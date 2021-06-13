@@ -116,6 +116,9 @@ class waypoint_list;
 #define OPF_FIREBALL			89		// Goober5000 - an entry in fireball.tbl
 #define OPF_SPECIES				90		// Goober5000
 #define OPF_LANGUAGE			91		// Goober5000
+#define OPF_CONTAINER_NAME		92		// Karajorma/jg18 - The name of a SEXP container
+#define OPF_LIST_CONTAINER_NAME	93		// Karajorma/jg18 - The name of a SEXP list container
+#define OPF_MAP_CONTAINER_NAME	94		// Karajorma/jg18 - The name of a SEXP map container
 
 // Operand return types
 #define	OPR_NUMBER				1	// returns number
@@ -1065,6 +1068,10 @@ const char *CTEXT(int n);
 #define SEXP_CHECK_INVALID_SSM_CLASS			-160
 #define SEXP_CHECK_INVALID_FIREBALL				-161
 #define SEXP_CHECK_INVALID_SPECIES				-162
+#define SEXP_CHECK_INVALID_LIST_MODIFIER		-163
+#define SEXP_CHECK_WRONG_CONTAINER_TYPE			-164
+#define SEXP_CHECK_WRONG_CONTAINER_DATA_TYPE	-165
+#define SEXP_CHECK_WRONG_MAP_KEY_TYPE			-166
 
 #define TRAINING_CONTEXT_SPEED		(1<<0)
 #define TRAINING_CONTEXT_FLY_PATH	(1<<1)

@@ -1930,10 +1930,27 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 			type2 = SEXP_ATOM_STRING;
 
 		} else if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER) {
-			// for now we'll completely ignore SEXP containers
-			node = Sexp_nodes[node].rest;
-			argnum++;
-			continue;
+			const auto *p_container = get_sexp_container(Sexp_nodes[node].text);
+			Assert(p_container != nullptr); // should have been checked in get_sexp()
+
+			switch (type) {
+				case OPF_CONTAINER_NAME:
+				case OPF_LIST_CONTAINER_NAME:
+				case OPF_MAP_CONTAINER_NAME:
+					// set two values for extra certainty
+					// since SEXP_ATOM_CONTAINER == OPR_AI_GOAL (yay untyped enums)
+					type2 = SEXP_ATOM_CONTAINER;
+					z = SEXP_ATOM_CONTAINER;
+					t = (int)p_container->type;
+					break;
+				default:
+					// must be an instance of "Replace Container"
+					// using CTEXT() isn't foolproof because could fail now but be OK in-mission
+					// for now, just skip over the container and continue checking
+					node = Sexp_nodes[node].rest;
+					argnum++;
+					continue;
+				}
 
 		} else {
 			Assert(0);
@@ -3334,6 +3351,17 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				}
 
 				// that's all we do, since there may be a language the game doesn't know about
+				break;
+
+			case OPF_CONTAINER_NAME:
+			case OPF_LIST_CONTAINER_NAME:
+			case OPF_MAP_CONTAINER_NAME:
+				if (type2 != SEXP_ATOM_CONTAINER || z != SEXP_ATOM_CONTAINER) {
+					return SEXP_CHECK_TYPE_MISMATCH;
+				} else if ((type == OPF_LIST_CONTAINER_NAME && none((ContainerType)t & ContainerType::LIST)) ||
+						   (type == OPF_MAP_CONTAINER_NAME && none((ContainerType)t & ContainerType::MAP))) {
+					return SEXP_CHECK_WRONG_CONTAINER_TYPE;
+				}
 				break;
 
 			default:
@@ -29878,6 +29906,18 @@ const char *sexp_error_message(int num)
 
 		case SEXP_CHECK_INVALID_SPECIES:
 			return "Invalid species";
+
+		case SEXP_CHECK_INVALID_LIST_MODIFIER:
+			return "Invalid list modifier";
+
+		case SEXP_CHECK_WRONG_CONTAINER_TYPE:
+			return "Wrong container type";
+
+		case SEXP_CHECK_WRONG_CONTAINER_DATA_TYPE:
+			return "Wrong container data type";
+
+		case SEXP_CHECK_WRONG_MAP_KEY_TYPE:
+			return "Wrong map key type";
 
 		default:
 			Warning(LOCATION, "Unhandled sexp error code %d!", num);
