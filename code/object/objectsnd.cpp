@@ -44,7 +44,7 @@ typedef struct _obj_snd {
 	int		freq;				// valid range: 100 -> 100000 Hz
 	int		flags;			
 	vec3d	offset;			// offset from the center of the object where the sound lives
-	ship_subsys *ss;		//Associated subsystem
+	const ship_subsys *ss;		//Associated subsystem
 } obj_snd;
 
 #define SPEED_SOUND				600.0f				// speed of sound in FreeSpace
@@ -684,8 +684,10 @@ void obj_snd_do_frame()
 //										sound can be assigned per object).  
 //               >= 0			=> sound was successfully assigned
 //
-int obj_snd_assign(int objnum, gamesnd_id sndnum, vec3d *pos, int flags, ship_subsys *associated_sub)
+int obj_snd_assign(int objnum, gamesnd_id sndnum, const vec3d *pos, int flags, const ship_subsys *associated_sub)
 {
+	Assertion(pos != nullptr, "Sound position must not be null!");
+
 	if(objnum < 0 || objnum > MAX_OBJECTS)
 		return -1;
 
