@@ -30,7 +30,7 @@
 
 #include <clocale>
 
-extern int Xstr_inited;
+extern bool Xstr_inited;
 
 extern void allocate_parse_text(size_t size);
 
@@ -103,7 +103,7 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 	lcl_init(LCL_UNTRANSLATED);
 
 	// Goober5000 - force init XSTRs (so they work, but only work untranslated, based on above comment)
-	Xstr_inited = 1;
+	Xstr_inited = true;
 
 #ifndef NDEBUG
 	load_filter_info();
