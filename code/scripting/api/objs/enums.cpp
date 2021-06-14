@@ -1,6 +1,7 @@
 
 #include "enums.h"
 
+#include "mission/missionparse.h"
 #include "object/objectsnd.h"
 #include "scripting/ade.h"
 
@@ -115,6 +116,14 @@ flag_def_list Enumerations[] = {
 	{"OS_SUBSYS_DAMAGED", OS_SUBSYS_DAMAGED, 0},
 	{"OS_SUBSYS_ROTATION", OS_SUBSYS_ROTATION, 0},
 	// end of OS_ definitions
+	// these also use values that aren't in enums.h
+	{ "MOVIE_PRE_FICTION", MOVIE_PRE_FICTION, 0 },
+	{ "MOVIE_PRE_CMD_BRIEF", MOVIE_PRE_CMD_BRIEF, 0 },
+	{ "MOVIE_PRE_BRIEF", MOVIE_PRE_BRIEF, 0 },
+	{ "MOVIE_PRE_GAME", MOVIE_PRE_GAME, 0 },
+	{ "MOVIE_PRE_DEBRIEF", MOVIE_PRE_DEBRIEF, 0 },
+	{ "MOVIE_END_CAMPAIGN", MOVIE_END_CAMPAIGN, 0 },
+	// end of MOVIE_ definitions
 };
 // clang-format on
 
