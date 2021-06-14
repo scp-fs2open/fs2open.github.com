@@ -46,7 +46,7 @@ const SCP_vector<list_modifier>& get_all_list_modifiers()
 namespace {
 	const char *Empty_str = "";
 	// Probably way too many now.I suspect someone will want to bump this later.Go ahead if you do, the choice was fairly arbitrary.
-	constexpr size_t NUM_CTEXT_RETURN_STRINGS = 100;
+	constexpr int NUM_CTEXT_RETURN_STRINGS = 100;
 	std::array<char[TOKEN_LENGTH], NUM_CTEXT_RETURN_STRINGS> Ctext_strings;
 	int Ctext_strings_last_index = 0;
 } // namespace

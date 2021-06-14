@@ -3588,7 +3588,7 @@ int get_sexp()
 			Mp++;
 
 			char container_name[TOKEN_LENGTH];
-			const SCP_string container_delim = "" + sexp_container::DELIM;
+			const SCP_string container_delim(1, sexp_container::DELIM);
 			stuff_string(container_name, F_NAME, TOKEN_LENGTH, container_delim.c_str());
 
 			// bump past closing '&'
