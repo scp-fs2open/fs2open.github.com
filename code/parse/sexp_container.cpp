@@ -467,9 +467,7 @@ const char *sexp_container_CTEXT(int node)
 		}
 
 		if (result.front() != sexp_container::DELIM) {
-			// FIXME: ugh. Instead of this hackishness, store the resulting string as cached data on the Sexp node in question
-			// if the node already has cached data attached, reuse the cached_data object
-			int result_index = container_push_return_string(result);
+			const int result_index = container_push_return_string(result);
 			return Ctext_strings[result_index];
 		} else {
 			// we're dealing with a multidimentional container
