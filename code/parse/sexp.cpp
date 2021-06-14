@@ -4043,7 +4043,14 @@ void stuff_sexp_text_string(SCP_string &dest, int node, int mode)
 {
 	Assert((node >= 0) && (node < Num_sexp_nodes));
 
-	if (Sexp_nodes[node].type & SEXP_FLAG_VARIABLE)
+	if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER) {
+		Assertion(get_sexp_container(Sexp_nodes[node].text) != nullptr,
+			"Couldn't find container: %s\n",
+			Sexp_nodes[node].text);
+
+		sprintf(dest, "%c%s%c ", sexp_container::DELIM, Sexp_nodes[node].text, sexp_container::DELIM);
+	}
+	else if (Sexp_nodes[node].type & SEXP_FLAG_VARIABLE)
 	{
 		int sexp_variables_index = get_index_sexp_variable_name(Sexp_nodes[node].text);
 		// during the last pass through error-reporting mode, sexp variables have already been transcoded to their indexes
@@ -4131,6 +4138,12 @@ int build_sexp_string(SCP_string &accumulator, int cur_node, int level, int mode
 			stuff_sexp_text_string(buf, node, mode);
 			accumulator += buf;
 
+		} else if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER) {
+			// build text to string
+			stuff_sexp_text_string(buf, node, mode);
+			accumulator += buf;
+
+			build_sexp_string(accumulator, Sexp_nodes[node].first, level + 1, mode);
 		} else {
 			build_sexp_string(accumulator, Sexp_nodes[node].first, level + 1, mode);
 		}
@@ -4168,6 +4181,12 @@ void build_extended_sexp_string(SCP_string &accumulator, int cur_node, int level
 			stuff_sexp_text_string(buf, node, mode);
 			accumulator += buf;
 
+		} else if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER) {
+			// build text to string
+			stuff_sexp_text_string(buf, node, mode);
+			accumulator += buf;
+
+			build_sexp_string(accumulator, Sexp_nodes[node].first, level + 1, mode);
 		} else {
 			build_sexp_string(accumulator, Sexp_nodes[node].first, level + 1, mode);
 		}
@@ -29499,7 +29518,9 @@ void update_sexp_references(const char *old_name, const char *new_name, int form
 		}
 		else
 		{
-			Assert((SEXP_NODE_TYPE(n) == SEXP_ATOM) && ((Sexp_nodes[n].subtype == SEXP_ATOM_NUMBER) || (Sexp_nodes[n].subtype == SEXP_ATOM_STRING)));
+			Assert((SEXP_NODE_TYPE(n) == SEXP_ATOM) &&
+				   ((Sexp_nodes[n].subtype == SEXP_ATOM_NUMBER) || (Sexp_nodes[n].subtype == SEXP_ATOM_STRING) ||
+					   (Sexp_nodes[n].subtype == SEXP_ATOM_CONTAINER)));
 
 			if (query_operator_argument_type(op, i) == format)
 			{
