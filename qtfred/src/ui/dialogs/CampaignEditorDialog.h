@@ -45,6 +45,7 @@ private:
 public slots:
 	void reject() override; //onClose for dialogs
 	void updateUI();
+	void updateUIBranch();
 
 private slots:
 	void fileNew();

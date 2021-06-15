@@ -25,8 +25,8 @@ public:
 		QString voice;
 	};
 
-	struct CampaignBranchData {  //noUIu
-		CampaignBranchData() = delete;
+	struct CampaignBranchData {
+		explicit CampaignBranchData() = default;
 		CampaignBranchData(const int &sexp_branch, const QString &from);
 
 		void connect(const SCP_vector<const std::unique_ptr<CampaignMissionData>*>& missions);
@@ -64,6 +64,8 @@ public:
 
 private:
 	inline const CampaignMissionData& getCurMn() const { return mnData_it ? *mnData_it : mdEmpty; }
+	inline const CampaignBranchData& getCurBr() const {
+		return mnData_it && mnData_it->brData_it ? *mnData_it->brData_it : CampaignMissionData::bdEmpty; }
 
 public:
 	inline const QString& getCurMnFilename() const { return getCurMn().filename; }
@@ -77,8 +79,8 @@ public:
 
 	inline const SCP_vector<CampaignBranchData>& getCurMnBranches() const {	return getCurMn().branches;	}
 
-	inline bool getCurBrIsLoop() const {
-		return (mnData_it ? mnData_it : &mdEmpty)->it_branches->loopData.get(); }
+	inline bool getCurBrIsLoop() const { return getCurBr().loopData.get(); }
+	inline const QString& getCurBrNext() const { return getCurBr().next; }
 
 	/*inline const QString& getCurLoopDescr() const {
 		return (mnData_it ? mnData_it : &mdEmpty)->it_branches->loopData.descr; }
@@ -116,6 +118,8 @@ public slots:
 	inline void setCurMnDebriefingPersona(const QString &debriefingPersona) {
 		if (! mnData_it) return;
 		modify<QString>(mnData_it->debriefingPersona, debriefingPersona); }
+
+	void setCurBr(const CampaignBranchData *br);
 
 	/*inline void setCurBrIsLoop(bool isLoop) {
 		if (! mnData_it) return;
@@ -161,7 +165,8 @@ private:
 		QString mainhall;
 		QString debriefingPersona;
 
-		SCP_vector<CampaignBranchData>::iterator it_branches;  //noUIu
+		static const CampaignBranchData bdEmpty;
+		CampaignBranchData *brData_it{nullptr};
 		SCP_vector<CampaignBranchData> branches;
 	};
 

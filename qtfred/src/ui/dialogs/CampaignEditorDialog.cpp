@@ -5,6 +5,9 @@
 #include <QFileDialog>
 #include <QStringListModel>
 
+
+Q_DECLARE_METATYPE(const fso::fred::dialogs::CampaignEditorDialogModel::CampaignBranchData*)
+
 namespace fso {
 namespace fred {
 namespace dialogs {
@@ -86,6 +89,13 @@ void CampaignEditorDialog::setModel(CampaignEditorDialogModel *new_model) {
 	connect(ui->cmbMainhall, &QComboBox::currentTextChanged, model.get(), &CampaignEditorDialogModel::setCurMnMainhall);
 	connect(ui->cmbDebriefingPersona, &QComboBox::currentTextChanged, model.get(), &CampaignEditorDialogModel::setCurMnDebriefingPersona);
 
+	connect(ui->sxtBranches, &QTreeWidget::currentItemChanged, model.get(), [&](QTreeWidgetItem *selected) {
+		QTreeWidgetItem *parent;
+		while ((parent = selected->parent()))
+			selected = parent;
+		model->setCurBr(selected->data(0, Qt::UserRole).value<const CampaignEditorDialogModel::CampaignBranchData*>());
+	});
+
 	/*connect(ui->btnBranchLoop, &QPushButton::toggled, model.get(), [&](bool checked) {
 		model->setCurBrIsLoop(checked);
 	});
@@ -133,8 +143,15 @@ void CampaignEditorDialog::updateUI() {
 	ui->cmbMainhall->setEnabled(included);
 	ui->cmbDebriefingPersona->setEnabled(included);
 
-
 	createTree(included);
+
+	updateUIBranch();
+	//ui->btnErrorChecker->setEnabled()
+	//ui->btnRealign->setEnabled()
+
+}
+
+void CampaignEditorDialog::updateUIBranch() {
 
 	//ui->btnBranchUp->setEnabled()
 	//ui->btnBranchDown->setEnabled()
@@ -145,10 +162,6 @@ void CampaignEditorDialog::updateUI() {
 	ui->btnBrLoopAnim->setEnabled()
 	ui->txtLoopVoice->setText(model->getCurLoopVoice());
 	ui->btnBrLoopVoice->setEnabled()*/
-
-	//ui->btnErrorChecker->setEnabled()
-	//ui->btnRealign->setEnabled()
-
 }
 
 bool CampaignEditorDialog::questionSaveChanges() {
@@ -244,7 +257,7 @@ void CampaignEditorDialog::createTree(bool enabled) {
 			else
 				img = NodeImage::BLACK_DOT;
 			QTreeWidgetItem *h = sxt.insert(Branch::branchTexts.at(br.type) + br.next, img);
-
+			h->setData(0, Qt::UserRole, QVariant::fromValue(&br));
 			sxt.add_sub_tree(sxt.load_sub_tree(br.sexp, true, "do-nothing"), h);
 		}
 }

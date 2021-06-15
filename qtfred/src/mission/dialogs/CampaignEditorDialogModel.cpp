@@ -127,8 +127,6 @@ CampaignEditorDialogModel::CampaignMissionData::CampaignMissionData(const QStrin
 		 it_cond_arm != -1;
 		 it_cond_arm = CDR(it_cond_arm) )
 		branches.emplace_back(CAR(it_cond_arm), filename);
-
-	it_branches = branches.begin();
 }
 
 CampaignEditorDialogModel::CampaignMissionData::CampaignMissionData(const QString &file) :
@@ -215,6 +213,7 @@ bool CampaignEditorDialogModel::saveTo(const QString &file) {
 	return success;
 }
 
+const CampaignEditorDialogModel::CampaignBranchData CampaignEditorDialogModel::CampaignMissionData::bdEmpty{};
 const CampaignEditorDialogModel::CampaignMissionData CampaignEditorDialogModel::mdEmpty{""};
 
 static QStringList initCampaignTypes() {
@@ -247,9 +246,17 @@ void CampaignEditorDialogModel::connectBranches() {
 }
 
 void CampaignEditorDialogModel::missionSelectionChanged(const QModelIndex &changed) {
+	if (mnData_it)
+		mnData_it->brData_it = nullptr;
 	mnData_it = missionData.internalData(changed).get();
 	mnData_idx = changed;
 	_parent->updateUI();
+}
+
+void CampaignEditorDialogModel::setCurBr(const CampaignBranchData *br) {
+	if (! mnData_it) return;
+	mnData_it->brData_it = const_cast<CampaignBranchData*>(br);
+	_parent->updateUIBranch();
 }
 
 bool CampaignEditorDialogModel::_saveTo(QString file) {
