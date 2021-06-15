@@ -864,14 +864,6 @@ void model_anim_set_initial_states(ship *shipp)
 
 	ship_primary_changed(shipp);
 	ship_secondary_changed(shipp);
-
-	ship_info* sip = &Ship_info[shipp->ship_info_index];
-
-	const auto& initialAnims = sip->animations.animationSet[{animation::ModelAnimationTriggerType::Initial, animation::ModelAnimationSet::SUBTYPE_DEFAULT}];
-
-	for (const auto& anim : initialAnims) {
-		anim.second->start(shipp, false);
-	}
 }
 
 /**

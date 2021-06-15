@@ -1,4 +1,5 @@
 #include "model/modelanimation.h"
+#include "model/modelanimation_segments.h"
 #include "ship/ship.h"
 
 extern float flFrametime;
@@ -180,6 +181,80 @@ namespace animation {
 		s_runningAnimations.clear();
 	}
 
+	void ModelAnimation::parseLegacyAnimationTable(model_subsystem* sp, ship_info* sip) {
+		//the only thing initial animation type needs is the angle, 
+		//so to save space lets just make everything optional in this case
+
+		//Most of these properties were read and allowed, but never actually used for anything.
+		//Hence, still allow them in tables, but now just skip reading them
+
+		angles angle;
+		bool isRelative;
+
+		if (optional_string("+delay:"))
+			skip_token();
+
+		if (optional_string("+reverse_delay:"))
+			skip_token();
+
+		if (optional_string("+absolute_angle:")) {
+			vec3d anglesDeg;
+			stuff_vec3d(&anglesDeg);
+
+			angle.p = fl_radians(anglesDeg.xyz.x);
+			angle.h = fl_radians(anglesDeg.xyz.y);
+			angle.b = fl_radians(anglesDeg.xyz.z);
+
+			isRelative = false;
+		}
+		else {
+			vec3d anglesDeg;
+			if (!optional_string("+relative_angle:"))
+				required_string("+relative_angle:");
+
+			stuff_vec3d(&anglesDeg);
+
+			angle.p = fl_radians(anglesDeg.xyz.x);
+			angle.h = fl_radians(anglesDeg.xyz.y);
+			angle.b = fl_radians(anglesDeg.xyz.z);
+
+			isRelative = true;
+		}
+
+		if (optional_string("+velocity:"))
+			skip_token();
+
+		if (optional_string("+acceleration:"))
+			skip_token();
+
+		if (optional_string("+time:"))
+			skip_token();
+
+		std::shared_ptr<animation::ModelAnimation> anim = std::make_shared<animation::ModelAnimation>();
+
+		char namelower[MAX_NAME_LEN];
+		strncpy(namelower, sp->subobj_name, MAX_NAME_LEN);
+		strlwr(namelower);
+		//since sp->type is not set without reading the pof, we need to infer it by subsystem name (which works, since the same name is used to match the submodels name, which is used to match the type in pof parsing)
+		//sadly, we also need to check for engine and radar, since these take precedent (as in, an engineturret is an engine before a turret type)
+		if (!strstr(namelower, "engine") && !strstr(namelower, "radar") && strstr(namelower, "turret")) {
+			std::unique_ptr<ModelAnimationSegmentSetAngle> rotBase = std::make_unique<ModelAnimationSegmentSetAngle>(angle.p);
+			std::unique_ptr<ModelAnimationSubmodel> subsysBase = std::make_unique<ModelAnimationSubmodel>(sp->subobj_name, false, std::move(rotBase));
+			anim->addSubsystemAnimation(std::move(subsysBase));
+
+			std::unique_ptr<animation::ModelAnimationSegmentSetAngle> rotBarrel = std::make_unique<animation::ModelAnimationSegmentSetAngle>(angle.h);
+			std::unique_ptr<animation::ModelAnimationSubmodel> subsysBarrel = std::make_unique<animation::ModelAnimationSubmodel>(sp->subobj_name, true, std::move(rotBarrel));
+			anim->addSubsystemAnimation(std::move(subsysBarrel));
+		}
+		else {
+			std::unique_ptr<animation::ModelAnimationSegmentSetPHB> rot = std::make_unique<animation::ModelAnimationSegmentSetPHB>(angle, isRelative);
+			std::unique_ptr<animation::ModelAnimationSubmodel> subsys = std::make_unique<animation::ModelAnimationSubmodel>(sp->subobj_name, std::move(rot));
+			anim->addSubsystemAnimation(std::move(subsys));
+		}
+
+		sip->animations.emplace(anim, "", animation::ModelAnimationTriggerType::Initial);
+	}
+
 	/*std::shared_ptr<ModelAnimation> ModelAnimation::parseAnimationTable() {
 		//TODO. This is not the function to parse the legacy table, that is still part of modelread.cpp
 		//This will eventually be the function to parse the new animation table
@@ -314,5 +389,16 @@ namespace animation {
 
 	void ModelAnimationSet::emplace(std::shared_ptr<ModelAnimation> animation, SCP_string name, ModelAnimationTriggerType type, int subtype) {
 		animationSet[{type, subtype}].emplace(name, animation);
+	}
+
+
+	void anim_set_initial_states(ship* shipp) {
+		ship_info* sip = &Ship_info[shipp->ship_info_index];
+
+		const auto& initialAnims = sip->animations.animationSet[{animation::ModelAnimationTriggerType::Initial, animation::ModelAnimationSet::SUBTYPE_DEFAULT}];
+
+		for (const auto& anim : initialAnims) {
+			anim.second->start(shipp, false);
+		}
 	}
 }

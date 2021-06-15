@@ -179,6 +179,8 @@ namespace animation {
 		static void stepAnimations(float frametime);
 		//Find animations in the running animations list that are fully reset and need to be removed
 		static void clearAnimations();
+		//Parses the legacy animation table in ships.tbl of a single subsystem. Currently initial animations only
+		static void parseLegacyAnimationTable(model_subsystem* sp, ship_info* sip);
 		//static std::shared_ptr<ModelAnimation> parseAnimationTable();
 	};
 
@@ -194,4 +196,9 @@ namespace animation {
 		//Helper function to shorten animation emplaces
 		void emplace(std::shared_ptr<ModelAnimation> animation, SCP_string name, ModelAnimationTriggerType type = ModelAnimationTriggerType::Scripted, int subtype = SUBTYPE_DEFAULT);
 	};
+
+
+	//Start of section of helper functions, mostly to complement the old modelanim functions as required
+
+	void anim_set_initial_states(ship* shipp);
 }

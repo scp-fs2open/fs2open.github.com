@@ -5000,76 +5000,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 
 
 					if(current_trigger.type == AnimationTriggerType::Initial){
-						//the only thing initial animation type needs is the angle, 
-						//so to save space lets just make everything optional in this case
-
-						//Most of these properties were read and allowed, but never actually used for anything.
-						//Hence, still allow them in tables, but now just skip reading them
-
-						angles angle;
-						bool isRelative;
-
-						if (optional_string("+delay:"))
-							skip_token();
-
-						if (optional_string("+reverse_delay:"))
-							skip_token();
-
-						if (optional_string("+absolute_angle:")) {
-							vec3d anglesDeg;
-							stuff_vec3d(&anglesDeg);
-		
-							angle.p = fl_radians(anglesDeg.xyz.x);
-							angle.h = fl_radians(anglesDeg.xyz.y);
-							angle.b = fl_radians(anglesDeg.xyz.z);
-
-							isRelative = false;
-						} else {
-							vec3d anglesDeg;
-							if (!optional_string("+relative_angle:"))
-								required_string("+relative_angle:");
-
-							stuff_vec3d(&anglesDeg);
-		
-							angle.p = fl_radians(anglesDeg.xyz.x);
-							angle.h = fl_radians(anglesDeg.xyz.y);
-							angle.b = fl_radians(anglesDeg.xyz.z);
-
-							isRelative = true;
-						}
-		
-						if(optional_string("+velocity:"))
-							skip_token();
-		
-						if(optional_string("+acceleration:"))
-							skip_token();
-
-						if(optional_string("+time:"))
-							skip_token();
-
-						std::shared_ptr<animation::ModelAnimation> anim = std::make_shared<animation::ModelAnimation>();
-
-						char namelower[MAX_NAME_LEN];
-						strncpy(namelower, sp->subobj_name, MAX_NAME_LEN);
-						strlwr(namelower);
-						//since sp->type is not set without reading the pof, we need to infer it by subsystem name (which works, since the same name is used to match the submodels name, which is used to match the type in pof parsing)
-						//sadly, we also need to check for engine and radar, since these take precedent (as in, an engineturret is an engine before a turret type)
-						if (!strstr(namelower, "engine") && !strstr(namelower, "radar") && strstr(namelower, "turret")) {
-							std::unique_ptr<animation::ModelAnimationSegmentSetAngle> rotBase = std::make_unique<animation::ModelAnimationSegmentSetAngle>(angle.p);
-							std::unique_ptr<animation::ModelAnimationSubmodel> subsysBase = std::make_unique<animation::ModelAnimationSubmodel>(sp->subobj_name, false, std::move(rotBase));
-							anim->addSubsystemAnimation(std::move(subsysBase));
-
-							std::unique_ptr<animation::ModelAnimationSegmentSetAngle> rotBarrel = std::make_unique<animation::ModelAnimationSegmentSetAngle>(angle.h);
-							std::unique_ptr<animation::ModelAnimationSubmodel> subsysBarrel = std::make_unique<animation::ModelAnimationSubmodel>(sp->subobj_name, true, std::move(rotBarrel));
-							anim->addSubsystemAnimation(std::move(subsysBarrel));
-						}
-						else {
-							std::unique_ptr<animation::ModelAnimationSegmentSetPHB> rot = std::make_unique<animation::ModelAnimationSegmentSetPHB>(angle, isRelative);
-							std::unique_ptr<animation::ModelAnimationSubmodel> subsys = std::make_unique<animation::ModelAnimationSubmodel>(sp->subobj_name, std::move(rot));
-							anim->addSubsystemAnimation(std::move(subsys));
-						}
-
-						sip->animations.emplace(anim, "", animation::ModelAnimationTriggerType::Initial);
+						animation::ModelAnimation::parseLegacyAnimationTable(sp, sip);
 
 						applyNewTrigger = false;
 					}else{
@@ -10126,6 +10057,7 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 	ct_ship_create(shipp);
 
 	model_anim_set_initial_states(shipp);
+	animation::anim_set_initial_states(shipp);
 
 	// Add this ship to Ship_obj_list
 	shipp->ship_list_index = ship_obj_list_add(objnum);
@@ -10833,6 +10765,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 			swp->secondary_animation_position[i] = MA_POS_NOT_SET;
 	}
 	model_anim_set_initial_states(sp);
+	animation::anim_set_initial_states(sp);
 
 	//Reassign sound stuff
 	if (!Fred_running)
