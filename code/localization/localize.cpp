@@ -462,8 +462,8 @@ void parse_tstringstbl(const char *filename)
 // initialize the xstr table
 void lcl_xstr_init()
 {
-	for (int i = 0; i < XSTR_SIZE; i++)
-		Xstr_table[i].str = nullptr;
+	for (auto &xstr_entry : Xstr_table)
+		xstr_entry.str = nullptr;
 
 	Assertion(Lcl_ext_str.empty() && Lcl_ext_str_explicit_default.empty(), "Localize system was not shut down properly!");
 	Lcl_ext_str.clear();
@@ -534,10 +534,10 @@ void lcl_xstr_init()
 // free Xstr table
 void lcl_xstr_close()
 {
-	for (int i = 0; i < XSTR_SIZE; i++) {
-		if (Xstr_table[i].str != nullptr) {
-			vm_free((void *)Xstr_table[i].str);
-			Xstr_table[i].str = nullptr;
+	for (auto &xstr_entry : Xstr_table) {
+		if (xstr_entry.str != nullptr) {
+			vm_free((void *)xstr_entry.str);
+			xstr_entry.str = nullptr;
 		}
 	}
 
@@ -792,7 +792,7 @@ bool lcl_ext_localize_sub(const char *in, char *text_str, char *out, size_t max_
 	}
 	
 	// if the localization file is not open, or there's no entry, or we're not translating, return the original string
-	if ( !Xstr_inited || (str_id < 0) || (Lcl_current_lang == LCL_UNTRANSLATED) || (Lcl_current_lang == LCL_RETAIL_HYBRID) ) {
+	if ( !Xstr_inited || (str_id < 0) || (!use_default_translation && ((Lcl_current_lang == LCL_UNTRANSLATED) || (Lcl_current_lang == LCL_RETAIL_HYBRID))) ) {
 		if ( strlen(text_str) > max_len && !Lcl_unexpected_tstring_check )
 			error_display(0, "Token too long: [%s].  Length = " SIZE_T_ARG ".  Max is " SIZE_T_ARG ".\n", text_str, strlen(text_str), max_len);
 
@@ -886,7 +886,7 @@ bool lcl_ext_localize_sub(const SCP_string &in, SCP_string &text_str, SCP_string
 	}
 	
 	// if the localization file is not open, or there's no entry, or we're not translating, return the original string
-	if ( !Xstr_inited || (str_id < 0) || (Lcl_current_lang == LCL_UNTRANSLATED) || (Lcl_current_lang == LCL_RETAIL_HYBRID) ) {
+	if ( !Xstr_inited || (str_id < 0) || (!use_default_translation && ((Lcl_current_lang == LCL_UNTRANSLATED) || (Lcl_current_lang == LCL_RETAIL_HYBRID))) ) {
 		out = text_str;
 
 		if (id != NULL)
