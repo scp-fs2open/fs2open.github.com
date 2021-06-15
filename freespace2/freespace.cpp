@@ -5439,6 +5439,14 @@ void game_leave_state( int old_state, int new_state )
 			break;
 
 		case GS_STATE_SCRIPTING:
+			// this can happen because scripting can be done in odd places.
+			if ( !going_to_briefing_state(new_state) ) {
+				common_select_close();
+
+				if ( going_to_menu_state(new_state) ) {
+					freespace_stop_mission();
+				}
+			}
 			scripting_state_close();
 			break;
 	}
