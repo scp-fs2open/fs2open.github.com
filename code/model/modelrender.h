@@ -99,6 +99,9 @@ class model_render_params
 
 	float Outline_thickness = -1.0f;
 
+	bool Use_alpha_mult;
+	float Alpha_mult;
+
 	model_render_params(const model_render_params&) = delete;
 	model_render_params& operator=(const model_render_params&) = delete;
 public:
@@ -125,10 +128,12 @@ public:
 	void set_thruster_info(mst_info &info);
 	void set_normal_alpha(float min, float max);
 	void set_outline_thickness(float thick);
+	void set_alpha_mult(float alpha);
 
 	bool is_clip_plane_set();
 	bool is_team_color_set();
 	bool is_normal_alpha_set();
+	bool is_alpha_mult_set();
 	bool uses_thick_outlines();
 
 	uint get_model_flags();
@@ -153,6 +158,7 @@ public:
 	float get_normal_alpha_min();
 	float get_normal_alpha_max();
 	float get_outline_thickness();
+	float get_alpha_mult();
 };
 
 struct arc_effect

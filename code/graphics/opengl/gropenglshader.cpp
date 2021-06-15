@@ -207,6 +207,8 @@ static opengl_shader_variant_t GL_shader_variants[] = {
 
 	{SDR_TYPE_MODEL, true, SDR_FLAG_MODEL_THICK_OUTLINES, "FLAG_THICK_OUTLINE", {}, "Thick outlines"},
 
+	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_ALPHA_MULT, "FLAG_ALPHA_MULT", {}, "Alpha multiplier"},
+
 	{SDR_TYPE_EFFECT_PARTICLE,
 	 true,
 	 SDR_FLAG_PARTICLE_POINT_GEN,
