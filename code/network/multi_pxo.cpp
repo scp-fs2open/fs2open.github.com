@@ -1647,8 +1647,17 @@ void multi_pxo_url(const char *url)
 		return;
 	}
 
+	static int click_timeout = 0;
+
+	if ( click_timeout && !timestamp_elapsed(click_timeout) ) {
+		return;
+	}
+
 	if ( open_url(url) ) {
 		popup(PF_USE_AFFIRMATIVE_ICON | PF_TITLE_RED | PF_TITLE_BIG,1,POPUP_OK,XSTR("Warning\nCould not locate/launch default Internet Browser",943));
+	} else {
+		// short delay before allowing another click
+		click_timeout = timestamp(750);
 	}
 }
 
