@@ -35209,9 +35209,15 @@ static void output_sexp_html(int sexp_idx, FILE *fp)
 				{
 					strcpy(dest_ptr, "\n<br>");
 					dest_ptr+=5;
-				}
-				else
-				{
+				// for html compatibility
+				} else if (*curr_ptr == '<') {
+					strcpy(dest_ptr, "&lt;");
+					dest_ptr += 4;
+				// for html compatibility
+				} else if (*curr_ptr == '>') {
+					strcpy(dest_ptr, "&gt;");
+					dest_ptr += 4;
+				} else {
 					*dest_ptr++ = *curr_ptr;
 				}
 				curr_ptr++;
