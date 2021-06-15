@@ -38,6 +38,8 @@ class FredApplication: public QObject {
 private slots:
 	void shutdown();
 
+	void lateShutdown();
+
 	void idleFunction();
 };
 

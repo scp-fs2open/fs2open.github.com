@@ -841,7 +841,7 @@ static void mcp_1(object *player_objp, object *planet_objp)
 	if (dist > planet_radius*PLANET_DAMAGE_RANGE)
 		return;
 
-	ship_apply_global_damage( player_objp, planet_objp, NULL, PLANET_DAMAGE_SCALE * flFrametime * (float)pow((planet_radius*PLANET_DAMAGE_RANGE)/dist, 3.0f) );
+	ship_apply_global_damage( player_objp, planet_objp, NULL, PLANET_DAMAGE_SCALE * flFrametime * (float)pow((planet_radius*PLANET_DAMAGE_RANGE)/dist, 3.0f), -1 );
 
 	if ((Missiontime - Last_planet_damage_time > F1_0) || (Missiontime < Last_planet_damage_time)) {
 		HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "Too close to planet.  Taking damage!", 465));
@@ -1371,20 +1371,26 @@ int collide_ship_ship( obj_pair * pair )
 						if ((LightOne->radius < 50.0f) && (HeavyOne->radius <50.0f)) {
 							damage /= 4.0f;
 						}
-					}
-					
-					float dam2 = (100.0f * damage/LightOne->phys_info.mass);
+					}					
 
-					int	quadrant_num = get_ship_quadrant_from_global(&world_hit_pos, ship_ship_hit_info.heavy);
-					if ((ship_ship_hit_info.heavy->flags[Object::Object_Flags::No_shields]) || !ship_is_shield_up(ship_ship_hit_info.heavy, quadrant_num) ) {
-						quadrant_num = -1;
+					int	quadrant_num = -1;					
+					if (!The_mission.ai_profile->flags[AI::Profile_Flags::No_shield_damage_from_ship_collisions] && !(ship_ship_hit_info.heavy->flags[Object::Object_Flags::No_shields])) {
+						quadrant_num = get_ship_quadrant_from_global(&world_hit_pos, ship_ship_hit_info.heavy);
+						if (!ship_is_shield_up(ship_ship_hit_info.heavy, quadrant_num))
+							quadrant_num = -1;
 					}
 
-					ship_apply_local_damage(ship_ship_hit_info.heavy, ship_ship_hit_info.light, &world_hit_pos, 100.0f * damage/HeavyOne->phys_info.mass, quadrant_num, CREATE_SPARKS, ship_ship_hit_info.submodel_num, &ship_ship_hit_info.collision_normal);
+					float damage_heavy = (100.0f * damage / HeavyOne->phys_info.mass);
+					ship_apply_local_damage(ship_ship_hit_info.heavy, ship_ship_hit_info.light, &world_hit_pos, damage_heavy, light_shipp->collision_damage_type_idx, 
+						quadrant_num, CREATE_SPARKS, ship_ship_hit_info.submodel_num, &ship_ship_hit_info.collision_normal);
+
 					hud_shield_quadrant_hit(ship_ship_hit_info.heavy, quadrant_num);
 
 					// don't draw sparks (using sphere hitpos)
-					ship_apply_local_damage(ship_ship_hit_info.light, ship_ship_hit_info.heavy, &world_hit_pos, dam2, MISS_SHIELDS, NO_SPARKS, -1, &ship_ship_hit_info.collision_normal);
+					float damage_light = (100.0f * damage / LightOne->phys_info.mass);
+					ship_apply_local_damage(ship_ship_hit_info.light, ship_ship_hit_info.heavy, &world_hit_pos, damage_light, heavy_shipp->collision_damage_type_idx, 
+						MISS_SHIELDS, NO_SPARKS, -1, &ship_ship_hit_info.collision_normal);
+
 					hud_shield_quadrant_hit(ship_ship_hit_info.light, -1);
 
 					maybe_push_little_ship_from_fast_big_ship(ship_ship_hit_info.heavy, ship_ship_hit_info.light, ship_ship_hit_info.impulse, &ship_ship_hit_info.collision_normal);

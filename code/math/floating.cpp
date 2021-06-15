@@ -12,6 +12,7 @@
 #include "io/timer.h"
 #include "math/floating.h"
 #include "math/staticrand.h"
+#include "utils/Random.h"
 
 
 /**
@@ -37,9 +38,9 @@ float frand()
 {
 	int i_rval;
 	do {
-		i_rval = myrand();
-	} while (i_rval == RAND_MAX);
-	float rval = i2fl(i_rval) * RAND_MAX_1f;
+		i_rval = Random::next();
+	} while (i_rval == Random::MAX_VALUE);
+	float rval = i2fl(i_rval) * Random::INV_F_MAX_VALUE;
 	return rval;
 }
 
@@ -78,12 +79,19 @@ static float accum_golden_ratio_rand_seed = 0.0f;
 // generates a quasirandom, low discrepancy number sequence
 // acts very much like a random number generator, but has the property of being very well distributed
 // use if you need quasirandom numbers, but don't want ugly 'runs' or 'clumps' of similar numbers 
-float golden_ratio_rand(float* seed) {
-	float* accum = seed == nullptr ? &accum_golden_ratio_rand_seed : seed;
-	*accum += GOLDEN_RATIO;
+float golden_ratio_rand() {
+	accum_golden_ratio_rand_seed += GOLDEN_RATIO;
+	if (accum_golden_ratio_rand_seed >= 1.0f)
+		accum_golden_ratio_rand_seed -= 1.0f;
+	return accum_golden_ratio_rand_seed;
+}
 
-	if (*accum >= 1.0f)
-		*accum -= 1.0f;
+float acosf_safe(float x) {
+	CLAMP(x, -1.f, 1.f);
+	return acosf(x);
+}
 
-	return *accum;
+float asinf_safe(float x) {
+	CLAMP(x, -1.f, 1.f);
+	return asinf(x);
 }

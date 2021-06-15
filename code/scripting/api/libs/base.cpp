@@ -21,9 +21,11 @@
 #include "scripting/api/objs/vecmath.h"
 #include "scripting/util/LuaValueDeserializer.h"
 #include "scripting/util/LuaValueSerializer.h"
+#include "utils/Random.h"
 
 namespace scripting {
 namespace api {
+using Random = ::util::Random;
 
 //**********LIBRARY: Base
 ADE_LIB(l_Base, "Base", "ba", "Base FreeSpace 2 functions");
@@ -52,7 +54,7 @@ ADE_FUNC(error, l_Base, "string Message", "Displays a FreeSpace error message wi
 ADE_FUNC(rand32,
 	l_Base,
 	"[number a, number b]",
-	"Calls FSO's rand32() function, which is higher-quality than Lua's ANSI C math.random().  If called with no arguments, returns a random integer from [0, 0x7fffffff).  If called with one argument, returns an integer from [0, a).  If called with two arguments, returns an integer from [a, b].",
+	"Calls FSO's Random::next() function, which is higher-quality than Lua's ANSI C math.random().  If called with no arguments, returns a random integer from [0, 0x7fffffff].  If called with one argument, returns an integer from [0, a).  If called with two arguments, returns an integer from [a, b].",
 	"number",
 	"A random integer")
 {
@@ -60,12 +62,23 @@ ADE_FUNC(rand32,
 	int numargs = ade_get_args(L, "|ii", &a, &b);
 
 	int result;
-	if (numargs == 2)
-		result = rand32(a, b);
-	else if (numargs == 1)
-		result = rand32() % a;
-	else
-		result = rand32();
+	if (numargs == 2) {
+		if (a <= b) {
+			result = Random::next(a, b);
+		} else {
+			LuaError(L, "rand32() script function was passed an invalid range (%d ... %d)!", a, b);
+			result = a; // match behavior of rand_sexp()
+		}
+	} else if (numargs == 1) {
+		if (a > 0) {
+			result = Random::next(a);
+		} else {
+			LuaError(L, "rand32() script function was passed an invalid modulus (%d)!", a);
+			result = 0;
+		}
+	} else {
+		result = Random::next();
+	}
 
 	return ade_set_error(L, "i", result);
 }
@@ -73,14 +86,14 @@ ADE_FUNC(rand32,
 ADE_FUNC(rand32f,
 	l_Base,
 	"[number max]",
-	"Calls FSO's rand32() function and transforms the result to a float.  If called with no arguments, returns a random float from [0.0, 1.0).  If called with one argument, returns a float from [0.0, max).",
+	"Calls FSO's Random::next() function and transforms the result to a float.  If called with no arguments, returns a random float from [0.0, 1.0).  If called with one argument, returns a float from [0.0, max).",
 	"number",
 	"A random float")
 {
 	float _max;
 	int numargs = ade_get_args(L, "|f", &_max);
 
-	float result = static_cast<float>(rand32()) / static_cast<float>(0x7fffffff);
+	float result = (float)Random::next() * Random::INV_F_MAX_VALUE;
 
 	if (numargs > 0)
 		result *= _max;

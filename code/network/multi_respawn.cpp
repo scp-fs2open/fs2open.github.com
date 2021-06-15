@@ -629,7 +629,7 @@ void multi_respawn_process_packet(ubyte *data, header *hinfo)
 	int offset = HEADER_LENGTH;
 
 	// determine who send the packet	
-	player_index = find_player_id(hinfo->id);
+	player_index = find_player_index(hinfo->id);
 	if(player_index == -1){
 		nprintf(("Network","Couldn't find player for processing respawn packet!\n"));
 	}
@@ -666,7 +666,7 @@ void multi_respawn_process_packet(ubyte *data, header *hinfo)
 		GET_STRING(parse_name);
 
 		if (!(Net_player->flags & NETINFO_FLAG_WARPING_OUT)) {
-			player_index = find_player_id(player_id);
+			player_index = find_player_index(player_id);
 
 			if(player_index == -1){
 				nprintf(("Network","Couldn't find player to respawn!\n"));

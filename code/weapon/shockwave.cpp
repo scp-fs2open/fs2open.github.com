@@ -151,7 +151,7 @@ int shockwave_create(int parent_objnum, vec3d* pos, shockwave_create_info* sci, 
 	orient = vmd_identity_matrix;
 	vm_angles_2_matrix(&orient, &sw->rot_angles);
     flagset<Object::Object_Flags> tmp_flags;
-	objnum = obj_create( OBJ_SHOCKWAVE, real_parent, i, &orient, &sw->pos, sw->outer_radius, tmp_flags + Object::Object_Flags::Renders);
+	objnum = obj_create( OBJ_SHOCKWAVE, real_parent, i, &orient, &sw->pos, sw->outer_radius, tmp_flags + Object::Object_Flags::Renders, false );
 
 	if ( objnum == -1 ){
 		Int3();
@@ -329,7 +329,7 @@ void shockwave_move(object *shockwave_objp, float frametime)
 			if ( (sw->weapon_info_index >= 0) && (Weapon_info[sw->weapon_info_index].wi_flags[Weapon::Info_Flags::Aoe_Electronics]) && !(objp->flags[Object::Object_Flags::Invulnerable]) ) {
 				weapon_do_electronics_effect(objp, &sw->pos, sw->weapon_info_index);
 			}
-			ship_apply_global_damage(objp, shockwave_objp, &sw->pos, damage );
+			ship_apply_global_damage(objp, shockwave_objp, &sw->pos, damage, sw->damage_type_idx );
 			weapon_area_apply_blast(NULL, objp, &sw->pos, blast, 1);
 			break;
 		case OBJ_ASTEROID:

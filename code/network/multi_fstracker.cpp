@@ -49,6 +49,12 @@ char Multi_fs_tracker_filter[MAX_PATH] = "";
 short Multi_fs_tracker_game_id = -1;
 SCP_string Multi_fs_tracker_game_name;
 
+enum PROBE_FLAGS {
+	PENDING	= (1<<0),
+	SUCCESS	= (1<<1),
+	FAILURE	= (1<<2)
+};
+
 // -----------------------------------------------------------------------------------
 // FREESPACE MASTER TRACKER FORWARD DECLARATIONS
 //
@@ -1126,7 +1132,7 @@ int multi_fs_tracker_validate_mission(char *filename)
 		SDL_snprintf(popup_string, SDL_arraysize(popup_string), XSTR("Validating mission %s", 1074), filename);
 
 		// run a popup
-		switch(popup_till_condition(multi_fs_tracker_validate_mission_normal, XSTR("&Cancel", 667), popup_string)){
+		switch ( popup_conditional_do(multi_fs_tracker_validate_mission_normal, popup_string) ) {
 		// cancel 
 		case 0: 
 			// bash some API values here so that next time we try and verify, everything works
@@ -1242,7 +1248,7 @@ int multi_fs_tracker_validate_table(const char *filename)
 		SDL_snprintf(popup_string, SDL_arraysize(popup_string), XSTR("Validating table %s", -1), filename);
 
 		// run a popup
-		switch ( popup_till_condition(multi_fs_tracker_validate_table_normal, XSTR("&Cancel", 667), popup_string) ) {
+		switch ( popup_conditional_do(multi_fs_tracker_validate_table_normal, popup_string) ) {
 			// cancel
 			case 0:
 				TableValidState = VALID_STATE_IDLE;
@@ -1308,7 +1314,11 @@ int multi_fs_tracker_validate_game_data()
 
 		// now check with tracker
 
-		for (auto tbl : table_list) {
+		if ( !(Game_mode & GM_STANDALONE_SERVER) ) {
+			popup_conditional_create(0, XSTR("&Cancel", 667), XSTR("Validating tables ...", -1));
+		}
+
+		for (auto &tbl : table_list) {
 			rval = multi_fs_tracker_validate_table( tbl.c_str() );
 
 			// if anything is valid then update our default
@@ -1319,6 +1329,15 @@ int multi_fs_tracker_validate_game_data()
 			else if (rval == TVALID_STATUS_INVALID) {
 				game_data_status = TVALID_STATUS_INVALID;
 			}
+			// if the popup was canceled then force a recheck on next attempt
+			else if (rval == -2) {
+				game_data_status = TVALID_STATUS_UNKNOWN;
+				break;
+			}
+		}
+
+		if ( !(Game_mode & GM_STANDALONE_SERVER) ) {
+			popup_conditional_close();
 		}
 
 		// we should hopefully have a mod id now, so log it
@@ -1358,6 +1377,56 @@ void multi_fs_tracker_report_stats_results()
 			}
 		}
 	}
+}
+
+// report the status of PXO game probe (firewall check)
+void multi_fs_tracker_report_probe_status(int flags, int next_try)
+{
+	static int last_flags = 0;
+	SCP_string str;
+
+	// if the flags haven't changed since last time then just bail
+	// *except* if the probe failed since we always want that message
+	// (don't & the flag check here, needs to be exact)
+	if ( (flags == last_flags) && (flags != PROBE_FLAGS::FAILURE) ) {
+		return;
+	}
+
+	if (flags & PROBE_FLAGS::PENDING) {
+		// if we've been here before just bail (to avoid log spam)
+		if (last_flags) {
+			last_flags = flags;
+			return;
+		}
+
+		str = "<PXO firewall probe in progress...>";
+	} else if (flags & PROBE_FLAGS::FAILURE) {
+		char t_str[64];
+
+		str = "<PXO firewall probe failed! Next attempt in ";
+
+		if (next_try < 120) {
+			SDL_snprintf(t_str, SDL_arraysize(t_str), "%d seconds...>", next_try);
+		} else if (next_try < (60*60+1)) {
+			int minutes = next_try / 60;
+			SDL_snprintf(t_str, SDL_arraysize(t_str), "%d minutes...>", minutes);
+		} else {
+			int hours = next_try / (60*60);
+			SDL_snprintf(t_str, SDL_arraysize(t_str), "%d hours...>", hours);
+		}
+
+		str += t_str;
+	} else if (flags & PROBE_FLAGS::SUCCESS) {
+		str = "<PXO firewall probe was a success!>";
+	} else {
+		// getting here shouldn't happen, but it's not technically fatal
+		return;
+	}
+
+	last_flags = flags;
+
+	multi_display_chat_msg(str.c_str(), 0, 0);
+	ml_string(str.c_str());
 }
 
 // return an MSW_STATUS_* constant

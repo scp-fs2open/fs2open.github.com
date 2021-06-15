@@ -64,10 +64,11 @@ extern char Neb2_bitmap_filenames[MAX_NEB2_BITMAPS][MAX_FILENAME_LEN];
 extern char Neb2_texture_name[MAX_FILENAME_LEN];
 
 typedef struct poof_info {
+	char name[NAME_LENGTH];
 	char bitmap_filename[MAX_FILENAME_LEN];
 	int bitmap;
 	::util::UniformFloatRange scale;
-	float density;						 // meters; the side length of a cube which contains 1 poof on average
+	float density;						 // poofs per square meter; can get *really* small but vague approximation is ok at those levels
 	::util::UniformFloatRange rotation;
 	float view_dist;
 	::util::UniformFloatRange alpha;
@@ -147,9 +148,6 @@ void neb2_get_fog_values(float *fnear, float *ffar, object *obj = NULL);
 
 // get adjusted near and far fog values (allows mission-specific fog adjustments)
 void neb2_get_adjusted_fog_values(float *fnear, float *ffar, float *fdensity = nullptr, object *obj = nullptr);
-
-// given an object, returns 0 - 1 the fog visibility of its center, 0 = completely obscured
-float neb2_get_fog_visibility(object *obj);
 
 // given a position, returns 0 - 1 the fog visibility of that position, 0 = completely obscured
 // distance_mult will multiply the result, use for things that can be obscured but can 'shine through' the nebula more than normal

@@ -49,6 +49,12 @@ void set_spec_flag(Checkbox* caller) {
 	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::NoSpecularMap, !value);
 }
 
+void set_reflect_flag(Checkbox* caller) {
+	auto value = caller->GetChecked();
+
+	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::NoReflectMap, !value);
+}
+
 void set_env_flag(Checkbox* caller) {
 	auto value = caller->GetChecked();
 
@@ -191,6 +197,9 @@ void RenderOptions::open(Button* /*caller*/) {
 	y += cbp->GetHeight() + 2;
 
 	cbp = (Checkbox*)dialogWindow->AddChild(new Checkbox("No Specular Map", 2, y, set_spec_flag));
+	y += cbp->GetHeight() + 2;
+
+	cbp = (Checkbox*)dialogWindow->AddChild(new Checkbox("No Reflection Map", 2, y, set_reflect_flag));
 	y += cbp->GetHeight() + 2;
 
 	cbp = (Checkbox*)dialogWindow->AddChild(new Checkbox("No Environment Map", 2, y, set_env_flag));

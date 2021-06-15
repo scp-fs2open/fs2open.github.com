@@ -324,7 +324,7 @@ int goal_text::add(const char *text)
 		return 1;
 	}
 
-	count = split_str(text, Goal_screen_text_w - Goal_screen_text_coords[gr_screen.res][GOAL_SCREEN_X_COORD] + Goal_screen_icon_xcoord[gr_screen.res], m_line_sizes + m_num_lines, m_lines + m_num_lines, max);
+	count = split_str(text, Goal_screen_text_w - Goal_screen_text_coords[gr_screen.res][GOAL_SCREEN_X_COORD] + Goal_screen_icon_xcoord[gr_screen.res], m_line_sizes + m_num_lines, m_lines + m_num_lines, max, MAX_GOAL_TEXT);
 	m_num_lines += count;
 	return count;
 }

@@ -20,6 +20,7 @@ FLAG_LIST(LabRenderFlag) {
 	NoDiffuseMap,
 	NoGlowMap,
 	NoSpecularMap,
+	NoReflectMap,
 	NoEnvMap,
 	NoNormalMap,
 	NoHeightMap,

@@ -586,33 +586,11 @@ float vm_vec_delta_ang_norm(const vec3d *v0, const vec3d *v1, const vec3d *uvec)
 	float a;
 	vec3d t;
 
-	a = acosf(vm_vec_dot(v0,v1));
+	a = acosf_safe(vm_vec_dot(v0,v1));
 
 	if (uvec) {
 		vm_vec_cross(&t,v0,v1);
 		if ( vm_vec_dot(&t,uvec) < 0.0 )	{
-			a = -a;
-		}
-	}
-
-	return a;
-}
-
-float vm_vec_delta_ang_norm_safe(const vec3d *v0, const vec3d *v1, const vec3d *uvec)
-{
-	float a, dot;
-	vec3d t;
-
-	// to avoid round-off errors...
-	// testing produced a dot of 1.00000012 which evaluates to an angle of -nan(ind)
-	dot = vm_vec_dot(v0, v1);
-	CLAMP(dot, -1.0f, 1.0f);
-
-	a = acosf(dot);
-
-	if (uvec) {
-		vm_vec_cross(&t,v0,v1);
-		if ( vm_vec_dot(&t,uvec) < 0.0 ) {
 			a = -a;
 		}
 	}
@@ -977,21 +955,11 @@ angles *vm_extract_angles_matrix_alternate(angles *a, const matrix *m)
 	Assert(a != NULL);
 	Assert(m != NULL);
 
-	// Extract pitch from m32, being careful for domain errors with
-	// asin().  We could have values slightly out of range due to
-	// floating point arithmetic.
-	float sp = -m->vec.fvec.xyz.y;
-	if (sp <= -1.0f) {
-		a->p = -PI_2;	// -pi/2
-	} else if (sp >= 1.0f) {
-		a->p = PI_2;	// pi/2
-	} else {
-		a->p = asinf(sp);
-	}
+	a->p = asinf_safe(-m->vec.fvec.xyz.y);
 
 	// Check for the Gimbal lock case, giving a slight tolerance
 	// for numerical imprecision
-	if (fabs(sp) > 0.9999f) {
+	if (fabs(m->vec.fvec.xyz.y) > 0.9999f) {
 		// We are looking straight up or down.
 		// Slam bank to zero and just set heading
 		a->b = 0.0f;
@@ -1014,7 +982,7 @@ static angles *vm_extract_angles_vector_normalized(angles *a, const vec3d *v)
 
 	a->b = 0.0f;		//always zero bank
 
-	a->p = asinf(-v->xyz.y);
+	a->p = asinf_safe(-v->xyz.y);
 
 	a->h = atan2_safe(v->xyz.z,v->xyz.x);
 
@@ -1567,7 +1535,7 @@ void vm_matrix_to_rot_axis_and_angle(const matrix *m, float *theta, vec3d *rot_a
 
 		vm_vec_make(rot_axis, 1.0f, 0.0f, 0.0f);
 	} else if (cos_theta > -0.999999875f) { // angle is within limits between 0 and PI
-		*theta = acosf(cos_theta);
+		*theta = acosf_safe(cos_theta);
 		Assert( !fl_is_nan(*theta) );
 
 		rot_axis->xyz.x = (m->vec.uvec.xyz.z - m->vec.fvec.xyz.y);
@@ -1988,7 +1956,7 @@ void vm_angular_move_forward_vec(const vec3d* goal_f, const matrix* orient, cons
 		vm_vec_rotate(&local_rot_axis, &rot_axis, orient);
 
 		// derive theta from sin(theta) for better accuracy
-		vm_vec_copy_scale(&theta_goal, &local_rot_axis, (cos_theta > 0 ? asinf(sin_theta) : PI - asinf(sin_theta)) / sin_theta);
+		vm_vec_copy_scale(&theta_goal, &local_rot_axis, (cos_theta > 0 ? asinf_safe(sin_theta) : PI - asinf_safe(sin_theta)) / sin_theta);
 		
 		// reset z to delta_bank, because it just got cleared
 		theta_goal.xyz.z = delta_bank;
@@ -2196,7 +2164,7 @@ void vm_vec_interp_constant(vec3d *out, const vec3d *v0, const vec3d *v1, float 
 	vm_vec_normalize(&cross);
 
 	// get the total angle between the 2 vectors
-	total_ang = -(acosf(vm_vec_dot(v0, v1)));
+	total_ang = -(acosf_safe(vm_vec_dot(v0, v1)));
 
 	// rotate around the cross product vector by the appropriate angle
 	vm_rot_point_around_line(out, v0, t * total_ang, &vmd_zero_vector, &cross);
@@ -2864,6 +2832,17 @@ std::ostream& operator<<(std::ostream& os, const vec3d& vec)
 	return os;
 }
 
+matrix vm_stretch_matrix(const vec3d* stretch_dir, float stretch) {
+	matrix outer_prod;
+	vm_vec_outer_product(&outer_prod, stretch_dir);
+
+	for (float& i : outer_prod.a1d)
+		i *= stretch - 1.f;
+
+
+	return vmd_identity_matrix + outer_prod;
+}
+
 // generates a well distributed quasi-random position in a -1 to 1 cube
 // the caller must provide and increment the seed for each call for proper results
 // algorithm taken from http://extremelearning.com.au/unreasonable-effectiveness-of-quasirandom-sequences/
@@ -2874,7 +2853,8 @@ vec3d vm_well_distributed_rand_vec(int seed, vec3d* offset) {
 		out.xyz.x = fmod(-fmod(offset->xyz.x, 1.f) + ((1.f / phi3) * seed), 1.f) * 2 - 1;
 		out.xyz.y = fmod(-fmod(offset->xyz.y, 1.f) + ((1.f / (phi3 * phi3)) * seed), 1.f) * 2 - 1;
 		out.xyz.z = fmod(-fmod(offset->xyz.z, 1.f) + ((1.f / (phi3 * phi3 * phi3)) * seed), 1.f) * 2 - 1;
-	} else {
+	}
+	else {
 		out.xyz.x = fmod((1.f / phi3) * seed, 1.f) * 2 - 1;
 		out.xyz.y = fmod((1.f / (phi3 * phi3)) * seed, 1.f) * 2 - 1;
 		out.xyz.z = fmod((1.f / (phi3 * phi3 * phi3)) * seed, 1.f) * 2 - 1;

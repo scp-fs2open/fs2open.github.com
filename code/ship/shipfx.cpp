@@ -39,6 +39,7 @@
 #include "scripting/hook_api.h"
 #include "ship/ship.h"
 #include "ship/shiphit.h"
+#include "utils/Random.h"
 #include "weapon/muzzleflash.h"
 #include "weapon/shockwave.h"
 #include "weapon/weapon.h"
@@ -354,7 +355,7 @@ void shipfx_blow_up_model(object *obj, int submodel, int ndebris, vec3d *exp_cen
 	// on all clients in the game -- the net_signature of the object works nicely -- since doing so should
 	// ensure that all pieces of debris will get scattered in same direction on all machines
 	if ( Game_mode & GM_MULTIPLAYER )
-		srand( obj->net_signature );
+		Random::seed( obj->net_signature );
 
 	// made a change to allow anyone but multiplayer client to blow up hull.  Clients will do it when
 	// they get the create packet
@@ -1199,7 +1200,7 @@ void shipfx_emit_spark( int n, int sn )
 
 	int spark_num;
 	if ( sn == -1 ) {
-		spark_num = myrand() % shipp->num_hits;
+		spark_num = Random::next(shipp->num_hits);
 	} else {
 		spark_num = sn;
 	}
@@ -1439,7 +1440,7 @@ static void split_ship_init( ship* shipp, split_ship* split_shipp )
 	polymodel* pm = model_get(Ship_info[shipp->ship_info_index].model_num);
 	float init_clip_plane_dist;
 	if (pm->num_split_plane > 0) {
-		int index = rand()%pm->num_split_plane;
+		int index = Random::next(pm->num_split_plane);
 		init_clip_plane_dist = pm->split_plane[index];
 	} else {
 		init_clip_plane_dist = 0.5f * (0.5f - frand())*pm->core_radius;
@@ -1835,7 +1836,7 @@ void do_sub_expl_sound(float radius, vec3d* sound_pos, sound_handle* handle_arra
 	// multiplier for range (near and far distances) to apply attenuation
 	float sound_range = 1.0f + 0.0043f*radius;
 
-	int handle_index = rand()%NUM_SUB_EXPL_HANDLES;
+	int handle_index = Random::next(NUM_SUB_EXPL_HANDLES);
 
 	auto sound_index = GameSounds::SHIP_EXPLODE_1;
 	auto handle      = handle_array[handle_index];
@@ -1900,7 +1901,7 @@ static void maybe_fireball_wipe(clip_ship* half_ship, sound_handle* handle_array
 
 			int fireball_type = fireball_ship_explosion_type(sip);
 			if(fireball_type < 0) {
-				fireball_type = FIREBALL_EXPLOSION_LARGE1 + rand()%FIREBALL_NUM_LARGE_EXPLOSIONS;
+				fireball_type = FIREBALL_EXPLOSION_LARGE1 + Random::next(FIREBALL_NUM_LARGE_EXPLOSIONS);
 			}
 			int low_res_fireballs = Bs_exp_fire_low;
 			fireball_create(&model_clip_plane_pt, fireball_type, FIREBALL_LARGE_EXPLOSION, OBJ_INDEX(half_ship->parent_obj), rad, false, &half_ship->parent_obj->phys_info.vel, 0.0f, -1, nullptr, low_res_fireballs);
@@ -2129,7 +2130,7 @@ void shipfx_do_damaged_arcs_frame( ship *shipp )
 
 		shipp->arc_next_time = timestamp(-1);		// invalid, so it gets restarted next frame
 
-		int n, n_arcs = ((rand()>>5) % 3)+1;		// Create 1-3 sparks
+		int n, n_arcs = Random::next(1, 3);
 
 		vec3d v1, v2, v3, v4;
 		submodel_get_two_random_points_better(model_num, -1, &v1, &v2);
@@ -2171,7 +2172,7 @@ void shipfx_do_damaged_arcs_frame( ship *shipp )
 		float factor = 1.0f + 0.0025f*obj->radius;
 		int a = (int) (factor*100.0f);
 		int b = (int) (factor*1000.0f);
-		int lifetime = (myrand()%((b)-(a)+1))+(a);
+		int lifetime = Random::next(a, b);
 
 		// Create the arc effects
 		for (i=0; i<MAX_SHIP_ARCS; i++ )	{
@@ -2240,8 +2241,8 @@ void shipfx_do_damaged_arcs_frame( ship *shipp )
 		if ( timestamp_valid( shipp->arc_timestamp[i] ) )	{
 			if ( !timestamp_elapsed( shipp->arc_timestamp[i] ) )	{							
 				// Maybe move a vertex....  20% of the time maybe?
-				int mr = myrand();
-				if ( mr < RAND_MAX/5 )	{
+				int mr = Random::next();
+				if ( mr < Random::MAX_VALUE/5 )	{
 					vec3d v1, v2;
 					submodel_get_two_random_points_better(model_num, -1, &v1, &v2);
 
@@ -2723,7 +2724,7 @@ void engine_wash_ship_process(ship *shipp)
 		// if we had no wash before now, add the wash object sound
 		if(started_with_no_wash){
 			if(shipp != Player_ship){
-				obj_snd_assign(shipp->objnum, GameSounds::ENGINE_WASH, &vmd_zero_vector, 1);
+				obj_snd_assign(shipp->objnum, GameSounds::ENGINE_WASH, &vmd_zero_vector, OS_MAIN);
 			} else {				
 				Player_engine_wash_loop = snd_play_looping( gamesnd_get_game_sound(GameSounds::ENGINE_WASH), 0.0f , -1, -1, 1.0f);
 			}

@@ -35,6 +35,7 @@
 #include "ship/subsysdamage.h"
 #include "sound/fsspeech.h"
 #include "species_defs/species_defs.h"
+#include "utils/Random.h"
 #include "weapon/emp.h"
 
 SCP_vector<SCP_string> Builtin_moods;
@@ -1132,12 +1133,12 @@ void message_calc_anim_start_frame(int time, generic_anim *ani, int reverse)
 		int num_frames_extra;
 		num_frames_extra = (int)std::lround(fps * (anim_time - wave_time));
 		if ( num_frames_extra > 0 ) {
-			start_frame=rand()%num_frames_extra;
+			start_frame= Random::next(num_frames_extra);
 		}
 	}
 
 	if ( start_frame < 0 ) {
-		mprintf(("Calculated start frame for animation %s was less than 0, setting to 0.", ani->filename));
+		mprintf(("Calculated start frame for animation %s was less than 0, setting to 0.\n", ani->filename));
 		start_frame=0;
 	}
 
@@ -1800,7 +1801,7 @@ int message_get_persona( ship *shipp )
 		// we didn't find an unused one - so we randomly select one
 		if(count != 0)
 		{
-			i = (rand() % count);
+			i = Random::next(count);
 			i = slist[i];
 		}
 		// RT Protect against count being zero
@@ -2101,7 +2102,7 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 
 	
 	// since we may have multiple builtins we need to pick one at random
-	random_selection = (int)(rand32() % num_matching_builtins) + 1; 
+	random_selection = Random::next(1, num_matching_builtins);
 
 	// loop through the vector until we have found enough elements of the correct matching type
 	for (i = 0; i < (int)matching_builtins.size(); i++) {
@@ -2251,12 +2252,12 @@ void message_maybe_distort_text(SCP_string &text, int shipnum, bool for_death_sc
 	if (Message_wave_duration == 0) {
 		SCP_string result_str;
 
-		size_t next_distort = 5 + myrand() % 5;
+		size_t next_distort = Random::next(5, 9);
 		size_t i            = 0;
 		size_t run = 0;
 		for (auto cp : unicode::codepoint_range(text.c_str())) {
 			if (i == next_distort) {
-				run = 3 + myrand() % 5;
+				run = Random::next(3, 7);
 				if (i + run > len)
 					run = len - i;
 			}
@@ -2266,7 +2267,7 @@ void message_maybe_distort_text(SCP_string &text, int shipnum, bool for_death_sc
 				--run;
 
 				if (run <= 0) {
-					next_distort = i + (5+myrand()%5);
+					next_distort = i + Random::next(5, 9);
 				}
 			} else {
 				unicode::encode(cp, std::back_inserter(result_str));
@@ -2281,7 +2282,7 @@ void message_maybe_distort_text(SCP_string &text, int shipnum, bool for_death_sc
 	voice_duration = Message_wave_duration;
 
 	// distort text
-	Distort_num = myrand()%MAX_DISTORT_PATTERNS;
+	Distort_num = Random::next(MAX_DISTORT_PATTERNS);
 	Distort_next = 0;
 	unicode::codepoint_range range(text.c_str());
 	auto curr_iter = range.begin();

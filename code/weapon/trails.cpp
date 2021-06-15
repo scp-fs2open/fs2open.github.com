@@ -226,7 +226,7 @@ void trail_render( trail * trailp )
 			l = (ubyte)fl2i((fade * a_size + ti->a_start) * 255.0f);
 		}
 
-		if (The_mission.flags[Mission::Mission_Flags::Fullneb])
+		if (The_mission.flags[Mission::Mission_Flags::Fullneb] && Neb_affects_weapons)
 			l = (ubyte)(l * neb2_get_fog_visibility(&trailp->pos[n], NEB_FOG_VISIBILITY_MULT_TRAIL));
 
 		if ( i == 0 )	{

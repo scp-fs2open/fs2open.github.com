@@ -105,4 +105,7 @@ int multi_fs_tracker_validate_game_data();
 // verify and possibly update Multi_options_g with sane PXO values
 void multi_fs_tracker_verify_options();
 
+// report the status of PXO game probe (firewall check)
+void multi_fs_tracker_report_probe_status(int flags, int next_try);
+
 #endif

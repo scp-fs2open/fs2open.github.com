@@ -112,7 +112,7 @@ static void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, vec3
 		}
 	}	
 
-	ship_apply_local_damage(pship_obj, weapon_obj, world_hitpos, damage, quadrant_num, CREATE_SPARKS, submodel_num);
+	ship_apply_local_damage(pship_obj, weapon_obj, world_hitpos, damage, wip->damage_type_idx, quadrant_num, CREATE_SPARKS, submodel_num);
 
 	// let the hud shield gauge know when Player or Player target is hit
 	hud_shield_quadrant_hit(pship_obj, quadrant_num);
@@ -185,6 +185,12 @@ static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, f
 	vm_vec_scale_add( &weapon_end_pos, &weapon_objp->pos, &weapon_objp->phys_info.vel, time_limit );
 
 
+	vec3d weapon_start_pos = weapon_objp->last_pos;
+	// Maybe take into account the ship's velocity, so it won't later overstep the weapon's
+	// current position (what will be its last_pos next frame)
+	if (The_mission.ai_profile->flags[AI::Profile_Flags::Fixed_ship_weapon_collision])
+		weapon_start_pos += ship_objp->phys_info.vel * flFrametime;
+
 	// Goober5000 - I tried to make collision code here much saner... here begin the (major) changes
 	mc_info_init(&mc);
 
@@ -194,7 +200,7 @@ static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, f
 	mc.submodel_num = -1;
 	mc.orient = &ship_objp->orient;
 	mc.pos = &ship_objp->pos;
-	mc.p0 = &weapon_objp->last_pos;
+	mc.p0 = &weapon_start_pos;
 	mc.p1 = &weapon_end_pos;
 	mc.lod = sip->collision_lod;
 	memcpy(&mc_shield, &mc, sizeof(mc_info));
@@ -532,7 +538,7 @@ int collide_ship_weapon( obj_pair * pair )
 	// If it does hit, don't check the pair until about 200 ms before collision.  
 	// If it does not hit and is within error tolerance, cull the pair.
 
-	if ( (sip->is_big_or_huge()) && (Weapon_info[Weapons[weapon_obj->instance].weapon_info_index].subtype == WP_LASER) ) {
+	if ( (sip->is_big_or_huge()) && (weapon_obj->phys_info.flags & PF_CONST_VEL) ) {
 		// Check when within ~1.1 radii.  
 		// This allows good transition between sphere checking (leaving the laser about 200 ms from radius) and checking
 		// within the sphere with little time between.  There may be some time for "small" big ships

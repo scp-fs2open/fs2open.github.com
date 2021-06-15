@@ -58,6 +58,26 @@ int ai_path_type_match(char *p)
 	return -1;
 }
 
+
+const char* AI_secondary_range_aware_select_modes[] = {
+	"retail",
+	"aware",
+};
+
+int Num_ai_secondary_range_aware_select_modes = sizeof(AI_secondary_range_aware_select_modes) / sizeof(char*);
+
+int ai_secondary_range_select_mode_match(char* p)
+{
+	int i;
+	for (i = 0; i < Num_ai_secondary_range_aware_select_modes; i++)
+	{
+		if (!stricmp(AI_secondary_range_aware_select_modes[i], p))
+			return i;
+	}
+
+	return -1;
+}
+
 void parse_ai_profiles_tbl(const char *filename)
 {
 	int i;
@@ -481,7 +501,7 @@ void parse_ai_profiles_tbl(const char *filename)
 					if (path_radii >= Minimum_subsystem_path_pt_dist) {
 						profile->subsystem_path_radii = path_radii;
 					} else {
-						mprintf(("Warning: \"$override radius for subsystem path points:\" should be >= %i (read %i). Value will not be used. ", Minimum_subsystem_path_pt_dist, path_radii));
+						mprintf(("Warning: \"$override radius for subsystem path points:\" should be >= %i (read %i). Value will not be used.\n", Minimum_subsystem_path_pt_dist, path_radii));
 					}
 				}
 
@@ -543,6 +563,25 @@ void parse_ai_profiles_tbl(const char *filename)
 				set_flag(profile, "$friendly ships use AI profile countermeasure chance:", AI::Profile_Flags::Friendlies_use_countermeasure_firechance);
 
 				set_flag(profile, "$improved subsystem attack pathing:", AI::Profile_Flags::Improved_subsystem_attack_pathing);
+
+				set_flag(profile, "$fixed ship-weapon collisions:", AI::Profile_Flags::Fixed_ship_weapon_collision);
+
+				//Intention is to expand this feature to include a preference for close or long range weapons
+				//hence using something besides a simple flag.
+				profile->ai_range_aware_secondary_select_mode = AI_RANGE_AWARE_SEC_SEL_MODE_RETAIL;
+				if (optional_string("$AI secondary range awareness:"))
+				{
+					stuff_string(buf, F_NAME, NAME_LENGTH);
+					int j = ai_secondary_range_select_mode_match(buf);
+					if (j >= 0) {
+						profile->ai_range_aware_secondary_select_mode = j;
+					}
+					else {
+						Warning(LOCATION, "Invalid ai secondary range awareness mode '%s' specified", buf);
+					}
+				}
+
+				set_flag(profile, "$no shield damage from ship collisions:", AI::Profile_Flags::No_shield_damage_from_ship_collisions);
 
 				// if we've been through once already and are at the same place, force a move
 				if (saved_Mp && (saved_Mp == Mp))
@@ -620,6 +659,7 @@ void ai_profile_t::reset()
     bay_arrive_speed_mult = 0;
     bay_depart_speed_mult = 0;
 	second_order_lead_predict_factor = 0;
+	ai_range_aware_secondary_select_mode = AI_RANGE_AWARE_SEC_SEL_MODE_RETAIL;
 
     for (int i = 0; i < NUM_SKILL_LEVELS; ++i) {
         max_incoming_asteroids[i] = 0;
@@ -696,5 +736,8 @@ void ai_profile_t::reset()
 	// this flag has been enabled ever since 3.7.2
 	if (mod_supports_version(3, 7, 2)) {
 		flags.set(AI::Profile_Flags::Fix_ramming_stationary_targets_bug);
+	}
+	if (mod_supports_version(21, 4, 0)) {
+		flags.set(AI::Profile_Flags::Fixed_ship_weapon_collision);
 	}
 }

@@ -79,9 +79,6 @@ int Neb2_bitmap_count = 0;
 // texture to use for this level
 char Neb2_texture_name[MAX_FILENAME_LEN] = "";
 
-// nebula flags
-#define NF_USED						(1<<0)		// if this nebula slot is used
-
 float max_rotation = 3.75f;
 float neb2_flash_fade = 0.3f;
 
@@ -118,54 +115,9 @@ float Neb2_fog_far_mult = 1.0f;
 // this is the percent of visibility at the fog far distance
 const float NEB_FOG_FAR_PCT = 0.1f;
 
-// how many "slices" are in the current player nebuls
-int Neb2_slices = 5;
-
 SCP_vector<poof> Neb2_poofs;
 
-neb2_detail	Neb2_detail[MAX_DETAIL_LEVEL] = {
-	{ // lowest detail level
-		0.575f,							// max alpha for this detail level in Glide
-		0.71f,							// max alpha for this detail level in D3d
-		0.013f,							// break alpha (below which, poofs don't draw). this affects the speed and visual quality a lot
-		510.0f,							// total dimension of player poof cube
-		50.0f,							// inner radius of the player poof cube
-		250.0f,							// outer radius of the player pood cube
-		120.0f,							// radius of the poofs
-		1.0f, 1.0f, 1.0f				// width, height, depth jittering. best left at 1.0	
-	},	
-	{ // 2nd lowest detail level
-		0.575f,							// max alpha for this detail level in Glide
-		0.71f,							// max alpha for this detail level in D3d
-		0.0125f,							// break alpha (below which, poofs don't draw). this affects the speed and visual quality a lot
-		550.0f,							// total dimension of player poof cube
-		100.0f,							// inner radius of the player poof cube
-		250.0f,							// outer radius of the player pood cube
-		125.0f,							// radius of the poofs
-		1.0f, 1.0f, 1.0f				// width, height, depth jittering. best left at 1.0	
-	},
-	{ // 2nd highest detail level
-		0.575f,							// max alpha for this detail level in Glide
-		0.71f,							// max alpha for this detail level in D3d
-		0.01f,							// break alpha (below which, poofs don't draw). this affects the speed and visual quality a lot
-		550.0f,							// total dimension of player poof cube
-		150.0f,							// inner radius of the player poof cube
-		250.0f,							// outer radius of the player pood cube
-		125.0f,							// radius of the poofs
-		1.0f, 1.0f, 1.0f				// width, height, depth jittering. best left at 1.0	
-	},
-	{ // higest detail level
-		0.475f,							// max alpha for this detail level in Glide
-		0.575f,							// max alpha for this detail level in D3d
-		0.005f,							// break alpha (below which, poofs don't draw). this affects the speed and visual quality a lot
-		750.0f,							// total dimension of player poof cube
-		200.0f,							// inner radius of the player poof cube
-		360.0f,							// outer radius of the player pood cube
-		150.0f,							// radius of the poofs
-		1.0f, 1.0f, 1.0f				// width, height, depth jittering. best left at 1.0	
-	},
-};
-neb2_detail *Nd = &Neb2_detail[MAX_DETAIL_LEVEL - 2];
+int Neb2_detail = 2;
 
 int Neb2_background_color[3] = {0, 0, 255};			// rgb background color (used for lame rendering)
 
@@ -206,10 +158,6 @@ void neb2_get_eye_pos(vec3d *eye_vector);
 // fill in the eye orient for this frame
 void neb2_get_eye_orient(matrix *eye_matrix);
 
-// get a (semi) random bitmap to use for a poof
-int neb2_get_bitmap();
-
-
 // --------------------------------------------------------------------------------------------------------
 // NEBULA FUNCTIONS
 //
@@ -241,47 +189,56 @@ void neb2_init()
 		}
 
 		// poofs
-		while (!optional_string("#end")) {
-			// nebula
-			required_string("+Poof:");
-			stuff_string(name, F_NAME, MAX_FILENAME_LEN);
+		while (required_string_one_of(3, "#end", "+Poof:", "$Name:")) {
 
 			if (Poof_info.size() < MAX_NEB2_POOFS) {
 				poof_info new_poof;
 
-				strcpy_s(new_poof.bitmap_filename, name);
+				if (optional_string("+Poof:")) { // retail style
+					stuff_string(name, F_NAME, MAX_FILENAME_LEN);
+					strcpy_s(new_poof.bitmap_filename, name);
 
-				if (optional_string("-Scale:"))
-					new_poof.scale = ::util::parseUniformRange<float>(0.01f, 100000.0f);
+					strcpy_s(new_poof.name, name);
 
-				if (optional_string("-Density:")) {
-					stuff_float(&new_poof.density);
-					if (new_poof.density < 0.0f) {
-						Warning(LOCATION, "Poof %s must have a positive density.", new_poof.bitmap_filename);
-						new_poof.density = 150.0f;
+					Poof_info.push_back(new_poof);
+				} else if (optional_string("$Name:")) { // new style
+					stuff_string(new_poof.name, F_NAME, NAME_LENGTH);
+
+					required_string("$Bitmap:");
+					stuff_string(new_poof.bitmap_filename, F_NAME, MAX_FILENAME_LEN);
+
+					if (optional_string("$Scale:"))
+						new_poof.scale = ::util::parseUniformRange<float>(0.01f, 100000.0f);
+
+					if (optional_string("$Density:")) {
+						stuff_float(&new_poof.density);
+						if (new_poof.density < 0.0f) {
+							Warning(LOCATION, "Poof %s must have a positive density.", new_poof.bitmap_filename);
+							new_poof.density = 150.0f;
+						}
+						new_poof.density = 1 / (new_poof.density * new_poof.density * new_poof.density);
 					}
-					new_poof.density = 1 / (new_poof.density * new_poof.density * new_poof.density);
-				}
 
-				if(optional_string("-Rotation:"))
-					new_poof.rotation = ::util::parseUniformRange<float>(-1000.0f, 1000.0f);
+					if (optional_string("$Rotation:"))
+						new_poof.rotation = ::util::parseUniformRange<float>(-1000.0f, 1000.0f);
 
-				if (optional_string("-View Distance:")) {
-					stuff_float(&new_poof.view_dist);
-					if (new_poof.view_dist < 0.0f) {
-						Warning(LOCATION, "Poof %s must have a positive view distance.", new_poof.bitmap_filename);
-						new_poof.view_dist = 360.f;
+					if (optional_string("$View Distance:")) {
+						stuff_float(&new_poof.view_dist);
+						if (new_poof.view_dist < 0.0f) {
+							Warning(LOCATION, "Poof %s must have a positive view distance.", new_poof.bitmap_filename);
+							new_poof.view_dist = 360.f;
+						}
 					}
-				}
 
-				if (optional_string("-Alpha:")) {
-					new_poof.alpha = ::util::parseUniformRange<float>(0.0f, 1.0f);
-				}
+					if (optional_string("$Alpha:")) {
+						new_poof.alpha = ::util::parseUniformRange<float>(0.0f, 1.0f);
+					}
 
-				Poof_info.push_back(new_poof);
+					Poof_info.push_back(new_poof);
+				}
 			}
 			else {
-				WarningEx(LOCATION, "nebula.tbl\nExceeded maximum number of nebula poofs (%d)!\nSkipping %s.", MAX_NEB2_POOFS, name);
+				WarningEx(LOCATION, "nebula.tbl\nExceeded maximum number of nebula poofs (%d)!\nSkipping %s.", (int)MAX_NEB2_POOFS, name);
 			}
 		}
 	}
@@ -301,15 +258,15 @@ void neb2_set_detail_level(int level)
 {
 	// sanity
 	if (level < 0) {
-		Nd = &Neb2_detail[0];
+		Neb2_detail = 0;
 		return;
 	}
-	if (level >= MAX_DETAIL_LEVEL) {
-		Nd = &Neb2_detail[MAX_DETAIL_LEVEL-1];
+	if (level > MAX_DETAIL_LEVEL) {
+		Neb2_detail = MAX_DETAIL_LEVEL;
 		return;
 	}
 
-	Nd = &Neb2_detail[level];
+	Neb2_detail = level;
 }
 
 void neb2_get_fog_color(ubyte *r, ubyte *g, ubyte *b)
@@ -323,7 +280,10 @@ void neb2_level_init()
 {
 	Nebula_sexp_used = false;
 }
+
+float nNf_near, nNf_density;
 void new_poof(int idx, vec3d* pos);
+
 // initialize nebula stuff - call from game_post_level_init(), so the mission has been loaded
 void neb2_post_level_init()
 {
@@ -389,9 +349,9 @@ void neb2_post_level_init()
 	Neb2_render_mode = NEB2_RENDER_HTL;
 
 	// load in all nebula bitmaps
-	for (poof_info &poof : Poof_info) {
-		if (poof.bitmap < 0) {
-			poof.bitmap = bm_load(poof.bitmap_filename);
+	for (poof_info &pinfo : Poof_info) {
+		if (pinfo.bitmap < 0) {
+			pinfo.bitmap = bm_load(pinfo.bitmap_filename);
 		}
 	}
 
@@ -424,21 +384,33 @@ void neb2_post_level_init()
 		Neb2_poof_flags = Neb2_poof_flags & available_poofs_mask;
 	}
 
-	Poof_dist_threshold = 40.0f;
+	// set the mission fog near dist and density
+	float fog_far;
+	neb2_get_adjusted_fog_values(&nNf_near, &fog_far, &nNf_density, nullptr);
+
 	for (float& accum : Poof_accum)
 		accum = 0.0f;
 
+	// a bit awkward but this will force a full sphere gen
 	vm_vec_make(&Poof_last_gen_pos, 999999.0f, 999999.0f, 999999.0f);
 
+	// make the total density of poofs be the average of all poofs, and each poofs density is its relative proportion compared to others
+	// this way we maintain the retail way of not affecting total density by having more poof types
+	Poof_dist_threshold = 9999.0f;
 	float Poof_density_sum_square = 0.0f;
 	float Poof_density_sum = 0.0f;
 	for (size_t i = 0; i < Poof_info.size(); i++) {
 		if (poof_is_used(i)) {
 			Poof_density_sum_square += Poof_info[i].density * Poof_info[i].density;
 			Poof_density_sum += Poof_info[i].density;
+			float dist_threshold = Poof_info[i].view_dist * (UPKEEP_DIST_MULT - 1.0f);
+			if (dist_threshold < Poof_dist_threshold)
+				Poof_dist_threshold = dist_threshold;
 		}
 	}
 	Poof_density_multiplier = Poof_density_sum_square / (Poof_density_sum * Poof_density_sum);
+	Poof_density_multiplier *= (Neb2_detail + 0.5f) / (MAX_DETAIL_LEVEL + 0.5f); // scale the poofs down based on detail level
+
 }
 
 // shutdown nebula stuff
@@ -455,10 +427,10 @@ void neb2_level_close()
 	}
 
 	// unload all nebula bitmaps
-	for (poof_info& poof : Poof_info) {
-		if (poof.bitmap >= 0) {
-			bm_release(poof.bitmap);
-			poof.bitmap = -1;
+	for (poof_info& pinfo : Poof_info) {
+		if (pinfo.bitmap >= 0) {
+			bm_release(pinfo.bitmap);
+			pinfo.bitmap = -1;
 		}
 	}
 
@@ -671,54 +643,6 @@ float neb2_get_alpha_2shell(float alpha, float inner_radius, float outer_radius,
 	return 0.0f;
 }
 
-// return an alpha value for a bitmap offscreen based upon "break" value
-float neb2_get_alpha_offscreen(float sx, float sy, float incoming_alpha)
-{
-	float alpha = 0.0f;
-	float per_pixel_x = incoming_alpha / (float)gr_screen.max_w;
-	float per_pixel_y = incoming_alpha / (float)gr_screen.max_h;
-	int off_x = ((sx < 0.0f) || (sx > (float)gr_screen.max_w));
-	int off_y = ((sy < 0.0f) || (sy > (float)gr_screen.max_h));
-	float off_x_amount = 0.0f;
-	float off_y_amount = 0.0f;
-
-	// determine how many pixels outside we are
-	if (off_x) {
-		if (sx < 0.0f) {
-			off_x_amount = fl_abs(sx);
-		} else {
-			off_x_amount = sx - (float)gr_screen.max_w;
-		}
-	}
-	if (off_y) {
-		if (sy < 0.0f) {
-			off_y_amount = fl_abs(sy);
-		} else {
-			off_y_amount = sy - (float)gr_screen.max_h;
-		}
-	}
-
-	// if offscreen X
-	if (off_x) {
-		// offscreen X and Y - and Y is greater
-		if (off_y && (off_y_amount > off_x_amount)) {
-			alpha = incoming_alpha - (off_y_amount * per_pixel_y);
-		} else {
-			alpha = incoming_alpha - (off_x_amount * per_pixel_x);
-		}
-	}
-	// offscreen y
-	else if (off_y) {
-		alpha = incoming_alpha - (off_y_amount * per_pixel_y);
-	}
-	// should never get here
-	else {
-		Int3();
-	}
-
-	return alpha < 0.0f ? 0.0f : alpha;
-}
-
 // -------------------------------------------------------------------------------------------------
 // WACKY LOCAL PLAYER NEBULA STUFF
 //
@@ -739,10 +663,6 @@ void new_poof(size_t poof_info_idx, vec3d* pos) {
 }
 
 static uint neb_rand_seed = 0;
-const float phi3 = 1.220744084f;
-float neb_rand1(float offset) { return fmod(-fmod(offset, 1.f) + ((1.f / phi3) * neb_rand_seed), 1.f) * 2 - 1; }
-float neb_rand2(float offset) {	return fmod(-fmod(offset, 1.f) + ((1.f/ (phi3 * phi3)) * neb_rand_seed), 1.f) * 2 - 1; }
-float neb_rand3(float offset) {	return fmod(-fmod(offset, 1.f) + ((1 / (phi3 * phi3 * phi3)) * neb_rand_seed), 1.f) * 2 - 1; }
 
 void upkeep_poofs()
 {
@@ -750,6 +670,7 @@ void upkeep_poofs()
 	neb2_get_eye_pos(&eye_pos);
 
 	neb_rand_seed = 0;
+
 	// make new poofs
 	for (size_t i = 0; i < Poof_info.size(); i++) {
 		if (!poof_is_used(i))
@@ -759,22 +680,24 @@ void upkeep_poofs()
 		float gen_side_length = (pinfo->view_dist * UPKEEP_DIST_MULT) * 2;
 		float gen_density = pinfo->density * Poof_density_multiplier;
 
-
 		float poofs_to_gen = gen_side_length * gen_side_length * gen_side_length * gen_density;
 
 		// store the fractional part, take the integer part
-		Poof_accum[i] = modf(Poof_accum[i] + (poofs_to_gen), &poofs_to_gen);
+		Poof_accum[i] = modff(Poof_accum[i] + (poofs_to_gen), &poofs_to_gen);
 		for (int j = 0; j < poofs_to_gen; j++) {
 			vec3d pos = eye_pos;
 			vec3d offset = eye_pos / gen_side_length;
 			vec3d rand_pos = vm_well_distributed_rand_vec(neb_rand_seed, &offset);
+			neb_rand_seed++;
+
 			rand_pos.xyz.x *= gen_side_length / 2;
 			rand_pos.xyz.y *= gen_side_length / 2;
 			rand_pos.xyz.z *= gen_side_length / 2;
 
 			pos += rand_pos;
 
-			neb_rand_seed++;
+			// we generated poofs in a cube, now keep only those that are within the view sphere, and weren't within the last view sphere
+			// not terribly efficient but very simple
 			if (vm_vec_dist(&eye_pos, &pos) <= (gen_side_length / 2) &&
 				vm_vec_dist(&Poof_last_gen_pos, &pos) > (gen_side_length / 2))
 				new_poof(i, &pos);
@@ -783,7 +706,6 @@ void upkeep_poofs()
 
 	// cull distant poofs
 	if (!Neb2_poofs.empty()) {
-		SCP_vector<int> cull_poofs;
 		for (size_t i = 0; i < Neb2_poofs.size();) {
 			if (vm_vec_dist(&Neb2_poofs[i].pt, &eye_pos) > Poof_info[Neb2_poofs[i].poof_info_index].view_dist * UPKEEP_DIST_MULT) {
 				Neb2_poofs[i] = Neb2_poofs.back();
@@ -798,6 +720,7 @@ void upkeep_poofs()
 void neb2_render_poofs()
 {
 	GR_DEBUG_SCOPE("Nebula render player");
+	TRACE_SCOPE(tracing::DrawPoofs);
 
 	vertex p, ptemp;
 	float alpha;
@@ -821,7 +744,7 @@ void neb2_render_poofs()
 	neb2_get_eye_pos(&eye_pos);
 	neb2_get_eye_orient(&eye_orient);
 
-	// maybe swap stuff around if the player crossed a "border"
+	// maybe swap stuff around if the player crossed the dist threshold
 	if (vm_vec_dist(&eye_pos, &Poof_last_gen_pos) > Poof_dist_threshold) {
 		upkeep_poofs();
 		Poof_last_gen_pos = eye_pos;
@@ -836,11 +759,9 @@ void neb2_render_poofs()
 	for (poof &pf : Neb2_poofs) {
 		poof_info* pinfo = &Poof_info[pf.poof_info_index];
 
-
 		// Miss this one out if the id is -1
-		if (pinfo->bitmap == -1) {
+		if (pinfo->bitmap < 0)
 			continue;
-		}
 
 		// generate the bitmap orient
 		// If the bitmap is large and distant and points in the view fvec direction (like retail poofs do) this looks good when moving,
@@ -882,29 +803,6 @@ void neb2_render_poofs()
 		// this amounts to big savings
 		if (alpha <= 0.0f)
 			continue;
-
-		// rotate and project the vertex into viewspace
-		g3_rotate_vertex(&ptemp, &pf.pt);
-		g3_project_vertex(&ptemp);
-
-		// drop poly's which are offscreen at all
-		// if the poly's are offscreen
-		if ( (ptemp.screen.xyw.x < 0.0f)
-			|| (ptemp.screen.xyw.x > (float)gr_screen.max_w)
-			|| (ptemp.screen.xyw.y < 0.0f)
-			|| (ptemp.screen.xyw.y > (float)gr_screen.max_h) )
-		{
-			alpha = neb2_get_alpha_offscreen(
-				ptemp.screen.xyw.x,
-				ptemp.screen.xyw.y,
-				alpha);
-		}
-
-		// optimization 2 - don't draw 0.0f or less poly's
-		// this amounts to big savings
-		if (alpha <= 0.0f) {
-			continue;
-		}
 
 		// render!
 		batching_add_polygon(pinfo->bitmap, &pf.pt, &orient, pf.radius, pf.radius, alpha);
@@ -987,25 +885,8 @@ void neb2_get_adjusted_fog_values(float *fnear, float *ffar, float *fdensity, ob
 		*fdensity = powf(NEB_FOG_FAR_PCT, 1 / (*ffar - *fnear));
 }
 
-float nNf_near, nNf_density;
-// given a position in space, return a value from 0.0 to 1.0 representing the fog level 
-float neb2_get_fog_visibility(object *obj)
-{
-	float fog_far;
-
-	// get near and far fog values based upon object type and rendering mode
-	neb2_get_adjusted_fog_values(&nNf_near, &fog_far, &nNf_density, obj);
-
-	// get the fog pct
-	float pct = pow(nNf_density, vm_vec_dist(&Eye_position, &obj->pos) - nNf_near);
-
-	CLAMP(pct, 0.0f, 1.0f);
-
-	return pct;
-}
-
-//this only gets called after the one above has been called as it assumes you have set the near and far planes properly
-//don't use this outside of ship rendering
+// given a position, returns 0 - 1 the fog visibility of that position, 0 = completely obscured
+// distance_mult will multiply the result, use for things that can be obscured but can 'shine through' the nebula more than normal
 float neb2_get_fog_visibility(vec3d *pos, float distance_mult)
 {
 	float pct;
@@ -1103,39 +984,6 @@ void neb2_get_eye_orient(matrix *eye_matrix)
 	*eye_matrix = Eye_matrix;
 }
 
-// get a (semi) random bitmap to use for a poof
-int neb2_get_bitmap()
-{
-	if (Neb2_poof_flags == 0)
-		return -1;
-
-	int neb2_choose = 0;
-	int mission_num_poofs = 0;
-
-
-	// count up poofs in use
-	for (int i = 0; i < MAX_NEB2_POOFS; i++) {
-		if (Neb2_poof_flags & (1 << i))
-			mission_num_poofs++;
-	}
-
-	// a pick a random one of the available number
-	neb2_choose = (int)(golden_ratio_rand() * mission_num_poofs);
-
-	// grab that one from our poofs
-	for (int i = 0; i < MAX_NEB2_POOFS; i++) {
-		if (Neb2_poof_flags & (1 << i)) {
-			if (neb2_choose == 0) {
-				neb2_choose = i;
-				break;
-			} else
-				neb2_choose--;
-		}
-	}
-
-	return Poof_info[neb2_choose].bitmap;
-}
-
 // nebula DCF functions ------------------------------------------------------
 // TODO: With the new debug parser in place, most of these sub-commands can now be handled by neb2. This should clear up the DCF list a bit
 DCF(neb2, "list nebula console commands")
@@ -1146,59 +994,13 @@ DCF(neb2, "list nebula console commands")
 //	dc_printf("4 = freighters, 5 = capital ships, 6 = transports, 7 = support ships\n");
 //	dc_printf("8 = navbuoys, 9 = sentryguns, 10 = escape pods, 11 = background nebula polygons\n\n");
 	
-	dc_printf("neb2_max_alpha   : max alpha value (0.0 to 1.0) for cloud poofs. 0.0 is completely transparent\n");
-	dc_printf("neb2_break_alpha : alpha value (0.0 to 1.0) at which faded polygons are not drawn. higher values generally equals higher framerate, with more visual cloud popping\n");
-	dc_printf("neb2_break_off   : how many pixels offscreen (left, right, top, bottom) when a cloud poof becomes fully transparent. Lower values cause quicker fading\n");
-	dc_printf("neb2_smooth      : magic fog smoothing modes (0 - 3)\n");
 	dc_printf("neb2_select      : <int> <int>  where the first # is the bitmap to be adjusting (0 through 5), and the second int is a 0 or 1, to turn off and on\n");
-	dc_printf("neb2_rot         : set max rotation speed for poofs\n");
-	dc_printf("neb2_prad        : set cloud poof radius\n");
-	dc_printf("neb2_cdim        : poof cube dimension\n");
-	dc_printf("neb2_cinner      : poof cube inner dimension\n");
-	dc_printf("neb2_couter      : poof cube outer dimension\n");
-	dc_printf("neb2_jitter      : poof jitter\n");
 	dc_printf("neb2_mode        : switch between no nebula, polygon background, pof background, lame, or HTL rendering (0, 1, 2, 3 and 4 respectively)\n\n");	
 	dc_printf("neb2_ff          : flash fade/sec\n");
 	dc_printf("neb2_background	: rgb background color\n");
 	dc_printf("neb2_fog_color   : rgb fog color\n");
 
 //	dc_printf("neb2_fog_vals    : display all the current settings for all above values\n");	
-}
-
-DCF(neb2_prad, "set cloud poof radius")
-{
-	dc_stuff_float(&Nd->prad);
-}
-DCF(neb2_cdim, "poof cube dimension")
-{
-	dc_stuff_float(&Nd->cube_dim);
-}
-
-DCF(neb2_cinner, "poof cube inner dimension")
-{
-	dc_stuff_float(&Nd->cube_inner);
-}
-
-DCF(neb2_couter, "poof cube outer dimension")
-{
-	dc_stuff_float(&Nd->cube_outer);
-}
-
-DCF(neb2_jitter, "poof jitter")
-{
-	float value;
-	dc_stuff_float(&value);
-	Nd->hj = Nd->dj = Nd->wj = value;
-}
-
-DCF(neb2_max_alpha, "max alpha value (0.0 to 1.0) for cloud poofs.")
-{
-	dc_stuff_float(&Nd->max_alpha_glide);
-}
-
-DCF(neb2_break_alpha, "alpha value (0.0 to 1.0) at which faded polygons are not drawn.")
-{
-	dc_stuff_float(&Nd->break_alpha);
 }
 
 DCF(neb2_select, "Enables/disables a poof bitmap")
@@ -1213,11 +1015,6 @@ DCF(neb2_select, "Enables/disables a poof bitmap")
 
 		val_b ? (Neb2_poof_flags |= (1<<bmap)) : (Neb2_poof_flags &= ~(1<<bmap));
 	}
-}
-
-DCF(neb2_rot, "set max rotation speed for poofs")
-{
-	dc_stuff_float(&max_rotation);
 }
 
 DCF(neb2_ff, "flash fade/sec")
@@ -1245,11 +1042,6 @@ DCF(neb2_mode, "Switches nebula render modes")
 			Neb2_render_mode = NEB2_RENDER_HTL;
 		break;
 	}
-}
-
-DCF(neb2_slices, "Sets how many 'slices' are used in the nebula")
-{
-	dc_stuff_int(&Neb2_slices);
 }
 
 DCF(neb2_background, "Sets the RGB background color (lame rendering)")

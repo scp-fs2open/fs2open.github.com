@@ -19,6 +19,7 @@
 #include "render/batching.h"
 #include "tracing/tracing.h"
 #include "tracing/Monitor.h"
+#include "utils/Random.h"
 #include "nebula/neb.h"
 #include "mission/missionparse.h"
 #include "mod_table/mod_table.h"
@@ -46,8 +47,8 @@ namespace
 		float dist;
 		float alpha = 0.99999f;
 
-		const float inner_radius = 30.0f;
-		const float magic_num = 2.75f;
+		const float inner_radius = MIN(30.0f, rad);
+		const float magic_num = MIN(2.75f, rad / 10.0f);
 
 		// determine what alpha to draw this bitmap with
 		// higher alpha the closer the bitmap gets to the eye
@@ -551,7 +552,7 @@ namespace particle
 		n2 = (pe->num_high * percent) / 100;
 
 		// How many to emit?
-		n = (rand() % (n2 - n1 + 1)) + n1;
+		n = Random::next(n1, n2);
 
 		if (n < 1) return;
 

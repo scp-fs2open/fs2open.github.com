@@ -231,7 +231,7 @@ void obj_shutdown();
 //object.  Returns 0 if failed, otherwise object index.
 //You can pass 0 for parent if you don't care about that.
 //You can pass null for orient and/or pos if you don't care.
-int obj_create(ubyte type,int parent_obj, int instance, matrix * orient, vec3d * pos, float radius, const flagset<Object::Object_Flags> &flags );
+int obj_create(ubyte type,int parent_obj, int instance, matrix * orient, vec3d * pos, float radius, const flagset<Object::Object_Flags> &flags, bool essential = true );
 
 void obj_render(object* obj);
 

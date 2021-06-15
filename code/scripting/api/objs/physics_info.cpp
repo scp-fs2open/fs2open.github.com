@@ -464,13 +464,16 @@ ADE_FUNC(applyWhack, l_Physics, "vector Impulse, [ vector Position]", "Applies a
 	object_h objh;
 	physics_info_h *pih;
 	vec3d *impulse;
-	vec3d *offset = &vmd_zero_vector;
+	vec3d *offset = nullptr;
 
 	if (!ade_get_args(L, "oo|o", l_Physics.GetPtr(&pih), l_Vector.GetPtr(&impulse), l_Vector.GetPtr(&offset)))
 		return ADE_RETURN_NIL;
 
 	objh = pih->objh;
-	vm_vec_add2(offset, &objh.objp->pos);
+	if (offset == nullptr)
+		offset = &objh.objp->pos;
+	else
+		vm_vec_add2(offset, &objh.objp->pos);
 
 	ship_apply_whack(impulse, offset, objh.objp);
 

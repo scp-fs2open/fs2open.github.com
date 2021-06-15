@@ -180,6 +180,7 @@
 #include "stats/stats.h"
 #include "tracing/Monitor.h"
 #include "tracing/tracing.h"
+#include "utils/Random.h"
 #include "weapon/beam.h"
 #include "weapon/emp.h"
 #include "weapon/flak.h"
@@ -903,7 +904,7 @@ void game_level_init()
 	if ( Game_mode & GM_MULTIPLAYER ) {
 		// seed the generator from the netgame security flags -- ensures that all players in
 		// multiplayer will have the same random number sequence (with static rand functions)
-		srand( Netgame.security );
+		Random::seed( Netgame.security );
 
 		// semirand function needs to get re-initted every time in multiplayer
 		init_semirand();
@@ -1594,11 +1595,8 @@ void game_init()
 
 	Game_current_mission_filename[0] = 0;
 
-	// Moved from rand32, if we're gonna break, break immediately.
-	Assert(RAND_MAX == 0x7fff || RAND_MAX >= 0x7ffffffd);
 	// seed the random number generator
-	int game_init_seed = (int) time(nullptr);
-	srand( game_init_seed );
+	Random::seed(static_cast<unsigned int>(time(nullptr)));
 
 	Framerate_delay = 0;
 
@@ -2854,9 +2852,9 @@ void game_shudder_apply(int time, float intensity)
 
 float get_shake(float intensity, int decay_time, int max_decay_time)
 {
-	int r = myrand();
+	int r = Random::next();
 
-	float shake = intensity * (float)(r-RAND_MAX_2) * RAND_MAX_1f;
+	float shake = intensity * (float)(r-Random::HALF_MAX_VALUE) * Random::INV_F_MAX_VALUE;
 	
 	if (decay_time >= 0) {
 		Assert(max_decay_time > 0);
@@ -2959,7 +2957,6 @@ camid game_render_frame_setup()
 
 	static int last_Viewer_mode = 0;
 	static int last_Game_mode = 0;
-	static int last_Viewer_objnum = -1;
 	static float last_FOV = Sexp_fov;
 
 	bool fov_changed = ((last_FOV != Sexp_fov) && (Sexp_fov > 0.0f));
@@ -2974,6 +2971,8 @@ camid game_render_frame_setup()
 		}
 	}
 
+	// This code is supposed to detect camera "cuts"... like going between
+	// different views.
 	if ( (last_Viewer_mode != Viewer_mode)
 		|| (last_Game_mode != Game_mode)
 		|| (fov_changed)
@@ -3006,14 +3005,10 @@ camid game_render_frame_setup()
 				//	View from target.
 				Viewer_obj = &Objects[Player_ai->target_objnum];
 
-				last_Viewer_objnum = Player_ai->target_objnum;
-
 				if ( Viewer_obj->type == OBJ_SHIP ) {
 					ship_get_eye( &eye_pos, &eye_orient, Viewer_obj );
 					view_from_player = 0;
 				}
-			} else {
-				last_Viewer_objnum = -1;
 			}
 
 			if(Viewer_obj)
@@ -3086,13 +3081,9 @@ camid game_render_frame_setup()
 			if (Viewer_mode & VM_OTHER_SHIP) {
 				if (Player_ai->target_objnum != -1){
 					Viewer_obj = &Objects[Player_ai->target_objnum];
-					last_Viewer_objnum = Player_ai->target_objnum;
 				} else {
 					Viewer_mode &= ~VM_OTHER_SHIP;
-					last_Viewer_objnum = -1;
 				}
-			} else {
-				last_Viewer_objnum = -1;
 			}
 
 			if(Viewer_mode & VM_FREECAMERA) {
