@@ -231,9 +231,6 @@ void multi_pxo_handle_disconnect();
 // it is safe to pass the same pointer for both parameters
 void multi_pxo_strip_space(char *string1,char *string2);
 
-// fire up the given URL
-void multi_pxo_url(const char *url);
-
 // unload the palette
 void multi_pxo_unload_palette();
 
@@ -1621,7 +1618,7 @@ static int open_url(const char *url)
 	} else if (mpid == 0) {
 		int rv = 0;
 
-		rv = execlp(open_cmd, open_cmd, s_url, (char *)0);
+		rv = execlp(open_cmd, open_cmd, s_url, nullptr);
 
 		exit(rv);
 	} else {
