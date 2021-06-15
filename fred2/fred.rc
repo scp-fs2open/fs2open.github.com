@@ -197,7 +197,7 @@ BEGIN
         MENUITEM "&New\tCtrl+N",                57600
         MENUITEM "&Open...\tCtrl+O",            57601
         MENUITEM "&Save\tCtrl+S",               57603
-        MENUITEM "Save &As...",                 57604
+        MENUITEM "Save &As...\tCtrl+Shift+S",   57604
         MENUITEM "Re&vert",                     33000
         MENUITEM SEPARATOR
         POPUP "Save &Format"
@@ -418,7 +418,7 @@ BEGIN
         MENUITEM "&New\tCtrl+N",                ID_CPGN_FILE_NEW
         MENUITEM "&Open...\tCtrl+O",            ID_CPGN_FILE_OPEN
         MENUITEM "&Save\tCtrl+S",               ID_CPGN_FILE_SAVE
-        MENUITEM "Save &As...",                 ID_CPGN_FILE_SAVE_AS
+        MENUITEM "Save &As...\tCtrl+Shift+S",   ID_CPGN_FILE_SAVE_AS
         MENUITEM SEPARATOR
         MENUITEM "E&xit",                       ID_CLOSE
     END
@@ -591,6 +591,7 @@ BEGIN
     "N",            ID_FILE_NEW,            VIRTKEY, CONTROL, NOINVERT
     "O",            ID_FILE_OPEN,           VIRTKEY, CONTROL, NOINVERT
     "S",            ID_FILE_SAVE,           VIRTKEY, CONTROL, NOINVERT
+    "S",            ID_FILE_SAVE_AS,        VIRTKEY, SHIFT, CONTROL, NOINVERT
     "W",            ID_FORM_WING,           VIRTKEY, CONTROL, NOINVERT
     "1",            ID_GROUP1,              VIRTKEY, CONTROL, NOINVERT
     "2",            ID_GROUP2,              VIRTKEY, CONTROL, NOINVERT
@@ -648,6 +649,7 @@ BEGIN
     "N",            ID_CPGN_FILE_NEW,       VIRTKEY, CONTROL, NOINVERT
     "O",            ID_CPGN_FILE_OPEN,      VIRTKEY, CONTROL, NOINVERT
     "S",            ID_CPGN_FILE_SAVE,      VIRTKEY, CONTROL, NOINVERT
+    "S",            ID_CPGN_FILE_SAVE_AS,   VIRTKEY, SHIFT, CONTROL, NOINVERT
     VK_RETURN,      ID_END_EDIT,            VIRTKEY, NOINVERT
 END
 
