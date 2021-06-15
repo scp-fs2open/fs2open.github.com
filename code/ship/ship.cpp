@@ -5073,7 +5073,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 
 					if (applyNewTrigger) {
 						sp->triggers = (queued_animation*)vm_realloc(sp->triggers, sizeof(queued_animation) * (sp->n_triggers + 1));
-						Verify(sp->triggers != NULL);
+						Verify(sp->triggers != nullptr);
 
 						queued_animation* actual = &sp->triggers[sp->n_triggers];
 						sp->n_triggers++;
@@ -7672,8 +7672,8 @@ void ship_delete( object * obj )
 	shipp->objnum = -1;
 
 	for (const auto& animationList : Ship_info[shipp->ship_info_index].animations.animationSet) {
-		for (const auto& anim : animationList.second) {
-			anim.second->stop(shipp, true);
+		for (const auto& animStop : animationList.second) {
+			animStop.second->stop(shipp, true);
 		}
 	}
 

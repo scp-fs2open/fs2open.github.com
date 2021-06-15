@@ -4,10 +4,10 @@ namespace animation {
 
 	void ModelAnimationSegmentSerial::recalculate(const submodel_instance* submodel_instance, const bsp_info* submodel, const ModelAnimationData<>& base) {
 		ModelAnimationData<true> data = base;
-		for (size_t i = 0; i < m_segments.size(); i++) {
-			m_segments[i]->recalculate(submodel_instance, submodel, data);
+		for (const auto& segment : m_segments) {
+			segment->recalculate(submodel_instance, submodel, data);
 			//To properly recalculate, we actually need to fully calculate the previous' segment's final delta
-			data.applyDelta(m_segments[i]->calculateAnimation(data, base, m_segments[i]->getDuration()));
+			data.applyDelta(segment->calculateAnimation(data, base, segment->getDuration()));
 		}
 	}
 
@@ -34,12 +34,12 @@ namespace animation {
 	}
 
 	void ModelAnimationSegmentSerial::executeAnimation(const ModelAnimationData<>& state, float time) const {
-		for (size_t i = 0; i < m_segments.size(); i++) {
-			if (time < m_segments[i]->getDuration()) {
-				m_segments[i]->executeAnimation(state, time);
+		for (const auto& segment : m_segments) {
+			if (time < segment->getDuration()) {
+				segment->executeAnimation(state, time);
 				return;
 			}
-			time -= m_segments[i]->getDuration();
+			time -= segment->getDuration();
 		}
 	}
 
@@ -50,21 +50,21 @@ namespace animation {
 
 
 	void ModelAnimationSegmentParallel::recalculate(const submodel_instance* submodel_instance, const bsp_info* submodel, const ModelAnimationData<>& base) {
-		for (size_t i = 0; i < m_segments.size(); i++) {
-			m_segments[i]->recalculate(submodel_instance, submodel, base);
+		for (const auto& segment : m_segments) {
+			segment->recalculate(submodel_instance, submodel, base);
 		}
 	}
 
 	ModelAnimationData<true> ModelAnimationSegmentParallel::calculateAnimation(const ModelAnimationData<>& base, const ModelAnimationData<>& lastState, float time) const {
 		ModelAnimationData<true> delta;
 
-		for (size_t i = 0; i < m_segments.size(); i++) {
+		for (const auto& segment : m_segments) {
 			float timeLocal = time;
 			//Make sure that no segment runs over it's length
-			if (timeLocal > m_segments[i]->getDuration())
-				timeLocal = m_segments[i]->getDuration();
+			if (timeLocal > segment->getDuration())
+				timeLocal = segment->getDuration();
 			
-			ModelAnimationData<true> deltaLocal = m_segments[i]->calculateAnimation(base, lastState, timeLocal);
+			ModelAnimationData<true> deltaLocal = segment->calculateAnimation(base, lastState, timeLocal);
 			delta.applyDelta(deltaLocal);
 		}
 
@@ -72,9 +72,9 @@ namespace animation {
 	}
 
 	void ModelAnimationSegmentParallel::executeAnimation(const ModelAnimationData<>& state, float time) const {
-		for (size_t i = 0; i < m_segments.size(); i++) {
-			if(time < m_segments[i]->getDuration())
-				m_segments[i]->executeAnimation(state, time);
+		for (const auto& segment : m_segments) {
+			if(time < segment->getDuration())
+				segment->executeAnimation(state, time);
 		}
 	}
 
@@ -117,7 +117,7 @@ namespace animation {
 	ModelAnimationSegmentSetAngle::ModelAnimationSegmentSetAngle(float angle) :
 		m_angle(angle) { }
 
-	void ModelAnimationSegmentSetAngle::recalculate(const submodel_instance* /*submodel_instance*/, const bsp_info* submodel, const ModelAnimationData<>& base) {
+	void ModelAnimationSegmentSetAngle::recalculate(const submodel_instance* /*submodel_instance*/, const bsp_info* submodel, const ModelAnimationData<>& /*base*/) {
 		angles angs = vmd_zero_angles;
 
 		switch (submodel->movement_axis_id)

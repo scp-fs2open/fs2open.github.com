@@ -33,7 +33,7 @@ namespace animation {
 	//This segment does nothing but serve as a placeholder taking up time, used primarily in serial segments
 	class ModelAnimationSegmentWait : public ModelAnimationSegment {
 		void recalculate(const submodel_instance* /*submodel_instance*/, const bsp_info* /*submodel*/, const ModelAnimationData<>& /*base*/) override { };
-		ModelAnimationData<true> calculateAnimation(const ModelAnimationData<>& /*base*/, const ModelAnimationData<>& /*lastState*/, float /*time*/) const override { return ModelAnimationData<true>(); };
+		ModelAnimationData<true> calculateAnimation(const ModelAnimationData<>& /*base*/, const ModelAnimationData<>& /*lastState*/, float /*time*/) const override { return {}; };
 		void executeAnimation(const ModelAnimationData<>& /*state*/, float /*time*/) const override { };
 
 	public:
@@ -61,7 +61,7 @@ namespace animation {
 		float m_angle;
 		matrix m_rot;
 
-		void recalculate(const submodel_instance* /*submodel_instance*/, const bsp_info* submodel, const ModelAnimationData<>& base) override;
+		void recalculate(const submodel_instance* /*submodel_instance*/, const bsp_info* submodel, const ModelAnimationData<>& /*base*/) override;
 		ModelAnimationData<true> calculateAnimation(const ModelAnimationData<>& /*base*/, const ModelAnimationData<>& /*lastState*/, float /*time*/) const override;
 		void executeAnimation(const ModelAnimationData<>& /*state*/, float /*time*/) const override { };
 

@@ -51,6 +51,8 @@ namespace animation {
 			}
 
 			m_state = ModelAnimationState::RUNNING_FWD;
+
+			/* fall-thru */
 		case ModelAnimationState::RUNNING_FWD:
 			m_time += frametime;
 
@@ -68,6 +70,7 @@ namespace animation {
 		case ModelAnimationState::COMPLETED:
 			//This means someone requested to start once we were complete, so start moving backwards.
 			m_state = ModelAnimationState::RUNNING_RWD;
+			/* fall-thru */
 		case ModelAnimationState::RUNNING_RWD:
 			m_time -= frametime;
 
@@ -230,7 +233,7 @@ namespace animation {
 		if (optional_string("+time:"))
 			skip_token();
 
-		std::shared_ptr<animation::ModelAnimation> anim = std::make_shared<animation::ModelAnimation>();
+		std::shared_ptr<ModelAnimation> anim = std::shared_ptr<ModelAnimation>(new ModelAnimation());
 
 		char namelower[MAX_NAME_LEN];
 		strncpy(namelower, sp->subobj_name, MAX_NAME_LEN);
@@ -238,17 +241,17 @@ namespace animation {
 		//since sp->type is not set without reading the pof, we need to infer it by subsystem name (which works, since the same name is used to match the submodels name, which is used to match the type in pof parsing)
 		//sadly, we also need to check for engine and radar, since these take precedent (as in, an engineturret is an engine before a turret type)
 		if (!strstr(namelower, "engine") && !strstr(namelower, "radar") && strstr(namelower, "turret")) {
-			std::unique_ptr<ModelAnimationSegmentSetAngle> rotBase = std::make_unique<ModelAnimationSegmentSetAngle>(angle.p);
-			std::unique_ptr<ModelAnimationSubmodel> subsysBase = std::make_unique<ModelAnimationSubmodel>(sp->subobj_name, false, std::move(rotBase));
+			auto rotBase = std::unique_ptr<ModelAnimationSegmentSetAngle>(new ModelAnimationSegmentSetAngle(angle.p));
+			auto subsysBase = std::unique_ptr<ModelAnimationSubmodel>(new ModelAnimationSubmodel(sp->subobj_name, false, std::move(rotBase)));
 			anim->addSubsystemAnimation(std::move(subsysBase));
 
-			std::unique_ptr<animation::ModelAnimationSegmentSetAngle> rotBarrel = std::make_unique<animation::ModelAnimationSegmentSetAngle>(angle.h);
-			std::unique_ptr<animation::ModelAnimationSubmodel> subsysBarrel = std::make_unique<animation::ModelAnimationSubmodel>(sp->subobj_name, true, std::move(rotBarrel));
+			auto rotBarrel = std::unique_ptr<ModelAnimationSegmentSetAngle>(new ModelAnimationSegmentSetAngle(angle.h));
+			auto subsysBarrel = std::unique_ptr<ModelAnimationSubmodel>(new ModelAnimationSubmodel(sp->subobj_name, true, std::move(rotBarrel)));
 			anim->addSubsystemAnimation(std::move(subsysBarrel));
 		}
 		else {
-			std::unique_ptr<animation::ModelAnimationSegmentSetPHB> rot = std::make_unique<animation::ModelAnimationSegmentSetPHB>(angle, isRelative);
-			std::unique_ptr<animation::ModelAnimationSubmodel> subsys = std::make_unique<animation::ModelAnimationSubmodel>(sp->subobj_name, std::move(rot));
+			auto rot = std::unique_ptr<ModelAnimationSegmentSetPHB>(new ModelAnimationSegmentSetPHB(angle, isRelative));
+			auto subsys = std::unique_ptr<ModelAnimationSubmodel>(new ModelAnimationSubmodel(sp->subobj_name, std::move(rot)));
 			anim->addSubsystemAnimation(std::move(subsys));
 		}
 
@@ -262,9 +265,9 @@ namespace animation {
 	}*/
 
 
-	ModelAnimationSubmodel::ModelAnimationSubmodel(const SCP_string& submodelName, std::unique_ptr<ModelAnimationSegment> mainSegment) : m_name(submodelName), m_mainSegment(std::move(mainSegment)) { }
+	ModelAnimationSubmodel::ModelAnimationSubmodel(SCP_string submodelName, std::unique_ptr<ModelAnimationSegment> mainSegment) : m_name(std::move(submodelName)), m_mainSegment(std::move(mainSegment)) { }
 
-	ModelAnimationSubmodel::ModelAnimationSubmodel(const SCP_string& subsystemName, bool findBarrel, std::unique_ptr<ModelAnimationSegment> mainSegment) : m_name(subsystemName), m_findBarrel(findBarrel), m_mainSegment(std::move(mainSegment)) { }
+	ModelAnimationSubmodel::ModelAnimationSubmodel(SCP_string subsystemName, bool findBarrel, std::unique_ptr<ModelAnimationSegment> mainSegment) : m_name(std::move(subsystemName)), m_findBarrel(findBarrel), m_mainSegment(std::move(mainSegment)) { }
 
 	void ModelAnimationSubmodel::play(float frametime, ship* ship) {
 		auto dataIt = m_initialData.find(ship);
@@ -387,7 +390,7 @@ namespace animation {
 
 	int ModelAnimationSet::SUBTYPE_DEFAULT = ANIMATION_SUBTYPE_ALL;
 
-	void ModelAnimationSet::emplace(std::shared_ptr<ModelAnimation> animation, SCP_string name, ModelAnimationTriggerType type, int subtype) {
+	void ModelAnimationSet::emplace(const std::shared_ptr<ModelAnimation>& animation, const SCP_string& name, ModelAnimationTriggerType type, int subtype) {
 		animationSet[{type, subtype}].emplace(name, animation);
 	}
 

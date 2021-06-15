@@ -21,15 +21,16 @@ class optional {
 	union data {
 		T t;
 		bool dummy;
-		constexpr data(T t) : t(t) {}
+		constexpr data(T other_t) : t(other_t) {}
 		constexpr data() : dummy(false) {}
 	} data;
-	bool filled;
+	bool filled = false;
 
 public:
-	constexpr optional(const T& data) : data(data), filled(true) { }
-	constexpr optional() : data(), filled(false) { }
-	constexpr operator T() const {
+	constexpr optional(const T& other_data) : data(other_data), filled(true) { }
+	constexpr optional() : data() { }
+
+	operator T() const {
 		if (filled)
 			return data.t;
 		else {
@@ -76,7 +77,7 @@ namespace animation {
 	struct ModelAnimationData {
 	private:
 		template<typename T>
-		using maybe_optional = std::conditional_t<is_optional, optional<T>, T>;
+		using maybe_optional = typename std::conditional<is_optional, optional<T>, T>::type;
 
 	public:
 		ModelAnimationData() = default;
@@ -140,9 +141,9 @@ namespace animation {
 		friend class ModelAnimation;
 	public:
 		//Create a submodel animation based on the name of the submodel
-		ModelAnimationSubmodel(const SCP_string& submodelName, std::unique_ptr<ModelAnimationSegment> mainSegment);
+		ModelAnimationSubmodel(SCP_string submodelName, std::unique_ptr<ModelAnimationSegment> mainSegment);
 		//Create a submodel animation by taking the submodel assigned to a subsystem with a given name, or, if requested, the submodel of the turret barrel
-		ModelAnimationSubmodel(const SCP_string& subsystemName, bool findBarrel, std::unique_ptr<ModelAnimationSegment> mainSegment);
+		ModelAnimationSubmodel(SCP_string subsystemName, bool findBarrel, std::unique_ptr<ModelAnimationSegment> mainSegment);
 
 		//Sets the animation to the specified time and applies it to the submodel
 		void play(float time, ship* ship);
@@ -194,7 +195,7 @@ namespace animation {
 		std::map <std::pair<ModelAnimationTriggerType, int>, std::multimap <SCP_string, std::shared_ptr<ModelAnimation>>> animationSet;
 
 		//Helper function to shorten animation emplaces
-		void emplace(std::shared_ptr<ModelAnimation> animation, SCP_string name, ModelAnimationTriggerType type = ModelAnimationTriggerType::Scripted, int subtype = SUBTYPE_DEFAULT);
+		void emplace(const std::shared_ptr<ModelAnimation>& animation, const SCP_string& name, ModelAnimationTriggerType type = ModelAnimationTriggerType::Scripted, int subtype = SUBTYPE_DEFAULT);
 	};
 
 
