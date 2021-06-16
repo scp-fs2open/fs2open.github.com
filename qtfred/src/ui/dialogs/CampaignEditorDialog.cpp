@@ -50,7 +50,7 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget *parent, EditorViewport *view
 
 	menFile->addAction(tr("&Open..."), this, &CampaignEditorDialog::fileOpen, tr("Ctrl+O"));
 	menFile->addAction(tr("&Save"), this, &CampaignEditorDialog::fileSave, tr("Ctrl+S"));
-	menFile->addAction(tr("Save &as..."), this, &CampaignEditorDialog::fileSaveAs);
+	menFile->addAction(tr("Save &as..."), this, &CampaignEditorDialog::fileSaveAs, tr("Ctrl+Shift+S"));
 	menFile->addAction(tr("Save &Copy as..."), this, &CampaignEditorDialog::fileSaveCopyAs);
 	menFile->addSeparator();
 	menFile->addAction(tr("E&xit"), this, &QDialog::reject);
