@@ -18,7 +18,7 @@ namespace animation {
 		size_t animationCnt = 0;
 		while (time > 0.0f && animationCnt < m_segments.size()) {
 			float timeLocal = time;
-			//Make sure that each segment actually stops at it's end
+			//Make sure that each segment actually stops at its end
 			if (timeLocal > m_segments[animationCnt]->getDuration())
 				timeLocal = m_segments[animationCnt]->getDuration();
 			ModelAnimationData<true> deltaLocal = m_segments[animationCnt]->calculateAnimation(absoluteState, lastState, timeLocal);
@@ -60,7 +60,7 @@ namespace animation {
 
 		for (const auto& segment : m_segments) {
 			float timeLocal = time;
-			//Make sure that no segment runs over it's length
+			//Make sure that no segment runs over its length
 			if (timeLocal > segment->getDuration())
 				timeLocal = segment->getDuration();
 			

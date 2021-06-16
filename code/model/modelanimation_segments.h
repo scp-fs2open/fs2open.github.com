@@ -56,7 +56,7 @@ namespace animation {
 
 	};
 
-	//This segment rotates a submodels orientation by a certain amount around it's defined rotation axis
+	//This segment rotates a submodels orientation by a certain amount around its defined rotation axis
 	class ModelAnimationSegmentSetAngle : public ModelAnimationSegment {
 		float m_angle;
 		matrix m_rot;

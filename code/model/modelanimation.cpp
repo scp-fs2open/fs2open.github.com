@@ -212,8 +212,7 @@ namespace animation {
 		}
 		else {
 			vec3d anglesDeg;
-			if (!optional_string("+relative_angle:"))
-				required_string("+relative_angle:");
+			required_string("+relative_angle:");
 
 			stuff_vec3d(&anglesDeg);
 
@@ -282,7 +281,7 @@ namespace animation {
 			frametime = m_mainSegment->getDuration();
 
 		ModelAnimationData<> currentFrame = dataIt->second;
-		//Calculate the submodels data (or it's delta from the data stored at the animation's start)
+		//Calculate the submodels data (or its delta from the data stored at the animation's start)
 		ModelAnimationData<true> delta = m_mainSegment->calculateAnimation(currentFrame, lastDataIt->second, frametime);
 		
 		currentFrame.applyDelta(delta);
@@ -300,7 +299,7 @@ namespace animation {
 		if (dataIt == m_initialData.end())
 			return;
 
-		//Since resetting the submodel animation also has to happen for the submodel itself, copy it's state at the animation's start back to the submodel
+		//Since resetting the submodel animation also has to happen for the submodel itself, copy its state at the animation's start back to the submodel
 		copyToSubmodel(dataIt->second, ship);
 	}
 
