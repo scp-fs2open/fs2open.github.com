@@ -2458,9 +2458,9 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 			vec3d temp = pos1; vm_vec_unrotate(&pos1, &temp, &orient);
 			temp = pos2;       vm_vec_unrotate(&pos2, &temp, &orient);
 			temp = center;     vm_vec_unrotate(&center, &temp, &orient);
-			pos1 += b->last_start;
-			pos2 += b->last_start;
-			center += b->last_start;
+			pos1 += turret_point;
+			pos2 += turret_point;
+			center += turret_point;
 
 			// set rot_axis if its center
 			if (bwi->t5info.continuous_rot_axis == Type5BeamRotAxis::CENTER)
@@ -2482,7 +2482,15 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 			burst_rot_axis = bwi->t5info.burst_rot_axis == Type5BeamRotAxis::STARTPOS_NO_OFFSET ? pos1 : pos2;
 
 		// now the offsets
-		float scale_factor = (bwi->t5info.target_scale_positions && b->target != nullptr) ? b->target->radius : 300.f;
+		float scale_factor;
+		if (b->target != nullptr) {
+			if (bwi->t5info.target_scale_positions)
+				scale_factor = b->target->radius;
+			else
+				scale_factor = vm_vec_dist(&b->target->pos, &turret_point); // using dist here means we have a constant angular width
+		} else
+			scale_factor = 300.f; // no target, just use 300m like the notarget scenario above
+
 		vec3d offset = bwi->t5info.start_pos_offset;
 		offset *= scale_factor;
 
