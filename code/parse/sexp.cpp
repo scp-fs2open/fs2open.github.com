@@ -23679,7 +23679,7 @@ void add_to_event_log_buffer(int op_num, int result)
 	if (!Current_event_log_container_buffer->empty()) {
 		tmp.append("\nContainers:\n");
 		while (!Current_event_log_container_buffer->empty()) {
-			tmp.append(Current_event_log_container_buffer->back().c_str());
+			tmp.append(Current_event_log_container_buffer->back());
 			Current_event_log_container_buffer->pop_back();
 		}
 	}
