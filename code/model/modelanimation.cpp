@@ -10,7 +10,9 @@ namespace animation {
 
 	ModelAnimationState ModelAnimation::play(float frametime, ship* ship) {
 
-		switch (m_state) {
+		float& time = m_time[ship];
+
+		switch (m_state[ship]) {
 		case ModelAnimationState::UNTRIGGERED:
 			//We have a new animation starting up in this phase. Put it in the list of running animations to track and step it later
 			s_runningAnimations.emplace(ship, shared_from_this());
@@ -50,50 +52,50 @@ namespace animation {
 					m_duration = duration;
 			}
 
-			m_state = ModelAnimationState::RUNNING_FWD;
+			m_state[ship] = ModelAnimationState::RUNNING_FWD;
 
 			/* fall-thru */
 		case ModelAnimationState::RUNNING_FWD:
-			m_time += frametime;
+			time += frametime;
 
 			//Cap time if needed
-			if (m_time > m_duration) {
-				m_time = m_duration;
-				m_state = ModelAnimationState::COMPLETED;
+			if (time > m_duration) {
+				time = m_duration;
+				m_state[ship] = ModelAnimationState::COMPLETED;
 			}
 
 			for (const auto& animation : m_submodelAnimation) {
-				animation->play(m_time, ship);
+				animation->play(time, ship);
 			}
 			break;
 
 		case ModelAnimationState::COMPLETED:
 			//This means someone requested to start once we were complete, so start moving backwards.
-			m_state = ModelAnimationState::RUNNING_RWD;
+			m_state[ship] = ModelAnimationState::RUNNING_RWD;
 			/* fall-thru */
 		case ModelAnimationState::RUNNING_RWD:
-			m_time -= frametime;
+			time -= frametime;
 
 			//Cap time at 0, but don't clean up the animations here since this function is called in a loop over the running animations, and cleaning now would invalidate the iterator
-			if (m_time < 0) {
+			if (time < 0) {
 				stop(ship, false);
 				break;
 			}
 
 			for (const auto& animation : m_submodelAnimation) {
-				animation->play(m_time, ship);
+				animation->play(time, ship);
 			}
 
 			break;
 		}
 
-		return m_state;
+		return m_state[ship];
 	}
 
 	void ModelAnimation::cleanRunning() {
 		auto removeIt = s_runningAnimations.cbegin();
 		while (removeIt != s_runningAnimations.cend()) {
-			if (removeIt->second->m_state == ModelAnimationState::UNTRIGGERED) {
+			if (removeIt->second->m_state[removeIt->first] == ModelAnimationState::UNTRIGGERED) {
 				removeIt = s_runningAnimations.erase(removeIt);
 			}
 			else
@@ -103,14 +105,14 @@ namespace animation {
 	
 	void ModelAnimation::start(ship* ship, bool reverse) {
 		if (reverse) {
-			switch (m_state) {
+			switch (m_state[ship]) {
 			case ModelAnimationState::RUNNING_RWD:
 			case ModelAnimationState::UNTRIGGERED:
 				//Cannot reverse-start if it's already running rwd or fully untriggered
 				return;
 			case ModelAnimationState::RUNNING_FWD:
 				//Just pretend we were going in the right direction
-				m_state = ModelAnimationState::RUNNING_RWD;
+				m_state[ship] = ModelAnimationState::RUNNING_RWD;
 				break;
 			case ModelAnimationState::COMPLETED:
 				//Nothing special to do. Expected case
@@ -118,14 +120,14 @@ namespace animation {
 			}
 		}
 		else {
-			switch (m_state) {
+			switch (m_state[ship]) {
 			case ModelAnimationState::RUNNING_FWD:
 			case ModelAnimationState::COMPLETED:
 				//Cannot start if it's already running fwd or fully triggered
 				return;
 			case ModelAnimationState::RUNNING_RWD:
 				//Just pretend we were going in the right direction
-				m_state = ModelAnimationState::RUNNING_FWD;
+				m_state[ship] = ModelAnimationState::RUNNING_FWD;
 				break;
 			case ModelAnimationState::UNTRIGGERED:
 				//Nothing special to do. Expected case
@@ -144,8 +146,8 @@ namespace animation {
 			animation->reset(ship);
 		}
 
-		m_time = 0;
-		m_state = ModelAnimationState::UNTRIGGERED;
+		m_time[ship] = 0;
+		m_state[ship] = ModelAnimationState::UNTRIGGERED;
 
 		if (cleanup)
 			cleanRunning();
@@ -157,7 +159,7 @@ namespace animation {
 
 	void ModelAnimation::stepAnimations(float frametime) {
 		for (const auto& anim : s_runningAnimations) {
-			switch (anim.second->m_state) {
+			switch (anim.second->m_state[anim.first]) {
 			case ModelAnimationState::RUNNING_FWD:
 			case ModelAnimationState::RUNNING_RWD:
 				anim.second->play(frametime, anim.first);

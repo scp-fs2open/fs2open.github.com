@@ -164,8 +164,8 @@ namespace animation {
 		std::vector<std::unique_ptr<ModelAnimationSubmodel>> m_submodelAnimation;
 		float m_duration = 0.0f;
 
-		ModelAnimationState m_state = ModelAnimationState::UNTRIGGERED;
-		float m_time = 0.0f;
+		std::map <ship*, ModelAnimationState> m_state;
+		std::map<ship*, float> m_time;
 		ModelAnimationState play(float frametime, ship* ship);
 
 		static void cleanRunning();
