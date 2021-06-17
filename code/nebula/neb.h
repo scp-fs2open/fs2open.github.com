@@ -140,6 +140,9 @@ void neb2_level_close();
 // call before beginning all rendering
 void neb2_render_setup(camid cid);
 
+// turns a poof on or off
+void neb2_toggle_poof(int poof_idx, bool enabling);
+
 // render the player nebula
 void neb2_render_poofs();
 

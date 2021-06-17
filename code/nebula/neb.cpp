@@ -282,7 +282,25 @@ void neb2_level_init()
 }
 
 float nNf_near, nNf_density;
-void new_poof(int idx, vec3d* pos);
+
+void neb2_poof_setup() {
+	// make the total density of poofs be the average of all poofs, and each poofs density is its relative proportion compared to others
+	// this way we maintain the retail way of not affecting total density by having more poof types
+	Poof_dist_threshold = 9999.0f;
+	float Poof_density_sum_square = 0.0f;
+	float Poof_density_sum = 0.0f;
+	for (size_t i = 0; i < Poof_info.size(); i++) {
+		if (poof_is_used(i)) {
+			Poof_density_sum_square += Poof_info[i].density * Poof_info[i].density;
+			Poof_density_sum += Poof_info[i].density;
+			float dist_threshold = Poof_info[i].view_dist * (UPKEEP_DIST_MULT - 1.0f);
+			if (dist_threshold < Poof_dist_threshold)
+				Poof_dist_threshold = dist_threshold;
+		}
+	}
+	Poof_density_multiplier = Poof_density_sum_square / (Poof_density_sum * Poof_density_sum);
+	Poof_density_multiplier *= (Neb2_detail + 0.5f) / (MAX_DETAIL_LEVEL + 0.5f); // scale the poofs down based on detail level
+}
 
 // initialize nebula stuff - call from game_post_level_init(), so the mission has been loaded
 void neb2_post_level_init()
@@ -394,23 +412,7 @@ void neb2_post_level_init()
 	// a bit awkward but this will force a full sphere gen
 	vm_vec_make(&Poof_last_gen_pos, 999999.0f, 999999.0f, 999999.0f);
 
-	// make the total density of poofs be the average of all poofs, and each poofs density is its relative proportion compared to others
-	// this way we maintain the retail way of not affecting total density by having more poof types
-	Poof_dist_threshold = 9999.0f;
-	float Poof_density_sum_square = 0.0f;
-	float Poof_density_sum = 0.0f;
-	for (size_t i = 0; i < Poof_info.size(); i++) {
-		if (poof_is_used(i)) {
-			Poof_density_sum_square += Poof_info[i].density * Poof_info[i].density;
-			Poof_density_sum += Poof_info[i].density;
-			float dist_threshold = Poof_info[i].view_dist * (UPKEEP_DIST_MULT - 1.0f);
-			if (dist_threshold < Poof_dist_threshold)
-				Poof_dist_threshold = dist_threshold;
-		}
-	}
-	Poof_density_multiplier = Poof_density_sum_square / (Poof_density_sum * Poof_density_sum);
-	Poof_density_multiplier *= (Neb2_detail + 0.5f) / (MAX_DETAIL_LEVEL + 0.5f); // scale the poofs down based on detail level
-
+	neb2_poof_setup();
 }
 
 // shutdown nebula stuff
@@ -646,6 +648,19 @@ float neb2_get_alpha_2shell(float alpha, float inner_radius, float outer_radius,
 // -------------------------------------------------------------------------------------------------
 // WACKY LOCAL PLAYER NEBULA STUFF
 //
+
+void neb2_toggle_poof(int poof_idx, bool enabling) {
+
+	if (enabling) Neb2_poof_flags |= (1 << poof_idx);
+	else Neb2_poof_flags &= ~(1 << poof_idx);
+
+	Neb2_poofs.clear();
+
+	// a bit awkward but this will force a full sphere gen
+	vm_vec_make(&Poof_last_gen_pos, 999999.0f, 999999.0f, 999999.0f);
+
+	neb2_poof_setup();
+}
 
 void new_poof(size_t poof_info_idx, vec3d* pos) {
 	poof new_poof;

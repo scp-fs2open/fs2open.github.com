@@ -13983,8 +13983,7 @@ void sexp_nebula_toggle_poof(int n)
 	//coulnd't find the poof
 	if (i == (int)Poof_info.size()) return;
 
-	if (result) Neb2_poof_flags |= (1 << i);
-	else Neb2_poof_flags &= ~(1 << i);
+	neb2_toggle_poof(i, result);
 }
 
 void sexp_nebula_change_pattern(int n)
