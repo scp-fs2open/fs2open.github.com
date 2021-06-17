@@ -12,6 +12,7 @@
 
 #include "ai/ai.h"
 #include "debugconsole/console.h"
+#include "gamesequence/gamesequence.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/linklist.h"
 #include "hud/hudlock.h"
@@ -1487,6 +1488,11 @@ void hud_do_lock_indicators(float frametime)
 
 	// if i'm a multiplayer observer, bail here
  	if((Game_mode & GM_MULTIPLAYER) && ((Net_player->flags & NETINFO_FLAG_OBSERVER) || (Player_obj->type == OBJ_OBSERVER)) ){
+		return;
+	}
+
+	// do not continue locking if the game is paused (viewer pause still has hud on)
+	if (gameseq_get_state() == GS_STATE_GAME_PAUSED) {
 		return;
 	}
 
