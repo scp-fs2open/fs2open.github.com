@@ -29,7 +29,7 @@ public:
 		explicit CampaignBranchData() = default;
 		CampaignBranchData(const int &sexp_branch, const QString &from);
 
-		void connect(const SCP_vector<const std::unique_ptr<CampaignMissionData>*>& missions);
+		void connect(const SCP_unordered_set<const CampaignMissionData*>& missions);
 
 		enum BranchType { INVALID, REPEAT, NEXT, NEXT_NOT_FOUND, END, };
 		static const SCP_map<BranchType, QString> branchTexts;
@@ -56,10 +56,10 @@ public:
 	inline int getCampaignNumPlayers() const {
 		if (campaignType == campaignTypes[0])
 			return 0;
-		auto checked = missionData.getCheckedData();
+		auto checked = missionData.getCheckedDataConst();
 		if (checked.empty())
 			return 0;
-		return checked.front()->get()->fsoMission.num_players;
+		return (*checked.cbegin())->fsoMission.num_players;
 	}
 
 private:
@@ -153,8 +153,9 @@ private:
 		CampaignMissionData(const QString &file, const cmission &cm);
 		CampaignMissionData(const QString &file);
 
-		static CheckedDataListModel<std::unique_ptr<CampaignMissionData>>::RowData
-		initMissions(const SCP_vector<SCP_string>::const_iterator &m_it);
+		static void initMissions(
+				const SCP_vector<SCP_string>::const_iterator &m_it,
+				CheckedDataListModel<CampaignEditorDialogModel::CampaignMissionData> &model);
 
 		const QString filename;
 
@@ -188,7 +189,7 @@ public:
 	const QString campaignType;
 	CheckedDataListModel<std::ptrdiff_t> initialShips;
 	CheckedDataListModel<std::ptrdiff_t> initialWeapons;
-	CheckedDataListModel<std::unique_ptr<CampaignMissionData>> missionData;
+	CheckedDataListModel<CampaignMissionData> missionData;
 
 private:
 	QString _campaignName;

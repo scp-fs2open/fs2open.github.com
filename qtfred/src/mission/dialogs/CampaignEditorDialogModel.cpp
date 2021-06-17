@@ -54,24 +54,25 @@ static const QString loadFile(QString file, const QString& campaignType) {
 	return Campaign.filename;
 }
 
-static CheckedDataListModel<std::ptrdiff_t>::RowData initShips(const SCP_vector<ship_info>::const_iterator &s_it){
+static void initShips(const SCP_vector<ship_info>::const_iterator &s_it, CheckedDataListModel<std::ptrdiff_t> &model){
 	std::ptrdiff_t shpIdx{ std::distance(Ship_info.cbegin(), s_it) };
-	return CheckedDataListModel<std::ptrdiff_t>::RowData{
-			s_it->flags[Ship::Info_Flags::Player_ship] ? s_it->name : "",
-			shpIdx,
-			static_cast<bool>(Campaign.ships_allowed[static_cast<size_t>(shpIdx)])};
+	if (s_it->flags[Ship::Info_Flags::Player_ship])
+		model.initRow(
+				s_it->name,
+				shpIdx,
+				static_cast<bool>(Campaign.ships_allowed[static_cast<size_t>(shpIdx)]));
 }
 
-static CheckedDataListModel<std::ptrdiff_t>::RowData initWeps(const SCP_vector<weapon_info>::const_iterator &w_it){
+static void initWeps(const SCP_vector<weapon_info>::const_iterator &w_it, CheckedDataListModel<std::ptrdiff_t> &model){
 	std::ptrdiff_t wepIdx{ std::distance(Weapon_info.cbegin(), w_it) };
-	for (auto s_it = Ship_info.cbegin(); s_it != Ship_info.cend(); ++s_it)
-		if (s_it->flags[Ship::Info_Flags::Player_ship]
-			&& s_it->allowed_weapons[static_cast<size_t>(wepIdx)])
-			return CheckedDataListModel<std::ptrdiff_t>::RowData{
+	for (const ship_info& shp: Ship_info)
+		if (shp.flags[Ship::Info_Flags::Player_ship]
+			&& shp.allowed_weapons[static_cast<size_t>(wepIdx)]
+			&& !model.contains(w_it->name))
+			model.initRow(
 					w_it->name,
 					wepIdx,
-					static_cast<bool>(Campaign.weapons_allowed[static_cast<size_t>(wepIdx)])};
-	return CheckedDataListModel<std::ptrdiff_t>::RowData();
+					static_cast<bool>(Campaign.weapons_allowed[static_cast<size_t>(wepIdx)]));
 }
 
 static SCP_vector<SCP_string> getMissions(){
@@ -104,10 +105,10 @@ CampaignEditorDialogModel::CampaignBranchData::CampaignBranchData(const int &sex
 	}
 }
 
-void CampaignEditorDialogModel::CampaignBranchData::connect(const SCP_vector<const std::unique_ptr<CampaignMissionData>*>& missions) {
+void CampaignEditorDialogModel::CampaignBranchData::connect(const SCP_unordered_set<const CampaignMissionData*>& missions) {
 	if (std::find_if(missions.cbegin(), missions.cend(),
-					 [&](const std::unique_ptr<CampaignMissionData>* mn){
-						return next == (*mn)->filename; })
+					 [&](const CampaignMissionData* mn){
+						return next == mn->filename; })
 			== missions.cend())
 		type = NEXT_NOT_FOUND;
 	else
@@ -135,28 +136,30 @@ CampaignEditorDialogModel::CampaignMissionData::CampaignMissionData(const QStrin
 
 }
 
-CheckedDataListModel<std::unique_ptr<CampaignEditorDialogModel::CampaignMissionData>>::RowData
-CampaignEditorDialogModel::CampaignMissionData::initMissions(const SCP_vector<SCP_string>::const_iterator &m_it){
+void CampaignEditorDialogModel::CampaignMissionData::initMissions(
+		const SCP_vector<SCP_string>::const_iterator &m_it,
+		CheckedDataListModel<CampaignEditorDialogModel::CampaignMissionData> &model){
 
 	const QString filename{ QString::fromStdString(*m_it).append(".fs2") };
 	const cmission *cm_it{
 		std::find_if(Campaign.missions, CMISSIONS_END,
 				[&](const cmission &cm){ return filename == cm.name; })};
 
-	std::unique_ptr<CampaignMissionData> ret_data{
+	CampaignMissionData* ret_data{
 		cm_it == CMISSIONS_END
 				? new CampaignMissionData{filename}
-				: new CampaignMissionData{filename, *cm_it}};
+				: new CampaignMissionData{filename, *cm_it} };
 
 	ret_data->fredable = !get_mission_info(m_it->c_str(), &ret_data->fsoMission);
 	if (! ret_data->fredable)
 		QMessageBox::warning(nullptr, "Error loading mission", "Could not get info from mission: " + ret_data->filename +"\nFile corrupted?");
 
-	return CheckedDataListModel<std::unique_ptr<CampaignMissionData>>::RowData{
-		isCampaignCompatible(ret_data->fsoMission) ? filename : "",
-		ret_data,
-		cm_it != CMISSIONS_END,
-		ret_data->fredable ? Qt::color0 : Qt::red};
+	if(isCampaignCompatible(ret_data->fsoMission))
+		model.initRow(
+			filename,
+			ret_data,
+			cm_it != CMISSIONS_END,
+			ret_data->fredable ? Qt::color0 : Qt::red);
 }
 
 CampaignEditorDialogModel::CampaignEditorDialogModel(CampaignEditorDialog* parent, EditorViewport* viewport, const QString &file, const QString& newCampaignType) :
@@ -176,14 +179,12 @@ CampaignEditorDialogModel::CampaignEditorDialogModel(CampaignEditorDialog* paren
 {
 	for (int i=0; i<Campaign.num_missions; i++)
 		if (! missionData.contains(Campaign.missions[i].name)) {
-			std::unique_ptr<CampaignMissionData> ptr{
-				new CampaignMissionData{Campaign.missions[i].name}
-			};
+			CampaignMissionData* ptr{ new CampaignMissionData{Campaign.missions[i].name} };
 
 			bool loaded = !get_mission_info(Campaign.missions[i].name, &ptr->fsoMission);
 			ptr->fredable = false;
 
-			missionData.addRow(Campaign.missions[i].name, ptr, true,
+			missionData.initRow(Campaign.missions[i].name, ptr, true,
 							   loaded ? Qt::darkYellow : Qt::red);
 		}
 	connectBranches();
@@ -228,7 +229,7 @@ const QStringList CampaignEditorDialogModel::campaignTypes { initCampaignTypes()
 void CampaignEditorDialogModel::checkMissionDrop(const QModelIndex &idx, const QModelIndex &bottomRight, const QVector<int> &roles) {
 	Assert(idx == bottomRight);
 
-	if (roles.contains(Qt::CheckStateRole)	&& ! missionData.internalData(idx)->fredable) {
+	if (roles.contains(Qt::CheckStateRole)	&& ! missionData.internalData(idx).fredable) {
 		if (missionData.data(idx, Qt::CheckStateRole).toBool()) {
 			droppedMissions.removeAll(missionData.data(idx).toString());
 		} else {
@@ -238,17 +239,16 @@ void CampaignEditorDialogModel::checkMissionDrop(const QModelIndex &idx, const Q
 }
 
 void CampaignEditorDialogModel::connectBranches() {
-	auto missions = missionData.getCheckedData();
-	for (auto& mn: missions)
-		for (auto& br: (*mn)->branches)
+	for (auto& mn: missionData.getCheckedData())
+		for (auto& br: mn->branches)
 			if (br.type == CampaignBranchData::NEXT || br.type == CampaignBranchData::NEXT_NOT_FOUND)
-				br.connect(missions);
+				br.connect(missionData.getCheckedDataConst());
 }
 
 void CampaignEditorDialogModel::missionSelectionChanged(const QModelIndex &changed) {
 	if (mnData_it)
 		mnData_it->brData_it = nullptr;
-	mnData_it = missionData.internalData(changed).get();
+	mnData_it = &missionData.internalData(changed);
 	mnData_idx = changed;
 	_parent->updateUI();
 }
