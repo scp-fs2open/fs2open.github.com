@@ -230,7 +230,7 @@ void beam_recalc_sounds(beam *b);
 void beam_apply_whack(beam *b, object *objp, vec3d *hit_point);
 
 // return the amount of damage which should be applied to a ship. basically, filters friendly fire damage 
-float beam_get_ship_damage(beam *b, object *objp);
+float beam_get_ship_damage(beam *b, object *objp, vec3d* hitpos);
 
 // if the beam is likely to tool a given target before its lifetime expires
 int beam_will_tool_target(beam *b, object *objp);
@@ -3792,11 +3792,11 @@ void beam_handle_collisions(beam *b)
 						if (trgt->hull_strength > 0) {
 							float attenuation = 1.0f;
 							if ((b->damage_threshold >= 0.0f) && (b->damage_threshold < 1.0f)) {
-								float dist = vm_vec_dist(&b->last_shot, &b->last_start);
+								float dist = vm_vec_dist(&b->f_collisions[idx].cinfo.hit_point_world, &b->last_start);
 								float range = b->range;
 								float atten_dist = range * b->damage_threshold;
 								if ((range > dist) && (atten_dist < dist)) {
-									attenuation = (dist - atten_dist) / (range - atten_dist);
+									attenuation = 1 - ((dist - atten_dist) / (range - atten_dist));
 								}
 							}
 
@@ -3845,7 +3845,7 @@ void beam_handle_collisions(beam *b)
 				// maybe vaporize ship.
 				//only apply damage if the collision is not an exit collision.  this prevents twice the damage from being done, although it probably be more realistic since two holes are being punched in the ship instead of one.
 				if (!b->f_collisions[idx].is_exit_collision) {
-					real_damage = beam_get_ship_damage(b, &Objects[target]) * damage_time_mod;
+					real_damage = beam_get_ship_damage(b, &Objects[target], &b->f_collisions[idx].cinfo.hit_point_world) * damage_time_mod;
 					ship_apply_local_damage(&Objects[target], &Objects[b->objnum], &b->f_collisions[idx].cinfo.hit_point_world, real_damage, wi->damage_type_idx, b->f_collisions[idx].quadrant);
 				}
 				// if this is the first hit on the player ship. whack him
@@ -4014,7 +4014,7 @@ void beam_apply_whack(beam *b, object *objp, vec3d *hit_point)
 }
 
 // return the amount of damage which should be applied to a ship. basically, filters friendly fire damage 
-float beam_get_ship_damage(beam *b, object *objp)
+float beam_get_ship_damage(beam *b, object *objp, vec3d* hitpos)
 {	
 	// if the beam is on the same team as the object
 	if ( (objp == NULL) || (b == NULL) ) {
@@ -4035,11 +4035,11 @@ float beam_get_ship_damage(beam *b, object *objp)
 	float attenuation = 1.0f;
 
 	if ((b->damage_threshold >= 0.0f) && (b->damage_threshold < 1.0f)) {
-		float dist = vm_vec_dist(&b->last_shot, &b->last_start);
+		float dist = hitpos ? vm_vec_dist(hitpos, &b->last_start) : 0.0f;
 		float range = b->range;
 		float atten_dist = range * b->damage_threshold;
 		if ((range > dist) && (atten_dist < dist)) {
-			attenuation = (dist - atten_dist) / (range - atten_dist);
+			attenuation =  1 - ((dist - atten_dist) / (range - atten_dist));
 		}
 	}
 
