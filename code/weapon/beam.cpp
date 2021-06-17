@@ -229,9 +229,6 @@ void beam_recalc_sounds(beam *b);
 // apply a whack to a ship
 void beam_apply_whack(beam *b, object *objp, vec3d *hit_point);
 
-// return the amount of damage which should be applied to a ship. basically, filters friendly fire damage 
-float beam_get_ship_damage(beam *b, object *objp, vec3d* hitpos);
-
 // if the beam is likely to tool a given target before its lifetime expires
 int beam_will_tool_target(beam *b, object *objp);
 
