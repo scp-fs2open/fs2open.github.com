@@ -78,7 +78,7 @@ typedef struct poof_info {
 		bitmap = -1;
 		scale = ::util::UniformFloatRange(150.0f, 150.0f);
 		density = 1 / (150.f * 150.f * 150.f);
-		rotation = ::util::UniformFloatRange(-0.065f, 0.065f);
+		rotation = ::util::UniformFloatRange(-3.7f, 3.7f);
 		view_dist = 360.f;
 		alpha = ::util::UniformFloatRange(0.5f, 0.5f);
 	}

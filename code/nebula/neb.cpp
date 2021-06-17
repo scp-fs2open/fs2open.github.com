@@ -670,7 +670,7 @@ void new_poof(size_t poof_info_idx, vec3d* pos) {
 	new_poof.flash = 0;
 	new_poof.radius = pinfo->scale.next();
 	new_poof.pt = *pos;
-	new_poof.rot_speed = pinfo->rotation.next();
+	new_poof.rot_speed = fl_radians(pinfo->rotation.next());
 	new_poof.alpha = pinfo->alpha.next();
 	vm_vec_rand_vec(&new_poof.up_vec);
 
