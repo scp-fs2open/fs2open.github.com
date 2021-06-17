@@ -611,7 +611,7 @@ void obj_snd_do_frame()
 
 				if ( go_ahead_flag ) {
 					int is_looping = (osp->flags & OS_LOOPING_DISABLED) ? 0 : 1;
-					osp->instance = snd_play_3d(gs, &source_pos, &View_position, add_distance, &objp->phys_info.vel, is_looping, 1.0f, SND_PRIORITY_TRIPLE_INSTANCE, NULL, 1.0f, 0, true);
+					osp->instance = snd_play_3d(gs, &source_pos, &View_position, add_distance, &objp->phys_info.vel, is_looping, 1.0f, SND_PRIORITY_TRIPLE_INSTANCE, nullptr, 1.0f, 0, true);
 					if (osp->instance.isValid()) {
 						Num_obj_sounds_playing++;
 						osp->flags |= OS_STARTED_PLAYING;
