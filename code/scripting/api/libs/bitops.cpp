@@ -1,6 +1,7 @@
 
 #include "bitops.h"
 #include "scripting/ade_args.h"
+#include "scripting/api/objs/enums.h"
 
 namespace scripting {
 namespace api {
@@ -34,6 +35,36 @@ ADE_FUNC(OR, l_BitOps, "number, number, [number, number, number, number, number,
 		c |= a[i];
 
 	return ade_set_args(L, "i", c);
+}
+
+ADE_FUNC(EnumAND, l_BitOps, "enumeration, enumeration, [enumeration, enumeration, enumeration, enumeration, enumeration, enumeration, enumeration, enumeration]", "Values for which bitwise boolean AND operation is performed", "number", "Result of the AND operation")
+{
+	enum_h a[10];
+	int c;
+	int n = ade_get_args(L, "oo|oooooooo", l_Enum.Get(&a[0]), l_Enum.Get(&a[1]), l_Enum.Get(&a[2]), l_Enum.Get(&a[3]), l_Enum.Get(&a[4]), l_Enum.Get(&a[5]), l_Enum.Get(&a[6]), l_Enum.Get(&a[7]), l_Enum.Get(&a[8]), l_Enum.Get(&a[9]));
+	if (n < 2)
+		return ade_set_error(L, "o", l_Enum.Set(enum_h()));
+
+	c = a[0].index;
+	for (int i = 1; i < n; ++i)
+		c &= a[i].index;
+
+	return ade_set_args(L, "o", l_Enum.Set(enum_h(c)));
+}
+
+ADE_FUNC(EnumOR, l_BitOps, "enumeration, enumeration, [enumeration, enumeration, enumeration, enumeration, enumeration, enumeration, enumeration, enumeration]", "Values for which bitwise boolean OR operation is performed", "number", "Result of the OR operation")
+{
+	enum_h a[10];
+	int c;
+	int n = ade_get_args(L, "oo|oooooooo", l_Enum.Get(&a[0]), l_Enum.Get(&a[1]), l_Enum.Get(&a[2]), l_Enum.Get(&a[3]), l_Enum.Get(&a[4]), l_Enum.Get(&a[5]), l_Enum.Get(&a[6]), l_Enum.Get(&a[7]), l_Enum.Get(&a[8]), l_Enum.Get(&a[9]));
+	if (n < 2)
+		return ade_set_error(L, "o", l_Enum.Set(enum_h()));
+
+	c = a[0].index;
+	for (int i = 1; i < n; ++i)
+		c |= a[i].index;
+
+	return ade_set_args(L, "o", l_Enum.Set(enum_h(c)));
 }
 
 ADE_FUNC(XOR, l_BitOps, "number, number", "Values for which bitwise boolean XOR operation is performed", "number", "Result of the XOR operation")

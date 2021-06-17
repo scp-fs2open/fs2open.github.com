@@ -106,6 +106,7 @@ flag_def_list Enumerations[] = {
 	{"FIREBALL_LARGE_EXPLOSION", LE_FIREBALL_LARGE_EXPLOSION, 0},
 	{"FIREBALL_WARP_EFFECT", LE_FIREBALL_WARP_EFFECT, 0},
 	// the following OS_ definitions use bitfield values, not the indexes in enums.h
+	{"OS_NONE", 0, 0},
 	{"OS_USED", OS_USED, 0},
 	{"OS_DS3D", OS_DS3D, 0},
 	{"OS_MAIN", OS_MAIN, 0},
@@ -213,6 +214,21 @@ ADE_FUNC(__eq,
 	}
 
 	return ade_set_args(L, "b", e1->index == e2->index);
+}
+
+ADE_VIRTVAR(IntValue, l_Enum, "enumeration", "Internal value of the enum.  Probably not useful unless this enum is a bitfield or corresponds to a #define somewhere else in the source code.", "number", "Integer (index) value of the enum")
+{
+	enum_h* e = nullptr;
+	if (!ade_get_args(L, "o", l_Enum.GetPtr(&e))) {
+		return ade_set_args(L, "i", -1);
+	}
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "IntValue is read only!");
+		return ADE_RETURN_NIL;
+	}
+
+	return ade_set_args(L, "i", e->index);
 }
 
 }

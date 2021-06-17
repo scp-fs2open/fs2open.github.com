@@ -541,16 +541,8 @@ ADE_FUNC(assignSound, l_Object, "soundentry GameSnd, [vector Offset=nil, enumera
 	auto subsys = tgsh ? tgsh->ss : nullptr;
 	if (!offset)
 		offset = &vmd_zero_vector;
-	if (enum_flags.IsValid())
-	{
+	if (enum_flags.index >= 0)
 		flags = enum_flags.index;
-
-		if (flags < 0 || flags > OS_SUBSYS_ROTATION)
-		{
-			LuaError(L, "Flags parameter %d is out of range for object %d!", flags, OBJ_INDEX(objp));
-			return ADE_RETURN_NIL;
-		}
-	}
 
 	int snd_idx = obj_snd_assign(OBJ_INDEX(objp), gs_id, offset, flags, subsys);
 
