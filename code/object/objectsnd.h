@@ -23,6 +23,9 @@
 #define OS_SUBSYS_DEAD			(1<<6)
 #define OS_SUBSYS_DAMAGED		(1<<7)
 #define OS_SUBSYS_ROTATION		(1<<8)
+#define OS_PLAY_ON_PLAYER		(1<<9)
+#define OS_LOOPING_DISABLED		(1<<7)
+#define OS_STARTED_PLAYING		(1<<11)
 
 struct vec3d;
 class ship_subsys;

@@ -471,8 +471,9 @@ void obj_snd_do_frame()
 	for ( osp = GET_FIRST(&obj_snd_list); osp !=END_OF_LIST(&obj_snd_list); osp = GET_NEXT(osp) ) {
 		Assert(osp != NULL);
 		objp = &Objects[osp->objnum];
-		if ( Player_obj == objp && observer_obj == Player_obj ) {
+		if ((Player_obj == objp) && (observer_obj == Player_obj) && !(osp->flags & OS_PLAY_ON_PLAYER)) {
 			// we don't play the engine sound if the view is from the player
+			// unless OS_PLAY_ON_PLAYER was set manually
 			continue;
 		}
 
@@ -577,7 +578,8 @@ void obj_snd_do_frame()
 
 		go_ahead_flag = TRUE;
 		float max_vol,new_vol;
-		if (!osp->instance.isValid()) {
+		// start playing if sound is invalid and looping or non-looping but has not started
+		if (!osp->instance.isValid() && (!(osp->flags & OS_LOOPING_DISABLED) || !(osp->flags & OS_STARTED_PLAYING))) {
 			if ( distance < gs->max ) {
 				max_vol = gs->volume_range.max();
 				if ( distance <= gs->min ) {
@@ -608,9 +610,11 @@ void obj_snd_do_frame()
 				} // end switch
 
 				if ( go_ahead_flag ) {
-					osp->instance = snd_play_3d(gs, &source_pos, &View_position, add_distance, &objp->phys_info.vel, 1, 1.0f, SND_PRIORITY_TRIPLE_INSTANCE, NULL, 1.0f, 0, true);
+					int is_looping = (osp->flags & OS_LOOPING_DISABLED) ? 0 : 1;
+					osp->instance = snd_play_3d(gs, &source_pos, &View_position, add_distance, &objp->phys_info.vel, is_looping, 1.0f, SND_PRIORITY_TRIPLE_INSTANCE, NULL, 1.0f, 0, true);
 					if (osp->instance.isValid()) {
 						Num_obj_sounds_playing++;
+						osp->flags |= OS_STARTED_PLAYING;
 					}
 				}
 				Assert(Num_obj_sounds_playing <= MAX_OBJ_SOUNDS_PLAYING);

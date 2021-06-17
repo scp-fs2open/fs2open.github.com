@@ -116,6 +116,9 @@ flag_def_list Enumerations[] = {
 	{"OS_SUBSYS_DEAD", OS_SUBSYS_DEAD, 0},
 	{"OS_SUBSYS_DAMAGED", OS_SUBSYS_DAMAGED, 0},
 	{"OS_SUBSYS_ROTATION", OS_SUBSYS_ROTATION, 0},
+	{"OS_PLAY_ON_PLAYER", OS_PLAY_ON_PLAYER, 0},
+	{"OS_LOOPING_DISABLED", OS_LOOPING_DISABLED, 0},
+	{"OS_STARTED_PLAYING", OS_STARTED_PLAYING, 0},
 	// end of OS_ definitions
 	// these also use values that aren't in enums.h
 	{ "MOVIE_PRE_FICTION", MOVIE_PRE_FICTION, 0 },
