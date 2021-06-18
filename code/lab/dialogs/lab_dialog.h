@@ -3,6 +3,8 @@
 #include "lab/wmcgui.h"
 #include "lab/labv2.h"
 
+class DialogOpener;
+
 class LabDialog {
 public:
 	// Called when this dialog is opened via the top toolbar
@@ -19,13 +21,17 @@ public:
 
 	// Returns true if it is safe to open this dialog
 	virtual bool safeToOpen(LabMode labMode) = 0;
+
+	void setOpener(const DialogOpener* opener) { Opener = opener; }
+protected:
+	const DialogOpener *Opener = nullptr;
 };
 
 // This is a base class for Windows opened by the various dialogs. Since dialogs exist even when their Windows are closed,
 // this introduces the concept of an "Owner", who gets notified when the DialogWindow is closed.
 class DialogWindow : public Window {
 public:
-	void SetOwner(LabDialog* owner) { Owner = owner; }
+	void SetOwner(std::shared_ptr<LabDialog> owner) { Owner = owner; }
 	DialogWindow(const SCP_string& in_caption, int x_coord, int y_coord, int x_width = -1, int y_height = -1, int in_style = 0) :
 		Window(in_caption, x_coord, y_coord, x_width, y_height, in_style) {
 	}
@@ -35,5 +41,5 @@ public:
 			Owner->close();
 	}
 private:
-	LabDialog* Owner = nullptr;
+	std::shared_ptr<LabDialog> Owner;
 };

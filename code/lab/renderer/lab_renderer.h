@@ -68,7 +68,7 @@ enum class TextureOverride {
 
 class LabRenderer {
 public:
-	LabRenderer(LabCamera* cam) {
+	LabRenderer() {
 		bloomLevel = gr_bloom_intensity();
 		ambientFactor = Cmdline_ambient_factor;
 		directionalFactor = static_light_factor;
@@ -77,7 +77,7 @@ public:
 		currentTeamColor = "<none>";
 		useBackground("None");
 
-		labCamera = cam;
+		labCamera = std::make_unique<OrbitCamera>();
 
 		Viewer_mode |= VM_FREECAMERA;
 
@@ -157,8 +157,8 @@ public:
 
 	void resetTextureOverride() {};
 
-	LabCamera* getCurrentCamera();
-	void setCurrentCamera(LabCamera* newcam);
+	std::unique_ptr<LabCamera> &getCurrentCamera();
+	void setCurrentCamera(std::unique_ptr<LabCamera> &newcam);
 
 private:
 	flagset<LabRenderFlag> renderFlags;
@@ -169,7 +169,7 @@ private:
 	SCP_string currentTeamColor;
 	SCP_string currentMissionBackground;
 
-	LabCamera* labCamera;
+	std::unique_ptr<LabCamera> labCamera;
 
 	float cameraDistance;
 

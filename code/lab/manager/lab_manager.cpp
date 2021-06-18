@@ -19,21 +19,23 @@ void lab_exit(Button* /*caller*/) {
 }
 
 LabManager::LabManager() {
-	Screen = GUI_system.PushScreen(new GUIScreen("Lab"));
+	Screen.reset(GUI_system.PushScreen(new GUIScreen("Lab")));
 	Toolbar = (Window*)Screen->Add(new Window("Toolbar", gr_screen.center_offset_x, gr_screen.center_offset_y,
 		-1, -1, WS_NOTITLEBAR | WS_NONMOVEABLE));
 
-	Renderer = new LabRenderer(new OrbitCamera());
+	Renderer = std::make_unique<LabRenderer>();
 
-	Dialogs.push_back(new ShipClasses());
-	Dialogs.push_back(new WeaponClasses());
-	Dialogs.push_back(new BackgroundDialog());
-	Dialogs.push_back(new Actions());
-	Dialogs.push_back(new RenderOptions());
+	Dialogs.emplace_back(std::make_shared<ShipClasses>());
+	Dialogs.emplace_back(std::make_shared<WeaponClasses>());
+	Dialogs.emplace_back(std::make_shared<BackgroundDialog>());
+	Dialogs.emplace_back(std::make_shared<Actions>());
+	Dialogs.emplace_back(std::make_shared<RenderOptions>());
 
 	int x = 0;
 	for (auto dialog : Dialogs) {
-		auto cbp = Toolbar->AddChild(new DialogOpener(dialog, x, 0));
+		auto *dgo = new DialogOpener(dialog, x, 0);
+		dialog->setOpener(dgo);
+		auto *cbp = Toolbar->AddChild(dgo);
 		x += cbp->GetWidth() + 10;
 	}
 
@@ -83,6 +85,12 @@ LabManager::LabManager() {
 	teamp->num_weapon_choices = static_cast<int>(Weapon_info.size());
 
 	Game_mode |= GM_LAB;
+}
+
+LabManager::~LabManager()
+{
+	obj_delete_all();
+	Toolbar = nullptr;
 }
 
 void LabManager::onFrame(float frametime) {
@@ -295,8 +303,10 @@ void LabManager::changeDisplayedObject(LabMode mode, int info_index) {
 	CurrentMode = mode;
 	CurrentClass = info_index;
 
-	if (CurrentObject != -1)
+	if (CurrentObject != -1) {
 		obj_delete_all();
+		CurrentObject = -1;
+	}
 
 	switch (CurrentMode) {
 	case LabMode::Ship:
@@ -310,11 +320,14 @@ void LabManager::changeDisplayedObject(LabMode mode, int info_index) {
 		}
 		break;
 	default:
+		UNREACHABLE("Unhandled lab mode %d", (int)mode);
 		ModelFilename = "";
 		break;
 	}
-	
-	for (auto const& dialog : Dialogs) {
+
+	Assert(CurrentObject != -1);
+
+	for (auto dialog : Dialogs) {
 		dialog->update(CurrentMode, CurrentClass);
 	}
 

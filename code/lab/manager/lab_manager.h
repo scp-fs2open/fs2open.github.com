@@ -18,6 +18,7 @@ FLAG_LIST(ManagerFlags) {
 class LabManager {
 public:
 	LabManager();
+	~LabManager();
 
 	// Do rendering and handle keyboard/mouse events
 	void onFrame(float frametime);
@@ -27,18 +28,11 @@ public:
 	void changeDisplayedObject(LabMode type, int info_index);
 
 	void close() {
-		if (CurrentObject != -1)
-			obj_delete(CurrentObject);
-		CurrentObject = -1;
-
 		for (auto d : Dialogs) {
 			d->close();
 		}
 
 		LabRenderer::close();
-
-		delete Screen;
-		Screen = nullptr;
 
 		Game_mode &= ~GM_LAB;
 
@@ -47,9 +41,10 @@ public:
 		gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
 	}
 
-	GUIScreen* Screen;
+	std::unique_ptr<GUIScreen> Screen;
+	// points to an object inside Screen, so we can't use smart pointer
 	Window* Toolbar;
-	LabRenderer* Renderer;
+	std::unique_ptr<LabRenderer> Renderer;
 
 	LabMode CurrentMode = LabMode::None;
 	int CurrentObject = -1;
@@ -88,7 +83,7 @@ public:
 
 	flagset<ManagerFlags> Flags;
 private:
-	SCP_vector<LabDialog*> Dialogs = {};
+	SCP_vector<std::shared_ptr<LabDialog>> Dialogs;
 
 	float Lab_thrust_len = 0.0f;
 	bool Lab_thrust_afterburn = false;

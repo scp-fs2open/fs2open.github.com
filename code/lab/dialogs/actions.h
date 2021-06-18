@@ -105,10 +105,10 @@ private:
 class Actions : public LabDialog {
 public:
 	Actions() {
-		subDialogs.push_back(new DestroySubsystems());
-		subDialogs.push_back(new ChangeLoadout());
-		subDialogs.push_back(new WeaponFire());
-		subDialogs.push_back(new AnimationTrigger());
+		subDialogs.emplace_back(std::make_shared<DestroySubsystems>());
+		subDialogs.emplace_back(std::make_shared<ChangeLoadout>());
+		subDialogs.emplace_back(std::make_shared<WeaponFire>());
+		subDialogs.emplace_back(std::make_shared<AnimationTrigger>());
 	}
 
 	// Called when this dialog is opened via the top toolbar
@@ -133,5 +133,5 @@ public:
 
 private:
 	DialogWindow* dialogWindow = nullptr;
-	SCP_vector<LabDialog*> subDialogs;
+	SCP_vector<std::shared_ptr<LabDialog>> subDialogs;
 };

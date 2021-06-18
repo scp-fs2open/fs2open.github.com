@@ -8,9 +8,9 @@
 class WeaponClasses : public LabDialog {
 public:
 	WeaponClasses() {
-		Subdialogs.push_back(new Descriptions());
-		Subdialogs.push_back(new Options());
-		Subdialogs.push_back(new Variables());
+		Subdialogs.emplace_back(std::make_shared<Descriptions>());
+		Subdialogs.emplace_back(std::make_shared<Options>());
+		Subdialogs.emplace_back(std::make_shared<Variables>());
 
 		dialogWindow = nullptr;
 		Class_toolbar = nullptr;
@@ -39,5 +39,5 @@ public:
 private:
 	DialogWindow* dialogWindow = nullptr;
 	DialogWindow* Class_toolbar = nullptr;
-	SCP_vector<LabDialog*> Subdialogs;
+	SCP_vector<std::shared_ptr<LabDialog>> Subdialogs;
 };
