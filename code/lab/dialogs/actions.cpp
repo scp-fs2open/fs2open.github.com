@@ -187,7 +187,7 @@ void Actions::open(Button* /*caller*/) {
 	dialogWindow->AddChild(btn);
 	y += btn->GetHeight();
 
-	for (auto dialog : subDialogs) {
+	for (auto &dialog : subDialogs) {
 		auto *dgo = new DialogOpener(dialog, 0, y);
 		dialog->setOpener(dgo);
 		dialogWindow->AddChild(dgo);
@@ -198,7 +198,7 @@ void Actions::open(Button* /*caller*/) {
 }
 
 void Actions::update(LabMode newLabMode, int classIndex) {
-	for (auto dialog : subDialogs) {
+	for (auto &dialog : subDialogs) {
 		dialog->update(newLabMode, classIndex);
 	}
 }

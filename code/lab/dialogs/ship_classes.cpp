@@ -56,7 +56,7 @@ void ShipClasses::update(LabMode newLabMode, int classIndex) {
 	Class_toolbar->DeleteChildren();
 
 	auto x = 0;
-	for (auto subdialog : Subdialogs) {
+	for (auto &subdialog : Subdialogs) {
 		auto *dgo = new DialogOpener(subdialog, x, 0);
 		subdialog->setOpener(dgo);
 		auto *cbp = Class_toolbar->AddChild(dgo);

@@ -32,7 +32,7 @@ LabManager::LabManager() {
 	Dialogs.emplace_back(std::make_shared<RenderOptions>());
 
 	int x = 0;
-	for (auto dialog : Dialogs) {
+	for (auto &dialog : Dialogs) {
 		auto *dgo = new DialogOpener(dialog, x, 0);
 		dialog->setOpener(dgo);
 		auto *cbp = Toolbar->AddChild(dgo);
@@ -327,7 +327,7 @@ void LabManager::changeDisplayedObject(LabMode mode, int info_index) {
 
 	Assert(CurrentObject != -1);
 
-	for (auto dialog : Dialogs) {
+	for (auto &dialog : Dialogs) {
 		dialog->update(CurrentMode, CurrentClass);
 	}
 

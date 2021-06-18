@@ -33,7 +33,6 @@ protected:
 // this introduces the concept of an "Owner", who gets notified when the DialogWindow is closed.
 class DialogWindow : public Window {
 public:
-	void SetOwner(std::shared_ptr<LabDialog> owner) { Owner = owner; }
 	DialogWindow(const SCP_string& in_caption, int x_coord, int y_coord, int x_width = -1, int y_height = -1, int in_style = 0) :
 		Window(in_caption, x_coord, y_coord, x_width, y_height, in_style) {
 	}
@@ -42,6 +41,12 @@ public:
 		if (Owner != nullptr)
 			Owner->close();
 	}
+
+	void SetOwner(std::shared_ptr<LabDialog> owner)
+	{
+		Owner = std::move(owner);
+	}
+
 private:
 	std::shared_ptr<LabDialog> Owner;
 };
