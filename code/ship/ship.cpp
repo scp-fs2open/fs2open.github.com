@@ -8967,10 +8967,10 @@ static void ship_auto_repair_frame(int shipnum, float frametime)
 	{
 		objp->hull_strength += sp->ship_max_hull_strength * sip->hull_repair_rate * frametime;
 
-		if(objp->hull_strength > sp->ship_max_hull_strength)
-		{
+		if (objp->hull_strength > sp->ship_max_hull_strength)
 			objp->hull_strength = sp->ship_max_hull_strength;
-		}
+		else if (objp->hull_strength < 0)
+			ship_hit_kill(objp, nullptr, nullptr, 0, 1);
 	}
 
 	// only allow for the auto-repair of subsystems on small ships
