@@ -20,6 +20,8 @@ public:
 		Class_toolbar = nullptr;
 	}
 
+	~ShipClasses() override = default;
+
 	SCP_string getTitle() override { return "Ship Classes"; }
 
 	bool safeToOpen(LabMode /*labMode*/) override { return true; }

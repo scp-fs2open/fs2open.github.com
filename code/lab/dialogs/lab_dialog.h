@@ -7,6 +7,8 @@ class DialogOpener;
 
 class LabDialog {
 public:
+	virtual ~LabDialog() = default;
+
 	// Called when this dialog is opened via the top toolbar
 	virtual void open(Button* caller) = 0;
 

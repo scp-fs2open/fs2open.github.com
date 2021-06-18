@@ -16,6 +16,8 @@ public:
 		Class_toolbar = nullptr;
 	}
 
+	~WeaponClasses() override = default;
+
 	SCP_string getTitle() override { return "Weapon Classes"; }
 
 	bool safeToOpen(LabMode /*labMode*/) override { return true; }

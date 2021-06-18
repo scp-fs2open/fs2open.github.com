@@ -5,7 +5,10 @@
 
 
 class DestroySubsystems : public LabDialog {
+public:
+	~DestroySubsystems() override = default;
 
+private:
 	// Called when this dialog is opened via the top toolbar
 	void open(Button* /*caller*/) override;
 
@@ -31,7 +34,10 @@ private:
 };
 
 class ChangeLoadout : public LabDialog {
+public:
+	~ChangeLoadout() override = default;
 
+private:
 	// Called when this dialog is opened via the top toolbar
 	void open(Button* /*caller*/) override;
 
@@ -57,7 +63,10 @@ private:
 };
 
 class WeaponFire : public LabDialog {
+public:
+	~WeaponFire() override = default;
 
+private:
 	// Called when this dialog is opened via the top toolbar
 	void open(Button* /*caller*/) override;
 
@@ -83,6 +92,10 @@ private:
 };
 
 class AnimationTrigger : public LabDialog {
+public:
+	~AnimationTrigger() override = default;
+
+private:
 	// Called when this dialog is opened via the top toolbar
 	void open(Button* /*caller*/) override;
 
@@ -110,6 +123,8 @@ public:
 		subDialogs.emplace_back(std::make_shared<WeaponFire>());
 		subDialogs.emplace_back(std::make_shared<AnimationTrigger>());
 	}
+
+	~Actions() override = default;
 
 	// Called when this dialog is opened via the top toolbar
 	void open(Button* /*caller*/) override;

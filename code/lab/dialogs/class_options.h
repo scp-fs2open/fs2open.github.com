@@ -9,6 +9,10 @@ struct lab_flag {
 };
 
 class Options : public LabDialog {
+public:
+	~Options() override = default;
+
+private:
 	// Called when this dialog is opened via the top toolbar
 	void open(Button* /*caller*/) override;
 
