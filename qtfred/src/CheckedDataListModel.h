@@ -17,8 +17,8 @@ class CheckedDataListModel : public QAbstractListModel
 		bool _checked;
 		Qt::GlobalColor _color;
 
-		BaseRowData(const QString &text, bool checked, Qt::GlobalColor bgColor) :
-			_text(text),
+		BaseRowData(QString text, bool checked, Qt::GlobalColor bgColor) :
+			_text(std::move(text)),
 			_checked(checked),
 			_color(bgColor)
 		{}
@@ -32,7 +32,7 @@ class CheckedDataListModel : public QAbstractListModel
 			_internalData(internalData)
 		{}
 
-		explicit RowData(RowData&& move) = default;
+		explicit RowData(RowData&& move) noexcept = default;
 		RowData& operator=(RowData&& move) = delete;
 
 		inline U& internalData() {return _internalData;}
@@ -47,15 +47,15 @@ class CheckedDataListModel : public QAbstractListModel
 			_internalData(std::move(internalData))
 		{}
 
-		explicit RowData(RowData&& move) = default;
+		explicit RowData(RowData&& move) noexcept = default;
 		RowData& operator=(RowData&& move) = delete;
 
 		inline U& internalData() {return *_internalData;}
 	};
 
+public:
 	CheckedDataListModel(QObject *parent) = delete;
 
-public:
 	template<typename Container>
 	CheckedDataListModel(const Container &c,
 						 void (*emplacerFn)(const typename Container::const_iterator &it, CheckedDataListModel<T> &model),
@@ -145,7 +145,7 @@ public:
 		return checkeds;
 	}
 
-	inline const SCP_unordered_set<const T*> getCheckedDataConst() const {
+	inline const SCP_unordered_set<const T*>& getCheckedDataConst() const {
 		return checkedsConst;
 	}
 
