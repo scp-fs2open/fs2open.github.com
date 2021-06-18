@@ -23,7 +23,7 @@ LabManager::LabManager() {
 	Toolbar = (Window*)Screen->Add(new Window("Toolbar", gr_screen.center_offset_x, gr_screen.center_offset_y,
 		-1, -1, WS_NOTITLEBAR | WS_NONMOVEABLE));
 
-	Renderer = std::make_unique<LabRenderer>();
+	Renderer.reset(new LabRenderer());
 
 	Dialogs.emplace_back(std::make_shared<ShipClasses>());
 	Dialogs.emplace_back(std::make_shared<WeaponClasses>());

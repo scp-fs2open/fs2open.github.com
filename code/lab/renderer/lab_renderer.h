@@ -77,7 +77,7 @@ public:
 		currentTeamColor = "<none>";
 		useBackground("None");
 
-		labCamera = std::make_unique<OrbitCamera>();
+		labCamera.reset(new OrbitCamera());
 
 		Viewer_mode |= VM_FREECAMERA;
 
