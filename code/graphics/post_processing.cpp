@@ -195,6 +195,15 @@ SCP_vector<graphics::post_effect_t>& PostProcessingManager::getPostEffects() { r
 const lightshaft_parameters& PostProcessingManager::getLightshaftParams() const { return m_lightshaftParams; }
 lightshaft_parameters& PostProcessingManager::getLightshaftParams() { return m_lightshaftParams; }
 
+bool PostProcessingManager::bloomShadersOk() const
+{
+	return m_bloomShadersOk;
+}
+
+void PostProcessingManager::setBloomShadersOk(bool ok)
+{
+	m_bloomShadersOk = ok;
+}
 } // namespace graphics
 
 bool gr_lightshafts_enabled()
