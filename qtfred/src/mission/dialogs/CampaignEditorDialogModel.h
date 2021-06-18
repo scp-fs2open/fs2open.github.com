@@ -150,8 +150,8 @@ private:
 
 	struct CampaignMissionData {
 		CampaignMissionData() = delete;
-		CampaignMissionData(const QString &file, const cmission &cm);
-		CampaignMissionData(const QString &file);
+		CampaignMissionData(QString file, const cmission &cm);
+		CampaignMissionData(QString file);
 
 		static void initMissions(
 				const SCP_vector<SCP_string>::const_iterator &m_it,

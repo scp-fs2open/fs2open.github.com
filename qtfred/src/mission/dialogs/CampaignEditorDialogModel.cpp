@@ -115,8 +115,8 @@ void CampaignEditorDialogModel::CampaignBranchData::connect(const SCP_unordered_
 		type = NEXT;
 }
 
-CampaignEditorDialogModel::CampaignMissionData::CampaignMissionData(const QString &file, const cmission &cm) :
-	filename(file),
+CampaignEditorDialogModel::CampaignMissionData::CampaignMissionData(QString file, const cmission &cm) :
+	filename(std::move(file)),
 	briefingCutscene(cm.briefing_cutscene),
 	mainhall(cm.main_hall.c_str()),
 	debriefingPersona(QString::number(cm.debrief_persona_index))
@@ -130,8 +130,8 @@ CampaignEditorDialogModel::CampaignMissionData::CampaignMissionData(const QStrin
 		branches.emplace_back(CAR(it_cond_arm), filename);
 }
 
-CampaignEditorDialogModel::CampaignMissionData::CampaignMissionData(const QString &file) :
-	filename(file)
+CampaignEditorDialogModel::CampaignMissionData::CampaignMissionData(QString file) :
+	filename(std::move(file))
 {
 
 }
@@ -262,7 +262,7 @@ void CampaignEditorDialogModel::setCurBr(const CampaignBranchData *br) {
 bool CampaignEditorDialogModel::_saveTo(QString file) {
 	if (file.isEmpty())
 		return false;
-	//auto path = qPrintable(file.replace('/',DIR_SEPARATOR_CHAR));
+	qPrintable(file.replace('/',DIR_SEPARATOR_CHAR));
 
 	return false;
 }

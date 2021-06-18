@@ -58,9 +58,7 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget *parent, EditorViewport *view
 	updateUI();
 }
 
-CampaignEditorDialog::~CampaignEditorDialog()
-{
-}
+CampaignEditorDialog::~CampaignEditorDialog() = default;
 
 void CampaignEditorDialog::setModel(CampaignEditorDialogModel *new_model) {
 	if (new_model)
@@ -186,7 +184,7 @@ void CampaignEditorDialog::fileNew() {
 	if (! questionSaveChanges())
 		return;
 
-	QAction *act = qobject_cast<QAction*>(sender());
+	auto *act = qobject_cast<QAction*>(sender());
 
 	setModel(new CampaignEditorDialogModel(this, _viewport, "", act ? act->text() : ""));
 	updateUI();
