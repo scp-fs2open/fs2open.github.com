@@ -2549,7 +2549,7 @@ void gr_flip(bool execute_scripting)
 
 	// m!m avoid running CHA_ONFRAME when the "Quit mission" popup is shown. See mantis 2446 for reference
 	// Cyborg - A similar bug will occur when a mission is restarted so check for that, too.
-	if (execute_scripting && !popup_active() && GameState_Stack_Valid() && !((gameseq_get_state() == GS_STATE_GAME_PLAY) && !(Game_mode & GM_IN_MISSION))) {
+	if (execute_scripting && !popup_active() && !((gameseq_get_state() == GS_STATE_GAME_PLAY) && !(Game_mode & GM_IN_MISSION))) {
 		TRACE_SCOPE(tracing::LuaOnFrame);
 
 		// WMC - Do conditional hooks. Yippee!
