@@ -20,27 +20,29 @@ static QStringList initCutscenes() {
 
 static QStringList initMainhalls() {
 	QStringList ret;
-	for (auto& vec_mh: Main_hall_defines)
+	for (auto& vec_mh: Main_hall_defines) {
 		for (auto& mh: vec_mh){
 			QString name{ mh.name.c_str() };
 			if (! ret.contains(name))
 				ret << name;
 		}
+}
 	return ret;
 }
 
 static QStringList initDebriefingPersonas() {
 	QStringList ret{""};
-	for (auto& rn: Ranks)
+	for (auto& rn: Ranks) {
 		for (auto& p: rn.promotion_text){
 			QString persona{ QString::number(p.first) };
 			if (p.first >= 0 && ! ret.contains(persona))
 				ret << persona;
 		}
+}
 	return ret;
 }
 
-static const QString loadFile(QString file, const QString& campaignType) {
+static QString loadFile(QString file, const QString& campaignType) {
 	if (file.isEmpty()) {
 		mission_campaign_clear();
 		Campaign.type = campaignType.isEmpty() ? CAMPAIGN_TYPE_SINGLE :
@@ -56,23 +58,26 @@ static const QString loadFile(QString file, const QString& campaignType) {
 
 static void initShips(const SCP_vector<ship_info>::const_iterator &s_it, CheckedDataListModel<std::ptrdiff_t> &model){
 	std::ptrdiff_t shpIdx{ std::distance(Ship_info.cbegin(), s_it) };
-	if (s_it->flags[Ship::Info_Flags::Player_ship])
+	if (s_it->flags[Ship::Info_Flags::Player_ship]) {
 		model.initRow(
 				s_it->name,
 				shpIdx,
 				static_cast<bool>(Campaign.ships_allowed[static_cast<size_t>(shpIdx)]));
 }
+}
 
 static void initWeps(const SCP_vector<weapon_info>::const_iterator &w_it, CheckedDataListModel<std::ptrdiff_t> &model){
 	std::ptrdiff_t wepIdx{ std::distance(Weapon_info.cbegin(), w_it) };
-	for (const ship_info& shp: Ship_info)
+	for (const ship_info& shp: Ship_info) {
 		if (shp.flags[Ship::Info_Flags::Player_ship]
 			&& shp.allowed_weapons[static_cast<size_t>(wepIdx)]
-			&& !model.contains(w_it->name))
+			&& !model.contains(w_it->name)) {
 			model.initRow(
 					w_it->name,
 					wepIdx,
 					static_cast<bool>(Campaign.weapons_allowed[static_cast<size_t>(wepIdx)]));
+}
+}
 }
 
 static SCP_vector<SCP_string> getMissions(){
@@ -154,12 +159,13 @@ void CampaignEditorDialogModel::CampaignMissionData::initMissions(
 	if (! ret_data->fredable)
 		QMessageBox::warning(nullptr, "Error loading mission", "Could not get info from mission: " + ret_data->filename +"\nFile corrupted?");
 
-	if(isCampaignCompatible(ret_data->fsoMission))
+	if(isCampaignCompatible(ret_data->fsoMission)) {
 		model.initRow(
 			filename,
 			ret_data,
 			cm_it != CMISSIONS_END,
 			ret_data->fredable ? Qt::color0 : Qt::red);
+}
 }
 
 CampaignEditorDialogModel::CampaignEditorDialogModel(CampaignEditorDialog* parent, EditorViewport* viewport, const QString &file, const QString& newCampaignType) :
@@ -177,7 +183,7 @@ CampaignEditorDialogModel::CampaignEditorDialogModel(CampaignEditorDialog* paren
 	_campaignDescr(Campaign.desc),
 	_campaignTechReset(Campaign.flags & CF_CUSTOM_TECH_DATABASE)
 {
-	for (int i=0; i<Campaign.num_missions; i++)
+	for (int i=0; i<Campaign.num_missions; i++) {
 		if (! missionData.contains(Campaign.missions[i].name)) {
 			CampaignMissionData* ptr{ new CampaignMissionData{Campaign.missions[i].name} };
 
@@ -187,6 +193,7 @@ CampaignEditorDialogModel::CampaignEditorDialogModel(CampaignEditorDialog* paren
 			missionData.initRow(Campaign.missions[i].name, ptr, true,
 							   loaded ? Qt::darkYellow : Qt::red);
 		}
+}
 	connectBranches();
 
 	connect(&initialShips, &QAbstractListModel::dataChanged, this, &CampaignEditorDialogModel::flagModified);
@@ -259,11 +266,12 @@ void CampaignEditorDialogModel::setCurBr(const CampaignBranchData *br) {
 	_parent->updateUIBranch();
 }
 
-bool CampaignEditorDialogModel::_saveTo(QString file) {
+//placeholder
+bool CampaignEditorDialogModel::_saveTo(QString file) const {
 	if (file.isEmpty())
 		return false;
 	qPrintable(file.replace('/',DIR_SEPARATOR_CHAR));
-
+	getCampaignDescr();
 	return false;
 }
 

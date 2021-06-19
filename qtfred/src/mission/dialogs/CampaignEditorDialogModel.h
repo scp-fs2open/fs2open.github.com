@@ -135,7 +135,7 @@ public slots:
 		modify<QString>(mnData_it->it_branches->loopData.voice, voice); }*/
 
 private:
-	bool _saveTo(QString file);
+	bool _saveTo(QString file) const;
 
 	bool modified{false};
 	template<typename T>

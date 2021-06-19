@@ -249,7 +249,7 @@ void CampaignEditorDialog::createTree(bool enabled) {
 
 	sxt.setEnabled(enabled);
 	sxt.clear_tree("");
-	if (enabled)
+	if (enabled) {
 		for (const Branch& br : model->getCurMnBranches()) {
 			NodeImage img;
 			if (br.type == Branch::NEXT_NOT_FOUND)
@@ -262,6 +262,7 @@ void CampaignEditorDialog::createTree(bool enabled) {
 			h->setData(0, Qt::UserRole, QVariant::fromValue(&br));
 			sxt.add_sub_tree(sxt.load_sub_tree(br.sexp, true, "do-nothing"), h);
 		}
+}
 }
 
 void CampaignEditorDialog::btnBranchUpClicked() {
