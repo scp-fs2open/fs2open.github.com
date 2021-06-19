@@ -4,6 +4,7 @@
 #include "ui/util/SignalBlockers.h"
 #include <QFileDialog>
 #include <QStringListModel>
+#include <ui/FredView.h>
 
 
 Q_DECLARE_METATYPE(const fso::fred::dialogs::CampaignEditorDialogModel::CampaignBranchData*)
@@ -38,7 +39,11 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget *parent, EditorViewport *view
 	connect(ui->btnBrLoopVoice, &QPushButton::clicked, this, &CampaignEditorDialog::btnBrLoopVoiceClicked);
 	connect(ui->btnRealign, &QPushButton::clicked, this, &CampaignEditorDialog::btnRealignClicked);
 	connect(ui->btnErrorChecker, &QPushButton::clicked, this, &CampaignEditorDialog::btnErrorCheckerClicked);
-	connect(ui->btnFredMission, &QPushButton::clicked, this, &CampaignEditorDialog::btnFredMissionClicked);
+	connect(ui->btnFredMission, &QPushButton::clicked, this, [&](){
+		reject();
+		if(result() == Rejected)
+			qobject_cast<FredView*>(_parent)->loadMissionFile(model->getCurMnFilename());
+	});
 	connect(ui->btnExit, &QPushButton::clicked, this, &CampaignEditorDialog::reject);
 
 	QMenu *menFile { new QMenu(this) };
@@ -194,7 +199,6 @@ void CampaignEditorDialog::fileOpen() {
 	if (! questionSaveChanges())
 		return;
 
-
 	QString pathName = QFileDialog::getOpenFileName(this, tr("Load campaign"), model->campaignFile, tr("FS2 campaigns (*.fc2)"));
 
 	auto newModel = new CampaignEditorDialogModel(this, _viewport, pathName);
@@ -284,9 +288,6 @@ void CampaignEditorDialog::btnRealignClicked() {
 
 }
 
-void CampaignEditorDialog::btnFredMissionClicked() {
-
-}
 
 
 }

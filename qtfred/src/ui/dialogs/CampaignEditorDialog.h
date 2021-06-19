@@ -64,7 +64,6 @@ private slots:
 
 	void btnErrorCheckerClicked();
 	void btnRealignClicked();
-	void btnFredMissionClicked();
 };
 
 }
