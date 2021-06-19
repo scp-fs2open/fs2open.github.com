@@ -1750,7 +1750,6 @@ void game_init()
 	}
 
 #endif
-	script_init();			//WMC
 
 	font::init();					// loads up all fonts
 	
@@ -1902,6 +1901,7 @@ void game_init()
 		main_hall_table_init();
 	}
 
+	script_init();			//WMC
 	// Initialize dynamic SEXPs
 	sexp::dynamic_sexp_init();
 
