@@ -89,6 +89,10 @@ LabManager::LabManager() {
 
 LabManager::~LabManager()
 {
+	for (auto &dialog : Dialogs) {
+		dialog->close();
+	}
+
 	obj_delete_all();
 	Toolbar = nullptr;
 }

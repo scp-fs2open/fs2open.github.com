@@ -28,10 +28,6 @@ public:
 	void changeDisplayedObject(LabMode type, int info_index);
 
 	void close() {
-		for (auto &dialog : Dialogs) {
-			dialog->close();
-		}
-
 		LabRenderer::close();
 
 		Game_mode &= ~GM_LAB;
