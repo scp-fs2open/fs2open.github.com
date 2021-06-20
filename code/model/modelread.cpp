@@ -226,11 +226,11 @@ void model_unload(int modelnum, int force)
 		vm_free(pm->shield.tris);
 	}
 
-	if (pm->gun_banks) {
+	if (pm->gun_banks) {	// NOLINT
 		delete[] pm->gun_banks;
 	}
 
-	if (pm->missile_banks) {
+	if (pm->missile_banks) {	// NOLINT
 		delete[] pm->missile_banks;
 	}
 

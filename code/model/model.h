@@ -400,12 +400,9 @@ struct w_bank
 
 	~w_bank()
 	{
-		if (pnt)
-			delete[] pnt;
-		if (norm)
-			delete[] norm;
-		if (external_model_angle_offset)
-			delete[] external_model_angle_offset;
+		delete[] pnt;
+		delete[] norm;
+		delete[] external_model_angle_offset;
 	}
 };
 
