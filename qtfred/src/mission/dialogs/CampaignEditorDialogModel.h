@@ -19,6 +19,9 @@ class CampaignEditorDialogModel : public AbstractDialogModel
 	Q_OBJECT
 public:
 	struct CampaignLoopData	{
+		CampaignLoopData() = default;
+		CampaignLoopData(const cmission *loop);
+		bool is{false};
 
 		QString descr;
 		QString anim;
@@ -27,7 +30,7 @@ public:
 
 	struct CampaignBranchData {
 		explicit CampaignBranchData() = default;
-		CampaignBranchData(const int &sexp_branch, const QString &from);
+		CampaignBranchData(const int &sexp_branch, const QString &from, const cmission *loop = nullptr);
 
 		void connect(const SCP_unordered_set<const CampaignMissionData*>& missions);
 
@@ -39,7 +42,7 @@ public:
 
 		QString next;
 
-		std::unique_ptr<CampaignLoopData> loopData{nullptr};
+		CampaignLoopData loop;
 	};
 
 	CampaignEditorDialogModel(CampaignEditorDialog *parent, EditorViewport *viewport, const QString &file = "", const QString& newCampaignType = "");
@@ -64,8 +67,6 @@ public:
 
 private:
 	inline const CampaignMissionData& getCurMn() const { return mnData_it ? *mnData_it : mdEmpty; }
-	inline const CampaignBranchData& getCurBr() const {
-		return mnData_it && mnData_it->brData_it ? *mnData_it->brData_it : CampaignMissionData::bdEmpty; }
 
 public:
 	inline const QString& getCurMnFilename() const { return getCurMn().filename; }
@@ -78,16 +79,18 @@ public:
 	inline const QString& getCurMnDebriefingPersona() const { return getCurMn().debriefingPersona; }
 
 	inline const SCP_vector<CampaignBranchData>& getCurMnBranches() const {	return getCurMn().branches;	}
+	inline bool isCurBrSelected() const { return mnData_it && mnData_it->brData_it; };
+private:
+	inline const CampaignBranchData& getCurBr() const {
+		return isCurBrSelected() ? *mnData_it->brData_it : CampaignMissionData::bdEmpty; }
 
-	inline bool getCurBrIsLoop() const { return getCurBr().loopData.get(); }
+public:
+	inline bool getCurBrIsLoop() const { return getCurBr().loop.is; }
 	inline const QString& getCurBrNext() const { return getCurBr().next; }
 
-	/*inline const QString& getCurLoopDescr() const {
-		return (mnData_it ? mnData_it : &mdEmpty)->it_branches->loopData.descr; }
-	inline const QString& getCurLoopAnim() const {
-		return (mnData_it ? mnData_it : &mdEmpty)->it_branches->loopData.anim; }
-	inline const QString& getCurLoopVoice() const {
-		return (mnData_it ? mnData_it : &mdEmpty)->it_branches->loopData.voice; }*/
+	inline const QString& getCurLoopDescr() const {	return getCurBr().loop.descr; }
+	inline const QString& getCurLoopAnim() const { return getCurBr().loop.anim; }
+	inline const QString& getCurLoopVoice() const {	return getCurBr().loop.voice; }
 
 	bool saveTo(const QString &file);
 
@@ -119,20 +122,20 @@ public slots:
 		if (! mnData_it) return;
 		modify<QString>(mnData_it->debriefingPersona, debriefingPersona); }
 
-	void setCurBr(const CampaignBranchData *br);
+	void selectCurBr(const CampaignBranchData *br);
 
-	/*inline void setCurBrIsLoop(bool isLoop) {
-		if (! mnData_it) return;
-		modify<bool>(mnData_it->it_branches->isLoop, isLoop);}
+	inline void setCurBrIsLoop(bool isLoop) {
+		if (! (mnData_it && mnData_it->brData_it)) return;
+		modify<bool>(mnData_it->brData_it->loop.is, isLoop);}
 	inline void setCurLoopDescr(const QString &descr) {
-		if (! mnData_it) return;
-		modify<QString>(mnData_it->it_branches->loopData.descr, descr); }
+		if (! (mnData_it && mnData_it->brData_it)) return;
+		modify<QString>(mnData_it->brData_it->loop.descr, descr); }
 	inline void setCurLoopAnim(const QString &anim) {
-		if (! mnData_it) return;
-		modify<QString>(mnData_it->it_branches->loopData.anim, anim); }
+		if (! (mnData_it && mnData_it->brData_it)) return;
+		modify<QString>(mnData_it->brData_it->loop.anim, anim); }
 	inline void setCurLoopVoice(const QString &voice) {
-		if (! mnData_it) return;
-		modify<QString>(mnData_it->it_branches->loopData.voice, voice); }*/
+		if (! (mnData_it && mnData_it->brData_it)) return;
+		modify<QString>(mnData_it->brData_it->loop.voice, voice); }
 
 private:
 	bool _saveTo(QString file) const;
@@ -169,6 +172,9 @@ private:
 		static const CampaignBranchData bdEmpty;
 		CampaignBranchData *brData_it{nullptr};
 		SCP_vector<CampaignBranchData> branches;
+
+	private:
+		void branchesFromFormula(int formula, const cmission *loop = nullptr);
 	};
 
 	QStringList droppedMissions{};

@@ -94,12 +94,19 @@ static inline bool isCampaignCompatible(const mission &fsoMission){
 			|| (Campaign.type == CAMPAIGN_TYPE_MULTI_TEAMS && fsoMission.game_type & MISSION_TYPE_MULTI_TEAMS);
 }
 
-const SCP_map<CampaignEditorDialogModel::CampaignBranchData::BranchType, QString> CampaignEditorDialogModel::CampaignBranchData::branchTexts{
-	{INVALID, ""}, {REPEAT, "Repeat mission "}, {NEXT, "Branch to "}, {NEXT_NOT_FOUND, "Branch to "}, {END, "End of Campaign"}
-};
+CampaignEditorDialogModel::CampaignLoopData::CampaignLoopData(const cmission *loop) :
+	is(loop)
+{
+	if (loop) {
+		descr = loop->mission_branch_desc;
+		anim = loop->mission_branch_brief_anim;
+		voice = loop->mission_branch_brief_sound;
+	}
+}
 
-CampaignEditorDialogModel::CampaignBranchData::CampaignBranchData(const int &sexp_branch, const QString &from) :
-	sexp(CAR(sexp_branch))
+CampaignEditorDialogModel::CampaignBranchData::CampaignBranchData(const int &sexp_branch, const QString &from, const cmission *_loop) :
+	sexp(CAR(sexp_branch)),
+	loop(_loop)
 {
 	int node_next = CADR(sexp_branch);
 	if (!stricmp(CTEXT(node_next), "end-of-campaign")) {
@@ -120,19 +127,19 @@ void CampaignEditorDialogModel::CampaignBranchData::connect(const SCP_unordered_
 		type = NEXT;
 }
 
+
+const SCP_map<CampaignEditorDialogModel::CampaignBranchData::BranchType, QString> CampaignEditorDialogModel::CampaignBranchData::branchTexts{
+	{INVALID, ""}, {REPEAT, "Repeat mission "}, {NEXT, "Branch to "}, {NEXT_NOT_FOUND, "Branch to "}, {END, "End of Campaign"}
+};
+
 CampaignEditorDialogModel::CampaignMissionData::CampaignMissionData(QString file, const cmission &cm) :
 	filename(std::move(file)),
 	briefingCutscene(cm.briefing_cutscene),
 	mainhall(cm.main_hall.c_str()),
 	debriefingPersona(QString::number(cm.debrief_persona_index))
 {
-	if ( cm.formula < 0 || stricmp(CTEXT(cm.formula), "cond"))
-		return;
-
-	for (int it_cond_arm = CDR(cm.formula);
-		 it_cond_arm != -1;
-		 it_cond_arm = CDR(it_cond_arm) )
-		branches.emplace_back(CAR(it_cond_arm), filename);
+	branchesFromFormula(cm.formula);
+	branchesFromFormula(cm.mission_loop_formula, &cm);
 }
 
 CampaignEditorDialogModel::CampaignMissionData::CampaignMissionData(QString file) :
@@ -143,8 +150,8 @@ CampaignEditorDialogModel::CampaignMissionData::CampaignMissionData(QString file
 
 void CampaignEditorDialogModel::CampaignMissionData::initMissions(
 		const SCP_vector<SCP_string>::const_iterator &m_it,
-		CheckedDataListModel<CampaignEditorDialogModel::CampaignMissionData> &model){
-
+		CheckedDataListModel<CampaignEditorDialogModel::CampaignMissionData> &model)
+{
 	const QString filename{ QString::fromStdString(*m_it).append(".fs2") };
 	const cmission *cm_it{
 		std::find_if(Campaign.missions, CMISSIONS_END,
@@ -165,7 +172,17 @@ void CampaignEditorDialogModel::CampaignMissionData::initMissions(
 			ret_data,
 			cm_it != CMISSIONS_END,
 			ret_data->fredable ? Qt::color0 : Qt::red);
+	}
 }
+
+void CampaignEditorDialogModel::CampaignMissionData::branchesFromFormula(int formula, const cmission *loop) {
+	if ( formula < 0 || stricmp(CTEXT(formula), "cond"))
+		return;
+
+	for (int it_cond_arm = CDR(formula);
+		 it_cond_arm != -1;
+		 it_cond_arm = CDR(it_cond_arm) )
+		branches.emplace_back(CAR(it_cond_arm), filename, loop);
 }
 
 CampaignEditorDialogModel::CampaignEditorDialogModel(CampaignEditorDialog* parent, EditorViewport* viewport, const QString &file, const QString& newCampaignType) :
@@ -260,7 +277,7 @@ void CampaignEditorDialogModel::missionSelectionChanged(const QModelIndex &chang
 	_parent->updateUI();
 }
 
-void CampaignEditorDialogModel::setCurBr(const CampaignBranchData *br) {
+void CampaignEditorDialogModel::selectCurBr(const CampaignBranchData *br) {
 	if (! mnData_it) return;
 	mnData_it->brData_it = const_cast<CampaignBranchData*>(br);
 	_parent->updateUIBranch();

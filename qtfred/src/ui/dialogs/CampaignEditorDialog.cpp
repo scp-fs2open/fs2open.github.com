@@ -96,10 +96,10 @@ void CampaignEditorDialog::setModel(CampaignEditorDialogModel *new_model) {
 		QTreeWidgetItem *parent;
 		while ((parent = selected->parent()))
 			selected = parent;
-		model->setCurBr(selected->data(0, Qt::UserRole).value<const CampaignEditorDialogModel::CampaignBranchData*>());
+		model->selectCurBr(selected->data(0, Qt::UserRole).value<const CampaignEditorDialogModel::CampaignBranchData*>());
 	});
 
-	/*connect(ui->btnBranchLoop, &QPushButton::toggled, model.get(), [&](bool checked) {
+	connect(ui->btnBranchLoop, &QPushButton::toggled, model.get(), [&](bool checked) {
 		model->setCurBrIsLoop(checked);
 	});
 	connect(ui->txaLoopDescr, &QPlainTextEdit::textChanged, model.get(), [&]() {
@@ -107,7 +107,7 @@ void CampaignEditorDialog::setModel(CampaignEditorDialogModel *new_model) {
 		model->setCurLoopDescr(ui->txaLoopDescr->toPlainText());
 	});
 	connect(ui->txtLoopAnim, &QLineEdit::textChanged, model.get(), &CampaignEditorDialogModel::setCurLoopAnim);
-	connect(ui->txtLoopVoice, &QLineEdit::textChanged, model.get(), &CampaignEditorDialogModel::setCurLoopVoice);*/
+	connect(ui->txtLoopVoice, &QLineEdit::textChanged, model.get(), &CampaignEditorDialogModel::setCurLoopVoice);
 
 	connect(model.get(), &AbstractDialogModel::modelChanged, this, &CampaignEditorDialog::updateUI);
 }
@@ -155,16 +155,23 @@ void CampaignEditorDialog::updateUI() {
 }
 
 void CampaignEditorDialog::updateUIBranch() {
+	bool sel = model->isCurBrSelected();
+	bool loop = model->getCurBrIsLoop();
 
-	//ui->btnBranchUp->setEnabled()
-	//ui->btnBranchDown->setEnabled()
-	//ui->btnBranchLoop->setEnabled()
+	ui->btnBranchUp->setEnabled(sel);
+	ui->btnBranchDown->setEnabled(sel);
 
-	/*ui->txaLoopDescr->setPlainText(model->getCurLoopDescr());
+	ui->btnBranchLoop->setEnabled(sel);
+	ui->btnBranchLoop->setChecked(loop);
+
+	ui->txaLoopDescr->setPlainText(model->getCurLoopDescr());
+	ui->txaLoopDescr->setEnabled(loop);
+
 	ui->txtLoopAnim->setText(model->getCurLoopAnim());
-	ui->btnBrLoopAnim->setEnabled()
+	ui->btnBrLoopAnim->setEnabled(loop);
+
 	ui->txtLoopVoice->setText(model->getCurLoopVoice());
-	ui->btnBrLoopVoice->setEnabled()*/
+	ui->btnBrLoopVoice->setEnabled(loop);
 }
 
 bool CampaignEditorDialog::questionSaveChanges() {
@@ -254,7 +261,7 @@ void CampaignEditorDialog::createTree(bool enabled) {
 			NodeImage img;
 			if (br.type == Branch::NEXT_NOT_FOUND)
 				img = NodeImage::ROOT_DIRECTIVE;
-			else if (br.loopData)
+			else if (br.loop.is)
 				img = NodeImage::ROOT;
 			else
 				img = NodeImage::BLACK_DOT;
