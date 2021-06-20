@@ -3,7 +3,7 @@
 #include "lab/manager/lab_manager.h"
 
 
-LabManager* getLabManager();
+const std::unique_ptr<LabManager> &getLabManager();
 
 class DialogOpener : public Button {
 public:
