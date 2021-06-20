@@ -80,11 +80,14 @@ static uint Global_checksum = 0;
 // compatible.  
 #define PM_OBJFILE_MAJOR_VERSION 30
 
+// 22.00 fixes the POF byte alignment and introduces the SLC2 chunk
 // 21.17 adds support for engine thruster banks linked to specific engine subsystems.
 // FreeSpace 2 shipped at POF version 21.17
 // Descent: FreeSpace shipped at POF version 20.14
 // See also https://wiki.hard-light.net/index.php/POF_data_structure
-#define PM_LATEST_VERSION	2117
+#define PM_LATEST_ALIGNED_VERSION	2200
+#define PM_LATEST_LEGACY_VERSION	2117
+#define PM_FIRST_ALIGNED_VERSION	2200
 
 static int Model_signature = 0;
 
@@ -1192,8 +1195,8 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 		Warning(LOCATION,"Bad version (%d) in model file <%s>",version,filename);
 		return 0;
 	}
-	if (version > PM_LATEST_VERSION) {
-		Warning(LOCATION, "Model file %s is version %d, but the latest supported version on this build of FSO is %d.  The model may not work correctly.", filename, version, PM_LATEST_VERSION);
+	if ((version > PM_LATEST_LEGACY_VERSION && version < PM_FIRST_ALIGNED_VERSION) || (version > PM_LATEST_ALIGNED_VERSION)) {
+		Warning(LOCATION, "Model file %s is version %d, but the latest supported version on this build of FSO is %d.  The model may not work correctly.", filename, version, version >= PM_FIRST_ALIGNED_VERSION ? PM_LATEST_ALIGNED_VERSION : PM_LATEST_LEGACY_VERSION);
 	}
 
 	pm->version = version;
@@ -1789,8 +1792,8 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 					}
 				}
 
-				//ShivanSpS - if pof version is 2118 or higher load bsp_data as it is, otherwise, align it
-				if (pm->version >= 2118)
+				//ShivanSpS - if pof version is 2200 or higher load bsp_data as it is, otherwise, align it
+				if (pm->version >= 2200)
 				{
 					pm->submodel[n].bsp_data_size = cfread_int(fp);
 					if (pm->submodel[n].bsp_data_size > 0) {
@@ -1841,8 +1844,8 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 			}
 
 			case ID_SLDC: // kazan - Shield Collision tree
-			{   //ShivanSpS - if pof version is 2118 or higher ignore SLDC, otherwise convert it to slc2.
-				if (pm->version < 2118) {
+			{   //ShivanSpS - if pof version is 2200 or higher ignore SLDC, otherwise convert it to slc2.
+				if (pm->version < 2200) {
 					//mprintf(("SLDC data is being converted to SLC2.\n"));
 					pm->sldc_size = cfread_int(fp);
 
@@ -1860,9 +1863,9 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 			}
 			break;
 
-			case ID_SLC2: // ShivanSpS -Newer version of the SLDC Shield Collision tree, only pof version 2118.
+			case ID_SLC2: // ShivanSpS -Newer version of the SLDC Shield Collision tree, only pof version 2200.
 			{
-				if (pm->version >= 2118) {
+				if (pm->version >= 2200) {
 					pm->sldc_size = cfread_int(fp);
 					pm->shield_collision_tree = (ubyte*)vm_malloc(pm->sldc_size);
 					cfread(pm->shield_collision_tree, 1, pm->sldc_size, fp);
