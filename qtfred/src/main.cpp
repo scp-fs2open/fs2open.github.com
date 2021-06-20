@@ -100,7 +100,7 @@ int main(int argc, char* argv[]) {
 	// Expect that the platform library is in the same directory
 	QCoreApplication::addLibraryPath(QCoreApplication::applicationDirPath());	
 
-	QGuiApplication::setApplicationDisplayName(app.tr("qtFRED v%1").arg(FS_VERSION_FULL));
+	QGuiApplication::setApplicationDisplayName(QApplication::tr("qtFRED v%1").arg(FS_VERSION_FULL));
 
 #ifndef NDEBUG
 	QLoggingCategory::defaultCategory()->setEnabled(QtDebugMsg, true);
@@ -120,50 +120,50 @@ int main(int argc, char* argv[]) {
 	auto baseDir = QDir::toNativeSeparators(QDir::current().absolutePath());
 
 	typedef std::unordered_map<SubSystem, QString> SubsystemMap;
-	SubsystemMap initializers = {{ SubSystem::OS,                app.tr("Initializing OS interface") },
-								 { SubSystem::CommandLine,       app.tr("Parsing command line") },
-								 { SubSystem::Timer,             app.tr("Initializing Timer") },
-								 { SubSystem::CFile,             app.tr("Initializing CFile") },
-								 { SubSystem::Locale,            app.tr("Initializing locale") },
-								 { SubSystem::Sound,             app.tr("Initializing sound") },
-								 { SubSystem::Graphics,          app.tr("Initializing graphics") },
-								 { SubSystem::Scripting,         app.tr("Initializing scripting") },
-								 { SubSystem::Fonts,             app.tr("Initializing Fonts") },
-								 { SubSystem::Keyboard,          app.tr("Initializing keyboard") },
-								 { SubSystem::Mouse,             app.tr("Initializing mouse") },
-								 { SubSystem::Particles,         app.tr("Initializing particles") },
-								 { SubSystem::Iff,               app.tr("Initializing IFF") },
-								 { SubSystem::Objects,           app.tr("Initializing objects") },
-								 { SubSystem::Models,            app.tr("Initializing model system") },
-								 { SubSystem::Species,           app.tr("Initializing species") },
-								 { SubSystem::BriefingIcons,     app.tr("Initializing briefing icons") },
-								 { SubSystem::HudCommOrders,     app.tr("Initializing HUD comm orders") },
-								 { SubSystem::AlphaColors,       app.tr("Initializing alpha colors") },
-								 { SubSystem::GameSound,         app.tr("Initializing briefing icons") },
-								 { SubSystem::MissionBrief,      app.tr("Initializing briefings") },
-								 { SubSystem::AI,                app.tr("Initializing AI") },
-								 { SubSystem::AIProfiles,        app.tr("Initializing AI profiles") },
-								 { SubSystem::Armor,             app.tr("Initializing armors") },
-								 { SubSystem::Weapon,            app.tr("Initializing weaponry") },
-								 { SubSystem::Medals,            app.tr("Initializing medals") },
-								 { SubSystem::Glowpoints,        app.tr("Initializing glow points") },
-								 { SubSystem::Ships,             app.tr("Initializing ships") },
-								 { SubSystem::Parse,             app.tr("Initializing parser") },
-								 { SubSystem::TechroomIntel,     app.tr("Initializing techroom intel") },
-								 { SubSystem::Nebulas,           app.tr("Initializing nebulas") },
-								 { SubSystem::Stars,             app.tr("Initializing stars") },
-								 { SubSystem::Ssm,               app.tr("Initializing SSMs") },
-								 { SubSystem::EventMusic,        app.tr("Initializing event music") },
+	SubsystemMap initializers = {{ SubSystem::OS,                QApplication::tr("Initializing OS interface") },
+								 { SubSystem::CommandLine,       QApplication::tr("Parsing command line") },
+								 { SubSystem::Timer,             QApplication::tr("Initializing Timer") },
+								 { SubSystem::CFile,             QApplication::tr("Initializing CFile") },
+								 { SubSystem::Locale,            QApplication::tr("Initializing locale") },
+								 { SubSystem::Sound,             QApplication::tr("Initializing sound") },
+								 { SubSystem::Graphics,          QApplication::tr("Initializing graphics") },
+								 { SubSystem::Scripting,         QApplication::tr("Initializing scripting") },
+								 { SubSystem::Fonts,             QApplication::tr("Initializing Fonts") },
+								 { SubSystem::Keyboard,          QApplication::tr("Initializing keyboard") },
+								 { SubSystem::Mouse,             QApplication::tr("Initializing mouse") },
+								 { SubSystem::Particles,         QApplication::tr("Initializing particles") },
+								 { SubSystem::Iff,               QApplication::tr("Initializing IFF") },
+								 { SubSystem::Objects,           QApplication::tr("Initializing objects") },
+								 { SubSystem::Models,            QApplication::tr("Initializing model system") },
+								 { SubSystem::Species,           QApplication::tr("Initializing species") },
+								 { SubSystem::BriefingIcons,     QApplication::tr("Initializing briefing icons") },
+								 { SubSystem::HudCommOrders,     QApplication::tr("Initializing HUD comm orders") },
+								 { SubSystem::AlphaColors,       QApplication::tr("Initializing alpha colors") },
+								 { SubSystem::GameSound,         QApplication::tr("Initializing briefing icons") },
+								 { SubSystem::MissionBrief,      QApplication::tr("Initializing briefings") },
+								 { SubSystem::AI,                QApplication::tr("Initializing AI") },
+								 { SubSystem::AIProfiles,        QApplication::tr("Initializing AI profiles") },
+								 { SubSystem::Armor,             QApplication::tr("Initializing armors") },
+								 { SubSystem::Weapon,            QApplication::tr("Initializing weaponry") },
+								 { SubSystem::Medals,            QApplication::tr("Initializing medals") },
+								 { SubSystem::Glowpoints,        QApplication::tr("Initializing glow points") },
+								 { SubSystem::Ships,             QApplication::tr("Initializing ships") },
+								 { SubSystem::Parse,             QApplication::tr("Initializing parser") },
+								 { SubSystem::TechroomIntel,     QApplication::tr("Initializing techroom intel") },
+								 { SubSystem::Nebulas,           QApplication::tr("Initializing nebulas") },
+								 { SubSystem::Stars,             QApplication::tr("Initializing stars") },
+								 { SubSystem::Ssm,               QApplication::tr("Initializing SSMs") },
+								 { SubSystem::EventMusic,        QApplication::tr("Initializing event music") },
 								 { SubSystem::FictionViewer,     QApplication::tr("Initializing fiction viewer") },
 								 { SubSystem::CommandBriefing,   QApplication::tr("Initializing command briefing") },
 								 { SubSystem::Cutscenes,         QApplication::tr("Initializing cutscenes")},
-								 { SubSystem::Mainhalls,         app.tr("Initializing mainhalls")},
-								 { SubSystem::Ranks,             app.tr("Initializing ranks")},
-								 { SubSystem::Campaign,          app.tr("Initializing campaign system") },
-								 { SubSystem::NebulaLightning,   app.tr("Initializing nebula lightning") },
-								 { SubSystem::FFmpeg,            app.tr("Initializing FFmpeg") },
-								 { SubSystem::DynamicSEXPs,      app.tr("Initializing dynamic SEXP system") },
-								 { SubSystem::ScriptingInitHook, app.tr("Running game init scripting hook") },
+								 { SubSystem::Mainhalls,         QApplication::tr("Initializing mainhalls")},
+								 { SubSystem::Ranks,             QApplication::tr("Initializing ranks")},
+								 { SubSystem::Campaign,          QApplication::tr("Initializing campaign system") },
+								 { SubSystem::NebulaLightning,   QApplication::tr("Initializing nebula lightning") },
+								 { SubSystem::FFmpeg,            QApplication::tr("Initializing FFmpeg") },
+								 { SubSystem::DynamicSEXPs,      QApplication::tr("Initializing dynamic SEXP system") },
+								 { SubSystem::ScriptingInitHook, QApplication::tr("Running game init scripting hook") },
 	};
 
 	auto initSuccess = fso::fred::initialize(baseDir.toStdString(), argc, argv, fred.get(), [&](const SubSystem& which) {
@@ -177,7 +177,7 @@ int main(int argc, char* argv[]) {
 		return -1;
 	}
 
-	splash.showMessage(app.tr("Showing editor window"), Qt::AlignHCenter | Qt::AlignBottom, Qt::white);
+	splash.showMessage(QApplication::tr("Showing editor window"), Qt::AlignHCenter | Qt::AlignBottom, Qt::white);
 	splash.finish(qApp->activeWindow());
 
 	// Use this to keep the app responsive
