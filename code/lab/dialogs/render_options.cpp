@@ -49,6 +49,12 @@ void set_spec_flag(Checkbox* caller) {
 	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::NoSpecularMap, !value);
 }
 
+void set_reflect_flag(Checkbox* caller) {
+	auto value = caller->GetChecked();
+
+	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::NoReflectMap, !value);
+}
+
 void set_env_flag(Checkbox* caller) {
 	auto value = caller->GetChecked();
 
@@ -193,6 +199,9 @@ void RenderOptions::open(Button* /*caller*/) {
 	cbp = (Checkbox*)dialogWindow->AddChild(new Checkbox("No Specular Map", 2, y, set_spec_flag));
 	y += cbp->GetHeight() + 2;
 
+	cbp = (Checkbox*)dialogWindow->AddChild(new Checkbox("No Reflection Map", 2, y, set_reflect_flag));
+	y += cbp->GetHeight() + 2;
+
 	cbp = (Checkbox*)dialogWindow->AddChild(new Checkbox("No Environment Map", 2, y, set_env_flag));
 	y += cbp->GetHeight() + 2;
 
@@ -243,7 +252,7 @@ void RenderOptions::open(Button* /*caller*/) {
 	y += direct_sldr->GetHeight() + 2;
 
 	auto bloom_sldr = new Slider("Bloom", 0, 200, 0, y + 2, set_bloom, dialogWindow->GetWidth());
-	bloom_sldr->SetSliderValue((float)Cmdline_bloom_intensity);
+	bloom_sldr->SetSliderValue((float)gr_bloom_intensity());
 	dialogWindow->AddChild(bloom_sldr);
 	y += bloom_sldr->GetHeight() + 2;
 

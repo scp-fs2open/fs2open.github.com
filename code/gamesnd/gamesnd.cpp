@@ -526,7 +526,7 @@ void parse_iface_sound_list(const char* tag, SCP_vector<interface_snd_id>& desti
 		//if we're using the old format, double check the size)
 		if(!scp_list && (destination.size() != (unsigned)check))
 		{
-			mprintf(("%s in '%s' has " SIZE_T_ARG " entries. This does not match entered size of %i.", tag, object_name, destination.size(), check));
+			mprintf(("%s in '%s' has " SIZE_T_ARG " entries. This does not match entered size of %i.\n", tag, object_name, destination.size(), check));
 		}
 	}
 }
@@ -751,14 +751,14 @@ bool required_string_no_create(const char* token, bool no_create)
 
 static GameSoundCycleType parse_cycle_type() {
 	if (optional_string("Sequential")) {
-		return GameSoundCycleType::Sequential;
+		return GameSoundCycleType::SequentialCycle;
 	} else if (optional_string("Random")) {
-		return GameSoundCycleType::Random;
+		return GameSoundCycleType::RandomCycle;
 	} else {
 		error_display(0, "Failed to parse sound cycle type. Expected 'sequential' or 'random'. Got [%.32s]", next_tokens());
 		// Ignore everything until the end of the line. That should hopefully skip the bad token.
 		advance_to_eoln(nullptr);
-		return GameSoundCycleType::Sequential;
+		return GameSoundCycleType::SequentialCycle;
 	}
 }
 
@@ -1362,14 +1362,14 @@ game_snd_entry* gamesnd_choose_entry(game_snd* gs) {
 
 	size_t index = 0;
 	switch(gs->cycle_type) {
-	case GameSoundCycleType::Random:
+	case GameSoundCycleType::RandomCycle:
 		if (gs->sound_entries.size() == 1) {
 			index = 0;
 		} else {
 			index = util::UniformRange<size_t>(0, gs->sound_entries.size() - 1).next();
 		}
 		break;
-	case GameSoundCycleType::Sequential:
+	case GameSoundCycleType::SequentialCycle:
 		if (gs->last_entry_index == std::numeric_limits<size_t>::max()) {
 			// If this is the first time we must return the first sound to keep everything consistent
 			index = 0;

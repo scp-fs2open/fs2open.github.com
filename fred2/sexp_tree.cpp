@@ -45,6 +45,7 @@
 #include "sound/ds.h"
 #include "globalincs/alphacolors.h"
 #include "localization/localize.h"
+#include "AddModifyContainerDlg.h"
 
 #define TREE_NODE_INCREMENT	100
 
@@ -853,6 +854,7 @@ void sexp_tree::right_clicked(int mode)
 							case OP_SET_OBJECT_SPEED_Y:
 							case OP_SET_OBJECT_SPEED_Z:
 							case OP_DISTANCE:
+							case OP_SCRIPT_EVAL:
 								j = (int)op_menu.size();	// don't allow these operators to be visible
 								break;
 						}
@@ -903,6 +905,7 @@ void sexp_tree::right_clicked(int mode)
 							case OP_SET_OBJECT_SPEED_Y:
 							case OP_SET_OBJECT_SPEED_Z:
 							case OP_DISTANCE:
+							case OP_SCRIPT_EVAL:
 								j = (int)op_submenu.size();	// don't allow these operators to be visible
 								break;
 						}
@@ -985,11 +988,19 @@ void sexp_tree::right_clicked(int mode)
 						menu.EnableMenuItem(Operators[ptr->op].value, MF_ENABLED);
 
 					} else {
+						UINT flags = MF_STRING | MF_ENABLED;
+
+						if (!((data_idx + 3) % 30)) {
+							flags |= MF_MENUBARBREAK;
+						}
+
 						// add data
-						if ( (data_idx + 3) % 30) {
-							add_data_menu->AppendMenu(MF_STRING | MF_ENABLED, ID_ADD_MENU + data_idx, ptr->text.c_str());
+						if (type == OPF_VARIABLE_NAME) {
+							char buf[128];
+							sprintf(buf, "%s (%s)", Sexp_variables[data_idx].variable_name, Sexp_variables[data_idx].text);
+							add_data_menu->AppendMenu(flags, ID_ADD_MENU + data_idx, buf);
 						} else {
-							add_data_menu->AppendMenu(MF_MENUBARBREAK | MF_STRING | MF_ENABLED, ID_ADD_MENU + data_idx, ptr->text.c_str());
+							add_data_menu->AppendMenu(flags, ID_ADD_MENU + data_idx, ptr->text.c_str());
 						}
 					}
 
@@ -1725,6 +1736,14 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 		return 1;
 	}
 
+	// Add/Modify Container
+	if (id == ID_EDIT_SEXP_TREE_EDIT_CONTAINERS) {
+		CAddModifyContainerDlg dlg(this);
+
+		dlg.DoModal();
+
+		return 1;
+	}
 
 	// check if REPLACE_VARIABLE_MENU
 	if ( (id >= ID_VARIABLE_MENU) && (id < ID_VARIABLE_MENU + 511)) {
@@ -1767,6 +1786,7 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 
 
 	if ((id >= ID_ADD_MENU) && (id < ID_ADD_MENU + 511)) {
+		auto saved_id = id;
 		Assert(item_index >= 0);
 		op = get_operator_index(tree_nodes[item_index].text);
 		Assert(op >= 0);
@@ -1785,8 +1805,29 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 
 		Assert((SEXPT_TYPE(ptr->type) != SEXPT_OPERATOR) && (ptr->op < 0));
 		expand_operator(item_index);
-		add_data(ptr->text.c_str(), ptr->type);
+		node = add_data(ptr->text.c_str(), ptr->type);
 		list->destroy();
+
+		// bolted-on ugly hack
+		if (type == OPF_VARIABLE_NAME) {
+			auto var_idx = saved_id - ID_ADD_MENU;
+			auto saved_item_index = item_index;
+
+			if (Sexp_variables[var_idx].type & SEXP_VARIABLE_NUMBER) {
+				type = SEXPT_NUMBER;
+			}
+			else if (Sexp_variables[var_idx].type & SEXP_VARIABLE_STRING) {
+				type = SEXPT_STRING;
+			}
+			else {
+				UNREACHABLE("Unknown sexp variable type");
+			}
+
+			item_index = node;
+			replace_variable_data(var_idx, (type | SEXPT_VARIABLE));
+			item_index = saved_item_index;
+		}
+
 		return 1;
 	}
 
@@ -2730,8 +2771,8 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 			str = "<Effect Name>";
 			break;
 
-		case OPF_HUD_GAUGE:
-			str = "Messages";
+		case OPF_CUSTOM_HUD_GAUGE:
+			str = "<Custom hud gauge>";
 			break;
 
 		default:
@@ -2786,7 +2827,6 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_WEAPON_NAME:
 		case OPF_INTEL_NAME:
 		case OPF_SHIP_CLASS_NAME:
-		case OPF_HUD_GAUGE_NAME:
 		case OPF_HUGE_WEAPON:
 		case OPF_JUMP_NODE_NAME:
 		case OPF_AMBIGUOUS:
@@ -2823,7 +2863,8 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_AUDIO_VOLUME_OPTION:
 		case OPF_WEAPON_BANK_NUMBER:
 		case OPF_MESSAGE_OR_STRING:
-		case OPF_HUD_GAUGE:
+		case OPF_BUILTIN_HUD_GAUGE:
+		case OPF_CUSTOM_HUD_GAUGE:
 		case OPF_SHIP_EFFECT:
 		case OPF_ANIMATION_TYPE:
 		case OPF_SHIP_FLAG:
@@ -4491,10 +4532,6 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			list = get_listing_opf_ship_class_name();
 			break;
 
-		case OPF_HUD_GAUGE_NAME:
-			list = get_listing_opf_hud_gauge_name();
-			break;
-
 		case OPF_HUGE_WEAPON:
 			list = get_listing_opf_huge_weapon();
 			break;
@@ -4615,8 +4652,12 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			list = get_listing_opf_message();
 			break;
 
-		case OPF_HUD_GAUGE:
-			list = get_listing_opf_hud_gauge();
+		case OPF_BUILTIN_HUD_GAUGE:
+			list = get_listing_opf_builtin_hud_gauge();
+			break;
+
+		case OPF_CUSTOM_HUD_GAUGE:
+			list = get_listing_opf_custom_hud_gauge();
 			break;
 
 		case OPF_SHIP_EFFECT:
@@ -5589,7 +5630,7 @@ sexp_list_item *sexp_tree::get_listing_opf_adjust_audio_volume()
 	return head.next;
 }
 
-sexp_list_item *sexp_tree::get_listing_opf_hud_gauge() 
+sexp_list_item *sexp_tree::get_listing_opf_builtin_hud_gauge() 
 {
 	sexp_list_item head;
 
@@ -5599,7 +5640,34 @@ sexp_list_item *sexp_tree::get_listing_opf_hud_gauge()
 	return head.next;
 }
 
-sexp_list_item *sexp_tree::get_listing_opf_ship_effect() 
+sexp_list_item *sexp_tree::get_listing_opf_custom_hud_gauge()
+{
+	sexp_list_item head;
+	SCP_unordered_set<SCP_string> all_gauges;
+
+	for (auto &gauge : default_hud_gauges)
+	{
+		all_gauges.insert(gauge->getCustomGaugeName());
+		head.add_data(gauge->getCustomGaugeName());
+	}
+
+	for (auto &si : Ship_info)
+	{
+		for (auto &gauge : si.hud_gauges)
+		{
+			// avoid duplicating any HUD gauges
+			if (all_gauges.count(gauge->getCustomGaugeName()) == 0)
+			{
+				all_gauges.insert(gauge->getCustomGaugeName());
+				head.add_data(gauge->getCustomGaugeName());
+			}
+		}
+	}
+
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_ship_effect()
 {
 	sexp_list_item head;
 	
@@ -5910,17 +5978,6 @@ sexp_list_item *sexp_tree::get_listing_opf_ship_class_name()
 
 	for (auto &si : Ship_info)
 		head.add_data(si.name);
-
-	return head.next;
-}
-
-sexp_list_item *sexp_tree::get_listing_opf_hud_gauge_name()
-{
-	int i;
-	sexp_list_item head;
-
-	for (i=0; i<NUM_HUD_GAUGES; i++)
-		head.add_data(HUD_gauge_text[i]);
 
 	return head.next;
 }
@@ -6429,4 +6486,21 @@ int sexp_tree::get_loadout_variable_count(int var_index)
 	}
 	
 	return count; 
+}
+
+int sexp_tree::get_container_usage_count(const char* container_name) const
+{
+	const SCP_string container_name_str = sexp_container::DELIM + container_name + sexp_container::DELIM;
+
+	int count = 0;
+
+	for (uint idx = 0; idx < tree_nodes.size(); idx++) {
+		if (tree_nodes[idx].type & (SEXPT_VALID | SEXPT_CONTAINER)) {
+			if (!stricmp(tree_nodes[idx].text, container_name_str.c_str())) {
+				count++;
+			}
+		}
+	}
+
+	return count;
 }

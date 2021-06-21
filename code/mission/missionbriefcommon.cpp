@@ -1681,7 +1681,7 @@ int brief_color_text_init(const char* src, int w, const char default_color, int 
 	}
 
 	Assert(src != NULL);
-	n_lines = split_str(src, w, n_chars, p_str, BRIEF_META_CHAR);
+	n_lines = split_str(src, w, n_chars, p_str, MAX_BRIEF_LINE_LEN, BRIEF_META_CHAR);
 	Assert(n_lines >= 0);
 
 	//for compatability reasons truncate text from everything except the fiction viewer

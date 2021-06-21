@@ -159,10 +159,10 @@ void object::clear()
 /**
  * Scan the object list, freeing down to num_used objects
  *
- * @param  num_used Number of used objects to free down to
+ * @param  target_num_used Number of used objects to free down to
  * @return Returns number of slots freed
  */
-int free_object_slots(int num_used)
+int free_object_slots(int target_num_used)
 {
 	int	i, olind, deleted_weapons;
 	int	obj_list[MAX_OBJECTS];
@@ -176,19 +176,19 @@ int free_object_slots(int num_used)
 	for ( objp = GET_FIRST(&obj_free_list); objp != END_OF_LIST(&obj_free_list); objp = GET_NEXT(objp) )
 		num_already_free++;
 
-	if (MAX_OBJECTS - num_already_free < num_used)
+	if (MAX_OBJECTS - num_already_free < target_num_used)
 		return 0;
 
 	for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
 		if (objp->flags[Object::Object_Flags::Should_be_dead]) {
 			num_already_free++;
-			if (MAX_OBJECTS - num_already_free < num_used)
+			if (MAX_OBJECTS - num_already_free < target_num_used)
 				return num_already_free;
 		} else
 			switch (objp->type) {
 				case OBJ_NONE:
 					num_already_free++;
-					if (MAX_OBJECTS - num_already_free < num_used)
+					if (MAX_OBJECTS - num_already_free < target_num_used)
 						return 0;
 					break;
 				case OBJ_FIREBALL:
@@ -217,7 +217,7 @@ int free_object_slots(int num_used)
 
 	}
 
-	num_to_free = MAX_OBJECTS - num_used - num_already_free;
+	num_to_free = MAX_OBJECTS - target_num_used - num_already_free;
 	original_num_to_free = num_to_free;
 
 	if (num_to_free > olind) {
@@ -232,26 +232,26 @@ int free_object_slots(int num_used)
 			Objects[obj_list[i]].flags.set(Object::Object_Flags::Should_be_dead);
 		}
 
-	if (!num_to_free)
+	if (num_to_free <= 0) {
 		return original_num_to_free;
+	}
 
 	for (i=0; i<num_to_free; i++)	{
 		object *tmp_obj = &Objects[obj_list[i]];
 		if ( (tmp_obj->type == OBJ_FIREBALL) && (fireball_is_perishable(tmp_obj)) ) {
 			num_to_free--;
+			if (num_to_free <= 0) {
+				return original_num_to_free;
+			}
 			nprintf(("allender", "Freeing FIREBALL object %3i\n", obj_list[i]));
 			tmp_obj->flags.set(Object::Object_Flags::Should_be_dead);
 		}
 	}
 
-	if (!num_to_free){
-		return original_num_to_free;
-	}
-
 	deleted_weapons = collide_remove_weapons();
 
 	num_to_free -= deleted_weapons;
-	if ( !num_to_free ){
+	if ( num_to_free <= 0){
 		return original_num_to_free;
 	}
 
@@ -382,7 +382,7 @@ static int num_objects_hwm = 0;
  * @return the number of a free object, updating Highest_object_index
  * @return -1 if no free objects
  */
-int obj_allocate(void)
+int obj_allocate(bool essential)
 {
 	int objnum;
 	object *objp;
@@ -392,7 +392,7 @@ int obj_allocate(void)
 		obj_init();
 	}
 
-	if ( Num_objects >= MAX_OBJECTS-10 ) {
+	if ( (Num_objects >= MAX_OBJECTS-10) && essential ) {
 		int	num_freed;
 
 		num_freed = free_object_slots(MAX_OBJECTS-10);
@@ -400,9 +400,7 @@ int obj_allocate(void)
 	}
 
 	if (Num_objects >= MAX_OBJECTS) {
-		#ifndef NDEBUG
 		mprintf(("Object creation failed - too many objects!\n" ));
-		#endif
 		return -1;
 	}
 
@@ -482,13 +480,13 @@ void obj_free(int objnum)
  * @return the object number 
  */
 int obj_create(ubyte type,int parent_obj,int instance, matrix * orient, 
-               vec3d * pos, float radius, const flagset<Object::Object_Flags> &flags )
+               vec3d * pos, float radius, const flagset<Object::Object_Flags> &flags, bool essential)
 {
 	int objnum;
 	object *obj;
 
 	// Find next free object
-	objnum = obj_allocate();
+	objnum = obj_allocate(essential);
 
 	if (objnum == -1)		//no free objects
 		return -1;

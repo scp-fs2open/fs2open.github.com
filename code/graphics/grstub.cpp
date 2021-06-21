@@ -285,7 +285,7 @@ int gr_stub_maybe_create_shader(shader_type  /*shader_t*/, unsigned int  /*flags
 	return -1;
 }
 
-void gr_stub_shadow_map_start(matrix4 * /*shadow_view_matrix*/, const matrix*  /*light_matrix*/)
+void gr_stub_shadow_map_start(matrix4 * /*shadow_view_matrix*/, const matrix*  /*light_matrix*/, vec3d* /*eye_pos*/)
 {
 }
 

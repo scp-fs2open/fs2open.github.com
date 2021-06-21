@@ -265,7 +265,7 @@ void techroom_init_desc(const char *src, int w)
 		return;
 	}
 
-	Text_size = split_str(src, w, Text_line_size, Text_lines, MAX_TEXT_LINES);
+	Text_size = split_str(src, w, Text_line_size, Text_lines, MAX_TEXT_LINES, MAX_TEXT_LINE_LEN);
 	Assert(Text_size >= 0 && Text_size < MAX_TEXT_LINES);
 }
 

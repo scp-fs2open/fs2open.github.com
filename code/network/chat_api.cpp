@@ -10,6 +10,7 @@
 #include "globalincs/pstypes.h"
 #include "network/chat_api.h"
 #include "network/psnet2.h"
+#include "network/multi_log.h"
 
 #ifdef SCP_UNIX
 #include <sys/time.h>
@@ -34,7 +35,7 @@ typedef int socklen_t;
 
 #define MAXCHATBUFFER	500
 
-SOCKET Chatsock;
+SOCKET Chatsock = INVALID_SOCKET;
 static SOCKADDR_STORAGE Chataddr;
 int Socket_connecting = 0;
 char Nick_name[33];
@@ -148,7 +149,6 @@ int ConnectToChatServer(char *serveraddr, char *nickname, char *trackerid)
 
 		if ( !psnet_get_addr(nullptr, static_cast<uint16_t>(0), &Chataddr) )
 		{
-			printf("bail!\n");
 			return -1;
 		}
 		
@@ -216,6 +216,14 @@ int ConnectToChatServer(char *serveraddr, char *nickname, char *trackerid)
 					return 0;
 				}
 
+				// check for server error messages
+				const char *msg = ChatGetString();
+
+				if (msg && !strcmp(msg, "ERROR"))
+				{
+					return -1;
+				}
+
 				Socket_connected = 1;
 				memset(signon_str, 0, sizeof(signon_str));
 				sprintf_safe(signon_str, NOX("/USER %s %s %s :%s"), NOX("user"), NOX("user"), NOX("user"), Chat_tracker_id);
@@ -245,10 +253,18 @@ int ConnectToChatServer(char *serveraddr, char *nickname, char *trackerid)
  */
 void DisconnectFromChatServer()
 {
-	if(!Socket_connected) return;
-	SendChatString(NOX("/QUIT"),1);
-	shutdown(Chatsock,2);
-	closesocket(Chatsock);
+	if (Socket_connected)
+	{
+		SendChatString(NOX("/QUIT"), 1);
+	}
+
+	if (Chatsock != INVALID_SOCKET)
+	{
+		shutdown(Chatsock, 2);
+		closesocket(Chatsock);
+	}
+
+	Chatsock = INVALID_SOCKET;
 	Socket_connecting = 0;
 	Socket_connected = 0;
 	Input_chat_buffer[0] = '\0';
@@ -466,7 +482,7 @@ char *ChatGetString(void)
 	FD_ZERO(&read_fds);
 	FD_SET(Chatsock,&read_fds);    
 	//Writable -- that means it's connected
-	while ( select(static_cast<int>(Chatsock+1), &read_fds, nullptr, nullptr, &timeout) )
+	while ( select(static_cast<int>(Chatsock+1), &read_fds, nullptr, nullptr, &timeout) > 0 )
 	{
 		bytesread = recv(Chatsock,ch,1,0);
 		if(bytesread)
@@ -775,6 +791,15 @@ char * ParseIRCMessage(char *Line, int iMode)
 	if(iMode==MSG_LOCAL)
 	{
 		return NULL;
+	}
+
+	if(stricmp(szCmd,NOX("ERROR"))==0)
+	{
+		// Server reported errors
+		ml_printf("Chat ERROR:  %s", szRemLine);
+		AddChatCommandToQueue(CC_DISCONNECTED, nullptr, 0);
+		strcpy_s(szResponse, "ERROR");
+		return szResponse;
 	}
 
 	if(stricmp(szCmd,NOX("NOTICE"))==0)

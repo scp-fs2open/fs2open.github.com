@@ -162,6 +162,9 @@ public:
 	size_t primary_bank_pattern_index[MAX_SHIP_PRIMARY_BANKS];
 	size_t secondary_bank_pattern_index[MAX_SHIP_SECONDARY_BANKS];
 
+	// for type5 beams, keeps track of accumulated per burst rotation, added to with each shot (or burst)
+	float per_burst_rot;
+
 	/**
 	 * @brief Constructor. Calls clear()
 	 */
@@ -1565,7 +1568,6 @@ extern void physics_ship_init(object *objp);
 
 //	Note: This is not a general purpose routine.
 //	It is specifically used for targeting.
-//	It only returns a subsystem position if it has shields.
 //	Return true/false for subsystem found/not found.
 //	Stuff vector *pos with absolute position.
 extern int get_subsystem_pos(vec3d *pos, object *objp, ship_subsys *subsysp);

@@ -39,7 +39,7 @@ jobs:
     name: Linux
     needs: create_release
     runs-on: ubuntu-latest
-    container: ghcr.io/scp-fs2open/linux_build:sha-e29f882
+    container: ghcr.io/scp-fs2open/linux_build:sha-11e553c
     steps:
       - name: Cache Qt
         id: cache-qt-lin

@@ -20,6 +20,7 @@ FLAG_LIST(LabRenderFlag) {
 	NoDiffuseMap,
 	NoGlowMap,
 	NoSpecularMap,
+	NoReflectMap,
 	NoEnvMap,
 	NoNormalMap,
 	NoHeightMap,
@@ -68,7 +69,7 @@ enum class TextureOverride {
 class LabRenderer {
 public:
 	LabRenderer(LabCamera* cam) {
-		bloomLevel = Cmdline_bloom_intensity;
+		bloomLevel = gr_bloom_intensity();
 		ambientFactor = Cmdline_ambient_factor;
 		directionalFactor = static_light_factor;
 		textureQuality = TextureQuality::Maximum;
@@ -146,7 +147,7 @@ public:
 
 	int setBloomLevel(int level) { 
 		bloomLevel = level; 
-		Cmdline_bloom_intensity = level;
+		gr_set_bloom_intensity(level);
 		return level; 
 	}
 
