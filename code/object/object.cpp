@@ -1520,6 +1520,8 @@ void obj_move_all(float frametime)
 		// move post
 		obj_move_all_post(objp, frametime);
 
+		animation::ModelAnimation::stepAnimations(frametime);
+
 		// Equipment script processing
 		if (objp->type == OBJ_SHIP) {
 			ship* shipp = &Ships[objp->instance];

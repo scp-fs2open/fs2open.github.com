@@ -31,6 +31,8 @@ public:
 			obj_delete(CurrentObject);
 		CurrentObject = -1;
 
+		animation::ModelAnimation::clearAnimations();
+
 		for (auto d : Dialogs) {
 			d->close();
 		}

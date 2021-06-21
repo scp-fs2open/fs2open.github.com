@@ -854,8 +854,6 @@ int model_anim_get_time_type(ship *shipp, AnimationTriggerType animation_type, i
 void model_anim_set_initial_states(ship *shipp)
 {
 	ship_weapon	*swp = &shipp->weapons;
-	ship_subsys	*pss;
-	model_subsystem	*psub;
 	int i;
 
 	for (i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++)
@@ -866,41 +864,6 @@ void model_anim_set_initial_states(ship *shipp)
 
 	ship_primary_changed(shipp);
 	ship_secondary_changed(shipp);
-
-	auto pmi = model_get_instance(shipp->model_instance_num);
-	auto pm = model_get(pmi->model_num);
-
-	for ( pss = GET_FIRST(&shipp->subsys_list); pss != END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) ) {
-		psub = pss->system_info;
-
-		for (i = 0; i < psub->n_triggers; i++) {
-			if (psub->triggers[i].type == AnimationTriggerType::Initial) {
-				if (psub->type == SUBSYSTEM_TURRET) {
-					// special case for turrets
-					if (pss->submodel_instance_1 != nullptr) {
-						pss->submodel_instance_1->cur_angle = psub->triggers[i].angle.xyz.y;
-						submodel_canonicalize(&pm->submodel[psub->subobj_num], pss->submodel_instance_1, true);
-					}
-					if (pss->submodel_instance_2 != nullptr) {
-						pss->submodel_instance_2->cur_angle = psub->triggers[i].angle.xyz.x;
-						submodel_canonicalize(&pm->submodel[psub->turret_gun_sobj], pss->submodel_instance_2, true);
-					}
-				} else {
-					if (pss->triggered_rotation_index < 0) {
-						mprintf(("Invalid rotation index for triggered rotation in subsystem %s in model %s!\n", psub->name, model_get(Ship_info[shipp->ship_info_index].model_num)->filename));
-						continue;
-					}
-					triggered_rotation *tr = &Triggered_rotations[pss->triggered_rotation_index];
-
-					tr->set_to_initial(&psub->triggers[i]);
-
-					angles angs;
-					tr->apply_trigger_angles(&angs);
-					vm_angles_2_matrix(&pss->submodel_instance_1->canonical_orient, &angs);
-				}
-			}
-		}
-	}
 }
 
 /**

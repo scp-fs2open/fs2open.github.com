@@ -111,6 +111,9 @@ void LabRenderer::renderModel(float frametime) {
 	obj_move_all(frametime);
 	if (getLabManager()->CurrentMode == LabMode::Ship)
 		process_subobjects(getLabManager()->CurrentObject);
+
+	animation::ModelAnimation::stepAnimations(frametime);
+
 	particle::move_all(frametime);
 	particle::ParticleManager::get()->doFrame(frametime);
 	shockwave_move_all(frametime);
