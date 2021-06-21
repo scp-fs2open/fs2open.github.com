@@ -252,7 +252,7 @@ void RenderOptions::open(Button* /*caller*/) {
 	y += direct_sldr->GetHeight() + 2;
 
 	auto bloom_sldr = new Slider("Bloom", 0, 200, 0, y + 2, set_bloom, dialogWindow->GetWidth());
-	bloom_sldr->SetSliderValue((float)Cmdline_bloom_intensity);
+	bloom_sldr->SetSliderValue((float)gr_bloom_intensity());
 	dialogWindow->AddChild(bloom_sldr);
 	y += bloom_sldr->GetHeight() + 2;
 
