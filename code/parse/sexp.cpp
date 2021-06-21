@@ -233,6 +233,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "ship_score",						OP_SHIP_SCORE,							1,	1,			SEXP_INTEGER_OPERATOR,	},
 	{ "time-elapsed-last-order",		OP_LAST_ORDER_TIME,						2,	2,			SEXP_INTEGER_OPERATOR,	},
 	{ "player-is-cheating",				OP_PLAYER_IS_CHEATING_BASTARD,			0,  0,			SEXP_BOOLEAN_OPERATOR,  },
+	{ "is-language",					OP_IS_LANGUAGE,							1,	1,			SEXP_BOOLEAN_OPERATOR, }, // Goober5000
 
 	//Multiplayer Sub-Category
 	{ "num-players",					OP_NUM_PLAYERS,							0,	0,			SEXP_INTEGER_OPERATOR,	},
@@ -3317,6 +3318,14 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				if (species_info_lookup(CTEXT(node)) < 0 ) {
 					return SEXP_CHECK_INVALID_SPECIES;
 				}
+				break;
+
+			case OPF_LANGUAGE:
+				if (type2 != SEXP_ATOM_STRING) {
+					return SEXP_CHECK_TYPE_MISMATCH;
+				}
+
+				// that's all we do, since there may be a language the game doesn't know about
 				break;
 
 			default:
@@ -23295,6 +23304,21 @@ int sexp_player_is_cheating_bastard()
 	return SEXP_FALSE;
 }
 
+int sexp_is_language(int node)
+{
+	// we don't check the language for validity because it could be a language the engine doesn't know about
+	auto lang = CTEXT(node);
+
+	// easy lookup
+	auto li = &Lcl_languages[lcl_get_current_lang_index()];
+
+	// easy comparison
+	if (stricmp(li->lang_name, lang) == 0)
+		return SEXP_KNOWN_TRUE;
+	else
+		return SEXP_KNOWN_FALSE;
+}
+
 void sexp_set_motion_debris(int node)
 {
 	Motion_debris_override = is_sexp_true(node);
@@ -25755,6 +25779,10 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_player_is_cheating_bastard();
 				break;
 
+			case OP_IS_LANGUAGE:
+				sexp_val = sexp_is_language(node);
+				break;
+
 			case OP_IS_IN_TURRET_FOV:
 				sexp_val = sexp_is_in_turret_fov(node);
 				break;
@@ -26432,6 +26460,7 @@ int query_operator_return_type(int op)
 		case OP_PLAYER_IS_CHEATING_BASTARD:
 		case OP_ARE_SHIP_FLAGS_SET:
 		case OP_IS_IN_TURRET_FOV:
+		case OP_IS_LANGUAGE:
 			return OPR_BOOL;
 
 		case OP_PLUS:
@@ -29280,6 +29309,9 @@ int query_operator_argument_type(int op, int argnum)
 			else
 				return OPF_SHIP_WING;
 
+		case OP_IS_LANGUAGE:
+			return OPF_LANGUAGE;
+
 		default: {
 			auto dynamicSEXP = sexp::get_dynamic_sexp(op);
 			if (dynamicSEXP != nullptr) {
@@ -30971,6 +31003,7 @@ int get_subcategory(int sexp_id)
 		case OP_SHIP_SCORE:
 		case OP_LAST_ORDER_TIME:
 		case OP_PLAYER_IS_CHEATING_BASTARD:
+		case OP_IS_LANGUAGE:
 			return STATUS_SUBCATEGORY_PLAYER;
 
 		case OP_NUM_PLAYERS:
@@ -35106,6 +35139,12 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{OP_PLAYER_IS_CHEATING_BASTARD, "player-is-cheating\r\n"
 		"\tReturns true if the player is or has been cheating in this mission.\r\n"
+	},
+
+	{ OP_IS_LANGUAGE, "is-language\r\n"
+		"\tReturns whether the game is running in the specified language.  Takes 1 argument...\r\n"
+		"\t1:\tA language.  This can be any string; the SEXP will return true if and only if the string matches the current language.  "
+		"Builtin languages are English, German, French, and Polish, and others can be defined in strings.tbl.\r\n"
 	},
 
 	{ OP_SET_MOTION_DEBRIS, "set-motion-debris-override\r\n"

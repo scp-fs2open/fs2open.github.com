@@ -115,6 +115,7 @@ class waypoint_list;
 #define OPF_GAME_SND			88		// m!m - A game sound
 #define OPF_FIREBALL			89		// Goober5000 - an entry in fireball.tbl
 #define OPF_SPECIES				90		// Goober5000
+#define OPF_LANGUAGE			91		// Goober5000
 
 // Operand return types
 #define	OPR_NUMBER				1	// returns number
@@ -397,6 +398,7 @@ class waypoint_list;
 #define OP_DISTANCE_CENTER					(0x0054 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Goober5000
 #define OP_DISTANCE_BBOX					(0x0055 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Goober5000
 #define OP_DISTANCE_BBOX_SUBSYSTEM			(0x0056 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Goober5000
+#define OP_IS_LANGUAGE						(0x0057 | OP_CATEGORY_STATUS)						// Goober5000
 
 // conditional sexpressions
 #define OP_WHEN								(0x0000 | OP_CATEGORY_CONDITIONAL)
