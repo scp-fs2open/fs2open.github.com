@@ -6953,6 +6953,8 @@ void do_random_sidethrust(ai_info *aip, ship_info *sip)
 	AI_ci.sideways = side_vec.x;
 	AI_ci.vertical = side_vec.y;
 }
+
+const float AI_DEFAULT_ATTACK_APPROACH_DIST = 200.0f;
 				
 /**
  * Set acceleration while in attack mode.
@@ -7005,10 +7007,24 @@ void attack_set_accel(ai_info *aip, ship_info *sip, float dist_to_enemy, float d
 		return;
 	}
 
+	// assume the original retail value of a 200m range
+	float optimal_range = AI_DEFAULT_ATTACK_APPROACH_DIST;
+	ship_weapon* weapons = &Ships[Pl_objp->instance].weapons;
+	weapon_info* wip = nullptr;
 
-	if (dist_to_enemy > 200.0f + vm_vec_mag_quick(&En_objp->phys_info.vel) * dot_from_enemy + Pl_objp->phys_info.speed * speed_ratio) {
+	// see if we can get a better one
+	if (weapons->num_primary_banks >= 1 && weapons->current_primary_bank >= 0) {
+		wip = &Weapon_info[weapons->primary_bank_weapons[weapons->current_primary_bank]];
+	} else if (weapons->num_secondary_banks >= 1 && weapons->current_secondary_bank >= 0) {
+		wip = &Weapon_info[weapons->secondary_bank_weapons[weapons->current_secondary_bank]];
+	}
+
+	if (wip != nullptr && wip->optimum_range > 0)
+		optimal_range = wip->optimum_range;
+
+	if (dist_to_enemy > optimal_range + vm_vec_mag_quick(&En_objp->phys_info.vel) * dot_from_enemy + Pl_objp->phys_info.speed * speed_ratio) {
 		if (ai_maybe_fire_afterburner(Pl_objp, aip)) {
-			if (dist_to_enemy > 800.0f) {
+			if (dist_to_enemy > optimal_range + 600.0f) {
 				if (!( Pl_objp->phys_info.flags & PF_AFTERBURNER_ON )) {
 					float percent_left;
 					ship	*shipp;
@@ -9086,7 +9102,7 @@ void ai_chase()
 					float range_max = pwip->max_speed * (1.0f + scale);
 					if (aip->ai_profile_flags[AI::Profile_Flags::Use_actual_primary_range]) {
 						range_max = std::min({range_max, pwip->max_speed * pwip->lifetime, pwip->weapon_range});
-						range_min = pwip->WeaponMinRange;
+						range_min = pwip->weapon_min_range;
 					}
 					if ((dist_to_enemy < range_max) && (dist_to_enemy >= range_min)) {
 						if(ai_fire_primary_weapon(Pl_objp) == 1){

@@ -13216,7 +13216,7 @@ int get_available_secondary_weapons(object *objp, int *outlist, int *outbanklist
 		if (shipp->weapons.secondary_bank_ammo[i]) {
 			if (The_mission.ai_profile->ai_range_aware_secondary_select_mode != AI_RANGE_AWARE_SEC_SEL_MODE_RETAIL) {
 				wepp = &Weapon_info[shipp->weapons.secondary_bank_weapons[i]];
-				weapon_range_min = wepp->WeaponMinRange;
+				weapon_range_min = wepp->weapon_min_range;
 				weapon_range_max = wepp->weapon_range;
 				//If weapon range is not set in the weapon info, derive it
 				if (weapon_range_max >= WEAPON_DEFAULT_TABLED_MAX_RANGE) {

@@ -2125,7 +2125,7 @@ extern int Nebula_sec_range;
 void ai_fire_from_turret(ship *shipp, ship_subsys *ss)
 {
 	float		weapon_firing_range;
-    float		WeaponMinRange;			// *Weapon minimum firing range -Et1
+    float		weapon_min_range;			// *Weapon minimum firing range -Et1
 	vec3d	v2e;
 	object	*lep;		//	Last enemy pointer
 	model_subsystem	*tp = ss->system_info;
@@ -2300,12 +2300,12 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss)
 		if (wip->wi_flags[Weapon::Info_Flags::Local_ssm])
 		{
 			weapon_firing_range = wip->lssm_lock_range;
-			WeaponMinRange = 0.0f;
+			weapon_min_range = 0.0f;
 		}
 		else
 		{
 			weapon_firing_range = MIN(wip->lifetime * wip->max_speed, wip->weapon_range);
-			WeaponMinRange = wip->WeaponMinRange;
+			weapon_min_range = wip->weapon_min_range;
 		}
 
 		// if beam weapon in nebula and target not tagged, decrease firing range
@@ -2318,7 +2318,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss)
 		}
 
 		// Don't try to fire beyond weapon_limit_range (or within min range)
-		if (dist_to_enemy < WeaponMinRange || dist_to_enemy > weapon_firing_range) {
+		if (dist_to_enemy < weapon_min_range || dist_to_enemy > weapon_firing_range) {
 			// it's possible another weapon is in range, but if not,
 			// we will end up selecting a new target
 			continue;
