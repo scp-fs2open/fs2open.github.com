@@ -331,6 +331,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "mission-time-msecs",				OP_MISSION_TIME_MSECS,					0,	0,			SEXP_INTEGER_OPERATOR,	},	// Goober5000
 	{ "time-docked",					OP_TIME_DOCKED,							3,	3,			SEXP_INTEGER_OPERATOR,	},
 	{ "time-undocked",					OP_TIME_UNDOCKED,						3,	3,			SEXP_INTEGER_OPERATOR,	},
+	{ "time-to-goal",					OP_TIME_TO_GOAL,						1,	1,			SEXP_INTEGER_OPERATOR,	},	// tcrayford
 
 	//Conditionals Category
 	{ "cond",							OP_COND,								1,	INT_MAX,	SEXP_CONDITIONAL_OPERATOR,},
@@ -16996,6 +16997,29 @@ int sexp_query_orders (int n)
 	return hud_query_order_issued(order_to, order, target, timestamp, order_from, special);
 }
 
+int sexp_time_to_goal(int n)
+{
+	auto ship_entry = eval_ship(n);
+
+	if (!ship_entry || !ship_entry->shipp)
+		return SEXP_NAN;
+
+	if (ship_entry->status == NOT_YET_PRESENT)
+		return SEXP_CANT_EVAL;
+	
+	if (ship_entry->status == EXITED)
+		return SEXP_NAN_FOREVER;
+
+	auto shipp = ship_entry->shipp;
+	int time = ship_return_seconds_to_goal(shipp);
+	
+	if (time < 0) {
+		return SEXP_CANT_EVAL;
+	}
+
+	return time;
+}
+
 // Karajorma
 void sexp_reset_orders (int  /*n*/)
 {
@@ -24927,6 +24951,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_query_orders(node);
 				break;
 
+			case OP_TIME_TO_GOAL:
+				sexp_val = sexp_time_to_goal(node);
+				break;
+
+
 			// Karajorma
 			case OP_RESET_ORDERS:
 				sexp_reset_orders(node);
@@ -26483,6 +26512,7 @@ int query_operator_return_type(int op)
 		case OP_MISSION_TIME_MSECS:
 		case OP_TIME_DOCKED:
 		case OP_TIME_UNDOCKED:
+		case OP_TIME_TO_GOAL:
 		case OP_AFTERBURNER_LEFT:
 		case OP_WEAPON_ENERGY_LEFT:
 		case OP_SHIELDS_LEFT:
@@ -27298,6 +27328,9 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_SUBSYSTEM;
 			else
 				return OPF_SHIP_WING;
+
+		case OP_TIME_TO_GOAL:
+				return OPF_SHIP;
 
 		case OP_WAS_DESTROYED_BY_DELAY:
 			if (argnum == 0)
@@ -31745,6 +31778,11 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tThe name of the docker ship.\r\n"
 		"\t2:\tThe name of the dockee ship.\r\n"
 		"\t3:\tThe number of times they must have undocked to be true." },
+
+	{ OP_TIME_TO_GOAL, "Time-to-goal (Time operator)\r\n"
+		"\tReturns the number of seconds until a ship reaches its waypoint\r\n\r\n"
+		"Returns a number value.  Takes 1 argument...\r\n"
+		"\t1:\tName of ship to check waypoint time." },
 
 	{ OP_AFTERBURNER_LEFT, "Afterburner left\r\n"
 		"\tReturns a ship's current engine energy as a percentage.\r\n"

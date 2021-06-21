@@ -15847,8 +15847,38 @@ SCP_string ship_return_orders(ship* sp)
 // it suits your needs for something.
 char *ship_return_time_to_goal(char *outbuf, ship *sp)
 {
+	int	minutes, seconds;
+	int time = ship_return_seconds_to_goal(sp);
+	if ( time >= 0 ) {
+		minutes = time/60;
+		seconds = time%60;
+		if ( minutes > 99 ) {
+			minutes = 99;
+			seconds = 99;
+		}
+		sprintf(outbuf, NOX("%02d:%02d"), minutes, seconds);
+	
+	} else {
+		strcpy( outbuf, XSTR( "Unknown", 497) );
+	}
+
+	return outbuf;
+}
+
+// Returns the estimated time, in seconds, of the given ship to reach its goal
+//
+// @param[in] sp  Pointer to ship to check
+//
+// @returns Time of the ship to reach its goal, or
+// @returns  0, if it has met its goal, or
+// @returns -1, if the ship is not moving or can not move, or
+// @returns -2, if the ship does not have a valid goal
+//
+// @note tcrayford: split out of ship_return_time_to_goal
+int ship_return_seconds_to_goal(ship *sp)
+{
 	ai_info	*aip;
-	int		time, seconds, minutes;
+	int		time;
 	float		dist = 0.0f;
 	object	*objp;	
 	float		min_speed, max_speed;
@@ -15865,6 +15895,7 @@ char *ship_return_time_to_goal(char *outbuf, ship *sp)
 		max_speed = sp->current_max_speed;
 
 	if ( aip->mode == AIM_WAYPOINTS ) {
+		// Is traveling a waypoint path
 		min_speed = 0.9f * max_speed;
 		if (aip->wp_list != NULL) {
 			Assert(aip->wp_index != INVALID_WAYPOINT_POSITION);
@@ -15881,12 +15912,15 @@ char *ship_return_time_to_goal(char *outbuf, ship *sp)
 		}
 
 		if ( dist < 1.0f) {
-			return NULL;
-		}	
+			// Already there
+			time = 0;
 
-		if ( (Objects[sp->objnum].phys_info.speed <= 0) || (max_speed <= 0.0f) ) {
+		} else if ( (Objects[sp->objnum].phys_info.speed <= 0) || (max_speed <= 0.0f) ) {
+			// Is not moving or can not move
 			time = -1;
+
 		} else {
+			// On the way!
 			float	speed;
 
 			speed = objp->phys_info.speed;
@@ -15897,25 +15931,15 @@ char *ship_return_time_to_goal(char *outbuf, ship *sp)
 		}
 
 	} else if ( (aip->mode == AIM_DOCK) && (aip->submode < AIS_DOCK_4) ) {
+		// Is traveling a docking path
 		time = hud_get_dock_time( objp );
+
 	} else {
-		// don't return anytime for time to except for waypoints and actual docking.
-		return NULL;
+		// Not a waypoint or docking goal
+		time = -2;
 	}
 
-	if ( time >= 0 ) {
-		minutes = time/60;
-		seconds = time%60;
-		if ( minutes > 99 ) {
-			minutes = 99;
-			seconds = 99;
-		}
-		sprintf(outbuf, NOX("%02d:%02d"), minutes, seconds);
-	} else {
-		strcpy( outbuf, XSTR( "Unknown", 497) );
-	}
-
-	return outbuf;
+	return time;
 }
 
 /* Karajorma - V decided not to use this function so I've commented it out so it isn't confused with code

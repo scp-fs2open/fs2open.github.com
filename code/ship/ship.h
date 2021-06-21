@@ -1753,6 +1753,7 @@ int ship_lock_threat(ship *sp);
 int	bitmask_2_bitnum(int num);
 SCP_string ship_return_orders(ship *sp);
 char	*ship_return_time_to_goal(char *outbuf, ship *sp);
+int	ship_return_seconds_to_goal(ship *sp);
 
 void	ship_maybe_warn_player(ship *enemy_sp, float dist);
 void	ship_maybe_praise_player(ship *deader_sp);
