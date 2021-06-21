@@ -62,9 +62,6 @@
 #define MAX_SHOT_POINTS				30
 #define SHOT_POINT_TIME				200			// 5 arcs a second
 
-// how many times a second beams consume 1 ammo
-const float BEAM_AMMO_COMSUMPTION_RATE = 4.0f;
-
 #define TOOLTIME						1500.0f
 
 std::array<beam, MAX_BEAMS> Beams;				// all beams
@@ -1170,34 +1167,15 @@ void beam_move_all_post()
 		// deal with ammo/energy for fighter beams
 		bool multi_ai = MULTIPLAYER_CLIENT && (moveup->objp != Player_obj);
 		bool cheating_player = Weapon_energy_cheat && (moveup->objp == Player_obj);
+
 		if (moveup->flags & BF_IS_FIGHTER_BEAM && !multi_ai && !cheating_player) {
 			ship* shipp = &Ships[moveup->objp->instance];
 			weapon_info* wip = &Weapon_info[moveup->weapon_info_index];
 
 			shipp->weapon_energy -= wip->energy_consumed * flFrametime;
 
-			if (shipp->weapon_energy < 0.0f) {
+			if (shipp->weapon_energy < 0.0f)
 				shipp->weapon_energy = 0.0f;
-			}
-
-			if (wip->wi_flags[Weapon::Info_Flags::Ballistic]) {
-				// counts up from 0, for each quarter-second
-				float progress = (moveup->life_total - moveup->life_left) * BEAM_AMMO_COMSUMPTION_RATE;
-
-				float frametime = flFrametime * BEAM_AMMO_COMSUMPTION_RATE;
-
-				// yes this can happen...
-				if (moveup->life_left < 0.0f) {
-					progress += moveup->life_left * BEAM_AMMO_COMSUMPTION_RATE;
-					frametime += moveup->life_left * BEAM_AMMO_COMSUMPTION_RATE;
-				}
-
-				// if these differ, we passed a threshold and should decrement ammo
-				while ((int)progress > (int)(progress - frametime) && shipp->weapons.primary_bank_ammo[moveup->bank] > 0) {
-					shipp->weapons.primary_bank_ammo[moveup->bank]--;
-					frametime -= 1.0f;
-				}
-			}
 		}
 
 		// stop shooting?
