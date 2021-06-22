@@ -1203,6 +1203,9 @@ public:
 	vec3d	closeup_pos_targetbox;			// position for camera when using ship in closeup view for hud target monitor
 	float	closeup_zoom_targetbox;			// zoom when using ship in closeup view for hud target monitor
 
+	vec3d	chase_view_offset;				// special offset for chase view
+	float	chase_view_rigidity;			// how 'floaty' this ship is when viewed in chase view
+
 	allowed_weapon_bank allowed_weapons;	// specifies which weapons can be loaded out by the
 											// player during weapons loadout.
 

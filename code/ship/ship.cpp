@@ -1042,6 +1042,9 @@ void ship_info::clone(const ship_info& other)
 	closeup_pos_targetbox = other.closeup_pos_targetbox;
 	closeup_zoom_targetbox = other.closeup_zoom_targetbox;
 
+	chase_view_offset = other.chase_view_offset;
+	chase_view_rigidity = other.chase_view_rigidity;
+
 	allowed_weapons = other.allowed_weapons;
 
 	restricted_loadout_flag = other.restricted_loadout_flag;
@@ -1351,6 +1354,9 @@ void ship_info::move(ship_info&& other)
 
 	std::swap(closeup_pos_targetbox, other.closeup_pos_targetbox);
 	closeup_zoom_targetbox = other.closeup_zoom_targetbox;
+
+	std::swap(chase_view_offset, other.chase_view_offset);
+	chase_view_rigidity = other.chase_view_rigidity;
 
 	std::swap(allowed_weapons, other.allowed_weapons);
 
@@ -1764,6 +1770,9 @@ ship_info::ship_info()
 
 	vm_vec_zero(&closeup_pos_targetbox);
 	closeup_zoom_targetbox = 0.5f;
+
+	vm_vec_zero(&chase_view_offset);
+	chase_view_rigidity = 5.0f;
 
 	allowed_weapons.clear();
 
@@ -4071,6 +4080,14 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	if(optional_string("$Topdown offset:")) {
 		sip->topdown_offset_def = true;
 		stuff_vec3d(&sip->topdown_offset);
+	}
+
+	if (optional_string("$Chase View Offset:"))	{
+		stuff_vec3d(&sip->chase_view_offset);
+	}
+
+	if (optional_string("$Chase View Rigidity:")) {
+		stuff_float(&sip->chase_view_rigidity);
 	}
 
 	if (optional_string("$Shield_icon:")) {
@@ -19229,6 +19246,7 @@ void ship_render_batch_thrusters(object *obj)
 		vec3d des_vel;
 		vm_vec_rotate(&des_vel, &pi->desired_vel, &obj->orient);
 
+		/*
 		if(pi->desired_rotvel.xyz.x < 0 && (mtp->use_flags[Ship::Thruster_Flags::Pitch_up])) {
 			render_amount = fl_abs(pi->desired_rotvel.xyz.x) / pi->max_rotvel.xyz.x;
 		} else if(pi->desired_rotvel.xyz.x > 0 && (mtp->use_flags[Ship::Thruster_Flags::Pitch_down])) {
@@ -19256,7 +19274,7 @@ void ship_render_batch_thrusters(object *obj)
 			render_amount = pi->forward_thrust;
 		} else if(pi->forward_thrust < 0 && (mtp->use_flags[Ship::Thruster_Flags::Reverse])) {
 			render_amount = -pi->forward_thrust;
-		}
+		}*/
 
 		//Don't render small faraway thrusters (more than 10k * radius away)
 		if ( vm_vec_dist(&Eye_position, &obj->pos) > (10000.0f * mtp->radius) ) {
