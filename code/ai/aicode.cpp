@@ -15295,6 +15295,8 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hit_normal)
 		Assert(objp_hitter != NULL);
 		hitter_aip = &Ai_info[Ships[objp_hitter->instance].ai_index];
 		hitter_aip->last_hit_target_time = Missiontime;
+
+		aip->last_hit_time = Missiontime;
 		return;
 	}
 
