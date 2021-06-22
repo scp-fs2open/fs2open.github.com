@@ -160,12 +160,6 @@ void trail_render( trail * trailp )
 		n = sections[i];
 
 		// first get the alpha
-		float init_fade_out = 1.0f;
-
-		if ((num_faded_sections > 0) && (i < num_faded_sections)) {
-			init_fade_out = ((float) i) / (float) num_faded_sections;
-		}
-
 		float w = trailp->val[n] * w_size + ti->w_start;
 
 		float fade = trailp->val[n];
@@ -174,7 +168,8 @@ void trail_render( trail * trailp )
 			fade = powf(trailp->val[n], trailp->info.a_decay_exponent);
 
 		ubyte current_alpha = 0;
-		if (init_fade_out != 1.0f) {
+		if ((num_faded_sections > 0) && (i < num_faded_sections)) {
+			float init_fade_out = ((float)i) / (float)num_faded_sections;
 			current_alpha = (ubyte)fl2i((fade * a_size + ti->a_start) * 255.0f * init_fade_out * init_fade_out);
 		} else {
 			current_alpha = (ubyte)fl2i((fade * a_size + ti->a_start) * 255.0f);
