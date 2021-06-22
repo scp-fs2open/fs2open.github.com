@@ -3,11 +3,11 @@
 #include "lab/manager/lab_manager.h"
 #include "gamesequence/gamesequence.h"
 
-LabManager* LMGR = nullptr;
+static std::unique_ptr<LabManager> LMGR;
 
-LabManager* getLabManager() {
+const std::unique_ptr<LabManager> &getLabManager() {
 	if (LMGR == nullptr) {
-		LMGR = new LabManager();
+		LMGR.reset(new LabManager());
 	}
 
 	return LMGR;
@@ -18,8 +18,7 @@ void lab_init() {
 }
 
 void lab_close() {
-	delete LMGR;
-	LMGR = nullptr; 
+	LMGR.reset();
 	gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
 }
 

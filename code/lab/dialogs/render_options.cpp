@@ -170,7 +170,8 @@ void RenderOptions::open(Button* /*caller*/) {
 		return;
 
 	dialogWindow = (DialogWindow*)getLabManager()->Screen->Add(new DialogWindow("Render Options", gr_screen.center_offset_x + gr_screen.center_w - 300, gr_screen.center_offset_y + 200));
-	dialogWindow->SetOwner(this);
+	Assert(Opener != nullptr);
+	dialogWindow->SetOwner(Opener->getDialog());
 
 	dialogWindow->DeleteChildren();
 
