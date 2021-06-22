@@ -86,7 +86,7 @@ void obj_snd_source_pos(vec3d *sound_pos, obj_snd *osp)
 int obj_snd_find(object *objp, obj_snd *osp)
 {
 	int idx = 0;
-	for (SCP_vector<int>::iterator iter = objp->objsnd_num.begin(); iter != objp->objsnd_num.end(); ++iter, ++idx) {
+	for (auto iter = objp->objsnd_num.begin(); iter != objp->objsnd_num.end(); ++iter, ++idx) {
 		if (*iter == (osp - Objsnds)) {
 			return idx;
 		}

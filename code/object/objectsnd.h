@@ -26,6 +26,7 @@
 #define OS_LOOPING_DISABLED		(1<<9)
 
 struct vec3d;
+class object;
 class ship_subsys;
 
 extern int Obj_snd_enabled;
