@@ -82,6 +82,18 @@ void obj_snd_source_pos(vec3d *sound_pos, obj_snd *osp)
 	vm_vec_add(sound_pos, &objp->pos, &offset_world);
 }
 
+// determine what index in this guy the sound is
+int obj_snd_find(object *objp, obj_snd *osp)
+{
+	int idx = 0;
+	for (SCP_vector<int>::iterator iter = objp->objsnd_num.begin(); iter != objp->objsnd_num.end(); ++iter, ++idx) {
+		if (*iter == (osp - Objsnds)) {
+			return idx;
+		}
+	}
+	return -1;
+}
+
 // ---------------------------------------------------------------------------------------
 // dcf_objsnd()
 //
@@ -332,14 +344,7 @@ int obj_snd_stop_lowest_vol(float new_vol)
         objp = &Objects[lowest_vol_osp->objnum];
 
 	if ( (lowest_vol < new_vol) && (objp != NULL) ) {
-		int idx = 0;
-		// determine what index in this guy the sound is
-		for(SCP_vector<int>::iterator iter = objp->objsnd_num.begin(); iter != objp->objsnd_num.end(); ++iter, ++idx){
-			if(*iter == (lowest_vol_osp - Objsnds)){
-				obj_snd_index = idx;
-				break;
-			}
-		}
+		obj_snd_index = obj_snd_find(objp, lowest_vol_osp);
 
 		if((obj_snd_index == -1) || (obj_snd_index >= (int) objp->objsnd_num.size())){
 			Int3();		// get dave
@@ -437,7 +442,7 @@ void maybe_play_flyby_snd(float closest_dist, object *closest_objp, object *list
 void obj_snd_do_frame()
 {
 	float				closest_dist, distance, speed_vol_multiplier, rot_vol_mult, percent_max, alive_vol_mult;
-	obj_snd			*osp, *osp_prev;
+	obj_snd			*osp;
 	object			*objp, *closest_objp;
 	game_snd			*gs;
 	ship				*sp;
@@ -578,15 +583,7 @@ void obj_snd_do_frame()
 
 		go_ahead_flag = TRUE;
 		float max_vol,new_vol;
-		// if sound not valid, evaluate looping status before possibly replaying
-		if (!osp->instance.isValid() && (osp->flags & OS_LOOPING_DISABLED) && (osp->flags & OS_STARTED_PLAYING)) {
-			// non-looping sounds that have already played once need to be removed from the object sound list
-			osp_prev = GET_PREV(osp);
-			list_remove(&obj_snd_list, osp);
-			osp = osp_prev;
-			continue;
-		} else if (!osp->instance.isValid()) {
-			// start playing sound if (invalid and looping) or (invalid and non-looping and not started)
+		if ( !osp->instance.isValid() ) {
 			if ( distance < gs->max ) {
 				max_vol = gs->volume_range.max();
 				if ( distance <= gs->min ) {
@@ -621,28 +618,31 @@ void obj_snd_do_frame()
 					osp->instance = snd_play_3d(gs, &source_pos, &View_position, add_distance, &objp->phys_info.vel, is_looping, 1.0f, SND_PRIORITY_TRIPLE_INSTANCE, nullptr, 1.0f, 0, true);
 					if (osp->instance.isValid()) {
 						Num_obj_sounds_playing++;
-						osp->flags |= OS_STARTED_PLAYING;
 					}
 				}
 				Assert(Num_obj_sounds_playing <= MAX_OBJ_SOUNDS_PLAYING);
-
-			} // 		end if ( distance < Snds[osp->id].max )
-		} // 		if ( osp->instance == -1 )
+			}
+		}
 		else {
-			if ( distance > gamesnd_get_game_sound(osp->id)->max ) {
-				int sound_index = -1;
-				int idx = 0;
+			// sound has finished playing and won't be played again
+			if ((osp->flags & OS_LOOPING_DISABLED) && !snd_is_playing(osp->instance)) {
+				auto osp_prev = GET_PREV(osp);
 
-				// determine which sound index it is for this guy
-				for(SCP_vector<int>::iterator iter = objp->objsnd_num.begin(); iter != objp->objsnd_num.end(); ++iter, ++idx){
-					if(*iter == (osp - Objsnds)){
-						sound_index = idx;
-						break;
-					}
-				}
+				// non-looping sounds that have already played once need to be removed from the object sound list
+				int sound_index = obj_snd_find(objp, osp);
+				obj_snd_delete(objp, sound_index, false);
+
+				// don't corrupt the iterating loop (next iteration will move to the deleted osp's next sibling)
+				osp = osp_prev;
+				continue;
+			}
+
+			// currently playing sound has gone past maximum
+			if ( distance > gamesnd_get_game_sound(osp->id)->max ) {
+				int sound_index = obj_snd_find(objp, osp);
 
 				Assert(sound_index != -1);
-				obj_snd_stop(objp, sound_index);						// currently playing sound has gone past maximum
+				obj_snd_stop(objp, sound_index);
 			}
 		}
 
@@ -767,20 +767,17 @@ int obj_snd_assign(int objnum, gamesnd_id sndnum, const vec3d *pos, int flags, c
 //
 // parameters:  objnum		=> index of object that sound is being removed from.
 //				index		=> index of sound in objsnd_num
+//				stop_sound	=> whether we stop it (defaults to true)
 //
-void obj_snd_delete(int objnum, int index)
+void obj_snd_delete(object *objp, int index, bool stop_sound)
 {
-	//Sanity checking
-	Assert(objnum > -1 && objnum < MAX_OBJECTS);
-
-	object *objp = &Objects[objnum];
-	
 	Assert(index > -1 && index < (int) objp->objsnd_num.size());
 
 	obj_snd *osp = &Objsnds[objp->objsnd_num[index]];
 
 	//Stop the sound
-	obj_snd_stop(objp, index);
+	if (stop_sound)
+		obj_snd_stop(objp, index);
 
 	// remove objp from the obj_snd_list
 	list_remove( &obj_snd_list, osp );
@@ -828,7 +825,7 @@ void	obj_snd_delete_type(int objnum, gamesnd_id sndnum, ship_subsys *ss)
 			continue;
 		}
 
-		obj_snd_delete(objnum, idx);
+		obj_snd_delete(objp, idx);
 	}
 }
 

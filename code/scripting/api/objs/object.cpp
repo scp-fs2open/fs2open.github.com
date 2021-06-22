@@ -565,7 +565,7 @@ ADE_FUNC(removeSoundByIndex, l_Object, "number index", "Removes an assigned soun
 		return ADE_RETURN_NIL;
 	}
 
-	obj_snd_delete(OBJ_INDEX(objp), snd_idx);
+	obj_snd_delete(objp, snd_idx);
 
 	return ADE_RETURN_NIL;
 }

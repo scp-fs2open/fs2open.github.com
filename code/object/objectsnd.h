@@ -24,7 +24,6 @@
 #define OS_SUBSYS_ROTATION		(1<<7)
 #define OS_PLAY_ON_PLAYER		(1<<8)
 #define OS_LOOPING_DISABLED		(1<<9)
-#define OS_STARTED_PLAYING		(1<<10)
 
 struct vec3d;
 class ship_subsys;
@@ -43,7 +42,7 @@ void	obj_snd_do_frame();
 int	obj_snd_assign(int objnum, gamesnd_id sndnum, const vec3d *pos, int flags = 0, const ship_subsys *associated_sub = nullptr);
 
 //Delete specific persistent sound on object
-void obj_snd_delete(int objnum, int index);
+void obj_snd_delete(object *objp, int index, bool stop_sound = true);
 
 // if sndnum is not -1, deletes all instances of the given sound within the object
 void	obj_snd_delete_type(int objnum, gamesnd_id sndnum = gamesnd_id(), ship_subsys *ss = NULL);

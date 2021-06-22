@@ -19424,7 +19424,7 @@ void ship_render_batch_thrusters(object *obj)
 			shipp->thrusters_start[i] = 0;
 			if(shipp->thrusters_sounds[i] >= 0)
 			{
-				obj_snd_delete(OBJ_INDEX(obj), shipp->thrusters_sounds[i]);
+				obj_snd_delete(obj, shipp->thrusters_sounds[i]);
 				shipp->thrusters_sounds[i] = -1;
 			}
 
