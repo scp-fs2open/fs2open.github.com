@@ -437,7 +437,7 @@ void maybe_play_flyby_snd(float closest_dist, object *closest_objp, object *list
 void obj_snd_do_frame()
 {
 	float				closest_dist, distance, speed_vol_multiplier, rot_vol_mult, percent_max, alive_vol_mult;
-	obj_snd			*osp;
+	obj_snd			*osp, *osp_prev;
 	object			*objp, *closest_objp;
 	game_snd			*gs;
 	ship				*sp;
@@ -578,8 +578,15 @@ void obj_snd_do_frame()
 
 		go_ahead_flag = TRUE;
 		float max_vol,new_vol;
-		// start playing if sound is invalid and looping or non-looping but has not started
-		if (!osp->instance.isValid() && (!(osp->flags & OS_LOOPING_DISABLED) || !(osp->flags & OS_STARTED_PLAYING))) {
+		// if sound not valid, evaluate looping status before possibly replaying
+		if (!osp->instance.isValid() && (osp->flags & OS_LOOPING_DISABLED) && (osp->flags & OS_STARTED_PLAYING)) {
+			// non-looping sounds that have already played once need to be removed from the object sound list
+			osp_prev = GET_PREV(osp);
+			list_remove(&obj_snd_list, osp);
+			osp = osp_prev;
+			continue;
+		} else if (!osp->instance.isValid()) {
+			// start playing sound if (invalid and looping) or (invalid and non-looping and not started)
 			if ( distance < gs->max ) {
 				max_vol = gs->volume_range.max();
 				if ( distance <= gs->min ) {
