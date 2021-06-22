@@ -99,7 +99,7 @@ namespace
 				break;
 			default:
 				// SDL gave us an unknown button. Just log it
-				mprintf(("Unknown SDL button %i", e.button.button));
+				mprintf(("Unknown SDL button %i\n", e.button.button));
 		}
 
 		return true;

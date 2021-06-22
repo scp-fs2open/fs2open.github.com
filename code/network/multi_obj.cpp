@@ -639,7 +639,7 @@ void multi_ship_record_do_rollback()
 		}
 
 		objp = &Objects[cur_ship.objnum];
-		if (objp == nullptr) {
+		if (objp == nullptr || objp->type != OBJ_SHIP) {
 			continue;
 		}
 
@@ -2392,7 +2392,7 @@ void multi_oo_process_all(net_player *pl)
 		// this should only happen when the game is just starting, because the previous timestamp is nonsense.
 		if (Oo_info.number_of_frames > 1) {
 			// Send to the log if we're getting negative times. 
-			mprintf(("Somehow the object update packet is calculating a negative time differential in multi_oo_send_control_info. Value: %d. It's going to guess on a correct value. Please investigate.", temp_timestamp));
+			mprintf(("Somehow the object update packet is calculating a negative time differential in multi_oo_send_control_info. Value: %d. It's going to guess on a correct value. Please investigate.\n", temp_timestamp));
 		}
 		temp_timestamp = TIMESTAMP_OUT_IF_ERROR; // average amount of time per frame on a 60fps machine
 	}
@@ -2513,7 +2513,7 @@ void multi_oo_process_update(ubyte *data, header *hinfo)
 	net_player *pl = nullptr;	
 
 	// determine what player this came from 
-	player_index = find_player_id(hinfo->id);
+	player_index = find_player_index(hinfo->id);
 	if(player_index != -1){						
 		pl = &Net_players[player_index];
 	}
@@ -2714,7 +2714,7 @@ void multi_oo_send_control_info()
 		temp_timestamp = 255;
 	} else if (temp_timestamp < 0) {
 		// Send to the log if we're getting negative times.  
-		mprintf(("Somehow the object update packet is calculating negative time differential in multi_oo_send_control_info. Value: %d. It's going to guess on a correct value. Please investigate.", temp_timestamp));
+		mprintf(("Somehow the object update packet is calculating negative time differential in multi_oo_send_control_info. Value: %d. It's going to guess on a correct value. Please investigate.\n", temp_timestamp));
 		temp_timestamp = TIMESTAMP_OUT_IF_ERROR;
 	}
 	auto time_out = (ubyte)temp_timestamp;
@@ -2787,7 +2787,7 @@ void multi_oo_send_changed_object(object *changedobj)
 		temp_timestamp = 255;
 	} else if (temp_timestamp < 0) {
 		// Send to the log if we're getting negative times.  
-		mprintf(("Somehow the object update packet is calculating negative time differential in multi_oo_send_control_info. Value: %d. It's going to guess on a correct value. Please investigate.", temp_timestamp));
+		mprintf(("Somehow the object update packet is calculating negative time differential in multi_oo_send_control_info. Value: %d. It's going to guess on a correct value. Please investigate.\n", temp_timestamp));
 		temp_timestamp = TIMESTAMP_OUT_IF_ERROR;
 	}
 	auto time_out = (ubyte)temp_timestamp;

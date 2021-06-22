@@ -28,6 +28,7 @@
 #include <nebula/neb.h>
 #include <object/objectdock.h>
 #include <object/objectshield.h>
+#include <parse/sexp_container.h>
 #include <sound/ds.h>
 #include <starfield/nebula.h>
 #include <starfield/starfield.h>
@@ -1133,10 +1134,6 @@ int CFred_mission_save::save_cmd_brief()
 	stage = 0;
 	required_string_fred("#Command Briefing");
 	parse_comments(2);
-
-	if (The_mission.game_type & MISSION_TYPE_MULTI) {
-		return err;
-	}  // no command briefings allowed in multiplayer missions.
 
 	save_custom_bitmap("$Background 640:",
 					   "$Background 1024:",
@@ -2500,6 +2497,8 @@ void CFred_mission_save::save_mission_internal(const char* pathname)
 	} else if (save_plot_info()) {
 		err = -3;
 	} else if (save_variables()) {
+		err = -3;
+	} else if (save_containers()) {
 		err = -3;
 		//	else if (save_briefing_info())
 		//		err = -4;
@@ -4027,6 +4026,134 @@ int CFred_mission_save::save_variables()
 	fso_comment_pop(true);
 
 	return err;
+}
+
+int CFred_mission_save::save_containers()
+{
+	if (save_format == MissionFormat::RETAIL) {
+		return 0;
+	}
+
+	const auto &containers = get_all_sexp_containers();
+
+	if (containers.empty()) {
+		fso_comment_pop(true);
+		return 0;
+	}
+
+	required_string_fred("#Sexp_containers");
+	parse_comments(2);
+
+	bool list_found = false;
+	bool map_found = false;
+
+	// What types of container do we have?
+	for (const auto &container : containers) {
+		if (container.is_list()) {
+			list_found = true;
+		} else if (container.is_map()) {
+			map_found = true;
+		}
+		if (list_found && map_found) {
+			// no point in continuing to check
+			break;
+		}
+	}
+
+	if (list_found) {
+		required_string_fred("$Lists");
+		parse_comments(2);
+
+		for (const auto &container : containers) {
+			if (container.is_list()) {
+				fout("\n$Name: %s", container.container_name.c_str());
+				if (any(container.type & ContainerType::STRING_DATA)) {
+					fout("\n$Data Type: String");
+				} else if (any(container.type & ContainerType::NUMBER_DATA)) {
+					fout("\n$Data Type: Number");
+				}
+
+				if (any(container.type & ContainerType::STRICTLY_TYPED_DATA)) {
+					fout("\n+Strictly Typed Data");
+				}
+
+				fout("\n$Data: ( ");
+				for (const auto &list_entry : container.list_data) {
+					fout("\"%s\" ", list_entry.c_str());
+				}
+
+				fout(")\n");
+
+				save_container_options(container);
+			}
+		}
+
+		required_string_fred("$End Lists");
+		parse_comments(1);
+	}
+
+	if (map_found) {
+		required_string_fred("$Maps");
+		parse_comments(2);
+
+		for (const auto &container : containers) {
+			if (container.is_map()) {
+				fout("\n$Name: %s", container.container_name.c_str());
+				if (any(container.type & ContainerType::STRING_DATA)) {
+					fout("\n$Data Type: String");
+				} else if (any(container.type & ContainerType::NUMBER_DATA)) {
+					fout("\n$Data Type: Number");
+				}
+
+				if (any(container.type & ContainerType::NUMBER_KEYS)) {
+					fout("\n$Key Type: Number");
+				} else {
+					fout("\n$Key Type: String");
+				}
+
+				if (any(container.type & ContainerType::STRICTLY_TYPED_KEYS)) {
+					fout("\n+Strictly Typed Keys");
+				}
+
+				if (any(container.type & ContainerType::STRICTLY_TYPED_DATA)) {
+					fout("\n+Strictly Typed Data");
+				}
+
+				fout("\n$Data: ( ");
+				for (const auto &map_entry : container.map_data) {
+					fout("\"%s\" \"%s\" ", map_entry.first.c_str(), map_entry.second.c_str());
+				}
+
+				fout(")\n");
+
+				save_container_options(container);
+			}
+		}
+
+		required_string_fred("$End Maps");
+		parse_comments(1);
+	}
+
+	return err;
+}
+
+void CFred_mission_save::save_container_options(const sexp_container &container)
+{
+	if (any(container.type & ContainerType::NETWORK)) {
+		fout("+Network Container\n");
+	}
+
+	if (container.is_eternal()) {
+		fout("+Eternal\n");
+	}
+
+	if (any(container.type & ContainerType::SAVE_ON_MISSION_CLOSE)) {
+		fout("+Save On Mission Close\n");
+	} else if (any(container.type & ContainerType::SAVE_ON_MISSION_PROGRESS)) {
+		fout("+Save On Mission Progress\n");
+	}
+
+	fout("\n");
 }
 
 int CFred_mission_save::save_vector(vec3d& v)

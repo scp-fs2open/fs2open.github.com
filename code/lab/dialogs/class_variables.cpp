@@ -89,7 +89,7 @@ void Variables::update(LabMode newLabMode, int classIndex) {
 			addVariable(&y, "Max speed", wip->max_speed);
 			addVariable(&y, "Lifetime", wip->lifetime);
 			addVariable(&y, "Range", wip->weapon_range);
-			addVariable(&y, "Min Range", wip->WeaponMinRange);
+			addVariable(&y, "Min Range", wip->weapon_min_range);
 
 			addHeader(y, "Damage");
 			addVariable(&y, "Fire wait", wip->fire_wait);

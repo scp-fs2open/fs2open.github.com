@@ -302,7 +302,7 @@ const char *multi_random_death_word()
 {
 	int index;
 
-	index = rand() % NUM_DEATH_WORDS;
+	index = Random::next(NUM_DEATH_WORDS);
 	switch (index) {
 		case 0:
 			return XSTR("zapped",853);
@@ -401,7 +401,7 @@ const char *multi_random_chat_start()
 {
 	int index;
 
-	index = rand() % NUM_CHAT_START_WORDS;
+	index = Random::next(NUM_CHAT_START_WORDS);
 	switch (index) {
 		case 0:
 			return XSTR("says",893);
@@ -486,7 +486,8 @@ int find_player_no_port(net_addr *addr)
 	return -1;
 }
 
-int find_player_id(short player_id)
+// return the index to the players array from the player ID assigned by the Server.
+int find_player_index(short player_id)
 {
 	int i;
 	for (i = 0; i < MAX_PLAYERS; i++ ) {
@@ -1304,7 +1305,7 @@ void server_verify_filesig(short player_id, ushort sum_sig, int length_sig)
 	int ok;	
 	int is_builtin;
    
-	player = find_player_id(player_id);
+	player = find_player_index(player_id);
 	Assert(player >= 0);
 	if(player < 0){
 		return;
@@ -3074,6 +3075,10 @@ void multi_update_valid_missions()
 	// now poll for all unknown missions
 	was_cancelled = false;
 
+	if ( !(Game_mode & GM_STANDALONE_SERVER) ) {
+		popup_conditional_create(0, XSTR("&Cancel", 667), XSTR("Validating missions ...", -1));
+	}
+
 	for (idx = 0; idx < Multi_create_mission_list.size(); idx++) {
 		if (Multi_create_mission_list[idx].valid_status != MVALID_STATUS_UNKNOWN) {
 			continue;
@@ -3087,6 +3092,10 @@ void multi_update_valid_missions()
 		}
 
 		Multi_create_mission_list[idx].valid_status = (char)rval;
+	}
+
+	if ( !(Game_mode & GM_STANDALONE_SERVER) ) {
+		popup_conditional_close();
 	}
 
 	// if the operation was cancelled, don't write anything new

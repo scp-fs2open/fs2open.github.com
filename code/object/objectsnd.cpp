@@ -44,7 +44,7 @@ typedef struct _obj_snd {
 	int		freq;				// valid range: 100 -> 100000 Hz
 	int		flags;			
 	vec3d	offset;			// offset from the center of the object where the sound lives
-	ship_subsys *ss;		//Associated subsystem
+	const ship_subsys *ss;		//Associated subsystem
 } obj_snd;
 
 #define SPEED_SOUND				600.0f				// speed of sound in FreeSpace
@@ -247,6 +247,7 @@ void obj_snd_stop(object *objp, int index)
 					case OBJ_GHOST:
 					case OBJ_DEBRIS:
 					case OBJ_ASTEROID:
+					case OBJ_WEAPON:
 						Num_obj_sounds_playing--;
 						Assert(Num_obj_sounds_playing >= 0);					
 						break;
@@ -272,6 +273,7 @@ void obj_snd_stop(object *objp, int index)
 			case OBJ_GHOST:
 			case OBJ_DEBRIS:
 			case OBJ_ASTEROID:
+			case OBJ_WEAPON:
 				Num_obj_sounds_playing--;
 				Assert(Num_obj_sounds_playing >= 0);					
 				break;
@@ -594,6 +596,7 @@ void obj_snd_do_frame()
 					case OBJ_SHIP:
 					case OBJ_DEBRIS:
 					case OBJ_ASTEROID:
+					case OBJ_WEAPON:
 						if ( Num_obj_sounds_playing >= MAX_OBJ_SOUNDS_PLAYING ) {
 							go_ahead_flag = obj_snd_stop_lowest_vol(new_vol);
 						}
@@ -681,8 +684,10 @@ void obj_snd_do_frame()
 //										sound can be assigned per object).  
 //               >= 0			=> sound was successfully assigned
 //
-int obj_snd_assign(int objnum, gamesnd_id sndnum, vec3d *pos, int main, int flags, ship_subsys *associated_sub)
+int obj_snd_assign(int objnum, gamesnd_id sndnum, const vec3d *pos, int flags, const ship_subsys *associated_sub)
 {
+	Assertion(pos != nullptr, "Sound position must not be null!");
+
 	if(objnum < 0 || objnum > MAX_OBJECTS)
 		return -1;
 
@@ -723,10 +728,6 @@ int obj_snd_assign(int objnum, gamesnd_id sndnum, vec3d *pos, int main, int flag
 	}
 	snd = &Objsnds[objp->objsnd_num[sound_index]];
 	snd->flags = OS_USED;
-
-	if(main){
-		snd->flags |= OS_MAIN;
-	}
 
 	if(flags > 0){
 		snd->flags |= flags;

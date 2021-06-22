@@ -21,6 +21,7 @@
 #include "globalincs/linklist.h"
 #include "graphics/font.h"
 #include "graphics/matrix.h"
+#include "graphics/shadows.h"
 #include "hud/hud.h"
 #include "io/key.h"
 #include "io/mouse.h"
@@ -789,14 +790,17 @@ void brief_set_default_closeup()
  */
 void brief_compact_stages()
 {
-	int num, before, result, i;
+	int num, before, i;
 
 	before = Briefing->num_stages;
 
 	num = 0;
 	while ( num < Briefing->num_stages ) {
-		result = eval_sexp( Briefing->stages[num].formula );
-		if ( !result ) {
+		if ( eval_sexp(Briefing->stages[num].formula) ) {
+			// Goober5000 - replace any variables (probably persistent variables) with their values
+			sexp_replace_variable_names_with_values(Briefing->stages[num].text);
+		} else {
+			// clean up unused briefing stage
 			Briefing->stages[num].text = "";
 
 			if ( Briefing->stages[num].icons != NULL ) {
@@ -835,8 +839,6 @@ void brief_compact_stages()
 //
 void brief_init()
 {
-	int i;
-
 	// for multiplayer, change the state in my netplayer structure
 	// and initialize the briefing chat area thingy
 	if ( Game_mode & GM_MULTIPLAYER ){
@@ -856,10 +858,6 @@ void brief_init()
 	} else {
 		Briefing = &Briefings[0];			
 	}
-
-	// Goober5000 - replace any variables (probably persistent variables) with their values
-	for (i = 0; i < Briefing->num_stages; i++)
-		sexp_replace_variable_names_with_values(Briefing->stages[i].text);
 
 	Brief_last_auto_advance = 0;
 
@@ -1048,10 +1046,6 @@ void brief_render_closeup(int ship_class, float frametime)
 
 	g3_start_frame(1);
 	g3_set_view_matrix(&Closeup_cam_pos, &view_orient, Closeup_zoom);
-
-
-	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
-	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 	
 	// the following is copied from menuui/techmenu.cpp ... it works heehee :D  - delt.
 	// lighting for techroom
@@ -1073,12 +1067,28 @@ void brief_render_closeup(int ship_class, float frametime)
 	model_render_params render_info;
 	render_info.set_detail_level_lock(0);
 
+	if (Shadow_quality != ShadowQuality::Disabled)
+	{
+		auto pm = model_get(Closeup_icon->modelnum);
+
+		gr_reset_clip();
+		shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, gr_screen.clip_aspect, -Closeup_cam_pos.xyz.z + pm->rad, -Closeup_cam_pos.xyz.z + pm->rad + 200.0f, -Closeup_cam_pos.xyz.z + pm->rad + 2000.0f, -Closeup_cam_pos.xyz.z + pm->rad + 10000.0f);
+		render_info.set_flags(MR_NO_TEXTURING | MR_NO_LIGHTING | MR_AUTOCENTER);
+
+		model_render_immediate(&render_info, Closeup_icon->modelnum, Closeup_icon->model_instance_num, &Closeup_orient, &Closeup_pos);
+		shadows_end_render();
+		gr_set_clip(Closeup_region[gr_screen.res][0], Closeup_region[gr_screen.res][1], w, h, GR_RESIZE_MENU);
+	}
+
 	if ( Closeup_icon->type == ICON_JUMP_NODE) {
 		render_info.set_color(HUD_color_red, HUD_color_green, HUD_color_blue);
 		render_info.set_flags(MR_NO_LIGHTING | MR_AUTOCENTER | MR_NO_POLYS | MR_SHOW_OUTLINE_HTL | MR_NO_TEXTURING);
 	} else {
 		render_info.set_flags(MR_AUTOCENTER);
 	}
+
+	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
 	model_render_immediate( &render_info, Closeup_icon->modelnum, Closeup_icon->model_instance_num, &Closeup_orient, &Closeup_pos );
 

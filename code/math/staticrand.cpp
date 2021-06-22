@@ -9,6 +9,7 @@
 
 #include "math/staticrand.h"
 #include "math/vecmat.h"
+#include "utils/Random.h"
 
 bool Semirand_inited = false;
 unsigned int Semirand[SEMIRAND_MAX];
@@ -20,11 +21,12 @@ void init_semirand()
 {
 	Semirand_inited = true;
 
-	// Originally this made a 30-bit rand by sticking two 15-bit rands from myrand() together. Instead we trim rand32() down to size.
+	// Originally this made a 30-bit rand by sticking two 15-bit rands from myrand() together. Instead we trim Random::next() down to size.
 	for (auto & number : Semirand)
-		number = (unsigned) (rand32() & STATIC_RAND_MAX);
+		number = (unsigned) (util::Random::next() & STATIC_RAND_MAX);
 }
 
+// TODO: figure out what to do with these
 /**
  * @brief Return a pseudo random 32 bit value given a reasonably small number.
  *

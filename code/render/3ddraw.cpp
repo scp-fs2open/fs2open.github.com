@@ -1190,17 +1190,17 @@ void flash_ball::initialize(int number, float min_ray_width, float max_ray_width
 	for(i = 0; i<n_rays; i++){
 	//colors
 		if(min_r != 255){
-			ray[i].start.r = (rand()%(max_r-min_r))+min_r;
+			ray[i].start.r = (ubyte)Random::next(min_r, max_r);
 		}else{
 			ray[i].start.r = 255;
 		}
 		if(min_g != 255){
-			ray[i].start.g = (rand()%(max_g-min_g))+min_g;
+			ray[i].start.g = (ubyte)Random::next(min_g, max_g);
 		}else{
 			ray[i].start.g = 255;
 		}
 		if(min_b != 255){
-			ray[i].start.b = (rand()%(max_b-min_b))+min_b;
+			ray[i].start.b = (ubyte)Random::next(min_b, max_b);
 		}else{
 			ray[i].start.b = 255;
 		}
@@ -1320,17 +1320,17 @@ void flash_ball::initialize(ubyte *bsp_data, float min_ray_width, float max_ray_
 	for(i = 0; i<n_rays; i++){
 	//colors
 		if(min_r != 255){
-			ray[i].start.r = (rand()%(max_r-min_r))+min_r;
+			ray[i].start.r = (ubyte)Random::next(min_r, max_r);
 		}else{
 			ray[i].start.r = 255;
 		}
 		if(min_g != 255){
-			ray[i].start.g = (rand()%(max_g-min_g))+min_g;
+			ray[i].start.g = (ubyte)Random::next(min_g, max_g);
 		}else{
 			ray[i].start.g = 255;
 		}
 		if(min_b != 255){
-			ray[i].start.b = (rand()%(max_b-min_b))+min_b;
+			ray[i].start.b = (ubyte)Random::next(min_b, max_b);
 		}else{
 			ray[i].start.b = 255;
 		}

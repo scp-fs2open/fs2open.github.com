@@ -1222,7 +1222,7 @@ void ship_select_blit_ship_info()
 	if(Ship_select_ship_info_text[0] != '\0'){
 		// split the string into multiple lines
 		// MageKing17: Changed to use the widths determined by Yarn here: http://scp.indiegames.us/mantis/view.php?id=3144#c16516
-		n_lines = split_str(Ship_select_ship_info_text, gr_screen.res == GR_640 ? 204 : 328, n_chars, p_str, MAX_NUM_SHIP_DESC_LINES, 0);
+		n_lines = split_str(Ship_select_ship_info_text, gr_screen.res == GR_640 ? 204 : 328, n_chars, p_str, MAX_NUM_SHIP_DESC_LINES, SHIP_SELECT_SHIP_INFO_MAX_LINE_LEN);
 
 		// copy the split up lines into the text lines array
 		for (int idx = 0;idx<n_lines;idx++ ) {

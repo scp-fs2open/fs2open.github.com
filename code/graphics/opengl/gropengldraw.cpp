@@ -706,8 +706,8 @@ void gr_opengl_update_distortion()
 
 	for(int i = 0; i < 33; i++)
 	{
-		distortion_verts[i].r = (ubyte)rand() % 256;
-		distortion_verts[i].g = (ubyte)rand() % 256;
+		distortion_verts[i].r = (ubyte)Random::next(256);
+		distortion_verts[i].g = (ubyte)Random::next(256);
 		distortion_verts[i].b = 255;
 		distortion_verts[i].a = 255;
 

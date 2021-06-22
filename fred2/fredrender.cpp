@@ -1125,6 +1125,8 @@ void inc_mission_time() {
 
 	if (Frametime > MAX_FRAMETIME) {
 		Frametime = MAX_FRAMETIME;
+	} else if (Frametime < 0) {
+		Frametime = thistime = MIN_FRAMETIME;
 	} else if (Frametime < MIN_FRAMETIME) {
 		if (!Cmdline_NoFPSCap) {
 			thistime = MIN_FRAMETIME - Frametime;

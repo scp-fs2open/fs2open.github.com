@@ -629,7 +629,7 @@ void multi_respawn_process_packet(ubyte *data, header *hinfo)
 	int offset = HEADER_LENGTH;
 
 	// determine who send the packet	
-	player_index = find_player_id(hinfo->id);
+	player_index = find_player_index(hinfo->id);
 	if(player_index == -1){
 		nprintf(("Network","Couldn't find player for processing respawn packet!\n"));
 	}
@@ -644,9 +644,14 @@ void multi_respawn_process_packet(ubyte *data, header *hinfo)
 		p_object *pobjp;
 
 		GET_USHORT( net_sig );
-		pobjp = mission_parse_get_arrival_ship( net_sig );
-		Assert( pobjp != NULL );
-		multi_respawn_ai( pobjp );
+
+		// only attempt to respawn if we are in the mission
+		if (!(Net_player->flags & NETINFO_FLAG_WARPING_OUT)) {
+			pobjp = mission_parse_get_arrival_ship(net_sig);
+			Assert(pobjp != NULL);
+			multi_respawn_ai(pobjp);
+		}
+
 		break;		
 
 	case RESPAWN_BROADCAST:
@@ -659,19 +664,23 @@ void multi_respawn_process_packet(ubyte *data, header *hinfo)
 		GET_DATA(cur_link_status);
 		GET_USHORT(ship_ets);
 		GET_STRING(parse_name);
-		player_index = find_player_id(player_id);
-		if(player_index == -1){
-			nprintf(("Network","Couldn't find player to respawn!\n"));
-			break;
-		}
 
-		// create the ship and assign its position, net_signature, and class
-		// respawn the player
-		multi_respawn_player(&Net_players[player_index], cur_primary_bank, cur_secondary_bank, cur_link_status, ship_ets, net_sig, parse_name, &v);
+		if (!(Net_player->flags & NETINFO_FLAG_WARPING_OUT)) {
+			player_index = find_player_index(player_id);
 
-		// if this is for me, I should jump back into gameplay
-		if(&Net_players[player_index] == Net_player){
-			gameseq_post_event(GS_EVENT_ENTER_GAME);
+			if(player_index == -1){
+				nprintf(("Network","Couldn't find player to respawn!\n"));
+				break;
+			}
+
+			// create the ship and assign its position, net_signature, and class
+			// respawn the player
+			multi_respawn_player(&Net_players[player_index], cur_primary_bank, cur_secondary_bank, cur_link_status, ship_ets, net_sig, parse_name, &v);
+
+			// if this is for me, I should jump back into gameplay
+			if(&Net_players[player_index] == Net_player){
+				gameseq_post_event(GS_EVENT_ENTER_GAME);
+			}
 		}
 		break;
 	
