@@ -1179,6 +1179,7 @@ public:
 	float		max_overclocked_speed;			// max speed when 100% power output sent to engines
 	float		max_weapon_reserve;				// maximum energy that can be stored for primary weapon usage
 	float		max_shield_regen_per_second;	// Goober5000 - max percent/100 of shield energy regenerated per second
+	float       shield_regen_hit_delay;			// Asteroth - delay after being hit before shield will start recharging again
 	float		max_weapon_regen_per_second;	// Goober5000 - max percent/100 of weapon energy regenerated per second
 
 	// Fields for tuning the ETS' direct shield<->weapon transfer feature
