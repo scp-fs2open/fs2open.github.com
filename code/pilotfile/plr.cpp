@@ -610,7 +610,10 @@ void pilotfile::plr_read_controls()
 
 			std::copy(Control_config.begin(), Control_config.end(), std::back_inserter(preset.bindings));
 			Control_config_presets.push_back(preset);
+
+			// Overwrite any existing preset, preferring the old version bindings over the new.
 			save_preset_file(preset, true);
+			ReleaseWarning(LOCATION, "Successfully converted PLR v2 to v3.  Please rebind your mouse controls, if any.");
 		}
 		return;
 
@@ -623,6 +626,7 @@ void pilotfile::plr_read_controls()
 
 		if (it == Control_config_presets.end()) {
 			// Couldn't find the preset, use defaults
+			ReleaseWarning(LOCATION, "Could not find preset %s, using defaults\n", buf.c_str());
 			it = Control_config_presets.begin();
 		}
 
