@@ -2641,6 +2641,7 @@ CCI_builder& CCI_builder::operator()(IoActionId action_id, short primary, short 
 
 	if (tab == NO_TAB) {
 		mprintf(("Control item defined without a valid tab. Disabling: %s\n", item.text.c_str()));
+		item.disabled = true;
 	}
 
 	// Enable if it has a valid tab and if caller wants it enabled
