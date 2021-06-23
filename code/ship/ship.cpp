@@ -12442,8 +12442,11 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 	// if trying to fire a swarm missile, make sure being called from right place
 	if ( (wip->wi_flags[Weapon::Info_Flags::Swarm]) && !allow_swarm ) {
 		Assert(wip->swarm_count > 0);
-		if (wip->multi_lock && (obj == Player_obj || (MULTIPLAYER_MASTER && obj->flags[Object::Object_Flags::Player_ship] ))) {
-			shipp->num_swarm_missiles_to_fire = (int)shipp->missile_locks_firing.size();
+		if (wip->multi_lock) {
+			if(obj == Player_obj || (MULTIPLAYER_MASTER && obj->flags[Object::Object_Flags::Player_ship]))
+				shipp->num_swarm_missiles_to_fire = (int)shipp->missile_locks_firing.size();
+			else // AI ships
+				shipp->num_swarm_missiles_to_fire = (int)aip->ai_missile_locks_firing.size();
 		} else if(wip->swarm_count <= 0){
 			shipp->num_swarm_missiles_to_fire = SWARM_DEFAULT_NUM_MISSILES_FIRED;
 		} else {
@@ -12458,8 +12461,11 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 	if ( (wip->wi_flags[Weapon::Info_Flags::Corkscrew]) && !allow_swarm ) {
 		//phreak 11-9-02 
 		//changed this from 4 to custom number defined in tables
-		if (wip->multi_lock && (obj == Player_obj || (MULTIPLAYER_MASTER && obj->flags[Object::Object_Flags::Player_ship] ))) {
-			shipp->num_corkscrew_to_fire = (ubyte)shipp->missile_locks_firing.size();
+		if (wip->multi_lock) {
+			if (obj == Player_obj || (MULTIPLAYER_MASTER && obj->flags[Object::Object_Flags::Player_ship]))
+				shipp->num_corkscrew_to_fire = (ubyte)shipp->missile_locks_firing.size();
+			else // AI ships
+				shipp->num_corkscrew_to_fire = (ubyte)aip->ai_missile_locks_firing.size();
 		} else {
 			shipp->num_corkscrew_to_fire = (ubyte)(shipp->num_corkscrew_to_fire + (ubyte)wip->cs_num_fired);
 		}
@@ -12533,6 +12539,11 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 				target_subsys = nullptr;
 				locked = 0;
 			}
+		} else if (wip->multi_lock && !aip->ai_missile_locks_firing.empty()) {
+			target_objnum = aip->ai_missile_locks_firing.back().first;
+			target_subsys = aip->ai_missile_locks_firing.back().second;
+			locked = 1;
+			aip->ai_missile_locks_firing.pop_back();
 		} else {
 			target_objnum = aip->target_objnum;
 			target_subsys = aip->targeted_subsys;
