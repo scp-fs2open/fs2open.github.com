@@ -122,17 +122,14 @@ void load_preset_files() {
 		handler->endArrayRead(); // Actions
 
 		// Done with the file
-		bool unique = false;
+		bool unique = true;
 		auto it = Control_config_presets.begin();
 		for (; it != Control_config_presets.end(); ++it) {
-			for (size_t i = 0; i < it->bindings.size(); ++i) {
-				if (preset.bindings[i] != it->bindings[i]) {
-					unique = true;
-					goto is_unique;
-				}
+			if (preset.is_duplicate_of(*it)) {
+				unique = false;
+				break;
 			}
 		}
-		is_unique:;
 
 		if (unique) {
 			Control_config_presets.push_back(preset);

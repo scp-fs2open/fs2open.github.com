@@ -506,6 +506,12 @@ class CC_preset {
 public:
 	SCP_vector<CCB> bindings;
 	SCP_string name;
+
+public:
+	/*!
+	 * Checks if the given preset is a duplicate of this one
+	 */
+	bool is_duplicate_of(CC_preset&);
 };
 
 /*!

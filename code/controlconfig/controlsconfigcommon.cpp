@@ -1520,8 +1520,11 @@ size_t find_control_by_text(SCP_string& text) {
  * @brief Reads a section in controlconfigdefaults.tbl.
  *
  * @param[in] s Value of a call to optional_string_either(); 0 = "ControlConfigOverride" 1 = "ControlConfigPreset"
+ * @param[in] first_override Legacy support for unnamed #ControlConfigOverrides.  If this is the first unnamed
+ *   override, then overwrite the default preset, else, save it as an "unnamed preset"
  *
- * @details ControlConfigPresets are read in the exact same manner as ControlConfigOverrides, however only the bindings are available for modification
+ * @details ControlConfigPresets are read in the exact same manner as ControlConfigOverrides, however only the
+ *   bindings are available for modification
  */
 void control_config_common_read_section(int s, bool first_override) {
 	CC_preset new_preset;
@@ -1675,14 +1678,11 @@ void control_config_common_read_section(int s, bool first_override) {
 		bool unique = true;
 		auto it = Control_config_presets.begin();
 		for (; it != Control_config_presets.end(); ++it) {
-			for (size_t i = 0; i < it->bindings.size(); ++i) {
-				if (new_preset.bindings[i] == it->bindings[i]) {
-					unique = false;
-					goto not_unique;
-				}
+			if (new_preset.is_duplicate_of(*it)) {
+				unique = false;
+				break;
 			}
 		}
-		not_unique:;
 
 		if (unique) {
 			Control_config_presets.push_back(new_preset);
@@ -2650,4 +2650,16 @@ CCI_builder& CCI_builder::operator()(IoActionId action_id, short primary, short 
 	}
 
 	return *this;
+}
+
+bool CC_preset::is_duplicate_of(CC_preset& A) {
+	for (size_t i = 0; i < A.bindings.size(); ++i) {
+		if (bindings[i] != A.bindings[i]) {
+			// Found a binding that's different.  Thus, this preset is not a duplicate
+			return false;
+		}
+	}
+
+	// Else, did not find any differences in the bindings.  Thus, this preset is a duplicate
+	return true;
 }
