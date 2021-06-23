@@ -26,6 +26,7 @@ class Category {
 };
 
 extern Category LuaOnFrame;
+extern Category LuaHooks;
 
 extern Category DrawSceneTexture;
 extern Category UpdateDistortion;

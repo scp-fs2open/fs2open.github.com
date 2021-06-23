@@ -18,6 +18,7 @@
 #include "render/3d.h"
 #include "ship/ship.h"
 #include "ship/shipfx.h"
+#include "utils/Random.h"
 #include "weapon/beam.h"
 #include "weapon/flak.h"
 #include "weapon/muzzleflash.h"
@@ -146,13 +147,15 @@ bool object_in_turret_fov(object *objp, ship_subsys *ss, vec3d *tvec, vec3d *tpo
 			if (in_fov)
 				return true;
 		}
+	} 
+	// if the bbox points method didn't work (or fov_edge_checks isn't on)
+	// try the normal method
 
-	} else {
-		vm_vec_normalized_dir(&v2e, &objp->pos, tpos);
-		size_mod = objp->radius / (dist + objp->radius);
+	vm_vec_normalized_dir(&v2e, &objp->pos, tpos);
+	size_mod = objp->radius / (dist + objp->radius);
 
-		in_fov = turret_fov_test(ss, tvec, &v2e, size_mod);
-	}
+	in_fov = turret_fov_test(ss, tvec, &v2e, size_mod);
+
 
 	return in_fov;
 }
@@ -1382,12 +1385,12 @@ int aifft_rotate_turret(object *objp, ship *shipp, ship_subsys *ss, object *lep,
 		in_fov = turret_fov_test(ss, gvec, &v2e);
 
 		if (in_fov) {
-			ret_val = model_rotate_gun(objp, pm, pmi, tp, predicted_enemy_pos);
+			ret_val = model_rotate_gun(objp, pm, pmi, ss, predicted_enemy_pos);
 		} else if ((tp->flags[Model::Subsystem_Flags::Turret_reset_idle]) &&(timestamp_elapsed(ss->rotation_timestamp))) {
-			ret_val = model_rotate_gun(objp, pm, pmi, tp, predicted_enemy_pos, true);
+			ret_val = model_rotate_gun(objp, pm, pmi, ss, predicted_enemy_pos, true);
 		}
 	} else if ((ss->system_info->flags[Model::Subsystem_Flags::Turret_reset_idle]) && (timestamp_elapsed(ss->rotation_timestamp))) {
-		ret_val = model_rotate_gun(objp, pm, pmi, ss->system_info, predicted_enemy_pos, true);
+		ret_val = model_rotate_gun(objp, pm, pmi, ss, predicted_enemy_pos, true);
 	}
 
 	// by default "ret_val" should be set to 1 for multi-part turrets, and 0 for single-part turrets
@@ -1614,11 +1617,11 @@ void turret_set_next_fire_timestamp(int weapon_num, weapon_info *wip, ship_subsy
 			wait *= wip->fire_wait;
 		}
 		if ((wip->burst_shots > 0) && (wip->burst_flags[Weapon::Burst_Flags::Random_length])) {
-			turret->weapons.burst_counter[weapon_num] = (myrand() % wip->burst_shots);
-			turret->weapons.burst_seed[weapon_num] = rand32();
+			turret->weapons.burst_counter[weapon_num] = Random::next(wip->burst_shots);
+			turret->weapons.burst_seed[weapon_num] = Random::next();
 		} else {
 			turret->weapons.burst_counter[weapon_num] = 0;
-			turret->weapons.burst_seed[weapon_num] = rand32();
+			turret->weapons.burst_seed[weapon_num] = Random::next();
 		}
 	}
 
@@ -1785,8 +1788,19 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 
 		vm_vector_2_matrix(&turret_orient, firing_vec, nullptr, nullptr);
 
-		// set next fire timestamp for the turret
+		// grab and set some burst data before turret_set_next_fire_timestamp wipes it
 		int old_burst_seed = swp->burst_seed[weapon_num];
+		int old_burst_counter = swp->burst_counter[weapon_num];
+		// only used by type 5 beams
+		if (turret->weapons.burst_counter[weapon_num] == 0) {
+			swp->per_burst_rot += wip->b_info.t5info.per_burst_rot;
+			if (swp->per_burst_rot > PI2)
+				swp->per_burst_rot -= PI2;
+			else if (swp->per_burst_rot < -PI2)
+				swp->per_burst_rot += PI2;
+		}
+
+		// set next fire timestamp for the turret
 		if (last_shot_in_salvo)
 			turret_set_next_fire_timestamp(weapon_num, wip, turret, parent_aip);
 
@@ -1812,6 +1826,8 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 			fire_info.turret = turret;
 			fire_info.burst_seed = old_burst_seed;
 			fire_info.fire_method = BFM_TURRET_FIRED;
+			fire_info.per_burst_rotation = swp->per_burst_rot;
+			fire_info.burst_index = old_burst_counter;
 
 			// fire a beam weapon
 			weapon_objnum = beam_fire(&fire_info);
@@ -2109,7 +2125,7 @@ extern int Nebula_sec_range;
 void ai_fire_from_turret(ship *shipp, ship_subsys *ss)
 {
 	float		weapon_firing_range;
-    float		WeaponMinRange;			// *Weapon minimum firing range -Et1
+    float		weapon_min_range;			// *Weapon minimum firing range -Et1
 	vec3d	v2e;
 	object	*lep;		//	Last enemy pointer
 	model_subsystem	*tp = ss->system_info;
@@ -2284,12 +2300,12 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss)
 		if (wip->wi_flags[Weapon::Info_Flags::Local_ssm])
 		{
 			weapon_firing_range = wip->lssm_lock_range;
-			WeaponMinRange = 0.0f;
+			weapon_min_range = 0.0f;
 		}
 		else
 		{
 			weapon_firing_range = MIN(wip->lifetime * wip->max_speed, wip->weapon_range);
-			WeaponMinRange = wip->WeaponMinRange;
+			weapon_min_range = wip->weapon_min_range;
 		}
 
 		// if beam weapon in nebula and target not tagged, decrease firing range
@@ -2302,7 +2318,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss)
 		}
 
 		// Don't try to fire beyond weapon_limit_range (or within min range)
-		if (dist_to_enemy < WeaponMinRange || dist_to_enemy > weapon_firing_range) {
+		if (dist_to_enemy < weapon_min_range || dist_to_enemy > weapon_firing_range) {
 			// it's possible another weapon is in range, but if not,
 			// we will end up selecting a new target
 			continue;

@@ -13,7 +13,7 @@
 
 void sexp_packet_received(ubyte *received_packet, int num_ubytes);
 
-#if SCP_COMPILER_IS_GNU
+#if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic push
 // This suppresses a GCC bug where it thinks that some of the enum fields below shadow global declarations even though
 // the enum class names are not visible in the global namespace
@@ -37,7 +37,7 @@ enum class packet_data_type {
 	WING				= 12,
 };
 
-#if SCP_COMPILER_IS_GNU
+#if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic pop
 #endif
 

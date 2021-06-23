@@ -446,7 +446,7 @@ void credits_init()
 	// we could conceivably have specified a number of images but not an index,
 	// so if that's the case, set the value here
 	if (Credits_artwork_index < 0) {
-		Credits_artwork_index = rand() % Credits_num_images;
+		Credits_artwork_index = Random::next(Credits_num_images);
 	}
 
 	int credits_spooled_music_index = event_music_get_spooled_music_index(Credits_music_name);	

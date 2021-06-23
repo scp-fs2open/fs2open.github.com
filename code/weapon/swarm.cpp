@@ -227,7 +227,7 @@ void swarm_update_direction(object *objp, swarm_info* swarmp)
 			missile_dist = missile_speed * zig_zag_time / 1000.0f;
 			if (missile_dist < SWARM_DIST_OFFSET)
 				missile_dist = SWARM_DIST_OFFSET;
-			float angle_offset = asinf(SWARM_DIST_OFFSET / missile_dist);
+			float angle_offset = asinf_safe(SWARM_DIST_OFFSET / missile_dist);
 			Assert(!fl_is_nan(angle_offset));
 
 			// Radius around the target pos. Shortens as the missiles get closer to the target.

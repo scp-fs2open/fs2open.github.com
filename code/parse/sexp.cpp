@@ -82,6 +82,7 @@
 #include "parse/parselo.h"
 #include "scripting/scripting.h"
 #include "parse/sexp.h"
+#include "parse/sexp_container.h"
 #include "playerman/player.h"
 #include "render/3d.h"
 #include "ship/afterburner.h"
@@ -97,6 +98,7 @@
 #include "starfield/starfield.h"
 #include "starfield/supernova.h"
 #include "stats/medals.h"
+#include "utils/Random.h"
 #include "weapon/beam.h"
 #include "weapon/emp.h"
 #include "weapon/shockwave.h"
@@ -231,6 +233,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "ship_score",						OP_SHIP_SCORE,							1,	1,			SEXP_INTEGER_OPERATOR,	},
 	{ "time-elapsed-last-order",		OP_LAST_ORDER_TIME,						2,	2,			SEXP_INTEGER_OPERATOR,	},
 	{ "player-is-cheating",				OP_PLAYER_IS_CHEATING_BASTARD,			0,  0,			SEXP_BOOLEAN_OPERATOR,  },
+	{ "is-language",					OP_IS_LANGUAGE,							1,	1,			SEXP_BOOLEAN_OPERATOR, }, // Goober5000
 
 	//Multiplayer Sub-Category
 	{ "num-players",					OP_NUM_PLAYERS,							0,	0,			SEXP_INTEGER_OPERATOR,	},
@@ -329,6 +332,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "mission-time-msecs",				OP_MISSION_TIME_MSECS,					0,	0,			SEXP_INTEGER_OPERATOR,	},	// Goober5000
 	{ "time-docked",					OP_TIME_DOCKED,							3,	3,			SEXP_INTEGER_OPERATOR,	},
 	{ "time-undocked",					OP_TIME_UNDOCKED,						3,	3,			SEXP_INTEGER_OPERATOR,	},
+	{ "time-to-goal",					OP_TIME_TO_GOAL,						1,	1,			SEXP_INTEGER_OPERATOR,	},	// tcrayford
 
 	//Conditionals Category
 	{ "cond",							OP_COND,								1,	INT_MAX,	SEXP_CONDITIONAL_OPERATOR,},
@@ -607,7 +611,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "hud-disable",					OP_HUD_DISABLE,							1,	1,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "hud-disable-except-messages",	OP_HUD_DISABLE_EXCEPT_MESSAGES,			1,	1,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "hud-set-custom-gauge-active",	OP_HUD_SET_CUSTOM_GAUGE_ACTIVE,			2, 	INT_MAX, 	SEXP_ACTION_OPERATOR,	},
-	{ "hud-set-retail-gauge-active",	OP_HUD_SET_RETAIL_GAUGE_ACTIVE,			2, 	INT_MAX,	SEXP_ACTION_OPERATOR,	},
+	{ "hud-set-builtin-gauge-active",	OP_HUD_SET_BUILTIN_GAUGE_ACTIVE,		2, 	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "hud-set-text",					OP_HUD_SET_TEXT,						2,	2,			SEXP_ACTION_OPERATOR,	},	//WMCoolmon
 	{ "hud-set-text-num",				OP_HUD_SET_TEXT_NUM,					2,	2,			SEXP_ACTION_OPERATOR,	},	//WMCoolmon
 	{ "hud-set-message",				OP_HUD_SET_MESSAGE,						2,	2,			SEXP_ACTION_OPERATOR,	},	//The E
@@ -812,50 +816,6 @@ sexp_ai_goal_link Sexp_ai_goal_links[] = {
 	{ AI_GOAL_PLAY_DEAD_PERSISTENT, OP_AI_PLAY_DEAD_PERSISTENT },
 	{ AI_GOAL_FORM_ON_WING, OP_AI_FORM_ON_WING }
 };
-
-const char *HUD_gauge_text[NUM_HUD_GAUGES] =
-{
-	"LEAD_INDICATOR",
-	"ORIENTATION_TEE",
-	"HOSTILE_TRIANGLE",
-	"TARGET_TRIANGLE",
-	"MISSION_TIME",
-	"RETICLE_CIRCLE",
-	"THROTTLE_GAUGE",
-	"RADAR",
-	"TARGET_MONITOR",
-	"CENTER_RETICLE",
-	"TARGET_MONITOR_EXTRA_DATA",
-	"TARGET_SHIELD_ICON",
-	"PLAYER_SHIELD_ICON",
-	"ETS_GAUGE",
-	"AUTO_TARGET",
-	"AUTO_SPEED",
-	"WEAPONS_GAUGE",
-	"ESCORT_VIEW",
-	"DIRECTIVES_VIEW",
-	"THREAT_GAUGE",
-	"AFTERBURNER_ENERGY",
-	"WEAPONS_ENERGY",
-	"WEAPON_LINKING_GAUGE",
-	"TARGER_MINI_ICON",
-	"OFFSCREEN_INDICATOR",
-	"TALKING_HEAD",
-	"DAMAGE_GAUGE",
-	"MESSAGE_LINES",
-	"MISSILE_WARNING_ARROW",
-	"CMEASURE_GAUGE",
-	"OBJECTIVES_NOTIFY_GAUGE",
-	"WINGMEN_STATUS",
-	"OFFSCREEN RANGE",
-	"KILLS GAUGE",
-	"ATTACKING TARGET COUNT",
-	"TEXT FLASH",
-	"MESSAGE BOX",
-	"SUPPORT GUAGE",
-	"LAG GUAGE"
-};
-
 
 void sexp_set_skybox_model_preload(const char *name); // taylor
 int Num_skybox_flags = 6;
@@ -1201,6 +1161,7 @@ void init_sexp()
 
 	sexp_nodes_init();
 	init_sexp_vars();
+	init_sexp_containers();
 	Locked_sexp_false = Locked_sexp_true = -1;
 
 	Locked_sexp_false = alloc_sexp("false", SEXP_LIST, SEXP_ATOM_OPERATOR, -1, -1);
@@ -2982,13 +2943,41 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					return SEXP_CHECK_INVALID_AUDIO_VOLUME_OPTION;
 				break;
 
-			case OPF_HUD_GAUGE:
+			case OPF_BUILTIN_HUD_GAUGE:
+			{
+				if (type2 != SEXP_ATOM_STRING) {
+					return SEXP_CHECK_TYPE_MISMATCH;
+				}
+				auto gauge_name = CTEXT(node);
+
+				// for compatibility, since this operator now uses a different set of parameters
+				if (get_operator_const(op_node) == OP_FLASH_HUD_GAUGE) {
+					bool found = false;
+					for (int legacy_idx = 0; legacy_idx < NUM_HUD_GAUGES; legacy_idx++) {
+						if (stricmp(gauge_name, Legacy_HUD_gauges[legacy_idx].hud_gauge_text) == 0) {
+							found = true;
+							break;
+						}
+					}
+					if (found) {
+						break;
+					}
+				}
+
+				if (hud_gauge_type_lookup(gauge_name) == -1)
+					return SEXP_CHECK_INVALID_BUILTIN_HUD_GAUGE;
+
+				break;
+			}
+
+			case OPF_CUSTOM_HUD_GAUGE:
 				if (type2 != SEXP_ATOM_STRING) {
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
-				if (hud_gauge_type_lookup(CTEXT(node)) == -1)
-					return SEXP_CHECK_INVALID_HUD_GAUGE;
+				if (hud_get_gauge(CTEXT(node)) == nullptr)
+					return SEXP_CHECK_INVALID_CUSTOM_HUD_GAUGE;
+
 				break;
 
 			case OPF_SOUND_ENVIRONMENT_OPTION:
@@ -3162,21 +3151,6 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 				break;
 
-			case OPF_HUD_GAUGE_NAME:
-				if ( type2 != SEXP_ATOM_STRING )
-					return SEXP_CHECK_TYPE_MISMATCH;
-
-				for ( i = 0; i < NUM_HUD_GAUGES; i++ ) {
-					if ( !stricmp(CTEXT(node), HUD_gauge_text[i]) )
-						break;
-				}
-
-				// if we reached the end of the list, then the name is invalid
-				if ( i == NUM_HUD_GAUGES )
-					return SEXP_CHECK_INVALID_GAUGE_NAME;
-				
-				break;
-
 			case OPF_SKYBOX_MODEL_NAME:
 				if ( type2 != SEXP_ATOM_STRING )
 					return SEXP_CHECK_TYPE_MISMATCH;
@@ -3347,6 +3321,14 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				}
 				break;
 
+			case OPF_LANGUAGE:
+				if (type2 != SEXP_ATOM_STRING) {
+					return SEXP_CHECK_TYPE_MISMATCH;
+				}
+
+				// that's all we do, since there may be a language the game doesn't know about
+				break;
+
 			default:
 				Error(LOCATION, "Unhandled argument format");
 		}
@@ -3391,7 +3373,9 @@ void get_sexp_text_for_variable(char *text, const char *token)
 	if ( !Fred_running ) {
 		// freespace - get index into Sexp_variables array
 		sexp_var_index = get_index_sexp_variable_name(text);
-		Assert(sexp_var_index != -1);
+		if (sexp_var_index == -1) {
+			Error(LOCATION, "Invalid variable name [%s]!", text);
+		}
 		sprintf(text, "%d", sexp_var_index);
 	}
 }
@@ -3619,6 +3603,8 @@ int get_sexp()
 				strcpy_s(token, "distance-center-to-subsystem");
 			else if (!stricmp(token, "remove-weapons"))
 				strcpy_s(token, "clear-weapons");
+			else if (!stricmp(token, "hud-set-retail-gauge-active"))
+				strcpy_s(token, "hud-set-builtin-gauge-active");
 
 			op = get_operator_index(token);
 			if (op >= 0) {
@@ -4762,9 +4748,9 @@ int rand_internal(int low, int high, int seed = 0)
 {
 	// maybe seed it
 	if (seed > 0)
-		srand(seed);
+		Random::seed(seed);
 
-	return rand32(low, high);
+	return Random::next(low, high);
 }
 
 // Goober5000
@@ -5117,6 +5103,12 @@ int rand_sexp(int node, bool multiple)
 		return SEXP_NAN;
 	if (is_nan_forever)
 		return SEXP_NAN_FOREVER;
+
+	if (low > high) {
+		Warning(LOCATION, "rand%s was passed an invalid range (%d ... %d)!", multiple ? "-multiple" : "", low, high);
+		// preserve old behavior from before Random class was introduced
+		return low;
+	}
 
 	// get the random number
 	rand_num = rand_internal(low, high, seed);
@@ -6839,7 +6831,21 @@ int sexp_is_ship_visible(int node)
 	{
 		// if the second argument is not supplied, default to the player, per retail
 		if (Game_mode & GM_MULTIPLAYER)
-			Warning(LOCATION, "In multiplayer, is-ship-visible must have two arguments!");
+		{
+			mprintf(("In multiplayer, is-ship-visible must have two arguments!  Defaulting to the first player.\n"));
+
+			// to make allowances for buggy missions (such as retail), just pick the first player
+			// if we actually have no valid players, viewer_shipp will be NULL, but that's ok
+			for (int i = 0; i < MAX_PLAYERS; ++i)
+			{
+				int shipnum = multi_get_player_ship(i);
+				if (shipnum >= 0)
+				{
+					viewer_shipp = &Ships[shipnum];
+					break;
+				}
+			}
+		}
 		else
 			viewer_shipp = Player_ship;
 	}
@@ -9863,6 +9869,7 @@ int eval_random_of(int arg_handler_node, int condition_node, bool multiple)
 
 	// get the number of valid arguments
 	num_valid_args = query_sexp_args_count(arg_handler_node, true);
+	Assert(num_valid_args >= 0);
 
 	if (num_valid_args == 0)
 	{
@@ -10135,12 +10142,14 @@ int eval_for_ship_collection(int arg_handler_node, int condition_node, int op_co
 
 	// test the whole argument vector
 	num_valid_arguments = test_argument_vector_for_condition(argument_vector, true, condition_node, &num_true, &num_false, &num_known_true, &num_known_false);
+	SCP_UNUSED(num_valid_arguments);
 
 	// use the sexp_or algorithm
 	if (num_known_true || num_true)
 		return SEXP_TRUE;
-	else if (num_known_false == num_valid_arguments)
-		return SEXP_KNOWN_FALSE;
+// Don't short-circuit because ships can arrive later on, and this sexp's ship collection is intrinsically unknowable.
+//	else if (num_known_false == num_valid_arguments)
+//		return SEXP_KNOWN_FALSE;
 	else
 		return SEXP_FALSE;
 }
@@ -10178,7 +10187,7 @@ int eval_for_players(int arg_handler_node, int condition_node, bool just_count =
 	// use the sexp_or algorithm
 	if (num_known_true || num_true)
 		return SEXP_TRUE;
-	else if (num_known_false == num_valid_arguments)
+	else if (num_valid_arguments > 0 && num_known_false == num_valid_arguments)
 		return SEXP_KNOWN_FALSE;
 	else
 		return SEXP_FALSE;
@@ -11405,7 +11414,7 @@ void sexp_hud_activate_gauge_type(int n)
 	}
 }
 
-void sexp_hud_set_retail_gauge_active(int node)
+void sexp_hud_set_builtin_gauge_active(int node)
 {
 	bool activate = is_sexp_true(node);
 	node = CDR(node);
@@ -12375,7 +12384,7 @@ void sexp_explosion_effect(int n)
 				switch ( objp->type )
 				{
 					case OBJ_SHIP:
-						ship_apply_global_damage( objp, nullptr, &origin, t_damage );
+						ship_apply_global_damage( objp, nullptr, &origin, t_damage, -1 );
 						vec3d force, vec_ship_to_impact;
 						vm_vec_sub( &vec_ship_to_impact, &objp->pos, &origin );
 						if (!IS_VEC_NULL_SQ_SAFE( &vec_ship_to_impact )) {
@@ -12750,7 +12759,7 @@ void sexp_send_random_message(int n)
 	Assert ( num_messages >= 1 );
 	
 	// get a random message, and pass the parameters to send_one_message
-	message_num = myrand() % num_messages;
+	message_num = Random::next(num_messages);
 	n = temp;
 	while ( n != -1 ) {
 		if ( message_num == 0 )
@@ -16997,6 +17006,29 @@ int sexp_query_orders (int n)
 	return hud_query_order_issued(order_to, order, target, timestamp, order_from, special);
 }
 
+int sexp_time_to_goal(int n)
+{
+	auto ship_entry = eval_ship(n);
+
+	if (!ship_entry || !ship_entry->shipp)
+		return SEXP_NAN;
+
+	if (ship_entry->status == NOT_YET_PRESENT)
+		return SEXP_CANT_EVAL;
+	
+	if (ship_entry->status == EXITED)
+		return SEXP_NAN_FOREVER;
+
+	auto shipp = ship_entry->shipp;
+	int time = ship_return_seconds_to_goal(shipp);
+	
+	if (time < 0) {
+		return SEXP_CANT_EVAL;
+	}
+
+	return time;
+}
+
 // Karajorma
 void sexp_reset_orders (int  /*n*/)
 {
@@ -17824,6 +17856,7 @@ void ship_copy_damage(ship *target_shipp, ship *source_shipp)
 	target_objp->hull_strength = source_objp->hull_strength;
 
 	// ...and shields
+	target_shipp->special_shield = source_shipp->special_shield;
 	target_shipp->ship_max_shield_strength = source_shipp->ship_max_shield_strength;
 	for (i = 0; i < MIN(target_objp->n_quadrants, source_objp->n_quadrants); i++)
 		target_objp->shield_quadrant[i] = source_objp->shield_quadrant[i];
@@ -17975,7 +18008,6 @@ void parse_copy_damage(p_object *target_pobjp, ship *source_shipp)
 		// copy
 		if (source_ss->max_hits == 0.0f)
 		{
-			Warning(LOCATION, "Why does %s's subsystem %s have a maximum strength of 0?", source_shipp->ship_name, source_ss->system_info->subobj_name);
 			target_sssp->percent = 100.0f;
 		}
 		else
@@ -18255,6 +18287,7 @@ void sexp_beam_fire(int node, bool at_coords)
 	// zero stuff out
 	memset(&fire_info, 0, sizeof(beam_fire_info));
 	fire_info.accuracy = 0.000001f;							// this will guarantee a hit
+	fire_info.burst_index = 0;
 
 	// get the firing ship
 	auto shooter = eval_ship(n);
@@ -18359,6 +18392,7 @@ void sexp_beam_floating_fire(int n)
 	fire_info.accuracy = 0.000001f;							// this will guarantee a hit
 	fire_info.bfi_flags |= BFIF_FLOATING_BEAM;
 	fire_info.turret = nullptr;		// A free-floating beam isn't fired from a subsystem.
+	fire_info.burst_index = 0;
 
 	fire_info.beam_info_index = weapon_info_lookup(CTEXT(n));
 	n = CDR(n);
@@ -19342,7 +19376,7 @@ void sexp_set_subsys_rotation_lock_free(int node, bool locked)
 		{
 			if (rotate->system_info->rotation_snd.isValid())
 			{
-				obj_snd_assign(ship_entry->shipp->objnum, rotate->system_info->rotation_snd, &rotate->system_info->pnt, 0, OS_SUBSYS_ROTATION, rotate);
+				obj_snd_assign(ship_entry->shipp->objnum, rotate->system_info->rotation_snd, &rotate->system_info->pnt, OS_SUBSYS_ROTATION, rotate);
 				rotate->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Rotate);
 			}
 		}
@@ -19943,8 +19977,8 @@ void sexp_damage_escort_list_all(int n)
 			Ships[escort_ship[i].index].escort_priority = priority[i];
 	}
 
-	// redo the escort list
-	hud_setup_escort_list();
+	// reorder the escort list
+	hud_resort_escort_list();
 }
 
 void sexp_awacs_set_radius(int node)
@@ -21363,12 +21397,26 @@ int sexp_special_training_check(int node)
 	return rtn;
 }
 
-// sexpression to flash a hud gauge.  gauge name is text valud of node
+// sexpression to flash a hud gauge.  gauge name is text value of node
 void sexp_flash_hud_gauge( int node )
 {
 	auto name = CTEXT(node);
+	bool match = false;
+
+	// see if this is specified the new way, according to the HUD type #define
+	int type = hud_gauge_type_lookup(name);
+
+	// now go through and find out which gauge (index i in the legacy list) to flash
 	for (int i = 0; i < NUM_HUD_GAUGES; ++i) {
-		if ( !stricmp(HUD_gauge_text[i], name) ) {
+		if (type < 0) {
+			if (stricmp(name, Legacy_HUD_gauges[i].hud_gauge_text) == 0) {
+				match = true;
+			}
+		} else if (type == Legacy_HUD_gauges[i].hud_gauge_type) {
+			match = true;
+		}
+
+		if (match) {
 			hud_gauge_start_flash(i);	// call HUD function to flash gauge
 
 			Current_sexp_network_packet.start_callback();
@@ -21377,6 +21425,10 @@ void sexp_flash_hud_gauge( int node )
 
 			break;
 		}
+	}
+
+	if (!match && type >= 0) {
+		Warning(LOCATION, "HUD gauge '%s' is not a legacy gauge; flashing is not supported", name);
 	}
 }
 
@@ -23276,6 +23328,21 @@ int sexp_player_is_cheating_bastard()
 	return SEXP_FALSE;
 }
 
+int sexp_is_language(int node)
+{
+	// we don't check the language for validity because it could be a language the engine doesn't know about
+	auto lang = CTEXT(node);
+
+	// easy lookup
+	auto li = &Lcl_languages[lcl_get_current_lang_index()];
+
+	// easy comparison
+	if (stricmp(li->lang_name, lang) == 0)
+		return SEXP_KNOWN_TRUE;
+	else
+		return SEXP_KNOWN_FALSE;
+}
+
 void sexp_set_motion_debris(int node)
 {
 	Motion_debris_override = is_sexp_true(node);
@@ -24908,6 +24975,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_query_orders(node);
 				break;
 
+			case OP_TIME_TO_GOAL:
+				sexp_val = sexp_time_to_goal(node);
+				break;
+
+
 			// Karajorma
 			case OP_RESET_ORDERS:
 				sexp_reset_orders(node);
@@ -25686,9 +25758,9 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_hud_activate_gauge_type(node);
 				break;
 
-			case OP_HUD_SET_RETAIL_GAUGE_ACTIVE:
+			case OP_HUD_SET_BUILTIN_GAUGE_ACTIVE:
 				sexp_val = SEXP_TRUE;
-				sexp_hud_set_retail_gauge_active(node);
+				sexp_hud_set_builtin_gauge_active(node);
 				break;
 
 			case OP_ADD_TO_COLGROUP:
@@ -25734,6 +25806,10 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			case OP_PLAYER_IS_CHEATING_BASTARD:
 				sexp_val = sexp_player_is_cheating_bastard();
+				break;
+
+			case OP_IS_LANGUAGE:
+				sexp_val = sexp_is_language(node);
 				break;
 
 			case OP_IS_IN_TURRET_FOV:
@@ -26208,15 +26284,26 @@ int get_sexp_main()
 int run_sexp(const char* sexpression, bool run_eval_num, bool *is_nan_or_nan_forever)
 {
 	char* oldMp = Mp;
-	int n, i, sexp_val = UNINITIALIZED;
+	int n, sexp_val = UNINITIALIZED;
 	char buf[8192];
 
 	strcpy_s(buf, sexpression);
 
 	// HACK: ! -> "
-	for (i = 0; i < (int)strlen(buf); i++)
-		if (buf[i] == '!')
-			buf[i]='\"';
+	for (auto ch = buf; *ch; ++ch)
+	{
+		// convert single ! to ", but don't convert !!
+		if (*ch == '!')
+		{
+			if (*(ch + 1) == '!')
+				++ch;
+			else
+				*ch = '\"';
+		}
+	}
+
+	// !! -> !
+	consolidate_double_characters(buf, '!');
 
 	Mp = buf;
 
@@ -26402,6 +26489,7 @@ int query_operator_return_type(int op)
 		case OP_PLAYER_IS_CHEATING_BASTARD:
 		case OP_ARE_SHIP_FLAGS_SET:
 		case OP_IS_IN_TURRET_FOV:
+		case OP_IS_LANGUAGE:
 			return OPR_BOOL;
 
 		case OP_PLUS:
@@ -26453,6 +26541,7 @@ int query_operator_return_type(int op)
 		case OP_MISSION_TIME_MSECS:
 		case OP_TIME_DOCKED:
 		case OP_TIME_UNDOCKED:
+		case OP_TIME_TO_GOAL:
 		case OP_AFTERBURNER_LEFT:
 		case OP_WEAPON_ENERGY_LEFT:
 		case OP_SHIELDS_LEFT:
@@ -26826,7 +26915,7 @@ int query_operator_return_type(int op)
 		case OP_SET_PLAYER_THROTTLE_SPEED:
 		case OP_DEBUG:
 		case OP_HUD_SET_CUSTOM_GAUGE_ACTIVE:
-		case OP_HUD_SET_RETAIL_GAUGE_ACTIVE:
+		case OP_HUD_SET_BUILTIN_GAUGE_ACTIVE:
 		case OP_ALTER_SHIP_FLAG:
 		case OP_CHANGE_TEAM_COLOR:
 		case OP_NEBULA_CHANGE_PATTERN:
@@ -27268,6 +27357,9 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_SUBSYSTEM;
 			else
 				return OPF_SHIP_WING;
+
+		case OP_TIME_TO_GOAL:
+				return OPF_SHIP;
 
 		case OP_WAS_DESTROYED_BY_DELAY:
 			if (argnum == 0)
@@ -27844,11 +27936,14 @@ int query_operator_argument_type(int op, int argnum)
 			return OPF_POSITIVE;
 
 		case OP_HUD_SET_TEXT:
-			return OPF_STRING;
+			if (argnum == 0)
+				return OPF_CUSTOM_HUD_GAUGE;
+			else
+				return OPF_STRING;
 
 		case OP_HUD_SET_MESSAGE:
 			if(argnum == 0)
-				return OPF_STRING;
+				return OPF_CUSTOM_HUD_GAUGE;
 			else
 				return OPF_MESSAGE;
 
@@ -27857,7 +27952,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_HUD_SET_FRAME:
 		case OP_HUD_SET_COLOR:
 			if(argnum == 0)
-				return OPF_STRING;
+				return OPF_CUSTOM_HUD_GAUGE;
 			else
 				return OPF_POSITIVE;
 
@@ -28202,7 +28297,7 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_SHIP;
 
 		case OP_FLASH_HUD_GAUGE:
-			return OPF_HUD_GAUGE_NAME;
+			return OPF_BUILTIN_HUD_GAUGE;
 
 		case OP_GOOD_SECONDARY_TIME:
 			if ( argnum == 0 )
@@ -29175,17 +29270,20 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_BOOL;
 
 		case OP_HUD_SET_DIRECTIVE:
-			return OPF_STRING;
+			if (argnum == 0)
+				return OPF_CUSTOM_HUD_GAUGE;
+			else
+				return OPF_STRING;
 
 		case OP_HUD_GAUGE_SET_ACTIVE:
 			if (argnum == 0)
-				return OPF_STRING;
+				return OPF_CUSTOM_HUD_GAUGE;
 			else
 				return OPF_BOOL;
 
 		case OP_HUD_ACTIVATE_GAUGE_TYPE:
 			if (argnum == 0)
-				return OPF_HUD_GAUGE;
+				return OPF_BUILTIN_HUD_GAUGE;
 			else
 				return OPF_BOOL;
 
@@ -29193,13 +29291,13 @@ int query_operator_argument_type(int op, int argnum)
 			if (argnum == 0)
 				return OPF_BOOL;
 			else
-				return OPF_STRING;
+				return OPF_CUSTOM_HUD_GAUGE;
 
-		case OP_HUD_SET_RETAIL_GAUGE_ACTIVE:
+		case OP_HUD_SET_BUILTIN_GAUGE_ACTIVE:
 			if (argnum == 0)
 				return OPF_BOOL;
 			else
-				return OPF_HUD_GAUGE;
+				return OPF_BUILTIN_HUD_GAUGE;
 
 		case OP_GET_COLGROUP_ID:
 			return OPF_SHIP;
@@ -29243,6 +29341,9 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_STRING;
 			else
 				return OPF_SHIP_WING;
+
+		case OP_IS_LANGUAGE:
+			return OPF_LANGUAGE;
 
 		default: {
 			auto dynamicSEXP = sexp::get_dynamic_sexp(op);
@@ -29633,9 +29734,6 @@ const char *sexp_error_message(int num)
 		case SEXP_CHECK_INVALID_SHIP_CLASS_NAME:
 			return "Invalid ship class name";
 
-		case SEXP_CHECK_INVALID_GAUGE_NAME:
-			return "Invalid builtin HUD gauge";
-
 		case SEXP_CHECK_INVALID_SKYBOX_NAME:
 			return "Invalid skybox name";
 
@@ -29705,8 +29803,11 @@ const char *sexp_error_message(int num)
 		case SEXP_CHECK_INVALID_DAMAGE_TYPE:
 			return "Invalid damage type";
 
-		case SEXP_CHECK_INVALID_HUD_GAUGE:
-			return "Invalid HUD gauge";
+		case SEXP_CHECK_INVALID_BUILTIN_HUD_GAUGE:
+			return "Invalid builtin HUD gauge";
+
+		case SEXP_CHECK_INVALID_CUSTOM_HUD_GAUGE:
+			return "Invalid custom HUD gauge";
 
 		case SEXP_CHECK_INVALID_TARGET_PRIORITIES:
 			return "Invalid target priorities";
@@ -30795,7 +30896,7 @@ int get_subcategory(int sexp_id)
 		case OP_HUD_DISABLE:
 		case OP_HUD_DISABLE_EXCEPT_MESSAGES:
 		case OP_HUD_SET_CUSTOM_GAUGE_ACTIVE:
-		case OP_HUD_SET_RETAIL_GAUGE_ACTIVE:
+		case OP_HUD_SET_BUILTIN_GAUGE_ACTIVE:
 		case OP_HUD_SET_TEXT:
 		case OP_HUD_SET_TEXT_NUM:
 		case OP_HUD_SET_MESSAGE:
@@ -30935,6 +31036,7 @@ int get_subcategory(int sexp_id)
 		case OP_SHIP_SCORE:
 		case OP_LAST_ORDER_TIME:
 		case OP_PLAYER_IS_CHEATING_BASTARD:
+		case OP_IS_LANGUAGE:
 			return STATUS_SUBCATEGORY_PLAYER;
 
 		case OP_NUM_PLAYERS:
@@ -31709,6 +31811,11 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tThe name of the docker ship.\r\n"
 		"\t2:\tThe name of the dockee ship.\r\n"
 		"\t3:\tThe number of times they must have undocked to be true." },
+
+	{ OP_TIME_TO_GOAL, "Time-to-goal (Time operator)\r\n"
+		"\tReturns the number of seconds until a ship reaches its waypoint\r\n\r\n"
+		"Returns a number value.  Takes 1 argument...\r\n"
+		"\t1:\tName of ship to check waypoint time." },
 
 	{ OP_AFTERBURNER_LEFT, "Afterburner left\r\n"
 		"\tReturns a ship's current engine energy as a percentage.\r\n"
@@ -34036,7 +34143,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_IS_SHIP_VISIBLE, "is-ship-visible\r\n"
 		"\tCheck whether ship is visible on a certain ship's radar.  Returns 0 - not visible, 1 - partially visible, 2 - fully visible.\r\n"
-		"\tNote: In multiplayer, the second argument *must* be supplied or this SEXP will always return 0.\r\n"
+		"\tNote: In multiplayer, the second argument *must* be supplied or this SEXP will default to the first player.\r\n"
 		"\tTakes 1 or 2 arguments...\r\n"
 		"\t1: Name of ship to check\r\n"
 		"\t2 (optional): Name of the viewing ship.  Defaults to the player's ship in single-player mode.  If this ship is not in-mission, the SEXP will return 0.\r\n" },
@@ -34914,14 +35021,14 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t2:\tString variable to hold the result\r\n"
 	},
 
-	{OP_SCRIPT_EVAL, "script-eval\r\n"
-		"\tEvaluates the given script\r\n"
+	{OP_SCRIPT_EVAL, "script-eval (deprecated in favor of script-eval-block)\r\n"
+		"\tEvaluates the given scripts, one script per argument\r\n"
 		"Takes at least 1 argument...\r\n"
-		"\t1:\tScript to evaluate\r\n"
+		"\tAll:\tScript to evaluate\r\n"
 	},
 
 	{OP_SCRIPT_EVAL_BLOCK, "script-eval-block\r\n"
-		"\tEvaluates the concatenation of all arguments as a script\r\n"
+		"\tEvaluates the concatenation of all arguments as a single script\r\n"
 		"Takes at least 1 argument...\r\n"
 		"\tAll:\tScript to evaluate\r\n"
 	},
@@ -34974,8 +35081,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tRest:\tHUD Gauge name\r\n"
 	},
 
-	{OP_HUD_SET_RETAIL_GAUGE_ACTIVE, "hud-set-custom-gauge-active\r\n"
-		"\tActivates or deactivates a retail hud gauge grouping."
+	{OP_HUD_SET_BUILTIN_GAUGE_ACTIVE, "hud-set-builtin-gauge-active\r\n"
+		"\tActivates or deactivates a builtin hud gauge grouping."
 		"Takes 2 Arguments...\r\n"
 		"\t1:\tBoolean, whether or not to display this gauge\r\n"
 		"\tRest:\tHUD Gauge Group name\r\n"
@@ -35070,6 +35177,12 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{OP_PLAYER_IS_CHEATING_BASTARD, "player-is-cheating\r\n"
 		"\tReturns true if the player is or has been cheating in this mission.\r\n"
+	},
+
+	{ OP_IS_LANGUAGE, "is-language\r\n"
+		"\tReturns whether the game is running in the specified language.  Takes 1 argument...\r\n"
+		"\t1:\tA language.  This can be any string; the SEXP will return true if and only if the string matches the current language.  "
+		"Builtin languages are English, German, French, and Polish, and others can be defined in strings.tbl.\r\n"
 	},
 
 	{ OP_SET_MOTION_DEBRIS, "set-motion-debris-override\r\n"
@@ -35173,9 +35286,15 @@ static void output_sexp_html(int sexp_idx, FILE *fp)
 				{
 					strcpy(dest_ptr, "\n<br>");
 					dest_ptr+=5;
-				}
-				else
-				{
+				// for html compatibility
+				} else if (*curr_ptr == '<') {
+					strcpy(dest_ptr, "&lt;");
+					dest_ptr += 4;
+				// for html compatibility
+				} else if (*curr_ptr == '>') {
+					strcpy(dest_ptr, "&gt;");
+					dest_ptr += 4;
+				} else {
 					*dest_ptr++ = *curr_ptr;
 				}
 				curr_ptr++;

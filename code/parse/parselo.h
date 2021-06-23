@@ -19,10 +19,12 @@
 
 #include <cinttypes>
 #include <exception>
+#include <limits.h>
 
 // NOTE: although the main game doesn't need this anymore, FRED2 still does
 #define	PARSE_TEXT_SIZE	1000000
 
+extern char Current_filename[MAX_PATH_LEN];
 extern char	*Parse_text;
 extern char	*Parse_text_raw;
 extern char	*Mp;
@@ -73,6 +75,8 @@ extern bool end_string_at_first_hash_symbol(SCP_string &src, bool ignore_doubled
 extern char *get_pointer_to_first_hash_symbol(char *src, bool ignore_doubled_hash = false);
 extern const char *get_pointer_to_first_hash_symbol(const char *src, bool ignore_doubled_hash = false);
 extern int get_index_of_first_hash_symbol(SCP_string &src, bool ignore_doubled_hash = false);
+
+extern void consolidate_double_characters(char *str, char ch);
 
 // white space
 extern int is_white_space(char ch);
@@ -196,6 +200,7 @@ void stuff_flagset(T *dest) {
 
 extern size_t stuff_int_list(int *ilp, size_t max_ints, int lookup_type = RAW_INTEGER_TYPE);
 extern size_t stuff_float_list(float* flp, size_t max_floats);
+extern void stuff_float_list(SCP_vector<float>& flp);
 extern size_t stuff_vec3d_list(vec3d *vlp, size_t max_vecs);
 extern void stuff_vec3d_list(SCP_vector<vec3d> &vec_list);
 extern size_t stuff_bool_list(bool *blp, size_t max_bools);
@@ -262,12 +267,14 @@ int split_str(const char* src,
 			  int* n_chars,
 			  const char** p_str,
 			  int max_lines,
+			  int max_line_length = INT_MAX,
 			  unicode::codepoint_t ignore_char = (unicode::codepoint_t) -1,
 			  bool strip_leading_whitespace = true);
 int split_str(const char* src,
 			  int max_pixel_w,
 			  SCP_vector<int>& n_chars,
 			  SCP_vector<const char*>& p_str,
+			  int max_line_length = INT_MAX,
 			  unicode::codepoint_t ignore_char = (unicode::codepoint_t) -1,
 			  bool strip_leading_whitespace = true);
 

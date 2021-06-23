@@ -180,6 +180,7 @@
 #include "stats/stats.h"
 #include "tracing/Monitor.h"
 #include "tracing/tracing.h"
+#include "utils/Random.h"
 #include "weapon/beam.h"
 #include "weapon/emp.h"
 #include "weapon/flak.h"
@@ -857,6 +858,7 @@ void game_level_close()
 		trail_level_close();
 		ship_clear_cockpit_displays();
 		hud_level_close();
+		hud_escort_clear_all();
 		model_instance_free_all();
 		batch_render_close();
 
@@ -903,7 +905,7 @@ void game_level_init()
 	if ( Game_mode & GM_MULTIPLAYER ) {
 		// seed the generator from the netgame security flags -- ensures that all players in
 		// multiplayer will have the same random number sequence (with static rand functions)
-		srand( Netgame.security );
+		Random::seed( Netgame.security );
 
 		// semirand function needs to get re-initted every time in multiplayer
 		init_semirand();
@@ -1594,11 +1596,8 @@ void game_init()
 
 	Game_current_mission_filename[0] = 0;
 
-	// Moved from rand32, if we're gonna break, break immediately.
-	Assert(RAND_MAX == 0x7fff || RAND_MAX >= 0x7ffffffd);
 	// seed the random number generator
-	int game_init_seed = (int) time(nullptr);
-	srand( game_init_seed );
+	Random::seed(static_cast<unsigned int>(time(nullptr)));
 
 	Framerate_delay = 0;
 
@@ -1752,7 +1751,6 @@ void game_init()
 	}
 
 #endif
-	script_init();			//WMC
 
 	font::init();					// loads up all fonts
 	
@@ -1904,6 +1902,7 @@ void game_init()
 		main_hall_table_init();
 	}
 
+	script_init();			//WMC
 	// Initialize dynamic SEXPs
 	sexp::dynamic_sexp_init();
 
@@ -2854,9 +2853,9 @@ void game_shudder_apply(int time, float intensity)
 
 float get_shake(float intensity, int decay_time, int max_decay_time)
 {
-	int r = myrand();
+	int r = Random::next();
 
-	float shake = intensity * (float)(r-RAND_MAX_2) * RAND_MAX_1f;
+	float shake = intensity * (float)(r-Random::HALF_MAX_VALUE) * Random::INV_F_MAX_VALUE;
 	
 	if (decay_time >= 0) {
 		Assert(max_decay_time > 0);
@@ -4954,6 +4953,40 @@ void game_process_event( int current_state, int event )
 	}
 }
 
+static bool going_to_briefing_state(int new_state)
+{
+	switch (new_state) {
+		case GS_STATE_TEAM_SELECT:
+		case GS_STATE_SHIP_SELECT:
+		case GS_STATE_WEAPON_SELECT:
+		case GS_STATE_OPTIONS_MENU:
+		case GS_STATE_GAMEPLAY_HELP:
+		case GS_STATE_HOTKEY_SCREEN:
+		case GS_STATE_MULTI_MISSION_SYNC:
+		case GS_STATE_BRIEFING:
+		case GS_STATE_CMD_BRIEF:
+		case GS_STATE_RED_ALERT:
+		case GS_STATE_FICTION_VIEWER:
+			return true;
+	}
+
+	return false;
+}
+
+static bool going_to_menu_state(int new_state)
+{
+	switch (new_state) {
+		case GS_STATE_MAIN_MENU:
+		case GS_STATE_PXO:
+		case GS_STATE_MULTI_JOIN_GAME:
+		case GS_STATE_STANDALONE_MAIN:
+		case GS_STATE_QUIT_GAME:
+			return true;
+	}
+
+	return false;
+}
+
 // Called when a state is being left.
 // The current state is still at old_state, but as soon as
 // this function leaves, then the current state will become
@@ -5002,17 +5035,15 @@ void game_leave_state( int old_state, int new_state )
 	switch (old_state) {
 		case GS_STATE_BRIEFING:
 			brief_stop_voices();
-			if ( (new_state != GS_STATE_OPTIONS_MENU) && (new_state != GS_STATE_WEAPON_SELECT)
-				  && (new_state != GS_STATE_SHIP_SELECT) && (new_state != GS_STATE_HOTKEY_SCREEN)
-				  && (new_state != GS_STATE_TEAM_SELECT) && (new_state != GS_STATE_MULTI_MISSION_SYNC)){
+
+			if ( !going_to_briefing_state(new_state) ) {
 				common_select_close();
-				if ( (new_state == GS_STATE_MAIN_MENU) || (new_state == GS_STATE_PXO)
-					 || (new_state == GS_STATE_MULTI_JOIN_GAME) )
-				{
-					freespace_stop_mission();	
+
+				if ( going_to_menu_state(new_state) ) {
+					freespace_stop_mission();
 				}
 			}
-			
+
 			// COMMAND LINE OPTION
 			if (Cmdline_multi_stream_chat_to_file){
 				cfwrite_string(NOX("-------------------------------------------\n"),Multi_chat_stream);
@@ -5048,67 +5079,57 @@ void game_leave_state( int old_state, int new_state )
 				cmd_brief_hold();
 			} else {
 				cmd_brief_close();
-				common_select_close();
 
-				if (new_state != GS_STATE_BRIEFING) {
-					common_music_close();
-				}
+				if ( !going_to_briefing_state(new_state) ) {
+					common_select_close();
 
-				if ( (new_state == GS_STATE_MAIN_MENU) || (new_state == GS_STATE_PXO)
-					 || (new_state == GS_STATE_MULTI_JOIN_GAME) )
-				{
-					freespace_stop_mission();	
+					if ( going_to_menu_state(new_state) ) {
+						freespace_stop_mission();
+					}
 				}
 			}
 			break;
 
 		case GS_STATE_RED_ALERT:
 			red_alert_close();
-			common_select_close();
-			if ( (new_state == GS_STATE_MAIN_MENU) || (new_state == GS_STATE_PXO)
-				 || (new_state == GS_STATE_MULTI_JOIN_GAME) )
-			{
-				freespace_stop_mission();
+
+			if ( !going_to_briefing_state(new_state) ) {
+				common_select_close();
+
+				if ( going_to_menu_state(new_state) ) {
+					freespace_stop_mission();
+				}
 			}
 			break;
 
 		case GS_STATE_SHIP_SELECT:
-			if ( new_state != GS_STATE_OPTIONS_MENU && new_state != GS_STATE_WEAPON_SELECT &&
-				  new_state != GS_STATE_HOTKEY_SCREEN &&
-				  new_state != GS_STATE_BRIEFING && new_state != GS_STATE_TEAM_SELECT  && (new_state != GS_STATE_MULTI_MISSION_SYNC)) {
+			if ( !going_to_briefing_state(new_state) ) {
 				common_select_close();
-				if ( (new_state == GS_STATE_MAIN_MENU) || (new_state == GS_STATE_PXO)
-					 || (new_state == GS_STATE_MULTI_JOIN_GAME) )
-				{
-					freespace_stop_mission();	
+
+				if ( going_to_menu_state(new_state) ) {
+					freespace_stop_mission();
 				}
 			}
 			break;
 
 		case GS_STATE_WEAPON_SELECT:
-			if ( new_state != GS_STATE_OPTIONS_MENU && new_state != GS_STATE_SHIP_SELECT &&
-				  new_state != GS_STATE_HOTKEY_SCREEN &&
-				  new_state != GS_STATE_BRIEFING && new_state != GS_STATE_TEAM_SELECT && (new_state != GS_STATE_MULTI_MISSION_SYNC)) {
+			if ( !going_to_briefing_state(new_state) ) {
 				common_select_close();
-				if ( (new_state == GS_STATE_MAIN_MENU) || (new_state == GS_STATE_PXO)
-					 || (new_state == GS_STATE_MULTI_JOIN_GAME) )
-				{
-					freespace_stop_mission();	
+
+				if ( going_to_menu_state(new_state) ) {
+					freespace_stop_mission();
 				}
 			}
 			break;
 
 		case GS_STATE_TEAM_SELECT:
-			if ( new_state != GS_STATE_OPTIONS_MENU && new_state != GS_STATE_SHIP_SELECT &&
-				  new_state != GS_STATE_HOTKEY_SCREEN &&
-				  new_state != GS_STATE_BRIEFING && new_state != GS_STATE_WEAPON_SELECT && (new_state != GS_STATE_MULTI_MISSION_SYNC)) {
+			if ( !going_to_briefing_state(new_state) ) {
 				common_select_close();
-				if ( (new_state == GS_STATE_MAIN_MENU) || (new_state == GS_STATE_PXO)
-					 || (new_state == GS_STATE_MULTI_JOIN_GAME) )
-				{
-					freespace_stop_mission();	
+
+				if ( going_to_menu_state(new_state) ) {
+					freespace_stop_mission();
 				}
-			}					
+			}
 			break;
 
 		case GS_STATE_MAIN_MENU:
@@ -5121,6 +5142,12 @@ void game_leave_state( int old_state, int new_state )
 			}
 
 			options_menu_close();
+
+			// can't use going_to_briefing_state() here since it doesn't catch sub-optionmenu states
+			// it's basically just to catch the exit game button
+			if ( going_to_menu_state(new_state) ) {
+				common_select_close();
+			}
 
 			if (new_state != GS_STATE_CONTROL_CONFIG && new_state != GS_STATE_HUD_CONFIG) {
 				// unpause all sounds, since we could be headed back to the game
@@ -5318,7 +5345,9 @@ void game_leave_state( int old_state, int new_state )
 			break;
 
 		case GS_STATE_MULTI_MISSION_SYNC:
-			common_select_close();
+			if ( !going_to_briefing_state(new_state) ) {
+				common_select_close();
+			}
 
 			// if we're moving into the options menu we don't need to do anything else
 			if(new_state == GS_STATE_OPTIONS_MENU){	
@@ -5327,6 +5356,7 @@ void game_leave_state( int old_state, int new_state )
 
 			Assert( Game_mode & GM_MULTIPLAYER );
 			multi_sync_close();
+
 			if ( new_state == GS_STATE_GAME_PLAY ){
 				// palette_restore_palette();
 
@@ -5337,14 +5367,13 @@ void game_leave_state( int old_state, int new_state )
 				// set the game mode
 				Game_mode |= GM_IN_MISSION;
 
-				main_hall_stop_music(true);
-				main_hall_stop_ambient();		
-
 				// any other state needs to close out the mission, because we're not going in to gameplay.
-			} else if (new_state == GS_STATE_PXO || new_state == GS_STATE_MULTI_JOIN_GAME) {
+			} else if ( going_to_menu_state(new_state) ) {
 				freespace_stop_mission();
 			}
 
+			main_hall_stop_music(true);
+			main_hall_stop_ambient();
 			break;		
    
 		case GS_STATE_VIEW_CUTSCENES:
@@ -5396,16 +5425,13 @@ void game_leave_state( int old_state, int new_state )
 
 		case GS_STATE_FICTION_VIEWER:
 			fiction_viewer_close();
-			common_select_close();
 
-			if ( (new_state != GS_STATE_BRIEFING) && (new_state != GS_STATE_CMD_BRIEF) ) {
-				common_music_close();
-			}
+			if ( !going_to_briefing_state(new_state) ) {
+				common_select_close();
 
-			if ( (new_state == GS_STATE_MAIN_MENU) || (new_state == GS_STATE_PXO)
-				 || (new_state == GS_STATE_MULTI_JOIN_GAME) )
-			{
-				freespace_stop_mission();
+				if ( going_to_menu_state(new_state) ) {
+					freespace_stop_mission();
+				}
 			}
 			break;
 
@@ -5414,6 +5440,14 @@ void game_leave_state( int old_state, int new_state )
 			break;
 
 		case GS_STATE_SCRIPTING:
+			// this can happen because scripting can be done in odd places.
+			if ( !going_to_briefing_state(new_state) ) {
+				common_select_close();
+
+				if ( going_to_menu_state(new_state) ) {
+					freespace_stop_mission();
+				}
+			}
 			scripting_state_close();
 			break;
 	}

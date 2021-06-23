@@ -134,6 +134,14 @@ struct script_condition
 {
 	ConditionalType condition_type = CHC_NONE;
 	SCP_string condition_string;
+	// stores values evaluated at hook load to optimize later condition checking.
+	// currently mostly olg done for the highest impact condition types, according to performance profiling
+	// the exact type of information stored varries between hook types.
+	// CHC_STATE, CHC_OBJECTTYPE - stores the value of enum matching the name requested by the condition string.
+	// CHC_SHIPCLASS, CHC_WEAPONCLASS - stores the index of the info object requested by the condition
+	// CHC_VERSION, CHC_APPLICATION - stores validity of the check in 1 for true or 0 for false, as the condition will not change after load.
+	// see ConditionedHook::AddCondition for exact implimentation
+	int condition_cached_value = -1;
 };
 
 struct script_action
@@ -146,7 +154,7 @@ class ConditionedHook
 {
 private:
 	SCP_vector<script_action> Actions;
-	script_condition Conditions[MAX_HOOK_CONDITIONS];
+	SCP_vector<script_condition> Conditions;
 public:
 	bool AddCondition(script_condition *sc);
 	bool AddAction(script_action *sa);

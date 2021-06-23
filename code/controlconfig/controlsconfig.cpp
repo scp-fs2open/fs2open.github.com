@@ -115,10 +115,10 @@ int Conflict_wnd_coords[GR_NUM_RESOLUTIONS][4] = {
 // conflict warning anim coords
 int Conflict_warning_coords[GR_NUM_RESOLUTIONS][2] = {
 	{
-		-1, 420			// GR_640
+		320, 420			// GR_640
 	},
 	{
-		-1, 669			// GR_1024
+		512, 669			// GR_1024
 	}
 };
 
@@ -2295,7 +2295,9 @@ void control_config_do_frame(float frametime)
 		int sw, sh;
 		gr_get_string_size(&sw, &sh, conflict_str);
 
-		gr_string((gr_screen.max_w / 2) - (sw / 2), Conflict_warning_coords[gr_screen.res][1], conflict_str, GR_RESIZE_MENU);
+		x = Conflict_warning_coords[gr_screen.res][CONTROL_X_COORD] - (sw / 2);
+		y = Conflict_warning_coords[gr_screen.res][CONTROL_Y_COORD];
+		gr_printf_menu(x, y, "%s", conflict_str);
 
 		font::set_font(font::FONT1);
 	} else {

@@ -67,6 +67,7 @@
 #include "mod_table/mod_table.h"
 #include "libs/ffmpeg/FFmpeg.h"
 #include "scripting/scripting.h"
+#include "utils/Random.h"
 
 #include <direct.h>
 #include "cmdline/cmdline.h"
@@ -296,7 +297,7 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 
 	SDL_SetMainReady();
 
-	srand( (unsigned) time(NULL) );
+	Random::seed(static_cast<unsigned int>(time(nullptr)));
 	init_pending_messages();
 
 	os_init(Osreg_class_name, Osreg_app_name);
@@ -340,8 +341,8 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	lcl_init(LCL_UNTRANSLATED);
 
 	// Goober5000 - force init XSTRs (so they work, but only work untranslated, based on above comment)
-	extern int Xstr_inited;
-	Xstr_inited = 1;
+	extern bool Xstr_inited;
+	Xstr_inited = true;
 
 #ifndef NDEBUG
 	load_filter_info();
@@ -417,6 +418,7 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	ship_init();
 	parse_init();
 	techroom_intel_init();
+	hud_positions_init();
 	asteroid_init();
 
 	// get fireball IDs for sexpression usage
@@ -970,9 +972,9 @@ void clear_mission()
 	stars_pre_level_init();
 	Nebula_index = 0;
 	Mission_palette = 1;
-	Nebula_pitch = (int) ((float) (rand() & 0x0fff) * 360.0f / 4096.0f);
-	Nebula_bank = (int) ((float) (rand() & 0x0fff) * 360.0f / 4096.0f);
-	Nebula_heading = (int) ((float) (rand() & 0x0fff) * 360.0f / 4096.0f);
+	Nebula_pitch = (int) ((float) (Random::next() & 0x0fff) * 360.0f / 4096.0f);
+	Nebula_bank = (int) ((float) (Random::next() & 0x0fff) * 360.0f / 4096.0f);
+	Nebula_heading = (int) ((float) (Random::next() & 0x0fff) * 360.0f / 4096.0f);
 	Neb2_awacs = -1.0f;
 	Neb2_poof_flags = 0;
 	strcpy_s(Neb2_texture_name, "");

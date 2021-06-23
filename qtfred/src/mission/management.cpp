@@ -26,10 +26,11 @@
 #include <nebula/neblightning.h>
 #include <libs/ffmpeg/FFmpeg.h>
 #include <parse/sexp/sexp_lookup.h>
+#include <utils/Random.h>
 
 #include <clocale>
 
-extern int Xstr_inited;
+extern bool Xstr_inited;
 
 extern void allocate_parse_text(size_t size);
 
@@ -56,7 +57,7 @@ bool
 initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor, const InitializerCallback& listener) {
 	std::setlocale(LC_ALL, "C");
 
-	srand((unsigned) time(NULL));
+	Random::seed(static_cast<unsigned int>(time(nullptr)));
 
 	listener(SubSystem::OS);
 	os_init(Osreg_class_name, Osreg_app_name);
@@ -102,7 +103,7 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 	lcl_init(LCL_UNTRANSLATED);
 
 	// Goober5000 - force init XSTRs (so they work, but only work untranslated, based on above comment)
-	Xstr_inited = 1;
+	Xstr_inited = true;
 
 #ifndef NDEBUG
 	load_filter_info();

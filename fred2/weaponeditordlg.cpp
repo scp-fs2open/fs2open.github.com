@@ -585,10 +585,14 @@ void WeaponEditorDlg::OnSelchangeMissile1()
 {
 	UpdateData(TRUE);
 	UpdateData(TRUE);
-	if (m_cur_item == 0) {
-		m_ammo_max1 = get_max_ammo_count_for_bank(m_ship_class, 0, m_missile1 + First_secondary_index - 1);
+	if (m_missile1 == 0) {
+		m_ammo_max1 = 0;
 	} else {
-		m_ammo_max1 = get_max_ammo_count_for_turret_bank(cur_weapon, 0, m_missile1 + First_secondary_index - 1);
+		if (m_cur_item == 0) {
+			m_ammo_max1 = get_max_ammo_count_for_bank(m_ship_class, 0, m_missile1 + First_secondary_index - 1);
+		} else {
+			m_ammo_max1 = get_max_ammo_count_for_turret_bank(cur_weapon, 0, m_missile1 + First_secondary_index - 1);
+		}
 	}
 	m_ammo1 = m_ammo_max1 ? (m_ammo_max1) : 0;
 	change_selection();
@@ -598,10 +602,14 @@ void WeaponEditorDlg::OnSelchangeMissile2()
 {
 	UpdateData(TRUE);
 	UpdateData(TRUE);
-	if (m_cur_item == 0) {
-		m_ammo_max2 = get_max_ammo_count_for_bank(m_ship_class, 1, m_missile2 + First_secondary_index - 1);
+	if (m_missile2 == 0) {
+		m_ammo_max2 = 0;
 	} else {
-		m_ammo_max2 = get_max_ammo_count_for_turret_bank(cur_weapon, 1, m_missile2 + First_secondary_index - 1);
+		if (m_cur_item == 0) {
+			m_ammo_max2 = get_max_ammo_count_for_bank(m_ship_class, 1, m_missile2 + First_secondary_index - 1);
+		} else {
+			m_ammo_max2 = get_max_ammo_count_for_turret_bank(cur_weapon, 1, m_missile2 + First_secondary_index - 1);
+		}
 	}
 	m_ammo2 = m_ammo_max2 ? (m_ammo_max2) : 0;
 	change_selection();
@@ -611,10 +619,14 @@ void WeaponEditorDlg::OnSelchangeMissile3()
 {
 	UpdateData(TRUE);
 	UpdateData(TRUE);
-	if (m_cur_item == 0) {
-		m_ammo_max3 = get_max_ammo_count_for_bank(m_ship_class, 2, m_missile3 + First_secondary_index - 1);
+	if (m_missile3 == 0) {
+		m_ammo_max3 = 0;
 	} else {
-		m_ammo_max3 = get_max_ammo_count_for_turret_bank(cur_weapon, 2, m_missile3 + First_secondary_index - 1);
+		if (m_cur_item == 0) {
+			m_ammo_max3 = get_max_ammo_count_for_bank(m_ship_class, 2, m_missile3 + First_secondary_index - 1);
+		} else {
+			m_ammo_max3 = get_max_ammo_count_for_turret_bank(cur_weapon, 2, m_missile3 + First_secondary_index - 1);
+		}
 	}
 	m_ammo3 = m_ammo_max3 ? (m_ammo_max3) : 0;
 	change_selection();
@@ -624,10 +636,14 @@ void WeaponEditorDlg::OnSelchangeMissile4()
 {
 	UpdateData(TRUE);
 	UpdateData(TRUE);
-	if (m_cur_item == 0) {
-		m_ammo_max4 = get_max_ammo_count_for_bank(m_ship_class, 3, m_missile4 + First_secondary_index - 1);
+	if (m_missile4 == 0) {
+		m_ammo_max4 = 0;
 	} else {
-		m_ammo_max4 = get_max_ammo_count_for_turret_bank(cur_weapon, 3, m_missile4 + First_secondary_index - 1);
+		if (m_cur_item == 0) {
+			m_ammo_max4 = get_max_ammo_count_for_bank(m_ship_class, 3, m_missile4 + First_secondary_index - 1);
+		} else {
+			m_ammo_max4 = get_max_ammo_count_for_turret_bank(cur_weapon, 3, m_missile4 + First_secondary_index - 1);
+		}
 	}
 	m_ammo4 = m_ammo_max4 ? (m_ammo_max4) : 0;
 	change_selection();

@@ -132,9 +132,6 @@ void neb2_get_fog_values(float *fnear, float *ffar, object *obj = NULL);
 // get adjusted near and far fog values (allows mission-specific fog adjustments)
 void neb2_get_adjusted_fog_values(float *fnear, float *ffar, float *fdensity = nullptr, object *obj = nullptr);
 
-// given an object, returns 0 - 1 the fog visibility of its center, 0 = completely obscured
-float neb2_get_fog_visibility(object *obj);
-
 // given a position, returns 0 - 1 the fog visibility of that position, 0 = completely obscured
 // distance_mult will multiply the result, use for things that can be obscured but can 'shine through' the nebula more than normal
 float neb2_get_fog_visibility (vec3d* pos, float distance_mult);

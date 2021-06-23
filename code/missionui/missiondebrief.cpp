@@ -460,6 +460,7 @@ int Debrief_award_text_num_lines = 0;
 // prototypes, you know you love 'em
 void debrief_add_award_text(const char *str);
 void debrief_award_text_clear();
+void debrief_replace_stage_text(debrief_stage &stage);
 
 
 
@@ -698,6 +699,9 @@ void debrief_set_multi_clients( int stage_count, int active_stages[] )
 	// set the pointers to the debriefings for this client
 	for (i = 0; i < stage_count; i++) {
 		Debrief_stages[Num_debrief_stages++] = &Debriefing->stages[active_stages[i]];
+		// in multi, debriefing text replacement must occur client-side
+		// update most recently added stage only, in case replacement has side effects
+		debrief_replace_stage_text(*Debrief_stages[Num_debrief_stages - 1]);
 	}
 
 	Debrief_multi_stages_loaded = 1;
@@ -780,7 +784,9 @@ int debrief_set_stages_and_multi_stuff()
 	}
 
 	for (i=0; i<debriefp->num_stages; i++) {
-		if (eval_sexp(debriefp->stages[i].formula) == 1) {
+		if (eval_sexp(debriefp->stages[i].formula) == SEXP_TRUE) {
+			// replacement in single-player and for host/server in multi
+			debrief_replace_stage_text(debriefp->stages[i]);
 			Debrief_stages[Num_debrief_stages++] = &debriefp->stages[i];
 		}
 	}
@@ -1885,8 +1891,6 @@ static void debrief_init_music()
 
 void debrief_init()
 {
-	int i;
-
 	Assert(!Debrief_inited);
 //	Campaign.loop_enabled = 0;
 	Campaign.loop_mission = CAMPAIGN_LOOP_MISSION_UNINITIALIZED;
@@ -1899,12 +1903,6 @@ void debrief_init()
 		Debriefing = &Debriefings[Net_player->p_info.team];
 	} else {
 		Debriefing = &Debriefings[0];			
-	}
-
-	// Goober5000 - replace any variables with their values
-	for (i = 0; i < Debriefing->num_stages; i++) {
-		sexp_replace_variable_names_with_values(Debriefing->stages[i].text);
-		sexp_replace_variable_names_with_values(Debriefing->stages[i].recommendation_text);
 	}
 
 	// no longer is mission
@@ -2558,4 +2556,11 @@ void debrief_handle_player_drop()
 
 void debrief_disable_accept()
 {
+}
+
+// Goober5000 - replace any variables with their values
+void debrief_replace_stage_text(debrief_stage &stage)
+{
+	sexp_replace_variable_names_with_values(stage.text);
+	sexp_replace_variable_names_with_values(stage.recommendation_text);
 }

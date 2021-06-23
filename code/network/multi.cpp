@@ -605,7 +605,7 @@ void process_packet_normal(ubyte* data, header *header_info)
 
 			// if I'm the server of the game, find out who this came from			
 			if((Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)){
-				np_index = find_player_id(header_info->id);
+				np_index = find_player_index(header_info->id);
 				if(np_index >= 0){
 					sock = Net_players[np_index].reliable_socket;
 				}
@@ -1318,11 +1318,6 @@ void multi_do_frame()
 	if (Game_mode & GM_STANDALONE_SERVER) {
 		std_do_gui_frame();
 	}	
-
-	// dogfight nonstandalone players should recalc the escort list every frame
-	if(!(Game_mode & GM_STANDALONE_SERVER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT) && MULTI_IN_MISSION){
-		hud_setup_escort_list(0);
-	}
 
 	// if master then maybe do port forwarding setup/refresh/wait
 	if (Net_player->flags & NETINFO_FLAG_AM_MASTER) {

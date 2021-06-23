@@ -67,6 +67,7 @@ void LabRenderer::renderModel(float frametime) {
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_glowmap, renderFlags[LabRenderFlag::NoGlowMap]);
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_normalmap, renderFlags[LabRenderFlag::NoNormalMap]);
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_specmap, renderFlags[LabRenderFlag::NoSpecularMap]);
+		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_reflectmap, renderFlags[LabRenderFlag::NoReflectMap]);
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_heightmap, renderFlags[LabRenderFlag::NoHeightMap]);
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_miscmap, renderFlags[LabRenderFlag::NoMiscMap]);
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_weapons, !renderFlags[LabRenderFlag::ShowWeapons]);
@@ -451,11 +452,10 @@ void LabRenderer::useBackground(const SCP_string& mission_name) {
 	}
 }
 
-LabCamera* LabRenderer::getCurrentCamera() {
+std::unique_ptr<LabCamera> &LabRenderer::getCurrentCamera() {
 	return labCamera;
 }
 
-void LabRenderer::setCurrentCamera(LabCamera* newcam) {
-	delete labCamera;
-	labCamera = newcam;
+void LabRenderer::setCurrentCamera(std::unique_ptr<LabCamera> &newcam) {
+	labCamera = std::move(newcam);
 }
