@@ -613,7 +613,7 @@ void pilotfile::plr_read_controls()
 
 			// Overwrite any existing preset, preferring the old version bindings over the new.
 			save_preset_file(preset, true);
-			ReleaseWarning(LOCATION, "Successfully converted PLR v2 to v3.  Please rebind your mouse controls, if any.");
+			Information(LOCATION, "Successfully converted playerfile to v3.  Please rebind your mouse controls, if any.");
 		}
 		return;
 

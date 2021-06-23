@@ -114,6 +114,19 @@ namespace os
 		 */
 		void ReleaseWarning(const char* filename, int line, SCP_FORMAT_STRING const char* format, ...) SCP_FORMAT_STRING_ARGS(3, 4);
 		
+		/**
+		 * @brief Shows an information dialog
+		 *  Displays a modal dialog with at most an OK button and some text.  Use instead of ReleaseWarning if
+		 * debugging is not necassary and you just want to inform the player of something important and can't use
+		 * other UI.  Use sparingly.
+		 *
+		 * @param filename The source code filename where this function was called
+		 * @param line The source code line number where this function was called
+		 * @param format The message to display
+		 */
+		void Information(const char* filename, int line, SCP_FORMAT_STRING const char* format, ...) SCP_FORMAT_STRING_ARGS(3, 4);
+
+
 		void Message(MessageType type, const char* message, const char* title = NULL);
 	}
 }
@@ -124,5 +137,6 @@ using os::dialogs::Error;
 using os::dialogs::Warning;
 using os::dialogs::ReleaseWarning;
 using os::dialogs::WarningEx;
+using os::dialogs::Information;
 
 #endif // _OSAPI_DIALOGS_H
