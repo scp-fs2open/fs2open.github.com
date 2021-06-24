@@ -361,7 +361,6 @@ add_file_folder("GameSnd"
 
 add_file_folder("Generated Files"
 	${GENERATED_SOURCE_DIR}/project.h
-	${GENERATED_SOURCE_DIR}/scp_compiler_detection.h
 	${PLATFORM_CHECK_HEADER}
 )
 

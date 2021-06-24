@@ -2901,25 +2901,25 @@ size_t stuff_int_list(int *ilp, size_t max_ints, int lookup_type)
 				case SHIP_TYPE:
 					num = ship_name_lookup(str.c_str());	// returns index of Ship[] entry with name
 					if (num < 0)
-						error_display(1, "Unable to find ship %s in stuff_int_list!", str.c_str());
+						error_display(0, "Unable to find ship %s in stuff_int_list!", str.c_str());
 					break;
 
 				case SHIP_INFO_TYPE:
 					num = ship_info_lookup(str.c_str());	// returns index of Ship_info[] entry with name
 					if (num < 0)
-						error_display(1, "Unable to find ship class %s in stuff_int_list!", str.c_str());
+						error_display(0, "Unable to find ship class %s in stuff_int_list!", str.c_str());
 					break;
 
 				case WEAPON_POOL_TYPE:
 					num = weapon_info_lookup(str.c_str());
 					if (num < 0)
-						error_display(1, "Unable to find weapon class %s in stuff_int_list!", str.c_str());
+						error_display(0, "Unable to find weapon class %s in stuff_int_list!", str.c_str());
 					break;
 
 				case WEAPON_LIST_TYPE:
 					num = weapon_info_lookup(str.c_str());
 					if (num < 0 && !str.empty())
-						error_display(1, "Unable to find weapon class %s in stuff_int_list!", str.c_str());
+						error_display(0, "Unable to find weapon class %s in stuff_int_list!", str.c_str());
 					break;
 
 				case RAW_INTEGER_TYPE:
@@ -2931,7 +2931,10 @@ size_t stuff_int_list(int *ilp, size_t max_ints, int lookup_type)
 					break;
 			}
 
-			*buf = num;
+			if (num < 0)
+				return false;
+
+			*buf = num;			
 		} else {
 			stuff_int(buf);
 		}
@@ -3019,13 +3022,22 @@ void stuff_loadout_list(SCP_vector<loadout_row> &list, int lookup_type)
 	}, get_lookup_type_name(lookup_type));
 }
 
-//Stuffs an integer list like stuff_int_list.
+//Stuffs an float list like stuff_int_list.
 size_t stuff_float_list(float* flp, size_t max_floats)
 {
 	return stuff_token_list(flp, max_floats, [](float *f)->bool {
 		stuff_float(f);
 		return true;
 	}, "float");
+}
+
+// ditto the above, but a vector of floats...
+void stuff_float_list(SCP_vector<float>& flp)
+{
+	stuff_token_list(flp, [](float* buf)->bool {
+		stuff_float(buf);
+		return true;
+		}, "float");
 }
 
 //	Stuff a vec3d struct, which is 3 floats.

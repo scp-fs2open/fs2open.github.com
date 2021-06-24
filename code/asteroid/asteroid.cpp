@@ -1324,7 +1324,7 @@ static void asteroid_do_area_effect(object *asteroid_objp)
 		if ( weapon_area_calc_damage(ship_objp, &asteroid_objp->pos, asip->inner_rad, asip->outer_rad, asip->blast, asip->damage, &blast, &damage, asip->outer_rad) == -1 )
 			continue;
 
-		ship_apply_global_damage(ship_objp, asteroid_objp, &asteroid_objp->pos, damage );
+		ship_apply_global_damage(ship_objp, asteroid_objp, &asteroid_objp->pos, damage, asip->damage_type_idx);
 		weapon_area_apply_blast(NULL, ship_objp, &asteroid_objp->pos, blast, 0);
 	}	// end for
 }

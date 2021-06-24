@@ -45,10 +45,8 @@ struct DecoderStatus {
 
 	~DecoderStatus();
 
- private:
-	DecoderStatus(const DecoderStatus&) SCP_DELETED_FUNCTION;
-
-	DecoderStatus& operator=(const DecoderStatus&) SCP_DELETED_FUNCTION;
+	DecoderStatus(const DecoderStatus&) = delete;
+	DecoderStatus& operator=(const DecoderStatus&) = delete;
 };
 
 template<typename Frame>
@@ -67,8 +65,8 @@ class FFMPEGStreamDecoder {
 	explicit FFMPEGStreamDecoder(DecoderStatus* status);
 	virtual ~FFMPEGStreamDecoder();
 
-	FFMPEGStreamDecoder(const FFMPEGStreamDecoder&) SCP_DELETED_FUNCTION;
-	FFMPEGStreamDecoder& operator=(const FFMPEGStreamDecoder&) SCP_DELETED_FUNCTION;
+	FFMPEGStreamDecoder(const FFMPEGStreamDecoder&) = delete;
+	FFMPEGStreamDecoder& operator=(const FFMPEGStreamDecoder&) = delete;
 
 	virtual void decodePacket(AVPacket* packet) = 0;
 

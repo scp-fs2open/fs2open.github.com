@@ -8288,6 +8288,7 @@ void process_beam_fired_packet(ubyte *data, header *hinfo)
 	fire_info.beam_info_index = u_beam_info;
 	fire_info.shooter = multi_get_network_object(shooter_sig);
 	fire_info.target = multi_get_network_object(target_sig);
+	fire_info.burst_index = 0;
 
 	if ( fire_info.target && (target_subsys_index >= 0) ) {
 		ship *targetp = &Ships[fire_info.target->instance];
@@ -8309,7 +8310,7 @@ void process_beam_fired_packet(ubyte *data, header *hinfo)
 			polymodel *pm = model_get( Ship_info[shipp->ship_info_index].model_num );
 			float field_of_fire = Weapon_info[fire_info.beam_info_index].field_of_fire;
 
-			fire_info.targeting_laser_offset = pm->gun_banks[bank].pnt[point];
+			fire_info.local_fire_postion = pm->gun_banks[bank].pnt[point];
 
 			shipp->beam_sys_info.turret_norm.xyz.x = 0.0f;
 			shipp->beam_sys_info.turret_norm.xyz.y = 0.0f;
@@ -8318,8 +8319,8 @@ void process_beam_fired_packet(ubyte *data, header *hinfo)
 			shipp->beam_sys_info.turret_gun_sobj = pm->detail[0];
 			shipp->beam_sys_info.turret_num_firing_points = 1;
 			shipp->beam_sys_info.turret_fov = cosf((field_of_fire != 0.0f) ? field_of_fire : 180);
-			shipp->beam_sys_info.pnt = fire_info.targeting_laser_offset;
-			shipp->beam_sys_info.turret_firing_point[0] = fire_info.targeting_laser_offset;
+			shipp->beam_sys_info.pnt = fire_info.local_fire_postion;
+			shipp->beam_sys_info.turret_firing_point[0] = fire_info.local_fire_postion;
 
 			shipp->fighter_beam_turret_data.disruption_timestamp = timestamp(0);
 			shipp->fighter_beam_turret_data.turret_next_fire_pos = 0;

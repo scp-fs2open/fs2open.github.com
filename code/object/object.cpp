@@ -873,7 +873,7 @@ void obj_move_call_physics(object *objp, float frametime)
 					if (points > missles_left) {
 						//there are more slots than missles left, so not all of the slots will have missles drawn on them
 						for (int k = next_point; k < next_point+missles_left; k ++) {
-							float &s_pct = shipp->secondary_point_reload_pct[i][k % points];
+							float &s_pct = shipp->secondary_point_reload_pct.get(i, k % points);
 							if (s_pct < 1.0)
 								s_pct += reload_time * frametime;
 							if (s_pct > 1.0)
@@ -882,7 +882,7 @@ void obj_move_call_physics(object *objp, float frametime)
 					} else {
 						//we don't have to worry about such things
 						for (int k = 0; k < points; k++) {
-							float &s_pct = shipp->secondary_point_reload_pct[i][k];
+							float &s_pct = shipp->secondary_point_reload_pct.get(i, k);
 							if (s_pct < 1.0)
 								s_pct += reload_time * frametime;
 							if (s_pct > 1.0)

@@ -19,6 +19,7 @@
 #include "scpui/rocket_ui.h"
 #include "scripting/api/objs/cmd_brief.h"
 #include "scripting/api/objs/color.h"
+#include "scripting/api/objs/enums.h"
 #include "scripting/api/objs/player.h"
 #include "scripting/lua/LuaTable.h"
 
@@ -108,6 +109,20 @@ ADE_FUNC(playElementSound,
 	}
 
 	return ade_set_args(L, "b", scpui::SoundPlugin::instance()->PlayElementSound(el, event, state));
+}
+
+ADE_FUNC(maybePlayCutscene, l_UserInterface, "enumeration MovieType, boolean RestartMusic, number ScoreIndex", "Plays a cutscene, if one exists, for the appropriate state transition.  If RestartMusic is true, then the music score at ScoreIndex will be started after the cutscene plays.", nullptr, "Returns nothing")
+{
+	enum_h movie_type;
+	bool restart_music = false;
+	int score_index = 0;
+
+	if (!ade_get_args(L, "*obi", l_Enum.Get(&movie_type), &restart_music, &score_index))
+		return ADE_RETURN_NIL;
+
+	// if an out-of-range enum is passed to this function, it will just be ignored
+	common_maybe_play_cutscene(movie_type.index, restart_music, score_index);
+	return ADE_RETURN_NIL;
 }
 
 //**********SUBLIBRARY: UserInterface/PilotSelect

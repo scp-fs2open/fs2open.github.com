@@ -215,7 +215,7 @@ extern object *Player_obj;	// Which object is the player. Has to be valid.
 // given it's pointer.  This way, we can replace it with a macro
 // to check that the pointer is valid for debugging.
 // This code will break in 64 bit builds when we have more than 2^31 objects but that will probably never happen
-#define OBJ_INDEX(objp) (int)(objp-Objects)
+#define OBJ_INDEX(objp) static_cast<int>(objp-Objects)
 
 /*
  *		FUNCTIONS

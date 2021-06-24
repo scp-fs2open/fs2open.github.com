@@ -197,7 +197,7 @@ BEGIN
         MENUITEM "&New\tCtrl+N",                57600
         MENUITEM "&Open...\tCtrl+O",            57601
         MENUITEM "&Save\tCtrl+S",               57603
-        MENUITEM "Save &As...",                 57604
+        MENUITEM "Save &As...\tCtrl+Shift+S",   57604
         MENUITEM "Re&vert",                     33000
         MENUITEM SEPARATOR
         POPUP "Save &Format"
@@ -211,7 +211,7 @@ BEGIN
             MENUITEM "&FreeSpace 1 mission...",     33074
         END
         MENUITEM SEPARATOR
-        MENUITEM "&Run FreeSpace",       32985
+        MENUITEM "&Run FreeSpace",              32985
         MENUITEM SEPARATOR
         MENUITEM "Recent File",                 57616, GRAYED
         MENUITEM SEPARATOR
@@ -418,7 +418,7 @@ BEGIN
         MENUITEM "&New\tCtrl+N",                ID_CPGN_FILE_NEW
         MENUITEM "&Open...\tCtrl+O",            ID_CPGN_FILE_OPEN
         MENUITEM "&Save\tCtrl+S",               ID_CPGN_FILE_SAVE
-        MENUITEM "Save &As...",                 ID_CPGN_FILE_SAVE_AS
+        MENUITEM "Save &As...\tCtrl+Shift+S",   ID_CPGN_FILE_SAVE_AS
         MENUITEM SEPARATOR
         MENUITEM "E&xit",                       ID_CLOSE
     END
@@ -459,7 +459,7 @@ BEGIN
             MENUITEM SEPARATOR
         END
         MENUITEM SEPARATOR
-        MENUITEM "Add Paste\tCtrl+P",               ID_EDIT_PASTE_SPECIAL, GRAYED
+        MENUITEM "Add Paste\tCtrl+P",           ID_EDIT_PASTE_SPECIAL, GRAYED
         MENUITEM SEPARATOR
         POPUP "Insert Operator"
         BEGIN
@@ -483,6 +483,8 @@ BEGIN
         BEGIN
             MENUITEM "Placeholder",                 ID_PLACEHOLDER, GRAYED
         END
+        MENUITEM SEPARATOR
+        MENUITEM "Add/Modify Container",        ID_EDIT_SEXP_TREE_EDIT_CONTAINERS
     END
 END
 
@@ -589,6 +591,7 @@ BEGIN
     "N",            ID_FILE_NEW,            VIRTKEY, CONTROL, NOINVERT
     "O",            ID_FILE_OPEN,           VIRTKEY, CONTROL, NOINVERT
     "S",            ID_FILE_SAVE,           VIRTKEY, CONTROL, NOINVERT
+    "S",            ID_FILE_SAVE_AS,        VIRTKEY, SHIFT, CONTROL, NOINVERT
     "W",            ID_FORM_WING,           VIRTKEY, CONTROL, NOINVERT
     "1",            ID_GROUP1,              VIRTKEY, CONTROL, NOINVERT
     "2",            ID_GROUP2,              VIRTKEY, CONTROL, NOINVERT
@@ -646,6 +649,7 @@ BEGIN
     "N",            ID_CPGN_FILE_NEW,       VIRTKEY, CONTROL, NOINVERT
     "O",            ID_CPGN_FILE_OPEN,      VIRTKEY, CONTROL, NOINVERT
     "S",            ID_CPGN_FILE_SAVE,      VIRTKEY, CONTROL, NOINVERT
+    "S",            ID_CPGN_FILE_SAVE_AS,   VIRTKEY, SHIFT, CONTROL, NOINVERT
     VK_RETURN,      ID_END_EDIT,            VIRTKEY, NOINVERT
 END
 
@@ -2206,6 +2210,56 @@ BEGIN
     PUSHBUTTON      "Insert",IDC_ALT_CLASS_INSERT,58,177,50,17
 END
 
+IDD_EDIT_CONTAINER DIALOGEX 0, 0, 441, 267
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Add/Modify Container"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,384,7,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,384,25,50,14
+    CONTROL         "List",IDC_CONTAINER_LIST,"Button",BS_AUTORADIOBUTTON | WS_GROUP,139,25,27,10
+    CONTROL         "Map",IDC_CONTAINER_MAP,"Button",BS_AUTORADIOBUTTON,172,25,25,10
+    CONTROL         "String",IDC_CONTAINER_STRING_DATA,"Button",BS_AUTORADIOBUTTON | WS_GROUP,215,25,35,10
+    CONTROL         "Number",IDC_CONTAINER_NUMBER_DATA,"Button",BS_AUTORADIOBUTTON,255,25,41,10
+    GROUPBOX        "Container Type",IDC_STATIC,133,14,70,25
+    LISTBOX         IDC_CONTAINER_DATA_LISTER,133,47,289,206,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Data",IDC_STATIC,15,101,50,8
+    LTEXT           "Key",IDC_STATIC,15,41,13,8
+    EDITTEXT        IDC_CONTAINER_KEY,15,53,111,14,ES_AUTOHSCROLL | WS_DISABLED
+    EDITTEXT        IDC_CONTAINER_DATA,15,112,112,14,ES_AUTOHSCROLL | WS_DISABLED
+    GROUPBOX        "Data Type",IDC_STATIC,210,14,88,25
+    PUSHBUTTON      "Add",IDC_CONTAINER_ADD,15,144,37,15
+    PUSHBUTTON      "Insert",IDC_CONTAINER_INSERT,53,144,37,15
+    PUSHBUTTON      "Remove",IDC_CONTAINER_REMOVE,91,144,35,15
+    PUSHBUTTON      "Update",IDC_CONTAINER_UPDATE,15,128,112,15
+    COMBOBOX        IDC_CURRENT_CONTAINER_NAME,15,26,112,176,CBS_DROPDOWNLIST | WS_DISABLED | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Name",IDC_STATIC,15,15,52,8
+    PUSHBUTTON      "Add Container",IDC_ADD_NEW_CONTAINER,14,211,112,14
+    GROUPBOX        "Key Type",IDC_STATIC,15,71,111,27
+    CONTROL         "String",IDC_CONTAINER_STRING_KEYS,"Button",BS_AUTORADIOBUTTON | WS_DISABLED,21,82,35,10
+    CONTROL         "Number",IDC_CONTAINER_NUMBER_KEYS,"Button",BS_AUTORADIOBUTTON | WS_DISABLED,71,82,41,10
+    PUSHBUTTON      "Delete Container",IDC_DELETE_CONTAINER,14,240,112,13,WS_DISABLED
+    GROUPBOX        " Persistence",IDC_STATIC,15,161,111,48
+    CONTROL         " None",IDC_CONTAINER_NO_PERSIST,"Button",BS_AUTORADIOBUTTON,21,172,35,10
+    CONTROL         " Save on mission complete",IDC_CONTAINER_CAMPAIGN_PERSIST,
+                    "Button",BS_AUTORADIOBUTTON,21,184,99,10
+    CONTROL         " Save on mission close",IDC_CONTAINER_PLAYER_PERSIST,
+                    "Button",BS_AUTORADIOBUTTON,22,195,87,10
+    CONTROL         " Eternal",IDC_CONTAINER_ETERNAL_PERSIST,"Button",BS_AUTOCHECKBOX | WS_DISABLED | WS_TABSTOP,81,172,41,10
+    CONTROL         " Network Container",IDC_CONTAINER_NETWORK,"Button",BS_AUTOCHECKBOX | NOT WS_VISIBLE | WS_TABSTOP,301,25,78,10
+    PUSHBUTTON      " Rename Container",IDC_RENAME_CONTAINER,14,226,112,14,WS_DISABLED
+END
+
+IDD_EDIT_CONTAINER_NAME DIALOGEX 0, 0, 138, 70
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Edit Container Name"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,14,36,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,72,36,50,14
+    EDITTEXT        IDC_NEW_CONTAINER_NAME,15,14,102,14,ES_AUTOHSCROLL
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -2604,6 +2658,22 @@ BEGIN
         RIGHTMARGIN, 305
         TOPMARGIN, 7
         BOTTOMMARGIN, 205
+    END
+
+    IDD_EDIT_CONTAINER, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 434
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 260
+    END
+
+    IDD_EDIT_CONTAINER_NAME, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 131
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 63
     END
 END
 #endif    // APSTUDIO_INVOKED
