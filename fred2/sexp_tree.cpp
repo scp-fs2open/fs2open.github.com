@@ -52,6 +52,7 @@
 #define MAX_OP_MENUS	30
 #define MAX_SUBMENUS	(MAX_OP_MENUS * MAX_OP_MENUS)
 
+#define ID_CONTAINER_MENU	0xd800
 #define ID_VARIABLE_MENU	0xda00
 #define ID_ADD_MENU			0xdc00
 #define ID_REPLACE_MENU		0xde00
@@ -164,6 +165,14 @@ int sexp_tree::load_branch(int index, int parent)
 	char combined_var_name[2*TOKEN_LENGTH + 2];
 
 	while (index != -1) {
+		int additional_flags = SEXPT_VALID;
+		// special check for containers
+		if (parent != -1) {
+			if (tree_nodes[parent].type & SEXPT_CONTAINER) {
+				additional_flags |= SEXPT_MODIFIER;
+			}
+		}
+
 		Assert(Sexp_nodes[index].type != SEXP_NOT_USED);
 		if (Sexp_nodes[index].subtype == SEXP_ATOM_LIST) {
 			load_branch(Sexp_nodes[index].first, parent);  // do the sublist and continue
@@ -175,7 +184,7 @@ int sexp_tree::load_branch(int index, int parent)
 				flag = 1;
 			}
 
-			set_node(cur, (SEXPT_OPERATOR | SEXPT_VALID), Sexp_nodes[index].text);
+			set_node(cur, (SEXPT_OPERATOR | additional_flags), Sexp_nodes[index].text);
 			load_branch(Sexp_nodes[index].rest, cur);  // operator is new parent now
 			return cur;  // 'rest' was just used, so nothing left to use.
 
@@ -183,9 +192,9 @@ int sexp_tree::load_branch(int index, int parent)
 			cur = allocate_node(parent);
 			if (Sexp_nodes[index].type & SEXP_FLAG_VARIABLE) {
 				get_combined_variable_name(combined_var_name, Sexp_nodes[index].text);
-				set_node(cur, (SEXPT_VARIABLE | SEXPT_NUMBER | SEXPT_VALID), combined_var_name);
+				set_node(cur, (SEXPT_VARIABLE | SEXPT_NUMBER | additional_flags), combined_var_name);
 			} else {
-				set_node(cur, (SEXPT_NUMBER | SEXPT_VALID), Sexp_nodes[index].text);
+				set_node(cur, (SEXPT_NUMBER | additional_flags), Sexp_nodes[index].text);
 			}
 
 		} else if (Sexp_nodes[index].subtype == SEXP_ATOM_STRING) {
@@ -6505,13 +6514,11 @@ int sexp_tree::get_loadout_variable_count(int var_index)
 
 int sexp_tree::get_container_usage_count(const char* container_name) const
 {
-	const SCP_string container_name_str = sexp_container::DELIM + container_name + sexp_container::DELIM;
-
 	int count = 0;
 
 	for (uint idx = 0; idx < tree_nodes.size(); idx++) {
 		if (tree_nodes[idx].type & (SEXPT_VALID | SEXPT_CONTAINER)) {
-			if (!stricmp(tree_nodes[idx].text, container_name_str.c_str())) {
+			if (!stricmp(tree_nodes[idx].text, container_name)) {
 				count++;
 			}
 		}

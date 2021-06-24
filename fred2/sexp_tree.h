@@ -58,6 +58,7 @@
 #define BITMAP_NUMBERED_DATA	9
 // There are 20 number bitmaps, 9 to 28, counting by 5s from 0 to 95
 #define BITMAP_COMMENT			29
+#define BITMAP_CONTAINER		30
 
 
 // tree behavior modes (or tree subtype)
@@ -198,6 +199,11 @@ public:
 	int get_data_image(int node);
 
 
+	// Karajorma/jg18 - SEXP Container functions
+	void add_default_modifier(int container_index);
+	void replace_container_ref(int container_idx, int type, bool test_child_nodes = true, bool delete_child_nodes = true, bool set_default_modifier = true);
+	int add_container_ref(const char* data, bool add_default = true);
+
 	sexp_list_item *get_listing_opf(int opf, int parent_node, int arg_index);
 	sexp_list_item *get_listing_opf_null();
 	sexp_list_item *get_listing_opf_bool(int parent_node = -1);
@@ -283,6 +289,9 @@ public:
 	sexp_list_item *get_listing_opf_fireball();
 	sexp_list_item *get_listing_opf_species();
 	sexp_list_item *get_listing_opf_language();
+	sexp_list_item *get_listing_opf_sexp_containers(int type);
+	sexp_list_item *get_listing_opf_list_modifiers(bool modifier);
+	sexp_list_item *get_listing_opf_map_keys(int parent_node, bool modifier);
 
 	int m_mode;
 	int item_index;

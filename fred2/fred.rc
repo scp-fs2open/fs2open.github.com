@@ -148,6 +148,8 @@ IDB_DATA_95             BITMAP                  "res\\data95.bmp"
 
 IDB_COMMENT             BITMAP                  "res\\comment.bmp"
 
+IDB_CONTAINER           BITMAP                  "res\\container.bmp"
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -485,6 +487,10 @@ BEGIN
         END
         MENUITEM SEPARATOR
         MENUITEM "Add/Modify Container",        ID_EDIT_SEXP_TREE_EDIT_CONTAINERS
+        POPUP "Replace Container"
+        BEGIN
+            MENUITEM "Placeholder", ID_PLACEHOLDER, GRAYED
+        END
     END
 END
 
