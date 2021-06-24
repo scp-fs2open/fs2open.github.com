@@ -8320,7 +8320,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 				vm_vec_scale_add(&headp, &obj->pos, &obj->orient.vec.fvec, wip->laser_length);
 
 				batching_add_laser(wip->laser_bitmap.first_frame + framenum, &headp, wip->laser_head_radius, &obj->pos, wip->laser_tail_radius, 
-					alpha, alpha, alpha, wip->laser_headon_bitmap.first_frame + headon_framenum, wip->laser_headon_switch_ang);
+					alpha, alpha, alpha, wip->laser_headon_bitmap.first_frame + headon_framenum, wip->laser_headon_switch_ang, wip->laser_headon_switch_rate);
 			}			
 
 			// maybe draw laser glow bitmap
@@ -8385,7 +8385,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 					alpha = (int)(alpha * neb2_get_fog_visibility(&obj->pos, NEB_FOG_VISIBILITY_MULT_WEAPON));
 
 				batching_add_laser(wip->laser_glow_bitmap.first_frame + framenum, &headp2, wip->laser_head_radius * weapon_glow_scale_f, &tailp, wip->laser_tail_radius * weapon_glow_scale_r, 
-					(c.red*alpha)/255, (c.green*alpha)/255, (c.blue*alpha)/255, wip->laser_glow_headon_bitmap.first_frame + framenum, wip->laser_headon_switch_ang);
+					(c.red*alpha)/255, (c.green*alpha)/255, (c.blue*alpha)/255, wip->laser_glow_headon_bitmap.first_frame + framenum, wip->laser_headon_switch_ang, wip->laser_headon_switch_rate);
 			}
 
 			break;
