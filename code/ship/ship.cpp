@@ -6629,18 +6629,18 @@ static void ship_set(int ship_index, int objnum, int ship_type)
 
 	shipp->max_shield_recharge = sip->max_shield_recharge;
 
+	if (sip->flags[Ship::Info_Flags::Model_point_shields]) {
+		objp->n_quadrants = (int)pm->shield_points.size();
+		shipp->shield_points = pm->shield_points;
+		objp->shield_quadrant.resize(objp->n_quadrants);
+	}
+
 	if (Fred_running) {
 		shipp->ship_max_shield_strength = 100.0f;
 		objp->shield_quadrant[0] = 100.0f;
 	} else {
 		shipp->ship_max_shield_strength = sip->max_shield_strength;
 		shield_set_strength(objp, shield_get_max_strength(objp));
-	}
-
-	if (sip->flags[Ship::Info_Flags::Model_point_shields]) {
-		objp->n_quadrants = (int)pm->shield_points.size();
-		shipp->shield_points = pm->shield_points;
-		objp->shield_quadrant.resize(objp->n_quadrants);
 	}
 
 	shipp->orders_accepted = ship_get_default_orders_accepted( sip );
