@@ -44,8 +44,12 @@ private:
 
 public slots:
 	void reject() override; //onClose for dialogs
-	void updateUI();
+
+	void updateUISpec();
+	void updateUIMission();
 	void updateUIBranch();
+
+	inline void updateUIAll(){updateUISpec(); updateUIMission(); updateUIBranch();}
 
 private slots:
 	void fileNew();
@@ -53,8 +57,6 @@ private slots:
 	bool fileSave();
 	bool fileSaveAs();
 	void fileSaveCopyAs();
-
-	void createTree(bool enabled = true);
 
 	void btnBranchUpClicked();
 	void btnBranchDownClicked();

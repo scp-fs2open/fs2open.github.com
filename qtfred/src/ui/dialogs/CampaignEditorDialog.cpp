@@ -60,7 +60,7 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget *parent, EditorViewport *view
 	menFile->addSeparator();
 	menFile->addAction(tr("E&xit"), this, &QDialog::reject);
 
-	updateUI();
+	updateUIAll();
 }
 
 CampaignEditorDialog::~CampaignEditorDialog() = default;
@@ -84,7 +84,6 @@ void CampaignEditorDialog::setModel(CampaignEditorDialogModel *new_model) {
 		model->setCampaignTechReset(changed == Qt::Checked);
 	});
 	connect(ui->txaDescr, &QPlainTextEdit::textChanged, model.get(), [&]() {
-		util::SignalBlockers blockers(model.get());
 		model->setCampaignDescr(ui->txaDescr->toPlainText());
 	});
 
@@ -99,17 +98,12 @@ void CampaignEditorDialog::setModel(CampaignEditorDialogModel *new_model) {
 		model->selectCurBr(selected->data(0, Qt::UserRole).value<const CampaignEditorDialogModel::CampaignBranchData*>());
 	});
 
-	connect(ui->btnBranchLoop, &QPushButton::toggled, model.get(), [&](bool checked) {
-		model->setCurBrIsLoop(checked);
-	});
+	connect(ui->btnBranchLoop, &QPushButton::toggled, model.get(), &CampaignEditorDialogModel::setCurBrIsLoop);
 	connect(ui->txaLoopDescr, &QPlainTextEdit::textChanged, model.get(), [&]() {
-		util::SignalBlockers blockers(model.get());
 		model->setCurLoopDescr(ui->txaLoopDescr->toPlainText());
 	});
 	connect(ui->txtLoopAnim, &QLineEdit::textChanged, model.get(), &CampaignEditorDialogModel::setCurLoopAnim);
 	connect(ui->txtLoopVoice, &QLineEdit::textChanged, model.get(), &CampaignEditorDialogModel::setCurLoopVoice);
-
-	connect(model.get(), &AbstractDialogModel::modelChanged, this, &CampaignEditorDialog::updateUI);
 }
 
 void CampaignEditorDialog::reject() {  //merely means onClose
@@ -120,10 +114,10 @@ void CampaignEditorDialog::reject() {  //merely means onClose
 	deleteLater();
 }
 
-void CampaignEditorDialog::updateUI() {
+void CampaignEditorDialog::updateUISpec() {
 	util::SignalBlockers blockers(this);
 
-	this->setWindowTitle(model->campaignFile.isEmpty() ? "Untitled" : model->campaignFile + ".fc2");
+	setWindowTitle(model->campaignFile.isEmpty() ? "Untitled" : model->campaignFile + ".fc2");
 
 	ui->txtName->setText(model->getCampaignName());
 	if (model->getCampaignNumPlayers())
@@ -133,6 +127,14 @@ void CampaignEditorDialog::updateUI() {
 	ui->chkTechReset->setChecked(model->getCampaignTechReset());
 
 	ui->txaDescr->setPlainText(model->getCampaignDescr());
+
+	//ui->btnErrorChecker->setEnabled()
+	//ui->btnRealign->setEnabled()
+
+}
+
+void CampaignEditorDialog::updateUIMission() {
+	util::SignalBlockers blockers(this);
 
 	ui->btnFredMission->setEnabled(model->getCurMnFredable());
 	ui->txbMissionDescr->setText(model->getCurMnDescr());
@@ -146,15 +148,32 @@ void CampaignEditorDialog::updateUI() {
 	ui->cmbMainhall->setEnabled(included);
 	ui->cmbDebriefingPersona->setEnabled(included);
 
-	createTree(included);
+	sexp_tree &sxt = *ui->sxtBranches;
+	sxt.setEnabled(included);
+	sxt.clear_tree("");
+
+	using Branch = CampaignEditorDialogModel::CampaignBranchData;
+	if (included) {
+		for (const Branch& br : model->getCurMnBranches()) {
+			NodeImage img;
+			if (br.type == Branch::NEXT_NOT_FOUND)
+				img = NodeImage::ROOT_DIRECTIVE;
+			else if (br.loop.is)
+				img = NodeImage::ROOT;
+			else
+				img = NodeImage::BLACK_DOT;
+			QTreeWidgetItem *h = sxt.insert(Branch::branchTexts.at(br.type) + br.next, img);
+			h->setData(0, Qt::UserRole, QVariant::fromValue(&br));
+			sxt.add_sub_tree(sxt.load_sub_tree(br.sexp, true, "do-nothing"), h);
+		}
+	}
 
 	updateUIBranch();
-	//ui->btnErrorChecker->setEnabled()
-	//ui->btnRealign->setEnabled()
-
 }
 
 void CampaignEditorDialog::updateUIBranch() {
+	util::SignalBlockers blockers(this);
+
 	bool sel = model->isCurBrSelected();
 	bool loop = model->getCurBrIsLoop();
 
@@ -199,7 +218,7 @@ void CampaignEditorDialog::fileNew() {
 	auto *act = qobject_cast<QAction*>(sender());
 
 	setModel(new CampaignEditorDialogModel(this, _viewport, "", act ? act->text() : ""));
-	updateUI();
+	updateUIAll();
 }
 
 void CampaignEditorDialog::fileOpen() {
@@ -216,7 +235,7 @@ void CampaignEditorDialog::fileOpen() {
 		QMessageBox::information(this, tr("Error opening file"), pathName);
 	}
 
-	updateUI();
+	updateUIAll();
 }
 
 bool CampaignEditorDialog::fileSave() {
@@ -225,7 +244,7 @@ bool CampaignEditorDialog::fileSave() {
 
 	bool res = model->apply();
 
-	updateUI();
+	updateUIAll();
 	return res;
 }
 
@@ -238,7 +257,7 @@ bool CampaignEditorDialog::fileSaveAs() {
 	if (res)
 		setModel(new CampaignEditorDialogModel(this, _viewport, pathName));
 
-	updateUI();
+	updateUIAll();
 	return res;
 }
 
@@ -248,28 +267,6 @@ void CampaignEditorDialog::fileSaveCopyAs() {
 		return;
 
 	model->saveTo(pathName);
-}
-
-void CampaignEditorDialog::createTree(bool enabled) {
-	using Branch = CampaignEditorDialogModel::CampaignBranchData;
-	sexp_tree &sxt = *ui->sxtBranches;
-
-	sxt.setEnabled(enabled);
-	sxt.clear_tree("");
-	if (enabled) {
-		for (const Branch& br : model->getCurMnBranches()) {
-			NodeImage img;
-			if (br.type == Branch::NEXT_NOT_FOUND)
-				img = NodeImage::ROOT_DIRECTIVE;
-			else if (br.loop.is)
-				img = NodeImage::ROOT;
-			else
-				img = NodeImage::BLACK_DOT;
-			QTreeWidgetItem *h = sxt.insert(Branch::branchTexts.at(br.type) + br.next, img);
-			h->setData(0, Qt::UserRole, QVariant::fromValue(&br));
-			sxt.add_sub_tree(sxt.load_sub_tree(br.sexp, true, "do-nothing"), h);
-		}
-}
 }
 
 void CampaignEditorDialog::btnBranchUpClicked() {

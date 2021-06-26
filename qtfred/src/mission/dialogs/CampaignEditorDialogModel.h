@@ -83,6 +83,7 @@ public:
 private:
 	inline const CampaignBranchData& getCurBr() const {
 		return isCurBrSelected() ? *mnData_it->brData_it : CampaignMissionData::bdEmpty; }
+	void connectBranches(bool uiUpdate = true);
 
 public:
 	inline bool getCurBrIsLoop() const { return getCurBr().loop.is; }
@@ -100,9 +101,8 @@ public:
 private slots:
 	inline void flagModified() { modified = true; }
 	void checkMissionDrop(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles);
-	void connectBranches();
-public slots:
 
+public slots:
 	inline void setCampaignName(const QString &campaignName) {
 		modify<QString>(_campaignName, campaignName); }
 	inline void setCampaignTechReset(bool campaignTechReset) {
@@ -124,30 +124,22 @@ public slots:
 
 	void selectCurBr(const CampaignBranchData *br);
 
-	inline void setCurBrIsLoop(bool isLoop) {
-		if (! (mnData_it && mnData_it->brData_it)) return;
-		modify<bool>(mnData_it->brData_it->loop.is, isLoop);}
+	void setCurBrIsLoop(bool isLoop);
 	inline void setCurLoopDescr(const QString &descr) {
 		if (! (mnData_it && mnData_it->brData_it)) return;
 		modify<QString>(mnData_it->brData_it->loop.descr, descr); }
-	inline void setCurLoopAnim(const QString &anim) {
-		if (! (mnData_it && mnData_it->brData_it)) return;
-		modify<QString>(mnData_it->brData_it->loop.anim, anim); }
-	inline void setCurLoopVoice(const QString &voice) {
-		if (! (mnData_it && mnData_it->brData_it)) return;
-		modify<QString>(mnData_it->brData_it->loop.voice, voice); }
+	void setCurLoopAnim(const QString &anim);
+	void setCurLoopVoice(const QString &voice);
 
 private:
 	bool _saveTo(QString file) const;
 
 	bool modified{false};
 	template<typename T>
-	inline void modify(T &a, const T &b, const bool dataModification = true) {
+	inline void modify(T &a, const T &b) {
 		if (a != b) {
 			a = b;
-			modelChanged();
-			if (dataModification)
-				flagModified();
+			flagModified();
 		}
 	}
 

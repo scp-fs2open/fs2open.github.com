@@ -210,16 +210,15 @@ CampaignEditorDialogModel::CampaignEditorDialogModel(CampaignEditorDialog* paren
 			missionData.initRow(Campaign.missions[i].name, ptr, true,
 							   loaded ? Qt::darkYellow : Qt::red);
 		}
-}
-	connectBranches();
+	}
+	connectBranches(false);
+
 
 	connect(&initialShips, &QAbstractListModel::dataChanged, this, &CampaignEditorDialogModel::flagModified);
 	connect(&initialWeapons, &QAbstractListModel::dataChanged, this, &CampaignEditorDialogModel::flagModified);
-	connect(&missionData, &QAbstractListModel::dataChanged, this, &CampaignEditorDialogModel::modelChanged);
+	connect(&missionData, &QAbstractListModel::dataChanged, this, [&](){connectBranches();});
 	connect(&missionData, &QAbstractListModel::dataChanged, this, &CampaignEditorDialogModel::flagModified);
 	connect(&missionData, &QAbstractListModel::dataChanged, this, &CampaignEditorDialogModel::checkMissionDrop);
-
-	connect(this, &CampaignEditorDialogModel::modelChanged, this, &CampaignEditorDialogModel::connectBranches);
 }
 
 bool CampaignEditorDialogModel::apply() {
@@ -231,6 +230,20 @@ void CampaignEditorDialogModel::reject() {
 	// nothing to do if the dialog is created each time it's opened
 }
 
+void CampaignEditorDialogModel::setCurBrIsLoop(bool isLoop) {
+	if (! (mnData_it && mnData_it->brData_it)) return;
+	modify<bool>(mnData_it->brData_it->loop.is, isLoop);
+	_parent->updateUIMission();}
+
+void CampaignEditorDialogModel::setCurLoopAnim(const QString &anim) {
+	if (! (mnData_it && mnData_it->brData_it)) return;
+	modify<QString>(mnData_it->brData_it->loop.anim, anim);
+	_parent->updateUIBranch();}
+
+void CampaignEditorDialogModel::setCurLoopVoice(const QString &voice) {
+	if (! (mnData_it && mnData_it->brData_it)) return;
+	modify<QString>(mnData_it->brData_it->loop.voice, voice);
+	_parent->updateUIBranch();}
 
 bool CampaignEditorDialogModel::saveTo(const QString &file) {
 	bool success = _saveTo(file);
@@ -262,11 +275,13 @@ void CampaignEditorDialogModel::checkMissionDrop(const QModelIndex &idx, const Q
 	}
 }
 
-void CampaignEditorDialogModel::connectBranches() {
+void CampaignEditorDialogModel::connectBranches(bool uiUpdate) {
 	for (auto& mn: missionData.getCheckedData())
 		for (auto& br: mn->branches)
 			if (br.type == CampaignBranchData::NEXT || br.type == CampaignBranchData::NEXT_NOT_FOUND)
 				br.connect(missionData.getCheckedDataConst());
+	if (uiUpdate)
+		_parent->updateUIMission();
 }
 
 void CampaignEditorDialogModel::missionSelectionChanged(const QModelIndex &changed) {
@@ -274,7 +289,7 @@ void CampaignEditorDialogModel::missionSelectionChanged(const QModelIndex &chang
 		mnData_it->brData_it = nullptr;
 	mnData_it = &missionData.internalData(changed);
 	mnData_idx = changed;
-	_parent->updateUI();
+	_parent->updateUIMission();
 }
 
 void CampaignEditorDialogModel::selectCurBr(const CampaignBranchData *br) {
