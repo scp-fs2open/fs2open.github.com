@@ -3,6 +3,7 @@
 #include "LuaSEXP.h"
 
 #include "iff_defs/iff_defs.h"
+#include "localization/localize.h"
 #include "mission/missionmessage.h"
 #include "object/waypoint.h"
 #include "parse/parselo.h"
@@ -470,6 +471,7 @@ void LuaSEXP::parseTable() {
 	}
 
 	_help_text = help_text.str();
+	lcl_replace_stuff(_help_text, true);
 }
 void LuaSEXP::setAction(const luacpp::LuaFunction& action) {
 	Assertion(action.isValid(), "Invalid function handle supplied!");
