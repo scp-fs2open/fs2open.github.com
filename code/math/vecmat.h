@@ -645,8 +645,8 @@ inline matrix& operator-=(matrix& left, const matrix& right)
  * @param right The vector/matrix
  * @return The multiplied result
  */
-vec3d operator*(const matrix& A, const vec3d& v);
-matrix operator*(const matrix& A, const matrix& B);
+inline vec3d operator*(const matrix& A, const vec3d& v);
+inline matrix operator*(const matrix& A, const matrix& B);
 
 std::ostream& operator<<(std::ostream& os, const vec3d& vec);
 

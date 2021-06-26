@@ -862,7 +862,7 @@ matrix *vm_copy_transpose(matrix *dest, const matrix *src)
 	return dest;
 }
 
-vec3d operator*(const matrix& A, const vec3d& v) {
+inline vec3d operator*(const matrix& A, const vec3d& v) {
 	vec3d out;
 
 	out.xyz.x = vm_vec_dot(&A.vec.rvec, &v);
@@ -872,7 +872,7 @@ vec3d operator*(const matrix& A, const vec3d& v) {
 	return out;
 }
 
-matrix operator*(const matrix& A, const matrix& B) {
+inline matrix operator*(const matrix& A, const matrix& B) {
 	matrix BT, out;
 
 	// we transpose B here for concision and also potential vectorisation opportunities
