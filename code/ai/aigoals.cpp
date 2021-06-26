@@ -293,9 +293,11 @@ void ai_clear_ship_goals( ai_info *aip )
 	}
 
 	// add scripting hook for 'On Goals Cleared' --wookieejedi
-	Script_system.SetHookObject("Ship", &Objects[Ships[aip->shipnum].objnum]);
-	Script_system.RunCondition(CHA_ONGOALSCLEARED);
-	Script_system.RemHookVars({"Ship"});
+	if (Script_system.IsActiveAction(CHA_ONGOALSCLEARED)) {
+		Script_system.SetHookObject("Ship", &Objects[Ships[aip->shipnum].objnum]);
+		Script_system.RunCondition(CHA_ONGOALSCLEARED);
+		Script_system.RemHookVars({"Ship"});
+	}
 }
 
 void ai_clear_wing_goals( wing *wingp )

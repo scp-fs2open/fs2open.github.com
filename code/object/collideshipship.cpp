@@ -1147,16 +1147,20 @@ int collide_ship_ship( obj_pair * pair )
 
 		if ( hit )
 		{
-			Script_system.SetHookObjects(4, "Self", A, "Object", B, "Ship", A, "ShipB", B);
-			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(world_hit_pos));
-			bool a_override = Script_system.IsConditionOverride(CHA_COLLIDESHIP, A);
-			Script_system.RemHookVars({ "Self", "Object", "Ship", "ShipB", "Hitpos" });
+			bool a_override = false, b_override = false;
 
-			// Yes, this should be reversed.
-			Script_system.SetHookObjects(4, "Self", B, "Object", A, "Ship", B, "ShipB", A);
-			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(world_hit_pos));
-			bool b_override = Script_system.IsConditionOverride(CHA_COLLIDESHIP, B);
-			Script_system.RemHookVars({ "Self", "Object", "Ship", "ShipB", "Hitpos" });
+			if (Script_system.IsActiveAction(CHA_COLLIDESHIP)) {
+				Script_system.SetHookObjects(4, "Self", A, "Object", B, "Ship", A, "ShipB", B);
+				Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(world_hit_pos));
+				a_override = Script_system.IsConditionOverride(CHA_COLLIDESHIP, A);
+				Script_system.RemHookVars({ "Self", "Object", "Ship", "ShipB", "Hitpos" });
+
+				// Yes, this should be reversed.
+				Script_system.SetHookObjects(4, "Self", B, "Object", A, "Ship", B, "ShipB", A);
+				Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(world_hit_pos));
+				b_override = Script_system.IsConditionOverride(CHA_COLLIDESHIP, B);
+				Script_system.RemHookVars({ "Self", "Object", "Ship", "ShipB", "Hitpos" });
+			}
 
 			if(!a_override && !b_override)
 			{
@@ -1395,6 +1399,10 @@ int collide_ship_ship( obj_pair * pair )
 
 					maybe_push_little_ship_from_fast_big_ship(ship_ship_hit_info.heavy, ship_ship_hit_info.light, ship_ship_hit_info.impulse, &ship_ship_hit_info.collision_normal);
 				}
+			}
+
+			if (!Script_system.IsActiveAction(CHA_COLLIDESHIP)) {
+				return 0;
 			}
 
 			if(!(b_override && !a_override))
