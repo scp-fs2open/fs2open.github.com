@@ -185,9 +185,9 @@ void CampaignEditorDialogModel::CampaignMissionData::branchesFromFormula(int for
 		branches.emplace_back(CAR(it_cond_arm), filename, loop);
 }
 
-CampaignEditorDialogModel::CampaignEditorDialogModel(CampaignEditorDialog* parent, EditorViewport* viewport, const QString &file, const QString& newCampaignType) :
-	AbstractDialogModel(parent, viewport),
-	_parent(parent),
+CampaignEditorDialogModel::CampaignEditorDialogModel(CampaignEditorDialog* _parent, EditorViewport* viewport, const QString &file, const QString& newCampaignType) :
+	AbstractDialogModel(_parent, viewport),
+	parent(_parent),
 	cutscenes(initCutscenes()),
 	mainhalls(initMainhalls()),
 	debriefingPersonas(initDebriefingPersonas()),
@@ -196,9 +196,9 @@ CampaignEditorDialogModel::CampaignEditorDialogModel(CampaignEditorDialog* paren
 	initialShips(Ship_info, &initShips, this),
 	initialWeapons(Weapon_info, &initWeps, this),
 	missionData(getMissions(), &CampaignMissionData::initMissions, this),
-	_campaignName(Campaign.name),		//missioncampaign.h globals
-	_campaignDescr(Campaign.desc),
-	_campaignTechReset(Campaign.flags & CF_CUSTOM_TECH_DATABASE)
+	campaignName(Campaign.name),		//missioncampaign.h globals
+	campaignDescr(Campaign.desc),
+	campaignTechReset(Campaign.flags & CF_CUSTOM_TECH_DATABASE)
 {
 	for (int i=0; i<Campaign.num_missions; i++) {
 		if (! missionData.contains(Campaign.missions[i].name)) {
@@ -211,8 +211,8 @@ CampaignEditorDialogModel::CampaignEditorDialogModel(CampaignEditorDialog* paren
 							   loaded ? Qt::darkYellow : Qt::red);
 		}
 	}
-	connectBranches(false);
 
+	connectBranches(false);
 
 	connect(&initialShips, &QAbstractListModel::dataChanged, this, &CampaignEditorDialogModel::flagModified);
 	connect(&initialWeapons, &QAbstractListModel::dataChanged, this, &CampaignEditorDialogModel::flagModified);
@@ -233,21 +233,21 @@ void CampaignEditorDialogModel::reject() {
 void CampaignEditorDialogModel::setCurBrIsLoop(bool isLoop) {
 	if (! (mnData_it && mnData_it->brData_it)) return;
 	modify<bool>(mnData_it->brData_it->loop.is, isLoop);
-	_parent->updateUIMission();}
+	parent->updateUIMission();}
 
 void CampaignEditorDialogModel::setCurLoopAnim(const QString &anim) {
 	if (! (mnData_it && mnData_it->brData_it)) return;
 	modify<QString>(mnData_it->brData_it->loop.anim, anim);
-	_parent->updateUIBranch();}
+	parent->updateUIBranch();}
 
 void CampaignEditorDialogModel::setCurLoopVoice(const QString &voice) {
 	if (! (mnData_it && mnData_it->brData_it)) return;
 	modify<QString>(mnData_it->brData_it->loop.voice, voice);
-	_parent->updateUIBranch();}
+	parent->updateUIBranch();}
 
 bool CampaignEditorDialogModel::saveTo(const QString &file) {
 	bool success = _saveTo(file);
-	QMessageBox::information(_parent, file, success ? tr("Successfully saved") : tr("Error saving"));
+	QMessageBox::information(parent, file, success ? tr("Successfully saved") : tr("Error saving"));
 	return success;
 }
 
@@ -281,7 +281,7 @@ void CampaignEditorDialogModel::connectBranches(bool uiUpdate) {
 			if (br.type == CampaignBranchData::NEXT || br.type == CampaignBranchData::NEXT_NOT_FOUND)
 				br.connect(missionData.getCheckedDataConst());
 	if (uiUpdate)
-		_parent->updateUIMission();
+		parent->updateUIMission();
 }
 
 void CampaignEditorDialogModel::missionSelectionChanged(const QModelIndex &changed) {
@@ -289,13 +289,13 @@ void CampaignEditorDialogModel::missionSelectionChanged(const QModelIndex &chang
 		mnData_it->brData_it = nullptr;
 	mnData_it = &missionData.internalData(changed);
 	mnData_idx = changed;
-	_parent->updateUIMission();
+	parent->updateUIMission();
 }
 
 void CampaignEditorDialogModel::selectCurBr(const CampaignBranchData *br) {
 	if (! mnData_it) return;
 	mnData_it->brData_it = const_cast<CampaignBranchData*>(br);
-	_parent->updateUIBranch();
+	parent->updateUIBranch();
 }
 
 //placeholder

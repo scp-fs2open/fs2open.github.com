@@ -37,8 +37,8 @@ private:
 
 	void setModel(CampaignEditorDialogModel *model = nullptr);
 
-	QWidget *const _parent;
-	EditorViewport *const _viewport;
+	QWidget *const parent;
+	EditorViewport *const viewport;
 
 	bool questionSaveChanges();
 

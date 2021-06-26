@@ -13,12 +13,12 @@ namespace fso {
 namespace fred {
 namespace dialogs {
 
-CampaignEditorDialog::CampaignEditorDialog(QWidget *parent, EditorViewport *viewport) :
-	QDialog(parent),
+CampaignEditorDialog::CampaignEditorDialog(QWidget *_parent, EditorViewport *_viewport) :
+	QDialog(_parent),
 	ui(new Ui::CampaignEditorDialog),
-	model(new CampaignEditorDialogModel(this, viewport)),
-	_parent(parent),
-	_viewport(viewport)
+	model(new CampaignEditorDialogModel(this, _viewport)),
+	parent(_parent),
+	viewport(_viewport)
 {
 	ui->setupUi(this);
 
@@ -42,7 +42,7 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget *parent, EditorViewport *view
 	connect(ui->btnFredMission, &QPushButton::clicked, this, [&](){
 		reject();
 		if(result() == Rejected)
-			qobject_cast<FredView*>(_parent)->loadMissionFile(model->getCurMnFilename());
+			qobject_cast<FredView*>(parent)->loadMissionFile(model->getCurMnFilename());
 	});
 	connect(ui->btnExit, &QPushButton::clicked, this, &CampaignEditorDialog::reject);
 
@@ -92,9 +92,9 @@ void CampaignEditorDialog::setModel(CampaignEditorDialogModel *new_model) {
 	connect(ui->cmbDebriefingPersona, &QComboBox::currentTextChanged, model.get(), &CampaignEditorDialogModel::setCurMnDebriefingPersona);
 
 	connect(ui->sxtBranches, &QTreeWidget::currentItemChanged, model.get(), [&](QTreeWidgetItem *selected) {
-		QTreeWidgetItem *parent;
-		while ((parent = selected->parent()))
-			selected = parent;
+		QTreeWidgetItem *parent_node;
+		while ((parent_node = selected->parent()))
+			selected = parent_node;
 		model->selectCurBr(selected->data(0, Qt::UserRole).value<const CampaignEditorDialogModel::CampaignBranchData*>());
 	});
 
@@ -217,7 +217,7 @@ void CampaignEditorDialog::fileNew() {
 
 	auto *act = qobject_cast<QAction*>(sender());
 
-	setModel(new CampaignEditorDialogModel(this, _viewport, "", act ? act->text() : ""));
+	setModel(new CampaignEditorDialogModel(this, viewport, "", act ? act->text() : ""));
 	updateUIAll();
 }
 
@@ -227,7 +227,7 @@ void CampaignEditorDialog::fileOpen() {
 
 	QString pathName = QFileDialog::getOpenFileName(this, tr("Load campaign"), model->campaignFile, tr("FS2 campaigns (*.fc2)"));
 
-	auto newModel = new CampaignEditorDialogModel(this, _viewport, pathName);
+	auto newModel = new CampaignEditorDialogModel(this, viewport, pathName);
 	if (newModel->isFileLoaded())
 		setModel(newModel);
 	else {
@@ -255,7 +255,7 @@ bool CampaignEditorDialog::fileSaveAs() {
 
 	bool res = model->saveTo(pathName);
 	if (res)
-		setModel(new CampaignEditorDialogModel(this, _viewport, pathName));
+		setModel(new CampaignEditorDialogModel(this, viewport, pathName));
 
 	updateUIAll();
 	return res;

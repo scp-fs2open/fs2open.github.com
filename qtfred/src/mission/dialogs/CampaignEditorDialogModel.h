@@ -53,9 +53,9 @@ public:
 
 	inline bool isFileLoaded() const { return ! campaignFile.isEmpty(); }
 
-	inline const QString& getCampaignName() const { return _campaignName; }
-	inline bool getCampaignTechReset() const { return _campaignTechReset; }
-	inline const QString& getCampaignDescr() const { return _campaignDescr; }
+	inline const QString& getCampaignName() const { return campaignName; }
+	inline bool getCampaignTechReset() const { return campaignTechReset; }
+	inline const QString& getCampaignDescr() const { return campaignDescr; }
 	inline int getCampaignNumPlayers() const {
 		if (campaignType == campaignTypes[0])
 			return 0;
@@ -103,12 +103,12 @@ private slots:
 	void checkMissionDrop(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles);
 
 public slots:
-	inline void setCampaignName(const QString &campaignName) {
-		modify<QString>(_campaignName, campaignName); }
-	inline void setCampaignTechReset(bool campaignTechReset) {
-		modify<bool>(_campaignTechReset, campaignTechReset); }
-	inline void setCampaignDescr(const QString &campaignDescr) {
-		modify<QString>(_campaignDescr, campaignDescr); }
+	inline void setCampaignName(const QString &name) {
+		modify<QString>(campaignName, name); }
+	inline void setCampaignTechReset(bool techReset) {
+		modify<bool>(campaignTechReset, techReset); }
+	inline void setCampaignDescr(const QString &descr) {
+		modify<QString>(campaignDescr, descr); }
 
 	void missionSelectionChanged(const QModelIndex &changed);
 
@@ -174,7 +174,7 @@ private:
 	static const CampaignMissionData mdEmpty;
 	CampaignMissionData* mnData_it{nullptr};
 	QPersistentModelIndex mnData_idx{};
-	CampaignEditorDialog *const _parent;
+	CampaignEditorDialog *const parent;
 
 
 public:
@@ -190,9 +190,9 @@ public:
 	CheckedDataListModel<CampaignMissionData> missionData;
 
 private:
-	QString _campaignName;
-	QString _campaignDescr;
-	bool _campaignTechReset{false};
+	QString campaignName;
+	QString campaignDescr;
+	bool campaignTechReset{false};
 
 };
 
