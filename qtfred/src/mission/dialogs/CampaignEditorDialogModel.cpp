@@ -5,7 +5,6 @@
 #include "stats/scoring.h"
 
 extern int Skip_packfile_search;
-#define CMISSIONS_END &Campaign.missions[Campaign.num_missions]
 
 namespace fso {
 namespace fred {
@@ -132,20 +131,19 @@ const SCP_map<CampaignEditorDialogModel::CampaignBranchData::BranchType, QString
 	{INVALID, ""}, {REPEAT, "Repeat mission "}, {NEXT, "Branch to "}, {NEXT_NOT_FOUND, "Branch to "}, {END, "End of Campaign"}
 };
 
-CampaignEditorDialogModel::CampaignMissionData::CampaignMissionData(QString file, const cmission &cm) :
+CampaignEditorDialogModel::CampaignMissionData::CampaignMissionData(QString file, const mission *fsoMn, const cmission *cm) :
 	filename(std::move(file)),
-	briefingCutscene(cm.briefing_cutscene),
-	mainhall(cm.main_hall.c_str()),
-	debriefingPersona(QString::number(cm.debrief_persona_index))
+	fredable(fsoMn),
+	nPlayers(fsoMn ? fsoMn->num_players : 0),
+	notes(fsoMn ? fsoMn->notes : ""),
+	briefingCutscene(cm ? cm->briefing_cutscene : ""),
+	mainhall(cm ? cm->main_hall.c_str() : ""),
+	debriefingPersona(cm ? QString::number(cm->debrief_persona_index) : "")
 {
-	branchesFromFormula(cm.formula);
-	branchesFromFormula(cm.mission_loop_formula, &cm);
-}
-
-CampaignEditorDialogModel::CampaignMissionData::CampaignMissionData(QString file) :
-	filename(std::move(file))
-{
-
+	if (cm) {
+		branchesFromFormula(cm->formula);
+		branchesFromFormula(cm->mission_loop_formula, cm);
+	}
 }
 
 void CampaignEditorDialogModel::CampaignMissionData::initMissions(
@@ -153,26 +151,29 @@ void CampaignEditorDialogModel::CampaignMissionData::initMissions(
 		CheckedDataListModel<CampaignEditorDialogModel::CampaignMissionData> &model)
 {
 	const QString filename{ QString::fromStdString(*m_it).append(".fs2") };
-	const cmission *cm_it{
-		std::find_if(Campaign.missions, CMISSIONS_END,
+	const cmission * cm_it{
+		std::find_if(Campaign.missions, &Campaign.missions[Campaign.num_missions],
 				[&](const cmission &cm){ return filename == cm.name; })};
+	if (cm_it == &Campaign.missions[Campaign.num_missions])
+		cm_it = nullptr;
+
+	mission fsoMn;
+	bool loaded = !get_mission_info(m_it->c_str(), &fsoMn);
+	if (! isCampaignCompatible(fsoMn))
+		return;
 
 	CampaignMissionData* ret_data{
-		cm_it == CMISSIONS_END
-				? new CampaignMissionData{filename}
-				: new CampaignMissionData{filename, *cm_it} };
-
-	ret_data->fredable = !get_mission_info(m_it->c_str(), &ret_data->fsoMission);
-	if (! ret_data->fredable)
-		QMessageBox::warning(nullptr, "Error loading mission", "Could not get info from mission: " + ret_data->filename +"\nFile corrupted?");
-
-	if(isCampaignCompatible(ret_data->fsoMission)) {
-		model.initRow(
+		new CampaignMissionData{
 			filename,
-			ret_data,
-			cm_it != CMISSIONS_END,
-			ret_data->fredable ? Qt::color0 : Qt::red);
-	}
+			loaded ? &fsoMn : nullptr,
+			cm_it ? cm_it : nullptr
+		}
+	};
+
+	if (! loaded)
+		QMessageBox::warning(nullptr, "Error loading mission", "Could not get info from mission: " + filename +"\nFile corrupted?");
+
+	model.initRow(filename,	ret_data, cm_it, loaded ? Qt::color0 : Qt::red);
 }
 
 void CampaignEditorDialogModel::CampaignMissionData::branchesFromFormula(int formula, const cmission *loop) {
@@ -202,9 +203,17 @@ CampaignEditorDialogModel::CampaignEditorDialogModel(CampaignEditorDialog* _pare
 {
 	for (int i=0; i<Campaign.num_missions; i++) {
 		if (! missionData.contains(Campaign.missions[i].name)) {
-			CampaignMissionData* ptr{ new CampaignMissionData{Campaign.missions[i].name} };
+			mission fsoMn;
+			bool loaded = !get_mission_info(Campaign.missions[i].name, &fsoMn);
 
-			bool loaded = !get_mission_info(Campaign.missions[i].name, &ptr->fsoMission);
+			CampaignMissionData* ptr{
+				new CampaignMissionData{
+					Campaign.missions[i].name,
+					loaded ? &fsoMn : nullptr,
+					&Campaign.missions[i]
+				}
+			};
+
 			ptr->fredable = false;
 
 			missionData.initRow(Campaign.missions[i].name, ptr, true,
@@ -222,7 +231,6 @@ CampaignEditorDialogModel::CampaignEditorDialogModel(CampaignEditorDialog* _pare
 }
 
 bool CampaignEditorDialogModel::apply() {
-
 	return saveTo(campaignFile);
 }
 

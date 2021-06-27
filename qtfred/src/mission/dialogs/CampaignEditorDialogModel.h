@@ -62,7 +62,7 @@ public:
 		auto checked = missionData.getCheckedDataConst();
 		if (checked.empty())
 			return 0;
-		return (*checked.cbegin())->fsoMission.num_players;
+		return (*checked.cbegin())->nPlayers;
 	}
 
 private:
@@ -73,7 +73,7 @@ public:
 	inline bool getCurMnIncluded() const {
 		return mnData_idx.isValid() && mnData_idx.data(Qt::CheckStateRole) == Qt::Checked; }
 	inline bool getCurMnFredable() const { return getCurMn().fredable; }
-	inline const char* getCurMnDescr() const { return getCurMn().fsoMission.notes; }
+	inline const QString& getCurMnDescr() const { return getCurMn().notes; }
 	inline const QString& getCurMnBriefingCutscene() const { return getCurMn().briefingCutscene; }
 	inline const QString& getCurMnMainhall() const { return getCurMn().mainhall; }
 	inline const QString& getCurMnDebriefingPersona() const { return getCurMn().debriefingPersona; }
@@ -145,8 +145,7 @@ private:
 
 	struct CampaignMissionData {
 		CampaignMissionData() = delete;
-		CampaignMissionData(QString file, const cmission &cm);
-		CampaignMissionData(QString file);
+		CampaignMissionData(QString file, const mission *fsoMn = nullptr, const cmission *cm = nullptr);
 
 		static void initMissions(
 				const SCP_vector<SCP_string>::const_iterator &m_it,
@@ -154,8 +153,10 @@ private:
 
 		const QString filename;
 
-		mission fsoMission{};
 		bool fredable{false};
+
+		const int nPlayers;
+		const QString notes;
 
 		QString briefingCutscene;
 		QString mainhall;
