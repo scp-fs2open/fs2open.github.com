@@ -52,8 +52,6 @@ int Debris_model = -1;
 int Debris_vaporize_model = -1;
 int Debris_num_submodels = 0;
 
-#define	MAX_DEBRIS_DIST					10000.0f			//	Debris goes away if it's this far away.
-#define	DEBRIS_DISTANCE_CHECK_TIME		(10*1000)		//	Check every 10 seconds.
 #define	DEBRIS_INDEX(dp) (int)(dp-Debris.data())
 
 const auto OnDebrisCreatedHook = scripting::Hook::Factory(
@@ -451,9 +449,6 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 		}
 	}
 
-	//WMC - We must survive until now, at least.
-	db->must_survive_until = timestamp();
-
 	if(hull_flag && sip->debris_min_lifetime >= 0.0f && sip->debris_max_lifetime >= 0.0f)
 	{
 		db->lifeleft = (( sip->debris_max_lifetime - sip->debris_min_lifetime ) * frand()) + sip->debris_min_lifetime;
@@ -480,12 +475,10 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 	{
 		if(sip->debris_min_lifetime >= 0.0f && sip->debris_max_lifetime >= 0.0f)
 		{
-			db->must_survive_until = timestamp(fl2i(sip->debris_min_lifetime * 1000.0f));
 			db->lifeleft = (( sip->debris_max_lifetime - sip->debris_min_lifetime ) * frand()) + sip->debris_min_lifetime;
 		}
 		else if(sip->debris_min_lifetime >= 0.0f)
 		{
-			db->must_survive_until = timestamp(fl2i(sip->debris_min_lifetime * 1000.0f));
 			if(db->lifeleft < sip->debris_min_lifetime)
 				db->lifeleft = sip->debris_min_lifetime;
 		}
@@ -510,7 +503,6 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 	db->fire_timeout = 0;	// if not changed, timestamp_elapsed() will return false
 	db->time_started = Missiontime;
 	db->species = Ship_info[shipp->ship_info_index].species;
-	db->next_distance_check = Random::next(2000) + 4*DEBRIS_DISTANCE_CHECK_TIME;
 	db->parent_alt_name = shipp->alt_type_index;
 	db->damage_mult = 1.0f;
 
