@@ -29,7 +29,7 @@
 
 
 // check structs for size compatibility
-SDL_COMPILE_TIME_ASSERT(game_packet_header, sizeof(game_packet_header) == 529);
+SDL_COMPILE_TIME_ASSERT(game_packet_header, sizeof(game_packet_header) == 1529);
 SDL_COMPILE_TIME_ASSERT(freespace2_net_game_data, sizeof(freespace2_net_game_data) == 120);
 SDL_COMPILE_TIME_ASSERT(game_list_ip4, sizeof(game_list_ip4) == 384);
 SDL_COMPILE_TIME_ASSERT(game_list_ip6, sizeof(game_list_ip6) == 504);
@@ -146,6 +146,7 @@ static int SerializeGamePacket(const game_packet_header *gph, ubyte *data)
 
 	Assert(packet_size >= GAME_HEADER_ONLY_SIZE);
 	Assert(packet_size == gph->len);
+	Assert(packet_size <= MAX_PACKET_SIZE);
 
 	return static_cast<int>(packet_size);
 }
