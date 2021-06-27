@@ -197,34 +197,6 @@ void debris_delete( object * obj )
 	db->objnum = -1;
 }
 
-/**
- * If debris piece *db is far away from all players, make it go away very soon.
- * In single player game, delete if MAX_DEBRIS_DIST from player.
- * In multiplayer game, delete if MAX_DEBRIS_DIST from all players.
- */
-void maybe_delete_debris(debris *db)
-{
-	object	*objp;
-
-	if (Player_obj != nullptr && timestamp_elapsed(db->next_distance_check) && timestamp_elapsed(db->must_survive_until)) {
-		if (!(Game_mode & GM_MULTIPLAYER)) {		//	In single player game, just check against player.
-			if (vm_vec_dist_quick(&Player_obj->pos, &Objects[db->objnum].pos) > MAX_DEBRIS_DIST)
-				db->lifeleft = 0.1f;
-			else
-				db->next_distance_check = timestamp(DEBRIS_DISTANCE_CHECK_TIME);
-		} else {
-			for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
-				if (objp->flags[Object::Object_Flags::Player_ship]) {
-					if (vm_vec_dist_quick(&objp->pos, &Objects[db->objnum].pos) < MAX_DEBRIS_DIST) {
-						db->next_distance_check = timestamp(DEBRIS_DISTANCE_CHECK_TIME);
-						return;
-					}
-				}
-			}
-			db->lifeleft = 0.1f;
-		}
-	}
-}
 
 /**
  * Do various updates to debris:  check if time to die, start fireballs
@@ -260,8 +232,6 @@ void debris_process_post(object * obj, float frame_time)
 			debris_start_death_roll(obj, db);
 		}
 	}
-
-	maybe_delete_debris(db);	//	Make this debris go away if it's very far away.
 
 	// ================== DO THE ELECTRIC ARCING STUFF =====================
 	if ( db->arc_frequency <= 0 )	{
