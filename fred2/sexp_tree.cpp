@@ -1105,7 +1105,8 @@ void sexp_tree::right_clicked(int mode)
 
 			list = get_listing_opf(type, parent, Replace_count);
 
-			// special case don't allow replace data for variable names
+			// special case don't allow replace data for variable or container names
+			// FIXME TODO: include OPF_*CONTAINER_NAME (generic/list/map) once Part 5 is merged
 			if ( (type != OPF_VARIABLE_NAME) && list) {
 				sexp_list_item *ptr;
 
