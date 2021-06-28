@@ -61,9 +61,6 @@ private slots:
 	void btnBranchUpClicked();
 	void btnBranchDownClicked();
 
-	void btnBrLoopAnimClicked();
-	void btnBrLoopVoiceClicked();
-
 	void btnErrorCheckerClicked();
 	void btnRealignClicked();
 };

@@ -420,20 +420,6 @@
          </item>
          <item>
           <layout class="QGridLayout" name="loopBrief">
-           <item row="2" column="1">
-            <widget class="QLineEdit" name="txtLoopVoice">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="1">
-            <widget class="QLineEdit" name="txtLoopAnim">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-            </widget>
-           </item>
            <item row="0" column="0">
             <widget class="QLabel" name="lblLoopAnim">
              <property name="text">
@@ -441,30 +427,24 @@
              </property>
             </widget>
            </item>
-           <item row="2" column="0">
+           <item row="2" column="1">
+            <widget class="QComboBox" name="cmbLoopVoice">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
             <widget class="QLabel" name="lblLoopVoice">
              <property name="text">
               <string>Loop brief voice</string>
              </property>
             </widget>
            </item>
-           <item row="0" column="2">
-            <widget class="QPushButton" name="btnBrLoopAnim">
+           <item row="2" column="0">
+            <widget class="QComboBox" name="cmbLoopAnim">
              <property name="enabled">
               <bool>false</bool>
-             </property>
-             <property name="text">
-              <string>Browse...</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="2">
-            <widget class="QPushButton" name="btnBrLoopVoice">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="text">
-              <string>Browse...</string>
              </property>
             </widget>
            </item>
@@ -552,10 +532,6 @@
   <tabstop>btnBranchDown</tabstop>
   <tabstop>btnBranchLoop</tabstop>
   <tabstop>txaLoopDescr</tabstop>
-  <tabstop>txtLoopAnim</tabstop>
-  <tabstop>btnBrLoopAnim</tabstop>
-  <tabstop>txtLoopVoice</tabstop>
-  <tabstop>btnBrLoopVoice</tabstop>
   <tabstop>scrFlowCampaign</tabstop>
  </tabstops>
  <resources/>

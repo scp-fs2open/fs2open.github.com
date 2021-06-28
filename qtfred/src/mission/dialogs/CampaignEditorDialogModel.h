@@ -182,6 +182,8 @@ public:
 	const QStringList cutscenes;
 	const QStringList mainhalls;
 	const QStringList debriefingPersonas;
+	const QStringList loopAnims;
+	const QStringList loopVoices;
 
 	const QString campaignFile;
 	static const QStringList campaignTypes;

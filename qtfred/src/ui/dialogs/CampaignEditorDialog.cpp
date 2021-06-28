@@ -35,8 +35,6 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget *_parent, EditorViewport *_vi
 
 	connect(ui->btnBranchUp, &QPushButton::clicked, this, &CampaignEditorDialog::btnBranchUpClicked);
 	connect(ui->btnBranchDown, &QPushButton::clicked, this, &CampaignEditorDialog::btnBranchDownClicked);
-	connect(ui->btnBrLoopAnim, &QPushButton::clicked, this, &CampaignEditorDialog::btnBrLoopAnimClicked);
-	connect(ui->btnBrLoopVoice, &QPushButton::clicked, this, &CampaignEditorDialog::btnBrLoopVoiceClicked);
 	connect(ui->btnRealign, &QPushButton::clicked, this, &CampaignEditorDialog::btnRealignClicked);
 	connect(ui->btnErrorChecker, &QPushButton::clicked, this, &CampaignEditorDialog::btnErrorCheckerClicked);
 	connect(ui->btnFredMission, &QPushButton::clicked, this, [&](){
@@ -69,9 +67,11 @@ void CampaignEditorDialog::setModel(CampaignEditorDialogModel *new_model) {
 	if (new_model)
 		model = std::unique_ptr<CampaignEditorDialogModel>(new_model);
 
-	ui->cmbBriefingCutscene->setModel(new QStringListModel{model->cutscenes, this});
-	ui->cmbMainhall->setModel(new QStringListModel{model->mainhalls, this});
-	ui->cmbDebriefingPersona->setModel(new QStringListModel{model->debriefingPersonas, this});
+	ui->cmbBriefingCutscene->setModel(new QStringListModel{model->cutscenes, model.get()});
+	ui->cmbMainhall->setModel(new QStringListModel{model->mainhalls, model.get()});
+	ui->cmbDebriefingPersona->setModel(new QStringListModel{model->debriefingPersonas, model.get()});
+	ui->cmbLoopAnim->setModel(new QStringListModel{model->loopAnims, model.get()});
+	ui->cmbLoopVoice->setModel(new QStringListModel{model->loopVoices, model.get()});
 
 	ui->lstShips->setModel(&model->initialShips);
 	ui->lstWeapons->setModel(&model->initialWeapons);
@@ -102,8 +102,8 @@ void CampaignEditorDialog::setModel(CampaignEditorDialogModel *new_model) {
 	connect(ui->txaLoopDescr, &QPlainTextEdit::textChanged, model.get(), [&]() {
 		model->setCurLoopDescr(ui->txaLoopDescr->toPlainText());
 	});
-	connect(ui->txtLoopAnim, &QLineEdit::textChanged, model.get(), &CampaignEditorDialogModel::setCurLoopAnim);
-	connect(ui->txtLoopVoice, &QLineEdit::textChanged, model.get(), &CampaignEditorDialogModel::setCurLoopVoice);
+	connect(ui->cmbLoopAnim, &QComboBox::currentTextChanged, model.get(), &CampaignEditorDialogModel::setCurLoopAnim);
+	connect(ui->cmbLoopVoice, &QComboBox::currentTextChanged, model.get(), &CampaignEditorDialogModel::setCurLoopVoice);
 }
 
 void CampaignEditorDialog::reject() {  //merely means onClose
@@ -186,11 +186,11 @@ void CampaignEditorDialog::updateUIBranch() {
 	ui->txaLoopDescr->setPlainText(model->getCurLoopDescr());
 	ui->txaLoopDescr->setEnabled(loop);
 
-	ui->txtLoopAnim->setText(model->getCurLoopAnim());
-	ui->btnBrLoopAnim->setEnabled(loop);
+	ui->cmbLoopAnim->setCurrentText(model->getCurLoopAnim());
+	ui->cmbLoopAnim->setEnabled(loop);
 
-	ui->txtLoopVoice->setText(model->getCurLoopVoice());
-	ui->btnBrLoopVoice->setEnabled(loop);
+	ui->cmbLoopVoice->setCurrentText(model->getCurLoopVoice());
+	ui->cmbLoopVoice->setEnabled(loop);
 }
 
 bool CampaignEditorDialog::questionSaveChanges() {
@@ -274,14 +274,6 @@ void CampaignEditorDialog::btnBranchUpClicked() {
 }
 
 void CampaignEditorDialog::btnBranchDownClicked() {
-
-}
-
-void CampaignEditorDialog::btnBrLoopAnimClicked() {
-
-}
-
-void CampaignEditorDialog::btnBrLoopVoiceClicked() {
 
 }
 

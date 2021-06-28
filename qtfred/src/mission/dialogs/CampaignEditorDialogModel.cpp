@@ -25,7 +25,7 @@ static QStringList initMainhalls() {
 			if (! ret.contains(name))
 				ret << name;
 		}
-}
+	}
 	return ret;
 }
 
@@ -37,7 +37,16 @@ static QStringList initDebriefingPersonas() {
 			if (p.first >= 0 && ! ret.contains(persona))
 				ret << persona;
 		}
+	}
+	return ret;
 }
+
+static QStringList initFilelist(const int type) {
+	QStringList ret{""};
+	SCP_vector<SCP_string> fl;
+	cf_get_file_list(fl, type, "*", CF_SORT_NAME, nullptr, CF_LOCATION_TYPE_PRIMARY_MOD);
+	for (auto& f: fl)
+		ret << QString::fromStdString(f);
 	return ret;
 }
 
@@ -192,6 +201,8 @@ CampaignEditorDialogModel::CampaignEditorDialogModel(CampaignEditorDialog* _pare
 	cutscenes(initCutscenes()),
 	mainhalls(initMainhalls()),
 	debriefingPersonas(initDebriefingPersonas()),
+	loopAnims(initFilelist(CF_TYPE_INTERFACE)), // as per campaigneditordlg.cpp:810
+	loopVoices(initFilelist(CF_TYPE_VOICE_CMD_BRIEF)), // as per campaigneditordlg.cpp:832
 	campaignFile(loadFile(file, newCampaignType)),
 	campaignType(campaignTypes[Campaign.type]),
 	initialShips(Ship_info, &initShips, this),
