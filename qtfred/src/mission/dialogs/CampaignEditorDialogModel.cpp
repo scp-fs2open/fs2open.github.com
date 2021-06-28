@@ -236,6 +236,7 @@ CampaignEditorDialogModel::CampaignEditorDialogModel(CampaignEditorDialog* _pare
 
 	connect(&initialShips, &QAbstractListModel::dataChanged, this, &CampaignEditorDialogModel::flagModified);
 	connect(&initialWeapons, &QAbstractListModel::dataChanged, this, &CampaignEditorDialogModel::flagModified);
+	connect(&missionData, &QAbstractListModel::rowsAboutToBeInserted, this, [&](){mnData_it = nullptr;});
 	connect(&missionData, &QAbstractListModel::dataChanged, this, [&](){connectBranches();});
 	connect(&missionData, &QAbstractListModel::dataChanged, this, &CampaignEditorDialogModel::flagModified);
 	connect(&missionData, &QAbstractListModel::dataChanged, this, &CampaignEditorDialogModel::checkMissionDrop);
@@ -284,8 +285,9 @@ const QStringList CampaignEditorDialogModel::campaignTypes { initCampaignTypes()
 
 void CampaignEditorDialogModel::checkMissionDrop(const QModelIndex &idx, const QModelIndex &bottomRight, const QVector<int> &roles) {
 	Assert(idx == bottomRight);
+	Assert(missionData.internalDataConst(idx));
 
-	if (roles.contains(Qt::CheckStateRole)	&& ! missionData.internalData(idx).fredable) {
+	if (roles.contains(Qt::CheckStateRole)	&& ! missionData.internalDataConst(idx)->fredable) {
 		if (missionData.data(idx, Qt::CheckStateRole).toBool()) {
 			droppedMissions.removeAll(missionData.data(idx).toString());
 		} else {
@@ -306,7 +308,7 @@ void CampaignEditorDialogModel::connectBranches(bool uiUpdate) {
 void CampaignEditorDialogModel::missionSelectionChanged(const QModelIndex &changed) {
 	if (mnData_it)
 		mnData_it->brData_it = nullptr;
-	mnData_it = &missionData.internalData(changed);
+	mnData_it = missionData.internalData(changed);
 	mnData_idx = changed;
 	parent->updateUIMission();
 }

@@ -102,12 +102,15 @@ public:
 			return QVariant();
 	}
 
-	inline T& internalData(const QModelIndex &index) {
-		return items[static_cast<size_t>(index.row())].internalData();
+	inline T* internalData(const QModelIndex &index) {
+		if (! index.isValid()) return nullptr;
+		size_t row{static_cast<size_t>(index.row())};
+		if (row >= items.size()) return nullptr;
+		return &items[row].internalData();
 	}
 
-	inline const T& internalDataConst(const QModelIndex &index) const {
-		return items[static_cast<size_t>(index.row())].internalData();
+	inline const T* internalDataConst(const QModelIndex &index) const {
+		return const_cast<CheckedDataListModel<T>*>(this)->internalData(index);
 	}
 
 	bool setData(const QModelIndex &index, const QVariant &value,
