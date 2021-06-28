@@ -2824,6 +2824,8 @@ void stuff_string_list(SCP_vector<SCP_string> &slp)
 	stuff_token_list(slp, [](SCP_string *buf)->bool {
 		if (*Mp != '\"') {
 			error_display(0, "Missing quotation marks in string list.");
+			// Since this is a bad token, skip characters until we find a comma, parenthesis, or EOLN
+			advance_to_eoln(",)");
 			return false;
 		}
 
