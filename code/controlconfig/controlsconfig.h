@@ -42,6 +42,7 @@ const short MOUSE_X_AXIS = JOY_X_AXIS;
 const short MOUSE_Y_AXIS = JOY_Y_AXIS;
 const short MOUSE_Z_AXIS = JOY_Z_AXIS;
 const short MOUSE_NUM_AXES = 3;
+const short MOUSE_NUM_BUTTONS = 9;	// Keep this up to date with mouse.h until z64555 stops being lazy and does it right
 
 /*!
  * Controller index enumeration
@@ -612,8 +613,14 @@ extern int Control_config_overlay_id;
 extern SCP_vector<CCI> Control_config;		//!< Stores the keyboard configuration
 extern SCP_vector<CC_preset> Control_config_presets; // tabled control presets; pointers to config_item arrays
 extern const char **Scan_code_text;
-extern const char **Joy_button_text;
-extern char *Joy_axis_text[JOY_NUM_AXES];
+extern const char **Joy_button_text;			// String table of button labels.  XSTR'd on init.
+
+// string table constants for labels and stuff.
+#define NUM_AXIS_TEXT			JOY_NUM_AXES
+#define NUM_MOUSE_TEXT			MOUSE_NUM_BUTTONS
+
+extern char *Axis_text[NUM_AXIS_TEXT];			// String table of axis labels (joystick and mice).  XSTR'd on init.
+extern char *Mouse_button_text[NUM_MOUSE_TEXT];	// String table of mouse button labels.  XSTR'd on init.
 
 /*!
  * @brief Checks if either binding in the CCB has the given cid

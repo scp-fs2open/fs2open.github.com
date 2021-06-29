@@ -2347,6 +2347,7 @@ SCP_string CC_bind::textify() const {
 	SCP_string prefix;
 	SCP_string retval;
 
+	// TODO: XSTR the Mouse/Joy prefix
 	switch (cid) {
 	case CID_MOUSE:
 		prefix = "Mouse ";
@@ -2375,54 +2376,22 @@ SCP_string CC_bind::textify() const {
 		if (cid == CID_NONE) {
 			retval = "None";
 		} else {
-			retval = Joy_axis_text[btn];
+			Assert((btn >= 0) && (btn < NUM_AXIS_TEXT));
+			retval = SCP_string(Axis_text[btn]);
 		}
 
 	} else {
-			// Is button or key
+		// Is button or key
 		switch (cid) {
 		case CID_KEYBOARD:
 			retval = textify_scancode(btn);
 			break;
 
 		case CID_MOUSE:
-			// Keep this up to date with mouse.h.  Better yet, move it into mouse.h and mouse.cpp
-			// TODO: XSTR this
-			switch (btn) {
-			case 0:
-				retval = "Left";
-				break;
-			case 1:
-				retval = "Right";
-				break;
-			case 2:
-				retval = "Middle";
-				break;
-			case 3:
-				retval = "X1";
-				break;
-			case 4:
-				retval = "X2";
-				break;
-			case 5:
-				retval = "Wheel Up";
-				break;
-			case 6:
-				retval = "Wheel Down";
-				break;
-			case 7:
-				retval = "Wheel Left";
-				break;
-			case 8:
-				retval = "Wheel Right";
-				break;
-			default:
-				retval = "Unknown Button";
+			Assert((btn >= 0) && (btn < NUM_MOUSE_TEXT));
+			retval = SCP_string(Mouse_button_text[btn]);
 			break;
-			}
-		break;
 
-		// TODO XSTR the "Joy #" prefix
 		case CID_JOY0:
 		case CID_JOY1:
 		case CID_JOY2:
