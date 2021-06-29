@@ -111,6 +111,7 @@ public:
 
 	inline const T* internalDataConst(const QModelIndex &index) const {
 		return const_cast<CheckedDataListModel<T>*>(this)->internalData(index);
+
 	}
 
 	bool setData(const QModelIndex &index, const QVariant &value,

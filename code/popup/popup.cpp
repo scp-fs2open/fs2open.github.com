@@ -361,7 +361,7 @@ void popup_split_lines(popup_info *pi, int flags)
 	font::set_font(font::FONT1);
 	n_chars[0]=0;
 
-	nlines = split_str(pi->raw_text, 1000, n_chars, p_str, POPUP_MAX_LINES);
+	nlines = split_str(pi->raw_text, 1000, n_chars, p_str, POPUP_MAX_LINES, POPUP_MAX_LINE_CHARS);
 	Assert(nlines >= 0 && nlines <= POPUP_MAX_LINES );
 
 	if ( flags & (PF_TITLE | PF_TITLE_BIG) ) {
@@ -375,7 +375,7 @@ void popup_split_lines(popup_info *pi, int flags)
 		font::set_font(font::FONT2);
 	}
 
-	nlines = split_str(pi->raw_text, Popup_text_coords[gr_screen.res][2], n_chars, p_str, POPUP_MAX_LINES);
+	nlines = split_str(pi->raw_text, Popup_text_coords[gr_screen.res][2], n_chars, p_str, POPUP_MAX_LINES, POPUP_MAX_LINE_CHARS);
 	Assert(nlines >= 0 && nlines <= POPUP_MAX_LINES );
 
 	pi->nlines = nlines - body_offset;

@@ -60,6 +60,7 @@
 #include "object/waypoint.h"
 #include "parse/generic_log.h"
 #include "parse/parselo.h"
+#include "parse/sexp_container.h"
 #include "scripting/hook_api.h"
 #include "scripting/scripting.h"
 #include "playerman/player.h"
@@ -866,7 +867,7 @@ void parse_player_info2(mission *pm)
 				if ( !Campaign.ships_allowed[sc.index] )
 					continue;
 			}
-			if (sc.index < 0 || sc.index >= weapon_info_size())
+			if (sc.index < 0 || sc.index >= ship_info_size())
 				continue;
 
 			ptr->ship_list[num_choices] = sc.index;
@@ -2317,7 +2318,7 @@ int parse_create_object_sub(p_object *p_objp)
 		{
 			ptr->max_hits = ptr->system_info->max_subsys_strength * (shipp->ship_max_hull_strength / sip->max_hull_strength);
 
-			float new_hits = ptr->max_hits * (100.0f - sssp->percent) / 100.f;
+			float new_hits = ptr->max_hits * ((100.0f - sssp->percent) / 100.f);
 			if (!(ptr->flags[Ship::Subsystem_Flags::No_aggregate])) {
 				shipp->subsys_info[ptr->system_info->type].aggregate_current_hits -= (ptr->max_hits - new_hits);
 			}
@@ -5785,6 +5786,23 @@ void parse_variables()
 	}
 }
 
+void parse_sexp_containers()
+{
+	if (!optional_string("#Sexp_containers")) {
+		return;
+	}
+
+	if (optional_string("$Lists")) {
+		stuff_sexp_list_containers();
+		required_string("$End Lists");
+	}
+
+	if (optional_string("$Maps")) {
+		stuff_sexp_map_containers();
+		required_string("$End Maps");
+	}
+}
+
 bool parse_mission(mission *pm, int flags)
 {
 	int saved_warning_count = Global_warning_count;
@@ -5830,6 +5848,7 @@ bool parse_mission(mission *pm, int flags)
 
 	parse_plot_info(pm);
 	parse_variables();
+	parse_sexp_containers();
 	parse_briefing_info(pm);	// TODO: obsolete code, keeping so we don't obsolete existing mission files
 	parse_cutscenes(pm);
 	parse_fiction(pm);

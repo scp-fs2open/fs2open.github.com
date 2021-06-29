@@ -170,7 +170,7 @@ void opengl_post_pass_bloom()
 		opengl_set_generic_uniform_data<graphics::generic_data::bloom_composition_data>(
 			[](graphics::generic_data::bloom_composition_data* data) {
 				data->levels          = MAX_MIP_BLUR_LEVELS;
-				data->bloom_intensity = Cmdline_bloom_intensity / 100.0f;
+				data->bloom_intensity = gr_bloom_intensity() / 100.0f;
 			});
 
 		GL_state.Texture.Enable(0, GL_TEXTURE_2D, Bloom_textures[0]);
@@ -871,7 +871,7 @@ bool opengl_post_init_shaders()
 		gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_BLUR, SDR_FLAG_BLUR_VERTICAL) < 0 ||
 		gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_BLOOM_COMP, 0) < 0) {
 		// disable bloom if we don't have those shaders available
-		Cmdline_bloom_intensity = 0;
+		graphics::Post_processing_manager->setBloomShadersOk(false);
 	}
 
 	if (gr_is_fxaa_mode(Gr_aa_mode))

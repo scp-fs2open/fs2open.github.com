@@ -1134,6 +1134,7 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 				if (debug_flags & MR_DEBUG_NO_DIFFUSE)  texture_maps[TM_BASE_TYPE] = -1;
 				if (debug_flags & MR_DEBUG_NO_GLOW)		  texture_maps[TM_GLOW_TYPE] = -1;
 				if (debug_flags & MR_DEBUG_NO_SPEC)		  texture_maps[TM_SPECULAR_TYPE] = -1;
+				if (debug_flags & MR_DEBUG_NO_REFLECT)	  texture_maps[TM_SPEC_GLOSS_TYPE] = -1;
 				if (!(debug_flags & MR_DEBUG_NO_MISC))    texture_maps[TM_MISC_TYPE] = model_interp_get_texture(misc_map, base_frametime);
 				if (!(debug_flags & MR_DEBUG_NO_NORMAL) && Detail.lighting > 0)  texture_maps[TM_NORMAL_TYPE] = model_interp_get_texture(norm_map, base_frametime);
 				if (!(debug_flags & MR_DEBUG_NO_AMBIENT) && Detail.lighting > 0) texture_maps[TM_AMBIENT_TYPE] = model_interp_get_texture(ambient_map, base_frametime);
@@ -1702,9 +1703,9 @@ void model_render_glowpoint(int point_num, vec3d *pos, matrix *orient, glow_poin
 					int bitmap_id = (gpo && gpo->glow_bitmap_override) ? gpo->glow_bitmap : bank->glow_bitmap;
 
 					if ( use_depth_buffer ) {
-						batching_add_volume_bitmap(bitmap_id, &p, 0, (w * 0.5f), d * pulse, w);
+						batching_add_volume_bitmap(bitmap_id, &p, 0, (w * 0.5f), d * pulse);
 					} else {
-						batching_add_bitmap(bitmap_id, &p, 0, (w * 0.5f), d * pulse, w);
+						batching_add_bitmap(bitmap_id, &p, 0, (w * 0.5f), d * pulse);
 					}
 				}
 			} //d>0.0f

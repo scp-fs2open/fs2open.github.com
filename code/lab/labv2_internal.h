@@ -3,13 +3,13 @@
 #include "lab/manager/lab_manager.h"
 
 
-LabManager* getLabManager();
+const std::unique_ptr<LabManager> &getLabManager();
 
 class DialogOpener : public Button {
 public:
-	DialogOpener(LabDialog* dialog, int x_coord, int y_coord, int x_width = -1, int y_height = -1, int in_style = 0) :
+	DialogOpener(std::shared_ptr<LabDialog> dialog, int x_coord, int y_coord, int x_width = -1, int y_height = -1, int in_style = 0) :
 		Button(dialog->getTitle(), x_coord, y_coord, nullptr, x_width, y_height, in_style) {
-		Dialog = dialog;
+		Dialog = std::move(dialog);
 	}
 
 	int DoMouseUp(float frametime) override {
@@ -18,6 +18,8 @@ public:
 
 		return Button::DoMouseUp(frametime);
 	}
+
+	std::shared_ptr<LabDialog> getDialog() const { return Dialog; }
 private:
-	LabDialog* Dialog;
+	std::shared_ptr<LabDialog> Dialog;
 };

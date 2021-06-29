@@ -1365,8 +1365,8 @@ int sexp_tree::get_default_value(sexp_list_item* item, char* text_buf, int op, i
 		str = "<Effect Name>";
 		break;
 
-	case OPF_HUD_GAUGE:
-		str = "Messages";
+	case OPF_CUSTOM_HUD_GAUGE:
+		str = "<Custom hud gauge>";
 		break;
 
 	default:
@@ -1421,7 +1421,6 @@ int sexp_tree::query_default_argument_available(int op, int i) {
 	case OPF_WEAPON_NAME:
 	case OPF_INTEL_NAME:
 	case OPF_SHIP_CLASS_NAME:
-	case OPF_HUD_GAUGE_NAME:
 	case OPF_HUGE_WEAPON:
 	case OPF_JUMP_NODE_NAME:
 	case OPF_AMBIGUOUS:
@@ -1458,7 +1457,8 @@ int sexp_tree::query_default_argument_available(int op, int i) {
 	case OPF_AUDIO_VOLUME_OPTION:
 	case OPF_WEAPON_BANK_NUMBER:
 	case OPF_MESSAGE_OR_STRING:
-	case OPF_HUD_GAUGE:
+	case OPF_BUILTIN_HUD_GAUGE:
+	case OPF_CUSTOM_HUD_GAUGE:
 	case OPF_SHIP_EFFECT:
 	case OPF_ANIMATION_TYPE:
 	case OPF_SHIP_FLAG:
@@ -1468,6 +1468,7 @@ int sexp_tree::query_default_argument_available(int op, int i) {
 	case OPF_GAME_SND:
 	case OPF_FIREBALL:
 	case OPF_SPECIES:
+	case OPF_LANGUAGE:
 		return 1;
 
 	case OPF_SHIP:
@@ -2868,10 +2869,6 @@ sexp_list_item* sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 		list = get_listing_opf_ship_class_name();
 		break;
 
-	case OPF_HUD_GAUGE_NAME:
-		list = get_listing_opf_hud_gauge_name();
-		break;
-
 	case OPF_HUGE_WEAPON:
 		list = get_listing_opf_huge_weapon();
 		break;
@@ -2992,8 +2989,12 @@ sexp_list_item* sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 		list = get_listing_opf_message();
 		break;
 
-	case OPF_HUD_GAUGE:
-		list = get_listing_opf_hud_gauge();
+	case OPF_BUILTIN_HUD_GAUGE:
+		list = get_listing_opf_builtin_hud_gauge();
+		break;
+
+	case OPF_CUSTOM_HUD_GAUGE:
+		list = get_listing_opf_custom_hud_gauge();
 		break;
 
 	case OPF_SHIP_EFFECT:
@@ -3026,6 +3027,10 @@ sexp_list_item* sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 
 	case OPF_SPECIES:
 		list = get_listing_opf_species();
+		break;
+
+	case OPF_LANGUAGE:
+		list = get_listing_opf_language();
 		break;
 
 	default:
@@ -3912,11 +3917,38 @@ sexp_list_item* sexp_tree::get_listing_opf_adjust_audio_volume() {
 	return head.next;
 }
 
-sexp_list_item* sexp_tree::get_listing_opf_hud_gauge() {
+sexp_list_item* sexp_tree::get_listing_opf_builtin_hud_gauge() {
 	sexp_list_item head;
 
 	for (int i = 0; i < Num_hud_gauge_types; i++) {
 		head.add_data(Hud_gauge_types[i].name);
+	}
+
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_custom_hud_gauge()
+{
+	sexp_list_item head;
+	SCP_unordered_set<SCP_string> all_gauges;
+
+	for (auto &gauge : default_hud_gauges)
+	{
+		all_gauges.insert(gauge->getCustomGaugeName());
+		head.add_data(gauge->getCustomGaugeName());
+	}
+
+	for (auto &si : Ship_info)
+	{
+		for (auto &gauge : si.hud_gauges)
+		{
+			// avoid duplicating any HUD gauges
+			if (all_gauges.count(gauge->getCustomGaugeName()) == 0)
+			{
+				all_gauges.insert(gauge->getCustomGaugeName());
+				head.add_data(gauge->getCustomGaugeName());
+			}
+		}
 	}
 
 	return head.next;
@@ -4254,17 +4286,6 @@ sexp_list_item* sexp_tree::get_listing_opf_ship_class_name() {
 	return head.next;
 }
 
-sexp_list_item* sexp_tree::get_listing_opf_hud_gauge_name() {
-	int i;
-	sexp_list_item head;
-
-	for (i = 0; i < NUM_HUD_GAUGES; i++) {
-		head.add_data(HUD_gauge_text[i]);
-	}
-
-	return head.next;
-}
-
 sexp_list_item* sexp_tree::get_listing_opf_huge_weapon() {
 	sexp_list_item head;
 
@@ -4579,6 +4600,16 @@ sexp_list_item *sexp_tree::get_listing_opf_species()	// NOLINT
 
 	for (auto &species : Species_info)
 		head.add_data(species.species_name);
+
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_language()	// NOLINT
+{
+	sexp_list_item head;
+
+	for (auto &lang: Lcl_languages)
+		head.add_data(lang.lang_name);
 
 	return head.next;
 }
@@ -5006,6 +5037,7 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 					case OP_SET_OBJECT_SPEED_Y:
 					case OP_SET_OBJECT_SPEED_Z:
 					case OP_DISTANCE:
+					case OP_SCRIPT_EVAL:
 						j = (int) op_menu.size();    // don't allow these operators to be visible
 						break;
 					}
@@ -5073,6 +5105,7 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 					case OP_SET_OBJECT_SPEED_Y:
 					case OP_SET_OBJECT_SPEED_Z:
 					case OP_DISTANCE:
+					case OP_SCRIPT_EVAL:
 						j = (int) op_submenu.size();    // don't allow these operators to be visible
 						break;
 					}

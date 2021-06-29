@@ -640,27 +640,22 @@ inline matrix& operator-=(matrix& left, const matrix& right)
 }
 
 /**
- * @brief Rotates a vector into the orientation specified by the matrix
+ * @brief Implements matrix multiplication on both 3x3 matrices and 3D vectors
  * @param left The matrix
- * @param right The vector
- * @return The rotated vector
- *
- * @note This actually follows the definition of the * operator in linear algebra. The standard vm_vec_rotate actually
- * implements a multiplication with the transpose of the matrix.
+ * @param right The vector/matrix
+ * @return The multiplied result
  */
-inline vec3d operator*(const matrix& left, const vec3d& right) {
-	vec3d out;
-	vm_vec_unrotate(&out, &right, &left);
-	return out;
-}
-
-inline matrix operator*(const matrix& left, const matrix& right) {
-	matrix out;
-	vm_matrix_x_matrix(&out, &left, &right);
-	return out;
-}
+inline vec3d operator*(const matrix& A, const vec3d& v);
+inline matrix operator*(const matrix& A, const matrix& B);
 
 std::ostream& operator<<(std::ostream& os, const vec3d& vec);
+
+// Given a direction and a 'stretch amount', computes a matrix which can be used to
+// 'rotate' positional vectors as to stretch them in that direction by that amount
+// Positions in the opposite direction of the stretch_dir are stretched in the opposite direction
+// and position orthogonal to the stretch_dir are not moved at all
+// Essentially turns spheres into ellipsoids
+matrix vm_stretch_matrix(const vec3d* stretch_dir, float stretch);
 
 #endif
 

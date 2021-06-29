@@ -760,7 +760,7 @@ void process_game_chat_packet( ubyte *data, header *hinfo )
 	PACKET_SET_SIZE();	
 
    // get the index of the sending player
-	color_index = find_player_id(from);
+	color_index = find_player_index(from);
 	player_index = color_index;
 	
 	// if we couldn't find the player - bail
@@ -775,7 +775,7 @@ void process_game_chat_packet( ubyte *data, header *hinfo )
 	if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
 		// if he's targeting a specific player, find out who it is
 		if(mode == MULTI_MSG_TARGET){
-			to_player_index = find_player_id(to);
+			to_player_index = find_player_index(to);
 		} else {
 			to_player_index = -1;
 		}	
@@ -1747,7 +1747,7 @@ void process_leave_game_packet(ubyte* data, header* hinfo)
 	PACKET_SET_SIZE();
 
 	// determine who is dropping and printf out a notification
-	player_num = find_player_id(deader_id);
+	player_num = find_player_index(deader_id);
 	if (player_num == -1) {
 		nprintf(("Network", "Received leave game packet for unknown player, ignoring\n"));
 		return;
@@ -2459,7 +2459,7 @@ void process_netplayer_update_packet( ubyte *data, header *hinfo )
 	while(stop != 0xff){
 		// look the player up
 		GET_SHORT(player_id);
-		player_num = find_player_id(player_id);
+		player_num = find_player_index(player_id);
 		// if we couldn't find him, read in the bogus data
 		if((player_num == -1) || (Net_player == &Net_players[player_num])){
 			GET_INT(bogus.state);
@@ -3627,7 +3627,7 @@ void process_pong_packet(ubyte * /*data*/, header *hinfo)
 		
 	// if we're connected , see who sent us this pong
 	if(Net_player->flags & NETINFO_FLAG_CONNECTED){
-		lookup = find_player_id(hinfo->id);
+		lookup = find_player_index(hinfo->id);
 		if(lookup == -1){
 			return;
 		}
@@ -3773,7 +3773,7 @@ void process_mission_request_packet(ubyte * /*data*/, header *hinfo)
 	PACKET_SET_SIZE();
 
 	// fill in the address information of where this came from	
-	player_num = find_player_id(hinfo->id);
+	player_num = find_player_index(hinfo->id);
 	if(player_num == -1){
 		nprintf(("Network","Could not find player to send mission list items to!\n"));
 		return;
@@ -3872,7 +3872,7 @@ void process_multi_pause_packet(ubyte *data, header *hinfo)
 	PACKET_SET_SIZE();
 
 	// get who sent the packet	
-	player_index = find_player_id(hinfo->id);
+	player_index = find_player_index(hinfo->id);
 	// if we don't know who sent the packet, don't do anything
 	if(player_index == -1){
 		return;
@@ -3936,7 +3936,7 @@ void process_ingame_nak(ubyte *data, header *hinfo)
 	GET_INT(state);	
 	PACKET_SET_SIZE();
 	
-	pid = find_player_id(hinfo->id);
+	pid = find_player_index(hinfo->id);
 	if(pid < 0){
 		return;
 	}
@@ -4035,7 +4035,7 @@ void process_endgame_packet(ubyte * /*data*/, header *hinfo)
 	// if I'm the server, I should evaluate whether the sender is authorized to end the game
 	if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
 		// determine who this came from and make sure he is allowed to end the game		
-		player_num = find_player_id(hinfo->id);
+		player_num = find_player_index(hinfo->id);
 		Assert(player_num != -1);
 		if(player_num < 0){
 			return;
@@ -4123,7 +4123,7 @@ void process_observer_update_packet(ubyte *data, header *hinfo)
 	object *target_obj;
 	offset = HEADER_LENGTH;
 
-	obs_num = find_player_id(hinfo->id);
+	obs_num = find_player_index(hinfo->id);
 	
 	memset(&bogus_pi,0,sizeof(physics_info));
 	ret = multi_pack_unpack_position( 0, data + offset, &g_vec );
@@ -4207,7 +4207,7 @@ void process_netplayer_slot_packet(ubyte *data, header *hinfo)
 		GET_USHORT(net_sig);
 		GET_SHORT(ship_class);
 		GET_DATA(ship_index);
-		player_num = find_player_id(player_id);
+		player_num = find_player_index(player_id);
 		if(player_num < 0){
 			nprintf(("Network","Error looking up player for object/slot assignment!!\n"));
 		} else {
@@ -4380,7 +4380,7 @@ void process_ship_status_packet(ubyte *data, header *hinfo)
    // this will be handled differently client and server side. Duh.
 	if(Net_player->flags & NETINFO_FLAG_AM_MASTER){                  // SERVER SIDE
 		// find which net-player has sent us butotn information		
-		player_num = find_player_id(hinfo->id);
+		player_num = find_player_index(hinfo->id);
 		Assert(player_num >= 0);
 		if(player_num < 0){
 			return;
@@ -4480,7 +4480,7 @@ void process_player_order_packet(ubyte *data, header *hinfo)
 
 	PACKET_SET_SIZE();	
 
-	player_num = find_player_id(hinfo->id);
+	player_num = find_player_index(hinfo->id);
 	if(player_num == -1){
 		nprintf(("Network","Received player order packet from unknown player\n"));		
 		return;
@@ -5551,7 +5551,7 @@ void process_wss_request_packet(ubyte *data, header *hinfo)
 
 	// determine who this request is from	
 	GET_SHORT(player_id);	
-	player_num = find_player_id(player_id);	
+	player_num = find_player_index(player_id);	
 
 	// read in the request data	
 	GET_INT(from_slot);
@@ -5637,7 +5637,7 @@ void process_wss_update_packet(ubyte *data, header *hinfo)
 		PACKET_SET_SIZE();
 
 		// determine where this came from		
-		player_index = find_player_id(hinfo->id);		
+		player_index = find_player_index(hinfo->id);		
 		Assert(player_index != -1);		
 		if(player_index < 0){
 			return;
@@ -5702,7 +5702,7 @@ void process_firing_info_packet( ubyte *data, header *hinfo )
 	GET_DATA( sdual );
 	PACKET_SET_SIZE();	
 
-	player_num = find_player_id(hinfo->id);
+	player_num = find_player_index(hinfo->id);
 	if(player_num < 0){
 		nprintf(("Network","Received firing info packet from unknown player, ignoring\n"));
 		return;
@@ -5805,7 +5805,7 @@ void process_player_settings_packet(ubyte *data, header *hinfo)
 	while(stop != 0xff){
 		// lookup the player
 		GET_SHORT(player_id);
-		player_num = find_player_id(player_id);
+		player_num = find_player_index(player_id);
 
 		// make sure this is a valid player
 		if(player_num == -1){
@@ -6700,7 +6700,7 @@ void process_player_stats_block_packet(ubyte *data, header *hinfo)
 
 	// get the player who these stats are for
 	GET_SHORT(player_id);	
-	player_num = find_player_id(player_id);
+	player_num = find_player_index(player_id);
 	if (player_num == -1) {
 		nprintf(("Network", "Couldn't find player for stats update!\n"));
 		ml_string("Couldn't find player for stats update!\n");
@@ -7265,7 +7265,7 @@ void process_client_update_packet(ubyte *data, header *hinfo)
 	// if we are paused, get who paused
 	if(is_paused){		
 		GET_SHORT(pauser);
-		player_index = find_player_id(pauser);
+		player_index = find_player_index(pauser);
 		if(player_index != -1){
 			Multi_pause_pauser = &Net_players[player_index];
 		} else {
@@ -8288,6 +8288,7 @@ void process_beam_fired_packet(ubyte *data, header *hinfo)
 	fire_info.beam_info_index = u_beam_info;
 	fire_info.shooter = multi_get_network_object(shooter_sig);
 	fire_info.target = multi_get_network_object(target_sig);
+	fire_info.burst_index = 0;
 
 	if ( fire_info.target && (target_subsys_index >= 0) ) {
 		ship *targetp = &Ships[fire_info.target->instance];
@@ -8309,7 +8310,7 @@ void process_beam_fired_packet(ubyte *data, header *hinfo)
 			polymodel *pm = model_get( Ship_info[shipp->ship_info_index].model_num );
 			float field_of_fire = Weapon_info[fire_info.beam_info_index].field_of_fire;
 
-			fire_info.targeting_laser_offset = pm->gun_banks[bank].pnt[point];
+			fire_info.local_fire_postion = pm->gun_banks[bank].pnt[point];
 
 			shipp->beam_sys_info.turret_norm.xyz.x = 0.0f;
 			shipp->beam_sys_info.turret_norm.xyz.y = 0.0f;
@@ -8318,8 +8319,8 @@ void process_beam_fired_packet(ubyte *data, header *hinfo)
 			shipp->beam_sys_info.turret_gun_sobj = pm->detail[0];
 			shipp->beam_sys_info.turret_num_firing_points = 1;
 			shipp->beam_sys_info.turret_fov = cosf((field_of_fire != 0.0f) ? field_of_fire : 180);
-			shipp->beam_sys_info.pnt = fire_info.targeting_laser_offset;
-			shipp->beam_sys_info.turret_firing_point[0] = fire_info.targeting_laser_offset;
+			shipp->beam_sys_info.pnt = fire_info.local_fire_postion;
+			shipp->beam_sys_info.turret_firing_point[0] = fire_info.local_fire_postion;
 
 			shipp->fighter_beam_turret_data.disruption_timestamp = timestamp(0);
 			shipp->fighter_beam_turret_data.turret_next_fire_pos = 0;
@@ -8835,7 +8836,7 @@ void process_bytes_recvd_packet(ubyte *data, header *hinfo)
 	}
 
 	// make sure we know what player sent this
-	pid = find_player_id(hinfo->id);
+	pid = find_player_index(hinfo->id);
 	if((pid < 0) || (pid >= MAX_PLAYERS)){
 		return;
 	}
@@ -8963,7 +8964,7 @@ void process_self_destruct_packet(ubyte *data, header *hinfo)
 	PACKET_SET_SIZE();
 
 	// get the player
-	np_index = find_player_id(hinfo->id);
+	np_index = find_player_index(hinfo->id);
 	if(np_index < 0){
 		return;
 	}

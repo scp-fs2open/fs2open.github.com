@@ -1788,8 +1788,19 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 
 		vm_vector_2_matrix(&turret_orient, firing_vec, nullptr, nullptr);
 
-		// set next fire timestamp for the turret
+		// grab and set some burst data before turret_set_next_fire_timestamp wipes it
 		int old_burst_seed = swp->burst_seed[weapon_num];
+		int old_burst_counter = swp->burst_counter[weapon_num];
+		// only used by type 5 beams
+		if (turret->weapons.burst_counter[weapon_num] == 0) {
+			swp->per_burst_rot += wip->b_info.t5info.per_burst_rot;
+			if (swp->per_burst_rot > PI2)
+				swp->per_burst_rot -= PI2;
+			else if (swp->per_burst_rot < -PI2)
+				swp->per_burst_rot += PI2;
+		}
+
+		// set next fire timestamp for the turret
 		if (last_shot_in_salvo)
 			turret_set_next_fire_timestamp(weapon_num, wip, turret, parent_aip);
 
@@ -1815,6 +1826,8 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 			fire_info.turret = turret;
 			fire_info.burst_seed = old_burst_seed;
 			fire_info.fire_method = BFM_TURRET_FIRED;
+			fire_info.per_burst_rotation = swp->per_burst_rot;
+			fire_info.burst_index = old_burst_counter;
 
 			// fire a beam weapon
 			weapon_objnum = beam_fire(&fire_info);
@@ -2112,7 +2125,7 @@ extern int Nebula_sec_range;
 void ai_fire_from_turret(ship *shipp, ship_subsys *ss)
 {
 	float		weapon_firing_range;
-    float		WeaponMinRange;			// *Weapon minimum firing range -Et1
+    float		weapon_min_range;			// *Weapon minimum firing range -Et1
 	vec3d	v2e;
 	object	*lep;		//	Last enemy pointer
 	model_subsystem	*tp = ss->system_info;
@@ -2287,12 +2300,12 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss)
 		if (wip->wi_flags[Weapon::Info_Flags::Local_ssm])
 		{
 			weapon_firing_range = wip->lssm_lock_range;
-			WeaponMinRange = 0.0f;
+			weapon_min_range = 0.0f;
 		}
 		else
 		{
 			weapon_firing_range = MIN(wip->lifetime * wip->max_speed, wip->weapon_range);
-			WeaponMinRange = wip->WeaponMinRange;
+			weapon_min_range = wip->weapon_min_range;
 		}
 
 		// if beam weapon in nebula and target not tagged, decrease firing range
@@ -2305,7 +2318,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss)
 		}
 
 		// Don't try to fire beyond weapon_limit_range (or within min range)
-		if (dist_to_enemy < WeaponMinRange || dist_to_enemy > weapon_firing_range) {
+		if (dist_to_enemy < weapon_min_range || dist_to_enemy > weapon_firing_range) {
 			// it's possible another weapon is in range, but if not,
 			// we will end up selecting a new target
 			continue;

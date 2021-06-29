@@ -88,7 +88,7 @@
 #define REG_NAK_UPDATE_LOG			7								// update failed because login not found
 #define REG_ACK_NEW_ID				8								// New id created, just used for return code, not net packets.
 
-#define MAX_UDP_DATA_LENGH			480
+#define MAX_UDP_DATA_LENGH			500
 #define PACKED_HEADER_ONLY_SIZE	(sizeof(udp_packet_header)-MAX_UDP_DATA_LENGH)
 //sizeof(update_id_request)	//The largest packet
 
