@@ -52,13 +52,15 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget *_parent, EditorViewport *_vi
 	menFile->addSeparator();
 
 	menFile->addAction(tr("&Open..."), this, &CampaignEditorDialog::fileOpen, tr("Ctrl+O"));
-	menFile->addAction(tr("&Save"), this, &CampaignEditorDialog::fileSave, tr("Ctrl+S"));
-	menFile->addAction(tr("Save &as..."), this, &CampaignEditorDialog::fileSaveAs, tr("Ctrl+Shift+S"));
-	menFile->addAction(tr("Save &Copy as..."), this, &CampaignEditorDialog::fileSaveCopyAs);
+	menFile->addAction(tr("&Save"), this, &CampaignEditorDialog::fileSave, tr("Ctrl+S"))->setEnabled(false);
+	menFile->addAction(tr("Save &as..."), this, &CampaignEditorDialog::fileSaveAs, tr("Ctrl+Shift+S"))->setEnabled(false);
+	menFile->addAction(tr("Save &Copy as..."), this, &CampaignEditorDialog::fileSaveCopyAs)->setEnabled(false);
 	menFile->addSeparator();
 	menFile->addAction(tr("E&xit"), this, &QDialog::reject);
 
 	updateUIAll();
+
+	QMessageBox::information(this, "WORK-IN-PROGRESS", "This editor dialog is a work in progress.\nSpecifically, saving changes is NOT SUPPORTED yet.");
 }
 
 CampaignEditorDialog::~CampaignEditorDialog() = default;

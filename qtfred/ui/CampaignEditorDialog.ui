@@ -397,6 +397,9 @@
               </item>
               <item>
                <widget class="QPushButton" name="btnRealign">
+                <property name="enabled">
+                 <bool>false</bool>
+                </property>
                 <property name="text">
                  <string>Realign Tree</string>
                 </property>
@@ -505,6 +508,9 @@
     <layout class="QHBoxLayout" name="mainControls">
      <item>
       <widget class="QPushButton" name="btnErrorChecker">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
        <property name="text">
         <string>Error Checker</string>
        </property>
