@@ -138,6 +138,7 @@ static int SerializeValidatePacket(const udp_packet_header *uph, ubyte *data)
 
 	Assert(packet_size >= PACKED_HEADER_ONLY_SIZE);
 	Assert(packet_size == uph->len);
+	Assert(packet_size <= MAX_PACKET_SIZE);
 
 	return static_cast<int>(packet_size);
 }
