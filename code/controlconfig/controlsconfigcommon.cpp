@@ -2263,22 +2263,12 @@ SCP_string ValToJoy(const CC_bind &bind) {
 
 bool CC_bind::operator==(const CC_bind &B) const
 {
-	return (btn == B.btn) && (cid == B.cid) && (~(flags ^ B.flags) & CCF_AXIS);
-}
-
-bool CC_bind::operator==(const CCB &pair) const
-{
-	return (*this == pair.first) || (*this == pair.second);
+	return (btn == B.btn) && (cid == B.cid) && (flags == B.flags);
 }
 
 bool CC_bind::operator!=(const CC_bind &B) const
 {
 	return !(*this == B);
-}
-
-bool CC_bind::operator!=(const CCB &pair) const
-{
-	return !(*this == pair);
 }
 
 void CC_bind::clear()
@@ -2306,8 +2296,41 @@ void CC_bind::invert_toggle() {
 	flags ^= CCF_INVERTED;
 }
 
+bool CC_bind::conflicts_with(const CC_bind& B) const {
+	// Bail early if CID or btn are not the same
+	if ((cid != B.cid) || (btn != B.btn)) {
+		return false;
+	}
+
+	// Check if A is an Axis or Axis Button, and if B is an Axis or Axis Button
+	if ((flags & (CCF_AXIS_BTN | CCF_AXIS)) &&
+		(B.flags & (CCF_AXIS_BTN | CCF_AXIS))) {
+		return true;
+	}
+
+	// Check if Hat
+	if (flags & B.flags & CCF_HAT) {
+		return true;
+	}
+
+	// Check if Ball
+	if (flags & B.flags & CCF_BALL) {
+		return true;
+	}
+
+	// These flags are ignored for conflict checks:
+	// CCF_RELATIVE, CCF_INVERTED
+
+	return false;
+}
+
 bool CC_bind::is_inverted() const {
 	return static_cast<bool>(flags & CCF_INVERTED);
+}
+
+bool CC_bind::is_in_pair(const CCB &pair) const
+{
+	return (*this == pair.first) || (*this == pair.second);
 }
 
 void CC_bind::take(CID _cid, short _btn, char _flags) {
@@ -2480,12 +2503,12 @@ bool CCB::operator!=(const CCB& A) {
 	return !this->operator==(A);
 }
 
-bool CCB::has_first(const CCB& A) const {
-	return !first.empty() && ((first == A.first) || (first == A.second));
+bool CCB::has_first_conflict(const CCB& A) const {
+	return !first.empty() && (first.conflicts_with(A.first) || first.conflicts_with(A.second));
 }
 
-bool CCB::has_second(const CCB& A) const {
-	return !second.empty() && ((second == A.first) || (second == A.second));
+bool CCB::has_second_conflict(const CCB& A) const {
+	return !second.empty() && (second.conflicts_with(A.first) || second.conflicts_with(A.second));
 }
 
 CCI& CCI::operator=(const CCI& A) {

@@ -614,37 +614,37 @@ void control_config_conflict_check()
 				continue;
 			}
 
-			if (item_i.disabled && (item_i.has_first(item_j) || item_i.has_second(item_j))) {
+			if (item_i.disabled && (item_i.has_first_conflict(item_j) || item_i.has_second_conflict(item_j))) {
 				// item_i conflicts with item_j and is disabled.  Silently clear item_i
 				item_i.clear();
 			}
 
-			if (item_j.disabled && (item_j.has_first(item_i) || item_j.has_second(item_i))) {
+			if (item_j.disabled && (item_j.has_first_conflict(item_i) || item_j.has_second_conflict(item_i))) {
 				// item_j conflicts with item_i and is disabled.  Silently clear item_j
 				item_j.clear();
 			}
 
 			// Clearly a headache
 			// This mess is needed so that only the conflicting bind is highlighted instead of both of them
-			if (item_i.has_first(item_j)) {
+			if (item_i.has_first_conflict(item_j)) {
 				// item_i's first binding has conflict
 				Conflicts[i].first = j;
 				Conflicts_tabs[ item_i.tab ] = 1;
 			}
 
-			if (item_i.has_second(item_j)) {
+			if (item_i.has_second_conflict(item_j)) {
 				// item_i's second binding has conflict
 				Conflicts[i].second = j;
 				Conflicts_tabs[ item_i.tab ] = 1;
 			}
 
-			if (item_j.has_first(item_i)) {
+			if (item_j.has_first_conflict(item_i)) {
 				// item_j's first binding has conflict
 				Conflicts[j].first = i;
 				Conflicts_tabs[item_j.tab] = 1;
 			}
 
-			if (item_j.has_second(item_i)) {
+			if (item_j.has_second_conflict(item_i)) {
 				// item_j's second binding has conflict
 				Conflicts[j].second = i;
 				Conflicts_tabs[ item_j.tab ] = 1;
@@ -843,13 +843,13 @@ int control_config_clear_other()
 
 		auto &other = Control_config[i];
 
-		if (other.has_first(selected)) {
+		if (other.has_first_conflict(selected)) {
 			stack.save(other.first);
 			other.first.clear();
 			total++;
 		}
 
-		if (other.has_second(selected)) {
+		if (other.has_second_conflict(selected)) {
 			stack.save(other.second);
 			other.second.clear();
 			total++;

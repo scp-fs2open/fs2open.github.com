@@ -342,25 +342,14 @@ public:
 	/*!
 	 * Checks if this CC_bind is equal to the given CC_bind
 	 *
-	 * @details Not all flags may be necassary for equality, which may require careful bool logic
-	 *   For now, we just have to worry about CCF_AXIS
+	 * @note EQUAL means EQUAL
 	 */
 	bool operator==(const CC_bind &B) const;
-
-	/*!
-	 * Checks if this CC_bind is equal to either in the pair
-	 */
-	bool operator==(const CCB &pair) const;
 
 	/*!
 	 * Checks if this CC_bind is not equal to the given CC_bind
 	 */
 	bool operator!=(const CC_bind &B) const;
-
-	/*!
-	 * Checks if this CC_bind is not equal to either in the pair
-	 */
-	bool operator!=(const CCB &pair) const;
 
 	/*!
 	 * Clears the binding and flags.  Some flags are retained.
@@ -401,6 +390,18 @@ public:
 	 * Is true if inverted, false otherwise
 	 */
 	bool is_inverted() const;
+
+	/*!
+	 * Checks if this CC_bind is equal to either in the pair
+	 */
+	bool is_in_pair(const CCB &pair) const;
+
+	/*!
+	 * Checks if this CC_bind conflicts with the given argument
+	 *
+	 * @note Similar to operator==, but ignores certain combinations of flags.
+	 */
+	bool conflicts_with(const CC_bind&) const;
 };
 
 /*!
@@ -460,14 +461,14 @@ public:
 	bool operator!=(const CCB&);
 
 	/*!
-	 * Returns True if this CCB's first isn't empty and the given CCB has a binding equal to it
+	 * Returns True if this CCB's first isn't empty and the given CCB has a binding that can conflict with it
 	 */
-	bool has_first(const CCB&) const;
+	bool has_first_conflict(const CCB&) const;
 
 	/*!
-	 * Returns True if this CCB's second isn't empty and the given CCB has a binding equal to it
+	 * Returns True if this CCB's second isn't empty and the given CCB has a binding that can conflict with it
 	 */
-	bool has_second(const CCB&) const;
+	bool has_second_conflict(const CCB&) const;
 
 	/*!
 	 * Returns a pointer to first, or second, whichever has a binding equal to the given CC_bind, or nullptr if neither
