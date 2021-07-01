@@ -315,7 +315,17 @@ void CampaignEditorDialogModel::missionSelectionChanged(const QModelIndex &chang
 
 void CampaignEditorDialogModel::selectCurBr(const CampaignBranchData *br) {
 	if (! mnData_it) return;
-	mnData_it->brData_it = const_cast<CampaignBranchData*>(br);
+	mnData_it->brData_it = nullptr;
+	mnData_it->brData_idx = -1;
+	if (br) {
+		for (auto& br_it: mnData_it->branches) {
+			mnData_it->brData_idx++;
+			if (&br_it == br) {
+				mnData_it->brData_it = &br_it;
+				break;
+			}
+		}
+	}
 	parent->updateUIBranch();
 }
 

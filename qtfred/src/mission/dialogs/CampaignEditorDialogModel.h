@@ -86,6 +86,8 @@ private:
 	void connectBranches(bool uiUpdate = true);
 
 public:
+	inline int getCurBrIdx() const { return isCurBrSelected() ? mnData_it->brData_idx : -1; }
+
 	inline bool getCurBrIsLoop() const { return getCurBr().loop.is; }
 	inline const QString& getCurBrNext() const { return getCurBr().next; }
 
@@ -164,6 +166,7 @@ private:
 
 		static const CampaignBranchData bdEmpty;
 		CampaignBranchData *brData_it{nullptr};
+		int brData_idx{-1};
 		SCP_vector<CampaignBranchData> branches;
 
 	private:

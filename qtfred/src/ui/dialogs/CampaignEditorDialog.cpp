@@ -179,6 +179,11 @@ void CampaignEditorDialog::updateUIBranch() {
 	bool sel = model->isCurBrSelected();
 	bool loop = model->getCurBrIsLoop();
 
+	if (sel)
+		ui->sxtBranches->selectionModel()->select(
+					ui->sxtBranches->model()->index(model->getCurBrIdx(),0),
+					QItemSelectionModel::Select);
+
 	ui->btnBranchUp->setEnabled(sel);
 	ui->btnBranchDown->setEnabled(sel);
 
