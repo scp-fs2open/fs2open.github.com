@@ -747,6 +747,16 @@ void batching_add_laser(int texture, vec3d* p0, float width1, vec3d* p1, float w
 		head /= head_side_total;
 		side /= head_side_total;
 
+		if (switchover_rate >= 20.0f) {
+			if (head > side) {
+				head = 1.0f;
+				side = 0.0f;
+			} else {
+				head = 0.0f;
+				side = 1.0f;
+			}
+		}
+
 		r2 = (int)(r2 * head);   g2 = (int)(g2 * head);  b2 = (int)(b2 * head);
 		r  = (int)(r  * side);   g  = (int)(g * side);   b  = (int)(b  * side);
 
