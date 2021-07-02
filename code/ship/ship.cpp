@@ -984,6 +984,7 @@ void ship_info::clone(const ship_info& other)
 	max_overclocked_speed = other.max_overclocked_speed;
 	max_weapon_reserve = other.max_weapon_reserve;
 	max_shield_regen_per_second = other.max_shield_regen_per_second;
+	shield_regen_hit_delay = other.shield_regen_hit_delay;
 	max_weapon_regen_per_second = other.max_weapon_regen_per_second;
 
 	shield_weap_amount = other.shield_weap_amount;
@@ -1295,6 +1296,7 @@ void ship_info::move(ship_info&& other)
 	max_overclocked_speed = other.max_overclocked_speed;
 	max_weapon_reserve = other.max_weapon_reserve;
 	max_shield_regen_per_second = other.max_shield_regen_per_second;
+	shield_regen_hit_delay = other.shield_regen_hit_delay;
 	max_weapon_regen_per_second = other.max_weapon_regen_per_second;
 
 	shield_weap_amount = other.shield_weap_amount;
@@ -1695,6 +1697,7 @@ ship_info::ship_info()
 	max_overclocked_speed = 0.0f;
 	max_weapon_reserve = 0.0f;
 	max_shield_regen_per_second = 0.0f;
+	shield_regen_hit_delay = 0.0f;
 	max_weapon_regen_per_second = 0.0f;
 
 	shield_weap_amount = 0.0f;
@@ -6626,18 +6629,18 @@ static void ship_set(int ship_index, int objnum, int ship_type)
 
 	shipp->max_shield_recharge = sip->max_shield_recharge;
 
+	if (sip->flags[Ship::Info_Flags::Model_point_shields]) {
+		objp->n_quadrants = (int)pm->shield_points.size();
+		shipp->shield_points = pm->shield_points;
+		objp->shield_quadrant.resize(objp->n_quadrants);
+	}
+
 	if (Fred_running) {
 		shipp->ship_max_shield_strength = 100.0f;
 		objp->shield_quadrant[0] = 100.0f;
 	} else {
 		shipp->ship_max_shield_strength = sip->max_shield_strength;
 		shield_set_strength(objp, shield_get_max_strength(objp));
-	}
-
-	if (sip->flags[Ship::Info_Flags::Model_point_shields]) {
-		objp->n_quadrants = (int)pm->shield_points.size();
-		shipp->shield_points = pm->shield_points;
-		objp->shield_quadrant.resize(objp->n_quadrants);
 	}
 
 	shipp->orders_accepted = ship_get_default_orders_accepted( sip );
@@ -12388,7 +12391,7 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 
 	// Ensure if this is a "require-lock" missile, that a lock actually exists
 	if ( wip->wi_flags[Weapon::Info_Flags::No_dumbfire] ) {
-		if (!aip->current_target_is_locked && !ship_lock_present(shipp) && shipp->missile_locks_firing.empty()) {
+		if (!aip->current_target_is_locked && !ship_lock_present(shipp) && shipp->missile_locks_firing.empty() && aip->ai_missile_locks_firing.empty()) {
 			if (obj == Player_obj) {
 				if (!Weapon_energy_cheat) {
 					float max_dist;
