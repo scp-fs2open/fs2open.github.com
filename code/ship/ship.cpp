@@ -7903,9 +7903,11 @@ void ship_destroy_instantly(object *ship_objp)
 	mission_log_add_entry(LOG_SELF_DESTRUCTED, Ships[ship_objp->instance].ship_name, NULL );
 	
 	// scripting stuff
-	Script_system.SetHookObjects(2, "Self", ship_objp, "Ship", ship_objp);
-	Script_system.RunCondition(CHA_DEATH, ship_objp);
-	Script_system.RemHookVars({"Self", "Ship"});
+	if (Script_system.IsActiveAction(CHA_DEATH)) {
+		Script_system.SetHookObjects(2, "Self", ship_objp, "Ship", ship_objp);
+		Script_system.RunCondition(CHA_DEATH, ship_objp);
+		Script_system.RemHookVars({"Self", "Ship"});
+	}
 
 	ship_objp->flags.set(Object::Object_Flags::Should_be_dead);
 	ship_cleanup(ship_objp->instance, SHIP_DESTROYED);
@@ -8019,11 +8021,14 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 	    (cleanup_mode == SHIP_DEPARTED) || (cleanup_mode == SHIP_DEPARTED_REDALERT) ||
 	    (cleanup_mode == SHIP_VANISHED)) {
 		const char* departmethod = get_departure_name(cleanup_mode);
-		Script_system.SetHookObject("Ship", objp);
-		Script_system.SetHookVar("Method", 's', departmethod);
-		Script_system.SetHookVar("JumpNode", 's', jumpnode_name);
-		Script_system.RunCondition(CHA_ONSHIPDEPART);
-		Script_system.RemHookVars({"Ship", "Method", "JumpNode"});
+
+		if (Script_system.IsActiveAction(CHA_ONSHIPDEPART)) {
+			Script_system.SetHookObject("Ship", objp);
+			Script_system.SetHookVar("Method", 's', departmethod);
+			Script_system.SetHookVar("JumpNode", 's', jumpnode_name);
+			Script_system.RunCondition(CHA_ONSHIPDEPART);
+			Script_system.RemHookVars({"Ship", "Method", "JumpNode"});
+		}
 	}
 
 	if (Ship_info[shipp->ship_info_index].is_big_or_huge()) {
@@ -12110,10 +12115,12 @@ int ship_fire_primary(object * obj, int stream_weapons, int force, bool rollback
 		if (objp == Player_obj && Player_ai->target_objnum != -1)
 			target = &Objects[Player_ai->target_objnum]; 
 
-		Script_system.SetHookObjects(2, "User", objp, "Target", target);
-		Script_system.RunCondition(CHA_ONWPFIRED, objp, 1);
-		Script_system.RunCondition(CHA_PRIMARYFIRE, objp);
-		Script_system.RemHookVars({"User", "Target"});
+		if (Script_system.IsActiveAction(CHA_ONWPFIRED) || Script_system.IsActiveAction(CHA_PRIMARYFIRE)) {
+			Script_system.SetHookObjects(2, "User", objp, "Target", target);
+			Script_system.RunCondition(CHA_ONWPFIRED, objp, 1);
+			Script_system.RunCondition(CHA_PRIMARYFIRE, objp);
+			Script_system.RemHookVars({"User", "Target"});
+		}
 	}
 
 	return num_fired;
@@ -12797,10 +12804,12 @@ done_secondary:
 		if (objp == Player_obj && Player_ai->target_objnum != -1)
 			target = &Objects[Player_ai->target_objnum];
 
-		Script_system.SetHookObjects(2, "User", objp, "Target", target);
-		Script_system.RunCondition(CHA_ONWPFIRED, objp);
-		Script_system.RunCondition(CHA_SECONDARYFIRE, objp);
-		Script_system.RemHookVars({"User", "Target"});
+		if (Script_system.IsActiveAction(CHA_ONWPFIRED) || Script_system.IsActiveAction(CHA_SECONDARYFIRE)) {
+			Script_system.SetHookObjects(2, "User", objp, "Target", target);
+			Script_system.RunCondition(CHA_ONWPFIRED, objp);
+			Script_system.RunCondition(CHA_SECONDARYFIRE, objp);
+			Script_system.RemHookVars({"User", "Target"});
+		}
 	}
 
 	// AL 3-7-98: Move to next valid secondary bank if out of ammo
@@ -13057,10 +13066,12 @@ int ship_select_next_primary(object *objp, int direction)
 		if (objp == Player_obj && Player_ai->target_objnum != -1)
 			target = &Objects[Player_ai->target_objnum];
 
-		Script_system.SetHookObjects(2, "User", objp, "Target", target);
-		Script_system.RunCondition(CHA_ONWPSELECTED, objp);
-		Script_system.RunCondition(CHA_ONWPDESELECTED, objp);
-		Script_system.RemHookVars({"User", "Target"});
+		if (Script_system.IsActiveAction(CHA_ONWPSELECTED) || Script_system.IsActiveAction(CHA_ONWPDESELECTED)) {
+			Script_system.SetHookObjects(2, "User", objp, "Target", target);
+			Script_system.RunCondition(CHA_ONWPSELECTED, objp);
+			Script_system.RunCondition(CHA_ONWPDESELECTED, objp);
+			Script_system.RemHookVars({"User", "Target"});
+		}
 
 		return 1;
 	}
@@ -13159,10 +13170,12 @@ int ship_select_next_secondary(object *objp)
 			if (objp == Player_obj && Player_ai->target_objnum != -1)
 				target = &Objects[Player_ai->target_objnum];
 
-			Script_system.SetHookObjects(2, "User", objp, "Target", target);
-			Script_system.RunCondition(CHA_ONWPSELECTED, objp);
-			Script_system.RunCondition(CHA_ONWPDESELECTED, objp);
-			Script_system.RemHookVars({"User", "Target"});
+			if (Script_system.IsActiveAction(CHA_ONWPSELECTED) || Script_system.IsActiveAction(CHA_ONWPDESELECTED)) {
+				Script_system.SetHookObjects(2, "User", objp, "Target", target);
+				Script_system.RunCondition(CHA_ONWPSELECTED, objp);
+				Script_system.RunCondition(CHA_ONWPDESELECTED, objp);
+				Script_system.RemHookVars({"User", "Target"});
+			}
 
 			return 1;
 		}

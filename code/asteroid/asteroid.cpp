@@ -1432,9 +1432,14 @@ static void asteroid_maybe_break_up(object *pasteroid_obj)
 
 	if ( timestamp_elapsed(asp->final_death_time) ) {
 		vec3d	relvec, vfh, tvec;
+		bool skip = false;
+		bool hooked = Script_system.IsActiveAction(CHA_DEATH);
 
-		Script_system.SetHookObject("Self", pasteroid_obj);
-		if(!Script_system.IsConditionOverride(CHA_DEATH, pasteroid_obj))
+		if (hooked) {
+			Script_system.SetHookObject("Self", pasteroid_obj);
+			skip = Script_system.IsConditionOverride(CHA_DEATH, pasteroid_obj);
+		}
+		if (!skip)
 		{
 			pasteroid_obj->flags.set(Object::Object_Flags::Should_be_dead);
 
@@ -1539,8 +1544,10 @@ static void asteroid_maybe_break_up(object *pasteroid_obj)
 			}
 			asp->final_death_time = timestamp(-1);
 		}
-		Script_system.RunCondition(CHA_DEATH, pasteroid_obj);
-		Script_system.RemHookVar("Self");
+		if (hooked) {
+			Script_system.RunCondition(CHA_DEATH, pasteroid_obj);
+			Script_system.RemHookVar("Self");
+		}
 	}
 }
 
