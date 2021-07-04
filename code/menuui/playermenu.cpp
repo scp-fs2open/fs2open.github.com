@@ -327,7 +327,7 @@ void player_select_init()
 
 // if we found a pilot
 	if ( player_select_get_last_pilot_info() ) {
-		if (Player_select_last_is_multi && !Networking_disabled) {
+		if (Player_select_last_is_multi) {
 			player_select_init_player_stuff(PLAYER_SELECT_MODE_MULTI);
 		} else {
 			player_select_init_player_stuff(PLAYER_SELECT_MODE_SINGLE);
@@ -412,6 +412,12 @@ void player_select_do()
 	GR_MAYBE_CLEAR_RES(Player_select_background_bitmap);
 	gr_set_bitmap(Player_select_background_bitmap);
 	gr_bitmap(0,0,GR_RESIZE_MENU);
+
+	//skip this if pilot is given through cmdline, assuming single-player
+	if (Cmdline_pilot) {
+		player_finish_select(Cmdline_pilot, false);
+		return;
+	}
 
 	// press the accept button
 	if (Player_select_autoaccept) {
@@ -689,10 +695,6 @@ void player_select_button_pressed(int n)
 
 	case MULTI_BUTTON:
 		Player_select_autoaccept = 0;
-		if ( Networking_disabled ) {
-			game_feature_disabled_popup();
-			break;
-		}
 
 		// switch to multiplayer mode
 		if (Player_select_mode != PLAYER_SELECT_MODE_MULTI) {
@@ -1448,7 +1450,7 @@ void player_finish_select(const char* callsign, bool is_multi) {
 
 	// now read in a the pilot data
 	if ( !Pilot.load_player(callsign, Player) ) {
-		Error(LOCATION,"Couldn't load pilot file, bailing");
+		Error(LOCATION,"Couldn't load pilot file for pilot \"%s\", bailing", callsign);
 		Player = nullptr;
 	} else {
 		// NOTE: this may fail if there is no current campaign, it's not fatal

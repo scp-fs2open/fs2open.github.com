@@ -105,8 +105,16 @@ bool dock_check_find_direct_docked_object(object *objp, object *other_objp)
 
 bool dock_check_find_docked_object(object *objp, object *other_objp)
 {
-	Assert(objp != NULL);
-	Assert(other_objp != NULL);
+	Assert(objp != nullptr);
+	Assert(objp->signature > 0);
+	Assert(other_objp != nullptr);
+	Assert(other_objp->signature > 0);
+
+
+	if (!(objp != nullptr && objp->signature > 0))
+		return false;
+	if (!(other_objp != nullptr && other_objp->signature > 0))
+		return false;
 
 	dock_function_info dfi;
 	dfi.parameter_variables.objp_value = other_objp;

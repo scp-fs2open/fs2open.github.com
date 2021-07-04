@@ -196,7 +196,7 @@ ADE_VIRTVAR(MainStatus, l_ParseObject, nullptr,
 }
 
 ADE_VIRTVAR(Subsystems, l_ParseObject, nullptr, "Get the list of subsystems of this parse object",
-            ade_type_array("parse_subsystem"), "An array of the parse subsystems of this object")
+            "parse_subsystem[]", "An array of the parse subsystems of this object")
 {
 	parse_object_h* poh = nullptr;
 	if (!ade_get_args(L, "o", l_ParseObject.GetPtr(&poh)))
@@ -299,7 +299,7 @@ ADE_VIRTVAR(Damage, l_ParseSubsystem, "number", "The percentage to what the subs
 	return ade_set_args(L, "f", poh->getSubsys()->percent);
 }
 
-ADE_VIRTVAR(PrimaryBanks, l_ParseSubsystem, nullptr, "The overridden primary banks", ade_type_array("weaponclass"),
+ADE_VIRTVAR(PrimaryBanks, l_ParseSubsystem, nullptr, "The overridden primary banks", "weaponclass[]",
             "The primary bank weapons or nil if not changed from default")
 {
 	parse_subsys_h* poh = nullptr;
@@ -337,7 +337,7 @@ ADE_VIRTVAR(PrimaryBanks, l_ParseSubsystem, nullptr, "The overridden primary ban
 }
 
 ADE_VIRTVAR(PrimaryAmmo, l_ParseSubsystem, nullptr, "The overridden primary ammunition, as a percentage of the default",
-            ade_type_array("weaponclass"), "The primary bank ammunition percantage or nil if not changed from default")
+            "weaponclass[]", "The primary bank ammunition percantage or nil if not changed from default")
 {
 	parse_subsys_h* poh = nullptr;
 	float newPercentage = -1.0f;
@@ -374,7 +374,7 @@ ADE_VIRTVAR(PrimaryAmmo, l_ParseSubsystem, nullptr, "The overridden primary ammu
 	return ade_set_args(L, "t", tbl);
 }
 
-ADE_VIRTVAR(SecondaryBanks, l_ParseSubsystem, nullptr, "The overridden secondary banks", ade_type_array("weaponclass"),
+ADE_VIRTVAR(SecondaryBanks, l_ParseSubsystem, nullptr, "The overridden secondary banks", "weaponclass[]",
             "The secondary bank weapons or nil if not changed from default")
 {
 	parse_subsys_h* poh = nullptr;
@@ -412,7 +412,7 @@ ADE_VIRTVAR(SecondaryBanks, l_ParseSubsystem, nullptr, "The overridden secondary
 }
 
 ADE_VIRTVAR(SecondaryAmmo, l_ParseSubsystem, nullptr, "The overridden secondary ammunition, as a percentage of the default",
-            ade_type_array("weaponclass"), "The secondary bank ammunition percantage or nil if not changed from default")
+            "weaponclass[]", "The secondary bank ammunition percantage or nil if not changed from default")
 {
 	parse_subsys_h* poh = nullptr;
 	float newPercentage = -1.0f;

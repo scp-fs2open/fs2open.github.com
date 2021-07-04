@@ -287,7 +287,7 @@ static int _cfile_chdir(const char *new_dir, const char *cur_dir __UNUSED)
 	const char *colon = strchr(new_dir, ':');
 
 	if (colon) {
-		if (!cfile_chdrive(tolower(*(colon - 1)) - 'a' + 1, 1))
+		if (!cfile_chdrive(SCP_tolower(*(colon - 1)) - 'a' + 1, 1))
 			return 1;
 
 		path = colon + 1;
@@ -305,7 +305,7 @@ static int _cfile_chdir(const char *new_dir, const char *cur_dir __UNUSED)
 	status = _chdir(path);
 	if (status != 0) {
 #ifdef _WIN32
-		cfile_chdrive(tolower(cur_dir[0]) - 'a' + 1, 1);
+		cfile_chdrive(SCP_tolower(cur_dir[0]) - 'a' + 1, 1);
 #endif /* _WIN32 */
 		return 2;
 	}
@@ -866,6 +866,7 @@ static int cfget_cfile_block()
 			cfile->data = nullptr;
 			cfile->fp = nullptr;
 			cfile->type = CFILE_BLOCK_USED;
+			cf_clear_compression_info(cfile);
 			return i;
 		}
 	}
@@ -921,7 +922,7 @@ int cfclose( CFILE * cfile )
 	} else {
 		// VP  do nothing
 	}
-
+	cf_clear_compression_info(cfile);
 	cfile->type = CFILE_BLOCK_UNUSED;
 	return result;
 }
@@ -973,7 +974,7 @@ static CFILE *cf_open_fill_cfblock(const char* source, int line, const char* ori
 		if(pos == -1L)
 			pos = 0;
 		cf_init_lowlevel_read_code(cfp,0,filelength(fileno(fp)), 0 );
-
+		cf_check_compression(cfp);
 		return cfp;
 	}
 }
@@ -1008,7 +1009,7 @@ static CFILE *cf_open_packed_cfblock(const char* source, int line, const char* o
 		cfp->line_num = line;
 
 		cf_init_lowlevel_read_code(cfp,offset, size, 0 );
-
+		cf_check_compression(cfp);
 		return cfp;
 	}
 
@@ -1052,6 +1053,7 @@ static CFILE *cf_open_mapped_fill_cfblock(const char* source, int line, const ch
 		cfp->line_num = line;
 
 		cf_init_lowlevel_read_code(cfp, 0, 0, 0 );
+		
 #if defined _WIN32
 		cfp->hMapFile = CreateFileMapping(cfp->hInFile, NULL, PAGE_READONLY, 0, 0, NULL);
 		if (cfp->hMapFile == NULL) {

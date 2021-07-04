@@ -64,7 +64,7 @@
 
 #define USED_VARIABLE __attribute__((used))
 
-#if SCP_COMPILER_VERSION_MAJOR >= 7
+#if __GNUC__ >= 7
 #define FALLTHROUGH __attribute__((fallthrough))
 #else
 #define FALLTHROUGH

@@ -10,7 +10,7 @@
 #include "hud/hudtarget.h"
 #include "ship/shiphit.h"
 
-bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, vec3d *turret_pos, vec3d *turret_fvec, vec3d *predicted_pos = NULL, float flak_range_override = 100.0f);
+bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, vec3d *turret_pos, vec3d *firing_vec, vec3d *predicted_pos = nullptr, float flak_range_override = 100.0f);
 
 namespace scripting {
 namespace api {
@@ -111,12 +111,17 @@ ADE_VIRTVAR(Orientation, l_Subsystem, "orientation", "Orientation of subobject o
 	if (!sso->isSubsystemValid())
 		return ade_set_error(L, "o", l_Matrix.Set(matrix_h()));
 
+	auto smi = sso->ss->submodel_instance_1;
+	if (smi == nullptr)
+		return ade_set_error(L, "o", l_Matrix.Set(matrix_h()));
+
 	if(ADE_SETTING_VAR && mh)
 	{
-		sso->ss->submodel_info_1.angs = *mh->GetAngles();
+		smi->canonical_prev_orient = smi->canonical_orient;
+		smi->canonical_orient = *mh->GetMatrix();
 	}
 
-	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&sso->ss->submodel_info_1.angs)));
+	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&smi->canonical_orient)));
 }
 
 ADE_VIRTVAR(GunOrientation, l_Subsystem, "orientation", "Orientation of turret gun", "orientation", "Gun orientation, or null orientation if handle is invalid")
@@ -129,12 +134,17 @@ ADE_VIRTVAR(GunOrientation, l_Subsystem, "orientation", "Orientation of turret g
 	if (!sso->isSubsystemValid())
 		return ade_set_error(L, "o", l_Matrix.Set(matrix_h()));
 
+	auto smi = sso->ss->submodel_instance_2;
+	if (smi == nullptr)
+		return ade_set_error(L, "o", l_Matrix.Set(matrix_h()));
+
 	if(ADE_SETTING_VAR && mh)
 	{
-		sso->ss->submodel_info_2.angs = *mh->GetAngles();
+		smi->canonical_prev_orient = smi->canonical_orient;
+		smi->canonical_orient = *mh->GetMatrix();
 	}
 
-	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&sso->ss->submodel_info_2.angs)));
+	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&smi->canonical_orient)));
 }
 
 ADE_VIRTVAR(HitpointsLeft, l_Subsystem, "number", "Subsystem hitpoints left", "number", "Hitpoints left, or 0 if handle is invalid. Setting a value of 0 will disable it - set a value of -1 or lower to actually blow it up.")
@@ -626,21 +636,19 @@ ADE_FUNC(rotateTurret, l_Subsystem, "vector Pos, boolean reset=false", "Rotates 
 	if (!ade_get_args(L, "oo|b", l_Subsystem.GetPtr(&sso), l_Vector.Get(&pos), &reset))
 		return ADE_RETURN_NIL;
 
+	if (!sso->isSubsystemValid())
+		return ADE_RETURN_NIL;
+
+	if (sso->ss->submodel_instance_1 == nullptr || sso->ss->submodel_instance_2 == nullptr)
+		return ADE_RETURN_NIL;
+
 	//Get default turret info
-	vec3d gpos, gvec;
-	model_subsystem *tp = sso->ss->system_info;
 	object *objp = sso->objp;
 
-	//Rotate turret position with ship
-	vm_vec_unrotate(&gpos, &tp->pnt, &sso->objp->orient);
+	auto pmi = model_get_instance(Ships[objp->instance].model_instance_num);
+	auto pm = model_get(pmi->model_num);
 
-	//Add turret position to appropriate world space
-	vm_vec_add2(&gpos, &sso->objp->pos);
-
-	// Find direction of turret
-	model_instance_find_world_dir(&gvec, &tp->turret_norm, Ships[objp->instance].model_instance_num, tp->turret_gun_sobj, &objp->orient);
-
-	int ret_val = model_rotate_gun(Ship_info[(&Ships[sso->objp->instance])->ship_info_index].model_num, tp, &Objects[sso->objp->instance].orient, &sso->ss->submodel_info_1.angs, &sso->ss->submodel_info_2.angs, &Objects[sso->objp->instance].pos, &pos, (&Ships[sso->objp->instance])->objnum, reset);
+	int ret_val = model_rotate_gun(objp, pm, pmi, sso->ss, &pos, reset);
 
 	if (ret_val)
 		return ADE_RETURN_TRUE;
@@ -660,15 +668,18 @@ ADE_FUNC(getTurretHeading, l_Subsystem, NULL, "Returns the turrets forward vecto
 	vec3d gvec;
 	object *objp = sso->objp;
 
-	model_instance_find_world_dir(&gvec, &sso->ss->system_info->turret_norm, Ships[objp->instance].model_instance_num, sso->ss->system_info->turret_gun_sobj, &objp->orient);
+	auto pmi = model_get_instance(Ships[objp->instance].model_instance_num);
+	auto pm = model_get(pmi->model_num);
+
+	model_instance_find_world_dir(&gvec, &sso->ss->system_info->turret_norm, pm, pmi, sso->ss->system_info->turret_gun_sobj, &objp->orient);
 
 	vec3d out;
-	vm_vec_rotate(&out, &gvec, &sso->objp->orient);
+	vm_vec_rotate(&out, &gvec, &objp->orient);
 
 	return ade_set_args(L, "o", l_Vector.Set(out));
 }
 
-ADE_FUNC(getFOVs, l_Subsystem, nullptr, "Returns current turrets FOVs", ade_type_info({"number", "number", "number"}),
+ADE_FUNC(getFOVs, l_Subsystem, nullptr, "Returns current turrets FOVs", "number, number, number",
          "Standard FOV, maximum barrel elevation, turret base fov.")
 {
 	ship_subsys_h *sso;
@@ -683,7 +694,7 @@ ADE_FUNC(getFOVs, l_Subsystem, nullptr, "Returns current turrets FOVs", ade_type
 
 	fov = tp->turret_fov;
 	fov_e = tp->turret_max_fov;
-	fov_y = tp->turret_y_fov;
+	fov_y = tp->turret_base_fov;
 
 	return ade_set_args(L, "fff", fov, fov_e, fov_y);
 }
@@ -691,7 +702,7 @@ ADE_FUNC(getFOVs, l_Subsystem, nullptr, "Returns current turrets FOVs", ade_type
 ADE_FUNC(
     getNextFiringPosition, l_Subsystem, nullptr,
     "Retrieves the next position and firing normal this turret will fire from. This function returns a world position",
-    ade_type_info({"vector", "vector"}), "vector or null vector on error")
+    "vector, vector", "vector or null vector on error")
 {
 	ship_subsys_h *sso;
 	if(!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
@@ -719,7 +730,8 @@ ADE_FUNC(getTurretMatrix, l_Subsystem, nullptr, "Returns current subsystems turr
 
 	model_subsystem *tp = sso->ss->system_info;
 
-	m = tp->turret_matrix;
+	// we have to fake a turret matrix because that field is no longer part of model_subsystem
+	vm_vector_2_matrix(&m, &tp->turret_norm, nullptr, nullptr);
 
 	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&m)));
 }

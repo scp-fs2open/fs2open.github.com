@@ -275,7 +275,7 @@ int hash_filename(const char *filename) {
 	
 	// Don't hash .fsm extension, convert all to upper case
 	for (int i=0; i < ((signed int)(strlen(filename)) - 4); i++) {
-		hash_val = (hash_val << 4) + toupper(*ptr++);
+		hash_val = (hash_val << 4) + SCP_toupper(*ptr++);
 	}
 
 	return int(hash_val % CAMPAIGN_MISSION_HASH_SIZE);
@@ -1510,7 +1510,7 @@ void set_new_campaign_line(int n)
 	str = Campaign_descs[Selected_campaign_index];
 	Num_info_lines = 0;
 	if (str) {
-		Num_info_lines = split_str(str, Cr_info_coords[gr_screen.res][2], Info_text_line_size, Info_text_ptrs, MAX_INFO_LINES);
+		Num_info_lines = split_str(str, Cr_info_coords[gr_screen.res][2], Info_text_line_size, Info_text_ptrs, MAX_INFO_LINES, MAX_INFO_LINE_LEN);
 		Assert(Num_info_lines >= 0);
 	}
 

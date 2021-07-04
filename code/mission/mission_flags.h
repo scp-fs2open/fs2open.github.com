@@ -25,7 +25,7 @@ namespace Mission {
 		Red_alert,					// a red-alert mission - Goober5000
 		Scramble,					// a scramble mission - Goober5000
 		No_builtin_command,			// turns off Command without turning off pilots - Karajorma
-		Player_start_ai,			// Player Starts mission under AI Control (NOT MULTI COMPATABLE) - Kazan
+		Player_start_ai,			// Player starts mission under AI Control (NOT MULTI COMPATABLE) - Kazan
 		All_attack,					// all teams at war - Goober5000
 		Use_ap_cinematics,			// use autopilot cinematics - Kazan
 		Deactivate_ap,				// deactivate autopilot - KeldorKatarn (patch approved by Kazan)
@@ -33,6 +33,7 @@ namespace Mission {
 		End_to_mainhall,			// Return to the mainhall after debrief - niffiwan
 		Override_hashcommand,		// Override #Command with the Command info in Mission Specs - Goober5000
 		No_emp_scramble,			// Disable scrambling of comm messages by EMP effects
+		Player_start_chase_view,	// Player starts mission in chase view - Goober5000
 		
 		NUM_VALUES
 	};

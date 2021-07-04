@@ -966,6 +966,7 @@ void pilotfile::csg_write_redalert()
 void pilotfile::csg_read_hud()
 {
 	int idx;
+	int strikes = 0;
 
 	// flags
 	HUD_config.show_flags = cfread_int(cfp);
@@ -980,16 +981,28 @@ void pilotfile::csg_read_hud()
 	HUD_config.rp_flags = cfread_int(cfp);
 	HUD_config.rp_dist = cfread_int(cfp);
 	if (HUD_config.rp_dist < 0 || HUD_config.rp_dist >= RR_MAX_RANGES) {
-		Warning(LOCATION, "Campaign file has invalid radar range %d, setting to default.\n", HUD_config.rp_dist);
+		ReleaseWarning(LOCATION, "Campaign file has invalid radar range %d, setting to default.\n", HUD_config.rp_dist);
 		HUD_config.rp_dist = RR_INFINITY;
+		strikes++;
 	}
 
 	// basic colors
 	HUD_config.main_color = cfread_int(cfp);
-	HUD_color_alpha = cfread_int(cfp);
+	if (HUD_config.main_color < 0 || HUD_config.main_color >= HUD_COLOR_SIZE) {
+		ReleaseWarning(LOCATION, "Campaign file has invalid main color selection %i, setting to default.\n", HUD_config.main_color);
+		HUD_config.main_color = HUD_COLOR_GREEN;
+		strikes++;
+	}
 
-	if (HUD_color_alpha < HUD_COLOR_ALPHA_USER_MIN) {
+	HUD_color_alpha = cfread_int(cfp);
+	if (HUD_color_alpha < HUD_COLOR_ALPHA_USER_MIN || HUD_color_alpha > HUD_COLOR_ALPHA_USER_MAX) {
+		ReleaseWarning(LOCATION, "Campaign file has invalid alpha color %i, setting to default.\n", HUD_color_alpha);
 		HUD_color_alpha = HUD_COLOR_ALPHA_DEFAULT;
+		strikes++;
+	}
+
+	if (strikes == 3) {
+		ReleaseWarning(LOCATION, "Campaign file has too many hud config errors, and is likely corrupted. Please verify and save your settings in the hud config menu.");
 	}
 
 	hud_config_record_color(HUD_config.main_color);
@@ -1206,8 +1219,8 @@ void pilotfile::csg_read_controls()
 		id3 = cfread_short(cfp);	// unused, at the moment
 
 		if (idx < CCFG_MAX) {
-			Control_config[idx].key_id = id1;
-			Control_config[idx].joy_id = id2;
+			Control_config[idx].take(CC_bind(CID_KEYBOARD, id1), 0);
+			Control_config[idx].take(CC_bind(CID_JOY0, id2), 1);
 		}
 	}
 }
@@ -1221,8 +1234,8 @@ void pilotfile::csg_write_controls()
 	cfwrite_ushort(CCFG_MAX, cfp);
 
 	for (idx = 0; idx < CCFG_MAX; idx++) {
-		cfwrite_short(Control_config[idx].key_id, cfp);
-		cfwrite_short(Control_config[idx].joy_id, cfp);
+		cfwrite_short(Control_config[idx].get_btn(CID_KEYBOARD), cfp);
+		cfwrite_short(Control_config[idx].get_btn(CID_JOY0), cfp);
 		// placeholder? for future mouse_id?
 		cfwrite_short(-1, cfp);
 	}

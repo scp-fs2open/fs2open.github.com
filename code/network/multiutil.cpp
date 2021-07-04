@@ -302,7 +302,7 @@ const char *multi_random_death_word()
 {
 	int index;
 
-	index = rand() % NUM_DEATH_WORDS;
+	index = Random::next(NUM_DEATH_WORDS);
 	switch (index) {
 		case 0:
 			return XSTR("zapped",853);
@@ -401,7 +401,7 @@ const char *multi_random_chat_start()
 {
 	int index;
 
-	index = rand() % NUM_CHAT_START_WORDS;
+	index = Random::next(NUM_CHAT_START_WORDS);
 	switch (index) {
 		case 0:
 			return XSTR("says",893);
@@ -486,7 +486,8 @@ int find_player_no_port(net_addr *addr)
 	return -1;
 }
 
-int find_player_id(short player_id)
+// return the index to the players array from the player ID assigned by the Server.
+int find_player_index(short player_id)
 {
 	int i;
 	for (i = 0; i < MAX_PLAYERS; i++ ) {
@@ -800,6 +801,7 @@ void multi_create_player( int net_player_num, player *pl, const char* name, net_
 	Net_players[net_player_num].reliable_socket = PSNET_INVALID_SOCKET;
 	Net_players[net_player_num].s_info.kick_timestamp = -1;
 	Net_players[net_player_num].s_info.voice_token_timestamp = -1;
+	Net_players[net_player_num].s_info.player_collision_timestamp = timestamp(0);
 	Net_players[net_player_num].s_info.tracker_security_last = -1;
 	Net_players[net_player_num].s_info.target_objnum = -1;
 	Net_players[net_player_num].s_info.accum_buttons = 0;
@@ -926,7 +928,7 @@ void delete_player(int player_num,int kicked_reason)
 						Netgame.host = &Net_players[idx];
 
 						// send a packet
-						send_host_captain_change_packet(Net_players[idx].player_id, 0);
+						send_host_captain_change_packet(Net_players[idx].player_id, false);
 
 						found_new_host = 1;
 						break;
@@ -1303,7 +1305,7 @@ void server_verify_filesig(short player_id, ushort sum_sig, int length_sig)
 	int ok;	
 	int is_builtin;
    
-	player = find_player_id(player_id);
+	player = find_player_index(player_id);
 	Assert(player >= 0);
 	if(player < 0){
 		return;
@@ -2297,7 +2299,6 @@ void multi_handle_state_special()
 void multi_file_xfer_notify(int handle)
 {
 	char *filename = nullptr;
-	size_t len,idx;
 	int cf_type;
 	int is_mission = 0;	
 
@@ -2310,10 +2311,7 @@ void multi_file_xfer_notify(int handle)
 	}
 
 	// convert the filename to all lowercase
-	len = strlen(filename);
-	for(idx=0;idx<len;idx++){
-		filename[idx] = (char)tolower(filename[idx]);
-	}		
+	SCP_tolower(filename);
 
 	// if this is a mission file
 	is_mission = (strstr(filename, FS_MISSION_FILE_EXT) != nullptr);
@@ -3077,6 +3075,10 @@ void multi_update_valid_missions()
 	// now poll for all unknown missions
 	was_cancelled = false;
 
+	if ( !(Game_mode & GM_STANDALONE_SERVER) ) {
+		popup_conditional_create(0, XSTR("&Cancel", 667), XSTR("Validating missions ...", -1));
+	}
+
 	for (idx = 0; idx < Multi_create_mission_list.size(); idx++) {
 		if (Multi_create_mission_list[idx].valid_status != MVALID_STATUS_UNKNOWN) {
 			continue;
@@ -3090,6 +3092,10 @@ void multi_update_valid_missions()
 		}
 
 		Multi_create_mission_list[idx].valid_status = (char)rval;
+	}
+
+	if ( !(Game_mode & GM_STANDALONE_SERVER) ) {
+		popup_conditional_close();
 	}
 
 	// if the operation was cancelled, don't write anything new
@@ -3525,25 +3531,25 @@ int multi_pack_unpack_vel( int write, ubyte *data, matrix *orient, physics_info 
 		f = vm_vec_dot( &orient->vec.fvec, &pi->vel );
 
 		// Cyborg17 - using round here allows us keep part of the decimal accuracy that would have been dropped with just fl2i
-		a = fl2i(round(r * 2.0f)); 
-		b = fl2i(round(u * 2.0f));
-		c = fl2i(round(f * 4.0f));
-		CAP(a,-512,511);
-		CAP(b,-512,511);
-		CAP(c,-2048,2047);
-		bitbuffer_put( &buf, (uint)a, 10 );
-		bitbuffer_put( &buf, (uint)b, 10 );
-		bitbuffer_put( &buf, (uint)c, 12 );
+		a = fl2i(round(r * 16.0f)); 
+		b = fl2i(round(u * 16.0f));
+		c = fl2i(round(f * 32.0f));
+		CAP(a,-2048,2047);
+		CAP(b,-2048,2047);
+		CAP(c,-4096,4095);
+		bitbuffer_put( &buf, (uint)a, 13 );
+		bitbuffer_put( &buf, (uint)b, 13 );
+		bitbuffer_put( &buf, (uint)c, 14 );
 
 		return bitbuffer_write_flush(&buf);
 	} else {
 		// unpack velocity
-		a = bitbuffer_get_signed(&buf,10);
-		b = bitbuffer_get_signed(&buf,10);
-		c = bitbuffer_get_signed(&buf,12);
-		r = i2fl(a)/2.0f;
-		u = i2fl(b)/2.0f;
-		f = i2fl(c)/4.0f;
+		a = bitbuffer_get_signed(&buf,13);
+		b = bitbuffer_get_signed(&buf,13);
+		c = bitbuffer_get_signed(&buf,14);
+		r = i2fl(a)/16.0f;
+		u = i2fl(b)/16.0f;
+		f = i2fl(c)/32.0f;
 
 		// Convert into world coordinates
 		vm_vec_zero(&pi->vel);
@@ -3577,7 +3583,6 @@ int multi_pack_unpack_rotvel( int write, ubyte *data, physics_info *pi)
 		bitbuffer_put( &buf, (uint)b, 10 );
 		bitbuffer_put( &buf, (uint)c, 10 );
 
-
 		return bitbuffer_write_flush(&buf);
 
 	} else {
@@ -3602,6 +3607,11 @@ int multi_pack_unpack_desired_vel_and_desired_rotvel( int write, bool full_physi
 
 	int a = 0, b = 0, c = 0;
 	int d = 0, e = 0, f = 0;
+
+	// we could have reduced it to 8 when full physics is false, and saved the byte, 
+	// but this ends up allowing us more accuracy during capship warpin/out
+	const int z_bitcount = (full_physics) ? 9 : 16; 				
+	const int z_capfactor = (full_physics) ? 255 : 32640;
 
 	if ( write )	{
 		if (full_physics) {
@@ -3635,17 +3645,20 @@ int multi_pack_unpack_desired_vel_and_desired_rotvel( int write, bool full_physi
 		if (pi->max_vel.xyz.y > 0.0f) {
 			e = fl2i(round( (local_desired_vel->xyz.y / pi->max_vel.xyz.y) * 7.0f));
 		}
+
 		// for z velocity, take into account afterburner.
-		if (pi->max_vel.xyz.z > 0.0f) {
-			f = fl2i(round( (local_desired_vel->xyz.z / pi->afterburner_max_vel.xyz.z) * 255.0f));
+		float z_divisor = MAX(pi->afterburner_max_vel.xyz.z, pi->max_vel.xyz.z);
+
+		if (z_divisor > 0.0f) {
+			f = fl2i(round( (local_desired_vel->xyz.z / z_divisor) * 255.0f));
 		}
 
 		CAP(d,-7,7);
 		CAP(e,-7,7);
-		CAP(f,-255,255);
+		CAP(f,-z_capfactor,z_capfactor);
 		bitbuffer_put( &buf, (uint)d,4);
 		bitbuffer_put( &buf, (uint)e,4);
-		bitbuffer_put( &buf, (uint)f,9);
+		bitbuffer_put( &buf, (uint)f,z_bitcount); // either 9 or 16 bits.
 
 		return bitbuffer_write_flush(&buf);
 
@@ -3665,10 +3678,13 @@ int multi_pack_unpack_desired_vel_and_desired_rotvel( int write, bool full_physi
 		// unpack desired velocity
 		d = bitbuffer_get_signed(&buf,4);
 		e = bitbuffer_get_signed(&buf,4);
-		f = bitbuffer_get_signed(&buf,9);
+		f = bitbuffer_get_signed(&buf,z_bitcount); // either 9 or 16 bits.
 		local_desired_vel->xyz.x = pi->max_vel.xyz.x * i2fl(d)/7.0f;
 		local_desired_vel->xyz.y = pi->max_vel.xyz.y * i2fl(e)/7.0f;
-		local_desired_vel->xyz.z = pi->afterburner_max_vel.xyz.z * i2fl(f)/255.0f;
+
+		float z_multiplier = MAX(pi->afterburner_max_vel.xyz.z, pi->max_vel.xyz.z);
+
+		local_desired_vel->xyz.z = z_multiplier * i2fl(f)/255.0f;
 
 
 		return bitbuffer_read_flush(&buf);

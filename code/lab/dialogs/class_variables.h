@@ -3,6 +3,10 @@
 #include "lab/dialogs/lab_dialog.h"
 
 class Variables : public LabDialog {
+public:
+	~Variables() override = default;
+
+private:
 	void open(Button* caller) override;
 
 	void close() override {

@@ -75,6 +75,7 @@ ADE_FUNC(addHook,
 			script_condition cond;
 			cond.condition_type   = scripting_string_to_condition(key.getValue<SCP_string>().c_str());
 			cond.condition_string = value.getValue<SCP_string>();
+			cond.condition_cached_value = -1;
 
 			cond_hook.AddCondition(&cond);
 		}

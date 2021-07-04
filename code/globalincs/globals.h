@@ -39,11 +39,6 @@
 
 // from missionparse.h and then redefined to the same value in sexp.h
 #define TOKEN_LENGTH	32
-// ****************************************************************
-// DO NOT CHANGE THIS - IT WILL LIKELY BREAK FREESPACE2 PXO SUPPORT
-// TALK TO DAVE B FIRST
-// ****************************************************************
-#define MAX_SHIP_CLASSES_MULTI	130
 
 #define MAX_SHIP_CLASSES		500
 

@@ -403,6 +403,7 @@ void mission_hotkey_maybe_save_sets()
 	int i;
 	htarget_list	*hitem, *plist;
 	HK_save_info *hkp;
+	bool found_player_hotkey;
 
 	if ( !timestamp_elapsed(Mission_hotkey_save_timestamp) ) {
 		mission_hotkey_maybe_restore();
@@ -424,6 +425,14 @@ void mission_hotkey_maybe_save_sets()
 		// get the list.  do nothing if list is empty
 		plist = &(Player->keyed_targets[i]);
 		if ( EMPTY(plist) )
+			continue;
+
+		found_player_hotkey = false;
+		for ( hitem = GET_FIRST(plist); hitem != END_OF_LIST(plist); hitem = GET_NEXT(hitem) )
+			if (hitem->how_added == HOTKEY_USER_ADDED)
+				found_player_hotkey = true;
+
+		if (!found_player_hotkey)
 			continue;
 
 		for ( hitem = GET_FIRST(plist); hitem != END_OF_LIST(plist); hitem = GET_NEXT(hitem) ) {

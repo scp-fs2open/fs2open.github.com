@@ -67,6 +67,7 @@
 #include "mod_table/mod_table.h"
 #include "libs/ffmpeg/FFmpeg.h"
 #include "scripting/scripting.h"
+#include "utils/Random.h"
 
 #include <direct.h>
 #include "cmdline/cmdline.h"
@@ -296,7 +297,7 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 
 	SDL_SetMainReady();
 
-	srand( (unsigned) time(NULL) );
+	Random::seed(static_cast<unsigned int>(time(nullptr)));
 	init_pending_messages();
 
 	os_init(Osreg_class_name, Osreg_app_name);
@@ -340,8 +341,8 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	lcl_init(LCL_UNTRANSLATED);
 
 	// Goober5000 - force init XSTRs (so they work, but only work untranslated, based on above comment)
-	extern int Xstr_inited;
-	Xstr_inited = 1;
+	extern bool Xstr_inited;
+	Xstr_inited = true;
 
 #ifndef NDEBUG
 	load_filter_info();
@@ -380,7 +381,7 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	iff_init();			// Goober5000
 	species_init();		// Kazan
 
-	brief_parse_icon_tbl();
+	brief_icons_init();
 
 	// for fred specific replacement texture stuff
 	Fred_texture_replacements.clear();
@@ -417,6 +418,8 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	ship_init();
 	parse_init();
 	techroom_intel_init();
+	hud_positions_init();
+	asteroid_init();
 
 	// get fireball IDs for sexpression usage
 	// (we don't need to init the entire system via fireball_init, we just need the information)
@@ -521,18 +524,16 @@ void fix_ship_name(int ship)
 
 int create_ship(matrix *orient, vec3d *pos, int ship_type)
 {
-	// Save the Current Working dir to restore in a minute - fred is being stupid
-	char pwd[MAX_PATH_LEN];
-	getcwd(pwd, MAX_PATH_LEN); // get the present working dir - probably <fs2path>[/modpapth]/data/missions/
-	
-
 	int obj, z1, z2;
 	float temp_max_hull_strength;
 	ship_info *sip;
 
-	// "pop" and cfile_chdirs off the sta
-	chdir(Fred_base_dir);
+	// Save the Current Working dir to restore in a minute - fred is being stupid
+	char pwd[MAX_PATH_LEN];
+	getcwd(pwd, MAX_PATH_LEN); // get the present working dir - probably <fs2path>[/modpath]/data/missions/
 
+	// "pop" and cfile_chdirs off the stack
+	chdir(Fred_base_dir);
 
 	obj = ship_create(orient, pos, ship_type);
 	if (obj == -1)
@@ -548,6 +549,9 @@ int create_ship(matrix *orient, vec3d *pos, int ship_type)
 
 	if (query_ship_name_duplicate(Objects[obj].instance))
 		fix_ship_name(Objects[obj].instance);
+
+	// set up model stuff - only needs to be done once, not every frame
+	model_set_up_techroom_instance(sip, shipp->model_instance_num);
 
 	// default stuff according to species and IFF
 	shipp->team = Species_info[Ship_info[shipp->ship_info_index].species].default_iff;
@@ -955,6 +959,8 @@ void clear_mission()
 	event_music_reset_choices();
 	clear_texture_replacements();
 
+	Event_annotations.clear();
+
 	mission_parse_reset_alt();		// alternate ship type names
 	mission_parse_reset_callsign();
 
@@ -966,9 +972,9 @@ void clear_mission()
 	stars_pre_level_init();
 	Nebula_index = 0;
 	Mission_palette = 1;
-	Nebula_pitch = (int) ((float) (rand() & 0x0fff) * 360.0f / 4096.0f);
-	Nebula_bank = (int) ((float) (rand() & 0x0fff) * 360.0f / 4096.0f);
-	Nebula_heading = (int) ((float) (rand() & 0x0fff) * 360.0f / 4096.0f);
+	Nebula_pitch = (int) ((float) (Random::next() & 0x0fff) * 360.0f / 4096.0f);
+	Nebula_bank = (int) ((float) (Random::next() & 0x0fff) * 360.0f / 4096.0f);
+	Nebula_heading = (int) ((float) (Random::next() & 0x0fff) * 360.0f / 4096.0f);
 	Neb2_awacs = -1.0f;
 	Neb2_poof_flags = 0;
 	strcpy_s(Neb2_texture_name, "");

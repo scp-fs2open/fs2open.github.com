@@ -200,7 +200,7 @@ bool ship_bank_h::IsValid() {
 	return true;
 }
 
-ADE_VIRTVAR(WeaponClass, l_WeaponBank, "weaponclass", "Class of weapon mounted in the bank", "weaponclass", "Weapon class, or an invalid weaponclass handle if bank handle is invalid")
+ADE_VIRTVAR(WeaponClass, l_WeaponBank, "weaponclass", "Class of weapon mounted in the bank. As of FSO 21.0, also changes the maximum ammo to its proper value, which is what the support ship will rearm the ship to.", "weaponclass", "Weapon class, or an invalid weaponclass handle if bank handle is invalid")
 {
 	ship_bank_h *bh = NULL;
 	int weaponclass=-1;
@@ -215,12 +215,16 @@ ADE_VIRTVAR(WeaponClass, l_WeaponBank, "weaponclass", "Class of weapon mounted i
 		case SWH_PRIMARY:
 			if(ADE_SETTING_VAR && weaponclass > -1) {
 				bh->sw->primary_bank_weapons[bh->bank] = weaponclass;
+				if (Weapon_info[weaponclass].wi_flags[Weapon::Info_Flags::Ballistic]) {
+					bh->sw->primary_bank_start_ammo[bh->bank] = (int)std::lround(bh->sw->primary_bank_capacity[bh->bank] / Weapon_info[weaponclass].cargo_size);
+				}
 			}
 
 			return ade_set_args(L, "o", l_Weaponclass.Set(bh->sw->primary_bank_weapons[bh->bank]));
 		case SWH_SECONDARY:
 			if(ADE_SETTING_VAR && weaponclass > -1) {
 				bh->sw->secondary_bank_weapons[bh->bank] = weaponclass;
+				bh->sw->secondary_bank_start_ammo[bh->bank] = (int)std::lround(bh->sw->secondary_bank_capacity[bh->bank] / Weapon_info[weaponclass].cargo_size);
 			}
 
 			return ade_set_args(L, "o", l_Weaponclass.Set(bh->sw->secondary_bank_weapons[bh->bank]));

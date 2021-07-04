@@ -42,8 +42,20 @@ namespace
 		// Lazily initialize the preferences path
 		if (!preferencesPath) {
 		    preferencesPath = SDL_GetPrefPath(ORGANIZATION_NAME, APPLICATION_NAME);
-		    if (!preferencesPath) {
-			    mprintf(("Failed to get preferences path from SDL: %s\n", SDL_GetError()));
+			
+			// this section will at least tell the user if something is seriously wrong instead of just crashing without a message or debug log.
+			// It may crash later, especially when trying to load sound. But let's let it *try* to run in the current directory at least.
+		    if (preferencesPath == nullptr) {
+				static bool sdl_is_borked_warning = false;
+				if (!sdl_is_borked_warning) {
+					ReleaseWarning(LOCATION, "%s\n\nSDL and Windows are unable to get the preferred path for the reason above. "
+						"Installing FSO, its executables and DLLs in another non-protected folder may fix the issue.\n\n"
+						"You may experience issues if you continue playing, and FSO may crash. Please report this error if it persists.\n\n"
+						"Report at www.hard-light.net or the hard-light discord.", SDL_GetError());
+					sdl_is_borked_warning = true;
+				}
+				// No preferences path, try current directory.  
+				return "." DIR_SEPARATOR_STR;
 		    }
 #ifdef WIN32
 		    try {
@@ -128,6 +140,61 @@ namespace
 		mprintf(("Recevied quit signal\n"));
 		gameseq_post_event(GS_EVENT_QUIT_GAME);
 		return true;
+	}
+
+	const char* mapCategory(int category) {
+		switch (category) {
+			case SDL_LOG_CATEGORY_APPLICATION:
+				return "APPLICATION";
+			case SDL_LOG_CATEGORY_ERROR:
+				return "ERROR";
+			case SDL_LOG_CATEGORY_ASSERT:
+				return "ASSERT";
+			case SDL_LOG_CATEGORY_SYSTEM:
+				return "SYSTEM";
+			case SDL_LOG_CATEGORY_AUDIO:
+				return "AUDIO";
+			case SDL_LOG_CATEGORY_VIDEO:
+				return "VIDEO";
+			case SDL_LOG_CATEGORY_RENDER:
+				return "RENDER";
+			case SDL_LOG_CATEGORY_INPUT:
+				return "INPUT";
+			case SDL_LOG_CATEGORY_TEST:
+				return "TEST";
+
+			default:
+				return "UNKNOWN";
+		}
+	}
+
+	const char* mapPriority(SDL_LogPriority prio)
+	{
+		switch (prio) {
+		case SDL_LOG_PRIORITY_VERBOSE:
+			return "VRB";
+		case SDL_LOG_PRIORITY_DEBUG:
+			return "DBG";
+		case SDL_LOG_PRIORITY_INFO:
+			return "INF";
+		case SDL_LOG_PRIORITY_WARN:
+			return "WRN";
+		case SDL_LOG_PRIORITY_ERROR:
+			return "ERR";
+		case SDL_LOG_PRIORITY_CRITICAL:
+			return "CRI";
+
+		default:
+			return "UNK";
+		}
+	}
+
+	void SDLCALL logHandler(void*, int category, SDL_LogPriority priority, const char* message) {
+		if (priority >= SDL_LOG_PRIORITY_INFO) {
+			mprintf(("SDL [%s][%s]: %s\n", mapPriority(priority), mapCategory(category), message));
+		} else {
+			nprintf(("SDL", "SDL [%s][%s]: %s\n", mapPriority(priority), mapCategory(category), message));
+		}
 	}
 }
 
@@ -282,6 +349,11 @@ void os_init(const char * wclass, const char * title, const char * app_name)
 
 	mprintf(("  Initializing SDL %d.%d.%d (compiled with %d.%d.%d)...\n", linked.major, linked.minor, linked.patch,
 	         compiled.major, compiled.minor, compiled.patch));
+
+	if (LoggingEnabled) {
+		SDL_LogSetAllPriority(SDL_LOG_PRIORITY_VERBOSE);
+		SDL_LogSetOutputFunction(&logHandler, nullptr);
+	}
 
 	if (SDL_Init(SDL_INIT_EVENTS) < 0)
 	{

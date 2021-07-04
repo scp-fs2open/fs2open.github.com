@@ -154,7 +154,7 @@ static void json_doc_generate_function(json_t* elObj, const DocumentationElement
 static void json_doc_generate_property(json_t* elObj, const DocumentationElementProperty* lib)
 {
 	json_object_set_new(elObj, "getterType", json_doc_generate_return_type(lib->getterType));
-	json_object_set_new(elObj, "setterType", json_string(lib->setterType.c_str()));
+	json_object_set_new(elObj, "setterType", json_doc_generate_return_type(lib->setterType));
 	json_object_set_new(elObj, "returnDocumentation", json_string(lib->returnDocumentation.c_str()));
 }
 static json_t* json_doc_generate_elements(const SCP_vector<std::unique_ptr<DocumentationElement>>& elements);

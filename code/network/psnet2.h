@@ -104,6 +104,11 @@ extern SOCKET Psnet_socket;	// all PXO API modules should use this to send and r
 
 extern unsigned int Serverconn;
 
+#define PSNET_IP_MODE_UNKNOWN	0
+#define PSNET_IP_MODE_V4		(1<<0)
+#define PSNET_IP_MODE_V6		(1<<1)
+#define PSNET_IP_MODE_DUAL		(PSNET_IP_MODE_V4|PSNET_IP_MODE_V6)
+
 // -------------------------------------------------------------------------------------------------------
 // PSNET 2 TOP LAYER FUNCTIONS - these functions simply buffer and store packets based upon type (see PSNET_TYPE_* defines)
 //
@@ -157,9 +162,6 @@ int psnet_send(net_addr *who_to, void *data, int len, int np_index = -1);
 // get data from the unreliable socket
 int psnet_get(void *data, net_addr *from_addr);
 
-// broadcast data on unreliable socket
-int psnet_broadcast(void *data, int len);
-
 // flush all sockets
 void psnet_flush();
 
@@ -179,8 +181,15 @@ bool psnet_get_addr(const char *host, uint16_t port, SOCKADDR_STORAGE *addr, int
 // map an IPv4 address to IPv6
 void psnet_map4to6(const in_addr *in4, in6_addr *in6);
 
+// map an IPv4-mapped IPv6 address to IPv4
+bool psnet_map6to4(const in6_addr *in6, in_addr *in4);
+
 // anonymize address for logging
 in6_addr *psnet_mask_addr(const in6_addr *inaddr);
+
+const in6_addr *psnet_get_local_ip(int af_type);
+
+int psnet_get_ip_mode();
 
 // -------------------------------------------------------------------------------------------------------
 // PSNET 2 RELIABLE SOCKET FUNCTIONS

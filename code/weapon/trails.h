@@ -25,9 +25,11 @@ typedef struct trail_info {
 	float w_end;			// ending width
 	float a_start;			// starting alpha
 	float a_end;			// ending alpha
+	float a_decay_exponent; // applied to val to determine final alpha
 	float max_life;		// max_life for a section
 	int stamp;				// spew timestamp
 	generic_bitmap texture;	// texture to use for trail
+	float texture_stretch;  // stretches ... the texture
 	int n_fade_out_sections;// number of initial sections used for fading out start 'edge' of the effect
 	float spread;           // casues the trail points to spread and drift away over its lifetime
 	                        // trail points move away sideways randomly between 0 - spread m/s

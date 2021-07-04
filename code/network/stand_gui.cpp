@@ -1066,8 +1066,10 @@ void std_pinfo_display_player_info(net_player *p)
 	char txt[40];
 	txt[sizeof(txt)-1] = '\0';
 
-	// set his ship type
-	SetWindowText(Player_ship_type,Ship_info[p->p_info.ship_class].name);
+	// set his ship type -- Cyborg17, if it's valid!
+	if (p->p_info.ship_class >= 0 && p->p_info.ship_class < static_cast<int>(Ship_info.size())) {
+		SetWindowText(Player_ship_type, Ship_info[p->p_info.ship_class].name);
+	}
 
 	// display his ping time
 	std_pinfo_update_ping(p);

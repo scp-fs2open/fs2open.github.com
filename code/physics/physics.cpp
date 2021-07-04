@@ -21,6 +21,7 @@
 #include "mod_table/mod_table.h"
 #include "physics/physics.h"
 #include "ship/ship.h"
+#include "utils/Random.h"
 
 
 
@@ -183,13 +184,8 @@ void physics_sim_rot(matrix * orient, physics_info * pi, float sim_time )
 
 	// "frit" here meaning Framerate_independent_turning
 	bool frit_ai_wants_to_move = Framerate_independent_turning && !IS_MAT_NULL(&pi->ai_desired_orient);
-	bool spinning_too_fast = vm_vec_mag(&pi->max_rotvel) > 0.001f &&
-		(pi->rotvel.xyz.x > pi->max_rotvel.xyz.x * 1.5f ||
-		pi->rotvel.xyz.y > pi->max_rotvel.xyz.y * 1.5f ||
-		pi->rotvel.xyz.z > pi->max_rotvel.xyz.z * 1.5f);
 	// In the case an ai entity used angular_move, we should use those calculations instead
-	// Unless it's spinning too fast, in which case let the exponential damping handle it
-	if (frit_ai_wants_to_move && !(spinning_too_fast)){
+	if (frit_ai_wants_to_move){
 		Assert(is_valid_matrix(&pi->ai_desired_orient));
 
 		// AI simply get the rotvel they ask for, calculations were already done
@@ -203,11 +199,6 @@ void physics_sim_rot(matrix * orient, physics_info * pi, float sim_time )
 		vm_mat_zero(&pi->ai_desired_orient);
 
 	} else { // players and no framerate_independent_turning go here
-
-		if (frit_ai_wants_to_move) {
-			// Make sure its slowing down as much as possible by desiring 0 velocity
-			vm_vec_zero(&pi->desired_rotvel);
-		}
 
 		// Do rotational physics with given damping
 		apply_physics(rotdamp, pi->desired_rotvel.xyz.x, pi->rotvel.xyz.x, sim_time, &new_vel.xyz.x, nullptr);
@@ -226,8 +217,8 @@ void physics_sim_rot(matrix * orient, physics_info * pi, float sim_time )
 
 	// Make ship shake due to shockwave, decreasing in amplitude at the end of the shockwave
 	if ( pi->flags & PF_IN_SHOCKWAVE ) {
-		tangles.p += (float) (myrand()-RAND_MAX_2) * RAND_MAX_1f * shock_amplitude;
-		tangles.h += (float) (myrand()-RAND_MAX_2) * RAND_MAX_1f * shock_amplitude;
+		tangles.p += (float) (Random::next()-Random::HALF_MAX_VALUE) * Random::INV_F_MAX_VALUE * shock_amplitude;
+		tangles.h += (float) (Random::next()-Random::HALF_MAX_VALUE) * Random::INV_F_MAX_VALUE * shock_amplitude;
 	}
 
 

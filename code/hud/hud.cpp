@@ -538,6 +538,11 @@ void HudGauge::updateColor(int r, int g, int b, int a)
 	gr_init_alphacolor(&gauge_color, r, g, b, a);
 }
 
+ const color& HudGauge::getColor()
+{
+	return gauge_color;
+}
+
 void HudGauge::updateActive(bool show)
 {
 	active = show;
@@ -1608,6 +1613,8 @@ void hud_render_preprocess(float frametime)
 	}
 
 	if ( hud_disabled() ) {
+		// if the hud is disabled, we still need to make sure that the indicators are properly handled
+		hud_do_lock_indicators(flFrametime);
 		return;
 	}
 

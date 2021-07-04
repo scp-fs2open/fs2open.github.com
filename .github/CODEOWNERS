@@ -6,3 +6,5 @@ code/executor/ @asarium
 code/scpui/ @asarium
 
 code/scripting/ @asarium
+
+code/controlconfig/ @z64555

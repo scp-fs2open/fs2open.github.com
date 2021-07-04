@@ -280,7 +280,7 @@ CString VoiceActingManager::generate_filename(CString section, int number, int d
 		size_t j;
 		for( j = 0; sender[j] != '\0'; j++ ) {
 			// lower case letter
-			sender[j] = (char)tolower(sender[j]);
+			sender[j] = SCP_tolower(sender[j]);
 
 			// replace any non alpha numeric with a underscore
 			if ( !isalnum( sender[j] ) )
@@ -754,8 +754,12 @@ char *VoiceActingManager::get_message_sender(char *message)
 			if (!strcmp(message, Sexp_nodes[CDDR(n)].text))
 				return Sexp_nodes[n].text;
 		}
-		else if (op == OP_SEND_MESSAGE_LIST)
+		else if (op == OP_SEND_MESSAGE_LIST || op == OP_SEND_MESSAGE_CHAIN)
 		{
+			// skip the event argument
+			if (op == OP_SEND_MESSAGE_CHAIN)
+				n = CDR(n);
+
 			// check the argument list
 			while (n != -1)
 			{
@@ -839,8 +843,12 @@ void VoiceActingManager::group_message_indexes_in_tree(int node, SCP_vector<int>
 	op = get_operator_const(node);
 	n = CDR(node);
 
-	if (op == OP_SEND_MESSAGE_LIST)
+	if (op == OP_SEND_MESSAGE_LIST || op == OP_SEND_MESSAGE_CHAIN)
 	{
+		// skip the event argument
+		if (op == OP_SEND_MESSAGE_CHAIN)
+			n = CDR(n);
+
 		// check the argument list
 		while (n != -1)
 		{

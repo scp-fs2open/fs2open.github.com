@@ -19,6 +19,10 @@
 #include "render/batching.h"
 #include "tracing/tracing.h"
 #include "tracing/Monitor.h"
+#include "utils/Random.h"
+#include "nebula/neb.h"
+#include "mission/missionparse.h"
+#include "mod_table/mod_table.h"
 
 using namespace particle;
 
@@ -38,13 +42,13 @@ namespace
 
 	static int Particles_enabled = 1;
 
-	float get_current_alpha(vec3d* pos)
+	float get_current_alpha(vec3d* pos, float rad)
 	{
 		float dist;
-		float alpha;
+		float alpha = 0.99999f;
 
-		const float inner_radius = 30.0f;
-		const float magic_num = 2.75f;
+		const float inner_radius = MIN(30.0f, rad);
+		const float magic_num = MIN(2.75f, rad / 10.0f);
 
 		// determine what alpha to draw this bitmap with
 		// higher alpha the closer the bitmap gets to the eye
@@ -55,14 +59,18 @@ namespace
 		if (dist <= inner_radius)
 		{
 			// alpha per meter between the magic # and the inner radius
-			alpha = 0.99999f / (inner_radius - magic_num);
+			alpha /= (inner_radius - magic_num);
 
 			// above value times the # of meters away we are
 			alpha *= (dist - magic_num);
-			return (alpha < 0.05f) ? 0.0f : alpha;
+			if (alpha < 0.05f)
+				return 0.0f;
 		}
 
-		return 0.99999f;
+		if (The_mission.flags[Mission::Mission_Flags::Fullneb] && Neb_affects_particles)
+			alpha *= neb2_get_fog_visibility(pos, NEB_FOG_VISIBILITY_MULT_PARTICLE(rad));
+
+		return alpha;
 	}
 
 	inline int get_percent(int count)
@@ -399,7 +407,7 @@ namespace particle
 		}
 
 		// calculate the alpha to draw at
-		auto alpha = get_current_alpha(&p_pos);
+		auto alpha = get_current_alpha(&p_pos, part->radius);
 
 		// if it's transparent then just skip it
 		if (alpha <= 0.0f)
@@ -544,7 +552,7 @@ namespace particle
 		n2 = (pe->num_high * percent) / 100;
 
 		// How many to emit?
-		n = (rand() % (n2 - n1 + 1)) + n1;
+		n = Random::next(n1, n2);
 
 		if (n < 1) return;
 

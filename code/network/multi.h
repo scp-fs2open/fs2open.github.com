@@ -65,9 +65,11 @@ class player;
 // version 50 - 7/27/2020 IPv6
 // version 51 - 9/20/2020 Object Update Packet Upgrade: Waypoints, subsystem rotation, bandwidth improvements, bugfixes
 // version 52 - 10/9/2020 Dumbfire Rollback, increases accuracy of high ping, or delayed packet primary fire for clients.
+// version 53 - 12/2/2020 big set of packet fixes/upgrades
+// version 54 - 3/20/2021 - Fixes for FSO 21_2 especially better net_sig calc, better missile intercept
 // STANDALONE_ONLY
 
-#define MULTI_FS_SERVER_VERSION							52
+#define MULTI_FS_SERVER_VERSION							54
 
 #define MULTI_FS_SERVER_COMPATIBLE_VERSION			MULTI_FS_SERVER_VERSION
 
@@ -251,6 +253,7 @@ class player;
 #define REINFORCEMENT_AVAIL		0xDB		// a reinforcement is available
 #define LIGHTNING_PACKET			0xDC		// lightning bolt packet for multiplayer nebula
 #define BYTES_SENT					0xDD		// how much data we've sent/received
+#define MISSILE_KILL					0xDE		// get rid of this weapon on the client.
 
 #define GAME_ACTIVE					0xE1		// info on an active game server
 #define GAME_QUERY					0xE2		// request for a list of active game servers
@@ -365,7 +368,8 @@ class player;
 #define STATS_MISSION_CLASS_KILLS	4			// kills for the mission, for one player
 #define STATS_ALLTIME_KILLS			5			// alltime kills, for one player
 
-#define MAX_SHIPS_PER_PACKET		64			// Number of ships in a STATS_MISSION_KILLS or STATS_ALLTIME_KILLS packet
+// minor hack
+constexpr int PLAYER_COLLISION_TIMESTAMP = 200; // how often the server should allow a client to go through ship-ship collisions
 
 // ----------------------------------------------------------------------------------------
 
@@ -419,6 +423,9 @@ typedef struct net_player_server_info {
 
 	// common targeting information
 	int				target_objnum;
+
+	// for collision hack -- to fix, enough bandwidth would be needed for full physics info to be transmitted uncompressed
+	int				player_collision_timestamp;		// gets around limitations on oo update packets by having collisions only occur so often								
 
 	// rate limiting information
 	int				rate_stamp;							// rate limiting timestamp
@@ -761,7 +768,7 @@ extern int Multi_button_info_ok;										// flag saying it is ok to apply criti
 extern int Multi_button_info_id;										// identifier of the stored button info to be applying
 
 // low level networking vars
-extern int HEADER_LENGTH;												// 1 byte (packet type)
+#define HEADER_LENGTH	1											// 1 byte (packet type)
 
 // misc data
 extern active_game* Active_game_head;								// linked list of active games displayed on Join screen

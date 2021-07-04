@@ -604,7 +604,8 @@ int drag_objects()
 	}
 	*/
 
-	if (!query_valid_object())
+	// Do not move ships that we are currently centered around (Lookat_mode). The vector math will start going haywire and return NAN
+	if (!query_valid_object() || Lookat_mode)
 		return -1;
 
 	if ((Dup_drag == 1) && (Briefing_dialog))
@@ -4368,7 +4369,7 @@ void CFREDView::OnUpdateDisableUndo(CCmdUI* pCmdUI)
 
 void CFREDView::OnUpdateCmdBrief(CCmdUI* pCmdUI) 
 {
-	pCmdUI->Enable(!(The_mission.game_type & MISSION_TYPE_MULTI));
+	pCmdUI->Enable(true);
 }
 
 int get_visible_sub_system_count(ship *shipp)

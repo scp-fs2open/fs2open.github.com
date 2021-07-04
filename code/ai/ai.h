@@ -487,9 +487,13 @@ typedef struct ai_info {
 
 	flagset<AI::Maneuver_Override_Flags>	ai_override_flags;			// flags for marking ai overrides from sexp or lua systems
 	control_info	ai_override_ci;		// ai override control info
-	int		ai_override_timestamp;		// mark for when to end the current override
+	int		ai_override_lat_timestamp;		// mark for when to end the current lateral maneuver override
+	int		ai_override_rot_timestamp;		// mark for when to end the current rotational maneuver override
 
 	int form_obj_slotnum;               // for flying in formation object mode, the position in the formation
+
+	int multilock_check_timestamp;		// when to check for multilock next
+	SCP_vector<std::pair<int, ship_subsys*>> ai_missile_locks_firing;  // a list of missile locks (locked objnum, locked subsys) the ai is currently firing
 } ai_info;
 
 // Goober5000
@@ -560,7 +564,7 @@ const char *ai_get_goal_target_name(const char *name, int *index);
 void ai_clear_goal_target_names();
 
 extern void init_ai_system(void);
-extern void ai_attack_object(object *attacker, object *attacked, ship_subsys *ssp, int ship_info_index = -1);
+extern void ai_attack_object(object *attacker, object *attacked, int ship_info_index = -1);
 extern void ai_evade_object(object *evader, object *evaded);
 extern void ai_ignore_object(object *ignorer, object *ignored, int ignore_new);
 extern void ai_ignore_wing(object *ignorer, int wingnum);

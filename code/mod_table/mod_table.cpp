@@ -62,9 +62,16 @@ bool Use_engine_wash_intensity;
 bool Framerate_independent_turning; // an in-depth explanation how this flag is supposed to work can be found in #2740 PR description
 bool Ai_respect_tabled_turntime_rotdamp;
 bool Swarmers_lead_targets;
+bool Chase_view_default;
 SCP_vector<gr_capability> Required_render_ext;
 float Weapon_SS_Threshold_Turret_Inaccuracy;
 bool Render_player_mflash;
+bool Neb_affects_beams;
+bool Neb_affects_weapons;
+bool Neb_affects_particles;
+bool Neb_affects_fireballs;
+std::tuple<float, float, float, float> Shadow_distances;
+std::tuple<float, float, float, float> Shadow_distances_cockpit;
 
 SCP_vector<std::pair<SCP_string, gr_capability>> req_render_ext_pairs = {
 	std::make_pair("BPTC Texture Compression", CAPABILITY_BPTC)
@@ -152,8 +159,7 @@ void parse_mod_table(const char *filename)
 				}
 
 				// we want case-insensitive matching, so make this lowercase
-				std::transform(campaign_name.begin(), campaign_name.end(), campaign_name.begin(),
-				               [](char c) { return (char)::tolower(c); });
+				SCP_tolower(campaign_name);
 
 				Ignored_campaigns.push_back(campaign_name);
 			}
@@ -172,8 +178,7 @@ void parse_mod_table(const char *filename)
 				}
 
 				// we want case-insensitive matching, so make this lowercase
-				std::transform(mission_name.begin(), mission_name.end(), mission_name.begin(),
-				               [](char c) { return (char)::tolower(c); });
+				SCP_tolower(mission_name);
 
 				Ignored_missions.push_back(mission_name);
 			}
@@ -378,6 +383,43 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Render_player_mflash);
 		}
 
+		if (optional_string("$Beams affected by nebula visibility:")) {
+			stuff_boolean(&Neb_affects_beams);
+		}
+
+		if (optional_string("$Weapons affected by nebula visibility:")) {
+			stuff_boolean(&Neb_affects_weapons);
+		}
+
+		if (optional_string("$Particles affected by nebula visibility:")) {
+			stuff_boolean(&Neb_affects_particles);
+		}
+		
+		if (optional_string("$Fireballs affected by nebula visibility:")) {
+			stuff_boolean(&Neb_affects_fireballs);
+		}
+
+		if (optional_string("$Shadow Cascade Distances:")) {
+			float dis[4];
+			stuff_float_list(dis, 4);
+			if ((dis[0] >= 0) && (dis[1] > dis[0]) && (dis[2] > dis[1]) && (dis[3] > dis[2])) {
+				Shadow_distances = std::make_tuple((dis[0]), (dis[1]), (dis[2]), (dis[3]));
+			} else {
+				error_display(0, "$Shadow Cascade Distances are %f, %f, %f, %f. One or more are < 0, and/or values are not increasing. Assuming default distances.", dis[0], dis[1], dis[2], dis[3]);
+			}
+		}
+
+		if (optional_string("$Shadow Cascade Distances Cockpit:")) {
+			float dis[4];
+			stuff_float_list(dis, 4);
+			if ((dis[0] >= 0) && (dis[1] > dis[0]) && (dis[2] > dis[1]) && (dis[3] > dis[2])) {
+				Shadow_distances_cockpit = std::make_tuple((dis[0]), (dis[1]), (dis[2]), (dis[3]));
+			}
+			else {
+				error_display(0, "$Shadow Cascade Distances Cockpit are %f, %f, %f, %f. One or more are < 0, and/or values are not increasing. Assuming default distances.", dis[0], dis[1], dis[2], dis[3]);
+			}
+		}
+
 		optional_string("#NETWORK SETTINGS");
 
 		if (optional_string("$FS2NetD port:")) {
@@ -579,7 +621,11 @@ void parse_mod_table(const char *filename)
 				Warning(LOCATION, "\'AI respect tabled turn time and rotdamp\' requires \'AI use framerate independent turning\' in order to function.\n");
 			}
 		}
-
+		
+		if (optional_string("$Player starts in third person/chase view by default:")) {
+			stuff_boolean(&Chase_view_default);
+		}
+		
 		required_string("#END");
 	}
 	catch (const parse::ParseException& e)
@@ -654,10 +700,17 @@ void mod_table_reset()
 	Arc_color_emp_p2 = std::make_tuple(static_cast<ubyte>(128), static_cast<ubyte>(128), static_cast<ubyte>(10));
 	Arc_color_emp_s1 = std::make_tuple(static_cast<ubyte>(255), static_cast<ubyte>(255), static_cast<ubyte>(10));
 	Use_engine_wash_intensity = false;
-	Framerate_independent_turning = false;
+	Framerate_independent_turning = true;
 	Ai_respect_tabled_turntime_rotdamp = false;
+	Chase_view_default = false;
 	Swarmers_lead_targets = false;
 	Required_render_ext.clear();
 	Weapon_SS_Threshold_Turret_Inaccuracy = 0.7f; // Defaults to retail value of 0.7 --wookieejedi
 	Render_player_mflash = false;
+	Neb_affects_beams = false;
+	Neb_affects_weapons = false;
+	Neb_affects_particles = false;
+	Neb_affects_fireballs = false;
+	Shadow_distances = std::make_tuple(200.0f, 600.0f, 2500.0f, 8000.0f); // Default values tuned by Swifty and added here by wookieejedi
+	Shadow_distances_cockpit = std::make_tuple(0.25f, 0.75f, 1.5f, 3.0f); // Default values tuned by wookieejedi and added here by Lafiel
 }

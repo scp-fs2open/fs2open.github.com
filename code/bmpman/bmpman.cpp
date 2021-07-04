@@ -2854,6 +2854,28 @@ int bm_release(int handle, int clear_render_targets) {
 	return 1;
 }
 
+bool bm_release_rendertarget(int handle) {
+	Assert(handle >= 0);
+
+	bitmap_entry* be = bm_get_entry(handle);
+
+	if (be->type == BM_TYPE_NONE) {
+		return false;	// Already been released?
+	}
+
+	Assertion(be->handle == handle, "Invalid bitmap handle number %d (expected %d) for %s passed to bm_release_rendertarget()\n", be->handle, handle, be->filename);
+	Assertion(!bm_is_anim(be), "Cannot release a render target of an animation (bitmap handle number %d for %s)!\n", be->handle, be->filename);
+
+	if (!((be->type == BM_TYPE_RENDER_TARGET_STATIC) || (be->type == BM_TYPE_RENDER_TARGET_DYNAMIC))) {
+		nprintf(("BmpMan", "Tried to release a render target of a non-rendered bitmap!\n"));
+		return false;
+	}
+
+	gr_bm_free_data(bm_get_slot(handle), false);
+
+	return true;
+}
+
 int bm_reload(int bitmap_handle, const char* filename) {
 	Assertion(bm_inited, "bmpman must be initialized before this function can be called!");
 

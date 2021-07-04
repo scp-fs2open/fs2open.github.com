@@ -2,6 +2,8 @@
 #include "lab/labv2_internal.h"
 #include "ship/shiphit.h"
 
+#include <array>
+
 /**********************Click event handlers********************************************/
 
 void destroy_subsystem(Tree* caller) {
@@ -13,12 +15,16 @@ void destroy_subsystem(Tree* caller) {
 		auto subsys_index = 0;
 		while (ssp != END_OF_LIST(&sp->subsys_list)) {
 			if (subsys_index == selected_subsys_index) {
+				ssp->current_hits = 0;
 				do_subobj_destroyed_stuff(sp, ssp, nullptr);
 			}
 
 			ssp = GET_NEXT(ssp);
 			++subsys_index;
 		}
+
+		// recalculate when done
+		ship_recalc_subsys_strength(sp);
 	}
 }
 
@@ -58,8 +64,8 @@ void destroy_ship(Button* /*caller*/) {
 std::map<AnimationTriggerType, std::map<int, bool>> manual_animation_triggers = {};
 std::map<AnimationTriggerType, bool> manual_animations = {};
 
-bool triggered_primary_banks[MAX_SHIP_PRIMARY_BANKS];
-bool triggered_secondary_banks[MAX_SHIP_SECONDARY_BANKS];
+std::array<bool, MAX_SHIP_PRIMARY_BANKS> triggered_primary_banks;
+std::array<bool, MAX_SHIP_SECONDARY_BANKS> triggered_secondary_banks;
 
 void reset_animations(Tree*) {
 	if (getLabManager()->isSafeForShips()) {
@@ -172,7 +178,8 @@ void Actions::open(Button* /*caller*/) {
 	getLabManager()->loadWeapons();
 
 	dialogWindow = (DialogWindow*)getLabManager()->Screen->Add(new DialogWindow("Actions", gr_screen.center_offset_x + 250, gr_screen.center_offset_y + 50));
-	dialogWindow->SetOwner(this);
+	Assert(Opener != nullptr);
+	dialogWindow->SetOwner(Opener->getDialog());
 
 	int y = 0;
 
@@ -180,8 +187,9 @@ void Actions::open(Button* /*caller*/) {
 	dialogWindow->AddChild(btn);
 	y += btn->GetHeight();
 
-	for (auto dialog : subDialogs) {
-		auto dgo = new DialogOpener(dialog, 0, y);
+	for (auto &dialog : subDialogs) {
+		auto *dgo = new DialogOpener(dialog, 0, y);
+		dialog->setOpener(dgo);
 		dialogWindow->AddChild(dgo);
 		y += dgo->GetHeight();
 	}
@@ -190,7 +198,7 @@ void Actions::open(Button* /*caller*/) {
 }
 
 void Actions::update(LabMode newLabMode, int classIndex) {
-	for (auto dialog : subDialogs) {
+	for (auto &dialog : subDialogs) {
 		dialog->update(newLabMode, classIndex);
 	}
 }
@@ -200,7 +208,8 @@ void DestroySubsystems::open(Button* /*caller*/) {
 		return;
 
 	dialogWindow = (DialogWindow*)getLabManager()->Screen->Add(new DialogWindow("Destroy Subsystems", gr_screen.center_offset_x + 400, gr_screen.center_offset_y + 50));
-	dialogWindow->SetOwner(this);
+	Assert(Opener != nullptr);
+	dialogWindow->SetOwner(Opener->getDialog());
 
 	update(getLabManager()->CurrentMode, getLabManager()->CurrentClass);
 }
@@ -230,7 +239,8 @@ void ChangeLoadout::open(Button* /*caller*/) {
 		return;
 
 	dialogWindow = (DialogWindow*)getLabManager()->Screen->Add(new DialogWindow("Change Loadout", gr_screen.center_offset_x + 400, gr_screen.center_offset_y + 50));
-	dialogWindow->SetOwner(this);
+	Assert(Opener != nullptr);
+	dialogWindow->SetOwner(Opener->getDialog());
 
 	update(getLabManager()->CurrentMode, getLabManager()->CurrentClass);
 }
@@ -345,7 +355,8 @@ void WeaponFire::open(Button* /*caller*/) {
 	dialogWindow = (DialogWindow*)getLabManager()->Screen->Add(
 		new DialogWindow("Fire weapons", gr_screen.center_offset_x + 400, gr_screen.center_offset_y + 50)
 	);
-	dialogWindow->SetOwner(this);
+	Assert(Opener != nullptr);
+	dialogWindow->SetOwner(Opener->getDialog());
 
 	update(getLabManager()->CurrentMode, getLabManager()->CurrentClass);
 }
@@ -383,7 +394,8 @@ void AnimationTrigger::open(Button* /*caller*/) {
 	dialogWindow = (DialogWindow*)getLabManager()->Screen->Add(
 		new DialogWindow("Trigger animations", gr_screen.center_offset_x + 400, gr_screen.center_offset_y + 50)
 	);
-	dialogWindow->SetOwner(this);
+	Assert(Opener != nullptr);
+	dialogWindow->SetOwner(Opener->getDialog());
 
 	update(getLabManager()->CurrentMode, getLabManager()->CurrentClass);
 }

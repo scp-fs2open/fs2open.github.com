@@ -41,6 +41,7 @@
 #include "scripting/scripting.h"
 #include "tracing/tracing.h"
 #include "utils/boost/hash_combine.h"
+#include "gamesequence/gamesequence.h"
 
 #ifdef WITH_OPENGL
 #include "graphics/opengl/gropengl.h"
@@ -1919,122 +1920,6 @@ void gr_bitmap_uv(int _x, int _y, int _w, int _h, float _u0, float _v0, float _u
 	g3_render_primitives_textured(&material_params, verts, 4, PRIM_TYPE_TRIFAN, true);
 }
 
-// NEW new bitmap functions -Bobboau
-// void gr_bitmap_list(bitmap_2d_list* list, int n_bm, int resize_mode)
-// {
-// 	for (int i = 0; i < n_bm; i++) {
-// 		bitmap_2d_list *l = &list[i];
-// 
-// 		bm_get_info(gr_screen.current_bitmap, &l->w, &l->h, NULL, NULL, NULL);
-// 
-// 		if ( resize_mode != GR_RESIZE_NONE && (gr_screen.custom_size || (gr_screen.rendering_to_texture != -1)) ) {
-// 			gr_resize_screen_pos(&l->x, &l->y, &l->w, &l->h, resize_mode);
-// 		}
-// 	}
-// 
-// 	g3_draw_2d_poly_bitmap_list(list, n_bm, TMAP_FLAG_INTERFACE);
-// }
-
-// _->NEW<-_ NEW new bitmap functions -Bobboau
-//takes a list of rectangles that have assosiated rectangles in a texture
-void gr_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode)
-{
-	GR_DEBUG_SCOPE("2D Bitmap list");
-
-	// adapted from g3_draw_2d_poly_bitmap_list
-
-	for ( int i = 0; i < n_bm; i++ ) {
-		bitmap_2d_list *l = &list[i].screen_rect;
-
-		// if no valid hight or width values were given get some from the bitmap
-		if ( (l->w <= 0) || (l->h <= 0) ) {
-			bm_get_info(gr_screen.current_bitmap, &l->w, &l->h, NULL, NULL, NULL);
-		}
-
-		if ( resize_mode != GR_RESIZE_NONE && (gr_screen.custom_size || (gr_screen.rendering_to_texture != -1)) ) {
-			gr_resize_screen_pos(&l->x, &l->y, &l->w, &l->h, resize_mode);
-		}
-	}
-
-	vertex* vert_list = new vertex[6 * n_bm];
-	float sw = 0.1f;
-
-	for ( int i = 0; i < n_bm; i++ ) {
-		// stuff coords	
-
-		bitmap_2d_list* b = &list[i].screen_rect;
-		texture_rect_list* t = &list[i].texture_rect;
-		//tri one
-		vertex *V = &vert_list[i * 6];
-		V->screen.xyw.x = (float)b->x;
-		V->screen.xyw.y = (float)b->y;
-		V->screen.xyw.w = sw;
-		V->texture_position.u = (float)t->u0;
-		V->texture_position.v = (float)t->v0;
-		V->flags = PF_PROJECTED;
-		V->codes = 0;
-
-		V++;
-		V->screen.xyw.x = (float)(b->x + b->w);
-		V->screen.xyw.y = (float)b->y;
-		V->screen.xyw.w = sw;
-		V->texture_position.u = (float)t->u1;
-		V->texture_position.v = (float)t->v0;
-		V->flags = PF_PROJECTED;
-		V->codes = 0;
-
-		V++;
-		V->screen.xyw.x = (float)(b->x + b->w);
-		V->screen.xyw.y = (float)(b->y + b->h);
-		V->screen.xyw.w = sw;
-		V->texture_position.u = (float)t->u1;
-		V->texture_position.v = (float)t->v1;
-		V->flags = PF_PROJECTED;
-		V->codes = 0;
-
-		//tri two
-		V++;
-		V->screen.xyw.x = (float)b->x;
-		V->screen.xyw.y = (float)b->y;
-		V->screen.xyw.w = sw;
-		V->texture_position.u = (float)t->u0;
-		V->texture_position.v = (float)t->v0;
-		V->flags = PF_PROJECTED;
-		V->codes = 0;
-
-		V++;
-		V->screen.xyw.x = (float)(b->x + b->w);
-		V->screen.xyw.y = (float)(b->y + b->h);
-		V->screen.xyw.w = sw;
-		V->texture_position.u = (float)t->u1;
-		V->texture_position.v = (float)t->v1;
-		V->flags = PF_PROJECTED;
-		V->codes = 0;
-
-		V++;
-		V->screen.xyw.x = (float)b->x;
-		V->screen.xyw.y = (float)(b->y + b->h);
-		V->screen.xyw.w = sw;
-		V->texture_position.u = (float)t->u0;
-		V->texture_position.v = (float)t->v1;
-		V->flags = PF_PROJECTED;
-		V->codes = 0;
-	}
-
-	material mat_params;
-	material_set_interface(
-		&mat_params,
-		gr_screen.current_bitmap,
-		gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER ? true : false,
-		gr_screen.current_alpha
-	);
-	g3_render_primitives_textured(&mat_params, vert_list, 6 * n_bm, PRIM_TYPE_TRIS, true);
-
-	delete[] vert_list;
-}
-
-
-
 /**
 * Given endpoints, and thickness, calculate coords of the endpoint
 * Adapted from gr_pline_helper()
@@ -2663,7 +2548,8 @@ void gr_flip(bool execute_scripting)
 	executor::OnFrameExecutor->process();
 
 	// m!m avoid running CHA_ONFRAME when the "Quit mission" popup is shown. See mantis 2446 for reference
-	if (execute_scripting && !popup_active()) {
+	// Cyborg - A similar bug will occur when a mission is restarted so check for that, too.
+	if (execute_scripting && !popup_active() && !((gameseq_get_state() == GS_STATE_GAME_PLAY) && !(Game_mode & GM_IN_MISSION))) {
 		TRACE_SCOPE(tracing::LuaOnFrame);
 
 		// WMC - Do conditional hooks. Yippee!

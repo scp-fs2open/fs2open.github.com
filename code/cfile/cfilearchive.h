@@ -7,7 +7,6 @@
  *
 */ 
 
-
 #ifndef _CFILEARCHIVE_H
 #define _CFILEARCHIVE_H
 
@@ -22,6 +21,17 @@
 //
 #define CFILE_BLOCK_UNUSED		0
 #define CFILE_BLOCK_USED		1
+
+struct COMPRESSION_INFO {
+	int header = 0;
+	size_t compressed_size = 0;
+	int block_size = 0;
+	int num_offsets = 0;
+	int* offsets = nullptr;
+	char* decoder_buffer = nullptr;
+	int last_decoded_block_pos = 0;
+	int last_decoded_block_bytes = 0;
+};
 
 struct CFILE {
 	int type = CFILE_BLOCK_UNUSED;                // CFILE_BLOCK_UNUSED, CFILE_BLOCK_USED
@@ -44,12 +54,19 @@ struct CFILE {
 	SCP_string original_filename;
 	const char* source_file;
 	int line_num;
+	COMPRESSION_INFO compression_info;
 };
 
 #define MAX_CFILE_BLOCKS	64
 extern std::array<CFILE, MAX_CFILE_BLOCKS> Cfile_block_list;
 
 // Called once to setup the low-level reading code.
-void cf_init_lowlevel_read_code( CFILE * cfile, size_t lib_offset, size_t size, size_t pos );
+void cf_init_lowlevel_read_code(CFILE* cfile, size_t lib_offset, size_t size, size_t pos);
+
+// This checks if the file is compressed or not, and creates the proper compression info if so.
+void cf_check_compression(CFILE* cfile);
+
+// Used to clear compression info data and free dynamic memory used by compression
+void cf_clear_compression_info(CFILE* cfile);
 
 #endif

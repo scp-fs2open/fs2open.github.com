@@ -102,10 +102,11 @@ typedef struct physics_info {
 								// only by the AI after calls to angular_move. It is read and then zeroed out for the rest of the frame by physics_sim_rot
 } physics_info;
 
-
+// control info override flags
 #define CIF_DONT_BANK_WHEN_TURNING		(1 << 0)	// Goober5000 - changing heading does not change bank
 #define CIF_DONT_CLAMP_MAX_VELOCITY		(1 << 1)	// Goober5000 - maneuvers can exceed tabled max velocity
 #define CIF_INSTANTANEOUS_ACCELERATION	(1 << 2)	// Goober5000 - instantaneously jump to the goal velocity
+#define CIF_DONT_OVERRIDE_OLD_MANEUVERS	(1 << 3)	// Asteroth - will attempt to maintain any old maneuvers still in progress
 
 #define	SW_ROT_FACTOR			5		// increase in rotational time constant in shockwave
 #define	SW_BLAST_DURATION		2000	// maximum duration of shockwave

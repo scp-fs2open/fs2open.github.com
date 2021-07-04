@@ -45,27 +45,15 @@
 net_addr Psnet_my_addr;
 static SCP_vector<in6_addr> Psnet_my_ip;
 
-#define PSNET_IP_MODE_UNKNOWN	0
-#define PSNET_IP_MODE_V4		1
-#define PSNET_IP_MODE_V6		2
-#define PSNET_IP_MODE_DUAL		3
-
 static int Psnet_ip_mode = PSNET_IP_MODE_UNKNOWN;
 
 static bool Psnet_active = false;
-static bool Can_broadcast = false;
 
 static int Network_status;
 int Psnet_failure_code = 0;
 int Psnet_connection;
 
 uint16_t Psnet_default_port;
-
-// stuff for multicast
-static SOCKET Psnet_mcast_socket = INVALID_SOCKET;
-static SOCKADDR_STORAGE Psnet_mcast_addr;
-#define PSNET_MCAST_DEST		"224.1.2.3"
-#define PSNET_MCAST_DEST_IP6	"ff12::6673:325f:6f70:656e"
 
 // defines and variables to indicate network connection status
 #define NETWORK_STATUS_NOT_INITIALIZED	1
@@ -208,10 +196,6 @@ bool psnet_init_socket();
 
 // initilize my addr
 bool psnet_init_my_addr();
-
-// multicast stuff
-bool psnet_init_multicast();
-void psnet_multicast_process();
 
 // get time in seconds
 float psnet_get_time();
@@ -356,9 +340,6 @@ void PSNET_TOP_LAYER_PROCESS()
 		return;
 	}
 
-	// grab any multicast data too
-	psnet_multicast_process();
-
 	// clear the addresses to remove compiler warnings
 	memset(&from_addr, 0, sizeof(from_addr));
 
@@ -457,13 +438,6 @@ void psnet_init(uint16_t port_num)
 		return;
 	}
 
-	Can_broadcast = false;
-
-	if ( psnet_init_multicast() ) {
-		ml_string("Multicast setup complete");
-		Can_broadcast = true;
-	}
-
 	psnet_init_rel_tcp();
 
 	Psnet_active = true;
@@ -491,11 +465,6 @@ void psnet_close()
 	// send a disconnect to any remote machines
 	psnet_rel_close();
 
-	if (Psnet_mcast_socket != INVALID_SOCKET) {
-		shutdown(Psnet_mcast_socket, 1);
-		closesocket(Psnet_mcast_socket);
-	}
-
 	if (Psnet_socket != INVALID_SOCKET) {
 		shutdown(Psnet_socket, 1);
 		closesocket(Psnet_socket);
@@ -503,7 +472,6 @@ void psnet_close()
 
 	Psnet_active = false;
 	Network_status = NETWORK_STATUS_NOT_INITIALIZED;
-	Can_broadcast = false;
 
 #ifdef _WIN32
 	WSACleanup();
@@ -729,7 +697,7 @@ bool psnet_string_to_addr(const char *text, net_addr *address)
 				address->port = static_cast<uint16_t>(port_num);
 			}
 		} catch (...) {
-			mprintf(("Invalid port number in psnet_string_to_addr()"));
+			mprintf(("Invalid port number in psnet_string_to_addr()\n"));
 		}
 	}
 
@@ -782,6 +750,14 @@ bool psnet_is_local_addr(const net_addr *addr)
 	}
 
 	return false;
+}
+
+/**
+ * Get IP mode (IPv4, IPv6, dual stack...)
+ */
+int psnet_get_ip_mode()
+{
+	return Psnet_ip_mode;
 }
 
 /**
@@ -869,26 +845,6 @@ int psnet_get(void *data, net_addr *addr)
 }
 
 /**
- * Broadcast data on multicast socket
- */
-int psnet_broadcast(void *data, int len)
-{
-	if ( !Can_broadcast ) {
-		return 0;
-	}
-
-	int ret = SENDTO(Psnet_mcast_socket, reinterpret_cast<char *>(data), len, 0,
-				reinterpret_cast<LPSOCKADDR>(&Psnet_mcast_addr), sizeof(Psnet_mcast_addr),
-				PSNET_TYPE_UNRELIABLE);
-
-	if (ret == SOCKET_ERROR) {
-		return 0;
-	}
-
-	return 1;
-}
-
-/**
  * Flush all sockets
  */
 void psnet_flush()
@@ -957,6 +913,20 @@ void psnet_map4to6(const in_addr *in4, in6_addr *in6)
 		reinterpret_cast<uint32_t *>(in6)[2] = htonl(0xffff);
 		reinterpret_cast<uint32_t *>(in6)[3] = in4->s_addr;
 	}
+}
+
+/**
+ * Helper to map IPv6 to IPv4
+ */
+bool psnet_map6to4(const in6_addr *in6, in_addr *in4)
+{
+	if ( !IN6_IS_ADDR_V4MAPPED(in6) ) {
+		return false;
+	}
+
+	in4->s_addr = reinterpret_cast<const uint32_t *>(in6)[3];
+
+	return true;
 }
 
 /**
@@ -1157,11 +1127,11 @@ bool psnet_get_addr(const char *host, const char *port, SOCKADDR_STORAGE *addr, 
 			hints.ai_flags |= AI_NUMERICHOST;
 		}
 		// skip AAAA lookups if we can't use them
-		else if (Psnet_ip_mode == PSNET_IP_MODE_V4) {
+		else if ( !(Psnet_ip_mode & PSNET_IP_MODE_V6) ) {
 			hints.ai_family = AF_INET;
 		}
 		// skip A lookups if we can't use them
-		else if (Psnet_ip_mode == PSNET_IP_MODE_V6) {
+		else if ( !(Psnet_ip_mode & PSNET_IP_MODE_V4) ) {
 			hints.ai_family = AF_INET6;
 		}
 	}
@@ -1217,6 +1187,34 @@ bool psnet_get_addr(const char *host, const uint16_t port, SOCKADDR_STORAGE *add
 	SCP_string port_str = std::to_string(port);
 
 	return psnet_get_addr(host, port_str.c_str(), addr, flags | ADDR_FLAG_NUMERIC_SERVICE);
+}
+
+const in6_addr *psnet_get_local_ip(int af_type)
+{
+	switch (af_type) {
+		case AF_INET: {
+			if (Psnet_ip_mode == PSNET_IP_MODE_DUAL) {
+				return &Psnet_my_ip[1];
+			} else if (Psnet_ip_mode & PSNET_IP_MODE_V4) {
+				return &Psnet_my_ip[0];
+			}
+
+			break;
+		}
+
+		case AF_INET6: {
+			if (Psnet_ip_mode & PSNET_IP_MODE_V6) {
+				return &Psnet_my_ip[0];
+			}
+
+			break;
+		}
+
+		default:
+			break;
+	}
+
+	return nullptr;
 }
 
 // -------------------------------------------------------------------------------------------------------
@@ -2256,224 +2254,6 @@ bool psnet_init_socket()
 
 	// success
 	return true;
-}
-
-static bool psnet_multicast_get_addr(int af, const char *host, const char *port, SOCKADDR_STORAGE *addr)
-{
-	struct addrinfo hints, *srvinfo = nullptr;
-	bool success = false;
-	int rval;
-
-	memset(&hints, 0, sizeof(hints));
-
-	hints.ai_family = af;
-	hints.ai_socktype = SOCK_DGRAM;
-
-	if (host == nullptr) {
-		hints.ai_flags |= AI_PASSIVE;
-	} else {
-		hints.ai_flags |= AI_NUMERICHOST;
-	}
-
-	if (port != nullptr) {
-		hints.ai_flags |= AI_NUMERICSERV;
-	}
-
-	if ( (rval = getaddrinfo(host, port, &hints, &srvinfo)) != 0 ) {
-		ml_printf("Multicast getadinfo() => %s", gai_strerror(rval));
-
-		if (srvinfo) {
-			freeaddrinfo(srvinfo);
-		}
-
-		return false;
-	}
-
-	for (auto *srv = srvinfo; srv != nullptr; srv = srv->ai_next) {
-		if ( (srv->ai_family == AF_INET) || (srv->ai_family == AF_INET6) ) {
-			memcpy(addr, srv->ai_addr, srv->ai_addrlen);
-
-			success = true;
-
-			break;
-		}
-	}
-
-	if (srvinfo) {
-		freeaddrinfo(srvinfo);
-	}
-
-	return success;
-}
-
-bool psnet_init_multicast()
-{
-	int family = AF_INET6;
-	int option;
-	const SCP_string port_str = std::to_string(DEFAULT_GAME_PORT + 10000);
-	SOCKADDR_STORAGE listenAddr, groupAddr;
-
-	if (Psnet_ip_mode == PSNET_IP_MODE_UNKNOWN) {
-		return false;
-	}
-
-	// drop to IPv4 multicast if we are mapped
-	if (Psnet_ip_mode == PSNET_IP_MODE_V4) {
-		family = AF_INET;
-	}
-
-	Psnet_mcast_socket = socket(family, SOCK_DGRAM, IPPROTO_UDP);
-
-	if (Psnet_mcast_socket == INVALID_SOCKET) {
-		ml_printf("Error creating multicast socket %d", WSAGetLastError());
-		return false;
-	}
-
-	// reuse socket, in case we're running multiple instances
-	option = 1;
-	if ( setsockopt(Psnet_mcast_socket, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<const char *>(&option), sizeof(option)) ) {
-		ml_printf("Unable to set multicast reuse addr option (%d)", WSAGetLastError());
-		return false;
-	}
-
-	// fill listen addr
-	psnet_multicast_get_addr(family, nullptr, port_str.c_str(), &listenAddr);
-
-	if ( bind(Psnet_mcast_socket, reinterpret_cast<LPSOCKADDR>(&listenAddr), sizeof(listenAddr)) == SOCKET_ERROR ) {
-		ml_printf("Couldn't bind multicast socket (%d)!", WSAGetLastError());
-		return false;
-	}
-
-	if (family == AF_INET6) {
-		// disable data loopback
-		option = 0;
-		if ( setsockopt(Psnet_mcast_socket, IPPROTO_IPV6, IPV6_MULTICAST_LOOP, reinterpret_cast<const char *>(&option), sizeof(option)) ) {
-			ml_printf("Unable to set multicast loop option (%d)", WSAGetLastError());
-			return false;
-		}
-
-		// set interface
-		unsigned int iface = 0;	// any
-		if ( setsockopt(Psnet_mcast_socket, IPPROTO_IPV6, IPV6_MULTICAST_IF, reinterpret_cast<const char *>(&iface), sizeof(iface)) ) {
-			ml_printf("Unable to set multicast interface option (%d)", WSAGetLastError());
-			return false;
-		}
-
-		// fill destination addr (sending)
-		psnet_multicast_get_addr(family, PSNET_MCAST_DEST_IP6, port_str.c_str(), &Psnet_mcast_addr);
-
-		// join multicast group
-		psnet_multicast_get_addr(family, PSNET_MCAST_DEST_IP6, nullptr, &groupAddr);
-		auto *sa6 = reinterpret_cast<SOCKADDR_IN6 *>(&groupAddr);
-
-		struct ipv6_mreq mRequest;
-		memcpy(&mRequest.ipv6mr_multiaddr, &sa6->sin6_addr, sizeof(in6_addr));
-		mRequest.ipv6mr_interface = 0;	// any
-
-		if ( setsockopt(Psnet_mcast_socket, IPPROTO_IPV6, IPV6_JOIN_GROUP, reinterpret_cast<const char *>(&mRequest), sizeof(mRequest)) ) {
-			ml_printf("Unable to set multicast membership option (%d)", WSAGetLastError());
-			return false;
-		}
-	} else {
-		Assert(family == AF_INET);
-
-		// disable data loopback
-		option = 0;
-		if ( setsockopt(Psnet_mcast_socket, IPPROTO_IP, IP_MULTICAST_LOOP, reinterpret_cast<const char *>(&option), sizeof(option)) ) {
-			ml_printf("Unable to set multicast loop option (%d)", WSAGetLastError());
-			return false;
-		}
-
-		// set interface
-		uint32_t iface = INADDR_ANY;
-		if ( setsockopt(Psnet_mcast_socket, IPPROTO_IP, IP_MULTICAST_IF, reinterpret_cast<const char *>(&iface), sizeof(iface)) ) {
-			ml_printf("Unable to set multicast interface option (%d)", WSAGetLastError());
-			return false;
-		}
-
-		// fill destination addr (sending)
-		psnet_multicast_get_addr(family, PSNET_MCAST_DEST, port_str.c_str(), &Psnet_mcast_addr);
-
-		// join multicast group
-		psnet_multicast_get_addr(family, PSNET_MCAST_DEST, nullptr, &groupAddr);
-		auto *sa4 = reinterpret_cast<SOCKADDR_IN *>(&groupAddr);
-
-		struct ip_mreq mRequest;
-		memcpy(&mRequest.imr_multiaddr, &sa4->sin_addr, sizeof(in_addr));
-		mRequest.imr_interface.s_addr = htonl(INADDR_ANY);
-
-		if ( setsockopt(Psnet_mcast_socket, IPPROTO_IP, IP_ADD_MEMBERSHIP, reinterpret_cast<const char *>(&mRequest), sizeof(mRequest)) ) {
-			ml_printf("Unable to set multicast membership option (%d)", WSAGetLastError());
-			return false;
-		}
-	}
-
-	return true;
-}
-
-void psnet_multicast_process()
-{
-	fd_set readfds;
-	timeval timeout;
-	SOCKADDR_STORAGE from_addr;
-	SOCKADDR_IN6 from_addr6;
-	socklen_t from_len;
-	SSIZE_T read_len;
-	uint8_t packet_data[MAX_TOP_LAYER_PACKET_SIZE];
-
-	if ( !Can_broadcast ) {
-		return;
-	}
-
-	FD_ZERO(&readfds);
-	FD_SET(Psnet_mcast_socket, &readfds);
-
-	timeout.tv_sec = 0;
-	timeout.tv_usec = 0;
-
-	if ( select(static_cast<int>(Psnet_mcast_socket + 1), &readfds, nullptr, nullptr, &timeout) == SOCKET_ERROR ) {
-		ml_printf("Error %d doing a multicast socket select", WSAGetLastError());
-		return;
-	}
-
-	if ( !FD_ISSET(Psnet_mcast_socket, &readfds) ) {
-		return;
-	}
-
-	from_len = sizeof(from_addr);
-	read_len = recvfrom(Psnet_mcast_socket, reinterpret_cast<char *>(packet_data), sizeof(packet_data),
-						0, reinterpret_cast<LPSOCKADDR>(&from_addr), &from_len);
-
-	if (read_len <= 0) {
-		if (read_len == SOCKET_ERROR) {
-			ml_string("Error getting multicast socket data %d", WSAGetLastError());
-		}
-
-		return;
-	}
-
-	if (from_addr.ss_family == AF_INET6) {
-		memcpy(&from_addr6, &from_addr, sizeof(from_addr6));
-	} else if (from_addr.ss_family == AF_INET) {
-		auto *sa4 = reinterpret_cast<SOCKADDR_IN *>(&from_addr);
-
-		memset(&from_addr6, 0, sizeof(from_addr6));
-
-		psnet_map4to6(&sa4->sin_addr, &from_addr6.sin6_addr);
-		from_addr6.sin6_port = sa4->sin_port;
-	} else {
-		Int3();
-		return;
-	}
-
-	// determine the packet_type
-	int packet_type = packet_data[0];
-	Assertion(( (packet_type >= 0) && (packet_type < PSNET_NUM_TYPES) ), "Invalid packet_type found. Packet type %d does not exist", packet_type);
-
-	if ( (packet_type >= 0) && (packet_type < PSNET_NUM_TYPES) ) {
-		// buffer the packet
-		psnet_buffer_packet(&Psnet_top_buffers[packet_type], packet_data + 1, read_len - 1, &from_addr6);
-	}
 }
 
 /**

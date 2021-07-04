@@ -236,7 +236,7 @@ void HudGaugeReticle::initBitmaps(char *fname)
 {
 	crosshair.first_frame = bm_load_animation(fname, &crosshair.num_frames);
 	if (crosshair.first_frame < 0) {
-		mprintf(("Cannot load hud ani: %s\n", fname));
+		Warning(LOCATION, "Cannot load hud ani: %s\n", fname);
 	}
 }
 
@@ -495,7 +495,7 @@ void HudGaugeThrottle::initBitmaps(char *fname)
 	throttle_frames.first_frame = bm_load_animation(fname, &throttle_frames.num_frames);
 
 	if (throttle_frames.first_frame < 0) {
-		mprintf(("Cannot load hud ani: %s\n", fname));
+		Warning(LOCATION, "Cannot load hud ani: %s\n", fname);
 	}
 }
 
@@ -748,17 +748,17 @@ void HudGaugeThreatIndicator::initBitmaps(char *fname_arc, char *fname_laser, ch
 {
 	threat_arc.first_frame = bm_load_animation(fname_arc, &threat_arc.num_frames);
 	if (threat_arc.first_frame < 0) {
-		mprintf(("Cannot load hud ani: %s\n", fname_arc));
+		Warning(LOCATION, "Cannot load hud ani: %s\n", fname_arc);
 	}
 	
 	laser_warn.first_frame = bm_load_animation(fname_laser, &laser_warn.num_frames);
 	if (laser_warn.first_frame < 0) {
-		mprintf(("Cannot load hud ani: %s\n", fname_laser));
+		Warning(LOCATION, "Cannot load hud ani: %s\n", fname_laser);
 	}
 
 	lock_warn.first_frame = bm_load_animation(fname_lock, &lock_warn.num_frames);
 	if (lock_warn.first_frame < 0) {
-		mprintf(("Cannot load hud ani: %s\n", fname_lock));
+		Warning(LOCATION, "Cannot load hud ani: %s\n", fname_lock);
 	}
 }
 

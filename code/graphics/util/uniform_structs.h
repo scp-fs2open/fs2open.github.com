@@ -284,7 +284,7 @@ struct fog_data {
 	vec3d fog_color;
 	float fog_start;
 
-	float fog_scale;
+	float fog_density;
 	float zNear;
 	float zFar;
 

@@ -40,20 +40,20 @@ typedef struct debris {
 	gamesnd_id ambient_sound;		// Ambient looping sound
 	int		objnum = -1;			// What object this is linked to
 	float		lifeleft;			// When 0 or less object dies
-	int		must_survive_until;		//WMC - timestamp of earliest point that it can be murthered.
 	int		model_num;				// What model this uses
+	int		model_instance_num;		// What model instance this uses - needed for arcs
 	int		submodel_num;			// What submodel this uses
 	int		next_fireball;			// When to start a fireball
-	int		is_hull;				// indicates a large hull chunk of debris
+	int		is_hull;				// indicates whether this is a collideable, destructable piece of debris from the model, or just a generic debris fragment
 	int		species;				// What species this is from.  -1 if don't care.
 	int		fire_timeout;			// timestamp that holds time for fireballs to stop appearing
 	int		sound_delay;			// timestamp to signal when sound should start
 	fix		time_started;			// time when debris was created
-	int		next_distance_check;	//	timestamp to determine whether to delete this piece of debris.
 
 	vec3d	arc_pts[MAX_DEBRIS_ARCS][2];	// The endpoints of each arc
 	int		arc_timestamp[MAX_DEBRIS_ARCS];	// When this times out, the spark goes away.  -1 is not used
 	int		arc_frequency;					// Starts at 1000, gets bigger
+
 	int		parent_alt_name;
 	float	damage_mult;
 
@@ -79,5 +79,9 @@ void debris_remove_from_hull_list(debris *db);
 
 bool debris_is_generic(debris *db);
 bool debris_is_vaporized(debris *db);
+
+// creates a burst of generic debris at hitpos from ship_objp, with a random number between min and max
+// use_ship_debris is for whether the ship's generic debris should be used, or simply debris01.pof
+void create_generic_debris(object* ship_objp, vec3d* hitpos, float min_num_debris, float max_num_debris, float speed_mult, bool use_ship_debris);
 
 #endif // _DEBRIS_H

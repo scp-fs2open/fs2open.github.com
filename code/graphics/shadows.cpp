@@ -14,6 +14,7 @@
 #include "graphics/matrix.h"
 #include "lighting/lighting.h"
 #include "math/vecmat.h"
+#include "mod_table/mod_table.h"
 #include "model/model.h"
 #include "model/modelrender.h"
 #include "options/Option.h"
@@ -405,7 +406,7 @@ matrix shadows_start_render(matrix *eye_orient, vec3d *eye_pos, float fov, float
 	Shadow_proj_matrix[2] = Shadow_frustums[2].proj_matrix;
 	Shadow_proj_matrix[3] = Shadow_frustums[3].proj_matrix;
 
-	gr_shadow_map_start(&Shadow_view_matrix, &light_matrix);
+	gr_shadow_map_start(&Shadow_view_matrix, &light_matrix, eye_pos);
 
 	return light_matrix;
 }
@@ -433,9 +434,9 @@ void shadows_render_all(float fov, matrix *eye_orient, vec3d *eye_pos)
 	gr_end_proj_matrix();
 	gr_end_view_matrix();
 
-	// these cascade distances are a result of some arbitrary tuning to give a good balance of quality and banding. 
+	// the default cascade distances are a result of some arbitrary tuning to give a good balance of quality and banding. 
 	// maybe we could use a more programmatic algorithim? 
-	matrix light_matrix = shadows_start_render(eye_orient, eye_pos, fov, gr_screen.clip_aspect, 200.0f, 600.0f, 2500.0f, 8000.0f);
+	matrix light_matrix = shadows_start_render(eye_orient, eye_pos, fov, gr_screen.clip_aspect, std::get<0>(Shadow_distances), std::get<1>(Shadow_distances), std::get<2>(Shadow_distances), std::get<3>(Shadow_distances));
 
 	model_draw_list scene;
 	object *objp = Objects;
@@ -482,13 +483,16 @@ void shadows_render_all(float fov, matrix *eye_orient, vec3d *eye_pos)
 					continue;
 				}
 								
+				auto pmi = model_get_instance(db->model_instance_num);
+				auto pm = model_get(pmi->model_num);
+
 				objp = &Objects[db->objnum];
 
 				model_render_params render_info;
 
 				render_info.set_flags(MR_NO_TEXTURING | MR_NO_LIGHTING);
 
-				submodel_render_queue(&render_info, &scene, db->model_num, db->submodel_num, &objp->orient, &objp->pos);
+				submodel_render_queue(&render_info, &scene, pm, pmi, db->submodel_num, &objp->orient, &objp->pos);
 			}
 			break; 
 		}

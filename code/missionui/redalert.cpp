@@ -623,8 +623,8 @@ void red_alert_bash_subsys_status(red_alert_ship_status *ras, ship *shipp)
 			break;
 		}
 
-		if (ss->current_hits <= 0) {
-			ss->submodel_info_1.blown_off = 1;
+		if (ss->current_hits <= 0 && ss->submodel_instance_1 != nullptr) {
+			ss->submodel_instance_1->blown_off = true;
 		}
 
 		ss = GET_NEXT( ss );

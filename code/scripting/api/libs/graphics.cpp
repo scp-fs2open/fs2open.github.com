@@ -841,7 +841,7 @@ ADE_FUNC(drawTargetingBrackets, l_Graphics, "object Object, [boolean draw=true, 
          "Gets the edge positions of targeting brackets for the specified object. The brackets will only be drawn if "
          "draw is true or the default value of draw is used. Brackets are drawn with the current color. The brackets "
          "will have a padding (distance from the actual bounding box); the default value (used elsewhere in FS2) is 5.",
-         ade_type_info({"number", "number", "number", "number"}),
+         "number, number, number, number",
          "Left, top, right, and bottom positions of the brackets, or nil if invalid")
 {
 	if(!Gr_inited) {
@@ -899,9 +899,16 @@ ADE_FUNC(drawTargetingBrackets, l_Graphics, "object Object, [boolean draw=true, 
 			}
 			break;
 		case OBJ_WEAPON:
-			Assert(Weapon_info[Weapons[targetp->instance].weapon_info_index].subtype == WP_MISSILE);
 			modelnum = Weapon_info[Weapons[targetp->instance].weapon_info_index].model_num;
-			bound_rc = model_find_2d_bound_min( modelnum, &targetp->orient, &targetp->pos,&x1,&y1,&x2,&y2 );
+			if (modelnum != -1)
+				bound_rc = model_find_2d_bound_min(modelnum, &targetp->orient, &targetp->pos, &x1, &y1, &x2, &y2);
+			else {
+				vertex vtx;
+				g3_rotate_vertex(&vtx, &targetp->pos);
+				g3_project_vertex(&vtx);
+				x1 = x2 = (int)vtx.screen.xyw.x;
+				y1 = y2 = (int)vtx.screen.xyw.y;
+			}
 			break;
 		case OBJ_ASTEROID:
 			pof = Asteroids[targetp->instance].asteroid_subtype;
@@ -943,7 +950,7 @@ ADE_FUNC(
     drawSubsystemTargetingBrackets, l_Graphics, "subsystem subsys, [boolean draw=true, boolean setColor=false]",
     "Gets the edge position of the targeting brackets drawn for a subsystem as if they were drawn on the HUD. Only "
     "actually draws the brackets if <i>draw</i> is true, optionally sets the color the as if it was drawn on the HUD",
-    ade_type_info({"number", "number", "number", "number"}),
+    "number, number, number, number",
     "Left, top, right, and bottom positions of the brackets, or nil if invalid or off-screen")
 {
 	if(!Gr_inited) {
@@ -994,7 +1001,7 @@ ADE_FUNC(drawOffscreenIndicator, l_Graphics, "object Object, [boolean draw=true,
          "Draws an off-screen indicator for the given object. The indicator will not be drawn if draw=false, but the "
          "coordinates will be returned in either case. The indicator will be drawn using the current color if "
          "setColor=true and using the IFF color of the object if setColor=false.",
-         ade_type_info({"number", "number"}),
+         "number, number",
          "Coordinates of the indicator (at the very edge of the screen), or nil if object is on-screen")
 {
 	object_h *objh = NULL;
@@ -1152,7 +1159,7 @@ ADE_FUNC(drawString, l_Graphics, "string Message, [number X1, number Y1, number 
 			y2 = temp;
 		}
 
-		num_lines = split_str(s, x2-x, linelengths, linestarts, (unicode::codepoint_t)-1, false);
+		num_lines = split_str(s, x2-x, linelengths, linestarts, INT_MAX, (unicode::codepoint_t)-1, false);
 
 		//Make sure we don't go over size
 		int line_ht = gr_get_font_height();
@@ -1304,10 +1311,11 @@ ADE_FUNC(loadTexture, l_Graphics, "string Filename, [boolean LoadIfAnimation, bo
 ADE_FUNC(drawImage,
 	l_Graphics,
 	"string|texture fileNameOrTexture, [number X1=0, number Y1=0, number X2, number Y2, number UVX1 = 0.0, number UVY1 "
-	"= 0.0, number UVX2=1.0, number UVY2=1.0, number alpha=1.0]",
+	"= 0.0, number UVX2=1.0, number UVY2=1.0, number alpha=1.0, boolean aaImage = false]",
 	"Draws an image file or texture. Any image extension passed will be ignored."
 	"The UV variables specify the UV value for each corner of the image. "
-	"In UV coordinates, (0,0) is the top left of the image; (1,1) is the lower right.",
+	"In UV coordinates, (0,0) is the top left of the image; (1,1) is the lower right. If aaImage is true, image needs "
+	"to be monochrome and will be drawn tinted with the currently active color.",
 	"boolean",
 	"Whether image was drawn")
 {
@@ -1324,11 +1332,12 @@ ADE_FUNC(drawImage,
 	float uv_x2=1.0f;
 	float uv_y2=1.0f;
 	float alpha=1.0f;
+	bool aabitmap = false;
 
 	if(lua_isstring(L, 1))
 	{
 		const char* s = nullptr;
-		if(!ade_get_args(L, "s|iiiifffff", &s,&x1,&y1,&x2,&y2,&uv_x1,&uv_y1,&uv_x2,&uv_y2,&alpha))
+		if (!ade_get_args(L, "s|iiiifffffb", &s, &x1, &y1, &x2, &y2, &uv_x1, &uv_y1, &uv_x2, &uv_y2, &alpha, &aabitmap))
 			return ade_set_error(L, "b", false);
 
 		idx = Script_system.LoadBm(s);
@@ -1339,8 +1348,19 @@ ADE_FUNC(drawImage,
 	else
 	{
 		texture_h* th = nullptr;
-		if (!ade_get_args(L, "o|iiiifffff", l_Texture.GetPtr(&th), &x1, &y1, &x2, &y2, &uv_x1, &uv_y1, &uv_x2, &uv_y2,
-		                  &alpha))
+		if (!ade_get_args(L,
+				"o|iiiifffffb",
+				l_Texture.GetPtr(&th),
+				&x1,
+				&y1,
+				&x2,
+				&y2,
+				&uv_x1,
+				&uv_y1,
+				&uv_x2,
+				&uv_y2,
+				&alpha,
+				&aabitmap))
 			return ade_set_error(L, "b", false);
 
 		if (!th->isValid()) {
@@ -1365,17 +1385,24 @@ ADE_FUNC(drawImage,
 
 	gr_set_bitmap(idx, lua_Opacity_type, GR_BITBLT_MODE_NORMAL, alpha);
 	bitmap_rect_list brl = bitmap_rect_list(x1, y1, w, h, uv_x1, uv_y1, uv_x2, uv_y2);
-	gr_bitmap_list(&brl, 1, GR_RESIZE_NONE);
+
+	if (aabitmap) {
+		gr_aabitmap_list(&brl, 1, GR_RESIZE_NONE);
+	} else {
+		gr_bitmap_list(&brl, 1, GR_RESIZE_NONE);
+	}
 
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(drawMonochromeImage,
+ADE_FUNC_DEPRECATED(drawMonochromeImage,
 	l_Graphics,
 	"string|texture fileNameOrTexture, number X1, number Y1, [number X2, number Y2, number alpha=1.0]",
 	"Draws a monochrome image from a texture or file using the current color",
 	"boolean",
-	"Whether image was drawn")
+	"Whether image was drawn",
+	gameversion::version(21, 0),
+	"gr.drawImage now has support for drawing monochrome images with full UV scaling support")
 {
 	if(!Gr_inited)
 		return ade_set_error(L, "b", false);

@@ -165,22 +165,22 @@ bool SourceOrigin::isValid() const {
 
 SourceOrientation::SourceOrientation() : m_orientation(vmd_identity_matrix) {}
 
-void SourceOrientation::setFromVector(const vec3d& vec) {
+void SourceOrientation::setFromVector(const vec3d& vec, bool relative) {
 	vec3d workVec = vec;
 
 	vm_vec_normalize(&workVec);
 
-	this->setFromNormalizedVector(workVec);
+	this->setFromNormalizedVector(workVec, relative);
 }
 
-void SourceOrientation::setFromNormalizedVector(const vec3d& vec) {
+void SourceOrientation::setFromNormalizedVector(const vec3d& vec, bool relative) {
 	vm_vector_2_matrix_norm(&m_orientation, &vec);
-	m_isRelative = false;
+	m_isRelative = relative;
 }
 
-void SourceOrientation::setFromMatrix(const matrix& mat) {
+void SourceOrientation::setFromMatrix(const matrix& mat, bool relative) {
 	m_orientation = mat;
-	m_isRelative = false;
+	m_isRelative = relative;
 }
 
 void SourceOrientation::setNormal(const vec3d& normal) {
@@ -310,7 +310,7 @@ void ParticleSource::initializeThrusterOffset(weapon*  /*wp*/, weapon_info* wip)
 	// Only use the first point in the bank
 	auto point = &thruster->points[0];
 
-	model_find_world_point(&this->m_origin.m_offset, &point->pnt, wip->model_num, thruster->submodel_num,
+	model_find_world_point(&this->m_origin.m_offset, &point->pnt, pm, thruster->submodel_num,
 						   &vmd_identity_matrix, &vmd_zero_vector);
 }
 

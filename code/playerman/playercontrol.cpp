@@ -1379,7 +1379,15 @@ void player_level_init()
 	Viewer_external_info.preferred_distance = 0.0f;
 	Viewer_external_info.current_distance = 0.0f;
 
-	Viewer_mode = 0;
+	
+	if (Chase_view_default || The_mission.flags[Mission::Mission_Flags::Player_start_chase_view])
+	{
+		Viewer_mode = VM_CHASE;
+	}
+	else
+	{
+		Viewer_mode = 0;
+	}
  
 	Player_obj = NULL;
 	Player_ship = NULL;
@@ -2025,7 +2033,7 @@ void player_maybe_play_all_alone_msg()
 	}
 
 	// met all the requirements, now only play 50% of the time :)
-	if ( rand()&1 ) {
+	if (Random::flip_coin()) {
 		message_send_builtin_to_player(MESSAGE_ALL_ALONE, NULL, MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_ANYTIME, 0, 0, -1, -1);
 	}
 	Player->flags |= PLAYER_FLAGS_NO_CHECK_ALL_ALONE_MSG;

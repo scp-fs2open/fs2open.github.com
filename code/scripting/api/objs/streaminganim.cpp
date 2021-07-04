@@ -40,7 +40,7 @@ streaminganim_h& streaminganim_h::operator=(streaminganim_h&& other) noexcept {
 //**********HANDLE: streamingAnimation
 ADE_OBJ(l_streaminganim, streaminganim_h, "streaminganim", "Streaming Animation handle");
 
-ADE_VIRTVAR(Loop, l_streaminganim, "[boolean loop]", "Make the streaming animation loop.", "boolean", "Is the animation looping, or nil if anim invalid")
+ADE_VIRTVAR(Loop, l_streaminganim, "boolean", "Make the streaming animation loop.", "boolean", "Is the animation looping, or nil if anim invalid")
 {
 	streaminganim_h* sah;
 	bool loop = false;
@@ -61,7 +61,7 @@ ADE_VIRTVAR(Loop, l_streaminganim, "[boolean loop]", "Make the streaming animati
 	return ((sah->ga.direction & GENERIC_ANIM_DIRECTION_NOLOOP) == false ? ADE_RETURN_TRUE : ADE_RETURN_FALSE);
 }
 
-ADE_VIRTVAR(Pause, l_streaminganim, "[boolean pause]", "Pause the streaming animation.", "boolean", "Is the animation paused, or nil if anim invalid")
+ADE_VIRTVAR(Pause, l_streaminganim, "boolean", "Pause the streaming animation.", "boolean", "Is the animation paused, or nil if anim invalid")
 {
 	streaminganim_h* sah;
 	bool pause = false;
@@ -82,7 +82,7 @@ ADE_VIRTVAR(Pause, l_streaminganim, "[boolean pause]", "Pause the streaming anim
 	return ((sah->ga.direction & GENERIC_ANIM_DIRECTION_PAUSED) ? ADE_RETURN_TRUE : ADE_RETURN_FALSE);
 }
 
-ADE_VIRTVAR(Reverse, l_streaminganim, "[boolean reverse]", "Make the streaming animation play in reverse.", "boolean", "Is the animation playing in reverse, or nil if anim invalid")
+ADE_VIRTVAR(Reverse, l_streaminganim, "boolean", "Make the streaming animation play in reverse.", "boolean", "Is the animation playing in reverse, or nil if anim invalid")
 {
 	streaminganim_h* sah;
 	bool reverse = false;
@@ -103,7 +103,7 @@ ADE_VIRTVAR(Reverse, l_streaminganim, "[boolean reverse]", "Make the streaming a
 	return ((sah->ga.direction & GENERIC_ANIM_DIRECTION_BACKWARDS) ? ADE_RETURN_TRUE : ADE_RETURN_FALSE);
 }
 
-ADE_VIRTVAR(Grayscale, l_streaminganim, "[boolean flag]", "Whether the streaming animation is drawn as grayscale multiplied by the current color (the HUD method).", "boolean", "Boolean flag")
+ADE_VIRTVAR(Grayscale, l_streaminganim, "boolean", "Whether the streaming animation is drawn as grayscale multiplied by the current color (the HUD method).", "boolean", "Boolean flag")
 {
 	streaminganim_h* sah;
 	bool grayscale = false;

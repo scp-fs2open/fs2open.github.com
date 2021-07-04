@@ -14,7 +14,11 @@
 
 #include "globalincs/pstypes.h"
 
+#include "utils/Random.h"
+
 #include <cstdint>
+
+using Random = util::Random;
 
 //==========================================================================
 // This installs the timer services and interrupts at the rate specified by
@@ -96,7 +100,7 @@ int timestamp();
 // gets a timestamp randomly between a and b milliseconds in
 // the future.
 inline int timestamp_rand(int a, int b) {
-	return timestamp(myrand() % (b - a + 1) + a);
+	return timestamp(Random::next(a, b));
 }
 
 // Example that makes a ship fire in 1/2 second

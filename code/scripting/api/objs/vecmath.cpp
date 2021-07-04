@@ -549,8 +549,12 @@ ADE_FUNC(getCrossProduct,
 	return ade_set_args(L, "o", l_Vector.Set(v3r));
 }
 
-ADE_FUNC(getScreenCoords, l_Vector, nullptr, "Gets screen cordinates of a world vector",
-         ade_type_info({"number", "number"}), "X (number), Y (number), or false if off-screen")
+ADE_FUNC(getScreenCoords,
+	l_Vector,
+	nullptr,
+	"Gets screen cordinates of a world vector",
+	"number, number",
+	"X (number), Y (number), or false if off-screen")
 {
 	vec3d v3;
 	if (!ade_get_args(L, "o", l_Vector.Get(&v3))) {
@@ -591,6 +595,28 @@ ADE_FUNC(getNormalized,
 	return ade_set_args(L, "o", l_Vector.Set(v3));
 }
 
+ADE_FUNC(projectParallel,
+	l_Vector,
+	"vector unitVector",
+	"Returns a projection of the vector along a unit vector.  The unit vector MUST be normalized.",
+	"vector",
+	"The projected vector, or NIL if a handle is invalid")
+{
+	vec3d *src, *unit;
+	if (!ade_get_args(L, "oo", l_Vector.GetPtr(&src), l_Vector.GetPtr(&unit)))
+		return ADE_RETURN_NIL;
+
+	if (!vm_vec_is_normalized(unit))
+	{
+		LuaError(L, "The unit vector MUST be normalized!");
+		return ADE_RETURN_NIL;
+	}
+
+	vec3d dest;
+	vm_vec_projection_parallel(&dest, src, unit);
+	return ade_set_args(L, "o", l_Vector.Set(dest));
+}
+
 ADE_FUNC(projectOntoPlane,
 	l_Vector,
 	"vector surfaceNormal",
@@ -602,6 +628,12 @@ ADE_FUNC(projectOntoPlane,
 	if (!ade_get_args(L, "oo", l_Vector.GetPtr(&src), l_Vector.GetPtr(&normal)))
 		return ADE_RETURN_NIL;
 
+	if (!vm_vec_is_normalized(normal))
+	{
+		LuaError(L, "The surface normal MUST be normalized!");
+		return ADE_RETURN_NIL;
+	}
+
 	vec3d dest;
 	vm_vec_projection_onto_plane(&dest, src, normal);
 	return ade_set_args(L, "o", l_Vector.Set(dest));
@@ -611,7 +643,7 @@ ADE_FUNC(findNearestPointOnLine,
 	l_Vector,
 	"vector point1, vector point2",
 	"Finds the point on the line defined by point1 and point2 that is closest to this point.  (The line is assumed to extend infinitely in both directions; the closest point will not necessarily be between the two points.)",
-	ade_type_info({ "vector", "number" }),
+	"vector, number",
 	"Returns two arguments.  The first is the nearest point, and the second is a value indicating where on the line the point lies.  From the code: '0.0 means nearest_point is p1; 1.0 means it's p2; 2.0 means it's beyond p2 by 2x; -1.0 means it's \"before\" p1 by 1x'.")
 {
 	vec3d *point, *p0, *p1;
@@ -670,8 +702,8 @@ ADE_FUNC(perturb,
 
 ADE_FUNC(randomInCircle,
 	l_Vector,
-	"orientation orient, number radius, boolean on_edge",
-	"Given this vector (the origin point), an orientation, and a radius, generate a point on the plane of the circle.  If on_edge is true, the point will be on the edge of the circle.",
+	"orientation orient, number radius, boolean on_edge, [boolean bias_towards_center = true]",
+	"Given this vector (the origin point), an orientation, and a radius, generate a point on the plane of the circle.  If on_edge is true, the point will be on the edge of the circle. If bias_towards_center is true, the probability will be higher towards the center.",
 	"vector",
 	"A point within the plane of the circle")
 {
@@ -679,30 +711,32 @@ ADE_FUNC(randomInCircle,
 	matrix_h* mh = nullptr;
 	float radius;
 	bool on_edge;
+	bool bias_towards_center = true;
 
-	if (!ade_get_args(L, "oofb", l_Vector.GetPtr(&in), l_Matrix.GetPtr(&mh), &radius, &on_edge))
+	if (!ade_get_args(L, "oofb|b", l_Vector.GetPtr(&in), l_Matrix.GetPtr(&mh), &radius, &on_edge, &bias_towards_center))
 		return ADE_RETURN_NIL;
 
-	vm_vec_random_in_circle(&out, in, mh->GetMatrix(), radius, on_edge);
+	vm_vec_random_in_circle(&out, in, mh->GetMatrix(), radius, on_edge, bias_towards_center);
 
 	return ade_set_args(L, "o", l_Vector.Set(out));
 }
 
 ADE_FUNC(randomInSphere,
 	l_Vector,
-	"number radius, boolean on_surface",
-	"Given this vector (the origin point) and a radius, generate a point in the volume of the sphere.  If on_surface is true, the point will be on the surface of the sphere.",
+	"number radius, boolean on_surface, [boolean bias_towards_center = true]",
+	"Given this vector (the origin point) and a radius, generate a point in the volume of the sphere.  If on_surface is true, the point will be on the surface of the sphere. If bias_towards_center is true, the probability will be higher towards the center",
 	"vector",
 	"A point within the plane of the circle")
 {
 	vec3d *in, out;
 	float radius;
 	bool on_surface;
+	bool bias_towards_center = true;
 
-	if (!ade_get_args(L, "ofb", l_Vector.GetPtr(&in), &radius, &on_surface))
+	if (!ade_get_args(L, "ofb|b", l_Vector.GetPtr(&in), &radius, &on_surface, &bias_towards_center))
 		return ADE_RETURN_NIL;
 
-	vm_vec_random_in_sphere(&out, in, radius, on_surface);
+	vm_vec_random_in_sphere(&out, in, radius, on_surface, bias_towards_center);
 
 	return ade_set_args(L, "o", l_Vector.Set(out));
 }

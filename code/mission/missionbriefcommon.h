@@ -12,10 +12,12 @@
 #ifndef __MISSIONBRIEFCOMMON_H__
 #define __MISSIONBRIEFCOMMON_H__
 
-#include "anim/packunpack.h"
 #include "globalincs/globals.h"
+
+#include "anim/packunpack.h"
 #include "graphics/generic.h"
 #include "hud/hud.h"
+#include "utils/unicode.h"
 
 #define MAX_TEXT_STREAMS	2		// how many concurrent streams of text can be displayed
 
@@ -82,17 +84,17 @@ extern const float		BRIEF_TEXT_WIPE_TIME;		// time in seconds for wipe to occur
 // ------------------------------------------------------------------------
 
 #define	MAX_BRIEF_LINES		70
-#define	MAX_BRIEF_LINE_LEN	256		// max number of chars in a briefing line
+#define	MAX_BRIEF_LINE_LEN	512		// max number of chars in a briefing line. Increased to allow for multibyte characters to fill a briefing line
 #define	MAX_BRIEF_LINE_W_640		375		// max width of line in pixels in 640x480 mode
 #define	MAX_BRIEF_LINE_W_1024	600		// max width of line in pixels in 1024x768 mode
 
 #define	MAX_DEBRIEF_LINES		60
-#define	MAX_DEBRIEF_LINE_LEN	256		// max number of chars in a debriefing line
+#define	MAX_DEBRIEF_LINE_LEN	512		// max number of chars in a debriefing line
 #define	MAX_DEBRIEF_LINE_W	500		// max width of line in pixels
 
 #define	MAX_ICON_TEXT_LEN			1024		// max number of chars for icon info
 #define	MAX_ICON_TEXT_LINES		30
-#define	MAX_ICON_TEXT_LINE_LEN	256		// max number of chars in icon info line
+#define	MAX_ICON_TEXT_LINE_LEN	512	// max number of chars in icon info line
 #define	MAX_ICON_TEXT_LINE_W		170		// max width of line in pixels
 
 #define	MAX_STAGE_ICONS			20
@@ -112,6 +114,7 @@ typedef struct brief_icon {
 	int		hold_x, hold_y;	// 2D screen position of icon, used to place animations
 	int		ship_class;
 	int		modelnum;
+	int		model_instance_num;
 	float		radius;
 	int		type;					// ICON_* defines from MissionBriefCommon.h
 	int		bitmap_id;
@@ -295,7 +298,7 @@ void brief_camera_move(float frametime, int stage_num);
 void brief_render_icon(int stage_num, int icon_num, float frametime, int selected = 0, float w_scale_factor = 1.0f, float h_scale_factor = 1.0f);
 void brief_render_icon_line(int stage_num, int line_num);
 void brief_init_map();
-void brief_parse_icon_tbl();
+void brief_icons_init();
 void brief_common_close();
 void brief_reset_icons(int stage_num);
 void brief_restart_text_wipe();
@@ -320,5 +323,7 @@ int brief_render_text(int line_offset, int x, int y, int h, float frametime, int
 void cmd_brief_reset();
 
 int brief_time_to_advance(int stage_num);
+
+bool brief_verify_color_tag(unicode::codepoint_t color_tag);
 
 #endif

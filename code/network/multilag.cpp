@@ -318,7 +318,7 @@ int multi_lag_get_random_lag()
 		
 	// pick a value
 	// see if we should be going up or down (loss max/loss min)
-	float rand_val = rand() * RAND_MAX_1f;
+	float rand_val = Random::next() * Random::INV_F_MAX_VALUE;
 	mod = 0;
 	if (rand_val < 0.5f) {
 		// down
@@ -363,7 +363,7 @@ int multi_lag_should_be_lost()
 	}
 		
 	// see if we should be going up or down (loss max/loss min)
-	float rand_val = rand() * RAND_MAX_1f;
+	float rand_val = Random::next() * Random::INV_F_MAX_VALUE;
 	mod = 0.0f;
 	if (rand_val < 0.5) {
 		// down

@@ -3426,6 +3426,7 @@ void wl_bash_ship_weapons(ship_weapon *swp, wss_unit *slot)
 		if ( (slot->wep_count[sidx] > 0) && (slot->wep[sidx] >= 0) ) {
 			swp->secondary_bank_weapons[j] = slot->wep[sidx];
 			swp->secondary_bank_ammo[j] = slot->wep_count[sidx];
+			swp->secondary_bank_start_ammo[j] = (int)std::lround(Ship_info[slot->ship_class].secondary_bank_ammo_capacity[i] / Weapon_info[swp->secondary_bank_weapons[j]].cargo_size);
 			j++;
 		}
 	}
@@ -3858,7 +3859,7 @@ int wl_apply(int mode,int from_bank,int from_list,int to_bank,int to_list,int sh
 	if ( update ) {
 		if ( MULTIPLAYER_HOST ) {
 			int size;
-			ubyte wss_data[MAX_PACKET_SIZE-20];
+			ubyte wss_data[MAX_PACKET_SIZE];
 
 			size = store_wss_data(wss_data, MAX_PACKET_SIZE-20,sound,player_index);			
 			Assert(pl != NULL);

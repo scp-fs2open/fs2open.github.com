@@ -3,7 +3,9 @@
 
 #include "player.h"
 
+#include "gamesequence/gamesequence.h"
 #include "menuui/mainhallmenu.h"
+#include "menuui/techmenu.h"
 #include "mission/missioncampaign.h"
 #include "pilotfile/pilotfile.h"
 #include "playerman/player.h"
@@ -290,6 +292,41 @@ ADE_FUNC(loadCampaignSavefile, l_Player, "string campaign = \"<current>\"", "Loa
 	if (!loader.load_savefile(plh->get(), savefile)) {
 		return ADE_RETURN_FALSE;
 	}
+
+	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(loadCampaign, l_Player, "string campaign", "Loads the specified campaign file and return to it's mainhall.", "boolean", "true on success, false otherwise")
+{
+	player_h* plh;
+	const char* filename = nullptr;
+	if (!ade_get_args(L, "os", l_Player.GetPtr(&plh), &filename)) {
+		return ADE_RETURN_FALSE;
+	}
+
+	if (!plh->isValid()) {
+		return ADE_RETURN_FALSE;
+	}
+
+	player* pl = plh->get();
+
+	strcpy_s(pl->current_campaign, filename); // track new campaign for player
+
+	// attempt to load the campaign
+	int load_status = mission_campaign_load(filename, pl);
+
+	// see if we successfully loaded this campaign and it's at the beginning
+	if (load_status == 0 && Campaign.prev_mission < 0) {
+		// Goober5000 - reinitialize tech database if needed
+		if ((Campaign.flags & CF_CUSTOM_TECH_DATABASE) || !stricmp(Campaign.filename, "freespace2")) {
+			// reset tech database to what's in the tables
+			tech_reset_to_default();
+		}
+	}
+	// that's all we need to do for now; the campaign loading status will be checked again when we try to load the
+	// campaign in the ready room
+
+	gameseq_post_event(GS_EVENT_MAIN_MENU);
 
 	return ADE_RETURN_TRUE;
 }

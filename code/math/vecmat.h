@@ -14,6 +14,7 @@
 
 #include "globalincs/pstypes.h"
 #include "math/floating.h"
+#include <limits>
 
 
 #define vm_is_vec_nan(v) (fl_is_nan((v)->xyz.x) || fl_is_nan((v)->xyz.y) || fl_is_nan((v)->xyz.z))
@@ -51,6 +52,8 @@
 extern void vm_set_identity(matrix *m);
 
 #define vm_vec_make(v,_x,_y,_z) ((v)->xyz.x=(_x), (v)->xyz.y=(_y), (v)->xyz.z=(_z))
+
+extern vec3d vm_vec_new(float x, float y, float z);
 
 //Global constants
 
@@ -184,6 +187,8 @@ float vm_vec_dist(const vec3d *v0, const vec3d *v1);
 #define vm_vec_normalized_dir_quick		vm_vec_normalized_dir
 #define vm_vec_rand_vec_quick			vm_vec_rand_vec
 
+bool vm_vec_is_normalized(const vec3d *v);
+
 //normalize a vector. returns mag of source vec
 float vm_vec_copy_normalize(vec3d *dest, const vec3d *src);
 float vm_vec_normalize(vec3d *v);
@@ -224,13 +229,15 @@ vec3d *vm_vec_perp(vec3d *dest, const vec3d *p0, const vec3d *p1, const vec3d *p
 
 //computes the delta angle between two vectors.
 //vectors need not be normalized. if they are, call vm_vec_delta_ang_norm()
-//the forward vector (third parameter) can be NULL, in which case the absolute
-//value of the angle in returned.  Otherwise the angle around that vector is
-//returned.
-float vm_vec_delta_ang(const vec3d *v0, const vec3d *v1, const vec3d *fvec);
+//the up vector (third parameter) can be NULL, in which case the absolute
+//value of the angle in returned.  
+//Otherwise, the delta ang will be positive if the v0 -> v1 direction from the
+//point of view of uvec is clockwise, negative if counterclockwise.
+//This vector should be orthogonal to v0 and v1
+float vm_vec_delta_ang(const vec3d *v0, const vec3d *v1, const vec3d *uvec);
 
 //computes the delta angle between two normalized vectors.
-float vm_vec_delta_ang_norm(const vec3d *v0, const vec3d *v1,const vec3d *fvec);
+float vm_vec_delta_ang_norm(const vec3d *v0, const vec3d *v1,const vec3d *uvec);
 
 //computes a matrix from a set of three angles.  returns ptr to matrix
 matrix *vm_angles_2_matrix(matrix *m, const angles *a);
@@ -479,11 +486,13 @@ void vm_vec_random_cone(vec3d *out, const vec3d *in, float min_angle, float max_
 
 // given a start vector, an orientation, and a radius, generate a point on the plane of the circle
 // if on_edge is true, the point will be on the edge of the circle
-void vm_vec_random_in_circle(vec3d *out, const vec3d *in, const matrix *orient, float radius, bool on_edge);
+// if bias_towards_center is true, the probability will be higher towards the center
+void vm_vec_random_in_circle(vec3d *out, const vec3d *in, const matrix *orient, float radius, bool on_edge, bool bias_towards_center = false);
 
 // given a start vector and a radius, generate a point in a spherical volume
 // if on_surface is true, the point will be on the surface of the sphere
-void vm_vec_random_in_sphere(vec3d *out, const vec3d *in, float radius, bool on_surface);
+// if bias_towards_center is true, the probability will be higher towards the center
+void vm_vec_random_in_sphere(vec3d *out, const vec3d *in, float radius, bool on_surface, bool bias_towards_center = false);
 
 // find the nearest point on the line to p. if dist is non-NULL, it is filled in
 // returns 0 if the point is inside the line segment, -1 if "before" the line segment and 1 ir "after" the line segment
@@ -631,25 +640,22 @@ inline matrix& operator-=(matrix& left, const matrix& right)
 }
 
 /**
- * @brief Rotates a vector into the orientation specified by the matrix
+ * @brief Implements matrix multiplication on both 3x3 matrices and 3D vectors
  * @param left The matrix
- * @param right The vector
- * @return The rotated vector
- *
- * @note This actually follows the definition of the * operator in linear algebra. The standard vm_vec_rotate actually
- * implements a multiplication with the transpose of the matrix.
+ * @param right The vector/matrix
+ * @return The multiplied result
  */
-inline vec3d operator*(const matrix& left, const vec3d& right) {
-	vec3d out;
-	vm_vec_unrotate(&out, &right, &left);
-	return out;
-}
+inline vec3d operator*(const matrix& A, const vec3d& v);
+inline matrix operator*(const matrix& A, const matrix& B);
 
-inline matrix operator*(const matrix& left, const matrix& right) {
-	matrix out;
-	vm_matrix_x_matrix(&out, &left, &right);
-	return out;
-}
+std::ostream& operator<<(std::ostream& os, const vec3d& vec);
+
+// Given a direction and a 'stretch amount', computes a matrix which can be used to
+// 'rotate' positional vectors as to stretch them in that direction by that amount
+// Positions in the opposite direction of the stretch_dir are stretched in the opposite direction
+// and position orthogonal to the stretch_dir are not moved at all
+// Essentially turns spheres into ellipsoids
+matrix vm_stretch_matrix(const vec3d* stretch_dir, float stretch);
 
 #endif
 

@@ -52,6 +52,10 @@ struct weapon;
 #define OO_SUBSYS_ROTATION_2p		(1<<6)		// Did this subsystem's barrel rotation angles change
 #define OO_SUBSYS_TRANSLATION		(1<<7)		// Only for backwards compatibility of future builds.
 
+// combo values
+#define OO_SUBSYS_ROTATION_1	(OO_SUBSYS_ROTATION_1b | OO_SUBSYS_ROTATION_1h | OO_SUBSYS_ROTATION_1p)
+#define OO_SUBSYS_ROTATION_2	(OO_SUBSYS_ROTATION_2b | OO_SUBSYS_ROTATION_2h | OO_SUBSYS_ROTATION_2p)
+
 
 // ---------------------------------------------------------------------------------------------------
 // POSITION AND ORIENTATION RECORDING
@@ -163,6 +167,9 @@ int multi_oo_rate_exceeded(net_player *pl);
 
 // if it is ok for me to send a control info (will be ~N times a second)
 int multi_oo_cirate_can_send();
+
+// temporarily sets this as a client interpolated ship 
+void multi_oo_set_client_simulation_mode(ushort netsig);
 
 // display any oo info on the hud
 void multi_oo_display();

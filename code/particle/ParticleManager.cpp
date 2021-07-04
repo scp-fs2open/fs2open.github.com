@@ -5,6 +5,7 @@
 
 #include "particle/effects/SingleParticleEffect.h"
 #include "particle/effects/CompositeEffect.h"
+#include "particle/effects/VolumeEffect.h"
 
 #include "particle/effects/ConeShape.h"
 #include "particle/effects/SphereShape.h"
@@ -25,7 +26,8 @@ const char* effectTypeNames[static_cast<int64_t>(EffectType::MAX)] = {
 	"Single",
 	"Composite",
 	"Cone",
-	"Sphere"
+	"Sphere",
+	"Volume"
 };
 
 const char* getEffectTypeName(EffectType type) {
@@ -59,6 +61,11 @@ ParticleEffectPtr constructEffect(const SCP_string& name, EffectType type) {
 		}
 		case EffectType::Sphere: {
 			effect.reset(new GenericShapeEffect<SphereShape>(name));
+			effect->parseValues(false);
+			break;
+		}
+		case EffectType::Volume: {
+			effect.reset(new VolumeEffect(name));
 			effect->parseValues(false);
 			break;
 		}
@@ -250,7 +257,12 @@ ParticleSourceWrapper ParticleManager::createSource(ParticleEffectHandle index)
 
 		// UGH, HACK! To implement the source wrapper we need constant pointers to all sources.
 		// To ensure this we reserve the number of sources we will need (current sources + sources being created)
-		m_sources.reserve(m_sources.size() + childEffects.size());
+		if (m_processingSources) {
+			// If we are already in our onFrame, we need to apply the hack to the right vector though
+			m_deferredSourceAdding.reserve(m_sources.size() + childEffects.size());
+		} else {
+			m_sources.reserve(m_sources.size() + childEffects.size());
+		}
 
 		for (auto& effect : childEffects) {
 			ParticleSource* source = createSource();

@@ -1,6 +1,7 @@
 #include "doc_parser.h"
 
 #include "parse/parselo.h"
+#include "libs/antlr/ErrorListener.h"
 
 #undef TRUE
 #undef FALSE
@@ -14,32 +15,6 @@ POP_SUPPRESS_WARNINGS
 namespace scripting {
 
 namespace {
-
-struct Diagnostic {
-	size_t line;
-	size_t columnInLine;
-	size_t tokenLength;
-	SCP_string errorMessage;
-};
-
-struct ErrorListener : public antlr4::BaseErrorListener {
-	SCP_vector<Diagnostic> diagnostics;
-
-	void syntaxError(antlr4::Recognizer* /*recognizer*/,
-	                 antlr4::Token* offendingSymbol,
-	                 size_t line,
-	                 size_t charPositionInLine,
-	                 const std::string& msg,
-	                 std::exception_ptr /*e*/) override
-	{
-		// Apparently stop < start is a thing?
-		const auto left   = std::min(offendingSymbol->getStartIndex(), offendingSymbol->getStopIndex());
-		const auto right  = std::max(offendingSymbol->getStartIndex(), offendingSymbol->getStopIndex());
-		const auto length = right - left + 1;
-
-		diagnostics.push_back(Diagnostic{line, charPositionInLine, length, msg});
-	}
-};
 
 ade_type_info merge_alternatives(const ade_type_info& left, const ade_type_info& right)
 {
@@ -59,54 +34,86 @@ ade_type_info merge_alternatives(const ade_type_info& left, const ade_type_info&
 }
 
 class BaseVisitor : public ArgumentListVisitor {
+	static void failure()
+	{
+		throw std::runtime_error("Unhandled node encountered!");
+	}
+
   public:
 	antlrcpp::Any visitArg_list(ArgumentListParser::Arg_listContext* /*context*/) override
 	{
-		throw std::runtime_error("Unhandled node encountered!");
+		failure();
+		return antlrcpp::Any();
+	}
+	antlrcpp::Any visitStandalone_type(ArgumentListParser::Standalone_typeContext* /*context*/) override
+	{
+		failure();
+		return antlrcpp::Any();
+	}
+	antlrcpp::Any visitMap_type(ArgumentListParser::Map_typeContext* /*context*/) override
+	{
+		failure();
+		return antlrcpp::Any();
+	}
+	antlrcpp::Any visitIterator_type(ArgumentListParser::Iterator_typeContext* /*context*/) override
+	{
+		failure();
+		return antlrcpp::Any();
 	}
 	antlrcpp::Any visitSimple_type(ArgumentListParser::Simple_typeContext* /*context*/) override
 	{
-		throw std::runtime_error("Unhandled node encountered!");
+		failure();
+		return antlrcpp::Any();
 	}
 	antlrcpp::Any visitType(ArgumentListParser::TypeContext* /*context*/) override
 	{
-		throw std::runtime_error("Unhandled node encountered!");
+		failure();
+		return antlrcpp::Any();
 	}
 	antlrcpp::Any visitBoolean(ArgumentListParser::BooleanContext* /*context*/) override
 	{
-		throw std::runtime_error("Unhandled node encountered!");
+		failure();
+		return antlrcpp::Any();
 	}
 	antlrcpp::Any visitValue(ArgumentListParser::ValueContext* /*context*/) override
 	{
-		throw std::runtime_error("Unhandled node encountered!");
+		failure();
+		return antlrcpp::Any();
 	}
 	antlrcpp::Any visitActual_argument(ArgumentListParser::Actual_argumentContext* /*context*/) override
 	{
-		throw std::runtime_error("Unhandled node encountered!");
+		failure();
+		return antlrcpp::Any();
 	}
 	antlrcpp::Any visitOptional_argument(ArgumentListParser::Optional_argumentContext* /*context*/) override
 	{
-		throw std::runtime_error("Unhandled node encountered!");
+		failure();
+		return antlrcpp::Any();
 	}
 	antlrcpp::Any visitArgument(ArgumentListParser::ArgumentContext* /*context*/) override
 	{
-		throw std::runtime_error("Unhandled node encountered!");
+		failure();
+		return antlrcpp::Any();
 	}
 	antlrcpp::Any visitFunc_arg(ArgumentListParser::Func_argContext* /*context*/) override
 	{
-		throw std::runtime_error("Unhandled node encountered!");
+		failure();
+		return antlrcpp::Any();
 	}
 	antlrcpp::Any visitFunc_arglist(ArgumentListParser::Func_arglistContext* /*context*/) override
 	{
-		throw std::runtime_error("Unhandled node encountered!");
+		failure();
+		return antlrcpp::Any();
 	}
 	antlrcpp::Any visitFunction_type(ArgumentListParser::Function_typeContext* /*context*/) override
 	{
-		throw std::runtime_error("Unhandled node encountered!");
+		failure();
+		return antlrcpp::Any();
 	}
 	antlrcpp::Any visitVarargs_or_simple_type(ArgumentListParser::Varargs_or_simple_typeContext* /*context*/) override
 	{
-		throw std::runtime_error("Unhandled node encountered!");
+		failure();
+		return antlrcpp::Any();
 	}
 };
 
@@ -168,6 +175,20 @@ class TypeVisitor : public BaseVisitor {
 	{
 		return visitChildren(context);
 	}
+	antlrcpp::Any visitStandalone_type(ArgumentListParser::Standalone_typeContext* context) override
+	{
+		const auto typeValue = visitChildren(context).as<ade_type_info>();
+
+		// We can't properly distinguish between alternate types and tuple types in aggregateResult so instead we do
+		// that here. For a single type, we just return that type
+		if (!context->COMMA().empty()) {
+			// We saw a comma in our rule so this is a tuple type
+			return ade_type_info(ade_type_tuple(typeValue.elements()));
+		}
+
+		// Otherwise just pass through the originally parsed type
+		return typeValue;
+	}
 
 	antlrcpp::Any visitFunction_type(ArgumentListParser::Function_typeContext* context) override
 	{
@@ -177,6 +198,21 @@ class TypeVisitor : public BaseVisitor {
 		auto argTypes = context->func_arglist()->accept(&arglistVisitor).as<SCP_vector<ade_type_info>>();
 
 		return ade_type_info(ade_type_function(std::move(retType), std::move(argTypes)));
+	}
+
+	antlrcpp::Any visitMap_type(ArgumentListParser::Map_typeContext* context) override
+	{
+		const auto keyType = visit(context->type(0)).as<ade_type_info>();
+		const auto valueType = visit(context->type(1)).as<ade_type_info>();
+
+		return ade_type_info(ade_type_map(keyType, valueType));
+	}
+
+	antlrcpp::Any visitIterator_type(ArgumentListParser::Iterator_typeContext* context) override
+	{
+		const auto valueType = visit(context->type()).as<ade_type_info>();
+
+		return ade_type_info(ade_type_iterator(valueType));
 	}
 
 	antlrcpp::Any visitErrorNode(antlr4::tree::ErrorNode* /*node*/) override { return ade_type_info("<error type>"); }
@@ -306,6 +342,18 @@ class TypeCheckVisitor : public BaseVisitor {
 	{
 		return visitChildren(context);
 	}
+	antlrcpp::Any visitStandalone_type(ArgumentListParser::Standalone_typeContext* context) override
+	{
+		return visitChildren(context);
+	}
+	antlrcpp::Any visitMap_type(ArgumentListParser::Map_typeContext* context) override
+	{
+		return visitChildren(context);
+	}
+	antlrcpp::Any visitIterator_type(ArgumentListParser::Iterator_typeContext* context) override
+	{
+		return visitChildren(context);
+	}
 
 	antlrcpp::Any visitFunc_arg(ArgumentListParser::Func_argContext* context) override
 	{
@@ -369,7 +417,7 @@ bool argument_list_parser::parse(const SCP_string& argumentList)
 	ArgumentListParser parser(&tokens);
 	// By default we log to stderr which we do not want
 	parser.removeErrorListeners();
-	ErrorListener errListener;
+	libs::antlr::ErrorListener errListener;
 	parser.addErrorListener(&errListener);
 
 	antlr4::tree::ParseTree* tree = parser.arg_list();
@@ -407,6 +455,60 @@ const SCP_vector<scripting::argument_def>& argument_list_parser::getArgList() co
 	return _argList;
 }
 const SCP_string& argument_list_parser::getErrorMessage() const
+{
+	return _errorMessage;
+}
+
+type_parser::type_parser(const SCP_vector<SCP_string>& validTypeNames)
+	: _validTypeNames(validTypeNames.begin(), validTypeNames.end())
+{
+}
+bool type_parser::parse(const SCP_string& type)
+{
+	antlr4::ANTLRInputStream input(type);
+	ArgumentListLexer lexer(&input);
+	antlr4::CommonTokenStream tokens(&lexer);
+
+	ArgumentListParser parser(&tokens);
+	// By default we log to stderr which we do not want
+	parser.removeErrorListeners();
+	libs::antlr::ErrorListener errListener;
+	parser.addErrorListener(&errListener);
+
+	// Tuple type is the entry point for a standalone type
+	antlr4::tree::ParseTree* tree = parser.standalone_type();
+
+	TypeCheckVisitor typeChecker(&parser, _validTypeNames);
+	tree->accept(&typeChecker);
+
+	// If there were errors, output them
+	if (!errListener.diagnostics.empty()) {
+		SCP_stringstream outStream;
+		for (const auto& diag : errListener.diagnostics) {
+			SCP_string tokenUnderline;
+			if (diag.tokenLength > 1) {
+				tokenUnderline = SCP_string(diag.tokenLength - 1, '~');
+			}
+			outStream << type << "\n"
+					  << SCP_string(diag.columnInLine, ' ') << "^" << tokenUnderline << "\n"
+					  << diag.errorMessage << "\n";
+		}
+
+		_errorMessage = outStream.str();
+	} else {
+		TypeVisitor typeVisitor;
+		const auto typeAny = tree->accept(&typeVisitor);
+
+		_parsedType = typeAny.as<ade_type_info>();
+	}
+
+	return errListener.diagnostics.empty();
+}
+const ade_type_info& type_parser::getType() const
+{
+	return _parsedType;
+}
+const SCP_string& type_parser::getErrorMessage() const
 {
 	return _errorMessage;
 }

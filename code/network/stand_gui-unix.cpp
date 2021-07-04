@@ -455,10 +455,13 @@ json_t* serverPut(ResourceContext *context) {
 	if (passwd) {
 		changeCommand->setPasswd(passwd);
 	}
-	int framecap = atoi(json_string_value(json_object_get(context->requestEntity, "framecap")));
-	if (framecap)
-	{
-		changeCommand->setFrameCap(framecap);
+	const char* frameCapValue = json_string_value(json_object_get(context->requestEntity, "framecap"));
+	if (frameCapValue != nullptr) {
+		int framecap = atoi(frameCapValue);
+		if (framecap)
+		{
+			changeCommand->setFrameCap(framecap);
+		}
 	}
 
 	webapiAddCommand(changeCommand);

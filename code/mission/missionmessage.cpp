@@ -21,6 +21,7 @@
 #include "io/timer.h"
 #include "localization/localize.h"
 #include "mission/missiontraining.h"
+#include "mission/missiongoals.h"
 #include "mod_table/mod_table.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
@@ -34,6 +35,7 @@
 #include "ship/subsysdamage.h"
 #include "sound/fsspeech.h"
 #include "species_defs/species_defs.h"
+#include "utils/Random.h"
 #include "weapon/emp.h"
 
 SCP_vector<SCP_string> Builtin_moods;
@@ -121,18 +123,6 @@ SCP_vector<message_extra> Message_waves;
 // variables to keep track of messages that are currently playing
 int Num_messages_playing;						// number of is a message currently playing?
 
-/*typedef struct pmessage {
-	//anim_instance *anim;		// handle of anim currently playing
-	anim *anim_data;			// animation data to be used by the talking head HUD gauge handler
-	int start_frame;			// the start frame needed to play the animation
-	bool play_anim;			// used to tell HUD gauges if they should be playing or not
-	int wave;					// handle of wave currently playing
-	int id;						// id of message currently playing
-	int priority;				// priority of message currently playing
-	int shipnum;				// shipnum of ship sending this message,  -1 if from Terran command
-	int builtin_type;			// if a builtin message, type of the message
-} pmessage;*/
-
 pmessage Playing_messages[MAX_PLAYING_MESSAGES];
 
 int Message_shipnum;						// ship number of who is sending message to player -- used outside this module
@@ -156,6 +146,7 @@ typedef struct message_q {
 	int	flags;						// should this message entry be converted to Terran Command head/wave file
 	int	min_delay_stamp;			// minimum delay before this message will start playing
 	int	group;						// message is part of a group, don't time it out
+	int event_num_to_cancel;		// Goober5000 - if this event is true, the message will not be played
 } message_q;
 
 #define MAX_MESSAGE_Q				30
@@ -186,7 +177,7 @@ int Default_command_persona;
 
 // Goober5000
 // NOTE - these are truncated filenames, i.e. without extensions
-SCP_vector<SCP_string> generic_message_filenames;
+SCP_vector<SCP_string> Generic_message_filenames;
 
 ///////////////////////////////////////////////////////////////////
 // used to distort incoming messages when comms are damaged
@@ -622,13 +613,13 @@ void parse_msgtbl()
 
 
 		// additional table part!
-		generic_message_filenames.clear();
-		generic_message_filenames.push_back("none");
-		generic_message_filenames.push_back("cuevoice");
-		generic_message_filenames.push_back("cue_voice");
-		generic_message_filenames.push_back("emptymsg");
-		generic_message_filenames.push_back("generic");
-		generic_message_filenames.push_back("msgstart");
+		Generic_message_filenames.clear();
+		Generic_message_filenames.push_back("none");
+		Generic_message_filenames.push_back("cuevoice");
+		Generic_message_filenames.push_back("cue_voice");
+		Generic_message_filenames.push_back("emptymsg");
+		Generic_message_filenames.push_back("generic");
+		Generic_message_filenames.push_back("msgstart");
 
 		if (optional_string("#Simulated Speech Overrides"))
 		{
@@ -658,7 +649,7 @@ void parse_msgtbl()
 				*ptr = '\0';
 
 				// add truncated file name
-				generic_message_filenames.push_back(filename);
+				Generic_message_filenames.push_back(filename);
 			}
 
 			required_string("#End");
@@ -711,7 +702,8 @@ void messages_init()
 		MessageQ[i].group = 0;
 
 		// Goober5000
-		MessageQ[i].special_message = NULL;
+		MessageQ[i].special_message = nullptr;
+		MessageQ[i].event_num_to_cancel = -1;
 	}
 	
 	// this forces a reload of the AVI's and waves for builtin messages.  Needed because the flic and
@@ -992,6 +984,7 @@ void message_remove_from_queue(message_q *q)
 		vm_free(q->special_message);
 		q->special_message = NULL;
 	}
+	q->event_num_to_cancel = -1;
 
 	if ( MessageQ_num > 0 ) {
 		insertion_sort(MessageQ, MAX_MESSAGE_Q, sizeof(message_q), message_queue_priority_compare);
@@ -1040,9 +1033,9 @@ bool message_filename_is_generic(char *filename)
 	*ptr = '\0';
 
 	// test against the list
-	for (unsigned int i = 0; i < generic_message_filenames.size(); i++)
+	for (unsigned int i = 0; i < Generic_message_filenames.size(); i++)
 	{
-		if (!stricmp(generic_message_filenames[i].c_str(), truncated_filename))
+		if (!stricmp(Generic_message_filenames[i].c_str(), truncated_filename))
 			return true;
 	}
 
@@ -1140,12 +1133,12 @@ void message_calc_anim_start_frame(int time, generic_anim *ani, int reverse)
 		int num_frames_extra;
 		num_frames_extra = (int)std::lround(fps * (anim_time - wave_time));
 		if ( num_frames_extra > 0 ) {
-			start_frame=rand()%num_frames_extra;
+			start_frame= Random::next(num_frames_extra);
 		}
 	}
 
 	if ( start_frame < 0 ) {
-		mprintf(("Calculated start frame for animation %s was less than 0, setting to 0.", ani->filename));
+		mprintf(("Calculated start frame for animation %s was less than 0, setting to 0.\n", ani->filename));
 		start_frame=0;
 	}
 
@@ -1392,7 +1385,8 @@ void message_queue_process()
 	// preprocess message queue and remove anything on the queue that is too old.  If next message on
 	// the queue can be played, then break out of the loop.  Otherwise, loop until nothing on the queue
 	while ( MessageQ_num > 0 ) {
-		q = &MessageQ[0];		
+		q = &MessageQ[0];
+		// message is outside its time window
 		if ( timestamp_valid(q->window_timestamp) && timestamp_elapsed(q->window_timestamp) && !q->group) {
 			// remove message from queue and see if more to remove
 			nprintf(("messaging", "Message %s didn't play because it didn't fit into time window.\n", Messages[q->message_num].name));
@@ -1401,7 +1395,13 @@ void message_queue_process()
 			} else {
 				break;
 			}
-		} else {
+		}
+		// message can't be played after a certain event
+		else if (q->event_num_to_cancel >= 0 && Mission_events[q->event_num_to_cancel].result) {
+			message_remove_from_queue(q);
+		}
+		// message isn't too old
+		else {
 			break;
 		}
 	}
@@ -1641,7 +1641,7 @@ all_done:
 }
 
 // queues up a message to display to the player
-void message_queue_message( int message_num, int priority, int timing, const char *who_from, int source, int group, int delay, int builtin_type )
+void message_queue_message( int message_num, int priority, int timing, const char *who_from, int source, int group, int delay, int builtin_type, int event_num_to_cancel )
 {
 	int i, m_persona;
 	char temp_buf[MESSAGE_LENGTH];
@@ -1690,6 +1690,7 @@ void message_queue_message( int message_num, int priority, int timing, const cha
 	MessageQ[i].min_delay_stamp = timestamp(delay);
 	MessageQ[i].group = group;
 	strcpy_s(MessageQ[i].who_from, who_from);
+	MessageQ[i].event_num_to_cancel = event_num_to_cancel;
 
 	// Goober5000 - this shouldn't happen, but let's be safe
 	if (MessageQ[i].special_message != NULL)
@@ -1800,7 +1801,7 @@ int message_get_persona( ship *shipp )
 		// we didn't find an unused one - so we randomly select one
 		if(count != 0)
 		{
-			i = (rand() % count);
+			i = Random::next(count);
 			i = slist[i];
 		}
 		// RT Protect against count being zero
@@ -1862,7 +1863,7 @@ int message_filter_multi(int id)
 
 // send_unique_to_player sends a mission unique (specific) message to the player (possibly a multiplayer
 // person).  These messages are *not* the builtin messages
-void message_send_unique_to_player( const char *id, const void *data, int m_source, int priority, int group, int delay )
+void message_send_unique_to_player( const char *id, const void *data, int m_source, int priority, int group, int delay, int event_num_to_cancel )
 {
 	int i, source;
 	const char *who_from;
@@ -1918,12 +1919,12 @@ void message_send_unique_to_player( const char *id, const void *data, int m_sour
 
 			// maybe filter it out altogether
 			if (!message_filter_multi(i)) {
-				message_queue_message( i, priority, MESSAGE_TIME_ANYTIME, who_from, source, group, delay );
+				message_queue_message( i, priority, MESSAGE_TIME_ANYTIME, who_from, source, group, delay, -1, event_num_to_cancel );
 			}
 
 			// send a message packet to a player if destined for everyone or only a specific person
 			if ( MULTIPLAYER_MASTER ){
-				send_mission_message_packet( i, who_from, priority, MESSAGE_TIME_SOON, source, -1, -1, -1, delay);
+				send_mission_message_packet( i, who_from, priority, MESSAGE_TIME_SOON, source, -1, -1, -1, delay, event_num_to_cancel );
 			}			
 
 			return;		// all done with displaying		
@@ -2101,7 +2102,7 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 
 	
 	// since we may have multiple builtins we need to pick one at random
-	random_selection = (int)(rand32() % num_matching_builtins) + 1; 
+	random_selection = Random::next(1, num_matching_builtins);
 
 	// loop through the vector until we have found enough elements of the correct matching type
 	for (i = 0; i < (int)matching_builtins.size(); i++) {
@@ -2145,7 +2146,7 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 
 		// if this filter matches mine
 		if( (multi_team_filter < 0) || !(Netgame.type_flags & NG_TYPE_TEAM) || ((Net_player != NULL) && (Net_player->p_info.team == multi_team_filter)) ){
-			message_queue_message( message_index, priority, timing, who_from, source, group, delay, type );
+			message_queue_message( message_index, priority, timing, who_from, source, group, delay, type, -1 );
 		}
 	}
 
@@ -2251,12 +2252,12 @@ void message_maybe_distort_text(SCP_string &text, int shipnum, bool for_death_sc
 	if (Message_wave_duration == 0) {
 		SCP_string result_str;
 
-		size_t next_distort = 5 + myrand() % 5;
+		size_t next_distort = Random::next(5, 9);
 		size_t i            = 0;
 		size_t run = 0;
 		for (auto cp : unicode::codepoint_range(text.c_str())) {
 			if (i == next_distort) {
-				run = 3 + myrand() % 5;
+				run = Random::next(3, 7);
 				if (i + run > len)
 					run = len - i;
 			}
@@ -2266,7 +2267,7 @@ void message_maybe_distort_text(SCP_string &text, int shipnum, bool for_death_sc
 				--run;
 
 				if (run <= 0) {
-					next_distort = i + (5+myrand()%5);
+					next_distort = i + Random::next(5, 9);
 				}
 			} else {
 				unicode::encode(cp, std::back_inserter(result_str));
@@ -2281,7 +2282,7 @@ void message_maybe_distort_text(SCP_string &text, int shipnum, bool for_death_sc
 	voice_duration = Message_wave_duration;
 
 	// distort text
-	Distort_num = myrand()%MAX_DISTORT_PATTERNS;
+	Distort_num = Random::next(MAX_DISTORT_PATTERNS);
 	Distort_next = 0;
 	unicode::codepoint_range range(text.c_str());
 	auto curr_iter = range.begin();

@@ -30,6 +30,7 @@
 #include "jumpnode/jumpnode.h"
 #include "lighting/lighting.h"
 #include "localization/fhash.h"
+#include "localization/localize.h"
 #include "math/vecmat.h"
 #include "mission/missionbriefcommon.h"
 #include "mission/missioncampaign.h"
@@ -43,6 +44,7 @@
 #include "object/objectshield.h"
 #include "osapi/osapi.h"
 #include "parse/sexp.h"
+#include "parse/sexp_container.h"
 #include "sound/ds.h"
 #include "sound/sound.h"
 #include "starfield/nebula.h"
@@ -1370,9 +1372,6 @@ int CFred_mission_save::save_cmd_brief()
 	required_string_fred("#Command Briefing");
 	parse_comments(2);
 
-	if (The_mission.game_type & MISSION_TYPE_MULTI)
-		return err;  // no command briefings allowed in multiplayer missions.
-
 	save_custom_bitmap("$Background 640:", "$Background 1024:", Cur_cmd_brief->background[GR_640], Cur_cmd_brief->background[GR_1024], 1);
 
 	for (stage = 0; stage < Cur_cmd_brief->num_stages; stage++) {
@@ -1635,6 +1634,134 @@ int CFred_mission_save::save_common_object_data(object *objp, ship *shipp)
 	fso_comment_pop(true);
 
 	return err;
+}
+
+int CFred_mission_save::save_containers()
+{
+	if (Mission_save_format == FSO_FORMAT_RETAIL) {
+		return 0;
+	}
+
+	const auto& containers = get_all_sexp_containers();
+
+	if (containers.empty()) {
+		fso_comment_pop(true);
+		return 0;
+	}
+
+	required_string_fred("#Sexp_containers");
+	parse_comments(2);
+
+	bool list_found = false;
+	bool map_found = false;
+
+	// What types of container do we have?
+	for (const auto &container : containers) {
+		if (container.is_list()) {
+			list_found = true;
+		} else if (container.is_map()) {
+			map_found = true;
+		}
+		if (list_found && map_found) {
+			// no point in continuing to check
+			break;
+		}
+	}
+
+	if (list_found) {
+		required_string_fred("$Lists");
+		parse_comments(2);
+
+		for (const auto &container : containers) {
+			if (container.is_list()) {
+				fout("\n$Name: %s", container.container_name.c_str());
+				if (any(container.type & ContainerType::STRING_DATA)) {
+					fout("\n$Data Type: String");
+				} else if (any(container.type & ContainerType::NUMBER_DATA)) {
+					fout("\n$Data Type: Number");
+				}
+
+				if (any(container.type & ContainerType::STRICTLY_TYPED_DATA)) {
+					fout("\n+Strictly Typed Data");
+				}
+
+				fout("\n$Data: ( ");
+				for (const auto &list_entry : container.list_data) {
+					fout("\"%s\" ", list_entry.c_str());
+				}
+
+				fout(")\n");
+
+				save_container_options(container);
+			}
+		}
+
+		required_string_fred("$End Lists");
+		parse_comments(1);
+	}
+
+	if (map_found) {
+		required_string_fred("$Maps");
+		parse_comments(2);
+
+		for (const auto &container : containers) {
+			if (container.is_map()) {
+				fout("\n$Name: %s", container.container_name.c_str());
+				if (any(container.type & ContainerType::STRING_DATA)) {
+					fout("\n$Data Type: String");
+				} else if (any(container.type & ContainerType::NUMBER_DATA)) {
+					fout("\n$Data Type: Number");
+				}
+
+				if (any(container.type & ContainerType::NUMBER_KEYS)) {
+					fout("\n$Key Type: Number");
+				} else {
+					fout("\n$Key Type: String");
+				}
+
+				if (any(container.type & ContainerType::STRICTLY_TYPED_KEYS)) {
+					fout("\n+Strictly Typed Keys");
+				}
+
+				if (any(container.type & ContainerType::STRICTLY_TYPED_DATA)) {
+					fout("\n+Strictly Typed Data");
+				}
+
+				fout("\n$Data: ( ");
+				for (const auto &map_entry : container.map_data) {
+					fout("\"%s\" \"%s\" ", map_entry.first.c_str(), map_entry.second.c_str());
+				}
+
+				fout(")\n");
+
+				save_container_options(container);
+			}
+		}
+
+		required_string_fred("$End Maps");
+		parse_comments(1);
+	}
+
+	return err;
+}
+
+void CFred_mission_save::save_container_options(const sexp_container &container)
+{
+	if (any(container.type & ContainerType::NETWORK)) {
+		fout("+Network Container\n");
+	}
+
+	if (container.is_eternal()) {
+		fout("+Eternal\n");
+	}
+
+	if (any(container.type & ContainerType::SAVE_ON_MISSION_CLOSE)) {
+		fout("+Save On Mission Close\n");
+	} else if (any(container.type & ContainerType::SAVE_ON_MISSION_PROGRESS)) {
+		fout("+Save On Mission Progress\n");
+	}
+
+	fout("\n");
 }
 
 void CFred_mission_save::save_custom_bitmap(const char *expected_string_640, const char *expected_string_1024, const char *string_field_640, const char *string_field_1024, int blank_lines)
@@ -1935,7 +2062,84 @@ int CFred_mission_save::save_events()
 			fout(" )");
 		}
 
-		fso_comment_pop();
+		// save event annotations
+		if (Mission_save_format != FSO_FORMAT_RETAIL && !Event_annotations.empty())
+		{
+			bool at_least_one = false;
+			fso_comment_push(";;FSO 21.0.0;;");
+			event_annotation default_ea;
+
+			// see if there is an annotation for this event
+			for (const auto &ea : Event_annotations)
+			{
+				if (ea.path.empty() || ea.path.front() != i)
+					continue;
+
+				if (!at_least_one)
+				{
+					if (optional_string_fred("$Annotations Start", "$Formula:"))
+						parse_comments();
+					else
+						fout_version("\n$Annotations Start");
+					at_least_one = true;
+				}
+
+				if (ea.comment != default_ea.comment)
+				{
+					if (optional_string_fred("+Comment:", "$Formula:"))
+						parse_comments();
+					else
+						fout_version("\n+Comment:");
+
+					auto copy = ea.comment;
+					lcl_fred_replace_stuff(copy);
+					fout(" %s", copy.c_str());
+
+					if (optional_string_fred("$end_multi_text", "$Formula:"))
+						parse_comments();
+					else
+						fout_version("\n$end_multi_text");
+				}
+
+				if (ea.r != default_ea.r || ea.g != default_ea.g || ea.b != default_ea.b)
+				{
+					if (optional_string_fred("+Background Color:", "$Formula:"))
+						parse_comments();
+					else
+						fout_version("\n+Background Color:");
+
+					fout(" %d, %d, %d", ea.r, ea.g, ea.b);
+				}
+
+				if (ea.path.size() > 1)
+				{
+					if (optional_string_fred("+Path:", "$Formula:"))
+						parse_comments();
+					else
+						fout_version("\n+Path:");
+
+					bool comma = false;
+					auto it = ea.path.begin();
+					for (++it; it != ea.path.end(); ++it)
+					{
+						if (comma)
+							fout(",");
+						comma = true;
+						fout(" %d", *it);
+					}
+				}
+			}
+
+			if (at_least_one)
+			{
+				if (optional_string_fred("$Annotations End", "$Formula:"))
+					parse_comments();
+				else
+					fout_version("\n$Annotations End");
+			}
+
+			fso_comment_pop();
+		}
 	}
 
 	fso_comment_pop(true);
@@ -2578,6 +2782,8 @@ void CFred_mission_save::save_mission_internal(const char *pathname)
 	else if (save_plot_info())
 		err = -3;
 	else if (save_variables())
+		err = -3;
+	else if (save_containers())
 		err = -3;
 	//	else if (save_briefing_info())
 	//		err = -4;
@@ -3474,7 +3680,7 @@ int CFred_mission_save::save_objects()
 			fso_comment_push(";;FSO 3.6.8;;");
 
 			for (SCP_vector<texture_replace>::iterator ii = Fred_texture_replacements.begin(); ii != Fred_texture_replacements.end(); ++ii) {
-				if (!stricmp(shipp->ship_name, ii->ship_name)) {
+				if (!stricmp(shipp->ship_name, ii->ship_name) && !(ii->from_table)) {
 					if (needs_header) {
 						if (optional_string_fred("$Texture Replace:")) {
 							parse_comments(1);

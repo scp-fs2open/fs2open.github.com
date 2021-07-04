@@ -52,6 +52,7 @@
 #include "pilotfile/pilotfile.h"
 #include "debugconsole/console.h"
 #include "network/psnet2.h"
+#include "network/multi_mdns.h"
 
 // Stupid windows workaround...
 #ifdef MessageBox
@@ -106,9 +107,6 @@ int Multi_mission_loaded = 0;										// flag, so that we don't load the missio
 int Ingame_join_net_signature = -1;								// signature for the player obj for use when joining ingame
 int Multi_button_info_ok = 0;										// flag saying it is ok to apply critical button info on a client machine
 int Multi_button_info_id = 0;										// identifier of the stored button info to be applying
-
-// low level networking vars
-int HEADER_LENGTH;													// 1 byte (packet type)
 
 // misc data
 active_game* Active_game_head;									// linked list of active games displayed on Join screen
@@ -571,6 +569,10 @@ void process_packet_normal(ubyte* data, header *header_info)
 			process_ship_kill_packet( data, header_info );
 			break;
 
+		case MISSILE_KILL:
+			process_weapon_kill_packet(data, header_info);
+			break;
+
 		case WING_CREATE:
 			process_wing_create_packet( data, header_info );
 			break;
@@ -603,7 +605,7 @@ void process_packet_normal(ubyte* data, header *header_info)
 
 			// if I'm the server of the game, find out who this came from			
 			if((Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)){
-				np_index = find_player_id(header_info->id);
+				np_index = find_player_index(header_info->id);
 				if(np_index >= 0){
 					sock = Net_players[np_index].reliable_socket;
 				}
@@ -1317,14 +1319,14 @@ void multi_do_frame()
 		std_do_gui_frame();
 	}	
 
-	// dogfight nonstandalone players should recalc the escort list every frame
-	if(!(Game_mode & GM_STANDALONE_SERVER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT) && MULTI_IN_MISSION){
-		hud_setup_escort_list(0);
-	}
-
 	// if master then maybe do port forwarding setup/refresh/wait
 	if (Net_player->flags & NETINFO_FLAG_AM_MASTER) {
 		multi_port_forward_do();
+
+		// do mdns stuff here too
+		if ( !MULTI_IS_TRACKER_GAME && (Net_player->p_info.options.flags & MLO_FLAG_LOCAL_BROADCAST) ) {
+			multi_mdns_service_do();
+		}
 	}
 }
 
@@ -1425,6 +1427,11 @@ void multi_pause_do_frame()
 	// if master then maybe do port forwarding setup/refresh/wait
 	if (Net_player->flags & NETINFO_FLAG_AM_MASTER) {
 		multi_port_forward_do();
+
+		// do mdns stuff here too
+		if ( !MULTI_IS_TRACKER_GAME && (Net_player->p_info.options.flags & MLO_FLAG_LOCAL_BROADCAST) ) {
+			multi_mdns_service_do();
+		}
 	}
 }
 
@@ -1463,8 +1470,6 @@ void standalone_main_init()
 	}
 #endif // ifdef _WIN32
 
-	HEADER_LENGTH = 1;		
-	
 	// clear out the Netgame structure and start filling in the values
 	// NOTE : these values are not incredibly important since they will be overwritten by the host when he joins
 	memset( &Netgame, 0, sizeof(Netgame) );	
@@ -1554,6 +1559,11 @@ void standalone_main_init()
 	// setup port forwarding
 	multi_port_forward_init();
 
+	// setup mdns
+	if ( !MULTI_IS_TRACKER_GAME ) {
+		multi_mdns_service_init();
+	}
+
 	// login to game tracker
 	std_tracker_login();
 
@@ -1593,6 +1603,11 @@ void standalone_main_do()
 
    // process/renew port mapping
    multi_port_forward_do();
+
+	// handle mdns messages
+	if ( !MULTI_IS_TRACKER_GAME ) {
+		multi_mdns_service_do();
+	}
 }
 
 // --------------------------------------------------------------------------------
@@ -1608,6 +1623,9 @@ void standalone_main_close()
 
 	// remove port forwarding
 	multi_port_forward_close();
+
+	// stop mdns
+	multi_mdns_service_close();
 }
 
 void multi_standalone_reset_all()
@@ -1779,6 +1797,7 @@ void multi_reset_timestamps()
 		Players[i].update_lock_time = timestamp(0);
 
 		Net_players[i].s_info.voice_token_timestamp = -1;
+		Net_players[i].s_info.player_collision_timestamp = timestamp(0);
 	}
 
 	// reset standalone gui timestamps (these are not game critical, so there is not much danger)

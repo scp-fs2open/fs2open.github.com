@@ -159,10 +159,10 @@ void object::clear()
 /**
  * Scan the object list, freeing down to num_used objects
  *
- * @param  num_used Number of used objects to free down to
+ * @param  target_num_used Number of used objects to free down to
  * @return Returns number of slots freed
  */
-int free_object_slots(int num_used)
+int free_object_slots(int target_num_used)
 {
 	int	i, olind, deleted_weapons;
 	int	obj_list[MAX_OBJECTS];
@@ -176,19 +176,19 @@ int free_object_slots(int num_used)
 	for ( objp = GET_FIRST(&obj_free_list); objp != END_OF_LIST(&obj_free_list); objp = GET_NEXT(objp) )
 		num_already_free++;
 
-	if (MAX_OBJECTS - num_already_free < num_used)
+	if (MAX_OBJECTS - num_already_free < target_num_used)
 		return 0;
 
 	for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
 		if (objp->flags[Object::Object_Flags::Should_be_dead]) {
 			num_already_free++;
-			if (MAX_OBJECTS - num_already_free < num_used)
+			if (MAX_OBJECTS - num_already_free < target_num_used)
 				return num_already_free;
 		} else
 			switch (objp->type) {
 				case OBJ_NONE:
 					num_already_free++;
-					if (MAX_OBJECTS - num_already_free < num_used)
+					if (MAX_OBJECTS - num_already_free < target_num_used)
 						return 0;
 					break;
 				case OBJ_FIREBALL:
@@ -217,7 +217,7 @@ int free_object_slots(int num_used)
 
 	}
 
-	num_to_free = MAX_OBJECTS - num_used - num_already_free;
+	num_to_free = MAX_OBJECTS - target_num_used - num_already_free;
 	original_num_to_free = num_to_free;
 
 	if (num_to_free > olind) {
@@ -232,26 +232,26 @@ int free_object_slots(int num_used)
 			Objects[obj_list[i]].flags.set(Object::Object_Flags::Should_be_dead);
 		}
 
-	if (!num_to_free)
+	if (num_to_free <= 0) {
 		return original_num_to_free;
+	}
 
 	for (i=0; i<num_to_free; i++)	{
 		object *tmp_obj = &Objects[obj_list[i]];
 		if ( (tmp_obj->type == OBJ_FIREBALL) && (fireball_is_perishable(tmp_obj)) ) {
 			num_to_free--;
+			if (num_to_free <= 0) {
+				return original_num_to_free;
+			}
 			nprintf(("allender", "Freeing FIREBALL object %3i\n", obj_list[i]));
 			tmp_obj->flags.set(Object::Object_Flags::Should_be_dead);
 		}
 	}
 
-	if (!num_to_free){
-		return original_num_to_free;
-	}
-
 	deleted_weapons = collide_remove_weapons();
 
 	num_to_free -= deleted_weapons;
-	if ( !num_to_free ){
+	if ( num_to_free <= 0){
 		return original_num_to_free;
 	}
 
@@ -382,7 +382,7 @@ static int num_objects_hwm = 0;
  * @return the number of a free object, updating Highest_object_index
  * @return -1 if no free objects
  */
-int obj_allocate(void)
+int obj_allocate(bool essential)
 {
 	int objnum;
 	object *objp;
@@ -392,7 +392,7 @@ int obj_allocate(void)
 		obj_init();
 	}
 
-	if ( Num_objects >= MAX_OBJECTS-10 ) {
+	if ( (Num_objects >= MAX_OBJECTS-10) && essential ) {
 		int	num_freed;
 
 		num_freed = free_object_slots(MAX_OBJECTS-10);
@@ -400,9 +400,7 @@ int obj_allocate(void)
 	}
 
 	if (Num_objects >= MAX_OBJECTS) {
-		#ifndef NDEBUG
 		mprintf(("Object creation failed - too many objects!\n" ));
-		#endif
 		return -1;
 	}
 
@@ -482,13 +480,13 @@ void obj_free(int objnum)
  * @return the object number 
  */
 int obj_create(ubyte type,int parent_obj,int instance, matrix * orient, 
-               vec3d * pos, float radius, const flagset<Object::Object_Flags> &flags )
+               vec3d * pos, float radius, const flagset<Object::Object_Flags> &flags, bool essential)
 {
 	int objnum;
 	object *obj;
 
 	// Find next free object
-	objnum = obj_allocate();
+	objnum = obj_allocate(essential);
 
 	if (objnum == -1)		//no free objects
 		return -1;
@@ -875,7 +873,7 @@ void obj_move_call_physics(object *objp, float frametime)
 					if (points > missles_left) {
 						//there are more slots than missles left, so not all of the slots will have missles drawn on them
 						for (int k = next_point; k < next_point+missles_left; k ++) {
-							float &s_pct = shipp->secondary_point_reload_pct[i][k % points];
+							float &s_pct = shipp->secondary_point_reload_pct.get(i, k % points);
 							if (s_pct < 1.0)
 								s_pct += reload_time * frametime;
 							if (s_pct > 1.0)
@@ -884,7 +882,7 @@ void obj_move_call_physics(object *objp, float frametime)
 					} else {
 						//we don't have to worry about such things
 						for (int k = 0; k < points; k++) {
-							float &s_pct = shipp->secondary_point_reload_pct[i][k];
+							float &s_pct = shipp->secondary_point_reload_pct.get(i, k);
 							if (s_pct < 1.0)
 								s_pct += reload_time * frametime;
 							if (s_pct > 1.0)
@@ -933,13 +931,8 @@ void obj_move_call_physics(object *objp, float frametime)
 				}
 			}			
 
-			// in multiplayer, if this object was just updatd (i.e. clients send their own positions),
-			// then reset the flag and don't move the object.
-            if (MULTIPLAYER_MASTER && (objp->flags[Object::Object_Flags::Just_updated])) {
-				objp->flags.remove(Object::Object_Flags::Just_updated);
-			} else {
-				physics_sim(&objp->pos, &objp->orient, &objp->phys_info, frametime);		// simulate the physics
-			}
+			// simulate the physics
+			physics_sim(&objp->pos, &objp->orient, &objp->phys_info, frametime);		
 
 			// if the object is the player object, do things that need to be done after the ship
 			// is moved (like firing weapons, etc).  This routine will get called either single
@@ -1206,7 +1199,6 @@ void obj_clear_weapon_group_id_list()
 
 int Arc_light = 1;		// If set, electrical arcs on debris cast light
 DCF_BOOL(arc_light, Arc_light)	
-extern fireball Fireballs[];
 
 void obj_move_all_post(object *objp, float frametime)
 {
@@ -1318,6 +1310,9 @@ void obj_move_all_post(object *objp, float frametime)
 
 			if (Detail.lighting > 2) {
 				float r = 0.0f, g = 0.0f, b = 0.0f;
+				// Make sure the new system works fine.
+				Assert(objp->instance > -1);
+				Assert(static_cast<int>(Fireballs.size()) > objp->instance);
 
 				fireball_get_color(Fireballs[objp->instance].fireball_info_index, &r, &g, &b);
 
@@ -1337,6 +1332,9 @@ void obj_move_all_post(object *objp, float frametime)
 					float intensity = 1.0f;
 					if (fireball_is_warp(objp))
 					{
+						// Make sure the new system works fine.
+						Assert(static_cast<int>(Fireballs.size()) > objp->instance);
+						Assert(objp->instance > -1);
 						intensity = fireball_wormhole_intensity(&Fireballs[objp->instance]); // Valathil: Get wormhole radius for lighting
 						rad = objp->radius;
 					}
@@ -1534,9 +1532,11 @@ void obj_move_all(float frametime)
 			if (objp == Player_obj && Player_ai->target_objnum != -1)
 				target = &Objects[Player_ai->target_objnum];
 
-			Script_system.SetHookObjects(2, "User", objp, "Target", target);
-			Script_system.RunCondition(CHA_ONWPEQUIPPED, objp);
-			Script_system.RemHookVars({"User", "Target"});
+			if (Script_system.IsActiveAction(CHA_ONWPEQUIPPED)) {
+				Script_system.SetHookObjects(2, "User", objp, "Target", target);
+				Script_system.RunCondition(CHA_ONWPEQUIPPED, objp);
+				Script_system.RemHookVars({"User", "Target"});
+			}
 		}
 	}
 
@@ -1580,10 +1580,6 @@ void obj_move_all(float frametime)
 				Physics_viewer_bank -= 2.0f * PI; 	 
 			}
 		}
-
-		// unflag all objects as being updates
-        objp->flags.remove(Object::Object_Flags::Just_updated);
-
 		objp = GET_NEXT(objp);
 	}
 
@@ -1648,19 +1644,18 @@ void obj_queue_render(object* obj, model_draw_list* scene)
 
 	if ( obj->flags[Object::Object_Flags::Should_be_dead] ) return;
 
-	Script_system.SetHookObject("Self", obj);
-	
-	auto skip_render = Script_system.IsConditionOverride(CHA_OBJECTRENDER, obj);
-	
-	// Always execute the hook content
-	Script_system.RunCondition(CHA_OBJECTRENDER, obj);
-
-	Script_system.RemHookVar("Self");
-
-	if (skip_render) {
-		// Script said that it want's to skip rendering
-		return;
+	if (Script_system.IsActiveAction(CHA_OBJECTRENDER)) {
+		Script_system.SetHookObject("Self", obj);
+		bool skip_render = Script_system.IsConditionOverride(CHA_OBJECTRENDER, obj);
+		// Always execute the hook content
+		Script_system.RunCondition(CHA_OBJECTRENDER, obj);
+		Script_system.RemHookVar("Self");
+		if (skip_render) {
+			// Script said that it want's to skip rendering
+			return;
+		}
 	}
+
 
 	switch ( obj->type ) {
 	case OBJ_NONE:
@@ -1809,7 +1804,6 @@ void obj_observer_move(float frame_time)
 	ft = flFrametime;
 	obj_move_call_physics( objp, ft );
 	obj_move_all_post(objp, frame_time);
-	objp->flags.remove(Object::Object_Flags::Just_updated);
 }
 
 /**
@@ -2036,6 +2030,44 @@ int object_get_model(const object *objp)
 
 	return -1;
 }
+
+int object_get_model_instance(const object *objp)
+{
+	switch (objp->type)
+	{
+		case OBJ_ASTEROID:
+		{
+			asteroid *asp = &Asteroids[objp->instance];
+			return asp->model_instance_num;
+		}
+		case OBJ_DEBRIS:
+		{
+			debris *debrisp = &Debris[objp->instance];
+			return debrisp->model_instance_num;
+		}
+		case OBJ_SHIP:
+		{
+			ship *shipp = &Ships[objp->instance];
+			return shipp->model_instance_num;
+		}
+		case OBJ_WEAPON:
+		{
+			weapon *wp = &Weapons[objp->instance];
+			return wp->model_instance_num;
+		}
+		case OBJ_JUMP_NODE:
+		{
+			CJumpNode* jnp = jumpnode_get_by_objnum(OBJ_INDEX(objp));
+			Assertion(jnp != nullptr, "Could not find jump node!");
+			return jnp->GetPolymodelInstanceNum();
+		}
+		default:
+			break;
+	}
+
+	return -1;
+}
+
 bool obj_compare(object* left, object* right) {
 	if (left == right) {
 		// Same pointer

@@ -17,6 +17,9 @@ ELSE("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 	MESSAGE(STATUS "No special handling for this compiler present, good luck!")
 ENDIF("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 
+find_package(Threads REQUIRED)
+target_link_libraries(compiler INTERFACE Threads::Threads)
+
 # Copy release settings to FastDebug
 set(CMAKE_C_FLAGS_FASTDEBUG "${CMAKE_C_FLAGS_RELEASE}")
 set(CMAKE_CXX_FLAGS_FASTDEBUG "${CMAKE_CXX_FLAGS_RELEASE}")

@@ -566,7 +566,7 @@ typedef struct hc_col {
 	ubyte	r, g, b;
 } hc_col;
 
-hc_col HC_colors[3] =
+hc_col HC_colors[HUD_COLOR_SIZE] =
 {
 	{0, 255, 0},		// Green - get RGB from Adam so it matches palette?-??.pcx
 	{67, 123, 203},	// Blue - get RGB from Adam so it matches palette?-??.pcx
@@ -1509,6 +1509,8 @@ void hud_config_close()
 	if (HC_background_bitmap_mask != -1) {
 		bm_release(HC_background_bitmap_mask);
 	}
+
+	HUD_config_inited = 0;
 }
 
 // hud_set_default_hud_config() will set the hud configuration to default values
@@ -1557,7 +1559,7 @@ void hud_config_backup()
 
 void hud_config_as_observer(ship *shipp,ai_info *aif)
 {
-	// store the current hus
+	// store the current hud
 	hud_config_backup();
 
 	// bash these values so the HUD is not offset incorrectly
@@ -1663,10 +1665,10 @@ void hud_config_alpha_slider_up()
 	HC_color_sliders[HCS_GREEN].force_currentItem( HCS_CONV(HCS_CONV(HC_color_sliders[HCS_GREEN].get_currentItem()) + 1) );
 	HC_color_sliders[HCS_BLUE].force_currentItem( HCS_CONV(HCS_CONV(HC_color_sliders[HCS_BLUE].get_currentItem()) + 1) );
 	
-	// apply
+	// apply -- Cyborg17 -- Unless you have nothing to apply it to!
 	if(HC_select_all){
 		hud_config_stuff_colors( HCS_CONV(HC_color_sliders[HCS_RED].get_currentItem()), HCS_CONV(HC_color_sliders[HCS_GREEN].get_currentItem()), HCS_CONV(HC_color_sliders[HCS_BLUE].get_currentItem()) );
-	} else {
+	} else if (HC_gauge_selected >= 0) {
 		gr_init_alphacolor(&HUD_config.clr[HC_gauge_selected], HCS_CONV(HC_color_sliders[HCS_RED].get_currentItem()), HCS_CONV(HC_color_sliders[HCS_GREEN].get_currentItem()), HCS_CONV(HC_color_sliders[HCS_BLUE].get_currentItem()), 255);
 	}
 }
@@ -1687,10 +1689,10 @@ void hud_config_alpha_slider_down()
 	HC_color_sliders[HCS_GREEN].force_currentItem( HCS_CONV(HCS_CONV(HC_color_sliders[HCS_GREEN].get_currentItem()) - 1) );
 	HC_color_sliders[HCS_BLUE].force_currentItem( HCS_CONV(HCS_CONV(HC_color_sliders[HCS_BLUE].get_currentItem()) - 1) );	
 
-	// apply
+	// apply -- Cyborg17 -- Unless you have nothing to apply it to!
 	if(HC_select_all){
 		hud_config_stuff_colors( HCS_CONV(HC_color_sliders[HCS_RED].get_currentItem()), HCS_CONV(HC_color_sliders[HCS_GREEN].get_currentItem()), HCS_CONV(HC_color_sliders[HCS_BLUE].get_currentItem()) );
-	} else {
+	} else if (HC_gauge_selected >= 0) {
 		gr_init_alphacolor(&HUD_config.clr[HC_gauge_selected], HCS_CONV(HC_color_sliders[HCS_RED].get_currentItem()), HCS_CONV(HC_color_sliders[HCS_GREEN].get_currentItem()), HCS_CONV(HC_color_sliders[HCS_BLUE].get_currentItem()), 255);
 	}
 }

@@ -586,11 +586,6 @@ void options_change_tab(int n)
 
 	switch (n) {
 		case MULTIPLAYER_TAB:
-			if ( Networking_disabled ) {
-				game_feature_disabled_popup();
-				return;
-			}
-
 			if ( !Options_multi_inited ) {
 				// init multiplayer
 				options_multi_init(&Ui_window);

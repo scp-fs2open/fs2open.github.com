@@ -239,3 +239,40 @@ TEST_F(ArgumentListParserTest, CommentOnArgWithFolliwingArg) {
 	ASSERT_EQ("", arglist[1].comment);
 }
 
+TEST_F(ArgumentListParserTest, MapType) {
+	ASSERT_TRUE(parser.parse("{ string => number ... } mapArg"));
+
+	const auto arglist = parser.getArgList();
+	ASSERT_EQ(1, static_cast<int>(arglist.size()));
+
+	const auto mapType = arglist[0].type;
+	ASSERT_EQ(ade_type_info_type::Map, mapType.getType());
+	ASSERT_EQ(2, static_cast<int>(mapType.elements().size()));
+	ASSERT_TRUE(mapType.elements()[0].isSimple());
+	ASSERT_STREQ("string", mapType.elements()[0].getIdentifier());
+	ASSERT_TRUE(mapType.elements()[1].isSimple());
+	ASSERT_STREQ("number", mapType.elements()[1].getIdentifier());
+
+	ASSERT_EQ("mapArg", arglist[0].name);
+	ASSERT_EQ("", arglist[0].def_val);
+	ASSERT_FALSE(arglist[0].optional);
+	ASSERT_EQ("", arglist[0].comment);
+}
+
+TEST_F(ArgumentListParserTest, IteratorType) {
+	ASSERT_TRUE(parser.parse("iterator<string> iteratorArg"));
+
+	const auto arglist = parser.getArgList();
+	ASSERT_EQ(1, static_cast<int>(arglist.size()));
+
+	const auto mapType = arglist[0].type;
+	ASSERT_EQ(ade_type_info_type::Iterator, mapType.getType());
+	ASSERT_EQ(1, static_cast<int>(mapType.elements().size()));
+	ASSERT_TRUE(mapType.elements()[0].isSimple());
+	ASSERT_STREQ("string", mapType.elements()[0].getIdentifier());
+
+	ASSERT_EQ("iteratorArg", arglist[0].name);
+	ASSERT_EQ("", arglist[0].def_val);
+	ASSERT_FALSE(arglist[0].optional);
+	ASSERT_EQ("", arglist[0].comment);
+}

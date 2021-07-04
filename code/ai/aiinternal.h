@@ -26,9 +26,12 @@ int object_is_targetable(object *target, ship *viewer);
 int num_nearby_fighters(int enemy_team_mask, vec3d *pos, float threshold);
 
 //Returns true if OK for *aip to fire its current weapon at its current target.
-int check_ok_to_fire(int objnum, int target_objnum, weapon_info *wip);
+int check_ok_to_fire(int objnum, int target_objnum, weapon_info *wip, int secondary_bank, ship_subsys* turret);
+
+//Returns true if *aip has a line of sight to its current target.
+bool check_los(int objnum, int target_objnum, float threshold, int primary_bank, int secondary_bank, ship_subsys* turret);
 
 //Does all the stuff needed to aim and fire a turret.
-void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum);
+void ai_fire_from_turret(ship *shipp, ship_subsys *ss);
 
 #endif

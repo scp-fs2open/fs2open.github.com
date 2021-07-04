@@ -1,7 +1,12 @@
 
 find_program(GLSLC_PATH glslc)
 
-if (GLSLC_PATH)
+# Add an option for this so that this can be disabled locally when not needed
+option(SHADERS_ENABLE_COMPILATION "Enable compilation of shaders to SPIR-V" OFF)
+
+mark_as_advanced(SHADERS_ENABLE_COMPILATION)
+
+if (SHADERS_ENABLE_COMPILATION AND GLSLC_PATH)
 	if(PLATFORM_WINDOWS)
 		set(SHADERTOOL_FILENAME "shadertool-windows.tar.gz")
 	elseif(PLATFORM_LINUX)

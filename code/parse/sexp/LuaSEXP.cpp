@@ -3,6 +3,7 @@
 #include "LuaSEXP.h"
 
 #include "iff_defs/iff_defs.h"
+#include "localization/localize.h"
 #include "mission/missionmessage.h"
 #include "object/waypoint.h"
 #include "parse/parselo.h"
@@ -38,9 +39,10 @@ SCP_unordered_map<SCP_string, int> parameter_type_mapping{{ "boolean",      OPF_
 														  { "shipclass",    OPF_SHIP_CLASS_NAME },
 														  { "weaponclass",  OPF_WEAPON_NAME },
 														  { "soundentry",   OPF_GAME_SND }, };
-std::pair<SCP_string, int> get_parameter_type(const SCP_string& name) {
+std::pair<SCP_string, int> get_parameter_type(const SCP_string& name)
+{
 	SCP_string copy = name;
-	std::transform(copy.begin(), copy.end(), copy.begin(), [](char c) { return (char)::tolower(c); });
+	SCP_tolower(copy);
 
 	auto iter = parameter_type_mapping.find(copy);
 	if (iter == parameter_type_mapping.end()) {
@@ -53,9 +55,10 @@ std::pair<SCP_string, int> get_parameter_type(const SCP_string& name) {
 SCP_unordered_map<SCP_string, int> return_type_mapping{{ "number",  OPR_NUMBER },
 													   { "boolean", OPR_BOOL },
 													   { "nothing", OPR_NULL }, };
-int get_return_type(const SCP_string& name) {
+int get_return_type(const SCP_string& name)
+{
 	SCP_string copy = name;
-	std::transform(copy.begin(), copy.end(), copy.begin(), [](char c) { return (char)::tolower(c); });
+	SCP_tolower(copy);
 
 	auto iter = return_type_mapping.find(copy);
 	if (iter == return_type_mapping.end()) {
@@ -75,9 +78,9 @@ int get_category(const SCP_string& name) {
 	return -1;
 }
 
-int get_subcategory(const SCP_string& name) {
+int get_subcategory(const SCP_string& name, int category) {
 	for (auto& subcat : op_submenu) {
-		if (subcat.name == name) {
+		if (subcat.name == name && (subcat.id & OP_CATEGORY_MASK) == category) {
 			return subcat.id;
 		}
 	}
@@ -357,7 +360,7 @@ void LuaSEXP::parseTable() {
 	SCP_string subcategory;
 	stuff_string(subcategory, F_NAME);
 
-	_subcategory = get_subcategory(subcategory);
+	_subcategory = get_subcategory(subcategory, _category);
 	if (_subcategory < 0) {
 		// Unknown subcategory so we need to add this one
 		_subcategory = sexp::add_subcategory(_category, subcategory);
@@ -371,14 +374,7 @@ void LuaSEXP::parseTable() {
 			// Default to the first subcategory in our category, hopefully it will exist...
 			_subcategory = 0x0000 | _category;
 		}
-	} else if ((_subcategory & OP_CATEGORY_MASK) != _category) {
-		error_display(0,
-					  "Subcategory '%s' is in a different category than the specified category! Subcategory names must be unique.",
-					  subcategory.c_str());
-
-		// Default to the first subcategory in our category, hopefully it will exist...
-		_subcategory = 0x0000 | _category;
-	}
+	} 
 
 	required_string("$Minimum Arguments:");
 
@@ -475,6 +471,7 @@ void LuaSEXP::parseTable() {
 	}
 
 	_help_text = help_text.str();
+	lcl_replace_stuff(_help_text, true);
 }
 void LuaSEXP::setAction(const luacpp::LuaFunction& action) {
 	Assertion(action.isValid(), "Invalid function handle supplied!");

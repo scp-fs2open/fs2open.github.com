@@ -12,18 +12,18 @@
 class  ArgumentListParser : public antlr4::Parser {
 public:
   enum {
-    COMMA = 1, EQUALS = 2, STRING = 3, PLACEHOLDER = 4, NIL = 5, TRUE = 6, 
-    FALSE = 7, FUNCTION = 8, VARARGS_SPECIFIER = 9, NUMBER = 10, TYPE_ALT = 11, 
-    L_BRACKET = 12, R_BRACKET = 13, L_PAREN = 14, R_PAREN = 15, ARROW = 16, 
-    L_ANGLE_BRACKET = 17, R_ANGLE_BRACKET = 18, ARG_COMMENT = 19, ID = 20, 
-    SPACE = 21, OTHER = 22
+    COMMA = 1, EQUALS = 2, STRING = 3, NIL = 4, TRUE = 5, FALSE = 6, FUNCTION = 7, 
+    VARARGS_SPECIFIER = 8, NUMBER = 9, TYPE_ALT = 10, L_BRACKET = 11, R_BRACKET = 12, 
+    L_PAREN = 13, R_PAREN = 14, L_CURLY = 15, R_CURLY = 16, ARROW = 17, 
+    ITERATOR = 18, L_ANGLE_BRACKET = 19, R_ANGLE_BRACKET = 20, ARG_COMMENT = 21, 
+    ID = 22, SPACE = 23, OTHER = 24
   };
 
   enum {
-    RuleArg_list = 0, RuleSimple_type = 1, RuleVarargs_or_simple_type = 2, 
-    RuleFunc_arg = 3, RuleFunc_arglist = 4, RuleFunction_type = 5, RuleType = 6, 
-    RuleBoolean = 7, RuleValue = 8, RuleActual_argument = 9, RuleOptional_argument = 10, 
-    RuleArgument = 11
+    RuleArg_list = 0, RuleStandalone_type = 1, RuleSimple_type = 2, RuleVarargs_or_simple_type = 3, 
+    RuleFunc_arg = 4, RuleFunc_arglist = 5, RuleFunction_type = 6, RuleMap_type = 7, 
+    RuleIterator_type = 8, RuleType = 9, RuleBoolean = 10, RuleValue = 11, 
+    RuleActual_argument = 12, RuleOptional_argument = 13, RuleArgument = 14
   };
 
   ArgumentListParser(antlr4::TokenStream *input);
@@ -37,11 +37,14 @@ public:
 
 
   class Arg_listContext;
+  class Standalone_typeContext;
   class Simple_typeContext;
   class Varargs_or_simple_typeContext;
   class Func_argContext;
   class Func_arglistContext;
   class Function_typeContext;
+  class Map_typeContext;
+  class Iterator_typeContext;
   class TypeContext;
   class BooleanContext;
   class ValueContext;
@@ -62,6 +65,22 @@ public:
   };
 
   Arg_listContext* arg_list();
+
+  class  Standalone_typeContext : public antlr4::ParserRuleContext {
+  public:
+    Standalone_typeContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    std::vector<TypeContext *> type();
+    TypeContext* type(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> COMMA();
+    antlr4::tree::TerminalNode* COMMA(size_t i);
+
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  Standalone_typeContext* standalone_type();
 
   class  Simple_typeContext : public antlr4::ParserRuleContext {
   public:
@@ -139,14 +158,52 @@ public:
 
   Function_typeContext* function_type();
 
+  class  Map_typeContext : public antlr4::ParserRuleContext {
+  public:
+    Map_typeContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *L_CURLY();
+    std::vector<TypeContext *> type();
+    TypeContext* type(size_t i);
+    antlr4::tree::TerminalNode *ARROW();
+    antlr4::tree::TerminalNode *VARARGS_SPECIFIER();
+    antlr4::tree::TerminalNode *R_CURLY();
+
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  Map_typeContext* map_type();
+
+  class  Iterator_typeContext : public antlr4::ParserRuleContext {
+  public:
+    Iterator_typeContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *ITERATOR();
+    antlr4::tree::TerminalNode *L_ANGLE_BRACKET();
+    TypeContext *type();
+    antlr4::tree::TerminalNode *R_ANGLE_BRACKET();
+
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  Iterator_typeContext* iterator_type();
+
   class  TypeContext : public antlr4::ParserRuleContext {
   public:
     TypeContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     Varargs_or_simple_typeContext *varargs_or_simple_type();
     Function_typeContext *function_type();
+    Map_typeContext *map_type();
+    Iterator_typeContext *iterator_type();
     std::vector<TypeContext *> type();
     TypeContext* type(size_t i);
+    antlr4::tree::TerminalNode *L_BRACKET();
+    antlr4::tree::TerminalNode *R_BRACKET();
     std::vector<antlr4::tree::TerminalNode *> TYPE_ALT();
     antlr4::tree::TerminalNode* TYPE_ALT(size_t i);
 

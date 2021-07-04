@@ -808,7 +808,7 @@ typedef struct screen {
 	std::function<void(int bitmap_handle, int bpp, const ubyte* data, int width, int height)> gf_update_texture;
 	std::function<void(void* data_out, int bitmap_num)> gf_get_bitmap_from_texture;
 
-	std::function<void(matrix4* shadow_view_matrix, const matrix* light_matrix)> gf_shadow_map_start;
+	std::function<void(matrix4* shadow_view_matrix, const matrix* light_matrix, vec3d* eye_pos)> gf_shadow_map_start;
 	std::function<void()> gf_shadow_map_end;
 
 	std::function<void()> gf_start_decal_pass;
@@ -1268,7 +1268,6 @@ void gr_set_shader(shader *shade);
 // new bitmap functions
 void gr_bitmap(int x, int y, int resize_mode = GR_RESIZE_FULL);
 void gr_bitmap_uv(int _x, int _y, int _w, int _h, float _u0, float _v0, float _u1, float _v1, int resize_mode = GR_RESIZE_FULL);
-void gr_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode);
 
 // special function for drawing polylines. this function is specifically intended for
 // polylines where each section is no more than 90 degrees away from a previous section.

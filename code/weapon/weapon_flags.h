@@ -84,6 +84,10 @@ namespace Weapon {
         Die_on_lost_lock,                   // WIF_LOCKED_HOMING missiles will die if they lose their lock
 		Has_display_name,					// Goober5000
 		No_impact_spew,						// Goober5000
+		Require_exact_los,					// If secondary or in turret, will only fire if ship has line of sight to target
+		Can_damage_shooter,					// this weapon and any of its descendants can damage its shooter - Asteroth
+		Heals,								// 'damage' heals instead of actually damaging - Asteroth
+		No_collide,
 
         NUM_VALUES
 	};
@@ -97,9 +101,10 @@ namespace Weapon {
 		Locked_when_fired,			// fired with a lock
 		Destroyed_by_weapon,		// destroyed by damage from other weapon
 		Spawned,					//Spawned from a spawning type weapon
-		Homing_update_needed,       // this is a newly spawned homing weapon which needs to update client machines
         No_homing,                  // this weapon should ignore any homing behavior it'd usually have
 		Overridden_homing,          // Homing is overridden by an external source (probably scripting)
+		Multi_homing_update_needed, // this is a newly spawned homing weapon which needs to update client machines
+		Multi_Update_Sent,			// Marks this missile as already being updated once by the server
 
 		NUM_VALUES
 	};
@@ -108,6 +113,13 @@ namespace Weapon {
 		Fast_firing,
 		Random_length,
 		Resets,
+
+		NUM_VALUES
+	};
+
+	FLAG_LIST(Beam_Info_Flags) {
+		Burst_share_random,
+		Track_own_texture_tiling,
 
 		NUM_VALUES
 	};

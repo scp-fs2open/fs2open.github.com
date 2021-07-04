@@ -20,6 +20,7 @@ FLAG_LIST(LabRenderFlag) {
 	NoDiffuseMap,
 	NoGlowMap,
 	NoSpecularMap,
+	NoReflectMap,
 	NoEnvMap,
 	NoNormalMap,
 	NoHeightMap,
@@ -67,8 +68,8 @@ enum class TextureOverride {
 
 class LabRenderer {
 public:
-	LabRenderer(LabCamera* cam) {
-		bloomLevel = Cmdline_bloom_intensity;
+	LabRenderer() {
+		bloomLevel = gr_bloom_intensity();
 		ambientFactor = Cmdline_ambient_factor;
 		directionalFactor = static_light_factor;
 		textureQuality = TextureQuality::Maximum;
@@ -76,7 +77,7 @@ public:
 		currentTeamColor = "<none>";
 		useBackground("None");
 
-		labCamera = cam;
+		labCamera.reset(new OrbitCamera());
 
 		Viewer_mode |= VM_FREECAMERA;
 
@@ -133,6 +134,8 @@ public:
 	int setAmbientFactor(int factor) { 
 		ambientFactor = factor; 
 		Cmdline_ambient_factor = factor;
+		gr_calculate_ambient_factor();
+
 		return factor; 
 	}
 
@@ -144,7 +147,7 @@ public:
 
 	int setBloomLevel(int level) { 
 		bloomLevel = level; 
-		Cmdline_bloom_intensity = level;
+		gr_set_bloom_intensity(level);
 		return level; 
 	}
 
@@ -154,8 +157,8 @@ public:
 
 	void resetTextureOverride() {};
 
-	LabCamera* getCurrentCamera();
-	void setCurrentCamera(LabCamera* newcam);
+	std::unique_ptr<LabCamera> &getCurrentCamera();
+	void setCurrentCamera(std::unique_ptr<LabCamera> &newcam);
 
 private:
 	flagset<LabRenderFlag> renderFlags;
@@ -166,7 +169,7 @@ private:
 	SCP_string currentTeamColor;
 	SCP_string currentMissionBackground;
 
-	LabCamera* labCamera;
+	std::unique_ptr<LabCamera> labCamera;
 
 	float cameraDistance;
 

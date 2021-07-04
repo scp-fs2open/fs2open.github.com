@@ -181,6 +181,8 @@ mission_event Mission_events[MAX_MISSION_EVENTS];
 mission_goal Mission_goals[MAX_GOALS];		// structure for the goals of this mission
 static goal_text Goal_text;
 
+SCP_vector<event_annotation> Event_annotations;
+
 #define DIRECTIVE_SOUND_DELAY			500					// time directive success sound effect is delayed
 #define DIRECTIVE_SPECIAL_DELAY		7000					// mark special directives as true after 7 seconds
 
@@ -322,7 +324,7 @@ int goal_text::add(const char *text)
 		return 1;
 	}
 
-	count = split_str(text, Goal_screen_text_w - Goal_screen_text_coords[gr_screen.res][GOAL_SCREEN_X_COORD] + Goal_screen_icon_xcoord[gr_screen.res], m_line_sizes + m_num_lines, m_lines + m_num_lines, max);
+	count = split_str(text, Goal_screen_text_w - Goal_screen_text_coords[gr_screen.res][GOAL_SCREEN_X_COORD] + Goal_screen_icon_xcoord[gr_screen.res], m_line_sizes + m_num_lines, m_lines + m_num_lines, max, MAX_GOAL_TEXT);
 	m_num_lines += count;
 	return count;
 }
@@ -886,6 +888,11 @@ void mission_event_unset_directive_special(int event)
 	Mission_directive_special_timestamp = timestamp(-1);
 }
 
+void mission_event_set_completion_sound_timestamp()
+{
+	Mission_directive_sound_timestamp = timestamp(DIRECTIVE_SOUND_DELAY);
+}
+
 // function which evaluates and processes the given event
 void mission_process_event( int event )
 {
@@ -982,13 +989,18 @@ void mission_process_event( int event )
 		// _argv[-1] - repeat_count of -1 would mean repeat indefinitely, so set to 0 instead.
 		Mission_events[event].repeat_count = 0;
 		Mission_events[event].formula = -1;
+
+		// Also send an update, if necessary.
+		if(MULTIPLAYER_MASTER && ((store_flags != Mission_events[event].flags) || (sindex != Mission_events[event].formula) || (store_formula != Mission_events[event].formula) || (store_result != Mission_events[event].result) || (store_count != Mission_events[event].count)) ){
+			send_event_update_packet(event);
+		}
 		return;
 	}
 
 	if (result && !Mission_events[event].satisfied_time) {
 		Mission_events[event].satisfied_time = Missiontime;
 		if ( Mission_events[event].objective_text ) {
-			Mission_directive_sound_timestamp = timestamp(DIRECTIVE_SOUND_DELAY);
+			mission_event_set_completion_sound_timestamp();
 		}
 	}
 
