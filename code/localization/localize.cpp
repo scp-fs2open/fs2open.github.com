@@ -58,7 +58,8 @@ bool *Lcl_unexpected_tstring_check = nullptr;
 // the english version (in the code) to a foreign version (in the table).  Thus, if you
 // add a new string to the code, you must assign it a new index.  Use the number below for
 // that index and increase the number below by one.
-#define XSTR_SIZE	1659
+// retail XSTR_SIZE = 1570
+#define XSTR_SIZE	1662
 
 
 // struct to allow for strings.tbl-determined x offset
