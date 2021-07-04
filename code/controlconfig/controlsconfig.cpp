@@ -1600,7 +1600,7 @@ void control_config_draw_selected_preset() {
 		sprintf(preset_str, XSTR("Preset: %s", 1659), preset_it->name.c_str());
 		
 	} else {
-		sprintf(preset_str, XSTR("Preset: custom", 1660));
+		sprintf(preset_str, XSTR("Preset: custom", 1660), "");
 	}
 
 	// Draw the string
