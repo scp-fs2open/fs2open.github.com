@@ -480,7 +480,7 @@ namespace os
 			mprintf(("INFO: \"%s\" at %s:%d\n", msg.c_str(), filename, line));
 
 			// now go for the additional popup window, if we want it ...
-			if (Cmdline_noninteractive) {
+			if (Cmdline_noninteractive || running_unittests) {
 				return;
 			}
 
