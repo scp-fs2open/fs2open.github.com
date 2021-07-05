@@ -140,7 +140,8 @@ using ListModifier = list_modifier::Modifier;
 
 // management functions
 void init_sexp_containers();
-void update_sexp_containers(SCP_vector<sexp_container>& containers);
+void update_sexp_containers(SCP_vector<sexp_container> &containers,
+	const SCP_unordered_map<SCP_string, SCP_string> &old_to_new_names);
 
 // parsing functions
 void stuff_sexp_list_containers();

@@ -82,13 +82,30 @@ void init_sexp_containers()
 	Containers_by_name_map.clear();
 }
 
-void update_sexp_containers(SCP_vector<sexp_container> &containers)
+void update_sexp_containers(SCP_vector<sexp_container> &containers,
+	const SCP_unordered_map<SCP_string, SCP_string> &old_to_new_names)
 {
 	Sexp_containers = std::move(containers);
 
 	Containers_by_name_map.clear();
 	for (auto &container : Sexp_containers) {
 		Containers_by_name_map.emplace(container.container_name, &container);
+	}
+
+	if (!old_to_new_names.empty()) {
+		const SCP_unordered_map<SCP_string, SCP_string, SCP_string_lcase_hash, SCP_string_lcase_equal_to>
+			renamed_containers(old_to_new_names.cbegin(), old_to_new_names.cend());
+		Assert(renamed_containers.size() == old_to_new_names.size());
+
+		for (int i = 0; i < Num_sexp_nodes; i++) {
+			auto &node = Sexp_nodes[i];
+			if (node.type == SEXP_ATOM && node.subtype == SEXP_ATOM_CONTAINER) {
+				const auto new_name_it = renamed_containers.find(node.text);
+				if (new_name_it != renamed_containers.cend()) {
+					strcpy_s(node.text, new_name_it->second.c_str());
+				}
+			}
+		}
 	}
 }
 
