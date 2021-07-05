@@ -201,10 +201,18 @@ int sexp_tree::load_branch(int index, int parent)
 			cur = allocate_node(parent);
 			if (Sexp_nodes[index].type & SEXP_FLAG_VARIABLE) {
 				get_combined_variable_name(combined_var_name, Sexp_nodes[index].text);
-				set_node(cur, (SEXPT_VARIABLE | SEXPT_STRING | SEXPT_VALID), combined_var_name);
+				set_node(cur, (SEXPT_VARIABLE | SEXPT_STRING | additional_flags), combined_var_name);
 			} else {
-				set_node(cur, (SEXPT_STRING | SEXPT_VALID), Sexp_nodes[index].text);
+				set_node(cur, (SEXPT_STRING | additional_flags), Sexp_nodes[index].text);
 			}
+
+		} else if (Sexp_nodes[index].subtype == SEXP_ATOM_CONTAINER) {
+			cur = allocate_node(parent);
+			const auto *p_container = get_sexp_container(Sexp_nodes[index].text);
+			Assertion(p_container != nullptr, "Attempt to load unknown container %s into SEXP tree!", Sexp_nodes[index].text);
+			// DISCUSSME: allow nested Replace Container? If so, then SEXPT_CONTAINER | SEXPT_MODIFIER is possible
+			set_node(cur, (SEXPT_CONTAINER | SEXPT_STRING | additional_flags), p_container->container_name.c_str());
+			load_branch(Sexp_nodes[index].first, cur);  // container is new parent now
 
 		} else
 			Assert(0);  // unknown and/or invalid sexp type
@@ -261,6 +269,7 @@ void var_name_from_sexp_tree_text(char *var_name, const char *text)
 
 #define NO_PREVIOUS_NODE -9
 // called recursively to save a tree branch and everything under it
+// SEXPT_MODIFIER requires no special handling here
 int sexp_tree::save_branch(int cur, int at_root)
 {
 	int start, node = -1, last = NO_PREVIOUS_NODE;
@@ -274,6 +283,11 @@ int sexp_tree::save_branch(int cur, int at_root)
 			if ((tree_nodes[cur].parent >= 0) && !at_root) {
 				node = alloc_sexp("", SEXP_LIST, SEXP_ATOM_LIST, node, -1);
 			}
+		} else if (tree_nodes[cur].type & SEXPT_CONTAINER) {
+			Assertion(get_sexp_container(tree_nodes[cur].text) != nullptr,
+				"Attempt to save unknown container %s from SEXP tree!",
+				tree_nodes[cur].text);
+			node = alloc_sexp(tree_nodes[cur].text, SEXP_ATOM, SEXP_ATOM_CONTAINER, save_branch(tree_nodes[cur].child), -1);
 		} else if (tree_nodes[cur].type & SEXPT_NUMBER) {
 			// allocate number, maybe variable
 			if (tree_nodes[cur].type & SEXPT_VARIABLE) {
@@ -452,6 +466,8 @@ void sexp_tree::set_node(int node, int type, const char *text)
 	size_t max_length;
 	if (type & SEXPT_VARIABLE) {
 		max_length = 2 * TOKEN_LENGTH + 2;
+	} else if (type & SEXPT_CONTAINER) {
+		max_length = sexp_container::NAME_MAX_LENGTH + 1;
 	} else {
 		max_length = TOKEN_LENGTH;
 	}
@@ -504,6 +520,10 @@ void sexp_tree::add_sub_tree(int node, HTREEITEM root)
 		if (tree_nodes[node].type & SEXPT_VARIABLE) {
 			tree_nodes[node].flags = NOT_EDITABLE;
 			bitmap = BITMAP_VARIABLE;
+		} else if (tree_nodes[node].type & SEXPT_CONTAINER) {
+			tree_nodes[node].flags = NOT_EDITABLE;
+			bitmap = BITMAP_CONTAINER;
+		// FIXME TODO: could SEXPT_MODIFIER happen?
 		} else {
 			tree_nodes[node].flags = EDITABLE;
 			bitmap = get_data_image(node);
@@ -519,11 +539,21 @@ void sexp_tree::add_sub_tree(int node, HTREEITEM root)
 		if (tree_nodes[node].type & SEXPT_OPERATOR)	{
 			add_sub_tree(node, root);
 
+		} else if (tree_nodes[node].type & SEXPT_CONTAINER) {
+			if (tree_nodes[node].child != -1) {
+				// we're at the root of a Replace Container subtree
+				// FIXME TODO: Assert that child's type & SEXPT_MODIFIER?
+				add_sub_tree(node, root);
+			} else {
+				tree_nodes[node].handle = insert(tree_nodes[node].text, BITMAP_CONTAINER, BITMAP_CONTAINER, root);
+				tree_nodes[node].flags = NOT_EDITABLE;
+			}
 		} else {
 			Assert(tree_nodes[node].child == -1);
 			if (tree_nodes[node].type & SEXPT_VARIABLE) {
 				tree_nodes[node].handle = insert(tree_nodes[node].text, BITMAP_VARIABLE, BITMAP_VARIABLE, root);
 				tree_nodes[node].flags = NOT_EDITABLE;
+			// FIXME TODO: handle SEXPT_MODIFIER
 			} else {
 				int bmap = get_data_image(node);
 				tree_nodes[node].handle = insert(tree_nodes[node].text, bmap, bmap, root);
