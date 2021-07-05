@@ -82,8 +82,9 @@ void init_sexp_containers()
 	Containers_by_name_map.clear();
 }
 
-void update_sexp_containers(SCP_vector<sexp_container> &containers,
-	const SCP_unordered_map<SCP_string, SCP_string> &old_to_new_names)
+void update_sexp_containers(SCP_vector<sexp_container>& containers,
+	const SCP_unordered_map<SCP_string, SCP_string, SCP_string_lcase_hash, SCP_string_lcase_equal_to>
+		&renamed_containers)
 {
 	Sexp_containers = std::move(containers);
 
@@ -92,11 +93,7 @@ void update_sexp_containers(SCP_vector<sexp_container> &containers,
 		Containers_by_name_map.emplace(container.container_name, &container);
 	}
 
-	if (!old_to_new_names.empty()) {
-		const SCP_unordered_map<SCP_string, SCP_string, SCP_string_lcase_hash, SCP_string_lcase_equal_to>
-			renamed_containers(old_to_new_names.cbegin(), old_to_new_names.cend());
-		Assert(renamed_containers.size() == old_to_new_names.size());
-
+	if (!renamed_containers.empty()) {
 		for (int i = 0; i < Num_sexp_nodes; i++) {
 			auto &node = Sexp_nodes[i];
 			if (node.type == SEXP_ATOM && node.subtype == SEXP_ATOM_CONTAINER) {
