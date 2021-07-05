@@ -131,11 +131,10 @@ void CAddModifyContainerDlg::OnOK()
 {
 	update_sexp_containers(m_containers);
 
-	// TODO: add this once SEXP tree nodes support containers
-	//if (!m_old_to_new_names.empty()) {
-	//	// TODO: rename nodes in Sexp_nodes
-	//	// TODO: rename nodes in sexp_tree::tree_nodes
-	//}
+	if (!m_old_to_new_names.empty()) {
+		// TODO: rename nodes in Sexp_nodes
+		// TODO: rename nodes in sexp_tree::tree_nodes
+	}
 
 	CDialog::OnOK();
 }
