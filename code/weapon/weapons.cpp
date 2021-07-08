@@ -100,7 +100,8 @@ int Num_weapon_subtypes = sizeof(Weapon_subtype_names)/sizeof(Weapon_subtype_nam
 flag_def_list_new<Weapon::Burst_Flags> Burst_fire_flags[] = {
 	{ "fast firing",		Weapon::Burst_Flags::Fast_firing,		true, false },
 	{ "random length",		Weapon::Burst_Flags::Random_length,		true, false },
-	{ "resets",		Weapon::Burst_Flags::Resets,		true, false }
+	{ "resets",		Weapon::Burst_Flags::Resets,		true, false },
+	{ "num firepoints for burst shots",		Weapon::Burst_Flags::Num_firepoints_burst_shots,		true, false }
 };
 
 const size_t Num_burst_fire_flags = sizeof(Burst_fire_flags)/sizeof(flag_def_list_new<Weapon::Burst_Flags>);
