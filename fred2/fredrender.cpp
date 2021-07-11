@@ -786,8 +786,30 @@ void fredhtl_render_subsystem_bounding_box(subsys_to_render * s2r) {
 
 	fred_disable_htl();
 
+	// get text
+	strcpy_s(buf, s2r->cur_subsys->system_info->subobj_name);
+
+	// add weapons if present
+	for (int i = 0; i < s2r->cur_subsys->weapons.num_primary_banks; ++i)
+	{
+		int wi = s2r->cur_subsys->weapons.primary_bank_weapons[i];
+		if (wi >= 0)
+		{
+			strcat_s(buf, "\n");
+			strcat_s(buf, Weapon_info[wi].name);
+		}
+	}
+	for (int i = 0; i < s2r->cur_subsys->weapons.num_secondary_banks; ++i)
+	{
+		int wi = s2r->cur_subsys->weapons.secondary_bank_weapons[i];
+		if (wi >= 0)
+		{
+			strcat_s(buf, "\n");
+			strcat_s(buf, Weapon_info[wi].name);
+		}
+	}
+
 	//draw the text.  rotate the center of the subsystem into place before finding out where to put the text
-	strcpy_s(buf, Render_subsys.cur_subsys->system_info->subobj_name);
 	vec3d center_pt;
 	vm_vec_unrotate(&center_pt, &bsp->offset, &s2r->ship_obj->orient);
 	vm_vec_add2(&center_pt, &s2r->ship_obj->pos);

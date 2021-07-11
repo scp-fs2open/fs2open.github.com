@@ -141,7 +141,7 @@ void draw_asteroid_field() {
 	}
 }
 
-void fredhtl_render_subsystem_bounding_box(subsys_to_render* s2r, subsys_to_render& Render_subsys) {
+void fredhtl_render_subsystem_bounding_box(subsys_to_render* s2r) {
 	vertex text_center;
 	polymodel* pm = model_get(Ship_info[Ships[s2r->ship_obj->instance].ship_info_index].model_num);
 	int subobj_num = s2r->cur_subsys->system_info->subobj_num;
@@ -219,8 +219,30 @@ void fredhtl_render_subsystem_bounding_box(subsys_to_render* s2r, subsys_to_rend
 
 	disable_htl();
 
+	// get text
+	strcpy_s(buf, s2r->cur_subsys->system_info->subobj_name);
+
+	// add weapons if present
+	for (int i = 0; i < s2r->cur_subsys->weapons.num_primary_banks; ++i)
+	{
+		int wi = s2r->cur_subsys->weapons.primary_bank_weapons[i];
+		if (wi >= 0)
+		{
+			strcat_s(buf, "\n");
+			strcat_s(buf, Weapon_info[wi].name);
+		}
+	}
+	for (int i = 0; i < s2r->cur_subsys->weapons.num_secondary_banks; ++i)
+	{
+		int wi = s2r->cur_subsys->weapons.secondary_bank_weapons[i];
+		if (wi >= 0)
+		{
+			strcat_s(buf, "\n");
+			strcat_s(buf, Weapon_info[wi].name);
+		}
+	}
+
 	//draw the text.  rotate the center of the subsystem into place before finding out where to put the text
-	strcpy_s(buf, Render_subsys.cur_subsys->system_info->subobj_name);
 	vec3d center_pt;
 	vm_vec_unrotate(&center_pt, &bsp->offset, &s2r->ship_obj->orient);
 	vm_vec_add2(&center_pt, &s2r->ship_obj->pos);
@@ -516,7 +538,7 @@ void FredRenderer::display_active_ship_subsystem(subsys_to_render& Render_subsys
 				// get subsys name
 				strcpy_s(buf, Render_subsys.cur_subsys->system_info->subobj_name);
 
-				fredhtl_render_subsystem_bounding_box(&Render_subsys, Render_subsys);
+				fredhtl_render_subsystem_bounding_box(&Render_subsys);
 			} else {
 				cancel_display_active_ship_subsystem(Render_subsys);
 			}
