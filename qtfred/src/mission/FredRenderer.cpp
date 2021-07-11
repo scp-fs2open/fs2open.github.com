@@ -25,6 +25,7 @@
 #include <graphics/light.h>
 
 #include "mission/object.h"
+#include "weapon/weapon.h"
 
 
 namespace {
@@ -528,7 +529,7 @@ void FredRenderer::display_active_ship_subsystem(subsys_to_render& Render_subsys
 			object* objp = &Objects[cur_object_index];
 
 			// if this option is checked, we want to render info for all subsystems, not just the ones we select with K and Shift-K
-			if (Highlight_selectable_subsys) {
+			if (view().Highlight_selectable_subsys) {
 				auto shipp = &Ships[objp->instance];
 
 				for (auto ss = GET_FIRST(&shipp->subsys_list); ss != END_OF_LIST(&shipp->subsys_list); ss = GET_NEXT(ss)) {
