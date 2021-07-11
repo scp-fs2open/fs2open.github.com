@@ -83,7 +83,7 @@ public:
 private:
 	inline const CampaignBranchData& getCurBr() const {
 		return isCurBrSelected() ? *mnData_it->brData_it : CampaignMissionData::bdEmpty; }
-	void connectBranches(bool uiUpdate = true);
+	void connectBranches(bool uiUpdate = true, const campaign *cpgn = nullptr);
 
 public:
 	inline int getCurBrIdx() const { return isCurBrSelected() ? mnData_it->brData_idx : -1; }
@@ -113,6 +113,22 @@ public slots:
 		modify<QString>(campaignDescr, descr); }
 
 	void missionSelectionChanged(const QModelIndex &changed);
+	/*inline const QList<QAction *>& missionLinkMenus(const QModelIndex &idx){
+		QMenu men{};
+		men.addActions();
+	}*/
+	inline const QString *missionName(const QModelIndex idx) const {
+		const CampaignMissionData *mn = missionData.internalDataConst(idx);
+		return mn ? &mn->filename : nullptr;
+	}
+	inline const QList<QAction*> *missionEvents(const QModelIndex &idx) const {
+		const CampaignMissionData *mn = missionData.internalDataConst(idx);
+		return mn ? &mn->events : nullptr;
+	}
+	inline const QList<QAction*> *missionGoals(const QModelIndex &idx) const {
+		const CampaignMissionData *mn = missionData.internalDataConst(idx);
+		return mn ? &mn->goals : nullptr;
+	}
 
 	inline void setCurMnBriefingCutscene(const QString &briefingCutscene) {
 		if (! mnData_it) return;
@@ -147,7 +163,11 @@ private:
 
 	struct CampaignMissionData {
 		CampaignMissionData() = delete;
-		CampaignMissionData(QString file, const mission *fsoMn = nullptr, const cmission *cm = nullptr);
+		CampaignMissionData(QString file,
+							bool loaded = false,
+							const mission *fsoMn = nullptr,
+							const cmission *cm = nullptr,
+							QObject* parent = nullptr);
 
 		static void initMissions(
 				const SCP_vector<SCP_string>::const_iterator &m_it,
@@ -160,6 +180,9 @@ private:
 		const int nPlayers;
 		const QString notes;
 
+		const QList<QAction *> events;
+		const QList<QAction *> goals;
+
 		QString briefingCutscene;
 		QString mainhall;
 		QString debriefingPersona;
@@ -169,7 +192,6 @@ private:
 		int brData_idx{-1};
 		SCP_vector<CampaignBranchData> branches;
 
-	private:
 		void branchesFromFormula(int formula, const cmission *loop = nullptr);
 	};
 

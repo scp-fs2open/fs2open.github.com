@@ -3,8 +3,15 @@
 #include "cutscene/cutscenes.h"
 #include "menuui/mainhallmenu.h"
 #include "stats/scoring.h"
+#include "mission/missiongoals.h"
 
 extern int Skip_packfile_search;
+
+extern void parse_init(bool basic);
+extern void parse_mission_info(mission *mn, bool basic);
+extern void parse_events(mission *mn);
+extern void parse_goals(mission* mn);
+extern int Subsys_status_size;
 
 namespace fso {
 namespace fred {
@@ -57,7 +64,9 @@ static QString loadFile(QString file, const QString& campaignType) {
 												 CampaignEditorDialogModel::campaignTypes.indexOf(campaignType);
 		return QString();
 	}
+	//FRED is to enforce that only on new campaigns a campaign type may be given
 	Assert(campaignType.isEmpty());
+	parse_init(false);
 	if (mission_campaign_load(qPrintable(file.replace('/',DIR_SEPARATOR_CHAR)), nullptr, 0))
 		return QString();
 
@@ -102,6 +111,44 @@ static inline bool isCampaignCompatible(const mission &fsoMission){
 			|| (Campaign.type == CAMPAIGN_TYPE_MULTI_TEAMS && fsoMission.game_type & MISSION_TYPE_MULTI_TEAMS);
 }
 
+static inline bool parseMnPart(mission *mn, const char *filename){
+	try {
+		read_file_text(filename, CF_TYPE_MISSIONS);
+
+		parse_init(false);
+		Subsys_index = 0;
+		Subsys_status_size = 0;
+		if (Subsys_status != nullptr) {
+			vm_free( Subsys_status );
+			Subsys_status = nullptr;
+		}
+
+		parse_mission_info(mn, true);
+		skip_to_start_of_string("#Events");
+		Num_mission_events = 0;
+		parse_events(mn);
+		Num_goals = 0;
+		parse_goals(mn);
+	}  catch (const parse::ParseException& ) {
+		return false;
+	}
+	return true;
+}
+
+static inline QList<QAction*> getParsedEvts(QObject *parent) {
+	QList<QAction*> ret;
+	for (int i = 0; i < Num_mission_events; i++)
+		ret << new QAction{ Mission_events[i].name, parent };
+	return ret;
+}
+
+static inline QList<QAction*> getParsedGoals(QObject *parent) {
+	QList<QAction*> ret;
+	for (int i = 0; i < Num_goals; i++)
+		ret << new QAction{ Mission_goals[i].name, parent };
+	return ret;
+}
+
 CampaignEditorDialogModel::CampaignLoopData::CampaignLoopData(const cmission *loop) :
 	is(loop)
 {
@@ -140,20 +187,17 @@ const SCP_map<CampaignEditorDialogModel::CampaignBranchData::BranchType, QString
 	{INVALID, ""}, {REPEAT, "Repeat mission "}, {NEXT, "Branch to "}, {NEXT_NOT_FOUND, "Branch to "}, {END, "End of Campaign"}
 };
 
-CampaignEditorDialogModel::CampaignMissionData::CampaignMissionData(QString file, const mission *fsoMn, const cmission *cm) :
+CampaignEditorDialogModel::CampaignMissionData::CampaignMissionData(QString file, bool loaded, const mission *fsoMn, const cmission *cm, QObject* parent) :
 	filename(std::move(file)),
-	fredable(fsoMn),
-	nPlayers(fsoMn ? fsoMn->num_players : 0),
-	notes(fsoMn ? fsoMn->notes : ""),
+	fredable(loaded),
+	nPlayers(loaded ? fsoMn->num_players : 0),
+	notes(loaded ? fsoMn->notes : ""),
+	events(loaded ? getParsedEvts(parent) : QList<QAction*>{}),
+	goals(loaded ? getParsedGoals(parent) : QList<QAction*>{}),
 	briefingCutscene(cm ? cm->briefing_cutscene : ""),
 	mainhall(cm ? cm->main_hall.c_str() : ""),
 	debriefingPersona(cm ? QString::number(cm->debrief_persona_index) : "")
-{
-	if (cm) {
-		branchesFromFormula(cm->formula);
-		branchesFromFormula(cm->mission_loop_formula, cm);
-	}
-}
+{}
 
 void CampaignEditorDialogModel::CampaignMissionData::initMissions(
 		const SCP_vector<SCP_string>::const_iterator &m_it,
@@ -166,23 +210,20 @@ void CampaignEditorDialogModel::CampaignMissionData::initMissions(
 	if (cm_it == &Campaign.missions[Campaign.num_missions])
 		cm_it = nullptr;
 
-	mission fsoMn;
-	bool loaded = !get_mission_info(m_it->c_str(), &fsoMn);
-	if (! isCampaignCompatible(fsoMn))
+	mission temp{};
+	bool loaded{parseMnPart(&temp, qPrintable(filename))};
+
+	if (! isCampaignCompatible(temp))
 		return;
 
-	CampaignMissionData* ret_data{
-		new CampaignMissionData{
-			filename,
-			loaded ? &fsoMn : nullptr,
-			cm_it ? cm_it : nullptr
-		}
+	CampaignMissionData* data{
+		new CampaignMissionData{ filename, loaded, &temp, cm_it, &model	}
 	};
 
 	if (! loaded)
 		QMessageBox::warning(nullptr, "Error loading mission", "Could not get info from mission: " + filename +"\nFile corrupted?");
 
-	model.initRow(filename,	ret_data, cm_it, loaded ? Qt::color0 : Qt::red);
+	model.initRow(filename,	data, cm_it, loaded ? Qt::color0 : Qt::red);
 }
 
 void CampaignEditorDialogModel::CampaignMissionData::branchesFromFormula(int formula, const cmission *loop) {
@@ -214,14 +255,12 @@ CampaignEditorDialogModel::CampaignEditorDialogModel(CampaignEditorDialog* _pare
 {
 	for (int i=0; i<Campaign.num_missions; i++) {
 		if (! missionData.contains(Campaign.missions[i].name)) {
-			mission fsoMn;
-			bool loaded = !get_mission_info(Campaign.missions[i].name, &fsoMn);
+			mission temp{};
+			bool loaded{parseMnPart(&temp, qPrintable(Campaign.missions[i].name))};
 
 			CampaignMissionData* ptr{
 				new CampaignMissionData{
-					Campaign.missions[i].name,
-					loaded ? &fsoMn : nullptr,
-					&Campaign.missions[i]
+					Campaign.missions[i].name, loaded, &temp, &Campaign.missions[i], &missionData
 				}
 			};
 
@@ -232,7 +271,14 @@ CampaignEditorDialogModel::CampaignEditorDialogModel(CampaignEditorDialog* _pare
 		}
 	}
 
-	connectBranches(false);
+	//reparse campaign after parsing missions
+	parse_init(false);
+	if (!campaignFile.isEmpty()){
+		QString temp = campaignFile;
+		bool reloaded = !mission_campaign_load(qPrintable(temp.replace('/',DIR_SEPARATOR_CHAR)), nullptr, 0);
+		Assertion(reloaded, "Campaign file should still be loadable");
+		connectBranches(false, &Campaign);
+	}
 
 	connect(&initialShips, &QAbstractListModel::dataChanged, this, &CampaignEditorDialogModel::flagModified);
 	connect(&initialWeapons, &QAbstractListModel::dataChanged, this, &CampaignEditorDialogModel::flagModified);
@@ -296,11 +342,21 @@ void CampaignEditorDialogModel::checkMissionDrop(const QModelIndex &idx, const Q
 	}
 }
 
-void CampaignEditorDialogModel::connectBranches(bool uiUpdate) {
-	for (auto& mn: missionData.getCheckedData())
+void CampaignEditorDialogModel::connectBranches(bool uiUpdate, const campaign *cpgn) {
+	for (auto& mn: missionData.getCheckedData()) {
+		if (cpgn) {
+			const cmission *const cm_it{
+				std::find_if(cpgn->missions, &cpgn->missions[cpgn->num_missions],
+						[&](const cmission &cm){ return mn->filename == cm.name; })};
+			if (cm_it != &cpgn->missions[cpgn->num_missions]) {
+				mn->branchesFromFormula(cm_it->formula);
+				mn->branchesFromFormula(cm_it->mission_loop_formula, cm_it);
+			}
+		}
 		for (auto& br: mn->branches)
 			if (br.type == CampaignBranchData::NEXT || br.type == CampaignBranchData::NEXT_NOT_FOUND)
 				br.connect(missionData.getCheckedDataConst());
+	}
 	if (uiUpdate)
 		parent->updateUIMission();
 }
