@@ -409,22 +409,31 @@ void display_active_ship_subsystem() {
 		if (Objects[cur_object_index].type == OBJ_SHIP) {
 
 			object *objp = &Objects[cur_object_index];
-			char buf[256];
+			
+			// if this option is checked, we want to render info for all subsystems, not just the ones we select with K and Shift-K
+			if (Highlight_selectable_subsys) {
+				auto shipp = &Ships[objp->instance];
 
-			// switching to a new ship, so reset
-			if (objp != Render_subsys.ship_obj) {
-				cancel_display_active_ship_subsystem();
-				return;
+				for (auto ss = GET_FIRST(&shipp->subsys_list); ss != END_OF_LIST(&shipp->subsys_list); ss = GET_NEXT(ss)) {
+					if (ss->system_info->subobj_num != -1) {
+						subsys_to_render s2r = { true, objp, ss };
+						fredhtl_render_subsystem_bounding_box(&s2r);
+					}
+				}
 			}
+			// otherwise select individual subsystems, or not, as normal
+			else {
+				// switching to a new ship, so reset
+				if (objp != Render_subsys.ship_obj) {
+					cancel_display_active_ship_subsystem();
+					return;
+				}
 
-			if (Render_subsys.do_render) {
-
-				// get subsys name
-				strcpy_s(buf, Render_subsys.cur_subsys->system_info->subobj_name);
-
-				fredhtl_render_subsystem_bounding_box(&Render_subsys);
-			} else {
-				cancel_display_active_ship_subsystem();
+				if (Render_subsys.do_render) {
+					fredhtl_render_subsystem_bounding_box(&Render_subsys);
+				} else {
+					cancel_display_active_ship_subsystem();
+				}
 			}
 		}
 	}
@@ -786,8 +795,30 @@ void fredhtl_render_subsystem_bounding_box(subsys_to_render * s2r) {
 
 	fred_disable_htl();
 
+	// get text
+	strcpy_s(buf, s2r->cur_subsys->system_info->subobj_name);
+
+	// add weapons if present
+	for (int i = 0; i < s2r->cur_subsys->weapons.num_primary_banks; ++i)
+	{
+		int wi = s2r->cur_subsys->weapons.primary_bank_weapons[i];
+		if (wi >= 0)
+		{
+			strcat_s(buf, "\n");
+			strcat_s(buf, Weapon_info[wi].name);
+		}
+	}
+	for (int i = 0; i < s2r->cur_subsys->weapons.num_secondary_banks; ++i)
+	{
+		int wi = s2r->cur_subsys->weapons.secondary_bank_weapons[i];
+		if (wi >= 0)
+		{
+			strcat_s(buf, "\n");
+			strcat_s(buf, Weapon_info[wi].name);
+		}
+	}
+
 	//draw the text.  rotate the center of the subsystem into place before finding out where to put the text
-	strcpy_s(buf, Render_subsys.cur_subsys->system_info->subobj_name);
 	vec3d center_pt;
 	vm_vec_unrotate(&center_pt, &bsp->offset, &s2r->ship_obj->orient);
 	vm_vec_add2(&center_pt, &s2r->ship_obj->pos);

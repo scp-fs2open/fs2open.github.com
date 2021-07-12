@@ -1408,6 +1408,7 @@
 #define ID_NEXT_SUBSYS                  33059
 #define ID_PREV_SUBSYS                  33060
 #define ID_CANCEL_SUBSYS                33061
+#define ID_HIGHLIGHT_SUBSYS             33062
 #define ID_SHOW_DOCK_POINTS             33065
 #define ID_SHOW_PATHS                   33066
 #define ID_DUMP_STATS                   33067

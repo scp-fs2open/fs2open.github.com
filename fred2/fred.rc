@@ -260,6 +260,7 @@ BEGIN
         MENUITEM "Show Distances\tD",           32941
         MENUITEM "Show Model Paths",            33066
         MENUITEM "Show Model Dock Points",      33065
+        MENUITEM "Highlight Selectable Subsystems",      33062
         MENUITEM SEPARATOR
         MENUITEM "Show &Grid\tShift+Alt+G",     32808
         MENUITEM "Show Horizon\tShift+Alt+H",   32954
