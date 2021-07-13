@@ -116,6 +116,11 @@ class waypoint_list;
 #define OPF_FIREBALL			89		// Goober5000 - an entry in fireball.tbl
 #define OPF_SPECIES				90		// Goober5000
 #define OPF_LANGUAGE			91		// Goober5000
+#define OPF_CONTAINER_NAME		92		// Karajorma/jg18 - The name of a SEXP container
+#define OPF_LIST_CONTAINER_NAME	93		// Karajorma/jg18 - The name of a SEXP list container
+#define OPF_MAP_CONTAINER_NAME	94		// Karajorma/jg18 - The name of a SEXP map container
+#define OPF_LIST_MODIFIER		95		// Karajorma/jg18 - The possible modifiers for a SEXP list container
+#define OPF_MAP_KEY				96		// Karajorma/jg18 - The keys in a SEXP map container
 
 // Operand return types
 #define	OPR_NUMBER				1	// returns number

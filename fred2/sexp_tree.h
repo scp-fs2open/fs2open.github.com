@@ -149,6 +149,11 @@ public:
 	void replace_operator(const char *op);
 	void replace_data(const char *data, int type);
 	void replace_variable_data(int var_idx, int type);
+	void replace_container_data(const sexp_container &container,
+		int type,
+		bool test_child_nodes,
+		bool delete_child_nodes,
+		bool set_default_modifier);
 	void link_modified(int *ptr);
 	void ensure_visible(int node);
 	int node_error(int node, const char *msg, int *bypass);
@@ -176,6 +181,7 @@ public:
 	void add_operator(const char *op, HTREEITEM h = TVI_ROOT);
 	int add_data(const char *data, int type);
 	int add_variable_data(const char *data, int type);
+	int add_container_data(const char *data); // type info can be retrieved from the container
 	void add_sub_tree(int node, HTREEITEM root);
 	int load_sub_tree(int index, bool valid, const char *text);
 	void hilite_item(int node);
@@ -200,9 +206,8 @@ public:
 
 
 	// Karajorma/jg18 - SEXP Container functions
-	void add_default_modifier(int container_index);
-	void replace_container_ref(int container_idx, int type, bool test_child_nodes = true, bool delete_child_nodes = true, bool set_default_modifier = true);
-	int add_container_ref(const char* data, bool add_default = true);
+	void add_default_modifier(const sexp_container &container);
+
 
 	sexp_list_item *get_listing_opf(int opf, int parent_node, int arg_index);
 	sexp_list_item *get_listing_opf_null();
@@ -289,9 +294,9 @@ public:
 	sexp_list_item *get_listing_opf_fireball();
 	sexp_list_item *get_listing_opf_species();
 	sexp_list_item *get_listing_opf_language();
-	sexp_list_item *get_listing_opf_sexp_containers(int type);
-	sexp_list_item *get_listing_opf_list_modifiers(bool modifier);
-	sexp_list_item *get_listing_opf_map_keys(int parent_node, bool modifier);
+	sexp_list_item *get_listing_opf_sexp_containers(ContainerType con_type);
+	sexp_list_item *get_listing_opf_list_modifiers(bool use_modifier_type);
+	sexp_list_item *get_listing_opf_map_keys(int parent_node, bool use_modifier_type);
 
 	int m_mode;
 	int item_index;

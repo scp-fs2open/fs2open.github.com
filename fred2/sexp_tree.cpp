@@ -756,7 +756,7 @@ void sexp_tree::right_clicked(int mode)
 							query_operator_argument_type(op, Replace_count); // check argument type at this position
 					} else {
 						Assert(tree_nodes[parent].type & SEXPT_CONTAINER);
-						const auto *p_container = get_sexp_container(tree_nodes[parent].text);
+						const auto* p_container = get_sexp_container(tree_nodes[parent].text);
 						Assert(p_container != nullptr);
 						op_type = p_container->opf_type;
 					}
@@ -1348,8 +1348,14 @@ void sexp_tree::right_clicked(int mode)
 				j = tree_nodes[j].next;
 			}
 
-			type = query_operator_argument_type(op, count); // check argument type at this position
-
+			if (op >= 0) {
+				type = query_operator_argument_type(op, count);
+			} else {
+				Assert(tree_nodes[parent].type & SEXPT_CONTAINER);
+				const auto *p_container = get_sexp_container(tree_nodes[z].text);
+				Assert(p_container != nullptr);
+				type = p_container->opf_type;
+			}
 		} else {
 			if (m_mode == MODE_EVENTS)
 				type = OPF_NULL;
@@ -3110,6 +3116,31 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_MISSION_MOOD:
 			return Builtin_moods.empty() ? 0 : 1;
 
+		case OPF_CONTAINER_NAME:
+			return get_all_sexp_containers().empty() ? 0 : 1;
+
+		case OPF_LIST_CONTAINER_NAME:
+			for (const auto &container : get_all_sexp_containers()) {
+				if (container.is_list()) {
+					return 1;
+				}
+			}
+			return 0;
+
+		case OPF_MAP_CONTAINER_NAME:
+			for (const auto &container : get_all_sexp_containers()) {
+				if (container.is_map()) {
+					return 1;
+				}
+			}
+			return 0;
+
+		case OPF_LIST_MODIFIER:
+			return 1;
+
+		case OPF_MAP_KEY:	// without knowing which map we are dealing with, there is no possible way to know if any keys are defined for it
+			return 0;
+
 		default:
 			Int3();
 
@@ -4824,6 +4855,26 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			list = get_listing_opf_language();
 			break;
 
+		case OPF_CONTAINER_NAME:
+			list = get_listing_opf_sexp_containers(ContainerType::LIST | ContainerType::MAP);
+			break;
+
+		case OPF_LIST_CONTAINER_NAME:
+			list = get_listing_opf_sexp_containers(ContainerType::LIST);
+			break;
+
+		case OPF_MAP_CONTAINER_NAME:
+			list = get_listing_opf_sexp_containers(ContainerType::MAP);
+			break;
+
+		case OPF_LIST_MODIFIER:
+			list = get_listing_opf_list_modifiers(modifier);
+			break;
+
+		case OPF_MAP_KEY:
+			list = get_listing_opf_map_keys(parent_node, modifier);
+			break;
+
 		default:
 			Int3();  // unknown OPF code
 			list = NULL;
@@ -6464,6 +6515,50 @@ sexp_list_item *sexp_tree::get_listing_opf_language()	// NOLINT
 
 	for (auto &lang: Lcl_languages)
 		head.add_data(lang.lang_name);
+
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_sexp_containers(ContainerType con_type)
+{
+	sexp_list_item head;
+
+	for (const auto &container : get_all_sexp_containers()) {
+		if (any(container.type & type)) {
+			head.add_data(container.container_name.c_str());
+		}
+	}
+
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_list_modifiers(bool use_modifier_type)
+{
+	sexp_list_item head;
+
+	const int type = SEXPT_STRING | SEXPT_VALID | (use_modifier_type ? SEXPT_MODIFIER : 0);
+	for (const auto &modifier : get_all_list_modifiers()) {
+		head.add_data(modifier.name, type);
+	}
+
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_map_keys(int parent_node, bool use_modifier_type)
+{
+	sexp_list_item head;
+
+	Assert(tree_nodes[parent_node].type & SEXPT_CONTAINER);
+
+	const auto *p_container = get_sexp_container(tree_nodes[parent_node].text);
+
+	Assert(p_container != nullptr);
+	Assert(p_container->is_map());
+
+	const int type = SEXPT_STRING | SEXPT_VALID | (use_modifier_type ? SEXPT_MODIFIER : 0);
+	for (const auto &kv_pair : p_container->map_data) {
+		head.add_data(kv_pair.first.c_str(), type);
+	}
 
 	return head.next;
 }
