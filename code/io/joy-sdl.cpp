@@ -167,7 +167,7 @@ bool isPlayerJoystick(Joystick* testStick, short cid) {
 	GUID = os_config_read_string(nullptr, key_guid.c_str(), "");
 	Id = static_cast<int>(os_config_read_uint(nullptr, key_id.c_str(), 0));
 
-	if ((cid == CID_JOY0) && (GUID == "")) {
+	if ((cid == CID_JOY0) && GUID.empty()) {
 		// Check legacy keys
 		GUID = os_config_read_string(nullptr, "CurrentJoystickGUID", "");
 		Id = static_cast<int>(os_config_read_uint(nullptr, "CurrentJoystick", 0));

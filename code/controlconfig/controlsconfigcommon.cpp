@@ -2304,8 +2304,7 @@ bool CC_bind::conflicts_with(const CC_bind& B) const {
 
 	// Check if A is an Axis or Axis Button, and if B is an Axis or Axis Button
 	char mask = (CCF_AXIS_BTN | CCF_AXIS);
-	if ((flags & mask) &&
-		(B.flags & mask)) {
+	if ((flags & mask) && (B.flags & mask)) {
 		return true;
 	}
 
@@ -2324,8 +2323,7 @@ bool CC_bind::conflicts_with(const CC_bind& B) const {
 
 	// Check if A is not a key/button, or if B is not a key/button
 	mask = (CCF_AXIS_BTN | CCF_AXIS | CCF_HAT | CCF_BALL | CCF_RELATIVE | CCF_INVERTED);
-	if (flags & mask ||
-		B.flags & mask) {
+	if ((flags & mask) || (B.flags & mask)) {
 		return false;
 	}
 

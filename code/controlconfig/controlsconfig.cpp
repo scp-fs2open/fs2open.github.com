@@ -1521,21 +1521,21 @@ void control_config_close()
 
 	// free strings	
 	for(idx=0; idx<NUM_AXIS_TEXT; idx++){
-		if(Axis_text[idx] != NULL){
+		if(Axis_text[idx] != nullptr){
 			vm_free(Axis_text[idx]);
-			Axis_text[idx] = NULL;
+			Axis_text[idx] = nullptr;
 		}
 	}
 	for(idx=0; idx<NUM_MOUSE_TEXT; idx++){
-		if(Mouse_button_text[idx] != NULL){
+		if(Mouse_button_text[idx] != nullptr){
 			vm_free(Mouse_button_text[idx]);
-			Mouse_button_text[idx] = NULL;
+			Mouse_button_text[idx] = nullptr;
 		}
 	}
 	for(idx=0; idx<NUM_INVERT_TEXT; idx++){
-		if(Invert_text[idx] != NULL){
+		if(Invert_text[idx] != nullptr){
 			vm_free(Invert_text[idx]);
-			Invert_text[idx] = NULL;
+			Invert_text[idx] = nullptr;
 		}
 	}
 

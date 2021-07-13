@@ -349,9 +349,15 @@ void PresetFileHandler::ensureExists(const char* name) {
 }
 
 void PresetFileHandler::ensureNotExists(const char* name) {
-	Assertion(json_is_object(_currentEl), "Currently not in an element that supports keys!");
+	// Stuff debug checks into booleans, otherwise clang will trigger a false positive for static method with just the asserts
+	// Make sure we're in an element that can support keys
+	bool supports_keys = json_is_object(_currentEl);
+
 	// Make sure we don't overwrite previous values
-	Assertion(json_object_get(_currentEl, name) == nullptr, "Entry with name %s already exists!", name);
+	bool element_is_unique = json_object_get(_currentEl, name) == nullptr;
+
+	Assertion(supports_keys, "Currently not in an element that supports keys!");
+	Assertion(element_is_unique, "Entry with name %s already exists!", name);
 }
 
 bool PresetFileHandler::exists(const char* name) {
