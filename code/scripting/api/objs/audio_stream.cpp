@@ -132,6 +132,21 @@ ADE_FUNC(isPlaying,
 	return ade_set_args(L, "b", audiostream_is_playing(streamHandle) != 0);
 }
 
+ADE_FUNC(setVolume,	l_AudioStream, "number volume", "Sets the volume of the audio stream, 0 - 1", "boolean", "true on success, false otherwise")
+{
+	int streamHandle = -1;
+	float volume = -1.0f;
+	if (!ade_get_args(L, "of", l_AudioStream.Get(&streamHandle), &volume)) {
+		return ADE_RETURN_FALSE;
+	}
+
+	if (streamHandle < 0) {
+		return ade_set_args(L, "b", false);
+	}
+	audiostream_set_volume(streamHandle, volume);
+	return ade_set_args(L, "b", true);
+}
+
 ADE_FUNC(isValid,
 	l_AudioStream,
 	nullptr,
