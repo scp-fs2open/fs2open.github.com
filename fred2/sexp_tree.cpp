@@ -6524,7 +6524,7 @@ sexp_list_item *sexp_tree::get_listing_opf_sexp_containers(ContainerType con_typ
 	sexp_list_item head;
 
 	for (const auto &container : get_all_sexp_containers()) {
-		if (any(container.type & type)) {
+		if (any(container.type & con_type)) {
 			head.add_data(container.container_name.c_str());
 		}
 	}

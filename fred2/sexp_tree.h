@@ -14,6 +14,7 @@
 #pragma warning(disable: 4786)
 
 #include "parse/sexp.h"
+#include "parse/sexp_container.h"
 #include "parse/parselo.h"
 
 // Goober5000 - it's dynamic now
