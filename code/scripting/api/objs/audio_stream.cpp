@@ -141,10 +141,10 @@ ADE_FUNC(setVolume,	l_AudioStream, "number volume", "Sets the volume of the audi
 	}
 
 	if (streamHandle < 0) {
-		return ade_set_args(L, "b", false);
+		return ADE_RETURN_FALSE;
 	}
 	audiostream_set_volume(streamHandle, volume);
-	return ade_set_args(L, "b", true);
+	return ADE_RETURN_TRUE;
 }
 
 ADE_FUNC(isValid,
