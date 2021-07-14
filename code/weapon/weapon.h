@@ -550,7 +550,7 @@ struct weapon_info
 
 	int weapon_hitpoints;
 
-	int	burst_shots;
+	int	burst_shots;	// always 1 less than the actual burst length; 0 = no burst, 1 = two-shot burst, 2 = 3-shot, etc
 	float burst_delay;
 	flagset<Weapon::Burst_Flags> burst_flags;
 

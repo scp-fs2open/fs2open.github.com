@@ -1605,6 +1605,7 @@ void turret_set_next_fire_timestamp(int weapon_num, weapon_info *wip, ship_subsy
 {
 	Assert(weapon_num < MAX_SHIP_WEAPONS);
 	float wait = 1000.0f;
+	// should subtract 1 from firepoints to match behavior of wip->burst_shots
 	int burst_shots = (wip->burst_flags[Weapon::Burst_Flags::Num_firepoints_burst_shots] ? turret->system_info->turret_num_firing_points - 1 : wip->burst_shots);
 
 	if (burst_shots > turret->weapons.burst_counter[weapon_num]) {

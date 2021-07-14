@@ -11500,6 +11500,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force, bool rollback
 		int old_burst_counter = swp->burst_counter[bank_to_fire];
 		int old_burst_seed = swp->burst_seed[bank_to_fire];
 
+		// should subtract 1 from num_slots to match behavior of winfo_p->burst_shots
 		int burst_shots = (winfo_p->burst_flags[Weapon::Burst_Flags::Num_firepoints_burst_shots] ? num_slots - 1 : winfo_p->burst_shots);
 		if (burst_shots > swp->burst_counter[bank_to_fire]) {
 			next_fire_delay = winfo_p->burst_delay * 1000.0f;
