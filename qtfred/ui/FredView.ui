@@ -109,6 +109,7 @@
     <addaction name="actionShow_Distances"/>
     <addaction name="actionShow_Model_Paths"/>
     <addaction name="actionShow_Model_Dock_Points"/>
+    <addaction name="actionHighlight_Selectable_Subsystems"/>
     <addaction name="separator"/>
     <addaction name="actionShow_Grid"/>
     <addaction name="actionShow_Horizon"/>
@@ -796,6 +797,14 @@
    </property>
    <property name="text">
     <string>Show Model Doc&amp;k Points</string>
+   </property>
+  </action>
+  <action name="actionHighlight_Selectable_Subsystems">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Highlight Selectable Subsystems</string>
    </property>
   </action>
   <action name="actionShow_Grid">

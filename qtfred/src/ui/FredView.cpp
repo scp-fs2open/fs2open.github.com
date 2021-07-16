@@ -277,6 +277,7 @@ void FredView::syncViewOptions() {
 	connectActionToViewSetting(ui->actionShow_Distances, &_viewport->view.Show_distances);
 	connectActionToViewSetting(ui->actionShow_Model_Paths, &_viewport->view.Show_paths_fred);
 	connectActionToViewSetting(ui->actionShow_Model_Dock_Points, &_viewport->view.Show_dock_points);
+	connectActionToViewSetting(ui->actionHighlight_Selectable_Subsystems, &_viewport->view.Highlight_selectable_subsys);
 
 	connectActionToViewSetting(ui->actionShow_Grid, &_viewport->view.Show_grid);
 	connectActionToViewSetting(ui->actionShow_Horizon, &_viewport->view.Show_horizon);
