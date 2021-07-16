@@ -129,6 +129,8 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 			&FredView::viewIdle,
 			this,
 			[this]() { ui->actionRestore_Camera_Pos->setEnabled(!IS_VEC_NULL(&_viewport->saved_cam_orient.vec.fvec)); });
+
+	connect(this, &FredView::viewIdle, this, [this]() { ui->actionMove_Ships_When_Undocking->setChecked(_viewport->Move_ships_when_undocking); });
 }
 
 void FredView::loadMissionFile(const QString& pathName) {
@@ -1028,14 +1030,14 @@ void FredView::onSetGroup(int group) {
 
 	fred->updateAllViewports();
 }
+void FredView::on_actionControl_Object_triggered(bool) {
+	_viewport->Control_mode = (_viewport->Control_mode + 1) % 2;
+}
 void FredView::on_actionLevel_Object_triggered(bool) {
 	_viewport->level_controlled();
 }
 void FredView::on_actionAlign_Object_triggered(bool) {
 	_viewport->verticalize_controlled();
-}
-void FredView::on_actionControl_Object_triggered(bool) {
-	_viewport->Control_mode = (_viewport->Control_mode + 1) % 2;
 }
 void FredView::on_actionNext_Subsystem_triggered(bool) {
 	fred->select_next_subsystem();
@@ -1045,6 +1047,9 @@ void FredView::on_actionPrev_Subsystem_triggered(bool) {
 }
 void FredView::on_actionCancel_Subsystem_triggered(bool) {
 	fred->cancel_select_subsystem();
+}
+void FredView::on_actionMove_Ships_When_Undocking_triggered(bool) {
+	_viewport->Move_ships_when_undocking = !_viewport->Move_ships_when_undocking;
 }
 void FredView::on_actionError_Checker_triggered(bool) {
 	fred->global_error_check();

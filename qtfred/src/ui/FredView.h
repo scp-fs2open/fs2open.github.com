@@ -111,13 +111,16 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void on_actionDelete_triggered(bool);
 	void on_actionDelete_Wing_triggered(bool);
 
+	void on_actionControl_Object_triggered(bool);
 	void on_actionLevel_Object_triggered(bool);
 	void on_actionAlign_Object_triggered(bool);
-	void on_actionControl_Object_triggered(bool);
 
 	void on_actionNext_Subsystem_triggered(bool);
 	void on_actionPrev_Subsystem_triggered(bool);
 	void on_actionCancel_Subsystem_triggered(bool);
+
+	void on_actionMove_Ships_When_Undocking_triggered(bool);
+
 	void on_actionError_Checker_triggered(bool);
 
 	void on_actionAbout_triggered(bool);

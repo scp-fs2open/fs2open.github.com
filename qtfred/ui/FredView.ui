@@ -225,6 +225,7 @@
     <addaction name="separator"/>
     <addaction name="actionMark_Wing"/>
     <addaction name="actionAdjust_Grid"/>
+    <addaction name="actionMove_Ships_When_Undocking"/>
     <addaction name="actionMission_Statistics"/>
     <addaction name="separator"/>
     <addaction name="actionError_Checker"/>
@@ -1387,6 +1388,14 @@
   <action name="actionAdjust_Grid">
    <property name="text">
     <string>Adjust &amp;Grid</string>
+   </property>
+  </action>
+  <action name="actionMove_Ships_When_Undocking">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Move Ships When Undocking</string>
    </property>
   </action>
   <action name="actionMission_Statistics">
