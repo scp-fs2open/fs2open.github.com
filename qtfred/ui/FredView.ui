@@ -213,16 +213,18 @@
     <property name="title">
      <string>&amp;Misc</string>
     </property>
-    <addaction name="actionLevel_Object"/>
-    <addaction name="actionAlign_Object"/>
-    <addaction name="actionMark_Wing"/>
-    <addaction name="actionControl_Object"/>
     <addaction name="actionNext_Object"/>
     <addaction name="actionPrev_Object"/>
-    <addaction name="actionAdjust_Grid"/>
+    <addaction name="actionControl_Object"/>
+    <addaction name="actionLevel_Object"/>
+    <addaction name="actionAlign_Object"/>
+    <addaction name="separator"/>
     <addaction name="actionNext_Subsystem"/>
     <addaction name="actionPrev_Subsystem"/>
     <addaction name="actionCancel_Subsystem"/>
+    <addaction name="separator"/>
+    <addaction name="actionMark_Wing"/>
+    <addaction name="actionAdjust_Grid"/>
     <addaction name="actionMission_Statistics"/>
     <addaction name="separator"/>
     <addaction name="actionError_Checker"/>
@@ -570,7 +572,7 @@
     <string>OrbitSelected</string>
    </property>
    <property name="toolTip">
-    <string>Rotate about Selected (Alt+R)</string>
+    <string>Rotate Around Object (Alt+R)</string>
    </property>
    <property name="shortcut">
     <string>Alt+R</string>
@@ -894,7 +896,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>&amp;Lighting from Suns...</string>
+    <string>&amp;Lighting from Suns</string>
    </property>
   </action>
   <action name="actionCamera">
@@ -1310,38 +1312,6 @@
     <string>Group &amp;9</string>
    </property>
   </action>
-  <action name="actionLevel_Object">
-   <property name="text">
-    <string>&amp;Level Object</string>
-   </property>
-   <property name="shortcut">
-    <string>L</string>
-   </property>
-  </action>
-  <action name="actionAlign_Object">
-   <property name="text">
-    <string>&amp;Align Object</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+L</string>
-   </property>
-  </action>
-  <action name="actionMark_Wing">
-   <property name="text">
-    <string>&amp;Mark Wing</string>
-   </property>
-   <property name="shortcut">
-    <string>W</string>
-   </property>
-  </action>
-  <action name="actionControl_Object">
-   <property name="text">
-    <string>&amp;Control Object</string>
-   </property>
-   <property name="shortcut">
-    <string>T</string>
-   </property>
-  </action>
   <action name="actionNext_Object">
    <property name="text">
     <string>&amp;Next Object</string>
@@ -1358,9 +1328,28 @@
     <string>Ctrl+Tab</string>
    </property>
   </action>
-  <action name="actionAdjust_Grid">
+  <action name="actionControl_Object">
    <property name="text">
-    <string>Adjust &amp;Grid</string>
+    <string>&amp;Control Object</string>
+   </property>
+   <property name="shortcut">
+    <string>T</string>
+   </property>
+  </action>
+  <action name="actionLevel_Object">
+   <property name="text">
+    <string>&amp;Level Object</string>
+   </property>
+   <property name="shortcut">
+    <string>L</string>
+   </property>
+  </action>
+  <action name="actionAlign_Object">
+   <property name="text">
+    <string>&amp;Align Object</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+L</string>
    </property>
   </action>
   <action name="actionNext_Subsystem">
@@ -1385,6 +1374,19 @@
    </property>
    <property name="shortcut">
     <string>Alt+K</string>
+   </property>
+  </action>
+  <action name="actionMark_Wing">
+   <property name="text">
+    <string>&amp;Mark Wing</string>
+   </property>
+   <property name="shortcut">
+    <string>W</string>
+   </property>
+  </action>
+  <action name="actionAdjust_Grid">
+   <property name="text">
+    <string>Adjust &amp;Grid</string>
    </property>
   </action>
   <action name="actionMission_Statistics">
