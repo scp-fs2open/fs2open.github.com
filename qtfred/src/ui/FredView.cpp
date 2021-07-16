@@ -63,7 +63,6 @@ FredView::FredView(QWidget* parent) : QMainWindow(parent), ui(new Ui::FredView()
 	ui->actionNew->setShortcuts(QKeySequence::New);
 	ui->actionOpen->setShortcuts(QKeySequence::Open);
 	ui->actionSave->setShortcuts(QKeySequence::Save);
-	ui->actionSave_As->setShortcuts(QKeySequence::SaveAs);
 	ui->actionExit->setShortcuts(QKeySequence::Quit);
 	ui->actionUndo->setShortcuts(QKeySequence::Undo);
 	ui->actionDelete->setShortcuts(QKeySequence::Delete);

@@ -333,7 +333,7 @@
     <string>SelectRotate</string>
    </property>
    <property name="toolTip">
-    <string>Select and Rotate</string>
+    <string>Select and Rotate (R)</string>
    </property>
    <property name="shortcut">
     <string>R</string>
@@ -369,7 +369,7 @@
     <string>ConstraintX</string>
    </property>
    <property name="toolTip">
-    <string>X Constraint (`)</string>
+    <string>X Constraint</string>
    </property>
   </action>
   <action name="actionConstrainY">
@@ -384,7 +384,7 @@
     <string>ConstraintY</string>
    </property>
    <property name="toolTip">
-    <string>Y Constraint (`)</string>
+    <string>Y Constraint</string>
    </property>
   </action>
   <action name="actionConstrainZ">
@@ -399,7 +399,7 @@
     <string>ConstraintZ</string>
    </property>
    <property name="toolTip">
-    <string>Z Constraint (`)</string>
+    <string>Z Constraint</string>
    </property>
   </action>
   <action name="actionConstrainXZ">
@@ -414,7 +414,7 @@
     <string>ConstraintXZ</string>
    </property>
    <property name="toolTip">
-    <string>XZ Constraint (`)</string>
+    <string>XZ Constraint</string>
    </property>
   </action>
   <action name="actionConstrainYZ">
@@ -444,7 +444,7 @@
     <string>ConstraintXY</string>
    </property>
    <property name="toolTip">
-    <string>XY Constaint (`)</string>
+    <string>XY Constaint</string>
    </property>
   </action>
   <action name="actionSelectionList">
@@ -474,10 +474,10 @@
     <string>SelectionLock</string>
    </property>
    <property name="toolTip">
-    <string>Selection Lock (L)</string>
+    <string>Selection Lock (Spacebar)</string>
    </property>
    <property name="shortcut">
-    <string>L</string>
+    <string>Space</string>
    </property>
   </action>
   <action name="actionWingForm">
@@ -489,7 +489,7 @@
     <string>WingForm</string>
    </property>
    <property name="toolTip">
-    <string>Form Wing (Ctrl + W)</string>
+    <string>Form Wing (Ctrl+W)</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+W</string>
@@ -504,7 +504,7 @@
     <string>WingDisband</string>
    </property>
    <property name="toolTip">
-    <string>Disband Wing (Ctrl + D)</string>
+    <string>Disband Wing (Ctrl+D)</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+D</string>
@@ -519,7 +519,10 @@
     <string>ZoomSelected</string>
    </property>
    <property name="toolTip">
-    <string>Zoom on Selected (Alt + Z)</string>
+    <string>Zoom on Selected (Alt+Z)</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+Z</string>
    </property>
   </action>
   <action name="actionZoomExtents">
@@ -531,7 +534,7 @@
     <string>ZoomExtents</string>
    </property>
    <property name="toolTip">
-    <string>Zoom Extents (Shift + Z)</string>
+    <string>Zoom Extents (Shift+Z)</string>
    </property>
    <property name="shortcut">
     <string>Shift+Z</string>
@@ -567,10 +570,10 @@
     <string>OrbitSelected</string>
    </property>
    <property name="toolTip">
-    <string>Rotate about Selected (Ctrl + V)</string>
+    <string>Rotate about Selected (Alt+R)</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+V</string>
+    <string>Alt+R</string>
    </property>
   </action>
   <action name="actionNew">
@@ -594,6 +597,9 @@
   <action name="actionSave_As">
    <property name="text">
     <string>Sa&amp;ve As...</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+S</string>
    </property>
   </action>
   <action name="actionRevert">
@@ -915,7 +921,7 @@
     <string>&amp;x1</string>
    </property>
    <property name="shortcut">
-    <string>Alt+Shift+1</string>
+    <string>1</string>
    </property>
   </action>
   <action name="actionx2">
@@ -926,7 +932,7 @@
     <string>x&amp;2</string>
    </property>
    <property name="shortcut">
-    <string>Alt+Shift+2</string>
+    <string>2</string>
    </property>
   </action>
   <action name="actionx3">
@@ -937,7 +943,7 @@
     <string>x&amp;3</string>
    </property>
    <property name="shortcut">
-    <string>Alt+Shift+3</string>
+    <string>3</string>
    </property>
   </action>
   <action name="actionx5">
@@ -948,7 +954,7 @@
     <string>x&amp;5</string>
    </property>
    <property name="shortcut">
-    <string>Alt+Shift+4</string>
+    <string>4</string>
    </property>
   </action>
   <action name="actionx8">
@@ -959,7 +965,7 @@
     <string>x&amp;8</string>
    </property>
    <property name="shortcut">
-    <string>Alt+Shift+5</string>
+    <string>5</string>
    </property>
   </action>
   <action name="actionx10">
@@ -970,7 +976,7 @@
     <string>x&amp;10</string>
    </property>
    <property name="shortcut">
-    <string>Alt+Shift+6</string>
+    <string>6</string>
    </property>
   </action>
   <action name="actionx50">
@@ -981,7 +987,7 @@
     <string>x5&amp;0</string>
    </property>
    <property name="shortcut">
-    <string>Alt+Shift+7</string>
+    <string>7</string>
    </property>
   </action>
   <action name="actionx100">
@@ -992,7 +998,7 @@
     <string>x100</string>
    </property>
    <property name="shortcut">
-    <string>Alt+Shift+8</string>
+    <string>8</string>
    </property>
   </action>
   <action name="actionRotx1">
@@ -1054,10 +1060,16 @@
    <property name="text">
     <string>&amp;Ships</string>
    </property>
+   <property name="shortcut">
+    <string>Shift+S</string>
+   </property>
   </action>
   <action name="actionWings">
    <property name="text">
     <string>&amp;Wings</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+W</string>
    </property>
   </action>
   <action name="actionObjects">
@@ -1088,6 +1100,9 @@
    <property name="text">
     <string>&amp;Team Loadout</string>
    </property>
+   <property name="shortcut">
+    <string>Shift+P</string>
+   </property>
   </action>
   <action name="actionBackground">
    <property name="text">
@@ -1100,6 +1115,9 @@
   <action name="actionReinforcements">
    <property name="text">
     <string>&amp;Reinforcements</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+R</string>
    </property>
   </action>
   <action name="actionAsteroid_Field">
@@ -1131,12 +1149,15 @@
     <string>&amp;Debriefing</string>
    </property>
    <property name="shortcut">
-    <string/>
+    <string>Shift+D</string>
    </property>
   </action>
   <action name="actionCommand_Briefing">
    <property name="text">
     <string>&amp;Command Briefing</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+C</string>
    </property>
   </action>
   <action name="actionFiction_Viewer">
@@ -1379,7 +1400,7 @@
     <string>&amp;Error Checker</string>
    </property>
    <property name="shortcut">
-    <string/>
+    <string>Shift+H</string>
    </property>
   </action>
   <action name="actionHelp_Topics">
@@ -1390,6 +1411,9 @@
   <action name="actionShow_SEXP_Help">
    <property name="text">
     <string>&amp;Show SEXP Help</string>
+   </property>
+   <property name="checkable">
+    <bool>true</bool>
    </property>
   </action>
   <action name="actionAbout">
