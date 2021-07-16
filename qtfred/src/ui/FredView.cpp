@@ -951,6 +951,11 @@ void FredView::on_actionTool_Bar_triggered(bool enabled) {
 void FredView::on_actionStatus_Bar_triggered(bool enabled) {
 	statusBar()->setVisible(enabled);
 }
+void FredView::on_actionClone_Marked_Objects_triggered(bool) {
+	if (fred->getNumMarked() > 0) {
+		_viewport->duplicate_marked_objects();
+	}
+}
 void FredView::on_actionDelete_triggered(bool) {
 	if (fred->getNumMarked() > 0) {
 		fred->delete_marked();

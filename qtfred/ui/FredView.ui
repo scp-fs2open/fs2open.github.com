@@ -67,6 +67,7 @@
      <string>E&amp;dit</string>
     </property>
     <addaction name="actionUndo"/>
+    <addaction name="actionClone_Marked_Objects"/>
     <addaction name="actionDelete"/>
     <addaction name="actionDelete_Wing"/>
     <addaction name="separator"/>
@@ -635,6 +636,11 @@
   <action name="actionUndo">
    <property name="text">
     <string>&amp;Undo</string>
+   </property>
+  </action>
+  <action name="actionClone_Marked_Objects">
+   <property name="text">
+    <string>&amp;Clone Marked Objects</string>
    </property>
   </action>
   <action name="actionDelete">

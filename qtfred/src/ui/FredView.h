@@ -107,6 +107,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void on_actionTool_Bar_triggered(bool enabled);
 	void on_actionStatus_Bar_triggered(bool enabled);
 
+	void on_actionClone_Marked_Objects_triggered(bool);
 	void on_actionDelete_triggered(bool);
 	void on_actionDelete_Wing_triggered(bool);
 

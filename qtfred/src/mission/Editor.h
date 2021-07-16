@@ -159,6 +159,7 @@ class Editor : public QObject {
 	 */
 	void remove_wing(int wing_num);
 
+	void duplicate_marked();
 	void delete_marked();
 
 	int delete_wing(int wing_num, int bypass = 0);
