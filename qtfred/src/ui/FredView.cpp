@@ -129,18 +129,6 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 			&FredView::viewIdle,
 			this,
 			[this]() { ui->actionRestore_Camera_Pos->setEnabled(!IS_VEC_NULL(&_viewport->saved_cam_orient.vec.fvec)); });
-
-	// The Show teams actions need to be initialized after everything has been set up since the IFFs may not have been
-	// initialized yet
-	fredApp->runAfterInit([this]() {
-		for (auto i = 0; i < Num_iffs; ++i) {
-			auto action = new QAction(QString::fromUtf8(Iff_info[i].iff_name), ui->menuDisplay_Filter);
-			action->setCheckable(true);
-			connectActionToViewSetting(action, &_viewport->view.Show_iff[i]);
-
-			ui->menuDisplay_Filter->addAction(action);
-		}
-	});
 }
 
 void FredView::loadMissionFile(const QString& pathName) {
@@ -266,7 +254,17 @@ void FredView::syncViewOptions() {
 	connectActionToViewSetting(ui->actionShow_Player_Starts, &_viewport->view.Show_starts);
 	connectActionToViewSetting(ui->actionShow_Waypoints, &_viewport->view.Show_waypoints);
 
-	// TODO: Dynamically handle the Show teams option
+	// The Show teams actions need to be initialized after everything has been set up since the IFFs may not have been
+	// initialized yet
+	fredApp->runAfterInit([this]() {
+		for (auto i = 0; i < Num_iffs; ++i) {
+			auto action = new QAction(QString::fromUtf8(Iff_info[i].iff_name), ui->menuDisplay_Filter);
+			action->setCheckable(true);
+			connectActionToViewSetting(action, &_viewport->view.Show_iff[i]);
+
+			ui->menuDisplay_Filter->addAction(action);
+		}
+	});
 
 	connectActionToViewSetting(ui->actionShow_Ship_Models, &_viewport->view.Show_ship_models);
 	connectActionToViewSetting(ui->actionShow_Outlines, &_viewport->view.Show_outlines);
