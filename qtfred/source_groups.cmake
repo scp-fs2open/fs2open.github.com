@@ -41,6 +41,8 @@ add_file_folder("Source/Mission/Dialogs"
     src/mission/dialogs/AbstractDialogModel.h
 	src/mission/dialogs/AsteroidEditorDialogModel.cpp
 	src/mission/dialogs/AsteroidEditorDialogModel.h
+	src/mission/dialogs/CampaignEditorDialogModel.cpp
+	src/mission/dialogs/CampaignEditorDialogModel.h
 	src/mission/dialogs/CustomWingNamesDialogModel.cpp
 	src/mission/dialogs/CustomWingNamesDialogModel.h
     src/mission/dialogs/FictionViewerDialogModel.cpp
@@ -79,6 +81,8 @@ add_file_folder("Source/UI/Dialogs"
 	src/ui/dialogs/BackgroundEditorDialog.cpp
     src/ui/dialogs/BriefingEditorDialog.cpp
     src/ui/dialogs/BriefingEditorDialog.h
+	src/ui/dialogs/CampaignEditorDialog.h
+	src/ui/dialogs/CampaignEditorDialog.cpp
 	src/ui/dialogs/CustomWingNamesDialog.cpp
 	src/ui/dialogs/CustomWingNamesDialog.h
     src/ui/dialogs/EventEditorDialog.cpp
@@ -105,6 +109,7 @@ add_file_folder("Source/UI/Dialogs"
 	src/ui/dialogs/WaypointEditorDialog.h
 	src/ui/dialogs/ShipEditorDialog.h
 	src/ui/dialogs/ShipEditorDialog.cpp
+
 )
 
 add_file_folder("Source/UI/Util"
@@ -128,6 +133,7 @@ add_file_folder("UI"
 	ui/AsteroidEditorDialog.ui
 	ui/BackgroundEditor.ui
 	ui/BriefingEditorDialog.ui
+	ui/CampaignEditorDialog.ui
 	ui/CustomWingNamesDialog.ui
     ui/EventEditorDialog.ui
 	ui/FictionViewerDialog.ui

@@ -14,6 +14,7 @@
 
 #include "stats/scoring.h"
 #include "parse/sexp.h"
+#include "cfile/cfile.h"
 
 struct sexp_variable;
 
@@ -108,7 +109,7 @@ class campaign
 {
 public:
 	char	name[NAME_LENGTH];						// name of the campaign
-	char	filename[MAX_FILENAME_LEN];				// filename the campaign info is in
+	char	filename[CF_MAX_PATHNAME_LENGTH];			// filename the campaign info is in
 	char	*desc;									// description of campaign
 	int		type;									// type of campaign
 	int		flags;									// flags - Goober5000
