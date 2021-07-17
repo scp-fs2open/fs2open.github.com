@@ -11411,6 +11411,8 @@ int ship_fire_primary(object * obj, int stream_weapons, int force, bool rollback
 		dist_to_target = vm_vec_dist_quick(&target_position, &obj->pos);
 	}
 
+	polymodel* pm = model_get(sip->model_num);
+
 	for ( i = 0; i < num_primary_banks; i++ ) {		
 		// Goober5000 - allow more than two banks
 		bank_to_fire = (swp->current_primary_bank+i) % swp->num_primary_banks;
@@ -11481,6 +11483,8 @@ int ship_fire_primary(object * obj, int stream_weapons, int force, bool rollback
 			continue;
 		}
 
+		int num_slots = pm->gun_banks[bank_to_fire].num_slots;
+
 		// do timestamp stuff for next firing time
 		float next_fire_delay;
 		bool fast_firing = false;
@@ -11496,7 +11500,9 @@ int ship_fire_primary(object * obj, int stream_weapons, int force, bool rollback
 		int old_burst_counter = swp->burst_counter[bank_to_fire];
 		int old_burst_seed = swp->burst_seed[bank_to_fire];
 
-		if (winfo_p->burst_shots > swp->burst_counter[bank_to_fire]) {
+		// should subtract 1 from num_slots to match behavior of winfo_p->burst_shots
+		int burst_shots = (winfo_p->burst_flags[Weapon::Burst_Flags::Num_firepoints_burst_shots] ? num_slots - 1 : winfo_p->burst_shots);
+		if (burst_shots > swp->burst_counter[bank_to_fire]) {
 			next_fire_delay = winfo_p->burst_delay * 1000.0f;
 			swp->burst_counter[bank_to_fire]++;
 			if (winfo_p->burst_flags[Weapon::Burst_Flags::Fast_firing])
@@ -11527,8 +11533,6 @@ int ship_fire_primary(object * obj, int stream_weapons, int force, bool rollback
 				next_fire_delay *= aip->ai_ship_fire_delay_scale_hostile;
 			}
 		}
-
-		polymodel *pm = model_get( sip->model_num );
 		
 		// Goober5000 (thanks to _argv[-1] for the original idea)
 		if ( (num_primary_banks > 1) &&  !(winfo_p->wi_flags[Weapon::Info_Flags::No_linked_penalty]) && !(The_mission.ai_profile->flags[AI::Profile_Flags::Disable_linked_fire_penalty]) )
@@ -11604,7 +11608,6 @@ int ship_fire_primary(object * obj, int stream_weapons, int force, bool rollback
 		}		
 
 		if ( pm->n_guns > 0 ) {
-			int num_slots = pm->gun_banks[bank_to_fire].num_slots;
 			vec3d predicted_target_pos, plr_to_target_vec;
 			vec3d player_forward_vec = obj->orient.vec.fvec;
 			bool in_automatic_aim_fov = false;
