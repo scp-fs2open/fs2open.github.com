@@ -961,6 +961,7 @@ void multi_sexp_modify_variable();
 // event log stuff
 SCP_vector<SCP_string> *Current_event_log_buffer;
 SCP_vector<SCP_string> *Current_event_log_variable_buffer;
+SCP_vector<SCP_string> *Current_event_log_container_buffer;
 SCP_vector<SCP_string> *Current_event_log_argument_buffer;
 
 // Goober5000 - arg_item class stuff, borrowed from sexp_list_item class stuff -------------
@@ -1758,7 +1759,7 @@ int check_operator_argument_count(int count, int op)
  */
 int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, int mode)
 {
-	int i = 0, z, t, type, argnum = 0, count, op, type2 = 0, op2;
+	int i = 0, z = 0, t = 0, type, argnum = 0, count, op, type2 = 0, op2;
 	int op_node;
 	int var_index = -1;
 	size_t st;
@@ -1927,6 +1928,29 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 		} else if (Sexp_nodes[node].subtype == SEXP_ATOM_STRING) {
 			type2 = SEXP_ATOM_STRING;
+
+		} else if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER) {
+			const auto *p_container = get_sexp_container(Sexp_nodes[node].text);
+			Assert(p_container != nullptr); // should have been checked in get_sexp()
+
+			switch (type) {
+				case OPF_CONTAINER_NAME:
+				case OPF_LIST_CONTAINER_NAME:
+				case OPF_MAP_CONTAINER_NAME:
+					// set two values for extra certainty
+					// since SEXP_ATOM_CONTAINER == OPR_AI_GOAL (yay untyped enums)
+					type2 = SEXP_ATOM_CONTAINER;
+					z = SEXP_ATOM_CONTAINER;
+					t = (int)p_container->type;
+					break;
+				default:
+					// must be an instance of "Replace Container"
+					// using CTEXT() isn't foolproof because could fail now but be OK in-mission
+					// for now, just skip over the container and continue checking
+					node = Sexp_nodes[node].rest;
+					argnum++;
+					continue;
+				}
 
 		} else {
 			Assert(0);
@@ -3329,6 +3353,17 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				// that's all we do, since there may be a language the game doesn't know about
 				break;
 
+			case OPF_CONTAINER_NAME:
+			case OPF_LIST_CONTAINER_NAME:
+			case OPF_MAP_CONTAINER_NAME:
+				if (type2 != SEXP_ATOM_CONTAINER || z != SEXP_ATOM_CONTAINER) {
+					return SEXP_CHECK_TYPE_MISMATCH;
+				} else if ((type == OPF_LIST_CONTAINER_NAME && none((ContainerType)t & ContainerType::LIST)) ||
+						   (type == OPF_MAP_CONTAINER_NAME && none((ContainerType)t & ContainerType::MAP))) {
+					return SEXP_CHECK_WRONG_CONTAINER_TYPE;
+				}
+				break;
+
 			default:
 				Error(LOCATION, "Unhandled argument format");
 		}
@@ -3546,6 +3581,33 @@ int get_sexp()
 			// bump past closing \" by 1 char
 			Mp += (len + 2);
 
+		}
+
+		// Sexp container
+		else if (*Mp == sexp_container::DELIM) {
+			Mp++;
+
+			char container_name[TOKEN_LENGTH];
+			const SCP_string container_delim(1, sexp_container::DELIM);
+			stuff_string(container_name, F_NAME, TOKEN_LENGTH, container_delim.c_str());
+
+			// bump past closing '&'
+			Mp += 2;
+
+			if (get_sexp_container(container_name) == nullptr) {
+				Error(LOCATION, "Attempt to use unknown container '%s'", container_name);
+				return -1;
+			}
+
+			// advance to the control options, since we'll read them when calling get_sexp() below
+			while (*Mp != '(') {
+				Mp++;
+			}
+			Mp++;
+
+			node = alloc_sexp(container_name, SEXP_ATOM, SEXP_ATOM_CONTAINER, get_sexp(), -1);
+
+			ignore_white_space();
 		}
 
 		// Sexp operator or number
@@ -3981,7 +4043,14 @@ void stuff_sexp_text_string(SCP_string &dest, int node, int mode)
 {
 	Assert((node >= 0) && (node < Num_sexp_nodes));
 
-	if (Sexp_nodes[node].type & SEXP_FLAG_VARIABLE)
+	if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER) {
+		Assertion(get_sexp_container(Sexp_nodes[node].text) != nullptr,
+			"Couldn't find container: %s\n",
+			Sexp_nodes[node].text);
+
+		sprintf(dest, "%c%s%c ", sexp_container::DELIM, Sexp_nodes[node].text, sexp_container::DELIM);
+	}
+	else if (Sexp_nodes[node].type & SEXP_FLAG_VARIABLE)
 	{
 		int sexp_variables_index = get_index_sexp_variable_name(Sexp_nodes[node].text);
 		// during the last pass through error-reporting mode, sexp variables have already been transcoded to their indexes
@@ -4069,6 +4138,12 @@ int build_sexp_string(SCP_string &accumulator, int cur_node, int level, int mode
 			stuff_sexp_text_string(buf, node, mode);
 			accumulator += buf;
 
+		} else if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER) {
+			// build text to string
+			stuff_sexp_text_string(buf, node, mode);
+			accumulator += buf;
+
+			build_sexp_string(accumulator, Sexp_nodes[node].first, level + 1, mode);
 		} else {
 			build_sexp_string(accumulator, Sexp_nodes[node].first, level + 1, mode);
 		}
@@ -4106,6 +4181,12 @@ void build_extended_sexp_string(SCP_string &accumulator, int cur_node, int level
 			stuff_sexp_text_string(buf, node, mode);
 			accumulator += buf;
 
+		} else if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER) {
+			// build text to string
+			stuff_sexp_text_string(buf, node, mode);
+			accumulator += buf;
+
+			build_sexp_string(accumulator, Sexp_nodes[node].first, level + 1, mode);
 		} else {
 			build_sexp_string(accumulator, Sexp_nodes[node].first, level + 1, mode);
 		}
@@ -23550,6 +23631,7 @@ void add_to_event_log_buffer(int op_num, int result)
 {
 	Assertion ((Current_event_log_buffer != nullptr) &&
 				(Current_event_log_variable_buffer != nullptr)&& 
+				(Current_event_log_container_buffer != nullptr) &&
 				(Current_event_log_argument_buffer != nullptr), "Attempting to write to a non-existent log buffer");
 
 	if (op_num == -1) {
@@ -23593,6 +23675,14 @@ void add_to_event_log_buffer(int op_num, int result)
 			tmp.append(Current_event_log_variable_buffer->back());
 			Current_event_log_variable_buffer->pop_back();
 			tmp.append("]");
+		}
+	}
+
+	if (!Current_event_log_container_buffer->empty()) {
+		tmp.append("\nContainers:\n");
+		while (!Current_event_log_container_buffer->empty()) {
+			tmp.append(Current_event_log_container_buffer->back());
+			Current_event_log_container_buffer->pop_back();
 		}
 	}
 
@@ -29430,7 +29520,9 @@ void update_sexp_references(const char *old_name, const char *new_name, int form
 		}
 		else
 		{
-			Assert((SEXP_NODE_TYPE(n) == SEXP_ATOM) && ((Sexp_nodes[n].subtype == SEXP_ATOM_NUMBER) || (Sexp_nodes[n].subtype == SEXP_ATOM_STRING)));
+			Assert((SEXP_NODE_TYPE(n) == SEXP_ATOM) &&
+				   ((Sexp_nodes[n].subtype == SEXP_ATOM_NUMBER) || (Sexp_nodes[n].subtype == SEXP_ATOM_STRING) ||
+					   (Sexp_nodes[n].subtype == SEXP_ATOM_CONTAINER)));
 
 			if (query_operator_argument_type(op, i) == format)
 			{
@@ -29838,6 +29930,18 @@ const char *sexp_error_message(int num)
 		case SEXP_CHECK_INVALID_SPECIES:
 			return "Invalid species";
 
+		case SEXP_CHECK_INVALID_LIST_MODIFIER:
+			return "Invalid list modifier";
+
+		case SEXP_CHECK_WRONG_CONTAINER_TYPE:
+			return "Wrong container type";
+
+		case SEXP_CHECK_WRONG_CONTAINER_DATA_TYPE:
+			return "Wrong container data type";
+
+		case SEXP_CHECK_WRONG_MAP_KEY_TYPE:
+			return "Wrong map key type";
+
 		default:
 			Warning(LOCATION, "Unhandled sexp error code %d!", num);
 			return "Unhandled sexp error code!";
@@ -29959,6 +30063,10 @@ const char *CTEXT(int n)
 		}
 
 		return Sexp_variables[sexp_variable_index].text;
+	}
+	else if (Sexp_nodes[n].subtype == SEXP_ATOM_CONTAINER)
+	{
+		return sexp_container_CTEXT(n);
 	}
 	else
 	{

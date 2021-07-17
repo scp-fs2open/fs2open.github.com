@@ -87,8 +87,8 @@ private:
 	const sexp_tree * const m_p_sexp_tree;
 	SCP_vector<sexp_container> m_containers;
 	// two-way map to handle container renaming
-	SCP_unordered_map<SCP_string, SCP_string> m_old_to_new_names;
-	SCP_unordered_map<SCP_string, SCP_string> m_new_to_old_names;
+	SCP_unordered_map<SCP_string, SCP_string, SCP_string_lcase_hash, SCP_string_lcase_equal_to> m_old_to_new_names;
+	SCP_unordered_map<SCP_string, SCP_string, SCP_string_lcase_hash, SCP_string_lcase_equal_to> m_new_to_old_names;
 	// dialog model when m_containers is empty
 	sexp_container m_dummy_container;
 	// read-only view of list data/map keys
