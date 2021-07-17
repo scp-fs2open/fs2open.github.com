@@ -378,7 +378,13 @@ void hud_shield_show_mini(object *objp, int x_force, int y_force, int x_hull_off
 			break;
 		}
 
-		if (objp->shield_quadrant[Quadrant_xlate[i]] < 0.1f ) {
+		int num;
+		if (!(Ship_info[Ships[objp->instance].ship_info_index].flags[Ship::Info_Flags::Model_point_shields]))
+			num = Quadrant_xlate[i];
+		else
+			num = i;
+
+		if (objp->shield_quadrant[num] < 0.1f ) {
 			continue;
 		}
 
@@ -389,7 +395,7 @@ void hud_shield_show_mini(object *objp, int x_force, int y_force, int x_hull_off
 		}
 				
 		range = HUD_color_alpha;
-		hud_color_index = (int)std::lround((objp->shield_quadrant[Quadrant_xlate[i]] / max_shield) * range);
+		hud_color_index = (int)std::lround((objp->shield_quadrant[num] / max_shield) * range);
 		Assert(hud_color_index >= 0 && hud_color_index <= range);
 	
 		if ( hud_color_index < 0 ) {
@@ -975,7 +981,13 @@ void HudGaugeShieldMini::showMiniShields(object *objp)
 			break;
 		}
 
-		if ( objp->shield_quadrant[Quadrant_xlate[i]] < 0.1f ) {
+		int num;
+		if (!(Ship_info[Ships[objp->instance].ship_info_index].flags[Ship::Info_Flags::Model_point_shields]))
+			num = Quadrant_xlate[i];
+		else
+			num = i;
+
+		if (objp->shield_quadrant[num] < 0.1f ) {
 			continue;
 		}
 
@@ -986,7 +998,7 @@ void HudGaugeShieldMini::showMiniShields(object *objp)
 		}
 				
 		range = HUD_color_alpha;
-		hud_color_index = (int)std::lround((objp->shield_quadrant[Quadrant_xlate[i]] / max_shield) * range);
+		hud_color_index = (int)std::lround((objp->shield_quadrant[num] / max_shield) * range);
 		Assert(hud_color_index >= 0 && hud_color_index <= range);
 	
 		if ( hud_color_index < 0 ) {

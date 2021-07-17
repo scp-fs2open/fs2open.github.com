@@ -1755,16 +1755,24 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 	if( optional_string( "+Weapon Min Range:" ) )
 	{
-		float MinRange;
-		stuff_float( &MinRange );
+		float min_range;
+		stuff_float( &min_range);
 
-		if( MinRange > 0.0f && MinRange < MIN( wip->max_speed * wip->lifetime, wip->weapon_range ) )
+		if(min_range > 0.0f && min_range < MIN( wip->max_speed * wip->lifetime, wip->weapon_range ) )
 		{
-			wip->WeaponMinRange = MinRange;
+			wip->weapon_min_range = min_range;
 		}
 		else
 		{
 			Warning(LOCATION, "Invalid minimum range on weapon %s; setting to 0", wip->name);
+		}
+	}
+
+	if (optional_string("+Weapon Optimum Range:")) {
+		stuff_float(&wip->optimum_range);
+		if (wip->optimum_range < wip->weapon_min_range || wip->optimum_range > MIN(wip->max_speed * wip->lifetime, wip->weapon_range)) {
+			Warning(LOCATION, "Optimum range on weapon %s must be within its min range and max range", wip->name);
+			wip->optimum_range = 0.0f;
 		}
 	}
 
@@ -4243,9 +4251,11 @@ void weapon_delete(object *obj)
 	weapon *wp;
 	int num;
 
-	Script_system.SetHookObjects(2, "Weapon", obj, "Self", obj);
-	Script_system.RunCondition(CHA_ONWEAPONDELETE);
-	Script_system.RemHookVars({"Weapon", "Self"});
+	if (Script_system.IsActiveAction(CHA_ONWEAPONDELETE)) {
+		Script_system.SetHookObjects(2, "Weapon", obj, "Self", obj);
+		Script_system.RunCondition(CHA_ONWEAPONDELETE);
+		Script_system.RemHookVars({"Weapon", "Self"});
+	}
 
 	num = obj->instance;
 
@@ -6310,9 +6320,11 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		obj_snd_assign(objnum, wip->ambient_snd, &vmd_zero_vector , OS_MAIN);
 	}
 
-	Script_system.SetHookObject("Weapon", &Objects[objnum]);
-	Script_system.RunCondition(CHA_ONWEAPONCREATED);
-	Script_system.RemHookVar("Weapon");
+	if (Script_system.IsActiveAction(CHA_ONWEAPONCREATED)) {
+		Script_system.SetHookObject("Weapon", &Objects[objnum]);
+		Script_system.RunCondition(CHA_ONWEAPONCREATED);
+		Script_system.RemHookVar("Weapon");
+	}
 
 	return objnum;
 }
@@ -8510,7 +8522,8 @@ void weapon_info::reset()
 	this->reloaded_per_batch = -1;
 	this->weapon_range = WEAPON_DEFAULT_TABLED_MAX_RANGE;
 	// *Minimum weapon range, default is 0 -Et1
-	this->WeaponMinRange = 0.0f;
+	this->weapon_min_range = 0.0f;
+	this->optimum_range = 0.0f;
 
 	this->pierce_objects = false;
 	this->spawn_children_on_pierce = false;
@@ -9139,4 +9152,95 @@ bool weapon_has_iff_restrictions(weapon_info* wip)
 		[=](std::pair<LockRestrictionType, int>& restriction) {
 			return restriction.first == LockRestrictionType::IFF; 
 		});
+}
+
+bool weapon_secondary_world_pos_in_range(object* shooter, weapon_info* wip, vec3d* target_world_pos)
+{
+	vec3d vec_to_target;
+	vm_vec_sub(&vec_to_target, target_world_pos, &shooter->pos);
+	float dist_to_target = vm_vec_mag(&vec_to_target);
+
+	float weapon_range;
+	//local ssms are always in range :)
+	if (wip->wi_flags[Weapon::Info_Flags::Local_ssm])
+		weapon_range = wip->lssm_lock_range;
+	else
+		// if the weapon can actually hit the target
+		weapon_range = MIN((wip->max_speed * wip->lifetime), wip->weapon_range);
+
+
+	extern int Nebula_sec_range;
+	// reduce firing range in nebula
+	if ((The_mission.flags[Mission::Mission_Flags::Fullneb]) && Nebula_sec_range) {
+		weapon_range *= 0.8f;
+	}
+
+	return dist_to_target <= weapon_range;
+}
+
+bool weapon_multilock_can_lock_on_subsys(object* shooter, object* target, ship_subsys* target_subsys, weapon_info* wip, float* out_dot) {
+	Assertion(shooter->type == OBJ_SHIP, "weapon_multilock_can_lock_on_subsys called with a non-ship shooter");
+	if (shooter->type != OBJ_SHIP)
+		return false;
+
+	if (target_subsys->flags[Ship::Subsystem_Flags::Untargetable])
+		return false;
+
+	vec3d ss_pos;
+	get_subsystem_world_pos(target, target_subsys, &ss_pos);
+
+	if (!weapon_secondary_world_pos_in_range(shooter, wip, &ss_pos))
+		return false;
+
+	vec3d vec_to_target;
+	vm_vec_normalized_dir(&vec_to_target, &ss_pos, &shooter->pos);
+	float dot = vm_vec_dot(&shooter->orient.vec.fvec, &vec_to_target);
+
+	if (out_dot != nullptr)
+		*out_dot = dot;
+
+	if (dot < wip->lock_fov)
+		return false;
+
+	vec3d gsubpos;
+	vm_vec_unrotate(&gsubpos, &target_subsys->system_info->pnt, &target->orient);
+	vm_vec_add2(&gsubpos, &target->pos);
+
+	polymodel* pm = model_get(Ship_info[Ships[shooter->instance].ship_info_index].model_num);
+	vec3d eye_pos = pm->view_positions[0].pnt + shooter->pos;
+
+	return ship_subsystem_in_sight(target, target_subsys, &eye_pos, &gsubpos) == 1;
+}
+
+bool weapon_multilock_can_lock_on_target(object* shooter, object* target_objp, weapon_info* wip, float* out_dot) {
+	Assertion(shooter->type == OBJ_SHIP, "weapon_multilock_can_lock_on_target called with a non-ship shooter");
+	if (target_objp->type != OBJ_SHIP)
+		return false;
+
+	if (hud_target_invalid_awacs(target_objp))
+		return false;
+
+	ship* target_ship = &Ships[target_objp->instance];
+
+	if (target_objp->flags[Object::Object_Flags::Should_be_dead])
+		return false;
+
+	if (target_ship->flags[Ship::Ship_Flags::Dying])
+		return false;
+
+	if (should_be_ignored(target_ship))
+		return false;
+
+	// if this is part of the same team and doesn't have any iff restrictions, reject lock
+	if (!weapon_has_iff_restrictions(wip) && Ships[shooter->instance].team == obj_team(target_objp))
+		return false;
+
+	vec3d vec_to_target;
+	vm_vec_normalized_dir(&vec_to_target, &target_objp->pos, &shooter->pos);
+	float dot = vm_vec_dot(&shooter->orient.vec.fvec, &vec_to_target);
+
+	if (out_dot != nullptr)
+		*out_dot = dot;
+
+	return weapon_target_satisfies_lock_restrictions(wip, target_objp);
 }

@@ -2824,6 +2824,8 @@ void stuff_string_list(SCP_vector<SCP_string> &slp)
 	stuff_token_list(slp, [](SCP_string *buf)->bool {
 		if (*Mp != '\"') {
 			error_display(0, "Missing quotation marks in string list.");
+			// Since this is a bad token, skip characters until we find a comma, parenthesis, or EOLN
+			advance_to_eoln(",)");
 			return false;
 		}
 
@@ -2901,25 +2903,25 @@ size_t stuff_int_list(int *ilp, size_t max_ints, int lookup_type)
 				case SHIP_TYPE:
 					num = ship_name_lookup(str.c_str());	// returns index of Ship[] entry with name
 					if (num < 0)
-						error_display(1, "Unable to find ship %s in stuff_int_list!", str.c_str());
+						error_display(0, "Unable to find ship %s in stuff_int_list!", str.c_str());
 					break;
 
 				case SHIP_INFO_TYPE:
 					num = ship_info_lookup(str.c_str());	// returns index of Ship_info[] entry with name
 					if (num < 0)
-						error_display(1, "Unable to find ship class %s in stuff_int_list!", str.c_str());
+						error_display(0, "Unable to find ship class %s in stuff_int_list!", str.c_str());
 					break;
 
 				case WEAPON_POOL_TYPE:
 					num = weapon_info_lookup(str.c_str());
 					if (num < 0)
-						error_display(1, "Unable to find weapon class %s in stuff_int_list!", str.c_str());
+						error_display(0, "Unable to find weapon class %s in stuff_int_list!", str.c_str());
 					break;
 
 				case WEAPON_LIST_TYPE:
 					num = weapon_info_lookup(str.c_str());
 					if (num < 0 && !str.empty())
-						error_display(1, "Unable to find weapon class %s in stuff_int_list!", str.c_str());
+						error_display(0, "Unable to find weapon class %s in stuff_int_list!", str.c_str());
 					break;
 
 				case RAW_INTEGER_TYPE:
@@ -2931,7 +2933,10 @@ size_t stuff_int_list(int *ilp, size_t max_ints, int lookup_type)
 					break;
 			}
 
-			*buf = num;
+			if (num < 0)
+				return false;
+
+			*buf = num;			
 		} else {
 			stuff_int(buf);
 		}

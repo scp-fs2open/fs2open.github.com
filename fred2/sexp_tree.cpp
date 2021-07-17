@@ -45,6 +45,7 @@
 #include "sound/ds.h"
 #include "globalincs/alphacolors.h"
 #include "localization/localize.h"
+#include "AddModifyContainerDlg.h"
 
 #define TREE_NODE_INCREMENT	100
 
@@ -1735,6 +1736,14 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 		return 1;
 	}
 
+	// Add/Modify Container
+	if (id == ID_EDIT_SEXP_TREE_EDIT_CONTAINERS) {
+		CAddModifyContainerDlg dlg(this);
+
+		dlg.DoModal();
+
+		return 1;
+	}
 
 	// check if REPLACE_VARIABLE_MENU
 	if ( (id >= ID_VARIABLE_MENU) && (id < ID_VARIABLE_MENU + 511)) {
@@ -2865,6 +2874,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_GAME_SND:
 		case OPF_FIREBALL:
 		case OPF_SPECIES:
+		case OPF_LANGUAGE:
 			return 1;
 
 		case OPF_SHIP:
@@ -4683,6 +4693,10 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			list = get_listing_opf_species();
 			break;
 
+		case OPF_LANGUAGE:
+			list = get_listing_opf_language();
+			break;
+
 		default:
 			Int3();  // unknown OPF code
 			list = NULL;
@@ -6316,6 +6330,16 @@ sexp_list_item *sexp_tree::get_listing_opf_species()	// NOLINT
 	return head.next;
 }
 
+sexp_list_item *sexp_tree::get_listing_opf_language()	// NOLINT
+{
+	sexp_list_item head;
+
+	for (auto &lang: Lcl_languages)
+		head.add_data(lang.lang_name);
+
+	return head.next;
+}
+
 // Deletes sexp_variable from sexp_tree.
 // resets tree to not include given variable, and resets text and type
 void sexp_tree::delete_sexp_tree_variable(const char *var_name)
@@ -6476,4 +6500,21 @@ int sexp_tree::get_loadout_variable_count(int var_index)
 	}
 	
 	return count; 
+}
+
+int sexp_tree::get_container_usage_count(const char* container_name) const
+{
+	const SCP_string container_name_str = sexp_container::DELIM + container_name + sexp_container::DELIM;
+
+	int count = 0;
+
+	for (uint idx = 0; idx < tree_nodes.size(); idx++) {
+		if (tree_nodes[idx].type & (SEXPT_VALID | SEXPT_CONTAINER)) {
+			if (!stricmp(tree_nodes[idx].text, container_name_str.c_str())) {
+				count++;
+			}
+		}
+	}
+
+	return count;
 }

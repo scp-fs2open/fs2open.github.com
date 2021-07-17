@@ -15,16 +15,18 @@
 #include "gamesnd/gamesnd.h"
 
 #define	OS_USED					(1<<0)
-#define	OS_DS3D					(1<<1)
-#define OS_MAIN					(1<<2)		// "main" sound. attentuation does not apply until outside the radius of the object
-#define OS_TURRET_BASE_ROTATION	(1<<3)
-#define OS_TURRET_GUN_ROTATION	(1<<4)
-#define OS_SUBSYS_ALIVE			(1<<5)
-#define OS_SUBSYS_DEAD			(1<<6)
-#define OS_SUBSYS_DAMAGED		(1<<7)
-#define OS_SUBSYS_ROTATION		(1<<8)
+#define OS_MAIN					(1<<1)		// "main" sound. attentuation does not apply until outside the radius of the object
+#define OS_TURRET_BASE_ROTATION	(1<<2)
+#define OS_TURRET_GUN_ROTATION	(1<<3)
+#define OS_SUBSYS_ALIVE			(1<<4)
+#define OS_SUBSYS_DEAD			(1<<5)
+#define OS_SUBSYS_DAMAGED		(1<<6)
+#define OS_SUBSYS_ROTATION		(1<<7)
+#define OS_PLAY_ON_PLAYER		(1<<8)
+#define OS_LOOPING_DISABLED		(1<<9)
 
 struct vec3d;
+class object;
 class ship_subsys;
 
 extern int Obj_snd_enabled;
@@ -38,10 +40,10 @@ void	obj_snd_do_frame();
 // model coords of the location of the engine
 // by passing vmd_zero_vector here, you get a sound centered directly on the object
 // This function used to have a "main" argument, but that is equivalent to including OS_MAIN as one of the flags
-int	obj_snd_assign(int objnum, gamesnd_id sndnum, vec3d *pos, int flags=0, ship_subsys *associated_sub=NULL);
+int	obj_snd_assign(int objnum, gamesnd_id sndnum, const vec3d *pos, int flags = 0, const ship_subsys *associated_sub = nullptr);
 
 //Delete specific persistent sound on object
-void obj_snd_delete(int objnum, int index);
+void obj_snd_delete(object *objp, int index, bool stop_sound = true);
 
 // if sndnum is not -1, deletes all instances of the given sound within the object
 void	obj_snd_delete_type(int objnum, gamesnd_id sndnum = gamesnd_id(), ship_subsys *ss = NULL);

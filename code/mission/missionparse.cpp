@@ -2464,9 +2464,11 @@ int parse_create_object_sub(p_object *p_objp)
 	if (Game_mode & GM_IN_MISSION && ((shipp->wingnum == -1) || (brought_in_docked_wing))) {
 		object *anchor_objp = (anchor_objnum >= 0) ? &Objects[anchor_objnum] : nullptr;
 
-		Script_system.SetHookObjects(2, "Ship", &Objects[objnum], "Parent", anchor_objp);
-		Script_system.RunCondition(CHA_ONSHIPARRIVE, &Objects[objnum]);
-		Script_system.RemHookVars({"Ship", "Parent"});
+		if (Script_system.IsActiveAction(CHA_ONSHIPARRIVE)) {
+			Script_system.SetHookObjects(2, "Ship", &Objects[objnum], "Parent", anchor_objp);
+			Script_system.RunCondition(CHA_ONSHIPARRIVE, &Objects[objnum]);
+			Script_system.RemHookVars({"Ship", "Parent"});
+		}
 
 		if (Ship_info[shipp->ship_info_index].is_big_or_huge() && !brought_in_docked_wing) {
 			float mission_time = f2fl(Missiontime);
@@ -4981,6 +4983,8 @@ void parse_event(mission * /*pm*/)
 	mission_event *event;
 
 	event = &Mission_events[Num_mission_events];
+	// Need to set this to zero so that we don't accidentally reuse old data.
+	event->flags = 0;
 
 	required_string( "$Formula:" );
 	event->formula = get_sexp_main();
@@ -5065,9 +5069,6 @@ void parse_event(mission * /*pm*/)
 			event->team = -1;
 		}
 	}
-
-	// Need to set this to zero so that we don't accidentally reuse old data.
-	event->flags = 0;
 
 	if (optional_string("+Event Flags:")) {
 		parse_string_flag_list(&event->flags, Mission_event_flags, Num_mission_event_flags);
@@ -6382,9 +6383,11 @@ void mission_set_wing_arrival_location( wing *wingp, int num_to_set )
 			object *objp = &Objects[Ships[wingp->ship_index[index]].objnum];
 			object *anchor_objp = (anchor_objnum >= 0) ? &Objects[anchor_objnum] : nullptr;
 
-			Script_system.SetHookObjects(2, "Ship", objp, "Parent", anchor_objp);
-			Script_system.RunCondition(CHA_ONSHIPARRIVE, objp);
-			Script_system.RemHookVars({"Ship", "Parent"});
+			if (Script_system.IsActiveAction(CHA_ONSHIPARRIVE)) {
+				Script_system.SetHookObjects(2, "Ship", objp, "Parent", anchor_objp);
+				Script_system.RunCondition(CHA_ONSHIPARRIVE, objp);
+				Script_system.RemHookVars({"Ship", "Parent"});
+			}
 
 			if (wingp->arrival_location != ARRIVE_FROM_DOCK_BAY) {
 				shipfx_warpin_start(objp);

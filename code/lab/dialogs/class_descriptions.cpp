@@ -8,7 +8,8 @@ void Descriptions::open(Button* /*caller*/) {
 				gr_screen.center_offset_y + gr_screen.center_h - gr_screen.center_h / 6 - 50, gr_screen.center_w / 3,
 				gr_screen.center_h / 6)
 		);
-		dialogWindow->SetOwner(this);
+		Assert(Opener != nullptr);
+		dialogWindow->SetOwner(Opener->getDialog());
 	}
 
 	dialogWindow->DeleteChildren();

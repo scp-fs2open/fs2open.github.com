@@ -4420,6 +4420,13 @@ void ai_fly_to_target_position(vec3d* target_pos, bool* pl_done_p=NULL, bool* pl
 	bool carry_flag = ((shipp->flags[Ship::Ship_Flags::Navpoint_carry]) || ((shipp->wingnum >= 0) && (Wings[shipp->wingnum].flags[Ship::Wing_Flags::Nav_carry])));
 
 	float waypoint_turnrate = 1 / (3.0f * scale);
+
+	// for retail compatability reasons, have to take into account rotdamp so that ships with less than 1 rotdamp have increased waypoint turnrate
+	// please see PR #2740 and #3494 for more information
+	if (Pl_objp->phys_info.rotdamp < 1.0f )
+		// start increasing the turnrate to 2x at 0.5 rotdamp and 3x at 0
+		waypoint_turnrate *= (3 - 2 * Pl_objp->phys_info.rotdamp);
+
 	vec3d turnrate_mod;
 	vm_vec_make(&turnrate_mod, waypoint_turnrate, waypoint_turnrate, waypoint_turnrate);
 
@@ -4700,11 +4707,13 @@ void ai_waypoints()
 					mission_log_add_entry( LOG_WAYPOINTS_DONE, Wings[Ships[Pl_objp->instance].wingnum].name, aip->wp_list->get_name(), -1 );
 				}
 				// adds scripting hook for 'On Waypoints Done' --wookieejedi
-				Script_system.SetHookObject("Ship", &Objects[Ships[Pl_objp->instance].objnum]);
-				Script_system.SetHookVar("Wing", 'o', scripting::api::l_Wing.Set(Ships[Pl_objp->instance].wingnum));
-				Script_system.SetHookVar("Waypointlist", 'o', scripting::api::l_WaypointList.Set(scripting::api::waypointlist_h(aip->wp_list)));
-				Script_system.RunCondition(CHA_ONWAYPOINTSDONE);
-				Script_system.RemHookVars({"Ship", "Wing", "Waypointlist"});
+				if (Script_system.IsActiveAction(CHA_ONWAYPOINTSDONE)) {
+					Script_system.SetHookObject("Ship", &Objects[Ships[Pl_objp->instance].objnum]);
+					Script_system.SetHookVar("Wing", 'o', scripting::api::l_Wing.Set(Ships[Pl_objp->instance].wingnum));
+					Script_system.SetHookVar("Waypointlist", 'o', scripting::api::l_WaypointList.Set(scripting::api::waypointlist_h(aip->wp_list)));
+					Script_system.RunCondition(CHA_ONWAYPOINTSDONE);
+					Script_system.RemHookVars({"Ship", "Wing", "Waypointlist"});
+				}
 			}
 		}
 	}
@@ -5758,6 +5767,140 @@ void set_primary_weapon_linkage(object *objp)
 	}
 }
 
+const int MULTILOCK_CHECK_INTERVAL = 250; // every quarter of a second
+
+//  This function returns if the ship could theoretically have fully locked all available targets
+// given the current time it's been locking on its primary target
+//  If so, it cheats a little bit and assumes that's what it has done, and fills 
+// the ai's missile_locks_firing vector, and to be fired at those targets
+bool ai_do_multilock(ai_info* aip, weapon_info* wip) {
+
+	if (!timestamp_elapsed(aip->multilock_check_timestamp))
+		return false;
+
+	object* primary_target = &Objects[aip->target_objnum];
+
+	struct multilock_target {
+		object* objp;
+		ship_subsys* subsys;
+		float dot;
+	};
+
+	// First we accrue all available targets into this vector which we will later sort by dot 
+	SCP_vector<multilock_target> multilock_targets;
+
+	if (wip->target_restrict == LR_CURRENT_TARGET)
+		multilock_targets.push_back(multilock_target{ primary_target,  nullptr, 1.0f });
+	else if (wip->target_restrict == LR_CURRENT_TARGET_SUBSYS) {
+
+		if (primary_target->type != OBJ_SHIP)
+			multilock_targets.push_back(multilock_target{ primary_target,  nullptr, 1.0f });
+		else {
+			ship* sp = &Ships[primary_target->instance];
+			ship_subsys* ss;
+
+			if (Ship_info[sp->ship_info_index].is_big_or_huge()) {
+				for (ss = GET_FIRST(&sp->subsys_list); ss != END_OF_LIST(&sp->subsys_list); ss = GET_NEXT(ss)) {
+					float dot;
+
+					if (!weapon_multilock_can_lock_on_subsys(Pl_objp, primary_target, ss, wip, &dot))
+						continue;
+
+					// this will guarantee the ship will send always send some missiles at its actual target
+					if (aip->targeted_subsys == ss)
+						dot = 1.0f;
+
+					multilock_targets.push_back(multilock_target{ primary_target,  ss, dot });
+				}
+			} else
+				multilock_targets.push_back(multilock_target{ primary_target,  nullptr, 1.0f });
+		}
+	} else { // any target
+		for (ship_obj* so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so)) {
+			object* target_objp = &Objects[so->objnum];
+			ship* target_ship = &Ships[target_objp->instance];
+			float dot;
+
+			if (!weapon_multilock_can_lock_on_target(Pl_objp, target_objp, wip, &dot))
+				continue;
+
+			if (Ship_info[target_ship->ship_info_index].is_big_or_huge()) {
+				// add ALL the valid subsystems as possible targets
+				// dont check range or lock fov, the sub function will do that for subsystems
+				ship_subsys* ss;
+				for (ss = GET_FIRST(&target_ship->subsys_list); ss != END_OF_LIST(&target_ship->subsys_list); ss = GET_NEXT(ss)) {
+
+					if (!weapon_multilock_can_lock_on_subsys(Pl_objp, target_objp, ss, wip, &dot))
+						continue;
+
+					// this will guarantee the ship will send always send some missiles at its actual target
+					if (aip->targeted_subsys == ss)
+						dot = 1.0f;
+
+					multilock_targets.push_back(multilock_target{ target_objp,  ss, dot });
+				}
+			} else {
+				// just a small target, now we check range and fov
+				if (!weapon_secondary_world_pos_in_range(Player_obj, wip, &target_objp->pos))
+					continue;
+
+				if (dot < wip->lock_fov)
+					continue;
+
+				// this will guarantee the ship will send always send some missiles at its actual target
+				if (primary_target == target_objp)
+					dot = 1.0f;
+
+				multilock_targets.push_back(multilock_target{ target_objp,  nullptr, dot });
+			}
+		}
+	}
+
+	// before any sorting let's first determine if we're maximally locked
+	int allocatable_missiles = MIN(weapon_get_max_missile_seekers(wip), (int)multilock_targets.size() * wip->max_seekers_per_target);
+	float missiles_allocated = wip->max_seeking * (aip->aspect_locked_time / wip->min_lock_time);
+
+	// we could still lock more missiles! wait for it (or couldn't find any targets??)
+	if (missiles_allocated < allocatable_missiles || allocatable_missiles == 0) {
+		aip->multilock_check_timestamp = timestamp(MULTILOCK_CHECK_INTERVAL);
+		return false;
+	}
+
+	// we're fully locked! sort by dot and let them fly!
+	std::sort(multilock_targets.begin(), multilock_targets.end(), [](multilock_target &a, multilock_target &b) 
+		{ return a.dot < b.dot; });
+
+	aip->ai_missile_locks_firing.clear();
+	int missiles = weapon_get_max_missile_seekers(wip);
+	int remaining_seekers_per_target = wip->max_seekers_per_target;
+	for (size_t i = multilock_targets.size() - 1;; i--) {
+		std::pair<int, ship_subsys*> lock;
+
+		lock.first = OBJ_INDEX(multilock_targets.at(i).objp);
+		lock.second = multilock_targets.at(i).subsys;
+		aip->ai_missile_locks_firing.push_back(lock);
+		missiles--;
+
+		// out of missiles, we're done
+		if (missiles == 0)
+			break;
+
+		// still more missiles, but exhausted our targets, time to loop over them all again
+		// and start double-locking triple-locking etc
+		if (i == 0) {
+			remaining_seekers_per_target--;
+			// exhausted our seekers per target, we're done
+			if (remaining_seekers_per_target == 0)
+				break;
+
+			// reset i and go through the whole list again
+			i = multilock_targets.size();
+		}
+	}
+
+	return true;
+}
+
 //	--------------------------------------------------------------------------
 //	Fire the current primary weapon.
 //	*objp is the object to fire from.
@@ -6399,9 +6542,18 @@ int ai_fire_secondary_weapon(object *objp)
 		//	Note, maybe don't fire if firing at player and any homers yet fired.
 		//	Decreasing chance to fire the more homers are incoming on player.
 		if (check_ok_to_fire(OBJ_INDEX(objp), aip->target_objnum, wip, current_bank, nullptr)) {
+
+			if (wip->multi_lock && !ai_do_multilock(aip, wip))
+				return rval;
+
 			if (ship_fire_secondary(objp)) {
 				rval = 1;
 				swp->next_secondary_fire_stamp[current_bank] = timestamp(500);
+
+				if (wip->multi_lock && wip->launch_reset_locks) {
+					aip->aspect_locked_time = 0.0f;
+					aip->current_target_is_locked = 0;
+				}
 			}
 
 		} else {
@@ -6946,6 +7098,8 @@ void do_random_sidethrust(ai_info *aip, ship_info *sip)
 	AI_ci.sideways = side_vec.x;
 	AI_ci.vertical = side_vec.y;
 }
+
+const float AI_DEFAULT_ATTACK_APPROACH_DIST = 200.0f;
 				
 /**
  * Set acceleration while in attack mode.
@@ -6998,10 +7152,24 @@ void attack_set_accel(ai_info *aip, ship_info *sip, float dist_to_enemy, float d
 		return;
 	}
 
+	// assume the original retail value of a 200m range
+	float optimal_range = AI_DEFAULT_ATTACK_APPROACH_DIST;
+	ship_weapon* weapons = &Ships[Pl_objp->instance].weapons;
+	weapon_info* wip = nullptr;
 
-	if (dist_to_enemy > 200.0f + vm_vec_mag_quick(&En_objp->phys_info.vel) * dot_from_enemy + Pl_objp->phys_info.speed * speed_ratio) {
+	// see if we can get a better one
+	if (weapons->num_primary_banks >= 1 && weapons->current_primary_bank >= 0) {
+		wip = &Weapon_info[weapons->primary_bank_weapons[weapons->current_primary_bank]];
+	} else if (weapons->num_secondary_banks >= 1 && weapons->current_secondary_bank >= 0) {
+		wip = &Weapon_info[weapons->secondary_bank_weapons[weapons->current_secondary_bank]];
+	}
+
+	if (wip != nullptr && wip->optimum_range > 0)
+		optimal_range = wip->optimum_range;
+
+	if (dist_to_enemy > optimal_range + vm_vec_mag_quick(&En_objp->phys_info.vel) * dot_from_enemy + Pl_objp->phys_info.speed * speed_ratio) {
 		if (ai_maybe_fire_afterburner(Pl_objp, aip)) {
-			if (dist_to_enemy > 800.0f) {
+			if (dist_to_enemy > optimal_range + 600.0f) {
 				if (!( Pl_objp->phys_info.flags & PF_AFTERBURNER_ON )) {
 					float percent_left;
 					ship	*shipp;
@@ -7904,11 +8072,13 @@ void update_aspect_lock_information(ai_info *aip, vec3d *vec_to_enemy, float dis
 			(tshpp == NULL ||
 			ship_get_closest_subsys_in_sight(tshpp, SUBSYSTEM_ENGINE, &aiobjp->pos))))) {
 				aip->aspect_locked_time += flFrametime;
-				if (aip->aspect_locked_time >= wip->min_lock_time) {
-					aip->aspect_locked_time = wip->min_lock_time;
+				 if (aip->aspect_locked_time >= wip->min_lock_time) {
 					aip->current_target_is_locked = 1;
 				}
 		} else {
+			if (aip->aspect_locked_time > wip->min_lock_time)
+				aip->aspect_locked_time = wip->min_lock_time;
+
 			aip->aspect_locked_time -= flFrametime*2;
 			if (aip->aspect_locked_time < 0.0f)
 				aip->aspect_locked_time = 0.0f;
@@ -9079,7 +9249,7 @@ void ai_chase()
 					float range_max = pwip->max_speed * (1.0f + scale);
 					if (aip->ai_profile_flags[AI::Profile_Flags::Use_actual_primary_range]) {
 						range_max = std::min({range_max, pwip->max_speed * pwip->lifetime, pwip->weapon_range});
-						range_min = pwip->WeaponMinRange;
+						range_min = pwip->weapon_min_range;
 					}
 					if ((dist_to_enemy < range_max) && (dist_to_enemy >= range_min)) {
 						if(ai_fire_primary_weapon(Pl_objp) == 1){
@@ -14785,6 +14955,9 @@ void init_ai_object(int objnum)
 	memset(&aip->ai_override_ci,0,sizeof(control_info));
 
 	aip->form_obj_slotnum = -1;
+
+	aip->multilock_check_timestamp = timestamp(1);
+	aip->ai_missile_locks_firing.clear();
 }
 
 void init_ai_system()
@@ -15272,6 +15445,8 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hit_normal)
 		Assert(objp_hitter != NULL);
 		hitter_aip = &Ai_info[Ships[objp_hitter->instance].ai_index];
 		hitter_aip->last_hit_target_time = Missiontime;
+
+		aip->last_hit_time = Missiontime;
 		return;
 	}
 

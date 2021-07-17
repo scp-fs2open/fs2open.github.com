@@ -2552,9 +2552,11 @@ int check_control(int id, int key)
 		// If we reach this point, then it means this is a continuous control
 		// which has just been released
 
-		Script_system.SetHookVar("Action", 's', Control_config[id].text);
-		Script_system.RunCondition(CHA_ONACTIONSTOPPED, nullptr, id);
-		Script_system.RemHookVar("Action");
+		if (Script_system.IsActiveAction(CHA_ONACTIONSTOPPED)) {
+			Script_system.SetHookVar("Action", 's', Control_config[id].text);
+			Script_system.RunCondition(CHA_ONACTIONSTOPPED, nullptr, id);
+			Script_system.RemHookVar("Action");
+		}
 
 		Control_config[id].continuous_ongoing = false;
 	}

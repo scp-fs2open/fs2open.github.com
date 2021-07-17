@@ -984,6 +984,7 @@ void ship_info::clone(const ship_info& other)
 	max_overclocked_speed = other.max_overclocked_speed;
 	max_weapon_reserve = other.max_weapon_reserve;
 	max_shield_regen_per_second = other.max_shield_regen_per_second;
+	shield_regen_hit_delay = other.shield_regen_hit_delay;
 	max_weapon_regen_per_second = other.max_weapon_regen_per_second;
 
 	shield_weap_amount = other.shield_weap_amount;
@@ -1295,6 +1296,7 @@ void ship_info::move(ship_info&& other)
 	max_overclocked_speed = other.max_overclocked_speed;
 	max_weapon_reserve = other.max_weapon_reserve;
 	max_shield_regen_per_second = other.max_shield_regen_per_second;
+	shield_regen_hit_delay = other.shield_regen_hit_delay;
 	max_weapon_regen_per_second = other.max_weapon_regen_per_second;
 
 	shield_weap_amount = other.shield_weap_amount;
@@ -1695,6 +1697,7 @@ ship_info::ship_info()
 	max_overclocked_speed = 0.0f;
 	max_weapon_reserve = 0.0f;
 	max_shield_regen_per_second = 0.0f;
+	shield_regen_hit_delay = 0.0f;
 	max_weapon_regen_per_second = 0.0f;
 
 	shield_weap_amount = 0.0f;
@@ -3608,6 +3611,14 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		stuff_float(&sip->max_shield_regen_per_second);
 	else if (first_time)
 		sip->max_shield_regen_per_second = 0.02f;
+
+	if (optional_string("+Shield Regen Hit Delay:")) {
+		stuff_float(&sip->shield_regen_hit_delay);
+		if (sip->shield_regen_hit_delay < 0.0f) {
+			Warning(LOCATION, "Shield Regen Hit Delay on ship '%s' cannot be less than 0.\n", sip->name);
+			sip->shield_regen_hit_delay = 0.0f;
+		}
+	}
 
 	// Support ship hull shield rate - if allowed
 	if(optional_string("$Support Shield Repair Rate:"))
@@ -6323,11 +6334,7 @@ void ship::clear()
 		was_firing_last_frame[i] = 0;
 	}
 
-	for (i = 0; i < MAX_SHIP_SECONDARY_BANKS; i++)
-	{
-		for (j = 0; j < MAX_SLOTS; j++)
-			secondary_point_reload_pct[i][j] = 1.0f;
-	}
+	secondary_point_reload_pct.init(0, 0, 0.0f);
 	// ---------- done with weapons init
 
 	shield_hits = 0;
@@ -6622,18 +6629,18 @@ static void ship_set(int ship_index, int objnum, int ship_type)
 
 	shipp->max_shield_recharge = sip->max_shield_recharge;
 
+	if (sip->flags[Ship::Info_Flags::Model_point_shields]) {
+		objp->n_quadrants = (int)pm->shield_points.size();
+		shipp->shield_points = pm->shield_points;
+		objp->shield_quadrant.resize(objp->n_quadrants);
+	}
+
 	if (Fred_running) {
 		shipp->ship_max_shield_strength = 100.0f;
 		objp->shield_quadrant[0] = 100.0f;
 	} else {
 		shipp->ship_max_shield_strength = sip->max_shield_strength;
 		shield_set_strength(objp, shield_get_max_strength(objp));
-	}
-
-	if (sip->flags[Ship::Info_Flags::Model_point_shields]) {
-		objp->n_quadrants = (int)pm->shield_points.size();
-		shipp->shield_points = pm->shield_points;
-		objp->shield_quadrant.resize(objp->n_quadrants);
 	}
 
 	shipp->orders_accepted = ship_get_default_orders_accepted( sip );
@@ -6715,6 +6722,16 @@ static void ship_set(int ship_index, int objnum, int ship_type)
 		else
 			swp->secondary_bank_ammo[i] = (int)std::lround(sip->secondary_bank_ammo_capacity[i] / weapon_size);
 	}
+
+	// set initial reload percentages... used to be done in ship::clear()
+	int max_points_per_bank = 0;
+	for (i = 0; i < sip->num_secondary_banks; ++i)
+	{
+		int slots = pm->missile_banks[i].num_slots;
+		if (slots > max_points_per_bank)
+			max_points_per_bank = slots;
+	}
+	shipp->secondary_point_reload_pct.init(sip->num_secondary_banks, max_points_per_bank, 1.0f);
 
 	shipp->armor_type_idx = sip->armor_type_idx;
 	shipp->shield_armor_type_idx = sip->shield_armor_type_idx;
@@ -7886,9 +7903,11 @@ void ship_destroy_instantly(object *ship_objp)
 	mission_log_add_entry(LOG_SELF_DESTRUCTED, Ships[ship_objp->instance].ship_name, NULL );
 	
 	// scripting stuff
-	Script_system.SetHookObjects(2, "Self", ship_objp, "Ship", ship_objp);
-	Script_system.RunCondition(CHA_DEATH, ship_objp);
-	Script_system.RemHookVars({"Self", "Ship"});
+	if (Script_system.IsActiveAction(CHA_DEATH)) {
+		Script_system.SetHookObjects(2, "Self", ship_objp, "Ship", ship_objp);
+		Script_system.RunCondition(CHA_DEATH, ship_objp);
+		Script_system.RemHookVars({"Self", "Ship"});
+	}
 
 	ship_objp->flags.set(Object::Object_Flags::Should_be_dead);
 	ship_cleanup(ship_objp->instance, SHIP_DESTROYED);
@@ -8002,11 +8021,14 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 	    (cleanup_mode == SHIP_DEPARTED) || (cleanup_mode == SHIP_DEPARTED_REDALERT) ||
 	    (cleanup_mode == SHIP_VANISHED)) {
 		const char* departmethod = get_departure_name(cleanup_mode);
-		Script_system.SetHookObject("Ship", objp);
-		Script_system.SetHookVar("Method", 's', departmethod);
-		Script_system.SetHookVar("JumpNode", 's', jumpnode_name);
-		Script_system.RunCondition(CHA_ONSHIPDEPART);
-		Script_system.RemHookVars({"Ship", "Method", "JumpNode"});
+
+		if (Script_system.IsActiveAction(CHA_ONSHIPDEPART)) {
+			Script_system.SetHookObject("Ship", objp);
+			Script_system.SetHookVar("Method", 's', departmethod);
+			Script_system.SetHookVar("JumpNode", 's', jumpnode_name);
+			Script_system.RunCondition(CHA_ONSHIPDEPART);
+			Script_system.RemHookVars({"Ship", "Method", "JumpNode"});
+		}
 	}
 
 	if (Ship_info[shipp->ship_info_index].is_big_or_huge()) {
@@ -8967,10 +8989,10 @@ static void ship_auto_repair_frame(int shipnum, float frametime)
 	{
 		objp->hull_strength += sp->ship_max_hull_strength * sip->hull_repair_rate * frametime;
 
-		if(objp->hull_strength > sp->ship_max_hull_strength)
-		{
+		if (objp->hull_strength > sp->ship_max_hull_strength)
 			objp->hull_strength = sp->ship_max_hull_strength;
-		}
+		else if (objp->hull_strength < 0)
+			ship_hit_kill(objp, nullptr, nullptr, 0, 1);
 	}
 
 	// only allow for the auto-repair of subsystems on small ships
@@ -12093,10 +12115,12 @@ int ship_fire_primary(object * obj, int stream_weapons, int force, bool rollback
 		if (objp == Player_obj && Player_ai->target_objnum != -1)
 			target = &Objects[Player_ai->target_objnum]; 
 
-		Script_system.SetHookObjects(2, "User", objp, "Target", target);
-		Script_system.RunCondition(CHA_ONWPFIRED, objp, 1);
-		Script_system.RunCondition(CHA_PRIMARYFIRE, objp);
-		Script_system.RemHookVars({"User", "Target"});
+		if (Script_system.IsActiveAction(CHA_ONWPFIRED) || Script_system.IsActiveAction(CHA_PRIMARYFIRE)) {
+			Script_system.SetHookObjects(2, "User", objp, "Target", target);
+			Script_system.RunCondition(CHA_ONWPFIRED, objp, 1);
+			Script_system.RunCondition(CHA_PRIMARYFIRE, objp);
+			Script_system.RemHookVars({"User", "Target"});
+		}
 	}
 
 	return num_fired;
@@ -12374,7 +12398,7 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 
 	// Ensure if this is a "require-lock" missile, that a lock actually exists
 	if ( wip->wi_flags[Weapon::Info_Flags::No_dumbfire] ) {
-		if (!aip->current_target_is_locked && !ship_lock_present(shipp) && shipp->missile_locks_firing.empty()) {
+		if (!aip->current_target_is_locked && !ship_lock_present(shipp) && shipp->missile_locks_firing.empty() && aip->ai_missile_locks_firing.empty()) {
 			if (obj == Player_obj) {
 				if (!Weapon_energy_cheat) {
 					float max_dist;
@@ -12436,8 +12460,11 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 	// if trying to fire a swarm missile, make sure being called from right place
 	if ( (wip->wi_flags[Weapon::Info_Flags::Swarm]) && !allow_swarm ) {
 		Assert(wip->swarm_count > 0);
-		if (wip->multi_lock && (obj == Player_obj || (MULTIPLAYER_MASTER && obj->flags[Object::Object_Flags::Player_ship] ))) {
-			shipp->num_swarm_missiles_to_fire = (int)shipp->missile_locks_firing.size();
+		if (wip->multi_lock) {
+			if(obj == Player_obj || (MULTIPLAYER_MASTER && obj->flags[Object::Object_Flags::Player_ship]))
+				shipp->num_swarm_missiles_to_fire = (int)shipp->missile_locks_firing.size();
+			else // AI ships
+				shipp->num_swarm_missiles_to_fire = (int)aip->ai_missile_locks_firing.size();
 		} else if(wip->swarm_count <= 0){
 			shipp->num_swarm_missiles_to_fire = SWARM_DEFAULT_NUM_MISSILES_FIRED;
 		} else {
@@ -12452,8 +12479,11 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 	if ( (wip->wi_flags[Weapon::Info_Flags::Corkscrew]) && !allow_swarm ) {
 		//phreak 11-9-02 
 		//changed this from 4 to custom number defined in tables
-		if (wip->multi_lock && (obj == Player_obj || (MULTIPLAYER_MASTER && obj->flags[Object::Object_Flags::Player_ship] ))) {
-			shipp->num_corkscrew_to_fire = (ubyte)shipp->missile_locks_firing.size();
+		if (wip->multi_lock) {
+			if (obj == Player_obj || (MULTIPLAYER_MASTER && obj->flags[Object::Object_Flags::Player_ship]))
+				shipp->num_corkscrew_to_fire = (ubyte)shipp->missile_locks_firing.size();
+			else // AI ships
+				shipp->num_corkscrew_to_fire = (ubyte)aip->ai_missile_locks_firing.size();
 		} else {
 			shipp->num_corkscrew_to_fire = (ubyte)(shipp->num_corkscrew_to_fire + (ubyte)wip->cs_num_fired);
 		}
@@ -12527,6 +12557,11 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 				target_subsys = nullptr;
 				locked = 0;
 			}
+		} else if (wip->multi_lock && !aip->ai_missile_locks_firing.empty()) {
+			target_objnum = aip->ai_missile_locks_firing.back().first;
+			target_subsys = aip->ai_missile_locks_firing.back().second;
+			locked = 1;
+			aip->ai_missile_locks_firing.pop_back();
 		} else {
 			target_objnum = aip->target_objnum;
 			target_subsys = aip->targeted_subsys;
@@ -12602,7 +12637,7 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 			if ( pnt_index >= num_slots ){
 				pnt_index = 0;
 			}
-			shipp->secondary_point_reload_pct[bank][pnt_index] = 0.0f;
+			shipp->secondary_point_reload_pct.set(bank, pnt_index, 0.0f);
 			pnt = pm->missile_banks[bank].pnt[pnt_index++];
 
 			polymodel *weapon_model = NULL;
@@ -12769,10 +12804,12 @@ done_secondary:
 		if (objp == Player_obj && Player_ai->target_objnum != -1)
 			target = &Objects[Player_ai->target_objnum];
 
-		Script_system.SetHookObjects(2, "User", objp, "Target", target);
-		Script_system.RunCondition(CHA_ONWPFIRED, objp);
-		Script_system.RunCondition(CHA_SECONDARYFIRE, objp);
-		Script_system.RemHookVars({"User", "Target"});
+		if (Script_system.IsActiveAction(CHA_ONWPFIRED) || Script_system.IsActiveAction(CHA_SECONDARYFIRE)) {
+			Script_system.SetHookObjects(2, "User", objp, "Target", target);
+			Script_system.RunCondition(CHA_ONWPFIRED, objp);
+			Script_system.RunCondition(CHA_SECONDARYFIRE, objp);
+			Script_system.RemHookVars({"User", "Target"});
+		}
 	}
 
 	// AL 3-7-98: Move to next valid secondary bank if out of ammo
@@ -13029,10 +13066,12 @@ int ship_select_next_primary(object *objp, int direction)
 		if (objp == Player_obj && Player_ai->target_objnum != -1)
 			target = &Objects[Player_ai->target_objnum];
 
-		Script_system.SetHookObjects(2, "User", objp, "Target", target);
-		Script_system.RunCondition(CHA_ONWPSELECTED, objp);
-		Script_system.RunCondition(CHA_ONWPDESELECTED, objp);
-		Script_system.RemHookVars({"User", "Target"});
+		if (Script_system.IsActiveAction(CHA_ONWPSELECTED) || Script_system.IsActiveAction(CHA_ONWPDESELECTED)) {
+			Script_system.SetHookObjects(2, "User", objp, "Target", target);
+			Script_system.RunCondition(CHA_ONWPSELECTED, objp);
+			Script_system.RunCondition(CHA_ONWPDESELECTED, objp);
+			Script_system.RemHookVars({"User", "Target"});
+		}
 
 		return 1;
 	}
@@ -13131,10 +13170,12 @@ int ship_select_next_secondary(object *objp)
 			if (objp == Player_obj && Player_ai->target_objnum != -1)
 				target = &Objects[Player_ai->target_objnum];
 
-			Script_system.SetHookObjects(2, "User", objp, "Target", target);
-			Script_system.RunCondition(CHA_ONWPSELECTED, objp);
-			Script_system.RunCondition(CHA_ONWPDESELECTED, objp);
-			Script_system.RemHookVars({"User", "Target"});
+			if (Script_system.IsActiveAction(CHA_ONWPSELECTED) || Script_system.IsActiveAction(CHA_ONWPDESELECTED)) {
+				Script_system.SetHookObjects(2, "User", objp, "Target", target);
+				Script_system.RunCondition(CHA_ONWPSELECTED, objp);
+				Script_system.RunCondition(CHA_ONWPDESELECTED, objp);
+				Script_system.RemHookVars({"User", "Target"});
+			}
 
 			return 1;
 		}
@@ -13216,7 +13257,7 @@ int get_available_secondary_weapons(object *objp, int *outlist, int *outbanklist
 		if (shipp->weapons.secondary_bank_ammo[i]) {
 			if (The_mission.ai_profile->ai_range_aware_secondary_select_mode != AI_RANGE_AWARE_SEC_SEL_MODE_RETAIL) {
 				wepp = &Weapon_info[shipp->weapons.secondary_bank_weapons[i]];
-				weapon_range_min = wepp->WeaponMinRange;
+				weapon_range_min = wepp->weapon_min_range;
 				weapon_range_max = wepp->weapon_range;
 				//If weapon range is not set in the weapon info, derive it
 				if (weapon_range_max >= WEAPON_DEFAULT_TABLED_MAX_RANGE) {
@@ -14678,8 +14719,8 @@ void ship_assign_sound(ship *sp)
 {
 	ship_info	*sip;	
 	object *objp;
-	vec3d engine_pos;
 	ship_subsys *moveup;
+	bool has_engine = false;
 
 	Assert( sp->objnum >= 0 );
 	if(sp->objnum < 0){
@@ -14689,15 +14730,13 @@ void ship_assign_sound(ship *sp)
 	objp = &Objects[sp->objnum];
 	sip = &Ship_info[sp->ship_info_index];
 
-	if ( sip->engine_snd.isValid() ) {
-		vm_vec_copy_scale(&engine_pos, &objp->orient.vec.fvec, -objp->radius/2.0f);		
-		
-		obj_snd_assign(sp->objnum, sip->engine_snd, &engine_pos, OS_MAIN);
-	}
-
 	// Do subsystem sounds	
 	moveup = GET_FIRST(&sp->subsys_list);
-	while(moveup != END_OF_LIST(&sp->subsys_list)){
+	while(moveup != END_OF_LIST(&sp->subsys_list)) {
+		if (!strnicmp(moveup->system_info->name, "engine", 6)) {
+			has_engine = true;
+		}
+
 		// Check for any engine sounds		
 		if(strstr(moveup->system_info->name, "enginelarge")){
 			obj_snd_assign(sp->objnum, GameSounds::ENGINE_LOOP_LARGE, &moveup->system_info->pnt);
@@ -14740,7 +14779,20 @@ void ship_assign_sound(ship *sp)
 
 		// next
 		moveup = GET_NEXT(moveup);
-	}	
+	}
+
+	if (sip->engine_snd.isValid()) {
+		vec3d engine_pos;
+
+		// Only put the engine sound near the back of the ship if it has an engine.  Otherwise put it in the center.
+		if (has_engine) {
+			vm_vec_copy_scale(&engine_pos, &objp->orient.vec.fvec, -objp->radius / 2.0f);
+		} else {
+			engine_pos = vmd_zero_vector;
+		}
+
+		obj_snd_assign(sp->objnum, sip->engine_snd, &engine_pos, OS_MAIN);
+	}
 }
 
 /**
@@ -15830,8 +15882,38 @@ SCP_string ship_return_orders(ship* sp)
 // it suits your needs for something.
 char *ship_return_time_to_goal(char *outbuf, ship *sp)
 {
+	int	minutes, seconds;
+	int time = ship_return_seconds_to_goal(sp);
+	if ( time >= 0 ) {
+		minutes = time/60;
+		seconds = time%60;
+		if ( minutes > 99 ) {
+			minutes = 99;
+			seconds = 99;
+		}
+		sprintf(outbuf, NOX("%02d:%02d"), minutes, seconds);
+	
+	} else {
+		strcpy( outbuf, XSTR( "Unknown", 497) );
+	}
+
+	return outbuf;
+}
+
+// Returns the estimated time, in seconds, of the given ship to reach its goal
+//
+// @param[in] sp  Pointer to ship to check
+//
+// @returns Time of the ship to reach its goal, or
+// @returns  0, if it has met its goal, or
+// @returns -1, if the ship is not moving or can not move, or
+// @returns -2, if the ship does not have a valid goal
+//
+// @note tcrayford: split out of ship_return_time_to_goal
+int ship_return_seconds_to_goal(ship *sp)
+{
 	ai_info	*aip;
-	int		time, seconds, minutes;
+	int		time;
 	float		dist = 0.0f;
 	object	*objp;	
 	float		min_speed, max_speed;
@@ -15848,6 +15930,7 @@ char *ship_return_time_to_goal(char *outbuf, ship *sp)
 		max_speed = sp->current_max_speed;
 
 	if ( aip->mode == AIM_WAYPOINTS ) {
+		// Is traveling a waypoint path
 		min_speed = 0.9f * max_speed;
 		if (aip->wp_list != NULL) {
 			Assert(aip->wp_index != INVALID_WAYPOINT_POSITION);
@@ -15864,12 +15947,15 @@ char *ship_return_time_to_goal(char *outbuf, ship *sp)
 		}
 
 		if ( dist < 1.0f) {
-			return NULL;
-		}	
+			// Already there
+			time = 0;
 
-		if ( (Objects[sp->objnum].phys_info.speed <= 0) || (max_speed <= 0.0f) ) {
+		} else if ( (Objects[sp->objnum].phys_info.speed <= 0) || (max_speed <= 0.0f) ) {
+			// Is not moving or can not move
 			time = -1;
+
 		} else {
+			// On the way!
 			float	speed;
 
 			speed = objp->phys_info.speed;
@@ -15880,25 +15966,15 @@ char *ship_return_time_to_goal(char *outbuf, ship *sp)
 		}
 
 	} else if ( (aip->mode == AIM_DOCK) && (aip->submode < AIS_DOCK_4) ) {
+		// Is traveling a docking path
 		time = hud_get_dock_time( objp );
+
 	} else {
-		// don't return anytime for time to except for waypoints and actual docking.
-		return NULL;
+		// Not a waypoint or docking goal
+		time = -2;
 	}
 
-	if ( time >= 0 ) {
-		minutes = time/60;
-		seconds = time%60;
-		if ( minutes > 99 ) {
-			minutes = 99;
-			seconds = 99;
-		}
-		sprintf(outbuf, NOX("%02d:%02d"), minutes, seconds);
-	} else {
-		strcpy( outbuf, XSTR( "Unknown", 497) );
-	}
-
-	return outbuf;
+	return time;
 }
 
 /* Karajorma - V decided not to use this function so I've commented it out so it isn't confused with code
@@ -19413,7 +19489,7 @@ void ship_render_batch_thrusters(object *obj)
 			shipp->thrusters_start[i] = 0;
 			if(shipp->thrusters_sounds[i] >= 0)
 			{
-				obj_snd_delete(OBJ_INDEX(obj), shipp->thrusters_sounds[i]);
+				obj_snd_delete(obj, shipp->thrusters_sounds[i]);
 				shipp->thrusters_sounds[i] = -1;
 			}
 
@@ -19441,6 +19517,7 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 
 	int i,k;
 	ship_weapon *swp = &shipp->weapons;
+	auto ship_pm = model_get(sip->model_num);
 
 	scene->push_transform(&obj->pos, &obj->orient);
 
@@ -19476,7 +19553,7 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 			swp->primary_bank_model_instance_check[i] = true;
 		}
 
-		auto bank = &model_get(sip->model_num)->gun_banks[i];
+		auto bank = &ship_pm->gun_banks[i];
 
 		if ( swp->primary_bank_external_model_instance[i] >= 0 )
 		{
@@ -19496,25 +19573,36 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 		}
 
 		for ( k = 0; k < bank->num_slots; k++ ) {
-			model_render_queue(ship_render_info, scene, wip->external_model_num, swp->primary_bank_external_model_instance[i], &vmd_identity_matrix, &bank->pnt[k]);
+			// "Bank" the external model by the angle offset
+			angles angs = { 0.0f, bank->external_model_angle_offset[k], 0.0f };
+			matrix model_orient;
+			vm_angles_2_matrix(&model_orient, &angs);
+
+			model_render_queue(ship_render_info, scene, wip->external_model_num, swp->primary_bank_external_model_instance[i], &model_orient, &bank->pnt[k]);
 		}
 	}
 
 	//secondary weapons
 	int num_secondaries_rendered = 0;
 	vec3d secondary_weapon_pos;
-	w_bank* bank;
 
 	for (i = 0; i < swp->num_secondary_banks; i++) {
-		if ( Weapon_info[swp->secondary_bank_weapons[i]].external_model_num == -1 || !sip->draw_secondary_models[i] ) {
+		auto wip = &Weapon_info[swp->secondary_bank_weapons[i]];
+
+		if ( wip->external_model_num == -1 || !sip->draw_secondary_models[i] ) {
 			continue;
 		}
 
-		bank = &(model_get(sip->model_num))->missile_banks[i];
+		auto bank = &ship_pm->missile_banks[i];
 
-		if (Weapon_info[swp->secondary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::External_weapon_lnch]) {			
+		if (wip->wi_flags[Weapon::Info_Flags::External_weapon_lnch]) {			
 			for(k = 0; k < bank->num_slots; k++) {
-				model_render_queue(ship_render_info, scene, Weapon_info[swp->secondary_bank_weapons[i]].external_model_num, &vmd_identity_matrix, &bank->pnt[k]);
+				// "Bank" the external model by the angle offset
+				angles angs = { 0.0f, bank->external_model_angle_offset[k], 0.0f };
+				matrix model_orient;
+				vm_angles_2_matrix(&model_orient, &angs);
+
+				model_render_queue(ship_render_info, scene, wip->external_model_num, &model_orient, &bank->pnt[k]);
 			}
 		} else {
 			num_secondaries_rendered = 0;
@@ -19526,15 +19614,20 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 					break;
 				}
 
-				if ( shipp->secondary_point_reload_pct[i][k] <= 0.0 ) {
+				if ( shipp->secondary_point_reload_pct.get(i, k) <= 0.0 ) {
 					continue;
 				}
 
 				num_secondaries_rendered++;
 
-				vm_vec_scale_add2(&secondary_weapon_pos, &vmd_z_vector, -(1.0f-shipp->secondary_point_reload_pct[i][k]) * model_get(Weapon_info[swp->secondary_bank_weapons[i]].external_model_num)->rad);
+				vm_vec_scale_add2(&secondary_weapon_pos, &vmd_z_vector, -(1.0f-shipp->secondary_point_reload_pct.get(i, k)) * model_get(wip->external_model_num)->rad);
 
-				model_render_queue(ship_render_info, scene, Weapon_info[swp->secondary_bank_weapons[i]].external_model_num, &vmd_identity_matrix, &secondary_weapon_pos);
+				// "Bank" the external model by the angle offset
+				angles angs = { 0.0f, bank->external_model_angle_offset[k], 0.0f };
+				matrix model_orient;
+				vm_angles_2_matrix(&model_orient, &angs);
+
+				model_render_queue(ship_render_info, scene, wip->external_model_num, &model_orient, &secondary_weapon_pos);
 			}
 		}
 	}

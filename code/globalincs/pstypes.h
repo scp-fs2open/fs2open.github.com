@@ -113,6 +113,8 @@ typedef struct vec2d {
 	float x, y;
 } vec2d;
 
+// Euler angles for a rotation: h=heading, b=bank and p=pitch; angles are around the y, z and x axes
+// respectively and are performed in that order.
 typedef struct angles {
 	float	p, b, h;
 } angles_t;
@@ -128,6 +130,7 @@ typedef struct matrix {
 	};
 } matrix;
 
+// You might think this is also row-major. You fool! It is actually column-major.
 typedef struct matrix4 {
 	union {
 		struct {
@@ -453,7 +456,6 @@ SCP_string dump_stacktrace();
 // DEBUG compile time catch for dangerous uses of memset/memcpy/memmove
 // This is disabled for VS2013 and lower since that doesn't support the necessary features
 #if !defined(NDEBUG) && !defined(USING_THIRD_PARTY_LIBS) && (!defined(_MSC_VER) || _MSC_VER >= 1900)
-	#if SCP_COMPILER_CXX_AUTO_TYPE && SCP_COMPILER_CXX_STATIC_ASSERT && HAVE_STD_IS_TRIVIALLY_COPYABLE
 	// feature support seems to be: gcc   clang   msvc
 	// auto                         4.4   2.9     2010
 	// std::is_trivial              4.5   ?       2012 (2010 only duplicates std::is_pod)
@@ -553,7 +555,6 @@ using std::memcpy_if_trivial_else_error;
 using std::memmove_if_trivial_else_error;
 using std::memset_if_trivial_else_error;
 
-	#endif // HAVE_CXX11
 #endif // NDEBUG
 
-#endif		// PS_TYPES_H
+#endif		// _PSTYPES_H

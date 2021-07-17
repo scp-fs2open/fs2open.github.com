@@ -78,8 +78,6 @@ Category NonrepeatingEvents("Nonrepeating events", false);
 Category ParticlesRenderAll("Render particles", true);
 Category ParticlesMoveAll("Move particles", false);
 
-Category TrailDraw("Trail Draw", true);
-
 Category EnvironmentMapping("Environment Mapping", true);
 Category BuildShadowMap("Build Shadow Map", true);
 Category RenderScene("Render scene", true);
