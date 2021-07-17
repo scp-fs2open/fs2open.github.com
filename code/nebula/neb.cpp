@@ -66,6 +66,8 @@ float Poof_density_multiplier;
 
 const float UPKEEP_DIST_MULT = 1.2f;
 
+const float PROBABLY_TOO_MANY_POOFS = 100000.0f;
+
 // array of neb2 poofs
 int32_t Neb2_poof_flags = 0;
 
@@ -212,8 +214,8 @@ void neb2_init()
 
 					if (optional_string("$Density:")) {
 						stuff_float(&new_poof.density);
-						if (new_poof.density < 0.0f) {
-							Warning(LOCATION, "Poof %s must have a positive density.", new_poof.bitmap_filename);
+						if (new_poof.density <= 0.0f) {
+							Warning(LOCATION, "Poof %s must have a density greater than 0.", new_poof.name);
 							new_poof.density = 150.0f;
 						}
 						new_poof.density = 1 / (new_poof.density * new_poof.density * new_poof.density);
@@ -225,8 +227,14 @@ void neb2_init()
 					if (optional_string("$View Distance:")) {
 						stuff_float(&new_poof.view_dist);
 						if (new_poof.view_dist < 0.0f) {
-							Warning(LOCATION, "Poof %s must have a positive view distance.", new_poof.bitmap_filename);
+							Warning(LOCATION, "Poof %s must have a positive view distance.", new_poof.name);
 							new_poof.view_dist = 360.f;
+						}
+
+						float volume = PI * 4 / 3 * (new_poof.view_dist * new_poof.view_dist * new_poof.view_dist);
+						if (volume * new_poof.density > PROBABLY_TOO_MANY_POOFS) {
+							Warning(LOCATION, "Poof %s will have over 100,000 poofs on the field at once, and could cause serious performance issues. "
+								"Remember that as $Density decreases and $View Distance increases, the total number of poofs increases exponentially.", new_poof.name);
 						}
 					}
 
