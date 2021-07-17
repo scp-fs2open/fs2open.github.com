@@ -10,6 +10,7 @@
 #include <memory>
 
 class player;
+struct sexp_container;
 
 
 // current pilot constants
@@ -138,6 +139,8 @@ class pilotfile {
 		void plr_read_stats_multi();
 		void plr_read_multiplayer();
 		void plr_read_variables();
+		void plr_read_containers();
+
 		void plr_read_hud();
 		void plr_read_controls();
 
@@ -148,6 +151,7 @@ class pilotfile {
 		void plr_write_stats_multi();
 		void plr_write_multiplayer();
 		void plr_write_variables();
+		void plr_write_containers();
 		void plr_write_hud();
 		void plr_write_controls();
 
@@ -170,6 +174,8 @@ class pilotfile {
 		void csg_read_controls();
 		void csg_read_cutscenes();
 		void csg_read_lastmissions();
+		void csg_read_containers();
+		void csg_read_container(sexp_container& container);
 
 		void csg_write_flags();
 		void csg_write_info();
@@ -184,6 +190,8 @@ class pilotfile {
 		void csg_write_controls();
 		void csg_write_cutscenes();
 		void csg_write_lastmissions();
+		void csg_write_containers();
+		void csg_write_container(const sexp_container& container);
 
 		// similar to PLR verify, except we only want the rank
 		bool get_csg_rank(int *rank);

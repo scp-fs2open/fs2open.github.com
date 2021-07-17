@@ -95,6 +95,8 @@ struct sexp_container
 	SCP_list<SCP_string> list_data;
 	SCP_unordered_map<SCP_string, SCP_string> map_data;
 
+	bool operator==(const sexp_container &sc) const;
+
 	inline bool is_list() const
 	{
 		return any(type & ContainerType::LIST);
@@ -117,6 +119,11 @@ struct sexp_container
 
 	bool empty() const;
 	int size() const;
+
+	// get type without persistence flags
+	ContainerType get_non_persistent_type() const;
+	// matching is performed only on non-persistence flags
+	bool type_matches(const sexp_container &container) const;
 };
 
 struct list_modifier {
@@ -154,3 +161,5 @@ const SCP_vector<list_modifier> &get_all_list_modifiers();
  * Return pointer to a sexp_container by its name, or nullptr if not found
  */
 sexp_container *get_sexp_container(const char *name);
+
+bool sexp_container_has_persistent_non_eternal_containers();

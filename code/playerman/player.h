@@ -18,6 +18,7 @@
 #include "localization/localize.h"
 #include "network/multi_options.h"
 #include "parse/sexp.h"
+#include "parse/sexp_container.h"
 #include "physics/physics.h"
 #include "sound/sound.h"
 #include "stats/scoring.h" // for scoring/stats
@@ -199,6 +200,9 @@ public:
 
 	// player-persistent variables - Goober5000
 	SCP_vector<sexp_variable>	variables;
+
+	// player-persistent containers - jg18
+	SCP_vector<sexp_container>	containers;
 
 	SCP_string		death_message;								// Goober5000
 
