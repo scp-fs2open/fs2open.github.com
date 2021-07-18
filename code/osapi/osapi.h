@@ -36,6 +36,9 @@
 // set if running under MsDev - done after os_init(...) has returned
 extern int Os_debugger_running;
 
+// set if the normal preferred path has a non-unicode character
+extern bool Force_Portable_Mode;
+
 #ifdef SCP_UNIX
 const char* os_get_legacy_user_dir();
 #endif

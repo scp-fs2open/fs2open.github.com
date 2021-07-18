@@ -453,7 +453,7 @@ void cf_build_root_list(const char *cdrom_dir)
 #endif
 		// =========================================================================
 	}
-	else if (!Cmdline_portable_mode)
+	else if (!Cmdline_portable_mode && !Force_Portable_Mode)
 	{
 		// =========================================================================
 		// now look for mods under the users HOME directory to use before system ones
