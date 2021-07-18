@@ -800,7 +800,10 @@ void FredRenderer::render_one_model_htl(object* objp,
 	}
 
 	Fred_outline = 0;
-	if ((OBJ_INDEX(objp) == cur_object_index) && !Bg_bitmap_dialog) {
+
+	if (!view().Draw_outlines_on_selected_ships && ((OBJ_INDEX(objp) == cur_object_index) || (objp->flags[Object::Object_Flags::Marked]))) {
+		/* don't draw the outlines we would normally draw */;
+	} else if ((OBJ_INDEX(objp) == cur_object_index) && !Bg_bitmap_dialog) {
 		Fred_outline = FRED_COLOUR_WHITE;
 	} else if ((objp->flags[Object::Object_Flags::Marked]) && !Bg_bitmap_dialog) { // is it a marked object?
 		Fred_outline = FRED_COLOUR_YELLOW;
