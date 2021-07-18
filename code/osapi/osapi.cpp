@@ -76,7 +76,7 @@ namespace
 							ReleaseWarning(LOCATION,
 								"Determined the preferences path as \"%s\". That path is not supported since it "
 								"contains a Unicode character (%s). Using portable mode. Set -portable_mode in "
-								" the commandline to avoid in the future",
+								"the commandline to avoid in the future",
 								preferencesPath, std::string(current, invalid_end).c_str());
 							force_portable_warning = true;
 						}
