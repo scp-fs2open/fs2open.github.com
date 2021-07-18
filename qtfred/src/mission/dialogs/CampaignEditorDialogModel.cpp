@@ -361,12 +361,36 @@ void CampaignEditorDialogModel::connectBranches(bool uiUpdate, const campaign *c
 		parent->updateUIMission();
 }
 
-void CampaignEditorDialogModel::missionSelectionChanged(const QModelIndex &changed) {
+void CampaignEditorDialogModel::missionSelectionChanged(const QItemSelection & selected) {
 	if (mnData_it)
 		mnData_it->brData_it = nullptr;
-	mnData_it = missionData.internalData(changed);
-	mnData_idx = changed;
+	if (selected.empty()) {
+		mnData_it = nullptr;
+		mnData_idx = QPersistentModelIndex();
+	} else {
+		const QPersistentModelIndex &changed = selected.first().topLeft();
+		mnData_it = missionData.internalData(changed);
+		mnData_idx = changed;
+	}
 	parent->updateUIMission();
+}
+
+bool CampaignEditorDialogModel::addCurMnBranchTo(const QModelIndex *other, bool flip) {
+	if (! mnData_it)
+		return false;
+	if (! other) {
+		QMessageBox::information(nullptr, "", "End of Campaign");
+		return true;
+	}
+	CampaignMissionData *otherMn = missionData.internalData(*other);
+	if (! otherMn)
+		return false;
+	CampaignMissionData &from = flip ? *otherMn : *mnData_it;
+	const CampaignMissionData &to = flip ? *mnData_it : *otherMn;
+
+
+	QMessageBox::information(nullptr, "", "From: "+from.filename+"\nTo: "+to.filename);
+	return true;
 }
 
 void CampaignEditorDialogModel::selectCurBr(const CampaignBranchData *br) {
@@ -383,6 +407,11 @@ void CampaignEditorDialogModel::selectCurBr(const CampaignBranchData *br) {
 		}
 	}
 	parent->updateUIBranch();
+}
+
+bool CampaignEditorDialogModel::setCurBrCond(const QString &sexp, const QString &mn, const QString &arg) {
+	QMessageBox::information(nullptr, "", "("+sexp+"\n  "+mn+"\n  "+arg+")");
+	return true;
 }
 
 //placeholder

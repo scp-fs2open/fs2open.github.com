@@ -29,13 +29,22 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget *_parent, EditorViewport *_vi
 	p.setColor(QPalette::WindowText, Qt::red);
 	ui->lblMissionDescr2->setPalette(p);
 
+	connect(ui->lstMissions, &QListView::clicked, this, [&](const QModelIndex &idx){
+		QItemSelectionModel &sel = *ui->lstMissions->selectionModel();
+		bool same = sel.selectedIndexes().contains(idx);
+		sel.clearSelection();
+		if (!same)
+			sel.select(idx, QItemSelectionModel::Toggle | QItemSelectionModel::Rows);
+	});
+
 	ui->sxtBranches->initializeEditor(nullptr, this);
 
 	setModel();
 
+	connect(ui->lstMissions, &QListView::customContextMenuRequested, this, &CampaignEditorDialog::mnLinkMenu);
+
 	connect(ui->btnBranchUp, &QPushButton::clicked, this, &CampaignEditorDialog::btnBranchUpClicked);
 	connect(ui->btnBranchDown, &QPushButton::clicked, this, &CampaignEditorDialog::btnBranchDownClicked);
-	connect(ui->btnRealign, &QPushButton::clicked, this, &CampaignEditorDialog::btnRealignClicked);
 	connect(ui->btnErrorChecker, &QPushButton::clicked, this, &CampaignEditorDialog::btnErrorCheckerClicked);
 	connect(ui->btnFredMission, &QPushButton::clicked, this, [&](){
 		reject();
@@ -79,7 +88,7 @@ void CampaignEditorDialog::setModel(CampaignEditorDialogModel *new_model) {
 	ui->lstWeapons->setModel(&model->initialWeapons);
 
 	ui->lstMissions->setModel(&model->missionData);
-	connect(ui->lstMissions->selectionModel(), &QItemSelectionModel::currentRowChanged, model.get(), &CampaignEditorDialogModel::missionSelectionChanged);
+	connect(ui->lstMissions->selectionModel(), &QItemSelectionModel::selectionChanged, model.get(), &CampaignEditorDialogModel::missionSelectionChanged);
 
 	connect(ui->txtName, &QLineEdit::textChanged, model.get(), &CampaignEditorDialogModel::setCampaignName);
 	connect(ui->chkTechReset, &QCheckBox::stateChanged, model.get(), [&](int changed) {
@@ -276,6 +285,69 @@ void CampaignEditorDialog::fileSaveCopyAs() {
 	model->saveTo(pathName);
 }
 
+void CampaignEditorDialog::mnLinkMenu(const QPoint &pos){
+	QModelIndex here = ui->lstMissions->indexAt(pos);
+	if (here.data(Qt::CheckStateRole) != Qt::Checked)
+		return;
+	const QString *mnName = model->missionName(here);
+	if (! mnName) return;
+	const QList<QAction*> *goals{ model->missionGoals(here) };
+	if (! goals) return;
+	const QList<QAction*> *evts{ model->missionEvents(here) };
+	if (! evts) return;
+
+	QMenu menu{ ui->lstMissions };
+
+	QAction *to = menu.addAction(tr("Add branch to ") + mnName);
+	QAction *from = menu.addAction(tr("Add branch from ") + mnName);
+	QAction *end = menu.addAction(tr("Add campaign end"));
+	bool mnSel{ model->isCurMnSelected() };
+	to->setEnabled(mnSel);
+	from->setEnabled(mnSel);
+	end->setEnabled(mnSel);
+	if (! mnSel) {
+		menu.exec(ui->lstMissions->mapToGlobal(pos));
+		return;
+	}
+
+	QMenu *par{ nullptr };
+
+	if (! model->isCurBrSelected()) {
+		menu.addSection(tr("Select a branch to choose conditions!"));
+		menu.addAction("")->setEnabled(false);
+	} else {
+		menu.addSection(tr("Branch Conditions"));
+		QMenu *gt = menu.addMenu("is-previous-goal-true");
+		gt->addActions(*goals);
+		connect(gt, &QMenu::aboutToShow, this, [&](){par = gt;});
+		QMenu *gf = menu.addMenu("is-previous-goal-false");
+		gf->addActions(*goals);
+		connect(gf, &QMenu::aboutToShow, this, [&](){par = gf;});
+		QMenu *et = menu.addMenu("is-previous-event-true");
+		et->addActions(*evts);
+		connect(et, &QMenu::aboutToShow, this, [&](){par = et;});
+		QMenu *ef = menu.addMenu("is-previous-event-false");
+		ef->addActions(*evts);
+		connect(ef, &QMenu::aboutToShow, this, [&](){par = ef;});
+	}
+
+	const QAction *choice = menu.exec(ui->lstMissions->mapToGlobal(pos));
+
+	bool res{false};
+	if (choice == to) {
+		res = model->addCurMnBranchTo(&here);
+	} else if (choice == from) {
+		res = model->addCurMnBranchTo(&here, true);
+	} else if (choice == end) {
+		res = model->addCurMnBranchTo(/*end*/);
+	} else if (choice && par) {
+		res = model->setCurBrCond(par->title(), *mnName, choice->text());
+	} //else menu was dismissed
+
+	if (res)
+		updateUIMission();
+}
+
 void CampaignEditorDialog::btnBranchUpClicked() {
 
 }
@@ -287,11 +359,6 @@ void CampaignEditorDialog::btnBranchDownClicked() {
 void CampaignEditorDialog::btnErrorCheckerClicked() {
 
 }
-
-void CampaignEditorDialog::btnRealignClicked() {
-
-}
-
 
 
 }

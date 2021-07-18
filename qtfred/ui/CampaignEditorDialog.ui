@@ -203,11 +203,20 @@
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
+           <property name="contextMenuPolicy">
+            <enum>Qt::CustomContextMenu</enum>
+           </property>
+           <property name="toolTip">
+            <string>Right click mission list to add or change branches</string>
+           </property>
            <property name="autoScrollMargin">
             <number>16</number>
            </property>
            <property name="editTriggers">
             <set>QAbstractItemView::NoEditTriggers</set>
+           </property>
+           <property name="selectionMode">
+            <enum>QAbstractItemView::NoSelection</enum>
            </property>
           </widget>
          </item>
@@ -258,9 +267,6 @@
          </item>
          <item>
           <widget class="QGroupBox" name="missionOptions">
-           <property name="title">
-            <string>Mission Options</string>
-           </property>
            <layout class="QGridLayout" name="gridLayout" columnstretch="0,0,0,0,0">
             <item row="0" column="0">
              <widget class="QLabel" name="lblBriefingCutscene">
@@ -336,6 +342,18 @@
               <property name="enabled">
                <bool>false</bool>
               </property>
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="contextMenuPolicy">
+               <enum>Qt::NoContextMenu</enum>
+              </property>
+              <property name="toolTip">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Right click mission list to add or change a branch&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
              </widget>
             </item>
             <item>
@@ -393,16 +411,6 @@
                   </spacer>
                  </item>
                 </layout>
-               </widget>
-              </item>
-              <item>
-               <widget class="QPushButton" name="btnRealign">
-                <property name="enabled">
-                 <bool>false</bool>
-                </property>
-                <property name="text">
-                 <string>Realign Tree</string>
-                </property>
                </widget>
               </item>
              </layout>

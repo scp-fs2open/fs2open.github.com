@@ -69,6 +69,7 @@ private:
 	inline const CampaignMissionData& getCurMn() const { return mnData_it ? *mnData_it : mdEmpty; }
 
 public:
+	inline bool isCurMnSelected() const { return mnData_it; }
 	inline const QString& getCurMnFilename() const { return getCurMn().filename; }
 	inline bool getCurMnIncluded() const {
 		return mnData_idx.isValid() && mnData_idx.data(Qt::CheckStateRole) == Qt::Checked; }
@@ -112,11 +113,8 @@ public slots:
 	inline void setCampaignDescr(const QString &descr) {
 		modify<QString>(campaignDescr, descr); }
 
-	void missionSelectionChanged(const QModelIndex &changed);
-	/*inline const QList<QAction *>& missionLinkMenus(const QModelIndex &idx){
-		QMenu men{};
-		men.addActions();
-	}*/
+	void missionSelectionChanged(const QItemSelection &selected);
+
 	inline const QString *missionName(const QModelIndex idx) const {
 		const CampaignMissionData *mn = missionData.internalDataConst(idx);
 		return mn ? &mn->filename : nullptr;
@@ -140,9 +138,12 @@ public slots:
 		if (! mnData_it) return;
 		modify<QString>(mnData_it->debriefingPersona, debriefingPersona); }
 
-	void selectCurBr(const CampaignBranchData *br);
+	bool addCurMnBranchTo(const QModelIndex *other = nullptr, bool flip = false);
 
+	void selectCurBr(const CampaignBranchData *br);
+	bool setCurBrCond(const QString &sexp, const QString &mn, const QString &arg);
 	void setCurBrIsLoop(bool isLoop);
+
 	inline void setCurLoopDescr(const QString &descr) {
 		if (! (mnData_it && mnData_it->brData_it)) return;
 		modify<QString>(mnData_it->brData_it->loop.descr, descr); }

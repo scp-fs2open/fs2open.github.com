@@ -58,11 +58,12 @@ private slots:
 	bool fileSaveAs();
 	void fileSaveCopyAs();
 
+	void mnLinkMenu(const QPoint &pos);
+
 	void btnBranchUpClicked();
 	void btnBranchDownClicked();
 
 	void btnErrorCheckerClicked();
-	void btnRealignClicked();
 };
 
 }
