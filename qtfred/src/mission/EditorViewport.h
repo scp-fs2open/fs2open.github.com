@@ -20,6 +20,7 @@ struct ViewSettings {
 	bool Aa_gridlines = false;
 	bool Show_coordinates = false;
 	bool Show_outlines = false;
+	bool Draw_outlines_on_selected_ships = true;
 	bool Show_grid_positions = true;
 	bool Show_dock_points = false;
 	bool Show_starts = true;

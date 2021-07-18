@@ -270,6 +270,7 @@ void FredView::syncViewOptions() {
 
 	connectActionToViewSetting(ui->actionShow_Ship_Models, &_viewport->view.Show_ship_models);
 	connectActionToViewSetting(ui->actionShow_Outlines, &_viewport->view.Show_outlines);
+	connectActionToViewSetting(ui->actionDraw_Outlines_On_Selected_Ships, &_viewport->view.Draw_outlines_on_selected_ships);
 	connectActionToViewSetting(ui->actionShow_Ship_Info, &_viewport->view.Show_ship_info);
 	connectActionToViewSetting(ui->actionShow_Coordinates, &_viewport->view.Show_coordinates);
 	connectActionToViewSetting(ui->actionShow_Grid_Positions, &_viewport->view.Show_grid_positions);
