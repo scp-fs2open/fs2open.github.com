@@ -251,6 +251,8 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_COMMAND(ID_EDITORS_WAYPOINT, OnEditorsWaypoint)
 	ON_COMMAND(ID_VIEW_OUTLINES, OnViewOutlines)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_OUTLINES, OnUpdateViewOutlines)
+	ON_COMMAND(ID_VIEW_OUTLINES_ON_SELECTED, OnViewOutlinesOnSelected)
+	ON_UPDATE_COMMAND_UI(ID_VIEW_OUTLINES_ON_SELECTED, OnUpdateViewOutlinesOnSelected)
 	ON_UPDATE_COMMAND_UI(ID_NEW_SHIP_TYPE, OnUpdateNewShipType)
 	ON_COMMAND(ID_SHOW_STARFIELD, OnShowStarfield)
 	ON_UPDATE_COMMAND_UI(ID_SHOW_STARFIELD, OnUpdateShowStarfield)
@@ -3758,6 +3760,18 @@ void CFREDView::OnViewOutlines()
 void CFREDView::OnUpdateViewOutlines(CCmdUI* pCmdUI) 
 {
 	pCmdUI->SetCheck(Show_outlines);
+}
+
+void CFREDView::OnViewOutlinesOnSelected() 
+{
+	Draw_outlines_on_selected_ships = !Draw_outlines_on_selected_ships;
+	theApp.write_ini_file();
+	Update_window = 1;
+}
+
+void CFREDView::OnUpdateViewOutlinesOnSelected(CCmdUI* pCmdUI) 
+{
+	pCmdUI->SetCheck(Draw_outlines_on_selected_ships);
 }
 
 void CFREDView::OnUpdateNewShipType(CCmdUI* pCmdUI) 
