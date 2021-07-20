@@ -23,6 +23,8 @@
 #include <sys/types.h>
 #endif
 
+bool Force_Portable_Mode = false;
+
 namespace
 {
 	const char* ORGANIZATION_NAME = "HardLightProductions";
@@ -54,7 +56,8 @@ namespace
 						"Report at www.hard-light.net or the hard-light discord.", SDL_GetError());
 					sdl_is_borked_warning = true;
 				}
-				// No preferences path, try current directory.  
+				// No preferences path, try current directory.
+				Force_Portable_Mode = true;
 				return "." DIR_SEPARATOR_STR;
 		    }
 #ifdef WIN32
@@ -64,15 +67,21 @@ namespace
 			    while (current != prefPathEnd) {
 				    const auto cp = utf8::next(current, prefPathEnd);
 				    if (cp > 127) {
-					    // On Windows, we currently do not support Unicode paths so catch this early and let the user
+					    // On Windows, we currently do not support Unicode paths so force portable mode let the user
 					    // know
 					    const auto invalid_end = current;
-					    utf8::prior(current, preferencesPath);
-					    Error(LOCATION,
-					          "Determined the preferences path as \"%s\". That path is not supported since it "
-					          "contains a Unicode character (%s). If possible, choose a different user name or "
-					          "use portable mode.",
-					          preferencesPath, std::string(current, invalid_end).c_str());
+						static bool force_portable_warning = false;
+						if (!force_portable_warning) {
+							utf8::prior(current, preferencesPath);
+							ReleaseWarning(LOCATION,
+								"Determined the preferences path as \"%s\". That path is not supported since it "
+								"contains a Unicode character (%s). Using portable mode. Set -portable_mode in "
+								"the commandline to avoid in the future",
+								preferencesPath, std::string(current, invalid_end).c_str());
+							force_portable_warning = true;
+						}
+						Force_Portable_Mode = true;
+						return "." DIR_SEPARATOR_STR;
 				    }
 			    }
 		    } catch (const std::exception& e) {
@@ -466,7 +475,7 @@ bool os_is_legacy_mode()
 		return legacyMode;
 	}
 
-	if (Cmdline_portable_mode) {
+	if (Cmdline_portable_mode || Force_Portable_Mode) {
 		// When the portable mode option is given, non-legacy is implied
 		legacyMode = false;
 		checkedLegacyMode = true;
@@ -762,7 +771,7 @@ SCP_string os_get_config_path(const SCP_string& subpath)
 
 	SCP_stringstream ss;
 
-	if (Cmdline_portable_mode) {
+	if (Cmdline_portable_mode || Force_Portable_Mode) {
 		// Use the current directory
 		ss << "." << DIR_SEPARATOR_CHAR << compatiblePath;
 		return ss.str();
