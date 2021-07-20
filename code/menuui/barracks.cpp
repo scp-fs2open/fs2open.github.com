@@ -1587,7 +1587,7 @@ void barracks_do_frame(float  /*frametime*/)
 	}
 
 	// check mouse over help
-	if (mouse_down(MOUSE_LEFT_BUTTON)) {
+	if (mouse_down(CC_bind(CID_MOUSE, MOUSE_LEFT_BUTTON))) {
 		help_overlay_set_state(Barracks_overlay_id, gr_screen.res, 0);
 	}
 

@@ -110,8 +110,8 @@ int joy_ff_init()
 	} else {
 		ff_enabled = os_config_read_uint(nullptr, "EnableJoystickFF", 1) != 0;
 	}
-
-	if ( !ff_enabled || io::joystick::getCurrentJoystick() == nullptr) {
+	
+	if ( !ff_enabled || (io::joystick::getPlayerJoystick(CID_JOY0) == nullptr) ) {
 		return 0;
 	}
 
@@ -140,7 +140,7 @@ int joy_ff_init()
 	}
 #endif
 
-	haptic = SDL_HapticOpenFromJoystick(io::joystick::getCurrentJoystick()->getDevice());
+	haptic = SDL_HapticOpenFromJoystick(io::joystick::getPlayerJoystick(CID_JOY0)->getDevice());
 
 	if (haptic == NULL) {
 		mprintf(("    ERROR: Unable to open haptic joystick: %s\n", SDL_GetError()));

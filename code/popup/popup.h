@@ -94,8 +94,14 @@ int popup(int flags, int nchoices, ... );
 //	rval = popup_till_condition( condition_function, "Cancel", "Checking to see if %s is an idiot.", pl->callsign);
 int popup_till_condition( int(*condition)() , ...);
 
-// popup to return the value from an input box
-char *popup_input(int flags, const char *caption, int max_output_len = -1);
+/*!
+ * Popup that prompts the user for input
+ * @param[in] flags             Apperance and behavior flags. See the PF_* defines in popup.h
+ * @param[in] caption           Caption text of the prompt
+ * @param[in] max_output_len    (Optional) Maximum string length of the input text
+ * @param[in] default_input     (Optional) Default input text
+ */
+char *popup_input(int flags, const char *caption, int max_output_len = -1, const char *default_input = "");
 
 int popup_active();
 

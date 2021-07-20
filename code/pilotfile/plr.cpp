@@ -1,4 +1,6 @@
 
+#include "controlconfig/controlsconfig.h"
+#include "controlconfig/presets.h"
 #include "freespace.h"
 #include "gamesnd/eventmusic.h"
 #include "hud/hudconfig.h"
@@ -566,65 +568,127 @@ void pilotfile::plr_write_stats_multi()
 
 void pilotfile::plr_read_controls()
 {
-	short id1, id2;
-	int axi, inv;
+	if (version < 3) {
+		// PLR < 3
+		short id1, id2;
+		int axi, inv;
 
-	auto list_size = handler->startArrayRead("controls", true);
-	for (size_t idx = 0; idx < list_size; idx++, handler->nextArraySection()) {
-		id1 = handler->readShort("key");
-		id2 = handler->readShort("joystick");
-		handler->readShort("mouse");	// unused, at the moment
+		auto list_size = handler->startArrayRead("controls", true);
+		for (size_t idx = 0; idx < list_size; idx++, handler->nextArraySection()) {
+			id1 = handler->readShort("key");
+			id2 = handler->readShort("joystick");
+			handler->readShort("mouse");	// unused, at the moment
 
-		if (idx < Control_config.size()) {
-			Control_config[idx].take(CC_bind(CID_KEYBOARD, id1), 0);
-			Control_config[idx].take(CC_bind(CID_JOY0, id2), 1);
+			if (idx < Control_config.size()) {
+				Control_config[idx].take(CC_bind(CID_KEYBOARD, id1), 0);
+				Control_config[idx].take(CC_bind(CID_JOY0, id2), 1);
+			}
 		}
-	}
-	handler->endArrayRead();
+		handler->endArrayRead();
 
-	auto list_axis = handler->startArrayRead("axes");
-	for (size_t idx = 0; idx < list_axis; idx++, handler->nextArraySection()) {
-		axi = handler->readInt("axis_map");
-		inv = handler->readInt("invert_axis");
+		auto list_axis = handler->startArrayRead("axes");
+		for (size_t idx = 0; idx < list_axis; idx++, handler->nextArraySection()) {
+			axi = handler->readInt("axis_map");
+			inv = handler->readInt("invert_axis");
 
-		if (idx < NUM_JOY_AXIS_ACTIONS) {
-			Axis_map_to[idx] = axi;
-			Invert_axis[idx] = inv;
+			if (idx < NUM_JOY_AXIS_ACTIONS) {
+				Control_config[idx + JOY_AXIS_BEGIN].take(CC_bind(CID_JOY0, static_cast<short>(axi), CCF_AXIS), 0);
+				Control_config[idx + JOY_AXIS_BEGIN].invert(inv != 0);
+			}
 		}
+		handler->endArrayRead();
+
+		// Check that these bindings are in a preset.  If it is not, create a new preset file
+		auto it = control_config_get_current_preset();
+		if (it == Control_config_presets.end()) {
+			CC_preset preset;
+			preset.name = filename;
+
+			// strip off extension
+			auto n = preset.name.find_last_of('.');
+			preset.name.resize(n);
+
+			std::copy(Control_config.begin(), Control_config.end(), std::back_inserter(preset.bindings));
+			Control_config_presets.push_back(preset);
+
+			// Overwrite any existing preset, preferring the old version bindings over the new.
+			save_preset_file(preset, true);
+			Information(LOCATION, "Successfully converted playerfile to v3.  Please rebind your mouse controls, if any.");
+		}
+		return;
+
+	} else {
+		// read PLR >= 3
+		SCP_string buf = handler->readString("preset");
+
+		auto it = std::find_if(Control_config_presets.begin(), Control_config_presets.end(),
+							   [buf](const CC_preset& preset) { return preset.name == buf; });
+
+		if (it == Control_config_presets.end()) {
+			// Couldn't find the preset, use defaults
+			ReleaseWarning(LOCATION, "Could not find preset %s, using defaults\n", buf.c_str());
+			it = Control_config_presets.begin();
+		}
+
+		control_config_use_preset(*it);
+		return;
 	}
-	handler->endArrayRead();
 }
 
 void pilotfile::plr_write_controls()
 {
 	handler->startSectionWrite(Section::Controls);
+	
+	auto it = control_config_get_current_preset();
+	handler->writeString("preset", it->name.c_str());
 
-	// For some unknown reason, the old code used a short for the array length here...
-	handler->startArrayWrite("controls", Control_config.size(), true);
-	for (auto &item : Control_config) {
+	// For forward compatibility with old versions of FSO, we must still save the preset to the best of our ability.
+	// This is required because the plr_read will trigger an error and halt FSO execution.
+	handler->startArrayWrite("controls", JOY_AXIS_BEGIN, true);
+	for (size_t idx = 0; idx < JOY_AXIS_BEGIN; idx++) {
 		handler->startSectionWrite(Section::Unnamed);
 
-		handler->writeShort("key", item.get_btn(CID_KEYBOARD));
-		handler->writeShort("joystick", item.get_btn(CID_JOY0));
-		// placeholder? for future mouse_id?
+		// Merge Joy0 and Mouse buttons, Joy0 bind has priority
+		short joy_btn = Control_config[idx].get_btn(CID_JOY0);
+		short mouse_btn = Control_config[idx].get_btn(CID_MOUSE);
+
+		if (joy_btn == -1) {
+			joy_btn = mouse_btn;
+		}
+
+		handler->writeShort("key", Control_config[idx].get_btn(CID_KEYBOARD));
+		handler->writeShort("joystick", joy_btn);
 		handler->writeShort("mouse", -1);
 
-		handler->endSectionWrite();
+		handler->endSectionWrite();	// Section::Unnamed
 	}
-	handler->endArrayWrite();
+	handler->endArrayWrite(); // Array::controls
 
 	handler->startArrayWrite("axes", NUM_JOY_AXIS_ACTIONS);
-	for (size_t idx = 0; idx < NUM_JOY_AXIS_ACTIONS; idx++) {
+	for (size_t idx = JOY_AXIS_BEGIN; idx < JOY_AXIS_END; idx++) {
 		handler->startSectionWrite(Section::Unnamed);
 
-		handler->writeInt("axis_map", Axis_map_to[idx]);
-		handler->writeInt("invert_axis", Invert_axis[idx]);
+		CC_bind *bind_ptr;
+		CC_bind bind;
+		int inverted = 0;
 
-		handler->endSectionWrite();
+		bind_ptr = Control_config[idx].find(CID_JOY0);
+		if (bind_ptr != nullptr) {
+			bind = *bind_ptr;
+		}
+
+		if ((bind.flags & CCF_INVERTED) == CCF_INVERTED) {
+			inverted = 1;
+		}
+
+		handler->writeInt("axis_map", bind.btn);
+		handler->writeInt("invert_axis", inverted);
+
+		handler->endSectionWrite(); // Section::Unnamed
 	}
-	handler->endArrayWrite();
+	handler->endArrayWrite(); // Array::axes
 
-	handler->endSectionWrite();
+	handler->endSectionWrite(); // Section::controls
 }
 
 void pilotfile::plr_read_settings()

@@ -21,15 +21,17 @@ static const unsigned int CSG_FILE_ID = 0x5f475343;	// "CSG_" in file
 //   0 - initial version
 //   1 - Adding support for the player is multi flag
 //   2 - Add language in use when pilot was created
-//	     (due to intel entries using translated text as the primary key)
-static const ubyte PLR_VERSION = 2;
+//       (due to intel entries using translated text as the primary key)
+//   3   Controls are removed, and instead a preset name is saved/loaded
+static const ubyte PLR_VERSION = 3;
 //   0 - initial version
 //   1 - re-add recent missions
 //   2 - separate single/multi squad name & pic
 //   3 - remove separate detail settings for campaigns
 //   4 - add CPV rollback for Red Alert missions
 //   5 - save rank to flags for quick access
-static const ubyte CSG_VERSION = 5;
+//   6 - Controls are removed, and instead a preset name is saved/loaded.
+static const ubyte CSG_VERSION = 6;
 
 typedef struct index_list_t {
 	SCP_string name;

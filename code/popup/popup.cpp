@@ -529,7 +529,7 @@ int popup_init(popup_info *pi, int flags)
 
 	// if this is an input popup, create and center the popup
 	if(flags & PF_INPUT){
-		Popup_input.create(&Popup_window, Popup_text_coords[gr_screen.res][0], pbg->coords[1] + Popup_input_y_offset[gr_screen.res], Popup_text_coords[gr_screen.res][2], pi->max_input_text_len, "", UI_INPUTBOX_FLAG_INVIS | UI_INPUTBOX_FLAG_ESC_CLR | UI_INPUTBOX_FLAG_ESC_FOC | UI_INPUTBOX_FLAG_KEYTHRU | UI_INPUTBOX_FLAG_TEXT_CEN);
+		Popup_input.create(&Popup_window, Popup_text_coords[gr_screen.res][0], pbg->coords[1] + Popup_input_y_offset[gr_screen.res], Popup_text_coords[gr_screen.res][2], pi->max_input_text_len, pi->input_text, UI_INPUTBOX_FLAG_INVIS | UI_INPUTBOX_FLAG_ESC_CLR | UI_INPUTBOX_FLAG_ESC_FOC | UI_INPUTBOX_FLAG_KEYTHRU | UI_INPUTBOX_FLAG_TEXT_CEN);
 		Popup_input.set_focus();
 	}	
 	
@@ -1102,7 +1102,7 @@ int popup_till_condition(int (*condition)(), ...)
 }
 
 // popup to return the value from an input box
-char *popup_input(int flags, const char *caption, int max_output_len)
+char *popup_input(int flags, const char *caption, int max_output_len, const char *default_input)
 {
 	if ( Popup_is_active ) {
 		Int3();		// should never happen
@@ -1129,8 +1129,9 @@ char *popup_input(int flags, const char *caption, int max_output_len)
 		Popup_info.max_input_text_len = max_output_len;
 	}
 
-	// zero the popup input text
+	// zero the popup input text and set default, if provided
 	memset(Popup_info.input_text, 0, POPUP_INPUT_MAX_CHARS);
+	strcpy_s(Popup_info.input_text, default_input);
 	
 	gamesnd_play_iface(InterfaceSounds::POPUP_APPEAR); 	// play sound when popup appears
 

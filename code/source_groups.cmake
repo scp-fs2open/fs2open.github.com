@@ -145,6 +145,8 @@ add_file_folder("ControlConfig"
 	controlconfig/controlsconfig.cpp
 	controlconfig/controlsconfig.h
 	controlconfig/controlsconfigcommon.cpp
+	controlconfig/presets.cpp
+	controlconfig/presets.h
 )
 
 # Cutscene files
