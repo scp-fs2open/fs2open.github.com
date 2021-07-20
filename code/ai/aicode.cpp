@@ -1108,6 +1108,10 @@ void ai_update_danger_weapon(int attacked_objnum, int weapon_objnum)
 		}
 	}
 
+	weapon_info* wip = &Weapon_info[Weapons[weapon_objp->instance].weapon_info_index];
+	if (wip->wi_flags[Weapon::Info_Flags::No_evasion])
+		return;
+
 	if (aip->danger_weapon_objnum != -1) {
 		old_weapon_objp = &Objects[aip->danger_weapon_objnum];
 		if ((old_weapon_objp->type == OBJ_WEAPON) && (old_weapon_objp->signature == aip->danger_weapon_signature)) {

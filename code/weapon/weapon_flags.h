@@ -88,6 +88,7 @@ namespace Weapon {
 		Can_damage_shooter,					// this weapon and any of its descendants can damage its shooter - Asteroth
 		Heals,								// 'damage' heals instead of actually damaging - Asteroth
 		No_collide,
+		No_evasion,							// AI will not attempt to dodge this weapon - Asteroth
 
         NUM_VALUES
 	};
