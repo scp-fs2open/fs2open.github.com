@@ -3,6 +3,10 @@
 #include "lab/dialogs/lab_dialog.h"
 
 class Descriptions : public LabDialog {
+public:
+	~Descriptions() override = default;
+
+private:
 	void open(Button* caller) override;
 
 	void close() override {

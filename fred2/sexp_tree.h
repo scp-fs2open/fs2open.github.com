@@ -282,6 +282,7 @@ public:
 	sexp_list_item *get_listing_opf_game_snds();
 	sexp_list_item *get_listing_opf_fireball();
 	sexp_list_item *get_listing_opf_species();
+	sexp_list_item *get_listing_opf_language();
 
 	int m_mode;
 	int item_index;

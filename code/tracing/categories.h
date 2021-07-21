@@ -90,8 +90,6 @@ extern Category NonrepeatingEvents;
 extern Category ParticlesRenderAll;
 extern Category ParticlesMoveAll;
 
-extern Category TrailDraw;
-
 extern Category EnvironmentMapping;
 extern Category BuildShadowMap;
 extern Category RenderScene;

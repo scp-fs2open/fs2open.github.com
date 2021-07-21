@@ -4,6 +4,10 @@
 
 
 class RenderOptions : public LabDialog {
+public:
+	~RenderOptions() override = default;
+
+private:
 	// Called when this dialog is opened via the top toolbar
 	void open(Button* /*caller*/) override;
 

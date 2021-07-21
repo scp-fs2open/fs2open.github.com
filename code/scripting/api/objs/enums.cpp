@@ -107,8 +107,6 @@ flag_def_list Enumerations[] = {
 	{"FIREBALL_WARP_EFFECT", LE_FIREBALL_WARP_EFFECT, 0},
 	// the following OS_ definitions use bitfield values, not the indexes in enums.h
 	{"OS_NONE", 0, 0},
-	{"OS_USED", OS_USED, 0},
-	{"OS_DS3D", OS_DS3D, 0},
 	{"OS_MAIN", OS_MAIN, 0},
 	{"OS_TURRET_BASE_ROTATION", OS_TURRET_BASE_ROTATION, 0},
 	{"OS_TURRET_GUN_ROTATION", OS_TURRET_GUN_ROTATION, 0},
@@ -116,6 +114,8 @@ flag_def_list Enumerations[] = {
 	{"OS_SUBSYS_DEAD", OS_SUBSYS_DEAD, 0},
 	{"OS_SUBSYS_DAMAGED", OS_SUBSYS_DAMAGED, 0},
 	{"OS_SUBSYS_ROTATION", OS_SUBSYS_ROTATION, 0},
+	{"OS_PLAY_ON_PLAYER", OS_PLAY_ON_PLAYER, 0},
+	{"OS_LOOPING_DISABLED", OS_LOOPING_DISABLED, 0},
 	// end of OS_ definitions
 	// these also use values that aren't in enums.h
 	{ "MOVIE_PRE_FICTION", MOVIE_PRE_FICTION, 0 },

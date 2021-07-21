@@ -461,6 +461,45 @@ typedef struct ship_spark {
 	int end_time;
 } ship_spark;
 
+template <class T>
+struct reload_pct
+{
+	void init(int num_banks, int points_per_bank, T value)
+	{
+		_points_per_bank = points_per_bank;
+		_buffer.clear();
+		_buffer.resize(num_banks * points_per_bank, value);
+		_value = value;
+	}
+
+	T& get(int bank, int point)
+	{
+		int pos = bank * _points_per_bank + point;
+
+		// this can happen with mismatched ships.tbl and models
+		if (pos >= (int)_buffer.size())
+			return _value;
+
+		return _buffer[pos];
+	}
+
+	void set(int bank, int point, T value)
+	{
+		int pos = bank * _points_per_bank + point;
+
+		// this can happen with mismatched ships.tbl and models
+		if (pos >= (int)_buffer.size())
+			return;
+
+		_buffer[pos] = value;
+	}
+
+private:
+	int _points_per_bank = 0;
+	T _value;
+	SCP_vector<T> _buffer;
+};
+
 // NOTE: Can't be treated as a struct anymore, since it has STL data structures in its object tree!
 class ship
 {
@@ -715,7 +754,7 @@ public:
 	bool bay_doors_need_open;		// keep track of whether I need the door open or not
 	int bay_doors_parent_shipnum;	// our parent ship, what we are entering/leaving
 	
-	float secondary_point_reload_pct[MAX_SHIP_SECONDARY_BANKS][MAX_SLOTS];	//after fireing a secondary it takes some time for that secondary weapon to reload, this is how far along in that proces it is (from 0 to 1)
+	reload_pct<float> secondary_point_reload_pct;	//after fireing a secondary it takes some time for that secondary weapon to reload, this is how far along in that proces it is (from 0 to 1)
 	float primary_rotate_rate[MAX_SHIP_PRIMARY_BANKS];
 	float primary_rotate_ang[MAX_SHIP_PRIMARY_BANKS];
 
@@ -1140,6 +1179,7 @@ public:
 	float		max_overclocked_speed;			// max speed when 100% power output sent to engines
 	float		max_weapon_reserve;				// maximum energy that can be stored for primary weapon usage
 	float		max_shield_regen_per_second;	// Goober5000 - max percent/100 of shield energy regenerated per second
+	float       shield_regen_hit_delay;			// Asteroth - delay after being hit before shield will start recharging again
 	float		max_weapon_regen_per_second;	// Goober5000 - max percent/100 of weapon energy regenerated per second
 
 	// Fields for tuning the ETS' direct shield<->weapon transfer feature
@@ -1714,6 +1754,7 @@ int ship_lock_threat(ship *sp);
 int	bitmask_2_bitnum(int num);
 SCP_string ship_return_orders(ship *sp);
 char	*ship_return_time_to_goal(char *outbuf, ship *sp);
+int	ship_return_seconds_to_goal(ship *sp);
 
 void	ship_maybe_warn_player(ship *enemy_sp, float dist);
 void	ship_maybe_praise_player(ship *deader_sp);
