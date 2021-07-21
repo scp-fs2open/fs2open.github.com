@@ -850,7 +850,6 @@ void clear_mission()
 	obj_init();
 	model_free_all();				// Free all existing models
 	ai_init();
-	ai_profiles_init();
 	ship_init();
 	jumpnode_level_close();
 	waypoint_level_close();
