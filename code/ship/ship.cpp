@@ -11668,7 +11668,8 @@ int ship_fire_primary(object * obj, int stream_weapons, int force, bool rollback
 					points = num_slots;
 				}
 
-				if ( shipp->weapon_energy < points*winfo_p->energy_consumed*flFrametime)
+				if ( shipp->weapon_energy < points*winfo_p->energy_consumed*flFrametime || 
+					(winfo_p->wi_flags[Weapon::Info_Flags::Ballistic] && shipp->weapons.primary_bank_ammo[bank_to_fire] <= 0))
 				{
 					swp->next_primary_fire_stamp[bank_to_fire] = timestamp((int)(next_fire_delay));
 					if ( obj == Player_obj )
