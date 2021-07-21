@@ -86,7 +86,7 @@ void stub_scene_texture_end() {}
 
 void stub_copy_effect_texture() {}
 
-void stub_deferred_lighting_begin() {}
+void stub_deferred_lighting_begin(bool /*clearNonColorBufs*/) {}
 
 void stub_deferred_lighting_end() {}
 

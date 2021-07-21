@@ -53,7 +53,7 @@ void opengl_clear_deferred_buffers()
 	GL_state.CullFace(cull);
 }
 
-void gr_opengl_deferred_lighting_begin()
+void gr_opengl_deferred_lighting_begin(bool clearNonColorBufs)
 {
 	if ( Cmdline_no_deferred_lighting)
 		return;
@@ -73,7 +73,13 @@ void gr_opengl_deferred_lighting_begin()
 	glDrawBuffers(5, buffers);
 
 	static const float black[] = { 0, 0, 0, 1.0f };
+
 	glClearBufferfv(GL_COLOR, 0, black);
+	if (clearNonColorBufs) {
+		glClearBufferfv(GL_COLOR, 1, black);
+		glClearBufferfv(GL_COLOR, 2, black);
+		glClearBufferfv(GL_COLOR, 3, black);
+	}
 }
 
 void gr_opengl_deferred_lighting_end()
@@ -142,7 +148,7 @@ void gr_opengl_deferred_lighting_finish()
 		auto header = uniformAligner.getHeader<deferred_global_data>();
 		if (Shadow_quality != ShadowQuality::Disabled) {
 			// Avoid this overhead when we are not going to use these values
-			header->shadow_mv_matrix = Shadow_view_matrix;
+			header->shadow_mv_matrix = Shadow_view_matrix_light;
 			for (size_t i = 0; i < MAX_SHADOW_CASCADES; ++i) {
 				header->shadow_proj_matrix[i] = Shadow_proj_matrix[i];
 			}
@@ -151,7 +157,7 @@ void gr_opengl_deferred_lighting_finish()
 			header->middist = Shadow_cascade_distances[2];
 			header->fardist = Shadow_cascade_distances[3];
 
-			vm_inverse_matrix4(&header->inv_view_matrix, &gr_view_matrix);
+			vm_inverse_matrix4(&header->inv_view_matrix, &Shadow_view_matrix_render);
 		}
 
 		header->invScreenWidth = 1.0f / gr_screen.max_w;
@@ -260,16 +266,18 @@ void gr_opengl_deferred_lighting_finish()
 			case Light_Type::Cone:
 			case Light_Type::Point:
 				gr_bind_uniform_buffer(uniform_block_type::Lights, buffer.getAlignerElementOffset(element_index),
-				                       sizeof(graphics::deferred_light_data), buffer.bufferHandle());
+					sizeof(graphics::deferred_light_data), buffer.bufferHandle());
+
 				gr_opengl_draw_deferred_light_sphere(&l.vec);
-				++element_index;
+				++element_index; 
 				break;
 			case Light_Type::Tube:
 				gr_bind_uniform_buffer(uniform_block_type::Lights, buffer.getAlignerElementOffset(element_index),
-				                       sizeof(graphics::deferred_light_data), buffer.bufferHandle());
+					sizeof(graphics::deferred_light_data), buffer.bufferHandle());
 
 				vec3d dir, newPos;
 				matrix orient;
+
 				vm_vec_sub(&dir, &l.vec, &l.vec2);
 				vm_vector_2_matrix(&orient, &dir, nullptr, nullptr);
 				//Tube light volumes must be extended past the length of their requested light vector
@@ -280,6 +288,7 @@ void gr_opengl_deferred_lighting_finish()
 				vm_vec_scale_sub(&newPos, &l.vec2, &dir, l.radb * 1.5f);
 				gr_opengl_draw_deferred_light_cylinder(&newPos, &orient);
 				++element_index;
+				
 				break;
 			default:
 				continue;

@@ -26,6 +26,7 @@
 #include "gamesnd/eventmusic.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
+#include "graphics/light.h"
 #include "graphics/matrix.h"
 #include "graphics/shadows.h"
 #include "def_files/def_files.h"
@@ -7413,6 +7414,11 @@ void ship_render_cockpit(object *objp)
 	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 0.02f, 10.0f * pm->rad);
 	gr_set_view_matrix(&leaning_position, &Eye_matrix);
 
+	Shadow_view_matrix_render = gr_view_matrix;
+
+	if(Cmdline_deferred_lighting_cockpit)
+		gr_deferred_lighting_begin(true);
+
 	uint render_flags = MR_NORMAL;
 	render_flags |= MR_NO_FOGGING;
 
@@ -7426,6 +7432,20 @@ void ship_render_cockpit(object *objp)
 	render_info.set_replacement_textures(Player_cockpit_textures);
 
 	model_render_immediate(&render_info, sip->cockpit_model_num, &eye_ori, &pos);
+
+	if (Cmdline_deferred_lighting_cockpit) {
+		gr_end_view_matrix();
+		gr_end_proj_matrix();
+
+		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+		gr_set_view_matrix(&Eye_position, &Eye_matrix);
+
+		gr_deferred_lighting_end();
+		gr_deferred_lighting_finish();
+
+		gr_reset_lighting();
+		gr_set_lighting(false, false);
+	}
 
 	gr_end_view_matrix();
 	gr_end_proj_matrix();
