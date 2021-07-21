@@ -1225,7 +1225,6 @@ int brief_setup_closeup(brief_icon *bi)
 	vec3d			tvec;
 
 	Closeup_icon = bi;
-	Closeup_icon->ship_class = bi->ship_class;
 	Closeup_icon->modelnum = -1;
 	Closeup_icon->model_instance_num = -1;
 
