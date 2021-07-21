@@ -74,6 +74,7 @@ extern Category SubmitDraws;
 extern Category ApplyLights;
 extern Category DrawEffects;
 extern Category SetupNebula;
+extern Category DrawPoofs;
 extern Category DrawStars;
 extern Category DrawShields;
 extern Category DrawBeams;

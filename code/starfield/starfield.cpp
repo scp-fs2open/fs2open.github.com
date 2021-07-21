@@ -2532,7 +2532,6 @@ void stars_set_nebula(bool activate)
 		} else {
 			Neb2_render_mode = NEB2_RENDER_HTL;
 		}
-		neb2_eye_changed();
 	}
 	else
 	{

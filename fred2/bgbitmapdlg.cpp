@@ -219,12 +219,12 @@ void bg_bitmap_dlg::create()
 	build_nebfile_list();	
 
 	// setup neb poof names
-	GetDlgItem(IDC_POOF0)->SetWindowText(Neb2_poof_filenames[0]);	
-	GetDlgItem(IDC_POOF1)->SetWindowText(Neb2_poof_filenames[1]);
-	GetDlgItem(IDC_POOF2)->SetWindowText(Neb2_poof_filenames[2]);
-	GetDlgItem(IDC_POOF3)->SetWindowText(Neb2_poof_filenames[3]);
-	GetDlgItem(IDC_POOF4)->SetWindowText(Neb2_poof_filenames[4]);
-	GetDlgItem(IDC_POOF5)->SetWindowText(Neb2_poof_filenames[5]);
+	GetDlgItem(IDC_POOF0)->SetWindowText(Poof_info[0].name);	
+	GetDlgItem(IDC_POOF1)->SetWindowText(Poof_info[1].name);
+	GetDlgItem(IDC_POOF2)->SetWindowText(Poof_info[2].name);
+	GetDlgItem(IDC_POOF3)->SetWindowText(Poof_info[3].name);
+	GetDlgItem(IDC_POOF4)->SetWindowText(Poof_info[4].name);
+	GetDlgItem(IDC_POOF5)->SetWindowText(Poof_info[5].name);
 
 	m_skybox_model = _T(The_mission.skybox_model);
 	m_envmap = _T(The_mission.envmap_name);
