@@ -7097,6 +7097,10 @@ static int subsys_set(int objnum, int ignore_subsys_info)
 			ship_system->flags.set(Ship::Subsystem_Flags::Autorepair_if_disabled);
 		if (model_system->flags[Model::Subsystem_Flags::No_autorepair_if_disabled])
 			ship_system->flags.set(Ship::Subsystem_Flags::No_autorepair_if_disabled);
+		if (model_system->flags[Model::Subsystem_Flags::Turret_locked])
+			ship_system->weapons.flags.set(Ship::Weapon_Flags::Turret_Lock);
+		if (The_mission.flags[Mission::Mission_Flags::Beam_free_all_by_default]) 
+			ship_system->weapons.flags.set(Ship::Weapon_Flags::Beam_Free);
 
 		ship_system->turn_rate = model_system->turn_rate;
 

@@ -2300,7 +2300,7 @@ int parse_create_object_sub(p_object *p_objp)
 			}
 		}
 
-		if (shipp->flags[Ship::Ship_Flags::Lock_all_turrets_initially] || ptr->system_info->flags[Model::Subsystem_Flags::Turret_locked])
+		if (shipp->flags[Ship::Ship_Flags::Lock_all_turrets_initially])
 		{
 			// mark all turrets as locked
 			if(ptr->system_info->type == SUBSYSTEM_TURRET)
