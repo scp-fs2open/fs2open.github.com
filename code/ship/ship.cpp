@@ -10880,9 +10880,10 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 		for (i = 0; i < MAX_REPLACEMENT_TEXTURES; i++)
 			sp->ship_replacement_textures[i] = -1;
 
-		if (p_objp != nullptr) {
+		if (p_objp != nullptr) 
+		{
 			// now fill them in according to texture name
-			for (SCP_vector<texture_replace>::iterator tr = p_objp->replacement_textures.begin(); tr != p_objp->replacement_textures.end(); ++tr)
+			for (const auto &tr : p_objp->replacement_textures)
 			{
 				int j;
 				polymodel* pm = model_get(sip->model_num);
@@ -10892,9 +10893,9 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 				{
 					texture_map* tmap = &pm->maps[j];
 
-					int tnum = tmap->FindTexture(tr->old_texture);
+					int tnum = tmap->FindTexture(tr.old_texture);
 					if (tnum > -1)
-						sp->ship_replacement_textures[j * TM_NUM_TYPES + tnum] = tr->new_texture_id;
+						sp->ship_replacement_textures[j * TM_NUM_TYPES + tnum] = tr.new_texture_id;
 				}
 			}
 		}
