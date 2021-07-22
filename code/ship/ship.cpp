@@ -7673,7 +7673,7 @@ void ship_delete( object * obj )
 
 	for (const auto& animationList : Ship_info[shipp->ship_info_index].animations.animationSet) {
 		for (const auto& animStop : animationList.second) {
-			animStop.second->stop(shipp, true);
+			animStop.second->stop(model_get_instance(shipp->model_instance_num), true);
 		}
 	}
 

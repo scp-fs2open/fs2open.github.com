@@ -65,8 +65,7 @@ public:
 };
 
 class ship;
-struct submodel_instance;
-class bsp_info;
+class ship_info;
 
 namespace animation {
 
@@ -128,54 +127,56 @@ namespace animation {
 		//This function needs to contain any animation parts that do not change ModelAnimationData (such as sound or particles)
 		virtual void executeAnimation(const ModelAnimationData<>& state, float time) const = 0;
 	};
-
+	
 
 	class ModelAnimationSubmodel {
 		SCP_string m_name;
 		optional<int> m_submodel;
 		optional<bool> m_findBarrel;
+		ship_info* m_sip = nullptr;
 		std::unique_ptr<ModelAnimationSegment> m_mainSegment;
-		std::map<ship*, ModelAnimationData<>> m_initialData;
-		std::map <ship*, ModelAnimationData<>> m_lastFrame;
+		std::map<polymodel_instance*, ModelAnimationData<>> m_initialData;
+		std::map<polymodel_instance*, ModelAnimationData<>> m_lastFrame;
 
 		friend class ModelAnimation;
 	public:
 		//Create a submodel animation based on the name of the submodel
 		ModelAnimationSubmodel(SCP_string submodelName, std::unique_ptr<ModelAnimationSegment> mainSegment);
 		//Create a submodel animation by taking the submodel assigned to a subsystem with a given name, or, if requested, the submodel of the turret barrel
-		ModelAnimationSubmodel(SCP_string subsystemName, bool findBarrel, std::unique_ptr<ModelAnimationSegment> mainSegment);
+		ModelAnimationSubmodel(SCP_string subsystemName, bool findBarrel, ship_info* sip, std::unique_ptr<ModelAnimationSegment> mainSegment);
 
 		//Sets the animation to the specified time and applies it to the submodel
-		void play(float time, ship* ship);
-		void reset(ship* ship);
+		void play(float time, polymodel_instance* pmi);
+
+		void reset(polymodel_instance* pmi);
 
 	private:
 		//Set the submodels current state as the base for the animation, recalculate the animation data (e.g. take this as the base for absolutely defined angles)
-		float saveCurrentAsBase(ship* ship);
+		float saveCurrentAsBase(polymodel_instance* pmi);
 		//Reapply the calculated animation state to the submodel
-		void copyToSubmodel(const ModelAnimationData<>& data, ship* ship);
-		std::pair<submodel_instance*, bsp_info*> findSubmodel(ship* ship);
+		void copyToSubmodel(const ModelAnimationData<>& data, polymodel_instance* pmi);
+		std::pair<submodel_instance*, bsp_info*> findSubmodel(polymodel_instance* pmi);
 	};
 
 
 	class ModelAnimation : public std::enable_shared_from_this <ModelAnimation> {
-		static std::multimap<ship*, std::shared_ptr<ModelAnimation>> s_runningAnimations;
+		static std::multimap<polymodel_instance*, std::shared_ptr<ModelAnimation>> s_runningAnimations;
 
 		std::vector<std::unique_ptr<ModelAnimationSubmodel>> m_submodelAnimation;
 		float m_duration = 0.0f;
 
-		std::map <ship*, ModelAnimationState> m_state;
-		std::map<ship*, float> m_time;
-		ModelAnimationState play(float frametime, ship* ship);
+		std::map<polymodel_instance*, ModelAnimationState> m_state;
+		std::map<polymodel_instance*, float> m_time;
+		ModelAnimationState play(float frametime, polymodel_instance* pmi);
 
 		static void cleanRunning();
 	public:
 		void addSubsystemAnimation(std::unique_ptr<ModelAnimationSubmodel> animation);
 
 		//Start playing the animation. Will stop other animations that have components running on the same submodels
-		void start(ship* ship, bool reverse);
+		void start(polymodel_instance* pmi, bool reverse);
 		//Stops the animation. If cleanup is set, it will remove the animation from the list of running animations. Don't call without cleanup unless you know what you are doing
-		void stop(ship* ship, bool cleanup = true);
+		void stop(polymodel_instance* pmi, bool cleanup = true);
 
 		static void stepAnimations(float frametime);
 		//Find animations in the running animations list that are fully reset and need to be removed
