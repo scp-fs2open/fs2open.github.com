@@ -1703,9 +1703,9 @@ void model_render_glowpoint(int point_num, vec3d *pos, matrix *orient, glow_poin
 					int bitmap_id = (gpo && gpo->glow_bitmap_override) ? gpo->glow_bitmap : bank->glow_bitmap;
 
 					if ( use_depth_buffer ) {
-						batching_add_volume_bitmap(bitmap_id, &p, 0, (w * 0.5f), d * pulse, w);
+						batching_add_volume_bitmap(bitmap_id, &p, 0, (w * 0.5f), d * pulse);
 					} else {
-						batching_add_bitmap(bitmap_id, &p, 0, (w * 0.5f), d * pulse, w);
+						batching_add_bitmap(bitmap_id, &p, 0, (w * 0.5f), d * pulse);
 					}
 				}
 			} //d>0.0f

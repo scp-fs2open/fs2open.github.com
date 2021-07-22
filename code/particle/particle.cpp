@@ -47,8 +47,8 @@ namespace
 		float dist;
 		float alpha = 0.99999f;
 
-		const float inner_radius = 30.0f;
-		const float magic_num = 2.75f;
+		const float inner_radius = MIN(30.0f, rad);
+		const float magic_num = MIN(2.75f, rad / 10.0f);
 
 		// determine what alpha to draw this bitmap with
 		// higher alpha the closer the bitmap gets to the eye

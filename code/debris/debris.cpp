@@ -52,8 +52,6 @@ int Debris_model = -1;
 int Debris_vaporize_model = -1;
 int Debris_num_submodels = 0;
 
-#define	MAX_DEBRIS_DIST					10000.0f			//	Debris goes away if it's this far away.
-#define	DEBRIS_DISTANCE_CHECK_TIME		(10*1000)		//	Check every 10 seconds.
 #define	DEBRIS_INDEX(dp) (int)(dp-Debris.data())
 
 const auto OnDebrisCreatedHook = scripting::Hook::Factory(
@@ -197,34 +195,6 @@ void debris_delete( object * obj )
 	db->objnum = -1;
 }
 
-/**
- * If debris piece *db is far away from all players, make it go away very soon.
- * In single player game, delete if MAX_DEBRIS_DIST from player.
- * In multiplayer game, delete if MAX_DEBRIS_DIST from all players.
- */
-void maybe_delete_debris(debris *db)
-{
-	object	*objp;
-
-	if (Player_obj != nullptr && timestamp_elapsed(db->next_distance_check) && timestamp_elapsed(db->must_survive_until)) {
-		if (!(Game_mode & GM_MULTIPLAYER)) {		//	In single player game, just check against player.
-			if (vm_vec_dist_quick(&Player_obj->pos, &Objects[db->objnum].pos) > MAX_DEBRIS_DIST)
-				db->lifeleft = 0.1f;
-			else
-				db->next_distance_check = timestamp(DEBRIS_DISTANCE_CHECK_TIME);
-		} else {
-			for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
-				if (objp->flags[Object::Object_Flags::Player_ship]) {
-					if (vm_vec_dist_quick(&objp->pos, &Objects[db->objnum].pos) < MAX_DEBRIS_DIST) {
-						db->next_distance_check = timestamp(DEBRIS_DISTANCE_CHECK_TIME);
-						return;
-					}
-				}
-			}
-			db->lifeleft = 0.1f;
-		}
-	}
-}
 
 /**
  * Do various updates to debris:  check if time to die, start fireballs
@@ -247,7 +217,7 @@ void debris_process_post(object * obj, float frame_time)
 		radar_plot_object( obj );
 
 		if ( timestamp_elapsed(db->sound_delay) ) {
-			obj_snd_assign(objnum, db->ambient_sound, &vmd_zero_vector, 0);
+			obj_snd_assign(objnum, db->ambient_sound, &vmd_zero_vector);
 			db->sound_delay = 0;
 		}
 	}
@@ -260,8 +230,6 @@ void debris_process_post(object * obj, float frame_time)
 			debris_start_death_roll(obj, db);
 		}
 	}
-
-	maybe_delete_debris(db);	//	Make this debris go away if it's very far away.
 
 	// ================== DO THE ELECTRIC ARCING STUFF =====================
 	if ( db->arc_frequency <= 0 )	{
@@ -481,9 +449,6 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 		}
 	}
 
-	//WMC - We must survive until now, at least.
-	db->must_survive_until = timestamp();
-
 	if(hull_flag && sip->debris_min_lifetime >= 0.0f && sip->debris_max_lifetime >= 0.0f)
 	{
 		db->lifeleft = (( sip->debris_max_lifetime - sip->debris_min_lifetime ) * frand()) + sip->debris_min_lifetime;
@@ -510,12 +475,10 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 	{
 		if(sip->debris_min_lifetime >= 0.0f && sip->debris_max_lifetime >= 0.0f)
 		{
-			db->must_survive_until = timestamp(fl2i(sip->debris_min_lifetime * 1000.0f));
 			db->lifeleft = (( sip->debris_max_lifetime - sip->debris_min_lifetime ) * frand()) + sip->debris_min_lifetime;
 		}
 		else if(sip->debris_min_lifetime >= 0.0f)
 		{
-			db->must_survive_until = timestamp(fl2i(sip->debris_min_lifetime * 1000.0f));
 			if(db->lifeleft < sip->debris_min_lifetime)
 				db->lifeleft = sip->debris_min_lifetime;
 		}
@@ -540,7 +503,6 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 	db->fire_timeout = 0;	// if not changed, timestamp_elapsed() will return false
 	db->time_started = Missiontime;
 	db->species = Ship_info[shipp->ship_info_index].species;
-	db->next_distance_check = Random::next(2000) + 4*DEBRIS_DISTANCE_CHECK_TIME;
 	db->parent_alt_name = shipp->alt_type_index;
 	db->damage_mult = 1.0f;
 

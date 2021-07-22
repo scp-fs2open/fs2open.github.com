@@ -873,7 +873,7 @@ void obj_move_call_physics(object *objp, float frametime)
 					if (points > missles_left) {
 						//there are more slots than missles left, so not all of the slots will have missles drawn on them
 						for (int k = next_point; k < next_point+missles_left; k ++) {
-							float &s_pct = shipp->secondary_point_reload_pct[i][k % points];
+							float &s_pct = shipp->secondary_point_reload_pct.get(i, k % points);
 							if (s_pct < 1.0)
 								s_pct += reload_time * frametime;
 							if (s_pct > 1.0)
@@ -882,7 +882,7 @@ void obj_move_call_physics(object *objp, float frametime)
 					} else {
 						//we don't have to worry about such things
 						for (int k = 0; k < points; k++) {
-							float &s_pct = shipp->secondary_point_reload_pct[i][k];
+							float &s_pct = shipp->secondary_point_reload_pct.get(i, k);
 							if (s_pct < 1.0)
 								s_pct += reload_time * frametime;
 							if (s_pct > 1.0)
@@ -1534,9 +1534,11 @@ void obj_move_all(float frametime)
 			if (objp == Player_obj && Player_ai->target_objnum != -1)
 				target = &Objects[Player_ai->target_objnum];
 
-			Script_system.SetHookObjects(2, "User", objp, "Target", target);
-			Script_system.RunCondition(CHA_ONWPEQUIPPED, objp);
-			Script_system.RemHookVars({"User", "Target"});
+			if (Script_system.IsActiveAction(CHA_ONWPEQUIPPED)) {
+				Script_system.SetHookObjects(2, "User", objp, "Target", target);
+				Script_system.RunCondition(CHA_ONWPEQUIPPED, objp);
+				Script_system.RemHookVars({"User", "Target"});
+			}
 		}
 	}
 
@@ -1644,19 +1646,18 @@ void obj_queue_render(object* obj, model_draw_list* scene)
 
 	if ( obj->flags[Object::Object_Flags::Should_be_dead] ) return;
 
-	Script_system.SetHookObject("Self", obj);
-	
-	auto skip_render = Script_system.IsConditionOverride(CHA_OBJECTRENDER, obj);
-	
-	// Always execute the hook content
-	Script_system.RunCondition(CHA_OBJECTRENDER, obj);
-
-	Script_system.RemHookVar("Self");
-
-	if (skip_render) {
-		// Script said that it want's to skip rendering
-		return;
+	if (Script_system.IsActiveAction(CHA_OBJECTRENDER)) {
+		Script_system.SetHookObject("Self", obj);
+		bool skip_render = Script_system.IsConditionOverride(CHA_OBJECTRENDER, obj);
+		// Always execute the hook content
+		Script_system.RunCondition(CHA_OBJECTRENDER, obj);
+		Script_system.RemHookVar("Self");
+		if (skip_render) {
+			// Script said that it want's to skip rendering
+			return;
+		}
 	}
+
 
 	switch ( obj->type ) {
 	case OBJ_NONE:

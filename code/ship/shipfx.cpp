@@ -359,8 +359,10 @@ void shipfx_blow_up_model(object *obj, int submodel, int ndebris, vec3d *exp_cen
 
 	// made a change to allow anyone but multiplayer client to blow up hull.  Clients will do it when
 	// they get the create packet
+	bool use_ship_debris = false;
 	if ( submodel == 0 ) {
 		shipfx_blow_up_hull(obj, pm, pmi, exp_center);
+		use_ship_debris = true;
 	}
 
 	for (i=0; i<ndebris; i++ )	{
@@ -374,7 +376,7 @@ void shipfx_blow_up_model(object *obj, int submodel, int ndebris, vec3d *exp_cen
 		vm_vec_avg( &tmp, &pnt1, &pnt2 );
 		model_instance_find_world_point(&outpnt, &tmp, pm, pmi, submodel, &obj->orient, &obj->pos );
 
-		debris_create( obj, Ship_info[Ships[obj->instance].ship_info_index].generic_debris_model_num, -1, &outpnt, exp_center, 0, 1.0f );
+		debris_create( obj, use_ship_debris ? Ship_info[Ships[obj->instance].ship_info_index].generic_debris_model_num : -1, -1, &outpnt, exp_center, 0, 1.0f );
 	}
 }
 
@@ -2724,7 +2726,7 @@ void engine_wash_ship_process(ship *shipp)
 		// if we had no wash before now, add the wash object sound
 		if(started_with_no_wash){
 			if(shipp != Player_ship){
-				obj_snd_assign(shipp->objnum, GameSounds::ENGINE_WASH, &vmd_zero_vector, 1);
+				obj_snd_assign(shipp->objnum, GameSounds::ENGINE_WASH, &vmd_zero_vector, OS_MAIN);
 			} else {				
 				Player_engine_wash_loop = snd_play_looping( gamesnd_get_game_sound(GameSounds::ENGINE_WASH), 0.0f , -1, -1, 1.0f);
 			}

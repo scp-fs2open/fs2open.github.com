@@ -1568,7 +1568,7 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 		GET_USHORT(sig_request);
 		PACKET_SET_SIZE();
 			
-		player_num = find_player_id(hinfo->id);	
+		player_num = find_player_index(hinfo->id);	
 		if(player_num == -1){
 			nprintf(("Network","Received ingame ship request packet from unknown player!!\n"));		
 			break;

@@ -1468,6 +1468,7 @@ int sexp_tree::query_default_argument_available(int op, int i) {
 	case OPF_GAME_SND:
 	case OPF_FIREBALL:
 	case OPF_SPECIES:
+	case OPF_LANGUAGE:
 		return 1;
 
 	case OPF_SHIP:
@@ -3026,6 +3027,10 @@ sexp_list_item* sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 
 	case OPF_SPECIES:
 		list = get_listing_opf_species();
+		break;
+
+	case OPF_LANGUAGE:
+		list = get_listing_opf_language();
 		break;
 
 	default:
@@ -4599,6 +4604,16 @@ sexp_list_item *sexp_tree::get_listing_opf_species()	// NOLINT
 	return head.next;
 }
 
+sexp_list_item *sexp_tree::get_listing_opf_language()	// NOLINT
+{
+	sexp_list_item head;
+
+	for (auto &lang: Lcl_languages)
+		head.add_data(lang.lang_name);
+
+	return head.next;
+}
+
 // Deletes sexp_variable from sexp_tree.
 // resets tree to not include given variable, and resets text and type
 void sexp_tree::delete_sexp_tree_variable(const char* var_name) {
@@ -5022,6 +5037,7 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 					case OP_SET_OBJECT_SPEED_Y:
 					case OP_SET_OBJECT_SPEED_Z:
 					case OP_DISTANCE:
+					case OP_SCRIPT_EVAL:
 						j = (int) op_menu.size();    // don't allow these operators to be visible
 						break;
 					}
@@ -5089,6 +5105,7 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 					case OP_SET_OBJECT_SPEED_Y:
 					case OP_SET_OBJECT_SPEED_Z:
 					case OP_DISTANCE:
+					case OP_SCRIPT_EVAL:
 						j = (int) op_submenu.size();    // don't allow these operators to be visible
 						break;
 					}

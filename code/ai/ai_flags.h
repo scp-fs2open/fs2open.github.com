@@ -5,7 +5,7 @@
 
 namespace AI {
 	FLAG_LIST(AI_Flags) {
-		Formation_wing,				//	Fly in formation as part of wing.
+		Formation_wing,				//	Fly in formation as part of wing. Also used when flying waypoints.
 		Awaiting_repair,			//	Awaiting a repair ship.
 		Being_repaired,				//	Currently docked with repair ship.
 		Repairing,					//	Repairing a ship (or going to repair a ship)
@@ -137,6 +137,8 @@ namespace AI {
 		Improved_missile_avoidance,
 		Friendlies_use_countermeasure_firechance,
 		Improved_subsystem_attack_pathing,
+		Fixed_ship_weapon_collision,
+		No_shield_damage_from_ship_collisions,
 
 		NUM_VALUES
 	};

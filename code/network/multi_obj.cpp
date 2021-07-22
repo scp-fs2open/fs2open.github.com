@@ -2513,7 +2513,7 @@ void multi_oo_process_update(ubyte *data, header *hinfo)
 	net_player *pl = nullptr;	
 
 	// determine what player this came from 
-	player_index = find_player_id(hinfo->id);
+	player_index = find_player_index(hinfo->id);
 	if(player_index != -1){						
 		pl = &Net_players[player_index];
 	}

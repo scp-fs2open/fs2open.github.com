@@ -859,6 +859,7 @@ void game_level_close()
 		trail_level_close();
 		ship_clear_cockpit_displays();
 		hud_level_close();
+		hud_escort_clear_all();
 		model_instance_free_all();
 		batch_render_close();
 
@@ -1751,7 +1752,6 @@ void game_init()
 	}
 
 #endif
-	script_init();			//WMC
 
 	font::init();					// loads up all fonts
 	
@@ -1903,6 +1903,7 @@ void game_init()
 		main_hall_table_init();
 	}
 
+	script_init();			//WMC
 	// Initialize dynamic SEXPs
 	sexp::dynamic_sexp_init();
 
@@ -5440,6 +5441,14 @@ void game_leave_state( int old_state, int new_state )
 			break;
 
 		case GS_STATE_SCRIPTING:
+			// this can happen because scripting can be done in odd places.
+			if ( !going_to_briefing_state(new_state) ) {
+				common_select_close();
+
+				if ( going_to_menu_state(new_state) ) {
+					freespace_stop_mission();
+				}
+			}
 			scripting_state_close();
 			break;
 	}

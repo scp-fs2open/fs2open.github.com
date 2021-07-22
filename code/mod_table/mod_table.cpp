@@ -43,6 +43,7 @@ gameversion::version Targetted_version; // Defaults to retail
 SCP_string Window_title;
 bool Unicode_text_mode;
 bool Use_tabled_strings_for_default_language;
+bool Dont_preempt_training_voice;
 SCP_string Movie_subtitle_font;
 bool Enable_scripts_in_fred; // By default FRED does not initialize the scripting system
 SCP_string Window_icon_path;
@@ -116,13 +117,21 @@ void parse_mod_table(const char *filename)
 		if (optional_string("$Unicode mode:")) {
 			stuff_boolean(&Unicode_text_mode);
 
-			mprintf(("Game settings table: Unicode mode: %s\n", Unicode_text_mode ? "yes" : "no"));
+			mprintf(("Game Settings Table: Unicode mode: %s\n", Unicode_text_mode ? "yes" : "no"));
 		}
+
+		optional_string("#LOCALIZATION SETTINGS");
 
 		if (optional_string("$Use tabled strings for the default language:")) {
 			stuff_boolean(&Use_tabled_strings_for_default_language);
 
-			mprintf(("Game settings table: Use tabled strings (translations) for the default language: %s\n", Use_tabled_strings_for_default_language ? "yes" : "no"));
+			mprintf(("Game Settings Table: Use tabled strings (translations) for the default language: %s\n", Use_tabled_strings_for_default_language ? "yes" : "no"));
+		}
+
+		if (optional_string("$Don't pre-empt training message voice:")) {
+			stuff_boolean(&Dont_preempt_training_voice);
+
+			mprintf(("Game Settings Table: %sre-empting training message voice\n", Dont_preempt_training_voice ? "Not p" : "P"));
 		}
 
 		optional_string("#CAMPAIGN SETTINGS");

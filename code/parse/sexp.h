@@ -115,6 +115,7 @@ class waypoint_list;
 #define OPF_GAME_SND			88		// m!m - A game sound
 #define OPF_FIREBALL			89		// Goober5000 - an entry in fireball.tbl
 #define OPF_SPECIES				90		// Goober5000
+#define OPF_LANGUAGE			91		// Goober5000
 
 // Operand return types
 #define	OPR_NUMBER				1	// returns number
@@ -304,6 +305,7 @@ class waypoint_list;
 #define	OP_MISSION_TIME_MSECS				(0x0007 | OP_CATEGORY_TIME | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define	OP_TIME_DOCKED						(0x0008 | OP_CATEGORY_TIME | OP_NONCAMPAIGN_FLAG)
 #define	OP_TIME_UNDOCKED					(0x0009 | OP_CATEGORY_TIME | OP_NONCAMPAIGN_FLAG)
+#define OP_TIME_TO_GOAL						(0x000a | OP_CATEGORY_TIME | OP_NONCAMPAIGN_FLAG) // tcrayford
 
 #define	OP_SHIELDS_LEFT						(0x0000 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
 #define	OP_HITS_LEFT						(0x0001 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
@@ -397,6 +399,7 @@ class waypoint_list;
 #define OP_DISTANCE_CENTER					(0x0054 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Goober5000
 #define OP_DISTANCE_BBOX					(0x0055 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Goober5000
 #define OP_DISTANCE_BBOX_SUBSYSTEM			(0x0056 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Goober5000
+#define OP_IS_LANGUAGE						(0x0057 | OP_CATEGORY_STATUS)						// Goober5000
 
 // conditional sexpressions
 #define OP_WHEN								(0x0000 | OP_CATEGORY_CONDITIONAL)
@@ -973,6 +976,7 @@ const char *CTEXT(int n);
 #define SEXP_ATOM_OPERATOR		1
 #define SEXP_ATOM_NUMBER		2
 #define SEXP_ATOM_STRING		3
+#define SEXP_ATOM_CONTAINER		4
 
 // defines to short circuit evaluation when possible. Also used when goals can't
 // be satisfied yet because ship (or wing) hasn't been created yet.

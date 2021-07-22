@@ -62,12 +62,23 @@ ADE_FUNC(rand32,
 	int numargs = ade_get_args(L, "|ii", &a, &b);
 
 	int result;
-	if (numargs == 2)
-		result = Random::next(a, b);
-	else if (numargs == 1)
-		result = Random::next(a);
-	else
+	if (numargs == 2) {
+		if (a <= b) {
+			result = Random::next(a, b);
+		} else {
+			LuaError(L, "rand32() script function was passed an invalid range (%d ... %d)!", a, b);
+			result = a; // match behavior of rand_sexp()
+		}
+	} else if (numargs == 1) {
+		if (a > 0) {
+			result = Random::next(a);
+		} else {
+			LuaError(L, "rand32() script function was passed an invalid modulus (%d)!", a);
+			result = 0;
+		}
+	} else {
 		result = Random::next();
+	}
 
 	return ade_set_error(L, "i", result);
 }

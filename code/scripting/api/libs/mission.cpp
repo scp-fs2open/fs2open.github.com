@@ -933,9 +933,11 @@ ADE_FUNC(createShip,
 
 		mission_log_add_entry(LOG_SHIP_ARRIVED, shipp->ship_name, nullptr);
 
-		Script_system.SetHookObjects(2, "Ship", &Objects[obj_idx], "Parent", NULL);
-		Script_system.RunCondition(CHA_ONSHIPARRIVE, &Objects[obj_idx]);
-		Script_system.RemHookVars({"Ship", "Parent"});
+		if (Script_system.IsActiveAction(CHA_ONSHIPARRIVE)) {
+			Script_system.SetHookObjects(2, "Ship", &Objects[obj_idx], "Parent", NULL);
+			Script_system.RunCondition(CHA_ONSHIPARRIVE, &Objects[obj_idx]);
+			Script_system.RemHookVars({"Ship", "Parent"});
+		}
 
 		if (Game_mode & GM_IN_MISSION && sip->is_big_or_huge()) {
 			float mission_time = f2fl(Missiontime);

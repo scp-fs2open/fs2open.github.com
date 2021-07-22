@@ -649,8 +649,21 @@ briefing_icon_info *brief_get_icon_info(brief_icon *bi)
 		return NULL;
 	ship_info *sip = &Ship_info[bi->ship_class];
 
+	bool allow_override = true;
+	switch (bi->type)
+	{
+		case ICON_PLANET:
+		case ICON_ASTEROID_FIELD:
+		case ICON_WAYPOINT:
+		case ICON_UNKNOWN:
+		case ICON_UNKNOWN_WING:
+		case ICON_JUMP_NODE:
+			allow_override = false;
+			break;
+	}
+
 	// ship info might override the usual briefing icon
-	if (sip->bii_index_ship >= 0)
+	if (allow_override && sip->bii_index_ship >= 0)
 	{
 		if (bi->flags & BI_USE_WING_ICON)
 		{
