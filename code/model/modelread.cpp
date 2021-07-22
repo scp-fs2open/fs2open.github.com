@@ -4397,8 +4397,8 @@ void model_set_up_techroom_instance(ship_info *sip, int model_instance_num)
 
 		const auto& initialAnims = sip->animations.animationSet[{animation::ModelAnimationTriggerType::Initial, animation::ModelAnimationSet::SUBTYPE_DEFAULT}];
 
-		for (const auto& anim : initialAnims) {
-			anim.second->start(pmi, false);
+		for (const auto& initialAnim : initialAnims) {
+			initialAnim.second->start(pmi, false);
 		}
 
 		if (msp->subobj_num >= 0)
