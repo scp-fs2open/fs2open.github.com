@@ -10540,10 +10540,10 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	// Mantis 2763: moved down to have access to the right ship_max_shield_strength value
 	// make sure that shields are disabled/enabled if they need to be - Chief1983
 	if (!Fred_running) {
-		if ((p_objp->flags[Mission::Parse_Object_Flags::OF_Force_shields_on]) && (sp->ship_max_shield_strength > 0.0f)) {
+		if ((p_objp != nullptr && p_objp->flags[Mission::Parse_Object_Flags::OF_Force_shields_on]) && (sp->ship_max_shield_strength > 0.0f)) {
 			objp->flags.remove(Object::Object_Flags::No_shields);
 		}
-		else if ((p_objp->flags[Mission::Parse_Object_Flags::OF_No_shields]) || (sp->ship_max_shield_strength == 0.0f)) {
+		else if ((p_objp != nullptr && p_objp->flags[Mission::Parse_Object_Flags::OF_No_shields]) || (sp->ship_max_shield_strength == 0.0f)) {
 			objp->flags.set(Object::Object_Flags::No_shields);
 			// Since there's not a mission flag set to be adjusting this, see if there was a change from a ship that normally has shields to one that doesn't, and vice versa
 		}
@@ -10874,26 +10874,28 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	}
 
 	// Goober5000 - deal with texture replacement by re-applying the same code we used during parsing
-	if (sp->ship_replacement_textures != NULL)
+	if (sp->ship_replacement_textures != nullptr)
 	{
 		// clear them out because the new positions may be different
 		for (i = 0; i < MAX_REPLACEMENT_TEXTURES; i++)
 			sp->ship_replacement_textures[i] = -1;
 
-		// now fill them in according to texture name
-		for (SCP_vector<texture_replace>::iterator tr = p_objp->replacement_textures.begin(); tr != p_objp->replacement_textures.end(); ++tr)
-		{
-			int j;
-			polymodel *pm = model_get(sip->model_num);
-
-			// look for textures
-			for (j = 0; j < pm->n_textures; j++)
+		if (p_objp != nullptr) {
+			// now fill them in according to texture name
+			for (SCP_vector<texture_replace>::iterator tr = p_objp->replacement_textures.begin(); tr != p_objp->replacement_textures.end(); ++tr)
 			{
-				texture_map *tmap = &pm->maps[j];
+				int j;
+				polymodel* pm = model_get(sip->model_num);
 
-				int tnum = tmap->FindTexture(tr->old_texture);
-				if(tnum > -1)
-					sp->ship_replacement_textures[j * TM_NUM_TYPES + tnum] = tr->new_texture_id;
+				// look for textures
+				for (j = 0; j < pm->n_textures; j++)
+				{
+					texture_map* tmap = &pm->maps[j];
+
+					int tnum = tmap->FindTexture(tr->old_texture);
+					if (tnum > -1)
+						sp->ship_replacement_textures[j * TM_NUM_TYPES + tnum] = tr->new_texture_id;
+				}
 			}
 		}
 	}
