@@ -268,7 +268,7 @@ namespace animation {
 
 	ModelAnimationSubmodel::ModelAnimationSubmodel(SCP_string submodelName, std::unique_ptr<ModelAnimationSegment> mainSegment) : m_name(std::move(submodelName)), m_mainSegment(std::move(mainSegment)) { }
 
-	ModelAnimationSubmodel::ModelAnimationSubmodel(SCP_string subsystemName, bool findBarrel, ship_info* sip, std::unique_ptr<ModelAnimationSegment> mainSegment) : m_name(std::move(subsystemName)), m_findBarrel(findBarrel), m_mainSegment(std::move(mainSegment)), m_sip(sip) { }
+	ModelAnimationSubmodel::ModelAnimationSubmodel(SCP_string subsystemName, bool findBarrel, ship_info* sip, std::unique_ptr<ModelAnimationSegment> mainSegment) : m_name(std::move(subsystemName)), m_findBarrel(findBarrel), m_sip(sip), m_mainSegment(std::move(mainSegment)) { }
 
 	void ModelAnimationSubmodel::play(float frametime, polymodel_instance* pmi) {
 		auto dataIt = m_initialData.find(pmi);
