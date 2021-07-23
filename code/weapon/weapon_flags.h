@@ -87,6 +87,7 @@ namespace Weapon {
 		Require_exact_los,					// If secondary or in turret, will only fire if ship has line of sight to target
 		Can_damage_shooter,					// this weapon and any of its descendants can damage its shooter - Asteroth
 		Heals,								// 'damage' heals instead of actually damaging - Asteroth
+		Vampiric,							// damage applied also brings back health to the shooter - Strygon
 		No_collide,
 
         NUM_VALUES
