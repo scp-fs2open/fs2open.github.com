@@ -23,6 +23,7 @@
 #include "hud/hudparse.h"
 #include "model/model.h"
 #include "model/modelanim.h"
+#include "model/modelanimation.h"
 #include "network/multi_obj.h"
 #include "radar/radarsetup.h"
 #include "render/3d.h"
@@ -1380,6 +1381,8 @@ public:
 	SCP_map<SCP_string, path_metadata> pathMetadata;
 
 	SCP_unordered_map<int, void*> glowpoint_bank_override_map;
+
+	animation::ModelAnimationSet animations;
 
 	ship_info();
 	~ship_info();

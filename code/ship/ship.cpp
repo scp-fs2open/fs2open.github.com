@@ -54,6 +54,7 @@
 #include "missionui/redalert.h"
 #include "mod_table/mod_table.h"
 #include "model/model.h"
+#include "model/modelanimation_segments.h"
 #include "model/modelrender.h"
 #include "nebula/neb.h"
 #include "network/multimsgs.h"
@@ -4986,155 +4987,114 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 				stuff_string(name_tmp, F_NAME, sizeof(name_tmp));
 				if(!stricmp(name_tmp, "triggered"))
 				{
-					queued_animation *current_trigger;
-
-					sp->triggers = (queued_animation*)vm_realloc(sp->triggers, sizeof(queued_animation) * (sp->n_triggers + 1));
-					Verify(sp->triggers != NULL);
+					queued_animation current_trigger;
+					bool applyNewTrigger = true;
 					
 					//add a new trigger
-					current_trigger = &sp->triggers[sp->n_triggers];
-					queued_animation_init(current_trigger);
-					sp->n_triggers++;
+					queued_animation_init(&current_trigger);
 
 					required_string("$type:");
 					char atype[NAME_LENGTH];
 					stuff_string(atype, F_NAME, NAME_LENGTH);
-					current_trigger->type = model_anim_match_type(atype);
+					current_trigger.type = model_anim_match_type(atype);
 
 					if(optional_string("+sub_type:")){
-						stuff_int(&current_trigger->subtype);
+						stuff_int(&current_trigger.subtype);
 					}else{
-						current_trigger->subtype = ANIMATION_SUBTYPE_ALL;
+						current_trigger.subtype = ANIMATION_SUBTYPE_ALL;
 					}
 
 					if(optional_string("+sub_name:")) {
-						stuff_string(current_trigger->sub_name, F_NAME, NAME_LENGTH);
+						stuff_string(current_trigger.sub_name, F_NAME, NAME_LENGTH);
 					} else {
-						strcpy_s(current_trigger->sub_name, "<none>");
+						strcpy_s(current_trigger.sub_name, "<none>");
 					}
 
 
-					if(current_trigger->type == AnimationTriggerType::Initial){
-						//the only thing initial animation type needs is the angle, 
-						//so to save space lets just make everything optional in this case
+					if(current_trigger.type == AnimationTriggerType::Initial){
+						animation::ModelAnimation::parseLegacyAnimationTable(sp, sip);
 
-						if(optional_string("+delay:"))
-							stuff_int(&current_trigger->start); 
-						else
-							current_trigger->start = 0;
-
-						if ( optional_string("+reverse_delay:") )
-							stuff_int(&current_trigger->reverse_start);
-						else
-							current_trigger->reverse_start = 0;
-
-						if(optional_string("+absolute_angle:")){
-							current_trigger->absolute = true;
-							stuff_vec3d(&current_trigger->angle );
-		
-							current_trigger->angle.xyz.x = fl_radians(current_trigger->angle.xyz.x);
-							current_trigger->angle.xyz.y = fl_radians(current_trigger->angle.xyz.y);
-							current_trigger->angle.xyz.z = fl_radians(current_trigger->angle.xyz.z);
-						}else{
-							current_trigger->absolute = false;
-							if(!optional_string("+relative_angle:"))
-								required_string("+relative_angle:");
-
-							stuff_vec3d(&current_trigger->angle );
-		
-							current_trigger->angle.xyz.x = fl_radians(current_trigger->angle.xyz.x);
-							current_trigger->angle.xyz.y = fl_radians(current_trigger->angle.xyz.y);
-							current_trigger->angle.xyz.z = fl_radians(current_trigger->angle.xyz.z);
-						}
-		
-						if(optional_string("+velocity:")){
-							stuff_vec3d(&current_trigger->vel );
-							current_trigger->vel.xyz.x = fl_radians(current_trigger->vel.xyz.x);
-							current_trigger->vel.xyz.y = fl_radians(current_trigger->vel.xyz.y);
-							current_trigger->vel.xyz.z = fl_radians(current_trigger->vel.xyz.z);
-						}
-		
-						if(optional_string("+acceleration:")){
-							stuff_vec3d(&current_trigger->accel );
-							current_trigger->accel.xyz.x = fl_radians(current_trigger->accel.xyz.x);
-							current_trigger->accel.xyz.y = fl_radians(current_trigger->accel.xyz.y);
-							current_trigger->accel.xyz.z = fl_radians(current_trigger->accel.xyz.z);
-						}
-
-						if(optional_string("+time:"))
-							stuff_int(&current_trigger->end );
-						else
-							current_trigger->end = 0;
+						applyNewTrigger = false;
 					}else{
 
 						if(optional_string("+delay:"))
-							stuff_int(&current_trigger->start); 
+							stuff_int(&current_trigger.start); 
 						else
-							current_trigger->start = 0;
+							current_trigger.start = 0;
 
 						if ( optional_string("+reverse_delay:") )
-							stuff_int(&current_trigger->reverse_start);
+							stuff_int(&current_trigger.reverse_start);
 						else
-							current_trigger->reverse_start = -1; //have some code figure this out for us
+							current_trigger.reverse_start = -1; //have some code figure this out for us
 		
 						if(optional_string("+absolute_angle:")){
-							current_trigger->absolute = true;
-							stuff_vec3d(&current_trigger->angle );
+							current_trigger.absolute = true;
+							stuff_vec3d(&current_trigger.angle );
 		
-							current_trigger->angle.xyz.x = fl_radians(current_trigger->angle.xyz.x);
-							current_trigger->angle.xyz.y = fl_radians(current_trigger->angle.xyz.y);
-							current_trigger->angle.xyz.z = fl_radians(current_trigger->angle.xyz.z);
+							current_trigger.angle.xyz.x = fl_radians(current_trigger.angle.xyz.x);
+							current_trigger.angle.xyz.y = fl_radians(current_trigger.angle.xyz.y);
+							current_trigger.angle.xyz.z = fl_radians(current_trigger.angle.xyz.z);
 						}else{
-							current_trigger->absolute = false;
+							current_trigger.absolute = false;
 							required_string("+relative_angle:");
-							stuff_vec3d(&current_trigger->angle );
+							stuff_vec3d(&current_trigger.angle );
 		
-							current_trigger->angle.xyz.x = fl_radians(current_trigger->angle.xyz.x);
-							current_trigger->angle.xyz.y = fl_radians(current_trigger->angle.xyz.y);
-							current_trigger->angle.xyz.z = fl_radians(current_trigger->angle.xyz.z);
+							current_trigger.angle.xyz.x = fl_radians(current_trigger.angle.xyz.x);
+							current_trigger.angle.xyz.y = fl_radians(current_trigger.angle.xyz.y);
+							current_trigger.angle.xyz.z = fl_radians(current_trigger.angle.xyz.z);
 						}
 		
 						required_string("+velocity:");
-						stuff_vec3d(&current_trigger->vel );
-						current_trigger->vel.xyz.x = fl_radians(current_trigger->vel.xyz.x);
-						current_trigger->vel.xyz.y = fl_radians(current_trigger->vel.xyz.y);
-						current_trigger->vel.xyz.z = fl_radians(current_trigger->vel.xyz.z);
+						stuff_vec3d(&current_trigger.vel );
+						current_trigger.vel.xyz.x = fl_radians(current_trigger.vel.xyz.x);
+						current_trigger.vel.xyz.y = fl_radians(current_trigger.vel.xyz.y);
+						current_trigger.vel.xyz.z = fl_radians(current_trigger.vel.xyz.z);
 		
 						if (optional_string("+acceleration:")){
-							stuff_vec3d(&current_trigger->accel );
-							current_trigger->accel.xyz.x = fl_radians(current_trigger->accel.xyz.x);
-							current_trigger->accel.xyz.y = fl_radians(current_trigger->accel.xyz.y);
-							current_trigger->accel.xyz.z = fl_radians(current_trigger->accel.xyz.z);
+							stuff_vec3d(&current_trigger.accel );
+							current_trigger.accel.xyz.x = fl_radians(current_trigger.accel.xyz.x);
+							current_trigger.accel.xyz.y = fl_radians(current_trigger.accel.xyz.y);
+							current_trigger.accel.xyz.z = fl_radians(current_trigger.accel.xyz.z);
 						} else {
-							current_trigger->accel.xyz.x = 0.0f;
-							current_trigger->accel.xyz.y = 0.0f;
-							current_trigger->accel.xyz.z = 0.0f;
+							current_trigger.accel.xyz.x = 0.0f;
+							current_trigger.accel.xyz.y = 0.0f;
+							current_trigger.accel.xyz.z = 0.0f;
 						}
 
 						if(optional_string("+time:"))
-							stuff_int(&current_trigger->end );
+							stuff_int(&current_trigger.end );
 						else
-							current_trigger->end = 0;
+							current_trigger.end = 0;
 
 						if(optional_string("$Sound:")){
-							parse_game_sound("+Start:", &current_trigger->start_sound);
+							parse_game_sound("+Start:", &current_trigger.start_sound);
 
-							parse_game_sound("+Loop:", &current_trigger->loop_sound);
+							parse_game_sound("+Loop:", &current_trigger.loop_sound);
 
-							parse_game_sound("+End:", &current_trigger->end_sound);
+							parse_game_sound("+End:", &current_trigger.end_sound);
 
 							required_string("+Radius:");
-							stuff_float(&current_trigger->snd_rad );
+							stuff_float(&current_trigger.snd_rad );
 						}else{
-							current_trigger->start_sound = gamesnd_id();
-							current_trigger->loop_sound = gamesnd_id();
-							current_trigger->end_sound = gamesnd_id();
-							current_trigger->snd_rad = 0;
+							current_trigger.start_sound = gamesnd_id();
+							current_trigger.loop_sound = gamesnd_id();
+							current_trigger.end_sound = gamesnd_id();
+							current_trigger.snd_rad = 0;
 						}
 					}
 
-					//make sure that the amount of time it takes to accelerate up and down doesn't make it go farther than the angle
-					queued_animation_correct(current_trigger);
+					if (applyNewTrigger) {
+						sp->triggers = (queued_animation*)vm_realloc(sp->triggers, sizeof(queued_animation) * (sp->n_triggers + 1));
+						Verify(sp->triggers != nullptr);
+
+						queued_animation* actual = &sp->triggers[sp->n_triggers];
+						sp->n_triggers++;
+
+						*actual = current_trigger;
+					
+						//make sure that the amount of time it takes to accelerate up and down doesn't make it go farther than the angle
+						queued_animation_correct(actual);
+					}
 				}
 				else if(!stricmp(name_tmp, "linked"))
 				{
@@ -7731,6 +7691,12 @@ void ship_delete( object * obj )
 	ship_subsystems_delete(&Ships[num]);
 	shipp->objnum = -1;
 
+	for (const auto& animationList : Ship_info[shipp->ship_info_index].animations.animationSet) {
+		for (const auto& animStop : animationList.second) {
+			animStop.second->stop(model_get_instance(shipp->model_instance_num), true);
+		}
+	}
+
 	if (shipp->ship_replacement_textures != NULL) {
 		vm_free(shipp->ship_replacement_textures);
 		shipp->ship_replacement_textures = NULL;
@@ -10116,6 +10082,7 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 	ct_ship_create(shipp);
 
 	model_anim_set_initial_states(shipp);
+	animation::anim_set_initial_states(shipp);
 
 	// Add this ship to Ship_obj_list
 	shipp->ship_list_index = ship_obj_list_add(objnum);
@@ -10823,6 +10790,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 			swp->secondary_animation_position[i] = MA_POS_NOT_SET;
 	}
 	model_anim_set_initial_states(sp);
+	animation::anim_set_initial_states(sp);
 
 	//Reassign sound stuff
 	if (!Fred_running)
