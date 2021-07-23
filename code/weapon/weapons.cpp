@@ -2174,6 +2174,11 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	if( optional_string("$Leech Afterburner:") ){
 		stuff_float(&wip->afterburner_reduce);
 	}
+	
+	// Multiplier for the healing done to the shooter of the weapon.
+	if( optional_string("$Vampiric Healing Factor:") ){
+		stuff_float(&wip->succ_factor);
+	}
 
 	if (optional_string("$Corkscrew:"))
 	{
