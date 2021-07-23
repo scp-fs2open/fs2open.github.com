@@ -2387,6 +2387,27 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 				apply_diff_scale = false;
 			}
 		}
+			// if weapon is vampiric, slap healing on shooter instead of target
+		if (Weapons[other_obj->instance].weapon_info_index >= 0){
+			weapon_info *wip = &Weapon_info[Weapons[other_obj->instance].weapon_info_index];
+			if (wip->wi_flags[Weapon::Info_Flags::Vampiric]){
+				if (other_obj->parent > 0){
+					object* parent = &Objects[other_obj->parent];
+					if (parent->type == OBJ_SHIP) {
+						if (parent->signature == other_obj->parent_sig){
+							ship* shipparent = &Ships[parent->instance];
+							if (!parent->flags[Object::Object_Flags::Should_be_dead]) {
+								parent->hull_strength += damage * wip->succ_factor;
+								if (parent->hull_strength > shipparent->ship_max_hull_strength){
+									parent->hull_strength = shipparent->ship_max_hull_strength;
+								}
+							}
+						}
+					}
+				}
+			}
+		
+		}
 		// Nuke: this is done incase difficulty scaling is not applied into damage by getDamage() above
 		if (apply_diff_scale) {
 			damage *= difficulty_scale_factor; // Nuke: we can finally stop doing this now
