@@ -135,8 +135,10 @@ namespace animation {
 		optional<bool> m_findBarrel;
 		ship_info* m_sip = nullptr;
 		std::unique_ptr<ModelAnimationSegment> m_mainSegment;
-		std::map<polymodel_instance*, ModelAnimationData<>> m_initialData;
-		std::map<polymodel_instance*, ModelAnimationData<>> m_lastFrame;
+		//Polymodel Instance ID -> ModelAnimationData
+		std::map<int, ModelAnimationData<>> m_initialData;
+		//Polymodel Instance ID -> ModelAnimationData
+		std::map<int, ModelAnimationData<>> m_lastFrame;
 
 		friend class ModelAnimation;
 	public:
@@ -160,13 +162,16 @@ namespace animation {
 
 
 	class ModelAnimation : public std::enable_shared_from_this <ModelAnimation> {
-		static std::multimap<polymodel_instance*, std::shared_ptr<ModelAnimation>> s_runningAnimations;
+		//Polymodel Instance ID -> ModelAnimation*
+		static std::multimap<int, std::shared_ptr<ModelAnimation>> s_runningAnimations;
 
 		std::vector<std::unique_ptr<ModelAnimationSubmodel>> m_submodelAnimation;
 		float m_duration = 0.0f;
 
-		std::map<polymodel_instance*, ModelAnimationState> m_state;
-		std::map<polymodel_instance*, float> m_time;
+		//Polymodel Instance ID -> ModelAnimationState
+		std::map<int, ModelAnimationState> m_state;
+		//Polymodel Instance ID -> ModelAnimation Time
+		std::map<int, float> m_time;
 		ModelAnimationState play(float frametime, polymodel_instance* pmi);
 
 		static void cleanRunning();

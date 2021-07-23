@@ -6,23 +6,23 @@ extern float flFrametime;
 
 namespace animation {
 
-	std::multimap<polymodel_instance*, std::shared_ptr<ModelAnimation>> ModelAnimation::s_runningAnimations;
+	std::multimap<int, std::shared_ptr<ModelAnimation>> ModelAnimation::s_runningAnimations;
 
 	ModelAnimationState ModelAnimation::play(float frametime, polymodel_instance* pmi) {
 
-		float& time = m_time[pmi];
+		float& timeCurrentAnim = m_time[pmi->id];
 
-		switch (m_state[pmi]) {
+		switch (m_state[pmi->id]) {
 		case ModelAnimationState::UNTRIGGERED:
 			//We have a new animation starting up in this phase. Put it in the list of running animations to track and step it later
-			s_runningAnimations.emplace(pmi, shared_from_this());
+			s_runningAnimations.emplace(pmi->id, shared_from_this());
 			m_duration = 0.0f;
 			//Stop other running animations on subsystems we care about. Store subsystems initial values as well.
 			for (const auto& animation : m_submodelAnimation) {
 				//We need to make sure that we have the submodel index cached before we check if other animations have the same index
 				animation->findSubmodel(pmi);
 
-				auto animIterRange = s_runningAnimations.equal_range(pmi);
+				auto animIterRange = s_runningAnimations.equal_range(pmi->id);
 				for (auto animIter = animIterRange.first; animIter != animIterRange.second; animIter++) {
 					//Don't stop this animation, even though it (obviously) runs on the same submodels
 					if (animIter->second == shared_from_this())
@@ -40,7 +40,7 @@ namespace animation {
 					}
 					
 					if (needStop) {
-						animIter->second->stop(animIter->first, false);
+						animIter->second->stop(model_get_instance(animIter->first), false);
 					}
 				}
 
@@ -52,44 +52,44 @@ namespace animation {
 					m_duration = duration;
 			}
 
-			m_state[pmi] = ModelAnimationState::RUNNING_FWD;
+			m_state[pmi->id] = ModelAnimationState::RUNNING_FWD;
 
 			/* fall-thru */
 		case ModelAnimationState::RUNNING_FWD:
-			time += frametime;
+			timeCurrentAnim += frametime;
 
 			//Cap time if needed
-			if (time > m_duration) {
-				time = m_duration;
-				m_state[pmi] = ModelAnimationState::COMPLETED;
+			if (timeCurrentAnim > m_duration) {
+				timeCurrentAnim = m_duration;
+				m_state[pmi->id] = ModelAnimationState::COMPLETED;
 			}
 
 			for (const auto& animation : m_submodelAnimation) {
-				animation->play(time, pmi);
+				animation->play(timeCurrentAnim, pmi);
 			}
 			break;
 
 		case ModelAnimationState::COMPLETED:
 			//This means someone requested to start once we were complete, so start moving backwards.
-			m_state[pmi] = ModelAnimationState::RUNNING_RWD;
+			m_state[pmi->id] = ModelAnimationState::RUNNING_RWD;
 			/* fall-thru */
 		case ModelAnimationState::RUNNING_RWD:
-			time -= frametime;
+			timeCurrentAnim -= frametime;
 
 			//Cap time at 0, but don't clean up the animations here since this function is called in a loop over the running animations, and cleaning now would invalidate the iterator
-			if (time < 0) {
+			if (timeCurrentAnim < 0) {
 				stop(pmi, false);
 				break;
 			}
 
 			for (const auto& animation : m_submodelAnimation) {
-				animation->play(time, pmi);
+				animation->play(timeCurrentAnim, pmi);
 			}
 
 			break;
 		}
 
-		return m_state[pmi];
+		return m_state[pmi->id];
 	}
 
 	void ModelAnimation::cleanRunning() {
@@ -105,14 +105,14 @@ namespace animation {
 	
 	void ModelAnimation::start(polymodel_instance* pmi, bool reverse) {
 		if (reverse) {
-			switch (m_state[pmi]) {
+			switch (m_state[pmi->id]) {
 			case ModelAnimationState::RUNNING_RWD:
 			case ModelAnimationState::UNTRIGGERED:
 				//Cannot reverse-start if it's already running rwd or fully untriggered
 				return;
 			case ModelAnimationState::RUNNING_FWD:
 				//Just pretend we were going in the right direction
-				m_state[pmi] = ModelAnimationState::RUNNING_RWD;
+				m_state[pmi->id] = ModelAnimationState::RUNNING_RWD;
 				break;
 			case ModelAnimationState::COMPLETED:
 				//Nothing special to do. Expected case
@@ -120,14 +120,14 @@ namespace animation {
 			}
 		}
 		else {
-			switch (m_state[pmi]) {
+			switch (m_state[pmi->id]) {
 			case ModelAnimationState::RUNNING_FWD:
 			case ModelAnimationState::COMPLETED:
 				//Cannot start if it's already running fwd or fully triggered
 				return;
 			case ModelAnimationState::RUNNING_RWD:
 				//Just pretend we were going in the right direction
-				m_state[pmi] = ModelAnimationState::RUNNING_FWD;
+				m_state[pmi->id] = ModelAnimationState::RUNNING_FWD;
 				break;
 			case ModelAnimationState::UNTRIGGERED:
 				//Nothing special to do. Expected case
@@ -146,8 +146,8 @@ namespace animation {
 			animation->reset(pmi);
 		}
 
-		m_time[pmi] = 0;
-		m_state[pmi] = ModelAnimationState::UNTRIGGERED;
+		m_time[pmi->id] = 0;
+		m_state[pmi->id] = ModelAnimationState::UNTRIGGERED;
 
 		if (cleanup)
 			cleanRunning();
@@ -162,7 +162,7 @@ namespace animation {
 			switch (anim.second->m_state[anim.first]) {
 			case ModelAnimationState::RUNNING_FWD:
 			case ModelAnimationState::RUNNING_RWD:
-				anim.second->play(frametime, anim.first);
+				anim.second->play(frametime, model_get_instance(anim.first));
 				break;
 			case ModelAnimationState::COMPLETED:
 				//Fully triggered. Keep in buffer in case some other animation starts on that submodel, but don't play without manual starting
@@ -180,7 +180,7 @@ namespace animation {
 
 	void ModelAnimation::clearAnimations() {
 		for (const auto& anim : s_runningAnimations) {
-			anim.second->stop(anim.first, false);
+			anim.second->stop(model_get_instance(anim.first), false);
 		}
 
 		s_runningAnimations.clear();
@@ -271,8 +271,8 @@ namespace animation {
 	ModelAnimationSubmodel::ModelAnimationSubmodel(SCP_string subsystemName, bool findBarrel, ship_info* sip, std::unique_ptr<ModelAnimationSegment> mainSegment) : m_name(std::move(subsystemName)), m_findBarrel(findBarrel), m_sip(sip), m_mainSegment(std::move(mainSegment)) { }
 
 	void ModelAnimationSubmodel::play(float frametime, polymodel_instance* pmi) {
-		auto dataIt = m_initialData.find(pmi);
-		auto lastDataIt = m_lastFrame.find(pmi);
+		auto dataIt = m_initialData.find(pmi->id);
+		auto lastDataIt = m_lastFrame.find(pmi->id);
 
 		//Specified submodel not found. Don't play
 		if (dataIt == m_initialData.end() || lastDataIt == m_lastFrame.end())
@@ -293,11 +293,11 @@ namespace animation {
 
 		//Actually apply the result to the submodel
 		copyToSubmodel(currentFrame, pmi);
-		m_lastFrame[pmi] = currentFrame;
+		m_lastFrame[pmi->id] = currentFrame;
 	}
 
 	void ModelAnimationSubmodel::reset(polymodel_instance* pmi) {
-		auto dataIt = m_initialData.find(pmi);
+		auto dataIt = m_initialData.find(pmi->id);
 		if (dataIt == m_initialData.end())
 			return;
 
@@ -320,12 +320,12 @@ namespace animation {
 		if (!submodel.first || !submodel.second)
 			return 0;
 
-		ModelAnimationData<>& data = m_initialData[pmi];
+		ModelAnimationData<>& data = m_initialData[pmi->id];
 		data.orientation = submodel.first->canonical_orient;
 		//TODO: Once translation is a thing
 		//data.position = m_subsys->submodel_instance_1->offset;
 		
-		m_lastFrame[pmi] = data;
+		m_lastFrame[pmi->id] = data;
 		m_mainSegment->recalculate(submodel.first, submodel.second, data);
 		return m_mainSegment->getDuration();
 	}
