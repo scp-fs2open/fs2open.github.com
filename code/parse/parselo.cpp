@@ -2929,6 +2929,7 @@ size_t stuff_int_list(int *ilp, size_t max_ints, int lookup_type)
 
 				case RAW_INTEGER_TYPE:
 					num = atoi(str.c_str());
+					valid_negative = true;
 					break;
 
 				default:
