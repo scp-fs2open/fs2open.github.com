@@ -474,8 +474,8 @@ struct weapon_info
 	float weapon_reduce;					// how much energy removed from weapons systems
 	float afterburner_reduce;			// how much energy removed from weapons systems
 	
-	// Vampirism Effect -Strygon 7/23/2021
-	float succ_factor;					// Factor by which a vampiric weapon will multiply the healing done to the shooter
+	// Vampirism Effect Multiplier
+	float vamp_regen;					// Factor by which a vampiric weapon will multiply the healing done to the shooter
 	
 	// tag stuff
 	float	tag_time;						// how long the tag lasts		
