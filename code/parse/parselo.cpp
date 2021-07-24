@@ -2896,6 +2896,7 @@ size_t stuff_int_list(int *ilp, size_t max_ints, int lookup_type)
 	return stuff_token_list(ilp, max_ints, [&](int *buf)->bool {
 		if (*Mp == '"') {
 			int num = 0;
+			bool valid_negative = false;
 			SCP_string str;
 			get_string(str);
 
@@ -2920,7 +2921,9 @@ size_t stuff_int_list(int *ilp, size_t max_ints, int lookup_type)
 
 				case WEAPON_LIST_TYPE:
 					num = weapon_info_lookup(str.c_str());
-					if (num < 0 && !str.empty())
+					if (str.empty())
+						valid_negative = true;
+					else if (num < 0)
 						error_display(0, "Unable to find weapon class %s in stuff_int_list!", str.c_str());
 					break;
 
@@ -2933,7 +2936,7 @@ size_t stuff_int_list(int *ilp, size_t max_ints, int lookup_type)
 					break;
 			}
 
-			if (num < 0)
+			if (num < 0 && !valid_negative)
 				return false;
 
 			*buf = num;			
