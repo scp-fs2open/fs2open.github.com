@@ -1520,6 +1520,8 @@ void obj_move_all(float frametime)
 		// move post
 		obj_move_all_post(objp, frametime);
 
+		animation::ModelAnimation::stepAnimations(frametime);
+
 		// Equipment script processing
 		if (objp->type == OBJ_SHIP) {
 			ship* shipp = &Ships[objp->instance];
@@ -1532,9 +1534,11 @@ void obj_move_all(float frametime)
 			if (objp == Player_obj && Player_ai->target_objnum != -1)
 				target = &Objects[Player_ai->target_objnum];
 
-			Script_system.SetHookObjects(2, "User", objp, "Target", target);
-			Script_system.RunCondition(CHA_ONWPEQUIPPED, objp);
-			Script_system.RemHookVars({"User", "Target"});
+			if (Script_system.IsActiveAction(CHA_ONWPEQUIPPED)) {
+				Script_system.SetHookObjects(2, "User", objp, "Target", target);
+				Script_system.RunCondition(CHA_ONWPEQUIPPED, objp);
+				Script_system.RemHookVars({"User", "Target"});
+			}
 		}
 	}
 
@@ -1642,19 +1646,18 @@ void obj_queue_render(object* obj, model_draw_list* scene)
 
 	if ( obj->flags[Object::Object_Flags::Should_be_dead] ) return;
 
-	Script_system.SetHookObject("Self", obj);
-	
-	auto skip_render = Script_system.IsConditionOverride(CHA_OBJECTRENDER, obj);
-	
-	// Always execute the hook content
-	Script_system.RunCondition(CHA_OBJECTRENDER, obj);
-
-	Script_system.RemHookVar("Self");
-
-	if (skip_render) {
-		// Script said that it want's to skip rendering
-		return;
+	if (Script_system.IsActiveAction(CHA_OBJECTRENDER)) {
+		Script_system.SetHookObject("Self", obj);
+		bool skip_render = Script_system.IsConditionOverride(CHA_OBJECTRENDER, obj);
+		// Always execute the hook content
+		Script_system.RunCondition(CHA_OBJECTRENDER, obj);
+		Script_system.RemHookVar("Self");
+		if (skip_render) {
+			// Script said that it want's to skip rendering
+			return;
+		}
 	}
+
 
 	switch ( obj->type ) {
 	case OBJ_NONE:

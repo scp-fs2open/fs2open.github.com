@@ -4395,27 +4395,10 @@ void model_set_up_techroom_instance(ship_info *sip, int model_instance_num)
 	{
 		model_subsystem *msp = &sip->subsystems[i];
 
-		for (int j = 0; j < msp->n_triggers; ++j)
-		{
-			if (msp->triggers[j].type == AnimationTriggerType::Initial)
-			{
-				// special case for turrets
-				if (msp->type == SUBSYSTEM_TURRET)
-				{
-					if (msp->subobj_num >= 0)
-					{
-						pmi->submodel[msp->subobj_num].cur_angle = msp->triggers[j].angle.xyz.y;
-						submodel_canonicalize(&pm->submodel[msp->subobj_num], &pmi->submodel[msp->subobj_num], true);
-					}
+		const auto& initialAnims = sip->animations.animationSet[{animation::ModelAnimationTriggerType::Initial, animation::ModelAnimationSet::SUBTYPE_DEFAULT}];
 
-					if ((msp->subobj_num != msp->turret_gun_sobj) && (msp->turret_gun_sobj >= 0))
-					{
-						pmi->submodel[msp->turret_gun_sobj].cur_angle = msp->triggers[j].angle.xyz.x;
-						submodel_canonicalize(&pm->submodel[msp->turret_gun_sobj], &pmi->submodel[msp->turret_gun_sobj], true);
-					}
-				}
-				// we can't support non-turrets, as in modelanim, because we need a ship subsystem but we don't actually have a ship
-			}
+		for (const auto& initialAnim : initialAnims) {
+			initialAnim.second->start(pmi, false);
 		}
 
 		if (msp->subobj_num >= 0)

@@ -58,7 +58,7 @@ void physics_init( physics_info * pi )
 	pi->max_vel.xyz.z = 100.0f;		//forward
 	pi->max_rear_vel = 100.0f;	//backward -- controlled seperately
 
-	vm_vec_zero(&pi->max_rotvel);
+	pi->max_rotvel = vm_vec_new(2.0f, 1.0f, 2.0f);
 
 	vm_vec_zero(&pi->prev_ramp_vel);
 

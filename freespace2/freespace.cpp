@@ -853,11 +853,13 @@ void game_level_close()
 		mission_brief_common_reset();		// close out parsed briefing/mission stuff
 		cam_close();
 		subtitles_close();
+		animation::ModelAnimation::clearAnimations();
 		particle::ParticleManager::get()->clearSources();
 		particle::close();
 		trail_level_close();
 		ship_clear_cockpit_displays();
 		hud_level_close();
+		hud_escort_clear_all();
 		model_instance_free_all();
 		batch_render_close();
 

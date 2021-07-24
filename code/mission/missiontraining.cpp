@@ -27,6 +27,7 @@
 #include "popup/popup.h"
 #include "ship/ship.h"
 #include "sound/audiostr.h"
+#include "sound/fsspeech.h"
 #include "sound/sound.h"
 #include "weapon/emp.h"
 
@@ -921,6 +922,17 @@ void message_training_queue_check()
 
 	if (Training_failure)
 		return;
+
+	if (Dont_preempt_training_voice) {
+		// don't pre-empt any voice files that are playing
+		if (Training_voice >= 0) {
+			auto z = (Training_voice_type) ? audiostream_is_playing(Training_voice_soundstream) : snd_is_playing(Training_voice_snd_handle);
+			if (z)
+				return;
+		}
+		if (fsspeech_playing())
+			return;
+	}
 
 	for (i=0; i<Training_message_queue_count; i++) {
 		if (timestamp_elapsed(Training_message_queue[i].timestamp)) {

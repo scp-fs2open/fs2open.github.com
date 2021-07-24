@@ -23,6 +23,7 @@
 #include "hud/hudparse.h"
 #include "model/model.h"
 #include "model/modelanim.h"
+#include "model/modelanimation.h"
 #include "network/multi_obj.h"
 #include "radar/radarsetup.h"
 #include "render/3d.h"
@@ -1179,6 +1180,7 @@ public:
 	float		max_overclocked_speed;			// max speed when 100% power output sent to engines
 	float		max_weapon_reserve;				// maximum energy that can be stored for primary weapon usage
 	float		max_shield_regen_per_second;	// Goober5000 - max percent/100 of shield energy regenerated per second
+	float       shield_regen_hit_delay;			// Asteroth - delay after being hit before shield will start recharging again
 	float		max_weapon_regen_per_second;	// Goober5000 - max percent/100 of weapon energy regenerated per second
 
 	// Fields for tuning the ETS' direct shield<->weapon transfer feature
@@ -1382,6 +1384,8 @@ public:
 	SCP_map<SCP_string, path_metadata> pathMetadata;
 
 	SCP_unordered_map<int, void*> glowpoint_bank_override_map;
+
+	animation::ModelAnimationSet animations;
 
 	ship_info();
 	~ship_info();

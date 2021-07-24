@@ -32,7 +32,7 @@ struct ViewSettings {
 	bool FullDetail = false;
 	bool Show_waypoints = true;
 	bool Show_compass = true;
-	bool Move_ships_when_undocking = true;
+	bool Highlight_selectable_subsys = false;
 
 	ViewSettings();
 };
@@ -160,6 +160,7 @@ class EditorViewport {
 
 	bool Group_rotate = true;
 	bool Lookat_mode = false;
+	bool Move_ships_when_undocking = true;
 
 	Editor* editor = nullptr;
 	FredRenderer* renderer = nullptr;

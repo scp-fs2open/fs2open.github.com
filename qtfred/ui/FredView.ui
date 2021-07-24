@@ -67,6 +67,7 @@
      <string>E&amp;dit</string>
     </property>
     <addaction name="actionUndo"/>
+    <addaction name="actionClone_Marked_Objects"/>
     <addaction name="actionDelete"/>
     <addaction name="actionDelete_Wing"/>
     <addaction name="separator"/>
@@ -108,6 +109,7 @@
     <addaction name="actionShow_Distances"/>
     <addaction name="actionShow_Model_Paths"/>
     <addaction name="actionShow_Model_Dock_Points"/>
+    <addaction name="actionHighlight_Selectable_Subsystems"/>
     <addaction name="separator"/>
     <addaction name="actionShow_Grid"/>
     <addaction name="actionShow_Horizon"/>
@@ -211,16 +213,19 @@
     <property name="title">
      <string>&amp;Misc</string>
     </property>
-    <addaction name="actionLevel_Object"/>
-    <addaction name="actionAlign_Object"/>
-    <addaction name="actionMark_Wing"/>
-    <addaction name="actionControl_Object"/>
     <addaction name="actionNext_Object"/>
     <addaction name="actionPrev_Object"/>
-    <addaction name="actionAdjust_Grid"/>
+    <addaction name="actionControl_Object"/>
+    <addaction name="actionLevel_Object"/>
+    <addaction name="actionAlign_Object"/>
+    <addaction name="separator"/>
     <addaction name="actionNext_Subsystem"/>
     <addaction name="actionPrev_Subsystem"/>
     <addaction name="actionCancel_Subsystem"/>
+    <addaction name="separator"/>
+    <addaction name="actionMark_Wing"/>
+    <addaction name="actionAdjust_Grid"/>
+    <addaction name="actionMove_Ships_When_Undocking"/>
     <addaction name="actionMission_Statistics"/>
     <addaction name="separator"/>
     <addaction name="actionError_Checker"/>
@@ -331,7 +336,7 @@
     <string>SelectRotate</string>
    </property>
    <property name="toolTip">
-    <string>Select and Rotate</string>
+    <string>Select and Rotate (R)</string>
    </property>
    <property name="shortcut">
     <string>R</string>
@@ -367,7 +372,7 @@
     <string>ConstraintX</string>
    </property>
    <property name="toolTip">
-    <string>X Constraint (`)</string>
+    <string>X Constraint</string>
    </property>
   </action>
   <action name="actionConstrainY">
@@ -382,7 +387,7 @@
     <string>ConstraintY</string>
    </property>
    <property name="toolTip">
-    <string>Y Constraint (`)</string>
+    <string>Y Constraint</string>
    </property>
   </action>
   <action name="actionConstrainZ">
@@ -397,7 +402,7 @@
     <string>ConstraintZ</string>
    </property>
    <property name="toolTip">
-    <string>Z Constraint (`)</string>
+    <string>Z Constraint</string>
    </property>
   </action>
   <action name="actionConstrainXZ">
@@ -412,7 +417,7 @@
     <string>ConstraintXZ</string>
    </property>
    <property name="toolTip">
-    <string>XZ Constraint (`)</string>
+    <string>XZ Constraint</string>
    </property>
   </action>
   <action name="actionConstrainYZ">
@@ -442,7 +447,7 @@
     <string>ConstraintXY</string>
    </property>
    <property name="toolTip">
-    <string>XY Constaint (`)</string>
+    <string>XY Constaint</string>
    </property>
   </action>
   <action name="actionSelectionList">
@@ -472,10 +477,10 @@
     <string>SelectionLock</string>
    </property>
    <property name="toolTip">
-    <string>Selection Lock (L)</string>
+    <string>Selection Lock (Spacebar)</string>
    </property>
    <property name="shortcut">
-    <string>L</string>
+    <string>Space</string>
    </property>
   </action>
   <action name="actionWingForm">
@@ -487,7 +492,7 @@
     <string>WingForm</string>
    </property>
    <property name="toolTip">
-    <string>Form Wing (Ctrl + W)</string>
+    <string>Form Wing (Ctrl+W)</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+W</string>
@@ -502,7 +507,7 @@
     <string>WingDisband</string>
    </property>
    <property name="toolTip">
-    <string>Disband Wing (Ctrl + D)</string>
+    <string>Disband Wing (Ctrl+D)</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+D</string>
@@ -517,7 +522,10 @@
     <string>ZoomSelected</string>
    </property>
    <property name="toolTip">
-    <string>Zoom on Selected (Alt + Z)</string>
+    <string>Zoom on Selected (Alt+Z)</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+Z</string>
    </property>
   </action>
   <action name="actionZoomExtents">
@@ -529,7 +537,7 @@
     <string>ZoomExtents</string>
    </property>
    <property name="toolTip">
-    <string>Zoom Extents (Shift + Z)</string>
+    <string>Zoom Extents (Shift+Z)</string>
    </property>
    <property name="shortcut">
     <string>Shift+Z</string>
@@ -565,10 +573,10 @@
     <string>OrbitSelected</string>
    </property>
    <property name="toolTip">
-    <string>Rotate about Selected (Ctrl + V)</string>
+    <string>Rotate Around Object (Alt+R)</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+V</string>
+    <string>Alt+R</string>
    </property>
   </action>
   <action name="actionNew">
@@ -592,6 +600,9 @@
   <action name="actionSave_As">
    <property name="text">
     <string>Sa&amp;ve As...</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+S</string>
    </property>
   </action>
   <action name="actionRevert">
@@ -635,6 +646,11 @@
   <action name="actionUndo">
    <property name="text">
     <string>&amp;Undo</string>
+   </property>
+  </action>
+  <action name="actionClone_Marked_Objects">
+   <property name="text">
+    <string>&amp;Clone Marked Objects</string>
    </property>
   </action>
   <action name="actionDelete">
@@ -792,6 +808,14 @@
     <string>Show Model Doc&amp;k Points</string>
    </property>
   </action>
+  <action name="actionHighlight_Selectable_Subsystems">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Highlight Selectable Subsystems</string>
+   </property>
+  </action>
   <action name="actionShow_Grid">
    <property name="checkable">
     <bool>true</bool>
@@ -873,7 +897,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>&amp;Lighting from Suns...</string>
+    <string>&amp;Lighting from Suns</string>
    </property>
   </action>
   <action name="actionCamera">
@@ -900,7 +924,7 @@
     <string>&amp;x1</string>
    </property>
    <property name="shortcut">
-    <string>Alt+Shift+1</string>
+    <string>1</string>
    </property>
   </action>
   <action name="actionx2">
@@ -911,7 +935,7 @@
     <string>x&amp;2</string>
    </property>
    <property name="shortcut">
-    <string>Alt+Shift+2</string>
+    <string>2</string>
    </property>
   </action>
   <action name="actionx3">
@@ -922,7 +946,7 @@
     <string>x&amp;3</string>
    </property>
    <property name="shortcut">
-    <string>Alt+Shift+3</string>
+    <string>3</string>
    </property>
   </action>
   <action name="actionx5">
@@ -933,7 +957,7 @@
     <string>x&amp;5</string>
    </property>
    <property name="shortcut">
-    <string>Alt+Shift+4</string>
+    <string>4</string>
    </property>
   </action>
   <action name="actionx8">
@@ -944,7 +968,7 @@
     <string>x&amp;8</string>
    </property>
    <property name="shortcut">
-    <string>Alt+Shift+5</string>
+    <string>5</string>
    </property>
   </action>
   <action name="actionx10">
@@ -955,7 +979,7 @@
     <string>x&amp;10</string>
    </property>
    <property name="shortcut">
-    <string>Alt+Shift+6</string>
+    <string>6</string>
    </property>
   </action>
   <action name="actionx50">
@@ -966,7 +990,7 @@
     <string>x5&amp;0</string>
    </property>
    <property name="shortcut">
-    <string>Alt+Shift+7</string>
+    <string>7</string>
    </property>
   </action>
   <action name="actionx100">
@@ -977,7 +1001,7 @@
     <string>x100</string>
    </property>
    <property name="shortcut">
-    <string>Alt+Shift+8</string>
+    <string>8</string>
    </property>
   </action>
   <action name="actionRotx1">
@@ -1039,10 +1063,16 @@
    <property name="text">
     <string>&amp;Ships</string>
    </property>
+   <property name="shortcut">
+    <string>Shift+S</string>
+   </property>
   </action>
   <action name="actionWings">
    <property name="text">
     <string>&amp;Wings</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+W</string>
    </property>
   </action>
   <action name="actionObjects">
@@ -1073,6 +1103,9 @@
    <property name="text">
     <string>&amp;Team Loadout</string>
    </property>
+   <property name="shortcut">
+    <string>Shift+P</string>
+   </property>
   </action>
   <action name="actionBackground">
    <property name="text">
@@ -1085,6 +1118,9 @@
   <action name="actionReinforcements">
    <property name="text">
     <string>&amp;Reinforcements</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+R</string>
    </property>
   </action>
   <action name="actionAsteroid_Field">
@@ -1116,12 +1152,15 @@
     <string>&amp;Debriefing</string>
    </property>
    <property name="shortcut">
-    <string/>
+    <string>Shift+D</string>
    </property>
   </action>
   <action name="actionCommand_Briefing">
    <property name="text">
     <string>&amp;Command Briefing</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+C</string>
    </property>
   </action>
   <action name="actionFiction_Viewer">
@@ -1274,38 +1313,6 @@
     <string>Group &amp;9</string>
    </property>
   </action>
-  <action name="actionLevel_Object">
-   <property name="text">
-    <string>&amp;Level Object</string>
-   </property>
-   <property name="shortcut">
-    <string>L</string>
-   </property>
-  </action>
-  <action name="actionAlign_Object">
-   <property name="text">
-    <string>&amp;Align Object</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+L</string>
-   </property>
-  </action>
-  <action name="actionMark_Wing">
-   <property name="text">
-    <string>&amp;Mark Wing</string>
-   </property>
-   <property name="shortcut">
-    <string>W</string>
-   </property>
-  </action>
-  <action name="actionControl_Object">
-   <property name="text">
-    <string>&amp;Control Object</string>
-   </property>
-   <property name="shortcut">
-    <string>T</string>
-   </property>
-  </action>
   <action name="actionNext_Object">
    <property name="text">
     <string>&amp;Next Object</string>
@@ -1322,9 +1329,28 @@
     <string>Ctrl+Tab</string>
    </property>
   </action>
-  <action name="actionAdjust_Grid">
+  <action name="actionControl_Object">
    <property name="text">
-    <string>Adjust &amp;Grid</string>
+    <string>&amp;Control Object</string>
+   </property>
+   <property name="shortcut">
+    <string>T</string>
+   </property>
+  </action>
+  <action name="actionLevel_Object">
+   <property name="text">
+    <string>&amp;Level Object</string>
+   </property>
+   <property name="shortcut">
+    <string>L</string>
+   </property>
+  </action>
+  <action name="actionAlign_Object">
+   <property name="text">
+    <string>&amp;Align Object</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+L</string>
    </property>
   </action>
   <action name="actionNext_Subsystem">
@@ -1351,6 +1377,27 @@
     <string>Alt+K</string>
    </property>
   </action>
+  <action name="actionMark_Wing">
+   <property name="text">
+    <string>&amp;Mark Wing</string>
+   </property>
+   <property name="shortcut">
+    <string>W</string>
+   </property>
+  </action>
+  <action name="actionAdjust_Grid">
+   <property name="text">
+    <string>Adjust &amp;Grid</string>
+   </property>
+  </action>
+  <action name="actionMove_Ships_When_Undocking">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Move Ships When Undocking</string>
+   </property>
+  </action>
   <action name="actionMission_Statistics">
    <property name="text">
     <string>M&amp;ission Statistics</string>
@@ -1364,7 +1411,7 @@
     <string>&amp;Error Checker</string>
    </property>
    <property name="shortcut">
-    <string/>
+    <string>Shift+H</string>
    </property>
   </action>
   <action name="actionHelp_Topics">
@@ -1375,6 +1422,9 @@
   <action name="actionShow_SEXP_Help">
    <property name="text">
     <string>&amp;Show SEXP Help</string>
+   </property>
+   <property name="checkable">
+    <bool>true</bool>
    </property>
   </action>
   <action name="actionAbout">
