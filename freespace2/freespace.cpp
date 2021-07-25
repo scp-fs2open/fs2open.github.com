@@ -2877,17 +2877,18 @@ void apply_view_shake(matrix *eye_orient)
 	tangles.b = 0.0f;
 
 	// do shakes that only affect the HUD (unless disabled by cmdline in singleplayer)
-	if (Viewer_obj == Player_obj && (!Cmdline_no_screenshake || Game_mode & GM_MULTIPLAYER)) {
+	if ((Viewer_obj == Player_obj || ((Viewer_mode & VM_CHASE) && Screen_shake_on_chase)) 
+		&& (!Cmdline_no_screenshake || Game_mode & GM_MULTIPLAYER)) {
 		physics_info *pi = &Player_obj->phys_info;
 
 		// Make eye shake due to afterburner
-		if (!timestamp_elapsed(pi->afterburner_decay)) {
+		if (!timestamp_elapsed(pi->afterburner_decay) && (!Screen_shake_on_chase || Screen_shake_chase_afterburner)) {
 			tangles.p += get_shake(0.07f, timestamp_until(pi->afterburner_decay), ABURN_DECAY_TIME);
 			tangles.h += get_shake(0.07f, timestamp_until(pi->afterburner_decay), ABURN_DECAY_TIME);
 		}
 
 		// Make eye shake due to engine wash
-		if (Player_obj->type == OBJ_SHIP && (Ships[Player_obj->instance].wash_intensity > 0) && Wash_on ) {
+		if (Player_obj->type == OBJ_SHIP && (Ships[Player_obj->instance].wash_intensity > 0) && Wash_on && (!Screen_shake_on_chase || Screen_shake_chase_afterburner)) {
 			float wash_intensity = Ships[Player_obj->instance].wash_intensity;
 	
 			tangles.p += get_shake(0.07f * wash_intensity, -1, 0);

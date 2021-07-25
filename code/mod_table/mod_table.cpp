@@ -64,6 +64,9 @@ bool Framerate_independent_turning; // an in-depth explanation how this flag is 
 bool Ai_respect_tabled_turntime_rotdamp;
 bool Swarmers_lead_targets;
 bool Chase_view_default;
+bool Screen_shake_on_chase;
+bool Screen_shake_chase_afterburner;
+bool Screen_shake_chase_engine_wash;
 SCP_vector<gr_capability> Required_render_ext;
 float Weapon_SS_Threshold_Turret_Inaccuracy;
 bool Render_player_mflash;
@@ -634,6 +637,19 @@ void parse_mod_table(const char *filename)
 		if (optional_string("$Player starts in third person/chase view by default:")) {
 			stuff_boolean(&Chase_view_default);
 		}
+
+		if (optional_string("$Screen shakes in chase view:")) {
+			stuff_boolean(&Screen_shake_on_chase);
+
+			// These are additional settings that have to be enabled to use screenshake in chase mode with afterburner or engine wash.
+			if (optional_string("+Include Afterburner:")) {
+				stuff_boolean(&Screen_shake_chase_afterburner);
+			}
+
+			if (optional_string("+Include Engine Wash:")) {
+				stuff_boolean(&Screen_shake_chase_engine_wash);
+			}
+		}
 		
 		required_string("#END");
 	}
@@ -712,6 +728,9 @@ void mod_table_reset()
 	Framerate_independent_turning = true;
 	Ai_respect_tabled_turntime_rotdamp = false;
 	Chase_view_default = false;
+	Screen_shake_on_chase = false;
+	Screen_shake_chase_afterburner = false;
+	Screen_shake_chase_engine_wash = false;
 	Swarmers_lead_targets = false;
 	Required_render_ext.clear();
 	Weapon_SS_Threshold_Turret_Inaccuracy = 0.7f; // Defaults to retail value of 0.7 --wookieejedi
