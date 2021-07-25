@@ -15867,9 +15867,13 @@ char *ship_return_time_to_goal(char *outbuf, ship *sp)
 			seconds = 99;
 		}
 		sprintf(outbuf, NOX("%02d:%02d"), minutes, seconds);
-	
-	} else {
+
+	} else if ( time == -1 ) {
 		strcpy( outbuf, XSTR( "Unknown", 497) );
+
+	} else {
+		// we don't want to display anything on the HUD
+		return nullptr;
 	}
 
 	return outbuf;
