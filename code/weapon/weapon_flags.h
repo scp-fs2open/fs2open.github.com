@@ -35,7 +35,7 @@ namespace Weapon {
 		Flak,								// use for big-ship turrets - flak gun
 		Beam,								// if this is a beam weapon : NOTE - VERY SPECIAL CASE
 		Tag,								// this weapon has a tag effect when it hits
-		Shudder,							// causes the weapon to shudder. shudder is proportional to the mass and damage of the weapon
+		Shudder,							// causes the camera to shudder when fired. shudder is proportional to the mass and damage of the weapon
 		Mflash,								// has muzzle flash
 		Lockarm,							// if the missile was fired without a lock, it does significanlty less damage on impact
 		Stream,								// handled by "trigger down/trigger up" instead of "fire - wait - fire - wait"
