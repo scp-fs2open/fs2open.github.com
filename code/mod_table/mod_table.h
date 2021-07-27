@@ -65,6 +65,7 @@ extern bool Neb_affects_particles;
 extern bool Neb_affects_fireballs;
 extern std::tuple<float, float, float, float> Shadow_distances;
 extern std::tuple<float, float, float, float> Shadow_distances_cockpit;
+extern bool Custom_briefing_icons_always_override_standard_icons;
 
 void mod_table_init();
 
