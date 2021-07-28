@@ -663,7 +663,7 @@ briefing_icon_info *brief_get_icon_info(brief_icon *bi)
 	}
 
 	// ship info might override the usual briefing icon
-	if (allow_override && sip->bii_index_ship >= 0)
+	if ((allow_override || Custom_briefing_icons_always_override_standard_icons) && sip->bii_index_ship >= 0)
 	{
 		if (bi->flags & BI_USE_WING_ICON)
 		{
