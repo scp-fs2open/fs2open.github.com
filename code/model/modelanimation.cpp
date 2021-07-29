@@ -242,11 +242,11 @@ namespace animation {
 		//since sp->type is not set without reading the pof, we need to infer it by subsystem name (which works, since the same name is used to match the submodels name, which is used to match the type in pof parsing)
 		//sadly, we also need to check for engine and radar, since these take precedent (as in, an engineturret is an engine before a turret type)
 		if (!strstr(namelower, "engine") && !strstr(namelower, "radar") && strstr(namelower, "turret")) {
-			auto rotBase = std::unique_ptr<ModelAnimationSegmentSetAngle>(new ModelAnimationSegmentSetAngle(angle.p));
+			auto rotBase = std::unique_ptr<ModelAnimationSegmentSetAngle>(new ModelAnimationSegmentSetAngle(angle.h));
 			auto subsysBase = std::unique_ptr<ModelAnimationSubmodel>(new ModelAnimationSubmodel(sp->subobj_name, false, sip, std::move(rotBase)));
 			anim->addSubsystemAnimation(std::move(subsysBase));
 
-			auto rotBarrel = std::unique_ptr<ModelAnimationSegmentSetAngle>(new ModelAnimationSegmentSetAngle(angle.h));
+			auto rotBarrel = std::unique_ptr<ModelAnimationSegmentSetAngle>(new ModelAnimationSegmentSetAngle(angle.p));
 			auto subsysBarrel = std::unique_ptr<ModelAnimationSubmodel>(new ModelAnimationSubmodel(sp->subobj_name, true, sip, std::move(rotBarrel)));
 			anim->addSubsystemAnimation(std::move(subsysBarrel));
 		}
