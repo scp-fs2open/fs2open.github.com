@@ -195,7 +195,6 @@ Flag exe_params[] =
 	{ "-no_enhanced_sound",	"Disable enhanced sound",					false,	0,									EASY_DEFAULT,					"Audio",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_enhanced_sound", },
 
 	{ "-portable_mode",		"Store config in portable location",		false,	0,									EASY_DEFAULT,					"Launcher",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-portable_mode", },
-	{ "-joy_info",			"Outputs SDL joystick info",				true,	0,									EASY_DEFAULT,					"Launcher",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-joy_info",},
 
 	{ "-standalone",		"Run as standalone server",					false,	0,									EASY_DEFAULT,					"Multiplayer",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-standalone", },
 	{ "-startgame",			"Skip mainhall and start hosting",			false,	0,									EASY_DEFAULT,					"Multiplayer",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-startgame", },
@@ -418,7 +417,6 @@ char *Cmdline_gateway_ip = nullptr;
 
 // Launcher related options
 cmdline_parm portable_mode("-portable_mode", NULL, AT_NONE);
-cmdline_parm joy_info("-joy_info", "Outputs SDL joystick info", AT_NONE);
 
 bool Cmdline_portable_mode = false;
 
