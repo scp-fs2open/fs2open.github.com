@@ -2321,14 +2321,12 @@ bool CC_bind::conflicts_with(const CC_bind& B) const {
 	// These flags don't cause a conflict for anything other than buttons/keys:
 	// CCF_RELATIVE, CCF_INVERTED
 
-	// Check if A is not a key/button, or if B is not a key/button
 	mask = (CCF_AXIS_BTN | CCF_AXIS | CCF_HAT | CCF_BALL | CCF_RELATIVE | CCF_INVERTED);
-	if ((flags & mask) || (B.flags & mask)) {
-		return false;
-	}
-
-	// Else, is a key or button
-	return true;
+	// z64: I really don't like this form, even if its "simpler" and "faster" according to clang-tidy
+	// First off, check if A or B is NOT a button, as according to the mask.  Buttons do not have a flag, so we check
+	// if they are any of the other input types
+	// Next, we return the inverse of the result. Negative of a Negative = Positive. Not Not a button = Is a button
+	return !((flags | B.flags) & mask);
 }
 
 bool CC_bind::is_inverted() const {
