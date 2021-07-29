@@ -103,12 +103,20 @@ namespace animation {
 		}
 	}
 	
-	void ModelAnimation::start(polymodel_instance* pmi, bool reverse) {
+	void ModelAnimation::start(polymodel_instance* pmi, bool reverse, bool force) {
 		if (reverse) {
 			switch (m_state[pmi->id]) {
 			case ModelAnimationState::RUNNING_RWD:
 			case ModelAnimationState::UNTRIGGERED:
 				//Cannot reverse-start if it's already running rwd or fully untriggered
+
+				//If forced, reset and play anyways
+				if (force) {
+					m_time[pmi->id] = m_duration;
+					m_state[pmi->id] = ModelAnimationState::RUNNING_RWD;
+					break;
+				}
+
 				return;
 			case ModelAnimationState::RUNNING_FWD:
 				//Just pretend we were going in the right direction
@@ -124,6 +132,14 @@ namespace animation {
 			case ModelAnimationState::RUNNING_FWD:
 			case ModelAnimationState::COMPLETED:
 				//Cannot start if it's already running fwd or fully triggered
+
+				//If forced, reset and play anyways
+				if (force) {
+					m_time[pmi->id] = 0;
+					m_state[pmi->id] = ModelAnimationState::RUNNING_FWD;
+					break;
+				}
+
 				return;
 			case ModelAnimationState::RUNNING_RWD:
 				//Just pretend we were going in the right direction
@@ -404,7 +420,7 @@ namespace animation {
 		const auto& initialAnims = sip->animations.animationSet[{animation::ModelAnimationTriggerType::Initial, animation::ModelAnimationSet::SUBTYPE_DEFAULT}];
 
 		for (const auto& anim : initialAnims) {
-			anim.second->start(model_get_instance(shipp->model_instance_num), false);
+			anim.second->start(model_get_instance(shipp->model_instance_num), false, true);
 		}
 	}
 }

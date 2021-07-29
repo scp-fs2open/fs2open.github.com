@@ -179,7 +179,7 @@ namespace animation {
 		void addSubsystemAnimation(std::unique_ptr<ModelAnimationSubmodel> animation);
 
 		//Start playing the animation. Will stop other animations that have components running on the same submodels
-		void start(polymodel_instance* pmi, bool reverse);
+		void start(polymodel_instance* pmi, bool reverse, bool force = false);
 		//Stops the animation. If cleanup is set, it will remove the animation from the list of running animations. Don't call without cleanup unless you know what you are doing
 		void stop(polymodel_instance* pmi, bool cleanup = true);
 
