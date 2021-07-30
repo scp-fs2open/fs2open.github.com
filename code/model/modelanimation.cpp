@@ -259,11 +259,11 @@ namespace animation {
 		//sadly, we also need to check for engine and radar, since these take precedent (as in, an engineturret is an engine before a turret type)
 		if (!strstr(namelower, "engine") && !strstr(namelower, "radar") && strstr(namelower, "turret")) {
 			auto rotBase = std::unique_ptr<ModelAnimationSegmentSetAngle>(new ModelAnimationSegmentSetAngle(angle.h));
-			auto subsysBase = std::unique_ptr<ModelAnimationSubmodel>(new ModelAnimationSubmodelTurret(sp->subobj_name, false, sip, std::move(rotBase)));
+			auto subsysBase = std::unique_ptr<ModelAnimationSubmodelTurret>(new ModelAnimationSubmodelTurret(sp->subobj_name, false, sip, std::move(rotBase)));
 			anim->addSubsystemAnimation(std::move(subsysBase));
 
 			auto rotBarrel = std::unique_ptr<ModelAnimationSegmentSetAngle>(new ModelAnimationSegmentSetAngle(angle.p));
-			auto subsysBarrel = std::unique_ptr<ModelAnimationSubmodel>(new ModelAnimationSubmodelTurret(sp->subobj_name, true, sip, std::move(rotBarrel)));
+			auto subsysBarrel = std::unique_ptr<ModelAnimationSubmodelTurret>(new ModelAnimationSubmodelTurret(sp->subobj_name, true, sip, std::move(rotBarrel)));
 			anim->addSubsystemAnimation(std::move(subsysBarrel));
 		}
 		else {
@@ -377,7 +377,7 @@ namespace animation {
 		return { &pmi->submodel[submodelNumber], &pm->submodel[submodelNumber] };
 	}
 
-	ModelAnimationSubmodelTurret::ModelAnimationSubmodelTurret(SCP_string subsystemName, bool findBarrel, ship_info* sip, std::unique_ptr<ModelAnimationSegment> mainSegment) : ModelAnimationSubmodel(std::move(subsystemName), std::move(mainSegment)), m_findBarrel(findBarrel), m_sipIndex(sip - &Ship_info[0]) { }
+	ModelAnimationSubmodelTurret::ModelAnimationSubmodelTurret(SCP_string subsystemName, bool findBarrel, ship_info* sip, std::unique_ptr<ModelAnimationSegment> mainSegment) : ModelAnimationSubmodel(std::move(subsystemName), std::move(mainSegment)), m_sipIndex((int) (sip - &Ship_info[0])), m_findBarrel(findBarrel) { }
 
 	std::pair<submodel_instance*, bsp_info*> ModelAnimationSubmodelTurret::findSubmodel(polymodel_instance* pmi) {
 		//Ship was deleted
@@ -394,7 +394,7 @@ namespace animation {
 		//Do we know if we were told to find the barrel submodel or not? This implies we have a subsystem name, not a submodel name
 		else {
 
-			if (m_sipIndex < 0 || m_sipIndex >= Ship_info.size())
+			if (m_sipIndex < 0 || m_sipIndex >= ship_info_size())
 				return { nullptr, nullptr };
 
 			ship_info* sip = &Ship_info[m_sipIndex];

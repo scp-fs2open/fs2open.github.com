@@ -146,6 +146,7 @@ namespace animation {
 		//Create a submodel animation based on the name of the submodel
 		ModelAnimationSubmodel(SCP_string submodelName, std::unique_ptr<ModelAnimationSegment> mainSegment);
 
+		virtual ~ModelAnimationSubmodel() = default;
 
 		//Sets the animation to the specified time and applies it to the submodel
 		void play(float time, polymodel_instance* pmi);
