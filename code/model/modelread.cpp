@@ -3895,14 +3895,11 @@ int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, ship_
 		base_smi->canonical_orient = save_base_orient;
 
 	} else {
-		desired_base_angle = 0.0f;
+		desired_base_angle = base_smi->turret_idle_angle;
 		desired_gun_angle = 0.0f;
-		if (turret->n_triggers > 0) {
-			int i;
-			for (i = 0; i<turret->n_triggers; i++) {
-				desired_gun_angle = turret->triggers[i].angle.xyz.x;
-				desired_base_angle = turret->triggers[i].angle.xyz.y;
-			}
+
+		if ((turret->subobj_num != turret->turret_gun_sobj)) {
+			desired_gun_angle = gun_smi->turret_idle_angle;
 		}
 	}
 

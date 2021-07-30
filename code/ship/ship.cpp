@@ -1481,6 +1481,8 @@ void ship_info::move(ship_info&& other)
 	std::swap(pathMetadata, other.pathMetadata);
 
 	std::swap(glowpoint_bank_override_map, other.glowpoint_bank_override_map);
+
+	std::swap(animations, other.animations);
 }
 
 #define CHECK_THEN_FREE(attribute) \

@@ -130,10 +130,11 @@ namespace animation {
 	
 
 	class ModelAnimationSubmodel {
+	protected:
 		SCP_string m_name;
 		optional<int> m_submodel;
-		optional<bool> m_findBarrel;
-		ship_info* m_sip = nullptr;
+		
+	private:
 		std::unique_ptr<ModelAnimationSegment> m_mainSegment;
 		//Polymodel Instance ID -> ModelAnimationData
 		std::map<int, ModelAnimationData<>> m_initialData;
@@ -144,8 +145,7 @@ namespace animation {
 	public:
 		//Create a submodel animation based on the name of the submodel
 		ModelAnimationSubmodel(SCP_string submodelName, std::unique_ptr<ModelAnimationSegment> mainSegment);
-		//Create a submodel animation by taking the submodel assigned to a subsystem with a given name, or, if requested, the submodel of the turret barrel
-		ModelAnimationSubmodel(SCP_string subsystemName, bool findBarrel, ship_info* sip, std::unique_ptr<ModelAnimationSegment> mainSegment);
+
 
 		//Sets the animation to the specified time and applies it to the submodel
 		void play(float time, polymodel_instance* pmi);
@@ -156,8 +156,21 @@ namespace animation {
 		//Set the submodels current state as the base for the animation, recalculate the animation data (e.g. take this as the base for absolutely defined angles)
 		float saveCurrentAsBase(polymodel_instance* pmi);
 		//Reapply the calculated animation state to the submodel
-		void copyToSubmodel(const ModelAnimationData<>& data, polymodel_instance* pmi);
-		std::pair<submodel_instance*, bsp_info*> findSubmodel(polymodel_instance* pmi);
+		virtual void copyToSubmodel(const ModelAnimationData<>& data, polymodel_instance* pmi);
+		virtual std::pair<submodel_instance*, bsp_info*> findSubmodel(polymodel_instance* pmi);
+	};
+
+	class ModelAnimationSubmodelTurret : public ModelAnimationSubmodel {
+		int m_sipIndex = -1;
+		bool m_findBarrel;
+		void copyToSubmodel(const ModelAnimationData<>& data, polymodel_instance* pmi) override;
+		std::pair<submodel_instance*, bsp_info*> findSubmodel(polymodel_instance* pmi) override;
+
+	public:
+		/*Create a submodel animation by taking the submodel assigned to a subsystem with a given name, or, if requested, the submodel of the turret barrel.
+		Due to how turrets work in FSO, this should never be given a segment that does anything but rotate the turret around its axis
+		*/
+		ModelAnimationSubmodelTurret(SCP_string subsystemName, bool findBarrel, ship_info* sip, std::unique_ptr<ModelAnimationSegment> mainSegment);
 	};
 
 
