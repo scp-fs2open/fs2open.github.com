@@ -172,6 +172,11 @@ CampaignEditorDialogModel::CampaignBranchData::CampaignBranchData(const int &sex
 	}
 }
 
+CampaignEditorDialogModel::CampaignBranchData::CampaignBranchData(const QString &from, QString to) :
+	type(to.isEmpty() ? END : to == from ? REPEAT : NEXT),
+	next(std::move(to))
+{}
+
 void CampaignEditorDialogModel::CampaignBranchData::connect(const SCP_unordered_set<const CampaignMissionData*>& missions) {
 	if (std::find_if(missions.cbegin(), missions.cend(),
 					 [&](const CampaignMissionData* mn){
@@ -379,7 +384,9 @@ bool CampaignEditorDialogModel::addCurMnBranchTo(const QModelIndex *other, bool 
 	if (! mnData_it)
 		return false;
 	if (! other) {
-		QMessageBox::information(nullptr, "", "End of Campaign");
+		mnData_it->branches.emplace_back(mnData_it->filename);
+
+		flagModified();
 		return true;
 	}
 	CampaignMissionData *otherMn = missionData.internalData(*other);
@@ -387,9 +394,9 @@ bool CampaignEditorDialogModel::addCurMnBranchTo(const QModelIndex *other, bool 
 		return false;
 	CampaignMissionData &from = flip ? *otherMn : *mnData_it;
 	const CampaignMissionData &to = flip ? *mnData_it : *otherMn;
+	from.branches.emplace_back(from.filename, to.filename);
 
-
-	QMessageBox::information(nullptr, "", "From: "+from.filename+"\nTo: "+to.filename);
+	flagModified();
 	return true;
 }
 
@@ -410,7 +417,13 @@ void CampaignEditorDialogModel::selectCurBr(const CampaignBranchData *br) {
 }
 
 bool CampaignEditorDialogModel::setCurBrCond(const QString &sexp, const QString &mn, const QString &arg) {
-	QMessageBox::information(nullptr, "", "("+sexp+"\n  "+mn+"\n  "+arg+")");
+	if (! getCurBr()) return false;
+
+	mnData_it->brData_it->sexp =
+			alloc_sexp(qPrintable(sexp), SEXP_ATOM, SEXP_ATOM_OPERATOR, -1,
+					   alloc_sexp(qPrintable(mn), SEXP_ATOM, SEXP_ATOM_STRING, -1,
+								  alloc_sexp(qPrintable(arg), SEXP_ATOM, SEXP_ATOM_STRING, -1, -1)));
+	flagModified();
 	return true;
 }
 

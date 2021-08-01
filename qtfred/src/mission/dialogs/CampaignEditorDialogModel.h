@@ -17,7 +17,7 @@ class CampaignEditorDialogModel : public AbstractDialogModel
 {
 	struct CampaignMissionData;
 	Q_OBJECT
-public:
+
 	struct CampaignLoopData	{
 		CampaignLoopData() = default;
 		CampaignLoopData(const cmission *loop);
@@ -28,21 +28,24 @@ public:
 		QString voice;
 	};
 
+public:
 	struct CampaignBranchData {
+		enum BranchType { INVALID, REPEAT, NEXT, NEXT_NOT_FOUND, END, };
+
 		explicit CampaignBranchData() = default;
 		CampaignBranchData(const int &sexp_branch, const QString &from, const cmission *loop = nullptr);
+		CampaignBranchData(const QString &from, QString to = "");
 
 		void connect(const SCP_unordered_set<const CampaignMissionData*>& missions);
 
-		enum BranchType { INVALID, REPEAT, NEXT, NEXT_NOT_FOUND, END, };
 		static const SCP_map<BranchType, QString> branchTexts;
 
 		BranchType type{INVALID};
-		int sexp{-1};
+		int sexp{Locked_sexp_true};
 
 		QString next;
 
-		CampaignLoopData loop;
+		CampaignLoopData loop{nullptr};
 	};
 
 	CampaignEditorDialogModel(CampaignEditorDialog *parent, EditorViewport *viewport, const QString &file = "", const QString& newCampaignType = "");
