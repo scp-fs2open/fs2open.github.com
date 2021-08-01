@@ -3151,7 +3151,7 @@ camid game_render_frame_setup()
 
 				eye_pos = Viewer_obj->pos;
 
-				//get a point 1000m forward of ship
+				//get a point far in front of the ship to point the camera at
 				vm_vec_copy_scale(&aim_pt,&Viewer_obj->orient.vec.fvec, Viewer_obj->radius * 100.0f);
 				vm_vec_add2(&aim_pt,&Viewer_obj->pos);
 
