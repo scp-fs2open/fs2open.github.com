@@ -506,7 +506,7 @@ void nebl_process()
 			vec3d strike;
 			do {
 				vm_vec_random_in_sphere(&strike, &Eye_position, 800.0f, false);
-			} while (vm_vec_dist(&strike, &Eye_position) > 200.0f);
+			} while (vm_vec_dist(&strike, &Eye_position) > 200.0f && vm_vec_dist(&start, &strike) > 200.0f);
 
 			// add some flavor to the bolt. mmmmmmmm, lightning
 			if(!IS_VEC_NULL_SQ_SAFE(&Storm->flavor)){			

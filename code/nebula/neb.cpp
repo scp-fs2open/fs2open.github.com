@@ -292,15 +292,21 @@ void neb2_level_init()
 float nNf_near, nNf_density;
 
 void neb2_poof_setup() {
+	if (!Neb2_poof_flags)
+		return;
+
 	// make the total density of poofs be the average of all poofs, and each poofs density is its relative proportion compared to others
 	// this way we maintain the retail way of not affecting total density by having more poof types
-	Poof_dist_threshold = 9999.0f;
 	float Poof_density_sum_square = 0.0f;
 	float Poof_density_sum = 0.0f;
+
+	// also determine the minimum distance before re-triggering a poof upkeep
+	Poof_dist_threshold = 9999.0f;
 	for (size_t i = 0; i < Poof_info.size(); i++) {
 		if (poof_is_used(i)) {
 			Poof_density_sum_square += Poof_info[i].density * Poof_info[i].density;
 			Poof_density_sum += Poof_info[i].density;
+
 			float dist_threshold = Poof_info[i].view_dist * (UPKEEP_DIST_MULT - 1.0f);
 			if (dist_threshold < Poof_dist_threshold)
 				Poof_dist_threshold = dist_threshold;
@@ -692,6 +698,18 @@ void upkeep_poofs()
 	vec3d eye_pos;
 	neb2_get_eye_pos(&eye_pos);
 
+	// cull distant poofs
+	if (!Neb2_poofs.empty()) {
+		for (size_t i = 0; i < Neb2_poofs.size();) {
+			if (vm_vec_dist(&Neb2_poofs[i].pt, &eye_pos) > Poof_info[Neb2_poofs[i].poof_info_index].view_dist * UPKEEP_DIST_MULT) {
+				Neb2_poofs[i] = Neb2_poofs.back();
+				Neb2_poofs.pop_back();
+			}
+			else // if we needed to cull we should not advance because we just moved a new poof into this spot
+				i++;
+		}
+	}
+
 	neb_rand_seed = 0;
 
 	// make new poofs
@@ -724,18 +742,6 @@ void upkeep_poofs()
 			if (vm_vec_dist(&eye_pos, &pos) <= (gen_side_length / 2) &&
 				vm_vec_dist(&Poof_last_gen_pos, &pos) > (gen_side_length / 2))
 				new_poof(i, &pos);
-		}
-	}
-
-	// cull distant poofs
-	if (!Neb2_poofs.empty()) {
-		for (size_t i = 0; i < Neb2_poofs.size();) {
-			if (vm_vec_dist(&Neb2_poofs[i].pt, &eye_pos) > Poof_info[Neb2_poofs[i].poof_info_index].view_dist * UPKEEP_DIST_MULT) {
-				Neb2_poofs[i] = Neb2_poofs.back();
-				Neb2_poofs.pop_back();
-			}
-			else // if we needed to cull we should not advance because we just moved a new poof into this spot
-				i++;
 		}
 	}
 }
