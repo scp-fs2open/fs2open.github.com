@@ -82,6 +82,7 @@ struct submodel_instance
 {
 	float	cur_angle = 0.0f;							// The current angle this thing is turned to.
 	float	prev_angle = 0.0f;
+	float	turret_idle_angle = 0.0f;				// If this is a turret, this is the expected idling angle of the submodel
 
 	float	current_turn_rate = 0.0f;
 	float	desired_turn_rate = 0.0f;
