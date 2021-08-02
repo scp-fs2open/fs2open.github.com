@@ -2959,7 +2959,6 @@ camid game_render_frame_setup()
 
 	static int last_Viewer_mode = 0;
 	static int last_Game_mode = 0;
-	static int last_Viewer_objnum = -1;
 	static float last_FOV = Sexp_fov;
 
 	bool fov_changed = ((last_FOV != Sexp_fov) && (Sexp_fov > 0.0f));
@@ -2976,28 +2975,6 @@ camid game_render_frame_setup()
 
 	// This code is supposed to detect camera "cuts"... like going between
 	// different views.
-
-	// determine if we need to regenerate the nebula
-	if(	(!(last_Viewer_mode & VM_EXTERNAL) && (Viewer_mode & VM_EXTERNAL)) ||							// internal to external 
-			((last_Viewer_mode & VM_EXTERNAL) && !(Viewer_mode & VM_EXTERNAL)) ||							// external to internal
-			(!(last_Viewer_mode & VM_DEAD_VIEW) && (Viewer_mode & VM_DEAD_VIEW)) ||							// non dead-view to dead-view
-			((last_Viewer_mode & VM_DEAD_VIEW) && !(Viewer_mode & VM_DEAD_VIEW)) ||							// dead-view to non dead-view
-			(!(last_Viewer_mode & VM_WARP_CHASE) && (Viewer_mode & VM_WARP_CHASE)) ||						// non warp-chase to warp-chase
-			((last_Viewer_mode & VM_WARP_CHASE) && !(Viewer_mode & VM_WARP_CHASE)) ||						// warp-chase to non warp-chase
-			(!(last_Viewer_mode & VM_OTHER_SHIP) && (Viewer_mode & VM_OTHER_SHIP)) ||						// non other-ship to other-ship
-			((last_Viewer_mode & VM_OTHER_SHIP) && !(Viewer_mode & VM_OTHER_SHIP)) ||						// other-ship to non-other ship
-			(!(last_Viewer_mode & VM_FREECAMERA) && (Viewer_mode & VM_FREECAMERA)) ||
-			((last_Viewer_mode & VM_FREECAMERA) && !(Viewer_mode & VM_FREECAMERA)) ||
-			(!(last_Viewer_mode & VM_TOPDOWN) && (Viewer_mode & VM_TOPDOWN)) ||
-			((last_Viewer_mode & VM_TOPDOWN) && !(Viewer_mode & VM_TOPDOWN)) ||
-			(fov_changed) ||
-			((Viewer_mode & VM_OTHER_SHIP) && (last_Viewer_objnum != Player_ai->target_objnum)) 		// other ship mode, but targets changes
-			) {
-
-		// regenerate the nebula
-		neb2_eye_changed();
-	}		
-
 	if ( (last_Viewer_mode != Viewer_mode)
 		|| (last_Game_mode != Game_mode)
 		|| (fov_changed)
@@ -3030,14 +3007,10 @@ camid game_render_frame_setup()
 				//	View from target.
 				Viewer_obj = &Objects[Player_ai->target_objnum];
 
-				last_Viewer_objnum = Player_ai->target_objnum;
-
 				if ( Viewer_obj->type == OBJ_SHIP ) {
 					ship_get_eye( &eye_pos, &eye_orient, Viewer_obj );
 					view_from_player = 0;
 				}
-			} else {
-				last_Viewer_objnum = -1;
 			}
 
 			if(Viewer_obj)
@@ -3110,13 +3083,9 @@ camid game_render_frame_setup()
 			if (Viewer_mode & VM_OTHER_SHIP) {
 				if (Player_ai->target_objnum != -1){
 					Viewer_obj = &Objects[Player_ai->target_objnum];
-					last_Viewer_objnum = Player_ai->target_objnum;
 				} else {
 					Viewer_mode &= ~VM_OTHER_SHIP;
-					last_Viewer_objnum = -1;
 				}
-			} else {
-				last_Viewer_objnum = -1;
 			}
 
 			if(Viewer_mode & VM_FREECAMERA) {

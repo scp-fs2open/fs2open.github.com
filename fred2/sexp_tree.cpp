@@ -6136,11 +6136,10 @@ sexp_list_item *sexp_tree::get_listing_opf_nebula_storm_type()
 sexp_list_item *sexp_tree::get_listing_opf_nebula_poof()
 {
 	sexp_list_item head;
-	int i;
 
-	for (i=0; i < MAX_NEB2_POOFS; i++)
+	for (poof_info pf : Poof_info)
 	{
-		head.add_data(Neb2_poof_filenames[i]);
+		head.add_data(pf.name);
 	}
 
 	return head.next;

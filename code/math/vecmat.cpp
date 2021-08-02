@@ -2830,3 +2830,22 @@ matrix vm_stretch_matrix(const vec3d* stretch_dir, float stretch) {
 
 	return vmd_identity_matrix + outer_prod;
 }
+
+// generates a well distributed quasi-random position in a -1 to 1 cube
+// the caller must provide and increment the seed for each call for proper results
+// algorithm taken from http://extremelearning.com.au/unreasonable-effectiveness-of-quasirandom-sequences/
+const float phi3 = 1.220744084f;
+vec3d vm_well_distributed_rand_vec(int seed, vec3d* offset) {
+	vec3d out;
+	if (offset != nullptr) {
+		out.xyz.x = fmod(-fmod(offset->xyz.x, 1.f) + ((1.f / phi3) * seed), 1.f) * 2 - 1;
+		out.xyz.y = fmod(-fmod(offset->xyz.y, 1.f) + ((1.f / (phi3 * phi3)) * seed), 1.f) * 2 - 1;
+		out.xyz.z = fmod(-fmod(offset->xyz.z, 1.f) + ((1.f / (phi3 * phi3 * phi3)) * seed), 1.f) * 2 - 1;
+	}
+	else {
+		out.xyz.x = fmod((1.f / phi3) * seed, 1.f) * 2 - 1;
+		out.xyz.y = fmod((1.f / (phi3 * phi3)) * seed, 1.f) * 2 - 1;
+		out.xyz.z = fmod((1.f / (phi3 * phi3 * phi3)) * seed, 1.f) * 2 - 1;
+	}
+	return out;
+}
