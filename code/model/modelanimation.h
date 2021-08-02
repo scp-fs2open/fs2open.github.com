@@ -153,8 +153,8 @@ namespace animation {
 
 		void reset(polymodel_instance* pmi);
 
-		//Hack needed for potential cloning of a animations due to templates, while still allowing changing the subsystem data for turret retrieval later on.
-		virtual ModelAnimationSubmodel* copy(SCP_string newSIPname);
+		//Hack needed for potential cloning of animations due to templates, while still allowing changing the subsystem data for turret retrieval later on.
+		virtual ModelAnimationSubmodel* copy(const SCP_string& /*newSIPname*/);
 
 	private:
 		//Set the submodels current state as the base for the animation, recalculate the animation data (e.g. take this as the base for absolutely defined angles)
@@ -175,7 +175,7 @@ namespace animation {
 		*/
 		ModelAnimationSubmodelTurret(SCP_string subsystemName, bool findBarrel, SCP_string SIPname, std::shared_ptr<ModelAnimationSegment> mainSegment);
 
-		ModelAnimationSubmodel* copy(SCP_string newSIPname) override;
+		ModelAnimationSubmodel* copy(const SCP_string& newSIPname) override;
 	};
 
 
@@ -223,7 +223,7 @@ namespace animation {
 		//Helper function to shorten animation emplaces
 		void emplace(const std::shared_ptr<ModelAnimation>& animation, const SCP_string& name, ModelAnimationTriggerType type = ModelAnimationTriggerType::Scripted, int subtype = SUBTYPE_DEFAULT);
 
-		void changeShipName(SCP_string name);
+		void changeShipName(const SCP_string& name);
 	};
 
 

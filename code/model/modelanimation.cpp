@@ -284,7 +284,7 @@ namespace animation {
 
 	ModelAnimationSubmodel::ModelAnimationSubmodel(SCP_string submodelName, std::shared_ptr<ModelAnimationSegment> mainSegment) : m_name(std::move(submodelName)), m_mainSegment(std::move(mainSegment)) { }
 
-	ModelAnimationSubmodel* ModelAnimationSubmodel::copy(SCP_string newSIPname) {
+	ModelAnimationSubmodel* ModelAnimationSubmodel::copy(const SCP_string& /*newSIPname*/) {
 		return new ModelAnimationSubmodel(*this);
 	}
 
@@ -383,8 +383,8 @@ namespace animation {
 
 	ModelAnimationSubmodelTurret::ModelAnimationSubmodelTurret(SCP_string subsystemName, bool findBarrel, SCP_string SIPname, std::shared_ptr<ModelAnimationSegment> mainSegment) : ModelAnimationSubmodel(std::move(subsystemName), std::move(mainSegment)), m_SIPname(std::move(SIPname)), m_findBarrel(findBarrel) { }
 
-	ModelAnimationSubmodel* ModelAnimationSubmodelTurret::copy(SCP_string newSIPname) {
-		ModelAnimationSubmodelTurret* anim = new ModelAnimationSubmodelTurret(*this);
+	ModelAnimationSubmodel* ModelAnimationSubmodelTurret::copy(const SCP_string& newSIPname) {
+		auto anim = new ModelAnimationSubmodelTurret(*this);
 		anim->m_SIPname = newSIPname;
 		return anim;
 	}
@@ -405,9 +405,9 @@ namespace animation {
 		else {
 
 			int sip_index = ship_info_lookup(m_SIPname.c_str());
-			ship_info* sip = &Ship_info[sip_index];
-			if (sip->subsystems == nullptr)
+			if (sip_index < 0)
 				return { nullptr, nullptr };
+			ship_info* sip = &Ship_info[sip_index];
 
 			for (int i = 0; i < sip->n_subsystems; i++) {
 				if (!subsystem_stricmp(sip->subsystems[i].subobj_name, m_name.c_str())) {
@@ -468,7 +468,7 @@ namespace animation {
 		animationSet[{type, subtype}].emplace(name, animation);
 	}
 
-	void ModelAnimationSet::changeShipName(SCP_string name) {
+	void ModelAnimationSet::changeShipName(const SCP_string& name) {
 		decltype(animationSet) newAnimationSet;
 
 		for (const auto& animationTypes : animationSet) {
