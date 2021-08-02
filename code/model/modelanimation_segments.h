@@ -6,27 +6,27 @@ namespace animation {
 
 	//This segment handles multiple generic segments chained after one another
 	class ModelAnimationSegmentSerial : public ModelAnimationSegment {
-		std::vector<std::unique_ptr<ModelAnimationSegment>> m_segments;
+		std::vector<std::shared_ptr<ModelAnimationSegment>> m_segments;
 
 		void recalculate(const submodel_instance* submodel_instance, const bsp_info* submodel, const ModelAnimationData<>& base) override;
 		ModelAnimationData<true> calculateAnimation(const ModelAnimationData<>& base, const ModelAnimationData<>& lastState, float time) const override;
 		void executeAnimation(const ModelAnimationData<>& state, float time) const override;
 
 	public:
-		void addSegment(std::unique_ptr<ModelAnimationSegment> segment);
+		void addSegment(std::shared_ptr<ModelAnimationSegment> segment);
 
 	};
 
 	//This segment handles multiple generic segments executing in parallel
 	class ModelAnimationSegmentParallel : public ModelAnimationSegment {
-		std::vector<std::unique_ptr<ModelAnimationSegment>> m_segments;
+		std::vector<std::shared_ptr<ModelAnimationSegment>> m_segments;
 
 		void recalculate(const submodel_instance* submodel_instance, const bsp_info* submodel, const ModelAnimationData<>& base) override;
 		ModelAnimationData<true> calculateAnimation(const ModelAnimationData<>& base, const ModelAnimationData<>& lastState, float time) const override;
 		void executeAnimation(const ModelAnimationData<>& state, float time) const override;
 
 	public:
-		void addSegment(std::unique_ptr<ModelAnimationSegment> segment);
+		void addSegment(std::shared_ptr<ModelAnimationSegment> segment);
 
 	};
 

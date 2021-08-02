@@ -981,6 +981,8 @@ void ship_info::clone(const ship_info& other)
 	}
 	n_subsystems = other.n_subsystems;
 
+	animations = other.animations;
+
 	power_output = other.power_output;
 	max_overclocked_speed = other.max_overclocked_speed;
 	max_weapon_reserve = other.max_weapon_reserve;
@@ -2145,6 +2147,8 @@ static void parse_ship(const char *filename, bool replace)
 			end_string_at_first_hash_symbol(sip->display_name);
 			sip->flags.set(Ship::Info_Flags::Has_display_name);
 		}
+
+		sip->animations.changeShipName(sip->name);
 	}
 
 	parse_ship_values(sip, false, first_time, replace);
@@ -2195,6 +2199,7 @@ static void parse_ship_template()
 				first_time = false;
 				sip->clone(Ship_templates[template_id]);
 				strcpy_s(sip->name, buf);
+				sip->animations.changeShipName(sip->name);
 			}
 			else {
 				Warning(LOCATION, "Unable to find ship template '%s' requested by ship template '%s', ignoring template request...", template_name, buf);
