@@ -28,6 +28,7 @@
 #include <ui/dialogs/SelectionDialog.h>
 #include <ui/dialogs/FictionViewerDialog.h>
 #include <ui/dialogs/CommandBriefingDialog.h>
+#include <ui/dialogs/ReinforcementsEditorDialog.h>
 #include <iff_defs/iff_defs.h>
 
 #include "mission/Editor.h"
@@ -732,6 +733,10 @@ void FredView::on_actionObjects_triggered(bool) {
 }
 void FredView::on_actionCommand_Briefing_triggered(bool) {
 	auto editorDialog = new dialogs::CommandBriefingDialog(this, _viewport);
+	editorDialog->show();
+}
+void FredView::on_actionReinforcements_triggered(bool) {
+	auto editorDialog = new dialogs::ReinforcementsDialog(this, _viewport);
 	editorDialog->show();
 }
 DialogButton FredView::showButtonDialog(DialogType type,
