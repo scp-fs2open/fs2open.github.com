@@ -135,7 +135,7 @@ namespace animation {
 		optional<int> m_submodel;
 		
 	private:
-		std::unique_ptr<ModelAnimationSegment> m_mainSegment;
+		std::shared_ptr<ModelAnimationSegment> m_mainSegment;
 		//Polymodel Instance ID -> ModelAnimationData
 		std::map<int, ModelAnimationData<>> m_initialData;
 		//Polymodel Instance ID -> ModelAnimationData
@@ -144,7 +144,7 @@ namespace animation {
 		friend class ModelAnimation;
 	public:
 		//Create a submodel animation based on the name of the submodel
-		ModelAnimationSubmodel(SCP_string submodelName, std::unique_ptr<ModelAnimationSegment> mainSegment);
+		ModelAnimationSubmodel(SCP_string submodelName, std::shared_ptr<ModelAnimationSegment> mainSegment);
 
 		virtual ~ModelAnimationSubmodel() = default;
 
@@ -152,6 +152,9 @@ namespace animation {
 		void play(float time, polymodel_instance* pmi);
 
 		void reset(polymodel_instance* pmi);
+
+		//Hack needed for potential cloning of animations due to templates, while still allowing changing the subsystem data for turret retrieval later on.
+		virtual ModelAnimationSubmodel* copy(const SCP_string& /*newSIPname*/);
 
 	private:
 		//Set the submodels current state as the base for the animation, recalculate the animation data (e.g. take this as the base for absolutely defined angles)
@@ -162,16 +165,17 @@ namespace animation {
 	};
 
 	class ModelAnimationSubmodelTurret : public ModelAnimationSubmodel {
-		int m_sipIndex = -1;
+		SCP_string m_SIPname;
 		bool m_findBarrel;
 		void copyToSubmodel(const ModelAnimationData<>& data, polymodel_instance* pmi) override;
 		std::pair<submodel_instance*, bsp_info*> findSubmodel(polymodel_instance* pmi) override;
-
 	public:
 		/*Create a submodel animation by taking the submodel assigned to a subsystem with a given name, or, if requested, the submodel of the turret barrel.
 		Due to how turrets work in FSO, this should never be given a segment that does anything but rotate the turret around its axis
 		*/
-		ModelAnimationSubmodelTurret(SCP_string subsystemName, bool findBarrel, ship_info* sip, std::unique_ptr<ModelAnimationSegment> mainSegment);
+		ModelAnimationSubmodelTurret(SCP_string subsystemName, bool findBarrel, SCP_string SIPname, std::shared_ptr<ModelAnimationSegment> mainSegment);
+
+		ModelAnimationSubmodel* copy(const SCP_string& newSIPname) override;
 	};
 
 
@@ -179,7 +183,7 @@ namespace animation {
 		//Polymodel Instance ID -> ModelAnimation*
 		static std::multimap<int, std::shared_ptr<ModelAnimation>> s_runningAnimations;
 
-		std::vector<std::unique_ptr<ModelAnimationSubmodel>> m_submodelAnimation;
+		std::vector<std::shared_ptr<ModelAnimationSubmodel>> m_submodelAnimation;
 		float m_duration = 0.0f;
 
 		//Polymodel Instance ID -> ModelAnimationState
@@ -189,8 +193,10 @@ namespace animation {
 		ModelAnimationState play(float frametime, polymodel_instance* pmi);
 
 		static void cleanRunning();
+
+		friend struct ModelAnimationSet;
 	public:
-		void addSubsystemAnimation(std::unique_ptr<ModelAnimationSubmodel> animation);
+		void addSubmodelAnimation(std::shared_ptr<ModelAnimationSubmodel> animation);
 
 		//Start playing the animation. Will stop other animations that have components running on the same submodels
 		void start(polymodel_instance* pmi, bool reverse, bool force = false);
@@ -212,10 +218,12 @@ namespace animation {
 	struct ModelAnimationSet {
 		static int SUBTYPE_DEFAULT;
 
-		std::map <std::pair<ModelAnimationTriggerType, int>, std::multimap <SCP_string, std::shared_ptr<ModelAnimation>>> animationSet;
+		std::map <std::pair<ModelAnimationTriggerType, int>, std::map <SCP_string, std::shared_ptr<ModelAnimation>>> animationSet;
 
 		//Helper function to shorten animation emplaces
 		void emplace(const std::shared_ptr<ModelAnimation>& animation, const SCP_string& name, ModelAnimationTriggerType type = ModelAnimationTriggerType::Scripted, int subtype = SUBTYPE_DEFAULT);
+
+		void changeShipName(const SCP_string& name);
 	};
 
 
