@@ -100,7 +100,7 @@ typedef struct physics_info {
 
 	matrix ai_desired_orient;   // Asteroth - This is only set to something other than the zero matrix if Framerate_independent_turning is enabled, and 
 								// only by the AI after calls to angular_move. It is read and then zeroed out for the rest of the frame by physics_sim_rot
-	vec3d acceleration;
+	vec3d acceleration;		// this is only the current trend of velocity in m/s^2, does NOT determine future velocity
 } physics_info;
 
 // control info override flags
