@@ -408,20 +408,7 @@ bool ShipEditorDialogModel::update_data()
 			}
 		}
 
-		for (i = 0; i < Num_iffs; i++) {
-			if (!stricmp(_m_ship_name.c_str(), Iff_info[i].iff_name)) {
-				auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Error,
-					"Ship Name Error",
-					"This ship name is already being used by a team.\n Press OK to restore old name",
-					{DialogButton::Ok, DialogButton::Cancel});
-				if (button == DialogButton::Cancel) {
-					return false;
-				} else {
-					_m_ship_name = Ships[single_ship].ship_name;
-					modelChanged();
-				}
-			}
-		}
+		// We don't need to check teams.  "Unknown" is a valid name and also an IFF.
 
 		for (i = 0; i < (int)Ai_tp_list.size(); i++) {
 			if (!stricmp(_m_ship_name.c_str(), Ai_tp_list[i].name)) {
