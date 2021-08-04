@@ -372,7 +372,9 @@ void bg_bitmap_dlg::OnClose()
 		}
 
 		// store poof flags
-		Neb2_poof_flags = 0;
+
+		//This will clear the first six poof flags to then be set by the checkboxes, and keep higher bits as is, for example when manuall set for custom poofs by editing the mission file
+		Neb2_poof_flags &= ~(0b111111);
 		if(m_poof_0)
 		{
 			Neb2_poof_flags |= (1<<0);
