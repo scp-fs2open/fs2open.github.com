@@ -5,6 +5,7 @@
 #include <QtWidgets/QMenuBar>
 #include <QListWidgetItem>
 #include <QMessageBox>
+#include <QTextDocument>
 
 #include <memory>
 

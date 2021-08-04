@@ -5,120 +5,74 @@
 #include "ui/dialogs/CampaignEditorDialog.h"
 #include "CheckedDataListModel.h"
 #include <mission/missioncampaign.h>
+#include <ui/widgets/sexp_tree.h>
+
+#include <QTextDocument>
+#include <QPlainTextEdit>
 
 namespace fso {
 namespace fred {
 namespace dialogs {
 
+static const QString qstrEmpty{};
 
 class CampaignEditorDialog;
 
 class CampaignEditorDialogModel : public AbstractDialogModel
 {
 	struct CampaignMissionData;
+	struct CampaignBranchData;
 	Q_OBJECT
 
-	struct CampaignLoopData	{
-		CampaignLoopData() = default;
-		CampaignLoopData(const cmission *loop);
-		bool is{false};
-
-		QString descr;
-		QString anim;
-		QString voice;
-	};
-
 public:
-	struct CampaignBranchData {
-		enum BranchType { INVALID, REPEAT, NEXT, NEXT_NOT_FOUND, END, };
-
-		explicit CampaignBranchData() = default;
-		CampaignBranchData(const int &sexp_branch, const QString &from, const cmission *loop = nullptr);
-		CampaignBranchData(const QString &from, QString to = "");
-
-		void connect(const SCP_unordered_set<const CampaignMissionData*>& missions);
-
-		static const SCP_map<BranchType, QString> branchTexts;
-
-		BranchType type{INVALID};
-		int sexp{Locked_sexp_true};
-
-		QString next;
-
-		CampaignLoopData loop{nullptr};
-	};
-
 	CampaignEditorDialogModel(CampaignEditorDialog *parent, EditorViewport *viewport, const QString &file = "", const QString& newCampaignType = "");
-	~CampaignEditorDialogModel() override = default;
-	bool apply() override;
+	~CampaignEditorDialogModel() override;
 
-	void reject() override;
+	bool apply() override {	return saveTo(campaignFile); }
 
+	void reject() override {} // nothing to do if the dialog is created each time it's opened
+
+	void supplySubModels(QListView &ships, QListView &weps, QListView &missions, QPlainTextEdit &descr);
+
+// Model state getters
 	inline bool isFileLoaded() const { return ! campaignFile.isEmpty(); }
 
 	inline const QString& getCampaignName() const { return campaignName; }
 	inline bool getCampaignTechReset() const { return campaignTechReset; }
-	inline const QString& getCampaignDescr() const { return campaignDescr; }
-	inline int getCampaignNumPlayers() const {
-		if (campaignType == campaignTypes[0])
-			return 0;
-		auto checked = missionData.getCheckedDataConst();
-		if (checked.empty())
-			return 0;
-		return (*checked.cbegin())->nPlayers;
-	}
+	int getCampaignNumPlayers() const;
 
-private:
-	inline const CampaignMissionData& getCurMn() const { return mnData_it ? *mnData_it : mdEmpty; }
-
-public:
 	inline bool isCurMnSelected() const { return mnData_it; }
-	inline const QString& getCurMnFilename() const { return getCurMn().filename; }
+	inline const QString& getCurMnFilename() const { return mnData_it ? mnData_it->filename : qstrEmpty; }
 	inline bool getCurMnIncluded() const {
 		return mnData_idx.isValid() && mnData_idx.data(Qt::CheckStateRole) == Qt::Checked; }
-	inline bool getCurMnFredable() const { return getCurMn().fredable; }
-	inline const QString& getCurMnDescr() const { return getCurMn().notes; }
-	inline const QString& getCurMnBriefingCutscene() const { return getCurMn().briefingCutscene; }
-	inline const QString& getCurMnMainhall() const { return getCurMn().mainhall; }
-	inline const QString& getCurMnDebriefingPersona() const { return getCurMn().debriefingPersona; }
+	inline bool getCurMnFredable() const { return mnData_it && mnData_it->fredable; }
+	inline const QString& getCurMnDescr() const { return mnData_it ? mnData_it->notes : qstrEmpty; }
+	inline const QString& getCurMnBriefingCutscene() const { return mnData_it ? mnData_it->briefingCutscene : qstrEmpty; }
+	inline const QString& getCurMnMainhall() const { return mnData_it ? mnData_it->mainhall : qstrEmpty; }
+	inline const QString& getCurMnDebriefingPersona() const { return mnData_it ? mnData_it->debriefingPersona : qstrEmpty; }
 
-	inline const SCP_vector<CampaignBranchData>& getCurMnBranches() const {	return getCurMn().branches;	}
-	inline bool isCurBrSelected() const { return mnData_it && mnData_it->brData_it; };
+//branch helpers
 private:
-	inline const CampaignBranchData& getCurBr() const {
-		return isCurBrSelected() ? *mnData_it->brData_it : CampaignMissionData::bdEmpty; }
+	inline const CampaignBranchData* getCurBr() const {
+		return mnData_it ? mnData_it->brData_it : nullptr; }
 	void connectBranches(bool uiUpdate = true, const campaign *cpgn = nullptr);
 
 public:
-	inline int getCurBrIdx() const { return isCurBrSelected() ? mnData_it->brData_idx : -1; }
+	bool fillTree(sexp_tree& sxt) const;
+// Model state getters -- branch
+	inline bool isCurBrSelected() const { return getCurBr(); };
 
-	inline bool getCurBrIsLoop() const { return getCurBr().loop.is; }
-	inline const QString& getCurBrNext() const { return getCurBr().next; }
+	inline int getCurBrIdx() const { return getCurBr() ? mnData_it->brData_idx : -1; }
 
-	inline const QString& getCurLoopDescr() const {	return getCurBr().loop.descr; }
-	inline const QString& getCurLoopAnim() const { return getCurBr().loop.anim; }
-	inline const QString& getCurLoopVoice() const {	return getCurBr().loop.voice; }
+	inline bool getCurBrIsLoop() const { return getCurBr() && getCurBr()->loop; }
+	inline const QString& getCurBrNext() const { return getCurBr() ? getCurBr()->next : qstrEmpty; }
 
-	bool saveTo(const QString &file);
+	void supplySubModelLoop(QPlainTextEdit &descr);
+	inline const QString& getCurLoopAnim() const { return getCurBr() ? getCurBr()->loopAnim : qstrEmpty; }
+	inline const QString& getCurLoopVoice() const {	return getCurBr() ? getCurBr()->loopVoice : qstrEmpty; }
 
-	inline bool query_modified() const { return modified; }
-	inline bool missionDropped() const { return ! droppedMissions.isEmpty(); }
-
-private slots:
-	inline void flagModified() { modified = true; }
-	void checkMissionDrop(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles);
-
-public slots:
-	inline void setCampaignName(const QString &name) {
-		modify<QString>(campaignName, name); }
-	inline void setCampaignTechReset(bool techReset) {
-		modify<bool>(campaignTechReset, techReset); }
-	inline void setCampaignDescr(const QString &descr) {
-		modify<QString>(campaignDescr, descr); }
-
-	void missionSelectionChanged(const QItemSelection &selected);
-
-	inline const QString *missionName(const QModelIndex idx) const {
+// Model state getters -- branch creation data
+	inline const QString *missionName(const QModelIndex &idx) const {
 		const CampaignMissionData *mn = missionData.internalDataConst(idx);
 		return mn ? &mn->filename : nullptr;
 	}
@@ -130,6 +84,39 @@ public slots:
 		const CampaignMissionData *mn = missionData.internalDataConst(idx);
 		return mn ? &mn->goals : nullptr;
 	}
+
+//saving & change checking
+	bool saveTo(const QString &file);
+
+	inline bool query_modified() const { return modified; }
+	inline bool missionDropped() const { return ! droppedMissions.isEmpty(); }
+
+private slots:
+	void checkMissionDrop(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles);
+	inline void flagModified() { modified = true; }
+
+public: //clang
+private:
+	bool _saveTo(QString file) const;
+
+	template<typename T>
+	inline void modify(T &a, const T &b) {
+		if (a != b) {
+			a = b;
+			flagModified();
+		}
+	}
+	QStringList droppedMissions{};
+	bool modified{false};
+
+// Model state setters
+public slots:
+	inline void setCampaignName(const QString &name) {
+		modify<QString>(campaignName, name); }
+	inline void setCampaignTechReset(bool techReset) {
+		modify<bool>(campaignTechReset, techReset); }
+
+	void missionSelectionChanged(const QItemSelection &selected);
 
 	inline void setCurMnBriefingCutscene(const QString &briefingCutscene) {
 		if (! mnData_it) return;
@@ -143,28 +130,15 @@ public slots:
 
 	bool addCurMnBranchTo(const QModelIndex *other = nullptr, bool flip = false);
 
-	void selectCurBr(const CampaignBranchData *br);
+	void selectCurBr(QTreeWidgetItem *selected);
 	bool setCurBrCond(const QString &sexp, const QString &mn, const QString &arg);
 	void setCurBrIsLoop(bool isLoop);
 
-	inline void setCurLoopDescr(const QString &descr) {
-		if (! (mnData_it && mnData_it->brData_it)) return;
-		modify<QString>(mnData_it->brData_it->loop.descr, descr); }
 	void setCurLoopAnim(const QString &anim);
 	void setCurLoopVoice(const QString &voice);
 
+//Model inner types
 private:
-	bool _saveTo(QString file) const;
-
-	bool modified{false};
-	template<typename T>
-	inline void modify(T &a, const T &b) {
-		if (a != b) {
-			a = b;
-			flagModified();
-		}
-	}
-
 	struct CampaignMissionData {
 		CampaignMissionData() = delete;
 		CampaignMissionData(QString file,
@@ -176,7 +150,9 @@ private:
 		static void initMissions(
 				const SCP_vector<SCP_string>::const_iterator &m_it,
 				CheckedDataListModel<CampaignEditorDialogModel::CampaignMissionData> &model);
+		void branchesFromFormula(CampaignEditorDialogModel *model, int formula, const cmission *loop = nullptr);
 
+	// state
 		const QString filename;
 
 		bool fredable{false};
@@ -191,41 +167,69 @@ private:
 		QString mainhall;
 		QString debriefingPersona;
 
-		static const CampaignBranchData bdEmpty;
+		SCP_vector<CampaignBranchData> branches;
+	// state -- current branch
 		CampaignBranchData *brData_it{nullptr};
 		int brData_idx{-1};
-		SCP_vector<CampaignBranchData> branches;
-
-		void branchesFromFormula(int formula, const cmission *loop = nullptr);
 	};
 
-	QStringList droppedMissions{};
+	struct CampaignBranchData {
+		explicit CampaignBranchData() = default;
+		CampaignBranchData(CampaignEditorDialogModel *model, int sexp_branch, const QString &from, const cmission *loop = nullptr);
+		CampaignBranchData(CampaignEditorDialogModel *model, const QString &from, QString to = "");
 
-	static const CampaignMissionData mdEmpty;
+		void connect(const SCP_unordered_set<const CampaignMissionData*>& missions);
+
+	// constants
+		enum BranchType { INVALID, REPEAT, NEXT, NEXT_NOT_FOUND, END, };
+		static const SCP_map<BranchType, QString> branchTexts;
+
+	// state
+		BranchType type{INVALID};
+		int sexp;
+
+		QString next;
+
+		bool loop;
+
+		QTextDocument* loopDescr;
+		QString loopAnim;
+		QString loopVoice;
+	};
+
+// Model state -- current mission
 	CampaignMissionData* mnData_it{nullptr};
 	QPersistentModelIndex mnData_idx{};
+
 	CampaignEditorDialog *const parent;
 
-
 public:
+// parsed table / cfile data
 	const QStringList cutscenes;
 	const QStringList mainhalls;
 	const QStringList debriefingPersonas;
 	const QStringList loopAnims;
 	const QStringList loopVoices;
 
+// Model state -- specs
 	const QString campaignFile;
 	static const QStringList campaignTypes;
 	const QString campaignType;
+
+private:
+// submodels
 	CheckedDataListModel<std::ptrdiff_t> initialShips;
 	CheckedDataListModel<std::ptrdiff_t> initialWeapons;
 	CheckedDataListModel<CampaignMissionData> missionData;
 
-private:
+// Model state -- specs
 	QString campaignName;
-	QString campaignDescr;
+	QTextDocument campaignDescr{""};
 	bool campaignTechReset{false};
 
+//submodel management
+	QPlainTextEdit *campaignDescrEdit{nullptr};
+	QPlainTextEdit *loopDescrEdit{nullptr};
 };
 
 

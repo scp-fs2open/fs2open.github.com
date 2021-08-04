@@ -560,7 +560,6 @@
   <tabstop>btnBranchUp</tabstop>
   <tabstop>btnBranchDown</tabstop>
   <tabstop>btnBranchLoop</tabstop>
-  <tabstop>txaLoopDescr</tabstop>
   <tabstop>scrFlowCampaign</tabstop>
  </tabstops>
  <resources/>

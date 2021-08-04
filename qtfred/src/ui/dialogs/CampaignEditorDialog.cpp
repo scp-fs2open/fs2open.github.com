@@ -7,8 +7,6 @@
 #include <ui/FredView.h>
 
 
-Q_DECLARE_METATYPE(const fso::fred::dialogs::CampaignEditorDialogModel::CampaignBranchData*)
-
 namespace fso {
 namespace fred {
 namespace dialogs {
@@ -84,35 +82,22 @@ void CampaignEditorDialog::setModel(CampaignEditorDialogModel *new_model) {
 	ui->cmbLoopAnim->setModel(new QStringListModel{model->loopAnims, model.get()});
 	ui->cmbLoopVoice->setModel(new QStringListModel{model->loopVoices, model.get()});
 
-	ui->lstShips->setModel(&model->initialShips);
-	ui->lstWeapons->setModel(&model->initialWeapons);
+	model->supplySubModels(*ui->lstShips, *ui->lstWeapons, *ui->lstMissions, *ui->txaDescr);
 
-	ui->lstMissions->setModel(&model->missionData);
 	connect(ui->lstMissions->selectionModel(), &QItemSelectionModel::selectionChanged, model.get(), &CampaignEditorDialogModel::missionSelectionChanged);
 
 	connect(ui->txtName, &QLineEdit::textChanged, model.get(), &CampaignEditorDialogModel::setCampaignName);
 	connect(ui->chkTechReset, &QCheckBox::stateChanged, model.get(), [&](int changed) {
 		model->setCampaignTechReset(changed == Qt::Checked);
 	});
-	connect(ui->txaDescr, &QPlainTextEdit::textChanged, model.get(), [&]() {
-		model->setCampaignDescr(ui->txaDescr->toPlainText());
-	});
 
 	connect(ui->cmbBriefingCutscene, &QComboBox::currentTextChanged, model.get(), &CampaignEditorDialogModel::setCurMnBriefingCutscene);
 	connect(ui->cmbMainhall, &QComboBox::currentTextChanged, model.get(), &CampaignEditorDialogModel::setCurMnMainhall);
 	connect(ui->cmbDebriefingPersona, &QComboBox::currentTextChanged, model.get(), &CampaignEditorDialogModel::setCurMnDebriefingPersona);
 
-	connect(ui->sxtBranches, &QTreeWidget::currentItemChanged, model.get(), [&](QTreeWidgetItem *selected) {
-		QTreeWidgetItem *parent_node;
-		while ((parent_node = selected->parent()))
-			selected = parent_node;
-		model->selectCurBr(selected->data(0, Qt::UserRole).value<const CampaignEditorDialogModel::CampaignBranchData*>());
-	});
+	connect(ui->sxtBranches, &QTreeWidget::currentItemChanged, model.get(), &CampaignEditorDialogModel::selectCurBr);
 
 	connect(ui->btnBranchLoop, &QPushButton::toggled, model.get(), &CampaignEditorDialogModel::setCurBrIsLoop);
-	connect(ui->txaLoopDescr, &QPlainTextEdit::textChanged, model.get(), [&]() {
-		model->setCurLoopDescr(ui->txaLoopDescr->toPlainText());
-	});
 	connect(ui->cmbLoopAnim, &QComboBox::currentTextChanged, model.get(), &CampaignEditorDialogModel::setCurLoopAnim);
 	connect(ui->cmbLoopVoice, &QComboBox::currentTextChanged, model.get(), &CampaignEditorDialogModel::setCurLoopVoice);
 }
@@ -137,8 +122,6 @@ void CampaignEditorDialog::updateUISpec() {
 		ui->txtType->setText(model->campaignType);
 	ui->chkTechReset->setChecked(model->getCampaignTechReset());
 
-	ui->txaDescr->setPlainText(model->getCampaignDescr());
-
 	//ui->btnErrorChecker->setEnabled()
 	//ui->btnRealign->setEnabled()
 
@@ -159,25 +142,11 @@ void CampaignEditorDialog::updateUIMission() {
 	ui->cmbMainhall->setEnabled(included);
 	ui->cmbDebriefingPersona->setEnabled(included);
 
-	sexp_tree &sxt = *ui->sxtBranches;
-	sxt.setEnabled(included);
-	sxt.clear_tree("");
+	ui->sxtBranches->setEnabled(included);
+	ui->sxtBranches->clear_tree("");
 
-	using Branch = CampaignEditorDialogModel::CampaignBranchData;
-	if (included) {
-		for (const Branch& br : model->getCurMnBranches()) {
-			NodeImage img;
-			if (br.type == Branch::NEXT_NOT_FOUND)
-				img = NodeImage::ROOT_DIRECTIVE;
-			else if (br.loop.is)
-				img = NodeImage::ROOT;
-			else
-				img = NodeImage::BLACK_DOT;
-			QTreeWidgetItem *h = sxt.insert(Branch::branchTexts.at(br.type) + br.next, img);
-			h->setData(0, Qt::UserRole, QVariant::fromValue(&br));
-			sxt.add_sub_tree(sxt.load_sub_tree(br.sexp, true, "do-nothing"), h);
-		}
-	}
+	if (included)
+		model->fillTree(*ui->sxtBranches);
 
 	updateUIBranch();
 }
@@ -199,7 +168,7 @@ void CampaignEditorDialog::updateUIBranch() {
 	ui->btnBranchLoop->setEnabled(sel);
 	ui->btnBranchLoop->setChecked(loop);
 
-	ui->txaLoopDescr->setPlainText(model->getCurLoopDescr());
+	model->supplySubModelLoop(*ui->txaLoopDescr);
 	ui->txaLoopDescr->setEnabled(loop);
 
 	ui->cmbLoopAnim->setCurrentText(model->getCurLoopAnim());
