@@ -6137,7 +6137,7 @@ sexp_list_item *sexp_tree::get_listing_opf_nebula_poof()
 {
 	sexp_list_item head;
 
-	for (poof_info pf : Poof_info)
+	for (poof_info &pf : Poof_info)
 	{
 		head.add_data(pf.name);
 	}
