@@ -73,6 +73,7 @@ bool Neb_affects_particles;
 bool Neb_affects_fireballs;
 std::tuple<float, float, float, float> Shadow_distances;
 std::tuple<float, float, float, float> Shadow_distances_cockpit;
+bool Custom_briefing_icons_always_override_standard_icons;
 
 SCP_vector<std::pair<SCP_string, gr_capability>> req_render_ext_pairs = {
 	std::make_pair("BPTC Texture Compression", CAPABILITY_BPTC)
@@ -635,6 +636,10 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Chase_view_default);
 		}
 		
+		if (optional_string("$Custom briefing icons always override standard icons:")) {
+			stuff_boolean(&Custom_briefing_icons_always_override_standard_icons);
+		}
+
 		required_string("#END");
 	}
 	catch (const parse::ParseException& e)
@@ -693,6 +698,7 @@ void mod_table_reset()
 	Window_title = "";
 	Unicode_text_mode = false;
 	Use_tabled_strings_for_default_language = false;
+	Dont_preempt_training_voice = false;
 	Movie_subtitle_font = "font01.vf";
 	Enable_scripts_in_fred = false;
 	Window_icon_path = "app_icon_sse";
@@ -722,4 +728,5 @@ void mod_table_reset()
 	Neb_affects_fireballs = false;
 	Shadow_distances = std::make_tuple(200.0f, 600.0f, 2500.0f, 8000.0f); // Default values tuned by Swifty and added here by wookieejedi
 	Shadow_distances_cockpit = std::make_tuple(0.25f, 0.75f, 1.5f, 3.0f); // Default values tuned by wookieejedi and added here by Lafiel
+	Custom_briefing_icons_always_override_standard_icons = false;
 }

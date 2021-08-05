@@ -981,6 +981,8 @@ void ship_info::clone(const ship_info& other)
 	}
 	n_subsystems = other.n_subsystems;
 
+	animations = other.animations;
+
 	power_output = other.power_output;
 	max_overclocked_speed = other.max_overclocked_speed;
 	max_weapon_reserve = other.max_weapon_reserve;
@@ -1487,6 +1489,8 @@ void ship_info::move(ship_info&& other)
 	std::swap(pathMetadata, other.pathMetadata);
 
 	std::swap(glowpoint_bank_override_map, other.glowpoint_bank_override_map);
+
+	std::swap(animations, other.animations);
 }
 
 #define CHECK_THEN_FREE(attribute) \
@@ -2152,6 +2156,8 @@ static void parse_ship(const char *filename, bool replace)
 			end_string_at_first_hash_symbol(sip->display_name);
 			sip->flags.set(Ship::Info_Flags::Has_display_name);
 		}
+
+		sip->animations.changeShipName(sip->name);
 	}
 
 	parse_ship_values(sip, false, first_time, replace);
@@ -2202,6 +2208,7 @@ static void parse_ship_template()
 				first_time = false;
 				sip->clone(Ship_templates[template_id]);
 				strcpy_s(sip->name, buf);
+				sip->animations.changeShipName(sip->name);
 			}
 			else {
 				Warning(LOCATION, "Unable to find ship template '%s' requested by ship template '%s', ignoring template request...", template_name, buf);
@@ -7078,6 +7085,11 @@ static int subsys_set(int objnum, int ignore_subsys_info)
 			ship_system->flags.set(Ship::Subsystem_Flags::Autorepair_if_disabled);
 		if (model_system->flags[Model::Subsystem_Flags::No_autorepair_if_disabled])
 			ship_system->flags.set(Ship::Subsystem_Flags::No_autorepair_if_disabled);
+		if (model_system->flags[Model::Subsystem_Flags::Turret_locked])
+			ship_system->weapons.flags.set(Ship::Weapon_Flags::Turret_Lock);
+		// check the mission flag to possibly free all beam weapons - Goober5000, taken from SEXP.CPP, and moved to subsys_set() by Asteroth
+		if (The_mission.flags[Mission::Mission_Flags::Beam_free_all_by_default]) 
+			ship_system->weapons.flags.set(Ship::Weapon_Flags::Beam_Free);
 
 		ship_system->turn_rate = model_system->turn_rate;
 
@@ -15888,9 +15900,13 @@ char *ship_return_time_to_goal(char *outbuf, ship *sp)
 			seconds = 99;
 		}
 		sprintf(outbuf, NOX("%02d:%02d"), minutes, seconds);
-	
-	} else {
+
+	} else if ( time == -1 ) {
 		strcpy( outbuf, XSTR( "Unknown", 497) );
+
+	} else {
+		// we don't want to display anything on the HUD
+		return nullptr;
 	}
 
 	return outbuf;

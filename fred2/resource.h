@@ -1334,6 +1334,7 @@
 #define ID_EDITORS_WAYPOINT             32979
 #define ID_VIEW_OUTLINES                32980
 #define ID_NEW_SHIP_TYPE                32981
+#define ID_VIEW_OUTLINES_ON_SELECTED    32982
 #define ID_SHOW_STARFIELD               32983
 #define ID_ASTEROID_EDITOR              32984
 #define ID_RUN_FREESPACE                32985

@@ -69,8 +69,8 @@ static char THIS_FILE[] = __FILE__;
 #define LOLLIPOP_SIZE   2.5f
 #define CONVERT_DEGREES 57.29578f   // conversion factor from radians to degrees
 
-#define FRED_COLOUR_WHITE	0xffffff
-#define FRED_COLOUR_YELLOW	0x9fff00
+#define FRED_COLOUR_WHITE			0xffffff
+#define FRED_COLOUR_YELLOW_GREEN	0xc8ff00
 
 const float FRED_DEFAULT_HTL_FOV = 0.485f;
 const float FRED_BRIEFING_HTL_FOV = 0.325f;
@@ -99,6 +99,7 @@ int Show_grid = 1;
 int Show_grid_positions = 1;
 int Show_horizon = 0;
 int Show_outlines = 0;
+bool Draw_outlines_on_selected_ships = false;
 int Show_stars = 1;
 int Single_axis_constraint = 0;
 int True_rw, True_rh;
@@ -128,7 +129,7 @@ CWnd info_popup;
 color colour_black;
 color colour_green;
 color colour_white;
-color colour_yellow;
+color colour_yellow_green;
 
 static vec3d Global_light_world = { 0.208758f, -0.688253f, -0.694782f };
 
@@ -492,7 +493,7 @@ void display_ship_info() {
 		if (OBJ_INDEX(objp) == cur_object_index)
 			Fred_outline = FRED_COLOUR_WHITE;
 		else if (objp->flags[Object::Object_Flags::Marked])  // is it a marked object?
-			Fred_outline = FRED_COLOUR_YELLOW;
+			Fred_outline = FRED_COLOUR_YELLOW_GREEN;
 		else
 			Fred_outline = 0;
 
@@ -556,8 +557,8 @@ void display_ship_info() {
 				if (*buf) {
 					if (Fred_outline == FRED_COLOUR_WHITE)
 						gr_set_color_fast(&colour_green);
-					else if (Fred_outline == FRED_COLOUR_YELLOW)
-						gr_set_color_fast(&colour_yellow);
+					else if (Fred_outline == FRED_COLOUR_YELLOW_GREEN)
+						gr_set_color_fast(&colour_yellow_green);
 					else
 						gr_set_color_fast(&colour_white);
 
@@ -915,7 +916,7 @@ void fred_render_init() {
 
 	gr_init_alphacolor(&colour_white, 255, 255, 255, 255);
 	gr_init_alphacolor(&colour_green, 0, 200, 0, 255);
-	gr_init_alphacolor(&colour_yellow, 200, 255, 0, 255);
+	gr_init_alphacolor(&colour_yellow_green, 200, 255, 0, 255);
 	gr_init_alphacolor(&colour_black, 0, 0, 0, 255);
 }
 
@@ -1780,11 +1781,15 @@ void render_one_model_htl(object *objp) {
 
 	rendering_order[render_count] = OBJ_INDEX(objp);
 	Fred_outline = 0;
-	if ((OBJ_INDEX(objp) == cur_object_index) && !Bg_bitmap_dialog)
+
+	if (!Draw_outlines_on_selected_ships && ((OBJ_INDEX(objp) == cur_object_index) || (objp->flags[Object::Object_Flags::Marked])))
+		/* don't draw the outlines we would normally draw */;
+
+	else if ((OBJ_INDEX(objp) == cur_object_index) && !Bg_bitmap_dialog)
 		Fred_outline = FRED_COLOUR_WHITE;
 
 	else if ((objp->flags[Object::Object_Flags::Marked]) && !Bg_bitmap_dialog)  // is it a marked object?
-		Fred_outline = FRED_COLOUR_YELLOW;
+		Fred_outline = FRED_COLOUR_YELLOW_GREEN;
 
 	else if ((objp->type == OBJ_SHIP) && Show_outlines) {
 		color *iff_color = iff_get_color_by_team_and_object(Ships[objp->instance].team, -1, 1, objp);
@@ -1931,11 +1936,15 @@ void render_one_model_nohtl(object *objp) {
 
 	rendering_order[render_count] = OBJ_INDEX(objp);
 	Fred_outline = 0;
-	if ((OBJ_INDEX(objp) == cur_object_index) && !Bg_bitmap_dialog)
+
+	if (!Draw_outlines_on_selected_ships && ((OBJ_INDEX(objp) == cur_object_index) || (objp->flags[Object::Object_Flags::Marked])))
+		/* don't draw the outlines we would normally draw */;
+
+	else if ((OBJ_INDEX(objp) == cur_object_index) && !Bg_bitmap_dialog)
 		Fred_outline = FRED_COLOUR_WHITE;
 
 	else if ((objp->flags[Object::Object_Flags::Marked]) && !Bg_bitmap_dialog)  // is it a marked object?
-		Fred_outline = FRED_COLOUR_YELLOW;
+		Fred_outline = FRED_COLOUR_YELLOW_GREEN;
 
 	else if ((objp->type == OBJ_SHIP) && Show_outlines) {
 		color *iff_color = iff_get_color_by_team_and_object(Ships[objp->instance].team, -1, 1, objp);

@@ -43,7 +43,7 @@ namespace animation {
 		}
 	}
 
-	void ModelAnimationSegmentSerial::addSegment(std::unique_ptr<ModelAnimationSegment> segment) {
+	void ModelAnimationSegmentSerial::addSegment(std::shared_ptr<ModelAnimationSegment> segment) {
 		m_duration += segment->getDuration();
 		m_segments.push_back(std::move(segment));
 	}
@@ -78,7 +78,7 @@ namespace animation {
 		}
 	}
 
-	void ModelAnimationSegmentParallel::addSegment(std::unique_ptr<ModelAnimationSegment> segment) {
+	void ModelAnimationSegmentParallel::addSegment(std::shared_ptr<ModelAnimationSegment> segment) {
 		float newDur = segment->getDuration();
 		//recalculate total duration if necessary
 		m_duration = newDur > m_duration ? newDur : m_duration;

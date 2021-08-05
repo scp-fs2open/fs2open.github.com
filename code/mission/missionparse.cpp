@@ -2289,18 +2289,7 @@ int parse_create_object_sub(p_object *p_objp)
 		if (!ptr)
 			continue;
 
-		// check the mission flag to possibly free all beam weapons - Goober5000, taken from SEXP.CPP
-		if (The_mission.flags[Mission::Mission_Flags::Beam_free_all_by_default])
-		{
-			// mark all turrets as beam free
-			if(ptr->system_info->type == SUBSYSTEM_TURRET)
-			{
-				ptr->weapons.flags.set(Ship::Weapon_Flags::Beam_Free);
-				ptr->turret_next_fire_stamp = timestamp((int) frand_range(50.0f, 4000.0f));
-			}
-		}
-
-		if (shipp->flags[Ship::Ship_Flags::Lock_all_turrets_initially] || ptr->system_info->flags[Model::Subsystem_Flags::Turret_locked])
+		if (shipp->flags[Ship::Ship_Flags::Lock_all_turrets_initially])
 		{
 			// mark all turrets as locked
 			if(ptr->system_info->type == SUBSYSTEM_TURRET)

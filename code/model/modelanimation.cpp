@@ -103,12 +103,20 @@ namespace animation {
 		}
 	}
 	
-	void ModelAnimation::start(polymodel_instance* pmi, bool reverse) {
+	void ModelAnimation::start(polymodel_instance* pmi, bool reverse, bool force) {
 		if (reverse) {
 			switch (m_state[pmi->id]) {
 			case ModelAnimationState::RUNNING_RWD:
 			case ModelAnimationState::UNTRIGGERED:
 				//Cannot reverse-start if it's already running rwd or fully untriggered
+
+				//If forced, reset and play anyways
+				if (force) {
+					m_time[pmi->id] = m_duration;
+					m_state[pmi->id] = ModelAnimationState::RUNNING_RWD;
+					break;
+				}
+
 				return;
 			case ModelAnimationState::RUNNING_FWD:
 				//Just pretend we were going in the right direction
@@ -124,6 +132,14 @@ namespace animation {
 			case ModelAnimationState::RUNNING_FWD:
 			case ModelAnimationState::COMPLETED:
 				//Cannot start if it's already running fwd or fully triggered
+
+				//If forced, reset and play anyways
+				if (force) {
+					m_time[pmi->id] = 0;
+					m_state[pmi->id] = ModelAnimationState::RUNNING_FWD;
+					break;
+				}
+
 				return;
 			case ModelAnimationState::RUNNING_RWD:
 				//Just pretend we were going in the right direction
@@ -153,7 +169,7 @@ namespace animation {
 			cleanRunning();
 	}
 
-	void ModelAnimation::addSubsystemAnimation(std::unique_ptr<ModelAnimationSubmodel> animation) {
+	void ModelAnimation::addSubmodelAnimation(std::shared_ptr<ModelAnimationSubmodel> animation) {
 		m_submodelAnimation.push_back(std::move(animation));
 	}
 
@@ -242,21 +258,21 @@ namespace animation {
 		//since sp->type is not set without reading the pof, we need to infer it by subsystem name (which works, since the same name is used to match the submodels name, which is used to match the type in pof parsing)
 		//sadly, we also need to check for engine and radar, since these take precedent (as in, an engineturret is an engine before a turret type)
 		if (!strstr(namelower, "engine") && !strstr(namelower, "radar") && strstr(namelower, "turret")) {
-			auto rotBase = std::unique_ptr<ModelAnimationSegmentSetAngle>(new ModelAnimationSegmentSetAngle(angle.p));
-			auto subsysBase = std::unique_ptr<ModelAnimationSubmodel>(new ModelAnimationSubmodel(sp->subobj_name, false, sip, std::move(rotBase)));
-			anim->addSubsystemAnimation(std::move(subsysBase));
+			auto rotBase = std::shared_ptr<ModelAnimationSegmentSetAngle>(new ModelAnimationSegmentSetAngle(angle.h));
+			auto subsysBase = std::shared_ptr<ModelAnimationSubmodelTurret>(new ModelAnimationSubmodelTurret(sp->subobj_name, false, sip->name, std::move(rotBase)));
+			anim->addSubmodelAnimation(std::move(subsysBase));
 
-			auto rotBarrel = std::unique_ptr<ModelAnimationSegmentSetAngle>(new ModelAnimationSegmentSetAngle(angle.h));
-			auto subsysBarrel = std::unique_ptr<ModelAnimationSubmodel>(new ModelAnimationSubmodel(sp->subobj_name, true, sip, std::move(rotBarrel)));
-			anim->addSubsystemAnimation(std::move(subsysBarrel));
+			auto rotBarrel = std::shared_ptr<ModelAnimationSegmentSetAngle>(new ModelAnimationSegmentSetAngle(angle.p));
+			auto subsysBarrel = std::shared_ptr<ModelAnimationSubmodelTurret>(new ModelAnimationSubmodelTurret(sp->subobj_name, true, sip->name, std::move(rotBarrel)));
+			anim->addSubmodelAnimation(std::move(subsysBarrel));
 		}
 		else {
-			auto rot = std::unique_ptr<ModelAnimationSegmentSetPHB>(new ModelAnimationSegmentSetPHB(angle, isRelative));
-			auto subsys = std::unique_ptr<ModelAnimationSubmodel>(new ModelAnimationSubmodel(sp->subobj_name, std::move(rot)));
-			anim->addSubsystemAnimation(std::move(subsys));
+			auto rot = std::shared_ptr<ModelAnimationSegmentSetPHB>(new ModelAnimationSegmentSetPHB(angle, isRelative));
+			auto subsys = std::shared_ptr<ModelAnimationSubmodel>(new ModelAnimationSubmodel(sp->subobj_name, std::move(rot)));
+			anim->addSubmodelAnimation(std::move(subsys));
 		}
 
-		sip->animations.emplace(anim, "", animation::ModelAnimationTriggerType::Initial);
+		sip->animations.emplace(anim, sp->subobj_name, animation::ModelAnimationTriggerType::Initial);
 	}
 
 	/*std::shared_ptr<ModelAnimation> ModelAnimation::parseAnimationTable() {
@@ -266,9 +282,11 @@ namespace animation {
 	}*/
 
 
-	ModelAnimationSubmodel::ModelAnimationSubmodel(SCP_string submodelName, std::unique_ptr<ModelAnimationSegment> mainSegment) : m_name(std::move(submodelName)), m_mainSegment(std::move(mainSegment)) { }
+	ModelAnimationSubmodel::ModelAnimationSubmodel(SCP_string submodelName, std::shared_ptr<ModelAnimationSegment> mainSegment) : m_name(std::move(submodelName)), m_mainSegment(std::move(mainSegment)) { }
 
-	ModelAnimationSubmodel::ModelAnimationSubmodel(SCP_string subsystemName, bool findBarrel, ship_info* sip, std::unique_ptr<ModelAnimationSegment> mainSegment) : m_name(std::move(subsystemName)), m_findBarrel(findBarrel), m_sip(sip), m_mainSegment(std::move(mainSegment)) { }
+	ModelAnimationSubmodel* ModelAnimationSubmodel::copy(const SCP_string& /*newSIPname*/) {
+		return new ModelAnimationSubmodel(*this);
+	}
 
 	void ModelAnimationSubmodel::play(float frametime, polymodel_instance* pmi) {
 		auto dataIt = m_initialData.find(pmi->id);
@@ -311,6 +329,7 @@ namespace animation {
 			return;
 
 		submodel->canonical_orient = data.orientation;
+
 		//TODO: Once translation is a thing
 		//m_subsys->submodel_instance_1->offset = data.position;
 	}
@@ -342,29 +361,6 @@ namespace animation {
 		//Do we have a submodel number already cached?
 		if (m_submodel.has())
 			submodelNumber = m_submodel;
-		//Do we know if we were told to find the barrel submodel or not? This implies we have a subsystem name, not a submodel name
-		else if (m_findBarrel.has()) {
-
-			if(m_sip == nullptr)
-				return { nullptr, nullptr };
-
-			for (int i = 0; i < m_sip->n_subsystems; i++) {
-				if (!subsystem_stricmp(m_sip->subsystems[i].subobj_name, m_name.c_str())) {
-					if ((bool)m_findBarrel) {
-						//Check if the barrel subobj is a dedicated existing subobj or just the base turret.
-						if (m_sip->subsystems[i].turret_gun_sobj != m_sip->subsystems[i].subobj_num)
-							submodelNumber = m_sip->subsystems[i].turret_gun_sobj;
-						else
-							submodelNumber = -1;
-					}
-					else
-						submodelNumber = m_sip->subsystems[i].subobj_num;
-					break;
-				}
-			}
-
-			m_submodel = submodelNumber;
-		}
 		//We seem to have a submodel name
 		else {
 			for (int i = 0; i < pm->n_models; i++) {
@@ -385,6 +381,81 @@ namespace animation {
 		return { &pmi->submodel[submodelNumber], &pm->submodel[submodelNumber] };
 	}
 
+	ModelAnimationSubmodelTurret::ModelAnimationSubmodelTurret(SCP_string subsystemName, bool findBarrel, SCP_string SIPname, std::shared_ptr<ModelAnimationSegment> mainSegment) : ModelAnimationSubmodel(std::move(subsystemName), std::move(mainSegment)), m_SIPname(std::move(SIPname)), m_findBarrel(findBarrel) { }
+
+	ModelAnimationSubmodel* ModelAnimationSubmodelTurret::copy(const SCP_string& newSIPname) {
+		auto anim = new ModelAnimationSubmodelTurret(*this);
+		anim->m_SIPname = newSIPname;
+		return anim;
+	}
+
+	std::pair<submodel_instance*, bsp_info*> ModelAnimationSubmodelTurret::findSubmodel(polymodel_instance* pmi) {
+		//Ship was deleted
+		if (pmi->id < 0)
+			return { nullptr, nullptr };
+
+		int submodelNumber = -1;
+
+		polymodel* pm = model_get(pmi->model_num);
+
+		//Do we have a submodel number already cached?
+		if (m_submodel.has())
+			submodelNumber = m_submodel;
+		//Do we know if we were told to find the barrel submodel or not? This implies we have a subsystem name, not a submodel name
+		else {
+
+			int sip_index = ship_info_lookup(m_SIPname.c_str());
+			if (sip_index < 0)
+				return { nullptr, nullptr };
+			ship_info* sip = &Ship_info[sip_index];
+
+			for (int i = 0; i < sip->n_subsystems; i++) {
+				if (!subsystem_stricmp(sip->subsystems[i].subobj_name, m_name.c_str())) {
+					if ((bool)m_findBarrel) {
+						//Check if the barrel subobj is a dedicated existing subobj or just the base turret.
+						if (sip->subsystems[i].turret_gun_sobj != sip->subsystems[i].subobj_num)
+							submodelNumber = sip->subsystems[i].turret_gun_sobj;
+						else
+							submodelNumber = -1;
+					}
+					else 
+						submodelNumber = sip->subsystems[i].subobj_num;
+					break;
+				}
+			}
+
+			m_submodel = submodelNumber;
+		}
+
+		//If the model does not exist, return null. The system is expected to just silently tolerate this,
+		//as this needs to be the case to be able to handle turrets whose barrels may or may not exist, depending on the pof which is not loaded at table parse time
+		if (submodelNumber < 0 || submodelNumber >= pm->n_models)
+			return { nullptr, nullptr };
+
+		return { &pmi->submodel[submodelNumber], &pm->submodel[submodelNumber] };
+	}
+
+	//To handle Multipart-turrets properly, they need a modified version that sets the actual angle, not just the orientation matrix.
+	void ModelAnimationSubmodelTurret::copyToSubmodel(const ModelAnimationData<>& data, polymodel_instance* pmi) {
+		submodel_instance* submodel = findSubmodel(pmi).first;
+
+		if (!submodel)
+			return;
+
+		submodel->canonical_orient = data.orientation;
+
+		float angle;
+		vec3d axis;
+		vm_matrix_to_rot_axis_and_angle(&submodel->canonical_orient, &angle, &axis);
+		while (angle > PI2)
+			angle -= PI2;
+		while (angle < 0.0f)
+			angle += PI2;
+
+		submodel->cur_angle = angle;
+		submodel->turret_idle_angle = angle;
+	}
+
 
 	float ModelAnimationSegment::getDuration() const {
 		return m_duration;
@@ -397,6 +468,24 @@ namespace animation {
 		animationSet[{type, subtype}].emplace(name, animation);
 	}
 
+	void ModelAnimationSet::changeShipName(const SCP_string& name) {
+		decltype(animationSet) newAnimationSet;
+
+		for (const auto& animationTypes : animationSet) {
+			auto& newAnimations = newAnimationSet[animationTypes.first];
+			for (const auto& oldAnimation : animationTypes.second) {
+				std::shared_ptr<ModelAnimation> newAnimation = std::shared_ptr<ModelAnimation>(new ModelAnimation());
+				for (const auto& submodelAnims : oldAnimation.second->m_submodelAnimation) {
+					std::shared_ptr<ModelAnimationSubmodel> animSubmodel = std::shared_ptr<ModelAnimationSubmodel>(submodelAnims->copy(name));
+					newAnimation->addSubmodelAnimation(std::move(animSubmodel));
+				}
+				newAnimations.emplace(oldAnimation.first, newAnimation);
+			}
+		}
+
+		animationSet = newAnimationSet;
+	}
+
 
 	void anim_set_initial_states(ship* shipp) {
 		ship_info* sip = &Ship_info[shipp->ship_info_index];
@@ -404,7 +493,7 @@ namespace animation {
 		const auto& initialAnims = sip->animations.animationSet[{animation::ModelAnimationTriggerType::Initial, animation::ModelAnimationSet::SUBTYPE_DEFAULT}];
 
 		for (const auto& anim : initialAnims) {
-			anim.second->start(model_get_instance(shipp->model_instance_num), false);
+			anim.second->start(model_get_instance(shipp->model_instance_num), false, true);
 		}
 	}
 }
