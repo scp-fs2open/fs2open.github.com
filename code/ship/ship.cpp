@@ -1048,6 +1048,9 @@ void ship_info::clone(const ship_info& other)
 	closeup_pos_targetbox = other.closeup_pos_targetbox;
 	closeup_zoom_targetbox = other.closeup_zoom_targetbox;
 
+	chase_view_offset = other.chase_view_offset;
+	chase_view_rigidity = other.chase_view_rigidity;
+
 	allowed_weapons = other.allowed_weapons;
 
 	restricted_loadout_flag = other.restricted_loadout_flag;
@@ -1358,6 +1361,9 @@ void ship_info::move(ship_info&& other)
 
 	std::swap(closeup_pos_targetbox, other.closeup_pos_targetbox);
 	closeup_zoom_targetbox = other.closeup_zoom_targetbox;
+
+	std::swap(chase_view_offset, other.chase_view_offset);
+	chase_view_rigidity = other.chase_view_rigidity;
 
 	std::swap(allowed_weapons, other.allowed_weapons);
 
@@ -1774,6 +1780,9 @@ ship_info::ship_info()
 
 	vm_vec_zero(&closeup_pos_targetbox);
 	closeup_zoom_targetbox = 0.5f;
+
+	vm_vec_zero(&chase_view_offset);
+	chase_view_rigidity = 5.0f;
 
 	allowed_weapons.clear();
 
@@ -4094,6 +4103,18 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	if(optional_string("$Topdown offset:")) {
 		sip->topdown_offset_def = true;
 		stuff_vec3d(&sip->topdown_offset);
+	}
+
+	if (optional_string("$Chase View Offset:"))	{
+		stuff_vec3d(&sip->chase_view_offset);
+	}
+
+	if (optional_string("$Chase View Rigidity:")) {
+		stuff_float(&sip->chase_view_rigidity);
+		if (sip->chase_view_rigidity <= 0) {
+			Warning(LOCATION, "Ship \'%s\' must have a Chase View Rigidity greater than 0.", sip->name);
+			sip->chase_view_rigidity = 5.0f;
+		}
 	}
 
 	if (optional_string("$Shield_icon:")) {
