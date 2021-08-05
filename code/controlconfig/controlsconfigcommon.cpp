@@ -1751,16 +1751,17 @@ int control_config_common_write_tbl(bool overwrite = false) {
 		int key_alt = 0;
 		int key_ctrl = 0;
 
-		short btn = bindings.second.btn;
+		const short btn1 = bindings.first.get_btn();
+		const short btn2 = bindings.second.get_btn();
 
 		SCP_string buf_str;
 		
-		if (bindings.first.btn != -1) {
+		if (btn1 != -1) {
 			// Translate the key into string form
-			key = bindings.first.btn & KEY_MASK;
-			key_shift = (bindings.first.btn & KEY_SHIFTED) ? 1 : 0;
-			key_alt = (bindings.first.btn & KEY_ALTED) ? 1 : 0;
-			key_ctrl = (bindings.first.btn & KEY_CTRLED) ? 1 : 0;
+			key = btn1 & KEY_MASK;
+			key_shift = (btn1 & KEY_SHIFTED) ? 1 : 0;
+			key_alt = (btn1 & KEY_ALTED) ? 1 : 0;
+			key_ctrl = (btn1 & KEY_CTRLED) ? 1 : 0;
 
 			for (const auto& pair : mKeyNameToVal) {
 				if (pair.second == key) {
@@ -1781,7 +1782,7 @@ int control_config_common_write_tbl(bool overwrite = false) {
 		cfputs(("  $Key Mod Alt: " + std::to_string(key_alt) + "\n").c_str(), cfile);
 		cfputs(("  $Key Mod Ctrl: " + std::to_string(key_ctrl) + "\n").c_str(), cfile);
 
-		cfputs(("  $Joy Default: " + std::to_string(btn) + "\n").c_str(), cfile);
+		cfputs(("  $Joy Default: " + std::to_string(btn2) + "\n").c_str(), cfile);
 
 		// Config menu options
 		buf_str = "";
@@ -2122,7 +2123,7 @@ const char * ValToCID(int id) {
 SCP_string ValToInput(const CC_bind &bind) {
 	SCP_string str;
 
-	switch (bind.cid) {
+	switch (bind.get_cid()) {
 	case CID_MOUSE:
 		str = ValToMouse(bind);
 		break;
@@ -2151,20 +2152,23 @@ SCP_string ValToInput(const CC_bind &bind) {
 }
 
 SCP_string ValToMouse(const CC_bind &bind) {
-	Assert(bind.cid == CID_MOUSE);
+	const auto cid = bind.get_cid();
+	const auto btn = bind.get_btn();
+	const auto flags = bind.get_flags();
+	Assert(cid == CID_MOUSE);
 
-	if (bind.flags & CCF_AXIS) {
+	if (flags & CCF_AXIS) {
 		// is an axis
-		if (bind.btn >= MOUSE_NUM_AXES) {
-			Error(LOCATION, "Invalid mouse axis '%i'", bind.btn);
+		if (btn >= MOUSE_NUM_AXES) {
+			Error(LOCATION, "Invalid mouse axis '%i'", btn);
 			return "NONE";
 		}
 
 		auto it = std::find_if(mAxisNameToVal.begin(), mAxisNameToVal.end(),
-		[bind](const std::pair<SCP_string, short>& pair) { return pair.second == bind.btn; });
+		[bind, btn](const std::pair<SCP_string, short>& pair) { return pair.second == btn; });
 
 		if (it == mAxisNameToVal.end()) {
-			Error(LOCATION, "Unknown input value for Mouse axis '%i'", bind.btn);
+			Error(LOCATION, "Unknown input value for Mouse axis '%i'", btn);
 			return "NONE";
 		}
 
@@ -2172,10 +2176,10 @@ SCP_string ValToMouse(const CC_bind &bind) {
 	} // else, its a button
 
 	auto it = std::find_if(mMouseNameToVal.begin(), mMouseNameToVal.end(),
-		[bind](const std::pair<SCP_string, short>& pair) { return pair.second == (1 << bind.btn); });
+		[bind, btn](const std::pair<SCP_string, short>& pair) { return pair.second == (1 << btn); });
 
 	if (it == mMouseNameToVal.end()) {
-		Error(LOCATION, "Unknown input value for Mouse button: '%i'", bind.btn);
+		Error(LOCATION, "Unknown input value for Mouse button: '%i'", btn);
 		return "NONE";
 
 	} else {
@@ -2186,10 +2190,10 @@ SCP_string ValToMouse(const CC_bind &bind) {
 SCP_string ValToKeyboard(const CC_bind &bind) {
 	SCP_string str;
 
-	Assert(bind.cid == CID_KEYBOARD);
+	Assert(bind.get_cid() == CID_KEYBOARD);
 
 	// Can't use textify_scancode since we want the key enum strings
-	short btn = bind.btn;
+	short btn = bind.get_btn();
 
 	if (btn & KEY_ALTED) {
 		str += "ALT-";
@@ -2217,14 +2221,17 @@ SCP_string ValToKeyboard(const CC_bind &bind) {
 
 SCP_string ValToJoy(const CC_bind &bind) {
 	SCP_string str;
+	const auto btn = bind.get_btn();
+	const auto cid = bind.get_cid();
+	const auto flags = bind.get_flags();
 
-	Assert((bind.cid == CID_JOY0) || (bind.cid == CID_JOY1) ||
-	       (bind.cid == CID_JOY2) || (bind.cid == CID_JOY3));
+	Assert((cid == CID_JOY0) || (cid == CID_JOY1) ||
+	       (cid == CID_JOY2) || (cid == CID_JOY3));
 
-	if (bind.flags & (CCF_AXIS | CCF_BALL)) {
+	if (flags & (CCF_AXIS | CCF_BALL)) {
 		// is an axis or ball
 		auto it = std::find_if(mAxisNameToVal.begin(), mAxisNameToVal.end(),
-			[bind](const std::pair<SCP_string, int>& pair) { return pair.second == bind.btn; });
+			[bind, btn](const std::pair<SCP_string, int>& pair) { return pair.second == btn; });
 
 		if (it == mAxisNameToVal.end()) {
 			// should never happen
@@ -2233,11 +2240,11 @@ SCP_string ValToJoy(const CC_bind &bind) {
 
 		str = it->first;
 
-/*	} else if (bind.flags & CCF_HAT) {
+/*	} else if (flags & CCF_HAT) {
 		// TODO Still currently encoded as buttons
 		// Is a hat
-		int hat_id = bind.btn / 4;
-		int hat_pos = bind.btn % 4;
+		int hat_id = btn / 4;
+		int hat_pos = btn % 4;
 
 		auto it = std::find_if(mJoyNameToVal.begin(), mJoyNameToVal.end(),
 			[hat_pos](std::pair<SCP_string, int> pair) { return pair.second == hat_pos; });
@@ -2249,9 +2256,9 @@ SCP_string ValToJoy(const CC_bind &bind) {
 		
 		sprintf(str, "HAT-%i %s", hat_id, it->first.c_str());
 */
-	} else if (bind.btn != -1) {
+	} else if (btn != -1) {
 		// Is a button
-		sprintf(str, "%i", bind.btn);
+		sprintf(str, "%i", btn);
 
 	} else {
 		// Unbound
@@ -2290,6 +2297,21 @@ void CC_bind::clear()
 bool CC_bind::empty() const
 {
 	return cid == CID_NONE;
+}
+
+short CC_bind::get_btn() const
+{
+	return btn;
+}
+
+CID CC_bind::get_cid() const
+{
+	return cid;
+}
+
+char CC_bind::get_flags() const
+{
+	return flags;
 }
 
 void CC_bind::invert(bool inv)
@@ -2448,7 +2470,7 @@ SCP_string CC_bind::textify() const {
 }
 
 bool CCB::empty() const {
-	return ((first.cid == CID_NONE) && (second.cid == CID_NONE));
+	return (first.empty() && second.empty());
 }
 
 void CCB::take(CC_bind A, int order) {
@@ -2458,7 +2480,7 @@ void CCB::take(CC_bind A, int order) {
 	case 0:
 		first = A;
 
-		if (second.cid == A.cid) {
+		if (second.get_cid() == A.get_cid()) {
 			second.clear();
 		}
 		break;
@@ -2466,17 +2488,17 @@ void CCB::take(CC_bind A, int order) {
 	case 1:
 		second = A;
 	
-		if (first.cid == A.cid) {
+		if (first.get_cid() == A.get_cid()) {
 			first.clear();
 		}
 		break;
 
 	case -1:
 		// Overwrite existing, or put in empty
-		if (first.cid == A.cid) {
+		if (first.get_cid() == A.get_cid()) {
 			first = A;
 
-		} else if (second.cid == A.cid) {
+		} else if (second.get_cid() == A.get_cid()) {
 			second = A;
 
 		} else if (first.empty()) {
@@ -2498,11 +2520,11 @@ void CCB::clear() {
 }
 
 short CCB::get_btn(CID cid) const {
-	if (first.cid == cid) {
-		return first.btn;
+	if (first.get_cid() == cid) {
+		return first.get_btn();
 
-	} else if (second.cid == cid) {
-		return second.btn;
+	} else if (second.get_cid() == cid) {
+		return second.get_btn();
 
 	} else {
 		return -1;
@@ -2557,10 +2579,10 @@ CC_bind* CCB::find(const CC_bind &A) {
 }
 
 CC_bind* CCB::find(CID A) {
-	if (first.cid == A) {
+	if (first.get_cid() == A) {
 		return &first;
 
-	} else if (second.cid == A) {
+	} else if (second.get_cid() == A) {
 		return &second;
 	}
 
@@ -2570,11 +2592,11 @@ CC_bind* CCB::find(CID A) {
 CC_bind* CCB::find_flags(const char mask) {
 	// ((A & B) ^ B) is true if A has any bit in B that's different
 	// !((A & B) ^ B) should therefore mean A has all bits in B
-	if (!((first.flags & mask) ^ mask)) {
+	if (!((first.get_flags() & mask) ^ mask)) {
 		return &first;
 	}
 
-	if (!((second.flags & mask) ^ mask)) {
+	if (!((second.get_flags() & mask) ^ mask)) {
 		return &second;
 	}
 

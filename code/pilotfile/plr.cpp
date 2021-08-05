@@ -677,11 +677,11 @@ void pilotfile::plr_write_controls()
 			bind = *bind_ptr;
 		}
 
-		if ((bind.flags & CCF_INVERTED) == CCF_INVERTED) {
+		if ((bind.get_flags() & CCF_INVERTED) == CCF_INVERTED) {
 			inverted = 1;
 		}
 
-		handler->writeInt("axis_map", bind.btn);
+		handler->writeInt("axis_map", bind.get_btn());
 		handler->writeInt("invert_axis", inverted);
 
 		handler->endSectionWrite(); // Section::Unnamed

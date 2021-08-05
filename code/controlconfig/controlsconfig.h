@@ -327,11 +327,6 @@ class CCB;
  */
 class CC_bind {
 public:
-	CID cid = CID_NONE; //!< Which controller this belongs to
-	char flags = 0;     //!< mask to determine various additional attributes of btn
-	short btn = -1;     //!< The button, key combo, or axis that's bound.
-
-public:
 	CC_bind() = default;
 	CC_bind(CID _cid, short _btn) : cid(_cid), btn(_btn) { validate(); };
 	CC_bind(CID _cid, short _btn, char _flags) : cid(_cid), flags(_flags), btn(_btn) { validate(); };
@@ -342,7 +337,7 @@ public:
 	/*!
 	 * Checks if this CC_bind is equal to the given CC_bind
 	 *
-	 * @note EQUAL means EQUAL
+	 * @note EQUAL means EQUAL, this will return FALSE if the flags differ by a single bit
 	 */
 	bool operator==(const CC_bind &B) const;
 
@@ -365,6 +360,21 @@ public:
 	 * True if not bound
 	 */
 	bool empty() const;
+
+	/*!
+	 * Returns a copy of ::btn
+	 */
+	short get_btn() const;
+
+	/*!
+	 * Returns a copy of ::cid
+	 */
+	CID get_cid() const;
+
+	/*!
+	 * Returns a copy of ::flags
+	 */
+	char get_flags() const;
 
 	/**
 	 * Takes the given binding.
@@ -407,6 +417,11 @@ public:
 	 * @note Similar to operator==, but ignores certain combinations of flags.
 	 */
 	bool conflicts_with(const CC_bind&) const;
+
+private:
+	CID cid = CID_NONE; //!< Which controller this belongs to
+	char flags = 0;     //!< mask to determine various additional attributes of btn
+	short btn = -1;     //!< The button, key combo, or axis that's bound.
 };
 
 /*!

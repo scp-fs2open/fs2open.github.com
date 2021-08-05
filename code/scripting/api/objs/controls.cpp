@@ -145,7 +145,7 @@ ADE_VIRTVAR(RelativeThrottleAxisInverted, l_Mouse, "boolean inverted", "Gets or 
 	return AxisActionInverted_sub(JOY_REL_THROTTLE_AXIS, L);
 }
 
-ADE_FUNC(AxisInverted, l_Mouse, "number cid, number axis, boolean inverted", "Gets or sets the given Joystick or Mouse axis inversion state", "boolean", "True/false")
+ADE_FUNC(AxisInverted, l_Mouse, "number cid, number axis, boolean inverted", "Gets or sets the given Joystick or Mouse axis inversion state.  Mouse cid = -1, Joystick cid = [0, 3]", "boolean", "True/false")
 {
 	int joy = CID_NONE;
 	int axis = -1;

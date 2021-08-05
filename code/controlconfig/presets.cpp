@@ -96,25 +96,27 @@ void load_preset_files() {
 
 			handler->beginSectionRead(Section::Primary);
 			str = handler->readString("cid");
-			item.first.cid = CIDToVal(str.c_str());
+			auto cid = CIDToVal(str.c_str());
 
 			str = handler->readString("flags");
-			item.first.flags = CCFToVal(str.c_str());
+			auto flags = CCFToVal(str.c_str());
 
 			str = handler->readString("input");
-			item.first.btn = InputToVal(item.first.cid, str.c_str());
+			auto btn = InputToVal(cid, str.c_str());
+			item.first.take(cid, btn, flags);
 			handler->endSectionRead(); // Primary
 
 
 			handler->beginSectionRead(Section::Secondary);
 			str = handler->readString("cid");
-			item.second.cid = CIDToVal(str.c_str());
+			cid = CIDToVal(str.c_str());
 
 			str = handler->readString("flags");
-			item.second.flags = CCFToVal(str.c_str());
+			flags = CCFToVal(str.c_str());
 
 			str = handler->readString("input");
-			item.second.btn = InputToVal(item.second.cid, str.c_str());
+			btn = InputToVal(cid, str.c_str());
+			item.second.take(cid, btn, flags);
 			handler->endSectionRead(); // Secondary
 
 			//handler->endSectionRead(); // Unnamed
@@ -190,14 +192,14 @@ bool save_preset_file(CC_preset preset, bool overwrite) {
 		handler->writeString("bind", ValToAction(i));
 
 		handler->beginSectionWrite(Section::Primary);
-		handler->writeString("cid",   ValToCID(first.cid));
-		handler->writeString("flags", ValToCCF(first.flags));
+		handler->writeString("cid",   ValToCID(first.get_cid()));
+		handler->writeString("flags", ValToCCF(first.get_flags()));
 		handler->writeString("input", ValToInput(first));
 		handler->endSectionWrite(); // Primary
 
 		handler->beginSectionWrite(Section::Secondary);
-		handler->writeString("cid", ValToCID(second.cid));
-		handler->writeString("flags", ValToCCF(second.flags));
+		handler->writeString("cid", ValToCID(second.get_cid()));
+		handler->writeString("flags", ValToCCF(second.get_flags()));
 		handler->writeString("input", ValToInput(second));
 		handler->endSectionWrite(); // Secondary
 

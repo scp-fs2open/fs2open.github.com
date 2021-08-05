@@ -2604,8 +2604,10 @@ void scale_invert(const CC_bind &bind,
 	const int MOUSE_ID = CID_JOY_MAX;	// Joy axes go in front here, mouse gets tacked on the end
 	float factor = 0.0f;
 	int dx = 0;
+	const auto cid = bind.get_cid();
+	const auto btn = bind.get_btn();
 
-	switch (bind.cid) {
+	switch (cid) {
 	case CID_MOUSE:
 		factor = (float)Mouse_sensitivity + 1.77f;
 		factor = factor * factor / frame_time / 0.6f;
@@ -2613,7 +2615,7 @@ void scale_invert(const CC_bind &bind,
 			return;
 		}
 
-		dx = axis_in[MOUSE_ID][bind.btn];
+		dx = axis_in[MOUSE_ID][btn];
 		maybe_invert(bind.is_inverted(), type, dx);
 		axis_out[action] += (int)((float)dx * factor);
 		break;
@@ -2624,14 +2626,14 @@ void scale_invert(const CC_bind &bind,
 	case CID_JOY3:
 		switch (type) {
 		case CC_TYPE_AXIS_ABS:
-			dx = joy_get_unscaled_reading(axis_in[bind.cid][bind.btn]);
+			dx = joy_get_unscaled_reading(axis_in[cid][btn]);
 			break;
 
 		case CC_TYPE_AXIS_REL:
 		case CC_TYPE_AXIS_BTN_NEG:
 		case CC_TYPE_AXIS_BTN_POS:
 		default:
-			dx = joy_get_scaled_reading(axis_in[bind.cid][bind.btn]);
+			dx = joy_get_scaled_reading(axis_in[cid][btn]);
 			break;
 		}
 		

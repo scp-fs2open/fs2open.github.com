@@ -304,11 +304,11 @@ void mouse_flush()
 
 int mouse_down_count(const CC_bind &bind, int reset_count)
 {
-	if (bind.cid != CID_MOUSE) {
+	if (bind.get_cid() != CID_MOUSE) {
 		return 0;
 	}
 
-	int n = 1 << bind.btn;
+	int n = 1 << bind.get_btn();
 	return mouse_down_count(n, reset_count);
 }
 
@@ -369,10 +369,10 @@ int mouse_down_count(int n, int reset_count) {
 //
 int mouse_up_count(const CC_bind &bind)
 {
-	if (bind.cid != CID_MOUSE) {
+	if (bind.get_cid() != CID_MOUSE) {
 		return 0;
 	}
-	int n = 1 << bind.btn;
+	int n = 1 << bind.get_btn();
 	return mouse_up_count(n);
 }
 
@@ -424,10 +424,10 @@ int mouse_up_count(int n) {
 
 int mouse_down(const CC_bind &bind)
 {
-	if (bind.cid != CID_MOUSE) {
+	if (bind.get_cid() != CID_MOUSE) {
 		return 0;
 	}
-	int btn = 1 << bind.btn;
+	int btn = 1 << bind.get_btn();
 
 	return mouse_down(btn);
 }
