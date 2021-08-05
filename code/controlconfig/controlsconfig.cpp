@@ -1563,14 +1563,14 @@ SCP_vector<CC_preset>::iterator control_config_get_current_preset() {
 			}
 
 			// Check Primary
-			if (Control_config[i].first != it->bindings[i].first) {
+			if (!Control_config[i].first.invert_agnostic_equals(it->bindings[i].first)) {
 				// Isn't a match, stop checking this preset
 				is_match = false;
 				break;
 			}
 
 			// Check Secondary
-			if (Control_config[i].second != it->bindings[i].second) {
+			if (!Control_config[i].second.invert_agnostic_equals(it->bindings[i].second)) {
 				// Isn't a match, stop checking this preset
 				is_match = false;
 				break;

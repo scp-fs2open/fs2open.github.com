@@ -80,89 +80,69 @@ ADE_FUNC(isMouseButtonDown,
 	return ade_set_args(L, "b", rtn);
 }
 
-static int AxisInverted_sub(Joy_axis_index joy_axis, lua_State* L)
-{
-	Assertion(joy_axis == JOY_X_AXIS || joy_axis == JOY_Y_AXIS || joy_axis == JOY_Z_AXIS, "Only the X, Y, and Z axes are supported for now.");
-
-	bool b;
-	if (!ade_get_args(L, "*|b", &b))
-		return ade_set_error(L, "b", false);
-
-	// Find the binding of the action that has the given joystick axis bound
-	CC_bind *A = nullptr;
-	for (int i = JOY_HEADING_AXIS; i <= JOY_REL_THROTTLE_AXIS; ++i)
-	{
-		CC_bind B(CID_JOY0, joy_axis, CCF_AXIS);
-		if (Control_config[i].first.invert_agnostic_equals(B))
-		{
-			A = &Control_config[i].first;
-			break;
-		}
-		else if (Control_config[i].second.invert_agnostic_equals(B))
-		{
-			A = &Control_config[i].second;
-			break;
-		}
-	}
-
-	if (A == nullptr)
-	{
-		LuaError(L, "Control axis %d not found!", static_cast<int>(joy_axis));
-		return ADE_RETURN_NIL;
-	}
-
-	if (ADE_SETTING_VAR)
-		b ? (A->flags |= CCF_INVERTED) : (A->flags &= ~CCF_INVERTED);
-
-	if (A->flags & CCF_INVERTED)
-		return ADE_RETURN_TRUE;
-	else
-		return ADE_RETURN_FALSE;
-}
-
-ADE_VIRTVAR_DEPRECATED(XAxisInverted, l_Mouse, "boolean inverted", "Gets or sets whether the Joy0 X-axis is inverted", "boolean", "True/false", gameversion::version(20, 1), "Deprecated in favor of per-action inversion")
-{
-	return AxisInverted_sub(JOY_X_AXIS, L);
-}
-
-ADE_VIRTVAR_DEPRECATED(YAxisInverted, l_Mouse, "boolean inverted", "Gets or sets whether the Joy0 Y-axis is inverted", "boolean", "True/false", gameversion::version(20, 1), "Deprecated in favor of per-action inversion")
-{
-	return AxisInverted_sub(JOY_Y_AXIS, L);
-}
-
-ADE_VIRTVAR_DEPRECATED(ZAxisInverted, l_Mouse, "boolean inverted", "Gets or sets whether the Joy0 Z-axis is inverted", "boolean", "True/false", gameversion::version(20, 1), "Deprecated in favor of per-action inversion")
-{
-	return AxisInverted_sub(JOY_Z_AXIS, L);
-}
-
-ADE_FUNC(AxisActionInverted, l_Mouse, "number IoActionId, boolean inverted", "Gets or sets whether the given axis action is inverted", "boolean", "True/false")
+static int AxisActionInverted_sub(int AxisAction, lua_State* L)
 {
 	// z64: If so desired, it may be possible to have two inversion states, one set by the player in the config menu,
 	//   and one set by scripting.  Essentially, the CCI will have its own inversion flag in addition to the inversion
 	//   flags to both bindings.  Thus, its possible for the player to invert one binding while keeping the other
 	//   binding normal instead of having the script try to set each bind's inversion state individually.
-	int AxisAction = CCFG_MAX;
-	bool inverted;
 
-	int n = ade_get_args(L, "i|b", &AxisAction, &inverted);
+	bool b;
+	if (!ade_get_args(L, "*|b", &b))
+		return ade_set_error(L, "b", false);
 
-	if (n==0)
-		return ade_set_error(L, "b", false);	// no arguments passed
-
-	if ((AxisAction < JOY_HEADING_AXIS) || (JOY_REL_THROTTLE_AXIS <= AxisAction))
+	if ((AxisAction < JOY_HEADING_AXIS) || (AxisAction > JOY_REL_THROTTLE_AXIS))
 		return ade_set_error(L, "b", false);	// invalid IoActionId
 
 	auto& item = Control_config[AxisAction];
 
-	if (n > 1)
-	{
-		item.invert(inverted);
-	}
+	if (ADE_SETTING_VAR)
+		item.invert(b);
 
 	if (item.is_inverted())
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;
+}
+
+ADE_VIRTVAR_DEPRECATED(XAxisInverted, l_Mouse, "boolean inverted", "Gets or sets whether the X-axis action is inverted", "boolean", "True/false", gameversion::version(21, 6), "Deprecated in favor of HeadingAxisInverted")
+{
+	return AxisActionInverted_sub(JOY_HEADING_AXIS, L);
+}
+
+ADE_VIRTVAR_DEPRECATED(YAxisInverted, l_Mouse, "boolean inverted", "Gets or sets whether the Y-axis action is inverted", "boolean", "True/false", gameversion::version(21, 6), "Deprecated in favor of PitchAxisInverted")
+{
+	return AxisActionInverted_sub(JOY_PITCH_AXIS, L);
+}
+
+ADE_VIRTVAR_DEPRECATED(ZAxisInverted, l_Mouse, "boolean inverted", "Gets or sets whether the Z-axis action is inverted", "boolean", "True/false", gameversion::version(21, 6), "Deprecated in favor of BankAxisInverted")
+{
+	return AxisActionInverted_sub(JOY_BANK_AXIS, L);
+}
+
+ADE_VIRTVAR(HeadingAxisInverted, l_Mouse, "boolean inverted", "Gets or sets whether the heading axis action is inverted", "boolean", "True/false")
+{
+	return AxisActionInverted_sub(JOY_HEADING_AXIS, L);
+}
+
+ADE_VIRTVAR(PitchAxisInverted, l_Mouse, "boolean inverted", "Gets or sets whether the pitch axis action is inverted", "boolean", "True/false")
+{
+	return AxisActionInverted_sub(JOY_PITCH_AXIS, L);
+}
+
+ADE_VIRTVAR(BankAxisInverted, l_Mouse, "boolean inverted", "Gets or sets whether the bank axis action is inverted", "boolean", "True/false")
+{
+	return AxisActionInverted_sub(JOY_BANK_AXIS, L);
+}
+
+ADE_VIRTVAR(AbsoluteThrottleAxisInverted, l_Mouse, "boolean inverted", "Gets or sets whether the absolute throttle axis action is inverted", "boolean", "True/false")
+{
+	return AxisActionInverted_sub(JOY_ABS_THROTTLE_AXIS, L);
+}
+
+ADE_VIRTVAR(RelativeThrottleAxisInverted, l_Mouse, "boolean inverted", "Gets or sets whether the relative throttle axis action is inverted", "boolean", "True/false")
+{
+	return AxisActionInverted_sub(JOY_REL_THROTTLE_AXIS, L);
 }
 
 ADE_FUNC(AxisInverted, l_Mouse, "number cid, number axis, boolean inverted", "Gets or sets the given Joystick or Mouse axis inversion state", "boolean", "True/false")
@@ -188,7 +168,12 @@ ADE_FUNC(AxisInverted, l_Mouse, "number cid, number axis, boolean inverted", "Ge
 	{
 		CC_bind B(static_cast<CID>(joy), static_cast<short>(axis), CCF_AXIS);
 		A = Control_config[i].find(B);
+		if (A != nullptr)
+			break;
 
+		// the binding we're looking for could be inverted
+		CC_bind C(static_cast<CID>(joy), static_cast<short>(axis), CCF_AXIS | CCF_INVERTED);
+		A = Control_config[i].find(C);
 		if (A != nullptr)
 			break;
 	}
