@@ -352,6 +352,11 @@ public:
 	bool operator!=(const CC_bind &B) const;
 
 	/*!
+	 * Checks if this CC_bind is equal to the given CC_bind, disregarding the inversion flag
+	 */
+	bool invert_agnostic_equals(const CC_bind &B) const;
+
+	/*!
 	 * Clears the binding and flags.  Some flags are retained.
 	 */
 	void clear();

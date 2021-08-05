@@ -93,12 +93,12 @@ static int AxisInverted_sub(Joy_axis_index joy_axis, lua_State* L)
 	for (int i = JOY_HEADING_AXIS; i <= JOY_REL_THROTTLE_AXIS; ++i)
 	{
 		CC_bind B(CID_JOY0, joy_axis, CCF_AXIS);
-		if (Control_config[i].first == B)
+		if (Control_config[i].first.invert_agnostic_equals(B))
 		{
 			A = &Control_config[i].first;
 			break;
 		}
-		else if (Control_config[i].second == B)
+		else if (Control_config[i].second.invert_agnostic_equals(B))
 		{
 			A = &Control_config[i].second;
 			break;

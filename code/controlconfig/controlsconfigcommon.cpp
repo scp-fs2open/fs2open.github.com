@@ -2271,6 +2271,15 @@ bool CC_bind::operator!=(const CC_bind &B) const
 	return !(*this == B);
 }
 
+bool CC_bind::invert_agnostic_equals(const CC_bind &B) const
+{
+	// invert both
+	auto my_flags = flags | CCF_INVERTED;
+	auto other_flags = B.flags | CCF_INVERTED;
+
+	return (btn == B.btn) && (cid == B.cid) && (my_flags == other_flags);
+}
+
 void CC_bind::clear()
 {
 	cid = CID_NONE;
