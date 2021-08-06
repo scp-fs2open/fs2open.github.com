@@ -18,6 +18,7 @@
 #include "camera/camera.h"
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
+#include "utils/RandomRange.h"
 
 class ship;
 class object;
@@ -51,11 +52,8 @@ extern float Neb2_fog_far_mult;
 #define NEB_FOG_VISIBILITY_MULT_SHOCKWAVE		2.5f
 #define NEB_FOG_VISIBILITY_MULT_FIREBALL(size)	1.2f + (size / 12)
 
-#define MAX_NEB2_POOFS				32
-
-// poof names and flags (for fred)
-extern char Neb2_poof_filenames[MAX_NEB2_POOFS][MAX_FILENAME_LEN];	
 extern int Neb2_poof_flags;
+const size_t MAX_NEB2_POOFS = 32;
 
 #define MAX_NEB2_BITMAPS			10
 
@@ -65,22 +63,45 @@ extern char Neb2_bitmap_filenames[MAX_NEB2_BITMAPS][MAX_FILENAME_LEN];
 // texture to use for this level
 extern char Neb2_texture_name[MAX_FILENAME_LEN];
 
-// how many "slices" are in the current player nebuls
-extern int Neb2_slices;
+typedef struct poof_info {
+	char name[NAME_LENGTH];
+	char bitmap_filename[MAX_FILENAME_LEN];
+	int bitmap;
+	::util::UniformFloatRange scale;
+	float density;						 // poofs per square meter; can get *really* small but vague approximation is ok at those levels
+	::util::UniformFloatRange rotation;
+	float view_dist;
+	::util::UniformFloatRange alpha;
+
+	poof_info() {
+		bitmap_filename[0] = '\0';
+		bitmap = -1;
+		scale = ::util::UniformFloatRange(150.0f, 150.0f);
+		density = 1 / (150.f * 150.f * 150.f);
+		rotation = ::util::UniformFloatRange(-3.7f, 3.7f);
+		view_dist = 360.f;
+		alpha = ::util::UniformFloatRange(0.5f, 0.5f);
+	}
+} poof_info;
+
+extern SCP_vector<poof_info> Poof_info;
 
 // the color of the fog/background
 extern ubyte Neb2_fog_color[3];
 
 // nebula poofs
-typedef struct cube_poof {
+typedef struct poof {
 	vec3d	pt;				// point in space
-	int		bmap;				// bitmap in space
-	float		rot;				// rotation angle
-	float		rot_speed;		// rotation speed
+	size_t		poof_info_index;
+	float		radius;
+	vec3d		up_vec;			// to keep track of the poofs rotation
+								// must be the full vector instead of an angle to prevent parallel transport when looking around
+	float		rot_speed;		// rotation speed, deg/sec
 	float		flash;			// lightning flash
-} cube_poof;
-#define MAX_CPTS		5		// should always be <= slices
-extern cube_poof Neb2_cubes[MAX_CPTS][MAX_CPTS][MAX_CPTS];
+	float		alpha;			// base amount of alpha to start with
+} poof;
+
+extern SCP_vector<poof> Neb2_poofs;
 
 // nebula detail level
 typedef struct neb2_detail {
@@ -119,12 +140,11 @@ void neb2_level_close();
 // call before beginning all rendering
 void neb2_render_setup(camid cid);
 
+// turns a poof on or off
+void neb2_toggle_poof(int poof_idx, bool enabling);
+
 // render the player nebula
 void neb2_render_poofs();
-
-// call this when the player's viewpoint has changed, this will cause the code to properly reset
-// the eye's local poofs
-void neb2_eye_changed();
 
 // get near and far fog values based upon object type and rendering mode
 void neb2_get_fog_values(float *fnear, float *ffar, object *obj = NULL);

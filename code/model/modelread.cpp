@@ -3895,14 +3895,11 @@ int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, ship_
 		base_smi->canonical_orient = save_base_orient;
 
 	} else {
-		desired_base_angle = 0.0f;
+		desired_base_angle = base_smi->turret_idle_angle;
 		desired_gun_angle = 0.0f;
-		if (turret->n_triggers > 0) {
-			int i;
-			for (i = 0; i<turret->n_triggers; i++) {
-				desired_gun_angle = turret->triggers[i].angle.xyz.x;
-				desired_base_angle = turret->triggers[i].angle.xyz.y;
-			}
+
+		if ((turret->subobj_num != turret->turret_gun_sobj)) {
+			desired_gun_angle = gun_smi->turret_idle_angle;
 		}
 	}
 
@@ -4395,27 +4392,10 @@ void model_set_up_techroom_instance(ship_info *sip, int model_instance_num)
 	{
 		model_subsystem *msp = &sip->subsystems[i];
 
-		for (int j = 0; j < msp->n_triggers; ++j)
-		{
-			if (msp->triggers[j].type == AnimationTriggerType::Initial)
-			{
-				// special case for turrets
-				if (msp->type == SUBSYSTEM_TURRET)
-				{
-					if (msp->subobj_num >= 0)
-					{
-						pmi->submodel[msp->subobj_num].cur_angle = msp->triggers[j].angle.xyz.y;
-						submodel_canonicalize(&pm->submodel[msp->subobj_num], &pmi->submodel[msp->subobj_num], true);
-					}
+		const auto& initialAnims = sip->animations.animationSet[{animation::ModelAnimationTriggerType::Initial, animation::ModelAnimationSet::SUBTYPE_DEFAULT}];
 
-					if ((msp->subobj_num != msp->turret_gun_sobj) && (msp->turret_gun_sobj >= 0))
-					{
-						pmi->submodel[msp->turret_gun_sobj].cur_angle = msp->triggers[j].angle.xyz.x;
-						submodel_canonicalize(&pm->submodel[msp->turret_gun_sobj], &pmi->submodel[msp->turret_gun_sobj], true);
-					}
-				}
-				// we can't support non-turrets, as in modelanim, because we need a ship subsystem but we don't actually have a ship
-			}
+		for (const auto& initialAnim : initialAnims) {
+			initialAnim.second->start(pmi, false, true);
 		}
 
 		if (msp->subobj_num >= 0)

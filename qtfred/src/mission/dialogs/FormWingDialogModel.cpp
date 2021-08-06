@@ -70,18 +70,7 @@ bool FormWingDialogModel::apply() {
 		ptr = GET_NEXT(ptr);
 	}
 
-	for (auto i = 0; i < Num_iffs; i++) {
-		if (!stricmp(_name.c_str(), Iff_info[i].iff_name)) {
-			SCP_string msg;
-			sprintf(msg, "The name \"%s\" is already being used by a team", _name.c_str());
-
-			_viewport->dialogProvider->showButtonDialog(DialogType::Error,
-														"Error",
-														msg,
-														{ DialogButton::Ok });
-			return false;
-		}
-	}
+	// We don't need to check teams.  "Unknown" is a valid name and also an IFF.
 
 	for (auto i = 0; i < (int) Ai_tp_list.size(); i++) {
 		if (!stricmp(_name.c_str(), Ai_tp_list[i].name)) {

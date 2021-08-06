@@ -82,17 +82,7 @@ bool WaypointEditorDialogModel::apply() {
 			ptr = GET_NEXT(ptr);
 		}
 
-		for (i = 0; i < Num_iffs; i++) {
-			if (!stricmp(_currentName.c_str(), Iff_info[i].iff_name)) {
-				if (showErrorDialog("This waypoint path name is already being used by a team.\n"
-										"Press OK to restore old name", "Error")) {
-					return false;
-				}
-
-				_currentName = _editor->cur_waypoint_list->get_name();
-				modelChanged();
-			}
-		}
+		// We don't need to check teams.  "Unknown" is a valid name and also an IFF.
 
 		for (i = 0; i < (int) Ai_tp_list.size(); i++) {
 			if (!stricmp(_currentName.c_str(), Ai_tp_list[i].name)) {
@@ -187,17 +177,7 @@ bool WaypointEditorDialogModel::apply() {
 			ptr = GET_NEXT(ptr);
 		}
 
-		for (i = 0; i < Num_iffs; i++) {
-			if (!stricmp(_currentName.c_str(), Iff_info[i].iff_name)) {
-				if (showErrorDialog("This jump node name is already being used by a team.\n"
-										"Press OK to restore old name", "Error")) {
-					return false;
-				}
-
-				_currentName = jnp->GetName();
-				modelChanged();
-			}
-		}
+		// We don't need to check teams.  "Unknown" is a valid name and also an IFF.
 
 		for (i = 0; i < (int) Ai_tp_list.size(); i++) {
 			if (!stricmp(_currentName.c_str(), Ai_tp_list[i].name)) {

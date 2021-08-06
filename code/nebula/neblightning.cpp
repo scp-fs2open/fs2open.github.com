@@ -498,33 +498,15 @@ void nebl_process()
 		// determine how many bolts to spew
 		num_bolts = (uint)frand_range((float)Storm->min_count, (float)Storm->max_count);
 		for(idx=0; idx<num_bolts; idx++){
-			// hmm. for now just pick a random bolt type and run with it
-			int s1, s2, s3;
-			int e1, e2, e3;
+			vec3d start;
 			do {
-				s1 = (int)frand_range(0.0f, (float)Neb2_slices);
-				s2 = (int)frand_range(0.0f, (float)Neb2_slices);
-				s3 = (int)frand_range(0.0f, (float)Neb2_slices);
+				vm_vec_random_in_sphere(&start, &Eye_position, 800.0f, false);
+			} while (vm_vec_dist(&start, &Eye_position) > 200.0f);
 
-				e1 = (int)frand_range(0.0f, (float)Neb2_slices);
-				e2 = (int)frand_range(0.0f, (float)Neb2_slices);
-				e3 = (int)frand_range(0.0f, (float)Neb2_slices);
-			
-				// never choose the middle cube
-				if((s1 == 2) && (s2 == 2) && (s3 == 2)){
-					s1 = 4;
-					s2 = 0;
-				}
-				if((e1 == 2) && (e2 == 2) && (e3 == 2)){
-					e1 = 0;
-					e2 = 4;
-				}
-
-			// sanity
-			} while((s1 == e1) && (s2 == e2) && (s3 == e3));
-
-			vec3d start = Neb2_cubes[s1][s2][s3].pt;
-			vec3d strike = Neb2_cubes[e1][e2][e3].pt;
+			vec3d strike;
+			do {
+				vm_vec_random_in_sphere(&strike, &Eye_position, 800.0f, false);
+			} while (vm_vec_dist(&strike, &Eye_position) > 200.0f && vm_vec_dist(&start, &strike) > 200.0f);
 
 			// add some flavor to the bolt. mmmmmmmm, lightning
 			if(!IS_VEC_NULL_SQ_SAFE(&Storm->flavor)){			

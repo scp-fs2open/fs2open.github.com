@@ -19,6 +19,7 @@
 #include "freespace.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/linklist.h"
+#include "hud/hudets.h"
 #include "hud/hudmessage.h"
 #include "hud/hudshield.h"
 #include "iff_defs/iff_defs.h"
@@ -901,8 +902,6 @@ void beam_type_b_move(beam *b)
 void beam_type_c_move(beam *b)
 {	
 	vec3d temp;
-	ship *shipp;
-	int num_fire_points = 1;
 
 	// ugh
 	if ( (b->objp == NULL) || (b->objp->instance < 0) ) {
@@ -915,18 +914,6 @@ void beam_type_c_move(beam *b)
 	vm_vec_unrotate(&b->last_start, &temp, &b->objp->orient);
 	vm_vec_add2(&b->last_start, &b->objp->pos);	
 	vm_vec_scale_add(&b->last_shot, &b->last_start, &b->objp->orient.vec.fvec, b->range);
-
-	shipp = &Ships[b->objp->instance];
-
-	if (shipp->beam_sys_info.turret_num_firing_points > 1) {
-		num_fire_points = shipp->beam_sys_info.turret_num_firing_points;
-	}
-
-	shipp->weapon_energy -= num_fire_points * Weapon_info[b->weapon_info_index].energy_consumed * flFrametime;
-
-	if (shipp->weapon_energy < 0.0f) {
-		shipp->weapon_energy = 0.0f;
-	}
 }
 
 // type D functions
@@ -1272,6 +1259,20 @@ void beam_move_all_post()
 			{
 				beam_add_light(moveup, OBJ_INDEX(moveup->objp), 1, nullptr);
 			}
+		}
+
+		// deal with ammo/energy for fighter beams
+		bool multi_ai = MULTIPLAYER_CLIENT && (moveup->objp != Player_obj);
+		bool cheating_player = Weapon_energy_cheat && (moveup->objp == Player_obj);
+
+		if (moveup->flags & BF_IS_FIGHTER_BEAM && !multi_ai && !cheating_player) {
+			ship* shipp = &Ships[moveup->objp->instance];
+			weapon_info* wip = &Weapon_info[moveup->weapon_info_index];
+
+			shipp->weapon_energy -= wip->energy_consumed * flFrametime;
+
+			if (shipp->weapon_energy < 0.0f)
+				shipp->weapon_energy = 0.0f;
 		}
 
 		// stop shooting?
@@ -2133,7 +2134,9 @@ int beam_start_firing(beam *b)
 	case 0 :			
 		beam_start_warmdown(b);
 		return 1;
-	}				
+	}
+
+	weapon_info* wip = &Weapon_info[b->weapon_info_index];
 
 	// start the beam firing sound now, if we haven't already
 	if ((!b->beam_sound_loop.isValid()) && (Weapon_info[b->weapon_info_index].b_info.beam_loop_sound.isValid())) {
@@ -2143,6 +2146,10 @@ int beam_start_firing(beam *b)
 	// "shot" sound
 	if (Weapon_info[b->weapon_info_index].launch_snd.isValid())
 		snd_play_3d(gamesnd_get_game_sound(Weapon_info[b->weapon_info_index].launch_snd), &b->last_start, &View_position);
+
+	// if this is a fighter ballistic beam, always take at least one ammo to start with
+	if (b->flags & BF_IS_FIGHTER_BEAM && wip->wi_flags[Weapon::Info_Flags::Ballistic])
+		Ships[b->objp->instance].weapons.primary_bank_ammo[b->bank]--;
 
 	if (Script_system.IsActiveAction(CHA_BEAMFIRE)) {
 		Script_system.SetHookObjects(3, "Beam", &Objects[b->objnum], "User", b->objp, "Target", b->target);
@@ -3927,7 +3934,7 @@ int beam_ok_to_fire(beam *b)
 	if (b->type == BEAM_TYPE_C) {
 		ship *shipp = &Ships[b->objp->instance];
 
-		if (shipp->weapon_energy <= 0.0f) {
+		if (shipp->weapon_energy <= 0.0f ) {
 
 			if ( OBJ_INDEX(Player_obj) == shipp->objnum && !(b->life_left>0.0f)) {
 				extern void ship_maybe_play_primary_fail_sound();
