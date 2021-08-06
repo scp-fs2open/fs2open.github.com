@@ -50,6 +50,7 @@ extern int Num_weapon_subtypes;
 #define LR_CURRENT_TARGET				0		// Only lock current target and subsystem
 #define LR_CURRENT_TARGET_SUBSYS		1		// 
 #define LR_ANY_TARGETS					2
+#define LR_BOMBS			3		// Only lock onto other fired secondaries
 
 //particle names go here -nuke
 #define PSPEW_NONE		-1			//used to disable a spew, useful for xmts
@@ -768,7 +769,7 @@ bool weapon_multilock_can_lock_on_subsys(object* shooter, object* target, ship_s
 // does NOT check range
 // also returns the dot to the subsys in out_dot
 // While single target missiles will check these properties as well separately, this function is ONLY used by multilock
-bool weapon_multilock_can_lock_on_target(object* shooter, object* target_objp, weapon_info* wip, float* out_dot = nullptr);
+bool weapon_multilock_can_lock_on_target(object* shooter, object* target_objp, weapon_info* wip, float* out_dot = nullptr, bool checkWeapons = false);
 
 
 #endif

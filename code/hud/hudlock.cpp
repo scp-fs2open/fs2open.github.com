@@ -899,13 +899,73 @@ void hud_lock_acquire_uncaged_target(lock_info *current_lock, weapon_info *wip)
 	current_lock->subsys = best_subsys;
 }
 
+void hud_lock_acquire_uncaged_target_weapon(lock_info* current_lock, weapon_info* wip)
+{
+	object* A;
+	float dot;
+
+	size_t i = 0;
+
+	object* best_obj = nullptr;
+	ship_subsys* best_subsys = nullptr;
+
+	float best_dot = 0.0f;
+
+	int current_num_locks = 0;
+	int least_num_locks = INT_MAX;
+	bool actively_locking = false;
+
+	for (A = GET_FIRST(&obj_used_list); A != END_OF_LIST(&obj_used_list); A = GET_NEXT(A)) {
+		if (!weapon_multilock_can_lock_on_target(Player_obj, A, wip, &dot, true))
+			continue;
+
+		bool in_range = weapon_secondary_world_pos_in_range(Player_obj, wip, &A->pos);
+
+		if (!in_range) {
+			continue;
+		}
+
+		if (dot < wip->lock_fov) {
+			continue;
+		}
+
+		current_num_locks = 0;
+		actively_locking = false;
+
+		for (i = 0; i < Player_ship->missile_locks.size(); ++i) {
+			if (Player_ship->missile_locks[i].obj != nullptr && OBJ_INDEX(Player_ship->missile_locks[i].obj) == OBJ_INDEX(A) && Player_ship->missile_locks[i].subsys == nullptr) {
+				if (!Player_ship->missile_locks[i].locked) {
+					// we're already currently locking on this subsystem so let's not throw another aspect lock on it.
+					actively_locking = true;
+					continue;
+				}
+
+				current_num_locks++;
+			}
+		}
+
+		if (!actively_locking
+			&& current_num_locks < wip->max_seekers_per_target
+			&& current_num_locks <= least_num_locks
+			&& dot > best_dot) {
+			best_subsys = nullptr;
+			best_obj = A;
+			best_dot = dot;
+			least_num_locks = current_num_locks;
+		}
+	}
+
+	current_lock->obj = best_obj;
+	current_lock->subsys = best_subsys;
+}
+
 void hud_lock_determine_lock_target(lock_info *lock_slot, weapon_info *wip)
 {
 	if ( lock_slot->obj != nullptr) {
 		return;
 	}
 
-	if ( wip->target_restrict == LR_ANY_TARGETS ) {
+	if (wip->target_restrict == LR_ANY_TARGETS || wip->target_restrict == LR_BOMBS) {
 		// if this weapon is uncaged, grab the best possible target within the player's lock cone and weapon distance
 		vec3d vec_to_target;
 		vec3d target_pos;
@@ -927,16 +987,22 @@ void hud_lock_determine_lock_target(lock_info *lock_slot, weapon_info *wip)
 			vm_vec_normalized_dir(&vec_to_target, &target_pos, &Eye_position);
 			dot = vm_vec_dot(&Player_obj->orient.vec.fvec, &vec_to_target);
 
-			if ( !weapon_secondary_world_pos_in_range(Player_obj, wip, &lock_slot->obj->pos) || dot < wip->lock_fov) {
+			if (!weapon_secondary_world_pos_in_range(Player_obj, wip, &lock_slot->obj->pos) || dot < wip->lock_fov) {
 				// set this lock slot to empty
 				ship_clear_lock(lock_slot);
-				hud_lock_acquire_uncaged_target(lock_slot, wip);
+				if (wip->target_restrict == LR_ANY_TARGETS)
+					hud_lock_acquire_uncaged_target(lock_slot, wip);
+				else
+					hud_lock_acquire_uncaged_target_weapon(lock_slot, wip);
 			}
 		} else {
 			// not using an else because the previous block may have 
 			// invalidated the target that was previously in this lock slot
 			ship_clear_lock(lock_slot);
-			hud_lock_acquire_uncaged_target(lock_slot, wip);
+			if (wip->target_restrict == LR_ANY_TARGETS)
+				hud_lock_acquire_uncaged_target(lock_slot, wip);
+			else
+				hud_lock_acquire_uncaged_target_weapon(lock_slot, wip);
 		}
 	} else if ( wip->target_restrict == LR_CURRENT_TARGET_SUBSYS ) {
 		if ( lock_slot->obj != nullptr) {
