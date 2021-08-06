@@ -2269,6 +2269,11 @@ int parse_create_object_sub(p_object *p_objp)
 			}
 			else if (wp->secondary_bank_weapons[j] >= 0)
 			{
+				if (Weapon_info[wp->secondary_bank_weapons[j]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo]) {
+					wp->secondary_bank_ammo[j] = 0;
+					continue;
+				}
+
 				Assertion(Weapon_info[wp->secondary_bank_weapons[j]].cargo_size > 0.0f,
 					"Secondary weapon cargo size <= 0. Ship (%s) Subsystem (%s) Bank (%i) Weapon (%s)",
 					shipp->ship_name, sssp->name, j, Weapon_info[wp->secondary_bank_weapons[j]].name);

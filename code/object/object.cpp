@@ -858,7 +858,7 @@ void obj_move_call_physics(object *objp, float frametime)
 
 				for (int i = 0; i < shipp->weapons.num_secondary_banks; i++) {
 					//if there are no missles left don't bother
-					if (shipp->weapons.secondary_bank_ammo[i] == 0)
+					if (shipp->weapons.secondary_bank_ammo[i] == 0 && !Weapon_info[shipp->weapons.secondary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo])
 						continue;
 
 					int points = pm->missile_banks[i].num_slots;

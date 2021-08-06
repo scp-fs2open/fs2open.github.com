@@ -6702,6 +6702,11 @@ static void ship_set(int ship_index, int objnum, int ship_type)
 
 	for ( i = 0; i < sip->num_secondary_banks; i++ )
 	{
+		if (Weapon_info[swp->secondary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo]) {
+			swp->secondary_bank_ammo[i] = 0;
+			continue;
+		}
+
 		float weapon_size = Weapon_info[sip->secondary_bank_weapons[i]].cargo_size;
 		Assertion( weapon_size > 0.0f, "Cargo size for secondary weapon %s is invalid, must be greater than 0.\n", Weapon_info[sip->secondary_bank_weapons[i]].name );
 
@@ -7217,6 +7222,13 @@ static int subsys_set(int objnum, int ignore_subsys_info)
 		}
 
 		for (k=0; k<ship_system->weapons.num_secondary_banks; k++) {
+			if (Weapon_info[ship_system->weapons.secondary_bank_weapons[k]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo])
+			{
+				ship_system->weapons.secondary_bank_ammo[k] = 0;
+				ship_system->weapons.secondary_next_slot[k] = 0;
+				continue;
+			}
+
 			float weapon_size = Weapon_info[ship_system->weapons.secondary_bank_weapons[k]].cargo_size;
 			Assertion( weapon_size > 0.0f, "Cargo size for secondary weapon %s is invalid, must be greater than 0.\n", Weapon_info[ship_system->weapons.secondary_bank_weapons[k]].name );
 			ship_system->weapons.secondary_bank_ammo[k] = (Fred_running ? 100 : (int)std::lround(ship_system->weapons.secondary_bank_capacity[k] / weapon_size));
@@ -9717,6 +9729,12 @@ static void ship_set_default_weapons(ship *shipp, ship_info *sip)
 
 	swp->num_secondary_banks = sip->num_secondary_banks;
 	for ( i = 0; i < swp->num_secondary_banks; i++ ) {
+		if (Weapon_info[swp->secondary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo]) {
+			swp->secondary_bank_ammo[i] = 0;
+			swp->secondary_bank_start_ammo[i] = swp->secondary_bank_ammo[i];
+			swp->secondary_bank_capacity[i] = sip->secondary_bank_ammo_capacity[i];
+		}
+
 		if (Fred_running){
 			swp->secondary_bank_ammo[i] = 100;
 		} else {
@@ -12587,6 +12605,10 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 			check_ammo = 0;
 		}
 
+		if (Weapon_info[swp->secondary_bank_weapons[bank]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo]) {
+			check_ammo = 0;
+		}
+
 		if ( check_ammo && ( swp->secondary_bank_ammo[bank] <= 0) ) {
 			if ( shipp->objnum == OBJ_INDEX(Player_obj) ) {
 				if ( ship_maybe_play_secondary_fail_sound(wip) ) {
@@ -12722,7 +12744,8 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 
 				// subtract the number of missiles fired
 				if ( !Weapon_energy_cheat ){
-					swp->secondary_bank_ammo[bank]--;
+					if(!Weapon_info[swp->secondary_bank_weapons[bank]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo])
+						swp->secondary_bank_ammo[bank]--;
 				}
 			}
 		}
@@ -12787,7 +12810,7 @@ done_secondary:
 
 	// if we are out of ammo in this bank then don't carry over firing swarm/corkscrew
 	// missiles to a new bank
-	if (swp->secondary_bank_ammo[bank] <= 0) {
+	if (swp->secondary_bank_ammo[bank] <= 0 && !Weapon_info[swp->secondary_bank_weapons[bank]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo]) {
 		// NOTE: these are set to 1 since they will get reduced by 1 in the
 		//       swarm/corkscrew code once this function returns
 
@@ -12835,7 +12858,7 @@ done_secondary:
 	//the next valid bank. the delay is there to prevent things like Trible/Quad Fire Trebuchets.
 	//
 	// niffiwan: only try to switch banks if object has multiple banks, and firing bank is the current bank
-	if ( (obj->flags[Object::Object_Flags::Player_ship]) && (swp->secondary_bank_ammo[bank] <= 0) && (swp->num_secondary_banks >= 2) && (bank == swp->current_secondary_bank) ) {
+	if ( (obj->flags[Object::Object_Flags::Player_ship]) && (swp->secondary_bank_ammo[bank] <= 0) && !Weapon_info[swp->secondary_bank_weapons[bank]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo] && (swp->num_secondary_banks >= 2) && (bank == swp->current_secondary_bank) ) {
 		if (ship_select_next_secondary(obj) ) {			//DTP here we switch to the next valid bank, but we can't call weapon_info on next fire_wait
 
 			if ( timestamp_elapsed(shipp->weapons.next_secondary_fire_stamp[shipp->weapons.current_secondary_bank]) ) {	//DTP, this is simply a copy of the manual cycle functions
@@ -13147,7 +13170,7 @@ int ship_select_next_secondary(object *objp)
 
 		for ( i = 1; i < swp->num_secondary_banks; i++ ) {
 			new_bank = (swp->current_secondary_bank+i) % swp->num_secondary_banks;
-			if ( swp->secondary_bank_ammo[new_bank] <= 0 )
+			if ( swp->secondary_bank_ammo[new_bank] <= 0 && !Weapon_info[swp->secondary_bank_weapons[new_bank]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo])
 				continue;
 			swp->current_secondary_bank = new_bank;
 			break;
@@ -13262,7 +13285,7 @@ int get_available_secondary_weapons(object *objp, int *outlist, int *outbanklist
 		target_range = vm_vec_dist_quick(&our_position, &target_position);
 	}
 	for (i=0; i<shipp->weapons.num_secondary_banks; i++)
-		if (shipp->weapons.secondary_bank_ammo[i]) {
+		if (shipp->weapons.secondary_bank_ammo[i] || Weapon_info[shipp->weapons.secondary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo]) {
 			if (The_mission.ai_profile->ai_range_aware_secondary_select_mode != AI_RANGE_AWARE_SEC_SEL_MODE_RETAIL) {
 				wepp = &Weapon_info[shipp->weapons.secondary_bank_weapons[i]];
 				weapon_range_min = wepp->weapon_min_range;
@@ -14176,6 +14199,9 @@ float ship_calculate_rearm_duration( object *objp )
 	{
 			wip = &Weapon_info[swp->secondary_bank_weapons[i]];
 	
+			if (wip->wi_flags[Weapon::Info_Flags::SecondaryNoAmmo])
+				continue;
+
 			//check how many full reloads we need
 		    num_reloads = (swp->secondary_bank_start_ammo[i] - swp->secondary_bank_ammo[i]) / wip->reloaded_per_batch;
 
@@ -15298,6 +15324,10 @@ int ship_secondary_bank_has_ammo(int shipnum)
 		return 0;
 
 	Assert(swp->current_secondary_bank >= 0 && swp->current_secondary_bank < MAX_SHIP_SECONDARY_BANKS );
+
+	if (Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo])
+		return 1;
+
 	if ( swp->secondary_bank_ammo[swp->current_secondary_bank] <= 0 )
 		return 0;
 
@@ -16570,7 +16600,7 @@ void ship_maybe_tell_about_rearm(ship *sp)
 		swp = &sp->weapons;
 		for (i = 0; i < swp->num_secondary_banks; i++)
 		{
-			if (swp->secondary_bank_start_ammo[i] > 0)
+			if (swp->secondary_bank_start_ammo[i] > 0 && !Weapon_info[swp->secondary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo])
 			{
 				if ((float)swp->secondary_bank_ammo[i] / (float)swp->secondary_bank_start_ammo[i] < 0.5f)
 				{
@@ -16871,7 +16901,7 @@ float ship_get_secondary_weapon_range(ship *shipp)
 		int bank=swp->current_secondary_bank;
 		if (swp->secondary_bank_weapons[bank] >= 0) {
 			wip = &Weapon_info[swp->secondary_bank_weapons[bank]];
-			if ( swp->secondary_bank_ammo[bank] > 0 ) {
+			if ( swp->secondary_bank_ammo[bank] > 0 || wip->wi_flags[Weapon::Info_Flags::SecondaryNoAmmo]) {
 				srange = wip->max_speed * wip->lifetime;
 			}
 		}

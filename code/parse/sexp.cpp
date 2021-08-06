@@ -16776,6 +16776,11 @@ int sexp_weapons_depleted(int node, bool primary)
 				continue;
 			}
 		}
+		else {
+			if (Weapon_info[ship_entry->shipp->weapons.secondary_bank_weapons[idx]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo]) {
+				continue;
+			}
+		}
 		num_tested_banks++;
 
 		// is this bank out of ammo?
@@ -17293,6 +17298,9 @@ int sexp_get_ammo_sub(ship_weapon *swp, int bank_to_check, bool primary, bool do
 		if (primary && !Weapon_info[weapons[i]].wi_flags[Weapon::Info_Flags::Ballistic])
 			continue;
 
+		if (!primary && Weapon_info[weapons[i]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo])
+			continue;
+
 		// if we are checking a specific bank, and this isn't it, skip it
 		if (bank_to_check >= 0 && bank_to_check < num_banks && i != bank_to_check)
 			continue;
@@ -17379,6 +17387,10 @@ void sexp_set_ammo_sub(ship_weapon *swp, int requested_bank, int requested_ammo,
 	{
 		// Check that this isn't a non-ballistic bank as it's pointless to set the amount of ammo for those
 		if (!(Weapon_info[weapons[requested_bank]].wi_flags[Weapon::Info_Flags::Ballistic]))
+			return;
+	}
+	else {
+		if (Weapon_info[weapons[requested_bank]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo])
 			return;
 	}
 
@@ -18655,7 +18667,10 @@ void sexp_turret_change_weapon(int node)
 		size = (float)Weapon_info[windex].cargo_size;
 
 		//Set various vars
-		swp->secondary_bank_start_ammo[sec_slot] = (int)(capacity / size);
+		if (Weapon_info[windex].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo])
+			swp->secondary_bank_start_ammo[sec_slot] = 0;
+		else
+			swp->secondary_bank_start_ammo[sec_slot] = (int)(capacity / size);
 		swp->secondary_bank_ammo[sec_slot] = swp->secondary_bank_start_ammo[sec_slot];
 		swp->secondary_bank_weapons[sec_slot] = windex;
 		swp->secondary_bank_rearm_time[sec_slot] = timestamp(0);
