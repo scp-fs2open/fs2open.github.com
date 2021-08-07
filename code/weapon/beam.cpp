@@ -2368,8 +2368,14 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 		if (b->flags & BF_IS_FIGHTER_BEAM) {
 			orient = b->objp->orient;
 		} else if (b->subsys) {
-			vec3d fvec, uvec;
-			vm_vec_sub(&fvec, &b->target->pos, &turret_point);
+			vec3d fvec, uvec, target_pos;
+			if (b->target)
+				target_pos = b->target->pos;
+			else if (b->flags & BF_TARGETING_COORDS)
+				target_pos = b->target_pos1;
+			else
+				UNREACHABLE("Turret beam fired without a target or target coordinates?");
+			vm_vec_sub(&fvec, &target_pos, &turret_point);
 			vm_vec_unrotate(&uvec, &b->subsys->system_info->turret_norm, &b->objp->orient);
 			vm_vector_2_matrix(&orient, &fvec, &uvec);
 		} else if (b->flags & BF_TARGETING_COORDS) {
