@@ -6184,7 +6184,7 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, flagset<Weapon::
 				auto ignore_mask_to_use = ((aip->ai_profile_flags[AI::Profile_Flags::Smart_secondary_weapon_selection]) && (wi_flags[Weapon::Info_Flags::Bomber_plus])) ? (ignore_mask - Weapon::Info_Flags::Huge) : ignore_mask;
 
 				if (!(wi_flags & ignore_mask_to_use).any_set()) {					//	Maybe bombs are illegal.
-					if (swp->secondary_bank_ammo[weapon_bank_list[i]] > 0 || Weapon_info[swp->secondary_bank_weapons[weapon_bank_list[i]]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo]) {
+					if (ship_secondary_has_ammo(swp, weapon_bank_list[i])) {
 						swp->current_secondary_bank = weapon_bank_list[i];
 						break;
 					}
@@ -8138,7 +8138,7 @@ int has_preferred_secondary(object *objp, object *en_objp, ship_weapon *swp)
 
 	for (i=0; i<swp->num_secondary_banks; i++) {
 		if (swp->secondary_bank_capacity[i] > 0) {
-			if (swp->secondary_bank_ammo[i] > 0 || Weapon_info[swp->secondary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo]) {
+			if (ship_secondary_has_ammo(swp, i)) {
 				if (is_preferred_weapon(swp->secondary_bank_weapons[i], objp, en_objp) != -1){
 					return i;
 				}
@@ -15309,7 +15309,7 @@ int firing_aspect_seeking_bomb(object *objp)
 
 	if (bank_index != -1) {
 		if (swp->secondary_bank_weapons[bank_index] > 0) {
-			if (swp->secondary_bank_ammo[bank_index] > 0 || Weapon_info[swp->secondary_bank_weapons[bank_index]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo]) {
+			if (ship_secondary_has_ammo(swp, bank_index)) {
 				if (Weapon_info[swp->secondary_bank_weapons[bank_index]].wi_flags[Weapon::Info_Flags::Bomb]) {
 					if (Weapon_info[swp->secondary_bank_weapons[bank_index]].wi_flags[Weapon::Info_Flags::Homing_aspect]) {
 						return 1;
