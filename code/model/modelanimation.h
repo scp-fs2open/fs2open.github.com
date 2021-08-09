@@ -190,12 +190,18 @@ namespace animation {
 		std::map<int, ModelAnimationState> m_state;
 		//Polymodel Instance ID -> ModelAnimation Time
 		std::map<int, float> m_time;
+
+		bool m_isInitialType;
+
 		ModelAnimationState play(float frametime, polymodel_instance* pmi);
 
 		static void cleanRunning();
 
 		friend struct ModelAnimationSet;
 	public:
+		//Initial type animations must complete within a single frame, and then never modifiy the submodel again. If this is the case, we do not need to remember them being active for massive performance gains with lots of turrets
+		ModelAnimation(bool isInitialType = false);
+
 		void addSubmodelAnimation(std::shared_ptr<ModelAnimationSubmodel> animation);
 
 		//Start playing the animation. Will stop other animations that have components running on the same submodels

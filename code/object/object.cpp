@@ -1520,8 +1520,6 @@ void obj_move_all(float frametime)
 		// move post
 		obj_move_all_post(objp, frametime);
 
-		animation::ModelAnimation::stepAnimations(frametime);
-
 		// Equipment script processing
 		if (objp->type == OBJ_SHIP) {
 			ship* shipp = &Ships[objp->instance];
@@ -1541,6 +1539,8 @@ void obj_move_all(float frametime)
 			}
 		}
 	}
+
+	animation::ModelAnimation::stepAnimations(frametime);
 
 	// Now that we've moved all the objects, move all the models that use intrinsic rotations.  We do that here because we already handled the
 	// ship models in obj_move_all_post, and this is more or less conceptually close enough to move the rest.  (Originally all models
