@@ -8030,7 +8030,8 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 		}
 	}
 
-	if (Ship_info[shipp->ship_info_index].is_big_or_huge()) {
+#ifndef NDEBUG
+	{
 		float mission_time = f2fl(Missiontime);  
 		int minutes = (int)(mission_time / 60);
 		int seconds = (int)mission_time % 60;
@@ -8051,6 +8052,7 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 			break;
 		}
 	}
+#endif
 
 	// update wingman status gauge
 	if ( (shipp->wing_status_wing_index >= 0) && (shipp->wing_status_wing_pos >= 0) ) {
@@ -10152,6 +10154,16 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 	ship_make_create_time_unique(shipp);
 
 	shipp->time_created = Missiontime;
+
+#ifndef NDEBUG
+	if (!Fred_running) {
+		float mission_time = f2fl(Missiontime);
+		int minutes = (int)(mission_time / 60);
+		int seconds = (int)mission_time % 60;
+
+		mprintf(("%s created at %02d:%02d\n", shipp->ship_name, minutes, seconds));
+	}
+#endif
 
 	return objnum;
 }
