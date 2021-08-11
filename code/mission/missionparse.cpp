@@ -1528,11 +1528,6 @@ void parse_briefing(mission * /*pm*/, int flags)
 						else if (bi->type == ICON_CRUISER_WING)
 							bi->type = ICON_LARGESHIP_WING;
 					}
-					// the Demon is a support ship :p
-					else if (!strnicmp(Ship_info[bi->ship_class].name, "SD Demon", 8))
-					{
-						bi->type = ICON_SUPPORT_SHIP;
-					}
 					// the Hades is a supercap
 					else if (!strnicmp(Ship_info[bi->ship_class].name, "GTD Hades", 9))
 					{
