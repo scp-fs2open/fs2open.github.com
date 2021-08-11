@@ -8030,27 +8030,16 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 		}
 	}
 
-	if (Ship_info[shipp->ship_info_index].is_big_or_huge()) {
-		float mission_time = f2fl(Missiontime);  
+#ifndef NDEBUG
+	// this isn't posted to the mission log, so log it here
+	if (cleanup_mode == SHIP_VANISHED) {
+		float mission_time = f2fl(Missiontime);
 		int minutes = (int)(mission_time / 60);
 		int seconds = (int)mission_time % 60;
 
-		switch (cleanup_mode) {
-		case SHIP_DESTROYED:
-			mprintf(("%s destroyed at %02d:%02d\n", shipp->ship_name, minutes, seconds));
-			break;
-		case SHIP_DEPARTED:
-		case SHIP_DEPARTED_WARP:
-		case SHIP_DEPARTED_BAY:
-			mprintf(("%s departed at %02d:%02d\n", shipp->ship_name, minutes, seconds));
-			break;
-		case SHIP_VANISHED:
-			mprintf(("%s vanished at %02d:%02d\n", shipp->ship_name, minutes, seconds));
-			break;
-		default:
-			break;
-		}
+		nprintf(("missionlog", "MISSION LOG: %s vanished at %02d:%02d\n", shipp->ship_name, minutes, seconds));
 	}
+#endif
 
 	// update wingman status gauge
 	if ( (shipp->wing_status_wing_index >= 0) && (shipp->wing_status_wing_pos >= 0) ) {
