@@ -8031,26 +8031,13 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 	}
 
 #ifndef NDEBUG
-	{
-		float mission_time = f2fl(Missiontime);  
+	// this isn't posted to the mission log, so log it here
+	if (cleanup_mode == SHIP_VANISHED) {
+		float mission_time = f2fl(Missiontime);
 		int minutes = (int)(mission_time / 60);
 		int seconds = (int)mission_time % 60;
 
-		switch (cleanup_mode) {
-		case SHIP_DESTROYED:
-			mprintf(("%s destroyed at %02d:%02d\n", shipp->ship_name, minutes, seconds));
-			break;
-		case SHIP_DEPARTED:
-		case SHIP_DEPARTED_WARP:
-		case SHIP_DEPARTED_BAY:
-			mprintf(("%s departed at %02d:%02d\n", shipp->ship_name, minutes, seconds));
-			break;
-		case SHIP_VANISHED:
-			mprintf(("%s vanished at %02d:%02d\n", shipp->ship_name, minutes, seconds));
-			break;
-		default:
-			break;
-		}
+		nprintf(("missionlog", "MISSION LOG: %s vanished at %02d:%02d\n", shipp->ship_name, minutes, seconds));
 	}
 #endif
 
@@ -10154,16 +10141,6 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 	ship_make_create_time_unique(shipp);
 
 	shipp->time_created = Missiontime;
-
-#ifndef NDEBUG
-	if (!Fred_running) {
-		float mission_time = f2fl(Missiontime);
-		int minutes = (int)(mission_time / 60);
-		int seconds = (int)mission_time % 60;
-
-		mprintf(("%s created at %02d:%02d\n", shipp->ship_name, minutes, seconds));
-	}
-#endif
 
 	return objnum;
 }

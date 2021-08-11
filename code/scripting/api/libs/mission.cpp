@@ -939,14 +939,6 @@ ADE_FUNC(createShip,
 			Script_system.RemHookVars({"Ship", "Parent"});
 		}
 
-		if (Game_mode & GM_IN_MISSION && sip->is_big_or_huge()) {
-			float mission_time = f2fl(Missiontime);
-			int minutes = (int)(mission_time / 60);
-			int seconds = (int)mission_time % 60;
-
-			mprintf(("%s created at %02d:%02d\n", shipp->ship_name, minutes, seconds));
-		}
-
 		return ade_set_args(L, "o", l_Ship.Set(object_h(&Objects[obj_idx])));
 	} else
 		return ade_set_error(L, "o", l_Ship.Set(object_h()));

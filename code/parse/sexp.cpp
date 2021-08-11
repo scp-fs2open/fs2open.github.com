@@ -16077,14 +16077,6 @@ void sexp_ship_create(int n)
 		Script_system.RunCondition(CHA_ONSHIPARRIVE, &Objects[objnum]);
 		Script_system.RemHookVars({"Ship", "Parent"});
 	}
-
-	if (Game_mode & GM_IN_MISSION && sip->is_big_or_huge()) {
-		float mission_time = f2fl(Missiontime);
-		int minutes = (int)(mission_time / 60);
-		int seconds = (int)mission_time % 60;
-
-		mprintf(("%s created at %02d:%02d\n", shipp->ship_name, minutes, seconds));
-	}
 }
 
 // Goober5000
