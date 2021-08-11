@@ -130,7 +130,7 @@ const SCP_vector<std::pair<int, SCP_string>> DetailLevelValues = {{ 0, "Minimum"
 const auto ModelDetailOption = options::OptionBuilder<int>("Graphics.NebulaDetail",
                                                            "Nebula Detail",
                                                            "Detail level of nebulas").category("Graphics").values(
-	DetailLevelValues).default_val(MAX_DETAIL_LEVEL).importance(7).change_listener([](int val, bool initial) {
+	DetailLevelValues).default_val(MAX_DETAIL_LEVEL).importance(7).change_listener([](int val, bool) {
 	Detail.nebula_detail = val;
 	return true;
 }).finish();
