@@ -1353,7 +1353,6 @@ void options_detail_sliders_update()
 
 	// modify nebula stuff
 	Detail.nebula_detail = Detail_sliders[gr_screen.res][NEBULA_DETAIL_SLIDER].slider.pos;
-	neb2_set_detail_level(Detail.nebula_detail);
 
 	Detail.hardware_textures = Detail_sliders[gr_screen.res][HARDWARE_TEXTURES_SLIDER].slider.pos;
 	Detail.num_small_debris = Detail_sliders[gr_screen.res][SHARD_CULLING_SLIDER].slider.pos;

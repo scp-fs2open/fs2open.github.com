@@ -119,8 +119,6 @@ const float NEB_FOG_FAR_PCT = 0.1f;
 
 SCP_vector<poof> Neb2_poofs;
 
-int Neb2_detail = 2;
-
 int Neb2_background_color[3] = {0, 0, 255};			// rgb background color (used for lame rendering)
 
 const SCP_vector<std::pair<int, SCP_string>> DetailLevelValues = {{ 0, "Minimum" },
@@ -132,12 +130,8 @@ const SCP_vector<std::pair<int, SCP_string>> DetailLevelValues = {{ 0, "Minimum"
 const auto ModelDetailOption = options::OptionBuilder<int>("Graphics.NebulaDetail",
                                                            "Nebula Detail",
                                                            "Detail level of nebulas").category("Graphics").values(
-	DetailLevelValues).default_val(MAX_DETAIL_LEVEL).importance(7).change_listener([](int val, bool initial) {
+	DetailLevelValues).default_val(MAX_DETAIL_LEVEL).importance(7).change_listener([](int val, bool) {
 	Detail.nebula_detail = val;
-	if (!initial) {
-		// This is only needed for changes after the game startup
-		neb2_set_detail_level(Detail.nebula_detail);
-	}
 	return true;
 }).finish();
 
@@ -261,22 +255,6 @@ bool poof_is_used(size_t idx) {
 	return (Neb2_poof_flags & (1 << idx)) != 0;
 }
 
-// set detail level
-void neb2_set_detail_level(int level)
-{
-	// sanity
-	if (level < 0) {
-		Neb2_detail = 0;
-		return;
-	}
-	if (level > MAX_DETAIL_LEVEL) {
-		Neb2_detail = MAX_DETAIL_LEVEL;
-		return;
-	}
-
-	Neb2_detail = level;
-}
-
 void neb2_get_fog_color(ubyte *r, ubyte *g, ubyte *b)
 {
 	if (r) *r = Neb2_fog_color[0];
@@ -313,7 +291,7 @@ void neb2_poof_setup() {
 		}
 	}
 	Poof_density_multiplier = Poof_density_sum_square / (Poof_density_sum * Poof_density_sum);
-	Poof_density_multiplier *= (Neb2_detail + 0.5f) / (MAX_DETAIL_LEVEL + 0.5f); // scale the poofs down based on detail level
+	Poof_density_multiplier *= (Detail.nebula_detail + 0.5f) / (MAX_DETAIL_LEVEL + 0.5f); // scale the poofs down based on detail level
 }
 
 // initialize nebula stuff - call from game_post_level_init(), so the mission has been loaded

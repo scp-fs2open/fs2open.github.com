@@ -76,11 +76,11 @@ typedef struct poof_info {
 	poof_info() {
 		bitmap_filename[0] = '\0';
 		bitmap = -1;
-		scale = ::util::UniformFloatRange(150.0f, 150.0f);
-		density = 1 / (150.f * 150.f * 150.f);
+		scale = ::util::UniformFloatRange(175.0f, 175.0f);
+		density = 1 / (110.f * 110.f * 110.f);
 		rotation = ::util::UniformFloatRange(-3.7f, 3.7f);
-		view_dist = 360.f;
-		alpha = ::util::UniformFloatRange(0.5f, 0.5f);
+		view_dist = 250.f;
+		alpha = ::util::UniformFloatRange(0.8f, 0.8f);
 	}
 } poof_info;
 
@@ -124,9 +124,6 @@ typedef struct neb2_detail {
 
 // initialize neb2 stuff at game startup
 void neb2_init();
-
-// set detail level
-void neb2_set_detail_level(int level);
 
 //init neb stuff  - WMC
 void neb2_level_init();
