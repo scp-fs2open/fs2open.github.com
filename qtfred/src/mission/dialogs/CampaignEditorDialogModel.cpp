@@ -154,7 +154,7 @@ static inline QList<QAction*> getParsedGoals(QObject *parent) {
 CampaignEditorDialogModel::CampaignBranchData::CampaignBranchData(CampaignEditorDialogModel *model, int sexp_branch, const QString &from, const cmission *_loop) :
 	sexp(CAR(sexp_branch)),
 	loop(_loop),
-	loopDescr(new QTextDocument(_loop ? _loop->mission_branch_desc : "", model))
+	loopDescr(new AssociatedPlainTextDocument(_loop ? _loop->mission_branch_desc : "", model))
 {
 	int node_next = CADR(sexp_branch);
 	if (!stricmp(CTEXT(node_next), "end-of-campaign")) {
@@ -164,7 +164,6 @@ CampaignEditorDialogModel::CampaignBranchData::CampaignBranchData(CampaignEditor
 		type = (from == next) ? REPEAT : NEXT_NOT_FOUND;
 	}
 
-	loopDescr->setDocumentLayout(new QPlainTextDocumentLayout(loopDescr));
 	QObject::connect(loopDescr, &QTextDocument::contentsChanged, model, &CampaignEditorDialogModel::flagModified);
 	if (loop) {
 		loopAnim = _loop->mission_branch_brief_anim;
@@ -178,9 +177,8 @@ CampaignEditorDialogModel::CampaignBranchData::CampaignBranchData(CampaignEditor
 	sexp(Locked_sexp_true),
 	next(std::move(to)),
 	loop(false),
-	loopDescr(new QTextDocument("", model))
+	loopDescr(new AssociatedPlainTextDocument("", model))
 {
-	loopDescr->setDocumentLayout(new QPlainTextDocumentLayout(loopDescr));
 	QObject::connect(loopDescr, &QTextDocument::contentsChanged, model, &CampaignEditorDialogModel::flagModified);
 }
 
@@ -265,7 +263,6 @@ CampaignEditorDialogModel::CampaignEditorDialogModel(CampaignEditorDialog* _pare
 	campaignDescr(Campaign.desc),
 	campaignTechReset(Campaign.flags & CF_CUSTOM_TECH_DATABASE)
 {
-	campaignDescr.setDocumentLayout(new QPlainTextDocumentLayout(&campaignDescr));
 	connect(&campaignDescr, &QTextDocument::contentsChanged, this, &CampaignEditorDialogModel::flagModified);
 
 	for (int i=0; i<Campaign.num_missions; i++) {
@@ -303,20 +300,12 @@ CampaignEditorDialogModel::CampaignEditorDialogModel(CampaignEditorDialog* _pare
 	connect(&missionData, &QAbstractListModel::dataChanged, this, &CampaignEditorDialogModel::checkMissionDrop);
 }
 
-CampaignEditorDialogModel::~CampaignEditorDialogModel() {
-	if (campaignDescrEdit)
-		campaignDescrEdit->setDocument(nullptr);
-	if (loopDescrEdit)
-		loopDescrEdit->setDocument(nullptr);
-}
-
 void CampaignEditorDialogModel::supplySubModels(QListView &ships, QListView &weps, QListView &missions, QPlainTextEdit &descr) {
 	ships.setModel(&initialShips);
 	weps.setModel(&initialWeapons);
 	missions.setModel(&missionData);
 
-	campaignDescrEdit = &descr;
-	descr.setDocument(&campaignDescr);
+	campaignDescr.associateEdit(&descr);
 }
 
 int CampaignEditorDialogModel::getCampaignNumPlayers() const {
@@ -412,8 +401,10 @@ bool CampaignEditorDialogModel::fillTree(sexp_tree& sxt) const {
 }
 
 void CampaignEditorDialogModel::supplySubModelLoop(QPlainTextEdit &descr) {
-	descr.setDocument(getCurBrIsLoop() ? mnData_it->brData_it->loopDescr : nullptr);
-	loopDescrEdit = &descr;
+	if (getCurBr())
+		getCurBr()->loopDescr->associateEdit(&descr);
+	else
+		descr.setDocument(nullptr);
 }
 
 void CampaignEditorDialogModel::missionSelectionChanged(const QItemSelection & selected) {
@@ -484,7 +475,7 @@ bool CampaignEditorDialogModel::_saveTo(QString file) const {
 	if (file.isEmpty())
 		return false;
 	qPrintable(file.replace('/',DIR_SEPARATOR_CHAR));
-	campaignDescr.toPlainText();
+	QMessageBox::information(parent, "", campaignDescr);
 	return false;
 }
 

@@ -3,6 +3,7 @@
 
 #include "mission/dialogs/AbstractDialogModel.h"
 #include "ui/dialogs/CampaignEditorDialog.h"
+#include "AssociatedPlainTextDocument.h"
 #include "CheckedDataListModel.h"
 #include <mission/missioncampaign.h>
 #include <ui/widgets/sexp_tree.h>
@@ -26,7 +27,7 @@ class CampaignEditorDialogModel : public AbstractDialogModel
 
 public:
 	CampaignEditorDialogModel(CampaignEditorDialog *parent, EditorViewport *viewport, const QString &file = "", const QString& newCampaignType = "");
-	~CampaignEditorDialogModel() override;
+	~CampaignEditorDialogModel() override = default;
 
 	bool apply() override {	return saveTo(campaignFile); }
 
@@ -192,7 +193,7 @@ private:
 
 		bool loop;
 
-		QTextDocument* loopDescr;
+		AssociatedPlainTextDocument* loopDescr;
 		QString loopAnim;
 		QString loopVoice;
 	};
@@ -224,12 +225,8 @@ private:
 
 // Model state -- specs
 	QString campaignName;
-	QTextDocument campaignDescr{""};
+	AssociatedPlainTextDocument campaignDescr{""};
 	bool campaignTechReset{false};
-
-//submodel management
-	QPlainTextEdit *campaignDescrEdit{nullptr};
-	QPlainTextEdit *loopDescrEdit{nullptr};
 };
 
 
