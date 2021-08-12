@@ -2,6 +2,7 @@
 set(source_files)
 
 add_file_folder("Source"
+    src/AssociatedPlainTextDocument.h
     src/CheckedDataListModel.h
     src/FredApplication.cpp
     src/FredApplication.h
