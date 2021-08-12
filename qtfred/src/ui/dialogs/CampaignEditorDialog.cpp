@@ -27,13 +27,7 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget *_parent, EditorViewport *_vi
 	p.setColor(QPalette::WindowText, Qt::red);
 	ui->lblMissionDescr2->setPalette(p);
 
-	connect(ui->lstMissions, &QListView::clicked, this, [&](const QModelIndex &idx){
-		QItemSelectionModel &sel = *ui->lstMissions->selectionModel();
-		bool same = sel.selectedIndexes().contains(idx);
-		sel.clearSelection();
-		if (!same)
-			sel.select(idx, QItemSelectionModel::Toggle | QItemSelectionModel::Rows);
-	});
+	connect(ui->lstMissions, &QListView::clicked, this, &CampaignEditorDialog::lstMissionsClicked);
 
 	ui->sxtBranches->initializeEditor(nullptr, this);
 
@@ -254,6 +248,14 @@ void CampaignEditorDialog::fileSaveCopyAs() {
 	model->saveTo(pathName);
 }
 
+void CampaignEditorDialog::lstMissionsClicked(const QModelIndex &idx) {
+	QItemSelectionModel &sel = *ui->lstMissions->selectionModel();
+	bool same = sel.selectedIndexes().contains(idx);
+	sel.clearSelection();
+	if (!same)
+		sel.select(idx, QItemSelectionModel::Toggle | QItemSelectionModel::Rows);
+}
+
 void CampaignEditorDialog::mnLinkMenu(const QPoint &pos){
 	QModelIndex here = ui->lstMissions->indexAt(pos);
 	if (here.data(Qt::CheckStateRole) != Qt::Checked)
@@ -326,7 +328,7 @@ void CampaignEditorDialog::btnBranchDownClicked() {
 }
 
 void CampaignEditorDialog::btnErrorCheckerClicked() {
-
+	QMessageBox::information(this, tr("Error Checker"), "Error checker not implemented yet.");
 }
 
 

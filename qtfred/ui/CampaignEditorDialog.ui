@@ -516,11 +516,11 @@
     <layout class="QHBoxLayout" name="mainControls">
      <item>
       <widget class="QPushButton" name="btnErrorChecker">
-       <property name="enabled">
-        <bool>false</bool>
-       </property>
        <property name="text">
         <string>Error Checker</string>
+       </property>
+       <property name="shortcut">
+        <string>Shift+H</string>
        </property>
       </widget>
      </item>

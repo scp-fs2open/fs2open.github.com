@@ -59,6 +59,7 @@ private slots:
 	bool fileSaveAs();
 	void fileSaveCopyAs();
 
+	void lstMissionsClicked(const QModelIndex &idx);
 	void mnLinkMenu(const QPoint &pos);
 
 	void btnBranchUpClicked();
