@@ -5073,8 +5073,10 @@ static void weapon_set_state(weapon_info* wip, weapon* wp, WeaponState state)
 	{
 		auto source = particle::ParticleManager::get()->createSource(map_entry->second);
 
-		source.moveToObject(&Objects[wp->objnum], &vmd_zero_vector);
+		object* objp = &Objects[wp->objnum];
+		source.moveToObject(objp, &vmd_zero_vector);
 		source.setWeaponState(wp->weapon_state);
+		source.setVelocity(&objp->phys_info.vel);
 
 		source.finish();
 	}
@@ -5162,6 +5164,7 @@ void weapon_process_post(object * obj, float frame_time)
 						auto particleSource = particle::ParticleManager::get()->createSource(wip->spawn_info[i].spawn_effect);
 						particleSource.moveTo(&obj->pos);
 						particleSource.setOrientationFromVec(&obj->phys_info.vel);
+						particleSource.setVelocity(&obj->phys_info.vel);
 						particleSource.finish();
 					}
 
@@ -6804,6 +6807,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 		auto particleSource = particle::ParticleManager::get()->createSource(wip->impact_weapon_expl_effect);
 		particleSource.moveTo(hitpos);
 		particleSource.setOrientationFromVec(&weapon_obj->phys_info.vel);
+		particleSource.setVelocity(&weapon_obj->phys_info.vel);
 
 		if (hitnormal)
 		{
@@ -6815,6 +6819,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 		auto particleSource = particle::ParticleManager::get()->createSource(wip->dinky_impact_weapon_expl_effect);
 		particleSource.moveTo(hitpos);
 		particleSource.setOrientationFromVec(&weapon_obj->phys_info.vel);
+		particleSource.setVelocity(&weapon_obj->phys_info.vel);
 
 		if (hitnormal)
 		{
@@ -6858,6 +6863,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 				auto primarySource = ParticleManager::get()->createSource(wip->piercing_impact_effect);
 				primarySource.moveTo(&weapon_obj->pos);
 				primarySource.setOrientationMatrix(&weapon_obj->last_orient);
+				primarySource.setVelocity(&weapon_obj->phys_info.vel);
 
 				if (hitnormal)
 				{
@@ -6870,6 +6876,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 					auto secondarySource = ParticleManager::get()->createSource(wip->piercing_impact_secondary_effect);
 					secondarySource.moveTo(&weapon_obj->pos);
 					secondarySource.setOrientationMatrix(&weapon_obj->last_orient);
+					secondarySource.setVelocity(&weapon_obj->phys_info.vel);
 
 					if (hitnormal)
 					{

@@ -25,6 +25,8 @@ namespace particle {
 
 			::util::UniformFloatRange m_velocity;
 
+			float m_vel_inherit = 0.0f;
+
 		public:
 			explicit VolumeEffect(const SCP_string& name);
 

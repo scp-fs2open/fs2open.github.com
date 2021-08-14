@@ -19,6 +19,8 @@ class SingleParticleEffect: public ParticleEffect {
 
 	util::EffectTiming m_timing;
 
+	float m_vel_inherit = 0.0f;
+
  public:
 	explicit SingleParticleEffect(const SCP_string& name);
 

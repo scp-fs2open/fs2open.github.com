@@ -28,7 +28,6 @@ bool SingleParticleEffect::processSource(ParticleSource* source) {
 		particle_info info;
 
 		source->getOrigin()->applyToParticleInfo(info);
-		info.vel = vmd_zero_vector;
 
 		m_particleProperties.createParticle(info);
 	}
@@ -39,6 +38,10 @@ bool SingleParticleEffect::processSource(ParticleSource* source) {
 
 void SingleParticleEffect::parseValues(bool nocreate) {
 	m_particleProperties.parse(nocreate);
+
+	if (optional_string("+Velocity Inherit:")) {
+		stuff_float(&m_vel_inherit);
+	}
 
 	m_timing = util::EffectTiming::parseTiming();
 }
