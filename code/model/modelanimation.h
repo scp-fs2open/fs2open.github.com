@@ -113,19 +113,20 @@ namespace animation {
 
 	class ModelAnimationSegment {
 	protected:
-		float m_duration = 0.0f;
+
+		std::map<int, float> m_duration;
 
 	public:
 		virtual ~ModelAnimationSegment() = default;
 
-		float getDuration() const;
+		float getDuration(int pmi_id) const;
 
 		//Will be called to give the animations an opportunity to recalculate based on current ship data, as well as animation data up to that point.
-		virtual void recalculate(const submodel_instance* submodel_instance, const bsp_info* submodel, const ModelAnimationData<>& base) = 0;
+		virtual void recalculate(const submodel_instance* submodel_instance, const bsp_info* submodel, const ModelAnimationData<>& base, int pmi_id) = 0;
 		//This function needs to contain anything that manipulates ModelAnimationData (such as any movement)
-		virtual ModelAnimationData<true> calculateAnimation(const ModelAnimationData<>& base, const ModelAnimationData<>& lastState, float time) const = 0;
+		virtual ModelAnimationData<true> calculateAnimation(const ModelAnimationData<>& base, float time, int pmi_id) const = 0;
 		//This function needs to contain any animation parts that do not change ModelAnimationData (such as sound or particles)
-		virtual void executeAnimation(const ModelAnimationData<>& state, float time) const = 0;
+		virtual void executeAnimation(const ModelAnimationData<>& state, float time, int pmi_id) const = 0;
 	};
 	
 
@@ -138,8 +139,6 @@ namespace animation {
 		std::shared_ptr<ModelAnimationSegment> m_mainSegment;
 		//Polymodel Instance ID -> ModelAnimationData
 		std::map<int, ModelAnimationData<>> m_initialData;
-		//Polymodel Instance ID -> ModelAnimationData
-		std::map<int, ModelAnimationData<>> m_lastFrame;
 
 		friend class ModelAnimation;
 	public:
@@ -186,10 +185,12 @@ namespace animation {
 		std::vector<std::shared_ptr<ModelAnimationSubmodel>> m_submodelAnimation;
 		float m_duration = 0.0f;
 
-		//Polymodel Instance ID -> ModelAnimationState
-		std::map<int, ModelAnimationState> m_state;
-		//Polymodel Instance ID -> ModelAnimation Time
-		std::map<int, float> m_time;
+		struct instance_data {
+			ModelAnimationState state = ModelAnimationState::UNTRIGGERED;
+			float time = 0.0f;
+		};
+		//PMI ID -> Instance Data
+		std::map<int, instance_data> m_instances;
 
 		bool m_isInitialType;
 

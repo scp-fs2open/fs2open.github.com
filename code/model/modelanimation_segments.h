@@ -8,9 +8,9 @@ namespace animation {
 	class ModelAnimationSegmentSerial : public ModelAnimationSegment {
 		std::vector<std::shared_ptr<ModelAnimationSegment>> m_segments;
 
-		void recalculate(const submodel_instance* submodel_instance, const bsp_info* submodel, const ModelAnimationData<>& base) override;
-		ModelAnimationData<true> calculateAnimation(const ModelAnimationData<>& base, const ModelAnimationData<>& lastState, float time) const override;
-		void executeAnimation(const ModelAnimationData<>& state, float time) const override;
+		void recalculate(const submodel_instance* submodel_instance, const bsp_info* submodel, const ModelAnimationData<>& base, int pmi_id) override;
+		ModelAnimationData<true> calculateAnimation(const ModelAnimationData<>& base, float time, int pmi_id) const override;
+		void executeAnimation(const ModelAnimationData<>& state, float time, int pmi_id) const override;
 
 	public:
 		void addSegment(std::shared_ptr<ModelAnimationSegment> segment);
@@ -21,9 +21,9 @@ namespace animation {
 	class ModelAnimationSegmentParallel : public ModelAnimationSegment {
 		std::vector<std::shared_ptr<ModelAnimationSegment>> m_segments;
 
-		void recalculate(const submodel_instance* submodel_instance, const bsp_info* submodel, const ModelAnimationData<>& base) override;
-		ModelAnimationData<true> calculateAnimation(const ModelAnimationData<>& base, const ModelAnimationData<>& lastState, float time) const override;
-		void executeAnimation(const ModelAnimationData<>& state, float time) const override;
+		void recalculate(const submodel_instance* submodel_instance, const bsp_info* submodel, const ModelAnimationData<>& base, int pmi_id) override;
+		ModelAnimationData<true> calculateAnimation(const ModelAnimationData<>& base, float time, int pmi_id) const override;
+		void executeAnimation(const ModelAnimationData<>& state, float time, int pmi_id) const override;
 
 	public:
 		void addSegment(std::shared_ptr<ModelAnimationSegment> segment);
@@ -32,9 +32,11 @@ namespace animation {
 
 	//This segment does nothing but serve as a placeholder taking up time, used primarily in serial segments
 	class ModelAnimationSegmentWait : public ModelAnimationSegment {
-		void recalculate(const submodel_instance* /*submodel_instance*/, const bsp_info* /*submodel*/, const ModelAnimationData<>& /*base*/) override { };
-		ModelAnimationData<true> calculateAnimation(const ModelAnimationData<>& /*base*/, const ModelAnimationData<>& /*lastState*/, float /*time*/) const override { return {}; };
-		void executeAnimation(const ModelAnimationData<>& /*state*/, float /*time*/) const override { };
+		float m_time;
+
+		void recalculate(const submodel_instance* /*submodel_instance*/, const bsp_info* /*submodel*/, const ModelAnimationData<>& /*base*/, int pmi_id) override;
+		ModelAnimationData<true> calculateAnimation(const ModelAnimationData<>& /*base*/, float /*time*/, int /*pmi_id*/) const override { return {}; };
+		void executeAnimation(const ModelAnimationData<>& /*state*/, float /*time*/, int /*pmi_id*/) const override { };
 
 	public:
 		ModelAnimationSegmentWait(float time);
@@ -47,9 +49,9 @@ namespace animation {
 		bool m_isAngleRelative;
 		matrix m_rot;
 
-		void recalculate(const submodel_instance* /*submodel_instance*/, const bsp_info* /*submodel*/, const ModelAnimationData<>& base) override;
-		ModelAnimationData<true> calculateAnimation(const ModelAnimationData<>& /*base*/, const ModelAnimationData<>& /*lastState*/, float /*time*/) const override;
-		void executeAnimation(const ModelAnimationData<>& /*state*/, float /*time*/) const override { };
+		void recalculate(const submodel_instance* /*submodel_instance*/, const bsp_info* /*submodel*/, const ModelAnimationData<>& base, int /*pmi_id*/) override;
+		ModelAnimationData<true> calculateAnimation(const ModelAnimationData<>& /*base*/, float /*time*/, int /*pmi_id*/) const override;
+		void executeAnimation(const ModelAnimationData<>& /*state*/, float /*time*/, int /*pmi_id*/) const override { };
 
 	public:
 		ModelAnimationSegmentSetPHB(const angles& angle, bool isAngleRelative);
@@ -61,12 +63,40 @@ namespace animation {
 		float m_angle;
 		matrix m_rot;
 
-		void recalculate(const submodel_instance* /*submodel_instance*/, const bsp_info* submodel, const ModelAnimationData<>& /*base*/) override;
-		ModelAnimationData<true> calculateAnimation(const ModelAnimationData<>& /*base*/, const ModelAnimationData<>& /*lastState*/, float /*time*/) const override;
-		void executeAnimation(const ModelAnimationData<>& /*state*/, float /*time*/) const override { };
+		void recalculate(const submodel_instance* /*submodel_instance*/, const bsp_info* submodel, const ModelAnimationData<>& /*base*/, int /*pmi_id*/) override;
+		ModelAnimationData<true> calculateAnimation(const ModelAnimationData<>& /*base*/, float /*time*/, int /*pmi_id*/) const override;
+		void executeAnimation(const ModelAnimationData<>& /*state*/, float /*time*/, int /*pmi_id*/) const override { };
 
 	public:
 		ModelAnimationSegmentSetAngle(float angle);
+
+	};
+
+	//This segment rotates a submodels orientation by a certain amount around its defined rotation axis
+	class ModelAnimationSegmentRotation : public ModelAnimationSegment {
+		struct instance_data {
+			angles m_actualVelocity;
+			angles m_actualTarget; //Usually won't be needed, but if vel + angle is specified, not all angles necessarily end simultaneously.
+			angles m_actualTime;
+			optional<angles> m_actualAccel;
+			optional<angles> m_accelTime;
+		};
+
+		//PMI ID -> Instance Data
+		std::map<int, instance_data> m_instances;
+
+		optional<angles> m_targetAngle;
+		optional<angles> m_velocity;
+		optional<float> m_time;
+		optional<angles> m_acceleration;
+		bool m_isAbsolute;
+
+		void recalculate(const submodel_instance* /*submodel_instance*/, const bsp_info* submodel, const ModelAnimationData<>& base, int pmi_id) override;
+		ModelAnimationData<true> calculateAnimation(const ModelAnimationData<>& /*base*/, float time, int pmi_id) const override;
+		void executeAnimation(const ModelAnimationData<>& /*state*/, float /*time*/, int /*pmi_id*/) const override { };
+
+	public:
+		ModelAnimationSegmentRotation(optional<angles> targetAngle, optional<angles> velocity, optional<float> time, optional<angles> acceleration, bool isAbsolute = false);
 
 	};
 
