@@ -130,6 +130,7 @@ public slots:
 		modify<QString>(mnData_it->debriefingPersona, debriefingPersona); }
 
 	bool addCurMnBranchTo(const QModelIndex *other = nullptr, bool flip = false);
+	void delCurMnBranch(int node);
 
 	void selectCurBr(QTreeWidgetItem *selected);
 	bool setCurBrCond(const QString &sexp, const QString &mn, const QString &arg);

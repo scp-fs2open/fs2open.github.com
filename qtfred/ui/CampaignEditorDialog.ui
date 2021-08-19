@@ -348,9 +348,6 @@
                 <verstretch>0</verstretch>
                </sizepolicy>
               </property>
-              <property name="contextMenuPolicy">
-               <enum>Qt::NoContextMenu</enum>
-              </property>
               <property name="toolTip">
                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Right click mission list to add or change a branch&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
               </property>

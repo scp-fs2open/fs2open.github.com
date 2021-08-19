@@ -89,6 +89,8 @@ void CampaignEditorDialog::setModel(CampaignEditorDialogModel *new_model) {
 	connect(ui->cmbMainhall, &QComboBox::currentTextChanged, model.get(), &CampaignEditorDialogModel::setCurMnMainhall);
 	connect(ui->cmbDebriefingPersona, &QComboBox::currentTextChanged, model.get(), &CampaignEditorDialogModel::setCurMnDebriefingPersona);
 
+	connect(ui->sxtBranches, &sexp_tree::rootNodeDeleted, model.get(), &CampaignEditorDialogModel::delCurMnBranch, Qt::QueuedConnection);
+
 	connect(ui->sxtBranches, &QTreeWidget::currentItemChanged, model.get(), &CampaignEditorDialogModel::selectCurBr);
 
 	connect(ui->btnBranchLoop, &QPushButton::toggled, model.get(), &CampaignEditorDialogModel::setCurBrIsLoop);

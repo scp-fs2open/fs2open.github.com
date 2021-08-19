@@ -397,6 +397,8 @@ bool CampaignEditorDialogModel::fillTree(sexp_tree& sxt) const {
 		h->setData(0, Qt::UserRole, i++);
 		sxt.add_sub_tree(sxt.load_sub_tree(br.sexp, true, "do-nothing"), h);
 	}
+	mnData_it->brData_it = nullptr;
+	mnData_it->brData_idx = -1;
 	return true;
 }
 
@@ -439,6 +441,15 @@ bool CampaignEditorDialogModel::addCurMnBranchTo(const QModelIndex *other, bool 
 
 	flagModified();
 	return true;
+}
+
+void CampaignEditorDialogModel::delCurMnBranch(int node) {
+	if (! mnData_it) return;
+
+	mnData_it->branches.erase(mnData_it->branches.cbegin() + node);
+	flagModified();
+
+	parent->updateUIMission();
 }
 
 void CampaignEditorDialogModel::selectCurBr(QTreeWidgetItem *selected) {
