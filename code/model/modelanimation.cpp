@@ -215,70 +215,193 @@ namespace animation {
 		//Most of these properties were read and allowed, but never actually used for anything.
 		//Hence, still allow them in tables, but now just skip reading them
 
-		angles angle;
-		bool isRelative;
+		required_string("$type:");
+		char atype[NAME_LENGTH];
+		stuff_string(atype, F_NAME, NAME_LENGTH);
+		AnimationTriggerType type = model_anim_match_type(atype);
+		int subtype = ModelAnimationSet::SUBTYPE_DEFAULT;
+		char sub_name[NAME_LENGTH];
 
-		if (optional_string("+delay:"))
-			skip_token();
+		if (optional_string("+sub_type:")) {
+			stuff_int(&subtype);
+		}
 
-		if (optional_string("+reverse_delay:"))
-			skip_token();
-
-		if (optional_string("+absolute_angle:")) {
-			vec3d anglesDeg;
-			stuff_vec3d(&anglesDeg);
-
-			angle.p = fl_radians(anglesDeg.xyz.x);
-			angle.h = fl_radians(anglesDeg.xyz.y);
-			angle.b = fl_radians(anglesDeg.xyz.z);
-
-			isRelative = false;
+		if (optional_string("+sub_name:")) {
+			stuff_string(sub_name, F_NAME, NAME_LENGTH);
 		}
 		else {
-			vec3d anglesDeg;
-			required_string("+relative_angle:");
-
-			stuff_vec3d(&anglesDeg);
-
-			angle.p = fl_radians(anglesDeg.xyz.x);
-			angle.h = fl_radians(anglesDeg.xyz.y);
-			angle.b = fl_radians(anglesDeg.xyz.z);
-
-			isRelative = true;
+			strcpy_s(sub_name, "<none>");
 		}
 
-		if (optional_string("+velocity:"))
-			skip_token();
+		if (type == AnimationTriggerType::Initial) {
+			angles angle;
+			bool isRelative;
 
-		if (optional_string("+acceleration:"))
-			skip_token();
+			if (optional_string("+delay:"))
+				skip_token();
 
-		if (optional_string("+time:"))
-			skip_token();
+			if (optional_string("+reverse_delay:"))
+				skip_token();
 
-		std::shared_ptr<ModelAnimation> anim = std::shared_ptr<ModelAnimation>(new ModelAnimation(true));
+			if (optional_string("+absolute_angle:")) {
+				vec3d anglesDeg;
+				stuff_vec3d(&anglesDeg);
 
-		char namelower[MAX_NAME_LEN];
-		strncpy(namelower, sp->subobj_name, MAX_NAME_LEN);
-		strlwr(namelower);
-		//since sp->type is not set without reading the pof, we need to infer it by subsystem name (which works, since the same name is used to match the submodels name, which is used to match the type in pof parsing)
-		//sadly, we also need to check for engine and radar, since these take precedent (as in, an engineturret is an engine before a turret type)
-		if (!strstr(namelower, "engine") && !strstr(namelower, "radar") && strstr(namelower, "turret")) {
-			auto rotBase = std::shared_ptr<ModelAnimationSegmentSetAngle>(new ModelAnimationSegmentSetAngle(angle.h));
-			auto subsysBase = std::shared_ptr<ModelAnimationSubmodelTurret>(new ModelAnimationSubmodelTurret(sp->subobj_name, false, sip->name, std::move(rotBase)));
-			anim->addSubmodelAnimation(std::move(subsysBase));
+				angle.p = fl_radians(anglesDeg.xyz.x);
+				angle.h = fl_radians(anglesDeg.xyz.y);
+				angle.b = fl_radians(anglesDeg.xyz.z);
 
-			auto rotBarrel = std::shared_ptr<ModelAnimationSegmentSetAngle>(new ModelAnimationSegmentSetAngle(angle.p));
-			auto subsysBarrel = std::shared_ptr<ModelAnimationSubmodelTurret>(new ModelAnimationSubmodelTurret(sp->subobj_name, true, sip->name, std::move(rotBarrel)));
-			anim->addSubmodelAnimation(std::move(subsysBarrel));
+				isRelative = false;
+			}
+			else {
+				vec3d anglesDeg;
+				required_string("+relative_angle:");
+
+				stuff_vec3d(&anglesDeg);
+
+				angle.p = fl_radians(anglesDeg.xyz.x);
+				angle.h = fl_radians(anglesDeg.xyz.y);
+				angle.b = fl_radians(anglesDeg.xyz.z);
+
+				isRelative = true;
+			}
+
+			if (optional_string("+velocity:"))
+				skip_token();
+
+			if (optional_string("+acceleration:"))
+				skip_token();
+
+			if (optional_string("+time:"))
+				skip_token();
+
+			std::shared_ptr<ModelAnimation> anim = std::shared_ptr<ModelAnimation>(new ModelAnimation(true));
+
+			char namelower[MAX_NAME_LEN];
+			strncpy(namelower, sp->subobj_name, MAX_NAME_LEN);
+			strlwr(namelower);
+			//since sp->type is not set without reading the pof, we need to infer it by subsystem name (which works, since the same name is used to match the submodels name, which is used to match the type in pof parsing)
+			//sadly, we also need to check for engine and radar, since these take precedent (as in, an engineturret is an engine before a turret type)
+			if (!strstr(namelower, "engine") && !strstr(namelower, "radar") && strstr(namelower, "turret")) {
+				auto rotBase = std::shared_ptr<ModelAnimationSegmentSetAngle>(new ModelAnimationSegmentSetAngle(angle.h));
+				auto subsysBase = std::shared_ptr<ModelAnimationSubmodelTurret>(new ModelAnimationSubmodelTurret(sp->subobj_name, false, sip->name, std::move(rotBase)));
+				anim->addSubmodelAnimation(std::move(subsysBase));
+
+				auto rotBarrel = std::shared_ptr<ModelAnimationSegmentSetAngle>(new ModelAnimationSegmentSetAngle(angle.p));
+				auto subsysBarrel = std::shared_ptr<ModelAnimationSubmodelTurret>(new ModelAnimationSubmodelTurret(sp->subobj_name, true, sip->name, std::move(rotBarrel)));
+				anim->addSubmodelAnimation(std::move(subsysBarrel));
+			}
+			else {
+				auto rot = std::shared_ptr<ModelAnimationSegmentSetPHB>(new ModelAnimationSegmentSetPHB(angle, isRelative));
+				auto subsys = std::shared_ptr<ModelAnimationSubmodel>(new ModelAnimationSubmodel(sp->subobj_name, std::move(rot)));
+				anim->addSubmodelAnimation(std::move(subsys));
+			}
+
+			sip->animations.emplace(anim, sp->subobj_name, animation::ModelAnimationTriggerType::Initial);
 		}
 		else {
-			auto rot = std::shared_ptr<ModelAnimationSegmentSetPHB>(new ModelAnimationSegmentSetPHB(angle, isRelative));
-			auto subsys = std::shared_ptr<ModelAnimationSubmodel>(new ModelAnimationSubmodel(sp->subobj_name, std::move(rot)));
-			anim->addSubmodelAnimation(std::move(subsys));
-		}
+			std::shared_ptr<ModelAnimation> anim = std::shared_ptr<ModelAnimation>(new ModelAnimation());
+			
+			auto mainSegment = std::shared_ptr<ModelAnimationSegmentSerial>(new ModelAnimationSegmentSerial());
+			auto moveSegment = std::shared_ptr<ModelAnimationSegmentParallel>(new ModelAnimationSegmentParallel());
 
-		sip->animations.emplace(anim, sp->subobj_name, animation::ModelAnimationTriggerType::Initial);
+			if (optional_string("+delay:")) {
+				int delayByMs;
+				stuff_int(&delayByMs);
+				auto delay = std::shared_ptr<ModelAnimationSegmentWait>(new ModelAnimationSegmentWait(((float)delayByMs) * 0.001f));
+				mainSegment->addSegment(delay);
+			}
+
+			mainSegment->addSegment(moveSegment);
+
+			if (optional_string("+reverse_delay:")) {
+				int delayByMs;
+				stuff_int(&delayByMs);
+				auto delay = std::shared_ptr<ModelAnimationSegmentWait>(new ModelAnimationSegmentWait(((float)delayByMs) * 0.001f));
+				mainSegment->addSegment(delay);
+			}
+
+			angles target{ 0,0,0 };
+			bool absolute = false;
+
+			if (optional_string("+absolute_angle:")) {
+				absolute = true;
+				vec3d angle{ 0,0,0 };
+
+				stuff_vec3d(&angle);
+
+				target.p = fl_radians(angle.xyz.x);
+				target.b = fl_radians(angle.xyz.y);
+				target.h = fl_radians(angle.xyz.z);
+			}
+			else {
+				absolute = false;
+				vec3d angle{ 0,0,0 };
+
+				required_string("+relative_angle:");
+				stuff_vec3d(&angle);
+
+				target.p = fl_radians(angle.xyz.x);
+				target.b = fl_radians(angle.xyz.y);
+				target.h = fl_radians(angle.xyz.z);
+			}
+
+			angles velocity{ 0,0,0 };
+			{
+				vec3d vel{ 0,0,0 };
+				required_string("+velocity:");
+				stuff_vec3d(&vel);
+				velocity.p = fl_radians(vel.xyz.x);
+				velocity.b = fl_radians(vel.xyz.y);
+				velocity.h = fl_radians(vel.xyz.z);
+			}
+
+			optional<angles> acceleration;
+
+			if (optional_string("+acceleration:")) {
+				angles accel{ 0,0,0 };
+				vec3d accelVec{ 0,0,0 };
+				stuff_vec3d(&accelVec);
+				accel.p = fl_radians(accelVec.xyz.x);
+				accel.b = fl_radians(accelVec.xyz.y);
+				accel.h = fl_radians(accelVec.xyz.z);
+				acceleration = accel;
+			}
+
+			if (optional_string("+time:")) {
+				skip_token();
+
+				//Time is ignored if acceleration is set in legacy animations. Even if it isn't set, time seems to only affect metadata and not the actual animation.
+				//Hence, throw time away, and let the segment handle calculating how long it actually takes
+			}
+
+			auto rotation = std::shared_ptr<ModelAnimationSegmentRotation>(new ModelAnimationSegmentRotation(target, velocity, optional<float>(), acceleration, absolute));
+			moveSegment->addSegment(rotation);
+
+			if (optional_string("$Sound:")) {
+				gamesnd_id start_sound;
+				gamesnd_id loop_sound;
+				gamesnd_id end_sound;
+				float snd_rad;
+
+				parse_game_sound("+Start:", &start_sound);
+
+				parse_game_sound("+Loop:", &loop_sound);
+
+				parse_game_sound("+End:", &end_sound);
+
+				required_string("+Radius:");
+				stuff_float(&snd_rad);
+
+				//TODO Add sound segment
+			}
+
+			auto subsys = std::shared_ptr<ModelAnimationSubmodel>(new ModelAnimationSubmodel(sp->subobj_name, std::move(mainSegment)));
+			anim->addSubmodelAnimation(subsys);
+
+			//TODO maybe handle sub_name? Not documented in Wiki, maybe no one actually uses it...
+			sip->animations.emplace(anim, sp->subobj_name, type, subtype);
+		}
 	}
 
 	/*std::shared_ptr<ModelAnimation> ModelAnimation::parseAnimationTable() {

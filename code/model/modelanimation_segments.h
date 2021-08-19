@@ -72,7 +72,7 @@ namespace animation {
 
 	};
 
-	//This segment rotates a submodels orientation by a certain amount around its defined rotation axis
+	//This segment rotates a submodels orientation by a certain amount in PBH
 	class ModelAnimationSegmentRotation : public ModelAnimationSegment {
 		struct instance_data {
 			angles m_actualVelocity;

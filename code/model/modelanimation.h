@@ -51,8 +51,10 @@ public:
 	inline void if_filled_or_set(const std::function<void(const T&)>& fnc, const T* orSet = nullptr) {
 		if (filled)
 			fnc(data.t);
-		else if (orSet != nullptr)
+		else if (orSet != nullptr) {
 			data = *orSet;
+			filled = true;
+		}
 	}
 
 	inline bool operator==(const optional<T>& rhs) {

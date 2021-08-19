@@ -32,8 +32,8 @@ namespace animation {
 			absoluteState.applyDelta(deltaLocal);
 			delta.applyDelta(deltaLocal);
 
-			animationCnt++;
 			time -= m_segments[animationCnt]->getDuration(pmi_id);
+			animationCnt++;
 		}
 
 		return delta;
@@ -293,7 +293,7 @@ namespace animation {
 					if (m_acceleration.has()) { //Consider acceleration to calculate the time
 						//Assume equations from calc angles case, but solve for ta and t now, with the resulting ta <= t / 2.
 						//t = v/a+d/v and ta = v/a
-						//If thus d/v < v/a, it's t = sqrt(d/a), and ta = 1/2*t -> this implies that the acceleration is too small to reach the target velocity within the specified distance.
+						//If thus d/v < v/a, it's t = 2*sqrt(d/a), and ta = 1/2*t -> this implies that the acceleration is too small to reach the target velocity within the specified distance.
 						float a = copysignf(((angles)m_acceleration).*pbh[i], d.*pbh[i]);
 						actualAccel.*pbh[i] = a;
 
@@ -305,7 +305,7 @@ namespace animation {
 							accelTime.*pbh[i] = va;
 						}
 						else {
-							durationAxis = sqrtf(d.*pbh[i] / a);
+							durationAxis = 2.0f * sqrtf(d.*pbh[i] / a);
 							accelTime.*pbh[i] = durationAxis / 2.0f;
 						}
 					}
@@ -349,7 +349,8 @@ namespace animation {
 
 				float acceltime2 = fminf(time - (t.*pbh[i] - at.*pbh[i]), at.*pbh[i]);
 				if (acceltime2 > 0) {
-					currentRot.*pbh[i] += 0.5f * a.*pbh[i] * acceltime2 * acceltime2;
+					//Cap this to 0, as it could get negative if it rotates "longer than its duration" (which happens when a different axis takes longer to rotate)
+					currentRot.*pbh[i] += fminf(at.*pbh[i] * a.*pbh[i] * acceltime2 - 0.5f * a.*pbh[i] * acceltime2 * acceltime2, 0.0f);
 				}
 			}
 		}

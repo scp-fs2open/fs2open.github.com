@@ -19468,6 +19468,7 @@ void sexp_trigger_submodel_animation(int node)
 	// instant or not
 	if (n >= 0)
 	{
+		//TODO Respect in new animations
 		instant = is_sexp_true(n);
 		n = CDR(n);
 	}
@@ -19483,11 +19484,44 @@ void sexp_trigger_submodel_animation(int node)
 			Warning(LOCATION, "Subsystem \"%s\" not found on ship \"%s\"!", CTEXT(n), CTEXT(node));
 			return;
 		}
-		model_anim_start_type(ss, animation_type, animation_subtype, direction, instant);
+
+		char namelower[MAX_NAME_LEN];
+		strncpy(namelower, ss->sub_name, MAX_NAME_LEN);
+		strlwr(namelower);
+
+		ship_info* sip = &Ship_info[ship_entry->shipp->ship_info_index];
+		auto animations = sip->animations.animationSet.find({ animation_type, animation_subtype });
+		if (animations != sip->animations.animationSet.end()) {
+			auto namedAnimation = animations->second.find(namelower);
+			if (namedAnimation != animations->second.end()) {
+				namedAnimation->second->start(model_get_instance(ship_entry->shipp->model_instance_num), direction == -1);
+			}
+		}
+
+		animations = sip->animations.animationSet.find({ animation_type, animation::ModelAnimationSet::SUBTYPE_DEFAULT });
+		if (animations != sip->animations.animationSet.end()) {
+			auto namedAnimation = animations->second.find(namelower);
+			if (namedAnimation != animations->second.end()) {
+				namedAnimation->second->start(model_get_instance(ship_entry->shipp->model_instance_num), direction == -1);
+			}
+		}
 	}
 	else
 	{
-		model_anim_start_type(ship_entry->shipp, animation_type, animation_subtype, direction, instant);
+		ship_info* sip = &Ship_info[ship_entry->shipp->ship_info_index];
+		auto animations = sip->animations.animationSet.find({ animation_type, animation_subtype });
+		if (animations != sip->animations.animationSet.end()) {
+			for (auto namedAnimation : animations->second) {
+				namedAnimation.second->start(model_get_instance(ship_entry->shipp->model_instance_num), direction == -1);
+			}
+		}
+
+		animations = sip->animations.animationSet.find({ animation_type, animation::ModelAnimationSet::SUBTYPE_DEFAULT });
+		if (animations != sip->animations.animationSet.end()) {
+			for (auto namedAnimation : animations->second) {
+				namedAnimation.second->start(model_get_instance(ship_entry->shipp->model_instance_num), direction == -1);
+			}
+		}
 	}
 }
 
