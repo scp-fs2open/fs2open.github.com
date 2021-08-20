@@ -116,6 +116,7 @@ class waypoint_list;
 #define OPF_FIREBALL			89		// Goober5000 - an entry in fireball.tbl
 #define OPF_SPECIES				90		// Goober5000
 #define OPF_LANGUAGE			91		// Goober5000
+#define OPF_FUNCTIONAL_WHEN_EVAL_TYPE	92	// Goober5000
 
 // Operand return types
 #define	OPR_NUMBER				1	// returns number
@@ -431,6 +432,7 @@ class waypoint_list;
 #define OP_FIRST_OF							(0x0018 | OP_CATEGORY_CONDITIONAL)	// MageKing17
 #define OP_SWITCH							(0x0019 | OP_CATEGORY_CONDITIONAL)	// Goober5000
 #define OP_FUNCTIONAL_SWITCH				(0x001a | OP_CATEGORY_CONDITIONAL)	// Goober5000
+#define OP_FUNCTIONAL_WHEN					(0x001b | OP_CATEGORY_CONDITIONAL)	// Goober5000
 
 
 // sexpressions with side-effects
@@ -1066,6 +1068,7 @@ const char *CTEXT(int n);
 #define SEXP_CHECK_INVALID_SSM_CLASS			-160
 #define SEXP_CHECK_INVALID_FIREBALL				-161
 #define SEXP_CHECK_INVALID_SPECIES				-162
+#define SEXP_CHECK_INVALID_FUNCTIONAL_WHEN_EVAL_TYPE	-163
 
 #define TRAINING_CONTEXT_SPEED		(1<<0)
 #define TRAINING_CONTEXT_FLY_PATH	(1<<1)
@@ -1316,6 +1319,9 @@ extern const char *Sound_environment_option[];
 // Goober5000
 extern int Num_explosion_options;
 extern const char *Explosion_option[];
+
+extern int Num_functional_when_eval_types;
+extern const char *Functional_when_eval_type[];
 
 //The E
 extern int Num_adjust_audio_options;
