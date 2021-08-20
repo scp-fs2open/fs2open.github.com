@@ -9420,7 +9420,7 @@ int sexp_functional_when_eval_type_lookup(const char *text)
  */
 int eval_perform_actions(int n, int op_num)
 {
-	int return_cond, actions_cond, val, actions;
+	int return_cond, actions_cond, val = SEXP_NAN, actions;
 	bool retval_first;
 	Assert( n >= 0 );
 
@@ -9456,6 +9456,11 @@ int eval_perform_actions(int n, int op_num)
 		n = CDR(n);
 
 		actions = n;
+	}
+	else
+	{
+		UNREACHABLE("Unsupported SEXP %d!", op_num);
+		return SEXP_NAN_FOREVER;
 	}
 
 	if (retval_first)
