@@ -2393,6 +2393,11 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss)
 				tentative_return = true;
 				continue;
 			}
+
+			if (!weapon_target_satisfies_lock_restrictions(wip, lep)) {
+				tentative_return = true;
+				continue;
+			}
 		}
 		else {
 			// check tagged-only for bombs only if the flag is set; see Mantis #3114
