@@ -69,7 +69,7 @@ namespace animation {
 		float m_angle;
 		matrix m_rot;
 
-		void recalculate(const submodel_instance* /*submodel_instance*/, const bsp_info* submodel, const ModelAnimationData<>& /*base*/, int /*pmi_id*/) override;
+		void recalculate(const submodel_instance* /*submodel_instance*/, const bsp_info* submodel, const ModelAnimationData<>& /*base*/, int pmi_id) override;
 		ModelAnimationData<true> calculateAnimation(const ModelAnimationData<>& /*base*/, float /*time*/, int /*pmi_id*/) const override;
 		void executeAnimation(const ModelAnimationData<>& /*state*/, float /*timeboundLower*/, float /*timeboundUpper*/, bool /*forwards*/, int /*pmi_id*/) override { };
 

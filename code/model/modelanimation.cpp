@@ -280,6 +280,17 @@ namespace animation {
 
 		if (optional_string("+sub_type:")) {
 			stuff_int(&subtype);
+
+			if (type == ModelAnimationTriggerType::DockBayDoor){
+				if (subtype == 0) {
+					//Apparently the legacy code treated a 0 here like subtype default (this is incorrect, as it doesn't allow triggering on fighterbay 0 only, the new tables will fix this).
+					subtype = ModelAnimationSet::SUBTYPE_DEFAULT;
+				}
+				else {
+					//Increase by 1, so that -x != x is true for all possible values
+					subtype += subtype < 0 ? -1 : 1;
+				}
+			}
 		}
 
 		if (optional_string("+sub_name:")) {
@@ -382,8 +393,8 @@ namespace animation {
 				stuff_vec3d(&angle);
 
 				target.p = fl_radians(angle.xyz.x);
-				target.b = fl_radians(angle.xyz.y);
-				target.h = fl_radians(angle.xyz.z);
+				target.h = fl_radians(angle.xyz.y);
+				target.b = fl_radians(angle.xyz.z);
 			}
 			else {
 				absolute = false;
@@ -393,8 +404,8 @@ namespace animation {
 				stuff_vec3d(&angle);
 
 				target.p = fl_radians(angle.xyz.x);
-				target.b = fl_radians(angle.xyz.y);
-				target.h = fl_radians(angle.xyz.z);
+				target.h = fl_radians(angle.xyz.y);
+				target.b = fl_radians(angle.xyz.z);
 			}
 
 			angles velocity{ 0,0,0 };
@@ -403,8 +414,8 @@ namespace animation {
 				required_string("+velocity:");
 				stuff_vec3d(&vel);
 				velocity.p = fl_radians(vel.xyz.x);
-				velocity.b = fl_radians(vel.xyz.y);
-				velocity.h = fl_radians(vel.xyz.z);
+				velocity.h = fl_radians(vel.xyz.y);
+				velocity.b = fl_radians(vel.xyz.z);
 			}
 
 			optional<angles> acceleration;
@@ -413,10 +424,17 @@ namespace animation {
 				angles accel{ 0,0,0 };
 				vec3d accelVec{ 0,0,0 };
 				stuff_vec3d(&accelVec);
-				accel.p = fl_radians(accelVec.xyz.x);
-				accel.b = fl_radians(accelVec.xyz.y);
-				accel.h = fl_radians(accelVec.xyz.z);
-				acceleration = accel;
+
+				bool allZero = true;
+				for (const float& val : accelVec.a1d)
+					allZero &= val == 0.0f;
+
+				if (!allZero) {
+					accel.p = fl_radians(accelVec.xyz.x);
+					accel.h = fl_radians(accelVec.xyz.y);
+					accel.b = fl_radians(accelVec.xyz.z);
+					acceleration = accel;
+				}
 			}
 
 			if (optional_string("+time:")) {
@@ -733,6 +751,61 @@ namespace animation {
 			}
 		}
 		return started;
+	}
+
+	//Yes why of course does this need special handling...
+	bool ModelAnimationSet::startDockBayDoors(polymodel_instance* pmi, bool reverse, bool forced, bool instant, int subtype) {
+		bool started = false;
+		subtype++;
+
+		for (const auto& animList : animationSet) {
+			if (animList.first.first != ModelAnimationTriggerType::DockBayDoor)
+				continue;
+
+			if (animList.first.second != ModelAnimationSet::SUBTYPE_DEFAULT) {
+				//Trigger on all but x type
+				if (animList.first.second < 0 && animList.first.second == subtype)
+					continue;
+
+				//Trigger only on x type. For the record, animsubtype 0 cannot happen here.
+				if (animList.first.second > 0 && animList.first.second != subtype)
+					continue;
+			}
+			for (auto& namedAnimation : animList.second) {
+				namedAnimation.second->start(pmi, reverse, forced, instant);
+				started = true;
+			}
+		}
+		return started;
+	}
+
+	int ModelAnimationSet::getTimeDockBayDoors(polymodel_instance* pmi, int subtype) {
+		float duration = 0.0f;
+		subtype++;
+
+		for (const auto& animList : animationSet) {
+			if (animList.first.first != ModelAnimationTriggerType::DockBayDoor)
+				continue;
+
+			if (animList.first.second != ModelAnimationSet::SUBTYPE_DEFAULT) {
+				//Trigger on all but x type
+				if (animList.first.second < 0 && animList.first.second == subtype)
+					continue;
+
+				//Trigger only on x type. For the record, animsubtype 0 cannot happen here.
+				if (animList.first.second > 0 && animList.first.second != subtype)
+					continue;
+			}
+			for (auto& namedAnimation : animList.second) {
+				if (namedAnimation.second->m_instances[pmi->id].state == ModelAnimationState::UNTRIGGERED)
+					continue;
+
+				float localDur = namedAnimation.second->m_instances[pmi->id].duration;
+				duration = duration < localDur ? localDur : duration;
+			}
+		}
+
+		return (int) (duration * 1000);
 	}
 
 	int ModelAnimationSet::getTime(polymodel_instance* pmi, ModelAnimationTriggerType type, SCP_string name, int subtype) {

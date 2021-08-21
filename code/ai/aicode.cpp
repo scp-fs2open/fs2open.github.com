@@ -13106,9 +13106,9 @@ void ai_manage_bay_doors(object *pl_objp, ai_info *aip, bool done)
 
 	// trigger an open if we need it
 	if ( (parent_ship->bay_doors_status == MA_POS_NOT_SET) && (parent_ship->bay_doors_wanting_open > 0) ) {
-		if (Ship_info[parent_ship->ship_info_index].animations.startAll(model_get_instance(parent_ship->model_instance_num), animation::ModelAnimationTriggerType::DockBayDoor, false, false, false, shipp->bay_doors_launched_from)) {
+		if (Ship_info[parent_ship->ship_info_index].animations.startDockBayDoors(model_get_instance(parent_ship->model_instance_num), false, false, false, shipp->bay_doors_launched_from)) {
 			parent_ship->bay_doors_status = MA_POS_SET;
-			parent_ship->bay_doors_anim_done_time = Ship_info[parent_ship->ship_info_index].animations.getTimeAll(model_get_instance(parent_ship->model_instance_num), animation::ModelAnimationTriggerType::DockBayDoor, shipp->bay_doors_launched_from);
+			parent_ship->bay_doors_anim_done_time = Ship_info[parent_ship->ship_info_index].animations.getTimeDockBayDoors(model_get_instance(parent_ship->model_instance_num), shipp->bay_doors_launched_from);
 		} else {
 			parent_ship->bay_doors_status = MA_POS_READY;
 		}
@@ -13116,7 +13116,7 @@ void ai_manage_bay_doors(object *pl_objp, ai_info *aip, bool done)
 
 	// if we are already open, and no longer need to be, then close the doors
 	if ( (parent_ship->bay_doors_status == MA_POS_READY) && (parent_ship->bay_doors_wanting_open <= 0) ) {
-		Ship_info[parent_ship->ship_info_index].animations.startAll(model_get_instance(parent_ship->model_instance_num), animation::ModelAnimationTriggerType::DockBayDoor, true, false, false, shipp->bay_doors_launched_from);
+		Ship_info[parent_ship->ship_info_index].animations.startDockBayDoors(model_get_instance(parent_ship->model_instance_num), true, false, false, shipp->bay_doors_launched_from);
 		parent_ship->bay_doors_status = MA_POS_NOT_SET;
 	}
 

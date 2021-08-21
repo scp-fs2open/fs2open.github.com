@@ -122,6 +122,8 @@ namespace animation {
 			vm_angles_2_matrix(&target, &m_targetAngle);
 			vm_matrix_x_matrix(&m_instances[pmi_id].rot, &target, &unrotate);
 		}
+
+		m_duration[pmi_id] = 0.0f;
 	}
 
 	ModelAnimationData<true> ModelAnimationSegmentSetPHB::calculateAnimation(const ModelAnimationData<>& /*base*/, float /*time*/, int pmi_id) const {
@@ -134,7 +136,7 @@ namespace animation {
 	ModelAnimationSegmentSetAngle::ModelAnimationSegmentSetAngle(float angle) :
 		m_angle(angle) { }
 
-	void ModelAnimationSegmentSetAngle::recalculate(const submodel_instance* /*submodel_instance*/, const bsp_info* submodel, const ModelAnimationData<>& /*base*/, int /*pmi_id*/) {
+	void ModelAnimationSegmentSetAngle::recalculate(const submodel_instance* /*submodel_instance*/, const bsp_info* submodel, const ModelAnimationData<>& /*base*/, int pmi_id) {
 		angles angs = vmd_zero_angles;
 
 		switch (submodel->movement_axis_id)
@@ -158,6 +160,8 @@ namespace animation {
 			vm_quaternion_rotate(&m_rot, m_angle, &submodel->movement_axis);
 			break;
 		}
+
+		m_duration[pmi_id] = 0.0f;
 	}
 
 	ModelAnimationData<true> ModelAnimationSegmentSetAngle::calculateAnimation(const ModelAnimationData<>& /*base*/, float /*time*/, int /*pmi_id*/) const {
