@@ -5479,9 +5479,6 @@ void model_subsystem::reset()
 
     path_num = 0;
 
-    n_triggers = 0;
-    triggers = NULL;
-
     turret_reset_delay = 0;
 
     for (auto it = std::begin(target_priority); it != std::end(target_priority); ++it)

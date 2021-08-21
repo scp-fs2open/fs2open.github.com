@@ -1,7 +1,6 @@
 #pragma once
 
 #include "lab/dialogs/lab_dialog.h"
-#include "model/modelanim.h"
 
 
 class DestroySubsystems : public LabDialog {

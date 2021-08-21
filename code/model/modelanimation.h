@@ -12,9 +12,6 @@
 #include <memory>
 #include <map>
 
-//Only needed for the trigger type, will eventually disappear
-#include "model/modelanim.h"
-
 //Since we don't have C++17, this is a small (actually not std conform) implementation of an optional that works for objects with complex constructors
 template<typename T>
 class optional {
@@ -68,6 +65,33 @@ public:
 
 class ship;
 class ship_info;
+
+enum class AnimationTriggerType : int {
+	None = -1,       // No animation
+	Initial,		 // This is just the position the subobject should be placed in
+	Docking_Stage1,	 // Before you dock
+	Docking_Stage2,	 // Before you dock
+	Docking_Stage3,	 // Before you dock
+	Docked,			 // As you dock
+	PrimaryBank,	 // Primary banks
+	SecondaryBank,	 // Secondary banks
+	DockBayDoor,	 // Fighter bays
+	Afterburner,	 // Afterburner -C
+	TurretFiring,	 // Turret shooting -C
+	Scripted,		 // Triggered exclusively by scripting...maybe SEXPs? -C
+	TurretFired,	 // Triggered after a turret has fired -The E
+
+	MaxAnimationTypes
+};
+
+// Model Animation Position settings
+enum EModelAnimationPosition {
+	MA_POS_NOT_SET = 0,	// not yet setup
+	MA_POS_SET = 1,	// set, but is moving
+	MA_POS_READY = 2     // set, done with move
+};
+
+#define ANIMATION_SUBTYPE_ALL INT_MAX
 
 namespace animation {
 
@@ -138,9 +162,10 @@ namespace animation {
 		optional<int> m_submodel;
 		
 	private:
+		//Polymodel Instance ID + submodel ID -> ModelAnimationData
+		static std::map<std::pair<int, int>, ModelAnimationData<>> s_initialData;
+
 		std::shared_ptr<ModelAnimationSegment> m_mainSegment;
-		//Polymodel Instance ID -> ModelAnimationData
-		std::map<int, ModelAnimationData<>> m_initialData;
 
 		friend class ModelAnimation;
 	public:
@@ -150,7 +175,7 @@ namespace animation {
 		virtual ~ModelAnimationSubmodel() = default;
 
 		//Sets the animation to the specified time and applies it to the submodel
-		void play(float time, polymodel_instance* pmi);
+		ModelAnimationData<true> play(float time, polymodel_instance* pmi, ModelAnimationData<> base);
 
 		void reset(polymodel_instance* pmi);
 
@@ -158,8 +183,9 @@ namespace animation {
 		virtual ModelAnimationSubmodel* copy(const SCP_string& /*newSIPname*/);
 
 	private:
-		//Set the submodels current state as the base for the animation, recalculate the animation data (e.g. take this as the base for absolutely defined angles)
-		float saveCurrentAsBase(polymodel_instance* pmi);
+		void saveCurrentAsBase(polymodel_instance* pmi);
+		//recalculate the animation data (e.g. take this as the base for absolutely defined angles)
+		float recalculate(polymodel_instance* pmi);
 		//Reapply the calculated animation state to the submodel
 		virtual void copyToSubmodel(const ModelAnimationData<>& data, polymodel_instance* pmi);
 		virtual std::pair<submodel_instance*, bsp_info*> findSubmodel(polymodel_instance* pmi);
@@ -181,23 +207,24 @@ namespace animation {
 
 
 	class ModelAnimation : public std::enable_shared_from_this <ModelAnimation> {
-		//Polymodel Instance ID -> ModelAnimation*
-		static std::multimap<int, std::shared_ptr<ModelAnimation>> s_runningAnimations;
+		//Polymodel Instance ID -> ModelAnimation* list (naturally ordered by beginning time)
+		static std::map<int, std::list<std::shared_ptr<ModelAnimation>>> s_runningAnimations;
 
 		std::vector<std::shared_ptr<ModelAnimationSubmodel>> m_submodelAnimation;
-		float m_duration = 0.0f;
 
 		struct instance_data {
 			ModelAnimationState state = ModelAnimationState::UNTRIGGERED;
 			float time = 0.0f;
+			float duration = 0.0f;
 		};
 		//PMI ID -> Instance Data
 		std::map<int, instance_data> m_instances;
 
 		bool m_isInitialType;
 
-		ModelAnimationState play(float frametime, polymodel_instance* pmi);
+		ModelAnimationState play(float frametime, polymodel_instance* pmi, std::map<ModelAnimationSubmodel*, ModelAnimationData<true>>* applyBuffer);
 
+		static void apply(polymodel_instance* pmi, std::map<ModelAnimationSubmodel*, ModelAnimationData<true>>* applyBuffer);
 		static void cleanRunning();
 
 		friend struct ModelAnimationSet;
@@ -207,8 +234,8 @@ namespace animation {
 
 		void addSubmodelAnimation(std::shared_ptr<ModelAnimationSubmodel> animation);
 
-		//Start playing the animation. Will stop other animations that have components running on the same submodels
-		void start(polymodel_instance* pmi, bool reverse, bool force = false);
+		//Start playing the animation. Will stop other animations that have components running on the same submodels. instant always requires force
+		void start(polymodel_instance* pmi, bool reverse, bool force = false, bool instant = false);
 		//Stops the animation. If cleanup is set, it will remove the animation from the list of running animations. Don't call without cleanup unless you know what you are doing
 		void stop(polymodel_instance* pmi, bool cleanup = true);
 
@@ -233,10 +260,22 @@ namespace animation {
 		void emplace(const std::shared_ptr<ModelAnimation>& animation, const SCP_string& name, ModelAnimationTriggerType type = ModelAnimationTriggerType::Scripted, int subtype = SUBTYPE_DEFAULT);
 
 		void changeShipName(const SCP_string& name);
+
+		bool start(polymodel_instance* pmi, ModelAnimationTriggerType type, SCP_string name, bool reverse, bool forced = false, bool instant = false, int subtype = SUBTYPE_DEFAULT);
+		bool startAll(polymodel_instance* pmi, ModelAnimationTriggerType type, bool reverse, bool forced = false, bool instant = false, int subtype = SUBTYPE_DEFAULT, bool strict = false);
+
+		int getTime(polymodel_instance* pmi, ModelAnimationTriggerType type, SCP_string name, int subtype = SUBTYPE_DEFAULT);
+		int getTimeAll(polymodel_instance* pmi, ModelAnimationTriggerType type, int subtype = SUBTYPE_DEFAULT, bool strict = false);
 	};
 
 
 	//Start of section of helper functions, mostly to complement the old modelanim functions as required
 
+	extern const std::map<animation::ModelAnimationTriggerType, const char*> Animation_type_names;
+
 	void anim_set_initial_states(ship* shipp);
+
+	ModelAnimationTriggerType anim_match_type(const char* p);
+
+	SCP_string anim_name_from_subsys(model_subsystem* ss);
 }

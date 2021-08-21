@@ -350,7 +350,7 @@ namespace animation {
 				float acceltime2 = fminf(time - (t.*pbh[i] - at.*pbh[i]), at.*pbh[i]);
 				if (acceltime2 > 0) {
 					//Cap this to 0, as it could get negative if it rotates "longer than its duration" (which happens when a different axis takes longer to rotate)
-					currentRot.*pbh[i] += fminf(at.*pbh[i] * a.*pbh[i] * acceltime2 - 0.5f * a.*pbh[i] * acceltime2 * acceltime2, 0.0f);
+					currentRot.*pbh[i] += fmaxf(at.*pbh[i] * a.*pbh[i] * acceltime2 - 0.5f * a.*pbh[i] * acceltime2 * acceltime2, 0.0f);
 				}
 			}
 		}
