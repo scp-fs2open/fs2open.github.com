@@ -118,7 +118,7 @@ void trigger_secondary_bank(Tree* caller) {
 	}
 }
 
-void labviewer_actions_do_triggered_anim(AnimationTriggerType type, SCP_string name, bool direction, int subtype = animation::ModelAnimationSet::SUBTYPE_DEFAULT) {
+void labviewer_actions_do_triggered_anim(AnimationTriggerType type, const SCP_string& name, bool direction, int subtype = animation::ModelAnimationSet::SUBTYPE_DEFAULT) {
 	if (getLabManager()->isSafeForShips()) {
 		auto shipp = &Ships[Objects[getLabManager()->CurrentObject].instance];
 
@@ -441,23 +441,23 @@ void AnimationTrigger::update(LabMode, int) {
 		const animation::ModelAnimationSet& anims = Ship_info[shipp->ship_info_index].animations;
 
 		for (const auto& animList : anims.animationSet) {
-			for (const auto& anim : animList.second) {
+			for (const auto& animation : animList.second) {
 				switch (animList.first.first) {
 				case animation::ModelAnimationTriggerType::TurretFiring: {
-					SCP_string name = anim.first;
+					SCP_string name = animation.first;
 					if (animList.first.second != animation::ModelAnimationSet::SUBTYPE_DEFAULT) {
 						//Legacy layer
-						name = "Turret Model Nr. " + animList.first.second;
+						sprintf(name, "Turret Model Nr. %i", animList.first.second);
 					}
 					
 					animations_tree->AddItem(subsystem_headers[animation::ModelAnimationTriggerType::TurretFiring], name, animList.first.second, true, trigger_turret_firing);
 					break;
 				}
 				case animation::ModelAnimationTriggerType::TurretFired:
-					animations_tree->AddItem(subsystem_headers[animation::ModelAnimationTriggerType::TurretFired], anim.first, animList.first.second, true, trigger_turret_fired);
+					animations_tree->AddItem(subsystem_headers[animation::ModelAnimationTriggerType::TurretFired], animation.first, animList.first.second, true, trigger_turret_fired);
 					break;
 				case animation::ModelAnimationTriggerType::Scripted:
-					animations_tree->AddItem(subsystem_headers[animation::ModelAnimationTriggerType::Scripted], anim.first, animList.first.second, true, trigger_scripted);
+					animations_tree->AddItem(subsystem_headers[animation::ModelAnimationTriggerType::Scripted], animation.first, animList.first.second, true, trigger_scripted);
 					break;
 				default:
 					break;

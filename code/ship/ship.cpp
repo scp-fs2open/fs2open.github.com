@@ -581,7 +581,8 @@ static int Ship_cargo_check_timer;
 
 static int Thrust_anim_inited = 0;
 
-static int ship_get_subobj_model_num(ship_info* sip, char* subobj_name);
+//Currently unused
+//static int ship_get_subobj_model_num(ship_info* sip, char* subobj_name);
 
 SCP_vector<ship_effect> Ship_effects;
 
@@ -19108,6 +19109,7 @@ void parse_weapon_targeting_priorities()
 	}
 }
 
+/* Currently unused
 static int ship_get_subobj_model_num(ship_info* sip, char* subobj_name) 
 {
 	for (int i = 0; i < sip->n_subsystems; i++) {
@@ -19116,7 +19118,7 @@ static int ship_get_subobj_model_num(ship_info* sip, char* subobj_name)
 	}
 
 	return -1;
-}
+}*/
 
 void init_path_metadata(path_metadata& metadata)
 {
@@ -19127,7 +19129,7 @@ void init_path_metadata(path_metadata& metadata)
 
 gamesnd_id ship_get_sound(object *objp, GameSounds id)
 {
-	Assert( objp != NULL );
+	Assert( objp != nullptr);
 	Assert( gamesnd_game_sound_valid(gamesnd_id(id)) );
 
 	// It's possible that this gets called when an object (in most cases the player) is dead or an observer
@@ -19149,7 +19151,7 @@ gamesnd_id ship_get_sound(object *objp, GameSounds id)
 
 bool ship_has_sound(object *objp, GameSounds id)
 {
-	Assert( objp != NULL );
+	Assert( objp != nullptr );
 	Assert( gamesnd_game_sound_valid(id) );
 
 	// It's possible that this gets called when an object (in most cases the player) is dead or an observer

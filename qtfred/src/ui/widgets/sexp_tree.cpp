@@ -4490,7 +4490,7 @@ sexp_list_item* sexp_tree::get_listing_opf_damage_type() {
 sexp_list_item* sexp_tree::get_listing_opf_animation_type() {
 	sexp_list_item head;
 
-	for (const auto &animation_type_name: Animation_type_names) {
+	for (const auto &animation_type_name: animation::Animation_type_names) {
 		head.add_data(animation_type_name.second);
 	}
 

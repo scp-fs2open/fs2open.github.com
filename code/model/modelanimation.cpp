@@ -32,7 +32,7 @@ namespace animation {
 				bool haveInitial = false;
 
 				auto animIterList = s_runningAnimations[pmi->id];
-				for (auto animIter : animIterList) {
+				for (const auto& animIter : animIterList) {
 					//Don't stop this animation, even though it (obviously) runs on the same submodels
 					if (animIter == shared_from_this())
 						continue;
@@ -388,7 +388,7 @@ namespace animation {
 
 			if (optional_string("+absolute_angle:")) {
 				absolute = true;
-				vec3d angle{ 0,0,0 };
+				vec3d angle;
 
 				stuff_vec3d(&angle);
 
@@ -398,7 +398,7 @@ namespace animation {
 			}
 			else {
 				absolute = false;
-				vec3d angle{ 0,0,0 };
+				vec3d angle;
 
 				required_string("+relative_angle:");
 				stuff_vec3d(&angle);
@@ -410,7 +410,7 @@ namespace animation {
 
 			angles velocity{ 0,0,0 };
 			{
-				vec3d vel{ 0,0,0 };
+				vec3d vel;
 				required_string("+velocity:");
 				stuff_vec3d(&vel);
 				velocity.p = fl_radians(vel.xyz.x);
@@ -422,7 +422,7 @@ namespace animation {
 
 			if (optional_string("+acceleration:")) {
 				angles accel{ 0,0,0 };
-				vec3d accelVec{ 0,0,0 };
+				vec3d accelVec;
 				stuff_vec3d(&accelVec);
 
 				bool allZero = true;
@@ -501,7 +501,7 @@ namespace animation {
 
 		//Specified submodel not found. Don't play
 		if (dataIt == s_initialData.end())
-			return ModelAnimationData<true>();
+			return {};
 
 		//Cap the frametime at this submodels duration
 		if (frametime > m_mainSegment->getDuration(pmi->id))
@@ -703,7 +703,7 @@ namespace animation {
 		animationSet = newAnimationSet;
 	}
 
-	bool ModelAnimationSet::start(polymodel_instance* pmi, ModelAnimationTriggerType type, SCP_string name, bool reverse, bool forced, bool instant, int subtype) {
+	bool ModelAnimationSet::start(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& name, bool reverse, bool forced, bool instant, int subtype) {
 		bool started = false;
 		auto animations = animationSet.find({ type, subtype });
 		if (animations != animationSet.end()) {
@@ -808,7 +808,7 @@ namespace animation {
 		return (int) (duration * 1000);
 	}
 
-	int ModelAnimationSet::getTime(polymodel_instance* pmi, ModelAnimationTriggerType type, SCP_string name, int subtype) {
+	int ModelAnimationSet::getTime(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& name, int subtype) {
 		float duration = 0.0f;
 
 		auto animations = animationSet.find({ type, subtype });

@@ -261,11 +261,11 @@ namespace animation {
 
 		void changeShipName(const SCP_string& name);
 
-		bool start(polymodel_instance* pmi, ModelAnimationTriggerType type, SCP_string name, bool reverse, bool forced = false, bool instant = false, int subtype = SUBTYPE_DEFAULT);
+		bool start(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& name, bool reverse, bool forced = false, bool instant = false, int subtype = SUBTYPE_DEFAULT);
 		bool startAll(polymodel_instance* pmi, ModelAnimationTriggerType type, bool reverse, bool forced = false, bool instant = false, int subtype = SUBTYPE_DEFAULT, bool strict = false);
 		bool startDockBayDoors(polymodel_instance* pmi, bool reverse, bool forced, bool instant, int subtype);
 
-		int getTime(polymodel_instance* pmi, ModelAnimationTriggerType type, SCP_string name, int subtype = SUBTYPE_DEFAULT);
+		int getTime(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& name, int subtype = SUBTYPE_DEFAULT);
 		int getTimeAll(polymodel_instance* pmi, ModelAnimationTriggerType type, int subtype = SUBTYPE_DEFAULT, bool strict = false);
 		int getTimeDockBayDoors(polymodel_instance* pmi, int subtype);
 	};

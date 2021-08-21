@@ -186,8 +186,8 @@ namespace animation {
 				angles absoluteOffset{ 0,0,0 };
 				vm_extract_angles_matrix_alternate(&absoluteOffset, &base.orientation);
 				const angles& targetAngle = m_targetAngle;
-				for(int i = 0; i < 3; i++)
-					instanceData.m_actualTarget.*pbh[i] = targetAngle.*pbh[i] - absoluteOffset.*pbh[i];
+				for(float angles::* i : pbh)
+					instanceData.m_actualTarget.*i = targetAngle.*i - absoluteOffset.*i;
 			}
 			else
 				instanceData.m_actualTarget = m_targetAngle;
@@ -206,20 +206,20 @@ namespace animation {
 				angles a = m_acceleration;
 				angles at;
 
-				for (int i = 0; i < 3; i++) {
-					a.*pbh[i] = copysignf(a.*pbh[i], v.*pbh[i]);
-					at.*pbh[i] = fmaxf(v.*pbh[i] / a.*pbh[i], t / 2.0f);
+				for (float angles::* i : pbh) {
+					a.*i = copysignf(a.*i, v.*i);
+					at.*i = fmaxf(v.*i / a.*i, t / 2.0f);
 				}
 				instanceData.m_actualAccel = a;
 				instanceData.m_accelTime = at;
 
-				for (int i = 0; i < 3; i++)
-					instanceData.m_actualTarget.*pbh[i] = 2.0f * v.*pbh[i] / a.*pbh[i] <= t ? (v.*pbh[i] * (a.*pbh[i] * t - v.*pbh[i])) / a.*pbh[i] : a.*pbh[i] * (t * t / 4.0f);
+				for (float angles::* i : pbh)
+					instanceData.m_actualTarget.*i = 2.0f * v.*i / a.*i <= t ? (v.*i * (a.*i * t - v.*i)) / a.*i: a.*i * (t * t / 4.0f);
 
 			}
 			else { //Don't consider acceleration, assume instant velocity.
-				for (int i = 0; i < 3; i++)
-					instanceData.m_actualTarget.*pbh[i] = v.*pbh[i] * t;
+				for (float angles::* i : pbh)
+					instanceData.m_actualTarget.*i = v.*i * t;
 			}
 		}
 
@@ -236,30 +236,30 @@ namespace animation {
 				//If the roots don't have a real solution, it's v = a * t/2, and ta = 1/2*t -> this implies that the acceleration is too small to reach the target distance within the specified time.
 
 				angles a = m_acceleration;
-				for (int i = 0; i < 3; i++)
-					a.*pbh[i] = copysignf(a.*pbh[i], d.*pbh[i]);
+				for (float angles::* i : pbh)
+					a.*i = copysignf(a.*i, d.*i);
 				instanceData.m_actualAccel = a;
 
 				angles at{ 0,0,0 };
 
-				for (int i = 0; i < 3; i++) {
-					float a_abs = fabsf(a.*pbh[i]);
-					float radicant = a_abs * t * t - 4 * fabsf(d.*pbh[i]);
+				for (float angles::* i : pbh) {
+					float a_abs = fabsf(a.*i);
+					float radicant = a_abs * t * t - 4 * fabsf(d.*i);
 					if (radicant >= 0) {
-						instanceData.m_actualVelocity.*pbh[i] = copysignf(0.5f * (a_abs * t - sqrtf(a_abs) * sqrtf(radicant)), d.*pbh[i]);
-						at.*pbh[i] = 0.5f * (t - (sqrtf(radicant) / sqrtf(a_abs)));
+						instanceData.m_actualVelocity.*i = copysignf(0.5f * (a_abs * t - sqrtf(a_abs) * sqrtf(radicant)), d.*i);
+						at.*i = 0.5f * (t - (sqrtf(radicant) / sqrtf(a_abs)));
 					}
 					else {
-						instanceData.m_actualVelocity.*pbh[i] = a.*pbh[i] * t / 2.0f;
-						at.*pbh[i] = t / 2.0f;
+						instanceData.m_actualVelocity.*i = a.*i * t / 2.0f;
+						at.*i = t / 2.0f;
 					}
 				}
 
 				instanceData.m_accelTime = at;
 			}
 			else { //Don't consider acceleration, assume instant velocity.
-				for (int i = 0; i < 3; i++)
-					instanceData.m_actualVelocity.*pbh[i] = d.*pbh[i] / t;
+				for (float angles::* i : pbh)
+					instanceData.m_actualVelocity.*i = d.*i / t;
 			}
 
 		}
@@ -269,8 +269,8 @@ namespace animation {
 			m_duration[pmi_id] = time;
 
 			angles actualTime{ 0,0,0 };
-			for (int i = 0; i < 3; i++)
-				actualTime.*pbh[i] = time;
+			for (float angles::* i : pbh)
+				actualTime.*i = time;
 
 			instanceData.m_actualTime = actualTime;
 
@@ -288,14 +288,14 @@ namespace animation {
 			angles accelTime{ 0,0,0 };
 			angles actualTime{ 0,0,0 };
 
-			for (int i = 0; i < 3; i++) {
-				if (d.*pbh[i] != 0.0f) {
-					if (v.*pbh[i] == 0.0f) {
-						Warning(LOCATION, "Tried to rotate submodel %s by %.2f in axis %d, but velocity was 0! Rotating with velocity 1...", submodel->name, d.*pbh[i], i);
-						v.*pbh[i] = 1;
+			for (float angles::* i : pbh) {
+				if (d.*i != 0.0f) {
+					if (v.*i == 0.0f) {
+						Warning(LOCATION, "Tried to rotate submodel %s by %.2f, but velocity was 0! Rotating with velocity 1...", submodel->name, d.*i);
+						v.*i = 1;
 					}
 
-					v.*pbh[i] = copysignf(v.*pbh[i], d.*pbh[i]);
+					v.*i = copysignf(v.*i, d.*i);
 
 					float durationAxis = 0.0f;
 
@@ -303,27 +303,27 @@ namespace animation {
 						//Assume equations from calc angles case, but solve for ta and t now, with the resulting ta <= t / 2.
 						//t = v/a+d/v and ta = v/a
 						//If thus d/v < v/a, it's t = 2*sqrt(d/a), and ta = 1/2*t -> this implies that the acceleration is too small to reach the target velocity within the specified distance.
-						float a = copysignf(((angles)m_acceleration).*pbh[i], d.*pbh[i]);
-						actualAccel.*pbh[i] = a;
+						float a = copysignf(((angles)m_acceleration).*i, d.*i);
+						actualAccel.*i = a;
 
-						float va = v.*pbh[i] / a;
-						float dv = d.*pbh[i] / v.*pbh[i];
+						float va = v.*i / a;
+						float dv = d.*i / v.*i;
 
 						if (dv >= va) {
 							durationAxis = va + dv;
-							accelTime.*pbh[i] = va;
+							accelTime.*i = va;
 						}
 						else {
-							durationAxis = 2.0f * sqrtf(d.*pbh[i] / a);
-							accelTime.*pbh[i] = durationAxis / 2.0f;
+							durationAxis = 2.0f * sqrtf(d.*i / a);
+							accelTime.*i = durationAxis / 2.0f;
 						}
 					}
 					else {
-						durationAxis = d.*pbh[i] / v.*pbh[i];
+						durationAxis = d.*i / v.*i;
 					}
 
 					duration = duration < durationAxis ? durationAxis : duration;
-					actualTime.*pbh[i] = durationAxis;
+					actualTime.*i = durationAxis;
 				}
 			}
 			
@@ -347,33 +347,33 @@ namespace animation {
 			const angles& v = instanceData.m_actualVelocity;
 			const angles& t = instanceData.m_actualTime;
 
-			for (int i = 0; i < 3; i++) {
-				float acceltime1 = fminf(time, at.*pbh[i]);
-				currentRot.*pbh[i] = 0.5f * a.*pbh[i] * acceltime1 * acceltime1;
+			for (float angles::* i : pbh) {
+				float acceltime1 = fminf(time, at.*i);
+				currentRot.*i = 0.5f * a.*i * acceltime1 * acceltime1;
 				
-				float lineartime = fminf(time - at.*pbh[i], t.*pbh[i] - 2.0f * at.*pbh[i]);
+				float lineartime = fminf(time - at.*i, t.*i - 2.0f * at.*i);
 				if (lineartime > 0) {
-					currentRot.*pbh[i] += v.*pbh[i] * lineartime;
+					currentRot.*i += v.*i * lineartime;
 				}
 
-				float acceltime2 = fminf(time - (t.*pbh[i] - at.*pbh[i]), at.*pbh[i]);
+				float acceltime2 = fminf(time - (t.*i - at.*i), at.*i);
 				if (acceltime2 > 0) {
 					//Cap this to 0, as it could get negative if it rotates "longer than its duration" (which happens when a different axis takes longer to rotate)
-					currentRot.*pbh[i] += fmaxf(at.*pbh[i] * a.*pbh[i] * acceltime2 - 0.5f * a.*pbh[i] * acceltime2 * acceltime2, 0.0f);
+					currentRot.*i += fmaxf(at.*i * a.*i * acceltime2 - 0.5f * a.*i * acceltime2 * acceltime2, 0.0f);
 				}
 			}
 		}
 		else {
-			for (int i = 0; i < 3; i++) // Linear Rotation
-				currentRot.*pbh[i] = instanceData.m_actualVelocity.*pbh[i] * time;
+			for (float angles::* i : pbh)// Linear Rotation
+				currentRot.*i = instanceData.m_actualVelocity.*i * time;
 		}
 
-		for (int i = 0; i < 3; i++) { // Clamp rotation to actual target
-			if (instanceData.m_actualTarget.*pbh[i] < 0) {
-				currentRot.*pbh[i] = fmaxf(instanceData.m_actualTarget.*pbh[i], currentRot.*pbh[i]);
+		for (float angles::* i : pbh) { // Clamp rotation to actual target
+			if (instanceData.m_actualTarget.*i < 0) {
+				currentRot.*i = fmaxf(instanceData.m_actualTarget.*i, currentRot.*i);
 			}
 			else {
-				currentRot.*pbh[i] = fminf(instanceData.m_actualTarget.*pbh[i], currentRot.*pbh[i]);
+				currentRot.*i = fminf(instanceData.m_actualTarget.*i, currentRot.*i);
 			}
 		}
 
@@ -388,7 +388,7 @@ namespace animation {
 
 
 	ModelAnimationSegmentSoundDuring::ModelAnimationSegmentSoundDuring(std::shared_ptr<ModelAnimationSegment> segment, gamesnd_id start, gamesnd_id end, gamesnd_id during, bool flipIfReversed) :
-		m_segment(segment), m_start(start), m_end(end), m_during(during), m_flipIfReversed(flipIfReversed) { }
+		m_segment(std::move(segment)), m_start(start), m_end(end), m_during(during), m_flipIfReversed(flipIfReversed) { }
 
 	void ModelAnimationSegmentSoundDuring::recalculate(const submodel_instance* submodel_instance, const bsp_info* submodel, const ModelAnimationData<>& base, int pmi_id) {
 		m_segment->recalculate(submodel_instance, submodel, base, pmi_id);
