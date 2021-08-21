@@ -152,7 +152,7 @@ namespace animation {
 		//This function needs to contain anything that manipulates ModelAnimationData (such as any movement)
 		virtual ModelAnimationData<true> calculateAnimation(const ModelAnimationData<>& base, float time, int pmi_id) const = 0;
 		//This function needs to contain any animation parts that do not change ModelAnimationData (such as sound or particles)
-		virtual void executeAnimation(const ModelAnimationData<>& state, float time, int pmi_id) const = 0;
+		virtual void executeAnimation(const ModelAnimationData<>& state, float timeboundLower, float timeboundUpper, bool forwards, int pmi_id) = 0;
 	};
 	
 
@@ -175,7 +175,7 @@ namespace animation {
 		virtual ~ModelAnimationSubmodel() = default;
 
 		//Sets the animation to the specified time and applies it to the submodel
-		ModelAnimationData<true> play(float time, polymodel_instance* pmi, ModelAnimationData<> base);
+		ModelAnimationData<true> play(float time, float frametimePrev, bool forwards, polymodel_instance* pmi, ModelAnimationData<> base);
 
 		void reset(polymodel_instance* pmi);
 

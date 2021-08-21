@@ -39,13 +39,17 @@ namespace animation {
 		return delta;
 	}
 
-	void ModelAnimationSegmentSerial::executeAnimation(const ModelAnimationData<>& state, float time, int pmi_id) const {
+	void ModelAnimationSegmentSerial::executeAnimation(const ModelAnimationData<>& state, float timeboundLower, float timeboundUpper, bool forwards, int pmi_id) {
 		for (const auto& segment : m_segments) {
-			if (time < segment->getDuration(pmi_id)) {
-				segment->executeAnimation(state, time, pmi_id);
-				return;
+			if (timeboundLower < segment->getDuration(pmi_id)) {
+				segment->executeAnimation(state, fmaxf(0.0f, timeboundLower), fminf(timeboundUpper, segment->getDuration(pmi_id)), forwards, pmi_id);
 			}
-			time -= segment->getDuration(pmi_id);
+
+			timeboundLower -= segment->getDuration(pmi_id);
+			timeboundUpper -= segment->getDuration(pmi_id);
+
+			if (timeboundUpper < 0)
+				return;
 		}
 	}
 
@@ -84,10 +88,11 @@ namespace animation {
 		return delta;
 	}
 
-	void ModelAnimationSegmentParallel::executeAnimation(const ModelAnimationData<>& state, float time, int pmi_id) const {
+	void ModelAnimationSegmentParallel::executeAnimation(const ModelAnimationData<>& state, float timeboundLower, float timeboundUpper, bool forwards, int pmi_id) {
 		for (const auto& segment : m_segments) {
-			if(time < segment->getDuration(pmi_id))
-				segment->executeAnimation(state, time, pmi_id);
+			if (timeboundLower < segment->getDuration(pmi_id)) {
+				segment->executeAnimation(state, timeboundLower, fminf(timeboundUpper, segment->getDuration(pmi_id)), forwards, pmi_id);
+			}
 		}
 	}
 
@@ -106,22 +111,22 @@ namespace animation {
 	ModelAnimationSegmentSetPHB::ModelAnimationSegmentSetPHB(const angles& angle, bool isAngleRelative) :
 		m_targetAngle(angle), m_isAngleRelative(isAngleRelative) { }
 
-	void ModelAnimationSegmentSetPHB::recalculate(const submodel_instance* /*submodel_instance*/, const bsp_info* /*submodel*/, const ModelAnimationData<>& base, int /*pmi_id*/) {
+	void ModelAnimationSegmentSetPHB::recalculate(const submodel_instance* /*submodel_instance*/, const bsp_info* /*submodel*/, const ModelAnimationData<>& base, int pmi_id) {
 		if (m_isAngleRelative) {
-			vm_angles_2_matrix(&m_rot, &m_targetAngle);
+			vm_angles_2_matrix(&m_instances[pmi_id].rot, &m_targetAngle);
 		}
 		else {
 			//In Absolute mode we need to undo the previously applied rotation to make sure we actually end up at the target rotation despite having only a delta we output, as opposed to just overwriting the value
 			matrix unrotate, target;
 			vm_copy_transpose(&unrotate, &base.orientation);
 			vm_angles_2_matrix(&target, &m_targetAngle);
-			vm_matrix_x_matrix(&m_rot, &target, &unrotate);
+			vm_matrix_x_matrix(&m_instances[pmi_id].rot, &target, &unrotate);
 		}
 	}
 
-	ModelAnimationData<true> ModelAnimationSegmentSetPHB::calculateAnimation(const ModelAnimationData<>& /*base*/, float /*time*/, int /*pmi_id*/) const {
+	ModelAnimationData<true> ModelAnimationSegmentSetPHB::calculateAnimation(const ModelAnimationData<>& /*base*/, float /*time*/, int pmi_id) const {
 		ModelAnimationData<true> data;
-		data.orientation = m_rot;
+		data.orientation = m_instances.at(pmi_id).rot;
 		return data;
 	}
 
@@ -375,5 +380,51 @@ namespace animation {
 		delta.orientation = orient;
 
 		return delta;
+	}
+
+
+	ModelAnimationSegmentSoundDuring::ModelAnimationSegmentSoundDuring(std::shared_ptr<ModelAnimationSegment> segment, gamesnd_id start, gamesnd_id end, gamesnd_id during, bool flipIfReversed) :
+		m_segment(segment), m_start(start), m_end(end), m_during(during), m_flipIfReversed(flipIfReversed) { }
+
+	void ModelAnimationSegmentSoundDuring::recalculate(const submodel_instance* submodel_instance, const bsp_info* submodel, const ModelAnimationData<>& base, int pmi_id) {
+		m_segment->recalculate(submodel_instance, submodel, base, pmi_id);
+		m_duration[pmi_id] = m_segment->getDuration(pmi_id);
+	}
+
+	ModelAnimationData<true> ModelAnimationSegmentSoundDuring::calculateAnimation(const ModelAnimationData<>& base, float time, int pmi_id) const {
+		return m_segment->calculateAnimation(base, time, pmi_id);
+	}
+
+	void ModelAnimationSegmentSoundDuring::executeAnimation(const ModelAnimationData<>& state, float timeboundLower, float timeboundUpper, bool forwards, int pmi_id) {
+		if (timeboundLower <= 0.0f && 0.0f <= timeboundUpper) {
+			if (!m_flipIfReversed || forwards)
+				playStartSnd(pmi_id);
+			else
+				playEndSnd(pmi_id);
+		}
+
+		if (0.0f < timeboundLower && timeboundUpper < m_duration.at(pmi_id)) {
+			if (m_during.isValid() && (!m_instances[pmi_id].currentlyPlaying.isValid() || !snd_is_playing(m_instances[pmi_id].currentlyPlaying)))
+				snd_play_looping(gamesnd_get_game_sound(m_during));
+		}
+
+		if (timeboundLower <= m_duration.at(pmi_id) && m_duration.at(pmi_id) <= timeboundUpper) {
+			if (!m_flipIfReversed || forwards)
+				playEndSnd(pmi_id);
+			else
+				playStartSnd(pmi_id);
+		}
+		m_segment->executeAnimation(state, timeboundLower, timeboundUpper, forwards, pmi_id);
+	}
+
+	void ModelAnimationSegmentSoundDuring::playStartSnd(int pmi_id) {
+		if(m_start.isValid())
+			m_instances[pmi_id].currentlyPlaying = snd_play(gamesnd_get_game_sound(m_start));
+	}
+	void ModelAnimationSegmentSoundDuring::playEndSnd(int pmi_id) {
+		if (m_end.isValid()) {
+			snd_stop(m_instances[pmi_id].currentlyPlaying);
+			m_instances[pmi_id].currentlyPlaying = snd_play(gamesnd_get_game_sound(m_end));
+		}
 	}
 }

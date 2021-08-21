@@ -15,6 +15,8 @@ namespace animation {
 	ModelAnimationState ModelAnimation::play(float frametime, polymodel_instance* pmi, std::map<ModelAnimationSubmodel*, ModelAnimationData<true>>* applyBuffer) {
 		instance_data& instanceData = m_instances[pmi->id];
 
+		float prevTime = instanceData.time;
+
 		switch (instanceData.state) {
 		case ModelAnimationState::UNTRIGGERED:
 			//We have a new animation starting up in this phase. Put it in the list of running animations to track and step it later
@@ -77,7 +79,7 @@ namespace animation {
 				ModelAnimationData<true>& previousDelta = (*applyBuffer)[animation.get()];
 
 				base.applyDelta(previousDelta);
-				ModelAnimationData<true> delta = animation->play(instanceData.time, pmi, base);
+				ModelAnimationData<true> delta = animation->play(instanceData.time, prevTime, true, pmi, base);
 				previousDelta.applyDelta(delta);
 			}
 			break;
@@ -100,7 +102,7 @@ namespace animation {
 				ModelAnimationData<true>& previousDelta = (*applyBuffer)[animation.get()];
 
 				base.applyDelta(previousDelta);
-				ModelAnimationData<true> delta = animation->play(instanceData.time, pmi, base);
+				ModelAnimationData<true> delta = animation->play(instanceData.time, prevTime, false, pmi, base);
 				previousDelta.applyDelta(delta);
 			}
 
@@ -357,7 +359,6 @@ namespace animation {
 			std::shared_ptr<ModelAnimation> anim = std::shared_ptr<ModelAnimation>(new ModelAnimation());
 			
 			auto mainSegment = std::shared_ptr<ModelAnimationSegmentSerial>(new ModelAnimationSegmentSerial());
-			auto moveSegment = std::shared_ptr<ModelAnimationSegmentParallel>(new ModelAnimationSegmentParallel());
 
 			if (optional_string("+delay:")) {
 				int delayByMs;
@@ -366,13 +367,9 @@ namespace animation {
 				mainSegment->addSegment(delay);
 			}
 
-			mainSegment->addSegment(moveSegment);
-
+			int delayByMsReverse = -1;
 			if (optional_string("+reverse_delay:")) {
-				int delayByMs;
-				stuff_int(&delayByMs);
-				auto delay = std::shared_ptr<ModelAnimationSegmentWait>(new ModelAnimationSegmentWait(((float)delayByMs) * 0.001f));
-				mainSegment->addSegment(delay);
+				stuff_int(&delayByMsReverse);
 			}
 
 			angles target{ 0,0,0 };
@@ -430,7 +427,6 @@ namespace animation {
 			}
 
 			auto rotation = std::shared_ptr<ModelAnimationSegmentRotation>(new ModelAnimationSegmentRotation(target, velocity, optional<float>(), acceleration, absolute));
-			moveSegment->addSegment(rotation);
 
 			if (optional_string("$Sound:")) {
 				gamesnd_id start_sound;
@@ -447,7 +443,15 @@ namespace animation {
 				required_string("+Radius:");
 				stuff_float(&snd_rad);
 
-				//TODO Add sound segment
+				auto sound = std::shared_ptr<ModelAnimationSegmentSoundDuring>(new ModelAnimationSegmentSoundDuring(rotation, start_sound, end_sound, loop_sound, true));
+				mainSegment->addSegment(sound);
+			}
+			else
+				mainSegment->addSegment(rotation);
+
+			if (delayByMsReverse != -1) {
+				auto delay = std::shared_ptr<ModelAnimationSegmentWait>(new ModelAnimationSegmentWait(((float)delayByMsReverse) * 0.001f));
+				mainSegment->addSegment(delay);
 			}
 
 			auto subsys = std::shared_ptr<ModelAnimationSubmodel>(new ModelAnimationSubmodel(sp->subobj_name, std::move(mainSegment)));
@@ -471,7 +475,7 @@ namespace animation {
 		return new ModelAnimationSubmodel(*this);
 	}
 
-	ModelAnimationData<true> ModelAnimationSubmodel::play(float frametime, polymodel_instance* pmi, ModelAnimationData<> base) {
+	ModelAnimationData<true> ModelAnimationSubmodel::play(float frametime, float frametimePrev, bool forwards, polymodel_instance* pmi, ModelAnimationData<> base) {
 		if (!m_submodel.has())
 			findSubmodel(pmi);
 
@@ -491,7 +495,10 @@ namespace animation {
 		base.applyDelta(delta);
 
 		//Execute stuff of the animation that doesn't modify this delta (stuff like sounds / particles)
-		m_mainSegment->executeAnimation(base, frametime, pmi->id);
+		if(frametime < frametimePrev)
+			m_mainSegment->executeAnimation(base, frametime, frametimePrev, forwards, pmi->id);
+		else
+			m_mainSegment->executeAnimation(base, frametimePrev, frametime, forwards, pmi->id);
 
 		return delta;
 	}
