@@ -70,11 +70,11 @@ void CampaignEditorDialog::setModel(CampaignEditorDialogModel *new_model) {
 	if (new_model)
 		model = std::unique_ptr<CampaignEditorDialogModel>(new_model);
 
-	ui->cmbBriefingCutscene->setModel(new QStringListModel{model->cutscenes, model.get()});
-	ui->cmbMainhall->setModel(new QStringListModel{model->mainhalls, model.get()});
-	ui->cmbDebriefingPersona->setModel(new QStringListModel{model->debriefingPersonas, model.get()});
-	ui->cmbLoopAnim->setModel(new QStringListModel{model->loopAnims, model.get()});
-	ui->cmbLoopVoice->setModel(new QStringListModel{model->loopVoices, model.get()});
+	ui->cmbBriefingCutscene->setModel(new QStringListModel{CampaignEditorDialogModel::cutscenes(), model.get()});
+	ui->cmbMainhall->setModel(new QStringListModel{CampaignEditorDialogModel::mainhalls(), model.get()});
+	ui->cmbDebriefingPersona->setModel(new QStringListModel{CampaignEditorDialogModel::debriefingPersonas(), model.get()});
+	ui->cmbLoopAnim->setModel(new QStringListModel{CampaignEditorDialogModel::loopAnims(), model.get()});
+	ui->cmbLoopVoice->setModel(new QStringListModel{CampaignEditorDialogModel::loopVoices(), model.get()});
 
 	model->supplySubModels(*ui->lstShips, *ui->lstWeapons, *ui->lstMissions, *ui->txaDescr);
 

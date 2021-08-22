@@ -207,11 +207,11 @@ private:
 
 public:
 // parsed table / cfile data
-	const QStringList cutscenes;
-	const QStringList mainhalls;
-	const QStringList debriefingPersonas;
-	const QStringList loopAnims;
-	const QStringList loopVoices;
+	static const QStringList& cutscenes();
+	static const QStringList& mainhalls();
+	static const QStringList& debriefingPersonas();
+	static const QStringList& loopAnims();
+	static const QStringList& loopVoices();
 
 // Model state -- specs
 	const QString campaignFile;

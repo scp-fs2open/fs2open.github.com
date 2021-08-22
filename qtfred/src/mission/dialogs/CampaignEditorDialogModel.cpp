@@ -19,46 +19,6 @@ namespace fso {
 namespace fred {
 namespace dialogs {
 
-static QStringList initCutscenes() {
-	QStringList ret{""};
-	for (auto& cs: Cutscenes)
-		ret << cs.filename;
-	return ret;
-}
-
-static QStringList initMainhalls() {
-	QStringList ret;
-	for (auto& vec_mh: Main_hall_defines) {
-		for (auto& mh: vec_mh){
-			QString name{ mh.name.c_str() };
-			if (! ret.contains(name))
-				ret << name;
-		}
-	}
-	return ret;
-}
-
-static QStringList initDebriefingPersonas() {
-	QStringList ret{""};
-	for (auto& rn: Ranks) {
-		for (auto& p: rn.promotion_text){
-			QString persona{ QString::number(p.first) };
-			if (p.first >= 0 && ! ret.contains(persona))
-				ret << persona;
-		}
-	}
-	return ret;
-}
-
-static QStringList initFilelist(const int type) {
-	QStringList ret{""};
-	SCP_vector<SCP_string> fl;
-	cf_get_file_list(fl, type, "*", CF_SORT_NAME, nullptr, CF_LOCATION_TYPE_PRIMARY_MOD);
-	for (auto& f: fl)
-		ret << QString::fromStdString(f);
-	return ret;
-}
-
 static QString loadFile(QString file, const QString& campaignType) {
 	if (file.isEmpty()) {
 		mission_campaign_clear();
@@ -107,13 +67,7 @@ static SCP_vector<SCP_string> getMissions(){
 	return missions;
 }
 
-static inline bool isCampaignCompatible(const mission &fsoMission){
-	return (Campaign.type == CAMPAIGN_TYPE_SINGLE && fsoMission.game_type & (MISSION_TYPE_SINGLE|MISSION_TYPE_TRAINING))
-			|| (Campaign.type == CAMPAIGN_TYPE_MULTI_COOP && fsoMission.game_type & MISSION_TYPE_MULTI_COOP)
-			|| (Campaign.type == CAMPAIGN_TYPE_MULTI_TEAMS && fsoMission.game_type & MISSION_TYPE_MULTI_TEAMS);
-}
-
-static inline bool parseMnPart(mission *mn, const char *filename){
+static bool parseMnPart(mission *mn, const char *filename){
 	try {
 		read_file_text(filename, CF_TYPE_MISSIONS);
 
@@ -137,123 +91,9 @@ static inline bool parseMnPart(mission *mn, const char *filename){
 	return true;
 }
 
-static inline QList<QAction*> getParsedEvts(QObject *parent) {
-	QList<QAction*> ret;
-	for (int i = 0; i < Num_mission_events; i++)
-		ret << new QAction{ Mission_events[i].name, parent };
-	return ret;
-}
-
-static inline QList<QAction*> getParsedGoals(QObject *parent) {
-	QList<QAction*> ret;
-	for (int i = 0; i < Num_goals; i++)
-		ret << new QAction{ Mission_goals[i].name, parent };
-	return ret;
-}
-
-CampaignEditorDialogModel::CampaignBranchData::CampaignBranchData(CampaignEditorDialogModel *model, int sexp_branch, const QString &from, const cmission *_loop) :
-	sexp(CAR(sexp_branch)),
-	loop(_loop),
-	loopDescr(new AssociatedPlainTextDocument(_loop ? _loop->mission_branch_desc : "", model))
-{
-	int node_next = CADR(sexp_branch);
-	if (!stricmp(CTEXT(node_next), "end-of-campaign")) {
-		type = END;
-	} else if (!stricmp(CTEXT(node_next), "next-mission")) {
-		next = CTEXT(CDR(node_next));
-		type = (from == next) ? REPEAT : NEXT_NOT_FOUND;
-	}
-
-	QObject::connect(loopDescr, &QTextDocument::contentsChanged, model, &CampaignEditorDialogModel::flagModified);
-	if (loop) {
-		loopAnim = _loop->mission_branch_brief_anim;
-		loopVoice = _loop->mission_branch_brief_sound;
-	}
-
-}
-
-CampaignEditorDialogModel::CampaignBranchData::CampaignBranchData(CampaignEditorDialogModel *model, const QString &from, QString to) :
-	type(to.isEmpty() ? END : to == from ? REPEAT : NEXT),
-	sexp(Locked_sexp_true),
-	next(std::move(to)),
-	loop(false),
-	loopDescr(new AssociatedPlainTextDocument("", model))
-{
-	QObject::connect(loopDescr, &QTextDocument::contentsChanged, model, &CampaignEditorDialogModel::flagModified);
-}
-
-void CampaignEditorDialogModel::CampaignBranchData::connect(const SCP_unordered_set<const CampaignMissionData*>& missions) {
-	if (std::find_if(missions.cbegin(), missions.cend(),
-					 [&](const CampaignMissionData* mn){
-						return next == mn->filename; })
-			== missions.cend())
-		type = NEXT_NOT_FOUND;
-	else
-		type = NEXT;
-}
-
-
-const SCP_map<CampaignEditorDialogModel::CampaignBranchData::BranchType, QString> CampaignEditorDialogModel::CampaignBranchData::branchTexts{
-	{INVALID, ""}, {REPEAT, "Repeat mission "}, {NEXT, "Branch to "}, {NEXT_NOT_FOUND, "Branch to "}, {END, "End of Campaign"}
-};
-
-CampaignEditorDialogModel::CampaignMissionData::CampaignMissionData(QString file, bool loaded, const mission *fsoMn, const cmission *cm, QObject* parent) :
-	filename(std::move(file)),
-	fredable(loaded),
-	nPlayers(loaded ? fsoMn->num_players : 0),
-	notes(loaded ? fsoMn->notes : ""),
-	events(loaded ? getParsedEvts(parent) : QList<QAction*>{}),
-	goals(loaded ? getParsedGoals(parent) : QList<QAction*>{}),
-	briefingCutscene(cm ? cm->briefing_cutscene : ""),
-	mainhall(cm ? cm->main_hall.c_str() : ""),
-	debriefingPersona(cm ? QString::number(cm->debrief_persona_index) : "")
-{}
-
-void CampaignEditorDialogModel::CampaignMissionData::initMissions(
-		const SCP_vector<SCP_string>::const_iterator &m_it,
-		CheckedDataListModel<CampaignEditorDialogModel::CampaignMissionData> &model)
-{
-	const QString filename{ QString::fromStdString(*m_it).append(".fs2") };
-	const cmission * cm_it{
-		std::find_if(Campaign.missions, &Campaign.missions[Campaign.num_missions],
-				[&](const cmission &cm){ return filename == cm.name; })};
-	if (cm_it == &Campaign.missions[Campaign.num_missions])
-		cm_it = nullptr;
-
-	mission temp{};
-	bool loaded{parseMnPart(&temp, qPrintable(filename))};
-
-	if (! isCampaignCompatible(temp))
-		return;
-
-	CampaignMissionData* data{
-		new CampaignMissionData{ filename, loaded, &temp, cm_it, &model	}
-	};
-
-	if (! loaded)
-		QMessageBox::warning(nullptr, "Error loading mission", "Could not get info from mission: " + filename +"\nFile corrupted?");
-
-	model.initRow(filename,	data, cm_it, loaded ? Qt::color0 : Qt::red);
-}
-
-void CampaignEditorDialogModel::CampaignMissionData::branchesFromFormula(CampaignEditorDialogModel *model, int formula, const cmission *loop) {
-	if ( formula < 0 || stricmp(CTEXT(formula), "cond"))
-		return;
-
-	for (int it_cond_arm = CDR(formula);
-		 it_cond_arm != -1;
-		 it_cond_arm = CDR(it_cond_arm) )
-		branches.emplace_back(model, CAR(it_cond_arm), filename, loop);
-}
-
 CampaignEditorDialogModel::CampaignEditorDialogModel(CampaignEditorDialog* _parent, EditorViewport* viewport, const QString &file, const QString& newCampaignType) :
 	AbstractDialogModel(_parent, viewport),
 	parent(_parent),
-	cutscenes(initCutscenes()),
-	mainhalls(initMainhalls()),
-	debriefingPersonas(initDebriefingPersonas()),
-	loopAnims(initFilelist(CF_TYPE_INTERFACE)), // as per campaigneditordlg.cpp:810
-	loopVoices(initFilelist(CF_TYPE_VOICE_CMD_BRIEF)), // as per campaigneditordlg.cpp:832
 	campaignFile(loadFile(file, newCampaignType)),
 	campaignType(campaignTypes[Campaign.type]),
 	initialShips(Ship_info, &initShips, this),
@@ -316,52 +156,6 @@ int CampaignEditorDialogModel::getCampaignNumPlayers() const {
 	return (*checked.cbegin())->nPlayers;
 }
 
-void CampaignEditorDialogModel::setCurBrIsLoop(bool isLoop) {
-	if (! (mnData_it && mnData_it->brData_it)) return;
-	modify<bool>(mnData_it->brData_it->loop, isLoop);
-	parent->updateUIMission();
-}
-
-void CampaignEditorDialogModel::setCurLoopAnim(const QString &anim) {
-	if (! (mnData_it && mnData_it->brData_it)) return;
-	modify<QString>(mnData_it->brData_it->loopAnim, anim);
-	parent->updateUIBranch();
-}
-
-void CampaignEditorDialogModel::setCurLoopVoice(const QString &voice) {
-	if (! (mnData_it && mnData_it->brData_it)) return;
-	modify<QString>(mnData_it->brData_it->loopVoice, voice);
-	parent->updateUIBranch();
-}
-
-bool CampaignEditorDialogModel::saveTo(const QString &file) {
-	bool success = _saveTo(file);
-	QMessageBox::information(parent, file, success ? tr("Successfully saved") : tr("Error saving"));
-	return success;
-}
-
-static QStringList initCampaignTypes() {
-	QStringList ret;
-	for (auto& tp: campaign_types) {  //missioncampaign.h global
-		ret << tp;
-	}
-	return ret;
-}
-const QStringList CampaignEditorDialogModel::campaignTypes { initCampaignTypes() };
-
-void CampaignEditorDialogModel::checkMissionDrop(const QModelIndex &idx, const QModelIndex &bottomRight, const QVector<int> &roles) {
-	Assert(idx == bottomRight);
-	Assert(missionData.internalDataConst(idx));
-
-	if (roles.contains(Qt::CheckStateRole)	&& ! missionData.internalDataConst(idx)->fredable) {
-		if (missionData.data(idx, Qt::CheckStateRole).toBool()) {
-			droppedMissions.removeAll(missionData.data(idx).toString());
-		} else {
-			droppedMissions.append(missionData.data(idx).toString());
-		}
-	}
-}
-
 void CampaignEditorDialogModel::connectBranches(bool uiUpdate, const campaign *cpgn) {
 	for (auto& mn: missionData.getCheckedData()) {
 		if (cpgn) {
@@ -406,6 +200,34 @@ void CampaignEditorDialogModel::supplySubModelLoop(QPlainTextEdit &descr) {
 		getCurBr()->loopDescr->associateEdit(&descr);
 	else
 		descr.setDocument(nullptr);
+}
+
+bool CampaignEditorDialogModel::saveTo(const QString &file) {
+	bool success = _saveTo(file);
+	QMessageBox::information(parent, file, success ? tr("Successfully saved") : tr("Error saving"));
+	return success;
+}
+
+void CampaignEditorDialogModel::checkMissionDrop(const QModelIndex &idx, const QModelIndex &bottomRight, const QVector<int> &roles) {
+	Assert(idx == bottomRight);
+	Assert(missionData.internalDataConst(idx));
+
+	if (roles.contains(Qt::CheckStateRole)	&& ! missionData.internalDataConst(idx)->fredable) {
+		if (missionData.data(idx, Qt::CheckStateRole).toBool()) {
+			droppedMissions.removeAll(missionData.data(idx).toString());
+		} else {
+			droppedMissions.append(missionData.data(idx).toString());
+		}
+	}
+}
+
+//placeholder
+bool CampaignEditorDialogModel::_saveTo(QString file) const {
+	if (file.isEmpty())
+		return false;
+	qPrintable(file.replace('/',DIR_SEPARATOR_CHAR));
+	QMessageBox::information(parent, "", campaignDescr);
+	return false;
 }
 
 void CampaignEditorDialogModel::missionSelectionChanged(const QItemSelection & selected) {
@@ -480,14 +302,212 @@ bool CampaignEditorDialogModel::setCurBrCond(const QString &sexp, const QString 
 	return true;
 }
 
-//placeholder
-bool CampaignEditorDialogModel::_saveTo(QString file) const {
-	if (file.isEmpty())
-		return false;
-	qPrintable(file.replace('/',DIR_SEPARATOR_CHAR));
-	QMessageBox::information(parent, "", campaignDescr);
-	return false;
+void CampaignEditorDialogModel::setCurBrIsLoop(bool isLoop) {
+	if (! (mnData_it && mnData_it->brData_it)) return;
+	modify<bool>(mnData_it->brData_it->loop, isLoop);
+	parent->updateUIMission();
 }
+
+void CampaignEditorDialogModel::setCurLoopAnim(const QString &anim) {
+	if (! (mnData_it && mnData_it->brData_it)) return;
+	modify<QString>(mnData_it->brData_it->loopAnim, anim);
+	parent->updateUIBranch();
+}
+
+void CampaignEditorDialogModel::setCurLoopVoice(const QString &voice) {
+	if (! (mnData_it && mnData_it->brData_it)) return;
+	modify<QString>(mnData_it->brData_it->loopVoice, voice);
+	parent->updateUIBranch();
+}
+
+static inline QList<QAction*> getParsedEvts(QObject *parent) {
+	QList<QAction*> ret;
+	for (int i = 0; i < Num_mission_events; i++)
+		ret << new QAction{ Mission_events[i].name, parent };
+	return ret;
+}
+
+static inline QList<QAction*> getParsedGoals(QObject *parent) {
+	QList<QAction*> ret;
+	for (int i = 0; i < Num_goals; i++)
+		ret << new QAction{ Mission_goals[i].name, parent };
+	return ret;
+}
+
+static inline bool isCampaignCompatible(const mission &fsoMission) {
+	return (Campaign.type == CAMPAIGN_TYPE_SINGLE && fsoMission.game_type & (MISSION_TYPE_SINGLE|MISSION_TYPE_TRAINING))
+			|| (Campaign.type == CAMPAIGN_TYPE_MULTI_COOP && fsoMission.game_type & MISSION_TYPE_MULTI_COOP)
+			|| (Campaign.type == CAMPAIGN_TYPE_MULTI_TEAMS && fsoMission.game_type & MISSION_TYPE_MULTI_TEAMS);
+}
+
+CampaignEditorDialogModel::CampaignMissionData::CampaignMissionData(QString file, bool loaded, const mission *fsoMn, const cmission *cm, QObject* parent) :
+	filename(std::move(file)),
+	fredable(loaded),
+	nPlayers(loaded ? fsoMn->num_players : 0),
+	notes(loaded ? fsoMn->notes : ""),
+	events(loaded ? getParsedEvts(parent) : QList<QAction*>{}),
+	goals(loaded ? getParsedGoals(parent) : QList<QAction*>{}),
+	briefingCutscene(cm ? cm->briefing_cutscene : ""),
+	mainhall(cm ? cm->main_hall.c_str() : ""),
+	debriefingPersona(cm ? QString::number(cm->debrief_persona_index) : "")
+{}
+
+void CampaignEditorDialogModel::CampaignMissionData::initMissions(
+		const SCP_vector<SCP_string>::const_iterator &m_it,
+		CheckedDataListModel<CampaignEditorDialogModel::CampaignMissionData> &model)
+{
+	const QString filename{ QString::fromStdString(*m_it).append(".fs2") };
+	const cmission * cm_it{
+		std::find_if(Campaign.missions, &Campaign.missions[Campaign.num_missions],
+				[&](const cmission &cm){ return filename == cm.name; })};
+	if (cm_it == &Campaign.missions[Campaign.num_missions])
+		cm_it = nullptr;
+
+	mission temp{};
+	bool loaded{parseMnPart(&temp, qPrintable(filename))};
+
+	if (! isCampaignCompatible(temp))
+		return;
+
+	CampaignMissionData* data{
+		new CampaignMissionData{ filename, loaded, &temp, cm_it, &model	}
+	};
+
+	if (! loaded)
+		QMessageBox::warning(nullptr, "Error loading mission", "Could not get info from mission: " + filename +"\nFile corrupted?");
+
+	model.initRow(filename,	data, cm_it, loaded ? Qt::color0 : Qt::red);
+}
+
+void CampaignEditorDialogModel::CampaignMissionData::branchesFromFormula(CampaignEditorDialogModel *model, int formula, const cmission *loop) {
+	if ( formula < 0 || stricmp(CTEXT(formula), "cond"))
+		return;
+
+	for (int it_cond_arm = CDR(formula);
+		 it_cond_arm != -1;
+		 it_cond_arm = CDR(it_cond_arm) )
+		branches.emplace_back(model, CAR(it_cond_arm), filename, loop);
+}
+
+CampaignEditorDialogModel::CampaignBranchData::CampaignBranchData(CampaignEditorDialogModel *model, int sexp_branch, const QString &from, const cmission *_loop) :
+	sexp(CAR(sexp_branch)),
+	loop(_loop),
+	loopDescr(new AssociatedPlainTextDocument(_loop ? _loop->mission_branch_desc : "", model))
+{
+	int node_next = CADR(sexp_branch);
+	if (!stricmp(CTEXT(node_next), "end-of-campaign")) {
+		type = END;
+	} else if (!stricmp(CTEXT(node_next), "next-mission")) {
+		next = CTEXT(CDR(node_next));
+		type = (from == next) ? REPEAT : NEXT_NOT_FOUND;
+	}
+
+	QObject::connect(loopDescr, &QTextDocument::contentsChanged, model, &CampaignEditorDialogModel::flagModified);
+	if (loop) {
+		loopAnim = _loop->mission_branch_brief_anim;
+		loopVoice = _loop->mission_branch_brief_sound;
+	}
+
+}
+
+CampaignEditorDialogModel::CampaignBranchData::CampaignBranchData(CampaignEditorDialogModel *model, const QString &from, QString to) :
+	type(to.isEmpty() ? END : to == from ? REPEAT : NEXT),
+	sexp(Locked_sexp_true),
+	next(std::move(to)),
+	loop(false),
+	loopDescr(new AssociatedPlainTextDocument("", model))
+{
+	QObject::connect(loopDescr, &QTextDocument::contentsChanged, model, &CampaignEditorDialogModel::flagModified);
+}
+
+void CampaignEditorDialogModel::CampaignBranchData::connect(const SCP_unordered_set<const CampaignMissionData*>& missions) {
+	if (std::find_if(missions.cbegin(), missions.cend(),
+					 [&](const CampaignMissionData* mn){
+						return next == mn->filename; })
+			== missions.cend())
+		type = NEXT_NOT_FOUND;
+	else
+		type = NEXT;
+}
+
+const SCP_map<CampaignEditorDialogModel::CampaignBranchData::BranchType, QString> CampaignEditorDialogModel::CampaignBranchData::branchTexts{
+	{INVALID, ""}, {REPEAT, "Repeat mission "}, {NEXT, "Branch to "}, {NEXT_NOT_FOUND, "Branch to "}, {END, "End of Campaign"}
+};
+
+static inline QStringList initCutscenes() {
+	QStringList ret{""};
+	for (auto& cs: Cutscenes)
+		ret << cs.filename;
+	return ret;
+}
+
+const QStringList& CampaignEditorDialogModel::cutscenes() {
+	static QStringList ret{ initCutscenes() };
+	return ret;
+}
+
+static inline QStringList initMainhalls() {
+	QStringList ret;
+	for (auto& vec_mh: Main_hall_defines) {
+		for (auto& mh: vec_mh){
+			QString name{ mh.name.c_str() };
+			if (! ret.contains(name))
+				ret << name;
+		}
+	}
+	return ret;
+}
+
+const QStringList& CampaignEditorDialogModel::mainhalls() {
+	static QStringList ret{ initMainhalls() };
+	return ret;
+}
+
+static inline QStringList initDebriefingPersonas() {
+	QStringList ret{""};
+	for (auto& rn: Ranks) {
+		for (auto& p: rn.promotion_text){
+			QString persona{ QString::number(p.first) };
+			if (p.first >= 0 && ! ret.contains(persona))
+				ret << persona;
+		}
+	}
+	return ret;
+}
+
+const QStringList& CampaignEditorDialogModel::debriefingPersonas() {
+	static QStringList ret{ initDebriefingPersonas() };
+	return ret;
+}
+
+static inline QStringList initFilelist(const int type) {
+	QStringList ret{""};
+	SCP_vector<SCP_string> fl;
+	cf_get_file_list(fl, type, "*", CF_SORT_NAME, nullptr, CF_LOCATION_TYPE_PRIMARY_MOD);
+	for (auto& f: fl)
+		ret << QString::fromStdString(f);
+	return ret;
+}
+
+const QStringList& CampaignEditorDialogModel::loopAnims() {
+	static QStringList ret{ initFilelist(CF_TYPE_INTERFACE) }; // as per campaigneditordlg.cpp:810
+	return ret;
+}
+
+const QStringList& CampaignEditorDialogModel::loopVoices() {
+	static QStringList ret{ initFilelist(CF_TYPE_VOICE_CMD_BRIEF) }; // as per campaigneditordlg.cpp:832
+	return ret;
+}
+
+static inline QStringList initCampaignTypes() {
+	QStringList ret;
+	for (auto& tp: campaign_types) {  //missioncampaign.h global
+		ret << tp;
+	}
+	return ret;
+}
+
+const QStringList CampaignEditorDialogModel::campaignTypes { initCampaignTypes() };
 
 }
 }
