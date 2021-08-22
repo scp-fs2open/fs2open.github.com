@@ -1482,7 +1482,6 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 				// note, this should come BEFORE do_new_subsystem() for proper error handling (to avoid both rotating and look-at submodel)
 				if ((p = strstr(props, "$look_at")) != nullptr) {
 					pm->submodel[n].movement_type = MOVEMENT_TYPE_INTRINSIC_ROTATE;
-					pm->flags |= PM_FLAG_HAS_INTRINSIC_ROTATE;
 
 					// we need to work out the correct subobject number later, after all subobjects have been processed
 					pm->submodel[n].look_at_submodel = static_cast<int>(look_at_submodel_names.size());
@@ -1520,7 +1519,6 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 				int idx = prop_string(props, &p, "$dumb_rotate_time", "$dumb_rotate_rate", "$dumb_rotate");
 				if (idx >= 0) {
 					pm->submodel[n].movement_type = MOVEMENT_TYPE_INTRINSIC_ROTATE;
-					pm->flags |= PM_FLAG_HAS_INTRINSIC_ROTATE;
 
 					// do this the same way as regular $rotate
 					char buf[64];
@@ -2592,17 +2590,33 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 					}
 				}
 
+				// certain old models specify the submodel number, so let's maintain compatibilty
+				if (submodel_name != nullptr && can_construe_as_integer(submodel_name)) {
+					pm->submodel[i].look_at_submodel = atoi(submodel_name);
+					submodel_name = nullptr;
+				}
+
 				// did we fail to find it?
 				if (submodel_name != nullptr) {
 					Warning(LOCATION, "Unable to match %s %s $look_at: target %s with a submodel!\n", pm->filename, pm->submodel[i].name, submodel_name);
 					pm->submodel[i].look_at_submodel = -1;
+					pm->submodel[i].movement_type = MOVEMENT_TYPE_NONE;
 				}
 				// are we navel-gazing?
 				else if (pm->submodel[i].look_at_submodel == i) {
 					Warning(LOCATION, "Matched %s %s $look_at: target with its own submodel!  Submodel cannot look at itself!\n", pm->filename, pm->submodel[i].name);
 					pm->submodel[i].look_at_submodel = -1;
+					pm->submodel[i].movement_type = MOVEMENT_TYPE_NONE;
 				}
 			}
+		}
+	}
+
+	// And now look through all the submodels and set the model flag if any are intrinsic-rotating
+	for (i = 0; i < pm->n_models; i++) {
+		if (pm->submodel[i].movement_type == MOVEMENT_TYPE_INTRINSIC_ROTATE) {
+			pm->flags |= PM_FLAG_HAS_INTRINSIC_ROTATE;
+			break;
 		}
 	}
 
