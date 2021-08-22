@@ -15418,7 +15418,7 @@ void ai_update_lethality(object *pship_obj, object *other_obj, float damage)
 void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hit_normal)
 {
 	int		hitter_objnum = -2;
-	object	*objp_hitter = NULL;
+	object	*objp_hitter = nullptr;
 	ship		*shipp;
 	ai_info	*aip, *hitter_aip;
 
@@ -15440,10 +15440,10 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hit_normal)
 			} else if (hit_objp->type == OBJ_SHIP) {
 				objp_hitter = hit_objp;
 			} else {
-				Int3();	// Should never happen.
+				UNREACHABLE("Should never happen.");
 				return;
 			}
-			Assert(objp_hitter != NULL);
+			Assert(objp_hitter != nullptr);
 			hitter_aip = &Ai_info[Ships[objp_hitter->instance].ai_index];
 			hitter_aip->last_hit_target_time = Missiontime;
 
@@ -15534,7 +15534,7 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hit_normal)
 	if (hit_objp->flags[Object::Object_Flags::Protected])
 		return;
 
-	Assert(objp_hitter != NULL);
+	Assert(objp_hitter != nullptr);
 	hitter_aip = &Ai_info[Ships[objp_hitter->instance].ai_index];
 	hitter_aip->last_hit_target_time = Missiontime;
 	
