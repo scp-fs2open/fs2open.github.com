@@ -12,8 +12,22 @@ namespace animation {
 
 	ModelAnimation::ModelAnimation(bool isInitialType) : m_isInitialType(isInitialType) { }
 
-	ModelAnimationState ModelAnimation::play(float frametime, polymodel_instance* pmi, std::map<ModelAnimationSubmodel*, ModelAnimationData<true>>* applyBuffer) {
+	ModelAnimationState ModelAnimation::play(float frametime, polymodel_instance* pmi, std::map<int, std::pair<ModelAnimationSubmodel*, ModelAnimationData<true>>>* applyBuffer, bool applyOnly) {
 		instance_data& instanceData = m_instances[pmi->id];
+		
+		if (applyOnly) {
+			for (const auto& animation : m_submodelAnimation) {
+				ModelAnimationData<> base = animation->s_initialData.at({ pmi->id, animation->m_submodel });
+				ModelAnimationData<true>& previousDelta = (*applyBuffer)[animation->m_submodel].second;
+				(*applyBuffer)[animation->m_submodel].first = animation.get();
+
+				base.applyDelta(previousDelta);
+				ModelAnimationData<true> delta = animation->play(instanceData.time, instanceData.time, false, pmi, base, true);
+				previousDelta.applyDelta(delta);
+			}
+
+			return instanceData.state;
+		}
 
 		float prevTime = instanceData.time;
 
@@ -76,7 +90,8 @@ namespace animation {
 
 			for (const auto& animation : m_submodelAnimation) {
 				ModelAnimationData<> base = animation->s_initialData.at({ pmi->id, animation->m_submodel });
-				ModelAnimationData<true>& previousDelta = (*applyBuffer)[animation.get()];
+				ModelAnimationData<true>& previousDelta = (*applyBuffer)[animation->m_submodel].second;
+				(*applyBuffer)[animation->m_submodel].first = animation.get();
 
 				base.applyDelta(previousDelta);
 				ModelAnimationData<true> delta = animation->play(instanceData.time, prevTime, true, pmi, base);
@@ -99,7 +114,8 @@ namespace animation {
 
 			for (const auto& animation : m_submodelAnimation) {
 				ModelAnimationData<> base = animation->s_initialData.at({ pmi->id, animation->m_submodel });
-				ModelAnimationData<true>& previousDelta = (*applyBuffer)[animation.get()];
+				ModelAnimationData<true>& previousDelta = (*applyBuffer)[animation->m_submodel].second;
+				(*applyBuffer)[animation->m_submodel].first = animation.get();
 
 				base.applyDelta(previousDelta);
 				ModelAnimationData<true> delta = animation->play(instanceData.time, prevTime, false, pmi, base);
@@ -112,13 +128,14 @@ namespace animation {
 		return instanceData.state;
 	}
 
-	void ModelAnimation::apply(polymodel_instance* pmi, std::map<ModelAnimationSubmodel*, ModelAnimationData<true>>* applyBuffer) {
+	void ModelAnimation::apply(polymodel_instance* pmi, std::map<int, std::pair<ModelAnimationSubmodel*, ModelAnimationData<true>>>* applyBuffer) {
 		for (const auto& toApply : *applyBuffer) {
-			ModelAnimationData<> base = ModelAnimationSubmodel::s_initialData.at({ pmi->id, toApply.first->m_submodel });
+			ModelAnimationData<> base = ModelAnimationSubmodel::s_initialData.at({ pmi->id, toApply.first });
 
-			base.applyDelta(toApply.second);
+			base.applyDelta(toApply.second.second);
 
-			toApply.first->copyToSubmodel(base, pmi);
+
+			toApply.second.first->copyToSubmodel(base, pmi);
 		}
 	}
 
@@ -201,7 +218,7 @@ namespace animation {
 
 		//Make sure to recalculate the animation here, as otherwise we cannot inquire about things like length after starting.
 		//Don't apply just yet if it's a non-initial type, as there might be other animations this'd need to depend upon
-		std::map<ModelAnimationSubmodel*, ModelAnimationData<true>> applyBuffer;
+		std::map<int, std::pair<ModelAnimationSubmodel*, ModelAnimationData<true>>> applyBuffer;
 		play(0, pmi, &applyBuffer);
 		//Since initial types never get stepped, they need to be manually applied here once.
 		if (m_isInitialType) {
@@ -229,7 +246,7 @@ namespace animation {
 
 	void ModelAnimation::stepAnimations(float frametime) {
 		for (const auto& animList : s_runningAnimations) {
-			std::map<ModelAnimationSubmodel*, ModelAnimationData<true>> applyBuffer;
+			std::map<int, std::pair<ModelAnimationSubmodel*, ModelAnimationData<true>>> applyBuffer;
 
 			for (const auto& anim : animList.second) {
 				switch (anim->m_instances[animList.first].state) {
@@ -238,6 +255,7 @@ namespace animation {
 					anim->play(frametime, model_get_instance(animList.first), &applyBuffer);
 					break;
 				case ModelAnimationState::COMPLETED:
+					anim->play(frametime, model_get_instance(animList.first), &applyBuffer, true);
 					//Fully triggered. Keep in buffer in case some other animation starts on that submodel, but don't play without manual starting
 					break;
 				case ModelAnimationState::UNTRIGGERED:
@@ -281,15 +299,14 @@ namespace animation {
 		if (optional_string("+sub_type:")) {
 			stuff_int(&subtype);
 
-			if (type == ModelAnimationTriggerType::DockBayDoor){
-				if (subtype == 0) {
-					//Apparently the legacy code treated a 0 here like subtype default (this is incorrect, as it doesn't allow triggering on fighterbay 0 only, the new tables will fix this).
-					subtype = ModelAnimationSet::SUBTYPE_DEFAULT;
-				}
-				else {
-					//Increase by 1, so that -x != x is true for all possible values
-					subtype += subtype < 0 ? -1 : 1;
-				}
+			if (subtype == 0) {
+				//Apparently the legacy code treated a 0 here like subtype default (this is incorrect in a lot of places).
+				subtype = ModelAnimationSet::SUBTYPE_DEFAULT;
+			}
+
+			if (type == ModelAnimationTriggerType::DockBayDoor && subtype != ModelAnimationSet::SUBTYPE_DEFAULT) {
+				//Increase by 1, so that -x != x is true for all possible values
+				subtype += subtype < 0 ? -1 : 1;
 			}
 		}
 
@@ -493,7 +510,7 @@ namespace animation {
 		return new ModelAnimationSubmodel(*this);
 	}
 
-	ModelAnimationData<true> ModelAnimationSubmodel::play(float frametime, float frametimePrev, bool forwards, polymodel_instance* pmi, ModelAnimationData<> base) {
+	ModelAnimationData<true> ModelAnimationSubmodel::play(float frametime, float frametimePrev, bool forwards, polymodel_instance* pmi, ModelAnimationData<> base, bool applyOnly) {
 		if (!m_submodel.has())
 			findSubmodel(pmi);
 
@@ -510,6 +527,9 @@ namespace animation {
 		//Calculate the submodels data (or its delta from the data stored at the animation's start)
 		ModelAnimationData<true> delta = m_mainSegment->calculateAnimation(base, frametime, pmi->id);
 		
+		if (applyOnly)
+			return delta;
+
 		base.applyDelta(delta);
 
 		//Execute stuff of the animation that doesn't modify this delta (stuff like sounds / particles)

@@ -359,7 +359,11 @@ namespace animation {
 				float acceltime2 = fminf(time - (t.*i - at.*i), at.*i);
 				if (acceltime2 > 0) {
 					//Cap this to 0, as it could get negative if it rotates "longer than its duration" (which happens when a different axis takes longer to rotate)
-					currentRot.*i += fmaxf(at.*i * a.*i * acceltime2 - 0.5f * a.*i * acceltime2 * acceltime2, 0.0f);
+					float accel2dist = at.*i * a.*i * acceltime2 - 0.5f * a.*i * acceltime2 * acceltime2;
+					if(std::signbit(a.*i))
+						currentRot.*i += fminf(accel2dist, 0.0f);
+					else
+						currentRot.*i += fmaxf(accel2dist, 0.0f);
 				}
 			}
 		}

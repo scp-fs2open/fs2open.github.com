@@ -175,7 +175,7 @@ namespace animation {
 		virtual ~ModelAnimationSubmodel() = default;
 
 		//Sets the animation to the specified time and applies it to the submodel
-		ModelAnimationData<true> play(float time, float frametimePrev, bool forwards, polymodel_instance* pmi, ModelAnimationData<> base);
+		ModelAnimationData<true> play(float time, float frametimePrev, bool forwards, polymodel_instance* pmi, ModelAnimationData<> base, bool applyOnly = false);
 
 		void reset(polymodel_instance* pmi);
 
@@ -222,9 +222,9 @@ namespace animation {
 
 		bool m_isInitialType;
 
-		ModelAnimationState play(float frametime, polymodel_instance* pmi, std::map<ModelAnimationSubmodel*, ModelAnimationData<true>>* applyBuffer);
+		ModelAnimationState play(float frametime, polymodel_instance* pmi, std::map<int, std::pair<ModelAnimationSubmodel*, ModelAnimationData<true>>>* applyBuffer, bool applyOnly = false);
 
-		static void apply(polymodel_instance* pmi, std::map<ModelAnimationSubmodel*, ModelAnimationData<true>>* applyBuffer);
+		static void apply(polymodel_instance* pmi, std::map<int, std::pair<ModelAnimationSubmodel*, ModelAnimationData<true>>>* applyBuffer);
 		static void cleanRunning();
 
 		friend struct ModelAnimationSet;
