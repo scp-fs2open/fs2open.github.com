@@ -9182,6 +9182,10 @@ bool weapon_multilock_can_lock_on_subsys(object* shooter, object* target, ship_s
 	if (target_subsys->flags[Ship::Subsystem_Flags::Untargetable])
 		return false;
 
+	//by not checking for max_hits > 0 here, subsys' with disabled hitpoints are also excluded.
+	if (target_subsys->current_hits <= 0.0f)
+		return false;
+
 	vec3d ss_pos;
 	get_subsystem_world_pos(target, target_subsys, &ss_pos);
 
