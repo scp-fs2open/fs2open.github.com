@@ -263,8 +263,6 @@ CampaignEditorDialogModel::CampaignEditorDialogModel(CampaignEditorDialog* _pare
 	campaignDescr(Campaign.desc),
 	campaignTechReset(Campaign.flags & CF_CUSTOM_TECH_DATABASE)
 {
-	connect(&campaignDescr, &QTextDocument::contentsChanged, this, &CampaignEditorDialogModel::flagModified);
-
 	for (int i=0; i<Campaign.num_missions; i++) {
 		if (! missionData.contains(Campaign.missions[i].name)) {
 			mission temp{};
@@ -292,9 +290,10 @@ CampaignEditorDialogModel::CampaignEditorDialogModel(CampaignEditorDialog* _pare
 		connectBranches(false, &Campaign);
 	}
 
+	connect(&campaignDescr, &QTextDocument::contentsChanged, this, &CampaignEditorDialogModel::flagModified);
 	connect(&initialShips, &QAbstractListModel::dataChanged, this, &CampaignEditorDialogModel::flagModified);
 	connect(&initialWeapons, &QAbstractListModel::dataChanged, this, &CampaignEditorDialogModel::flagModified);
-	connect(&missionData, &QAbstractListModel::rowsAboutToBeInserted, this, [&](){mnData_it = nullptr;});
+	connect(&missionData, &QAbstractListModel::rowsAboutToBeInserted, this, [&](){mnData_it = nullptr; mnData_idx = QModelIndex();});
 	connect(&missionData, &QAbstractListModel::dataChanged, this, [&](){connectBranches();});
 	connect(&missionData, &QAbstractListModel::dataChanged, this, &CampaignEditorDialogModel::flagModified);
 	connect(&missionData, &QAbstractListModel::dataChanged, this, &CampaignEditorDialogModel::checkMissionDrop);

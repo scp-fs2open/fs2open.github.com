@@ -208,12 +208,16 @@ void CampaignEditorDialog::fileOpen() {
 
 	QString pathName = QFileDialog::getOpenFileName(this, tr("Load campaign"), model->campaignFile, tr("FS2 campaigns (*.fc2)"));
 
+	if (pathName.isEmpty())
+		return;
+
 	auto newModel = new CampaignEditorDialogModel(this, viewport, pathName);
 	if (newModel->isFileLoaded())
 		setModel(newModel);
 	else {
 		delete newModel;
 		QMessageBox::information(this, tr("Error opening file"), pathName);
+		setModel(new CampaignEditorDialogModel(this, viewport, ""));
 	}
 
 	updateUIAll();
