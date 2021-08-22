@@ -15418,7 +15418,7 @@ void ai_update_lethality(object *pship_obj, object *other_obj, float damage)
 void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hit_normal)
 {
 	int		hitter_objnum = -2;
-	object	*objp_hitter = NULL;
+	object	*objp_hitter = nullptr;
 	ship		*shipp;
 	ai_info	*aip, *hitter_aip;
 
@@ -15426,27 +15426,29 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hit_normal)
 	aip = &Ai_info[shipp->ai_index];
 
 	if (objp_ship->flags[Object::Object_Flags::Player_ship]) {
-		//SUSHI: So that hitting a player ship actually resets the last_hit_target_time counter for whoever hit the player.
-		//This is all copypasted from code below
-		// Added OBJ_BEAM for traitor detection - FUBAR
-		if ((hit_objp->type == OBJ_WEAPON) || (hit_objp->type == OBJ_BEAM)) {
-			hitter_objnum = hit_objp->parent;
-			Assert((hitter_objnum < MAX_OBJECTS));
-			if (hitter_objnum == -1) {
-				return; // Possible SSM, bail while we still can.
+		if (The_mission.ai_profile->flags[AI::Profile_Flags::Reset_last_hit_target_time_for_player_hits]) {
+			//SUSHI: So that hitting a player ship actually resets the last_hit_target_time counter for whoever hit the player.
+			//This is all copypasted from code below
+			// Added OBJ_BEAM for traitor detection - FUBAR
+			if ((hit_objp->type == OBJ_WEAPON) || (hit_objp->type == OBJ_BEAM)) {
+				hitter_objnum = hit_objp->parent;
+				Assert((hitter_objnum < MAX_OBJECTS));
+				if (hitter_objnum == -1) {
+					return; // Possible SSM, bail while we still can.
+				}
+				objp_hitter = &Objects[hitter_objnum];
+			} else if (hit_objp->type == OBJ_SHIP) {
+				objp_hitter = hit_objp;
+			} else {
+				UNREACHABLE("Should never happen.");
+				return;
 			}
-			objp_hitter = &Objects[hitter_objnum];
-		} else if (hit_objp->type == OBJ_SHIP) {
-			objp_hitter = hit_objp;
-		} else {
-			Int3();	// Should never happen.
-			return;
-		}
-		Assert(objp_hitter != NULL);
-		hitter_aip = &Ai_info[Ships[objp_hitter->instance].ai_index];
-		hitter_aip->last_hit_target_time = Missiontime;
+			Assert(objp_hitter != nullptr);
+			hitter_aip = &Ai_info[Ships[objp_hitter->instance].ai_index];
+			hitter_aip->last_hit_target_time = Missiontime;
 
-		aip->last_hit_time = Missiontime;
+			aip->last_hit_time = Missiontime;
+		}
 		return;
 	}
 
@@ -15532,7 +15534,7 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hit_normal)
 	if (hit_objp->flags[Object::Object_Flags::Protected])
 		return;
 
-	Assert(objp_hitter != NULL);
+	Assert(objp_hitter != nullptr);
 	hitter_aip = &Ai_info[Ships[objp_hitter->instance].ai_index];
 	hitter_aip->last_hit_target_time = Missiontime;
 	
