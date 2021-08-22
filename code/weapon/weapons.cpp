@@ -187,6 +187,7 @@ flag_def_list_new<Weapon::Info_Flags> Weapon_Info_Flags[] = {
 	{ "can damage shooter",				Weapon::Info_Flags::Can_damage_shooter,					true, false },
 	{ "heals",							Weapon::Info_Flags::Heals,						        true, false },
 	{ "no collide",						Weapon::Info_Flags::No_collide,						    true, false },
+	{ "multilock ignore dead subsys",   Weapon::Info_Flags::Multilock_ignore_dead_subsys,		true, false },
 };
 
 const size_t num_weapon_info_flags = sizeof(Weapon_Info_Flags) / sizeof(flag_def_list_new<Weapon::Info_Flags>);
@@ -9183,7 +9184,7 @@ bool weapon_multilock_can_lock_on_subsys(object* shooter, object* target, ship_s
 		return false;
 
 	//by not checking for max_hits > 0 here, subsys' with disabled hitpoints are also excluded.
-	if (target_subsys->current_hits <= 0.0f)
+	if (wip->wi_flags[Weapon::Info_Flags::Multilock_ignore_dead_subsys] && target_subsys->current_hits <= 0.0f)
 		return false;
 
 	vec3d ss_pos;
