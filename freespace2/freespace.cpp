@@ -3141,7 +3141,8 @@ camid game_render_frame_setup()
 
 				vec3d old_pos;
 				main_cam->get_info(&old_pos, nullptr);
-				if (camera_cut)
+				bool hyperspace = (Player_ship->flags[Ship::Ship_Flags::Depart_warp] && Warp_params[Player_ship->warpout_params_index].warp_type == WT_HYPERSPACE);
+				if (camera_cut || hyperspace)
 					old_pos = eye_pos;
 
 				// "push" the camera backwards in the direction of its old position based on acceleration to to make it 
