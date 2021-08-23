@@ -299,14 +299,16 @@ namespace animation {
 		if (optional_string("+sub_type:")) {
 			stuff_int(&subtype);
 
-			if (subtype == 0) {
-				//Apparently the legacy code treated a 0 here like subtype default (this is incorrect in a lot of places).
-				subtype = ModelAnimationSet::SUBTYPE_DEFAULT;
-			}
+			if (type == ModelAnimationTriggerType::DockBayDoor) {
+				if (subtype == 0) {
+					//Apparently the legacy code treated a 0 here like subtype default (this is incorrect in a lot of places).
+					subtype = ModelAnimationSet::SUBTYPE_DEFAULT;
+				}
+				else {
+					//Increase by 1, so that -x != x is true for all possible values
+					subtype += subtype < 0 ? -1 : 1;
+				}
 
-			if (type == ModelAnimationTriggerType::DockBayDoor && subtype != ModelAnimationSet::SUBTYPE_DEFAULT) {
-				//Increase by 1, so that -x != x is true for all possible values
-				subtype += subtype < 0 ? -1 : 1;
 			}
 		}
 

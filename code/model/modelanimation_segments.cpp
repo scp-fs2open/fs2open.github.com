@@ -413,7 +413,7 @@ namespace animation {
 
 		if (0.0f < timeboundLower && timeboundUpper < m_duration.at(pmi_id)) {
 			if (m_during.isValid() && (!m_instances[pmi_id].currentlyPlaying.isValid() || !snd_is_playing(m_instances[pmi_id].currentlyPlaying)))
-				snd_play_looping(gamesnd_get_game_sound(m_during));
+				m_instances[pmi_id].currentlyPlaying = snd_play_looping(gamesnd_get_game_sound(m_during));
 		}
 
 		if (timeboundLower <= m_duration.at(pmi_id) && m_duration.at(pmi_id) <= timeboundUpper) {
@@ -430,9 +430,10 @@ namespace animation {
 			m_instances[pmi_id].currentlyPlaying = snd_play(gamesnd_get_game_sound(m_start));
 	}
 	void ModelAnimationSegmentSoundDuring::playEndSnd(int pmi_id) {
-		if (m_end.isValid()) {
+		if (snd_is_playing(m_instances[pmi_id].currentlyPlaying))
 			snd_stop(m_instances[pmi_id].currentlyPlaying);
+
+		if (m_end.isValid()) 
 			m_instances[pmi_id].currentlyPlaying = snd_play(gamesnd_get_game_sound(m_end));
-		}
 	}
 }
