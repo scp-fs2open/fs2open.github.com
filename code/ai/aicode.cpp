@@ -5790,7 +5790,7 @@ bool ai_do_multilock(ai_info* aip, weapon_info* wip) {
 	SCP_vector<multilock_target> multilock_targets;
 
 	if (wip->target_restrict == LR_CURRENT_TARGET)
-		multilock_targets.push_back(multilock_target{ primary_target,  nullptr, 1.0f });
+		multilock_targets.push_back(multilock_target{ primary_target, aip->targeted_subsys, 1.0f });
 	else if (wip->target_restrict == LR_CURRENT_TARGET_SUBSYS) {
 
 		if (primary_target->type != OBJ_SHIP)
