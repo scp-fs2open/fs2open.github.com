@@ -1051,8 +1051,8 @@ void gr_rect(int x, int y, int w, int h, int resize_mode, float angle) {
 	auto path = beginDrawing(resize_mode);
 	if (angle != 0) {
 		// If we don't do this translation before and after rotating, the rotation will use 0,0 as the pivot, flinging the rectangle far away. 
-		float offsetX = i2fl(x) + i2fl(w) / 2;
-		float offsetY = i2fl(y) + i2fl(h) / 2;
+		float offsetX = x + w / 2.0f;
+		float offsetY = y + h / 2.0f;
 		path->translate(offsetX, offsetY);
 		path->rotate(fl_radians(angle));
 		path->translate(-offsetX, -offsetY);
