@@ -114,6 +114,7 @@ void gr_pixel(int x, int y, int resize_mode = GR_RESIZE_FULL);
  * @param w The width of the rectangle
  * @param h The height of the rectangle
  * @param resize_mode The mode for translating the screen positions
+ * @param angle The angle (in degrees) for rotating the rectangle around its center.
  */
 void gr_rect(int x, int y, int w, int h, int resize_mode = GR_RESIZE_FULL, float angle = 0);
 /**
