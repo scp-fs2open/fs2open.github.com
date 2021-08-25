@@ -675,8 +675,8 @@ ADE_FUNC(drawRectangle, l_Graphics, "number X1, number Y1, number X2, number Y2,
 	else
 	{
 		if (a != 0) {
-			float centerX = (x1 + x2) / 2;
-			float centerY = (y1 + y2) / 2;
+			float centerX = (x1 + x2) / 2.0f;
+			float centerY = (y1 + y2) / 2.0f;
 
 			float rad = fl_radians(a);
 			
@@ -696,10 +696,10 @@ ADE_FUNC(drawRectangle, l_Graphics, "number X1, number Y1, number X2, number Y2,
 			float DY = sinf(rad) * (x1 - centerX) + cosf(rad) * (y2 - centerY) + centerY;
 
 
-			gr_line(AX, AY, BX, BY, GR_RESIZE_NONE);
-			gr_line(BX, BY, CX, CY, GR_RESIZE_NONE);
-			gr_line(CX, CY, DX, DY, GR_RESIZE_NONE);
-			gr_line(DX, DY, AX, AY, GR_RESIZE_NONE);
+			gr_line(fl2i(AX), fl2i(AY), fl2i(BX), fl2i(BY), GR_RESIZE_NONE);
+			gr_line(fl2i(BX), fl2i(BY), fl2i(CX), fl2i(CY), GR_RESIZE_NONE);
+			gr_line(fl2i(CX), fl2i(CY), fl2i(DX), fl2i(DY), GR_RESIZE_NONE);
+			gr_line(fl2i(DX), fl2i(DY), fl2i(AX), fl2i(AY), GR_RESIZE_NONE);
 		}
 		else {
 

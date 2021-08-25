@@ -1051,9 +1051,11 @@ void gr_rect(int x, int y, int w, int h, int resize_mode, float angle) {
 	auto path = beginDrawing(resize_mode);
 	if (angle != 0) {
 		// If we don't do this translation before and after rotating, the rotation will use 0,0 as the pivot, flinging the rectangle far away. 
-		path->translate(x + w / 2, y + h / 2);
+		float offsetX = i2fl(x) + i2fl(w) / 2;
+		float offsetY = i2fl(y) + i2fl(h) / 2;
+		path->translate(offsetX, offsetY);
 		path->rotate(fl_radians(angle));
-		path->translate(-(x + w / 2), -(y + h / 2));
+		path->translate(-offsetX, -offsetY);
 	}
 	path->rectangle(i2fl(x), i2fl(y), i2fl(w), i2fl(h));
 	path->setFillColor(&gr_screen.current_color);
