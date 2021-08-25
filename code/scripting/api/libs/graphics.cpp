@@ -687,13 +687,13 @@ ADE_FUNC(drawRectangle, l_Graphics, "number X1, number Y1, number X2, number Y2,
 			float AY = sinf(rad) * (x1 - centerX) + cosf(rad) * (y1 - centerY) + centerY;
 			
 			float BX = cosf(rad) * (x2 - centerX) - sinf(rad) * (y1 - centerY) + centerX;
-			float BY = sinf(rad) * (x2 - centerX) + cosf(rad) * (y1 - centerY) + centerX;
+			float BY = sinf(rad) * (x2 - centerX) + cosf(rad) * (y1 - centerY) + centerY;
 
 			float CX = cosf(rad) * (x2 - centerX) - sinf(rad) * (y2 - centerY) + centerX;
-			float CY = sinf(rad) * (x2 - centerX) + cosf(rad) * (y2 - centerY) + centerX;
+			float CY = sinf(rad) * (x2 - centerX) + cosf(rad) * (y2 - centerY) + centerY;
 			
 			float DX = cosf(rad) * (x1 - centerX) - sinf(rad) * (y2 - centerY) + centerX;
-			float DY = sinf(rad) * (x1 - centerX) + cosf(rad) * (y2 - centerY) + centerX;
+			float DY = sinf(rad) * (x1 - centerX) + cosf(rad) * (y2 - centerY) + centerY;
 
 
 			gr_line(AX, AY, BX, BY, GR_RESIZE_NONE);
