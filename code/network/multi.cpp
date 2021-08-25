@@ -52,6 +52,7 @@
 #include "pilotfile/pilotfile.h"
 #include "debugconsole/console.h"
 #include "network/psnet2.h"
+#include "network/multi_mdns.h"
 
 // Stupid windows workaround...
 #ifdef MessageBox
@@ -107,11 +108,6 @@ int Ingame_join_net_signature = -1;								// signature for the player obj for u
 int Multi_button_info_ok = 0;										// flag saying it is ok to apply critical button info on a client machine
 int Multi_button_info_id = 0;										// identifier of the stored button info to be applying
 
-// low level networking vars
-int ADDRESS_LENGTH;
-int PORT_LENGTH;
-int HEADER_LENGTH;													// 1 byte (packet type)
-
 // misc data
 active_game* Active_game_head;									// linked list of active games displayed on Join screen
 int Active_game_count;												// for interface screens as well
@@ -141,7 +137,7 @@ LOCAL ubyte Multi_read_count;
 
 int Multi_restr_query_timestamp = -1;
 join_request Multi_restr_join_request;
-net_addr Multi_restr_addr;				
+net_addr Multi_restr_addr;
 int Multi_join_restr_mode = -1;
 
 LOCAL fix Multi_server_wait_start;				// variable to hold start time when waiting to reestablish with server
@@ -177,7 +173,7 @@ void multi_init()
 	// clear out all netplayers
 	memset(Net_players, 0, sizeof(net_player) * MAX_PLAYERS);
 	for(idx=0; idx<MAX_PLAYERS; idx++){
-		Net_players[idx].reliable_socket = INVALID_SOCKET;
+		Net_players[idx].reliable_socket = PSNET_INVALID_SOCKET;
 	}
 
 	// initialize the local netplayer
@@ -213,6 +209,7 @@ void multi_vars_init()
 	Next_asteroid_signature = ASTEROID_SIG_MIN;
 	Next_non_perm_signature = NPERM_SIG_MIN;   
 	Next_debris_signature = DEBRIS_SIG_MIN;
+	Next_waypoint_signature = WAYPOINT_SIG_MIN;
 	
 	// server-client critical stuff
 	Multi_button_info_ok = 0;
@@ -270,10 +267,10 @@ void multi_level_init()
 	// initialize the Net_players array
 	for ( idx = 0; idx < MAX_PLAYERS; idx++) {
 		// close all sockets down just for good measure
-		psnet_rel_close_socket(&Net_players[idx].reliable_socket);
+		psnet_rel_close_socket(Net_players[idx].reliable_socket);
 
 		memset(&Net_players[idx],0,sizeof(net_player));
-		Net_players[idx].reliable_socket = INVALID_SOCKET;
+		Net_players[idx].reliable_socket = PSNET_INVALID_SOCKET;
 
 		Net_players[idx].s_info.xfer_handle = -1;
 		Net_players[idx].p_info.team = 0;
@@ -331,13 +328,14 @@ void multi_check_listen()
 {
 	int i;
 	net_addr addr;
-	PSNET_SOCKET_RELIABLE sock = INVALID_SOCKET;
+	PSNET_SOCKET_RELIABLE sock;
 
 	// call psnet routine which calls select to see if we need to check for a connect from a client
 	// by passing addr, we are telling check_for_listen to do the accept and return who it was from in
 	// addr.  The
 	sock = psnet_rel_check_for_listen(&addr);
-	if ( sock != INVALID_SOCKET ) {
+
+	if (sock != PSNET_INVALID_SOCKET) {
 		// be sure that my address and the server address are set correctly.
 		if ( !psnet_same(&Psnet_my_addr, &Net_player->p_info.addr) ){
 			Net_player->p_info.addr = Psnet_my_addr;
@@ -377,7 +375,7 @@ void multi_check_listen()
 		// if we didn't find a player, close the socket
 		if ( i == MAX_PLAYERS ) {
 			nprintf(("Network", "Got accept on my listen socket, but unknown player.  Closing socket.\n"));
-			psnet_rel_close_socket(&sock);
+			psnet_rel_close_socket(sock);
 		}
 	}
 }
@@ -571,6 +569,10 @@ void process_packet_normal(ubyte* data, header *header_info)
 			process_ship_kill_packet( data, header_info );
 			break;
 
+		case MISSILE_KILL:
+			process_weapon_kill_packet(data, header_info);
+			break;
+
 		case WING_CREATE:
 			process_wing_create_packet( data, header_info );
 			break;
@@ -599,11 +601,11 @@ void process_packet_normal(ubyte* data, header *header_info)
 			Assert(header_info->id >= 0);
 			int np_index;
 			PSNET_SOCKET_RELIABLE sock;
-			sock = INVALID_SOCKET;
+			sock = PSNET_INVALID_SOCKET;
 
 			// if I'm the server of the game, find out who this came from			
 			if((Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)){
-				np_index = find_player_id(header_info->id);
+				np_index = find_player_index(header_info->id);
 				if(np_index >= 0){
 					sock = Net_players[np_index].reliable_socket;
 				}
@@ -856,6 +858,10 @@ void process_packet_normal(ubyte* data, header *header_info)
 			process_NEW_primary_fired_packet(data, header_info);
 			break;
 
+		case LINEAR_WEAPON_FIRED:
+			process_non_homing_fired_packet(data, header_info);
+			break;
+
 		case COUNTERMEASURE_NEW:
 			process_NEW_countermeasure_fired_packet(data, header_info);
 			break;
@@ -945,7 +951,7 @@ void multi_process_bigdata(ubyte *data, int len, net_addr *from_addr, int reliab
 
 	// store fields that were passed along in the message
 	// store header information that was captured from the network-layer header
-	memcpy(header_info.addr, from_addr->addr, 6);
+	memcpy(header_info.addr, from_addr->addr, sizeof(header_info.addr));
 	header_info.port = from_addr->port;	
 	if(player_num >= 0){
 		header_info.id = Net_players[player_num].player_id;
@@ -1015,11 +1021,11 @@ void multi_process_reliable_details()
 				// if we're still waiting for this guy to connect on his reliable socket and he's timed out, boot him
 				if(Net_players[idx].s_info.reliable_connect_time != -1){
 					// if he's connected
-					if(Net_players[idx].reliable_socket != INVALID_SOCKET){
+					if(Net_players[idx].reliable_socket != PSNET_INVALID_SOCKET){
 						Net_players[idx].s_info.reliable_connect_time = -1;
 					} 
 					// if he's timed out
-					else if(((time(NULL) - Net_players[idx].s_info.reliable_connect_time) > MULTI_RELIABLE_CONNECT_WAIT) && (Net_players[idx].reliable_socket == INVALID_SOCKET)){
+					else if(((time(nullptr) - Net_players[idx].s_info.reliable_connect_time) > MULTI_RELIABLE_CONNECT_WAIT) && (Net_players[idx].reliable_socket == PSNET_INVALID_SOCKET)){
 						ml_string("Player timed out while connecting on reliable socket!");
 						delete_player(idx);
 					}
@@ -1085,7 +1091,7 @@ void multi_process_incoming()
 		}
 	} else {
 		// if I'm not the master of the game, read reliable data from my connection with the server
-		if((Net_player->reliable_socket != INVALID_SOCKET) && (Net_player->reliable_socket != 0)){
+		if((Net_player->reliable_socket != PSNET_INVALID_SOCKET) && (Net_player->reliable_socket != 0)){
 			while( (size = psnet_rel_get(Net_player->reliable_socket,data, MAX_NET_BUFFER)) > 0){				
 				multi_process_bigdata(data, size, &Netgame.server_addr, 1);
 			}
@@ -1172,7 +1178,7 @@ void multi_do_frame()
 	if ( (Net_player->flags & NETINFO_FLAG_CONNECTED) && !(Game_mode & GM_IN_MISSION)){	
 		if ( Net_player->flags & NETINFO_FLAG_AM_MASTER ) {			
 			if ( (Netgame_send_time < 0) || ((time(NULL) - Netgame_send_time) > NETGAME_SEND_TIME) ) {
-				send_netgame_update_packet();				
+				send_netgame_update_packet(nullptr, true);
 				
 				Netgame_send_time = (int) time(NULL);
 			}		
@@ -1247,7 +1253,11 @@ void multi_do_frame()
 				// reset timestamp
 				Next_bytes_time = (int) time(NULL);				
 			}
-		} else {			
+		} else {
+
+			// right before sending new positions, we should do any rollback shots and resimulation
+			multi_ship_record_do_rollback();
+
 			// sending new objects from here is dependent on having objects only created after
 			// the game is done moving the objects.  I think that I can enforce this.				
 			multi_oo_process();			
@@ -1299,19 +1309,24 @@ void multi_do_frame()
 	// process any tracker messages
 	multi_fs_tracker_process();
 
+	// Cyborg17 update the new frame recording system for accurate client shots, needs to go after most everything else in multi.
+	if (Game_mode & GM_IN_MISSION) {
+		multi_ship_record_increment_frame();
+	}
+
 	// if on the standalone, do any gui stuff
 	if (Game_mode & GM_STANDALONE_SERVER) {
 		std_do_gui_frame();
 	}	
 
-	// dogfight nonstandalone players should recalc the escort list every frame
-	if(!(Game_mode & GM_STANDALONE_SERVER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT) && MULTI_IN_MISSION){
-		hud_setup_escort_list(0);
-	}
-
 	// if master then maybe do port forwarding setup/refresh/wait
 	if (Net_player->flags & NETINFO_FLAG_AM_MASTER) {
 		multi_port_forward_do();
+
+		// do mdns stuff here too
+		if ( !MULTI_IS_TRACKER_GAME && (Net_player->p_info.options.flags & MLO_FLAG_LOCAL_BROADCAST) ) {
+			multi_mdns_service_do();
+		}
 	}
 }
 
@@ -1412,6 +1427,11 @@ void multi_pause_do_frame()
 	// if master then maybe do port forwarding setup/refresh/wait
 	if (Net_player->flags & NETINFO_FLAG_AM_MASTER) {
 		multi_port_forward_do();
+
+		// do mdns stuff here too
+		if ( !MULTI_IS_TRACKER_GAME && (Net_player->p_info.options.flags & MLO_FLAG_LOCAL_BROADCAST) ) {
+			multi_mdns_service_do();
+		}
 	}
 }
 
@@ -1438,8 +1458,8 @@ void standalone_main_init()
 	// multi_options_read_config();   
 #ifdef _WIN32
 	// if we failed to startup on our desired protocol, fail
-	if ((Multi_options_g.protocol == NET_TCP) && !Tcp_active){
-		if (Tcp_failure_code == WSAEADDRINUSE) {
+	if ( !psnet_is_active() ) {
+		if (Psnet_failure_code == WSAEADDRINUSE) {
 			os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR, XSTR("You have selected TCP/IP for multiplayer FreeSpace, but the TCP socket is already in use.  Check for another instance and/or use the \"-port <port_num>\" command line option to select an available port.", 1604));
 		}
 		else {
@@ -1450,21 +1470,6 @@ void standalone_main_init()
 	}
 #endif // ifdef _WIN32
 
-
-	// set the protocol
-	psnet_use_protocol(Multi_options_g.protocol);
-	switch (Multi_options_g.protocol) {
-	case NET_TCP:
-		ADDRESS_LENGTH = IP_ADDRESS_LENGTH;
-		PORT_LENGTH = IP_PORT_LENGTH;
-		break;
-
-	default:
-		Int3();
-	} // end switch
-
-	HEADER_LENGTH = 1;		
-	
 	// clear out the Netgame structure and start filling in the values
 	// NOTE : these values are not incredibly important since they will be overwritten by the host when he joins
 	memset( &Netgame, 0, sizeof(Netgame) );	
@@ -1554,6 +1559,11 @@ void standalone_main_init()
 	// setup port forwarding
 	multi_port_forward_init();
 
+	// setup mdns
+	if ( !MULTI_IS_TRACKER_GAME ) {
+		multi_mdns_service_init();
+	}
+
 	// login to game tracker
 	std_tracker_login();
 
@@ -1593,6 +1603,11 @@ void standalone_main_do()
 
    // process/renew port mapping
    multi_port_forward_do();
+
+	// handle mdns messages
+	if ( !MULTI_IS_TRACKER_GAME ) {
+		multi_mdns_service_do();
+	}
 }
 
 // --------------------------------------------------------------------------------
@@ -1608,6 +1623,9 @@ void standalone_main_close()
 
 	// remove port forwarding
 	multi_port_forward_close();
+
+	// stop mdns
+	multi_mdns_service_close();
 }
 
 void multi_standalone_reset_all()
@@ -1779,13 +1797,11 @@ void multi_reset_timestamps()
 		Players[i].update_lock_time = timestamp(0);
 
 		Net_players[i].s_info.voice_token_timestamp = -1;
+		Net_players[i].s_info.player_collision_timestamp = timestamp(0);
 	}
 
 	// reset standalone gui timestamps (these are not game critical, so there is not much danger)
 	std_reset_timestamps();
-
-	// initialize all object update timestamps
-	multi_oo_gameplay_init();
 }
 
 // netgame debug flags for debug console stuff

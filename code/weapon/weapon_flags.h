@@ -55,7 +55,7 @@ namespace Weapon {
 		No_emp_kill,						// though weapon has hitpoints it can not be disabled by EMP
 		Variable_lead_homing,				// allows user defined scaler to be added to lead (to enable, lead, pure or lag pursuit for missiles)
 		Untargeted_heat_seeker,				// forces heat seeker to lose target immeadiately (and acquire a random new one)
-		Hard_target_bomb,					// removes the radius doubling effect bombs have for collisions
+		No_radius_doubling,					// removes the radius doubling effect bombs have for collisions
 		Non_subsys_homing,					// spreads fired missiles around the target ships hull
 		No_life_lost_if_missed,				// prevents game from shortening the lifeleft of the missed but still homing missiles
 		Custom_seeker_str,					// sets the game to use custom seeker strengths instead of default values
@@ -82,6 +82,12 @@ namespace Weapon {
 		Apply_Recoil,						// Apply Recoil using weapon and ship info
         Dont_spawn_if_shot,                 // Prevent shot down parent weapons from spawning children (DahBlount)
         Die_on_lost_lock,                   // WIF_LOCKED_HOMING missiles will die if they lose their lock
+		Has_display_name,					// Goober5000
+		No_impact_spew,						// Goober5000
+		Require_exact_los,					// If secondary or in turret, will only fire if ship has line of sight to target
+		Can_damage_shooter,					// this weapon and any of its descendants can damage its shooter - Asteroth
+		Heals,								// 'damage' heals instead of actually damaging - Asteroth
+		No_collide,
 
         NUM_VALUES
 	};
@@ -95,9 +101,10 @@ namespace Weapon {
 		Locked_when_fired,			// fired with a lock
 		Destroyed_by_weapon,		// destroyed by damage from other weapon
 		Spawned,					//Spawned from a spawning type weapon
-		Homing_update_needed,       // this is a newly spawned homing weapon which needs to update client machines
         No_homing,                  // this weapon should ignore any homing behavior it'd usually have
 		Overridden_homing,          // Homing is overridden by an external source (probably scripting)
+		Multi_homing_update_needed, // this is a newly spawned homing weapon which needs to update client machines
+		Multi_Update_Sent,			// Marks this missile as already being updated once by the server
 
 		NUM_VALUES
 	};
@@ -105,6 +112,15 @@ namespace Weapon {
 	FLAG_LIST(Burst_Flags) {
 		Fast_firing,
 		Random_length,
+		Resets,
+		Num_firepoints_burst_shots, // Burst shots is set to however many firepoints the firer has
+
+		NUM_VALUES
+	};
+
+	FLAG_LIST(Beam_Info_Flags) {
+		Burst_share_random,
+		Track_own_texture_tiling,
 
 		NUM_VALUES
 	};

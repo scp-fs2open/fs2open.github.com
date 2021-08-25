@@ -316,6 +316,7 @@ class UI_INPUTBOX : public UI_GADGET
 		int pressed();
 		void get_text(char *out);
 		void set_text(const char *in);
+		void append_text(const char *in);
 };
 
 // Icon flags

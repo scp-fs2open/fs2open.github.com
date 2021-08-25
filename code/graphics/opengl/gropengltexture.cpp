@@ -397,6 +397,11 @@ static int opengl_texture_set_level(int bitmap_handle, int bitmap_type, int bmap
 		intFormat  = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
 		block_size = 16;
 		break;
+
+	case DDS_BC7:
+		intFormat = GL_COMPRESSED_RGBA_BPTC_UNORM_ARB;
+		block_size = 16;
+		break;
 	}
 
 	if (bitmap_type == TCACHE_TYPE_CUBEMAP) {
@@ -700,6 +705,10 @@ static GLenum opengl_get_internal_format(int handle, int bitmap_type, int bpp) {
 		case DDS_DXT5:
 		case DDS_CUBEMAP_DXT5:
 			return GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+
+		case DDS_BC7:
+			return GL_COMPRESSED_RGBA_BPTC_UNORM_ARB;
+
 		default:
 			// Not compressed
 			break;
@@ -719,7 +728,7 @@ static GLenum opengl_get_internal_format(int handle, int bitmap_type, int bpp) {
 	}
 }
 
-void opengl_determine_bpp_and_flags(int bitmap_handle, int bitmap_type, ubyte& flags, int& bpp) {
+void opengl_determine_bpp_and_flags(int bitmap_handle, int bitmap_type, ushort& flags, int& bpp) {
 	flags = 0;
 	bpp = 16;
 	switch (bitmap_type) {
@@ -769,6 +778,11 @@ void opengl_determine_bpp_and_flags(int bitmap_handle, int bitmap_type, ubyte& f
 				case DDS_DXT5:				//dxt5
 					bpp = 32;
 					flags |= BMP_TEX_DXT5;
+					break;
+
+				case DDS_BC7:				//bc7
+					bpp = 32;
+					flags |= BMP_TEX_BC7;
 					break;
 
 				case DDS_CUBEMAP_DXT1:
@@ -967,7 +981,7 @@ int opengl_create_texture(int bitmap_handle, int bitmap_type, tcache_slot_opengl
 
 	tslot->wrap_mode = GL_CLAMP_TO_EDGE;
 
-	ubyte bitmap_flags;
+	ushort bitmap_flags;
 	int bits_per_pixel;
 	opengl_determine_bpp_and_flags(animation_begin, bitmap_type, bitmap_flags, bits_per_pixel);
 
@@ -979,7 +993,7 @@ int opengl_create_texture(int bitmap_handle, int bitmap_type, tcache_slot_opengl
 #ifndef NDEBUG
         // I'm not sure if these values are consistent across the whole animation but they really should be.
 		// This should catch any instances where this assumption isn't right
-		ubyte debug_flags = 0;
+		ushort debug_flags = 0;
 		int debug_bpp;
 		opengl_determine_bpp_and_flags(frame, bitmap_type, debug_flags, debug_bpp);
 
@@ -1520,19 +1534,24 @@ static fbo_t* opengl_get_fbo(int id) {
 }
 
 static fbo_t* opengl_get_free_fbo() {
+	fbo_t* fbo = nullptr;
+
 	for (auto& target : RenderTarget) {
 		if (target.fbo_id < 0) {
 			// This slot is free
-			return &target;
+			fbo = &target;
 		}
 	}
 
-	RenderTarget.push_back(fbo_t());
-	auto& last = RenderTarget.back();
-	last.fbo_id = next_fbo_id;
+	if (fbo == nullptr) {
+		RenderTarget.push_back(fbo_t());
+		fbo = &RenderTarget.back();
+	}
+	
+	fbo->fbo_id = next_fbo_id;
 	++next_fbo_id;
 
-	return &RenderTarget.back();
+	return fbo;
 }
 
 static void opengl_free_fbo_slot(int id) {

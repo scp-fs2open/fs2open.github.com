@@ -393,8 +393,7 @@ int hud_squadmsg_count_ships(int add_to_menu)
 		if (add_to_menu)
 		{
 			Assert ( Num_menu_items < MAX_MENU_ITEMS );
-			MsgItems[Num_menu_items].text = shipp->get_display_string();
-			end_string_at_first_hash_symbol(MsgItems[Num_menu_items].text); // truncate the name if it has a # in it
+			MsgItems[Num_menu_items].text = shipp->get_display_name();
 			MsgItems[Num_menu_items].instance = SHIP_INDEX(shipp);
 			MsgItems[Num_menu_items].active = 1;
 			Num_menu_items++;
@@ -1824,7 +1823,7 @@ void hud_squadmsg_call_reinforcement(int reinforcement_num, int  /*player_num*/)
 			break;
 
 	//if ( i > 0 )
-	//	message_send_to_player( rp->yes_messages[myrand() % i], rp->name, MESSAGE_PRIORITY_NORMAL, HUD_SOURCE_FRIENDLY );
+	//	message_send_to_player( rp->yes_messages[Random::next(i)], rp->name, MESSAGE_PRIORITY_NORMAL, HUD_SOURCE_FRIENDLY );
 	*/
 
 	mission_log_add_entry(LOG_PLAYER_CALLED_FOR_REINFORCEMENT, rp->name, NULL);
@@ -1840,6 +1839,7 @@ void hud_squadmsg_reinforcement_select()
 		Num_menu_items = 0;
 		for (i = 0; i < Num_reinforcements; i++) {
 			rp = &Reinforcements[i];
+			SCP_string rp_name = rp->name;
 
 			// don't put reinforcements onto the list that have already been used up.
 			if ( rp->num_uses == rp->uses ){
@@ -1861,6 +1861,8 @@ void hud_squadmsg_reinforcement_select()
 					|| Sexp_nodes[Wings[wingnum].arrival_cue].value == SEXP_KNOWN_FALSE ){
 					continue;
 				}
+
+				end_string_at_first_hash_symbol(rp_name);
 			} else {
 				p_object *p_objp;
 				
@@ -1874,11 +1876,12 @@ void hud_squadmsg_reinforcement_select()
 					Int3();							// allender says bogus!  reinforcement should be here since it wasn't a wing!
 					continue;
 				}
+
+				rp_name = p_objp->get_display_name();	// this will handle getting rid of the hash if necessary
 			}
 
 			Assert ( Num_menu_items < MAX_MENU_ITEMS );
-			MsgItems[Num_menu_items].text = rp->name;
-			end_string_at_first_hash_symbol(MsgItems[Num_menu_items].text);
+			MsgItems[Num_menu_items].text = rp_name;
 			MsgItems[Num_menu_items].instance = i;
 			MsgItems[Num_menu_items].active = 0;
 

@@ -24,7 +24,6 @@ class model_draw_list;
 #define	SW_WEAPON_KILL		(1<<3)	// Shockwave created when weapon destroyed by another
 
 #define	MAX_SHOCKWAVES					16
-#define	SW_MAX_OBJS_HIT	64
 
 // -----------------------------------------------------------
 // Data structures
@@ -51,8 +50,7 @@ typedef struct shockwave {
 	shockwave	*next, *prev;
 	int			flags;
 	int			objnum;					// index into Objects[] for shockwave
-	int			num_objs_hit;
-	int			obj_sig_hitlist[SW_MAX_OBJS_HIT];
+	SCP_vector<std::pair<int, int>>			obj_sig_hitlist;
 	float		speed, radius;
 	float		inner_radius, outer_radius, damage;
 	int			weapon_info_index;	// -1 if shockwave not caused by weapon	
@@ -80,6 +78,8 @@ typedef struct shockwave_create_info {
 	float blast;
 	float speed;
 	angles rot_angles;
+	bool rot_defined;		// if the modder specified rot_angles
+	bool damage_overidden;  // did this have shockwave damage specifically set or not
 
 	int damage_type_idx;
 	int damage_type_idx_sav;	// stored value from table used to reset damage_type_idx

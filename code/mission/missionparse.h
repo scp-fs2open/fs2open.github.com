@@ -134,6 +134,7 @@ typedef struct mission {
 	// Goober5000
 	int	command_persona;
 	char command_sender[NAME_LENGTH];
+	int debriefing_persona;
 
 	// Goober5000
 	char event_music_name[NAME_LENGTH];
@@ -176,6 +177,7 @@ typedef struct mission {
 		sound_environment.id = -1;
 		command_persona = 0;
 		command_sender[ 0 ] = '\0';
+		debriefing_persona = -1;
 		event_music_name[ 0 ] = '\0';
 		briefing_music_name[ 0 ] = '\0';
 		substitute_event_music_name[ 0 ] = '\0';
@@ -308,6 +310,7 @@ typedef struct texture_replace {
 	char old_texture[MAX_FILENAME_LEN];
 	char new_texture[MAX_FILENAME_LEN];
 	int new_texture_id;
+	bool from_table;
 } texture_replace;
 
 extern SCP_vector<texture_replace> Fred_texture_replacements;
@@ -334,6 +337,7 @@ public:
 	matrix	orient;
 	int	ship_class;
 	int	team;
+	int loadout_team;						// original team, should never be changed after being set!!
 	int	behavior;							// ai_class;
 	int	ai_goals;							// sexp of lists of goals that this ship should try and do
 	char	cargo1;
@@ -423,8 +427,8 @@ public:
 	p_object();
 	~p_object();
 
-	const char* get_display_string();
-	bool has_display_string();
+	const char* get_display_name();
+	bool has_display_name();
 };
 
 // Goober5000 - this is now dynamic
@@ -514,9 +518,6 @@ int get_parse_name_index(const char *name);
 // called from freespace game level loop
 void mission_parse_eval_stuff();
 
-// function to set the ramaing time left in the mission
-void mission_parse_set_end_time( int seconds );
-
 // code to bring in a repair ship.
 void mission_bring_in_support_ship( object *requester_objp );
 int mission_is_support_ship_arriving( void );
@@ -527,14 +528,15 @@ void mission_parse_support_arrived( int objnum );
 
 // alternate name stuff
 int mission_parse_lookup_alt(const char *name);
-void mission_parse_lookup_alt_index(int index, char *out);
+const char *mission_parse_lookup_alt_index(int index);
 int mission_parse_add_alt(const char *name);
 void mission_parse_remove_alt(const char *name);
 void mission_parse_reset_alt();
+void mission_process_alt_types();
 
 // callsign stuff
 int mission_parse_lookup_callsign(const char *name);
-void mission_parse_lookup_callsign_index(int index, char *out);
+const char *mission_parse_lookup_callsign_index(int index);
 int mission_parse_add_callsign(const char *name);
 void mission_parse_remove_callsign(const char *name);
 void mission_parse_reset_callsign();

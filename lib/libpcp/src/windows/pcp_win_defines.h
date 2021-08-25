@@ -81,14 +81,4 @@ int gettimeofday(struct timeval *tv, struct timezone *tz);
 
 #define MSG_DONTWAIT    0x0
 
-#if (_WIN32_WINNT < _WIN32_WINNT_VISTA)
-#define AI_NUMERICSERV              0x00000008
-#define AI_ALL                      0x00000100
-#define AI_ADDRCONFIG               0x00000400
-#define AI_V4MAPPED                 0x00000800
-#define AI_NON_AUTHORITATIVE        0x00004000
-#define AI_SECURE                   0x00008000
-#define AI_RETURN_PREFERRED_NAMES   0x00010000
-#endif
-
 #endif /*PCP_WIN_DEFINES*/

@@ -26,7 +26,7 @@ class UniformBufferManager {
 
 	std::array<gr_sync, NUM_SEGMENTS> _segment_fences;
 
-	int _active_uniform_buffer = -1;
+	gr_buffer_handle _active_uniform_buffer;
 	size_t _active_buffer_size = 0;
 	void* _buffer_ptr          = nullptr; // Pointer to mapped data for persistently mapped buffers
 
@@ -43,7 +43,7 @@ class UniformBufferManager {
 	 * The byte array is the associated shadow buffer which will ensure that the pointer stays valid until the buffer is
 	 * deleted at which point any reference to it will surely be removed.
 	 */
-	SCP_vector<std::tuple<gr_sync, int, std::unique_ptr<uint8_t[]>>> _retired_buffers;
+	SCP_vector<std::tuple<gr_sync, gr_buffer_handle, std::unique_ptr<uint8_t[]>>> _retired_buffers;
 
 	/**
 	 * @brief This is a pointer to an array which is a shadow of the uniform buffer
@@ -93,7 +93,7 @@ class UniformBufferManager {
 	 *
 	 * @return The uniform buffer handle
 	 */
-	int getActiveBufferHandle();
+	gr_buffer_handle getActiveBufferHandle();
 
 	/**
 	 * @brief Checks the used buffer and retires any buffers that are no longer in use for later reuse

@@ -762,7 +762,10 @@ void batching_add_tri(int texture, vertex *verts)
 	batching_add_tri_internal(batch, texture, verts);
 }
 
-void batching_render_batch_item(primitive_batch_item *item, vertex_layout *layout, primitive_type prim_type, int buffer_num)
+void batching_render_batch_item(primitive_batch_item* item,
+	vertex_layout* layout,
+	primitive_type prim_type,
+	gr_buffer_handle buffer_num)
 {
 	GR_DEBUG_SCOPE("Batching render item");
 	TRACE_SCOPE(tracing::RenderBatchItem);
@@ -813,7 +816,7 @@ void batching_allocate_and_load_buffer(primitive_batch_buffer *draw_queue)
 		offset += item->n_verts;
 	}
 
-	if ( draw_queue->buffer_num >= 0 ) {
+	if (draw_queue->buffer_num.isValid()) {
 		gr_update_buffer_data(draw_queue->buffer_num, draw_queue->buffer_size, draw_queue->buffer_ptr);
 	}
 }

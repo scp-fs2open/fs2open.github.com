@@ -35,9 +35,6 @@ static int		Player_afterburner_start_time;
 // local constants
 // ----------------------------------------------------------
 
-// The minimum required fuel to engage afterburners
-#define MIN_AFTERBURNER_FUEL_TO_ENGAGE		10
-
 #define AFTERBURNER_DEFAULT_VOL					0.5f	// default starting volume (0.0f -> 1.0f)
 #define AFTERBURNER_PERCENT_VOL_ATTENUATE		0.30f	// % at which afterburner volume is reduced
 #define AFTERBURNER_PERCENT_FOR_LOOP_SND		0.33f
@@ -88,10 +85,21 @@ void afterburners_start(object *objp)
 		return;
 	}
 
-	if ( (objp->flags[Object::Object_Flags::Player_ship]) && (objp == Player_obj) ) {
-		unsigned int now;
-		now = timer_get_milliseconds();
+	shipp->flags.set(Ship::Ship_Flags::Attempting_to_afterburn);
 
+	int now = timer_get_milliseconds();
+
+	if (now - shipp->afterburner_last_end_time < (int)(sip->afterburner_cooldown_time * 1000.0f)) {
+
+		if ((objp->flags[Object::Object_Flags::Player_ship]) && (objp == Player_obj))
+			snd_play(gamesnd_get_game_sound(ship_get_sound(objp, GameSounds::ABURN_FAIL)));
+
+		return;
+	}
+
+
+	if ( (objp->flags[Object::Object_Flags::Player_ship]) && (objp == Player_obj) ) {
+		
 		if ( (now - Player_afterburner_start_time) < 1300 ) {
 			snd_play( gamesnd_get_game_sound(ship_get_sound(objp, GameSounds::ABURN_FAIL)) );
 			return;
@@ -115,12 +123,14 @@ void afterburners_start(object *objp)
 	}
 
 	// Check if there is enough afterburner fuel
-	if ( (shipp->afterburner_fuel < MIN_AFTERBURNER_FUEL_TO_ENGAGE) && !MULTIPLAYER_CLIENT ) {
+	if ( (shipp->afterburner_fuel < sip->afterburner_min_start_fuel) && !MULTIPLAYER_CLIENT ) {
 		if ( objp == Player_obj ) {
 			snd_play( gamesnd_get_game_sound(ship_get_sound(objp, GameSounds::ABURN_FAIL)) );
 		}
 		return;
 	}
+
+	shipp->afterburner_last_engage_fuel = shipp->afterburner_fuel;
 
 	objp->phys_info.flags |= PF_AFTERBURNER_ON;
 
@@ -149,9 +159,11 @@ void afterburners_start(object *objp)
 		snd_play_3d( gamesnd_get_game_sound(ship_get_sound(objp, GameSounds::ABURN_ENGAGE)), &objp->pos, &View_position, objp->radius );
 	}
 
-	Script_system.SetHookObjects(1, "Ship", objp);
-	Script_system.RunCondition(CHA_AFTERBURNSTART, objp);
-	Script_system.RemHookVars(1, "Ship");
+	if (Script_system.IsActiveAction(CHA_AFTERBURNSTART)) {
+		Script_system.SetHookObjects(1, "Ship", objp);
+		Script_system.RunCondition(CHA_AFTERBURNSTART, objp);
+		Script_system.RemHookVars({"Ship"});
+	}
 	
 	objp->phys_info.flags |= PF_AFTERBURNER_WAIT;
 }
@@ -235,7 +247,13 @@ void afterburners_update(object *objp, float fl_frametime)
 				shipp->afterburner_fuel = 0.0f;
 				afterburners_stop(objp);
 				return;
+			} // if the ship had to burn a certain amount of fuel, and it did so and isn't still trying to afterburn, stop it
+			else if (!(shipp->flags[Ship::Ship_Flags::Attempting_to_afterburn]) && sip->afterburner_min_fuel_to_burn > 0.0f &&
+				shipp->afterburner_last_engage_fuel - shipp->afterburner_fuel > sip->afterburner_min_fuel_to_burn) {
+				afterburners_stop(objp);
+				return;
 			}
+
 		}
 
 		// afterburners are firing at this point
@@ -298,13 +316,25 @@ void afterburners_stop(object *objp, int key_released)
 		return;
 	}
 
+	shipp->flags.remove(Ship::Ship_Flags::Attempting_to_afterburn);
+
+	// if they need to burn a certain a amount of fuel but haven't done so, dont let them stop unless they have no fuel
+	// the removal of the above flag will turn it off later
+	if (shipp->afterburner_fuel > 0.0f && sip->afterburner_min_fuel_to_burn > 0.0f && 
+		shipp->afterburner_last_engage_fuel - shipp->afterburner_fuel < sip->afterburner_min_fuel_to_burn)
+		return;
+
 	if ( !(objp->phys_info.flags & PF_AFTERBURNER_ON) ) {
 		return;
 	}
 
-	Script_system.SetHookObjects(1, "Ship", objp);
-	Script_system.RunCondition(CHA_AFTERBURNEND, objp);
-	Script_system.RemHookVars(1, "Ship");
+	shipp->afterburner_last_end_time = timer_get_milliseconds();
+
+	if (Script_system.IsActiveAction(CHA_AFTERBURNEND)) {
+		Script_system.SetHookObjects(1, "Ship", objp);
+		Script_system.RunCondition(CHA_AFTERBURNEND, objp);
+		Script_system.RemHookVars({"Ship"});
+	}
 
 	objp->phys_info.flags &= ~PF_AFTERBURNER_ON;
 

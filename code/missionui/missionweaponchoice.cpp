@@ -1638,6 +1638,12 @@ void wl_get_parseobj_weapons(int sa_index, int ship_class, int *wep, int *wep_co
  */
 void wl_cull_illegal_weapons(int ship_class, int *wep, int *wep_count)
 {
+	auto sip = &Ship_info[ship_class];
+
+	// if we have *no* allowed weapon list, weapons are unrestricted
+	if (sip->allowed_weapons.weapon_and_flags.empty())
+		return;
+
 	int i, check_flag;
 	for ( i=0; i < MAX_SHIP_WEAPONS; i++ )
 	{
@@ -1645,12 +1651,12 @@ void wl_cull_illegal_weapons(int ship_class, int *wep, int *wep_count)
 			continue;
 		}
 
-		check_flag = Ship_info[ship_class].allowed_weapons[wep[i]];
+		check_flag = sip->allowed_weapons[wep[i]];
 
 		// possibly change flag if it's restricted
-		if (eval_weapon_flag_for_game_type(Ship_info[ship_class].restricted_loadout_flag[i]))
+		if (eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[i]))
 		{
-			check_flag = Ship_info[ship_class].allowed_bank_restricted_weapons[i][wep[i]];
+			check_flag = sip->allowed_bank_restricted_weapons[i][wep[i]];
 		}
 
 
@@ -2757,16 +2763,13 @@ void weapon_select_do(float frametime)
 				} else {
 					//Draw the weapon name, crappy last-ditch effort to not crash.
 					int half_x, half_y;
-					SCP_string print_name = Weapon_info[Carried_wl_icon.weapon_class].get_display_string();
+					auto weapon_name = Weapon_info[Carried_wl_icon.weapon_class].get_display_name();
 
-					// Truncate the # and everything to the right. Zacam
-					end_string_at_first_hash_symbol(print_name);
-					
 					// Center-align and fit the text for display
-					gr_get_string_size(&half_x, &half_y, print_name.c_str());
+					gr_get_string_size(&half_x, &half_y, weapon_name);
 					half_x = sx +((56 - half_x) / 2);
 					half_y = sy +((28 - half_y) / 2); // Was ((24 - half_y) / 2) Zacam
-					gr_string(half_x, half_y, print_name.c_str(), GR_RESIZE_MENU);
+					gr_string(half_x, half_y, weapon_name, GR_RESIZE_MENU);
 				}
 			}
 		}
@@ -2788,20 +2791,10 @@ void weapon_select_do(float frametime)
 			diffy = abs(Carried_wl_icon.from_y-my);
 			if ( (diffx > 2) || (diffy > 2) ) {
 				int ship_class = Wss_slots[Selected_wl_slot].ship_class;
+				auto ship_class_name = Ship_info[ship_class].get_display_name();
+				auto weapon_name = Weapon_info[Carried_wl_icon.weapon_class].get_display_name();
 
-				// might have to get weapon name translation
-				if (Lcl_gr && !Disable_built_in_translations)
-				{
-					char display_name[NAME_LENGTH];
-					strcpy_s(display_name, Weapon_info[Carried_wl_icon.weapon_class].get_display_string());
-					lcl_translate_wep_name_gr(display_name);
-					popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("A %s is unable to carry %s weaponry", 633), (Ship_info[ship_class].alt_name[0] != '\0') ? Ship_info[ship_class].alt_name : Ship_info[ship_class].name, display_name);
-				}
-				else
-				{
-					popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("A %s is unable to carry %s weaponry", 633), (Ship_info[ship_class].alt_name[0] != '\0') ? Ship_info[ship_class].alt_name : Ship_info[ship_class].name, Weapon_info[Carried_wl_icon.weapon_class].get_display_string());
-				}
-
+				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("A %s is unable to carry %s weaponry", 633), ship_class_name, weapon_name);
 				wl_dump_carried_icon();
 			}
 		}
@@ -3002,16 +2995,13 @@ void wl_render_icon(int index, int x, int y, int num, int draw_num_flag, int hot
 		{
 			//Draw the weapon name, crappy last-ditch effort to not crash.
 			int half_x, half_y;
-			SCP_string print_name = Weapon_info[index].get_display_string();
-
-			// Truncate the # and everything to the right. Zacam
-			end_string_at_first_hash_symbol(print_name);
+			auto weapon_name = Weapon_info[index].get_display_name();
 
 			// Center-align and fit the text for display
-			gr_get_string_size(&half_x, &half_y, print_name.c_str());
+			gr_get_string_size(&half_x, &half_y, weapon_name);
 			half_x = x +((56 - half_x) / 2);
 			half_y = y +((28 - half_y) / 2); // Was ((24 - half_y) / 2) Zacam
-			gr_string(half_x, half_y, print_name.c_str(), GR_RESIZE_MENU);
+			gr_string(half_x, half_y, weapon_name, GR_RESIZE_MENU);
 		}
 	}
 
@@ -3436,6 +3426,7 @@ void wl_bash_ship_weapons(ship_weapon *swp, wss_unit *slot)
 		if ( (slot->wep_count[sidx] > 0) && (slot->wep[sidx] >= 0) ) {
 			swp->secondary_bank_weapons[j] = slot->wep[sidx];
 			swp->secondary_bank_ammo[j] = slot->wep_count[sidx];
+			swp->secondary_bank_start_ammo[j] = (int)std::lround(Ship_info[slot->ship_class].secondary_bank_ammo_capacity[i] / Weapon_info[swp->secondary_bank_weapons[j]].cargo_size);
 			j++;
 		}
 	}
@@ -3547,22 +3538,13 @@ int wl_swap_slot_slot(int from_bank, int to_bank, int ship_slot, interface_snd_i
 		// check the to-bank first
 		if (eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[to_bank])) {
 			if (!eval_weapon_flag_for_game_type(sip->allowed_bank_restricted_weapons[to_bank][slot->wep[from_bank]])) {
-				char display_name[NAME_LENGTH];
-				char txt[39 + NAME_LENGTH];
-
-				strcpy_s(display_name, Weapon_info[slot->wep[from_bank]].get_display_string());
-
-				// might have to get weapon name translation
-				if (Lcl_gr && !Disable_built_in_translations) {
-					lcl_translate_wep_name_gr(display_name);
-				}
-
-				sprintf(txt, XSTR("This bank is unable to carry %s weaponry", 1628), display_name);
+				SCP_string txt;
+				sprintf(txt, XSTR("This bank is unable to carry %s weaponry", 1628), Weapon_info[slot->wep[from_bank]].get_display_name());
 
 				if ( !(Game_mode & GM_MULTIPLAYER) || (Netgame.host == pl) ) {
-					popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, txt);
+					popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, txt.c_str());
 				} else if (pl != NULL) {
-					send_game_chat_packet(Netgame.host, txt, MULTI_MSG_TARGET, pl, NULL, 1);
+					send_game_chat_packet(Netgame.host, txt.c_str(), MULTI_MSG_TARGET, pl, nullptr, 1);
 				}
 
 				return forced_update;
@@ -3711,22 +3693,13 @@ int wl_grab_from_list(int from_list, int to_bank, int ship_slot, interface_snd_i
 	// ensure that this bank will accept the weapon...
 	if (eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[to_bank])) {
 		if (!eval_weapon_flag_for_game_type(sip->allowed_bank_restricted_weapons[to_bank][from_list])) {
-			char display_name[NAME_LENGTH];
-			char txt[39 + NAME_LENGTH];
-
-			strcpy_s(display_name, Weapon_info[from_list].get_display_string());
-
-			// might have to get weapon name translation
-			if (Lcl_gr && !Disable_built_in_translations) {
-				lcl_translate_wep_name_gr(display_name);
-			}
-
-			sprintf(txt, XSTR("This bank is unable to carry %s weaponry", 1628), display_name);
+			SCP_string txt;
+			sprintf(txt, XSTR("This bank is unable to carry %s weaponry", 1628), Weapon_info[from_list].get_display_name());
 
 			if ( !(Game_mode & GM_MULTIPLAYER) || (Netgame.host == pl) ) {
-				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, txt);
+				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, txt.c_str());
 			} else if (pl != NULL) {
-				send_game_chat_packet(Netgame.host, txt, MULTI_MSG_TARGET, pl, NULL, 1);
+				send_game_chat_packet(Netgame.host, txt.c_str(), MULTI_MSG_TARGET, pl, nullptr, 1);
 			}
 
 			return 0;
@@ -3797,22 +3770,13 @@ int wl_swap_list_slot(int from_list, int to_bank, int ship_slot, interface_snd_i
 	// ensure that this bank will accept the weapon
 	if (eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[to_bank])) {
 		if (!eval_weapon_flag_for_game_type(sip->allowed_bank_restricted_weapons[to_bank][from_list])) {
-			char display_name[NAME_LENGTH];
-			char txt[39 + NAME_LENGTH];
-
-			strcpy_s(display_name, Weapon_info[from_list].get_display_string());
-
-			// might have to get weapon name translation
-			if (Lcl_gr && !Disable_built_in_translations) {
-				lcl_translate_wep_name_gr(display_name);
-			}
-
-			sprintf(txt, XSTR("This bank is unable to carry %s weaponry", 1628), display_name);
+			SCP_string txt;
+			sprintf(txt, XSTR("This bank is unable to carry %s weaponry", 1628), Weapon_info[from_list].get_display_name());
 
 			if ( !(Game_mode & GM_MULTIPLAYER) || (Netgame.host == pl) ) {
-				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, txt);
+				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, txt.c_str());
 			} else if (pl != NULL) {
-				send_game_chat_packet(Netgame.host, txt, MULTI_MSG_TARGET, pl, NULL, 1);
+				send_game_chat_packet(Netgame.host, txt.c_str(), MULTI_MSG_TARGET, pl, nullptr, 1);
 			}
 
 			return 0;
@@ -3895,7 +3859,7 @@ int wl_apply(int mode,int from_bank,int from_list,int to_bank,int to_list,int sh
 	if ( update ) {
 		if ( MULTIPLAYER_HOST ) {
 			int size;
-			ubyte wss_data[MAX_PACKET_SIZE-20];
+			ubyte wss_data[MAX_PACKET_SIZE];
 
 			size = store_wss_data(wss_data, MAX_PACKET_SIZE-20,sound,player_index);			
 			Assert(pl != NULL);
@@ -3969,7 +3933,6 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 	ship_info *sip, *source_sip;
 
 	char ship_name[NAME_LENGTH];
-	char buf[NAME_LENGTH];
 
 	// error stuff
 	bool error_flag = false;
@@ -4033,19 +3996,7 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 
 			// determine the weapon we need
 			weapon_type_to_add = Wss_slots[source_wss_slot].wep[cur_bank];
-
-			// maybe localize
-			const char* wep_display_name;
-			if (Lcl_gr && !Disable_built_in_translations)
-			{
-				strcpy_s(buf, Weapon_info[weapon_type_to_add].get_display_string());
-				lcl_translate_wep_name_gr(buf);
-				wep_display_name = buf;
-			}
-			else
-			{
-				wep_display_name = Weapon_info[weapon_type_to_add].get_display_string();
-			}
+			auto wep_display_name = Weapon_info[weapon_type_to_add].get_display_name();
 
 			// make sure this ship can accept this weapon
 			if (!eval_weapon_flag_for_game_type(sip->allowed_weapons[weapon_type_to_add]))
@@ -4082,7 +4033,7 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 			if ((result == 0) || (result == 2))
 			{
 				SCP_string temp;
-				sprintf(temp, XSTR("Insufficient %s available to arm %s", 1632), Weapon_info[weapon_type_to_add].get_display_string(), ship_name);
+				sprintf(temp, XSTR("Insufficient %s available to arm %s", 1632), Weapon_info[weapon_type_to_add].get_display_name(), ship_name);
 				error_messages.push_back(temp);
 
 				error_flag = true;

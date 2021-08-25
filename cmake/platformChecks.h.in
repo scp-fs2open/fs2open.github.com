@@ -8,8 +8,6 @@
 #cmakedefine SCP_HAVE_MAX_ALIGN_T
 #cmakedefine SCP_HAVE_STD_MAX_ALIGN_T
 
-#cmakedefine01 HAVE_STD_IS_TRIVIALLY_COPYABLE
-
 #cmakedefine01 IS_64BIT
 
 #cmakedefine01 SCP_HAVE_STRCASECMP

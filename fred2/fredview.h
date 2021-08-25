@@ -215,6 +215,8 @@ protected:
 	afx_msg void OnEditorsWaypoint();
 	afx_msg void OnViewOutlines();
 	afx_msg void OnUpdateViewOutlines(CCmdUI* pCmdUI);
+	afx_msg void OnViewOutlinesOnSelected();
+	afx_msg void OnUpdateViewOutlinesOnSelected(CCmdUI* pCmdUI);
 	afx_msg void OnUpdateNewShipType(CCmdUI* pCmdUI);
 	afx_msg void OnShowStarfield();
 	afx_msg void OnUpdateShowStarfield(CCmdUI* pCmdUI);
@@ -269,6 +271,7 @@ protected:
 	afx_msg void OnControlObj();
 	afx_msg void OnNextObj();
 	afx_msg void OnPrevObj();
+	afx_msg void OnEditCloneMarkedObjects();
 	afx_msg void OnEditDeleteWing();
 	afx_msg void OnMarkWing();
 	afx_msg void OnUpdateControlObj(CCmdUI* pCmdUI);
@@ -295,6 +298,10 @@ protected:
 	afx_msg void OnUpdateFormatFs2Retail(CCmdUI* pCmdUI);
 	afx_msg void OnFormatFs1Retail();
 	afx_msg void OnUpdateFormatFs1Retail(CCmdUI* pCmdUI);
+	afx_msg void OnMoveShipsWhenUndocking();
+	afx_msg void OnUpdateMoveShipsWhenUndocking(CCmdUI* pCmdUI);
+	afx_msg void OnHighlightSubsys();
+	afx_msg void OnUpdateHighlightSubsys(CCmdUI* pCmdUI);
 	afx_msg void OnEditorsSetGlobalShipFlags();
 	afx_msg void OnEditorsVoiceManager();
 	afx_msg void OnEditorsFiction();
@@ -355,6 +362,9 @@ extern int Id_select_type_jump_node;
 extern int Id_select_type_start;
 extern int Id_select_type_waypoint;
 extern int Hide_ship_cues, Hide_wing_cues;
+extern int Move_ships_when_undocking;
+extern int Highlight_selectable_subsys;
+
 extern Marking_box marking_box;
 extern object_orient_pos	rotation_backup[MAX_OBJECTS];
 

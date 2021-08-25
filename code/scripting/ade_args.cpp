@@ -102,6 +102,17 @@ bool get_single_arg(lua_State* L, const get_args_state& state, char fmt, luacpp:
 	f->setErrorFunction(luacpp::LuaFunction::createFromCFunction(L, ade_friendly_error));
 	return true;
 }
+bool get_single_arg(lua_State* L, const get_args_state& state, char fmt, luacpp::LuaValue* f)
+{
+	Assertion(fmt == 'a', "Invalid character '%c' for any type!", fmt);
+
+	// Get a function
+	if (!luacpp::convert::popValue(L, *f, state.nargs, false)) {
+		LuaError(L, "%s: Failed to get argument %d. Internal error.", state.funcname, state.nargs);
+		return false;
+	}
+	return true;
+}
 
 void set_single_arg(lua_State* L, char fmt, const char* s)
 {
@@ -131,6 +142,11 @@ void set_single_arg(lua_State* L, char fmt, luacpp::LuaFunction* func)
 void set_single_arg(lua_State* L, char fmt, const luacpp::LuaFunction& func)
 {
 	Assertion(fmt == 'u', "Invalid format character '%c' for function type!", fmt);
+	func.pushValue(L);
+}
+void set_single_arg(lua_State* L, char fmt, const luacpp::LuaValue& func)
+{
+	Assertion(fmt == 'a', "Invalid format character '%c' for any type!", fmt);
 	func.pushValue(L);
 }
 

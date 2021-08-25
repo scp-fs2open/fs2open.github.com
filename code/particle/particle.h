@@ -74,6 +74,7 @@ namespace particle
 		int attached_sig = -1;					// to make sure the object hasn't changed or died. velocity is ignored in this case
 		bool reverse = false;					// play any animations in reverse
 		bool lifetime_from_animation = true;	// if the particle plays an animation then use the anim length for the particle life
+		float length = 0.f;						// if set, makes the particle render like a laser, oriented along its path
 	} particle_info;
 
 	typedef struct particle {
@@ -93,6 +94,7 @@ namespace particle
 		int		attached_sig;		// to check for dead/nonexistent objects
 		bool	reverse;			// play any animations in reverse
 		int		particle_index;		// used to keep particle offset in dynamic array for orient usage
+		float   length;				// the length of the particle for laser-style rendering
 	} particle;
 
 	typedef std::weak_ptr<particle> WeakParticlePtr;

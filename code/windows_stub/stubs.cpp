@@ -1,48 +1,7 @@
 
 
 
-#ifdef _WIN32
-
-#if (_WIN32_WINNT < 0x0600)
-#include <winsock2.h>
-#include <ws2tcpip.h>
-
-const char *inet_ntop(int af, const void *src, char *dst, int size)
-{
-	struct sockaddr_storage srcaddr;
-	size_t slen;
-
-	if (af == AF_INET) {
-		struct sockaddr_in *sa4 = reinterpret_cast<struct sockaddr_in *>(&srcaddr);
-
-		memset(sa4, 0, sizeof(struct sockaddr_in));
-		memcpy(&(sa4->sin_addr), src, sizeof(sa4->sin_addr));
-
-		slen = sizeof(struct sockaddr_in);
-	} else if (af == AF_INET6) {
-		struct sockaddr_in6 *sa6 = reinterpret_cast<struct sockaddr_in6 *>(&srcaddr);
-
-		memset(sa6, 0, sizeof(struct sockaddr_in6));
-		memcpy(&(sa6->sin6_addr), src, sizeof(sa6->sin6_addr));
-
-		slen = sizeof(struct sockaddr_in6);
-	} else {
-		return nullptr;
-	}
-
-	srcaddr.ss_family = static_cast<short>(af);
-
-	if (WSAAddressToString(reinterpret_cast<struct sockaddr *>(&srcaddr), static_cast<DWORD>(slen),
-						   0, dst, reinterpret_cast<LPDWORD>(&size)) != 0)
-	{
-		return nullptr;
-	}
-
-	return dst;
-}
-#endif	// (_WIN32_WINNT < 0x0600)
-
-#else	// ! _WIN32
+#ifndef _WIN32
 
 #include <cctype>
 #include <cerrno>

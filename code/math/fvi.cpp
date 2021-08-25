@@ -243,6 +243,33 @@ int fvi_segment_sphere(vec3d *intp, const vec3d *p0, const vec3d *p1, const vec3
 		return 0;
 }
 
+/**
+ * Determine if a cylinder *may* intersect with a sphere
+ *
+ * cylinder from p0 to p1 with radius cyl_rad
+ * sphere at sphere_pos with radius sphere_rad
+ * @return false if definitely not intersecting, returns true if intersection is possible
+ */
+bool fvi_cylinder_sphere_may_collide(const vec3d* p0, const vec3d* p1, float cyl_rad, const vec3d* sphere_pos, float sphere_rad)
+{
+	vec3d cyl_rel = *p1 - *p0;
+	vec3d sphere_rel = *sphere_pos - *p0;
+
+	float cyl_len = vm_vec_mag(&cyl_rel);
+	if (cyl_len < SMALL_NUM)
+		// zero length cylinder, weird but ok, just do two sphere intersection
+		return vm_vec_mag_squared(&sphere_rel) <= (cyl_rad + sphere_rad) * (cyl_rad + sphere_rad);
+	 
+	vec3d cyl_dir = cyl_rel / cyl_len;
+	float intp_dist = vm_vec_dot(&cyl_dir, &sphere_rel);
+	if (intp_dist < -sphere_rad || intp_dist > cyl_len + sphere_rad)
+		// sphere is too far beyond either end of the cylinder
+		return false;
+
+	vec3d sphere_rel_intp = sphere_rel - cyl_dir * intp_dist;
+	return vm_vec_mag_squared(&sphere_rel_intp) <= (cyl_rad + sphere_rad) * (cyl_rad + sphere_rad);
+}
+
 
 /**
  * Determine if and where a ray intersects with a sphere

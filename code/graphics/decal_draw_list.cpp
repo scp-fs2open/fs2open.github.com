@@ -27,8 +27,8 @@ uint32_t BOX_FACES[] =
 
 const size_t BOX_NUM_FACES = sizeof(BOX_FACES) / sizeof(BOX_FACES[0]);
 
-int box_vertex_buffer = -1;
-int box_index_buffer = -1;
+gr_buffer_handle box_vertex_buffer;
+gr_buffer_handle box_index_buffer;
 
 void init_buffers() {
 	box_vertex_buffer = gr_create_buffer(BufferType::Vertex, BufferUsageHint::Static);
@@ -104,12 +104,12 @@ decal_draw_list::decal_draw_list(size_t num_decals)
 	// Initialize header data
 	auto header = aligner.getHeader<graphics::decal_globals>();
 	matrix4 invView;
-	vm_inverse_matrix4(&gr_view_matrix, &invView);
+	vm_inverse_matrix4(&invView, &gr_view_matrix);
 
 	header->viewMatrix = gr_view_matrix;
 	header->projMatrix = gr_projection_matrix;
 	header->invViewMatrix = invView;
-	vm_inverse_matrix4(&gr_projection_matrix, &header->invProjMatrix);
+	vm_inverse_matrix4(&header->invProjMatrix, &gr_projection_matrix);
 
 	header->viewportSize.x = (float) gr_screen.max_w;
 	header->viewportSize.y = (float) gr_screen.max_h;
@@ -191,7 +191,7 @@ void decal_draw_list::add_decal(int diffuse_bitmap,
 	// The decal shader works in view-space so the direction also has to be transformed into that space
 	vm_vec_transform(&info->decal_direction, &transform_rot.vec.fvec, &gr_view_matrix, false);
 
-	vm_inverse_matrix4(&info->model_matrix, &info->inv_model_matrix);
+	vm_inverse_matrix4(&info->inv_model_matrix, &info->model_matrix);
 
 	info->diffuse_index = diffuse_bitmap < 0 ? -1 : bm_get_array_index(diffuse_bitmap);
 	info->glow_index = glow_bitmap < 0 ? -1 : bm_get_array_index(glow_bitmap);

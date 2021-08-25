@@ -29,7 +29,6 @@ struct beam_info;
 bool Env_cubemap_drawn = false;
 int Multi_ping_timestamp = -1;
 int Sun_drew = 0;
-int Networking_disabled = 0;
 
 bool running_unittests = false;
 

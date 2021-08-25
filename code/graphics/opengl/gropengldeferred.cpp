@@ -130,13 +130,7 @@ void gr_opengl_deferred_lighting_finish()
 	using namespace graphics;
 
 	// We need to precompute how many elements we are going to need
-	size_t num_data_elements = 0;
-	for (auto& l : Lights) {
-		++num_data_elements;
-		if (l.type == Light_Type::Tube) {
-			++num_data_elements;
-		}
-	}
+	size_t num_data_elements = Lights.size();
 
 	// Get a uniform buffer for our data
 	auto buffer          = gr_get_uniform_buffer(uniform_block_type::Lights, num_data_elements);
@@ -157,7 +151,7 @@ void gr_opengl_deferred_lighting_finish()
 			header->middist = Shadow_cascade_distances[2];
 			header->fardist = Shadow_cascade_distances[3];
 
-			vm_inverse_matrix4(&gr_view_matrix, &header->inv_view_matrix);
+			vm_inverse_matrix4(&header->inv_view_matrix, &gr_view_matrix);
 		}
 
 		header->invScreenWidth = 1.0f / gr_screen.max_w;
@@ -229,26 +223,16 @@ void gr_opengl_deferred_lighting_finish()
 				vec3d a;
 				vm_vec_sub(&a, &l.vec, &l.vec2);
 				auto length = vm_vec_mag(&a);
+				//Tube light volumes must be extended past the length of their requested light vector
+				//to allow smooth fall-off from all angles. Since the light volume starts at the mesh
+				//origin we must extend it here. Later the position will be adjusted as well.
+				length += light_data->lightRadius * 2.0f;
 
 				light_data->scale.xyz.x = l.radb * 1.53f;
 				light_data->scale.xyz.y = l.radb * 1.53f;
 				light_data->scale.xyz.z = length;
 
 				vm_vec_scale(&light_data->specLightColor, static_tube_factor);
-
-				// Tube lights consist of two different types of lights with almost the same properties
-				light_data = uniformAligner.addTypedElement<deferred_light_data>();
-				light_data->diffuseLightColor = diffuse;
-				light_data->specLightColor = spec;
-
-				vm_vec_scale(&light_data->specLightColor, static_tube_factor);
-
-				light_data->lightRadius = l.radb * 1.5f;
-				light_data->lightType = LT_POINT;
-
-				light_data->scale.xyz.x = l.radb * 1.53f;
-				light_data->scale.xyz.y = l.radb * 1.53f;
-				light_data->scale.xyz.z = l.radb * 1.53f;
 				break;
 			}
 			}
@@ -284,20 +268,17 @@ void gr_opengl_deferred_lighting_finish()
 				gr_bind_uniform_buffer(uniform_block_type::Lights, buffer.getAlignerElementOffset(element_index),
 				                       sizeof(graphics::deferred_light_data), buffer.bufferHandle());
 
-				vec3d a;
+				vec3d dir, newPos;
 				matrix orient;
-				vm_vec_sub(&a, &l.vec, &l.vec2);
-				vm_vector_2_matrix(&orient, &a, NULL, NULL);
-
-				gr_opengl_draw_deferred_light_cylinder(&l.vec2, &orient);
-				++element_index;
-
-				// The next two draws use the same uniform block element
-				gr_bind_uniform_buffer(uniform_block_type::Lights, buffer.getAlignerElementOffset(element_index),
-				                       sizeof(graphics::deferred_light_data), buffer.bufferHandle());
-
-				gr_opengl_draw_deferred_light_sphere(&l.vec);
-				gr_opengl_draw_deferred_light_sphere(&l.vec2);
+				vm_vec_sub(&dir, &l.vec, &l.vec2);
+				vm_vector_2_matrix(&orient, &dir, nullptr, nullptr);
+				//Tube light volumes must be extended past the length of their requested light vector
+				//to allow smooth fall-off from all angles. Since the light volume starts at the mesh
+				//origin we must extend it, which has been done above, and then move it backwards one radius.
+				vm_vec_normalize(&dir);
+				//1.5 multiplier matches scaling used earlier to scale light radius for all tubes
+				vm_vec_scale_sub(&newPos, &l.vec2, &dir, l.radb * 1.5f);
+				gr_opengl_draw_deferred_light_cylinder(&newPos, &orient);
 				++element_index;
 				break;
 			default:
@@ -320,8 +301,8 @@ void gr_opengl_deferred_lighting_finish()
 		GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_emissive_texture);
 		GL_state.Texture.Enable(1, GL_TEXTURE_2D, Scene_depth_texture);
 
-		float fog_near, fog_far;
-		neb2_get_adjusted_fog_values(&fog_near, &fog_far, nullptr);
+		float fog_near, fog_far, fog_density;
+		neb2_get_adjusted_fog_values(&fog_near, &fog_far, &fog_density);
 		unsigned char r, g, b;
 		neb2_get_fog_color(&r, &g, &b);
 
@@ -330,7 +311,7 @@ void gr_opengl_deferred_lighting_finish()
 
 		opengl_set_generic_uniform_data<graphics::generic_data::fog_data>([&](graphics::generic_data::fog_data* data) {
 			data->fog_start       = fog_near;
-			data->fog_scale       = 1.0f / (fog_far - fog_near);
+			data->fog_density     = fog_density;
 			data->fog_color.xyz.x = r / 255.f;
 			data->fog_color.xyz.y = g / 255.f;
 			data->fog_color.xyz.z = b / 255.f;

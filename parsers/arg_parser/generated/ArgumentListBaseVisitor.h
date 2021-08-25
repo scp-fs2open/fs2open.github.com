@@ -19,7 +19,15 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual antlrcpp::Any visitStandalone_type(ArgumentListParser::Standalone_typeContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual antlrcpp::Any visitSimple_type(ArgumentListParser::Simple_typeContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitVarargs_or_simple_type(ArgumentListParser::Varargs_or_simple_typeContext *ctx) override {
     return visitChildren(ctx);
   }
 
@@ -32,6 +40,14 @@ public:
   }
 
   virtual antlrcpp::Any visitFunction_type(ArgumentListParser::Function_typeContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitMap_type(ArgumentListParser::Map_typeContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitIterator_type(ArgumentListParser::Iterator_typeContext *ctx) override {
     return visitChildren(ctx);
   }
 

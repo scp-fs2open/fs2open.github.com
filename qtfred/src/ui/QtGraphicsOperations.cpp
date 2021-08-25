@@ -1,6 +1,12 @@
 //
 //
 
+#if defined(_MSC_VER) && _MSC_VER <= 1920
+	// work around MSVC 2015 and 2017 compiler bug
+	// https://bugreports.qt.io/browse/QTBUG-72073
+	#define QT_NO_FLOAT16_OPERATORS
+#endif
+
 #include "QtGraphicsOperations.h"
 
 #include "widgets/renderwidget.h"
@@ -129,8 +135,9 @@ std::pair<uint32_t, uint32_t> QtViewport::getSize() {
 	return std::make_pair((uint32_t) size.width(), (uint32_t) size.height());
 }
 void QtViewport::swapBuffers() {
-	if (_viewportWindow->getRenderWidget()->isVisible()) {
-		QOpenGLContext::currentContext()->swapBuffers(_viewportWindow->getRenderSurface());
+	auto qSurf = dynamic_cast<QWindow*>(_viewportWindow->getRenderSurface());
+	if (qSurf && qSurf->isExposed()) {
+		QOpenGLContext::currentContext()->swapBuffers(qSurf);
 	}
 }
 void QtViewport::setState(os::ViewportState  /*state*/) {

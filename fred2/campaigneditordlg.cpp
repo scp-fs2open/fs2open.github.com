@@ -145,14 +145,6 @@ void campaign_editor::OnLoad()
 		FREDDoc_ptr->SetPathName(res.full_name.c_str());
 	}
 	Campaign_wnd->DestroyWindow();
-
-//		if (FREDDoc_ptr->OnOpenDocument(Campaign.missions[Cur_campaign_mission].name)) {
-//			Bypass_clear_mission = 1;
-//			Campaign_wnd->DestroyWindow();
-//
-//		} else {
-//			MessageBox("Failed to load mission!", "Error");
-//		}
 }
 
 BOOL campaign_editor::Create(LPCTSTR lpszClassName, LPCTSTR lpszWindowName, DWORD dwStyle, const RECT& rect, CWnd* pParentWnd, UINT nID, CCreateContext* pContext) 

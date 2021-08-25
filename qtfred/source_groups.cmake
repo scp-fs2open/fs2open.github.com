@@ -2,6 +2,7 @@
 set(source_files)
 
 add_file_folder("Source"
+    src/CheckedDataListModel.h
     src/FredApplication.cpp
     src/FredApplication.h
     src/fredstubs.cpp
@@ -40,6 +41,8 @@ add_file_folder("Source/Mission/Dialogs"
     src/mission/dialogs/AbstractDialogModel.h
 	src/mission/dialogs/AsteroidEditorDialogModel.cpp
 	src/mission/dialogs/AsteroidEditorDialogModel.h
+	src/mission/dialogs/CommandBriefingDialogModel.cpp
+	src/mission/dialogs/CommandBriefingDialogModel.h
 	src/mission/dialogs/CustomWingNamesDialogModel.cpp
 	src/mission/dialogs/CustomWingNamesDialogModel.h
     src/mission/dialogs/FictionViewerDialogModel.cpp
@@ -58,6 +61,8 @@ add_file_folder("Source/Mission/Dialogs"
 	src/mission/dialogs/ShieldSystemDialogModel.h
 	src/mission/dialogs/WaypointEditorDialogModel.cpp
 	src/mission/dialogs/WaypointEditorDialogModel.h
+	src/mission/dialogs/ShipEditorDialogModel.h
+	src/mission/dialogs/ShipEditorDialogModel.cpp
 )
 
 add_file_folder("Source/UI"
@@ -76,6 +81,8 @@ add_file_folder("Source/UI/Dialogs"
 	src/ui/dialogs/BackgroundEditorDialog.cpp
     src/ui/dialogs/BriefingEditorDialog.cpp
     src/ui/dialogs/BriefingEditorDialog.h
+	src/ui/dialogs/CommandBriefingDialog.cpp
+	src/ui/dialogs/CommandBriefingDialog.h
 	src/ui/dialogs/CustomWingNamesDialog.cpp
 	src/ui/dialogs/CustomWingNamesDialog.h
     src/ui/dialogs/EventEditorDialog.cpp
@@ -100,6 +107,8 @@ add_file_folder("Source/UI/Dialogs"
 	src/ui/dialogs/VoiceActingManager.cpp
 	src/ui/dialogs/WaypointEditorDialog.cpp
 	src/ui/dialogs/WaypointEditorDialog.h
+	src/ui/dialogs/ShipEditorDialog.h
+	src/ui/dialogs/ShipEditorDialog.cpp
 )
 
 add_file_folder("Source/UI/Util"
@@ -123,6 +132,7 @@ add_file_folder("UI"
 	ui/AsteroidEditorDialog.ui
 	ui/BackgroundEditor.ui
 	ui/BriefingEditorDialog.ui
+	ui/CommandBriefingDialog.ui
 	ui/CustomWingNamesDialog.ui
     ui/EventEditorDialog.ui
 	ui/FictionViewerDialog.ui
@@ -136,6 +146,7 @@ add_file_folder("UI"
 	ui/TeamLoadoutDialog.ui
 	ui/VoiceActingManager.ui
     ui/WaypointEditorDialog.ui
+	ui/ShipEditorDialog.ui
 )
 
 add_file_folder("Resources"

@@ -9,6 +9,8 @@
 
 #include "globalincs/pstypes.h"
 #include "network/chat_api.h"
+#include "network/psnet2.h"
+#include "network/multi_log.h"
 
 #ifdef SCP_UNIX
 #include <sys/time.h>
@@ -23,8 +25,6 @@
 #include <cerrno>
 #include <arpa/inet.h>
 #include <netdb.h>
-
-#define WSAGetLastError()  (errno)
 #else
 #include <winsock2.h>
 typedef int socklen_t;
@@ -35,8 +35,8 @@ typedef int socklen_t;
 
 #define MAXCHATBUFFER	500
 
-SOCKET Chatsock;
-SOCKADDR_IN Chataddr;
+SOCKET Chatsock = INVALID_SOCKET;
+static SOCKADDR_STORAGE Chataddr;
 int Socket_connecting = 0;
 char Nick_name[33];
 char Orignial_nick_name[33];
@@ -103,7 +103,7 @@ void ChatInit(void)
 // exists (Scourge1 for instance)
 int ConnectToChatServer(char *serveraddr, char *nickname, char *trackerid)
 {
-	short chat_port;
+	uint16_t chat_port;
 	char chat_server[50];
 	char *p;
 	unsigned long argp = 1;
@@ -111,8 +111,6 @@ int ConnectToChatServer(char *serveraddr, char *nickname, char *trackerid)
 
 	if(!Socket_connecting)
 	{
-		unsigned long iaddr;
-
 		strncpy(Nick_name, nickname, sizeof(Nick_name)-1);
 		strncpy(Orignial_nick_name, nickname, sizeof(Orignial_nick_name)-1);
 		strncpy(Chat_tracker_id, trackerid, sizeof(Chat_tracker_id)-1);
@@ -132,48 +130,41 @@ int ConnectToChatServer(char *serveraddr, char *nickname, char *trackerid)
 		memset(chat_server, 0, sizeof(chat_server));
 		strncpy(chat_server,serveraddr,(p-serveraddr));
 		chat_server[p-serveraddr] = '\0';
-		chat_port = (short)atoi(p+1);
+		chat_port = static_cast<uint16_t>(atoi(p+1));
 		if(0==chat_port)
 		{
 			return -1;
 		}
 
-		Chatsock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+		Chatsock = socket(AF_INET6, SOCK_STREAM, 0);
 
 		if(INVALID_SOCKET == Chatsock)
 		{
 			return -1;
 		}
 
-		memset( &Chataddr, 0, sizeof(SOCKADDR_IN) );
-		Chataddr.sin_family = AF_INET; 
-		Chataddr.sin_addr.s_addr = INADDR_ANY; 
-		Chataddr.sin_port = 0;
+		// make sure we are in dual-stack mode (not the default on Windows)
+		int i_opt = 0;
+		setsockopt(Chatsock, IPPROTO_IPV6, IPV6_V6ONLY, reinterpret_cast<const char *>(&i_opt), sizeof(i_opt));
+
+		if ( !psnet_get_addr(nullptr, static_cast<uint16_t>(0), &Chataddr) )
+		{
+			return -1;
+		}
 		
-		if (SOCKET_ERROR==bind(Chatsock, (SOCKADDR*)&Chataddr, sizeof (sockaddr))) 
+		if (SOCKET_ERROR==bind(Chatsock, reinterpret_cast<LPSOCKADDR>(&Chataddr), sizeof(Chataddr)))
 		{
 			return -1;
 		}
 
 		ioctlsocket(Chatsock, FIONBIO, &argp);
-		
-		// first try and resolve by name
-		iaddr = inet_addr( chat_server );
-		if ( iaddr == INADDR_NONE ) {	
-			HOSTENT *he;
-			he = gethostbyname(chat_server);
-			if(!he)
-			{
-				return 0;
-			}
-			memcpy(&iaddr, he->h_addr_list[0],4);
+
+		if ( !psnet_get_addr(chat_server, chat_port, &Chataddr) )
+		{
+			return -2;
 		}
-		
-		memcpy(&Chataddr.sin_addr.s_addr, &iaddr,4);			
 
-		Chataddr.sin_port = htons( chat_port );
-
-		if(SOCKET_ERROR == connect(Chatsock,(SOCKADDR *)&Chataddr,sizeof(SOCKADDR_IN)))
+		if(SOCKET_ERROR == connect(Chatsock, reinterpret_cast<LPSOCKADDR>(&Chataddr), sizeof(Chataddr)))
 		{
 			if(WSAEWOULDBLOCK == WSAGetLastError())
 			{
@@ -225,6 +216,14 @@ int ConnectToChatServer(char *serveraddr, char *nickname, char *trackerid)
 					return 0;
 				}
 
+				// check for server error messages
+				const char *msg = ChatGetString();
+
+				if (msg && !strcmp(msg, "ERROR"))
+				{
+					return -1;
+				}
+
 				Socket_connected = 1;
 				memset(signon_str, 0, sizeof(signon_str));
 				sprintf_safe(signon_str, NOX("/USER %s %s %s :%s"), NOX("user"), NOX("user"), NOX("user"), Chat_tracker_id);
@@ -254,10 +253,18 @@ int ConnectToChatServer(char *serveraddr, char *nickname, char *trackerid)
  */
 void DisconnectFromChatServer()
 {
-	if(!Socket_connected) return;
-	SendChatString(NOX("/QUIT"),1);
-	shutdown(Chatsock,2);
-	closesocket(Chatsock);
+	if (Socket_connected)
+	{
+		SendChatString(NOX("/QUIT"), 1);
+	}
+
+	if (Chatsock != INVALID_SOCKET)
+	{
+		shutdown(Chatsock, 2);
+		closesocket(Chatsock);
+	}
+
+	Chatsock = INVALID_SOCKET;
 	Socket_connecting = 0;
 	Socket_connected = 0;
 	Input_chat_buffer[0] = '\0';
@@ -475,7 +482,7 @@ char *ChatGetString(void)
 	FD_ZERO(&read_fds);
 	FD_SET(Chatsock,&read_fds);    
 	//Writable -- that means it's connected
-	while ( select(static_cast<int>(Chatsock+1), &read_fds, nullptr, nullptr, &timeout) )
+	while ( select(static_cast<int>(Chatsock+1), &read_fds, nullptr, nullptr, &timeout) > 0 )
 	{
 		bytesread = recv(Chatsock,ch,1,0);
 		if(bytesread)
@@ -784,6 +791,15 @@ char * ParseIRCMessage(char *Line, int iMode)
 	if(iMode==MSG_LOCAL)
 	{
 		return NULL;
+	}
+
+	if(stricmp(szCmd,NOX("ERROR"))==0)
+	{
+		// Server reported errors
+		ml_printf("Chat ERROR:  %s", szRemLine);
+		AddChatCommandToQueue(CC_DISCONNECTED, nullptr, 0);
+		strcpy_s(szResponse, "ERROR");
+		return szResponse;
 	}
 
 	if(stricmp(szCmd,NOX("NOTICE"))==0)
@@ -1266,6 +1282,7 @@ char *GetTrackerIdByUser(char *nickname)
 		if(Getting_user_tracker_error)
 		{
 			Getting_user_tracker_error = 0;
+			Getting_user_channel_error = 0;
 			GettingUserTID = 0;
 			return (char *)-1;
 		}
@@ -1296,6 +1313,7 @@ char *GetChannelByUser(char *nickname)
 		if(Getting_user_channel_error)
 		{
 			Getting_user_channel_error = 0;
+			Getting_user_tracker_error = 0;
 			GettingUserChannel = 0;
 			return (char *)-1;
 		}

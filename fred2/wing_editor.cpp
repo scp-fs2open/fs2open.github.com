@@ -44,6 +44,7 @@ wing_editor::wing_editor(CWnd* pParent /*=NULL*/)
 	m_special_ship = -1;
 	m_waves = 0;
 	m_threshold = 0;
+	m_formation = 0;	// retail formation (no formation) is -1, but it's the 0-offset in the combo box
 	m_arrival_location = -1;
 	m_departure_location = -1;
 	m_arrival_delay = 0;
@@ -82,6 +83,7 @@ void wing_editor::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_WING_NAME, m_wing_name);
 	DDX_Text(pDX, IDC_WING_SQUAD_LOGO, m_wing_squad_filename);
 	DDX_CBIndex(pDX, IDC_WING_SPECIAL_SHIP, m_special_ship);
+	DDX_CBIndex(pDX, IDC_WING_FORMATION, m_formation);
 	DDX_CBIndex(pDX, IDC_ARRIVAL_LOCATION, m_arrival_location);
 	DDX_CBIndex(pDX, IDC_DEPARTURE_LOCATION, m_departure_location);
 	DDX_Check(pDX, IDC_REINFORCEMENT, m_reinforcement);
@@ -179,6 +181,13 @@ BOOL wing_editor::Create()
 	CComboBox *box;
 
 	r = CDialog::Create(IDD, Fred_main_wnd);
+
+	box = (CComboBox *)GetDlgItem(IDC_WING_FORMATION);
+	box->ResetContent();
+	box->AddString("Default");
+	for (auto &f : Wing_formations)
+		box->AddString(f.name);
+
 	box = (CComboBox *) GetDlgItem(IDC_ARRIVAL_LOCATION);
 	box->ResetContent();
 	for (i=0; i<MAX_ARRIVAL_NAMES; i++)
@@ -263,6 +272,7 @@ void wing_editor::initialize_data_safe(int full_update)
 	if (cur_wing < 0) {
 		m_wing_squad_filename = _T("");
 		m_special_ship = -1;
+		m_formation = 0;
 		m_arrival_location = -1;
 		m_departure_location = -1;
 		m_arrival_delay = 0;
@@ -322,6 +332,7 @@ void wing_editor::initialize_data_safe(int full_update)
 		m_special_ship = Wings[cur_wing].special_ship;
 		m_waves = Wings[cur_wing].num_waves;
 		m_threshold = Wings[cur_wing].threshold;
+		m_formation = Wings[cur_wing].formation + 1;
 		m_arrival_location = Wings[cur_wing].arrival_location;
 		m_departure_location = Wings[cur_wing].departure_location;
 		m_arrival_delay = Wings[cur_wing].arrival_delay;
@@ -430,8 +441,10 @@ void wing_editor::initialize_data_safe(int full_update)
 	GetDlgItem(IDC_DISBAND_WING)->EnableWindow(enable);
 	GetDlgItem(IDC_SPIN_WAVES)->EnableWindow(player_enabled);
 	GetDlgItem(IDC_SPIN_WAVE_THRESHOLD)->EnableWindow(player_enabled);
-	GetDlgItem(IDC_ARRIVAL_LOCATION)->EnableWindow(enable);
 
+	GetDlgItem(IDC_WING_FORMATION)->EnableWindow(enable);
+
+	GetDlgItem(IDC_ARRIVAL_LOCATION)->EnableWindow(enable);
 	GetDlgItem(IDC_ARRIVAL_DELAY)->EnableWindow(player_enabled);
 	GetDlgItem(IDC_ARRIVAL_DELAY_MIN)->EnableWindow(player_enabled);
 	GetDlgItem(IDC_ARRIVAL_DELAY_MAX)->EnableWindow(player_enabled);
@@ -593,23 +606,7 @@ int wing_editor::update_data(int redraw)
 			ptr = GET_NEXT(ptr);
 		}
 
-		for (i=0; i<Num_iffs; i++) {
-			if (!stricmp(m_wing_name, Iff_info[i].iff_name)) 
-			{
-				if (bypass_errors)
-					return 1;
-
-				bypass_errors = 1;
-				z = MessageBox("This wing name is already being used by a team.\n"
-					"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
-
-				if (z == IDCANCEL)
-					return -1;
-
-				m_wing_name = _T(Wings[cur_wing].name);
-				UpdateData(FALSE);
-			}
-		}
+		// We don't need to check teams.  "Unknown" is a valid name and also an IFF.
 
 		for ( i=0; i < (int)Ai_tp_list.size(); i++) {
 			if (!stricmp(m_wing_name, Ai_tp_list[i].name)) 
@@ -699,6 +696,8 @@ int wing_editor::update_data(int redraw)
 				if ((Objects[wing_objects[cur_wing][i]].type == OBJ_SHIP) || (Objects[wing_objects[cur_wing][i]].type == OBJ_START)) {
 					wing_bash_ship_name(buf, str, i + 1);
 					rename_ship(Wings[cur_wing].ship_index[i], buf);
+					// clear display name if we have one hanging around
+					Ships[Wings[cur_wing].ship_index[i]].flags.remove(Ship::Ship_Flags::Has_display_name);
 				}
 			}
 
@@ -777,6 +776,7 @@ void wing_editor::update_data_safe()
 	MODIFY(Wings[cur_wing].special_ship, m_special_ship);
 	MODIFY(Wings[cur_wing].num_waves, m_waves);
 	MODIFY(Wings[cur_wing].threshold, m_threshold);
+	MODIFY(Wings[cur_wing].formation, m_formation - 1);
 	MODIFY(Wings[cur_wing].arrival_location, m_arrival_location);
 	MODIFY(Wings[cur_wing].departure_location, m_departure_location);
 	MODIFY(Wings[cur_wing].arrival_delay, m_arrival_delay);

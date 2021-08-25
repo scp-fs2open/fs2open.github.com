@@ -910,20 +910,102 @@ void EditorViewport::initialSetup() {
 	cur_model_index = get_default_player_ship_index();
 }
 
+int EditorViewport::duplicate_marked_objects()
+{
+	int z, cobj, flag;
+	object *objp, *ptr;
+
+	cobj = Duped_wing = -1;
+	flag = 0;
+
+	int duping_waypoint_list = -1;
+
+	objp = GET_FIRST(&obj_used_list);
+	while (objp != END_OF_LIST(&obj_used_list))	{
+		Assert(objp->type != OBJ_NONE);
+		if (objp->flags[Object::Object_Flags::Marked]) {
+			if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) {
+				z = Ships[objp->instance].wingnum;
+				if (!flag)
+					Duped_wing = z;
+				else if (Duped_wing != z)
+					Duped_wing = -1;
+
+			} else {
+				Duped_wing = -1;
+			}
+
+			// make sure we dup as many waypoint lists as we have
+			if (objp->type == OBJ_WAYPOINT) {
+				int this_list = calc_waypoint_list_index(objp->instance);
+				if (duping_waypoint_list != this_list) {
+					editor->dup_object(nullptr);  // reset waypoint list
+					duping_waypoint_list = this_list;
+				}
+			}
+
+			flag = 1;
+			z = editor->dup_object(objp);
+			if (z == -1) {
+				cobj = -1;
+				break;
+			}
+
+			if (editor->currentObject == OBJ_INDEX(objp) )
+				cobj = z;
+		}
+
+		objp = GET_NEXT(objp);
+	}
+
+	obj_merge_created_list();
+
+	// I think this code is to catch the case where an object wasn't created for whatever reason;
+	// in this case just delete the remaining objects we just created
+	if (cobj == -1) {
+		objp = GET_FIRST(&obj_used_list);
+		while (objp != END_OF_LIST(&obj_used_list))	{
+			ptr = GET_NEXT(objp);
+			if (objp->flags [Object::Object_Flags::Temp_marked])
+				editor->delete_object(OBJ_INDEX(objp));
+
+			objp = ptr;
+		}
+
+		button_down = false;
+		return -1;
+	}
+
+	editor->unmark_all();
+
+	objp = GET_FIRST(&obj_used_list);
+	while (objp != END_OF_LIST(&obj_used_list))	{
+		if (objp->flags [Object::Object_Flags::Temp_marked]) {
+			objp->flags.remove(Object::Object_Flags::Temp_marked);
+			editor->markObject(OBJ_INDEX(objp));
+		}
+
+		objp = GET_NEXT(objp);
+	}
+
+	editor->selectObject(cobj);
+	return 0;
+}
+
 //	If cur_object_index references a valid object, drag it from its current
 //	location to the new cursor location specified by "point".
 //	It is dragged relative to the main grid.  Its y coordinate is not changed.
 //	Return value: 0/1 = didn't/did move object all the way to goal.
 int EditorViewport::drag_objects(int x, int y)
 {
-	int z, cobj, flag, rval = 1;
+	int rval = 1;
 	float r;
 	float	distance_moved = 0.0f;
 	vec3d cursor_dir, int_pnt;
 	vec3d movement_vector;
 	vec3d obj;
 	vec3d vec1, vec2;
-	object *objp, *ptr;
+	object *objp;
 	// starfield_bitmaps *bmp;
 
 	/*
@@ -945,7 +1027,8 @@ int EditorViewport::drag_objects(int x, int y)
 	}
 	*/
 
-	if (!query_valid_object(editor->currentObject))
+	// Do not move ships that we are currently centered around (Lookat_mode). The vector math will start going haywire and return NAN
+	if (!query_valid_object(editor->currentObject) || Lookat_mode)
 		return -1;
 
 	if (Dup_drag == 1
@@ -955,76 +1038,9 @@ int EditorViewport::drag_objects(int x, int y)
 	}
 
 	if (Dup_drag == 1) {
-		cobj = Duped_wing = -1;
-		flag = 0;
-
-		int duping_waypoint_list = -1;
-
-		objp = GET_FIRST(&obj_used_list);
-		while (objp != END_OF_LIST(&obj_used_list))	{
-			Assert(objp->type != OBJ_NONE);
-			if (objp->flags[Object::Object_Flags::Marked]) {
-				if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) {
-					z = Ships[objp->instance].wingnum;
-					if (!flag)
-						Duped_wing = z;
-					else if (Duped_wing != z)
-						Duped_wing = -1;
-
-				} else
-					Duped_wing = -1;
-
-				// make sure we dup as many waypoint lists as we have
-				if (objp->type == OBJ_WAYPOINT) {
-					int this_list = calc_waypoint_list_index(objp->instance);
-					if (duping_waypoint_list != this_list) {
-						editor->dup_object(nullptr);  // reset waypoint list
-						duping_waypoint_list = this_list;
-					}
-				}
-
-				flag = 1;
-				z = editor->dup_object(objp);
-				if (z == -1) {
-					cobj = -1;
-					break;
-				}
-
-				if (editor->currentObject == OBJ_INDEX(objp) )
-					cobj = z;
-			}
-
-			objp = GET_NEXT(objp);
-		}
-
-		obj_merge_created_list();
-		if (cobj == -1) {
-			objp = GET_FIRST(&obj_used_list);
-			while (objp != END_OF_LIST(&obj_used_list))	{
-				ptr = GET_NEXT(objp);
-				if (objp->flags [Object::Object_Flags::Temp_marked])
-					editor->delete_object(OBJ_INDEX(objp));
-
-				objp = ptr;
-			}
-
-			button_down = 0;
+		if (duplicate_marked_objects() < 0)
 			return -1;
-		}
 
-		editor->unmark_all();
-
-		objp = GET_FIRST(&obj_used_list);
-		while (objp != END_OF_LIST(&obj_used_list))	{
-			if (objp->flags [Object::Object_Flags::Temp_marked]) {
-				objp->flags.remove(Object::Object_Flags::Temp_marked);
-				editor->markObject(OBJ_INDEX(objp));
-			}
-
-			objp = GET_NEXT(objp);
-		}
-
-		editor->selectObject(cobj);
 		if (Duped_wing != -1)
 			Dup_drag = DUP_DRAG_OF_WING;  // indication for later that we duped objects in a wing
 		else

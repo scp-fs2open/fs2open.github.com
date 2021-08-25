@@ -126,7 +126,8 @@ plr_data::~plr_data()
 void pilotfile_convert::plr_import_controls()
 {
 	int idx;
-	config_item con;
+	CCI con;
+	short buf;
 
 	unsigned char num_controls = cfread_ubyte(cfp);
 
@@ -135,6 +136,7 @@ void pilotfile_convert::plr_import_controls()
 	}
 
 	// it may be less than 118, but it shouldn't be more than 118
+	// Don't touch this magic number! This is for old playerfiles. See banner at top of this file.
 	if (num_controls > 118) {
 		throw "Data check failure in controls!";
 	}
@@ -142,17 +144,17 @@ void pilotfile_convert::plr_import_controls()
 	plr->controls.reserve(num_controls);
 
 	for (idx = 0; idx < num_controls; idx++) {
-		con.key_id = cfread_short(cfp);
-
-		if (con.key_id == 255) {
-			con.key_id = -1;
+		buf = cfread_short(cfp);
+		if (buf == 255) {
+			buf = -1;
 		}
+		con.take(CC_bind(CID_KEYBOARD, buf), 0);
 
-		con.joy_id = cfread_short(cfp);
-
-		if (con.joy_id == 255) {
-			con.joy_id = -1;
+		buf = cfread_short(cfp);
+		if (buf == 255) {
+			buf = -1;
 		}
+		con.take(CC_bind(CID_JOY0, buf), 1);
 
 		plr->controls.push_back( con );
 	}
@@ -765,8 +767,8 @@ void pilotfile_convert::plr_export_controls()
 	cfwrite_ushort((unsigned short)plr->controls.size(), cfp);
 
 	for (idx = 0; idx < plr->controls.size(); idx++) {
-		cfwrite_short(plr->controls[idx].key_id, cfp);
-		cfwrite_short(plr->controls[idx].joy_id, cfp);
+		cfwrite_short(plr->controls[idx].get_btn(CID_KEYBOARD), cfp);
+		cfwrite_short(plr->controls[idx].get_btn(CID_JOY0), cfp);
 		// placeholder? for future mouse_id?
 		cfwrite_short(-1, cfp);
 	}

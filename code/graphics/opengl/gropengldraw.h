@@ -34,10 +34,14 @@ void gr_opengl_update_distortion();
 
 void gr_opengl_sphere(material *material_def, float rad);
 
-void gr_opengl_shadow_map_start(matrix4 *shadow_view_matrix, const matrix *light_orient);
+void gr_opengl_shadow_map_start(matrix4 *shadow_view_matrix, const matrix *light_orient, vec3d* eye_pos);
 void gr_opengl_shadow_map_end();
 
-void gr_opengl_render_shield_impact(shield_material *material_info, primitive_type prim_type, vertex_layout *layout, int buffer_handle, int n_verts);
+void gr_opengl_render_shield_impact(shield_material* material_info,
+	primitive_type prim_type,
+	vertex_layout* layout,
+	gr_buffer_handle buffer_handle,
+	int n_verts);
 
 void opengl_setup_scene_textures();
 void opengl_scene_texture_shutdown();
@@ -45,21 +49,75 @@ void gr_opengl_scene_texture_begin();
 void gr_opengl_scene_texture_end();
 void gr_opengl_copy_effect_texture();
 
-void opengl_render_primitives(primitive_type prim_type, vertex_layout* layout, int n_verts, int buffer_handle, size_t vert_offset, size_t byte_offset);
-void opengl_render_primitives_immediate(primitive_type prim_type, vertex_layout* layout, int n_verts, void* data, int size);
+void opengl_render_primitives(primitive_type prim_type,
+	vertex_layout* layout,
+	int n_verts,
+	gr_buffer_handle buffer_handle,
+	size_t vert_offset,
+	size_t byte_offset);
+void opengl_render_primitives_immediate(primitive_type prim_type,
+	vertex_layout* layout,
+	int n_verts,
+	void* data,
+	int size);
 
-void gr_opengl_render_primitives(material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle, size_t buffer_offset);
-void gr_opengl_render_primitives_particle(particle_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle);
-void gr_opengl_render_primitives_batched(batched_bitmap_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle);
-void gr_opengl_render_primitives_distortion(distortion_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle);
-void gr_opengl_render_movie(movie_material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts, int buffer, size_t buffer_offset);
-void gr_opengl_render_nanovg(nanovg_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle);
-void gr_opengl_render_decals(decal_material* material_info, primitive_type prim_type, vertex_layout* layout, int num_elements, const indexed_vertex_source& binding);
-void gr_opengl_render_rocket_primitives(interface_material* material_info, primitive_type prim_type,
-                                        vertex_layout* layout, int n_indices, int vertex_buffer, int index_buffer);
+void gr_opengl_render_primitives(material* material_info,
+	primitive_type prim_type,
+	vertex_layout* layout,
+	int offset,
+	int n_verts,
+	gr_buffer_handle buffer_handle,
+	size_t buffer_offset);
+void gr_opengl_render_primitives_particle(particle_material* material_info,
+	primitive_type prim_type,
+	vertex_layout* layout,
+	int offset,
+	int n_verts,
+	gr_buffer_handle buffer_handle);
+void gr_opengl_render_primitives_batched(batched_bitmap_material* material_info,
+	primitive_type prim_type,
+	vertex_layout* layout,
+	int offset,
+	int n_verts,
+	gr_buffer_handle buffer_handle);
+void gr_opengl_render_primitives_distortion(distortion_material* material_info,
+	primitive_type prim_type,
+	vertex_layout* layout,
+	int offset,
+	int n_verts,
+	gr_buffer_handle buffer_handle);
+void gr_opengl_render_movie(movie_material* material_info,
+	primitive_type prim_type,
+	vertex_layout* layout,
+	int n_verts,
+	gr_buffer_handle buffer,
+	size_t buffer_offset);
+void gr_opengl_render_nanovg(nanovg_material* material_info,
+	primitive_type prim_type,
+	vertex_layout* layout,
+	int offset,
+	int n_verts,
+	gr_buffer_handle buffer_handle);
+void gr_opengl_render_decals(decal_material* material_info,
+	primitive_type prim_type,
+	vertex_layout* layout,
+	int num_elements,
+	const indexed_vertex_source& binding);
+void gr_opengl_render_rocket_primitives(interface_material* material_info,
+	primitive_type prim_type,
+	vertex_layout* layout,
+	int n_indices,
+	gr_buffer_handle vertex_buffer,
+	gr_buffer_handle index_buffer);
 
-void opengl_draw_textured_quad(GLfloat x1, GLfloat y1, GLfloat u1, GLfloat v1,
-							   GLfloat x2, GLfloat y2, GLfloat u2, GLfloat v2 );
+void opengl_draw_textured_quad(GLfloat x1,
+	GLfloat y1,
+	GLfloat u1,
+	GLfloat v1,
+	GLfloat x2,
+	GLfloat y2,
+	GLfloat u2,
+	GLfloat v2);
 
 /**
  * @brief Draw "something" so that the entire screen is covered and the corners use the UV values that are provided.

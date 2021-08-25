@@ -3,6 +3,7 @@
 
 #include "hookvars.h"
 
+#include "scripting/scripting.h"
 
 namespace scripting {
 namespace api {
@@ -10,119 +11,86 @@ namespace api {
 //**********LIBRARY: Scripting Variables
 ADE_LIB(l_HookVar, "HookVariables", "hv", "Hook variables repository");
 
-//WMC: IMPORTANT
-//Be very careful when modifying this library, as the Globals[] library does depend
-//on the current number of items in the library. If you add _anything_, modify __len.
-//Or run changes by me.
+ADE_INDEXER(l_HookVar,
+	"string variableName",
+	"Retrieves a hook variable value",
+	"any",
+	"The hook variable value or nil if hook variable is not defined")
+{
+	const char* name;
+	if (!ade_get_args(L, "*s", &name)) {
+		return ADE_RETURN_NIL;
+	}
+
+	const auto scriptSystem = script_state::GetScriptState(L);
+
+	const auto& hookVars = scriptSystem->GetHookVariableReferences();
+	const auto iter = hookVars.find(name);
+	if (iter == hookVars.end()) {
+		return ADE_RETURN_NIL;
+	}
+	if (iter->second.empty()) {
+		// Hook variable existed at some point but was removed again
+		return ADE_RETURN_NIL;
+	}
+
+	// Use the value on top of the stack
+	iter->second.back()->pushValue(L);
+	return 1;
+}
+
+// WMC: IMPORTANT
+// Be very careful when modifying this library, as the Globals[] library does depend
+// on the current number of items in the library. If you add _anything_, modify __len.
+// Or run changes by me.
 
 //*****LIBRARY: Scripting Variables
 ADE_LIB_DERIV(l_HookVar_Globals, "Globals", nullptr, nullptr, l_HookVar);
 
-ADE_INDEXER(l_HookVar_Globals, "number Index", "Array of current HookVariable names", "string", "Hookvariable name, or empty string if invalid index specified")
+ADE_INDEXER(l_HookVar_Globals,
+	"number Index",
+	"Array of current HookVariable names",
+	"string",
+	"Hookvariable name, or empty string if invalid index specified")
 {
 	int idx;
-	if(!ade_get_args(L, "*i", &idx))
+	if (!ade_get_args(L, "*i", &idx))
 		return ade_set_error(L, "s", "");
 
-	//Get lib
-	lua_getglobal(L, l_HookVar.GetName());
-	int lib_ldx = lua_gettop(L);
-	if(!lua_isuserdata(L, lib_ldx))
-	{
-		lua_pop(L, 1);
-		return ade_set_error(L, "s", "");
-	}
+	const auto scriptSystem = script_state::GetScriptState(L);
 
-	//Get metatable
-	lua_getmetatable(L, lib_ldx);
-	int mtb_ldx = lua_gettop(L);
-	if(!lua_istable(L, mtb_ldx))
-	{
-		lua_pop(L, 2);
-		return ade_set_error(L, "s", "");
-	}
+	const auto& hookVars = scriptSystem->GetHookVariableReferences();
 
-	//Get ade members table
-	lua_pushstring(L, "__ademembers");
-	lua_rawget(L, mtb_ldx);
-	int amt_ldx = lua_gettop(L);
-	if(!lua_istable(L, amt_ldx))
-	{
-		lua_pop(L, 3);
-		return ade_set_error(L, "s", "");
-	}
-
-	//List 'em
+	// List 'em
 	int count = 1;
-	lua_pushnil(L);
-	while(lua_next(L, amt_ldx))
-	{
-		//Now on stack: Key, value
-		lua_pushvalue(L, -2);
-		auto keyname = lua_tostring(L, -1);
-		if(strcmp(keyname, "Globals") != 0)
-		{
-			if(count == idx)
-			{
-				//lib, mtb, amt, key, value, string go bye-bye
-				lua_pop(L, 5);
-				return ade_set_args(L, "s", keyname);
-			}
-			count++;
+	for (const auto& pair : hookVars) {
+		if (pair.second.empty()) {
+			// Skip empty value stacks
+			continue;
 		}
-		lua_pop(L, 2);	//Value, string
-	}
 
-	lua_pop(L, 3);	//lib, mtb, amt
+		if (count == idx) {
+			return ade_set_args(L, "s", pair.first);
+		}
+		count++;
+	}
 
 	return ade_set_error(L, "s", "");
 }
 
 ADE_FUNC(__len, l_HookVar_Globals, NULL, "Number of HookVariables", "number", "Number of HookVariables")
 {
-	//Get metatable
-	lua_getglobal(L, l_HookVar.GetName());
-	int lib_ldx = lua_gettop(L);
-	if(!lua_isuserdata(L, lib_ldx))
-	{
-		lua_pop(L, 1);
-		return ade_set_error(L, "i", 0);
-	}
+	const auto scriptSystem = script_state::GetScriptState(L);
 
-	lua_getmetatable(L, lib_ldx);
-	int mtb_ldx = lua_gettop(L);
-	if(!lua_istable(L, mtb_ldx))
-	{
-		lua_pop(L, 2);
-		return ade_set_error(L, "i", 0);
-	}
+	const auto& hookVars = scriptSystem->GetHookVariableReferences();
 
-	//Get ade members table
-	lua_pushstring(L, "__ademembers");
-	lua_rawget(L, mtb_ldx);
-	int amt_ldx = lua_gettop(L);
-	if(!lua_istable(L, amt_ldx))
-	{
-		lua_pop(L, 3);
-		return ade_set_error(L, "i", 0);
-	}
+	// Since the values are on a stack, it is possible to have entries in the map that have no values at the moment
+	auto validHookVars = std::count_if(hookVars.cbegin(),
+		hookVars.cend(),
+		[](const std::pair<SCP_string, SCP_vector<luacpp::LuaReference>>& values) { return !values.second.empty(); });
 
-	int total_len = 0;
-	lua_pushnil(L);
-	while(lua_next(L, amt_ldx))
-	{
-		total_len++;
-		lua_pop(L, 1);	//value
-	}
-	size_t num_sub = ade_manager::getInstance()->getEntry(l_HookVar.GetIdx()).Num_subentries;
-
-	lua_pop(L, 3);
-
-	//WMC - Return length, minus the 'Globals' library
-	return ade_set_args(L, "i", (int)(total_len - num_sub));
+	return ade_set_args(L, "i", validHookVars);
 }
 
-
-}
-}
-
+} // namespace api
+} // namespace scripting

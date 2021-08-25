@@ -1086,22 +1086,7 @@ int CShipEditorDlg::update_data(int redraw)
 			}
 		}
 
-		for (i=0; i<Num_iffs; i++) {
-			if (!stricmp(m_ship_name, Iff_info[i].iff_name)) {
-				if (bypass_errors)
-					return 1;
-
-				bypass_errors = 1;
-				z = MessageBox("This ship name is already being used by a team.\n"
-					"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
-
-				if (z == IDCANCEL)
-					return -1;
-
-				m_ship_name = _T(Ships[single_ship].ship_name);
-				UpdateData(FALSE);
-			}
-		}
+		// We don't need to check teams.  "Unknown" is a valid name and also an IFF.
 
 		for ( i=0; i < (int)Ai_tp_list.size(); i++) {
 			if (!stricmp(m_ship_name, Ai_tp_list[i].name)) 
@@ -1719,9 +1704,13 @@ void CShipEditorDlg::OnDeleteShip()
 
 void CShipEditorDlg::OnShipTbl()
 {
-	text_view_dlg dlg;
+	TextViewDlg dlg;
 
-	dlg.set(m_ship_class);
+	if (m_ship_class < 0)
+		return;
+	auto sip = &Ship_info[m_ship_class];
+
+	dlg.LoadShipsTblText(sip);
 	dlg.DoModal();
 }
 
@@ -2009,7 +1998,7 @@ void CShipEditorDlg::OnSelchangeHotkey()
 	set_num = m_hotkey-1;			// use -1 since values associated with hotkey sets are 1 index based
 
 	// the first three sets are generally reserved for player starting wings.
-	if ( set_num < MAX_STARTING_WINGS ) {
+	if ( set_num >= 0 && set_num < MAX_STARTING_WINGS ) {
 		sprintf( buf, "This hotkey set should probably be reserved\nfor wing %s", Starting_wing_names[set_num] );
 		MessageBox(buf, NULL, MB_OK);
 	}

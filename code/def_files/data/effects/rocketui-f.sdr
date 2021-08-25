@@ -1,23 +1,41 @@
 
 in vec2 fragTexCoord;
 in vec4 fragColor;
+in vec2 fragScreenPosition;
 
 out vec4 fragOut0;
 
 uniform sampler2DArray baseMap;
 
 layout (std140) uniform genericData {
-	mat4 modelViewMatrix;
 	mat4 projMatrix;
 
+	vec2 offset;
 	bool textured;
 	int baseMapIndex;
+
+	float horizontalSwipeOffset;
 };
 
 void main() {
-    if (textured) {
-        fragOut0 = texture(baseMap, vec3(fragTexCoord, float(baseMapIndex))) * fragColor;
-    } else {
-        fragOut0 = fragColor;
-    }
+	if (fragScreenPosition.x > horizontalSwipeOffset) {
+		discard;
+	}
+
+	float distance = horizontalSwipeOffset - fragScreenPosition.x;
+
+	vec4 color;
+	if (textured) {
+		color = texture(baseMap, vec3(fragTexCoord, float(baseMapIndex))) * fragColor;
+	} else {
+		color = fragColor;
+	}
+
+	// Hard-coded for now but can be easily made configurable should that be needed at some point
+	if (distance < 10.f) {
+		// Only change the colors but not the alpha channel to preserve the transparent part of text
+		color.xyz = vec3(1.0);
+	}
+
+	fragOut0 = color;
 }

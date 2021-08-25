@@ -409,7 +409,7 @@ bool StartAutopilot()
 				if (leader_objp != &Objects[Ships[i].objnum])
 				{
 					// not leader.. get our position relative to leader
-					get_absolute_wing_pos_autopilot(&goal_point, leader_objp, wing_index, aip->ai_flags[AI::AI_Flags::Formation_object]);
+					get_absolute_wing_pos(&goal_point, leader_objp, wingnum, wing_index, aip->ai_flags[AI::AI_Flags::Formation_object], true);
 				}
 				else
 				{
@@ -716,7 +716,7 @@ bool StartAutopilot()
 		vm_vec_scale(&pos, 5*speed_cap*tc_factor); // pos is now scaled by 5 times the speed (5 seconds ahead)
 		vm_vec_add(&pos, &pos, &Autopilot_flight_leader->pos); // pos is now 5*speed cap in front of player ship
 
-		switch (myrand()%24) 
+		switch (Random::next(24))
 		// 8 different ways of getting perp points
 		// 4 of which will not be used when capships are present (anything below, or straight above)
 		{
@@ -795,7 +795,8 @@ bool StartAutopilot()
 		vm_vec_scale(&perp,  Autopilot_flight_leader->radius+radius);
 
 		// randomly scale up/down by up to 20%
-		j = 20-myrand()%40; // [-20,20]
+		// jg18 - original comment said [-20,20] but preserving existing behavior
+		j = Random::next(-19, 20);
 
 		vm_vec_scale(&perp, 1.0f+(float(j)/100.0f));
 		vm_vec_add(&cameraPos, &pos, &perp);

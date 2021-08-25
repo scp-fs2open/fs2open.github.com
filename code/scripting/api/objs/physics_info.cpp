@@ -1,6 +1,8 @@
 
 #include "physics_info.h"
 #include "vecmath.h"
+#include "math/vecmat.h"
+#include "ship/shiphit.h"
 
 namespace scripting {
 namespace api {
@@ -457,19 +459,44 @@ ADE_FUNC(isGliding, l_Physics, NULL, "True if glide mode is on, false or nil if 
 		return ade_set_args(L, "b",  false);
 }
 
-ADE_FUNC(applyWhack, l_Physics, "vector Impulse, [ vector Position]", "Applies a whack to an object at a position (a local vector) based on impulse supplied (a world vector). If no position is supplied, an empty vector is used.", "boolean", "true if it succeeded, false otherwise")
+ADE_FUNC(applyWhack, l_Physics, "vector Impulse, [ vector Position]", "Applies a whack to an object based on an impulse vector, indicating the direction and strength of whack and optionally at a position relative to the ship in world orientation, the ship's center being default.", "boolean", "true if it succeeded, false otherwise")
 {
 	object_h objh;
 	physics_info_h *pih;
 	vec3d *impulse;
-	vec3d *offset = &vmd_zero_vector;
+	vec3d *offset = nullptr;
 
 	if (!ade_get_args(L, "oo|o", l_Physics.GetPtr(&pih), l_Vector.GetPtr(&impulse), l_Vector.GetPtr(&offset)))
 		return ADE_RETURN_NIL;
 
 	objh = pih->objh;
+	if (offset == nullptr)
+		offset = &objh.objp->pos;
+	else
+		vm_vec_add2(offset, &objh.objp->pos);
 
-	physics_apply_whack(impulse, offset, pih->pi, &objh.objp->orient, pih->pi->mass);
+	ship_apply_whack(impulse, offset, objh.objp);
+
+	return ADE_RETURN_TRUE;
+
+}
+
+ADE_FUNC(applyWhackWorld, l_Physics, "vector Impulse, [ vector Position]", "Applies a whack to an object based on an impulse vector, indicating the direction and strength of whack and optionally at a world position, the ship's center being default.", "boolean", "true if it succeeded, false otherwise")
+{
+	object_h objh;
+	physics_info_h* pih;
+	vec3d* impulse;
+	vec3d* world_pos = nullptr;
+
+	if (!ade_get_args(L, "oo|o", l_Physics.GetPtr(&pih), l_Vector.GetPtr(&impulse), l_Vector.GetPtr(&world_pos)))
+		return ADE_RETURN_NIL;
+
+	objh = pih->objh;
+	if (!world_pos) {
+		world_pos = &objh.objp->pos;
+	}
+
+	ship_apply_whack(impulse, world_pos, objh.objp);
 
 	return ADE_RETURN_TRUE;
 

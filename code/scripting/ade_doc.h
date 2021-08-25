@@ -14,6 +14,7 @@ enum class ade_type_info_type {
 	Alternative,
 	Function,
 	Generic,
+	Varargs,
 };
 
 class ade_type_array;
@@ -22,6 +23,8 @@ class ade_type_iterator;
 class ade_type_alternative;
 class ade_type_function;
 class ade_type_generic;
+class ade_type_varargs;
+class ade_type_tuple;
 
 /**
  * @brief A definition of a type used in the ADE system
@@ -37,13 +40,14 @@ class ade_type_info {
 	ade_type_info() = default;
 	/*implicit*/ ade_type_info(const char* single_type); // NOLINT(hicpp-explicit-conversions)
 	/*implicit*/ ade_type_info(SCP_string single_type);
-	/*implicit*/ ade_type_info(std::initializer_list<ade_type_info> tuple_types);
+	/*implicit*/ ade_type_info(const ade_type_tuple& tupleType);
 	/*implicit*/ ade_type_info(const ade_type_array& listType);
 	/*implicit*/ ade_type_info(const ade_type_map& listType);
 	/*implicit*/ ade_type_info(const ade_type_iterator& iteratorType);
 	/*implicit*/ ade_type_info(const ade_type_alternative& alternativeType);
 	/*implicit*/ ade_type_info(const ade_type_function& functionType);
 	/*implicit*/ ade_type_info(const ade_type_generic& genericType);
+	/*implicit*/ ade_type_info(const ade_type_varargs& genericType);
 
 	ade_type_info(const ade_type_info&) = default;
 	ade_type_info& operator=(const ade_type_info&) = default;
@@ -112,6 +116,15 @@ class ade_type_alternative {
 	const SCP_vector<ade_type_info>& getElementTypes() const;
 };
 
+class ade_type_tuple {
+	SCP_vector<ade_type_info> _elements;
+
+  public:
+	explicit ade_type_tuple(SCP_vector<ade_type_info> elements);
+
+	const SCP_vector<ade_type_info>& getElementTypes() const;
+};
+
 class ade_type_function {
 	ade_type_info _returnType;
 	SCP_vector<ade_type_info> _argumentTypes;
@@ -132,6 +145,15 @@ class ade_type_generic {
 
 	const ade_type_info& getBaseType() const;
 	const SCP_vector<scripting::ade_type_info>& getGenericTypes() const;
+};
+
+class ade_type_varargs {
+	ade_type_info _baseType;
+
+  public:
+	explicit ade_type_varargs(ade_type_info baseType);
+
+	const ade_type_info& getBaseType() const;
 };
 
 class ade_overload_list {

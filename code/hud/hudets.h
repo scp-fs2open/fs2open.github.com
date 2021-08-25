@@ -16,7 +16,6 @@
 
 class object;
 
-#define ENERGY_DIVERT_DELTA				0.2f	// percentage of energy transferred in a shield->weapon or weapon->shield energy transfer
 #define INTIAL_SHIELD_RECHARGE_INDEX	4		// default shield charge rate (index in Energy_levels[])
 #define INTIAL_WEAPON_RECHARGE_INDEX	4		// default weapon charge rate (index in Energy_levels[])
 #define INTIAL_ENGINE_RECHARGE_INDEX	4		// default engine charge rate (index in Energy_levels[])
@@ -34,12 +33,10 @@ class object;
 #define HAS_SHIELDS			(1<<1)
 #define HAS_WEAPONS			(1<<2)
 
-#define	ETS_RECHARGE_RATE	4.0f			//	Recharge this percent of total shields/second
-
 const int num_retail_ets_gauges = 3;
 
 extern float Energy_levels[];
-extern int Weapon_energy_cheat;
+extern bool Weapon_energy_cheat;
 
 enum SYSTEM_TYPE {WEAPONS, SHIELDS, ENGINES};
 

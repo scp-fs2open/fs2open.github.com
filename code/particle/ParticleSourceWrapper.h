@@ -30,9 +30,8 @@ namespace particle
 		bool m_finished = false;
 
 	public:
-		ParticleSourceWrapper(const ParticleSourceWrapper&) SCP_DELETED_FUNCTION;
-
-		ParticleSourceWrapper& operator=(const ParticleSourceWrapper&) SCP_DELETED_FUNCTION;
+		ParticleSourceWrapper(const ParticleSourceWrapper&) = delete;
+		ParticleSourceWrapper& operator=(const ParticleSourceWrapper&) = delete;
 
 		ParticleSourceWrapper() = default;
 		explicit ParticleSourceWrapper(SCP_vector<ParticleSource*>&& sources);
@@ -54,11 +53,11 @@ namespace particle
 
 		void moveTo(vec3d* pos);
 
-		void setOrientationFromNormalizedVec(vec3d* normalizedDir);
+		void setOrientationFromNormalizedVec(vec3d* normalizedDir, bool relative = false);
 
-		void setOrientationFromVec(vec3d* dir);
+		void setOrientationFromVec(vec3d* dir, bool relative = false);
 
-		void setOrientationMatrix(matrix* mtx);
+		void setOrientationMatrix(matrix* mtx, bool relative = false);
 
 		void setOrientationNormal(vec3d* normal);
 

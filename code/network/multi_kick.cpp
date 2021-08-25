@@ -56,7 +56,7 @@ int multi_kick_can_kick(net_player *player);
 void multi_kick_init()
 {
 	// blast all the ban slots
-	memset(Multi_kick_ban_slots,0,sizeof(net_addr)*MAX_BAN_SLOTS);
+	memset(Multi_kick_ban_slots, 0, sizeof(Multi_kick_ban_slots));
 	Multi_kick_num_ban_slots = 0;
 }
 
@@ -196,7 +196,7 @@ void multi_kick_add_ban(net_addr *addr)
 {
 	// if we still have any slots left
 	if(Multi_kick_num_ban_slots < (MAX_BAN_SLOTS - 1)){
-		memcpy(&Multi_kick_ban_slots[Multi_kick_num_ban_slots++],addr,sizeof(net_addr));
+		memcpy(&Multi_kick_ban_slots[Multi_kick_num_ban_slots++], addr, sizeof(*addr));
 	}
 }
 
@@ -235,14 +235,14 @@ void process_player_kick_packet(ubyte *data, header *hinfo)
 	GET_SHORT(player_id);
 	GET_INT(ban);
 	GET_INT(reason);
-	player_num = find_player_id(player_id);
+	player_num = find_player_index(player_id);
 	PACKET_SET_SIZE();
 
 	// only the server should ever receive a request to kick a guy
 	Assert(Net_player->flags & NETINFO_FLAG_AM_MASTER);
 	
 	// determine who sent the packet	
-	from_player = find_player_id(hinfo->id);
+	from_player = find_player_index(hinfo->id);
 
 	// check to see if this guy is allowed to make such a request
 	if((from_player == -1) || !multi_kick_can_kick(&Net_players[from_player]) ){

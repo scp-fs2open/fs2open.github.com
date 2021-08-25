@@ -2,6 +2,11 @@
 
 #include "globalincs/pstypes.h"
 
+using SPIRV_FLOAT_MAT_4x4 = matrix4;
+using SPIRV_FLOAT_VEC4 = vec4;
+
+#include "shader_structs.h"
+
 namespace graphics {
 
 /**
@@ -218,24 +223,6 @@ struct passthrough_data {
 	float pad[2];
 };
 
-struct default_material_data {
-	matrix4 modelMatrix;
-
-	vec4 color;
-
-	vec4 clipEquation;
-
-	int baseMapIndex;
-	int alphaTexture;
-	int noTexturing;
-	int srgb;
-
-	float intensity;
-	float alphaThreshold;
-	int clipEnabled;
-	float pad;
-};
-
 struct tonemapping_data {
 	float exposure;
 
@@ -263,13 +250,15 @@ struct shield_impact_data {
 };
 
 struct rocketui_data {
-	matrix4 modelViewMatrix;
 	matrix4 projMatrix;
 
+	vec2d offset;
 	int textured;
 	int baseMapIndex;
 
-	float pad[2];
+	float horizontalSwipeOffset;
+
+	float pad[3];
 };
 
 struct lightshaft_data {
@@ -295,7 +284,7 @@ struct fog_data {
 	vec3d fog_color;
 	float fog_start;
 
-	float fog_scale;
+	float fog_density;
 	float zNear;
 	float zFar;
 

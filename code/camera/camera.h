@@ -15,6 +15,9 @@
 #define CAM_STATIONARY_POS			(1<<2)
 #define CAM_DEFAULT_FLAGS			0
 
+#define	EXTERN_CAM_BBOX_CONSTANT_PADDING			5.0f
+#define	EXTERN_CAM_BBOX_MULTIPLIER_PADDING			1.5f
+
 class camera
 {
 protected:
@@ -164,6 +167,7 @@ camid cam_lookup(const char* name);
 camid cam_get_camera(uint index);
 camid cam_get_current();
 size_t cam_get_num();
+float cam_get_bbox_dist(const object* viewer_obj, float preferred_distance, const matrix* cam_orient);
 
 void get_turret_cam_pos(camera *cam, vec3d *pos);
 void get_turret_cam_orient(camera *cam, matrix *ori);

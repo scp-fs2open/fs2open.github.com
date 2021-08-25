@@ -24,6 +24,13 @@
 #include <sstream>
 #include <limits>
 
+// this is kinda tricky
+enum class TechroomState : ubyte
+{
+	DEFAULT = 0,
+	ADDED = 1,
+	REMOVED = 2
+};
 
 void pilotfile::csg_read_flags()
 {
@@ -145,8 +152,7 @@ void pilotfile::csg_read_info()
 			if (ship_list[idx].index >= 0) {
 				Campaign.ships_allowed[ship_list[idx].index] = 1;
 			} else {
-				mprintf(
-				    ("Found invalid ship \"%s\" in campaign save file. Skipping...\n", ship_list[idx].name.c_str()));
+				mprintf(("Found invalid ship \"%s\" in campaign save file. Skipping...\n", ship_list[idx].name.c_str()));
 			}
 		}
 	}
@@ -199,10 +205,10 @@ void pilotfile::csg_write_info()
 	}
 
 	// intel list
-	cfwrite_int(Intel_info_size, cfp);
+	cfwrite_int(intel_info_size(), cfp);
 
-	for (idx = 0; idx < Intel_info_size; idx++) {
-		cfwrite_string_len(Intel_info[idx].name, cfp);
+	for (auto &ii : Intel_info) {
+		cfwrite_string_len(ii.name, cfp);
 	}
 
 	// medals list
@@ -420,7 +426,7 @@ void pilotfile::csg_write_missions()
 void pilotfile::csg_read_techroom()
 {
 	int idx, list_size = 0;
-	ubyte visible;
+	TechroomState state;
 
 	if ( !m_have_info ) {
 		throw "Techroom before Info!";
@@ -429,11 +435,17 @@ void pilotfile::csg_read_techroom()
 	// visible ships
 	list_size = (int)ship_list.size();
 	for (idx = 0; idx < list_size; idx++) {
-		visible = cfread_ubyte(cfp);
+		state = (TechroomState) cfread_ubyte(cfp);
 
-		if (visible) {
+		if (state != TechroomState::DEFAULT) {
 			if (ship_list[idx].index >= 0) {
-				Ship_info[ship_list[idx].index].flags.set(Ship::Info_Flags::In_tech_database);
+				if (state == TechroomState::ADDED) {
+					Ship_info[ship_list[idx].index].flags.set(Ship::Info_Flags::In_tech_database);
+				} else if (state == TechroomState::REMOVED) {
+					Ship_info[ship_list[idx].index].flags.remove(Ship::Info_Flags::In_tech_database);
+				} else {
+					mprintf(("Unrecognized techroom state: %d\n", (int) state));
+				}
 			} else {
 				mprintf(("Found invalid ship \"%s\" in campaign save file. "
 				         "Skipping...\n",
@@ -445,11 +457,17 @@ void pilotfile::csg_read_techroom()
 	// visible weapons
 	list_size = (int)weapon_list.size();
 	for (idx = 0; idx < list_size; idx++) {
-		visible = cfread_ubyte(cfp);
+		state = (TechroomState) cfread_ubyte(cfp);
 
-		if (visible) {
+		if (state != TechroomState::DEFAULT) {
 			if (weapon_list[idx].index >= 0) {
-                Weapon_info[weapon_list[idx].index].wi_flags.set(Weapon::Info_Flags::In_tech_database);
+				if (state == TechroomState::ADDED) {
+					Weapon_info[weapon_list[idx].index].wi_flags.set(Weapon::Info_Flags::In_tech_database);
+				} else if (state == TechroomState::REMOVED) {
+					Weapon_info[weapon_list[idx].index].wi_flags.remove(Weapon::Info_Flags::In_tech_database);
+				} else {
+					mprintf(("Unrecognized techroom state: %d\n", (int) state));
+				}
 			} else {
 				mprintf(("Found invalid weapon \"%s\" in campaign save file. Skipping...\n",
 				         weapon_list[idx].name.c_str()));
@@ -460,11 +478,17 @@ void pilotfile::csg_read_techroom()
 	// visible intel entries
 	list_size = (int)intel_list.size();
 	for (idx = 0; idx < list_size; idx++) {
-		visible = cfread_ubyte(cfp);
+		state = (TechroomState) cfread_ubyte(cfp);
 
-		if (visible) {
+		if (state != TechroomState::DEFAULT) {
 			if (intel_list[idx].index >= 0) {
-				Intel_info[intel_list[idx].index].flags |= IIF_IN_TECH_DATABASE;
+				if (state == TechroomState::ADDED) {
+					Intel_info[intel_list[idx].index].flags |= IIF_IN_TECH_DATABASE;
+				} else if (state == TechroomState::REMOVED) {
+					Intel_info[intel_list[idx].index].flags &= ~IIF_IN_TECH_DATABASE;
+				} else {
+					mprintf(("Unrecognized techroom state: %d\n", (int) state));
+				}
 			} else {
 				mprintf(("Found invalid intel entry \"%s\" in campaign save file. Skipping...\n",
 				         intel_list[idx].name.c_str()));
@@ -480,45 +504,47 @@ void pilotfile::csg_read_techroom()
 
 void pilotfile::csg_write_techroom()
 {
-	int idx;
-	ubyte visible;
+	TechroomState state;
 
 	startSection(Section::Techroom);
 
-	// visible ships
-    for (auto &si : Ship_info) {
-        if ((si.flags[Ship::Info_Flags::In_tech_database]) && !(si.flags[Ship::Info_Flags::Default_in_tech_database])) {
-            visible = 1;
-        }
-        else {
-            visible = 0;
-        }
-
-        cfwrite_ubyte(visible, cfp);
-    }
-
-	// visible weapons
-	for (auto &wi : Weapon_info) {
-		// only visible if not in techroom by default
-		if ((wi.wi_flags[Weapon::Info_Flags::In_tech_database]) && !(wi.wi_flags[Weapon::Info_Flags::Default_in_tech_database]) ) {
-			visible = 1;
+	// write whether it differs from the default for ships
+	for (auto &si : Ship_info) {
+		if (si.flags[Ship::Info_Flags::In_tech_database] == si.flags[Ship::Info_Flags::Default_in_tech_database]) {
+			state = TechroomState::DEFAULT;
+		} else if (si.flags[Ship::Info_Flags::In_tech_database]) {
+			state = TechroomState::ADDED;
 		} else {
-			visible = 0;
+			state = TechroomState::REMOVED;
 		}
 
-		cfwrite_ubyte(visible, cfp);
+		cfwrite_ubyte((ubyte) state, cfp);
 	}
 
-	// visible intel entries
-	for (idx = 0; idx < Intel_info_size; idx++) {
-		// only visible if not in techroom by default
-		if ( (Intel_info[idx].flags & IIF_IN_TECH_DATABASE) && !(Intel_info[idx].flags & IIF_DEFAULT_IN_TECH_DATABASE) ) {
-			visible = 1;
+	// and for weapons
+	for (auto &wi : Weapon_info) {
+		if (wi.wi_flags[Weapon::Info_Flags::In_tech_database] == wi.wi_flags[Weapon::Info_Flags::Default_in_tech_database]) {
+			state = TechroomState::DEFAULT;
+		} else if (wi.wi_flags[Weapon::Info_Flags::In_tech_database]) {
+			state = TechroomState::ADDED;
 		} else {
-			visible = 0;
+			state = TechroomState::REMOVED;
 		}
 
-		cfwrite_ubyte(visible, cfp);
+		cfwrite_ubyte((ubyte) state, cfp);
+	}
+
+	// and for intel entries
+	for (auto &ii : Intel_info) {
+		if (((ii.flags & IIF_IN_TECH_DATABASE) != 0) == ((ii.flags & IIF_DEFAULT_IN_TECH_DATABASE) != 0)) {
+			state = TechroomState::DEFAULT;
+		} else if ((ii.flags & IIF_IN_TECH_DATABASE) != 0) {
+			state = TechroomState::ADDED;
+		} else {
+			state = TechroomState::REMOVED;
+		}
+
+		cfwrite_ubyte((ubyte) state, cfp);
 	}
 
 	endSection();
@@ -940,6 +966,7 @@ void pilotfile::csg_write_redalert()
 void pilotfile::csg_read_hud()
 {
 	int idx;
+	int strikes = 0;
 
 	// flags
 	HUD_config.show_flags = cfread_int(cfp);
@@ -954,16 +981,28 @@ void pilotfile::csg_read_hud()
 	HUD_config.rp_flags = cfread_int(cfp);
 	HUD_config.rp_dist = cfread_int(cfp);
 	if (HUD_config.rp_dist < 0 || HUD_config.rp_dist >= RR_MAX_RANGES) {
-		Warning(LOCATION, "Campaign file has invalid radar range %d, setting to default.\n", HUD_config.rp_dist);
+		ReleaseWarning(LOCATION, "Campaign file has invalid radar range %d, setting to default.\n", HUD_config.rp_dist);
 		HUD_config.rp_dist = RR_INFINITY;
+		strikes++;
 	}
 
 	// basic colors
 	HUD_config.main_color = cfread_int(cfp);
-	HUD_color_alpha = cfread_int(cfp);
+	if (HUD_config.main_color < 0 || HUD_config.main_color >= HUD_COLOR_SIZE) {
+		ReleaseWarning(LOCATION, "Campaign file has invalid main color selection %i, setting to default.\n", HUD_config.main_color);
+		HUD_config.main_color = HUD_COLOR_GREEN;
+		strikes++;
+	}
 
-	if (HUD_color_alpha < HUD_COLOR_ALPHA_USER_MIN) {
+	HUD_color_alpha = cfread_int(cfp);
+	if (HUD_color_alpha < HUD_COLOR_ALPHA_USER_MIN || HUD_color_alpha > HUD_COLOR_ALPHA_USER_MAX) {
+		ReleaseWarning(LOCATION, "Campaign file has invalid alpha color %i, setting to default.\n", HUD_color_alpha);
 		HUD_color_alpha = HUD_COLOR_ALPHA_DEFAULT;
+		strikes++;
+	}
+
+	if (strikes == 3) {
+		ReleaseWarning(LOCATION, "Campaign file has too many hud config errors, and is likely corrupted. Please verify and save your settings in the hud config menu.");
 	}
 
 	hud_config_record_color(HUD_config.main_color);
@@ -1180,8 +1219,8 @@ void pilotfile::csg_read_controls()
 		id3 = cfread_short(cfp);	// unused, at the moment
 
 		if (idx < CCFG_MAX) {
-			Control_config[idx].key_id = id1;
-			Control_config[idx].joy_id = id2;
+			Control_config[idx].take(CC_bind(CID_KEYBOARD, id1), 0);
+			Control_config[idx].take(CC_bind(CID_JOY0, id2), 1);
 		}
 	}
 }
@@ -1195,8 +1234,8 @@ void pilotfile::csg_write_controls()
 	cfwrite_ushort(CCFG_MAX, cfp);
 
 	for (idx = 0; idx < CCFG_MAX; idx++) {
-		cfwrite_short(Control_config[idx].key_id, cfp);
-		cfwrite_short(Control_config[idx].joy_id, cfp);
+		cfwrite_short(Control_config[idx].get_btn(CID_KEYBOARD), cfp);
+		cfwrite_short(Control_config[idx].get_btn(CID_JOY0), cfp);
 		// placeholder? for future mouse_id?
 		cfwrite_short(-1, cfp);
 	}

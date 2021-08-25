@@ -12,10 +12,11 @@
 class  ArgumentListLexer : public antlr4::Lexer {
 public:
   enum {
-    COMMA = 1, EQUALS = 2, STRING = 3, PLACEHOLDER = 4, NIL = 5, TRUE = 6, 
-    FALSE = 7, FUNCTION = 8, NUMBER = 9, TYPE_ALT = 10, L_BRACKET = 11, 
-    R_BRACKET = 12, L_PAREN = 13, R_PAREN = 14, ARROW = 15, L_ANGLE_BRACKET = 16, 
-    R_ANGLE_BRACKET = 17, ARG_COMMENT = 18, ID = 19, SPACE = 20, OTHER = 21
+    COMMA = 1, EQUALS = 2, STRING = 3, NIL = 4, TRUE = 5, FALSE = 6, FUNCTION = 7, 
+    VARARGS_SPECIFIER = 8, NUMBER = 9, TYPE_ALT = 10, L_BRACKET = 11, R_BRACKET = 12, 
+    L_PAREN = 13, R_PAREN = 14, L_CURLY = 15, R_CURLY = 16, ARROW = 17, 
+    ITERATOR = 18, L_ANGLE_BRACKET = 19, R_ANGLE_BRACKET = 20, ARG_COMMENT = 21, 
+    ID = 22, SPACE = 23, OTHER = 24
   };
 
   ArgumentListLexer(antlr4::CharStream *input);

@@ -9,6 +9,7 @@
 
 #include "math/staticrand.h"
 #include "math/vecmat.h"
+#include "utils/Random.h"
 
 bool Semirand_inited = false;
 unsigned int Semirand[SEMIRAND_MAX];
@@ -20,10 +21,12 @@ void init_semirand()
 {
 	Semirand_inited = true;
 
+	// Originally this made a 30-bit rand by sticking two 15-bit rands from myrand() together. Instead we trim Random::next() down to size.
 	for (auto & number : Semirand)
-		number = (static_cast<unsigned>(myrand()) << 15u) + myrand();
+		number = (unsigned) (util::Random::next() & STATIC_RAND_MAX);
 }
 
+// TODO: figure out what to do with these
 /**
  * @brief Return a pseudo random 32 bit value given a reasonably small number.
  *
@@ -92,7 +95,7 @@ float static_randf_range(int num, float min, float max)
 }
 
 /**
- * @brief [To be described]
+ * @brief Create a random, normalized vector in unit sphere
  *
  * @param num Seed input number
  * @param vp Vector
@@ -104,6 +107,20 @@ void static_randvec(int num, vec3d *vp)
 	vp->xyz.z = static_randf(num+2) - 0.5f;
 
 	vm_vec_normalize_quick(vp);
+}
+
+/**
+ *
+ * @brief Create a random, unnormalized vector in the (half) unit cube
+ *
+ * @param num Seed input vector
+ * @param vp Vector
+ */
+void static_randvec_unnormalized(int num, vec3d* vp)
+{
+	vp->xyz.x = static_randf(num) - 0.5f;
+	vp->xyz.y = static_randf(num + 1) - 0.5f;
+	vp->xyz.z = static_randf(num + 2) - 0.5f;
 }
 
 /**

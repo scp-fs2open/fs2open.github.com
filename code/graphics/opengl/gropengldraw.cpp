@@ -7,24 +7,26 @@
  *
 */
 
-#include "globalincs/pstypes.h"
-#include "cmdline/cmdline.h"
-#include "freespace.h"
-#include "graphics/matrix.h"
-#include "gropengl.h"
 #include "gropengldraw.h"
+
+#include "globalincs/pstypes.h"
+
+#include "ShaderProgram.h"
+#include "freespace.h"
+#include "gropengl.h"
+#include "gropengldeferred.h"
 #include "gropenglpostprocessing.h"
 #include "gropenglshader.h"
 #include "gropengltexture.h"
-#include "gropengldeferred.h"
 #include "gropengltnl.h"
-#include "graphics/paths/PathRenderer.h"
-#include "graphics/light.h"
-#include "tracing/tracing.h"
-#include "render/3d.h"
-#include "ShaderProgram.h"
 
-#include <algorithm>
+#include "cmdline/cmdline.h"
+#include "graphics/light.h"
+#include "graphics/matrix.h"
+#include "graphics/paths/PathRenderer.h"
+#include "graphics/util/uniform_structs.h"
+#include "render/3d.h"
+#include "tracing/tracing.h"
 
 GLuint Scene_framebuffer;
 GLuint Scene_ldr_texture;
@@ -44,7 +46,6 @@ GLuint Distortion_texture[2];
 int Distortion_switch = 0;
 
 int Scene_texture_initialized;
-bool Scene_framebuffer_in_frame;
 
 int Scene_texture_width;
 int Scene_texture_height;
@@ -590,13 +591,17 @@ void gr_opengl_copy_effect_texture()
 	glDrawBuffer(GL_COLOR_ATTACHMENT0);
 }
 
-void gr_opengl_render_shield_impact(shield_material *material_info, primitive_type prim_type, vertex_layout *layout, int buffer_handle, int n_verts)
+void gr_opengl_render_shield_impact(shield_material* material_info,
+	primitive_type prim_type,
+	vertex_layout* layout,
+	gr_buffer_handle buffer_handle,
+	int n_verts)
 {
 	matrix4 impact_transform;
 	matrix4 impact_projection;
 	vec3d min;
 	vec3d max;
-	
+
 	opengl_tnl_set_material(material_info, false);
 
 	float radius = material_info->get_impact_radius();
@@ -701,8 +706,8 @@ void gr_opengl_update_distortion()
 
 	for(int i = 0; i < 33; i++)
 	{
-		distortion_verts[i].r = (ubyte)rand() % 256;
-		distortion_verts[i].g = (ubyte)rand() % 256;
+		distortion_verts[i].r = (ubyte)Random::next(256);
+		distortion_verts[i].g = (ubyte)Random::next(256);
 		distortion_verts[i].b = 255;
 		distortion_verts[i].a = 255;
 
@@ -730,11 +735,17 @@ void gr_opengl_update_distortion()
 	GL_state.CullFace(cull);
 }
 
-void opengl_render_primitives(primitive_type prim_type, vertex_layout* layout, int n_verts, int buffer_handle, size_t vert_offset, size_t byte_offset)
+void opengl_render_primitives(primitive_type prim_type,
+	vertex_layout* layout,
+	int n_verts,
+	gr_buffer_handle buffer_handle,
+	size_t vert_offset,
+	size_t byte_offset)
 {
 	GR_DEBUG_SCOPE("Render primitives");
 
-	Assertion(buffer_handle >= 0, "A valid buffer handle is required! Use the immediate buffer if data is not in GPU buffer yet.");
+	Assertion(buffer_handle.isValid(),
+		"A valid buffer handle is required! Use the immediate buffer if data is not in GPU buffer yet.");
 
 	opengl_bind_vertex_layout(*layout, opengl_buffer_get_id(GL_ARRAY_BUFFER, buffer_handle), 0, byte_offset);
 
@@ -748,7 +759,13 @@ void opengl_render_primitives_immediate(primitive_type prim_type, vertex_layout*
 	opengl_render_primitives(prim_type, layout, n_verts, gr_immediate_buffer_handle, 0, offset);
 }
 
-void gr_opengl_render_primitives(material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle, size_t buffer_offset)
+void gr_opengl_render_primitives(material* material_info,
+	primitive_type prim_type,
+	vertex_layout* layout,
+	int offset,
+	int n_verts,
+	gr_buffer_handle buffer_handle,
+	size_t buffer_offset)
 {
 	GL_CHECK_FOR_ERRORS("start of gr_opengl_render_primitives()");
 
@@ -759,35 +776,49 @@ void gr_opengl_render_primitives(material* material_info, primitive_type prim_ty
 	GL_CHECK_FOR_ERRORS("end of gr_opengl_render_primitives()");
 }
 
-void gr_opengl_render_primitives_particle(particle_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle)
+void gr_opengl_render_primitives_particle(particle_material* material_info,
+	primitive_type prim_type,
+	vertex_layout* layout,
+	int offset,
+	int n_verts,
+	gr_buffer_handle buffer_handle)
 {
 	GL_CHECK_FOR_ERRORS("start of gr_opengl_render_primitives_particle()");
 
 	opengl_tnl_set_material_particle(material_info);
-	
+
 	opengl_render_primitives(prim_type, layout, n_verts, buffer_handle, offset, 0);
 
 	GL_CHECK_FOR_ERRORS("end of gr_opengl_render_primitives_particle()");
 }
 
-void gr_opengl_render_primitives_distortion(distortion_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle)
+void gr_opengl_render_primitives_distortion(distortion_material* material_info,
+	primitive_type prim_type,
+	vertex_layout* layout,
+	int offset,
+	int n_verts,
+	gr_buffer_handle buffer_handle)
 {
 	GL_CHECK_FOR_ERRORS("start of gr_opengl_render_primitives_distortion()");
 
 	opengl_tnl_set_material_distortion(material_info);
-	
+
 	glDrawBuffer(GL_COLOR_ATTACHMENT0);
-	
+
 	opengl_render_primitives(prim_type, layout, n_verts, buffer_handle, offset, 0);
 
-	GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+	GLenum buffers[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
 	glDrawBuffers(2, buffers);
 
 	GL_CHECK_FOR_ERRORS("start of gr_opengl_render_primitives_distortion()");
 }
 
-void gr_opengl_render_movie(movie_material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts,
-                            int buffer, size_t buffer_offset)
+void gr_opengl_render_movie(movie_material* material_info,
+	primitive_type prim_type,
+	vertex_layout* layout,
+	int n_verts,
+	gr_buffer_handle buffer,
+	size_t buffer_offset)
 {
 	GR_DEBUG_SCOPE("Render movie frame");
 
@@ -801,11 +832,12 @@ void gr_opengl_render_movie(movie_material* material_info, primitive_type prim_t
 }
 
 void gr_opengl_render_nanovg(nanovg_material* material_info,
-							 primitive_type prim_type,
-							 vertex_layout* layout,
-							 int offset,
-							 int n_verts,
-							 int buffer_handle) {
+	primitive_type prim_type,
+	vertex_layout* layout,
+	int offset,
+	int n_verts,
+	gr_buffer_handle buffer_handle)
+{
 	GR_DEBUG_SCOPE("Render NanoVG primitives");
 
 	opengl_tnl_set_material_nanovg(material_info);
@@ -814,19 +846,24 @@ void gr_opengl_render_nanovg(nanovg_material* material_info,
 }
 
 void gr_opengl_render_primitives_batched(batched_bitmap_material* material_info,
-										 primitive_type prim_type,
-										 vertex_layout* layout,
-										 int offset,
-										 int n_verts,
-										 int buffer_handle) {
+	primitive_type prim_type,
+	vertex_layout* layout,
+	int offset,
+	int n_verts,
+	gr_buffer_handle buffer_handle)
+{
 	GR_DEBUG_SCOPE("Render batched primitives");
 
 	opengl_tnl_set_material_batched(material_info);
 
 	opengl_render_primitives(prim_type, layout, n_verts, buffer_handle, offset, 0);
 }
-void gr_opengl_render_rocket_primitives(interface_material* material_info, primitive_type prim_type,
-                                        vertex_layout* layout, int n_indices, int vertex_buffer, int index_buffer)
+void gr_opengl_render_rocket_primitives(interface_material* material_info,
+	primitive_type prim_type,
+	vertex_layout* layout,
+	int n_indices,
+	gr_buffer_handle vertex_buffer,
+	gr_buffer_handle index_buffer)
 {
 	GR_DEBUG_SCOPE("Render rocket ui primitives");
 
@@ -834,8 +871,9 @@ void gr_opengl_render_rocket_primitives(interface_material* material_info, primi
 
 	opengl_tnl_set_rocketui_material(material_info);
 
-	opengl_bind_vertex_layout(*layout, opengl_buffer_get_id(GL_ARRAY_BUFFER, vertex_buffer),
-	                          opengl_buffer_get_id(GL_ELEMENT_ARRAY_BUFFER, index_buffer));
+	opengl_bind_vertex_layout(*layout,
+		opengl_buffer_get_id(GL_ARRAY_BUFFER, vertex_buffer),
+		opengl_buffer_get_id(GL_ELEMENT_ARRAY_BUFFER, index_buffer));
 
 	glDrawElements(opengl_primitive_type(prim_type), n_indices, GL_UNSIGNED_INT, nullptr);
 

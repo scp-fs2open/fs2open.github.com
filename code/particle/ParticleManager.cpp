@@ -5,6 +5,7 @@
 
 #include "particle/effects/SingleParticleEffect.h"
 #include "particle/effects/CompositeEffect.h"
+#include "particle/effects/VolumeEffect.h"
 
 #include "particle/effects/ConeShape.h"
 #include "particle/effects/SphereShape.h"
@@ -25,7 +26,8 @@ const char* effectTypeNames[static_cast<int64_t>(EffectType::MAX)] = {
 	"Single",
 	"Composite",
 	"Cone",
-	"Sphere"
+	"Sphere",
+	"Volume"
 };
 
 const char* getEffectTypeName(EffectType type) {
@@ -59,6 +61,11 @@ ParticleEffectPtr constructEffect(const SCP_string& name, EffectType type) {
 		}
 		case EffectType::Sphere: {
 			effect.reset(new GenericShapeEffect<SphereShape>(name));
+			effect->parseValues(false);
+			break;
+		}
+		case EffectType::Volume: {
+			effect.reset(new VolumeEffect(name));
 			effect->parseValues(false);
 			break;
 		}
@@ -250,7 +257,12 @@ ParticleSourceWrapper ParticleManager::createSource(ParticleEffectHandle index)
 
 		// UGH, HACK! To implement the source wrapper we need constant pointers to all sources.
 		// To ensure this we reserve the number of sources we will need (current sources + sources being created)
-		m_sources.reserve(m_sources.size() + childEffects.size());
+		if (m_processingSources) {
+			// If we are already in our onFrame, we need to apply the hack to the right vector though
+			m_deferredSourceAdding.reserve(m_sources.size() + childEffects.size());
+		} else {
+			m_sources.reserve(m_sources.size() + childEffects.size());
+		}
 
 		for (auto& effect : childEffects) {
 			ParticleSource* source = createSource();
@@ -343,18 +355,38 @@ bool required_string_if_new(const char* token, bool no_create) {
 	return true;
 }
 
-int parseAnimation(bool critical) {
-	SCP_string name;
-	stuff_string(name, F_FILESPEC);
+SCP_vector<int> parseAnimationList(bool critical) {
 
-	auto handle = bm_load_animation(name.c_str());
+	SCP_vector<SCP_string> bitmap_strings;
+	
+	// check to see if we are parsing a single value or list
+	ignore_white_space();
+	if (*Mp == '(') {
+		// list of names case
+		stuff_string_list(bitmap_strings);
+	}
+	else {
+		// single name case
+		SCP_string name;
+		stuff_string(name, F_FILESPEC);
+		bitmap_strings.push_back(name);
+	}
+	
+	SCP_vector<int> handles;
 
-	if (handle < 0) {
-		int level = critical ? 1 : 0;
-		error_display(level, "Failed to load effect %s!", name.c_str());
+	for (auto const &name: bitmap_strings) {
+		auto handle = bm_load_animation(name.c_str());
+		if (handle >= 0) {
+			handles.push_back(handle);
+		}
+		else {
+			int level = critical ? 1 : 0;
+			error_display(level, "Failed to load effect %s!", name.c_str());
+		}
 	}
 
-	return handle;
+	return handles;
 }
+
 }
 }

@@ -41,6 +41,10 @@
 float Kill_percentage = 0.30f;
 float Assist_percentage = 0.15f;
 
+// traitor stuff
+extern debriefing Traitor_debriefing;
+traitor_stuff Traitor;
+
 // these tables are overwritten with the values from rank.tbl
 rank_stuff Ranks[NUM_RANKS];
 
@@ -53,52 +57,61 @@ float Scoring_scale_factors[NUM_SKILL_LEVELS] = {
 	1.25f					// insane
 };
 
-void scoreing_close();
-
 void parse_rank_tbl()
 {
-	atexit(scoreing_close);
-	char buf[MULTITEXT_LENGTH];
-	int idx, persona;
-
 	try
 	{
 		read_file_text("rank.tbl", CF_TYPE_TABLES);
 		reset_parse();
 
 		// parse in all the rank names
-		idx = 0;
+		int idx = 0;
 		skip_to_string("[RANK NAMES]");
 		ignore_white_space();
-		while (required_string_either("#End", "$Name:")) {
+		while (required_string_either("#End", "$Name:"))
+		{
 			Assert(idx < NUM_RANKS);
+
 			required_string("$Name:");
 			stuff_string(Ranks[idx].name, F_NAME, NAME_LENGTH);
+
 			required_string("$Points:");
 			stuff_int(&Ranks[idx].points);
+
 			required_string("$Bitmap:");
 			stuff_string(Ranks[idx].bitmap, F_NAME, MAX_FILENAME_LEN);
+
 			required_string("$Promotion Voice Base:");
 			stuff_string(Ranks[idx].promotion_voice_base, F_NAME, MAX_FILENAME_LEN);
-			while (check_for_string("$Promotion Text:")) {
+
+			while (check_for_string("$Promotion Text:"))
+			{
+				SCP_string buf;
+				int persona = -1;
+
 				required_string("$Promotion Text:");
-				stuff_string(buf, F_MULTITEXT, sizeof(buf));
+				stuff_string(buf, F_MULTITEXT);
 				drop_white_space(buf);
 				compact_multitext_string(buf);
-				persona = -1;
-				if (optional_string("+Persona:")) {
+
+				if (optional_string("+Persona:"))
+				{
 					stuff_int(&persona);
-					if (persona < 0) {
+					if (persona < 0)
+					{
 						Warning(LOCATION, "Debriefing text for %s rank is assigned to an invalid persona: %i (must be 0 or greater).\n", Ranks[idx].name, persona);
 						continue;
 					}
 				}
-				Ranks[idx].promotion_text[persona] = SCP_string(buf);
+				Ranks[idx].promotion_text[persona] = buf;
 			}
-			if (Ranks[idx].promotion_text.find(-1) == Ranks[idx].promotion_text.end()) {
+
+			if (Ranks[idx].promotion_text.find(-1) == Ranks[idx].promotion_text.end())
+			{
 				Warning(LOCATION, "%s rank is missing default debriefing text.\n", Ranks[idx].name);
 				Ranks[idx].promotion_text[-1] = "";
 			}
+
 			idx++;
 		}
 
@@ -113,6 +126,67 @@ void parse_rank_tbl()
 	catch (const parse::ParseException& e)
 	{
 		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", "rank.tbl", e.what()));
+		return;
+	}
+}
+
+void parse_traitor_tbl()
+{
+	try
+	{
+		read_file_text("traitor.tbl", CF_TYPE_TABLES);
+		reset_parse();
+
+		// simplified form of the debriefing stuff.
+		auto debrief = &Traitor_debriefing;
+		required_string("#Debriefing_info");
+
+		required_string("$Num stages:");
+		stuff_int(&debrief->num_stages);
+		Assert(debrief->num_stages == 1);
+
+		int stage_num = 0;
+		auto stagep = &debrief->stages[stage_num++];
+
+		required_string("$Formula:");
+		stagep->formula = 1;						// sexp nodes aren't initialized yet, but node 1 will be Locked_sexp_true
+		skip_to_start_of_string("$multi text");		// just skip over the sexp, since it must always be locked-true anyway
+
+		while (check_for_string("$multi text"))
+		{
+			SCP_string text;
+			int persona = -1;
+
+			required_string("$multi text");
+			stuff_string(text, F_MULTITEXT);
+
+			if (optional_string("+Persona:"))
+			{
+				stuff_int(&persona);
+				if (persona < 0)
+				{
+					Warning(LOCATION, "Traitor information is assigned to an invalid persona: %i (must be 0 or greater).\n", persona);
+					continue;
+				}
+			}
+			Traitor.debriefing_text[persona] = text;
+		}
+
+		if (Traitor.debriefing_text.find(-1) == Traitor.debriefing_text.end())
+		{
+			Warning(LOCATION, "Traitor is missing default debriefing information.\n");
+			Traitor.debriefing_text[-1] = "";
+		}
+
+		if (optional_string("$Voice:"))
+			stuff_string(Traitor.traitor_voice_base, F_FILESPEC, MAX_FILENAME_LEN);
+
+		required_string("$Recommendation text:");
+		stuff_string(Traitor.recommendation_text, F_MULTITEXT);
+	}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", "traitor.tbl", e.what()));
 		return;
 	}
 }
@@ -749,7 +823,7 @@ int scoring_eval_kill(object *ship_objp)
 				strcpy_s(temp, Ship_info[si_index].name);
 				end_string_at_first_hash_symbol(temp);
 
-				// Goober5000 - previous error checking guarantees that this will be >= 0
+				// Goober5000 - previous error checking (for base ship in ship_parse_post_cleanup()) guarantees that this will be >= 0
 				si_index = ship_info_lookup(temp);	
 			}
 
@@ -1336,9 +1410,12 @@ DCF(rank, "changes player rank")
 	}
 }
 
-void scoreing_close()
+void scoring_close()
 {
 	for(int i = 0; i<NUM_RANKS; i++) {
 		Ranks[i].promotion_text.clear();
 	}
+
+	Traitor.debriefing_text.clear();
+	Traitor.recommendation_text.clear();
 }

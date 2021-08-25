@@ -20,6 +20,7 @@
 #include "io/cursor.h"
 #include "math/vecmat.h"
 #include "osapi/osapi.h"
+#include "utils/id.h"
 
 // Forward definition
 namespace graphics {
@@ -330,13 +331,19 @@ typedef enum gr_capability {
 	CAPABILITY_TIMESTAMP_QUERY,
 	CAPABILITY_SEPARATE_BLEND_FUNCTIONS,
 	CAPABILITY_PERSISTENT_BUFFER_MAPPING,
+	CAPABILITY_BPTC
 } gr_capability;
 
-enum class gr_property {
+enum class gr_property
+{
 	UNIFORM_BUFFER_OFFSET_ALIGNMENT,
 	UNIFORM_BUFFER_MAX_SIZE,
 	MAX_ANISOTROPY
 };
+
+struct gr_buffer_handle_tag {
+};
+using gr_buffer_handle = ::util::ID<gr_buffer_handle_tag, int, -1>;
 
 // stencil buffering stuff
 extern int gr_stencil_mode;
@@ -346,9 +353,9 @@ extern int gr_stencil_mode;
  * of the values you want to use in the shade primitive.
  */
 typedef struct shader {
-	uint	screen_sig;					// current mode this is in
-	ubyte	r,g,b,c;						// factors and constant
-	ubyte	lookup[256];
+	uint screen_sig;  // current mode this is in
+	ubyte r, g, b, c; // factors and constant
+	ubyte lookup[256];
 } shader;
 
 #define AC_TYPE_NONE		0		// Not an alphacolor
@@ -594,14 +601,14 @@ public:
 };
 
 struct indexed_vertex_source {
-	void *Vertex_list = nullptr;
-	void *Index_list = nullptr;
+	void* Vertex_list = nullptr;
+	void* Index_list = nullptr;
 
-	int Vbuffer_handle = -1;
+	gr_buffer_handle Vbuffer_handle;
 	size_t Vertex_offset = 0;
 	size_t Base_vertex_offset = 0;
 
-	int Ibuffer_handle = -1;
+	gr_buffer_handle Ibuffer_handle;
 	size_t Index_offset = 0;
 
 	uint Vertex_list_size = 0;
@@ -640,207 +647,262 @@ enum class BufferUsageHint { Static, Dynamic, Streaming, PersistentMapping };
 typedef void* gr_sync;
 
 typedef struct screen {
-	uint	signature;			// changes when mode or palette or width or height changes
-	int	max_w, max_h;		// Width and height
-	int max_w_unscaled, max_h_unscaled;
-	int max_w_unscaled_zoomed, max_h_unscaled_zoomed;
-	int center_w, center_h;	// Width and height of center monitor
-	int center_offset_x, center_offset_y;
-	int	save_max_w, save_max_h;		// Width and height
-	int save_max_w_unscaled, save_max_h_unscaled;
-	int save_max_w_unscaled_zoomed, save_max_h_unscaled_zoomed;
-	int save_center_w, save_center_h;	// Width and height of center monitor
-	int save_center_offset_x, save_center_offset_y;
-	int	res;					// GR_640 or GR_1024
-	int	mode;					// What mode gr_init was called with.
-	float	aspect, clip_aspect;				// Aspect ratio, aspect of clip_width/clip_height
-	int	rowsize;				// What you need to add to go to next row (includes bytes_per_pixel)
-	int	bits_per_pixel;	// How many bits per pixel it is. (7,8,15,16,24,32)
-	int	bytes_per_pixel;	// How many bytes per pixel (1,2,3,4)
-	int	offset_x, offset_y;		// The offsets into the screen
-	int offset_x_unscaled, offset_y_unscaled;	// Offsets into the screen, in unscaled dimensions
-	int	clip_width, clip_height;
-	int clip_width_unscaled, clip_height_unscaled;	// Height and width of clip aread, in unscaled dimensions
+	uint signature = 0;       // changes when mode or palette or width or height changes
+	int max_w = 0, max_h = 0; // Width and height
+	int max_w_unscaled = 0, max_h_unscaled = 0;
+	int max_w_unscaled_zoomed = 0, max_h_unscaled_zoomed = 0;
+	int center_w = 0, center_h = 0; // Width and height of center monitor
+	int center_offset_x = 0, center_offset_y = 0;
+	int save_max_w = 0, save_max_h = 0; // Width and height
+	int save_max_w_unscaled = 0, save_max_h_unscaled = 0;
+	int save_max_w_unscaled_zoomed = 0, save_max_h_unscaled_zoomed = 0;
+	int save_center_w = 0, save_center_h = 0; // Width and height of center monitor
+	int save_center_offset_x = 0, save_center_offset_y = 0;
+	int res = 0;                             // GR_640 or GR_1024
+	int mode = 0;                            // What mode gr_init was called with.
+	float aspect = 0.0f, clip_aspect = 0.0f; // Aspect ratio = 0, aspect of clip_width/clip_height
+	int rowsize = 0;                         // What you need to add to go to next row (includes bytes_per_pixel)
+	int bits_per_pixel = 0;                  // How many bits per pixel it is. (7,8,15,16,24,32)
+	int bytes_per_pixel = 0;                 // How many bytes per pixel (1,2,3,4)
+	int offset_x = 0, offset_y = 0;          // The offsets into the screen
+	int offset_x_unscaled = 0, offset_y_unscaled = 0; // Offsets into the screen, in unscaled dimensions
+	int clip_width = 0, clip_height = 0;
+	int clip_width_unscaled = 0, clip_height_unscaled = 0; // Height and width of clip aread, in unscaled dimensions
 	// center of clip area
-	float	clip_center_x, clip_center_y;
+	float clip_center_x = 0.0f, clip_center_y = 0.0f;
 
-	float fog_near, fog_far;
+	float fog_near = 0.0f, fog_far = 0.0f;
 
 	// the clip_l,r,t,b are used internally.  left and top are
 	// actually always 0, but it's nice to have the code work with
 	// arbitrary clipping regions.
-	int		clip_left, clip_right, clip_top, clip_bottom;
+	int clip_left = 0, clip_right = 0, clip_top = 0, clip_bottom = 0;
 	// same as above except in unscaled dimensions
-	int		clip_left_unscaled, clip_right_unscaled, clip_top_unscaled, clip_bottom_unscaled;
+	int clip_left_unscaled = 0, clip_right_unscaled = 0, clip_top_unscaled = 0, clip_bottom_unscaled = 0;
 
-	int		current_alphablend_mode;		// See GR_ALPHABLEND defines above
-	int		current_bitblt_mode;				// See GR_BITBLT_MODE defines above
-	int		current_bitmap;
-	color		current_color;
-	color		current_fog_color;				// current fog color
-	color		current_clear_color;				// current clear color
-	shader	current_shader;
-	float		current_alpha;
+	int current_alphablend_mode = 0; // See GR_ALPHABLEND defines above
+	int current_bitblt_mode = 0;     // See GR_BITBLT_MODE defines above
+	int current_bitmap = 0;
+	color current_color{};
+	color current_fog_color{};   // current fog color
+	color current_clear_color{}; // current clear color
+	shader current_shader{};
+	float current_alpha = 0.0f;
 
-	bool custom_size;
-	int		rendering_to_texture;		//wich texture we are rendering to, -1 if the back buffer
-	int		rendering_to_face;			//wich face of the texture we are rendering to, -1 if the back buffer
+	bool custom_size = false;
+	int rendering_to_texture = 0; // wich texture we are rendering to, -1 if the back buffer
+	int rendering_to_face = 0;    // wich face of the texture we are rendering to, -1 if the back buffer
 
-	int envmap_render_target;
+	int envmap_render_target = 0;
 
-	float line_width;
+	float line_width = 0.0f;
 
-	//switch onscreen, offscreen
-	void (*gf_flip)();
+	// switch onscreen, offscreen
+	std::function<void()> gf_flip;
 
 	// sets the clipping region
-	void (*gf_set_clip)(int x, int y, int w, int h, int resize_mode);
+	std::function<void(int x, int y, int w, int h, int resize_mode)> gf_set_clip;
 
 	// resets the clipping region to entire screen
-	void (*gf_reset_clip)();
+	std::function<void()> gf_reset_clip;
 
 	// clears entire clipping region to current color
-	void (*gf_clear)();
+	std::function<void()> gf_clear;
 
 	// dumps the current screen to a file
-	void (*gf_print_screen)(const char * filename);
+	std::function<void(const char* filename)> gf_print_screen;
 
 	// Retrieves the zbuffer mode.
-	int (*gf_zbuffer_get)();
+	std::function<int()> gf_zbuffer_get;
 
 	// Sets mode.  Returns previous mode.
-	int (*gf_zbuffer_set)(int mode);
+	std::function<int(int mode)> gf_zbuffer_set;
 
 	// Clears the zbuffer.  If use_zbuffer is FALSE, then zbuffering mode is ignored and zbuffer is always off.
-	void (*gf_zbuffer_clear)(int use_zbuffer);
+	std::function<void(int use_zbuffer)> gf_zbuffer_clear;
 
 	// Set the stencil buffer mode. Returns previous mode
-	int (*gf_stencil_set)(int mode);
+	std::function<int(int mode)> gf_stencil_set;
 
 	// Clears the stencil buffer.
-	void (*gf_stencil_clear)();
+	std::function<void()> gf_stencil_clear;
 
-	int (*gf_alpha_mask_set)(int mode, float alpha);
+	std::function<int(int mode, float alpha)> gf_alpha_mask_set;
 
 	// Saves screen. Returns an id you pass to restore and free.
-	int (*gf_save_screen)();
+	std::function<int()> gf_save_screen;
 
 	// Resets clip region and copies entire saved screen to the screen.
-	void (*gf_restore_screen)(int id);
+	std::function<void(int id)> gf_restore_screen;
 
 	// Frees up a saved screen.
-	void (*gf_free_screen)(int id);
+	std::function<void(int id)> gf_free_screen;
 
 	// grab a region of the screen. assumes data is large enough
-	void (*gf_get_region)(int front, int w, int h, ubyte *data);
+	std::function<void(int front, int w, int h, ubyte* data)> gf_get_region;
 
 	// poly culling
-	int (*gf_set_cull)(int cull);
+	std::function<int(int cull)> gf_set_cull;
 
 	// color buffer writes
-	int (*gf_set_color_buffer)(int mode);
+	std::function<int(int mode)> gf_set_color_buffer;
 
 	// preload a bitmap into texture memory
-	int (*gf_preload)(int bitmap_num, int is_aabitmap);
+	std::function<int(int bitmap_num, int is_aabitmap)> gf_preload;
 
 	// set the color to be used when clearing the background
-	void (*gf_set_clear_color)(int r, int g, int b);
+	std::function<void(int r, int g, int b)> gf_set_clear_color;
 
 	// Here be the bitmap functions
-	void (*gf_bm_free_data)(bitmap_slot* slot, bool release);
-	void (*gf_bm_create)(bitmap_slot* slot);
-	void (*gf_bm_init)(bitmap_slot* slot);
-	void (*gf_bm_page_in_start)();
-	bool (*gf_bm_data)(int handle, bitmap* bm);
+	std::function<void(bitmap_slot* slot, bool release)> gf_bm_free_data;
+	std::function<void(bitmap_slot* slot)> gf_bm_create;
+	std::function<void(bitmap_slot* slot)> gf_bm_init;
+	std::function<void()> gf_bm_page_in_start;
+	std::function<bool(int handle, bitmap* bm)> gf_bm_data;
 
-	int (*gf_bm_make_render_target)(int handle, int *width, int *height, int *bpp, int *mm_lvl, int flags );
-	int (*gf_bm_set_render_target)(int handle, int face);
+	std::function<int(int handle, int* width, int* height, int* bpp, int* mm_lvl, int flags)> gf_bm_make_render_target;
+	std::function<int(int handle, int face)> gf_bm_set_render_target;
 
-	void (*gf_set_texture_addressing)(int);
+	std::function<void(int)> gf_set_texture_addressing;
 
-	int (*gf_create_buffer)(BufferType type, BufferUsageHint usage);
-	void (*gf_delete_buffer)(int handle);
+	std::function<gr_buffer_handle(BufferType type, BufferUsageHint usage)> gf_create_buffer;
+	std::function<void(gr_buffer_handle handle)> gf_delete_buffer;
 
-	void (*gf_update_buffer_data)(int handle, size_t size, const void* data);
-	void (*gf_update_buffer_data_offset)(int handle, size_t offset, size_t size, const void* data);
-	void* (*gf_map_buffer)(int handle);
-	void (*gf_flush_mapped_buffer)(int handle, size_t offset, size_t size);
-	void (*gf_update_transform_buffer)(void* data, size_t size);
+	std::function<void(gr_buffer_handle handle, size_t size, const void* data)> gf_update_buffer_data;
+	std::function<void(gr_buffer_handle handle, size_t offset, size_t size, const void* data)>
+		gf_update_buffer_data_offset;
+	std::function<void*(gr_buffer_handle handle)> gf_map_buffer;
+	std::function<void(gr_buffer_handle handle, size_t offset, size_t size)> gf_flush_mapped_buffer;
+	std::function<void(void* data, size_t size)> gf_update_transform_buffer;
 
 	// postprocessing effects
-	void (*gf_post_process_set_effect)(const char*, int, const vec3d*);
-	void (*gf_post_process_set_defaults)();
+	std::function<void(const char*, int, const vec3d*)> gf_post_process_set_effect;
+	std::function<void()> gf_post_process_set_defaults;
 
-	void (*gf_post_process_begin)();
-	void (*gf_post_process_end)();
-	void (*gf_post_process_save_zbuffer)();
-	void (*gf_post_process_restore_zbuffer)();
+	std::function<void()> gf_post_process_begin;
+	std::function<void()> gf_post_process_end;
+	std::function<void()> gf_post_process_save_zbuffer;
+	std::function<void()> gf_post_process_restore_zbuffer;
 
-	void (*gf_deferred_lighting_begin)();
-	void (*gf_deferred_lighting_end)();
-	void (*gf_deferred_lighting_finish)();
+	std::function<void()> gf_deferred_lighting_begin;
+	std::function<void()> gf_deferred_lighting_end;
+	std::function<void()> gf_deferred_lighting_finish;
 
-	void (*gf_scene_texture_begin)();
-	void (*gf_scene_texture_end)();
-	void (*gf_copy_effect_texture)();
+	std::function<void()> gf_scene_texture_begin;
+	std::function<void()> gf_scene_texture_end;
+	std::function<void()> gf_copy_effect_texture;
 
-	void (*gf_zbias)(int zbias);
+	std::function<void(int zbias)> gf_zbias;
 
-	void (*gf_set_fill_mode)(int);
+	std::function<void(int)> gf_set_fill_mode;
 
-	void (*gf_set_line_width)(float width);
+	std::function<void(float width)> gf_set_line_width;
 
-	void (*gf_sphere)(material *material_def, float rad);
+	std::function<void(material* material_def, float rad)> gf_sphere;
 
-	int  (*gf_maybe_create_shader)(shader_type type, unsigned int flags);
-	void (*gf_recompile_all_shaders)(const std::function<void(size_t, size_t)>& progress_callback);
+	std::function<int(shader_type type, unsigned int flags)> gf_maybe_create_shader;
+	std::function<void(const std::function<void(size_t, size_t)>& progress_callback)> gf_recompile_all_shaders;
 
-	void (*gf_clear_states)();
+	std::function<void()> gf_clear_states;
 
-	void (*gf_update_texture)(int bitmap_handle, int bpp, const ubyte* data, int width, int height);
-	void (*gf_get_bitmap_from_texture)(void* data_out, int bitmap_num);
+	std::function<void(int bitmap_handle, int bpp, const ubyte* data, int width, int height)> gf_update_texture;
+	std::function<void(void* data_out, int bitmap_num)> gf_get_bitmap_from_texture;
 
-	void (*gf_shadow_map_start)(matrix4 *shadow_view_matrix, const matrix *light_matrix);
-	void (*gf_shadow_map_end)();
+	std::function<void(matrix4* shadow_view_matrix, const matrix* light_matrix, vec3d* eye_pos)> gf_shadow_map_start;
+	std::function<void()> gf_shadow_map_end;
 
-	void (*gf_start_decal_pass)();
-	void (*gf_stop_decal_pass)();
+	std::function<void()> gf_start_decal_pass;
+	std::function<void()> gf_stop_decal_pass;
 
 	// new drawing functions
-	void (*gf_render_model)(model_material* material_info, indexed_vertex_source *vert_source, vertex_buffer* bufferp, size_t texi);
-	void (*gf_render_shield_impact)(shield_material *material_info, primitive_type prim_type, vertex_layout *layout, int buffer_handle, int n_verts);
-	void (*gf_render_primitives)(material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle, size_t buffer_offset);
-	void (*gf_render_primitives_particle)(particle_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle);
-	void (*gf_render_primitives_distortion)(distortion_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle);
-	void (*gf_render_movie)(movie_material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts, int buffer, size_t buffer_offset);
-	void (*gf_render_primitives_batched)(batched_bitmap_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle);
-	void (*gf_render_nanovg)(nanovg_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle);
-	void (*gf_render_decals)(decal_material* material_info, primitive_type prim_type, vertex_layout* layout, int num_elements, const indexed_vertex_source& buffers);
-	void (*gf_render_rocket_primitives)(interface_material* material_info, primitive_type prim_type,
-	                                    vertex_layout* layout, int n_indices, int vertex_buffer, int index_buffer);
+	std::function<
+		void(model_material* material_info, indexed_vertex_source* vert_source, vertex_buffer* bufferp, size_t texi)>
+		gf_render_model;
+	std::function<void(shield_material* material_info,
+		primitive_type prim_type,
+		vertex_layout* layout,
+		gr_buffer_handle buffer_handle,
+		int n_verts)>
+		gf_render_shield_impact;
+	std::function<void(material* material_info,
+		primitive_type prim_type,
+		vertex_layout* layout,
+		int offset,
+		int n_verts,
+		gr_buffer_handle buffer_handle,
+		size_t buffer_offset)>
+		gf_render_primitives;
+	std::function<void(particle_material* material_info,
+		primitive_type prim_type,
+		vertex_layout* layout,
+		int offset,
+		int n_verts,
+		gr_buffer_handle buffer_handle)>
+		gf_render_primitives_particle;
+	std::function<void(distortion_material* material_info,
+		primitive_type prim_type,
+		vertex_layout* layout,
+		int offset,
+		int n_verts,
+		gr_buffer_handle buffer_handle)>
+		gf_render_primitives_distortion;
+	std::function<void(movie_material* material_info,
+		primitive_type prim_type,
+		vertex_layout* layout,
+		int n_verts,
+		gr_buffer_handle buffer,
+		size_t buffer_offset)>
+		gf_render_movie;
+	std::function<void(batched_bitmap_material* material_info,
+		primitive_type prim_type,
+		vertex_layout* layout,
+		int offset,
+		int n_verts,
+		gr_buffer_handle buffer_handle)>
+		gf_render_primitives_batched;
+	std::function<void(nanovg_material* material_info,
+		primitive_type prim_type,
+		vertex_layout* layout,
+		int offset,
+		int n_verts,
+		gr_buffer_handle buffer_handle)>
+		gf_render_nanovg;
+	std::function<void(decal_material* material_info,
+		primitive_type prim_type,
+		vertex_layout* layout,
+		int num_elements,
+		const indexed_vertex_source& buffers)>
+		gf_render_decals;
+	void (*gf_render_rocket_primitives)(interface_material* material_info,
+		primitive_type prim_type,
+		vertex_layout* layout,
+		int n_indices,
+		gr_buffer_handle vertex_buffer,
+		gr_buffer_handle index_buffer);
 
-	bool (*gf_is_capable)(gr_capability capability);
-	bool (*gf_get_property)(gr_property property, void* destination);
+	std::function<bool(gr_capability capability)> gf_is_capable;
+	std::function<bool(gr_property property, void* destination)> gf_get_property;
 
-	void (*gf_push_debug_group)(const char* name);
-	void (*gf_pop_debug_group)();
+	std::function<void(const char* name)> gf_push_debug_group;
+	std::function<void()> gf_pop_debug_group;
 
-	int (*gf_create_query_object)();
-	void (*gf_query_value)(int obj, QueryType type);
-	bool (*gf_query_value_available)(int obj);
-	std::uint64_t (*gf_get_query_value)(int obj);
-	void (*gf_delete_query_object)(int obj);
+	std::function<int()> gf_create_query_object;
+	std::function<void(int obj, QueryType type)> gf_query_value;
+	std::function<bool(int obj)> gf_query_value_available;
+	std::function<uint64_t(int obj)> gf_get_query_value;
+	std::function<void(int obj)> gf_delete_query_object;
 
 	std::unique_ptr<os::Viewport> (*gf_create_viewport)(const os::ViewPortProperties& props);
-	void (*gf_use_viewport)(os::Viewport* view);
+	std::function<void(os::Viewport* view)> gf_use_viewport;
 
-	void (*gf_bind_uniform_buffer)(uniform_block_type bind_point, size_t offset, size_t size, int buffer);
+	std::function<void(uniform_block_type bind_point, size_t offset, size_t size, gr_buffer_handle buffer)>
+		gf_bind_uniform_buffer;
 
-	gr_sync (*gf_sync_fence)();
-	bool (*gf_sync_wait)(gr_sync sync, uint64_t timeoutns);
-	void (*gf_sync_delete)(gr_sync sync);
+	std::function<gr_sync()> gf_sync_fence;
+	std::function<bool(gr_sync sync, uint64_t timeoutns)> gf_sync_wait;
+	std::function<void(gr_sync sync)> gf_sync_delete;
 
-	void (*gf_set_viewport)(int x, int y, int width, int height);
+	std::function<void(int x, int y, int width, int height)> gf_set_viewport;
 } screen;
 
 // handy macro
@@ -925,7 +987,7 @@ extern io::mouse::Cursor* Web_cursor;
 // Called by OS when application gets/looses focus
 extern void gr_activate(int active);
 
-#define GR_CALL(x)			(*x)
+#define GR_CALL(x) (x)
 
 // These macros make the function indirection look like the
 // old Descent-style gr_xxx calls.
@@ -936,9 +998,9 @@ extern void gr_activate(int active);
 void gr_flip(bool execute_scripting = true);
 
 //#define gr_set_clip			GR_CALL(gr_screen.gf_set_clip)
-__inline void gr_set_clip(int x, int y, int w, int h, int resize_mode=GR_RESIZE_FULL)
+inline void gr_set_clip(int x, int y, int w, int h, int resize_mode=GR_RESIZE_FULL)
 {
-	(*gr_screen.gf_set_clip)(x,y,w,h,resize_mode);
+	gr_screen.gf_set_clip(x, y, w, h, resize_mode);
 }
 #define gr_reset_clip		GR_CALL(gr_screen.gf_reset_clip)
 
@@ -978,38 +1040,42 @@ void gr_set_bitmap(int bitmap_num, int alphablend = GR_ALPHABLEND_NONE, int bitb
 
 #define gr_bm_make_render_target					GR_CALL(gr_screen.gf_bm_make_render_target)
 
-__inline int gr_bm_set_render_target(int n, int face = -1)
+inline int gr_bm_set_render_target(int n, int face = -1)
 {
-	return (*gr_screen.gf_bm_set_render_target)(n, face);
+	return gr_screen.gf_bm_set_render_target(n, face);
 }
 
-#define gr_set_texture_addressing					 GR_CALL(gr_screen.gf_set_texture_addressing)
+#define gr_set_texture_addressing GR_CALL(gr_screen.gf_set_texture_addressing)
 
-inline int gr_create_buffer(BufferType type, BufferUsageHint usage)
+inline gr_buffer_handle gr_create_buffer(BufferType type, BufferUsageHint usage)
 {
-	return (*gr_screen.gf_create_buffer)(type, usage);
+	return gr_screen.gf_create_buffer(type, usage);
 }
 
-#define gr_delete_buffer				GR_CALL(gr_screen.gf_delete_buffer)
-#define gr_update_buffer_data			GR_CALL(gr_screen.gf_update_buffer_data)
-#define gr_update_buffer_data_offset	GR_CALL(gr_screen.gf_update_buffer_data_offset)
-inline void* gr_map_buffer(int handle) { return gr_screen.gf_map_buffer(handle); }
-inline void gr_flush_mapped_buffer(int handle, size_t offset, size_t size)
+#define gr_delete_buffer GR_CALL(gr_screen.gf_delete_buffer)
+#define gr_update_buffer_data GR_CALL(gr_screen.gf_update_buffer_data)
+#define gr_update_buffer_data_offset GR_CALL(gr_screen.gf_update_buffer_data_offset)
+inline void* gr_map_buffer(gr_buffer_handle handle)
+{
+	return gr_screen.gf_map_buffer(handle);
+}
+inline void gr_flush_mapped_buffer(gr_buffer_handle handle, size_t offset, size_t size)
 {
 	gr_screen.gf_flush_mapped_buffer(handle, offset, size);
 }
-#define gr_update_transform_buffer		GR_CALL(gr_screen.gf_update_transform_buffer)
+#define gr_update_transform_buffer GR_CALL(gr_screen.gf_update_transform_buffer)
 
-#define gr_scene_texture_begin			GR_CALL(gr_screen.gf_scene_texture_begin)
-#define gr_scene_texture_end			GR_CALL(gr_screen.gf_scene_texture_end)
-#define gr_copy_effect_texture			GR_CALL(gr_screen.gf_copy_effect_texture)
+#define gr_scene_texture_begin GR_CALL(gr_screen.gf_scene_texture_begin)
+#define gr_scene_texture_end GR_CALL(gr_screen.gf_scene_texture_end)
+#define gr_copy_effect_texture GR_CALL(gr_screen.gf_copy_effect_texture)
 
-#define gr_post_process_set_effect		GR_CALL(gr_screen.gf_post_process_set_effect)
-#define gr_post_process_set_defaults	GR_CALL(gr_screen.gf_post_process_set_defaults)
-#define gr_post_process_begin			GR_CALL(gr_screen.gf_post_process_begin)
-#define gr_post_process_end				GR_CALL(gr_screen.gf_post_process_end)
-#define gr_post_process_save_zbuffer	GR_CALL(gr_screen.gf_post_process_save_zbuffer)
-inline void gr_post_process_restore_zbuffer() {
+#define gr_post_process_set_effect GR_CALL(gr_screen.gf_post_process_set_effect)
+#define gr_post_process_set_defaults GR_CALL(gr_screen.gf_post_process_set_defaults)
+#define gr_post_process_begin GR_CALL(gr_screen.gf_post_process_begin)
+#define gr_post_process_end GR_CALL(gr_screen.gf_post_process_end)
+#define gr_post_process_save_zbuffer GR_CALL(gr_screen.gf_post_process_save_zbuffer)
+inline void gr_post_process_restore_zbuffer()
+{
 	gr_screen.gf_post_process_restore_zbuffer();
 }
 
@@ -1036,114 +1102,157 @@ inline void gr_post_process_restore_zbuffer() {
 #define gr_shadow_map_end				GR_CALL(gr_screen.gf_shadow_map_end)
 #define gr_render_shield_impact			GR_CALL(gr_screen.gf_render_shield_impact)
 
-__inline void gr_render_primitives(material* material_info, primitive_type prim_type, vertex_layout* layout, int vert_offset, int n_verts, int buffer_handle = -1, size_t buffer_offset = 0)
+inline void gr_render_primitives(material* material_info,
+	primitive_type prim_type,
+	vertex_layout* layout,
+	int vert_offset,
+	int n_verts,
+	gr_buffer_handle buffer_handle = gr_buffer_handle(),
+	size_t buffer_offset = 0)
 {
-	(*gr_screen.gf_render_primitives)(material_info, prim_type, layout, vert_offset, n_verts, buffer_handle, buffer_offset);
+	gr_screen
+		.gf_render_primitives(material_info, prim_type, layout, vert_offset, n_verts, buffer_handle, buffer_offset);
 }
 
-__inline void gr_render_primitives_particle(particle_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle = -1)
+inline void gr_render_primitives_particle(particle_material* material_info,
+	primitive_type prim_type,
+	vertex_layout* layout,
+	int offset,
+	int n_verts,
+	gr_buffer_handle buffer_handle = gr_buffer_handle())
 {
-	(*gr_screen.gf_render_primitives_particle)(material_info, prim_type, layout, offset, n_verts, buffer_handle);
+	gr_screen.gf_render_primitives_particle(material_info, prim_type, layout, offset, n_verts, buffer_handle);
 }
 
-__inline void gr_render_primitives_batched(batched_bitmap_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle = -1)
+inline void gr_render_primitives_batched(batched_bitmap_material* material_info,
+	primitive_type prim_type,
+	vertex_layout* layout,
+	int offset,
+	int n_verts,
+	gr_buffer_handle buffer_handle = gr_buffer_handle())
 {
-	(*gr_screen.gf_render_primitives_batched)(material_info, prim_type, layout, offset, n_verts, buffer_handle);
+	gr_screen.gf_render_primitives_batched(material_info, prim_type, layout, offset, n_verts, buffer_handle);
 }
 
-__inline void gr_render_nanovg(nanovg_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle)
+inline void gr_render_nanovg(nanovg_material* material_info,
+	primitive_type prim_type,
+	vertex_layout* layout,
+	int offset,
+	int n_verts,
+	gr_buffer_handle buffer_handle)
 {
-	(*gr_screen.gf_render_nanovg)(material_info, prim_type, layout, offset, n_verts, buffer_handle);
+	gr_screen.gf_render_nanovg(material_info, prim_type, layout, offset, n_verts, buffer_handle);
 }
 
-__inline void gr_render_primitives_distortion(distortion_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle = -1)
+inline void gr_render_primitives_distortion(distortion_material* material_info,
+	primitive_type prim_type,
+	vertex_layout* layout,
+	int offset,
+	int n_verts,
+	gr_buffer_handle buffer_handle = gr_buffer_handle())
 {
-	(*gr_screen.gf_render_primitives_distortion)(material_info, prim_type, layout, offset, n_verts, buffer_handle);
+	gr_screen.gf_render_primitives_distortion(material_info, prim_type, layout, offset, n_verts, buffer_handle);
 }
 
-inline void gr_render_movie(movie_material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts, int buffer, size_t buffer_offset = 0)
+inline void gr_render_movie(movie_material* material_info,
+	primitive_type prim_type,
+	vertex_layout* layout,
+	int n_verts,
+	gr_buffer_handle buffer,
+	size_t buffer_offset = 0)
 {
-	(*gr_screen.gf_render_movie)(material_info, prim_type, layout, n_verts, buffer, buffer_offset);
+	gr_screen.gf_render_movie(material_info, prim_type, layout, n_verts, buffer, buffer_offset);
 }
 
-__inline void gr_render_model(model_material* material_info, indexed_vertex_source *vert_source, vertex_buffer* bufferp, size_t texi)
+inline void gr_render_model(model_material* material_info, indexed_vertex_source *vert_source, vertex_buffer* bufferp, size_t texi)
 {
-	(*gr_screen.gf_render_model)(material_info, vert_source, bufferp, texi);
+	gr_screen.gf_render_model(material_info, vert_source, bufferp, texi);
 }
 
-__inline void gr_render_rocket_primitives(interface_material* material_info, primitive_type prim_type,
-                                          vertex_layout* layout, int n_indices, int vertex_buffer, int index_buffer)
+inline void gr_render_rocket_primitives(interface_material* material_info,
+	primitive_type prim_type,
+	vertex_layout* layout,
+	int n_indices,
+	gr_buffer_handle vertex_buffer,
+	gr_buffer_handle index_buffer)
 {
-	(*gr_screen.gf_render_rocket_primitives)(material_info, prim_type, layout, n_indices, vertex_buffer, index_buffer);
+	gr_screen.gf_render_rocket_primitives(material_info, prim_type, layout, n_indices, vertex_buffer, index_buffer);
 }
 
-__inline bool gr_is_capable(gr_capability capability)
+inline bool gr_is_capable(gr_capability capability)
 {
-	return (*gr_screen.gf_is_capable)(capability);
+	return gr_screen.gf_is_capable(capability);
 }
 
 inline bool gr_get_property(gr_property property, void* destination)
 {
-	return (*gr_screen.gf_get_property)(property, destination);
+	return gr_screen.gf_get_property(property, destination);
 }
 
 inline void gr_push_debug_group(const char* name)
 {
-	(*gr_screen.gf_push_debug_group)(name);
+	gr_screen.gf_push_debug_group(name);
 }
 
 inline void gr_pop_debug_group()
 {
-	(*gr_screen.gf_pop_debug_group)();
+	gr_screen.gf_pop_debug_group();
 }
 
 inline int gr_create_query_object()
 {
-	return (*gr_screen.gf_create_query_object)();
+	return gr_screen.gf_create_query_object();
 }
 
 inline void gr_query_value(int obj, QueryType type)
 {
-	(*gr_screen.gf_query_value)(obj, type);
+	gr_screen.gf_query_value(obj, type);
 }
 
 inline bool gr_query_value_available(int obj)
 {
-	return (*gr_screen.gf_query_value_available)(obj);
+	return gr_screen.gf_query_value_available(obj);
 }
 
 inline std::uint64_t gr_get_query_value(int obj)
 {
-	return (*gr_screen.gf_get_query_value)(obj);
+	return gr_screen.gf_get_query_value(obj);
 }
 
 inline void gr_delete_query_object(int obj)
 {
-	(*gr_screen.gf_delete_query_object)(obj);
+	gr_screen.gf_delete_query_object(obj);
 }
 
-inline std::unique_ptr<os::Viewport> gr_create_viewport(const os::ViewPortProperties& props) {
-	return (*gr_screen.gf_create_viewport)(props);
+inline std::unique_ptr<os::Viewport> gr_create_viewport(const os::ViewPortProperties& props)
+{
+	return gr_screen.gf_create_viewport(props);
 }
-inline void gr_use_viewport(os::Viewport* view) {
-	(*gr_screen.gf_use_viewport)(view);
+inline void gr_use_viewport(os::Viewport* view)
+{
+	gr_screen.gf_use_viewport(view);
 }
-inline void gr_set_viewport(int x, int y, int width, int height) {
-	(*gr_screen.gf_set_viewport)(x, y, width, height);
+inline void gr_set_viewport(int x, int y, int width, int height)
+{
+	gr_screen.gf_set_viewport(x, y, width, height);
 }
 
-inline void gr_bind_uniform_buffer(uniform_block_type bind_point, size_t offset, size_t size, int buffer) {
-	(*gr_screen.gf_bind_uniform_buffer)(bind_point, offset, size, buffer);
+inline void gr_bind_uniform_buffer(uniform_block_type bind_point, size_t offset, size_t size, gr_buffer_handle buffer)
+{
+	gr_screen.gf_bind_uniform_buffer(bind_point, offset, size, buffer);
 }
 
-inline gr_sync gr_sync_fence() {
-	return (*gr_screen.gf_sync_fence)();
+inline gr_sync gr_sync_fence()
+{
+	return gr_screen.gf_sync_fence();
 }
-inline bool gr_sync_wait(gr_sync sync, uint64_t timeoutns) {
-	return (*gr_screen.gf_sync_wait)(sync, timeoutns);
+inline bool gr_sync_wait(gr_sync sync, uint64_t timeoutns)
+{
+	return gr_screen.gf_sync_wait(sync, timeoutns);
 }
-inline void gr_sync_delete(gr_sync sync) {
-	(*gr_screen.gf_sync_delete)(sync);
+inline void gr_sync_delete(gr_sync sync)
+{
+	gr_screen.gf_sync_delete(sync);
 }
 
 // color functions
@@ -1159,7 +1268,6 @@ void gr_set_shader(shader *shade);
 // new bitmap functions
 void gr_bitmap(int x, int y, int resize_mode = GR_RESIZE_FULL);
 void gr_bitmap_uv(int _x, int _y, int _w, int _h, float _u0, float _v0, float _u1, float _v1, int resize_mode = GR_RESIZE_FULL);
-void gr_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode);
 
 // special function for drawing polylines. this function is specifically intended for
 // polylines where each section is no more than 90 degrees away from a previous section.
@@ -1262,7 +1370,7 @@ enum class GpuHeap {
  * @param[out] offset_out The offset at which the data is stored in the buffer
  * @param[out] handle_out The handle of the buffer object this data is stored in
  */
-void gr_heap_allocate(GpuHeap heap_type, size_t size, void* data, size_t& offset_out, int& handle_out);
+void gr_heap_allocate(GpuHeap heap_type, size_t size, void* data, size_t& offset_out, gr_buffer_handle& handle_out);
 
 /**
  * @brief Deallocates memory previously allocated with gr_heap_allocate.
@@ -1271,8 +1379,9 @@ void gr_heap_allocate(GpuHeap heap_type, size_t size, void* data, size_t& offset
  */
 void gr_heap_deallocate(GpuHeap heap_type, size_t data_offset);
 
-
 void gr_set_gamma(float gamma);
+
+void gr_get_post_process_effect_names(SCP_vector<SCP_string> &names);
 
 // Include this last to make the 2D rendering function available everywhere
 #include "graphics/render.h"

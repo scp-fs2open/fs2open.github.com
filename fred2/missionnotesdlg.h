@@ -58,6 +58,7 @@ public:
 	BOOL		m_support_repairs_hull;
 	BOOL		m_beam_free_all_by_default;
 	BOOL		m_player_start_using_ai;
+	BOOL		m_player_start_chase_view;
 	BOOL		m_no_briefing;
 	BOOL		m_no_debriefing;
 	BOOL		m_autpilot_cinematics;

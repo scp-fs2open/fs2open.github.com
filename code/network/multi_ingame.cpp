@@ -862,13 +862,13 @@ void multi_ingame_join_display_ship(object *objp,int y_start)
 	// blit the ship's primary weapons	
 	y_spacing = (Mi_spacing[gr_screen.res] - (wp->num_primary_banks * line_height)) / 2;
 	for(idx=0;idx<wp->num_primary_banks;idx++){
-		gr_string(Mi_primary_field[gr_screen.res][MI_FIELD_X], y_start + y_spacing + (idx * line_height), Weapon_info[wp->primary_bank_weapons[idx]].get_display_string(), GR_RESIZE_MENU);
+		gr_string(Mi_primary_field[gr_screen.res][MI_FIELD_X], y_start + y_spacing + (idx * line_height), Weapon_info[wp->primary_bank_weapons[idx]].get_display_name(), GR_RESIZE_MENU);
 	}
 
 	// blit the ship's secondary weapons	
 	y_spacing = (Mi_spacing[gr_screen.res] - (wp->num_secondary_banks * line_height)) / 2;
 	for(idx=0;idx<wp->num_secondary_banks;idx++){
-		gr_string(Mi_secondary_field[gr_screen.res][MI_FIELD_X], y_start + y_spacing + (idx * line_height), Weapon_info[wp->secondary_bank_weapons[idx]].get_display_string(), GR_RESIZE_MENU);
+		gr_string(Mi_secondary_field[gr_screen.res][MI_FIELD_X], y_start + y_spacing + (idx * line_height), Weapon_info[wp->secondary_bank_weapons[idx]].get_display_name(), GR_RESIZE_MENU);
 	}	
 
 	// blit the shield/hull integrity
@@ -1038,6 +1038,9 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 		ship_num = Objects[objnum].instance;
         Objects[objnum].flags.from_u64(oflags);
 		Objects[objnum].net_signature = net_signature;
+
+		// Cyborg17 also add this ship to the multi ship tracking and interpolation struct
+		multi_ship_record_add_ship(objnum);
 
 		// assign any common data
 		strcpy_s(Ships[ship_num].ship_name, ship_name);
@@ -1565,7 +1568,7 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 		GET_USHORT(sig_request);
 		PACKET_SET_SIZE();
 			
-		player_num = find_player_id(hinfo->id);	
+		player_num = find_player_index(hinfo->id);	
 		if(player_num == -1){
 			nprintf(("Network","Received ingame ship request packet from unknown player!!\n"));		
 			break;

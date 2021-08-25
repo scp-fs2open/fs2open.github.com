@@ -128,7 +128,7 @@ typedef struct voice_stream {
 	sound_handle stream_snd_handle;                                         // sound playing instance handle
 	int stream_rtvoice_handle;												// rtvoice buffer handle
 } voice_stream;
-voice_stream Multi_voice_stream[MULTI_VOICE_MAX_STREAMS];		// voice streams themselves
+std::array<voice_stream, MULTI_VOICE_MAX_STREAMS> Multi_voice_stream;		// voice streams themselves
 
 // player-side data
 #define MULTI_VOICE_KEY									KEY_LAPOSTRO	// key used for realtime voice
@@ -333,8 +333,8 @@ void multi_voice_init()
 		}
 	}
 
-	// initialize the streams	
-	memset(Multi_voice_stream,0,sizeof(voice_stream) * MULTI_VOICE_MAX_STREAMS);	
+	// initialize the streams
+	Multi_voice_stream.fill({});
 	for(idx=0;idx<MULTI_VOICE_MAX_STREAMS;idx++){
 		Multi_voice_stream[idx].token_status = MULTI_VOICE_TOKEN_INDEX_FREE;
 		Multi_voice_stream[idx].token_stamp = -1;
@@ -1616,7 +1616,7 @@ int multi_voice_process_player_prefs(ubyte *data,int player_index)
 		GET_SHORT(mute_id);
 
 		// get the player to mute
-		mute_index = find_player_id(mute_id);
+		mute_index = find_player_index(mute_id);
 		if(mute_index != -1){
 #ifdef MULTI_VOICE_VERBOSE
 			nprintf(("Network","Player %s muting player %s\n",Net_players[player_index].m_player->callsign,Net_players[mute_index].m_player->callsign));
@@ -1642,7 +1642,7 @@ void multi_voice_process_packet(ubyte *data, header *hinfo)
 	int offset = HEADER_LENGTH;	
 
 	// find out who is sending this data	
-	player_index = find_player_id(hinfo->id);		
+	player_index = find_player_index(hinfo->id);		
 
 	// get the opcode
 	GET_DATA(code);
@@ -1934,7 +1934,7 @@ void multi_voice_alg_play_window(int stream_index)
 		// if we can play sound and we know who this is from, display it
 		if(Multi_voice_can_play){
 			char voice_msg[256];
-			int player_index = find_player_id(Multi_voice_stream[stream_index].stream_from);
+			int player_index = find_player_index(Multi_voice_stream[stream_index].stream_from);
 
 			if(player_index != -1){
 				memset(voice_msg,0,256);
@@ -1988,7 +1988,7 @@ void multi_voice_alg_process_streams()
 		// determine if we should play this window of data
 		if((Multi_voice_stamps[idx] != -1) && multi_voice_alg_should_play(idx)){
 			// determine who this stream came from
-			player_index = find_player_id(Multi_voice_stream[idx].stream_from);			
+			player_index = find_player_index(Multi_voice_stream[idx].stream_from);			
 
 			// server should check his own settings here
 			if((Net_player->flags & NETINFO_FLAG_AM_MASTER) && ((Net_player->p_info.options.flags & MLO_FLAG_NO_VOICE) || (player_index == -1) || !(Multi_voice_player_prefs[MY_NET_PLAYER_NUM] & (1<<player_index))) ){

@@ -37,7 +37,7 @@
 #include "ship/ship.h" //for ship struct
 
 //Global stuffs
-extern int ships_inited; //Need this
+extern bool Ships_inited; //Need this
 
 float Hud_unit_multiplier = 1.0f;	//Backslash
 float Hud_speed_multiplier = 1.0f;	//The E
@@ -53,9 +53,9 @@ int Hud_font = -1;
 
 bool Chase_view_only_ex = false;
 
-//WARNING: If you add gauges to this array, make sure to bump num_default_gauges!
-int num_default_gauges = 42;
-static int retail_gauges[] = {
+//WARNING: If you add gauges to this array, make sure to bump Num_builtin_gauges!
+const int Num_builtin_gauges = 42;
+static int Builtin_gauges[Num_builtin_gauges] = {
 	HUD_OBJECT_MESSAGES,
 	HUD_OBJECT_TRAINING_MESSAGES,
 	HUD_OBJECT_SUPPORT,
@@ -100,9 +100,52 @@ static int retail_gauges[] = {
 	HUD_OBJECT_ETS_RETAIL
 };
 
+Legacy_HUD_gauge_pair Legacy_HUD_gauges[NUM_HUD_GAUGES] =
+{
+	{ "LEAD_INDICATOR", HUD_OBJECT_LEAD },
+	{ "ORIENTATION_TEE", HUD_OBJECT_ORIENTATION_TEE },
+	{ "HOSTILE_TRIANGLE", HUD_OBJECT_HOSTILE_TRI },
+	{ "TARGET_TRIANGLE", HUD_OBJECT_TARGET_TRI },
+	{ "MISSION_TIME", HUD_OBJECT_MISSION_TIME },
+	{ "RETICLE_CIRCLE", -1 },
+	{ "THROTTLE_GAUGE", HUD_OBJECT_THROTTLE },
+	{ "RADAR", HUD_OBJECT_RADAR_STD },
+	{ "TARGET_MONITOR", HUD_OBJECT_TARGET_MONITOR },
+	{ "CENTER_RETICLE", HUD_OBJECT_CENTER_RETICLE },
+	{ "TARGET_MONITOR_EXTRA_DATA", HUD_OBJECT_EXTRA_TARGET_DATA },
+	{ "TARGET_SHIELD_ICON", HUD_OBJECT_TARGET_SHIELD },
+	{ "PLAYER_SHIELD_ICON", HUD_OBJECT_PLAYER_SHIELD },
+	{ "ETS_GAUGE", HUD_OBJECT_ETS_RETAIL },
+	{ "AUTO_TARGET", HUD_OBJECT_AUTO_TARGET },
+	{ "AUTO_SPEED", HUD_OBJECT_AUTO_SPEED },
+	{ "WEAPONS_GAUGE", HUD_OBJECT_WEAPONS },
+	{ "ESCORT_VIEW", HUD_OBJECT_ESCORT },
+	{ "DIRECTIVES_VIEW", HUD_OBJECT_DIRECTIVES },
+	{ "THREAT_GAUGE", HUD_OBJECT_THREAT },
+	{ "AFTERBURNER_ENERGY", HUD_OBJECT_AFTERBURNER },
+	{ "WEAPONS_ENERGY", HUD_OBJECT_WEAPON_ENERGY },
+	{ "WEAPON_LINKING_GAUGE", HUD_OBJECT_WEAPON_LINKING },
+	{ "TARGER_MINI_ICON", HUD_OBJECT_MINI_SHIELD },
+	{ "OFFSCREEN_INDICATOR", HUD_OBJECT_OFFSCREEN },
+	{ "TALKING_HEAD", HUD_OBJECT_TALKING_HEAD },
+	{ "DAMAGE_GAUGE", HUD_OBJECT_DAMAGE },
+	{ "MESSAGE_LINES", HUD_OBJECT_MESSAGES },
+	{ "MISSILE_WARNING_ARROW", HUD_OBJECT_MISSILE_TRI },
+	{ "CMEASURE_GAUGE", HUD_OBJECT_CMEASURES },
+	{ "OBJECTIVES_NOTIFY_GAUGE", HUD_OBJECT_OBJ_NOTIFY },
+	{ "WINGMEN_STATUS", HUD_OBJECT_WINGMAN_STATUS },
+	{ "OFFSCREEN RANGE", -1 },
+	{ "KILLS GAUGE", HUD_OBJECT_KILLS },
+	{ "ATTACKING TARGET COUNT", -1 },
+	{ "TEXT FLASH", HUD_OBJECT_TEXT_WARNINGS },
+	{ "MESSAGE BOX", HUD_OBJECT_SQUAD_MSG },
+	{ "SUPPORT GUAGE", HUD_OBJECT_SUPPORT },
+	{ "LAG GUAGE", HUD_OBJECT_LAG },
+};
+
 flag_def_list Hud_gauge_types[] = {
 	{ "Messages",			HUD_OBJECT_MESSAGES,			0},
-	{ "Training messages",	HUD_OBJECT_TRAINING_MESSAGES,	0},
+	{ "Training messages",	HUD_OBJECT_TRAINING_MESSAGES,	0},		// Not in legacy list
 	{ "Support",			HUD_OBJECT_SUPPORT,				0},
 	{ "Damage",				HUD_OBJECT_DAMAGE,				0},
 	{ "Wingman status",		HUD_OBJECT_WINGMAN_STATUS,		0},
@@ -120,14 +163,14 @@ flag_def_list Hud_gauge_types[] = {
 	{ "Target shield",		HUD_OBJECT_TARGET_SHIELD,		0},
 	{ "Escort list",		HUD_OBJECT_ESCORT,				0},
 	{ "Mission time",		HUD_OBJECT_MISSION_TIME,		0},
-	{ "Ets weapons",		HUD_OBJECT_ETS_WEAPONS,			0},
-	{ "Ets shields",		HUD_OBJECT_ETS_SHIELDS,			0},
-	{ "Ets engines",		HUD_OBJECT_ETS_ENGINES,			0},
+	{ "Ets weapons",		HUD_OBJECT_ETS_WEAPONS,			0},		// Not in legacy list
+	{ "Ets shields",		HUD_OBJECT_ETS_SHIELDS,			0},		// Not in legacy list
+	{ "Ets engines",		HUD_OBJECT_ETS_ENGINES,			0},		// Not in legacy list
 	{ "Target monitor",		HUD_OBJECT_TARGET_MONITOR,		0},
 	{ "Extra target data",	HUD_OBJECT_EXTRA_TARGET_DATA,	0},
 	{ "Radar",				HUD_OBJECT_RADAR_STD,			0},
-	{ "Radar orb",			HUD_OBJECT_RADAR_ORB,			0},
-	{ "Radar BSG",			HUD_OBJECT_RADAR_BSG,			0},
+	{ "Radar orb",			HUD_OBJECT_RADAR_ORB,			0},		// Not in legacy list
+	{ "Radar BSG",			HUD_OBJECT_RADAR_BSG,			0},		// Not in legacy list
 	{ "Afterburner energy",	HUD_OBJECT_AFTERBURNER,			0},
 	{ "Weapon energy",		HUD_OBJECT_WEAPON_ENERGY,		0},
 	{ "Text warnings",		HUD_OBJECT_TEXT_WARNINGS,		0},
@@ -136,12 +179,12 @@ flag_def_list Hud_gauge_types[] = {
 	{ "Threat indicator",	HUD_OBJECT_THREAT,				0},
 	{ "Lead indicator",		HUD_OBJECT_LEAD,				0},
 	{ "Lead sight",			HUD_OBJECT_LEAD_SIGHT,			0},
-	{ "Lock indicator",		HUD_OBJECT_LOCK,				0},
+	{ "Lock indicator",		HUD_OBJECT_LOCK,				0},		// Not in legacy list
 	{ "Weapon linking",		HUD_OBJECT_WEAPON_LINKING,		0},
-	{ "Multiplayer messages",	HUD_OBJECT_MULTI_MSG,			0},
-	{ "Voice status",		HUD_OBJECT_VOICE_STATUS,		0},
-	{ "Ping",				HUD_OBJECT_PING,				0},
-	{ "Supernova",			HUD_OBJECT_SUPERNOVA,			0},
+	{ "Multiplayer messages",	HUD_OBJECT_MULTI_MSG,			0},	// Not in legacy list
+	{ "Voice status",		HUD_OBJECT_VOICE_STATUS,		0},		// Not in legacy list
+	{ "Ping",				HUD_OBJECT_PING,				0},		// Not in legacy list
+	{ "Supernova",			HUD_OBJECT_SUPERNOVA,			0},		// Not in legacy list
 	{ "Offscreen indicator",	HUD_OBJECT_OFFSCREEN,			0},
 	{ "Targeting brackets",	HUD_OBJECT_BRACKETS,			0},
 	{ "Orientation",		HUD_OBJECT_ORIENTATION_TEE,		0},
@@ -149,10 +192,9 @@ flag_def_list Hud_gauge_types[] = {
 	{ "Target direction",	HUD_OBJECT_TARGET_TRI,			0},
 	{ "Missile indicator",	HUD_OBJECT_MISSILE_TRI,			0},
 	{ "Kills",				HUD_OBJECT_KILLS,				0},
-	{ "Fixed messages",		HUD_OBJECT_FIXED_MESSAGES,		0},
+	{ "Fixed messages",		HUD_OBJECT_FIXED_MESSAGES,		0},		// Not in legacy list
 	{ "Ets retail",			HUD_OBJECT_ETS_RETAIL,			0}
 };
-
 int Num_hud_gauge_types = sizeof(Hud_gauge_types)/sizeof(flag_def_list);
 
 int parse_ship_start()
@@ -290,7 +332,7 @@ void parse_hud_gauges_tbl(const char *filename)
 			case 0:
 				mprintf(("$Ship in hud_gauges.tbl and -hdg.tbms is deprecated. Use \"$Ships: (\"Some ship class\") instead.\n"));
 
-				if (!ships_inited) {
+				if (!Ships_inited) {
 					// just in case ship info has not been initialized.
 					skip_to_start_of_string("#Gauge Config");
 					continue;
@@ -335,7 +377,7 @@ void parse_hud_gauges_tbl(const char *filename)
 			case 1:
 				int shiparray[256];
 
-				n_ships = stuff_int_list(shiparray, 256, SHIP_INFO_TYPE);
+				n_ships = (int)stuff_int_list(shiparray, 256, SHIP_INFO_TYPE);
 
 				if (optional_string("$Load Retail Configuration:")) {
 					stuff_boolean(&retail_config);
@@ -507,7 +549,7 @@ void parse_hud_gauges_tbl(const char *filename)
 
 void hud_positions_init()
 {
-	if(!ships_inited)
+	if(!Ships_inited)
 	{
 		Error(LOCATION, "Could not initialize hudparse.cpp as ships were not inited first.");
 		return;
@@ -522,7 +564,6 @@ void hud_positions_init()
 
 	// load missing retail gauges for the default and ship-specific HUDs
 	load_missing_retail_gauges();
-	
 }
 
 void load_missing_retail_gauges()
@@ -533,11 +574,11 @@ void load_missing_retail_gauges()
 	if(Hud_retail) {
 		int num_loaded_gauges = (int)default_hud_gauges.size();
 
-		for(int i = 0; i < num_default_gauges; i++) {
+		for(int i = 0; i < Num_builtin_gauges; i++) {
 			retail_gauge_loaded = false;
 
 			for(int j = 0; j < num_loaded_gauges; j++) {
-				if(retail_gauges[i] == default_hud_gauges[j]->getObjectType()) {
+				if(Builtin_gauges[i] == default_hud_gauges[j]->getObjectType()) {
 					retail_gauge_loaded = true;
 					break;
 				}
@@ -545,7 +586,7 @@ void load_missing_retail_gauges()
 
 			if(!retail_gauge_loaded) {
 				gauge_settings settings;
-				load_gauge(retail_gauges[i], &settings);
+				load_gauge(Builtin_gauges[i], &settings);
 			}
 		}
 
@@ -589,9 +630,9 @@ void load_missing_retail_gauges()
 		if(it->hud_enabled && it->hud_retail) {
 			int num_loaded_gauges = (int)it->hud_gauges.size();
 
-			for(int i = 0; i < num_default_gauges; i++) {
+			for(int i = 0; i < Num_builtin_gauges; i++) {
 				for(int j = 0; j < num_loaded_gauges; j++) {
-					if(retail_gauges[i] == it->hud_gauges[j]->getObjectType()) {
+					if(Builtin_gauges[i] == it->hud_gauges[j]->getObjectType()) {
 						retail_gauge_loaded = true;
 					}
 				}
@@ -599,7 +640,7 @@ void load_missing_retail_gauges()
 				if(!retail_gauge_loaded) {
 					gauge_settings settings;
 					settings.ship_idx = &sindex;
-					load_gauge(retail_gauges[i], &settings);
+					load_gauge(Builtin_gauges[i], &settings);
 				}
 			}
 
@@ -1452,7 +1493,7 @@ void load_gauge_custom(gauge_settings* settings)
 		stuff_string(gauge_string, F_NAME, MAX_FILENAME_LEN);
 		
 		for(i = 0; i < NUM_HUD_GAUGES; i++) {
-			if(!strcmp(HUD_gauge_text[i], gauge_string)) {
+			if(!strcmp(Legacy_HUD_gauges[i].hud_gauge_text, gauge_string)) {
 				gauge_type = i;
 				break;
 			}
@@ -1575,13 +1616,13 @@ void load_gauge_weapon_energy(gauge_settings* settings)
 {
 	int Wenergy_text_offsets[2];
 	int Wenergy_h;
-	int text_alignment = 0;
+	HudAlignment text_alignment = HudAlignment::NONE;
 	bool always_show_text = false;
 	bool show_ballistic = false;
 	bool moving_text = false;
 	int armed_weapon_offsets[2] = {0, 0};
 	int armed_weapon_h = 12;
-	int weapon_alignment = 0;
+	HudAlignment weapon_alignment = HudAlignment::NONE;
 	bool show_weapons = false;
 	char fname[MAX_FILENAME_LEN];
 	
@@ -1633,9 +1674,9 @@ void load_gauge_weapon_energy(gauge_settings* settings)
 		stuff_int_list(Wenergy_text_offsets, 2);
 
 		if(optional_string("Text Alignment:")) {
-			if(required_string("Right")) {
-				text_alignment = 1;
-			}
+			char temp[NAME_LENGTH];
+			stuff_string(temp, F_NAME, NAME_LENGTH);
+			text_alignment = hud_alignment_lookup(temp);
 		}
 	}
 	if(optional_string("Always Show Text:")) {
@@ -1652,9 +1693,9 @@ void load_gauge_weapon_energy(gauge_settings* settings)
 		show_weapons = true;
 
 		if(optional_string("Armed Guns List Alignment:")) {
-			if(required_string("Right")) {
-				weapon_alignment = 1;
-			}
+			char temp[NAME_LENGTH];
+			stuff_string(temp, F_NAME, NAME_LENGTH);
+			weapon_alignment = hud_alignment_lookup(temp);
 		}
 
 		if(optional_string("Armed Guns List Entry Height:")) {
@@ -4427,6 +4468,7 @@ void load_gauge_lock(gauge_settings* settings)
 	int Lock_target_box_width;
 	int Lock_target_box_height;
 	bool loop_locked_anim;
+	bool blink_locked_anim;
 	char fname_lock[MAX_FILENAME_LEN];
 	char fname_spin[MAX_FILENAME_LEN];
 
@@ -4444,6 +4486,7 @@ void load_gauge_lock(gauge_settings* settings)
 			Lock_target_box_width = 19;
 			Lock_target_box_height = 30;
 			loop_locked_anim = true;
+			blink_locked_anim = false;
 
 			strcpy_s(fname_lock, "lock1_fs1");
 			strcpy_s(fname_spin, "lockspin_fs1");
@@ -4457,6 +4500,7 @@ void load_gauge_lock(gauge_settings* settings)
 			Lock_target_box_width = 19;
 			Lock_target_box_height = 30;
 			loop_locked_anim = true;
+			blink_locked_anim = false;
 
 			strcpy_s(fname_lock, "2_lock1_fs1");
 			strcpy_s(fname_spin, "2_lockspin_fs1");
@@ -4472,6 +4516,7 @@ void load_gauge_lock(gauge_settings* settings)
 			Lock_target_box_width = 19;
 			Lock_target_box_height = 30;
 			loop_locked_anim = false;
+			blink_locked_anim = true;
 
 			strcpy_s(fname_lock, "lock1");
 			strcpy_s(fname_spin, "lockspin");
@@ -4485,6 +4530,7 @@ void load_gauge_lock(gauge_settings* settings)
 			Lock_target_box_width = 19;
 			Lock_target_box_height = 30;
 			loop_locked_anim = false;
+			blink_locked_anim = true;
 
 			strcpy_s(fname_lock, "2_lock1");
 			strcpy_s(fname_spin, "2_lockspin");
@@ -4518,6 +4564,7 @@ void load_gauge_lock(gauge_settings* settings)
 
 	hud_gauge->initBitmaps(fname_lock, fname_spin);
 	hud_gauge->initLoopLockedAnim(loop_locked_anim);
+	hud_gauge->initBlinkLockedAnim(blink_locked_anim);
 	hud_gauge->initGaugeHalfSize(Lock_gauge_half_w, Lock_gauge_half_h);
 	hud_gauge->initSpinHalfSize(Lockspin_half_w, Lockspin_half_h);
 	hud_gauge->initTriHeight(Lock_triangle_height);
@@ -4919,7 +4966,7 @@ void load_gauge_warhead_count(gauge_settings* settings)
 	int icon_height = 0;
 	int max_icons = 0;
 	int max_columns = 0;
-	int alignment = 0;
+	HudAlignment alignment = HudAlignment::NONE;
 	char fname[MAX_FILENAME_LEN] = "warhead_icon";
 	
 	settings->origin[0] = 1.0f;
@@ -4965,11 +5012,9 @@ void load_gauge_warhead_count(gauge_settings* settings)
 	}
 
 	if ( optional_string("Name Alignment:") ) {
-		if ( optional_string("Right") ) {
-			alignment = 1;
-		} else {
-			alignment = 0;
-		}
+		char temp[NAME_LENGTH];
+		stuff_string(temp, F_NAME, NAME_LENGTH);
+		alignment = hud_alignment_lookup(temp);
 	}
 
 	hud_gauge->initBitmap(fname);

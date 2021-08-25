@@ -23,15 +23,12 @@ uint gr_stub_lock()
 	return 1;
 }
 
-int gr_stub_create_buffer(BufferType, BufferUsageHint)
+gr_buffer_handle gr_stub_create_buffer(BufferType, BufferUsageHint)
 {
-	return -1;
+	return {};
 }
 
-void gr_stub_delete_buffer(int  /*handle*/)
-{
-
-}
+void gr_stub_delete_buffer(gr_buffer_handle /*handle*/) {}
 
 int gr_stub_preload(int  /*bitmap_num*/, int  /*is_aabitmap*/)
 {
@@ -110,9 +107,14 @@ void gr_stub_save_mouse_area(int  /*x*/, int  /*y*/, int  /*w*/, int  /*h*/)
 {
 }
 
-void gr_stub_update_buffer_data(int /*handle*/, size_t /*size*/, const void* /*data*/) {}
+void gr_stub_update_buffer_data(gr_buffer_handle /*handle*/, size_t /*size*/, const void* /*data*/) {}
 
-void gr_stub_update_buffer_data_offset(int /*handle*/, size_t /*offset*/, size_t /*size*/, const void* /*data*/) {}
+void gr_stub_update_buffer_data_offset(gr_buffer_handle /*handle*/,
+	size_t /*offset*/,
+	size_t /*size*/,
+	const void* /*data*/)
+{
+}
 
 void gr_stub_update_transform_buffer(void*  /*data*/, size_t  /*size*/)
 {
@@ -283,7 +285,7 @@ int gr_stub_maybe_create_shader(shader_type  /*shader_t*/, unsigned int  /*flags
 	return -1;
 }
 
-void gr_stub_shadow_map_start(matrix4 * /*shadow_view_matrix*/, const matrix*  /*light_matrix*/)
+void gr_stub_shadow_map_start(matrix4 * /*shadow_view_matrix*/, const matrix*  /*light_matrix*/, vec3d* /*eye_pos*/)
 {
 }
 
@@ -291,9 +293,12 @@ void gr_stub_shadow_map_end()
 {
 }
 
-void gr_stub_render_shield_impact(shield_material * /*material_info*/, primitive_type  /*prim_type*/, vertex_layout * /*layout*/, int  /*buffer_handle*/, int  /*n_verts*/)
+void gr_stub_render_shield_impact(shield_material* /*material_info*/,
+	primitive_type /*prim_type*/,
+	vertex_layout* /*layout*/,
+	gr_buffer_handle /*buffer_handle*/,
+	int /*n_verts*/)
 {
-
 }
 
 void gr_stub_render_model(model_material*  /*material_info*/, indexed_vertex_source * /*vert_source*/, vertex_buffer*  /*bufferp*/, size_t  /*texi*/)
@@ -301,39 +306,66 @@ void gr_stub_render_model(model_material*  /*material_info*/, indexed_vertex_sou
 
 }
 
-void gr_stub_render_primitives(material*  /*material_info*/, primitive_type  /*prim_type*/, vertex_layout*  /*layout*/, int  /*offset*/, int  /*n_verts*/, int  /*buffer_handle*/, size_t  /*buffer_offset*/)
-{
-
-}
-
-void gr_stub_render_primitives_particle(particle_material*  /*material_info*/, primitive_type  /*prim_type*/, vertex_layout*  /*layout*/, int  /*offset*/, int  /*n_verts*/, int  /*buffer_handle*/)
-{
-
-}
-
-void gr_stub_render_primitives_distortion(distortion_material*  /*material_info*/, primitive_type  /*prim_type*/, vertex_layout*  /*layout*/, int  /*offset*/, int  /*n_verts*/, int  /*buffer_handle*/)
-{
-
-}
-void gr_stub_render_movie(movie_material*  /*material_info*/, primitive_type  /*prim_type*/, vertex_layout*  /*layout*/, int  /*n_verts*/, int  /*buffer*/, size_t /*buffer_offset*/)
+void gr_stub_render_primitives(material* /*material_info*/,
+	primitive_type /*prim_type*/,
+	vertex_layout* /*layout*/,
+	int /*offset*/,
+	int /*n_verts*/,
+	gr_buffer_handle /*buffer_handle*/,
+	size_t /*buffer_offset*/)
 {
 }
 
-void gr_stub_render_nanovg(nanovg_material*  /*material_info*/,
-							  primitive_type  /*prim_type*/,
-							  vertex_layout*  /*layout*/,
-							  int  /*offset*/,
-							  int  /*n_verts*/,
-							  int  /*buffer_handle*/) {
-}
-
-void gr_stub_render_primitives_batched(batched_bitmap_material*  /*material_info*/, primitive_type  /*prim_type*/, vertex_layout*  /*layout*/, int  /*offset*/, int  /*n_verts*/, int  /*buffer_handle*/)
+void gr_stub_render_primitives_particle(particle_material* /*material_info*/,
+	primitive_type /*prim_type*/,
+	vertex_layout* /*layout*/,
+	int /*offset*/,
+	int /*n_verts*/,
+	gr_buffer_handle /*buffer_handle*/)
 {
 }
 
-void gr_stub_render_rocket_primitives(interface_material* /*material_info*/, primitive_type /*prim_type*/,
-                                      vertex_layout* /*layout*/, int /*n_indices*/, int /*vertex_buffer*/,
-                                      int /*index_buffer*/)
+void gr_stub_render_primitives_distortion(distortion_material* /*material_info*/,
+	primitive_type /*prim_type*/,
+	vertex_layout* /*layout*/,
+	int /*offset*/,
+	int /*n_verts*/,
+	gr_buffer_handle /*buffer_handle*/)
+{
+}
+void gr_stub_render_movie(movie_material* /*material_info*/,
+	primitive_type /*prim_type*/,
+	vertex_layout* /*layout*/,
+	int /*n_verts*/,
+	gr_buffer_handle /*buffer*/,
+	size_t /*buffer_offset*/)
+{
+}
+
+void gr_stub_render_nanovg(nanovg_material* /*material_info*/,
+	primitive_type /*prim_type*/,
+	vertex_layout* /*layout*/,
+	int /*offset*/,
+	int /*n_verts*/,
+	gr_buffer_handle /*buffer_handle*/)
+{
+}
+
+void gr_stub_render_primitives_batched(batched_bitmap_material* /*material_info*/,
+	primitive_type /*prim_type*/,
+	vertex_layout* /*layout*/,
+	int /*offset*/,
+	int /*n_verts*/,
+	gr_buffer_handle /*buffer_handle*/)
+{
+}
+
+void gr_stub_render_rocket_primitives(interface_material* /*material_info*/,
+	primitive_type /*prim_type*/,
+	vertex_layout* /*layout*/,
+	int /*n_indices*/,
+	gr_buffer_handle /*vertex_buffer*/,
+	gr_buffer_handle /*index_buffer*/)
 {
 }
 
@@ -450,26 +482,26 @@ bool gr_stub_init()
 
 	gr_screen.gf_preload			= gr_stub_preload;
 
-	gr_screen.gf_set_texture_addressing	= gr_stub_set_texture_addressing;
-	gr_screen.gf_zbias					= gr_stub_zbias_stub;
-	gr_screen.gf_set_fill_mode			= gr_set_fill_mode_stub;
+	gr_screen.gf_set_texture_addressing = gr_stub_set_texture_addressing;
+	gr_screen.gf_zbias = gr_stub_zbias_stub;
+	gr_screen.gf_set_fill_mode = gr_set_fill_mode_stub;
 
-	gr_screen.gf_create_buffer	= gr_stub_create_buffer;
-	gr_screen.gf_delete_buffer		= gr_stub_delete_buffer;
+	gr_screen.gf_create_buffer = gr_stub_create_buffer;
+	gr_screen.gf_delete_buffer = gr_stub_delete_buffer;
 
-	gr_screen.gf_update_transform_buffer	= gr_stub_update_transform_buffer;
-	gr_screen.gf_update_buffer_data		= gr_stub_update_buffer_data;
+	gr_screen.gf_update_transform_buffer = gr_stub_update_transform_buffer;
+	gr_screen.gf_update_buffer_data = gr_stub_update_buffer_data;
 	gr_screen.gf_update_buffer_data_offset = gr_stub_update_buffer_data_offset;
-	gr_screen.gf_map_buffer                 = [](int) -> void* { return nullptr; };
-	gr_screen.gf_flush_mapped_buffer        = [](int, size_t, size_t) {};
+	gr_screen.gf_map_buffer = [](gr_buffer_handle) -> void* { return nullptr; };
+	gr_screen.gf_flush_mapped_buffer = [](gr_buffer_handle, size_t, size_t) {};
 
-	gr_screen.gf_post_process_set_effect	= gr_stub_post_process_set_effect;
-	gr_screen.gf_post_process_set_defaults	= gr_stub_post_process_set_defaults;
+	gr_screen.gf_post_process_set_effect = gr_stub_post_process_set_effect;
+	gr_screen.gf_post_process_set_defaults = gr_stub_post_process_set_defaults;
 
-	gr_screen.gf_post_process_begin		= gr_stub_post_process_begin;
-	gr_screen.gf_post_process_end		= gr_stub_post_process_end;
-	gr_screen.gf_post_process_save_zbuffer	= gr_stub_post_process_save_zbuffer;
-	gr_screen.gf_post_process_restore_zbuffer = [](){};
+	gr_screen.gf_post_process_begin = gr_stub_post_process_begin;
+	gr_screen.gf_post_process_end = gr_stub_post_process_end;
+	gr_screen.gf_post_process_save_zbuffer = gr_stub_post_process_save_zbuffer;
+	gr_screen.gf_post_process_restore_zbuffer = []() {};
 
 	gr_screen.gf_scene_texture_begin = gr_stub_scene_texture_begin;
 	gr_screen.gf_scene_texture_end = gr_stub_scene_texture_end;
@@ -516,13 +548,16 @@ bool gr_stub_init()
 	gr_screen.gf_get_query_value = gr_stub_get_query_value;
 	gr_screen.gf_delete_query_object = gr_stub_delete_query_object;
 
-	gr_screen.gf_create_viewport = [](const os::ViewPortProperties&) {
-		return std::unique_ptr<os::Viewport>();
-	};
-	gr_screen.gf_use_viewport = [](os::Viewport*) {
-	};
+	gr_screen.gf_create_viewport = [](const os::ViewPortProperties&) { return std::unique_ptr<os::Viewport>(); };
+	gr_screen.gf_use_viewport = [](os::Viewport*) {};
 
-	gr_screen.gf_bind_uniform_buffer = [](uniform_block_type, size_t, size_t, int) {};
+	gr_screen.gf_bind_uniform_buffer = [](uniform_block_type, size_t, size_t, gr_buffer_handle) {};
+
+	gr_screen.gf_sync_fence = []() -> gr_sync { return nullptr; };
+	gr_screen.gf_sync_wait = [](gr_sync /*sync*/, uint64_t /*timeoutns*/) { return true; };
+	gr_screen.gf_sync_delete = [](gr_sync /*sync*/) {};
+
+	gr_screen.gf_set_viewport = [](int /*x*/, int /*y*/, int /*width*/, int /*height*/) {};
 
 	return true;
 }

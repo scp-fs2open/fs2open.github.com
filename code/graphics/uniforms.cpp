@@ -75,7 +75,7 @@ void convert_model_material(model_uniform_data* data_out,
 		int num_lights = MIN(Num_active_gr_lights, (int)graphics::MAX_UNIFORM_LIGHTS);
 		data_out->n_lights = num_lights;
 
-		std::copy(std::begin(gr_light_uniforms), std::end(gr_light_uniforms), std::begin(data_out->lights));
+		gr_lighting_fill_uniforms(data_out->lights, sizeof(data_out->lights));
 
 		float light_factor = material.get_light_factor();
 		data_out->diffuseFactor.xyz.x = gr_light_color[0] * light_factor;

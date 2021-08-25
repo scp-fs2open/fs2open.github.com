@@ -28,11 +28,12 @@ struct server_item;
 class ship_info;
 class p_object;
 
-// two types of signatures that we can request,  permanent signatures are all below 1000.  non-permanent are above 1000
+// two types of signatures that we can request,  permanent signatures are all below 5000.  non-permanent are above 5000
 #define MULTI_SIG_SHIP					1
 #define MULTI_SIG_ASTEROID				2
 #define MULTI_SIG_NON_PERMANENT		3
 #define MULTI_SIG_DEBRIS				4
+#define MULTI_SIG_WAYPOINT				5				// Added for dynamic waypoints in multiplayer missions
 
 extern ushort multi_assign_network_signature( int what_kind );
 extern ushort multi_get_next_network_signature( int what_kind );
@@ -41,7 +42,7 @@ extern void multi_set_network_signature( ushort signature, int what_kind );
 extern void stuff_netplayer_info( net_player *nplayer, net_addr *addr, int ship_class, player *pplayer );
 extern int find_player(net_addr* addr);
 extern int find_player_no_port(net_addr *addr);
-extern int find_player_id(short player_id);
+extern int find_player_index(short player_id);
 extern int find_player_socket(PSNET_SOCKET_RELIABLE sock);	// note this is only valid to do on a server!
 extern int multi_find_player_by_object( object *obj );
 extern int multi_find_player_by_signature( int signature );
@@ -185,33 +186,25 @@ void multi_get_mission_checksum(const char *filename);
 
 // Packs/unpacks an object position.
 // Returns number of bytes read or written.
-#define OO_POS_RET_SIZE							9
 int multi_pack_unpack_position(int write, ubyte *data, vec3d *pos);
 
 // Packs/unpacks an orientation matrix.
 // Returns number of bytes read or written.
-#define OO_ORIENT_RET_SIZE						6
-int multi_pack_unpack_orient(int write, ubyte *data, matrix *orient);
+int multi_pack_unpack_orient(int write, ubyte *data, angles *angles_out);
 
 // Packs/unpacks velocity
 // Returns number of bytes read or written.
-#define OO_VEL_RET_SIZE							4
-int multi_pack_unpack_vel(int write, ubyte *data, matrix *orient, vec3d *pos, physics_info *pi);
-
-// Packs/unpacks desired_velocity
-// Returns number of bytes read or written.
-#define OO_DESIRED_VEL_RET_SIZE				3
-int multi_pack_unpack_desired_vel(int write, ubyte *data, matrix *orient, vec3d *pos, physics_info *pi, ship_info *sip);
+int multi_pack_unpack_vel(int write, ubyte *data, matrix *orient, physics_info *pi);
 
 // Packs/unpacks rotational velocity
 // Returns number of bytes read or written.
-#define OO_ROTVEL_RET_SIZE						4
-int multi_pack_unpack_rotvel(int write, ubyte *data, matrix *orient, vec3d *pos, physics_info *pi);
+int multi_pack_unpack_rotvel(int write, ubyte *data, physics_info *pi);
 
-// Packs/unpacks desired rotvel
-// Returns number of bytes read or written.
-#define OO_DESIRED_ROTVEL_RET_SIZE			3
-int multi_pack_unpack_desired_rotvel(int write, ubyte *data, matrix *orient, vec3d *pos, physics_info *pi, ship_info *sip);
+// Cyborg17 - Packs/unpacks desired velocity and rotational velocity.
+int multi_pack_unpack_desired_vel_and_desired_rotvel(int write, bool full_physics, ubyte* data, physics_info* pi, vec3d* local_desired_vel);
+
+// Cyborg17 - Compresses the list of subsystems, so that we don't have to mark each one with a ubyte
+int multi_pack_unpack_subsystem_list(bool write, ubyte* data, SCP_vector<ubyte>* flags, SCP_vector<float>* subsys_data);
 
 char multi_unit_to_char(float unit);
 float multi_char_to_unit(float val);

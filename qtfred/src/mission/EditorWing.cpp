@@ -1,11 +1,10 @@
 #include "Editor.h"
+#include "object.h"
 
 #include "mission/dialogs/FormWingDialogModel.h"
 
-#include "object.h"
-
-#include <ship/ship.h>
 #include <globalincs/linklist.h>
+#include <ship/ship.h>
 
 namespace {
 
@@ -16,8 +15,8 @@ const int MULTI_WING = 999999;
 namespace fso {
 namespace fred {
 
-
-int Editor::delete_wing(int wing_num, int bypass) {
+int Editor::delete_wing(int wing_num, int bypass)
+{
 	int i, r, total;
 
 	if (already_deleting_wing) {
@@ -64,16 +63,18 @@ int Editor::delete_wing(int wing_num, int bypass) {
 	already_deleting_wing = 0;
 	return 0;
 }
-void Editor::set_cur_wing(int wing) {
+void Editor::set_cur_wing(int wing)
+{
 	cur_wing = wing;
-/*	if (cur_ship != -1)
-		Assert(cur_wing == Ships[cur_ship].wingnum);
-	if ((cur_object_index != -1) && (Objects[cur_object_index].type == OBJ_SHIP))
-		Assert(cur_wing == Ships[Objects[cur_object_index].instance].wingnum);*/
+	/*	if (cur_ship != -1)
+			Assert(cur_wing == Ships[cur_ship].wingnum);
+		if ((cur_object_index != -1) && (Objects[cur_object_index].type == OBJ_SHIP))
+			Assert(cur_wing == Ships[Objects[cur_object_index].instance].wingnum);*/
 	updateAllViewports();
 	// TODO: Add notification for a changed selection
 }
-void Editor::update_custom_wing_indexes() {
+void Editor::update_custom_wing_indexes()
+{
 	int i;
 
 	for (i = 0; i < MAX_STARTING_WINGS; i++) {
@@ -89,7 +90,8 @@ void Editor::update_custom_wing_indexes() {
 	}
 }
 
-int Editor::create_wing() {
+int Editor::create_wing()
+{
 	char msg[1024];
 	int i, ship, wing = -1, waypoints = 0, count = 0, illegal_ships = 0;
 	int leader, leader_team;
@@ -125,26 +127,26 @@ int Editor::create_wing() {
 	}
 
 	if (count > MAX_SHIPS_PER_WING) {
-		sprintf(msg, "You have too many ships marked!\n"
-			"A wing is limited to %d ships total", MAX_SHIPS_PER_WING);
+		sprintf(msg,
+			"You have too many ships marked!\n"
+			"A wing is limited to %d ships total",
+			MAX_SHIPS_PER_WING);
 
-		_lastActiveViewport->dialogProvider->showButtonDialog(DialogType::Error, "Error", msg, { DialogButton::Ok });
+		_lastActiveViewport->dialogProvider->showButtonDialog(DialogType::Error, "Error", msg, {DialogButton::Ok});
 		return -1;
 	}
 
 	if ((wing >= 0) && (wing != MULTI_WING)) {
 		sprintf(msg, "Do you want to reform wing \"%s\"?", Wings[wing].name);
 		auto button = _lastActiveViewport->dialogProvider->showButtonDialog(DialogType::Question,
-																			"Query",
-																			msg,
-																			{ DialogButton::Yes,
-																			  DialogButton::No,
-																			  DialogButton::Cancel });
+			"Query",
+			msg,
+			{DialogButton::Yes, DialogButton::No, DialogButton::Cancel});
 		if (button == DialogButton::Cancel) {
 			return -1;
 		} else if (button == DialogButton::No) {
 			wing = -1;
-		} else {  // must be IDYES
+		} else { // must be IDYES
 			for (i = Wings[wing].wave_count - 1; i >= 0; i--) {
 				ptr = &Objects[wing_objects[wing][i]];
 				switch (ptr->type) {
@@ -157,7 +159,7 @@ int Editor::create_wing() {
 					break;
 
 				default:
-					Int3();  // shouldn't be in a wing!
+					Int3(); // shouldn't be in a wing!
 				}
 			}
 
@@ -174,9 +176,9 @@ int Editor::create_wing() {
 
 		if (wing < 0) {
 			_lastActiveViewport->dialogProvider->showButtonDialog(DialogType::Error,
-																  "Error",
-																  "Too many wings, can't create more!",
-																  { DialogButton::Ok });
+				"Error",
+				"Too many wings, can't create more!",
+				{DialogButton::Ok});
 
 			return -1;
 		}
@@ -197,7 +199,7 @@ int Editor::create_wing() {
 
 		for (i = 0; i < MAX_AI_GOALS; i++) {
 			Wings[wing].ai_goals[i].ai_mode = AI_GOAL_NONE;
-			Wings[wing].ai_goals[i].priority = -1;                // this sets up the priority field to be like ships
+			Wings[wing].ai_goals[i].priority = -1; // this sets up the priority field to be like ships
 		}
 
 		auto dlg = _lastActiveViewport->dialogProvider->createFormWingDialog();
@@ -213,9 +215,9 @@ int Editor::create_wing() {
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
 		if (ptr->flags[Object::Object_Flags::Marked]) {
-//			if ((ptr->type == OBJ_START) && (ptr->instance)) {
-//				starts++;
-//				unmark_object(OBJ_INDEX(ptr));
+			//			if ((ptr->type == OBJ_START) && (ptr->instance)) {
+			//				starts++;
+			//				unmark_object(OBJ_INDEX(ptr));
 
 			//			} else if (ptr->type == OBJ_WAYPOINT) {
 			if (ptr->type == OBJ_WAYPOINT) {
@@ -251,7 +253,7 @@ int Editor::create_wing() {
 	while (ptr != END_OF_LIST(&obj_used_list)) {
 		if (ptr->flags[Object::Object_Flags::Marked]) {
 			if ((ptr->type == OBJ_START) && (ptr->instance == Player_start_shipnum)) {
-				i = 0;  // player 1 start always goes to front of the wing
+				i = 0; // player 1 start always goes to front of the wing
 			} else {
 				i = count++;
 			}
@@ -291,7 +293,7 @@ int Editor::create_wing() {
 		ptr = GET_NEXT(ptr);
 	}
 
-	if (!count) {  // this should never happen, so if it does, needs to be fixed now.
+	if (!count) { // this should never happen, so if it does, needs to be fixed now.
 		Error(LOCATION, "No valid ships were selected to form wing from");
 	}
 
@@ -305,28 +307,27 @@ int Editor::create_wing() {
 
 	if (waypoints) {
 		_lastActiveViewport->dialogProvider->showButtonDialog(DialogType::Error,
-															  "Error",
-															  "Waypoints can't be part of a wing!\n"
-																  "All marked waypoints were ignored",
-															  { DialogButton::Ok });
+			"Error",
+			"Waypoints can't be part of a wing!\n"
+			"All marked waypoints were ignored",
+			{DialogButton::Ok});
 	}
 
 	if (illegal_ships) {
 		_lastActiveViewport->dialogProvider->showButtonDialog(DialogType::Error,
-															  "Error",
-															  "Some ship types aren't allowed to be in a wing.\n"
-																  "All marked ships of these types were ignored",
-															  { DialogButton::Ok });
+			"Error",
+			"Some ship types aren't allowed to be in a wing.\n"
+			"All marked ships of these types were ignored",
+			{DialogButton::Ok});
 	}
-
 
 	leader_team = Ships[Wings[wing].ship_index[Wings[wing].special_ship]].team;
 	for (i = 0; i < Wings[wing].wave_count; i++) {
 		if (Ships[Wings[wing].ship_index[i]].team != leader_team) {
 			_lastActiveViewport->dialogProvider->showButtonDialog(DialogType::Warning,
-																  "Warning",
-																  "Wing contains ships on different teams",
-																  { DialogButton::Ok });
+				"Warning",
+				"Wing contains ships on different teams",
+				{DialogButton::Ok});
 			break;
 		}
 	}
@@ -338,10 +339,9 @@ int Editor::create_wing() {
 	return 0;
 }
 
-void Editor::remove_player_from_wing(int player, int min) {
-	remove_ship_from_wing(player, min);
-}
-void Editor::remove_ship_from_wing(int ship, int min) {
+void Editor::remove_player_from_wing(int player, int min) { remove_ship_from_wing(player, min); }
+void Editor::remove_ship_from_wing(int ship, int min)
+{
 	char buf[256];
 	int i, wing, end, obj;
 
@@ -361,7 +361,7 @@ void Editor::remove_ship_from_wing(int ship, int min) {
 				}
 			}
 
-			Assert(i != -1);  // Error, object should be in wing.
+			Assert(i != -1); // Error, object should be in wing.
 			if (Wings[wing].special_ship == i) {
 				Wings[wing].special_ship = 0;
 			}
@@ -390,7 +390,8 @@ void Editor::remove_ship_from_wing(int ship, int min) {
 	sprintf(buf, "%s %d", Ship_info[Ships[ship].ship_info_index].name, ship);
 	rename_ship(ship, buf);
 }
-int Editor::find_free_wing() {
+int Editor::find_free_wing()
+{
 	int i;
 
 	for (i = 0; i < MAX_WINGS; i++) {
@@ -401,7 +402,8 @@ int Editor::find_free_wing() {
 
 	return -1;
 }
-void Editor::mark_wing(int wing) {
+void Editor::mark_wing(int wing)
+{
 	int i;
 
 	unmark_all();
@@ -412,7 +414,8 @@ void Editor::mark_wing(int wing) {
 	}
 }
 
-bool Editor::query_single_wing_marked() {
+bool Editor::query_single_wing_marked()
+{
 	int i, obj;
 
 	if (!query_valid_object(currentObject))
@@ -422,7 +425,7 @@ bool Editor::query_single_wing_marked() {
 		return false;
 
 	i = Wings[cur_wing].wave_count;
-	if (numMarked != i)  // does marked object count match number of ships in wing?
+	if (numMarked != i) // does marked object count match number of ships in wing?
 		return false;
 
 	while (i--) {
@@ -430,15 +433,36 @@ bool Editor::query_single_wing_marked() {
 		if ((Objects[obj].type != OBJ_SHIP) && (Objects[obj].type != OBJ_START))
 			Error(LOCATION, "Invalid objects detected in wing \"%s\"", Wings[cur_wing].name);
 
-//		if (Ships[Objects[obj].instance].wingnum != cur_wing)
-//			return false;
+		//		if (Ships[Objects[obj].instance].wingnum != cur_wing)
+		//			return false;
 		Assert(Ships[Objects[obj].instance].wingnum == cur_wing);
-		if (!(Objects[obj].flags[Object::Object_Flags::Marked]))  // ensure all ships in wing.are marked
+		if (!(Objects[obj].flags[Object::Object_Flags::Marked])) // ensure all ships in wing.are marked
 			return false;
 	}
 
 	return true;
 }
 
+bool Editor::wing_is_player_wing(int wing)
+{
+	int i;
+
+	if (wing < 0)
+		return false;
+
+	if (The_mission.game_type & MISSION_TYPE_MULTI_TEAMS) {
+		for (i = 0; i < MAX_TVT_WINGS; i++) {
+			if (wing == TVT_wings[i])
+				return true;
+		}
+	} else {
+		for (i = 0; i < MAX_STARTING_WINGS; i++) {
+			if (wing == Starting_wings[i])
+				return true;
+		}
+	}
+
+	return false;
 }
-}
+} // namespace fred
+} // namespace fso

@@ -101,6 +101,9 @@ int Id_select_type_jump_node;
 int Id_select_type_start = 0;
 int Id_select_type_waypoint = 0;
 int Hide_ship_cues = 0, Hide_wing_cues = 0;
+int Move_ships_when_undocking = 1;			// true by default
+int Highlight_selectable_subsys = 0;
+
 vec3d original_pos, saved_cam_pos;
 matrix bitmap_matrix_backup, saved_cam_orient = { 0.0f };
 Marking_box	marking_box;
@@ -248,6 +251,8 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_COMMAND(ID_EDITORS_WAYPOINT, OnEditorsWaypoint)
 	ON_COMMAND(ID_VIEW_OUTLINES, OnViewOutlines)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_OUTLINES, OnUpdateViewOutlines)
+	ON_COMMAND(ID_VIEW_OUTLINES_ON_SELECTED, OnViewOutlinesOnSelected)
+	ON_UPDATE_COMMAND_UI(ID_VIEW_OUTLINES_ON_SELECTED, OnUpdateViewOutlinesOnSelected)
 	ON_UPDATE_COMMAND_UI(ID_NEW_SHIP_TYPE, OnUpdateNewShipType)
 	ON_COMMAND(ID_SHOW_STARFIELD, OnShowStarfield)
 	ON_UPDATE_COMMAND_UI(ID_SHOW_STARFIELD, OnUpdateShowStarfield)
@@ -302,6 +307,7 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_COMMAND(ID_CONTROL_OBJ, OnControlObj)
 	ON_COMMAND(ID_NEXT_OBJ, OnNextObj)
 	ON_COMMAND(ID_PREV_OBJ, OnPrevObj)
+	ON_COMMAND(ID_EDIT_CLONEMARKEDOBJECTS, OnEditCloneMarkedObjects)
 	ON_COMMAND(ID_EDIT_DELETE_WING, OnEditDeleteWing)
 	ON_COMMAND(ID_MARK_WING, OnMarkWing)
 	ON_UPDATE_COMMAND_UI(ID_CONTROL_OBJ, OnUpdateControlObj)
@@ -328,6 +334,10 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_UPDATE_COMMAND_UI(ID_FORMAT_FS2_RETAIL, OnUpdateFormatFs2Retail)
 	ON_COMMAND(ID_FORMAT_FS1_RETAIL, OnFormatFs1Retail)
 	ON_UPDATE_COMMAND_UI(ID_FORMAT_FS1_RETAIL, OnUpdateFormatFs1Retail)
+	ON_COMMAND(ID_MISC_MOVESHIPSWHENUNDOCKING, OnMoveShipsWhenUndocking)
+	ON_UPDATE_COMMAND_UI(ID_MISC_MOVESHIPSWHENUNDOCKING, OnUpdateMoveShipsWhenUndocking)
+	ON_COMMAND(ID_HIGHLIGHT_SUBSYS, OnHighlightSubsys)
+	ON_UPDATE_COMMAND_UI(ID_HIGHLIGHT_SUBSYS, OnUpdateHighlightSubsys)
 	ON_COMMAND(ID_EDITORS_SET_GLOBAL_SHIP_FLAGS, OnEditorsSetGlobalShipFlags)
 	ON_COMMAND(ID_EDITORS_VOICE, OnEditorsVoiceManager)
 	ON_COMMAND(ID_EDITORS_FICTION, OnEditorsFiction)
@@ -480,6 +490,88 @@ void CFREDView::OnUpdateViewWaypoints(CCmdUI* pCmdUI)
 	pCmdUI->SetCheck(Show_waypoints);
 }
 
+int duplicate_marked_objects()
+{
+	int z, cobj, flag;
+	object *objp, *ptr;
+
+	cobj = Duped_wing = -1;
+	flag = 0;
+
+	int duping_waypoint_list = -1;
+
+	objp = GET_FIRST(&obj_used_list);
+	while (objp != END_OF_LIST(&obj_used_list))	{
+		Assert(objp->type != OBJ_NONE);
+		if (objp->flags[Object::Object_Flags::Marked]) {
+			if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) {
+				z = Ships[objp->instance].wingnum;
+				if (!flag)
+					Duped_wing = z;
+				else if (Duped_wing != z)
+					Duped_wing = -1;
+
+			} else {
+				Duped_wing = -1;
+			}
+
+			// make sure we dup as many waypoint lists as we have
+			if (objp->type == OBJ_WAYPOINT) {
+				int this_list = calc_waypoint_list_index(objp->instance);
+				if (duping_waypoint_list != this_list) {
+					dup_object(nullptr);  // reset waypoint list
+					duping_waypoint_list = this_list;
+				}
+			}
+
+			flag = 1;
+			z = dup_object(objp);
+			if (z == -1) {
+				cobj = -1;
+				break;
+			}
+
+			if (cur_object_index == OBJ_INDEX(objp) )
+				cobj = z;
+		}
+
+		objp = GET_NEXT(objp);
+	}
+
+	obj_merge_created_list();
+
+	// I think this code is to catch the case where an object wasn't created for whatever reason;
+	// in this case just delete the remaining objects we just created
+	if (cobj == -1) {
+		objp = GET_FIRST(&obj_used_list);
+		while (objp != END_OF_LIST(&obj_used_list))	{
+			ptr = GET_NEXT(objp);
+			if (objp->flags [Object::Object_Flags::Temp_marked])
+				delete_object(objp);
+
+			objp = ptr;
+		}
+
+		button_down = 0;
+		return -1;
+	}
+
+	unmark_all();
+
+	objp = GET_FIRST(&obj_used_list);
+	while (objp != END_OF_LIST(&obj_used_list))	{
+		if (objp->flags [Object::Object_Flags::Temp_marked]) {
+            objp->flags.remove(Object::Object_Flags::Temp_marked);
+			mark_object(OBJ_INDEX(objp));
+		}
+
+		objp = GET_NEXT(objp);
+	}
+
+	set_cur_object_index(cobj);
+	return 0;
+}
+
 #define MAX_MOVE_DISTANCE 25.0f
 
 //	If cur_object_index references a valid object, drag it from its current
@@ -488,14 +580,14 @@ void CFREDView::OnUpdateViewWaypoints(CCmdUI* pCmdUI)
 //	Return value: 0/1 = didn't/did move object all the way to goal.
 int drag_objects()
 {
-	int z, cobj, flag, rval = 1;
+	int rval = 1;
 	float r;
 	float	distance_moved = 0.0f;
 	vec3d cursor_dir, int_pnt;
 	vec3d movement_vector;
 	vec3d obj;
 	vec3d vec1, vec2;
-	object *objp, *ptr;
+	object *objp;
 	// starfield_bitmaps *bmp;
 
 	/*
@@ -517,83 +609,17 @@ int drag_objects()
 	}
 	*/
 
-	if (!query_valid_object())
+	// Do not move ships that we are currently centered around (Lookat_mode). The vector math will start going haywire and return NAN
+	if (!query_valid_object() || Lookat_mode)
 		return -1;
 
 	if ((Dup_drag == 1) && (Briefing_dialog))
 		Dup_drag = 0;
 
 	if (Dup_drag == 1) {
-		cobj = Duped_wing = -1;
-		flag = 0;
-
-		int duping_waypoint_list = -1;
-
-		objp = GET_FIRST(&obj_used_list);
-		while (objp != END_OF_LIST(&obj_used_list))	{
-			Assert(objp->type != OBJ_NONE);
-			if (objp->flags[Object::Object_Flags::Marked]) {
-				if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) {
-					z = Ships[objp->instance].wingnum;
-					if (!flag)
-						Duped_wing = z;
-					else if (Duped_wing != z)
-						Duped_wing = -1;
-
-				} else
-					Duped_wing = -1;
-
-				// make sure we dup as many waypoint lists as we have
-				if (objp->type == OBJ_WAYPOINT) {
-					int this_list = calc_waypoint_list_index(objp->instance);
-					if (duping_waypoint_list != this_list) {
-						dup_object(nullptr);  // reset waypoint list
-						duping_waypoint_list = this_list;
-					}
-				}
-
-				flag = 1;
-				z = dup_object(objp);
-				if (z == -1) {
-					cobj = -1;
-					break;
-				}
-
-				if (cur_object_index == OBJ_INDEX(objp) )
-					cobj = z;
-			}
-
-			objp = GET_NEXT(objp);
-		}
-
-		obj_merge_created_list();
-		if (cobj == -1) {
-			objp = GET_FIRST(&obj_used_list);
-			while (objp != END_OF_LIST(&obj_used_list))	{
-				ptr = GET_NEXT(objp);
-				if (objp->flags [Object::Object_Flags::Temp_marked])
-					delete_object(objp);
-
-				objp = ptr;
-			}
-
-			button_down = 0;
+		if (duplicate_marked_objects() < 0)
 			return -1;
-		}
 
-		unmark_all();
-
-		objp = GET_FIRST(&obj_used_list);
-		while (objp != END_OF_LIST(&obj_used_list))	{
-			if (objp->flags [Object::Object_Flags::Temp_marked]) {
-                objp->flags.remove(Object::Object_Flags::Temp_marked);
-				mark_object(OBJ_INDEX(objp));
-			}
-
-			objp = GET_NEXT(objp);
-		}
-
-		set_cur_object_index(cobj);
 		if (Duped_wing != -1)
 			Dup_drag = DUP_DRAG_OF_WING;  // indication for later that we duped objects in a wing
 		else
@@ -3736,6 +3762,18 @@ void CFREDView::OnUpdateViewOutlines(CCmdUI* pCmdUI)
 	pCmdUI->SetCheck(Show_outlines);
 }
 
+void CFREDView::OnViewOutlinesOnSelected() 
+{
+	Draw_outlines_on_selected_ships = !Draw_outlines_on_selected_ships;
+	theApp.write_ini_file();
+	Update_window = 1;
+}
+
+void CFREDView::OnUpdateViewOutlinesOnSelected(CCmdUI* pCmdUI) 
+{
+	pCmdUI->SetCheck(Draw_outlines_on_selected_ships);
+}
+
 void CFREDView::OnUpdateNewShipType(CCmdUI* pCmdUI) 
 {
 	int z;
@@ -4272,6 +4310,16 @@ void CFREDView::OnEditDelete()
 	Update_window = 2;  // For some strange reason, need to redraw twice for it to take.
 }
 
+void CFREDView::OnEditCloneMarkedObjects()
+{
+	if (!button_down && Marked) {
+		duplicate_marked_objects();
+		FREDDoc_ptr->autosave("clone marked");
+	}
+
+	Update_window = 1;
+}
+
 void CFREDView::OnEditDeleteWing() 
 {
 	if (!button_down && (cur_wing >= 0)) {
@@ -4338,7 +4386,7 @@ void CFREDView::OnUpdateDisableUndo(CCmdUI* pCmdUI)
 
 void CFREDView::OnUpdateCmdBrief(CCmdUI* pCmdUI) 
 {
-	pCmdUI->Enable(!(The_mission.game_type & MISSION_TYPE_MULTI));
+	pCmdUI->Enable(true);
 }
 
 int get_visible_sub_system_count(ship *shipp)
@@ -4510,6 +4558,29 @@ void CFREDView::OnShowDockPoints()
 void CFREDView::OnUpdateShowDockPoints(CCmdUI* pCmdUI)
 {	
 	pCmdUI->SetCheck(Show_dock_points);
+}
+
+void CFREDView::OnMoveShipsWhenUndocking()
+{
+	Move_ships_when_undocking = !Move_ships_when_undocking;
+	theApp.write_ini_file();
+}
+
+void CFREDView::OnUpdateMoveShipsWhenUndocking(CCmdUI* pCmdUI)
+{
+	pCmdUI->SetCheck(Move_ships_when_undocking);
+}
+
+void CFREDView::OnHighlightSubsys()
+{
+	Highlight_selectable_subsys = !Highlight_selectable_subsys;
+	theApp.write_ini_file();
+	Update_window = 1;
+}
+
+void CFREDView::OnUpdateHighlightSubsys(CCmdUI* pCmdUI)
+{
+	pCmdUI->SetCheck(Highlight_selectable_subsys);
 }
 
 void CFREDView::OnDumpStats()

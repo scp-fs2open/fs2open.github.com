@@ -14,6 +14,7 @@
 #include "object/objcollide.h"
 #include "object/object.h"
 #include "scripting/scripting.h"
+#include "scripting/api/objs/vecmath.h"
 #include "ship/ship.h"
 #include "stats/scoring.h"
 #include "weapon/weapon.h"
@@ -55,7 +56,7 @@ int collide_weapon_weapon( obj_pair * pair )
 	B_radius = B->radius;
 
 	if (wipA->weapon_hitpoints > 0) {
-		if (!(wipA->wi_flags[Weapon::Info_Flags::Hard_target_bomb])) {
+		if (!(wipA->wi_flags[Weapon::Info_Flags::No_radius_doubling])) {
 			A_radius *= 2;		// Makes bombs easier to hit
 		}
 		
@@ -68,7 +69,7 @@ int collide_weapon_weapon( obj_pair * pair )
 	}
 
 	if (wipB->weapon_hitpoints > 0) {
-		if (!(wipB->wi_flags[Weapon::Info_Flags::Hard_target_bomb])) {
+		if (!(wipB->wi_flags[Weapon::Info_Flags::No_radius_doubling])) {
 			B_radius *= 2;		// Makes bombs easier to hit
 		}
 		if ((The_mission.ai_profile->flags[AI::Profile_Flags::Aspect_invulnerability_fix]) && (wipB->is_locked_homing()) && (wpB->homing_object != &obj_used_list)) {
@@ -82,16 +83,23 @@ int collide_weapon_weapon( obj_pair * pair )
 	//	Rats, do collision detection.
 	if (collide_subdivide(&A->last_pos, &A->pos, A_radius, &B->last_pos, &B->pos, B_radius))
 	{
-		Script_system.SetHookObjects(4, "Self", A, "Object", B, "Weapon", A, "WeaponB", B);
-		bool a_override = Script_system.IsConditionOverride(CHA_COLLIDEWEAPON, A);
-		Script_system.RemHookVars(4, "Self", "Object", "Weapon", "WeaponB");
+		bool a_override = false, b_override = false;
 
-		// Yes, this should be reversed.
-		Script_system.SetHookObjects(4, "Self", B, "Object", A, "Weapon", B, "WeaponB", A);
-		bool b_override = Script_system.IsConditionOverride(CHA_COLLIDEWEAPON, B);
-		Script_system.RemHookVars(4, "Self", "Object", "Weapon", "WeaponB");
+		if (Script_system.IsActiveAction(CHA_COLLIDEWEAPON)) {
+			Script_system.SetHookObjects(4, "Self", A, "Object", B, "Weapon", A, "WeaponB", B);
+			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(B->pos));
+			a_override = Script_system.IsConditionOverride(CHA_COLLIDEWEAPON, A);
+			Script_system.RemHookVars({"Self", "Object", "Weapon", "WeaponB", "Hitpos" });
 
-		if(!a_override && !b_override)
+			// Yes, this should be reversed.
+			Script_system.SetHookObjects(4, "Self", B, "Object", A, "Weapon", B, "WeaponB", A);
+			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(A->pos));
+			b_override = Script_system.IsConditionOverride(CHA_COLLIDEWEAPON, B);
+			Script_system.RemHookVars({ "Self", "Object", "Weapon", "WeaponB", "Hitpos" });
+		}
+
+		// damage calculation should not be done on clients, the server will tell the client version of the bomb when to die
+		if(!a_override && !b_override && !MULTIPLAYER_CLIENT)
 		{
 			float aDamage = wipA->damage;
 			if (wipB->armor_type_idx >= 0)
@@ -170,18 +178,24 @@ int collide_weapon_weapon( obj_pair * pair )
 			}
 		}
 
+		if (!Script_system.IsActiveAction(CHA_COLLIDEWEAPON)) {
+			return 1;
+		}
+
 		if(!(b_override && !a_override))
 		{
 			Script_system.SetHookObjects(4, "Self", A, "Object", B, "Weapon", A, "WeaponB", B);
+			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(B->pos));
 			Script_system.RunCondition(CHA_COLLIDEWEAPON, A, wpA->weapon_info_index);
-			Script_system.RemHookVars(4, "Self", "Object", "Weapon", "WeaponB");
+			Script_system.RemHookVars({ "Self", "Object", "Weapon", "WeaponB", "Hitpos" });
 		}
 		else
 		{
 			// Yes, this should be reversed.
 			Script_system.SetHookObjects(4, "Self", B, "Object", A, "Weapon", B, "WeaponB", A);
+			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(A->pos));
 			Script_system.RunCondition(CHA_COLLIDEWEAPON, B, wpB->weapon_info_index);
-			Script_system.RemHookVars(4, "Self", "Object", "Weapon", "WeaponB");
+			Script_system.RemHookVars({ "Self", "Object", "Weapon", "WeaponB", "Hitpos" });
 		}
 
 		return 1;

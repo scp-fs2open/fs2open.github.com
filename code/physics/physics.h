@@ -42,7 +42,9 @@ typedef struct physics_info {
 	vec3d		center_of_mass;		// Goober5000 - this is never ever used by physics; currently physics assumes the center of an object is the center of mass
 	matrix	I_body_inv;		// inverse moment of inertia tensor (used to calculate rotational effects)
 
-	float		rotdamp;			//rotational velocity damping
+	float		rotdamp;			// for players, the exponential time constant applied to rotational velocity changes
+									// for AI ships and missiles, the polynomial approximation of the same, 
+									// such that rotdamp * 2 is the total acceleration time
 	float		side_slip_time_const;	// time const for achieving desired velocity in the local sideways direction
 												//   value should be zero for no sideslip and increase depending on desired slip
 
@@ -69,8 +71,9 @@ typedef struct physics_info {
 	// These get changed by the control code.  The physics uses these
 	// as input values when doing physics.
 	vec3d	prev_ramp_vel;				// follows the user's desired velocity, in local coord
-	vec3d	desired_vel;				// in world coord
-	vec3d	desired_rotvel;			// in local coord
+	vec3d	desired_vel;				// in world coord, (possibly) damped by side_slip_time_const to get final vel
+	vec3d	desired_rotvel;				// in local coords, damped by rotdamp to get final rotvel
+										// With framerate_independent_turning, the AI are not damped, see physics_sim_rot
 	float		forward_thrust;			// How much the forward thruster is applied.  0-1.
 	float		side_thrust;			// How much the forward thruster is +x.  0-1.
 	float		vert_thrust;			// How much the forward thruster is +y.  0-1.
@@ -94,12 +97,20 @@ typedef struct physics_info {
 
 	float afterburner_max_reverse_vel; //SparK: This is the reverse afterburners top speed vector
 	float afterburner_reverse_accel; //SparK: Afterburner's acceleration on reverse mode
+
+	matrix ai_desired_orient;   // Asteroth - This is only set to something other than the zero matrix if Framerate_independent_turning is enabled, and 
+								// only by the AI after calls to angular_move. It is read and then zeroed out for the rest of the frame by physics_sim_rot
+	vec3d acceleration;		// this is only the current trend of velocity in m/s^2, does NOT determine future velocity
 } physics_info;
 
-
+// control info override flags
 #define CIF_DONT_BANK_WHEN_TURNING		(1 << 0)	// Goober5000 - changing heading does not change bank
 #define CIF_DONT_CLAMP_MAX_VELOCITY		(1 << 1)	// Goober5000 - maneuvers can exceed tabled max velocity
 #define CIF_INSTANTANEOUS_ACCELERATION	(1 << 2)	// Goober5000 - instantaneously jump to the goal velocity
+#define CIF_DONT_OVERRIDE_OLD_MANEUVERS	(1 << 3)	// Asteroth - will attempt to maintain any old maneuvers still in progress
+
+#define	SW_ROT_FACTOR			5		// increase in rotational time constant in shockwave
+#define	SW_BLAST_DURATION		2000	// maximum duration of shockwave
 
 // All of these are numbers from -1.0 to 1.0 indicating
 // what percent of full velocity you want to go.
@@ -140,10 +151,13 @@ extern void physics_sim_editor(vec3d *position, matrix * orient, physics_info * 
 
 extern void physics_sim_vel(vec3d * position, physics_info * pi, float sim_time, matrix * orient);
 extern void physics_sim_rot(matrix * orient, physics_info * pi, float sim_time );
-extern void physics_apply_whack(vec3d *force, vec3d *pos, physics_info *pi, matrix *orient, float mass);
+extern bool whack_below_limit(const vec3d* impulse);
+extern void physics_calculate_and_apply_whack(vec3d *force, vec3d *pos, physics_info *pi, matrix *orient, matrix *inv_moi);
+extern void physics_apply_whack(float orig_impulse, physics_info* pi, vec3d *delta_rotvel, vec3d* delta_vel, matrix* orient);
 extern void physics_apply_shock(vec3d *direction_vec, float pressure, physics_info *pi, matrix *orient, vec3d *min, vec3d *max, float radius);
 extern void physics_collide_whack(vec3d *impulse, vec3d *delta_rotvel, physics_info *pi, matrix *orient, bool is_landing);
 int check_rotvel_limit( physics_info *pi );
+extern void physics_add_point_mass_moi(matrix *moi, float mass, vec3d *pos);
 
 
 // If physics_set_viewer is called with the viewer's physics_info, then

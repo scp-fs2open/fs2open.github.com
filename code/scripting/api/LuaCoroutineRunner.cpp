@@ -108,14 +108,11 @@ class run_resolve_context : public resolve_context, public std::enable_shared_fr
 		internal::Ade_get_args_lfunction = true;
 		LuaPromise* promise              = nullptr;
 		if (!ade_get_args(_coroutine.getLuaState(), "o", l_Promise.GetPtr(&promise))) {
-			internal::Ade_get_args_skip = 0;
 			LuaError(_coroutine.getLuaState(),
 				"Failed to get promise after coroutine yielded. Make sure you only use async.await in async "
 				"coroutines.");
 			return;
 		}
-		internal::Ade_get_args_lfunction = false;
-		internal::Ade_get_args_skip      = 0;
 
 		lua_settop(_coroutine.getLuaState(), promiseStackStart);
 

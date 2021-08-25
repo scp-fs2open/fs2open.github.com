@@ -40,11 +40,9 @@ typedef struct background_t {
 	SCP_vector<starfield_list_entry> suns;
 } background_t;
 
-#define MAX_BACKGROUNDS	2
-
-extern int Num_backgrounds;
 extern int Cur_background;
-extern background_t Backgrounds[MAX_BACKGROUNDS];
+extern SCP_vector<background_t> Backgrounds;
+
 extern int Nmodel_flags;
 
 extern bool Motion_debris_override;
@@ -53,7 +51,7 @@ extern bool Motion_debris_enabled;
 
 void stars_swap_backgrounds(int idx1, int idx2);
 void stars_pack_backgrounds();
-bool stars_background_empty();
+bool stars_background_empty(const background_t &bg);
 
 
 // add a new sun or bitmap instance
@@ -128,6 +126,7 @@ void stars_get_sun_pos(int sun_n, vec3d *pos);
 
 // for SEXP stuff so that we can mark a bitmap as being used regardless of whether 
 // or not there is an instance for it yet
+void stars_preload_background(const char *token);
 void stars_preload_sun_bitmap(const char *fname);
 void stars_preload_background_bitmap(const char *fname);
 

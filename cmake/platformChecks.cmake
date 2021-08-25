@@ -21,8 +21,6 @@ endif()
 
 set(CMAKE_EXTRA_INCLUDE_FILES "cstddef")
 CHECK_TYPE_SIZE("std::max_align_t" STD_MAX_ALIGN_T LANGUAGE CXX)
-set(CMAKE_EXTRA_INCLUDE_FILES "type_traits")
-CHECK_TYPE_SIZE("std::is_trivially_copyable<int>" STD_IS_TRIVIALLY_COPYABLE LANGUAGE CXX)
 set(CMAKE_EXTRA_INCLUDE_FILES)
 
 CHECK_TYPE_SIZE("char32_t" CHAR32_T LANGUAGE CXX)
@@ -42,7 +40,6 @@ CHECK_FUNCTION_EXISTS(strlwr SCP_HAVE_STRLWR)
 CHECK_INCLUDE_FILE("strings.h" SCP_HAVE_STRINGS_H)
 
 check_symbol_exists(snprintf "stdio.h" SCP_HAVE_SNPRINTF)
-check_symbol_exists(_snprintf "stdio.h" SCP_HAVE__SNPRINTF)
 
 set(PLATFORM_CHECK_HEADER "${GENERATED_SOURCE_DIR}/platformChecks.h")
 CONFIGURE_FILE(${CMAKE_CURRENT_LIST_DIR}/platformChecks.h.in "${PLATFORM_CHECK_HEADER}")

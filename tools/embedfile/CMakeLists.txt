@@ -4,7 +4,7 @@ IF(NOT CMAKE_CROSSCOMPILING)
 
 	ADD_EXECUTABLE(embedfile EXCLUDE_FROM_ALL ${EMBEDFILE_SOURCES})
 
-	target_compile_features(embedfile PUBLIC cxx_auto_type)
+	target_link_libraries(embedfile compiler platform)
 
 	set_target_properties(embedfile
 		PROPERTIES

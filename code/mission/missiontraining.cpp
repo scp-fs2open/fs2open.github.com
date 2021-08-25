@@ -27,6 +27,7 @@
 #include "popup/popup.h"
 #include "ship/ship.h"
 #include "sound/audiostr.h"
+#include "sound/fsspeech.h"
 #include "sound/sound.h"
 #include "weapon/emp.h"
 
@@ -53,7 +54,7 @@
 #define TMMOD_BOLD	1
 
 typedef struct {
-	char *pos;
+	size_t pos;
 	int mode;  // what function to perform at given position (TMMOD_*)
 } training_message_mods;  // training message modifiers
 
@@ -64,7 +65,7 @@ typedef struct {
 	char *special_message;
 } training_message_queue;
 
-char Training_buf[TRAINING_MESSAGE_LENGTH];
+SCP_string Training_buf;
 const char *Training_lines[MAX_TRAINING_MESSAGE_LINES];  // Training message split into lines
 int Training_line_lengths[MAX_TRAINING_MESSAGE_LINES];
 
@@ -103,8 +104,7 @@ int Training_obj_lines[TRAINING_OBJ_LINES];
 training_message_mods Training_message_mods[MAX_TRAINING_MESSAGE_MODS];
 
 // local module prototypes
-void training_process_message(char *message);
-void message_translate_tokens(char *buf, const char *text);
+void training_process_message();
 
 
 static int Directive_frames_loaded = 0;
@@ -248,7 +248,8 @@ void HudGaugeDirectives::render(float  /*frametime*/)
 
 		c = &Color_normal;
 		if (Training_obj_lines[i + offset] & TRAINING_OBJ_LINES_KEY) {
-			message_translate_tokens(buf, Mission_events[z].objective_key_text);  // remap keys
+			SCP_string temp_buf = message_translate_tokens(Mission_events[z].objective_key_text);  // remap keys
+			strcpy_s(buf, temp_buf.c_str());
 			c = &Color_bright_green;
 		} else {
 			strcpy_s(buf, Mission_events[z].objective_text);
@@ -289,7 +290,11 @@ void HudGaugeDirectives::render(float  /*frametime*/)
 
 		// maybe split the directives line
 		second_line = split_str_once(buf, max_line_width);
-		Assert( second_line != buf );
+
+		// if we are unable to split the line, just print it once
+		if (second_line == buf) {
+			second_line = nullptr;
+		}
 
 		// blit the background frames
 		setGaugeColor();
@@ -571,6 +576,14 @@ void training_check_objectives()
 	// now sort list of events
 	// sort on EVENT_CURRENT and born on date, for other events (EVENT_SATISFIED, EVENT_FAILED) sort on born on date
 	sort_training_objectives();
+
+	// Cyborg - Multiplayer clients will not run the other directive functions, so just run this quick check to see
+	// if the directive success sound should be played.
+	if (MULTIPLAYER_CLIENT) {
+		if ( !hud_disabled() && hud_gauge_active(HUD_DIRECTIVES_VIEW) ) {
+			mission_maybe_play_directive_success_sound();
+		}
+	}
 }
 
 /**
@@ -602,7 +615,7 @@ void training_mission_shutdown()
 	Training_voice = -1;
 	Training_num_lines = Training_obj_num_lines = 0;
 
-	*Training_buf = 0;
+	Training_buf.clear();
 }
 
 /**
@@ -621,19 +634,18 @@ char *translate_message_token(char *str)
 /**
  * Translates all special tokens in a message, producing the new finalized message to be displayed
  */
-void message_translate_tokens(char *buf, const char *text)
+SCP_string message_translate_tokens(const char *text)
 {
 	char temp[40], *ptr;
 	const char *toke1, *toke2;
 	int r;
+	SCP_string buf;
 
-	*buf = 0;
 	toke1 = strchr(text, '$');
 	toke2 = strchr(text, '#');
 	while (toke1 || toke2) {  // is either token types present?
 		if (!toke2 || (toke1 && (toke1 < toke2))) {  // found $ before #
-			strncpy(buf, text, toke1 - text + 1);  // copy text up to token
-			buf += toke1 - text + 1;
+			buf.append(text, toke1 - text + 1);  // copy text up to token
 			text = toke1 + 1;  // advance pointers past processed data
 
 			toke2 = strchr(text, '$');
@@ -652,26 +664,24 @@ void message_translate_tokens(char *buf, const char *text)
 						if ( The_mission.game_type & MISSION_TYPE_TRAINING ) {
 							r = popup(PF_TITLE_BIG | PF_TITLE_RED, 2, XSTR( "&Bind Control", 424), XSTR( "&Abort mission", 425),
 								XSTR( "Warning\nYou have no control bound to the action \"%s\".  You must do so before you can continue with your training.", 426),
-								XSTR(Control_config[Failed_key_index].text, CONTROL_CONFIG_XSTR + Failed_key_index));
+								XSTR(Control_config[Failed_key_index].text.c_str(), CONTROL_CONFIG_XSTR + Failed_key_index));
 
 							if (r) {  // do they want to abort the mission?
 								gameseq_post_event(GS_EVENT_END_GAME);
-								return;
+								return buf;
 							}
 
 							gameseq_post_event(GS_EVENT_CONTROL_CONFIG);  // goto control config screen to bind the control
 						}
 					}
 
-					buf--;  // erase the $
-					strcpy(buf, ptr);  // put translated key in place of token
-					buf += strlen(buf);
+					buf.pop_back();	// erase the $
+					buf += ptr;		// put translated key in place of token
 					text = toke2 + 1;
 				}
 			}
 		} else {
-			strncpy(buf, text, toke2 - text + 1);  // copy text up to token
-			buf += toke2 - text + 1;
+			buf.append(text, toke2 - text + 1);  // copy text up to token
 			text = toke2 + 1;  // advance pointers past processed data
 
 			toke1 = strchr(text, '#');
@@ -686,9 +696,8 @@ void message_translate_tokens(char *buf, const char *text)
 				temp[toke1 - text] = 0;  // null terminate string
 				ptr = translate_message_token(temp);  // try and translate key
 				if (ptr) {  // was key translated properly?
-					buf--;  // erase the #
-					strcpy(buf, ptr);  // put translated key in place of token
-					buf += strlen(buf);
+					buf.pop_back();	// erase the #
+					buf += ptr;		// put translated key in place of token
 					text = toke1 + 1;
 				}
 			}
@@ -698,8 +707,8 @@ void message_translate_tokens(char *buf, const char *text)
 		toke2 = strchr(text, '#');
 	}
 
-	strcpy(buf, text);
-	return;
+	buf += text;
+	return buf;
 }
 
 /**
@@ -807,17 +816,14 @@ void message_training_setup(int m, int length, char *special_message)
 	}
 
 	// translate tokens in message to the real things
-	if (special_message == NULL)
-		message_translate_tokens(Training_buf, Messages[m].message);
-	else
-		message_translate_tokens(Training_buf, special_message);
+	Training_buf = message_translate_tokens(special_message ? special_message : Messages[m].message);
 
-	HUD_add_to_scrollback(Training_buf, HUD_SOURCE_TRAINING);
+	HUD_add_to_scrollback(Training_buf.c_str(), HUD_SOURCE_TRAINING);
 
 	// moved from message_training_display() because we got rid of an extra buffer and we have to determine
 	// the number of lines earlier to avoid inadvertant modification of Training_buf.  - taylor
-	training_process_message(Training_buf);
-	Training_num_lines = split_str(Training_buf, TRAINING_LINE_WIDTH, Training_line_lengths, Training_lines, MAX_TRAINING_MESSAGE_LINES);
+	training_process_message();
+	Training_num_lines = split_str(Training_buf.c_str(), TRAINING_LINE_WIDTH, Training_line_lengths, Training_lines, MAX_TRAINING_MESSAGE_LINES);
 
 	Assert(Training_num_lines >= 0);
 
@@ -837,7 +843,7 @@ void message_training_setup(int m, int length, char *special_message)
 void message_training_queue(const char *text, int timestamp, int length)
 {
 	int m;
-	char temp_buf[TRAINING_MESSAGE_LENGTH];
+	SCP_string temp_buf;
 
 	Assert(Training_message_queue_count < TRAINING_MESSAGE_QUEUE_MAX);
 	if (Training_message_queue_count < TRAINING_MESSAGE_QUEUE_MAX) {
@@ -866,9 +872,9 @@ void message_training_queue(const char *text, int timestamp, int length)
 		}
 
 		// Goober5000 - replace variables if necessary
-		strcpy_s(temp_buf, Messages[m].message);
-		if (sexp_replace_variable_names_with_values(temp_buf, MESSAGE_LENGTH))
-			Training_message_queue[Training_message_queue_count].special_message = vm_strdup(temp_buf);
+		temp_buf = Messages[m].message;
+		if (sexp_replace_variable_names_with_values(temp_buf))
+			Training_message_queue[Training_message_queue_count].special_message = vm_strdup(temp_buf.c_str());
 
 		Training_message_queue_count++;
 	}
@@ -917,6 +923,17 @@ void message_training_queue_check()
 	if (Training_failure)
 		return;
 
+	if (Dont_preempt_training_voice) {
+		// don't pre-empt any voice files that are playing
+		if (Training_voice >= 0) {
+			auto z = (Training_voice_type) ? audiostream_is_playing(Training_voice_soundstream) : snd_is_playing(Training_voice_snd_handle);
+			if (z)
+				return;
+		}
+		if (fsspeech_playing())
+			return;
+	}
+
 	for (i=0; i<Training_message_queue_count; i++) {
 		if (timestamp_elapsed(Training_message_queue[i].timestamp)) {
 			message_training_setup(Training_message_queue[i].num, Training_message_queue[i].length, Training_message_queue[i].special_message);
@@ -947,7 +964,7 @@ void message_training_update_frame()
 		return;
 	}
 
-	if (timestamp_elapsed(Training_message_timestamp) || !strlen(Training_buf)){
+	if (timestamp_elapsed(Training_message_timestamp) || Training_buf.empty()){
 		return;
 	}
 
@@ -1018,7 +1035,7 @@ void HudGaugeTrainingMessages::render(float  /*frametime*/)
 		return;
 	}
 
-	if (timestamp_elapsed(Training_message_timestamp) || !strlen(Training_buf)){
+	if (timestamp_elapsed(Training_message_timestamp) || Training_buf.empty()){
 		return;
 	}
 
@@ -1041,7 +1058,7 @@ void HudGaugeTrainingMessages::render(float  /*frametime*/)
 		y = position[1] + i * height + height / 2 + 1;
 
 		while ((str - Training_lines[i]) < Training_line_lengths[i]) {  // loop through each character of each line
-			if ((count < MAX_TRAINING_MESSAGE_MODS) && (str == Training_message_mods[count].pos)) {
+			if ((count < MAX_TRAINING_MESSAGE_MODS) && (static_cast<size_t>(str - Training_lines[i]) == Training_message_mods[count].pos)) {
 				buf[z] = 0;
 				renderPrintf(x, y, "%s", buf);
 				gr_get_string_size(&z, NULL, buf);
@@ -1073,20 +1090,20 @@ void HudGaugeTrainingMessages::render(float  /*frametime*/)
 /**
  * Processes a new training message to get hilighting information and store it in internal structures.
  */
-void training_process_message(char *message)
+void training_process_message()
 {
-	int count;
-	char *src, *dest, buf[TRAINING_MESSAGE_LENGTH];
+	int count = 0;
+	SCP_string orig = Training_buf;
+	Training_buf.clear();
+	auto src = orig.c_str();
 
-	message_translate_tokens(buf, message);
-	count = 0;
-	src = buf;
-	dest = Training_buf;
+	// basically what this is doing is re-copying the training message, marking out the points where it is bolded or un-bolded
+	// (it does the re-copying in case it has to skip over the bold tags)
 	while (*src) {
 		if (!strnicmp(src, NOX("<b>"), 3)) {
 			Assert(count < MAX_TRAINING_MESSAGE_MODS);
 			src += 3;
-			Training_message_mods[count].pos = dest;
+			Training_message_mods[count].pos = Training_buf.size();
 			Training_message_mods[count].mode = TMMOD_BOLD;
 			count++;
 		}
@@ -1094,17 +1111,16 @@ void training_process_message(char *message)
 		if (!strnicmp(src, NOX("</b>"), 4)) {
 			Assert(count < MAX_TRAINING_MESSAGE_MODS);
 			src += 4;
-			Training_message_mods[count].pos = dest;
+			Training_message_mods[count].pos = Training_buf.size();
 			Training_message_mods[count].mode = TMMOD_NORMAL;
 			count++;
 		}
 
-		*dest++ = *src++;
+		Training_buf += *src++;
 	}
 
-	*dest = 0;
 	if (count < MAX_TRAINING_MESSAGE_MODS)
-		Training_message_mods[count].pos = NULL;
+		Training_message_mods[count].pos = 0;
 }
 
 void training_fail()

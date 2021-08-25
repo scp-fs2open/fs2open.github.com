@@ -15,10 +15,10 @@
 
 struct default_file
 {
-	const char* path_type;
-	const char* filename;
-	const void* data;
-	size_t size;
+	const char* path_type = nullptr;
+	const char* filename = nullptr;
+	const void* data = nullptr;
+	size_t size = 0;
 };
 
 //Used to retrieve pointer to file data from def_files.cpp

@@ -1,8 +1,11 @@
 
 #include "file.h"
+
+#include "bytearray.h"
+
 #include "cfile/cfilesystem.h"
 
-extern int cfread_lua_number(double *buf, CFILE *cfile);
+extern int cfread_lua_number(double* buf, CFILE* cfile);
 namespace scripting {
 namespace api {
 
@@ -10,7 +13,7 @@ cfile_h::cfile_h(CFILE* cfp) : _cfp(cfp) {}
 cfile_h::~cfile_h()
 {
 	if (_cfp && cf_is_valid(_cfp.get())) {
-		Error(LOCATION, "Lua file handle has been left open!\n\nSorry, I can't say anything more than that...");
+		Warning(LOCATION, "Lua cfile handle of file %s has been left open!\nYou should close the file with the object's close() method explicitly.\n", cf_get_filename(_cfp.get()));
 	}
 }
 bool cfile_h::isValid() const { return _cfp != nullptr; }
@@ -59,10 +62,26 @@ ADE_FUNC(flush, l_File, NULL, "Flushes file buffer to disk.", "boolean", "True f
 
 	//WMC - this looks reversed, yes, it's right. Look at cflush.
 	int cf_result = cflush(cfp->get());
-	return ade_set_args(L, "b", cf_result ? false : true);
+	return ade_set_args(L, "b", cf_result == 0);
 }
 
-ADE_FUNC(getPath, l_File, NULL, "Determines path of the given file", "string", "Path string of the file handle, or an empty string if it doesn't have one, or the handle is invalid")
+ADE_FUNC(getName, l_File, nullptr, "Returns the name of the given file", "string", "Name of the file handle, or an empty string if it doesn't have one, or the handle is invalid")
+{
+	cfile_h* cfp = nullptr;
+	if (!ade_get_args(L, "o", l_File.GetPtr(&cfp)))
+		return ade_set_error(L, "s", "");
+
+	if (cfp == nullptr || !cfp->isValid())
+		return ade_set_error(L, "s", "");
+
+	auto filename = cf_get_filename(cfp->get());
+	if (filename != nullptr)
+		return ade_set_args(L, "s", filename);
+	else
+		return ade_set_args(L, "s", "");
+}
+
+ADE_FUNC(getPath, l_File, nullptr, "Determines path of the given file", "string", "Path string of the file handle, or an empty string if it doesn't have one, or the handle is invalid")
 {
 	cfile_h* cfp = nullptr;
 	if (!ade_get_args(L, "o", l_File.GetPtr(&cfp)))
@@ -72,7 +91,9 @@ ADE_FUNC(getPath, l_File, NULL, "Determines path of the given file", "string", "
 		return ade_set_error(L, "s", "");
 
 	int id = cf_get_dir_type(cfp->get());
-	if (Pathtypes[id].path != NULL)
+	if (id == CF_TYPE_ANY)
+		return ade_set_args(L, "s", "<any path>");
+	else if (Pathtypes[id].path != nullptr)
 		return ade_set_args(L, "s", Pathtypes[id].path);
 	else
 		return ade_set_args(L, "s", "");
@@ -80,14 +101,14 @@ ADE_FUNC(getPath, l_File, NULL, "Determines path of the given file", "string", "
 
 ADE_FUNC(read,
 	l_File,
-	"number|string, ...",
+	"number|string, any...",
 	"Reads part of or all of a file, depending on arguments passed. Based on basic Lua file:read function."
 	"Returns nil when the end of the file is reached."
 	"<br><ul><li>\"*n\" - Reads a number.</li>"
 	"<li>\"*a\" - Reads the rest of the file and returns it as a string.</li>"
 	"<li>\"*l\" - Reads a line. Skips the end of line markers.</li>"
 	"<li>(number) - Reads given number of characters, then returns them as a string.</li></ul>",
-	ade_type_info({ade_type_alternative({"number", "string"}), "..."}),
+	"number|string...",
 	"Requested data, or nil if the function fails")
 {
 	cfile_h* cfp = nullptr;
@@ -241,7 +262,7 @@ ADE_FUNC(seek, l_File, "[string Whence=\"cur\", number Offset=0]",
 		return ADE_RETURN_FALSE;
 }
 
-ADE_FUNC(write, l_File, "string or number, ...",
+ADE_FUNC(write, l_File, "string|number, any...",
 	"Writes a series of Lua strings or numbers to the current file.", "number", "Number of items successfully written.")
 {
 	cfile_h* cfp = nullptr;
@@ -278,5 +299,49 @@ ADE_FUNC(write, l_File, "string or number, ...",
 	return ade_set_args(L, "i", num_successful);
 }
 
+ADE_FUNC(writeBytes,
+	l_File,
+	"bytearray bytes",
+	"Writes the specified data to the file",
+	"number",
+	"Number of bytes successfully written.")
+{
+	cfile_h* cfp = nullptr;
+	bytearray_h* array = nullptr;
+	if (!ade_get_args(L, "oo", l_File.GetPtr(&cfp), l_Bytearray.GetPtr(&array)))
+		return ade_set_error(L, "i", 0);
+
+	if (cfp == nullptr || !cfp->isValid())
+		return ade_set_error(L, "i", 0);
+
+	auto written = cfwrite(array->data().data(), 1, static_cast<int>(array->data().size()), cfp->get());
+
+	return ade_set_args(L, "i", written);
 }
+
+ADE_FUNC(readBytes,
+	l_File,
+	nullptr,
+	"Reads the entire contents of the file as a byte array.<br><b>Warning:</b> This may change the position inside the "
+	"file.",
+	"bytearray",
+	"The bytes read from the file or empty array on error")
+{
+	cfile_h* cfp = nullptr;
+	if (!ade_get_args(L, "o", l_File.GetPtr(&cfp)))
+		return ade_set_error(L, "o", l_Bytearray.Set(bytearray_h()));
+
+	if (cfp == nullptr || !cfp->isValid())
+		return ade_set_error(L, "o", l_Bytearray.Set(bytearray_h()));
+
+	cfseek(cfp->get(), 0, CF_SEEK_SET);
+	SCP_vector<uint8_t> data;
+	data.resize(cfilelength(cfp->get()));
+
+	cfread(data.data(), 1, cfilelength(cfp->get()), cfp->get());
+
+	return ade_set_error(L, "o", l_Bytearray.Set(bytearray_h(std::move(data))));
 }
+
+} // namespace api
+} // namespace scripting

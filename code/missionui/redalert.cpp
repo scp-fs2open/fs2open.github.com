@@ -27,6 +27,9 @@
 #include "missionui/missionscreencommon.h"
 #include "missionui/missionweaponchoice.h"
 #include "missionui/redalert.h"
+#include "network/multi.h"
+#include "network/multiteamselect.h"
+#include "network/multi_endgame.h"
 #include "mod_table/mod_table.h"
 #include "model/model.h"
 #include "object/deadobjectdock.h"
@@ -233,16 +236,14 @@ void red_alert_button_pressed(int n)
 		mouse_set_pos( gr_screen.max_w/2, gr_screen.max_h/2 );
 
 		if(Game_mode & GM_MULTIPLAYER){	
-			// process the initial orders now (moved from post_process_mission()in missionparse) 
-			mission_parse_fixup_players();
-			ai_post_process_mission();
+			multi_ts_commit_pressed();
+		} else {
+			gameseq_post_event(GS_EVENT_ENTER_GAME);
 		}
-
-		gameseq_post_event(GS_EVENT_ENTER_GAME);
 		break;
 
 	case RA_REPLAY_MISSION:
-		if ( Game_mode & GM_CAMPAIGN_MODE ) {
+		if ( (Game_mode & GM_CAMPAIGN_MODE) && !(Game_mode & GM_MULTIPLAYER) ) {
 			// TODO: make call to campaign code to set correct mission for loading
 			// mission_campaign_play_previous_mission(Red_alert_precursor_mission);
 			if ( !mission_campaign_previous_mission() ) {
@@ -305,6 +306,11 @@ void red_alert_init()
 		return;
 	}
 
+	// for multiplayer, change the state in my netplayer structure
+	if (Game_mode & GM_MULTIPLAYER) {
+		Net_player->state = NETPLAYER_STATE_RED_ALERT;
+	}
+
 	Ui_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
 	Ui_window.set_mask_bmap(Red_alert_mask[gr_screen.res]);
 
@@ -346,10 +352,6 @@ void red_alert_init()
 	}
 
 	red_alert_voice_load();
-
-	// we have to reset/setup the shipselect and weaponselect pointers before moving on
-	ship_select_common_init();
-	weapon_select_common_init();
 
 	Text_delay = timestamp(200);
 
@@ -406,7 +408,12 @@ void red_alert_do_frame(float frametime)
 	switch (k) {
 		case KEY_ESC:
 //			gameseq_post_event(GS_EVENT_ENTER_GAME);
-			gameseq_post_event(GS_EVENT_MAIN_MENU);
+			if (Game_mode & GM_MULTIPLAYER) {
+				gamesnd_play_iface(InterfaceSounds::USER_SELECT);
+				multi_quit_game(PROMPT_ALL);
+			} else {
+				gameseq_post_event(GS_EVENT_MAIN_MENU);
+			}
 			break;
 	}	// end switch
 
@@ -616,8 +623,8 @@ void red_alert_bash_subsys_status(red_alert_ship_status *ras, ship *shipp)
 			break;
 		}
 
-		if (ss->current_hits <= 0) {
-			ss->submodel_info_1.blown_off = 1;
+		if (ss->current_hits <= 0 && ss->submodel_instance_1 != nullptr) {
+			ss->submodel_instance_1->blown_off = true;
 		}
 
 		ss = GET_NEXT( ss );
@@ -1051,20 +1058,23 @@ void red_alert_start_mission()
 //		return;
 //	}
 
-	// check player health here.  
+	// check player health here, but only in single-player
 	// if we're dead (or about to die), don't start red alert mission.
-	if (Player_obj->type == OBJ_SHIP) {
-		if (Player_obj->hull_strength > 0) {
+	if ( (Game_mode & GM_MULTIPLAYER) ||
+		 ((Player_obj->type == OBJ_SHIP) && !Player_ship->flags[Ship::Ship_Flags::Dying] && (Player_obj->hull_strength > 0)) )
+	{
+		if (Player_obj->type == OBJ_SHIP)
+		{
 			// make sure we don't die
 			Player_ship->ship_guardian_threshold = SHIP_GUARDIAN_THRESHOLD_DEFAULT;
-
-			// do normal red alert stuff
-			Red_alert_new_mission_timestamp = timestamp(RED_ALERT_WARN_TIME);
-
-			// throw down a sound here to make the warning seem ultra-important
-			// gamesnd_play_iface(SND_USER_SELECT);
-			snd_play(gamesnd_get_game_sound(GameSounds::DIRECTIVE_COMPLETE));
 		}
+
+		// do normal red alert stuff
+		Red_alert_new_mission_timestamp = timestamp(RED_ALERT_WARN_TIME);
+
+		// throw down a sound here to make the warning seem ultra-important
+		// gamesnd_play_iface(SND_USER_SELECT);
+		snd_play(gamesnd_get_game_sound(GameSounds::DIRECTIVE_COMPLETE));
 	}
 }
 
@@ -1091,15 +1101,25 @@ void red_alert_maybe_move_to_next_mission()
 	if ( Game_mode & GM_CAMPAIGN_MODE ) {
 		red_alert_store_wingman_status();
 		mission_goal_fail_incomplete();
-		mission_campaign_store_goals_and_events_and_variables();
-		scoring_level_close();
-		mission_campaign_eval_next_mission();
-		mission_campaign_mission_over();
 
-		// CD CHECK
-		gameseq_post_event(GS_EVENT_START_GAME);
+		if (Game_mode & GM_MULTIPLAYER) {
+			// this should handle close-out and moving to next mission
+			gameseq_post_event(GS_EVENT_DEBRIEF);
+		} else {
+			mission_campaign_store_goals_and_events_and_variables();
+			scoring_level_close();
+			mission_campaign_eval_next_mission();
+			mission_campaign_mission_over();
+
+			// CD CHECK
+			gameseq_post_event(GS_EVENT_START_GAME);
+		}
 	} else {
-		gameseq_post_event(GS_EVENT_END_GAME);
+		if (Game_mode & GM_MULTIPLAYER) {
+			gameseq_post_event(GS_EVENT_DEBRIEF);
+		} else {
+			gameseq_post_event(GS_EVENT_END_GAME);
+		}
 	}
 }
 

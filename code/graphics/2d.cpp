@@ -25,12 +25,11 @@
 #include "cmdline/cmdline.h"
 #include "debugconsole/console.h"
 #include "executor/global_executors.h"
-#include "graphics/opengl/gropengl.h"
 #include "graphics/paths/PathRenderer.h"
+#include "graphics/post_processing.h"
 #include "graphics/util/GPUMemoryHeap.h"
 #include "graphics/util/UniformBuffer.h"
 #include "graphics/util/UniformBufferManager.h"
-#include "graphics/vulkan/gr_vulkan.h"
 #include "io/mouse.h"
 #include "libs/jansson.h"
 #include "options/Option.h"
@@ -42,6 +41,14 @@
 #include "scripting/scripting.h"
 #include "tracing/tracing.h"
 #include "utils/boost/hash_combine.h"
+#include "gamesequence/gamesequence.h"
+
+#ifdef WITH_OPENGL
+#include "graphics/opengl/gropengl.h"
+#endif
+#ifdef WITH_VULKAN
+#include "graphics/vulkan/gr_vulkan.h"
+#endif
 
 #include <SDL_surface.h>
 
@@ -1017,9 +1024,17 @@ void gr_close()
 
 	switch (gr_screen.mode) {
 		case GR_OPENGL:
+#ifdef WITH_OPENGL
 			gr_opengl_cleanup(true);
+#endif
 			break;
-	
+
+		case GR_VULKAN:
+#ifdef WITH_VULKAN
+			graphics::vulkan::cleanup();
+#endif
+			break;
+
 		case GR_STUB:
 			break;
 	
@@ -1224,7 +1239,7 @@ static bool gr_init_sub(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, i
 	int res = GR_1024;
 	bool rc = false;
 
-	memset(&gr_screen, 0, sizeof(screen));
+	gr_screen = {};
 
 	float aspect_ratio = (float)width / (float)height;
 
@@ -1324,23 +1339,30 @@ static bool gr_init_sub(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, i
 
 	switch (mode) {
 	case GR_OPENGL:
+#ifdef WITH_OPENGL
 		rc = gr_opengl_init(std::move(graphicsOps));
+#else
+		Error(LOCATION, "OpenGL renderer was requested but that was not compiled into this build.");
+		rc = false;
+#endif
 		break;
 	case GR_VULKAN:
+#ifdef WITH_VULKAN
 		rc = graphics::vulkan::initialize(std::move(graphicsOps));
+#else
+		Error(LOCATION, "Vulkan renderer was requested but that was not compiled into this build.");
+		rc = false;
+#endif
 		break;
 	case GR_STUB:
+		SCP_UNUSED(graphicsOps);
 		rc = gr_stub_init();
 		break;
 	default:
 		Int3(); // Invalid graphics mode
 	}
 
-	if ( !rc ) {
-		return false;
-	}
-
-	return true;
+	return rc != 0;
 }
 
 static void init_window_icon() {
@@ -1377,6 +1399,16 @@ static void init_window_icon() {
 	bm_release(icon_handle);
 }
 
+SCP_string gr_capability_to_string(gr_capability capability) 
+{
+	switch (capability) {
+	case CAPABILITY_BPTC:
+		return "BPTC Texture Compression";
+	default:
+		return "Invalid Capability";
+	}
+}
+
 bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, int d_width, int d_height, int d_depth)
 {
 	int width = 1024, height = 768, depth = 32, mode = GR_OPENGL;
@@ -1386,7 +1418,9 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 	if (Gr_inited) {
 		switch (gr_screen.mode) {
 			case GR_OPENGL:
+#ifdef WITH_OPENGL
 				gr_opengl_cleanup(false);
+#endif
 				break;
 			
 			case GR_STUB:
@@ -1593,6 +1627,14 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 	mprintf(("  Persistent buffer mapping: %s\n",
 	         gr_is_capable(CAPABILITY_PERSISTENT_BUFFER_MAPPING) ? "Enabled" : "Disabled"));
 
+	mprintf(("Checking mod required rendering features...\n"));
+	for (gr_capability ext : Required_render_ext) {
+		if (!gr_is_capable(ext)) {
+			Error(LOCATION, "Feature %s required by mod not supported by system.\n", gr_capability_to_string(ext).c_str());
+		}
+	}
+	mprintf(("  All required features are supported.\n"));
+
 	bool missing_installation = false;
 	if (!running_unittests && Web_cursor == nullptr) {
 		if (Is_standalone) {
@@ -1659,7 +1701,7 @@ void gr_activate(int active)
 	}
 	gr_activated = active;
 
-	if ( !Gr_inited ) { 
+	if ( !Gr_inited || os::getMainViewport() == nullptr) { 
 		return;
 	}
 
@@ -1877,122 +1919,6 @@ void gr_bitmap_uv(int _x, int _y, int _w, int _h, float _u0, float _v0, float _u
 	);
 	g3_render_primitives_textured(&material_params, verts, 4, PRIM_TYPE_TRIFAN, true);
 }
-
-// NEW new bitmap functions -Bobboau
-// void gr_bitmap_list(bitmap_2d_list* list, int n_bm, int resize_mode)
-// {
-// 	for (int i = 0; i < n_bm; i++) {
-// 		bitmap_2d_list *l = &list[i];
-// 
-// 		bm_get_info(gr_screen.current_bitmap, &l->w, &l->h, NULL, NULL, NULL);
-// 
-// 		if ( resize_mode != GR_RESIZE_NONE && (gr_screen.custom_size || (gr_screen.rendering_to_texture != -1)) ) {
-// 			gr_resize_screen_pos(&l->x, &l->y, &l->w, &l->h, resize_mode);
-// 		}
-// 	}
-// 
-// 	g3_draw_2d_poly_bitmap_list(list, n_bm, TMAP_FLAG_INTERFACE);
-// }
-
-// _->NEW<-_ NEW new bitmap functions -Bobboau
-//takes a list of rectangles that have assosiated rectangles in a texture
-void gr_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode)
-{
-	GR_DEBUG_SCOPE("2D Bitmap list");
-
-	// adapted from g3_draw_2d_poly_bitmap_list
-
-	for ( int i = 0; i < n_bm; i++ ) {
-		bitmap_2d_list *l = &list[i].screen_rect;
-
-		// if no valid hight or width values were given get some from the bitmap
-		if ( (l->w <= 0) || (l->h <= 0) ) {
-			bm_get_info(gr_screen.current_bitmap, &l->w, &l->h, NULL, NULL, NULL);
-		}
-
-		if ( resize_mode != GR_RESIZE_NONE && (gr_screen.custom_size || (gr_screen.rendering_to_texture != -1)) ) {
-			gr_resize_screen_pos(&l->x, &l->y, &l->w, &l->h, resize_mode);
-		}
-	}
-
-	vertex* vert_list = new vertex[6 * n_bm];
-	float sw = 0.1f;
-
-	for ( int i = 0; i < n_bm; i++ ) {
-		// stuff coords	
-
-		bitmap_2d_list* b = &list[i].screen_rect;
-		texture_rect_list* t = &list[i].texture_rect;
-		//tri one
-		vertex *V = &vert_list[i * 6];
-		V->screen.xyw.x = (float)b->x;
-		V->screen.xyw.y = (float)b->y;
-		V->screen.xyw.w = sw;
-		V->texture_position.u = (float)t->u0;
-		V->texture_position.v = (float)t->v0;
-		V->flags = PF_PROJECTED;
-		V->codes = 0;
-
-		V++;
-		V->screen.xyw.x = (float)(b->x + b->w);
-		V->screen.xyw.y = (float)b->y;
-		V->screen.xyw.w = sw;
-		V->texture_position.u = (float)t->u1;
-		V->texture_position.v = (float)t->v0;
-		V->flags = PF_PROJECTED;
-		V->codes = 0;
-
-		V++;
-		V->screen.xyw.x = (float)(b->x + b->w);
-		V->screen.xyw.y = (float)(b->y + b->h);
-		V->screen.xyw.w = sw;
-		V->texture_position.u = (float)t->u1;
-		V->texture_position.v = (float)t->v1;
-		V->flags = PF_PROJECTED;
-		V->codes = 0;
-
-		//tri two
-		V++;
-		V->screen.xyw.x = (float)b->x;
-		V->screen.xyw.y = (float)b->y;
-		V->screen.xyw.w = sw;
-		V->texture_position.u = (float)t->u0;
-		V->texture_position.v = (float)t->v0;
-		V->flags = PF_PROJECTED;
-		V->codes = 0;
-
-		V++;
-		V->screen.xyw.x = (float)(b->x + b->w);
-		V->screen.xyw.y = (float)(b->y + b->h);
-		V->screen.xyw.w = sw;
-		V->texture_position.u = (float)t->u1;
-		V->texture_position.v = (float)t->v1;
-		V->flags = PF_PROJECTED;
-		V->codes = 0;
-
-		V++;
-		V->screen.xyw.x = (float)b->x;
-		V->screen.xyw.y = (float)(b->y + b->h);
-		V->screen.xyw.w = sw;
-		V->texture_position.u = (float)t->u0;
-		V->texture_position.v = (float)t->v1;
-		V->flags = PF_PROJECTED;
-		V->codes = 0;
-	}
-
-	material mat_params;
-	material_set_interface(
-		&mat_params,
-		gr_screen.current_bitmap,
-		gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER ? true : false,
-		gr_screen.current_alpha
-	);
-	g3_render_primitives_textured(&mat_params, vert_list, 6 * n_bm, PRIM_TYPE_TRIS, true);
-
-	delete[] vert_list;
-}
-
-
 
 /**
 * Given endpoints, and thickness, calculate coords of the endpoint
@@ -2622,7 +2548,8 @@ void gr_flip(bool execute_scripting)
 	executor::OnFrameExecutor->process();
 
 	// m!m avoid running CHA_ONFRAME when the "Quit mission" popup is shown. See mantis 2446 for reference
-	if (execute_scripting && !popup_active()) {
+	// Cyborg - A similar bug will occur when a mission is restarted so check for that, too.
+	if (execute_scripting && !popup_active() && !((gameseq_get_state() == GS_STATE_GAME_PLAY) && !(Game_mode & GM_IN_MISSION))) {
 		TRACE_SCOPE(tracing::LuaOnFrame);
 
 		// WMC - Do conditional hooks. Yippee!
@@ -2817,7 +2744,7 @@ static graphics::util::GPUMemoryHeap* get_gpu_heap(GpuHeap heap_type) {
 	return gpu_heaps[static_cast<size_t>(heap_type)].get();
 }
 
-void gr_heap_allocate(GpuHeap heap_type, size_t size, void* data, size_t& offset_out, int& handle_out) {
+void gr_heap_allocate(GpuHeap heap_type, size_t size, void* data, size_t& offset_out, gr_buffer_handle& handle_out) {
 	TRACE_SCOPE(tracing::GpuHeapAllocate);
 
 	auto gpuHeap = get_gpu_heap(heap_type);
@@ -2925,5 +2852,18 @@ void gr_set_gamma(float gamma)
 		SDL_SetWindowGammaRamp(os::getSDLMainWindow(), gamma_ramp, (gamma_ramp + 256), (gamma_ramp + 512));
 
 		vm_free(gamma_ramp);
+	}
+}
+
+void gr_get_post_process_effect_names(SCP_vector<SCP_string>& names)
+{
+	if (graphics::Post_processing_manager == nullptr) {
+		names.clear();
+		return;
+	}
+
+	const auto& effects = graphics::Post_processing_manager->getPostEffects();
+	for (const auto& eff : effects) {
+		names.push_back(eff.name);
 	}
 }

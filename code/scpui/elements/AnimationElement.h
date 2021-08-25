@@ -17,8 +17,6 @@ using namespace Rocket::Core;
 
 class AnimationElement : public Rocket::Core::Element {
   public:
-	/// Constructs a new ElementImage. This should not be called directly; use the Factory instead.
-	/// @param[in] tag_in The tag the element was declared as in RML.
 	AnimationElement(const String& tag_in);
 	~AnimationElement() override;
 

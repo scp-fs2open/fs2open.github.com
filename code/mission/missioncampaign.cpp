@@ -97,7 +97,7 @@ campaign Campaign;
  * In the type field, we return if the campaign is a single player or multiplayer campaign.  
  * The type field will only be valid if the name returned is non-NULL
  */
-int mission_campaign_get_info(const char *filename, char *name, int *type, int *max_players, char **desc)
+int mission_campaign_get_info(const char *filename, char *name, int *type, int *max_players, char **desc, char **first_mission)
 {
 	int i, success = 0;
 	char campaign_type[NAME_LENGTH], fname[MAX_FILENAME_LEN];
@@ -154,6 +154,11 @@ int mission_campaign_get_info(const char *filename, char *name, int *type, int *
 			if ((*type) != CAMPAIGN_TYPE_SINGLE) {
 				skip_to_string("+Num Players:");
 				stuff_int(max_players);
+				// Cyborg17 - and the first mission name if we want it, too
+				if (first_mission) {
+					skip_to_string("$Mission:");
+					*first_mission = stuff_and_malloc_string(F_NAME, nullptr);
+				}
 			}
 
 			// if we found a valid campaign type
@@ -374,7 +379,7 @@ void mission_campaign_get_sw_info()
 	memset(Campaign.weapons_allowed, 0, sizeof(Campaign.weapons_allowed));
 
     if (optional_string("+Starting Ships:")) {
-        count = stuff_int_list(ship_list, MAX_SHIP_CLASSES, SHIP_INFO_TYPE);
+        count = (int)stuff_int_list(ship_list, MAX_SHIP_CLASSES, SHIP_INFO_TYPE);
 
         // now set the array elements stating which ships we are allowed
         for (i = 0; i < count; i++) {
@@ -391,7 +396,7 @@ void mission_campaign_get_sw_info()
 	}
 
     if (optional_string("+Starting Weapons:")) {
-        count = stuff_int_list(weapon_list, MAX_WEAPON_TYPES, WEAPON_POOL_TYPE);
+        count = (int)stuff_int_list(weapon_list, MAX_WEAPON_TYPES, WEAPON_POOL_TYPE);
 
         // now set the array elements stating which ships we are allowed
 		for (i = 0; i < count; i++) {
@@ -907,16 +912,22 @@ void mission_campaign_eval_next_mission()
 
 	// evaluate mission loop mission (if any) so it can be used if chosen
 	if ( Campaign.missions[cur].flags & CMISSION_FLAG_HAS_LOOP ) {
-		int copy_next_mission = Campaign.next_mission;
+		int saved_next_mission = Campaign.next_mission;
 		// Set temporarily to -1 so we know if loop formula fails to assign
 		Campaign.next_mission = -1;
 		if (Campaign.missions[cur].mission_loop_formula != -1) {
 			flush_sexp_tree(Campaign.missions[cur].mission_loop_formula);  // force formula to be re-evaluated
-			eval_sexp(Campaign.missions[cur].mission_loop_formula);  // this should reset Campaign.next_mission to proper value
+			eval_sexp(Campaign.missions[cur].mission_loop_formula);  // this should set Campaign.next_mission to the loop mission
 		}
 
 		Campaign.loop_mission = Campaign.next_mission;
-		Campaign.next_mission = copy_next_mission;
+		Campaign.next_mission = saved_next_mission;
+
+		// If the loop mission and the next mission are the same, then don't do the loop.  This could be the case if the campaign
+		// only allows us to proceed to the loop mission if certain conditions are met.
+		if (Campaign.loop_mission == Campaign.next_mission) {
+			Campaign.loop_mission = -1;
+		}
 	}
 
 	if (Campaign.next_mission == -1) {
@@ -1142,7 +1153,9 @@ void mission_campaign_mission_over(bool do_next_mission)
 		}
 
 		// runs the new scripting conditional hook, "On Campaign Mission Accept" --wookieejedi
-		Script_system.RunCondition(CHA_CMISSIONACCEPT);
+		if (Script_system.IsActiveAction(CHA_CMISSIONACCEPT)) {
+			Script_system.RunCondition(CHA_CMISSIONACCEPT);
+		}
 		
 	} else {
 		// free up the goals and events which were just malloced.  It's kind of like erasing any fact
@@ -1583,8 +1596,7 @@ bool campaign_is_ignored(const char *filename)
 {
 	SCP_string filename_no_ext = filename;
 	drop_extension(filename_no_ext);
-	std::transform(filename_no_ext.begin(), filename_no_ext.end(), filename_no_ext.begin(),
-	               [](char c) { return (char)::tolower(c); });
+	SCP_tolower(filename_no_ext);
 
 	for (auto &ii: Ignored_campaigns) {
 		if (ii == filename_no_ext) {
@@ -1785,8 +1797,9 @@ void mission_campaign_jump_to_mission(const char* name, bool no_skip)
 			break;
 		} else if (!no_skip) {
 			Campaign.missions[i].flags |= CMISSION_FLAG_SKIPPED;
-			Campaign.num_missions_completed = i;
-		}	
+			Campaign.missions[i].completed = 1;
+			Campaign.num_missions_completed = i + 1;
+		}
 	}
 
 	if (mission_num < 0) {

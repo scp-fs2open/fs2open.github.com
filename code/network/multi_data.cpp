@@ -124,7 +124,7 @@ void multi_data_do()
 				// send it to all players who need it
 				for(p_idx=0; p_idx<MAX_PLAYERS; p_idx++){
 					// if he doesn't have it
-					if((Net_player != &Net_players[p_idx]) && MULTI_CONNECTED(Net_players[p_idx]) && (Net_players[p_idx].reliable_socket != INVALID_SOCKET) && (Multi_data[idx].status[p_idx] == 0)){						
+					if ( (Net_player != &Net_players[p_idx]) && MULTI_CONNECTED(Net_players[p_idx]) && (Net_players[p_idx].reliable_socket != PSNET_INVALID_SOCKET) && (Multi_data[idx].status[p_idx] == 0) ) {
 						// queue up the file to send to him, or at least try to
 						if(multi_xfer_send_file(Net_players[p_idx].reliable_socket, Multi_data[idx].filename, CF_TYPE_ANY, MULTI_XFER_FLAG_AUTODESTROY | MULTI_XFER_FLAG_QUEUE) < 0){
 							nprintf(("Network", "Failed to send data file! Trying again later...\n"));
@@ -143,7 +143,7 @@ void multi_data_do()
 void multi_data_handle_incoming(int handle)
 {	
 	int player_index = -1;
-	PSNET_SOCKET_RELIABLE sock = INVALID_SOCKET;	
+	PSNET_SOCKET_RELIABLE sock;
 	char *fname;		
 
 	// get the player who is sending us this file	
@@ -336,9 +336,7 @@ void multi_data_send_my_junk()
 
 // is the give file xfer handle for a "multi data" file (pcx, wav, etc)
 int multi_data_is_data(char *filename)
-{		
-	size_t len,idx;
-
+{
 	Assert(filename != NULL);
 
 	// some kind of error
@@ -347,10 +345,7 @@ int multi_data_is_data(char *filename)
 	}
 
 	// convert to lowercase
-	len = strlen(filename);
-	for(idx=0;idx<len;idx++){
-		filename[idx] = (char)tolower(filename[idx]);
-	}
+	SCP_tolower(filename);
 
 	// check to see if the extension is .pcx
 	if(strstr(filename, NOX(".pcx"))){

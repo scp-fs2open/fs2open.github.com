@@ -75,12 +75,13 @@ extern int Fade_end_timestamp;
 
 typedef struct vei {
 	angles_t	angles;			//	Angles defining viewer location.
-	float		distance;		//	Distance from which to view, plus 2x radius.
+	float		preferred_distance; // the distance the player wants to be at, may be set to farther away by cam_get_bbox_dist
+	float		current_distance; // the actual cam distance after cam_get_bbox_dist
 } vei;
 
 typedef struct vci {
 	angles_t	angles;
-	float		distance;		// Distance from which to view, plus 3x radius
+	float		distance; // extra distance added by the controls, 0 when as close as possible
 } vci;
 
 extern fix Missiontime;
@@ -93,7 +94,6 @@ extern int Game_mode;
 #define SINGLEPLAYER !(Game_mode & GM_MULTIPLAYER)
 
 extern int Viewer_mode;
-extern int Rand_count;
 
 extern int Game_restoring;		// If set, this means we are restoring data from disk
 

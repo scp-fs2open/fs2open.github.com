@@ -12,7 +12,7 @@ layout (std140) uniform genericData {
 	vec3 fog_color;
 	float fog_start;
 
-	float fog_scale;
+	float fog_density;
 	float zNear;
 	float zFar;
 };
@@ -23,17 +23,15 @@ void main()
 
 	// If the scene is in fog then we change the color we operate on based on the depth of the pixel
 	float depth_val = texture(depth_tex, fragTexCoord.xy).x;
-	// Transform depth value from [-1, 1] to [0, 1]
-	float depth_normalized = fma(depth_val, 0.5, 0.5);
+	// Transform depth value from [0, 1] to [-1, 1]
+	float depth_normalized = 2 * depth_val - 1;
 	// Now we compute the depth value in projection space using the clipping plane information
 	float view_depth = 2.0 * zNear * zFar / (zFar + zNear - depth_normalized * (zFar - zNear));
 
 	if (isinf(view_depth)) {
 		fragOut0.rgb = color_in.rgb;
 	} else {
-		// This is the same formula that is also used by the main shader
-		float fog_dist = clamp((view_depth - fog_start) * 0.75 * fog_scale, 0.0, 1.0);
-
+		float fog_dist = clamp(1 - pow(fog_density, view_depth - fog_start) , 0.0, 1.0);
 		vec3 finalFogColor = srgb_to_linear(fog_color);
 
 		fragOut0.rgb = mix(color_in.rgb, finalFogColor, fog_dist);

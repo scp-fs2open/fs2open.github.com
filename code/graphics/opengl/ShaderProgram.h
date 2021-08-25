@@ -55,8 +55,8 @@ class ShaderProgram {
 
 	ShaderUniforms Uniforms;
 
-	ShaderProgram(const ShaderProgram&) SCP_DELETED_FUNCTION;
-	ShaderProgram& operator=(const ShaderProgram&) SCP_DELETED_FUNCTION;
+	ShaderProgram(const ShaderProgram&) = delete;
+	ShaderProgram& operator=(const ShaderProgram&) = delete;
 
 	ShaderProgram(ShaderProgram&& other) noexcept;
 	ShaderProgram& operator=(ShaderProgram&& other) noexcept;

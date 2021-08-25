@@ -90,6 +90,15 @@ int fvi_point_face(const vec3d *checkp, int nv, vec3d const *const *verts, const
 //else returns 0
 int fvi_segment_sphere(vec3d *intp, const vec3d *p0, const vec3d *p1, const vec3d *sphere_pos, float sphere_rad);
 
+/**
+ * Determine if a cylinder *may* intersect with a sphere
+ *
+ * cylinder from p0 to p1 with radius cyl_rad
+ * sphere at sphere_pos with radius sphere_rad
+ * @return false if definitely not intersecting, returns true if intersection is possible
+ */
+bool fvi_cylinder_sphere_may_collide(const vec3d* p0, const vec3d* p1, float cyl_rad, const vec3d* sphere_pos, float sphere_rad);
+
 //determine if and where a ray intersects with a sphere
 //vector defined by p0,p1 
 //returns 1 if intersects, and fills in intp

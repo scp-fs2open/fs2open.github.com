@@ -23,6 +23,13 @@ class DynamicSEXP {
 	const SCP_string& getHelpText() const;
 
 	/**
+	 * @brief Called when the sexp is added to the SEXP system
+	 *
+	 * This can be used for executing operations that can only be run once the SEXP is added to the system
+	 */
+	virtual void initialize() = 0;
+
+	/**
 	 * @brief Retrieves the minimum number of parameters this SEXP needs
 	 *
 	 * All remaining parameters are optional and the implementation must handle non-existing parameters gracefully

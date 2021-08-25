@@ -213,8 +213,8 @@ void pilotfile_convert::csg_import_ships_weapons()
 		csg->medals_list.push_back( ilist );
 	}
 
-	// stuff intel list as well (present but burried in old files)
-	list_size = Intel_info_size;
+	// stuff intel list as well (present but buried in old files)
+	list_size = intel_info_size();
 
 	for (idx = 0; idx < list_size; idx++) {
 		ilist.name = Intel_info[idx].name;

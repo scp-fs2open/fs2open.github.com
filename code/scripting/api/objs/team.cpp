@@ -11,7 +11,7 @@ namespace api {
 //**********HANDLE: Team
 ADE_OBJ(l_Team, int, "team", "Team handle");
 
-ADE_FUNC(__eq, l_Team, "team, team", "Checks whether two teams are the same team", "boolean", "true if equal")
+ADE_FUNC(__eq, l_Team, "team, team", "Checks whether two teams are the same team", "boolean", "true if equal, false otherwise")
 {
 	int t1, t2;
 	if(!ade_get_args(L, "oo", l_Team.Get(&t1), l_Team.Get(&t2)))
@@ -30,15 +30,21 @@ ADE_VIRTVAR(Name, l_Team, "string", "Team name", "string", "Team name, or empty 
 	if(tdx < 0 || tdx > Num_iffs)
 		return ade_set_error(L, "s", "");
 
-	if(ADE_SETTING_VAR && s != NULL) {
-		strncpy(Iff_info[tdx].iff_name, s, NAME_LENGTH-1);
+	if(ADE_SETTING_VAR && s != nullptr) {
+		auto len = sizeof(Iff_info[tdx].iff_name);
+		strncpy(Iff_info[tdx].iff_name, s, len);
+		Iff_info[tdx].iff_name[len - 1] = 0;
 	}
 
 	return ade_set_args(L, "s", Iff_info[tdx].iff_name);
 }
 
-ADE_FUNC(getColor, l_Team, nullptr, "Gets the IFF color of the specified Team",
-         ade_type_info({"number", "number", "number"}), "rgb color for the specified team or nil if invalid")
+ADE_FUNC(getColor,
+	l_Team,
+	nullptr,
+	"Gets the IFF color of the specified Team",
+	"number, number, number",
+	"rgb color for the specified team or nil if invalid")
 {
 	int idx;
 	int r,g,b;

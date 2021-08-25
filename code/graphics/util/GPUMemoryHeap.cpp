@@ -27,9 +27,9 @@ GPUMemoryHeap::GPUMemoryHeap(GpuHeap heap_type) {
 	_allocator.reset(new ::util::HeapAllocator([this](size_t n) { resizeBuffer(n); }));
 }
 GPUMemoryHeap::~GPUMemoryHeap() {
-	if (_bufferHandle != -1) {
+	if (_bufferHandle.isValid()) {
 		gr_delete_buffer(_bufferHandle);
-		_bufferHandle = -1;
+		_bufferHandle = gr_buffer_handle();
 	}
 
 	if (_dataBuffer != nullptr) {
@@ -63,7 +63,7 @@ void GPUMemoryHeap::freeGpuData(size_t offset) {
 	_allocator->free(offset);
 	// Just leave the data in the buffers since it doesn't hurt anyone if it's kept in there
 }
-int GPUMemoryHeap::bufferHandle() {
+gr_buffer_handle GPUMemoryHeap::bufferHandle() {
 	return _bufferHandle;
 }
 

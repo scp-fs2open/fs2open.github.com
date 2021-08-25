@@ -33,6 +33,9 @@ static char THIS_FILE[] = __FILE__;
 /////////////////////////////////////////////////////////////////////////////
 // bg_bitmap_dlg dialog
 
+// FRED has a fixed number of checkboxes and supports only up to this number of nebula poofs
+#define MAX_NEB2_POOF_CHECKBOXES	6
+
 bg_bitmap_dlg::bg_bitmap_dlg(CWnd* pParent) : CDialog(bg_bitmap_dlg::IDD, pParent)
 {
 	//{{AFX_DATA_INIT(bg_bitmap_dlg)		
@@ -47,12 +50,10 @@ bg_bitmap_dlg::bg_bitmap_dlg(CWnd* pParent) : CDialog(bg_bitmap_dlg::IDD, pParen
 	m_subspace = FALSE;
 	m_fullneb = FALSE;
 	m_toggle_trails = FALSE;
-	m_poof_0 = Neb2_poof_flags & (1<<0) ? 1 : 0;
-	m_poof_1 = Neb2_poof_flags & (1<<1) ? 1 : 0;
-	m_poof_2 = Neb2_poof_flags & (1<<2) ? 1 : 0;
-	m_poof_3 = Neb2_poof_flags & (1<<3) ? 1 : 0;
-	m_poof_4 = Neb2_poof_flags & (1<<4) ? 1 : 0;
-	m_poof_5 = Neb2_poof_flags & (1<<5) ? 1 : 0;
+
+	for (int i = 0; i < MAX_NEB2_POOFS; ++i)
+		m_poofs[i] = Neb2_poof_flags & (1 << i) ? 1 : 0;
+
 	s_pitch = 0;
 	s_bank = 0;
 	s_heading = 0;
@@ -95,12 +96,10 @@ void bg_bitmap_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_CBIndex(pDX, IDC_NEB2_TEXTURE, m_neb2_texture);
 	DDX_Check(pDX, IDC_SUBSPACE, m_subspace);
 	DDX_Check(pDX, IDC_FULLNEB, m_fullneb);
-	DDX_Check(pDX, IDC_POOF0, m_poof_0);
-	DDX_Check(pDX, IDC_POOF1, m_poof_1);
-	DDX_Check(pDX, IDC_POOF2, m_poof_2);
-	DDX_Check(pDX, IDC_POOF3, m_poof_3);
-	DDX_Check(pDX, IDC_POOF4, m_poof_4);
-	DDX_Check(pDX, IDC_POOF5, m_poof_5);
+
+	for (int i = 0; i < MAX_NEB2_POOF_CHECKBOXES; ++i)
+		DDX_Check(pDX, IDC_POOF0 + i, m_poofs[i]);
+
 	DDX_Check(pDX, IDC_NEB_TOGGLE_TRAILS, m_toggle_trails);
 	DDX_Text(pDX, IDC_SUN1, s_name);
 	DDX_Text(pDX, IDC_SUN1_P, s_pitch);
@@ -176,6 +175,8 @@ BEGIN_MESSAGE_MAP(bg_bitmap_dlg, CDialog)
 	ON_EN_KILLFOCUS(IDC_SUN1_H, OnKillfocusSun1H)
 	ON_EN_KILLFOCUS(IDC_SUN1_B, OnKillfocusSun1B)
 	ON_EN_KILLFOCUS(IDC_SUN1_SCALE, OnKillfocusSun1Scale)
+	ON_BN_CLICKED(IDC_ADD_BACKGROUND, OnAddBackground)
+	ON_BN_CLICKED(IDC_REMOVE_BACKGROUND, OnRemoveBackground)
 	ON_BN_CLICKED(IDC_IMPORT_BACKGROUND, OnImportBackground)
 	ON_BN_CLICKED(IDC_SWAP_BACKGROUND, OnSwapBackground)
 	ON_CBN_SELCHANGE(IDC_BACKGROUND_NUM, OnBackgroundDropdownChange)
@@ -217,12 +218,8 @@ void bg_bitmap_dlg::create()
 	build_nebfile_list();	
 
 	// setup neb poof names
-	GetDlgItem(IDC_POOF0)->SetWindowText(Neb2_poof_filenames[0]);	
-	GetDlgItem(IDC_POOF1)->SetWindowText(Neb2_poof_filenames[1]);
-	GetDlgItem(IDC_POOF2)->SetWindowText(Neb2_poof_filenames[2]);
-	GetDlgItem(IDC_POOF3)->SetWindowText(Neb2_poof_filenames[3]);
-	GetDlgItem(IDC_POOF4)->SetWindowText(Neb2_poof_filenames[4]);
-	GetDlgItem(IDC_POOF5)->SetWindowText(Neb2_poof_filenames[5]);
+	for (i = 0; i < MAX_NEB2_POOF_CHECKBOXES; ++i)
+		GetDlgItem(IDC_POOF0 + i)->SetWindowText(Poof_info[i].name);
 
 	m_skybox_model = _T(The_mission.skybox_model);
 	m_envmap = _T(The_mission.envmap_name);
@@ -297,7 +294,7 @@ void bg_bitmap_dlg::create()
 	((CButton*)GetDlgItem(IDC_NEB_TOGGLE_TRAILS))->SetCheck(m_toggle_trails);
 
 	// setup background numbering
-	for (i = 0; i < MAX_BACKGROUNDS; i++) 
+	for (i = 0; i < (int)Backgrounds.size(); i++) 
 	{
 		char temp[NAME_LENGTH];
 		sprintf(temp, "Background %d", i + 1);
@@ -307,6 +304,9 @@ void bg_bitmap_dlg::create()
 	}
 	((CComboBox*) GetDlgItem(IDC_BACKGROUND_NUM))->SetCurSel(0);
 	((CComboBox*) GetDlgItem(IDC_BACKGROUND_SWAP_NUM))->SetCurSel(0);
+
+	// we can't remove the only remaining background
+	GetDlgItem(IDC_REMOVE_BACKGROUND)->EnableWindow(Backgrounds.size() > 1);
 
 	// setup sun and sunglow controls
 	sun_data_init();	
@@ -368,29 +368,10 @@ void bg_bitmap_dlg::OnClose()
 
 		// store poof flags
 		Neb2_poof_flags = 0;
-		if(m_poof_0)
+		for (int i = 0; i < MAX_NEB2_POOFS; ++i)
 		{
-			Neb2_poof_flags |= (1<<0);
-		}
-		if(m_poof_1)
-		{
-			Neb2_poof_flags |= (1<<1);
-		}
-		if(m_poof_2)
-		{
-			Neb2_poof_flags |= (1<<2);
-		}
-		if(m_poof_3)
-		{
-			Neb2_poof_flags |= (1<<3);
-		}
-		if(m_poof_4)
-		{
-			Neb2_poof_flags |= (1<<4);
-		}
-		if(m_poof_5)
-		{
-			Neb2_poof_flags |= (1<<5);
+			if (m_poofs[i])
+				Neb2_poof_flags |= (1 << i);
 		}
 		
 		// get the bitmap name
@@ -464,7 +445,7 @@ void bg_bitmap_dlg::OnClose()
 	// reset the background
 	stars_pack_backgrounds();
 	stars_load_first_valid_background();
-	
+
 	// close window stuff
 	theApp.record_window_data(&Bg_wnd_data, this);
 	delete Bg_bitmap_dialog;
@@ -546,12 +527,10 @@ void bg_bitmap_dlg::OnFullNeb()
 		GetDlgItem(IDC_NEB2_INTENSITY)->EnableWindow(TRUE);
 		GetDlgItem(IDC_NEB2_TEXTURE)->EnableWindow(TRUE);
 		GetDlgItem(IDC_NEB2_LIGHTNING)->EnableWindow(TRUE);
-		GetDlgItem(IDC_POOF0)->EnableWindow(TRUE);
-		GetDlgItem(IDC_POOF1)->EnableWindow(TRUE);
-		GetDlgItem(IDC_POOF2)->EnableWindow(TRUE);
-		GetDlgItem(IDC_POOF3)->EnableWindow(TRUE);
-		GetDlgItem(IDC_POOF4)->EnableWindow(TRUE);
-		GetDlgItem(IDC_POOF5)->EnableWindow(TRUE);
+
+		for (int i = 0; i < MAX_NEB2_POOF_CHECKBOXES; ++i)
+			GetDlgItem(IDC_POOF0 + i)->EnableWindow(TRUE);
+
 		GetDlgItem(IDC_NEB_TOGGLE_TRAILS)->EnableWindow(TRUE);
 
 		// disable non-fullneb controls
@@ -561,30 +540,12 @@ void bg_bitmap_dlg::OnFullNeb()
 		GetDlgItem(IDC_BANK)->EnableWindow(FALSE);
 		GetDlgItem(IDC_HEADING)->EnableWindow(FALSE);
 
-		// check all relevant poofs		
-		((CButton*)GetDlgItem(IDC_POOF0))->SetCheck(FALSE);
-		if(m_poof_0){
-			((CButton*)GetDlgItem(IDC_POOF0))->SetCheck(TRUE);
-		}
-		((CButton*)GetDlgItem(IDC_POOF1))->SetCheck(FALSE);
-		if(m_poof_1){
-			((CButton*)GetDlgItem(IDC_POOF1))->SetCheck(TRUE);
-		}
-		((CButton*)GetDlgItem(IDC_POOF2))->SetCheck(FALSE);
-		if(m_poof_2){
-			((CButton*)GetDlgItem(IDC_POOF2))->SetCheck(TRUE);
-		}
-		((CButton*)GetDlgItem(IDC_POOF3))->SetCheck(FALSE);
-		if(m_poof_3){
-			((CButton*)GetDlgItem(IDC_POOF3))->SetCheck(TRUE);
-		}
-		((CButton*)GetDlgItem(IDC_POOF4))->SetCheck(FALSE);
-		if(m_poof_4){
-			((CButton*)GetDlgItem(IDC_POOF4))->SetCheck(TRUE);
-		}
-		((CButton*)GetDlgItem(IDC_POOF5))->SetCheck(FALSE);
-		if(m_poof_5){
-			((CButton*)GetDlgItem(IDC_POOF5))->SetCheck(TRUE);
+		// check all relevant poofs
+		for (int i = 0; i < MAX_NEB2_POOF_CHECKBOXES; ++i)
+		{
+			((CButton*)GetDlgItem(IDC_POOF0 + i))->SetCheck(FALSE);
+			if (m_poofs[i])
+				((CButton*)GetDlgItem(IDC_POOF0 + i))->SetCheck(TRUE);
 		}
 	} else {
 		// enable all non-fullneb controls
@@ -598,12 +559,10 @@ void bg_bitmap_dlg::OnFullNeb()
 		GetDlgItem(IDC_NEB2_INTENSITY)->EnableWindow(FALSE);
 		GetDlgItem(IDC_NEB2_TEXTURE)->EnableWindow(FALSE);
 		GetDlgItem(IDC_NEB2_LIGHTNING)->EnableWindow(FALSE);
-		GetDlgItem(IDC_POOF0)->EnableWindow(FALSE);
-		GetDlgItem(IDC_POOF1)->EnableWindow(FALSE);
-		GetDlgItem(IDC_POOF2)->EnableWindow(FALSE);
-		GetDlgItem(IDC_POOF3)->EnableWindow(FALSE);
-		GetDlgItem(IDC_POOF4)->EnableWindow(FALSE);
-		GetDlgItem(IDC_POOF5)->EnableWindow(FALSE);
+
+		for (int i = 0; i < MAX_NEB2_POOF_CHECKBOXES; ++i)
+			GetDlgItem(IDC_POOF0 + i)->EnableWindow(FALSE);
+
 		GetDlgItem(IDC_NEB_TOGGLE_TRAILS)->EnableWindow(FALSE);
 	}		
 }
@@ -1251,8 +1210,11 @@ void bg_bitmap_dlg::OnImportBackground()
 	char *saved_mp;
 
 	//warn on pressing the button
-	if (MessageBox("This action will erase any nebulae and suns already placed.  Continue?", "Fred2", MB_ICONWARNING | MB_YESNO) == IDNO)
-		return;
+	if (!stars_background_empty(Backgrounds[get_active_background()]))
+	{
+		if (MessageBox("This action will erase any stars and bitmaps already placed.  Continue?", "Fred2", MB_ICONWARNING | MB_YESNO) == IDNO)
+			return;
+	}
 
 	//check if cancel was pressed
 	if (cfd.DoModal() == IDCANCEL)
@@ -1335,7 +1297,7 @@ int bg_bitmap_dlg::get_active_background()
 {
 	// find out which background we're editing
 	int idx = ((CComboBox *) GetDlgItem(IDC_BACKGROUND_NUM))->GetCurSel();
-	if (idx < 0 || idx >= MAX_BACKGROUNDS)
+	if (idx < 0 || idx >= (int)Backgrounds.size())
 		idx = 0;
 
 	return idx;
@@ -1345,7 +1307,7 @@ int bg_bitmap_dlg::get_swap_background()
 {
 	// find out which background we're swapping
 	int idx = ((CComboBox *) GetDlgItem(IDC_BACKGROUND_SWAP_NUM))->GetCurSel();
-	if (idx < 0 || idx >= MAX_BACKGROUNDS)
+	if (idx < 0 || idx >= (int)Backgrounds.size())
 		idx = 0;
 
 	return idx;
@@ -1353,6 +1315,65 @@ int bg_bitmap_dlg::get_swap_background()
 
 void bg_bitmap_dlg::OnBackgroundDropdownChange()
 {
+	reinitialize_lists();
+}
+
+void bg_bitmap_dlg::OnAddBackground()
+{
+	int new_index = (int)Backgrounds.size();
+
+	// add new combo box entry
+	char temp[NAME_LENGTH];
+	sprintf(temp, "Background %d", new_index + 1);
+	((CComboBox*)GetDlgItem(IDC_BACKGROUND_NUM))->AddString(temp);
+	((CComboBox*)GetDlgItem(IDC_BACKGROUND_SWAP_NUM))->AddString(temp);
+
+	// add the background slot
+	Backgrounds.emplace_back();
+
+	// select the new entry
+	((CComboBox*)GetDlgItem(IDC_BACKGROUND_NUM))->SetCurSel(new_index);
+	((CComboBox*)GetDlgItem(IDC_BACKGROUND_SWAP_NUM))->SetCurSel(new_index);
+
+	// can remove all but one background
+	if (Backgrounds.size() > 1)
+		GetDlgItem(IDC_REMOVE_BACKGROUND)->EnableWindow(TRUE);
+
+	// refresh dialog
+	reinitialize_lists();
+}
+
+void bg_bitmap_dlg::OnRemoveBackground()
+{
+	int old_index = get_active_background();
+
+	//warn on pressing the button
+	if (!stars_background_empty(Backgrounds[old_index]))
+	{
+		if (MessageBox("Are you sure you want to remove the current background and all of its stars and bitmaps?", "Fred2", MB_ICONWARNING | MB_YESNO) == IDNO)
+			return;
+	}
+
+	// remove the last combo box entry (not the current one, because they are numbered in order)
+	((CComboBox*)GetDlgItem(IDC_BACKGROUND_NUM))->DeleteString((int)Backgrounds.size() - 1);
+	((CComboBox*)GetDlgItem(IDC_BACKGROUND_SWAP_NUM))->DeleteString((int)Backgrounds.size() - 1);
+
+	// remove the background slot
+	Backgrounds.erase(Backgrounds.begin() + old_index);
+
+	// if the index is no longer valid, adjust it
+	if (old_index >= (int)Backgrounds.size())
+		old_index--;
+
+	// select the old entry
+	((CComboBox*)GetDlgItem(IDC_BACKGROUND_NUM))->SetCurSel(old_index);
+	((CComboBox*)GetDlgItem(IDC_BACKGROUND_SWAP_NUM))->SetCurSel(old_index);
+
+	// can remove all but one background
+	if (Backgrounds.size() <= 1)
+		GetDlgItem(IDC_REMOVE_BACKGROUND)->EnableWindow(FALSE);
+
+	// refresh dialog
 	reinitialize_lists();
 }
 

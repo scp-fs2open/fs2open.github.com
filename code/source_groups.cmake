@@ -6,6 +6,66 @@ add_file_folder(""
 	prefix_header.h
 )
 
+add_file_folder("Actions"
+	actions/Action.cpp
+	actions/Action.h
+	actions/ActionDefinition.cpp
+	actions/ActionDefinition.h
+	actions/ActionDefinitionManager.cpp
+	actions/ActionDefinitionManager.h
+	actions/BuiltinActionDefinition.h
+	actions/common.cpp
+	actions/common.h
+	actions/Program.cpp
+	actions/Program.h
+)
+
+add_file_folder("Actions\\\\Expression"
+	actions/expression/ActionExpression.cpp
+	actions/expression/ActionExpression.h
+	actions/expression/ExpressionParser.cpp
+	actions/expression/ExpressionParser.h
+	actions/expression/FunctionManager.cpp
+	actions/expression/FunctionManager.h
+	actions/expression/ParseContext.h
+	actions/expression/ProgramVariables.cpp
+	actions/expression/ProgramVariables.h
+	actions/expression/TypeDefinition.cpp
+	actions/expression/TypeDefinition.h
+	actions/expression/Value.cpp
+	actions/expression/Value.h
+)
+
+add_file_folder("Actions\\\\Expression\\\\Nodes"
+	actions/expression/nodes/AbstractExpression.cpp
+	actions/expression/nodes/AbstractExpression.h
+	actions/expression/nodes/FunctionCallExpression.cpp
+	actions/expression/nodes/FunctionCallExpression.h
+	actions/expression/nodes/LiteralExpression.cpp
+	actions/expression/nodes/LiteralExpression.h
+	actions/expression/nodes/RandomRangeExpression.cpp
+	actions/expression/nodes/RandomRangeExpression.h
+	actions/expression/nodes/VariableReferenceExpression.cpp
+	actions/expression/nodes/VariableReferenceExpression.h
+	actions/expression/nodes/VectorConstructorExpression.cpp
+	actions/expression/nodes/VectorConstructorExpression.h
+)
+
+add_file_folder("Actions\\\\Types"
+	actions/types/MoveToSubmodel.cpp
+	actions/types/MoveToSubmodel.h
+	actions/types/ParticleEffectAction.cpp
+	actions/types/ParticleEffectAction.h
+	actions/types/PlaySoundAction.cpp
+	actions/types/PlaySoundAction.h
+	actions/types/SetDirectionAction.cpp
+	actions/types/SetDirectionAction.h
+	actions/types/SetPositionAction.cpp
+	actions/types/SetPositionAction.h
+	actions/types/WaitAction.cpp
+	actions/types/WaitAction.h
+)
+
 # AI files
 add_file_folder("AI"
 	ai/ai.cpp
@@ -64,6 +124,8 @@ add_file_folder("CFile"
 	cfile/cfilelist.cpp
 	cfile/cfilesystem.cpp
 	cfile/cfilesystem.h
+	cfile/cfilecompression.cpp
+	cfile/cfilecompression.h
 )
 
 # Cmdline files
@@ -143,18 +205,9 @@ add_file_folder("Decals"
 
 add_file_folder("Default files"
 	def_files/def_files.h
+	def_files/def_files.cpp
+	${file_root_def_files}
 )
-if(MSVC)
-	add_file_folder("Default files"
-		${file_root_def_files}
-		def_files/def_files-win32.cpp
-	)
-else()
-	add_file_folder("Default files"
-		${file_root_def_files}
-		def_files/def_files-generic.cpp
-	)
-endif()
 
 add_file_folder("Default files\\\\data"
 )
@@ -167,8 +220,6 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/brightpass-f.sdr
 	def_files/data/effects/decal-f.sdr
 	def_files/data/effects/decal-v.sdr
-	def_files/data/effects/default-material-f.sdr
-	def_files/data/effects/default-material-v.sdr
 	def_files/data/effects/deferred-clear-f.sdr
 	def_files/data/effects/deferred-clear-v.sdr
 	def_files/data/effects/deferred-f.sdr
@@ -262,6 +313,8 @@ add_file_folder("ExceptionHandler"
 
 # Executor files
 add_file_folder("Executor"
+	executor/CombinedExecutionContext.cpp
+	executor/CombinedExecutionContext.h
 	executor/Executor.cpp
 	executor/Executor.h
 	executor/GameStateExecutionContext.cpp
@@ -308,7 +361,6 @@ add_file_folder("GameSnd"
 
 add_file_folder("Generated Files"
 	${GENERATED_SOURCE_DIR}/project.h
-	${GENERATED_SOURCE_DIR}/scp_compiler_detection.h
 	${PLATFORM_CHECK_HEADER}
 )
 
@@ -327,6 +379,8 @@ add_file_folder("GlobalIncs"
 	globalincs/systemvars.cpp
 	globalincs/systemvars.h
 	globalincs/toolchain.h
+	globalincs/undosys.cpp
+	globalincs/undosys.h
 	globalincs/version.cpp
 	globalincs/version.h
 	globalincs/vmallocator.h
@@ -365,6 +419,7 @@ add_file_folder("Graphics"
 	graphics/decal_draw_list.h
 	graphics/grbatch.cpp
 	graphics/grbatch.h
+	graphics/grinternal.cpp
 	graphics/grinternal.h
 	graphics/light.cpp
 	graphics/light.h
@@ -374,6 +429,8 @@ add_file_folder("Graphics"
 	graphics/material.h
 	graphics/matrix.cpp
 	graphics/matrix.h
+	graphics/post_processing.cpp
+	graphics/post_processing.h
 	graphics/render.cpp
 	graphics/render.h
 	graphics/shadows.cpp
@@ -383,43 +440,45 @@ add_file_folder("Graphics"
 	graphics/uniforms.h
 )
 
-# Graphics -> OpenGLGr files
-add_file_folder("Graphics\\\\OpenGLGr"
-)
+if (FSO_BUILD_WITH_OPENGL)
+	# Graphics -> OpenGLGr files
+	add_file_folder("Graphics\\\\OpenGLGr"
+	)
 
-# Graphics -> OpenGLGr -> OpenGL CPPs files
-add_file_folder("Graphics\\\\OpenGLGr\\\\OpenGL CPPs"
-	graphics/opengl/gropengl.cpp
-	graphics/opengl/gropenglbmpman.cpp
-	graphics/opengl/gropengldeferred.cpp
-	graphics/opengl/gropengldraw.cpp
-	graphics/opengl/gropenglpostprocessing.cpp
-	graphics/opengl/gropenglquery.cpp
-	graphics/opengl/gropenglshader.cpp
-	graphics/opengl/gropenglstate.cpp
-	graphics/opengl/gropenglsync.cpp
-	graphics/opengl/gropengltexture.cpp
-	graphics/opengl/gropengltnl.cpp
-	graphics/opengl/ShaderProgram.cpp
-)
+	# Graphics -> OpenGLGr -> OpenGL CPPs files
+	add_file_folder("Graphics\\\\OpenGLGr\\\\OpenGL CPPs"
+		graphics/opengl/gropengl.cpp
+		graphics/opengl/gropenglbmpman.cpp
+		graphics/opengl/gropengldeferred.cpp
+		graphics/opengl/gropengldraw.cpp
+		graphics/opengl/gropenglpostprocessing.cpp
+		graphics/opengl/gropenglquery.cpp
+		graphics/opengl/gropenglshader.cpp
+		graphics/opengl/gropenglstate.cpp
+		graphics/opengl/gropenglsync.cpp
+		graphics/opengl/gropengltexture.cpp
+		graphics/opengl/gropengltnl.cpp
+		graphics/opengl/ShaderProgram.cpp
+	)
 
-# Graphics -> OpenGLGr -> OpenGL Headers files
-add_file_folder("Graphics\\\\OpenGLGr\\\\OpenGL Headers"
-	graphics/opengl/gropengl.h
-	graphics/opengl/gropenglbmpman.h
-	graphics/opengl/gropengldeferred.h
-	graphics/opengl/gropengldraw.h
-	graphics/opengl/gropenglpostprocessing.h
-	graphics/opengl/gropenglquery.h
-	graphics/opengl/gropenglshader.h
-	graphics/opengl/gropenglstate.h
-	graphics/opengl/gropenglsync.h
-	graphics/opengl/gropengltexture.h
-	graphics/opengl/gropengltnl.h
-	graphics/opengl/ShaderProgram.h
-	graphics/opengl/SmaaAreaTex.h
-	graphics/opengl/SmaaSearchTex.h
-)
+	# Graphics -> OpenGLGr -> OpenGL Headers files
+	add_file_folder("Graphics\\\\OpenGLGr\\\\OpenGL Headers"
+		graphics/opengl/gropengl.h
+		graphics/opengl/gropenglbmpman.h
+		graphics/opengl/gropengldeferred.h
+		graphics/opengl/gropengldraw.h
+		graphics/opengl/gropenglpostprocessing.h
+		graphics/opengl/gropenglquery.h
+		graphics/opengl/gropenglshader.h
+		graphics/opengl/gropenglstate.h
+		graphics/opengl/gropenglsync.h
+		graphics/opengl/gropengltexture.h
+		graphics/opengl/gropengltnl.h
+		graphics/opengl/ShaderProgram.h
+		graphics/opengl/SmaaAreaTex.h
+		graphics/opengl/SmaaSearchTex.h
+	)
+endif()
 
 # Graphics -> Paths
 add_file_folder("Graphics\\\\Paths"
@@ -475,12 +534,18 @@ add_file_folder("Graphics\\\\Util"
 	graphics/util/UniformBufferManager.cpp
 )
 
-add_file_folder("Graphics\\\\Vulkan"
-	graphics/vulkan/gr_vulkan.cpp
-	graphics/vulkan/gr_vulkan.h
-	graphics/vulkan/VulkanRenderer.cpp
-	graphics/vulkan/VulkanRenderer.h
-)
+if (FSO_BUILD_WITH_VULKAN)
+	add_file_folder("Graphics\\\\Vulkan"
+		graphics/vulkan/gr_vulkan.cpp
+		graphics/vulkan/gr_vulkan.h
+		graphics/vulkan/RenderFrame.cpp
+		graphics/vulkan/RenderFrame.h
+		graphics/vulkan/vulkan_stubs.cpp
+		graphics/vulkan/vulkan_stubs.h
+		graphics/vulkan/VulkanRenderer.cpp
+		graphics/vulkan/VulkanRenderer.h
+	)
+endif()
 
 # HeadTracking files
 add_file_folder("HeadTracking"
@@ -591,16 +656,54 @@ add_file_folder("JumpNode"
 
 # Lab files
 add_file_folder("Lab"
-	lab/lab.cpp
-	lab/lab.h
 	lab/wmcgui.cpp
 	lab/wmcgui.h
+	lab/labv2.h
+	lab/labv2_internal.h
+	lab/labv2.cpp
+)
+
+add_file_folder("Lab\\\\Dialogs"
+	lab/dialogs/lab_dialog.h
+	lab/dialogs/ship_classes.h
+	lab/dialogs/ship_classes.cpp
+	lab/dialogs/weapon_classes.h
+	lab/dialogs/weapon_classes.cpp
+	lab/dialogs/class_descriptions.h
+	lab/dialogs/class_descriptions.cpp
+	lab/dialogs/class_options.h
+	lab/dialogs/class_options.cpp
+	lab/dialogs/class_variables.h
+	lab/dialogs/class_variables.cpp
+	lab/dialogs/render_options.h
+	lab/dialogs/render_options.cpp
+	lab/dialogs/backgrounds.h
+	lab/dialogs/backgrounds.cpp
+	lab/dialogs/actions.h
+	lab/dialogs/actions.cpp
+)
+
+add_file_folder("Lab\\\\Manager"
+	lab/manager/lab_manager.h
+	lab/manager/lab_manager.cpp
+)
+
+add_file_folder("Lab\\\\Renderer"
+	lab/renderer/lab_renderer.h
+	lab/renderer/lab_renderer.cpp
+	lab/renderer/lab_cameras.h
+	lab/renderer/lab_cameras.cpp
 )
 
 add_file_folder("Libs"
 	libs/jansson.cpp
 	libs/jansson.h
 )
+
+add_file_folder("Libs\\\\AntLR"
+	libs/antlr/ErrorListener.cpp
+	libs/antlr/ErrorListener.h
+	)
 
 add_file_folder("Libs\\\\Discord"
 	libs/discord/discord.cpp
@@ -744,6 +847,10 @@ add_file_folder("Model"
 	model/model.h
 	model/modelanim.cpp
 	model/modelanim.h
+	model/modelanimation.cpp
+	model/modelanimation.h
+	model/modelanimation_segments.cpp
+	model/modelanimation_segments.h
 	model/modelcollide.cpp
 	model/modelinterp.cpp
 	model/modeloctant.cpp
@@ -786,6 +893,8 @@ add_file_folder("Network"
 	network/multi_kick.h
 	network/multi_log.cpp
 	network/multi_log.h
+	network/multi_mdns.cpp
+	network/multi_mdns.h
 	network/multi_obj.cpp
 	network/multi_obj.h
 	network/multi_observer.cpp
@@ -915,15 +1024,21 @@ add_file_folder("Parse"
 	parse/parselo.h
 	parse/sexp.cpp
 	parse/sexp.h
+	parse/sexp_container.cpp
+	parse/sexp_container.h
 )
 
 add_file_folder("Parse\\\\SEXP"
 	parse/sexp/DynamicSEXP.cpp
 	parse/sexp/DynamicSEXP.h
+	parse/sexp/EngineSEXP.cpp
+	parse/sexp/EngineSEXP.h
 	parse/sexp/LuaSEXP.cpp
 	parse/sexp/LuaSEXP.h
 	parse/sexp/sexp_lookup.cpp
 	parse/sexp/sexp_lookup.h
+	parse/sexp/SEXPParameterExtractor.cpp
+	parse/sexp/SEXPParameterExtractor.h
 )
 
 # Particle files
@@ -951,6 +1066,8 @@ add_file_folder("Particle\\\\Effects"
 	particle/effects/SingleParticleEffect.cpp
 	particle/effects/SingleParticleEffect.h
 	particle/effects/SphereShape.h
+	particle/effects/VolumeEffect.cpp
+	particle/effects/VolumeEffect.h
 )
 
 add_file_folder("Particle\\\\Util"
@@ -1045,6 +1162,8 @@ add_file_folder("ScpUi"
 	scpui/rocket_ui.h
 	scpui/RocketFileInterface.cpp
 	scpui/RocketFileInterface.h
+	scpui/RocketLuaSystemInterface.cpp
+	scpui/RocketLuaSystemInterface.h
 	scpui/RocketRenderingInterface.cpp
 	scpui/RocketRenderingInterface.h
 	scpui/RocketSystemInterface.cpp
@@ -1056,6 +1175,8 @@ add_file_folder("ScpUi"
 add_file_folder("ScpUi\\\\Elements"
 	scpui/elements/AnimationElement.cpp
 	scpui/elements/AnimationElement.h
+	scpui/elements/ScrollingTextElement.cpp
+	scpui/elements/ScrollingTextElement.h
 )
 
 add_file_folder("Scripting"
@@ -1080,11 +1201,20 @@ add_file_folder("Scripting"
 	scripting/scripting_doc.h
 )
 
+add_file_folder("Scripting\\\\Util"
+	scripting/util/LuaValueDeserializer.cpp
+	scripting/util/LuaValueDeserializer.h
+	scripting/util/LuaValueSerializer.cpp
+	scripting/util/LuaValueSerializer.h
+)
+
 add_file_folder("Scripting\\\\Api"
 	scripting/api/LuaCoroutineRunner.cpp
 	scripting/api/LuaCoroutineRunner.h
 	scripting/api/LuaEventCallback.cpp
 	scripting/api/LuaEventCallback.h
+	scripting/api/LuaExecutionContext.cpp
+	scripting/api/LuaExecutionContext.h
 	scripting/api/LuaPromise.cpp
 	scripting/api/LuaPromise.h
 )
@@ -1129,16 +1259,22 @@ add_file_folder("Scripting\\\\Api\\\\Libs"
 add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/asteroid.cpp
 	scripting/api/objs/asteroid.h
+	scripting/api/objs/audio_stream.cpp
+	scripting/api/objs/audio_stream.h
 	scripting/api/objs/background_element.cpp
 	scripting/api/objs/background_element.h
 	scripting/api/objs/beam.cpp
 	scripting/api/objs/beam.h
+	scripting/api/objs/bytearray.cpp
+	scripting/api/objs/bytearray.h
 	scripting/api/objs/camera.cpp
 	scripting/api/objs/camera.h
 	scripting/api/objs/cmd_brief.cpp
 	scripting/api/objs/cmd_brief.h
 	scripting/api/objs/cockpit_display.cpp
 	scripting/api/objs/cockpit_display.h
+	scripting/api/objs/color.cpp
+	scripting/api/objs/color.h
 	scripting/api/objs/control_info.cpp
 	scripting/api/objs/control_info.h
 	scripting/api/objs/controls.cpp
@@ -1149,12 +1285,18 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/enums.h
 	scripting/api/objs/event.cpp
 	scripting/api/objs/event.h
+	scripting/api/objs/execution_context.cpp
+	scripting/api/objs/execution_context.h
 	scripting/api/objs/executor.cpp
 	scripting/api/objs/executor.h
 	scripting/api/objs/eye.cpp
 	scripting/api/objs/eye.h
 	scripting/api/objs/file.cpp
 	scripting/api/objs/file.h
+	scripting/api/objs/fireballclass.cpp
+	scripting/api/objs/fireballclass.h
+	scripting/api/objs/fireball.cpp
+	scripting/api/objs/fireball.h
 	scripting/api/objs/font.cpp
 	scripting/api/objs/font.h
 	scripting/api/objs/gameevent.cpp
@@ -1163,6 +1305,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/gamestate.h
 	scripting/api/objs/hudgauge.cpp
 	scripting/api/objs/hudgauge.h
+	scripting/api/objs/intelentry.cpp
+	scripting/api/objs/intelentry.h
 	scripting/api/objs/LuaSEXP.cpp
 	scripting/api/objs/LuaSEXP.h
 	scripting/api/objs/mc_info.cpp
@@ -1390,6 +1534,9 @@ add_file_folder("Utils"
 	utils/HeapAllocator.cpp
 	utils/HeapAllocator.h
 	utils/id.h
+	utils/join_string.h
+	utils/Random.cpp
+	utils/Random.h
 	utils/RandomRange.h
 	utils/string_utils.cpp
 	utils/string_utils.h

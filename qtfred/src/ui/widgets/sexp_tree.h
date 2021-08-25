@@ -90,6 +90,7 @@ enum class NodeImage {
 	DATA_85,
 	DATA_90,
 	DATA_95,
+	COMMENT,
 };
 
 /**
@@ -226,7 +227,7 @@ class sexp_tree: public QTreeWidget {
 	void add_sub_tree(int node, QTreeWidgetItem* root);
 	int load_sub_tree(int index, bool valid, const char* text);
 	void hilite_item(int node);
-	SCP_string match_closest_operator(const char* str, int node);
+	SCP_string match_closest_operator(const SCP_string &str, int node);
 	void delete_sexp_tree_variable(const char* var_name);
 	void modify_sexp_tree_variable(const char* old_name, int sexp_var_index);
 	int get_item_index_to_var_index();
@@ -280,7 +281,6 @@ class sexp_tree: public QTreeWidget {
 	sexp_list_item* get_listing_opf_medal_name();
 	sexp_list_item* get_listing_opf_weapon_name();
 	sexp_list_item* get_listing_opf_ship_class_name();
-	sexp_list_item* get_listing_opf_hud_gauge_name();
 	sexp_list_item* get_listing_opf_huge_weapon();
 	sexp_list_item* get_listing_opf_ship_not_player();
 	sexp_list_item* get_listing_opf_jump_nodes();
@@ -319,7 +319,8 @@ class sexp_tree: public QTreeWidget {
 	sexp_list_item* get_listing_opf_explosion_option();
 	sexp_list_item* get_listing_opf_adjust_audio_volume();
 	sexp_list_item* get_listing_opf_weapon_banks();
-	sexp_list_item* get_listing_opf_hud_gauge();
+	sexp_list_item* get_listing_opf_builtin_hud_gauge();
+	sexp_list_item* get_listing_opf_custom_hud_gauge();
 	sexp_list_item* get_listing_opf_ship_effect();
 	sexp_list_item* get_listing_opf_animation_type();
 	sexp_list_item* get_listing_opf_mission_moods();
@@ -328,6 +329,8 @@ class sexp_tree: public QTreeWidget {
 	sexp_list_item* get_listing_opf_nebula_patterns();
 	sexp_list_item* get_listing_opf_game_snds();
 	sexp_list_item* get_listing_opf_fireball();
+	sexp_list_item *get_listing_opf_species();
+	sexp_list_item *get_listing_opf_language();
 
 
 	int getCurrentItemIndex() const;

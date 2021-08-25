@@ -21,13 +21,21 @@ public:
    */
     virtual antlrcpp::Any visitArg_list(ArgumentListParser::Arg_listContext *context) = 0;
 
+    virtual antlrcpp::Any visitStandalone_type(ArgumentListParser::Standalone_typeContext *context) = 0;
+
     virtual antlrcpp::Any visitSimple_type(ArgumentListParser::Simple_typeContext *context) = 0;
+
+    virtual antlrcpp::Any visitVarargs_or_simple_type(ArgumentListParser::Varargs_or_simple_typeContext *context) = 0;
 
     virtual antlrcpp::Any visitFunc_arg(ArgumentListParser::Func_argContext *context) = 0;
 
     virtual antlrcpp::Any visitFunc_arglist(ArgumentListParser::Func_arglistContext *context) = 0;
 
     virtual antlrcpp::Any visitFunction_type(ArgumentListParser::Function_typeContext *context) = 0;
+
+    virtual antlrcpp::Any visitMap_type(ArgumentListParser::Map_typeContext *context) = 0;
+
+    virtual antlrcpp::Any visitIterator_type(ArgumentListParser::Iterator_typeContext *context) = 0;
 
     virtual antlrcpp::Any visitType(ArgumentListParser::TypeContext *context) = 0;
 

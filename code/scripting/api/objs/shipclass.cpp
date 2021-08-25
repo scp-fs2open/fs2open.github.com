@@ -31,7 +31,7 @@ ADE_FUNC(__tostring, l_Shipclass, NULL, "Ship class name", "string", "Ship class
 	return ade_set_args(L, "s", Ship_info[idx].name);
 }
 
-ADE_FUNC(__eq, l_Shipclass, "shipclass, shipclass", "Checks if the two classes are equal", "boolean", "true if equal false otherwise")
+ADE_FUNC(__eq, l_Shipclass, "shipclass, shipclass", "Checks if the two classes are equal", "boolean", "true if equal, false otherwise")
 {
 	int idx1,idx2;
 	if(!ade_get_args(L, "oo", l_Shipclass.Get(&idx1), l_Shipclass.Get(&idx2)))
@@ -57,7 +57,9 @@ ADE_VIRTVAR(Name, l_Shipclass, "string", "Ship class name", "string", "Ship clas
 		return ade_set_error(L, "s", "");
 
 	if(ADE_SETTING_VAR && s != NULL) {
-		strncpy(Ship_info[idx].name, s, sizeof(Ship_info[idx].name)-1);
+		auto len = sizeof(Ship_info[idx].name);
+		strncpy(Ship_info[idx].name, s, len);
+		Ship_info[idx].name[len - 1] = 0;
 	}
 
 	return ade_set_args(L, "s", Ship_info[idx].name);
@@ -74,7 +76,9 @@ ADE_VIRTVAR(ShortName, l_Shipclass, "string", "Ship class short name", "string",
 		return ade_set_error(L, "s", "");
 
 	if(ADE_SETTING_VAR && s != NULL) {
-		strncpy(Ship_info[idx].short_name, s, sizeof(Ship_info[idx].short_name)-1);
+		auto len = sizeof(Ship_info[idx].short_name);
+		strncpy(Ship_info[idx].short_name, s, len);
+		Ship_info[idx].short_name[len - 1] = 0;
 	}
 
 	return ade_set_args(L, "s", Ship_info[idx].short_name);
@@ -358,7 +362,7 @@ ADE_VIRTVAR(HitpointsMax, l_Shipclass, "number", "Ship class hitpoints", "number
 	return ade_set_args(L, "f", Ship_info[idx].max_hull_strength);
 }
 
-ADE_VIRTVAR(Species, l_Shipclass, "Species", "Ship class species", "species", "Ship class species, or invalid species handle if shipclass handle is invalid")
+ADE_VIRTVAR(Species, l_Shipclass, "species", "Ship class species", "species", "Ship class species, or invalid species handle if shipclass handle is invalid")
 {
 	int idx;
 	int sidx = -1;
@@ -409,10 +413,10 @@ ADE_VIRTVAR(AltName, l_Shipclass, "string", "Alternate name for ship class", "st
 			return ade_set_error(L, "s", "");
 		}
 
-		strcpy_s(Ship_info[idx].alt_name, newName);
+		strcpy_s(Ship_info[idx].display_name, newName);
 	}
 
-	return ade_set_args(L, "s", Ship_info[idx].alt_name);
+	return ade_set_args(L, "s", Ship_info[idx].display_name);
 }
 
 ADE_VIRTVAR(Score, l_Shipclass, "string", "The score of this ship class", "number", "The score or -1 on invalid ship class")
@@ -430,6 +434,44 @@ ADE_VIRTVAR(Score, l_Shipclass, "string", "The score of this ship class", "numbe
 	}
 
 	return ade_set_args(L, "i", Ship_info[idx].score);
+}
+
+ADE_VIRTVAR(InTechDatabase, l_Shipclass, "boolean", "Gets or sets whether this ship class is visible in the tech room", "boolean", "True or false")
+{
+	int idx;
+	bool new_value;
+	if (!ade_get_args(L, "o|b", l_Shipclass.Get(&idx), &new_value))
+		return ade_set_error(L, "b", false);
+
+	if (idx < 0 || idx >= ship_info_size())
+		return ade_set_error(L, "b", false);
+
+	auto flag = (Player && (Player->flags & PLAYER_FLAGS_IS_MULTI))
+		? Ship::Info_Flags::In_tech_database_m
+		: Ship::Info_Flags::In_tech_database;
+
+	if (ADE_SETTING_VAR) {
+		Ship_info[idx].flags.set(flag, new_value);
+	}
+
+	return ade_set_args(L, "b", Ship_info[idx].flags[flag]);
+}
+
+ADE_VIRTVAR(PowerOutput, l_Shipclass, "number", "Gets or sets a ship class' power output", "number", "The ship class' current power output")
+{
+	int idx;
+	float new_power;
+	if (!ade_get_args(L, "o|f", l_Shipclass.Get(&idx), &new_power))
+		return ade_set_error(L, "f", -1.0f);
+
+	if (idx < 0 || idx >= ship_info_size())
+		return ade_set_error(L, "f", -1.0f);
+
+	if (ADE_SETTING_VAR) {
+		Ship_info[idx].power_output = new_power;
+	}
+
+	return ade_set_args(L, "f", Ship_info[idx].power_output);
 }
 
 ADE_FUNC(isValid, l_Shipclass, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
@@ -647,7 +689,7 @@ ADE_FUNC(isModelLoaded, l_Shipclass, "[boolean Load = false]", "Checks if the mo
 		return ADE_RETURN_FALSE;
 }
 
-ADE_FUNC(getShipClassIndex, l_Shipclass, NULL, "Gets the index valus of the ship class", "number", "index value of the ship class")
+ADE_FUNC(getShipClassIndex, l_Shipclass, nullptr, "Gets the index value of the ship class", "number", "index value of the ship class")
 {
 	int idx;
 	if(!ade_get_args(L, "o", l_Shipclass.Get(&idx)))

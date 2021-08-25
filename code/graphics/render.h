@@ -187,7 +187,7 @@ void gr_2d_stop_buffer();
 /**
  * @brief The buffer object holding the data for immediate draws
  */
-extern int gr_immediate_buffer_handle;
+extern gr_buffer_handle gr_immediate_buffer_handle;
 
 /**
  * @brief Adds data to the immediate buffer for use by draw operations
@@ -226,3 +226,7 @@ void gr_render_primitives_immediate(material* material_info, primitive_type prim
  * @param size The size of the data
  */
 void gr_render_primitives_2d_immediate(material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts, void* data, size_t size);
+
+void gr_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode);
+
+void gr_aabitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode);

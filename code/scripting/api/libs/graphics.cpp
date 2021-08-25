@@ -23,7 +23,6 @@
 #include <graphics/2d.h>
 #include <graphics/material.h>
 #include <graphics/matrix.h>
-#include <graphics/opengl/gropenglpostprocessing.h>
 #include <hud/hudbrackets.h>
 #include <hud/hudtarget.h>
 #include <jumpnode/jumpnode.h>
@@ -151,7 +150,7 @@ ADE_INDEXER(l_Graphics_Posteffects, "number index", "Gets the name of the specif
 		return ade_set_error(L, "s", "");
 
 	SCP_vector<SCP_string> names;
-	get_post_process_effect_names(names);
+	gr_get_post_process_effect_names(names);
 	names.push_back(SCP_string("lightshafts"));
 
 	if (index >= (int) names.size())
@@ -163,7 +162,7 @@ ADE_INDEXER(l_Graphics_Posteffects, "number index", "Gets the name of the specif
 ADE_FUNC(__len, l_Graphics_Posteffects, nullptr, "Gets the number of available post-processing effects", "number", "number of post-processing effects or 0 on error")
 {
 	SCP_vector<SCP_string> names;
-	get_post_process_effect_names(names);
+	gr_get_post_process_effect_names(names);
 
 	// Add one for lightshafts
 	return ade_set_args(L, "i", ((int) names.size()) + 1);
@@ -248,6 +247,14 @@ ADE_VIRTVAR(CurrentRenderTarget, l_Graphics, "texture", "Current rendering targe
 
 		return ade_set_args(L, "o", l_Texture.Set(texture_h(gr_screen.rendering_to_texture)));
 	}
+}
+
+ADE_FUNC(clear, l_Graphics, nullptr, "Calls gr_clear(), which fills the entire screen with the currently active color.  Useful if you want to have a fresh start for drawing things.  (Call this between setClip and resetClip if you only want to clear part of the screen.)", nullptr, nullptr)
+{
+	gr_clear();
+
+	(void)(L);	// avoid unused parameter warning
+	return ADE_RETURN_NIL;
 }
 
 ADE_FUNC(clearScreen, l_Graphics, "[number red, number green, number blue, number alpha]",
@@ -834,7 +841,7 @@ ADE_FUNC(drawTargetingBrackets, l_Graphics, "object Object, [boolean draw=true, 
          "Gets the edge positions of targeting brackets for the specified object. The brackets will only be drawn if "
          "draw is true or the default value of draw is used. Brackets are drawn with the current color. The brackets "
          "will have a padding (distance from the actual bounding box); the default value (used elsewhere in FS2) is 5.",
-         ade_type_info({"number", "number", "number", "number"}),
+         "number, number, number, number",
          "Left, top, right, and bottom positions of the brackets, or nil if invalid")
 {
 	if(!Gr_inited) {
@@ -892,9 +899,16 @@ ADE_FUNC(drawTargetingBrackets, l_Graphics, "object Object, [boolean draw=true, 
 			}
 			break;
 		case OBJ_WEAPON:
-			Assert(Weapon_info[Weapons[targetp->instance].weapon_info_index].subtype == WP_MISSILE);
 			modelnum = Weapon_info[Weapons[targetp->instance].weapon_info_index].model_num;
-			bound_rc = model_find_2d_bound_min( modelnum, &targetp->orient, &targetp->pos,&x1,&y1,&x2,&y2 );
+			if (modelnum != -1)
+				bound_rc = model_find_2d_bound_min(modelnum, &targetp->orient, &targetp->pos, &x1, &y1, &x2, &y2);
+			else {
+				vertex vtx;
+				g3_rotate_vertex(&vtx, &targetp->pos);
+				g3_project_vertex(&vtx);
+				x1 = x2 = (int)vtx.screen.xyw.x;
+				y1 = y2 = (int)vtx.screen.xyw.y;
+			}
 			break;
 		case OBJ_ASTEROID:
 			pof = Asteroids[targetp->instance].asteroid_subtype;
@@ -936,7 +950,7 @@ ADE_FUNC(
     drawSubsystemTargetingBrackets, l_Graphics, "subsystem subsys, [boolean draw=true, boolean setColor=false]",
     "Gets the edge position of the targeting brackets drawn for a subsystem as if they were drawn on the HUD. Only "
     "actually draws the brackets if <i>draw</i> is true, optionally sets the color the as if it was drawn on the HUD",
-    ade_type_info({"number", "number", "number", "number"}),
+    "number, number, number, number",
     "Left, top, right, and bottom positions of the brackets, or nil if invalid or off-screen")
 {
 	if(!Gr_inited) {
@@ -987,7 +1001,7 @@ ADE_FUNC(drawOffscreenIndicator, l_Graphics, "object Object, [boolean draw=true,
          "Draws an off-screen indicator for the given object. The indicator will not be drawn if draw=false, but the "
          "coordinates will be returned in either case. The indicator will be drawn using the current color if "
          "setColor=true and using the IFF color of the object if setColor=false.",
-         ade_type_info({"number", "number"}),
+         "number, number",
          "Coordinates of the indicator (at the very edge of the screen), or nil if object is on-screen")
 {
 	object_h *objh = NULL;
@@ -1145,7 +1159,7 @@ ADE_FUNC(drawString, l_Graphics, "string Message, [number X1, number Y1, number 
 			y2 = temp;
 		}
 
-		num_lines = split_str(s, x2-x, linelengths, linestarts, (unicode::codepoint_t)-1, false);
+		num_lines = split_str(s, x2-x, linelengths, linestarts, INT_MAX, (unicode::codepoint_t)-1, false);
 
 		//Make sure we don't go over size
 		int line_ht = gr_get_font_height();
@@ -1198,8 +1212,8 @@ ADE_FUNC(getStringWidth, l_Graphics, "string String", "Gets string width", "numb
 	return ade_set_args(L, "i", w);
 }
 
-ADE_FUNC(loadStreamingAnim, l_Graphics, "string Filename, [boolean loop, boolean reverse, boolean pause, boolean cache]",
-		 "Plays a streaming animation, returning its handle. The optional booleans (except cache) can also be set via the handles virtvars<br>"
+ADE_FUNC(loadStreamingAnim, l_Graphics, "string Filename, [boolean loop, boolean reverse, boolean pause, boolean cache, boolean grayscale]",
+		 "Plays a streaming animation, returning its handle. The optional booleans (except cache and grayscale) can also be set via the handle's virtvars<br>"
 			 "cache is best set to false when loading animations that are only intended to play once, e.g. headz<br>"
 			 "Remember to call the unload() function when you're finished using the animation to free up memory.",
 		 "streaminganim",
@@ -1207,20 +1221,23 @@ ADE_FUNC(loadStreamingAnim, l_Graphics, "string Filename, [boolean loop, boolean
 {
 	const char* s;
 	int rc = -1;
-	bool loop = false, reverse = false, pause = false, cache = true;
+	bool loop = false, reverse = false, pause = false, cache = true, grayscale = false;
 
-	if(!ade_get_args(L, "s|bbbb", &s, &loop, &reverse, &pause, &cache))
+	if(!ade_get_args(L, "s|bbbbb", &s, &loop, &reverse, &pause, &cache, &grayscale))
 		return ADE_RETURN_NIL;
 
 	streaminganim_h sah(s);
-	if (loop == false) {
+	if (!loop) {
 		sah.ga.direction |= GENERIC_ANIM_DIRECTION_NOLOOP;
 	}
-	if (reverse == true) {
+	if (reverse) {
 		sah.ga.direction |= GENERIC_ANIM_DIRECTION_BACKWARDS;
 	}
-	if (pause == true) {
+	if (pause) {
 		sah.ga.direction |= GENERIC_ANIM_DIRECTION_PAUSED;
+	}
+	if (grayscale) {
+		sah.ga.use_hud_color = true;
 	}
 	rc = generic_anim_stream(&sah.ga, cache);
 
@@ -1266,7 +1283,7 @@ ADE_FUNC(loadTexture, l_Graphics, "string Filename, [boolean LoadIfAnimation, bo
 		 "Gets a handle to a texture. If second argument is set to true, animations will also be loaded."
 			 "If third argument is set to true, every other animation frame will not be loaded if system has less than 48 MB memory."
 			 "<br><strong>IMPORTANT:</strong> Textures will not be unload themselves unless you explicitly tell them to do so."
-			 "When you are done with a texture, call the Unload() function to free up memory.",
+			 "When you are done with a texture, call the unload() function to free up memory.",
 		 "texture",
 		 "Texture handle, or invalid texture handle if texture couldn't be loaded")
 {
@@ -1278,7 +1295,7 @@ ADE_FUNC(loadTexture, l_Graphics, "string Filename, [boolean LoadIfAnimation, bo
 	if(!ade_get_args(L, "s|bb", &s, &b, &d))
 		return ade_set_error(L, "o", l_Texture.Set(texture_h()));
 
-	if(b == true) {
+	if(b) {
 		idx = bm_load_animation(s, nullptr, nullptr, nullptr, nullptr, d);
 	}
 	if(idx < 0) {
@@ -1294,10 +1311,11 @@ ADE_FUNC(loadTexture, l_Graphics, "string Filename, [boolean LoadIfAnimation, bo
 ADE_FUNC(drawImage,
 	l_Graphics,
 	"string|texture fileNameOrTexture, [number X1=0, number Y1=0, number X2, number Y2, number UVX1 = 0.0, number UVY1 "
-	"= 0.0, number UVX2=1.0, number UVY2=1.0, number alpha=1.0]",
+	"= 0.0, number UVX2=1.0, number UVY2=1.0, number alpha=1.0, boolean aaImage = false]",
 	"Draws an image file or texture. Any image extension passed will be ignored."
 	"The UV variables specify the UV value for each corner of the image. "
-	"In UV coordinates, (0,0) is the top left of the image; (1,1) is the lower right.",
+	"In UV coordinates, (0,0) is the top left of the image; (1,1) is the lower right. If aaImage is true, image needs "
+	"to be monochrome and will be drawn tinted with the currently active color.",
 	"boolean",
 	"Whether image was drawn")
 {
@@ -1314,11 +1332,12 @@ ADE_FUNC(drawImage,
 	float uv_x2=1.0f;
 	float uv_y2=1.0f;
 	float alpha=1.0f;
+	bool aabitmap = false;
 
 	if(lua_isstring(L, 1))
 	{
 		const char* s = nullptr;
-		if(!ade_get_args(L, "s|iiiifffff", &s,&x1,&y1,&x2,&y2,&uv_x1,&uv_y1,&uv_x2,&uv_y2,&alpha))
+		if (!ade_get_args(L, "s|iiiifffffb", &s, &x1, &y1, &x2, &y2, &uv_x1, &uv_y1, &uv_x2, &uv_y2, &alpha, &aabitmap))
 			return ade_set_error(L, "b", false);
 
 		idx = Script_system.LoadBm(s);
@@ -1329,8 +1348,19 @@ ADE_FUNC(drawImage,
 	else
 	{
 		texture_h* th = nullptr;
-		if (!ade_get_args(L, "o|iiiifffff", l_Texture.GetPtr(&th), &x1, &y1, &x2, &y2, &uv_x1, &uv_y1, &uv_x2, &uv_y2,
-		                  &alpha))
+		if (!ade_get_args(L,
+				"o|iiiifffffb",
+				l_Texture.GetPtr(&th),
+				&x1,
+				&y1,
+				&x2,
+				&y2,
+				&uv_x1,
+				&uv_y1,
+				&uv_x2,
+				&uv_y2,
+				&alpha,
+				&aabitmap))
 			return ade_set_error(L, "b", false);
 
 		if (!th->isValid()) {
@@ -1355,17 +1385,24 @@ ADE_FUNC(drawImage,
 
 	gr_set_bitmap(idx, lua_Opacity_type, GR_BITBLT_MODE_NORMAL, alpha);
 	bitmap_rect_list brl = bitmap_rect_list(x1, y1, w, h, uv_x1, uv_y1, uv_x2, uv_y2);
-	gr_bitmap_list(&brl, 1, GR_RESIZE_NONE);
+
+	if (aabitmap) {
+		gr_aabitmap_list(&brl, 1, GR_RESIZE_NONE);
+	} else {
+		gr_bitmap_list(&brl, 1, GR_RESIZE_NONE);
+	}
 
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(drawMonochromeImage,
+ADE_FUNC_DEPRECATED(drawMonochromeImage,
 	l_Graphics,
 	"string|texture fileNameOrTexture, number X1, number Y1, [number X2, number Y2, number alpha=1.0]",
 	"Draws a monochrome image from a texture or file using the current color",
 	"boolean",
-	"Whether image was drawn")
+	"Whether image was drawn",
+	gameversion::version(21, 0),
+	"gr.drawImage now has support for drawing monochrome images with full UV scaling support")
 {
 	if(!Gr_inited)
 		return ade_set_error(L, "b", false);

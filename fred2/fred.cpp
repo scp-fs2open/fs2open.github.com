@@ -233,6 +233,9 @@ BOOL CFREDApp::InitInstance() {
 	// Goober5000
 	Mission_save_format = GetProfileInt("Preferences", "FS2 open format", FSO_FORMAT_STANDARD);
 	Mission_save_format = GetProfileInt("Preferences", "Mission save format", Mission_save_format);
+	Move_ships_when_undocking = GetProfileInt("Preferences", "Move ships when undocking", 1);
+	Highlight_selectable_subsys = GetProfileInt("Preferences", "Highlight selectable subsys", Highlight_selectable_subsys);
+	Draw_outlines_on_selected_ships = GetProfileInt("Preferences", "Draw outlines on selected ships", 1) != 0;
 
 	read_window("Main window", &Main_wnd_data);
 	read_window("Ship window", &Ship_wnd_data);
@@ -493,6 +496,9 @@ void CFREDApp::write_ini_file(int degree) {
 
 	// Goober5000
 	WriteProfileInt("Preferences", "Mission save format", Mission_save_format);
+	WriteProfileInt("Preferences", "Move ships when undocking", Move_ships_when_undocking);
+	WriteProfileInt("Preferences", "Highlight selectable subsys", Highlight_selectable_subsys);
+	WriteProfileInt("Preferences", "Draw outlines on selected ships", Draw_outlines_on_selected_ships ? 1 : 0);
 
 	if (!degree) {
 		record_window_data(&Waypoint_wnd_data, &Waypoint_editor_dialog);

@@ -58,6 +58,26 @@ int ai_path_type_match(char *p)
 	return -1;
 }
 
+
+const char* AI_secondary_range_aware_select_modes[] = {
+	"retail",
+	"aware",
+};
+
+int Num_ai_secondary_range_aware_select_modes = sizeof(AI_secondary_range_aware_select_modes) / sizeof(char*);
+
+int ai_secondary_range_select_mode_match(char* p)
+{
+	int i;
+	for (i = 0; i < Num_ai_secondary_range_aware_select_modes; i++)
+	{
+		if (!stricmp(AI_secondary_range_aware_select_modes[i], p))
+			return i;
+	}
+
+	return -1;
+}
+
 void parse_ai_profiles_tbl(const char *filename)
 {
 	int i;
@@ -446,7 +466,8 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$support don't add primaries:", AI::Profile_Flags::Support_dont_add_primaries);
 
-				profile->ai_path_mode = AI_PATH_MODE_NORMAL;
+				set_flag(profile, "$firing requires exact los:", AI::Profile_Flags::Require_exact_los);
+
 				if (optional_string("$ai path mode:"))
 				{
 					stuff_string(buf, F_NAME, NAME_LENGTH);
@@ -463,7 +484,7 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$fix ai path order bug:", AI::Profile_Flags::Fix_ai_path_order_bug);
 
-				set_flag(profile, "$strict turret-tagged-only targeting:", AI::Profile_Flags::Strict_turred_tagged_only_targeting);
+				set_flag(profile, "$strict turret-tagged-only targeting:", AI::Profile_Flags::Strict_turret_tagged_only_targeting);
 
 				set_flag(profile, "$aspect bomb invulnerability fix:", AI::Profile_Flags::Aspect_invulnerability_fix);
 
@@ -479,14 +500,12 @@ void parse_ai_profiles_tbl(const char *filename)
 					if (path_radii >= Minimum_subsystem_path_pt_dist) {
 						profile->subsystem_path_radii = path_radii;
 					} else {
-						mprintf(("Warning: \"$override radius for subsystem path points:\" should be >= %i (read %i). Value will not be used. ", Minimum_subsystem_path_pt_dist, path_radii));
+						mprintf(("Warning: \"$override radius for subsystem path points:\" should be >= %i (read %i). Value will not be used.\n", Minimum_subsystem_path_pt_dist, path_radii));
 					}
 				}
 
 				set_flag(profile, "$use POF radius for subsystem path points:", AI::Profile_Flags::Use_subsystem_path_point_radii);
 
-				profile->bay_arrive_speed_mult = 1.0f;
-				profile->bay_depart_speed_mult = 1.0f;
 				if (optional_string("$bay arrive speed multiplier:")) {
 					stuff_float(&profile->bay_arrive_speed_mult);
 				}
@@ -511,7 +530,56 @@ void parse_ai_profiles_tbl(const char *filename)
 					stuff_boolean(&temp);
                     profile->flags.set(AI::Profile_Flags::Allow_primary_link_at_start, !temp);
 				}
+				if (optional_string("$lead indicator second-order prediction factor:")) {
+					stuff_float(&profile->second_order_lead_predict_factor);
+					if (profile->second_order_lead_predict_factor > 1 || profile->second_order_lead_predict_factor < 0) {
+						mprintf(("Warning: \"$lead indicator second-order prediction factor\" must be 0 - 1, resetting to 0.\"\n"));
+						profile->second_order_lead_predict_factor = 0;
+					}
+				}
+				if (optional_string("$ships with no shields can manage ETS:"))
+				{
+					mprintf(("Warning: \"$ships with no shields can manage ETS\" flag is deprecated in favor of \"$any ship with no shields can manage ETS\"\n"));
+					bool temp;
+					stuff_boolean(&temp);
+                    profile->flags.set(AI::Profile_Flags::all_nonshielded_ships_can_manage_ets, temp);
+				}
 
+                set_flag(profile, "$no directional bias for missile and ship turning:", AI::Profile_Flags::No_turning_directional_bias);
+
+				set_flag(profile, "$respect ship axial turnrate differences:", AI::Profile_Flags::Use_axial_turnrate_differences);
+
+				set_flag(profile, "$any ship with no shields can manage ETS:", AI::Profile_Flags::all_nonshielded_ships_can_manage_ets);
+
+				set_flag(profile, "$fighters/bombers with no shields can manage ETS:", AI::Profile_Flags::fightercraft_nonshielded_ships_can_manage_ets);
+
+				set_flag(profile, "$better combat collision avoidance for fightercraft:", AI::Profile_Flags::Better_collision_avoidance);
+
+				set_flag(profile, "$improved missile avoidance for fightercraft:", AI::Profile_Flags::Improved_missile_avoidance);
+
+				set_flag(profile, "$friendly ships use AI profile countermeasure chance:", AI::Profile_Flags::Friendlies_use_countermeasure_firechance);
+
+				set_flag(profile, "$improved subsystem attack pathing:", AI::Profile_Flags::Improved_subsystem_attack_pathing);
+
+				set_flag(profile, "$fixed ship-weapon collisions:", AI::Profile_Flags::Fixed_ship_weapon_collision);
+
+				//Intention is to expand this feature to include a preference for close or long range weapons
+				//hence using something besides a simple flag.
+				if (optional_string("$AI secondary range awareness:"))
+				{
+					stuff_string(buf, F_NAME, NAME_LENGTH);
+					int j = ai_secondary_range_select_mode_match(buf);
+					if (j >= 0) {
+						profile->ai_range_aware_secondary_select_mode = j;
+					}
+					else {
+						Warning(LOCATION, "Invalid ai secondary range awareness mode '%s' specified", buf);
+					}
+				}
+
+				set_flag(profile, "$no shield damage from ship collisions:", AI::Profile_Flags::No_shield_damage_from_ship_collisions);
+
+				set_flag(profile, "$reset last_hit_target_time for player hits:", AI::Profile_Flags::Reset_last_hit_target_time_for_player_hits);
 
 				// if we've been through once already and are at the same place, force a move
 				if (saved_Mp && (saved_Mp == Mp))
@@ -584,10 +652,12 @@ void ai_profile_t::reset()
 
     flags.reset();
 
-    ai_path_mode = 0;
+    ai_path_mode = AI_PATH_MODE_NORMAL;
 	subsystem_path_radii = 0;
-    bay_arrive_speed_mult = 0;
-    bay_depart_speed_mult = 0;
+    bay_arrive_speed_mult = 1.0f;
+    bay_depart_speed_mult = 1.0f;
+	second_order_lead_predict_factor = 0;
+	ai_range_aware_secondary_select_mode = AI_RANGE_AWARE_SEC_SEL_MODE_RETAIL;
 
     for (int i = 0; i < NUM_SKILL_LEVELS; ++i) {
         max_incoming_asteroids[i] = 0;
@@ -659,9 +729,17 @@ void ai_profile_t::reset()
 		flags.set(AI::Profile_Flags::Fix_ai_path_order_bug);
 		flags.set(AI::Profile_Flags::Aspect_invulnerability_fix);
 		flags.set(AI::Profile_Flags::Use_actual_primary_range);
+		flags.set(AI::Profile_Flags::fightercraft_nonshielded_ships_can_manage_ets);
 	}
 	// this flag has been enabled ever since 3.7.2
 	if (mod_supports_version(3, 7, 2)) {
 		flags.set(AI::Profile_Flags::Fix_ramming_stationary_targets_bug);
+	}
+	// and this flag has been enabled ever since 3.6.10
+	if (mod_supports_version(3, 6, 10)) {
+		flags.set(AI::Profile_Flags::Reset_last_hit_target_time_for_player_hits);
+	}
+	if (mod_supports_version(21, 4, 0)) {
+		flags.set(AI::Profile_Flags::Fixed_ship_weapon_collision);
 	}
 }

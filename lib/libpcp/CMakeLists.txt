@@ -1,3 +1,9 @@
+include(CheckStructHasMember)
+
+check_struct_has_member("struct sockaddr" sa_len
+        "sys/types.h sys/socket.h"
+        HAVE_SOCKADDR_SA_LEN)
+
 set(LIBPCP_INCLUDE_DIRECTORIES
     include
     src
@@ -53,13 +59,14 @@ endif(WIN32)
 
 add_library(pcp STATIC ${LIBPCP_SOURCES})
 
+
 if(WIN32)
     if(MINGW)
         target_compile_definitions(pcp PRIVATE HAVE_GETTIMEOFDAY)
     endif(MINGW)
 
     # target XP
-    target_compile_definitions(pcp PRIVATE WIN32 NTDDI_VERSION=0x05010000 _WIN32_WINNT=0x0501)
+    target_compile_definitions(pcp PRIVATE WIN32 NTDDI_VERSION=0x06000000 _WIN32_WINNT=0x0600)
     target_link_libraries(pcp INTERFACE iphlpapi ws2_32)
 endif(WIN32)
 

@@ -169,7 +169,7 @@ int ade_index_handler(lua_State* L) {
 	}
 	lua_pop(L, 1);    //WMC - metatable
 
-	if (type_name != NULL) {
+	if (type_name != nullptr) {
 		LuaError(L, "Could not find index '%s' in type '%s'", lua_tostring(L, key_ldx), type_name);
 	} else {
 		LuaError(L, "Could not find index '%s'", lua_tostring(L, key_ldx));
@@ -332,10 +332,8 @@ int ade_table_entry::SetTable(lua_State* L, int p_amt_ldx, int p_mtb_ldx)
 		}
 
 		if (data_ldx != INT_MAX) {
-			//WMC - Cannot delete libs and stuff off here.
-			if (p_amt_ldx != LUA_GLOBALSINDEX) {
-				cleanup_items++;
-			}
+			// Remove data once we are done
+			cleanup_items++;
 
 			//WMC - Handle virtual variables by getting their table
 			if (Type == 'v') {
@@ -499,7 +497,8 @@ size_t ade_table_entry::AddSubentry(ade_table_entry& n_ate) {
 	return new_idx;
 }
 
-std::unique_ptr<DocumentationElement> ade_table_entry::ToDocumentationElement()
+std::unique_ptr<DocumentationElement> ade_table_entry::ToDocumentationElement(
+	const scripting::DocumentationErrorReporter& errorReporter)
 {
 	using namespace scripting;
 
@@ -508,7 +507,6 @@ std::unique_ptr<DocumentationElement> ade_table_entry::ToDocumentationElement()
 		return std::unique_ptr<DocumentationElement>();
 	}
 
-	// WMC - Hack
 	std::unique_ptr<DocumentationElement> element;
 
 	//***Begin entry
@@ -544,9 +542,21 @@ std::unique_ptr<DocumentationElement> ade_table_entry::ToDocumentationElement()
 			obj->type = ElementType::Function;
 		}
 
-		obj->returnType = ReturnType;
-
 		auto typeNames = ade_manager::getInstance()->getTypeNames();
+
+		if (ReturnType != nullptr) {
+			type_parser type_parser(typeNames);
+			if (type_parser.parse(ReturnType)) {
+				obj->returnType = type_parser.getType();
+			} else {
+				if (errorReporter) {
+					errorReporter(GetFullPath() + "(Return Type):\n" + type_parser.getErrorMessage());
+				}
+				obj->returnType = ade_type_info();
+			}
+		} else {
+			obj->returnType = ade_type_info();
+		}
 
 		for (const auto& overload : Arguments.overloads()) {
 			DocumentationElementFunction::argument_list overloadArgList;
@@ -564,6 +574,9 @@ std::unique_ptr<DocumentationElement> ade_table_entry::ToDocumentationElement()
 					overloadArgList.arguments.push_back(std::move(argCopy));
 				}
 			} else {
+				if (errorReporter) {
+					errorReporter(GetFullPath() + "(Arguments):\n" + arg_parser.getErrorMessage());
+				}
 				overloadArgList.simple.assign(overload);
 			}
 
@@ -581,9 +594,37 @@ std::unique_ptr<DocumentationElement> ade_table_entry::ToDocumentationElement()
 		std::unique_ptr<DocumentationElementProperty> obj(new DocumentationElementProperty());
 		obj->type = ElementType::Property;
 
+		auto typeNames = ade_manager::getInstance()->getTypeNames();
+
 		//***Type Name(ShortName)
-		obj->getterType = ReturnType;
-		obj->setterType = Arguments.overloads().front();
+		if (ReturnType != nullptr) {
+			type_parser type_parser(typeNames);
+			if (type_parser.parse(ReturnType)) {
+				obj->getterType = type_parser.getType();
+			} else {
+				if (errorReporter) {
+					errorReporter(GetFullPath() + "(Getter Type):\n" + type_parser.getErrorMessage());
+				}
+				obj->getterType = ade_type_info();
+			}
+		} else {
+			obj->getterType = ade_type_info();
+		}
+
+		const SCP_string setterType = Arguments.overloads().front();
+		if (!setterType.empty()) {
+			type_parser type_parser(typeNames);
+			if (type_parser.parse(setterType)) {
+				obj->setterType = type_parser.getType();
+			} else {
+				if (errorReporter) {
+					errorReporter(GetFullPath() + "(Setter Type):\n" + type_parser.getErrorMessage());
+				}
+				obj->setterType = ade_type_info();
+			}
+		} else {
+			obj->setterType = ade_type_info();
+		}
 
 		if (ReturnDescription != nullptr) {
 			obj->returnDocumentation = ReturnDescription;
@@ -622,10 +663,37 @@ std::unique_ptr<DocumentationElement> ade_table_entry::ToDocumentationElement()
 	}
 
 	for (uint32_t i = 0; i < Num_subentries; i++) {
-		element->children.emplace_back(getTableEntry(Subentries[i]).ToDocumentationElement());
+		element->children.emplace_back(getTableEntry(Subentries[i]).ToDocumentationElement(errorReporter));
 	}
 
 	return element;
+}
+const char* ade_table_entry::GetName() const
+{
+	if (Name != nullptr) {
+		return Name;
+	} else {
+		return ShortName;
+	}
+}
+SCP_string ade_table_entry::GetFullPath() const
+{
+	SCP_string path(GetName());
+
+	size_t currentIdx = ParentIdx;
+	while (currentIdx != UINT_MAX) {
+		const auto entry = ade_manager::getInstance()->getEntry(currentIdx);
+
+		SCP_string entryName(entry.GetName());
+
+		// Not very efficient but should not be used at runtime so this is fine
+		path.insert(path.begin(), '.');
+		path.insert(path.begin(), entryName.cbegin(), entryName.cend());
+
+		currentIdx = entry.ParentIdx;
+	}
+
+	return path;
 }
 
 ade_lib::ade_lib(const char* in_name, const ade_lib_handle* parent, const char* in_shortname, const char* in_desc) {
@@ -663,7 +731,7 @@ ade_func::ade_func(const char* name,
 	const ade_lib_handle& parent,
 	ade_overload_list args,
 	const char* desc,
-	ade_type_info ret_type,
+	const char* ret_type,
 	const char* ret_desc,
 	const gameversion::version& deprecation_version,
 	const char* deprecation_message)
@@ -678,7 +746,7 @@ ade_func::ade_func(const char* name,
 	ate.Function           = func;
 	ate.Arguments          = std::move(args);
 	ate.Description        = desc;
-	ate.ReturnType         = std::move(ret_type);
+	ate.ReturnType         = ret_type;
 	ate.ReturnDescription  = ret_desc;
 	ate.DeprecationVersion = deprecation_version;
 	ate.DeprecationMessage = deprecation_message;
@@ -686,9 +754,15 @@ ade_func::ade_func(const char* name,
 	LibIdx = ade_manager::getInstance()->getEntry(parent.GetIdx()).AddSubentry(ate);
 }
 
-ade_virtvar::ade_virtvar(const char* name, lua_CFunction func, const ade_lib_handle& parent, const char* args,
-                         const char* desc, ade_type_info ret_type, const char* ret_desc,
-                         const gameversion::version& deprecation_version, const char* deprecation_message)
+ade_virtvar::ade_virtvar(const char* name,
+	lua_CFunction func,
+	const ade_lib_handle& parent,
+	const char* args,
+	const char* desc,
+	const char* ret_type,
+	const char* ret_desc,
+	const gameversion::version& deprecation_version,
+	const char* deprecation_message)
 {
 	Assertion(strcmp(name, "__gc") != 0, "__gc is a reserved function name! An API function may not use it!");
 
@@ -700,7 +774,7 @@ ade_virtvar::ade_virtvar(const char* name, lua_CFunction func, const ade_lib_han
 	ate.Function           = func;
 	ate.Arguments          = args;
 	ate.Description        = desc;
-	ate.ReturnType         = std::move(ret_type);
+	ate.ReturnType         = ret_type;
 	ate.ReturnDescription  = ret_desc;
 	ate.DeprecationVersion = deprecation_version;
 	ate.DeprecationMessage = deprecation_message;
@@ -708,8 +782,12 @@ ade_virtvar::ade_virtvar(const char* name, lua_CFunction func, const ade_lib_han
 	LibIdx = ade_manager::getInstance()->getEntry(parent.GetIdx()).AddSubentry(ate);
 }
 
-ade_indexer::ade_indexer(lua_CFunction func, const ade_lib_handle& parent, ade_overload_list overloads, const char* desc,
-                         ade_type_info ret_type, const char* ret_desc)
+ade_indexer::ade_indexer(lua_CFunction func,
+	const ade_lib_handle& parent,
+	ade_overload_list overloads,
+	const char* desc,
+	const char* ret_type,
+	const char* ret_desc)
 {
 	// Add function for meta
 	ade_table_entry ate;
@@ -720,7 +798,7 @@ ade_indexer::ade_indexer(lua_CFunction func, const ade_lib_handle& parent, ade_o
 	ate.Function          = func;
 	ate.Arguments         = std::move(overloads);
 	ate.Description       = desc;
-	ate.ReturnType        = std::move(ret_type);
+	ate.ReturnType        = ret_type;
 	ate.ReturnDescription = ret_desc;
 
 	LibIdx = ade_manager::getInstance()->getEntry(parent.GetIdx()).AddSubentry(ate);

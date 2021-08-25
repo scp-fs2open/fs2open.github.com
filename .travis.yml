@@ -103,7 +103,7 @@ matrix:
       env: CONFIGURATION="Debug"
 
     - os: windows
-      env: CONFIGURATION="Debug" CMAKE_TOOLSET=v141_xp CMAKE_GENERATOR="Visual Studio 15 2017"
+      env: CONFIGURATION="Debug" CMAKE_TOOLSET=v141 CMAKE_GENERATOR="Visual Studio 15 2017"
     - os: windows
       env: CONFIGURATION="Debug" CMAKE_TOOLSET="" CMAKE_GENERATOR="Ninja"
 
@@ -144,7 +144,7 @@ matrix:
       env: CONFIGURATION="Release"
 
     - os: windows
-      env: CONFIGURATION="Release" CMAKE_TOOLSET=v141_xp CMAKE_GENERATOR="Visual Studio 15 2017"
+      env: CONFIGURATION="Release" CMAKE_TOOLSET=v141 CMAKE_GENERATOR="Visual Studio 15 2017"
     - os: windows
       env: CONFIGURATION="Release" CMAKE_TOOLSET="" CMAKE_GENERATOR="Ninja"
   # There is a GCC compiler bug with MinGW that causes compilation failures on Windows at the moment

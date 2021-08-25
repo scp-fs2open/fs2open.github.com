@@ -60,6 +60,7 @@
 #include "object/waypoint.h"
 #include "parse/generic_log.h"
 #include "parse/parselo.h"
+#include "parse/sexp_container.h"
 #include "scripting/hook_api.h"
 #include "scripting/scripting.h"
 #include "playerman/player.h"
@@ -588,6 +589,9 @@ void parse_mission_info(mission *pm, bool basic = false)
 	if (basic)
 		return;
 
+	// this is part of mission info but derived from the campaign file rather than parsed
+	extern int debrief_find_persona_index();
+	pm->debriefing_persona = debrief_find_persona_index();
 
 	// set up support ships
 	pm->support_ships.arrival_location = ARRIVE_AT_LOCATION;
@@ -836,8 +840,8 @@ void parse_player_info(mission *pm)
 
 void parse_player_info2(mission *pm)
 {
-	char str[NAME_LENGTH];
-	int nt, i, total, list[MAX_SHIP_CLASSES * 4], list2[MAX_WEAPON_TYPES * 4]; 
+	int nt, i;
+	SCP_vector<loadout_row> list, list2;
 	team_data *ptr;
 
 	// read in a ship/weapon pool for each team.
@@ -851,46 +855,49 @@ void parse_player_info2(mission *pm)
 			stuff_string( Player_start_shipname, F_NAME, NAME_LENGTH );
 
 		required_string("$Ship Choices:");
-		total = stuff_loadout_list(list, MAX_SHIP_CLASSES * 4, MISSION_LOADOUT_SHIP_LIST);
-
-		// make sure we have a count which is divisible by four since four values are added for each ship
-		Assert((total%4) == 0); 
+		stuff_loadout_list(list, MISSION_LOADOUT_SHIP_LIST);
 
 		num_choices = 0;
 
-		// only every 4th entry is actually a ship class.
-		for (i=0; i<total; i += 4) {
+		// check ship class loadout entries
+		for (auto &sc : list) {
 			// in a campaign, see if the player is allowed the ships or not.  Remove them from the
 			// pool if they are not allowed
 			if (Game_mode & GM_CAMPAIGN_MODE || (MULTIPLAYER_CLIENT)) {
-				if ( !Campaign.ships_allowed[list[i]] )
+				if ( !Campaign.ships_allowed[sc.index] )
 					continue;
 			}
+			if (sc.index < 0 || sc.index >= ship_info_size())
+				continue;
 
-			ptr->ship_list[num_choices] = list[i];
+			ptr->ship_list[num_choices] = sc.index;
+
 			// if the list isn't set by a variable leave the variable name empty
-			if (list[i+1] == -1) {
+			if (sc.index_sexp_var == NOT_SET_BY_SEXP_VARIABLE) {
 				strcpy_s(ptr->ship_list_variables[num_choices], "") ;
 			}
 			else {
-				strcpy_s(ptr->ship_list_variables[num_choices],Sexp_variables[list[i+1]].variable_name);
+				strcpy_s(ptr->ship_list_variables[num_choices], Sexp_variables[sc.index_sexp_var].variable_name);
 			}
-			ptr->ship_count[num_choices] = list[i+2];
-			ptr->loadout_total += list[i+2];
+
+			ptr->ship_count[num_choices] = sc.count;
+			ptr->loadout_total += sc.count;
 
 			// if the list isn't set by a variable leave the variable name empty
-			if (list[i+3] == -1) {
+			if (sc.count_sexp_var == NOT_SET_BY_SEXP_VARIABLE) {
 				strcpy_s(ptr->ship_count_variables[num_choices], "");
 			}
 			else {
-				strcpy_s(ptr->ship_count_variables[num_choices], Sexp_variables[list[i+3]].variable_name);
+				strcpy_s(ptr->ship_count_variables[num_choices], Sexp_variables[sc.count_sexp_var].variable_name);
 			}
+
 			num_choices++;
 		}
 		ptr->num_ship_choices = num_choices;
 
 		ptr->default_ship = -1;
 		if (optional_string("+Default_ship:")) {
+			char str[NAME_LENGTH];
 			stuff_string(str, F_NAME, NAME_LENGTH);
 			ptr->default_ship = ship_info_lookup(str);
 			if (-1 == ptr->default_ship) {
@@ -916,49 +923,49 @@ void parse_player_info2(mission *pm)
 			ptr->default_ship = ptr->ship_list[0];
 
 		required_string("+Weaponry Pool:");
-		total = stuff_loadout_list(list2, MAX_WEAPON_TYPES * 4, MISSION_LOADOUT_WEAPON_LIST);
+		stuff_loadout_list(list2, MISSION_LOADOUT_WEAPON_LIST);
 
-		// make sure we have a count which is divisible by four since four values are added for each ship
-		Assert((total%4) == 0); 
 		num_choices = 0;
 
-		for (i = 0; i < total; i += 4) {
+		// check weapon class loadout entries
+		for (auto &wc : list2) {
 			// in a campaign, see if the player is allowed the weapons or not.  Remove them from the
 			// pool if they are not allowed
 			if (Game_mode & GM_CAMPAIGN_MODE || (MULTIPLAYER_CLIENT)) {
-				if ( !Campaign.weapons_allowed[list2[i]] ) {
+				if ( !Campaign.weapons_allowed[wc.index] ) {
 					continue;
 				}
 			}
+			if (wc.index < 0 || wc.index >= weapon_info_size())
+				continue;
 
-			if ( (list2[i] >= 0) && (list2[i] < weapon_info_size()) ) {
-				// always allow the pool to be added in FRED, it is a verbal warning
-				// to let the mission dev know about the problem
-				if ( (Weapon_info[list2[i]].wi_flags[Weapon::Info_Flags::Player_allowed]) || Fred_running ) {
-					ptr->weaponry_pool[num_choices] = list2[i]; 
-					ptr->weaponry_count[num_choices] = list2[i+2];
-
-					// if the list isn't set by a variable leave the variable name empty
-					if (list2[i+1] == -1) {
-						strcpy_s(ptr->weaponry_pool_variable[num_choices], "");
-					}
-					else {
-						strcpy_s(ptr->weaponry_pool_variable[num_choices], Sexp_variables[list2[i+1]].variable_name);
-					}
-
-					// if the list isn't set by a variable leave the variable name empty
-					if (list2[i+3] == -1) {
-						strcpy_s(ptr->weaponry_amount_variable[num_choices], "");
-					}
-					else {
-						strcpy_s(ptr->weaponry_amount_variable[num_choices], Sexp_variables[list2[i+3]].variable_name);
-					}
-					num_choices++; 
-				}
-				else {
-					WarningEx(LOCATION, "Weapon '%s' in weapon pool isn't allowed on player loadout! Ignoring it ...\n", Weapon_info[i].name);
-				}
+			// always allow the pool to be added in FRED, it is a verbal warning
+			// to let the mission dev know about the problem
+			if ( !(Weapon_info[wc.index].wi_flags[Weapon::Info_Flags::Player_allowed]) && !Fred_running ) {
+				WarningEx(LOCATION, "Weapon '%s' in weapon pool isn't allowed on player loadout! Ignoring it ...\n", Weapon_info[wc.index].name);
+				continue;
 			}
+
+			ptr->weaponry_pool[num_choices] = wc.index; 
+			ptr->weaponry_count[num_choices] = wc.count;
+
+			// if the list isn't set by a variable leave the variable name empty
+			if (wc.index_sexp_var == NOT_SET_BY_SEXP_VARIABLE) {
+				strcpy_s(ptr->weaponry_pool_variable[num_choices], "");
+			}
+			else {
+				strcpy_s(ptr->weaponry_pool_variable[num_choices], Sexp_variables[wc.index_sexp_var].variable_name);
+			}
+
+			// if the list isn't set by a variable leave the variable name empty
+			if (wc.count_sexp_var == NOT_SET_BY_SEXP_VARIABLE) {
+				strcpy_s(ptr->weaponry_amount_variable[num_choices], "");
+			}
+			else {
+				strcpy_s(ptr->weaponry_amount_variable[num_choices], Sexp_variables[wc.count_sexp_var].variable_name);
+			}
+
+			num_choices++; 
 		}
 		ptr->num_weapon_choices = num_choices;
 
@@ -967,7 +974,7 @@ void parse_player_info2(mission *pm)
 		{
 			int num_weapons;
 			int weapon_list_buf[MAX_WEAPON_TYPES];
-			num_weapons = stuff_int_list(weapon_list_buf, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
+			num_weapons = (int)stuff_int_list(weapon_list_buf, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
 
 			for (i = 0; i < num_weapons; i++)
 				ptr->weapon_required[weapon_list_buf[i]] = true;
@@ -1203,7 +1210,7 @@ void parse_music(mission *pm, int flags)
 
 		// last resort: pick a random track out of the 7 FS2 soundtracks
 		num = (Num_soundtracks < 7) ? Num_soundtracks : 7;
-		strcpy_s(pm->event_music_name, Soundtracks[rand() % num].name);
+		strcpy_s(pm->event_music_name, Soundtracks[Random::next(num)].name);
 
 
 done_event_music:
@@ -1230,7 +1237,7 @@ done_event_music:
 
 		// last resort: pick a random track out of the first 7 FS2 briefings (the regular ones)...
 		num = (Num_music_files < 7) ? Num_music_files : 7;
-		strcpy_s(pm->briefing_music_name, Spooled_music[rand() % num].name);
+		strcpy_s(pm->briefing_music_name, Spooled_music[Random::next(num)].name);
 
 
 done_briefing_music:
@@ -1506,6 +1513,8 @@ void parse_briefing(mission * /*pm*/, int flags)
 				find_and_stuff("$team:", &bi->team, F_NAME, temp_team_names, Num_iffs, "team name");
 
 				find_and_stuff("$class:", &bi->ship_class, F_NAME, Ship_class_names, Ship_info.size(), "ship class");
+				bi->modelnum = -1;
+				bi->model_instance_num = -1;
 
 				// Goober5000 - import
 				if (flags & MPF_IMPORT_FSM)
@@ -1518,11 +1527,6 @@ void parse_briefing(mission * /*pm*/, int flags)
 
 						else if (bi->type == ICON_CRUISER_WING)
 							bi->type = ICON_LARGESHIP_WING;
-					}
-					// the Demon is a support ship :p
-					else if (!strnicmp(Ship_info[bi->ship_class].name, "SD Demon", 8))
-					{
-						bi->type = ICON_SUPPORT_SHIP;
 					}
 					// the Hades is a supercap
 					else if (!strnicmp(Ship_info[bi->ship_class].name, "GTD Hades", 9))
@@ -2114,11 +2118,15 @@ int parse_create_object_sub(p_object *p_objp)
 	if (p_objp->flags[Mission::Parse_Object_Flags::SF_Dock_leader])
 		shipp->flags.set(Ship::Ship_Flags::Dock_leader);
 
-    if (p_objp->flags[Mission::Parse_Object_Flags::SF_Warp_broken])
-        shipp->flags.set(Ship::Ship_Flags::Warp_broken);
+	if (p_objp->flags[Mission::Parse_Object_Flags::SF_Warp_broken])
+		shipp->flags.set(Ship::Ship_Flags::Warp_broken);
 
-    if (p_objp->flags[Mission::Parse_Object_Flags::SF_Warp_never])
-        shipp->flags.set(Ship::Ship_Flags::Warp_never);
+	if (p_objp->flags[Mission::Parse_Object_Flags::SF_Warp_never])
+		shipp->flags.set(Ship::Ship_Flags::Warp_never);
+
+	if (p_objp->flags[Mission::Parse_Object_Flags::SF_Has_display_name])
+		shipp->flags.set(Ship::Ship_Flags::Has_display_name);
+
 ////////////////////////
 
 
@@ -2276,18 +2284,7 @@ int parse_create_object_sub(p_object *p_objp)
 		if (!ptr)
 			continue;
 
-		// check the mission flag to possibly free all beam weapons - Goober5000, taken from SEXP.CPP
-		if (The_mission.flags[Mission::Mission_Flags::Beam_free_all_by_default])
-		{
-			// mark all turrets as beam free
-			if(ptr->system_info->type == SUBSYSTEM_TURRET)
-			{
-				ptr->weapons.flags.set(Ship::Weapon_Flags::Beam_Free);
-				ptr->turret_next_fire_stamp = timestamp((int) frand_range(50.0f, 4000.0f));
-			}
-		}
-
-		if (shipp->flags[Ship::Ship_Flags::Lock_all_turrets_initially] || ptr->system_info->flags[Model::Subsystem_Flags::Turret_locked])
+		if (shipp->flags[Ship::Ship_Flags::Lock_all_turrets_initially])
 		{
 			// mark all turrets as locked
 			if(ptr->system_info->type == SUBSYSTEM_TURRET)
@@ -2305,7 +2302,7 @@ int parse_create_object_sub(p_object *p_objp)
 		{
 			ptr->max_hits = ptr->system_info->max_subsys_strength * (shipp->ship_max_hull_strength / sip->max_hull_strength);
 
-			float new_hits = ptr->max_hits * (100.0f - sssp->percent) / 100.f;
+			float new_hits = ptr->max_hits * ((100.0f - sssp->percent) / 100.f);
 			if (!(ptr->flags[Ship::Subsystem_Flags::No_aggregate])) {
 				shipp->subsys_info[ptr->system_info->type].aggregate_current_hits -= (ptr->max_hits - new_hits);
 			}
@@ -2313,7 +2310,8 @@ int parse_create_object_sub(p_object *p_objp)
 			if ((100.0f - sssp->percent) < 0.5)
 			{
 				ptr->current_hits = 0.0f;
-				ptr->submodel_info_1.blown_off = 1;
+				if (ptr->submodel_instance_1 != nullptr)
+					ptr->submodel_instance_1->blown_off = true;
 			}
 			else
 			{
@@ -2326,7 +2324,6 @@ int parse_create_object_sub(p_object *p_objp)
 		if (sssp->ai_class != SUBSYS_STATUS_NO_CHANGE)
 			ptr->weapons.ai_class = sssp->ai_class;
 
-		ptr->turret_best_weapon = -1;
 		ptr->turret_animation_position = MA_POS_NOT_SET;	// model animation position is not set
 		ptr->turret_animation_done_time = 0;
 	}
@@ -2440,8 +2437,10 @@ int parse_create_object_sub(p_object *p_objp)
 		if (!object_is_docked(p_objp) || (p_objp->flags[Mission::Parse_Object_Flags::SF_Dock_leader]))
 		{
 			if ((Game_mode & GM_IN_MISSION) && MULTIPLAYER_MASTER && (p_objp->wingnum == -1))
-				send_ship_create_packet(&Objects[objnum], (p_objp == Arriving_support_ship) ? 1 : 0);
+				send_ship_create_packet(&Objects[objnum], (p_objp == Arriving_support_ship));
 		}
+		// also add this ship to the multi ship tracking and interpolation struct
+		multi_ship_record_add_ship(objnum);
 	}
 
 	// If the ship is in a wing, this will be done in mission_set_wing_arrival_location() instead
@@ -2449,9 +2448,11 @@ int parse_create_object_sub(p_object *p_objp)
 	if (Game_mode & GM_IN_MISSION && ((shipp->wingnum == -1) || (brought_in_docked_wing))) {
 		object *anchor_objp = (anchor_objnum >= 0) ? &Objects[anchor_objnum] : nullptr;
 
-		Script_system.SetHookObjects(2, "Ship", &Objects[objnum], "Parent", anchor_objp);
-		Script_system.RunCondition(CHA_ONSHIPARRIVE, &Objects[objnum]);
-		Script_system.RemHookVars(2, "Ship", "Parent");
+		if (Script_system.IsActiveAction(CHA_ONSHIPARRIVE)) {
+			Script_system.SetHookObjects(2, "Ship", &Objects[objnum], "Parent", anchor_objp);
+			Script_system.RunCondition(CHA_ONSHIPARRIVE, &Objects[objnum]);
+			Script_system.RemHookVars({"Ship", "Parent"});
+		}
 	}
 
 	return objnum;
@@ -2745,15 +2746,15 @@ p_object::~p_object()
 {
 	dock_free_dock_list(this);
 }
-const char* p_object::get_display_string() {
-	if (has_display_string()) {
+const char* p_object::get_display_name() {
+	if (has_display_name()) {
 		return display_name.c_str();
 	} else {
 		return name;
 	}
 }
-bool p_object::has_display_string() {
-	return !display_name.empty();
+bool p_object::has_display_name() {
+	return flags[Mission::Parse_Object_Flags::SF_Has_display_name];
 }
 
 extern int parse_warp_params(const WarpParams *inherit_from, WarpDirection direction, const char *info_type_name, const char *sip_name);
@@ -2779,14 +2780,23 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 	p_objp->created_object = NULL;
 	p_objp->next = NULL;
 	p_objp->prev = NULL;
+	p_objp->flags.reset();
 
 	required_string("$Name:");
 	stuff_string(p_objp->name, F_NAME, NAME_LENGTH);
 	if (mission_parse_get_parse_object(p_objp->name))
 		error_display(0, NOX("Redundant ship name: %s\n"), p_objp->name);
 
+	// if this name has a hash, create a default display name
+	if (get_pointer_to_first_hash_symbol(p_objp->name)) {
+		p_objp->display_name = p_objp->name;
+		end_string_at_first_hash_symbol(p_objp->display_name);
+		p_objp->flags.set(Mission::Parse_Object_Flags::SF_Has_display_name);
+	}
+
 	if (optional_string("$Display Name:")) {
 		stuff_string(p_objp->display_name, F_NAME);
+		p_objp->flags.set(Mission::Parse_Object_Flags::SF_Has_display_name);
 	}
 
 	find_and_stuff("$Class:", &p_objp->ship_class, F_NAME, Ship_class_names, Ship_info.size(), "ship class");
@@ -2897,6 +2907,10 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 		temp_team_names[i] = Iff_info[i].iff_name;
 
 	find_and_stuff("$Team:", &p_objp->team, F_NAME, temp_team_names, Num_iffs, "team name");
+
+	// save current team for loadout purposes, so that in multi we always respawn
+	// from the original loadout slot even if the team changes
+	p_objp->loadout_team = p_objp->team;
 
 	if (optional_string("$Team Color Setting:")) {
 		char temp[NAME_LENGTH];
@@ -3062,7 +3076,6 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 	stuff_int(&dummy);
 
     // set flags
-    p_objp->flags.reset();
     if (optional_string("+Flags:"))
     {
         SCP_vector<SCP_string> unparsed;
@@ -3345,6 +3358,8 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 		texture_replace tr;
 		char *p;
 
+		tr.from_table = false;
+
 		while (optional_string("+old:"))
 		{
 			strcpy_s(tr.ship_name, p_objp->name);
@@ -3518,32 +3533,27 @@ void mission_parse_maybe_create_parse_object(p_object *pobjp)
 			// FreeSpace
 			if (!Fred_running)
 			{
-				int i;
-				shipfx_blow_up_model(objp, Ship_info[Ships[objp->instance].ship_info_index].model_num, 0, 0, &objp->pos);
+				shipfx_blow_up_model(objp, 0, 0, &objp->pos);
 				objp->flags.set(Object::Object_Flags::Should_be_dead);
 
 				// Make sure that the ship is marked as destroyed so the AI doesn't freak out later
-				auto sip = &Ships[objp->instance];
-				ship_add_exited_ship(sip, Ship::Exit_Flags::Destroyed);
+				ship_add_exited_ship(&Ships[objp->instance], Ship::Exit_Flags::Destroyed);
 
 				// once the ship is exploded, find the debris pieces belonging to this object, mark them
 				// as not to expire, and move them forward in time N seconds
-				for (i = 0; i < MAX_DEBRIS_PIECES; i++)
+				for (auto &db: Debris)
 				{
-					debris *db;
-
-					db = &Debris[i];
-					if (!(db->flags[Debris_Flags::Used]))		// not used, move onto the next one.
+					if (!(db.flags[Debris_Flags::Used]))		// not used, move onto the next one.
 						continue;
-					if (db->source_objnum != real_objnum)		// not from this ship, move to next one
+					if (db.source_objnum != real_objnum)		// not from this ship, move to next one
 						continue;
 					
-					debris_remove_from_hull_list(db);
-					db->flags.set(Debris_Flags::DoNotExpire);   // mark as don't expire
-					db->lifeleft = -1.0f;						// be sure that lifeleft == -1.0 so that it really doesn't expire!
+					debris_remove_from_hull_list(&db);
+					db.flags.set(Debris_Flags::DoNotExpire);   // mark as don't expire
+					db.lifeleft = -1.0f;						// be sure that lifeleft == -1.0 so that it really doesn't expire!
 
 					// now move the debris along its path for N seconds
-					objp = &Objects[db->objnum];
+					objp = &Objects[db.objnum];
 					physics_sim(&objp->pos, &objp->orient, &objp->phys_info, (float) pobjp->destroy_before_mission_time);
 				}
 			}
@@ -3558,34 +3568,34 @@ void mission_parse_maybe_create_parse_object(p_object *pobjp)
 	}
 }
 
-void parse_common_object_data(p_object	*objp)
+void parse_common_object_data(p_object *p_objp)
 {
 	int i;
 
 	// Genghis: used later for subsystem checking
-	ship_info* sip = &Ship_info[objp->ship_class];
+	auto sip = &Ship_info[p_objp->ship_class];
 
 	// set some defaults..
-	objp->initial_velocity = 0;
-	objp->initial_hull = 100;
-	objp->initial_shields = 100;
+	p_objp->initial_velocity = 0;
+	p_objp->initial_hull = 100;
+	p_objp->initial_shields = 100;
 
 	// now change defaults if present
 	if (optional_string("+Initial Velocity:")) {
-		stuff_int(&objp->initial_velocity);
+		stuff_int(&p_objp->initial_velocity);
 	}
 
 	if (optional_string("+Initial Hull:"))
-		stuff_int(&objp->initial_hull);
+		stuff_int(&p_objp->initial_hull);
 	if (optional_string("+Initial Shields:"))
-		stuff_int(&objp->initial_shields);
+		stuff_int(&p_objp->initial_shields);
 
-	objp->subsys_index = Subsys_index;
-	objp->subsys_count = 0;
+	p_objp->subsys_index = Subsys_index;
+	p_objp->subsys_count = 0;
 	while (optional_string("+Subsystem:")) {
 		i = allocate_subsys_status();
 
-		objp->subsys_count++;
+		p_objp->subsys_count++;
 		stuff_string(Subsys_status[i].name, F_NAME, NAME_LENGTH);
 		
 		// Genghis: check that the subsystem name makes sense for this ship type
@@ -3621,7 +3631,15 @@ void parse_common_object_data(p_object	*objp)
 		}
 
 		if (optional_string("+AI Class:"))
+		{
 			Subsys_status[i].ai_class = match_and_stuff(F_NAME, Ai_class_names, Num_ai_classes, "AI class");
+
+			if (Subsys_status[i].ai_class < 0)
+			{
+				Warning(LOCATION, "AI Class for ship %s and subsystem %s does not exist in ai.tbl. Setting to first available class.\n", p_objp->name, Subsys_status[i].name);
+				Subsys_status[i].ai_class = 0;
+			}
+		}
 
 		if (optional_string("+Primary Banks:"))
 			stuff_int_list(Subsys_status[i].primary_banks, MAX_SHIP_PRIMARY_BANKS, WEAPON_LIST_TYPE);
@@ -4170,13 +4188,40 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 		// bash the ship name to be the name of the wing + some number if there is > 1 wave in this wing
 		wingp->total_arrived_count++;
 		if (wingp->num_waves > 1)
-			wing_bash_ship_name(p_objp->name, wingp->name, wingp->total_arrived_count + wingp->red_alert_skipped_ships);
+		{
+			bool needs_display_name;
+			wing_bash_ship_name(p_objp->name, wingp->name, wingp->total_arrived_count + wingp->red_alert_skipped_ships, &needs_display_name);
+
+			// set up display name if we need to
+			// (In the unlikely edge case where the ship already has a display name for some reason, it will be overwritten.
+			// This is unavoidable, because if we didn't overwrite display names, all waves would have the display name from the first wave.)
+			if (needs_display_name)
+			{
+				p_objp->display_name = p_objp->name;
+				end_string_at_first_hash_symbol(p_objp->display_name);
+				p_objp->flags.set(Mission::Parse_Object_Flags::SF_Has_display_name);
+			}
+
+			// subsequent waves of ships will not be in the ship registry, so add them
+			if (!ship_registry_get(p_objp->name))
+			{
+				ship_registry_entry entry(p_objp->name);
+				entry.p_objp = p_objp;
+
+				Ship_registry.push_back(entry);
+				Ship_registry_map[p_objp->name] = static_cast<int>(Ship_registry.size() - 1);
+			}
+		}
 
 		// also, if multiplayer, set the parse object's net signature to be wing's net signature
 		// base + total_arrived_count (before adding 1)
-		if (Game_mode & GM_MULTIPLAYER)
+		// Cyborg -- The original ships in the wave have their net_signature set at mission parse
+		// so only do this if this is a subsequent wave.
+		if (Game_mode & GM_MULTIPLAYER && wingp->num_waves > 1)
 		{
-			p_objp->net_signature = (ushort) (wingp->net_signature + wingp->total_arrived_count);
+			// Cyborg -- Also, then we need to subtract the original wave's number of fighters 
+			// and also subtract 1 to use the wing's starting signature
+			p_objp->net_signature = (ushort) (wingp->net_signature + wingp->total_arrived_count - (wingp->wave_count + 1));
 		}
 
 
@@ -4358,6 +4403,17 @@ void parse_wing(mission *pm)
 
 	required_string("$Name:");
 	stuff_string(wingp->name, F_NAME, NAME_LENGTH);
+
+	// quickly look through the squadron wing names to see if we have to warn the modder about this mission
+	// to avoid them avoid the multi missing wing bug.
+	if (pm->game_type & (MISSION_TYPE_MULTI | MISSION_TYPE_MULTI_COOP)) {
+		for (int j = 0; j < MAX_SQUADRON_WINGS; j++) {
+			if (!strcmp(wingp->name, Squadron_wing_names[j])) {
+				Squadron_wing_names_found[j] = true;
+			}
+		}
+	}
+
 	wingnum = find_wing_name(wingp->name);
 	if (wingnum != -1)
 		error_display(0, NOX("Redundant wing name: %s\n"), wingp->name);
@@ -4418,6 +4474,20 @@ void parse_wing(mission *pm)
 
 	required_string("$Special Ship:");
 	stuff_int(&wingp->special_ship);
+
+	// Use a custom formation if specified
+	if (optional_string("+Formation:")) {
+		char f[NAME_LENGTH];
+		stuff_string(f, F_NAME, NAME_LENGTH);
+
+		wingp->formation = wing_formation_lookup(f);
+		if (wingp->formation < 0) {
+			Warning(LOCATION, "Invalid Formation %s.", f);
+		}
+	}
+	else {
+		wingp->formation = -1;
+	}
 
 	wingp->arrival_anchor = -1;
 	wingp->arrival_distance = 0;
@@ -4502,7 +4572,7 @@ void parse_wing(mission *pm)
 
 	// stores a list of all names of ships in the wing
 	required_string("$Ships:");
-	wingp->wave_count = stuff_string_list( ship_names, MAX_SHIPS_PER_WING );
+	wingp->wave_count = (int)stuff_string_list( ship_names, MAX_SHIPS_PER_WING );
 	wingp->current_count = 0;
 
 	// get the wings goals, if any
@@ -4517,9 +4587,8 @@ void parse_wing(mission *pm)
 	}
 
 	if (optional_string("+Flags:")) {
-		int count;
+		auto count = (int)stuff_string_list( wing_flag_strings, PARSEABLE_WING_FLAGS);
 
-		count = stuff_string_list( wing_flag_strings, PARSEABLE_WING_FLAGS);
         for (i = 0; i < count; i++) {
             if (!stricmp(wing_flag_strings[i], NOX("ignore-count")))
                 wingp->flags.set(Ship::Wing_Flags::Ignore_count);
@@ -4597,7 +4666,8 @@ void parse_wing(mission *pm)
 		int next_signature;
 
 		wingp->net_signature = multi_assign_network_signature( MULTI_SIG_SHIP );
-		next_signature = wingp->net_signature + (wingp->wave_count * wingp->num_waves);
+		// Cyborg -- Subtract one because the original wave already has its signatures set.
+		next_signature = wingp->net_signature + (wingp->wave_count * (wingp->num_waves - 1));
 		if ( next_signature > SHIP_SIG_MAX )
 			Error(LOCATION, "Too many total ships in mission (%d) for network signature assignment", SHIP_SIG_MAX);
 		multi_set_network_signature( (ushort)next_signature, MULTI_SIG_SHIP );
@@ -4667,14 +4737,45 @@ void parse_wing(mission *pm)
 	// Goober5000 - wing creation stuff moved to post_process_ships_wings
 }
 
-void parse_wings(mission *pm)
+void parse_wings(mission* pm)
 {
+	// reset this for the missing wing bug.
+	for (int i = 0; i < MAX_SQUADRON_WINGS; i++) {
+		Squadron_wing_names_found[i] = false;
+	}
+
 	required_string("#Wings");
 	while (required_string_either("#Events", "$Name:"))
 	{
 		Assert(Num_wings < MAX_WINGS);
 		parse_wing(pm);
 		Num_wings++;
+	}
+
+	bool found = false;
+
+	static_assert(MAX_TVT_WINGS_PER_TEAM == 1, "Unless you also update the section of code below or redo the loadout code, for TvT, there should be just one player wing, otherwise, wings may start disappearing in game.");
+
+	// now see if we found the missing wing.  We're looking for a wing that is there after a wing that is not.
+	// for now TvT mission do not have enough player wings to be affected by this bug.
+	if (pm->game_type & (MISSION_TYPE_MULTI | MISSION_TYPE_MULTI_COOP)) {
+		do {
+			found = false;
+			// we only search up to the MAX_STARTING_WINGS because non-starting wings should not be in starting wing indices (0-2)
+			for (int i = 1; i < MAX_STARTING_WINGS; i++) {
+				// If there was a wing for this squadron entry, check the last one. If it's empty, we found a mistake, so move the wing names over.
+				if (Squadron_wing_names_found[i] && !Squadron_wing_names_found[i - 1]) {
+					Warning(LOCATION, "Squadron wings are not in the correct order and may cause wings to disappear in multi.\n\nEither wing %s should exist or the %s entry needs to come before it in the list.\n\nPlease go back and fix the mission.", Squadron_wing_names[i - 1], Squadron_wing_names[i]);
+					char temp_chars[NAME_LENGTH];
+					strcpy_s(temp_chars, Squadron_wing_names[i - 1]);
+					strcpy_s(Squadron_wing_names[i - 1], Squadron_wing_names[i]);
+					strcpy_s(Squadron_wing_names[i], temp_chars);
+					Squadron_wing_names_found[i] = !Squadron_wing_names_found[i];
+					Squadron_wing_names_found[i - 1] = !Squadron_wing_names_found[i - 1];
+					found = true;
+				}
+			}
+		} while (found);
 	}
 }
 
@@ -4773,7 +4874,9 @@ void post_process_ships_wings()
 	// any ships are created from the parse objects.
 	for (auto &p_obj : Parse_objects)
 	{
-		ship_registry_entry entry = { ShipStatus::NOT_YET_PRESENT, p_obj.name, &p_obj, nullptr, nullptr, 0, -1 };
+		ship_registry_entry entry(p_obj.name);
+		entry.p_objp = &p_obj;
+
 		Ship_registry.push_back(entry);
 		Ship_registry_map[p_obj.name] = static_cast<int>(Ship_registry.size() - 1);
 	}
@@ -4783,12 +4886,15 @@ void post_process_ships_wings()
 	// in parse_object().
 	for (auto &p_obj : Parse_objects)
 	{
-		// evaluate the arrival cue and maybe set up the arrival delay.  This can't be done until the ship registry is populated
+		// Evaluate the arrival cue and maybe set up the arrival delay.  This can't be done until the ship registry is populated
 		// (because SEXPs now require a complete ship registry) but must be done before the arrival list check inside
 		// mission_parse_maybe_create_parse_object.  That check is, in fact, the only reason this is needed.  We don't need to
 		// pre-emptively set up the delay for wings because there is no equivalent wing arrival list check.  In any case, the
 		// arrival_delay is always validated in mission_did_ship_arrive (for ships) and parse_wing_create_ships (for wings).
-		if (!Fred_running && (p_obj.arrival_cue >= 0))
+		// Addendum: Don't mess with any arrival delays which are strictly positive, meaning they have already been set.
+		// (This is the case for ships destroyed before mission.  In the retail codebase, the destroy-before-mission chunk was
+		// parsed after the arrival cue and delay were parsed and checked, so it overwrote them.)
+		if (!Fred_running && (p_obj.arrival_cue >= 0) && (p_obj.arrival_delay <= 0))
 		{
 			// eval the arrival cue.  if the cue is true, set up the timestamp for the arrival delay
 			if (eval_sexp(p_obj.arrival_cue))
@@ -4853,6 +4959,8 @@ void parse_event(mission * /*pm*/)
 	mission_event *event;
 
 	event = &Mission_events[Num_mission_events];
+	// Need to set this to zero so that we don't accidentally reuse old data.
+	event->flags = 0;
 
 	required_string( "$Formula:" );
 	event->formula = get_sexp_main();
@@ -4956,6 +5064,47 @@ void parse_event(mission * /*pm*/)
 					event->mission_log_flags |= add_flag;
 				}
 			}
+		}
+	}
+
+	if (optional_string("$Annotations Start")) {
+		// annotations are only used in FRED
+		if (Fred_running) {
+			while (check_for_string("+Comment:") || check_for_string("+Background Color:") || check_for_string("+Path:")) {
+				event_annotation ea;
+				ea.path.push_back(Num_mission_events);
+
+				if (optional_string("+Comment:")) {
+					stuff_string(ea.comment, F_MULTITEXT);
+					lcl_replace_stuff(ea.comment, true);
+				}
+
+				if (optional_string("+Background Color:")) {
+					stuff_ubyte(&ea.r);
+					if (*Mp == ',')
+						Mp++;
+					stuff_ubyte(&ea.g);
+					if (*Mp == ',')
+						Mp++;
+					stuff_ubyte(&ea.b);
+				}
+
+				if (optional_string("+Path:")) {
+					int num;
+					while (true) {
+						ignore_gray_space();
+						if (stuff_int_optional(&num) != 2) {
+							break;
+						}
+						ea.path.push_back(num);
+					}
+				}
+
+				Event_annotations.push_back(std::move(ea));
+			}
+			required_string("$Annotations End");
+		} else {
+			skip_to_string("$Annotations End");
 		}
 	}
 }
@@ -5317,11 +5466,21 @@ void parse_bitmaps(mission *pm)
 	Mission_palette = 1;
 
 	// neb2 info
-	strcpy_s(Neb2_texture_name, "Eraseme3");
+	strcpy_s(Neb2_texture_name, "");
 	Neb2_poof_flags = ((1<<0) | (1<<1) | (1<<2) | (1<<3) | (1<<4) | (1<<5));
-	if(optional_string("+Neb2:")){
+	bool nebula = false;
+	if (optional_string("+Neb2:")) {
+		nebula = true;
 		stuff_string(Neb2_texture_name, F_NAME, MAX_FILENAME_LEN);
-
+	} else if (optional_string("+Neb2Color:")) {
+		nebula = true;
+		int neb_colors[3];
+		stuff_int_list(neb_colors, 3, RAW_INTEGER_TYPE);
+		Neb2_fog_color[0] = (ubyte)neb_colors[0];
+		Neb2_fog_color[1] = (ubyte)neb_colors[1];
+		Neb2_fog_color[2] = (ubyte)neb_colors[2];
+	}
+	if (nebula) {
 		required_string("+Neb2Flags:");			
 		stuff_int(&Neb2_poof_flags);
 
@@ -5396,18 +5555,10 @@ void parse_bitmaps(mission *pm)
 	}	
 
 	// Goober5000
-	Num_backgrounds = 0;
 	while (optional_string("$Bitmap List:") || check_for_string("$Sun:") || check_for_string("$Starbitmap:"))
 	{
-		// don't allow overflow; just make sure the last background is the last read
-		if (Num_backgrounds >= MAX_BACKGROUNDS)
-		{
-			Warning(LOCATION, "Too many backgrounds in mission!  Max is %d.", MAX_BACKGROUNDS);
-			Num_backgrounds = MAX_BACKGROUNDS - 1;
-		}
-
-		parse_one_background(&Backgrounds[Num_backgrounds]);
-		Num_backgrounds++;
+		Backgrounds.emplace_back();
+		parse_one_background(&Backgrounds.back());
 	}
 
 	// Goober5000
@@ -5488,6 +5639,17 @@ void parse_asteroid_fields(mission *pm)
 				count++;
 			}
 		}
+
+		bool invalid_asteroids = false;
+		for (int& ast_type : Asteroid_field.field_debris_type) {
+			if (ast_type >= (int)Asteroid_info.size()) {
+				invalid_asteroids = true;
+				ast_type = -1;
+			}
+		}
+
+		if (invalid_asteroids)
+			Warning(LOCATION, "The Asteroid field contains invalid entries!");
 
 		// backward compatibility
 		if ( (Asteroid_field.debris_genre == DG_ASTEROID) && (count == 0) ) {
@@ -5601,6 +5763,23 @@ void parse_variables()
 	}
 }
 
+void parse_sexp_containers()
+{
+	if (!optional_string("#Sexp_containers")) {
+		return;
+	}
+
+	if (optional_string("$Lists")) {
+		stuff_sexp_list_containers();
+		required_string("$End Lists");
+	}
+
+	if (optional_string("$Maps")) {
+		stuff_sexp_map_containers();
+		required_string("$End Maps");
+	}
+}
+
 bool parse_mission(mission *pm, int flags)
 {
 	int saved_warning_count = Global_warning_count;
@@ -5646,6 +5825,7 @@ bool parse_mission(mission *pm, int flags)
 
 	parse_plot_info(pm);
 	parse_variables();
+	parse_sexp_containers();
 	parse_briefing_info(pm);	// TODO: obsolete code, keeping so we don't obsolete existing mission files
 	parse_cutscenes(pm);
 	parse_fiction(pm);
@@ -5674,7 +5854,7 @@ bool parse_mission(mission *pm, int flags)
 		// don't do this in FRED; we will display a separate popup
 		else if (!Fred_running) {
 			// build up the prompt...
-			char text[1024];
+			SCP_string text;
 
 			if (Num_unknown_ship_classes > 0) {
 				sprintf(text, "Warning!\n\nFreeSpace was unable to find %d ship class%s while loading this mission.  This can happen if you try to play a %s that is incompatible with the current mod.\n\n", Num_unknown_ship_classes, (Num_unknown_ship_classes > 1) ? "es" : "", (Game_mode & GM_CAMPAIGN_MODE) ? "campaign" : "mission");
@@ -5684,32 +5864,33 @@ bool parse_mission(mission *pm, int flags)
 			}
 
 			if (Game_mode & GM_CAMPAIGN_MODE) {
-				strcat_s(text, "(The current campaign is \"");
-				strcat_s(text, Campaign.name);
+				text += "(The current campaign is \"";
+				text += Campaign.name;
 			} else {
-				strcat_s(text, "(The current mission is \"");
-				strcat_s(text, pm->name);
+				text += "(The current mission is \"";
+				text += pm->name;
 			}
 
-			strcat_s(text, "\", and the current mod is \"");
+			text += "\", and the current mod is \"";
 
 			if (Cmdline_mod == NULL || *Cmdline_mod == 0) {
-				strcat_s(text, "<retail default> ");
+				text += "<retail default> ";
 			} else {
 				for (char *mod_token = Cmdline_mod; *mod_token != '\0'; mod_token += strlen(mod_token) + 1) {
-					strcat_s(text, mod_token);
-					strcat_s(text, " ");
+					text += mod_token;
+					text += " ";
 				}
 			}
 
-			strcpy(text + strlen(text) - 1, "\".)\n\n  You can continue to load the mission, but it is quite likely that you will encounter a large number of mysterious errors.  It is recommended that you either select a ");
-			strcat(text, (Game_mode & GM_CAMPAIGN_MODE) ? "campaign" : "mission");
-			strcat(text, " that is compatible with your current mod, or else exit FreeSpace and select a different mod.\n\n");
+			text.erase(text.length() - 1);	// trim last space
+			text += "\".)\n\n  You can continue to load the mission, but it is quite likely that you will encounter a large number of mysterious errors.  It is recommended that you either select a ";
+			text += (Game_mode & GM_CAMPAIGN_MODE) ? "campaign" : "mission";
+			text += " that is compatible with your current mod, or else exit FreeSpace and select a different mod.\n\n";
 
-			strcat(text, "Do you want to continue to load the mission?");
+			text += "Do you want to continue to load the mission?";
 
 			// now display the popup
-			int popup_rval = popup(PF_TITLE_BIG | PF_TITLE_RED, 2, POPUP_NO, POPUP_YES, text);
+			int popup_rval = popup(PF_TITLE_BIG | PF_TITLE_RED, 2, POPUP_NO, POPUP_YES, text.c_str());
 			if (popup_rval == 0) {
 				return false;
 			}
@@ -6165,7 +6346,7 @@ void mission_set_wing_arrival_location( wing *wingp, int num_to_set )
 
 				// change the position of the next ships in the wing.  Use the cool function in AiCode.cpp which
 				// Mike K wrote to give new positions to the wing members.
-				get_absolute_wing_pos( &objp->pos, leader_objp, wing_index++, 0);
+				get_absolute_wing_pos( &objp->pos, leader_objp, WING_INDEX(wingp), wing_index++, false);
 				memcpy( &objp->orient, &orient, sizeof(matrix) );
 
 				index++;
@@ -6178,9 +6359,11 @@ void mission_set_wing_arrival_location( wing *wingp, int num_to_set )
 			object *objp = &Objects[Ships[wingp->ship_index[index]].objnum];
 			object *anchor_objp = (anchor_objnum >= 0) ? &Objects[anchor_objnum] : nullptr;
 
-			Script_system.SetHookObjects(2, "Ship", objp, "Parent", anchor_objp);
-			Script_system.RunCondition(CHA_ONSHIPARRIVE, objp);
-			Script_system.RemHookVars(2, "Ship", "Parent");
+			if (Script_system.IsActiveAction(CHA_ONSHIPARRIVE)) {
+				Script_system.SetHookObjects(2, "Ship", objp, "Parent", anchor_objp);
+				Script_system.RunCondition(CHA_ONSHIPARRIVE, objp);
+				Script_system.RemHookVars({"Ship", "Parent"});
+			}
 
 			if (wingp->arrival_location != ARRIVE_FROM_DOCK_BAY) {
 				shipfx_warpin_start(objp);
@@ -6438,7 +6621,7 @@ void mission_parse_set_up_initial_docks()
 		// display an error if necessary
 		if (dfi.maintained_variables.int_value == 0)
 		{
-			Warning(LOCATION, "No dock leaders found in the docking group containing %s.  The group will not appear in-mission!\n", pobjp->name);
+			Warning(LOCATION, "In the docking group containing %s, every ship has an arrival cue set to false.  The group will not appear in-mission!\n", pobjp->name);
 
 			// for FRED, we must arbitrarily choose a dock leader, otherwise the entire docked group will not be loaded
 			if (Fred_running)
@@ -6446,7 +6629,7 @@ void mission_parse_set_up_initial_docks()
 		}
 		else if (dfi.maintained_variables.int_value > 1)
 		{
-			Warning(LOCATION, "There are multiple dock leaders in the docking group containing the leader %s!  Setting %s as the sole leader...\n", dfi.maintained_variables.objp_value->name, dfi.maintained_variables.objp_value->name);
+			Warning(LOCATION, "In the docking group containing %s, there is more than one ship with a non-false arrival cue!  There can only be one such ship.  Setting all arrival cues except %s to false...\n", dfi.maintained_variables.objp_value->name, dfi.maintained_variables.objp_value->name);
 		}
 
 		// clear dfi stuff
@@ -6692,13 +6875,13 @@ int mission_set_arrival_location(int anchor, int location, int dist, int objnum,
 			// If these are not available, this would be an expensive method.
 			x = cosf(fl_radians(45.0f));
 			if ( Game_mode & GM_NORMAL ) {
-				r1 = rand() < RAND_MAX_2 ? -1 : 1;
-				r2 = rand() < RAND_MAX_2 ? -1 : 1;
+				r1 = Random::flip_coin() ? -1 : 1;
+				r2 = Random::flip_coin() ? -1 : 1;
 			} else {
 				// in multiplayer, use the static rand functions so that all clients can get the
 				// same information.
-				r1 = static_rand(Objects[objnum].net_signature) < RAND_MAX_2 ? -1 : 1;
-				r2 = static_rand(Objects[objnum].net_signature+1) < RAND_MAX_2 ? -1 : 1;
+				r1 = static_rand(Objects[objnum].net_signature) < STATIC_RAND_MAX / 2 ? -1 : 1;
+				r2 = static_rand(Objects[objnum].net_signature+1) < STATIC_RAND_MAX / 2 ? -1 : 1;
 			}
 
 			vm_vec_copy_scale(&t1, &(Objects[anchor_objnum].orient.vec.fvec), x);
@@ -7490,7 +7673,7 @@ int add_path_restriction()
 	// parse it
 	path_restriction_t temp;
 	temp.cached_mask = (1 << MAX_SHIP_BAY_PATHS);	// uninitialized value (too high)
-	temp.num_paths = stuff_string_list(temp.path_names, MAX_SHIP_BAY_PATHS);
+	temp.num_paths = (int)stuff_string_list(temp.path_names, MAX_SHIP_BAY_PATHS);
 
 	// no restriction?
 	if (temp.num_paths == 0)
@@ -7921,12 +8104,8 @@ int mission_parse_lookup_alt(const char *name)
 }
 
 static int mission_parse_lookup_alt_index_warn = 1;
-void mission_parse_lookup_alt_index(int index, char *out)
+const char *mission_parse_lookup_alt_index(int index)
 {
-	// sanity
-	if(out == NULL)
-		return;
-
 	if((index < 0) || (index >= Mission_alt_type_count))
 	{
 		if (mission_parse_lookup_alt_index_warn)
@@ -7934,11 +8113,11 @@ void mission_parse_lookup_alt_index(int index, char *out)
 			Warning(LOCATION, "Ship with invalid alt_name.  Get a programmer");
 			mission_parse_lookup_alt_index_warn = 0;
 		}
-		return;
+		return "";
 	}
 
-	// stuff it
-	strcpy(out, Mission_alt_types[index]);
+	// get it
+	return Mission_alt_types[index];
 }
 
 int mission_parse_add_alt(const char *name)
@@ -7986,6 +8165,21 @@ void mission_parse_reset_alt()
 	Mission_alt_type_count = 0;
 }
 
+// For compatibility purposes some mods want alt names to truncate at the hash symbol.  But we can't actually do that at mission load,
+// since we have to save them again in FRED.  So this function processes the names just before the mission starts.
+// To further complicate things, some mods actually want the hash to be displayed.  So this function uses the double-hash as an escape sequence for a single hash.
+void mission_process_alt_types()
+{
+	for (int i = 0; i < Mission_alt_type_count; ++i)
+	{
+		// truncate at a single hash
+		end_string_at_first_hash_symbol(Mission_alt_types[i], true);
+
+		// ## -> #
+		consolidate_double_characters(Mission_alt_types[i], '#');
+	}
+}
+
 /**
  * Callsign stuff
  */
@@ -8009,12 +8203,8 @@ int mission_parse_lookup_callsign(const char *name)
 }
 
 static int mission_parse_lookup_callsign_index_warn = 1;
-void mission_parse_lookup_callsign_index(int index, char *out)
+const char *mission_parse_lookup_callsign_index(int index)
 {
-	// sanity
-	if(out == NULL)
-		return;
-
 	if((index < 0) || (index >= Mission_callsign_count))
 	{
 		if (mission_parse_lookup_callsign_index_warn)
@@ -8022,11 +8212,11 @@ void mission_parse_lookup_callsign_index(int index, char *out)
 			Warning(LOCATION, "Ship with invalid callsign.  Get a programmer");
 			mission_parse_lookup_callsign_index_warn = 0;
 		}
-		return;
+		return "";
 	}
 
-	// stuff it
-	strcpy(out, Mission_callsigns[index]);
+	// get it
+	return Mission_callsigns[index];
 }
 
 int mission_parse_add_callsign(const char *name)

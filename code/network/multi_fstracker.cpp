@@ -49,6 +49,12 @@ char Multi_fs_tracker_filter[MAX_PATH] = "";
 short Multi_fs_tracker_game_id = -1;
 SCP_string Multi_fs_tracker_game_name;
 
+enum PROBE_FLAGS {
+	PENDING	= (1<<0),
+	SUCCESS	= (1<<1),
+	FAILURE	= (1<<2)
+};
+
 // -----------------------------------------------------------------------------------
 // FREESPACE MASTER TRACKER FORWARD DECLARATIONS
 //
@@ -279,12 +285,20 @@ void multi_fs_tracker_login_freespace()
 	// pretty much all we do is make 1 call
 	memset(&Multi_tracker_game_data, 0, sizeof(Multi_tracker_game_data));
 	SDL_strlcpy(Multi_tracker_game_data.game_name, Netgame.name, SDL_arraysize(Multi_tracker_game_data.game_name));
-	Multi_tracker_game_data.difficulty = 99;
-	Multi_tracker_game_data.type = 0;
-	Multi_tracker_game_data.state = 1;
-	Multi_tracker_game_data.max_players = 12;
+	Multi_tracker_game_data.type = Netgame.type_flags;
+	Multi_tracker_game_data.state = Netgame.game_state;
+	Multi_tracker_game_data.max_players = MAX_PLAYERS;
 	Multi_tracker_game_data.current_num_players = 0;
-	
+
+	// repurpose difficulty field to be netgame mode (both otherwise unused)
+	if (Netgame.mode == NG_MODE_RANK_BELOW) {
+		Multi_tracker_game_data.difficulty = -(100 + Netgame.rank_base);
+	} else if (Netgame.mode == NG_MODE_RANK_ABOVE) {
+		Multi_tracker_game_data.difficulty = (100 + Netgame.rank_base);
+	} else {
+		Multi_tracker_game_data.difficulty = Netgame.mode;
+	}
+
 	// if we have a valid channel string, use it		
 	if(strlen(Multi_fs_tracker_channel)){
 		SDL_strlcpy(Multi_tracker_game_data.channel, Multi_fs_tracker_channel, SDL_arraysize(Multi_tracker_game_data.channel));
@@ -511,7 +525,7 @@ void multi_fs_tracker_send_game_request()
 // if the API has successfully been initialized and is running
 int multi_fs_tracker_inited()
 {
-	return Multi_fs_tracker_inited;
+	return (Multi_fs_tracker_inited && Multi_options_g.pxo);
 }
 
 // update our settings on the tracker regarding the current netgame stuff
@@ -520,15 +534,30 @@ void multi_fs_tracker_update_game(netgame_info *ng)
 	if(!Multi_fs_tracker_inited){
 		return;
 	}
-		
+
 	// copy in the relevant data
+	SDL_strlcpy(Multi_tracker_game_data.game_name, ng->name, SDL_arraysize(Multi_tracker_game_data.game_name));
+
+	Multi_tracker_game_data.type = ng->type_flags;
+	Multi_tracker_game_data.state = ng->game_state;
 	Multi_tracker_game_data.max_players = ng->max_players;
 	Multi_tracker_game_data.current_num_players = multi_num_players();
 
-	SDL_strlcpy(Multi_tracker_game_data.mission_name, ng->name, SDL_arraysize(Multi_tracker_game_data.mission_name));
+	// repurpose difficulty field to be netgame mode (both otherwise unused)
+	if (ng->mode == NG_MODE_RANK_BELOW) {
+		Multi_tracker_game_data.difficulty = -(100 + ng->rank_base);
+	} else if (ng->mode == NG_MODE_RANK_ABOVE) {
+		Multi_tracker_game_data.difficulty = (100 + ng->rank_base);
+	} else {
+		Multi_tracker_game_data.difficulty = ng->mode;
+	}
+
+	SDL_strlcpy(Multi_tracker_game_data.mission_name, ng->mission_name, SDL_arraysize(Multi_tracker_game_data.mission_name));
 
 	// NETLOG
 	ml_string(NOX("Server updating netgame info for Game Tracker"));
+
+	UpdateGameData(&Multi_tracker_game_data);
 }
 
 // if we're currently busy performing some tracker operation (ie, you should wait or not)
@@ -847,20 +876,26 @@ void multi_stats_fs_to_tracker(scoring_struct *fs, vmt_stats_struct *vmt, player
 	vmt->last_flown = static_cast<unsigned int>(fs->last_flown);
 
 	// medals and ship kills are stored in a single array, medals first
-	Assert(fs->medal_counts.size() < MAX_FS2OPEN_COUNTS);
-	vmt->num_medals = static_cast<unsigned char>(fs->medal_counts.size());
+	Assert(fs->medal_counts.size() >= static_cast<size_t>(Num_medals));
+	vmt->num_medals = static_cast<unsigned char>(Num_medals);
+
+	if (vmt->num_medals > MAX_FS2OPEN_COUNTS) {
+		vmt->num_medals = MAX_FS2OPEN_COUNTS;
+	}
 
 	// find only up to last in array with at least 1 kill
-	vmt->num_ships = 0;
+	vmt->num_ships = MAX_FS2OPEN_COUNTS - vmt->num_medals;
 
-	for (int idx : fs->kills) {
+	for (int idx = vmt->num_ships-1; idx >= 0; --idx) {
 		if (fs->kills[idx] > 0) {
-			vmt->num_ships++;
+			break;
 		}
+
+		--vmt->num_ships;
 	}
 
 	// medals should always fit here, ships might get cut off on large mods
-	const size_t count = std::min(static_cast<unsigned short>(vmt->num_medals + vmt->num_ships), MAX_FS2OPEN_COUNTS);
+	const size_t count = vmt->num_medals + vmt->num_ships;
 
 	for (size_t idx = 0, idx2 = 0; idx < count; ++idx) {
 		if (idx < vmt->num_medals) {
@@ -901,13 +936,16 @@ void multi_stats_tracker_to_fs(vmt_stats_struct *vmt,scoring_struct *fs)
 	}
 
 	// medals and ship kills are stored in a single array, medals first
-	const int count = vmt->num_medals + vmt->num_ships;
+	const size_t count = vmt->num_medals + vmt->num_ships;
 
 	Assert(count <= MAX_FS2OPEN_COUNTS);
 
-	for (int idx = 0, idx2 = 0; idx < count; ++idx) {
+	const size_t max_medals = std::max(static_cast<size_t>(Num_medals), static_cast<size_t>(vmt->num_medals));
+	fs->medal_counts.assign(max_medals, 0);
+
+	for (size_t idx = 0, idx2 = 0; idx < count; ++idx) {
 		if (idx < vmt->num_medals) {
-			fs->medal_counts.push_back( static_cast<int>(vmt->counts[idx]) );
+			fs->medal_counts[idx] = static_cast<int>(vmt->counts[idx]);
 		} else {
 			fs->kills[idx2++] = static_cast<int>(vmt->counts[idx]);
 		}
@@ -922,15 +960,15 @@ void multi_fs_tracker_process_game_item(game_list *gl)
 
 	for(idx=0;idx<MAX_GAME_LISTS_PER_PACKET;idx++){
 		// skip null server addresses
-		if(gl->game_server[idx] == 0){
+		if (IN6_IS_ADDR_UNSPECIFIED(&gl->game_server[idx])) {
 			continue;
 		}
 
 		// package up the game information
 		memset(&ag,0,sizeof(active_game));
 		SDL_strlcpy(ag.name, gl->game_name[idx], SDL_arraysize(ag.name));
-		memcpy(&ag.server_addr.addr[0], &gl->game_server[idx], IP_ADDRESS_LENGTH);
-		ag.server_addr.type = NET_TCP;
+
+		memcpy(&ag.server_addr.addr, &gl->game_server[idx], sizeof(ag.server_addr.addr));
 		ag.server_addr.port = ntohs(gl->port[idx]); //DEFAULT_GAME_PORT;
 
 		// add to the active game list
@@ -1094,7 +1132,7 @@ int multi_fs_tracker_validate_mission(char *filename)
 		SDL_snprintf(popup_string, SDL_arraysize(popup_string), XSTR("Validating mission %s", 1074), filename);
 
 		// run a popup
-		switch(popup_till_condition(multi_fs_tracker_validate_mission_normal, XSTR("&Cancel", 667), popup_string)){
+		switch ( popup_conditional_do(multi_fs_tracker_validate_mission_normal, popup_string) ) {
 		// cancel 
 		case 0: 
 			// bash some API values here so that next time we try and verify, everything works
@@ -1210,7 +1248,7 @@ int multi_fs_tracker_validate_table(const char *filename)
 		SDL_snprintf(popup_string, SDL_arraysize(popup_string), XSTR("Validating table %s", -1), filename);
 
 		// run a popup
-		switch ( popup_till_condition(multi_fs_tracker_validate_table_normal, XSTR("&Cancel", 667), popup_string) ) {
+		switch ( popup_conditional_do(multi_fs_tracker_validate_table_normal, popup_string) ) {
 			// cancel
 			case 0:
 				TableValidState = VALID_STATE_IDLE;
@@ -1276,7 +1314,11 @@ int multi_fs_tracker_validate_game_data()
 
 		// now check with tracker
 
-		for (auto tbl : table_list) {
+		if ( !(Game_mode & GM_STANDALONE_SERVER) ) {
+			popup_conditional_create(0, XSTR("&Cancel", 667), XSTR("Validating tables ...", -1));
+		}
+
+		for (auto &tbl : table_list) {
 			rval = multi_fs_tracker_validate_table( tbl.c_str() );
 
 			// if anything is valid then update our default
@@ -1287,6 +1329,15 @@ int multi_fs_tracker_validate_game_data()
 			else if (rval == TVALID_STATUS_INVALID) {
 				game_data_status = TVALID_STATUS_INVALID;
 			}
+			// if the popup was canceled then force a recheck on next attempt
+			else if (rval == -2) {
+				game_data_status = TVALID_STATUS_UNKNOWN;
+				break;
+			}
+		}
+
+		if ( !(Game_mode & GM_STANDALONE_SERVER) ) {
+			popup_conditional_close();
 		}
 
 		// we should hopefully have a mod id now, so log it
@@ -1326,6 +1377,56 @@ void multi_fs_tracker_report_stats_results()
 			}
 		}
 	}
+}
+
+// report the status of PXO game probe (firewall check)
+void multi_fs_tracker_report_probe_status(int flags, int next_try)
+{
+	static int last_flags = 0;
+	SCP_string str;
+
+	// if the flags haven't changed since last time then just bail
+	// *except* if the probe failed since we always want that message
+	// (don't & the flag check here, needs to be exact)
+	if ( (flags == last_flags) && (flags != PROBE_FLAGS::FAILURE) ) {
+		return;
+	}
+
+	if (flags & PROBE_FLAGS::PENDING) {
+		// if we've been here before just bail (to avoid log spam)
+		if (last_flags) {
+			last_flags = flags;
+			return;
+		}
+
+		str = "<PXO firewall probe in progress...>";
+	} else if (flags & PROBE_FLAGS::FAILURE) {
+		char t_str[64];
+
+		str = "<PXO firewall probe failed! Next attempt in ";
+
+		if (next_try < 120) {
+			SDL_snprintf(t_str, SDL_arraysize(t_str), "%d seconds...>", next_try);
+		} else if (next_try < (60*60+1)) {
+			int minutes = next_try / 60;
+			SDL_snprintf(t_str, SDL_arraysize(t_str), "%d minutes...>", minutes);
+		} else {
+			int hours = next_try / (60*60);
+			SDL_snprintf(t_str, SDL_arraysize(t_str), "%d hours...>", hours);
+		}
+
+		str += t_str;
+	} else if (flags & PROBE_FLAGS::SUCCESS) {
+		str = "<PXO firewall probe was a success!>";
+	} else {
+		// getting here shouldn't happen, but it's not technically fatal
+		return;
+	}
+
+	last_flags = flags;
+
+	multi_display_chat_msg(str.c_str(), 0, 0);
+	ml_string(str.c_str());
 }
 
 // return an MSW_STATUS_* constant

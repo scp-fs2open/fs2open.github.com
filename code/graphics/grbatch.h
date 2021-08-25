@@ -9,6 +9,8 @@
 #ifndef	__GRBATCH_H__
 #define	__GRBATCH_H__
 
+#include "2d.h"
+
 class geometry_batcher
 {
 private:
@@ -64,7 +66,7 @@ public:
 
 	void load_buffer(effect_vertex* buffer, int *n_verts);
 
-	void render_buffer(int buffer_handle, int flags);
+	void render_buffer(gr_buffer_handle buffer_handle, int flags);
 
 	// determine if we even need to try and render this (helpful for particle system)
 	int need_to_render() { return n_to_render; }
@@ -84,18 +86,18 @@ public:
 
 	void load_buffer(particle_pnt* buffer, size_t *n_verts);
 
-	void render_buffer(int buffer_handle, int flags);
+	void render_buffer(gr_buffer_handle buffer_handle, int flags);
 
 	size_t need_to_render() { return vertices.size(); }
 };
 
-void batch_render_all(int stream_buffer = -1);
-void batch_render_geometry_map_bitmaps(int buffer_handle = -1);
+void batch_render_all(gr_buffer_handle stream_buffer = gr_buffer_handle::invalid());
+void batch_render_geometry_map_bitmaps(gr_buffer_handle buffer_handle = gr_buffer_handle::invalid());
 void batch_load_buffer_geometry_map_bitmaps(effect_vertex* buffer, int *n_verts);
-void batch_render_lasers(int buffer_handle = -1);
+void batch_render_lasers(gr_buffer_handle buffer_handle = gr_buffer_handle::invalid());
 void batch_load_buffer_lasers(effect_vertex* buffer, int *n_verts);
 void batch_reset();
-void batch_render_distortion_map_bitmaps(int buffer_handle = -1);
+void batch_render_distortion_map_bitmaps(gr_buffer_handle buffer_handle = gr_buffer_handle::invalid());
 void batch_load_buffer_distortion_map_bitmaps(effect_vertex* buffer, int *n_verts);
 
 int batch_get_size();
@@ -104,7 +106,7 @@ void batch_render_close();
 int geometry_batch_add_bitmap(int texture, int tmap_flags, vertex *pnt, int orient, float rad, float alpha, float depth);
 void batch_load_buffer_geometry_shader_map_bitmaps(particle_pnt* buffer, int *n_verts);
 void batch_render_geometry_shader_map_bitmaps();
-void geometry_batch_render(int stream_buffer);
+void geometry_batch_render(gr_buffer_handle stream_buffer);
 size_t geometry_batch_get_size();
 
 #endif

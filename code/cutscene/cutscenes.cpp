@@ -613,7 +613,7 @@ void cutscenes_screen_do_frame()
 			if (src)
 			{
 				Text_size = split_str(src, Cutscene_desc_coords[gr_screen.res][2], Text_line_size, Text_lines,
-									  Cutscene_max_text_lines[gr_screen.res]);
+									  Cutscene_max_text_lines[gr_screen.res], MAX_TEXT_LINE_LEN);
 				Assert(Text_size >= 0 && Text_size < Cutscene_max_text_lines[gr_screen.res]);
 			}
 		}

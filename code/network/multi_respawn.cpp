@@ -326,7 +326,6 @@ int multi_respawn_common_stuff(p_object *pobjp)
 	int objnum, team, slot_index;
 	object *objp;
 	ship *shipp;
-	int idx;
 
 	// create the object
 	objnum = parse_create_object(pobjp);
@@ -339,15 +338,6 @@ int multi_respawn_common_stuff(p_object *pobjp)
 	Assert( team != -1 );
 	Assert( slot_index != -1 );
 
-	// reset object update stuff
-	for(idx=0; idx<MAX_PLAYERS; idx++){
-		shipp->np_updates[idx].orient_chksum = 0;
-		shipp->np_updates[idx].pos_chksum = 0;
-		shipp->np_updates[idx].seq = 0;
-		shipp->np_updates[idx].status_update_stamp = -1;
-		shipp->np_updates[idx].subsys_update_stamp = -1;
-		shipp->np_updates[idx].update_stamp = -1;
-	}
 
 	// change the ship type and the weapons
 	if (team != -1 && slot_index != -1) {
@@ -359,6 +349,9 @@ int multi_respawn_common_stuff(p_object *pobjp)
 	if(Netgame.type_flags & NG_TYPE_TEAM){
 		multi_team_mark_ship(&Ships[Objects[objnum].instance]);
 	}
+
+	// need to make sure that we will update this object and that the frame tracker knows this is a valid ship again.
+	multi_oo_respawn_reset_info(objp->net_signature);
 
 	pobjp->respawn_count++;
 
@@ -405,6 +398,10 @@ void multi_respawn_player(net_player *pl, char cur_primary_bank, char cur_second
 	if ( pl == Net_player ) {
 		object *oldplr = Player_obj;
 
+		// Cyborg17 - Despite the fact that the object and ship are getting deleted below, unless the net_signature is cleared here
+		// respawning in a rollback enabled game will crash the server.
+		oldplr->net_signature = 0;
+
 		Player_obj = objp;
 		Player_ship = shipp;
 		Player_ai = &Ai_info[Player_ship->ai_index];
@@ -421,7 +418,7 @@ void multi_respawn_player(net_player *pl, char cur_primary_bank, char cur_second
 	if(!(Net_player->flags & NETINFO_FLAG_AM_MASTER)){
 		objp->net_signature = net_sig;
 	}
-	
+
 	// restore the correct weapon bank selections
 	shipp->weapons.current_primary_bank = (int)cur_primary_bank;
 	shipp->weapons.current_secondary_bank = (int)cur_secondary_bank;
@@ -491,7 +488,7 @@ void multi_respawn_ai( p_object *pobjp )
 	object *objp;
 
 	// create the object and change the ship type
-	objnum = multi_respawn_common_stuff( pobjp );
+	objnum = multi_respawn_common_stuff( pobjp);
 	objp = &Objects[objnum];
 
 	// be sure the the OF_PLAYER_SHIP flag is unset, and the could be player flag is set
@@ -632,7 +629,7 @@ void multi_respawn_process_packet(ubyte *data, header *hinfo)
 	int offset = HEADER_LENGTH;
 
 	// determine who send the packet	
-	player_index = find_player_id(hinfo->id);
+	player_index = find_player_index(hinfo->id);
 	if(player_index == -1){
 		nprintf(("Network","Couldn't find player for processing respawn packet!\n"));
 	}
@@ -647,9 +644,14 @@ void multi_respawn_process_packet(ubyte *data, header *hinfo)
 		p_object *pobjp;
 
 		GET_USHORT( net_sig );
-		pobjp = mission_parse_get_arrival_ship( net_sig );
-		Assert( pobjp != NULL );
-		multi_respawn_ai( pobjp );
+
+		// only attempt to respawn if we are in the mission
+		if (!(Net_player->flags & NETINFO_FLAG_WARPING_OUT)) {
+			pobjp = mission_parse_get_arrival_ship(net_sig);
+			Assert(pobjp != NULL);
+			multi_respawn_ai(pobjp);
+		}
+
 		break;		
 
 	case RESPAWN_BROADCAST:
@@ -662,19 +664,23 @@ void multi_respawn_process_packet(ubyte *data, header *hinfo)
 		GET_DATA(cur_link_status);
 		GET_USHORT(ship_ets);
 		GET_STRING(parse_name);
-		player_index = find_player_id(player_id);
-		if(player_index == -1){
-			nprintf(("Network","Couldn't find player to respawn!\n"));
-			break;
-		}
 
-		// create the ship and assign its position, net_signature, and class
-		// respawn the player
-		multi_respawn_player(&Net_players[player_index], cur_primary_bank, cur_secondary_bank, cur_link_status, ship_ets, net_sig, parse_name, &v);
+		if (!(Net_player->flags & NETINFO_FLAG_WARPING_OUT)) {
+			player_index = find_player_index(player_id);
 
-		// if this is for me, I should jump back into gameplay
-		if(&Net_players[player_index] == Net_player){
-			gameseq_post_event(GS_EVENT_ENTER_GAME);
+			if(player_index == -1){
+				nprintf(("Network","Couldn't find player to respawn!\n"));
+				break;
+			}
+
+			// create the ship and assign its position, net_signature, and class
+			// respawn the player
+			multi_respawn_player(&Net_players[player_index], cur_primary_bank, cur_secondary_bank, cur_link_status, ship_ets, net_sig, parse_name, &v);
+
+			// if this is for me, I should jump back into gameplay
+			if(&Net_players[player_index] == Net_player){
+				gameseq_post_event(GS_EVENT_ENTER_GAME);
+			}
 		}
 		break;
 	
@@ -724,7 +730,7 @@ void multi_respawn_server()
 	Assert(Net_player->flags & NETINFO_FLAG_AM_MASTER);
 
 	// respawn me
-	multi_respawn_player(Net_player, Net_player->s_info.cur_primary_bank, Net_player->s_info.cur_secondary_bank, Net_player->s_info.cur_link_status, Net_player->s_info.ship_ets, 0, Net_player->p_info.p_objp->name);
+	multi_respawn_player(Net_player, Net_player->s_info.cur_primary_bank, Net_player->s_info.cur_secondary_bank, Net_player->s_info.cur_link_status, Net_player->s_info.ship_ets, Net_player->p_info.p_objp->net_signature, Net_player->p_info.p_objp->name);
 
 	// jump back into the game
 	gameseq_post_event(GS_EVENT_ENTER_GAME);	

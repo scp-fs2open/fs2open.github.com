@@ -23,7 +23,7 @@ endif()
 
 if (CLANG_USE_LIBCXX)
 	set(CXX_BASE_FLAGS "${CXX_BASE_FLAGS} -stdlib=libc++")
-	target_link_libraries(compiler INTERFACE "c++abi")
+	target_link_libraries(compiler INTERFACE "c++" "c++abi")
 endif()
 
 # Initialize with an empty string to make sure we always get a clean start
@@ -118,3 +118,14 @@ endif()
 
 # Always define this to make sure that the fixed width format macros are available
 target_compile_definitions(compiler INTERFACE __STDC_FORMAT_MACROS)
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux" OR MINGW)
+	# GNU ar: Create thin archive files.
+	# Requires binutils-2.19 or later.
+	set(CMAKE_C_ARCHIVE_CREATE   "<CMAKE_AR> qcTP <TARGET> <LINK_FLAGS> <OBJECTS>")
+	set(CMAKE_C_ARCHIVE_APPEND   "<CMAKE_AR> qTP  <TARGET> <LINK_FLAGS> <OBJECTS>")
+	set(CMAKE_CXX_ARCHIVE_CREATE "<CMAKE_AR> qcTP <TARGET> <LINK_FLAGS> <OBJECTS>")
+	set(CMAKE_CXX_ARCHIVE_APPEND "<CMAKE_AR> qTP  <TARGET> <LINK_FLAGS> <OBJECTS>")
+endif()
+
+target_link_libraries(compiler INTERFACE m)

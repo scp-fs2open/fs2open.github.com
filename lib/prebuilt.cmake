@@ -1,5 +1,5 @@
 
-set(PREBUILT_VERSION_NAME "b5cddcd84af2d85c9e9394c28e1fc5be16aacff6")
+set(PREBUILT_VERSION_NAME "ba538510e6c957f5e773bb7009eac4ed285120e3")
 
 set(FSO_PREBUILT_OVERRIDE "" CACHE PATH "Path to the prebuilt binaries, if empty the binaries will be downloaded.")
 set(PREBUILT_LIB_DIR "${CMAKE_CURRENT_BINARY_DIR}/prebuilt")
@@ -55,7 +55,7 @@ function(get_prebuilt_path OUT_VAR)
     endforeach()
 
     if (NOT (DOWNLOAD_STATUS EQUAL 0))
-        message(FATAL_ERROR "${MAX_RETRIES} download attemps failed!")
+        message(FATAL_ERROR "${MAX_RETRIES} download attempts failed!")
         return()
     endif()
 
@@ -79,7 +79,7 @@ function(get_prebuilt_path OUT_VAR)
     )
     
     if (NOT (EXTRACT_RESULT EQUAL 0))
-        message(FATAL_ERROR "Extracing prebuilt libraries failed! Error message: ${ERROR_TEXT}")
+        message(FATAL_ERROR "Extracting prebuilt libraries failed! Error message: ${ERROR_TEXT}")
         return()
     endif()
     

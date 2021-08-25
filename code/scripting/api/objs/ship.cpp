@@ -14,6 +14,7 @@
 #include "order.h"
 #include "enums.h"
 #include "wing.h"
+#include "vecmath.h"
 
 #include "ship/shiphit.h"
 #include "hud/hudshield.h"
@@ -249,8 +250,10 @@ ADE_VIRTVAR(Name, l_Ship, "string", "Ship name. This is the actual name of the s
 
 	ship *shipp = &Ships[objh->objp->instance];
 
-	if(ADE_SETTING_VAR && s != NULL) {
-		strncpy(shipp->ship_name, s, sizeof(shipp->ship_name)-1);
+	if(ADE_SETTING_VAR && s != nullptr) {
+		auto len = sizeof(shipp->ship_name);
+		strncpy(shipp->ship_name, s, len);
+		shipp->ship_name[len - 1] = 0;
 	}
 
 	return ade_set_args(L, "s", shipp->ship_name);
@@ -270,6 +273,9 @@ ADE_VIRTVAR(DisplayName, l_Ship, "string", "Ship display name", "string", "The d
 
 	if(ADE_SETTING_VAR && s != nullptr) {
 		shipp->display_name = s;
+
+		// for compatibility reasons, if we are setting this to the empty string, clear the flag
+		shipp->flags.set(Ship::Ship_Flags::Has_display_name, s[0] != 0);
 	}
 
 	return ade_set_args(L, "s", shipp->display_name.c_str());
@@ -959,16 +965,35 @@ ADE_VIRTVAR(Orders, l_Ship, "shiporders", "Array of ship orders", "shiporders", 
 	return ade_set_args(L, "o", l_ShipOrders.Set(object_h(objh->objp)));
 }
 
-ADE_FUNC(kill, l_Ship, "[object Killer]", "Kills the ship. Set \"Killer\" to the ship you are killing to self-destruct", "boolean", "True if successful, false or nil otherwise")
+ADE_FUNC(getCenterPosition, l_Ship, nullptr, "Returns the position of the ship's physical center, which may not be the position of the origin of the model", "vector", "World position of the center of the ship, or nil if an error occurred")
 {
-	object_h *victim,*killer=NULL;
-	if(!ade_get_args(L, "o|o", l_Ship.GetPtr(&victim), l_Ship.GetPtr(&killer)))
+	object_h *shiph;
+	vec3d center_pos, actual_local_center;
+
+	if (!ade_get_args(L, "o", l_Ship.GetPtr(&shiph)))
+		return ADE_RETURN_NIL;
+
+	// find local center
+	ship_class_get_actual_center(&Ship_info[Ships[shiph->objp->instance].ship_info_index], &actual_local_center);
+
+	// find world position of the center
+	vm_vec_unrotate(&center_pos, &actual_local_center, &shiph->objp->orient);
+	vm_vec_add2(&center_pos, &shiph->objp->pos);
+
+	return ade_set_args(L, "o", l_Vector.Set(center_pos));
+}
+
+ADE_FUNC(kill, l_Ship, "[object Killer, vector Hitpos]", "Kills the ship. Set \"Killer\" to the ship you are killing to self-destruct, and \"Hitpos\" to the world coordinates of the weapon impact", "boolean", "True if successful, false or nil otherwise")
+{
+	object_h *victim, *killer = nullptr;
+	vec3d *hitpos = nullptr;
+	if(!ade_get_args(L, "o|oo", l_Ship.GetPtr(&victim), l_Ship.GetPtr(&killer), l_Vector.GetPtr(&hitpos)))
 		return ADE_RETURN_NIL;
 
 	if(!victim->IsValid())
 		return ADE_RETURN_NIL;
 
-	if(!killer || !killer->IsValid())
+	if(killer && !killer->IsValid())
 		return ADE_RETURN_NIL;
 
 	//Ripped straight from shiphit.cpp
@@ -977,7 +1002,7 @@ ADE_FUNC(kill, l_Ship, "[object Killer]", "Kills the ship. Set \"Killer\" to the
 		percent_killed = 1.0f;
 	}
 
-	ship_hit_kill(victim->objp, killer->objp, percent_killed, (victim->sig == killer->sig) ? 1 : 0);
+	ship_hit_kill(victim->objp, killer ? killer->objp : nullptr, hitpos, percent_killed, (killer && victim->sig == killer->sig) ? 1 : 0);
 
 	return ADE_RETURN_TRUE;
 }
@@ -1030,6 +1055,48 @@ ADE_FUNC(hasShipExploded, l_Ship, NULL, "Checks if the ship explosion event has 
 	}
 
 	return ade_set_args(L, "i", 0);
+}
+
+ADE_FUNC(isDepartingWarp, l_Ship, nullptr, "Checks if the ship is departing via warp", "boolean", "True if the Depart_warp flag is set, false otherwise")
+{
+	object_h *shiph;
+	if (!ade_get_args(L, "o", l_Ship.GetPtr(&shiph)))
+		return ade_set_error(L, "b", false);
+
+	if (!shiph->IsValid())
+		return ade_set_error(L, "b", false);
+
+	ship *shipp = &Ships[shiph->objp->instance];
+
+	return ade_set_args(L, "b", shipp->flags[Ship::Ship_Flags::Depart_warp]);
+}
+
+ADE_FUNC(isDepartingDockbay, l_Ship, nullptr, "Checks if the ship is departing via warp", "boolean", "True if the Depart_dockbay flag is set, false otherwise")
+{
+	object_h *shiph;
+	if (!ade_get_args(L, "o", l_Ship.GetPtr(&shiph)))
+		return ade_set_error(L, "b", false);
+
+	if (!shiph->IsValid())
+		return ade_set_error(L, "b", false);
+
+	ship *shipp = &Ships[shiph->objp->instance];
+
+	return ade_set_args(L, "b", shipp->flags[Ship::Ship_Flags::Depart_dockbay]);
+}
+
+ADE_FUNC(isDying, l_Ship, nullptr, "Checks if the ship is dying (doing its death roll or exploding)", "boolean", "True if the Dying flag is set, false otherwise")
+{
+	object_h *shiph;
+	if (!ade_get_args(L, "o", l_Ship.GetPtr(&shiph)))
+		return ade_set_error(L, "b", false);
+
+	if (!shiph->IsValid())
+		return ade_set_error(L, "b", false);
+
+	ship *shipp = &Ships[shiph->objp->instance];
+
+	return ade_set_args(L, "b", shipp->flags[Ship::Ship_Flags::Dying]);
 }
 
 ADE_FUNC(fireCountermeasure, l_Ship, NULL, "Launches a countermeasure from the ship", "boolean", "Whether countermeasure was launched or not")
@@ -1395,33 +1462,33 @@ ADE_FUNC(doManeuver,
 	ai_info *aip = &Ai_info[shipp->ai_index];
 	control_info *cip = &aip->ai_override_ci;
 
-	aip->ai_override_flags.reset();
-
-	// handle infinite timestamps
-	if (duration >= 2) {
-		aip->ai_override_timestamp = timestamp(duration);
-	} else {
-		aip->ai_override_timestamp = timestamp(10);
-		aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Never_expire);
+	if (!(maneuver_flags & CIF_DONT_OVERRIDE_OLD_MANEUVERS)) {
+		aip->ai_override_flags.reset();
 	}
-
+	
+	bool applied_rot = false;
+	bool applied_lat = false;
 	if (apply_all_rotate) {
 		aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Full_rot);
 		cip->heading = heading;
 		cip->pitch = pitch;
 		cip->bank = bank;
+		applied_rot = true;
 	} else {
 		if (heading != 0) {
 			cip->heading = heading;
 			aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Heading);
+			applied_rot = true;
 		}
 		if (pitch != 0) {
 			cip->pitch = pitch;
 			aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Pitch);
+			applied_rot = true;
 		}
 		if (bank != 0) {
 			cip->bank = bank;
 			aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Roll);
+			applied_rot = true;
 		}
 	}
 	if (apply_all_move) {
@@ -1429,18 +1496,40 @@ ADE_FUNC(doManeuver,
 		cip->vertical = up;
 		cip->sideways = sideways;
 		cip->forward = forward;
+		applied_lat = true;
 	} else {
 		if (up != 0) {
 			cip->vertical = up;
 			aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Up);
+			applied_lat = true;
 		}
 		if (sideways != 0) {
 			cip->sideways = sideways;
 			aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Sideways);
+			applied_lat = true;
 		}
 		if (forward != 0) {
 			cip->forward = forward;
 			aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Forward);
+			applied_lat = true;
+		}
+	}
+
+	// handle infinite timestamps
+	if (duration >= 2) {
+		if (applied_rot)
+			aip->ai_override_rot_timestamp = timestamp(duration);
+		if (applied_lat)
+			aip->ai_override_lat_timestamp = timestamp(duration);
+	}
+	else {
+		if (applied_rot) {
+			aip->ai_override_rot_timestamp = timestamp(10);
+			aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Rotational_never_expire);
+		}
+		if (applied_lat) {
+			aip->ai_override_lat_timestamp = timestamp(10);
+			aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Lateral_never_expire);
 		}
 	}
 
@@ -1587,27 +1676,47 @@ ADE_FUNC(getEMP, l_Ship, NULL, "Returns the current emp effect strength acting o
 	return ade_set_args(L, "f", shipp->emp_intensity);
 }
 
-ADE_FUNC(getTimeUntilExplosion, l_Ship, NULL, "Returns the time in seconds until the ship explodes", "number", "Time until explosion or -1, if invalid handle or ship isn't exploding")
+ADE_FUNC(getTimeUntilExplosion, l_Ship, nullptr, "Returns the time in seconds until the ship explodes (the ship's final_death_time timestamp)", "number", "Time until explosion or -1, if invalid handle or ship isn't exploding")
 {
-	object_h *objh = NULL;
+	object_h *objh = nullptr;
 
-	if (!ade_get_args(L, "o", l_Ship.GetPtr(&objh))) {
+	if (!ade_get_args(L, "o", l_Ship.GetPtr(&objh)))
 		return ade_set_error(L, "f", -1.0f);
-	}
-
 	if(!objh->IsValid())
 		return ade_set_error(L, "f", -1.0f);
 
 	ship *shipp = &Ships[objh->objp->instance];
 
 	if (!timestamp_valid(shipp->final_death_time))
-	{
 		return ade_set_args(L, "f", -1.0f);
-	}
 
 	int time_until = timestamp_until(shipp->final_death_time);
 
 	return ade_set_args(L, "f", (i2fl(time_until) / 1000.0f));
+}
+
+ADE_FUNC(setTimeUntilExplosion, l_Ship, "number Time", "Sets the time in seconds until the ship explodes (the ship's final_death_time timestamp).  This function will only work if the ship is in its death roll but hasn't exploded yet, which can be checked via isDying() or getTimeUntilExplosion().", "boolean", "True if successful, false if the ship is invalid or not currently exploding")
+{
+	object_h *objh = nullptr;
+	float delta_s;
+
+	if (!ade_get_args(L, "of", l_Ship.GetPtr(&objh), &delta_s))
+		return ade_set_error(L, "b", false);
+	if (!objh->IsValid())
+		return ade_set_error(L, "b", false);
+
+	ship *shipp = &Ships[objh->objp->instance];
+
+	if (!timestamp_valid(shipp->final_death_time))
+		return ade_set_args(L, "b", false);
+
+	int delta_ms = fl2i(delta_s * 1000.0f);
+	if (delta_ms < 2)
+		delta_ms = 2;
+
+	shipp->final_death_time = timestamp(delta_ms);
+
+	return ade_set_args(L, "b", true);
 }
 
 ADE_FUNC(getCallsign, l_Ship, NULL, "Gets the callsign of the ship in the current mission", "string", "The callsign or an empty string if the ship doesn't have a callsign or an error occurs")
@@ -1629,7 +1738,7 @@ ADE_FUNC(getCallsign, l_Ship, NULL, "Gets the callsign of the ship in the curren
 	char temp_callsign[NAME_LENGTH];
 
 	*temp_callsign = 0;
-	mission_parse_lookup_callsign_index(shipp->callsign_index, temp_callsign);
+	strcpy(temp_callsign, mission_parse_lookup_callsign_index(shipp->callsign_index));
 
 	if (*temp_callsign)
 		return ade_set_args(L, "s", temp_callsign);
@@ -1653,13 +1762,12 @@ ADE_FUNC(getAltClassName, l_Ship, NULL, "Gets the alternate class name of the sh
 	if (shipp->alt_type_index < 0)
 		return ade_set_args(L, "s", "");
 
-	char temp[NAME_LENGTH];
+	char temp_altname[NAME_LENGTH];
 
-	*temp = 0;
-	mission_parse_lookup_alt_index(shipp->alt_type_index, temp);
+	strcpy_s(temp_altname, mission_parse_lookup_alt_index(shipp->alt_type_index));
 
-	if (*temp)
-		return ade_set_args(L, "s", temp);
+	if (*temp_altname)
+		return ade_set_args(L, "s", temp_altname);
 	else
 		return ade_set_args(L, "s", "");
 }
@@ -1742,7 +1850,23 @@ ADE_FUNC(getDisplayString, l_Ship, nullptr, "Returns the string which should be 
 		return ade_set_error(L, "s", "");
 
 	shipp = &Ships[objh->objp->instance];
-	return ade_set_args(L, "s", shipp->get_display_string());
+	return ade_set_args(L, "s", shipp->get_display_name());
+}
+
+ADE_FUNC(vanish, l_Ship, nullptr, "Vanishes this ship from the mission. Works in Singleplayer only and will cause the ship exit to not be logged.", "boolean", "True if the deletion was successful, false otherwise.")
+{
+
+	object_h* objh = nullptr;
+
+	if (!ade_get_args(L, "o", l_Ship.GetPtr(&objh)))
+		return ade_set_error(L, "b", false);
+
+	if (!objh->IsValid())
+		return ade_set_error(L, "b", false);
+
+	ship_actually_depart(objh->objp->instance, SHIP_VANISHED);
+
+	return ade_set_args(L, "b", true);
 }
 
 

@@ -32,7 +32,6 @@ extern float shadow_veryneardist;
 extern float shadow_neardist;
 extern float shadow_middist;
 extern float shadow_fardist;
-extern bool Rendering_to_shadow_map;
 
 extern GLuint Shadow_map_texture;
 
@@ -44,15 +43,15 @@ struct opengl_vertex_bind {
 	opengl_vert_attrib::attrib_id attribute_id;
 };
 
-int gr_opengl_create_buffer(BufferType type, BufferUsageHint usage);
+gr_buffer_handle gr_opengl_create_buffer(BufferType type, BufferUsageHint usage);
 
-void opengl_bind_buffer_object(int handle);
-void gr_opengl_update_buffer_data(int handle, size_t size, const void* data);
-void gr_opengl_update_buffer_data_offset(int handle, size_t offset, size_t size, const void* data);
-void gr_opengl_delete_buffer(int handle);
-void gr_opengl_bind_uniform_buffer(uniform_block_type bind_point, size_t offset, size_t size, int buffer);
-void* gr_opengl_map_buffer(int handle);
-void gr_opengl_flush_mapped_buffer(int handle, size_t offset, size_t size);
+void opengl_bind_buffer_object(gr_buffer_handle handle);
+void gr_opengl_update_buffer_data(gr_buffer_handle handle, size_t size, const void* data);
+void gr_opengl_update_buffer_data_offset(gr_buffer_handle handle, size_t offset, size_t size, const void* data);
+void gr_opengl_delete_buffer(gr_buffer_handle handle);
+void gr_opengl_bind_uniform_buffer(uniform_block_type bind_point, size_t offset, size_t size, gr_buffer_handle buffer);
+void* gr_opengl_map_buffer(gr_buffer_handle handle);
+void gr_opengl_flush_mapped_buffer(gr_buffer_handle handle, size_t offset, size_t size);
 
 /**
  * @brief Retrieves the OpenGL handle of a generic buffer handle
@@ -60,7 +59,7 @@ void gr_opengl_flush_mapped_buffer(int handle, size_t offset, size_t size);
  * @param buffer_handle The handle of the generic buffer
  * @return The OpenGL handle ID
  */
-GLuint opengl_buffer_get_id(GLenum expected_type, int buffer_handle);
+GLuint opengl_buffer_get_id(GLenum expected_type, gr_buffer_handle buffer_handle);
 
 void gr_opengl_update_transform_buffer(void* data, size_t size);
 

@@ -83,7 +83,7 @@ waypoint *find_waypoint_with_instance(int waypoint_instance);
 waypoint_list *find_waypoint_list_at_index(int index);
 waypoint *find_waypoint_at_index(waypoint_list *list, int index);
 int find_index_of_waypoint_list(waypoint_list *wp_list);
-int find_index_of_waypoint(waypoint *wpt);
+int find_index_of_waypoint(waypoint_list *wp_list, waypoint *wpt);
 
 // Find a name that doesn't conflict with any current waypoint list
 void waypoint_find_unique_name(char *dest_name, int start_index);

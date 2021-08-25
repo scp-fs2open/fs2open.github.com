@@ -9,6 +9,24 @@ namespace api {
 
 ADE_OBJ(l_SEXPVariable, sexpvar_h, "sexpvariable", "SEXP Variable handle");
 
+ADE_VIRTVAR(Name, l_SEXPVariable, "string", "SEXP Variable name.", "string", "SEXP Variable name, or empty string if handle is invalid")
+{
+	sexpvar_h *svh = nullptr;
+	const char* s = nullptr;
+	if (!ade_get_args(L, "o|s", l_SEXPVariable.GetPtr(&svh), &s))
+		return ade_set_error(L, "s", "");
+
+	if (!svh->IsValid())
+		return ade_set_error(L, "s", "");
+
+	sexp_variable *sv = &Sexp_variables[svh->idx];
+
+	if (ADE_SETTING_VAR && s != nullptr) {
+		LuaError(L, "Reassigning SEXP variable names is not supported.  (Tried to rename %s to %s.)", sv->variable_name, s);
+	}
+
+	return ade_set_args(L, "s", sv->variable_name);
+}
 
 ADE_VIRTVAR(Persistence, l_SEXPVariable, "enumeration", "SEXP Variable persistance, uses SEXPVAR_*_PERSISTENT enumerations", "enumeration", "SEXPVAR_*_PERSISTENT enumeration, or invalid numeration if handle is invalid")
 {

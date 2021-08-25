@@ -1044,6 +1044,10 @@ void briefing_editor_dlg::OnMakeIcon()
 	biconp->pos = pos;
 	biconp->flags = 0;
 	biconp->id = Cur_brief_id++;
+
+	biconp->modelnum = -1;
+	biconp->model_instance_num = -1;
+
 	if (ship >= 0) {
 		biconp->ship_class = Ships[ship].ship_info_index;
         ship_info* sip = &Ship_info[Ships[ship].ship_info_index];

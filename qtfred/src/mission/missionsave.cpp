@@ -17,6 +17,7 @@
 #include <iff_defs/iff_defs.h>
 #include <jumpnode/jumpnode.h>
 #include <localization/fhash.h>
+#include <localization/localize.h>
 #include <mission/missionbriefcommon.h>
 #include <mission/missioncampaign.h>
 #include <mission/missiongoals.h>
@@ -27,6 +28,7 @@
 #include <nebula/neb.h>
 #include <object/objectdock.h>
 #include <object/objectshield.h>
+#include <parse/sexp_container.h>
 #include <sound/ds.h>
 #include <starfield/nebula.h>
 #include <starfield/starfield.h>
@@ -848,8 +850,8 @@ int CFred_mission_save::save_bitmaps()
 	fso_comment_pop();
 
 	// Goober5000 - save all but the lowest priority using the special comment tag
-	for (i = 0; i < Num_backgrounds; i++) {
-		bool tag = (i < Num_backgrounds - 1);
+	for (i = 0; i < (int)Backgrounds.size(); i++) {
+		bool tag = (i < (int)Backgrounds.size() - 1);
 		background_t* background = &Backgrounds[i];
 
 		fso_comment_push(";;FSO 3.6.9;;");
@@ -1132,10 +1134,6 @@ int CFred_mission_save::save_cmd_brief()
 	stage = 0;
 	required_string_fred("#Command Briefing");
 	parse_comments(2);
-
-	if (The_mission.game_type & MISSION_TYPE_MULTI) {
-		return err;
-	}  // no command briefings allowed in multiplayer missions.
 
 	save_custom_bitmap("$Background 640:",
 					   "$Background 1024:",
@@ -1689,22 +1687,32 @@ int CFred_mission_save::save_events()
 		}
 
 		// save flags, if any
-		// (the transient flags are not used in FRED, so if the flags field is nonzero they will all be meaningful flags from the flag list)
-		if (save_format != MissionFormat::RETAIL && Mission_events[i].flags != 0) {
-			fso_comment_push(";;FSO 20.0.0;;");
-			if (optional_string_fred("+Event Flags: (", "$Formula:")) {
-				parse_comments();
-			} else {
-				fout_version("\n+Event Flags: (");
-			}
-			fso_comment_pop();
+		if (save_format != MissionFormat::RETAIL) {
+			// we need to lazily-write the tag because we should only write it if there are also flags to write
+			// (some of the flags are transient, internal flags)
+			bool wrote_tag = false;
 
 			for (j = 0; j < Num_mission_event_flags; ++j) {
 				if (Mission_events[i].flags & Mission_event_flags[j].def) {
+					if (!wrote_tag) {
+						wrote_tag = true;
+
+						fso_comment_push(";;FSO 20.0.0;;");
+						if (optional_string_fred("+Event Flags: (", "$Formula:")) {
+							parse_comments();
+						}
+						else {
+							fout_version("\n+Event Flags: (");
+						}
+						fso_comment_pop();
+					}
+
 					fout(" \"%s\"", Mission_event_flags[j].name);
 				}
 			}
-			fout(" )");
+
+			if (wrote_tag)
+				fout(" )");
 		}
 
 		if (save_format != MissionFormat::RETAIL && Mission_events[i].mission_log_flags != 0) {
@@ -1725,7 +1733,84 @@ int CFred_mission_save::save_events()
 			fout(" )");
 		}
 
-		fso_comment_pop();
+		// save event annotations
+		if (save_format != MissionFormat::RETAIL && !Event_annotations.empty())
+		{
+			bool at_least_one = false;
+			fso_comment_push(";;FSO 21.0.0;;");
+			event_annotation default_ea;
+
+			// see if there is an annotation for this event
+			for (const auto &ea : Event_annotations)
+			{
+				if (ea.path.empty() || ea.path.front() != i)
+					continue;
+
+				if (!at_least_one)
+				{
+					if (optional_string_fred("$Annotations Start", "$Formula:"))
+						parse_comments();
+					else
+						fout_version("\n$Annotations Start");
+					at_least_one = true;
+				}
+
+				if (ea.comment != default_ea.comment)
+				{
+					if (optional_string_fred("+Comment:", "$Formula:"))
+						parse_comments();
+					else
+						fout_version("\n+Comment:");
+
+					auto copy = ea.comment;
+					lcl_fred_replace_stuff(copy);
+					fout(" %s", copy.c_str());
+
+					if (optional_string_fred("$end_multi_text", "$Formula:"))
+						parse_comments();
+					else
+						fout_version("\n$end_multi_text");
+				}
+
+				if (ea.r != default_ea.r || ea.g != default_ea.g || ea.b != default_ea.b)
+				{
+					if (optional_string_fred("+Background Color:", "$Formula:"))
+						parse_comments();
+					else
+						fout_version("\n+Background Color:");
+
+					fout(" %d, %d, %d", ea.r, ea.g, ea.b);
+				}
+
+				if (ea.path.size() > 1)
+				{
+					if (optional_string_fred("+Path:", "$Formula:"))
+						parse_comments();
+					else
+						fout_version("\n+Path:");
+
+					bool comma = false;
+					auto it = ea.path.begin();
+					for (++it; it != ea.path.end(); ++it)
+					{
+						if (comma)
+							fout(",");
+						comma = true;
+						fout(" %d", *it);
+					}
+				}
+			}
+
+			if (at_least_one)
+			{
+				if (optional_string_fred("$Annotations End", "$Formula:"))
+					parse_comments();
+				else
+					fout_version("\n$Annotations End");
+			}
+
+			fso_comment_pop();
+		}
 	}
 
 	fso_comment_pop(true);
@@ -2413,6 +2498,8 @@ void CFred_mission_save::save_mission_internal(const char* pathname)
 		err = -3;
 	} else if (save_variables()) {
 		err = -3;
+	} else if (save_containers()) {
+		err = -3;
 		//	else if (save_briefing_info())
 		//		err = -4;
 	} else if (save_cutscenes()) {
@@ -2688,17 +2775,23 @@ int CFred_mission_save::save_objects()
 		required_string_either_fred("$Name:", "#Wings");
 		required_string_fred("$Name:");
 		parse_comments(z ? 2 : 1);
-		fout(" %s\t\t;! Object #%d\n", shipp->ship_name, i);
+		fout(" %s\t\t;! Object #%d", shipp->ship_name, i);
 
 		// Display name
+		// The display name is only written if there was one at the start to avoid introducing inconsistencies
 		if (save_format != MissionFormat::RETAIL && shipp->has_display_name()) {
-			// The display name is only written if there was one at the start to avoid introducing inconsistencies
-			fout("\n$Display name:");
-			fout_ext(" ", "%s", shipp->display_name.c_str());
-			fout("\n");
+			char truncated_name[NAME_LENGTH];
+			strcpy_s(truncated_name, shipp->ship_name);
+			end_string_at_first_hash_symbol(truncated_name);
+
+			// Also, the display name is not written if it's just the truncation of the name at the hash
+			if (strcmp(shipp->get_display_name(), truncated_name) != 0) {
+				fout("\n$Display name:");
+				fout_ext(" ", "%s", shipp->display_name.c_str());
+			}
 		}
 
-		required_string_fred("$Class:");
+		required_string_fred("\n$Class:");
 		parse_comments(0);
 		fout(" %s", Ship_info[shipp->ship_info_index].name);
 
@@ -3379,7 +3472,8 @@ int CFred_mission_save::save_objects()
 
 			for (SCP_vector<texture_replace>::iterator ii = Fred_texture_replacements.begin();
 				 ii != Fred_texture_replacements.end(); ++ii) {
-				if (!stricmp(shipp->ship_name, ii->ship_name)) {
+				// Only look at this entry if it's not from the table. Table entries will just be read by FSO.
+				if (!stricmp(shipp->ship_name, ii->ship_name) && !(ii->from_table)) {
 					if (needs_header) {
 						if (optional_string_fred("$Texture Replace:")) {
 							parse_comments(1);
@@ -3934,6 +4028,134 @@ int CFred_mission_save::save_variables()
 	return err;
 }
 
+int CFred_mission_save::save_containers()
+{
+	if (save_format == MissionFormat::RETAIL) {
+		return 0;
+	}
+
+	const auto &containers = get_all_sexp_containers();
+
+	if (containers.empty()) {
+		fso_comment_pop(true);
+		return 0;
+	}
+
+	required_string_fred("#Sexp_containers");
+	parse_comments(2);
+
+	bool list_found = false;
+	bool map_found = false;
+
+	// What types of container do we have?
+	for (const auto &container : containers) {
+		if (container.is_list()) {
+			list_found = true;
+		} else if (container.is_map()) {
+			map_found = true;
+		}
+		if (list_found && map_found) {
+			// no point in continuing to check
+			break;
+		}
+	}
+
+	if (list_found) {
+		required_string_fred("$Lists");
+		parse_comments(2);
+
+		for (const auto &container : containers) {
+			if (container.is_list()) {
+				fout("\n$Name: %s", container.container_name.c_str());
+				if (any(container.type & ContainerType::STRING_DATA)) {
+					fout("\n$Data Type: String");
+				} else if (any(container.type & ContainerType::NUMBER_DATA)) {
+					fout("\n$Data Type: Number");
+				}
+
+				if (any(container.type & ContainerType::STRICTLY_TYPED_DATA)) {
+					fout("\n+Strictly Typed Data");
+				}
+
+				fout("\n$Data: ( ");
+				for (const auto &list_entry : container.list_data) {
+					fout("\"%s\" ", list_entry.c_str());
+				}
+
+				fout(")\n");
+
+				save_container_options(container);
+			}
+		}
+
+		required_string_fred("$End Lists");
+		parse_comments(1);
+	}
+
+	if (map_found) {
+		required_string_fred("$Maps");
+		parse_comments(2);
+
+		for (const auto &container : containers) {
+			if (container.is_map()) {
+				fout("\n$Name: %s", container.container_name.c_str());
+				if (any(container.type & ContainerType::STRING_DATA)) {
+					fout("\n$Data Type: String");
+				} else if (any(container.type & ContainerType::NUMBER_DATA)) {
+					fout("\n$Data Type: Number");
+				}
+
+				if (any(container.type & ContainerType::NUMBER_KEYS)) {
+					fout("\n$Key Type: Number");
+				} else {
+					fout("\n$Key Type: String");
+				}
+
+				if (any(container.type & ContainerType::STRICTLY_TYPED_KEYS)) {
+					fout("\n+Strictly Typed Keys");
+				}
+
+				if (any(container.type & ContainerType::STRICTLY_TYPED_DATA)) {
+					fout("\n+Strictly Typed Data");
+				}
+
+				fout("\n$Data: ( ");
+				for (const auto &map_entry : container.map_data) {
+					fout("\"%s\" \"%s\" ", map_entry.first.c_str(), map_entry.second.c_str());
+				}
+
+				fout(")\n");
+
+				save_container_options(container);
+			}
+		}
+
+		required_string_fred("$End Maps");
+		parse_comments(1);
+	}
+
+	return err;
+}
+
+void CFred_mission_save::save_container_options(const sexp_container &container)
+{
+	if (any(container.type & ContainerType::NETWORK)) {
+		fout("+Network Container\n");
+	}
+
+	if (container.is_eternal()) {
+		fout("+Eternal\n");
+	}
+
+	if (any(container.type & ContainerType::SAVE_ON_MISSION_CLOSE)) {
+		fout("+Save On Mission Close\n");
+	} else if (any(container.type & ContainerType::SAVE_ON_MISSION_PROGRESS)) {
+		fout("+Save On Mission Progress\n");
+	}
+
+	fout("\n");
+}
+
 int CFred_mission_save::save_vector(vec3d& v)
 {
 	fout(" %f, %f, %f", v.xyz.x, v.xyz.y, v.xyz.z);
@@ -4087,7 +4309,21 @@ int CFred_mission_save::save_wings()
 
 		required_string_fred("$Special Ship:");
 		parse_comments();
-		fout(" %d\t\t;! %s\n", Wings[i].special_ship, Ships[Wings[i].ship_index[Wings[i].special_ship]].ship_name);
+		fout(" %d\t\t;! %s", Wings[i].special_ship, Ships[Wings[i].ship_index[Wings[i].special_ship]].ship_name);
+
+		if (save_format != MissionFormat::RETAIL) {
+			if (Wings[i].formation >= 0 && Wings[i].formation < (int)Wing_formations.size())
+			{
+				if (optional_string_fred("+Formation:", "$Name:")) {
+					parse_comments();
+				}
+				else {
+					fout("\n+Formation:");
+				}
+
+				fout(" %s", Wing_formations[Wings[i].formation].name);
+			}
+		}
 
 		required_string_fred("$Arrival Location:");
 		parse_comments();

@@ -67,5 +67,4 @@ public:
 
 extern int Mission_filename_cb_format;
 extern int Campaign_modified;
-extern int Bypass_clear_mission;
 extern campaign_tree_wnd *Campaign_wnd;

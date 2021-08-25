@@ -28,12 +28,27 @@ enum Joy_axis_index {
 	JOY_RZ_AXIS
 };
 
+/*!
+ * Controller index enumeration
+ * @details For use with hardcoded bindings and scripting API to allow human-readable translation
+ * @note These enums are hardcoded so that an int value of 0 would be JOY0
+ */
+enum CID : short {
+	CID_NONE     = -3,	// No device bound
+	CID_KEYBOARD = -2,	// button belongs to keyboard
+	CID_MOUSE    = -1,  // to mouse
+	CID_JOY0     =  0,  // to Joy0
+	CID_JOY1     =  1,  // to Joy1 (Throttle?)
+	CID_JOY2     =  2,  // to Joy2 (Pedals?)
+	CID_JOY3     =  3   // to Joy3 (Head tracker?)
+	                    // Any additional joystick is an int >3
+};
 
 /*!
  * These are used to index a corresponding (analog) action, namely controlling the orientation angles and throttle.
  */
 enum Joy_axis_action_index {
-	JOY_HEADING_AXIS	=0,
+	JOY_HEADING_AXIS	=0,	//
 	JOY_PITCH_AXIS,
 	JOY_BANK_AXIS,
 	JOY_ABS_THROTTLE_AXIS,
@@ -45,7 +60,16 @@ enum Joy_axis_action_index {
 	NUM_JOY_AXIS_ACTIONS			//!< The total number of actions an axis may map to
 };
 
-
+/*!
+ * Joystick action modes
+ * note: should this be in joy.h?
+ */
+enum Joy_axis_action_mode {
+	JAAM_ABS,       //!< Absolute mode.  Axis position = output value
+	JAAM_REL,       //!< Relative mode.  Axis postion away from its center adds or subtracts an output value register.
+	JAAM_BTN_NEG,   //!< Button mode, negative side.  Axis position in the negative side will trigger a button action
+	JAAM_BTN_POS,   //!< Button mode, positive side.  Axis position in the positive side will trigger a button action
+};
 
 /*!
  * Control Configuration Types. Namely differ in how the control is activated
@@ -56,26 +80,11 @@ enum CC_type {
 };
 
 /*!
- * Control configuration item type.
- */
-typedef struct config_item {
-	short key_default;		//!< default key bound to action
-	short joy_default;		//!< default joystick button bound to action
-	char tab;				//!< what tab (category) it belongs in
-	int indexXSTR;			//!< what string index we should use to translate this with an XSTR
-	const char *text;		//!< describes the action in the config screen
-	char type;				//!< manner control should be checked in
-	short key_id;			//!< actual key bound to action
-	short joy_id;			//!< joystick button bound to action
-	int used;				//!< has control been used yet in mission?  If so, this is the timestamp
-	bool disabled;			//!< whether this action should be available at all
-	bool continuous_ongoing;//!< whether this action is a continuous one and is currently ongoing
-} config_item;
-
-/*!
  * All available actions
  * This is the value of the id field in config_item
  * The first group of items are ship targeting.
+ *
+ * Note: Do not adjust the order or numeric value
  */
 enum IoActionId  {
 	TARGET_NEXT										=0,		//!< target next
@@ -252,7 +261,7 @@ enum IoActionId  {
 	DOWN_SLIDE_THRUST								=111,	//!< DOWN_SLIDE_THRUST
 	HUD_TARGETBOX_TOGGLE_WIREFRAME					=112,	//!< HUD_TARGETBOX_TOGGLE_WIREFRAME
 	VIEW_TOPDOWN									=113,	//!< VIEW_TOPDOWN
-	VIEW_TRACK_TARGET								=114,	//!< VIEW_TRACK_TARGET
+	VIEW_TRACK_TARGET								=114,	//!< VIEW_TRACK_TARGET (Switfty) Toggle for VM_Track
 
 	//!< @n
 	//!< AutoPilot - Kazan
@@ -285,10 +294,200 @@ enum IoActionId  {
 	CCFG_MAX                                  //!<  The total number of defined control actions (or last define + 1)
 };
 
+class CCB;
+
+/*!
+ *  A singular button binding
+ */
+class CC_bind {
+public:
+	CID cid   = CID_NONE;   //!< Which controller this belongs to
+	short btn = -1;         //!< Which button to index; If cid == CID_KEYBOARD, this is a key hash.
+
+public:
+	CC_bind() = default;
+	CC_bind(const CC_bind &A) = default;
+
+	CC_bind(CID _cid, short _btn) : cid(_cid), btn(_btn) {};
+
+	CC_bind& operator=(const CC_bind &A);
+
+	/*!
+	 * Checks if this CC_bind is equal to the given CC_bind
+	 */
+	bool operator==(const CC_bind &B) const;
+
+	/*!
+	 * Checks if this CC_bind is equal to either in the pair
+	 */
+	bool operator==(const CCB &pair) const;
+
+	/*!
+	 * Checks if this CC_bind is not equal to the given CC_bind
+	 */
+	bool operator!=(const CC_bind &B) const;
+
+	/*!
+	 * Checks if this CC_bind is not equal to either in the pair
+	 */
+	bool operator!=(const CCB &pair) const;
+
+	/*!
+	 * Clears the binding
+	 */
+	void clear();
+
+	/*!
+	 * True if not bound
+	 */
+	bool empty() const;
+
+	/*!
+	 * Returns a human-readable string of this binding
+	 */
+	SCP_string textify() const;
+};
+
+/*!
+ * A pair of bindings.
+ * @note Please don't set the bindings directly, use ::take() instead.
+ */
+class CCB {
+public:
+	CC_bind first;  // The primary binding
+	CC_bind second; // The secondary binding
+
+public:
+	CCB() = default;
+	CCB(const CCB& A) = default;
+
+	/*!
+	 * Returns true if nothing is bound
+	 */
+	bool empty() const;
+
+	/*!
+	 * Takes a given binding
+	 *
+	 * @param[in] A     The bind to take
+	 * @param[in] order 0 is primary, 1 is secondary, -1 is overwrite existing bind (if any)
+	 *
+	 * @note Should there be a binding to the same controller as the given binding, it is cleared
+	 */
+	void take(CC_bind A, int order);
+
+	/*!
+	 * Clears both bindings
+	 */
+	void clear();
+
+	/*!
+	 * Gets the value of btn if either CC_bind has the given CID
+	 *
+	 * @returns the btn of the bound controller, or
+	 * @returns -1 if that controller is not bound
+	 */
+	short get_btn(CID) const;
+
+	/*!
+	 * Assigns the contents of the given CCB to this CCB
+	 */
+	CCB& operator=(const CCB&);
+
+	/*!
+	 * Returns True if this CCB's first isn't empty and the given CCB has a binding equal to it
+	 */
+	bool has_first(const CCB&) const;
+
+	/*!
+	 * Returns True if this CCB's second isn't empty and the given CCB has a binding equal to it
+	 */
+	bool has_second(const CCB&) const;
+};
+
+/*!
+ * A preset, a collection of bindings for use in Control_config with an associated name
+ */
+class CC_preset {
+public:
+	SCP_vector<CCB> bindings;
+	SCP_string name;
+};
+
+/*!
+ * Control configuration item type.
+ * @detail Contains binding info, documentation, behavior, etc. for a single control
+ */
+class CCI : public CCB {
+public:
+// Inherited from CCB
+	// CC_bind first;
+	// CC_bind second;
+
+// Items Set in menu
+	char tab;               //!< what tab (category) it belongs in
+	int  indexXSTR;         //!< what string index we should use to translate this with an XSTR 0 = None, 1= Use item index + CONTROL_CONFIG_XSTR, 2 <= use CCI::indexXSTR directly
+	SCP_string text;        //!< describes the action in the config screen
+
+	CC_type type;           //!< manner control should be checked in
+
+// Items used during gameplay
+	int  used;                  //!< has control been used yet in mission?  If so, this is the timestamp
+	bool disabled = true;       //!< whether this action should be available at all
+	bool continuous_ongoing;    //!< whether this action is a continuous one and is currently ongoing
+
+public:
+	CCI() = default;
+	CCI(const CCI& A) = default;
+	
+	/*!
+	 * Assigns the contents of the given CCI to this CCI
+	 */
+	CCI& operator=(const CCI&);
+
+	/*!
+	 * @brief Takes the bindings of the given CCB, but leaves all other members alone
+	 */
+	CCI& operator=(const CCB&);
+};
+
+/*!
+ * Builder predicate to populate a ControlConfig vector with hardcoded default bindings.
+ */
+class CCI_builder {
+public:
+	/*!
+	 * Initilizes the given ControlConfig vector
+	 */
+	CCI_builder(SCP_vector<CCI>& _ControlConfig);
+
+	/*!
+	 * Start a chain of factory methods. If there are any pre-init work to be done, that's done here.
+	 */
+	CCI_builder& start();
+
+	/*!
+	 * End a chain of factory methods.  If there any post-init work to be done, that's done here.
+	 */
+	void end();
+
+	/*!
+	 * Assigns the hardcoded binding to the given action
+	 * @note This differs from the original hardcode from :V: in the hopes of it being more intuitive to future IoAction additions
+	 */
+	CCI_builder& operator()(IoActionId action_id, short key_default, short joy_default, char tab, int indexXSTR, const char *text, CC_type type, bool disabled = false);
+
+private:
+	CCI_builder();	// Only one builder per Control Config, so a default constructor is useless
+	SCP_vector<CCI>& ControlConfig;
+};
+
+
 extern int Failed_key_index;
 
-extern int Axis_map_to[];
-extern int Invert_axis[];
+extern int Axis_map_to[];           // Array to map an axis action to a joy axis. size() = NUM_JOY_AXIS_ACTIONS
+extern int Axis_map_to_defaults[];
+extern int Invert_axis[];           // Array to hold inversion bools for a joy axis. size() = JOY_NUM_AXES
 extern int Invert_axis_defaults[];
 
 extern int Joy_dead_zone_size;
@@ -296,23 +495,76 @@ extern int Joy_sensitivity;
 
 extern int Control_config_overlay_id;
 
-extern config_item Control_config[];		//!< Stores the keyboard configuration
-extern SCP_vector<config_item*> Control_config_presets; // tabled control presets; pointers to config_item arrays
-extern SCP_vector<SCP_string> Control_config_preset_names; // names for Control_config_presets (identical order of items)
+extern SCP_vector<CCI> Control_config;		//!< Stores the keyboard configuration
+extern SCP_vector<CC_preset> Control_config_presets; // tabled control presets; pointers to config_item arrays
 extern const char **Scan_code_text;
 extern const char **Joy_button_text;
 
-void control_config_common_init();			//!< initialize common control config stuff - call at game startup after localization has been initialized
-void control_config_common_close();			//!< close common control config stuff - call at game shutdown
+/*!
+ * @brief Checks if either binding in the CCB has the given cid
+ *
+ * @returns  0  if its the first element, or
+ * @returns  1  if its the second element, or
+ * @returns -1  if neither
+ */
+int is_cid_either(CID, const CCB);
 
+/*!
+* @brief initialize common control config stuff - call at game startup after localization has been initialized
+*/
+void control_config_common_init();
+
+/*!
+ * @brief close common control config stuff - call at game shutdown
+ */
+void control_config_common_close();
+
+/*!
+ * @brief init config menu
+ */
 void control_config_init();
+
+/*!
+ * @brief do a frame of the config menu
+ */
 void control_config_do_frame(float frametime);
+
+/*!
+ * @brief close config menu
+ */
 void control_config_close();
 
+/*!
+ * @brief Cancel configuration of controls, revert any changes, return to previous menu/game state
+ */
 void control_config_cancel_exit();
 
-void control_config_reset_defaults(int presetnum=-1);
+/*!
+ * @brief Resets all controls to values within the currently selected preset
+ */
+void control_config_reset_defaults();
+
+/*!
+ * Returns the IoActionId of a control bound to the given key
+ *
+ * @param[in] key           The key combo to look for
+ * @param[in] find_override If true, return the IoActionId of a control that has this key as its default
+ * @details If find_override is set to true, then this returns the index of the action
+ */
 int translate_key_to_index(const char *key, bool find_override=true);
+
+
+/*!
+ * @brief Given the system default key 'key', return the current key that is bound to that function.
+ *
+ * @param[in] key  The default key combo (as string) to a certain control
+ *
+ * @returns The key combo (as string) currently bound to the control
+ *
+ * @details Both the 'key' and the return value are descriptive strings that can be displayed
+ * directly to the user.  If 'key' isn't a real key, is not normally bound to anything,
+ * or there is no key currently bound to the function, NULL is returned.
+ */
 char *translate_key(char *key);
 
 /**
@@ -334,14 +586,70 @@ const char *textify_scancode(int code);
  */
 const char *textify_scancode_universal(int code);
 
+/*!
+ * @brief Checks how long a control has been active
+ *
+ * @param[in] id The IoActionId of the control to check
+ *
+ * @returns Time, in milliseconds, that the control has been active.
+ *
+ * @note This function is only to be used on CC_CONTINOUS type controls, or it will trigger an assertion
+ */
 float check_control_timef(int id);
+
+/**
+ * @brief Wrapper for check_control_used. Allows the game to ignore the key if told to do so by the ignore-key SEXP.
+ *
+ * @brief id    The IoActionId of the control to check
+ * @brief key   The key combo to check against the control.
+ *
+ * @returns 0 If the control wasn't used, or
+ * @returns 1 If the control was used
+ */
 int check_control(int id, int key = -1);
+
+/**
+ * @brief Gets the scaled reading for all control axes.
+ *
+ * @param[out] h  heading
+ * @param[out] p pitch
+ * @param[out] b bank
+ * @param[out] ta Throttle - Absolute
+ * @param[out] tr Throttle - Relative
+ *
+ * @note None of the input pointers may be nullptr
+ */
 void control_get_axes_readings(int *h, int *p, int *b, int *ta, int *tr);
+
+/**
+ * @brief Markes the given control (by IoActionId) as used
+ *
+ * @details Updates the ::used timestamp, triggers a script hook, and marks ::continous_ongoing as true
+ */
 void control_used(int id);
+
+/**
+ * @brief Clears the bindings of all controls
+ */
 void control_config_clear();
+
+/**
+ * @brief debug function used to indicate number of controls checked
+ */
 void control_check_indicate();
+
+/**
+ * @brief Clears the used timestamp of all controls
+ */
 void control_config_clear_used_status();
 
+/**
+ * @brief Applies sensitivity multiplier and deadzone histerisis to the raw axis value
+ *
+ * @param[in] raw  The raw axis value to transform
+ *
+ * @return The transformed value
+ */
 int joy_get_scaled_reading(int raw);
 
 #endif

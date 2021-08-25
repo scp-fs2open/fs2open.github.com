@@ -363,9 +363,9 @@ void emp_process_ship(ship *shipp)
 		int ship_lookup = ship_get_random_team_ship(iff_get_attackee_mask(shipp->team));
 
 		// if we got a valid ship object to target
-		if((ship_lookup >= 0) && (Ships[ship_lookup].objnum >= 0) && !(Objects[Ships[ship_lookup].objnum].flags[Object::Object_Flags::Protected])){
+		if((ship_lookup >= 0) && (Ships[ship_lookup].objnum >= 0) && !(Objects[Ships[ship_lookup].objnum].flags[Object::Object_Flags::Protected]) && (SHIP_INDEX(shipp) != ship_lookup)){
 			// attack the object
-			ai_attack_object(objp, &Objects[Ships[ship_lookup].objnum], NULL);
+			ai_attack_object(objp, &Objects[Ships[ship_lookup].objnum]);
 		}
 	}
 }
@@ -521,7 +521,7 @@ void emp_maybe_reformat_text(char *text, int  /*max_len*/, int gauge_id)
 		{
 			int wep_index = weapon_get_random_player_usable_weapon();
 			if (wep_index >= 0) {
-				strcpy_s(wt->str, Weapon_info[wep_index].get_display_string());
+				strcpy_s(wt->str, Weapon_info[wep_index].get_display_name());
 			}
 			break;
 		}
@@ -532,7 +532,7 @@ void emp_maybe_reformat_text(char *text, int  /*max_len*/, int gauge_id)
 			// choose a random ship
 			int shipnum = ship_get_random_targetable_ship();
 			if (shipnum >= 0) {
-				strcpy_s(wt->str, Ships[shipnum].get_display_string());
+				strcpy_s(wt->str, Ships[shipnum].get_display_name());
 			}
 			break;
 		}
@@ -577,9 +577,6 @@ void emp_maybe_reformat_text(char *text, int  /*max_len*/, int gauge_id)
 	else {
 		strcpy(text, wt->str);
 	}
-
-	// watch out for '#' - Goober5000
-	end_string_at_first_hash_symbol(text);
 }
 
 // randomize the chars in a string

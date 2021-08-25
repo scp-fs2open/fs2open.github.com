@@ -1154,11 +1154,6 @@ void barracks_button_pressed(int n)
 			break;
 
 		case B_PILOT_MULTI_MODE_BUTTON:
-			if ( Networking_disabled ) {
-				game_feature_disabled_popup();
-				break;
-			}
-
 			if (Player_sel_mode != PLAYER_SELECT_MODE_MULTI) {
 				gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 				Cur_pilot->flags |= PLAYER_FLAGS_IS_MULTI;
@@ -1539,11 +1534,6 @@ void barracks_do_frame(float  /*frametime*/)
 				break;
 
 			case KEY_TAB:  // switch mode (simgle/multi)
-				if ( Networking_disabled ) {
-					game_feature_disabled_popup();
-					break;
-				}
-
 				if (Player_sel_mode == PLAYER_SELECT_MODE_SINGLE) {
 					Cur_pilot->flags |= PLAYER_FLAGS_IS_MULTI;
 					Cur_pilot->player_was_multi = 1;

@@ -23,6 +23,7 @@
 #include "object/object.h"
 #include "parse/parselo.h"
 #include "sound/sound.h"
+#include "utils/Random.h"
 #include "weapon/beam.h"
 #include "weapon/weapon.h"
 
@@ -82,6 +83,12 @@ void parse_ssm(const char *filename)
 			required_string("+Weapon:");
 			stuff_string(weapon_name, F_NAME, NAME_LENGTH);
 
+			// see if we have a valid weapon
+			s.weapon_info_index = weapon_info_lookup(weapon_name);
+			if (s.weapon_info_index < 0) {
+				error_display(0, "Unknown weapon [%s] for SSM strike [%s]; this SSM strike will be discarded.", weapon_name, s.name);
+			}
+
 			string_index = optional_string_either("+Count:", "+Min Count:");
 			if (string_index == 0) {
 				stuff_int(&s.count);
@@ -104,14 +111,14 @@ void parse_ssm(const char *filename)
 					stuff_string(unique_id, F_NAME, NAME_LENGTH);
 					int fireball_type = fireball_info_lookup(unique_id);
 					if (fireball_type < 0) {
-						error_display(1, "Unknown fireball [%s] to use as warp effect for SSM strike [%s]", unique_id, s.name);
+						error_display(0, "Unknown fireball [%s] to use as warp effect for SSM strike [%s]", unique_id, s.name);
 						s.fireball_idx = FIREBALL_WARP;
 					} else {
 						s.fireball_idx = fireball_type;
 					}
 				} else {
 					if ((temp < 0) || (temp >= Num_fireball_types)) {
-						error_display(1, "Fireball index [%d] out of range (should be 0-%d) for SSM strike [%s]", temp, Num_fireball_types - 1, s.name);
+						error_display(0, "Fireball index [%d] out of range (should be 0-%d) for SSM strike [%s]", temp, Num_fireball_types - 1, s.name);
 						s.fireball_idx = FIREBALL_WARP;
 					} else {
 						s.fireball_idx = temp;
@@ -129,7 +136,7 @@ void parse_ssm(const char *filename)
 				// According to fireballs.cpp, "Warp lifetime must be at least 4 seconds!"
 				if ( (s.warp_time) < 4.0f) {
 					// So let's warn them before they try to use it, shall we?
-					Warning(LOCATION, "Expected a '+WarpTime:' value equal or greater than 4.0, found '%f' in weapon '%s'.\n Setting to 4.0, please check and set to a number 4.0 or greater!\n", s.warp_time, weapon_name);
+					error_display(0, "Expected a '+WarpTime:' value equal or greater than 4.0, found '%f' in SSM strike [%s].\nSetting to 4.0, please check and set to a number 4.0 or greater!", s.warp_time, s.name);
 					// And then make the Assert obsolete -- Zacam
 					s.warp_time = 4.0f;
 				}
@@ -198,8 +205,6 @@ void parse_ssm(const char *filename)
 			s.sound_index = gamesnd_id();
 			parse_game_sound("+Alarm Sound:", &s.sound_index);
 
-			// see if we have a valid weapon
-			s.weapon_info_index = weapon_info_lookup(weapon_name);
 			if(s.weapon_info_index >= 0) {
 				// valid
 				int existing = ssm_info_lookup(s.name);
@@ -208,7 +213,7 @@ void parse_ssm(const char *filename)
 				} else {
 					Ssm_info.push_back(s);
 				}
-			}
+			} // We already warned the modder that the SSM strike was invalid without a valid weapon.
 		}
 	}
 	catch (const parse::ParseException& e)
@@ -250,11 +255,11 @@ void ssm_get_random_start_pos(vec3d *out, vec3d *start, matrix *orient, size_t s
 	switch (s->shape) {
 	case SSM_SHAPE_SPHERE:
 		// get a random vector in a sphere around the target
-		vm_vec_random_in_sphere(&temp, start, radius, 1);
+		vm_vec_random_in_sphere(&temp, start, radius, true);
 		break;
 	case SSM_SHAPE_CIRCLE:
 		// get a random vector in the circle of the firing plane
-		vm_vec_random_in_circle(&temp, start, orient, radius, 1);
+		vm_vec_random_in_circle(&temp, start, orient, radius, true);
 		break;
 	case SSM_SHAPE_POINT:
 		// boooring
@@ -298,7 +303,7 @@ void ssm_create(object *target, vec3d *start, size_t ssm_index, ssm_firing_info 
 
 	count = Ssm_info[ssm_index].count;
 	if (Ssm_info[ssm_index].max_count != -1) {
-		count += rand32(count, Ssm_info[ssm_index].max_count);
+		count += Random::next(count, Ssm_info[ssm_index].max_count);
 	}
 
 	// override in multiplayer
@@ -395,34 +400,45 @@ void ssm_process()
 				if(moveup->fireballs[idx] >= 0){
 					if ((1.0f - fireball_lifeleft_percent(&Objects[moveup->fireballs[idx]])) >= moveup->sinfo.duration) {
 						weapon_info *wip = &Weapon_info[si->weapon_info_index];
+
+						// get an orientation
+						vec3d temp;
+						matrix orient;
+
+						vm_vec_sub(&temp, &moveup->sinfo.target->pos, &moveup->sinfo.start_pos[idx]);
+						vm_vec_normalize(&temp);
+						vm_vector_2_matrix(&orient, &temp, nullptr, nullptr);
+
 						// are we a beam? -MageKing17
 						if (wip->wi_flags[Weapon::Info_Flags::Beam]) {
-							beam_fire_info fire_info;
-							memset(&fire_info, 0, sizeof(beam_fire_info));
+							int num_beams = wip->b_info.beam_type == 5 && (int)wip->b_info.t5info.burst_rot_pattern.size() > 1 ?
+								(int)wip->b_info.t5info.burst_rot_pattern.size() : 1;
+							for (int i = 0; i < num_beams; i++) {
+								beam_fire_info fire_info;
+								memset(&fire_info, 0, sizeof(beam_fire_info));
 
-							fire_info.accuracy = 0.000001f;		// this will guarantee a hit
-							fire_info.shooter = NULL;
-							fire_info.turret = NULL;
-							fire_info.target = moveup->sinfo.target;
-							fire_info.target_subsys = NULL;
-							fire_info.bfi_flags |= BFIF_FLOATING_BEAM;
-							fire_info.starting_pos = moveup->sinfo.start_pos[idx];
-							fire_info.beam_info_index = si->weapon_info_index;
-							fire_info.team = static_cast<char>(moveup->sinfo.ssm_team);
+								fire_info.accuracy = 0.000001f;		// this will guarantee a hit
+								fire_info.shooter = nullptr;
+								fire_info.turret = nullptr;
+								fire_info.target = moveup->sinfo.target;
+								fire_info.target_subsys = nullptr;
+								fire_info.bfi_flags |= BFIF_FLOATING_BEAM;
+								fire_info.starting_pos = moveup->sinfo.start_pos[idx];
+								fire_info.beam_info_index = si->weapon_info_index;
+								fire_info.team = static_cast<char>(moveup->sinfo.ssm_team);
+								fire_info.fire_method = BFM_SUBSPACE_STRIKE;
+								fire_info.burst_index = i;
 
-							// fire the beam
-							beam_fire(&fire_info);
+								// Fill target_pos but DONT turn on BFIF_TARGETING_COORDS
+								// It would mess up normal beams but type 5s can still make use of this
+								fire_info.target_pos1 = orient.vec.fvec + fire_info.starting_pos;
 
-							moveup->done_flags[idx] = true;
+								// fire the beam
+								beam_fire(&fire_info);
+
+								moveup->done_flags[idx] = true;
+							}
 						} else {
-							// get an orientation
-							vec3d temp;
-							matrix orient;
-
-							vm_vec_sub(&temp, &moveup->sinfo.target->pos, &moveup->sinfo.start_pos[idx]);
-							vm_vec_normalize(&temp);
-							vm_vector_2_matrix(&orient, &temp, NULL, NULL);
-
 							// fire the missile and flash the screen
 							weapon_objnum = weapon_create(&moveup->sinfo.start_pos[idx], &orient, si->weapon_info_index, -1, -1, 1);
 

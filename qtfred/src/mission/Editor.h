@@ -1,18 +1,18 @@
 #pragma once
 
-#include "FredRenderer.h"
 #include "EditorViewport.h"
+#include "FredRenderer.h"
+
+#include <globalincs/globals.h>
+#include <object/waypoint.h>
+#include <osapi/osapi.h>
+#include <ship/ship.h>
 
 #include <QObject>
-
 #include <functional>
 #include <memory>
 #include <stdexcept>
-
-#include <globalincs/globals.h>
-#include <osapi/osapi.h>
-#include <object/waypoint.h>
-#include <ship/ship.h>
+#include <jumpnode/jumpnode.h>
 
 namespace fso {
 namespace fred {
@@ -25,10 +25,10 @@ namespace fred {
  * simultaneously, this class should be treated as a singleton.
  *
  */
-class Editor: public QObject {
- Q_OBJECT
+class Editor : public QObject {
+	Q_OBJECT
 
- public:
+  public:
 	Editor();
 
 	void unmark_all();
@@ -74,11 +74,11 @@ class Editor: public QObject {
 	///! Non-copyable.
 	const Editor& operator=(const Editor&) = delete;
 
- public slots:
+  public slots:
 	/*! Update the game but doesn't render anything. */
 	void update();
 
- signals:
+  signals:
 	/**
 	 * @brief Signal for when a new mission has been loaded
 	 * @param filepath The path of the mission file, empty if new mission
@@ -102,8 +102,8 @@ class Editor: public QObject {
 	 * @param marked @c true if the object is now marked, @c false otherwise
 	 */
 	void objectMarkingChanged(int obj, bool marked);
- public:
 
+  public:
 	int Id_select_type_jump_node = 0;
 	int Id_select_type_waypoint = 0;
 
@@ -124,13 +124,12 @@ class Editor: public QObject {
 	// Goober5000
 	// This must be done when either the wing name or the custom name is changed.
 	// (It's also duplicated in FS2, in post_process_mission, for setting the indexes at mission load.)
-	void update_custom_wing_indexes();
+	static void update_custom_wing_indexes();
 
 	void ai_update_goal_references(int type, const char* old_name, const char* new_name);
 
 	// Goober5000
 	void update_texture_replacements(const char* old_name, const char* new_name);
-
 
 	int set_reinforcement(const char* name, int state);
 
@@ -150,6 +149,8 @@ class Editor: public QObject {
 	void mark_wing(int wing);
 
 	bool query_single_wing_marked();
+
+	static bool wing_is_player_wing(int);
 
 	/**
 	 * @brief Delete a whole wing, leaving ships intact but wingless.
@@ -177,7 +178,8 @@ class Editor: public QObject {
 
 	static void strip_quotation_marks(SCP_string& str);
 	static void pad_with_newline(SCP_string& str, size_t max_size);
- private:
+
+  private:
 	void clearMission();
 
 	void initialSetup();
@@ -198,8 +200,8 @@ class Editor: public QObject {
 
 	bool already_deleting_wing = false;
 
-// used by error checker, but needed in more than just one function.
-	char *names[MAX_OBJECTS];
+	// used by error checker, but needed in more than just one function.
+	char* names[MAX_OBJECTS];
 	char err_flags[MAX_OBJECTS];
 	int obj_count = 0;
 	int g_err = 0;
@@ -241,40 +243,40 @@ class Editor: public QObject {
 	 *
 	 * @param[in] ship Index of the ship to remove (Ships[i])
 	 * @param[in] min  Minimum number of ships in a wing.
-	 *   Pass a 0 to allow a wing to exist without any ships in it, or pass a value >1 to have the wing deleted when it has
-	 *   this many members in it
+	 *   Pass a 0 to allow a wing to exist without any ships in it, or pass a value >1 to have the wing deleted when it
+	 * has this many members in it
 	 */
 	void remove_ship_from_wing(int ship, int min = 1);
 
 	/**
 	 * @brief Finds a free wing slot (i.e. unused)
 	 */
-	int find_free_wing();
+	static int find_free_wing();
 
 	void generate_wing_weaponry_usage_list(int* arr, int wing);
 
 	void generate_team_weaponry_usage_list(int team, int* arr);
 
-	int get_visible_sub_system_count(ship *shipp);
+	int get_visible_sub_system_count(ship* shipp);
 
-	int get_next_visible_subsys(ship *shipp, ship_subsys **next_subsys);
+	int get_next_visible_subsys(ship* shipp, ship_subsys** next_subsys);
 
-	int get_prev_visible_subsys(ship *shipp, ship_subsys **prev_subsys);
+	int get_prev_visible_subsys(ship* shipp, ship_subsys** prev_subsys);
 
 	int global_error_check_impl();
 
 	int error(SCP_FORMAT_STRING const char* msg, ...) SCP_FORMAT_STRING_ARGS(2, 3);
-	int internal_error(SCP_FORMAT_STRING const char *msg, ...) SCP_FORMAT_STRING_ARGS(2, 3);
+	int internal_error(SCP_FORMAT_STRING const char* msg, ...) SCP_FORMAT_STRING_ARGS(2, 3);
 
-	int fred_check_sexp(int sexp, int type, const char *msg, ...);
+	int fred_check_sexp(int sexp, int type, const char* msg, ...);
 
-	const char *error_check_initial_orders(ai_goal *goals, int ship, int wing);
+	const char* error_check_initial_orders(ai_goal* goals, int ship, int wing);
 
 	int global_error_check_mixed_player_wing(int w);
 
 	int global_error_check_player_wings(int multi);
 
-	const char *get_order_name(int order);
+	const char* get_order_name(int order);
 };
 
 } // namespace fred
@@ -282,4 +284,3 @@ class Editor: public QObject {
 
 extern char Fred_callsigns[MAX_SHIPS][NAME_LENGTH + 1];
 extern char Fred_alt_names[MAX_SHIPS][NAME_LENGTH + 1];
-

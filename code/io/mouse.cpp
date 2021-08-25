@@ -81,12 +81,26 @@ namespace
 			return false;
 		}
 
-		if (e.button.button == SDL_BUTTON_LEFT)
-			mouse_mark_button(MOUSE_LEFT_BUTTON, e.button.state);
-		else if (e.button.button == SDL_BUTTON_MIDDLE)
-			mouse_mark_button(MOUSE_MIDDLE_BUTTON, e.button.state);
-		else if (e.button.button == SDL_BUTTON_RIGHT)
-			mouse_mark_button(MOUSE_RIGHT_BUTTON, e.button.state);
+		switch (e.button.button) {
+			case SDL_BUTTON_LEFT:
+				mouse_mark_button(MOUSE_LEFT_BUTTON, e.button.state);
+				break;
+			case SDL_BUTTON_RIGHT:
+				mouse_mark_button(MOUSE_RIGHT_BUTTON, e.button.state);
+				break;
+			case SDL_BUTTON_MIDDLE:
+				mouse_mark_button(MOUSE_MIDDLE_BUTTON, e.button.state);
+				break;
+			case SDL_BUTTON_X1:
+				mouse_mark_button(MOUSE_X1_BUTTON, e.button.state);
+				break;
+			case SDL_BUTTON_X2:
+				mouse_mark_button(MOUSE_X2_BUTTON, e.button.state);
+				break;
+			default:
+				// SDL gave us an unknown button. Just log it
+				mprintf(("Unknown SDL button %i\n", e.button.button));
+		}
 
 		return true;
 	}
@@ -256,14 +270,13 @@ void mouse_mark_button( uint flags, int set)
 
 	Script_system.SetHookVar("MouseButton", 'i', flags);
 
-	//WMC - On Mouse Pressed and On Mouse Released hooks
-	if (set == 1)
-	{
-		Script_system.RunCondition(CHA_MOUSEPRESSED);
-	}
-	else if (set == 0)
-	{
-		Script_system.RunCondition(CHA_MOUSERELEASED);
+	if (Script_system.IsActiveAction(CHA_MOUSEPRESSED) || Script_system.IsActiveAction(CHA_MOUSERELEASED)) {
+		//WMC - On Mouse Pressed and On Mouse Released hooks
+		if (set == 1) {
+			Script_system.RunCondition(CHA_MOUSEPRESSED);
+		} else if (set == 0) {
+			Script_system.RunCondition(CHA_MOUSERELEASED);
+		}
 	}
 
 	Script_system.RemHookVar("MouseButton");
@@ -450,7 +463,7 @@ void mouse_event(int x, int y, int dx, int dy)
 	Mouse_dx += dx;
 	Mouse_dy += dy;
 
-	if(Mouse_dx != 0 || Mouse_dy != 0)
+	if (Script_system.IsActiveAction(CHA_MOUSEMOVED) && (Mouse_dx != 0 || Mouse_dy != 0))
 	{
 		Script_system.RunCondition(CHA_MOUSEMOVED);
 	}

@@ -178,7 +178,7 @@ void obj_render_all(const std::function<void(object*)>& render_function, bool *d
 {
 	object *objp;
 	int i;
-	float fog_near, fog_far;
+	float fog_near, fog_far, fog_density;
 
 	objp = Objects;
 
@@ -244,7 +244,7 @@ void obj_render_all(const std::function<void(object*)>& render_function, bool *d
 		// if we're fullneb, fire up the fog - this also generates a fog table
 		if (full_neb) {
 			// get the fog values
-			neb2_get_adjusted_fog_values(&fog_near, &fog_far, obj);
+			neb2_get_adjusted_fog_values(&fog_near, &fog_far, &fog_density, obj);
 
 			// maybe skip rendering an object because its obscured by the nebula
 			if(neb2_skip_render(obj, os->z)){
@@ -278,15 +278,9 @@ void obj_render_all(const std::function<void(object*)>& render_function, bool *d
 		if ( obj_render_is_model(obj) )
 			continue;
 
-		// if we're fullneb, fire up the fog - this also generates a fog table
-		if(full_neb){
-			// get the fog values
-			neb2_get_adjusted_fog_values(&fog_near, &fog_far, obj);
-
-			// maybe skip rendering an object because its obscured by the nebula
-			if(neb2_skip_render(obj, os->z)){
-				continue;
-			}
+		// maybe skip rendering an object because its obscured by the nebula
+		if(full_neb && neb2_skip_render(obj, os->z)){
+			continue;
 		}
 
 		render_function(obj);

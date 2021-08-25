@@ -17,10 +17,14 @@
 constexpr unsigned int SEMIRAND_MAX_LOG = 4;
 constexpr unsigned int SEMIRAND_MAX = (2u << SEMIRAND_MAX_LOG); //Do not change this!  Change SEMIRAND_MAX_LOG!
 
+// Static rand has a max value independent of Random::next()
+#define STATIC_RAND_MAX 0x3fffffff
+
 extern void init_semirand();
 extern int static_rand(int num);
 extern float static_randf(int num);
 extern void static_randvec(int num, vec3d *vp);
+extern void static_randvec_unnormalized(int num, vec3d* vp);
 extern int static_rand_range(int num, int min, int max);
 extern float static_randf_range(int num, float min, float max);
 void static_rand_cone(int num, vec3d *out, const vec3d* const in, float max_angle, const matrix* const orient = nullptr);

@@ -25,6 +25,8 @@
 #include "ship/ship.h"
 #include "weapon/weapon.h"
 
+// Just a reference to this struct being for looking up a ship's team in TVT
+struct ship_registry_entry;
 
 // all ai goals dealt with in this code are goals that are specified through
 // sexpressions in the mission file.  They are either specified as part of a
@@ -134,28 +136,48 @@ const char *Ai_goal_text(int goal)
 	return NULL;
 }
 
-// function to maybe add the form on my wing goal for a player's starting wing.  Called when a player wing arrives.
-void ai_maybe_add_form_goal( wing *wingp )
+void ai_maybe_add_form_goal(wing* wingp)
 {
+	// Cyborg17 - Changes from the client would just get overridden by the server anyway
+	// might as well keep them more closely in sync.
+	if (MULTIPLAYER_CLIENT) {
+		return;
+	}
+
 	int j;
 
 	// iterate through the ship_index list of this wing and check for orders.  We will do
 	// this for all ships in the wing instead of on a wing only basis in case some ships
 	// in the wing actually have different orders than others
-	for ( j = 0; j < wingp->current_count; j++ ) {
-		ai_info *aip;
+	for (j = 0; j < wingp->current_count; j++) {
+		ai_info* aip;
 
-		Assert( wingp->ship_index[j] != -1 );						// get Allender
+		Assert(wingp->ship_index[j] != -1);						// get Allender
 
 		aip = &Ai_info[Ships[wingp->ship_index[j]].ai_index];
-		// don't process Player_ship
-		if ( aip == Player_ai )
+		// don't process a Player_ship
+		if (Objects[Ships[aip->shipnum].objnum].flags[Object::Object_Flags::Player_ship]) {
 			continue;
-		
+		}
+
+		// need to add a form on my wing goal here.  Ships are always forming on the player's wing.
 		// it is sufficient enough to check the first goal entry to see if it has a valid goal
-		if ( aip->goals[0].ai_mode == AI_GOAL_NONE ) {
-			// need to add a form on my wing goal here.  Ships are always forming on the player's wing.
-			ai_add_ship_goal_player( AIG_TYPE_PLAYER_SHIP, AI_GOAL_FORM_ON_WING, -1, Player_ship->ship_name, aip );
+		if (aip->goals[0].ai_mode == AI_GOAL_NONE) {
+			// Need to have a more specific target in multi, or they may end up trying to target standalone placeholder.
+			// So form on their team leader.  In dogfight, all player-slot ai die, so just exclude.
+			if (MULTIPLAYER_MASTER && !(Netgame.type_flags & NG_TYPE_DOGFIGHT)) {
+				int wingnum;
+				if (Netgame.type_flags & NG_TYPE_TEAM) {
+					const ship_registry_entry* ship_regp = ship_registry_get(Ships[wingp->ship_index[j]].ship_name);
+					wingnum = TVT_wings[ship_regp->p_objp->team];
+					ai_add_ship_goal_player(AIG_TYPE_PLAYER_SHIP, AI_GOAL_FORM_ON_WING, -1, Ships[Wings[wingnum].ship_index[Wings[wingnum].special_ship]].ship_name, aip);
+				} else {
+					wingnum = Starting_wings[0];
+					ai_add_ship_goal_player(AIG_TYPE_PLAYER_SHIP, AI_GOAL_FORM_ON_WING, -1, Ships[Wings[wingnum].ship_index[Wings[wingnum].special_ship]].ship_name, aip);
+				}
+			} else if (!(Game_mode & GM_MULTIPLAYER)) {
+				ai_add_ship_goal_player(AIG_TYPE_PLAYER_SHIP, AI_GOAL_FORM_ON_WING, -1, Player_ship->ship_name, aip);
+			}
 		}
 	}
 }
@@ -271,10 +293,11 @@ void ai_clear_ship_goals( ai_info *aip )
 	}
 
 	// add scripting hook for 'On Goals Cleared' --wookieejedi
-	Script_system.SetHookObject("Ship", &Objects[Ships[aip->shipnum].objnum]);
-	Script_system.RunCondition(CHA_ONGOALSCLEARED);
-	Script_system.RemHookVars(1, "Ship");
-
+	if (Script_system.IsActiveAction(CHA_ONGOALSCLEARED)) {
+		Script_system.SetHookObject("Ship", &Objects[Ships[aip->shipnum].objnum]);
+		Script_system.RunCondition(CHA_ONGOALSCLEARED);
+		Script_system.RemHookVars({"Ship"});
+	}
 }
 
 void ai_clear_wing_goals( wing *wingp )
@@ -2097,7 +2120,13 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 	// if this object was flying in formation off of another object, remove the flag that tells him
 	// to do this.  The form-on-my-wing command is removed from the goal list as soon as it is called, so
 	// we are safe removing this bit here.
-	aip->ai_flags.remove(AI::AI_Flags::Formation_object);
+	int old_form_objnum = -1;
+	if (aip->ai_flags[AI::AI_Flags::Formation_object]) {
+		// save who he was following so we can tell any others 
+		// who are following to re-organize
+		old_form_objnum = aip->goal_objnum;
+		aip->ai_flags.remove(AI::AI_Flags::Formation_object);
+	}
 
 	// Goober5000 - we may want to use AI for the player
 	// AL 3-7-98: If this is a player ship, and the goal is not a formation goal, then do a quick out
@@ -2120,14 +2149,14 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 
 		//	Mike -- debug code!
 		//	If a ship has a subobject on it, attack that instead of the main ship!
-		ai_attack_object( objp, other_obj, NULL);
+		ai_attack_object( objp, other_obj);
 		break;
 
 	case AI_GOAL_CHASE_WEAPON:
 		Assert( Weapons[current_goal->target_instance].objnum >= 0 );
 		other_obj = &Objects[Weapons[current_goal->target_instance].objnum];
 		Assert( other_obj->signature == current_goal->target_signature );
-		ai_attack_object( objp, other_obj, NULL );
+		ai_attack_object( objp, other_obj);
 		break;
 
 	case AI_GOAL_GUARD:
@@ -2252,7 +2281,7 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 		shipnum = ship_name_lookup( current_goal->target_name );
 		Assert( shipnum >= 0 );
 		other_obj = &Objects[Ships[shipnum].objnum];
-		ai_attack_object( objp, other_obj, NULL);
+		ai_attack_object( objp, other_obj);
 		ai_set_attack_subsystem( objp, current_goal->ai_submode );		// submode stored the subsystem type
 		if (current_goal->ai_mode != AI_GOAL_DESTROY_SUBSYSTEM) {
 			if (aip->target_objnum != -1) {
@@ -2274,14 +2303,14 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 		break;
 
 	case AI_GOAL_CHASE_ANY:
-		ai_attack_object( objp, NULL, NULL );
+		ai_attack_object( objp, nullptr);
 		break;
 
 	// chase-ship-class is chase-any but restricted to a subset of ships
 	case AI_GOAL_CHASE_SHIP_CLASS:
 		shipnum = ship_info_lookup( current_goal->target_name );
 		Assertion( shipnum >= 0, "The target of AI_GOAL_CHASE_SHIP_CLASS must refer to a valid ship class!" );
-		ai_attack_object( objp, NULL, NULL, shipnum );
+		ai_attack_object( objp, nullptr, shipnum );
 		break;
 
 	case AI_GOAL_WARP: {
@@ -2363,6 +2392,8 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 		break;
 	}
 
+	if (old_form_objnum != -1)
+		ai_formation_object_recalculate_slotnums(old_form_objnum);
 }
 
 void ai_update_goal_references(ai_goal *goals, int type, const char *old_name, const char *new_name)

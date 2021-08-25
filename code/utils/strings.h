@@ -50,18 +50,16 @@ inline void strlwr(char *s) {
 		return;
 
 	while (*s) {
-		*s = (char) tolower(*s);
+		*s = (char) tolower((unsigned char) *s);
 		s++;
 	}
 }
 #endif
 
 #if !SCP_HAVE_SNPRINTF
-#if SCP_HAVE__SNPRINTF
-#define snprintf _snprintf
-#else
-#error No support for snprintf detected!
-#endif
+// Older Visual Studio versions have _snprintf but that does not always append a null terminator so we do not want to
+// use that
+#error No support for standard conforming snprintf detected!
 #endif
 
 template<size_t SIZE, typename... Args>

@@ -115,28 +115,6 @@ void flak_jitter_aim(vec3d *dir, float dist_to_target, float weapon_subsys_stren
 }
 
 /**
- * Create a muzzle flash from a flak gun based upon firing position and weapon type
- */
-void flak_muzzle_flash(vec3d *pos, vec3d *dir, physics_info *pip, int turret_weapon_class)
-{
-	// sanity
-	Assert((turret_weapon_class >= 0) && (turret_weapon_class < weapon_info_size()));
-	if((turret_weapon_class < 0) || (turret_weapon_class >= weapon_info_size())){
-		return;
-	}
-	Assert(Weapon_info[turret_weapon_class].wi_flags[Weapon::Info_Flags::Flak]);
-	if(!(Weapon_info[turret_weapon_class].wi_flags[Weapon::Info_Flags::Flak])){
-		return;
-	}
-
-	if(Weapon_info[turret_weapon_class].muzzle_flash < 0){
-		return;
-	}
-
-	mflash_create(pos, dir, pip, Weapon_info[turret_weapon_class].muzzle_flash);
-}
-
-/**
  * Given a just fired flak shell, pick a detonating distance for it
  */
 void flak_set_range(object *objp, float range)

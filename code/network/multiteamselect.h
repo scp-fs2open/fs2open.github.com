@@ -40,6 +40,9 @@ void multi_ts_init();
 // initialize all critical internal data structures
 void multi_ts_common_init();
 
+// initialize internal structures that need to be sync'd between host/client
+void multi_ts_common_level_init();
+
 // do frame for team select
 void multi_ts_do();
 
@@ -74,7 +77,7 @@ void multi_ts_commit_pressed();
 int multi_ts_get_team(char *ship_name);
 
 // function to get the team and slot of a particular ship
-void multi_ts_get_team_and_slot(char *ship_name,int *team_index,int *slot_index, bool mantis2757switch = false);
+void multi_ts_get_team_and_slot(char *ship_name,int *team_index,int *slot_index);
 
 // function to return the shipname of the ship belonging in slot N
 void multi_ts_get_shipname( char *ship_name, int team, int slot_index );

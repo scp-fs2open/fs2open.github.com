@@ -9,6 +9,7 @@ namespace Ship {
 		Beam_Free = 0,	// if this is a beam weapon, its free to fire
 		Turret_Lock,	// is this turret is free to fire or locked
 		Tagged_Only,	// only fire if target is tagged
+		Trigger_Lock,	// // indicates that the trigger is held down
 
 		NUM_VALUES
 	};
@@ -31,6 +32,8 @@ namespace Ship {
 		No_disappear,				// prevents submodel from disappearing when subsys destroyed
         Autorepair_if_disabled,     // Allows the subsystem to repair itself even when disabled - MageKing17
         No_autorepair_if_disabled,  // Inversion of the above; allow a specific subsystem not to repair itself after being disabled if the ship has the "repair disabled subsystems" flag - MageKing17
+		Forced_target,				// The turrets current target is being forced by SEXP, and won't let it go until it dies or is cleared by SEXP
+		Forced_subsys_target,		// The turrets current subsystem target is being forced by SEXP, implies Forced_target
 
 		NUM_VALUES
 	};
@@ -116,9 +119,12 @@ namespace Ship {
 		Render_without_heightmap,
 		Render_without_ambientmap,
 		Render_without_miscmap,
+		Render_without_reflectmap,
 		Render_full_detail, 
 		Render_without_light,
 		Render_without_weapons,		// The_E -- Skip weapon model rendering
+		Has_display_name,			// Goober5000
+		Attempting_to_afterburn,    // set and unset by afterburner_start and stop, used by afterburner_min_fuel_to_consume
 
 		NUM_VALUES
 
@@ -188,6 +194,12 @@ namespace Ship {
 		Draw_weapon_models,				// the ship draws weapon models of any sort (used to be a boolean)
 		Model_point_shields,			// zookeeper - uses model-defined shield points instead of quadrants
         Subsys_repair_when_disabled,    // MageKing17 - Subsystems auto-repair themselves even when disabled.
+		Dont_bank_when_turning,			// Goober5000
+		Dont_clamp_max_velocity,		// Goober5000
+		Instantaneous_acceleration,		// Goober5000
+		Has_display_name,				// Goober5000
+		Large_ship_deathroll,			// Asteroth - big ships dont normally deathroll, this makes them do it!
+		No_impact_debris,				// wookieejedi - Don't spawn the small debris on impact
 
 		NUM_VALUES
 	};
@@ -222,6 +234,7 @@ namespace Ship {
         AI_turrets_attack,
         AI_can_form_wing,
         AI_protected_on_cripple,
+		Targeted_by_huge_Ignored_by_small_only,
 
         NUM_VALUES
     };

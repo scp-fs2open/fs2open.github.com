@@ -328,6 +328,19 @@ void parse_species_tbl(const char *filename)
 			if (optional_string("$Countermeasure type:"))
 				stuff_string(species->cmeasure_name, F_NAME, NAME_LENGTH);
 
+			if (optional_string("$Borrows Briefing Icons from:")) {
+				char temp_name[NAME_LENGTH];
+				stuff_string(temp_name, F_NAME, NAME_LENGTH);
+				int idx = species_info_lookup(temp_name);
+				if (idx >= 0)
+					species->borrows_bii_index_species = idx;
+				else {
+					Warning(LOCATION, "Species %s for '$Borrows Briefing Icons from' in Species %s is either invalid or not yet parsed."
+									  "The Species doing the borrowing must be defined after the Species it is borrowing from\n", temp_name, species->species_name);
+				}
+			}
+
+
 			// don't add new entry if this is just a modified one
 			if (!no_create)
 				Species_info.push_back(new_species);

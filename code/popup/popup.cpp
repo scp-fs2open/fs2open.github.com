@@ -23,6 +23,7 @@
 #include "parse/parselo.h"
 #include "playerman/player.h"
 #include "popup/popup.h"
+#include "popup/popupdead.h"
 #include "ui/ui.h"
 
 
@@ -124,6 +125,7 @@ static int Popup_should_die=0;			// popup should quit during the next iteration 
 
 static popup_info Popup_info;
 static int Popup_flags;
+static int Popup_screen_id = -1;
 
 static int Title_coords[GR_NUM_RESOLUTIONS][5] =
 {
@@ -359,7 +361,7 @@ void popup_split_lines(popup_info *pi, int flags)
 	font::set_font(font::FONT1);
 	n_chars[0]=0;
 
-	nlines = split_str(pi->raw_text, 1000, n_chars, p_str, POPUP_MAX_LINES);
+	nlines = split_str(pi->raw_text, 1000, n_chars, p_str, POPUP_MAX_LINES, POPUP_MAX_LINE_CHARS);
 	Assert(nlines >= 0 && nlines <= POPUP_MAX_LINES );
 
 	if ( flags & (PF_TITLE | PF_TITLE_BIG) ) {
@@ -373,7 +375,7 @@ void popup_split_lines(popup_info *pi, int flags)
 		font::set_font(font::FONT2);
 	}
 
-	nlines = split_str(pi->raw_text, Popup_text_coords[gr_screen.res][2], n_chars, p_str, POPUP_MAX_LINES);
+	nlines = split_str(pi->raw_text, Popup_text_coords[gr_screen.res][2], n_chars, p_str, POPUP_MAX_LINES, POPUP_MAX_LINE_CHARS);
 	Assert(nlines >= 0 && nlines <= POPUP_MAX_LINES );
 
 	pi->nlines = nlines - body_offset;
@@ -811,13 +813,15 @@ void popup_force_draw_buttons(popup_info *pi)
 //			0..nchoices-1		=> choice
 int popup_do(popup_info *pi, int flags)
 {
-	int screen_id, choice = -1, done = 0;
+	int screen_id = -1, choice = -1, done = 0;
 
 	if ( popup_init(pi, flags) == -1 ){
 		return -1;
 	}
 
-	screen_id = gr_save_screen();
+	if ( !(flags & PF_RUN_STATE) ) {
+		screen_id = gr_save_screen();
+	}
 
 	int old_max_w_unscaled = gr_screen.max_w_unscaled;
 	int old_max_h_unscaled = gr_screen.max_h_unscaled;
@@ -861,7 +865,7 @@ int popup_do(popup_info *pi, int flags)
 		}
 
 		// don't draw anything 
-		if(!(flags & PF_RUN_STATE)){
+		if ( !(flags & PF_RUN_STATE) ) {
 			//gr_clear();
 			gr_restore_screen(screen_id);
 		}
@@ -1169,4 +1173,141 @@ void popup_change_text(const char *new_text)
 void popup_game_feature_not_in_demo()
 {
 	popup(PF_USE_AFFIRMATIVE_ICON|PF_BODY_BIG, 1, POPUP_OK, XSTR( "Sorry, this feature is available only in the retail version", 200));
+}
+
+// the same as popup_till_condition(), but split into separate parts such that
+// it can run multiple conditions with a single popup
+bool popup_conditional_create(int flags, ...)
+{
+	char *format, *s;
+	va_list args;
+
+	if (Popup_is_active) {
+		UNREACHABLE("Can't create a conditional popup while another popup is open!");
+		return false;
+	}
+
+	flags = 0;	// no flags supported at this time
+
+	Popup_info.nchoices = 1;
+
+	Popup_flags = flags;
+
+	va_start(args, flags);
+
+	// get button text
+	s = va_arg(args, char *);
+	Popup_info.button_text[0] = nullptr;
+	popup_maybe_assign_keypress(&Popup_info, 0, s);
+
+	// get msg text
+	format = va_arg( args, char * );
+	vsnprintf(Popup_info.raw_text, sizeof(Popup_info.raw_text)-1, format, args);
+	Popup_info.raw_text[sizeof(Popup_info.raw_text)-1] = '\0';
+
+	va_end(args);
+
+	gamesnd_play_iface(InterfaceSounds::POPUP_APPEAR); 	// play sound when popup appears
+
+	io::mouse::CursorManager::get()->pushStatus();
+	io::mouse::CursorManager::get()->showCursor(true);
+	Popup_is_active = 1;
+
+	Popup_screen_id = gr_save_screen();
+
+	if ( popup_init(&Popup_info, flags) == -1 ) {
+		popup_conditional_close();
+		return false;
+	}
+
+	return true;
+}
+
+int popup_conditional_do(int (*condition)(), const char *text)
+{
+	int choice = -1;
+	bool done = false;
+	int k, test;
+	bool self_popup = false;
+
+	// if no popup, create a default
+	if ( !Popup_is_active ) {
+		if ( !popup_conditional_create(0, XSTR("&Cancel", 667), text ? text : "") ) {
+			return -1;
+		}
+
+		self_popup = true;
+	} else if (text) {
+		popup_change_text(text);
+	}
+
+	int old_max_w_unscaled = gr_screen.max_w_unscaled;
+	int old_max_h_unscaled = gr_screen.max_h_unscaled;
+	int old_max_w_unscaled_zoomed = gr_screen.max_w_unscaled_zoomed;
+	int old_max_h_unscaled_zoomed = gr_screen.max_h_unscaled_zoomed;
+
+	gr_reset_screen_scale();
+
+
+	while ( !done ) {
+		os_poll();
+
+		game_set_frametime(-1);
+		game_do_state_common(gameseq_get_state());	// do stuff common to all states
+		gr_restore_screen(Popup_screen_id);
+
+		// draw one frame first
+		Popup_window.draw();
+		popup_force_draw_buttons(&Popup_info);
+		popup_draw_msg_text(&Popup_info, Popup_flags);
+		popup_draw_button_text(&Popup_info, Popup_flags);
+		gr_flip();
+
+		// test the condition function or process for the window
+		if ((test = condition()) > 0) {
+			done = true;
+			choice = test;
+		} else {
+			k = Popup_window.process();						// poll for input, handle mouse
+			choice = popup_process_keys(&Popup_info, k, Popup_flags);
+
+			if (choice != POPUP_NOCHANGE) {
+				done = true;
+			}
+
+			if ( !done ) {
+				choice = popup_check_buttons(&Popup_info);
+
+				if (choice != POPUP_NOCHANGE) {
+					done = true;
+				}
+			}
+		}
+	}
+
+	gr_set_screen_scale(old_max_w_unscaled, old_max_h_unscaled, old_max_w_unscaled_zoomed, old_max_h_unscaled_zoomed);
+
+	// close popup if we created it here
+	if (self_popup) {
+		popup_conditional_close();
+	}
+
+	switch (choice) {
+		case POPUP_ABORT:
+			return 0;
+
+		default:
+			return choice;
+	}
+}
+
+void popup_conditional_close()
+{
+	if ( !Popup_is_active ) {
+		return;
+	}
+
+	popup_close(&Popup_info, Popup_screen_id);
+
+	io::mouse::CursorManager::get()->popStatus();
 }

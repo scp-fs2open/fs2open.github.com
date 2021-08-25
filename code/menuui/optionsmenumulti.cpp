@@ -58,6 +58,8 @@ int Om_mask_0		  = -1;
 int Om_background_1 = -1;
 int Om_mask_1       = -1;
 
+#define OM_NOTIFICATION_LINE_LEN 255
+
 // screen modes
 #define OM_MODE_NONE									-1		// no mode (unintialized)
 #define OM_MODE_GENERAL								0		// general tab
@@ -202,7 +204,7 @@ UI_INPUTBOX Om_tracker_squad_name;
 static int Om_tracker_focus = 0;
 
 // ip address list vars
-#define IP_STRING_LEN								255
+#define IP_STRING_LEN								60
 #define MAX_IP_ADDRS									100
 
 #define IP_CONFIG_FNAME								NOX("Tcp.cfg")
@@ -637,7 +639,7 @@ void options_multi_notify_process()
 	int w;
 	const char *p_str[3];
 	int n_chars[3];
-	char line[255];
+	char line[OM_NOTIFICATION_LINE_LEN];
 	int line_count;
 	int y_start;
 	int idx;
@@ -656,11 +658,11 @@ void options_multi_notify_process()
 
 	// otherwise display the string
 	line_height = gr_get_font_height() + 1;
-	line_count = split_str(Om_notify_string, 600, n_chars, p_str, 3);	
+	line_count = split_str(Om_notify_string, 600, n_chars, p_str, 3, OM_NOTIFICATION_LINE_LEN);
 	y_start = OM_NOTIFY_Y;
 	gr_set_color_fast(&Color_bright);
 	for(idx=0;idx<line_count;idx++){
-		memset(line, 0, 255);
+		memset(line, 0, OM_NOTIFICATION_LINE_LEN);
 		strncpy(line, p_str[idx], n_chars[idx]);
 				
 		gr_get_string_size(&w,NULL,line);
@@ -1289,7 +1291,7 @@ char Ip_str[IP_STRING_LEN+1];
 int Ip_validated_already = 0;
 int options_multi_verify_ip()
 {
-	int result;
+	bool result;
 
 	if(!Ip_validated_already){
 		// see if its a valid ip address

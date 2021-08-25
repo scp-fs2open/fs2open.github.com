@@ -53,9 +53,16 @@ ADE_VIRTVAR(HUDDisabledExceptMessages, l_HUD, "boolean", "Specifies if only the 
 		return ADE_RETURN_FALSE;
 }
 
+ADE_VIRTVAR(HUDDefaultGaugeCount, l_HUD, "number", "Specifies the amount of HUD gauges defined by FSO", "number", "The number of FSO HUD gauges")
+{
+	int amount = (int)default_hud_gauges.size();
+
+	return ade_set_args(L, "i", amount);
+}
+
 ADE_FUNC(setHUDGaugeColor, l_HUD,
          "number gaugeIndex, [number red, number green, number blue, number alpha]",
-         "Color used to draw the gauge", "boolean", "If the operation was successful")
+         "Modifies color used to draw the gauge in the pilot config", "boolean", "If the operation was successful")
 {
 	int idx = -1;
 	int r = 0;
@@ -74,8 +81,12 @@ ADE_FUNC(setHUDGaugeColor, l_HUD,
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(getHUDGaugeColor, l_HUD, "number gaugeIndex", "Color used to draw the gauge",
-         ade_type_info({"number", "number", "number", "number"}), "Red, green, blue, and alpha of the gauge")
+ADE_FUNC(getHUDGaugeColor,
+	l_HUD,
+	"number gaugeIndex",
+	"Color specified in the config to draw the gauge",
+	"number, number, number, number",
+	"Red, green, blue, and alpha of the gauge")
 {
 	int idx = -1;
 
@@ -86,6 +97,47 @@ ADE_FUNC(getHUDGaugeColor, l_HUD, "number gaugeIndex", "Color used to draw the g
 		return ADE_RETURN_NIL;
 
 	color c = HUD_config.clr[idx];
+
+	return ade_set_args(L, "iiii", (int) c.red, (int) c.green, (int) c.blue, (int) c.alpha);
+}
+
+ADE_FUNC(setHUDGaugeColorInMission, l_HUD,
+         "number gaugeIndex, [number red, number green, number blue, number alpha]",
+         "Set color currently used to draw the gauge", "boolean", "If the operation was successful")
+{
+	int idx = -1;
+	int r = 0;
+	int g = 0;
+	int b = 0;
+	int a = 255;
+
+	if(!ade_get_args(L, "i|iiii", &idx, &r, &g, &b, &a))
+		return ADE_RETURN_FALSE;
+
+	if ((idx < 0) || (idx >= (int)default_hud_gauges.size()))
+		return ADE_RETURN_FALSE;
+
+	default_hud_gauges[idx]->updateColor(r, g, b, a);
+
+	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(getHUDGaugeColorInMission,
+	l_HUD,
+	"number gaugeIndex",
+	"Color currently used to draw the gauge",
+	"number, number, number, number",
+	"Red, green, blue, and alpha of the gauge")
+{
+	int idx = -1;
+
+	if(!ade_get_args(L, "i", &idx))
+		return ADE_RETURN_NIL;
+
+	if ((idx < 0) || (idx >= (int)default_hud_gauges.size()))
+		return ADE_RETURN_NIL;
+
+	color c = default_hud_gauges[idx]->getColor();
 
 	return ade_set_args(L, "iiii", (int) c.red, (int) c.green, (int) c.blue, (int) c.alpha);
 }

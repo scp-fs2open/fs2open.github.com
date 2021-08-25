@@ -489,12 +489,15 @@ void HudGaugeRadar::drawRange()
  */
 RadarVisibility radar_is_visible( object *objp )
 {
-	Assert( objp != NULL );
+	Assert( objp != nullptr );
 
 	if (objp->flags[Object::Object_Flags::Should_be_dead])
 	{
 		return NOT_VISIBLE;
 	}
+
+	if (Player_obj == nullptr)
+		return NOT_VISIBLE;
 
 	vec3d pos, tempv;
 	float awacs_level, dist, max_radar_dist;
@@ -504,7 +507,7 @@ RadarVisibility radar_is_visible( object *objp )
 	// get team-wide awacs level for the object if not ship
 	int ship_is_visible = 0;
 	if (objp->type == OBJ_SHIP) {
-		if (Player_ship != NULL) {
+		if (Player_ship != nullptr) {
 			if (ship_is_visible_by_team(objp, Player_ship)) {
 				ship_is_visible = 1;
 			}
@@ -513,7 +516,7 @@ RadarVisibility radar_is_visible( object *objp )
 
 	// only check awacs level if ship is not visible by team
 	awacs_level = 1.5f;
-	if (Player_ship != NULL && !ship_is_visible) {
+	if (Player_ship != nullptr && !ship_is_visible) {
 		awacs_level = awacs_get_level(objp, Player_ship);
 	}
 

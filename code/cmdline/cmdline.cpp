@@ -188,6 +188,7 @@ Flag exe_params[] =
 	{ "-3dwarp",			"Enable 3D warp",							true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-3dwarp", },
 	{ "-warp_flash",		"Enable flash upon warp",					true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-warp_flash", },
 	{ "-no_ap_interrupt",	"Disable interrupting autopilot",			true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_ap_interrupt", },
+	{ "-no_screenshake",	"Disable screen shaking",					true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_screenshake", },
 
 	{ "-nosound",			"Disable all sound",						false,	0,									EASY_DEFAULT,					"Audio",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nosound", },
 	{ "-nomusic",			"Disable music",							false,	0,									EASY_DEFAULT,					"Audio",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nomusic", },
@@ -245,7 +246,7 @@ Flag exe_params[] =
 	{ "-noninteractive",	"Disables interactive dialogs",				true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-noninteractive", },
 	{ "-no_unfocused_pause","Don't pause if the window isn't focused",	true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_unfocused_pause", },
 	{ "-benchmark_mode",	"Puts the game into benchmark mode",		true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-benchmark_mode", },
-	{ "-profile_frame_time","Profile frame time",				true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-profile_frame_time", },
+	{ "-profile_frame_time","Profile frame time",						true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-profile_frame_time", },
 	{ "-profile_write_file", "Write profiling information to file",		true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-profile_write_file", },
 	{ "-json_profiling",	"Generate JSON profiling output",			true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-json_profiling", },
 	{ "-debug_window",		"Enable the debug window",					true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-debug_window", },
@@ -273,7 +274,6 @@ cmdline_parm gameclosed_arg("-closed", NULL, AT_NONE);		// Cmdline_closed_game
 cmdline_parm gamerestricted_arg("-restricted", NULL, AT_NONE);	// Cmdline_restricted_game
 cmdline_parm port_arg("-port", "Multiplayer network port", AT_INT);
 cmdline_parm multilog_arg("-multilog", NULL, AT_NONE);		// Cmdline_multi_log
-cmdline_parm client_dodamage("-clientdamage", NULL, AT_NONE);	// Cmdline_client_dodamage
 cmdline_parm pof_spew("-pofspew", NULL, AT_NONE);			// Cmdline_spew_pof_info
 cmdline_parm weapon_spew("-weaponspew", nullptr, AT_STRING);			// Cmdline_spew_weapon_stats
 cmdline_parm mouse_coords("-coords", NULL, AT_NONE);			// Cmdline_mouse_coords
@@ -286,7 +286,6 @@ char *Cmdline_game_password = NULL;
 char *Cmdline_rank_above = NULL;
 char *Cmdline_rank_below = NULL;
 int Cmdline_cd_check = 1;
-int Cmdline_client_dodamage = 0;
 int Cmdline_closed_game = 0;
 int Cmdline_freespace_no_music = 0;
 int Cmdline_freespace_no_sound = 0;
@@ -351,7 +350,7 @@ int Cmdline_height = 1;
 int Cmdline_enable_3d_shockwave = 0;
 int Cmdline_softparticles = 0;
 int Cmdline_bloom_intensity = 25;
-extern bool ls_force_off;
+bool Cmdline_force_lightshaft_off = false;
 int Cmdline_no_deferred_lighting = 0;
 int Cmdline_aniso_level = 0;
 
@@ -382,6 +381,7 @@ cmdline_parm weapon_choice_3d_arg("-weapon_choice_3d", NULL, AT_NONE);	// Cmdlin
 cmdline_parm use_warp_flash("-warp_flash", NULL, AT_NONE);	// Cmdline_warp_flash
 cmdline_parm allow_autpilot_interrupt("-no_ap_interrupt", NULL, AT_NONE);
 cmdline_parm stretch_menu("-stretch_menu", NULL, AT_NONE);	// Cmdline_stretch_menu
+cmdline_parm no_screenshake("-no_screenshake", nullptr, AT_NONE); // Cmdline_no_screenshake
 
 int Cmdline_3dwarp = 0;
 int Cmdline_ship_choice_3d = 0;
@@ -389,6 +389,7 @@ int Cmdline_weapon_choice_3d = 0;
 int Cmdline_warp_flash = 0;
 int Cmdline_autopilot_interruptable = 1;
 int Cmdline_stretch_menu = 0;
+int Cmdline_no_screenshake = 0;
 
 // Audio related
 cmdline_parm voice_recognition_arg("-voicer", NULL, AT_NONE);	// Cmdline_voice_recognition
@@ -478,6 +479,7 @@ cmdline_parm reparse_mainhall_arg("-reparse_mainhall", NULL, AT_NONE); //Cmdline
 cmdline_parm frame_profile_write_file("-profile_write_file", NULL, AT_NONE); // Cmdline_profile_write_file
 cmdline_parm no_unfocused_pause_arg("-no_unfocused_pause", NULL, AT_NONE); //Cmdline_no_unfocus_pause
 cmdline_parm benchmark_mode_arg("-benchmark_mode", NULL, AT_NONE); //Cmdline_benchmark_mode
+cmdline_parm pilot_arg("-pilot", nullptr, AT_STRING); //Cmdline_pilot
 cmdline_parm noninteractive_arg("-noninteractive", NULL, AT_NONE); //Cmdline_noninteractive
 cmdline_parm json_profiling("-json_profiling", NULL, AT_NONE); //Cmdline_json_profiling
 cmdline_parm show_video_info("-show_video_info", NULL, AT_NONE); //Cmdline_show_video_info
@@ -509,6 +511,7 @@ int Cmdline_reparse_mainhall = 0;
 bool Cmdline_profile_write_file = false;
 bool Cmdline_no_unfocus_pause = false;
 bool Cmdline_benchmark_mode = false;
+const char *Cmdline_pilot = nullptr;
 bool Cmdline_noninteractive = false;
 bool Cmdline_json_profiling = false;
 bool Cmdline_frame_profile = false;
@@ -809,7 +812,7 @@ void os_validate_parms(int argc, char *argv[])
 				if (!stricmp(token, "-help") || !stricmp(token, "--help") || !stricmp(token, "-h") || !stricmp(token, "-?")) {
 					printf("FreeSpace 2 Open, version %s\n", FS_VERSION_FULL);
 					printf("Website: http://scp.indiegames.us\n");
-					printf("Mantis (bug reporting): http://scp.indiegames.us/mantis/\n\n");
+					printf("Github (bug reporting): https://github.com/scp-fs2open/fs2open.github.com/issues\n\n");
 					printf("Usage: fs2_open [options]\n");
 
 					// not the prettiest thing but the job gets done
@@ -1616,7 +1619,7 @@ bool SetCmdlineParams()
 		Cmdline_game_name = gamename_arg.str();
 
 		// be sure that this string fits in our limits
-		if ( strlen(Cmdline_game_name) > MAX_GAMENAME_LEN ) {
+		if ( strlen(Cmdline_game_name) >= MAX_GAMENAME_LEN ) {
 			Cmdline_game_name[MAX_GAMENAME_LEN-1] = '\0';
 		}
 	}
@@ -1626,8 +1629,9 @@ bool SetCmdlineParams()
 		Cmdline_game_password = gamepassword_arg.str();
 
 		// be sure that this string fits in our limits
-		if ( strlen(Cmdline_game_name) > MAX_PASSWD_LEN ) {
-			Cmdline_game_name[MAX_PASSWD_LEN-1] = '\0';
+		if ( strlen(Cmdline_game_password) >= MAX_PASSWD_LEN ) {
+			ReleaseWarning(LOCATION, "Multi game password is longer than max of %d charaters and will be trimmed to fit!", MAX_PASSWD_LEN-1);
+			Cmdline_game_password[MAX_PASSWD_LEN-1] = '\0';
 		}
 	}
 
@@ -1658,12 +1662,6 @@ bool SetCmdlineParams()
 	// see if the multilog flag was set
 	if ( multilog_arg.found() ){
 		Cmdline_multi_log = 1;
-	}	
-
-
-	// maybe use old-school client damage
-	if(client_dodamage.found()){
-		Cmdline_client_dodamage = 1;
 	}	
 
 	// spew pof info
@@ -1718,7 +1716,7 @@ bool SetCmdlineParams()
 			sprintf(override, "{\"width\":%d,\"height\":%d}", width, height);
 			options::OptionsManager::instance()->setOverride("Graphics.Resolution", override);
 		} else {
-			mprintf(("Failed to parse -res parameter \"%s\". Must be in format \"<width>x<height>\".", Cmdline_res));
+			mprintf(("Failed to parse -res parameter \"%s\". Must be in format \"<width>x<height>\".\n", Cmdline_res));
 		}
 	}
 	if(center_res_arg.found()){
@@ -1840,6 +1838,10 @@ bool SetCmdlineParams()
 		Cmdline_autopilot_interruptable = 0;
 	}
 
+	if ( no_screenshake.found() ) {
+		Cmdline_no_screenshake = 1;
+	}
+	
 	if ( stretch_menu.found() )	{
 		Cmdline_stretch_menu = 1;
 	}
@@ -1909,10 +1911,6 @@ bool SetCmdlineParams()
 			}
 		}
 	}
-
-	// If any of the AA presets were chosen, update the _last_frame AA mode to avoid an unnecessary
-	// shader recompile.
-	Gr_aa_mode_last_frame = Gr_aa_mode;
 
 	if ( glow_arg.found() )
 		Cmdline_glow = 0;
@@ -2065,7 +2063,7 @@ bool SetCmdlineParams()
 
 	if ( flightshaftsoff_arg.found() )
 	{
-		ls_force_off = true;
+		Cmdline_force_lightshaft_off = true;
 	}
 
 	if( reparse_mainhall_arg.found() )
@@ -2126,6 +2124,11 @@ bool SetCmdlineParams()
 	if (benchmark_mode_arg.found())
 	{
 		Cmdline_benchmark_mode = true;
+	}
+
+	if (pilot_arg.found())
+	{
+		Cmdline_pilot = pilot_arg.str();
 	}
 
 	if (noninteractive_arg.found())

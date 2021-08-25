@@ -1,15 +1,19 @@
 //
 //
 
+#include "enums.h"
+#include "mc_info.h"
 #include "object.h"
-#include "vecmath.h"
 #include "physics_info.h"
 #include "shields.h"
-#include "mc_info.h"
+#include "sound.h"
+#include "subsystem.h"
+#include "vecmath.h"
 
 #include "asteroid/asteroid.h"
 #include "debris/debris.h"
 #include "object/objectshield.h"
+#include "object/objectsnd.h"
 #include "scripting/api/LuaEventCallback.h"
 #include "scripting/lua/LuaFunction.h"
 #include "ship/ship.h"
@@ -54,7 +58,7 @@ ADE_FUNC(__tostring, l_Object, NULL, "Returns name of object (if any)", "string"
 			sprintf(buf, "%s", Ships[objh->objp->instance].ship_name);
 			break;
 		case OBJ_WEAPON:
-			sprintf(buf, "%s projectile", Weapon_info[Weapons[objh->objp->instance].weapon_info_index].get_display_string());
+			sprintf(buf, "%s projectile", Weapon_info[Weapons[objh->objp->instance].weapon_info_index].get_display_name());
 			break;
 		default:
 			sprintf(buf, "Object %d [%d]", OBJ_INDEX(objh->objp), objh->sig);
@@ -186,7 +190,7 @@ ADE_VIRTVAR(Physics, l_Object, "physics", "Physics data used to move ship betwee
 
 ADE_VIRTVAR(HitpointsLeft, l_Object, "number", "Hitpoints an object has left", "number", "Hitpoints left, or 0 if handle is invalid")
 {
-	object_h *objh = NULL;
+	object_h *objh = nullptr;
 	float f = -1.0f;
 	if(!ade_get_args(L, "o|f", l_Object.GetPtr(&objh), &f))
 		return ade_set_error(L, "f", 0.0f);
@@ -200,6 +204,24 @@ ADE_VIRTVAR(HitpointsLeft, l_Object, "number", "Hitpoints an object has left", "
 	}
 
 	return ade_set_args(L, "f", objh->objp->hull_strength);
+}
+
+ADE_VIRTVAR(SimHitpointsLeft, l_Object, "number", "Simulated hitpoints an object has left", "number", "Simulated hitpoints left, or 0 if handle is invalid")
+{
+	object_h *objh = nullptr;
+	float f = -1.0f;
+	if (!ade_get_args(L, "o|f", l_Object.GetPtr(&objh), &f))
+		return ade_set_error(L, "f", 0.0f);
+
+	if (!objh->IsValid())
+		return ade_set_error(L, "f", 0.0f);
+
+	//Set sim hull strength.
+	if (ADE_SETTING_VAR) {
+		objh->objp->sim_hull_strength = f;
+	}
+
+	return ade_set_args(L, "f", objh->objp->sim_hull_strength);
 }
 
 ADE_VIRTVAR(Shields, l_Object, "shields", "Shields", "shields", "Shields handle, or invalid shields handle if object handle is invalid")
@@ -273,6 +295,40 @@ ADE_VIRTVAR(CollisionGroups, l_Object, "number", "Collision group data", "number
 	return ade_set_args(L, "i", objh->objp->collision_group_id);
 }
 
+ADE_FUNC(addToCollisionGroup, l_Object, "number group", "Adds this object to the specified collision group.  The group must be between 0 and 31, inclusive.", nullptr, "Returns nothing")
+{
+	object_h *objh = nullptr;
+	int group;
+
+	if (!ade_get_args(L, "oi", l_Object.GetPtr(&objh), &group))
+		return ADE_RETURN_NIL;
+
+	if (!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	if (group >= 0 && group <= 31)
+		objh->objp->collision_group_id |= (1 << group);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(removeFromCollisionGroup, l_Object, "number group", "Removes this object from the specified collision group.  The group must be between 0 and 31, inclusive.", nullptr, "Returns nothing")
+{
+	object_h *objh = nullptr;
+	int group;
+
+	if (!ade_get_args(L, "oi", l_Object.GetPtr(&objh), &group))
+		return ADE_RETURN_NIL;
+
+	if (!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	if (group >= 0 && group <= 31)
+		objh->objp->collision_group_id &= ~(1 << group);
+
+	return ADE_RETURN_NIL;
+}
+
 ADE_FUNC(getfvec, l_Object, "[boolean normalize]", "Returns the objects' current fvec.", "vector", "Objects' forward vector, or nil if invalid. If called with a true argument, vector will be normalized.")
 {
 	object_h *objh = NULL;
@@ -340,7 +396,7 @@ ADE_FUNC(
     checkRayCollision, l_Object, "vector StartPoint, vector EndPoint, [boolean Local=false]",
     "Checks the collisions between the polygons of the current object and a ray. Start and end vectors are in world "
     "coordinates",
-    ade_type_info({"vector", "collision_info"}),
+    "vector, collision_info",
     "World collision point (local if boolean is set to true) and the specific collsision info, nil if no collisions")
 {
 	object_h *objh = NULL;
@@ -458,6 +514,82 @@ ADE_FUNC(addPostMoveHook, l_Object, "function(object object) => void callback",
 		return ADE_RETURN_NIL;
 
 	objh->objp->post_move_event.add(make_lua_callback<void, object*>(callback));
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(assignSound, l_Object, "soundentry GameSnd, [vector Offset=nil, enumeration Flags=0, subsystem Subsys=nil]",
+	"Assigns a sound to this object, with optional offset, sound flags (OS_XXXX), and associated subsystem.",
+	"number",
+	"Returns the index of the sound on this object, or -1 if a sound could not be assigned.")
+{
+	object_h* objh = nullptr;
+	sound_entry_h *seh = nullptr;
+	vec3d *offset = nullptr;
+	enum_h enum_flags;
+	int flags = 0;
+	ship_subsys_h *tgsh = nullptr;
+
+	if (!ade_get_args(L, "oo|ooo", l_Object.GetPtr(&objh), l_SoundEntry.GetPtr(&seh), l_Vector.GetPtr(&offset), l_Enum.Get(&enum_flags), l_Subsystem.GetPtr(&tgsh)))
+		return ade_set_error(L, "i", -1);
+
+	if (!objh->IsValid() || !seh->IsValid() || (tgsh && (!tgsh->IsValid() || !tgsh->isSubsystemValid())))
+		return ade_set_error(L, "i", -1);
+
+	auto objp = objh->objp;
+	auto gs_id = seh->idx;
+	auto subsys = tgsh ? tgsh->ss : nullptr;
+	if (!offset)
+		offset = &vmd_zero_vector;
+	if (enum_flags.index >= 0)
+		flags = enum_flags.index;
+
+	int snd_idx = obj_snd_assign(OBJ_INDEX(objp), gs_id, offset, flags, subsys);
+
+	return ade_set_args(L, "i", snd_idx);
+}
+
+ADE_FUNC(removeSoundByIndex, l_Object, "number index", "Removes an assigned sound from this object.", nullptr, "Returns nothing.")
+{
+	object_h* objh = nullptr;
+	int snd_idx;
+
+	if (!ade_get_args(L, "oi", l_Object.GetPtr(&objh), &snd_idx))
+		return ADE_RETURN_NIL;
+
+	auto objp = objh->objp;
+
+	if (snd_idx < 0 || snd_idx >= (int)objp->objsnd_num.size())
+	{
+		LuaError(L, "Sound index is out of range for object %d!", OBJ_INDEX(objp));
+		return ADE_RETURN_NIL;
+	}
+
+	obj_snd_delete(objp, snd_idx);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(removeSound, l_Object, "soundentry GameSnd, [subsystem Subsys=nil]",
+	"Removes all sounds of the given type from the object or object's subsystem",
+	nullptr,
+	"Returns nothing.")
+{
+	object_h* objh = nullptr;
+	sound_entry_h *seh = nullptr;
+	ship_subsys_h *tgsh = nullptr;
+
+	if (!ade_get_args(L, "oo|o", l_Object.GetPtr(&objh), l_SoundEntry.GetPtr(&seh), l_Subsystem.GetPtr(&tgsh)))
+		return ADE_RETURN_NIL;
+
+	if (!objh->IsValid() || !seh->IsValid() || (tgsh && (!tgsh->IsValid() || !tgsh->isSubsystemValid())))
+		return ADE_RETURN_NIL;
+
+	auto objp = objh->objp;
+	auto gs_id = seh->idx;
+	auto subsys = tgsh ? tgsh->ss : nullptr;
+
+	obj_snd_delete_type(OBJ_INDEX(objp), gs_id, subsys);
 
 	return ADE_RETURN_NIL;
 }

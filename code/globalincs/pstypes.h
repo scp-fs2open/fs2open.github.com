@@ -113,10 +113,13 @@ typedef struct vec2d {
 	float x, y;
 } vec2d;
 
+// Euler angles for a rotation: h=heading, b=bank and p=pitch; angles are around the y, z and x axes
+// respectively and are performed in that order.
 typedef struct angles {
 	float	p, b, h;
 } angles_t;
 
+// For the avoidance of doubt, this is a row-major order matrix.
 typedef struct matrix {
 	union {
 		struct {
@@ -127,6 +130,7 @@ typedef struct matrix {
 	};
 } matrix;
 
+// You might think this is also row-major. You fool! It is actually column-major.
 typedef struct matrix4 {
 	union {
 		struct {
@@ -302,8 +306,6 @@ constexpr bool LoggingEnabled = false;
 const float PI2			= (PI*2.0f);
 // half values
 const float PI_2		= (PI/2.0f);
-const int RAND_MAX_2	= (RAND_MAX/2);
-const float RAND_MAX_1f	= (1.0f / RAND_MAX);
 
 
 extern int Fred_running;  // Is Fred running, or FreeSpace?
@@ -349,14 +351,6 @@ const size_t INVALID_SIZE = static_cast<size_t>(-1);
 #define TRUE	1
 #define FALSE	0
 
-int myrand();
-
-// Returns a random number between 0 and 0x7fffffff
-int rand32();
-
-// Returns a random integer from low to high, inclusive
-int rand32(int low, int high);
-
 
 // lod checker for (modular) table parsing
 typedef struct lod_checker {
@@ -388,7 +382,7 @@ extern void game_busy(const char *filename = NULL);
 
 #define NOX(s) s
 
-const char *XSTR(const char *str, int index);
+const char *XSTR(const char *str, int index, bool force_lookup = false);
 
 // Caps V between MN and MX.
 template <class T> void CAP( T& v, T mn, T mx )
@@ -462,7 +456,6 @@ SCP_string dump_stacktrace();
 // DEBUG compile time catch for dangerous uses of memset/memcpy/memmove
 // This is disabled for VS2013 and lower since that doesn't support the necessary features
 #if !defined(NDEBUG) && !defined(USING_THIRD_PARTY_LIBS) && (!defined(_MSC_VER) || _MSC_VER >= 1900)
-	#if SCP_COMPILER_CXX_AUTO_TYPE && SCP_COMPILER_CXX_STATIC_ASSERT && HAVE_STD_IS_TRIVIALLY_COPYABLE
 	// feature support seems to be: gcc   clang   msvc
 	// auto                         4.4   2.9     2010
 	// std::is_trivial              4.5   ?       2012 (2010 only duplicates std::is_pod)
@@ -562,7 +555,6 @@ using std::memcpy_if_trivial_else_error;
 using std::memmove_if_trivial_else_error;
 using std::memset_if_trivial_else_error;
 
-	#endif // HAVE_CXX11
 #endif // NDEBUG
 
-#endif		// PS_TYPES_H
+#endif		// _PSTYPES_H

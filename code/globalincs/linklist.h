@@ -81,6 +81,6 @@ do {												\
 #define GET_PREV(elem) 		((elem)->prev)
 #define END_OF_LIST(head)	(head)
 #define NOT_EMPTY(head)		((head)->next != (head))
-#define EMPTY(head)			((head)->next == (head))
+#define EMPTY(head)			((head) == nullptr || (head)->next == (head))
 
 #endif

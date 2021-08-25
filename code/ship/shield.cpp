@@ -19,12 +19,14 @@
 #include "model/model.h"
 #include "freespace.h"
 #include "mission/missionparse.h"
+#include "nebula/neb.h"
 #include "network/multi.h"
 #include "object/objectshield.h"
 #include "ship/ship.h"
 #include "species_defs/species_defs.h"
 #include "tracing/Monitor.h"
 #include "tracing/tracing.h"
+#include "utils/Random.h"
 
 int	Show_shield_mesh = 0;
 
@@ -390,7 +392,7 @@ void shield_render_triangle(int texture, float alpha, gshield_tri *trip, matrix 
 
 void shield_render_decal(polymodel *pm, matrix *orient, vec3d *pos, matrix* hit_orient, vec3d *hit_pos, float hit_radius, int bitmap_id, color *clr)
 {
-	if ( pm->shield.buffer_id < 0 || pm->shield.buffer_n_verts < 3 ) {
+	if (!pm->shield.buffer_id.isValid() || pm->shield.buffer_n_verts < 3) {
 		return;
 	}
 
@@ -490,18 +492,23 @@ void render_shield(int shield_num)
 
 		float alpha = 0.9999f;
 		if(The_mission.flags[Mission::Mission_Flags::Fullneb]){
-			alpha *= 0.85f;
+			alpha *= neb2_get_fog_visibility(centerp, NEB_FOG_VISIBILITY_MULT_SHIELD);
 		}
+
+		ubyte r, g, b;
+		r = (ubyte)(Shield_hits[shield_num].rgb[0] * alpha);
+		g = (ubyte)(Shield_hits[shield_num].rgb[1] * alpha);
+		b = (ubyte)(Shield_hits[shield_num].rgb[2] * alpha);
 
 		if ( bitmap_id <= -1 ) {
 			return;
 		}
 
 		if ( (Detail.shield_effects == 1) || (Detail.shield_effects == 2) ) {
-			shield_render_low_detail_bitmap(bitmap_id, alpha, &Global_tris[Shield_hits[shield_num].tri_list[0]], orient, centerp, Shield_hits[shield_num].rgb[0], Shield_hits[shield_num].rgb[1], Shield_hits[shield_num].rgb[2]);
+			shield_render_low_detail_bitmap(bitmap_id, alpha, &Global_tris[Shield_hits[shield_num].tri_list[0]], orient, centerp, r, g, b);
 		} else if ( Detail.shield_effects < 4 ) {
 			for ( int i = 0; i < Shield_hits[shield_num].num_tris; i++ ) {
-				shield_render_triangle(bitmap_id, alpha, &Global_tris[Shield_hits[shield_num].tri_list[i]], orient, centerp, Shield_hits[shield_num].rgb[0], Shield_hits[shield_num].rgb[1], Shield_hits[shield_num].rgb[2]);
+				shield_render_triangle(bitmap_id, alpha, &Global_tris[Shield_hits[shield_num].tri_list[i]], orient, centerp, r, g, b);
 			}
 		} else {
 			float hit_radius = pm->core_radius;
@@ -510,7 +517,7 @@ void render_shield(int shield_num)
 			}
 
 			color clr;
-			gr_init_alphacolor(&clr, Shield_hits[shield_num].rgb[0], Shield_hits[shield_num].rgb[1], Shield_hits[shield_num].rgb[2], fl2i(alpha * 255.0f));
+			gr_init_alphacolor(&clr, r, g, b, fl2i(alpha * 255.0f));
 			shield_render_decal(pm, orient, centerp, &Shield_hits[shield_num].hit_orient, &Shield_hits[shield_num].hit_pos, hit_radius, bitmap_id, &clr);
 		}
 	}
@@ -597,7 +604,7 @@ int get_global_shield_tri()
 			break;
 
 	if (shnum == MAX_SHIELD_HITS) {
-		shnum = myrand() % MAX_SHIELD_HITS;
+		shnum = Random::next(MAX_SHIELD_HITS);
 	}
 
 	Assert((shnum >= 0) && (shnum < MAX_SHIELD_HITS));
@@ -655,7 +662,9 @@ void copy_shield_to_globals( int objnum, shield_info *shieldp, matrix *hit_orien
 			Shield_hits[shnum].tri_list[count++] = gi;
 
 			if (count >= MAX_TRIS_PER_HIT) {
-				mprintf(("Warning: Too many triangles in shield hit.\n"));
+				if (Detail.shield_effects < 4) {
+					mprintf(("Warning: Too many triangles in shield hit.\n"));
+				}
 				break;
 			}
 		}

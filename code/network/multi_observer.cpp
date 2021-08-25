@@ -57,9 +57,10 @@ void multi_obs_create_player(int player_num,char *name,net_addr *addr,player *pl
 
 	stuff_netplayer_info( &Net_players[player_num], addr, 0, pl );
 	Net_players[player_num].last_heard_time = timer_get_fixed_seconds();
-	Net_players[player_num].reliable_socket = INVALID_SOCKET;
+	Net_players[player_num].reliable_socket = PSNET_INVALID_SOCKET;
 	Net_players[player_num].s_info.kick_timestamp = -1;
 	Net_players[player_num].s_info.voice_token_timestamp = -1;
+	Net_players[player_num].s_info.player_collision_timestamp = timestamp(0);
 	Net_players[player_num].s_info.tracker_security_last = -1;
 	Net_players[player_num].s_info.target_objnum = -1;
 	Net_players[player_num].s_info.accum_buttons = 0;

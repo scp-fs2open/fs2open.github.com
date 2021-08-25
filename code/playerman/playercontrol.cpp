@@ -72,6 +72,8 @@ float Player_warpout_speed = 40.0f;
 float Target_warpout_match_percent = 0.05f;
 float Minimum_player_warpout_time = 3.0f;
 
+#define MAX_CHASE_EXTERN_CAM_DISTANCE 30000.f
+
 #ifndef NDEBUG
 	int Show_killer_weapon = 0;
 	DCF_BOOL( show_killer_weapon, Show_killer_weapon )
@@ -141,9 +143,8 @@ angles	Viewer_external_angles_delta;
  * @param[out]  da      The delta angles applied to ma (magnitude is saturated to 1 radian).
  * @param[in]   max_p   The maximum pitch magnitude ma may have (radians).
  * @param[in]   max_h   The maximum heading magnitude ma may have (radians).
- * @param[in]   frame_time  The frame time at which this function is called.
  */
-void view_modify(angles *ma, angles *da, float max_p, float max_h, float frame_time)
+void view_modify(angles *ma, angles *da, float max_p, float max_h)
 {
 	// Digital inputs
 	float	t = 0;
@@ -222,7 +223,7 @@ void view_modify(angles *ma, angles *da, float max_p, float max_h, float frame_t
 		t = (check_control_timef(YAW_RIGHT) - check_control_timef(YAW_LEFT));
 		u = (check_control_timef(PITCH_FORWARD) - check_control_timef(PITCH_BACK));
 
-		playercontrol_read_stick(axis, frame_time);
+		playercontrol_read_stick(axis, flRealframetime);
 
 		// Does the same thing as t and u but for the joystick input 
 		h = f2fl(axis[JOY_HEADING_AXIS]);
@@ -271,7 +272,7 @@ void view_modify(angles *ma, angles *da, float max_p, float max_h, float frame_t
 	CLAMP(ma->h, -max_h, max_h);
 }
 
-void do_view_track_target(float  /*frame_time*/)
+void do_view_track_target()
 {
 	vec3d view_vector;
 	vec3d targetpos_rotated;
@@ -344,14 +345,14 @@ void do_view_track_target(float  /*frame_time*/)
  *
  * @note Some mods may prefer to set their own limits, so, maybe make this as a table option in the future
  */
-void do_view_slew(float frame_time)
+void do_view_slew()
 {
-	view_modify(&chase_slew_angles, &Viewer_slew_angles_delta, PI_2, PI2/3, frame_time);
+	view_modify(&chase_slew_angles, &Viewer_slew_angles_delta, PI_2, PI2/3);
 
 	// Check Track target
 	if (Viewer_mode & VM_TRACK) {
 		// Player's vision will track current target.
-		do_view_track_target(frame_time);
+		do_view_track_target();
 		Viewer_mode |= VM_CAMERA_LOCKED;
 		return;
 	}
@@ -414,31 +415,6 @@ void do_view_slew(float frame_time)
 	}
 }
 
-void do_view_chase(float  /*frame_time*/)
-{
-	float t;
-
-	if (Viewer_mode & VM_TRACK) {
-		// Snap back to zero and disable target tracking
-		reset_angles(&Viewer_slew_angles);
-		reset_angles(&chase_slew_angles);
-		Viewer_mode &= ~VM_TRACK;
-	}
-
-	// Process centering key.
-	if (check_control_timef(VIEW_CENTER)) {
-		Viewer_chase_info.distance = 0.0f;
-	}
-	
-	// Process distance +/- keys
-	t = check_control_timef(VIEW_DIST_INCREASE) - check_control_timef(VIEW_DIST_DECREASE);
-	Viewer_chase_info.distance += t*4;
-	if (Viewer_chase_info.distance < 0.0f)
-		Viewer_chase_info.distance = 0.0f;
-
-	Viewer_mode |= VM_CAMERA_LOCKED;
-}
-
 float camera_zoom_scale = 1.0f;
 
 DCF(camera_speed, "Sets the camera zoom scale")
@@ -453,9 +429,9 @@ DCF(camera_speed, "Sets the camera zoom scale")
 	dc_printf("Camera zoom scale set to %f\n", camera_zoom_scale);
 }
 
-void do_view_external(float frame_time)
+void do_view_chase()
 {
-	float	t;
+	float t;
 
 	if (Viewer_mode & VM_TRACK) {
 		// Snap back to zero and disable target tracking
@@ -464,19 +440,68 @@ void do_view_external(float frame_time)
 		Viewer_mode &= ~VM_TRACK;
 	}
 
-	view_modify(&Viewer_external_info.angles, &Viewer_external_angles_delta, PI2, PI2, frame_time);
+	// Process centering key.
+	if (check_control_timef(VIEW_CENTER)) {
+		Viewer_chase_info.distance = 0.0f;
+	}
+
+	object* viewer_obj = Player_obj;
+
+	if (Viewer_mode & VM_OTHER_SHIP) {
+		if (Player_ai->target_objnum != -1) {
+			viewer_obj = &Objects[Player_ai->target_objnum];
+		}
+	}
+
+	t = check_control_timef(VIEW_DIST_INCREASE) - check_control_timef(VIEW_DIST_DECREASE);
+
+	float current_distance = 2 * viewer_obj->radius + Viewer_chase_info.distance;
+	Viewer_chase_info.distance += -t * (current_distance / 35) * camera_zoom_scale;
+	if (Viewer_chase_info.distance < 0.0f)
+		Viewer_chase_info.distance = 0.0f;
+	if (Viewer_chase_info.distance > MAX_CHASE_EXTERN_CAM_DISTANCE)
+		Viewer_chase_info.distance = MAX_CHASE_EXTERN_CAM_DISTANCE;
+
+
+
+	Viewer_mode |= VM_CAMERA_LOCKED;
+}
+
+void do_view_external()
+{
+	float	t;
+
+	object* viewer_obj = Player_obj;
+
+	if (Viewer_mode & VM_OTHER_SHIP) {
+		if (Player_ai->target_objnum != -1) {
+			viewer_obj = &Objects[Player_ai->target_objnum];
+		}
+	}
+
+	if (Viewer_mode & VM_TRACK) {
+		// Snap back to zero and disable target tracking
+		reset_angles(&Viewer_slew_angles);
+		reset_angles(&chase_slew_angles);
+		Viewer_mode &= ~VM_TRACK;
+	}
+
+	view_modify(&Viewer_external_info.angles, &Viewer_external_angles_delta, PI2, PI2);
 
 	//	Process centering key.
 	if (check_control_timef(VIEW_CENTER)) {
 		Viewer_external_info.angles.p = 0.0f;
 		Viewer_external_info.angles.h = 0.0f;
-		Viewer_external_info.distance = 0.0f;
+		Viewer_external_info.preferred_distance = 2 * viewer_obj->radius;
 	}
-	
+
 	t = check_control_timef(VIEW_DIST_INCREASE) - check_control_timef(VIEW_DIST_DECREASE);
-	Viewer_external_info.distance += t*4*camera_zoom_scale;
-	if (Viewer_external_info.distance < 0.0f){
-		Viewer_external_info.distance = 0.0f;
+	if (t != 0.f) {
+		Viewer_external_info.preferred_distance = Viewer_external_info.current_distance + (t * (Viewer_external_info.current_distance / 25) * camera_zoom_scale);
+		if (Viewer_external_info.preferred_distance < 0.0f)
+			Viewer_external_info.preferred_distance = 0.0f;
+		if (Viewer_external_info.preferred_distance > MAX_CHASE_EXTERN_CAM_DISTANCE)
+			Viewer_external_info.preferred_distance = MAX_CHASE_EXTERN_CAM_DISTANCE;
 	}
 
 	//	Do over-the-top correction.
@@ -599,15 +624,15 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 	if ( Viewer_mode & VM_EXTERNAL ) {
 		control_used(VIEW_EXTERNAL);
 
-		do_view_external(frame_time);
+		do_view_external();
 		do_thrust_keys(ci);
 
 	} else if ( Viewer_mode & VM_CHASE ) {
-		do_view_chase(frame_time);
+		do_view_chase();
 
 	} else {
 		// We're in the cockpit. 
-		do_view_slew(frame_time);
+		do_view_slew();
 	}
 
 	chase_angles_to_value(&Viewer_slew_angles, &chase_slew_angles, centering_speed);
@@ -854,7 +879,7 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 
 			// if we're a multiplayer client, set our accum bits now
 			if( MULTIPLAYER_CLIENT && (Net_player != NULL)){
-				Net_player->s_info.accum_buttons |= OOC_FIRE_SECONDARY;
+				Net_player->s_info.accum_buttons |= OOC_FIRE_CONTROL_PRESSED;
 			}
 		}
 
@@ -1008,6 +1033,18 @@ void read_player_controls(object *objp, float frametime)
 
 		case PCM_NORMAL:
 			read_keyboard_controls(&(Player->ci), frametime, &objp->phys_info );
+
+			// this is similar to ai_control_info_check
+			if (Player_obj->type == OBJ_SHIP) {
+				auto sip = &Ship_info[Ships[Player_obj->instance].ship_info_index];
+
+				if (sip->flags[Ship::Info_Flags::Dont_bank_when_turning])
+					Player->ci.control_flags |= CIF_DONT_BANK_WHEN_TURNING;
+				if (sip->flags[Ship::Info_Flags::Dont_clamp_max_velocity])
+					Player->ci.control_flags |= CIF_DONT_CLAMP_MAX_VELOCITY;
+				if (sip->flags[Ship::Info_Flags::Instantaneous_acceleration])
+					Player->ci.control_flags |= CIF_INSTANTANEOUS_ACCELERATION;
+			}
 
 			if ( lua_game_control & LGC_STEERING ) {
 				// make sure to copy the control before reseting it
@@ -1339,9 +1376,18 @@ void player_level_init()
 	Viewer_external_info.angles.p = 0.0f;
 	Viewer_external_info.angles.b = 0.0f;
 	Viewer_external_info.angles.h = 0.0f;
-	Viewer_external_info.distance = 0.0f;
+	Viewer_external_info.preferred_distance = 0.0f;
+	Viewer_external_info.current_distance = 0.0f;
 
-	Viewer_mode = 0;
+	
+	if (Chase_view_default || The_mission.flags[Mission::Mission_Flags::Player_start_chase_view])
+	{
+		Viewer_mode = VM_CHASE;
+	}
+	else
+	{
+		Viewer_mode = 0;
+	}
  
 	Player_obj = NULL;
 	Player_ship = NULL;
@@ -1776,10 +1822,10 @@ float	player_farthest_weapon_range()
  * @param killer_species Species of ship that fired weapon
  * @param weapon_name (Output parameter) Stores weapon name generated in this function
  */
-void player_generate_killer_weapon_name(int weapon_info_index, int killer_species, char *weapon_name)
+const char *player_get_killer_weapon_name(int weapon_info_index, int killer_species)
 {
 	if ( weapon_info_index < 0 ) {
-		return;
+		return "";
 	}
 
 #ifndef NDEBUG
@@ -1787,12 +1833,12 @@ void player_generate_killer_weapon_name(int weapon_info_index, int killer_specie
 #else
 	if (killer_species == Ship_info[Player_ship->ship_info_index].species) {
 #endif
-		strcpy(weapon_name, Weapon_info[weapon_info_index].get_display_string());
+		return Weapon_info[weapon_info_index].get_display_name();
 	} else {
 		if ( Weapon_info[weapon_info_index].subtype == WP_MISSILE ) {
-			strcpy(weapon_name, XSTR( "missile", 90));
+			return XSTR( "missile", 90);
 		} else {
-			strcpy(weapon_name, XSTR( "laser fire", 91));
+			return XSTR( "laser fire", 91);
 		}
 	}
 }
@@ -1802,12 +1848,10 @@ void player_generate_killer_weapon_name(int weapon_info_index, int killer_specie
  */
 void player_generate_death_message(player *player_p)
 {
-	char weapon_name[NAME_LENGTH];
-	weapon_name[0] = 0;
 	SCP_string &msg = player_p->death_message;
 	int ship_index;
 
-	player_generate_killer_weapon_name(player_p->killer_weapon_index, player_p->killer_species, weapon_name);
+	auto weapon_name = player_get_killer_weapon_name(player_p->killer_weapon_index, player_p->killer_species);
 
 	switch (player_p->killer_objtype)
 	{
@@ -1989,7 +2033,7 @@ void player_maybe_play_all_alone_msg()
 	}
 
 	// met all the requirements, now only play 50% of the time :)
-	if ( rand()&1 ) {
+	if (Random::flip_coin()) {
 		message_send_builtin_to_player(MESSAGE_ALL_ALONE, NULL, MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_ANYTIME, 0, 0, -1, -1);
 	}
 	Player->flags |= PLAYER_FLAGS_NO_CHECK_ALL_ALONE_MSG;
@@ -2139,7 +2183,9 @@ camid player_get_cam()
 			vm_angles_2_matrix(&tm2, &Viewer_external_info.angles);
 			vm_matrix_x_matrix(&tm, &viewer_obj->orient, &tm2);
 
-			vm_vec_scale_add(&eye_pos, &viewer_obj->pos, &tm.vec.fvec, 2.0f * viewer_obj->radius + Viewer_external_info.distance);
+			Viewer_external_info.current_distance = cam_get_bbox_dist(viewer_obj, Viewer_external_info.preferred_distance, &tm2);
+
+			vm_vec_scale_add(&eye_pos, &viewer_obj->pos, &tm.vec.fvec, Viewer_external_info.current_distance);
 
 			vm_vec_sub(&tmp_dir, &viewer_obj->pos, &eye_pos);
 			vm_vec_normalize(&tmp_dir);

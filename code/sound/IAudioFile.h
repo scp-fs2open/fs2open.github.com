@@ -1,5 +1,7 @@
 #pragma once
 
+#include "globalincs/vmallocator.h"
+
 namespace sound {
 
 /**
@@ -21,6 +23,7 @@ struct ResampleProperties {
 	int num_channels = -1;
 };
 
+
 /**
  * @brief An audio file from which decoded audio data can be read
  */
@@ -38,7 +41,16 @@ class IAudioFile {
 	 * @return @c true if the file was succesfully loaded, @c false otherwise
 	 */
 	virtual bool Open(const char* pszFilename, bool keep_ext = true) = 0;
-
+	
+	/**
+	 * @brief Sets up the given in-memory "soundfile"
+	 *
+	 * @param snddata The sound
+ 	 * @param snd_len The sound's length
+	 * @return @c true if the sound was succesfully loaded, @c false otherwise
+	 */
+	virtual bool OpenMem(const uint8_t* snddata, size_t snd_len) = 0;
+	
 	/**
 	 * @brief Prepare file for audio reading
 	 *

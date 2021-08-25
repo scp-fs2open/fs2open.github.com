@@ -71,7 +71,7 @@ cf_pathtype Pathtypes[CF_MAX_PATH_TYPES]  = {
 	{ CF_TYPE_MUSIC,				"data" DIR_SEPARATOR_STR "music",											".wav .ogg",						CF_TYPE_DATA	},
 	{ CF_TYPE_MOVIES,				"data" DIR_SEPARATOR_STR "movies",											".mve .msb .ogg .mp4 .srt .webm .png",CF_TYPE_DATA	},
 	{ CF_TYPE_INTERFACE,			"data" DIR_SEPARATOR_STR "interface",										".pcx .ani .dds .tga .eff .png .jpg",	CF_TYPE_DATA	},
-	{ CF_TYPE_FONT,					"data" DIR_SEPARATOR_STR "fonts",											".vf .ttf",							CF_TYPE_DATA	},
+	{ CF_TYPE_FONT,					"data" DIR_SEPARATOR_STR "fonts",											".vf .ttf .otf",						CF_TYPE_DATA	},
 	{ CF_TYPE_EFFECTS,				"data" DIR_SEPARATOR_STR "effects",											".ani .eff .pcx .neb .tga .jpg .png .dds .sdr",	CF_TYPE_DATA	},
 	{ CF_TYPE_HUD,					"data" DIR_SEPARATOR_STR "hud",												".pcx .ani .eff .tga .jpg .png .dds",	CF_TYPE_DATA	},
 	{ CF_TYPE_PLAYERS,				"data" DIR_SEPARATOR_STR "players",											".hcf",								CF_TYPE_DATA	},
@@ -109,14 +109,14 @@ static const char *Cfile_cdrom_dir = NULL;
 // Function prototypes for internally-called functions
 //
 static int cfget_cfile_block();
-static CFILE *cf_open_fill_cfblock(const char* source, int line, FILE * fp, int type);
-static CFILE *cf_open_packed_cfblock(const char* source, int line, FILE *fp, int type, size_t offset, size_t size);
-static CFILE *cf_open_memory_fill_cfblock(const char* source, int line, const void* data, size_t size, int dir_type);
+static CFILE *cf_open_fill_cfblock(const char* source, int line, const char* original_filename, FILE * fp, int type);
+static CFILE *cf_open_packed_cfblock(const char* source, int line, const char* original_filename, FILE *fp, int type, size_t offset, size_t size);
+static CFILE *cf_open_memory_fill_cfblock(const char* source, int line, const char* original_filename, const void* data, size_t size, int dir_type);
 
 #if defined _WIN32
-static CFILE *cf_open_mapped_fill_cfblock(const char* source, int line, HANDLE hFile, int type);
+static CFILE *cf_open_mapped_fill_cfblock(const char* source, int line, const char* original_filename, HANDLE hFile, int type);
 #elif defined SCP_UNIX
-static CFILE *cf_open_mapped_fill_cfblock(const char* source, int line, FILE *fp, int type);
+static CFILE *cf_open_mapped_fill_cfblock(const char* source, int line, const char* original_filename, FILE *fp, int type);
 #endif
 
 static void cf_chksum_long_init();
@@ -287,7 +287,7 @@ static int _cfile_chdir(const char *new_dir, const char *cur_dir __UNUSED)
 	const char *colon = strchr(new_dir, ':');
 
 	if (colon) {
-		if (!cfile_chdrive(tolower(*(colon - 1)) - 'a' + 1, 1))
+		if (!cfile_chdrive(SCP_tolower(*(colon - 1)) - 'a' + 1, 1))
 			return 1;
 
 		path = colon + 1;
@@ -305,7 +305,7 @@ static int _cfile_chdir(const char *new_dir, const char *cur_dir __UNUSED)
 	status = _chdir(path);
 	if (status != 0) {
 #ifdef _WIN32
-		cfile_chdrive(tolower(cur_dir[0]) - 'a' + 1, 1);
+		cfile_chdrive(SCP_tolower(cur_dir[0]) - 'a' + 1, 1);
 #endif /* _WIN32 */
 		return 2;
 	}
@@ -675,13 +675,10 @@ CFILE* _cfopen(const char* source, int line, const char* file_path, const char* 
 	
 	if ( strchr(mode,'w') || strchr(mode,'+') || strchr(mode,'a') )	{
 		char longname[_MAX_PATH];
+		auto last_separator = strrchr(file_path, DIR_SEPARATOR_CHAR);
 
 		// For write-only files, require a full path or a path type
-#ifdef SCP_UNIX
-		if ( strpbrk(file_path, "/") ) {
-#else
-		if ( strpbrk(file_path,"/\\:")  ) {
-#endif
+		if ( last_separator ) {
 			// Full path given?
 			strcpy_s(longname, file_path );
 		} else {
@@ -697,7 +694,7 @@ CFILE* _cfopen(const char* source, int line, const char* file_path, const char* 
 
 		// JOHN: TODO, you should create the path if it doesn't exist.
 		
-		//WMC - For some godawful reason, fread does not return the correct number of bytes read
+		//WMC - For some reason, fread does not return the correct number of bytes read
 		//in text mode, which messes up FS2_Open's raw_position indicator in fgets. As a consequence, you
 		//_must_ open files that are gonna be read in binary mode.
 
@@ -732,7 +729,7 @@ CFILE* _cfopen(const char* source, int line, const char* file_path, const char* 
 
 		FILE *fp = fopen(longname, happy_mode);
 		if (fp)	{
-			return cf_open_fill_cfblock(source, line, fp, dir_type);
+			return cf_open_fill_cfblock(source, line, last_separator ? (last_separator + 1) : file_path, fp, dir_type);
  		}
 		return NULL;
 	} 
@@ -760,20 +757,19 @@ CFILE* _cfopen(const char* source, int line, const char* file_path, const char* 
 				hFile = CreateFile(find_res.full_name.c_str(), GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
 				if (hFile != INVALID_HANDLE_VALUE)	{
-					return cf_open_mapped_fill_cfblock(source, line, hFile, dir_type);
+					return cf_open_mapped_fill_cfblock(source, line, file_path, hFile, dir_type);
 				}
 #elif defined SCP_UNIX
 				FILE* fp = fopen(find_res.full_name.c_str(), "rb");
 				if (fp) {
-					return cf_open_mapped_fill_cfblock(source, line, fp, dir_type);
+					return cf_open_mapped_fill_cfblock(source, line, file_path, fp, dir_type);
 				}
 #endif
 			} 
 
 		} else {
 			// since cfopen_special already has all the code to handle the opening we can just use that here
-			return _cfopen_special(source, line, find_res.full_name.c_str(), mode, find_res.size, find_res.offset,
-			                       find_res.data_ptr, dir_type);
+			return _cfopen_special(source, line, find_res, mode, dir_type);
 		}
 
 	}
@@ -792,14 +788,14 @@ CFILE* _cfopen(const char* source, int line, const char* file_path, const char* 
 // returns:		success	==> address of CFILE structure
 //				error	==> NULL
 //
-CFILE *_cfopen_special(const char* source, int line, const char *file_path, const char *mode, const size_t size, const size_t offset, const void* data, int dir_type)
+CFILE *_cfopen_special(const char* source, int line, const CFileLocation &res, const char* mode, int dir_type)
 {
 	if ( !cfile_inited) {
 		Int3();
 		return NULL;
 	}
 
-	Assert( file_path && strlen(file_path) );
+	Assert( !res.full_name.empty() );
 	Assert( mode != NULL );
 
 	// cfopen_special() only supports reading files, not creating them
@@ -809,21 +805,21 @@ CFILE *_cfopen_special(const char* source, int line, const char *file_path, cons
 	}
 
 	// In-Memory files are a bit different from normal files so we need to handle them separately
-	if (data != nullptr) {
-		return cf_open_memory_fill_cfblock(source, line, data, size, dir_type);
+	if (res.data_ptr != nullptr) {
+		return cf_open_memory_fill_cfblock(source, line, res.name_ext.c_str(), res.data_ptr, res.size, dir_type);
 	}
 	else {
 		// "file_path" should already be a fully qualified path, so just try to open it
-		FILE *fp = fopen(file_path, "rb");
+		FILE *fp = fopen(res.full_name.c_str(), "rb");
 
 		if (fp) {
-			if (offset) {
+			if (res.offset) {
 				// Found it in a pack file
-				return cf_open_packed_cfblock(source, line, fp, dir_type, offset, size);
+				return cf_open_packed_cfblock(source, line, res.name_ext.c_str(), fp, dir_type, res.offset, res.size);
 			}
 			else {
 				// Found it in a normal file
-				return cf_open_fill_cfblock(source, line, fp, dir_type);
+				return cf_open_fill_cfblock(source, line, res.name_ext.c_str(), fp, dir_type);
 			}
 		}
 	}
@@ -846,7 +842,7 @@ CFILE *ctmpfile()
 	FILE	*fp;
 	fp = tmpfile();
 	if ( fp )
-		return cf_open_fill_cfblock(LOCATION, fp, 0);
+		return cf_open_fill_cfblock(LOCATION, "<temporary file>", fp, 0);
 	else
 		return NULL;
 }
@@ -870,6 +866,7 @@ static int cfget_cfile_block()
 			cfile->data = nullptr;
 			cfile->fp = nullptr;
 			cfile->type = CFILE_BLOCK_USED;
+			cf_clear_compression_info(cfile);
 			return i;
 		}
 	}
@@ -925,7 +922,7 @@ int cfclose( CFILE * cfile )
 	} else {
 		// VP  do nothing
 	}
-
+	cf_clear_compression_info(cfile);
 	cfile->type = CFILE_BLOCK_UNUSED;
 	return result;
 }
@@ -953,7 +950,7 @@ int cf_is_valid(CFILE *cfile)
 // returns:   success ==> ptr to CFILE structure.  
 //            error   ==> NULL
 //
-static CFILE *cf_open_fill_cfblock(const char* source, int line, FILE *fp, int type)
+static CFILE *cf_open_fill_cfblock(const char* source, int line, const char* original_filename, FILE *fp, int type)
 {
 	int cfile_block_index;
 
@@ -969,6 +966,7 @@ static CFILE *cf_open_fill_cfblock(const char* source, int line, FILE *fp, int t
 		cfp->dir_type = type;
 		cfp->max_read_len = 0;
 
+		cfp->original_filename = original_filename;
 		cfp->source_file = source;
 		cfp->line_num = line;
 		
@@ -976,7 +974,7 @@ static CFILE *cf_open_fill_cfblock(const char* source, int line, FILE *fp, int t
 		if(pos == -1L)
 			pos = 0;
 		cf_init_lowlevel_read_code(cfp,0,filelength(fileno(fp)), 0 );
-
+		cf_check_compression(cfp);
 		return cfp;
 	}
 }
@@ -988,7 +986,7 @@ static CFILE *cf_open_fill_cfblock(const char* source, int line, FILE *fp, int t
 // returns:   success ==> ptr to CFILE structure.  
 //            error   ==> NULL
 //
-static CFILE *cf_open_packed_cfblock(const char* source, int line, FILE *fp, int type, size_t offset, size_t size)
+static CFILE *cf_open_packed_cfblock(const char* source, int line, const char* original_filename, FILE *fp, int type, size_t offset, size_t size)
 {
 	// Found it in a pack file
 	int cfile_block_index;
@@ -1006,11 +1004,12 @@ static CFILE *cf_open_packed_cfblock(const char* source, int line, FILE *fp, int
 		cfp->dir_type = type;
 		cfp->max_read_len = 0;
 
+		cfp->original_filename = original_filename;
 		cfp->source_file = source;
 		cfp->line_num = line;
 
 		cf_init_lowlevel_read_code(cfp,offset, size, 0 );
-
+		cf_check_compression(cfp);
 		return cfp;
 	}
 
@@ -1024,9 +1023,9 @@ static CFILE *cf_open_packed_cfblock(const char* source, int line, FILE *fp, int
 // returns:   ptr CFILE structure.  
 //
 #if defined _WIN32
-static CFILE *cf_open_mapped_fill_cfblock(const char* source, int line, HANDLE hFile, int type)
+static CFILE *cf_open_mapped_fill_cfblock(const char* source, int line, const char* original_filename, HANDLE hFile, int type)
 #elif defined SCP_UNIX
-static CFILE *cf_open_mapped_fill_cfblock(const char* source, int line, FILE *fp, int type)
+static CFILE *cf_open_mapped_fill_cfblock(const char* source, int line, const char* original_filename, FILE *fp, int type)
 #endif
 {
 	int cfile_block_index;
@@ -1049,10 +1048,12 @@ static CFILE *cf_open_mapped_fill_cfblock(const char* source, int line, FILE *fp
 #endif
 		cfp->dir_type = type;
 
+		cfp->original_filename = original_filename;
 		cfp->source_file = source;
 		cfp->line_num = line;
 
 		cf_init_lowlevel_read_code(cfp, 0, 0, 0 );
+		
 #if defined _WIN32
 		cfp->hMapFile = CreateFileMapping(cfp->hInFile, NULL, PAGE_READONLY, 0, 0, NULL);
 		if (cfp->hMapFile == NULL) {
@@ -1078,7 +1079,7 @@ static CFILE *cf_open_mapped_fill_cfblock(const char* source, int line, FILE *fp
 	}
 }
 
-static CFILE *cf_open_memory_fill_cfblock(const char* source, int line, const void* data, size_t size, int dir_type)
+static CFILE *cf_open_memory_fill_cfblock(const char* source, int line, const char* original_filename, const void* data, size_t size, int dir_type)
 {
 	int cfile_block_index;
 
@@ -1094,6 +1095,7 @@ static CFILE *cf_open_memory_fill_cfblock(const char* source, int line, const vo
 		cfp->mem_mapped = false;
 		cfp->dir_type = dir_type;
 
+		cfp->original_filename = original_filename;
 		cfp->source_file = source;
 		cfp->line_num = line;
 
@@ -1104,7 +1106,12 @@ static CFILE *cf_open_memory_fill_cfblock(const char* source, int line, const vo
 	}
 }
 
-int cf_get_dir_type(CFILE *cfile)
+const char *cf_get_filename(const CFILE *cfile)
+{
+	return cfile->original_filename.c_str();
+}
+
+int cf_get_dir_type(const CFILE *cfile)
 {
 	return cfile->dir_type;
 }

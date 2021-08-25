@@ -82,6 +82,10 @@
 using namespace scripting;
 using namespace scripting::api;
 
+namespace {
+const char* ScriptStateReferenceName = "SCP_ScriptState";
+}
+
 // *************************Housekeeping*************************
 
 static void *vm_lua_alloc(void*, void *ptr, size_t, size_t nsize) {
@@ -116,6 +120,11 @@ int script_state::CreateLuaState()
 
 	//*****INITIALIZE OUR SUPPORT LIBRARY
 	luacpp::util::initializeLuaSupportLib(L);
+
+	// Store our script state pointer in this Lua state so that it can be retrieved from the Lua API without depending
+	// on global state
+	lua_pushlightuserdata(L, this);
+	lua_setfield(L, LUA_REGISTRYINDEX, ScriptStateReferenceName);
 
 	//*****DISABLE DANGEROUS COMMANDS
 	lua_pushstring(L, "os");
@@ -184,15 +193,8 @@ static bool sort_table_entries(const ade_table_entry* left, const ade_table_entr
 		return false;
 	}
 
-	SCP_string leftStr(leftCmp);
-	std::transform(std::begin(leftStr), std::end(leftStr), std::begin(leftStr),
-	               [](char c) { return (char)::tolower(c); });
-
-	SCP_string rightStr(rightCmp);
-	std::transform(std::begin(rightStr), std::end(rightStr), std::begin(rightStr),
-	               [](char c) { return (char)::tolower(c); });
-
-	return leftStr < rightStr;
+	SCP_string_lcase_less_than lt;
+	return lt(leftCmp, rightCmp);
 }
 
 static bool sort_doc_entries(const ade_table_entry* left, const ade_table_entry* right) {
@@ -206,7 +208,8 @@ static bool sort_doc_entries(const ade_table_entry* left, const ade_table_entry*
 	return false;
 }
 
-void script_state::OutputLuaDocumentation(ScriptingDocumentation& doc)
+void script_state::OutputLuaDocumentation(ScriptingDocumentation& doc,
+	const scripting::DocumentationErrorReporter& errorReporter)
 {
 	SCP_vector<ade_table_entry*> table_entries;
 
@@ -219,7 +222,7 @@ void script_state::OutputLuaDocumentation(ScriptingDocumentation& doc)
 
 	std::sort(std::begin(table_entries), std::end(table_entries), sort_doc_entries);
 	for (auto entry : table_entries) {
-		doc.elements.emplace_back(entry->ToDocumentationElement());
+		doc.elements.emplace_back(entry->ToDocumentationElement(errorReporter));
 	}
 
 	//***Enumerations
@@ -230,4 +233,14 @@ void script_state::OutputLuaDocumentation(ScriptingDocumentation& doc)
 
 		doc.enumerations.push_back(e);
 	}
+}
+
+script_state* script_state::GetScriptState(lua_State* L)
+{
+	lua_getfield(L, LUA_REGISTRYINDEX, ScriptStateReferenceName);
+	Assertion(lua_islightuserdata(L, -1), "Function called for Lua state that is not properly set up!");
+	auto scriptStatePtr = lua_touserdata(L, -1);
+	lua_pop(L, 1);
+
+	return static_cast<script_state*>(scriptStatePtr);
 }

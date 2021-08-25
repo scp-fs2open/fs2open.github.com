@@ -176,8 +176,11 @@ void cfile_close();
 // add an extension to a filename if it doesn't already have it
 char *cf_add_ext(const char *filename, const char *ext);
 
+// return filename of a CFILE you called cfopen() successfully on.
+const char *cf_get_filename(const CFILE *cfile);
+
 // return CF_TYPE (directory location type) of a CFILE you called cfopen() successfully on.
-int cf_get_dir_type(CFILE *cfile);
+int cf_get_dir_type(const CFILE *cfile);
 
 // Opens the file.  If no path is given, use the extension to look into the
 // default path.  If mode is NULL, delete the file.
@@ -185,10 +188,12 @@ CFILE* _cfopen(const char* source_file, int line, const char* filename, const ch
                int dir_type = CF_TYPE_ANY, bool localize = false, uint32_t location_flags = CF_LOCATION_ALL);
 #define cfopen(...) _cfopen(LOCATION, __VA_ARGS__) // Pass source location to the function
 
+struct CFileLocation;
+
 // like cfopen(), but it accepts a fully qualified path only (ie, the result of a cf_find_file_location() call)
 // NOTE: only supports reading files!!
-CFILE *_cfopen_special(const char* source_file, int line, const char *file_path, const char *mode,
-	const size_t size, const size_t offset, const void* data, int dir_type = CF_TYPE_ANY);
+CFILE *_cfopen_special(const char* source_file, int line, const CFileLocation &res, const char* mode,
+	                   int dir_type = CF_TYPE_ANY);
 #define cfopen_special(...) _cfopen_special(LOCATION, __VA_ARGS__) // Pass source location to the function
 
 // Flush the open file buffer
@@ -369,6 +374,7 @@ void cf_sort_filenames( SCP_vector<SCP_string> &list, int sort, SCP_vector<file_
 
 struct CFileLocation {
 	bool found = false;
+	SCP_string name_ext;
 	SCP_string full_name;
 	size_t size          = 0;
 	size_t offset        = 0;

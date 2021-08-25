@@ -13,7 +13,9 @@
 
 #include "globalincs/globals.h" // just in case pstypes.h messed up
 #include "globalincs/pstypes.h" // IAM_64BIT
+
 #include "graphics/font.h"
+#include "graphics/post_processing.h"
 
 extern ubyte Gr_original_palette[768];		// The palette 
 extern ubyte Gr_current_palette[768];
@@ -42,6 +44,9 @@ extern color_gun *Gr_current_red, *Gr_current_green, *Gr_current_blue, *Gr_curre
 
 extern float Gr_gamma;
 
+extern bool Rendering_to_shadow_map;
+extern bool Scene_framebuffer_in_frame;
+
 #define TCACHE_TYPE_AABITMAP				0		// HUD bitmap.  All Alpha.
 #define TCACHE_TYPE_NORMAL					1		// Normal bitmap. Alpha = 0.
 #define TCACHE_TYPE_XPARENT					2		// Bitmap with 0,255,0 = transparent.  Alpha=0 if transparent, 1 if not.
@@ -67,5 +72,11 @@ typedef enum gr_zbuffer_type {
 	ZBUFFER_TYPE_FULL,
 	ZBUFFER_TYPE_DEFAULT
 } gr_zbuffer_type;
+
+namespace graphics {
+
+extern std::unique_ptr<PostProcessingManager> Post_processing_manager;
+
+}
 
 #endif

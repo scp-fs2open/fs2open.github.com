@@ -26,18 +26,19 @@
 #define LCL_POLISH						3
 
 #define LCL_UNTRANSLATED				10	// this should be higher than the highest builtin language
+#define LCL_RETAIL_HYBRID				11	// ditto; this is the weird retail behavior where internal is translated but external isn't
 #define	LCL_DEFAULT						0
 
 // for language name strings
 #define LCL_LANG_NAME_LEN				32
 
-#define LCL_MAX_FONTS					5
+#define LCL_MIN_FONTS					3
 
 // language info table
 typedef struct lang_info {
 	char lang_name[LCL_LANG_NAME_LEN + 1];				// literal name of the language
 	char lang_ext[LCL_LANG_NAME_LEN + 1];				// the extension used for adding to names on disk access
-	ubyte special_char_indexes[LCL_MAX_FONTS];			// where in the font do we have the special characters for this language
+	SCP_vector<ubyte> special_char_indexes;				// where in the font do we have the special characters for this language
 														// note: treats 0 as "none" since a zero offset in a font makes no sense
 														// i.e. all the normal chars start at zero
 	int checksum;										// used for language auto-detection
@@ -70,6 +71,10 @@ extern bool *Lcl_unexpected_tstring_check;
 // LOCALIZE FUNCTIONS
 //
 
+// get an index we can use to look into the array, since we now have three different ways of using English
+// (translated, untranslated, and hybrid: internal translated, external untranslated)
+int lcl_get_current_lang_index();
+
 // initialize localization, if no language is passed - use the language specified in the registry
 void lcl_init(int lang = -1);
 
@@ -100,8 +105,8 @@ ubyte lcl_get_font_index(int font_num);
 int lcl_add_dir_to_path_with_filename(char *current_path, size_t path_max);
 
 // Goober5000
-void lcl_replace_stuff(char *text, size_t max_len);
-void lcl_replace_stuff(SCP_string &text);
+void lcl_replace_stuff(char *text, size_t max_len, bool force = false);
+void lcl_replace_stuff(SCP_string &text, bool force = false);
 
 // Karajorma
 void lcl_fred_replace_stuff(char *text, size_t max_len);
@@ -118,7 +123,6 @@ void lcl_ext_localize(const char *in, char *out, size_t max_len, int *id = nullp
 void lcl_ext_localize(const SCP_string &in, SCP_string &out, int *id = nullptr);
 
 // translate the specified string based upon the current language
-const char *XSTR(const char *str, int index);
 int lcl_get_xstr_offset(int index, int res);
 
 void lcl_translate_wep_name_gr(char *name);

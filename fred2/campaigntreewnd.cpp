@@ -29,7 +29,6 @@ static char THIS_FILE[] = __FILE__;
 
 int Mission_filename_cb_format;
 int Campaign_modified = 0;
-int Bypass_clear_mission;
 campaign_tree_wnd *Campaign_wnd = NULL;
 
 IMPLEMENT_DYNCREATE(campaign_tree_wnd, CFrameWnd)
@@ -39,7 +38,6 @@ IMPLEMENT_DYNCREATE(campaign_tree_wnd, CFrameWnd)
 
 campaign_tree_wnd::campaign_tree_wnd()
 {
-	Bypass_clear_mission = 0;
 }
 
 campaign_tree_wnd::~campaign_tree_wnd()
@@ -146,8 +144,7 @@ void campaign_tree_wnd::OnDestroy()
 
 	OnCpgnFileNew();
 	Fred_main_wnd->EnableWindow(TRUE);
-//	if (!Bypass_clear_mission)
-//		create_new_mission();
+
 	str = FREDDoc_ptr->GetPathName();
 	if (str.IsEmpty())
 		create_new_mission();

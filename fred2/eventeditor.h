@@ -18,9 +18,29 @@
 
 #define MAX_SEARCH_MESSAGE_DEPTH		5		// maximum search number of event nodes with message text
 
+
 class event_sexp_tree : public sexp_tree
 {
+public:
+	// for tooltips
+	INT_PTR OnToolHitTest(CPoint point, TOOLINFO *pTI) const;
+	BOOL OnToolTipText(UINT id, NMHDR * pNMHDR, LRESULT *pResult);
+
+	void edit_comment(HTREEITEM h);
+	void edit_bg_color(HTREEITEM h);
+
+protected:
+	virtual void PreSubclassWindow();
+	virtual void OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult);
+
+	DECLARE_MESSAGE_MAP()
 };
+
+void event_annotation_prune();
+int event_annotation_lookup(HTREEITEM handle);
+void event_annotation_swap_image(event_sexp_tree *tree, HTREEITEM handle, int annotation_index);
+void event_annotation_swap_image(event_sexp_tree *tree, HTREEITEM handle, event_annotation &ea);
+
 
 /////////////////////////////////////////////////////////////////////////////
 // event_editor dialog
@@ -36,19 +56,23 @@ public:
 	int save_message(int num);
 	void update_cur_message();
 	HTREEITEM get_event_handle(int num);
+	int get_event_num(HTREEITEM handle);
 	void reset_event(int num, HTREEITEM after);
 	void save_event(int e);
 	void swap_handler(int node1, int node2);
 	void insert_handler(int old, int node);
 	int query_modified();
-	void OnOK();
-	void OnCancel();
-	int handler(int code, int node, char *str = NULL);
+	void OnOK();		// default MFC OK behavior
+	void OnCancel();	// default MFC Cancel behavior
+	int handler(int code, int node, const char *str = nullptr);
 	void create_tree();
 	void load_tree();
 	int modified;
 	int select_sexp_node;
 	event_editor(CWnd* pParent = NULL);   // standard constructor
+
+	void populate_path(event_annotation &ea, HTREEITEM h);
+	HTREEITEM traverse_path(const event_annotation &ea);
 
 // Dialog Data
 	//{{AFX_DATA(event_editor)
@@ -68,7 +92,7 @@ public:
 	CString	m_message_text;
 	int		m_persona;
 	CString	m_wave_filename;
-	int		m_cur_msg;
+	int		m_cur_msg, m_cur_msg_old;
 	int		m_team;
 	int		m_message_team;
 	int		m_last_message_node;
@@ -104,7 +128,8 @@ protected:
 	afx_msg void OnEndlabeleditEventTree(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnButtonNewEvent();
 	afx_msg void OnDelete();
-	afx_msg void OnOk();
+	afx_msg void OnButtonOk();
+	afx_msg void OnButtonCancel();
 	afx_msg void OnClose();
 	afx_msg void OnSelchangedEventTree(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnUpdateRepeatCount();
@@ -119,7 +144,6 @@ protected:
 	afx_msg void OnSelchangeWaveFilename();
 	afx_msg void OnPlay();
 	afx_msg void OnUpdate();
-	afx_msg void On_Cancel();
 	afx_msg void OnSelchangeTeam();
 	afx_msg void OnSelchangeMessageTeam();
 	afx_msg void OnDblclkMessageList();

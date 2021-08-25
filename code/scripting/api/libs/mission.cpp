@@ -21,6 +21,7 @@
 #include "mission/missionlog.h"
 #include "mission/missionmessage.h"
 #include "mission/missiontraining.h"
+#include "missionui/redalert.h"
 #include "parse/parselo.h"
 #include "parse/sexp.h"
 #include "parse/sexp/DynamicSEXP.h"
@@ -34,6 +35,8 @@
 #include "scripting/api/objs/debris.h"
 #include "scripting/api/objs/enums.h"
 #include "scripting/api/objs/event.h"
+#include "scripting/api/objs/fireball.h"
+#include "scripting/api/objs/fireballclass.h"
 #include "scripting/api/objs/message.h"
 #include "scripting/api/objs/object.h"
 #include "scripting/api/objs/parse_object.h"
@@ -41,6 +44,7 @@
 #include "scripting/api/objs/sexpvar.h"
 #include "scripting/api/objs/ship.h"
 #include "scripting/api/objs/shipclass.h"
+#include "scripting/api/objs/sound.h"
 #include "scripting/api/objs/team.h"
 #include "scripting/api/objs/vecmath.h"
 #include "scripting/api/objs/waypoint.h"
@@ -56,7 +60,7 @@
 #include "weapon/beam.h"
 #include "weapon/weapon.h"
 
-extern int ships_inited;
+extern bool Ships_inited;
 
 namespace scripting {
 namespace api {
@@ -82,7 +86,7 @@ ADE_FUNC(getObjectFromSignature, l_Mission, "number Signature", "Gets a handle o
 	return ade_set_object_with_breed(L, objnum);
 }
 
-ADE_FUNC(evaluateSEXP, l_Mission, "string", "Runs the defined SEXP script", "boolean", "if the operation was successful")
+ADE_FUNC(evaluateSEXP, l_Mission, "string", "Runs the defined SEXP script, and returns the result as a boolean", "boolean", "true if the SEXP returned SEXP_TRUE or SEXP_KNOWN_TRUE; false if the SEXP returned anything else (even a number)")
 {
 	const char* s;
 	int r_val;
@@ -98,7 +102,24 @@ ADE_FUNC(evaluateSEXP, l_Mission, "string", "Runs the defined SEXP script", "boo
 		return ADE_RETURN_FALSE;
 }
 
-ADE_FUNC(runSEXP, l_Mission, "string", "Runs the defined SEXP script", "boolean", "if the operation was successful")
+ADE_FUNC(evaluateNumericSEXP, l_Mission, "string", "Runs the defined SEXP script, and returns the result as a number", "number", "the value of the SEXP result (or NaN if the SEXP returned SEXP_NAN or SEXP_NAN_FOREVER)")
+{
+	const char* s;
+	int r_val;
+	bool got_nan;
+
+	if (!ade_get_args(L, "s", &s))
+		return ade_set_args(L, "i", 0);
+
+	r_val = run_sexp(s, true, &got_nan);
+
+	if (got_nan)
+		return ade_set_args(L, "f", std::numeric_limits<float>::quiet_NaN());
+	else
+		return ade_set_args(L, "i", r_val);
+}
+
+ADE_FUNC(runSEXP, l_Mission, "string", "Runs the defined SEXP script within a `when` operator", "boolean", "if the operation was successful")
 {
 	const char* s;
 	int r_val;
@@ -171,8 +192,10 @@ ADE_INDEXER(l_Mission_Debris, "number Index", "Array of debris in the current mi
 	if( !ade_get_args( L, "*i", &idx ) ) {
 		return ade_set_error(L, "o", l_Debris.Set(object_h()));
 	}
-	if( idx > -1 && idx < Num_debris_pieces ) {
-		idx--; // Lua -> C
+
+	idx--; // Lua -> C
+
+	if( idx >= 0 && idx < (int)Debris.size() ) {
 		if (Debris[idx].objnum == -1) //Somehow accessed an invalid debris piece
 			return ade_set_error(L, "o", l_Debris.Set(object_h()));
 		return ade_set_args(L, "o", l_Debris.Set(object_h(&Objects[Debris[idx].objnum])));
@@ -187,7 +210,7 @@ ADE_FUNC(__len, l_Mission_Debris, NULL,
 		 "number",
 		 "Current number of debris particles")
 {
-	return ade_set_args(L, "i", Num_debris_pieces);
+	return ade_set_args(L, "i", (int)Debris.size());
 }
 
 //****SUBLIBRARY: Mission/EscortShips
@@ -344,7 +367,7 @@ ADE_FUNC(__len, l_Mission_Ships, NULL,
 		 "number",
 		 "Number of ships in the mission, or 0 if ships haven't been initialized yet")
 {
-	if(ships_inited)
+	if(Ships_inited)
 		return ade_set_args(L, "i", ship_get_num_ships());
 	else
 		return ade_set_args(L, "i", 0);
@@ -673,6 +696,38 @@ ADE_FUNC(__len, l_Mission_Personas, NULL, "Number of personas in the mission", "
 	return ade_set_args(L, "i", Num_personas);
 }
 
+//****SUBLIBRARY: Mission/Fireballs
+ADE_LIB_DERIV(l_Mission_Fireballs, "Fireballs", NULL, NULL, l_Mission);
+
+ADE_INDEXER(l_Mission_Fireballs, "number Index", "Gets handle to a fireball object in the mission.", "fireball", "Fireball handle, or invalid fireball handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "o", l_Fireball.Set(object_h()));
+
+	//Remember, Lua indices start at 1.
+	int count = 1;
+
+	for (auto& current_fireball : Fireballs) {
+		if (current_fireball.fireball_info_index < 0 || current_fireball.objnum < 0 || Objects[current_fireball.objnum].type != OBJ_FIREBALL)
+			continue;
+
+		if (count == idx) {
+			return ade_set_args(L, "o", l_Fireball.Set(object_h(&Objects[current_fireball.objnum])));
+		}
+
+		count++;
+
+	}
+
+	return ade_set_error(L, "o", l_Fireball.Set(object_h()));
+}
+ADE_FUNC(__len, l_Mission_Fireballs, NULL, "Number of fireball objects in mission. Note that this is only accurate for one frame.", "number", "Number of fireball objects in mission")
+{
+	int count = fireball_get_count();
+	return ade_set_args(L, "i", count);
+}
+
 ADE_FUNC(addMessage, l_Mission, "string name, string text, [persona persona]", "Adds a message", "message", "The new message or invalid handle on error")
 {
 	const char* name = nullptr;
@@ -828,7 +883,7 @@ ADE_FUNC(sendPlainMessage,
 ADE_FUNC(createShip,
 	l_Mission,
 	"[string Name, shipclass Class /* First ship class by default */, orientation Orientation=null, vector Position /* "
-	"null vector by default */]",
+	"null vector by default */, team Team]",
 	"Creates a ship and returns a handle to it using the specified name, class, world orientation, and world position",
 	"ship",
 	"Ship handle, or invalid ship handle if ship couldn't be created")
@@ -837,7 +892,8 @@ ADE_FUNC(createShip,
 	int sclass       = -1;
 	matrix_h* orient = nullptr;
 	vec3d pos        = vmd_zero_vector;
-	ade_get_args(L, "|sooo", &name, l_Shipclass.Get(&sclass), l_Matrix.GetPtr(&orient), l_Vector.Get(&pos));
+	int team         = -1;
+	ade_get_args(L, "|soooo", &name, l_Shipclass.Get(&sclass), l_Matrix.GetPtr(&orient), l_Vector.Get(&pos), l_Team.Get(&team));
 
 	matrix *real_orient = &vmd_identity_matrix;
 	if(orient != NULL)
@@ -852,19 +908,36 @@ ADE_FUNC(createShip,
 	int obj_idx = ship_create(real_orient, &pos, sclass, name);
 
 	if(obj_idx >= 0) {
-		model_page_in_textures(Ship_info[sclass].model_num, sclass);
+		auto shipp = &Ships[Objects[obj_idx].instance];
+
+		if (team >= 0) {
+			shipp->team = team;
+		}
+
+		ship_info* sip = &Ship_info[sclass];
+
+		model_page_in_textures(sip->model_num, sclass);
 
 		ship_set_warp_effects(&Objects[obj_idx]);
 
-		if (Ship_info[sclass].flags[Ship::Info_Flags::Intrinsic_no_shields]) {
+		// if this name has a hash, create a default display name
+		if (get_pointer_to_first_hash_symbol(shipp->ship_name)) {
+			shipp->display_name = shipp->ship_name;
+			end_string_at_first_hash_symbol(shipp->display_name);
+			shipp->flags.set(Ship::Ship_Flags::Has_display_name);
+		}
+
+		if (sip->flags[Ship::Info_Flags::Intrinsic_no_shields]) {
 			Objects[obj_idx].flags.set(Object::Object_Flags::No_shields);
 		}
 
-		mission_log_add_entry(LOG_SHIP_ARRIVED, Ships[Objects[obj_idx].instance].ship_name, nullptr);
+		mission_log_add_entry(LOG_SHIP_ARRIVED, shipp->ship_name, nullptr);
 
-		Script_system.SetHookObjects(2, "Ship", &Objects[obj_idx], "Parent", NULL);
-		Script_system.RunCondition(CHA_ONSHIPARRIVE, &Objects[obj_idx]);
-		Script_system.RemHookVars(2, "Ship", "Parent");
+		if (Script_system.IsActiveAction(CHA_ONSHIPARRIVE)) {
+			Script_system.SetHookObjects(2, "Ship", &Objects[obj_idx], "Parent", NULL);
+			Script_system.RunCondition(CHA_ONSHIPARRIVE, &Objects[obj_idx]);
+			Script_system.RemHookVars({"Ship", "Parent"});
+		}
 
 		return ade_set_args(L, "o", l_Ship.Set(object_h(&Objects[obj_idx])));
 	} else
@@ -930,6 +1003,104 @@ ADE_FUNC(createWeapon,
 		return ade_set_error(L, "o", l_Weapon.Set(object_h()));
 }
 
+ADE_FUNC(createWarpeffect,
+	l_Mission,
+	"vector WorldPosition, vector PointTo, number radius, number duration /* Must be >= 4*/, fireballclass Class, "
+	"soundentry WarpOpenSound, soundentry WarpCloseSound, "
+	"[number WarpOpenDuration = -1, number WarpCloseDuration = -1, vector Velocity /* null vector by default*/, "
+	"boolean Use3DModel = false]",
+	"Creates a warp-effect fireball and returns a handle to it.",
+	"fireball",
+	"Fireball handle, or invalid fireball handle if fireball couldn't be created.")
+{
+	vec3d pos = vmd_zero_vector;
+	vec3d point_to = vmd_zero_vector;
+	float radius = 0.0f;
+	float duration = 4.0f;
+	int fireballclass = -1;
+	sound_entry_h *opensound = NULL;
+	sound_entry_h *closesound = NULL;
+
+	float opentime = -1.0f;
+	float closetime = -1.0f;
+	vec3d velocity = vmd_zero_vector;
+	bool warp3d = false;
+
+	if (!ade_get_args(L, "ooffooo|ffob", l_Vector.Get(&pos), l_Vector.Get(&point_to), &radius, &duration, l_Fireballclass.Get(&fireballclass), l_SoundEntry.GetPtr(&opensound), l_SoundEntry.GetPtr(&closesound), &opentime, &closetime, l_Vector.Get(&velocity), &warp3d)) {
+		return ade_set_error(L, "o", l_Fireball.Set(object_h()));
+	}
+
+	int flags = warp3d ? FBF_WARP_VIA_SEXP | FBF_WARP_3D : FBF_WARP_VIA_SEXP;
+
+	if (duration < 4.0f) {
+		duration = 4.0f;
+		LuaError(L, "The duration of the warp effect must be at least 4 seconds");
+	}
+
+	// sanity check, if these were specified
+	if (duration < opentime + closetime)
+	{
+		//Both warp opening and warp closing must occur within the duration of the warp effect.
+		opentime = closetime = duration / 2.0f;
+		LuaError(L, "The duration of the warp effect must be higher than the sum of the opening and close durations");
+	}
+
+	// calculate orientation matrix ----------------
+
+	vec3d v_orient;
+	matrix m_orient;
+
+	vm_vec_sub(&v_orient, &point_to, &pos);
+
+	if (IS_VEC_NULL_SQ_SAFE(&v_orient))
+	{
+		//error in warp-effect: warp can't point to itself
+		LuaError(L, "The warp effect cannot be pointing at itself");
+		return ade_set_error(L, "o", l_Fireball.Set(object_h()));
+	}
+
+	vm_vector_2_matrix(&m_orient, &v_orient, nullptr, nullptr);
+
+	int obj_idx = fireball_create(&pos, fireballclass, FIREBALL_WARP_EFFECT, -1, radius, false, &velocity, duration, -1, &m_orient, 0, flags, opensound->idx, closesound->idx, opentime, closetime);
+
+	if (obj_idx > -1)
+		return ade_set_args(L, "o", l_Fireball.Set(object_h(&Objects[obj_idx])));
+	else
+		return ade_set_error(L, "o", l_Fireball.Set(object_h()));
+}
+
+ADE_FUNC(createExplosion,
+	l_Mission,
+	"vector WorldPosition, number radius, fireballclass Class, "
+	"[boolean LargeExplosion = false, vector Velocity /* null vector by default*/, object parent = nil]",
+	"Creates an explosion-effect fireball and returns a handle to it.",
+	"fireball",
+	"Fireball handle, or invalid fireball handle if fireball couldn't be created.")
+{
+	vec3d pos = vmd_zero_vector;
+	float radius = 0.0f;
+	int fireballclass = -1;
+	bool big = false;
+
+	vec3d velocity = vmd_zero_vector;
+	object_h* parent = NULL;
+
+	if (!ade_get_args(L, "ofo|boo", l_Vector.Get(&pos), &radius, l_Fireballclass.Get(&fireballclass), &big, l_Vector.Get(&velocity), l_Object.GetPtr(&parent))) {
+		return ade_set_error(L, "o", l_Fireball.Set(object_h()));
+	}
+
+	int type = big ? FIREBALL_LARGE_EXPLOSION : FIREBALL_MEDIUM_EXPLOSION;
+
+	int parent_idx = (parent && parent->IsValid()) ? OBJ_INDEX(parent->objp) : -1;
+
+	int obj_idx = fireball_create(&pos, fireballclass, type, parent_idx, radius, false, &velocity);
+
+	if (obj_idx > -1)
+		return ade_set_args(L, "o", l_Fireball.Set(object_h(&Objects[obj_idx])));
+	else
+		return ade_set_error(L, "o", l_Fireball.Set(object_h()));
+}
+
 ADE_FUNC(getMissionFilename, l_Mission, NULL, "Gets mission filename", "string", "Mission filename, or empty string if game is not in a mission")
 {
 	char temp[MAX_FILENAME_LEN];
@@ -966,7 +1137,7 @@ ADE_FUNC(startMission,
 
 		if (e->index == LE_MISSION_REPEAT) {
 			if (Num_recent_missions > 0)  {
-				strncpy( s, Recent_missions[0], MAX_FILENAME_LEN );
+				strcpy_s( s, Recent_missions[0] );
 			} else {
 				return ade_set_args(L, "b", false);
 			}
@@ -1112,6 +1283,16 @@ ADE_FUNC(isInCampaign, l_Mission, NULL, "Get whether or not the current mission 
 	return ade_set_args(L, "b", b);
 }
 
+ADE_FUNC(isNebula, l_Mission, nullptr, "Get whether or not the current mission being played is set in a nebula", "boolean", "true if in nebula, false if not")
+{
+	return ade_set_args(L, "b", The_mission.flags[Mission::Mission_Flags::Fullneb]);
+}
+
+ADE_FUNC(isSubspace, l_Mission, nullptr, "Get whether or not the current mission being played is set in subspace", "boolean", "true if in subspace, false if not")
+{
+	return ade_set_args(L, "b", The_mission.flags[Mission::Mission_Flags::Subspace]);
+}
+
 ADE_FUNC(getMissionTitle, l_Mission, NULL, "Get the title of the current mission", "string", "The mission title or an empty string if currently not in mission") {
 	return ade_set_args(L, "s", The_mission.name);
 }
@@ -1254,6 +1435,16 @@ ADE_FUNC(removeBackgroundElement, l_Mission, "background_element el",
 	}
 }
 
+ADE_FUNC(isRedAlertMission,
+	l_Mission,
+	nullptr,
+	"Determines if the current mission is a red alert mission",
+	"boolean",
+	"true if red alert mission, false otherwise.")
+{
+	return ade_set_args(L, "b", red_alert_mission() != 0);
+}
+
 ADE_LIB_DERIV(l_Mission_LuaSEXPs, "LuaSEXPs", NULL, "Lua SEXPs", l_Mission);
 
 ADE_INDEXER(l_Mission_LuaSEXPs, "string Name", "Gets a handle of a Lua SEXP", "LuaSEXP", "Lua SEXP handle or invalid handle on error")
@@ -1312,7 +1503,7 @@ ADE_FUNC(getArrivalList,
 	l_Mission,
 	nullptr,
 	"Get the list of yet to arrive ships for this mission",
-	ade_type_iterator("parse_object"),
+	"iterator<parse_object>",
 	"An iterator across all the yet to arrive ships. Can be used in a for .. in loop")
 {
 	return ade_set_args(L, "u*o", luacpp::LuaFunction::createFromCFunction(L, arrivalListIter),

@@ -20,8 +20,9 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <sys/ioctl.h>
-
-#define WSAGetLastError()  (errno)
+#ifdef SCP_SOLARIS
+#include <sys/filio.h>
+#endif
 #endif
 
 #include <cstring>
@@ -35,16 +36,8 @@
 #include "inetfile/inetgetfile.h"
 #include "inetfile/chttpget.h"
 #include "io/timer.h"
+#include "network/psnet2.h"
 
-
-
-#define NW_AGHBN_CANCEL		1
-#define NW_AGHBN_LOOKUP		2
-#define NW_AGHBN_READ		3
-
-int http_gethostbynameworker(void *parm);
-
-int http_Asyncgethostbyname(unsigned int *ip, int command, const char *hostname);
 
 int HTTPObjThread( void *obj )
 {
@@ -94,13 +87,17 @@ void ChttpGet::GetFile(const char *URL, const char *localfile)
 		m_Aborted = true;
 		return;
 	}
-	m_DataSock = socket(AF_INET, SOCK_STREAM, 0);
+	m_DataSock = socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
 	if(INVALID_SOCKET == m_DataSock)
 	{
 		m_State = HTTP_STATE_SOCKET_ERROR;
 		m_Aborted = true;
 		return;
 	}
+
+	// make sure we are in dual-stack mode (not the default on Windows)
+	int i_opt = 0;
+	setsockopt(m_DataSock, IPPROTO_IPV6, IPV6_V6ONLY, reinterpret_cast<const char *>(&i_opt), sizeof(i_opt));
 
 	unsigned long arg = 1;
 	ioctlsocket( m_DataSock, FIONBIO, &arg );
@@ -304,89 +301,29 @@ void ChttpGet::WorkerThread()
 
 int ChttpGet::ConnectSocket()
 {
-	unsigned int ip;
-	SERVENT *se;
-	SOCKADDR_IN hostaddr;
-	if(m_Aborting){
+	SOCKADDR_STORAGE hostaddr;
+	int rcode;
+
+	if (m_Aborting) {
 		return 0;
 	}
-	
-	ip = inet_addr((const char *)m_szHost);
 
-	int rcode = 0;
-	if(ip==INADDR_NONE)
-	{
-		http_Asyncgethostbyname(&ip,NW_AGHBN_LOOKUP,m_szHost);		
-		do
-		{	
-			if(m_Aborting)
-			{
-				http_Asyncgethostbyname(&ip,NW_AGHBN_CANCEL,m_szHost);
-				return 0;
-			}
-			rcode = http_Asyncgethostbyname(&ip,NW_AGHBN_READ,m_szHost);
-
-			os_sleep(1);
-		}while(rcode==0);
-	}
-	
-	if(rcode == -1)
-	{
-		m_State = HTTP_STATE_HOST_NOT_FOUND;
-		return 0;
-	}
-	//m_ControlSock
-	if(m_Aborting)
-		return 0;
-	se = getservbyname("http", NULL);
-	if(m_Aborting)
-		return 0;
-	if(se == NULL)
-	{
-		hostaddr.sin_port = htons(80);
-	}
-	else
-	{
-		hostaddr.sin_port = se->s_port;
-	}
-	hostaddr.sin_family = AF_INET;
-	memcpy(&hostaddr.sin_addr, &ip, 4);
-
-	if(m_ProxyEnabled)
-	{
-		//This is on a proxy, so we need to make sure to connect to the proxy machine
-		ip = inet_addr((const char *)m_ProxyIP);
-				
-		if(ip==INADDR_NONE)
-		{
-			http_Asyncgethostbyname(&ip,NW_AGHBN_LOOKUP,m_ProxyIP);
-			rcode = 0;
-			do
-			{	
-				if(m_Aborting)
-				{
-					http_Asyncgethostbyname(&ip,NW_AGHBN_CANCEL,m_ProxyIP);
-					return 0;
-				}
-				rcode = http_Asyncgethostbyname(&ip,NW_AGHBN_READ,m_ProxyIP);
-
-				os_sleep(1);
-			}while(rcode==0);
-			
-			
-			if(rcode == -1)
-			{
-				m_State = HTTP_STATE_HOST_NOT_FOUND;
-				return 0;
-			}
-
+	if (m_ProxyEnabled) {
+		if (m_ProxyPort) {
+			rcode = psnet_get_addr(m_ProxyIP, m_ProxyPort, &hostaddr);
+		} else {
+			rcode = psnet_get_addr(m_ProxyIP, "http", &hostaddr);
 		}
-		//Use either the proxy port or 80 if none specified
-		hostaddr.sin_port = htons((ushort)(m_ProxyPort ? m_ProxyPort : 80));
-		//Copy the proxy address...
-		memcpy(&hostaddr.sin_addr,&ip,4);
-
+	} else {
+		rcode = psnet_get_addr(m_szHost, "http", &hostaddr);
 	}
+
+	if ( !rcode ) {
+		m_State = HTTP_STATE_HOST_NOT_FOUND;
+
+		return 0;
+	}
+
 	//Now we will connect to the host					
 	fd_set	wfds;
 
@@ -394,7 +331,7 @@ int ChttpGet::ConnectSocket()
 	timeout.tv_sec = 0;
 	timeout.tv_usec = 0;
 
-	int serr = connect(m_DataSock, (SOCKADDR *)&hostaddr, sizeof(SOCKADDR));
+	int serr = connect(m_DataSock, reinterpret_cast<LPSOCKADDR>(&hostaddr), sizeof(hostaddr));
 	int cerr = WSAGetLastError();
 	if (serr) {
 		// fail after 20 seconds
@@ -423,7 +360,7 @@ int ChttpGet::ConnectSocket()
 			if (m_Aborting)
 				return 0;
 
-			serr = connect(m_DataSock, (SOCKADDR *)&hostaddr, sizeof(SOCKADDR));
+			serr = connect(m_DataSock, reinterpret_cast<LPSOCKADDR>(&hostaddr), sizeof(hostaddr));
 
 			if (serr == 0)
 				break;
@@ -590,90 +527,4 @@ uint ChttpGet::ReadDataChannel()
 		m_State = HTTP_STATE_FILE_RECEIVED;
 		return 1;
 	}
-}	
-
-
-typedef struct _async_dns_lookup
-{
-	unsigned int ip;	//resolved host. Write only to worker thread.
-	const char * host;//host name to resolve. read only to worker thread
-	bool done;	//write only to the worker thread. Signals that the operation is complete
-	bool error; //write only to worker thread. Thread sets this if the name doesn't resolve
-	bool abort;	//read only to worker thread. If this is set, don't fill in the struct.
-}async_dns_lookup;
-
-async_dns_lookup httpaslu;
-async_dns_lookup *http_lastaslu = NULL;
-
-int http_gethostbynameworker(void *parm);
-
-int http_Asyncgethostbyname(unsigned int *ip, int command, const char *hostname)
-{
-	
-	if(command==NW_AGHBN_LOOKUP)
-	{
-		if(http_lastaslu)
-			http_lastaslu->abort = true;
-
-		async_dns_lookup *newaslu;
-		newaslu = (async_dns_lookup *)vm_malloc(sizeof(async_dns_lookup));
-		newaslu->ip = 0;
-		newaslu->host = hostname;
-		newaslu->done = false;
-		newaslu->error = false;
-		newaslu->abort = false;
-		http_lastaslu = newaslu;
-		httpaslu.done = false;
-
-		SDL_CreateThread(http_gethostbynameworker, "GetHostByNameWorker", newaslu);
-
-		return 1;
-	}
-	else if(command==NW_AGHBN_CANCEL)
-	{
-		if(http_lastaslu)
-			http_lastaslu->abort = true;
-		http_lastaslu = NULL;
-	}
-	else if(command==NW_AGHBN_READ)
-	{
-		if(!http_lastaslu)
-			return -1;
-		if(httpaslu.done)
-		{
-			http_lastaslu = NULL;
-			*ip = httpaslu.ip;
-			return 1;
-		}
-		else if(httpaslu.error)
-		{
-			vm_free(http_lastaslu);
-			http_lastaslu = NULL;
-			return -1;
-		}
-		else return 0;
-	}
-	return -2;
-
-}
-
-// This is the worker thread which does the lookup.
-int http_gethostbynameworker(void *parm)
-{
-	auto *lookup = reinterpret_cast<async_dns_lookup *>(parm);
-	struct hostent *he = gethostbyname(lookup->host);
-	if(he==nullptr)
-	{
-		lookup->error = true;
-		return 1;
-	}
-	else if(!lookup->abort)
-	{
-		memcpy(&lookup->ip,he->h_addr_list[0],sizeof(unsigned int));
-		lookup->done = true;
-		memcpy(&httpaslu,lookup,sizeof(async_dns_lookup));
-	}
-	vm_free(lookup);
-
-	return 0;
 }

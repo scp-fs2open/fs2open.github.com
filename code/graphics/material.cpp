@@ -123,10 +123,14 @@ void material_set_distortion(distortion_material *mat_info, int texture, bool th
 	mat_info->set_cull_mode(false);
 	mat_info->set_color(1.0f, 1.0f, 1.0f, 1.0f);
 }
-void material_set_rocket_interface(interface_material* mat_info, int texture, const vec2d& offset)
+void material_set_rocket_interface(interface_material* mat_info,
+	int texture,
+	const vec2d& offset,
+	float horizontal_swipe)
 {
 	mat_info->set_texture_map(TM_BASE_TYPE, texture);
 	mat_info->set_offset(offset);
+	mat_info->set_horizontal_swipe(horizontal_swipe);
 
 	mat_info->set_cull_mode(false);
 	mat_info->set_color(1.0f, 1.0f, 1.0f, 1.0f);
@@ -913,4 +917,6 @@ interface_material::interface_material()
 	offset.y = 0;
 }
 void interface_material::set_offset(const vec2d& new_offset) { this->offset = new_offset; }
-vec2d interface_material::get_offset() { return offset; }
+vec2d interface_material::get_offset() const { return offset; }
+void interface_material::set_horizontal_swipe(float hor_offset) { this->horizontalSwipeOff = hor_offset; }
+float interface_material::get_horizontal_swipe() const { return this->horizontalSwipeOff; }

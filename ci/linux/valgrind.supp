@@ -1,0 +1,163 @@
+{
+   liblsan Invalid read
+   Memcheck:Addr8
+   obj:/usr/lib64/liblsan.so.0.0.0
+   obj:/usr/lib64/liblsan.so.0.0.0
+   obj:/usr/lib64/liblsan.so.0.0.0
+   obj:*
+   obj:*
+   obj:*
+}
+{
+    Travis memleak
+    Memcheck:Leak
+    match-leak-kinds: definite
+    fun:malloc
+    fun:_dl_signal_error
+    fun:_dl_open
+    fun:dlopen_doit
+    fun:_dl_catch_error
+    fun:_dlerror_run
+    fun:dlopen@@GLIBC_2.2.5
+    obj:/usr/lib/x86_64-linux-gnu/libmirclient.so.7
+    fun:call_init.part.0
+    fun:call_init
+    fun:_dl_init
+    fun:dl_open_worker
+    fun:_dl_catch_error
+}
+{
+   CLang Lua unitialized value error
+   Memcheck:Cond
+   ...
+   fun:luaH_get
+   fun:lua_rawget
+   fun:_ZN12_GLOBAL__N_117ade_index_handlerEP9lua_State
+}
+{
+   False-positive uninitialized variable warning
+   Memcheck:Cond
+   fun:_Z23cf_check_location_flagsjj
+   fun:_Z29cf_create_default_path_stringPcjiPKcbj
+   ...
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:_Znwm
+   obj:*
+   obj:*
+   obj:*
+   obj:/usr/lib/x86_64-linux-gnu/libSDL2-2.0.so.0.4.0
+   obj:/usr/lib/x86_64-linux-gnu/libSDL2-2.0.so.0.4.0
+   obj:/usr/lib/x86_64-linux-gnu/libSDL2-2.0.so.0.4.0
+   fun:_Z7gr_initOSt10unique_ptrIN2os18GraphicsOperationsESt14default_deleteIS1_EEiiii
+   fun:_ZN4test13FSTestFixture5SetUpEv
+   fun:_ZN7testing8internal38HandleSehExceptionsInMethodIfSupportedINS_4TestEvEET0_PT_MS4_FS3_vEPKc
+   fun:_ZN7testing8internal35HandleExceptionsInMethodIfSupportedINS_4TestEvEET0_PT_MS4_FS3_vEPKc
+   fun:_ZN7testing4Test3RunEv
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:_Znwm
+   obj:*
+   obj:*
+   obj:*
+   obj:/usr/lib/x86_64-linux-gnu/libSDL2-2.0.so.0.4.0
+   obj:/usr/lib/x86_64-linux-gnu/libSDL2-2.0.so.0.4.0
+   obj:/usr/lib/x86_64-linux-gnu/libSDL2-2.0.so.0.4.0
+   fun:_Z7gr_initOSt10unique_ptrIN2os18GraphicsOperationsESt14default_deleteIS1_EEiiii
+   fun:_ZN4test13FSTestFixture5SetUpEv
+   fun:_ZN8FontTest5SetUpEv
+   fun:_ZN7testing8internal38HandleSehExceptionsInMethodIfSupportedINS_4TestEvEET0_PT_MS4_FS3_vEPKc
+   fun:_ZN7testing8internal35HandleExceptionsInMethodIfSupportedINS_4TestEvEET0_PT_MS4_FS3_vEPKc
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:_Znwm
+   obj:*
+   obj:*
+   obj:*
+   obj:/usr/lib/x86_64-linux-gnu/libSDL2-2.0.so.0.4.0
+   obj:/usr/lib/x86_64-linux-gnu/libSDL2-2.0.so.0.4.0
+   obj:/usr/lib/x86_64-linux-gnu/libSDL2-2.0.so.0.4.0
+   fun:_Z7gr_initONSt3__110unique_ptrIN2os18GraphicsOperationsENS_14default_deleteIS2_EEEEiiii
+   fun:_ZN4test13FSTestFixture5SetUpEv
+   fun:_ZN8FontTest5SetUpEv
+   fun:_ZN7testing8internal38HandleSehExceptionsInMethodIfSupportedINS_4TestEvEET0_PT_MS4_FS3_vEPKc
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:_Znwm
+   obj:*
+   obj:*
+   obj:*
+   obj:/usr/lib/x86_64-linux-gnu/libSDL2-2.0.so.0.4.0
+   obj:/usr/lib/x86_64-linux-gnu/libSDL2-2.0.so.0.4.0
+   obj:/usr/lib/x86_64-linux-gnu/libSDL2-2.0.so.0.4.0
+   fun:_Z7gr_initONSt3__110unique_ptrIN2os18GraphicsOperationsENS_14default_deleteIS2_EEEEiiii
+   fun:_ZN4test13FSTestFixture5SetUpEv
+   fun:_ZN8FontTest5SetUpEv
+   fun:_ZN7testing8internal38HandleSehExceptionsInMethodIfSupportedINS_4TestEvEET0_PT_MS4_FS3_vEPKc
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:_Znwm
+   obj:*
+   obj:*
+   obj:*
+   obj:/usr/lib/x86_64-linux-gnu/libSDL2-2.0.so.0.4.0
+   obj:/usr/lib/x86_64-linux-gnu/libSDL2-2.0.so.0.4.0
+   obj:/usr/lib/x86_64-linux-gnu/libSDL2-2.0.so.0.4.0
+   fun:_Z7gr_initONSt3__110unique_ptrIN2os18GraphicsOperationsENS_14default_deleteIS2_EEEEiiii
+   fun:_ZN4test13FSTestFixture5SetUpEv
+   fun:_ZN7testing8internal38HandleSehExceptionsInMethodIfSupportedINS_4TestEvEET0_PT_MS4_FS3_vEPKc
+   fun:_ZN7testing8internal35HandleExceptionsInMethodIfSupportedINS_4TestEvEET0_PT_MS4_FS3_vEPKc
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:_dl_signal_error
+   fun:_dl_open
+   fun:dlopen_doit
+   fun:_dl_catch_error
+   fun:_dlerror_run
+   fun:dlopen@@GLIBC_2.2.5
+   obj:*
+   obj:*
+   fun:call_init.part.0
+   fun:call_init
+   fun:_dl_init
+   fun:dl_open_worker
+}
+{
+   dlopen leak
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:_dl_exception_create
+   fun:_dl_signal_error
+   fun:_dl_map_object
+   fun:dl_open_worker
+   fun:_dl_catch_exception
+   fun:_dl_open
+   fun:dlopen_doit
+   fun:_dl_catch_exception
+   fun:_dl_catch_error
+   fun:_dlerror_run
+   fun:dlopen@@GLIBC_2.2.5
+}

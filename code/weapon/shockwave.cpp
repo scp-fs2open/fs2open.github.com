@@ -13,6 +13,7 @@
 #include "globalincs/linklist.h"
 #include "io/timer.h"
 #include "model/modelrender.h"
+#include "nebula/neb.h"
 #include "object/object.h"
 #include "options/Option.h"
 #include "render/3d.h"
@@ -128,14 +129,20 @@ int shockwave_create(int parent_objnum, vec3d* pos, shockwave_create_info* sci, 
 	sw->blast = sci->blast;
 	sw->radius = 1.0f;
 	sw->pos = *pos;
-	sw->num_objs_hit = 0;
+	sw->obj_sig_hitlist.clear();
 	sw->shockwave_info_index = info_index;		// only one type for now... type could be passed is as a parameter
 	sw->current_bitmap = -1;
 
 	sw->time_elapsed=0.0f;
 	sw->delay_stamp = delay;
 
-	sw->rot_angles = sci->rot_angles;
+	if (!sci->rot_defined) {
+		sw->rot_angles.p = frand_range(0.0f, PI2);
+		sw->rot_angles.b = frand_range(0.0f, PI2);
+		sw->rot_angles.h = frand_range(0.0f, PI2);
+	} else 
+		sw->rot_angles = sci->rot_angles; // should just be 0,0,0
+
 	sw->damage_type_idx = sci->damage_type_idx;
 
 	sw->total_time = sw->outer_radius / sw->speed;
@@ -150,7 +157,7 @@ int shockwave_create(int parent_objnum, vec3d* pos, shockwave_create_info* sci, 
 	orient = vmd_identity_matrix;
 	vm_angles_2_matrix(&orient, &sw->rot_angles);
     flagset<Object::Object_Flags> tmp_flags;
-	objnum = obj_create( OBJ_SHOCKWAVE, real_parent, i, &orient, &sw->pos, sw->outer_radius, tmp_flags + Object::Object_Flags::Renders);
+	objnum = obj_create( OBJ_SHOCKWAVE, real_parent, i, &orient, &sw->pos, sw->outer_radius, tmp_flags + Object::Object_Flags::Renders, false );
 
 	if ( objnum == -1 ){
 		Int3();
@@ -246,7 +253,6 @@ void shockwave_move(object *shockwave_objp, float frametime)
 	shockwave	*sw;
 	object		*objp;
 	float			blast,damage;
-	int			i;
 
 	Assertion(shockwave_objp->type == OBJ_SHOCKWAVE, "shockwave_move() called on an object of type %d instead of OBJ_SHOCKWAVE (%d); get a coder!\n", shockwave_objp->type, OBJ_SHOCKWAVE);
 	Assertion(shockwave_objp->instance  >= 0 && shockwave_objp->instance < MAX_SHOCKWAVES, "shockwave_move() called on an object with an instance of %d (should be 0-%d); get a coder!\n", shockwave_objp->instance, MAX_SHOCKWAVES - 1);
@@ -285,7 +291,7 @@ void shockwave_move(object *shockwave_objp, float frametime)
 			if (wip->weapon_hitpoints <= 0)
 				continue;
 
-			if (!(wip->wi_flags[Weapon::Info_Flags::Takes_shockwave_damage] || (sw->weapon_info_index >= 0 && Weapon_info[sw->weapon_info_index].wi_flags[Weapon::Info_Flags::Ciws])))
+			if (!Shockwaves_always_damage_bombs && !(wip->wi_flags[Weapon::Info_Flags::Takes_shockwave_damage] || (sw->weapon_info_index >= 0 && Weapon_info[sw->weapon_info_index].wi_flags[Weapon::Info_Flags::Ciws])))
 				continue;
 		}
 
@@ -297,14 +303,17 @@ void shockwave_move(object *shockwave_objp, float frametime)
 			}
 		}
 
-		// only apply damage to a ship once from a shockwave
-		for ( i = 0; i < sw->num_objs_hit; i++ ) {
-			if ( objp->signature == sw->obj_sig_hitlist[i] ){
+		bool found_in_list = false;
+
+		// only apply damage to an object once from a shockwave
+		for (auto & comparison : sw->obj_sig_hitlist) {
+			if ( (objp->signature == comparison.first) && (objp->type == comparison.second) ){
+				found_in_list = true;
 				break;
 			}
 		}
 
-		if ( i < sw->num_objs_hit ){
+		if (found_in_list) {
 			continue;
 		}
 
@@ -312,22 +321,21 @@ void shockwave_move(object *shockwave_objp, float frametime)
 			continue;
 		}
 
-		// okay, we have damage applied, record the object signature so we don't repeatedly apply damage
-		Assert(sw->num_objs_hit < SW_MAX_OBJS_HIT);
-		if ( sw->num_objs_hit >= SW_MAX_OBJS_HIT) {
-			sw->num_objs_hit--;
-		}
-
 		weapon_info* wip = NULL;
+		
+		// okay, we have damage applied, record the object signature so we don't repeatedly apply damage 
+		// but only add non-ships to the list if the Game_settings flag is set
+		if (objp->type == OBJ_SHIP || Shockwaves_damage_all_obj_types_once) {
+			sw->obj_sig_hitlist.emplace_back(objp->signature, objp->type);
+		}
 
 		switch(objp->type) {
 		case OBJ_SHIP:
-			sw->obj_sig_hitlist[sw->num_objs_hit++] = objp->signature;
 			// If we're doing an AoE Electronics shockwave, do the electronics stuff. -MageKing17
 			if ( (sw->weapon_info_index >= 0) && (Weapon_info[sw->weapon_info_index].wi_flags[Weapon::Info_Flags::Aoe_Electronics]) && !(objp->flags[Object::Object_Flags::Invulnerable]) ) {
 				weapon_do_electronics_effect(objp, &sw->pos, sw->weapon_info_index);
 			}
-			ship_apply_global_damage(objp, shockwave_objp, &sw->pos, damage );
+			ship_apply_global_damage(objp, shockwave_objp, &sw->pos, damage, sw->damage_type_idx );
 			weapon_area_apply_blast(NULL, objp, &sw->pos, blast, 1);
 			break;
 		case OBJ_ASTEROID:
@@ -391,6 +399,11 @@ void shockwave_render(object *objp, model_draw_list *scene)
 	if ( (sw->current_bitmap < 0) && (sw->model_id < 0) )
 		return;
 
+
+	float alpha = 1.0f;
+	if (The_mission.flags[Mission::Mission_Flags::Fullneb] && Neb_affects_weapons)
+		alpha *= neb2_get_fog_visibility(&objp->pos, NEB_FOG_VISIBILITY_MULT_SHOCKWAVE);
+
 	if (sw->model_id > -1) {
 		vec3d scale;
 		scale.xyz.x = scale.xyz.y = scale.xyz.z = sw->radius / 50.0f;
@@ -418,10 +431,10 @@ void shockwave_render(object *objp, model_draw_list *scene)
 
 		if ( Gr_framebuffer_effects[FramebufferEffects::Shockwaves] ) {
 			float intensity = ((sw->time_elapsed / sw->total_time) > 0.9f) ? (1.0f - (sw->time_elapsed / sw->total_time)) * 10.0f : 1.0f;
-			batching_add_distortion_bitmap_rotated(sw->current_bitmap, &p, fl_radians(sw->rot_angles.p), sw->radius, intensity);
+			batching_add_distortion_bitmap_rotated(sw->current_bitmap, &p, sw->rot_angles.p, sw->radius, intensity);
 		}
 
-		batching_add_volume_bitmap_rotated(sw->current_bitmap, &p, fl_radians(sw->rot_angles.p), sw->radius);
+		batching_add_volume_bitmap_rotated(sw->current_bitmap, &p, sw->rot_angles.p, sw->radius, alpha);
 	}
 }
 
@@ -706,7 +719,9 @@ void shockwave_create_info_init(shockwave_create_info *sci)
 	sci->inner_rad = sci->outer_rad = sci->damage = sci->blast = sci->speed = 0.0f;
 
 	sci->rot_angles.p = sci->rot_angles.b = sci->rot_angles.h = 0.0f;
+	sci->rot_defined = false;
 	sci->damage_type_idx = sci->damage_type_idx_sav = -1;
+	sci->damage_overidden = false;
 }
 
 /**

@@ -13,7 +13,6 @@ namespace Object {
 		Protected,				// Don't kill this object, probably mission-critical.
 		Player_ship,			// this object under control of some player -- don't do ai stuff on it!!!
 		No_shields,				// object has no shield generator system (i.e. no shields)
-		Just_updated,			// for multiplayer -- indicates that we received object update this frame
 		Could_be_player,		// for multiplayer -- indicates that it is selectable ingame joiners as their ship
 		Was_rendered,			// Set if this object was rendered this frame.  Only gets set if OF_RENDERS set.  Gets cleared or set in obj_render_all().
 		Not_in_coll,			// object has not been added to collision list
@@ -28,6 +27,7 @@ namespace Object {
 		Marked,					// Object is marked (Fred).  Can be reused in FreeSpace for anything that won't be used by Fred.
 		Temp_marked,			// Temporarily marked (Fred).
 		Hidden,					// Object is hidden (not shown) and can't be manipulated
+		Collides_with_parent,	// Asteroth - Only used for weapons with 'Can_damage_shooter'
 
 		NUM_VALUES
 	};

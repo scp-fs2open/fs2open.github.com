@@ -231,6 +231,11 @@ ADE_VIRTVAR(HomingPosition, l_Weapon, "vector", "Position that weapon will home 
 		{
 			wp->homing_pos = vmd_zero_vector;
 		}
+
+		// need to update the position for multiplayer.
+		if (Game_mode & GM_MULTIPLAYER) {
+			wp->weapon_flags.set(Weapon::Weapon_Flags::Multi_homing_update_needed);
+		}
 	}
 
 	return ade_set_args(L, "o", l_Vector.Set(wp->homing_pos));
@@ -268,6 +273,11 @@ ADE_VIRTVAR(HomingSubsystem, l_Weapon, "subsystem", "Subsystem that weapon will 
 			wp->homing_object = &obj_used_list;
 			wp->homing_pos = vmd_zero_vector;
 			wp->homing_subsys = NULL;
+		}
+
+		// need to update the position for multiplayer.
+		if (Game_mode & GM_MULTIPLAYER) {
+			wp->weapon_flags.set(Weapon::Weapon_Flags::Multi_homing_update_needed);
 		}
 	}
 
@@ -351,6 +361,20 @@ ADE_FUNC(getCollisionInformation, l_Weapon, nullptr, "Returns the collision info
 		return ade_set_args(L, "o", l_ColInfo.Set(mc_info_h()));
 }
 
+ADE_FUNC(vanish, l_Weapon, nullptr, "Vanishes this weapon from the mission.", "boolean", "True if the deletion was successful, false otherwise.")
+{
+
+	object_h* oh = nullptr;
+	if (!ade_get_args(L, "o", l_Weapon.GetPtr(&oh)))
+		return ade_set_error(L, "b", false);
+
+	if (!oh->IsValid())
+		return ade_set_error(L, "b", false);
+
+	oh->objp->flags.set(Object::Object_Flags::Should_be_dead);
+
+	return ade_set_args(L, "b", true);
+}
 
 }
 }

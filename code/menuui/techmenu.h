@@ -13,13 +13,11 @@
 #define _TECHMENU_H
 
 #include "globalincs/globals.h"
-
-#define MAX_INTEL_ENTRIES		75
-#define TECH_INTEL_DESC_LEN		5120
+#include "globalincs/pstypes.h"
 
 typedef struct {
 	char name[NAME_LENGTH];
-	char desc[TECH_INTEL_DESC_LEN];
+	SCP_string desc;
 	char anim_filename[NAME_LENGTH];
 	int  flags;
 } intel_data;
@@ -31,18 +29,20 @@ typedef struct {
 
 extern int Techroom_overlay_id;
 
-extern intel_data Intel_info[MAX_INTEL_ENTRIES];
-extern int Intel_info_size;
+extern SCP_vector<intel_data> Intel_info;
 
+inline int intel_info_size()
+{
+	return static_cast<int>(Intel_info.size());
+}
 
 // function prototypes
 void techroom_init();
 void techroom_close();
 void techroom_do_frame(float frametime);
-int techroom_on_ships_tab();
 void techroom_intel_init();			// called on startup so campaigns can manipulate tech room visibility
 void techroom_intel_reset(); // for testing
-int intel_info_lookup(char *name);
+int intel_info_lookup(const char *name);
 extern void tech_reset_to_default();
 
 #endif

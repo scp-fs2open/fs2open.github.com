@@ -160,15 +160,16 @@ ParticleEffectHandle parseEffectElement(EffectType forcedType = EffectType::Inva
 bool required_string_if_new(const char* token, bool no_create);
 
 /**
- * @brief Parses an animation
+ * @brief Parses an animation or list of animations.
  *
- * Parses and animation and returns the handle. If critical is @c true then a failure to load the animation will cause
+ * Parses an animation or list of animations and returns the handle(s). If critical is @c true then a failure to load the animation will cause
  * an error. Otherwise it will be cause a warning.
  *
  * @param critical @c true if a failure is critical
- * @return The animation handle
+ * @return The vector of animation handles
  */
-int parseAnimation(bool critical = true);
+
+SCP_vector<int> parseAnimationList(bool critical = true);
 }
 
 namespace util {

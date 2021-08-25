@@ -58,7 +58,8 @@ SingleParticleEffect* SingleParticleEffect::createInstance(int effectID, float m
 	Assertion(minSize >= 0.0f, "Minimum size may not be less than zero, got %f!", minSize);
 
 	auto effectPtr = new SingleParticleEffect("");
-	effectPtr->m_particleProperties.m_bitmap = effectID;
+	effectPtr->m_particleProperties.m_bitmap_list.push_back(effectID);
+	effectPtr->m_particleProperties.m_bitmap_range = ::util::UniformRange<size_t>(0, effectPtr->m_particleProperties.m_bitmap_list.size() - 1);
 	effectPtr->m_particleProperties.m_radius = ::util::UniformFloatRange(minSize, maxSize);
 
 	if (lifetime > 0.0f) {

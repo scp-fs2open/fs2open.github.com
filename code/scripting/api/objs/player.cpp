@@ -3,7 +3,9 @@
 
 #include "player.h"
 
+#include "gamesequence/gamesequence.h"
 #include "menuui/mainhallmenu.h"
+#include "menuui/techmenu.h"
 #include "mission/missioncampaign.h"
 #include "pilotfile/pilotfile.h"
 #include "playerman/player.h"
@@ -15,16 +17,25 @@ namespace scripting {
 namespace api {
 
 player_h::player_h() = default;
+player_h::player_h(player* plr)
+{
+	_plr = plr;
+	_owned = false;
+}
 player_h::player_h(const player& plr)
 {
 	_plr = new player();
 	_plr->assign(&plr);
+	_owned = true;
 }
 bool player_h::isValid() const { return _plr != nullptr; }
 player* player_h::get() { return _plr; }
 player_h::~player_h()
 {
-	delete _plr;
+	if (_owned)
+	{
+		delete _plr;
+	}
 	_plr = nullptr;
 }
 player_h::player_h(player_h&& other) noexcept { *this = std::move(other); }
@@ -137,6 +148,28 @@ ADE_VIRTVAR(WasMultiplayer, l_Player, "boolean value", "Determines if this playe
 	}
 
 	return ade_set_args(L, "b", plr->get()->player_was_multi != 0);
+}
+
+ADE_VIRTVAR(AutoAdvance,
+	l_Player,
+	"boolean value",
+	"Determines if briefing stages should be auto advanced.",
+	"boolean",
+	"true if auto advance is enabled, false otherwise or if the handle is invalid")
+{
+	player_h* plr;
+	bool value = false;
+	if (!ade_get_args(L, "o|b", l_Player.GetPtr(&plr), &value))
+		return ADE_RETURN_FALSE;
+
+	if (!plr->isValid())
+		return ADE_RETURN_FALSE;
+
+	if (ADE_SETTING_VAR) {
+		plr->get()->auto_advance = value ? 1 : 0;
+	}
+
+	return ade_set_args(L, "b", plr->get()->auto_advance != 0);
 }
 
 ADE_FUNC(isValid, l_Player, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
@@ -259,6 +292,41 @@ ADE_FUNC(loadCampaignSavefile, l_Player, "string campaign = \"<current>\"", "Loa
 	if (!loader.load_savefile(plh->get(), savefile)) {
 		return ADE_RETURN_FALSE;
 	}
+
+	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(loadCampaign, l_Player, "string campaign", "Loads the specified campaign file and return to it's mainhall.", "boolean", "true on success, false otherwise")
+{
+	player_h* plh;
+	const char* filename = nullptr;
+	if (!ade_get_args(L, "os", l_Player.GetPtr(&plh), &filename)) {
+		return ADE_RETURN_FALSE;
+	}
+
+	if (!plh->isValid()) {
+		return ADE_RETURN_FALSE;
+	}
+
+	player* pl = plh->get();
+
+	strcpy_s(pl->current_campaign, filename); // track new campaign for player
+
+	// attempt to load the campaign
+	int load_status = mission_campaign_load(filename, pl);
+
+	// see if we successfully loaded this campaign and it's at the beginning
+	if (load_status == 0 && Campaign.prev_mission < 0) {
+		// Goober5000 - reinitialize tech database if needed
+		if ((Campaign.flags & CF_CUSTOM_TECH_DATABASE) || !stricmp(Campaign.filename, "freespace2")) {
+			// reset tech database to what's in the tables
+			tech_reset_to_default();
+		}
+	}
+	// that's all we need to do for now; the campaign loading status will be checked again when we try to load the
+	// campaign in the ready room
+
+	gameseq_post_event(GS_EVENT_MAIN_MENU);
 
 	return ADE_RETURN_TRUE;
 }

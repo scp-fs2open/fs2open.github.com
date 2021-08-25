@@ -123,8 +123,12 @@ ADE_FUNC(getBackgroundFileName, l_DisplayInfo, NULL, "Gets the file name of the 
 	return ade_set_args(L, "s", cdi->bg_filename);
 }
 
-ADE_FUNC(getSize, l_DisplayInfo, nullptr, "Gets the size of this cockpit display", ade_type_info({"number", "number"}),
-         "Width and height of the display or -1, -1 on error")
+ADE_FUNC(getSize,
+	l_DisplayInfo,
+	nullptr,
+	"Gets the size of this cockpit display",
+	"number, number",
+	"Width and height of the display or -1, -1 on error")
 {
 	cockpit_disp_info_h *cdh = NULL;
 
@@ -142,8 +146,12 @@ ADE_FUNC(getSize, l_DisplayInfo, nullptr, "Gets the size of this cockpit display
 	return ade_set_args(L, "ii", cdi->size[0], cdi->size[1]);
 }
 
-ADE_FUNC(getOffset, l_DisplayInfo, nullptr, "Gets the offset of this cockpit display",
-         ade_type_info({"number", "number"}), "x and y offset of the display or -1, -1 on error")
+ADE_FUNC(getOffset,
+	l_DisplayInfo,
+	nullptr,
+	"Gets the offset of this cockpit display",
+	"number, number",
+	"x and y offset of the display or -1, -1 on error")
 {
 	cockpit_disp_info_h *cdh = NULL;
 
@@ -304,8 +312,12 @@ ADE_FUNC(getForegroundTexture, l_CockpitDisplay, NULL, "Gets the foreground text
 	return ade_set_args(L, "o", l_Texture.Set(texture_h(cd->foreground)));
 }
 
-ADE_FUNC(getSize, l_CockpitDisplay, nullptr, "Gets the size of this cockpit display",
-         ade_type_info({"number", "number"}), "Width and height of the display or -1, -1 on error")
+ADE_FUNC(getSize,
+	l_CockpitDisplay,
+	nullptr,
+	"Gets the size of this cockpit display",
+	"number, number",
+	"Width and height of the display or -1, -1 on error")
 {
 	cockpit_display_h *cdh = NULL;
 
@@ -323,8 +335,12 @@ ADE_FUNC(getSize, l_CockpitDisplay, nullptr, "Gets the size of this cockpit disp
 	return ade_set_args(L, "ii", cd->size[0], cd->size[1]);
 }
 
-ADE_FUNC(getOffset, l_CockpitDisplay, nullptr, "Gets the offset of this cockpit display",
-         ade_type_info({"number", "number"}), "x and y offset of the display or -1, -1 on error")
+ADE_FUNC(getOffset,
+	l_CockpitDisplay,
+	nullptr,
+	"Gets the offset of this cockpit display",
+	"number, number",
+	"x and y offset of the display or -1, -1 on error")
 {
 	cockpit_display_h *cdh = NULL;
 

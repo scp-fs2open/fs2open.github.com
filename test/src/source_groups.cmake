@@ -6,6 +6,13 @@ add_file_folder(""
     test_stubs.cpp
 )
 
+add_file_folder("Actions"
+)
+
+add_file_folder("Actions\\\\Expression"
+	actions/expression/test_ExpressionParser.cpp
+)
+
 add_file_folder("CFile"
     cfile/cfile.cpp
 )
@@ -18,6 +25,10 @@ add_file_folder("Globalincs"
 
 add_file_folder("Graphics"
 	   graphics/test_font.cpp
+)
+
+add_file_folder("Math"
+    math/test_vecmat.cpp
 )
 
 add_file_folder("menuui"
@@ -40,6 +51,7 @@ add_file_folder("Scripting"
     scripting/ade_args.cpp
     scripting/doc_parser.cpp
     scripting/require.cpp
+    scripting/script_state.cpp
     scripting/ScriptingTestFixture.h
     scripting/ScriptingTestFixture.cpp
 )
@@ -49,6 +61,7 @@ add_file_folder("Scripting\\\\API"
     scripting/api/base.cpp
     scripting/api/bitops.cpp
     scripting/api/enums.cpp
+    scripting/api/hookvars.cpp
 )
 
 add_file_folder("Scripting\\\\Lua"

@@ -460,6 +460,7 @@ int Debrief_award_text_num_lines = 0;
 // prototypes, you know you love 'em
 void debrief_add_award_text(const char *str);
 void debrief_award_text_clear();
+void debrief_replace_stage_text(debrief_stage &stage);
 
 
 
@@ -483,7 +484,7 @@ const char *debrief_tooltip_handler(const char *str)
 
 	} else if (!stricmp(str, NOX("@Medal"))) {
 		if (Medal_bitmap >= 0){
-			return Medals[Player->stats.m_medal_earned].get_display_string();
+			return Medals[Player->stats.m_medal_earned].get_display_name();
 		}
 
 	} else if (!stricmp(str, NOX("@Rank"))) {
@@ -493,7 +494,7 @@ const char *debrief_tooltip_handler(const char *str)
 
 	} else if (!stricmp(str, NOX("@Badge"))) {
 		if (Badge_bitmap >= 0){
-			return Medals[Player->stats.m_badge_earned.back()].get_display_string();
+			return Medals[Player->stats.m_badge_earned.back()].get_display_name();
 		}
 	}
 
@@ -698,6 +699,9 @@ void debrief_set_multi_clients( int stage_count, int active_stages[] )
 	// set the pointers to the debriefings for this client
 	for (i = 0; i < stage_count; i++) {
 		Debrief_stages[Num_debrief_stages++] = &Debriefing->stages[active_stages[i]];
+		// in multi, debriefing text replacement must occur client-side
+		// update most recently added stage only, in case replacement has side effects
+		debrief_replace_stage_text(*Debrief_stages[Num_debrief_stages - 1]);
 	}
 
 	Debrief_multi_stages_loaded = 1;
@@ -780,7 +784,9 @@ int debrief_set_stages_and_multi_stuff()
 	}
 
 	for (i=0; i<debriefp->num_stages; i++) {
-		if (eval_sexp(debriefp->stages[i].formula) == 1) {
+		if (eval_sexp(debriefp->stages[i].formula) == SEXP_TRUE) {
+			// replacement in single-player and for host/server in multi
+			debrief_replace_stage_text(debriefp->stages[i]);
 			Debrief_stages[Num_debrief_stages++] = &debriefp->stages[i];
 		}
 	}
@@ -910,16 +916,18 @@ int debrief_find_persona_index()
 // Goober5000
 // V sez: "defaults to number 9 (Petrarch) for non-volition missions
 // this is an ugly, nasty, hateful way of doing this, but it saves us changing the missions at this point"
-void debrief_choose_voice(char *voice_dest, char *voice_base, int persona_index, int default_to_base = 0)
+void debrief_choose_voice(char *voice_dest, size_t buf_size, char *voice_base, int persona_index, int default_to_base = 0)
 {
 	if (persona_index >= 0)
 	{
-		// get voice file
-		sprintf(voice_dest, NOX("%d_%s"), persona_index, voice_base);
+		// get voice file, also check for too long base file names via the return value of snprintf
+		if (snprintf(voice_dest, buf_size, NOX("%d_%s"), persona_index, voice_base) < static_cast<int>(buf_size))
+		{
+			// if it exists, we're done
+			if (cf_exists_full(voice_dest, CF_TYPE_VOICE_DEBRIEFINGS))
+				return;
+		}
 
-		// if it exists, we're done
-		if (cf_exists_full(voice_dest, CF_TYPE_VOICE_DEBRIEFINGS))
-			return;
 	}
 
 	// that didn't work, so use the default
@@ -927,14 +935,16 @@ void debrief_choose_voice(char *voice_dest, char *voice_base, int persona_index,
 	// use the base file; don't prepend anything to it
 	if (default_to_base)
 	{
-		strcpy(voice_dest, voice_base);
+		strncpy(voice_dest, voice_base, buf_size);
 	}
 	// default to Petrarch
 	else
 	{
-		strcpy(voice_dest, "9_");
-		strcpy(voice_dest + 2, voice_base);
+		strncpy(voice_dest, "9_", buf_size);
+		strncat(voice_dest, voice_base, buf_size);
 	}
+	// Ensure null terminator
+	voice_dest[buf_size] = '\0';
 }
 
 void debrief_choose_medal_variant(char *buf, int medal_earned, int zero_based_version_index)
@@ -984,7 +994,7 @@ void debrief_award_init()
 		debrief_choose_medal_variant(buf, Player->stats.m_medal_earned, Player->stats.medal_counts[Player->stats.m_medal_earned] - 1);
 		Medal_bitmap = bm_load(buf);
 
-		debrief_add_award_text(Medals[Player->stats.m_medal_earned].get_display_string());
+		debrief_add_award_text(Medals[Player->stats.m_medal_earned].get_display_name());
 	}
 	
 	// handle promotions
@@ -994,7 +1004,7 @@ void debrief_award_init()
 		Rank_bitmap = bm_load(buf);
 
 		// see if we have a persona
-		int persona_index = debrief_find_persona_index();
+		int persona_index = The_mission.debriefing_persona;
 
 		// use persona-specific promotion text if it exists; otherwise, use default
 		if (Ranks[Promoted].promotion_text.find(persona_index) != Ranks[Promoted].promotion_text.end()) {
@@ -1005,7 +1015,7 @@ void debrief_award_init()
 		Promotion_stage.recommendation_text = "";
 
 		// choose appropriate promotion voice for this mission
-		debrief_choose_voice(Promotion_stage.voice, Ranks[Promoted].promotion_voice_base, persona_index);
+		debrief_choose_voice(Promotion_stage.voice, sizeof(Promotion_stage.voice), Ranks[Promoted].promotion_voice_base, persona_index);
 
 		debrief_add_award_text(Ranks[Promoted].name);
 	}
@@ -1017,7 +1027,7 @@ void debrief_award_init()
 		Badge_bitmap = bm_load(buf);
 
 		// see if we have a persona
-		int persona_index = debrief_find_persona_index();
+		int persona_index = The_mission.debriefing_persona;
 
 		// use persona-specific badge text if it exists; otherwise, use default
 		if (Medals[Player->stats.m_badge_earned.back()].promotion_text.find(persona_index) != Medals[Player->stats.m_badge_earned.back()].promotion_text.end()) {
@@ -1028,9 +1038,9 @@ void debrief_award_init()
 		Badge_stage.recommendation_text = "";
 
 		// choose appropriate badge voice for this mission
-		debrief_choose_voice(Badge_stage.voice, Medals[Player->stats.m_badge_earned.back()].voice_base, persona_index);
+		debrief_choose_voice(Badge_stage.voice, sizeof(Badge_stage.voice), Medals[Player->stats.m_badge_earned.back()].voice_base, persona_index);
 
-		debrief_add_award_text(Medals[Player->stats.m_badge_earned.back()].get_display_string());
+		debrief_add_award_text(Medals[Player->stats.m_badge_earned.back()].get_display_name());
 	}
 
 	if ((Rank_bitmap >= 0) || (Medal_bitmap >= 0) || (Badge_bitmap >= 0)) {
@@ -1044,71 +1054,37 @@ void debrief_award_init()
 // mission a traitor.  The same debriefing always gets played
 void debrief_traitor_init()
 {
-	static int inited = 0;
-
-	if ( !inited ) {
-		debriefing		*debrief;
-		debrief_stage	*stagep;
-		int stage_num;
-		
-		try
-		{
-			read_file_text("traitor.tbl", CF_TYPE_TABLES);
-			reset_parse();
-
-			// simplied form of the debriefing stuff.
-			debrief = &Traitor_debriefing;
-			required_string("#Debriefing_info");
-
-			required_string("$Num stages:");
-			stuff_int(&debrief->num_stages);
-			Assert(debrief->num_stages == 1);
-
-			stage_num = 0;
-			stagep = &debrief->stages[stage_num++];
-			required_string("$Formula:");
-			stagep->formula = get_sexp_main();
-			required_string("$multi text");
-			stuff_string(stagep->text, F_MULTITEXT, NULL);
-			required_string("$Voice:");
-			char traitor_voice_file[MAX_FILENAME_LEN];
-			stuff_string(traitor_voice_file, F_FILESPEC, MAX_FILENAME_LEN);
-
-			// DKA 9/13/99	Only 1 traitor msg for FS2
-			//		if ( Player->main_hall ) {
-			//			strcpy_s(stagep->voice, NOX("3_"));
-			//		} else {
-			//			strcpy_s(stagep->voice, NOX("1_"));
-			//		}
-
-			// Goober5000
-			debrief_choose_voice(stagep->voice, traitor_voice_file, debrief_find_persona_index(), 1);
-
-			required_string("$Recommendation text:");
-			stuff_string(stagep->recommendation_text, F_MULTITEXT, NULL);
-
-			inited = 1;
-		}
-		catch (const parse::ParseException& e)
-		{
-			mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", "traitor.tbl", e.what()));
-			return;
-		}
-	}
-
-	// disable the accept button if in single player and I am a traitor
 	Debrief_accepted = 0;
 	Turned_traitor = Must_replay_mission = 0;
-	if (!(Game_mode & GM_MULTIPLAYER) && (Game_mode & GM_CAMPAIGN_MODE)) {
-		if (Player_ship->team == Iff_traitor){
-			Turned_traitor = 1;
-		}
 
+	if (Player_ship->team == Iff_traitor) {
+		Turned_traitor = 1;
+
+		// if traitor, set up persona-specific traitor debriefing
+		auto stagep = &Traitor_debriefing.stages[0];
+
+		// see if we have a persona
+		int persona_index = The_mission.debriefing_persona;
+
+		// use persona-specific traitor text if it exists; otherwise, use default
+		if (Traitor.debriefing_text.find(persona_index) != Traitor.debriefing_text.end())
+			stagep->text = Traitor.debriefing_text[persona_index];
+		else
+			stagep->text = Traitor.debriefing_text[-1];
+
+		// choose appropriate traitor voice for this mission
+		debrief_choose_voice(stagep->voice, sizeof(stagep->voice), Traitor.traitor_voice_base, persona_index, 1);
+
+		stagep->recommendation_text = Traitor.recommendation_text;
+	}
+
+	if (!(Game_mode & GM_MULTIPLAYER) && (Game_mode & GM_CAMPAIGN_MODE)) {
 		if (Campaign.next_mission == Campaign.current_mission){
 			Must_replay_mission = 1;
 		}
 	}
 
+	// disable the accept button if in single player and I am a traitor
 	if (Turned_traitor || Must_replay_mission) {
 		Buttons[gr_screen.res][ACCEPT_BUTTON].button.hide();
 
@@ -1294,9 +1270,7 @@ void debrief_assemble_optional_mission_popup_text(char *buffer, char *mission_lo
 // what to do when the accept button is hit
 void debrief_accept(int ok_to_post_start_game_event)
 {
-	extern int Weapon_energy_cheat;
 	int go_loop = 0;
-	Weapon_energy_cheat=0;
 
 	if ( (/*Cheats_enabled ||*/ Turned_traitor || Must_replay_mission) && (Game_mode & GM_CAMPAIGN_MODE) ) {
 		const char *str;
@@ -1894,7 +1868,7 @@ static void debrief_init_music()
 
 	Debrief_music_timeout = 0;
 
-	if ( (Game_mode & GM_CAMPAIGN_MODE) && (Campaign.next_mission == Campaign.current_mission) ) {
+	if ( Turned_traitor || ((Game_mode & GM_CAMPAIGN_MODE) && (Campaign.next_mission == Campaign.current_mission)) ) {
 		// you failed the mission, so you get the fail music
 		score = SCORE_DEBRIEF_FAIL;
 	} else if ( mission_goals_met() ) {
@@ -1917,8 +1891,6 @@ static void debrief_init_music()
 
 void debrief_init()
 {
-	int i;
-
 	Assert(!Debrief_inited);
 //	Campaign.loop_enabled = 0;
 	Campaign.loop_mission = CAMPAIGN_LOOP_MISSION_UNINITIALIZED;
@@ -1931,12 +1903,6 @@ void debrief_init()
 		Debriefing = &Debriefings[Net_player->p_info.team];
 	} else {
 		Debriefing = &Debriefings[0];			
-	}
-
-	// Goober5000 - replace any variables with their values
-	for (i = 0; i < Debriefing->num_stages; i++) {
-		sexp_replace_variable_names_with_values(Debriefing->stages[i].text);
-		sexp_replace_variable_names_with_values(Debriefing->stages[i].recommendation_text);
 	}
 
 	// no longer is mission
@@ -2590,4 +2556,11 @@ void debrief_handle_player_drop()
 
 void debrief_disable_accept()
 {
+}
+
+// Goober5000 - replace any variables with their values
+void debrief_replace_stage_text(debrief_stage &stage)
+{
+	sexp_replace_variable_names_with_values(stage.text);
+	sexp_replace_variable_names_with_values(stage.recommendation_text);
 }

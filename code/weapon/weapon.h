@@ -14,15 +14,18 @@
 
 #include "globalincs/globals.h"
 #include "globalincs/systemvars.h"
+
+#include "actions/Program.h"
+#include "decals/decals.h"
+#include "gamesnd/gamesnd.h"
 #include "graphics/2d.h"
 #include "graphics/generic.h"
-#include "gamesnd/gamesnd.h"
 #include "model/model.h"
-#include "weapon/shockwave.h"
-#include "weapon/trails.h"
 #include "particle/ParticleManager.h"
+#include "weapon/shockwave.h"
+#include "weapon/swarm.h"
+#include "weapon/trails.h"
 #include "weapon/weapon_flags.h"
-#include "decals/decals.h"
 
 class object;
 class ship_subsys;
@@ -38,6 +41,15 @@ extern int Num_weapon_subtypes;
 #define	WRT_LASER	1
 #define	WRT_POF		2
 
+// constants for weapon lock acquire methods
+#define WLOCK_PIXEL		0
+#define WLOCK_TIMER		1
+
+// constants for weapon lock restrictions
+#define LR_CURRENT_TARGET				0		// Only lock current target and subsystem
+#define LR_CURRENT_TARGET_SUBSYS		1		// 
+#define LR_ANY_TARGETS					2
+
 //particle names go here -nuke
 #define PSPEW_NONE		-1			//used to disable a spew, useful for xmts
 #define PSPEW_DEFAULT	0			//std fs2 pspew
@@ -50,6 +62,14 @@ extern int Num_weapon_subtypes;
 
 // scale factor for supercaps taking damage from weapons which are not "supercap" weapons
 #define SUPERCAP_DAMAGE_SCALE			0.25f
+
+// default amount of time to wait after firing before a remote detonated missile can be detonated
+#define DEFAULT_REMOTE_DETONATE_TRIGGER_WAIT  0.5f
+
+// default value weapon max range is set to if there's not a tabled range value.
+#define WEAPON_DEFAULT_TABLED_MAX_RANGE 999999999.9f
+
+#define MAX_SPAWN_TYPES_PER_WEAPON 5
 
 enum class WeaponState : uint32_t
 {
@@ -87,7 +107,7 @@ typedef struct weapon {
 	object*	homing_object;					//	object this weapon is homing on.
 	ship_subsys*	homing_subsys;			// subsystem this weapon is homing on
 	vec3d	homing_pos;						// world position missile is homing on
-	short		swarm_index;					// index into swarm missile info, -1 if not WIF_SWARM
+	std::unique_ptr<swarm_info>		swarm_info_ptr;	// index into swarm missile info, -1 if not WIF_SWARM
 	int		missile_list_index;			// index for missiles into Missile_obj_list, -1 weapon not missile
 	trail		*trail_ptr;						// NULL if no trail, otherwise a pointer to its trail
 	ship_subsys *turret_subsys;			// points to turret that fired weapon, otherwise NULL
@@ -138,11 +158,15 @@ typedef struct weapon {
 	float launch_speed;			// the initial forward speed (can vary due to additive velocity or acceleration)
 								// currently only gets set when weapon_info->acceleration_time is used
 
+	int next_spawn_time[MAX_SPAWN_TYPES_PER_WEAPON];		// used for continuous child spawn
+
 	mc_info* collisionInfo; // The last collision of this weapon or NULL if it had none
 
 	sound_handle hud_in_flight_snd_sig; // Signature of the sound played while the weapon is in flight
 
 	WeaponState weapon_state; // The current state of the weapon
+
+	float beam_per_shot_rot; // for type 5 beams
 } weapon;
 
 
@@ -156,6 +180,42 @@ typedef struct beam_weapon_section_info {
 	float translation;						// makes the beam texture move -Bobboau
 	generic_anim texture;					// texture anim/bitmap
 } beam_weapon_section_info;
+
+enum class Type5BeamRotAxis {
+	STARTPOS_OFFSET,
+	ENDPOS_OFFSET, 
+	STARTPOS_NO_OFFSET,
+	ENDPOS_NO_OFFSET,
+	CENTER,
+	UNSPECIFIED
+};
+
+enum class Type5BeamPos {
+	RANDOM_OUTSIDE,
+	RANDOM_INSIDE,
+	CENTER,
+	SAME_RANDOM
+};
+
+typedef struct type5_beam_info {
+	bool no_translate;                           // true if the end pos parameters were left unspecified
+	Type5BeamPos start_pos;						 // whether it starts from the center or a type 0 or 1 beam kind of random
+	Type5BeamPos end_pos;						 // same as above but but with an extra 'same random as start' option
+	vec3d start_pos_offset;                      // position simply added to start pos (possibly manipulated by the bools below)
+	vec3d end_pos_offset;                        // position simply added to end pos (possibly manipulated by the bools below)
+	vec3d start_pos_rand;                        // same as above but a randomly chosen between defined value for each axis and its negative
+	vec3d end_pos_rand;
+	bool target_orient_positions;                // if true, offsets are oriented relative to the target, else the shooter's pov
+	bool target_scale_positions;                 // if true, offsets are scaled by target radius, else its a fixed span from the shooters pov
+	                                             // regardless of distance
+	float continuous_rot;                        // radians per sec rotation over beam lifetime
+	Type5BeamRotAxis continuous_rot_axis;		 // axis around which do continuous rotation
+	SCP_vector<float> burst_rot_pattern;         // radians to rotate for each beam in a burst, will also make spawned and ssb beams fire 
+	                                             // this many beams simultaneously with the defined rotations
+	Type5BeamRotAxis burst_rot_axis;			 // axis around which to do burst rotation
+	float per_burst_rot;                         // radians to rotate for each burst, or each shot if no burst
+	Type5BeamRotAxis per_burst_rot_axis;		 // axis around which to do per burst rotation
+} type5_beam_info;
 
 typedef struct beam_weapon_info {
 	int beam_type;						// beam type
@@ -178,10 +238,15 @@ typedef struct beam_weapon_info {
 	int beam_shots;						// # of shots the beam takes
 	float beam_shrink_factor;			// what percentage of total beam lifetime when the beam starts shrinking
 	float beam_shrink_pct;				// what percent/second the beam shrinks at
+	float beam_initial_width;		    // what percentage of total beam width the beam has initially
+	float beam_grow_factor;			    // what percentage of total beam lifetime when the beam starts growing
+	float beam_grow_pct;				// what percent/second the beam grows at
 	beam_weapon_section_info sections[MAX_BEAM_SECTIONS];	// info on the visible sections of the beam 	
 	float range;						// how far it will shoot-Bobboau
 	float damage_threshold;				// point at wich damage will start being atenuated from 0.0 to 1.0
 	float beam_width;					// width of the beam (for certain collision checks)
+	flagset<Weapon::Beam_Info_Flags> flags;
+	type5_beam_info t5info;              // type 5 beams only
 } beam_weapon_info;
 
 typedef struct particle_spew_info {	//this will be used for multi spews
@@ -206,9 +271,11 @@ typedef struct spawn_weapon_info
 	short	spawn_count;						//	Number of weapons of spawn_type to spawn.
 	float	spawn_angle;						//  Angle to spawn the child weapons in.  default is 180
 	float	spawn_min_angle;					//  Angle of spawning 'deadzone' inside spawn angle. Default 0.
+	float	spawn_interval;						//  How often to do continuous spawn, negative is no continuous spawn
+	float   spawn_interval_delay;               //  A delay before starting continuous spawn
+	float   spawn_chance;						//  Liklihood of spawning on every spawn interval
+	particle::ParticleEffectHandle spawn_effect; // Effect for continuous spawnings
 } spawn_weapon_info;
-
-#define MAX_SPAWN_TYPES_PER_WEAPON 5
 
 // use this to extend a beam to "infinity"
 #define BEAM_FAR_LENGTH				30000.0f
@@ -227,10 +294,22 @@ enum InFlightSoundType
 
 #define MAX_SUBSTITUTION_PATTERNS	10
 
+enum class LockRestrictionType
+{
+	TYPE, CLASS, SPECIES, IFF
+};
+
+typedef std::pair<LockRestrictionType, int> lock_restriction;
+
+enum class HomingAcquisitionType {
+	CLOSEST,
+	RANDOM,
+};
+
 struct weapon_info
 {
 	char	name[NAME_LENGTH];				// name of this weapon
-	char	alt_name[NAME_LENGTH];			// alt name of this weapon
+	char	display_name[NAME_LENGTH];		// display name of this weapon
 	char	title[WEAPON_TITLE_LEN];		// official title of weapon (used by tooltips)
 	char	*desc;								// weapon's description (used by tooltips)
 
@@ -263,11 +342,13 @@ struct weapon_info
 	color	laser_color_1;						// for cycling between glow colors
 	color	laser_color_2;						// for cycling between glow colors
 	float	laser_head_radius, laser_tail_radius;
+	float	collision_radius_override;          // overrides the radius for the purposes of collision
 
 	float	max_speed;							// max speed of the weapon
 	float	acceleration_time;					// how many seconds to reach max speed (secondaries only)
 	float	vel_inherit_amount;					// how much of the parent ship's velocity is inherited (0.0..1.0)
 	float	free_flight_time;
+	float	free_flight_speed_factor;
 	float mass;									// mass of the weapon
 	float fire_wait;							// fire rate -- amount of time before you can refire the weapon
 	float max_delay;							// max time to delay a shot (DahBlount)
@@ -276,6 +357,8 @@ struct weapon_info
 	float	damage;								//	damage of weapon (for missile, damage within inner radius)
 	float	damage_time;						// point in the lifetime of the weapon at which damage starts to attenuate. This applies to non-beam primaries. (DahBlount)
 	float	atten_damage;							// The damage to attenuate to. (DahBlount)
+	float	damage_incidence_max;				// dmg multipler when weapon hits dead-on (perpindicular)
+	float	damage_incidence_min;				// dmg multipler when weapon hits glancing (parallel)
 
 	shockwave_create_info shockwave;
 	shockwave_create_info dinky_shockwave;
@@ -301,26 +384,46 @@ struct weapon_info
 	flagset<Weapon::Info_Flags>	wi_flags;							//	bit flags defining behavior, see WIF_xxxx
 
 	float turn_time;
+	float turn_accel_time;
 	float	cargo_size;							// cargo space taken up by individual weapon (missiles only)
 	float rearm_rate;							// rate per second at which secondary weapons are loaded during rearming
 	int		reloaded_per_batch;				    // number of munitions rearmed per batch
 	float	weapon_range;						// max range weapon can be effectively fired.  (May be less than life * speed)
-	float WeaponMinRange;           // *Minimum weapon range, default is 0 -Et1
+	float	optimum_range;						// causes ai fighters to prefer this distance when attacking with the weapon
+	float weapon_min_range;           // *Minimum weapon range, default is 0 -Et1
+
+	bool pierce_objects;
+	bool spawn_children_on_pierce;
 
     // spawn weapons
     int num_spawn_weapons_defined;
-    int total_children_spawned;
+    int maximum_children_spawned;		// An upper bound for the total number of spawned children, used by multi
     spawn_weapon_info spawn_info[MAX_SPAWN_TYPES_PER_WEAPON];
 
 	// swarm count
 	short swarm_count;						// how many swarm missiles are fired for this weapon
 	int SwarmWait;                  // *Swarm firewait, default is 150  -Et1
 
+	int target_restrict;
+	bool multi_lock;
+	int max_seeking;						// how many seekers can be active at a time if multilock is enabled. A value of one will lock stuff up one by one.
+	int max_seekers_per_target;			// how many seekers can be attached to a target.
+
+	SCP_vector<lock_restriction> ship_restrict;                     // list of pairs of types of restrictions, and the specific restriction of that type
+	SCP_vector<std::pair<LockRestrictionType, SCP_string>> ship_restrict_strings;    // the above but the specific restrictions are the parsed strings (instead of looked up indicies)
+
+	bool trigger_lock;						// Trigger must be held down and released to lock and fire.
+	bool launch_reset_locks;				// Lock indicators reset after firing
+
+	HomingAcquisitionType auto_target_method;
+
 	//	Specific to ASPECT homing missiles.
+	int acquire_method;
 	float	min_lock_time;						// minimum time (in seconds) to achieve lock
 	int	lock_pixels_per_sec;				// pixels/sec moved while locking
 	int	catchup_pixels_per_sec;			// pixels/sec moved while catching-up for a lock				
-	int	catchup_pixel_penalty;			// number of extra pixels to move while locking as a penalty for catching up for a lock			
+	int	catchup_pixel_penalty;			// number of extra pixels to move while locking as a penalty for catching up for a lock		
+	float lock_fov;
 
 	//	Specific to HEAT homing missiles.
 	float	fov;
@@ -334,10 +437,11 @@ struct weapon_info
 	gamesnd_id	impact_snd;
 	gamesnd_id disarmed_impact_snd;
 	gamesnd_id	flyby_snd;							//	whizz-by sound, transmitted through weapon's portable atmosphere.
+	gamesnd_id	ambient_snd;
 	
-	gamesnd_id hud_tracking_snd; // Sound played when this weapon tracks a target
-	gamesnd_id hud_locked_snd; // Sound played when this weapon locked onto a target
-	gamesnd_id hud_in_flight_snd; // Sound played while the weapon is in flight
+	gamesnd_id hud_tracking_snd; // Sound played when the player is tracking a target with this weapon
+	gamesnd_id hud_locked_snd; // Sound played when the player is locked onto a target with this weapon
+	gamesnd_id hud_in_flight_snd; // Sound played while the player has this weapon in flight
 	InFlightSoundType in_flight_play_type; // The status when the sound should be played
 
 	// Specific to weapons with TRAILS:
@@ -410,6 +514,7 @@ struct weapon_info
 	float lssm_stage5_vel;			//velocity during final stage
 	float lssm_warpin_radius;
 	float lssm_lock_range;
+	int lssm_warpeffect;		//Which fireballtype is used for the warp effect
 
 	// Beam weapon effect	
 	beam_weapon_info	b_info;			// this must be valid if the weapon is a beam weapon WIF_BEAM or WIF_BEAM_SMALL
@@ -424,6 +529,10 @@ struct weapon_info
 	float cm_detonation_rad;
 	bool  cm_kill_single;       // should the countermeasure kill just the single decoyed missile within CMEASURE_DETONATE_DISTANCE?
 	int   cmeasure_timer_interval;	// how many milliseconds between pulses
+	int cmeasure_firewait;						// delay in milliseconds between countermeasure firing --wookieejedi
+	bool cmeasure_use_firewait;					// if set to true, then countermeasure will use specified firewait instead of default --wookieejedi
+	int cmeasure_failure_delay_multiplier_ai;	// multiplier for firewait between failed countermeasure launches, next launch try = this value * firewait  --wookieejedi
+	int cmeasure_sucess_delay_multiplier_ai;	// multiplier for firewait between successful countermeasure launches, next launch try = this value * firewait  --wookieejedi
 
 	float weapon_submodel_rotate_accell;
 	float weapon_submodel_rotate_vel;
@@ -441,7 +550,7 @@ struct weapon_info
 
 	int weapon_hitpoints;
 
-	int	burst_shots;
+	int	burst_shots;	// always 1 less than the actual burst length; 0 = no burst, 1 = two-shot burst, 2 = 3-shot, etc
 	float burst_delay;
 	flagset<Weapon::Burst_Flags> burst_flags;
 
@@ -468,6 +577,8 @@ struct weapon_info
 
 	decals::creation_info impact_decal;
 
+	actions::ProgramSet on_create_program;
+
 public:
 	weapon_info();
 
@@ -476,9 +587,8 @@ public:
     inline bool hurts_big_ships()  { return wi_flags[Weapon::Info_Flags::Bomb, Weapon::Info_Flags::Beam, Weapon::Info_Flags::Huge, Weapon::Info_Flags::Big_only]; }
     inline bool is_interceptable() { return wi_flags[Weapon::Info_Flags::Fighter_Interceptable, Weapon::Info_Flags::Turret_Interceptable]; }
 
-	const char* get_display_string();
-
-	bool has_alternate_name();
+	const char* get_display_name() const;
+	bool has_display_name() const;
 
 	void reset();
 };
@@ -580,12 +690,16 @@ int weapon_create_group_id();
 int weapon_create( vec3d * pos, matrix * orient, int weapon_type, int parent_obj, int group_id=-1, int is_locked = 0, int is_spawned = 0, float fof_cooldown = 0.0f, ship_subsys * src_turret = NULL);
 void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_objnum, int target_is_locked = 0, ship_subsys *target_subsys = NULL);
 
+// gets the substitution pattern pointer for a given weapon
+// src_turret may be null
+size_t* get_pointer_to_weapon_fire_pattern_index(int weapon_type, int ship_idx, ship_subsys* src_turret);
+
 // for weapons flagged as particle spewers, spew particles. wheee
 void weapon_maybe_spew_particle(object *obj);
 
 bool weapon_armed(weapon *wp, bool hit_target);
 void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int quadrant = -1, vec3d* hitnormal = NULL );
-void spawn_child_weapons( object *objp );
+void spawn_child_weapons( object *objp, int spawn_index_override = -1);
 
 // call to detonate a weapon. essentially calls weapon_hit() with other_obj as NULL, and sends a packet in multiplayer
 void weapon_detonate(object *objp);
@@ -629,5 +743,29 @@ void weapon_unpause_sounds();
 void validate_SSM_entries();
 
 void shield_impact_explosion(vec3d *hitpos, object *objp, float radius, int idx);
+
+// Swifty - return number of max simultaneous locks 
+int weapon_get_max_missile_seekers(weapon_info *wip);
+
+// return if this weapon can lock on this target, based on its type, class, species or iff
+bool weapon_target_satisfies_lock_restrictions(weapon_info *wip, object* target);
+
+// return if this weapon has iff restrictions, and should ignore normal iff targeting restrictions
+bool weapon_has_iff_restrictions(weapon_info* wip);
+
+// whether secondary weapon wip on shooter is in range of target_world_pos
+bool weapon_secondary_world_pos_in_range(object* shooter, weapon_info* wip, vec3d* target_world_pos);
+
+// Return whether shooter is in range, fov, etc of target_subsys, for multilock
+// also returns the dot to the subsys in out_dot
+// While single target missiles will check these properties as well separately, this function is ONLY used by multilock
+bool weapon_multilock_can_lock_on_subsys(object* shooter, object* target, ship_subsys* target_subsys, weapon_info* wip, float* out_dot = nullptr);
+
+// Return whether shooter is in fov, etc of a target, for multilock
+// does NOT check range
+// also returns the dot to the subsys in out_dot
+// While single target missiles will check these properties as well separately, this function is ONLY used by multilock
+bool weapon_multilock_can_lock_on_target(object* shooter, object* target_objp, weapon_info* wip, float* out_dot = nullptr);
+
 
 #endif

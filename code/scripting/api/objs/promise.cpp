@@ -15,7 +15,7 @@ ADE_OBJ(l_Promise,
 // Can't call this "then" since that is a Lua keyword
 ADE_FUNC(continueWith,
 	l_Promise,
-	"function(args...)",
+	"function(any... args) => any...",
 	"When the called on promise resolves, this function will be called with the resolved value of the promise.",
 	"promise",
 	"A promise that will resolve with the return value of the passed function.")
@@ -43,7 +43,7 @@ ADE_FUNC(continueWith,
 
 ADE_FUNC(catch,
 	l_Promise,
-	"function(args...)",
+	"function(any... args) => any...",
 	"When the called on promise produces an error, this function will be called with the error value of the promise.",
 	"promise",
 	"A promise that will resolve with the return value of the passed function.")
@@ -113,7 +113,7 @@ ADE_FUNC(getValue,
 	l_Promise,
 	nullptr,
 	"Gets the resolved value of this promise. Causes an error when used on an unresolved or errored promise!",
-	"unknown",
+	"any",
 	"The resolved values.")
 {
 	LuaPromise* promise = nullptr;
@@ -143,7 +143,7 @@ ADE_FUNC(getErrorValue,
 	l_Promise,
 	nullptr,
 	"Gets the error value of this promise. Causes an error when used on an unresolved or resolved promise!",
-	"unknown",
+	"any",
 	"The error values.")
 {
 	LuaPromise* promise = nullptr;

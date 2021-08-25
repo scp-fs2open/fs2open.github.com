@@ -12,6 +12,7 @@
 
 #include "cmdline/cmdline.h"
 #include "def_files/def_files.h"
+#include "graphics/grinternal.h"
 #include "graphics/util/uniform_structs.h"
 #include "io/timer.h"
 #include "lighting/lighting.h"
@@ -29,47 +30,7 @@ extern int opengl_check_framebuffer();
 bool fxaa_unavailable = false;
 bool zbuffer_saved    = false;
 
-// lightshaft parameters
-bool ls_on           = false;
-bool ls_force_off    = false;
-float ls_density     = 0.5f;
-float ls_weight      = 0.02f;
-float ls_falloff     = 1.0f;
-float ls_intensity   = 0.5f;
-float ls_cpintensity = 0.5f * 50 * 0.02f;
-int ls_samplenum     = 50;
-
 const int MAX_MIP_BLUR_LEVELS = 4;
-
-enum class PostEffectUniformType {
-	Invalid,
-	NoiseAmount,
-	Saturation,
-	Brightness,
-	Contrast,
-	FilmGrain,
-	TvStripes,
-	Cutoff,
-	Tint,
-	Dither,
-};
-
-struct post_effect_t {
-	SCP_string name;
-	PostEffectUniformType uniform_type = PostEffectUniformType::Invalid;
-	SCP_string define_name;
-
-	float intensity{0.0f};
-	float default_intensity{0.0f};
-	float div{1.0f};
-	float add{0.0f};
-
-	vec3d rgb = vmd_zero_vector;
-
-	bool always_on{false};
-};
-
-SCP_vector<post_effect_t> Post_effects;
 
 static int Post_initialized = 0;
 
@@ -209,7 +170,7 @@ void opengl_post_pass_bloom()
 		opengl_set_generic_uniform_data<graphics::generic_data::bloom_composition_data>(
 			[](graphics::generic_data::bloom_composition_data* data) {
 				data->levels          = MAX_MIP_BLUR_LEVELS;
-				data->bloom_intensity = Cmdline_bloom_intensity / 100.0f;
+				data->bloom_intensity = gr_bloom_intensity() / 100.0f;
 			});
 
 		GL_state.Texture.Enable(0, GL_TEXTURE_2D, Bloom_textures[0]);
@@ -465,7 +426,7 @@ void opengl_post_lightshafts()
 	float x, y;
 
 	// should we even be here?
-	if ( !Game_subspace_effect && ls_on && !ls_force_off ) {
+	if ( !Game_subspace_effect && gr_lightshafts_enabled() ) {
 		int n_lights = light_get_global_count();
 
 		for ( int idx = 0; idx<n_lights; idx++ ) {
@@ -481,20 +442,21 @@ void opengl_post_lightshafts()
 			float dot;
 			if ( (dot = vm_vec_dot(&light_dir, &Eye_matrix.vec.fvec)) > 0.7f ) {
 
-				x = asinf(vm_vec_dot(&light_dir, &Eye_matrix.vec.rvec)) / PI * 1.5f +
+				x = asinf_safe(vm_vec_dot(&light_dir, &Eye_matrix.vec.rvec)) / PI * 1.5f +
 					0.5f; // cant get the coordinates right but this works for the limited glare fov
-				y = asinf(vm_vec_dot(&light_dir, &Eye_matrix.vec.uvec)) / PI * 1.5f * gr_screen.clip_aspect + 0.5f;
+				y = asinf_safe(vm_vec_dot(&light_dir, &Eye_matrix.vec.uvec)) / PI * 1.5f * gr_screen.clip_aspect + 0.5f;
 
 				opengl_set_generic_uniform_data<graphics::generic_data::lightshaft_data>(
 					[&](graphics::generic_data::lightshaft_data* data) {
 						data->sun_pos.x = x;
 						data->sun_pos.y = y;
 
-						data->density      = ls_density;
-						data->falloff      = ls_falloff;
-						data->weight       = ls_weight;
-						data->intensity    = Sun_spot * ls_intensity;
-						data->cp_intensity = Sun_spot * ls_cpintensity;
+						auto& ls_params = graphics::Post_processing_manager->getLightshaftParams();
+						data->density      = ls_params.density;
+						data->falloff      = ls_params.falloff;
+						data->weight       = ls_params.weight;
+						data->intensity    = Sun_spot * ls_params.intensity;
+						data->cp_intensity = Sun_spot * ls_params.cpintensity;
 					});
 
 				Current_shader->program->Uniforms.setTextureUniform("scene", 0);
@@ -558,8 +520,9 @@ void gr_opengl_post_process_end()
 
 	// set and configure post shader ...
 	int flags = 0;
-	for ( int i = 0; i < (int)Post_effects.size(); i++) {
-		if (Post_effects[i].always_on) {
+	const auto& postEffects = graphics::Post_processing_manager->getPostEffects();
+	for ( int i = 0; i < (int)postEffects.size(); i++) {
+		if (postEffects[i].always_on) {
 			flags |= (1 << i);
 		}
 	}
@@ -583,40 +546,40 @@ void gr_opengl_post_process_end()
 	opengl_set_generic_uniform_data<graphics::generic_data::post_data>([&](graphics::generic_data::post_data* data) {
 		data->timer = i2fl(timer_get_milliseconds() % 100 + 1);
 
-		for (size_t idx = 0; idx < Post_effects.size(); idx++) {
+		for (size_t idx = 0; idx < postEffects.size(); idx++) {
 			if (GL_shader[post_sdr_handle].flags & (1 << idx)) {
-				float value = Post_effects[idx].intensity;
+				float value = postEffects[idx].intensity;
 
-				switch (Post_effects[idx].uniform_type) {
-				case PostEffectUniformType::Invalid:
+				switch (postEffects[idx].uniform_type) {
+				case graphics::PostEffectUniformType::Invalid:
 					// Invalid name specified, do nothing
 					break;
-				case PostEffectUniformType::NoiseAmount:
+				case graphics::PostEffectUniformType::NoiseAmount:
 					data->noise_amount = value;
 					break;
-				case PostEffectUniformType::Saturation:
+				case graphics::PostEffectUniformType::Saturation:
 					data->saturation = value;
 					break;
-				case PostEffectUniformType::Brightness:
+				case graphics::PostEffectUniformType::Brightness:
 					data->brightness = value;
 					break;
-				case PostEffectUniformType::Contrast:
+				case graphics::PostEffectUniformType::Contrast:
 					data->contrast = value;
 					break;
-				case PostEffectUniformType::FilmGrain:
+				case graphics::PostEffectUniformType::FilmGrain:
 					data->film_grain = value;
 					break;
-				case PostEffectUniformType::TvStripes:
+				case graphics::PostEffectUniformType::TvStripes:
 					data->tv_stripes = value;
 					break;
-				case PostEffectUniformType::Cutoff:
+				case graphics::PostEffectUniformType::Cutoff:
 					data->cutoff = value;
 					break;
-				case PostEffectUniformType::Dither:
+				case graphics::PostEffectUniformType::Dither:
 					data->dither = value;
 					break;
-				case PostEffectUniformType::Tint:
-					data->tint = Post_effects[idx].rgb;
+				case graphics::PostEffectUniformType::Tint:
+					data->tint = postEffects[idx].rgb;
 					break;
 				}
 			}
@@ -697,8 +660,9 @@ void get_post_process_effect_names(SCP_vector<SCP_string> &names)
 {
 	size_t idx;
 
-	for (idx = 0; idx < Post_effects.size(); idx++) {
-		names.push_back(Post_effects[idx].name);
+	const auto& postEffects = graphics::Post_processing_manager->getPostEffects();
+	for (idx = 0; idx < postEffects.size(); idx++) {
+		names.push_back(postEffects[idx].name);
 	}
 }
 
@@ -715,28 +679,31 @@ void gr_opengl_post_process_set_effect(const char *name, int value, const vec3d 
 	size_t idx;
 	int sflags = 0;
 
+	auto& ls_params = graphics::Post_processing_manager->getLightshaftParams();
+
 	if(!stricmp("lightshafts",name))
 	{
-		ls_intensity = value / 100.0f;
-		ls_on = !!value;
+		ls_params.intensity = value / 100.0f;
+		ls_params.on = !!value;
 		return;
 	}
 
-	for (idx = 0; idx < Post_effects.size(); idx++) {
-		const char *eff_name = Post_effects[idx].name.c_str();
+	auto& postEffects = graphics::Post_processing_manager->getPostEffects();
+	for (idx = 0; idx < postEffects.size(); idx++) {
+		const char *eff_name = postEffects[idx].name.c_str();
 
 		if ( !stricmp(eff_name, name) ) {
-			Post_effects[idx].intensity = (value / Post_effects[idx].div) + Post_effects[idx].add;
+			postEffects[idx].intensity = (value / postEffects[idx].div) + postEffects[idx].add;
 			if ((rgb != nullptr) && !(vmd_zero_vector == *rgb)) {
-				Post_effects[idx].rgb = *rgb;
+				postEffects[idx].rgb = *rgb;
 			}
 			break;
 		}
 	}
 
 	// figure out new flags
-	for (idx = 0; idx < Post_effects.size(); idx++) {
-		if ( Post_effects[idx].always_on || (Post_effects[idx].intensity != Post_effects[idx].default_intensity) ) {
+	for (idx = 0; idx < postEffects.size(); idx++) {
+		if ( postEffects[idx].always_on || (postEffects[idx].intensity != postEffects[idx].default_intensity) ) {
 			sflags |= (1<<idx);
 		}
 	}
@@ -752,15 +719,15 @@ void gr_opengl_post_process_set_defaults()
 		return;
 	}
 
+	auto& postEffects = graphics::Post_processing_manager->getPostEffects();
 	// reset all effects to their default values
-	for (idx = 0; idx < Post_effects.size(); idx++) {
-		Post_effects[idx].intensity = Post_effects[idx].default_intensity;
+	for (idx = 0; idx < postEffects.size(); idx++) {
+		postEffects[idx].intensity = postEffects[idx].default_intensity;
 	}
 
 	Post_active_shader_index = -1;
 }
 
-extern GLuint Cockpit_depth_texture;
 void gr_opengl_post_process_save_zbuffer()
 {
 	GR_DEBUG_SCOPE("Save z-Buffer");
@@ -785,151 +752,6 @@ void gr_opengl_post_process_restore_zbuffer()
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, Scene_depth_texture, 0);
 
 		zbuffer_saved = false;
-	}
-}
-
-static PostEffectUniformType mapUniformNameToType(const SCP_string& uniform_name)
-{
-	if (!stricmp(uniform_name.c_str(), "noise_amount")) {
-		return PostEffectUniformType::NoiseAmount;
-	} else if (!stricmp(uniform_name.c_str(), "saturation")) {
-		return PostEffectUniformType::Saturation;
-	} else if (!stricmp(uniform_name.c_str(), "brightness")) {
-		return PostEffectUniformType::Brightness;
-	} else if (!stricmp(uniform_name.c_str(), "contrast")) {
-		return PostEffectUniformType::Contrast;
-	} else if (!stricmp(uniform_name.c_str(), "film_grain")) {
-		return PostEffectUniformType::FilmGrain;
-	} else if (!stricmp(uniform_name.c_str(), "tv_stripes")) {
-		return PostEffectUniformType::TvStripes;
-	} else if (!stricmp(uniform_name.c_str(), "cutoff")) {
-		return PostEffectUniformType::Cutoff;
-	} else if (!stricmp(uniform_name.c_str(), "dither")) {
-		return PostEffectUniformType::Dither;
-	} else if (!stricmp(uniform_name.c_str(), "tint")) {
-		return PostEffectUniformType::Tint;
-	} else {
-		error_display(0, "Unknown uniform name '%s'!", uniform_name.c_str());
-		return PostEffectUniformType::Invalid;
-	}
-}
-
-static bool opengl_post_init_table()
-{
-	bool warned = false;
-
-	try
-	{
-		if (cf_exists_full("post_processing.tbl", CF_TYPE_TABLES))
-			read_file_text("post_processing.tbl", CF_TYPE_TABLES);
-		else
-			read_file_text_from_default(defaults_get_file("post_processing.tbl"));
-
-		reset_parse();
-
-
-		if (optional_string("#Effects")) {
-			while (!required_string_one_of(3, "$Name:", "#Ship Effects", "#End")) {
-				post_effect_t eff;
-
-				required_string("$Name:");
-				stuff_string(eff.name, F_NAME);
-
-				required_string("$Uniform:");
-
-				SCP_string tbuf;
-				stuff_string(tbuf, F_NAME);
-				eff.uniform_type = mapUniformNameToType(tbuf);
-
-				required_string("$Define:");
-				stuff_string(eff.define_name, F_NAME);
-
-				required_string("$AlwaysOn:");
-				stuff_boolean(&eff.always_on);
-
-				required_string("$Default:");
-				stuff_float(&eff.default_intensity);
-				eff.intensity = eff.default_intensity;
-
-				required_string("$Div:");
-				stuff_float(&eff.div);
-
-				required_string("$Add:");
-				stuff_float(&eff.add);
-
-				if (optional_string("$RGB:")) {
-					stuff_vec3d(&eff.rgb);
-				}
-
-				// Post_effects index is used for flag checks, so we can't have more than 32
-				if (Post_effects.size() < 32) {
-					Post_effects.push_back(eff);
-				}
-				else if (!warned) {
-					mprintf(("WARNING: post_processing.tbl can only have a max of 32 effects! Ignoring extra...\n"));
-					warned = true;
-				}
-			}
-		}
-
-		//Built-in per-ship effects
-		ship_effect se1;
-		strcpy_s(se1.name, "FS1 Ship select");
-		se1.shader_effect = 0;
-		se1.disables_rendering = false;
-		se1.invert_timer = false;
-		Ship_effects.push_back(se1);
-
-		if (optional_string("#Ship Effects")) {
-			while (!required_string_one_of(3, "$Name:", "#Light Shafts", "#End")) {
-				ship_effect se;
-				char tbuf[NAME_LENGTH] = { 0 };
-
-				required_string("$Name:");
-				stuff_string(tbuf, F_NAME, NAME_LENGTH);
-				strcpy_s(se.name, tbuf);
-
-				required_string("$Shader Effect:");
-				stuff_int(&se.shader_effect);
-
-				required_string("$Disables Rendering:");
-				stuff_boolean(&se.disables_rendering);
-
-				required_string("$Invert timer:");
-				stuff_boolean(&se.invert_timer);
-
-				Ship_effects.push_back(se);
-			}
-		}
-
-		if (optional_string("#Light Shafts")) {
-			required_string("$AlwaysOn:");
-			stuff_boolean(&ls_on);
-			required_string("$Density:");
-			stuff_float(&ls_density);
-			required_string("$Falloff:");
-			stuff_float(&ls_falloff);
-			required_string("$Weight:");
-			stuff_float(&ls_weight);
-			required_string("$Intensity:");
-			stuff_float(&ls_intensity);
-			required_string("$Sample Number:");
-			stuff_int(&ls_samplenum);
-
-			ls_cpintensity = ls_weight;
-			for (int i = 1; i < ls_samplenum; i++)
-				ls_cpintensity += ls_weight * pow(ls_falloff, i);
-			ls_cpintensity *= ls_intensity;
-		}
-
-		required_string("#End");
-
-		return true;
-	}
-	catch (const parse::ParseException& e)
-	{
-		mprintf(("Unable to parse 'post_processing.tbl'!  Error message = %s.\n", e.what()));
-		return false;
 	}
 }
 
@@ -1001,17 +823,19 @@ void set_smaa_defines(SCP_stringstream& sflags)
 }
 void opengl_post_shader_header(SCP_stringstream& sflags, shader_type shader_t, int flags)
 {
+	const auto& postEffects = graphics::Post_processing_manager->getPostEffects();
 	if (shader_t == SDR_TYPE_POST_PROCESS_MAIN) {
-		for (size_t idx = 0; idx < Post_effects.size(); idx++) {
+		for (size_t idx = 0; idx < postEffects.size(); idx++) {
 			if (flags & (1 << idx)) {
 				sflags << "#define ";
-				sflags << Post_effects[idx].define_name.c_str();
+				sflags << postEffects[idx].define_name.c_str();
 				sflags << "\n";
 			}
 		}
 	} else if (shader_t == SDR_TYPE_POST_PROCESS_LIGHTSHAFTS) {
 		char temp[64];
-		sprintf(temp, "#define SAMPLE_NUM %d\n", ls_samplenum);
+		const auto ls_params = graphics::Post_processing_manager->getLightshaftParams();
+		sprintf(temp, "#define SAMPLE_NUM %d\n", ls_params.samplenum);
 		sflags << temp;
 	} else if (shader_t == SDR_TYPE_POST_PROCESS_FXAA) {
 		set_fxaa_defines(sflags);
@@ -1026,9 +850,13 @@ bool opengl_post_init_shaders()
 	int idx;
 	int flags = 0;
 
+	// Make sure this is set properly before we actually try to render anything with the post pipeline
+	Gr_aa_mode_last_frame = Gr_aa_mode;
+
+	const auto& postEffects = graphics::Post_processing_manager->getPostEffects();
 	// figure out which flags we need for the main post process shader
-	for (idx = 0; idx < (int)Post_effects.size(); idx++) {
-		if (Post_effects[idx].always_on) {
+	for (idx = 0; idx < (int)postEffects.size(); idx++) {
+		if (postEffects[idx].always_on) {
 			flags |= (1 << idx);
 		}
 	}
@@ -1043,7 +871,7 @@ bool opengl_post_init_shaders()
 		gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_BLUR, SDR_FLAG_BLUR_VERTICAL) < 0 ||
 		gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_BLOOM_COMP, 0) < 0) {
 		// disable bloom if we don't have those shaders available
-		Cmdline_bloom_intensity = 0;
+		graphics::Post_processing_manager->setBloomShadersOk(false);
 	}
 
 	if (gr_is_fxaa_mode(Gr_aa_mode))
@@ -1292,10 +1120,13 @@ void opengl_post_process_shutdown_bloom()
 
 void opengl_post_process_init()
 {
+	// Externally used manager class to expose information about post processing externally
+	graphics::Post_processing_manager.reset(new graphics::PostProcessingManager());
+
 	Post_initialized = 0;
 
 	//We need to read the tbl first. This is mostly for FRED's benefit, as otherwise the list of post effects for the sexp doesn't get updated.
-	if ( !opengl_post_init_table() ) {
+	if ( !graphics::Post_processing_manager->parse_table() ) {
 		mprintf(("  Unable to read post-processing table! Disabling post-processing...\n\n"));
 		Gr_post_processing_enabled = false;
 		return;
@@ -1345,7 +1176,8 @@ void opengl_post_process_shutdown()
 		}
 	}
 
-	Post_effects.clear();
+	graphics::Post_processing_manager->clear();
+	graphics::Post_processing_manager = nullptr;
 
 	opengl_post_process_shutdown_bloom();
 

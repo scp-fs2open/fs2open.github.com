@@ -21,6 +21,7 @@
 #include "mod_table/mod_table.h"
 #include "physics/physics.h"
 #include "ship/ship.h"
+#include "utils/Random.h"
 
 
 
@@ -34,8 +35,6 @@
 #define MAX_SHIP_SPEED		500		// Maximum speed allowed after whack or shockwave
 #define RESET_SHIP_SPEED	440		// Speed that a ship is reset to after exceeding MAX_SHIP_SPEED
 
-#define	SW_ROT_FACTOR			5		// increase in rotational time constant in shockwave
-#define	SW_BLAST_DURATION		2000	// maximum duration of shockwave
 #define	REDUCED_DAMP_FACTOR	10		// increase in side_slip and acceleration time constants (scaled according to reduced damp time)
 #define	REDUCED_DAMP_VEL		30		// change in velocity at which reduced_damp_time is 2000 ms
 #define	REDUCED_DAMP_TIME		2000	// ms (2.0 sec)
@@ -59,17 +58,11 @@ void physics_init( physics_info * pi )
 	pi->max_vel.xyz.z = 100.0f;		//forward
 	pi->max_rear_vel = 100.0f;	//backward -- controlled seperately
 
-	pi->max_rotvel.xyz.x = 2.0f;		//pitch
-	pi->max_rotvel.xyz.y = 1.0f;		//heading
-	pi->max_rotvel.xyz.z = 2.0f;		//bank
+	pi->max_rotvel = vm_vec_new(2.0f, 1.0f, 2.0f);
 
-	pi->prev_ramp_vel.xyz.x = 0.0f;
-	pi->prev_ramp_vel.xyz.y = 0.0f;
-	pi->prev_ramp_vel.xyz.z = 0.0f;
+	vm_vec_zero(&pi->prev_ramp_vel);
 
-	pi->desired_vel.xyz.x = 0.0f;
-	pi->desired_vel.xyz.y = 0.0f;
-	pi->desired_vel.xyz.z = 0.0f;
+	vm_vec_zero(&pi->desired_vel);
 
 	pi->slide_accel_time_const=pi->side_slip_time_const;	// slide using max_vel.xyz.x & .xyz.y
 	pi->slide_decel_time_const=pi->side_slip_time_const;	// slide using max_vel.xyz.x & .xyz.y
@@ -86,6 +79,9 @@ void physics_init( physics_info * pi )
 	vm_vec_make( &pi->I_body_inv.vec.uvec, 0.0f, 1e-5f, 0.0f );
 	vm_vec_make( &pi->I_body_inv.vec.fvec, 0.0f, 0.0f, 1e-5f );
 
+	pi->ai_desired_orient = vmd_zero_matrix; // Asteroth - initialize to the "invalid" orientation, which will be ignored by physics unless set otherwise
+
+	vm_vec_zero(&pi->acceleration);
 }
 
 
@@ -150,10 +146,8 @@ void physics_set_viewer( physics_info * p, int dir )
 
 void physics_sim_rot(matrix * orient, physics_info * pi, float sim_time )
 {
-	angles	tangles;
 	vec3d	new_vel;
 	matrix	tmp;
-	float		shock_amplitude;
 	float		rotdamp;
 	float		shock_fraction_time_left;
 
@@ -162,52 +156,64 @@ void physics_sim_rot(matrix * orient, physics_info * pi, float sim_time )
 	Assert(is_valid_vec(&pi->desired_rotvel));
 
 	// Handle special case of shockwave
-	shock_amplitude = 0.0f;
-	if ( pi->flags & PF_IN_SHOCKWAVE ) {
-		if ( timestamp_elapsed(pi->shockwave_decay) ) {
+	float		shock_amplitude = 0.0f;
+	if (pi->flags & PF_IN_SHOCKWAVE) {
+		if (timestamp_elapsed(pi->shockwave_decay)) {
 			pi->flags &= ~PF_IN_SHOCKWAVE;
 			rotdamp = pi->rotdamp;
-		} else {
- 			shock_fraction_time_left = timestamp_until( pi->shockwave_decay ) / (float) SW_BLAST_DURATION;
+		}
+		else {
+			shock_fraction_time_left = timestamp_until(pi->shockwave_decay) / (float)SW_BLAST_DURATION;
 			rotdamp = pi->rotdamp + pi->rotdamp * (SW_ROT_FACTOR - 1) * shock_fraction_time_left;
 			shock_amplitude = pi->shockwave_shake_amp * shock_fraction_time_left;
 		}
-	} else if ( pi->flags & PF_NO_DAMP ) {
+	}
+	else if (pi->flags & PF_NO_DAMP) {
 		rotdamp = 0.0f;
-	} else {
+	}
+	else {
 		rotdamp = pi->rotdamp;
 	}
 
-	// Do rotational physics with given damping
-	apply_physics( rotdamp, pi->desired_rotvel.xyz.x, pi->rotvel.xyz.x, sim_time, &new_vel.xyz.x, NULL );
-	apply_physics( rotdamp, pi->desired_rotvel.xyz.y, pi->rotvel.xyz.y, sim_time, &new_vel.xyz.y, NULL );
-	apply_physics( rotdamp, pi->desired_rotvel.xyz.z, pi->rotvel.xyz.z, sim_time, &new_vel.xyz.z, NULL );
+	angles	tangles = vmd_zero_angles;
 
-	Assert(is_valid_vec(&new_vel));
+	// "frit" here meaning Framerate_independent_turning
+	bool frit_ai_wants_to_move = Framerate_independent_turning && !IS_MAT_NULL(&pi->ai_desired_orient);
+	// In the case an ai entity used angular_move, we should use those calculations instead
+	if (frit_ai_wants_to_move){
+		Assert(is_valid_matrix(&pi->ai_desired_orient));
 
-	pi->rotvel = new_vel;
+		// AI simply get the rotvel they ask for, calculations were already done
+		pi->rotvel = pi->desired_rotvel;
+		// Zero it out because the same AI might not call angular_move again next time
+		// So we'll assume it's going to "go limp" unless it specifies otherwise next frame
+		vm_vec_zero(&pi->desired_rotvel);
 
-	tangles.p = pi->rotvel.xyz.x*sim_time;
-	tangles.h = pi->rotvel.xyz.y*sim_time;
-	tangles.b = pi->rotvel.xyz.z*sim_time;
+		// Pretty much same as above
+		*orient = pi->ai_desired_orient;
+		vm_mat_zero(&pi->ai_desired_orient);
 
-/*	//	Make ship shake due to afterburner.
-	if (pi->flags & PF_AFTERBURNER_ON || !timestamp_elapsed(pi->afterburner_decay) ) {
-		float	max_speed;
+	} else { // players and no framerate_independent_turning go here
 
-		max_speed = vm_vec_mag_quick(&pi->max_vel);
-		tangles.p += (float) (rand()-RAND_MAX_2) * RAND_MAX_1f * pi->speed/max_speed/64.0f;
-		tangles.h += (float) (rand()-RAND_MAX_2) * RAND_MAX_1f * pi->speed/max_speed/64.0f;
-		if ( pi->flags & PF_AFTERBURNER_ON ) {
-			pi->afterburner_decay = timestamp(ABURN_DECAY_TIME);
-		}
+		// Do rotational physics with given damping
+		apply_physics(rotdamp, pi->desired_rotvel.xyz.x, pi->rotvel.xyz.x, sim_time, &new_vel.xyz.x, nullptr);
+		apply_physics(rotdamp, pi->desired_rotvel.xyz.y, pi->rotvel.xyz.y, sim_time, &new_vel.xyz.y, nullptr);
+		apply_physics(rotdamp, pi->desired_rotvel.xyz.z, pi->rotvel.xyz.z, sim_time, &new_vel.xyz.z, nullptr);
+
+		Assert(is_valid_vec(&new_vel));
+
+		pi->rotvel = new_vel;
+
+		tangles.p = pi->rotvel.xyz.x * sim_time;
+		tangles.h = pi->rotvel.xyz.y * sim_time;
+		tangles.b = pi->rotvel.xyz.z * sim_time;
+	
 	}
-*/
 
 	// Make ship shake due to shockwave, decreasing in amplitude at the end of the shockwave
 	if ( pi->flags & PF_IN_SHOCKWAVE ) {
-		tangles.p += (float) (myrand()-RAND_MAX_2) * RAND_MAX_1f * shock_amplitude;
-		tangles.h += (float) (myrand()-RAND_MAX_2) * RAND_MAX_1f * shock_amplitude;
+		tangles.p += (float) (Random::next()-Random::HALF_MAX_VALUE) * Random::INV_F_MAX_VALUE * shock_amplitude;
+		tangles.h += (float) (Random::next()-Random::HALF_MAX_VALUE) * Random::INV_F_MAX_VALUE * shock_amplitude;
 	}
 
 
@@ -269,6 +275,8 @@ void physics_sim_vel(vec3d * position, physics_info * pi, float sim_time, matrix
 	vec3d local_desired_vel;	// desired velocity in local coords
 	vec3d local_v_out;		// velocity in local coords following this frame
 	vec3d damp;
+
+	vec3d old_vel = pi->vel;
 
 	//	Maybe clear the reduced_damp flag.
 	//	This fixes the problem of the player getting near-instantaneous acceleration under unknown circumstances.
@@ -361,6 +369,10 @@ void physics_sim_vel(vec3d * position, physics_info * pi, float sim_time, matrix
 
 	// update world velocity
 	vm_vec_unrotate(&pi->vel, &local_v_out, orient);
+
+	// update acceleration
+	vm_vec_sub(&pi->acceleration, &pi->vel, &old_vel);
+	vm_vec_scale(&pi->acceleration, 1 / sim_time);
 
 	if (special_warp_in) {
 		vm_vec_rotate(&pi->prev_ramp_vel, &pi->vel, orient);
@@ -456,50 +468,54 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 		else if (ci->forward < -1.0f ) ci->forward = -1.0f;
 	}
 
-	if (!Flight_controls_follow_eyepoint_orientation || (Player_obj == NULL) || (Player_obj->type != OBJ_SHIP)) {
-		// Default behavior; eyepoint orientation has no effect on controls
-		pi->desired_rotvel.xyz.x = ci->pitch * pi->max_rotvel.xyz.x;
-		pi->desired_rotvel.xyz.y = ci->heading * pi->max_rotvel.xyz.y;
-	} else {
-		// Optional behavior; pitch and yaw are always relative to the eyepoint
-		// orientation (excluding slew)
-		vec3d tmp_vec, new_rotvel;
-		matrix tmp_mat, eyemat, rotvelmat;
+	// If Framerate_independent_turning is on, AI don't use CI to turn
+	if (!Framerate_independent_turning || IS_MAT_NULL(&pi->ai_desired_orient)){
+		if (!Flight_controls_follow_eyepoint_orientation || (Player_obj == nullptr) || (Player_obj->type != OBJ_SHIP)) {
+			// Default behavior; eyepoint orientation has no effect on controls
+			pi->desired_rotvel.xyz.x = ci->pitch * pi->max_rotvel.xyz.x;
+			pi->desired_rotvel.xyz.y = ci->heading * pi->max_rotvel.xyz.y;
+		} else {
+			// Optional behavior; pitch and yaw are always relative to the eyepoint
+			// orientation (excluding slew)
+			vec3d tmp_vec, new_rotvel;
+			matrix tmp_mat, eyemat, rotvelmat;
 
-		ship_get_eye(&tmp_vec, &eyemat, Player_obj, false);
+			ship_get_eye(&tmp_vec, &eyemat, Player_obj, false);
 
-		vm_copy_transpose(&tmp_mat, &Player_obj->orient);
-		vm_matrix_x_matrix(&rotvelmat, &tmp_mat, &eyemat);
+			vm_copy_transpose(&tmp_mat, &Player_obj->orient);
+			vm_matrix_x_matrix(&rotvelmat, &tmp_mat, &eyemat);
 
-		vm_vec_rotate(&new_rotvel, &pi->max_rotvel, &rotvelmat);
-		vm_vec_unrotate(&tmp_vec, &pi->max_rotvel, &rotvelmat);
-		new_rotvel.xyz.x = tmp_vec.xyz.x;
+			vm_vec_rotate(&new_rotvel, &pi->max_rotvel, &rotvelmat);
+			vm_vec_unrotate(&tmp_vec, &pi->max_rotvel, &rotvelmat);
+			new_rotvel.xyz.x = tmp_vec.xyz.x;
 
-		new_rotvel.xyz.x = ci->pitch * new_rotvel.xyz.x;
-		new_rotvel.xyz.y = ci->heading * new_rotvel.xyz.y;
+			new_rotvel.xyz.x = ci->pitch * new_rotvel.xyz.x;
+			new_rotvel.xyz.y = ci->heading * new_rotvel.xyz.y;
 
-		vm_vec_unrotate(&tmp_vec, &new_rotvel, &rotvelmat);
+			vm_vec_unrotate(&tmp_vec, &new_rotvel, &rotvelmat);
 
-		pi->desired_rotvel = tmp_vec;
-	}
+			pi->desired_rotvel = tmp_vec;
+		}
 
-	float	delta_bank;
+		float	delta_bank;
 
 #ifdef BANK_WHEN_TURN
-	if ( ci->control_flags & CIF_DONT_BANK_WHEN_TURNING )
-		delta_bank = 0.0f;
-	else
-	{
-		//	To change direction of bank, negate the whole expression.
-		//	To increase magnitude of banking, decrease denominator.
-		//	Adam: The following statement is all the math for banking while turning.
-		delta_bank = - (ci->heading * pi->max_rotvel.xyz.y) * pi->delta_bank_const;
-	}
+		if ( ci->control_flags & CIF_DONT_BANK_WHEN_TURNING )
+			delta_bank = 0.0f;
+		else
+		{
+			//	To change direction of bank, negate the whole expression.
+			//	To increase magnitude of banking, decrease denominator.
+			//	Adam: The following statement is all the math for banking while turning.
+			delta_bank = - (ci->heading * pi->max_rotvel.xyz.y) * pi->delta_bank_const;
+		}
 #else
-	delta_bank = 0.0f;
+		delta_bank = 0.0f;
 #endif
 
-	pi->desired_rotvel.xyz.z = ci->bank * pi->max_rotvel.xyz.z + delta_bank;
+		pi->desired_rotvel.xyz.z = ci->bank * pi->max_rotvel.xyz.z + delta_bank;
+	}
+
 	pi->forward_thrust = ci->forward;
 	pi->vert_thrust = ci->vertical;	//added these two in order to get side and forward thrusters
 	pi->side_thrust = ci->sideways;	//to glow brighter when the ship is moving in the right direction -Bobboau
@@ -725,46 +741,66 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 }
 
 
+#define WHACK_LIMIT 0.001f
+#define ROTVEL_WHACK_CONST 0.12f
+
+//	-----------------------------------------------------------------------------------------------------------
+// Returns true if this impulse is below the limit and should be ignored.
+bool whack_below_limit(const vec3d* impulse)
+{
+	return (fl_abs(impulse->xyz.x) < WHACK_LIMIT) && (fl_abs(impulse->xyz.y) < WHACK_LIMIT) &&
+		   (fl_abs(impulse->xyz.z) < WHACK_LIMIT);
+}
+
 // ----------------------------------------------------------------------------
-// physics_apply_whack applies an instaneous whack on an object changing
-// both the objects velocity and the rotational velocity based on the impulse
-// being applied.
+// physics_calculate_and_apply_whack changes the rotaional and linear velocites of a ship due to
+// an instantaneous whack.
 //
-//	input:	impulse		=>		impulse vector ( force*time = impulse = change in momentum (mv) )
-//				pos			=>		vector from center of mass to location of where the force acts
+//	input:	impulse		=>		impulse vector (direction and magnitude of the impulse)
+//				pos			=>		vector from center of mass to location (in world coords) of where the force acts 
 //				pi				=>		pointer to phys_info struct of object getting whacked
 //				orient		=>		orientation matrix (needed to set rotational impulse in body coords)
-//				mass			=>		mass of the object (may be different from pi.mass if docked)
 //
-#define WHACK_LIMIT	0.001f
-#define ROTVEL_WHACK_CONST 0.12
-void physics_apply_whack(vec3d *impulse, vec3d *pos, physics_info *pi, matrix *orient, float mass)
+void physics_calculate_and_apply_whack(vec3d *impulse, vec3d *pos, physics_info *pi, matrix *orient, matrix *inv_moi)
 {
-	vec3d	local_torque, torque;
-//	vec3d	npos;
+	vec3d	local_angular_impulse, angular_impulse;
 
 	//	Detect null vector.
-	if ((fl_abs(impulse->xyz.x) <= WHACK_LIMIT) && (fl_abs(impulse->xyz.y) <= WHACK_LIMIT) && (fl_abs(impulse->xyz.z) <= WHACK_LIMIT))
+	if (whack_below_limit(impulse))
 		return;
 
 	// first do the rotational velocity
-	// calculate the torque on the body based on the point on the
+	// calculate the angular impulse on the body based on the point on the
 	// object that was hit and the momentum being applied to the object
 
-	vm_vec_cross(&torque, pos, impulse);
-	vm_vec_rotate ( &local_torque, &torque, orient );
+	vm_vec_cross(&angular_impulse, pos, impulse);
+	vm_vec_rotate ( &local_angular_impulse, &angular_impulse, orient );
 
 	vec3d delta_rotvel;
-	vm_vec_rotate( &delta_rotvel, &local_torque, &pi->I_body_inv );
-	vm_vec_scale ( &delta_rotvel, (float) ROTVEL_WHACK_CONST );
-	vm_vec_add2( &pi->rotvel, &delta_rotvel );
+	vm_vec_rotate(&delta_rotvel, &local_angular_impulse, inv_moi);
+
+	vec3d delta_vel = *impulse * (1.0f / pi->mass);
+
+	physics_apply_whack(vm_vec_mag(impulse), pi, &delta_rotvel, &delta_vel, orient);
+}
+
+
+// This function applies the calculated delta rotational and linear velocities calculated by physics_calculate_and_apply_whack
+// or dock_calculate_and_apply_whack_docked_object in objectdock.cpp if it was a docked object
+void physics_apply_whack(float orig_impulse, physics_info* pi, vec3d *delta_rotvel, vec3d* delta_vel, matrix* orient)
+{
+	Assertion((pi != nullptr) && (delta_rotvel != nullptr) && (delta_vel != nullptr) && (orient != nullptr),
+		"physics_apply_whack_direct invalid argument(s)");
+
+	vm_vec_scale(delta_rotvel, (float)ROTVEL_WHACK_CONST);
+	vm_vec_add2(&pi->rotvel, delta_rotvel);
 
 	//mprintf(("Whack: %7.3f %7.3f %7.3f\n", pi->rotvel.xyz.x, pi->rotvel.xyz.y, pi->rotvel.xyz.z));
 
 	// instant whack on the velocity
 	// reduce damping on all axes
 	pi->flags |= PF_REDUCED_DAMP;
-	update_reduced_damp_timestamp( pi, vm_vec_mag(impulse) );
+	update_reduced_damp_timestamp( pi, orig_impulse );
 
 	// find time for shake from weapon to end
 	int dtime = timestamp_until(pi->afterburner_decay);
@@ -772,16 +808,17 @@ void physics_apply_whack(vec3d *impulse, vec3d *pos, physics_info *pi, matrix *o
 		pi->afterburner_decay = timestamp( WEAPON_SHAKE_TIME );
 	}
 
-	// Goober5000 - pi->mass should probably be just mass, as specified in the header
-	vm_vec_scale_add2( &pi->vel, impulse, 1.0f / mass );
+	vm_vec_add2(&pi->vel, delta_vel);
 	if (!(pi->flags & PF_USE_VEL) && (vm_vec_mag_squared(&pi->vel) > MAX_SHIP_SPEED*MAX_SHIP_SPEED)) {
 		// Get DaveA
 		nprintf(("Physics", "speed reset in physics_apply_whack [speed: %f]\n", vm_vec_mag(&pi->vel)));
 		vm_vec_normalize(&pi->vel);
 		vm_vec_scale(&pi->vel, (float)RESET_SHIP_SPEED);
 	}
-	vm_vec_rotate( &pi->prev_ramp_vel, &pi->vel, orient );		// set so velocity will ramp starting from current speed
-																					// ramped velocity is now affected by collision
+
+	// set so velocity will ramp starting from current speed
+	// ramped velocity is now affected by collision
+	vm_vec_rotate( &pi->prev_ramp_vel, &pi->vel, orient );												
 }
 
 // function generates a velocity ramp with a given time constant independent of frame rate
@@ -1100,6 +1137,23 @@ void update_reduced_damp_timestamp( physics_info *pi, float impulse )
 		pi->reduced_damp_decay = timestamp( reduced_damp_decay_time );
 	}
 
+}
+
+void physics_add_point_mass_moi(matrix *moi, float mass, vec3d *pos)
+{
+	// moment of inertia for a point mass: 
+	// I_xx = m(y^2+z^2) | I_yx = -mxy       | I_zx = -mxz
+	// I_xy = -mxy       | I_yy = m(x^2+z^2) | I_zy = -myz 
+	// I_xz = -mxz		 | I_yz = -myz	     | I_zz = m(x^2+y^2)
+	moi->a2d[0][0] += mass * (pos->xyz.y * pos->xyz.y + pos->xyz.z * pos->xyz.z);
+	moi->a2d[0][1] -= mass * pos->xyz.x * pos->xyz.y;
+	moi->a2d[0][2] -= mass * pos->xyz.x * pos->xyz.z;
+	moi->a2d[1][0] -= mass * pos->xyz.x * pos->xyz.y;
+	moi->a2d[1][1] += mass * (pos->xyz.x * pos->xyz.x + pos->xyz.z * pos->xyz.z);
+	moi->a2d[1][2] -= mass * pos->xyz.y * pos->xyz.z;
+	moi->a2d[2][0] -= mass * pos->xyz.x * pos->xyz.z;
+	moi->a2d[2][1] -= mass * pos->xyz.y * pos->xyz.z;
+	moi->a2d[2][2] += mass * (pos->xyz.x * pos->xyz.x + pos->xyz.y * pos->xyz.y);
 }
 
 //*************************CLASS: avd_movement*************************

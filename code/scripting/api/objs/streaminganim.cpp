@@ -40,7 +40,7 @@ streaminganim_h& streaminganim_h::operator=(streaminganim_h&& other) noexcept {
 //**********HANDLE: streamingAnimation
 ADE_OBJ(l_streaminganim, streaminganim_h, "streaminganim", "Streaming Animation handle");
 
-ADE_VIRTVAR(Loop, l_streaminganim, "[boolean loop]", "Make the streaming animation loop.", "boolean", "Is the animation looping, or nil if anim invalid")
+ADE_VIRTVAR(Loop, l_streaminganim, "boolean", "Make the streaming animation loop.", "boolean", "Is the animation looping, or nil if anim invalid")
 {
 	streaminganim_h* sah;
 	bool loop = false;
@@ -61,7 +61,7 @@ ADE_VIRTVAR(Loop, l_streaminganim, "[boolean loop]", "Make the streaming animati
 	return ((sah->ga.direction & GENERIC_ANIM_DIRECTION_NOLOOP) == false ? ADE_RETURN_TRUE : ADE_RETURN_FALSE);
 }
 
-ADE_VIRTVAR(Pause, l_streaminganim, "[boolean pause]", "Pause the streaming animation.", "boolean", "Is the animation paused, or nil if anim invalid")
+ADE_VIRTVAR(Pause, l_streaminganim, "boolean", "Pause the streaming animation.", "boolean", "Is the animation paused, or nil if anim invalid")
 {
 	streaminganim_h* sah;
 	bool pause = false;
@@ -73,7 +73,7 @@ ADE_VIRTVAR(Pause, l_streaminganim, "[boolean pause]", "Pause the streaming anim
 		return ADE_RETURN_NIL;
 
 	if (ADE_SETTING_VAR) {
-		if (pause == true)
+		if (pause)
 			sah->ga.direction |= GENERIC_ANIM_DIRECTION_PAUSED;
 		else
 			sah->ga.direction &= ~GENERIC_ANIM_DIRECTION_PAUSED;
@@ -82,7 +82,7 @@ ADE_VIRTVAR(Pause, l_streaminganim, "[boolean pause]", "Pause the streaming anim
 	return ((sah->ga.direction & GENERIC_ANIM_DIRECTION_PAUSED) ? ADE_RETURN_TRUE : ADE_RETURN_FALSE);
 }
 
-ADE_VIRTVAR(Reverse, l_streaminganim, "[boolean reverse]", "Make the streaming animation play in reverse.", "boolean", "Is the animation playing in reverse, or nil if anim invalid")
+ADE_VIRTVAR(Reverse, l_streaminganim, "boolean", "Make the streaming animation play in reverse.", "boolean", "Is the animation playing in reverse, or nil if anim invalid")
 {
 	streaminganim_h* sah;
 	bool reverse = false;
@@ -94,13 +94,31 @@ ADE_VIRTVAR(Reverse, l_streaminganim, "[boolean reverse]", "Make the streaming a
 		return ADE_RETURN_NIL;
 
 	if (ADE_SETTING_VAR) {
-		if (reverse == true)
+		if (reverse)
 			sah->ga.direction |= GENERIC_ANIM_DIRECTION_BACKWARDS;
 		else
 			sah->ga.direction &= ~GENERIC_ANIM_DIRECTION_BACKWARDS;
 	}
 
 	return ((sah->ga.direction & GENERIC_ANIM_DIRECTION_BACKWARDS) ? ADE_RETURN_TRUE : ADE_RETURN_FALSE);
+}
+
+ADE_VIRTVAR(Grayscale, l_streaminganim, "boolean", "Whether the streaming animation is drawn as grayscale multiplied by the current color (the HUD method).", "boolean", "Boolean flag")
+{
+	streaminganim_h* sah;
+	bool grayscale = false;
+
+	if (!ade_get_args(L, "o|b", l_streaminganim.GetPtr(&sah), &grayscale))
+		return ADE_RETURN_NIL;
+
+	if (!sah->IsValid())
+		return ADE_RETURN_NIL;
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This variable can only be set before the anim is loaded.");
+	}
+
+	return sah->ga.use_hud_color ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
 }
 
 ADE_FUNC(getFilename, l_streaminganim, NULL, "Get the filename of the animation", "string", "Filename or nil if invalid")
@@ -218,13 +236,30 @@ ADE_FUNC(process, l_streaminganim, "[number x1, number y1, number x2, number y2,
 	if(!sah->IsValid())
 		return ADE_RETURN_NIL;
 
-	ge.width = sah->ga.width;
-	ge.height = sah->ga.height;
-	if (x2 != INT_MAX) ge.width = x2-x1;
-	if (y2 != INT_MAX) ge.height = y2-y1;
+	if (sah->ga.use_hud_color)
+	{
+		float scale_x = (x2 != INT_MAX) ? i2fl(x2 - x1) / i2fl(sah->ga.width) : 1.0f;
+		float scale_y = (y2 != INT_MAX) ? i2fl(y2 - y1) / i2fl(sah->ga.height) : 1.0f;
+		int base_w = gr_screen.max_w;
+		int base_h = gr_screen.max_h;
+		gr_set_screen_scale(fl2ir(base_w / scale_x), fl2ir(base_h / scale_y));
 
-	// note; generic_anim_render will default to GR_RESIZE_NONE when ge is provided
-	generic_anim_render(&sah->ga, flFrametime, x1, y1, false, &ge);
+		// generic_anim_render can't use generic_extras, says the function
+		// but we can at least do scaling, as above
+		generic_anim_render(&sah->ga, flFrametime, fl2ir(x1 / scale_x), fl2ir(y1 / scale_y), false);
+
+		gr_reset_screen_scale();
+	}
+	else
+	{
+		ge.width = sah->ga.width;
+		ge.height = sah->ga.height;
+		if (x2 != INT_MAX) ge.width = x2 - x1;
+		if (y2 != INT_MAX) ge.height = y2 - y1;
+
+		// note; generic_anim_render will default to GR_RESIZE_NONE when ge is provided
+		generic_anim_render(&sah->ga, flFrametime, x1, y1, false, &ge);
+	}
 
 	return ADE_RETURN_TRUE;
 }
@@ -255,10 +290,15 @@ ADE_FUNC(timeLeft, l_streaminganim, nullptr, "Get the amount of time left in the
 		return ADE_RETURN_NIL;
 
 	float timeLeft = 0.0f;
-	if ((sah->ga.direction & GENERIC_ANIM_DIRECTION_BACKWARDS) == true)
+	if ((sah->ga.direction & GENERIC_ANIM_DIRECTION_BACKWARDS))
 		timeLeft = sah->ga.anim_time;
 	else
 		timeLeft = sah->ga.total_time - sah->ga.anim_time;
+
+	// there was an anim that completed with less than 1/1000 seconds left;
+	// let's round under 1/200 seconds because nobody plays at 200 FPS
+	if (timeLeft < 0.005)
+		timeLeft = 0.0f;
 
 	return ade_set_args(L, "f", timeLeft);
 }

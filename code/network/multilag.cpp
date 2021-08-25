@@ -8,17 +8,17 @@
 */
 
 
-
-#ifndef SCP_UNIX
-
+#ifdef _WIN32
 #include <winsock2.h>
+#else
+#include <sys/socket.h>
+#endif
 
 #include "network/multilag.h"
 #include "io/timer.h"
 #include "globalincs/linklist.h"
 #include "network/psnet2.h"
 #include "debugconsole/console.h"
-
 
 
 // ----------------------------------------------------------------------------------------------------
@@ -54,11 +54,13 @@ int Multi_current_streak = -1;			// what lag the current streak has
 
 // struct for buffering stuff on receives
 typedef struct lag_buf {
+	SOCKADDR_STORAGE ip_addr;						// ip address
+	SSIZE_T data_len;								// length of the data
 	ubyte data[700];							// the data from the packet
-	int data_len;								// length of the data
 	SOCKET socket;								// this can be either a PSNET_SOCKET or a PSNET_SOCKET_RELIABLE
 	int stamp;									// when this expires, make this packet available	
-	SOCKADDR_IN ip_addr;						// ip address
+
+	uint8_t __pad[4];	// alignment
 
 	struct	lag_buf * prev;				// prev in the list
 	struct	lag_buf * next;				// next in the list
@@ -166,26 +168,38 @@ void multi_lag_close()
 
 // select for multi_lag
 int multi_lag_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *except_fds, timeval *timeout)
-{		
-	char t_buf[1024];
-	int t_from_len;
-	SOCKADDR_IN ip_addr;
-	int ret_val;
+{
+	#define T_BUF_SIZE	1024
+
+	char t_buf[T_BUF_SIZE];
+	socklen_t t_from_len;
+	SOCKADDR_STORAGE ip_addr;
+	SSIZE_T ret_val;
 	lag_buf *moveup, *item;
+	SOCKET sckt = 0;
 
 	Assert(readfds != NULL);
 	Assert(writefds == NULL);
 	Assert(except_fds == NULL);
 
 	// clear out addresses
-	memset(&ip_addr, 0, sizeof(SOCKADDR_IN));
+	memset(&ip_addr, 0, sizeof(ip_addr));
+
+#ifdef _WIN32
+	sckt = readfds->fd_array[0];
+#else
+	sckt = nfds - 1;
+#endif
 
 	// if there's data on the socket, read it
-	if(select(nfds, readfds, writefds, except_fds, timeout)){		
+	if ( select(nfds, readfds, writefds, except_fds, timeout) != SOCKET_ERROR ) {
+		if ( !FD_ISSET(sckt, readfds) ) {
+			return 0;
+		}
+
 		// read the data and stuff it
-		Assertion(Tcp_active, "multi_lag_select(): TCP/IP is not active!");
-		t_from_len = sizeof(SOCKADDR_IN);
-		ret_val = recvfrom(readfds->fd_array[0], t_buf, 1024, 0, (SOCKADDR*)&ip_addr, &t_from_len);
+		t_from_len = sizeof(ip_addr);
+		ret_val = recvfrom(sckt, t_buf, T_BUF_SIZE, 0, reinterpret_cast<LPSOCKADDR>(&ip_addr), &t_from_len);
 			
 		// wacky socket error
 		if(ret_val == SOCKET_ERROR){
@@ -198,26 +212,26 @@ int multi_lag_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *except
 			item = multi_lag_get_free();
 			if(item){
 				Assert(ret_val < 700);
-				memcpy(item->data, t_buf, ret_val);			
+				memcpy(item->data, t_buf, static_cast<size_t>(ret_val));
 				item->data_len = ret_val;
 				item->ip_addr = ip_addr;
-				item->socket = readfds->fd_array[0];
+				item->socket = sckt;
 				item->stamp = timestamp(multi_lag_get_random_lag());
 			}		
 		}
 	}
 
 	// always unset the readfds
-	readfds->fd_count = 0;
+	FD_CLR(sckt, readfds);
 
 	// now determine if we have any pending packets - find the first one
 	// NOTE : this _could_ be the packet we just read. In fact, with a 0 lag, this will always be the case
 	moveup=GET_FIRST(&Lag_used_list);
 	while ( moveup!=END_OF_LIST(&Lag_used_list) )	{		
 		// if the timestamp has elapsed and we have a matching socket
-		if((readfds->fd_array[0] == (SOCKET)moveup->socket) && ((moveup->stamp <= 0) || timestamp_elapsed(moveup->stamp))){
+		if ( (sckt == moveup->socket) && ((moveup->stamp <= 0) || timestamp_elapsed(moveup->stamp)) ) {
 			// set this so we think select returned yes
-			readfds->fd_count = 1;
+			FD_SET(sckt, readfds);
 			return 1;
 		}
 
@@ -229,7 +243,7 @@ int multi_lag_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *except
 }
 
 // recvfrom for multilag
-int multi_lag_recvfrom(uint s, char *buf, int len, int /*flags*/, struct sockaddr *from, int * /*fromlen*/)
+int multi_lag_recvfrom(SOCKET s, char *buf, int len, int /*flags*/, struct sockaddr *from, int *fromlen)
 {
 	lag_buf *moveup = NULL;
 	lag_buf *item = NULL;
@@ -238,7 +252,7 @@ int multi_lag_recvfrom(uint s, char *buf, int len, int /*flags*/, struct sockadd
 	moveup=GET_FIRST(&Lag_used_list);
 	while ( moveup!=END_OF_LIST(&Lag_used_list) )	{		
 		// if the timestamp has elapsed
-		if((s == (SOCKET)moveup->socket) && ((moveup->stamp <= 0) || timestamp_elapsed(moveup->stamp))){
+		if((s == moveup->socket) && ((moveup->stamp <= 0) || timestamp_elapsed(moveup->stamp))){
 			item = moveup;
 			break;
 		}
@@ -250,15 +264,41 @@ int multi_lag_recvfrom(uint s, char *buf, int len, int /*flags*/, struct sockadd
 	Assert(item);
 	// stuff the data
 	Assert(item->data_len <= len);
-	memcpy(buf, item->data, item->data_len);
-	Assertion(Tcp_active, "multi_lag_recvfrom(): TCP/IP is not active!");
-	memcpy(from, &item->ip_addr, sizeof(SOCKADDR_IN));
+	memcpy(buf, item->data, static_cast<size_t>(item->data_len));
+	Assertion(psnet_is_active(), "multi_lag_recvfrom(): TCP/IP is not active!");
+
+	switch (item->ip_addr.ss_family) {
+		case AF_INET: {
+			Assert(*fromlen >= static_cast<int>(sizeof(SOCKADDR_IN)));
+
+			memcpy(from, &item->ip_addr, sizeof(SOCKADDR_IN));
+			*fromlen = sizeof(SOCKADDR_IN);
+
+			break;
+		}
+
+		case AF_INET6: {
+			Assert(*fromlen >= static_cast<int>(sizeof(SOCKADDR_IN6)));
+
+			memcpy(from, &item->ip_addr, sizeof(SOCKADDR_IN6));
+			*fromlen = sizeof(SOCKADDR_IN6);
+
+			break;
+		}
+
+		default: {
+			Assert(*fromlen >= static_cast<int>(sizeof(item->ip_addr)));
+
+			memcpy(from, &item->ip_addr, sizeof(item->ip_addr));
+			*fromlen = sizeof(item->ip_addr);
+		}
+	}
 
 	// stick the item back on the free list
 	multi_lag_put_free(item);
 
 	// return the size in bytes
-	return item->data_len;
+	return static_cast<int>(item->data_len);
 }
 
 // ----------------------------------------------------------------------------------------------------
@@ -278,7 +318,7 @@ int multi_lag_get_random_lag()
 		
 	// pick a value
 	// see if we should be going up or down (loss max/loss min)
-	float rand_val = rand() * RAND_MAX_1f;
+	float rand_val = Random::next() * Random::INV_F_MAX_VALUE;
 	mod = 0;
 	if (rand_val < 0.5f) {
 		// down
@@ -323,7 +363,7 @@ int multi_lag_should_be_lost()
 	}
 		
 	// see if we should be going up or down (loss max/loss min)
-	float rand_val = rand() * RAND_MAX_1f;
+	float rand_val = Random::next() * Random::INV_F_MAX_VALUE;
 	mod = 0.0f;
 	if (rand_val < 0.5) {
 		// down
@@ -800,5 +840,3 @@ DCF(lag_good, "Lag system shortcut - Sets for 'good' lag simulation (Multiplayer
 	Multi_streak_stamp = -1;
 	Multi_current_streak = -1;
 }
-
-#endif // !SCP_UNIX

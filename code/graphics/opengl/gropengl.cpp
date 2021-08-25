@@ -1,5 +1,11 @@
 
 
+#if defined(_WIN32)
+#include <windows.h>
+#include <windowsx.h>
+#include <direct.h>
+#endif
+
 #include "gropengl.h"
 
 #include "gropenglbmpman.h"
@@ -27,12 +33,6 @@
 #include "osapi/osapi.h"
 #include "osapi/osregistry.h"
 #include "pngutils/pngutils.h"
-
-#if defined(_WIN32)
-#include <windows.h>
-#include <windowsx.h>
-#include <direct.h>
-#endif
 
 #include <glad/glad.h>
 
@@ -1304,6 +1304,8 @@ bool gr_opengl_is_capable(gr_capability capability)
 		return GLAD_GL_ARB_draw_buffers_blend != 0; // We need an OpenGL extension for this
 	case CAPABILITY_PERSISTENT_BUFFER_MAPPING:
 		return GLAD_GL_ARB_buffer_storage != 0;
+	case CAPABILITY_BPTC:
+		return GLAD_GL_ARB_texture_compression_bptc != 0;
 	}
 
 	return false;

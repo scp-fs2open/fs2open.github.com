@@ -401,11 +401,14 @@ matrix4 getDecalTransform(Decal& decal) {
 
 	auto objp = decal.object.objp;
 	auto ship = &Ships[objp->instance];
+	auto pmi = model_get_instance(ship->model_instance_num);
+	auto pm = model_get(pmi->model_num);
 
 	vec3d worldPos;
 	model_instance_find_world_point(&worldPos,
 									&decal.position,
-									ship->model_instance_num,
+									pm,
+									pmi,
 									decal.submodel,
 									&objp->orient,
 									&objp->pos);
@@ -413,14 +416,16 @@ matrix4 getDecalTransform(Decal& decal) {
 	vec3d worldDir;
 	model_instance_find_world_dir(&worldDir,
 								  &decal.orientation.vec.fvec,
-								  ship->model_instance_num,
+								  pm,
+								  pmi,
 								  decal.submodel,
 								  &objp->orient);
 
 	vec3d worldUp;
 	model_instance_find_world_dir(&worldUp,
 								  &decal.orientation.vec.fvec,
-								  ship->model_instance_num,
+								  pm,
+								  pmi,
 								  decal.submodel,
 								  &objp->orient);
 

@@ -11,7 +11,9 @@ ADD_SUBDIRECTORY(lua)
 
 include(OpenAL.cmake)
 
-add_subdirectory(opengl)
+if (FSO_BUILD_WITH_OPENGL)
+	add_subdirectory(opengl)
+endif()
 
 ADD_SUBDIRECTORY(libsdl)
 
@@ -37,6 +39,16 @@ include(libRocket.cmake)
 
 add_subdirectory(libpcp)
 
-add_subdirectory(vulkan-hpp)
+if (FSO_BUILD_WITH_VULKAN)
+	add_subdirectory(vulkan-hpp)
+endif()
 
 include(antlr4.cmake)
+
+include(vulkan.cmake)
+
+add_subdirectory(mdns)
+
+add_subdirectory(variant)
+
+ADD_SUBDIRECTORY(lz4)

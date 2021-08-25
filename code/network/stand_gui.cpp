@@ -331,7 +331,7 @@ void std_connect_update_ping(net_player *p)
 	// as long as his ping is not -1, do an update
 	if(p->s_info.ping.ping_avg > -1){	
 		// get the lookup string
-		psnet_addr_to_string(lookup,&p->p_info.addr);
+		psnet_addr_to_string(&p->p_info.addr, lookup, sizeof(lookup));
 		
 		// build the string to replace the ping with
 		strcpy_s(str,lookup); 
@@ -455,7 +455,7 @@ int std_connect_lindex_to_npindex(int index)
 		// only look at connected players
 		if(MULTI_CONNECTED(Net_players[idx])){
 			strcpy_s(addr_text,"");
-			psnet_addr_to_string(addr_text,&Net_players[idx].p_info.addr);
+			psnet_addr_to_string(&Net_players[idx].p_info.addr, addr_text, sizeof(addr_text));
 
 			// if we found the match
 			if((addr_text[0] != '\0') && (strstr(list_text,addr_text) != NULL)){
@@ -1066,8 +1066,10 @@ void std_pinfo_display_player_info(net_player *p)
 	char txt[40];
 	txt[sizeof(txt)-1] = '\0';
 
-	// set his ship type
-	SetWindowText(Player_ship_type,Ship_info[p->p_info.ship_class].name);
+	// set his ship type -- Cyborg17, if it's valid!
+	if (p->p_info.ship_class >= 0 && p->p_info.ship_class < static_cast<int>(Ship_info.size())) {
+		SetWindowText(Player_ship_type, Ship_info[p->p_info.ship_class].name);
+	}
 
 	// display his ping time
 	std_pinfo_update_ping(p);
@@ -1635,7 +1637,7 @@ void std_add_player(net_player *p)
 	char ip_string[60];	
 	
 	// get his ip string and add it to the list
-	psnet_addr_to_string(ip_string,&p->p_info.addr);
+	psnet_addr_to_string(&p->p_info.addr, ip_string, sizeof(ip_string));
 	std_connect_add_ip_string(ip_string);
 
 	// add to the player info player list box, and update his info
@@ -1659,7 +1661,7 @@ int std_remove_player(net_player *p)
 	char ip_string[60];	
    
 	// determine his ip string and remove it from the list
-	psnet_addr_to_string(ip_string,&p->p_info.addr);
+	psnet_addr_to_string(&p->p_info.addr, ip_string, sizeof(ip_string));
 	std_connect_remove_ip_string(ip_string);
 
 	// remove from the player info player list box

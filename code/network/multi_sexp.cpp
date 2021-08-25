@@ -9,8 +9,8 @@
 #include "network/multi.h"
 #include "network/multiutil.h"
 
-#define CALLBACK_TERMINATOR	255
-int TEMP_DATA_SIZE = -1;
+static const std::uint8_t CALLBACK_TERMINATOR = 255;
+static const std::int16_t TEMP_DATA_SIZE = -1;
 
 sexp_network_packet Current_sexp_network_packet;
 
@@ -40,10 +40,10 @@ void sexp_network_packet::ensure_space_remains(size_t data_size)
     int sub_packet_size = 0;
     int i, j;
 
-    //If the index of the data buffer isn't high enough yet, bail
-    if (packet_size + data_size + HEADER_LENGTH < MAX_PACKET_SIZE) {
-        return;
-    }
+	// If the index of the data buffer isn't high enough yet, bail
+	if (packet_size + static_cast<int>(data_size) < SEXP_MAX_PACKET_SIZE) {
+		return;
+	}
 
     //iterate back through the types array until we find a TERMINATOR and store the corresponding data index 
     for (i = packet_size - 1; i > 0; i--) {
@@ -57,7 +57,7 @@ void sexp_network_packet::ensure_space_remains(size_t data_size)
     sub_packet_size = packet_end + 1;
 
     // At very least must include OP, COUNT, TERMINATOR 
-    if (packet_end < 9 && !packet_flagged_invalid) {
+	if (packet_end < MIN_SEXP_PACKET_SIZE && !packet_flagged_invalid) {
         Warning(LOCATION, "Sexp %s has attempted to write too much data to a single packet. It is advised that you split this SEXP up into smaller ones", Operators[Current_sexp_operator.back()].text.c_str());
         packet_flagged_invalid = true;
         return;
@@ -76,7 +76,7 @@ void sexp_network_packet::ensure_space_remains(size_t data_size)
     packet_size = j;
 
     // flush the remaining type buffer
-    for (i = j; i < MAX_PACKET_SIZE; i++) {
+	for (i = j; i < SEXP_MAX_PACKET_SIZE; i++) {
         type[i] = packet_data_type::NOT_DATA;
     }
 
@@ -142,11 +142,10 @@ void sexp_network_packet::set_data(ubyte * received_packet, int num_ubytes)
     offset = 0;
     op_num = -1;
 
-    for (int i = 0; i < MAX_PACKET_SIZE; i++) {
-        data[i] = received_packet[i];
-    }
+	const auto r_data_size = std::min(SEXP_MAX_PACKET_SIZE, num_ubytes);
+	memcpy(data, received_packet, static_cast<size_t>(r_data_size));
 
-    sexp_bytes_left = num_ubytes;
+	sexp_bytes_left = r_data_size;
 }
 
 void sexp_network_packet::initialize()
@@ -155,7 +154,7 @@ void sexp_network_packet::initialize()
         return;
     }
 
-    for (int i = 0; i < MAX_PACKET_SIZE; ++i) {
+	for (int i = 0; i < SEXP_MAX_PACKET_SIZE; ++i) {
         data[i] = 0;
         type[i] = packet_data_type::NOT_DATA;
     }
@@ -187,7 +186,7 @@ void sexp_network_packet::start_callback()
     argument_count_index = packet_size;
     // store an invalid count, we'll come back and store the correct value once we know what it is.	
     type[packet_size] = packet_data_type::ARGUMENT_COUNT;
-    ADD_INT(TEMP_DATA_SIZE);
+	ADD_SHORT(TEMP_DATA_SIZE);
 }
 
 void sexp_network_packet::end_callback()
@@ -210,13 +209,12 @@ void sexp_network_packet::end_callback()
 
     //write TERMINATOR into the Type and data buffers
     type[packet_size] = packet_data_type::DATA_TERMINATES;
-    ubyte b = CALLBACK_TERMINATOR;
-    ADD_DATA(b);
+	ADD_DATA(CALLBACK_TERMINATOR);
 
     //Write the COUNT into the data buffer at the index we saved earlier.
     int temp_packet_size = packet_size;
     packet_size = argument_count_index;
-    ADD_INT(current_argument_count);
+	ADD_SHORT(static_cast<short>(current_argument_count));
     packet_size = temp_packet_size;
 
     current_argument_count = 0;
@@ -342,13 +340,13 @@ void sexp_network_packet::send_string(char * string)
         return;
     }
 
-    ensure_space_remains(strlen(string) + 4);
+	ensure_space_remains(strlen(string) + sizeof(uint16_t));
 
     int start_size = packet_size;
     //write into the Type buffer.
     type[packet_size] = packet_data_type::STRING;
     //write the into the data buffer
-    ADD_STRING(string);
+	ADD_STRING_16(string);
     current_argument_count += packet_size - start_size;
 }
 
@@ -358,13 +356,13 @@ void sexp_network_packet::send_string(const SCP_string & string)
         return;
     }
 
-    ensure_space_remains(string.length() + 4);
+	ensure_space_remains(string.length() + sizeof(uint16_t));
 
     int start_size = packet_size;
     //write into the Type buffer.
     type[packet_size] = packet_data_type::STRING;
     //write the into the data buffer
-    ADD_STRING(string.c_str());
+	ADD_STRING_16(string.c_str());
     current_argument_count += packet_size - start_size;
 }
 
@@ -560,15 +558,17 @@ bool sexp_network_packet::get_parse_object(p_object *& pobjp)
     return false;
 }
 
-bool sexp_network_packet::get_string(char * buffer)
+bool sexp_network_packet::get_string(char * buffer, const size_t buf_len)
 {
+	char tempstring[SEXP_MAX_PACKET_SIZE];
     int starting_offset = offset;
 
     if (!sexp_bytes_left || !current_argument_count) {
         return false;
     }
 
-    GET_STRING(buffer);
+	GET_STRING_16(tempstring);
+	strcpy_s(buffer, buf_len, tempstring);
     reduce_counts(offset - starting_offset);
 
     return true;
@@ -576,14 +576,14 @@ bool sexp_network_packet::get_string(char * buffer)
 
 bool sexp_network_packet::get_string(SCP_string & buffer)
 {
-    char tempstring[TOKEN_LENGTH];
+	char tempstring[SEXP_MAX_PACKET_SIZE];
     int starting_offset = offset;
 
     if (!sexp_bytes_left || !current_argument_count) {
         return false;
     }
 
-    GET_STRING(tempstring);
+	GET_STRING_16(tempstring);
     buffer = tempstring;
     reduce_counts(offset - starting_offset);
 
@@ -664,10 +664,13 @@ int sexp_network_packet::get_next_operator()
         return -1;
     }
 
+	short count;
+
     GET_INT(op_num);
     sexp_bytes_left -= sizeof(int);
-    GET_INT(current_argument_count);
-    sexp_bytes_left -= sizeof(int);
+	GET_SHORT(count);
+	current_argument_count = count;
+	sexp_bytes_left -= sizeof(short);
 
     Assert(sexp_bytes_left);
     return op_num;

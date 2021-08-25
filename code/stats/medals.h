@@ -43,7 +43,7 @@ public:
 
 	medal_stuff();
 
-	const char* get_display_string();
+	const char* get_display_name() const;
 };
 
 extern SCP_vector<medal_stuff> Medals;

@@ -19,6 +19,7 @@
 #include "scripting/doc_json.h"
 #include "scripting/scripting_doc.h"
 #include "ship/ship.h"
+#include "tracing/tracing.h"
 #include "weapon/beam.h"
 #include "weapon/weapon.h"
 
@@ -104,6 +105,7 @@ static USED_VARIABLE SCP_vector<std::shared_ptr<BuiltinHook>> Script_actions
 	std::make_shared<BuiltinHook>("On Subsystem Destroyed",	CHA_ONSUBSYSDEATH ),
 	std::make_shared<BuiltinHook>("On Goals Cleared",		CHA_ONGOALSCLEARED ),
 	std::make_shared<BuiltinHook>("On Briefing Stage",		CHA_ONBRIEFSTAGE ),
+	// DO NOT ADD NEW HOOKS HERE, see scripting.h for a more in-depth explanation
 };
 
 static HookVariableDocumentation GlobalVariables[] =
@@ -161,6 +163,8 @@ void script_parse_table(const char* filename)
 			while (st->ParseCondition(filename));
 			required_string("#End");
 		}
+
+		st->AssayActions();
 	}
 	catch (const parse::ParseException& e)
 	{
@@ -209,7 +213,10 @@ void script_init()
 	Script_system.CreateLuaState();
 
 	if (Output_scripting_meta || Output_scripting_json) {
-		const auto doc = Script_system.OutputDocumentation();
+		const auto doc = Script_system.OutputDocumentation([](const SCP_string& error) {
+			mprintf(("Scripting documentation: Error while parsing\n%s(This is only relevant for coders)\n\n",
+				error.c_str()));
+		});
 
 		if (Output_scripting_meta) {
 			mprintf(("SCRIPTING: Outputting scripting metadata...\n"));
@@ -250,16 +257,67 @@ DCF(script, "Evaluates a line of scripting")
 extern char Game_current_mission_filename[];
 bool ConditionedHook::AddCondition(script_condition *sc)
 {
-	for(int i = 0; i < MAX_HOOK_CONDITIONS; i++)
+	//Since string comparisons are expensive and these hooks have to be checked very frequently
+	//where possible whatever string comparison is done here and the outcome stored for later
+	//nature of value stored depends on condition type.
+	switch (sc->condition_type)
 	{
-		if(Conditions[i].condition_type == CHC_NONE)
-		{
-			Conditions[i] = *sc;
-			return true;
+	case CHC_SHIPCLASS:
+		sc->condition_cached_value = ship_info_lookup(sc->condition_string.c_str());
+		break;
+	case CHC_STATE:
+		sc->condition_cached_value = gameseq_get_state_idx(sc->condition_string.c_str());
+		break;
+	case CHC_WEAPONCLASS:
+		sc->condition_cached_value = weapon_info_lookup(sc->condition_string.c_str());
+		break;
+	case CHC_OBJECTTYPE:
+		for (int i = 0; i < MAX_OBJECT_TYPES; i++) {
+			if (stricmp(Object_type_names[i], sc->condition_string.c_str()) == 0) {
+				sc->condition_cached_value = i;
+				break;
+			}
 		}
+		break;
+	case CHC_VERSION:
+	{
+		char buf[32];
+		sc->condition_cached_value = 0;
+		sprintf(buf, "%i.%i.%i", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD);
+		if (stricmp(buf, sc->condition_string.c_str()) == 0)
+		{
+			sc->condition_cached_value = 1;
+		}
+		else if (FS_VERSION_BUILD == 0) //In case some people are lazy and say "3.7" instead of "3.7.0" or something
+		{
+			sprintf(buf, "%i.%i", FS_VERSION_MAJOR, FS_VERSION_MINOR);
+			if (stricmp(buf, sc->condition_string.c_str()) == 0) {
+				sc->condition_cached_value = 1;
+			}
+		}
+		break;
 	}
+	case CHC_APPLICATION:
+	{
+		sc->condition_cached_value = 1;
+		if (Fred_running)
+		{
+			if (stricmp("FRED2_Open", sc->condition_string.c_str()) != 0 && stricmp("FRED2Open", sc->condition_string.c_str()) != 0 && stricmp("FRED 2", sc->condition_string.c_str()) != 0 && stricmp("FRED", sc->condition_string.c_str()) != 0)
+				sc->condition_cached_value = 0;
+		}
+		else
+		{
+			if (stricmp("FS2_Open", sc->condition_string.c_str()) != 0 && stricmp("FS2Open", sc->condition_string.c_str()) != 0 && stricmp("Freespace 2", sc->condition_string.c_str()) != 0 && stricmp("Freespace", sc->condition_string.c_str()) != 0)
+				sc->condition_cached_value = 0;
+		}
+		break;
+	}
+	default:
+		break;
+	}
+	Conditions.push_back(*sc);
 
-	return false;
+	return true;
 }
 
 bool ConditionedHook::AddAction(script_action *sa)
@@ -274,20 +332,19 @@ bool ConditionedHook::AddAction(script_action *sa)
 
 bool ConditionedHook::ConditionsValid(int action, object *objp, int more_data)
 {
-	uint i;
 
 	//Return false if any conditions are not met
-	script_condition *scp;
+	//Never return true inside the loop, or you will be potentially skipping other conditions on the hook.
 	ship_info *sip;
-	for(i = 0; i < MAX_HOOK_CONDITIONS; i++)
+	for(auto & scp : Conditions)
 	{
-		scp = &Conditions[i];
-		switch(scp->condition_type)
+		
+		switch(scp.condition_type)
 		{
 			case CHC_STATE:
 				if(gameseq_get_depth() < 0)
 					return false;
-				if(stricmp(GS_state_text[gameseq_get_state(0)], scp->condition_string.c_str()) != 0)
+				if(gameseq_get_state() != scp.condition_cached_value)
 					return false;
 				break;
 			case CHC_SHIPTYPE:
@@ -296,19 +353,20 @@ bool ConditionedHook::ConditionsValid(int action, object *objp, int more_data)
 				sip = &Ship_info[Ships[objp->instance].ship_info_index];
 				if(sip->class_type < 0)
 					return false;
-				if(stricmp(Ship_types[sip->class_type].name, scp->condition_string.c_str()) != 0)
+				if(stricmp(Ship_types[sip->class_type].name, scp.condition_string.c_str()) != 0)
 					return false;
 				break;
 			case CHC_SHIPCLASS:
+				//scp.condition_cached_value holds the weapon_info_index of the requested weapon class
 				if(objp == NULL || objp->type != OBJ_SHIP)
 					return false;
-				if(stricmp(Ship_info[Ships[objp->instance].ship_info_index].name, scp->condition_string.c_str()) != 0)
+				if(!(Ships[objp->instance].ship_info_index == scp.condition_cached_value))
 					return false;
 				break;
 			case CHC_SHIP:
 				if(objp == NULL || objp->type != OBJ_SHIP)
 					return false;
-				if(stricmp(Ships[objp->instance].ship_name, scp->condition_string.c_str()) != 0)
+				if(stricmp(Ships[objp->instance].ship_name, scp.condition_string.c_str()) != 0)
 					return false;
 				break;
 			case CHC_MISSION:
@@ -321,7 +379,7 @@ bool ConditionedHook::ConditionsValid(int action, object *objp, int more_data)
 						return false;
 					if(len > 4 && !stricmp(&Mission_filename[len-4], ".fs2"))
 						len -= 4;
-					if(strnicmp(scp->condition_string.c_str(), Mission_filename, len) != 0)
+					if(strnicmp(scp.condition_string.c_str(), Mission_filename, len) != 0)
 						return false;
 					break;
 				}
@@ -332,158 +390,164 @@ bool ConditionedHook::ConditionsValid(int action, object *objp, int more_data)
 						return false;
 					if(len > 4 && !stricmp(&Mission_filename[len-4], ".fc2"))
 						len -= 4;
-					if(strnicmp(scp->condition_string.c_str(), Mission_filename, len) != 0)
+					if(strnicmp(scp.condition_string.c_str(), Mission_filename, len) != 0)
 						return false;
 					break;
 				}
 			case CHC_WEAPONCLASS:
 				{
+					//scp.condition_cached_value holds the weapon_info_index of the requested weapon class
 					if (action == CHA_COLLIDEWEAPON) {
-						if (stricmp(Weapon_info[more_data].name, scp->condition_string.c_str()) != 0)
-							return false;
+						return(more_data == scp.condition_cached_value);
 					} else if (!(action == CHA_ONWPSELECTED || action == CHA_ONWPDESELECTED || action == CHA_ONWPEQUIPPED || action == CHA_ONWPFIRED || action == CHA_ONTURRETFIRED )) {
-						if(objp == NULL || (objp->type != OBJ_WEAPON && objp->type != OBJ_BEAM))
+						if (objp == NULL || (objp->type != OBJ_WEAPON && objp->type != OBJ_BEAM))
 							return false;
-						else if (( objp->type == OBJ_WEAPON) && (stricmp(Weapon_info[Weapons[objp->instance].weapon_info_index].name, scp->condition_string.c_str()) != 0 ))
+						else if (objp->type == OBJ_WEAPON && !(Weapons[objp->instance].weapon_info_index == scp.condition_cached_value))
 							return false;
-						else if (( objp->type == OBJ_BEAM) && (stricmp(Weapon_info[Beams[objp->instance].weapon_info_index].name, scp->condition_string.c_str()) != 0 ))
+						else if (objp->type == OBJ_BEAM && !(Weapons[objp->instance].weapon_info_index == scp.condition_cached_value))
 							return false;
-					} else if(objp == NULL || objp->type != OBJ_SHIP) {
+					}
+					else if (objp == NULL || objp->type != OBJ_SHIP) {
 						return false;
-					} else if (action == CHA_ONWEAPONCREATED) {
+					}
+					else if (action == CHA_ONWEAPONCREATED) {
 						if (objp == nullptr || objp->type != OBJ_WEAPON)
 							return false;
-					} else {
+					}
+					else {
 
 						// Okay, if we're still here, then objp is both valid and a ship
 						ship* shipp = &Ships[objp->instance];
 						bool primary = false, secondary = false, prev_primary = false, prev_secondary = false;
 						switch (action) {
-							case CHA_ONWPSELECTED:
-								if (shipp->weapons.current_primary_bank >= 0) {
-									primary = stricmp(Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].name, scp->condition_string.c_str()) == 0;
-								}
-								if (shipp->weapons.current_secondary_bank >= 0) {
-									secondary = stricmp(Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank]].name, scp->condition_string.c_str()) == 0;
-								}
-
-								if (!(primary || secondary)) {
-									return false;
-								}
-
-								if ((shipp->flags[Ship::Ship_Flags::Primary_linked]) && primary && (Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].wi_flags[Weapon::Info_Flags::Nolink])) {
-									return false;
-								}
-
-								break;
-							case CHA_ONWPDESELECTED:
-								if (shipp->weapons.current_primary_bank >= 0) {
-									primary = stricmp(Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].name, scp->condition_string.c_str()) == 0;
-								}
-								if (shipp->weapons.previous_primary_bank >= 0) {
-									prev_primary = stricmp(Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.previous_primary_bank]].name, scp->condition_string.c_str()) == 0;
-								}
-								if (shipp->weapons.current_secondary_bank >= 0) {
-									secondary = stricmp(Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank]].name, scp->condition_string.c_str()) == 0;
-								}
-								if (shipp->weapons.previous_secondary_bank >= 0) {
-									prev_secondary = stricmp(Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.previous_secondary_bank]].name, scp->condition_string.c_str()) == 0;
-								}
-
-								if ((shipp->flags[Ship::Ship_Flags::Primary_linked]) && prev_primary && (Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.previous_primary_bank]].wi_flags[Weapon::Info_Flags::Nolink]))
-									return true;
-
-								if ( !prev_secondary && ! secondary && !prev_primary && !primary )
-									return false;
-
-								if ( (!prev_secondary && !secondary) && (prev_primary && primary) )
-									return false;
-
-								if ( (!prev_secondary && !secondary) && (!prev_primary && primary) )
-									return false;
-
-								if ( (!prev_primary && !primary) && (prev_secondary && secondary) )
-									return false;
-
-								if ( (!prev_primary && !primary) && (!prev_secondary && secondary) )
-									return false;
-
-								break;
-							case CHA_ONWPEQUIPPED: {
-								bool equipped = false;
-								for(int j = 0; j < MAX_SHIP_PRIMARY_BANKS; j++) {
-									if (!equipped && (shipp->weapons.primary_bank_weapons[j] >= 0) && (shipp->weapons.primary_bank_weapons[j] < weapon_info_size()) ) {
-										if (!stricmp(Weapon_info[shipp->weapons.primary_bank_weapons[j]].name,
-													 scp->condition_string.c_str())) {
-											equipped = true;
-											break;
-										}
-									}
-								}
-							
-								if (!equipped) {
-									for(int j = 0; j < MAX_SHIP_SECONDARY_BANKS; j++) {
-										if (!equipped && (shipp->weapons.secondary_bank_weapons[j] >= 0) && (shipp->weapons.secondary_bank_weapons[j] < weapon_info_size()) ) {
-											if (!stricmp(Weapon_info[shipp->weapons.secondary_bank_weapons[j]].name,
-														 scp->condition_string.c_str())) {
-												equipped = true;
-												break;
-											}
-										}
-									}
-								}
-
-								if (!equipped)
-									return false;
-							
-								break;
+						case CHA_ONWPSELECTED: {
+							if (shipp->weapons.current_primary_bank >= 0) {
+								primary = shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank] == scp.condition_cached_value;
 							}
-							case CHA_ONWPFIRED: {
-								if (more_data == 1) {
-									primary = stricmp(Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].name, scp->condition_string.c_str()) == 0;
-									secondary = false;
-								} else {
-									primary = false;
-									secondary = stricmp(Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank]].name, scp->condition_string.c_str()) == 0;
+							if (shipp->weapons.current_secondary_bank >= 0) {
+								secondary = shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank] == scp.condition_cached_value;
+							}
+
+							if (!(primary || secondary)) {
+								return false;
+							}
+
+							if ((shipp->flags[Ship::Ship_Flags::Primary_linked]) && primary && (Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].wi_flags[Weapon::Info_Flags::Nolink])) {
+								return false;
+							}
+
+							break; }
+						case CHA_ONWPDESELECTED: {
+							if (shipp->weapons.current_primary_bank >= 0) {
+								primary = shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank] == scp.condition_cached_value;
+							}
+							if (shipp->weapons.previous_primary_bank >= 0) {
+								prev_primary = shipp->weapons.primary_bank_weapons[shipp->weapons.previous_primary_bank] == scp.condition_cached_value;
+							}
+							if (shipp->weapons.current_secondary_bank >= 0) {
+								secondary = shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank] == scp.condition_cached_value;
+							}
+							if (shipp->weapons.previous_secondary_bank >= 0) {
+								prev_secondary = shipp->weapons.secondary_bank_weapons[shipp->weapons.previous_secondary_bank] == scp.condition_cached_value;
+							}
+
+							if (!(
+									(shipp->flags[Ship::Ship_Flags::Primary_linked]) && prev_primary && 
+									(Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.previous_primary_bank]].wi_flags[Weapon::Info_Flags::Nolink])
+								)) {
+								return false;
+							}
+							if (!prev_secondary && !secondary && !prev_primary && !primary)
+								return false;
+
+							if ((!prev_secondary && !secondary) && (prev_primary && primary))
+								return false;
+
+							if ((!prev_secondary && !secondary) && (!prev_primary && primary))
+								return false;
+
+							if ((!prev_primary && !primary) && (prev_secondary && secondary))
+								return false;
+
+							if ((!prev_primary && !primary) && (!prev_secondary && secondary))
+								return false;
+
+							break; }
+						case CHA_ONWPEQUIPPED: {
+							bool equipped = false;
+							for (int j = 0; j < MAX_SHIP_PRIMARY_BANKS && !equipped; j++) {
+								if (shipp->weapons.primary_bank_weapons[j] > 0 && shipp->weapons.primary_bank_weapons[j] < weapon_info_size()) {
+									equipped = shipp->weapons.primary_bank_weapons[j] == scp.condition_cached_value;
+								}
+							}
+							for (int j = 0; j < MAX_SHIP_SECONDARY_BANKS && !equipped; j++) {
+								if (shipp->weapons.secondary_bank_weapons[j] >= 0 && (shipp->weapons.secondary_bank_weapons[j] < weapon_info_size()))
+								{
+									equipped = shipp->weapons.secondary_bank_weapons[j] == scp.condition_cached_value;
 								}
 
-								if ((shipp->flags[Ship::Ship_Flags::Primary_linked]) && primary && (Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].wi_flags[Weapon::Info_Flags::Nolink]))
-								 	return false;
+							}
 
-								return more_data == 1 ? primary : secondary;
+							if (!equipped) {
+								return false;
+							}
 
-								break;
-							}
-							case CHA_ONTURRETFIRED: {
-								if (! (stricmp(Weapon_info[shipp->last_fired_turret->last_fired_weapon_info_index].name, scp->condition_string.c_str()) == 0))
-									return false;
-								break;
-							}
-							case CHA_PRIMARYFIRE: {
-								if (stricmp(Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].name, scp->condition_string.c_str()) != 0)
-									return false;
-								break;
-							}
-							case CHA_SECONDARYFIRE: {
-								if (stricmp(Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank]].name, scp->condition_string.c_str()) != 0)
-									return false;
-								break;
-							}
-							case CHA_BEAMFIRE: {
-								if (!(stricmp(Weapon_info[more_data].name, scp->condition_string.c_str()) == 0))
-									return false;
-								break;
-							}
-							default:
-								break;
+							break;
 						}
-					} // case CHC_WEAPONCLASS
-					break;
+						case CHA_ONWPFIRED: {
+							if (more_data == 1) {
+								primary = shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank] == scp.condition_cached_value;
+								secondary = false;
+							} else {
+								primary = false;
+								secondary = shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank] == scp.condition_cached_value;
+							}
+
+							if (
+								(shipp->flags[Ship::Ship_Flags::Primary_linked]) && primary && 
+								(Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].wi_flags[Weapon::Info_Flags::Nolink]))
+							{
+								return false;
+							}
+
+							if (more_data == 1 && !primary) {
+								return false;
+							}
+							else if (more_data != 1 && !secondary) {
+								return false;
+							}
+							break;
+						}
+						case CHA_ONTURRETFIRED: {
+							if(shipp->last_fired_turret->last_fired_weapon_info_index != scp.condition_cached_value)
+								return false;
+							break;
+						}
+						case CHA_PRIMARYFIRE: {
+							if (shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank] != scp.condition_cached_value)
+								return false;
+							break;
+						}
+						case CHA_SECONDARYFIRE: {
+							if(shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank] != scp.condition_cached_value)
+								return false;
+							break;
+						}
+						case CHA_BEAMFIRE: {
+							if(more_data != scp.condition_cached_value)
+								return false;
+							break;
+						}
+						default:
+							break;
+					}
+				} // case CHC_WEAPONCLASS
+				break;
 				}
 			case CHC_OBJECTTYPE:
 				if(objp == NULL)
 					return false;
-				if(stricmp(Object_type_names[objp->type], scp->condition_string.c_str()) != 0)
+				if(objp->type != scp.condition_cached_value)
 					return false;
 				break;
 			case CHC_KEYPRESS:
@@ -494,7 +558,7 @@ bool ConditionedHook::ConditionsValid(int action, object *objp, int more_data)
 					if(Current_key_down == 0)
 						return false;
 					//WMC - could be more efficient, but whatever.
-					if(stricmp(textify_scancode(Current_key_down), scp->condition_string.c_str()) != 0)
+					if(stricmp(textify_scancode(Current_key_down), scp.condition_string.c_str()) != 0)
 						return false;
 					break;
 				}
@@ -505,42 +569,25 @@ bool ConditionedHook::ConditionsValid(int action, object *objp, int more_data)
 
 					int action_index = more_data;
 
-					if (action_index <= 0 || stricmp(scp->condition_string.c_str(), Control_config[action_index].text) != 0)
+					if (action_index <= 0 || stricmp(scp.condition_string.c_str(), Control_config[action_index].text.c_str()) != 0)
 						return false;
 					break;
 				}
 			case CHC_VERSION:
 				{
-					// Goober5000: I'm going to assume scripting doesn't care about SVN revision
-					char buf[32];
-					sprintf(buf, "%i.%i.%i", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD);
-					if(stricmp(buf, scp->condition_string.c_str()) != 0)
+					//Already evaluated on script load, stored value is 1 if application matches condition, 0 if not.
+					if(scp.condition_cached_value == 0)
 					{
-						//In case some people are lazy and say "3.7" instead of "3.7.0" or something
-						if(FS_VERSION_BUILD == 0)
-						{
-							sprintf(buf, "%i.%i", FS_VERSION_MAJOR, FS_VERSION_MINOR);
-							if(stricmp(buf, scp->condition_string.c_str()) != 0)
-								return false;
-						}
-						else
-						{
-							return false;
-						}
+						return false;
 					}
 					break;
 				}
 			case CHC_APPLICATION:
 				{
-					if(Fred_running)
+					//Already evaluated on script load, stored value is 1 if application matches condition, 0 if not.
+					if(scp.condition_cached_value == 0)
 					{
-						if(stricmp("FRED2_Open", scp->condition_string.c_str()) != 0 && stricmp("FRED2Open", scp->condition_string.c_str()) != 0 && stricmp("FRED 2", scp->condition_string.c_str()) != 0 && stricmp("FRED", scp->condition_string.c_str()) != 0)
-							return false;
-					}
-					else
-					{
-						if(stricmp("FS2_Open", scp->condition_string.c_str()) != 0 && stricmp("FS2Open", scp->condition_string.c_str()) != 0 && stricmp("Freespace 2", scp->condition_string.c_str()) != 0 && stricmp("Freespace", scp->condition_string.c_str()) != 0)
-							return false;
+						return false;
 					}
 				}
 			default:
@@ -599,129 +646,41 @@ void script_state::SetHookObjects(int num, ...)
 
 	va_list vl;
 	va_start(vl, num);
-	if(this->OpenHookVarTable())
-	{
-		int amt_ldx = lua_gettop(LuaState);
-		for(int i = 0; i < num; i++)
-		{
-			char *name = va_arg(vl, char*);
-			object *objp = va_arg(vl, object*);
-			
-			ade_set_object_with_breed(LuaState, OBJ_INDEX(objp));
-			int data_ldx = lua_gettop(LuaState);
 
-			lua_pushstring(LuaState, name);
-			lua_pushvalue(LuaState, data_ldx);
-			lua_rawset(LuaState, amt_ldx);
+	for (int i = 0; i < num; i++) {
+		char* name = va_arg(vl, char*);
+		object* objp = va_arg(vl, object*);
 
-			lua_pop(LuaState, 1);	//data_ldx
-		}
-		this->CloseHookVarTable();
+		ade_set_object_with_breed(LuaState, OBJ_INDEX(objp));
+		auto reference = luacpp::UniqueLuaReference::create(LuaState);
+		lua_pop(LuaState, 1); // Remove object value from the stack
+
+		HookVariableValues[name].push_back(std::move(reference));
 	}
-	else
-	{
-		LuaError(LuaState, "Could not get HookVariable library to add hook variables - get a coder");
-	}
+
 	va_end(vl);
 }
 
-//This pair of abstraction functions handles
-//getting the table of ade member functions
-//for the hook library.
-//Call CloseHookVarTable() only if OpenHookVarTable()
-//returns true. (see below)
-static int ohvt_poststack = 0;		//Items on the stack prior to OHVT
-static int ohvt_isopen = 0;			//Items OHVT puts on the stack
-bool script_state::OpenHookVarTable()
+void script_state::RemHookVar(const char* name)
 {
-	if(ohvt_isopen)
-		Error(LOCATION, "OpenHookVarTable was called twice with no call to CloseHookVarTable - missing call ahoy!");
+	this->RemHookVars({name});
+}
 
-	lua_pushstring(LuaState, "hv");
-	lua_gettable(LuaState, LUA_GLOBALSINDEX);
-	int sv_ldx = lua_gettop(LuaState);
-	if(lua_isuserdata(LuaState, sv_ldx))
-	{
-		//Get ScriptVar metatable
-		lua_getmetatable(LuaState, sv_ldx);
-		int mtb_ldx = lua_gettop(LuaState);
-		if(lua_istable(LuaState, mtb_ldx))
-		{
-			//Get ScriptVar/metatable/__ademembers
-			lua_pushstring(LuaState, "__ademembers");
-			lua_rawget(LuaState, mtb_ldx);
-			int amt_ldx = lua_gettop(LuaState);
-			if(lua_istable(LuaState, amt_ldx))
-			{
-				ohvt_isopen = 3;
-				ohvt_poststack = amt_ldx;
-				return true;
+void script_state::RemHookVars(std::initializer_list<SCP_string> names)
+{
+	if (LuaState != nullptr) {
+		for (const auto& hookVar : names) {
+			if (HookVariableValues[hookVar].empty()) {
+				// Nothing to do
+				continue;
 			}
-			lua_pop(LuaState, 1);	//amt
-		}
-		lua_pop(LuaState, 1);	//metatable
-	}
-	lua_pop(LuaState, 1);	//Library
-	
-	return false;
-}
-
-//Call when you are done with CloseHookVarTable,
-//and you have removed all other objects 'above'
-//the stack objects generated by the call to OpenHookVarTable.
-bool script_state::CloseHookVarTable()
-{
-	if(!ohvt_isopen)
-	{
-		Error(LOCATION, "CloseHookVarTable was called with no associated call to OpenHookVarTable");
-	}
-	int top_ldx = lua_gettop(LuaState);
-	if(top_ldx >= ohvt_poststack)
-	{
-		lua_pop(LuaState, ohvt_isopen);
-		ohvt_isopen = 0;
-		return true;
-	}
-	else
-	{
-		Error(LOCATION, "CloseHookVarTable() was called with too few objects on the stack; get a coder. (Stack: %d OHVT post: %d OHVT num: %d", top_ldx, ohvt_poststack, ohvt_isopen);
-		return false;
-	}
-}
-
-void script_state::RemHookVar(const char *name)
-{
-	this->RemHookVars(1, name);
-}
-
-void script_state::RemHookVars(unsigned int num, ...)
-{
-	if (LuaState != nullptr)
-	{
-		//WMC - Quick and clean. :)
-		//WMC - *sigh* nostalgia
-		//Get ScriptVar table
-		if(this->OpenHookVarTable())
-		{
-			int amt_ldx = lua_gettop(LuaState);
-			va_list vl;
-			va_start(vl, num);
-			for(unsigned int i = 0; i < num; i++)
-			{
-				char *name = va_arg(vl, char*);
-				lua_pushstring(LuaState, name);
-				lua_pushnil(LuaState);
-				lua_rawset(LuaState, amt_ldx);
-			}
-			va_end(vl);
-
-			this->CloseHookVarTable();
-		}
-		else
-		{
-			LuaError(LuaState, "Could not get HookVariable library to remove hook variables - get a coder");
+			HookVariableValues[hookVar].pop_back();
 		}
 	}
+}
+const SCP_unordered_map<SCP_string, SCP_vector<luacpp::LuaReference>>& script_state::GetHookVariableReferences()
+{
+	return HookVariableValues;
 }
 
 int script_state::LoadBm(const char* name)
@@ -756,6 +715,7 @@ void script_state::UnloadImages()
 
 int script_state::RunCondition(int action, object* objp, int more_data)
 {
+	TRACE_SCOPE(tracing::LuaHooks);
 	int num = 0;
 
 	if (LuaState == nullptr) {
@@ -796,6 +756,9 @@ void script_state::Clear()
 {
 	// Free all lua value references
 	ConditionalHooks.clear();
+	HookVariableValues.clear();
+
+	AssayActions();
 
 	if (LuaState != nullptr) {
 		OnStateDestroy(LuaState);
@@ -813,7 +776,9 @@ void script_state::Clear()
 
 script_state::script_state(const char *name)
 {
-	strncpy(StateName, name, sizeof(StateName)-1);
+	auto len = sizeof(StateName);
+	strncpy(StateName, name, len);
+	StateName[len - 1] = 0;
 
 	Langs = 0;
 
@@ -841,7 +806,7 @@ void script_state::SetLuaSession(lua_State *L)
 	}
 }
 
-ScriptingDocumentation script_state::OutputDocumentation()
+ScriptingDocumentation script_state::OutputDocumentation(const scripting::DocumentationErrorReporter& errorReporter)
 {
 	ScriptingDocumentation doc;
 
@@ -868,9 +833,7 @@ ScriptingDocumentation script_state::OutputDocumentation()
 			{hook->getHookName(), hook->getDescription(), hook->getParameters(), hook->isOverridable()});
 	}
 
-	if (Langs & SC_LUA) {
-		OutputLuaDocumentation(doc);
-	}
+	OutputLuaDocumentation(doc, errorReporter);
 
 	return doc;
 }
@@ -1178,9 +1141,33 @@ bool script_state::ParseCondition(const char *filename)
 	return true;
 }
 
-void script_state::AddConditionedHook(ConditionedHook hook) { ConditionalHooks.push_back(std::move(hook)); }
+void script_state::AddConditionedHook(ConditionedHook hook) {
+	ConditionalHooks.push_back(std::move(hook));
+	AssayActions();
+}
 
 void script_state::AddGameInitFunction(script_function func) { GameInitFunctions.push_back(std::move(func)); }
+
+// For each possible script_action this maintains an array that records whether any scripts are actually using this action
+// This allows us to avoid significant overhead from checking everything at the potential hook sites, but you must call
+// AssayActions() after modifying ConditionalHooks before returning to normal operation of the scripting system!
+void script_state::AssayActions() {
+	for (bool &i : ActiveActions) {
+		i = false;
+	}
+
+	for (const auto &hook : ConditionalHooks) {
+		for (const auto &action : hook.Actions) {
+			if (action.action_type >= -1 && action.action_type <= CHA_LAST) {
+				ActiveActions[action.action_type] = true;
+			}
+		}
+	}
+}
+
+bool script_state::IsActiveAction(ConditionalActions action_id) {
+	return ActiveActions[action_id];
+}
 
 //*************************CLASS: script_state*************************
 bool script_state::IsOverride(script_hook &hd)

@@ -11,6 +11,8 @@
 
 #include "resource.h"
 
+#include "../code/nebula/neb.h"
+
 /////////////////////////////////////////////////////////////////////////////
 // bg_bitmap_dlg dialog
 
@@ -55,12 +57,7 @@ public:
 	int		m_neb2_texture;
 	BOOL		m_subspace;
 	BOOL		m_fullneb;
-	int		m_poof_0;
-	int		m_poof_1;
-	int		m_poof_2;
-	int		m_poof_3;
-	int		m_poof_4;
-	int		m_poof_5;
+	int		m_poofs[MAX_NEB2_POOFS];
 	BOOL	m_toggle_trails;
 	CString	m_storm_name;
 	CString s_name;
@@ -144,6 +141,8 @@ protected:
 	afx_msg void OnKillfocusSun1H();
 	afx_msg void OnKillfocusSun1B();
 	afx_msg void OnKillfocusSun1Scale();
+	afx_msg void OnAddBackground();
+	afx_msg void OnRemoveBackground();
 	afx_msg void OnImportBackground();
 	afx_msg void OnSwapBackground();
 	afx_msg void OnBackgroundDropdownChange();

@@ -38,6 +38,7 @@ public:
 		object*		objp_value;
 		vec3d*		vecp_value;
 		vec3d*		vecp_value2;
+		matrix*     matrix_value;
 		float		float_value;
 		int			int_value;
 		bool		bool_value;
@@ -97,7 +98,8 @@ void dock_calc_docked_extents(vec3d *mins, vec3d *maxs, object *objp);
 // calculate the center of mass of all docked objects (returned in dest)
 // currently the game assumes the center of mass is the center of an object; this will need to
 // be fixed eventually (though this function does weight the object masses properly)
-void dock_calc_docked_center_of_mass(vec3d *dest, object *objp);
+// returns the total mass of docked ships, calculated as a side effect
+float dock_calc_docked_center_of_mass(vec3d *dest, object *objp);
 
 // sum the masses of all directly or indirectly docked ships
 float dock_calc_total_docked_mass(object *objp);
@@ -131,7 +133,10 @@ void dock_dock_objects(object *objp1, int dockpoint1, object *objp2, int dockpoi
 // remove objp1 and objp2 from each others' dock lists; currently only called by ai_do_objects_undocked_stuff
 void dock_undock_objects(object *objp1, object *objp2);
 
-/**
+// apply force to a docked assembly of ships
+void dock_calculate_and_apply_whack_docked_object(vec3d* force, const vec3d* hit_pos, object* objp);
+
+	/**
  * @brief Undocks everything from the given object
  * @note This is a slow method. use dock_free_dock_list() when doing object cleanup.
  * @note Currently, this function cannot be called from within ship_cleanup() [Github Issue #1177:https://github.com/scp-fs2open/fs2open.github.com/issues/1177]

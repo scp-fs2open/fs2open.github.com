@@ -25,6 +25,11 @@ namespace font
 		this->name = newName;
 	}
 
+	void FSFont::setFilename(const SCP_string& newName) 
+	{
+		this->filename = newName;
+	}
+
 	float FSFont::getBottomOffset() const
 	{
 		return this->offsetBottom;
@@ -43,6 +48,11 @@ namespace font
 	const SCP_string &FSFont::getName() const
 	{
 		return this->name;
+	}
+
+	const SCP_string &FSFont::getFilename() const
+	{
+		return this->filename;
 	}
 
 	void FSFont::computeFontMetrics() {

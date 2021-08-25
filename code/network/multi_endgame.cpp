@@ -25,6 +25,7 @@
 #include "network/multi_portfwd.h"
 #include "hud/hudconfig.h"
 #include "network/multi_fstracker.h"
+#include "network/multi_mdns.h"
 
 
 // ----------------------------------------------------------------------------------------------------------
@@ -163,7 +164,7 @@ int Multi_quit_game = 0;
 // general quit function, with optional notification, error, and winsock error codes
 int multi_quit_game(int prompt, int notify_code, int err_code, int wsa_error)
 {
-	int ret_val,quit_already;
+	int ret_val;
 
 	// check for reentrancy
 	if(Multi_quit_game){
@@ -177,8 +178,6 @@ int multi_quit_game(int prompt, int notify_code, int err_code, int wsa_error)
 
 	// reentrancy
 	Multi_quit_game = 1;
-
-	quit_already = 0;
 
 	// reset my control info so that I don't continually do whacky stuff.  This is ugly
 	//player_control_reset_ci( &Player->ci );
@@ -203,36 +202,25 @@ int multi_quit_game(int prompt, int notify_code, int err_code, int wsa_error)
 			return 0;
 		}
 
-		// see if we should be prompting the host for confirmation
-		if((prompt==PROMPT_HOST || prompt==PROMPT_ALL) && (Net_player->flags & NETINFO_FLAG_GAME_HOST)){
-			int p_flags;
+		// see if we should be prompting for confirmation
+		if (prompt != PROMPT_NONE) {
+			int p_flags = PF_USE_AFFIRMATIVE_ICON | PF_USE_NEGATIVE_ICON | PF_BODY_BIG;
 
-			p_flags = PF_USE_AFFIRMATIVE_ICON | PF_USE_NEGATIVE_ICON | PF_BODY_BIG;
-			if ( Game_mode & GM_IN_MISSION )
+			if ( (Game_mode & GM_IN_MISSION) && ((Net_player->flags & NETINFO_FLAG_GAME_HOST) || popupdead_is_active()) ) {
 				p_flags |= PF_RUN_STATE;
+			}
 
-			ret_val = popup(p_flags,2,POPUP_CANCEL,POPUP_OK,XSTR("Warning - quitting will end the game for all players!",647));
+			if (prompt == PROMPT_HOST) {
+				ret_val = popup(p_flags, 2, POPUP_CANCEL, POPUP_OK, XSTR("Warning - quitting will end the game for all players!", 647));
+			} else {
+				ret_val = popup(p_flags, 2, POPUP_NO, POPUP_YES, XSTR("Are you sure you want to quit?", 648));
+			}
 
-			// check for host cancel
-			if((ret_val == 0) || (ret_val == -1)){
+			// check for cancel
+			if ( (ret_val == 0) || (ret_val == -1) ) {
 				Multi_quit_game = 0;
 				return 0;
 			}
-
-			// set this so that under certain circumstances, we don't call the popup below us as well
-			quit_already = 1;
-		}
-
-		// see if we should be prompting the client for confirmation
-		if((prompt==PROMPT_CLIENT || prompt==PROMPT_ALL) && !quit_already){
-			ret_val = popup(PF_USE_AFFIRMATIVE_ICON | PF_USE_NEGATIVE_ICON | PF_BODY_BIG,2,POPUP_NO,POPUP_YES,XSTR("Are you sure you want to quit?",648));
-
-			// check for host cancel
-			if((ret_val == 0) || (ret_val == -1)){
-				Multi_quit_game = 0;
-				return 0;
-			}
-			quit_already = 1;
 		}
 
 		// if i'm the server of the game, tell all clients that i'm leaving, then wait
@@ -289,10 +277,10 @@ int multi_quit_game(int prompt, int notify_code, int err_code, int wsa_error)
 				multi_display_chat_msg(XSTR("<The server has ended the game>",650),0,0);
 
 				// shut our reliable socket to the server down
-				psnet_rel_close_socket(&Net_player->reliable_socket);
-				Net_player->reliable_socket = INVALID_SOCKET;
+				psnet_rel_close_socket(Net_player->reliable_socket);
+				Net_player->reliable_socket = PSNET_INVALID_SOCKET;
 
-				// remove our do-notworking flag
+				// remove our do-networking flag
 				Net_player->flags &= ~(NETINFO_FLAG_DO_NETWORKING);
 				
 				Multi_quit_game = 0;
@@ -352,8 +340,8 @@ void multi_endgame_cleanup()
 
 	// 11/18/98 - DB, changed the above to kill all sockets. Its the safest thing to do
 	for(idx=0; idx<MAX_PLAYERS; idx++){
-		psnet_rel_close_socket(&Net_players[idx].reliable_socket);
-		Net_players[idx].reliable_socket = INVALID_SOCKET;
+		psnet_rel_close_socket(Net_players[idx].reliable_socket);
+		Net_players[idx].reliable_socket = PSNET_INVALID_SOCKET;
 	}
 
 	// set the game quitting flag in our local netgame info - this will _insure_ that even if we miss a packet or
@@ -390,6 +378,9 @@ void multi_endgame_cleanup()
 
 		// stop port forwarding
 		multi_port_forward_close();
+
+		// stop mdns
+		multi_mdns_service_close();
 
 		// if we're in Parallax Online mode, log back in there	
 		if (Multi_options_g.pxo == 1) {

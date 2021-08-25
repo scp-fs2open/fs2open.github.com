@@ -89,8 +89,17 @@ const int32_t LE_MESSAGE_PRIORITY_NORMAL     = 72;
 const int32_t LE_MESSAGE_PRIORITY_HIGH       = 73;
 const int32_t LE_OPTION_TYPE_SELECTION       = 78;
 const int32_t LE_OPTION_TYPE_RANGE           = 79;
+const int32_t LE_ASF_EVENTMUSIC              = 80;
+const int32_t LE_ASF_MENUMUSIC               = 81;
+const int32_t LE_ASF_VOICE                   = 82;
+const int32_t LE_CONTEXT_VALID               = 83;
+const int32_t LE_CONTEXT_SUSPENDED           = 84;
+const int32_t LE_CONTEXT_INVALID             = 85;
+const int32_t LE_FIREBALL_MEDIUM_EXPLOSION   = 86;
+const int32_t LE_FIREBALL_LARGE_EXPLOSION    = 87;
+const int32_t LE_FIREBALL_WARP_EFFECT        = 88;
 
-const int ENUM_NEXT_INDEX = 80; // <<<<<<<<<<<<<<<<<<<<<<
+const int ENUM_NEXT_INDEX = 89; // <<<<<<<<<<<<<<<<<<<<<<
 extern flag_def_list Enumerations[];
 extern size_t Num_enumerations;
 
@@ -101,6 +110,8 @@ struct enum_h {
 	enum_h();
 
 	explicit enum_h(int n_index);
+
+	SCP_string getName() const;
 
 	bool IsValid() const;
 };

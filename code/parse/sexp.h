@@ -58,7 +58,7 @@ class waypoint_list;
 #define	OPF_MEDAL_NAME			31		// name of medals
 #define	OPF_WEAPON_NAME			32		// name of a weapon
 #define	OPF_SHIP_CLASS_NAME		33		// name of a ship class
-#define	OPF_HUD_GAUGE_NAME		34		// name of HUD gauge
+#define	OPF_CUSTOM_HUD_GAUGE	34		// name of custom HUD gauge
 #define	OPF_HUGE_WEAPON			35		// name of a secondary bomb type weapon
 #define	OPF_SHIP_NOT_PLAYER		36		// a ship, but not a player ship
 #define	OPF_JUMP_NODE_NAME		37		// name of a jump node
@@ -103,7 +103,7 @@ class waypoint_list;
 #define OPF_AUDIO_VOLUME_OPTION 76		// The E
 #define OPF_WEAPON_BANK_NUMBER	77		// Karajorma - The number of a primary/secondary/tertiary weapon bank or all of them
 #define OPF_MESSAGE_OR_STRING	78		// Goober5000 - provides a list of messages like OPF_MESSAGE, but also allows entering arbitrary strings
-#define OPF_HUD_GAUGE			79		// The E
+#define OPF_BUILTIN_HUD_GAUGE	79		// The E
 #define OPF_DAMAGE_TYPE			80		// FUBAR - Damage type or <none>
 #define OPF_SHIP_EFFECT			81		// The E - per-ship effects, as defined in post-processing.tbl
 #define OPF_ANIMATION_TYPE		82		// Goober5000 - as defined in modelanim.h
@@ -114,6 +114,8 @@ class waypoint_list;
 #define OPF_SKYBOX_FLAGS		87		// niffiwan - valid skybox flags
 #define OPF_GAME_SND			88		// m!m - A game sound
 #define OPF_FIREBALL			89		// Goober5000 - an entry in fireball.tbl
+#define OPF_SPECIES				90		// Goober5000
+#define OPF_LANGUAGE			91		// Goober5000
 
 // Operand return types
 #define	OPR_NUMBER				1	// returns number
@@ -303,6 +305,7 @@ class waypoint_list;
 #define	OP_MISSION_TIME_MSECS				(0x0007 | OP_CATEGORY_TIME | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define	OP_TIME_DOCKED						(0x0008 | OP_CATEGORY_TIME | OP_NONCAMPAIGN_FLAG)
 #define	OP_TIME_UNDOCKED					(0x0009 | OP_CATEGORY_TIME | OP_NONCAMPAIGN_FLAG)
+#define OP_TIME_TO_GOAL						(0x000a | OP_CATEGORY_TIME | OP_NONCAMPAIGN_FLAG) // tcrayford
 
 #define	OP_SHIELDS_LEFT						(0x0000 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
 #define	OP_HITS_LEFT						(0x0001 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
@@ -396,6 +399,7 @@ class waypoint_list;
 #define OP_DISTANCE_CENTER					(0x0054 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Goober5000
 #define OP_DISTANCE_BBOX					(0x0055 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Goober5000
 #define OP_DISTANCE_BBOX_SUBSYSTEM			(0x0056 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Goober5000
+#define OP_IS_LANGUAGE						(0x0057 | OP_CATEGORY_STATUS)						// Goober5000
 
 // conditional sexpressions
 #define OP_WHEN								(0x0000 | OP_CATEGORY_CONDITIONAL)
@@ -418,6 +422,14 @@ class waypoint_list;
 #define OP_IF_THEN_ELSE						(0x0010 | OP_CATEGORY_CONDITIONAL)	// Goober5000
 #define OP_NUM_VALID_ARGUMENTS				(0x0011 | OP_CATEGORY_CONDITIONAL)	// Karajorma
 #define OP_FUNCTIONAL_IF_THEN_ELSE			(0x0012 | OP_CATEGORY_CONDITIONAL)	// Goober5000
+#define OP_FOR_SHIP_CLASS					(0x0013 | OP_CATEGORY_CONDITIONAL)	// Goober5000
+#define OP_FOR_SHIP_TYPE					(0x0014 | OP_CATEGORY_CONDITIONAL)	// Goober5000
+#define OP_FOR_SHIP_TEAM					(0x0015 | OP_CATEGORY_CONDITIONAL)	// Goober5000
+#define OP_FOR_SHIP_SPECIES					(0x0016 | OP_CATEGORY_CONDITIONAL)	// Goober5000
+#define OP_FOR_PLAYERS						(0x0017 | OP_CATEGORY_CONDITIONAL)	// Goober5000
+#define OP_FIRST_OF							(0x0018 | OP_CATEGORY_CONDITIONAL)	// MageKing17
+#define OP_SWITCH							(0x0019 | OP_CATEGORY_CONDITIONAL)	// Goober5000
+#define OP_FUNCTIONAL_SWITCH				(0x001a | OP_CATEGORY_CONDITIONAL)	// Goober5000
 
 
 // sexpressions with side-effects
@@ -633,7 +645,7 @@ class waypoint_list;
 #define OP_CHANGE_IFF_COLOR					(0x00c5 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Wanderer
 #define OP_TURRET_SUBSYS_TARGET_DISABLE		(0x00c6 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Wanderer
 #define OP_TURRET_SUBSYS_TARGET_ENABLE		(0x00c7 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Wanderer
-#define OP_REMOVE_WEAPONS					(0x00c8 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Wanderer
+#define OP_CLEAR_WEAPONS					(0x00c8 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Wanderer
 #define OP_SHIP_MANEUVER					(0x00c9 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Wanderer 
 #define OP_SHIP_ROT_MANEUVER				(0x00ca | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Wanderer
 #define OP_SHIP_LAT_MANEUVER				(0x00cb | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Wanderer
@@ -736,7 +748,7 @@ class waypoint_list;
 #define OP_CALL_SSM_STRIKE					(0x0024 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG) // X3N0-Life-Form
 #define OP_SET_MOTION_DEBRIS				(0x0025 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)    // The E
 #define OP_HUD_SET_CUSTOM_GAUGE_ACTIVE		(0x0026 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG) 	// The E, just revamped a bit by Axem
-#define OP_HUD_SET_RETAIL_GAUGE_ACTIVE		(0x0027 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG) 	// The E, just revamped a bit by Axem
+#define OP_HUD_SET_BUILTIN_GAUGE_ACTIVE		(0x0027 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG) 	// The E, just revamped a bit by Axem
 #define OP_SCRIPT_EVAL_MULTI				(0x0028 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
 #define OP_PAUSE_SOUND_FROM_FILE			(0x0029 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_SCRIPT_EVAL_BLOCK				(0x002a | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG) // niffiwan
@@ -751,6 +763,20 @@ class waypoint_list;
 #define OP_ADD_REMOVE_HOTKEY				(0x0032 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)    // wookieejedi
 #define OP_TECH_REMOVE_INTEL_XSTR			(0x0033 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)    // wookieejedi
 #define OP_TECH_REMOVE_INTEL				(0x0034 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)   // wookieejedi
+#define OP_CHANGE_BACKGROUND				(0x0035 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_CLEAR_DEBRIS						(0x0036 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_SET_DEBRIEFING_PERSONA			(0x0037 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_ADD_TO_COLGROUP2					(0x0038 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_REMOVE_FROM_COLGROUP2			(0x0039 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_GET_POWER_OUTPUT					(0x003a | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// The E
+#define OP_TURRET_SET_FORCED_TARGET			(0x003b | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Asteroth
+#define OP_TURRET_SET_FORCED_SUBSYS_TARGET	(0x003c | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Asteroth
+#define OP_TURRET_CLEAR_FORCED_TARGET		(0x003d | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Asteroth
+#define OP_SEND_MESSAGE_CHAIN				(0x003e | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_TURRET_SET_INACCURACY		    (0x003f | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Asteroth
+
+#define OP_REPLACE_TEXTURE					(0x0040 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Lafiel
+#define OP_NEBULA_CHANGE_FOG_COLOR			(0x0041 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Asteroth
 
 // defined for AI goals
 #define OP_AI_CHASE							(0x0000 | OP_CATEGORY_AI | OP_NONCAMPAIGN_FLAG)
@@ -950,6 +976,7 @@ const char *CTEXT(int n);
 #define SEXP_ATOM_OPERATOR		1
 #define SEXP_ATOM_NUMBER		2
 #define SEXP_ATOM_STRING		3
+#define SEXP_ATOM_CONTAINER		4
 
 // defines to short circuit evaluation when possible. Also used when goals can't
 // be satisfied yet because ship (or wing) hasn't been created yet.
@@ -1001,7 +1028,7 @@ const char *CTEXT(int n);
 #define SEXP_CHECK_INVALID_MEDAL_NAME			-123
 #define SEXP_CHECK_INVALID_WEAPON_NAME			-124
 #define SEXP_CHECK_INVALID_SHIP_CLASS_NAME	-125
-#define SEXP_CHECK_INVALID_GAUGE_NAME			-126
+#define SEXP_CHECK_INVALID_CUSTOM_HUD_GAUGE		-126
 #define SEXP_CHECK_INVALID_JUMP_NODE			-127
 #define SEXP_CHECK_INVALID_VARIABLE				-128
 #define SEXP_CHECK_INVALID_AI_CLASS				-129
@@ -1028,7 +1055,7 @@ const char *CTEXT(int n);
 #define SEXP_CHECK_INVALID_DAMAGE_TYPE			-150
 #define SEXP_CHECK_INVALID_TARGET_PRIORITIES	-151
 #define SEXP_CHECK_INVALID_AUDIO_VOLUME_OPTION	-152
-#define SEXP_CHECK_INVALID_HUD_GAUGE			-153
+#define SEXP_CHECK_INVALID_BUILTIN_HUD_GAUGE	-153
 #define SEXP_CHECK_INVALID_ANIMATION_TYPE		-154
 #define SEXP_CHECK_INVALID_MISSION_MOOD			-155
 #define SEXP_CHECK_INVALID_SHIP_FLAG			-156
@@ -1037,6 +1064,7 @@ const char *CTEXT(int n);
 #define SEXP_CHECK_INVALID_GAME_SND				-159
 #define SEXP_CHECK_INVALID_SSM_CLASS			-160
 #define SEXP_CHECK_INVALID_FIREBALL				-161
+#define SEXP_CHECK_INVALID_SPECIES				-162
 
 #define TRAINING_CONTEXT_SPEED		(1<<0)
 #define TRAINING_CONTEXT_FLY_PATH	(1<<1)
@@ -1181,7 +1209,7 @@ extern int get_operator_const(int node);
 
 extern int check_sexp_syntax(int node, int return_type = OPR_BOOL, int recursive = 0, int *bad_node = 0 /*NULL*/, int mode = 0);
 extern int get_sexp_main(void);	//	Returns start node
-extern int run_sexp(const char* sexpression); // debug and lua sexps
+extern int run_sexp(const char* sexpression, bool run_eval_num = false, bool *is_nan_or_nan_forever = nullptr); // debug and lua sexps
 extern int stuff_sexp_variable_list();
 extern int eval_sexp(int cur_node, int referenced_node = -1);
 extern int eval_num(int n, bool &is_nan, bool &is_nan_forever);
@@ -1248,8 +1276,6 @@ void set_secondary_ammo (int ship_index, int requested_bank, int requested_ammo,
 void set_turret_primary_ammo(ship_subsys *turret, int requested_bank, int requested_ammo);
 void set_turret_secondary_ammo(ship_subsys *turret, int requested_bank, int requested_ammo);
 
-// menu and category stuff
-extern int get_sexp_id(char *sexp_name);
 extern int get_category(int sexp_id);
 extern int category_of_subcategory(int subcategory_id);
 extern int get_subcategory(int sexp_id);

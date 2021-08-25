@@ -774,8 +774,11 @@ void HudGaugeTargetBox::renderTargetDebris(object *target_objp)
 
 		render_info.set_flags(flags | MR_NO_FOGGING);
 
+		auto pmi = model_get_instance(debrisp->model_instance_num);
+		auto pm = model_get(pmi->model_num);
+
 		// This calls the colour that doesn't get reset
-		submodel_render_immediate( &render_info, debrisp->model_num, debrisp->submodel_num, &target_objp->orient, &obj_pos);
+		submodel_render_immediate( &render_info, pm, pmi, debrisp->submodel_num, &target_objp->orient, &obj_pos);
 
 		if ( Monitor_mask >= 0 ) {
 			gr_stencil_set(GR_STENCIL_NONE);
@@ -787,16 +790,14 @@ void HudGaugeTargetBox::renderTargetDebris(object *target_objp)
 	renderTargetIntegrity(1);
 
 	// print out ship class that debris came from
-	char printable_ship_class[NAME_LENGTH];
+	const char *printable_ship_class;
 	if (debrisp->parent_alt_name >= 0)
-		mission_parse_lookup_alt_index(debrisp->parent_alt_name, printable_ship_class);
+		printable_ship_class = mission_parse_lookup_alt_index(debrisp->parent_alt_name);
 	else
-		strcpy_s(printable_ship_class, (Ship_info[debrisp->ship_info_index].alt_name[0]) ? Ship_info[debrisp->ship_info_index].alt_name : Ship_info[debrisp->ship_info_index].name);
-
-	end_string_at_first_hash_symbol(printable_ship_class);
+		printable_ship_class = Ship_info[debrisp->ship_info_index].get_display_name();
 	
 	renderString(position[0] + Class_offsets[0], position[1] + Class_offsets[1], EG_TBOX_CLASS, printable_ship_class);	
-	renderString(position[0] + Name_offsets[0], position[1] + Name_offsets[1], EG_TBOX_NAME, XSTR("Debris", 348));	
+	renderString(position[0] + Name_offsets[0], position[1] + Name_offsets[1], EG_TBOX_NAME, XSTR("debris", 348));	
 }
 
 /**
@@ -814,7 +815,6 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 	object		*viewer_obj, *viewed_obj;
 	int *replacement_textures = NULL;
 	int			target_team, is_homing, is_player_missile, missile_view, viewed_model_num, hud_target_lod, w, h;
-	char			outstr[100];				// temp buffer
 	int flags=0;
 
 	target_team = obj_team(target_objp);
@@ -1020,17 +1020,15 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 	setGaugeColor();
 
 	// print out the weapon class name
-	sprintf( outstr,"%s", target_wip->get_display_string() );
-	gr_get_string_size(&w,&h,outstr);
+	auto weapon_name = target_wip->get_display_name();
+	gr_get_string_size(&w,&h,weapon_name);
 
-	// drop name past the # sign
-	end_string_at_first_hash_symbol(outstr);			
-
-	renderString(position[0] + Name_offsets[0], position[1] + Name_offsets[1], EG_TBOX_NAME, outstr);	
+	renderString(position[0] + Name_offsets[0], position[1] + Name_offsets[1], EG_TBOX_NAME, weapon_name);
 
 	// If a homing weapon, show time to impact
 	if ( is_homing ) {
 		float dist, speed;
+		char			outstr[100];				// temp buffer
 
 		speed = vm_vec_mag(&target_objp->phys_info.vel);
 
@@ -1162,11 +1160,11 @@ void HudGaugeTargetBox::renderTargetAsteroid(object *target_objp)
 		case ASTEROID_TYPE_SMALL:
 		case ASTEROID_TYPE_MEDIUM:
 		case ASTEROID_TYPE_LARGE:
-			strcpy_s(hud_name, NOX("asteroid"));
+			strcpy_s(hud_name, XSTR("asteroid", 431));
 			break;
 
 		default:
-			sprintf(hud_name, NOX("%s debris"), Species_info[(asteroidp->asteroid_type / NUM_DEBRIS_SIZES) - 1].species_name);
+			strcpy_s(hud_name, Asteroid_info[asteroidp->asteroid_type].name);
 			break;
 	}
 
@@ -1174,7 +1172,7 @@ void HudGaugeTargetBox::renderTargetAsteroid(object *target_objp)
 	
 
 	if ( time_to_impact >= 0.0f ) {
-		renderPrintf(position[0] + Class_offsets[0], position[1] + Class_offsets[1], EG_TBOX_CLASS, NOX("impact: %.1f sec"), time_to_impact);	
+		renderPrintf(position[0] + Class_offsets[0], position[1] + Class_offsets[1], EG_TBOX_CLASS, XSTR("impact: %.1f sec", 1596), time_to_impact);	
 	}
 }
 
@@ -1491,8 +1489,7 @@ void HudGaugeExtraTargetData::render(float  /*frametime*/)
 		// docked to only one object
 		if (dock_count == 1)
 		{
-			sprintf(outstr, XSTR("Docked: %s", 339), Ships[dock_get_first_docked_object(target_objp)->instance].get_display_string());
-			end_string_at_first_hash_symbol(outstr);
+			sprintf(outstr, XSTR("Docked: %s", 339), Ships[dock_get_first_docked_object(target_objp)->instance].get_display_name());
 		}
 		// docked to multiple objects
 		else
@@ -2053,14 +2050,14 @@ void HudGaugeTargetBox::showTargetData(float  /*frametime*/)
 			
 			// data can be found in target montior
 			if (aip->target_objnum != -1) {
-				char	target_str[32];
+				const char *target_str;
 				float	dot, dist;
 				vec3d	v2t;
 
 				if (aip->target_objnum == OBJ_INDEX(Player_obj))
-					strcpy_s(target_str, "Player!");
+					target_str = "Player!";
 				else
-					sprintf(target_str, "%s", Ships[Objects[aip->target_objnum].instance].get_display_string());
+					target_str = Ships[Objects[aip->target_objnum].instance].get_display_name();
 
 				gr_printf_no_resize(sx, sy, "Targ: %s", target_str);
 				sy += dy;
@@ -2115,7 +2112,7 @@ void HudGaugeTargetBox::showTargetData(float  /*frametime*/)
 
 							dot = vm_vec_dot(&v2t, &Enemy_attacker->orient.vec.fvec);
 
-							gr_printf_no_resize(sx, sy, "#%i: %s", OBJ_INDEX(Enemy_attacker), Ships[Enemy_attacker->instance].get_display_string());
+							gr_printf_no_resize(sx, sy, "#%i: %s", OBJ_INDEX(Enemy_attacker), Ships[Enemy_attacker->instance].get_display_name());
 							sy += dy;
 							gr_printf_no_resize(sx, sy, "Targ dist: %5.1f", dist);
 							sy += dy;
@@ -2175,7 +2172,7 @@ void HudGaugeTargetBox::showTargetData(float  /*frametime*/)
 		gr_printf_no_resize(sx,sy,"%s", outstr);
 		sy += dy;
 		for ( i = 0; i < swp->num_primary_banks; i++ ) {
-			sprintf(outstr,"%d. %s", i+1, Weapon_info[swp->primary_bank_weapons[i]].get_display_string());
+			sprintf(outstr,"%d. %s", i+1, Weapon_info[swp->primary_bank_weapons[i]].get_display_name());
 			gr_printf_no_resize(sx,sy,"%s", outstr);
 			sy += dy;
 		}
@@ -2185,7 +2182,7 @@ void HudGaugeTargetBox::showTargetData(float  /*frametime*/)
 		gr_printf_no_resize(sx,sy,"%s", outstr);
 		sy += dy;
 		for ( i = 0; i < swp->num_secondary_banks; i++ ) {
-			sprintf(outstr,"%d. %s", i+1, Weapon_info[swp->secondary_bank_weapons[i]].get_display_string());
+			sprintf(outstr,"%d. %s", i+1, Weapon_info[swp->secondary_bank_weapons[i]].get_display_name());
 			gr_printf_no_resize(sx,sy,"%s", outstr);
 			sy += dy;
 		}

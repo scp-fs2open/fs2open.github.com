@@ -538,6 +538,11 @@ void HudGauge::updateColor(int r, int g, int b, int a)
 	gr_init_alphacolor(&gauge_color, r, g, b, a);
 }
 
+ const color& HudGauge::getColor()
+{
+	return gauge_color;
+}
+
 void HudGauge::updateActive(bool show)
 {
 	active = show;
@@ -1608,6 +1613,8 @@ void hud_render_preprocess(float frametime)
 	}
 
 	if ( hud_disabled() ) {
+		// if the hud is disabled, we still need to make sure that the indicators are properly handled
+		hud_do_lock_indicators(flFrametime);
 		return;
 	}
 
@@ -1875,6 +1882,13 @@ void update_throttle_sound()
 
 	if ( timestamp_elapsed(throttle_sound_check_id) ) {
 
+		auto enginesnd_id = ship_get_sound(Player_obj, GameSounds::ENGINE);
+		if (!enginesnd_id.isValid())
+		{
+			throttle_sound_check_id = timestamp(-1);	// never time out
+			return;
+		}
+
 		throttle_sound_check_id = timestamp(THROTTLE_SOUND_CHECK_INTERVAL);
 	
 		if ( object_get_gliding(Player_obj) ) {	// Backslash
@@ -1895,7 +1909,7 @@ void update_throttle_sound()
 			}
 			else {
 				if (!Player_engine_snd_loop.isValid()) {
-					Player_engine_snd_loop = snd_play_looping( gamesnd_get_game_sound(ship_get_sound(Player_obj, GameSounds::ENGINE)), 0.0f , -1, -1, percent_throttle * ENGINE_MAX_VOL, FALSE);
+					Player_engine_snd_loop = snd_play_looping( gamesnd_get_game_sound(enginesnd_id), 0.0f , -1, -1, percent_throttle * ENGINE_MAX_VOL, FALSE);
 				} else {
 					// The sound may have been trashed at the low-level if sound channel overflow.
 					// TODO: implement system where certain sounds cannot be interrupted (priority?)
@@ -3262,6 +3276,15 @@ int hud_gauge_maybe_flash(int gauge_index)
 		}
 	}
 	return flash_status;
+}
+
+HudAlignment hud_alignment_lookup(const char *name)
+{
+	if (!stricmp(name, "left"))
+		return HudAlignment::LEFT;
+	if (!stricmp(name, "right"))
+		return HudAlignment::RIGHT;
+	return HudAlignment::NONE;
 }
 
 /**

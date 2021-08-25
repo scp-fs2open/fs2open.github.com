@@ -11,6 +11,8 @@
 
 #ifdef _WIN32
 #include <winsock2.h>
+#else
+#include <sys/wait.h>
 #endif
 
 #include "network/multi_pxo.h"
@@ -228,9 +230,6 @@ void multi_pxo_handle_disconnect();
 // return string2, which is the first substring of string 1 without a space
 // it is safe to pass the same pointer for both parameters
 void multi_pxo_strip_space(char *string1,char *string2);
-
-// fire up the given URL
-void multi_pxo_url(char *url);
 
 // unload the palette
 void multi_pxo_unload_palette();
@@ -510,6 +509,8 @@ int Multi_pxo_max_chat_display[GR_NUM_RESOLUTIONS] = {
 
 // the "has left" message from the server
 #define MULTI_PXO_HAS_LEFT				"has left"
+
+#define MULTI_PXO_CHAT_LINE_LEN 512
 
 // chat flags
 #define CHAT_MODE_NORMAL				0			// normal chat from someone
@@ -1583,32 +1584,78 @@ void multi_pxo_strip_space(char *string1,char *string2)
 	}
 }
 
-// fire up the given URL
-void multi_pxo_url(char * /*url*/)
+static int open_url(const char *url)
 {
-#if 0
-	// execute the shell command
-	int r = (int) ShellExecute(NULL, NOX("open"), url, NULL, NULL, SW_SHOW);
-	if (r < 32) {		
-		switch (r) {
-			case 0:	
-			case ERROR_BAD_FORMAT: 
-			case SE_ERR_ACCESSDENIED: 
-			case SE_ERR_ASSOCINCOMPLETE: 
-			case SE_ERR_DDEBUSY:
-			case SE_ERR_DDEFAIL:
-			case SE_ERR_DDETIMEOUT:
-			case SE_ERR_DLLNOTFOUND:
-			case SE_ERR_OOM:
-			case SE_ERR_SHARE:			
-			case SE_ERR_NOASSOC:
-			case ERROR_FILE_NOT_FOUND:
-			case ERROR_PATH_NOT_FOUND:
-				popup(PF_USE_AFFIRMATIVE_ICON | PF_TITLE_RED | PF_TITLE_BIG,1,POPUP_OK,XSTR("Warning\nCould not locate/launch default Internet Browser",943));
-				break;
-		}					
-	}
+#if defined(_WIN32) || defined(__APPLE__)
+	const char *open_cmd = "open";
+#else
+	const char *open_cmd = "xdg-open";
 #endif
+
+	char s_url[256];
+
+	// make sure it's a valid web uri
+	if ( !SDL_strncasecmp(url, "http://", 7) || !SDL_strncasecmp(url, "https://", 8) ) {
+		SDL_strlcpy(s_url, url, SDL_arraysize(s_url));
+	} else {
+		SDL_snprintf(s_url, SDL_arraysize(s_url), "http://%s", url);
+	}
+
+#ifdef _WIN32
+	int rval = (int) ShellExecuteA(NULL, open_cmd, s_url, NULL, NULL, SW_SHOWNORMAL);
+
+	if (rval <= 32) {
+		return -1;
+	}
+
+	return 0;
+#else
+	int statval = 0;
+	pid_t mpid = fork();
+
+	if (mpid < 0) {
+		// nothing, will return error
+	} else if (mpid == 0) {
+		int rv = 0;
+
+		rv = execlp(open_cmd, open_cmd, s_url, nullptr);
+
+		exit(rv);
+	} else {
+		waitpid(mpid, &statval, 0);
+
+		if ( WIFEXITED(statval) ) {
+			if (WEXITSTATUS(statval) == 0) {
+				return 0;
+			} else {
+				return -1;
+			}
+		}
+	}
+
+	return -1;
+#endif
+}
+
+// fire up the given URL
+void multi_pxo_url(const char *url)
+{
+	if ( !url || !strlen(url) ) {
+		return;
+	}
+
+	static int click_timeout = 0;
+
+	if ( click_timeout && !timestamp_elapsed(click_timeout) ) {
+		return;
+	}
+
+	if ( open_url(url) ) {
+		popup(PF_USE_AFFIRMATIVE_ICON | PF_TITLE_RED | PF_TITLE_BIG,1,POPUP_OK,XSTR("Warning\nCould not locate/launch default Internet Browser",943));
+	} else {
+		// short delay before allowing another click
+		click_timeout = timestamp(750);
+	}
 }
 
 /**
@@ -1802,6 +1849,10 @@ void multi_pxo_button_pressed(int n)
 		if(Multi_pxo_player_select != NULL){
 			// if we successfully got info for this guy
 			if(multi_pxo_pinfo_get(Multi_pxo_player_select->name)){				
+				// convert stats to player
+				multi_stats_tracker_to_fs(&Multi_pxo_pinfo, &Multi_pxo_pinfo_player.stats);
+				SDL_strlcpy(Multi_pxo_pinfo_player.callsign, Multi_pxo_pinfo.pilot_name, SDL_arraysize(Multi_pxo_pinfo_player.callsign));
+
 				// show the stats
 				multi_pxo_pinfo_show();				
 			}
@@ -3199,7 +3250,7 @@ void multi_pxo_chat_add_line(const char *txt, int mode)
  */
 void multi_pxo_chat_process_incoming(const char *txt,int mode)
 {
-	char msg_total[512],line[512];
+	char msg_total[MULTI_PXO_CHAT_LINE_LEN],line[MULTI_PXO_CHAT_LINE_LEN];
 	int	n_lines,idx;
 	int	n_chars[20];
 	const char	*p_str[20];			//  the initial line (unindented)	
@@ -3244,7 +3295,7 @@ void multi_pxo_chat_process_incoming(const char *txt,int mode)
 	}
 
 	// split the text up into as many lines as necessary
-	n_lines = split_str(msg_total, Multi_pxo_chat_coords[gr_screen.res][2] - 5, n_chars, p_str, 3);
+	n_lines = split_str(msg_total, Multi_pxo_chat_coords[gr_screen.res][2] - 5, n_chars, p_str, 3, MULTI_PXO_CHAT_LINE_LEN);
 	Assert((n_lines != -1) && (n_lines <= 20));
 	if((n_lines < 0) || (n_lines > 20)) {
 		return;
@@ -4364,7 +4415,7 @@ int multi_pxo_pinfo_cond()
 
 			if (ret_string != NULL) {
 				// user not-online/not found
-				if ( (int)ret_string[0] == -1) {
+				if (reinterpret_cast<ptr_s>(ret_string) == -1) {
 					return 1;
 				} 
 
@@ -4774,6 +4825,10 @@ void multi_pxo_run_medals()
 
 	// run the networking functions for the PXO API
 	multi_pxo_api_process();
+
+	// initialize the freespace data and the player struct
+	multi_stats_tracker_to_fs(&Multi_pxo_pinfo, &Multi_pxo_pinfo_player.stats);
+	SDL_strlcpy(Multi_pxo_pinfo_player.callsign, Multi_pxo_pinfo.pilot_name, SDL_arraysize(Multi_pxo_pinfo_player.callsign));
 
 	// initialize the medals screen
 	medal_main_init(&Multi_pxo_pinfo_player, MM_POPUP);

@@ -434,7 +434,7 @@ void asteroid_editor::update_init()
 
 	// set up combo boxes
 	uint i;
-	int j, k, index, box_index;
+	int k, box_index;
 
 	// add "None" to each box
 	for (k = 0; k < MAX_ACTIVE_DEBRIS_TYPES; k++)
@@ -448,19 +448,14 @@ void asteroid_editor::update_init()
 	char *debris_size[NUM_DEBRIS_SIZES] = { "Small", "Medium", "Large" };
 
 	// each species
-	for (i = 0; i < Species_info.size(); i++)
-	{
-		// each size
-		for (j = 0; j < NUM_DEBRIS_SIZES; j++)
+	if (Asteroid_info.size() > NUM_DEBRIS_SIZES) {
+		for (i = NUM_DEBRIS_SIZES; i < Asteroid_info.size(); i++)
 		{
-			name = CString(Species_info[i].species_name) + " " + debris_size[j];
-			index = NUM_DEBRIS_SIZES + ((i * NUM_DEBRIS_SIZES) + j);
-
 			// each box
 			for (k = 0; k < MAX_ACTIVE_DEBRIS_TYPES; k++)
 			{
-				box_index = ((CComboBox*)GetDlgItem(Dlg_id[k]))->AddString(name);
-				((CComboBox*)GetDlgItem(Dlg_id[k]))->SetItemData(box_index, index);
+				box_index = ((CComboBox*)GetDlgItem(Dlg_id[k]))->AddString(Asteroid_info[i].name);
+				((CComboBox*)GetDlgItem(Dlg_id[k]))->SetItemData(box_index, i);
 			}
 		}
 	}

@@ -172,6 +172,7 @@ void pilotfile::plr_write_info()
 
 void pilotfile::plr_read_hud()
 {
+	int strikes = 0;
 	// flags
 	HUD_config.show_flags = handler->readInt("show_flags");
 	HUD_config.show_flags2 = handler->readInt("show_flags2");
@@ -185,15 +186,28 @@ void pilotfile::plr_read_hud()
 	HUD_config.rp_flags = handler->readInt("rp_flags");
 	HUD_config.rp_dist = handler->readInt("rp_dist");
 	if (HUD_config.rp_dist < 0 || HUD_config.rp_dist >= RR_MAX_RANGES) {
-		Warning(LOCATION, "Player file has invalid radar range %d, setting to default.\n", HUD_config.rp_dist);
+		ReleaseWarning(LOCATION, "Player file has invalid radar range %d, setting to default.\n", HUD_config.rp_dist);
 		HUD_config.rp_dist = RR_INFINITY;
+		strikes++;
 	}
+
 	// basic colors
 	HUD_config.main_color = handler->readInt("main_color");
-	HUD_color_alpha = handler->readInt("color_alpha");
+	if (HUD_config.main_color < 0 || HUD_config.main_color >= HUD_COLOR_SIZE) {
+		ReleaseWarning(LOCATION, "Player file has invalid main color selection %i, setting to default.\n", HUD_config.main_color);
+		HUD_config.main_color = HUD_COLOR_GREEN;
+		strikes++;
+	}
 
-	if (HUD_color_alpha < HUD_COLOR_ALPHA_USER_MIN) {
+	HUD_color_alpha = handler->readInt("color_alpha");
+	if (HUD_color_alpha < HUD_COLOR_ALPHA_USER_MIN || HUD_color_alpha > HUD_COLOR_ALPHA_USER_MAX) {
+		ReleaseWarning(LOCATION, "Player file has invalid alpha color %i, setting to default.\n", HUD_color_alpha);
 		HUD_color_alpha = HUD_COLOR_ALPHA_DEFAULT;
+		strikes++;
+	}
+
+	if (strikes == 3) {
+		ReleaseWarning(LOCATION, "Player file has too many hud config errors, and is likely corrupted. Please verify and save your settings in the hud config menu.");
 	}
 
 	hud_config_set_color(HUD_config.main_color);
@@ -540,8 +554,10 @@ void pilotfile::plr_write_stats_multi()
 	// medals earned (contains medals across all mods, not just current)
 	handler->startArrayWrite("medals", multi_stats.medals_earned.size());
 	for (auto& medal : multi_stats.medals_earned) {
+		handler->startSectionWrite(Section::Unnamed);
 		handler->writeString("name", medal.name.c_str());
 		handler->writeInt("val", medal.val);
+		handler->endSectionWrite();
 	}
 	handler->endArrayWrite();
 
@@ -559,9 +575,9 @@ void pilotfile::plr_read_controls()
 		id2 = handler->readShort("joystick");
 		handler->readShort("mouse");	// unused, at the moment
 
-		if (idx < CCFG_MAX) {
-			Control_config[idx].key_id = id1;
-			Control_config[idx].joy_id = id2;
+		if (idx < Control_config.size()) {
+			Control_config[idx].take(CC_bind(CID_KEYBOARD, id1), 0);
+			Control_config[idx].take(CC_bind(CID_JOY0, id2), 1);
 		}
 	}
 	handler->endArrayRead();
@@ -584,12 +600,12 @@ void pilotfile::plr_write_controls()
 	handler->startSectionWrite(Section::Controls);
 
 	// For some unknown reason, the old code used a short for the array length here...
-	handler->startArrayWrite("controls", CCFG_MAX, true);
-	for (size_t idx = 0; idx < CCFG_MAX; idx++) {
+	handler->startArrayWrite("controls", Control_config.size(), true);
+	for (auto &item : Control_config) {
 		handler->startSectionWrite(Section::Unnamed);
 
-		handler->writeShort("key", Control_config[idx].key_id);
-		handler->writeShort("joystick", Control_config[idx].joy_id);
+		handler->writeShort("key", item.get_btn(CID_KEYBOARD));
+		handler->writeShort("joystick", item.get_btn(CID_JOY0));
 		// placeholder? for future mouse_id?
 		handler->writeShort("mouse", -1);
 
@@ -721,22 +737,24 @@ void pilotfile::plr_reset_data(bool reset_all)
 
 	m_data_invalid = false;
 
-	// set all the entries in the control config arrays to -1 (undefined)
-	// Cyborg17 - clear_all is false when we are just trying to verify the file, but true when we load the whole thing.
-	// Otherwise, we can end up getting rid of a pilot's controls by accident.
-	if (reset_all) {
-		control_config_clear();
+	// if we aren't reloading all data (such as just a verify) then skip the rest
+	if ( !reset_all ) {
+		return;
 	}
+
+	Assertion(p != nullptr, "player pointer is null during data reset!");
+
+	// set all the entries in the control config arrays to -1 (undefined)
+	control_config_clear();
 
 	// init stats
 	p->stats.init();
 
 	// reset scoring lists
-	all_time_stats.ship_kills.clear();
-	all_time_stats.medals_earned.clear();
+	scoring_special_t blank_score;
 
-	multi_stats.ship_kills.clear();
-	multi_stats.medals_earned.clear();
+	all_time_stats = blank_score;
+	multi_stats = blank_score;
 
 	// clear variables
 	p->variables.clear();

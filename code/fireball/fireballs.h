@@ -40,6 +40,8 @@ class asteroid_info;
 
 #define FIREBALL_NUM_LARGE_EXPLOSIONS 2
 
+#define MAX_FIREBALLS	200
+
 extern int fireball_used[MAX_FIREBALL_TYPES];
 
 // all this moved here by Goober5000 because it makes more sense in the H file
@@ -93,6 +95,10 @@ typedef struct fireball {
 } fireball;
 // end move
 
+extern SCP_vector<fireball> Fireballs;
+
+extern bool fireballs_inited;
+
 void fireball_init();
 void fireball_render(object* obj, model_draw_list *scene);
 void fireball_delete( object * obj );
@@ -138,5 +144,8 @@ float fireball_wormhole_intensity( fireball *fb );
 extern int Knossos_warp_ani_used;
 
 extern bool Fireball_use_3d_warp;
+
+// Cyborg - get a count of how many valid fireballs are in the mission.
+int fireball_get_count();
 
 #endif /* _FIREBALLS_H */

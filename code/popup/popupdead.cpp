@@ -413,7 +413,7 @@ void popupdead_draw_button_text()
 // Called once per frame to run the dead popup
 int popupdead_do_frame(float  /*frametime*/)
 {
-	int k, choice;
+	int k, choice = -1;
 
 	if ( !Popupdead_active ) {
 		return -1;
@@ -445,65 +445,42 @@ int popupdead_do_frame(float  /*frametime*/)
 		Popupdead_skip_already_shown = 1;
 	}
 
-	
-	k = Popupdead_window.process();
+	// don't process keys/buttons if another popup is active
+	if ( !popup_active() ) {
+		k = Popupdead_window.process();
 
-	choice = popupdead_process_keys(k);
-	if ( choice >= 0 ) {
-		// do something different for single/multiplayer
-		if ( Game_mode & GM_NORMAL ) {
-			Popupdead_choice=choice;
-		} else {
-			Assert( Popupdead_multi_type != -1 );
-			switch ( Popupdead_multi_type ) {
-				
-			case POPUPDEAD_OBS_ONLY:
-			case POPUPDEAD_OBS_QUIT:
-				Popupdead_choice = POPUPDEAD_DO_OBSERVER;
-				if ( (Popupdead_multi_type == POPUPDEAD_OBS_QUIT) && (choice == 1) )
-					Popupdead_choice = POPUPDEAD_DO_MAIN_HALL;
-				break;
+		choice = popupdead_process_keys(k);
 
-			case POPUPDEAD_RESPAWN_ONLY:
-			case POPUPDEAD_RESPAWN_QUIT:
-				Popupdead_choice = POPUPDEAD_DO_RESPAWN;
-				if ( (Popupdead_multi_type == POPUPDEAD_RESPAWN_QUIT) && (choice == 1) )
-					Popupdead_choice = POPUPDEAD_DO_MAIN_HALL;
-				break;
-
-			default:
-				Int3();
-				break;
-			}
+		if (choice < 0) {
+			choice = popupdead_check_buttons();
 		}
-	}
 
-	choice = popupdead_check_buttons();
-	if ( choice >= 0 ) {
-		// do something different for single/multiplayer
-		if ( Game_mode & GM_NORMAL ) {
-			Popupdead_choice=choice;
-		} else {
-			Assert( Popupdead_multi_type != -1 );
-			switch ( Popupdead_multi_type ) {
-				
-			case POPUPDEAD_OBS_ONLY:
-			case POPUPDEAD_OBS_QUIT:
-				Popupdead_choice = POPUPDEAD_DO_OBSERVER;
-				if ( (Popupdead_multi_type == POPUPDEAD_OBS_QUIT) && (choice == 1) )
-					Popupdead_choice = POPUPDEAD_DO_MAIN_HALL;
-				break;
+		if ( choice >= 0 ) {
+			// do something different for single/multiplayer
+			if ( Game_mode & GM_NORMAL ) {
+				Popupdead_choice=choice;
+			} else {
+				Assert( Popupdead_multi_type != -1 );
+				switch ( Popupdead_multi_type ) {
 
-			case POPUPDEAD_RESPAWN_ONLY:
-			case POPUPDEAD_RESPAWN_QUIT:
-				Popupdead_choice = POPUPDEAD_DO_RESPAWN;
-				if ( (Popupdead_multi_type == POPUPDEAD_RESPAWN_QUIT) && (choice == 1) )
-					Popupdead_choice = POPUPDEAD_DO_MAIN_HALL;
-				break;
+				case POPUPDEAD_OBS_ONLY:
+				case POPUPDEAD_OBS_QUIT:
+					Popupdead_choice = POPUPDEAD_DO_OBSERVER;
+					if ( (Popupdead_multi_type == POPUPDEAD_OBS_QUIT) && (choice == 1) )
+						Popupdead_choice = POPUPDEAD_DO_MAIN_HALL;
+					break;
 
-			default:
-				Int3();
-				break;
+				case POPUPDEAD_RESPAWN_ONLY:
+				case POPUPDEAD_RESPAWN_QUIT:
+					Popupdead_choice = POPUPDEAD_DO_RESPAWN;
+					if ( (Popupdead_multi_type == POPUPDEAD_RESPAWN_QUIT) && (choice == 1) )
+						Popupdead_choice = POPUPDEAD_DO_MAIN_HALL;
+					break;
+
+				default:
+					UNREACHABLE("Invalid or unknown popupdead multi type!");
+					break;
+				}
 			}
 		}
 	}

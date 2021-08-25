@@ -4,7 +4,7 @@
 #include "shiptype.h"
 #include "ship/ship.h"
 
-extern int Species_initted;
+extern bool Ships_inited;
 
 namespace scripting {
 namespace api {
@@ -14,7 +14,7 @@ ADE_OBJ(l_Shiptype, int, "shiptype", "Ship type handle");
 
 ADE_VIRTVAR(Name, l_Shiptype, "string", "Ship type name", "string", "Ship type name, or empty string if handle is invalid")
 {
-	if(!Species_initted)
+	if(!Ships_inited)
 		return ade_set_error(L, "s", "");
 
 	const char* s = nullptr;
@@ -26,7 +26,9 @@ ADE_VIRTVAR(Name, l_Shiptype, "string", "Ship type name", "string", "Ship type n
 		return ade_set_error(L, "s", "");
 
 	if(ADE_SETTING_VAR && s != NULL) {
-		strncpy(Ship_types[idx].name, s, sizeof(Ship_types[idx].name)-1);
+		auto len = sizeof(Ship_types[idx].name);
+		strncpy(Ship_types[idx].name, s, len);
+		Ship_types[idx].name[len - 1] = 0;
 	}
 
 	return ade_set_args(L, "s", Ship_types[idx].name);

@@ -69,8 +69,8 @@ static char THIS_FILE[] = __FILE__;
 #define LOLLIPOP_SIZE   2.5f
 #define CONVERT_DEGREES 57.29578f   // conversion factor from radians to degrees
 
-#define FRED_COLOUR_WHITE	0xffffff
-#define FRED_COLOUR_YELLOW	0x9fff00
+#define FRED_COLOUR_WHITE			0xffffff
+#define FRED_COLOUR_YELLOW_GREEN	0xc8ff00
 
 const float FRED_DEFAULT_HTL_FOV = 0.485f;
 const float FRED_BRIEFING_HTL_FOV = 0.325f;
@@ -99,6 +99,7 @@ int Show_grid = 1;
 int Show_grid_positions = 1;
 int Show_horizon = 0;
 int Show_outlines = 0;
+bool Draw_outlines_on_selected_ships = false;
 int Show_stars = 1;
 int Single_axis_constraint = 0;
 int True_rw, True_rh;
@@ -128,7 +129,7 @@ CWnd info_popup;
 color colour_black;
 color colour_green;
 color colour_white;
-color colour_yellow;
+color colour_yellow_green;
 
 static vec3d Global_light_world = { 0.208758f, -0.688253f, -0.694782f };
 
@@ -409,22 +410,31 @@ void display_active_ship_subsystem() {
 		if (Objects[cur_object_index].type == OBJ_SHIP) {
 
 			object *objp = &Objects[cur_object_index];
-			char buf[256];
+			
+			// if this option is checked, we want to render info for all subsystems, not just the ones we select with K and Shift-K
+			if (Highlight_selectable_subsys) {
+				auto shipp = &Ships[objp->instance];
 
-			// switching to a new ship, so reset
-			if (objp != Render_subsys.ship_obj) {
-				cancel_display_active_ship_subsystem();
-				return;
+				for (auto ss = GET_FIRST(&shipp->subsys_list); ss != END_OF_LIST(&shipp->subsys_list); ss = GET_NEXT(ss)) {
+					if (ss->system_info->subobj_num != -1) {
+						subsys_to_render s2r = { true, objp, ss };
+						fredhtl_render_subsystem_bounding_box(&s2r);
+					}
+				}
 			}
+			// otherwise select individual subsystems, or not, as normal
+			else {
+				// switching to a new ship, so reset
+				if (objp != Render_subsys.ship_obj) {
+					cancel_display_active_ship_subsystem();
+					return;
+				}
 
-			if (Render_subsys.do_render) {
-
-				// get subsys name
-				strcpy_s(buf, Render_subsys.cur_subsys->system_info->subobj_name);
-
-				fredhtl_render_subsystem_bounding_box(&Render_subsys);
-			} else {
-				cancel_display_active_ship_subsystem();
+				if (Render_subsys.do_render) {
+					fredhtl_render_subsystem_bounding_box(&Render_subsys);
+				} else {
+					cancel_display_active_ship_subsystem();
+				}
 			}
 		}
 	}
@@ -483,7 +493,7 @@ void display_ship_info() {
 		if (OBJ_INDEX(objp) == cur_object_index)
 			Fred_outline = FRED_COLOUR_WHITE;
 		else if (objp->flags[Object::Object_Flags::Marked])  // is it a marked object?
-			Fred_outline = FRED_COLOUR_YELLOW;
+			Fred_outline = FRED_COLOUR_YELLOW_GREEN;
 		else
 			Fred_outline = 0;
 
@@ -547,8 +557,8 @@ void display_ship_info() {
 				if (*buf) {
 					if (Fred_outline == FRED_COLOUR_WHITE)
 						gr_set_color_fast(&colour_green);
-					else if (Fred_outline == FRED_COLOUR_YELLOW)
-						gr_set_color_fast(&colour_yellow);
+					else if (Fred_outline == FRED_COLOUR_YELLOW_GREEN)
+						gr_set_color_fast(&colour_yellow_green);
 					else
 						gr_set_color_fast(&colour_white);
 
@@ -786,8 +796,30 @@ void fredhtl_render_subsystem_bounding_box(subsys_to_render * s2r) {
 
 	fred_disable_htl();
 
+	// get text
+	strcpy_s(buf, s2r->cur_subsys->system_info->subobj_name);
+
+	// add weapons if present
+	for (int i = 0; i < s2r->cur_subsys->weapons.num_primary_banks; ++i)
+	{
+		int wi = s2r->cur_subsys->weapons.primary_bank_weapons[i];
+		if (wi >= 0)
+		{
+			strcat_s(buf, "\n");
+			strcat_s(buf, Weapon_info[wi].name);
+		}
+	}
+	for (int i = 0; i < s2r->cur_subsys->weapons.num_secondary_banks; ++i)
+	{
+		int wi = s2r->cur_subsys->weapons.secondary_bank_weapons[i];
+		if (wi >= 0)
+		{
+			strcat_s(buf, "\n");
+			strcat_s(buf, Weapon_info[wi].name);
+		}
+	}
+
 	//draw the text.  rotate the center of the subsystem into place before finding out where to put the text
-	strcpy_s(buf, Render_subsys.cur_subsys->system_info->subobj_name);
 	vec3d center_pt;
 	vm_vec_unrotate(&center_pt, &bsp->offset, &s2r->ship_obj->orient);
 	vm_vec_add2(&center_pt, &s2r->ship_obj->pos);
@@ -884,7 +916,7 @@ void fred_render_init() {
 
 	gr_init_alphacolor(&colour_white, 255, 255, 255, 255);
 	gr_init_alphacolor(&colour_green, 0, 200, 0, 255);
-	gr_init_alphacolor(&colour_yellow, 200, 255, 0, 255);
+	gr_init_alphacolor(&colour_yellow_green, 200, 255, 0, 255);
 	gr_init_alphacolor(&colour_black, 0, 0, 0, 255);
 }
 
@@ -1125,6 +1157,8 @@ void inc_mission_time() {
 
 	if (Frametime > MAX_FRAMETIME) {
 		Frametime = MAX_FRAMETIME;
+	} else if (Frametime < 0) {
+		Frametime = thistime = MIN_FRAMETIME;
 	} else if (Frametime < MIN_FRAMETIME) {
 		if (!Cmdline_NoFPSCap) {
 			thistime = MIN_FRAMETIME - Frametime;
@@ -1535,9 +1569,9 @@ void render_frame() {
 			a_deg.p = a.p * CONVERT_DEGREES;
 			a_deg.b = a.b * CONVERT_DEGREES;
 
-			sprintf(buf, "%s\n%s\n( %.1f , %.1f , %.1f ) \nHeading: %.2f\nPitch: %.2f\nBank: %.2f",
+			sprintf(buf, "%s\n%s\n( %.1f , %.1f , %.1f ) \nPitch: %.2f\nBank: %.2f\nHeading: %.2f",
 					Ships[inst].ship_name, Ship_info[Ships[inst].ship_info_index].short_name,
-					pos.xyz.x, pos.xyz.y, pos.xyz.z, a_deg.h, a_deg.p, a_deg.b);
+					pos.xyz.x, pos.xyz.y, pos.xyz.z, a_deg.p, a_deg.b, a_deg.h);
 
 		} else if (Objects[Cursor_over].type == OBJ_WAYPOINT) {
 			int idx;
@@ -1747,11 +1781,15 @@ void render_one_model_htl(object *objp) {
 
 	rendering_order[render_count] = OBJ_INDEX(objp);
 	Fred_outline = 0;
-	if ((OBJ_INDEX(objp) == cur_object_index) && !Bg_bitmap_dialog)
+
+	if (!Draw_outlines_on_selected_ships && ((OBJ_INDEX(objp) == cur_object_index) || (objp->flags[Object::Object_Flags::Marked])))
+		/* don't draw the outlines we would normally draw */;
+
+	else if ((OBJ_INDEX(objp) == cur_object_index) && !Bg_bitmap_dialog)
 		Fred_outline = FRED_COLOUR_WHITE;
 
 	else if ((objp->flags[Object::Object_Flags::Marked]) && !Bg_bitmap_dialog)  // is it a marked object?
-		Fred_outline = FRED_COLOUR_YELLOW;
+		Fred_outline = FRED_COLOUR_YELLOW_GREEN;
 
 	else if ((objp->type == OBJ_SHIP) && Show_outlines) {
 		color *iff_color = iff_get_color_by_team_and_object(Ships[objp->instance].team, -1, 1, objp);
@@ -1799,14 +1837,14 @@ void render_one_model_htl(object *objp) {
 		if (Fred_outline) {
 			render_info.set_color(Fred_outline >> 16, (Fred_outline >> 8) & 0xff, Fred_outline & 0xff);
 			render_info.set_flags(j | MR_SHOW_OUTLINE_HTL | MR_NO_LIGHTING | MR_NO_POLYS | MR_NO_TEXTURING);
-			model_render_immediate(&render_info, Ship_info[Ships[z].ship_info_index].model_num, &objp->orient, &objp->pos);
+			model_render_immediate(&render_info, Ship_info[Ships[z].ship_info_index].model_num, Ships[z].model_instance_num, &objp->orient, &objp->pos);
 		}
 
 		g3_done_instance(0);
 
 		if (Show_ship_models) {
 			render_info.set_flags(j);
-			model_render_immediate(&render_info, Ship_info[Ships[z].ship_info_index].model_num, &objp->orient, &objp->pos);
+			model_render_immediate(&render_info, Ship_info[Ships[z].ship_info_index].model_num, Ships[z].model_instance_num, &objp->orient, &objp->pos);
 		}
 	} else {
 		int r = 0, g = 0, b = 0;
@@ -1898,11 +1936,15 @@ void render_one_model_nohtl(object *objp) {
 
 	rendering_order[render_count] = OBJ_INDEX(objp);
 	Fred_outline = 0;
-	if ((OBJ_INDEX(objp) == cur_object_index) && !Bg_bitmap_dialog)
+
+	if (!Draw_outlines_on_selected_ships && ((OBJ_INDEX(objp) == cur_object_index) || (objp->flags[Object::Object_Flags::Marked])))
+		/* don't draw the outlines we would normally draw */;
+
+	else if ((OBJ_INDEX(objp) == cur_object_index) && !Bg_bitmap_dialog)
 		Fred_outline = FRED_COLOUR_WHITE;
 
 	else if ((objp->flags[Object::Object_Flags::Marked]) && !Bg_bitmap_dialog)  // is it a marked object?
-		Fred_outline = FRED_COLOUR_YELLOW;
+		Fred_outline = FRED_COLOUR_YELLOW_GREEN;
 
 	else if ((objp->type == OBJ_SHIP) && Show_outlines) {
 		color *iff_color = iff_get_color_by_team_and_object(Ships[objp->instance].team, -1, 1, objp);

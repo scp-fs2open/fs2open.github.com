@@ -41,7 +41,7 @@ extern void ship_apply_tag(ship *ship_p, int tag_level, float tag_time, object *
 // This assumes that whoever called this knows if the shield got hit or not.
 // hitpos is in world coordinates.
 // if quadrant is not -1, then that part of the shield takes damage properly.
-void ship_apply_local_damage(object *ship_obj, object *other_obj, vec3d *hitpos, float damage, int quadrant, bool create_spark=true, int submodel_num=-1, vec3d *hit_normal=0 /*NULL*/);
+void ship_apply_local_damage(object *ship_obj, object *other_obj, vec3d *hitpos, float damage, int damage_type_idx, int quadrant, bool create_spark=true, int submodel_num=-1, vec3d *hit_normal=0 /*NULL*/);
 
 // This gets called to apply damage when a damaging force hits a ship, but at no 
 // point in particular.  Like from a shockwave.   This routine will see if the
@@ -49,13 +49,13 @@ void ship_apply_local_damage(object *ship_obj, object *other_obj, vec3d *hitpos,
 // You can pass force_center==NULL if you the damage doesn't come from anywhere,
 // like for debug keys to damage an object or something.  It will 
 // assume damage is non-directional and will apply it correctly.   
-void ship_apply_global_damage(object *ship_obj, object *other_obj, vec3d *force_center, float damage );
+void ship_apply_global_damage(object *ship_obj, object *other_obj, vec3d *force_center, float damage, int damage_type_idx);
 
 // like above, but does not apply damage to shields
 void ship_apply_wash_damage(object *ship_obj, object *other_obj, float damage);
 
 // next routine needed for multiplayer
-void ship_hit_kill( object *ship_obj, object *other_obj, float percent_killed, int self_destruct);
+void ship_hit_kill( object *ship_obj, object *other_obj, vec3d *hitpos, float percent_killed, int self_destruct);
 
 void ship_self_destruct( object *objp );
 
