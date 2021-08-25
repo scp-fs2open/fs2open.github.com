@@ -115,7 +115,7 @@ void gr_pixel(int x, int y, int resize_mode = GR_RESIZE_FULL);
  * @param h The height of the rectangle
  * @param resize_mode The mode for translating the screen positions
  */
-void gr_rect(int x, int y, int w, int h, int resize_mode = GR_RESIZE_FULL, float angle = 0);
+void gr_rect(int x, int y, int w, int h, int resize_mode = GR_RESIZE_FULL);
 /**
  * @brief Draws a filled rectangle with the current shading color
  * @param x The x-coordinate
