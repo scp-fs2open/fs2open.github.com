@@ -655,7 +655,7 @@ ADE_FUNC(drawPolygon,
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(drawRectangle, l_Graphics, "number X1, number Y1, number X2, number Y2, [boolean Filled=true], [number angle=0]", "Draws a rectangle with CurrentColor", NULL, NULL)
+ADE_FUNC(drawRectangle, l_Graphics, "number X1, number Y1, number X2, number Y2, [boolean Filled=true, number angle=0.0]", "Draws a rectangle with CurrentColor", NULL, NULL)
 {
 	if(!Gr_inited)
 		return ADE_RETURN_NIL;
