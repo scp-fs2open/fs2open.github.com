@@ -85,15 +85,15 @@ public:
 
 // Model state getters -- branch creation data
 	inline const QString *missionName(const QModelIndex &idx) const {
-		const CampaignMissionData *mn = missionData.internalDataConst(idx);
+		const CampaignMissionData *mn = missionData.internalData(idx);
 		return mn ? &mn->filename : nullptr;
 	}
 	inline const QList<QAction*> *missionEvents(const QModelIndex &idx) const {
-		const CampaignMissionData *mn = missionData.internalDataConst(idx);
+		const CampaignMissionData *mn = missionData.internalData(idx);
 		return mn ? &mn->events : nullptr;
 	}
 	inline const QList<QAction*> *missionGoals(const QModelIndex &idx) const {
-		const CampaignMissionData *mn = missionData.internalDataConst(idx);
+		const CampaignMissionData *mn = missionData.internalData(idx);
 		return mn ? &mn->goals : nullptr;
 	}
 

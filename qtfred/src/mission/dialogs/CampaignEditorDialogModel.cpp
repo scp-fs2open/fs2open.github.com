@@ -149,7 +149,7 @@ void CampaignEditorDialogModel::supplySubModels(QListView &ships, QListView &wep
 
 QStringList CampaignEditorDialogModel::getMissionNames() {
 	QStringList ret{};
-	ret.reserve(missionData.getCheckedDataConst().size());
+	ret.reserve(missionData.getCheckedData().size());
 	for (auto mn : missionData)
 		if (mn.second)
 			ret << mn.first.filename;
@@ -159,10 +159,10 @@ QStringList CampaignEditorDialogModel::getMissionNames() {
 int CampaignEditorDialogModel::getCampaignNumPlayers() const {
 	if (campaignType == campaignTypes[0])
 		return 0;
-	auto checked = missionData.getCheckedDataConst();
+	auto checked = missionData.getCheckedData();
 	if (checked.empty())
 		return 0;
-	return (*checked.cbegin())->nPlayers;
+	return (**checked.cbegin()).nPlayers;
 }
 
 void CampaignEditorDialogModel::connectBranches(bool uiUpdate, const campaign *cpgn) {
@@ -178,7 +178,7 @@ void CampaignEditorDialogModel::connectBranches(bool uiUpdate, const campaign *c
 		}
 		for (auto& br: mn->branches)
 			if (br.type == CampaignBranchData::NEXT || br.type == CampaignBranchData::NEXT_NOT_FOUND)
-				br.connect(missionData.getCheckedDataConst());
+				br.connect(const_cast<const CheckedDataListModel<CampaignMissionData>&>(missionData).getCheckedData());
 	}
 	if (uiUpdate)
 		parent->updateUIMission();
@@ -219,9 +219,9 @@ bool CampaignEditorDialogModel::saveTo(const QString &file) {
 
 void CampaignEditorDialogModel::checkMissionDrop(const QModelIndex &idx, const QModelIndex &bottomRight, const QVector<int> &roles) {
 	Assert(idx == bottomRight);
-	Assert(missionData.internalDataConst(idx));
+	Assert(missionData.internalData(idx));
 
-	if (roles.contains(Qt::CheckStateRole)	&& ! missionData.internalDataConst(idx)->fredable) {
+	if (roles.contains(Qt::CheckStateRole)	&& ! missionData.internalData(idx)->fredable) {
 		if (missionData.data(idx, Qt::CheckStateRole).toBool()) {
 			droppedMissions.removeAll(missionData.data(idx).toString());
 		} else {

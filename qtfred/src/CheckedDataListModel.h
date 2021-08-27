@@ -104,16 +104,17 @@ public:
 			return QVariant();
 	}
 
-	inline T* internalData(const QModelIndex &index) {
+	inline const T* internalData(const QModelIndex &index) const {
 		if (! index.isValid()) return nullptr;
 		size_t row{static_cast<size_t>(index.row())};
 		if (row >= items.size()) return nullptr;
 		return &items[row].internalData();
 	}
 
-	inline const T* internalDataConst(const QModelIndex &index) const {
-		return const_cast<CheckedDataListModel<T>*>(this)->internalData(index);
-
+	inline T* internalData(const QModelIndex &index) {
+		return const_cast<T*>(
+					const_cast<const CheckedDataListModel<T>*>(this)
+					->internalData(index));
 	}
 
 	bool setData(const QModelIndex &index, const QVariant &value,
@@ -151,7 +152,7 @@ public:
 		return checkeds;
 	}
 
-	inline const SCP_unordered_set<const T*>& getCheckedDataConst() const {
+	inline const SCP_unordered_set<const T*>& getCheckedData() const {
 		return checkedsConst;
 	}
 
