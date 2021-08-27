@@ -19,7 +19,7 @@ static const QString qstrEmpty{};
 
 class CampaignEditorDialog;
 
-class CampaignEditorDialogModel : public AbstractDialogModel
+class CampaignEditorDialogModel : public AbstractDialogModel, public SexpTreeEditorInterface
 {
 	struct CampaignMissionData;
 	struct CampaignBranchData;
@@ -28,12 +28,23 @@ class CampaignEditorDialogModel : public AbstractDialogModel
 public:
 	CampaignEditorDialogModel(CampaignEditorDialog *parent, EditorViewport *viewport, const QString &file = "", const QString& newCampaignType = "");
 	~CampaignEditorDialogModel() override = default;
+	void supplySubModels(QListView &ships, QListView &weps, QListView &missions, QPlainTextEdit &descr);
 
+// AbstractDialogModel
 	bool apply() override {	return saveTo(campaignFile); }
-
 	void reject() override {} // nothing to do if the dialog is created each time it's opened
 
-	void supplySubModels(QListView &ships, QListView &weps, QListView &missions, QPlainTextEdit &descr);
+// SexpTreeEditorInterface
+	//SCP_vector<SCP_string> getMissionGoals(const SCP_string& reference_name) override;
+	bool hasDefaultGoal(int) override {return true;}
+
+	//SCP_vector<SCP_string> getMissionEvents(const SCP_string& reference_name) override;
+	bool hasDefaultEvent(int) override {return true;}
+
+	QStringList getMissionNames() override;
+	bool hasDefaultMissionName() override {return true;}
+
+	bool requireCampaignOperators() const override {return true;}
 
 // Model state getters
 	inline bool isFileLoaded() const { return ! campaignFile.isEmpty(); }

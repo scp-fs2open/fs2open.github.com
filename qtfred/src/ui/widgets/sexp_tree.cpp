@@ -146,26 +146,28 @@ SCP_vector<SCP_string> SexpTreeEditorInterface::getMessages() {
 
 	return list;
 }
-SCP_vector<SCP_string> SexpTreeEditorInterface::getMissionGoals(const SCP_string&  /*reference_name*/) {
-	SCP_vector<SCP_string> list;
+QStringList SexpTreeEditorInterface::getMissionGoals(const QString&  /*reference_name*/) {
+	QStringList list;
+	list.reserve(Num_goals);
 
 	for (auto i = 0; i < Num_goals; i++) {
-		list.emplace_back(Mission_goals[i].name);
+		list << Mission_goals[i].name;
 	}
 
 	return list;
 }
-SCP_vector<SCP_string> SexpTreeEditorInterface::getMissionEvents(const SCP_string&  /*reference_name*/) {
-	SCP_vector<SCP_string> list;
+QStringList SexpTreeEditorInterface::getMissionEvents(const QString&  /*reference_name*/) {
+	QStringList list;
+	list.reserve(Num_mission_events);
 
 	for (auto i = 0; i < Num_mission_events; i++) {
-		list.emplace_back(Mission_events[i].name);
+		list << Mission_events[i].name;
 	}
 
 	return list;
 }
-SCP_vector<SCP_string> SexpTreeEditorInterface::getMissionNames() {
-	return { SCP_string(Mission_filename) };
+QStringList SexpTreeEditorInterface::getMissionNames() {
+	return { Mission_filename };
 }
 bool SexpTreeEditorInterface::hasDefaultMissionName() {
 	return *Mission_filename != '\0';
@@ -4052,7 +4054,7 @@ sexp_list_item* sexp_tree::get_listing_opf_mission_name() {
 	sexp_list_item head;
 
 	for (auto& mission : _interface->getMissionNames()) {
-		head.add_data(mission.c_str());
+		head.add_data(qPrintable(mission));
 	}
 
 	// This code is kept until the campaign editor is added
@@ -4077,13 +4079,10 @@ sexp_list_item* sexp_tree::get_listing_opf_goal_name(int parent_node) {
 	auto child = tree_nodes[parent_node].child;
 
 	// This is used by the campaign editor to show the entries for specific missions
-	SCP_string reference;
-	if (child >= 0) {
-		reference = tree_nodes[child].text;
-	}
+	QString reference{ child >= 0 ? tree_nodes[child].text : "" };
 
 	for (auto& entry : _interface->getMissionGoals(reference)) {
-		head.add_data(entry.c_str());
+		head.add_data(qPrintable(entry));
 	}
 
 	// This code is kept for reference purposes until the campaign editor is added
@@ -4168,13 +4167,10 @@ sexp_list_item* sexp_tree::get_listing_opf_event_name(int parent_node) {
 	auto child = tree_nodes[parent_node].child;
 
 	// This is used by the campaign editor to show the entries for specific missions
-	SCP_string reference;
-	if (child >= 0) {
-		reference = tree_nodes[child].text;
-	}
+	QString reference{ child >= 0 ? tree_nodes[child].text : "" };
 
 	for (auto& entry : _interface->getMissionEvents(reference)) {
-		head.add_data(entry.c_str());
+		head.add_data(qPrintable(entry));
 	}
 
 	// This code is kept until the campaign editor is added

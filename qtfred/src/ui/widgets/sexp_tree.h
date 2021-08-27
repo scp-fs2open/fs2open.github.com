@@ -106,13 +106,13 @@ class SexpTreeEditorInterface {
 	virtual bool hasDefaultMessageParamter();
 	virtual SCP_vector<SCP_string> getMessages();
 
-	virtual SCP_vector<SCP_string> getMissionGoals(const SCP_string& reference_name);
+	virtual QStringList getMissionGoals(const QString& reference_name);
 	virtual bool hasDefaultGoal(int operator_value);
 
-	virtual SCP_vector<SCP_string> getMissionEvents(const SCP_string& reference_name);
+	virtual QStringList getMissionEvents(const QString& reference_name);
 	virtual bool hasDefaultEvent(int operator_value);
 
-	virtual SCP_vector<SCP_string> getMissionNames();
+	virtual QStringList getMissionNames();
 	virtual bool hasDefaultMissionName();
 
 	virtual int getRootReturnType() const;

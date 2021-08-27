@@ -22,15 +22,13 @@ namespace Ui {
 
 class CampaignEditorDialogModel;
 
-class CampaignEditorDialog : public QDialog, public SexpTreeEditorInterface
+class CampaignEditorDialog : public QDialog
 {
 	Q_OBJECT
 
 public:
 	explicit CampaignEditorDialog(QWidget *parent, EditorViewport *viewport);
 	~CampaignEditorDialog() override;
-
-	bool requireCampaignOperators() const override {return true;}
 
 private:
 	std::unique_ptr<Ui::CampaignEditorDialog> ui;

@@ -36,6 +36,7 @@ class CheckedDataListModel : public QAbstractListModel
 		RowData& operator=(RowData&& move) = delete;
 
 		inline U& internalData() {return _internalData;}
+		inline const U& internalData() const {return _internalData;}
 	};
 
 	template<class U>
@@ -51,6 +52,7 @@ class CheckedDataListModel : public QAbstractListModel
 		RowData& operator=(RowData&& move) = delete;
 
 		inline U& internalData() {return *_internalData;}
+		inline const U& internalData() const {return *_internalData;}
 	};
 
 public:
@@ -152,6 +154,60 @@ public:
 	inline const SCP_unordered_set<const T*>& getCheckedDataConst() const {
 		return checkedsConst;
 	}
+
+	struct Iterator
+	{
+		using iterator_delegate = typename SCP_vector<RowData<T>>::iterator;
+
+		using iterator_category = std::forward_iterator_tag;
+		using difference_type   = typename SCP_vector<RowData<T>>::iterator::difference_type;
+		using value_type        = std::pair<T, bool>;
+		using pointer           = std::pair<const T*, bool>;
+		using reference         = std::pair<T&, bool>;
+
+		Iterator(iterator_delegate it) : _it(it) {}
+
+		reference operator*() const { return reference(_it->internalData(), _it->_checked); }
+		pointer operator->() { return pointer(&_it->internalData(), _it->_checked); }
+		Iterator& operator++() { _it++; return *this; }
+		Iterator operator++(int) { Iterator tmp = *this; ++(*this); return tmp; }
+		friend bool operator== (const Iterator &a, const Iterator &b) { return a._it == b._it;}
+		friend bool operator!= (const Iterator &a, const Iterator &b) { return a._it != b._it;}
+
+	private:
+		iterator_delegate _it;
+	};
+
+	inline Iterator begin() { return Iterator(items.begin()); }
+	inline Iterator end() { return Iterator(items.end()); }
+
+	struct ConstIterator
+	{
+		using iterator_delegate = typename SCP_vector<RowData<T>>::const_iterator;
+
+		using iterator_category = std::forward_iterator_tag;
+		using difference_type   = typename SCP_vector<RowData<T>>::iterator::difference_type;
+		using value_type        = std::pair<T, bool>;
+		using pointer           = std::pair<const T*, bool>;
+		using reference         = std::pair<const T&, bool>;
+
+		ConstIterator(iterator_delegate it) : _it(it) {}
+
+		const reference operator*() const { return reference(_it->internalData(), _it->_checked); }
+		const pointer operator->() { return pointer(&_it->internalData(), _it->_checked); }
+		ConstIterator& operator++() { _it++; return *this; }
+		ConstIterator operator++(int) { ConstIterator tmp = *this; ++(*this); return tmp; }
+		friend bool operator== (const ConstIterator &a, const ConstIterator &b) { return a._it == b._it;}
+		friend bool operator!= (const ConstIterator &a, const ConstIterator &b) { return a._it != b._it;}
+
+	private:
+		iterator_delegate _it;
+	};
+
+	inline ConstIterator begin() const { return ConstIterator(items.cbegin()); }
+	inline ConstIterator end() const { return ConstIterator(items.cend()); }
+	inline ConstIterator cbegin() const { return begin(); }
+	inline ConstIterator cend() const { return end(); }
 
 	template<class... Args>
 	inline void initRow(Args&&... args) {

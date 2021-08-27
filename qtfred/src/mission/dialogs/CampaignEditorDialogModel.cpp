@@ -147,6 +147,15 @@ void CampaignEditorDialogModel::supplySubModels(QListView &ships, QListView &wep
 	campaignDescr.associateEdit(&descr);
 }
 
+QStringList CampaignEditorDialogModel::getMissionNames() {
+	QStringList ret{};
+	ret.reserve(missionData.getCheckedDataConst().size());
+	for (auto mn : missionData)
+		if (mn.second)
+			ret << mn.first.filename;
+	return ret;
+}
+
 int CampaignEditorDialogModel::getCampaignNumPlayers() const {
 	if (campaignType == campaignTypes[0])
 		return 0;
