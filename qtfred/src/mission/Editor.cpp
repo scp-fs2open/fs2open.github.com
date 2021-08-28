@@ -264,7 +264,7 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 	}
 
 	for (i = 0; i < Num_teams; i++) {
-		generate_team_weaponry_usage_list(i, used_pool);
+		generate_team_weaponry_usage_list(i, _weapon_usage[i]);
 		for (j = 0; j < Team_data[i].num_weapon_choices; j++) {
 			// The amount used in wings is always set by a static loadout entry so skip any that were set by Sexp variables
 			if ((!strlen(Team_data[i].weaponry_pool_variable[j]))
@@ -276,12 +276,12 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 				}
 
 				// zero the used pool entry
-				used_pool[Team_data[i].weaponry_pool[j]] = 0;
+				_weapon_usage[i][Team_data[i].weaponry_pool[j]] = 0;
 			}
 		}
 		// double check the used pool is empty
 		for (j = 0; j < static_cast<int>(Weapon_info.size()); j++) {
-			if (!Team_data[i].do_not_validate && used_pool[j] != 0) {
+			if (_weapon_usage[i][j] != 0) {
 				Warning(LOCATION,
 						"%s is used in wings of team %d but was not in the loadout. Fixing now",
 						Weapon_info[j].name,
@@ -1632,6 +1632,36 @@ void Editor::generate_team_weaponry_usage_list(int team, int* arr) {
 			generate_wing_weaponry_usage_list(arr, Starting_wings[i]);
 		}
 	}
+}
+void Editor::generate_ship_usage_list(int* arr, int wing) {
+	int i; 
+
+	if (wing < 0) {
+		return;
+	}
+
+	i = Wings[wing].wave_count;
+	while (i--) {
+		arr[Ships[Wings[wing].ship_index[i]].ship_info_index]++; 
+	}
+}
+void Editor::updateStartingWingLoadoutUseCounts() {
+	memset(_ship_usage, 0, sizeof(int) * MAX_TVT_TEAMS * MAX_SHIP_CLASSES);
+
+	if (The_mission.game_type & MISSION_TYPE_MULTI_TEAMS) { 
+		for (int i = 0; i<MAX_TVT_TEAMS; i++) {
+			for (int j = 0; j<MAX_TVT_WINGS_PER_TEAM; j++) {
+				generate_ship_usage_list(_ship_usage[i], TVT_wings[(i*MAX_TVT_WINGS_PER_TEAM) + j]);
+			}			
+			generate_team_weaponry_usage_list(i, _weapon_usage[i]);
+		}
+	}
+	else {
+		for (int i = 0; i < MAX_STARTING_WINGS; i++) {
+			generate_ship_usage_list(_ship_usage[0], Starting_wings[i]);
+		}
+		generate_team_weaponry_usage_list(0, _weapon_usage[0]);
+	}	
 }
 void Editor::delete_marked() {
 	object* ptr, * next;
@@ -3165,6 +3195,27 @@ void Editor::lcl_fred_replace_stuff(QString& text)
 	text.replace("/", "$slash");
 	text.replace("\\", "$backslash");
 }
+
+SCP_vector<int> Editor::getStartingWingLoadoutUseCounts() {
+	// update before sending so that we have the most up to date info.
+	updateStartingWingLoadoutUseCounts();
+
+	SCP_vector<int> out;
+
+	for (int i = 0; i < MAX_TVT_TEAMS; i++) {
+		for (auto& entry : _ship_usage[i]) {
+			out.push_back(entry);
+		}
+	}
+	for (int i = 0; i < MAX_TVT_TEAMS; i++) {
+		for (auto& entry : _weapon_usage[i]) {
+			out.push_back(entry);
+		}
+	}
+
+	return out;
+}
+
 
 
 } // namespace fred

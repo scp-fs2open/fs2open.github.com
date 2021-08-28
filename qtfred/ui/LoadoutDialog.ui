@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>fso::fred::dialogs::TeamLoadoutDialog</class>
- <widget class="QDialog" name="fso::fred::dialogs::TeamLoadoutDialog">
+ <class>fso::fred::dialogs::LoadoutDialog</class>
+ <widget class="QDialog" name="fso::fred::dialogs::LoadoutDialog">
   <property name="enabled">
    <bool>true</bool>
   </property>
@@ -9,7 +9,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>542</width>
+    <width>620</width>
     <height>643</height>
    </rect>
   </property>
@@ -78,7 +78,11 @@
         </widget>
        </item>
        <item row="0" column="1">
-        <widget class="QSpinBox" name="extraWepSpinbox"/>
+        <widget class="QSpinBox" name="extraWepSpinbox">
+         <property name="maximum">
+          <number>999999999</number>
+         </property>
+        </widget>
        </item>
       </layout>
      </item>
@@ -120,8 +124,14 @@
            <height>0</height>
           </size>
          </property>
+         <property name="toolTip">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This is literally a delay before the player enters the mission.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+         <property name="whatsThis">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This is literally a delay before the player enters the mission.  It uses a very rough 250 ms per frame (much less frequent than gameplay), so it usually better to either have the player jump in just at the start or if you need debris, to mark a ship as destroyed before the mission begins.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
          <property name="text">
-          <string>Player entry delay</string>
+          <string>Player entry delay in ms   </string>
          </property>
         </widget>
        </item>
@@ -132,6 +142,12 @@
            <horstretch>0</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
+         </property>
+         <property name="toolTip">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This is literally a delay before the player enters the mission.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+         <property name="whatsThis">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;This is literally a delay before the player enters the mission. It uses a very rough 250 ms per frame (much less frequent than gameplay), so it usually better to either have the player jump in just at the start or if you need debris, to mark a ship as destroyed before the mission begins.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
          </property>
          <property name="decimals">
           <number>0</number>
@@ -165,6 +181,9 @@
            <horstretch>0</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
+         </property>
+         <property name="value">
+          <number>1</number>
          </property>
         </widget>
        </item>
@@ -213,7 +232,11 @@
         </widget>
        </item>
        <item row="0" column="1">
-        <widget class="QSpinBox" name="extraShipSpinbox"/>
+        <widget class="QSpinBox" name="extraShipSpinbox">
+         <property name="maximum">
+          <number>999999999</number>
+         </property>
+        </widget>
        </item>
       </layout>
      </item>
@@ -226,7 +249,7 @@
         <enum>QLayout::SetMinimumSize</enum>
        </property>
        <item>
-        <widget class="QListWidget" name="shipVarList">
+        <widget class="QTableWidget" name="shipVarList">
          <property name="enabled">
           <bool>true</bool>
          </property>
@@ -242,25 +265,33 @@
            <height>0</height>
           </size>
          </property>
+         <property name="toolTipDuration">
+          <number>-1</number>
+         </property>
+         <property name="editTriggers">
+          <set>QAbstractItemView::AllEditTriggers</set>
+         </property>
+         <property name="tabKeyNavigation">
+          <bool>false</bool>
+         </property>
+         <property name="showDropIndicator" stdset="0">
+          <bool>false</bool>
+         </property>
+         <property name="dragDropOverwriteMode">
+          <bool>false</bool>
+         </property>
          <property name="selectionMode">
           <enum>QAbstractItemView::MultiSelection</enum>
          </property>
          <property name="selectionBehavior">
           <enum>QAbstractItemView::SelectRows</enum>
          </property>
-         <item>
-          <property name="text">
-           <string>Ship Name/Amount in WIng/Extra/Total</string>
-          </property>
-          <property name="flags">
-           <set>ItemIsEnabled</set>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>First Ship - 4, 2, 6</string>
-          </property>
-         </item>
+         <property name="showGrid">
+          <bool>false</bool>
+         </property>
+         <property name="gridStyle">
+          <enum>Qt::NoPen</enum>
+         </property>
         </widget>
        </item>
       </layout>
@@ -281,29 +312,37 @@
         <enum>QLayout::SetMinimumSize</enum>
        </property>
        <item>
-        <widget class="QListWidget" name="weaponVarList">
+        <widget class="QTableWidget" name="weaponVarList">
          <property name="minimumSize">
           <size>
            <width>0</width>
            <height>0</height>
           </size>
          </property>
-         <property name="selectionRectVisible">
-          <bool>true</bool>
+         <property name="editTriggers">
+          <set>QAbstractItemView::AllEditTriggers</set>
          </property>
-         <item>
-          <property name="text">
-           <string>Wep Name/Amount in Wing/Extra/Total</string>
-          </property>
-          <property name="flags">
-           <set>ItemIsEnabled</set>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>First Weapon - 250, 100, 350</string>
-          </property>
-         </item>
+         <property name="tabKeyNavigation">
+          <bool>false</bool>
+         </property>
+         <property name="showDropIndicator" stdset="0">
+          <bool>false</bool>
+         </property>
+         <property name="dragDropOverwriteMode">
+          <bool>false</bool>
+         </property>
+         <property name="selectionMode">
+          <enum>QAbstractItemView::MultiSelection</enum>
+         </property>
+         <property name="selectionBehavior">
+          <enum>QAbstractItemView::SelectRows</enum>
+         </property>
+         <property name="showGrid">
+          <bool>false</bool>
+         </property>
+         <property name="gridStyle">
+          <enum>Qt::NoPen</enum>
+         </property>
         </widget>
        </item>
       </layout>
@@ -324,7 +363,7 @@
         </spacer>
        </item>
        <item>
-        <widget class="QPushButton" name="pushButton">
+        <widget class="QPushButton" name="switchViewButton">
          <property name="text">
           <string>Switch to Enable Via Variable</string>
          </property>
@@ -404,5 +443,39 @@
   </layout>
  </widget>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>accepted()</signal>
+   <receiver>fso::fred::dialogs::LoadoutDialog</receiver>
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>309</x>
+     <y>625</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>309</x>
+     <y>321</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>rejected()</signal>
+   <receiver>fso::fred::dialogs::LoadoutDialog</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>309</x>
+     <y>625</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>309</x>
+     <y>321</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>
+
