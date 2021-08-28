@@ -67,9 +67,10 @@ class player;
 // version 52 - 10/9/2020 Dumbfire Rollback, increases accuracy of high ping, or delayed packet primary fire for clients.
 // version 53 - 12/2/2020 big set of packet fixes/upgrades
 // version 54 - 3/20/2021 - Fixes for FSO 21_2 especially better net_sig calc, better missile intercept
+// version 55 - 8/28/2021 Adding multi-compatible animations
 // STANDALONE_ONLY
 
-#define MULTI_FS_SERVER_VERSION							54
+#define MULTI_FS_SERVER_VERSION							55
 
 #define MULTI_FS_SERVER_COMPATIBLE_VERSION			MULTI_FS_SERVER_VERSION
 
@@ -198,6 +199,7 @@ class player;
 #define COUNTERMEASURE_NEW			0x2C		// for client-side firing
 #define EVENT_UPDATE					0x2D		// event change
 #define LINEAR_WEAPON_FIRED			0x2E		//  Cyborg17 - for firing of non-homing weapons from the player on a client to send to the server
+#define ANIMATION_TRIGGERED			0x2F		// Lafiel - Anytime an animation starts
 
 #define SECONDARY_FIRED_AI			0xA0		// fired a secondary weapon (ai ship)
 #define SECONDARY_FIRED_PLR		0xA1		// fired a secondary weapon (player ship)

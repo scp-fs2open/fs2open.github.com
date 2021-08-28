@@ -1,16 +1,33 @@
 #include "model/modelanimation.h"
 #include "model/modelanimation_segments.h"
+#include "network/multi.h"
+#include "network/multimsgs.h"
 #include "ship/ship.h"
 
 extern float flFrametime;
 
 namespace animation {
 
+	//Not yet needed, since before Phase 3 no flags are actually parsed.
+	/*flag_def_list_new<animation::Animation_Flags> Animation_flags[] = {
+		{ "auto reverse",		animation::Animation_Flags::Auto_Reverse,		        true, false }
+	};
+
+	const size_t Num_animation_flags = sizeof(Animation_flags) / sizeof(flag_def_list_new<animation::Animation_Flags>);
+	*/
+
 	std::map<int, std::list<std::shared_ptr<ModelAnimation>>> ModelAnimation::s_runningAnimations;
+	std::vector<std::shared_ptr<ModelAnimation>> ModelAnimation::s_animationById;
 
 	std::map<std::pair<int, int>, ModelAnimationData<>> ModelAnimationSubmodel::s_initialData;
 
-	ModelAnimation::ModelAnimation(bool isInitialType) : m_isInitialType(isInitialType) { }
+	ModelAnimation::ModelAnimation(bool isInitialType) : m_isInitialType(isInitialType), id(s_animationById.size()) { }
+
+	std::shared_ptr<ModelAnimation> ModelAnimation::createAnimation(bool isInitialType) {
+		auto ptr = std::shared_ptr<ModelAnimation>(new ModelAnimation(isInitialType));
+		s_animationById.push_back(ptr);
+		return ptr;
+	}
 
 	ModelAnimationState ModelAnimation::play(float frametime, polymodel_instance* pmi, std::map<int, std::pair<ModelAnimationSubmodel*, ModelAnimationData<true>>>* applyBuffer, bool applyOnly) {
 		instance_data& instanceData = m_instances[pmi->id];
@@ -85,7 +102,10 @@ namespace animation {
 			//Cap time if needed
 			if (instanceData.time > instanceData.duration) {
 				instanceData.time = instanceData.duration;
-				instanceData.state = ModelAnimationState::COMPLETED;
+				if (m_flags[Animation_Flags::Auto_Reverse])
+					instanceData.state = ModelAnimationState::RUNNING_RWD;
+				else
+					instanceData.state = ModelAnimationState::COMPLETED;
 			}
 
 			for (const auto& animation : m_submodelAnimation) {
@@ -159,8 +179,20 @@ namespace animation {
 		}
 	}
 	
-	void ModelAnimation::start(polymodel_instance* pmi, bool reverse, bool force, bool instant) {
+	void ModelAnimation::start(polymodel_instance* pmi, bool reverse, bool force, bool instant, const float* multiOverrideTime) {
 		instance_data& instanceData = m_instances[pmi->id];
+
+		if (multiOverrideTime == nullptr && (Game_mode & GM_MULTIPLAYER)) {
+			//We are in multiplayer. Send animation to server to start. Server starts animation online, and sends start request back (which'll have multiOverride == true).
+			//If we _are_ the server, also just start the animation
+
+			send_animation_triggered_packet((int)id, pmi->id, reverse, force, instant);
+
+			if(MULTIPLAYER_CLIENT)
+				return;
+		}
+
+		float timeOffset = multiOverrideTime != nullptr ? *multiOverrideTime : 0.0f;
 
 		if (reverse) {
 			switch (instanceData.state) {
@@ -173,7 +205,7 @@ namespace animation {
 					//This needs to recalculate first, so start it as if it were going forwards, and then set it's time and continue on
 					if (instanceData.state == ModelAnimationState::UNTRIGGERED)
 						start(pmi, false, true);
-					instanceData.time = instant ? 0 : instanceData.duration;
+					instanceData.time = instant ? 0 : instanceData.duration - timeOffset;
 					instanceData.state = ModelAnimationState::RUNNING_RWD;
 					break;
 				}
@@ -181,12 +213,16 @@ namespace animation {
 				return;
 			case ModelAnimationState::RUNNING_FWD:
 				//Just pretend we were going in the right direction
+				instanceData.time -= timeOffset;
+
 				if (force)
-					instanceData.time = instant ? 0 : instanceData.duration;
+					instanceData.time = instant ? 0 : instanceData.duration - timeOffset;
 				instanceData.state = ModelAnimationState::RUNNING_RWD;
 				break;
 			case ModelAnimationState::COMPLETED:
 				//Nothing special to do. Expected case
+				instanceData.time -= timeOffset;
+
 				break;
 			}
 		}
@@ -198,7 +234,7 @@ namespace animation {
 
 				//If forced, reset and play anyways
 				if (force) {
-					instanceData.time = instant ? instanceData.duration : 0;
+					instanceData.time = instant ? instanceData.duration : 0 + timeOffset;
 					instanceData.state = ModelAnimationState::RUNNING_FWD;
 					break;
 				}
@@ -206,12 +242,16 @@ namespace animation {
 				return;
 			case ModelAnimationState::RUNNING_RWD:
 				//Just pretend we were going in the right direction
+				instanceData.time += timeOffset;
+
 				if (force)
-					instanceData.time = instant ? instanceData.duration : 0;
+					instanceData.time = instant ? instanceData.duration : 0 + timeOffset;
 				instanceData.state = ModelAnimationState::RUNNING_FWD;
 				break;
 			case ModelAnimationState::UNTRIGGERED:
 				//Nothing special to do. Expected case
+				instanceData.time += timeOffset;
+
 				break;
 			}
 		}
@@ -361,7 +401,7 @@ namespace animation {
 			if (optional_string("+time:"))
 				skip_token();
 
-			std::shared_ptr<ModelAnimation> anim = std::shared_ptr<ModelAnimation>(new ModelAnimation(true));
+			std::shared_ptr<ModelAnimation> anim = ModelAnimation::createAnimation(true);
 
 			char namelower[MAX_NAME_LEN];
 			strncpy(namelower, sp->subobj_name, MAX_NAME_LEN);
@@ -386,7 +426,12 @@ namespace animation {
 			sip->animations.emplace(anim, anim_name_from_subsys(sp), animation::ModelAnimationTriggerType::Initial);
 		}
 		else {
-			std::shared_ptr<ModelAnimation> anim = std::shared_ptr<ModelAnimation>(new ModelAnimation());
+			std::shared_ptr<ModelAnimation> anim = ModelAnimation::createAnimation();
+
+			if (type == ModelAnimationTriggerType::TurretFired) {
+				//Turret fireds won't get reset by code, so make them auto-resetting
+				anim->m_flags += Animation_Flags::Auto_Reverse;
+			}
 			
 			auto mainSegment = std::shared_ptr<ModelAnimationSegmentSerial>(new ModelAnimationSegmentSerial());
 
@@ -713,7 +758,7 @@ namespace animation {
 		for (const auto& animationTypes : animationSet) {
 			auto& newAnimations = newAnimationSet[animationTypes.first];
 			for (const auto& oldAnimation : animationTypes.second) {
-				std::shared_ptr<ModelAnimation> newAnimation = std::shared_ptr<ModelAnimation>(new ModelAnimation(oldAnimation.second->m_isInitialType));
+				std::shared_ptr<ModelAnimation> newAnimation = ModelAnimation::createAnimation(oldAnimation.second->m_isInitialType);
 				for (const auto& submodelAnims : oldAnimation.second->m_submodelAnimation) {
 					std::shared_ptr<ModelAnimationSubmodel> animSubmodel = std::shared_ptr<ModelAnimationSubmodel>(submodelAnims->copy(name));
 					newAnimation->addSubmodelAnimation(std::move(animSubmodel));

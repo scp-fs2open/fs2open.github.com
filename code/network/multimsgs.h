@@ -497,6 +497,10 @@ void process_NEW_primary_fired_packet(ubyte* data, header* hinfo);
 void send_non_homing_fired_packet(ship *shipp, int banks_fired, bool secondary = false);
 void process_non_homing_fired_packet(ubyte *data, header *hinfo);
 
+// animation triggered info
+void send_animation_triggered_packet(int animationId, int pmi, bool reverse, bool force, bool instant, const int* time = nullptr);
+void process_animation_triggered_packet(ubyte* data, header* hinfo);
+
 // new countermeasure fired info
 void send_NEW_countermeasure_fired_packet(object *objp, int cmeasure_count, int rand_val);
 void process_NEW_countermeasure_fired_packet(ubyte *data, header *hinfo);

@@ -2658,7 +2658,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss)
 					if (started) {
 						int duration = Ship_info[shipp->ship_info_index].animations.getTimeAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::TurretFiring, ss->system_info->subobj_num, true);
 						int duration2 = Ship_info[shipp->ship_info_index].animations.getTime(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::TurretFiring, animation::anim_name_from_subsys(ss->system_info));
-						ss->turret_animation_done_time = duration < duration2 ? duration : duration2;
+						ss->turret_animation_done_time = timestamp(duration > duration2 ? duration : duration2);
 						ss->turret_animation_position = MA_POS_SET;
 					}
 				}

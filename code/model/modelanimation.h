@@ -97,6 +97,11 @@ namespace animation {
 
 	enum class ModelAnimationState { UNTRIGGERED, RUNNING_FWD, COMPLETED, RUNNING_RWD };
 
+	FLAG_LIST(Animation_Flags) {
+		Auto_Reverse,			//Will make the animation automatically transition into reverse mode as opposed to waiting in a completed state
+
+		NUM_VALUES
+	};
 
 	template <bool is_optional = false>
 	struct ModelAnimationData {
@@ -222,20 +227,23 @@ namespace animation {
 
 		bool m_isInitialType;
 
+		flagset<animation::Animation_Flags>	m_flags;
+
 		ModelAnimationState play(float frametime, polymodel_instance* pmi, std::map<int, std::pair<ModelAnimationSubmodel*, ModelAnimationData<true>>>* applyBuffer, bool applyOnly = false);
 
 		static void apply(polymodel_instance* pmi, std::map<int, std::pair<ModelAnimationSubmodel*, ModelAnimationData<true>>>* applyBuffer);
 		static void cleanRunning();
 
 		friend struct ModelAnimationSet;
+		ModelAnimation(bool isInitialType = false);
 	public:
 		//Initial type animations must complete within a single frame, and then never modifiy the submodel again. If this is the case, we do not need to remember them being active for massive performance gains with lots of turrets
-		ModelAnimation(bool isInitialType = false);
+		static std::shared_ptr<ModelAnimation> createAnimation(bool isInitialType = false);
 
 		void addSubmodelAnimation(std::shared_ptr<ModelAnimationSubmodel> animation);
 
 		//Start playing the animation. Will stop other animations that have components running on the same submodels. instant always requires force
-		void start(polymodel_instance* pmi, bool reverse, bool force = false, bool instant = false);
+		void start(polymodel_instance* pmi, bool reverse, bool force = false, bool instant = false, const float* multiOverrideTime = nullptr);
 		//Stops the animation. If cleanup is set, it will remove the animation from the list of running animations. Don't call without cleanup unless you know what you are doing
 		void stop(polymodel_instance* pmi, bool cleanup = true);
 
@@ -245,6 +253,9 @@ namespace animation {
 		//Parses the legacy animation table in ships.tbl of a single subsystem. Currently initial animations only
 		static void parseLegacyAnimationTable(model_subsystem* sp, ship_info* sip);
 		//static std::shared_ptr<ModelAnimation> parseAnimationTable();
+
+		static std::vector<std::shared_ptr<ModelAnimation>> s_animationById;
+		const size_t id;
 	};
 
 
@@ -269,7 +280,6 @@ namespace animation {
 		int getTimeAll(polymodel_instance* pmi, ModelAnimationTriggerType type, int subtype = SUBTYPE_DEFAULT, bool strict = false);
 		int getTimeDockBayDoors(polymodel_instance* pmi, int subtype);
 	};
-
 
 	//Start of section of helper functions, mostly to complement the old modelanim functions as required
 
