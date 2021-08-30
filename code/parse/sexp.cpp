@@ -10639,6 +10639,22 @@ void sexp_change_iff_helper(object_ship_wing_point_team oswpt, int new_team)
 
 			break;
 		}
+
+		case OSWPT_TYPE_WHOLE_TEAM:
+		{
+			for (ship_obj* so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so)) {
+				ship* shipp = &Ships[Objects[so->objnum].instance];
+				if (shipp->team == oswpt.team)
+					sexp_ingame_ship_change_iff(shipp, new_team);
+			}
+
+			for (p_object* p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
+			{
+				if (p_objp->team == oswpt.team)
+					sexp_parse_ship_change_iff(p_objp, new_team);
+			}
+
+		}
 	}
 }
 
@@ -27619,11 +27635,16 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_POSITIVE;
 
 		case OP_IS_IFF:
-		case OP_CHANGE_IFF:
 			if (!argnum)
 				return OPF_IFF;
 			else
 				return OPF_SHIP_WING;
+
+		case OP_CHANGE_IFF:
+			if (!argnum)
+				return OPF_IFF;
+			else
+				return OPF_SHIP_WING_WHOLETEAM;
 
 		case OP_ADD_SHIP_GOAL:
 			if (!argnum)
@@ -32158,7 +32179,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	// Goober5000 - added wing capability
 	{ OP_CHANGE_IFF, "Change IFF (Action operator)\r\n"
-		"\tSets the specified ship(s) or wing(s) to the specified team.\r\n"
+		"\tSets the specified ship(s) or wing(s) or all ships of a team to the specified team.\r\n"
 		"Takes 2 or more arguments...\r\n"
 		"\t1:\tTeam to change to (\"friendly\", \"hostile\" or \"unknown\").\r\n"
 		"\tRest:\tName of ship or wing to change team status of." },
