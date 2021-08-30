@@ -206,7 +206,7 @@ void parse_species_tbl(const char *filename)
 				stuff_string(temp_name, F_NAME, NAME_LENGTH);
 
 				// search for it in iffs
-				for (int iLoop = 0; iLoop < Num_iffs; iLoop++)
+				for (int iLoop = 0; iLoop < Iff_info.size(); iLoop++)
 				{
 					if (!stricmp(Iff_info[iLoop].iff_name, temp_name))
 					{

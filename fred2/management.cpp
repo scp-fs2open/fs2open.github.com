@@ -106,7 +106,7 @@ int wing_objects[MAX_WINGS][MAX_SHIPS_PER_WING];
 char *Docking_bay_list[MAX_DOCKS];
 
 // Goober5000
-bool Show_iff[MAX_IFFS];
+SCP_vector<bool> Show_iff;
 
 CCriticalSection CS_cur_object_index;
 
@@ -387,8 +387,9 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	Fred_texture_replacements.clear();
 
 	// Goober5000
-	for (i = 0; i < MAX_IFFS; i++)
-		Show_iff[i] = true;
+	Show_iff.clear();
+	for (i = 0; i < Iff_info.size(); i++)
+		Show_iff.push_back(true);
 
 	// Goober5000
 	strcpy_s(Voice_abbrev_briefing, "");
@@ -861,8 +862,9 @@ void clear_mission()
 		Wings[i].wing_insignia_texture = -1;
 	}
 
-	for (i=0; i<MAX_IFFS; i++){
-		Shield_sys_teams[i] = 0;
+	Shield_sys_teams.clear();
+	for (i=0; i<Iff_info.size(); i++){
+		Shield_sys_teams.push_back(0);
 	}
 
 	for (i=0; i<MAX_SHIP_CLASSES; i++){
@@ -2471,7 +2473,7 @@ void management_add_ships_to_combo( CComboBox *box, int flags )
 	{
 		for (restrict_to_players = 0; restrict_to_players < 2; restrict_to_players++)
 		{
-			for (i = 0; i < Num_iffs; i++)
+			for (i = 0; i < Iff_info.size(); i++)
 			{
 				char tmp[NAME_LENGTH + 15];
 				stuff_special_arrival_anchor_name(tmp, i, restrict_to_players, 0);

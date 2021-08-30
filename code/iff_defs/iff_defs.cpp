@@ -16,8 +16,7 @@
 
 extern int radar_target_id_flags;
 
-int Num_iffs;
-iff_info Iff_info[MAX_IFFS];
+SCP_vector<iff_info> Iff_info;
 
 int Iff_traitor;
 
@@ -26,7 +25,7 @@ int iff_bright_delta;
 int *iff_color_brightness = &iff_bright_delta;
 
 // global only to file
-color Iff_colors[MAX_IFF_COLORS][2];		// AL 1-2-97: Create two IFF colors, regular and bright
+SCP_vector <std::pair<color, color>> Iff_colors;		// AL 1-2-97: Create two IFF colors, regular and bright
 
 flag_def_list rti_flags[] = {
 	{ "crosshairs",			RTIF_CROSSHAIRS,	0 },
@@ -68,44 +67,32 @@ int iff_init_color(int r, int g, int b)
 	} temp_color_t;
 
 	int i, idx;
-	temp_color_t *c;
 
-	static int num_iff_colors = 0;
-	static temp_color_t temp_colors[MAX_IFF_COLORS];
+	static SCP_vector<temp_color_t> temp_colors;
 
 	Assert(r >= 0 && r <= 255);
 	Assert(g >= 0 && g <= 255);
 	Assert(b >= 0 && b <= 255);
 
-	// make sure we're under the limit
-	if (num_iff_colors >= MAX_IFF_COLORS)
-	{
-		Warning(LOCATION, "Too many iff colors!  Ignoring the rest...\n");
-		return 0;
-	}
-
 	// find out if this color is in use
-	for (i = 0; i < num_iff_colors; i++)
+	for (i = 0; i < temp_colors.size(); i++)
 	{
-		c = &temp_colors[i];
+		const temp_color_t& c = temp_colors[i];
 
-		if (c->r == r && c->g == g && c->b == b)
+		if (c.r == r && c.g == g && c.b == b)
 			return i;
 	}
 
 	// not in use, so add a new slot
-	idx = num_iff_colors;
-	num_iff_colors++;
-
 	// save the values
-	c = &temp_colors[idx];
-	c->r = r;
-	c->g = g;
-	c->b = b;
+	temp_colors.push_back({ r, g, b });
+
+	idx = (int) temp_colors.size() - 1;
 
 	// init it
-	gr_init_alphacolor(&Iff_colors[idx][0], r, g, b, iff_get_alpha_value(false));
-	gr_init_alphacolor(&Iff_colors[idx][1], r, g, b, iff_get_alpha_value(true));
+	Iff_colors.push_back({ color(), color() });
+	gr_init_alphacolor(&Iff_colors[idx].first, r, g, b, iff_get_alpha_value(false));
+	gr_init_alphacolor(&Iff_colors[idx].second, r, g, b, iff_get_alpha_value(true));
 
 	// return the new slot
 	return idx;
@@ -117,14 +104,14 @@ int iff_init_color(int r, int g, int b)
 void iff_init()
 {
 	char traitor_name[NAME_LENGTH];
-	char attack_names[MAX_IFFS][MAX_IFFS][NAME_LENGTH];
-	struct {
+	SCP_vector<SCP_vector<SCP_string>> attack_names;
+
+	struct observed_color_t {
 		char iff_name[NAME_LENGTH];
 		int color_index;
-	} observed_color_table[MAX_IFFS][MAX_IFFS];
+	};
 
-	int num_attack_names[MAX_IFFS];
-	int num_observed_colors[MAX_IFFS];
+	SCP_vector<SCP_vector<observed_color_t>> observed_color_table;
 	int i, j, k;
 
 	try
@@ -300,24 +287,17 @@ void iff_init()
 		}
 
 		// begin reading data
-		Num_iffs = 0;
 		while (required_string_either("#End", "$IFF Name:"))
 		{
 			iff_info *iff;
 			int cur_iff;
 
-			// make sure we're under the limit
-			if (Num_iffs >= MAX_IFFS)
-			{
-				Warning(LOCATION, "Too many iffs in iffs_defs.tbl!  Max is %d.\n", MAX_IFFS);
-				skip_to_start_of_string("#End", NULL);
-				break;
-			}
-
 			// add new IFF
-			iff = &Iff_info[Num_iffs];
-			cur_iff = Num_iffs;
-			Num_iffs++;
+			cur_iff = (int) Iff_info.size();
+			Iff_info.push_back(iff_info());
+			attack_names.push_back(decltype(attack_names)::value_type());
+			observed_color_table.push_back(decltype(observed_color_table)::value_type());
+			iff = &Iff_info[cur_iff];
 
 
 			// get required IFF info ----------------------------------------------
@@ -339,24 +319,19 @@ void iff_init()
 
 			// get the list of iffs attacked
 			if (optional_string("$Attacks:"))
-				num_attack_names[cur_iff] = (int)stuff_string_list(attack_names[cur_iff], MAX_IFFS);
-			else
-				num_attack_names[cur_iff] = 0;
+				stuff_string_list(attack_names[cur_iff]);
 
 			// get the list of observed colors
-			num_observed_colors[cur_iff] = 0;
 			while (optional_string("+Sees"))
 			{
+				observed_color_table[cur_iff].push_back(decltype(observed_color_table)::value_type::value_type());
 				// get iff observed
-				stuff_string_until(observed_color_table[cur_iff][num_observed_colors[cur_iff]].iff_name, "As:", NAME_LENGTH);
+				stuff_string_until(observed_color_table[cur_iff].back().iff_name, "As:", NAME_LENGTH);
 				required_string("As:");
 
 				// get color observed
 				stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
-				observed_color_table[cur_iff][num_observed_colors[cur_iff]].color_index = iff_init_color(rgb[0], rgb[1], rgb[2]);
-
-				// increment
-				num_observed_colors[cur_iff]++;
+				observed_color_table[cur_iff].back().color_index = iff_init_color(rgb[0], rgb[1], rgb[2]);
 			}
 
 			// get F3 override
@@ -436,46 +411,37 @@ void iff_init()
 		}
 
 		// next get the attackees and colors
-		for (int cur_iff = 0; cur_iff < Num_iffs; cur_iff++)
+		for (int cur_iff = 0; cur_iff < Iff_info.size(); cur_iff++)
 		{
-			iff_info *iff = &Iff_info[cur_iff];
+			iff_info* iff = &Iff_info[cur_iff];
 
 			// clear the iffs to be attacked
 			iff->attackee_bitmask = 0;
 			iff->attackee_bitmask_all_teams_at_war = 0;
 
 			// clear the observed colors
-			for (j = 0; j < MAX_IFFS; j++)
-				iff->observed_color_index[j] = -1;
+			iff->observed_color_map.clear();
 
-			// resolve the list names
-			for (int list_index = 0; list_index < MAX_IFFS; list_index++)
-			{
-				// are we within the number of attackees listed?
-				if (list_index < num_attack_names[cur_iff])
-				{
-					// find out who
-					int target_iff = iff_lookup(attack_names[cur_iff][list_index]);
+			for (const SCP_string& attacks : attack_names[cur_iff]) {
+				// find out who
+				int target_iff = iff_lookup(attacks.c_str());
 
-					// valid?
-					if (target_iff >= 0)
-						iff->attackee_bitmask |= iff_get_mask(target_iff);
-					else
-						Warning(LOCATION, "Attack target IFF %s not found for IFF %s in iff_defs.tbl!\n", attack_names[cur_iff][list_index], iff->iff_name);
-				}
+				// valid?
+				if (target_iff >= 0)
+					iff->attackee_bitmask |= iff_get_mask(target_iff);
+				else
+					Warning(LOCATION, "Attack target IFF %s not found for IFF %s in iff_defs.tbl!\n", attacks.c_str(), iff->iff_name);
+			}
 
-				// are we within the number of colors listed?
-				if (list_index < num_observed_colors[cur_iff])
-				{
-					// find out who
-					int target_iff = iff_lookup(observed_color_table[cur_iff][list_index].iff_name);
+			for (const auto& color : observed_color_table[cur_iff]) {
+				// find out who
+				int target_iff = iff_lookup(color.iff_name);
 
-					// valid?
-					if (target_iff >= 0)
-						iff->observed_color_index[target_iff] = observed_color_table[cur_iff][list_index].color_index;
-					else
-						Warning(LOCATION, "Observed color IFF %s not found for IFF %s in iff_defs.tbl!\n", observed_color_table[cur_iff][list_index].iff_name, iff->iff_name);
-				}
+				// valid?
+				if (target_iff >= 0)
+					iff->observed_color_map[target_iff] = color.color_index;
+				else
+					Warning(LOCATION, "Observed color IFF %s not found for IFF %s in iff_defs.tbl!\n", color.iff_name, iff->iff_name);
 			}
 
 			// resolve the all teams at war relationships
@@ -487,7 +453,7 @@ void iff_init()
 			else
 			{
 				// nonexempt, so build bitmask of all other nonexempt teams
-				for (int other_iff = 0; other_iff < Num_iffs; other_iff++)
+				for (int other_iff = 0; other_iff < Iff_info.size(); other_iff++)
 				{
 					// skip myself (unless I attack myself normally)
 					if ((other_iff == cur_iff) && !iff_x_attacks_y(cur_iff, cur_iff))
@@ -524,7 +490,7 @@ int iff_lookup(const char *iff_name)
 	if(iff_name == NULL)
 		return -1;
 
-	for (int i = 0; i < Num_iffs; i++)
+	for (int i = 0; i < Iff_info.size(); i++)
 		if (!stricmp(iff_name, Iff_info[i].iff_name))
 			return i;
 
@@ -539,7 +505,7 @@ int iff_lookup(const char *iff_name)
  */
 int iff_get_attackee_mask(int attacker_team)
 {
-	Assert(attacker_team >= 0 && attacker_team < Num_iffs);
+	Assert(attacker_team >= 0 && attacker_team < Iff_info.size());
 
 	//	All teams attack all other teams.
 	if (Mission_all_attack)
@@ -561,10 +527,10 @@ int iff_get_attackee_mask(int attacker_team)
  */
 int iff_get_attacker_mask(int attackee_team)
 {
-	Assert(attackee_team >= 0 && attackee_team < Num_iffs);
+	Assert(attackee_team >= 0 && attackee_team < Iff_info.size());
 
 	int i, attacker_bitmask = 0;
-	for (i = 0; i < Num_iffs; i++)
+	for (i = 0; i < Iff_info.size(); i++)
 	{
 		if (iff_x_attacks_y(i, attackee_team))
 			attacker_bitmask |= iff_get_mask(i);
@@ -610,7 +576,7 @@ bool iff_matches_mask(int team, int mask)
  */
 color *iff_get_color(int color_index, int is_bright)
 {
-	return &Iff_colors[color_index][is_bright];
+	return is_bright == 0 ? &Iff_colors[color_index].first : &Iff_colors[color_index].second;
 }
 
 /**
@@ -618,14 +584,14 @@ color *iff_get_color(int color_index, int is_bright)
  */
 color *iff_get_color_by_team(int team, int seen_from_team, int is_bright)
 {
-	Assert(team >= 0 && team < Num_iffs);
-	Assert(seen_from_team < Num_iffs);
+	Assert(team >= 0 && team < Iff_info.size());
+	Assert(seen_from_team < Iff_info.size());
 	Assert(is_bright == 0 || is_bright == 1);
 
 
 	// is this guy being seen by anyone?
 	if (seen_from_team < 0)
-		return &Iff_colors[Iff_info[team].color_index][is_bright];
+		return is_bright == 0 ? &Iff_colors[Iff_info[team].color_index].first : &Iff_colors[Iff_info[team].color_index].second;
 
 	// Goober5000 - base the following on "sees X as" from iff code
 	// c.f. AL's comment:
@@ -637,12 +603,13 @@ color *iff_get_color_by_team(int team, int seen_from_team, int is_bright)
 
 
 	// assume an observed color is defined; if not, use normal color
-	int color_index = Iff_info[seen_from_team].observed_color_index[team];
-	if (color_index < 0)
-		color_index = Iff_info[team].color_index;
+	auto it = Iff_info[seen_from_team].observed_color_map.find(team);
+	int color_index = Iff_info[team].color_index;
 
-
-	return &Iff_colors[color_index][is_bright];
+	if (it != Iff_info[seen_from_team].observed_color_map.end())
+		color_index = it->second;
+	
+	return is_bright == 0 ? &Iff_colors[color_index].first : &Iff_colors[color_index].second;
 }
 
 /**
@@ -650,33 +617,43 @@ color *iff_get_color_by_team(int team, int seen_from_team, int is_bright)
  * 
  * this one for the function calls that include some - any - of object
  */
-color *iff_get_color_by_team_and_object(int team, int seen_from_team, int is_bright, object *objp)
+color* iff_get_color_by_team_and_object(int team, int seen_from_team, int is_bright, object* objp)
 {
-	Assert(team >= 0 && team < Num_iffs);
-	Assert(seen_from_team < Num_iffs);
+	Assert(team >= 0 && team < Iff_info.size());
+	Assert(seen_from_team < Iff_info.size());
 	Assert(is_bright == 0 || is_bright == 1);
 
 	int alt_color_index = -1;
 
 	// is this guy being seen by anyone?
 	if (seen_from_team < 0)
-		return &Iff_colors[Iff_info[team].color_index][is_bright];
+		return is_bright == 0 ? &Iff_colors[Iff_info[team].color_index].first : &Iff_colors[Iff_info[team].color_index].second;
 
-	int color_index = Iff_info[seen_from_team].observed_color_index[team];
+	int color_index = -1;
+	{
+		auto it = Iff_info[seen_from_team].observed_color_map.find(team);
+		if (it != Iff_info[seen_from_team].observed_color_map.end())
+			color_index = it->second;
+	}
 
 	// switch incase some sort of parent iff color inheritance for example for bombs is wanted...
 	switch(objp->type)
 	{
 		case OBJ_SHIP:
-			if (Ships[objp->instance].ship_iff_color[seen_from_team][team] >= 0)
+		{
+			auto it = Ships[objp->instance].ship_iff_color.find({ seen_from_team, team });
+			if (it != Ships[objp->instance].ship_iff_color.end())
 			{
-				alt_color_index = Ships[objp->instance].ship_iff_color[seen_from_team][team];
+				alt_color_index = it->second;
+				break;
 			}
-			else
+			it = Ship_info[Ships[objp->instance].ship_info_index].ship_iff_info.find({ seen_from_team, team });
+			if (it != Ship_info[Ships[objp->instance].ship_info_index].ship_iff_info.end())
 			{
-				alt_color_index = Ship_info[Ships[objp->instance].ship_info_index].ship_iff_info[seen_from_team][team];
+				alt_color_index = it->second;
 			}
 			break;
+		}
 		default:
 			break;
 	}
@@ -688,5 +665,5 @@ color *iff_get_color_by_team_and_object(int team, int seen_from_team, int is_bri
 		color_index = Iff_info[team].color_index;
 
 
-	return &Iff_colors[color_index][is_bright];
+	return is_bright == 0 ? &Iff_colors[color_index].first : &Iff_colors[color_index].second;
 }

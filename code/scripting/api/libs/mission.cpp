@@ -555,7 +555,7 @@ ADE_INDEXER(l_Mission_Teams, "number/string IndexOrTeamName", "Teams in the miss
 		idx--;	//Lua->FS2
 	}
 
-	if(idx < 0 || idx >= Num_iffs)
+	if(idx < 0 || idx >= Iff_info.size())
 		return ade_set_error(L, "o", l_Team.Set(-1));
 
 	return ade_set_args(L, "o", l_Team.Set(idx));
@@ -563,7 +563,7 @@ ADE_INDEXER(l_Mission_Teams, "number/string IndexOrTeamName", "Teams in the miss
 
 ADE_FUNC(__len, l_Mission_Teams, NULL, "Number of teams in mission", "number", "Number of teams in mission")
 {
-	return ade_set_args(L, "i", Num_iffs);
+	return ade_set_args(L, "i", Iff_info.size());
 }
 
 //****SUBLIBRARY: Mission/Messages

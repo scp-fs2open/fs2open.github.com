@@ -30,10 +30,10 @@ int filter_ships = TRUE;
 int filter_starts = TRUE;
 int filter_waypoints = TRUE;
 
-int filter_iff[MAX_IFFS];
+SCP_vector<int> filter_iff;
 int filter_iff_inited = FALSE;
 
-int IDC_FILTER_SHIPS_IFF[MAX_IFFS];
+SCP_vector<int> IDC_FILTER_SHIPS_IFF;
 
 /////////////////////////////////////////////////////////////////////////////
 // ship_select dialog
@@ -50,21 +50,24 @@ ship_select::ship_select(CWnd* pParent /*=NULL*/)
 	//}}AFX_DATA_INIT
 
 	// this is stupid
-	IDC_FILTER_SHIPS_IFF[0] = IDC_FILTER_SHIPS_IFF_0;
-	IDC_FILTER_SHIPS_IFF[1] = IDC_FILTER_SHIPS_IFF_1;
-	IDC_FILTER_SHIPS_IFF[2] = IDC_FILTER_SHIPS_IFF_2;
-	IDC_FILTER_SHIPS_IFF[3] = IDC_FILTER_SHIPS_IFF_3;
-	IDC_FILTER_SHIPS_IFF[4] = IDC_FILTER_SHIPS_IFF_4;
-	IDC_FILTER_SHIPS_IFF[5] = IDC_FILTER_SHIPS_IFF_5;
-	IDC_FILTER_SHIPS_IFF[6] = IDC_FILTER_SHIPS_IFF_6;
-	IDC_FILTER_SHIPS_IFF[7] = IDC_FILTER_SHIPS_IFF_7;
-	IDC_FILTER_SHIPS_IFF[8] = IDC_FILTER_SHIPS_IFF_8;
-	IDC_FILTER_SHIPS_IFF[9] = IDC_FILTER_SHIPS_IFF_9;
+	IDC_FILTER_SHIPS_IFF.push_back(IDC_FILTER_SHIPS_IFF_0);
+	IDC_FILTER_SHIPS_IFF.push_back(IDC_FILTER_SHIPS_IFF_1);
+	IDC_FILTER_SHIPS_IFF.push_back(IDC_FILTER_SHIPS_IFF_2);
+	IDC_FILTER_SHIPS_IFF.push_back(IDC_FILTER_SHIPS_IFF_3);
+	IDC_FILTER_SHIPS_IFF.push_back(IDC_FILTER_SHIPS_IFF_4);
+	IDC_FILTER_SHIPS_IFF.push_back(IDC_FILTER_SHIPS_IFF_5);
+	IDC_FILTER_SHIPS_IFF.push_back(IDC_FILTER_SHIPS_IFF_6);
+	IDC_FILTER_SHIPS_IFF.push_back(IDC_FILTER_SHIPS_IFF_7);
+	IDC_FILTER_SHIPS_IFF.push_back(IDC_FILTER_SHIPS_IFF_8);
+	IDC_FILTER_SHIPS_IFF.push_back(IDC_FILTER_SHIPS_IFF_9);
+
+	m_filter_iff.clear();
 
 	if (filter_iff_inited == FALSE)
 	{
-		for (i = 0; i < MAX_IFFS; i++)
-			filter_iff[i] = TRUE;
+		filter_iff.clear();
+		for (i = 0; i < IDC_FILTER_SHIPS_IFF.size(); i++)
+			filter_iff.push_back(TRUE);
 
 		filter_iff_inited = TRUE;
 	}
@@ -73,8 +76,8 @@ ship_select::ship_select(CWnd* pParent /*=NULL*/)
 	m_filter_starts = filter_starts;
 	m_filter_waypoints = filter_waypoints;
 
-	for (i = 0; i < MAX_IFFS; i++)
-		m_filter_iff[i] = filter_iff[i];
+	for (i = 0; i < IDC_FILTER_SHIPS_IFF.size(); i++)
+		m_filter_iff.push_back(filter_iff[i]);
 
 	activity = 0;
 
@@ -93,7 +96,7 @@ void ship_select::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_FILTER_SHIPS, m_filter_ships);
 	DDX_Check(pDX, IDC_FILTER_STARTS, m_filter_starts);
 	DDX_Check(pDX, IDC_FILTER_WAYPOINTS, m_filter_waypoints);
-	for (i = 0; i < MAX_IFFS; i++)
+	for (i = 0; i < IDC_FILTER_SHIPS_IFF.size(); i++)
 		DDX_Check(pDX, IDC_FILTER_SHIPS_IFF[i], m_filter_iff[i]);
 	//}}AFX_DATA_MAP
 }
@@ -151,17 +154,17 @@ BOOL ship_select::OnInitDialog()
 	create_list();
 
 	// init dialog stuff
-	for (i = 0; i < MAX_IFFS; i++)
+	for (i = 0; i < IDC_FILTER_SHIPS_IFF.size(); i++)
 	{
-		if (i < Num_iffs)
+		if (i < Iff_info.size())
 		{
 			GetDlgItem(IDC_FILTER_SHIPS_IFF[i])->SetWindowText(Iff_info[i].iff_name);
 		}
 
-		GetDlgItem(IDC_FILTER_SHIPS_IFF[i])->ShowWindow(i < Num_iffs);
+		GetDlgItem(IDC_FILTER_SHIPS_IFF[i])->ShowWindow(i < Iff_info.size());
 	}
 
-	for (i = 0; i < Num_iffs; i++)
+	for (i = 0; i < Iff_info.size(); i++)
 		GetDlgItem(IDC_FILTER_SHIPS_IFF[i])->EnableWindow(m_filter_ships);
 
 	wlist_size = wplist_size = 0;
@@ -289,7 +292,7 @@ void ship_select::OnOK()
 	filter_starts = m_filter_starts;
 	filter_waypoints = m_filter_waypoints;
 
-	for (i = 0; i < MAX_IFFS; i++)
+	for (i = 0; i < IDC_FILTER_SHIPS_IFF.size(); i++)
 		filter_iff[i] = m_filter_iff[i];
 
 	CDialog::OnOK();
@@ -322,7 +325,7 @@ void ship_select::OnFilterShips()
 	UpdateData(TRUE);
 	create_list();
 
-	for (i = 0; i < Num_iffs; i++)
+	for (i = 0; i < (Iff_info.size() > IDC_FILTER_SHIPS_IFF.size() ? IDC_FILTER_SHIPS_IFF.size() : Iff_info.size()); i++)
 		GetDlgItem(IDC_FILTER_SHIPS_IFF[i])->EnableWindow(m_filter_ships);
 }
 

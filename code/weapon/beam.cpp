@@ -2288,7 +2288,7 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 	case BEAM_TYPE_A:
 		// determine the miss factor
 		Assert(Game_skill_level >= 0 && Game_skill_level < NUM_SKILL_LEVELS);
-		Assert(b->team >= 0 && b->team < Num_iffs);
+		Assert(b->team >= 0 && b->team < Iff_info.size());
 		miss_factor = bwi->beam_iff_miss_factor[b->team][Game_skill_level];
 
 		// all we will do is decide whether or not we will hit - type A beam weapons are re-aimed immediately before firing
@@ -2333,7 +2333,7 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 	case BEAM_TYPE_D:
 		// determine the miss factor
 		Assert(Game_skill_level >= 0 && Game_skill_level < NUM_SKILL_LEVELS);
-		Assert(b->team >= 0 && b->team < Num_iffs);
+		Assert(b->team >= 0 && b->team < Iff_info.size());
 		miss_factor = bwi->beam_iff_miss_factor[b->team][Game_skill_level];
 
 		// get a bunch of shot aims

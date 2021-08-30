@@ -55,7 +55,7 @@ extern char Voice_script_entry_format[NOTES_LENGTH];
 extern int Voice_export_selection;
 
 // Goober5000
-extern bool Show_iff[];
+extern SCP_vector<bool> Show_iff;
 
 extern CCriticalSection CS_cur_object_index;
 
