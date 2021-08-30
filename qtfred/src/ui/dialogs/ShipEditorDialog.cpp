@@ -216,7 +216,7 @@ void ShipEditorDialog::updateColumnOne()
 		idx = _model->getTeam();
 		ui->teamCombo->setEnabled(_model->enable);
 		ui->teamCombo->clear();
-		for (i = 0; i < Num_iffs; i++) {
+		for (i = 0; i < Iff_info.size(); i++) {
 			ui->teamCombo->addItem(Iff_info[i].iff_name, QVariant(i));
 		}
 		ui->teamCombo->setCurrentIndex(ui->teamCombo->findData(idx));
@@ -312,7 +312,7 @@ void ShipEditorDialog::updateArrival()
 	if (_model->getArrivalLocation() != ARRIVE_FROM_DOCK_BAY) {
 		// Add Special Arrivals
 		for (restrict_to_players = 0; restrict_to_players < 2; restrict_to_players++) {
-			for (i = 0; i < Num_iffs; i++) {
+			for (i = 0; i < Iff_info.size(); i++) {
 				char tmp[NAME_LENGTH + 15];
 				_model->stuff_special_arrival_anchor_name(tmp, i, restrict_to_players, 0);
 

@@ -3162,7 +3162,7 @@ void Editor::importShieldSysData(const std::vector<int>& teams, const std::vecto
 // adapted from shield_sys_dlg OnInitDialog()
 // 0 = has shields, 1 = no shields, 2 = conflict/inconsistent
 void Editor::normalizeShieldSysData() {
-	std::vector<int> teams(MAX_IFFS, 0);
+	std::vector<int> teams(Iff_info.size(), 0);
 	std::vector<int> types(MAX_SHIP_CLASSES, 0);
 
 	for (int i = 0; i < MAX_SHIPS; i++) {

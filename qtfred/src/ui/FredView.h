@@ -152,6 +152,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void on_mission_loaded(const std::string& filepath);
 
 	void connectActionToViewSetting(QAction* option, bool* destination);
+	void connectActionToViewSetting(QAction* option, std::vector<bool>* vector, size_t idx);
 
 	void on_actionControlModeCamera_triggered(bool enabled);
 	void on_actionControlModeCurrentShip_triggered(bool enabled);

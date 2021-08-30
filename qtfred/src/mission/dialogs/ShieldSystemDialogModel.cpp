@@ -8,7 +8,7 @@ namespace fred {
 namespace dialogs {
 
 ShieldSystemDialogModel::ShieldSystemDialogModel(QObject* parent, EditorViewport* viewport) :
-	AbstractDialogModel(parent, viewport), _teams(MAX_IFFS, 0), _types(MAX_SHIP_CLASSES, 0) {
+	AbstractDialogModel(parent, viewport), _teams(Iff_info.size(), 0), _types(MAX_SHIP_CLASSES, 0) {
 
 	initializeData();
 }
@@ -25,7 +25,7 @@ void ShieldSystemDialogModel::initializeData() {
 		_shipTypeOptions.emplace_back(info.name);
 	}
 
-	for (int i = 0; i < Num_iffs; i++) {
+	for (int i = 0; i < Iff_info.size(); i++) {
 		_teamOptions.emplace_back(Iff_info[i].iff_name);
 	}
 
