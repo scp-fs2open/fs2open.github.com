@@ -731,137 +731,138 @@ bool lcl_ext_localize_sub(const char *in, char *text_str, char *out, size_t max_
 	auto ch = in;
 	bool attempted_xstr = false;
 
-	// check to see if this is an XSTR() tag
-	if (strnicmp(ch, "XSTR", 4) != 0)
-		goto xstr_finished_parse;
-	ch += 4;
+	do {
+		// check to see if this is an XSTR() tag
+		if (strnicmp(ch, "XSTR", 4) != 0)
+			break;
+		ch += 4;
 
-	attempted_xstr = true;
+		attempted_xstr = true;
 
-	// the next non-whitespace char should be a (
-	ignore_white_space(&ch);
-	if (*ch != '(')
-		goto xstr_finished_parse;
-	ch++;
-
-	// the next should be a quote
-	ignore_white_space(&ch);
-	if (*ch != '\"')
-		goto xstr_finished_parse;
-	ch++;
-
-	// now we have the start of the string
-	auto str_start = ch;
-
-	// find the end of the string
-	ch = strchr(ch, '"');
-	if (ch == nullptr)
-		goto xstr_finished_parse;
-
-	// now we have the end of the string (past the last character in it)
-	auto str_end = ch;
-	ch++;	// skip the quote
-
-	// the next non-whitespace char should be a ,
-	ignore_white_space(&ch);
-	if (*ch != ',')
-		goto xstr_finished_parse;
-	ch++;
-
-	// check for number, being mindful of negative
-	ignore_white_space(&ch);
-	bool is_negative = false;
-	if (*ch == '-')
-	{
-		is_negative = true;
-		ch++;
-	}
-	if (!isdigit(*ch))
-		goto xstr_finished_parse;
-
-	// now we have the start of the id
-	auto id_start = ch;
-
-	// find all the digits
-	while (isdigit(*ch))
+		// the next non-whitespace char should be a (
+		ignore_white_space(&ch);
+		if (*ch != '(')
+			break;
 		ch++;
 
-	// now we have the end of the id (past the last character in it)
-	auto id_end = ch;
+		// the next should be a quote
+		ignore_white_space(&ch);
+		if (*ch != '\"')
+			break;
+		ch++;
 
-	// the next non-whitespace char should be a )
-	ignore_white_space(&ch);
-	if (*ch != ')')
-		goto xstr_finished_parse;
+		// now we have the start of the string
+		auto str_start = ch;
 
-	// if we got this far, we know we have a parseable XSTR of some sort
-	xstr_id = -1;
+		// find the end of the string
+		ch = strchr(ch, '"');
+		if (ch == nullptr)
+			break;
 
-	//
-	// split off the strings and id sections
-	//
+		// now we have the end of the string (past the last character in it)
+		auto str_end = ch;
+		ch++;	// skip the quote
 
-	// check bounds
-	if (str_end - str_start > PARSE_BUF_SIZE - 1)
-	{
-		error_display(0, "String cannot fit within XSTR buffer!\n\n%s\n", str_start);
-		goto xstr_finished_parse;
-	}
+		// the next non-whitespace char should be a ,
+		ignore_white_space(&ch);
+		if (*ch != ',')
+			break;
+		ch++;
 
-	// now that we know the boundaries of the actual string in the XSTR() tag, copy it
-	strncpy(text_str, str_start, str_end - str_start);
-	text_str[str_end - str_start] = '\0';
+		// check for number, being mindful of negative
+		ignore_white_space(&ch);
+		bool is_negative = false;
+		if (*ch == '-')
+		{
+			is_negative = true;
+			ch++;
+		}
+		if (!isdigit(*ch))
+			break;
 
-	// bounds for id too
-	if (id_end - id_start > PARSE_ID_BUF_SIZE - 1)
-	{
-		error_display(0, "Number cannot fit within XSTR buffer!\n\n%s\n", id_start);
-		goto xstr_finished_parse;
-	}
+		// now we have the start of the id
+		auto id_start = ch;
 
-	// copy id
-	char xstr_id_buf[PARSE_ID_BUF_SIZE];
-	strncpy(xstr_id_buf, id_start, id_end - id_start);
-	xstr_id_buf[id_end - id_start] = '\0';
+		// find all the digits
+		while (isdigit(*ch))
+			ch++;
 
-	//
-	// now we have the information we want
-	//
+		// now we have the end of the id (past the last character in it)
+		auto id_end = ch;
 
-	xstr_str = text_str;
-	xstr_id = atoi(xstr_id_buf);
-	if (is_negative)
-		xstr_id *= -1;
-	xstr_valid = true;
+		// the next non-whitespace char should be a )
+		ignore_white_space(&ch);
+		if (*ch != ')')
+			break;
 
-	// if the localization file is not open, or there's no entry, or we're not translating, return the original string
-	if (!Xstr_inited || (xstr_id < 0) || (!use_default_translation && ((Lcl_current_lang == LCL_UNTRANSLATED) || (Lcl_current_lang == LCL_RETAIL_HYBRID))))
-		goto xstr_finished_parse;
+		// if we got this far, we know we have a parseable XSTR of some sort
+		xstr_id = -1;
 
-	//
-	// we are translating
-	//
+		//
+		// split off the strings and id sections
+		//
 
-	auto lookup_map = &Lcl_ext_str;
-	if (use_default_translation && lcl_get_current_lang_index() != LCL_DEFAULT)
-	{
-		// if we're not already using the default, then switch to our explicit default
-		lookup_map = &Lcl_ext_str_explicit_default;
-	}
+		// check bounds
+		if (str_end - str_start > PARSE_BUF_SIZE - 1)
+		{
+			error_display(0, "String cannot fit within XSTR buffer!\n\n%s\n", str_start);
+			break;
+		}
 
-	// get the string if it exists
-	if (lookup_map->find(xstr_id) != lookup_map->end())
-	{
-		xstr_str = (*lookup_map)[xstr_id];
-	}
-	// otherwise use what we have, but complain about it
-	else
-	{
-		mprintf(("Could not find entry %d in the external string table!\n", xstr_id));
-	}
+		// now that we know the boundaries of the actual string in the XSTR() tag, copy it
+		strncpy(text_str, str_start, str_end - str_start);
+		text_str[str_end - str_start] = '\0';
+
+		// bounds for id too
+		if (id_end - id_start > PARSE_ID_BUF_SIZE - 1)
+		{
+			error_display(0, "Number cannot fit within XSTR buffer!\n\n%s\n", id_start);
+			break;
+		}
+
+		// copy id
+		char xstr_id_buf[PARSE_ID_BUF_SIZE];
+		strncpy(xstr_id_buf, id_start, id_end - id_start);
+		xstr_id_buf[id_end - id_start] = '\0';
+
+		//
+		// now we have the information we want
+		//
+
+		xstr_str = text_str;
+		xstr_id = atoi(xstr_id_buf);
+		if (is_negative)
+			xstr_id *= -1;
+		xstr_valid = true;
+
+		// if the localization file is not open, or there's no entry, or we're not translating, return the original string
+		if (!Xstr_inited || (xstr_id < 0) || (!use_default_translation && ((Lcl_current_lang == LCL_UNTRANSLATED) || (Lcl_current_lang == LCL_RETAIL_HYBRID))))
+			break;
+
+		//
+		// we are translating
+		//
+
+		auto lookup_map = &Lcl_ext_str;
+		if (use_default_translation && lcl_get_current_lang_index() != LCL_DEFAULT)
+		{
+			// if we're not already using the default, then switch to our explicit default
+			lookup_map = &Lcl_ext_str_explicit_default;
+		}
+
+		// get the string if it exists
+		if (lookup_map->find(xstr_id) != lookup_map->end())
+		{
+			xstr_str = (*lookup_map)[xstr_id];
+		}
+		// otherwise use what we have, but complain about it
+		else
+		{
+			mprintf(("Could not find entry %d in the external string table!\n", xstr_id));
+		}
+	} while (false);
 
 
-xstr_finished_parse:
 	// set whatever id we have
 	if (id != nullptr)
 		*id = xstr_id;
@@ -892,129 +893,130 @@ bool lcl_ext_localize_sub(const SCP_string &in, SCP_string &text_str, SCP_string
 	auto ch = in.c_str();
 	bool attempted_xstr = false;
 
-	// check to see if this is an XSTR() tag
-	if (strnicmp(ch, "XSTR", 4) != 0)
-		goto xstr_finished_parse;
-	ch += 4;
+	do {
+		// check to see if this is an XSTR() tag
+		if (strnicmp(ch, "XSTR", 4) != 0)
+			break;
+		ch += 4;
 
-	attempted_xstr = true;
+		attempted_xstr = true;
 
-	// the next non-whitespace char should be a (
-	ignore_white_space(&ch);
-	if (*ch != '(')
-		goto xstr_finished_parse;
-	ch++;
-
-	// the next should be a quote
-	ignore_white_space(&ch);
-	if (*ch != '\"')
-		goto xstr_finished_parse;
-	ch++;
-
-	// now we have the start of the string
-	auto str_start = ch;
-
-	// find the end of the string
-	ch = strchr(ch, '"');
-	if (ch == nullptr)
-		goto xstr_finished_parse;
-
-	// now we have the end of the string (past the last character in it)
-	auto str_end = ch;
-	ch++;	// skip the quote
-
-	// the next non-whitespace char should be a ,
-	ignore_white_space(&ch);
-	if (*ch != ',')
-		goto xstr_finished_parse;
-	ch++;
-
-	// check for number, being mindful of negative
-	ignore_white_space(&ch);
-	bool is_negative = false;
-	if (*ch == '-')
-	{
-		is_negative = true;
-		ch++;
-	}
-	if (!isdigit(*ch))
-		goto xstr_finished_parse;
-
-	// now we have the start of the id
-	auto id_start = ch;
-
-	// find all the digits
-	while (isdigit(*ch))
+		// the next non-whitespace char should be a (
+		ignore_white_space(&ch);
+		if (*ch != '(')
+			break;
 		ch++;
 
-	// now we have the end of the id (past the last character in it)
-	auto id_end = ch;
+		// the next should be a quote
+		ignore_white_space(&ch);
+		if (*ch != '\"')
+			break;
+		ch++;
 
-	// the next non-whitespace char should be a )
-	ignore_white_space(&ch);
-	if (*ch != ')')
-		goto xstr_finished_parse;
+		// now we have the start of the string
+		auto str_start = ch;
 
-	// if we got this far, we know we have a parseable XSTR of some sort
-	xstr_id = -1;
+		// find the end of the string
+		ch = strchr(ch, '"');
+		if (ch == nullptr)
+			break;
 
-	//
-	// split off the strings and id sections
-	//
+		// now we have the end of the string (past the last character in it)
+		auto str_end = ch;
+		ch++;	// skip the quote
 
-	// now that we know the boundaries of the actual string in the XSTR() tag, copy it
-	text_str.assign(str_start, str_end);
+		// the next non-whitespace char should be a ,
+		ignore_white_space(&ch);
+		if (*ch != ',')
+			break;
+		ch++;
 
-	// bounds for id too
-	if (id_end - id_start > PARSE_ID_BUF_SIZE - 1)
-	{
-		error_display(0, "Number cannot fit within XSTR buffer!\n\n%s\n", id_start);
-		goto xstr_finished_parse;
-	}
+		// check for number, being mindful of negative
+		ignore_white_space(&ch);
+		bool is_negative = false;
+		if (*ch == '-')
+		{
+			is_negative = true;
+			ch++;
+		}
+		if (!isdigit(*ch))
+			break;
 
-	// copy id
-	char xstr_id_buf[PARSE_ID_BUF_SIZE];
-	strncpy(xstr_id_buf, id_start, id_end - id_start);
-	xstr_id_buf[id_end - id_start] = '\0';
+		// now we have the start of the id
+		auto id_start = ch;
 
-	//
-	// now we have the information we want
-	//
+		// find all the digits
+		while (isdigit(*ch))
+			ch++;
 
-	xstr_str = text_str.c_str();
-	xstr_id = atoi(xstr_id_buf);
-	if (is_negative)
-		xstr_id *= -1;
-	xstr_valid = true;
+		// now we have the end of the id (past the last character in it)
+		auto id_end = ch;
 
-	// if the localization file is not open, or there's no entry, or we're not translating, return the original string
-	if (!Xstr_inited || (xstr_id < 0) || (!use_default_translation && ((Lcl_current_lang == LCL_UNTRANSLATED) || (Lcl_current_lang == LCL_RETAIL_HYBRID))))
-		goto xstr_finished_parse;
+		// the next non-whitespace char should be a )
+		ignore_white_space(&ch);
+		if (*ch != ')')
+			break;
 
-	//
-	// we are translating
-	//
+		// if we got this far, we know we have a parseable XSTR of some sort
+		xstr_id = -1;
 
-	auto lookup_map = &Lcl_ext_str;
-	if (use_default_translation && lcl_get_current_lang_index() != LCL_DEFAULT)
-	{
-		// if we're not already using the default, then switch to our explicit default
-		lookup_map = &Lcl_ext_str_explicit_default;
-	}
+		//
+		// split off the strings and id sections
+		//
 
-	// get the string if it exists
-	if (lookup_map->find(xstr_id) != lookup_map->end())
-	{
-		xstr_str = (*lookup_map)[xstr_id];
-	}
-	// otherwise use what we have, but complain about it
-	else
-	{
-		mprintf(("Could not find entry %d in the external string table!\n", xstr_id));
-	}
+		// now that we know the boundaries of the actual string in the XSTR() tag, copy it
+		text_str.assign(str_start, str_end);
+
+		// bounds for id too
+		if (id_end - id_start > PARSE_ID_BUF_SIZE - 1)
+		{
+			error_display(0, "Number cannot fit within XSTR buffer!\n\n%s\n", id_start);
+			break;
+		}
+
+		// copy id
+		char xstr_id_buf[PARSE_ID_BUF_SIZE];
+		strncpy(xstr_id_buf, id_start, id_end - id_start);
+		xstr_id_buf[id_end - id_start] = '\0';
+
+		//
+		// now we have the information we want
+		//
+
+		xstr_str = text_str.c_str();
+		xstr_id = atoi(xstr_id_buf);
+		if (is_negative)
+			xstr_id *= -1;
+		xstr_valid = true;
+
+		// if the localization file is not open, or there's no entry, or we're not translating, return the original string
+		if (!Xstr_inited || (xstr_id < 0) || (!use_default_translation && ((Lcl_current_lang == LCL_UNTRANSLATED) || (Lcl_current_lang == LCL_RETAIL_HYBRID))))
+			break;
+
+		//
+		// we are translating
+		//
+
+		auto lookup_map = &Lcl_ext_str;
+		if (use_default_translation && lcl_get_current_lang_index() != LCL_DEFAULT)
+		{
+			// if we're not already using the default, then switch to our explicit default
+			lookup_map = &Lcl_ext_str_explicit_default;
+		}
+
+		// get the string if it exists
+		if (lookup_map->find(xstr_id) != lookup_map->end())
+		{
+			xstr_str = (*lookup_map)[xstr_id];
+		}
+		// otherwise use what we have, but complain about it
+		else
+		{
+			mprintf(("Could not find entry %d in the external string table!\n", xstr_id));
+		}
+	} while (false);
 
 
-xstr_finished_parse:
 	// set whatever id we have
 	if (id != nullptr)
 		*id = xstr_id;
