@@ -32182,7 +32182,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tSets the specified ship(s) or wing(s) or all ships of a team to the specified team.\r\n"
 		"Takes 2 or more arguments...\r\n"
 		"\t1:\tTeam to change to (\"friendly\", \"hostile\" or \"unknown\").\r\n"
-		"\tRest:\tName of ship or wing to change team status of." },
+		"\tRest:\tName of ship, wing, or team to change team status of." },
 
 	// Wanderer
 	{ OP_CHANGE_IFF_COLOR, "Change IFF Color (Action operator)\r\n"
