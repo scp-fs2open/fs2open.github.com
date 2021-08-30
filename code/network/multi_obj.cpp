@@ -740,7 +740,7 @@ void multi_oo_fire_rollback_shots(int frame_idx)
 			ship_fire_secondary(rollback_shot.shooterp, 1, true);
 		}
 		else {
-			ship_fire_primary(rollback_shot.shooterp, 0, 1, true);
+			ship_fire_primary(rollback_shot.shooterp, 1, true);
 		}
 	}
 
@@ -3186,13 +3186,8 @@ void multi_oo_interp(object* objp)
 	if ((objp->instance < 0) || (objp->instance >= MAX_SHIPS)) {
 		return;
 	}
-	// Now that we know we have a valid ship, do stream weapon firing for this ship before we do anything else that makes us abort
+
 	Assert(objp != Player_obj);
-	if (objp != Player_obj) {
-		if (MULTIPLAYER_CLIENT) {
-			ship_fire_primary(objp, 1, 0);
-		}
-	}
 
 	vec3d store_old_pos = objp->pos;
 	ushort net_sig_idx = objp->net_signature;
