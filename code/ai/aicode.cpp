@@ -877,7 +877,7 @@ void ai_level_init()
 
 	Ai_goal_signature = 0;
 
-	for (i = 0; i < Iff_info.size(); i++)
+	for (i = 0; i < (int) Iff_info.size(); i++)
 		Iff_info[i].ai_rearm_timestamp = timestamp(-1);
 
 	// clear out the stuff needed for AI firing powerful secondary weapons

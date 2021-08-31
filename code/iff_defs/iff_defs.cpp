@@ -75,7 +75,7 @@ int iff_init_color(int r, int g, int b)
 	Assert(b >= 0 && b <= 255);
 
 	// find out if this color is in use
-	for (i = 0; i < temp_colors.size(); i++)
+	for (i = 0; i < (int) temp_colors.size(); i++)
 	{
 		const temp_color_t& c = temp_colors[i];
 
@@ -411,7 +411,7 @@ void iff_init()
 		}
 
 		// next get the attackees and colors
-		for (int cur_iff = 0; cur_iff < Iff_info.size(); cur_iff++)
+		for (int cur_iff = 0; cur_iff < (int) Iff_info.size(); cur_iff++)
 		{
 			iff_info* iff = &Iff_info[cur_iff];
 
@@ -433,15 +433,15 @@ void iff_init()
 					Warning(LOCATION, "Attack target IFF %s not found for IFF %s in iff_defs.tbl!\n", attacks.c_str(), iff->iff_name);
 			}
 
-			for (const auto& color : observed_color_table[cur_iff]) {
+			for (const auto& observed_color : observed_color_table[cur_iff]) {
 				// find out who
-				int target_iff = iff_lookup(color.iff_name);
+				int target_iff = iff_lookup(observed_color.iff_name);
 
 				// valid?
 				if (target_iff >= 0)
-					iff->observed_color_map[target_iff] = color.color_index;
+					iff->observed_color_map[target_iff] = observed_color.color_index;
 				else
-					Warning(LOCATION, "Observed color IFF %s not found for IFF %s in iff_defs.tbl!\n", color.iff_name, iff->iff_name);
+					Warning(LOCATION, "Observed color IFF %s not found for IFF %s in iff_defs.tbl!\n", observed_color.iff_name, iff->iff_name);
 			}
 
 			// resolve the all teams at war relationships
@@ -453,7 +453,7 @@ void iff_init()
 			else
 			{
 				// nonexempt, so build bitmask of all other nonexempt teams
-				for (int other_iff = 0; other_iff < Iff_info.size(); other_iff++)
+				for (int other_iff = 0; other_iff < (int) Iff_info.size(); other_iff++)
 				{
 					// skip myself (unless I attack myself normally)
 					if ((other_iff == cur_iff) && !iff_x_attacks_y(cur_iff, cur_iff))
@@ -490,7 +490,7 @@ int iff_lookup(const char *iff_name)
 	if(iff_name == NULL)
 		return -1;
 
-	for (int i = 0; i < Iff_info.size(); i++)
+	for (int i = 0; i < (int) Iff_info.size(); i++)
 		if (!stricmp(iff_name, Iff_info[i].iff_name))
 			return i;
 
@@ -505,7 +505,7 @@ int iff_lookup(const char *iff_name)
  */
 int iff_get_attackee_mask(int attacker_team)
 {
-	Assert(attacker_team >= 0 && attacker_team < Iff_info.size());
+	Assert(attacker_team >= 0 && attacker_team < (int)Iff_info.size());
 
 	//	All teams attack all other teams.
 	if (Mission_all_attack)
@@ -527,10 +527,10 @@ int iff_get_attackee_mask(int attacker_team)
  */
 int iff_get_attacker_mask(int attackee_team)
 {
-	Assert(attackee_team >= 0 && attackee_team < Iff_info.size());
+	Assert(attackee_team >= 0 && attackee_team < (int)Iff_info.size());
 
 	int i, attacker_bitmask = 0;
-	for (i = 0; i < Iff_info.size(); i++)
+	for (i = 0; i < (int) Iff_info.size(); i++)
 	{
 		if (iff_x_attacks_y(i, attackee_team))
 			attacker_bitmask |= iff_get_mask(i);
@@ -584,8 +584,8 @@ color *iff_get_color(int color_index, int is_bright)
  */
 color *iff_get_color_by_team(int team, int seen_from_team, int is_bright)
 {
-	Assert(team >= 0 && team < Iff_info.size());
-	Assert(seen_from_team < Iff_info.size());
+	Assert(team >= 0 && team < (int)Iff_info.size());
+	Assert(seen_from_team < (int)Iff_info.size());
 	Assert(is_bright == 0 || is_bright == 1);
 
 
@@ -619,8 +619,8 @@ color *iff_get_color_by_team(int team, int seen_from_team, int is_bright)
  */
 color* iff_get_color_by_team_and_object(int team, int seen_from_team, int is_bright, object* objp)
 {
-	Assert(team >= 0 && team < Iff_info.size());
-	Assert(seen_from_team < Iff_info.size());
+	Assert(team >= 0 && team < (int)Iff_info.size());
+	Assert(seen_from_team < (int)Iff_info.size());
 	Assert(is_bright == 0 || is_bright == 1);
 
 	int alt_color_index = -1;

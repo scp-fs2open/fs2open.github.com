@@ -1476,7 +1476,7 @@ void parse_briefing(mission * /*pm*/, int flags)
 
 			// static alias stuff - stupid, but it seems to be necessary
 			const char **temp_team_names = new const char*[Iff_info.size()];
-			for (i = 0; i < Iff_info.size(); i++)
+			for (i = 0; i < (int)Iff_info.size(); i++)
 				temp_team_names[i] = Iff_info[i].iff_name;
 
 			while (required_string_either("$end_stage", "$start_icon"))
@@ -2767,7 +2767,7 @@ extern int parse_warp_params(const WarpParams *inherit_from, WarpDirection direc
  */
 int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 {
-	int	i, j, count, delay;
+	int	i, count, delay;
     char name[NAME_LENGTH];
 	ship_info *sip;
 
@@ -2899,7 +2899,7 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 	}
 
 	const char **temp_team_names = new const char*[Iff_info.size()];
-	for (i = 0; i < Iff_info.size(); i++)
+	for (i = 0; i < (int)Iff_info.size(); i++)
 		temp_team_names[i] = Iff_info[i].iff_name;
 
 	find_and_stuff("$Team:", &p_objp->team, F_NAME, temp_team_names, Iff_info.size(), "team name");
@@ -5161,7 +5161,7 @@ void parse_goal(mission *pm)
 		stuff_int( &goalp->team );
 
 		// sanity check
-		if (goalp->team < -1 || goalp->team >= Iff_info.size()) {
+		if (goalp->team < -1 || goalp->team >= (int)Iff_info.size()) {
 			if (Fred_running && !Warned_about_team_out_of_range) {
 				Warning(LOCATION, "+Team: value was out of range in the mission file!  This was probably caused by a bug in an older version of FRED.  Using -1 for now.");
 				Warned_about_team_out_of_range = true;
@@ -7841,7 +7841,7 @@ void mission_bring_in_support_ship( object *requester_objp )
 	vec3d center, warp_in_pos;
 	p_object *pobj;
 	ship *requester_shipp;
-	int i, j, requester_species;
+	int i, requester_species;
 
 	Assert ( requester_objp->type == OBJ_SHIP );
 	requester_shipp = &Ships[requester_objp->instance];	//	MK, 10/23/97, used to be ->type, bogus, no?

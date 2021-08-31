@@ -38,7 +38,7 @@ SelectionDialog::SelectionDialog(FredView* parent, EditorViewport* viewport) :
 			[this](int state) { _model->setFilterStarts(state == Qt::Checked); });
 
 	// Initialize IFF check boxes
-	for (auto i = 0; i < Iff_info.size(); ++i) {
+	for (auto i = 0; i < (int)Iff_info.size(); ++i) {
 		auto checkbox = new QCheckBox(QString::fromUtf8(Iff_info[i].iff_name), this);
 		_iffCheckBoxes.push_back(checkbox);
 		ui->iffSelectionContainer->addWidget(checkbox);
@@ -73,7 +73,7 @@ void SelectionDialog::updateUI() {
 	ui->checkPlayerStarts->setChecked(_model->isFilterStarts());
 	ui->checkWaypoints->setChecked(_model->isFilterWaypoints());
 	ui->checkShips->setChecked(_model->isFilterShips());
-	for (auto i = 0; i < Iff_info.size(); ++i) {
+	for (auto i = 0; i < (int)Iff_info.size(); ++i) {
 		_iffCheckBoxes[i]->setChecked(_model->isFilterIFFTeam(i));
 		_iffCheckBoxes[i]->setEnabled(_model->isFilterShips());
 	}

@@ -264,12 +264,12 @@ void SelectionDialogModel::setFilterWaypoints(bool filter_waypoints) {
 }
 
 bool SelectionDialogModel::isFilterIFFTeam(int team) const {
-	Assertion(team >= 0 && team < Iff_info.size(), "Team index %d is invalid!", team);
+	Assertion(team >= 0 && team < (int)Iff_info.size(), "Team index %d is invalid!", team);
 
 	return _filter_iff[team];
 }
 void SelectionDialogModel::setFilterIFFTeam(int team, bool filter) {
-	Assertion(team >= 0 && team < Iff_info.size(), "Team index %d is invalid!", team);
+	Assertion(team >= 0 && team < (int)Iff_info.size(), "Team index %d is invalid!", team);
 
 	if (filter != _filter_iff[team]) {
 		_filter_iff[team] = filter;

@@ -296,7 +296,7 @@ ADE_VIRTVAR(Team, l_Weapon, "team", "Weapon's team", "team", "Weapon team, or in
 
 	weapon *wp = &Weapons[oh->objp->instance];
 
-	if(ADE_SETTING_VAR && nt > -1 && nt < Iff_info.size()) {
+	if(ADE_SETTING_VAR && nt > -1 && nt < (int)Iff_info.size()) {
 		wp->team = nt;
 	}
 

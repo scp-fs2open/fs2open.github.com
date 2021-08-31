@@ -16,6 +16,7 @@
 // AWACS DEFINES/VARS
 //
 #include "globalincs/globals.h"
+#include "globalincs/vmallocator.h"
 
 class object;
 class ship;

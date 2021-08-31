@@ -260,7 +260,7 @@ void FredView::syncViewOptions() {
 	// The Show teams actions need to be initialized after everything has been set up since the IFFs may not have been
 	// initialized yet
 	fredApp->runAfterInit([this]() {
-		for (auto i = 0; i < Iff_info.size(); ++i) {
+		for (auto i = 0; i < (int)Iff_info.size(); ++i) {
 			auto action = new QAction(QString::fromUtf8(Iff_info[i].iff_name), ui->menuDisplay_Filter);
 			action->setCheckable(true);
 			connectActionToViewSetting(action, &_viewport->view.Show_iff, i);

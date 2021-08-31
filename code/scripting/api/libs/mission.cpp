@@ -555,7 +555,7 @@ ADE_INDEXER(l_Mission_Teams, "number/string IndexOrTeamName", "Teams in the miss
 		idx--;	//Lua->FS2
 	}
 
-	if(idx < 0 || idx >= Iff_info.size())
+	if(idx < 0 || idx >= (int)Iff_info.size())
 		return ade_set_error(L, "o", l_Team.Set(-1));
 
 	return ade_set_args(L, "o", l_Team.Set(idx));

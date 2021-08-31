@@ -25,8 +25,8 @@ void ShieldSystemDialogModel::initializeData() {
 		_shipTypeOptions.emplace_back(info.name);
 	}
 
-	for (int i = 0; i < Iff_info.size(); i++) {
-		_teamOptions.emplace_back(Iff_info[i].iff_name);
+	for (const auto& iff : Iff_info) {
+		_teamOptions.emplace_back(iff.iff_name);
 	}
 
 	modelChanged();

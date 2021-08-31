@@ -5277,7 +5277,7 @@ sexp_list_item *sexp_tree::get_listing_opf_iff()
 	int i;
 	sexp_list_item head;
 
-	for (i=0; i< Iff_info.size(); i++)
+	for (i=0; i< (int)Iff_info.size(); i++)
 		head.add_data(Iff_info[i].iff_name);
 
 	return head.next;
@@ -5390,7 +5390,7 @@ sexp_list_item *sexp_tree::get_listing_opf_arrival_anchor_all()
 
 	for (restrict_to_players = 0; restrict_to_players < 2; restrict_to_players++)
 	{
-		for (i = 0; i < Iff_info.size(); i++)
+		for (i = 0; i < (int)Iff_info.size(); i++)
 		{
 			char tmp[NAME_LENGTH + 15];
 			stuff_special_arrival_anchor_name(tmp, i, restrict_to_players, 0);
@@ -5719,7 +5719,7 @@ sexp_list_item *sexp_tree::get_listing_opf_ship_wing_wholeteam()
 	int i;
 	sexp_list_item head;
 
-	for (i = 0; i < Iff_info.size(); i++)
+	for (i = 0; i < (int)Iff_info.size(); i++)
 		head.add_data(Iff_info[i].iff_name);
 
 	head.add_list(get_listing_opf_ship_wing());
@@ -5732,7 +5732,7 @@ sexp_list_item *sexp_tree::get_listing_opf_ship_wing_shiponteam_point()
 	int i;
 	sexp_list_item head;
 
-	for (i = 0; i < Iff_info.size(); i++)
+	for (i = 0; i < (int)Iff_info.size(); i++)
 	{
 		char tmp[NAME_LENGTH + 7];
 		sprintf(tmp, "<any %s>", Iff_info[i].iff_name);

@@ -388,7 +388,7 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 
 	// Goober5000
 	Show_iff.clear();
-	for (i = 0; i < Iff_info.size(); i++)
+	for (i = 0; i < (int)Iff_info.size(); i++)
 		Show_iff.push_back(true);
 
 	// Goober5000
@@ -863,7 +863,7 @@ void clear_mission()
 	}
 
 	Shield_sys_teams.clear();
-	for (i=0; i<Iff_info.size(); i++){
+	for (i=0; i< (int)Iff_info.size(); i++){
 		Shield_sys_teams.push_back(0);
 	}
 
@@ -2473,7 +2473,7 @@ void management_add_ships_to_combo( CComboBox *box, int flags )
 	{
 		for (restrict_to_players = 0; restrict_to_players < 2; restrict_to_players++)
 		{
-			for (i = 0; i < Iff_info.size(); i++)
+			for (i = 0; i < (int)Iff_info.size(); i++)
 			{
 				char tmp[NAME_LENGTH + 15];
 				stuff_special_arrival_anchor_name(tmp, i, restrict_to_players, 0);

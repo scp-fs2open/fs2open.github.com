@@ -273,9 +273,9 @@ void CMainFrame::OnInitMenu(CMenu* pMenu) {
 		pMenu->ModifyMenu(ID_EDIT_UNDO, MF_BYCOMMAND, ID_EDIT_UNDO, str);
 
 	// Goober5000 - do the IFF menu options
-	for (i = 0; i < ID_SHOW_IFF.size(); i++) {
+	for (i = 0; i < (int)ID_SHOW_IFF.size(); i++) {
 		//This should eventually be properly dynamic as well
-		if (i < Iff_info.size()) {
+		if (i < (int)Iff_info.size()) {
 			char text[NAME_LENGTH + 7];
 			sprintf(text, "Show %s", Iff_info[i].iff_name);
 

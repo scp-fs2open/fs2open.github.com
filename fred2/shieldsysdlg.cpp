@@ -62,7 +62,7 @@ BOOL shield_sys_dlg::OnInitDialog()
 	int types[MAX_SHIP_CLASSES];
 	CComboBox *box;
 
-	for (i=0; i< Iff_info.size(); i++)
+	for (i=0; i< (int)Iff_info.size(); i++)
 		teams[i] = 0;
 
 	for (i=0; i<MAX_SHIP_CLASSES; i++)
@@ -94,7 +94,7 @@ BOOL shield_sys_dlg::OnInitDialog()
 
 	box = (CComboBox *) GetDlgItem(IDC_TEAM);
 	box->ResetContent();
-	for (i=0; i< Iff_info.size(); i++)
+	for (i=0; i< (int)Iff_info.size(); i++)
 		box->AddString(Iff_info[i].iff_name);
 
 	CDialog::OnInitDialog();

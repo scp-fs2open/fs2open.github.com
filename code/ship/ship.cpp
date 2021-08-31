@@ -1543,7 +1543,7 @@ ship_info::ship_info(ship_info&& other) noexcept
 
 ship_info::ship_info()
 {
-	int i,j;
+	int i;
 
 	name[0] = '\0';
 	display_name[0] = '\0';
@@ -6184,7 +6184,7 @@ vec3d get_submodel_offset(int model, int submodel){
 // Reset all ship values to empty/unused.
 void ship::clear()
 {
-	int i, j;
+	int i;
 
 	objnum = -1;
 	ai_index = -1;

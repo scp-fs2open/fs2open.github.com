@@ -66,7 +66,7 @@ ship_select::ship_select(CWnd* pParent /*=NULL*/)
 	if (filter_iff_inited == FALSE)
 	{
 		filter_iff.clear();
-		for (i = 0; i < IDC_FILTER_SHIPS_IFF.size(); i++)
+		for (i = 0; i < (int)IDC_FILTER_SHIPS_IFF.size(); i++)
 			filter_iff.push_back(TRUE);
 
 		filter_iff_inited = TRUE;
@@ -76,7 +76,7 @@ ship_select::ship_select(CWnd* pParent /*=NULL*/)
 	m_filter_starts = filter_starts;
 	m_filter_waypoints = filter_waypoints;
 
-	for (i = 0; i < IDC_FILTER_SHIPS_IFF.size(); i++)
+	for (i = 0; i < (int)IDC_FILTER_SHIPS_IFF.size(); i++)
 		m_filter_iff.push_back(filter_iff[i]);
 
 	activity = 0;
@@ -96,7 +96,7 @@ void ship_select::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_FILTER_SHIPS, m_filter_ships);
 	DDX_Check(pDX, IDC_FILTER_STARTS, m_filter_starts);
 	DDX_Check(pDX, IDC_FILTER_WAYPOINTS, m_filter_waypoints);
-	for (i = 0; i < IDC_FILTER_SHIPS_IFF.size(); i++)
+	for (i = 0; i < (int)IDC_FILTER_SHIPS_IFF.size(); i++)
 		DDX_Check(pDX, IDC_FILTER_SHIPS_IFF[i], m_filter_iff[i]);
 	//}}AFX_DATA_MAP
 }
@@ -154,17 +154,17 @@ BOOL ship_select::OnInitDialog()
 	create_list();
 
 	// init dialog stuff
-	for (i = 0; i < IDC_FILTER_SHIPS_IFF.size(); i++)
+	for (i = 0; i < (int)IDC_FILTER_SHIPS_IFF.size(); i++)
 	{
-		if (i < Iff_info.size())
+		if (i < (int)Iff_info.size())
 		{
 			GetDlgItem(IDC_FILTER_SHIPS_IFF[i])->SetWindowText(Iff_info[i].iff_name);
 		}
 
-		GetDlgItem(IDC_FILTER_SHIPS_IFF[i])->ShowWindow(i < Iff_info.size());
+		GetDlgItem(IDC_FILTER_SHIPS_IFF[i])->ShowWindow(i < (int)Iff_info.size());
 	}
 
-	for (i = 0; i < Iff_info.size(); i++)
+	for (i = 0; i < (int)Iff_info.size(); i++)
 		GetDlgItem(IDC_FILTER_SHIPS_IFF[i])->EnableWindow(m_filter_ships);
 
 	wlist_size = wplist_size = 0;
@@ -292,7 +292,7 @@ void ship_select::OnOK()
 	filter_starts = m_filter_starts;
 	filter_waypoints = m_filter_waypoints;
 
-	for (i = 0; i < IDC_FILTER_SHIPS_IFF.size(); i++)
+	for (i = 0; i < (int)IDC_FILTER_SHIPS_IFF.size(); i++)
 		filter_iff[i] = m_filter_iff[i];
 
 	CDialog::OnOK();
@@ -325,7 +325,7 @@ void ship_select::OnFilterShips()
 	UpdateData(TRUE);
 	create_list();
 
-	for (i = 0; i < (Iff_info.size() > IDC_FILTER_SHIPS_IFF.size() ? IDC_FILTER_SHIPS_IFF.size() : Iff_info.size()); i++)
+	for (i = 0; i < (int)(Iff_info.size() > IDC_FILTER_SHIPS_IFF.size() ? IDC_FILTER_SHIPS_IFF.size() : Iff_info.size()); i++)
 		GetDlgItem(IDC_FILTER_SHIPS_IFF[i])->EnableWindow(m_filter_ships);
 }
 

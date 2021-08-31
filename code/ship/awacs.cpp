@@ -103,7 +103,7 @@ void awacs_update_all_levels()
 
 	// zero all levels
 	Awacs_level = 0.0f;
-	for (idx = 0; idx < Iff_info.size(); idx++) {
+	for (idx = 0; idx < (int)Iff_info.size(); idx++) {
 		Awacs_team.push_back(0.0f);
 		Ship_visibility_by_team.push_back(decltype(Ship_visibility_by_team)::value_type());
 	}
@@ -392,7 +392,7 @@ void team_visibility_update()
 	int *cur_team_ships, *en_team_ships;
 
 	// Do for all teams that cooperate with visibility
-	for (int cur_team = 0; cur_team < Iff_info.size(); cur_team++)
+	for (int cur_team = 0; cur_team < (int)Iff_info.size(); cur_team++)
 	{
 		// set up current team
 		cur_count = team_count[cur_team];
@@ -404,7 +404,7 @@ void team_visibility_update()
 
 
 		// check against all enemy teams
-		for (int en_team = 0; en_team < Iff_info.size(); en_team++)
+		for (int en_team = 0; en_team < (int)Iff_info.size(); en_team++)
 		{
 			// NOTE: we no longer skip our own team because we must adjust visibility for friendly-stealth-invisible ships
 			// if (en_team == cur_team)
