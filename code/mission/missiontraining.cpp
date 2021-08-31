@@ -635,8 +635,8 @@ char *translate_message_token(char *str)
  */
 SCP_string message_translate_tokens(const char *text)
 {
-	char temp[40], *ptr;
-	const char *toke1, *toke2;
+	char temp[40];
+	const char *ptr, *toke1, *toke2;
 	int r;
 	SCP_string buf;
 

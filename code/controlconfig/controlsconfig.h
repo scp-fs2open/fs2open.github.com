@@ -711,17 +711,19 @@ int translate_key_to_index(const char *key, bool find_override=true);
 
 
 /*!
- * @brief Given the system default key 'key', return the current key that is bound to that function.
+ * @brief Given the system default key 'key', return the current control input(s) that is bound to that function.
  *
- * @param[in] key  The default key combo (as string) to a certain control
+ * @param[in] key  The default key combo (as cstring) to a certain control
  *
- * @returns The key combo (as string) currently bound to the control
+ * @return The key combo (as cstring) currently bound to the control, or
+ * @return NULL if the given key is not a system default key, or
+ * @return "None" if there is nothing bound to the control
  *
  * @details Both the 'key' and the return value are descriptive strings that can be displayed
  * directly to the user.  If 'key' isn't a real key, is not normally bound to anything,
  * or there is no key currently bound to the function, NULL is returned.
  */
-char *translate_key(char *key);
+const char *translate_key(char *key);
 
 /**
  * @brief Converts the specified key code to a human readable string

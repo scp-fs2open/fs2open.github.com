@@ -902,52 +902,35 @@ int translate_key_to_index(const char *key, bool find_override)
 	return -1;
 }
 
-char *translate_key(char *key)
+const char *translate_key(char *key)
 {
-	int index = -1, key_code = -1, joy_code = -1;
-	const char *key_text = NULL;
-	const char *joy_text = NULL;
-
-	static char text[40] = {"None"};
+	int index = -1;
+	SCP_string retval;
 
 	index = translate_key_to_index(key, false);
 	if (index < 0) {
 		return NULL;
 	}
 
-	key_code = Control_config[index].get_btn(CID_KEYBOARD);
-	joy_code = Control_config[index].get_btn(CID_JOY0);
+	const CC_bind &first = Control_config[index].first;
+	const CC_bind &second = Control_config[index].second;
 
 	Failed_key_index = index;
 
-	if (key_code >= 0) {
-		key_text = textify_scancode(key_code);
+	if (!first.empty() && !second.empty()) {
+		retval = first.textify() + " or " + second.textify();
+
+	} else if (!first.empty()) {
+		retval = first.textify();
+
+	} else if (!second.empty()) {
+		retval = second.textify();
+
+	} else {
+		retval = "None";
 	}
 
-	if (joy_code >= 0) {
-		joy_text = Joy_button_text[joy_code];
-	}
-
-	// both key and joystick button are mapped to this control
-	if ((key_code >= 0 ) && (joy_code >= 0) ) {
-		strcpy_s(text, key_text);
-		strcat_s(text, " ");
-		strcat_s(text, XSTR("or", 1638));
-		strcat_s(text, " ");
-		strcat_s(text, joy_text);
-	}
-	// if we only have one
-	else if (key_code >= 0 ) {
-		strcpy_s(text, key_text);
-	}
-	else if (joy_code >= 0) {
-		strcpy_s(text, joy_text);
-	}
-	else {
-		strcpy_s(text, "None");
-	}
-
-	return text;
+	return retval.c_str();
 }
 
 const char *textify_scancode(int code)
