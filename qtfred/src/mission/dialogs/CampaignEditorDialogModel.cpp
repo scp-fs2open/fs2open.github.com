@@ -110,7 +110,7 @@ CampaignEditorDialogModel::CampaignEditorDialogModel(CampaignEditorDialog* _pare
 
 			CampaignMissionData* ptr{
 				new CampaignMissionData{
-					Campaign.missions[i].name, loaded, &temp, &Campaign.missions[i], &missionData
+					Campaign.missions[i].name, loaded, &temp, &Campaign.missions[i]
 				}
 			};
 
@@ -145,6 +145,30 @@ void CampaignEditorDialogModel::supplySubModels(QListView &ships, QListView &wep
 	missions.setModel(&missionData);
 
 	campaignDescr.associateEdit(&descr);
+}
+
+QStringList CampaignEditorDialogModel::getMissionGoals(const QString& /*model knows best*/) {
+	QString reference_name;
+	if (getCurBr())
+		reference_name = Sexp_nodes[CDR(getCurBr()->sexp)].text;
+	else
+		return QStringList{};
+	for (auto mn : missionData)
+		if (reference_name == mn.first.filename)
+			return mn.first.goals;
+	return QStringList{};
+}
+
+QStringList CampaignEditorDialogModel::getMissionEvents(const QString& /*model knows best*/) {
+	QString reference_name;
+	if (getCurBr())
+		reference_name = Sexp_nodes[CDR(getCurBr()->sexp)].text;
+	else
+		return QStringList{};
+	for (auto mn : missionData)
+		if (reference_name == mn.first.filename)
+			return mn.first.events;
+	return QStringList{};
 }
 
 QStringList CampaignEditorDialogModel::getMissionNames() {
@@ -253,24 +277,24 @@ void CampaignEditorDialogModel::missionSelectionChanged(const QItemSelection & s
 	parent->updateUIMission();
 }
 
-bool CampaignEditorDialogModel::addCurMnBranchTo(const QModelIndex *other, bool flip) {
+int CampaignEditorDialogModel::addCurMnBranchTo(const QModelIndex *other, bool flip) {
 	if (! mnData_it)
-		return false;
+		return -1;
 	if (! other) {
 		mnData_it->branches.emplace_back(this, mnData_it->filename);
 
 		flagModified();
-		return true;
+		return mnData_it->branches.size() -1;
 	}
 	CampaignMissionData *otherMn = missionData.internalData(*other);
 	if (! otherMn)
-		return false;
+		return -1;
 	CampaignMissionData &from = flip ? *otherMn : *mnData_it;
 	const CampaignMissionData &to = flip ? *mnData_it : *otherMn;
 	from.branches.emplace_back(this, from.filename, to.filename);
 
 	flagModified();
-	return true;
+	return mnData_it->branches.size() -1;
 }
 
 void CampaignEditorDialogModel::delCurMnBranch(int node) {
@@ -300,13 +324,21 @@ void CampaignEditorDialogModel::selectCurBr(QTreeWidgetItem *selected) {
 	parent->updateUIBranch();
 }
 
-bool CampaignEditorDialogModel::setCurBrCond(const QString &sexp, const QString &mn, const QString &arg) {
-	if (! getCurBr()) return false;
+int CampaignEditorDialogModel::setCurBrCond(const QString &sexp, const QString &mn, const QString &arg) {
+	if (! getCurBr()) return -1;
 
 	mnData_it->brData_it->sexp =
 			alloc_sexp(qPrintable(sexp), SEXP_ATOM, SEXP_ATOM_OPERATOR, -1,
 					   alloc_sexp(qPrintable(mn), SEXP_ATOM, SEXP_ATOM_STRING, -1,
 								  alloc_sexp(qPrintable(arg), SEXP_ATOM, SEXP_ATOM_STRING, -1, -1)));
+	flagModified();
+	return getCurBrIdx();
+}
+
+bool CampaignEditorDialogModel::setCurBrSexp(int sexp) {
+	if (! getCurBr()) return false;
+
+	mnData_it->brData_it->sexp = sexp;
 	flagModified();
 	return true;
 }
@@ -314,7 +346,9 @@ bool CampaignEditorDialogModel::setCurBrCond(const QString &sexp, const QString 
 void CampaignEditorDialogModel::setCurBrIsLoop(bool isLoop) {
 	if (! (mnData_it && mnData_it->brData_it)) return;
 	modify<bool>(mnData_it->brData_it->loop, isLoop);
-	parent->updateUIMission();
+	int idx = getCurBrIdx();
+	parent->updateUIMission(false);
+	parent->updateUIBranch(idx);
 }
 
 void CampaignEditorDialogModel::setCurLoopAnim(const QString &anim) {
@@ -329,17 +363,17 @@ void CampaignEditorDialogModel::setCurLoopVoice(const QString &voice) {
 	parent->updateUIBranch();
 }
 
-static inline QList<QAction*> getParsedEvts(QObject *parent) {
-	QList<QAction*> ret;
+static inline QStringList getParsedEvts() {
+	QStringList ret;
 	for (int i = 0; i < Num_mission_events; i++)
-		ret << new QAction{ Mission_events[i].name, parent };
+		ret << Mission_events[i].name;
 	return ret;
 }
 
-static inline QList<QAction*> getParsedGoals(QObject *parent) {
-	QList<QAction*> ret;
+static inline QStringList getParsedGoals() {
+	QStringList ret;
 	for (int i = 0; i < Num_goals; i++)
-		ret << new QAction{ Mission_goals[i].name, parent };
+		ret << Mission_goals[i].name;
 	return ret;
 }
 
@@ -349,13 +383,13 @@ static inline bool isCampaignCompatible(const mission &fsoMission) {
 			|| (Campaign.type == CAMPAIGN_TYPE_MULTI_TEAMS && fsoMission.game_type & MISSION_TYPE_MULTI_TEAMS);
 }
 
-CampaignEditorDialogModel::CampaignMissionData::CampaignMissionData(QString file, bool loaded, const mission *fsoMn, const cmission *cm, QObject* parent) :
+CampaignEditorDialogModel::CampaignMissionData::CampaignMissionData(QString file, bool loaded, const mission *fsoMn, const cmission *cm) :
 	filename(std::move(file)),
 	fredable(loaded),
 	nPlayers(loaded ? fsoMn->num_players : 0),
 	notes(loaded ? fsoMn->notes : ""),
-	events(loaded ? getParsedEvts(parent) : QList<QAction*>{}),
-	goals(loaded ? getParsedGoals(parent) : QList<QAction*>{}),
+	events(loaded ? getParsedEvts() : QStringList{}),
+	goals(loaded ? getParsedGoals() : QStringList{}),
 	briefingCutscene(cm ? cm->briefing_cutscene : ""),
 	mainhall(cm ? cm->main_hall.c_str() : ""),
 	debriefingPersona(cm ? QString::number(cm->debrief_persona_index) : "")
@@ -379,7 +413,7 @@ void CampaignEditorDialogModel::CampaignMissionData::initMissions(
 		return;
 
 	CampaignMissionData* data{
-		new CampaignMissionData{ filename, loaded, &temp, cm_it, &model	}
+		new CampaignMissionData{ filename, loaded, &temp, cm_it}
 	};
 
 	if (! loaded)

@@ -45,8 +45,8 @@ public slots:
 	void reject() override; //onClose for dialogs
 
 	void updateUISpec();
-	void updateUIMission();
-	void updateUIBranch();
+	void updateUIMission(bool updateBranch = true);
+	void updateUIBranch(int idx = -1);
 
 	inline void updateUIAll(){updateUISpec(); updateUIMission(); updateUIBranch();}
 

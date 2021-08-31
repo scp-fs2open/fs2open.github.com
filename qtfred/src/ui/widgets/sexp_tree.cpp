@@ -819,6 +819,7 @@ void sexp_tree::add_or_replace_operator(int op, int replace_flag) {
 					set_node(item_index, (SEXPT_OPERATOR | SEXPT_VALID), Operators[op].text.c_str());
 					tree_nodes[item_index].handle->setText(0, QString::fromStdString(Operators[op].text));
 					tree_nodes[item_index].flags = OPERAND;
+					nodeChanged(item_index);
 					return;
 				}
 			}
@@ -2182,6 +2183,8 @@ void sexp_tree::replace_data(const char* new_data, int type) {
 	// check remaining data beyond replaced data for validity (in case any of it is dependent on data just replaced)
 	verify_and_fix_arguments(tree_nodes[item_index].parent);
 
+	nodeChanged(item_index);
+
 	modified();
 	update_help(currentItem());
 }
@@ -2216,6 +2219,8 @@ void sexp_tree::replace_variable_data(int var_idx, int type) {
 	// check remaining data beyond replaced data for validity (in case any of it is dependent on data just replaced)
 	verify_and_fix_arguments(tree_nodes[item_index].parent);
 
+	nodeChanged(item_index);
+
 	modified();
 	update_help(currentItem());
 }
@@ -2236,6 +2241,7 @@ void sexp_tree::replace_operator(const char* op) {
 	set_node(item_index, (SEXPT_OPERATOR | SEXPT_VALID), op);
 	h->setText(0, op);
 	tree_nodes[item_index].flags = OPERAND;
+	nodeChanged(item_index);
 	modified();
 	update_help(currentItem());
 
@@ -2477,6 +2483,12 @@ int sexp_tree::get_node(QTreeWidgetItem* h) {
 	}
 
 	return i;
+}
+
+int sexp_tree::get_root(int node) {
+	while (tree_nodes[node].parent >= 0)
+		node = tree_nodes[node].parent;
+	return node;
 }
 
 void sexp_tree::update_help(QTreeWidgetItem* h) {
@@ -5682,6 +5694,9 @@ void sexp_tree::handleItemChange(QTreeWidgetItem* item, int  /*column*/) {
 
 	if (update_node) {
 		modified();
+
+		nodeChanged(node);
+
 		strncpy(tree_nodes[node].text, str.toStdString().c_str(), len);
 		tree_nodes[node].text[len] = 0;
 

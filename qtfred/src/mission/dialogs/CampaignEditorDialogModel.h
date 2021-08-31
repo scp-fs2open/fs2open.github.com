@@ -35,10 +35,10 @@ public:
 	void reject() override {} // nothing to do if the dialog is created each time it's opened
 
 // SexpTreeEditorInterface
-	//SCP_vector<SCP_string> getMissionGoals(const SCP_string& reference_name) override;
+	QStringList getMissionGoals(const QString& reference_name) override;
 	bool hasDefaultGoal(int) override {return true;}
 
-	//SCP_vector<SCP_string> getMissionEvents(const SCP_string& reference_name) override;
+	QStringList getMissionEvents(const QString& reference_name) override;
 	bool hasDefaultEvent(int) override {return true;}
 
 	QStringList getMissionNames() override;
@@ -72,7 +72,7 @@ private:
 public:
 	bool fillTree(sexp_tree& sxt) const;
 // Model state getters -- branch
-	inline bool isCurBrSelected() const { return getCurBr(); };
+	inline bool isCurBrSelected() const { return getCurBr(); }
 
 	inline int getCurBrIdx() const { return getCurBr() ? mnData_it->brData_idx : -1; }
 
@@ -84,15 +84,15 @@ public:
 	inline const QString& getCurLoopVoice() const {	return getCurBr() ? getCurBr()->loopVoice : qstrEmpty; }
 
 // Model state getters -- branch creation data
-	inline const QString *missionName(const QModelIndex &idx) const {
+	inline const QString* missionName(const QModelIndex &idx) const {
 		const CampaignMissionData *mn = missionData.internalData(idx);
 		return mn ? &mn->filename : nullptr;
 	}
-	inline const QList<QAction*> *missionEvents(const QModelIndex &idx) const {
+	inline const QStringList* missionEvents(const QModelIndex &idx) const {
 		const CampaignMissionData *mn = missionData.internalData(idx);
 		return mn ? &mn->events : nullptr;
 	}
-	inline const QList<QAction*> *missionGoals(const QModelIndex &idx) const {
+	inline const QStringList* missionGoals(const QModelIndex &idx) const {
 		const CampaignMissionData *mn = missionData.internalData(idx);
 		return mn ? &mn->goals : nullptr;
 	}
@@ -140,11 +140,12 @@ public slots:
 		if (! mnData_it) return;
 		modify<QString>(mnData_it->debriefingPersona, debriefingPersona); }
 
-	bool addCurMnBranchTo(const QModelIndex *other = nullptr, bool flip = false);
+	int addCurMnBranchTo(const QModelIndex *other = nullptr, bool flip = false);
 	void delCurMnBranch(int node);
 
 	void selectCurBr(QTreeWidgetItem *selected);
-	bool setCurBrCond(const QString &sexp, const QString &mn, const QString &arg);
+	int setCurBrCond(const QString &sexp, const QString &mn, const QString &arg);
+	bool setCurBrSexp(int sexp);
 	void setCurBrIsLoop(bool isLoop);
 
 	void setCurLoopAnim(const QString &anim);
@@ -157,8 +158,7 @@ private:
 		CampaignMissionData(QString file,
 							bool loaded = false,
 							const mission *fsoMn = nullptr,
-							const cmission *cm = nullptr,
-							QObject* parent = nullptr);
+							const cmission *cm = nullptr);
 
 		static void initMissions(
 				const SCP_vector<SCP_string>::const_iterator &m_it,
@@ -173,8 +173,8 @@ private:
 		const int nPlayers;
 		const QString notes;
 
-		const QList<QAction *> events;
-		const QList<QAction *> goals;
+		const QStringList events;
+		const QStringList goals;
 
 		QString briefingCutscene;
 		QString mainhall;

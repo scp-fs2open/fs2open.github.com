@@ -6,7 +6,6 @@
 #include <QStringListModel>
 #include <ui/FredView.h>
 
-
 namespace fso {
 namespace fred {
 namespace dialogs {
@@ -90,6 +89,11 @@ void CampaignEditorDialog::setModel(CampaignEditorDialogModel *new_model) {
 	ui->sxtBranches->initializeEditor(nullptr, model.get());
 	connect(ui->sxtBranches, &sexp_tree::rootNodeDeleted, model.get(), &CampaignEditorDialogModel::delCurMnBranch, Qt::QueuedConnection);
 	connect(ui->sxtBranches, &QTreeWidget::currentItemChanged, model.get(), &CampaignEditorDialogModel::selectCurBr);
+	connect(ui->sxtBranches, &sexp_tree::nodeChanged, model.get(), [&](int node) {
+		model->setCurBrSexp(
+					ui->sxtBranches->save_tree(
+							ui->sxtBranches->get_root(node)));
+	}, Qt::QueuedConnection);
 
 	connect(ui->btnBranchLoop, &QPushButton::toggled, model.get(), &CampaignEditorDialogModel::setCurBrIsLoop);
 	connect(ui->cmbLoopAnim, &QComboBox::currentTextChanged, model.get(), &CampaignEditorDialogModel::setCurLoopAnim);
@@ -121,7 +125,7 @@ void CampaignEditorDialog::updateUISpec() {
 
 }
 
-void CampaignEditorDialog::updateUIMission() {
+void CampaignEditorDialog::updateUIMission(bool updateBranch) {
 	util::SignalBlockers blockers(this);
 
 	ui->btnFredMission->setEnabled(model->getCurMnFredable());
@@ -142,19 +146,26 @@ void CampaignEditorDialog::updateUIMission() {
 	if (included)
 		model->fillTree(*ui->sxtBranches);
 
-	updateUIBranch();
+	if (updateBranch)
+		updateUIBranch();
 }
 
-void CampaignEditorDialog::updateUIBranch() {
+void CampaignEditorDialog::updateUIBranch(int selectedIdx) {
 	util::SignalBlockers blockers(this);
 
-	bool sel = model->isCurBrSelected();
-	bool loop = model->getCurBrIsLoop();
+	if (selectedIdx >= 0)
+		model->selectCurBr(ui->sxtBranches->topLevelItem(selectedIdx));
 
-	if (sel)
+	bool sel = model->isCurBrSelected();
+
+	if (sel) {
 		ui->sxtBranches->selectionModel()->select(
-					ui->sxtBranches->model()->index(model->getCurBrIdx(),0),
+					ui->sxtBranches->model()->index(
+								model->getCurBrIdx(), 0),
 					QItemSelectionModel::Select);
+	}
+
+	bool loop = model->getCurBrIsLoop();
 
 	ui->btnBranchUp->setEnabled(sel);
 	ui->btnBranchDown->setEnabled(sel);
@@ -266,9 +277,9 @@ void CampaignEditorDialog::mnLinkMenu(const QPoint &pos){
 		return;
 	const QString *mnName = model->missionName(here);
 	if (! mnName) return;
-	const QList<QAction*> *goals{ model->missionGoals(here) };
+	const QStringList *goals{ model->missionGoals(here) };
 	if (! goals) return;
-	const QList<QAction*> *evts{ model->missionEvents(here) };
+	const QStringList *evts{ model->missionEvents(here) };
 	if (! evts) return;
 
 	QMenu menu{ ui->lstMissions };
@@ -292,35 +303,45 @@ void CampaignEditorDialog::mnLinkMenu(const QPoint &pos){
 		menu.addAction("")->setEnabled(false);
 	} else {
 		menu.addSection(tr("Branch Conditions"));
+
 		QMenu *gt = menu.addMenu("is-previous-goal-true");
-		gt->addActions(*goals);
-		connect(gt, &QMenu::aboutToShow, this, [&](){par = gt;});
 		QMenu *gf = menu.addMenu("is-previous-goal-false");
-		gf->addActions(*goals);
+		for (auto& g : *goals) {
+			gt->addAction(g);
+			gf->addAction(g);
+		}
+		connect(gt, &QMenu::aboutToShow, this, [&](){par = gt;});
 		connect(gf, &QMenu::aboutToShow, this, [&](){par = gf;});
+
 		QMenu *et = menu.addMenu("is-previous-event-true");
-		et->addActions(*evts);
-		connect(et, &QMenu::aboutToShow, this, [&](){par = et;});
 		QMenu *ef = menu.addMenu("is-previous-event-false");
-		ef->addActions(*evts);
+		for (auto& e : *evts) {
+			et->addAction(e);
+			ef->addAction(e);
+		}
+		connect(et, &QMenu::aboutToShow, this, [&](){par = et;});
 		connect(ef, &QMenu::aboutToShow, this, [&](){par = ef;});
 	}
 
 	const QAction *choice = menu.exec(ui->lstMissions->mapToGlobal(pos));
 
-	bool res{false};
+	int res_branch{-1};
 	if (choice == to) {
-		res = model->addCurMnBranchTo(&here);
+		res_branch = model->addCurMnBranchTo(&here);
 	} else if (choice == from) {
-		res = model->addCurMnBranchTo(&here, true);
+		res_branch = model->addCurMnBranchTo(&here, true);
 	} else if (choice == end) {
-		res = model->addCurMnBranchTo(/*end*/);
+		res_branch = model->addCurMnBranchTo(/*end*/);
 	} else if (choice && par) {
-		res = model->setCurBrCond(par->title(), *mnName, choice->text());
+		res_branch = model->setCurBrCond(par->title(), *mnName, choice->text());
 	} //else menu was dismissed
 
-	if (res)
-		updateUIMission();
+	if (res_branch != -1) {
+		updateUIMission(false);
+		auto h = ui->sxtBranches->topLevelItem(res_branch);
+		model->selectCurBr(h);
+		ui->sxtBranches->expand_branch(h);
+	}
 }
 
 void CampaignEditorDialog::btnBranchUpClicked() {
