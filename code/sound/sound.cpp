@@ -916,7 +916,8 @@ sound_handle snd_play_looping(game_snd* gs, float pan, int /*start_loop*/, int /
 
 void remove_looping_sound(SCP_list<LoopingSoundInfo> &looping_sounds, sound_handle sig)
 {
-	std::remove_if(looping_sounds.begin(),
+	// the cast to void avoids warnings about unused return value
+	(void)std::remove_if(looping_sounds.begin(),
 		looping_sounds.end(),
 		std::bind(does_ls_info_match_sig, std::placeholders::_1, sig));
 }
