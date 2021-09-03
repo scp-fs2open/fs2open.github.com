@@ -116,6 +116,11 @@ bool does_ls_info_match_sig(const LoopingSoundInfo &ls_info, sound_handle sig)
 	return ls_info.m_dsHandle == sig;
 }
 
+std::function<bool(const LoopingSoundInfo&)> create_ls_info_match_pred(sound_handle sig)
+{
+	return std::bind(does_ls_info_match_sig, std::placeholders::_1, sig);
+}
+
 SCP_list<LoopingSoundInfo> currentlyLoopingSoundInfos;
 SCP_list<LoopingSoundInfo> currentlyLooping3dSoundInfos;
 
@@ -917,9 +922,7 @@ sound_handle snd_play_looping(game_snd* gs, float pan, int /*start_loop*/, int /
 void remove_looping_sound(SCP_list<LoopingSoundInfo> &looping_sounds, sound_handle sig)
 {
 	// the cast to void avoids warnings about unused return value
-	(void)std::remove_if(looping_sounds.begin(),
-		looping_sounds.end(),
-		std::bind(does_ls_info_match_sig, std::placeholders::_1, sig));
+	(void)std::remove_if(looping_sounds.begin(), looping_sounds.end(), create_ls_info_match_pred(sig));
 }
 
 /**
@@ -961,11 +964,9 @@ void snd_stop_all()
 	ds_stop_channel_all();
 }
 
-SCP_list<LoopingSoundInfo>::iterator find_looping_sound(SCP_list<LoopingSoundInfo>& looping_sounds, sound_handle sig)
+SCP_list<LoopingSoundInfo>::iterator find_looping_sound(SCP_list<LoopingSoundInfo> &looping_sounds, sound_handle sig)
 {
-	return std::find_if(looping_sounds.begin(),
-		looping_sounds.end(),
-		std::bind(does_ls_info_match_sig, std::placeholders::_1, sig));
+	return std::find_if(looping_sounds.begin(), looping_sounds.end(), create_ls_info_match_pred(sig));
 }
 
 /**
