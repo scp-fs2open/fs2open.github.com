@@ -21,8 +21,9 @@
 #define SOUND_LIB_DIRECTSOUND		0
 #define SOUND_LIB_RSX				1
 
-#define GAME_SND_USE_DS3D			(1<<1)
-#define GAME_SND_VOICE				(1<<2)
+#define GAME_SND_USE_DS3D			(1<<0)
+#define GAME_SND_VOICE				(1<<1)
+#define GAME_SND_NOT_VALID			(1<<2)
 
 // Priorities that can be passed to snd_play() functions to limit how many concurrent sounds of a 
 // given type are played.

@@ -655,6 +655,9 @@ sound_handle snd_play_3d(game_snd* gs, vec3d* source_pos, vec3d* listen_pos, flo
 		Int3();
 		return sound_handle::invalid();
 	}
+	if (gs->flags & GAME_SND_NOT_VALID) {
+		return sound_handle::invalid();
+	}
 
 	MONITOR_INC( Num3DSoundsStarted, 1 );
 	
@@ -662,13 +665,16 @@ sound_handle snd_play_3d(game_snd* gs, vec3d* source_pos, vec3d* listen_pos, flo
 
 	if (!entry->id.isValid()) {
 		entry->id = snd_load(entry, gs->flags);
-		MONITOR_INC( Num3DSoundsLoaded, 1 );
+		MONITOR_INC(Num3DSoundsLoaded, 1);
 	} else if (entry->id_sig != Sounds[entry->id.value()].sig) {
 		entry->id = snd_load(entry, gs->flags);
 	}
 
-	if (!entry->id.isValid())
+	if (!entry->id.isValid()) {
+		Warning(LOCATION, "Failed to load one or more sounds for gamesnd %s!", gs->name.c_str());
+		gs->flags |= GAME_SND_NOT_VALID;
 		return sound_handle::invalid();
+	}
 
 	snd = &Sounds[entry->id.value()];
 
