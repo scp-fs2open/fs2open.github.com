@@ -928,7 +928,7 @@ static void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy)
 									}
 								}
 
-								if (timestamp_elapsed(swp->next_secondary_fire_stamp[current_bank])) {
+								if (timestamp_elapsed(swp->next_secondary_fire_stamp[current_bank]) && weapon_target_satisfies_lock_restrictions(swip, En_objp)) {
 									float firing_range;
 									if (swip->wi_flags[Weapon::Info_Flags::Local_ssm])
 										firing_range=swip->lssm_lock_range;

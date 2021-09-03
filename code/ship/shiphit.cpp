@@ -300,10 +300,12 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 	}
 
 	// call a scripting hook for the subsystem (regardless of whether it's added to the mission log)
-	Script_system.SetHookObject("Ship", ship_objp);
-	Script_system.SetHookVar("Subsystem", 'o', scripting::api::l_Subsystem.Set(scripting::api::ship_subsys_h(ship_objp, subsys)));
-	Script_system.RunCondition(CHA_ONSUBSYSDEATH, ship_objp);
-	Script_system.RemHookVars({"Ship", "Subsystem"});
+	if (Script_system.IsActiveAction(CHA_ONSUBSYSDEATH)) {
+		Script_system.SetHookObject("Ship", ship_objp);
+		Script_system.SetHookVar("Subsystem", 'o', scripting::api::l_Subsystem.Set(scripting::api::ship_subsys_h(ship_objp, subsys)));
+		Script_system.RunCondition(CHA_ONSUBSYSDEATH, ship_objp);
+		Script_system.RemHookVars({"Ship", "Subsystem"});
+	}
 
 	if (!(subsys->flags[Ship::Subsystem_Flags::No_disappear])) {
 		if (psub->subobj_num > -1) {
@@ -1784,7 +1786,7 @@ void ship_hit_kill(object *ship_objp, object *other_obj, vec3d *hitpos, float pe
 {
 	Assert(ship_objp);	// Goober5000 - but not other_obj, not only for sexp but also for self-destruct
 
-	if(Script_system.IsConditionOverride(CHA_DEATH, ship_objp))
+	if(Script_system.IsActiveAction(CHA_DEATH) && Script_system.IsConditionOverride(CHA_DEATH, ship_objp))
 	{
 		//WMC - Do scripting stuff
 		Script_system.SetHookObjects(3, "Self", ship_objp, "Ship", ship_objp, "Killer", other_obj);
@@ -1933,13 +1935,15 @@ void ship_hit_kill(object *ship_objp, object *other_obj, vec3d *hitpos, float pe
 		ship_maybe_lament();
 	}
 
-	Script_system.SetHookObjects(3, "Self", ship_objp, "Ship", ship_objp, "Killer", other_obj);
-	if (hitpos)
-		Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(*hitpos));
-	Script_system.RunCondition(CHA_DEATH, ship_objp);
-	Script_system.RemHookVars({"Self", "Ship", "Killer"});
-	if (hitpos)
-		Script_system.RemHookVar("Hitpos");
+	if (Script_system.IsActiveAction(CHA_DEATH)) {
+		Script_system.SetHookObjects(3, "Self", ship_objp, "Ship", ship_objp, "Killer", other_obj);
+		if (hitpos)
+			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(*hitpos));
+		Script_system.RunCondition(CHA_DEATH, ship_objp);
+		Script_system.RemHookVars({"Self", "Ship", "Killer"});
+		if (hitpos)
+			Script_system.RemHookVar("Hitpos");
+	}
 }
 
 // function to simply explode a ship where it is currently at

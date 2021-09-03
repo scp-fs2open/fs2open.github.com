@@ -23,6 +23,7 @@
 #include "hud/hudparse.h"
 #include "model/model.h"
 #include "model/modelanim.h"
+#include "model/modelanimation.h"
 #include "network/multi_obj.h"
 #include "radar/radarsetup.h"
 #include "render/3d.h"
@@ -1246,6 +1247,9 @@ public:
 	vec3d	closeup_pos_targetbox;			// position for camera when using ship in closeup view for hud target monitor
 	float	closeup_zoom_targetbox;			// zoom when using ship in closeup view for hud target monitor
 
+	vec3d	chase_view_offset;				// special offset for chase view
+	float	chase_view_rigidity;			// how 'floaty' this ship is when viewed in chase view
+
 	allowed_weapon_bank allowed_weapons;	// specifies which weapons can be loaded out by the
 											// player during weapons loadout.
 
@@ -1380,6 +1384,8 @@ public:
 	SCP_map<SCP_string, path_metadata> pathMetadata;
 
 	SCP_unordered_map<int, void*> glowpoint_bank_override_map;
+
+	animation::ModelAnimationSet animations;
 
 	ship_info();
 	~ship_info();

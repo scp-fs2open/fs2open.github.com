@@ -254,12 +254,14 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "Show Ship Models\tShift+Alt+M", 32820, CHECKED
         MENUITEM "Show Outlines\tShift+Alt+O",  32980
+        MENUITEM "Draw Outlines on Selected Ships",      32982, CHECKED
         MENUITEM "Show Ship Info\tShift+Alt+I", 32823, CHECKED, HELP
         MENUITEM "Show Coordinates\tShift+Alt+C", 32915
         MENUITEM "Show Grid Positions\tShift+Alt+P", 32914
         MENUITEM "Show Distances\tD",           32941
         MENUITEM "Show Model Paths",            33066
         MENUITEM "Show Model Dock Points",      33065
+        MENUITEM "Highlight Selectable Subsystems",      33062
         MENUITEM SEPARATOR
         MENUITEM "Show &Grid\tShift+Alt+G",     32808
         MENUITEM "Show Horizon\tShift+Alt+H",   32954

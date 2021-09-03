@@ -35,6 +35,7 @@ extern float Shield_pain_flash_factor;
 extern SCP_string Window_title;
 extern bool Unicode_text_mode;
 extern bool Use_tabled_strings_for_default_language;
+extern bool Dont_preempt_training_voice;
 extern SCP_string Movie_subtitle_font;
 extern bool Enable_scripts_in_fred;
 extern SCP_string Window_icon_path;
@@ -64,6 +65,7 @@ extern bool Neb_affects_particles;
 extern bool Neb_affects_fireballs;
 extern std::tuple<float, float, float, float> Shadow_distances;
 extern std::tuple<float, float, float, float> Shadow_distances_cockpit;
+extern bool Custom_briefing_icons_always_override_standard_icons;
 
 void mod_table_init();
 

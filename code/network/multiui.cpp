@@ -4513,6 +4513,10 @@ void multi_create_list_load_missions()
 
 		flags = mission_parse_is_multi(filename, mission_name);
 
+		// maybe log
+		if (lcl_weirdness)
+			mprintf(("Skipping %s due to XSTR mismatch\n", filename));
+
 		// deactivate tstrings check
 		Lcl_unexpected_tstring_check = nullptr;
 

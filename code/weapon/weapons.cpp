@@ -100,7 +100,8 @@ int Num_weapon_subtypes = sizeof(Weapon_subtype_names)/sizeof(Weapon_subtype_nam
 flag_def_list_new<Weapon::Burst_Flags> Burst_fire_flags[] = {
 	{ "fast firing",		Weapon::Burst_Flags::Fast_firing,		true, false },
 	{ "random length",		Weapon::Burst_Flags::Random_length,		true, false },
-	{ "resets",		Weapon::Burst_Flags::Resets,		true, false }
+	{ "resets",		Weapon::Burst_Flags::Resets,		true, false },
+	{ "num firepoints for burst shots",		Weapon::Burst_Flags::Num_firepoints_burst_shots,		true, false }
 };
 
 const size_t Num_burst_fire_flags = sizeof(Burst_fire_flags)/sizeof(flag_def_list_new<Weapon::Burst_Flags>);
@@ -753,7 +754,7 @@ void parse_shockwave_info(shockwave_create_info *sci, const char *pre_char)
 		stuff_float_list(angs, 3);
 		for(int i = 0; i < 3; i++)
 		{
-			angs[i] = angs[i] * (PI2/180.0f);
+			angs[i] = fl_radians(angs[i]);
 			while(angs[i] < 0)
 			{
 				angs[i] += PI2;
@@ -4323,9 +4324,11 @@ void weapon_delete(object *obj)
 	weapon *wp;
 	int num;
 
-	Script_system.SetHookObjects(2, "Weapon", obj, "Self", obj);
-	Script_system.RunCondition(CHA_ONWEAPONDELETE);
-	Script_system.RemHookVars({"Weapon", "Self"});
+	if (Script_system.IsActiveAction(CHA_ONWEAPONDELETE)) {
+		Script_system.SetHookObjects(2, "Weapon", obj, "Self", obj);
+		Script_system.RunCondition(CHA_ONWEAPONDELETE);
+		Script_system.RemHookVars({"Weapon", "Self"});
+	}
 
 	num = obj->instance;
 
@@ -6392,9 +6395,11 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		obj_snd_assign(objnum, wip->ambient_snd, &vmd_zero_vector , OS_MAIN);
 	}
 
-	Script_system.SetHookObject("Weapon", &Objects[objnum]);
-	Script_system.RunCondition(CHA_ONWEAPONCREATED);
-	Script_system.RemHookVar("Weapon");
+	if (Script_system.IsActiveAction(CHA_ONWEAPONCREATED)) {
+		Script_system.SetHookObject("Weapon", &Objects[objnum]);
+		Script_system.RunCondition(CHA_ONWEAPONCREATED);
+		Script_system.RemHookVar("Weapon");
+	}
 
 	return objnum;
 }
@@ -7157,11 +7162,6 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 	if (sci->inner_rad != 0.0f || sci->outer_rad != 0.0f)
 	{
 		if(sci->speed > 0.0f) {
-			if (!sci->rot_defined) {
-				sci->rot_angles.p = frand_range(0.0f, PI2);
-				sci->rot_angles.b = frand_range(0.0f, PI2);
-				sci->rot_angles.h = frand_range(0.0f, PI2);
-			}
 			shockwave_create(OBJ_INDEX(weapon_obj), hitpos, sci, sw_flag, -1);
 		}
 		else {

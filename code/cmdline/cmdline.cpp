@@ -1619,7 +1619,7 @@ bool SetCmdlineParams()
 		Cmdline_game_name = gamename_arg.str();
 
 		// be sure that this string fits in our limits
-		if ( strlen(Cmdline_game_name) > MAX_GAMENAME_LEN ) {
+		if ( strlen(Cmdline_game_name) >= MAX_GAMENAME_LEN ) {
 			Cmdline_game_name[MAX_GAMENAME_LEN-1] = '\0';
 		}
 	}
@@ -1629,8 +1629,9 @@ bool SetCmdlineParams()
 		Cmdline_game_password = gamepassword_arg.str();
 
 		// be sure that this string fits in our limits
-		if ( strlen(Cmdline_game_name) > MAX_PASSWD_LEN ) {
-			Cmdline_game_name[MAX_PASSWD_LEN-1] = '\0';
+		if ( strlen(Cmdline_game_password) >= MAX_PASSWD_LEN ) {
+			ReleaseWarning(LOCATION, "Multi game password is longer than max of %d charaters and will be trimmed to fit!", MAX_PASSWD_LEN-1);
+			Cmdline_game_password[MAX_PASSWD_LEN-1] = '\0';
 		}
 	}
 

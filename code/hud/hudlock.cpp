@@ -1392,7 +1392,7 @@ int hud_lock_target_in_range(lock_info *lock_slot)
 	}
 	ship_weapon* swp = &Player_ship->weapons;
 
-	return weapon_secondary_world_pos_in_range(Player_obj, &Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]], &lock_slot->obj->pos);
+	return weapon_secondary_world_pos_in_range(Player_obj, &Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]], &target_world_pos);
 }
 
 void hud_do_lock_indicators(float frametime)
