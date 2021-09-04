@@ -803,18 +803,20 @@ bool lcl_ext_localize_sub(const char *in, char *text_str, char *out, size_t max_
 		//
 
 		// check bounds
-		if (str_end - str_start > PARSE_BUF_SIZE - 1)
+		auto str_length = str_end - str_start;
+		if (str_length > PARSE_BUF_SIZE - 1)
 		{
 			error_display(0, "String cannot fit within XSTR buffer!\n\n%s\n", str_start);
 			break;
 		}
 
 		// now that we know the boundaries of the actual string in the XSTR() tag, copy it
-		strncpy(text_str, str_start, str_end - str_start);
-		text_str[str_end - str_start] = '\0';
+		strncpy(text_str, str_start, str_length);
+		text_str[str_length] = '\0';
 
 		// bounds for id too
-		if (id_end - id_start > PARSE_ID_BUF_SIZE - 1)
+		auto id_length = id_end - id_start;
+		if (id_length > PARSE_ID_BUF_SIZE - 1)
 		{
 			error_display(0, "Number cannot fit within XSTR buffer!\n\n%s\n", id_start);
 			break;
@@ -822,8 +824,8 @@ bool lcl_ext_localize_sub(const char *in, char *text_str, char *out, size_t max_
 
 		// copy id
 		char xstr_id_buf[PARSE_ID_BUF_SIZE];
-		strncpy(xstr_id_buf, id_start, id_end - id_start);
-		xstr_id_buf[id_end - id_start] = '\0';
+		strncpy(xstr_id_buf, id_start, id_length);
+		xstr_id_buf[id_length] = '\0';
 
 		//
 		// now we have the information we want
@@ -968,7 +970,8 @@ bool lcl_ext_localize_sub(const SCP_string &in, SCP_string &text_str, SCP_string
 		text_str.assign(str_start, str_end);
 
 		// bounds for id too
-		if (id_end - id_start > PARSE_ID_BUF_SIZE - 1)
+		auto id_length = id_end - id_start;
+		if (id_length > PARSE_ID_BUF_SIZE - 1)
 		{
 			error_display(0, "Number cannot fit within XSTR buffer!\n\n%s\n", id_start);
 			break;
@@ -976,8 +979,8 @@ bool lcl_ext_localize_sub(const SCP_string &in, SCP_string &text_str, SCP_string
 
 		// copy id
 		char xstr_id_buf[PARSE_ID_BUF_SIZE];
-		strncpy(xstr_id_buf, id_start, id_end - id_start);
-		xstr_id_buf[id_end - id_start] = '\0';
+		strncpy(xstr_id_buf, id_start, id_length);
+		xstr_id_buf[id_length] = '\0';
 
 		//
 		// now we have the information we want
