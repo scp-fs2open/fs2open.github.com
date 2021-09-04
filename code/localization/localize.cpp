@@ -713,6 +713,7 @@ void lcl_fred_replace_stuff(SCP_string &text)
 // XSTR("wheeee", -1)
 // XSTR("whee", 2000)
 // and these should cover all the externalized string cases
+// NOTE: max_len is the maximum string length, not buffer length
 // fills in id if non-NULL. a value of -2 indicates it is not an external string
 // returns true if we were able to extract the XSTR elements (text_str and maybe id are populated)
 bool lcl_ext_localize_sub(const char *in, char *text_str, char *out, size_t max_len, int *id, bool use_default_translation = false)
@@ -731,6 +732,7 @@ bool lcl_ext_localize_sub(const char *in, char *text_str, char *out, size_t max_
 	auto ch = in;
 	bool attempted_xstr = false;
 
+	// this is a pseudo-goto block, not a loop
 	do {
 		// check to see if this is an XSTR() tag
 		if (strnicmp(ch, "XSTR", 4) != 0)
@@ -874,10 +876,14 @@ bool lcl_ext_localize_sub(const char *in, char *text_str, char *out, size_t max_
 		error_display(0, "Malformed XSTR detected:\n\n%s\n", in);
 
 	// copy the entire string (or as much as we can)
+	auto str_len = strlen(xstr_str);
 	strncpy(out, xstr_str, max_len);
+	if (str_len > max_len)
+		out[max_len] = '\0';
+	else
+		out[str_len] = '\0';
 
 	// maybe warn about length
-	auto str_len = strlen(xstr_str);
 	if (str_len > max_len && !Lcl_unexpected_tstring_check)
 		error_display(0, "Token too long: [%s].  Length = " SIZE_T_ARG ".  Max is " SIZE_T_ARG ".\n", xstr_str, str_len, max_len);
 
@@ -895,6 +901,7 @@ bool lcl_ext_localize_sub(const SCP_string &in, SCP_string &text_str, SCP_string
 	auto ch = in.c_str();
 	bool attempted_xstr = false;
 
+	// this is a pseudo-goto block, not a loop
 	do {
 		// check to see if this is an XSTR() tag
 		if (strnicmp(ch, "XSTR", 4) != 0)
