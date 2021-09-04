@@ -13799,7 +13799,7 @@ void sexp_mission_set_nebula(int n)
 	if (is_nan || is_nan_forever)
 		return;
 
-	stars_set_nebula(set_it > 0, range);
+	stars_set_nebula(set_it > 0, static_cast<float>(range));
 }
 
 /* freespace.cpp does not have these availiable externally, and we must call
