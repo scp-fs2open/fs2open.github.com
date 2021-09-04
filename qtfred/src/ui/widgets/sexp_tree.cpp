@@ -1133,6 +1133,12 @@ int sexp_tree::get_default_value(sexp_list_item* item, char* text_buf, int op, i
 
 			sprintf(sexp_str_token, "%d", temp);
 			item->set_data_dup(sexp_str_token, (SEXPT_NUMBER | SEXPT_VALID));
+		} else if (Operators[op].value == OP_MISSION_SET_NEBULA) {
+			if (i == 0) {
+				item->set_data("1", (SEXPT_NUMBER | SEXPT_VALID));
+			} else {
+				item->set_data("3000", (SEXPT_NUMBER | SEXPT_VALID));
+			}
 		} else if (Operators[op].value == OP_MODIFY_VARIABLE) {
 			if (get_modify_variable_type(index) == OPF_NUMBER) {
 				item->set_data("0", (SEXPT_NUMBER | SEXPT_VALID));
