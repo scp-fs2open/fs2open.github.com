@@ -564,24 +564,33 @@ sound_handle snd_play(game_snd* gs, float pan, float vol_scale, int priority, bo
 	if (!Sound_enabled)
 		return sound_handle::invalid();
 
-	if (gs == NULL) {
-		Int3();
+	if (!ds_initialized)
+		return sound_handle::invalid();
+
+	if (gs == nullptr) {
+		UNREACHABLE("gamesnd parameter must not be null!");
+		return sound_handle::invalid();
+	}
+	if (gs->flags & GAME_SND_NOT_VALID) {
 		return sound_handle::invalid();
 	}
 
-	MONITOR_INC(NumSoundsStarted, 1);
+	MONITOR_INC( NumSoundsStarted, 1 );
 
 	auto entry = gamesnd_choose_entry(gs);
 
 	if (!entry->id.isValid()) {
 		entry->id = snd_load(entry, gs->flags);
-		MONITOR_INC( NumSoundsLoaded, 1);
+		MONITOR_INC( NumSoundsLoaded, 1 );
 	} else if (entry->id_sig != Sounds[entry->id.value()].sig) {
 		entry->id = snd_load(entry, gs->flags);
 	}
 
-	if (!entry->id.isValid())
+	if (!entry->id.isValid()) {
+		Warning(LOCATION, "Failed to load one or more sounds for gamesnd %s!", gs->name.c_str());
+		gs->flags |= GAME_SND_NOT_VALID;
 		return sound_handle::invalid();
+	}
 
 	volume = gs->volume_range.next() * vol_scale;
 	if ( gs->flags&GAME_SND_VOICE ) {
@@ -595,9 +604,6 @@ sound_handle snd_play(game_snd* gs, float pan, float vol_scale, int priority, bo
 	snd = &Sounds[entry->id.value()];
 
 	if ( !(snd->flags & SND_F_USED) )
-		return sound_handle::invalid();
-
-	if (!ds_initialized)
 		return sound_handle::invalid();
 
 	sound_handle handle;
@@ -651,8 +657,11 @@ sound_handle snd_play_3d(game_snd* gs, vec3d* source_pos, vec3d* listen_pos, flo
 	if (!Sound_enabled)
 		return sound_handle::invalid();
 
-	if (gs == NULL) {
-		Int3();
+	if (!ds_initialized)
+		return sound_handle::invalid();
+
+	if (gs == nullptr) {
+		UNREACHABLE("gamesnd parameter must not be null!");
 		return sound_handle::invalid();
 	}
 	if (gs->flags & GAME_SND_NOT_VALID) {
@@ -665,7 +674,7 @@ sound_handle snd_play_3d(game_snd* gs, vec3d* source_pos, vec3d* listen_pos, flo
 
 	if (!entry->id.isValid()) {
 		entry->id = snd_load(entry, gs->flags);
-		MONITOR_INC(Num3DSoundsLoaded, 1);
+		MONITOR_INC( Num3DSoundsLoaded, 1 );
 	} else if (entry->id_sig != Sounds[entry->id.value()].sig) {
 		entry->id = snd_load(entry, gs->flags);
 	}
@@ -687,9 +696,6 @@ sound_handle snd_play_3d(game_snd* gs, vec3d* source_pos, vec3d* listen_pos, flo
 
 	min_range = (gs->min + radius) * range_factor;
 	max_range = (gs->max + radius) * range_factor;
-
-	if (!ds_initialized)
-		return sound_handle::invalid();
 
 	// DirectSound3D will not cut off sounds, no matter how quite they become.. so manually
 	// prevent sounds from playing past the max distance.
@@ -867,8 +873,11 @@ sound_handle snd_play_looping(game_snd* gs, float pan, int /*start_loop*/, int /
 	if (!ds_initialized)
 		return sound_handle::invalid();
 
-	if (gs == NULL) {
-		Int3();
+	if (gs == nullptr) {
+		UNREACHABLE("gamesnd parameter must not be null!");
+		return sound_handle::invalid();
+	}
+	if (gs->flags & GAME_SND_NOT_VALID) {
 		return sound_handle::invalid();
 	}
 
@@ -880,8 +889,11 @@ sound_handle snd_play_looping(game_snd* gs, float pan, int /*start_loop*/, int /
 		entry->id = snd_load(entry, gs->flags);
 	}
 
-	if (!entry->id.isValid())
+	if (!entry->id.isValid()) {
+		Warning(LOCATION, "Failed to load one or more sounds for gamesnd %s!", gs->name.c_str());
+		gs->flags |= GAME_SND_NOT_VALID;
 		return sound_handle::invalid();
+	}
 
 	snd = &Sounds[entry->id.value()];
 
