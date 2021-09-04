@@ -127,7 +127,7 @@ void snd_set_effects_volume(float volume);
 void snd_set_voice_volume(float volume);
 
 //int	snd_load( char *filename, int hardware=0, int three_d=0, int *sig=NULL );
-sound_load_id snd_load(game_snd_entry* entry, int flags, int allow_hardware_load = 0);
+sound_load_id snd_load(game_snd_entry* entry, int* flags, int allow_hardware_load = 0);
 
 int snd_unload(sound_load_id sndnum);
 void	snd_unload_all();
