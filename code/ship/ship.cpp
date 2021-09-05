@@ -18322,9 +18322,13 @@ int ship_squadron_wing_lookup(const char *wing_name)
 	}
 	else 
 	{
+		// match duplicate wings, such as Epsilon and Epsilon#clone
+		auto ch = get_pointer_to_first_hash_symbol(wing_name);
+		size_t len = (ch != nullptr) ? (ch - wing_name) : strlen(wing_name);
+
 		for (int i = 0; i < MAX_SQUADRON_WINGS; i++)
 		{
-			if (!stricmp(Squadron_wing_names[i], wing_name))
+			if (!strnicmp(Squadron_wing_names[i], wing_name, len))
 				return i;
 		}
 	}
