@@ -2517,7 +2517,7 @@ const char *stars_get_name_from_instance(int index, bool is_a_sun)
 }
 
 // WMC/Goober5000
-void stars_set_nebula(bool activate)
+void stars_set_nebula(bool activate, float range)
 {
     The_mission.flags.set(Mission::Mission_Flags::Fullneb, activate);
 	
@@ -2525,19 +2525,27 @@ void stars_set_nebula(bool activate)
 	{
 		Toggle_text_alpha = TOGGLE_TEXT_NEBULA_ALPHA;
 		HUD_contrast = 1;
-		if(Fred_running) {
+
+		Neb2_render_mode = NEB2_RENDER_HTL;
+		Neb2_awacs = range;
+		if (Neb2_awacs < 0.1f)
+			Neb2_awacs = 3000.0f;	// this is also the default in the background editor
+
+		// this function is not currently called in FRED, but this would be needed for FRED support
+		if (Fred_running)
+		{
 			Neb2_render_mode = NEB2_RENDER_POF;
 			stars_set_background_model(BACKGROUND_MODEL_FILENAME, Neb2_texture_name);
 			stars_set_background_orientation();
-		} else {
-			Neb2_render_mode = NEB2_RENDER_HTL;
 		}
 	}
 	else
 	{
 		Toggle_text_alpha = TOGGLE_TEXT_NORMAL_ALPHA;
-		Neb2_render_mode = NEB2_RENDER_NONE;
 		HUD_contrast = 0;
+
+		Neb2_render_mode = NEB2_RENDER_NONE;
+		Neb2_awacs = -1.0f;
 	}
 
 	// (DahBlount)
