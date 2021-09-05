@@ -2530,6 +2530,14 @@ void stars_set_nebula(bool activate, float range)
 		Neb2_awacs = range;
 		if (Neb2_awacs < 0.1f)
 			Neb2_awacs = 3000.0f;	// this is also the default in the background editor
+
+		// this function is not currently called in FRED, but this would be needed for FRED support
+		if (Fred_running)
+		{
+			Neb2_render_mode = NEB2_RENDER_POF;
+			stars_set_background_model(BACKGROUND_MODEL_FILENAME, Neb2_texture_name);
+			stars_set_background_orientation();
+		}
 	}
 	else
 	{
