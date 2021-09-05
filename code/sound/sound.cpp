@@ -301,8 +301,9 @@ static std::unique_ptr<sound::IAudioFile> openAudioFile(const char* fileName)
 // DirectSound, only 1 copy of the sound is used.
 //
 // parameters:		entry							=> entry of sound to load
-// parameters:		flags							=> flags of sound to load
-//						allow_hardware_load	=> whether to try to allocate in hardware
+// parameters:		flags							=> pointer to flags of sound to load, so they
+//													   can be modified if necessary; can be nullptr
+//					allow_hardware_load				=> whether to try to allocate in hardware
 //
 // returns:			success => index of sound in Sounds[] array
 //						failure => -1
