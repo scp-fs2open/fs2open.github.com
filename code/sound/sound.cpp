@@ -112,6 +112,7 @@ struct LoopingSoundInfo {
 };
 
 SCP_list<LoopingSoundInfo> currentlyLoopingSoundInfos;
+SCP_list<LoopingSoundInfo> currentlyLooping3dSoundInfos;
 
 //For the adjust-audio-volume sexp
 float aav_voice_volume = 1.0f;
@@ -758,6 +759,10 @@ sound_handle snd_play_3d(game_snd* gs, vec3d* source_pos, vec3d* listen_pos, flo
 	}
 
 	if (handle.isValid()) {
+		if (looping) {
+			currentlyLooping3dSoundInfos.emplace_back(handle, default_volume, vol_scale);
+		}
+
 		snd_set_pitch(handle, gs->pitch_range.next());
 	}
 
@@ -921,7 +926,7 @@ sound_handle snd_play_looping(game_snd* gs, float pan, int /*start_loop*/, int /
 
 		if (handle.isValid()) {
 			if (scriptingUpdateVolume) {
-				currentlyLoopingSoundInfos.push_back(LoopingSoundInfo(handle, default_volume, vol_scale));
+				currentlyLoopingSoundInfos.emplace_back(handle, default_volume, vol_scale);
 			}
 
 			snd_set_pitch(handle, gs->pitch_range.next());
@@ -929,6 +934,14 @@ sound_handle snd_play_looping(game_snd* gs, float pan, int /*start_loop*/, int /
 	}
 
 	return handle;
+}
+
+void remove_looping_sound(SCP_list<LoopingSoundInfo> &looping_sounds, sound_handle sig)
+{
+	// the cast to void avoids warnings about unused return value
+	(void)std::remove_if(looping_sounds.begin(), looping_sounds.end(), [sig](const LoopingSoundInfo &ls_info) -> bool {
+		return ls_info.m_dsHandle == sig;
+	});
 }
 
 /**
@@ -948,15 +961,8 @@ void snd_stop(sound_handle sig)
 	if ( channel == -1 )
 		return;
 	
-	SCP_list<LoopingSoundInfo>::iterator iter = currentlyLoopingSoundInfos.begin();
-	while (iter != currentlyLoopingSoundInfos.end())
-	{
-		if(iter->m_dsHandle == sig) {
-			iter = currentlyLoopingSoundInfos.erase(iter);
-		} else {
-			++iter;
-		}
-	}
+	remove_looping_sound(currentlyLoopingSoundInfos, sig);
+	remove_looping_sound(currentlyLooping3dSoundInfos, sig);
 
 	ds_stop_channel(channel);
 }
@@ -973,7 +979,15 @@ void snd_stop_all()
 		return;
 
 	currentlyLoopingSoundInfos.clear();
+	currentlyLooping3dSoundInfos.clear();
 	ds_stop_channel_all();
+}
+
+SCP_list<LoopingSoundInfo>::iterator find_looping_sound(SCP_list<LoopingSoundInfo> &looping_sounds, sound_handle sig)
+{
+	return std::find_if(looping_sounds.begin(), looping_sounds.end(), [sig](const LoopingSoundInfo &ls_info) -> bool {
+		return ls_info.m_dsHandle == sig;
+	});
 }
 
 /**
@@ -1001,13 +1015,16 @@ void snd_set_volume(sound_handle sig, float volume)
 
 	bool isLoopingSound = false;
 
-	SCP_list<LoopingSoundInfo>::iterator iter;
-	for (iter = currentlyLoopingSoundInfos.begin(); iter != currentlyLoopingSoundInfos.end(); ++iter) {
-		if(iter->m_dsHandle == sig) {
-			iter->m_dynamicVolume = volume;
 
+	auto iter = find_looping_sound(currentlyLoopingSoundInfos, sig);
+	if (iter != currentlyLoopingSoundInfos.end()) {
+		iter->m_dynamicVolume = volume;
+		isLoopingSound = true;
+	} else {
+		iter = find_looping_sound(currentlyLooping3dSoundInfos, sig);
+		if (iter != currentlyLooping3dSoundInfos.end()) {
+			iter->m_dynamicVolume = volume;
 			isLoopingSound = true;
-			break;
 		}
 	}
 
@@ -1456,20 +1473,26 @@ int sound_env_supported()
 //
 
 void adjust_volume_on_frame(float* volume_now, aav* data);
+void update_looping_sound_volumes(SCP_list<LoopingSoundInfo>& looping_sounds);
 void snd_do_frame()
 {
 	adjust_volume_on_frame(&aav_music_volume, &aav_data[AAV_MUSIC]);
 	adjust_volume_on_frame(&aav_voice_volume, &aav_data[AAV_VOICE]);
 	adjust_volume_on_frame(&aav_effect_volume, &aav_data[AAV_EFFECTS]);
 
-	SCP_list<LoopingSoundInfo>::iterator iter;
-	for (iter = currentlyLoopingSoundInfos.begin(); iter != currentlyLoopingSoundInfos.end(); ++iter) {
-
-		float new_volume = iter->m_defaultVolume * iter->m_dynamicVolume * (Master_sound_volume * aav_effect_volume);
-		ds_set_volume(ds_get_channel(iter->m_dsHandle), new_volume);
-	}
+	update_looping_sound_volumes(currentlyLoopingSoundInfos);
+	update_looping_sound_volumes(currentlyLooping3dSoundInfos);
 
 	ds_do_frame();
+}
+
+void update_looping_sound_volumes(SCP_list<LoopingSoundInfo> &looping_sounds)
+{
+	for (auto &looping_sound : looping_sounds) {
+		const float new_volume =
+			looping_sound.m_defaultVolume * looping_sound.m_dynamicVolume * (Master_sound_volume * aav_effect_volume);
+		ds_set_volume(ds_get_channel(looping_sound.m_dsHandle), new_volume);
+	}
 }
 
 void snd_adjust_audio_volume(int type, float percent, int time)
