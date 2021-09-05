@@ -13794,7 +13794,10 @@ void sexp_mission_set_nebula(int n)
 	bool is_nan, is_nan_forever;
 	int set_it, range;
 
-	// range is optional, so if it isn't found, it will be set to 0
+	// range is optional, so if it isn't found, it will be set to 0,
+	// which will in turn be set to a default in the next function
+	// (this means the sexp cannot set the nebula range to 0,
+	// but the same is true in the background editor)
 	eval_nums(n, is_nan, is_nan_forever, set_it, range);
 	if (is_nan || is_nan_forever)
 		return;

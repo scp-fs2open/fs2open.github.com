@@ -2529,7 +2529,7 @@ void stars_set_nebula(bool activate, float range)
 		Neb2_render_mode = NEB2_RENDER_HTL;
 		Neb2_awacs = range;
 		if (Neb2_awacs < 0.1f)
-			Neb2_awacs = 3000.0f;
+			Neb2_awacs = 3000.0f;	// this is also the default in the background editor
 	}
 	else
 	{
