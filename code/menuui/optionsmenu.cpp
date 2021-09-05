@@ -470,7 +470,7 @@ void options_play_voice_clip()
 	auto gs = gamesnd_get_interface_sound(InterfaceSounds::VOICE_SLIDER_CLIP);
 	auto entry = gamesnd_choose_entry(gs);
 
-	auto snd_id = snd_load(entry, gs->flags, 0);
+	auto snd_id = snd_load(entry, &gs->flags, 0);
 
 	Voice_vol_handle = snd_play_raw( snd_id, 0.0f, 1.0f, SND_PRIORITY_SINGLE_INSTANCE );
 }
