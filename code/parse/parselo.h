@@ -81,7 +81,7 @@ extern void consolidate_double_characters(char *str, char ch);
 // white space
 extern int is_white_space(char ch);
 extern int is_white_space(unicode::codepoint_t cp);
-extern void ignore_white_space();
+extern void ignore_white_space(const char **pp = nullptr);
 extern void drop_trailing_white_space(char *str);
 extern void drop_leading_white_space(char *str);
 extern char *drop_white_space(char *str);
@@ -94,7 +94,7 @@ extern void drop_white_space(SCP_string &str);
 // gray space
 extern int is_gray_space(char ch);
 extern bool is_gray_space(unicode::codepoint_t cp);
-extern void ignore_gray_space();
+extern void ignore_gray_space(const char **pp = nullptr);
 
 // error
 extern int get_line_num();
