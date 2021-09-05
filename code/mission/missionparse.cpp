@@ -1475,7 +1475,7 @@ void parse_briefing(mission * /*pm*/, int flags)
 			Assert(bs->num_icons <= MAX_STAGE_ICONS );
 
 			// static alias stuff - stupid, but it seems to be necessary
-			const char **temp_team_names = new const char*[Iff_info.size()];
+			auto temp_team_names = std::unique_ptr<const char* []>(new const char*[Iff_info.size()]);
 			for (i = 0; i < (int)Iff_info.size(); i++)
 				temp_team_names[i] = Iff_info[i].iff_name;
 
@@ -1510,7 +1510,7 @@ void parse_briefing(mission * /*pm*/, int flags)
 						bi->type = ICON_TRANSPORT_WING;
 				}
 
-				find_and_stuff("$team:", &bi->team, F_NAME, temp_team_names, Iff_info.size(), "team name");
+				find_and_stuff("$team:", &bi->team, F_NAME, temp_team_names.get(), Iff_info.size(), "team name");
 
 				find_and_stuff("$class:", &bi->ship_class, F_NAME, Ship_class_names, Ship_info.size(), "ship class");
 				bi->modelnum = -1;
@@ -1588,8 +1588,6 @@ void parse_briefing(mission * /*pm*/, int flags)
 				stuff_string(not_used_text, F_MULTITEXT, MAX_ICON_TEXT_LEN);
 				required_string("$end_icon");
 			} // end while
-			
-			delete[] temp_team_names;
 
 			if (icon_num != bs->num_icons) {
 				error_display(1,
@@ -2898,13 +2896,11 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 			mprintf(("Using callsign: %s\n", name));
 	}
 
-	const char **temp_team_names = new const char*[Iff_info.size()];
+	auto temp_team_names = std::unique_ptr<const char*[]>(new const char*[Iff_info.size()]);
 	for (i = 0; i < (int)Iff_info.size(); i++)
 		temp_team_names[i] = Iff_info[i].iff_name;
 
-	find_and_stuff("$Team:", &p_objp->team, F_NAME, temp_team_names, Iff_info.size(), "team name");
-
-	delete[] temp_team_names;
+	find_and_stuff("$Team:", &p_objp->team, F_NAME, temp_team_names.get(), Iff_info.size(), "team name");
 
 	// save current team for loadout purposes, so that in multi we always respawn
 	// from the original loadout slot even if the team changes

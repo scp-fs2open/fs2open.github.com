@@ -105,7 +105,7 @@ void awacs_update_all_levels()
 	Awacs_level = 0.0f;
 	for (idx = 0; idx < (int)Iff_info.size(); idx++) {
 		Awacs_team.push_back(0.0f);
-		Ship_visibility_by_team.push_back(decltype(Ship_visibility_by_team)::value_type());
+		Ship_visibility_by_team.emplace_back();
 	}
 
 	Awacs_count = 0;
@@ -351,8 +351,8 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 // update team visibility
 void team_visibility_update()
 {
-	int *team_count = new int[Iff_info.size()]();
-	auto team_ships = new int[Iff_info.size()][MAX_SHIPS]();
+	auto team_count = std::unique_ptr<int[]>(new int[Iff_info.size()]());
+	auto team_ships = std::unique_ptr<int[][MAX_SHIPS]>(new int[Iff_info.size()][MAX_SHIPS]());
 
 	ship_obj *moveup;
 	ship *shipp;
@@ -436,9 +436,6 @@ void team_visibility_update()
 			}
 		}
 	}
-
-	delete[] team_count;
-	delete[] team_ships;
 }
 
 

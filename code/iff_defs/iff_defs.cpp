@@ -295,8 +295,8 @@ void iff_init()
 			// add new IFF
 			cur_iff = (int) Iff_info.size();
 			Iff_info.push_back(iff_info());
-			attack_names.push_back(decltype(attack_names)::value_type());
-			observed_color_table.push_back(decltype(observed_color_table)::value_type());
+			attack_names.emplace_back();
+			observed_color_table.emplace_back();
 			iff = &Iff_info[cur_iff];
 
 
@@ -324,7 +324,7 @@ void iff_init()
 			// get the list of observed colors
 			while (optional_string("+Sees"))
 			{
-				observed_color_table[cur_iff].push_back(decltype(observed_color_table)::value_type::value_type());
+				observed_color_table[cur_iff].emplace_back();
 				// get iff observed
 				stuff_string_until(observed_color_table[cur_iff].back().iff_name, "As:", NAME_LENGTH);
 				required_string("As:");
@@ -422,6 +422,7 @@ void iff_init()
 			// clear the observed colors
 			iff->observed_color_map.clear();
 
+			// resolve the attacking list names
 			for (const SCP_string& attacks : attack_names[cur_iff]) {
 				// find out who
 				int target_iff = iff_lookup(attacks.c_str());
@@ -433,6 +434,7 @@ void iff_init()
 					Warning(LOCATION, "Attack target IFF %s not found for IFF %s in iff_defs.tbl!\n", attacks.c_str(), iff->iff_name);
 			}
 
+			// resolve the observed color list names
 			for (const auto& observed_color : observed_color_table[cur_iff]) {
 				// find out who
 				int target_iff = iff_lookup(observed_color.iff_name);
@@ -636,7 +638,7 @@ color* iff_get_color_by_team_and_object(int team, int seen_from_team, int is_bri
 			color_index = it->second;
 	}
 
-	// switch incase some sort of parent iff color inheritance for example for bombs is wanted...
+	// switch in case some sort of parent iff color inheritance for example for bombs is wanted...
 	switch(objp->type)
 	{
 		case OBJ_SHIP:
