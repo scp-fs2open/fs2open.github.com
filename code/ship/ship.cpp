@@ -9367,8 +9367,7 @@ void ship_evaluate_ai(object* obj, float frametime) {
 void ship_process_pre(object *obj, float frametime)
 {
 	// If Framerate_independent_turning is false everything following is evaluated in ship_process_post()
-	// Also only multi masters do ai
-	if ( (obj == nullptr) || !frametime || MULTIPLAYER_CLIENT || !Framerate_independent_turning)
+	if ( (obj == nullptr) || !frametime || !Framerate_independent_turning)
 		return;
 
 	if (obj->type != OBJ_SHIP) {
@@ -9380,6 +9379,13 @@ void ship_process_pre(object *obj, float frametime)
 	Assert(num >= 0 && num < MAX_SHIPS);
 	Assert(Ships[num].objnum == OBJ_INDEX(obj));
 	ship* shipp = &Ships[num];
+
+	// Also only multi masters do ai, but clients still need to clean out invalid goals to avoid crashes
+	if (MULTIPLAYER_CLIENT) {
+		extern void validate_mission_goals(int objnum, ai_info * aip);
+		validate_mission_goals(OBJ_INDEX(obj), &Ai_info[shipp->ai_index]);
+		return;
+	}
 
 	if ((!(shipp->is_arriving()) || (Ai_info[shipp->ai_index].mode == AIM_BAY_EMERGE)
 		|| ((Warp_params[shipp->warpin_params_index].warp_type == WT_IN_PLACE_ANIM) && (shipp->flags[Ship_Flags::Arriving_stage_2])))
