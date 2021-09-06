@@ -2039,6 +2039,39 @@ void validate_mission_goals(int objnum, ai_info *aip)
 	}
 }
 
+//	For multiplayer clients! Prevents crashes due to invalid goals
+//  Scan the list of goals at aip->goals. Remove obsolete goals.
+//	objnum	Object of interest.  Redundant with *aip.
+//	*aip		contains goals at aip->goals.
+void validate_mission_goals_client(int objnum, ai_info *aip) 
+{	
+	for (int i = 0; i < MAX_AI_GOALS; i++) {
+		int		state;
+		ai_goal* aigp;
+
+		aigp = &aip->goals[i];
+
+		// quick check to see if this goal is valid or not, or if we are trying to process the
+		// current goal
+		if (aigp->ai_mode == AI_GOAL_NONE)
+			continue;
+
+		// purge any goals which should get purged
+		if (aigp->flags[AI::Goal_Flags::Purge]) {
+			ai_remove_ship_goal(aip, i);
+			continue;
+		}
+
+		state = ai_mission_goal_achievable(objnum, aigp);
+
+		// if this order is no longer a valid one, remove it
+		if ((state == AI_GOAL_NOT_ACHIEVABLE) || (state == AI_GOAL_SATISFIED)) {
+			ai_remove_ship_goal(aip, i);
+			continue;
+		}
+	}
+}
+
 //XSTR:OFF
 /*
 static char *Goal_text[5] = {

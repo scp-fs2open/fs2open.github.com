@@ -9382,8 +9382,8 @@ void ship_process_pre(object *obj, float frametime)
 
 	// Also only multi masters do ai, but clients still need to clean out invalid goals to avoid crashes
 	if (MULTIPLAYER_CLIENT) {
-		extern void validate_mission_goals(int objnum, ai_info * aip);
-		validate_mission_goals(OBJ_INDEX(obj), &Ai_info[shipp->ai_index]);
+		extern void validate_mission_goals_client(int objnum, ai_info * aip);
+		validate_mission_goals_client(Ships[num].objnum, &Ai_info[shipp->ai_index]);
 		return;
 	}
 
