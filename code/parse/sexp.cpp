@@ -699,7 +699,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "set-post-effect",				OP_SET_POST_EFFECT,						2,	5,			SEXP_ACTION_OPERATOR,	},	// Hery
 	{ "reset-post-effects",				OP_RESET_POST_EFFECTS,					0,	0,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "ship-effect",					OP_SHIP_EFFECT,							3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Valathil
-	{ "ship-create",					OP_SHIP_CREATE,							5,	9,			SEXP_ACTION_OPERATOR,	},	// WMC
+	{ "ship-create",					OP_SHIP_CREATE,							5,	10,			SEXP_ACTION_OPERATOR,	},	// WMC
 	{ "weapon-create",					OP_WEAPON_CREATE,						5,	10,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "ship-vanish",					OP_SHIP_VANISH,							1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "ship-vaporize",					OP_SHIP_VAPORIZE,						1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
@@ -16011,7 +16011,7 @@ void sexp_ship_create(int n)
 	vec3d new_ship_pos;
 	angles new_ship_ang;
 	matrix new_ship_ori;
-	bool is_nan, is_nan_forever;
+	bool is_nan, is_nan_forever, show_in_mission_log = true;
 
 	Assert( n >= 0 );
 
@@ -16048,7 +16048,16 @@ void sexp_ship_create(int n)
 		new_ship_ori = vmd_identity_matrix;
 
 	if (n >= 0)
+	{
 		team = iff_lookup(CTEXT(n));
+		n = CDR(n);
+	}
+
+	if (n >= 0)
+	{
+		show_in_mission_log = is_sexp_true(n);
+		n = CDR(n);
+	}
 
 	int objnum = ship_create(&new_ship_ori, &new_ship_pos, new_ship_class, new_ship_name);
 	Assert(objnum != -1);
@@ -16076,7 +16085,7 @@ void sexp_ship_create(int n)
 	if (sip->flags[Ship::Info_Flags::Intrinsic_no_shields])
 		Objects[objnum].flags.set(Object::Object_Flags::No_shields);
 
-	mission_log_add_entry(LOG_SHIP_ARRIVED, shipp->ship_name, nullptr);
+	mission_log_add_entry(LOG_SHIP_ARRIVED, shipp->ship_name, nullptr, -1, show_in_mission_log ? 0 : MLF_HIDDEN);
 
 	if (Script_system.IsActiveAction(CHA_ONSHIPARRIVE)) {
 		Script_system.SetHookObjects(2, "Ship", &Objects[objnum], "Parent", nullptr);
@@ -27233,6 +27242,8 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_SHIP_CLASS_NAME;
 			else if (argnum == 8)
 				return OPF_IFF;
+			else if (argnum == 9)
+				return OPF_BOOL;
 			else
 				return OPF_NUMBER;
 
@@ -34107,7 +34118,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_SHIP_CREATE, "ship-create\r\n"
 		"\tCreates a new ship\r\n"
-		"\tTakes 5 to 8 arguments...\r\n"
+		"\tTakes 5 to 10 arguments...\r\n"
 		"\t1: Name of new ship (use \"" SEXP_NONE_STRING "\" for a default name)\r\n"
 		"\t2: Class of new ship\r\n"
 		"\t3: X position\r\n"
@@ -34116,7 +34127,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t6: Pitch (optional)\r\n"
 		"\t7: Bank (optional)\r\n"
 		"\t8: Heading (optional)\r\n"
-		"\t9: Team (optional)\r\n"
+		"\t9: Team (optional; overrides ships.tbl default if set)\r\n"
+		"\t10: Show in mission log (optional; defaults to true)\r\n"
 	},
 
 	// Goober5000

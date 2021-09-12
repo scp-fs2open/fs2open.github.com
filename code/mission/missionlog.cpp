@@ -175,7 +175,7 @@ void mission_log_obsolete_entries(LogType type, const char *pname)
 // following function adds an entry into the mission log.
 // pass a type and a string which indicates the object
 // that this event is for.  Don't add entries with this function for multiplayer
-void mission_log_add_entry(LogType type, const char *pname, const char *sname, int info_index)
+void mission_log_add_entry(LogType type, const char *pname, const char *sname, int info_index, int flags)
 {
 	int last_entry_save;
 	log_entry *entry;	
@@ -212,7 +212,7 @@ void mission_log_add_entry(LogType type, const char *pname, const char *sname, i
 		strcpy_s( entry->sname, EMPTY_LOG_NAME );
 
 	entry->index = info_index;
-	entry->flags = 0;
+	entry->flags = flags;
 	entry->primary_team = -1;
 	entry->secondary_team = -1;
 	entry->pname_display = entry->pname;
