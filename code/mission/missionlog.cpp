@@ -247,6 +247,10 @@ void mission_log_add_entry(LogType type, const char *pname, const char *sname, i
 		entry->primary_team = Ships[index].team;
 		entry->pname_display = Ships[index].get_display_name();
 
+		if (Ships[index].flags[Ship::Ship_Flags::Hide_mission_log]) {
+			entry->flags |= MLF_HIDDEN;
+		}
+
 		// some of the entries have a secondary component.  Figure out what is up with them.
 		if ( (type == LOG_SHIP_DOCKED) || (type == LOG_SHIP_UNDOCKED)) {
 			if ( sname ) {

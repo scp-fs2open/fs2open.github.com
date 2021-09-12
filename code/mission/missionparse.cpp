@@ -312,7 +312,8 @@ flag_def_list_new<Mission::Parse_Object_Flags> Parse_object_flags[] = {
     { "weapons-locked",					Mission::Parse_Object_Flags::SF_Weapons_locked,			true, false },
     { "scramble-messages",				Mission::Parse_Object_Flags::SF_Scramble_messages,		true, false },
     { "no_collide",						Mission::Parse_Object_Flags::OF_No_collide,				true, false },
-	{ "no-disabled-self-destruct",		Mission::Parse_Object_Flags::SF_No_disabled_self_destruct, true, false }
+	{ "no-disabled-self-destruct",		Mission::Parse_Object_Flags::SF_No_disabled_self_destruct, true, false },
+	{ "hide-in-mission-log",			Mission::Parse_Object_Flags::SF_Hide_mission_log,		true, false },
 };
 
 const size_t num_parse_object_flags = sizeof(Parse_object_flags) / sizeof(flag_def_list_new<Mission::Parse_Object_Flags>);
@@ -2115,18 +2116,6 @@ int parse_create_object_sub(p_object *p_objp)
 #endif
 	}
 
-	if (p_objp->flags[Mission::Parse_Object_Flags::SF_Dock_leader])
-		shipp->flags.set(Ship::Ship_Flags::Dock_leader);
-
-	if (p_objp->flags[Mission::Parse_Object_Flags::SF_Warp_broken])
-		shipp->flags.set(Ship::Ship_Flags::Warp_broken);
-
-	if (p_objp->flags[Mission::Parse_Object_Flags::SF_Warp_never])
-		shipp->flags.set(Ship::Ship_Flags::Warp_never);
-
-	if (p_objp->flags[Mission::Parse_Object_Flags::SF_Has_display_name])
-		shipp->flags.set(Ship::Ship_Flags::Has_display_name);
-
 ////////////////////////
 
 
@@ -2692,6 +2681,21 @@ void resolve_parse_flags(object *objp, flagset<Mission::Parse_Object_Flags> &par
 
     if (parse_flags[Mission::Parse_Object_Flags::SF_No_disabled_self_destruct])
         shipp->flags.set(Ship::Ship_Flags::No_disabled_self_destruct);
+
+    if (parse_flags[Mission::Parse_Object_Flags::SF_Dock_leader])
+        shipp->flags.set(Ship::Ship_Flags::Dock_leader);
+
+    if (parse_flags[Mission::Parse_Object_Flags::SF_Warp_broken])
+        shipp->flags.set(Ship::Ship_Flags::Warp_broken);
+
+    if (parse_flags[Mission::Parse_Object_Flags::SF_Warp_never])
+        shipp->flags.set(Ship::Ship_Flags::Warp_never);
+
+    if (parse_flags[Mission::Parse_Object_Flags::SF_Has_display_name])
+        shipp->flags.set(Ship::Ship_Flags::Has_display_name);
+
+    if (parse_flags[Mission::Parse_Object_Flags::SF_Hide_mission_log])
+        shipp->flags.set(Ship::Ship_Flags::Hide_mission_log);
 }
 
 void fix_old_special_explosions(p_object *p_objp, int variable_index) 
