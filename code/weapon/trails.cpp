@@ -92,6 +92,8 @@ void trail_calc_facing_pts( vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, flo
 	if (!IS_VEC_NULL(&uvec))
 		vm_vec_normalize(&uvec);
 
+	w = model_render_get_diameter_clamped_to_min_pixel_size(pos, w, Min_pixel_size_trail);
+
 	vm_vec_scale_add( top, pos, &uvec, w * 0.5f );
 	vm_vec_scale_add( bot, pos, &uvec, -w * 0.5f );
 }
@@ -151,7 +153,6 @@ void trail_render( trail * trailp )
 	float w_size = (ti->w_end - ti->w_start);
 	float a_size = (ti->a_end - ti->a_start);
 	int num_faded_sections = ti->n_fade_out_sections;
-
 
 	vec3d prev_top, prev_bot; vm_vec_zero(&prev_top); vm_vec_zero(&prev_bot);
 	float prev_U = 0;

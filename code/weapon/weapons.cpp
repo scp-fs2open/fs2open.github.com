@@ -8231,11 +8231,19 @@ void weapon_render(object* obj, model_draw_list *scene)
 					alpha = (int)(alpha * neb2_get_fog_visibility(&obj->pos, NEB_FOG_VISIBILITY_MULT_WEAPON));
 
 				vec3d headp;
-
 				vm_vec_scale_add(&headp, &obj->pos, &obj->orient.vec.fvec, wip->laser_length);
 
-				batching_add_laser(wip->laser_bitmap.first_frame + framenum, &headp, wip->laser_head_radius, &obj->pos, wip->laser_tail_radius, alpha, alpha, alpha);
-			}			
+				float scaled_head_radius = model_render_get_diameter_clamped_to_min_pixel_size(&headp, wip->laser_head_radius, Min_pixel_size_laser);
+				float scaled_tail_radius = model_render_get_diameter_clamped_to_min_pixel_size(&obj->pos, wip->laser_tail_radius, Min_pixel_size_laser);
+
+				batching_add_laser(
+					wip->laser_bitmap.first_frame + framenum,
+					&headp,
+					scaled_head_radius,
+					&obj->pos,
+					scaled_tail_radius,
+					alpha, alpha, alpha);
+			}
 
 			// maybe draw laser glow bitmap
 			if (wip->laser_glow_bitmap.first_frame >= 0) {
@@ -8281,7 +8289,16 @@ void weapon_render(object* obj, model_draw_list *scene)
 				if (The_mission.flags[Mission::Mission_Flags::Fullneb] && Neb_affects_weapons)
 					alpha = (int)(alpha * neb2_get_fog_visibility(&obj->pos, NEB_FOG_VISIBILITY_MULT_WEAPON));
 
-				batching_add_laser(wip->laser_glow_bitmap.first_frame + framenum, &headp2, wip->laser_head_radius * weapon_glow_scale_f, &tailp, wip->laser_tail_radius * weapon_glow_scale_r, (c.red*alpha)/255, (c.green*alpha)/255, (c.blue*alpha)/255);
+				float scaled_head_radius = model_render_get_diameter_clamped_to_min_pixel_size(&headp2, wip->laser_head_radius, Min_pixel_size_laser);
+				float scaled_tail_radius = model_render_get_diameter_clamped_to_min_pixel_size(&tailp, wip->laser_tail_radius, Min_pixel_size_laser);
+
+				batching_add_laser(
+					wip->laser_glow_bitmap.first_frame + framenum,
+					&headp2,
+					scaled_head_radius * weapon_glow_scale_f,
+					&tailp,
+					scaled_tail_radius * weapon_glow_scale_r,
+					(c.red*alpha)/255, (c.green*alpha)/255, (c.blue*alpha)/255);
 			}
 
 			break;
