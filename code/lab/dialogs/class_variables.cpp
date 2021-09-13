@@ -75,8 +75,8 @@ void Variables::update(LabMode newLabMode, int classIndex) {
 			addHeader(y, "Techroom");
 			addVariable(&y, "Closeup zoom", sip->closeup_zoom);
 			addVariable(&y, "Closeup pos (x)", sip->closeup_pos.xyz.x);
-			addVariable(&y, "Closeup pos (y)", sip->closeup_pos.xyz.x);
-			addVariable(&y, "Closeup pos (z)", sip->closeup_pos.xyz.x);
+			addVariable(&y, "Closeup pos (y)", sip->closeup_pos.xyz.y);
+			addVariable(&y, "Closeup pos (z)", sip->closeup_pos.xyz.z);
 			break;
 		case LabMode::Weapon:
 			wip = &Weapon_info[classIndex];
