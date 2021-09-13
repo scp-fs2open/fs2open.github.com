@@ -33154,19 +33154,23 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tGoal priority (number between 0 and 89)." },
 
 	{ OP_AI_IGNORE, "Ai-ignore (Ship goal)\r\n"
-		"\tTells all ships to ignore the given ship and not consider it as a valid "
-		"target to attack.\r\n\r\n"
+		"\tTells the specified ship to ignore the given target and not consider it when picking something "
+		"to attack, but ALSO sets the protect-ship flag on the target so that NO ship can attack it.  Only 1 target "
+		"can be ignored at a time, and the protect-ship flag will remain set on the target unless some other sexp "
+		"explicitly removes it or instructs a ship to attack the target.  In most cases mission designers will want to use "
+		"ai-ignore-new instead.\r\n\r\n"
 		"Takes 2 arguments...\r\n"
-		"\t1:\tName of ship to ignore.\r\n"
-		"\t2:\tGoal priority (number between 0 and 89)." },
+		"\t1:\tName of target to ignore.\r\n"
+		"\t2:\tGoal priority (number between 0 and 89) - note, this does not imply any ranking of ignored targets." },
 
 	// Goober5000
 	{ OP_AI_IGNORE_NEW, "Ai-ignore-new (Ship goal)\r\n"
-		"\tTells the specified ship to ignore the given ship and not consider it as a valid "
-		"target to attack.\r\n\r\n"
+		"\tTells the specified ship to ignore the given target and not consider it when picking something "
+		"to attack.  Up to MAX_IGNORE_NEW_OBJECTS targets can be ignored at a time.  Targets ignored by "
+		"any given ship do not affect targets ignored by any other ship.\r\n\r\n"
 		"Takes 2 arguments...\r\n"
-		"\t1:\tName of ship to ignore.\r\n"
-		"\t2:\tGoal priority (number between 0 and 89)." },
+		"\t1:\tName of target to ignore.\r\n"
+		"\t2:\tGoal priority (number between 0 and 89) - note, this does not imply any ranking of ignored targets." },
 
 	{ OP_AI_STAY_STILL, "Ai-stay still (Ship goal)\r\n"
 		"\tCauses the specified ship to stay still.  The ship will do nothing until attacked at "
@@ -33178,8 +33182,9 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_AI_PLAY_DEAD, "Ai-play-dead (Ship goal)\r\n"
 		"\tCauses the specified ship to pretend that it is dead and not do anything.  This "
 		"expression should be used to indicate that a ship has no pilot and cannot respond "
-		"to any enemy threats.  A ship playing dead will not respond to any attack.  This "
-		"should really be named ai-is-dead\r\n\r\n"
+		"to any enemy threats.  A ship playing dead will not respond to any attack.\r\n\r\n"
+		"Do note that the ship's goal list is cleared, which means that if it receives any other goal in any way, "
+		"it will immediately come back to life.  Use ai-play-dead-persistent to prevent this from happening.\r\n\r\n"
 		"Takes 1 argument...\r\n"
 		"\t1:\tGoal priority (number between 0 and 89)." },
 
