@@ -188,12 +188,6 @@
 #include "weapon/shockwave.h"
 #include "weapon/weapon.h"
 
-// for the Lua garbage collector
-extern "C"
-{
-	#include "lgc.h"
-}
-
 
 #include <SDL.h>
 #include <SDL_main.h>
@@ -1396,7 +1390,7 @@ bool game_start_mission()
 	if (L != nullptr)
 	{
 		game_busy(NOX("** cleaning up Lua objects **"));
-		luaC_fullgc(L);
+		lua_gc(L, LUA_GCCOLLECT, 0);
 	}
 
 	game_busy( NOX("** starting game_post_level_init() **") );
