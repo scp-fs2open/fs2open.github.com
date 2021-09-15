@@ -115,10 +115,10 @@
 #undef MessageBox
 #endif
 
-
-
-#define TRUE	1
-#define FALSE	0
+// these are useful for embedding numbers in SEXP help strings
+// see https://stackoverflow.com/questions/5459868/concatenate-int-to-string-using-c-preprocessor
+#define STR_HELPER(x) #x
+#define STR(x) STR_HELPER(x)
 
 
 SCP_vector<sexp_oper> Operators = {
@@ -2825,7 +2825,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				if (*CTEXT(node) != '#') {  // not a manual source?
 					if ( stricmp(CTEXT(node), "<any wingman>") != 0)  
 						if ( stricmp(CTEXT(node), "<none>") != 0 ) // not a special token?
-							if ((ship_name_lookup(CTEXT(node), TRUE) < 0) && (wing_name_lookup(CTEXT(node), 1) < 0))  // is it in the mission?
+							if ((ship_name_lookup(CTEXT(node), 1) < 0) && (wing_name_lookup(CTEXT(node), 1) < 0))  // is it in the mission?
 								if (Fred_running || !mission_check_ship_yet_to_arrive(CTEXT(node)))
 									return SEXP_CHECK_INVALID_MSG_SOURCE;
 				}
@@ -33166,7 +33166,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	// Goober5000
 	{ OP_AI_IGNORE_NEW, "Ai-ignore-new (Ship goal)\r\n"
 		"\tTells the specified ship to ignore the given target and not consider it when picking something "
-		"to attack.  Up to MAX_IGNORE_NEW_OBJECTS targets can be ignored at a time.  Targets ignored by "
+		"to attack.  Up to " STR(MAX_IGNORE_NEW_OBJECTS) " targets can be ignored at a time.  Targets ignored by "
 		"any given ship do not affect targets ignored by any other ship.\r\n\r\n"
 		"Takes 2 arguments...\r\n"
 		"\t1:\tName of target to ignore.\r\n"
