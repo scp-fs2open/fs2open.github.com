@@ -1520,6 +1520,8 @@ ADE_FUNC(getShipList,
 	ship_obj* so = &Ship_obj_list;
 
 	return ade_set_args(L, "u", luacpp::LuaFunction::createFromStdFunction(L, [so](lua_State* LInner, const luacpp::LuaValueList& /*params*/) mutable -> luacpp::LuaValueList {
+		//Since the first element of a list is the next element from the head, and we start this function with the the captured "so" object being the head, this GET_NEXT will return the first element on first call of this lambda.
+		//Similarly, an empty list is defined by the head's next element being itself, hence an empty list will immediately return nil just fine
 		so = GET_NEXT(so);
 
 		if (so == END_OF_LIST(&Ship_obj_list)) {
