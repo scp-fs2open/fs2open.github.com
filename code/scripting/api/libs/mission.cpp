@@ -1510,6 +1510,26 @@ ADE_FUNC(getArrivalList,
 	                    l_ParseObject.Set(parse_object_h(&Ship_arrival_list)));
 }
 
+ADE_FUNC(getShipList,
+	l_Mission,
+	nullptr,
+	"Get an iterator to the list of ships in this mission",
+	"iterator<ship>",
+	"An iterator across all ships in the mission. Can be used in a for .. in loop")
+{
+	ship_obj* so = &Ship_obj_list;
+
+	return ade_set_args(L, "u", luacpp::LuaFunction::createFromStdFunction(L, [so](lua_State* LInner, const luacpp::LuaValueList& /*params*/) mutable -> luacpp::LuaValueList {
+		so = GET_NEXT(so);
+
+		if (so == END_OF_LIST(&Ship_obj_list)) {
+			return luacpp::LuaValueList{ luacpp::LuaValue::createNil(LInner) };
+		}
+
+		return luacpp::LuaValueList{ luacpp::LuaValue::createValue(LInner, l_Ship.Set(object_h(&Objects[so->objnum]))) };
+	}));
+}
+
 ADE_FUNC(waitAsync,
 	l_Mission,
 	"number seconds",
