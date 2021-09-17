@@ -267,10 +267,10 @@ int weapon_will_never_hit( object *obj_weapon, object *other, obj_pair * current
 		}
 
 		// check weapon that does not turn against sphere expanding at ship maxvel
-		// compare (weeapon) ray with expanding sphere (ship) to find earliest possible collision time
+		// compare (weapon) ray with expanding sphere (ship) to find earliest possible collision time
 		// look for two time solutions to Xw = Xs, where Xw = Xw0 + Vwt*t  Xs = Xs + Vs*(t+dt), where Vs*dt = radius of ship 
 		// Since direction of Vs is unknown, solve for (Vs*t) and find norm of both sides
-		if ( !(wip->wi_flags[Weapon::Info_Flags::Turns]) ) {
+		if ( !(wip->wi_flags[Weapon::Info_Flags::Turns]) && (obj_weapon->phys_info.flags & PF_CONST_VEL) ) {
 			vec3d delta_x, weapon_vel;
 			float a,b,c, delta_x_dot_vl, delta_t;
 			float root1, root2, root, earliest_time;
@@ -604,10 +604,10 @@ void obj_reset_colliders()
 	Collision_cached_pairs.clear();
 }
 
-void obj_collide_retime_cached_pairs(int checkdly)
+void obj_collide_retime_cached_pairs()
 {
 	for ( auto& pair : Collision_cached_pairs ) {
-		pair.second.next_check_time = timestamp(checkdly);
+		pair.second.next_check_time = timestamp(0);
 	}
 }
 

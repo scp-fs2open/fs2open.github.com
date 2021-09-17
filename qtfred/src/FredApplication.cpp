@@ -29,6 +29,9 @@ FredApplication::FredApplication() {
 	// Run our shutdown code after closing last window, but before application quits.
 	connect(qApp, &QApplication::lastWindowClosed, this, &FredApplication::shutdown);
 
+	//Run late shutdown code when application is about to quit.
+	connect(qApp, &QApplication::aboutToQuit, this, &FredApplication::lateShutdown);
+
 	// This will call our function in regular increments which allows us to do mission simulation stuff
 	auto idleTimer = new QTimer(this);
 	connect(idleTimer, &QTimer::timeout, this, &FredApplication::idleFunction);
@@ -60,7 +63,9 @@ void FredApplication::runAfterInit(std::function<void()>&& action) {
 void FredApplication::shutdown() {
 	// Clean up resources after we are done
 	fso::fred::shutdown();
+}
 
+void FredApplication::lateShutdown() {
 #ifdef WIN32
 	SCP_mspdbcs_Cleanup();
 #endif

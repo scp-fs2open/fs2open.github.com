@@ -588,7 +588,7 @@ void multi_options_process_packet(unsigned char *data, header *hinfo)
 	int offset = HEADER_LENGTH;
 
 	// find out who is sending this data	
-	player_index = find_player_id(hinfo->id);
+	player_index = find_player_index(hinfo->id);
 
 	if (player_index < 0) {
 		nprintf(("Network", "Received packet from unknown player!\n"));

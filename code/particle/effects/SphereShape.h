@@ -5,8 +5,10 @@
 #define _SPHERE_SHAPE_H
 #pragma once
 
-#include <math/bitarray.h>
 #include "globalincs/pstypes.h"
+
+#include "math/bitarray.h"
+#include "particle/ParticleEffect.h"
 #include "utils/RandomRange.h"
 
 namespace particle {
@@ -47,7 +49,7 @@ class SphereShape {
 	 * @brief Specifies if the velocities of the particles should be scaled with the deviation from the direction
 	 * @return @c true
 	 */
-	static SCP_CONSTEXPR bool scale_velocity_deviation() {
+	static constexpr bool scale_velocity_deviation() {
 		return false;
 	}
 };

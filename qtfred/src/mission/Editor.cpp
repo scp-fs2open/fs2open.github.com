@@ -394,7 +394,6 @@ void Editor::clearMission() {
 	obj_init();
 	model_free_all();                // Free all existing models
 	ai_init();
-	ai_profiles_init();
 	ship_init();
 	jumpnode_level_close();
 	waypoint_level_close();
@@ -516,7 +515,7 @@ void Editor::clearMission() {
 	Neb2_awacs = -1.0f;
 	Neb2_poof_flags = 0;
 	strcpy_s(Neb2_texture_name, "");
-	for (auto i = 0; i < MAX_NEB2_POOFS; i++) {
+	for (size_t i = 0; i < MAX_NEB2_POOFS; i++) {
 		Neb2_poof_flags |= (1 << i);
 	}
 

@@ -12,6 +12,7 @@
 
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
+#include "object/object.h"
 
 #define	FRONT_QUAD	1
 #define	REAR_QUAD	2
@@ -115,6 +116,11 @@ void shield_set_max_strength(object *objp, float newmax);
  * @author Goober5000
  */
 float shield_get_max_quad(object *objp);
+
+/**
+ * @brief Strengthens the weakest quadrant first, then spreads it out
+ */
+void shield_apply_healing(object* objp, float healing);
 
 /**
  * @brief Applies damage to the given shield quandrant/sector of the given object.

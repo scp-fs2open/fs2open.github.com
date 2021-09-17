@@ -341,8 +341,8 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	lcl_init(LCL_UNTRANSLATED);
 
 	// Goober5000 - force init XSTRs (so they work, but only work untranslated, based on above comment)
-	extern int Xstr_inited;
-	Xstr_inited = 1;
+	extern bool Xstr_inited;
+	Xstr_inited = true;
 
 #ifndef NDEBUG
 	load_filter_info();
@@ -418,6 +418,7 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	ship_init();
 	parse_init();
 	techroom_intel_init();
+	hud_positions_init();
 	asteroid_init();
 
 	// get fireball IDs for sexpression usage
@@ -849,7 +850,6 @@ void clear_mission()
 	obj_init();
 	model_free_all();				// Free all existing models
 	ai_init();
-	ai_profiles_init();
 	ship_init();
 	jumpnode_level_close();
 	waypoint_level_close();
@@ -977,7 +977,7 @@ void clear_mission()
 	Neb2_awacs = -1.0f;
 	Neb2_poof_flags = 0;
 	strcpy_s(Neb2_texture_name, "");
-	for(i=0; i<MAX_NEB2_POOFS; i++){
+	for(i=0; i<(int)MAX_NEB2_POOFS; i++){
 		Neb2_poof_flags |= (1<<i);
 	}
 

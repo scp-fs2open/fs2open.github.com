@@ -36,7 +36,8 @@ void BackgroundDialog::open(Button* /*caller*/) {
 		return;
 
 	dialogWindow = (DialogWindow*)getLabManager()->Screen->Add(new DialogWindow("Mission Backgrounds", gr_screen.center_offset_x + 250, gr_screen.center_offset_y + 50));
-	dialogWindow->SetOwner(this);
+	Assert(Opener != nullptr);
+	dialogWindow->SetOwner(Opener->getDialog());
 
 	SCP_vector<SCP_string> missions;
 

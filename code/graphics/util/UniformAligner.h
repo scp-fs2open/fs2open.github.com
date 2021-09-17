@@ -40,9 +40,7 @@ class UniformAligner {
 	{
 		Assertion(sizeof(T) == _dataSize,
 		          "Sizes of template parameter and runtime size do not match! This probably uses the wrong type.");
-#if HAVE_STD_IS_TRIVIALLY_COPYABLE
 		static_assert(std::is_trivially_copyable<T>::value, "Element type must be trivially copyable!");
-#endif
 
 		return reinterpret_cast<T*>(addElement());
 	}
@@ -50,9 +48,7 @@ class UniformAligner {
 	template<typename THeader>
 	THeader* getHeader() {
 		Assertion(sizeof(THeader) == _headerSize, "Header size does not match requested header type!");
-#if HAVE_STD_IS_TRIVIALLY_COPYABLE
 		static_assert(std::is_trivially_copyable<THeader>::value, "Header type must be trivially copyable!");
-#endif
 
 		return reinterpret_cast<THeader*>(_buffer);
 	}
@@ -63,9 +59,7 @@ class UniformAligner {
 	T* getTypedElement(size_t index) {
 		Assertion(sizeof(T) == _dataSize,
 				  "Sizes of template parameter and runtime size do not match! This probably uses the wrong type.");
-#if HAVE_STD_IS_TRIVIALLY_COPYABLE
 		static_assert(std::is_trivially_copyable<T>::value, "Element type must be trivially copyable!");
-#endif
 
 		return reinterpret_cast<T*>(getElement(index));
 	}
@@ -82,9 +76,7 @@ class UniformAligner {
 	T* nextTypedElement(T* currentEl) {
 		Assertion(sizeof(T) == _dataSize,
 				  "Sizes of template parameter and runtime size do not match! This probably uses the wrong type.");
-#if HAVE_STD_IS_TRIVIALLY_COPYABLE
 		static_assert(std::is_trivially_copyable<T>::value, "Element type must be trivially copyable!");
-#endif
 
 		return reinterpret_cast<T*>(nextElement(reinterpret_cast<void*>(currentEl)));
 	}

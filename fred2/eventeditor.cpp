@@ -857,28 +857,14 @@ void event_editor::OnCancel()
 {
 }
 
-// this is called the clicking the ID_CANCEL button
+// this is called when you click the ID_CANCEL button
 void event_editor::OnButtonCancel()
 {
 	audiostream_close_file(m_wave_id, 0);
 	m_wave_id = -1;
 
-	event_annotation_prune();
-
-	theApp.record_window_data(&Events_wnd_data, this);
-	delete Event_editor_dlg;
-	Event_editor_dlg = NULL;
-}
-
-void event_editor::OnClose() 
-{
-	int z;
-
-	audiostream_close_file(m_wave_id, 0);
-	m_wave_id = -1;
-
 	if (query_modified()) {
-		z = MessageBox("Do you want to keep your changes?", "Close", MB_ICONQUESTION | MB_YESNOCANCEL);
+		int z = MessageBox("Do you want to keep your changes?", "Close", MB_ICONQUESTION | MB_YESNOCANCEL);
 		if (z == IDCANCEL){
 			return;
 		}
@@ -890,10 +876,15 @@ void event_editor::OnClose()
 	}
 
 	event_annotation_prune();
-	
+
 	theApp.record_window_data(&Events_wnd_data, this);
 	delete Event_editor_dlg;
 	Event_editor_dlg = NULL;
+}
+
+void event_editor::OnClose() 
+{
+	OnButtonCancel();
 }
 
 void event_editor::insert_handler(int old, int node)

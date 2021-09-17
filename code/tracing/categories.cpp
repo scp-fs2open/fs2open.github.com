@@ -61,6 +61,7 @@ Category SubmitDraws("Submit Draws", true);
 Category ApplyLights("Apply Lights", true);
 Category DrawEffects("Draw Effects", true);
 Category SetupNebula("Setup Nebula", true);
+Category DrawPoofs("Draw Poofs", true);
 Category DrawStars("Draw Stars", true);
 Category DrawShields("Draw Shields", true);
 Category DrawBeams("Draw Beams", true);
@@ -76,8 +77,6 @@ Category NonrepeatingEvents("Nonrepeating events", false);
 
 Category ParticlesRenderAll("Render particles", true);
 Category ParticlesMoveAll("Move particles", false);
-
-Category TrailDraw("Trail Draw", true);
 
 Category EnvironmentMapping("Environment Mapping", true);
 Category BuildShadowMap("Build Shadow Map", true);

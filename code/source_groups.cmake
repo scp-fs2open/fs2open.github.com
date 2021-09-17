@@ -361,7 +361,6 @@ add_file_folder("GameSnd"
 
 add_file_folder("Generated Files"
 	${GENERATED_SOURCE_DIR}/project.h
-	${GENERATED_SOURCE_DIR}/scp_compiler_detection.h
 	${PLATFORM_CHECK_HEADER}
 )
 
@@ -848,6 +847,10 @@ add_file_folder("Model"
 	model/model.h
 	model/modelanim.cpp
 	model/modelanim.h
+	model/modelanimation.cpp
+	model/modelanimation.h
+	model/modelanimation_segments.cpp
+	model/modelanimation_segments.h
 	model/modelcollide.cpp
 	model/modelinterp.cpp
 	model/modeloctant.cpp
@@ -1021,6 +1024,8 @@ add_file_folder("Parse"
 	parse/parselo.h
 	parse/sexp.cpp
 	parse/sexp.h
+	parse/sexp_container.cpp
+	parse/sexp_container.h
 )
 
 add_file_folder("Parse\\\\SEXP"
@@ -1061,6 +1066,8 @@ add_file_folder("Particle\\\\Effects"
 	particle/effects/SingleParticleEffect.cpp
 	particle/effects/SingleParticleEffect.h
 	particle/effects/SphereShape.h
+	particle/effects/VolumeEffect.cpp
+	particle/effects/VolumeEffect.h
 )
 
 add_file_folder("Particle\\\\Util"

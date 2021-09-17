@@ -328,9 +328,6 @@ void detail_level_set(int level)
 	Assert( level < NUM_DEFAULT_DETAIL_LEVELS );
 
 	Detail = Detail_defaults[level];
-
-	// reset nebula stuff
-	neb2_set_detail_level(level);
 }
 
 // Returns the current detail level or -1 if custom.
