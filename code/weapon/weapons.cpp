@@ -5455,7 +5455,6 @@ void weapon_process_post(object * obj, float frame_time)
 
 				vm_vec_normalized_dir(&tvec, &v0, &Objects[wp->target_num].pos);
 				dot = vm_vec_dot(&tvec, &Objects[wp->target_num].orient.vec.fvec);
-				wp->target_num = -1;
 
 				//	Learn!  If over-shooting or under-shooting, compensate.
 				//	Really need to compensate for left/right errors.  This does no good against someone circling
