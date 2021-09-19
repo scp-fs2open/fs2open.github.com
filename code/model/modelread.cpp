@@ -1482,7 +1482,6 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 				// note, this should come BEFORE do_new_subsystem() for proper error handling (to avoid both rotating and look-at submodel)
 				if ((p = strstr(props, "$look_at")) != nullptr) {
 					pm->submodel[n].movement_type = MOVEMENT_TYPE_INTRINSIC_ROTATE;
-					pm->flags |= PM_FLAG_HAS_INTRINSIC_ROTATE;
 
 					// we need to work out the correct subobject number later, after all subobjects have been processed
 					pm->submodel[n].look_at_submodel = static_cast<int>(look_at_submodel_names.size());
@@ -1520,7 +1519,6 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 				int idx = prop_string(props, &p, "$dumb_rotate_time", "$dumb_rotate_rate", "$dumb_rotate");
 				if (idx >= 0) {
 					pm->submodel[n].movement_type = MOVEMENT_TYPE_INTRINSIC_ROTATE;
-					pm->flags |= PM_FLAG_HAS_INTRINSIC_ROTATE;
 
 					// do this the same way as regular $rotate
 					char buf[64];
@@ -2592,17 +2590,33 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 					}
 				}
 
+				// certain old models specify the submodel number, so let's maintain compatibilty
+				if (submodel_name != nullptr && can_construe_as_integer(submodel_name)) {
+					pm->submodel[i].look_at_submodel = atoi(submodel_name);
+					submodel_name = nullptr;
+				}
+
 				// did we fail to find it?
 				if (submodel_name != nullptr) {
 					Warning(LOCATION, "Unable to match %s %s $look_at: target %s with a submodel!\n", pm->filename, pm->submodel[i].name, submodel_name);
 					pm->submodel[i].look_at_submodel = -1;
+					pm->submodel[i].movement_type = MOVEMENT_TYPE_NONE;
 				}
 				// are we navel-gazing?
 				else if (pm->submodel[i].look_at_submodel == i) {
 					Warning(LOCATION, "Matched %s %s $look_at: target with its own submodel!  Submodel cannot look at itself!\n", pm->filename, pm->submodel[i].name);
 					pm->submodel[i].look_at_submodel = -1;
+					pm->submodel[i].movement_type = MOVEMENT_TYPE_NONE;
 				}
 			}
+		}
+	}
+
+	// And now look through all the submodels and set the model flag if any are intrinsic-rotating
+	for (i = 0; i < pm->n_models; i++) {
+		if (pm->submodel[i].movement_type == MOVEMENT_TYPE_INTRINSIC_ROTATE) {
+			pm->flags |= PM_FLAG_HAS_INTRINSIC_ROTATE;
+			break;
 		}
 	}
 
@@ -3895,14 +3909,11 @@ int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, ship_
 		base_smi->canonical_orient = save_base_orient;
 
 	} else {
-		desired_base_angle = 0.0f;
+		desired_base_angle = base_smi->turret_idle_angle;
 		desired_gun_angle = 0.0f;
-		if (turret->n_triggers > 0) {
-			int i;
-			for (i = 0; i<turret->n_triggers; i++) {
-				desired_gun_angle = turret->triggers[i].angle.xyz.x;
-				desired_base_angle = turret->triggers[i].angle.xyz.y;
-			}
+
+		if ((turret->subobj_num != turret->turret_gun_sobj)) {
+			desired_gun_angle = gun_smi->turret_idle_angle;
 		}
 	}
 
@@ -4395,27 +4406,10 @@ void model_set_up_techroom_instance(ship_info *sip, int model_instance_num)
 	{
 		model_subsystem *msp = &sip->subsystems[i];
 
-		for (int j = 0; j < msp->n_triggers; ++j)
-		{
-			if (msp->triggers[j].type == AnimationTriggerType::Initial)
-			{
-				// special case for turrets
-				if (msp->type == SUBSYSTEM_TURRET)
-				{
-					if (msp->subobj_num >= 0)
-					{
-						pmi->submodel[msp->subobj_num].cur_angle = msp->triggers[j].angle.xyz.y;
-						submodel_canonicalize(&pm->submodel[msp->subobj_num], &pmi->submodel[msp->subobj_num], true);
-					}
+		const auto& initialAnims = sip->animations.animationSet[{animation::ModelAnimationTriggerType::Initial, animation::ModelAnimationSet::SUBTYPE_DEFAULT}];
 
-					if ((msp->subobj_num != msp->turret_gun_sobj) && (msp->turret_gun_sobj >= 0))
-					{
-						pmi->submodel[msp->turret_gun_sobj].cur_angle = msp->triggers[j].angle.xyz.x;
-						submodel_canonicalize(&pm->submodel[msp->turret_gun_sobj], &pmi->submodel[msp->turret_gun_sobj], true);
-					}
-				}
-				// we can't support non-turrets, as in modelanim, because we need a ship subsystem but we don't actually have a ship
-			}
+		for (const auto& initialAnim : initialAnims) {
+			initialAnim.second->start(pmi, false, true);
 		}
 
 		if (msp->subobj_num >= 0)

@@ -71,15 +71,21 @@ int collide_debris_ship( obj_pair * pair )
 		hit = debris_check_collision(debris_objp, ship_objp, &hitpos, &debris_hit_info );
 		if ( hit )
 		{
-			Script_system.SetHookObjects(4, "Self", ship_objp, "Object", debris_objp, "Ship", ship_objp, "Debris", debris_objp);
-			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(hitpos));
-			bool ship_override = Script_system.IsConditionOverride(CHA_COLLIDEDEBRIS, ship_objp);
-			Script_system.RemHookVars({ "Self", "Object", "Ship", "Debris", "Hitpos" });
+			bool ship_override = false, debris_override = false;
 
-			Script_system.SetHookObjects(4, "Self", debris_objp, "Object", ship_objp, "Ship", ship_objp, "Debris", debris_objp);
-			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(hitpos));
-			bool debris_override = Script_system.IsConditionOverride(CHA_COLLIDESHIP, debris_objp);
-			Script_system.RemHookVars({ "Self", "Object", "Ship", "Debris", "Hitpos" });
+			if (Script_system.IsActiveAction(CHA_COLLIDEDEBRIS)) {
+				Script_system.SetHookObjects(4, "Self", ship_objp, "Object", debris_objp, "Ship", ship_objp, "Debris", debris_objp);
+				Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(hitpos));
+				ship_override = Script_system.IsConditionOverride(CHA_COLLIDEDEBRIS, ship_objp);
+				Script_system.RemHookVars({ "Self", "Object", "Ship", "Debris", "Hitpos" });
+			}
+
+			if (Script_system.IsActiveAction(CHA_COLLIDESHIP)) {
+				Script_system.SetHookObjects(4, "Self", debris_objp, "Object", ship_objp, "Ship", ship_objp, "Debris", debris_objp);
+				Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(hitpos));
+				debris_override = Script_system.IsConditionOverride(CHA_COLLIDESHIP, debris_objp);
+				Script_system.RemHookVars({ "Self", "Object", "Ship", "Debris", "Hitpos" });
+			}
 
 			if(!ship_override && !debris_override)
 			{
@@ -144,7 +150,7 @@ int collide_debris_ship( obj_pair * pair )
 				collide_ship_ship_do_sound(&hitpos, ship_objp, debris_objp, ship_objp==Player_obj);
 			}
 
-			if (!(debris_override && !ship_override))
+			if (Script_system.IsActiveAction(CHA_COLLIDEDEBRIS) && !(debris_override && !ship_override))
 			{
 				Script_system.SetHookObjects(4, "Self", ship_objp, "Object", debris_objp, "Ship", ship_objp, "Debris", debris_objp);
 				Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(hitpos));
@@ -152,7 +158,7 @@ int collide_debris_ship( obj_pair * pair )
 				Script_system.RemHookVars({ "Self", "Object", "Ship", "Debris", "Hitpos" });
 			}
 
-			if ((debris_override && !ship_override) || (!debris_override && !ship_override))
+			if (Script_system.IsActiveAction(CHA_COLLIDESHIP) && ((debris_override && !ship_override) || (!debris_override && !ship_override)))
 			{
 				Script_system.SetHookObjects(4, "Self", debris_objp, "Object", ship_objp, "Ship", ship_objp, "Debris", debris_objp);
 				Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(hitpos));
@@ -236,16 +242,22 @@ int collide_asteroid_ship( obj_pair * pair )
 		hit = asteroid_check_collision(asteroid_objp, ship_objp, &hitpos, &asteroid_hit_info );
 		if ( hit )
 		{
-			//Scripting support (WMC)
-			Script_system.SetHookObjects(4, "Self", ship_objp, "Object", asteroid_objp, "Ship", ship_objp, "Asteroid", asteroid_objp);
-			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(hitpos));
-			bool ship_override = Script_system.IsConditionOverride(CHA_COLLIDEASTEROID, ship_objp);
-			Script_system.RemHookVars({ "Self", "Object", "Ship", "Asteroid", "Hitpos" });
+			bool ship_override = false, asteroid_override = false;
 
-			Script_system.SetHookObjects(4, "Self", asteroid_objp, "Object", ship_objp, "Ship", ship_objp, "Asteroid", asteroid_objp);
-			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(hitpos));
-			bool asteroid_override = Script_system.IsConditionOverride(CHA_COLLIDESHIP, asteroid_objp);
-			Script_system.RemHookVars({ "Self", "Object", "Ship", "Asteroid", "Hitpos" });
+			//Scripting support (WMC)
+			if (Script_system.IsActiveAction(CHA_COLLIDEASTEROID)) {
+				Script_system.SetHookObjects(4, "Self", ship_objp, "Object", asteroid_objp, "Ship", ship_objp, "Asteroid", asteroid_objp);
+				Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(hitpos));
+				ship_override = Script_system.IsConditionOverride(CHA_COLLIDEASTEROID, ship_objp);
+				Script_system.RemHookVars({ "Self", "Object", "Ship", "Asteroid", "Hitpos" });
+			}
+
+			if (Script_system.IsActiveAction(CHA_COLLIDESHIP)) {
+				Script_system.SetHookObjects(4, "Self", asteroid_objp, "Object", ship_objp, "Ship", ship_objp, "Asteroid", asteroid_objp);
+				Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(hitpos));
+				asteroid_override = Script_system.IsConditionOverride(CHA_COLLIDESHIP, asteroid_objp);
+				Script_system.RemHookVars({ "Self", "Object", "Ship", "Asteroid", "Hitpos" });
+			}
 
 			if(!ship_override && !asteroid_override)
 			{
@@ -314,7 +326,7 @@ int collide_asteroid_ship( obj_pair * pair )
 				collide_ship_ship_do_sound(&hitpos, ship_objp, asteroid_objp, ship_objp==Player_obj);
 			}
 
-			if (!(asteroid_override && !ship_override))
+			if (Script_system.IsActiveAction(CHA_COLLIDEASTEROID) && !(asteroid_override && !ship_override))
 			{
 				Script_system.SetHookObjects(4, "Self", ship_objp, "Object", asteroid_objp, "Ship", ship_objp, "Asteroid", asteroid_objp);
 				Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(hitpos));
@@ -322,7 +334,7 @@ int collide_asteroid_ship( obj_pair * pair )
 				Script_system.RemHookVars({ "Self", "Object", "Ship", "Asteroid", "Hitpos" });
 			}
 
-			if ((asteroid_override && !ship_override) || (!asteroid_override && !ship_override))
+			if (Script_system.IsActiveAction(CHA_COLLIDESHIP) && ((asteroid_override && !ship_override) || (!asteroid_override && !ship_override)))
 			{
 				Script_system.SetHookObjects(4, "Self", asteroid_objp, "Object", ship_objp, "Ship", ship_objp, "Asteroid", asteroid_objp);
 				Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(hitpos));

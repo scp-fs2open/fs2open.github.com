@@ -4707,11 +4707,13 @@ void ai_waypoints()
 					mission_log_add_entry( LOG_WAYPOINTS_DONE, Wings[Ships[Pl_objp->instance].wingnum].name, aip->wp_list->get_name(), -1 );
 				}
 				// adds scripting hook for 'On Waypoints Done' --wookieejedi
-				Script_system.SetHookObject("Ship", &Objects[Ships[Pl_objp->instance].objnum]);
-				Script_system.SetHookVar("Wing", 'o', scripting::api::l_Wing.Set(Ships[Pl_objp->instance].wingnum));
-				Script_system.SetHookVar("Waypointlist", 'o', scripting::api::l_WaypointList.Set(scripting::api::waypointlist_h(aip->wp_list)));
-				Script_system.RunCondition(CHA_ONWAYPOINTSDONE);
-				Script_system.RemHookVars({"Ship", "Wing", "Waypointlist"});
+				if (Script_system.IsActiveAction(CHA_ONWAYPOINTSDONE)) {
+					Script_system.SetHookObject("Ship", &Objects[Ships[Pl_objp->instance].objnum]);
+					Script_system.SetHookVar("Wing", 'o', scripting::api::l_Wing.Set(Ships[Pl_objp->instance].wingnum));
+					Script_system.SetHookVar("Waypointlist", 'o', scripting::api::l_WaypointList.Set(scripting::api::waypointlist_h(aip->wp_list)));
+					Script_system.RunCondition(CHA_ONWAYPOINTSDONE);
+					Script_system.RemHookVars({"Ship", "Wing", "Waypointlist"});
+				}
 			}
 		}
 	}
@@ -5788,7 +5790,7 @@ bool ai_do_multilock(ai_info* aip, weapon_info* wip) {
 	SCP_vector<multilock_target> multilock_targets;
 
 	if (wip->target_restrict == LR_CURRENT_TARGET)
-		multilock_targets.push_back(multilock_target{ primary_target,  nullptr, 1.0f });
+		multilock_targets.push_back(multilock_target{ primary_target, aip->targeted_subsys, 1.0f });
 	else if (wip->target_restrict == LR_CURRENT_TARGET_SUBSYS) {
 
 		if (primary_target->type != OBJ_SHIP)
@@ -11646,9 +11648,6 @@ void process_subobjects(int objnum)
 	ai_info	*aip = &Ai_info[shipp->ai_index];
 	ship_info	*sip = &Ship_info[shipp->ship_info_index];
 
-	//Look for enemies. If none are present, we don't have to move turrets
-	int enemies_present = -1;
-
 	model_subsystem	*psub;
 	for ( pss = GET_FIRST(&shipp->subsys_list); pss !=END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) ) {
 		psub = pss->system_info;
@@ -11668,34 +11667,7 @@ void process_subobjects(int objnum)
 
 			if ( psub->turret_num_firing_points > 0 )
 			{
-				if(enemies_present == -1)
-				{
-					enemies_present = 0;
-					for(unsigned int i = 0; i < MAX_OBJECTS; i++)
-					{
-						objp = &Objects[i];
-						switch(objp->type)
-						{
-							case OBJ_SHIP:
-							case OBJ_DEBRIS:
-							case OBJ_WEAPON:
-								if(obj_team(objp) != shipp->team)
-									enemies_present = 1;
-								break;
-							case OBJ_ASTEROID:
-								enemies_present = 1;
-								break;
-						}
-
-						if(enemies_present==1)
-							break;
-					}
-					//Reset objp
-					objp = &Objects[objnum];
-				}
-				//Only move turrets if enemies are present
-				if(enemies_present == 1 || pss->turret_enemy_objnum >= 0)
-					ai_fire_from_turret(shipp, pss);
+				ai_turret_execute_behavior(shipp, pss);
 			} else {
 				Warning( LOCATION, "Turret %s on ship %s has no firing points assigned to it.\nThis needs to be fixed in the model.\n", psub->name, shipp->ship_name );
 			}
@@ -15416,7 +15388,7 @@ void ai_update_lethality(object *pship_obj, object *other_obj, float damage)
 void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hit_normal)
 {
 	int		hitter_objnum = -2;
-	object	*objp_hitter = NULL;
+	object	*objp_hitter = nullptr;
 	ship		*shipp;
 	ai_info	*aip, *hitter_aip;
 
@@ -15424,27 +15396,29 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hit_normal)
 	aip = &Ai_info[shipp->ai_index];
 
 	if (objp_ship->flags[Object::Object_Flags::Player_ship]) {
-		//SUSHI: So that hitting a player ship actually resets the last_hit_target_time counter for whoever hit the player.
-		//This is all copypasted from code below
-		// Added OBJ_BEAM for traitor detection - FUBAR
-		if ((hit_objp->type == OBJ_WEAPON) || (hit_objp->type == OBJ_BEAM)) {
-			hitter_objnum = hit_objp->parent;
-			Assert((hitter_objnum < MAX_OBJECTS));
-			if (hitter_objnum == -1) {
-				return; // Possible SSM, bail while we still can.
+		if (The_mission.ai_profile->flags[AI::Profile_Flags::Reset_last_hit_target_time_for_player_hits]) {
+			//SUSHI: So that hitting a player ship actually resets the last_hit_target_time counter for whoever hit the player.
+			//This is all copypasted from code below
+			// Added OBJ_BEAM for traitor detection - FUBAR
+			if ((hit_objp->type == OBJ_WEAPON) || (hit_objp->type == OBJ_BEAM)) {
+				hitter_objnum = hit_objp->parent;
+				Assert((hitter_objnum < MAX_OBJECTS));
+				if (hitter_objnum == -1) {
+					return; // Possible SSM, bail while we still can.
+				}
+				objp_hitter = &Objects[hitter_objnum];
+			} else if (hit_objp->type == OBJ_SHIP) {
+				objp_hitter = hit_objp;
+			} else {
+				UNREACHABLE("Should never happen.");
+				return;
 			}
-			objp_hitter = &Objects[hitter_objnum];
-		} else if (hit_objp->type == OBJ_SHIP) {
-			objp_hitter = hit_objp;
-		} else {
-			Int3();	// Should never happen.
-			return;
-		}
-		Assert(objp_hitter != NULL);
-		hitter_aip = &Ai_info[Ships[objp_hitter->instance].ai_index];
-		hitter_aip->last_hit_target_time = Missiontime;
+			Assert(objp_hitter != nullptr);
+			hitter_aip = &Ai_info[Ships[objp_hitter->instance].ai_index];
+			hitter_aip->last_hit_target_time = Missiontime;
 
-		aip->last_hit_time = Missiontime;
+			aip->last_hit_time = Missiontime;
+		}
 		return;
 	}
 
@@ -15530,7 +15504,7 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hit_normal)
 	if (hit_objp->flags[Object::Object_Flags::Protected])
 		return;
 
-	Assert(objp_hitter != NULL);
+	Assert(objp_hitter != nullptr);
 	hitter_aip = &Ai_info[Ships[objp_hitter->instance].ai_index];
 	hitter_aip->last_hit_target_time = Missiontime;
 	

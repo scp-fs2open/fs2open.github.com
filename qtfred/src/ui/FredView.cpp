@@ -28,6 +28,7 @@
 #include <globalincs/linklist.h>
 #include <ui/dialogs/SelectionDialog.h>
 #include <ui/dialogs/FictionViewerDialog.h>
+#include <ui/dialogs/CommandBriefingDialog.h>
 #include <iff_defs/iff_defs.h>
 
 #include "mission/Editor.h"
@@ -64,7 +65,6 @@ FredView::FredView(QWidget* parent) : QMainWindow(parent), ui(new Ui::FredView()
 	ui->actionNew->setShortcuts(QKeySequence::New);
 	ui->actionOpen->setShortcuts(QKeySequence::Open);
 	ui->actionSave->setShortcuts(QKeySequence::Save);
-	ui->actionSave_As->setShortcuts(QKeySequence::SaveAs);
 	ui->actionExit->setShortcuts(QKeySequence::Quit);
 	ui->actionUndo->setShortcuts(QKeySequence::Undo);
 	ui->actionDelete->setShortcuts(QKeySequence::Delete);
@@ -132,17 +132,7 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 			this,
 			[this]() { ui->actionRestore_Camera_Pos->setEnabled(!IS_VEC_NULL(&_viewport->saved_cam_orient.vec.fvec)); });
 
-	// The Show teams actions need to be initialized after everything has been set up since the IFFs may not have been
-	// initialized yet
-	fredApp->runAfterInit([this]() {
-		for (auto i = 0; i < Num_iffs; ++i) {
-			auto action = new QAction(QString::fromUtf8(Iff_info[i].iff_name), ui->menuDisplay_Filter);
-			action->setCheckable(true);
-			connectActionToViewSetting(action, &_viewport->view.Show_iff[i]);
-
-			ui->menuDisplay_Filter->addAction(action);
-		}
-	});
+	connect(this, &FredView::viewIdle, this, [this]() { ui->actionMove_Ships_When_Undocking->setChecked(_viewport->Move_ships_when_undocking); });
 }
 
 void FredView::loadMissionFile(const QString& pathName) {
@@ -268,16 +258,28 @@ void FredView::syncViewOptions() {
 	connectActionToViewSetting(ui->actionShow_Player_Starts, &_viewport->view.Show_starts);
 	connectActionToViewSetting(ui->actionShow_Waypoints, &_viewport->view.Show_waypoints);
 
-	// TODO: Dynamically handle the Show teams option
+	// The Show teams actions need to be initialized after everything has been set up since the IFFs may not have been
+	// initialized yet
+	fredApp->runAfterInit([this]() {
+		for (auto i = 0; i < Num_iffs; ++i) {
+			auto action = new QAction(QString::fromUtf8(Iff_info[i].iff_name), ui->menuDisplay_Filter);
+			action->setCheckable(true);
+			connectActionToViewSetting(action, &_viewport->view.Show_iff[i]);
+
+			ui->menuDisplay_Filter->addAction(action);
+		}
+	});
 
 	connectActionToViewSetting(ui->actionShow_Ship_Models, &_viewport->view.Show_ship_models);
 	connectActionToViewSetting(ui->actionShow_Outlines, &_viewport->view.Show_outlines);
+	connectActionToViewSetting(ui->actionDraw_Outlines_On_Selected_Ships, &_viewport->view.Draw_outlines_on_selected_ships);
 	connectActionToViewSetting(ui->actionShow_Ship_Info, &_viewport->view.Show_ship_info);
 	connectActionToViewSetting(ui->actionShow_Coordinates, &_viewport->view.Show_coordinates);
 	connectActionToViewSetting(ui->actionShow_Grid_Positions, &_viewport->view.Show_grid_positions);
 	connectActionToViewSetting(ui->actionShow_Distances, &_viewport->view.Show_distances);
 	connectActionToViewSetting(ui->actionShow_Model_Paths, &_viewport->view.Show_paths_fred);
 	connectActionToViewSetting(ui->actionShow_Model_Dock_Points, &_viewport->view.Show_dock_points);
+	connectActionToViewSetting(ui->actionHighlight_Selectable_Subsystems, &_viewport->view.Highlight_selectable_subsys);
 
 	connectActionToViewSetting(ui->actionShow_Grid, &_viewport->view.Show_grid);
 	connectActionToViewSetting(ui->actionShow_Horizon, &_viewport->view.Show_horizon);
@@ -704,6 +706,10 @@ void FredView::on_actionCampaign_triggered(bool) {
 void FredView::on_actionObjects_triggered(bool) {
 	orientEditorTriggered();
 }
+void FredView::on_actionCommand_Briefing_triggered(bool) {
+	auto editorDialog = new dialogs::CommandBriefingDialog(this, _viewport);
+	editorDialog->show();
+}
 DialogButton FredView::showButtonDialog(DialogType type,
 										const SCP_string& title,
 										const SCP_string& message,
@@ -957,6 +963,11 @@ void FredView::on_actionTool_Bar_triggered(bool enabled) {
 void FredView::on_actionStatus_Bar_triggered(bool enabled) {
 	statusBar()->setVisible(enabled);
 }
+void FredView::on_actionClone_Marked_Objects_triggered(bool) {
+	if (fred->getNumMarked() > 0) {
+		_viewport->duplicate_marked_objects();
+	}
+}
 void FredView::on_actionDelete_triggered(bool) {
 	if (fred->getNumMarked() > 0) {
 		fred->delete_marked();
@@ -1031,14 +1042,14 @@ void FredView::onSetGroup(int group) {
 
 	fred->updateAllViewports();
 }
+void FredView::on_actionControl_Object_triggered(bool) {
+	_viewport->Control_mode = (_viewport->Control_mode + 1) % 2;
+}
 void FredView::on_actionLevel_Object_triggered(bool) {
 	_viewport->level_controlled();
 }
 void FredView::on_actionAlign_Object_triggered(bool) {
 	_viewport->verticalize_controlled();
-}
-void FredView::on_actionControl_Object_triggered(bool) {
-	_viewport->Control_mode = (_viewport->Control_mode + 1) % 2;
 }
 void FredView::on_actionNext_Subsystem_triggered(bool) {
 	fred->select_next_subsystem();
@@ -1048,6 +1059,9 @@ void FredView::on_actionPrev_Subsystem_triggered(bool) {
 }
 void FredView::on_actionCancel_Subsystem_triggered(bool) {
 	fred->cancel_select_subsystem();
+}
+void FredView::on_actionMove_Ships_When_Undocking_triggered(bool) {
+	_viewport->Move_ships_when_undocking = !_viewport->Move_ships_when_undocking;
 }
 void FredView::on_actionError_Checker_triggered(bool) {
 	fred->global_error_check();

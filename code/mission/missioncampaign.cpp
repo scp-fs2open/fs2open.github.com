@@ -912,16 +912,22 @@ void mission_campaign_eval_next_mission()
 
 	// evaluate mission loop mission (if any) so it can be used if chosen
 	if ( Campaign.missions[cur].flags & CMISSION_FLAG_HAS_LOOP ) {
-		int copy_next_mission = Campaign.next_mission;
+		int saved_next_mission = Campaign.next_mission;
 		// Set temporarily to -1 so we know if loop formula fails to assign
 		Campaign.next_mission = -1;
 		if (Campaign.missions[cur].mission_loop_formula != -1) {
 			flush_sexp_tree(Campaign.missions[cur].mission_loop_formula);  // force formula to be re-evaluated
-			eval_sexp(Campaign.missions[cur].mission_loop_formula);  // this should reset Campaign.next_mission to proper value
+			eval_sexp(Campaign.missions[cur].mission_loop_formula);  // this should set Campaign.next_mission to the loop mission
 		}
 
 		Campaign.loop_mission = Campaign.next_mission;
-		Campaign.next_mission = copy_next_mission;
+		Campaign.next_mission = saved_next_mission;
+
+		// If the loop mission and the next mission are the same, then don't do the loop.  This could be the case if the campaign
+		// only allows us to proceed to the loop mission if certain conditions are met.
+		if (Campaign.loop_mission == Campaign.next_mission) {
+			Campaign.loop_mission = -1;
+		}
 	}
 
 	if (Campaign.next_mission == -1) {
@@ -1147,7 +1153,9 @@ void mission_campaign_mission_over(bool do_next_mission)
 		}
 
 		// runs the new scripting conditional hook, "On Campaign Mission Accept" --wookieejedi
-		Script_system.RunCondition(CHA_CMISSIONACCEPT);
+		if (Script_system.IsActiveAction(CHA_CMISSIONACCEPT)) {
+			Script_system.RunCondition(CHA_CMISSIONACCEPT);
+		}
 		
 	} else {
 		// free up the goals and events which were just malloced.  It's kind of like erasing any fact

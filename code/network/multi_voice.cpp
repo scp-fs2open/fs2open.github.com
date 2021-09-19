@@ -319,7 +319,7 @@ void multi_voice_init()
 
 		// attempt to copy in the "pre" voice sound
 		auto gs = gamesnd_get_game_sound(MULTI_VOICE_PRE_SOUND);
-		auto pre_sound = snd_load(gamesnd_choose_entry(gs), gs->flags, 0);
+		auto pre_sound = snd_load(gamesnd_choose_entry(gs), &gs->flags, 0);
 		if (pre_sound.isValid()) {
 			// get the pre-sound size
 			if((snd_size(pre_sound,&pre_size) != -1) && (pre_size < MULTI_VOICE_MAX_BUFFER_SIZE)){
@@ -1418,7 +1418,7 @@ int multi_voice_mix(gamesnd_id post_sound,char *data,int cur_size,int max_size)
 	
 	// post sound
 	auto gs = gamesnd_get_game_sound(post_sound);
-	auto post_sound_handle = snd_load(gamesnd_choose_entry(gs), gs->flags, 0);
+	auto post_sound_handle = snd_load(gamesnd_choose_entry(gs), &gs->flags, 0);
 	if (post_sound_handle.isValid()) {
 		if(snd_size(post_sound_handle, &post_size) == -1){
 			post_size = 0;

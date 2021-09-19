@@ -477,8 +477,12 @@ int build_standalone_mission_list_do_frame()
 			// activate tstrings check
 			Lcl_unexpected_tstring_check = &lcl_weirdness;
 
-			// check if we can list the mission, if loading basic info didn't return an error code, and if we didn't find an unexpected XSTR mismatch
+			// check if we can list the mission, if loading basic info didn't return an error code, and if we didn't find an XSTR mismatch
 			bool condition = !mission_is_ignored(filename) && !get_mission_info(filename) && !lcl_weirdness;
+
+			// maybe log
+			if (lcl_weirdness)
+				mprintf(("Skipping %s due to XSTR mismatch\n", filename));
 
 			// deactivate tstrings check
 			Lcl_unexpected_tstring_check = nullptr;

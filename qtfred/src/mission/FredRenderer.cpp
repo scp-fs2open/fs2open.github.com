@@ -25,6 +25,7 @@
 #include <graphics/light.h>
 
 #include "mission/object.h"
+#include "weapon/weapon.h"
 
 
 namespace {
@@ -34,7 +35,7 @@ const float FRED_DEFAULT_HTL_FOV = 0.485f;
 const float FRED_DEAFULT_HTL_DRAW_DIST = 300000.0f;
 
 const int FRED_COLOUR_WHITE = 0xffffff;
-const int FRED_COLOUR_YELLOW = 0x9fff00;
+const int FRED_COLOUR_YELLOW_GREEN = 0xc8ff00;
 
 const int BRIEFING_LOOKAT_POINT_ID = 99999;
 
@@ -56,7 +57,7 @@ bool fred_colors_inited = false;
 color colour_white;
 color colour_green;
 color colour_black;
-color colour_yellow;
+color colour_yellow_green;
 
 void init_fred_colors() {
 	if (fred_colors_inited) {
@@ -67,7 +68,7 @@ void init_fred_colors() {
 
 	gr_init_alphacolor(&colour_white, 255, 255, 255, 255);
 	gr_init_alphacolor(&colour_green, 0, 200, 0, 255);
-	gr_init_alphacolor(&colour_yellow, 200, 255, 0, 255);
+	gr_init_alphacolor(&colour_yellow_green, 200, 255, 0, 255);
 	gr_init_alphacolor(&colour_black, 0, 0, 0, 255);
 }
 
@@ -141,7 +142,7 @@ void draw_asteroid_field() {
 	}
 }
 
-void fredhtl_render_subsystem_bounding_box(subsys_to_render* s2r, subsys_to_render& Render_subsys) {
+void fredhtl_render_subsystem_bounding_box(subsys_to_render* s2r) {
 	vertex text_center;
 	polymodel* pm = model_get(Ship_info[Ships[s2r->ship_obj->instance].ship_info_index].model_num);
 	int subobj_num = s2r->cur_subsys->system_info->subobj_num;
@@ -219,8 +220,30 @@ void fredhtl_render_subsystem_bounding_box(subsys_to_render* s2r, subsys_to_rend
 
 	disable_htl();
 
+	// get text
+	strcpy_s(buf, s2r->cur_subsys->system_info->subobj_name);
+
+	// add weapons if present
+	for (int i = 0; i < s2r->cur_subsys->weapons.num_primary_banks; ++i)
+	{
+		int wi = s2r->cur_subsys->weapons.primary_bank_weapons[i];
+		if (wi >= 0)
+		{
+			strcat_s(buf, "\n");
+			strcat_s(buf, Weapon_info[wi].name);
+		}
+	}
+	for (int i = 0; i < s2r->cur_subsys->weapons.num_secondary_banks; ++i)
+	{
+		int wi = s2r->cur_subsys->weapons.secondary_bank_weapons[i];
+		if (wi >= 0)
+		{
+			strcat_s(buf, "\n");
+			strcat_s(buf, Weapon_info[wi].name);
+		}
+	}
+
 	//draw the text.  rotate the center of the subsystem into place before finding out where to put the text
-	strcpy_s(buf, Render_subsys.cur_subsys->system_info->subobj_name);
 	vec3d center_pt;
 	vm_vec_unrotate(&center_pt, &bsp->offset, &s2r->ship_obj->orient);
 	vm_vec_add2(&center_pt, &s2r->ship_obj->pos);
@@ -412,7 +435,7 @@ void FredRenderer::display_ship_info(int cur_object_index) {
 		if (OBJ_INDEX(objp) == cur_object_index) {
 			Fred_outline = FRED_COLOUR_WHITE;
 		} else if (objp->flags[Object::Object_Flags::Marked]) { // is it a marked object?
-			Fred_outline = FRED_COLOUR_YELLOW;
+			Fred_outline = FRED_COLOUR_YELLOW_GREEN;
 		} else {
 			Fred_outline = 0;
 		}
@@ -479,8 +502,8 @@ void FredRenderer::display_ship_info(int cur_object_index) {
 				if (*buf) {
 					if (Fred_outline == FRED_COLOUR_WHITE) {
 						gr_set_color_fast(&colour_green);
-					} else if (Fred_outline == FRED_COLOUR_YELLOW) {
-						gr_set_color_fast(&colour_yellow);
+					} else if (Fred_outline == FRED_COLOUR_YELLOW_GREEN) {
+						gr_set_color_fast(&colour_yellow_green);
 					} else {
 						gr_set_color_fast(&colour_white);
 					}
@@ -504,21 +527,31 @@ void FredRenderer::display_active_ship_subsystem(subsys_to_render& Render_subsys
 	if (cur_object_index != -1) {
 		if (Objects[cur_object_index].type == OBJ_SHIP) {
 			object* objp = &Objects[cur_object_index];
-			char buf[256];
 
-			// switching to a new ship, so reset
-			if (objp != Render_subsys.ship_obj) {
-				cancel_display_active_ship_subsystem(Render_subsys);
-				return;
+			// if this option is checked, we want to render info for all subsystems, not just the ones we select with K and Shift-K
+			if (view().Highlight_selectable_subsys) {
+				auto shipp = &Ships[objp->instance];
+
+				for (auto ss = GET_FIRST(&shipp->subsys_list); ss != END_OF_LIST(&shipp->subsys_list); ss = GET_NEXT(ss)) {
+					if (ss->system_info->subobj_num != -1) {
+						subsys_to_render s2r = { true, objp, ss };
+						fredhtl_render_subsystem_bounding_box(&s2r);
+					}
+				}
 			}
+			// otherwise select individual subsystems, or not, as normal
+			else {
+				// switching to a new ship, so reset
+				if (objp != Render_subsys.ship_obj) {
+					cancel_display_active_ship_subsystem(Render_subsys);
+					return;
+				}
 
-			if (Render_subsys.do_render) {
-				// get subsys name
-				strcpy_s(buf, Render_subsys.cur_subsys->system_info->subobj_name);
-
-				fredhtl_render_subsystem_bounding_box(&Render_subsys, Render_subsys);
-			} else {
-				cancel_display_active_ship_subsystem(Render_subsys);
+				if (Render_subsys.do_render) {
+					fredhtl_render_subsystem_bounding_box(&Render_subsys);
+				} else {
+					cancel_display_active_ship_subsystem(Render_subsys);
+				}
 			}
 		}
 	}
@@ -767,10 +800,13 @@ void FredRenderer::render_one_model_htl(object* objp,
 	}
 
 	Fred_outline = 0;
-	if ((OBJ_INDEX(objp) == cur_object_index) && !Bg_bitmap_dialog) {
+
+	if (!view().Draw_outlines_on_selected_ships && ((OBJ_INDEX(objp) == cur_object_index) || (objp->flags[Object::Object_Flags::Marked]))) {
+		/* don't draw the outlines we would normally draw */;
+	} else if ((OBJ_INDEX(objp) == cur_object_index) && !Bg_bitmap_dialog) {
 		Fred_outline = FRED_COLOUR_WHITE;
 	} else if ((objp->flags[Object::Object_Flags::Marked]) && !Bg_bitmap_dialog) { // is it a marked object?
-		Fred_outline = FRED_COLOUR_YELLOW;
+		Fred_outline = FRED_COLOUR_YELLOW_GREEN;
 	} else if ((objp->type == OBJ_SHIP) && view().Show_outlines) {
 		color* iff_color = iff_get_color_by_team_and_object(Ships[objp->instance].team, -1, 1, objp);
 

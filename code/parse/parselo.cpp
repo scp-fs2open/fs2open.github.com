@@ -87,16 +87,22 @@ int is_parenthesis(char ch)
 
 //	Advance global Mp (mission pointer) past all current white space.
 //	Leaves Mp pointing at first non white space character.
-void ignore_white_space()
+void ignore_white_space(const char **pp)
 {
-	while ((*Mp != '\0') && is_white_space(*Mp))
-		Mp++;
+	if (pp == nullptr)
+		pp = const_cast<const char**>(&Mp);
+
+	while ((**pp != '\0') && is_white_space(**pp))
+		(*pp)++;
 }
 
-void ignore_gray_space()
+void ignore_gray_space(const char **pp)
 {
-	while ((*Mp != '\0') && is_gray_space(*Mp))
-		Mp++;
+	if (pp == nullptr)
+		pp = const_cast<const char**>(&Mp);
+
+	while ((**pp != '\0') && is_gray_space(**pp))
+		(*pp)++;
 }
 
 //	Truncate *str, eliminating all trailing white space.
@@ -2896,6 +2902,7 @@ size_t stuff_int_list(int *ilp, size_t max_ints, int lookup_type)
 	return stuff_token_list(ilp, max_ints, [&](int *buf)->bool {
 		if (*Mp == '"') {
 			int num = 0;
+			bool valid_negative = false;
 			SCP_string str;
 			get_string(str);
 
@@ -2920,12 +2927,15 @@ size_t stuff_int_list(int *ilp, size_t max_ints, int lookup_type)
 
 				case WEAPON_LIST_TYPE:
 					num = weapon_info_lookup(str.c_str());
-					if (num < 0 && !str.empty())
+					if (str.empty())
+						valid_negative = true;
+					else if (num < 0)
 						error_display(0, "Unable to find weapon class %s in stuff_int_list!", str.c_str());
 					break;
 
 				case RAW_INTEGER_TYPE:
 					num = atoi(str.c_str());
+					valid_negative = true;
 					break;
 
 				default:
@@ -2933,7 +2943,7 @@ size_t stuff_int_list(int *ilp, size_t max_ints, int lookup_type)
 					break;
 			}
 
-			if (num < 0)
+			if (num < 0 && !valid_negative)
 				return false;
 
 			*buf = num;			

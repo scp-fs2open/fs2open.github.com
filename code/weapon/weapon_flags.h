@@ -113,6 +113,7 @@ namespace Weapon {
 		Fast_firing,
 		Random_length,
 		Resets,
+		Num_firepoints_burst_shots, // Burst shots is set to however many firepoints the firer has
 
 		NUM_VALUES
 	};

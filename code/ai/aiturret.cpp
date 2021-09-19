@@ -1605,8 +1605,10 @@ void turret_set_next_fire_timestamp(int weapon_num, weapon_info *wip, ship_subsy
 {
 	Assert(weapon_num < MAX_SHIP_WEAPONS);
 	float wait = 1000.0f;
+	// should subtract 1 from firepoints to match behavior of wip->burst_shots
+	int burst_shots = (wip->burst_flags[Weapon::Burst_Flags::Num_firepoints_burst_shots] ? turret->system_info->turret_num_firing_points - 1 : wip->burst_shots);
 
-	if (wip->burst_shots > turret->weapons.burst_counter[weapon_num]) {
+	if (burst_shots > turret->weapons.burst_counter[weapon_num]) {
 		wait *= wip->burst_delay;
 		turret->weapons.burst_counter[weapon_num]++;
 	} else {
@@ -1616,8 +1618,8 @@ void turret_set_next_fire_timestamp(int weapon_num, weapon_info *wip, ship_subsy
 		} else {
 			wait *= wip->fire_wait;
 		}
-		if ((wip->burst_shots > 0) && (wip->burst_flags[Weapon::Burst_Flags::Random_length])) {
-			turret->weapons.burst_counter[weapon_num] = Random::next(wip->burst_shots);
+		if ((burst_shots > 0) && (wip->burst_flags[Weapon::Burst_Flags::Random_length])) {
+			turret->weapons.burst_counter[weapon_num] = Random::next(burst_shots);
 			turret->weapons.burst_seed[weapon_num] = Random::next();
 		} else {
 			turret->weapons.burst_counter[weapon_num] = 0;
@@ -1632,7 +1634,7 @@ void turret_set_next_fire_timestamp(int weapon_num, weapon_info *wip, ship_subsy
 		fs_dest = &turret->weapons.next_secondary_fire_stamp[weapon_num - MAX_SHIP_PRIMARY_BANKS];
 
 	//Check for the new cooldown flag
-	if(!((wip->wi_flags[Weapon::Info_Flags::Same_turret_cooldown]) || ((wip->burst_shots > 0) && (wip->burst_flags[Weapon::Burst_Flags::Fast_firing]))))
+	if(!((wip->wi_flags[Weapon::Info_Flags::Same_turret_cooldown]) || ((burst_shots > 0) && (wip->burst_flags[Weapon::Burst_Flags::Fast_firing]))))
 	{
 
 		// make side even for team vs. team
@@ -1838,9 +1840,11 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 				parent_ship->last_fired_turret = turret;
 				turret->last_fired_weapon_info_index = turret_weapon_class;
 
-				Script_system.SetHookObjects(4, "Ship", &Objects[parent_objnum], "Weapon", nullptr, "Beam", objp, "Target", &Objects[turret->turret_enemy_objnum]);
-				Script_system.RunCondition(CHA_ONTURRETFIRED, &Objects[parent_objnum]);
-				Script_system.RemHookVars({"Ship", "Weapon", "Beam", "Target"});
+				if (Script_system.IsActiveAction(CHA_ONTURRETFIRED)) {
+					Script_system.SetHookObjects(4, "Ship", &Objects[parent_objnum], "Weapon", nullptr, "Beam", objp, "Target", &Objects[turret->turret_enemy_objnum]);
+					Script_system.RunCondition(CHA_ONTURRETFIRED, &Objects[parent_objnum]);
+					Script_system.RemHookVars({"Ship", "Weapon", "Beam", "Target"});
+				}
 			}
 
 			turret->flags.set(Ship::Subsystem_Flags::Has_fired); //set fired flag for scripting -nike
@@ -1970,9 +1974,11 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 					// AL 1-6-97: Store pointer to turret subsystem
 					wp->turret_subsys = turret;	
 
-					Script_system.SetHookObjects(4, "Ship", &Objects[parent_objnum], "Weapon", objp, "Beam", nullptr, "Target", &Objects[turret->turret_enemy_objnum]);
-					Script_system.RunCondition(CHA_ONTURRETFIRED, &Objects[parent_objnum]);
-					Script_system.RemHookVars({"Ship", "Weapon", "Beam", "Target"});
+					if (Script_system.IsActiveAction(CHA_ONTURRETFIRED)) {
+						Script_system.SetHookObjects(4, "Ship", &Objects[parent_objnum], "Weapon", objp, "Beam", nullptr, "Target", &Objects[turret->turret_enemy_objnum]);
+						Script_system.RunCondition(CHA_ONTURRETFIRED, &Objects[parent_objnum]);
+						Script_system.RemHookVars({"Ship", "Weapon", "Beam", "Target"});
+					}
 
 					// if the gun is a flak gun
 					if (wip->wi_flags[Weapon::Info_Flags::Flak]) {
@@ -2086,9 +2092,11 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 		Ships[Objects[tsi->parent_objnum].instance].last_fired_turret = tsi->turret;
 		tsi->turret->last_fired_weapon_info_index = tsi->weapon_class;
 
-		Script_system.SetHookObjects(4, "Ship", &Objects[tsi->parent_objnum], "Weapon", &Objects[weapon_objnum], "Beam", nullptr, "Target", &Objects[tsi->turret->turret_enemy_objnum]);
-		Script_system.RunCondition(CHA_ONTURRETFIRED, &Objects[tsi->parent_objnum]);
-		Script_system.RemHookVars({"Ship", "Weapon", "Beam", "Target"});
+		if (Script_system.IsActiveAction(CHA_ONTURRETFIRED)) {
+			Script_system.SetHookObjects(4, "Ship", &Objects[tsi->parent_objnum], "Weapon", &Objects[weapon_objnum], "Beam", nullptr, "Target", &Objects[tsi->turret->turret_enemy_objnum]);
+			Script_system.RunCondition(CHA_ONTURRETFIRED, &Objects[tsi->parent_objnum]);
+			Script_system.RemHookVars({"Ship", "Weapon", "Beam", "Target"});
+		}
 
 		// muzzle flash?
 		if (Weapon_info[tsi->weapon_class].muzzle_flash >= 0) {
@@ -2119,10 +2127,12 @@ int Num_find_turret_enemy = 0;
 int Num_turrets_fired = 0;
 
 /**
- * Given a turret tp and its parent parent_objnum, fire from the turret at its enemy.
+ * Previously called ai_fire_from_turret()
+ * Given a ship and a turret subsystem, handle all its behavior, mostly targeting and shooting but also 
+ * all turret movement and resetting when idle
  */
 extern int Nebula_sec_range;
-void ai_fire_from_turret(ship *shipp, ship_subsys *ss)
+void ai_turret_execute_behavior(ship *shipp, ship_subsys *ss)
 {
 	float		weapon_firing_range;
     float		weapon_min_range;			// *Weapon minimum firing range -Et1
@@ -2382,6 +2392,11 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss)
 			// Check if weapon or turret is set to tagged-only
 			// must check here in case turret has multiple weapons and not all are tagged-only
 			else if (tagged_only && !ship_is_tagged(lep)) {
+				tentative_return = true;
+				continue;
+			}
+
+			if (!weapon_target_satisfies_lock_restrictions(wip, lep)) {
 				tentative_return = true;
 				continue;
 			}

@@ -144,7 +144,17 @@ void CMainFrame::init_tools() {
 	m_new_ship_type_combo_box.SetCurSel(0);
 }
 
-void CMainFrame::OnClose() {
+void CMainFrame::OnClose()
+{
+	// CFrameWnd::OnClose() doesn't provide a way for the caller to tell that the close has been cancelled,
+	// so let's extract that particular logic and do it manually here
+	if (!FREDDoc_ptr->SaveModified())
+		return;
+
+	// and now if we *are* closing, prevent the dialog from coming up
+	FREDDoc_ptr->SetModifiedFlag(FALSE);
+
+	// do the closing stuff
 	theApp.write_ini_file();
 	SaveBarState("Tools state");
 	CFrameWnd::OnClose();

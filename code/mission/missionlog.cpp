@@ -383,8 +383,67 @@ void mission_log_add_entry(LogType type, const char *pname, const char *sname, i
 			nprintf(("missionlog", "new highwater point reached for mission log (%d entries).\n", last_entry));
 		}
 	}
-#endif
 
+	float mission_time = f2fl(Missiontime);
+	int minutes = (int)(mission_time / 60);
+	int seconds = (int)mission_time % 60;
+
+	// record the entry to the debug log too
+	switch (entry->type) {
+		case LOG_SHIP_DESTROYED:
+		case LOG_WING_DESTROYED:
+			nprintf(("missionlog", "MISSION LOG: %s destroyed at %02d:%02d\n", entry->pname, minutes, seconds));
+			break;
+		case LOG_SHIP_ARRIVED:
+		case LOG_WING_ARRIVED:
+			nprintf(("missionlog", "MISSION LOG: %s arrived at %02d:%02d\n", entry->pname, minutes, seconds));
+			break;
+		case LOG_SHIP_DEPARTED:
+		case LOG_WING_DEPARTED:
+			nprintf(("missionlog", "MISSION LOG: %s departed at %02d:%02d\n", entry->pname, minutes, seconds));
+			break;
+		case LOG_SHIP_DOCKED:
+		case LOG_SHIP_UNDOCKED:
+			nprintf(("missionlog", "MISSION LOG: %s %sdocked with %s at %02d:%02d\n", entry->pname, entry->type == LOG_SHIP_UNDOCKED ? "un" : "", entry->sname, minutes, seconds));
+			break;
+		case LOG_SHIP_SUBSYS_DESTROYED:
+			nprintf(("missionlog", "MISSION LOG: %s subsystem %s destroyed at %02d:%02d\n", entry->pname, entry->sname, minutes, seconds));
+			break;
+		case LOG_SHIP_DISABLED:
+			nprintf(("missionlog", "MISSION LOG: %s disabled at %02d:%02d\n", entry->pname, minutes, seconds));
+			break;
+		case LOG_SHIP_DISARMED:
+			nprintf(("missionlog", "MISSION LOG: %s disarmed at %02d:%02d\n", entry->pname, minutes, seconds));
+			break;
+		case LOG_PLAYER_CALLED_FOR_REARM:
+			nprintf(("missionlog", "MISSION LOG: Player %s called for rearm at %02d:%02d\n", entry->pname, minutes, seconds));
+			break;
+		case LOG_PLAYER_ABORTED_REARM:
+			nprintf(("missionlog", "MISSION LOG: Player %s aborted rearm at %02d:%02d\n", entry->pname, minutes, seconds));
+			break;
+		case LOG_PLAYER_CALLED_FOR_REINFORCEMENT:
+			nprintf(("missionlog", "MISSION LOG: A player called for reinforcement %s at %02d:%02d\n", entry->pname, minutes, seconds));
+			break;
+		case LOG_GOAL_SATISFIED:
+			nprintf(("missionlog", "MISSION LOG: Goal %s satisfied at %02d:%02d\n", entry->pname, minutes, seconds));
+			break;
+		case LOG_GOAL_FAILED:
+			nprintf(("missionlog", "MISSION LOG: Goal %s failed at %02d:%02d\n", entry->pname, minutes, seconds));
+			break;
+		case LOG_WAYPOINTS_DONE:
+			nprintf(("missionlog", "MISSION LOG: %s completed waypoint path %s at %02d:%02d\n", entry->pname, entry->sname, minutes, seconds));
+			break;
+		case LOG_CARGO_REVEALED:
+			nprintf(("missionlog", "MISSION LOG: %s cargo %s revealed at %02d:%02d\n", entry->pname, Cargo_names[entry->index], minutes, seconds));
+			break;
+		case LOG_CAP_SUBSYS_CARGO_REVEALED:
+			nprintf(("missionlog", "MISSION LOG: %s subsystem %s cargo %s revealed at %02d:%02d\n", entry->pname, entry->sname, Cargo_names[entry->index], minutes, seconds));
+			break;
+		case LOG_SELF_DESTRUCTED:
+			nprintf(("missionlog", "MISSION LOG: %s self-destructed at %02d:%02d\n", entry->pname, minutes, seconds));
+			break;
+	}
+#endif
 }
 
 // function, used in multiplayer only, which adds an entry sent by the host of the game, into

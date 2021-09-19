@@ -136,7 +136,13 @@ int shockwave_create(int parent_objnum, vec3d* pos, shockwave_create_info* sci, 
 	sw->time_elapsed=0.0f;
 	sw->delay_stamp = delay;
 
-	sw->rot_angles = sci->rot_angles;
+	if (!sci->rot_defined) {
+		sw->rot_angles.p = frand_range(0.0f, PI2);
+		sw->rot_angles.b = frand_range(0.0f, PI2);
+		sw->rot_angles.h = frand_range(0.0f, PI2);
+	} else 
+		sw->rot_angles = sci->rot_angles; // should just be 0,0,0
+
 	sw->damage_type_idx = sci->damage_type_idx;
 
 	sw->total_time = sw->outer_radius / sw->speed;
@@ -425,10 +431,10 @@ void shockwave_render(object *objp, model_draw_list *scene)
 
 		if ( Gr_framebuffer_effects[FramebufferEffects::Shockwaves] ) {
 			float intensity = ((sw->time_elapsed / sw->total_time) > 0.9f) ? (1.0f - (sw->time_elapsed / sw->total_time)) * 10.0f : 1.0f;
-			batching_add_distortion_bitmap_rotated(sw->current_bitmap, &p, fl_radians(sw->rot_angles.p), sw->radius, intensity);
+			batching_add_distortion_bitmap_rotated(sw->current_bitmap, &p, sw->rot_angles.p, sw->radius, intensity);
 		}
 
-		batching_add_volume_bitmap_rotated(sw->current_bitmap, &p, fl_radians(sw->rot_angles.p), sw->radius, alpha);
+		batching_add_volume_bitmap_rotated(sw->current_bitmap, &p, sw->rot_angles.p, sw->radius, alpha);
 	}
 }
 

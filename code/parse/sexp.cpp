@@ -115,10 +115,10 @@
 #undef MessageBox
 #endif
 
-
-
-#define TRUE	1
-#define FALSE	0
+// these are useful for embedding numbers in SEXP help strings
+// see https://stackoverflow.com/questions/5459868/concatenate-int-to-string-using-c-preprocessor
+#define STR_HELPER(x) #x
+#define STR(x) STR_HELPER(x)
 
 
 SCP_vector<sexp_oper> Operators = {
@@ -673,7 +673,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "set-motion-debris-override",		OP_SET_MOTION_DEBRIS,					1,  1,			SEXP_ACTION_OPERATOR,	},	// The E
 
 	//Background and Nebula Sub-Category
-	{ "mission-set-nebula",				OP_MISSION_SET_NEBULA,					1,	1,			SEXP_ACTION_OPERATOR,	},	// Sesquipedalian
+	{ "mission-set-nebula",				OP_MISSION_SET_NEBULA,					1,	2,			SEXP_ACTION_OPERATOR,	},	// Sesquipedalian
 	{ "mission-set-subspace",			OP_MISSION_SET_SUBSPACE,				1,	1,			SEXP_ACTION_OPERATOR,	},
 	{ "change-background",				OP_CHANGE_BACKGROUND,					1,	1,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "add-background-bitmap",			OP_ADD_BACKGROUND_BITMAP,				8,	9,			SEXP_ACTION_OPERATOR,	},	// phreak
@@ -2825,7 +2825,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				if (*CTEXT(node) != '#') {  // not a manual source?
 					if ( stricmp(CTEXT(node), "<any wingman>") != 0)  
 						if ( stricmp(CTEXT(node), "<none>") != 0 ) // not a special token?
-							if ((ship_name_lookup(CTEXT(node), TRUE) < 0) && (wing_name_lookup(CTEXT(node), 1) < 0))  // is it in the mission?
+							if ((ship_name_lookup(CTEXT(node), 1) < 0) && (wing_name_lookup(CTEXT(node), 1) < 0))  // is it in the mission?
 								if (Fred_running || !mission_check_ship_yet_to_arrive(CTEXT(node)))
 									return SEXP_CHECK_INVALID_MSG_SOURCE;
 				}
@@ -7809,7 +7809,6 @@ void sexp_set_object_position(int n)
 	vec3d target_vec, orig_leader_vec;
 	object_ship_wing_point_team oswpt;
 	bool something_collides = false;
-	extern neb2_detail *Nd;
 
 	eval_object_ship_wing_point_team(&oswpt, n);
 	n = CDR(n);
@@ -7915,15 +7914,6 @@ void sexp_set_object_position(int n)
 	if (something_collides)
 	{
 		obj_collide_retime_cached_pairs();
-	}
-
-	// if this is a nebula mission and a player is being moved far enough,
-	// regenerate the nebula
-	if ( (oswpt.objp == Player_obj) 
-		&& (The_mission.flags[Mission::Mission_Flags::Fullneb]) 
-		&& (vm_vec_dist(&oswpt.objp->pos, &target_vec) >= Nd->cube_inner) )
-	{
-		neb2_eye_changed();
 	}
 }
 
@@ -13802,11 +13792,17 @@ void sexp_force_jump()
 void sexp_mission_set_nebula(int n)
 {
 	bool is_nan, is_nan_forever;
-	int set_it = eval_num(n, is_nan, is_nan_forever);
+	int set_it, range;
+
+	// range is optional, so if it isn't found, it will be set to 0,
+	// which will in turn be set to a default in the next function
+	// (this means the sexp cannot set the nebula range to 0,
+	// but the same is true in the background editor)
+	eval_nums(n, is_nan, is_nan_forever, set_it, range);
 	if (is_nan || is_nan_forever)
 		return;
 
-	stars_set_nebula(set_it > 0);
+	stars_set_nebula(set_it > 0, static_cast<float>(range));
 }
 
 /* freespace.cpp does not have these availiable externally, and we must call
@@ -13994,19 +13990,16 @@ void sexp_nebula_toggle_poof(int n)
 	bool result = is_sexp_true(CDR(n));
 	int i;
 
-	for (i = 0; i < MAX_NEB2_POOFS; i++)
+	for (i = 0; i < (int)Poof_info.size(); i++)
 	{
-		if (!stricmp(name,Neb2_poof_filenames[i]))
+		if (!stricmp(name, Poof_info[i].name))
 			break;
 	}
 
 	//coulnd't find the poof
-	if (i == MAX_NEB2_POOFS) return;
+	if (i == (int)Poof_info.size()) return;
 
-	if (result) Neb2_poof_flags |= (1 << i);
-	else Neb2_poof_flags &= ~(1 << i);
-	
-	neb2_eye_changed();
+	neb2_toggle_poof(i, result);
 }
 
 void sexp_nebula_change_pattern(int n)
@@ -16085,16 +16078,10 @@ void sexp_ship_create(int n)
 
 	mission_log_add_entry(LOG_SHIP_ARRIVED, shipp->ship_name, nullptr);
 
-	Script_system.SetHookObjects(2, "Ship", &Objects[objnum], "Parent", nullptr);
-	Script_system.RunCondition(CHA_ONSHIPARRIVE, &Objects[objnum]);
-	Script_system.RemHookVars({"Ship", "Parent"});
-
-	if (Game_mode & GM_IN_MISSION && sip->is_big_or_huge()) {
-		float mission_time = f2fl(Missiontime);
-		int minutes = (int)(mission_time / 60);
-		int seconds = (int)mission_time % 60;
-
-		mprintf(("%s created at %02d:%02d\n", shipp->ship_name, minutes, seconds));
+	if (Script_system.IsActiveAction(CHA_ONSHIPARRIVE)) {
+		Script_system.SetHookObjects(2, "Ship", &Objects[objnum], "Parent", nullptr);
+		Script_system.RunCondition(CHA_ONSHIPARRIVE, &Objects[objnum]);
+		Script_system.RemHookVars({"Ship", "Parent"});
 	}
 }
 
@@ -33167,19 +33154,23 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tGoal priority (number between 0 and 89)." },
 
 	{ OP_AI_IGNORE, "Ai-ignore (Ship goal)\r\n"
-		"\tTells all ships to ignore the given ship and not consider it as a valid "
-		"target to attack.\r\n\r\n"
+		"\tTells the specified ship to ignore the given target and not consider it when picking something "
+		"to attack, but ALSO sets the protect-ship flag on the target so that NO ship can attack it.  Only 1 target "
+		"can be ignored at a time, and the protect-ship flag will remain set on the target unless some other sexp "
+		"explicitly removes it or instructs a ship to attack the target.  In most cases mission designers will want to use "
+		"ai-ignore-new instead.\r\n\r\n"
 		"Takes 2 arguments...\r\n"
-		"\t1:\tName of ship to ignore.\r\n"
-		"\t2:\tGoal priority (number between 0 and 89)." },
+		"\t1:\tName of target to ignore.\r\n"
+		"\t2:\tGoal priority (number between 0 and 89) - note, this does not imply any ranking of ignored targets." },
 
 	// Goober5000
 	{ OP_AI_IGNORE_NEW, "Ai-ignore-new (Ship goal)\r\n"
-		"\tTells the specified ship to ignore the given ship and not consider it as a valid "
-		"target to attack.\r\n\r\n"
+		"\tTells the specified ship to ignore the given target and not consider it when picking something "
+		"to attack.  Up to " STR(MAX_IGNORE_NEW_OBJECTS) " targets can be ignored at a time.  Targets ignored by "
+		"any given ship do not affect targets ignored by any other ship.\r\n\r\n"
 		"Takes 2 arguments...\r\n"
-		"\t1:\tName of ship to ignore.\r\n"
-		"\t2:\tGoal priority (number between 0 and 89)." },
+		"\t1:\tName of target to ignore.\r\n"
+		"\t2:\tGoal priority (number between 0 and 89) - note, this does not imply any ranking of ignored targets." },
 
 	{ OP_AI_STAY_STILL, "Ai-stay still (Ship goal)\r\n"
 		"\tCauses the specified ship to stay still.  The ship will do nothing until attacked at "
@@ -33191,8 +33182,9 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_AI_PLAY_DEAD, "Ai-play-dead (Ship goal)\r\n"
 		"\tCauses the specified ship to pretend that it is dead and not do anything.  This "
 		"expression should be used to indicate that a ship has no pilot and cannot respond "
-		"to any enemy threats.  A ship playing dead will not respond to any attack.  This "
-		"should really be named ai-is-dead\r\n\r\n"
+		"to any enemy threats.  A ship playing dead will not respond to any attack.\r\n\r\n"
+		"Do note that the ship's goal list is cleared, which means that if it receives any other goal in any way, "
+		"it will immediately come back to life.  Use ai-play-dead-persistent to prevent this from happening.\r\n\r\n"
 		"Takes 1 argument...\r\n"
 		"\t1:\tGoal priority (number between 0 and 89)." },
 
@@ -33463,8 +33455,9 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_MISSION_SET_NEBULA, "mission-set-nebula\r\n" 
 		"\tTurns nebula on/off\r\n"
-		"\tTakes1 argument...\r\n"
-		"\t1:\t0 for nebula off, 1 for nebula on" },
+		"\tTakes 1 or 2 arguments...\r\n"
+		"\t1:\t0 for nebula off, 1 for nebula on\r\n"
+		"\t2:\tNebula range (optional; defaults to 3000)\r\n" },
 
 	{ OP_MISSION_SET_SUBSPACE, "mission-set-subspace\r\n"
 		"\tTurns subspace on/off\r\n"
