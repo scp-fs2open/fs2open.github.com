@@ -2347,11 +2347,6 @@ bool CC_bind::is_inverted() const {
 	return static_cast<bool>(flags & CCF_INVERTED);
 }
 
-bool CC_bind::is_in_pair(const CCB &pair) const
-{
-	return (*this == pair.first) || (*this == pair.second);
-}
-
 void CC_bind::take(CID _cid, short _btn, char _flags) {
 	cid = _cid;
 	btn = _btn;

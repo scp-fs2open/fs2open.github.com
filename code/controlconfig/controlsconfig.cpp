@@ -1280,6 +1280,28 @@ int control_config_accept()
  */
 void control_config_cancel_exit()
 {
+	// Check if any changes were made
+	if (control_config_get_current_preset() == Control_config_presets.end()) {
+		// Changes were made, prompt the user first.
+		int flags = PF_TITLE_WHITE;
+		int choice = popup(flags, 2, POPUP_NO, POPUP_YES, "You have unsaved changes.\n\n\n Do you wish to continue without saving?");
+
+		switch (choice) {
+			case -1:	// Aborted
+			case 1:		// Selected Yes (continue without saving)
+				// Either aborted (with Esc) or selected Yes (do not save)
+				// continue with backup restore and post event
+				break;
+			case 0:
+				// Selected No (do not exit)
+				return;
+				break;
+
+			default:
+				UNREACHABLE("Unknown popup choice %i", choice);
+		}
+	}
+
 	// Restore all bindings with the backup
 	std::move(Control_config_backup.begin(), Control_config_backup.end(), Control_config.begin());
 
