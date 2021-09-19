@@ -60,9 +60,6 @@ private slots:
 	void lstMissionsClicked(const QModelIndex &idx);
 	void mnLinkMenu(const QPoint &pos);
 
-	void btnBranchUpClicked();
-	void btnBranchDownClicked();
-
 	void btnErrorCheckerClicked();
 };
 

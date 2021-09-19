@@ -306,14 +306,14 @@ void CampaignEditorDialogModel::delCurMnBranch(int node) {
 	parent->updateUIMission();
 }
 
-void CampaignEditorDialogModel::selectCurBr(QTreeWidgetItem *selected) {
+void CampaignEditorDialogModel::selectCurBr(const QTreeWidgetItem *selected) {
 	if (! mnData_it) return;
 	mnData_it->brData_it = nullptr;
 	mnData_it->brData_idx = -1;
 
 	if (!selected) return;
 
-	QTreeWidgetItem *parent_node;
+	const QTreeWidgetItem *parent_node;
 	while ((parent_node = selected->parent()))
 		selected = parent_node;
 	mnData_it->brData_idx = selected->data(0, Qt::UserRole).toInt();
@@ -344,11 +344,28 @@ bool CampaignEditorDialogModel::setCurBrSexp(int sexp) {
 }
 
 void CampaignEditorDialogModel::setCurBrIsLoop(bool isLoop) {
-	if (! (mnData_it && mnData_it->brData_it)) return;
+	if (! getCurBr()) return;
 	modify<bool>(mnData_it->brData_it->loop, isLoop);
 	int idx = getCurBrIdx();
 	parent->updateUIMission(false);
 	parent->updateUIBranch(idx);
+}
+
+void CampaignEditorDialogModel::moveCurBr(bool up) {
+	if (! getCurBr()) return;
+
+	auto idx = static_cast<size_t>(mnData_it->brData_idx);
+	if (idx == 0 && up) return;
+
+	size_t other_idx = up ? idx - 1 : idx + 1;
+	auto& brs = mnData_it->branches;
+	if (brs.size() == other_idx) return;
+
+	std::swap(brs[idx], brs[other_idx]);
+	flagModified();
+
+	parent->updateUIMission(false);
+	parent->updateUIBranch(other_idx);
 }
 
 void CampaignEditorDialogModel::setCurLoopAnim(const QString &anim) {

@@ -32,8 +32,6 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget *_parent, EditorViewport *_vi
 
 	connect(ui->lstMissions, &QListView::customContextMenuRequested, this, &CampaignEditorDialog::mnLinkMenu);
 
-	connect(ui->btnBranchUp, &QPushButton::clicked, this, &CampaignEditorDialog::btnBranchUpClicked);
-	connect(ui->btnBranchDown, &QPushButton::clicked, this, &CampaignEditorDialog::btnBranchDownClicked);
 	connect(ui->btnErrorChecker, &QPushButton::clicked, this, &CampaignEditorDialog::btnErrorCheckerClicked);
 	connect(ui->btnFredMission, &QPushButton::clicked, this, [&](){
 		reject();
@@ -96,6 +94,9 @@ void CampaignEditorDialog::setModel(CampaignEditorDialogModel *new_model) {
 	}, Qt::QueuedConnection);
 
 	connect(ui->btnBranchLoop, &QPushButton::toggled, model.get(), &CampaignEditorDialogModel::setCurBrIsLoop);
+	connect(ui->btnBranchUp, &QPushButton::clicked, model.get(), [&](){model->moveCurBr(true);});
+	connect(ui->btnBranchDown, &QPushButton::clicked, model.get(),[&](){model->moveCurBr(false);});
+
 	connect(ui->cmbLoopAnim, &QComboBox::currentTextChanged, model.get(), &CampaignEditorDialogModel::setCurLoopAnim);
 	connect(ui->cmbLoopVoice, &QComboBox::currentTextChanged, model.get(), &CampaignEditorDialogModel::setCurLoopVoice);
 }
@@ -155,20 +156,22 @@ void CampaignEditorDialog::updateUIBranch(int selectedIdx) {
 
 	if (selectedIdx >= 0)
 		model->selectCurBr(ui->sxtBranches->topLevelItem(selectedIdx));
+	else
+		selectedIdx = model->getCurBrIdx();
 
-	bool sel = model->isCurBrSelected();
+	bool sel = selectedIdx >= 0;
 
 	if (sel) {
 		ui->sxtBranches->selectionModel()->select(
 					ui->sxtBranches->model()->index(
-								model->getCurBrIdx(), 0),
+								selectedIdx, 0),
 					QItemSelectionModel::Select);
 	}
 
 	bool loop = model->getCurBrIsLoop();
 
-	ui->btnBranchUp->setEnabled(sel);
-	ui->btnBranchDown->setEnabled(sel);
+	ui->btnBranchUp->setEnabled(selectedIdx > 0);
+	ui->btnBranchDown->setEnabled(sel && selectedIdx + 1 < model->getCurMnBrCnt());
 
 	ui->btnBranchLoop->setEnabled(sel);
 	ui->btnBranchLoop->setChecked(loop);
@@ -298,7 +301,7 @@ void CampaignEditorDialog::mnLinkMenu(const QPoint &pos){
 
 	QMenu *par{ nullptr };
 
-	if (! model->isCurBrSelected()) {
+	if (model->getCurBrIdx() < 0) {
 		menu.addSection(tr("Select a branch to choose conditions!"));
 		menu.addAction("")->setEnabled(false);
 	} else {
@@ -342,14 +345,6 @@ void CampaignEditorDialog::mnLinkMenu(const QPoint &pos){
 		model->selectCurBr(h);
 		ui->sxtBranches->expand_branch(h);
 	}
-}
-
-void CampaignEditorDialog::btnBranchUpClicked() {
-
-}
-
-void CampaignEditorDialog::btnBranchDownClicked() {
-
 }
 
 void CampaignEditorDialog::btnErrorCheckerClicked() {

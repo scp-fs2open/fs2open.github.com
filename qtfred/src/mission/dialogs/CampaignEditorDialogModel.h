@@ -62,6 +62,7 @@ public:
 	inline const QString& getCurMnBriefingCutscene() const { return mnData_it ? mnData_it->briefingCutscene : qstrEmpty; }
 	inline const QString& getCurMnMainhall() const { return mnData_it ? mnData_it->mainhall : qstrEmpty; }
 	inline const QString& getCurMnDebriefingPersona() const { return mnData_it ? mnData_it->debriefingPersona : qstrEmpty; }
+	inline int getCurMnBrCnt() const {return mnData_it ? static_cast<int>(mnData_it->branches.size()) : -1; }
 
 //branch helpers
 private:
@@ -72,8 +73,6 @@ private:
 public:
 	bool fillTree(sexp_tree& sxt) const;
 // Model state getters -- branch
-	inline bool isCurBrSelected() const { return getCurBr(); }
-
 	inline int getCurBrIdx() const { return getCurBr() ? mnData_it->brData_idx : -1; }
 
 	inline bool getCurBrIsLoop() const { return getCurBr() && getCurBr()->loop; }
@@ -143,10 +142,12 @@ public slots:
 	int addCurMnBranchTo(const QModelIndex *other = nullptr, bool flip = false);
 	void delCurMnBranch(int node);
 
-	void selectCurBr(QTreeWidgetItem *selected);
+	void selectCurBr(const QTreeWidgetItem *selected);
 	int setCurBrCond(const QString &sexp, const QString &mn, const QString &arg);
 	bool setCurBrSexp(int sexp);
 	void setCurBrIsLoop(bool isLoop);
+
+	void moveCurBr(bool up);
 
 	void setCurLoopAnim(const QString &anim);
 	void setCurLoopVoice(const QString &voice);
