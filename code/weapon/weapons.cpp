@@ -5429,53 +5429,7 @@ void weapon_process_post(object * obj, float frame_time)
 	}
 	#else
 		weapon_maybe_play_flyby_sound(obj, wp);
-	#endif	
-	
-	//	If our target is still valid, then update some info.
-	if (wp->target_num != -1) {
-		if (Objects[wp->target_num].signature == wp->target_sig) {
-			float		cur_dist;
-			vec3d	v0;
-
-			vm_vec_avg(&v0, &obj->pos, &obj->last_pos);
-
-			cur_dist = vm_vec_dist_quick(&v0, &Objects[wp->target_num].pos);
-
-			if (cur_dist < wp->nearest_dist) {
-				wp->nearest_dist = cur_dist;
-			} else if (cur_dist > wp->nearest_dist + 1.0f) {
-				float		dot;
-				vec3d	tvec;
-				ai_info	*parent_aip;
-
-				parent_aip = NULL;
-				if (obj->parent != Player_obj-Objects) {
-					parent_aip = &Ai_info[Ships[Objects[obj->parent].instance].ai_index];
-				}
-
-				vm_vec_normalized_dir(&tvec, &v0, &Objects[wp->target_num].pos);
-				dot = vm_vec_dot(&tvec, &Objects[wp->target_num].orient.vec.fvec);
-
-				//	Learn!  If over-shooting or under-shooting, compensate.
-				//	Really need to compensate for left/right errors.  This does no good against someone circling
-				//	in a plane perpendicular to the attacker's forward vector.
-				if (parent_aip != NULL) {
-					if (cur_dist > 100.0f)
-						parent_aip->lead_scale = 0.0f;
-
-					if (dot < -0.1f){
-						parent_aip->lead_scale += cur_dist/2000.0f;
-					} else if (dot > 0.1f) {
-						parent_aip->lead_scale -= cur_dist/2000.0f;
-					}
-					
-					if (fl_abs(parent_aip->lead_scale) > 1.0f){
-						parent_aip->lead_scale *= 0.9f;
-					}
-				}
-			}
-		}
-	}
+	#endif
 
 	if(wip->wi_flags[Weapon::Info_Flags::Particle_spew] && wp->lssm_stage != 3 ){
 		weapon_maybe_spew_particle(obj);
@@ -5740,7 +5694,6 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 		if ((target_objnum > -1) && (target_objnum < (MAX_OBJECTS)) && can_lock) {
 			wp->target_num = target_objnum;
 			wp->target_sig = Objects[target_objnum].signature;
-			wp->nearest_dist = 99999.0f;
 			if ( (wip->wi_flags[Weapon::Info_Flags::Homing_aspect]) && target_is_locked) {
 				wp->homing_object = &Objects[target_objnum];
 				wp->homing_subsys = target_subsys;

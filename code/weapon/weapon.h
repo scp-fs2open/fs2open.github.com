@@ -101,7 +101,6 @@ typedef struct weapon {
 
 	int		target_num;						//	Object index of target
 	int		target_sig;						//	So we know if the target is the same one we've been tracking
-	float		nearest_dist;					//	nearest distance yet attained to target
 	fix		creation_time;					//	time at which created, stuffed Missiontime
 	flagset<Weapon::Weapon_Flags> weapon_flags;					//	bit flags defining behavior, see WF_xxxx
 	object*	homing_object;					//	object this weapon is homing on.
