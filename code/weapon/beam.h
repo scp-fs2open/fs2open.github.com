@@ -25,13 +25,14 @@ struct obj_pair;
 struct beam_weapon_info;
 struct vec3d;
 
-// beam types
-#define BEAM_TYPE_A					0				// unidirectional beam
-#define BEAM_TYPE_B					1				// "slash" in one direction
-#define BEAM_TYPE_C					2				// targeting lasers (only lasts one frame)
-#define BEAM_TYPE_D					3				// similar to the type A beams, but takes multiple shots and "chases" fighters around
-#define BEAM_TYPE_E					4				// stupid beam. like type A, only it doesn't aim. it just shoots directly out of the turret
-#define BEAM_TYPE_F					5				// SCP type, highly flexible and configurable
+typedef enum class BeamType {
+	DIRECT_FIRE,	// unidirectional beam
+	SLASHING,		// "slash" in one direction
+	TARGETING,		// targeting lasers (only lasts one frame)
+	ANTIFIGHTER,	// similar to the type A beams, but takes multiple shots and "chases" fighters around
+	NORMAL_FIRE,	// stupid beam. like type A, only it doesn't aim. it just shoots directly out of the turret
+	OMNI			// SCP type, highly flexible and configurable
+} BeamType;
 
 // max # of "shots" an individual beam will take
 #define MAX_BEAM_SHOTS				5
@@ -147,7 +148,7 @@ typedef struct beam {
 	// beam info	
 	int		warmup_stamp;			// timestamp for "warming up"
 	int		warmdown_stamp;		// timestamp for "warming down"
-	int		type;						// see BEAM_TYPE_* defines in beam.h
+	BeamType		type;				// the type of beam, direct-fire, slashing, etc
 	float		life_left;				// in seconds
 	float		life_total;				// total life	
 	// this vector has very special meaning. BEFORE performing collision checks, it basically implies a "direction". meaning
