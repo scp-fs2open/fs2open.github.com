@@ -2767,7 +2767,7 @@ void beam_aim(beam *b)
 		break;
 
 	default:
-		UNREACHABLE("Impossible beam type (%d); get a coder!\n", b->type);
+		UNREACHABLE("Impossible beam type (%d); get a coder!\n", (int)b->type);
 	}
 
 	if (!Weapon_info[b->weapon_info_index].wi_flags[Weapon::Info_Flags::No_collide])
