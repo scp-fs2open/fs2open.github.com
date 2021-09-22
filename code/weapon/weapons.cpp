@@ -2448,7 +2448,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		if(optional_string("+Type:")) {
 			stuff_string(fname, F_NAME, NAME_LENGTH);
 
-				 if (!stricmp(fname, "Direct Fire") || !stricmp(fname, "0")) wip->b_info.beam_type = BeamType::DIRECT_FIRE;
+			if		(!stricmp(fname, "Direct Fire") || !stricmp(fname, "0")) wip->b_info.beam_type = BeamType::DIRECT_FIRE;
 			else if (!stricmp(fname, "Slashing")    || !stricmp(fname, "1")) wip->b_info.beam_type = BeamType::SLASHING;
 			else if (!stricmp(fname, "Targeting")   || !stricmp(fname, "2")) wip->b_info.beam_type = BeamType::TARGETING;
 			else if (!stricmp(fname, "Antifighter") || !stricmp(fname, "3")) wip->b_info.beam_type = BeamType::ANTIFIGHTER;
