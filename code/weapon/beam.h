@@ -26,12 +26,12 @@ struct beam_weapon_info;
 struct vec3d;
 
 typedef enum class BeamType {
-	DIRECT_FIRE,	// unidirectional beam
-	SLASHING,		// "slash" in one direction
-	TARGETING,		// targeting lasers (only lasts one frame)
-	ANTIFIGHTER,	// similar to the type A beams, but takes multiple shots and "chases" fighters around
-	NORMAL_FIRE,	// stupid beam. like type A, only it doesn't aim. it just shoots directly out of the turret
-	OMNI			// SCP type, highly flexible and configurable
+	DIRECT_FIRE,	// unidirectional beam; used to be BEAM_TYPE_A
+	SLASHING,		// "slash" in one direction; used to be BEAM_TYPE_B
+	TARGETING,		// targeting lasers (only lasts one frame); used to be BEAM_TYPE_C
+	ANTIFIGHTER,	// similar to the type A beams, but takes multiple shots and "chases" fighters around; used to be BEAM_TYPE_D
+	NORMAL_FIRE,	// stupid beam. like type A, only it doesn't aim. it just shoots directly out of the turret; used to be BEAM_TYPE_E
+	OMNI			// SCP type, highly flexible and configurable; used to be BEAM_TYPE_F
 } BeamType;
 
 // max # of "shots" an individual beam will take

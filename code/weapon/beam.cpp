@@ -486,18 +486,18 @@ int beam_fire(beam_fire_info *fire_info)
 		new_item->type = BeamType::TARGETING;
 	}
 
-	// if the targeted subsystem is not NULL, force it to be a type A beam
-	if(new_item->target_subsys != nullptr && new_item->type != BeamType::ANTIFIGHTER && new_item->type != BeamType::OMNI){
+	// if the targeted subsystem is not NULL, force it to be a direct fire beam
+	if(new_item->target_subsys != nullptr && new_item->type != BeamType::TARGETING && new_item->type != BeamType::OMNI){
 		new_item->type = BeamType::DIRECT_FIRE;
 	}
 
-	// type D weapons can only fire at small ships and missiles
+	// antifighter beam weapons can only fire at small ships and missiles
 	if(new_item->type == BeamType::ANTIFIGHTER){
 		// if its a targeted ship, get the target ship
 		if((fire_info->target != NULL) && (fire_info->target->type == OBJ_SHIP) && (fire_info->target->instance >= 0)){		
 			ship *target_ship = &Ships[fire_info->target->instance];
 			
-			// maybe force to be a type A
+			// maybe force to be direct fire
 			if(Ship_info[target_ship->ship_info_index].class_type > -1 && (Ship_types[Ship_info[target_ship->ship_info_index].class_type].flags[Ship::Type_Info_Flags::Beams_easily_hit])){
 				new_item->type = BeamType::DIRECT_FIRE;
 			}
@@ -649,7 +649,7 @@ int beam_fire_targeting(fighter_beam_fire_info *fire_info)
 		new_item->beam_light_width = widest;
 	}
 
-	// type c is a very special weapon type - binfo has no meaning
+	// targeting type beams are a very special weapon type - binfo has no meaning
 
 	flagset<Object::Object_Flags> initial_flags;
 	if (!wip->wi_flags[Weapon::Info_Flags::No_collide])
@@ -909,7 +909,7 @@ void beam_type_targeting_move(beam *b)
 		return;
 	}
 
-	// type c beams only last one frame so we never have to "move" them.			
+	// targeting type beams only last one frame so we never have to "move" them.			
 	temp = b->local_fire_postion;
 	vm_vec_unrotate(&b->last_start, &temp, &b->objp->orient);
 	vm_vec_add2(&b->last_start, &b->objp->pos);	
@@ -965,7 +965,7 @@ void beam_type_antifighter_get_status(beam *b, int *shot_index, int *fire_wait)
 	*shot_index = (int)(beam_time / shot_time);
 	
 	if(*shot_index >= b->binfo.shot_count){
-		nprintf(("Beam","Shot of type D beam had bad shot_index value\n"));
+		nprintf(("Beam","Shot of antifighter beam had bad shot_index value\n"));
 		*shot_index = b->binfo.shot_count - 1;
 	}	
 
@@ -1295,7 +1295,7 @@ void beam_move_all_post()
 
 		// increment framecount
 		moveup->framecount++;
-		// type c weapons live for one frame only
+		// targetin type weapons live for one frame only
 		// done firing, so go into the warmdown phase
 		{
 			if((moveup->life_left <= 0.0f) &&
@@ -2104,7 +2104,7 @@ int beam_start_firing(beam *b)
 
 	// any special stuff for each weapon type
 	switch(b->type){
-	// re-aim type A and D beam weapons here, otherwise they tend to miss		
+	// re-aim direct fire and antifighter beam weapons here, otherwise they tend to miss		
 	case BeamType::DIRECT_FIRE:
 	case BeamType::ANTIFIGHTER:
 		beam_aim(b);
@@ -2274,7 +2274,7 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 	}
 	bwi = &Weapon_info[b->weapon_info_index].b_info;
 
-	// stuff num shots even though its only used for type D weapons
+	// stuff num shots even though its only used for antifighter beam weapons
 	b->binfo.shot_count = (ubyte)num_shots;
 	if(b->binfo.shot_count > MAX_BEAM_SHOTS){
 		b->binfo.shot_count = MAX_BEAM_SHOTS;
@@ -2291,12 +2291,12 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 		Assert(b->team >= 0 && b->team < Num_iffs);
 		miss_factor = bwi->beam_iff_miss_factor[b->team][Game_skill_level];
 
-		// all we will do is decide whether or not we will hit - type A beam weapons are re-aimed immediately before firing
+		// all we will do is decide whether or not we will hit - direct fire beam weapons are re-aimed immediately before firing
 		b->binfo.shot_aim[0] = frand_range(0.0f, 1.0f + miss_factor * accuracy);
 		b->binfo.shot_count = 1;
 
 		if (b->flags & BF_TARGETING_COORDS) {
-			// these aren't used for type A beams, so zero them out
+			// these aren't used for direct fire beams, so zero them out
 			vm_vec_zero(&b->binfo.dir_a);
 			vm_vec_zero(&b->binfo.dir_b);
 		} else {
@@ -2609,7 +2609,7 @@ void beam_aim(beam *b)
 	vec3d temp, p2;
 	
 	if (!(b->flags & BF_TARGETING_COORDS)) {
-		// type C beam weapons have no target
+		// targeting type beam weapons have no target
 		if (b->target == NULL) {
 			Assert(b->type == BeamType::TARGETING);
 			if(b->type != BeamType::TARGETING){
@@ -2625,7 +2625,7 @@ void beam_aim(beam *b)
 		}
 	}
 
-	if (b->subsys != nullptr && b->type != BeamType::TARGETING) {	// Type C beams don't use this information.
+	if (b->subsys != nullptr && b->type != BeamType::TARGETING) {	// targeting type beams don't use this information.
 		int temp_int = b->subsys->turret_next_fire_pos;
 
 		if (!(b->flags & BF_IS_FIGHTER_BEAM))
@@ -3936,7 +3936,7 @@ int beam_ok_to_fire(beam *b)
 		return -1;
 	}	
 
-	// type C beams are ok to fire all the time
+	// targeting type beams are ok to fire all the time
 	if (b->type == BeamType::TARGETING) {
 		ship *shipp = &Ships[b->objp->instance];
 
