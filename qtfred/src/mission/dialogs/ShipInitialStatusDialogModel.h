@@ -44,12 +44,9 @@ class ShipInitialStatusDialogModel : public AbstractDialogModel {
 	int m_afterburner_locked;
 	SCP_string m_team_color_setting;
 
-		int ship_has_scannable_subsystems;
+	int ship_has_scannable_subsystems;
 
 	int num_dock_points;
-	// int cur_docker_point;
-	// int cur_dockee;
-	// int cur_dockee_point;
 
 	dockpoint_information* dockpoint_array;
 

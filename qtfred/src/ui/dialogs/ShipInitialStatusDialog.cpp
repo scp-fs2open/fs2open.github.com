@@ -1,5 +1,7 @@
 #include "ShipInitialStatusDialog.h"
 
+#include "globalincs/alphacolors.h"
+
 #include "ui_ShipInitialStatus.h"
 
 #include "object/objectdock.h"
@@ -7,7 +9,6 @@
 #include <globalincs/linklist.h>
 #include <mission/object.h>
 #include <ui/util/SignalBlockers.h>
-#include "globalincs/alphacolors.h"
 
 #include <QCloseEvent>
 
@@ -425,7 +426,8 @@ void ShipInitialStatusDialog::cargoChanged()
 {
 	_model->setCargo(ui->cargoEdit->text().toStdString());
 }
-void ShipInitialStatusDialog::colourChanged(int index) {
+void ShipInitialStatusDialog::colourChanged(int index)
+{
 	_model->setColour(ui->colourComboBox->itemText(index).toStdString());
 }
 } // namespace dialogs
