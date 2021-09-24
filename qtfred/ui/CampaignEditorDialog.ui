@@ -353,65 +353,6 @@
               </property>
              </widget>
             </item>
-            <item>
-             <layout class="QVBoxLayout" name="branchControls">
-              <item>
-               <widget class="QGroupBox" name="branchOptions">
-                <property name="title">
-                 <string>Branch Options</string>
-                </property>
-                <layout class="QVBoxLayout" name="verticalLayout">
-                 <item>
-                  <widget class="QPushButton" name="btnBranchUp">
-                   <property name="enabled">
-                    <bool>false</bool>
-                   </property>
-                   <property name="text">
-                    <string>Move Up</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QPushButton" name="btnBranchDown">
-                   <property name="enabled">
-                    <bool>false</bool>
-                   </property>
-                   <property name="text">
-                    <string>Move Down</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QPushButton" name="btnBranchLoop">
-                   <property name="enabled">
-                    <bool>false</bool>
-                   </property>
-                   <property name="text">
-                    <string>Toggle Loop</string>
-                   </property>
-                   <property name="checkable">
-                    <bool>true</bool>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <spacer name="spaceBranchOptions">
-                   <property name="orientation">
-                    <enum>Qt::Vertical</enum>
-                   </property>
-                   <property name="sizeHint" stdset="0">
-                    <size>
-                     <width>20</width>
-                     <height>40</height>
-                    </size>
-                   </property>
-                  </spacer>
-                 </item>
-                </layout>
-               </widget>
-              </item>
-             </layout>
-            </item>
            </layout>
           </widget>
          </item>
@@ -498,8 +439,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>535</width>
-            <height>880</height>
+            <width>597</width>
+            <height>883</height>
            </rect>
           </property>
          </widget>
@@ -554,9 +495,6 @@
  </customwidgets>
  <tabstops>
   <tabstop>lstMissions</tabstop>
-  <tabstop>btnBranchUp</tabstop>
-  <tabstop>btnBranchDown</tabstop>
-  <tabstop>btnBranchLoop</tabstop>
   <tabstop>scrFlowCampaign</tabstop>
  </tabstops>
  <resources/>

@@ -120,6 +120,8 @@ class SexpTreeEditorInterface {
 	const flagset<TreeFlags>& getFlags() const;
 
 	virtual bool requireCampaignOperators() const;
+
+	virtual QList<QAction *> getContextMenuExtras(QObject *parent = nullptr);
 };
 
 /*

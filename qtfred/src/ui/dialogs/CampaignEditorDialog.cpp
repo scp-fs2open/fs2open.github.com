@@ -93,10 +93,6 @@ void CampaignEditorDialog::setModel(CampaignEditorDialogModel *new_model) {
 							ui->sxtBranches->get_root(node)));
 	}, Qt::QueuedConnection);
 
-	connect(ui->btnBranchLoop, &QPushButton::toggled, model.get(), &CampaignEditorDialogModel::setCurBrIsLoop);
-	connect(ui->btnBranchUp, &QPushButton::clicked, model.get(), [&](){model->moveCurBr(true);});
-	connect(ui->btnBranchDown, &QPushButton::clicked, model.get(),[&](){model->moveCurBr(false);});
-
 	connect(ui->cmbLoopAnim, &QComboBox::currentTextChanged, model.get(), &CampaignEditorDialogModel::setCurLoopAnim);
 	connect(ui->cmbLoopVoice, &QComboBox::currentTextChanged, model.get(), &CampaignEditorDialogModel::setCurLoopVoice);
 }
@@ -169,12 +165,6 @@ void CampaignEditorDialog::updateUIBranch(int selectedIdx) {
 	}
 
 	bool loop = model->getCurBrIsLoop();
-
-	ui->btnBranchUp->setEnabled(selectedIdx > 0);
-	ui->btnBranchDown->setEnabled(sel && selectedIdx + 1 < model->getCurMnBrCnt());
-
-	ui->btnBranchLoop->setEnabled(sel);
-	ui->btnBranchLoop->setChecked(loop);
 
 	model->supplySubModelLoop(*ui->txaLoopDescr);
 	ui->txaLoopDescr->setEnabled(loop);

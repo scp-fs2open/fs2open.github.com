@@ -46,6 +46,8 @@ public:
 
 	bool requireCampaignOperators() const override {return true;}
 
+	QList<QAction *> getContextMenuExtras(QObject *parent = nullptr) override;
+
 // Model state getters
 	inline bool isFileLoaded() const { return ! campaignFile.isEmpty(); }
 

@@ -180,6 +180,30 @@ QStringList CampaignEditorDialogModel::getMissionNames() {
 	return ret;
 }
 
+QList<QAction *> CampaignEditorDialogModel::getContextMenuExtras(QObject *menu_parent) {
+	QList<QAction *> ret{};
+
+	int curBrIdx = getCurBrIdx();
+	QAction *moveUpAct{new QAction{tr("Move Up"), menu_parent}};
+	moveUpAct->setEnabled(curBrIdx > 0);
+	connect(moveUpAct, &QAction::triggered, this, [this](){moveCurBr(true);});
+	ret << moveUpAct;
+
+	QAction *moveDownAct{new QAction{tr("Move Down"), menu_parent}};
+	moveDownAct->setEnabled(curBrIdx >= 0 && curBrIdx + 1 < getCurMnBrCnt());
+	connect(moveDownAct, &QAction::triggered, this, [this](){moveCurBr(false);});
+	ret << moveDownAct;
+
+	QAction *toggleLoopAct{new QAction{tr("Toggle Loop"), menu_parent}};
+	toggleLoopAct->setEnabled(curBrIdx >= 0);
+	toggleLoopAct->setCheckable(true);
+	toggleLoopAct->setChecked(getCurBrIsLoop());
+	connect(toggleLoopAct, &QAction::toggled, this, &CampaignEditorDialogModel::setCurBrIsLoop);
+	ret << toggleLoopAct;
+
+	return ret;
+}
+
 int CampaignEditorDialogModel::getCampaignNumPlayers() const {
 	if (campaignType == campaignTypes[0])
 		return 0;

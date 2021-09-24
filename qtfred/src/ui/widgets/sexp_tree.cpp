@@ -190,6 +190,9 @@ int SexpTreeEditorInterface::getRootReturnType() const {
 bool SexpTreeEditorInterface::requireCampaignOperators() const {
 	return false;
 }
+QList<QAction *> SexpTreeEditorInterface::getContextMenuExtras(QObject */*parent*/) {
+	return QList<QAction *>();
+}
 SexpTreeEditorInterface::~SexpTreeEditorInterface() = default;
 
 QIcon sexp_tree::convertNodeImageToIcon(NodeImage image) {
@@ -4860,6 +4863,17 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 	auto modify_variable_act = popup_menu->addAction(tr("Modify Variable"), this, []() {});
 
 	auto replace_variable_menu = popup_menu->addMenu(tr("Replace Variable"));
+
+	if (_interface) {
+		auto extra_acts = _interface->getContextMenuExtras(popup_menu.get());
+		if (! extra_acts.isEmpty()) {
+			popup_menu->addSection("Special Actions");
+
+			for (QAction *act : extra_acts) {
+				popup_menu->addAction(act);
+			}
+		}
+	}
 
 	update_help(h);
 	//SelectDropTarget(h);  // WTF: Why was this here???
