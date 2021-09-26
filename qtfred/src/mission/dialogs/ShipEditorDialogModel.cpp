@@ -108,12 +108,7 @@ namespace fso {
 				}
 
 				total_count = ship_count + player_count;  // get total number of objects being edited.
-				if (total_count > 1) {
-					multi_edit = 1;
-				}
-				else {
-					multi_edit = 0;
-				}
+				multi_edit = (total_count > 1);
 
 				_m_arrival_tree_formula = _m_departure_tree_formula = -1;
 				_m_arrival_location = -1;
@@ -136,7 +131,7 @@ namespace fso {
 						_m_ship_name = "";
 					}
 
-					_m_update_arrival = _m_update_departure = 1;
+					_m_update_arrival = _m_update_departure = true;
 
 					base_player = 0;
 					objp = GET_FIRST(&obj_used_list);
@@ -208,12 +203,12 @@ namespace fso {
 
 											if (!cmp_sexp_chains(_m_arrival_tree_formula, Ships[i].arrival_cue)) {
 												_m_arrival_tree_formula = -1;
-												_m_update_arrival = 0;
+												_m_update_arrival = false;
 											}
 
 											if (!cmp_sexp_chains(_m_departure_tree_formula, Ships[i].departure_cue)) {
 												_m_departure_tree_formula = -1;
-												_m_update_departure = 0;
+												_m_update_departure = false;
 											}
 
 											if (Ships[i].departure_anchor != _m_departure_target) {
@@ -728,7 +723,7 @@ namespace fso {
 					Objects[Ships[ship].objnum].type = OBJ_SHIP;
 				}
 				_editor->missionChanged();
-				return 0;
+				return false;
 			}
 			void ShipEditorDialogModel::ship_alt_name_close(int ship)
 			{

@@ -102,7 +102,7 @@ ShipGoalsDialog::ShipGoalsDialog(QWidget* parent, EditorViewport* viewport, bool
 	resize(QDialog::sizeHint());
 }
 
-ShipGoalsDialog::~ShipGoalsDialog() {}
+ShipGoalsDialog::~ShipGoalsDialog() = default;
 
 void ShipGoalsDialog::closeEvent(QCloseEvent* event)
 {
@@ -152,7 +152,8 @@ void ShipGoalsDialog::updateUI()
 			subsys[i]->setEnabled(false);
 			docks[i]->setEnabled(false);
 			priority[i]->setEnabled(false);
-			_model->setSubsys(i, "");
+			SCP_string blank;
+			_model->setSubsys(i, blank);
 			_model->setDock(i, -1);
 		} else if ((mode == AI_GOAL_CHASE_ANY) || (mode == AI_GOAL_UNDOCK) || (mode == AI_GOAL_KEEP_SAFE_DISTANCE) ||
 				   (mode == AI_GOAL_PLAY_DEAD) || (mode == AI_GOAL_PLAY_DEAD_PERSISTENT) || (mode == AI_GOAL_WARP)) {
@@ -160,7 +161,8 @@ void ShipGoalsDialog::updateUI()
 			objects[i]->setEnabled(false);
 			subsys[i]->setEnabled(false);
 			docks[i]->setEnabled(false);
-			_model->setSubsys(i, "");
+			SCP_string blank;
+			_model->setSubsys(i, blank);
 			_model->setDock(i, -1);
 			priority[i]->setValue(_model->getPriority(i));
 		} else {
@@ -237,8 +239,9 @@ void ShipGoalsDialog::updateUI()
 
 						Assert(inst >= 0 && inst < MAX_SHIPS);
 						// remove all marked ships from list
-						if ((_model->getGoal() != nullptr) && (ptr->flags[Object::Object_Flags::Marked]))
+						if ((_model->getGoal() != nullptr) && (ptr->flags[Object::Object_Flags::Marked])) {
 							inst = -1;
+						}
 
 						// when docking, remove invalid dock targets
 						else if (mode == AI_GOAL_DOCK) {
@@ -292,7 +295,7 @@ void ShipGoalsDialog::updateUI()
 						QVariant(QString(cur_subsys->system_info->subobj_name)));
 					cur_subsys = GET_NEXT(cur_subsys);
 				}
-				if (subsysvalue == "") {
+				if (subsysvalue.empty()) {
 					subsys[i]->setCurrentIndex(0);
 				}
 				else {
@@ -329,7 +332,8 @@ void ShipGoalsDialog::updateUI()
 				subsys[i]->setEnabled(false);
 				docks[i]->setEnabled(false);
 				_model->setDock(i, -1);
-				_model->setSubsys(i, "");
+				SCP_string blank;
+				_model->setSubsys(i, blank);
 				priority[i]->setEnabled(true);
 				priority[i]->setValue(_model->getPriority(i));
 

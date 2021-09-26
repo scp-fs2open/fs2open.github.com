@@ -21,7 +21,7 @@ constexpr auto MAX_VALID = 99;
 
 class ShipGoalsDialogModel : public AbstractDialogModel {
   private:
-	int Ai_goal_list_size = _editor->getAigoal_list_size();
+	int Ai_goal_list_size = Editor::getAigoal_list_size();
 	void initializeData();
 	void initialize(ai_goal* goals, int ship);
 	void initialize_multi();
@@ -65,7 +65,7 @@ class ShipGoalsDialogModel : public AbstractDialogModel {
 	 ai_goal* getGoal();
 
 	 int getValid(int);
-	 const ai_goal_list* getGoalTypes();
+	 static const ai_goal_list* getGoalTypes();
 	 int getGoalsSize();
 
 	void setBehavior(int, int);
@@ -74,7 +74,7 @@ class ShipGoalsDialogModel : public AbstractDialogModel {
 	void setObject(int, int);
 	int getObject(int);
 
-	void setSubsys(int, SCP_string);
+	void setSubsys(int, SCP_string&);
 	SCP_string getSubsys(int);
 
 	void setDock(int, long long);
