@@ -833,6 +833,8 @@ const char* Joy_button_text_english[] = {
 const char **Scan_code_text = Scan_code_text_english;
 const char **Joy_button_text = Joy_button_text_english;
 
+const int BTN_MSG_LEN = 40;	//! Max length of textified keys and buttons.  Used in key/button translation functions
+
 int translate_key_to_index(const char *key, bool find_override)
 {
 	unsigned int max_scan_codes;
@@ -905,11 +907,11 @@ int translate_key_to_index(const char *key, bool find_override)
 const char *translate_key(char *key)
 {
 	int index = -1;
-	SCP_string retval;
+	static char text[BTN_MSG_LEN] = {""};
 
 	index = translate_key_to_index(key, false);
 	if (index < 0) {
-		return NULL;
+		return nullptr;
 	}
 
 	const CC_bind &first = Control_config[index].first;
@@ -918,24 +920,26 @@ const char *translate_key(char *key)
 	Failed_key_index = index;
 
 	if (!first.empty() && !second.empty()) {
-		retval = first.textify() + " or " + second.textify();
+		strcpy_s(text, first.textify().c_str());
+		strcat_s(text, " or ");
+		strcat_s(text, second.textify().c_str());
 
 	} else if (!first.empty()) {
-		retval = first.textify();
+		strcpy_s(text, first.textify().c_str());
 
 	} else if (!second.empty()) {
-		retval = second.textify();
+		strcpy_s(text, second.textify().c_str());
 
 	} else {
-		retval = "None";
+			strcpy_s(text, "None");
 	}
 
-	return retval.c_str();
+	return text;
 }
 
 const char *textify_scancode(int code)
 {
-	static char text[40];
+	static char text[BTN_MSG_LEN];
 
 	if (code < 0)
 		return "None";
@@ -974,7 +978,7 @@ const char *textify_scancode_universal(int code)
 
 	int keycode = code & KEY_MASK;
 
-	static char text[40];
+	static char text[BTN_MSG_LEN];
 	*text = 0;
 	if (code & KEY_ALTED && !(keycode == KEY_LALT || keycode == KEY_RALT)) {
 		strcat_s(text, "Alt-");

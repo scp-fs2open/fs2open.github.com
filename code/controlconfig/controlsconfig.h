@@ -696,10 +696,13 @@ void control_config_use_preset(CC_preset &preset);
 SCP_vector<CC_preset>::iterator control_config_get_current_preset();
 
 /*!
- * Returns the IoActionId of a control bound to the given key
+ * Returns the IoActionId (index within Control_config[]) of a control bound to the given key
  *
- * @param[in] key           The key combo to look for
- * @param[in] find_override If true, return the IoActionId of a control that has this key as its default
+ * @param[in]   key           The key combo to look for
+ * @param[in]   find_override If true, return the IoActionId of a control that has this key as its default
+ *
+ * @return  -1 if the given key is NULL or not bound.
+ *
  * @details If find_override is set to true, then this returns the index of the action
  */
 int translate_key_to_index(const char *key, bool find_override=true);
@@ -708,33 +711,42 @@ int translate_key_to_index(const char *key, bool find_override=true);
 /*!
  * @brief Given the system default key 'key', return the current control input(s) that is bound to that function.
  *
- * @param[in] key  The default key combo (as cstring) to a certain control
+ * @param[in]   key     The default key combo (as cstring) to a certain control
  *
- * @return The key combo (as cstring) currently bound to the control, or
- * @return NULL if the given key is not a system default key, or
- * @return "None" if there is nothing bound to the control
+ * @return  The key combo (as cstring) currently bound to the control, or
+ * @return  nullptr if the given key is not a system default key, or
+ * @return  "None" if there is nothing bound to the control
  *
  * @details Both the 'key' and the return value are descriptive strings that can be displayed
  * directly to the user.  If 'key' isn't a real key, is not normally bound to anything,
- * or there is no key currently bound to the function, NULL is returned.
+ * or there is no key currently bound to the function, nullptr is returned.
+ *
+ * @note Not thread safe.  Has an internal buffer for the return value which is overwritten on each call.
+ *
+ * @note Uses CC_bind::textify for translations
  */
 const char *translate_key(char *key);
 
 /**
  * @brief Converts the specified key code to a human readable string
  *
- * @note The returned value is localized to the current language
+ * @param[in]   code    The key code to convert
  *
- * @param code The key code to convert
- * @return The text representation of the code. The returned value is stored in a temporary location, copy it to your
- * own buffer if you want to continue using it.
+ * @return  The text representation of the code.
+ *
+ * @note Not thread safe.  Has an internal buffer for the return value which is overwritten on each call.
+ *
+ * @note The return value is translated according to localization settings
  */
 const char *textify_scancode(int code);
 
 /**
- * @note Same as textify_scancode but always returns the same value regardless of current language
- * @param code The key code to convert
- * @return The name of the key
+ * @note Same as textify_scancode but always returns the default value (English) regardless of current language
+ *
+ * @param[in]   code    The key code to convert
+ *
+ * @return  The name of the key
+ *
  * @see textify_scancode
  */
 const char *textify_scancode_universal(int code);
