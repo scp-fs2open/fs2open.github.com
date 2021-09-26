@@ -181,8 +181,8 @@ class Editor : public QObject {
 	static void pad_with_newline(SCP_string& str, size_t max_size);
 
 	const ai_goal_list* getAi_goal_list();
-	const int getAigoal_list_size();
-	char* error_check_initial_orders(ai_goal* goals, int ship, int wing);
+	int getAigoal_list_size();
+	const char* error_check_initial_orders(ai_goal* goals, int ship, int wing);
   private:
 	void clearMission();
 

@@ -75,24 +75,24 @@ ShipGoalsDialog::ShipGoalsDialog(QWidget* parent, EditorViewport* viewport, bool
 	connect(_model.get(), &AbstractDialogModel::modelChanged, this, &ShipGoalsDialog::updateUI);
 	for (int i = 0; i < ED_MAX_GOALS; i++) {
 		connect(behaviors[i], QOverload<int>::of(&QComboBox::currentIndexChanged), [=](int index) {
-			int data = behaviors[i]->itemData(index).value<int>();
-			_model->setBehavior(i, data);
+			int datap = behaviors[i]->itemData(index).value<int>();
+			_model->setBehavior(i, datap);
 		});
 		connect(objects[i], QOverload<int>::of(&QComboBox::currentIndexChanged), [=](int index) {
-			int data = objects[i]->itemData(index).value<int>();
-			_model->setObject(i, data);
+			int datap = objects[i]->itemData(index).value<int>();
+			_model->setObject(i, datap);
 		});
 		connect(subsys[i], QOverload<int>::of(&QComboBox::currentIndexChanged), [=](int index) {
-			auto data = subsys[i]->itemData(index).value<QString>().toStdString();
-			_model->setSubsys(i, data);
+			auto datap = subsys[i]->itemData(index).value<QString>().toStdString();
+			_model->setSubsys(i, datap);
 		});
 		connect(docks[i], QOverload<int>::of(&QComboBox::currentIndexChanged), [=](int index) {
-			int data = docks[i]->itemData(index).value<int>();
-			_model->setDock(i, data);
+			int datap = docks[i]->itemData(index).value<int>();
+			_model->setDock(i, datap);
 		});
-		connect(priority[i], QOverload<int>::of(&QSpinBox::valueChanged), [=](int index) {
-			int data = priority[i]->value();
-			_model->setPriority(i, data);
+		connect(priority[i], QOverload<int>::of(&QSpinBox::valueChanged), [=]() {
+			int datap = priority[i]->value();
+			_model->setPriority(i, datap);
 		});
 	}
 
@@ -188,7 +188,7 @@ void ShipGoalsDialog::updateUI()
 					if (ptr->type == OBJ_WAYPOINT) {
 						objects[i]->addItem(object_name(OBJ_INDEX(ptr)), QVariant(int(OBJ_INDEX(ptr) | TYPE_WAYPOINT)));
 						if ((_model->getObject(i) == (OBJ_INDEX(ptr) | TYPE_WAYPOINT)))
-							objects[i]->setCurrentIndex(j);
+							objects[i]->setCurrentIndex(objects[i]->findData(QVariant(int(OBJ_INDEX(ptr) | TYPE_WAYPOINT))));
 					}
 
 					ptr = GET_NEXT(ptr);
@@ -306,19 +306,19 @@ void ShipGoalsDialog::updateUI()
 					Ship_info[Ships[_viewport->editor->cur_ship].ship_info_index].model_num);
 				subsys[i]->setEnabled(true);
 				subsys[i]->clear();
-				auto value = _model->getSubsys(i);
+				auto subsysvalue = _model->getSubsys(i);
 				int j;
-				for (j = 0; j < docklist.size(); j++) {
+				for (j = 0; unsigned(j) < docklist.size(); j++) {
 					subsys[i]->addItem(docklist[j].c_str(), QVariant(QString(docklist[j].c_str())));
 				}
-				subsys[i]->setCurrentIndex(subsys[i]->findData(value.c_str()));
+				subsys[i]->setCurrentIndex(subsys[i]->findData(subsysvalue.c_str()));
 
 				docklist = _viewport->editor->get_docking_list(
 					Ship_info[Ships[_model->getDock(i) & DATA_MASK].ship_info_index].model_num);
 				docks[i]->setEnabled(true);
 				auto dockvalue = _model->getDock(i);
 				docks[i]->clear();
-				for (j = 0; j < docklist.size(); j++) {
+				for (j = 0; unsigned(j) < docklist.size(); j++) {
 					docks[i]->addItem(docklist[j].c_str(), QVariant(QString(docklist[j].c_str())));
 				}
 				docks[i]->setCurrentIndex(docks[i]->findData(dockvalue));

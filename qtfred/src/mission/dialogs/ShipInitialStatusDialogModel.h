@@ -13,7 +13,7 @@ typedef struct dockpoint_information {
 } dockpoint_information;
 constexpr auto BLANKFIELD = 101;
 void initial_status_mark_dock_leader_helper(object* objp, dock_function_info* infop, EditorViewport*);
-void initial_status_unmark_dock_handled_flag(object* objp, dock_function_info* infop, EditorViewport*);
+void initial_status_unmark_dock_handled_flag(object* objp);
 void reset_arrival_to_false(int shipnum, bool reset_wing, EditorViewport*);
 bool set_cue_to_false(int* cue);
 class ShipInitialStatusDialogModel : public AbstractDialogModel {
@@ -50,10 +50,6 @@ class ShipInitialStatusDialogModel : public AbstractDialogModel {
 
 	dockpoint_information* dockpoint_array;
 
-	bool vchanged;
-	bool schanged;
-	bool hchanged;
-
 	void set_modified();
 
 	void update_docking_info();
@@ -62,9 +58,16 @@ class ShipInitialStatusDialogModel : public AbstractDialogModel {
 	void dock_evaluate_all_docked_objects(object* objp,
 		dock_function_info* infop,
 		void (*function)(object*, dock_function_info*, EditorViewport*));
+	void dock_evaluate_all_docked_objects(object* objp,
+		dock_function_info* infop,
+		void (*function)(object*));
 	void dock_evaluate_tree(object* objp,
 		dock_function_info* infop,
 		void (*function)(object*, dock_function_info*, EditorViewport*),
+		ubyte* visited_bitstring);
+	void dock_evaluate_tree(object* objp,
+		dock_function_info* infop,
+		void (*function)(object*),
 		ubyte* visited_bitstring);
 
   public:
@@ -72,43 +75,43 @@ class ShipInitialStatusDialogModel : public AbstractDialogModel {
 
 	bool apply() override;
 	void reject() override;
-	const bool query_modified();
+	 bool query_modified();
 
 	void setVelocity(int);
-	const int getVelocity();
+	 int getVelocity();
 
 	void setHull(int);
-	const int getHull();
+	 int getHull();
 
 	void setHasShield(int);
 	int getHasShield();
 
 	void setShieldHull(int);
-	const int getShieldHull();
+	 int getShieldHull();
 
 	void setForceShield(int);
-	const int getForceShield();
+	 int getForceShield();
 
 	void setShipLocked(int);
-	const int getShipLocked();
+	 int getShipLocked();
 
 	void setWeaponLocked(int);
-	const int getWeaponLocked();
+	 int getWeaponLocked();
 
 	void setPrimariesDisabled(int);
-	const int getPrimariesDisabled();
+	 int getPrimariesDisabled();
 
 	void setSecondariesDisabled(int);
-	const int getSecondariesDisabled();
+	 int getSecondariesDisabled();
 
 	void setTurretsDisabled(int);
-	const int getTurretsDisabled();
+	 int getTurretsDisabled();
 
 	void setAfterburnerDisabled(int);
-	const int getAfterburnerDisabled();
+	 int getAfterburnerDisabled();
 
 	void setDamage(int);
-	const int getDamage();
+	 int getDamage();
 
 	SCP_string getCargo();
 	void setCargo(const SCP_string&);
@@ -121,10 +124,10 @@ class ShipInitialStatusDialogModel : public AbstractDialogModel {
 
 	void change_subsys(int);
 
-	const int getShip();
-	const int getnum_dock_points();
-	const int getShip_has_scannable_subsystems();
-	const dockpoint_information* getdockpoint_array();
+	 int getShip();
+	 int getnum_dock_points();
+	 int getShip_has_scannable_subsystems();
+	 dockpoint_information* getdockpoint_array();
 	void setDockee(int, int);
 	void setDockeePoint(int, int);
 };
