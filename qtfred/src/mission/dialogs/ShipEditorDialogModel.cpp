@@ -836,6 +836,7 @@ namespace fso {
 					}
 					ptr = GET_NEXT(ptr);
 				}
+				modify(_m_ship_class, m_ship_class);
 				_editor->missionChanged();
 			}
 
