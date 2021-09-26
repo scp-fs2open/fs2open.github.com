@@ -29,8 +29,7 @@ ShipEditorDialog::ShipEditorDialog(FredView* parent, EditorViewport* viewport)
 	connect(viewport->editor, &Editor::objectMarkingChanged, _model.get(), &ShipEditorDialogModel::apply);
 
 	// Column One
-	connect(ui->shipNameEdit,
-		static_cast<void (QLineEdit::*)(const QString&)>(&QLineEdit::textChanged),
+	connect(ui->shipNameEdit,(&QLineEdit::editingFinished),
 		this,
 		&ShipEditorDialog::shipNameChanged);
 
@@ -50,14 +49,20 @@ ShipEditorDialog::ShipEditorDialog(FredView* parent, EditorViewport* viewport)
 	connect(ui->cargoCombo->lineEdit(), (&QLineEdit::editingFinished), this, &ShipEditorDialog::cargoChanged);
 
 	// ui->cargoCombo->installEventFilter(this);
+	connect(ui->altNameCombo->lineEdit(), (&QLineEdit::editingFinished),
+		this,
+		qOverload<>(&ShipEditorDialog::altNameChanged));
 	connect(ui->altNameCombo,
-		static_cast<void (QComboBox::*)(const QString&)>(&QComboBox::editTextChanged),
+		static_cast<void (QComboBox::*)(const QString&)>(&QComboBox::currentIndexChanged),
 		this,
-		&ShipEditorDialog::altNameChanged);
+		qOverload<>(&ShipEditorDialog::altNameChanged));
 	connect(ui->callsignCombo,
-		static_cast<void (QComboBox::*)(const QString&)>(&QComboBox::editTextChanged),
+		static_cast<void (QComboBox::*)(const QString&)>(&QComboBox::currentIndexChanged),
 		this,
-		&ShipEditorDialog::callsignChanged);
+		qOverload<>(&ShipEditorDialog::callsignChanged));
+	connect(ui->callsignCombo->lineEdit(), (&QLineEdit::editingFinished),
+		this,
+		qOverload<>(&ShipEditorDialog::callsignChanged));
 
 	// Column Two
 	connect(ui->hotkeyCombo,
@@ -602,7 +607,7 @@ void ShipEditorDialog::enableDisable()
 	}
 }
 
-void ShipEditorDialog::shipNameChanged(const QString& string) { _model->setShipName(string.toStdString()); }
+void ShipEditorDialog::shipNameChanged() { _model->setShipName(ui->shipNameEdit->text().toStdString()); }
 void ShipEditorDialog::shipClassChanged(int index)
 {
 	auto shipClassIdx = ui->shipClassCombo->itemData(index).value<int>();
@@ -619,7 +624,15 @@ void ShipEditorDialog::teamChanged(int index)
 	_model->setTeam(teamIdx);
 }
 void ShipEditorDialog::cargoChanged() { _model->setCargo(ui->cargoCombo->currentText().toStdString()); }
+void ShipEditorDialog::altNameChanged()
+{
+	_model->setAltName(ui->altNameCombo->lineEdit()->text().toStdString());
+}
 void ShipEditorDialog::altNameChanged(const QString& value) { _model->setAltName(value.toStdString()); }
+void ShipEditorDialog::callsignChanged()
+{
+	_model->setCallsign(ui->callsignCombo->lineEdit()->text().toStdString());
+}
 void ShipEditorDialog::callsignChanged(const QString& value) { _model->setCallsign(value.toStdString()); }
 void ShipEditorDialog::hotkeyChanged(int index)
 {

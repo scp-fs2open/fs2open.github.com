@@ -18,7 +18,6 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	void modify(T& a, const T& b);
 
 	bool _modified = false;
-
 	bool _m_no_departure_warp;
 	bool _m_no_arrival_warp;
 	bool _m_player_ship;
@@ -64,7 +63,6 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 
 	bool apply() override;
 	void reject() override;
-	void onSelectedObjectMarkingChanged(int, bool);
 
 	void setShipName(const SCP_string& m_ship_name);
 	SCP_string getShipName();
@@ -149,20 +147,26 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 
 	static bool wing_is_player_wing(int);
 
-	bool enable;
-	bool p_enable;
-	int select_sexp_node;
+	bool enable = true;
+	//bool p_enable;
+	//int type;
+	//int base_player;
+	//int select_sexp_node;
 	int player_count;
 	int ship_count;
+	//int escort_count;
 	bool multi_edit;
-	int base_ship;
+	//int base_ship;
 	int cue_init;
 	int total_count;
 	int pvalid_count;
 	int pship_count; // a total count of the player ships not marked
-	int player_ship, single_ship;
+	int single_ship;
+	int player_ship;
 	int ship_orders;
 	static int tristate_set(int val, int cur_state);
+
+	//int pship, current_orders;
 };
 
 template <typename T>
@@ -171,6 +175,7 @@ inline void ShipEditorDialogModel::modify(T& a, const T& b)
 	if (a != b) {
 		a = b;
 		set_modified();
+		update_data();
 		modelChanged();
 	}
 }
