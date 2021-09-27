@@ -27,6 +27,7 @@
 #include <globalincs/linklist.h>
 #include <ui/dialogs/SelectionDialog.h>
 #include <ui/dialogs/FictionViewerDialog.h>
+#include <ui/dialogs/CommandBriefingDialog.h>
 #include <iff_defs/iff_defs.h>
 
 #include "mission/Editor.h"
@@ -698,6 +699,10 @@ void FredView::on_actionShips_triggered(bool)
 }
 void FredView::on_actionObjects_triggered(bool) {
 	orientEditorTriggered();
+}
+void FredView::on_actionCommand_Briefing_triggered(bool) {
+	auto editorDialog = new dialogs::CommandBriefingDialog(this, _viewport);
+	editorDialog->show();
 }
 DialogButton FredView::showButtonDialog(DialogType type,
 										const SCP_string& title,

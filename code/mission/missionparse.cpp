@@ -1528,11 +1528,6 @@ void parse_briefing(mission * /*pm*/, int flags)
 						else if (bi->type == ICON_CRUISER_WING)
 							bi->type = ICON_LARGESHIP_WING;
 					}
-					// the Demon is a support ship :p
-					else if (!strnicmp(Ship_info[bi->ship_class].name, "SD Demon", 8))
-					{
-						bi->type = ICON_SUPPORT_SHIP;
-					}
 					// the Hades is a supercap
 					else if (!strnicmp(Ship_info[bi->ship_class].name, "GTD Hades", 9))
 					{
@@ -2457,14 +2452,6 @@ int parse_create_object_sub(p_object *p_objp)
 			Script_system.SetHookObjects(2, "Ship", &Objects[objnum], "Parent", anchor_objp);
 			Script_system.RunCondition(CHA_ONSHIPARRIVE, &Objects[objnum]);
 			Script_system.RemHookVars({"Ship", "Parent"});
-		}
-
-		if (Ship_info[shipp->ship_info_index].is_big_or_huge() && !brought_in_docked_wing) {
-			float mission_time = f2fl(Missiontime);
-			int minutes = (int)(mission_time / 60);
-			int seconds = (int)mission_time % 60;
-
-			mprintf(("%s arrived at %02d:%02d\n", shipp->ship_name, minutes, seconds));
 		}
 	}
 

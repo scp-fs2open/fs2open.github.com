@@ -755,7 +755,7 @@ void parse_shockwave_info(shockwave_create_info *sci, const char *pre_char)
 		stuff_float_list(angs, 3);
 		for(int i = 0; i < 3; i++)
 		{
-			angs[i] = angs[i] * (PI2/180.0f);
+			angs[i] = fl_radians(angs[i]);
 			while(angs[i] < 0)
 			{
 				angs[i] += PI2;
@@ -7089,11 +7089,6 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 	if (sci->inner_rad != 0.0f || sci->outer_rad != 0.0f)
 	{
 		if(sci->speed > 0.0f) {
-			if (!sci->rot_defined) {
-				sci->rot_angles.p = frand_range(0.0f, PI2);
-				sci->rot_angles.b = frand_range(0.0f, PI2);
-				sci->rot_angles.h = frand_range(0.0f, PI2);
-			}
 			shockwave_create(OBJ_INDEX(weapon_obj), hitpos, sci, sw_flag, -1);
 		}
 		else {

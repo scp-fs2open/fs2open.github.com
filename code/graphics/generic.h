@@ -89,5 +89,5 @@ int generic_anim_stream(generic_anim *ga, const bool cache = true);
 int generic_bitmap_load(generic_bitmap *gb);
 void generic_anim_unload(generic_anim *ga);
 void generic_anim_render(generic_anim *ga, float frametime, int x, int y, bool menu = false, const generic_extras *ge = nullptr);
-
+void generic_anim_reset(generic_anim *ga);
 #endif

@@ -99,24 +99,6 @@ void hud_set_wingman_status_alive( int wing_index, int wing_pos)
 	HUD_wingman_status[wing_index].status[wing_pos] = HUD_WINGMAN_STATUS_ALIVE;
 }
 
-void hud_wingman_status_init_late_wings()
-{
-/*
-	int i, j, wing_index;
-
-	for ( i = 0; i < Num_wings; i++ ) {
-		wing_index = ship_squadron_wing_lookup(Wings[i].name);
-
-		if ( (wing_index >= 0) && (Wings[i].total_arrived_count == 0) ) {
-			HUD_wingman_status[wing_index].used = 1;
-			for (j = 0; j < Wings[i].wave_count; j++) {
-				HUD_wingman_status[wing_index].status[j] = HUD_WINGMAN_STATUS_NOT_HERE;
-			}
-		}
-	}
-*/
-}
-
 // function which marks the other team wing as not used for the wingman status gauge
 void hud_wingman_kill_multi_teams()
 {
@@ -161,7 +143,6 @@ void hud_init_wingman_status_gauge()
 		}
 	}
 
-	hud_wingman_status_init_late_wings();
 	hud_wingman_kill_multi_teams();
 	hud_wingman_status_update();
 }

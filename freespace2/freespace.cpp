@@ -188,6 +188,7 @@
 #include "weapon/shockwave.h"
 #include "weapon/weapon.h"
 
+
 #include <SDL.h>
 #include <SDL_main.h>
 
@@ -1360,7 +1361,13 @@ bool game_start_mission()
 
 	game_busy( NOX("** starting mission_load() **") );
 	load_mission_load = (uint) time(nullptr);
-	if ( !mission_load(Game_current_mission_filename) ) {
+	bool load_success = mission_load(Game_current_mission_filename);
+	load_mission_load = (uint)(time(nullptr) - load_mission_load);
+
+	// free up memory from parsing the mission
+	stop_parse();
+
+	if ( !load_success ) {
 		if ( !(Game_mode & GM_MULTIPLAYER) ) {
 			popup(PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR( "Attempt to load the mission failed", 169));
 			gameseq_post_event(GS_EVENT_MAIN_MENU);
@@ -1376,11 +1383,15 @@ bool game_start_mission()
 
 		return false;
 	}
-	load_mission_load = (uint) (time(nullptr) - load_mission_load);
 
-	// free up memory from parsing the mission
-	extern void stop_parse();
-	stop_parse();
+	// Since we just freed up memory, now is probably a good time to run the Lua garbage collector.
+	// This is also after the preliminary checks are complete but before things start getting paged in.
+	auto L = Script_system.GetLuaSession();
+	if (L != nullptr)
+	{
+		game_busy(NOX("** cleaning up Lua objects **"));
+		lua_gc(L, LUA_GCCOLLECT, 0);
+	}
 
 	game_busy( NOX("** starting game_post_level_init() **") );
 	load_post_level_init = (uint) time(nullptr);
@@ -3141,7 +3152,8 @@ camid game_render_frame_setup()
 
 				vec3d old_pos;
 				main_cam->get_info(&old_pos, nullptr);
-				if (camera_cut)
+				bool hyperspace = (Player_ship->flags[Ship::Ship_Flags::Depart_warp] && Warp_params[Player_ship->warpout_params_index].warp_type == WT_HYPERSPACE);
+				if (camera_cut || hyperspace)
 					old_pos = eye_pos;
 
 				// "push" the camera backwards in the direction of its old position based on acceleration to to make it 

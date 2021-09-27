@@ -8,6 +8,8 @@ namespace animation {
 
 	std::multimap<int, std::shared_ptr<ModelAnimation>> ModelAnimation::s_runningAnimations;
 
+	ModelAnimation::ModelAnimation(bool isInitialType) : m_isInitialType(isInitialType) { }
+
 	ModelAnimationState ModelAnimation::play(float frametime, polymodel_instance* pmi) {
 
 		float& timeCurrentAnim = m_time[pmi->id];
@@ -15,7 +17,9 @@ namespace animation {
 		switch (m_state[pmi->id]) {
 		case ModelAnimationState::UNTRIGGERED:
 			//We have a new animation starting up in this phase. Put it in the list of running animations to track and step it later
-			s_runningAnimations.emplace(pmi->id, shared_from_this());
+			if(!m_isInitialType)
+				s_runningAnimations.emplace(pmi->id, shared_from_this());
+
 			m_duration = 0.0f;
 			//Stop other running animations on subsystems we care about. Store subsystems initial values as well.
 			for (const auto& animation : m_submodelAnimation) {
@@ -250,7 +254,7 @@ namespace animation {
 		if (optional_string("+time:"))
 			skip_token();
 
-		std::shared_ptr<ModelAnimation> anim = std::shared_ptr<ModelAnimation>(new ModelAnimation());
+		std::shared_ptr<ModelAnimation> anim = std::shared_ptr<ModelAnimation>(new ModelAnimation(true));
 
 		char namelower[MAX_NAME_LEN];
 		strncpy(namelower, sp->subobj_name, MAX_NAME_LEN);
@@ -474,7 +478,7 @@ namespace animation {
 		for (const auto& animationTypes : animationSet) {
 			auto& newAnimations = newAnimationSet[animationTypes.first];
 			for (const auto& oldAnimation : animationTypes.second) {
-				std::shared_ptr<ModelAnimation> newAnimation = std::shared_ptr<ModelAnimation>(new ModelAnimation());
+				std::shared_ptr<ModelAnimation> newAnimation = std::shared_ptr<ModelAnimation>(new ModelAnimation(oldAnimation.second->m_isInitialType));
 				for (const auto& submodelAnims : oldAnimation.second->m_submodelAnimation) {
 					std::shared_ptr<ModelAnimationSubmodel> animSubmodel = std::shared_ptr<ModelAnimationSubmodel>(submodelAnims->copy(name));
 					newAnimation->addSubmodelAnimation(std::move(animSubmodel));
