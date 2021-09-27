@@ -41,16 +41,15 @@ extern float Neb2_awacs;
 extern float Neb2_fog_near_mult;
 extern float Neb2_fog_far_mult;
 
-#define NEB_FOG_VISIBILITY_MULT_TRAIL			1.0f
-#define NEB_FOG_VISIBILITY_MULT_THRUSTER		1.5f
-#define NEB_FOG_VISIBILITY_MULT_WEAPON			1.3f
-#define NEB_FOG_VISIBILITY_MULT_SHIELD			1.2f
-#define NEB_FOG_VISIBILITY_MULT_GLOWPOINT		1.2f
-#define NEB_FOG_VISIBILITY_MULT_BEAM(size)		4.0f + (size / 10)
-#define NEB_FOG_VISIBILITY_MULT_B_MUZZLE(size)  NEB_FOG_VISIBILITY_MULT_BEAM(size)
-#define NEB_FOG_VISIBILITY_MULT_PARTICLE(size)  1.0f + (size / 12)
-#define NEB_FOG_VISIBILITY_MULT_SHOCKWAVE		2.5f
-#define NEB_FOG_VISIBILITY_MULT_FIREBALL(size)	1.2f + (size / 12)
+extern float Neb2_fog_visibility_trail;
+extern float Neb2_fog_visibility_thruster;
+extern float Neb2_fog_visibility_weapon;
+extern float Neb2_fog_visibility_shield;
+extern float Neb2_fog_visibility_glowpoint;
+extern float Neb2_fog_visibility_beam;
+extern float Neb2_fog_visibility_particle;
+extern float Neb2_fog_visibility_shockwave;
+extern float Neb2_fog_visibility_fireball;
 
 extern int Neb2_poof_flags;
 const size_t MAX_NEB2_POOFS = 32;
