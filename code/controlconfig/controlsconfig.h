@@ -728,9 +728,10 @@ int translate_key_to_index(const char *key, bool find_override=true);
 const char *translate_key(char *key);
 
 /**
- * @brief Converts the specified key code to a human readable string
+ * @brief Converts the specified key code to a human readable string, according to the selected locale
  *
  * @param[in]   code    The key code to convert
+ * @param[in]   use_default_locale  If true, return the default locale (English) translation of the key
  *
  * @return  The text representation of the code.
  *
@@ -738,18 +739,7 @@ const char *translate_key(char *key);
  *
  * @note The return value is translated according to localization settings
  */
-const char *textify_scancode(int code);
-
-/**
- * @note Same as textify_scancode but always returns the default value (English) regardless of current language
- *
- * @param[in]   code    The key code to convert
- *
- * @return  The name of the key
- *
- * @see textify_scancode
- */
-const char *textify_scancode_universal(int code);
+const char *textify_scancode(int code, bool use_default_locale = false);
 
 /*!
  * @brief Checks how long a control has been active

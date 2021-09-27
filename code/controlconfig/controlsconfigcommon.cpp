@@ -937,7 +937,7 @@ const char *translate_key(char *key)
 	return text;
 }
 
-const char *textify_scancode(int code)
+const char *textify_scancode(int code, bool use_default_locale)
 {
 	static char text[BTN_MSG_LEN];
 
@@ -967,29 +967,15 @@ const char *textify_scancode(int code)
 		}
 	}
 
-	strcat_s(text, Scan_code_text[keycode]);
-	return text;
-}
+	if (use_default_locale) {
+		// Use default locale (English)
+		strcat_s(text, Scan_code_text_english[keycode]);
 
-const char *textify_scancode_universal(int code)
-{
-	if (code < 0)
-		return "None";
-
-	int keycode = code & KEY_MASK;
-
-	static char text[BTN_MSG_LEN];
-	*text = 0;
-	if (code & KEY_ALTED && !(keycode == KEY_LALT || keycode == KEY_RALT)) {
-		strcat_s(text, "Alt-");
+	} else {
+		// Use user locale
+		strcat_s(text, Scan_code_text[keycode]);
 	}
-
-	if (code & KEY_SHIFTED && !(keycode == KEY_LSHIFT || keycode == KEY_RSHIFT)) {
-		strcat_s(text, "Shift-");
-	}
-
-	// Always use the english version here
-	strcat_s(text, Scan_code_text_english[keycode]);
+	
 	return text;
 }
 //XSTR:ON
