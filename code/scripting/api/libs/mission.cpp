@@ -883,8 +883,8 @@ ADE_FUNC(sendPlainMessage,
 ADE_FUNC(createShip,
 	l_Mission,
 	"[string Name, shipclass Class /* First ship class by default */, orientation Orientation=null, vector Position /* "
-	"null vector by default */, team Team]",
-	"Creates a ship and returns a handle to it using the specified name, class, world orientation, and world position",
+	"null vector by default */, team Team, boolean ShowInMissionLog /* true by default */]",
+	"Creates a ship and returns a handle to it using the specified name, class, world orientation, and world position; and logs it in the mission log unless specified otherwise",
 	"ship",
 	"Ship handle, or invalid ship handle if ship couldn't be created")
 {
@@ -893,7 +893,8 @@ ADE_FUNC(createShip,
 	matrix_h* orient = nullptr;
 	vec3d pos        = vmd_zero_vector;
 	int team         = -1;
-	ade_get_args(L, "|soooo", &name, l_Shipclass.Get(&sclass), l_Matrix.GetPtr(&orient), l_Vector.Get(&pos), l_Team.Get(&team));
+	bool show_in_log = true;
+	ade_get_args(L, "|soooob", &name, l_Shipclass.Get(&sclass), l_Matrix.GetPtr(&orient), l_Vector.Get(&pos), l_Team.Get(&team), &show_in_log);
 
 	matrix *real_orient = &vmd_identity_matrix;
 	if(orient != NULL)
@@ -931,7 +932,7 @@ ADE_FUNC(createShip,
 			Objects[obj_idx].flags.set(Object::Object_Flags::No_shields);
 		}
 
-		mission_log_add_entry(LOG_SHIP_ARRIVED, shipp->ship_name, nullptr);
+		mission_log_add_entry(LOG_SHIP_ARRIVED, shipp->ship_name, nullptr, -1, show_in_log ? 0 : MLF_HIDDEN);
 
 		if (Script_system.IsActiveAction(CHA_ONSHIPARRIVE)) {
 			Script_system.SetHookObjects(2, "Ship", &Objects[obj_idx], "Parent", NULL);
