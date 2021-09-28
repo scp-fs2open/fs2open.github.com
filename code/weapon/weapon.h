@@ -472,7 +472,10 @@ struct weapon_info
 	// Energy suck effect
 	float weapon_reduce;					// how much energy removed from weapons systems
 	float afterburner_reduce;			// how much energy removed from weapons systems
-
+	
+	// Vampirism Effect Multiplier
+	float vamp_regen;					// Factor by which a vampiric weapon will multiply the healing done to the shooter
+	
 	// tag stuff
 	float	tag_time;						// how long the tag lasts		
 	int tag_level;							// tag level (1 - 3)

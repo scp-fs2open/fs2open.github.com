@@ -186,6 +186,7 @@ flag_def_list_new<Weapon::Info_Flags> Weapon_Info_Flags[] = {
 	{ "require exact los",				Weapon::Info_Flags::Require_exact_los,					true, false },
 	{ "can damage shooter",				Weapon::Info_Flags::Can_damage_shooter,					true, false },
 	{ "heals",							Weapon::Info_Flags::Heals,						        true, false },
+	{ "vampiric",						Weapon::Info_Flags::Vampiric,					        true, false },
 	{ "no collide",						Weapon::Info_Flags::No_collide,						    true, false },
 };
 
@@ -2172,6 +2173,11 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 	if( optional_string("$Leech Afterburner:") ){
 		stuff_float(&wip->afterburner_reduce);
+	}
+	
+	// Multiplier for the healing done to the shooter of the weapon.
+	if( optional_string("$Vampiric Healing Factor:") ){
+		stuff_float(&wip->succ_factor);
 	}
 
 	if (optional_string("$Corkscrew:"))
