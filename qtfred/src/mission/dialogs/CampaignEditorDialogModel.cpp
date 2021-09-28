@@ -173,7 +173,7 @@ QStringList CampaignEditorDialogModel::getMissionEvents(const QString& /*model k
 
 QStringList CampaignEditorDialogModel::getMissionNames() {
 	QStringList ret{};
-	ret.reserve(missionData.getCheckedData().size());
+	ret.reserve(static_cast<int>(missionData.getCheckedData().size()));
 	for (auto mn : missionData)
 		if (mn.second)
 			ret << mn.first.filename;
@@ -308,7 +308,7 @@ int CampaignEditorDialogModel::addCurMnBranchTo(const QModelIndex *other, bool f
 		mnData_it->branches.emplace_back(this, mnData_it->filename);
 
 		flagModified();
-		return mnData_it->branches.size() -1;
+		return static_cast<int>(mnData_it->branches.size() -1);
 	}
 	CampaignMissionData *otherMn = missionData.internalData(*other);
 	if (! otherMn)
@@ -318,7 +318,7 @@ int CampaignEditorDialogModel::addCurMnBranchTo(const QModelIndex *other, bool f
 	from.branches.emplace_back(this, from.filename, to.filename);
 
 	flagModified();
-	return mnData_it->branches.size() -1;
+	return static_cast<int>(mnData_it->branches.size() -1);
 }
 
 void CampaignEditorDialogModel::delCurMnBranch(int node) {
@@ -389,7 +389,7 @@ void CampaignEditorDialogModel::moveCurBr(bool up) {
 	flagModified();
 
 	parent->updateUIMission(false);
-	parent->updateUIBranch(other_idx);
+	parent->updateUIBranch(static_cast<int>(other_idx));
 }
 
 void CampaignEditorDialogModel::setCurLoopAnim(const QString &anim) {

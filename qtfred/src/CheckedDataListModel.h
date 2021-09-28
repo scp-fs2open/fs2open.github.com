@@ -194,8 +194,8 @@ public:
 
 		ConstIterator(iterator_delegate it) : _it(it) {}
 
-		const reference operator*() const { return reference(_it->internalData(), _it->_checked); }
-		const pointer operator->() { return pointer(&_it->internalData(), _it->_checked); }
+		reference operator*() const { return reference(_it->internalData(), _it->_checked); }
+		pointer operator->() { return pointer(&_it->internalData(), _it->_checked); }
 		ConstIterator& operator++() { _it++; return *this; }
 		ConstIterator operator++(int) { ConstIterator tmp = *this; ++(*this); return tmp; }
 		friend bool operator== (const ConstIterator &a, const ConstIterator &b) { return a._it == b._it;}
