@@ -14865,7 +14865,6 @@ void init_ai_object(int objnum)
 	aip->danger_weapon_objnum = -1;
 	aip->danger_weapon_signature = -1;
 
-	aip->lead_scale = 0.0f;
 	aip->last_hit_target_time = Missiontime;
 	aip->last_hit_time = Missiontime;
 

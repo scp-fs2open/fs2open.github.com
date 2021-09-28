@@ -405,7 +405,6 @@ typedef struct ai_info {
 
 
 	union {
-	float		lead_scale;							//	Amount to lead current opponent by.
 	float		stay_near_distance;				//	Distance to stay within for AIM_STAY_NEAR mode.
 	};
 
