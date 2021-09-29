@@ -40,6 +40,11 @@
 class object;
 class WarpEffect;
 
+namespace scripting
+{
+	class Hook;
+}
+
 //	Part of the player died system.
 extern vec3d	Original_vec_to_deader;
 
@@ -1590,6 +1595,8 @@ extern void ship_cleanup(int shipnum, int cleanup_mode);
 // Goober5000
 extern void ship_destroy_instantly(object *ship_obj);
 extern void ship_actually_depart(int shipnum, int method = SHIP_DEPARTED_WARP);
+
+extern const std::shared_ptr<scripting::Hook> OnShipDeathStartedHook;
 
 extern bool in_autoaim_fov(ship *shipp, int bank_to_fire, object *obj);
 extern int ship_stop_fire_primary(object * obj);

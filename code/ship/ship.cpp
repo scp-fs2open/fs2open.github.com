@@ -7890,6 +7890,11 @@ void ship_destroy_instantly(object *ship_objp)
 	Assert(ship_objp->type == OBJ_SHIP);
 	Assert(!(ship_objp == Player_obj));
 
+	// add scripting hook for 'On Ship Death Started' -- Goober5000
+	// hook is placed at the beginning of this function to allow the scripter to
+	// actually have access to the ship before any death routines (such as mission logging) are executed
+	OnShipDeathStartedHook->run(scripting::hook_param_list(scripting::hook_param("Ship", 'o', ship_objp)));
+
 	// undocking and death preparation
 	ship_stop_fire_primary(ship_objp);
 	ai_deathroll_start(ship_objp);
