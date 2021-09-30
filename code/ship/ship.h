@@ -764,7 +764,7 @@ public:
 
 	SCP_vector<alt_class> s_alt_classes;	
 
-	int ship_iff_color[MAX_IFFS][MAX_IFFS];
+	SCP_map<std::pair<int, int>, int> ship_iff_color;
 
 	int ammo_low_complaint_count;				// number of times this ship has complained about low ammo
 	int armor_type_idx;
@@ -1359,7 +1359,7 @@ public:
 	int radar_image_size;
 	float radar_projection_size_mult;
 
-	int ship_iff_info[MAX_IFFS][MAX_IFFS];
+	SCP_map<std::pair<int, int>, int> ship_iff_info;
 
 	flagset<Ship::Aiming_Flags> aiming_flags;
 	float minimum_convergence_distance;

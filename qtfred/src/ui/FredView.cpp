@@ -260,10 +260,10 @@ void FredView::syncViewOptions() {
 	// The Show teams actions need to be initialized after everything has been set up since the IFFs may not have been
 	// initialized yet
 	fredApp->runAfterInit([this]() {
-		for (auto i = 0; i < Num_iffs; ++i) {
+		for (auto i = 0; i < (int)Iff_info.size(); ++i) {
 			auto action = new QAction(QString::fromUtf8(Iff_info[i].iff_name), ui->menuDisplay_Filter);
 			action->setCheckable(true);
-			connectActionToViewSetting(action, &_viewport->view.Show_iff[i]);
+			connectActionToViewSetting(action, &_viewport->view.Show_iff, i);
 
 			ui->menuDisplay_Filter->addAction(action);
 		}
@@ -332,6 +332,24 @@ void FredView::connectActionToViewSetting(QAction* option, bool* destination) {
 		// View settings have changed so we need to update the window
 		_viewport->needsUpdate();
 	});
+}
+void FredView::connectActionToViewSetting(QAction* option, std::vector<bool>* vector, size_t idx) {
+	Q_ASSERT(option->isCheckable());
+
+	// Use our view idle function for updating the action status whenever possible
+	// TODO: Maybe this could be improved with an event based property system but that would need to be implemented
+	connect(this, &FredView::viewIdle, this, [option, vector, idx]() {
+		option->setChecked((*vector)[idx]);
+		});
+
+	// then connect the signal to a handler for updating the view setting
+	// The pointer should be valid as long as this signal is active since it should be pointing inside the renderer (I hope...)
+	connect(option, &QAction::triggered, this, [this, vector, idx](bool value) {
+		(*vector)[idx] = value;
+
+		// View settings have changed so we need to update the window
+		_viewport->needsUpdate();
+		});
 }
 
 void FredView::showContextMenu(const QPoint& globalPos) {

@@ -1157,7 +1157,7 @@ void ship_info::clone(const ship_info& other)
 	radar_image_size = other.radar_image_size;
 	radar_projection_size_mult = other.radar_projection_size_mult;
 
-	memcpy(ship_iff_info, other.ship_iff_info, sizeof(int) * MAX_IFFS * MAX_IFFS);
+	ship_iff_info = other.ship_iff_info;
 
 	aiming_flags = other.aiming_flags;
 	minimum_convergence_distance = other.minimum_convergence_distance;
@@ -1467,7 +1467,7 @@ void ship_info::move(ship_info&& other)
 	radar_image_size = other.radar_image_size;
 	radar_projection_size_mult = other.radar_projection_size_mult;
 
-	memcpy(ship_iff_info, other.ship_iff_info, sizeof(int) * MAX_IFFS * MAX_IFFS);
+	ship_iff_info = other.ship_iff_info;
 
 	aiming_flags = other.aiming_flags;
 	minimum_convergence_distance = other.minimum_convergence_distance;
@@ -1544,7 +1544,7 @@ ship_info::ship_info(ship_info&& other) noexcept
 
 ship_info::ship_info()
 {
-	int i,j;
+	int i;
 
 	name[0] = '\0';
 	display_name[0] = '\0';
@@ -1901,11 +1901,7 @@ ship_info::ship_info()
 	radar_image_size = -1;
 	radar_projection_size_mult = 1.0f;
 
-	for (i=0;i<MAX_IFFS;i++)
-	{
-		for (j=0;j<MAX_IFFS;j++)
-			ship_iff_info[i][j] = -1;
-	}
+	ship_iff_info.clear();
 
 	aiming_flags.reset();
 	minimum_convergence_distance = 0.0f;
@@ -4590,7 +4586,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		// Set the color
 		required_string("+As Color:");
 		stuff_int_list(iff_color_data, 3, RAW_INTEGER_TYPE);
-		sip->ship_iff_info[iff_data[0]][iff_data[1]] = iff_init_color(iff_color_data[0],iff_color_data[1],iff_color_data[2]);
+		sip->ship_iff_info[{iff_data[0],iff_data[1]}] = iff_init_color(iff_color_data[0], iff_color_data[1], iff_color_data[2]);
 	}
 
 	if (optional_string("$Target Priority Groups:") ) {
@@ -6189,7 +6185,7 @@ vec3d get_submodel_offset(int model, int submodel){
 // Reset all ship values to empty/unused.
 void ship::clear()
 {
-	int i, j;
+	int i;
 
 	objnum = -1;
 	ai_index = -1;
@@ -6437,9 +6433,7 @@ void ship::clear()
 
 	s_alt_classes.clear();
 
-	for(i=0;i<MAX_IFFS;i++)
-		for(j=0;j<MAX_IFFS;j++)
-			ship_iff_color[i][j] = -1;
+	ship_iff_color.clear();
 
 	ammo_low_complaint_count = 0;
 

@@ -192,7 +192,7 @@ void briefing_editor_dlg::create()
 		box->AddString(Icon_names[i]);
 
 	box = (CComboBox *) GetDlgItem(IDC_TEAM);
-	for (i=0; i<Num_iffs; i++)
+	for (i=0; i< (int)Iff_info.size(); i++)
 		box->AddString(Iff_info[i].iff_name);
 
 	box = (CComboBox *) GetDlgItem(IDC_SHIP_TYPE);

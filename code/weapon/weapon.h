@@ -226,7 +226,7 @@ typedef struct beam_weapon_info {
 	float beam_particle_radius;			// radius of beam particles
 	float beam_particle_angle;			// angle of beam particle spew cone
 	generic_anim beam_particle_ani;		// particle_ani
-	float beam_iff_miss_factor[MAX_IFFS][NUM_SKILL_LEVELS];	// magic # which makes beams miss more. by parent iff and player skill level
+	SCP_map<int, std::array<float, NUM_SKILL_LEVELS>> beam_iff_miss_factor;	// magic # which makes beams miss more. by parent iff and player skill level
 	gamesnd_id beam_loop_sound;				// looping beam sound
 	gamesnd_id beam_warmup_sound;				// warmup sound
 	gamesnd_id beam_warmdown_sound;			// warmdown sound

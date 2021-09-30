@@ -1476,8 +1476,8 @@ void parse_briefing(mission * /*pm*/, int flags)
 			Assert(bs->num_icons <= MAX_STAGE_ICONS );
 
 			// static alias stuff - stupid, but it seems to be necessary
-			static const char *temp_team_names[MAX_IFFS];
-			for (i = 0; i < Num_iffs; i++)
+			auto temp_team_names = std::unique_ptr<const char* []>(new const char*[Iff_info.size()]);
+			for (i = 0; i < (int)Iff_info.size(); i++)
 				temp_team_names[i] = Iff_info[i].iff_name;
 
 			while (required_string_either("$end_stage", "$start_icon"))
@@ -1511,7 +1511,7 @@ void parse_briefing(mission * /*pm*/, int flags)
 						bi->type = ICON_TRANSPORT_WING;
 				}
 
-				find_and_stuff("$team:", &bi->team, F_NAME, temp_team_names, Num_iffs, "team name");
+				find_and_stuff("$team:", &bi->team, F_NAME, temp_team_names.get(), Iff_info.size(), "team name");
 
 				find_and_stuff("$class:", &bi->ship_class, F_NAME, Ship_class_names, Ship_info.size(), "ship class");
 				bi->modelnum = -1;
@@ -1589,6 +1589,7 @@ void parse_briefing(mission * /*pm*/, int flags)
 				stuff_string(not_used_text, F_MULTITEXT, MAX_ICON_TEXT_LEN);
 				required_string("$end_icon");
 			} // end while
+
 			if (icon_num != bs->num_icons) {
 				error_display(1,
 							  "$num_icons did not match the number of specified icons! %d icons were specified but only %d were parsed.",
@@ -1931,13 +1932,7 @@ int parse_create_object_sub(p_object *p_objp)
 	shipp->special_hitpoints = p_objp->special_hitpoints;
 	shipp->special_shield = p_objp->special_shield;
 
-	for (i=0;i<MAX_IFFS;i++)
-	{
-		for (j=0;j<MAX_IFFS;j++)
-		{
-			shipp->ship_iff_color[i][j] = p_objp->alt_iff_color[i][j];
-		}
-	}
+	shipp->ship_iff_color = p_objp->alt_iff_color;
 
 	shipp->ship_max_shield_strength = p_objp->ship_max_shield_strength;
 	shipp->ship_max_hull_strength =  p_objp->ship_max_hull_strength;
@@ -2774,7 +2769,7 @@ extern int parse_warp_params(const WarpParams *inherit_from, WarpDirection direc
  */
 int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 {
-	int	i, j, count, delay;
+	int	i, count, delay;
     char name[NAME_LENGTH];
 	ship_info *sip;
 
@@ -2905,12 +2900,11 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 			mprintf(("Using callsign: %s\n", name));
 	}
 
-	// static alias stuff - stupid, but it seems to be necessary
-	static const char *temp_team_names[MAX_IFFS];
-	for (i = 0; i < Num_iffs; i++)
+	auto temp_team_names = std::unique_ptr<const char*[]>(new const char*[Iff_info.size()]);
+	for (i = 0; i < (int)Iff_info.size(); i++)
 		temp_team_names[i] = Iff_info[i].iff_name;
 
-	find_and_stuff("$Team:", &p_objp->team, F_NAME, temp_team_names, Num_iffs, "team name");
+	find_and_stuff("$Team:", &p_objp->team, F_NAME, temp_team_names.get(), Iff_info.size(), "team name");
 
 	// save current team for loadout purposes, so that in multi we always respawn
 	// from the original loadout slot even if the team changes
@@ -3426,14 +3420,8 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 
 	p_objp->wingnum = -1;					// set the wing number to -1 -- possibly to be set later
 	p_objp->pos_in_wing = -1;				// Goober5000
-
-	for (i=0;i<MAX_IFFS;i++)
-	{
-		for (j=0;j<MAX_IFFS;j++)
-		{
-			p_objp->alt_iff_color[i][j] = -1;
-		}
-	}
+	
+	p_objp->alt_iff_color.clear();
 
 	// for multiplayer, assign a network signature to this parse object.  Doing this here will
 	// allow servers to use the signature with clients when creating new ships, instead of having
@@ -5173,7 +5161,7 @@ void parse_goal(mission *pm)
 		stuff_int( &goalp->team );
 
 		// sanity check
-		if (goalp->team < -1 || goalp->team >= Num_iffs) {
+		if (goalp->team < -1 || goalp->team >= (int)Iff_info.size()) {
 			if (Fred_running && !Warned_about_team_out_of_range) {
 				Warning(LOCATION, "+Team: value was out of range in the mission file!  This was probably caused by a bug in an older version of FRED.  Using -1 for now.");
 				Warned_about_team_out_of_range = true;
@@ -7853,7 +7841,7 @@ void mission_bring_in_support_ship( object *requester_objp )
 	vec3d center, warp_in_pos;
 	p_object *pobj;
 	ship *requester_shipp;
-	int i, j, requester_species;
+	int i, requester_species;
 
 	Assert ( requester_objp->type == OBJ_SHIP );
 	requester_shipp = &Ships[requester_objp->instance];	//	MK, 10/23/97, used to be ->type, bogus, no?
@@ -7939,13 +7927,7 @@ void mission_bring_in_support_ship( object *requester_objp )
 
 	pobj->team = requester_shipp->team;
 
-	for (i=0;i<MAX_IFFS;i++)
-	{
-		for (j=0;j<MAX_IFFS;j++)
-		{
-			pobj->alt_iff_color[i][j] = -1;
-		}
-	}
+	pobj->alt_iff_color.clear();
 
 	pobj->behavior = AIM_NONE;		// ASSUMPTION:  the mission file has the string "None" which maps to AIM_NONE
 
