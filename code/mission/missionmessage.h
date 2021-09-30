@@ -118,7 +118,6 @@ extern builtin_message Builtin_messages[];
 #define MESSAGE_HIGH_PRAISE			42
 #define MESSAGE_REARM_PRIMARIES		43
 #define MESSAGE_PRIMARIES_LOW		44
-
 typedef struct MissionMessage {
 	char	name[NAME_LENGTH];					// used to identify this message
 	char	message[MESSAGE_LENGTH];			// actual message
@@ -181,10 +180,11 @@ extern SCP_vector<SCP_string> Generic_message_filenames;
 #define PERSONA_FLAG_USED		(1<<31)
 
 typedef struct persona_s {
-	char	name[NAME_LENGTH];
+	char name[NAME_LENGTH];
 	int	flags;
 	int species;
 	bool substitute_missing_messages;
+	char speech_tags[MAX_SPEECH_TAGS_LENGTH];
 } Persona;
 
 extern Persona *Personas;

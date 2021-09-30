@@ -302,6 +302,43 @@ void persona_parse()
 	{
 		Personas[Num_personas].substitute_missing_messages = true;
 	}
+	
+	if (optional_string("$Speech_Tags:")) {
+		char cstr_temp[NAME_LENGTH];
+		SCP_string temp_tags;
+		if (optional_string("+Gender:")) {
+			stuff_string(cstr_temp, F_NAME, NAME_LENGTH);
+			temp_tags.append(fsspeech_write_tag(FSSPEECH_SET_GENDER,cstr_temp));
+		}
+		if (optional_string("+Langid:")) {
+			stuff_string(cstr_temp, F_NAME, NAME_LENGTH);
+			temp_tags.append(fsspeech_write_tag(FSSPEECH_SET_LANGID, cstr_temp));
+		}
+		if (optional_string("+Rate:")) {
+			stuff_string(cstr_temp, F_NAME, NAME_LENGTH);
+			temp_tags.append(fsspeech_write_tag(FSSPEECH_SET_RATE, cstr_temp));
+		}
+		if (optional_string("+Pitch:")) {
+			stuff_string(cstr_temp, F_NAME, NAME_LENGTH);
+			temp_tags.append(fsspeech_write_tag(FSSPEECH_SET_PITCH, cstr_temp));
+		}
+		if (optional_string("+Volume:")) {
+			stuff_string(cstr_temp, F_NAME, NAME_LENGTH);
+			temp_tags.append(fsspeech_write_tag(FSSPEECH_SET_VOLUME, cstr_temp));
+		}
+
+		if (temp_tags.size() < MAX_SPEECH_TAGS_LENGTH) {
+			strcpy(Personas[Num_personas].speech_tags, temp_tags.c_str());
+			mprintf(("Speech tags for %s : %s \n", Personas[Num_personas].name, Personas[Num_personas].speech_tags));
+		}
+		else {
+			//error
+			mprintf(("Speech tags size for %s is larger than the allowed.\n", Personas[Num_personas].name));		
+		}
+	}
+	else {
+		Personas[Num_personas].speech_tags[0] = '\0';
+	}
 
 	Num_personas++;
 }
@@ -1581,7 +1618,12 @@ void message_queue_process()
 
 	// play wave first, since need to know duration for picking anim start frame
 	if(message_play_wave(q) == false) {
-		fsspeech_play(FSSPEECH_FROM_INGAME, buf.c_str());
+		if (m->persona_index != -1) {
+			fsspeech_play(FSSPEECH_FROM_INGAME, buf.c_str(), Personas[m->persona_index].speech_tags);
+		}
+		else{
+			fsspeech_play(FSSPEECH_FROM_INGAME, buf.c_str());
+		}
 	}
 
 	// play animation for head
