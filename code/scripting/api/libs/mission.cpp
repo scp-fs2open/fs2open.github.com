@@ -1493,7 +1493,7 @@ static int arrivalListIter(lua_State* L)
 
 	const auto next = GET_NEXT(poh->getObject());
 
-	if (next == END_OF_LIST(&Ship_arrival_list)) {
+	if (next == END_OF_LIST(&Ship_arrival_list) || next == nullptr) {
 		return ADE_RETURN_NIL;
 	}
 
@@ -1505,10 +1505,32 @@ ADE_FUNC(getArrivalList,
 	nullptr,
 	"Get the list of yet to arrive ships for this mission",
 	"iterator<parse_object>",
-	"An iterator across all the yet to arrive ships. Can be used in a for .. in loop")
+	"An iterator across all the yet to arrive ships. Can be used in a for .. in loop. Is not valid for more than one frame.")
 {
 	return ade_set_args(L, "u*o", luacpp::LuaFunction::createFromCFunction(L, arrivalListIter),
 	                    l_ParseObject.Set(parse_object_h(&Ship_arrival_list)));
+}
+
+ADE_FUNC(getShipList,
+	l_Mission,
+	nullptr,
+	"Get an iterator to the list of ships in this mission",
+	"iterator<ship>",
+	"An iterator across all ships in the mission. Can be used in a for .. in loop. Is not valid for more than one frame.")
+{
+	ship_obj* so = &Ship_obj_list;
+
+	return ade_set_args(L, "u", luacpp::LuaFunction::createFromStdFunction(L, [so](lua_State* LInner, const luacpp::LuaValueList& /*params*/) mutable -> luacpp::LuaValueList {
+		//Since the first element of a list is the next element from the head, and we start this function with the the captured "so" object being the head, this GET_NEXT will return the first element on first call of this lambda.
+		//Similarly, an empty list is defined by the head's next element being itself, hence an empty list will immediately return nil just fine
+		so = GET_NEXT(so);
+
+		if (so == END_OF_LIST(&Ship_obj_list) || so == nullptr) {
+			return luacpp::LuaValueList{ luacpp::LuaValue::createNil(LInner) };
+		}
+
+		return luacpp::LuaValueList{ luacpp::LuaValue::createValue(LInner, l_Ship.Set(object_h(&Objects[so->objnum]))) };
+	}));
 }
 
 ADE_FUNC(waitAsync,
