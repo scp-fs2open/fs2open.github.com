@@ -5611,7 +5611,7 @@ DCF_BOOL( show_velocity_dot, ship_show_velocity_dot )
 static bool ballistic_possible_for_this_ship(const ship_info *sip)
 {
 	// has no weapons!
-	if (sip->allowed_bank_restricted_weapons.empty() && sip->num_primary_banks < 1)
+	if (sip->num_primary_banks < 1)
 		return false;
 
 	for (int i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++)
