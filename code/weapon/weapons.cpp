@@ -8161,9 +8161,6 @@ void weapon_render(object* obj, model_draw_list *scene)
 	{
 	case WRT_LASER:
 		{
-			if(wip->laser_length < 0.0001f)
-				return;
-
 			int alpha = 255;
 			int framenum = 0;
 
@@ -8182,11 +8179,17 @@ void weapon_render(object* obj, model_draw_list *scene)
 				if (The_mission.flags[Mission::Mission_Flags::Fullneb] && Neb_affects_weapons)
 					alpha = (int)(alpha * neb2_get_fog_visibility(&obj->pos, NEB_FOG_VISIBILITY_MULT_WEAPON));
 
-				vec3d headp;
+				if (wip->laser_length > 0.0f) {
+					vec3d headp;
 
-				vm_vec_scale_add(&headp, &obj->pos, &obj->orient.vec.fvec, wip->laser_length);
+					vm_vec_scale_add(&headp, &obj->pos, &obj->orient.vec.fvec, wip->laser_length);
 
-				batching_add_laser(wip->laser_bitmap.first_frame + framenum, &headp, wip->laser_head_radius, &obj->pos, wip->laser_tail_radius, alpha, alpha, alpha);
+					batching_add_laser(wip->laser_bitmap.first_frame + framenum, &headp, wip->laser_head_radius, &obj->pos, wip->laser_tail_radius, alpha, alpha, alpha);
+				} else {
+					vertex vert;
+					g3_rotate_vertex(&vert, &obj->pos);
+					batching_add_bitmap(wip->laser_bitmap.first_frame + framenum, &vert, 0, wip->laser_head_radius, alpha);
+				}
 			}			
 
 			// maybe draw laser glow bitmap
@@ -8233,7 +8236,13 @@ void weapon_render(object* obj, model_draw_list *scene)
 				if (The_mission.flags[Mission::Mission_Flags::Fullneb] && Neb_affects_weapons)
 					alpha = (int)(alpha * neb2_get_fog_visibility(&obj->pos, NEB_FOG_VISIBILITY_MULT_WEAPON));
 
-				batching_add_laser(wip->laser_glow_bitmap.first_frame + framenum, &headp2, wip->laser_head_radius * weapon_glow_scale_f, &tailp, wip->laser_tail_radius * weapon_glow_scale_r, (c.red*alpha)/255, (c.green*alpha)/255, (c.blue*alpha)/255);
+				if (wip->laser_length > 0.0f) {
+					batching_add_laser(wip->laser_glow_bitmap.first_frame + framenum, &headp2, wip->laser_head_radius * weapon_glow_scale_f, &tailp, wip->laser_tail_radius * weapon_glow_scale_r, (c.red * alpha) / 255, (c.green * alpha) / 255, (c.blue * alpha) / 255);
+				} else {
+					vertex vert;
+					g3_rotate_vertex(&vert, &obj->pos);
+					batching_add_bitmap(wip->laser_bitmap.first_frame + framenum, &vert, 0, wip->laser_head_radius * weapon_glow_scale_f, alpha);
+				}
 			}
 
 			break;

@@ -5610,15 +5610,20 @@ DCF_BOOL( show_velocity_dot, ship_show_velocity_dot )
 
 static bool ballistic_possible_for_this_ship(const ship_info *sip)
 {
-	if (sip->allowed_bank_restricted_weapons.empty())
+	if (sip->allowed_bank_restricted_weapons.empty() && sip->num_primary_banks < 1)
 		return false;
 
 	for (int i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++)
 	{
-		for (int j = 0; j < weapon_info_size(); ++j)
-		{
-			if (sip->allowed_bank_restricted_weapons[i][j] && (Weapon_info[j].wi_flags[Weapon::Info_Flags::Ballistic]))
-				return true;
+		if (sip->primary_bank_weapons[i] >= 0 && Weapon_info[sip->primary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::Ballistic])
+			return true;
+
+		if (!sip->allowed_bank_restricted_weapons.empty()) {
+			for (int j = 0; j < weapon_info_size(); ++j)
+			{
+				if (sip->allowed_bank_restricted_weapons[i][j] && (Weapon_info[j].wi_flags[Weapon::Info_Flags::Ballistic]))
+					return true;
+			}
 		}
 	}
 
@@ -5648,15 +5653,7 @@ static void ship_parse_post_cleanup()
 			}
 
 			// be friendly; ensure ballistic flags check out
-			if (pbank_capacity_specified) {
-				if ( !ballistic_possible_for_this_ship(&(*sip)) ) {
-					Warning(LOCATION, "Pbank capacity specified for non-ballistic-primary-enabled ship %s.\nResetting capacities to 0.\nTo fix this, add a ballistic primary to the list of allowed primaries.\n", sip->name);
-
-					for (j = 0; j < MAX_SHIP_PRIMARY_BANKS; j++) {
-						sip->primary_bank_ammo_capacity[j] = 0;
-					}
-				}
-			} else {
+			if (!pbank_capacity_specified) {
 				if ( ballistic_possible_for_this_ship(&(*sip)) ) {
 					Warning(LOCATION, "Pbank capacity not specified for ballistic-primary-enabled ship %s.\nDefaulting to capacity of 1 per bank.\n", sip->name);
 
@@ -7439,7 +7436,8 @@ void ship_render_show_ship_cockpit(object *objp)
 	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 0.05f, Max_draw_distance);
 	gr_set_view_matrix(&cockpit_eye_pos, &Eye_matrix); // Set Camera to cockpit eye position
 	
-	Glowpoint_override = true; // Turn off glowpoints so they dont get rendered fixed at origin
+	//Glowpoint_override = true; // Turn off glowpoints so they dont get rendered fixed at origin
+	Deferred_lighting = true;
 
 	model_render_params render_info;
 
@@ -7450,7 +7448,8 @@ void ship_render_show_ship_cockpit(object *objp)
 	model_render_immediate(&render_info, Ship_info[Ships[objp->instance].ship_info_index].model_num, &objp->orient,
 	                       &objp->pos); // Render ship model with fixed detail level 0 so its not switching LOD when
 	                                    // moving away from origin
-	Glowpoint_override = false;
+	//Glowpoint_override = false;
+	Deferred_lighting = false;
 
 	gr_end_view_matrix();
 	gr_end_proj_matrix();
