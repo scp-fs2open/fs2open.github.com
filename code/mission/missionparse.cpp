@@ -410,8 +410,9 @@ MONITOR(NumShipDepartures)
 
 const std::shared_ptr<scripting::Hook> OnDepartureStartedHook = scripting::Hook::Factory(
 	"On Departure Started", "Called when a ship starts the departure process.",
-	{ 		
-		{"Ship", "ship", "The ship that has began the departure process."},
+	{
+		{"Self", "ship", "An alias for Ship."},
+		{"Ship", "ship", "The ship that has begun the departure process."},
 	});
 
 // Goober5000

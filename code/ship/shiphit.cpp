@@ -83,9 +83,9 @@ const std::shared_ptr<scripting::Hook> OnPainFlashHook = scripting::Hook::Factor
 const std::shared_ptr<scripting::Hook> OnShipDeathStartedHook = scripting::Hook::Factory(
 	"On Ship Death Started", "Called when a ship starts the death process.",
 	{
-		{"Ship", "ship", "The ship that has began the death process."},
-		{"Killer", "object", "The object responsible for killing the ship."},
-		{"Hitpos", "vector", "The ship that has began the death process."},
+		{"Ship", "ship", "The ship that has begun the death process."},
+		{"Killer", "object", "The object responsible for killing the ship.  Could be null."},
+		{"Hitpos", "vector", "The world coordinates of the killing blow.  Could be null."},
 	});
 
 
@@ -1878,7 +1878,7 @@ void ship_hit_kill(object *ship_objp, object *other_obj, vec3d *hitpos, float pe
 		if (always_log_other_obj && other_obj) {
 			object *named_objp = other_obj;
 
-			if (named_objp->type == OBJ_WEAPON && named_objp->parent != -1) {
+			if (named_objp->type != OBJ_SHIP && named_objp->parent >= 0) {
 				named_objp = &Objects[other_obj->parent];
 			}
 			if (named_objp->type == OBJ_SHIP) {
