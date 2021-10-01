@@ -80,6 +80,15 @@ const std::shared_ptr<scripting::Hook> OnPainFlashHook = scripting::Hook::Factor
 		{"Pain_Type", "number", "The type of pain flash displayed: shield = 0 and hull = 1."},
 	});
 
+const std::shared_ptr<scripting::Hook> OnShipDeathStartedHook = scripting::Hook::Factory(
+	"On Ship Death Started", "Called when a ship starts the death process.",
+	{
+		{"Ship", "ship", "The ship that has begun the death process."},
+		{"Killer", "object", "The object responsible for killing the ship.  Could be null."},
+		{"Hitpos", "vector", "The world coordinates of the killing blow.  Could be null."},
+	});
+
+
 //WMC - Camera rough draft stuff
 /*
 camid dead_get_camera()
@@ -1786,6 +1795,14 @@ void ship_hit_kill(object *ship_objp, object *other_obj, vec3d *hitpos, float pe
 {
 	Assert(ship_objp);	// Goober5000 - but not other_obj, not only for sexp but also for self-destruct
 
+	// add scripting hook for 'On Ship Death Started' -- Goober5000
+	// hook is placed at the beginning of this function to allow the scripter to
+	// actually have access to the ship before any death routines (such as mission logging) are executed
+	if (hitpos)
+		OnShipDeathStartedHook->run(scripting::hook_param_list(scripting::hook_param("Ship", 'o', ship_objp), scripting::hook_param("Killer", 'o', other_obj), scripting::hook_param("Hitpos", 'o', scripting::api::l_Vector.Set(*hitpos))));
+	else
+		OnShipDeathStartedHook->run(scripting::hook_param_list(scripting::hook_param("Ship", 'o', ship_objp), scripting::hook_param("Killer", 'o', other_obj)));
+
 	if(Script_system.IsActiveAction(CHA_DEATH) && Script_system.IsConditionOverride(CHA_DEATH, ship_objp))
 	{
 		//WMC - Do scripting stuff
@@ -1861,7 +1878,7 @@ void ship_hit_kill(object *ship_objp, object *other_obj, vec3d *hitpos, float pe
 		if (always_log_other_obj && other_obj) {
 			object *named_objp = other_obj;
 
-			if (named_objp->type == OBJ_WEAPON && named_objp->parent != -1) {
+			if (named_objp->type != OBJ_SHIP && named_objp->parent >= 0) {
 				named_objp = &Objects[other_obj->parent];
 			}
 			if (named_objp->type == OBJ_SHIP) {
