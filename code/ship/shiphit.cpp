@@ -1782,7 +1782,7 @@ static void ship_vaporize(ship *shipp)
 }
 
 //	*ship_objp was hit and we've determined he's been killed!  By *other_obj!
-void ship_hit_kill(object *ship_objp, object *other_obj, vec3d *hitpos, float percent_killed, int self_destruct)
+void ship_hit_kill(object *ship_objp, object *other_obj, vec3d *hitpos, float percent_killed, bool self_destruct, bool always_log_other_obj)
 {
 	Assert(ship_objp);	// Goober5000 - but not other_obj, not only for sexp but also for self-destruct
 
@@ -1855,7 +1855,21 @@ void ship_hit_kill(object *ship_objp, object *other_obj, vec3d *hitpos, float pe
 				}
 			}
 			killer_damage_percent = (int)(sp->damage_ship[killer_index]/sp->total_damage_received * 100.0f);
-		}		
+		}
+
+		// are we going to insist that other_obj was the killer?
+		if (always_log_other_obj && other_obj) {
+			object *named_objp = other_obj;
+
+			if (named_objp->type == OBJ_WEAPON && named_objp->parent != -1) {
+				named_objp = &Objects[other_obj->parent];
+			}
+			if (named_objp->type == OBJ_SHIP) {
+				killer_objp = nullptr;
+				killer_ship_name = Ships[named_objp->instance].ship_name;
+				killer_damage_percent = (int)(percent_killed * 100.0f);
+			}
+		}
 
 		if(!self_destruct){
 			// multiplayer
@@ -1982,7 +1996,7 @@ void ship_self_destruct( object *objp )
 	}
 
 	// self destruct
-	ship_hit_kill(objp, nullptr, nullptr, 1.0f, 1);	
+	ship_hit_kill(objp, nullptr, nullptr, 1.0f, true);
 }
 
 extern int Homing_hits, Homing_misses;
@@ -2522,7 +2536,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 				}
 
 				if ( !(shipp->flags[Ship::Ship_Flags::Dying]) && !MULTIPLAYER_CLIENT) {  // if not killed, then kill
-					ship_hit_kill(ship_objp, other_obj, hitpos, percent_killed, 0);
+					ship_hit_kill(ship_objp, other_obj, hitpos, percent_killed);
 				}
 			}
 		}
