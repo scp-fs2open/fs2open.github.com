@@ -55,7 +55,7 @@ void ship_apply_global_damage(object *ship_obj, object *other_obj, vec3d *force_
 void ship_apply_wash_damage(object *ship_obj, object *other_obj, float damage);
 
 // next routine needed for multiplayer
-void ship_hit_kill( object *ship_obj, object *other_obj, vec3d *hitpos, float percent_killed, int self_destruct);
+void ship_hit_kill( object *ship_obj, object *other_obj, vec3d *hitpos, float percent_killed, bool self_destruct = false, bool always_log_other_obj = false);
 
 void ship_self_destruct( object *objp );
 

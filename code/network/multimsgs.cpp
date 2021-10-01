@@ -2692,7 +2692,7 @@ void process_ship_kill_packet( ubyte *data, header *hinfo )
 
 	// do the normal thing when not ingame joining.  When ingame joining, simply kill off the ship.
 	if ( !(Net_player->flags & NETINFO_FLAG_INGAME_JOIN) ) {
-		ship_hit_kill( sobjp, oobjp, nullptr, percent_killed, sd );
+		ship_hit_kill( sobjp, oobjp, nullptr, percent_killed, sd != 0 );
 	} else {
         sobjp->flags.set(Object::Object_Flags::Should_be_dead);
 		ship_cleanup(sobjp->instance, SHIP_DESTROYED);
