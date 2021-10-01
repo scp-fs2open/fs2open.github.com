@@ -2003,4 +2003,6 @@ void ship_queue_missile_locks(ship *shipp);
 // snoops missile locks to see if any are ready to fire.
 bool ship_lock_present(ship *shipp);
 
+bool ship_secondary_has_ammo(ship_weapon* swp, int bank_index);
+
 #endif

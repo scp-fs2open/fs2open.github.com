@@ -3426,7 +3426,11 @@ void wl_bash_ship_weapons(ship_weapon *swp, wss_unit *slot)
 		if ( (slot->wep_count[sidx] > 0) && (slot->wep[sidx] >= 0) ) {
 			swp->secondary_bank_weapons[j] = slot->wep[sidx];
 			swp->secondary_bank_ammo[j] = slot->wep_count[sidx];
-			swp->secondary_bank_start_ammo[j] = (int)std::lround(Ship_info[slot->ship_class].secondary_bank_ammo_capacity[i] / Weapon_info[swp->secondary_bank_weapons[j]].cargo_size);
+
+			if (Weapon_info[slot->wep[sidx]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo])
+				swp->secondary_bank_start_ammo[j] = 0;
+			else
+				swp->secondary_bank_start_ammo[j] = (int)std::lround(Ship_info[slot->ship_class].secondary_bank_ammo_capacity[i] / Weapon_info[swp->secondary_bank_weapons[j]].cargo_size);
 			j++;
 		}
 	}

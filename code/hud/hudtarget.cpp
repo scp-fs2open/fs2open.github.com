@@ -6128,7 +6128,7 @@ void HudGaugeWeapons::render(float  /*frametime*/)
 			}
 
 			// show the cooldown time
-			if ( (sw->secondary_bank_ammo[i] > 0) && (sw->current_secondary_bank >= 0) ) {
+			if ((sw->current_secondary_bank >= 0) && ship_secondary_has_ammo(sw, i)) {
 				int ms_till_fire = timestamp_until(sw->next_secondary_fire_stamp[sw->current_secondary_bank]);
 				if ( (ms_till_fire >= 500) && ((wip->fire_wait >= 1 ) || (ms_till_fire > wip->fire_wait*1000)) ) {
 					renderPrintf(position[0] + Weapon_sreload_offset_x, name_y, EG_NULL, "%d", (int)std::lround(ms_till_fire/1000.0f));
@@ -6139,14 +6139,16 @@ void HudGaugeWeapons::render(float  /*frametime*/)
 			renderString(position[0] + Weapon_sname_offset_x, name_y, i ? EG_WEAPON_S1 : EG_WEAPON_S2, weapon_name);
 		}
 
-		int ammo=sw->secondary_bank_ammo[i];
+		if (!Weapon_info[sw->secondary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo]) {
+			int ammo=sw->secondary_bank_ammo[i];
 
-		// print out the ammo right justified
-		sprintf(ammo_str, "%d", ammo);
-		hud_num_make_mono(ammo_str, font_num);
-		gr_get_string_size(&w, &h, ammo_str);
+			// print out the ammo right justified
+			sprintf(ammo_str, "%d", ammo);
+			hud_num_make_mono(ammo_str, font_num);
+			gr_get_string_size(&w, &h, ammo_str);
 
-		renderString(position[0] + Weapon_sammo_offset_x - w, name_y, EG_NULL, ammo_str);
+			renderString(position[0] + Weapon_sammo_offset_x - w, name_y, EG_NULL, ammo_str);
+		}
 
 		if(i != 0) {
 			y += secondary_text_h;
@@ -7037,7 +7039,7 @@ void HudGaugeSecondaryWeapons::render(float  /*frametime*/)
 			}
 
 			// show the cooldown time
-			if ( (sw->secondary_bank_ammo[i] > 0) && (sw->current_secondary_bank >= 0) ) {
+			if ((sw->current_secondary_bank >= 0) && ship_secondary_has_ammo(sw, i)) {
 				int ms_till_fire = timestamp_until(sw->next_secondary_fire_stamp[sw->current_secondary_bank]);
 				if ( (ms_till_fire >= 500) && ((wip->fire_wait >= 1 ) || (ms_till_fire > wip->fire_wait*1000)) ) {
 					renderPrintf(position[0] + _sreload_offset_x, position[1] + text_y_offset, EG_NULL, "%d", (int)std::lround(ms_till_fire/1000.0f));
@@ -7047,14 +7049,16 @@ void HudGaugeSecondaryWeapons::render(float  /*frametime*/)
 			renderString(position[0] + _sname_offset_x, position[1] + text_y_offset, i ? EG_WEAPON_S1 : EG_WEAPON_S2, weapon_name);
 		}
 
-		int ammo = sw->secondary_bank_ammo[i];
+		if (!Weapon_info[sw->secondary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo]) {
+			int ammo = sw->secondary_bank_ammo[i];
 
-		// print out the ammo right justified
-		sprintf(ammo_str, "%d", ammo);
-		hud_num_make_mono(ammo_str, font_num);
-		gr_get_string_size(&w, &h, ammo_str);
+			// print out the ammo right justified
+			sprintf(ammo_str, "%d", ammo);
+			hud_num_make_mono(ammo_str, font_num);
+			gr_get_string_size(&w, &h, ammo_str);
 
-		renderString(position[0] + _sammo_offset_x - w, position[1] + text_y_offset, EG_NULL, ammo_str);
+			renderString(position[0] + _sammo_offset_x - w, position[1] + text_y_offset, EG_NULL, ammo_str);
+		}
 
 		bg_y_offset += _background_entry_h;
 		text_y_offset += _entry_h;
