@@ -43,7 +43,7 @@
 #include "render/batching.h"
 #include "ship/ship.h"
 #include "ship/shiphit.h"
-#include "weapon/beam.h"	// for BEAM_TYPE_? definitions
+#include "weapon/beam.h"	// for BeamType definitions
 #include "weapon/corkscrew.h"
 #include "weapon/emp.h"
 #include "weapon/flak.h"
@@ -2446,7 +2446,19 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	if ( optional_string("$BeamInfo:") ) {
 		// beam type
 		if(optional_string("+Type:")) {
-			stuff_int(&wip->b_info.beam_type);
+			stuff_string(fname, F_NAME, NAME_LENGTH);
+
+			if		(!stricmp(fname, "Direct Fire") || !stricmp(fname, "0")) wip->b_info.beam_type = BeamType::DIRECT_FIRE;
+			else if (!stricmp(fname, "Slashing")    || !stricmp(fname, "1")) wip->b_info.beam_type = BeamType::SLASHING;
+			else if (!stricmp(fname, "Targeting")   || !stricmp(fname, "2")) wip->b_info.beam_type = BeamType::TARGETING;
+			else if (!stricmp(fname, "Antifighter") || !stricmp(fname, "3")) wip->b_info.beam_type = BeamType::ANTIFIGHTER;
+			else if (!stricmp(fname, "Normal Fire") || !stricmp(fname, "4")) wip->b_info.beam_type = BeamType::NORMAL_FIRE;
+			else if (!stricmp(fname, "Omni")        || !stricmp(fname, "5")) wip->b_info.beam_type = BeamType::OMNI;
+			else
+				Warning(LOCATION, "Beam weapon, '%s', has an unknown beam type %s", wip->name, fname);
+		}
+		else if (first_time) {
+			Warning(LOCATION, "Beam weapon, '%s', does not specify a beam type.", wip->name);
 		}
 
 		// how long it lasts
@@ -2542,9 +2554,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			stuff_int(&wip->b_info.beam_shots);
 		}
 
-		// make sure that we have at least one shot so that TYPE_D beams will work
-		if ( (wip->b_info.beam_type == BEAM_TYPE_D) && (wip->b_info.beam_shots < 1) ) {
-			Warning( LOCATION, "Type D beam weapon, '%s', has less than one \"+Shots\" specified!  It must be set to at least 1!!",  wip->name);
+		// make sure that we have at least one shot so that antifighter beams will work
+		if ( (wip->b_info.beam_type == BeamType::ANTIFIGHTER) && (wip->b_info.beam_shots < 1) ) {
+			Warning( LOCATION, "Antifighter beam weapon, '%s', has less than one \"+Shots\" specified!  It must be set to at least 1!!",  wip->name);
 			wip->b_info.beam_shots = 1;
 		}
 		
@@ -8599,7 +8611,7 @@ void weapon_info::reset()
 	this->lssm_lock_range = 1000000.0f;	//local ssm lock range (optional)
 	this->lssm_warpeffect = FIREBALL_WARP;		//Which fireballtype is used for the warp effect
 
-	this->b_info.beam_type = -1;
+	this->b_info.beam_type = BeamType::DIRECT_FIRE;
 	this->b_info.beam_life = -1.0f;
 	this->b_info.beam_warmup = -1;
 	this->b_info.beam_warmdown = -1;

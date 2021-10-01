@@ -22,6 +22,7 @@
 #include "graphics/generic.h"
 #include "model/model.h"
 #include "particle/ParticleManager.h"
+#include "weapon/beam.h"
 #include "weapon/shockwave.h"
 #include "weapon/swarm.h"
 #include "weapon/trails.h"
@@ -217,7 +218,7 @@ typedef struct type5_beam_info {
 } type5_beam_info;
 
 typedef struct beam_weapon_info {
-	int beam_type;						// beam type
+	BeamType beam_type;						// beam type
 	float beam_life;					// how long it lasts
 	int beam_warmup;					// how long it takes to warmup (in ms)
 	int beam_warmdown;					// how long it takes to warmdown (in ms)
