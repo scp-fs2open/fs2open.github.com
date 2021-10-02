@@ -493,6 +493,16 @@ ADE_FUNC(setColor, l_Graphics, "number Red, number Green, number Blue, [number A
 	return ADE_RETURN_NIL;
 }
 
+ADE_FUNC(getColor, l_Graphics, nullptr, "Gets the active 2D drawing color", "number, number, number, number" , "rgba color which is currently in use for 2D drawing")
+{
+	
+	if(!Gr_inited)
+		return ADE_RETURN_NIL;
+
+	color cur = gr_screen.current_color;
+	return ade_set_args(L, "iiii", (int)cur.red, (int)cur.green, (int)cur.blue, (int)cur.alpha);
+}
+
 ADE_FUNC(setLineWidth, l_Graphics, "[number width=1.0]", "Sets the line width for lines. This call might fail if the specified width is not supported by the graphics implementation. Then the width will be the nearest supported value.", "boolean", "true if succeeded, false otherwise")
 {
 	if(!Gr_inited)
