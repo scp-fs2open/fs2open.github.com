@@ -1460,7 +1460,8 @@ void beam_render(beam *b, float u_offset)
 			if (result == -1)
 				nearest = b->last_start;
 
-			fade *= neb2_get_fog_visibility(&nearest, Neb2_fog_visibility_beam + (b->beam_light_width / (Neb2_fog_visibility_beam * 2.5f)));
+			fade *= neb2_get_fog_visibility(&nearest, 
+				Neb2_fog_visibility_beam_const + (b->beam_light_width * Neb2_fog_visibility_beam_size_factor));
 		}
 
 		material material_params;
@@ -1574,7 +1575,8 @@ static float get_muzzle_glow_alpha(beam* b)
 	}
 
 	if (The_mission.flags[Mission::Mission_Flags::Fullneb] && Neb_affects_beams) {
-		alpha *= neb2_get_fog_visibility(&b->last_start, Neb2_fog_visibility_beam + (b->beam_light_width / (Neb2_fog_visibility_beam * 2.5f)));
+		alpha *= neb2_get_fog_visibility(&b->last_start, 
+			Neb2_fog_visibility_beam_const + (b->beam_light_width * Neb2_fog_visibility_beam_size_factor));
 	}
 
 	return alpha;

@@ -121,10 +121,13 @@ float Neb2_fog_visibility_thruster = 1.5f;
 float Neb2_fog_visibility_weapon = 1.3f;
 float Neb2_fog_visibility_shield = 1.2f;
 float Neb2_fog_visibility_glowpoint = 1.2f;
-float Neb2_fog_visibility_beam = 4.0f;
-float Neb2_fog_visibility_particle = 1.0f;
+float Neb2_fog_visibility_beam_const = 4.0f;
+float Neb2_fog_visibility_beam_size_factor = 0.1f;
+float Neb2_fog_visibility_particle_const = 1.0f;
+float Neb2_fog_visibility_particle_size_factor = 0.08f;
 float Neb2_fog_visibility_shockwave = 2.5f;
-float Neb2_fog_visibility_fireball = 1.2f;
+float Neb2_fog_visibility_fireball_const = 1.2f;
+float Neb2_fog_visibility_fireball_size_factor = 0.08f;
 
 
 SCP_vector<poof> Neb2_poofs;

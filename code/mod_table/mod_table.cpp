@@ -412,8 +412,12 @@ void parse_mod_table(const char *filename)
 		if (optional_string("$Beams affected by nebula visibility:")) {
 			stuff_boolean(&Neb_affects_beams);
 
-			if (optional_string("+Visibility factor:")) {
-				stuff_float(&Neb2_fog_visibility_beam);
+			if (optional_string("+Constant visibility factor:")) {
+				stuff_float(&Neb2_fog_visibility_beam_const);
+			}
+
+			if (optional_string("+Size visibility factor:")) {
+				stuff_float(&Neb2_fog_visibility_beam_size_factor);
 			}
 		}
 
@@ -436,16 +440,24 @@ void parse_mod_table(const char *filename)
 		if (optional_string("$Particles affected by nebula visibility:")) {
 			stuff_boolean(&Neb_affects_particles);
 
-			if (optional_string("+Particle visibility factor:")) {
-				stuff_float(&Neb2_fog_visibility_particle);
+			if (optional_string("+Constant visibility factor:")) {
+				stuff_float(&Neb2_fog_visibility_particle_const);
+			}
+
+			if (optional_string("+Size visibility factor:")) {
+				stuff_float(&Neb2_fog_visibility_particle_size_factor);
 			}
 		}
 		
 		if (optional_string("$Fireballs affected by nebula visibility:")) {
 			stuff_boolean(&Neb_affects_fireballs);
 
-			if (optional_string("+Fireball visibility factor:")) {
-				stuff_float(&Neb2_fog_visibility_fireball);
+			if (optional_string("+Constant visibility factor:")) {
+				stuff_float(&Neb2_fog_visibility_fireball_const);
+			}
+
+			if (optional_string("+Size visibility factor:")) {
+				stuff_float(&Neb2_fog_visibility_fireball_size_factor);
 			}
 		}
 

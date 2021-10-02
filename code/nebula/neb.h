@@ -46,10 +46,13 @@ extern float Neb2_fog_visibility_thruster;
 extern float Neb2_fog_visibility_weapon;
 extern float Neb2_fog_visibility_shield;
 extern float Neb2_fog_visibility_glowpoint;
-extern float Neb2_fog_visibility_beam;
-extern float Neb2_fog_visibility_particle;
+extern float Neb2_fog_visibility_beam_const;
+extern float Neb2_fog_visibility_beam_size_factor;
+extern float Neb2_fog_visibility_particle_const;
+extern float Neb2_fog_visibility_particle_size_factor;
 extern float Neb2_fog_visibility_shockwave;
-extern float Neb2_fog_visibility_fireball;
+extern float Neb2_fog_visibility_fireball_const;
+extern float Neb2_fog_visibility_fireball_size_factor;
 
 extern int Neb2_poof_flags;
 const size_t MAX_NEB2_POOFS = 32;
