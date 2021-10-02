@@ -1319,6 +1319,7 @@ static json_t* json_get_v1() {
 		json_array_append_new(caps_array, json_string("No D3D"));
 		json_array_append_new(caps_array, json_string("New Sound"));
 		json_array_append_new(caps_array, json_string("SDL"));
+		json_array_append_new(caps_array, json_string("Multijoy"));
 
 		json_object_set_new(root, "caps", caps_array);
 	}
