@@ -20,16 +20,18 @@ enum
 
 enum
 {
-	FSSPEECH_SET_GENDER,
-	FSSPEECH_END_GENDER,
-	FSSPEECH_SET_LANGID,
-	FSSPEECH_END_LANGID,
-	FSSPEECH_SET_RATE,
-	FSSPEECH_END_RATE,
-	FSSPEECH_SET_PITCH,
-	FSSPEECH_END_PITCH,
-	FSSPEECH_SET_VOLUME,
-	FSSPEECH_END_VOLUME
+	FSSPEECH_TAG_SET_NAME,
+	FSSPEECH_TAG_END_NAME,
+	FSSPEECH_TAG_SET_GENDER,
+	FSSPEECH_TAG_END_GENDER,
+	FSSPEECH_TAG_SET_LANGID,
+	FSSPEECH_TAG_END_LANGID,
+	FSSPEECH_TAG_SET_RATE,
+	FSSPEECH_TAG_END_RATE,
+	FSSPEECH_TAG_SET_PITCH,
+	FSSPEECH_TAG_END_PITCH,
+	FSSPEECH_TAG_SET_VOLUME,
+	FSSPEECH_TAG_END_VOLUME
 };
 
 bool fsspeech_init();
@@ -45,9 +47,6 @@ void fsspeech_play_buffer(int type);
 bool fsspeech_play_from(int type);
 bool fsspeech_playing();
 
-void CleanStringTags(SCP_string& test);
-
 SCP_string fsspeech_write_tag(int type, const char* data = NULL);
-
 
 #endif	// header define

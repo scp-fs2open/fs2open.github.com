@@ -73,7 +73,6 @@ void fsspeech_deinit()
 	speech_inited = 0;
 }
 
-//reproduce
 void fsspeech_play(int type, const char *text, const char *tags)
 {
 	if (!speech_inited) {
@@ -92,7 +91,7 @@ void fsspeech_play(int type, const char *text, const char *tags)
 	}
 	
 	#ifdef _WIN32
-	if (tags != NULL && strlen(tags)>4) {
+	if (tags != NULL) {
 		char* text_with_tags = new char[strlen(tags) + strlen(text) + 1];
 		strcpy(text_with_tags, tags);
 		strcat(text_with_tags, text);
@@ -176,16 +175,18 @@ SCP_string fsspeech_write_tag(int type, const char* data)
 	SCP_string tag;
 	#ifdef _WIN32
 	switch (type) {
-		case FSSPEECH_SET_GENDER: tag.append("<voice required='Gender="); tag.append(data); tag.append("'>"); break;
-		case FSSPEECH_END_GENDER: tag.append("</voice>"); break;
-		case FSSPEECH_SET_LANGID: tag.append("<lang langid='"); tag.append(data); tag.append("'>"); break;
-		case FSSPEECH_END_LANGID: tag.append("</lang>"); break;
-		case FSSPEECH_SET_RATE: tag.append("<rate speed='"); tag.append(data); tag.append("'>"); break;
-		case FSSPEECH_END_RATE: tag.append("</rate>"); break;
-		case FSSPEECH_SET_PITCH: tag.append("<pitch middle='"); tag.append(data); tag.append("'>"); break;
-		case FSSPEECH_END_PITCH: tag.append("</pitch>"); break;
-		case FSSPEECH_SET_VOLUME: tag.append("<volume level='"); tag.append(data); tag.append("'>"); break;
-		case FSSPEECH_END_VOLUME: tag.append("</volume>"); break;
+		case FSSPEECH_TAG_SET_NAME: tag.append("<voice required='Name="); tag.append(data); tag.append("'>"); break;
+		case FSSPEECH_TAG_END_NAME: tag.append("</voice>"); break;
+		case FSSPEECH_TAG_SET_GENDER: tag.append("<voice required='Gender="); tag.append(data); tag.append("'>"); break;
+		case FSSPEECH_TAG_END_GENDER: tag.append("</voice>"); break;
+		case FSSPEECH_TAG_SET_LANGID: tag.append("<lang langid='"); tag.append(data); tag.append("'>"); break;
+		case FSSPEECH_TAG_END_LANGID: tag.append("</lang>"); break;
+		case FSSPEECH_TAG_SET_RATE: tag.append("<rate speed='"); tag.append(data); tag.append("'>"); break;
+		case FSSPEECH_TAG_END_RATE: tag.append("</rate>"); break;
+		case FSSPEECH_TAG_SET_PITCH: tag.append("<pitch middle='"); tag.append(data); tag.append("'>"); break;
+		case FSSPEECH_TAG_END_PITCH: tag.append("</pitch>"); break;
+		case FSSPEECH_TAG_SET_VOLUME: tag.append("<volume level='"); tag.append(data); tag.append("'>"); break;
+		case FSSPEECH_TAG_END_VOLUME: tag.append("</volume>"); break;
 	}
 	#else
 	#endif

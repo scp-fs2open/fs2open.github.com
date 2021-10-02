@@ -118,6 +118,7 @@ extern builtin_message Builtin_messages[];
 #define MESSAGE_HIGH_PRAISE			42
 #define MESSAGE_REARM_PRIMARIES		43
 #define MESSAGE_PRIMARIES_LOW		44
+
 typedef struct MissionMessage {
 	char	name[NAME_LENGTH];					// used to identify this message
 	char	message[MESSAGE_LENGTH];			// actual message

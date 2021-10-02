@@ -305,26 +305,34 @@ void persona_parse()
 	
 	if (optional_string("$Speech_Tags:")) {
 		char cstr_temp[NAME_LENGTH];
+		bool voice_name_set = false;
 		SCP_string temp_tags;
+		if (optional_string("+Voice:")) {
+			stuff_string(cstr_temp, F_NAME, NAME_LENGTH);
+			temp_tags.append(fsspeech_write_tag(FSSPEECH_TAG_SET_NAME, cstr_temp));
+			voice_name_set = true;
+		}
 		if (optional_string("+Gender:")) {
 			stuff_string(cstr_temp, F_NAME, NAME_LENGTH);
-			temp_tags.append(fsspeech_write_tag(FSSPEECH_SET_GENDER,cstr_temp));
+			if(!voice_name_set)
+				temp_tags.append(fsspeech_write_tag(FSSPEECH_TAG_SET_GENDER,cstr_temp));
 		}
 		if (optional_string("+Langid:")) {
 			stuff_string(cstr_temp, F_NAME, NAME_LENGTH);
-			temp_tags.append(fsspeech_write_tag(FSSPEECH_SET_LANGID, cstr_temp));
+			if (!voice_name_set)
+				temp_tags.append(fsspeech_write_tag(FSSPEECH_TAG_SET_LANGID, cstr_temp));
 		}
 		if (optional_string("+Rate:")) {
 			stuff_string(cstr_temp, F_NAME, NAME_LENGTH);
-			temp_tags.append(fsspeech_write_tag(FSSPEECH_SET_RATE, cstr_temp));
+			temp_tags.append(fsspeech_write_tag(FSSPEECH_TAG_SET_RATE, cstr_temp));
 		}
 		if (optional_string("+Pitch:")) {
 			stuff_string(cstr_temp, F_NAME, NAME_LENGTH);
-			temp_tags.append(fsspeech_write_tag(FSSPEECH_SET_PITCH, cstr_temp));
+			temp_tags.append(fsspeech_write_tag(FSSPEECH_TAG_SET_PITCH, cstr_temp));
 		}
 		if (optional_string("+Volume:")) {
 			stuff_string(cstr_temp, F_NAME, NAME_LENGTH);
-			temp_tags.append(fsspeech_write_tag(FSSPEECH_SET_VOLUME, cstr_temp));
+			temp_tags.append(fsspeech_write_tag(FSSPEECH_TAG_SET_VOLUME, cstr_temp));
 		}
 
 		if (temp_tags.size() < MAX_SPEECH_TAGS_LENGTH) {
