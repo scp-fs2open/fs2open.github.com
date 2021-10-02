@@ -88,6 +88,7 @@ namespace Weapon {
 		Can_damage_shooter,					// this weapon and any of its descendants can damage its shooter - Asteroth
 		Heals,								// 'damage' heals instead of actually damaging - Asteroth
 		No_collide,
+		Multilock_target_dead_subsys,
 
         NUM_VALUES
 	};
