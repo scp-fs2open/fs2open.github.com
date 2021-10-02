@@ -33,6 +33,7 @@
 #include <scripting/scripting.h>
 #include <ship/ship.h>
 #include <weapon/weapon.h>
+#include <cmath>
 
 namespace {
 
@@ -654,28 +655,59 @@ ADE_FUNC(drawPolygon,
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(drawRectangle, l_Graphics, "number X1, number Y1, number X2, number Y2, [boolean Filled=true]", "Draws a rectangle with CurrentColor", NULL, NULL)
+ADE_FUNC(drawRectangle, l_Graphics, "number X1, number Y1, number X2, number Y2, [boolean Filled=true, number angle=0.0]", "Draws a rectangle with CurrentColor", nullptr, nullptr)
 {
 	if(!Gr_inited)
 		return ADE_RETURN_NIL;
 
 	int x1,y1,x2,y2;
 	bool f=true;
+	float a = 0;
 
-	if(!ade_get_args(L, "iiii|b", &x1, &y1, &x2, &y2, &f))
+	if(!ade_get_args(L, "iiii|bf", &x1, &y1, &x2, &y2, &f, &a))
 		return ADE_RETURN_NIL;
 
 	if(f)
 	{
 		gr_set_bitmap(0);  // gr_rect will use the last bitmaps info, so set to zero to flush any previous alpha state
-		gr_rect(x1, y1, x2-x1, y2-y1, GR_RESIZE_NONE);
+		gr_rect(x1, y1, x2-x1, y2-y1, GR_RESIZE_NONE, a);
 	}
 	else
 	{
-		gr_line(x1,y1,x2,y1,GR_RESIZE_NONE);	//Top
-		gr_line(x1,y2,x2,y2,GR_RESIZE_NONE); //Bottom
-		gr_line(x1,y1,x1,y2,GR_RESIZE_NONE);	//Left
-		gr_line(x2,y1,x2,y2,GR_RESIZE_NONE);	//Right
+		if (a != 0) {
+			float centerX = (x1 + x2) / 2.0f;
+			float centerY = (y1 + y2) / 2.0f;
+
+			float rad = fl_radians(a);
+			
+
+			//We need to calculate each point individually due to the rotation, as they won't always align horizontally and vertically. 
+			
+			float AX = cosf(rad) * (x1 - centerX) - sinf(rad) * (y1 - centerY) + centerX;
+			float AY = sinf(rad) * (x1 - centerX) + cosf(rad) * (y1 - centerY) + centerY;
+			
+			float BX = cosf(rad) * (x2 - centerX) - sinf(rad) * (y1 - centerY) + centerX;
+			float BY = sinf(rad) * (x2 - centerX) + cosf(rad) * (y1 - centerY) + centerY;
+
+			float CX = cosf(rad) * (x2 - centerX) - sinf(rad) * (y2 - centerY) + centerX;
+			float CY = sinf(rad) * (x2 - centerX) + cosf(rad) * (y2 - centerY) + centerY;
+			
+			float DX = cosf(rad) * (x1 - centerX) - sinf(rad) * (y2 - centerY) + centerX;
+			float DY = sinf(rad) * (x1 - centerX) + cosf(rad) * (y2 - centerY) + centerY;
+
+
+			gr_line(fl2i(AX), fl2i(AY), fl2i(BX), fl2i(BY), GR_RESIZE_NONE);
+			gr_line(fl2i(BX), fl2i(BY), fl2i(CX), fl2i(CY), GR_RESIZE_NONE);
+			gr_line(fl2i(CX), fl2i(CY), fl2i(DX), fl2i(DY), GR_RESIZE_NONE);
+			gr_line(fl2i(DX), fl2i(DY), fl2i(AX), fl2i(AY), GR_RESIZE_NONE);
+		}
+		else {
+
+			gr_line(x1, y1, x2, y1, GR_RESIZE_NONE);	//Top
+			gr_line(x1, y2, x2, y2, GR_RESIZE_NONE);	//Bottom
+			gr_line(x1, y1, x1, y2, GR_RESIZE_NONE);	//Left
+			gr_line(x2, y1, x2, y2, GR_RESIZE_NONE);	//Right
+		}
 	}
 
 	return ADE_RETURN_NIL;
@@ -1159,7 +1191,7 @@ ADE_FUNC(drawString, l_Graphics, "string Message, [number X1, number Y1, number 
 			y2 = temp;
 		}
 
-		num_lines = split_str(s, x2-x, linelengths, linestarts, (unicode::codepoint_t)-1, false);
+		num_lines = split_str(s, x2-x, linelengths, linestarts, INT_MAX, (unicode::codepoint_t)-1, false);
 
 		//Make sure we don't go over size
 		int line_ht = gr_get_font_height();

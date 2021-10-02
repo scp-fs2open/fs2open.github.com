@@ -136,7 +136,13 @@ int shockwave_create(int parent_objnum, vec3d* pos, shockwave_create_info* sci, 
 	sw->time_elapsed=0.0f;
 	sw->delay_stamp = delay;
 
-	sw->rot_angles = sci->rot_angles;
+	if (!sci->rot_defined) {
+		sw->rot_angles.p = frand_range(0.0f, PI2);
+		sw->rot_angles.b = frand_range(0.0f, PI2);
+		sw->rot_angles.h = frand_range(0.0f, PI2);
+	} else 
+		sw->rot_angles = sci->rot_angles; // should just be 0,0,0
+
 	sw->damage_type_idx = sci->damage_type_idx;
 
 	sw->total_time = sw->outer_radius / sw->speed;
@@ -151,7 +157,7 @@ int shockwave_create(int parent_objnum, vec3d* pos, shockwave_create_info* sci, 
 	orient = vmd_identity_matrix;
 	vm_angles_2_matrix(&orient, &sw->rot_angles);
     flagset<Object::Object_Flags> tmp_flags;
-	objnum = obj_create( OBJ_SHOCKWAVE, real_parent, i, &orient, &sw->pos, sw->outer_radius, tmp_flags + Object::Object_Flags::Renders);
+	objnum = obj_create( OBJ_SHOCKWAVE, real_parent, i, &orient, &sw->pos, sw->outer_radius, tmp_flags + Object::Object_Flags::Renders, false );
 
 	if ( objnum == -1 ){
 		Int3();
@@ -329,7 +335,7 @@ void shockwave_move(object *shockwave_objp, float frametime)
 			if ( (sw->weapon_info_index >= 0) && (Weapon_info[sw->weapon_info_index].wi_flags[Weapon::Info_Flags::Aoe_Electronics]) && !(objp->flags[Object::Object_Flags::Invulnerable]) ) {
 				weapon_do_electronics_effect(objp, &sw->pos, sw->weapon_info_index);
 			}
-			ship_apply_global_damage(objp, shockwave_objp, &sw->pos, damage );
+			ship_apply_global_damage(objp, shockwave_objp, &sw->pos, damage, sw->damage_type_idx );
 			weapon_area_apply_blast(NULL, objp, &sw->pos, blast, 1);
 			break;
 		case OBJ_ASTEROID:
@@ -425,10 +431,10 @@ void shockwave_render(object *objp, model_draw_list *scene)
 
 		if ( Gr_framebuffer_effects[FramebufferEffects::Shockwaves] ) {
 			float intensity = ((sw->time_elapsed / sw->total_time) > 0.9f) ? (1.0f - (sw->time_elapsed / sw->total_time)) * 10.0f : 1.0f;
-			batching_add_distortion_bitmap_rotated(sw->current_bitmap, &p, fl_radians(sw->rot_angles.p), sw->radius, intensity);
+			batching_add_distortion_bitmap_rotated(sw->current_bitmap, &p, sw->rot_angles.p, sw->radius, intensity);
 		}
 
-		batching_add_volume_bitmap_rotated(sw->current_bitmap, &p, fl_radians(sw->rot_angles.p), sw->radius, alpha);
+		batching_add_volume_bitmap_rotated(sw->current_bitmap, &p, sw->rot_angles.p, sw->radius, alpha);
 	}
 }
 

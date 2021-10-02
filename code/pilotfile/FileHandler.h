@@ -8,11 +8,12 @@
 
 #include "globalincs/pstypes.h"
 
-#if SCP_COMPILER_IS_GNU
+#if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic push
 // This suppresses a GCC bug where it thinks that the Cutscenes from the enum class below shadows a global variable
 #pragma GCC diagnostic ignored "-Wshadow"
 #endif
+
 // sections of a pilot file. includes both plr and csg sections
 enum class Section {
 	Invalid = -1,
@@ -33,7 +34,7 @@ enum class Section {
 	Cutscenes = 0x0014,
 	LastMissions = 0x0015
 };
-#if SCP_COMPILER_IS_GNU
+#if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic pop
 #endif
 

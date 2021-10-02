@@ -279,7 +279,7 @@ void pilot_set_random_pic(player *p)
 		strcpy_s(p->image_filename, "");
 	} else {
 		// pick a random name from the list
-		int random_index = rand() % Num_pilot_images;
+		int random_index = Random::next(Num_pilot_images);
 		Assert((random_index >= 0) && (random_index < Num_pilot_images));
 		strcpy_s(p->image_filename, Pilot_images_arr[random_index]);
 	}	
@@ -299,7 +299,7 @@ void pilot_set_random_squad_pic(player *p)
 		player_set_squad_bitmap(p, "", false);
 	} else {
 		// pick a random name from the list
-		int random_index = rand() % Num_pilot_squad_images;		
+		int random_index = Random::next(Num_pilot_squad_images);
 		Assert((random_index >= 0) && (random_index < Num_pilot_squad_images));
 		player_set_squad_bitmap(p, Pilot_squad_images_arr[random_index], true);
 		player_set_squad_bitmap(p, Pilot_squad_images_arr[random_index], false);

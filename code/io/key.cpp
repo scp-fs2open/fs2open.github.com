@@ -542,9 +542,11 @@ void key_mark( uint code, int state, uint latency )
 			Current_key_down |= KEY_CTRLED;
 		}
 
-		Script_system.SetHookVar("Key", 's', textify_scancode(Current_key_down, true));
-		Script_system.RunCondition(CHA_KEYRELEASED);
-		Script_system.RemHookVar("Key");
+		if (Script_system.IsActiveAction(CHA_KEYRELEASED)) {
+			Script_system.SetHookVar("Key", 's', textify_scancode(Current_key_down, true));
+			Script_system.RunCondition(CHA_KEYRELEASED);
+			Script_system.RemHookVar("Key");
+		}
 	} else {
 		// Key going down
 		keyd_last_pressed = scancode;
@@ -570,10 +572,12 @@ void key_mark( uint code, int state, uint latency )
 				Current_key_down |= KEY_CTRLED;
 			}
 
-			// We use the universal value here to keep the scripting interface consistent regardless of the current language
-			Script_system.SetHookVar("Key", 's', textify_scancode(Current_key_down, true));
-			Script_system.RunCondition(CHA_KEYPRESSED);
-			Script_system.RemHookVar("Key");
+			if (Script_system.IsActiveAction(CHA_KEYPRESSED)) {
+				// We use the universal value here to keep the scripting interface consistent regardless of the current language
+				Script_system.SetHookVar("Key", 's', textify_scancode(Current_key_down, true));
+				Script_system.RunCondition(CHA_KEYPRESSED);
+				Script_system.RemHookVar("Key");
+			}
 		} else if (!keyd_repeat) {
 			// Don't buffer repeating key if repeat mode is off
 			scancode = 0xAA;		

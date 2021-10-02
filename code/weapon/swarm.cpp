@@ -227,7 +227,7 @@ void swarm_update_direction(object *objp, swarm_info* swarmp)
 			missile_dist = missile_speed * zig_zag_time / 1000.0f;
 			if (missile_dist < SWARM_DIST_OFFSET)
 				missile_dist = SWARM_DIST_OFFSET;
-			float angle_offset = asinf(SWARM_DIST_OFFSET / missile_dist);
+			float angle_offset = asinf_safe(SWARM_DIST_OFFSET / missile_dist);
 			Assert(!fl_is_nan(angle_offset));
 
 			// Radius around the target pos. Shortens as the missiles get closer to the target.
@@ -393,7 +393,7 @@ void turret_swarm_set_up_info(int parent_objnum, ship_subsys *turret, weapon_inf
 	} else {
 		tsi->num_to_launch = wip->cs_num_fired;
 	}
-	if (turret->system_info->flags[Model::Subsystem_Flags::Turret_use_ammo]) {
+	if (turret->system_info->flags[Model::Subsystem_Flags::Turret_use_ammo] && !Weapon_info[swp->secondary_bank_weapons[bank_fired]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo]) {
 		swp->secondary_bank_ammo[bank_fired] -= tsi->num_to_launch;
 	}
 	tsi->parent_objnum = parent_objnum;

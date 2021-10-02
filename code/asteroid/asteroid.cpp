@@ -324,7 +324,7 @@ object *asteroid_create(asteroid_field *asfieldp, int asteroid_type, int asteroi
     asteroid_default_flagset += Object::Object_Flags::Physics;
     asteroid_default_flagset += Object::Object_Flags::Collides;
     
-    objnum = obj_create(OBJ_ASTEROID, -1, n, &orient, &pos, radius, asteroid_default_flagset);
+    objnum = obj_create(OBJ_ASTEROID, -1, n, &orient, &pos, radius, asteroid_default_flagset, false);
 	
 	if ( (objnum == -1) || (objnum >= MAX_OBJECTS) ) {
 		mprintf(("Couldn't create asteroid -- out of object slots\n"));
@@ -496,7 +496,7 @@ void asteroid_create_all()
 
 	// ship_debris_odds_table keeps track of debris type of the next debris piece
 	// each different type (size) of debris piece has a diffenent weight, smaller weighted more heavily than larger.
-	// choose next type from table ship_debris_odds_table by rand()%max_weighted_range,
+	// choose next type from table ship_debris_odds_table by Random::next()%max_weighted_range,
 	// the threshold *below* which the debris type is selected.
 	struct {
 		float random_threshold;
@@ -564,7 +564,7 @@ void asteroid_create_all()
 			// For asteroid, load only large asteroids
 
 			// get a valid subtype
-			int subtype = rand() % NUM_DEBRIS_POFS;
+			int subtype = Random::next(NUM_DEBRIS_POFS);
 			while (Asteroid_field.field_debris_type[subtype] == -1) {
 				subtype = (subtype + 1) % NUM_DEBRIS_POFS;
 			}
@@ -758,7 +758,7 @@ static void maybe_throw_asteroid(int count)
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 		object *A = &Objects[so->objnum];
 		if (so->objnum == Asteroid_throw_objnum) {
-			int subtype = rand() % NUM_DEBRIS_POFS;
+			int subtype = Random::next(NUM_DEBRIS_POFS);
 			while (Asteroid_field.field_debris_type[subtype] == -1) {
 				subtype = (subtype + 1) % NUM_DEBRIS_POFS;
 			}
@@ -1324,7 +1324,7 @@ static void asteroid_do_area_effect(object *asteroid_objp)
 		if ( weapon_area_calc_damage(ship_objp, &asteroid_objp->pos, asip->inner_rad, asip->outer_rad, asip->blast, asip->damage, &blast, &damage, asip->outer_rad) == -1 )
 			continue;
 
-		ship_apply_global_damage(ship_objp, asteroid_objp, &asteroid_objp->pos, damage );
+		ship_apply_global_damage(ship_objp, asteroid_objp, &asteroid_objp->pos, damage, asip->damage_type_idx);
 		weapon_area_apply_blast(NULL, ship_objp, &asteroid_objp->pos, blast, 0);
 	}	// end for
 }
@@ -1432,9 +1432,14 @@ static void asteroid_maybe_break_up(object *pasteroid_obj)
 
 	if ( timestamp_elapsed(asp->final_death_time) ) {
 		vec3d	relvec, vfh, tvec;
+		bool skip = false;
+		bool hooked = Script_system.IsActiveAction(CHA_DEATH);
 
-		Script_system.SetHookObject("Self", pasteroid_obj);
-		if(!Script_system.IsConditionOverride(CHA_DEATH, pasteroid_obj))
+		if (hooked) {
+			Script_system.SetHookObject("Self", pasteroid_obj);
+			skip = Script_system.IsConditionOverride(CHA_DEATH, pasteroid_obj);
+		}
+		if (!skip)
 		{
 			pasteroid_obj->flags.set(Object::Object_Flags::Should_be_dead);
 
@@ -1484,7 +1489,7 @@ static void asteroid_maybe_break_up(object *pasteroid_obj)
 						int num_roids_var = split->max - split->min;
 
 						if (num_roids_var > 0)
-							num_roids += rand() % num_roids_var;
+							num_roids += Random::next(num_roids_var);
 
 						if (num_roids > 0)
 							for (int i=0; i<num_roids; i++)
@@ -1539,8 +1544,10 @@ static void asteroid_maybe_break_up(object *pasteroid_obj)
 			}
 			asp->final_death_time = timestamp(-1);
 		}
-		Script_system.RunCondition(CHA_DEATH, pasteroid_obj);
-		Script_system.RemHookVar("Self");
+		if (hooked) {
+			Script_system.RunCondition(CHA_DEATH, pasteroid_obj);
+			Script_system.RemHookVar("Self");
+		}
 	}
 }
 

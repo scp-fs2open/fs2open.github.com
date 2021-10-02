@@ -24,7 +24,8 @@
 #define NET_ACK_TIMEOUT 2500
 #define NET_GAME_TIMEOUT 300			//time in seconds
 
-#define MAX_GAME_DATA_SIZE	500
+#define MAX_GAME_DATA_SIZE	1500		// NOTE: this is larger than MAX_PACKET_SIZE but
+										//       is set here to match server code
 
 #define MAX_GENERIC_GAME_NAME_LEN	32
 
@@ -47,6 +48,8 @@
 #define	GNT_GAME_COUNT_REQ	7
 #define	GNT_GAME_COUNT_DATA	8
 #define	GNT_GAMELIST_DATA_NEW	9
+#define	GNT_GAME_PROBE_STATUS	10
+#define	GNT_GAMEUPDATE_STATUS	11
 
 #define	GT_FREESPACE			1
 #define	GT_DESCENT3				2

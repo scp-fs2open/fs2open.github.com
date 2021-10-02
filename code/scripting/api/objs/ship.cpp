@@ -983,11 +983,11 @@ ADE_FUNC(getCenterPosition, l_Ship, nullptr, "Returns the position of the ship's
 	return ade_set_args(L, "o", l_Vector.Set(center_pos));
 }
 
-ADE_FUNC(kill, l_Ship, "[object Killer, vector Hitpos]", "Kills the ship. Set \"Killer\" to the ship you are killing to self-destruct, and \"Hitpos\" to the world coordinates of the weapon impact", "boolean", "True if successful, false or nil otherwise")
+ADE_FUNC(kill, l_Ship, "[object Killer, vector Hitpos]", "Kills the ship. Set \"Killer\" to a ship (or a weapon fired by that ship) to credit it for the kill in the mission log. Set it to the ship being killed to self-destruct. Set \"Hitpos\" to the world coordinates of the weapon impact.", "boolean", "True if successful, false or nil otherwise")
 {
 	object_h *victim, *killer = nullptr;
 	vec3d *hitpos = nullptr;
-	if(!ade_get_args(L, "o|oo", l_Ship.GetPtr(&victim), l_Ship.GetPtr(&killer), l_Vector.GetPtr(&hitpos)))
+	if(!ade_get_args(L, "o|oo", l_Ship.GetPtr(&victim), l_Object.GetPtr(&killer), l_Vector.GetPtr(&hitpos)))
 		return ADE_RETURN_NIL;
 
 	if(!victim->IsValid())
@@ -996,13 +996,11 @@ ADE_FUNC(kill, l_Ship, "[object Killer, vector Hitpos]", "Kills the ship. Set \"
 	if(killer && !killer->IsValid())
 		return ADE_RETURN_NIL;
 
-	//Ripped straight from shiphit.cpp
-	float percent_killed = -get_hull_pct(victim->objp);
-	if (percent_killed > 1.0f){
-		percent_killed = 1.0f;
-	}
+	// use the current hull percentage for damage-after-death purposes
+	// (note that this does not actually affect scoring)
+	float percent_killed = get_hull_pct(victim->objp);
 
-	ship_hit_kill(victim->objp, killer ? killer->objp : nullptr, hitpos, percent_killed, (killer && victim->sig == killer->sig) ? 1 : 0);
+	ship_hit_kill(victim->objp, killer ? killer->objp : nullptr, hitpos, percent_killed, (killer && victim->sig == killer->sig), true);
 
 	return ADE_RETURN_TRUE;
 }

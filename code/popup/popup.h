@@ -116,4 +116,9 @@ void popup_change_text(const char *new_text);
 // Used if certain data is missing (e.g. running demo data).
 void popup_game_feature_not_in_demo();
 
+// create a popup which can test multiple conditions in a row
+bool popup_conditional_create(int flags, ...);
+void popup_conditional_close();
+int popup_conditional_do(int (*condition)(), const char *text);
+
 #endif

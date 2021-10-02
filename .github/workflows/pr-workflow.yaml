@@ -22,7 +22,7 @@ jobs:
             cmake_options: -DFSO_BUILD_WITH_OPENGL=OFF -DFSO_BUILD_WITH_VULKAN=OFF
     name: Linux
     runs-on: ubuntu-latest
-    container: ghcr.io/scp-fs2open/linux_build:sha-e29f882
+    container: ghcr.io/scp-fs2open/linux_build:sha-11e553c
     steps:
       - name: Cache Qt
         id: cache-qt-lin
@@ -44,6 +44,11 @@ jobs:
         with:
           submodules: true
           fetch-depth: 0
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1
+        with:
+          key: ${{ runner.os }}-${{ matrix.configuration }}-${{ matrix.compiler }}
+
       - name: Configure CMake
         env:
           CONFIGURATION: ${{ matrix.configuration }}

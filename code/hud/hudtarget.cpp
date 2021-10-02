@@ -6128,7 +6128,7 @@ void HudGaugeWeapons::render(float  /*frametime*/)
 			}
 
 			// show the cooldown time
-			if ( (sw->secondary_bank_ammo[i] > 0) && (sw->current_secondary_bank >= 0) ) {
+			if ((sw->current_secondary_bank >= 0) && ship_secondary_has_ammo(sw, i)) {
 				int ms_till_fire = timestamp_until(sw->next_secondary_fire_stamp[sw->current_secondary_bank]);
 				if ( (ms_till_fire >= 500) && ((wip->fire_wait >= 1 ) || (ms_till_fire > wip->fire_wait*1000)) ) {
 					renderPrintf(position[0] + Weapon_sreload_offset_x, name_y, EG_NULL, "%d", (int)std::lround(ms_till_fire/1000.0f));
@@ -6139,14 +6139,16 @@ void HudGaugeWeapons::render(float  /*frametime*/)
 			renderString(position[0] + Weapon_sname_offset_x, name_y, i ? EG_WEAPON_S1 : EG_WEAPON_S2, weapon_name);
 		}
 
-		int ammo=sw->secondary_bank_ammo[i];
+		if (!Weapon_info[sw->secondary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo]) {
+			int ammo=sw->secondary_bank_ammo[i];
 
-		// print out the ammo right justified
-		sprintf(ammo_str, "%d", ammo);
-		hud_num_make_mono(ammo_str, font_num);
-		gr_get_string_size(&w, &h, ammo_str);
+			// print out the ammo right justified
+			sprintf(ammo_str, "%d", ammo);
+			hud_num_make_mono(ammo_str, font_num);
+			gr_get_string_size(&w, &h, ammo_str);
 
-		renderString(position[0] + Weapon_sammo_offset_x - w, name_y, EG_NULL, ammo_str);
+			renderString(position[0] + Weapon_sammo_offset_x - w, name_y, EG_NULL, ammo_str);
+		}
 
 		if(i != 0) {
 			y += secondary_text_h;
@@ -7037,7 +7039,7 @@ void HudGaugeSecondaryWeapons::render(float  /*frametime*/)
 			}
 
 			// show the cooldown time
-			if ( (sw->secondary_bank_ammo[i] > 0) && (sw->current_secondary_bank >= 0) ) {
+			if ((sw->current_secondary_bank >= 0) && ship_secondary_has_ammo(sw, i)) {
 				int ms_till_fire = timestamp_until(sw->next_secondary_fire_stamp[sw->current_secondary_bank]);
 				if ( (ms_till_fire >= 500) && ((wip->fire_wait >= 1 ) || (ms_till_fire > wip->fire_wait*1000)) ) {
 					renderPrintf(position[0] + _sreload_offset_x, position[1] + text_y_offset, EG_NULL, "%d", (int)std::lround(ms_till_fire/1000.0f));
@@ -7047,14 +7049,16 @@ void HudGaugeSecondaryWeapons::render(float  /*frametime*/)
 			renderString(position[0] + _sname_offset_x, position[1] + text_y_offset, i ? EG_WEAPON_S1 : EG_WEAPON_S2, weapon_name);
 		}
 
-		int ammo = sw->secondary_bank_ammo[i];
+		if (!Weapon_info[sw->secondary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo]) {
+			int ammo = sw->secondary_bank_ammo[i];
 
-		// print out the ammo right justified
-		sprintf(ammo_str, "%d", ammo);
-		hud_num_make_mono(ammo_str, font_num);
-		gr_get_string_size(&w, &h, ammo_str);
+			// print out the ammo right justified
+			sprintf(ammo_str, "%d", ammo);
+			hud_num_make_mono(ammo_str, font_num);
+			gr_get_string_size(&w, &h, ammo_str);
 
-		renderString(position[0] + _sammo_offset_x - w, position[1] + text_y_offset, EG_NULL, ammo_str);
+			renderString(position[0] + _sammo_offset_x - w, position[1] + text_y_offset, EG_NULL, ammo_str);
+		}
 
 		bg_y_offset += _background_entry_h;
 		text_y_offset += _entry_h;
@@ -7185,13 +7189,17 @@ void HudGaugeHardpoints::render(float  /*frametime*/)
 	//secondary weapons
 	int num_secondaries_rendered = 0;
 	if ( draw_secondary_models ) {
+		auto ship_pm = model_get(sip->model_num);
+
 		for (i = 0; i < swp->num_secondary_banks; i++) {
-			if (Weapon_info[swp->secondary_bank_weapons[i]].external_model_num == -1 || !sip->draw_secondary_models[i])
+			auto wip = &Weapon_info[swp->secondary_bank_weapons[i]];
+
+			if (wip->external_model_num == -1 || !sip->draw_secondary_models[i])
 				continue;
 
-			auto bank = &(model_get(sip->model_num))->missile_banks[i];
+			auto bank = &ship_pm->missile_banks[i];
 
-			if (Weapon_info[swp->secondary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::External_weapon_lnch]) {
+			if (wip->wi_flags[Weapon::Info_Flags::External_weapon_lnch]) {
 				for(k = 0; k < bank->num_slots; k++) {
 					model_render_params weapon_render_info;
 
@@ -7202,7 +7210,12 @@ void HudGaugeHardpoints::render(float  /*frametime*/)
 					vec3d world_position;
 					vm_vec_unrotate(&world_position, &bank->pnt[k], &object_orient);
 
-					model_render_immediate(&weapon_render_info, Weapon_info[swp->secondary_bank_weapons[i]].external_model_num, &object_orient, &bank->pnt[k]);
+					// "Bank" the external model by the angle offset
+					angles angs = { 0.0f, bank->external_model_angle_offset[k], 0.0f };
+					matrix model_orient = object_orient;
+					vm_rotate_matrix_by_angles(&model_orient, &angs);
+
+					model_render_immediate(&weapon_render_info, wip->external_model_num, &model_orient, &bank->pnt[k]);
 				}
 			} else {
 				num_secondaries_rendered = 0;
@@ -7214,7 +7227,7 @@ void HudGaugeHardpoints::render(float  /*frametime*/)
 					if (num_secondaries_rendered >= sp->weapons.secondary_bank_ammo[i])
 						break;
 
-					if(sp->secondary_point_reload_pct[i][k] <= 0.0)
+					if(sp->secondary_point_reload_pct.get(i, k) <= 0.0)
 						continue;
 
 					model_render_params weapon_render_info;
@@ -7227,7 +7240,7 @@ void HudGaugeHardpoints::render(float  /*frametime*/)
 
 					num_secondaries_rendered++;
 
-					vm_vec_scale_add2(&secondary_weapon_pos, &vmd_z_vector, -(1.0f-sp->secondary_point_reload_pct[i][k]) * model_get(Weapon_info[swp->secondary_bank_weapons[i]].external_model_num)->rad);
+					vm_vec_scale_add2(&secondary_weapon_pos, &vmd_z_vector, -(1.0f-sp->secondary_point_reload_pct.get(i, k)) * model_get(wip->external_model_num)->rad);
 
 					weapon_render_info.set_detail_level_lock(detail_level_lock);
 					weapon_render_info.set_flags(render_flags);
@@ -7236,7 +7249,12 @@ void HudGaugeHardpoints::render(float  /*frametime*/)
 					vec3d world_position;
 					vm_vec_unrotate(&world_position, &secondary_weapon_pos, &object_orient);
 
-					model_render_immediate(&weapon_render_info, Weapon_info[swp->secondary_bank_weapons[i]].external_model_num, &object_orient, &world_position);
+					// "Bank" the external model by the angle offset
+					angles angs = { 0.0f, bank->external_model_angle_offset[k], 0.0f };
+					matrix model_orient = object_orient;
+					vm_rotate_matrix_by_angles(&model_orient, &angs);
+
+					model_render_immediate(&weapon_render_info, wip->external_model_num, &model_orient, &world_position);
 				}
 			}
 		}
@@ -7248,9 +7266,11 @@ void HudGaugeHardpoints::render(float  /*frametime*/)
 
 	//primary weapons
 	if ( draw_primary_models ) {
+		auto ship_pm = model_get(sip->model_num);
+
 		for ( i = 0; i < swp->num_primary_banks; i++ ) {
 			auto wip = &Weapon_info[swp->primary_bank_weapons[i]];
-			auto bank = &model_get(sip->model_num)->gun_banks[i];
+			auto bank = &ship_pm->gun_banks[i];
 
 			for ( k = 0; k < bank->num_slots; k++ ) {
 				if ( wip->external_model_num < 0 || !sip->draw_primary_models[i] ) {
@@ -7278,7 +7298,12 @@ void HudGaugeHardpoints::render(float  /*frametime*/)
 					vec3d world_position;
 					vm_vec_unrotate(&world_position, &bank->pnt[k], &object_orient);
 
-					model_render_immediate(&weapon_render_info, wip->external_model_num, swp->primary_bank_external_model_instance[i], &object_orient, &world_position);
+					// "Bank" the external model by the angle offset
+					angles angs = { 0.0f, bank->external_model_angle_offset[k], 0.0f };
+					matrix model_orient = object_orient;
+					vm_rotate_matrix_by_angles(&model_orient, &angs);
+
+					model_render_immediate(&weapon_render_info, wip->external_model_num, swp->primary_bank_external_model_instance[i], &model_orient, &world_position);
 				}
 			}
 		}

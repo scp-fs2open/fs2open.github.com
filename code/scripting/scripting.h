@@ -134,6 +134,14 @@ struct script_condition
 {
 	ConditionalType condition_type = CHC_NONE;
 	SCP_string condition_string;
+	// stores values evaluated at hook load to optimize later condition checking.
+	// currently mostly olg done for the highest impact condition types, according to performance profiling
+	// the exact type of information stored varries between hook types.
+	// CHC_STATE, CHC_OBJECTTYPE - stores the value of enum matching the name requested by the condition string.
+	// CHC_SHIPCLASS, CHC_WEAPONCLASS - stores the index of the info object requested by the condition
+	// CHC_VERSION, CHC_APPLICATION - stores validity of the check in 1 for true or 0 for false, as the condition will not change after load.
+	// see ConditionedHook::AddCondition for exact implimentation
+	int condition_cached_value = -1;
 };
 
 struct script_action
@@ -144,10 +152,9 @@ struct script_action
 
 class ConditionedHook
 {
-private:
-	SCP_vector<script_action> Actions;
-	script_condition Conditions[MAX_HOOK_CONDITIONS];
 public:
+	SCP_vector<script_action> Actions;
+	SCP_vector<script_condition> Conditions;
 	bool AddCondition(script_condition *sc);
 	bool AddAction(script_action *sa);
 
@@ -177,6 +184,9 @@ class script_state
 	// values are a vector to provide a stack of values. This is necessary to ensure consistent behavior if a scripting
 	// hook is called from within another script (e.g. calls to createShip)
 	SCP_unordered_map<SCP_string, SCP_vector<luacpp::LuaReference>> HookVariableValues;
+	// ActiveActions lets code that might run scripting hooks know whether any scripts are even registered for it.
+	// AssayActions is responsible for keeping it up to date.
+	bool ActiveActions[ConditionalActions::CHA_LAST+1];
 
 	void ParseChunkSub(script_function& out_func, const char* debug_str=NULL);
 
@@ -235,6 +245,8 @@ public:
 	void ParseGlobalChunk(ConditionalActions hookType, const char* debug_str=nullptr);
 	bool ParseCondition(const char *filename="<Unknown>");
 	void AddConditionedHook(ConditionedHook hook);
+	void AssayActions();
+	bool IsActiveAction(ConditionalActions action_id);
 
 	void AddGameInitFunction(script_function func);
 

@@ -55,7 +55,13 @@
 #define HUD_SUPPORT_GAUGE						37
 #define HUD_LAG_GAUGE							38
 
-extern const char *HUD_gauge_text[NUM_HUD_GAUGES];					// defined in sexp.cpp!!!!
+struct Legacy_HUD_gauge_pair
+{
+	const char *hud_gauge_text;
+	int hud_gauge_type;
+};
+
+extern Legacy_HUD_gauge_pair Legacy_HUD_gauges[NUM_HUD_GAUGES];					// defined in hudparse.cpp!!!!
 
 
 #endif	/* __HUD_COMMON_H__ */

@@ -470,7 +470,7 @@ void options_play_voice_clip()
 	auto gs = gamesnd_get_interface_sound(InterfaceSounds::VOICE_SLIDER_CLIP);
 	auto entry = gamesnd_choose_entry(gs);
 
-	auto snd_id = snd_load(entry, gs->flags, 0);
+	auto snd_id = snd_load(entry, &gs->flags, 0);
 
 	Voice_vol_handle = snd_play_raw( snd_id, 0.0f, 1.0f, SND_PRIORITY_SINGLE_INSTANCE );
 }
@@ -1353,7 +1353,6 @@ void options_detail_sliders_update()
 
 	// modify nebula stuff
 	Detail.nebula_detail = Detail_sliders[gr_screen.res][NEBULA_DETAIL_SLIDER].slider.pos;
-	neb2_set_detail_level(Detail.nebula_detail);
 
 	Detail.hardware_textures = Detail_sliders[gr_screen.res][HARDWARE_TEXTURES_SLIDER].slider.pos;
 	Detail.num_small_debris = Detail_sliders[gr_screen.res][SHARD_CULLING_SLIDER].slider.pos;

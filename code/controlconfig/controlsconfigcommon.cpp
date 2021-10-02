@@ -1567,9 +1567,9 @@ void control_config_common_read_section(int s, bool first_override) {
 
 		// Assign the various attributes to this control
 		int iTemp;
-		short key = 0;
 		auto  item = &Control_config[item_id];
 		auto& new_binding = new_preset.bindings[item_id];
+		short key = new_binding.get_btn(CID_KEYBOARD);
 
 		// Key assignment and modifiers
 		if (optional_string("$Key Default:")) {

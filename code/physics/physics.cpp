@@ -21,6 +21,7 @@
 #include "mod_table/mod_table.h"
 #include "physics/physics.h"
 #include "ship/ship.h"
+#include "utils/Random.h"
 
 
 
@@ -57,17 +58,11 @@ void physics_init( physics_info * pi )
 	pi->max_vel.xyz.z = 100.0f;		//forward
 	pi->max_rear_vel = 100.0f;	//backward -- controlled seperately
 
-	pi->max_rotvel.xyz.x = 2.0f;		//pitch
-	pi->max_rotvel.xyz.y = 1.0f;		//heading
-	pi->max_rotvel.xyz.z = 2.0f;		//bank
+	pi->max_rotvel = vm_vec_new(2.0f, 1.0f, 2.0f);
 
-	pi->prev_ramp_vel.xyz.x = 0.0f;
-	pi->prev_ramp_vel.xyz.y = 0.0f;
-	pi->prev_ramp_vel.xyz.z = 0.0f;
+	vm_vec_zero(&pi->prev_ramp_vel);
 
-	pi->desired_vel.xyz.x = 0.0f;
-	pi->desired_vel.xyz.y = 0.0f;
-	pi->desired_vel.xyz.z = 0.0f;
+	vm_vec_zero(&pi->desired_vel);
 
 	pi->slide_accel_time_const=pi->side_slip_time_const;	// slide using max_vel.xyz.x & .xyz.y
 	pi->slide_decel_time_const=pi->side_slip_time_const;	// slide using max_vel.xyz.x & .xyz.y
@@ -86,6 +81,7 @@ void physics_init( physics_info * pi )
 
 	pi->ai_desired_orient = vmd_zero_matrix; // Asteroth - initialize to the "invalid" orientation, which will be ignored by physics unless set otherwise
 
+	vm_vec_zero(&pi->acceleration);
 }
 
 
@@ -216,8 +212,8 @@ void physics_sim_rot(matrix * orient, physics_info * pi, float sim_time )
 
 	// Make ship shake due to shockwave, decreasing in amplitude at the end of the shockwave
 	if ( pi->flags & PF_IN_SHOCKWAVE ) {
-		tangles.p += (float) (myrand()-RAND_MAX_2) * RAND_MAX_1f * shock_amplitude;
-		tangles.h += (float) (myrand()-RAND_MAX_2) * RAND_MAX_1f * shock_amplitude;
+		tangles.p += (float) (Random::next()-Random::HALF_MAX_VALUE) * Random::INV_F_MAX_VALUE * shock_amplitude;
+		tangles.h += (float) (Random::next()-Random::HALF_MAX_VALUE) * Random::INV_F_MAX_VALUE * shock_amplitude;
 	}
 
 
@@ -279,6 +275,8 @@ void physics_sim_vel(vec3d * position, physics_info * pi, float sim_time, matrix
 	vec3d local_desired_vel;	// desired velocity in local coords
 	vec3d local_v_out;		// velocity in local coords following this frame
 	vec3d damp;
+
+	vec3d old_vel = pi->vel;
 
 	//	Maybe clear the reduced_damp flag.
 	//	This fixes the problem of the player getting near-instantaneous acceleration under unknown circumstances.
@@ -371,6 +369,10 @@ void physics_sim_vel(vec3d * position, physics_info * pi, float sim_time, matrix
 
 	// update world velocity
 	vm_vec_unrotate(&pi->vel, &local_v_out, orient);
+
+	// update acceleration
+	vm_vec_sub(&pi->acceleration, &pi->vel, &old_vel);
+	vm_vec_scale(&pi->acceleration, 1 / sim_time);
 
 	if (special_warp_in) {
 		vm_vec_rotate(&pi->prev_ramp_vel, &pi->vel, orient);

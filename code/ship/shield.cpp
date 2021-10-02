@@ -19,13 +19,14 @@
 #include "model/model.h"
 #include "freespace.h"
 #include "mission/missionparse.h"
+#include "nebula/neb.h"
 #include "network/multi.h"
 #include "object/objectshield.h"
 #include "ship/ship.h"
 #include "species_defs/species_defs.h"
 #include "tracing/Monitor.h"
 #include "tracing/tracing.h"
-#include "nebula/neb.h"
+#include "utils/Random.h"
 
 int	Show_shield_mesh = 0;
 
@@ -603,7 +604,7 @@ int get_global_shield_tri()
 			break;
 
 	if (shnum == MAX_SHIELD_HITS) {
-		shnum = myrand() % MAX_SHIELD_HITS;
+		shnum = Random::next(MAX_SHIELD_HITS);
 	}
 
 	Assert((shnum >= 0) && (shnum < MAX_SHIELD_HITS));

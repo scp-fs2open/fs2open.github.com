@@ -35,7 +35,7 @@ struct post_effect_t {
 };
 
 struct lightshaft_parameters {
-	bool on = false;
+	bool on = true; // enabled by default
 	float density = 0.5f;
 	float weight = 0.02f;
 	float falloff = 1.0f;
@@ -56,12 +56,19 @@ class PostProcessingManager {
 	const lightshaft_parameters& getLightshaftParams() const;
 	lightshaft_parameters& getLightshaftParams();
 
+	bool bloomShadersOk() const;
+	void setBloomShadersOk(bool ok);
+
   private:
 	SCP_vector<post_effect_t> m_postEffects;
 
 	lightshaft_parameters m_lightshaftParams;
+	bool m_bloomShadersOk = true;
 };
 
 } // namespace graphics
 
 bool gr_lightshafts_enabled();
+int gr_bloom_intensity();
+// used by lab
+void gr_set_bloom_intensity(int intensity);

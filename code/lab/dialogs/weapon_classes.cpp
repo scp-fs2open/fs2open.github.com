@@ -13,7 +13,8 @@ void WeaponClasses::open(Button* /*caller*/) {
 		return;
 
 	dialogWindow = (DialogWindow*)getLabManager()->Screen->Add(new DialogWindow("Weapon Classes", gr_screen.center_offset_x + 50, gr_screen.center_offset_y + 50));
-	dialogWindow->SetOwner(this);
+	Assert(Opener != nullptr);
+	dialogWindow->SetOwner(Opener->getDialog());
 	auto tree = (Tree*)dialogWindow->AddChild(new Tree("Weapon Tree", 0, 0));
 
 	SCP_vector<TreeItem*> typeHeaders;
@@ -52,13 +53,16 @@ void WeaponClasses::update(LabMode newLabMode, int classIndex) {
 	if (Class_toolbar == nullptr) {
 		Class_toolbar = (DialogWindow*)getLabManager()->Screen->Add(new DialogWindow("Class Toolbar", gr_screen.center_offset_x + 0,
 			gr_screen.center_offset_y + getLabManager()->Toolbar->GetHeight(), -1, -1, WS_NOTITLEBAR | WS_NONMOVEABLE));
-		Class_toolbar->SetOwner(this);
+		Assert(Opener != nullptr);
+		Class_toolbar->SetOwner(Opener->getDialog());
 	}
 	Class_toolbar->DeleteChildren();
 
 	auto x = 0;
-	for (auto subdialog : Subdialogs) {
-		auto cbp = Class_toolbar->AddChild(new DialogOpener(subdialog, x, 0));
+	for (auto &subdialog : Subdialogs) {
+		auto *dgo = new DialogOpener(subdialog, x, 0);
+		subdialog->setOpener(dgo);
+		auto *cbp = Class_toolbar->AddChild(dgo);
 		x += cbp->GetWidth();
 
 		subdialog->update(newLabMode, classIndex);

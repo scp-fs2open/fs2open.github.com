@@ -215,22 +215,7 @@ int waypoint_path_dlg::update_data(int redraw)
 			ptr = GET_NEXT(ptr);
 		}
 
-		for (i=0; i<Num_iffs; i++) {
-			if (!stricmp(m_name, Iff_info[i].iff_name)) {
-				if (bypass_errors)
-					return 1;
-
-				bypass_errors = 1;
-				z = MessageBox("This waypoint path name is already being used by a team.\n"
-					"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
-
-				if (z == IDCANCEL)
-					return -1;
-
-				m_name = _T(cur_waypoint_list->get_name());
-				UpdateData(FALSE);
-			}
-		}
+		// We don't need to check teams.  "Unknown" is a valid name and also an IFF.
 
 		for ( i=0; i < (int)Ai_tp_list.size(); i++) {
 			if (!stricmp(m_name, Ai_tp_list[i].name)) {
@@ -356,22 +341,7 @@ int waypoint_path_dlg::update_data(int redraw)
 			ptr = GET_NEXT(ptr);
 		}
 
-		for (i=0; i<Num_iffs; i++) {
-			if (!stricmp(m_name, Iff_info[i].iff_name)) {
-				if (bypass_errors)
-					return 1;
-
-				bypass_errors = 1;
-				z = MessageBox("This jump node name is already being used by a team.\n"
-					"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
-
-				if (z == IDCANCEL)
-					return -1;
-
-				m_name = _T(jnp->GetName());
-				UpdateData(FALSE);
-			}
-		}
+		// We don't need to check teams.  "Unknown" is a valid name and also an IFF.
 
 		for ( i=0; i < (int)Ai_tp_list.size(); i++) {
 			if (!stricmp(m_name, Ai_tp_list[i].name)) {

@@ -544,12 +544,12 @@ void gamesnd_preload_common_sounds()
 		return;
 
 	Assert( Snds.size() <= INT_MAX );
-	for (SCP_vector<game_snd>::iterator gs = Snds.begin(); gs != Snds.end(); ++gs) {
-		if ( gs->preload ) {
-			for (auto& entry : gs->sound_entries) {
+	for (auto& gs: Snds) {
+		if ( gs.preload ) {
+			for (auto& entry : gs.sound_entries) {
 				if ( entry.filename[0] != 0 && strnicmp(entry.filename, NOX("none.wav"), 4) != 0 ) {
 					game_busy( NOX("** preloading common game sounds **") );	// Animate loading cursor... does nothing if loading screen not active.
-					entry.id = snd_load(&entry, gs->flags);
+					entry.id = snd_load(&entry, &gs.flags);
 				}
 			}
 		}
@@ -565,12 +565,12 @@ void gamesnd_load_gameplay_sounds()
 		return;
 
 	Assert( Snds.size() <= INT_MAX );
-	for (SCP_vector<game_snd>::iterator gs = Snds.begin(); gs != Snds.end(); ++gs) {
-		if ( !gs->preload ) { // don't try to load anything that's already preloaded
-			for (auto& entry : gs->sound_entries) {
+	for (auto& gs: Snds) {
+		if ( !gs.preload ) { // don't try to load anything that's already preloaded
+			for (auto& entry : gs.sound_entries) {
 				if (entry.filename[0] != 0 && strnicmp(entry.filename, NOX("none.wav"), 4) != 0) {
 					game_busy(NOX("** preloading gameplay sounds **"));        // Animate loading cursor... does nothing if loading screen not active.
-					entry.id = snd_load(&entry, gs->flags);
+					entry.id = snd_load(&entry, &gs.flags);
 				}
 			}
 		}
@@ -583,8 +583,8 @@ void gamesnd_load_gameplay_sounds()
 void gamesnd_unload_gameplay_sounds()
 {
 	Assert( Snds.size() <= INT_MAX );
-	for (SCP_vector<game_snd>::iterator gs = Snds.begin(); gs != Snds.end(); ++gs) {
-		for (auto& entry : gs->sound_entries) {
+	for (auto& gs: Snds) {
+		for (auto& entry : gs.sound_entries) {
 			if (entry.id.isValid()) {
 				snd_unload(entry.id);
 				entry.id = sound_load_id::invalid();
@@ -602,10 +602,10 @@ void gamesnd_load_interface_sounds()
 		return;
 
 	Assert( Snds_iface.size() < INT_MAX );
-	for (SCP_vector<game_snd>::iterator si = Snds_iface.begin(); si != Snds_iface.end(); ++si) {
-		for (auto& entry : si->sound_entries) {
+	for (auto& gs: Snds) {
+		for (auto& entry : gs.sound_entries) {
 			if ( entry.filename[0] != 0 && strnicmp(entry.filename, NOX("none.wav"), 4) != 0 ) {
-				entry.id = snd_load(&entry, si->flags);
+				entry.id = snd_load(&entry, &gs.flags);
 			}
 		}
 	}
@@ -751,14 +751,14 @@ bool required_string_no_create(const char* token, bool no_create)
 
 static GameSoundCycleType parse_cycle_type() {
 	if (optional_string("Sequential")) {
-		return GameSoundCycleType::Sequential;
+		return GameSoundCycleType::SequentialCycle;
 	} else if (optional_string("Random")) {
-		return GameSoundCycleType::Random;
+		return GameSoundCycleType::RandomCycle;
 	} else {
 		error_display(0, "Failed to parse sound cycle type. Expected 'sequential' or 'random'. Got [%.32s]", next_tokens());
 		// Ignore everything until the end of the line. That should hopefully skip the bad token.
 		advance_to_eoln(nullptr);
-		return GameSoundCycleType::Sequential;
+		return GameSoundCycleType::SequentialCycle;
 	}
 }
 
@@ -1349,7 +1349,7 @@ float gamesnd_get_max_duration(game_snd* gs) {
 	for (auto& entry : gs->sound_entries) {
 		if (!entry.id.isValid()) {
 			// Lazily load unloaded sound entries when required
-			entry.id = snd_load(&entry, gs->flags);
+			entry.id = snd_load(&entry, &gs->flags);
 		}
 
 		max_length = std::max(max_length, snd_get_duration(entry.id));
@@ -1362,14 +1362,14 @@ game_snd_entry* gamesnd_choose_entry(game_snd* gs) {
 
 	size_t index = 0;
 	switch(gs->cycle_type) {
-	case GameSoundCycleType::Random:
+	case GameSoundCycleType::RandomCycle:
 		if (gs->sound_entries.size() == 1) {
 			index = 0;
 		} else {
 			index = util::UniformRange<size_t>(0, gs->sound_entries.size() - 1).next();
 		}
 		break;
-	case GameSoundCycleType::Sequential:
+	case GameSoundCycleType::SequentialCycle:
 		if (gs->last_entry_index == std::numeric_limits<size_t>::max()) {
 			// If this is the first time we must return the first sound to keep everything consistent
 			index = 0;

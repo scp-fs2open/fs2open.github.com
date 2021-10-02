@@ -1344,7 +1344,7 @@ void hud_maybe_popup_weapons_gauge()
 		int			i;
 
 		for ( i = 0; i < swp->num_secondary_banks; i++ ) {
-			if ( swp->secondary_bank_ammo[i] > 0 ) {
+			if (ship_secondary_has_ammo(swp, i)) {
 				int ms_till_fire = timestamp_until(swp->next_secondary_fire_stamp[i]);
 				if ( ms_till_fire >= 1000 ) {
 					hud_gauge_popup_start(HUD_WEAPONS_GAUGE, 2500);

@@ -67,6 +67,7 @@
 #include "mod_table/mod_table.h"
 #include "libs/ffmpeg/FFmpeg.h"
 #include "scripting/scripting.h"
+#include "utils/Random.h"
 
 #include <direct.h>
 #include "cmdline/cmdline.h"
@@ -105,7 +106,7 @@ int wing_objects[MAX_WINGS][MAX_SHIPS_PER_WING];
 char *Docking_bay_list[MAX_DOCKS];
 
 // Goober5000
-bool Show_iff[MAX_IFFS];
+SCP_vector<bool> Show_iff;
 
 CCriticalSection CS_cur_object_index;
 
@@ -296,7 +297,7 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 
 	SDL_SetMainReady();
 
-	srand( (unsigned) time(NULL) );
+	Random::seed(static_cast<unsigned int>(time(nullptr)));
 	init_pending_messages();
 
 	os_init(Osreg_class_name, Osreg_app_name);
@@ -340,8 +341,8 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	lcl_init(LCL_UNTRANSLATED);
 
 	// Goober5000 - force init XSTRs (so they work, but only work untranslated, based on above comment)
-	extern int Xstr_inited;
-	Xstr_inited = 1;
+	extern bool Xstr_inited;
+	Xstr_inited = true;
 
 #ifndef NDEBUG
 	load_filter_info();
@@ -386,8 +387,9 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	Fred_texture_replacements.clear();
 
 	// Goober5000
-	for (i = 0; i < MAX_IFFS; i++)
-		Show_iff[i] = true;
+	Show_iff.clear();
+	for (i = 0; i < (int)Iff_info.size(); i++)
+		Show_iff.push_back(true);
 
 	// Goober5000
 	strcpy_s(Voice_abbrev_briefing, "");
@@ -417,6 +419,7 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	ship_init();
 	parse_init();
 	techroom_intel_init();
+	hud_positions_init();
 	asteroid_init();
 
 	// get fireball IDs for sexpression usage
@@ -848,7 +851,6 @@ void clear_mission()
 	obj_init();
 	model_free_all();				// Free all existing models
 	ai_init();
-	ai_profiles_init();
 	ship_init();
 	jumpnode_level_close();
 	waypoint_level_close();
@@ -860,8 +862,9 @@ void clear_mission()
 		Wings[i].wing_insignia_texture = -1;
 	}
 
-	for (i=0; i<MAX_IFFS; i++){
-		Shield_sys_teams[i] = 0;
+	Shield_sys_teams.clear();
+	for (i=0; i< (int)Iff_info.size(); i++){
+		Shield_sys_teams.push_back(0);
 	}
 
 	for (i=0; i<MAX_SHIP_CLASSES; i++){
@@ -970,13 +973,13 @@ void clear_mission()
 	stars_pre_level_init();
 	Nebula_index = 0;
 	Mission_palette = 1;
-	Nebula_pitch = (int) ((float) (rand() & 0x0fff) * 360.0f / 4096.0f);
-	Nebula_bank = (int) ((float) (rand() & 0x0fff) * 360.0f / 4096.0f);
-	Nebula_heading = (int) ((float) (rand() & 0x0fff) * 360.0f / 4096.0f);
+	Nebula_pitch = (int) ((float) (Random::next() & 0x0fff) * 360.0f / 4096.0f);
+	Nebula_bank = (int) ((float) (Random::next() & 0x0fff) * 360.0f / 4096.0f);
+	Nebula_heading = (int) ((float) (Random::next() & 0x0fff) * 360.0f / 4096.0f);
 	Neb2_awacs = -1.0f;
 	Neb2_poof_flags = 0;
 	strcpy_s(Neb2_texture_name, "");
-	for(i=0; i<MAX_NEB2_POOFS; i++){
+	for(i=0; i<(int)MAX_NEB2_POOFS; i++){
 		Neb2_poof_flags |= (1<<i);
 	}
 
@@ -2470,7 +2473,7 @@ void management_add_ships_to_combo( CComboBox *box, int flags )
 	{
 		for (restrict_to_players = 0; restrict_to_players < 2; restrict_to_players++)
 		{
-			for (i = 0; i < Num_iffs; i++)
+			for (i = 0; i < (int)Iff_info.size(); i++)
 			{
 				char tmp[NAME_LENGTH + 15];
 				stuff_special_arrival_anchor_name(tmp, i, restrict_to_players, 0);

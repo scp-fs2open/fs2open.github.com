@@ -802,7 +802,7 @@ void chatbox_add_line(const char *msg, int pid, int add_id)
 	Assert(strlen(msg_extra) < (CHATBOX_STRING_LEN - 2));	
 
 	// split the text up into as many lines as necessary
-	n_lines = split_str(msg_extra, Chatbox_disp_w, n_chars, p_str, 3);
+	n_lines = split_str(msg_extra, Chatbox_disp_w, n_chars, p_str, 3, CHATBOX_STRING_LEN);
 	Assert(n_lines != -1);	
 
 	// setup the first line -- be sure to clear out the line
@@ -835,7 +835,7 @@ void chatbox_add_line(const char *msg, int pid, int add_id)
 	// if we have more than 1 line, re-split everything so that the rest are indented
 	if(n_lines > 1){
 		// split up the string after the first break-marker
-		n_lines = split_str(msg_extra + n_chars[0],Chatbox_disp_w - CHAT_LINE_INDENT,n_chars,p_str,3);
+		n_lines = split_str(msg_extra + n_chars[0],Chatbox_disp_w - CHAT_LINE_INDENT,n_chars,p_str,3, CHATBOX_STRING_LEN);
 		Assert(n_lines != -1);		
 
 		// setup these remaining lines

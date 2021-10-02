@@ -87,16 +87,22 @@ int is_parenthesis(char ch)
 
 //	Advance global Mp (mission pointer) past all current white space.
 //	Leaves Mp pointing at first non white space character.
-void ignore_white_space()
+void ignore_white_space(const char **pp)
 {
-	while ((*Mp != '\0') && is_white_space(*Mp))
-		Mp++;
+	if (pp == nullptr)
+		pp = const_cast<const char**>(&Mp);
+
+	while ((**pp != '\0') && is_white_space(**pp))
+		(*pp)++;
 }
 
-void ignore_gray_space()
+void ignore_gray_space(const char **pp)
 {
-	while ((*Mp != '\0') && is_gray_space(*Mp))
-		Mp++;
+	if (pp == nullptr)
+		pp = const_cast<const char**>(&Mp);
+
+	while ((**pp != '\0') && is_gray_space(**pp))
+		(*pp)++;
 }
 
 //	Truncate *str, eliminating all trailing white space.
@@ -2032,8 +2038,8 @@ int parse_get_line(char *lineout, int max_line_len, const char *start, int max_s
 void read_file_text(const char *filename, int mode, char *processed_text, char *raw_text)
 {
 	// copy the filename
-    if (!filename)
-        throw parse::ParseException("Invalid filename");
+	if (!filename)
+		throw parse::ParseException("Invalid filename");
 
 	strcpy_s(Current_filename_sub, filename);
 
@@ -2824,6 +2830,8 @@ void stuff_string_list(SCP_vector<SCP_string> &slp)
 	stuff_token_list(slp, [](SCP_string *buf)->bool {
 		if (*Mp != '\"') {
 			error_display(0, "Missing quotation marks in string list.");
+			// Since this is a bad token, skip characters until we find a comma, parenthesis, or EOLN
+			advance_to_eoln(",)");
 			return false;
 		}
 
@@ -2894,6 +2902,7 @@ size_t stuff_int_list(int *ilp, size_t max_ints, int lookup_type)
 	return stuff_token_list(ilp, max_ints, [&](int *buf)->bool {
 		if (*Mp == '"') {
 			int num = 0;
+			bool valid_negative = false;
 			SCP_string str;
 			get_string(str);
 
@@ -2901,29 +2910,32 @@ size_t stuff_int_list(int *ilp, size_t max_ints, int lookup_type)
 				case SHIP_TYPE:
 					num = ship_name_lookup(str.c_str());	// returns index of Ship[] entry with name
 					if (num < 0)
-						error_display(1, "Unable to find ship %s in stuff_int_list!", str.c_str());
+						error_display(0, "Unable to find ship %s in stuff_int_list!", str.c_str());
 					break;
 
 				case SHIP_INFO_TYPE:
 					num = ship_info_lookup(str.c_str());	// returns index of Ship_info[] entry with name
 					if (num < 0)
-						error_display(1, "Unable to find ship class %s in stuff_int_list!", str.c_str());
+						error_display(0, "Unable to find ship class %s in stuff_int_list!", str.c_str());
 					break;
 
 				case WEAPON_POOL_TYPE:
 					num = weapon_info_lookup(str.c_str());
 					if (num < 0)
-						error_display(1, "Unable to find weapon class %s in stuff_int_list!", str.c_str());
+						error_display(0, "Unable to find weapon class %s in stuff_int_list!", str.c_str());
 					break;
 
 				case WEAPON_LIST_TYPE:
 					num = weapon_info_lookup(str.c_str());
-					if (num < 0 && !str.empty())
-						error_display(1, "Unable to find weapon class %s in stuff_int_list!", str.c_str());
+					if (str.empty())
+						valid_negative = true;
+					else if (num < 0)
+						error_display(0, "Unable to find weapon class %s in stuff_int_list!", str.c_str());
 					break;
 
 				case RAW_INTEGER_TYPE:
 					num = atoi(str.c_str());
+					valid_negative = true;
 					break;
 
 				default:
@@ -2931,7 +2943,10 @@ size_t stuff_int_list(int *ilp, size_t max_ints, int lookup_type)
 					break;
 			}
 
-			*buf = num;
+			if (num < 0 && !valid_negative)
+				return false;
+
+			*buf = num;			
 		} else {
 			stuff_int(buf);
 		}
@@ -3019,13 +3034,22 @@ void stuff_loadout_list(SCP_vector<loadout_row> &list, int lookup_type)
 	}, get_lookup_type_name(lookup_type));
 }
 
-//Stuffs an integer list like stuff_int_list.
+//Stuffs an float list like stuff_int_list.
 size_t stuff_float_list(float* flp, size_t max_floats)
 {
 	return stuff_token_list(flp, max_floats, [](float *f)->bool {
 		stuff_float(f);
 		return true;
 	}, "float");
+}
+
+// ditto the above, but a vector of floats...
+void stuff_float_list(SCP_vector<float>& flp)
+{
+	stuff_token_list(flp, [](float* buf)->bool {
+		stuff_float(buf);
+		return true;
+		}, "float");
 }
 
 //	Stuff a vec3d struct, which is 3 floats.
@@ -3323,7 +3347,7 @@ char *split_str_once(char *src, int max_pixel_w)
 //	returns:			number of lines src is broken into
 //						-1 is returned when an error occurs
 //
-int split_str(const char *src, int max_pixel_w, int *n_chars, const char **p_str, int max_lines, unicode::codepoint_t ignore_char, bool strip_leading_whitespace)
+int split_str(const char *src, int max_pixel_w, int *n_chars, const char **p_str, int max_lines, int max_line_length, unicode::codepoint_t ignore_char, bool strip_leading_whitespace)
 {
 	char buffer[SPLIT_STR_BUFFER_SIZE];
 	const char *breakpoint = NULL;
@@ -3336,6 +3360,8 @@ int split_str(const char *src, int max_pixel_w, int *n_chars, const char **p_str
 	Assert(p_str != NULL);
 	Assert(max_lines > 0);
 	Assert(max_pixel_w > 0);
+
+	Assertion(max_line_length > 0, "Max line length should be >0, not %d; get a coder!\n", max_line_length);
 
 	memset(buffer, 0, sizeof(buffer));
 	buf_index = 0;
@@ -3419,7 +3445,7 @@ int split_str(const char *src, int max_pixel_w, int *n_chars, const char **p_str
 		buffer[buf_index] = 0;  // null terminate it
 
 		gr_get_string_size(&sw, NULL, buffer);
-		if (sw >= max_pixel_w) {
+		if (sw >= max_pixel_w || buf_index >= max_line_length) {
 			const char *end;
 
 			if (breakpoint) {
@@ -3454,7 +3480,7 @@ int split_str(const char *src, int max_pixel_w, int *n_chars, const char **p_str
 	return line_num;
 }
 
-int split_str(const char *src, int max_pixel_w, SCP_vector<int> &n_chars, SCP_vector<const char*> &p_str, unicode::codepoint_t ignore_char, bool strip_leading_whitespace)
+int split_str(const char *src, int max_pixel_w, SCP_vector<int> &n_chars, SCP_vector<const char*> &p_str, int max_line_length, unicode::codepoint_t ignore_char, bool strip_leading_whitespace)
 {
 	char buffer[SPLIT_STR_BUFFER_SIZE];
 	const char *breakpoint = NULL;
@@ -3464,6 +3490,8 @@ int split_str(const char *src, int max_pixel_w, SCP_vector<int> &n_chars, SCP_ve
 	// check our assumptions..
 	Assert(src != NULL);
 	Assert(max_pixel_w > 0);
+
+	Assertion(max_line_length > 0, "Max line length should be >0, not %d; get a coder!\n", max_line_length);
 
 	memset(buffer, 0, sizeof(buffer));
 
@@ -3542,7 +3570,7 @@ int split_str(const char *src, int max_pixel_w, SCP_vector<int> &n_chars, SCP_ve
 		buffer[buf_index] = 0;  // null terminate it
 
 		gr_get_string_size(&sw, NULL, buffer);
-		if (sw >= max_pixel_w) {
+		if (sw >= max_pixel_w || buf_index >= max_line_length) {
 			const char *end;
 
 			if (breakpoint) {
@@ -3597,13 +3625,11 @@ int subsystem_stricmp(const char *str1, const char *str2)
 		len2--;
 
 	// once we remove the trailing s on both names, they should be the same length
-	if (len1 > len2)
-		return 1;
-	if (len1 < len2)
-		return -1;
+	if (len1 == len2)
+		return strnicmp(str1, str2, len1);
 
-	// now do the comparison
-	return strnicmp(str1, str2, len1);
+	// if not, just do a regular comparison
+	return stricmp(str1, str2);
 }
 
 // Goober5000

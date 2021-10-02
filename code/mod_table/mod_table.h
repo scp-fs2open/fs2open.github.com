@@ -2,8 +2,10 @@
  * Created by Hassan "Karajorma" Kazmi for the FreeSpace2 Source Code Project.
  * You may not sell or otherwise commercially exploit the source or things you
  * create based on the source.
+ *
+ * This file is in charge of the "game_settings.tbl", colloquially referred to
+ * as the "mod table", and contains many misc FSO specific settings.
  */
-
 
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
@@ -35,6 +37,7 @@ extern float Shield_pain_flash_factor;
 extern SCP_string Window_title;
 extern bool Unicode_text_mode;
 extern bool Use_tabled_strings_for_default_language;
+extern bool Dont_preempt_training_voice;
 extern SCP_string Movie_subtitle_font;
 extern bool Enable_scripts_in_fred;
 extern SCP_string Window_icon_path;
@@ -62,6 +65,9 @@ extern bool Neb_affects_beams;
 extern bool Neb_affects_weapons;
 extern bool Neb_affects_particles;
 extern bool Neb_affects_fireballs;
+extern std::tuple<float, float, float, float> Shadow_distances;
+extern std::tuple<float, float, float, float> Shadow_distances_cockpit;
+extern bool Custom_briefing_icons_always_override_standard_icons;
 
 void mod_table_init();
 

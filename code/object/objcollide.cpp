@@ -267,10 +267,10 @@ int weapon_will_never_hit( object *obj_weapon, object *other, obj_pair * current
 		}
 
 		// check weapon that does not turn against sphere expanding at ship maxvel
-		// compare (weeapon) ray with expanding sphere (ship) to find earliest possible collision time
+		// compare (weapon) ray with expanding sphere (ship) to find earliest possible collision time
 		// look for two time solutions to Xw = Xs, where Xw = Xw0 + Vwt*t  Xs = Xs + Vs*(t+dt), where Vs*dt = radius of ship 
 		// Since direction of Vs is unknown, solve for (Vs*t) and find norm of both sides
-		if ( !(wip->wi_flags[Weapon::Info_Flags::Turns]) ) {
+		if ( !(wip->wi_flags[Weapon::Info_Flags::Turns]) && (obj_weapon->phys_info.flags & PF_CONST_VEL) ) {
 			vec3d delta_x, weapon_vel;
 			float a,b,c, delta_x_dot_vl, delta_t;
 			float root1, root2, root, earliest_time;
@@ -536,38 +536,7 @@ int collide_remove_weapons( )
 		}
 	}
 
-	if ( num_deleted )
-		return num_deleted;
-
-	// if we didn't remove any weapons, try to the N oldest weapons.  first checking for pairs, then
-	// checking for oldest weapons in general.  We will go through the loop a max of 2 times.  first time
-	// through, we check oldest weapons with pairs, next time through, for oldest weapons.
-	int loop_count = 0;
-	do {
-		for (int j = 0; j < CRW_MAX_TO_DELETE; j++ ) {
-			float oldest_time = 1000.0f;
-			int oldest_index = -1;
-			for (int i = 0; i < MAX_WEAPONS; i++ ) {
-				if ( Weapons[i].objnum == -1 )			// shouldn't happen, but this is the safe thing to do.
-					continue;
-				if ( ((loop_count || crw_status[i] == CRW_NO_PAIR)) && (Weapons[i].lifeleft < oldest_time) ) {
-					oldest_time = Weapons[i].lifeleft;
-					oldest_index = i;
-				}
-			}
-			if ( oldest_index != -1 ) {
-				obj_delete(Weapons[oldest_index].objnum);
-				num_deleted++;
-			}
-		}
-
-		// if we deleted some weapons, then we can break
-		if ( num_deleted )
-			break;
-
-		loop_count++;
-	} while ( loop_count < 2);
-
+	// stop here because any other weapon could currently be involved in a collision and can cause crashes
 	return num_deleted;
 
 }
@@ -635,10 +604,10 @@ void obj_reset_colliders()
 	Collision_cached_pairs.clear();
 }
 
-void obj_collide_retime_cached_pairs(int checkdly)
+void obj_collide_retime_cached_pairs()
 {
 	for ( auto& pair : Collision_cached_pairs ) {
-		pair.second.next_check_time = timestamp(checkdly);
+		pair.second.next_check_time = timestamp(0);
 	}
 }
 
