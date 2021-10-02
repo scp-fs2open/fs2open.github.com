@@ -89,6 +89,7 @@ namespace Weapon {
 		Heals,								// 'damage' heals instead of actually damaging - Asteroth
 		SecondaryNoAmmo,					// Secondaries that only use energy
 		No_collide,
+		Multilock_target_dead_subsys,
 
         NUM_VALUES
 	};
