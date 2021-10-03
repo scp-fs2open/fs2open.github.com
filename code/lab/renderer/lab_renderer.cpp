@@ -111,6 +111,9 @@ void LabRenderer::renderModel(float frametime) {
 	obj_move_all(frametime);
 	if (getLabManager()->CurrentMode == LabMode::Ship)
 		process_subobjects(getLabManager()->CurrentObject);
+
+	animation::ModelAnimation::stepAnimations(frametime);
+
 	particle::move_all(frametime);
 	particle::ParticleManager::get()->doFrame(frametime);
 	shockwave_move_all(frametime);
@@ -452,11 +455,10 @@ void LabRenderer::useBackground(const SCP_string& mission_name) {
 	}
 }
 
-LabCamera* LabRenderer::getCurrentCamera() {
+std::unique_ptr<LabCamera> &LabRenderer::getCurrentCamera() {
 	return labCamera;
 }
 
-void LabRenderer::setCurrentCamera(LabCamera* newcam) {
-	delete labCamera;
-	labCamera = newcam;
+void LabRenderer::setCurrentCamera(std::unique_ptr<LabCamera> &newcam) {
+	labCamera = std::move(newcam);
 }

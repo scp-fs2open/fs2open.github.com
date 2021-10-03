@@ -170,7 +170,8 @@ void RenderOptions::open(Button* /*caller*/) {
 		return;
 
 	dialogWindow = (DialogWindow*)getLabManager()->Screen->Add(new DialogWindow("Render Options", gr_screen.center_offset_x + gr_screen.center_w - 300, gr_screen.center_offset_y + 200));
-	dialogWindow->SetOwner(this);
+	Assert(Opener != nullptr);
+	dialogWindow->SetOwner(Opener->getDialog());
 
 	dialogWindow->DeleteChildren();
 
@@ -252,7 +253,7 @@ void RenderOptions::open(Button* /*caller*/) {
 	y += direct_sldr->GetHeight() + 2;
 
 	auto bloom_sldr = new Slider("Bloom", 0, 200, 0, y + 2, set_bloom, dialogWindow->GetWidth());
-	bloom_sldr->SetSliderValue((float)Cmdline_bloom_intensity);
+	bloom_sldr->SetSliderValue((float)gr_bloom_intensity());
 	dialogWindow->AddChild(bloom_sldr);
 	y += bloom_sldr->GetHeight() + 2;
 

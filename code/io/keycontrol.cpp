@@ -587,6 +587,10 @@ void debug_max_secondary_weapons(object *objp)
 		if (swp->secondary_bank_weapons[index] >= 0)
 		{
 			weapon_info *wip = &Weapon_info[swp->secondary_bank_weapons[index]];
+
+			if (wip->wi_flags[Weapon::Info_Flags::SecondaryNoAmmo])
+				continue;
+
 			float capacity = (float)sip->secondary_bank_ammo_capacity[index];
 			float size = (float)wip->cargo_size;
 			Assertion(size > 0.0f, "Weapon cargo size for %s must be greater than 0!", wip->name);
@@ -776,8 +780,8 @@ void process_debug_keys(int k)
 					// remove guardian flag -- kazan
 					Ships[objp->instance].ship_guardian_threshold = 0;
 					
-					ship_apply_local_damage( objp, Player_obj, &objp->pos, 100000.0f, MISS_SHIELDS, CREATE_SPARKS);
-					ship_apply_local_damage( objp, Player_obj, &objp->pos, 1.0f, MISS_SHIELDS, CREATE_SPARKS);
+					ship_apply_local_damage( objp, Player_obj, &objp->pos, 100000.0f, -1, MISS_SHIELDS, CREATE_SPARKS);
+					ship_apply_local_damage( objp, Player_obj, &objp->pos, 1.0f, -1, MISS_SHIELDS, CREATE_SPARKS);
 					break;
 				case OBJ_WEAPON:
 					Weapons[objp->instance].lifeleft = 0.01f;
@@ -847,7 +851,7 @@ void process_debug_keys(int k)
 				object	*objp = &Objects[Player_ai->target_objnum];
 
 				if (objp->type == OBJ_SHIP) {
-					ship_apply_local_damage( objp, Player_obj, &objp->pos, Ships[objp->instance].ship_max_hull_strength * 0.1f + 10.0f, MISS_SHIELDS, CREATE_SPARKS);
+					ship_apply_local_damage( objp, Player_obj, &objp->pos, Ships[objp->instance].ship_max_hull_strength * 0.1f + 10.0f, -1, MISS_SHIELDS, CREATE_SPARKS);
 				}
 			}
 			break;
@@ -885,7 +889,7 @@ void process_debug_keys(int k)
 
 				vm_vec_rand_vec_quick(&randvec);
 				vm_vec_scale_add(&pos, &Player_obj->pos, &randvec, Player_obj->radius);
-			ship_apply_local_damage(Player_obj, Player_obj, &pos, 25.0f, MISS_SHIELDS, CREATE_SPARKS);
+			ship_apply_local_damage(Player_obj, Player_obj, &pos, 25.0f, -1, MISS_SHIELDS, CREATE_SPARKS);
 			hud_get_target_strength(Player_obj, &shield, &integrity);
 			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "You whacked yourself down to %7.3f percent hull.\n", 9), 100.0f * integrity);
 			break;

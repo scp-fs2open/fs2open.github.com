@@ -777,11 +777,25 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 		
 		ai_turn_towards_vector(enemy_pos, Pl_objp, nullptr, rel_pos, 0.0f, 0, rvec);
 
+		// set an optimal range if applicable
+		float optimal_range = 0.0f;
+		ship_weapon* weapons = &Ships[Pl_objp->instance].weapons;
+		weapon_info* wip = nullptr;
+
+		if (weapons->num_primary_banks >= 1 && weapons->current_primary_bank >= 0) {
+			wip = &Weapon_info[weapons->primary_bank_weapons[weapons->current_primary_bank]];
+		} else if (weapons->num_secondary_banks >= 1 && weapons->current_secondary_bank >= 0) {
+			wip = &Weapon_info[weapons->secondary_bank_weapons[weapons->current_secondary_bank]];
+		}
+
+		if (wip != nullptr && wip->optimum_range > 0)
+			optimal_range = wip->optimum_range;
+
 		// calc range of primary weapon
 		weapon_travel_dist = ai_get_weapon_dist(&Ships[Pl_objp->instance].weapons);
 
 		if ( aip->targeted_subsys != NULL ) {
-			if (dist_to_enemy > (weapon_travel_dist-20)) {
+			if (dist_to_enemy > (optimal_range > 0.0f ? optimal_range : (weapon_travel_dist-20))) {
 				accelerate_ship(aip, 1.0f);
 				
 				ship	*shipp = &Ships[Pl_objp->instance];
@@ -809,7 +823,7 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 			} else if (dot_to_enemy < 0.75f) {
 				accel = 0.75f;
 			} else {
-				if (dist_to_enemy > weapon_travel_dist/2.0f) {
+				if (dist_to_enemy > (optimal_range > 0.0f ? optimal_range : (weapon_travel_dist/2.0f))) {
 					accel = 1.0f;
 				} else {
 					accel = 1.0f - dot_to_enemy;
@@ -914,7 +928,7 @@ static void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy)
 									}
 								}
 
-								if (timestamp_elapsed(swp->next_secondary_fire_stamp[current_bank])) {
+								if (timestamp_elapsed(swp->next_secondary_fire_stamp[current_bank]) && weapon_target_satisfies_lock_restrictions(swip, En_objp)) {
 									float firing_range;
 									if (swip->wi_flags[Weapon::Info_Flags::Local_ssm])
 										firing_range=swip->lssm_lock_range;

@@ -29,7 +29,7 @@
 
 
 // check structs for size compatibility
-SDL_COMPILE_TIME_ASSERT(udp_packet_header, sizeof(udp_packet_header) == 497);
+SDL_COMPILE_TIME_ASSERT(udp_packet_header, sizeof(udp_packet_header) == 517);
 SDL_COMPILE_TIME_ASSERT(vmt_fs2open_struct, sizeof(vmt_fs2open_struct) == 480);
 SDL_COMPILE_TIME_ASSERT(validate_id_request, sizeof(validate_id_request) == 60);
 SDL_COMPILE_TIME_ASSERT(squad_war_request, sizeof(squad_war_request) == 104);
@@ -163,6 +163,7 @@ static int SerializePilotPacket(const udp_packet_header *uph, ubyte *data)
 
 	Assert(packet_size >= PACKED_HEADER_ONLY_SIZE);
 	Assert(packet_size == uph->len);
+	Assert(packet_size <= MAX_PACKET_SIZE);
 
 	return static_cast<int>(packet_size);
 }

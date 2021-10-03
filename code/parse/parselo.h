@@ -81,7 +81,7 @@ extern void consolidate_double_characters(char *str, char ch);
 // white space
 extern int is_white_space(char ch);
 extern int is_white_space(unicode::codepoint_t cp);
-extern void ignore_white_space();
+extern void ignore_white_space(const char **pp = nullptr);
 extern void drop_trailing_white_space(char *str);
 extern void drop_leading_white_space(char *str);
 extern char *drop_white_space(char *str);
@@ -94,7 +94,7 @@ extern void drop_white_space(SCP_string &str);
 // gray space
 extern int is_gray_space(char ch);
 extern bool is_gray_space(unicode::codepoint_t cp);
-extern void ignore_gray_space();
+extern void ignore_gray_space(const char **pp = nullptr);
 
 // error
 extern int get_line_num();
@@ -200,6 +200,7 @@ void stuff_flagset(T *dest) {
 
 extern size_t stuff_int_list(int *ilp, size_t max_ints, int lookup_type = RAW_INTEGER_TYPE);
 extern size_t stuff_float_list(float* flp, size_t max_floats);
+extern void stuff_float_list(SCP_vector<float>& flp);
 extern size_t stuff_vec3d_list(vec3d *vlp, size_t max_vecs);
 extern void stuff_vec3d_list(SCP_vector<vec3d> &vec_list);
 extern size_t stuff_bool_list(bool *blp, size_t max_bools);

@@ -82,6 +82,7 @@ struct submodel_instance
 {
 	float	cur_angle = 0.0f;							// The current angle this thing is turned to.
 	float	prev_angle = 0.0f;
+	float	turret_idle_angle = 0.0f;				// If this is a turret, this is the expected idling angle of the submodel
 
 	float	current_turn_rate = 0.0f;
 	float	desired_turn_rate = 0.0f;
@@ -391,14 +392,20 @@ typedef struct model_path {
 // info for gun and missile banks.  Also used for docking points.  There should always
 // only be two slots for each docking bay
 
-#define MAX_SLOTS		25
+struct w_bank
+{
+	int		num_slots = 0;
+	vec3d	*pnt = nullptr;
+	vec3d	*norm = nullptr;
+	float   *external_model_angle_offset = nullptr;
 
-typedef struct w_bank {
-	int		num_slots;
-	vec3d	pnt[MAX_SLOTS];
-	vec3d	norm[MAX_SLOTS];
-	float		radius[MAX_SLOTS];
-} w_bank;
+	~w_bank()
+	{
+		delete[] pnt;
+		delete[] norm;
+		delete[] external_model_angle_offset;
+	}
+};
 
 struct glow_point{
 	vec3d	pnt;

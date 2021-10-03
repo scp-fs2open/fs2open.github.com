@@ -1675,13 +1675,13 @@ int CFred_mission_save::save_containers()
 		for (const auto &container : containers) {
 			if (container.is_list()) {
 				fout("\n$Name: %s", container.container_name.c_str());
-				if (container.type & ContainerType::STRING_DATA) {
+				if (any(container.type & ContainerType::STRING_DATA)) {
 					fout("\n$Data Type: String");
-				} else if (container.type & ContainerType::NUMBER_DATA) {
+				} else if (any(container.type & ContainerType::NUMBER_DATA)) {
 					fout("\n$Data Type: Number");
 				}
 
-				if (container.type & ContainerType::STRICTLY_TYPED_DATA) {
+				if (any(container.type & ContainerType::STRICTLY_TYPED_DATA)) {
 					fout("\n+Strictly Typed Data");
 				}
 
@@ -1707,23 +1707,23 @@ int CFred_mission_save::save_containers()
 		for (const auto &container : containers) {
 			if (container.is_map()) {
 				fout("\n$Name: %s", container.container_name.c_str());
-				if (container.type & ContainerType::STRING_DATA) {
+				if (any(container.type & ContainerType::STRING_DATA)) {
 					fout("\n$Data Type: String");
-				} else if (container.type & ContainerType::NUMBER_DATA) {
+				} else if (any(container.type & ContainerType::NUMBER_DATA)) {
 					fout("\n$Data Type: Number");
 				}
 
-				if (container.type & ContainerType::NUMBER_KEYS) {
+				if (any(container.type & ContainerType::NUMBER_KEYS)) {
 					fout("\n$Key Type: Number");
 				} else {
 					fout("\n$Key Type: String");
 				}
 
-				if (container.type & ContainerType::STRICTLY_TYPED_KEYS) {
+				if (any(container.type & ContainerType::STRICTLY_TYPED_KEYS)) {
 					fout("\n+Strictly Typed Keys");
 				}
 
-				if (container.type & ContainerType::STRICTLY_TYPED_DATA) {
+				if (any(container.type & ContainerType::STRICTLY_TYPED_DATA)) {
 					fout("\n+Strictly Typed Data");
 				}
 
@@ -1747,7 +1747,7 @@ int CFred_mission_save::save_containers()
 
 void CFred_mission_save::save_container_options(const sexp_container &container)
 {
-	if (container.type & ContainerType::NETWORK) {
+	if (any(container.type & ContainerType::NETWORK)) {
 		fout("+Network Container\n");
 	}
 
@@ -1755,9 +1755,9 @@ void CFred_mission_save::save_container_options(const sexp_container &container)
 		fout("+Eternal\n");
 	}
 
-	if (container.type & ContainerType::SAVE_ON_MISSION_CLOSE) {
+	if (any(container.type & ContainerType::SAVE_ON_MISSION_CLOSE)) {
 		fout("+Save On Mission Close\n");
-	} else if (container.type & ContainerType::SAVE_ON_MISSION_PROGRESS) {
+	} else if (any(container.type & ContainerType::SAVE_ON_MISSION_PROGRESS)) {
 		fout("+Save On Mission Progress\n");
 	}
 

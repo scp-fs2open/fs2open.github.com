@@ -27,13 +27,15 @@
 #define SEXPT_UNKNOWN	0x0002
 
 #define SEXPT_VALID		0x1000
-#define SEXPT_TYPE_MASK	0x00ff
+#define SEXPT_TYPE_MASK	0x03ff
 #define SEXPT_TYPE(X)	(SEXPT_TYPE_MASK & X)
 
 #define SEXPT_OPERATOR	0x0010
 #define SEXPT_NUMBER	0x0020
 #define SEXPT_STRING	0x0040
 #define SEXPT_VARIABLE	0x0080
+#define SEXPT_CONTAINER	0x0100
+#define SEXPT_MODIFIER	0x0200
 
 // tree_node flag
 #define NOT_EDITABLE	0x00
@@ -184,6 +186,7 @@ public:
 	int get_modify_variable_type(int parent);
 	int get_variable_count(const char *var_name);
 	int get_loadout_variable_count(int var_index);
+	int get_container_usage_count(const char *container_name) const;
 
 	// Goober5000
 	int find_argument_number(int parent_node, int child_node);
@@ -279,6 +282,7 @@ public:
 	sexp_list_item *get_listing_opf_game_snds();
 	sexp_list_item *get_listing_opf_fireball();
 	sexp_list_item *get_listing_opf_species();
+	sexp_list_item *get_listing_opf_language();
 
 	int m_mode;
 	int item_index;

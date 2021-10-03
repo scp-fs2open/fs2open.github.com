@@ -23,6 +23,7 @@
 #include "hud/hudparse.h"
 #include "model/model.h"
 #include "model/modelanim.h"
+#include "model/modelanimation.h"
 #include "network/multi_obj.h"
 #include "radar/radarsetup.h"
 #include "render/3d.h"
@@ -38,6 +39,11 @@
 
 class object;
 class WarpEffect;
+
+namespace scripting
+{
+	class Hook;
+}
 
 //	Part of the player died system.
 extern vec3d	Original_vec_to_deader;
@@ -161,6 +167,9 @@ public:
 
 	size_t primary_bank_pattern_index[MAX_SHIP_PRIMARY_BANKS];
 	size_t secondary_bank_pattern_index[MAX_SHIP_SECONDARY_BANKS];
+
+	// for type5 beams, keeps track of accumulated per burst rotation, added to with each shot (or burst)
+	float per_burst_rot;
 
 	/**
 	 * @brief Constructor. Calls clear()
@@ -440,7 +449,7 @@ typedef struct ship_flag_name {
 	char flag_name[TOKEN_LENGTH];		// the name written to the mission file for its corresponding parse_object flag
 } ship_flag_name;
 
-#define MAX_SHIP_FLAG_NAMES					19
+#define MAX_SHIP_FLAG_NAMES					20
 extern ship_flag_name Ship_flag_names[];
 
 #define DEFAULT_SHIP_PRIMITIVE_SENSOR_RANGE		10000	// Goober5000
@@ -457,6 +466,45 @@ typedef struct ship_spark {
 	int submodel_num;	// which submodel is making the spark
 	int end_time;
 } ship_spark;
+
+template <class T>
+struct reload_pct
+{
+	void init(int num_banks, int points_per_bank, T value)
+	{
+		_points_per_bank = points_per_bank;
+		_buffer.clear();
+		_buffer.resize(num_banks * points_per_bank, value);
+		_value = value;
+	}
+
+	T& get(int bank, int point)
+	{
+		int pos = bank * _points_per_bank + point;
+
+		// this can happen with mismatched ships.tbl and models
+		if (pos >= (int)_buffer.size())
+			return _value;
+
+		return _buffer[pos];
+	}
+
+	void set(int bank, int point, T value)
+	{
+		int pos = bank * _points_per_bank + point;
+
+		// this can happen with mismatched ships.tbl and models
+		if (pos >= (int)_buffer.size())
+			return;
+
+		_buffer[pos] = value;
+	}
+
+private:
+	int _points_per_bank = 0;
+	T _value;
+	SCP_vector<T> _buffer;
+};
 
 // NOTE: Can't be treated as a struct anymore, since it has STL data structures in its object tree!
 class ship
@@ -712,7 +760,7 @@ public:
 	bool bay_doors_need_open;		// keep track of whether I need the door open or not
 	int bay_doors_parent_shipnum;	// our parent ship, what we are entering/leaving
 	
-	float secondary_point_reload_pct[MAX_SHIP_SECONDARY_BANKS][MAX_SLOTS];	//after fireing a secondary it takes some time for that secondary weapon to reload, this is how far along in that proces it is (from 0 to 1)
+	reload_pct<float> secondary_point_reload_pct;	//after fireing a secondary it takes some time for that secondary weapon to reload, this is how far along in that proces it is (from 0 to 1)
 	float primary_rotate_rate[MAX_SHIP_PRIMARY_BANKS];
 	float primary_rotate_ang[MAX_SHIP_PRIMARY_BANKS];
 
@@ -721,7 +769,7 @@ public:
 
 	SCP_vector<alt_class> s_alt_classes;	
 
-	int ship_iff_color[MAX_IFFS][MAX_IFFS];
+	SCP_map<std::pair<int, int>, int> ship_iff_color;
 
 	int ammo_low_complaint_count;				// number of times this ship has complained about low ammo
 	int armor_type_idx;
@@ -1137,6 +1185,7 @@ public:
 	float		max_overclocked_speed;			// max speed when 100% power output sent to engines
 	float		max_weapon_reserve;				// maximum energy that can be stored for primary weapon usage
 	float		max_shield_regen_per_second;	// Goober5000 - max percent/100 of shield energy regenerated per second
+	float       shield_regen_hit_delay;			// Asteroth - delay after being hit before shield will start recharging again
 	float		max_weapon_regen_per_second;	// Goober5000 - max percent/100 of weapon energy regenerated per second
 
 	// Fields for tuning the ETS' direct shield<->weapon transfer feature
@@ -1202,6 +1251,9 @@ public:
 
 	vec3d	closeup_pos_targetbox;			// position for camera when using ship in closeup view for hud target monitor
 	float	closeup_zoom_targetbox;			// zoom when using ship in closeup view for hud target monitor
+
+	vec3d	chase_view_offset;				// special offset for chase view
+	float	chase_view_rigidity;			// how 'floaty' this ship is when viewed in chase view
 
 	allowed_weapon_bank allowed_weapons;	// specifies which weapons can be loaded out by the
 											// player during weapons loadout.
@@ -1312,7 +1364,7 @@ public:
 	int radar_image_size;
 	float radar_projection_size_mult;
 
-	int ship_iff_info[MAX_IFFS][MAX_IFFS];
+	SCP_map<std::pair<int, int>, int> ship_iff_info;
 
 	flagset<Ship::Aiming_Flags> aiming_flags;
 	float minimum_convergence_distance;
@@ -1337,6 +1389,8 @@ public:
 	SCP_map<SCP_string, path_metadata> pathMetadata;
 
 	SCP_unordered_map<int, void*> glowpoint_bank_override_map;
+
+	animation::ModelAnimationSet animations;
 
 	ship_info();
 	~ship_info();
@@ -1542,6 +1596,8 @@ extern void ship_cleanup(int shipnum, int cleanup_mode);
 extern void ship_destroy_instantly(object *ship_obj);
 extern void ship_actually_depart(int shipnum, int method = SHIP_DEPARTED_WARP);
 
+extern const std::shared_ptr<scripting::Hook> OnShipDeathStartedHook;
+
 extern bool in_autoaim_fov(ship *shipp, int bank_to_fire, object *obj);
 extern int ship_stop_fire_primary(object * obj);
 extern int ship_fire_primary(object * objp, int stream_weapons, int force = 0, bool rollback_shot = false);
@@ -1565,7 +1621,6 @@ extern void physics_ship_init(object *objp);
 
 //	Note: This is not a general purpose routine.
 //	It is specifically used for targeting.
-//	It only returns a subsystem position if it has shields.
 //	Return true/false for subsystem found/not found.
 //	Stuff vector *pos with absolute position.
 extern int get_subsystem_pos(vec3d *pos, object *objp, ship_subsys *subsysp);
@@ -1712,6 +1767,7 @@ int ship_lock_threat(ship *sp);
 int	bitmask_2_bitnum(int num);
 SCP_string ship_return_orders(ship *sp);
 char	*ship_return_time_to_goal(char *outbuf, ship *sp);
+int	ship_return_seconds_to_goal(ship *sp);
 
 void	ship_maybe_warn_player(ship *enemy_sp, float dist);
 void	ship_maybe_praise_player(ship *deader_sp);
@@ -1946,5 +2002,7 @@ void ship_queue_missile_locks(ship *shipp);
 
 // snoops missile locks to see if any are ready to fire.
 bool ship_lock_present(ship *shipp);
+
+bool ship_secondary_has_ammo(ship_weapon* swp, int bank_index);
 
 #endif

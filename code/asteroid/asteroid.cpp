@@ -1324,7 +1324,7 @@ static void asteroid_do_area_effect(object *asteroid_objp)
 		if ( weapon_area_calc_damage(ship_objp, &asteroid_objp->pos, asip->inner_rad, asip->outer_rad, asip->blast, asip->damage, &blast, &damage, asip->outer_rad) == -1 )
 			continue;
 
-		ship_apply_global_damage(ship_objp, asteroid_objp, &asteroid_objp->pos, damage );
+		ship_apply_global_damage(ship_objp, asteroid_objp, &asteroid_objp->pos, damage, asip->damage_type_idx);
 		weapon_area_apply_blast(NULL, ship_objp, &asteroid_objp->pos, blast, 0);
 	}	// end for
 }
@@ -1432,9 +1432,14 @@ static void asteroid_maybe_break_up(object *pasteroid_obj)
 
 	if ( timestamp_elapsed(asp->final_death_time) ) {
 		vec3d	relvec, vfh, tvec;
+		bool skip = false;
+		bool hooked = Script_system.IsActiveAction(CHA_DEATH);
 
-		Script_system.SetHookObject("Self", pasteroid_obj);
-		if(!Script_system.IsConditionOverride(CHA_DEATH, pasteroid_obj))
+		if (hooked) {
+			Script_system.SetHookObject("Self", pasteroid_obj);
+			skip = Script_system.IsConditionOverride(CHA_DEATH, pasteroid_obj);
+		}
+		if (!skip)
 		{
 			pasteroid_obj->flags.set(Object::Object_Flags::Should_be_dead);
 
@@ -1539,8 +1544,10 @@ static void asteroid_maybe_break_up(object *pasteroid_obj)
 			}
 			asp->final_death_time = timestamp(-1);
 		}
-		Script_system.RunCondition(CHA_DEATH, pasteroid_obj);
-		Script_system.RemHookVar("Self");
+		if (hooked) {
+			Script_system.RunCondition(CHA_DEATH, pasteroid_obj);
+			Script_system.RemHookVar("Self");
+		}
 	}
 }
 

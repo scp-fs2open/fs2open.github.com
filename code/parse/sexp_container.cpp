@@ -122,7 +122,7 @@ bool stuff_one_generic_sexp_container(SCP_string &name, ContainerType &type, int
 	}
 
 	if (optional_string("$Key Type:")) {
-		Assertion((type & ContainerType::MAP), "$Key Type: found for container which doesn't use keys!");
+		Assertion(any(type & ContainerType::MAP), "$Key Type: found for container which doesn't use keys!");
 
 		stuff_string(temp_type_string, F_NAME);
 		if (!stricmp(temp_type_string.c_str(), "Number")) {
@@ -137,7 +137,7 @@ bool stuff_one_generic_sexp_container(SCP_string &name, ContainerType &type, int
 	}
 
 	if (optional_string("+Strictly Typed Keys")) {
-		Assertion((type & ContainerType::MAP), "+Strictly Typed Keys found for container which doesn't use keys!");
+		Assertion(any(type & ContainerType::MAP), "+Strictly Typed Keys found for container which doesn't use keys!");
 		Warning(LOCATION, "Container %s is marked for strictly typed keys, which are not yet supported.", name.c_str());
 		type |= ContainerType::STRICTLY_TYPED_KEYS;
 	}
@@ -166,12 +166,12 @@ bool stuff_one_generic_sexp_container(SCP_string &name, ContainerType &type, int
 
 	// player-persistent
 	if (optional_string("+Save On Mission Close")) {
-		Assert(!(type & ContainerType::SAVE_ON_MISSION_PROGRESS));
+		Assert(none(type & ContainerType::SAVE_ON_MISSION_PROGRESS));
 		type |= ContainerType::SAVE_ON_MISSION_CLOSE;
 	}
 
-	Assert(!(type & ContainerType::SAVE_TO_PLAYER_FILE) ||
-		   ((type & ContainerType::SAVE_ON_MISSION_PROGRESS) ^ (type & ContainerType::SAVE_ON_MISSION_CLOSE)));
+	Assert(none(type & ContainerType::SAVE_TO_PLAYER_FILE) ||
+		   (any(type & ContainerType::SAVE_ON_MISSION_PROGRESS) ^ any(type & ContainerType::SAVE_ON_MISSION_CLOSE)));
 
 	return valid;
 }

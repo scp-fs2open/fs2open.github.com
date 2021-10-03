@@ -270,14 +270,13 @@ void mouse_mark_button( uint flags, int set)
 
 	Script_system.SetHookVar("MouseButton", 'i', flags);
 
-	//WMC - On Mouse Pressed and On Mouse Released hooks
-	if (set == 1)
-	{
-		Script_system.RunCondition(CHA_MOUSEPRESSED);
-	}
-	else if (set == 0)
-	{
-		Script_system.RunCondition(CHA_MOUSERELEASED);
+	if (Script_system.IsActiveAction(CHA_MOUSEPRESSED) || Script_system.IsActiveAction(CHA_MOUSERELEASED)) {
+		//WMC - On Mouse Pressed and On Mouse Released hooks
+		if (set == 1) {
+			Script_system.RunCondition(CHA_MOUSEPRESSED);
+		} else if (set == 0) {
+			Script_system.RunCondition(CHA_MOUSERELEASED);
+		}
 	}
 
 	Script_system.RemHookVar("MouseButton");
@@ -464,7 +463,7 @@ void mouse_event(int x, int y, int dx, int dy)
 	Mouse_dx += dx;
 	Mouse_dy += dy;
 
-	if(Mouse_dx != 0 || Mouse_dy != 0)
+	if (Script_system.IsActiveAction(CHA_MOUSEMOVED) && (Mouse_dx != 0 || Mouse_dy != 0))
 	{
 		Script_system.RunCondition(CHA_MOUSEMOVED);
 	}

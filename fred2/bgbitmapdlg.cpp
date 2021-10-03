@@ -33,6 +33,9 @@ static char THIS_FILE[] = __FILE__;
 /////////////////////////////////////////////////////////////////////////////
 // bg_bitmap_dlg dialog
 
+// FRED has a fixed number of checkboxes and supports only up to this number of nebula poofs
+#define MAX_NEB2_POOF_CHECKBOXES	6
+
 bg_bitmap_dlg::bg_bitmap_dlg(CWnd* pParent) : CDialog(bg_bitmap_dlg::IDD, pParent)
 {
 	//{{AFX_DATA_INIT(bg_bitmap_dlg)		
@@ -47,12 +50,10 @@ bg_bitmap_dlg::bg_bitmap_dlg(CWnd* pParent) : CDialog(bg_bitmap_dlg::IDD, pParen
 	m_subspace = FALSE;
 	m_fullneb = FALSE;
 	m_toggle_trails = FALSE;
-	m_poof_0 = Neb2_poof_flags & (1<<0) ? 1 : 0;
-	m_poof_1 = Neb2_poof_flags & (1<<1) ? 1 : 0;
-	m_poof_2 = Neb2_poof_flags & (1<<2) ? 1 : 0;
-	m_poof_3 = Neb2_poof_flags & (1<<3) ? 1 : 0;
-	m_poof_4 = Neb2_poof_flags & (1<<4) ? 1 : 0;
-	m_poof_5 = Neb2_poof_flags & (1<<5) ? 1 : 0;
+
+	for (int i = 0; i < MAX_NEB2_POOFS; ++i)
+		m_poofs[i] = Neb2_poof_flags & (1 << i) ? 1 : 0;
+
 	s_pitch = 0;
 	s_bank = 0;
 	s_heading = 0;
@@ -95,12 +96,10 @@ void bg_bitmap_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_CBIndex(pDX, IDC_NEB2_TEXTURE, m_neb2_texture);
 	DDX_Check(pDX, IDC_SUBSPACE, m_subspace);
 	DDX_Check(pDX, IDC_FULLNEB, m_fullneb);
-	DDX_Check(pDX, IDC_POOF0, m_poof_0);
-	DDX_Check(pDX, IDC_POOF1, m_poof_1);
-	DDX_Check(pDX, IDC_POOF2, m_poof_2);
-	DDX_Check(pDX, IDC_POOF3, m_poof_3);
-	DDX_Check(pDX, IDC_POOF4, m_poof_4);
-	DDX_Check(pDX, IDC_POOF5, m_poof_5);
+
+	for (int i = 0; i < MAX_NEB2_POOF_CHECKBOXES; ++i)
+		DDX_Check(pDX, IDC_POOF0 + i, m_poofs[i]);
+
 	DDX_Check(pDX, IDC_NEB_TOGGLE_TRAILS, m_toggle_trails);
 	DDX_Text(pDX, IDC_SUN1, s_name);
 	DDX_Text(pDX, IDC_SUN1_P, s_pitch);
@@ -219,12 +218,8 @@ void bg_bitmap_dlg::create()
 	build_nebfile_list();	
 
 	// setup neb poof names
-	GetDlgItem(IDC_POOF0)->SetWindowText(Neb2_poof_filenames[0]);	
-	GetDlgItem(IDC_POOF1)->SetWindowText(Neb2_poof_filenames[1]);
-	GetDlgItem(IDC_POOF2)->SetWindowText(Neb2_poof_filenames[2]);
-	GetDlgItem(IDC_POOF3)->SetWindowText(Neb2_poof_filenames[3]);
-	GetDlgItem(IDC_POOF4)->SetWindowText(Neb2_poof_filenames[4]);
-	GetDlgItem(IDC_POOF5)->SetWindowText(Neb2_poof_filenames[5]);
+	for (i = 0; i < MAX_NEB2_POOF_CHECKBOXES; ++i)
+		GetDlgItem(IDC_POOF0 + i)->SetWindowText(Poof_info[i].name);
 
 	m_skybox_model = _T(The_mission.skybox_model);
 	m_envmap = _T(The_mission.envmap_name);
@@ -373,29 +368,10 @@ void bg_bitmap_dlg::OnClose()
 
 		// store poof flags
 		Neb2_poof_flags = 0;
-		if(m_poof_0)
+		for (int i = 0; i < MAX_NEB2_POOFS; ++i)
 		{
-			Neb2_poof_flags |= (1<<0);
-		}
-		if(m_poof_1)
-		{
-			Neb2_poof_flags |= (1<<1);
-		}
-		if(m_poof_2)
-		{
-			Neb2_poof_flags |= (1<<2);
-		}
-		if(m_poof_3)
-		{
-			Neb2_poof_flags |= (1<<3);
-		}
-		if(m_poof_4)
-		{
-			Neb2_poof_flags |= (1<<4);
-		}
-		if(m_poof_5)
-		{
-			Neb2_poof_flags |= (1<<5);
+			if (m_poofs[i])
+				Neb2_poof_flags |= (1 << i);
 		}
 		
 		// get the bitmap name
@@ -551,12 +527,10 @@ void bg_bitmap_dlg::OnFullNeb()
 		GetDlgItem(IDC_NEB2_INTENSITY)->EnableWindow(TRUE);
 		GetDlgItem(IDC_NEB2_TEXTURE)->EnableWindow(TRUE);
 		GetDlgItem(IDC_NEB2_LIGHTNING)->EnableWindow(TRUE);
-		GetDlgItem(IDC_POOF0)->EnableWindow(TRUE);
-		GetDlgItem(IDC_POOF1)->EnableWindow(TRUE);
-		GetDlgItem(IDC_POOF2)->EnableWindow(TRUE);
-		GetDlgItem(IDC_POOF3)->EnableWindow(TRUE);
-		GetDlgItem(IDC_POOF4)->EnableWindow(TRUE);
-		GetDlgItem(IDC_POOF5)->EnableWindow(TRUE);
+
+		for (int i = 0; i < MAX_NEB2_POOF_CHECKBOXES; ++i)
+			GetDlgItem(IDC_POOF0 + i)->EnableWindow(TRUE);
+
 		GetDlgItem(IDC_NEB_TOGGLE_TRAILS)->EnableWindow(TRUE);
 
 		// disable non-fullneb controls
@@ -566,30 +540,12 @@ void bg_bitmap_dlg::OnFullNeb()
 		GetDlgItem(IDC_BANK)->EnableWindow(FALSE);
 		GetDlgItem(IDC_HEADING)->EnableWindow(FALSE);
 
-		// check all relevant poofs		
-		((CButton*)GetDlgItem(IDC_POOF0))->SetCheck(FALSE);
-		if(m_poof_0){
-			((CButton*)GetDlgItem(IDC_POOF0))->SetCheck(TRUE);
-		}
-		((CButton*)GetDlgItem(IDC_POOF1))->SetCheck(FALSE);
-		if(m_poof_1){
-			((CButton*)GetDlgItem(IDC_POOF1))->SetCheck(TRUE);
-		}
-		((CButton*)GetDlgItem(IDC_POOF2))->SetCheck(FALSE);
-		if(m_poof_2){
-			((CButton*)GetDlgItem(IDC_POOF2))->SetCheck(TRUE);
-		}
-		((CButton*)GetDlgItem(IDC_POOF3))->SetCheck(FALSE);
-		if(m_poof_3){
-			((CButton*)GetDlgItem(IDC_POOF3))->SetCheck(TRUE);
-		}
-		((CButton*)GetDlgItem(IDC_POOF4))->SetCheck(FALSE);
-		if(m_poof_4){
-			((CButton*)GetDlgItem(IDC_POOF4))->SetCheck(TRUE);
-		}
-		((CButton*)GetDlgItem(IDC_POOF5))->SetCheck(FALSE);
-		if(m_poof_5){
-			((CButton*)GetDlgItem(IDC_POOF5))->SetCheck(TRUE);
+		// check all relevant poofs
+		for (int i = 0; i < MAX_NEB2_POOF_CHECKBOXES; ++i)
+		{
+			((CButton*)GetDlgItem(IDC_POOF0 + i))->SetCheck(FALSE);
+			if (m_poofs[i])
+				((CButton*)GetDlgItem(IDC_POOF0 + i))->SetCheck(TRUE);
 		}
 	} else {
 		// enable all non-fullneb controls
@@ -603,12 +559,10 @@ void bg_bitmap_dlg::OnFullNeb()
 		GetDlgItem(IDC_NEB2_INTENSITY)->EnableWindow(FALSE);
 		GetDlgItem(IDC_NEB2_TEXTURE)->EnableWindow(FALSE);
 		GetDlgItem(IDC_NEB2_LIGHTNING)->EnableWindow(FALSE);
-		GetDlgItem(IDC_POOF0)->EnableWindow(FALSE);
-		GetDlgItem(IDC_POOF1)->EnableWindow(FALSE);
-		GetDlgItem(IDC_POOF2)->EnableWindow(FALSE);
-		GetDlgItem(IDC_POOF3)->EnableWindow(FALSE);
-		GetDlgItem(IDC_POOF4)->EnableWindow(FALSE);
-		GetDlgItem(IDC_POOF5)->EnableWindow(FALSE);
+
+		for (int i = 0; i < MAX_NEB2_POOF_CHECKBOXES; ++i)
+			GetDlgItem(IDC_POOF0 + i)->EnableWindow(FALSE);
+
 		GetDlgItem(IDC_NEB_TOGGLE_TRAILS)->EnableWindow(FALSE);
 	}		
 }

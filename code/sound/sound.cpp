@@ -112,6 +112,7 @@ struct LoopingSoundInfo {
 };
 
 SCP_list<LoopingSoundInfo> currentlyLoopingSoundInfos;
+SCP_list<LoopingSoundInfo> currentlyLooping3dSoundInfos;
 
 //For the adjust-audio-volume sexp
 float aav_voice_volume = 1.0f;
@@ -300,14 +301,16 @@ static std::unique_ptr<sound::IAudioFile> openAudioFile(const char* fileName)
 // a single instance, and can be played multiple times simultaneously.  Through the magic of
 // DirectSound, only 1 copy of the sound is used.
 //
-// parameters:		gs							=> file of sound to load
-//						allow_hardware_load	=> whether to try to allocate in hardware
+// parameters:		entry							=> entry of sound to load
+// parameters:		flags							=> pointer to flags of sound to load, so they
+//													   can be modified if necessary; can be nullptr
+//					allow_hardware_load				=> whether to try to allocate in hardware
 //
 // returns:			success => index of sound in Sounds[] array
 //						failure => -1
 //
 //int snd_load( char *filename, int hardware, int use_ds3d, int *sig)
-sound_load_id snd_load(game_snd_entry* entry, int flags, int /*allow_hardware_load*/)
+sound_load_id snd_load(game_snd_entry* entry, int *flags, int /*allow_hardware_load*/)
 {
 	int type;
 	sound_info* si;
@@ -320,6 +323,9 @@ sound_load_id snd_load(game_snd_entry* entry, int flags, int /*allow_hardware_lo
 	if (!VALID_FNAME(entry->filename))
 		return sound_load_id::invalid();
 
+	if (flags && *flags & GAME_SND_NOT_VALID)
+		return sound_load_id::invalid();
+
 	for (n = 0; n < Sounds.size(); n++) {
 		if ( !(Sounds[n].flags & SND_F_USED) ) {
 			break;
@@ -329,7 +335,7 @@ sound_load_id snd_load(game_snd_entry* entry, int flags, int /*allow_hardware_lo
 			// NOTE: this will allow a duplicate 3D entry if 2D stereo entry exists,
 			//       but will not load a duplicate 2D entry to get stereo if 3D
 			//       version already loaded
-			if ( (Sounds[n].info.n_channels == 1) || !(flags & GAME_SND_USE_DS3D) ) {
+			if ( (Sounds[n].info.n_channels == 1) || !(flags && *flags & GAME_SND_USE_DS3D) ) {
 				return sound_load_id(static_cast<int>(n));
 			}
 		}
@@ -354,13 +360,15 @@ sound_load_id snd_load(game_snd_entry* entry, int flags, int /*allow_hardware_lo
 	std::unique_ptr<sound::IAudioFile> audio_file = openAudioFile(entry->filename);
 
 	if (audio_file == nullptr) {
+		if (flags)
+			*flags |= GAME_SND_NOT_VALID;
 		return sound_load_id::invalid();
 	}
 
 	auto fileProps = audio_file->getFileProperties();
 
 	type = 0;
-	if (flags & GAME_SND_USE_DS3D) {
+	if (flags && *flags & GAME_SND_USE_DS3D) {
 		type |= DS_3D;
 
 		if (fileProps.num_channels > 1) {
@@ -420,6 +428,8 @@ sound_load_id snd_load(game_snd_entry* entry, int flags, int /*allow_hardware_lo
 	auto rc = ds_load_buffer(&snd->sid, type, audio_file.get());
 	if (rc == -1) {
 		nprintf(("Sound", "SOUND ==> Failed to load '%s'\n", entry->filename));
+		if (flags)
+			*flags |= GAME_SND_NOT_VALID;
 		return sound_load_id::invalid();
 	}
 
@@ -564,24 +574,33 @@ sound_handle snd_play(game_snd* gs, float pan, float vol_scale, int priority, bo
 	if (!Sound_enabled)
 		return sound_handle::invalid();
 
-	if (gs == NULL) {
-		Int3();
+	if (!ds_initialized)
+		return sound_handle::invalid();
+
+	if (gs == nullptr) {
+		UNREACHABLE("gamesnd parameter must not be null!");
+		return sound_handle::invalid();
+	}
+	if (gs->flags & GAME_SND_NOT_VALID) {
 		return sound_handle::invalid();
 	}
 
-	MONITOR_INC(NumSoundsStarted, 1);
+	MONITOR_INC( NumSoundsStarted, 1 );
 
 	auto entry = gamesnd_choose_entry(gs);
 
 	if (!entry->id.isValid()) {
-		entry->id = snd_load(entry, gs->flags);
-		MONITOR_INC( NumSoundsLoaded, 1);
+		entry->id = snd_load(entry, &gs->flags);
+		MONITOR_INC( NumSoundsLoaded, 1 );
 	} else if (entry->id_sig != Sounds[entry->id.value()].sig) {
-		entry->id = snd_load(entry, gs->flags);
+		entry->id = snd_load(entry, &gs->flags);
 	}
 
-	if (!entry->id.isValid())
+	if (!entry->id.isValid()) {
+		Warning(LOCATION, "Failed to load one or more sounds for gamesnd %s!", gs->name.c_str());
+		gs->flags |= GAME_SND_NOT_VALID;
 		return sound_handle::invalid();
+	}
 
 	volume = gs->volume_range.next() * vol_scale;
 	if ( gs->flags&GAME_SND_VOICE ) {
@@ -595,9 +614,6 @@ sound_handle snd_play(game_snd* gs, float pan, float vol_scale, int priority, bo
 	snd = &Sounds[entry->id.value()];
 
 	if ( !(snd->flags & SND_F_USED) )
-		return sound_handle::invalid();
-
-	if (!ds_initialized)
 		return sound_handle::invalid();
 
 	sound_handle handle;
@@ -651,8 +667,14 @@ sound_handle snd_play_3d(game_snd* gs, vec3d* source_pos, vec3d* listen_pos, flo
 	if (!Sound_enabled)
 		return sound_handle::invalid();
 
-	if (gs == NULL) {
-		Int3();
+	if (!ds_initialized)
+		return sound_handle::invalid();
+
+	if (gs == nullptr) {
+		UNREACHABLE("gamesnd parameter must not be null!");
+		return sound_handle::invalid();
+	}
+	if (gs->flags & GAME_SND_NOT_VALID) {
 		return sound_handle::invalid();
 	}
 
@@ -661,14 +683,17 @@ sound_handle snd_play_3d(game_snd* gs, vec3d* source_pos, vec3d* listen_pos, flo
 	auto entry = gamesnd_choose_entry(gs);
 
 	if (!entry->id.isValid()) {
-		entry->id = snd_load(entry, gs->flags);
+		entry->id = snd_load(entry, &gs->flags);
 		MONITOR_INC( Num3DSoundsLoaded, 1 );
 	} else if (entry->id_sig != Sounds[entry->id.value()].sig) {
-		entry->id = snd_load(entry, gs->flags);
+		entry->id = snd_load(entry, &gs->flags);
 	}
 
-	if (!entry->id.isValid())
+	if (!entry->id.isValid()) {
+		Warning(LOCATION, "Failed to load one or more sounds for gamesnd %s!", gs->name.c_str());
+		gs->flags |= GAME_SND_NOT_VALID;
 		return sound_handle::invalid();
+	}
 
 	snd = &Sounds[entry->id.value()];
 
@@ -681,9 +706,6 @@ sound_handle snd_play_3d(game_snd* gs, vec3d* source_pos, vec3d* listen_pos, flo
 
 	min_range = (gs->min + radius) * range_factor;
 	max_range = (gs->max + radius) * range_factor;
-
-	if (!ds_initialized)
-		return sound_handle::invalid();
 
 	// DirectSound3D will not cut off sounds, no matter how quite they become.. so manually
 	// prevent sounds from playing past the max distance.
@@ -737,6 +759,10 @@ sound_handle snd_play_3d(game_snd* gs, vec3d* source_pos, vec3d* listen_pos, flo
 	}
 
 	if (handle.isValid()) {
+		if (looping) {
+			currentlyLooping3dSoundInfos.emplace_back(handle, default_volume, vol_scale);
+		}
+
 		snd_set_pitch(handle, gs->pitch_range.next());
 	}
 
@@ -861,21 +887,27 @@ sound_handle snd_play_looping(game_snd* gs, float pan, int /*start_loop*/, int /
 	if (!ds_initialized)
 		return sound_handle::invalid();
 
-	if (gs == NULL) {
-		Int3();
+	if (gs == nullptr) {
+		UNREACHABLE("gamesnd parameter must not be null!");
+		return sound_handle::invalid();
+	}
+	if (gs->flags & GAME_SND_NOT_VALID) {
 		return sound_handle::invalid();
 	}
 
 	auto entry = gamesnd_choose_entry(gs);
 
 	if (!entry->id.isValid()) {
-		entry->id = snd_load(entry, gs->flags);
+		entry->id = snd_load(entry, &gs->flags);
 	} else if (entry->id_sig != Sounds[entry->id.value()].sig) {
-		entry->id = snd_load(entry, gs->flags);
+		entry->id = snd_load(entry, &gs->flags);
 	}
 
-	if (!entry->id.isValid())
+	if (!entry->id.isValid()) {
+		Warning(LOCATION, "Failed to load one or more sounds for gamesnd %s!", gs->name.c_str());
+		gs->flags |= GAME_SND_NOT_VALID;
 		return sound_handle::invalid();
+	}
 
 	snd = &Sounds[entry->id.value()];
 
@@ -894,7 +926,7 @@ sound_handle snd_play_looping(game_snd* gs, float pan, int /*start_loop*/, int /
 
 		if (handle.isValid()) {
 			if (scriptingUpdateVolume) {
-				currentlyLoopingSoundInfos.push_back(LoopingSoundInfo(handle, default_volume, vol_scale));
+				currentlyLoopingSoundInfos.emplace_back(handle, default_volume, vol_scale);
 			}
 
 			snd_set_pitch(handle, gs->pitch_range.next());
@@ -902,6 +934,14 @@ sound_handle snd_play_looping(game_snd* gs, float pan, int /*start_loop*/, int /
 	}
 
 	return handle;
+}
+
+void remove_looping_sound(SCP_list<LoopingSoundInfo> &looping_sounds, sound_handle sig)
+{
+	// the cast to void avoids warnings about unused return value
+	(void)std::remove_if(looping_sounds.begin(), looping_sounds.end(), [sig](const LoopingSoundInfo &ls_info) -> bool {
+		return ls_info.m_dsHandle == sig;
+	});
 }
 
 /**
@@ -921,15 +961,8 @@ void snd_stop(sound_handle sig)
 	if ( channel == -1 )
 		return;
 	
-	SCP_list<LoopingSoundInfo>::iterator iter = currentlyLoopingSoundInfos.begin();
-	while (iter != currentlyLoopingSoundInfos.end())
-	{
-		if(iter->m_dsHandle == sig) {
-			iter = currentlyLoopingSoundInfos.erase(iter);
-		} else {
-			++iter;
-		}
-	}
+	remove_looping_sound(currentlyLoopingSoundInfos, sig);
+	remove_looping_sound(currentlyLooping3dSoundInfos, sig);
 
 	ds_stop_channel(channel);
 }
@@ -946,7 +979,15 @@ void snd_stop_all()
 		return;
 
 	currentlyLoopingSoundInfos.clear();
+	currentlyLooping3dSoundInfos.clear();
 	ds_stop_channel_all();
+}
+
+SCP_list<LoopingSoundInfo>::iterator find_looping_sound(SCP_list<LoopingSoundInfo> &looping_sounds, sound_handle sig)
+{
+	return std::find_if(looping_sounds.begin(), looping_sounds.end(), [sig](const LoopingSoundInfo &ls_info) -> bool {
+		return ls_info.m_dsHandle == sig;
+	});
 }
 
 /**
@@ -974,13 +1015,16 @@ void snd_set_volume(sound_handle sig, float volume)
 
 	bool isLoopingSound = false;
 
-	SCP_list<LoopingSoundInfo>::iterator iter;
-	for (iter = currentlyLoopingSoundInfos.begin(); iter != currentlyLoopingSoundInfos.end(); ++iter) {
-		if(iter->m_dsHandle == sig) {
-			iter->m_dynamicVolume = volume;
 
+	auto iter = find_looping_sound(currentlyLoopingSoundInfos, sig);
+	if (iter != currentlyLoopingSoundInfos.end()) {
+		iter->m_dynamicVolume = volume;
+		isLoopingSound = true;
+	} else {
+		iter = find_looping_sound(currentlyLooping3dSoundInfos, sig);
+		if (iter != currentlyLooping3dSoundInfos.end()) {
+			iter->m_dynamicVolume = volume;
 			isLoopingSound = true;
-			break;
 		}
 	}
 
@@ -1429,20 +1473,26 @@ int sound_env_supported()
 //
 
 void adjust_volume_on_frame(float* volume_now, aav* data);
+void update_looping_sound_volumes(SCP_list<LoopingSoundInfo>& looping_sounds);
 void snd_do_frame()
 {
 	adjust_volume_on_frame(&aav_music_volume, &aav_data[AAV_MUSIC]);
 	adjust_volume_on_frame(&aav_voice_volume, &aav_data[AAV_VOICE]);
 	adjust_volume_on_frame(&aav_effect_volume, &aav_data[AAV_EFFECTS]);
 
-	SCP_list<LoopingSoundInfo>::iterator iter;
-	for (iter = currentlyLoopingSoundInfos.begin(); iter != currentlyLoopingSoundInfos.end(); ++iter) {
-
-		float new_volume = iter->m_defaultVolume * iter->m_dynamicVolume * (Master_sound_volume * aav_effect_volume);
-		ds_set_volume(ds_get_channel(iter->m_dsHandle), new_volume);
-	}
+	update_looping_sound_volumes(currentlyLoopingSoundInfos);
+	update_looping_sound_volumes(currentlyLooping3dSoundInfos);
 
 	ds_do_frame();
+}
+
+void update_looping_sound_volumes(SCP_list<LoopingSoundInfo> &looping_sounds)
+{
+	for (auto &looping_sound : looping_sounds) {
+		const float new_volume =
+			looping_sound.m_defaultVolume * looping_sound.m_dynamicVolume * (Master_sound_volume * aav_effect_volume);
+		ds_set_volume(ds_get_channel(looping_sound.m_dsHandle), new_volume);
+	}
 }
 
 void snd_adjust_audio_volume(int type, float percent, int time)
