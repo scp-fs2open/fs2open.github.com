@@ -17408,7 +17408,7 @@ void ship_replace_active_texture(int ship_index, const char* old_name, const cha
 	if (final_index >= 0) {
 		int texture = bm_load(new_name);
 
-		if (shipp->ship_replacement_textures == NULL) {
+		if (shipp->ship_replacement_textures == nullptr) {
 			shipp->ship_replacement_textures = (int*)vm_malloc(MAX_REPLACEMENT_TEXTURES * sizeof(int));
 
 			for (int i = 0; i < MAX_REPLACEMENT_TEXTURES; i++)
