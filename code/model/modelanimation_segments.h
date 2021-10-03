@@ -8,9 +8,11 @@ namespace animation {
 	class ModelAnimationSegmentSerial : public ModelAnimationSegment {
 		std::vector<std::shared_ptr<ModelAnimationSegment>> m_segments;
 
-		void recalculate(const submodel_instance* submodel_instance, const bsp_info* submodel, const ModelAnimationData<>& base, int pmi_id) override;
-		ModelAnimationData<true> calculateAnimation(const ModelAnimationData<>& base, float time, int pmi_id) const override;
-		void executeAnimation(const ModelAnimationData<>& state, float timeboundLower, float timeboundUpper, ModelAnimationDirection direction, int pmi_id) override;
+		virtual ModelAnimationSegment* copy() const override;
+		void recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) override;
+		void calculateAnimation(ModelAnimationSubmodelBuffer& base, float time, int pmi_id) const override;
+		void executeAnimation(const ModelAnimationSubmodelBuffer& state, float timeboundLower, float timeboundUpper, ModelAnimationDirection direction, int pmi_id) override;
+		void exchangeSubmodelPointers(const std::map<std::shared_ptr<ModelAnimationSubmodel>, std::shared_ptr<ModelAnimationSubmodel>>& exchangeMap) override;
 
 	public:
 		void addSegment(std::shared_ptr<ModelAnimationSegment> segment);
@@ -21,9 +23,11 @@ namespace animation {
 	class ModelAnimationSegmentParallel : public ModelAnimationSegment {
 		std::vector<std::shared_ptr<ModelAnimationSegment>> m_segments;
 
-		void recalculate(const submodel_instance* submodel_instance, const bsp_info* submodel, const ModelAnimationData<>& base, int pmi_id) override;
-		ModelAnimationData<true> calculateAnimation(const ModelAnimationData<>& base, float time, int pmi_id) const override;
-		void executeAnimation(const ModelAnimationData<>& state, float timeboundLower, float timeboundUpper, ModelAnimationDirection direction, int pmi_id) override;
+		virtual ModelAnimationSegment* copy() const override;
+		void recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) override;
+		void calculateAnimation(ModelAnimationSubmodelBuffer& base, float time, int pmi_id) const override;
+		void executeAnimation(const ModelAnimationSubmodelBuffer& state, float timeboundLower, float timeboundUpper, ModelAnimationDirection direction, int pmi_id) override;
+		void exchangeSubmodelPointers(const std::map<std::shared_ptr<ModelAnimationSubmodel>, std::shared_ptr<ModelAnimationSubmodel>>& exchangeMap) override;
 
 	public:
 		void addSegment(std::shared_ptr<ModelAnimationSegment> segment);
@@ -34,9 +38,11 @@ namespace animation {
 	class ModelAnimationSegmentWait : public ModelAnimationSegment {
 		float m_time;
 
-		void recalculate(const submodel_instance* /*submodel_instance*/, const bsp_info* /*submodel*/, const ModelAnimationData<>& /*base*/, int pmi_id) override;
-		ModelAnimationData<true> calculateAnimation(const ModelAnimationData<>& /*base*/, float /*time*/, int /*pmi_id*/) const override { return {}; };
-		void executeAnimation(const ModelAnimationData<>& /*state*/, float /*timeboundLower*/, float /*timeboundUpper*/, ModelAnimationDirection /*direction*/, int /*pmi_id*/) override { };
+		virtual ModelAnimationSegment* copy() const override;
+		void recalculate(ModelAnimationSubmodelBuffer& /*base*/, polymodel_instance* pmi) override;
+		void calculateAnimation(ModelAnimationSubmodelBuffer& /*base*/, float /*time*/, int /*pmi_id*/) const override { };
+		void executeAnimation(const ModelAnimationSubmodelBuffer& /*state*/, float /*timeboundLower*/, float /*timeboundUpper*/, ModelAnimationDirection /*direction*/, int /*pmi_id*/) override { };
+		void exchangeSubmodelPointers(const std::map<std::shared_ptr<ModelAnimationSubmodel>, std::shared_ptr<ModelAnimationSubmodel>>& exchangeMap) override { };
 
 	public:
 		ModelAnimationSegmentWait(float time);
@@ -52,29 +58,37 @@ namespace animation {
 		//PMI ID -> Instance Data
 		std::map<int, instance_data> m_instances;
 
+		std::shared_ptr<ModelAnimationSubmodel> m_submodel;
+
 		angles m_targetAngle;
 		bool m_isAngleRelative;
 
-		void recalculate(const submodel_instance* /*submodel_instance*/, const bsp_info* /*submodel*/, const ModelAnimationData<>& base, int pmi_id) override;
-		ModelAnimationData<true> calculateAnimation(const ModelAnimationData<>& /*base*/, float /*time*/, int pmi_id) const override;
-		void executeAnimation(const ModelAnimationData<>& /*state*/, float /*timeboundLower*/, float /*timeboundUpper*/, ModelAnimationDirection /*direction*/, int /*pmi_id*/) override { };
+		virtual ModelAnimationSegment* copy() const override;
+		void recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) override;
+		void calculateAnimation(ModelAnimationSubmodelBuffer& base, float /*time*/, int pmi_id) const override;
+		void executeAnimation(const ModelAnimationSubmodelBuffer& /*state*/, float /*timeboundLower*/, float /*timeboundUpper*/, ModelAnimationDirection /*direction*/, int /*pmi_id*/) override { };
+		void exchangeSubmodelPointers(const std::map<std::shared_ptr<ModelAnimationSubmodel>, std::shared_ptr<ModelAnimationSubmodel>>& exchangeMap) override;
 
 	public:
-		ModelAnimationSegmentSetPHB(const angles& angle, bool isAngleRelative);
+		ModelAnimationSegmentSetPHB(std::shared_ptr<ModelAnimationSubmodel> submodel, const angles& angle, bool isAngleRelative);
 
 	};
 
 	//This segment rotates a submodels orientation by a certain amount around its defined rotation axis
 	class ModelAnimationSegmentSetAngle : public ModelAnimationSegment {
+		std::shared_ptr<ModelAnimationSubmodel> m_submodel;
+
 		float m_angle;
 		matrix m_rot;
 
-		void recalculate(const submodel_instance* /*submodel_instance*/, const bsp_info* submodel, const ModelAnimationData<>& /*base*/, int pmi_id) override;
-		ModelAnimationData<true> calculateAnimation(const ModelAnimationData<>& /*base*/, float /*time*/, int /*pmi_id*/) const override;
-		void executeAnimation(const ModelAnimationData<>& /*state*/, float /*timeboundLower*/, float /*timeboundUpper*/, ModelAnimationDirection /*direction*/, int /*pmi_id*/) override { };
+		virtual ModelAnimationSegment* copy() const override;
+		void recalculate(ModelAnimationSubmodelBuffer& /*base*/, polymodel_instance* pmi) override;
+		void calculateAnimation(ModelAnimationSubmodelBuffer& base, float /*time*/, int /*pmi_id*/) const override;
+		void executeAnimation(const ModelAnimationSubmodelBuffer& /*state*/, float /*timeboundLower*/, float /*timeboundUpper*/, ModelAnimationDirection /*direction*/, int /*pmi_id*/) override { };
+		void exchangeSubmodelPointers(const std::map<std::shared_ptr<ModelAnimationSubmodel>, std::shared_ptr<ModelAnimationSubmodel>>& exchangeMap) override;
 
 	public:
-		ModelAnimationSegmentSetAngle(float angle);
+		ModelAnimationSegmentSetAngle(std::shared_ptr<ModelAnimationSubmodel> submodel, float angle);
 
 	};
 
@@ -91,18 +105,22 @@ namespace animation {
 		//PMI ID -> Instance Data
 		std::map<int, instance_data> m_instances;
 
+		std::shared_ptr<ModelAnimationSubmodel> m_submodel;
+
 		optional<angles> m_targetAngle;
 		optional<angles> m_velocity;
 		optional<float> m_time;
 		optional<angles> m_acceleration;
 		bool m_isAbsolute;
 
-		void recalculate(const submodel_instance* /*submodel_instance*/, const bsp_info* submodel, const ModelAnimationData<>& base, int pmi_id) override;
-		ModelAnimationData<true> calculateAnimation(const ModelAnimationData<>& /*base*/, float time, int pmi_id) const override;
-		void executeAnimation(const ModelAnimationData<>& /*state*/, float /*timeboundLower*/, float /*timeboundUpper*/, ModelAnimationDirection /*direction*/, int /*pmi_id*/) override { };
+		virtual ModelAnimationSegment* copy() const override;
+		void recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) override;
+		void calculateAnimation(ModelAnimationSubmodelBuffer& base, float time, int pmi_id) const override;
+		void executeAnimation(const ModelAnimationSubmodelBuffer& /*state*/, float /*timeboundLower*/, float /*timeboundUpper*/, ModelAnimationDirection /*direction*/, int /*pmi_id*/) override { };
+		void exchangeSubmodelPointers(const std::map<std::shared_ptr<ModelAnimationSubmodel>, std::shared_ptr<ModelAnimationSubmodel>>& exchangeMap) override;
 
 	public:
-		ModelAnimationSegmentRotation(optional<angles> targetAngle, optional<angles> velocity, optional<float> time, optional<angles> acceleration, bool isAbsolute = false);
+		ModelAnimationSegmentRotation(std::shared_ptr<ModelAnimationSubmodel> submodel, optional<angles> targetAngle, optional<angles> velocity, optional<float> time, optional<angles> acceleration, bool isAbsolute = false);
 
 	};
 
@@ -121,9 +139,11 @@ namespace animation {
 		gamesnd_id m_during;
 		bool m_flipIfReversed;
 
-		void recalculate(const submodel_instance* submodel_instance, const bsp_info* submodel, const ModelAnimationData<>& base, int pmi_id) override;
-		ModelAnimationData<true> calculateAnimation(const ModelAnimationData<>& base, float time, int pmi_id) const override;
-		void executeAnimation(const ModelAnimationData<>& state, float timeboundLower, float timeboundUpper, ModelAnimationDirection direction, int pmi_id) override;
+		virtual ModelAnimationSegment* copy() const override;
+		void recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) override;
+		void calculateAnimation(ModelAnimationSubmodelBuffer& base, float time, int pmi_id) const override;
+		void executeAnimation(const ModelAnimationSubmodelBuffer& state, float timeboundLower, float timeboundUpper, ModelAnimationDirection direction, int pmi_id) override;
+		void exchangeSubmodelPointers(const std::map<std::shared_ptr<ModelAnimationSubmodel>, std::shared_ptr<ModelAnimationSubmodel>>& exchangeMap) override;
 
 		void playStartSnd(int pmi_id);
 		void playEndSnd(int pmi_id);

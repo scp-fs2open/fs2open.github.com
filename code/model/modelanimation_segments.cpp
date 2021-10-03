@@ -2,24 +2,29 @@
 
 namespace animation {
 
-	void ModelAnimationSegmentSerial::recalculate(const submodel_instance* submodel_instance, const bsp_info* submodel, const ModelAnimationData<>& base, int pmi_id) {
-		ModelAnimationData<true> data = base;
-		float& duration = m_duration[pmi_id];
+	ModelAnimationSegment* ModelAnimationSegmentSerial::copy() const {
+		ModelAnimationSegmentSerial* newCopy = new ModelAnimationSegmentSerial();
+		for (const auto& segment : m_segments) {
+			newCopy->m_segments.push_back(std::shared_ptr<ModelAnimationSegment>(segment->copy()));
+		}
+		return newCopy;
+	}
+
+	void ModelAnimationSegmentSerial::recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) {
+		float& duration = m_duration[pmi->id];
 		duration = 0.0f;
 
 		for (const auto& segment : m_segments) {
-			segment->recalculate(submodel_instance, submodel, data, pmi_id);
+			segment->recalculate(base, pmi);
 
-			duration += segment->getDuration(pmi_id);
+			duration += segment->getDuration(pmi->id);
 
 			//To properly recalculate, we actually need to fully calculate the previous' segment's final delta
-			data.applyDelta(segment->calculateAnimation(data, segment->getDuration(pmi_id), pmi_id));
+			segment->calculateAnimation(base, segment->getDuration(pmi->id), pmi->id);
 		}
 	}
 
-	ModelAnimationData<true> ModelAnimationSegmentSerial::calculateAnimation(const ModelAnimationData<>& base, float time, int pmi_id) const {
-		ModelAnimationData<true> delta;
-		ModelAnimationData<> absoluteState = base;
+	void ModelAnimationSegmentSerial::calculateAnimation(ModelAnimationSubmodelBuffer& base, float time, int pmi_id) const {
 
 		size_t animationCnt = 0;
 		while (time > 0.0f && animationCnt < m_segments.size()) {
@@ -27,19 +32,14 @@ namespace animation {
 			//Make sure that each segment actually stops at its end
 			if (timeLocal > m_segments[animationCnt]->getDuration(pmi_id))
 				timeLocal = m_segments[animationCnt]->getDuration(pmi_id);
-			ModelAnimationData<true> deltaLocal = m_segments[animationCnt]->calculateAnimation(absoluteState, timeLocal, pmi_id);
-
-			absoluteState.applyDelta(deltaLocal);
-			delta.applyDelta(deltaLocal);
+			m_segments[animationCnt]->calculateAnimation(base, timeLocal, pmi_id);
 
 			time -= m_segments[animationCnt]->getDuration(pmi_id);
 			animationCnt++;
 		}
-
-		return delta;
 	}
 
-	void ModelAnimationSegmentSerial::executeAnimation(const ModelAnimationData<>& state, float timeboundLower, float timeboundUpper, ModelAnimationDirection direction, int pmi_id) {
+	void ModelAnimationSegmentSerial::executeAnimation(const ModelAnimationSubmodelBuffer& state, float timeboundLower, float timeboundUpper, ModelAnimationDirection direction, int pmi_id) {
 		for (const auto& segment : m_segments) {
 			if (timeboundLower < segment->getDuration(pmi_id)) {
 				segment->executeAnimation(state, fmaxf(0.0f, timeboundLower), fminf(timeboundUpper, segment->getDuration(pmi_id)), direction, pmi_id);
@@ -53,47 +53,61 @@ namespace animation {
 		}
 	}
 
+	void ModelAnimationSegmentSerial::exchangeSubmodelPointers(const std::map<std::shared_ptr<ModelAnimationSubmodel>, std::shared_ptr<ModelAnimationSubmodel>>& exchangeMap) {
+		for (const auto& segment : m_segments)
+			segment->exchangeSubmodelPointers(exchangeMap);
+	}
+
 	void ModelAnimationSegmentSerial::addSegment(std::shared_ptr<ModelAnimationSegment> segment) {
 		m_segments.push_back(std::move(segment));
 	}
 
 
-	void ModelAnimationSegmentParallel::recalculate(const submodel_instance* submodel_instance, const bsp_info* submodel, const ModelAnimationData<>& base, int pmi_id) {
-		float& duration = m_duration[pmi_id];
+	ModelAnimationSegment* ModelAnimationSegmentParallel::copy() const {
+		ModelAnimationSegmentParallel* newCopy = new ModelAnimationSegmentParallel();
+		for (const auto& segment : m_segments) {
+			newCopy->m_segments.push_back(std::shared_ptr<ModelAnimationSegment>(segment->copy()));
+		}
+		return newCopy;
+	}
+
+	void ModelAnimationSegmentParallel::recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) {
+		float& duration = m_duration[pmi->id];
 		duration = 0.0f;
 
 		for (const auto& segment : m_segments) {
-			segment->recalculate(submodel_instance, submodel, base, pmi_id);
+			ModelAnimationSubmodelBuffer baseCopy = base;
+			segment->recalculate(baseCopy, pmi);
 
 			//recalculate total duration if necessary
-			float newDur = segment->getDuration(pmi_id);
+			float newDur = segment->getDuration(pmi->id);
 			duration = newDur > duration ? newDur : duration;
 		}
 
 	}
 
-	ModelAnimationData<true> ModelAnimationSegmentParallel::calculateAnimation(const ModelAnimationData<>& base, float time, int pmi_id) const {
-		ModelAnimationData<true> delta;
-
+	void ModelAnimationSegmentParallel::calculateAnimation(ModelAnimationSubmodelBuffer& base, float time, int pmi_id) const {
 		for (const auto& segment : m_segments) {
 			float timeLocal = time;
 			//Make sure that no segment runs over its length
 			if (timeLocal > segment->getDuration(pmi_id))
 				timeLocal = segment->getDuration(pmi_id);
 			
-			ModelAnimationData<true> deltaLocal = segment->calculateAnimation(base, timeLocal, pmi_id);
-			delta.applyDelta(deltaLocal);
+			segment->calculateAnimation(base, timeLocal, pmi_id);
 		}
-
-		return delta;
 	}
 
-	void ModelAnimationSegmentParallel::executeAnimation(const ModelAnimationData<>& state, float timeboundLower, float timeboundUpper, ModelAnimationDirection direction, int pmi_id) {
+	void ModelAnimationSegmentParallel::executeAnimation(const ModelAnimationSubmodelBuffer& state, float timeboundLower, float timeboundUpper, ModelAnimationDirection direction, int pmi_id) {
 		for (const auto& segment : m_segments) {
 			if (timeboundLower < segment->getDuration(pmi_id)) {
 				segment->executeAnimation(state, timeboundLower, fminf(timeboundUpper, segment->getDuration(pmi_id)), direction, pmi_id);
 			}
 		}
+	}
+
+	void ModelAnimationSegmentParallel::exchangeSubmodelPointers(const std::map<std::shared_ptr<ModelAnimationSubmodel>, std::shared_ptr<ModelAnimationSubmodel>>& exchangeMap) {
+		for (const auto& segment : m_segments)
+			segment->exchangeSubmodelPointers(exchangeMap);
 	}
 
 	void ModelAnimationSegmentParallel::addSegment(std::shared_ptr<ModelAnimationSegment> segment) {
@@ -103,22 +117,34 @@ namespace animation {
 
 	ModelAnimationSegmentWait::ModelAnimationSegmentWait(float time) : m_time(time) { }
 
-	void ModelAnimationSegmentWait::recalculate(const submodel_instance* /*submodel_instance*/, const bsp_info* /*submodel*/, const ModelAnimationData<>& /*base*/, int pmi_id) { 
-		m_duration[pmi_id] = m_time;
+	ModelAnimationSegment* ModelAnimationSegmentWait::copy() const {
+		return new ModelAnimationSegmentWait(*this);
+	}
+	
+	void ModelAnimationSegmentWait::recalculate(ModelAnimationSubmodelBuffer& /*base*/, polymodel_instance* pmi) {
+		m_duration[pmi->id] = m_time;
 	};
 
 
-	ModelAnimationSegmentSetPHB::ModelAnimationSegmentSetPHB(const angles& angle, bool isAngleRelative) :
-		m_targetAngle(angle), m_isAngleRelative(isAngleRelative) { }
+	ModelAnimationSegmentSetPHB::ModelAnimationSegmentSetPHB(std::shared_ptr<ModelAnimationSubmodel> submodel, const angles& angle, bool isAngleRelative) :
+		m_submodel(submodel), m_targetAngle(angle), m_isAngleRelative(isAngleRelative) { }
 
-	void ModelAnimationSegmentSetPHB::recalculate(const submodel_instance* /*submodel_instance*/, const bsp_info* /*submodel*/, const ModelAnimationData<>& base, int pmi_id) {
+	ModelAnimationSegment* ModelAnimationSegmentSetPHB::copy() const {
+		return new ModelAnimationSegmentSetPHB(*this);
+	}
+
+	void ModelAnimationSegmentSetPHB::recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) {
+		int pmi_id = pmi->id;
 		if (m_isAngleRelative) {
 			vm_angles_2_matrix(&m_instances[pmi_id].rot, &m_targetAngle);
 		}
 		else {
 			//In Absolute mode we need to undo the previously applied rotation to make sure we actually end up at the target rotation despite having only a delta we output, as opposed to just overwriting the value
 			matrix unrotate, target;
-			vm_copy_transpose(&unrotate, &base.orientation);
+			const ModelAnimationData<>& submodel = base[m_submodel].first;
+			base[m_submodel].second = true;
+
+			vm_copy_transpose(&unrotate, &submodel.orientation);
 			vm_angles_2_matrix(&target, &m_targetAngle);
 			vm_matrix_x_matrix(&m_instances[pmi_id].rot, &target, &unrotate);
 		}
@@ -126,20 +152,29 @@ namespace animation {
 		m_duration[pmi_id] = 0.0f;
 	}
 
-	ModelAnimationData<true> ModelAnimationSegmentSetPHB::calculateAnimation(const ModelAnimationData<>& /*base*/, float /*time*/, int pmi_id) const {
+	void ModelAnimationSegmentSetPHB::calculateAnimation(ModelAnimationSubmodelBuffer& base, float /*time*/, int pmi_id) const {
 		ModelAnimationData<true> data;
 		data.orientation = m_instances.at(pmi_id).rot;
-		return data;
+
+		base[m_submodel].first.applyDelta(data);
+	}
+
+	void ModelAnimationSegmentSetPHB::exchangeSubmodelPointers(const std::map<std::shared_ptr<ModelAnimationSubmodel>, std::shared_ptr<ModelAnimationSubmodel>>& exchangeMap) {
+		m_submodel = exchangeMap.at(m_submodel);
 	}
 
 
-	ModelAnimationSegmentSetAngle::ModelAnimationSegmentSetAngle(float angle) :
-		m_angle(angle) { }
+	ModelAnimationSegmentSetAngle::ModelAnimationSegmentSetAngle(std::shared_ptr<ModelAnimationSubmodel> submodel, float angle) :
+		m_submodel(submodel), m_angle(angle) { }
 
-	void ModelAnimationSegmentSetAngle::recalculate(const submodel_instance* /*submodel_instance*/, const bsp_info* submodel, const ModelAnimationData<>& /*base*/, int pmi_id) {
+	ModelAnimationSegment* ModelAnimationSegmentSetAngle::copy() const {
+		return new ModelAnimationSegmentSetAngle(*this);
+	}
+
+	void ModelAnimationSegmentSetAngle::recalculate(ModelAnimationSubmodelBuffer& /*base*/, polymodel_instance* pmi) {
 		angles angs = vmd_zero_angles;
-
-		switch (submodel->movement_axis_id)
+		auto submodel_info = m_submodel->findSubmodel(pmi).second;
+		switch (submodel_info->movement_axis_id)
 		{
 			case MOVEMENT_AXIS_X:
 			angs.p = m_angle;
@@ -157,34 +192,47 @@ namespace animation {
 			break;
 
 		default:
-			vm_quaternion_rotate(&m_rot, m_angle, &submodel->movement_axis);
+			vm_quaternion_rotate(&m_rot, m_angle, &submodel_info->movement_axis);
 			break;
 		}
 
-		m_duration[pmi_id] = 0.0f;
+		m_duration[pmi->id] = 0.0f;
 	}
 
-	ModelAnimationData<true> ModelAnimationSegmentSetAngle::calculateAnimation(const ModelAnimationData<>& /*base*/, float /*time*/, int /*pmi_id*/) const {
+	void ModelAnimationSegmentSetAngle::calculateAnimation(ModelAnimationSubmodelBuffer& base, float /*time*/, int /*pmi_id*/) const {
 		ModelAnimationData<true> data;
 		data.orientation = m_rot;
-		return data;
+		
+		base[m_submodel].first.applyDelta(data);
+		base[m_submodel].second = true;
 	}
 
+	void ModelAnimationSegmentSetAngle::exchangeSubmodelPointers(const std::map<std::shared_ptr<ModelAnimationSubmodel>, std::shared_ptr<ModelAnimationSubmodel>>& exchangeMap) {
+		m_submodel = exchangeMap.at(m_submodel);
+	}
 
 	constexpr float angles::*pbh[] = { &angles::p, &angles::b, &angles::h };
 
-	ModelAnimationSegmentRotation::ModelAnimationSegmentRotation(optional<angles> targetAngle, optional<angles> velocity, optional<float> time, optional<angles> acceleration, bool isAbsolute) :
-		m_targetAngle(targetAngle), m_velocity(velocity), m_time(time), m_acceleration(acceleration), m_isAbsolute(isAbsolute) { }
+	ModelAnimationSegmentRotation::ModelAnimationSegmentRotation(std::shared_ptr<ModelAnimationSubmodel> submodel, optional<angles> targetAngle, optional<angles> velocity, optional<float> time, optional<angles> acceleration, bool isAbsolute) :
+		m_submodel(submodel), m_targetAngle(targetAngle), m_velocity(velocity), m_time(time), m_acceleration(acceleration), m_isAbsolute(isAbsolute) { }
 
-	void ModelAnimationSegmentRotation::recalculate(const submodel_instance* /*submodel_instance*/, const bsp_info* submodel, const ModelAnimationData<>& base, int pmi_id) {
+	ModelAnimationSegment* ModelAnimationSegmentRotation::copy() const {
+		return new ModelAnimationSegmentRotation(*this);
+	}
+
+	void ModelAnimationSegmentRotation::recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) {
 		Assertion(!(m_targetAngle.has() ^ m_velocity.has() ^ m_time.has()), "Tried to run over- or underdefined rotation. Define exactly two out of 'time', 'velocity', and 'angle'!");
 
-		instance_data& instanceData = m_instances[pmi_id];
+		instance_data& instanceData = m_instances[pmi->id];
+		auto submodel_info = m_submodel->findSubmodel(pmi).second;
 
 		if (m_targetAngle.has()) { //If we have an angle specified, use it.
 			if (m_isAbsolute) {
+				const ModelAnimationData<>& submodel = base[m_submodel].first;
+				base[m_submodel].second = true;
+
 				angles absoluteOffset{ 0,0,0 };
-				vm_extract_angles_matrix_alternate(&absoluteOffset, &base.orientation);
+				vm_extract_angles_matrix_alternate(&absoluteOffset, &submodel.orientation);
 				const angles& targetAngle = m_targetAngle;
 				for(float angles::* i : pbh)
 					instanceData.m_actualTarget.*i = targetAngle.*i - absoluteOffset.*i;
@@ -266,7 +314,7 @@ namespace animation {
 
 		if (m_time.has()) { //If we have time specified, use it.
 			const float& time = m_time;
-			m_duration[pmi_id] = time;
+			m_duration[pmi->id] = time;
 
 			angles actualTime{ 0,0,0 };
 			for (float angles::* i : pbh)
@@ -275,11 +323,12 @@ namespace animation {
 			instanceData.m_actualTime = actualTime;
 
 			if (time <= 0.0f) {
-				Error(LOCATION, "Tried to rotate submodel %s in %.2f seconds. Rotation time must be positive and nonzero!", submodel->name, time);
+
+				Error(LOCATION, "Tried to rotate submodel %s in %.2f seconds. Rotation time must be positive and nonzero!", submodel_info->name, time);
 			}
 		}
 		else { //Calc time
-			float& duration = m_duration[pmi_id] = 0.0f;
+			float& duration = m_duration[pmi->id] = 0.0f;
 
 			angles& v = instanceData.m_actualVelocity;
 			const angles& d = instanceData.m_actualTarget;
@@ -291,7 +340,7 @@ namespace animation {
 			for (float angles::* i : pbh) {
 				if (d.*i != 0.0f) {
 					if (v.*i == 0.0f) {
-						Warning(LOCATION, "Tried to rotate submodel %s by %.2f, but velocity was 0! Rotating with velocity 1...", submodel->name, d.*i);
+						Warning(LOCATION, "Tried to rotate submodel %s by %.2f, but velocity was 0! Rotating with velocity 1...", submodel_info->name, d.*i);
 						v.*i = 1;
 					}
 
@@ -336,7 +385,7 @@ namespace animation {
 		}
 	}
 
-	ModelAnimationData<true> ModelAnimationSegmentRotation::calculateAnimation(const ModelAnimationData<>& /*base*/, float time, int pmi_id) const {
+	void ModelAnimationSegmentRotation::calculateAnimation(ModelAnimationSubmodelBuffer& base, float time, int pmi_id) const {
 		const instance_data& instanceData = m_instances.at(pmi_id);
 
 		angles currentRot{ 0,0,0 };
@@ -387,23 +436,34 @@ namespace animation {
 		ModelAnimationData<true> delta;
 		delta.orientation = orient;
 
-		return delta;
+		base[m_submodel].first.applyDelta(delta);
+		base[m_submodel].second = true;
+	}
+
+	void ModelAnimationSegmentRotation::exchangeSubmodelPointers(const std::map<std::shared_ptr<ModelAnimationSubmodel>, std::shared_ptr<ModelAnimationSubmodel>>& exchangeMap) {
+		m_submodel = exchangeMap.at(m_submodel);
 	}
 
 
 	ModelAnimationSegmentSoundDuring::ModelAnimationSegmentSoundDuring(std::shared_ptr<ModelAnimationSegment> segment, gamesnd_id start, gamesnd_id end, gamesnd_id during, bool flipIfReversed) :
 		m_segment(std::move(segment)), m_start(start), m_end(end), m_during(during), m_flipIfReversed(flipIfReversed) { }
 
-	void ModelAnimationSegmentSoundDuring::recalculate(const submodel_instance* submodel_instance, const bsp_info* submodel, const ModelAnimationData<>& base, int pmi_id) {
-		m_segment->recalculate(submodel_instance, submodel, base, pmi_id);
-		m_duration[pmi_id] = m_segment->getDuration(pmi_id);
+	ModelAnimationSegment* ModelAnimationSegmentSoundDuring::copy() const {
+		auto newCopy = new ModelAnimationSegmentSoundDuring(*this);
+		newCopy->m_segment = std::shared_ptr<ModelAnimationSegment>(newCopy->m_segment->copy());
+		return newCopy;
 	}
 
-	ModelAnimationData<true> ModelAnimationSegmentSoundDuring::calculateAnimation(const ModelAnimationData<>& base, float time, int pmi_id) const {
-		return m_segment->calculateAnimation(base, time, pmi_id);
+	void ModelAnimationSegmentSoundDuring::recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) {
+		m_segment->recalculate(base, pmi);
+		m_duration[pmi->id] = m_segment->getDuration(pmi->id);
 	}
 
-	void ModelAnimationSegmentSoundDuring::executeAnimation(const ModelAnimationData<>& state, float timeboundLower, float timeboundUpper, ModelAnimationDirection direction, int pmi_id) {
+	void ModelAnimationSegmentSoundDuring::calculateAnimation(ModelAnimationSubmodelBuffer& base, float time, int pmi_id) const {
+		m_segment->calculateAnimation(base, time, pmi_id);
+	}
+
+	void ModelAnimationSegmentSoundDuring::executeAnimation(const ModelAnimationSubmodelBuffer& state, float timeboundLower, float timeboundUpper, ModelAnimationDirection direction, int pmi_id) {
 		if (timeboundLower <= 0.0f && 0.0f <= timeboundUpper) {
 			if (!m_flipIfReversed || direction == ModelAnimationDirection::FWD)
 				playStartSnd(pmi_id);
@@ -423,6 +483,10 @@ namespace animation {
 				playStartSnd(pmi_id);
 		}
 		m_segment->executeAnimation(state, timeboundLower, timeboundUpper, direction, pmi_id);
+	}
+
+	void ModelAnimationSegmentSoundDuring::exchangeSubmodelPointers(const std::map<std::shared_ptr<ModelAnimationSubmodel>, std::shared_ptr<ModelAnimationSubmodel>>& exchangeMap) {
+		m_segment->exchangeSubmodelPointers(exchangeMap);
 	}
 
 	void ModelAnimationSegmentSoundDuring::playStartSnd(int pmi_id) {

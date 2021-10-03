@@ -4427,17 +4427,18 @@ void model_set_up_techroom_instance(ship_info *sip, int model_instance_num)
 	{
 		model_subsystem *msp = &sip->subsystems[i];
 
-		const auto& initialAnims = sip->animations.animationSet[{animation::ModelAnimationTriggerType::Initial, animation::ModelAnimationSet::SUBTYPE_DEFAULT}];
-
-		for (const auto& initialAnim : initialAnims) {
-			initialAnim.second->start(pmi, animation::ModelAnimationDirection::FWD, true);
-		}
-
 		if (msp->subobj_num >= 0)
 			model_replicate_submodel_instance(pm, pmi, msp->subobj_num, empty);
 
 		if ((msp->subobj_num != msp->turret_gun_sobj) && (msp->turret_gun_sobj >= 0))
 			model_replicate_submodel_instance(pm, pmi, msp->turret_gun_sobj, empty);
+	}
+
+	sip->animations.clearShipData(pmi);
+	const auto& initialAnims = sip->animations.m_animationSet[{animation::ModelAnimationTriggerType::Initial, animation::ModelAnimationSet::SUBTYPE_DEFAULT}];
+
+	for (const auto& initialAnim : initialAnims) {
+		initialAnim.second->start(pmi, animation::ModelAnimationDirection::FWD, true);
 	}
 }
 

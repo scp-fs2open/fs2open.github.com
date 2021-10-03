@@ -17,36 +17,26 @@ namespace animation {
 	const size_t Num_animation_flags = sizeof(Animation_flags) / sizeof(flag_def_list_new<animation::Animation_Flags>);
 	*/
 
-	std::map<int, std::list<std::shared_ptr<ModelAnimation>>> ModelAnimation::s_runningAnimations;
+	std::map<int, std::pair<const ModelAnimationSet*, std::list<std::shared_ptr<ModelAnimation>>>> ModelAnimationSet::s_runningAnimations;
 	std::vector<std::shared_ptr<ModelAnimation>> ModelAnimation::s_animationById;
 
-	std::map<std::pair<int, int>, ModelAnimationData<>> ModelAnimationSubmodel::s_initialData;
+	ModelAnimation::ModelAnimation(const ModelAnimationSet* set, bool isInitialType) : m_set(set), m_isInitialType(isInitialType), id(s_animationById.size()) { }
 
-	ModelAnimation::ModelAnimation(bool isInitialType) : m_isInitialType(isInitialType), id(s_animationById.size()) { }
-
-	std::shared_ptr<ModelAnimation> ModelAnimation::createAnimation(bool isInitialType) {
-		auto ptr = std::shared_ptr<ModelAnimation>(new ModelAnimation(isInitialType));
+	std::shared_ptr<ModelAnimation> ModelAnimation::createAnimation(const ModelAnimationSet* set, bool isInitialType) {
+		auto ptr = std::shared_ptr<ModelAnimation>(new ModelAnimation(set, isInitialType));
 		s_animationById.push_back(ptr);
 		return ptr;
 	}
 
-	ModelAnimationState ModelAnimation::play(float frametime, polymodel_instance* pmi, std::map<int, std::pair<ModelAnimationSubmodel*, ModelAnimationData<true>>>* applyBuffer, bool applyOnly) {
+	void ModelAnimation::setAnimation(std::shared_ptr<ModelAnimationSegment> animation) {
+		m_animation = animation;
+	}
+
+	ModelAnimationState ModelAnimation::play(float frametime, polymodel_instance* pmi, ModelAnimationSubmodelBuffer& applyBuffer, bool applyOnly) {
 		instance_data& instanceData = m_instances[pmi->id];
 		
 		if (applyOnly) {
-			for (const auto& animation : m_submodelAnimation) {
-				std::pair<int,int> keypair = {pmi->id, animation->m_submodel};
-
-				if(animation->s_initialData.count(keypair) > 0){
-					ModelAnimationData<> base =  animation->s_initialData.at(keypair);
-					ModelAnimationData<true>& previousDelta = (*applyBuffer)[animation->m_submodel].second;
-					(*applyBuffer)[animation->m_submodel].first = animation.get();
-
-					base.applyDelta(previousDelta);
-					ModelAnimationData<true> delta = animation->play(instanceData.time, instanceData.time, ModelAnimationDirection::FWD, pmi, base, true);
-					previousDelta.applyDelta(delta);
-				}
-			}
+			m_animation->calculateAnimation(applyBuffer, instanceData.time, pmi->id);
 
 			return instanceData.state;
 		}
@@ -56,48 +46,16 @@ namespace animation {
 		switch (instanceData.state) {
 		case ModelAnimationState::UNTRIGGERED:
 			//We have a new animation starting up in this phase. Put it in the list of running animations to track and step it later
-			if(!m_isInitialType)
-				s_runningAnimations[pmi->id].push_back(shared_from_this());
-
-			instanceData.duration = 0.0f;
-			//Stop other running animations on subsystems we care about. Store subsystems initial values as well.
-			for (const auto& animation : m_submodelAnimation) {
-				//We need to make sure that we have the submodel index cached before we check if other animations have the same index
-				animation->findSubmodel(pmi);
-
-				bool haveInitial = false;
-
-				auto animIterList = s_runningAnimations[pmi->id];
-				for (const auto& animIter : animIterList) {
-					//Don't stop this animation, even though it (obviously) runs on the same submodels
-					if (animIter == shared_from_this())
-						continue;
-
-					const auto& otherAnims = animIter->m_submodelAnimation;
-	
-					//See if we can find a submodel that must be reset. In case the other submodel has not been cached, it cannot have been running, so it is fine to miss these here
-					for (const auto& otherAnim : otherAnims) {
-						if (otherAnim->m_submodel == animation->m_submodel) {
-							haveInitial = true;
-							break;
-						}
-					}
-					if (haveInitial)
-						break;
-				}
-
-				if (!haveInitial) {
-					animation->saveCurrentAsBase(pmi);
-				}
-
-				//Store the submodels current data as the base for this animation and calculate this animations parameters
-				float duration = animation->recalculate(pmi);
-
-				//Update this animations duration based on all the submodel animations (note that these could differ in multiple executions of the same animation, for example in case of absolute angles)
-				if (duration > instanceData.duration)
-					instanceData.duration = duration;
+			if (!m_isInitialType) {
+				auto& animEntry = ModelAnimationSet::s_runningAnimations[pmi->id];
+				animEntry.first = m_set;
+				animEntry.second.push_back(shared_from_this());
 			}
 
+			//Store the submodels current data as the base for this animation and calculate this animations parameters
+			m_animation->recalculate(applyBuffer, pmi);
+
+			instanceData.duration = m_animation->getDuration(pmi->id);
 			instanceData.state = ModelAnimationState::RUNNING_FWD;
 
 			/* fall-thru */
@@ -115,18 +73,8 @@ namespace animation {
 					instanceData.state = ModelAnimationState::COMPLETED;
 			}
 
-			for (const auto& animation : m_submodelAnimation) {
-				std::pair<int,int> keypair = {pmi->id, animation->m_submodel};
-				if(animation->s_initialData.count(keypair) > 0){
-					ModelAnimationData<> base = animation->s_initialData.at(keypair);
-					ModelAnimationData<true>& previousDelta = (*applyBuffer)[animation->m_submodel].second;
-					(*applyBuffer)[animation->m_submodel].first = animation.get();
-
-					base.applyDelta(previousDelta);
-					ModelAnimationData<true> delta = animation->play(instanceData.time, prevTime, ModelAnimationDirection::FWD, pmi, base);
-					previousDelta.applyDelta(delta);
-				}
-			}
+			m_animation->calculateAnimation(applyBuffer, instanceData.time, pmi->id);
+			m_animation->executeAnimation(applyBuffer, prevTime, instanceData.time, ModelAnimationDirection::FWD, pmi->id);
 			break;
 
 		case ModelAnimationState::COMPLETED:
@@ -142,54 +90,12 @@ namespace animation {
 				break;
 			}
 
-			for (const auto& animation : m_submodelAnimation) {
-				std::pair<int,int> keypair = {pmi->id, animation->m_submodel};
-				if(animation->s_initialData.count(keypair) > 0){
-					ModelAnimationData<> base = animation->s_initialData.at(keypair);
-					ModelAnimationData<true>& previousDelta = (*applyBuffer)[animation->m_submodel].second;
-					(*applyBuffer)[animation->m_submodel].first = animation.get();
-
-					base.applyDelta(previousDelta);
-					ModelAnimationData<true> delta = animation->play(instanceData.time, prevTime, ModelAnimationDirection::RWD, pmi, base);
-					previousDelta.applyDelta(delta);
-				}
-			}
-
+			m_animation->calculateAnimation(applyBuffer, instanceData.time, pmi->id);
+			m_animation->executeAnimation(applyBuffer, instanceData.time, prevTime, ModelAnimationDirection::RWD, pmi->id);
 			break;
 		}
-
+		
 		return instanceData.state;
-	}
-
-	void ModelAnimation::apply(polymodel_instance* pmi, std::map<int, std::pair<ModelAnimationSubmodel*, ModelAnimationData<true>>>* applyBuffer) {
-		for (const auto& toApply : *applyBuffer) {
-			ModelAnimationData<> base = ModelAnimationSubmodel::s_initialData.at({ pmi->id, toApply.first });
-
-			base.applyDelta(toApply.second.second);
-
-
-			toApply.second.first->copyToSubmodel(base, pmi);
-		}
-	}
-
-	void ModelAnimation::cleanRunning() {
-		auto removeIt = s_runningAnimations.begin();
-		while (removeIt != s_runningAnimations.end()) {
-			auto animIt = removeIt->second.cbegin();
-			while (animIt != removeIt->second.cend()) {
-				if ((*animIt)->m_instances[removeIt->first].state == ModelAnimationState::UNTRIGGERED) {
-					animIt = removeIt->second.erase(animIt);
-				}
-				else
-					animIt++;
-			}
-
-			if (removeIt->second.empty()) {
-				removeIt = s_runningAnimations.erase(removeIt);
-			}
-			else
-				removeIt++;
-		}
 	}
 	
 	void ModelAnimation::start(polymodel_instance* pmi, ModelAnimationDirection direction, bool force, bool instant, const float* multiOverrideTime) {
@@ -271,11 +177,20 @@ namespace animation {
 
 		//Make sure to recalculate the animation here, as otherwise we cannot inquire about things like length after starting.
 		//Don't apply just yet if it's a non-initial type, as there might be other animations this'd need to depend upon
-		std::map<int, std::pair<ModelAnimationSubmodel*, ModelAnimationData<true>>> applyBuffer;
-		play(0, pmi, &applyBuffer);
+		ModelAnimationSubmodelBuffer applyBuffer;
+		m_set->initializeSubmodelBuffer(pmi, applyBuffer);
+		play(0, pmi, applyBuffer);
 		//Since initial types never get stepped, they need to be manually applied here once.
 		if (m_isInitialType) {
-			apply(pmi, &applyBuffer);
+			ModelAnimationSet::apply(pmi, applyBuffer);
+
+			//Save the things modified by initial animations as actual baseline
+			for (const auto& initialModified : applyBuffer) {
+				if (!initialModified.second.second)
+					continue;
+
+				initialModified.first->saveCurrentAsBase(pmi);
+			}
 		}
 	}
 
@@ -290,25 +205,24 @@ namespace animation {
 		instanceData.state = ModelAnimationState::UNTRIGGERED;
 
 		if (cleanup)
-			cleanRunning();
-	}
-
-	void ModelAnimation::addSubmodelAnimation(std::shared_ptr<ModelAnimationSubmodel> animation) {
-		m_submodelAnimation.push_back(std::move(animation));
+			ModelAnimationSet::cleanRunning();
 	}
 
 	void ModelAnimation::stepAnimations(float frametime) {
-		for (const auto& animList : s_runningAnimations) {
-			std::map<int, std::pair<ModelAnimationSubmodel*, ModelAnimationData<true>>> applyBuffer;
+		for (const auto& animList : ModelAnimationSet::s_runningAnimations) {
+			polymodel_instance* pmi = model_get_instance(animList.first);
 
-			for (const auto& anim : animList.second) {
+			ModelAnimationSubmodelBuffer applyBuffer;
+			animList.second.first->initializeSubmodelBuffer(pmi, applyBuffer);
+
+			for (const auto& anim : animList.second.second) {
 				switch (anim->m_instances[animList.first].state) {
 				case ModelAnimationState::RUNNING_FWD:
 				case ModelAnimationState::RUNNING_RWD:
-					anim->play(frametime, model_get_instance(animList.first), &applyBuffer);
+					anim->play(frametime, pmi, applyBuffer);
 					break;
 				case ModelAnimationState::COMPLETED:
-					anim->play(frametime, model_get_instance(animList.first), &applyBuffer, true);
+					anim->play(frametime, pmi, applyBuffer, true);
 					//Fully triggered. Keep in buffer in case some other animation starts on that submodel, but don't play without manual starting
 					break;
 				case ModelAnimationState::UNTRIGGERED:
@@ -318,21 +232,11 @@ namespace animation {
 
 			}
 
-			apply(model_get_instance(animList.first), &applyBuffer);
+			ModelAnimationSet::apply(model_get_instance(animList.first), applyBuffer);
 		}
 
 		//Clear Animations that might have completed this frame.
-		cleanRunning();
-	}
-
-	void ModelAnimation::clearAnimations() {
-		for (const auto& animList : s_runningAnimations) {
-			for (const auto& anim : animList.second) {
-				anim->stop(model_get_instance(animList.first), false);
-			}
-		}
-
-		s_runningAnimations.clear();
+		ModelAnimationSet::cleanRunning();
 	}
 
 	void ModelAnimation::parseLegacyAnimationTable(model_subsystem* sp, ship_info* sip) {
@@ -404,7 +308,7 @@ namespace animation {
 			if (optional_string("+time:"))
 				skip_token();
 
-			std::shared_ptr<ModelAnimation> anim = ModelAnimation::createAnimation(true);
+			std::shared_ptr<ModelAnimation> anim = ModelAnimation::createAnimation(&sip->animations, true);
 
 			char namelower[MAX_NAME_LEN];
 			strncpy(namelower, sp->subobj_name, MAX_NAME_LEN);
@@ -412,24 +316,29 @@ namespace animation {
 			//since sp->type is not set without reading the pof, we need to infer it by subsystem name (which works, since the same name is used to match the submodels name, which is used to match the type in pof parsing)
 			//sadly, we also need to check for engine and radar, since these take precedent (as in, an engineturret is an engine before a turret type)
 			if (!strstr(namelower, "engine") && !strstr(namelower, "radar") && strstr(namelower, "turret")) {
-				auto rotBase = std::shared_ptr<ModelAnimationSegmentSetAngle>(new ModelAnimationSegmentSetAngle(angle.h));
-				auto subsysBase = std::shared_ptr<ModelAnimationSubmodelTurret>(new ModelAnimationSubmodelTurret(sp->subobj_name, false, sip->name, std::move(rotBase)));
-				anim->addSubmodelAnimation(std::move(subsysBase));
+				auto subsysBase = sip->animations.getSubmodel(sp->subobj_name, sip->name, false);
+				auto rotBase = std::shared_ptr<ModelAnimationSegmentSetAngle>(new ModelAnimationSegmentSetAngle(subsysBase, angle.h));
 
-				auto rotBarrel = std::shared_ptr<ModelAnimationSegmentSetAngle>(new ModelAnimationSegmentSetAngle(angle.p));
-				auto subsysBarrel = std::shared_ptr<ModelAnimationSubmodelTurret>(new ModelAnimationSubmodelTurret(sp->subobj_name, true, sip->name, std::move(rotBarrel)));
-				anim->addSubmodelAnimation(std::move(subsysBarrel));
+				auto subsysBarrel = sip->animations.getSubmodel(sp->subobj_name, sip->name, true);
+				auto rotBarrel = std::shared_ptr<ModelAnimationSegmentSetAngle>(new ModelAnimationSegmentSetAngle(subsysBarrel, angle.p));
+				
+				auto rot = std::shared_ptr<ModelAnimationSegmentParallel>(new ModelAnimationSegmentParallel());
+				rot->addSegment(std::move(rotBase));
+				rot->addSegment(std::move(rotBarrel));
+
+				anim->setAnimation(std::move(rot));
 			}
 			else {
-				auto rot = std::shared_ptr<ModelAnimationSegmentSetPHB>(new ModelAnimationSegmentSetPHB(angle, isRelative));
-				auto subsys = std::shared_ptr<ModelAnimationSubmodel>(new ModelAnimationSubmodel(sp->subobj_name, std::move(rot)));
-				anim->addSubmodelAnimation(std::move(subsys));
+				auto subsys = sip->animations.getSubmodel(sp->subobj_name);
+				auto rot = std::shared_ptr<ModelAnimationSegmentSetPHB>(new ModelAnimationSegmentSetPHB(subsys, angle, isRelative));
+				anim->setAnimation(std::move(rot));
 			}
 
 			sip->animations.emplace(anim, anim_name_from_subsys(sp), animation::ModelAnimationTriggerType::Initial);
 		}
 		else {
-			std::shared_ptr<ModelAnimation> anim = ModelAnimation::createAnimation();
+			std::shared_ptr<ModelAnimation> anim = ModelAnimation::createAnimation(&sip->animations);
+			auto subsys = sip->animations.getSubmodel(sp->subobj_name);
 
 			if (type == ModelAnimationTriggerType::TurretFired) {
 				//Turret fireds won't get reset by code, so make them auto-resetting
@@ -489,7 +398,7 @@ namespace animation {
 				//Hence, throw time away, and let the segment handle calculating how long it actually takes
 			}
 
-			auto rotation = std::shared_ptr<ModelAnimationSegmentRotation>(new ModelAnimationSegmentRotation(target, velocity, optional<float>(), acceleration, absolute));
+			auto rotation = std::shared_ptr<ModelAnimationSegmentRotation>(new ModelAnimationSegmentRotation(subsys, target, velocity, optional<float>(), acceleration, absolute));
 
 			if (optional_string("$Sound:")) {
 				gamesnd_id start_sound;
@@ -516,9 +425,8 @@ namespace animation {
 				auto delay = std::shared_ptr<ModelAnimationSegmentWait>(new ModelAnimationSegmentWait(((float)delayByMsReverse) * 0.001f));
 				mainSegment->addSegment(delay);
 			}
-
-			auto subsys = std::shared_ptr<ModelAnimationSubmodel>(new ModelAnimationSubmodel(sp->subobj_name, std::move(mainSegment)));
-			anim->addSubmodelAnimation(subsys);
+			
+			anim->setAnimation(mainSegment);
 
 			//TODO maybe handle sub_name? Not documented in Wiki, maybe no one actually uses it...
 			sip->animations.emplace(anim, anim_name_from_subsys(sp), type, subtype);
@@ -532,49 +440,27 @@ namespace animation {
 	}*/
 
 
-	ModelAnimationSubmodel::ModelAnimationSubmodel(SCP_string submodelName, std::shared_ptr<ModelAnimationSegment> mainSegment) : m_name(std::move(submodelName)), m_mainSegment(std::move(mainSegment)) { }
+	ModelAnimationSubmodel::ModelAnimationSubmodel(SCP_string submodelName) : m_name(std::move(submodelName)) { }
 
-	ModelAnimationSubmodel* ModelAnimationSubmodel::copy(const SCP_string& /*newSIPname*/) {
+	ModelAnimationSubmodel* ModelAnimationSubmodel::copy() const {
 		return new ModelAnimationSubmodel(*this);
 	}
 
-	ModelAnimationData<true> ModelAnimationSubmodel::play(float frametime, float frametimePrev, ModelAnimationDirection direction, polymodel_instance* pmi, ModelAnimationData<> base, bool applyOnly) {
-		if (!m_submodel.has())
-			findSubmodel(pmi);
+	const ModelAnimationData<>& ModelAnimationSubmodel::getInitialData(polymodel_instance* pmi) {
+		auto dataIt = m_initialData.find({ pmi->id });
+		if (dataIt == m_initialData.end()) {
+			saveCurrentAsBase(pmi);
+		}
 
-		auto dataIt = s_initialData.find({ pmi->id, m_submodel });
-
-		//Specified submodel not found. Don't play
-		if (dataIt == s_initialData.end())
-			return {};
-
-		//Cap the frametime at this submodels duration
-		if (frametime > m_mainSegment->getDuration(pmi->id))
-			frametime = m_mainSegment->getDuration(pmi->id);
-
-		//Calculate the submodels data (or its delta from the data stored at the animation's start)
-		ModelAnimationData<true> delta = m_mainSegment->calculateAnimation(base, frametime, pmi->id);
-		
-		if (applyOnly)
-			return delta;
-
-		base.applyDelta(delta);
-
-		//Execute stuff of the animation that doesn't modify this delta (stuff like sounds / particles)
-		if(frametime < frametimePrev)
-			m_mainSegment->executeAnimation(base, frametime, frametimePrev, direction, pmi->id);
-		else
-			m_mainSegment->executeAnimation(base, frametimePrev, frametime, direction, pmi->id);
-
-		return delta;
+		return m_initialData.at(pmi->id);
 	}
 
 	void ModelAnimationSubmodel::reset(polymodel_instance* pmi) {
 		if(!m_submodel.has())
 			findSubmodel(pmi);
 
-		auto dataIt = s_initialData.find({ pmi->id, m_submodel });
-		if (dataIt == s_initialData.end())
+		auto dataIt = m_initialData.find({ pmi->id });
+		if (dataIt == m_initialData.end())
 			return;
 
 		//Since resetting the submodel animation also has to happen for the submodel itself, copy its state at the animation's start back to the submodel
@@ -592,23 +478,12 @@ namespace animation {
 		//m_subsys->submodel_instance_1->offset = data.position;
 	}
 
-	float ModelAnimationSubmodel::recalculate(polymodel_instance* pmi) {
-		auto submodel = findSubmodel(pmi);
-		if (!submodel.first || !submodel.second)
-			return 0;
-
-		ModelAnimationData<>& data = s_initialData[{ pmi->id, m_submodel }];
-
-		m_mainSegment->recalculate(submodel.first, submodel.second, data, pmi->id);
-		return m_mainSegment->getDuration(pmi->id);
-	}
-
 	void ModelAnimationSubmodel::saveCurrentAsBase(polymodel_instance* pmi) {
 		auto submodel = findSubmodel(pmi);
 		if (!submodel.first || !submodel.second)
 			return;
 
-		ModelAnimationData<>& data = s_initialData[{ pmi->id, m_submodel }];
+		ModelAnimationData<>& data = m_initialData[{ pmi->id }];
 		data.orientation = submodel.first->canonical_orient;
 		//TODO: Once translation is a thing
 		//data.position = m_subsys->submodel_instance_1->offset;
@@ -646,12 +521,16 @@ namespace animation {
 		return { &pmi->submodel[submodelNumber], &pm->submodel[submodelNumber] };
 	}
 
-	ModelAnimationSubmodelTurret::ModelAnimationSubmodelTurret(SCP_string subsystemName, bool findBarrel, SCP_string SIPname, std::shared_ptr<ModelAnimationSegment> mainSegment) : ModelAnimationSubmodel(std::move(subsystemName), std::move(mainSegment)), m_SIPname(std::move(SIPname)), m_findBarrel(findBarrel) { }
+	ModelAnimationSubmodelTurret::ModelAnimationSubmodelTurret(SCP_string subsystemName, bool findBarrel, SCP_string SIPname) : ModelAnimationSubmodel(std::move(subsystemName)), m_SIPname(std::move(SIPname)), m_findBarrel(findBarrel) {
+		is_turret = true;
+	}
 
-	ModelAnimationSubmodel* ModelAnimationSubmodelTurret::copy(const SCP_string& newSIPname) {
-		auto anim = new ModelAnimationSubmodelTurret(*this);
-		anim->m_SIPname = newSIPname;
-		return anim;
+	ModelAnimationSubmodel* ModelAnimationSubmodelTurret::copy() const {
+		return new ModelAnimationSubmodelTurret(*this);
+	}
+
+	void ModelAnimationSubmodelTurret::renameSIP(const SCP_string& newSIPname) {
+		m_SIPname = newSIPname;
 	}
 
 	std::pair<submodel_instance*, bsp_info*> ModelAnimationSubmodelTurret::findSubmodel(polymodel_instance* pmi) {
@@ -729,26 +608,99 @@ namespace animation {
 
 	int ModelAnimationSet::SUBTYPE_DEFAULT = ANIMATION_SUBTYPE_ALL;
 
-	void ModelAnimationSet::emplace(const std::shared_ptr<ModelAnimation>& animation, const SCP_string& name, ModelAnimationTriggerType type, int subtype) {
-		animationSet[{type, subtype}].emplace(name, animation);
+	ModelAnimationSet& ModelAnimationSet::operator=(ModelAnimationSet&& other) {
+		std::swap(m_submodels, other.m_submodels);
+		std::swap(m_animationSet, other.m_animationSet);
+
+		for (const auto& animationTypes : m_animationSet) {
+			for (const auto& animation : animationTypes.second) {
+				animation.second->m_set = this;
+			}
+		}
+
+		return *this;
 	}
 
-	void ModelAnimationSet::changeShipName(const SCP_string& name) {
-		decltype(animationSet) newAnimationSet;
+	ModelAnimationSet& ModelAnimationSet::operator=(const ModelAnimationSet& other) {
+		std::map<std::shared_ptr<ModelAnimationSubmodel>, std::shared_ptr<ModelAnimationSubmodel>> submodelUpdateMap;
+		for (const auto& submodel : other.m_submodels) {
+			auto newSubmodel = std::shared_ptr<ModelAnimationSubmodel>(submodel->copy());
+			m_submodels.push_back(newSubmodel);
+			submodelUpdateMap.emplace(submodel, newSubmodel);
+		}
 
-		for (const auto& animationTypes : animationSet) {
-			auto& newAnimations = newAnimationSet[animationTypes.first];
+		for (const auto& animationTypes : other.m_animationSet) {
+			auto& newAnimations = m_animationSet[animationTypes.first];
 			for (const auto& oldAnimation : animationTypes.second) {
-				std::shared_ptr<ModelAnimation> newAnimation = ModelAnimation::createAnimation(oldAnimation.second->m_isInitialType);
-				for (const auto& submodelAnims : oldAnimation.second->m_submodelAnimation) {
-					std::shared_ptr<ModelAnimationSubmodel> animSubmodel = std::shared_ptr<ModelAnimationSubmodel>(submodelAnims->copy(name));
-					newAnimation->addSubmodelAnimation(std::move(animSubmodel));
-				}
+				std::shared_ptr<ModelAnimation> newAnimation = std::shared_ptr<ModelAnimation>(new ModelAnimation(*oldAnimation.second));
+				newAnimation->m_animation = std::shared_ptr<ModelAnimationSegment>(newAnimation->m_animation->copy());
+
+				newAnimation->m_animation->exchangeSubmodelPointers(submodelUpdateMap);
+
 				newAnimations.emplace(oldAnimation.first, newAnimation);
 			}
 		}
 
-		animationSet = newAnimationSet;
+		return *this;
+	}
+
+	void ModelAnimationSet::emplace(const std::shared_ptr<ModelAnimation>& animation, const SCP_string& name, ModelAnimationTriggerType type, int subtype) {
+		m_animationSet[{type, subtype}].emplace(name, animation);
+	}
+
+	void ModelAnimationSet::changeShipName(const SCP_string& name) {
+		for (const auto& submodel : m_submodels) {
+			submodel->renameSIP(name);
+		}
+	}
+
+	void ModelAnimationSet::cleanRunning() {
+		auto removeIt = s_runningAnimations.begin();
+		while (removeIt != s_runningAnimations.end()) {
+			auto animIt = removeIt->second.second.cbegin();
+			while (animIt != removeIt->second.second.cend()) {
+				if ((*animIt)->m_instances[removeIt->first].state == ModelAnimationState::UNTRIGGERED) {
+					animIt = removeIt->second.second.erase(animIt);
+				}
+				else
+					animIt++;
+			}
+
+			if (removeIt->second.second.empty()) {
+				removeIt = s_runningAnimations.erase(removeIt);
+			}
+			else
+				removeIt++;
+		}
+	}
+
+	void ModelAnimationSet::stopAnimations() {
+		for (const auto& animList : s_runningAnimations) {
+			for (const auto& anim : animList.second.second) {
+				anim->stop(model_get_instance(animList.first), false);
+			}
+		}
+
+		s_runningAnimations.clear();
+	}
+
+	void ModelAnimationSet::clearShipData(polymodel_instance* pmi) {
+		for (const auto& submodel : m_submodels) {
+			submodel->m_initialData.erase(pmi->id);
+		}
+	}
+
+	void ModelAnimationSet::apply(polymodel_instance* pmi, const ModelAnimationSubmodelBuffer& applyBuffer) {
+		for (const auto& toApply : applyBuffer) {
+			toApply.first->copyToSubmodel(toApply.second.first, pmi);
+		}
+	}
+
+	void ModelAnimationSet::initializeSubmodelBuffer(polymodel_instance* pmi, ModelAnimationSubmodelBuffer& applyBuffer) const {
+		for (const auto& submodel : m_submodels) {
+			ModelAnimationData<> base = submodel->getInitialData(pmi);
+			applyBuffer[submodel].first = base;
+		}
 	}
 
 	bool ModelAnimationSet::start(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& name, ModelAnimationDirection direction, bool forced, bool instant, int subtype) const {
@@ -756,8 +708,8 @@ namespace animation {
 			return false;
 
 		bool started = false;
-		auto animations = animationSet.find({ type, subtype });
-		if (animations != animationSet.end()) {
+		auto animations = m_animationSet.find({ type, subtype });
+		if (animations != m_animationSet.end()) {
 			auto namedAnimation = animations->second.find(name);
 			if (namedAnimation != animations->second.end()) {
 				namedAnimation->second->start(pmi, direction, forced, instant);
@@ -769,8 +721,8 @@ namespace animation {
 		if (subtype == SUBTYPE_DEFAULT)
 			return started;
 
-		animations = animationSet.find({ type, SUBTYPE_DEFAULT });
-		if (animations != animationSet.end()) {
+		animations = m_animationSet.find({ type, SUBTYPE_DEFAULT });
+		if (animations != m_animationSet.end()) {
 			auto namedAnimation = animations->second.find(name);
 			if (namedAnimation != animations->second.end()) {
 				namedAnimation->second->start(pmi, direction, forced, instant);
@@ -785,8 +737,8 @@ namespace animation {
 			return false;
 
 		bool started = false;
-		auto animations = animationSet.find({ type, subtype });
-		if (animations != animationSet.end()) {
+		auto animations = m_animationSet.find({ type, subtype });
+		if (animations != m_animationSet.end()) {
 			for (auto& namedAnimation : animations->second) {
 				namedAnimation.second->start(pmi, direction, forced, instant);
 				started = true;
@@ -797,8 +749,8 @@ namespace animation {
 		if (strict || subtype == SUBTYPE_DEFAULT)
 			return started;
 
-		animations = animationSet.find({ type, SUBTYPE_DEFAULT });
-		if (animations != animationSet.end()) {
+		animations = m_animationSet.find({ type, SUBTYPE_DEFAULT });
+		if (animations != m_animationSet.end()) {
 			for (auto& namedAnimation : animations->second) {
 				namedAnimation.second->start(pmi, direction, forced, instant);
 				started = true;
@@ -815,7 +767,7 @@ namespace animation {
 		bool started = false;
 		subtype++;
 
-		for (const auto& animList : animationSet) {
+		for (const auto& animList : m_animationSet) {
 			if (animList.first.first != ModelAnimationTriggerType::DockBayDoor)
 				continue;
 
@@ -840,7 +792,7 @@ namespace animation {
 		float duration = 0.0f;
 		subtype++;
 
-		for (const auto& animList : animationSet) {
+		for (const auto& animList : m_animationSet) {
 			if (animList.first.first != ModelAnimationTriggerType::DockBayDoor)
 				continue;
 
@@ -868,8 +820,8 @@ namespace animation {
 	int ModelAnimationSet::getTime(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& name, int subtype) const {
 		float duration = 0.0f;
 
-		auto animations = animationSet.find({ type, subtype });
-		if (animations != animationSet.end()) {
+		auto animations = m_animationSet.find({ type, subtype });
+		if (animations != m_animationSet.end()) {
 			auto namedAnimation = animations->second.find(name);
 			if (namedAnimation != animations->second.end() && namedAnimation->second->m_instances[pmi->id].state != ModelAnimationState::UNTRIGGERED) {
 				duration = namedAnimation->second->m_instances[pmi->id].duration;
@@ -880,8 +832,8 @@ namespace animation {
 		if (subtype == SUBTYPE_DEFAULT)
 			return (int) (duration * 1000);
 
-		animations = animationSet.find({ type, SUBTYPE_DEFAULT });
-		if (animations != animationSet.end()) {
+		animations = m_animationSet.find({ type, SUBTYPE_DEFAULT });
+		if (animations != m_animationSet.end()) {
 			auto namedAnimation = animations->second.find(name);
 			if (namedAnimation != animations->second.end() && namedAnimation->second->m_instances[pmi->id].state != ModelAnimationState::UNTRIGGERED) {
 				float localDur = namedAnimation->second->m_instances[pmi->id].duration;
@@ -895,8 +847,8 @@ namespace animation {
 	int ModelAnimationSet::getTimeAll(polymodel_instance* pmi, ModelAnimationTriggerType type, int subtype, bool strict) const {
 		float duration = 0.0f;
 
-		auto animations = animationSet.find({ type, subtype });
-		if (animations != animationSet.end()) {
+		auto animations = m_animationSet.find({ type, subtype });
+		if (animations != m_animationSet.end()) {
 			for (const auto& namedAnimation : animations->second) {
 				if (namedAnimation.second->m_instances[pmi->id].state == ModelAnimationState::UNTRIGGERED)
 					continue;
@@ -909,8 +861,8 @@ namespace animation {
 		if (strict || subtype == SUBTYPE_DEFAULT)
 			return (int) (duration * 1000);
 
-		animations = animationSet.find({ type, SUBTYPE_DEFAULT });
-		if (animations != animationSet.end()) {
+		animations = m_animationSet.find({ type, SUBTYPE_DEFAULT });
+		if (animations != m_animationSet.end()) {
 			for (const auto& namedAnimation : animations->second) {
 				if (namedAnimation.second->m_instances[pmi->id].state == ModelAnimationState::UNTRIGGERED)
 					continue;
@@ -922,15 +874,36 @@ namespace animation {
 		return (int) (duration * 1000);
 	}
 
+	std::shared_ptr<ModelAnimationSubmodel> ModelAnimationSet::getSubmodel(SCP_string submodelName) {
+		for (const auto& submodel : m_submodels) {
+			if (!submodel->is_turret && submodel->m_name == submodelName)
+				return submodel;
+		}
+
+		auto submodel = std::shared_ptr<ModelAnimationSubmodel>(new ModelAnimationSubmodel(submodelName));
+		m_submodels.push_back(submodel);
+		return submodel;
+	}
+
+	std::shared_ptr<ModelAnimationSubmodel> ModelAnimationSet::getSubmodel(SCP_string submodelName, SCP_string SIP_name, bool findBarrel) {
+		for (const auto& submodel : m_submodels) {
+			if (submodel->is_turret && submodel->m_name == submodelName) {
+				auto submodelTurret = ((ModelAnimationSubmodelTurret*)submodel.get());
+				if (submodelTurret->m_SIPname == SIP_name && submodelTurret->m_findBarrel == findBarrel)
+					return submodel;
+			}
+		}
+
+		auto submodel = std::shared_ptr<ModelAnimationSubmodelTurret>(new ModelAnimationSubmodelTurret(submodelName, findBarrel, SIP_name));
+		m_submodels.push_back(submodel);
+		return submodel;
+	}
+
 
 	void anim_set_initial_states(ship* shipp) {
 		ship_info* sip = &Ship_info[shipp->ship_info_index];
-
-		const auto& initialAnims = sip->animations.animationSet[{animation::ModelAnimationTriggerType::Initial, animation::ModelAnimationSet::SUBTYPE_DEFAULT}];
-
-		for (const auto& anim : initialAnims) {
-			anim.second->start(model_get_instance(shipp->model_instance_num), ModelAnimationDirection::FWD, true);
-		}
+		sip->animations.clearShipData(model_get_instance(shipp->model_instance_num));
+		sip->animations.startAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::Initial, ModelAnimationDirection::FWD, true);
 	}
 
 	const std::map<ModelAnimationTriggerType, const char*> Animation_type_names = {

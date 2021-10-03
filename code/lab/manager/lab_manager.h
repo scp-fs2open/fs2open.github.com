@@ -28,7 +28,7 @@ public:
 	void changeDisplayedObject(LabMode type, int info_index);
 
 	void close() {
-		animation::ModelAnimation::clearAnimations();
+		animation::ModelAnimationSet::stopAnimations();
   
 		LabRenderer::close();
 

@@ -1486,7 +1486,7 @@ void ship_info::move(ship_info&& other)
 
 	std::swap(glowpoint_bank_override_map, other.glowpoint_bank_override_map);
 
-	std::swap(animations, other.animations);
+	animations = std::move(other.animations);
 }
 
 #define CHECK_THEN_FREE(attribute) \
@@ -7649,7 +7649,7 @@ void ship_delete( object * obj )
 	ship_subsystems_delete(&Ships[num]);
 	shipp->objnum = -1;
 
-	for (const auto& animationList : Ship_info[shipp->ship_info_index].animations.animationSet) {
+	for (const auto& animationList : Ship_info[shipp->ship_info_index].animations.m_animationSet) {
 		for (const auto& animStop : animationList.second) {
 			animStop.second->stop(model_get_instance(shipp->model_instance_num), true);
 		}

@@ -442,7 +442,7 @@ void AnimationTrigger::update(LabMode, int) {
 
 		const animation::ModelAnimationSet& anims = Ship_info[shipp->ship_info_index].animations;
 
-		for (const auto& animList : anims.animationSet) {
+		for (const auto& animList : anims.m_animationSet) {
 			for (const auto& animation : animList.second) {
 				switch (animList.first.first) {
 				case animation::ModelAnimationTriggerType::TurretFiring: {
