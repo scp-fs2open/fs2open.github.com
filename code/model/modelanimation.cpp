@@ -39,7 +39,7 @@ namespace animation {
 				(*applyBuffer)[animation->m_submodel].first = animation.get();
 
 				base.applyDelta(previousDelta);
-				ModelAnimationData<true> delta = animation->play(instanceData.time, instanceData.time, false, pmi, base, true);
+				ModelAnimationData<true> delta = animation->play(instanceData.time, instanceData.time, ModelAnimationDirection::FWD, pmi, base, true);
 				previousDelta.applyDelta(delta);
 			}
 
@@ -114,7 +114,7 @@ namespace animation {
 				(*applyBuffer)[animation->m_submodel].first = animation.get();
 
 				base.applyDelta(previousDelta);
-				ModelAnimationData<true> delta = animation->play(instanceData.time, prevTime, true, pmi, base);
+				ModelAnimationData<true> delta = animation->play(instanceData.time, prevTime, ModelAnimationDirection::FWD, pmi, base);
 				previousDelta.applyDelta(delta);
 			}
 			break;
@@ -138,7 +138,7 @@ namespace animation {
 				(*applyBuffer)[animation->m_submodel].first = animation.get();
 
 				base.applyDelta(previousDelta);
-				ModelAnimationData<true> delta = animation->play(instanceData.time, prevTime, false, pmi, base);
+				ModelAnimationData<true> delta = animation->play(instanceData.time, prevTime, ModelAnimationDirection::RWD, pmi, base);
 				previousDelta.applyDelta(delta);
 			}
 
@@ -179,14 +179,14 @@ namespace animation {
 		}
 	}
 	
-	void ModelAnimation::start(polymodel_instance* pmi, bool reverse, bool force, bool instant, const float* multiOverrideTime) {
+	void ModelAnimation::start(polymodel_instance* pmi, ModelAnimationDirection direction, bool force, bool instant, const float* multiOverrideTime) {
 		instance_data& instanceData = m_instances[pmi->id];
 
 		if (multiOverrideTime == nullptr && (Game_mode & GM_MULTIPLAYER)) {
 			//We are in multiplayer. Send animation to server to start. Server starts animation online, and sends start request back (which'll have multiOverride == true).
 			//If we _are_ the server, also just start the animation
 
-			send_animation_triggered_packet((int)id, pmi->id, reverse, force, instant);
+			send_animation_triggered_packet((int)id, pmi->id, direction, force, instant);
 
 			if(MULTIPLAYER_CLIENT)
 				return;
@@ -194,7 +194,7 @@ namespace animation {
 
 		float timeOffset = multiOverrideTime != nullptr ? *multiOverrideTime : 0.0f;
 
-		if (reverse) {
+		if (direction == ModelAnimationDirection::RWD) {
 			switch (instanceData.state) {
 			case ModelAnimationState::RUNNING_RWD:
 			case ModelAnimationState::UNTRIGGERED:
@@ -204,7 +204,7 @@ namespace animation {
 				if (force) {
 					//This needs to recalculate first, so start it as if it were going forwards, and then set it's time and continue on
 					if (instanceData.state == ModelAnimationState::UNTRIGGERED)
-						start(pmi, false, true);
+						start(pmi, ModelAnimationDirection::FWD, true);
 					instanceData.time = instant ? 0 : instanceData.duration - timeOffset;
 					instanceData.state = ModelAnimationState::RUNNING_RWD;
 					break;
@@ -557,7 +557,7 @@ namespace animation {
 		return new ModelAnimationSubmodel(*this);
 	}
 
-	ModelAnimationData<true> ModelAnimationSubmodel::play(float frametime, float frametimePrev, bool forwards, polymodel_instance* pmi, ModelAnimationData<> base, bool applyOnly) {
+	ModelAnimationData<true> ModelAnimationSubmodel::play(float frametime, float frametimePrev, ModelAnimationDirection direction, polymodel_instance* pmi, ModelAnimationData<> base, bool applyOnly) {
 		if (!m_submodel.has())
 			findSubmodel(pmi);
 
@@ -581,9 +581,9 @@ namespace animation {
 
 		//Execute stuff of the animation that doesn't modify this delta (stuff like sounds / particles)
 		if(frametime < frametimePrev)
-			m_mainSegment->executeAnimation(base, frametime, frametimePrev, forwards, pmi->id);
+			m_mainSegment->executeAnimation(base, frametime, frametimePrev, direction, pmi->id);
 		else
-			m_mainSegment->executeAnimation(base, frametimePrev, frametime, forwards, pmi->id);
+			m_mainSegment->executeAnimation(base, frametimePrev, frametime, direction, pmi->id);
 
 		return delta;
 	}
@@ -770,13 +770,13 @@ namespace animation {
 		animationSet = newAnimationSet;
 	}
 
-	bool ModelAnimationSet::start(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& name, bool reverse, bool forced, bool instant, int subtype) {
+	bool ModelAnimationSet::start(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& name, ModelAnimationDirection direction, bool forced, bool instant, int subtype) {
 		bool started = false;
 		auto animations = animationSet.find({ type, subtype });
 		if (animations != animationSet.end()) {
 			auto namedAnimation = animations->second.find(name);
 			if (namedAnimation != animations->second.end()) {
-				namedAnimation->second->start(pmi, reverse, forced, instant);
+				namedAnimation->second->start(pmi, direction, forced, instant);
 				started = true;
 			}
 		}
@@ -789,19 +789,19 @@ namespace animation {
 		if (animations != animationSet.end()) {
 			auto namedAnimation = animations->second.find(name);
 			if (namedAnimation != animations->second.end()) {
-				namedAnimation->second->start(pmi, reverse, forced, instant);
+				namedAnimation->second->start(pmi, direction, forced, instant);
 				started = true;
 			}
 		}
 		return started;
 	}
 
-	bool ModelAnimationSet::startAll(polymodel_instance* pmi, ModelAnimationTriggerType type, bool reverse, bool forced, bool instant, int subtype, bool strict) {
+	bool ModelAnimationSet::startAll(polymodel_instance* pmi, ModelAnimationTriggerType type, ModelAnimationDirection direction, bool forced, bool instant, int subtype, bool strict) {
 		bool started = false;
 		auto animations = animationSet.find({ type, subtype });
 		if (animations != animationSet.end()) {
 			for (auto& namedAnimation : animations->second) {
-				namedAnimation.second->start(pmi, reverse, forced, instant);
+				namedAnimation.second->start(pmi, direction, forced, instant);
 				started = true;
 			}
 		}
@@ -813,7 +813,7 @@ namespace animation {
 		animations = animationSet.find({ type, SUBTYPE_DEFAULT });
 		if (animations != animationSet.end()) {
 			for (auto& namedAnimation : animations->second) {
-				namedAnimation.second->start(pmi, reverse, forced, instant);
+				namedAnimation.second->start(pmi, direction, forced, instant);
 				started = true;
 			}
 		}
@@ -821,7 +821,7 @@ namespace animation {
 	}
 
 	//Yes why of course does this need special handling...
-	bool ModelAnimationSet::startDockBayDoors(polymodel_instance* pmi, bool reverse, bool forced, bool instant, int subtype) {
+	bool ModelAnimationSet::startDockBayDoors(polymodel_instance* pmi, ModelAnimationDirection direction, bool forced, bool instant, int subtype) {
 		bool started = false;
 		subtype++;
 
@@ -839,7 +839,7 @@ namespace animation {
 					continue;
 			}
 			for (auto& namedAnimation : animList.second) {
-				namedAnimation.second->start(pmi, reverse, forced, instant);
+				namedAnimation.second->start(pmi, direction, forced, instant);
 				started = true;
 			}
 		}
@@ -939,7 +939,7 @@ namespace animation {
 		const auto& initialAnims = sip->animations.animationSet[{animation::ModelAnimationTriggerType::Initial, animation::ModelAnimationSet::SUBTYPE_DEFAULT}];
 
 		for (const auto& anim : initialAnims) {
-			anim.second->start(model_get_instance(shipp->model_instance_num), false, true);
+			anim.second->start(model_get_instance(shipp->model_instance_num), ModelAnimationDirection::FWD, true);
 		}
 	}
 

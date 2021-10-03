@@ -10,7 +10,7 @@ namespace animation {
 
 		void recalculate(const submodel_instance* submodel_instance, const bsp_info* submodel, const ModelAnimationData<>& base, int pmi_id) override;
 		ModelAnimationData<true> calculateAnimation(const ModelAnimationData<>& base, float time, int pmi_id) const override;
-		void executeAnimation(const ModelAnimationData<>& state, float timeboundLower, float timeboundUpper, bool forwards, int pmi_id) override;
+		void executeAnimation(const ModelAnimationData<>& state, float timeboundLower, float timeboundUpper, ModelAnimationDirection direction, int pmi_id) override;
 
 	public:
 		void addSegment(std::shared_ptr<ModelAnimationSegment> segment);
@@ -23,7 +23,7 @@ namespace animation {
 
 		void recalculate(const submodel_instance* submodel_instance, const bsp_info* submodel, const ModelAnimationData<>& base, int pmi_id) override;
 		ModelAnimationData<true> calculateAnimation(const ModelAnimationData<>& base, float time, int pmi_id) const override;
-		void executeAnimation(const ModelAnimationData<>& state, float timeboundLower, float timeboundUpper, bool forwards, int pmi_id) override;
+		void executeAnimation(const ModelAnimationData<>& state, float timeboundLower, float timeboundUpper, ModelAnimationDirection direction, int pmi_id) override;
 
 	public:
 		void addSegment(std::shared_ptr<ModelAnimationSegment> segment);
@@ -36,7 +36,7 @@ namespace animation {
 
 		void recalculate(const submodel_instance* /*submodel_instance*/, const bsp_info* /*submodel*/, const ModelAnimationData<>& /*base*/, int pmi_id) override;
 		ModelAnimationData<true> calculateAnimation(const ModelAnimationData<>& /*base*/, float /*time*/, int /*pmi_id*/) const override { return {}; };
-		void executeAnimation(const ModelAnimationData<>& /*state*/, float /*timeboundLower*/, float /*timeboundUpper*/, bool /*forwards*/, int /*pmi_id*/) override { };
+		void executeAnimation(const ModelAnimationData<>& /*state*/, float /*timeboundLower*/, float /*timeboundUpper*/, ModelAnimationDirection /*direction*/, int /*pmi_id*/) override { };
 
 	public:
 		ModelAnimationSegmentWait(float time);
@@ -57,7 +57,7 @@ namespace animation {
 
 		void recalculate(const submodel_instance* /*submodel_instance*/, const bsp_info* /*submodel*/, const ModelAnimationData<>& base, int pmi_id) override;
 		ModelAnimationData<true> calculateAnimation(const ModelAnimationData<>& /*base*/, float /*time*/, int pmi_id) const override;
-		void executeAnimation(const ModelAnimationData<>& /*state*/, float /*timeboundLower*/, float /*timeboundUpper*/, bool /*forwards*/, int /*pmi_id*/) override { };
+		void executeAnimation(const ModelAnimationData<>& /*state*/, float /*timeboundLower*/, float /*timeboundUpper*/, ModelAnimationDirection /*direction*/, int /*pmi_id*/) override { };
 
 	public:
 		ModelAnimationSegmentSetPHB(const angles& angle, bool isAngleRelative);
@@ -71,7 +71,7 @@ namespace animation {
 
 		void recalculate(const submodel_instance* /*submodel_instance*/, const bsp_info* submodel, const ModelAnimationData<>& /*base*/, int pmi_id) override;
 		ModelAnimationData<true> calculateAnimation(const ModelAnimationData<>& /*base*/, float /*time*/, int /*pmi_id*/) const override;
-		void executeAnimation(const ModelAnimationData<>& /*state*/, float /*timeboundLower*/, float /*timeboundUpper*/, bool /*forwards*/, int /*pmi_id*/) override { };
+		void executeAnimation(const ModelAnimationData<>& /*state*/, float /*timeboundLower*/, float /*timeboundUpper*/, ModelAnimationDirection /*direction*/, int /*pmi_id*/) override { };
 
 	public:
 		ModelAnimationSegmentSetAngle(float angle);
@@ -99,7 +99,7 @@ namespace animation {
 
 		void recalculate(const submodel_instance* /*submodel_instance*/, const bsp_info* submodel, const ModelAnimationData<>& base, int pmi_id) override;
 		ModelAnimationData<true> calculateAnimation(const ModelAnimationData<>& /*base*/, float time, int pmi_id) const override;
-		void executeAnimation(const ModelAnimationData<>& /*state*/, float /*timeboundLower*/, float /*timeboundUpper*/, bool /*forwards*/, int /*pmi_id*/) override { };
+		void executeAnimation(const ModelAnimationData<>& /*state*/, float /*timeboundLower*/, float /*timeboundUpper*/, ModelAnimationDirection /*direction*/, int /*pmi_id*/) override { };
 
 	public:
 		ModelAnimationSegmentRotation(optional<angles> targetAngle, optional<angles> velocity, optional<float> time, optional<angles> acceleration, bool isAbsolute = false);
@@ -123,7 +123,7 @@ namespace animation {
 
 		void recalculate(const submodel_instance* submodel_instance, const bsp_info* submodel, const ModelAnimationData<>& base, int pmi_id) override;
 		ModelAnimationData<true> calculateAnimation(const ModelAnimationData<>& base, float time, int pmi_id) const override;
-		void executeAnimation(const ModelAnimationData<>& state, float timeboundLower, float timeboundUpper, bool forwards, int pmi_id) override;
+		void executeAnimation(const ModelAnimationData<>& state, float timeboundLower, float timeboundUpper, ModelAnimationDirection direction, int pmi_id) override;
 
 		void playStartSnd(int pmi_id);
 		void playEndSnd(int pmi_id);

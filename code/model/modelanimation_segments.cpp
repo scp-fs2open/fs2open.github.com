@@ -39,10 +39,10 @@ namespace animation {
 		return delta;
 	}
 
-	void ModelAnimationSegmentSerial::executeAnimation(const ModelAnimationData<>& state, float timeboundLower, float timeboundUpper, bool forwards, int pmi_id) {
+	void ModelAnimationSegmentSerial::executeAnimation(const ModelAnimationData<>& state, float timeboundLower, float timeboundUpper, ModelAnimationDirection direction, int pmi_id) {
 		for (const auto& segment : m_segments) {
 			if (timeboundLower < segment->getDuration(pmi_id)) {
-				segment->executeAnimation(state, fmaxf(0.0f, timeboundLower), fminf(timeboundUpper, segment->getDuration(pmi_id)), forwards, pmi_id);
+				segment->executeAnimation(state, fmaxf(0.0f, timeboundLower), fminf(timeboundUpper, segment->getDuration(pmi_id)), direction, pmi_id);
 			}
 
 			timeboundLower -= segment->getDuration(pmi_id);
@@ -88,10 +88,10 @@ namespace animation {
 		return delta;
 	}
 
-	void ModelAnimationSegmentParallel::executeAnimation(const ModelAnimationData<>& state, float timeboundLower, float timeboundUpper, bool forwards, int pmi_id) {
+	void ModelAnimationSegmentParallel::executeAnimation(const ModelAnimationData<>& state, float timeboundLower, float timeboundUpper, ModelAnimationDirection direction, int pmi_id) {
 		for (const auto& segment : m_segments) {
 			if (timeboundLower < segment->getDuration(pmi_id)) {
-				segment->executeAnimation(state, timeboundLower, fminf(timeboundUpper, segment->getDuration(pmi_id)), forwards, pmi_id);
+				segment->executeAnimation(state, timeboundLower, fminf(timeboundUpper, segment->getDuration(pmi_id)), direction, pmi_id);
 			}
 		}
 	}
@@ -403,9 +403,9 @@ namespace animation {
 		return m_segment->calculateAnimation(base, time, pmi_id);
 	}
 
-	void ModelAnimationSegmentSoundDuring::executeAnimation(const ModelAnimationData<>& state, float timeboundLower, float timeboundUpper, bool forwards, int pmi_id) {
+	void ModelAnimationSegmentSoundDuring::executeAnimation(const ModelAnimationData<>& state, float timeboundLower, float timeboundUpper, ModelAnimationDirection direction, int pmi_id) {
 		if (timeboundLower <= 0.0f && 0.0f <= timeboundUpper) {
-			if (!m_flipIfReversed || forwards)
+			if (!m_flipIfReversed || direction == ModelAnimationDirection::FWD)
 				playStartSnd(pmi_id);
 			else
 				playEndSnd(pmi_id);
@@ -417,12 +417,12 @@ namespace animation {
 		}
 
 		if (timeboundLower <= m_duration.at(pmi_id) && m_duration.at(pmi_id) <= timeboundUpper) {
-			if (!m_flipIfReversed || forwards)
+			if (!m_flipIfReversed || direction == ModelAnimationDirection::FWD)
 				playEndSnd(pmi_id);
 			else
 				playStartSnd(pmi_id);
 		}
-		m_segment->executeAnimation(state, timeboundLower, timeboundUpper, forwards, pmi_id);
+		m_segment->executeAnimation(state, timeboundLower, timeboundUpper, direction, pmi_id);
 	}
 
 	void ModelAnimationSegmentSoundDuring::playStartSnd(int pmi_id) {

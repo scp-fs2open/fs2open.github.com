@@ -139,7 +139,7 @@ void afterburners_start(object *objp)
 	percent_left = shipp->afterburner_fuel / sip->afterburner_fuel_capacity;
 
 	//Do anim
-	Ship_info[shipp->ship_info_index].animations.startAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::Afterburner, false);
+	Ship_info[shipp->ship_info_index].animations.startAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::Afterburner, animation::ModelAnimationDirection::FWD);
 
 	if ( objp == Player_obj ) {
 		Player_afterburner_start_time = timer_get_milliseconds();
@@ -339,7 +339,7 @@ void afterburners_stop(object *objp, int key_released)
 	objp->phys_info.flags &= ~PF_AFTERBURNER_ON;
 
 	//Do anim
-	Ship_info[shipp->ship_info_index].animations.startAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::Afterburner, true);
+	Ship_info[shipp->ship_info_index].animations.startAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::Afterburner, animation::ModelAnimationDirection::RWD);
 
 	if ( objp == Player_obj ) {
 

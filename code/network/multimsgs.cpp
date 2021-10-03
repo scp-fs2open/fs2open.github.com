@@ -8020,7 +8020,7 @@ void process_non_homing_fired_packet(ubyte* data, header* hinfo)
 	}
 }
 
-void send_animation_triggered_packet(int animationId, int pmi, bool reverse, bool force, bool instant, const int* time) {
+void send_animation_triggered_packet(int animationId, int pmi, const animation::ModelAnimationDirection& direction, bool force, bool instant, const int* time) {
 	int packet_size;
 	ubyte data[MAX_PACKET_SIZE];
 
@@ -8029,7 +8029,7 @@ void send_animation_triggered_packet(int animationId, int pmi, bool reverse, boo
 	ADD_INT(animationId);
 	ADD_INT(pmi);
 	
-	ubyte metadata = (reverse ? 1 << 0 : 0) | (force ? 1 << 1 : 0) | (instant ? 1 << 2 : 0);
+	ubyte metadata = (direction == animation::ModelAnimationDirection::RWD ? 1 << 0 : 0) | (force ? 1 << 1 : 0) | (instant ? 1 << 2 : 0);
 	ADD_DATA(metadata);
 	int actualTimestamp = time == nullptr ? timestamp() : *time;
 	ADD_INT(actualTimestamp);
@@ -8058,18 +8058,19 @@ void process_animation_triggered_packet(ubyte* data, header* hinfo) {
 
 	PACKET_SET_SIZE();
 
-	bool reverse, forced, instant;
-	reverse = metadata & (1 << 0);
+	bool forced, instant;
+	animation::ModelAnimationDirection direction;
+	direction = (metadata & (1 << 0)) ? animation::ModelAnimationDirection::RWD : animation::ModelAnimationDirection::FWD;
 	forced = metadata & (1 << 1);
 	instant = metadata & (1 << 2);
 
 	float delay = (float)(timestamp() - time) * 0.001f;
 
-	animation::ModelAnimation::s_animationById[animationId]->start(model_get_instance(pmi), reverse, forced, instant, &delay);
+	animation::ModelAnimation::s_animationById[animationId]->start(model_get_instance(pmi), direction, forced, instant, &delay);
 
 	//Need to broadcast back to other clients
 	if (Net_player->flags & NETINFO_FLAG_AM_MASTER) {
-		send_animation_triggered_packet(animationId, pmi, reverse, forced, instant, &time);
+		send_animation_triggered_packet(animationId, pmi, direction, forced, instant, &time);
 	}
 }
 

@@ -95,6 +95,8 @@ enum EModelAnimationPosition {
 
 namespace animation {
 
+	enum class ModelAnimationDirection { FWD, RWD };
+
 	enum class ModelAnimationState { UNTRIGGERED, RUNNING_FWD, COMPLETED, RUNNING_RWD };
 
 	FLAG_LIST(Animation_Flags) {
@@ -157,7 +159,7 @@ namespace animation {
 		//This function needs to contain anything that manipulates ModelAnimationData (such as any movement)
 		virtual ModelAnimationData<true> calculateAnimation(const ModelAnimationData<>& base, float time, int pmi_id) const = 0;
 		//This function needs to contain any animation parts that do not change ModelAnimationData (such as sound or particles)
-		virtual void executeAnimation(const ModelAnimationData<>& state, float timeboundLower, float timeboundUpper, bool forwards, int pmi_id) = 0;
+		virtual void executeAnimation(const ModelAnimationData<>& state, float timeboundLower, float timeboundUpper, ModelAnimationDirection direction, int pmi_id) = 0;
 	};
 	
 
@@ -180,7 +182,7 @@ namespace animation {
 		virtual ~ModelAnimationSubmodel() = default;
 
 		//Sets the animation to the specified time and applies it to the submodel
-		ModelAnimationData<true> play(float time, float frametimePrev, bool forwards, polymodel_instance* pmi, ModelAnimationData<> base, bool applyOnly = false);
+		ModelAnimationData<true> play(float time, float frametimePrev, ModelAnimationDirection direction, polymodel_instance* pmi, ModelAnimationData<> base, bool applyOnly = false);
 
 		void reset(polymodel_instance* pmi);
 
@@ -243,7 +245,7 @@ namespace animation {
 		void addSubmodelAnimation(std::shared_ptr<ModelAnimationSubmodel> animation);
 
 		//Start playing the animation. Will stop other animations that have components running on the same submodels. instant always requires force
-		void start(polymodel_instance* pmi, bool reverse, bool force = false, bool instant = false, const float* multiOverrideTime = nullptr);
+		void start(polymodel_instance* pmi, ModelAnimationDirection direction, bool force = false, bool instant = false, const float* multiOverrideTime = nullptr);
 		//Stops the animation. If cleanup is set, it will remove the animation from the list of running animations. Don't call without cleanup unless you know what you are doing
 		void stop(polymodel_instance* pmi, bool cleanup = true);
 
@@ -272,9 +274,9 @@ namespace animation {
 
 		void changeShipName(const SCP_string& name);
 
-		bool start(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& name, bool reverse, bool forced = false, bool instant = false, int subtype = SUBTYPE_DEFAULT);
-		bool startAll(polymodel_instance* pmi, ModelAnimationTriggerType type, bool reverse, bool forced = false, bool instant = false, int subtype = SUBTYPE_DEFAULT, bool strict = false);
-		bool startDockBayDoors(polymodel_instance* pmi, bool reverse, bool forced, bool instant, int subtype);
+		bool start(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& name, ModelAnimationDirection direction, bool forced = false, bool instant = false, int subtype = SUBTYPE_DEFAULT);
+		bool startAll(polymodel_instance* pmi, ModelAnimationTriggerType type, ModelAnimationDirection direction, bool forced = false, bool instant = false, int subtype = SUBTYPE_DEFAULT, bool strict = false);
+		bool startDockBayDoors(polymodel_instance* pmi, ModelAnimationDirection direction, bool forced, bool instant, int subtype);
 
 		int getTime(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& name, int subtype = SUBTYPE_DEFAULT);
 		int getTimeAll(polymodel_instance* pmi, ModelAnimationTriggerType type, int subtype = SUBTYPE_DEFAULT, bool strict = false);
