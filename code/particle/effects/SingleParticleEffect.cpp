@@ -29,6 +29,8 @@ bool SingleParticleEffect::processSource(ParticleSource* source) {
 
 		source->getOrigin()->applyToParticleInfo(info);
 
+		info.vel *= m_vel_inherit;
+
 		m_particleProperties.createParticle(info);
 	}
 
