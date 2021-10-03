@@ -6,6 +6,7 @@
 #include "particle/ParticleEffect.h"
 #include "particle/ParticleManager.h"
 #include "particle/util/ParticleProperties.h"
+#include "particle/util/EffectTiming.h"
 #include "utils/RandomRange.h"
 
 namespace particle {
