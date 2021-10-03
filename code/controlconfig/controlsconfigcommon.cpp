@@ -2138,7 +2138,7 @@ SCP_string ValToMouse(const CC_bind &bind) {
 		}
 
 		auto it = std::find_if(mAxisNameToVal.begin(), mAxisNameToVal.end(),
-		[bind, btn](const std::pair<SCP_string, short>& pair) { return pair.second == btn; });
+		[btn](const std::pair<SCP_string, short>& pair) { return pair.second == btn; });
 
 		if (it == mAxisNameToVal.end()) {
 			Error(LOCATION, "Unknown input value for Mouse axis '%i'", btn);
@@ -2149,7 +2149,7 @@ SCP_string ValToMouse(const CC_bind &bind) {
 	} // else, its a button
 
 	auto it = std::find_if(mMouseNameToVal.begin(), mMouseNameToVal.end(),
-		[bind, btn](const std::pair<SCP_string, short>& pair) { return pair.second == (1 << btn); });
+		[btn](const std::pair<SCP_string, short>& pair) { return pair.second == (1 << btn); });
 
 	if (it == mMouseNameToVal.end()) {
 		Error(LOCATION, "Unknown input value for Mouse button: '%i'", btn);
@@ -2204,7 +2204,7 @@ SCP_string ValToJoy(const CC_bind &bind) {
 	if (flags & (CCF_AXIS | CCF_BALL)) {
 		// is an axis or ball
 		auto it = std::find_if(mAxisNameToVal.begin(), mAxisNameToVal.end(),
-			[bind, btn](const std::pair<SCP_string, int>& pair) { return pair.second == btn; });
+			[btn](const std::pair<SCP_string, short>& pair) { return pair.second == btn; });
 
 		if (it == mAxisNameToVal.end()) {
 			// should never happen
