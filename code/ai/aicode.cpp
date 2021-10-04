@@ -3275,14 +3275,17 @@ void ai_dock_with_object(object *docker, int docker_index, object *dockee, int d
 		ship_info* sip = &Ship_info[shipp->ship_info_index];
 		ship_info* goal_sip = &Ship_info[goal_shipp->ship_info_index];
 
-		sip->animations.startAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::Docking_Stage1, animation::ModelAnimationDirection::FWD, true, true, docker_index);
-		goal_sip->animations.startAll(model_get_instance(goal_shipp->model_instance_num), animation::ModelAnimationTriggerType::Docking_Stage1, animation::ModelAnimationDirection::FWD, true, true, dockee_index);
-		sip->animations.startAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::Docking_Stage2, animation::ModelAnimationDirection::FWD, true, true, docker_index);
-		goal_sip->animations.startAll(model_get_instance(goal_shipp->model_instance_num), animation::ModelAnimationTriggerType::Docking_Stage2, animation::ModelAnimationDirection::FWD, true, true, dockee_index);
-		sip->animations.startAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::Docking_Stage3, animation::ModelAnimationDirection::FWD, true, true, docker_index);
-		goal_sip->animations.startAll(model_get_instance(goal_shipp->model_instance_num), animation::ModelAnimationTriggerType::Docking_Stage3, animation::ModelAnimationDirection::FWD, true, true, dockee_index);
-		sip->animations.startAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::Docked, animation::ModelAnimationDirection::FWD, true, true, docker_index);
-		goal_sip->animations.startAll(model_get_instance(goal_shipp->model_instance_num), animation::ModelAnimationTriggerType::Docked, animation::ModelAnimationDirection::FWD, true, true, dockee_index);
+		polymodel_instance* shipp_pmi = model_get_instance(shipp->model_instance_num);
+		polymodel_instance* goal_shipp_pmi = model_get_instance(goal_shipp->model_instance_num);
+
+		sip->animations.startAll(shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage1, animation::ModelAnimationDirection::FWD, true, true, docker_index);
+		goal_sip->animations.startAll(goal_shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage1, animation::ModelAnimationDirection::FWD, true, true, dockee_index);
+		sip->animations.startAll(shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage2, animation::ModelAnimationDirection::FWD, true, true, docker_index);
+		goal_sip->animations.startAll(goal_shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage2, animation::ModelAnimationDirection::FWD, true, true, dockee_index);
+		sip->animations.startAll(shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage3, animation::ModelAnimationDirection::FWD, true, true, docker_index);
+		goal_sip->animations.startAll(goal_shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage3, animation::ModelAnimationDirection::FWD, true, true, dockee_index);
+		sip->animations.startAll(shipp_pmi, animation::ModelAnimationTriggerType::Docked, animation::ModelAnimationDirection::FWD, true, true, docker_index);
+		goal_sip->animations.startAll(goal_shipp_pmi, animation::ModelAnimationTriggerType::Docked, animation::ModelAnimationDirection::FWD, true, true, dockee_index);
 
 		dock_orient_and_approach(docker, docker_index, dockee, dockee_index, DOA_DOCK_STAY);
 		ai_do_objects_docked_stuff( docker, docker_index, dockee, dockee_index, false );
@@ -11437,10 +11440,13 @@ void ai_dock()
 				Assert(goal_objp != nullptr);
 				ship_info* goal_sip = &Ship_info[goal_shipp->ship_info_index];
 
-				sip->animations.startAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::Docked, animation::ModelAnimationDirection::RWD, false, false, docker_index);
-				goal_sip->animations.startAll(model_get_instance(goal_shipp->model_instance_num), animation::ModelAnimationTriggerType::Docked, animation::ModelAnimationDirection::RWD, false, false, dockee_index);
-				sip->animations.startAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::Docking_Stage3, animation::ModelAnimationDirection::RWD, false, false, docker_index);
-				goal_sip->animations.startAll(model_get_instance(goal_shipp->model_instance_num), animation::ModelAnimationTriggerType::Docking_Stage3, animation::ModelAnimationDirection::RWD, false, false, dockee_index);
+				polymodel_instance* shipp_pmi = model_get_instance(shipp->model_instance_num);
+				polymodel_instance* goal_shipp_pmi = model_get_instance(goal_shipp->model_instance_num);
+
+				sip->animations.startAll(shipp_pmi, animation::ModelAnimationTriggerType::Docked, animation::ModelAnimationDirection::RWD, false, false, docker_index);
+				goal_sip->animations.startAll(goal_shipp_pmi, animation::ModelAnimationTriggerType::Docked, animation::ModelAnimationDirection::RWD, false, false, dockee_index);
+				sip->animations.startAll(shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage3, animation::ModelAnimationDirection::RWD, false, false, docker_index);
+				goal_sip->animations.startAll(goal_shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage3, animation::ModelAnimationDirection::RWD, false, false, dockee_index);
 			}
 		}
 		else
