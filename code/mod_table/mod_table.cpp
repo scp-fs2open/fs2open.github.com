@@ -416,8 +416,8 @@ void parse_mod_table(const char *filename)
 				stuff_float(&Neb2_fog_visibility_beam_const);
 			}
 
-			if (optional_string("+Size visibility factor:")) {
-				stuff_float(&Neb2_fog_visibility_beam_size_factor);
+			if (optional_string("+Scaled visibility factor:")) {
+				stuff_float(&Neb2_fog_visibility_beam_scaled_factor);
 			}
 		}
 
@@ -444,8 +444,8 @@ void parse_mod_table(const char *filename)
 				stuff_float(&Neb2_fog_visibility_particle_const);
 			}
 
-			if (optional_string("+Size visibility factor:")) {
-				stuff_float(&Neb2_fog_visibility_particle_size_factor);
+			if (optional_string("+Scaled visibility factor:")) {
+				stuff_float(&Neb2_fog_visibility_particle_scaled_factor);
 			}
 		}
 		
@@ -456,8 +456,8 @@ void parse_mod_table(const char *filename)
 				stuff_float(&Neb2_fog_visibility_fireball_const);
 			}
 
-			if (optional_string("+Size visibility factor:")) {
-				stuff_float(&Neb2_fog_visibility_fireball_size_factor);
+			if (optional_string("+Scaled visibility factor:")) {
+				stuff_float(&Neb2_fog_visibility_fireball_scaled_factor);
 			}
 		}
 

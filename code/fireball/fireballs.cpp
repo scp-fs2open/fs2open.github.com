@@ -1050,7 +1050,7 @@ void fireball_render(object* obj, model_draw_list *scene)
 
 	if (The_mission.flags[Mission::Mission_Flags::Fullneb] && Neb_affects_fireballs)
 		alpha *= neb2_get_fog_visibility(&obj->pos, 
-			Neb2_fog_visibility_fireball_const + (obj->radius * Neb2_fog_visibility_fireball_size_factor));
+			Neb2_fog_visibility_fireball_const + (obj->radius * Neb2_fog_visibility_fireball_scaled_factor));
 	
 	g3_transfer_vertex(&p, &obj->pos);
 
