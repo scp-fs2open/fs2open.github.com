@@ -53,13 +53,31 @@ namespace animation {
 		}
 	}
 
-	void ModelAnimationSegmentSerial::exchangeSubmodelPointers(const std::map<std::shared_ptr<ModelAnimationSubmodel>, std::shared_ptr<ModelAnimationSubmodel>>& exchangeMap) {
+	void ModelAnimationSegmentSerial::exchangeSubmodelPointers(ModelAnimationSet& replaceWith) {
 		for (const auto& segment : m_segments)
-			segment->exchangeSubmodelPointers(exchangeMap);
+			segment->exchangeSubmodelPointers(replaceWith);
 	}
 
 	void ModelAnimationSegmentSerial::addSegment(std::shared_ptr<ModelAnimationSegment> segment) {
 		m_segments.push_back(std::move(segment));
+	}
+
+	ModelAnimationParseHelper::Registrar ModelAnimationSegmentSerial::reg("$Segment Sequential:", &parser);
+	std::shared_ptr<ModelAnimationSegment> ModelAnimationSegmentSerial::parser(ModelAnimationParseHelper* data) {
+		auto submodelOverride = data->parseSubmodel();
+
+		ignore_white_space();
+		auto segment = std::shared_ptr<ModelAnimationSegmentSerial>(new ModelAnimationSegmentSerial());
+
+		while (!optional_string("+End Segment")) {
+			if (!submodelOverride)
+				data->parentSubmodel = submodelOverride;
+
+			segment->addSegment(data->parseSegment());
+			ignore_white_space();
+		}
+
+		return segment;
 	}
 
 
@@ -105,13 +123,31 @@ namespace animation {
 		}
 	}
 
-	void ModelAnimationSegmentParallel::exchangeSubmodelPointers(const std::map<std::shared_ptr<ModelAnimationSubmodel>, std::shared_ptr<ModelAnimationSubmodel>>& exchangeMap) {
+	void ModelAnimationSegmentParallel::exchangeSubmodelPointers(ModelAnimationSet& replaceWith) {
 		for (const auto& segment : m_segments)
-			segment->exchangeSubmodelPointers(exchangeMap);
+			segment->exchangeSubmodelPointers(replaceWith);
 	}
 
 	void ModelAnimationSegmentParallel::addSegment(std::shared_ptr<ModelAnimationSegment> segment) {
 		m_segments.push_back(std::move(segment));
+	}
+
+	ModelAnimationParseHelper::Registrar ModelAnimationSegmentParallel::reg("$Segment Parallel:", &parser);
+	std::shared_ptr<ModelAnimationSegment> ModelAnimationSegmentParallel::parser(ModelAnimationParseHelper* data) {
+		auto submodelOverride = data->parseSubmodel();
+
+		ignore_white_space();
+		auto segment = std::shared_ptr<ModelAnimationSegmentParallel>(new ModelAnimationSegmentParallel());
+
+		while (!optional_string("+End Segment")) {
+			if (!submodelOverride)
+				data->parentSubmodel = submodelOverride;
+
+			segment->addSegment(data->parseSegment());
+			ignore_white_space();
+		}
+
+		return segment;
 	}
 
 
@@ -124,6 +160,15 @@ namespace animation {
 	void ModelAnimationSegmentWait::recalculate(ModelAnimationSubmodelBuffer& /*base*/, polymodel_instance* pmi) {
 		m_duration[pmi->id] = m_time;
 	};
+
+	ModelAnimationParseHelper::Registrar ModelAnimationSegmentWait::reg("$Wait:", &parser);
+	std::shared_ptr<ModelAnimationSegment> ModelAnimationSegmentWait::parser(ModelAnimationParseHelper* data) {
+		float time = 0.0f;
+		stuff_float(&time);
+		auto segment = std::shared_ptr<ModelAnimationSegmentWait>(new ModelAnimationSegmentWait(time));
+
+		return segment;
+	}
 
 
 	ModelAnimationSegmentSetPHB::ModelAnimationSegmentSetPHB(std::shared_ptr<ModelAnimationSubmodel> submodel, const angles& angle, bool isAngleRelative) :
@@ -159,8 +204,30 @@ namespace animation {
 		base[m_submodel].first.applyDelta(data);
 	}
 
-	void ModelAnimationSegmentSetPHB::exchangeSubmodelPointers(const std::map<std::shared_ptr<ModelAnimationSubmodel>, std::shared_ptr<ModelAnimationSubmodel>>& exchangeMap) {
-		m_submodel = exchangeMap.at(m_submodel);
+	void ModelAnimationSegmentSetPHB::exchangeSubmodelPointers(ModelAnimationSet& replaceWith) {
+		m_submodel = replaceWith.getSubmodel(m_submodel);
+	}
+
+	ModelAnimationParseHelper::Registrar ModelAnimationSegmentSetPHB::reg("$Set Orientation:", &parser);
+	std::shared_ptr<ModelAnimationSegment> ModelAnimationSegmentSetPHB::parser(ModelAnimationParseHelper* data) {
+		angles angle;
+		bool isRelative = true;
+
+		stuff_angles_deg_phb(&angle);
+		isRelative &= !optional_string("+Absolute");
+
+		auto submodel = data->parseSubmodel();
+
+		if (!submodel) {
+			if (data->parentSubmodel) 
+				submodel = data->parentSubmodel;
+			else
+				error_display(1, "Set Orientation has no target submodel!");
+		}
+
+		auto segment = std::shared_ptr<ModelAnimationSegmentSetPHB>(new ModelAnimationSegmentSetPHB(submodel, angle, isRelative));
+
+		return segment;
 	}
 
 
@@ -207,9 +274,30 @@ namespace animation {
 		base[m_submodel].second = true;
 	}
 
-	void ModelAnimationSegmentSetAngle::exchangeSubmodelPointers(const std::map<std::shared_ptr<ModelAnimationSubmodel>, std::shared_ptr<ModelAnimationSubmodel>>& exchangeMap) {
-		m_submodel = exchangeMap.at(m_submodel);
+	void ModelAnimationSegmentSetAngle::exchangeSubmodelPointers(ModelAnimationSet& replaceWith) {
+		m_submodel = replaceWith.getSubmodel(m_submodel);
 	}
+
+	ModelAnimationParseHelper::Registrar ModelAnimationSegmentSetAngle::reg("$Set Angle:", &parser);
+	std::shared_ptr<ModelAnimationSegment> ModelAnimationSegmentSetAngle::parser(ModelAnimationParseHelper* data) {
+		float angle;
+
+		stuff_float(&angle);
+
+		auto submodel = data->parseSubmodel();
+
+		if (!submodel) {
+			if (data->parentSubmodel)
+				submodel = data->parentSubmodel;
+			else
+				error_display(1, "Set Angle has no target submodel!");
+		}
+
+		auto segment = std::shared_ptr<ModelAnimationSegmentSetAngle>(new ModelAnimationSegmentSetAngle(submodel, angle));
+
+		return segment;
+	}
+
 
 	constexpr float angles::*pbh[] = { &angles::p, &angles::b, &angles::h };
 
@@ -440,8 +528,56 @@ namespace animation {
 		base[m_submodel].second = true;
 	}
 
-	void ModelAnimationSegmentRotation::exchangeSubmodelPointers(const std::map<std::shared_ptr<ModelAnimationSubmodel>, std::shared_ptr<ModelAnimationSubmodel>>& exchangeMap) {
-		m_submodel = exchangeMap.at(m_submodel);
+	void ModelAnimationSegmentRotation::exchangeSubmodelPointers(ModelAnimationSet& replaceWith) {
+		m_submodel = replaceWith.getSubmodel(m_submodel);
+	}
+
+	ModelAnimationParseHelper::Registrar ModelAnimationSegmentRotation::reg("$Rotation:", &parser);
+	std::shared_ptr<ModelAnimationSegment> ModelAnimationSegmentRotation::parser(ModelAnimationParseHelper* data) {
+		optional<angles> angle, velocity, acceleration;
+		optional<float> time;
+		bool isAbsolute = false;
+
+		if (optional_string("+Angle:")) {
+			angles parse;
+			stuff_angles_deg_phb(&parse);
+			angle = parse;
+			isAbsolute |= (bool)optional_string("+Absolute");
+		}
+
+		if (optional_string("+Velocity:")) {
+			angles parse;
+			stuff_angles_deg_phb(&parse);
+			velocity = parse;
+		}
+
+		if (optional_string("+Time:")) {
+			float parse;
+			stuff_float(&parse);
+			time = parse;
+		}
+
+		if (angle.has() ^ velocity.has() ^ time.has()) {
+			error_display(1, "Rotation must have exactly two values out of angle, velocity and time specified!");
+		}
+
+		if (optional_string("+Acceleration:")) {
+			angles parse;
+			stuff_angles_deg_phb(&parse);
+			acceleration = parse;
+		}
+
+		auto submodel = data->parseSubmodel();
+		if (!submodel) {
+			if (data->parentSubmodel)
+				submodel = data->parentSubmodel;
+			else
+				error_display(1, "Rotation has no target submodel!");
+		}
+
+		auto segment = std::shared_ptr<ModelAnimationSegmentRotation>(new ModelAnimationSegmentRotation(submodel, angle, velocity, time, acceleration, isAbsolute));
+
+		return segment;
 	}
 
 
@@ -485,8 +621,8 @@ namespace animation {
 		m_segment->executeAnimation(state, timeboundLower, timeboundUpper, direction, pmi_id);
 	}
 
-	void ModelAnimationSegmentSoundDuring::exchangeSubmodelPointers(const std::map<std::shared_ptr<ModelAnimationSubmodel>, std::shared_ptr<ModelAnimationSubmodel>>& exchangeMap) {
-		m_segment->exchangeSubmodelPointers(exchangeMap);
+	void ModelAnimationSegmentSoundDuring::exchangeSubmodelPointers(ModelAnimationSet& replaceWith) {
+		m_segment->exchangeSubmodelPointers(replaceWith);
 	}
 
 	void ModelAnimationSegmentSoundDuring::playStartSnd(int pmi_id) {
@@ -499,5 +635,26 @@ namespace animation {
 
 		if (m_end.isValid()) 
 			m_instances[pmi_id].currentlyPlaying = snd_play(gamesnd_get_game_sound(m_end));
+	}
+
+	ModelAnimationParseHelper::Registrar ModelAnimationSegmentSoundDuring::reg("$Sound During:", &parser);
+	std::shared_ptr<ModelAnimationSegment> ModelAnimationSegmentSoundDuring::parser(ModelAnimationParseHelper* data) {
+		gamesnd_id start_sound;
+		gamesnd_id loop_sound;
+		gamesnd_id end_sound;
+		float snd_rad;
+
+		parse_game_sound("+Start:", &start_sound);
+		parse_game_sound("+Loop:", &loop_sound);
+		parse_game_sound("+End:", &end_sound);
+
+		required_string("+Radius:");
+		stuff_float(&snd_rad);
+
+		bool flipIfReversed = optional_string("+Flip When Reversed");
+
+		auto segment = std::shared_ptr<ModelAnimationSegmentSoundDuring>(new ModelAnimationSegmentSoundDuring(data->parseSegment(), start_sound, end_sound, loop_sound, flipIfReversed));
+
+		return segment;
 	}
 }

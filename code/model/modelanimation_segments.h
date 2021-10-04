@@ -6,14 +6,16 @@ namespace animation {
 
 	//This segment handles multiple generic segments chained after one another
 	class ModelAnimationSegmentSerial : public ModelAnimationSegment {
+		static ModelAnimationParseHelper::Registrar reg;
 		std::vector<std::shared_ptr<ModelAnimationSegment>> m_segments;
 
 		virtual ModelAnimationSegment* copy() const override;
 		void recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) override;
 		void calculateAnimation(ModelAnimationSubmodelBuffer& base, float time, int pmi_id) const override;
 		void executeAnimation(const ModelAnimationSubmodelBuffer& state, float timeboundLower, float timeboundUpper, ModelAnimationDirection direction, int pmi_id) override;
-		void exchangeSubmodelPointers(const std::map<std::shared_ptr<ModelAnimationSubmodel>, std::shared_ptr<ModelAnimationSubmodel>>& exchangeMap) override;
+		void exchangeSubmodelPointers(ModelAnimationSet& replaceWith) override;
 
+		static std::shared_ptr<ModelAnimationSegment> parser(ModelAnimationParseHelper* data);
 	public:
 		void addSegment(std::shared_ptr<ModelAnimationSegment> segment);
 
@@ -21,14 +23,16 @@ namespace animation {
 
 	//This segment handles multiple generic segments executing in parallel
 	class ModelAnimationSegmentParallel : public ModelAnimationSegment {
+		static ModelAnimationParseHelper::Registrar reg;
 		std::vector<std::shared_ptr<ModelAnimationSegment>> m_segments;
 
 		virtual ModelAnimationSegment* copy() const override;
 		void recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) override;
 		void calculateAnimation(ModelAnimationSubmodelBuffer& base, float time, int pmi_id) const override;
 		void executeAnimation(const ModelAnimationSubmodelBuffer& state, float timeboundLower, float timeboundUpper, ModelAnimationDirection direction, int pmi_id) override;
-		void exchangeSubmodelPointers(const std::map<std::shared_ptr<ModelAnimationSubmodel>, std::shared_ptr<ModelAnimationSubmodel>>& exchangeMap) override;
+		void exchangeSubmodelPointers(ModelAnimationSet& replaceWith) override;
 
+		static std::shared_ptr<ModelAnimationSegment> parser(ModelAnimationParseHelper* data);
 	public:
 		void addSegment(std::shared_ptr<ModelAnimationSegment> segment);
 
@@ -36,14 +40,16 @@ namespace animation {
 
 	//This segment does nothing but serve as a placeholder taking up time, used primarily in serial segments
 	class ModelAnimationSegmentWait : public ModelAnimationSegment {
+		static ModelAnimationParseHelper::Registrar reg;
 		float m_time;
 
 		virtual ModelAnimationSegment* copy() const override;
 		void recalculate(ModelAnimationSubmodelBuffer& /*base*/, polymodel_instance* pmi) override;
 		void calculateAnimation(ModelAnimationSubmodelBuffer& /*base*/, float /*time*/, int /*pmi_id*/) const override { };
 		void executeAnimation(const ModelAnimationSubmodelBuffer& /*state*/, float /*timeboundLower*/, float /*timeboundUpper*/, ModelAnimationDirection /*direction*/, int /*pmi_id*/) override { };
-		void exchangeSubmodelPointers(const std::map<std::shared_ptr<ModelAnimationSubmodel>, std::shared_ptr<ModelAnimationSubmodel>>& exchangeMap) override { };
+		void exchangeSubmodelPointers(ModelAnimationSet& replaceWith) override { };
 
+		static std::shared_ptr<ModelAnimationSegment> parser(ModelAnimationParseHelper* data);
 	public:
 		ModelAnimationSegmentWait(float time);
 
@@ -51,6 +57,7 @@ namespace animation {
 
 	//This segment changes or sets a submodels orientation to a defined Pitch Heading and Bank angle.
 	class ModelAnimationSegmentSetPHB : public ModelAnimationSegment {
+		static ModelAnimationParseHelper::Registrar reg;
 		struct instance_data {
 			matrix rot;
 		};
@@ -67,8 +74,9 @@ namespace animation {
 		void recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) override;
 		void calculateAnimation(ModelAnimationSubmodelBuffer& base, float /*time*/, int pmi_id) const override;
 		void executeAnimation(const ModelAnimationSubmodelBuffer& /*state*/, float /*timeboundLower*/, float /*timeboundUpper*/, ModelAnimationDirection /*direction*/, int /*pmi_id*/) override { };
-		void exchangeSubmodelPointers(const std::map<std::shared_ptr<ModelAnimationSubmodel>, std::shared_ptr<ModelAnimationSubmodel>>& exchangeMap) override;
+		void exchangeSubmodelPointers(ModelAnimationSet& replaceWith) override;
 
+		static std::shared_ptr<ModelAnimationSegment> parser(ModelAnimationParseHelper* data);
 	public:
 		ModelAnimationSegmentSetPHB(std::shared_ptr<ModelAnimationSubmodel> submodel, const angles& angle, bool isAngleRelative);
 
@@ -76,6 +84,7 @@ namespace animation {
 
 	//This segment rotates a submodels orientation by a certain amount around its defined rotation axis
 	class ModelAnimationSegmentSetAngle : public ModelAnimationSegment {
+		static ModelAnimationParseHelper::Registrar reg;
 		std::shared_ptr<ModelAnimationSubmodel> m_submodel;
 
 		float m_angle;
@@ -85,8 +94,9 @@ namespace animation {
 		void recalculate(ModelAnimationSubmodelBuffer& /*base*/, polymodel_instance* pmi) override;
 		void calculateAnimation(ModelAnimationSubmodelBuffer& base, float /*time*/, int /*pmi_id*/) const override;
 		void executeAnimation(const ModelAnimationSubmodelBuffer& /*state*/, float /*timeboundLower*/, float /*timeboundUpper*/, ModelAnimationDirection /*direction*/, int /*pmi_id*/) override { };
-		void exchangeSubmodelPointers(const std::map<std::shared_ptr<ModelAnimationSubmodel>, std::shared_ptr<ModelAnimationSubmodel>>& exchangeMap) override;
+		void exchangeSubmodelPointers(ModelAnimationSet& replaceWith) override;
 
+		static std::shared_ptr<ModelAnimationSegment> parser(ModelAnimationParseHelper* data);
 	public:
 		ModelAnimationSegmentSetAngle(std::shared_ptr<ModelAnimationSubmodel> submodel, float angle);
 
@@ -94,6 +104,7 @@ namespace animation {
 
 	//This segment rotates a submodels orientation by a certain amount in PBH
 	class ModelAnimationSegmentRotation : public ModelAnimationSegment {
+		static ModelAnimationParseHelper::Registrar reg;
 		struct instance_data {
 			angles m_actualVelocity;
 			angles m_actualTarget; //Usually won't be needed, but if vel + angle is specified, not all angles necessarily end simultaneously.
@@ -117,14 +128,16 @@ namespace animation {
 		void recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) override;
 		void calculateAnimation(ModelAnimationSubmodelBuffer& base, float time, int pmi_id) const override;
 		void executeAnimation(const ModelAnimationSubmodelBuffer& /*state*/, float /*timeboundLower*/, float /*timeboundUpper*/, ModelAnimationDirection /*direction*/, int /*pmi_id*/) override { };
-		void exchangeSubmodelPointers(const std::map<std::shared_ptr<ModelAnimationSubmodel>, std::shared_ptr<ModelAnimationSubmodel>>& exchangeMap) override;
+		void exchangeSubmodelPointers(ModelAnimationSet& replaceWith) override;
 
+		static std::shared_ptr<ModelAnimationSegment> parser(ModelAnimationParseHelper* data);
 	public:
 		ModelAnimationSegmentRotation(std::shared_ptr<ModelAnimationSubmodel> submodel, optional<angles> targetAngle, optional<angles> velocity, optional<float> time, optional<angles> acceleration, bool isAbsolute = false);
 
 	};
 
 	class ModelAnimationSegmentSoundDuring : public ModelAnimationSegment {
+		static ModelAnimationParseHelper::Registrar reg;
 		std::shared_ptr<ModelAnimationSegment> m_segment;
 
 		struct instance_data {
@@ -143,11 +156,12 @@ namespace animation {
 		void recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) override;
 		void calculateAnimation(ModelAnimationSubmodelBuffer& base, float time, int pmi_id) const override;
 		void executeAnimation(const ModelAnimationSubmodelBuffer& state, float timeboundLower, float timeboundUpper, ModelAnimationDirection direction, int pmi_id) override;
-		void exchangeSubmodelPointers(const std::map<std::shared_ptr<ModelAnimationSubmodel>, std::shared_ptr<ModelAnimationSubmodel>>& exchangeMap) override;
+		void exchangeSubmodelPointers(ModelAnimationSet& replaceWith) override;
 
 		void playStartSnd(int pmi_id);
 		void playEndSnd(int pmi_id);
 
+		static std::shared_ptr<ModelAnimationSegment> parser(ModelAnimationParseHelper* data);
 	public:
 		ModelAnimationSegmentSoundDuring(std::shared_ptr<ModelAnimationSegment> segment, gamesnd_id start, gamesnd_id end, gamesnd_id during, bool flipIfReversed = false);
 

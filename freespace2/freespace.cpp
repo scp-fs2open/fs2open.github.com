@@ -1892,6 +1892,8 @@ void game_init()
 	// they don't need to be inited (data loaded etc.) until the mission starts
 	fireball_parse_tbl();
 
+	animation::ModelAnimationParseHelper::parseTables();
+
 	obj_init();	
 	mflash_game_init();	
 	armor_init();

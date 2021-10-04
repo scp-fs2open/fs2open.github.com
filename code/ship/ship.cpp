@@ -54,7 +54,6 @@
 #include "missionui/redalert.h"
 #include "mod_table/mod_table.h"
 #include "model/model.h"
-#include "model/modelanimation_segments.h"
 #include "model/modelrender.h"
 #include "nebula/neb.h"
 #include "network/multimsgs.h"
@@ -4708,6 +4707,10 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		sip->ship_passive_arcs.push_back(new_info);
 	}
 
+	if (optional_string("$Animations:")) {
+		animation::ModelAnimationParseHelper::parseAnimsetInfo(sip->animations, sip);
+	}
+
 	if (optional_string("$Custom data:")) 
 	{
 		parse_string_map(sip->custom_data, "$end_custom_data", "+Val:");
@@ -5058,7 +5061,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 				stuff_string(name_tmp, F_NAME, sizeof(name_tmp));
 				if(!stricmp(name_tmp, "triggered"))
 				{
-					animation::ModelAnimation::parseLegacyAnimationTable(sp, sip);
+					animation::ModelAnimationParseHelper::parseLegacyAnimationTable(sp, sip);
 				}
 				else if(!stricmp(name_tmp, "linked"))
 				{

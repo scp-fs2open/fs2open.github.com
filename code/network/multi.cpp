@@ -1556,6 +1556,7 @@ void standalone_main_init()
 	}
 
 	// clear out various things
+	animation::ModelAnimationParseHelper::parseTables();
 	psnet_flush();
 	game_flush();
 	ship_init();
