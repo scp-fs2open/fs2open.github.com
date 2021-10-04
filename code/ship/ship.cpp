@@ -17375,16 +17375,19 @@ void ship_replace_active_texture(int ship_index, const char* old_name, const cha
 		}
 	}
 
-	int texture = bm_load(new_name);
+	if (final_index >= 0) {
+		int texture = bm_load(new_name);
 
-	if (shipp->ship_replacement_textures == NULL) {
-		shipp->ship_replacement_textures = (int*)vm_malloc(MAX_REPLACEMENT_TEXTURES * sizeof(int));
+		if (shipp->ship_replacement_textures == nullptr) {
+			shipp->ship_replacement_textures = (int*)vm_malloc(MAX_REPLACEMENT_TEXTURES * sizeof(int));
 
-		for (int i = 0; i < MAX_REPLACEMENT_TEXTURES; i++)
-			shipp->ship_replacement_textures[i] = -1;
-	}
+			for (int i = 0; i < MAX_REPLACEMENT_TEXTURES; i++)
+				shipp->ship_replacement_textures[i] = -1;
+		}
 
-	shipp->ship_replacement_textures[final_index] = texture;
+		shipp->ship_replacement_textures[final_index] = texture;
+	} else
+		Warning(LOCATION, "Invalid texture '%s' used for replacement texture", old_name);
 }
 
 // function to return true if support ships are allowed in the mission for the given object.
