@@ -101,8 +101,8 @@ namespace animation {
 
 	FLAG_LIST(Animation_Flags) {
 		Auto_Reverse,			//Will make the animation automatically transition into reverse mode as opposed to waiting in a completed state
-		Reset_at_completion,			//Will cause the animation to reset once it completes. This usually only makes sense when the state at the end of the animation is identical to the state at the start of the animation. Incompatible with Auto_reverse
-
+		Reset_at_completion,	//Will cause the animation to reset once it completes. This usually only makes sense when the state at the end of the animation is identical to the state at the start of the animation. Incompatible with Auto_reverse
+		Loop,					//Will automatically loop the animation once it completes. Is compatible with Reset_at_completion to loop back from the start instead of reversing. Incompatible with Auto_reverse
 		NUM_VALUES
 	};
 

@@ -8,14 +8,13 @@ extern float flFrametime;
 
 namespace animation {
 
-	//Not yet needed, since before Phase 3 no flags are actually parsed.
-	/*flag_def_list_new<animation::Animation_Flags> Animation_flags[] = {
+	flag_def_list_new<animation::Animation_Flags> Animation_flags[] = {
 		{ "auto reverse",				animation::Animation_Flags::Auto_Reverse,						true, false },
-		{ "reset at completion",		animation::Animation_Flags::Reset_at_completion,		        true, false }
+		{ "reset at completion",		animation::Animation_Flags::Reset_at_completion,		        true, false },
+		{ "loop",						animation::Animation_Flags::Loop,						        true, false },
 	};
 
 	const size_t Num_animation_flags = sizeof(Animation_flags) / sizeof(flag_def_list_new<animation::Animation_Flags>);
-	*/
 
 	std::map<int, std::pair<const ModelAnimationSet*, std::list<std::shared_ptr<ModelAnimation>>>> ModelAnimationSet::s_runningAnimations;
 	std::vector<std::shared_ptr<ModelAnimation>> ModelAnimation::s_animationById;
@@ -66,10 +65,23 @@ namespace animation {
 			if (instanceData.time > instanceData.duration) {
 				instanceData.time = instanceData.duration;
 				if (m_flags[Animation_Flags::Auto_Reverse])
+					//Reverse
 					instanceData.state = ModelAnimationState::RUNNING_RWD;
+				else if (m_flags[Animation_Flags::Loop]) {
+					if (m_flags[Animation_Flags::Reset_at_completion]) {
+						//Loop from start
+						instanceData.time = 0;
+					}
+					else {
+						//Loop back
+						instanceData.state = ModelAnimationState::RUNNING_RWD;
+					}
+				}
 				else if (m_flags[Animation_Flags::Reset_at_completion])
+					//Stop animation at start, not end
 					stop(pmi, false);
 				else
+					//Normal execution, stop aniamtion at end
 					instanceData.state = ModelAnimationState::COMPLETED;
 			}
 
@@ -86,7 +98,19 @@ namespace animation {
 
 			//Cap time at 0, but don't clean up the animations here since this function is called in a loop over the running animations, and cleaning now would invalidate the iterator
 			if (instanceData.time < 0) {
-				stop(pmi, false);
+				if (m_flags[Animation_Flags::Loop]) {
+					if (m_flags[Animation_Flags::Reset_at_completion]) {
+						//Loop from end. This happens when a Loop + Reset at completion animation is started in reverse.
+						instanceData.time = instanceData.duration;
+					}
+					else {
+						//Loop back
+						instanceData.time = 0;
+						instanceData.state = ModelAnimationState::RUNNING_FWD;
+					}
+				}
+				else
+					stop(pmi, false);
 				break;
 			}
 
