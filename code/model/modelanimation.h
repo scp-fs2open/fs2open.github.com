@@ -69,10 +69,10 @@ class ship_info;
 enum class AnimationTriggerType : int {
 	None = -1,       // No animation
 	Initial,		 // This is just the position the subobject should be placed in
-	Docking_Stage1,	 // Before you dock
-	Docking_Stage2,	 // Before you dock
-	Docking_Stage3,	 // Before you dock
-	Docked,			 // As you dock
+	Docking_Stage1,	 // following the dock path until just before the end
+	Docking_Stage2,	 // drag oneself right to the second last point on the dock path. The old docking-type trigger
+	Docking_Stage3,	 // move directly to the dockpoint using thrusters
+	Docked,			 // As you dock / the attachment sound is played and the mission log indicates docking
 	PrimaryBank,	 // Primary banks
 	SecondaryBank,	 // Secondary banks
 	DockBayDoor,	 // Fighter bays
@@ -101,6 +101,7 @@ namespace animation {
 
 	FLAG_LIST(Animation_Flags) {
 		Auto_Reverse,			//Will make the animation automatically transition into reverse mode as opposed to waiting in a completed state
+		Reset_at_completion,			//Will cause the animation to reset once it completes. This usually only makes sense when the state at the end of the animation is identical to the state at the start of the animation. Incompatible with Auto_reverse
 
 		NUM_VALUES
 	};

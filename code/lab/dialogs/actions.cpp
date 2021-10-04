@@ -72,30 +72,32 @@ void reset_animations(Tree*) {
 	if (getLabManager()->isSafeForShips()) {
 		auto shipp = &Ships[Objects[getLabManager()->CurrentObject].instance];
 
+		polymodel_instance* shipp_pmi = model_get_instance(shipp->model_instance_num);
+
 		for (auto i = 0; i < MAX_SHIP_PRIMARY_BANKS; ++i) {
 			if (triggered_primary_banks[i]) {
-				Ship_info[shipp->ship_info_index].animations.startAll(model_get_instance(shipp->model_instance_num), AnimationTriggerType::PrimaryBank, animation::ModelAnimationDirection::RWD, false, false, i);
+				Ship_info[shipp->ship_info_index].animations.startAll(shipp_pmi, AnimationTriggerType::PrimaryBank, animation::ModelAnimationDirection::RWD, false, false, i);
 				triggered_primary_banks[i] = false;
 			}
 		}
 
 		for (auto i = 0; i < MAX_SHIP_SECONDARY_BANKS; ++i) {
 			if (triggered_secondary_banks[i]) {
-				Ship_info[shipp->ship_info_index].animations.startAll(model_get_instance(shipp->model_instance_num), AnimationTriggerType::SecondaryBank, animation::ModelAnimationDirection::RWD, false, false, i);
+				Ship_info[shipp->ship_info_index].animations.startAll(shipp_pmi, AnimationTriggerType::SecondaryBank, animation::ModelAnimationDirection::RWD, false, false, i);
 				triggered_secondary_banks[i] = false;
 			}
 		}
 
 		for (auto entry : manual_animations) {
 			if (manual_animations[entry.first]) {
-				Ship_info[shipp->ship_info_index].animations.startAll(model_get_instance(shipp->model_instance_num), entry.first, animation::ModelAnimationDirection::RWD, false, false);
+				Ship_info[shipp->ship_info_index].animations.startAll(shipp_pmi, entry.first, animation::ModelAnimationDirection::RWD, false, false);
 				manual_animations[entry.first] = false;
 			}
 		}
 
 		for (const auto& entry : manual_animation_triggers) {
 			auto animation_type = entry.first;
-			Ship_info[shipp->ship_info_index].animations.startAll(model_get_instance(shipp->model_instance_num), animation_type, animation::ModelAnimationDirection::RWD);
+			Ship_info[shipp->ship_info_index].animations.startAll(shipp_pmi, animation_type, animation::ModelAnimationDirection::RWD);
 		}
 	}
 }
@@ -447,7 +449,7 @@ void AnimationTrigger::update(LabMode, int) {
 					SCP_string name = animation.first;
 					if (animList.first.second != animation::ModelAnimationSet::SUBTYPE_DEFAULT) {
 						//Legacy layer
-						sprintf(name, "Turret Model Nr. %i", animList.first.second);
+						sprintf(name, "Turret Model #%i", animList.first.second);
 					}
 					
 					animations_tree->AddItem(subsystem_headers[animation::ModelAnimationTriggerType::TurretFiring], name, animList.first.second, true, trigger_turret_firing);

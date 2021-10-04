@@ -10,7 +10,8 @@ namespace animation {
 
 	//Not yet needed, since before Phase 3 no flags are actually parsed.
 	/*flag_def_list_new<animation::Animation_Flags> Animation_flags[] = {
-		{ "auto reverse",		animation::Animation_Flags::Auto_Reverse,		        true, false }
+		{ "auto reverse",				animation::Animation_Flags::Auto_Reverse,						true, false },
+		{ "reset at completion",		animation::Animation_Flags::Reset_at_completion,		        true, false }
 	};
 
 	const size_t Num_animation_flags = sizeof(Animation_flags) / sizeof(flag_def_list_new<animation::Animation_Flags>);
@@ -104,6 +105,8 @@ namespace animation {
 				instanceData.time = instanceData.duration;
 				if (m_flags[Animation_Flags::Auto_Reverse])
 					instanceData.state = ModelAnimationState::RUNNING_RWD;
+				else if (m_flags[Animation_Flags::Reset_at_completion])
+					stop(pmi, false);
 				else
 					instanceData.state = ModelAnimationState::COMPLETED;
 			}
@@ -430,7 +433,7 @@ namespace animation {
 
 			if (type == ModelAnimationTriggerType::TurretFired) {
 				//Turret fireds won't get reset by code, so make them auto-resetting
-				anim->m_flags += Animation_Flags::Auto_Reverse;
+				anim->m_flags += Animation_Flags::Reset_at_completion;
 			}
 			
 			auto mainSegment = std::shared_ptr<ModelAnimationSegmentSerial>(new ModelAnimationSegmentSerial());
