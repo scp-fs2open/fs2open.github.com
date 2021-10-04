@@ -2469,9 +2469,9 @@ void ai_turret_execute_behavior(ship *shipp, ship_subsys *ss)
 			if (( lep->type == OBJ_SHIP ) && !(ss->flags[Ship::Subsystem_Flags::No_SS_targeting])) {
 				ss->targeted_subsys = aifft_find_turret_subsys(objp, ss, lep, &dot);				
 			}
-			ss->turret_next_enemy_check_stamp = timestamp((int) (MAX(dot, 0.5f)*2000.0f) + 1000);
+			ss->turret_next_enemy_check_stamp = timestamp();
 		} else {
-			ss->turret_next_enemy_check_stamp = timestamp((int) (2000.0f * frand_range(0.9f, 1.1f)));	//	Check every two seconds
+			ss->turret_next_enemy_check_stamp = timestamp();	//	Check every two seconds
 		}
 	}
 
