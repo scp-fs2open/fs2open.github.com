@@ -4409,7 +4409,7 @@ void model_set_up_techroom_instance(ship_info *sip, int model_instance_num)
 		const auto& initialAnims = sip->animations.animationSet[{animation::ModelAnimationTriggerType::Initial, animation::ModelAnimationSet::SUBTYPE_DEFAULT}];
 
 		for (const auto& initialAnim : initialAnims) {
-			initialAnim.second->start(pmi, false, true);
+			initialAnim.second->start(pmi, animation::ModelAnimationDirection::FWD, true);
 		}
 
 		if (msp->subobj_num >= 0)
@@ -5492,9 +5492,6 @@ void model_subsystem::reset()
         *it = 0;
 
     path_num = 0;
-
-    n_triggers = 0;
-    triggers = NULL;
 
     turret_reset_delay = 0;
 

@@ -3123,7 +3123,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				if ( type2 != SEXP_ATOM_STRING )
 					return SEXP_CHECK_TYPE_MISMATCH;
 
-				if (model_anim_match_type(CTEXT(node)) == AnimationTriggerType::None )
+				if (animation::anim_match_type(CTEXT(node)) == animation::ModelAnimationTriggerType::None )
 					return SEXP_CHECK_INVALID_ANIMATION_TYPE;
 
 				break;
@@ -19484,8 +19484,8 @@ void sexp_trigger_submodel_animation(int node)
 	n = CDR(n);
 
 	// get the type
-	auto animation_type = model_anim_match_type(CTEXT(n));
-	if (animation_type == AnimationTriggerType::None)
+	auto animation_type = animation::anim_match_type(CTEXT(n));
+	if (animation_type == animation::ModelAnimationTriggerType::None)
 	{
 		Warning(LOCATION, "Unable to match animation type \"%s\"!", CTEXT(n));
 		return;
@@ -19506,6 +19506,7 @@ void sexp_trigger_submodel_animation(int node)
 	// instant or not
 	if (n >= 0)
 	{
+		//TODO Respect in new animations
 		instant = is_sexp_true(n);
 		n = CDR(n);
 	}
@@ -19521,11 +19522,12 @@ void sexp_trigger_submodel_animation(int node)
 			Warning(LOCATION, "Subsystem \"%s\" not found on ship \"%s\"!", CTEXT(n), CTEXT(node));
 			return;
 		}
-		model_anim_start_type(ss, animation_type, animation_subtype, direction, instant);
+
+		Ship_info[ship_entry->shipp->ship_info_index].animations.start(model_get_instance(ship_entry->shipp->model_instance_num), animation_type, animation::anim_name_from_subsys(ss->system_info), direction == -1 ? animation::ModelAnimationDirection::RWD : animation::ModelAnimationDirection::FWD, instant, instant, animation_subtype);
 	}
 	else
 	{
-		model_anim_start_type(ship_entry->shipp, animation_type, animation_subtype, direction, instant);
+		Ship_info[ship_entry->shipp->ship_info_index].animations.startAll(model_get_instance(ship_entry->shipp->model_instance_num), animation_type, direction == -1 ? animation::ModelAnimationDirection::RWD : animation::ModelAnimationDirection::FWD, instant, instant, animation_subtype);
 	}
 }
 

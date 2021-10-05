@@ -67,9 +67,10 @@ class player;
 // version 52 - 10/9/2020 Dumbfire Rollback, increases accuracy of high ping, or delayed packet primary fire for clients.
 // version 53 - 12/2/2020 big set of packet fixes/upgrades
 // version 54 - 3/20/2021 - Fixes for FSO 21_2 especially better net_sig calc, better missile intercept
+// version 55 - 8/28/2021 Adding multi-compatible animations
 // STANDALONE_ONLY
 
-#define MULTI_FS_SERVER_VERSION							54
+#define MULTI_FS_SERVER_VERSION							55
 
 #define MULTI_FS_SERVER_COMPATIBLE_VERSION			MULTI_FS_SERVER_VERSION
 
@@ -211,6 +212,7 @@ class player;
 #define HOMING_WEAPON_UPDATE		0xA9		// update homing object and subsystem for homing missile
 #define FLAK_FIRED					0xAA		// flak gun fired
 #define SELF_DESTRUCT				0xAB		// self destruct
+#define ANIMATION_TRIGGERED			0xAC		// Lafiel - Anytime an animation starts
 
 #define JOIN							0xB1		// a join request to a server
 #define ACCEPT							0xB2		// acceptance of a join packet

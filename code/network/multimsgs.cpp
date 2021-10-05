@@ -8020,6 +8020,66 @@ void process_non_homing_fired_packet(ubyte* data, header* hinfo)
 	}
 }
 
+static constexpr size_t animation_direction_bit = 1 << 0;
+static constexpr size_t animation_forced_bit = 1 << 1;
+static constexpr size_t animation_instant_bit = 1 << 2;
+
+void send_animation_triggered_packet(int animationId, int pmi, const animation::ModelAnimationDirection& direction, bool force, bool instant, const int* /*time*/) {
+	int packet_size;
+	ubyte data[MAX_PACKET_SIZE];
+
+	BUILD_HEADER(ANIMATION_TRIGGERED);
+
+	ADD_INT(animationId);
+	ADD_INT(pmi);
+	
+	ubyte metadata = (direction == animation::ModelAnimationDirection::RWD ? animation_direction_bit : 0)
+		| (force ? animation_forced_bit : 0)
+		| (instant ? animation_instant_bit : 0);
+	ADD_DATA(metadata);
+	int actualTimestamp = 0; //If animation desync becomes a problem, send the ping-delay for animation rollback
+	ADD_INT(actualTimestamp);
+
+	// if I'm the server, send to everyone, else send to the server to be rebroadcasted
+	if (Net_player->flags & NETINFO_FLAG_AM_MASTER) {
+		multi_io_send_to_all_reliable(data, packet_size);
+	}
+	else {
+		multi_io_send_reliable(Net_player, data, packet_size);
+	}
+}
+
+void process_animation_triggered_packet(ubyte* data, header* hinfo) {
+	int offset; // linked;	
+	int animationId, pmi;
+	ubyte metadata;
+	int time;
+
+	// read all packet info
+	offset = HEADER_LENGTH;
+	GET_INT(animationId);
+	GET_INT(pmi);
+	GET_DATA(metadata);
+	GET_INT(time);
+
+	PACKET_SET_SIZE();
+
+	bool forced, instant;
+	animation::ModelAnimationDirection direction;
+	direction = (metadata & (animation_direction_bit)) ? animation::ModelAnimationDirection::RWD : animation::ModelAnimationDirection::FWD;
+	forced = metadata & (animation_forced_bit);
+	instant = metadata & (animation_instant_bit);
+
+	float delay = time * 0.001f;
+
+	animation::ModelAnimation::s_animationById[animationId]->start(model_get_instance(pmi), direction, forced, instant, &delay);
+
+	//Need to broadcast back to other clients
+	if (Net_player->flags & NETINFO_FLAG_AM_MASTER) {
+		send_animation_triggered_packet(animationId, pmi, direction, forced, instant, &time);
+	}
+}
+
 void send_NEW_countermeasure_fired_packet(object *objp, int cmeasure_count, int rand_val)
 {
 	ubyte data[MAX_PACKET_SIZE];

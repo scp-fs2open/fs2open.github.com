@@ -22,7 +22,6 @@
 #include "hud/hud.h"
 #include "hud/hudparse.h"
 #include "model/model.h"
-#include "model/modelanim.h"
 #include "model/modelanimation.h"
 #include "network/multi_obj.h"
 #include "radar/radarsetup.h"

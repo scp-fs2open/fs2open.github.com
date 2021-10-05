@@ -194,9 +194,6 @@ public:
 	int		secondary_bank_capacity[MAX_SHIP_SECONDARY_BANKS];	// capacity of a bank -hoffoss
 	int		path_num;								// path index into polymodel .paths array.  -2 if none exists, -1 if not defined
 
-	int n_triggers;
-	queued_animation *triggers;		//all the triggered animations associated with this object
-
 	int		turret_reset_delay;
 
 	// target priority setting for turrets

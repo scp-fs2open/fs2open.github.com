@@ -2044,7 +2044,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 	turret->flags.set(Ship::Subsystem_Flags::Has_fired); //set has fired flag for scriptng - nuke
 
 	//Fire animation stuff
-	model_anim_start_type(turret, AnimationTriggerType::TurretFired, ANIMATION_SUBTYPE_ALL, 1);
+	Ship_info[parent_ship->ship_info_index].animations.start(model_get_instance(parent_ship->model_instance_num), animation::ModelAnimationTriggerType::TurretFired, animation::anim_name_from_subsys(turret->system_info), animation::ModelAnimationDirection::FWD, true);
 	return true;
 }
 
@@ -2660,8 +2660,15 @@ void ai_turret_execute_behavior(ship *shipp, ship_subsys *ss)
 			{
 				// starting animation checks
 				if (ss->turret_animation_position == MA_POS_NOT_SET) {
-					if ( model_anim_start_type(shipp, AnimationTriggerType::TurretFiring, ss->system_info->subobj_num, 1) ) {
-						ss->turret_animation_done_time = model_anim_get_time_type(shipp, AnimationTriggerType::TurretFiring, ss->system_info->subobj_num);
+					bool started = false;
+					//For legacy animations using subtype for turret number
+					started |= Ship_info[shipp->ship_info_index].animations.startAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::TurretFiring, animation::ModelAnimationDirection::FWD, false, false, ss->system_info->subobj_num, true);
+					//For modern animations using proper triggered-by-subsys name
+					started |= Ship_info[shipp->ship_info_index].animations.start(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::TurretFiring, animation::anim_name_from_subsys(ss->system_info), animation::ModelAnimationDirection::FWD);
+					if (started) {
+						int duration = Ship_info[shipp->ship_info_index].animations.getTimeAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::TurretFiring, ss->system_info->subobj_num, true);
+						int duration2 = Ship_info[shipp->ship_info_index].animations.getTime(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::TurretFiring, animation::anim_name_from_subsys(ss->system_info));
+						ss->turret_animation_done_time = timestamp(duration > duration2 ? duration : duration2);
 						ss->turret_animation_position = MA_POS_SET;
 					}
 				}
