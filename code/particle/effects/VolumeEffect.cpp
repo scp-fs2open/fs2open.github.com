@@ -57,7 +57,7 @@ namespace particle {
 
 					vm_vec_scale(&velocity, m_velocity.next());
 
-					info.vel *= m_vel_inherit;
+					info.vel *= m_vel_inherit.next();
 					info.vel += velocity;
 
 					m_particleProperties.createParticle(info);
@@ -112,8 +112,8 @@ namespace particle {
 				m_stretch = stretch;
 			}
 
-			if (optional_string("+Velocity Inherit:")) {
-				stuff_float(&m_vel_inherit);
+			if (optional_string("+Parent Velocity Factor:")) {
+				m_vel_inherit = ::util::parseUniformRange<float>();
 			}
 
 			m_timing = util::EffectTiming::parseTiming();

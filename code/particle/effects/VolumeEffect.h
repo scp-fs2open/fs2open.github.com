@@ -7,6 +7,7 @@
 #include "particle/ParticleManager.h"
 #include "particle/util/ParticleProperties.h"
 #include "particle/util/EffectTiming.h"
+#include "utils/RandomRange.h"
 
 namespace particle {
 	namespace effects {
@@ -25,7 +26,7 @@ namespace particle {
 
 			::util::UniformFloatRange m_velocity;
 
-			float m_vel_inherit = 0.0f;
+			::util::UniformFloatRange m_vel_inherit;
 
 		public:
 			explicit VolumeEffect(const SCP_string& name);
