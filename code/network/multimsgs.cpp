@@ -8020,11 +8020,11 @@ void process_non_homing_fired_packet(ubyte* data, header* hinfo)
 	}
 }
 
-constexpr size_t animation_triggered_packet_metadata_direction_bit = 1 << 0;
-constexpr size_t animation_triggered_packet_metadata_forced_bit = 1 << 1;
-constexpr size_t animation_triggered_packet_metadata_instant_bit = 1 << 2;
+static constexpr size_t animation_direction_bit = 1 << 0;
+static constexpr size_t animation_forced_bit = 1 << 1;
+static constexpr size_t animation_instant_bit = 1 << 2;
 
-void send_animation_triggered_packet(int animationId, int pmi, const animation::ModelAnimationDirection& direction, bool force, bool instant, const int* time) {
+void send_animation_triggered_packet(int animationId, int pmi, const animation::ModelAnimationDirection& direction, bool force, bool instant, const int* /*time*/) {
 	int packet_size;
 	ubyte data[MAX_PACKET_SIZE];
 
@@ -8033,11 +8033,11 @@ void send_animation_triggered_packet(int animationId, int pmi, const animation::
 	ADD_INT(animationId);
 	ADD_INT(pmi);
 	
-	ubyte metadata = (direction == animation::ModelAnimationDirection::RWD ? animation_triggered_packet_metadata_direction_bit : 0)
-		| (force ? animation_triggered_packet_metadata_forced_bit : 0)
-		| (instant ? animation_triggered_packet_metadata_instant_bit : 0);
+	ubyte metadata = (direction == animation::ModelAnimationDirection::RWD ? animation_direction_bit : 0)
+		| (force ? animation_forced_bit : 0)
+		| (instant ? animation_instant_bit : 0);
 	ADD_DATA(metadata);
-	int actualTimestamp = time == nullptr ? timestamp() : *time;
+	int actualTimestamp = 0; //If animation desync becomes a problem, send the ping-delay for animation rollback
 	ADD_INT(actualTimestamp);
 
 	// if I'm the server, send to everyone, else send to the server to be rebroadcasted
@@ -8066,11 +8066,11 @@ void process_animation_triggered_packet(ubyte* data, header* hinfo) {
 
 	bool forced, instant;
 	animation::ModelAnimationDirection direction;
-	direction = (metadata & (animation_triggered_packet_metadata_direction_bit)) ? animation::ModelAnimationDirection::RWD : animation::ModelAnimationDirection::FWD;
-	forced = metadata & (animation_triggered_packet_metadata_forced_bit);
-	instant = metadata & (animation_triggered_packet_metadata_instant_bit);
+	direction = (metadata & (animation_direction_bit)) ? animation::ModelAnimationDirection::RWD : animation::ModelAnimationDirection::FWD;
+	forced = metadata & (animation_forced_bit);
+	instant = metadata & (animation_instant_bit);
 
-	float delay = (float)(timestamp() - time) * 0.001f;
+	float delay = time * 0.001f;
 
 	animation::ModelAnimation::s_animationById[animationId]->start(model_get_instance(pmi), direction, forced, instant, &delay);
 
