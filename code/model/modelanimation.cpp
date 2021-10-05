@@ -373,24 +373,14 @@ namespace animation {
 				skip_token();
 
 			if (optional_string("+absolute_angle:")) {
-				vec3d anglesDeg;
-				stuff_vec3d(&anglesDeg);
-
-				angle.p = fl_radians(anglesDeg.xyz.x);
-				angle.h = fl_radians(anglesDeg.xyz.y);
-				angle.b = fl_radians(anglesDeg.xyz.z);
+				stuff_angles_deg_phb(&angle);
 
 				isRelative = false;
 			}
 			else {
-				vec3d anglesDeg;
 				required_string("+relative_angle:");
 
-				stuff_vec3d(&anglesDeg);
-
-				angle.p = fl_radians(anglesDeg.xyz.x);
-				angle.h = fl_radians(anglesDeg.xyz.y);
-				angle.b = fl_radians(anglesDeg.xyz.z);
+				stuff_angles_deg_phb(&angle);
 
 				isRelative = true;
 			}
@@ -455,51 +445,29 @@ namespace animation {
 
 			if (optional_string("+absolute_angle:")) {
 				absolute = true;
-				vec3d angle;
 
-				stuff_vec3d(&angle);
-
-				target.p = fl_radians(angle.xyz.x);
-				target.h = fl_radians(angle.xyz.y);
-				target.b = fl_radians(angle.xyz.z);
+				stuff_angles_deg_phb(&target);
 			}
 			else {
 				absolute = false;
-				vec3d angle;
 
 				required_string("+relative_angle:");
-				stuff_vec3d(&angle);
-
-				target.p = fl_radians(angle.xyz.x);
-				target.h = fl_radians(angle.xyz.y);
-				target.b = fl_radians(angle.xyz.z);
+				stuff_angles_deg_phb(&target);
 			}
 
 			angles velocity{ 0,0,0 };
-			{
-				vec3d vel;
-				required_string("+velocity:");
-				stuff_vec3d(&vel);
-				velocity.p = fl_radians(vel.xyz.x);
-				velocity.h = fl_radians(vel.xyz.y);
-				velocity.b = fl_radians(vel.xyz.z);
-			}
+			required_string("+velocity:");
+			stuff_angles_deg_phb(&velocity);
 
 			optional<angles> acceleration;
 
 			if (optional_string("+acceleration:")) {
 				angles accel{ 0,0,0 };
-				vec3d accelVec;
-				stuff_vec3d(&accelVec);
+				stuff_angles_deg_phb(&accel);
 
-				bool allZero = true;
-				for (const float& val : accelVec.a1d)
-					allZero &= val == 0.0f;
+				bool allZero = accel.p == 0 && accel.b == 0 && accel.h == 0;
 
 				if (!allZero) {
-					accel.p = fl_radians(accelVec.xyz.x);
-					accel.h = fl_radians(accelVec.xyz.y);
-					accel.b = fl_radians(accelVec.xyz.z);
 					acceleration = accel;
 				}
 			}

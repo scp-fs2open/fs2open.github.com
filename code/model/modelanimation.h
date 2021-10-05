@@ -69,10 +69,10 @@ class ship_info;
 enum class AnimationTriggerType : int {
 	None = -1,       // No animation
 	Initial,		 // This is just the position the subobject should be placed in
-	Docking_Stage1,	 // following the dock path until just before the end
-	Docking_Stage2,	 // drag oneself right to the second last point on the dock path. The old docking-type trigger
-	Docking_Stage3,	 // move directly to the dockpoint using thrusters
-	Docked,			 // As you dock / the attachment sound is played and the mission log indicates docking
+	Docking_Stage1,	 // following the dock path until just before the end. Equivalent to AIS_DOCK_1
+	Docking_Stage2,	 // drag oneself right to the second last point on the dock path. The old docking-type trigger. Equivalent to AIS_DOCK_2
+	Docking_Stage3,	 // move directly to the dockpoint using thrusters. Equivalent to AIS_DOCK_3
+	Docked,			 // As you dock / the attachment sound is played and the mission log indicates docking. Equivalent to AIS_DOCK_4
 	PrimaryBank,	 // Primary banks
 	SecondaryBank,	 // Secondary banks
 	DockBayDoor,	 // Fighter bays

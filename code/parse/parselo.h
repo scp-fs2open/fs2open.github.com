@@ -206,6 +206,7 @@ extern void stuff_vec3d_list(SCP_vector<vec3d> &vec_list);
 extern size_t stuff_bool_list(bool *blp, size_t max_bools);
 extern void stuff_vec3d(vec3d *vp);
 extern void stuff_matrix(matrix *mp);
+extern void stuff_angles_deg_phb(angles* vp);
 extern void find_and_stuff(const char *id, int *addr, int f_type, const char *strlist[], size_t max, const char *description);
 extern void find_and_stuff_optional(const char *id, int *addr, int f_type, const char * const *strlist, size_t max, const char *description);
 extern int match_and_stuff(int f_type, const char * const *strlist, int max, const char *description);

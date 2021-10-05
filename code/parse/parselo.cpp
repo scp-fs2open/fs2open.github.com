@@ -3054,6 +3054,15 @@ void stuff_vec3d(vec3d *vp)
 	stuff_float(&vp->xyz.z);
 }
 
+void stuff_angles_deg_phb(angles* ap) {
+	stuff_float(&ap->p);
+	stuff_float(&ap->h);
+	stuff_float(&ap->b);
+	ap->p = fl_radians(ap->p);
+	ap->h = fl_radians(ap->h);
+	ap->b = fl_radians(ap->b);
+}
+
 void stuff_parenthesized_vec3d(vec3d *vp)
 {
 	ignore_white_space();

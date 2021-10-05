@@ -8034,7 +8034,7 @@ void send_animation_triggered_packet(int animationId, int pmi, const animation::
 	int actualTimestamp = time == nullptr ? timestamp() : *time;
 	ADD_INT(actualTimestamp);
 
-	// if I'm the server, send to everyone, else send to the standalone to be rebroadcasted
+	// if I'm the server, send to everyone, else send to the server to be rebroadcasted
 	if (Net_player->flags & NETINFO_FLAG_AM_MASTER) {
 		multi_io_send_to_all_reliable(data, packet_size);
 	}

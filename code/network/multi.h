@@ -199,7 +199,6 @@ class player;
 #define COUNTERMEASURE_NEW			0x2C		// for client-side firing
 #define EVENT_UPDATE					0x2D		// event change
 #define LINEAR_WEAPON_FIRED			0x2E		//  Cyborg17 - for firing of non-homing weapons from the player on a client to send to the server
-#define ANIMATION_TRIGGERED			0x2F		// Lafiel - Anytime an animation starts
 
 #define SECONDARY_FIRED_AI			0xA0		// fired a secondary weapon (ai ship)
 #define SECONDARY_FIRED_PLR		0xA1		// fired a secondary weapon (player ship)
@@ -213,6 +212,7 @@ class player;
 #define HOMING_WEAPON_UPDATE		0xA9		// update homing object and subsystem for homing missile
 #define FLAK_FIRED					0xAA		// flak gun fired
 #define SELF_DESTRUCT				0xAB		// self destruct
+#define ANIMATION_TRIGGERED			0xAC		// Lafiel - Anytime an animation starts
 
 #define JOIN							0xB1		// a join request to a server
 #define ACCEPT							0xB2		// acceptance of a join packet
