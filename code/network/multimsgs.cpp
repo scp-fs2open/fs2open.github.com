@@ -8020,9 +8020,9 @@ void process_non_homing_fired_packet(ubyte* data, header* hinfo)
 	}
 }
 
-constexpr size_t animation_triggered_packet_metadata_direction_bit = 0;
-constexpr size_t animation_triggered_packet_metadata_forced_bit = 1;
-constexpr size_t animation_triggered_packet_metadata_instant_bit = 2;
+constexpr size_t animation_triggered_packet_metadata_direction_bit = 1 << 0;
+constexpr size_t animation_triggered_packet_metadata_forced_bit = 1 << 1;
+constexpr size_t animation_triggered_packet_metadata_instant_bit = 1 << 2;
 
 void send_animation_triggered_packet(int animationId, int pmi, const animation::ModelAnimationDirection& direction, bool force, bool instant, const int* time) {
 	int packet_size;
@@ -8033,9 +8033,9 @@ void send_animation_triggered_packet(int animationId, int pmi, const animation::
 	ADD_INT(animationId);
 	ADD_INT(pmi);
 	
-	ubyte metadata = (direction == animation::ModelAnimationDirection::RWD ? 1 << animation_triggered_packet_metadata_direction_bit : 0)
-		| (force ? 1 << animation_triggered_packet_metadata_forced_bit : 0)
-		| (instant ? 1 << animation_triggered_packet_metadata_instant_bit : 0);
+	ubyte metadata = (direction == animation::ModelAnimationDirection::RWD ? animation_triggered_packet_metadata_direction_bit : 0)
+		| (force ? animation_triggered_packet_metadata_forced_bit : 0)
+		| (instant ? animation_triggered_packet_metadata_instant_bit : 0);
 	ADD_DATA(metadata);
 	int actualTimestamp = time == nullptr ? timestamp() : *time;
 	ADD_INT(actualTimestamp);
@@ -8066,9 +8066,9 @@ void process_animation_triggered_packet(ubyte* data, header* hinfo) {
 
 	bool forced, instant;
 	animation::ModelAnimationDirection direction;
-	direction = (metadata & (1 << animation_triggered_packet_metadata_direction_bit)) ? animation::ModelAnimationDirection::RWD : animation::ModelAnimationDirection::FWD;
-	forced = metadata & (1 << animation_triggered_packet_metadata_forced_bit);
-	instant = metadata & (1 << animation_triggered_packet_metadata_instant_bit);
+	direction = (metadata & (animation_triggered_packet_metadata_direction_bit)) ? animation::ModelAnimationDirection::RWD : animation::ModelAnimationDirection::FWD;
+	forced = metadata & (animation_triggered_packet_metadata_forced_bit);
+	instant = metadata & (animation_triggered_packet_metadata_instant_bit);
 
 	float delay = (float)(timestamp() - time) * 0.001f;
 
