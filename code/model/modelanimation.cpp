@@ -851,6 +851,9 @@ namespace animation {
 	std::shared_ptr<ModelAnimationSubmodel> ModelAnimationParseHelper::parseSubmodel() {
 		int turretStatus = optional_string_one_of(3, "+Submodel:", "+Turret Base:", "+Turret Arm:");
 
+		if (turretStatus == -1)
+			return nullptr;
+
 		char name[NAME_LENGTH];
 		stuff_string(name, F_NAME, NAME_LENGTH);
 

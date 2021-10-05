@@ -70,7 +70,7 @@ namespace animation {
 		auto segment = std::shared_ptr<ModelAnimationSegmentSerial>(new ModelAnimationSegmentSerial());
 
 		while (!optional_string("+End Segment")) {
-			if (!submodelOverride)
+			if (submodelOverride)
 				data->parentSubmodel = submodelOverride;
 
 			segment->addSegment(data->parseSegment());
@@ -140,7 +140,7 @@ namespace animation {
 		auto segment = std::shared_ptr<ModelAnimationSegmentParallel>(new ModelAnimationSegmentParallel());
 
 		while (!optional_string("+End Segment")) {
-			if (!submodelOverride)
+			if (submodelOverride)
 				data->parentSubmodel = submodelOverride;
 
 			segment->addSegment(data->parseSegment());
@@ -163,6 +163,7 @@ namespace animation {
 
 	ModelAnimationParseHelper::Registrar ModelAnimationSegmentWait::reg("$Wait:", &parser);
 	std::shared_ptr<ModelAnimationSegment> ModelAnimationSegmentWait::parser(ModelAnimationParseHelper* data) {
+		required_string("+Time:");
 		float time = 0.0f;
 		stuff_float(&time);
 		auto segment = std::shared_ptr<ModelAnimationSegmentWait>(new ModelAnimationSegmentWait(time));
