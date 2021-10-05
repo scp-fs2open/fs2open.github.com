@@ -18062,15 +18062,11 @@ bool ship_fighterbays_all_destroyed(ship *shipp)
 }
 
 // moved here by Goober5000
-static bool ship_subsys_is_fighterbay(ship_subsys *ss)
+static bool ship_subsys_is_fighterbay(ship_subsys* ss)
 {
 	Assert(ss);
 
-	if ( !strnicmp(NOX("fighter"), ss->system_info->name, 7) ) {
-		return true;
-	}
-
-	return false;
+	return !strnicmp(NOX("fighter"), ss->system_info->name, 7);
 }
 
 // Goober5000
