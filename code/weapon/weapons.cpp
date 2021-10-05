@@ -43,7 +43,7 @@
 #include "render/batching.h"
 #include "ship/ship.h"
 #include "ship/shiphit.h"
-#include "weapon/beam.h"	// for BEAM_TYPE_? definitions
+#include "weapon/beam.h"	// for BeamType definitions
 #include "weapon/corkscrew.h"
 #include "weapon/emp.h"
 #include "weapon/flak.h"
@@ -186,7 +186,9 @@ flag_def_list_new<Weapon::Info_Flags> Weapon_Info_Flags[] = {
 	{ "require exact los",				Weapon::Info_Flags::Require_exact_los,					true, false },
 	{ "can damage shooter",				Weapon::Info_Flags::Can_damage_shooter,					true, false },
 	{ "heals",							Weapon::Info_Flags::Heals,						        true, false },
+	{ "secondary no ammo",				Weapon::Info_Flags::SecondaryNoAmmo,					true, false },
 	{ "no collide",						Weapon::Info_Flags::No_collide,						    true, false },
+	{ "multilock target dead subsys",   Weapon::Info_Flags::Multilock_target_dead_subsys,		true, false },
 	{ "no evasion",						Weapon::Info_Flags::No_evasion,						    true, false },
 };
 
@@ -2447,7 +2449,19 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	if ( optional_string("$BeamInfo:") ) {
 		// beam type
 		if(optional_string("+Type:")) {
-			stuff_int(&wip->b_info.beam_type);
+			stuff_string(fname, F_NAME, NAME_LENGTH);
+
+			if		(!stricmp(fname, "Direct Fire") || !stricmp(fname, "0")) wip->b_info.beam_type = BeamType::DIRECT_FIRE;
+			else if (!stricmp(fname, "Slashing")    || !stricmp(fname, "1")) wip->b_info.beam_type = BeamType::SLASHING;
+			else if (!stricmp(fname, "Targeting")   || !stricmp(fname, "2")) wip->b_info.beam_type = BeamType::TARGETING;
+			else if (!stricmp(fname, "Antifighter") || !stricmp(fname, "3")) wip->b_info.beam_type = BeamType::ANTIFIGHTER;
+			else if (!stricmp(fname, "Normal Fire") || !stricmp(fname, "4")) wip->b_info.beam_type = BeamType::NORMAL_FIRE;
+			else if (!stricmp(fname, "Omni")        || !stricmp(fname, "5")) wip->b_info.beam_type = BeamType::OMNI;
+			else
+				Warning(LOCATION, "Beam weapon, '%s', has an unknown beam type %s", wip->name, fname);
+		}
+		else if (first_time) {
+			Warning(LOCATION, "Beam weapon, '%s', does not specify a beam type.", wip->name);
 		}
 
 		// how long it lasts
@@ -2499,13 +2513,13 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 					break;
 				}
 				// an unspecified Miss Factor should apply to all IFFs
-				for(iff=0; iff<Num_iffs; iff++) {
+				for(iff=0; iff< (int)Iff_info.size(); iff++) {
 					wip->b_info.beam_iff_miss_factor[iff][idx] = temp;
 				}
 			}
 		}
 		// now check miss factors for each IFF
-		for(iff=0; iff<Num_iffs; iff++) {
+		for(iff=0; iff< (int)Iff_info.size(); iff++) {
 			SCP_string miss_factor_string;
 			sprintf(miss_factor_string, "+%s Miss Factor:", Iff_info[iff].iff_name);
 			if(optional_string(miss_factor_string.c_str())) {
@@ -2543,9 +2557,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			stuff_int(&wip->b_info.beam_shots);
 		}
 
-		// make sure that we have at least one shot so that TYPE_D beams will work
-		if ( (wip->b_info.beam_type == BEAM_TYPE_D) && (wip->b_info.beam_shots < 1) ) {
-			Warning( LOCATION, "Type D beam weapon, '%s', has less than one \"+Shots\" specified!  It must be set to at least 1!!",  wip->name);
+		// make sure that we have at least one shot so that antifighter beams will work
+		if ( (wip->b_info.beam_type == BeamType::ANTIFIGHTER) && (wip->b_info.beam_shots < 1) ) {
+			Warning( LOCATION, "Antifighter beam weapon, '%s', has less than one \"+Shots\" specified!  It must be set to at least 1!!",  wip->name);
 			wip->b_info.beam_shots = 1;
 		}
 		
@@ -5430,54 +5444,7 @@ void weapon_process_post(object * obj, float frame_time)
 	}
 	#else
 		weapon_maybe_play_flyby_sound(obj, wp);
-	#endif	
-	
-	//	If our target is still valid, then update some info.
-	if (wp->target_num != -1) {
-		if (Objects[wp->target_num].signature == wp->target_sig) {
-			float		cur_dist;
-			vec3d	v0;
-
-			vm_vec_avg(&v0, &obj->pos, &obj->last_pos);
-
-			cur_dist = vm_vec_dist_quick(&v0, &Objects[wp->target_num].pos);
-
-			if (cur_dist < wp->nearest_dist) {
-				wp->nearest_dist = cur_dist;
-			} else if (cur_dist > wp->nearest_dist + 1.0f) {
-				float		dot;
-				vec3d	tvec;
-				ai_info	*parent_aip;
-
-				parent_aip = NULL;
-				if (obj->parent != Player_obj-Objects) {
-					parent_aip = &Ai_info[Ships[Objects[obj->parent].instance].ai_index];
-				}
-
-				vm_vec_normalized_dir(&tvec, &v0, &Objects[wp->target_num].pos);
-				dot = vm_vec_dot(&tvec, &Objects[wp->target_num].orient.vec.fvec);
-				wp->target_num = -1;
-
-				//	Learn!  If over-shooting or under-shooting, compensate.
-				//	Really need to compensate for left/right errors.  This does no good against someone circling
-				//	in a plane perpendicular to the attacker's forward vector.
-				if (parent_aip != NULL) {
-					if (cur_dist > 100.0f)
-						parent_aip->lead_scale = 0.0f;
-
-					if (dot < -0.1f){
-						parent_aip->lead_scale += cur_dist/2000.0f;
-					} else if (dot > 0.1f) {
-						parent_aip->lead_scale -= cur_dist/2000.0f;
-					}
-					
-					if (fl_abs(parent_aip->lead_scale) > 1.0f){
-						parent_aip->lead_scale *= 0.9f;
-					}
-				}
-			}
-		}
-	}
+	#endif
 
 	if(wip->wi_flags[Weapon::Info_Flags::Particle_spew] && wp->lssm_stage != 3 ){
 		weapon_maybe_spew_particle(obj);
@@ -5742,7 +5709,6 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 		if ((target_objnum > -1) && (target_objnum < (MAX_OBJECTS)) && can_lock) {
 			wp->target_num = target_objnum;
 			wp->target_sig = Objects[target_objnum].signature;
-			wp->nearest_dist = 99999.0f;
 			if ( (wip->wi_flags[Weapon::Info_Flags::Homing_aspect]) && target_is_locked) {
 				wp->homing_object = &Objects[target_objnum];
 				wp->homing_subsys = target_subsys;
@@ -8648,7 +8614,7 @@ void weapon_info::reset()
 	this->lssm_lock_range = 1000000.0f;	//local ssm lock range (optional)
 	this->lssm_warpeffect = FIREBALL_WARP;		//Which fireballtype is used for the warp effect
 
-	this->b_info.beam_type = -1;
+	this->b_info.beam_type = BeamType::DIRECT_FIRE;
 	this->b_info.beam_life = -1.0f;
 	this->b_info.beam_warmup = -1;
 	this->b_info.beam_warmdown = -1;
@@ -8693,7 +8659,7 @@ void weapon_info::reset()
 	generic_anim_init(&this->b_info.beam_glow, NULL);
 	generic_anim_init(&this->b_info.beam_particle_ani, NULL);
 
-	for (i = 0; i < MAX_IFFS; i++)
+	for (i = 0; i < (int)Iff_info.size(); i++)
 		for (j = 0; j < NUM_SKILL_LEVELS; j++)
 			this->b_info.beam_iff_miss_factor[i][j] = 0.00001f;
 
@@ -9181,6 +9147,10 @@ bool weapon_multilock_can_lock_on_subsys(object* shooter, object* target, ship_s
 		return false;
 
 	if (target_subsys->flags[Ship::Subsystem_Flags::Untargetable])
+		return false;
+
+	//by not checking for max_hits > 0 here, subsys' with disabled hitpoints are also excluded.
+	if (!wip->wi_flags[Weapon::Info_Flags::Multilock_target_dead_subsys] && target_subsys->current_hits <= 0.0f)
 		return false;
 
 	vec3d ss_pos;

@@ -587,6 +587,10 @@ void debug_max_secondary_weapons(object *objp)
 		if (swp->secondary_bank_weapons[index] >= 0)
 		{
 			weapon_info *wip = &Weapon_info[swp->secondary_bank_weapons[index]];
+
+			if (wip->wi_flags[Weapon::Info_Flags::SecondaryNoAmmo])
+				continue;
+
 			float capacity = (float)sip->secondary_bank_ammo_capacity[index];
 			float size = (float)wip->cargo_size;
 			Assertion(size > 0.0f, "Weapon cargo size for %s must be greater than 0!", wip->name);

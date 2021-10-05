@@ -100,7 +100,7 @@ extern int Nmodel_bitmap;
 namespace fso {
 namespace fred {
 	
-Editor::Editor() : currentObject{ -1 }, Shield_sys_teams(MAX_IFFS, 0), Shield_sys_types(MAX_SHIP_CLASSES, 0) {
+Editor::Editor() : currentObject{ -1 }, Shield_sys_teams(Iff_info.size(), 0), Shield_sys_types(MAX_SHIP_CLASSES, 0) {
 	connect(fredApp, &FredApplication::onIdle, this, &Editor::update);
 
 	// When the mission changes we need to update all renderers
@@ -3162,7 +3162,7 @@ void Editor::importShieldSysData(const std::vector<int>& teams, const std::vecto
 // adapted from shield_sys_dlg OnInitDialog()
 // 0 = has shields, 1 = no shields, 2 = conflict/inconsistent
 void Editor::normalizeShieldSysData() {
-	std::vector<int> teams(MAX_IFFS, 0);
+	std::vector<int> teams(Iff_info.size(), 0);
 	std::vector<int> types(MAX_SHIP_CLASSES, 0);
 
 	for (int i = 0; i < MAX_SHIPS; i++) {

@@ -175,7 +175,7 @@ void mission_log_obsolete_entries(LogType type, const char *pname)
 // following function adds an entry into the mission log.
 // pass a type and a string which indicates the object
 // that this event is for.  Don't add entries with this function for multiplayer
-void mission_log_add_entry(LogType type, const char *pname, const char *sname, int info_index)
+void mission_log_add_entry(LogType type, const char *pname, const char *sname, int info_index, int flags)
 {
 	int last_entry_save;
 	log_entry *entry;	
@@ -212,7 +212,7 @@ void mission_log_add_entry(LogType type, const char *pname, const char *sname, i
 		strcpy_s( entry->sname, EMPTY_LOG_NAME );
 
 	entry->index = info_index;
-	entry->flags = 0;
+	entry->flags = flags;
 	entry->primary_team = -1;
 	entry->secondary_team = -1;
 	entry->pname_display = entry->pname;
@@ -246,6 +246,10 @@ void mission_log_add_entry(LogType type, const char *pname, const char *sname, i
 		Assert (index >= 0);
 		entry->primary_team = Ships[index].team;
 		entry->pname_display = Ships[index].get_display_name();
+
+		if (Ships[index].flags[Ship::Ship_Flags::Hide_mission_log]) {
+			entry->flags |= MLF_HIDDEN;
+		}
 
 		// some of the entries have a secondary component.  Figure out what is up with them.
 		if ( (type == LOG_SHIP_DOCKED) || (type == LOG_SHIP_UNDOCKED)) {

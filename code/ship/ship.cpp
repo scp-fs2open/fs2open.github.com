@@ -529,6 +529,7 @@ flag_def_list_new<Weapon::Info_Flags> ai_tgt_weapon_flags[] = {
     { "die on lost lock",			Weapon::Info_Flags::Die_on_lost_lock,					true, false },
 	{ "no impact spew",				Weapon::Info_Flags::No_impact_spew,						true, false },
 	{ "require exact los",			Weapon::Info_Flags::Require_exact_los,					true, false },
+	{ "multilock target dead subsys", Weapon::Info_Flags::Multilock_target_dead_subsys,		true, false },
 };
 
 const int num_ai_tgt_weapon_info_flags = sizeof(ai_tgt_weapon_flags) / sizeof(flag_def_list_new<Weapon::Info_Flags>);
@@ -555,8 +556,9 @@ ship_flag_name Ship_flag_names[] = {
 	{ Ship_Flags::Dont_collide_invis,			"don't-collide-invisible" },
 	{ Ship_Flags::No_ets,						"no-ets" },
 	{ Ship_Flags::Toggle_subsystem_scanning,	"toggle-subsystem-scanning" },
-	{ Ship_Flags::No_secondary_lockon,			"no-secondary-lock-on"},
-	{ Ship_Flags::No_disabled_self_destruct,	"no-disabled-self-destruct"},
+	{ Ship_Flags::No_secondary_lockon,			"no-secondary-lock-on" },
+	{ Ship_Flags::No_disabled_self_destruct,	"no-disabled-self-destruct" },
+	{ Ship_Flags::Hide_mission_log,				"hide-in-mission-log" },
 };
 
 static int Laser_energy_out_snd_timer;	// timer so we play out of laser sound effect periodically
@@ -1156,7 +1158,7 @@ void ship_info::clone(const ship_info& other)
 	radar_image_size = other.radar_image_size;
 	radar_projection_size_mult = other.radar_projection_size_mult;
 
-	memcpy(ship_iff_info, other.ship_iff_info, sizeof(int) * MAX_IFFS * MAX_IFFS);
+	ship_iff_info = other.ship_iff_info;
 
 	aiming_flags = other.aiming_flags;
 	minimum_convergence_distance = other.minimum_convergence_distance;
@@ -1466,7 +1468,7 @@ void ship_info::move(ship_info&& other)
 	radar_image_size = other.radar_image_size;
 	radar_projection_size_mult = other.radar_projection_size_mult;
 
-	memcpy(ship_iff_info, other.ship_iff_info, sizeof(int) * MAX_IFFS * MAX_IFFS);
+	ship_iff_info = other.ship_iff_info;
 
 	aiming_flags = other.aiming_flags;
 	minimum_convergence_distance = other.minimum_convergence_distance;
@@ -1543,7 +1545,7 @@ ship_info::ship_info(ship_info&& other) noexcept
 
 ship_info::ship_info()
 {
-	int i,j;
+	int i;
 
 	name[0] = '\0';
 	display_name[0] = '\0';
@@ -1900,11 +1902,7 @@ ship_info::ship_info()
 	radar_image_size = -1;
 	radar_projection_size_mult = 1.0f;
 
-	for (i=0;i<MAX_IFFS;i++)
-	{
-		for (j=0;j<MAX_IFFS;j++)
-			ship_iff_info[i][j] = -1;
-	}
+	ship_iff_info.clear();
 
 	aiming_flags.reset();
 	minimum_convergence_distance = 0.0f;
@@ -4589,7 +4587,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		// Set the color
 		required_string("+As Color:");
 		stuff_int_list(iff_color_data, 3, RAW_INTEGER_TYPE);
-		sip->ship_iff_info[iff_data[0]][iff_data[1]] = iff_init_color(iff_color_data[0],iff_color_data[1],iff_color_data[2]);
+		sip->ship_iff_info[{iff_data[0],iff_data[1]}] = iff_init_color(iff_color_data[0], iff_color_data[1], iff_color_data[2]);
 	}
 
 	if (optional_string("$Target Priority Groups:") ) {
@@ -5613,15 +5611,23 @@ DCF_BOOL( show_velocity_dot, ship_show_velocity_dot )
 
 static bool ballistic_possible_for_this_ship(const ship_info *sip)
 {
-	if (sip->allowed_bank_restricted_weapons.empty())
+	// has no weapons!
+	if (sip->num_primary_banks < 1)
 		return false;
 
 	for (int i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++)
 	{
-		for (int j = 0; j < weapon_info_size(); ++j)
-		{
-			if (sip->allowed_bank_restricted_weapons[i][j] && (Weapon_info[j].wi_flags[Weapon::Info_Flags::Ballistic]))
-				return true;
+		// check default weapons
+		if (sip->primary_bank_weapons[i] >= 0 && Weapon_info[sip->primary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::Ballistic])
+			return true;
+
+		// check allowed weapons
+		if (!sip->allowed_bank_restricted_weapons.empty()) {
+			for (int j = 0; j < weapon_info_size(); ++j)
+			{
+				if (sip->allowed_bank_restricted_weapons[i][j] && (Weapon_info[j].wi_flags[Weapon::Info_Flags::Ballistic]))
+					return true;
+			}
 		}
 	}
 
@@ -5651,15 +5657,7 @@ static void ship_parse_post_cleanup()
 			}
 
 			// be friendly; ensure ballistic flags check out
-			if (pbank_capacity_specified) {
-				if ( !ballistic_possible_for_this_ship(&(*sip)) ) {
-					Warning(LOCATION, "Pbank capacity specified for non-ballistic-primary-enabled ship %s.\nResetting capacities to 0.\nTo fix this, add a ballistic primary to the list of allowed primaries.\n", sip->name);
-
-					for (j = 0; j < MAX_SHIP_PRIMARY_BANKS; j++) {
-						sip->primary_bank_ammo_capacity[j] = 0;
-					}
-				}
-			} else {
+			if (!pbank_capacity_specified) {
 				if ( ballistic_possible_for_this_ship(&(*sip)) ) {
 					Warning(LOCATION, "Pbank capacity not specified for ballistic-primary-enabled ship %s.\nDefaulting to capacity of 1 per bank.\n", sip->name);
 
@@ -6188,7 +6186,7 @@ vec3d get_submodel_offset(int model, int submodel){
 // Reset all ship values to empty/unused.
 void ship::clear()
 {
-	int i, j;
+	int i;
 
 	objnum = -1;
 	ai_index = -1;
@@ -6436,9 +6434,7 @@ void ship::clear()
 
 	s_alt_classes.clear();
 
-	for(i=0;i<MAX_IFFS;i++)
-		for(j=0;j<MAX_IFFS;j++)
-			ship_iff_color[i][j] = -1;
+	ship_iff_color.clear();
 
 	ammo_low_complaint_count = 0;
 
@@ -6702,6 +6698,11 @@ static void ship_set(int ship_index, int objnum, int ship_type)
 
 	for ( i = 0; i < sip->num_secondary_banks; i++ )
 	{
+		if (Weapon_info[swp->secondary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo]) {
+			swp->secondary_bank_ammo[i] = 0;
+			continue;
+		}
+
 		float weapon_size = Weapon_info[sip->secondary_bank_weapons[i]].cargo_size;
 		Assertion( weapon_size > 0.0f, "Cargo size for secondary weapon %s is invalid, must be greater than 0.\n", Weapon_info[sip->secondary_bank_weapons[i]].name );
 
@@ -7217,6 +7218,13 @@ static int subsys_set(int objnum, int ignore_subsys_info)
 		}
 
 		for (k=0; k<ship_system->weapons.num_secondary_banks; k++) {
+			if (Weapon_info[ship_system->weapons.secondary_bank_weapons[k]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo])
+			{
+				ship_system->weapons.secondary_bank_ammo[k] = 0;
+				ship_system->weapons.secondary_next_slot[k] = 0;
+				continue;
+			}
+
 			float weapon_size = Weapon_info[ship_system->weapons.secondary_bank_weapons[k]].cargo_size;
 			Assertion( weapon_size > 0.0f, "Cargo size for secondary weapon %s is invalid, must be greater than 0.\n", Weapon_info[ship_system->weapons.secondary_bank_weapons[k]].name );
 			ship_system->weapons.secondary_bank_ammo[k] = (Fred_running ? 100 : (int)std::lround(ship_system->weapons.secondary_bank_capacity[k] / weapon_size));
@@ -7894,6 +7902,11 @@ void ship_destroy_instantly(object *ship_objp)
 {
 	Assert(ship_objp->type == OBJ_SHIP);
 	Assert(!(ship_objp == Player_obj));
+
+	// add scripting hook for 'On Ship Death Started' -- Goober5000
+	// hook is placed at the beginning of this function to allow the scripter to
+	// actually have access to the ship before any death routines (such as mission logging) are executed
+	OnShipDeathStartedHook->run(scripting::hook_param_list(scripting::hook_param("Ship", 'o', ship_objp)));
 
 	// undocking and death preparation
 	ship_stop_fire_primary(ship_objp);
@@ -8980,7 +8993,7 @@ static void ship_auto_repair_frame(int shipnum, float frametime)
 		if (objp->hull_strength > sp->ship_max_hull_strength)
 			objp->hull_strength = sp->ship_max_hull_strength;
 		else if (objp->hull_strength < 0)
-			ship_hit_kill(objp, nullptr, nullptr, 0, 1);
+			ship_hit_kill(objp, nullptr, nullptr, 0, true);
 	}
 
 	// only allow for the auto-repair of subsystems on small ships
@@ -9706,6 +9719,12 @@ static void ship_set_default_weapons(ship *shipp, ship_info *sip)
 
 	swp->num_secondary_banks = sip->num_secondary_banks;
 	for ( i = 0; i < swp->num_secondary_banks; i++ ) {
+		if (Weapon_info[swp->secondary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo]) {
+			swp->secondary_bank_ammo[i] = 0;
+			swp->secondary_bank_start_ammo[i] = swp->secondary_bank_ammo[i];
+			swp->secondary_bank_capacity[i] = sip->secondary_bank_ammo_capacity[i];
+		}
+
 		if (Fred_running){
 			swp->secondary_bank_ammo[i] = 100;
 		} else {
@@ -11450,7 +11469,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force, bool rollback
 				continue;
 		}
 		// if this is a targeting laser, start it up   ///- only targeting laser if it is tag-c, otherwise it's a fighter beam -Bobboau
-		if((winfo_p->wi_flags[Weapon::Info_Flags::Beam]) && (winfo_p->tag_level == 3) && (shipp->flags[Ship_Flags::Trigger_down]) && (winfo_p->b_info.beam_type == BEAM_TYPE_C) ){
+		if((winfo_p->wi_flags[Weapon::Info_Flags::Beam]) && (winfo_p->tag_level == 3) && (shipp->flags[Ship_Flags::Trigger_down]) && (winfo_p->b_info.beam_type == BeamType::TARGETING) ){
 			ship_start_targeting_laser(shipp);
 			continue;
 		}
@@ -12129,10 +12148,10 @@ static void ship_start_targeting_laser(ship *shipp)
 	int bank1_laser = 0;
 
 	// determine if either of our banks have a targeting laser
-	if((shipp->weapons.primary_bank_weapons[0] >= 0) && (Weapon_info[shipp->weapons.primary_bank_weapons[0]].wi_flags[Weapon::Info_Flags::Beam]) && (Weapon_info[shipp->weapons.primary_bank_weapons[0]].b_info.beam_type == BEAM_TYPE_C)){
+	if((shipp->weapons.primary_bank_weapons[0] >= 0) && (Weapon_info[shipp->weapons.primary_bank_weapons[0]].wi_flags[Weapon::Info_Flags::Beam]) && (Weapon_info[shipp->weapons.primary_bank_weapons[0]].b_info.beam_type == BeamType::TARGETING)){
 		bank0_laser = 1;
 	}
-	if((shipp->weapons.primary_bank_weapons[1] >= 0) && (Weapon_info[shipp->weapons.primary_bank_weapons[1]].wi_flags[Weapon::Info_Flags::Beam]) && (Weapon_info[shipp->weapons.primary_bank_weapons[1]].b_info.beam_type == BEAM_TYPE_C)){
+	if((shipp->weapons.primary_bank_weapons[1] >= 0) && (Weapon_info[shipp->weapons.primary_bank_weapons[1]].wi_flags[Weapon::Info_Flags::Beam]) && (Weapon_info[shipp->weapons.primary_bank_weapons[1]].b_info.beam_type == BeamType::TARGETING)){
 		bank1_laser = 1;
 	}
 
@@ -12576,6 +12595,10 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 			check_ammo = 0;
 		}
 
+		if (Weapon_info[swp->secondary_bank_weapons[bank]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo]) {
+			check_ammo = 0;
+		}
+
 		if ( check_ammo && ( swp->secondary_bank_ammo[bank] <= 0) ) {
 			if ( shipp->objnum == OBJ_INDEX(Player_obj) ) {
 				if ( ship_maybe_play_secondary_fail_sound(wip) ) {
@@ -12711,7 +12734,8 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 
 				// subtract the number of missiles fired
 				if ( !Weapon_energy_cheat ){
-					swp->secondary_bank_ammo[bank]--;
+					if(!Weapon_info[swp->secondary_bank_weapons[bank]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo])
+						swp->secondary_bank_ammo[bank]--;
 				}
 			}
 		}
@@ -12776,7 +12800,7 @@ done_secondary:
 
 	// if we are out of ammo in this bank then don't carry over firing swarm/corkscrew
 	// missiles to a new bank
-	if (swp->secondary_bank_ammo[bank] <= 0) {
+	if (!ship_secondary_has_ammo(swp, bank)) {
 		// NOTE: these are set to 1 since they will get reduced by 1 in the
 		//       swarm/corkscrew code once this function returns
 
@@ -12824,7 +12848,7 @@ done_secondary:
 	//the next valid bank. the delay is there to prevent things like Trible/Quad Fire Trebuchets.
 	//
 	// niffiwan: only try to switch banks if object has multiple banks, and firing bank is the current bank
-	if ( (obj->flags[Object::Object_Flags::Player_ship]) && (swp->secondary_bank_ammo[bank] <= 0) && (swp->num_secondary_banks >= 2) && (bank == swp->current_secondary_bank) ) {
+	if ( (obj->flags[Object::Object_Flags::Player_ship]) && !ship_secondary_has_ammo(swp, bank) && (swp->num_secondary_banks >= 2) && (bank == swp->current_secondary_bank) ) {
 		if (ship_select_next_secondary(obj) ) {			//DTP here we switch to the next valid bank, but we can't call weapon_info on next fire_wait
 
 			if ( timestamp_elapsed(shipp->weapons.next_secondary_fire_stamp[shipp->weapons.current_secondary_bank]) ) {	//DTP, this is simply a copy of the manual cycle functions
@@ -13136,7 +13160,7 @@ int ship_select_next_secondary(object *objp)
 
 		for ( i = 1; i < swp->num_secondary_banks; i++ ) {
 			new_bank = (swp->current_secondary_bank+i) % swp->num_secondary_banks;
-			if ( swp->secondary_bank_ammo[new_bank] <= 0 )
+			if ( !ship_secondary_has_ammo(swp, new_bank))
 				continue;
 			swp->current_secondary_bank = new_bank;
 			break;
@@ -13251,7 +13275,7 @@ int get_available_secondary_weapons(object *objp, int *outlist, int *outbanklist
 		target_range = vm_vec_dist_quick(&our_position, &target_position);
 	}
 	for (i=0; i<shipp->weapons.num_secondary_banks; i++)
-		if (shipp->weapons.secondary_bank_ammo[i]) {
+		if (ship_secondary_has_ammo(&shipp->weapons, i)) {
 			if (The_mission.ai_profile->ai_range_aware_secondary_select_mode != AI_RANGE_AWARE_SEC_SEL_MODE_RETAIL) {
 				wepp = &Weapon_info[shipp->weapons.secondary_bank_weapons[i]];
 				weapon_range_min = wepp->weapon_min_range;
@@ -14165,6 +14189,9 @@ float ship_calculate_rearm_duration( object *objp )
 	{
 			wip = &Weapon_info[swp->secondary_bank_weapons[i]];
 	
+			if (wip->wi_flags[Weapon::Info_Flags::SecondaryNoAmmo])
+				continue;
+
 			//check how many full reloads we need
 		    num_reloads = (swp->secondary_bank_start_ammo[i] - swp->secondary_bank_ammo[i]) / wip->reloaded_per_batch;
 
@@ -15282,12 +15309,20 @@ int ship_secondary_bank_has_ammo(int shipnum)
 
 	Assert(shipnum >= 0 && shipnum < MAX_SHIPS);
 	swp = &Ships[shipnum].weapons;
+	int current_bank = swp->current_secondary_bank;
 	
-	if ( swp->current_secondary_bank == -1 )
+	if (current_bank == -1 )
 		return 0;
 
-	Assert(swp->current_secondary_bank >= 0 && swp->current_secondary_bank < MAX_SHIP_SECONDARY_BANKS );
-	if ( swp->secondary_bank_ammo[swp->current_secondary_bank] <= 0 )
+	Assert(current_bank >= 0 && current_bank < MAX_SHIP_SECONDARY_BANKS );
+
+	if (swp->secondary_bank_weapons[current_bank] < 0)
+		return 0;
+
+	if (Weapon_info[swp->secondary_bank_weapons[current_bank]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo])
+		return 1;
+
+	if ( swp->secondary_bank_ammo[current_bank] <= 0 )
 		return 0;
 
 	return 1;
@@ -16559,7 +16594,7 @@ void ship_maybe_tell_about_rearm(ship *sp)
 		swp = &sp->weapons;
 		for (i = 0; i < swp->num_secondary_banks; i++)
 		{
-			if (swp->secondary_bank_start_ammo[i] > 0)
+			if (swp->secondary_bank_start_ammo[i] > 0 && !Weapon_info[swp->secondary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo])
 			{
 				if ((float)swp->secondary_bank_ammo[i] / (float)swp->secondary_bank_start_ammo[i] < 0.5f)
 				{
@@ -16860,7 +16895,7 @@ float ship_get_secondary_weapon_range(ship *shipp)
 		int bank=swp->current_secondary_bank;
 		if (swp->secondary_bank_weapons[bank] >= 0) {
 			wip = &Weapon_info[swp->secondary_bank_weapons[bank]];
-			if ( swp->secondary_bank_ammo[bank] > 0 ) {
+			if ( swp->secondary_bank_ammo[bank] > 0 || wip->wi_flags[Weapon::Info_Flags::SecondaryNoAmmo]) {
 				srange = wip->max_speed * wip->lifetime;
 			}
 		}
@@ -17374,16 +17409,19 @@ void ship_replace_active_texture(int ship_index, const char* old_name, const cha
 		}
 	}
 
-	int texture = bm_load(new_name);
+	if (final_index >= 0) {
+		int texture = bm_load(new_name);
 
-	if (shipp->ship_replacement_textures == NULL) {
-		shipp->ship_replacement_textures = (int*)vm_malloc(MAX_REPLACEMENT_TEXTURES * sizeof(int));
+		if (shipp->ship_replacement_textures == nullptr) {
+			shipp->ship_replacement_textures = (int*)vm_malloc(MAX_REPLACEMENT_TEXTURES * sizeof(int));
 
-		for (int i = 0; i < MAX_REPLACEMENT_TEXTURES; i++)
-			shipp->ship_replacement_textures[i] = -1;
-	}
+			for (int i = 0; i < MAX_REPLACEMENT_TEXTURES; i++)
+				shipp->ship_replacement_textures[i] = -1;
+		}
 
-	shipp->ship_replacement_textures[final_index] = texture;
+		shipp->ship_replacement_textures[final_index] = texture;
+	} else
+		Warning(LOCATION, "Invalid texture '%s' used for replacement texture", old_name);
 }
 
 // function to return true if support ships are allowed in the mission for the given object.
@@ -17814,8 +17852,8 @@ void ship_update_artillery_lock()
 		if(shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank] < 0){
 			continue;
 		}
-		Assert((Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].wi_flags[Weapon::Info_Flags::Beam]) && (Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].b_info.beam_type == BEAM_TYPE_C));
-		if(!(Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].wi_flags[Weapon::Info_Flags::Beam]) || (Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].b_info.beam_type != BEAM_TYPE_C)){
+		Assert((Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].wi_flags[Weapon::Info_Flags::Beam]) && (Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].b_info.beam_type == BeamType::TARGETING));
+		if(!(Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].wi_flags[Weapon::Info_Flags::Beam]) || (Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].b_info.beam_type != BeamType::TARGETING)){
 			continue;
 		}	
 
@@ -20142,4 +20180,8 @@ bool ship_stop_secondary_fire(object* objp)
 	}
 	
 	return false;
+}
+
+bool ship_secondary_has_ammo(ship_weapon* swp, int bank_index) {
+	return swp->secondary_bank_ammo[bank_index] > 0 || Weapon_info[swp->secondary_bank_weapons[bank_index]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo];
 }

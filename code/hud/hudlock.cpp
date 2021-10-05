@@ -1485,6 +1485,11 @@ void hud_do_lock_indicators(float frametime)
 			continue;
 		}
 
+		if ( !wip->wi_flags[Weapon::Info_Flags::Multilock_target_dead_subsys] && lock_slot->subsys != nullptr && lock_slot->subsys->current_hits <= 0.0f) {
+			ship_clear_lock(lock_slot);
+			continue;
+		}
+
 		hud_lock_determine_lock_point(lock_slot);
 
 		hud_lock_check_if_target_in_lock_cone(lock_slot, wip);

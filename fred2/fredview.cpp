@@ -117,7 +117,7 @@ char *names[MAX_OBJECTS], flags[MAX_OBJECTS];
 int obj_count = 0;
 int g_err = 0;
 
-int ID_SHOW_IFF[MAX_IFFS];
+SCP_vector<int> ID_SHOW_IFF;
 
 void view_universe(int just_marked = 0);
 void select_objects();
@@ -371,16 +371,16 @@ CFREDView::CFREDView()
 	//m_ShowWaypoints = TRUE;
 
 	// this is stupid
-	ID_SHOW_IFF[0] = ID_SHOW_IFF_0;
-	ID_SHOW_IFF[1] = ID_SHOW_IFF_1;
-	ID_SHOW_IFF[2] = ID_SHOW_IFF_2;
-	ID_SHOW_IFF[3] = ID_SHOW_IFF_3;
-	ID_SHOW_IFF[4] = ID_SHOW_IFF_4;
-	ID_SHOW_IFF[5] = ID_SHOW_IFF_5;
-	ID_SHOW_IFF[6] = ID_SHOW_IFF_6;
-	ID_SHOW_IFF[7] = ID_SHOW_IFF_7;
-	ID_SHOW_IFF[8] = ID_SHOW_IFF_8;
-	ID_SHOW_IFF[9] = ID_SHOW_IFF_9;
+	ID_SHOW_IFF.push_back(ID_SHOW_IFF_0);
+	ID_SHOW_IFF.push_back(ID_SHOW_IFF_1);
+	ID_SHOW_IFF.push_back(ID_SHOW_IFF_2);
+	ID_SHOW_IFF.push_back(ID_SHOW_IFF_3);
+	ID_SHOW_IFF.push_back(ID_SHOW_IFF_4);
+	ID_SHOW_IFF.push_back(ID_SHOW_IFF_5);
+	ID_SHOW_IFF.push_back(ID_SHOW_IFF_6);
+	ID_SHOW_IFF.push_back(ID_SHOW_IFF_7);
+	ID_SHOW_IFF.push_back(ID_SHOW_IFF_8);
+	ID_SHOW_IFF.push_back(ID_SHOW_IFF_9);
 	
 	m_pGDlg = new CGrid(this);
 

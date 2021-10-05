@@ -40,6 +40,11 @@
 class object;
 class WarpEffect;
 
+namespace scripting
+{
+	class Hook;
+}
+
 //	Part of the player died system.
 extern vec3d	Original_vec_to_deader;
 
@@ -444,7 +449,7 @@ typedef struct ship_flag_name {
 	char flag_name[TOKEN_LENGTH];		// the name written to the mission file for its corresponding parse_object flag
 } ship_flag_name;
 
-#define MAX_SHIP_FLAG_NAMES					19
+#define MAX_SHIP_FLAG_NAMES					20
 extern ship_flag_name Ship_flag_names[];
 
 #define DEFAULT_SHIP_PRIMITIVE_SENSOR_RANGE		10000	// Goober5000
@@ -764,7 +769,7 @@ public:
 
 	SCP_vector<alt_class> s_alt_classes;	
 
-	int ship_iff_color[MAX_IFFS][MAX_IFFS];
+	SCP_map<std::pair<int, int>, int> ship_iff_color;
 
 	int ammo_low_complaint_count;				// number of times this ship has complained about low ammo
 	int armor_type_idx;
@@ -1359,7 +1364,7 @@ public:
 	int radar_image_size;
 	float radar_projection_size_mult;
 
-	int ship_iff_info[MAX_IFFS][MAX_IFFS];
+	SCP_map<std::pair<int, int>, int> ship_iff_info;
 
 	flagset<Ship::Aiming_Flags> aiming_flags;
 	float minimum_convergence_distance;
@@ -1590,6 +1595,8 @@ extern void ship_cleanup(int shipnum, int cleanup_mode);
 // Goober5000
 extern void ship_destroy_instantly(object *ship_obj);
 extern void ship_actually_depart(int shipnum, int method = SHIP_DEPARTED_WARP);
+
+extern const std::shared_ptr<scripting::Hook> OnShipDeathStartedHook;
 
 extern bool in_autoaim_fov(ship *shipp, int bank_to_fire, object *obj);
 extern int ship_stop_fire_primary(object * obj);
@@ -1995,5 +2002,7 @@ void ship_queue_missile_locks(ship *shipp);
 
 // snoops missile locks to see if any are ready to fire.
 bool ship_lock_present(ship *shipp);
+
+bool ship_secondary_has_ammo(ship_weapon* swp, int bank_index);
 
 #endif

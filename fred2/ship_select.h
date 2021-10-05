@@ -34,7 +34,7 @@ public:
 	BOOL	m_filter_ships;
 	BOOL	m_filter_starts;
 	BOOL	m_filter_waypoints;
-	BOOL	m_filter_iff[MAX_IFFS];
+	SCP_vector<BOOL>	m_filter_iff;
 	//}}AFX_DATA
 
 

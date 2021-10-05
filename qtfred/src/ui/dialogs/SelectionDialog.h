@@ -29,7 +29,7 @@ public:
 
 	void wingSelectionChanged(QListWidgetItem *current, QListWidgetItem *previous);
 
-	std::array<QCheckBox*, MAX_IFFS> _iffCheckBoxes;
+	SCP_vector<QCheckBox*> _iffCheckBoxes;
 
 	std::unique_ptr<Ui::SelectionDialog> ui;
 	std::unique_ptr<SelectionDialogModel> _model;

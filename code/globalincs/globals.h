@@ -31,8 +31,6 @@
 #define CALLSIGN_LEN					(MAX_FILENAME_LEN - 4 - 1)		//	shortened from 32 to allow .json to be attached without exceeding MAX_FILENAME_LEN
 #define SHORT_CALLSIGN_PIXEL_W	80		// max width of short_callsign[] in pixels
 
-#define MAX_IFFS		10
-
 // from ship.h
 #define MAX_SHIPS					400			// max number of ship instances there can be.DTP; bumped from 200 to 400
 #define SHIPS_LIMIT					400			// what MAX_SHIPS will be at release time (for error checking in debug mode); dtp Bumped from 200 to 400

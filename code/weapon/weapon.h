@@ -22,6 +22,7 @@
 #include "graphics/generic.h"
 #include "model/model.h"
 #include "particle/ParticleManager.h"
+#include "weapon/beam.h"
 #include "weapon/shockwave.h"
 #include "weapon/swarm.h"
 #include "weapon/trails.h"
@@ -101,7 +102,6 @@ typedef struct weapon {
 
 	int		target_num;						//	Object index of target
 	int		target_sig;						//	So we know if the target is the same one we've been tracking
-	float		nearest_dist;					//	nearest distance yet attained to target
 	fix		creation_time;					//	time at which created, stuffed Missiontime
 	flagset<Weapon::Weapon_Flags> weapon_flags;					//	bit flags defining behavior, see WF_xxxx
 	object*	homing_object;					//	object this weapon is homing on.
@@ -218,7 +218,7 @@ typedef struct type5_beam_info {
 } type5_beam_info;
 
 typedef struct beam_weapon_info {
-	int beam_type;						// beam type
+	BeamType beam_type;						// beam type
 	float beam_life;					// how long it lasts
 	int beam_warmup;					// how long it takes to warmup (in ms)
 	int beam_warmdown;					// how long it takes to warmdown (in ms)
@@ -227,7 +227,7 @@ typedef struct beam_weapon_info {
 	float beam_particle_radius;			// radius of beam particles
 	float beam_particle_angle;			// angle of beam particle spew cone
 	generic_anim beam_particle_ani;		// particle_ani
-	float beam_iff_miss_factor[MAX_IFFS][NUM_SKILL_LEVELS];	// magic # which makes beams miss more. by parent iff and player skill level
+	SCP_map<int, std::array<float, NUM_SKILL_LEVELS>> beam_iff_miss_factor;	// magic # which makes beams miss more. by parent iff and player skill level
 	gamesnd_id beam_loop_sound;				// looping beam sound
 	gamesnd_id beam_warmup_sound;				// warmup sound
 	gamesnd_id beam_warmdown_sound;			// warmdown sound

@@ -87,7 +87,9 @@ namespace Weapon {
 		Require_exact_los,					// If secondary or in turret, will only fire if ship has line of sight to target
 		Can_damage_shooter,					// this weapon and any of its descendants can damage its shooter - Asteroth
 		Heals,								// 'damage' heals instead of actually damaging - Asteroth
+		SecondaryNoAmmo,					// Secondaries that only use energy
 		No_collide,
+		Multilock_target_dead_subsys,
 		No_evasion,							// AI will not attempt to dodge this weapon - Asteroth
 
         NUM_VALUES

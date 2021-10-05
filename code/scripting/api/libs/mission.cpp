@@ -555,7 +555,7 @@ ADE_INDEXER(l_Mission_Teams, "number/string IndexOrTeamName", "Teams in the miss
 		idx--;	//Lua->FS2
 	}
 
-	if(idx < 0 || idx >= Num_iffs)
+	if(idx < 0 || idx >= (int)Iff_info.size())
 		return ade_set_error(L, "o", l_Team.Set(-1));
 
 	return ade_set_args(L, "o", l_Team.Set(idx));
@@ -563,7 +563,7 @@ ADE_INDEXER(l_Mission_Teams, "number/string IndexOrTeamName", "Teams in the miss
 
 ADE_FUNC(__len, l_Mission_Teams, NULL, "Number of teams in mission", "number", "Number of teams in mission")
 {
-	return ade_set_args(L, "i", Num_iffs);
+	return ade_set_args(L, "i", Iff_info.size());
 }
 
 //****SUBLIBRARY: Mission/Messages
@@ -883,8 +883,8 @@ ADE_FUNC(sendPlainMessage,
 ADE_FUNC(createShip,
 	l_Mission,
 	"[string Name, shipclass Class /* First ship class by default */, orientation Orientation=null, vector Position /* "
-	"null vector by default */, team Team]",
-	"Creates a ship and returns a handle to it using the specified name, class, world orientation, and world position",
+	"null vector by default */, team Team, boolean ShowInMissionLog /* true by default */]",
+	"Creates a ship and returns a handle to it using the specified name, class, world orientation, and world position; and logs it in the mission log unless specified otherwise",
 	"ship",
 	"Ship handle, or invalid ship handle if ship couldn't be created")
 {
@@ -893,7 +893,8 @@ ADE_FUNC(createShip,
 	matrix_h* orient = nullptr;
 	vec3d pos        = vmd_zero_vector;
 	int team         = -1;
-	ade_get_args(L, "|soooo", &name, l_Shipclass.Get(&sclass), l_Matrix.GetPtr(&orient), l_Vector.Get(&pos), l_Team.Get(&team));
+	bool show_in_log = true;
+	ade_get_args(L, "|soooob", &name, l_Shipclass.Get(&sclass), l_Matrix.GetPtr(&orient), l_Vector.Get(&pos), l_Team.Get(&team), &show_in_log);
 
 	matrix *real_orient = &vmd_identity_matrix;
 	if(orient != NULL)
@@ -931,7 +932,7 @@ ADE_FUNC(createShip,
 			Objects[obj_idx].flags.set(Object::Object_Flags::No_shields);
 		}
 
-		mission_log_add_entry(LOG_SHIP_ARRIVED, shipp->ship_name, nullptr);
+		mission_log_add_entry(LOG_SHIP_ARRIVED, shipp->ship_name, nullptr, -1, show_in_log ? 0 : MLF_HIDDEN);
 
 		if (Script_system.IsActiveAction(CHA_ONSHIPARRIVE)) {
 			Script_system.SetHookObjects(2, "Ship", &Objects[obj_idx], "Parent", NULL);
@@ -1492,7 +1493,7 @@ static int arrivalListIter(lua_State* L)
 
 	const auto next = GET_NEXT(poh->getObject());
 
-	if (next == END_OF_LIST(&Ship_arrival_list)) {
+	if (next == END_OF_LIST(&Ship_arrival_list) || next == nullptr) {
 		return ADE_RETURN_NIL;
 	}
 
@@ -1504,10 +1505,32 @@ ADE_FUNC(getArrivalList,
 	nullptr,
 	"Get the list of yet to arrive ships for this mission",
 	"iterator<parse_object>",
-	"An iterator across all the yet to arrive ships. Can be used in a for .. in loop")
+	"An iterator across all the yet to arrive ships. Can be used in a for .. in loop. Is not valid for more than one frame.")
 {
 	return ade_set_args(L, "u*o", luacpp::LuaFunction::createFromCFunction(L, arrivalListIter),
 	                    l_ParseObject.Set(parse_object_h(&Ship_arrival_list)));
+}
+
+ADE_FUNC(getShipList,
+	l_Mission,
+	nullptr,
+	"Get an iterator to the list of ships in this mission",
+	"iterator<ship>",
+	"An iterator across all ships in the mission. Can be used in a for .. in loop. Is not valid for more than one frame.")
+{
+	ship_obj* so = &Ship_obj_list;
+
+	return ade_set_args(L, "u", luacpp::LuaFunction::createFromStdFunction(L, [so](lua_State* LInner, const luacpp::LuaValueList& /*params*/) mutable -> luacpp::LuaValueList {
+		//Since the first element of a list is the next element from the head, and we start this function with the the captured "so" object being the head, this GET_NEXT will return the first element on first call of this lambda.
+		//Similarly, an empty list is defined by the head's next element being itself, hence an empty list will immediately return nil just fine
+		so = GET_NEXT(so);
+
+		if (so == END_OF_LIST(&Ship_obj_list) || so == nullptr) {
+			return luacpp::LuaValueList{ luacpp::LuaValue::createNil(LInner) };
+		}
+
+		return luacpp::LuaValueList{ luacpp::LuaValue::createValue(LInner, l_Ship.Set(object_h(&Objects[so->objnum]))) };
+	}));
 }
 
 ADE_FUNC(waitAsync,
