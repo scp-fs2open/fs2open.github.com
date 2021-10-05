@@ -15309,16 +15309,20 @@ int ship_secondary_bank_has_ammo(int shipnum)
 
 	Assert(shipnum >= 0 && shipnum < MAX_SHIPS);
 	swp = &Ships[shipnum].weapons;
+	int current_bank = swp->current_secondary_bank;
 	
-	if ( swp->current_secondary_bank == -1 )
+	if (current_bank == -1 )
 		return 0;
 
-	Assert(swp->current_secondary_bank >= 0 && swp->current_secondary_bank < MAX_SHIP_SECONDARY_BANKS );
+	Assert(current_bank >= 0 && current_bank < MAX_SHIP_SECONDARY_BANKS );
 
-	if (Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo])
+	if (swp->secondary_bank_weapons[current_bank] < 0)
+		return 0;
+
+	if (Weapon_info[swp->secondary_bank_weapons[current_bank]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo])
 		return 1;
 
-	if ( swp->secondary_bank_ammo[swp->current_secondary_bank] <= 0 )
+	if ( swp->secondary_bank_ammo[current_bank] <= 0 )
 		return 0;
 
 	return 1;
