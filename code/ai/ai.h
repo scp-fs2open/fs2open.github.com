@@ -607,7 +607,7 @@ extern int ai_find_goal_index( ai_goal* aigp, int mode, int submode = -1, int pr
 extern void ai_do_safety(object *objp);
 
 // used to get path info for fighter bay emerging and departing
-int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, int path_mask, vec3d *pos, vec3d *fvec);
+int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, int path_mask);
 int ai_acquire_depart_path(object *pl_objp, int parent_objnum, int path_mask);
 
 // used by AiBig.cpp
