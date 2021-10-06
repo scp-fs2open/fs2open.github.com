@@ -90,6 +90,7 @@ namespace Weapon {
 		SecondaryNoAmmo,					// Secondaries that only use energy
 		No_collide,
 		Multilock_target_dead_subsys,
+		No_evasion,							// AI will not attempt to dodge this weapon - Asteroth
 
         NUM_VALUES
 	};

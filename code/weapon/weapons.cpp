@@ -189,6 +189,7 @@ flag_def_list_new<Weapon::Info_Flags> Weapon_Info_Flags[] = {
 	{ "secondary no ammo",				Weapon::Info_Flags::SecondaryNoAmmo,					true, false },
 	{ "no collide",						Weapon::Info_Flags::No_collide,						    true, false },
 	{ "multilock target dead subsys",   Weapon::Info_Flags::Multilock_target_dead_subsys,		true, false },
+	{ "no evasion",						Weapon::Info_Flags::No_evasion,						    true, false },
 };
 
 const size_t num_weapon_info_flags = sizeof(Weapon_Info_Flags) / sizeof(flag_def_list_new<Weapon::Info_Flags>);
@@ -4862,7 +4863,7 @@ void weapon_home(object *obj, int num, float frame_time)
 
 	//	See if this weapon is the nearest homing object to the object it is homing on.
 	//	If so, update some fields in the target object's ai_info.
-	if (hobjp != &obj_used_list) {
+	if (hobjp != &obj_used_list && !(wip->wi_flags[Weapon::Info_Flags::No_evasion])) {
 
 		if (hobjp->type == OBJ_SHIP) {
 			ai_info	*aip;
