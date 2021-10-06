@@ -66,24 +66,6 @@ public:
 class ship;
 class ship_info;
 
-enum class AnimationTriggerType : int {
-	None = -1,       // No animation
-	Initial,		 // This is just the position the subobject should be placed in
-	Docking_Stage1,	 // following the dock path until just before the end. Triggered when AIS_DOCK_1 begins.
-	Docking_Stage2,	 // drag oneself right to the second last point on the dock path. The old docking-type trigger. Triggered when AIS_DOCK_2 begins.
-	Docking_Stage3,	 // move directly to the dockpoint using thrusters. Triggered when AIS_DOCK_3 begins.
-	Docked,			 // As you dock / the attachment sound is played and the mission log indicates docking. Triggered when AIS_DOCK_4 begins.
-	PrimaryBank,	 // Primary banks
-	SecondaryBank,	 // Secondary banks
-	DockBayDoor,	 // Fighter bays
-	Afterburner,	 // Afterburner -C
-	TurretFiring,	 // Turret shooting -C
-	Scripted,		 // Triggered exclusively by scripting...maybe SEXPs? -C
-	TurretFired,	 // Triggered after a turret has fired -The E
-
-	MaxAnimationTypes
-};
-
 // Model Animation Position settings
 enum EModelAnimationPosition {
 	MA_POS_NOT_SET = 0,	// not yet setup
@@ -98,6 +80,27 @@ namespace animation {
 	enum class ModelAnimationDirection { FWD, RWD };
 
 	enum class ModelAnimationState { UNTRIGGERED, RUNNING_FWD, COMPLETED, RUNNING_RWD };
+
+	enum class ModelAnimationTriggerType : int {
+		None = -1,       // No animation
+		Initial,		 // This is just the position the subobject should be placed in
+		Docking_Stage1,	 // following the dock path until just before the end. Triggered when AIS_DOCK_1 begins.
+		Docking_Stage2,	 // drag oneself right to the second last point on the dock path. The old docking-type trigger. Triggered when AIS_DOCK_2 begins.
+		Docking_Stage3,	 // move directly to the dockpoint using thrusters. Triggered when AIS_DOCK_3 begins.
+		Docked,			 // As you dock / the attachment sound is played and the mission log indicates docking. Triggered when AIS_DOCK_4 begins.
+		PrimaryBank,	 // Primary banks
+		SecondaryBank,	 // Secondary banks
+		DockBayDoor,	 // Fighter bays
+		Afterburner,	 // Afterburner -C
+		TurretFiring,	 // Turret shooting -C
+		Scripted,		 // Triggered exclusively by scripting...maybe SEXPs? -C
+		TurretFired,	 // Triggered after a turret has fired -The E
+		PrimaryFired,    // Triggered when a primary weapon has fired.
+		SecondaryFired,  // Triggered when a primary weapon has fired.
+		WeaponLaunched,  // Triggers on the weapon model once it spawns when fired
+
+		MaxAnimationTypes
+	};
 
 	FLAG_LIST(Animation_Flags) {
 		Auto_Reverse,			//Will make the animation automatically transition into reverse mode as opposed to waiting in a completed state
@@ -262,9 +265,6 @@ namespace animation {
 	};
 
 
-	//Use the old modelanim.cpp TriggerType here. Eventually migrate to here.
-	using ModelAnimationTriggerType = ::AnimationTriggerType;
-
 	class ModelAnimationSet {
 	public:
 		static int SUBTYPE_DEFAULT;
@@ -287,6 +287,7 @@ namespace animation {
 		std::map <std::pair<ModelAnimationTriggerType, int>, std::map <SCP_string, std::shared_ptr<ModelAnimation>>> m_animationSet;
 
 		ModelAnimationSet(SCP_string SIPname = "");
+		ModelAnimationSet(const ModelAnimationSet& other);
 		ModelAnimationSet& operator=(ModelAnimationSet&& other);
 		ModelAnimationSet& operator=(const ModelAnimationSet& other);
 
@@ -306,6 +307,8 @@ namespace animation {
 		int getTime(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& name, int subtype = SUBTYPE_DEFAULT) const;
 		int getTimeAll(polymodel_instance* pmi, ModelAnimationTriggerType type, int subtype = SUBTYPE_DEFAULT, bool strict = false) const;
 		int getTimeDockBayDoors(polymodel_instance* pmi, int subtype) const;
+
+		bool isEmpty() const;
 
 		std::shared_ptr<ModelAnimationSubmodel> getSubmodel(SCP_string submodelName);
 		std::shared_ptr<ModelAnimationSubmodel> getSubmodel(SCP_string submodelName, SCP_string SIP_name, bool findBarrel);
@@ -352,7 +355,8 @@ namespace animation {
 	};
 	//Start of section of helper functions, mostly to complement the old modelanim functions as required
 
-	extern const std::map<animation::ModelAnimationTriggerType, const char*> Animation_type_names;
+	//Type -> Name + Requires reset flag (== will never be triggered in reverse)
+	extern const std::map<animation::ModelAnimationTriggerType, std::pair<const char*, bool>> Animation_types;
 
 	void anim_set_initial_states(ship* shipp);
 

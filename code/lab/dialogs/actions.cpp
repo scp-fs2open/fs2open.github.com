@@ -76,14 +76,14 @@ void reset_animations(Tree*) {
 
 		for (auto i = 0; i < MAX_SHIP_PRIMARY_BANKS; ++i) {
 			if (triggered_primary_banks[i]) {
-				Ship_info[shipp->ship_info_index].animations.startAll(shipp_pmi, AnimationTriggerType::PrimaryBank, animation::ModelAnimationDirection::RWD, false, false, i);
+				Ship_info[shipp->ship_info_index].animations.startAll(shipp_pmi, animation::ModelAnimationTriggerType::PrimaryBank, animation::ModelAnimationDirection::RWD, false, false, i);
 				triggered_primary_banks[i] = false;
 			}
 		}
 
 		for (auto i = 0; i < MAX_SHIP_SECONDARY_BANKS; ++i) {
 			if (triggered_secondary_banks[i]) {
-				Ship_info[shipp->ship_info_index].animations.startAll(shipp_pmi, AnimationTriggerType::SecondaryBank, animation::ModelAnimationDirection::RWD, false, false, i);
+				Ship_info[shipp->ship_info_index].animations.startAll(shipp_pmi, animation::ModelAnimationTriggerType::SecondaryBank, animation::ModelAnimationDirection::RWD, false, false, i);
 				triggered_secondary_banks[i] = false;
 			}
 		}
@@ -106,7 +106,7 @@ void trigger_primary_bank(Tree* caller) {
 	if (getLabManager()->isSafeForShips()) {
 		auto shipp = &Ships[Objects[getLabManager()->CurrentObject].instance];
 		auto bank = caller->GetSelectedItem()->GetData();
-		Ship_info[shipp->ship_info_index].animations.startAll(model_get_instance(shipp->model_instance_num), AnimationTriggerType::PrimaryBank, triggered_primary_banks[bank] ? animation::ModelAnimationDirection::RWD : animation::ModelAnimationDirection::FWD, false, false, bank);
+		Ship_info[shipp->ship_info_index].animations.startAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::PrimaryBank, triggered_primary_banks[bank] ? animation::ModelAnimationDirection::RWD : animation::ModelAnimationDirection::FWD, false, false, bank);
 		triggered_primary_banks[bank] = !triggered_primary_banks[bank];
 	}
 }
@@ -115,12 +115,12 @@ void trigger_secondary_bank(Tree* caller) {
 	if (getLabManager()->isSafeForShips()) {
 		auto shipp = &Ships[Objects[getLabManager()->CurrentObject].instance];
 		auto bank = caller->GetSelectedItem()->GetData();
-		Ship_info[shipp->ship_info_index].animations.startAll(model_get_instance(shipp->model_instance_num), AnimationTriggerType::SecondaryBank, triggered_primary_banks[bank] ? animation::ModelAnimationDirection::RWD : animation::ModelAnimationDirection::FWD, false, false, bank);
+		Ship_info[shipp->ship_info_index].animations.startAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::SecondaryBank, triggered_primary_banks[bank] ? animation::ModelAnimationDirection::RWD : animation::ModelAnimationDirection::FWD, false, false, bank);
 		triggered_primary_banks[bank] = !triggered_primary_banks[bank];
 	}
 }
 
-void labviewer_actions_do_triggered_anim(AnimationTriggerType type, const SCP_string& name, bool direction, int subtype = animation::ModelAnimationSet::SUBTYPE_DEFAULT) {
+void labviewer_actions_do_triggered_anim(animation::ModelAnimationTriggerType type, const SCP_string& name, bool direction, int subtype = animation::ModelAnimationSet::SUBTYPE_DEFAULT) {
 	if (getLabManager()->isSafeForShips()) {
 		auto shipp = &Ships[Objects[getLabManager()->CurrentObject].instance];
 
@@ -135,7 +135,7 @@ void trigger_animation(Tree* caller) {
 	if (getLabManager()->isSafeForShips()) {
 		auto shipp = &Ships[Objects[getLabManager()->CurrentObject].instance];
 
-		auto anim_type = static_cast<AnimationTriggerType>(caller->GetSelectedItem()->GetData());
+		auto anim_type = static_cast<animation::ModelAnimationTriggerType>(caller->GetSelectedItem()->GetData());
 
 		Ship_info[shipp->ship_info_index].animations.startAll(model_get_instance(shipp->model_instance_num), anim_type, manual_animations[anim_type] ? animation::ModelAnimationDirection::RWD : animation::ModelAnimationDirection::FWD, false, false);
 		manual_animations[anim_type] = !manual_animations[anim_type];
@@ -143,27 +143,27 @@ void trigger_animation(Tree* caller) {
 }
 
 void trigger_scripted(Tree* caller) {
-	auto& scripted_anim_triggers = manual_animation_triggers[AnimationTriggerType::Scripted];
+	auto& scripted_anim_triggers = manual_animation_triggers[animation::ModelAnimationTriggerType::Scripted];
 	auto direction = scripted_anim_triggers[caller->GetSelectedItem()->Name];
 
-	labviewer_actions_do_triggered_anim(AnimationTriggerType::Scripted, caller->GetSelectedItem()->Name, direction);
+	labviewer_actions_do_triggered_anim(animation::ModelAnimationTriggerType::Scripted, caller->GetSelectedItem()->Name, direction);
 	scripted_anim_triggers[caller->GetSelectedItem()->Name] = !scripted_anim_triggers[caller->GetSelectedItem()->Name];
 }
 
 void trigger_turret_firing(Tree* caller) {
 	auto subobj_num = caller->GetSelectedItem()->GetData();
-	auto& turret_firing_triggers = manual_animation_triggers[AnimationTriggerType::TurretFiring];
+	auto& turret_firing_triggers = manual_animation_triggers[animation::ModelAnimationTriggerType::TurretFiring];
 	auto direction = turret_firing_triggers[caller->GetSelectedItem()->Name];
 
-	labviewer_actions_do_triggered_anim(AnimationTriggerType::TurretFiring, caller->GetSelectedItem()->Name, direction, subobj_num);
+	labviewer_actions_do_triggered_anim(animation::ModelAnimationTriggerType::TurretFiring, caller->GetSelectedItem()->Name, direction, subobj_num);
 	turret_firing_triggers[caller->GetSelectedItem()->Name] = !turret_firing_triggers[caller->GetSelectedItem()->Name];
 }
 
 void trigger_turret_fired(Tree* caller) {
-	auto& turret_fired_triggers = manual_animation_triggers[AnimationTriggerType::TurretFired];
+	auto& turret_fired_triggers = manual_animation_triggers[animation::ModelAnimationTriggerType::TurretFired];
 	auto direction = turret_fired_triggers[caller->GetSelectedItem()->Name];
 
-	labviewer_actions_do_triggered_anim(AnimationTriggerType::TurretFired, caller->GetSelectedItem()->Name, direction);
+	labviewer_actions_do_triggered_anim(animation::ModelAnimationTriggerType::TurretFired, caller->GetSelectedItem()->Name, direction);
 	turret_fired_triggers[caller->GetSelectedItem()->Name] = !turret_fired_triggers[caller->GetSelectedItem()->Name];
 }
 
@@ -415,11 +415,11 @@ void AnimationTrigger::update(LabMode, int) {
 
 		manual_animation_triggers.clear();
 
-		for (const auto& entry : animation::Animation_type_names) {
+		for (const auto& entry : animation::Animation_types) {
 			if (entry.first == animation::ModelAnimationTriggerType::Initial)
 				continue;
 
-			subsystem_headers[entry.first] = animations_tree->AddItem(subsystems_head, entry.second);
+			subsystem_headers[entry.first] = animations_tree->AddItem(subsystems_head, entry.second.first);
 		}
 
 		for (auto i = 0; i < shipp->weapons.num_primary_banks; ++i) {
@@ -470,9 +470,9 @@ void AnimationTrigger::update(LabMode, int) {
 
 		auto shipwide_head = animations_tree->AddItem(nullptr, "Shipwide triggers");
 
-		for (const auto& entry : animation::Animation_type_names) {
+		for (const auto& entry : animation::Animation_types) {
 			manual_animations[entry.first] = false;
-			animations_tree->AddItem(shipwide_head, entry.second, static_cast<int>(entry.first), false, trigger_animation);
+			animations_tree->AddItem(shipwide_head, entry.second.first, static_cast<int>(entry.first), false, trigger_animation);
 		}
 	}
 }

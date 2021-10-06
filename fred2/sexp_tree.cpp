@@ -6221,8 +6221,8 @@ sexp_list_item *sexp_tree::get_listing_opf_animation_type()
 {
 	sexp_list_item head;
 
-	for (auto animation_type : animation::Animation_type_names) {
-		head.add_data(animation_type.second);
+	for (auto animation_type : animation::Animation_types) {
+		head.add_data(animation_type.second.first);
 	}
 
 	return head.next;

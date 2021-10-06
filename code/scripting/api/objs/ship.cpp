@@ -1562,7 +1562,7 @@ ADE_FUNC(triggerAnimation, l_Ship, "string Type, [number Subtype, boolean Forwar
 		return ADE_RETURN_NIL;
 
 	auto type = animation::anim_match_type(s);
-	if(type == AnimationTriggerType::None)
+	if(type == animation::ModelAnimationTriggerType::None)
 		return ADE_RETURN_FALSE;
 
 	Ship_info[Ships[objh->objp->instance].ship_info_index].animations.startAll(model_get_instance(Ships[objh->objp->instance].model_instance_num), type, b ? animation::ModelAnimationDirection::FWD : animation::ModelAnimationDirection::RWD, instant, instant, subtype);

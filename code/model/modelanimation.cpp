@@ -224,6 +224,9 @@ namespace animation {
 			animation->reset(pmi);
 		}*/
 
+		if (!pmi)
+			return;
+
 		instance_data& instanceData = m_instances[pmi->id];
 		instanceData.time = 0.0f;
 		instanceData.state = ModelAnimationState::UNTRIGGERED;
@@ -235,6 +238,17 @@ namespace animation {
 	void ModelAnimation::stepAnimations(float frametime) {
 		for (const auto& animList : ModelAnimationSet::s_runningAnimations) {
 			polymodel_instance* pmi = model_get_instance(animList.first);
+
+			//Object died during animation
+			if (pmi == nullptr) {
+				for (const auto& anim : animList.second.second) {
+					auto& state = anim->m_instances[animList.first];
+					state.state = ModelAnimationState::UNTRIGGERED;
+					state.time = 0.0f;
+				}
+
+				continue;
+			}
 
 			ModelAnimationSubmodelBuffer applyBuffer;
 			animList.second.first->initializeSubmodelBuffer(pmi, applyBuffer);
@@ -256,7 +270,7 @@ namespace animation {
 
 			}
 
-			ModelAnimationSet::apply(model_get_instance(animList.first), applyBuffer);
+			ModelAnimationSet::apply(pmi, applyBuffer);
 		}
 
 		//Clear Animations that might have completed this frame.
@@ -433,6 +447,10 @@ namespace animation {
 
 	ModelAnimationSet::ModelAnimationSet(SCP_string SIPname) : m_SIPname(SIPname) { };
 
+	ModelAnimationSet::ModelAnimationSet(const ModelAnimationSet& other) {
+		operator=(other);
+	}
+
 	ModelAnimationSet& ModelAnimationSet::operator=(ModelAnimationSet&& other) {
 		std::swap(m_submodels, other.m_submodels);
 		std::swap(m_animationSet, other.m_animationSet);
@@ -450,12 +468,10 @@ namespace animation {
 	ModelAnimationSet& ModelAnimationSet::operator=(const ModelAnimationSet& other) {
 		m_SIPname = other.m_SIPname;
 
-		std::map<std::shared_ptr<ModelAnimationSubmodel>, std::shared_ptr<ModelAnimationSubmodel>> submodelUpdateMap;
 		for (const auto& submodel : other.m_submodels) {
 			auto newSubmodel = std::shared_ptr<ModelAnimationSubmodel>(submodel->copy());
 			newSubmodel->m_submodel = optional<int>();
 			m_submodels.push_back(newSubmodel);
-			submodelUpdateMap.emplace(submodel, newSubmodel);
 		}
 
 		for (const auto& animationTypes : other.m_animationSet) {
@@ -465,6 +481,7 @@ namespace animation {
 				newAnimation->m_animation = std::shared_ptr<ModelAnimationSegment>(newAnimation->m_animation->copy());
 
 				newAnimation->m_animation->exchangeSubmodelPointers(*this);
+				newAnimation->m_set = this;
 
 				newAnimations.emplace(oldAnimation.first, newAnimation);
 			}
@@ -708,6 +725,15 @@ namespace animation {
 		return (int) (duration * 1000);
 	}
 
+	bool ModelAnimationSet::isEmpty() const {
+		for (const auto& animSet : m_animationSet) {
+			if (!animSet.second.empty())
+				return false;
+		}
+
+		return true;
+	};
+
 	std::shared_ptr<ModelAnimationSubmodel> ModelAnimationSet::getSubmodel(SCP_string submodelName) {
 		for (const auto& submodel : m_submodels) {
 			if (!submodel->is_turret && submodel->m_name == submodelName)
@@ -749,26 +775,29 @@ namespace animation {
 		sip->animations.startAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::Initial, ModelAnimationDirection::FWD, true);
 	}
 
-	const std::map<ModelAnimationTriggerType, const char*> Animation_type_names = {
-	{ModelAnimationTriggerType::Initial, "initial"},
-	{ModelAnimationTriggerType::Docking_Stage1, "docking-stage-1"},
-	{ModelAnimationTriggerType::Docking_Stage2, "docking-stage-2"},
-	{ModelAnimationTriggerType::Docking_Stage3, "docking-stage-3"},
-	{ModelAnimationTriggerType::Docked, "docked"},
-	{ModelAnimationTriggerType::PrimaryBank, "primary-bank"},
-	{ModelAnimationTriggerType::SecondaryBank, "secondary-bank"},
-	{ModelAnimationTriggerType::DockBayDoor, "fighterbay"},
-	{ModelAnimationTriggerType::Afterburner, "afterburner"},
-	{ModelAnimationTriggerType::TurretFiring, "turret-firing"},
-	{ModelAnimationTriggerType::Scripted, "scripted"},
-	{ModelAnimationTriggerType::TurretFired, "turret-fired"}
+	const std::map<ModelAnimationTriggerType, std::pair<const char*, bool>> Animation_types = {
+	{ModelAnimationTriggerType::Initial, {"initial", false}},
+	{ModelAnimationTriggerType::Docking_Stage1, {"docking-stage-1", false}},
+	{ModelAnimationTriggerType::Docking_Stage2, {"docking-stage-2", false}},
+	{ModelAnimationTriggerType::Docking_Stage3, {"docking-stage-3", false}},
+	{ModelAnimationTriggerType::Docked, {"docked", false}},
+	{ModelAnimationTriggerType::PrimaryBank, {"primary-bank", false}},
+	{ModelAnimationTriggerType::SecondaryBank, {"secondary-bank", false}},
+	{ModelAnimationTriggerType::DockBayDoor, {"fighterbay", false}},
+	{ModelAnimationTriggerType::Afterburner, {"afterburner", false}},
+	{ModelAnimationTriggerType::TurretFiring, {"turret-firing", false}},
+	{ModelAnimationTriggerType::Scripted, {"scripted", false}},
+	{ModelAnimationTriggerType::TurretFired, {"turret-fired", true}},
+	{ModelAnimationTriggerType::PrimaryFired,   {"primary-fired", true}},
+	{ModelAnimationTriggerType::SecondaryFired, {"secondary-fired", true}},
+	{ModelAnimationTriggerType::WeaponLaunched, {"weapon-launched", false}} //Atypical case. While no reverse trigger occurs, it is also guaranteed to not trigger more than once per model, hence non-resetting animations are fine here.
 	};
 
 	ModelAnimationTriggerType anim_match_type(const char* p)
 	{
 		// standard match
-		for (const auto& entry : Animation_type_names) {
-			if (!strnicmp(p, entry.second, strlen(entry.second)))
+		for (const auto& entry : Animation_types) {
+			if (!strnicmp(p, entry.second.first, strlen(entry.second.first)))
 				return entry.first;
 		}
 
@@ -780,36 +809,36 @@ namespace animation {
 
 		// Goober5000 - deprecation
 		if (!strnicmp(p, "docking", 7) || !strnicmp(p, "\"docking\"", 9)) {
-			auto docking_string = Animation_type_names.find(ModelAnimationTriggerType::Docking_Stage2)->second;
+			auto docking_string = Animation_types.find(ModelAnimationTriggerType::Docking_Stage2)->second.first;
 			mprintf(("The \"docking\" animation type name is deprecated.  Specify \"%s\" instead.\n", docking_string));
 			return ModelAnimationTriggerType::Docking_Stage2;
 		}
 		else if (!strnicmp(p, "primary_bank", 12) || !strnicmp(p, "\"primary_bank\"", 14)) {
-			auto pbank_string = Animation_type_names.find(ModelAnimationTriggerType::PrimaryBank)->second;
+			auto pbank_string = Animation_types.find(ModelAnimationTriggerType::PrimaryBank)->second.first;
 			mprintf(("The \"primary_bank\" animation type name is deprecated.  Specify \"%s\" instead.\n", pbank_string));
 			return ModelAnimationTriggerType::PrimaryBank;
 		}
 		else if (!strnicmp(p, "secondary_bank", 14) || !strnicmp(p, "\"secondary_bank\"", 16)) {
-			auto sbank_string = Animation_type_names.find(ModelAnimationTriggerType::SecondaryBank)->second;
+			auto sbank_string = Animation_types.find(ModelAnimationTriggerType::SecondaryBank)->second.first;
 			mprintf(("The \"secondary_bank\" animation type name is deprecated.  Specify \"%s\" instead.\n", sbank_string));
 			return ModelAnimationTriggerType::SecondaryBank;
 		}
 		else if (!strnicmp(p, "door", 4) || !strnicmp(p, "\"door\"", 6)) {
-			auto docking_string = Animation_type_names.find(ModelAnimationTriggerType::DockBayDoor)->second;
+			auto docking_string = Animation_types.find(ModelAnimationTriggerType::DockBayDoor)->second.first;
 			mprintf(("The \"door\" animation type name is deprecated.  Specify \"%s\" instead.\n", docking_string));
 			return ModelAnimationTriggerType::DockBayDoor;
 		}
 		else if (!strnicmp(p, "turret firing", 13) || !strnicmp(p, "\"turret firing\"", 15)) {
-			auto turret_string = Animation_type_names.find(ModelAnimationTriggerType::TurretFiring)->second;
+			auto turret_string = Animation_types.find(ModelAnimationTriggerType::TurretFiring)->second.first;
 			mprintf(("The \"turret firing\" animation type name is deprecated.  Specify \"%s\" instead.\n", turret_string));
 			return ModelAnimationTriggerType::TurretFiring;
 		}
 
 		// Goober5000 - with quotes
-		for (const auto& entry : Animation_type_names) {
+		for (const auto& entry : Animation_types) {
 			char quoted_name[NAME_LENGTH + 2];
 			strcpy(quoted_name, "\"");
-			strcat(quoted_name, entry.second);
+			strcat(quoted_name, entry.second.first);
 			strcat(quoted_name, "\"");
 
 			if (!strnicmp(p, quoted_name, strlen(quoted_name))) {
@@ -926,6 +955,7 @@ namespace animation {
 
 			case ModelAnimationTriggerType::Initial:
 			case ModelAnimationTriggerType::Afterburner:
+			case ModelAnimationTriggerType::WeaponLaunched:
 			default:
 				error_display(0, "Animation trigger type %s does not use any trigger specification!", atype);
 				//These shouldn't have further specifications. Ignore
@@ -935,6 +965,19 @@ namespace animation {
 		if (optional_string("$Flags:")) {
 			SCP_vector<SCP_string> unparsed;
 			parse_string_flag_list(animation->m_flags, Animation_flags, Num_animation_flags, &unparsed);
+		}
+
+		if (Animation_types.find(type)->second.second) {
+			//This is a type where the code does not reset the animation. The animation is expected to auto-reset in one way or another.
+			//If it doesn't, nothing will crash, but the result is most likely unintended.
+			if (!animation->m_flags[Animation_Flags::Auto_Reverse, Animation_Flags::Reset_at_completion]) {
+				error_display(0, "Animation trigger type %s expects an auto-reset flag to be set.", atype);
+			}
+
+			if (animation->m_flags[Animation_Flags::Loop]) {
+				//Looping animations for these trigger types are probably unintended as well, but rare cases could exist, hence no explicit warning.
+				mprintf(("Animation %s with trigger type %s has an unexpected loop flag.", helper.m_animationName.c_str(), atype));
+			}
 		}
 
 		animation->setAnimation(helper.parseSegment());
@@ -998,7 +1041,7 @@ namespace animation {
 		required_string("$type:");
 		char atype[NAME_LENGTH];
 		stuff_string(atype, F_NAME, NAME_LENGTH);
-		AnimationTriggerType type = anim_match_type(atype);
+		animation::ModelAnimationTriggerType type = anim_match_type(atype);
 		int subtype = ModelAnimationSet::SUBTYPE_DEFAULT;
 		char sub_name[NAME_LENGTH];
 
@@ -1025,7 +1068,7 @@ namespace animation {
 			strcpy_s(sub_name, "<none>");
 		}
 
-		if (type == AnimationTriggerType::Initial) {
+		if (type == animation::ModelAnimationTriggerType::Initial) {
 			angles angle;
 			bool isRelative;
 

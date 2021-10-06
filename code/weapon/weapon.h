@@ -21,6 +21,7 @@
 #include "graphics/2d.h"
 #include "graphics/generic.h"
 #include "model/model.h"
+#include "model/modelanimation.h"
 #include "particle/ParticleManager.h"
 #include "weapon/beam.h"
 #include "weapon/shockwave.h"
@@ -591,6 +592,8 @@ struct weapon_info
 	decals::creation_info impact_decal;
 
 	actions::ProgramSet on_create_program;
+
+	animation::ModelAnimationSet animations;
 
 public:
 	weapon_info();
