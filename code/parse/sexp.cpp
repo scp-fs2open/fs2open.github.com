@@ -164,7 +164,8 @@ SCP_vector<sexp_oper> Operators = {
 	{ "string-equals",					OP_STRING_EQUALS,						2,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},
 	{ "string-greater-than",			OP_STRING_GREATER_THAN,					2,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},
 	{ "string-less-than",				OP_STRING_LESS_THAN,					2,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},
-	{ "perform-actions",				OP_PERFORM_ACTIONS,						2,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},	// Goober5000
+	{ "perform-actions-bool-first",		OP_PERFORM_ACTIONS_BOOL_FIRST,			2,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},	// Goober5000
+	{ "perform-actions-bool-last",		OP_PERFORM_ACTIONS_BOOL_LAST,			2,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},	// Goober5000
 	{ "has-time-elapsed",				OP_HAS_TIME_ELAPSED,					1,	1,			SEXP_BOOLEAN_OPERATOR,	},
 
 	//Event/Goals Category
@@ -340,6 +341,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "when-argument",					OP_WHEN_ARGUMENT,						3,	INT_MAX,	SEXP_CONDITIONAL_OPERATOR,},	// Goober5000
 	{ "every-time",						OP_EVERY_TIME,							2,	INT_MAX,	SEXP_CONDITIONAL_OPERATOR,},	// Goober5000
 	{ "every-time-argument",			OP_EVERY_TIME_ARGUMENT,					3,	INT_MAX,	SEXP_CONDITIONAL_OPERATOR,},	// Goober5000
+	{ "functional-when",				OP_FUNCTIONAL_WHEN,						4,	INT_MAX,	SEXP_CONDITIONAL_OPERATOR, },	// Goober5000
 	{ "if-then-else",					OP_IF_THEN_ELSE,						3,	INT_MAX,	SEXP_CONDITIONAL_OPERATOR,},	// Goober5000
 	{ "functional-if-then-else",		OP_FUNCTIONAL_IF_THEN_ELSE,				3,	3,			SEXP_CONDITIONAL_OPERATOR, },	// Goober5000
 	{ "switch",							OP_SWITCH,								2,	INT_MAX,	SEXP_CONDITIONAL_OPERATOR, },	// Goober5000
@@ -893,6 +895,12 @@ int hud_gauge_type_lookup(const char* name);
 int sexp_explosion_option_lookup(const char *text);
 const char *Explosion_option[] = { "damage", "blast", "inner radius", "outer radius", "shockwave speed", "death roll time" };
 int Num_explosion_options = 6;
+
+#define FWET_RETVAL_FIRST	0
+#define FWET_RETVAL_LAST	1
+int sexp_functional_when_eval_type_lookup(const char *text);
+const char *Functional_when_eval_type[] = { "return-value-first", "return-value-last" };
+int Num_functional_when_eval_types = 2;
 
 int get_sexp();
 void build_extended_sexp_string(SCP_string &accumulator, int cur_node, int level, int mode);
@@ -3329,6 +3337,16 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				// that's all we do, since there may be a language the game doesn't know about
 				break;
 
+			case OPF_FUNCTIONAL_WHEN_EVAL_TYPE:
+				if (type2 != SEXP_ATOM_STRING) {
+					return SEXP_CHECK_TYPE_MISMATCH;
+				}
+
+				if (sexp_functional_when_eval_type_lookup(CTEXT(node)) < 0) {
+					return SEXP_CHECK_INVALID_FUNCTIONAL_WHEN_EVAL_TYPE;
+				}
+				break;
+
 			default:
 				Error(LOCATION, "Unhandled argument format");
 		}
@@ -3605,6 +3623,8 @@ int get_sexp()
 				strcpy_s(token, "clear-weapons");
 			else if (!stricmp(token, "hud-set-retail-gauge-active"))
 				strcpy_s(token, "hud-set-builtin-gauge-active");
+			else if (!stricmp(token, "perform-actions"))
+				strcpy_s(token, "perform-actions-bool-first");
 
 			op = get_operator_index(token);
 			if (op >= 0) {
@@ -9386,33 +9406,90 @@ void eval_when_do_all_exp(int all_actions, int when_op_num)
 	}
 }
 
+int sexp_functional_when_eval_type_lookup(const char *text)
+{
+	for (int i = 0; i < Num_functional_when_eval_types; i++)
+		if (!stricmp(text, Functional_when_eval_type[i]))
+			return i;
+	return -1;
+}
+
 /**
  * This is like using when, but it takes a lot of shortcuts.  It's clearer just to separate it out into its own function, especially since it's not supposed to start
  * a new level of special argument handling, like eval_when would do.  It's a lot like the original retail version of eval_when!
  */
-int eval_perform_actions(int n)
+int eval_perform_actions(int n, int op_num)
 {
-	int cond, val, actions;
+	int return_cond, actions_cond, val = SEXP_NAN, actions;
+	bool retval_first;
 	Assert( n >= 0 );
 
-	cond = CAR(n);
-	actions = CDR(n);
-
-	// evaluate the conditional to see what value we eventually return
-	val = eval_sexp(cond);
-
-	// perform all the actions in the rest of the sexp
-	// (Since we are technically inside a condition already, no special argument handling is needed.  The special argument, if any,
-	// will have been provided by a higher level of nesting.)
-	while (actions != -1)
+	if (op_num == OP_PERFORM_ACTIONS_BOOL_FIRST)
 	{
-		// get the operator
-		int exp = CAR(actions);
-		if (exp != -1)
-			eval_sexp(exp);
+		return_cond = CAR(n);
+		retval_first = true;
+		actions_cond = Locked_sexp_true;
+		actions = CDR(n);
+	}
+	else if (op_num == OP_PERFORM_ACTIONS_BOOL_LAST)
+	{
+		return_cond = CAR(n);
+		retval_first = false;
+		actions_cond = Locked_sexp_true;
+		actions = CDR(n);
+	}
+	else if (op_num == OP_FUNCTIONAL_WHEN)
+	{
+		return_cond = CAR(n);
+		n = CDR(n);
 
-		// iterate
-		actions = CDR(actions);
+		int eval_type = sexp_functional_when_eval_type_lookup(CTEXT(n));
+		if (eval_type == FWET_RETVAL_FIRST)
+			retval_first = true;
+		else if (eval_type == FWET_RETVAL_LAST)
+			retval_first = false;
+		else
+			return SEXP_NAN;
+		n = CDR(n);
+
+		actions_cond = CAR(n);
+		n = CDR(n);
+
+		actions = n;
+	}
+	else
+	{
+		UNREACHABLE("Unsupported SEXP %d!", op_num);
+		return SEXP_NAN_FOREVER;
+	}
+
+	if (retval_first)
+	{
+		// evaluate the conditional to see what value we eventually return
+		val = eval_sexp(return_cond);
+	}
+
+	if (is_sexp_true(actions_cond))
+	{
+		// perform all the actions in the rest of the sexp
+		// (Since we are technically inside a boolean condition already, no special argument handling is needed.  The special argument, if any,
+		// will have been provided by a higher level of nesting.)
+		while (actions != -1)
+		{
+			// get the operator
+			int exp = CAR(actions);
+			if (exp != -1)
+				eval_sexp(exp);
+
+			// iterate
+			actions = CDR(actions);
+		}
+	}
+
+	if (!retval_first)
+	{
+		// evaluate the conditional to see what value we now return
+		val = eval_sexp(return_cond);
 	}
 
 	// return whatever val was, but don't return known-*
@@ -9445,7 +9522,7 @@ void eval_switch(int n)
 	if (exp >= 0)
 		eval_sexp(exp);
 }
-	
+
 /**
  * Evaluates the when conditional
  *
@@ -24148,8 +24225,10 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = eval_when( node, op_num );
 				break;
 
-			case OP_PERFORM_ACTIONS:
-				sexp_val = eval_perform_actions( node );
+			case OP_PERFORM_ACTIONS_BOOL_FIRST:
+			case OP_PERFORM_ACTIONS_BOOL_LAST:
+			case OP_FUNCTIONAL_WHEN:
+				sexp_val = eval_perform_actions( node, op_num );
 				break;
 
 			case OP_SWITCH:
@@ -26422,7 +26501,8 @@ int query_operator_return_type(int op)
 		case OP_STRING_EQUALS:
 		case OP_STRING_GREATER_THAN:
 		case OP_STRING_LESS_THAN:
-		case OP_PERFORM_ACTIONS:
+		case OP_PERFORM_ACTIONS_BOOL_FIRST:
+		case OP_PERFORM_ACTIONS_BOOL_LAST:
 		case OP_IS_DESTROYED:
 		case OP_IS_SUBSYSTEM_DESTROYED:
 		case OP_IS_DISABLED:
@@ -26519,6 +26599,7 @@ int query_operator_return_type(int op)
 		case OP_ARE_SHIP_FLAGS_SET:
 		case OP_IS_IN_TURRET_FOV:
 		case OP_IS_LANGUAGE:
+		case OP_FUNCTIONAL_WHEN:
 			return OPR_BOOL;
 
 		case OP_PLUS:
@@ -27703,7 +27784,8 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_WHEN:
 		case OP_EVERY_TIME:
 		case OP_IF_THEN_ELSE:
-		case OP_PERFORM_ACTIONS:
+		case OP_PERFORM_ACTIONS_BOOL_FIRST:
+		case OP_PERFORM_ACTIONS_BOOL_LAST:
 			if (!argnum)
 				return OPF_BOOL;
 			else
@@ -27768,6 +27850,14 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_FUNCTIONAL_SWITCH:
 			return OPF_NUMBER;
+
+		case OP_FUNCTIONAL_WHEN:
+			if (argnum == 0 || argnum == 2)
+				return OPF_BOOL;
+			else if (argnum == 1)
+				return OPF_FUNCTIONAL_WHEN_EVAL_TYPE;
+			else
+				return OPF_NULL;
 
 		case OP_AI_DISABLE_SHIP:
 		case OP_AI_DISARM_SHIP:
@@ -29872,6 +29962,9 @@ const char *sexp_error_message(int num)
 		case SEXP_CHECK_INVALID_SPECIES:
 			return "Invalid species";
 
+		case SEXP_CHECK_INVALID_FUNCTIONAL_WHEN_EVAL_TYPE:
+			return "Invalid functional-when evaluation type";
+
 		default:
 			Warning(LOCATION, "Unhandled sexp error code %d!", num);
 			return "Unhandled sexp error code!";
@@ -31525,11 +31618,19 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"Returns a boolean value.  Takes 2 numeric arguments." },
 
 	// Goober5000
-	{ OP_PERFORM_ACTIONS, "perform-actions\r\n"
+	{ OP_PERFORM_ACTIONS_BOOL_FIRST, "perform-actions-bool-first\r\n"
 		"\tThis sexp allows actions to be performed as part of a conditional test.  It is most useful for assigning variables or performing some sort of pre-test action within the conditional part of \"when\", etc.  "
 		"It works well as the first branch of an \"and\" sexp, provided it returns true so as to not affect the return value of the \"and\".\r\n\r\n"
-		"Returns a boolean value.  Takes 2 or more arguments.\r\n"
+		"Returns a boolean value (note well the distinction between perform-actions-bool-first and perform-actions-bool-last).  Takes 2 or more arguments.\r\n"
 		"\t1:\tA boolean value to return after all successive actions have been performed.  NOTE: Even though this value is not returned until the actions are performed, it is evaluated BEFORE any of the actions.\r\n"
+		"\tRest:\tActions to perform, which would normally appear in a \"when\" sexp.\r\n" },
+
+	// Goober5000
+	{ OP_PERFORM_ACTIONS_BOOL_LAST, "perform-actions-bool-last\r\n"
+		"\tThis sexp allows actions to be performed as part of a conditional test.  It is most useful for assigning variables or performing some sort of pre-test action within the conditional part of \"when\", etc.  "
+		"It works well as the first branch of an \"and\" sexp, provided it returns true so as to not affect the return value of the \"and\".\r\n\r\n"
+		"Returns a boolean value (note well the distinction between perform-actions-bool-first and perform-actions-bool-last).  Takes 2 or more arguments.\r\n"
+		"\t1:\tA boolean value to return after all successive actions have been performed.  NOTE: This parameter is evaluated AFTER all of the actions have been performed.\r\n"
 		"\tRest:\tActions to perform, which would normally appear in a \"when\" sexp.\r\n" },
 
 	// Goober5000
@@ -32004,7 +32105,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tPerforms specified actions when a condition becomes true\r\n\r\n"
 		"Takes 2 or more arguments...\r\n"
 		"\t1:\tBoolean expression that must be true for actions to take place.\r\n"
-		"\tRest:\tActions to take when boolean expression becomes true." },
+		"\tRest:\tActions to take when the boolean expression becomes true." },
 
 	{ OP_COND, "Blah" },
 
@@ -32074,6 +32175,15 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"Takes 2 or more arguments...\r\n"
 		"\t1:\tNumeric expression to evaluate.\r\n"
 		"\tRest:\tList of numeric expressions, one of which will be returned according to the current value of the first argument.\r\n" },
+
+	// Goober5000
+	{ OP_FUNCTIONAL_WHEN, "Functional When (Conditional operator)\r\n"
+		"\tPerforms specified actions when a condition becomes true, then returns a boolean value.\r\n\r\n"
+		"Takes 4 or more arguments...\r\n"
+		"\t1:\tBoolean expression to be returned once the actions are taken\r\n"
+		"\t2:\tWhether to evaluate the return value (the first boolean expression) before or after the actions are taken\r\n"
+		"\t3:\tBoolean expression that must be true for actions to take place\r\n"
+		"\tRest:\tActions to take when the condition (the second boolean expression) becomes true." },
 
 	// Karajorma
 	{ OP_DO_FOR_VALID_ARGUMENTS, "Do-for-valid-arguments (Conditional operator)\r\n"

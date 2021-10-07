@@ -2882,6 +2882,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_FIREBALL:
 		case OPF_SPECIES:
 		case OPF_LANGUAGE:
+		case OPF_FUNCTIONAL_WHEN_EVAL_TYPE:
 			return 1;
 
 		case OPF_SHIP:
@@ -4704,6 +4705,10 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			list = get_listing_opf_language();
 			break;
 
+		case OPF_FUNCTIONAL_WHEN_EVAL_TYPE:
+			list = get_listing_opf_functional_when_eval_type();
+			break;
+
 		default:
 			Int3();  // unknown OPF code
 			list = NULL;
@@ -6343,6 +6348,16 @@ sexp_list_item *sexp_tree::get_listing_opf_language()	// NOLINT
 
 	for (auto &lang: Lcl_languages)
 		head.add_data(lang.lang_name);
+
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_functional_when_eval_type()	// NOLINT
+{
+	sexp_list_item head;
+
+	for (int i = 0; i < Num_functional_when_eval_types; i++)
+		head.add_data(Functional_when_eval_type[i]);
 
 	return head.next;
 }
