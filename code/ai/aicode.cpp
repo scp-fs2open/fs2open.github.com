@@ -11488,7 +11488,7 @@ void ai_dock()
 			// calculate time until animations elapse
 			int time1 = sip->animations.getTimeAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::Docked, docker_index);
 			int time2 = goal_sip->animations.getTimeAll(model_get_instance(goal_shipp->model_instance_num), animation::ModelAnimationTriggerType::Docked, dockee_index);
-			aip->mode_time = MAX(time1, time2);
+			aip->mode_time = timestamp(MAX(time1, time2));
 		}
 
 		// if not enough time has passed, just wait
