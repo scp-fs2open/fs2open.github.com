@@ -409,14 +409,13 @@ void HudGaugeWingmanStatus::renderDots(int wing_index, int screen_index, int num
 
 		case HUD_WINGMAN_STATUS_ALIVE:
 			bitmap = Wingman_status_dots.first_frame;
-			float wingman_health = HUD_wingman_status[wing_index].hull[i];
 			// set colors depending on HUD table option --wookieejedi
 			if (use_expanded_colors) {
 				// use expanded colors
-				if (wingman_health > 0.67f) {
+				if (HUD_wingman_status[wing_index].hull[i] > 0.67f) {
 					// green > 2/3 health
 					gr_set_color_fast(is_bright ? &Color_bright_green : &Color_green);
-				} else if (wingman_health > 0.34f) {
+				} else if (HUD_wingman_status[wing_index].hull[i] > 0.34f) {
 					// yellow 2/3 - > 1/3 health
 					gr_set_color_fast(is_bright ? &Color_bright_yellow : &Color_yellow);
 				} else {
@@ -425,7 +424,7 @@ void HudGaugeWingmanStatus::renderDots(int wing_index, int screen_index, int num
 				}
 			} else {
 				// use default colors
-				if (wingman_health > 0.5f) {
+				if (HUD_wingman_status[wing_index].hull[i] > 0.5f) {
 					// use gauge color
 					setGaugeColor(is_bright ? HUD_C_BRIGHT : HUD_C_NORMAL);
 				} else {
