@@ -136,6 +136,40 @@ namespace animation {
 
 	};
 
+	class ModelAnimationSegmentTranslation : public ModelAnimationSegment {
+		static ModelAnimationParseHelper::Registrar reg;
+		struct instance_data {
+			vec3d m_actualVelocity;
+			vec3d m_actualTarget; //Usually won't be needed, but if vel + angle is specified, not all angles necessarily end simultaneously.
+			vec3d m_actualTime;
+			optional<vec3d> m_actualAccel;
+			optional<vec3d> m_accelTime;
+			matrix m_rotationAtStart = vmd_identity_matrix;
+		};
+
+		//PMI ID -> Instance Data
+		std::map<int, instance_data> m_instances;
+
+		std::shared_ptr<ModelAnimationSubmodel> m_submodel;
+
+		optional<vec3d> m_target;
+		optional<vec3d> m_velocity;
+		optional<float> m_time;
+		optional<vec3d> m_acceleration;
+		enum class CoordinateSystem { COORDS_PARENT, COORDS_LOCAL_AT_START, COORDS_LOCAL_CURRENT } m_coordType;
+
+		virtual ModelAnimationSegment* copy() const override;
+		void recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) override;
+		void calculateAnimation(ModelAnimationSubmodelBuffer& base, float time, int pmi_id) const override;
+		void executeAnimation(const ModelAnimationSubmodelBuffer& /*state*/, float /*timeboundLower*/, float /*timeboundUpper*/, ModelAnimationDirection /*direction*/, int /*pmi_id*/) override { };
+		void exchangeSubmodelPointers(ModelAnimationSet& replaceWith) override;
+
+		static std::shared_ptr<ModelAnimationSegment> parser(ModelAnimationParseHelper* data);
+	public:
+		ModelAnimationSegmentTranslation(std::shared_ptr<ModelAnimationSubmodel> submodel, optional<vec3d> target, optional<vec3d> velocity, optional<float> time, optional<vec3d> acceleration, CoordinateSystem coordType = CoordinateSystem::COORDS_PARENT);
+
+	};
+
 	class ModelAnimationSegmentSoundDuring : public ModelAnimationSegment {
 		static ModelAnimationParseHelper::Registrar reg;
 		std::shared_ptr<ModelAnimationSegment> m_segment;
