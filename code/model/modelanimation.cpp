@@ -457,8 +457,9 @@ namespace animation {
 		std::swap(m_SIPname, other.m_SIPname);
 
 		for (const auto& animationTypes : m_animationSet) {
-			for (const auto& animation : animationTypes.second) {
-				animation.second->m_set = this;
+			for (const auto& animations : animationTypes.second) {
+				for(const auto& animation : animations.second)
+					animation->m_set = this;
 			}
 		}
 
@@ -476,14 +477,16 @@ namespace animation {
 
 		for (const auto& animationTypes : other.m_animationSet) {
 			auto& newAnimations = m_animationSet[animationTypes.first];
-			for (const auto& oldAnimation : animationTypes.second) {
-				std::shared_ptr<ModelAnimation> newAnimation = std::shared_ptr<ModelAnimation>(new ModelAnimation(*oldAnimation.second));
-				newAnimation->m_animation = std::shared_ptr<ModelAnimationSegment>(newAnimation->m_animation->copy());
+			for (const auto& oldAnimations : animationTypes.second) {
+				for (const auto& oldAnimation : oldAnimations.second) {
+					std::shared_ptr<ModelAnimation> newAnimation = std::shared_ptr<ModelAnimation>(new ModelAnimation(*oldAnimation));
+					newAnimation->m_animation = std::shared_ptr<ModelAnimationSegment>(newAnimation->m_animation->copy());
 
-				newAnimation->m_animation->exchangeSubmodelPointers(*this);
-				newAnimation->m_set = this;
+					newAnimation->m_animation->exchangeSubmodelPointers(*this);
+					newAnimation->m_set = this;
 
-				newAnimations.emplace(oldAnimation.first, newAnimation);
+					newAnimations[oldAnimations.first].push_back(newAnimation);
+				}
 			}
 		}
 
@@ -495,7 +498,7 @@ namespace animation {
 		newAnim->m_set = this;
 		newAnim->m_animation = std::shared_ptr<ModelAnimationSegment>(animation->m_animation->copy());
 		newAnim->m_animation->exchangeSubmodelPointers(*this);
-		m_animationSet[{type, subtype}].emplace(name, newAnim);
+		m_animationSet[{type, subtype}][name].push_back(newAnim);
 	}
 
 	void ModelAnimationSet::changeShipName(const SCP_string& name) {
@@ -561,10 +564,12 @@ namespace animation {
 		bool started = false;
 		auto animations = m_animationSet.find({ type, subtype });
 		if (animations != m_animationSet.end()) {
-			auto namedAnimation = animations->second.find(name);
-			if (namedAnimation != animations->second.end()) {
-				namedAnimation->second->start(pmi, direction, forced, instant);
-				started = true;
+			auto namedAnimations = animations->second.find(name);
+			if (namedAnimations != animations->second.end()) {
+				for (const auto& namedAnimation : namedAnimations->second) {
+					namedAnimation->start(pmi, direction, forced, instant);
+					started = true;
+				}
 			}
 		}
 
@@ -574,10 +579,12 @@ namespace animation {
 
 		animations = m_animationSet.find({ type, SUBTYPE_DEFAULT });
 		if (animations != m_animationSet.end()) {
-			auto namedAnimation = animations->second.find(name);
-			if (namedAnimation != animations->second.end()) {
-				namedAnimation->second->start(pmi, direction, forced, instant);
-				started = true;
+			auto namedAnimations = animations->second.find(name);
+			if (namedAnimations != animations->second.end()) {
+				for (const auto& namedAnimation : namedAnimations->second) {
+					namedAnimation->start(pmi, direction, forced, instant);
+					started = true;
+				}
 			}
 		}
 		return started;
@@ -590,9 +597,11 @@ namespace animation {
 		bool started = false;
 		auto animations = m_animationSet.find({ type, subtype });
 		if (animations != m_animationSet.end()) {
-			for (auto& namedAnimation : animations->second) {
-				namedAnimation.second->start(pmi, direction, forced, instant);
-				started = true;
+			for (auto& namedAnimations : animations->second) {
+				for (const auto& namedAnimation : namedAnimations.second) {
+					namedAnimation->start(pmi, direction, forced, instant);
+					started = true;
+				}
 			}
 		}
 
@@ -602,9 +611,11 @@ namespace animation {
 
 		animations = m_animationSet.find({ type, SUBTYPE_DEFAULT });
 		if (animations != m_animationSet.end()) {
-			for (auto& namedAnimation : animations->second) {
-				namedAnimation.second->start(pmi, direction, forced, instant);
-				started = true;
+			for (auto& namedAnimations : animations->second) {
+				for (const auto& namedAnimation : namedAnimations.second) {
+					namedAnimation->start(pmi, direction, forced, instant);
+					started = true;
+				}
 			}
 		}
 		return started;
@@ -631,9 +642,11 @@ namespace animation {
 				if (animList.first.second > 0 && animList.first.second != subtype)
 					continue;
 			}
-			for (auto& namedAnimation : animList.second) {
-				namedAnimation.second->start(pmi, direction, forced, instant);
-				started = true;
+			for (auto& namedAnimations : animList.second) {
+				for (const auto& namedAnimation : namedAnimations.second) {
+					namedAnimation->start(pmi, direction, forced, instant);
+					started = true;
+				}
 			}
 		}
 		return started;
@@ -656,12 +669,14 @@ namespace animation {
 				if (animList.first.second > 0 && animList.first.second != subtype)
 					continue;
 			}
-			for (auto& namedAnimation : animList.second) {
-				if (namedAnimation.second->m_instances[pmi->id].state == ModelAnimationState::UNTRIGGERED)
-					continue;
+			for (auto& namedAnimations : animList.second) {
+				for (const auto& namedAnimation : namedAnimations.second) {
+					if (namedAnimation->m_instances[pmi->id].state == ModelAnimationState::UNTRIGGERED)
+						continue;
 
-				float localDur = namedAnimation.second->m_instances[pmi->id].duration;
-				duration = duration < localDur ? localDur : duration;
+					float localDur = namedAnimation->m_instances[pmi->id].duration;
+					duration = duration < localDur ? localDur : duration;
+				}
 			}
 		}
 
@@ -673,9 +688,14 @@ namespace animation {
 
 		auto animations = m_animationSet.find({ type, subtype });
 		if (animations != m_animationSet.end()) {
-			auto namedAnimation = animations->second.find(name);
-			if (namedAnimation != animations->second.end() && namedAnimation->second->m_instances[pmi->id].state != ModelAnimationState::UNTRIGGERED) {
-				duration = namedAnimation->second->m_instances[pmi->id].duration;
+			auto namedAnimations = animations->second.find(name);
+			if (namedAnimations != animations->second.end()){
+				for (const auto& namedAnimation : namedAnimations->second) {
+					if (namedAnimation->m_instances[pmi->id].state != ModelAnimationState::UNTRIGGERED) {
+						float localDur = namedAnimation->m_instances[pmi->id].duration;
+						duration = duration < localDur ? localDur : duration;
+					}
+				}
 			}
 		}
 
@@ -685,10 +705,14 @@ namespace animation {
 
 		animations = m_animationSet.find({ type, SUBTYPE_DEFAULT });
 		if (animations != m_animationSet.end()) {
-			auto namedAnimation = animations->second.find(name);
-			if (namedAnimation != animations->second.end() && namedAnimation->second->m_instances[pmi->id].state != ModelAnimationState::UNTRIGGERED) {
-				float localDur = namedAnimation->second->m_instances[pmi->id].duration;
-				duration = duration < localDur ? localDur : duration;
+			auto namedAnimations = animations->second.find(name);
+			if (namedAnimations != animations->second.end()) {
+				for (const auto& namedAnimation : namedAnimations->second) {
+					if (namedAnimation->m_instances[pmi->id].state != ModelAnimationState::UNTRIGGERED) {
+						float localDur = namedAnimation->m_instances[pmi->id].duration;
+						duration = duration < localDur ? localDur : duration;
+					}
+				}
 			}
 		}
 
@@ -697,14 +721,15 @@ namespace animation {
 
 	int ModelAnimationSet::getTimeAll(polymodel_instance* pmi, ModelAnimationTriggerType type, int subtype, bool strict) const {
 		float duration = 0.0f;
-
 		auto animations = m_animationSet.find({ type, subtype });
 		if (animations != m_animationSet.end()) {
-			for (const auto& namedAnimation : animations->second) {
-				if (namedAnimation.second->m_instances[pmi->id].state == ModelAnimationState::UNTRIGGERED)
-					continue;
-				float localDur = namedAnimation.second->m_instances[pmi->id].duration;
-				duration = duration < localDur ? localDur : duration;
+			for (const auto& namedAnimations : animations->second) {
+				for (const auto& namedAnimation : namedAnimations.second) {
+					if (namedAnimation->m_instances[pmi->id].state == ModelAnimationState::UNTRIGGERED)
+						continue;
+					float localDur = namedAnimation->m_instances[pmi->id].duration;
+					duration = duration < localDur ? localDur : duration;
+				}
 			}
 		}
 
@@ -714,11 +739,13 @@ namespace animation {
 
 		animations = m_animationSet.find({ type, SUBTYPE_DEFAULT });
 		if (animations != m_animationSet.end()) {
-			for (const auto& namedAnimation : animations->second) {
-				if (namedAnimation.second->m_instances[pmi->id].state == ModelAnimationState::UNTRIGGERED)
-					continue;
-				float localDur = namedAnimation.second->m_instances[pmi->id].duration;
-				duration = duration < localDur ? localDur : duration;
+			for (const auto& namedAnimations : animations->second) {
+				for (const auto& namedAnimation : namedAnimations.second) {
+					if (namedAnimation->m_instances[pmi->id].state == ModelAnimationState::UNTRIGGERED)
+						continue;
+					float localDur = namedAnimation->m_instances[pmi->id].duration;
+					duration = duration < localDur ? localDur : duration;
+				}
 			}
 		}
 
@@ -772,7 +799,7 @@ namespace animation {
 	void anim_set_initial_states(ship* shipp) {
 		ship_info* sip = &Ship_info[shipp->ship_info_index];
 		sip->animations.clearShipData(model_get_instance(shipp->model_instance_num));
-		sip->animations.startAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::Initial, ModelAnimationDirection::FWD, true);
+		sip->animations.startAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::Initial, ModelAnimationDirection::FWD, true, true);
 	}
 
 	const std::map<ModelAnimationTriggerType, std::pair<const char*, bool>> Animation_types = {

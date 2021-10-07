@@ -4435,11 +4435,7 @@ void model_set_up_techroom_instance(ship_info *sip, int model_instance_num)
 	}
 
 	sip->animations.clearShipData(pmi);
-	const auto& initialAnims = sip->animations.m_animationSet[{animation::ModelAnimationTriggerType::Initial, animation::ModelAnimationSet::SUBTYPE_DEFAULT}];
-
-	for (const auto& initialAnim : initialAnims) {
-		initialAnim.second->start(pmi, animation::ModelAnimationDirection::FWD, true);
-	}
+	sip->animations.startAll(pmi, animation::ModelAnimationTriggerType::Initial, animation::ModelAnimationDirection::FWD, true, true);
 }
 
 /*

@@ -284,7 +284,7 @@ namespace animation {
 		friend class ModelAnimation;
 		friend class ModelAnimationParseHelper;
 	public:
-		std::map <std::pair<ModelAnimationTriggerType, int>, std::map <SCP_string, std::shared_ptr<ModelAnimation>>> m_animationSet;
+		std::map <std::pair<ModelAnimationTriggerType, int>, std::map <SCP_string, std::vector<std::shared_ptr<ModelAnimation>>>> m_animationSet;
 
 		ModelAnimationSet(SCP_string SIPname = "");
 		ModelAnimationSet(const ModelAnimationSet& other);

@@ -7652,11 +7652,7 @@ void ship_delete( object * obj )
 	ship_subsystems_delete(&Ships[num]);
 	shipp->objnum = -1;
 
-	for (const auto& animationList : Ship_info[shipp->ship_info_index].animations.m_animationSet) {
-		for (const auto& animStop : animationList.second) {
-			animStop.second->stop(model_get_instance(shipp->model_instance_num), true);
-		}
-	}
+	Ship_info[shipp->ship_info_index].animations.stopAnimations();
 
 	if (shipp->ship_replacement_textures != NULL) {
 		vm_free(shipp->ship_replacement_textures);
