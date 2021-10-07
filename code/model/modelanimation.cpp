@@ -1126,6 +1126,8 @@ namespace animation {
 				anim->setAnimation(std::move(rot));
 			}
 
+			//Initial Animations in legacy style will continue to be fully supported and allowed, given the frequency of these (especially for turrets) and the fact that these are more intuitive to be directly in the subsystem section of the ship table, as these are closer to representing a property of the subsystem rather than an animation.
+			//Hence, there will not be any warning displayed if the legacy table is used for these. -Lafiel 
 			sip->animations.emplace(anim, anim_name_from_subsys(sp), animation::ModelAnimationTriggerType::Initial);
 		}
 		else {
@@ -1222,6 +1224,8 @@ namespace animation {
 
 			//TODO maybe handle sub_name? Not documented in Wiki, maybe no one actually uses it...
 			sip->animations.emplace(anim, anim_name_from_subsys(sp), type, subtype);
+
+			mprintf(("Specified deprecated non-initial type animation on subsystem %s of ship class %s. Consider using *-anim.tbm's instead.", sp->subobj_name, sip->name));
 		}
 	}
 }
