@@ -96,7 +96,7 @@ namespace animation {
 		Scripted,		 // Triggered exclusively by scripting...maybe SEXPs? -C
 		TurretFired,	 // Triggered after a turret has fired -The E
 		PrimaryFired,    // Triggered when a primary weapon has fired.
-		SecondaryFired,  // Triggered when a primary weapon has fired.
+		SecondaryFired,  // Triggered when a secondary weapon has fired.
 		WeaponLaunched,  // Triggers on the weapon model once it spawns when fired
 
 		MaxAnimationTypes

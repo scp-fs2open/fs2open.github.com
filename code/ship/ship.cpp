@@ -12027,6 +12027,12 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 		if (objp == Player_obj && Player_ai->target_objnum != -1)
 			target = &Objects[Player_ai->target_objnum]; 
 
+		for (int bank = 0; bank < MAX_SHIP_PRIMARY_BANKS; bank++) {
+			if(banks_fired & (1 << bank))
+				//Start Animation in Forced mode: Always restart it from its initial position rather than just flip it to FWD motion if it was still moving. This is to make it work best for uses like recoil.
+				sip->animations.startAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::PrimaryFired, animation::ModelAnimationDirection::FWD, true, false, bank);
+		}
+
 		if (Script_system.IsActiveAction(CHA_ONWPFIRED) || Script_system.IsActiveAction(CHA_PRIMARYFIRE)) {
 			Script_system.SetHookObjects(2, "User", objp, "Target", target);
 			Script_system.RunCondition(CHA_ONWPFIRED, objp, 1);
@@ -12720,6 +12726,9 @@ done_secondary:
 			target = NULL;
 		if (objp == Player_obj && Player_ai->target_objnum != -1)
 			target = &Objects[Player_ai->target_objnum];
+
+		//Start Animation in Forced mode: Always restart it from its initial position rather than just flip it to FWD motion if it was still moving. This is to make it work best for uses like recoil.
+		sip->animations.startAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::SecondaryFired, animation::ModelAnimationDirection::FWD, true, false, bank);
 
 		if (Script_system.IsActiveAction(CHA_ONWPFIRED) || Script_system.IsActiveAction(CHA_SECONDARYFIRE)) {
 			Script_system.SetHookObjects(2, "User", objp, "Target", target);
