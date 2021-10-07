@@ -298,6 +298,17 @@ void HudGaugeWingmanStatus::initGrowMode(int mode) {
 	grow_mode = mode;
 }
 
+void HudGaugeWingmanStatus::initUseFullWingnames(bool usefullname)
+{
+	use_full_wingnames = usefullname;
+}
+
+void HudGaugeWingmanStatus::initUseExpandedColors(bool useexpandedcolors)
+{
+	use_expanded_colors = useexpandedcolors;
+}
+
+
 void HudGaugeWingmanStatus::renderBackground(int num_wings_to_draw)
 {
 	int sx, sy, header_x, header_y, bitmap;
@@ -398,16 +409,33 @@ void HudGaugeWingmanStatus::renderDots(int wing_index, int screen_index, int num
 
 		case HUD_WINGMAN_STATUS_ALIVE:
 			bitmap = Wingman_status_dots.first_frame;
-			if ( HUD_wingman_status[wing_index].hull[i] > 0.5f ) {
-				// use gauge color
-				setGaugeColor(is_bright ? HUD_C_BRIGHT : HUD_C_NORMAL);
+			float wingman_health = HUD_wingman_status[wing_index].hull[i];
+			// set colors depending on HUD table option --wookieejedi
+			if (use_expanded_colors) {
+				// use expanded colors
+				if (wingman_health > 0.67f) {
+					// green > 2/3 health
+					gr_set_color_fast(is_bright ? &Color_bright_green : &Color_green);
+				} else if (wingman_health > 0.34f) {
+					// yellow 2/3 - > 1/3 health
+					gr_set_color_fast(is_bright ? &Color_bright_yellow : &Color_yellow);
+				} else {
+					// red <= 1/3 health
+					gr_set_color_fast(is_bright ? &Color_bright_red : &Color_red);
+				}
 			} else {
-				gr_set_color_fast(is_bright ? &Color_bright_red : &Color_red);
+				// use default colors
+				if (wingman_health > 0.5f) {
+					// use gauge color
+					setGaugeColor(is_bright ? HUD_C_BRIGHT : HUD_C_NORMAL);
+				} else {
+					gr_set_color_fast(is_bright ? &Color_bright_red : &Color_red);
+				}
 			}
 			break;
 
 		case HUD_WINGMAN_STATUS_DEAD:
-			gr_set_color_fast(&Color_red);
+			gr_set_color_fast(is_bright ? &Color_bright_red : &Color_red);
 			bitmap = Wingman_status_dots.first_frame+1;
 			break;
 
@@ -433,17 +461,27 @@ void HudGaugeWingmanStatus::renderDots(int wing_index, int screen_index, int num
 	
 	setGaugeColor();
 
-	// Goober5000 - get the lowercase abbreviation
-	char abbrev[4];
-	abbrev[0] = SCP_tolower(Squadron_wing_names[wing_index][0]);
-	abbrev[1] = SCP_tolower(Squadron_wing_names[wing_index][1]);
-	abbrev[2] = SCP_tolower(Squadron_wing_names[wing_index][2]);
-	abbrev[3] = '\0';
+	// check if using full names or default abbreviations before rendering text
+	char wingstr[NAME_LENGTH];
+
+	if (use_full_wingnames) {
+		// wookieejedi - use full wing name with unaltered capitalization
+		strcpy_s(wingstr, Squadron_wing_names[wing_index]);
+	} else {
+		// Goober5000 - get the lowercase abbreviation
+		char abbrev[4];
+		abbrev[0] = SCP_tolower(Squadron_wing_names[wing_index][0]);
+		abbrev[1] = SCP_tolower(Squadron_wing_names[wing_index][1]);
+		abbrev[2] = SCP_tolower(Squadron_wing_names[wing_index][2]);
+		abbrev[3] = '\0';
+		strncpy(wingstr, abbrev, 3);
+	}
 
 	// Goober5000 - center it (round the offset rather than truncate it)
-	int abbrev_width;
-	gr_get_string_size(&abbrev_width, NULL, abbrev);
-	renderString(sx - (int)std::lround((float)abbrev_width/2.0f), sy, abbrev);
+	int wingstr_width;
+	gr_get_string_size(&wingstr_width, nullptr, wingstr);
+	renderString(sx - (int)std::lround((float)wingstr_width / 2.0f), sy, wingstr);
+
 }
 
 int hud_wingman_status_wingmen_exist(int num_wings_to_draw)
