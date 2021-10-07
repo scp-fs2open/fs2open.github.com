@@ -6832,8 +6832,6 @@ int mission_set_arrival_location(int anchor, int location, int dist, int objnum,
 
 	// if arriving from docking bay, then set ai mode and call function as per AL's instructions.
 	if ( location == ARRIVE_FROM_DOCK_BAY ) {
-		vec3d pos, fvec;
-
 		// if we get an error, just let the ship arrive(?)
 		if ( ai_acquire_emerge_path(&Objects[objnum], anchor_objnum, path_mask) == -1 ) {
 			// get MWA or AL -- not sure what to do here when we cannot acquire a path
