@@ -474,7 +474,7 @@ void HudGaugeWingmanStatus::renderDots(int wing_index, int screen_index, int num
 		abbrev[1] = SCP_tolower(Squadron_wing_names[wing_index][1]);
 		abbrev[2] = SCP_tolower(Squadron_wing_names[wing_index][2]);
 		abbrev[3] = '\0';
-		strncpy(wingstr, abbrev, 3);
+		strncpy(wingstr, abbrev, 4);
 	}
 
 	// Goober5000 - center it (round the offset rather than truncate it)
