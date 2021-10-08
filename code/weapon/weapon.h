@@ -575,6 +575,9 @@ struct weapon_info
 
 	int			score; //Optional score for destroying the weapon
 
+	
+	SCP_map<SCP_string, SCP_string> custom_data;
+
 	decals::creation_info impact_decal;
 
 	actions::ProgramSet on_create_program;

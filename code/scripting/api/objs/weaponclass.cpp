@@ -460,6 +460,42 @@ ADE_VIRTVAR(Bomb, l_Weaponclass, "boolean", "Is weapon class flagged as bomb", "
 		return ADE_RETURN_FALSE;
 }
 
+ADE_VIRTVAR(CustomData, l_Weaponclass, nullptr, "Gets the custom data table for this weapon class", "table", "The weapon class' custom data table") 
+{
+	int idx;
+	if(!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
+		return ADE_RETURN_NIL;
+	
+	if(idx < 0 || idx >= weapon_info_size())
+		return ADE_RETURN_NIL;
+
+	using namespace luacpp;
+	
+	auto table = luacpp::LuaTable::create(L);
+	
+	weapon_info *wip = &Weapon_info[idx];
+
+	if (wip->custom_data.empty())
+		return ade_set_args(L, "t", &table);
+
+	for (auto pair : wip->custom_data)
+	{
+		table.addValue(pair.first, pair.second);
+	}
+	return ade_set_args(L, "t", &table);	
+}
+
+ADE_FUNC(hasCustomData, l_Weaponclass, nullptr, "Detects whether the weapon class has any custom data", "boolean", "true if the weaponclass' custom_data is not empty, false otherwise") 
+{
+	int idx;
+	if(!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
+		return ADE_RETURN_NIL;
+	weapon_info *wip = &Weapon_info[idx];
+
+	bool result = !wip->custom_data.empty();
+	return ade_set_args(L, "b", result);
+}
+
 ADE_VIRTVAR(InTechDatabase, l_Weaponclass, "boolean", "Gets or sets whether this weapon class is visible in the tech room", "boolean", "True or false")
 {
 	int idx;
