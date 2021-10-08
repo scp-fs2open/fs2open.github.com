@@ -802,7 +802,7 @@ static void maybe_throw_asteroid()
 			subtype = (subtype + 1) % NUM_DEBRIS_POFS;
 
 		object *objp = asteroid_create(&Asteroid_field, ASTEROID_TYPE_LARGE, subtype);
-		if (objp != NULL) {
+		if (objp != nullptr) {
 			asteroid_aim_at_target(target_objp, objp, ASTEROID_MIN_COLLIDE_TIME + frand() * 20.0f);
 
 			// if asteroid is inside inner bound, kill it
