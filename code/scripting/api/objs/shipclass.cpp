@@ -46,6 +46,7 @@ ADE_FUNC(__eq, l_Shipclass, "shipclass, shipclass", "Checks if the two classes a
 	return ade_set_args(L, "b", idx1 == idx2);
 }
 
+
 ADE_VIRTVAR(Name, l_Shipclass, "string", "Ship class name", "string", "Ship class name, or an empty string if handle is invalid")
 {
 	int idx;
@@ -472,6 +473,39 @@ ADE_VIRTVAR(PowerOutput, l_Shipclass, "number", "Gets or sets a ship class' powe
 	}
 
 	return ade_set_args(L, "f", Ship_info[idx].power_output);
+}
+
+ADE_VIRTVAR(CustomData, l_Shipclass, nullptr, "Gets the custom data table for this ship class", "table", "The ship class' custom data table") 
+{
+	int idx;
+	if(!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
+		return ADE_RETURN_NIL;
+
+	using namespace luacpp;
+	
+	auto table = luacpp::LuaTable::create(L);
+	
+	ship_info *sip = &Ship_info[idx];
+
+	if (sip->custom_data.empty())
+		return ade_set_args(L, "t", &table);
+
+	for (auto pair : sip->custom_data)
+	{
+		table.addValue(pair.first, pair.second);
+	}
+	return ade_set_args(L, "t", &table);	
+}
+
+ADE_FUNC(HasCustomData, l_Shipclass, nullptr, "Detects whether the ship class has any custom data", "boolean", "true if the shipclass' custom_data is not empty, false otherwise") 
+{
+	int idx;
+	if(!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
+		return ADE_RETURN_NIL;
+	ship_info *sip = &Ship_info[idx];
+
+	bool result = !sip->custom_data.empty();
+	return ade_set_args(L, "b", result);
 }
 
 ADE_FUNC(isValid, l_Shipclass, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
