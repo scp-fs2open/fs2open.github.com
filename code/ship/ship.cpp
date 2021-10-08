@@ -4649,7 +4649,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		while (required_string_either("$end_custom_data", "+Val:")) 
 		{
 			SCP_string line;
-			stuff_string(line, F_NAME);
+			stuff_string(line, F_RAW);
 
 			line = line.substr(line.find_first_of(':')+1);
 			drop_white_space(line);
