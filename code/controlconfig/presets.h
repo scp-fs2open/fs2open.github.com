@@ -203,7 +203,9 @@ private:
  * @param[in] overwrite If true, overwrite existing preset file which have the same name as the given preset
  *
  * @returns True    if successful, or
- * @returns False   otherwise
+ * @returns False   Preset does not have a name, or
+ * @returns False   Preset file exists and overwrite == false, or
+ * @returns False   Preset file .JSON could not be written
  */
 bool save_preset_file(CC_preset preset, bool overwrite);
 
@@ -213,3 +215,8 @@ bool save_preset_file(CC_preset preset, bool overwrite);
  * a preset is a duplicate of another preset, it is ignored, and the player is warned of it
  */
 void load_preset_files();
+
+/**
+ * @brief Returns true if a preset file with the given name exists.
+ */
+bool preset_file_exists(SCP_string name);

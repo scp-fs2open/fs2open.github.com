@@ -974,6 +974,22 @@ void control_config_use_preset(CC_preset &preset)
 	}
 }
 
+bool control_config_use_preset_by_name(SCP_string name) {
+	auto it = std::find_if(Control_config_presets.begin(), Control_config_presets.end(),
+		[name](CC_preset &preset) {return preset.name == name;});
+
+	if (it == Control_config_presets.end()) {
+		// Couldn't find, use defaults
+		it = Control_config_presets.begin();
+		mprintf(("CCFG => Could not find preset with name %s, using defaults.", name.c_str()));
+		return false;
+	}
+
+	control_config_use_preset(*it);
+
+	return true;
+}
+
 void control_config_scroll_screen_up()
 {
 	if (Scroll_offset) {

@@ -687,6 +687,17 @@ void control_config_cancel_exit();
  */
 void control_config_use_preset(CC_preset &preset);
 
+/*!
+ * @brief Search for a given preset by name and use it, if it exists.
+ *
+ * @returns TRUE    if the preset was found and selected
+ * @returns FALSE   if the preset was not found, and the defaults were selected
+ *
+ * @details If the preset does not exist, then defaults are used instead.
+ * @see control_config_use_preset()
+ */
+bool control_config_use_preset_by_name(SCP_string name);
+
 /**
  * @brief Gets the currently used preset
  *

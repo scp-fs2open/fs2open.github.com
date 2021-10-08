@@ -142,6 +142,14 @@ void load_preset_files() {
 	}
 }
 
+bool preset_file_exists(SCP_string name) {
+	if (name.find(".json") == std::string::npos) {
+		name.append(".json");
+	}
+
+	return cf_exists(name.c_str(), CF_TYPE_PLAYER_BINDS) != 0;
+}
+
 bool save_preset_file(CC_preset preset, bool overwrite) {
 	// Must have a name
 	if (preset.name.empty()) {

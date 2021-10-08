@@ -573,6 +573,26 @@ void pilotfile::plr_read_controls()
 		short id1, id2;
 		int axi, inv;
 
+		// Set up preset name, we'll populate the rest of the preset's data later
+		CC_preset preset;
+		preset.name = filename;
+
+		// strip off extension
+		auto n = preset.name.find_last_of('.');
+		preset.name.resize(n); 
+		
+		// Check if an auto-generated preset file already exists
+		if (preset_file_exists(preset.name)) {
+			// Does exist, so we use that
+			if (control_config_use_preset_by_name(preset.name)) {
+				Information(LOCATION, "Successfully converted playerfile to v3.  Found and selected presets from previous conversion.");
+			} else {
+				Warning(LOCATION, "Successfully converted playerfile to v3.  Could not select presets from previous conversion, using defaults instead.");
+			}
+			return;
+
+		} // Else, does not exist.  Maybe generate a new preset file with legacy bindings
+
 		auto list_size = handler->startArrayRead("controls", true);
 		for (size_t idx = 0; idx < list_size; idx++, handler->nextArraySection()) {
 			id1 = handler->readShort("key");
@@ -580,6 +600,7 @@ void pilotfile::plr_read_controls()
 			handler->readShort("mouse");	// unused, at the moment
 
 			if (idx < Control_config.size()) {
+				// Force the bindings into Control_config
 				Control_config[idx].take(CC_bind(CID_KEYBOARD, id1), 0);
 				Control_config[idx].take(CC_bind(CID_JOY0, id2), 1);
 			}
@@ -601,19 +622,15 @@ void pilotfile::plr_read_controls()
 		// Check that these bindings are in a preset.  If it is not, create a new preset file
 		auto it = control_config_get_current_preset();
 		if (it == Control_config_presets.end()) {
-			CC_preset preset;
-			preset.name = filename;
-
-			// strip off extension
-			auto n = preset.name.find_last_of('.');
-			preset.name.resize(n);
-
 			std::copy(Control_config.begin(), Control_config.end(), std::back_inserter(preset.bindings));
 			Control_config_presets.push_back(preset);
 
-			// Overwrite any existing preset, preferring the old version bindings over the new.
-			save_preset_file(preset, true);
-			Information(LOCATION, "Successfully converted playerfile to v3.  Please rebind your mouse controls, if any.");
+			// Try to save the preset file
+			if (save_preset_file(preset, false)) {
+				Information(LOCATION, "Successfully converted playerfile to v3.  Please rebind your mouse controls, if any.");
+			} else {
+				Warning(LOCATION, "Could not save controls preset file (%s) when converting playerfile to v3.", preset.name.c_str());
+			}
 		}
 		return;
 
