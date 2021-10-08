@@ -6282,6 +6282,8 @@ void ship::clear()
 	shader_effect_start_time = 0;
 	shader_effect_active = false;
 
+	alpha_mult = 1.0f;
+
 	last_fired_turret = NULL;
 
 	bay_doors_anim_done_time = 0;
@@ -19687,6 +19689,10 @@ void ship_render(object* obj, model_draw_list* scene)
 		render_info.set_thruster_info(mst);
 
 		render_flags |= MR_SHOW_THRUSTERS;
+	}
+
+	if (shipp->flags[Ship_Flags::Render_with_alpha_mult]) {
+		render_info.set_alpha_mult(shipp->alpha_mult);
 	}
 
 	// Warp_shipp points to the ship that is going through a

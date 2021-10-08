@@ -746,6 +746,8 @@ public:
 	int shader_effect_start_time;
 	bool shader_effect_active;
 
+	float alpha_mult;
+
 	int last_fired_point[MAX_SHIP_PRIMARY_BANKS]; //for fire point cylceing
 	ship_subsys *last_fired_turret; // which turret has fired last
 

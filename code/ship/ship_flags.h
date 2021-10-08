@@ -123,6 +123,7 @@ namespace Ship {
 		Render_full_detail, 
 		Render_without_light,
 		Render_without_weapons,		// The_E -- Skip weapon model rendering
+		Render_with_alpha_mult,
 		Has_display_name,			// Goober5000
 		Attempting_to_afterburn,    // set and unset by afterburner_start and stop, used by afterburner_min_fuel_to_consume
 		Hide_mission_log,			// Goober5000 - mission log events generated for this ship will not be viewable
