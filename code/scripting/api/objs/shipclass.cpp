@@ -480,7 +480,9 @@ ADE_VIRTVAR(CustomData, l_Shipclass, nullptr, "Gets the custom data table for th
 	int idx;
 	if(!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
 		return ADE_RETURN_NIL;
-
+	
+	if(idx < 0 || idx >= ship_info_size())
+		return ADE_RETURN_NIL;
 	using namespace luacpp;
 	
 	auto table = luacpp::LuaTable::create(L);
