@@ -107,10 +107,15 @@ static const char *Cfile_cdrom_dir = NULL;
 
 CFileLocation::CFileLocation(const cf_file& file) {
 	found = true;
-	if(file.name_ext)
-		name_ext = file.name_ext;
+	name_ext = file.name_ext;
 	if (file.real_name)
 		full_name = file.real_name;
+	else {
+		//In Memory files need their full name generated
+		full_name = Pathtypes[file.pathtype_index].path;
+		full_name += DIR_SEPARATOR_STR;
+		full_name += name_ext;
+	}
 	size = file.size;
 	offset = file.pack_offset;
 	data_ptr = file.data;

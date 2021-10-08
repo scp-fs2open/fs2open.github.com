@@ -940,6 +940,7 @@ void cf_build_file_list()
 	int i;
 
 	Num_files = 0;
+	File_mapped_access.clear();
 
 	// For each root, find all files...
 	for (i=0; i<Num_roots; i++ )	{
@@ -1078,14 +1079,16 @@ CFileLocation cf_find_file_location(const char* filespec, int pathtype, bool loc
 		}
 	}
 
-	//Try a cache lookup first
-	for (ui = 0; ui < num_search_dirs; ui++) {
-		const auto& file_map = File_mapped_access[search_order[ui]];
-		auto file_it = file_map.find(filespec);
+	//Try a cache lookup first unless we need to localize
+	if (!localize) {
+		for (ui = 0; ui < num_search_dirs; ui++) {
+			const auto& file_map = File_mapped_access[search_order[ui]];
+			auto file_it = file_map.find(filespec);
 
-		if (file_it != file_map.end()) {
-			//Found file location in cache, return it
-			return CFileLocation(*file_it->second);
+			if (file_it != file_map.end()) {
+				//Found file location in cache, return it
+				return CFileLocation(*file_it->second);
+			}
 		}
 	}
 
