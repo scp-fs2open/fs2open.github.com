@@ -490,9 +490,6 @@ ADE_VIRTVAR(CustomData, l_Shipclass, nullptr, "Gets the custom data table for th
 	
 	ship_info *sip = &Ship_info[idx];
 
-	if (sip->custom_data.empty())
-		return ade_set_args(L, "t", &table);
-
 	for (auto pair : sip->custom_data)
 	{
 		table.addValue(pair.first, pair.second);
@@ -505,6 +502,10 @@ ADE_FUNC(hasCustomData, l_Shipclass, nullptr, "Detects whether the ship class ha
 	int idx;
 	if(!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
 		return ADE_RETURN_NIL;
+	
+	if(idx < 0 || idx >= ship_info_size())
+		return ADE_RETURN_NIL;
+
 	ship_info *sip = &Ship_info[idx];
 
 	bool result = !sip->custom_data.empty();

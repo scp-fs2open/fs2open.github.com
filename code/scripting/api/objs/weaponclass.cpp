@@ -475,9 +475,6 @@ ADE_VIRTVAR(CustomData, l_Weaponclass, nullptr, "Gets the custom data table for 
 	
 	weapon_info *wip = &Weapon_info[idx];
 
-	if (wip->custom_data.empty())
-		return ade_set_args(L, "t", &table);
-
 	for (auto pair : wip->custom_data)
 	{
 		table.addValue(pair.first, pair.second);
@@ -490,6 +487,10 @@ ADE_FUNC(hasCustomData, l_Weaponclass, nullptr, "Detects whether the weapon clas
 	int idx;
 	if(!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
 		return ADE_RETURN_NIL;
+	
+	if(idx < 0 || idx >= weapon_info_size())
+		return ADE_RETURN_NIL;
+
 	weapon_info *wip = &Weapon_info[idx];
 
 	bool result = !wip->custom_data.empty();
