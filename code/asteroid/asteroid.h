@@ -36,6 +36,11 @@ class model_draw_list;
 // Goober5000 - currently same as MAX_SHIP_DETAIL_LEVELS (put here to avoid an #include)
 #define MAX_ASTEROID_DETAIL_LEVELS	5
 
+// whether to do retail behavior, just throw at the first big ship in the field
+// must be explicitly opted out of by the mission
+extern bool Default_asteroid_throwing_behavior;
+
+extern SCP_vector<SCP_string> Asteroid_target_ships;
 
 // Data structure to track the active asteroids
 typedef struct asteroid_obj {
@@ -165,6 +170,7 @@ int	asteroid_collide_objnum(object *asteroid_objp);
 float asteroid_time_to_impact(object *asteroid_objp);
 void	asteroid_show_brackets();
 void	asteroid_target_closest_danger();
+void asteroid_add_target(object* objp);
 
 // need to extern for multiplayer
 void asteroid_sub_create(object *parent_objp, int asteroid_type, vec3d *relvec);

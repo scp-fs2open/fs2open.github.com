@@ -2445,6 +2445,15 @@ int parse_create_object_sub(p_object *p_objp)
 		}
 	}
 
+	// if this is an asteroid target, add it to the list
+	if (!Asteroid_target_ships.empty()) {
+		for (SCP_string& name : Asteroid_target_ships) {
+			if (strcmp(name.c_str(), shipp->ship_name) == 0) {
+				asteroid_add_target(&Objects[objnum]);
+			}
+		}
+	}
+
 	return objnum;
 }
 
@@ -5685,6 +5694,11 @@ void parse_asteroid_fields(mission *pm)
 			stuff_vec3d(&Asteroid_field.inner_max_bound);
 		} else {
 			Asteroid_field.has_inner_bound = 0;
+		}
+
+		if (optional_string("$Asteroid Targets:")) {
+			stuff_string_list(Asteroid_target_ships);
+			Default_asteroid_throwing_behavior = false;
 		}
 		i++;
 	}
