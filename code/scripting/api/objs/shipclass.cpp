@@ -483,6 +483,7 @@ ADE_VIRTVAR(CustomData, l_Shipclass, nullptr, "Gets the custom data table for th
 	
 	if(idx < 0 || idx >= ship_info_size())
 		return ADE_RETURN_NIL;
+
 	using namespace luacpp;
 	
 	auto table = luacpp::LuaTable::create(L);
@@ -499,7 +500,7 @@ ADE_VIRTVAR(CustomData, l_Shipclass, nullptr, "Gets the custom data table for th
 	return ade_set_args(L, "t", &table);	
 }
 
-ADE_FUNC(HasCustomData, l_Shipclass, nullptr, "Detects whether the ship class has any custom data", "boolean", "true if the shipclass' custom_data is not empty, false otherwise") 
+ADE_FUNC(hasCustomData, l_Shipclass, nullptr, "Detects whether the ship class has any custom data", "boolean", "true if the shipclass' custom_data is not empty, false otherwise") 
 {
 	int idx;
 	if(!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
