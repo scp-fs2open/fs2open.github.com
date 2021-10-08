@@ -26,6 +26,17 @@ typedef struct cf_pathtype {
 	int			parent_index;			// Index of this directory's parent.  Used for creating directories when writing.
 } cf_pathtype;
 
+typedef struct cf_file {
+	char		name_ext[CF_MAX_FILENAME_LENGTH];	// Filename and extension
+	int			root_index;							// Where in Roots this is located
+	int			pathtype_index;						// Where in Paths this is located
+	time_t		write_time;							// When it was last written
+	int			size;								// How big it is in bytes
+	int			pack_offset;						// For pack files, where it is at.   0 if not in a pack file.  This can be used to tell if in a pack file.
+	char* real_name;							// For real files, the full path
+	const void* data;								// For in-memory files, the data pointer
+} cf_file;
+
 // During cfile_init, verify that Pathtypes[n].index == n for each item
 extern cf_pathtype Pathtypes[CF_MAX_PATH_TYPES];
 

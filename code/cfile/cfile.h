@@ -372,6 +372,8 @@ int cf_get_file_list_preallocated(int max, char arr[][MAX_FILENAME_LEN], char** 
 void cf_sort_filenames( int n, char **list, int sort, file_list_info *info = NULL );
 void cf_sort_filenames( SCP_vector<SCP_string> &list, int sort, SCP_vector<file_list_info> *info = NULL );
 
+struct cf_file;
+
 struct CFileLocation {
 	bool found = false;
 	SCP_string name_ext;
@@ -381,6 +383,7 @@ struct CFileLocation {
 	const void* data_ptr = nullptr;
 
 	explicit CFileLocation(bool found_in = false) : found(found_in) {}
+	explicit CFileLocation(const cf_file& file);
 };
 
 // Searches for a file.   Follows all rules and precedence and searches

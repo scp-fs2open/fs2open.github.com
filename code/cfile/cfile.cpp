@@ -105,6 +105,17 @@ std::array<CFILE, MAX_CFILE_BLOCKS> Cfile_block_list;
 
 static const char *Cfile_cdrom_dir = NULL;
 
+CFileLocation::CFileLocation(const cf_file& file) {
+	found = true;
+	if(file.name_ext)
+		name_ext = file.name_ext;
+	if (file.real_name)
+		full_name = file.real_name;
+	size = file.size;
+	offset = file.pack_offset;
+	data_ptr = file.data;
+}
+
 //
 // Function prototypes for internally-called functions
 //

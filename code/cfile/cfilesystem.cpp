@@ -79,18 +79,6 @@ static cf_root_block  *Root_blocks[CF_MAX_ROOT_BLOCKS];
 
 static int Num_path_roots = 0;
 
-// Created by searching all roots in order.   This means Files is then sorted by precedence.
-typedef struct cf_file {
-	char		name_ext[CF_MAX_FILENAME_LENGTH];	// Filename and extension
-	int			root_index;							// Where in Roots this is located
-	int			pathtype_index;						// Where in Paths this is located
-	time_t		write_time;							// When it was last written
-	int			size;								// How big it is in bytes
-	int			pack_offset;						// For pack files, where it is at.   0 if not in a pack file.  This can be used to tell if in a pack file.
-	char*		real_name;							// For real files, the full path
-	const void*	data;								// For in-memory files, the data pointer
-} cf_file;
-
 #define CF_NUM_FILES_PER_BLOCK   512
 #define CF_MAX_FILE_BLOCKS			128						// Can store 512*128 = 65536 files
 
@@ -100,6 +88,20 @@ typedef struct cf_file_block {
 
 static uint Num_files = 0;
 static cf_file_block  *File_blocks[CF_MAX_FILE_BLOCKS];
+
+//Maps pathtype -> (name without extension -> cf_file entry). Can be used to shorten access to known files.
+static std::map<int, std::unordered_map<std::string, cf_file*>> File_mapped_access;
+
+void cf_emplace_file_in_lookup_map(cf_file* filelisting) {
+	auto& type_map = File_mapped_access[filelisting->pathtype_index];
+
+	bool already_inserted = type_map.find(filelisting->name_ext) != type_map.end();
+
+	//Preserve first files for proper ordering in cache lookups
+	if (!already_inserted) {
+		type_map.emplace(filelisting->name_ext, filelisting);
+	}
+}
 
 // Return a pointer to to file 'index'.
 cf_file *cf_get_file(int index)
@@ -636,6 +638,8 @@ void cf_search_root_path(int root_index)
 
 							file->real_name = vm_strdup(file_name.c_str());
 
+							cf_emplace_file_in_lookup_map(file);
+
 							num_files++;
 							//mprintf(( "Found file '%s'\n", file->name_ext ));
 						}
@@ -746,6 +750,8 @@ void cf_search_root_path(int root_index)
 							file->pack_offset = 0;			// Mark as a non-packed file
 
 							file->real_name = vm_strdup(fn.c_str());
+
+							cf_emplace_file_in_lookup_map(i, file);
 
 							num_files++;
 							//mprintf(( "Found file '%s'\n", file->name_ext ));
@@ -868,6 +874,8 @@ void cf_search_root_pack(int root_index)
 							file->size = find.size;
 							file->pack_offset = find.offset;			// Mark as a packed file
 
+							cf_emplace_file_in_lookup_map(file);
+
 							num_files++;
 							//mprintf(( "Found pack file '%s'\n", file->name_ext ));
 						}
@@ -918,6 +926,8 @@ void cf_search_memory_root(int root_index) {
 		file->write_time = time(nullptr); // Just assume that memory files were last written to just now
 		file->size = (int)default_file.size;
 		file->data = default_file.data;
+
+		cf_emplace_file_in_lookup_map(file);
 
 		num_files++;
 	}
@@ -1067,6 +1077,19 @@ CFileLocation cf_find_file_location(const char* filespec, int pathtype, bool loc
 				search_order[num_search_dirs++] = i;
 		}
 	}
+
+	//Try a cache lookup first
+	for (ui = 0; ui < num_search_dirs; ui++) {
+		const auto& file_map = File_mapped_access[search_order[ui]];
+		auto file_it = file_map.find(filespec);
+
+		if (file_it != file_map.end()) {
+			//Found file location in cache, return it
+			return CFileLocation(*file_it->second);
+		}
+	}
+
+	//Didn't find it in cache. This technically should only happen if we were passed a file without its proper extension, or files were changed after launch.
 
 	memset( longname, 0, sizeof(longname) );
 
