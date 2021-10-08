@@ -33286,7 +33286,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1+:\tName of ships to deactivate shields on." },
 
 	{ OP_SHIP_GUARDIAN, "ship-guardian\r\n"
-		"\tCauses the ships listed in this sexpression to not be killable by weapons.  Use with caution!!!!\r\n\r\n"
+		"\tCauses the ships listed in this sexpression to not take any damage below 1% of hull strength.  As such, the ship will not be killable by weapons.  Use with caution!!!!\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\t1+:\tName of ships to make unkillable." },
 
@@ -33297,7 +33297,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	// Goober5000
  	{ OP_SHIP_GUARDIAN_THRESHOLD, "ship-guardian-threshold\r\n"
- 		"\tSame as ship-guardian, except the lowest possible hull value is specified by the sexp rather than defaulting to 1.\r\n"
+ 		"\tSame as ship-guardian, except the lowest possible hull value (as a percentage) is specified by the sexp rather than defaulting to 1.\r\n"
  		"Call with a threshold of 0 (or use ship-no-guardian) to deactivate.\r\n\r\n"
  		"Takes 2 or more arguments...\r\n"
  		"\t1:\tThreshold value.\r\n"
@@ -34786,7 +34786,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	},
 
 	{ OP_CUTSCENES_SHOW_SUBTITLE, "show-subtitle (deprecated)\r\n"
-		"\tDisplays a subtitle, either an image or a string of text.  As this operator tries to combine two functions into one and does not adjust coordinates for screen formats, it has been deprecated.\r\n"
+		"\tDisplays a subtitle, either an image or a string of text.  Please note that, in images without an alpha channel, black pixels will be treated as transparent.  In images with an alpha channel, black pixels will be drawn as expected.\r\n\r\n"
+		"As this operator tries to combine two functions into one and does not adjust coordinates for screen formats, it has been deprecated.\r\n\r\n"
 		"Takes 4 to 13 arguments...\r\n"
 		"\t1:\tX position (negative value to be from right of screen)\r\n"
 		"\t2:\tY position (negative value to be from bottom of screen)\r\n"
@@ -34822,7 +34823,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	},
 
 	{ OP_CUTSCENES_SHOW_SUBTITLE_IMAGE, "show-subtitle-image\r\n"
-		"\tDisplays a subtitle in the form of an image.\r\n"
+		"\tDisplays a subtitle in the form of an image.  Please note that, in images without an alpha channel, black pixels will be treated as transparent.  In images with an alpha channel, black pixels will be drawn as expected.\r\n\r\n"
 		"Takes 8 to 10 arguments...\r\n"
 		"\t1:\tImage to display\r\n"
 		"\t2:\tX position, from 0 to 100% (positive measures from the left; negative measures from the right)\r\n"

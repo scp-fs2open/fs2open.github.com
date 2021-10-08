@@ -529,6 +529,7 @@ flag_def_list_new<Weapon::Info_Flags> ai_tgt_weapon_flags[] = {
     { "die on lost lock",			Weapon::Info_Flags::Die_on_lost_lock,					true, false },
 	{ "no impact spew",				Weapon::Info_Flags::No_impact_spew,						true, false },
 	{ "require exact los",			Weapon::Info_Flags::Require_exact_los,					true, false },
+	{ "multilock target dead subsys", Weapon::Info_Flags::Multilock_target_dead_subsys,		true, false },
 };
 
 const int num_ai_tgt_weapon_info_flags = sizeof(ai_tgt_weapon_flags) / sizeof(flag_def_list_new<Weapon::Info_Flags>);
@@ -5613,15 +5614,23 @@ DCF_BOOL( show_velocity_dot, ship_show_velocity_dot )
 
 static bool ballistic_possible_for_this_ship(const ship_info *sip)
 {
-	if (sip->allowed_bank_restricted_weapons.empty())
+	// has no weapons!
+	if (sip->num_primary_banks < 1)
 		return false;
 
 	for (int i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++)
 	{
-		for (int j = 0; j < weapon_info_size(); ++j)
-		{
-			if (sip->allowed_bank_restricted_weapons[i][j] && (Weapon_info[j].wi_flags[Weapon::Info_Flags::Ballistic]))
-				return true;
+		// check default weapons
+		if (sip->primary_bank_weapons[i] >= 0 && Weapon_info[sip->primary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::Ballistic])
+			return true;
+
+		// check allowed weapons
+		if (!sip->allowed_bank_restricted_weapons.empty()) {
+			for (int j = 0; j < weapon_info_size(); ++j)
+			{
+				if (sip->allowed_bank_restricted_weapons[i][j] && (Weapon_info[j].wi_flags[Weapon::Info_Flags::Ballistic]))
+					return true;
+			}
 		}
 	}
 
@@ -5651,15 +5660,7 @@ static void ship_parse_post_cleanup()
 			}
 
 			// be friendly; ensure ballistic flags check out
-			if (pbank_capacity_specified) {
-				if ( !ballistic_possible_for_this_ship(&(*sip)) ) {
-					Warning(LOCATION, "Pbank capacity specified for non-ballistic-primary-enabled ship %s.\nResetting capacities to 0.\nTo fix this, add a ballistic primary to the list of allowed primaries.\n", sip->name);
-
-					for (j = 0; j < MAX_SHIP_PRIMARY_BANKS; j++) {
-						sip->primary_bank_ammo_capacity[j] = 0;
-					}
-				}
-			} else {
+			if (!pbank_capacity_specified) {
 				if ( ballistic_possible_for_this_ship(&(*sip)) ) {
 					Warning(LOCATION, "Pbank capacity not specified for ballistic-primary-enabled ship %s.\nDefaulting to capacity of 1 per bank.\n", sip->name);
 
@@ -8980,7 +8981,7 @@ static void ship_auto_repair_frame(int shipnum, float frametime)
 		if (objp->hull_strength > sp->ship_max_hull_strength)
 			objp->hull_strength = sp->ship_max_hull_strength;
 		else if (objp->hull_strength < 0)
-			ship_hit_kill(objp, nullptr, nullptr, 0, 1);
+			ship_hit_kill(objp, nullptr, nullptr, 0, true);
 	}
 
 	// only allow for the auto-repair of subsystems on small ships
@@ -17374,16 +17375,19 @@ void ship_replace_active_texture(int ship_index, const char* old_name, const cha
 		}
 	}
 
-	int texture = bm_load(new_name);
+	if (final_index >= 0) {
+		int texture = bm_load(new_name);
 
-	if (shipp->ship_replacement_textures == NULL) {
-		shipp->ship_replacement_textures = (int*)vm_malloc(MAX_REPLACEMENT_TEXTURES * sizeof(int));
+		if (shipp->ship_replacement_textures == nullptr) {
+			shipp->ship_replacement_textures = (int*)vm_malloc(MAX_REPLACEMENT_TEXTURES * sizeof(int));
 
-		for (int i = 0; i < MAX_REPLACEMENT_TEXTURES; i++)
-			shipp->ship_replacement_textures[i] = -1;
-	}
+			for (int i = 0; i < MAX_REPLACEMENT_TEXTURES; i++)
+				shipp->ship_replacement_textures[i] = -1;
+		}
 
-	shipp->ship_replacement_textures[final_index] = texture;
+		shipp->ship_replacement_textures[final_index] = texture;
+	} else
+		Warning(LOCATION, "Invalid texture '%s' used for replacement texture", old_name);
 }
 
 // function to return true if support ships are allowed in the mission for the given object.

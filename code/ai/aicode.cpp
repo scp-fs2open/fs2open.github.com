@@ -11438,7 +11438,7 @@ void ai_dock()
 			// calculate time until animations elapse
 			int time1 = model_anim_get_time_type(shipp, AnimationTriggerType::Docked, docker_index);
 			int time2 = model_anim_get_time_type(goal_shipp, AnimationTriggerType::Docked, dockee_index);
-			aip->mode_time = MAX(time1, time2);
+			aip->mode_time = timestamp(MAX(time1, time2));
 		}
 
 		// if not enough time has passed, just wait
@@ -14865,7 +14865,6 @@ void init_ai_object(int objnum)
 	aip->danger_weapon_objnum = -1;
 	aip->danger_weapon_signature = -1;
 
-	aip->lead_scale = 0.0f;
 	aip->last_hit_target_time = Missiontime;
 	aip->last_hit_time = Missiontime;
 

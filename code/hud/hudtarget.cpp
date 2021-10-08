@@ -4304,19 +4304,38 @@ void HudGaugeLeadSight::render(float  /*frametime*/)
 	}
 }
 
-// hud_cease_subsystem_targeting() will cease targeting the current targets subsystems
-//
 void hud_cease_subsystem_targeting(bool print_message)
 {
 	int ship_index;
 
-	ship_index = Objects[Player_ai->target_objnum].instance;
-	if ( ship_index < 0 )
+	Assertion(Player_ai->target_objnum < MAX_OBJECTS, "Invalid player target objnum");
+
+	if (Player_ai->target_objnum < 0) {
+		// Nothing selected
+		if (print_message) {
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR("No target selected.", 322));
+			snd_play(gamesnd_get_game_sound(GameSounds::TARGET_FAIL));
+		}
 		return;
+	}
+
+	if (Objects[Player_ai->target_objnum].type != OBJ_SHIP) {
+		// Object isn't a ship, so it doesn't have any subsystems
+		if (print_message) {
+			snd_play(gamesnd_get_game_sound(GameSounds::TARGET_FAIL));
+		}
+		return;
+	}
+
+	ship_index = Objects[Player_ai->target_objnum].instance;
+
+	Assertion(ship_index >= 0 && ship_index < MAX_SHIPS, "Invalid ship index");
+	Assertion(Player_num >= 0 && Player_num < MAX_PLAYERS, "Invalid player number");
 
 	Ships[ship_index].last_targeted_subobject[Player_num] = NULL;
 	Player_ai->targeted_subsys = NULL;
 	Player_ai->targeted_subsys_parent = -1;
+
 	if ( print_message ) {
 		HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "Deactivating sub-system targeting", 324));
 	}
@@ -4325,14 +4344,14 @@ void hud_cease_subsystem_targeting(bool print_message)
 	hud_lock_reset();
 }
 
-// hud_cease_targeting() will cease targeting main target and subsystem
-// does not turn off auto-targeting by default
 void hud_cease_targeting(bool deliberate)
 {
-	set_target_objnum( Player_ai, -1 );
+	// Turn off subsys targeting before we invalidate the player target_objnum...
 	hud_cease_subsystem_targeting(false);
+	set_target_objnum(Player_ai, -1);
 
 	if (deliberate) {
+		// Player wants to stop targeting, so turn off auto-target so we don't immediately aquire another target
 		Players[Player_num].flags &= ~PLAYER_FLAGS_AUTO_TARGETING;
 		HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR("Deactivating targeting system", 325));
 	}
