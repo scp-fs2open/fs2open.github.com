@@ -140,6 +140,7 @@ namespace AI {
 		Fixed_ship_weapon_collision,
 		No_shield_damage_from_ship_collisions,
 		Reset_last_hit_target_time_for_player_hits,
+		Fighterbay_arrivals_use_carrier_orient,
 
 		NUM_VALUES
 	};

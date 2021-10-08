@@ -13232,6 +13232,9 @@ int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, int allowed_path_
 		vm_vec_copy_normalize(&rvec, &parent_sip->pathMetadata[pathName].arrival_rvec);
 		vm_vec_unrotate(&rvec, &rvec, &Objects[aip->path_objnum].orient);
 	}
+	else if (The_mission.ai_profile->flags[AI::Profile_Flags::Fighterbay_arrivals_use_carrier_orient]) {
+		rvec = parent_objp->orient.vec.rvec;
+	}
 	vm_vector_2_matrix(&pl_objp->orient, &fvec, nullptr, IS_VEC_NULL(&rvec) ? nullptr : &rvec);
 
 	return 0;	
