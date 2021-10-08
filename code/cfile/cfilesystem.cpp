@@ -751,7 +751,7 @@ void cf_search_root_path(int root_index)
 
 							file->real_name = vm_strdup(fn.c_str());
 
-							cf_emplace_file_in_lookup_map(i, file);
+							cf_emplace_file_in_lookup_map(file);
 
 							num_files++;
 							//mprintf(( "Found file '%s'\n", file->name_ext ));
