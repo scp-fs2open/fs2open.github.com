@@ -52,7 +52,7 @@ CJumpNode::CJumpNode(const vec3d* position)
 		polymodel* pm = model_get(m_modelnum);
 
 		if (pm->flags & PM_FLAG_HAS_INTRINSIC_ROTATE) {
-			m_polymodel_instance_num = model_create_instance(false, m_modelnum);
+			m_polymodel_instance_num = model_create_instance(true, m_modelnum);
 		}
 	}
 	
