@@ -3429,38 +3429,10 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	if (optional_string("$Score:")) {
 		stuff_int(&wip->score);
 	}
-
+	
 	if (optional_string("$Custom data:")) 
 	{
-		while (required_string_either("$end_custom_data", "+Val:")) 
-		{
-			SCP_string line;
-			stuff_string(line, F_NAME);
-
-			line = line.substr(line.find_first_of(':')+1);
-			drop_white_space(line);
-
-			if (line.empty()) 
-			{
-				Warning(LOCATION, "Empty +Val: entry in weapon %s.", wip->name);
-				continue;
-			}
-
-			size_t sep = line.find_first_of(' ');
-			
-			SCP_string key = line.substr(0, sep);
-			SCP_string value = line.substr(sep+1);
-
-			//if the modder didn't add a value, make the value an empty string. (Without this, value would instead be an identical string to key)
-			if (sep == SCP_string::npos)
-				value = "";
-			
-			drop_white_space(key);
-			drop_white_space(value);
-
-			wip->custom_data.emplace(key, value);
-		}
-		required_string("$end_custom_data");
+		parse_string_map(wip->custom_data, "$end_custom_data", "+Val:");
 	}
 
 	return w_id;

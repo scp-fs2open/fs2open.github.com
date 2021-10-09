@@ -4646,35 +4646,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 
 	if (optional_string("$Custom data:")) 
 	{
-		while (required_string_either("$end_custom_data", "+Val:")) 
-		{
-			SCP_string line;
-			stuff_string(line, F_RAW);
-
-			line = line.substr(line.find_first_of(':')+1);
-			drop_white_space(line);
-
-			if (line.empty()) 
-			{
-				Warning(LOCATION, "Empty +Val: entry in ship %s.", sip->name);
-				continue;
-			}
-
-			size_t sep = line.find_first_of(' ');
-			
-			SCP_string key = line.substr(0, sep);
-			SCP_string value = line.substr(sep+1);
-
-			//if the modder didn't add a value, make the value an empty string. (Without this, value would instead be an identical string to key)
-			if (sep == SCP_string::npos)
-				value = "";
-			
-			drop_white_space(key);
-			drop_white_space(value);
-
-			sip->custom_data.emplace(key, value);
-		}
-		required_string("$end_custom_data");
+		parse_string_map(sip->custom_data, "$end_custom_data", "+Val:");
 	}
 
 	int n_subsystems = 0;
