@@ -1270,6 +1270,8 @@ public:
 	char	overhead_filename[MAX_FILENAME_LEN];	// filename for animation that plays weapons loadout
 	int 	selection_effect;
 
+	int wingmen_status_dot_override; // optional wingmen dot status animation to use instead of default --wookieejedi
+
 	int bii_index_ship;						// if this ship has a briefing icon that overrides the normal icon set
 	int bii_index_ship_with_cargo;
 	int bii_index_wing;

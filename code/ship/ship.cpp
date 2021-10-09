@@ -1051,6 +1051,8 @@ void ship_info::clone(const ship_info& other)
 	strcpy_s(overhead_filename, other.overhead_filename);
 	selection_effect = other.selection_effect;
 
+	wingmen_status_dot_override = other.wingmen_status_dot_override;
+
 	bii_index_ship = other.bii_index_ship;
 	bii_index_ship_with_cargo = other.bii_index_ship_with_cargo;
 	bii_index_wing = other.bii_index_wing;
@@ -1364,6 +1366,8 @@ void ship_info::move(ship_info&& other)
 	std::swap(anim_filename, other.anim_filename);
 	std::swap(overhead_filename, other.overhead_filename);
 	selection_effect = other.selection_effect;
+
+	wingmen_status_dot_override = other.wingmen_status_dot_override;
 
 	bii_index_ship = other.bii_index_ship;
 	bii_index_ship_with_cargo = other.bii_index_ship_with_cargo;
@@ -1784,6 +1788,8 @@ ship_info::ship_info()
 	overhead_filename[0] = '\0';
 
 	selection_effect = Default_ship_select_effect;
+
+	wingmen_status_dot_override = -1;
 
 	bii_index_ship = -1;
 	bii_index_ship_with_cargo = -1;
@@ -4138,6 +4144,27 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	// read in filename for animation that is used in ship selection
 	if ( optional_string("$Ship_overhead:") ) {
 		stuff_string(sip->overhead_filename, F_NAME, MAX_FILENAME_LEN);
+	}
+
+	// read in filename for optional animation to use for wingmen dot status --wookieejedi
+	if (optional_string("$Wingmen Gauge Dot Override:")) {
+		stuff_string(name_tmp, F_NAME, sizeof(name_tmp));
+		int wm_dot_idx = -1;
+		int wm_dot_num_frames = 0;
+		wm_dot_idx = bm_load_animation(name_tmp, &wm_dot_num_frames);
+		if ((wm_dot_idx > -1) && (wm_dot_num_frames == 2)) {
+			sip->wingmen_status_dot_override = wm_dot_idx;
+		} else {
+			// two things could have gone wrong, so tell the modder
+			if (wm_dot_idx < 0) {
+				Warning(LOCATION, "Error loading \"%s\" animation for $Wingmen Gauge Dot Override, "
+					"ignoring and using default dot animation from HUD table...", name_tmp);
+			}
+			if (wm_dot_num_frames != 2) {
+				Warning(LOCATION, "Error, number of frames in \"%s\" animation for $Wingmen Gauge Dot Override is %i and not 2, "
+					"ignoring and using default dot animation from HUD table...", name_tmp, wm_dot_num_frames);
+			}
+		}
 	}
 
 	// read in briefing stuff

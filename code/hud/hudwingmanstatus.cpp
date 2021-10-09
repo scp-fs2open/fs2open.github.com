@@ -40,6 +40,7 @@ typedef struct Wingman_status
 	int	used;
 	float hull[MAX_SHIPS_PER_WING];			// 0.0 -> 1.0
 	int	status[MAX_SHIPS_PER_WING];		// HUD_WINGMAN_STATUS_* 
+	int dot_anim_override[MAX_SHIPS_PER_WING]; // optional wingmen dot status to use instead of default --wookieejedi
 } wingman_status;
 
 wingman_status HUD_wingman_status[MAX_SQUADRON_WINGS];
@@ -140,11 +141,33 @@ void hud_init_wingman_status_gauge()
 		HUD_wingman_status[i].used = 0;
 		for ( j = 0; j < MAX_SHIPS_PER_WING; j++ ) {
 			HUD_wingman_status[i].status[j] = HUD_WINGMAN_STATUS_NONE;
+			HUD_wingman_status[i].dot_anim_override[j] = -1;
 		}
 	}
 
 	hud_wingman_kill_multi_teams();
 	hud_wingman_status_update();
+
+	//  --wookieejedi
+	// page in optional wingmen dot animation
+	// and set the dot override for ships present at mission start
+	for (auto& p_obj : Parse_objects) {
+		int dot_override = Ship_info[p_obj.ship_class].wingmen_status_dot_override;
+		if (dot_override >= 0) {
+			// note, the wingmen_status_dot_override value will only have been set 
+			// during ship table parse if the number of frames was 2
+			bm_page_in_aabitmap(dot_override, 2);
+
+			// check and set the dot animation 
+			// note the wing_index and wing_pos is only set for ships present at start
+			// so the dot animations for delayed ships are set in hud_wingman_status_set_index()
+			int wing_index = p_obj.wing_status_wing_index;
+			int wing_pos = p_obj.wing_status_wing_pos;
+			if ( (wing_index >= 0) && (wing_pos >= 0) ) {
+				HUD_wingman_status[wing_index].dot_anim_override[wing_pos] = dot_override;
+			}
+		}
+	}
 }
 
 // Update the status of the wingman status
@@ -379,11 +402,12 @@ void HudGaugeWingmanStatus::renderBackground(int num_wings_to_draw)
 
 void HudGaugeWingmanStatus::renderDots(int wing_index, int screen_index, int num_wings_to_draw)
 {
-	int i, sx, sy, is_bright, bitmap = -1;
 
 	if ( Wingman_status_dots.first_frame < 0 ) {
 		return;
 	}
+
+	int i, sx, sy, is_bright = -1;
 
 	if(num_wings_to_draw == 1) {
 		sx = position[0] + single_wing_offsets[0];
@@ -395,8 +419,11 @@ void HudGaugeWingmanStatus::renderDots(int wing_index, int screen_index, int num
 		sx = actual_origin[0] + multiple_wing_offsets[0] + (screen_index - 1)*wing_width; // wing_width = 35
 		sy = actual_origin[1] + multiple_wing_offsets[1];
 	}
-	
+
+
 	// draw wingman dots
+	int bitmap, base_num = -1;
+
 	for ( i = 0; i < MAX_SHIPS_PER_WING; i++ ) {
 
 		if ( maybeFlashStatus(wing_index, i) ) {
@@ -408,7 +435,7 @@ void HudGaugeWingmanStatus::renderDots(int wing_index, int screen_index, int num
 		switch( HUD_wingman_status[wing_index].status[i] ) {
 
 		case HUD_WINGMAN_STATUS_ALIVE:
-			bitmap = Wingman_status_dots.first_frame;
+			base_num = 0;
 			// set colors depending on HUD table option --wookieejedi
 			if (use_expanded_colors) {
 				// use expanded colors
@@ -435,22 +462,36 @@ void HudGaugeWingmanStatus::renderDots(int wing_index, int screen_index, int num
 
 		case HUD_WINGMAN_STATUS_DEAD:
 			gr_set_color_fast(is_bright ? &Color_bright_red : &Color_red);
-			bitmap = Wingman_status_dots.first_frame+1;
+			base_num = 1;
 			break;
 
 		case HUD_WINGMAN_STATUS_NOT_HERE:
 			setGaugeColor(is_bright ? HUD_C_BRIGHT : HUD_C_NORMAL);
-			bitmap = Wingman_status_dots.first_frame+1;
+			base_num = 1;
 			break;
 
 		default:
-			bitmap=-1;
+			bitmap = -1;
+			base_num = -1;
 			break;
 
 		}	// end swtich
 
-		if ( bitmap > -1 ) {
-			renderBitmap(bitmap, sx + wingmate_offsets[i][0], sy + wingmate_offsets[i][1]);
+		// draw dot if there is a status to draw
+		if (base_num > -1) {
+			// use wingmen dot animation if present, otherwise use default --wookieejedi
+			if (HUD_wingman_status[wing_index].dot_anim_override[i] >= 0) {
+				bitmap = HUD_wingman_status[wing_index].dot_anim_override[i];
+			} else {
+				bitmap = Wingman_status_dots.first_frame;
+			}
+
+			// set if we are using the first frame or second --wookieejedi
+			bitmap += base_num;
+
+			if (bitmap > -1) {
+				renderBitmap(bitmap, sx + wingmate_offsets[i][0], sy + wingmate_offsets[i][1]);
+			}
 		}
 	}
 
@@ -662,6 +703,18 @@ void hud_wingman_status_set_index(wing *wingp, ship *shipp, p_object *pobjp)
 				shipp->wing_status_wing_pos = (char) i;
 				break;
 			}
+		}
+	}
+
+	// --wookieejedi
+	// also check the wingmen dot override animation and set if needed
+	// this section accounts for ships that are not present at mission start
+	// the wingmen dot override for ships present at mission start are set hud_init_wingman_status_gauge() 
+	int wing_pos = shipp->wing_status_wing_pos;
+	if ( (wing_index >= 0) && (wing_pos >= 0) ) {
+		int dot_override = Ship_info[pobjp->ship_class].wingmen_status_dot_override;
+		if (dot_override >= 0) {
+			HUD_wingman_status[wing_index].dot_anim_override[wing_pos] = dot_override;
 		}
 	}
 }
