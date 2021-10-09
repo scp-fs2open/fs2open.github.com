@@ -340,7 +340,7 @@ void pilotfile::plr_read_containers()
 				container.map_data.emplace(key, data);
 			}
 		} else {
-			Assert(false);
+			UNREACHABLE("Unknown container type %d", (int)container.type);
 		}
 	}
 	handler->endArrayRead();
@@ -378,7 +378,7 @@ void pilotfile::plr_write_containers()
 				++i;
 			}
 		} else {
-			Assert(false);
+			UNREACHABLE("Unknown container type %d", (int)container.type);
 		}
 
 		handler->endSectionWrite();

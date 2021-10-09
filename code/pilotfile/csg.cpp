@@ -1370,7 +1370,7 @@ void pilotfile::csg_read_container(sexp_container& container)
 			container.map_data.emplace(temp_key, temp_buf);
 		}
 	} else {
-		Assert(false);
+		UNREACHABLE("Unknown container type %d", (int)container.type);
 	}
 }
 

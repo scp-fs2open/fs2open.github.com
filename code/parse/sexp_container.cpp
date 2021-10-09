@@ -45,6 +45,11 @@ bool sexp_container::operator==(const sexp_container &sc) const
 		list_data == sc.list_data && map_data == sc.map_data;
 }
 
+bool sexp_container::name_matches(const sexp_container &container) const
+{
+	return !stricmp(container.container_name.c_str(), container_name.c_str());
+}
+
 bool sexp_container::empty() const
 {
 	return size() == 0;

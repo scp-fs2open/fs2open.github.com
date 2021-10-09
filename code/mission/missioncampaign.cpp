@@ -1101,8 +1101,8 @@ void mission_campaign_store_containers(ContainerType persistence_type, bool stor
 				// see if we already have a container with this name
 				auto cpc_it = std::find_if(Campaign.persistent_containers.begin(),
 					Campaign.persistent_containers.end(),
-					[container](const sexp_container& cpc) {
-						return !stricmp(container.container_name.c_str(), cpc.container_name.c_str());
+					[container](const sexp_container &cpc) {
+						return cpc.name_matches(container);
 					});
 
 				if (cpc_it != Campaign.persistent_containers.end()) {
@@ -1117,8 +1117,8 @@ void mission_campaign_store_containers(ContainerType persistence_type, bool stor
 			// we might need to save some eternal player-persistent containers
 			auto ppc_it = std::find_if(Player->containers.begin(),
 				Player->containers.end(),
-				[container](const sexp_container& ppc) {
-					return !stricmp(container.container_name.c_str(), ppc.container_name.c_str());
+				[container](const sexp_container &ppc) {
+					return ppc.name_matches(container);
 				});
 
 			if (ppc_it != Player->containers.end()) {
@@ -1937,8 +1937,8 @@ void mission_campaign_save_on_close_containers()
 			// check if container already exists and update it
 			auto ppc_it = std::find_if(Player->containers.begin(),
 				Player->containers.end(),
-				[container](const sexp_container& ppc) {
-					return !stricmp(container.container_name.c_str(), ppc.container_name.c_str());
+				[container](const sexp_container &ppc) {
+					return ppc.name_matches(container);
 				});
 
 			if (ppc_it != Player->containers.end()) {
