@@ -4230,7 +4230,7 @@ void parse_int_list(int *ilist, size_t size)
 	}
 }
 
-void parse_string_map(SCP_map<SCP_string, SCP_string>& outMap, const char* delimiter, const char* entry_prefix)
+void parse_string_map(SCP_map<SCP_string, SCP_string>& outMap, const char* end_marker, const char* entry_prefix)
 {
 	while(optional_string(entry_prefix)) 
 	{
@@ -4260,7 +4260,7 @@ void parse_string_map(SCP_map<SCP_string, SCP_string>& outMap, const char* delim
 
 		outMap.emplace(key, value);
 	}
-	required_string(delimiter);
+	required_string(end_marker);
 }
 
 // parse a modular table of type "name_check" and parse it using the specified function callback
