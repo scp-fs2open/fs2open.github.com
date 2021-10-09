@@ -468,9 +468,7 @@ ADE_VIRTVAR(CustomData, l_Weaponclass, nullptr, "Gets the custom data table for 
 	
 	if(idx < 0 || idx >= weapon_info_size())
 		return ADE_RETURN_NIL;
-
-	using namespace luacpp;
-	
+		
 	auto table = luacpp::LuaTable::create(L);
 	
 	weapon_info *wip = &Weapon_info[idx];
