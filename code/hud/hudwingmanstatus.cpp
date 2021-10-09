@@ -422,7 +422,7 @@ void HudGaugeWingmanStatus::renderDots(int wing_index, int screen_index, int num
 
 
 	// draw wingman dots
-	int bitmap, base_num = -1;
+	int bitmap, frame_num = -1;
 
 	for ( i = 0; i < MAX_SHIPS_PER_WING; i++ ) {
 
@@ -435,7 +435,7 @@ void HudGaugeWingmanStatus::renderDots(int wing_index, int screen_index, int num
 		switch( HUD_wingman_status[wing_index].status[i] ) {
 
 		case HUD_WINGMAN_STATUS_ALIVE:
-			base_num = 0;
+			frame_num = 0;
 			// set colors depending on HUD table option --wookieejedi
 			if (use_expanded_colors) {
 				// use expanded colors
@@ -462,32 +462,29 @@ void HudGaugeWingmanStatus::renderDots(int wing_index, int screen_index, int num
 
 		case HUD_WINGMAN_STATUS_DEAD:
 			gr_set_color_fast(is_bright ? &Color_bright_red : &Color_red);
-			base_num = 1;
+			frame_num = 1;
 			break;
 
 		case HUD_WINGMAN_STATUS_NOT_HERE:
 			setGaugeColor(is_bright ? HUD_C_BRIGHT : HUD_C_NORMAL);
-			base_num = 1;
+			frame_num = 1;
 			break;
 
 		default:
 			bitmap = -1;
-			base_num = -1;
+			frame_num = -1;
 			break;
 
 		}	// end swtich
 
 		// draw dot if there is a status to draw
-		if (base_num > -1) {
+		if (frame_num > -1) {
 			// use wingmen dot animation if present, otherwise use default --wookieejedi
 			if (HUD_wingman_status[wing_index].dot_anim_override[i] >= 0) {
-				bitmap = HUD_wingman_status[wing_index].dot_anim_override[i];
+				bitmap = HUD_wingman_status[wing_index].dot_anim_override[i] + frame_num;
 			} else {
-				bitmap = Wingman_status_dots.first_frame;
+				bitmap = Wingman_status_dots.first_frame + frame_num;
 			}
-
-			// set if we are using the first frame or second --wookieejedi
-			bitmap += base_num;
 
 			if (bitmap > -1) {
 				renderBitmap(bitmap, sx + wingmate_offsets[i][0], sy + wingmate_offsets[i][1]);
