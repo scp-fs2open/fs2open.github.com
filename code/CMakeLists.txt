@@ -6,7 +6,7 @@ INCLUDE(voice_rec.cmake)
 
 ADD_LIBRARY(code STATIC ${source_files} ${VOICE_REC_FILES})
 
-target_compile_features(code PUBLIC cxx_std_11)
+target_compile_features(code PUBLIC cxx_std_17)
 
 if (MSVC)
 	target_compile_definitions(code PUBLIC "PDB_DEBUGGING=1")
