@@ -481,13 +481,13 @@ void HudGaugeWingmanStatus::renderDots(int wing_index, int screen_index, int num
 		if (frame_num > -1) {
 			// use wingmen dot animation if present, otherwise use default --wookieejedi
 			if (HUD_wingman_status[wing_index].dot_anim_override[i] >= 0) {
-				bitmap = HUD_wingman_status[wing_index].dot_anim_override[i] + frame_num;
+				bitmap = HUD_wingman_status[wing_index].dot_anim_override[i];
 			} else {
-				bitmap = Wingman_status_dots.first_frame + frame_num;
+				bitmap = Wingman_status_dots.first_frame;
 			}
 
 			if (bitmap > -1) {
-				renderBitmap(bitmap, sx + wingmate_offsets[i][0], sy + wingmate_offsets[i][1]);
+				renderBitmap(bitmap + frame_num, sx + wingmate_offsets[i][0], sy + wingmate_offsets[i][1]);
 			}
 		}
 	}
