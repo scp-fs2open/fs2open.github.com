@@ -4157,12 +4157,12 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		} else {
 			// two things could have gone wrong, so tell the modder
 			if (wm_dot_idx < 0) {
-				Warning(LOCATION, "Error loading \"%s\" animation for $Wingmen Gauge Dot Override, "
-					"ignoring and using default dot animation from HUD table...", name_tmp);
+				Warning(LOCATION, "Error loading '%s' animation for $Wingmen Gauge Dot Override, "
+					"ignoring and using default dot animation from HUD table.", name_tmp);
 			}
 			if (wm_dot_num_frames != 2) {
-				Warning(LOCATION, "Error, number of frames in \"%s\" animation for $Wingmen Gauge Dot Override is %i and not 2, "
-					"ignoring and using default dot animation from HUD table...", name_tmp, wm_dot_num_frames);
+				Warning(LOCATION, "Error, number of frames in '%s' animation for $Wingmen Gauge Dot Override is %i and not 2, "
+					"ignoring and using default dot animation from HUD table.", name_tmp, wm_dot_num_frames);
 			}
 		}
 	}
