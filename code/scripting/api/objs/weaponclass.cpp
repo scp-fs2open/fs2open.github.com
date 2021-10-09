@@ -460,7 +460,7 @@ ADE_VIRTVAR(Bomb, l_Weaponclass, "boolean", "Is weapon class flagged as bomb", "
 		return ADE_RETURN_FALSE;
 }
 
-ADE_VIRTVAR(CustomData, l_Weaponclass, nullptr, "Gets the custom data table for this weapon class", "table", "The weapon class' custom data table") 
+ADE_VIRTVAR(CustomData, l_Weaponclass, nullptr, "Gets the custom data table for this weapon class", "table", "The weapon class's custom data table") 
 {
 	int idx;
 	if(!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
@@ -481,7 +481,7 @@ ADE_VIRTVAR(CustomData, l_Weaponclass, nullptr, "Gets the custom data table for 
 	return ade_set_args(L, "t", &table);	
 }
 
-ADE_FUNC(hasCustomData, l_Weaponclass, nullptr, "Detects whether the weapon class has any custom data", "boolean", "true if the weaponclass' custom_data is not empty, false otherwise") 
+ADE_FUNC(hasCustomData, l_Weaponclass, nullptr, "Detects whether the weapon class has any custom data", "boolean", "true if the weaponclass's custom_data is not empty, false otherwise") 
 {
 	int idx;
 	if(!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))

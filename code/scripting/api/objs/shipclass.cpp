@@ -475,7 +475,7 @@ ADE_VIRTVAR(PowerOutput, l_Shipclass, "number", "Gets or sets a ship class' powe
 	return ade_set_args(L, "f", Ship_info[idx].power_output);
 }
 
-ADE_VIRTVAR(CustomData, l_Shipclass, nullptr, "Gets the custom data table for this ship class", "table", "The ship class' custom data table") 
+ADE_VIRTVAR(CustomData, l_Shipclass, nullptr, "Gets the custom data table for this ship class", "table", "The ship class's custom data table") 
 {
 	int idx;
 	if(!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
@@ -496,7 +496,7 @@ ADE_VIRTVAR(CustomData, l_Shipclass, nullptr, "Gets the custom data table for th
 	return ade_set_args(L, "t", &table);	
 }
 
-ADE_FUNC(hasCustomData, l_Shipclass, nullptr, "Detects whether the ship class has any custom data", "boolean", "true if the shipclass' custom_data is not empty, false otherwise") 
+ADE_FUNC(hasCustomData, l_Shipclass, nullptr, "Detects whether the ship class has any custom data", "boolean", "true if the shipclass's custom_data is not empty, false otherwise") 
 {
 	int idx;
 	if(!ade_get_args(L, "o", l_Shipclass.Get(&idx)))

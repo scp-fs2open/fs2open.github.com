@@ -4234,21 +4234,21 @@ void parse_string_map(SCP_map<SCP_string, SCP_string>& outMap, const char* delim
 {
 	while(optional_string(entry_prefix)) 
 	{
-		SCP_string line;
-		stuff_string(line, F_RAW);
+		SCP_string temp;
+		stuff_string(temp, F_RAW);
 		
-		drop_white_space(line);
+		drop_white_space(temp);
 		
-		if (line.empty()) 
+		if (temp.empty()) 
 		{
 			Warning(LOCATION, "Empty entry in string map.");
 			continue;
 		}
 		
-		size_t sep = line.find_first_of(' ');
+		size_t sep = temp.find_first_of(' ');
 
-		SCP_string key = line.substr(0, sep);
-		SCP_string value = line.substr(sep+1);
+		SCP_string key = temp.substr(0, sep);
+		SCP_string value = temp.substr(sep+1);
 	
 		//if the modder didn't add a value, make the value an empty string. (Without this, value would instead be an identical string to key)
 		if (sep == SCP_string::npos)
