@@ -280,11 +280,14 @@ void mflash_create(vec3d *gun_pos, vec3d *gun_dir, physics_info *pip, int mflash
 			vm_vec_scale_add(&p.pos, gun_pos, gun_dir, mbi->offset);
 			vm_vec_zero(&p.vel);
 			//vm_vec_scale_add(&p.vel, &pip->rotvel, &pip->vel, 1.0f);
-			p.rad = model_render_get_diameter_clamped_to_min_pixel_size(&gun_world_pos, mbi->radius * 2.0f, Min_pizel_size_muzzleflash) / 2.0f;
 			p.type = particle::PARTICLE_BITMAP;
 			p.optional_data = mbi->anim_id;
 			p.attached_objnum = attached_objnum;
 			p.attached_sig = local->signature;
+
+			// Scale the radius of the muzzle flash effect so that it always appears some minimum width in pixels.
+			p.rad = model_render_get_diameter_clamped_to_min_pixel_size(&gun_world_pos, mbi->radius * 2.0f, Min_pizel_size_muzzleflash) / 2.0f;
+
 			particle::create(&p);
 		}
 	} else {
@@ -299,11 +302,14 @@ void mflash_create(vec3d *gun_pos, vec3d *gun_dir, physics_info *pip, int mflash
 			particle::particle_info p;
 			vm_vec_scale_add(&p.pos, gun_pos, gun_dir, mbi->offset);
 			vm_vec_scale_add(&p.vel, &pip->rotvel, &pip->vel, 1.0f);
-			p.rad = model_render_get_diameter_clamped_to_min_pixel_size(&p.pos, mbi->radius * 2.0f, Min_pizel_size_muzzleflash) / 2.0f;
 			p.type = particle::PARTICLE_BITMAP;
 			p.optional_data = mbi->anim_id;
 			p.attached_objnum = -1;
 			p.attached_sig = 0;
+
+			// Scale the radius of the muzzle flash effect so that it always appears some minimum width in pixels.
+			p.rad = model_render_get_diameter_clamped_to_min_pixel_size(&p.pos, mbi->radius * 2.0f, Min_pizel_size_muzzleflash) / 2.0f;
+
 			particle::create(&p);
 		}
 	}		

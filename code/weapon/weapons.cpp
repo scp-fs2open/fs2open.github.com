@@ -8233,6 +8233,8 @@ void weapon_render(object* obj, model_draw_list *scene)
 				vec3d headp;
 				vm_vec_scale_add(&headp, &obj->pos, &obj->orient.vec.fvec, wip->laser_length);
 
+				// Scale the laser so that it always appears some configured amount of pixels wide, no matter the distance.
+				// Only affects width, length remains unchanged.
 				float scaled_head_radius = model_render_get_diameter_clamped_to_min_pixel_size(&headp, wip->laser_head_radius, Min_pixel_size_laser);
 				float scaled_tail_radius = model_render_get_diameter_clamped_to_min_pixel_size(&obj->pos, wip->laser_tail_radius, Min_pixel_size_laser);
 
@@ -8289,6 +8291,8 @@ void weapon_render(object* obj, model_draw_list *scene)
 				if (The_mission.flags[Mission::Mission_Flags::Fullneb] && Neb_affects_weapons)
 					alpha = (int)(alpha * neb2_get_fog_visibility(&obj->pos, NEB_FOG_VISIBILITY_MULT_WEAPON));
 
+				// Scale the laser so that it always appears some configured amount of pixels wide, no matter the distance.
+				// Only affects width, length remains unchanged.
 				float scaled_head_radius = model_render_get_diameter_clamped_to_min_pixel_size(&headp2, wip->laser_head_radius, Min_pixel_size_laser);
 				float scaled_tail_radius = model_render_get_diameter_clamped_to_min_pixel_size(&tailp, wip->laser_tail_radius, Min_pixel_size_laser);
 

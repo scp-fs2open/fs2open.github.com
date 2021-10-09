@@ -92,6 +92,7 @@ void trail_calc_facing_pts( vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, flo
 	if (!IS_VEC_NULL(&uvec))
 		vm_vec_normalize(&uvec);
 
+	// Scale the trails so that they are always at least some configured amount of pixels across.
 	w = model_render_get_diameter_clamped_to_min_pixel_size(pos, w, Min_pixel_size_trail);
 
 	vm_vec_scale_add( top, pos, &uvec, w * 0.5f );

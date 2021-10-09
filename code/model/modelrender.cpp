@@ -2198,6 +2198,7 @@ void model_queue_render_thrusters(model_render_params *interp, polymodel *pm, in
 					d = 1.0f;
 			}
 
+			// Scale the thrusters so they always appears at least some configured amount of pixels wide.
 			float scaled_thruster_radius = model_render_get_diameter_clamped_to_min_pixel_size(
 				&world_pnt,
 				gpt->radius * 2.0f,

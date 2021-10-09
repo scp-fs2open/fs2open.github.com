@@ -1805,6 +1805,7 @@ void beam_calc_facing_pts( vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, floa
 	// VECMAT-ERROR: NULL VEC3D (value of, fvec == rvec)
 	vm_vec_normalize_safe(&uvec);
 
+	// Scale the beam width so that they always appear at least some configured amount of pixels wide.
 	float scaled_w = model_render_get_diameter_clamped_to_min_pixel_size(pos, w, Min_pixel_size_beam);
 
 	vm_vec_scale_add( top, &temp, &uvec, scaled_w * 0.5f );
