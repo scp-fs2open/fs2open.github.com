@@ -475,10 +475,11 @@ ADE_VIRTVAR(CustomData, l_Weaponclass, nullptr, "Gets the custom data table for 
 	
 	weapon_info *wip = &Weapon_info[idx];
 
-	for (const auto pair : wip->custom_data)
+	for (const auto& pair : wip->custom_data)
 	{
 		table.addValue(pair.first, pair.second);
 	}
+
 	return ade_set_args(L, "t", &table);	
 }
 

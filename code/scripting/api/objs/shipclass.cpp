@@ -490,10 +490,11 @@ ADE_VIRTVAR(CustomData, l_Shipclass, nullptr, "Gets the custom data table for th
 	
 	ship_info *sip = &Ship_info[idx];
 
-	for (const auto pair : sip->custom_data)
+	for (const auto& pair : sip->custom_data)
 	{
 		table.addValue(pair.first, pair.second);
 	}
+
 	return ade_set_args(L, "t", &table);	
 }
 
