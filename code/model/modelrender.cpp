@@ -1911,10 +1911,10 @@ void model_render_glow_points(polymodel *pm, polymodel_instance *pmi, ship *ship
 
 	int cull = gr_set_cull(0);
 
-	glow_point_bank_override *gpo = NULL;
+	glow_point_bank_override *gpo = nullptr;
 	bool override_all = false;
 	SCP_unordered_map<int, void*>::iterator gpoi;
-	ship_info *sip = NULL;
+	ship_info *sip = nullptr;
 
 	if ( shipp ) {
 		sip = &Ship_info[shipp->ship_info_index];
@@ -1934,7 +1934,7 @@ void model_render_glow_points(polymodel *pm, polymodel_instance *pmi, ship *ship
 			if(gpoi != sip->glowpoint_bank_override_map.end()) {
 				gpo = (glow_point_bank_override*) sip->glowpoint_bank_override_map[i];
 			} else {
-				gpo = NULL;
+				gpo = nullptr;
 			}
 		}
 
@@ -1950,11 +1950,11 @@ void model_render_glow_points(polymodel *pm, polymodel_instance *pmi, ship *ship
 		}
 
 		if ((gpo && gpo->off_time_override && !gpo->off_time)?gpo->is_on:bank->is_on) {
-			if ( (shipp != NULL) && !(shipp->glow_point_bank_active[i]) )
+			if ( (shipp != nullptr) && !(shipp->glow_point_bank_active[i]) )
 				continue;
 
 			for (j = 0; j < bank->num_points; j++) {
-				Assert( bank->points != NULL );
+				Assert( bank->points != nullptr );
 				int flick;
 
 				if (pmi != nullptr && pmi->submodel[pm->detail[0]].num_arcs > 0) {
