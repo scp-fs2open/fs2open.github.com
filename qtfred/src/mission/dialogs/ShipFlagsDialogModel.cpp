@@ -1110,7 +1110,6 @@ void ShipFlagsDialogModel::initializeData()
 {
 	object* objp;
 	ship* shipp;
-	bool ship_in_wing = false;
 	int j, first;
 
 	first = 1;
@@ -1181,8 +1180,6 @@ void ShipFlagsDialogModel::initializeData()
 
 					m_reinforcement = (j < Num_reinforcements) ? 1 : 0;
 
-					// check if ship in wing
-					ship_in_wing = (shipp->wingnum != -1);
 					;
 				} else {
 
@@ -1268,8 +1265,6 @@ void ShipFlagsDialogModel::initializeData()
 					}
 					m_reinforcement = tristate_set(j < Num_reinforcements, m_reinforcement);
 
-					// check if ship in wing
-					ship_in_wing = (shipp->wingnum != -1);
 					;
 				}
 			}
