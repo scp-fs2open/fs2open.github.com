@@ -1679,7 +1679,7 @@ extern void shield_hit_close();
 int ship_is_shield_up( object *obj, int quadrant );
 
 //=================================================
-void ship_model_update_instance(object *objp);
+void ship_model_replicate_submodels(object *objp);
 
 //============================================
 extern int ship_find_num_crewpoints(object *objp);
@@ -1911,8 +1911,8 @@ extern bool ship_fighterbays_all_destroyed(ship *shipp);
 // Goober5000
 extern bool ship_subsys_takes_damage(ship_subsys *ss);
 
-// Goober5000 - handles submodel rotation, incorporating conditions such as gun barrels when firing
-extern void ship_do_submodel_rotation(ship *shipp, model_subsystem *psub, ship_subsys *pss);
+// Goober5000 - handles submodel rotation for subsystems, excluding turrets
+extern void ship_move_subsystems(object *objp);
 
 // Goober5000 - shortcut hud stuff
 extern int ship_has_energy_weapons(ship *shipp);

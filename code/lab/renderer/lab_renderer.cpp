@@ -73,8 +73,6 @@ void LabRenderer::renderModel(float frametime) {
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_weapons, !renderFlags[LabRenderFlag::ShowWeapons]);
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_ambientmap, renderFlags[LabRenderFlag::NoAOMap]);
 
-		ship_model_update_instance(obj);
-
 		Ships[obj->instance].team_name = currentTeamColor;
 
 		if (renderFlags[LabRenderFlag::ShowDamageLightning]) {
@@ -109,10 +107,6 @@ void LabRenderer::renderModel(float frametime) {
 	}
 
 	obj_move_all(frametime);
-	if (getLabManager()->CurrentMode == LabMode::Ship)
-		process_subobjects(getLabManager()->CurrentObject);
-
-	animation::ModelAnimation::stepAnimations(frametime);
 
 	particle::move_all(frametime);
 	particle::ParticleManager::get()->doFrame(frametime);

@@ -11704,9 +11704,9 @@ void ai_debug_render_stuff()
 
 
 //	--------------------------------------------------------------------------
-// Process subobjects of object objnum.
+// Process whatever AI behavior is associated with subobjects of object objnum.
 //	Deal with engines disabled.
-void process_subobjects(int objnum)
+void ai_process_subobjects(int objnum)
 {
 	ship_subsys	*pss;
 	object	*objp = &Objects[objnum];
@@ -11714,16 +11714,34 @@ void process_subobjects(int objnum)
 	ai_info	*aip = &Ai_info[shipp->ai_index];
 	ship_info	*sip = &Ship_info[shipp->ship_info_index];
 
-	model_subsystem	*psub;
-	for ( pss = GET_FIRST(&shipp->subsys_list); pss !=END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) ) {
-		psub = pss->system_info;
+	polymodel_instance *pmi = model_get_instance(shipp->model_instance_num);
+	polymodel *pm = model_get(pmi->model_num);
 
-		// Don't process destroyed objects (but allow subobjects with hitpoints disabled -nuke) (but also process subobjects that are allowed to rotate)
-		if (pss->max_hits > 0 && pss->current_hits <= 0.0f && !(psub->flags[Model::Subsystem_Flags::Destroyed_rotation]))
+	for ( pss = GET_FIRST(&shipp->subsys_list); pss !=END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) ) {
+		auto psub = pss->system_info;
+
+		// Don't process destroyed objects (but allow subobjects with hitpoints disabled -nuke)
+		if (pss->max_hits > 0 && pss->current_hits <= 0.0f) {
 			continue;
+		}
 
 		switch (psub->type) {
 		case SUBSYSTEM_TURRET:
+			// Don't process multipart turrets if we can't rotate.
+			if ((psub->subobj_num != psub->turret_gun_sobj) && (psub->turret_gun_sobj >= 0) && shipp->flags[Ship::Ship_Flags::Rotators_locked])
+				break;
+
+			// Don't process a turret for a ship being repaired, if the support ship is close
+			// (previously in ship_evaluate_ai (previously in ship_process_post))
+			if (aip->ai_flags[AI::AI_Flags::Being_repaired, AI::AI_Flags::Awaiting_repair])
+			{
+				if (aip->support_ship_objnum >= 0)
+				{
+					if (vm_vec_dist_quick(&objp->pos, &Objects[aip->support_ship_objnum].pos) < (objp->radius + Objects[aip->support_ship_objnum].radius) * 1.25f)
+						break;
+				}
+			}
+
 			// handle ending animations
 			if ( (pss->turret_animation_position == MA_POS_READY) && timestamp_elapsed(pss->turret_animation_done_time) ) {
 				bool started = false;
@@ -11742,6 +11760,18 @@ void process_subobjects(int objnum)
 			} else {
 				Warning( LOCATION, "Turret %s on ship %s has no firing points assigned to it.\nThis needs to be fixed in the model.\n", psub->name, shipp->ship_name );
 			}
+
+			// If we're not using FIT, the AI stuff will happen after the object and its submodels move,
+			// so in that case be sure to keep the turret submodels up to date
+			if (!Framerate_independent_turning) {
+				if (psub->subobj_num >= 0) {
+					model_replicate_submodel_instance(pm, pmi, psub->subobj_num, pss->flags);
+				}
+
+				if ((psub->subobj_num != psub->turret_gun_sobj) && (psub->turret_gun_sobj >= 0)) {
+					model_replicate_submodel_instance(pm, pmi, psub->turret_gun_sobj, pss->flags);
+				}
+			}
 			break;
 
 		case SUBSYSTEM_ENGINE:
@@ -11752,36 +11782,32 @@ void process_subobjects(int objnum)
 		case SUBSYSTEM_UNKNOWN:
 			break;
 
-		// next set of subsystems may rotation
 		case SUBSYSTEM_RADAR:
 		case SUBSYSTEM_SOLAR:
 		case SUBSYSTEM_GAS_COLLECT:
 		case SUBSYSTEM_ACTIVATION:
 			break;
 		default:
-			Error(LOCATION, "Illegal subsystem type.\n");
+			Error(LOCATION, "Illegal subsystem type %d.\n", psub->type);
 		}
 
-		// do solar/radar/gas/activator rotation here
-		ship_do_submodel_rotation(shipp, psub, pss);
+		// NOTE: Subsystem submodels are no longer rotated here.  See ship_move_subsystems().
 	}
 
-	if (!(Game_mode & GM_LAB)) {
-		//	Deal with a ship with blown out engines.
-		if (ship_get_subsystem_strength(shipp, SUBSYSTEM_ENGINE) == 0.0f) {
-			// Karajorma - if Player_use_ai is ever fixed to work on multiplayer it should be checked that any player ships 
-			// aren't under AI control here
-			if ((!(objp->flags[Object::Object_Flags::Player_ship])) && (sip->is_fighter_bomber()) && !(shipp->flags[Ship::Ship_Flags::Dying])) {
-				// Goober5000 - don't do anything if docked
-				if (!object_is_docked(objp)) {
-					// AL: Only attack forever if not trying to depart to a docking bay.  Need to have this in, since
-					//     a ship may get repaired... and it should still try to depart.  Since docking bay departures
-					//     are not handled as goals, we don't want to leave the AIM_BAY_DEPART mode.
-					if (aip->mode != AIM_BAY_DEPART) {
-					  ai_attack_object(objp, nullptr);		//	Regardless of current mode, enter attack mode.
-						aip->submode = SM_ATTACK_FOREVER;				//	Never leave attack submode, don't avoid, evade, etc.
-						aip->submode_start_time = Missiontime;
-					}
+	//	Deal with a ship with blown out engines.
+	if (ship_get_subsystem_strength(shipp, SUBSYSTEM_ENGINE) == 0.0f) {
+		// Karajorma - if Player_use_ai is ever fixed to work on multiplayer it should be checked that any player ships 
+		// aren't under AI control here
+		if ((!(objp->flags[Object::Object_Flags::Player_ship])) && (sip->is_fighter_bomber()) && !(shipp->flags[Ship::Ship_Flags::Dying])) {
+			// Goober5000 - don't do anything if docked
+			if (!object_is_docked(objp)) {
+				// AL: Only attack forever if not trying to depart to a docking bay.  Need to have this in, since
+				//     a ship may get repaired... and it should still try to depart.  Since docking bay departures
+				//     are not handled as goals, we don't want to leave the AIM_BAY_DEPART mode.
+				if (aip->mode != AIM_BAY_DEPART) {
+					ai_attack_object(objp, nullptr);		//	Regardless of current mode, enter attack mode.
+					aip->submode = SM_ATTACK_FOREVER;				//	Never leave attack submode, don't avoid, evade, etc.
+					aip->submode_start_time = Missiontime;
 				}
 			}
 		}
@@ -13512,7 +13538,7 @@ void ai_bay_depart()
  */
 void ai_sentrygun()
 {
-	// Nothing to do here.  Turret firing is handled via process_subobjects().
+	// Nothing to do here.  Turret firing is handled via ai_process_subobjects().
 	// If you want the sentry guns to do anything beyond firing their turrets at enemies, add it here!
 }
 
@@ -14674,7 +14700,7 @@ void ai_frame(int objnum)
 		ai_execute_behavior(aip);
 	}
 
-	process_subobjects(objnum);
+	ai_process_subobjects(objnum);
 	maybe_resume_previous_mode(Pl_objp, aip);
 	
 	if (Pl_objp->phys_info.flags & PF_AFTERBURNER_ON ) {

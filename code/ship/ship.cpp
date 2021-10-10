@@ -9216,45 +9216,31 @@ void ship_evaluate_ai(object* obj, float frametime) {
 	int num = obj->instance;
 	Assertion(obj->type == OBJ_SHIP, "Non-ship object passed to ship_evaluate_ai");
 	Assertion(num >= 0 && num < MAX_SHIPS, "Invalid ship instance num in ship_evaluate_ai");
-	Assertion(Ships[num].objnum == OBJ_INDEX(obj), "Ship objnum does not match its num in OBJ_INDEX in ship_evaluate_ai");
-
 	ship* shipp = &Ships[num];
+	Assertion(shipp->objnum == OBJ_INDEX(obj), "Ship objnum does not match its num in OBJ_INDEX in ship_evaluate_ai");
 
-	//rotate player subobjects since its processed by the ai functions
-	// AL 2-19-98: Fire turret for player if it exists
-	//WMC - changed this to call process_subobjects
-	if ((obj->flags[Object::Object_Flags::Player_ship]) && !Player_use_ai)
-	{
-		ai_info* aip = &Ai_info[Ships[obj->instance].ai_index];
-		if (aip->ai_flags[AI::AI_Flags::Being_repaired, AI::AI_Flags::Awaiting_repair])
-		{
-			if (aip->support_ship_objnum >= 0)
-			{
-				if (vm_vec_dist_quick(&obj->pos, &Objects[aip->support_ship_objnum].pos) < (obj->radius + Objects[aip->support_ship_objnum].radius) * 1.25f)
-					return;
-			}
-		}
-		if (!shipp->flags[Ship::Ship_Flags::Rotators_locked])
-			process_subobjects(OBJ_INDEX(obj));
-	}
+	// seems important
+	if (shipp->ai_index < 0)
+		return;
+
+	// this prevents AI stuff, according to original Volition code
+	if (physics_paused || ai_paused)
+		return;
 
 	// update ship lethality
-	if (Ships[num].ai_index >= 0 ){
-		if (!physics_paused && !ai_paused) {
-			lethality_decay(&Ai_info[Ships[num].ai_index]);
-		}
-	}
+	lethality_decay(&Ai_info[shipp->ai_index]);
 
-	// if the ship is an observer ship don't need to do AI
-	if ( obj->type == OBJ_OBSERVER)  {
-		return;
+	// if we are a player ship and not under AI control, all we do is process our subobjects
+	if ((obj->flags[Object::Object_Flags::Player_ship]) && !Player_use_ai)
+	{
+		// AL 2-19-98: Fire turret for player if it exists
+		//WMC - changed this to call ai_process_subobjects
+		ai_process_subobjects(OBJ_INDEX(obj));
 	}
-
-	// Goober5000 - player may want to use AI
-	if ( (Ships[num].ai_index >= 0) && (!(obj->flags[Object::Object_Flags::Player_ship]) || Player_use_ai) ){
-		if (!physics_paused && !ai_paused){
-			ai_process( obj, Ships[num].ai_index, frametime );
-		}
+	// otherwise we run the full AI pipeline
+	else
+	{
+		ai_process( obj, shipp->ai_index, frametime );
 	}
 }
 
@@ -13506,9 +13492,9 @@ int get_subsystem_pos(vec3d* pos, object* objp, ship_subsys* subsysp)
 }
 
 /**
- * Like ship_model_start but fills submodel instances instead of the submodels themselves
+ * Makes sure all submodel instances for this ship are kept in sync
  */
-void ship_model_update_instance(object *objp)
+void ship_model_replicate_submodels(object *objp)
 {
 	model_subsystem	*psub;
 	ship		*shipp;
@@ -13522,37 +13508,17 @@ void ship_model_update_instance(object *objp)
 	polymodel_instance *pmi = model_get_instance(shipp->model_instance_num);
 	polymodel *pm = model_get(pmi->model_num);
 
-	// Handle subsystem rotations for this ship
 	for ( pss = GET_FIRST(&shipp->subsys_list); pss != END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) ) {
 		psub = pss->system_info;
-		switch (psub->type) {
-			case SUBSYSTEM_RADAR:
-			case SUBSYSTEM_NAVIGATION:
-			case SUBSYSTEM_COMMUNICATION:
-			case SUBSYSTEM_UNKNOWN:
-			case SUBSYSTEM_ENGINE:
-			case SUBSYSTEM_SENSORS:
-			case SUBSYSTEM_WEAPONS:
-			case SUBSYSTEM_SOLAR:
-			case SUBSYSTEM_GAS_COLLECT:
-			case SUBSYSTEM_ACTIVATION:
-			case SUBSYSTEM_TURRET:
-				break;
-			default:
-				Error(LOCATION, "Illegal subsystem type.\n");
-		}
 
 		if ( psub->subobj_num >= 0 )	{
-			model_update_instance(pm, pmi, psub->subobj_num, pss->flags );
+			model_replicate_submodel_instance(pm, pmi, psub->subobj_num, pss->flags );
 		}
 
 		if ( (psub->subobj_num != psub->turret_gun_sobj) && (psub->turret_gun_sobj >= 0) )		{
-			model_update_instance(pm, pmi, psub->turret_gun_sobj, pss->flags );
+			model_replicate_submodel_instance(pm, pmi, psub->turret_gun_sobj, pss->flags );
 		}
 	}
-
-	// Handle intrinsic rotations for this ship
-	model_do_intrinsic_rotations(shipp->model_instance_num);
 }
 
 /**
@@ -18193,6 +18159,24 @@ void ship_do_submodel_rotation(ship *shipp, model_subsystem *psub, ship_subsys *
 		submodel_stepped_rotate(psub, pss->submodel_instance_1);
 	} else {
 		submodel_rotate(psub, pss->submodel_instance_1 );
+	}
+}
+
+void ship_move_subsystems(object *objp)
+{
+	Assertion(objp->type == OBJ_SHIP, "ship_move_subsystems should only be called for ships!  objp type = %d", objp->type);
+	auto shipp = &Ships[objp->instance];
+
+	for (auto pss = GET_FIRST(&shipp->subsys_list); pss != END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss))
+	{
+		auto psub = pss->system_info;
+
+		// Don't process destroyed objects (but allow subobjects with hitpoints disabled -nuke) (but also process subobjects that are allowed to rotate)
+		if (pss->max_hits > 0 && pss->current_hits <= 0.0f && !(psub->flags[Model::Subsystem_Flags::Destroyed_rotation]))
+			continue;
+
+		// do solar/radar/gas/activator rotation here
+		ship_do_submodel_rotation(shipp, psub, pss);
 	}
 }
 
