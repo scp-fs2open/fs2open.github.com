@@ -1017,12 +1017,12 @@ namespace fso {
 				return _m_arrival_tree_formula;
 			}
 
-			void ShipEditorDialogModel::setNoArrivalWarp(bool value)
+			void ShipEditorDialogModel::setNoArrivalWarp(int value)
 			{
 				modify(_m_no_arrival_warp, value);
 			}
 
-			bool ShipEditorDialogModel::getNoArrivalWarp()
+			int ShipEditorDialogModel::getNoArrivalWarp()
 			{
 				return _m_no_arrival_warp;
 			}
@@ -1078,12 +1078,12 @@ namespace fso {
 				return _m_departure_tree_formula;
 			}
 
-			void ShipEditorDialogModel::setNoDepartureWarp(bool value)
+			void ShipEditorDialogModel::setNoDepartureWarp(int value)
 			{
 				modify(_m_no_departure_warp, value);
 			}
 
-			bool ShipEditorDialogModel::getNoDepartureWarp()
+			int ShipEditorDialogModel::getNoDepartureWarp()
 			{
 				return _m_no_departure_warp;
 			}

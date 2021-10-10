@@ -49,20 +49,20 @@ ShipEditorDialog::ShipEditorDialog(FredView* parent, EditorViewport* viewport)
 	connect(ui->cargoCombo->lineEdit(), (&QLineEdit::editingFinished), this, &ShipEditorDialog::cargoChanged);
 
 	// ui->cargoCombo->installEventFilter(this);
-	connect(ui->altNameCombo->lineEdit(), (&QLineEdit::editingFinished),
+	connect(ui->altNameCombo->lineEdit(), SIGNAL(editingFinished()),
 		this,
-		qOverload<>(&ShipEditorDialog::altNameChanged));
+		SLOT(altNameChanged()));
 	connect(ui->altNameCombo,
-		static_cast<void (QComboBox::*)(const QString&)>(&QComboBox::currentIndexChanged),
+		SIGNAL(currentIndexChanged(const QString&)),
 		this,
-		qOverload<>(&ShipEditorDialog::altNameChanged));
+		SLOT(altNameChanged(const QString&)));
 	connect(ui->callsignCombo,
-		static_cast<void (QComboBox::*)(const QString&)>(&QComboBox::currentIndexChanged),
+		SIGNAL(currentIndexChanged(const QString&)),
 		this,
-		qOverload<>(&ShipEditorDialog::callsignChanged));
-	connect(ui->callsignCombo->lineEdit(), (&QLineEdit::editingFinished),
+		SLOT(callsignChanged(const QString&)));
+	connect(ui->callsignCombo->lineEdit(), SIGNAL(editingFinished()),
 		this,
-		qOverload<>(&ShipEditorDialog::callsignChanged));
+		SLOT(callsignChanged()));
 
 	// Column Two
 	connect(ui->hotkeyCombo,
