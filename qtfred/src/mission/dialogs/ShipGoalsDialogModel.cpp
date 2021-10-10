@@ -68,7 +68,7 @@ namespace fso {
 			{
 				const char* str;
 				SCP_string error_message;
-				if ((str = _editor->error_check_initial_orders(goalp, self_ship, self_wing)) != NULL) {
+				if ((str = _editor->error_check_initial_orders(goalp, self_ship, self_wing)) != nullptr) {
 					if (*str == '!')
 						return 1;
 					else if (*str == '*')
@@ -130,8 +130,8 @@ namespace fso {
 					break;
 
 				case AI_GOAL_DESTROY_SUBSYSTEM:
-					subsys = NULL;
-					if (!m_multi_edit || (m_object[item] && (m_subsys[item].c_str() != 0)))
+					subsys = nullptr;
+					if (!m_multi_edit || (m_object[item] && (m_subsys[item].c_str() != nullptr)))
 						subsys = (char*)m_subsys[item].c_str();
 					//MODIFY(goalp[item].ai_submode, m_subsys[item] + 1);
 
@@ -169,18 +169,18 @@ namespace fso {
 					break;
 
 				case AI_GOAL_DOCK:
-					docker = NULL;
-					if (!m_multi_edit || (m_object[item] && (m_subsys[item].c_str() != 0)))
+					docker = nullptr;
+					if (!m_multi_edit || (m_object[item] && (m_subsys[item].c_str() != nullptr)))
 						docker = (char*)m_subsys[item].c_str();
 
-					dockee = NULL;
+					dockee = nullptr;
 					if (!m_multi_edit || (m_object[item] && (m_dock2[item] >= 0)))
 						dockee = (char *)m_dock2[item];
 
 					if (docker == (char*)SIZE_MAX)
-						docker = NULL;
+						docker = nullptr;
 					if (dockee == (char*)SIZE_MAX)
-						dockee = NULL;
+						dockee = nullptr;
 
 					if (!docker || !dockee) {
 						sprintf(error_message, "Order #%d doesn't have valid docking points.  Order will be removed", item + 1);
@@ -248,7 +248,7 @@ namespace fso {
 
 				case TYPE_PATH:
 					wp_list = find_waypoint_list_at_index(m_object[item] & DATA_MASK);
-					Assert(wp_list != NULL);
+					Assert(wp_list != nullptr);
 					goalp[item].target_name = ai_get_goal_target_name(wp_list->get_name(), &not_used);
 					break;
 
@@ -297,7 +297,7 @@ namespace fso {
 
 				if (self_ship >= 0) { // editing orders for just one ship
 					for (i = 0; i < Ai_goal_list_size; i++) {
-						if (!(ai_query_goal_valid(self_ship, _editor->getAi_goal_list()[i].def))) {
+						if (!(ai_query_goal_valid(self_ship, Editor::getAi_goal_list()[i].def))) {
 							valid[i] = 0;
 						}
 					}
@@ -305,13 +305,13 @@ namespace fso {
 				else if (self_wing >= 0) { // editing orders for just one wing
 					for (i = 0; i < Wings[self_wing].wave_count; i++) {
 						for (j = 0; j < Ai_goal_list_size; j++) {
-							if (!ai_query_goal_valid(Wings[self_wing].ship_index[i], _editor->getAi_goal_list()[j].def)) {
+							if (!ai_query_goal_valid(Wings[self_wing].ship_index[i], Editor::getAi_goal_list()[j].def)) {
 								valid[j] = 0;
 							}
 						}
 					}
 					for (i = 0; i < Ai_goal_list_size; i++) {
-						if (_editor->getAi_goal_list()[i].def == AI_GOAL_DOCK) { // a whole wing can't dock with one object..
+						if (Editor::getAi_goal_list()[i].def == AI_GOAL_DOCK) { // a whole wing can't dock with one object..
 							valid[i] = 0;
 						}
 					}
@@ -321,7 +321,7 @@ namespace fso {
 					while (ptr != END_OF_LIST(&obj_used_list)) {
 						if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (ptr->flags[Object::Object_Flags::Marked])) {
 							for (i = 0; i < Ai_goal_list_size; i++) {
-								if (!ai_query_goal_valid(ptr->instance, _editor->getAi_goal_list()[i].def)) {
+								if (!ai_query_goal_valid(ptr->instance, Editor::getAi_goal_list()[i].def)) {
 									valid[i] = 0;
 								}
 							}
@@ -332,7 +332,7 @@ namespace fso {
 				}
 				if (Waypoint_lists.empty()) {
 					for (i = 0; i < Ai_goal_list_size; i++) {
-						switch (_editor->getAi_goal_list()[i].def) {
+						switch (Editor::getAi_goal_list()[i].def) {
 						case AI_GOAL_WAYPOINTS:
 						case AI_GOAL_WAYPOINTS_ONCE:
 							// case AI_GOAL_WARP:
@@ -356,7 +356,7 @@ namespace fso {
 
 				if (!z) {
 					for (i = 0; i < Ai_goal_list_size; i++) {
-						if (_editor->getAi_goal_list()[i].def == AI_GOAL_DOCK) {
+						if (Editor::getAi_goal_list()[i].def == AI_GOAL_DOCK) {
 							valid[i] = 0;
 						}
 					}
@@ -494,13 +494,14 @@ namespace fso {
 					}
 
 					if (flag & 0x2) {
-						for (i = 0; i < MAX_WINGS; i++)
+						for (i = 0; i < MAX_WINGS; i++) {
 							if (Wings[i].wave_count) {
 								if (!stricmp(goalp[item].target_name, Wings[i].name)) {
 									m_object[item] = i | TYPE_WING;
 									break;
 								}
 							}
+						}
 					}
 
 					if (flag & 0x4) { // data is a waypoint path name
@@ -515,7 +516,7 @@ namespace fso {
 
 					if (flag & 0x8) { // data is a waypoint name
 						waypoint* wpt = find_matching_waypoint(goalp[item].target_name);
-						if (wpt != NULL)
+						if (wpt != nullptr)
 							m_object[item] = wpt->get_objnum() | TYPE_WAYPOINT;
 					}
 
@@ -604,7 +605,7 @@ namespace fso {
 					ptr = GET_NEXT(ptr);
 				}
 
-				goalp = NULL;
+				goalp = nullptr;
 				for (i = 0; i < ED_MAX_GOALS; i++) {
 					m_behavior[i] = behavior[i];
 					m_priority[i] = priority[i];
@@ -649,7 +650,7 @@ namespace fso {
 			}
 			const ai_goal_list* ShipGoalsDialogModel::getGoalTypes()
 			{
-				return _editor->getAi_goal_list();
+				return Editor::getAi_goal_list();
 			}
 			 int ShipGoalsDialogModel::getGoalsSize()
 			{
@@ -671,7 +672,7 @@ namespace fso {
 			{
 				return m_object[pos];
 			}
-			void ShipGoalsDialogModel::setSubsys(int pos, SCP_string data)
+			void ShipGoalsDialogModel::setSubsys(int pos, SCP_string& data)
 			{
 				modify(m_subsys[pos], data);
 			}
