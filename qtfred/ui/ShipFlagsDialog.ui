@@ -44,9 +44,9 @@
       </layout>
      </item>
      <item>
-      <widget class="fso::fred::ShipFlagCheckbox" name="scanableCheckbox">
+      <widget class="fso::fred::ShipFlagCheckbox" name="scannableCheckbox">
        <property name="text">
-        <string>Scanable</string>
+        <string>Scannable</string>
        </property>
        <property name="tristate">
         <bool>true</bool>
