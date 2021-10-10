@@ -1,7 +1,6 @@
 #include "ShipInitialStatusDialogModel.h"
 
 #include "mission/object.h"
-#include "ui/dialogs/ShipInitialStatusDialog.h"
 
 #include <globalincs/linklist.h>
 
@@ -337,7 +336,7 @@ void ShipInitialStatusDialogModel::undock(object* objp1, object* objp2)
 	ship_num = get_ship_from_obj(OBJ_INDEX(objp1));
 	other_ship_num = get_ship_from_obj(OBJ_INDEX(objp2));
 
-	if (_viewport->view.Move_ships_when_undocking) {
+	if (_viewport->Move_ships_when_undocking) {
 		if (ship_class_compare(Ships[ship_num].ship_info_index, Ships[other_ship_num].ship_info_index) <= 0)
 			vm_vec_scale_add2(&objp2->pos,
 				&v,
@@ -706,7 +705,7 @@ void ShipInitialStatusDialogModel::change_subsys(int new_subsys)
 	// Goober5000
 	ship_has_scannable_subsystems = Ship_info[Ships[m_ship].ship_info_index].is_huge_ship();
 	if (Ships[m_ship].flags[Ship::Ship_Flags::Toggle_subsystem_scanning]) {
-		ship_has_scannable_subsystems = !ship_has_scannable_subsystems;
+		ship_has_scannable_subsystems = ~ship_has_scannable_subsystems;
 	}
 
 	if (cur_subsys != -1) {
