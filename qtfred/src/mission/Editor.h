@@ -3,7 +3,9 @@
 #include "EditorViewport.h"
 #include "FredRenderer.h"
 
+#include <ai/aigoals.h>
 #include <globalincs/globals.h>
+#include <jumpnode/jumpnode.h>
 #include <object/waypoint.h>
 #include <osapi/osapi.h>
 #include <ship/ship.h>
@@ -12,7 +14,6 @@
 #include <functional>
 #include <memory>
 #include <stdexcept>
-#include <jumpnode/jumpnode.h>
 
 namespace fso {
 namespace fred {
@@ -179,6 +180,9 @@ class Editor : public QObject {
 	static void strip_quotation_marks(SCP_string& str);
 	static void pad_with_newline(SCP_string& str, size_t max_size);
 
+	const ai_goal_list* getAi_goal_list();
+	const int getAigoal_list_size();
+	char* error_check_initial_orders(ai_goal* goals, int ship, int wing);
   private:
 	void clearMission();
 
@@ -270,7 +274,6 @@ class Editor : public QObject {
 
 	int fred_check_sexp(int sexp, int type, const char* msg, ...);
 
-	const char* error_check_initial_orders(ai_goal* goals, int ship, int wing);
 
 	int global_error_check_mixed_player_wing(int w);
 

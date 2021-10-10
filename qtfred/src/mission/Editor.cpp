@@ -17,7 +17,6 @@
 #include <gamesnd/eventmusic.h>
 #include <starfield/nebula.h>
 #include <object/objectdock.h>
-#include <ai/aigoals.h>
 #include <localization/fhash.h>
 
 #include "iff_defs/iff_defs.h" // iff_init
@@ -2599,7 +2598,7 @@ int Editor::fred_check_sexp(int sexp, int type, const char* msg, ...) {
 
 	return 0;
 }
-const char* Editor::error_check_initial_orders(ai_goal* goals, int ship, int wing) {
+char* Editor::error_check_initial_orders(ai_goal* goals, int ship, int wing) {
 	char *source;
 	int i, j, flag, found, inst, team, team2;
 	object *ptr;
@@ -2852,6 +2851,13 @@ const char* Editor::get_order_name(int order) {
 			return entry.name;
 
 	return "???";
+}
+const ai_goal_list* Editor::getAi_goal_list()
+{
+	return Ai_goal_list;
+}
+const int Editor::getAigoal_list_size() {
+	return sizeof(Ai_goal_list) / sizeof(ai_goal_list);
 }
 SCP_vector<SCP_string> Editor::get_docking_list(int model_index) {
 	int i;
