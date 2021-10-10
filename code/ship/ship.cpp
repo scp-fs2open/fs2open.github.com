@@ -4671,6 +4671,11 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		sip->pathMetadata[pathName] = metadata;
 	}
 
+	if (optional_string("$Custom data:")) 
+	{
+		parse_string_map(sip->custom_data, "$end_custom_data", "+Val:");
+	}
+
 	int n_subsystems = 0;
 	int cont_flag = 1;
 	model_subsystem subsystems[MAX_MODEL_SUBSYSTEMS] = {}; // see model.h for max_model_subsystems

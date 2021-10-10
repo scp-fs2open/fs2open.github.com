@@ -1359,6 +1359,8 @@ public:
 
 	SCP_map<GameSounds, gamesnd_id> ship_sounds;			// specifies ship-specific sound indexes
 
+	SCP_map<SCP_string, SCP_string> custom_data;
+
 	int num_maneuvering;
 	man_thruster maneuvering[MAX_MAN_THRUSTERS];
 

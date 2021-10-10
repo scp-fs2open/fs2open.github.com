@@ -3429,6 +3429,11 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	if (optional_string("$Score:")) {
 		stuff_int(&wip->score);
 	}
+	
+	if (optional_string("$Custom data:")) 
+	{
+		parse_string_map(wip->custom_data, "$end_custom_data", "+Val:");
+	}
 
 	return w_id;
 }
