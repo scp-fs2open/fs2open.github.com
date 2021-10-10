@@ -130,6 +130,8 @@ add_file_folder("Source/UI/Widgets"
     src/ui/widgets/renderwidget.h
 	src/ui/widgets/sexp_tree.cpp
 	src/ui/widgets/sexp_tree.h
+	src/ui/widgets/ShipFlagCheckbox.h
+	src/ui/widgets/ShipFlagCheckbox.cpp
 )
 
 add_file_folder("UI"
