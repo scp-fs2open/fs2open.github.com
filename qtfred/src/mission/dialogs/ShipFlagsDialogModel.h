@@ -62,7 +62,7 @@ class ShipFlagsDialogModel : public AbstractDialogModel {
 	int m_respawn_priority;
 
 	void set_modified();
-	int tristate_set(int val, int cur_state);
+	static int tristate_set(int val, int cur_state);
 	void update_ship(int);
 
   public:

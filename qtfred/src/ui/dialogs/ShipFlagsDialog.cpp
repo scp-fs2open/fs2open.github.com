@@ -96,7 +96,7 @@ ShipFlagsDialog::ShipFlagsDialog(QWidget* parent, EditorViewport* viewport)
 	resize(QDialog::sizeHint());
 }
 
-ShipFlagsDialog::~ShipFlagsDialog() {}
+ShipFlagsDialog::~ShipFlagsDialog() = default;
 
 void ShipFlagsDialog::closeEvent(QCloseEvent* event)
 {
