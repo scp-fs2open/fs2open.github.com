@@ -1,4 +1,5 @@
-#include <QtWidgets/QCheckbox>
+#pragma once
+#include <QCheckBox>
 #include <QtGui/QStandardItemModel>
 
 namespace fso {
