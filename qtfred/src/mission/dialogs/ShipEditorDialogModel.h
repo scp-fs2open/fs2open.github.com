@@ -155,7 +155,7 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	int select_sexp_node;
 	int player_count;
 	int ship_count;
-	bool multi_edit;
+	int multi_edit;
 	int base_ship;
 	int cue_init;
 	int total_count;
