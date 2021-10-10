@@ -405,6 +405,11 @@ void Editor::clearMission() {
 		Wings[i].wing_insignia_texture = -1;
 	}
 
+	Shield_sys_teams.clear();
+	for (auto i = 0; i < (int)Iff_info.size(); i++) {
+		Shield_sys_teams.push_back(0);
+	}
+
 	Num_ai_dock_names = 0;
 	Num_reinforcements = 0;
 	setupCurrentObjectIndices(-1);
