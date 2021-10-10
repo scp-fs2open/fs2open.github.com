@@ -169,6 +169,10 @@ void ShipEditorDialog::on_initialStatusButton_clicked()
 void ShipEditorDialog::on_initialOrdersButton_clicked()
 {
 	// TODO:: Initial orders dialog
+	auto GoalsDialog = new dialogs::ShipGoalsDialog(this, _viewport, _model->multi_edit);
+	GoalsDialog->setShip(Ships[_model->base_ship].objnum);
+	GoalsDialog->show();
+
 }
 
 void ShipEditorDialog::on_tblInfoButton_clicked()
@@ -316,7 +320,7 @@ void ShipEditorDialog::updateArrival()
 		for (restrict_to_players = 0; restrict_to_players < 2; restrict_to_players++) {
 			for (i = 0; i < (int)Iff_info.size(); i++) {
 				char tmp[NAME_LENGTH + 15];
-				_model->stuff_special_arrival_anchor_name(tmp, i, restrict_to_players, 0);
+				stuff_special_arrival_anchor_name(tmp, i, restrict_to_players, 0);
 
 				ui->arrivalTargetCombo->addItem(tmp, QVariant(get_special_anchor(tmp)));
 			}

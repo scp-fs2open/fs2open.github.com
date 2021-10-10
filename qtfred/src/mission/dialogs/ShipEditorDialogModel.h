@@ -4,6 +4,7 @@
 
 #include "ship/ship.h"
 #include "ui/widgets/sexp_tree.h"
+#include "mission/util.h"
 
 namespace fso {
 namespace fred {
@@ -147,7 +148,6 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	void OnShipReset();
 
 	static bool wing_is_player_wing(int);
-	static void stuff_special_arrival_anchor_name(char* buf, int iff_index, int restrict_to_players, int retail_format);
 
 	bool enable;
 	bool p_enable;
