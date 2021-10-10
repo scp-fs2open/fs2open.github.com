@@ -121,8 +121,8 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	void setArrivalFormula(int, int);
 	int getArrivalFormula();
 
-	void setNoArrivalWarp(bool);
-	bool getNoArrivalWarp();
+	void setNoArrivalWarp(int);
+	int getNoArrivalWarp();
 
 	void setDepartureLocation(int);
 	int getDepartureLocation();
@@ -138,8 +138,8 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 
 	void setDepartureFormula(int, int);
 	int getDepartureFormula();
-	void setNoDepartureWarp(bool);
-	bool getNoDepartureWarp();
+	void setNoDepartureWarp(int);
+	int getNoDepartureWarp();
 
 	void OnPrevious();
 	void OnNext();

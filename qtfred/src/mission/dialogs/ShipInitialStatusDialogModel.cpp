@@ -54,7 +54,7 @@ bool set_cue_to_false(int* cue)
 }
 
 // self-explanatory, really
-void initial_status_unmark_dock_handled_flag(object* objp, dock_function_info* infop, EditorViewport* viewport)
+void initial_status_unmark_dock_handled_flag(object* objp)
 {
 	objp->flags.remove(Object::Object_Flags::Docked_already_handled);
 }
@@ -459,6 +459,67 @@ void ShipInitialStatusDialogModel::dock_evaluate_all_docked_objects(object* objp
 	}
 }
 
+void ShipInitialStatusDialogModel::dock_evaluate_all_docked_objects(object* objp, dock_function_info* infop, void(*function)(object*))
+{
+	Assertion((objp != nullptr) && (infop != nullptr) && (function != nullptr),
+		"dock_evaluate_all_docked_objects, invalid argument(s)");
+
+	// not docked?
+	if (!object_is_docked(objp)) {
+		// call the function for just the one object
+		function(objp);
+		return;
+	}
+
+	// we only have two objects docked
+	if (dock_check_docked_one_on_one(objp)) {
+		// call the function for the first object, and return if instructed
+		function(objp);
+		if (infop->early_return_condition)
+			return;
+
+		// call the function for the second object, and return if instructed
+		function(objp->dock_list->docked_objp);
+		if (infop->early_return_condition)
+			return;
+	}
+
+	// we have multiple objects docked and we're treating them as a hub
+	else if (dock_check_assume_hub()) {
+		// get the hub
+		object* hub_objp = dock_get_hub(objp);
+
+		// call the function for the hub, and return if instructed
+		function(hub_objp);
+		if (infop->early_return_condition)
+			return;
+
+		// iterate through all docked objects
+		for (dock_instance* ptr = hub_objp->dock_list; ptr != NULL; ptr = ptr->next) {
+			// call the function for this object, and return if instructed
+			function(ptr->docked_objp);
+			if (infop->early_return_condition)
+				return;
+		}
+	}
+
+	// we have multiple objects docked and we must treat them as a tree
+	else {
+		// create a bit array to mark the objects we check
+		ubyte* visited_bitstring = (ubyte*)vm_malloc(calculate_num_bytes(MAX_OBJECTS));
+
+		// clear it
+		memset(visited_bitstring, 0, calculate_num_bytes(MAX_OBJECTS));
+
+		// start evaluating the tree
+		dock_evaluate_tree(objp, infop, function, visited_bitstring);
+
+		// destroy the bit array
+		vm_free(visited_bitstring);
+		visited_bitstring = NULL;
+	}
+}
+
 void ShipInitialStatusDialogModel::dock_evaluate_tree(object* objp,
 	dock_function_info* infop,
 	void (*function)(object*, dock_function_info*, EditorViewport*),
@@ -473,6 +534,29 @@ void ShipInitialStatusDialogModel::dock_evaluate_tree(object* objp,
 
 	// call the function for this object, and return if instructed
 	function(objp, infop, _viewport);
+	if (infop->early_return_condition)
+		return;
+
+	// iterate through all docked objects
+	for (dock_instance* ptr = objp->dock_list; ptr != NULL; ptr = ptr->next) {
+		// start another tree with the docked object as the root, and return if instructed
+		dock_evaluate_tree(ptr->docked_objp, infop, function, visited_bitstring);
+		if (infop->early_return_condition)
+			return;
+	}
+}
+
+void ShipInitialStatusDialogModel::dock_evaluate_tree(object* objp, dock_function_info* infop, void(*function)(object*), ubyte* visited_bitstring)
+{
+	// make sure we haven't visited this object already
+	if (get_bit(visited_bitstring, OBJ_INDEX(objp)))
+		return;
+
+	// mark as visited
+	set_bit(visited_bitstring, OBJ_INDEX(objp));
+
+	// call the function for this object, and return if instructed
+	function(objp);
 	if (infop->early_return_condition)
 		return;
 
@@ -553,7 +637,7 @@ void ShipInitialStatusDialogModel::set_modified()
 	}
 }
 
-const bool ShipInitialStatusDialogModel::query_modified()
+ bool ShipInitialStatusDialogModel::query_modified()
 {
 	return _modified;
 }
@@ -563,7 +647,7 @@ void ShipInitialStatusDialogModel::setVelocity(int value)
 	modify(m_velocity, value);
 }
 
-const int ShipInitialStatusDialogModel::getVelocity()
+ int ShipInitialStatusDialogModel::getVelocity()
 {
 	return m_velocity;
 }
@@ -573,7 +657,7 @@ void ShipInitialStatusDialogModel::setHull(int value)
 	modify(m_hull, value);
 }
 
-const int ShipInitialStatusDialogModel::getHull()
+ int ShipInitialStatusDialogModel::getHull()
 {
 	return m_hull;
 }
@@ -593,7 +677,7 @@ void ShipInitialStatusDialogModel::setShieldHull(int value)
 	modify(m_shields, value);
 }
 
-const int ShipInitialStatusDialogModel::getShieldHull()
+ int ShipInitialStatusDialogModel::getShieldHull()
 {
 	return m_shields;
 }
@@ -603,7 +687,7 @@ void ShipInitialStatusDialogModel::setForceShield(const int state)
 	modify(m_force_shields, state);
 }
 
-const int ShipInitialStatusDialogModel::getForceShield()
+ int ShipInitialStatusDialogModel::getForceShield()
 {
 	return m_force_shields;
 }
@@ -613,7 +697,7 @@ void ShipInitialStatusDialogModel::setShipLocked(int state)
 	modify(m_ship_locked, state);
 }
 
-const int ShipInitialStatusDialogModel::getShipLocked()
+ int ShipInitialStatusDialogModel::getShipLocked()
 {
 	return m_ship_locked;
 }
@@ -623,7 +707,7 @@ void ShipInitialStatusDialogModel::setWeaponLocked(int state)
 	modify(m_weapons_locked, state);
 }
 
-const int ShipInitialStatusDialogModel::getWeaponLocked()
+ int ShipInitialStatusDialogModel::getWeaponLocked()
 {
 	return m_weapons_locked;
 }
@@ -633,7 +717,7 @@ void ShipInitialStatusDialogModel::setPrimariesDisabled(int state)
 	modify(m_primaries_locked, state);
 }
 
-const int ShipInitialStatusDialogModel::getPrimariesDisabled()
+ int ShipInitialStatusDialogModel::getPrimariesDisabled()
 {
 	return m_primaries_locked;
 }
@@ -643,7 +727,7 @@ void ShipInitialStatusDialogModel::setSecondariesDisabled(int state)
 	modify(m_secondaries_locked, state);
 }
 
-const int ShipInitialStatusDialogModel::getSecondariesDisabled()
+ int ShipInitialStatusDialogModel::getSecondariesDisabled()
 {
 	return m_secondaries_locked;
 }
@@ -653,7 +737,7 @@ void ShipInitialStatusDialogModel::setTurretsDisabled(int state)
 	modify(m_turrets_locked, state);
 }
 
-const int ShipInitialStatusDialogModel::getTurretsDisabled()
+ int ShipInitialStatusDialogModel::getTurretsDisabled()
 {
 	return m_turrets_locked;
 }
@@ -663,7 +747,7 @@ void ShipInitialStatusDialogModel::setAfterburnerDisabled(int state)
 	modify(m_afterburner_locked, state);
 }
 
-const int ShipInitialStatusDialogModel::getAfterburnerDisabled()
+ int ShipInitialStatusDialogModel::getAfterburnerDisabled()
 {
 	return m_afterburner_locked;
 }
@@ -673,7 +757,7 @@ void ShipInitialStatusDialogModel::setDamage(int value)
 	modify(m_damage, value);
 }
 
-const int ShipInitialStatusDialogModel::getDamage()
+ int ShipInitialStatusDialogModel::getDamage()
 {
 	return m_damage;
 }
@@ -766,22 +850,22 @@ void ShipInitialStatusDialogModel::change_subsys(int new_subsys)
 	modelChanged();
 }
 
-const int ShipInitialStatusDialogModel::getShip()
+ int ShipInitialStatusDialogModel::getShip()
 {
 	return m_ship;
 }
 
-const int ShipInitialStatusDialogModel::getnum_dock_points()
+ int ShipInitialStatusDialogModel::getnum_dock_points()
 {
 	return num_dock_points;
 }
 
-const int ShipInitialStatusDialogModel::getShip_has_scannable_subsystems()
+ int ShipInitialStatusDialogModel::getShip_has_scannable_subsystems()
 {
 	return ship_has_scannable_subsystems;
 }
 
-const dockpoint_information* ShipInitialStatusDialogModel::getdockpoint_array()
+ dockpoint_information* ShipInitialStatusDialogModel::getdockpoint_array()
 {
 	return dockpoint_array;
 }
