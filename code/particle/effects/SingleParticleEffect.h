@@ -7,6 +7,7 @@
 #include "particle/ParticleManager.h"
 #include "particle/util/ParticleProperties.h"
 #include "particle/util/EffectTiming.h"
+#include "utils/RandomRange.h"
 
 namespace particle {
 namespace effects {
@@ -18,6 +19,8 @@ class SingleParticleEffect: public ParticleEffect {
 	util::ParticleProperties m_particleProperties;
 
 	util::EffectTiming m_timing;
+
+	::util::UniformFloatRange m_vel_inherit;
 
  public:
 	explicit SingleParticleEffect(const SCP_string& name);

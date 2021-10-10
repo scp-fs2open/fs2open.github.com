@@ -8449,6 +8449,7 @@ static void ship_dying_frame(object *objp, int ship_num)
 
 					// Use the position since the ship is going to be invalid soon
 					source.moveTo(&objp->pos);
+					source.setVelocity(&objp->phys_info.vel);
 
 					source.finish();
 				} else {
