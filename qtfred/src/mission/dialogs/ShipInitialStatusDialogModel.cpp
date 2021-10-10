@@ -81,7 +81,7 @@ void initial_status_mark_dock_leader_helper(object* objp, dock_function_info* in
 
 		// see if we already found a leader
 		existing_leader = infop->maintained_variables.objp_value;
-		if (existing_leader != NULL) {
+		if (existing_leader != nullptr) {
 			ship* leader_shipp = &Ships[existing_leader->instance];
 
 			// keep existing leader if he has a higher priority than us
@@ -127,7 +127,7 @@ void ShipInitialStatusDialogModel::initializeData()
 		objp = &Objects[Ships[m_ship].objnum];
 		for (int i = 0; i < num_dock_points; i++) {
 			object* docked_objp = dock_find_object_at_dockpoint(objp, i);
-			if (docked_objp != NULL) {
+			if (docked_objp != nullptr) {
 				dockpoint_array[i].dockee_shipnum = docked_objp->instance;
 				dockpoint_array[i].dockee_point = dock_find_dockpoint_used_by_object(docked_objp, objp);
 			} else {
@@ -272,7 +272,7 @@ void ShipInitialStatusDialogModel::initializeData()
 		}
 	}
 
-	if (objp != NULL) {
+	if (objp != nullptr) {
 		if (objp->type == OBJ_SHIP || objp->type == OBJ_START) {
 			ship* shipp = &Ships[objp->instance];
 
@@ -301,7 +301,7 @@ void ShipInitialStatusDialogModel::update_docking_info()
 	for (i = 0; i < num_dock_points; i++) {
 		// see if the object at this point is no longer there
 		object* dockee_objp = dock_find_object_at_dockpoint(objp, i);
-		if (dockee_objp != NULL) {
+		if (dockee_objp != nullptr) {
 			// check if the dockee ship thinks that this ship is docked to this dock point
 			if (objp != dock_find_object_at_dockpoint(dockee_objp, dockpoint_array[i].dockee_point)) {
 				// undock it
@@ -313,7 +313,7 @@ void ShipInitialStatusDialogModel::update_docking_info()
 	for (i = 0; i < num_dock_points; i++) {
 		// see if there is an object at this point that wasn't there before
 		if (dockpoint_array[i].dockee_shipnum >= 0) {
-			if (dock_find_object_at_dockpoint(objp, i) == NULL) {
+			if (dock_find_object_at_dockpoint(objp, i) == nullptr) {
 				object* dockee_objp = &Objects[Ships[dockpoint_array[i].dockee_shipnum].objnum];
 				int dockee_point = dockpoint_array[i].dockee_point;
 
@@ -337,14 +337,16 @@ void ShipInitialStatusDialogModel::undock(object* objp1, object* objp2)
 	other_ship_num = get_ship_from_obj(OBJ_INDEX(objp2));
 
 	if (_viewport->Move_ships_when_undocking) {
-		if (ship_class_compare(Ships[ship_num].ship_info_index, Ships[other_ship_num].ship_info_index) <= 0)
+		if (ship_class_compare(Ships[ship_num].ship_info_index, Ships[other_ship_num].ship_info_index) <= 0) {
 			vm_vec_scale_add2(&objp2->pos,
 				&v,
 				ship_class_get_length(&Ship_info[Ships[objp2->instance].ship_info_index]));
-		else
+		}
+		else {
 			vm_vec_scale_add2(&objp1->pos,
 				&v,
 				ship_class_get_length(&Ship_info[Ships[objp1->instance].ship_info_index]) * -1.0f);
+		}
 	}
 
 	ai_do_objects_undocked_stuff(objp1, objp2);
@@ -434,7 +436,7 @@ void ShipInitialStatusDialogModel::dock_evaluate_all_docked_objects(object* objp
 			return;
 
 		// iterate through all docked objects
-		for (dock_instance* ptr = hub_objp->dock_list; ptr != NULL; ptr = ptr->next) {
+		for (dock_instance* ptr = hub_objp->dock_list; ptr != nullptr; ptr = ptr->next) {
 			// call the function for this object, and return if instructed
 			function(ptr->docked_objp, infop, _viewport);
 			if (infop->early_return_condition)
@@ -445,7 +447,7 @@ void ShipInitialStatusDialogModel::dock_evaluate_all_docked_objects(object* objp
 	// we have multiple objects docked and we must treat them as a tree
 	else {
 		// create a bit array to mark the objects we check
-		ubyte* visited_bitstring = (ubyte*)vm_malloc(calculate_num_bytes(MAX_OBJECTS));
+		auto visited_bitstring = (ubyte*)vm_malloc(calculate_num_bytes(MAX_OBJECTS));
 
 		// clear it
 		memset(visited_bitstring, 0, calculate_num_bytes(MAX_OBJECTS));
@@ -455,7 +457,7 @@ void ShipInitialStatusDialogModel::dock_evaluate_all_docked_objects(object* objp
 
 		// destroy the bit array
 		vm_free(visited_bitstring);
-		visited_bitstring = NULL;
+		visited_bitstring = nullptr;
 	}
 }
 
@@ -495,7 +497,7 @@ void ShipInitialStatusDialogModel::dock_evaluate_all_docked_objects(object* objp
 			return;
 
 		// iterate through all docked objects
-		for (dock_instance* ptr = hub_objp->dock_list; ptr != NULL; ptr = ptr->next) {
+		for (dock_instance* ptr = hub_objp->dock_list; ptr != nullptr; ptr = ptr->next) {
 			// call the function for this object, and return if instructed
 			function(ptr->docked_objp);
 			if (infop->early_return_condition)
@@ -506,7 +508,7 @@ void ShipInitialStatusDialogModel::dock_evaluate_all_docked_objects(object* objp
 	// we have multiple objects docked and we must treat them as a tree
 	else {
 		// create a bit array to mark the objects we check
-		ubyte* visited_bitstring = (ubyte*)vm_malloc(calculate_num_bytes(MAX_OBJECTS));
+		auto visited_bitstring = (ubyte*)vm_malloc(calculate_num_bytes(MAX_OBJECTS));
 
 		// clear it
 		memset(visited_bitstring, 0, calculate_num_bytes(MAX_OBJECTS));
@@ -516,7 +518,7 @@ void ShipInitialStatusDialogModel::dock_evaluate_all_docked_objects(object* objp
 
 		// destroy the bit array
 		vm_free(visited_bitstring);
-		visited_bitstring = NULL;
+		visited_bitstring = nullptr;
 	}
 }
 
@@ -538,7 +540,7 @@ void ShipInitialStatusDialogModel::dock_evaluate_tree(object* objp,
 		return;
 
 	// iterate through all docked objects
-	for (dock_instance* ptr = objp->dock_list; ptr != NULL; ptr = ptr->next) {
+	for (dock_instance* ptr = objp->dock_list; ptr != nullptr; ptr = ptr->next) {
 		// start another tree with the docked object as the root, and return if instructed
 		dock_evaluate_tree(ptr->docked_objp, infop, function, visited_bitstring);
 		if (infop->early_return_condition)
@@ -561,7 +563,7 @@ void ShipInitialStatusDialogModel::dock_evaluate_tree(object* objp, dock_functio
 		return;
 
 	// iterate through all docked objects
-	for (dock_instance* ptr = objp->dock_list; ptr != NULL; ptr = ptr->next) {
+	for (dock_instance* ptr = objp->dock_list; ptr != nullptr; ptr = ptr->next) {
 		// start another tree with the docked object as the root, and return if instructed
 		dock_evaluate_tree(ptr->docked_objp, infop, function, visited_bitstring);
 		if (infop->early_return_condition)
