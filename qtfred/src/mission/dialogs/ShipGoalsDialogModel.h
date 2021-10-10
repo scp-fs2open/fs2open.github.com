@@ -17,6 +17,7 @@ constexpr auto TYPE_WAYPOINT = 0x5000;
 constexpr auto TYPE_SHIP_CLASS = 0x6000;
 constexpr auto TYPE_MASK = 0xf000;
 constexpr auto DATA_MASK = 0x0fff;
+constexpr auto MAX_VALID = 99;
 
 class ShipGoalsDialogModel : public AbstractDialogModel {
   private:
@@ -37,9 +38,9 @@ class ShipGoalsDialogModel : public AbstractDialogModel {
 	int m_object[ED_MAX_GOALS];
 	int m_priority[ED_MAX_GOALS];
 	SCP_string m_subsys[ED_MAX_GOALS];
-	int m_dock2[ED_MAX_GOALS];
+	long long m_dock2[ED_MAX_GOALS];
 	//int m_data[ED_MAX_GOALS];
-	int valid[99];
+	int valid[MAX_VALID];
 
 	bool m_multi_edit;
 
@@ -52,7 +53,7 @@ class ShipGoalsDialogModel : public AbstractDialogModel {
 	ShipGoalsDialogModel(QObject* parent, EditorViewport* viewport, bool multi, int self_ship, int self_wing);
 	bool apply() override;
 	void reject() override;
-	const bool query_modified();
+	 bool query_modified();
 
 	void setShip(int);
 	int getShip();
@@ -61,14 +62,14 @@ class ShipGoalsDialogModel : public AbstractDialogModel {
 	int getWing();
 	
 
-	const ai_goal* getGoal();
+	 ai_goal* getGoal();
 
-	const int getValid(int);
-	const ai_goal_list* getGoalTypes();
-	const int getGoalsSize();
+	 int getValid(int);
+	 const ai_goal_list* getGoalTypes();
+	 int getGoalsSize();
 
 	void setBehavior(int, int);
-	const int getBehavior(int);
+	 int getBehavior(int);
 
 	void setObject(int, int);
 	int getObject(int);
@@ -76,11 +77,11 @@ class ShipGoalsDialogModel : public AbstractDialogModel {
 	void setSubsys(int, SCP_string);
 	SCP_string getSubsys(int);
 
-	void setDock(int, int);
+	void setDock(int, long long);
 	int getDock(int);
 
 	void setPriority(int, int);
-	const int getPriority(int);
+	 int getPriority(int);
 };
 template <typename T>
 inline void ShipGoalsDialogModel::modify(T& a, const T& b)
