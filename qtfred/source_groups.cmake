@@ -148,6 +148,7 @@ add_file_folder("UI"
 	ui/VoiceActingManager.ui
     ui/WaypointEditorDialog.ui
 	ui/ShipEditorDialog.ui
+	ui/ShipGoalsDialog.ui
 )
 
 add_file_folder("Resources"
