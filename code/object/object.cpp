@@ -1516,23 +1516,20 @@ void obj_move_all(float frametime)
 			}
 		}
 
-		// Submodel movement now happens here, right after physics movement.
-		// It's not excluded by the "immobile" flag, but it *is* excluded by the Rotators_locked flag.
-		if (objp->type != OBJ_SHIP || !Ships[objp->instance].flags[Ship::Ship_Flags::Rotators_locked]) {
-			// do subsystem movement on this object
-			if (objp->type == OBJ_SHIP) {
-				ship_move_subsystems(objp);
-			}
+		// Submodel movement now happens here, right after physics movement.  It's not excluded by the "immobile" flag.
+		
+		// this flag only affects ship subsystems, not any other type of submodel movement
+		if (objp->type == OBJ_SHIP && !Ships[objp->instance].flags[Ship::Ship_Flags::Subsystem_movement_locked])
+			ship_move_subsystems(objp);
 
-			// do animation on this object
-			// TODO: change stepAnimations to operate on a per-object basis
-			//animation::ModelAnimation::stepAnimations(objp, frametime);
+		// do animation on this object
+		// TODO: change stepAnimations to operate on a per-object basis
+		//animation::ModelAnimation::stepAnimations(objp, frametime);
 
-			// finally, do intrinsic rotation on this object
-			// (this happens last because look_at is a type of intrinsic rotation,
-			// and look_at needs to happen last or the angle may be off by a frame)
-			model_do_intrinsic_rotations(objp);
-		}
+		// finally, do intrinsic rotation on this object
+		// (this happens last because look_at is a type of intrinsic rotation,
+		// and look_at needs to happen last or the angle may be off by a frame)
+		model_do_intrinsic_rotations(objp);
 
 		// For ships, we now have to make sure that all the submodel detail levels remain consistent.
 		if (objp->type == OBJ_SHIP)
