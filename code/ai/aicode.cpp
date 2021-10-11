@@ -11728,7 +11728,7 @@ void ai_process_subobjects(int objnum)
 		switch (psub->type) {
 		case SUBSYSTEM_TURRET:
 			// Don't process multipart turrets if we can't rotate.
-			if ((psub->subobj_num != psub->turret_gun_sobj) && (psub->turret_gun_sobj >= 0) && shipp->flags[Ship::Ship_Flags::Rotators_locked])
+			if ((psub->subobj_num != psub->turret_gun_sobj) && (psub->turret_gun_sobj >= 0) && shipp->flags[Ship::Ship_Flags::Subsystem_movement_locked])
 				break;
 
 			// Don't process a turret for a ship being repaired, if the support ship is close
