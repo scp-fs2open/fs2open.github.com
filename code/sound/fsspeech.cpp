@@ -10,6 +10,7 @@
 #include "osapi/osregistry.h"
 #include "sound/fsspeech.h"
 #include "sound/speech.h"
+#include <regex>
 
 
 extern int Cmdline_freespace_no_sound;
@@ -73,7 +74,7 @@ void fsspeech_deinit()
 	speech_inited = 0;
 }
 
-void fsspeech_play(int type, const char *text, const char *tags)
+void fsspeech_play(int type, const char *text)
 {
 	if (!speech_inited) {
 		nprintf(("Speech", "Aborting fsspech_play because speech_inited is false.\n"));
@@ -89,20 +90,8 @@ void fsspeech_play(int type, const char *text, const char *tags)
 		nprintf(("Speech", "Aborting fsspeech_play because we aren't supposed to play from type %s.\n", FSSpeech_play_id[type]));
 		return;
 	}
-	
-	#ifdef _WIN32
-	if (tags != NULL) {
-		char* text_with_tags = new char[strlen(tags) + strlen(text) + 1];
-		strcpy(text_with_tags, tags);
-		strcat(text_with_tags, text);
-		speech_play((const char*)text_with_tags);
-	}
-	else{
-		speech_play(text);
-	}
-	#else
-		speech_play(text);
-	#endif
+
+	speech_play(text);
 }
 
 void fsspeech_stop()
@@ -175,8 +164,6 @@ SCP_string fsspeech_write_tag(int type, const char* data)
 	SCP_string tag;
 	#ifdef _WIN32
 	switch (type) {
-		case FSSPEECH_TAG_SET_NAME: tag.append("<voice required='Name="); tag.append(data); tag.append("'>"); break;
-		case FSSPEECH_TAG_END_NAME: tag.append("</voice>"); break;
 		case FSSPEECH_TAG_SET_GENDER: tag.append("<voice required='Gender="); tag.append(data); tag.append("'>"); break;
 		case FSSPEECH_TAG_END_GENDER: tag.append("</voice>"); break;
 		case FSSPEECH_TAG_SET_LANGID: tag.append("<lang langid='"); tag.append(data); tag.append("'>"); break;
@@ -187,8 +174,45 @@ SCP_string fsspeech_write_tag(int type, const char* data)
 		case FSSPEECH_TAG_END_PITCH: tag.append("</pitch>"); break;
 		case FSSPEECH_TAG_SET_VOLUME: tag.append("<volume level='"); tag.append(data); tag.append("'>"); break;
 		case FSSPEECH_TAG_END_VOLUME: tag.append("</volume>"); break;
+		case FSSPEECH_TAG_SET_SPELL: tag.append("<spell>"); break;
+		case FSSPEECH_TAG_END_SPELL: tag.append("</spell>"); break;
+		case FSSPEECH_TAG_SET_SILENCE: tag.append("<silence msec='"); tag.append(data); tag.append("'/>"); break;
 	}
 	#else
 	#endif
 	return tag;
+}
+
+void fsspeech_translate_tokens(SCP_string& text)
+{
+	text = std::regex_replace(text, std::regex(R"(\$SIL\$)"), fsspeech_write_tag(FSSPEECH_TAG_SET_SILENCE, "500"));
+	text = std::regex_replace(text, std::regex(R"(\$VOL0\$)"), fsspeech_write_tag(FSSPEECH_TAG_SET_VOLUME, "0"));
+	text = std::regex_replace(text, std::regex(R"(\$VOL1\$)"), fsspeech_write_tag(FSSPEECH_TAG_SET_VOLUME, "25"));
+	text = std::regex_replace(text, std::regex(R"(\$SPELL\$)"), fsspeech_write_tag(FSSPEECH_TAG_SET_SPELL));
+	text = std::regex_replace(text, std::regex(R"(\$EVOL\$)"), fsspeech_write_tag(FSSPEECH_TAG_END_VOLUME));
+	text = std::regex_replace(text, std::regex(R"(\$ESPELL\$)"), fsspeech_write_tag(FSSPEECH_TAG_END_SPELL));
+}
+
+void fsspeech_remove_tokens(SCP_string& text)
+{
+	text = std::regex_replace(text, std::regex(R"(\$SIL\$)"), "");
+	text = std::regex_replace(text, std::regex(R"(\$VOL0\$)"), "");
+	text = std::regex_replace(text, std::regex(R"(\$VOL1\$)"), "");
+	text = std::regex_replace(text, std::regex(R"(\$SPELL\$)"), "");
+	text = std::regex_replace(text, std::regex(R"(\$EVOL\$)"), "");
+	text = std::regex_replace(text, std::regex(R"(\$ESPELL\$)"), "");
+}
+
+SCP_string fsspeech_create_speech_text(const char* msg_text, const char* speech_tags)
+{
+	SCP_string speech_text = msg_text;
+#ifdef _WIN32
+	fsspeech_translate_tokens(speech_text);
+	if (speech_tags != nullptr) {
+		speech_text.insert(0, speech_tags);
+	}
+#else
+	fsspeech_remove_tokens(speech_text);
+#endif
+	return speech_text;
 }

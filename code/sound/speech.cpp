@@ -245,10 +245,17 @@ bool speech_set_voice(int voice)
 	CComPtr<IEnumSpObjectTokens>        cpEnum;
 	ULONG                               num_voices = 0;
 
-	//Enumerate the available voices 
-	hr = SpEnumTokens(SPCAT_VOICES, NULL, NULL, &cpEnum);
+	//Enumerate the available voices, try with onecore voices first
+	hr = SpEnumTokens(SPCAT_VOICES_ONECORE, NULL, NULL, &cpEnum);
 
-	if(FAILED(hr)) return false;
+	if (FAILED(hr))
+	{
+		//if fails, try with regular sapi voices and check again
+		hr = SpEnumTokens(SPCAT_VOICES, NULL, NULL, &cpEnum);
+		if (FAILED(hr)) {
+			return false;
+		}
+	}
 
     hr = cpEnum->GetCount(&num_voices);
 
@@ -324,9 +331,12 @@ SCP_vector<SCP_string> speech_enumerate_voices()
 		return SCP_vector<SCP_string>();
 	}
 
-	hr = comTokenCategory->SetId(SPCAT_VOICES, false);
+	hr = comTokenCategory->SetId(SPCAT_VOICES_ONECORE, false);
 	if (FAILED(hr)) {
-		return SCP_vector<SCP_string>();
+		hr = comTokenCategory->SetId(SPCAT_VOICES, false);
+		if (FAILED(hr)) {
+			return SCP_vector<SCP_string>();
+		}
 	}
 
 	hr = comTokenCategory->EnumTokens(NULL, NULL, &comVoices);

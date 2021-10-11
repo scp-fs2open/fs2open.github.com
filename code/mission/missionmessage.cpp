@@ -307,20 +307,13 @@ void persona_parse()
 		char cstr_temp[NAME_LENGTH];
 		bool voice_name_set = false;
 		SCP_string temp_tags;
-		if (optional_string("+Voice:")) {
-			stuff_string(cstr_temp, F_NAME, NAME_LENGTH);
-			temp_tags.append(fsspeech_write_tag(FSSPEECH_TAG_SET_NAME, cstr_temp));
-			voice_name_set = true;
-		}
 		if (optional_string("+Gender:")) {
 			stuff_string(cstr_temp, F_NAME, NAME_LENGTH);
-			if(!voice_name_set)
-				temp_tags.append(fsspeech_write_tag(FSSPEECH_TAG_SET_GENDER,cstr_temp));
+			temp_tags.append(fsspeech_write_tag(FSSPEECH_TAG_SET_GENDER,cstr_temp));
 		}
 		if (optional_string("+Langid:")) {
 			stuff_string(cstr_temp, F_NAME, NAME_LENGTH);
-			if (!voice_name_set)
-				temp_tags.append(fsspeech_write_tag(FSSPEECH_TAG_SET_LANGID, cstr_temp));
+			temp_tags.append(fsspeech_write_tag(FSSPEECH_TAG_SET_LANGID, cstr_temp));
 		}
 		if (optional_string("+Rate:")) {
 			stuff_string(cstr_temp, F_NAME, NAME_LENGTH);
@@ -340,8 +333,7 @@ void persona_parse()
 			mprintf(("Speech tags for %s : %s \n", Personas[Num_personas].name, Personas[Num_personas].speech_tags));
 		}
 		else {
-			//error
-			mprintf(("Speech tags size for %s is larger than the allowed.\n", Personas[Num_personas].name));		
+			mprintf(("Speech tags size for %s is larger than the %d allowed.\n", Personas[Num_personas].name, MAX_SPEECH_TAGS_LENGTH));		
 		}
 	}
 	else {
@@ -1627,12 +1619,27 @@ void message_queue_process()
 	// play wave first, since need to know duration for picking anim start frame
 	if(message_play_wave(q) == false) {
 		if (m->persona_index != -1) {
-			fsspeech_play(FSSPEECH_FROM_INGAME, buf.c_str(), Personas[m->persona_index].speech_tags);
+			SCP_string speech_text = fsspeech_create_speech_text(buf.c_str(), Personas[m->persona_index].speech_tags);
+			fsspeech_play(FSSPEECH_FROM_INGAME, speech_text.c_str());
 		}
-		else{
-			fsspeech_play(FSSPEECH_FROM_INGAME, buf.c_str());
+		else {
+			// Fiction viewer specific, try to find the persona this msg belongs to
+			int possible_index = -1;
+			if (!stricmp(m->name, "VS2Message")) {
+				possible_index = message_persona_name_lookup(q->who_from);
+			}
+			if (possible_index != -1) {
+				SCP_string speech_text = fsspeech_create_speech_text(buf.c_str(), Personas[possible_index].speech_tags);
+				fsspeech_play(FSSPEECH_FROM_INGAME, speech_text.c_str());
+			} else {
+				SCP_string speech_text = fsspeech_create_speech_text(buf.c_str(), nullptr);
+				fsspeech_play(FSSPEECH_FROM_INGAME, speech_text.c_str());
+			}
 		}
 	}
+	
+	// Remove speech tags from displayed text
+	fsspeech_remove_tokens(buf);
 
 	// play animation for head
 	message_play_anim(q);
