@@ -1516,8 +1516,11 @@ void obj_move_all(float frametime)
 			ship_move_subsystems(objp);
 
 		// do animation on this object
-		// TODO: change stepAnimations to operate on a per-object basis
-		//animation::ModelAnimation::stepAnimations(objp, frametime);
+		int modelnum = object_get_model_instance(objp);
+		if (modelnum > -1) {
+			polymodel_instance* pmi = model_get_instance(modelnum);
+			animation::ModelAnimation::stepAnimations(frametime, pmi);
+		}
 
 		// finally, do intrinsic motion on this object
 		// (this happens last because look_at is a type of intrinsic rotation,
@@ -1550,9 +1553,6 @@ void obj_move_all(float frametime)
 			}
 		}
 	}
-
-	// TODO: remove; see stepAnimations comment above
-	animation::ModelAnimation::stepAnimations(frametime);
 
 	// Now apply intrinsic movement to things that aren't objects (like skyboxes).  This technically doesn't belong in the object code,
 	// but there isn't really a good place to put this, it doesn't hurt to have this here, and it's conceptually related to what's here.

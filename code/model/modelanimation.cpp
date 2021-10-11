@@ -235,43 +235,46 @@ namespace animation {
 			ModelAnimationSet::cleanRunning();
 	}
 
-	void ModelAnimation::stepAnimations(float frametime) {
-		for (const auto& animList : ModelAnimationSet::s_runningAnimations) {
-			polymodel_instance* pmi = model_get_instance(animList.first);
+	void ModelAnimation::stepAnimations(float frametime, polymodel_instance* pmi) {
+		auto animListIt = ModelAnimationSet::s_runningAnimations.find(pmi->id);
 
-			//Object died during animation
-			if (pmi == nullptr) {
-				for (const auto& anim : animList.second.second) {
-					auto& state = anim->m_instances[animList.first];
-					state.state = ModelAnimationState::UNTRIGGERED;
-					state.time = 0.0f;
-				}
+		if (animListIt == ModelAnimationSet::s_runningAnimations.end())
+			return;
 
-				continue;
+		const auto& animList = animListIt->second;
+
+		//Object died during animation
+		if (pmi == nullptr) {
+			for (const auto& anim : animList.second) {
+				auto& state = anim->m_instances[pmi->id];
+				state.state = ModelAnimationState::UNTRIGGERED;
+				state.time = 0.0f;
 			}
 
-			ModelAnimationSubmodelBuffer applyBuffer;
-			animList.second.first->initializeSubmodelBuffer(pmi, applyBuffer);
-
-			for (const auto& anim : animList.second.second) {
-				switch (anim->m_instances[animList.first].state) {
-				case ModelAnimationState::RUNNING_FWD:
-				case ModelAnimationState::RUNNING_RWD:
-					anim->play(frametime, pmi, applyBuffer);
-					break;
-				case ModelAnimationState::COMPLETED:
-					anim->play(frametime, pmi, applyBuffer, true);
-					//Fully triggered. Keep in buffer in case some other animation starts on that submodel, but don't play without manual starting
-					break;
-				case ModelAnimationState::UNTRIGGERED:
-					UNREACHABLE("An untriggered animation should not be in the runningAnimations buffer");
-					break;
-				}
-
-			}
-
-			ModelAnimationSet::apply(pmi, applyBuffer);
+			return;
 		}
+
+		ModelAnimationSubmodelBuffer applyBuffer;
+		animList.first->initializeSubmodelBuffer(pmi, applyBuffer);
+
+		for (const auto& anim : animList.second) {
+			switch (anim->m_instances[pmi->id].state) {
+			case ModelAnimationState::RUNNING_FWD:
+			case ModelAnimationState::RUNNING_RWD:
+				anim->play(frametime, pmi, applyBuffer);
+				break;
+			case ModelAnimationState::COMPLETED:
+				anim->play(frametime, pmi, applyBuffer, true);
+				//Fully triggered. Keep in buffer in case some other animation starts on that submodel, but don't play without manual starting
+				break;
+			case ModelAnimationState::UNTRIGGERED:
+				UNREACHABLE("An untriggered animation should not be in the runningAnimations buffer");
+				break;
+			}
+
+		}
+
+		ModelAnimationSet::apply(pmi, applyBuffer);
 
 		//Clear Animations that might have completed this frame.
 		ModelAnimationSet::cleanRunning();

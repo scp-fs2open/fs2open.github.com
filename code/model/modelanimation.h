@@ -258,7 +258,7 @@ namespace animation {
 		//Stops the animation. If cleanup is set, it will remove the animation from the list of running animations. Don't call without cleanup unless you know what you are doing
 		void stop(polymodel_instance* pmi, bool cleanup = true);
 
-		static void stepAnimations(float frametime);
+		static void stepAnimations(float frametime, polymodel_instance* pmi);
 
 		static std::vector<std::shared_ptr<ModelAnimation>> s_animationById;
 		const size_t id;
