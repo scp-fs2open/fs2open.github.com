@@ -281,8 +281,6 @@ void draw_compass_arrow(vec3d* v0) {
 namespace fso {
 namespace fred {
 ViewSettings::ViewSettings() {
-	for(size_t i = 0; i < Iff_info.size(); i++)
-		Show_iff.push_back(true);
 }
 
 FredRenderer::FredRenderer(os::Viewport* targetView) : _targetView(targetView) {

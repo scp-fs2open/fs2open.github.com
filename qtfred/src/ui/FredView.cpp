@@ -261,6 +261,7 @@ void FredView::syncViewOptions() {
 	// initialized yet
 	fredApp->runAfterInit([this]() {
 		for (auto i = 0; i < (int)Iff_info.size(); ++i) {
+			_viewport->view.Show_iff.push_back(true);
 			auto action = new QAction(QString::fromUtf8(Iff_info[i].iff_name), ui->menuDisplay_Filter);
 			action->setCheckable(true);
 			connectActionToViewSetting(action, &_viewport->view.Show_iff, i);
