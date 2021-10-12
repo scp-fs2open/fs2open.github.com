@@ -214,6 +214,7 @@ namespace animation {
 		angles angle;
 		bool isRelative = true;
 
+		required_string("+Angle:");
 		stuff_angles_deg_phb(&angle);
 		isRelative &= !optional_string("+Absolute");
 
@@ -283,6 +284,7 @@ namespace animation {
 	std::shared_ptr<ModelAnimationSegment> ModelAnimationSegmentSetAngle::parser(ModelAnimationParseHelper* data) {
 		float angle;
 
+		required_string("+Angle:");
 		stuff_float(&angle);
 
 		auto submodel = data->parseSubmodel();

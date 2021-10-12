@@ -958,6 +958,8 @@ namespace animation {
 				//The index of the dock port
 			case ModelAnimationTriggerType::PrimaryBank:
 			case ModelAnimationTriggerType::SecondaryBank:
+			case ModelAnimationTriggerType::PrimaryFired:
+			case ModelAnimationTriggerType::SecondaryFired:
 				//The index of the bank
 				stuff_int(&subtype);
 
