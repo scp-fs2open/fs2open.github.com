@@ -1393,9 +1393,13 @@ int multi_oo_pack_data(net_player *pl, object *objp, ushort oo_flags, ubyte *dat
 			if ((aip->wp_list != nullptr) && (aip->wp_list->get_waypoints().size() > aip->wp_index)) {
 				target_signature = Objects[aip->wp_list->get_waypoints().at(aip->wp_index).get_objnum()].net_signature;
 			}
-		} // send the target signature.
-		else if (aip->target_objnum != -1) {
-			target_signature = Objects[Ai_info[shipp->ai_index].target_objnum].net_signature;
+		} // send the target signature. 2021 Version!
+		else if ((aip->goals[0].target_name != nullptr) && strlen(aip->goals[0].target_name) != 0) {
+			
+			int instance = ship_name_lookup(aip->goals[0].target_name);
+			if (instance > -1) {
+				target_signature = Objects[Ships[instance].objnum].net_signature;
+			}
 		}
 
 		PACK_BYTE( umode );

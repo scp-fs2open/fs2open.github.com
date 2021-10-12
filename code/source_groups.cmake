@@ -845,8 +845,6 @@ add_file_folder("mod_table"
 # Model files
 add_file_folder("Model"
 	model/model.h
-	model/modelanim.cpp
-	model/modelanim.h
 	model/modelanimation.cpp
 	model/modelanimation.h
 	model/modelanimation_segments.cpp

@@ -862,6 +862,10 @@ void process_packet_normal(ubyte* data, header *header_info)
 			process_non_homing_fired_packet(data, header_info);
 			break;
 
+		case ANIMATION_TRIGGERED:
+			process_animation_triggered_packet(data, header_info);
+			break;
+
 		case COUNTERMEASURE_NEW:
 			process_NEW_countermeasure_fired_packet(data, header_info);
 			break;

@@ -194,9 +194,6 @@ public:
 	int		secondary_bank_capacity[MAX_SHIP_SECONDARY_BANKS];	// capacity of a bank -hoffoss
 	int		path_num;								// path index into polymodel .paths array.  -2 if none exists, -1 if not defined
 
-	int n_triggers;
-	queued_animation *triggers;		//all the triggered animations associated with this object
-
 	int		turret_reset_delay;
 
 	// target priority setting for turrets
@@ -805,7 +802,7 @@ void model_instance_free_all();
 // Loads a model from disk and returns the model number it loaded into.
 int model_load(const char *filename, int n_subsystems, model_subsystem *subsystems, int ferror = 1, int duplicate = 0);
 
-int model_create_instance(bool is_ship, int model_num);
+int model_create_instance(bool is_object, int model_num);
 void model_delete_instance(int model_instance_num);
 
 // Goober5000
@@ -982,8 +979,7 @@ extern void model_set_submodel_turn_info(submodel_instance *smi, float turn_rate
 // Sets the submodel instance data in a submodel
 extern void model_set_up_techroom_instance(ship_info *sip, int model_instance_num);
 
-void model_update_instance(int model_instance_num, int submodel_num, flagset<Ship::Subsystem_Flags>& flags);
-void model_update_instance(polymodel *pm, polymodel_instance *pmi, int submodel_num, flagset<Ship::Subsystem_Flags>& flags);
+void model_replicate_submodel_instance(polymodel *pm, polymodel_instance *pmi, int submodel_num, flagset<Ship::Subsystem_Flags>& flags);
 
 // Adds an electrical arcing effect to a submodel
 void model_instance_clear_arcs(polymodel *pm, polymodel_instance *pmi);
@@ -1251,15 +1247,13 @@ void model_page_in_textures(int modelnum, int ship_info_index = -1);
 // given a model, unload all of its textures
 void model_page_out_textures(int model_num, bool release = false);
 
-void model_do_intrinsic_rotations(int model_instance_num = -1);
+void model_do_intrinsic_rotations(object *objp);
 
 int model_should_render_engine_glow(int objnum, int bank_obj);
 
 bool model_get_team_color(team_color *clr, const SCP_string &team, const SCP_string &secondaryteam, fix timestamp, int fadetime);
 
 void moldel_calc_facing_pts( vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, float w, float z_add, vec3d *Eyeposition );
-
-void model_render_insignias(polymodel *pm, int detail_level, int bitmap_num);
 
 void model_draw_debug_points( polymodel *pm, bsp_info * submodel, uint flags );
 

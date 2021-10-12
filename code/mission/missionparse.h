@@ -422,7 +422,7 @@ public:
 
 	SCP_vector<alt_class> alt_classes;	
 
-	int alt_iff_color[MAX_IFFS][MAX_IFFS];
+	SCP_map<std::pair<int, int>, int> alt_iff_color;
 
 	p_object();
 	~p_object();

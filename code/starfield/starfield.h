@@ -130,7 +130,7 @@ void stars_preload_background(const char *token);
 void stars_preload_sun_bitmap(const char *fname);
 void stars_preload_background_bitmap(const char *fname);
 
-void stars_set_nebula(bool activate);
+void stars_set_nebula(bool activate, float range);
 
 void stars_load_debris(int fullneb = 0);
 

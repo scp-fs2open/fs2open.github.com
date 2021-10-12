@@ -174,8 +174,9 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum) const {
 		auto ship_entry = eval_ship(node);
 
 		// if this is a shipname type, we want the name of a valid ship but not the ship itself
-		if (ship_entry && argtype.first == "shipname") {
-			return LuaValue::createValue(_action.getLuaState(), ship_entry->name);
+		// (if the ship is not valid, return an empty string)
+		if (argtype.first == "shipname") {
+			return LuaValue::createValue(_action.getLuaState(), ship_entry ? ship_entry->name : "");
 		}
 
 		if (!ship_entry || ship_entry->status != ShipStatus::PRESENT) {

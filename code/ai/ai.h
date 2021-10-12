@@ -405,7 +405,6 @@ typedef struct ai_info {
 
 
 	union {
-	float		lead_scale;							//	Amount to lead current opponent by.
 	float		stay_near_distance;				//	Distance to stay within for AIM_STAY_NEAR mode.
 	};
 
@@ -660,7 +659,7 @@ void ai_start_fly_to_ship(object *objp, int shipnum);
 void ai_fly_to_ship();
 
 //Moved declaration here for player ship -WMC
-void process_subobjects(int objnum);
+void ai_process_subobjects(int objnum);
 
 //SUSHI: Setting ai_info stuff from both ai class and ai profile
 void init_aip_from_class_and_profile(ai_info *aip, ai_class *aicp, ai_profile_t *profile);

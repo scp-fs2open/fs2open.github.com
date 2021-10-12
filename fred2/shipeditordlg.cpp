@@ -812,7 +812,7 @@ void CShipEditorDlg::initialize_data(int full_update)
 		box = (CComboBox *) GetDlgItem(IDC_SHIP_TEAM);
 		box->EnableWindow(enable);
 		box->ResetContent();
-		for (auto i=0; i<Num_iffs; i++){
+		for (auto i=0; i< (int)Iff_info.size(); i++){
 			box->AddString(Iff_info[i].iff_name);
 		}
 	}	
