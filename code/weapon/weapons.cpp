@@ -1498,14 +1498,22 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 					wip->target_restrict = LR_CURRENT_TARGET;
 					
 				}
-				else if (optional_string("bombs")) {
-					wip->target_restrict = LR_BOMBS;
-				}
 				else {
 					wip->target_restrict = LR_CURRENT_TARGET;
-					
 				}
 				
+				if (optional_string("+Target Lock Objecttypes:")) {
+					if (optional_string("ships")) {
+						wip->target_restrict_objecttypes = LR_Objecttypes::LRO_SHIPS;
+					} else if (optional_string("bombs")) {
+						wip->target_restrict_objecttypes = LR_Objecttypes::LRO_WEAPONS;
+
+						if (wip->target_restrict != LR_ANY_TARGETS) {
+							error_display(0, "+Target Lock Objecttypes: bombs is currently incompatibly with any +Target Lock Restriction but 'any target'");
+							wip->target_restrict = LR_ANY_TARGETS;
+						}
+					}
+				} 
 			}
 			
 				if (optional_string("+Independent Seekers:")) {
@@ -8524,6 +8532,7 @@ void weapon_info::reset()
 	this->SwarmWait = SWARM_MISSILE_DELAY;
 
 	this->target_restrict = LR_CURRENT_TARGET;
+	this->target_restrict_objecttypes = LR_Objecttypes::LRO_SHIPS;
 	this->multi_lock = false;
 	this->trigger_lock = false;
 	this->launch_reset_locks = false;

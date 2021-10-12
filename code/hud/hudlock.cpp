@@ -965,7 +965,7 @@ void hud_lock_determine_lock_target(lock_info *lock_slot, weapon_info *wip)
 		return;
 	}
 
-	if (wip->target_restrict == LR_ANY_TARGETS || wip->target_restrict == LR_BOMBS) {
+	if (wip->target_restrict == LR_ANY_TARGETS) {
 		// if this weapon is uncaged, grab the best possible target within the player's lock cone and weapon distance
 		vec3d vec_to_target;
 		vec3d target_pos;
@@ -990,7 +990,7 @@ void hud_lock_determine_lock_target(lock_info *lock_slot, weapon_info *wip)
 			if (!weapon_secondary_world_pos_in_range(Player_obj, wip, &lock_slot->obj->pos) || dot < wip->lock_fov) {
 				// set this lock slot to empty
 				ship_clear_lock(lock_slot);
-				if (wip->target_restrict == LR_ANY_TARGETS)
+				if (wip->target_restrict_objecttypes == LR_Objecttypes::LRO_SHIPS)
 					hud_lock_acquire_uncaged_target(lock_slot, wip);
 				else
 					hud_lock_acquire_uncaged_target_weapon(lock_slot, wip);
@@ -999,7 +999,7 @@ void hud_lock_determine_lock_target(lock_info *lock_slot, weapon_info *wip)
 			// not using an else because the previous block may have 
 			// invalidated the target that was previously in this lock slot
 			ship_clear_lock(lock_slot);
-			if (wip->target_restrict == LR_ANY_TARGETS)
+			if (wip->target_restrict_objecttypes == LR_Objecttypes::LRO_SHIPS)
 				hud_lock_acquire_uncaged_target(lock_slot, wip);
 			else
 				hud_lock_acquire_uncaged_target_weapon(lock_slot, wip);

@@ -50,7 +50,9 @@ extern int Num_weapon_subtypes;
 #define LR_CURRENT_TARGET				0		// Only lock current target and subsystem
 #define LR_CURRENT_TARGET_SUBSYS		1		// 
 #define LR_ANY_TARGETS					2
-#define LR_BOMBS			3		// Only lock onto other fired secondaries
+
+// enum for multilock object type restriction
+enum class LR_Objecttypes { LRO_SHIPS, LRO_WEAPONS };
 
 //particle names go here -nuke
 #define PSPEW_NONE		-1			//used to disable a spew, useful for xmts
@@ -406,6 +408,7 @@ struct weapon_info
 	int SwarmWait;                  // *Swarm firewait, default is 150  -Et1
 
 	int target_restrict;
+	LR_Objecttypes target_restrict_objecttypes;
 	bool multi_lock;
 	int max_seeking;						// how many seekers can be active at a time if multilock is enabled. A value of one will lock stuff up one by one.
 	int max_seekers_per_target;			// how many seekers can be attached to a target.
