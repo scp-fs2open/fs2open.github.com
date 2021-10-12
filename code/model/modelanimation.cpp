@@ -900,7 +900,7 @@ namespace animation {
 			}
 		}
 
-		return timestamp((int) (duration * 1000));
+		return (int) (duration * 1000);
 	}
 
 
