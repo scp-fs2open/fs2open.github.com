@@ -2905,13 +2905,11 @@ void create_model_path(object *pl_objp, object *mobjp, int path_num, int subsys_
 	//Get path departure orientation from ships.tbl if it exists, otherwise zero it
 	SCP_string pathName(mp->name);
 	if (osip->pathMetadata.find(pathName) != osip->pathMetadata.end() && !IS_VEC_NULL(&osip->pathMetadata[pathName].departure_rvec))
-	{
-		vm_vec_copy_normalize(&aip->path_depart_orient, &osip->pathMetadata[pathName].departure_rvec);
-	}
+		vm_vec_copy_normalize(&aip->path_depart_rvec, &osip->pathMetadata[pathName].departure_rvec);
+	else if (aip->ai_profile_flags[AI::Profile_Flags::Fighterbay_departures_use_carrier_orient])
+		aip->path_depart_rvec = vmd_x_vector; // this will be later rotated into the carrier's frame of reference
 	else
-	{
-		vm_vec_zero(&aip->path_depart_orient);
-	}
+		vm_vec_zero(&aip->path_depart_rvec);
 
 	aip->ai_flags.remove(AI::AI_Flags::Use_exit_path);	// ensure this flag is cleared
 }
@@ -3727,13 +3725,11 @@ float maybe_recreate_path(object *objp, ai_info *aip, int force_recreate_flag, i
 				model_path	*mp = &model_get(osip->model_num)->paths[aip->mp_index];
 				SCP_string pathName(mp->name);
 				if (osip->pathMetadata.find(pathName) != osip->pathMetadata.end() && !IS_VEC_NULL(&osip->pathMetadata[pathName].departure_rvec))
-				{
-					vm_vec_copy_normalize(&aip->path_depart_orient, &osip->pathMetadata[pathName].departure_rvec);
-				}
+					vm_vec_copy_normalize(&aip->path_depart_rvec, &osip->pathMetadata[pathName].departure_rvec);
+				else if (aip->ai_profile_flags[AI::Profile_Flags::Fighterbay_departures_use_carrier_orient])
+					aip->path_depart_rvec = vmd_x_vector;  // this will be later rotated into the carrier's frame of reference
 				else
-				{
-					vm_vec_zero(&aip->path_depart_orient);
-				}
+					vm_vec_zero(&aip->path_depart_rvec);
 
 				return dist;
 			}
@@ -4111,8 +4107,8 @@ float ai_path_1()
 	// (so you can always have "wheels-down" landings)
 	vec3d rvec;
 	vec3d *prvec = NULL;
-	if ( aip->mode == AIM_BAY_DEPART && !IS_VEC_NULL(&aip->path_depart_orient) ) {
-		vm_vec_unrotate(&rvec, &aip->path_depart_orient, &Objects[aip->path_objnum].orient);
+	if ( aip->mode == AIM_BAY_DEPART && !IS_VEC_NULL(&aip->path_depart_rvec) ) {
+		vm_vec_unrotate(&rvec, &aip->path_depart_rvec, &Objects[aip->path_objnum].orient);
 		prvec = &rvec;
 	}
 
@@ -14980,7 +14976,7 @@ void init_ai_object(int objnum)
 	aip->path_next_create_time = timestamp(1);
 	aip->path_create_pos = Objects[objnum].pos;
 	aip->path_create_orient = Objects[objnum].orient;
-	vm_vec_zero(&aip->path_depart_orient);
+	vm_vec_zero(&aip->path_depart_rvec);
 
 	aip->ignore_expire_timestamp = timestamp(1);
 	aip->warp_out_timestamp = 0;
