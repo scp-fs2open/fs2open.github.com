@@ -10,6 +10,7 @@
 #include "mission/missionload.h"
 #include "missionui/missionscreencommon.h"
 #include "missionui/missionshipchoice.h"
+#include "parse/sexp_container.h"
 #include "pilotfile/pilotfile.h"
 #include "playerman/player.h"
 #include "ship/ship.h"
@@ -1320,6 +1321,100 @@ void pilotfile::csg_write_lastmissions()
 	endSection();
 }
 
+void pilotfile::csg_read_containers()
+{
+	const int num_containers = cfread_int(cfp);
+
+	for (int idx = 0; idx < num_containers; idx++) {
+		Campaign.persistent_containers.emplace_back();
+		auto& container = Campaign.persistent_containers.back();
+		csg_read_container(container);
+	}
+
+	Campaign.red_alert_containers.clear();
+
+	const int redalert_num_containers = cfread_int(cfp);
+
+	for (int idx = 0; idx < redalert_num_containers; idx++) {
+		Campaign.red_alert_containers.emplace_back();
+		auto& ra_container = Campaign.red_alert_containers.back();
+		csg_read_container(ra_container);
+	}
+}
+
+void pilotfile::csg_read_container(sexp_container& container)
+{
+	char temp_buf[NAME_LENGTH];
+	memset(temp_buf, 0, sizeof(temp_buf));
+
+	cfread_string_len(temp_buf, sizeof(temp_buf), cfp);
+	container.container_name = temp_buf;
+
+	container.type = (ContainerType)cfread_int(cfp);
+	container.opf_type = cfread_int(cfp);
+
+	const int size = cfread_int(cfp);
+
+	if (container.is_list()) {
+		for (int i = 0; i < size; ++i) {
+			cfread_string_len(temp_buf, sizeof(temp_buf), cfp);
+			container.list_data.emplace_back(temp_buf);
+		}
+	} else if (container.is_map()) {
+		char temp_key[NAME_LENGTH];
+		memset(temp_key, 0, sizeof(temp_key));
+
+		for (int i = 0; i < size; ++i) {
+			cfread_string_len(temp_key, sizeof(temp_key), cfp);
+			cfread_string_len(temp_buf, sizeof(temp_buf), cfp);
+			container.map_data.emplace(temp_key, temp_buf);
+		}
+	} else {
+		UNREACHABLE("Unknown container type %d", (int)container.type);
+	}
+}
+
+void pilotfile::csg_write_containers()
+{
+	startSection(Section::Containers);
+
+	cfwrite_int((int)Campaign.persistent_containers.size(), cfp);
+
+	for (const auto& container : Campaign.persistent_containers) {
+		Assert(!container.is_eternal()); // eternal containers should be written to player file
+		csg_write_container(container);
+	}
+
+	cfwrite_int((int)Campaign.red_alert_containers.size(), cfp);
+
+	for (const auto& ra_container : Campaign.red_alert_containers) {
+		csg_write_container(ra_container);
+	}
+
+	endSection();
+}
+
+void pilotfile::csg_write_container(const sexp_container &container)
+{
+	cfwrite_string_len(container.container_name.c_str(), cfp);
+	cfwrite_int((int)container.type, cfp);
+	cfwrite_int(container.opf_type, cfp);
+
+	cfwrite_int(container.size(), cfp);
+	if (container.is_list()) {
+		for (const auto& data : container.list_data) {
+			cfwrite_string_len(data.c_str(), cfp);
+		}
+	} else if (container.is_map()) {
+		for (const auto& key_data : container.map_data) {
+			cfwrite_string_len(key_data.first.c_str(), cfp);
+			cfwrite_string_len(key_data.second.c_str(), cfp);
+		}
+	} else {
+		UNREACHABLE("Unknown container type %d", (int)container.type);
+	}
+}
+
 void pilotfile::csg_reset_data()
 {
 	int idx;
@@ -1536,6 +1631,11 @@ bool pilotfile::load_savefile(player *_p, const char *campaign)
 					csg_read_lastmissions();
 					break;
 
+				case Section::Containers:
+					mprintf(("CSG => Parsing:  Containers...\n"));
+					csg_read_containers();
+					break;
+
 				default:
 					mprintf(("CSG => Skipping unknown section 0x%04x!\n", (uint32_t)section_id));
 					break;
@@ -1656,6 +1756,8 @@ bool pilotfile::save_savefile()
 	csg_write_cutscenes();
 	mprintf(("CSG => Saving:  Last Missions...\n"));
 	csg_write_lastmissions();
+	mprintf(("CSG => Saving:  Containers...\n"));
+	csg_write_containers();
 
 	// Done!
 	mprintf(("CSG => Saving complete!\n"));

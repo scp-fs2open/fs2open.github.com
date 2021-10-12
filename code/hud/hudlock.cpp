@@ -1392,7 +1392,7 @@ int hud_lock_target_in_range(lock_info *lock_slot)
 	}
 	ship_weapon* swp = &Player_ship->weapons;
 
-	return weapon_secondary_world_pos_in_range(Player_obj, &Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]], &lock_slot->obj->pos);
+	return weapon_secondary_world_pos_in_range(Player_obj, &Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]], &target_world_pos);
 }
 
 void hud_do_lock_indicators(float frametime)
@@ -1481,6 +1481,11 @@ void hud_do_lock_indicators(float frametime)
 		}
 
 		if ( lock_slot->obj->type == OBJ_SHIP && Ships[lock_slot->obj->instance].flags[Ship::Ship_Flags::Dying] ) {
+			ship_clear_lock(lock_slot);
+			continue;
+		}
+
+		if ( !wip->wi_flags[Weapon::Info_Flags::Multilock_target_dead_subsys] && lock_slot->subsys != nullptr && lock_slot->subsys->current_hits <= 0.0f) {
 			ship_clear_lock(lock_slot);
 			continue;
 		}

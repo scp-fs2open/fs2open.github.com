@@ -98,6 +98,7 @@ namespace Mission {
 		OF_No_collide,
         SF_No_disabled_self_destruct,
 		SF_Has_display_name,
+		SF_Hide_mission_log,
 
 		NUM_VALUES
 	};

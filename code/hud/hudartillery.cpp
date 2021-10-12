@@ -411,7 +411,7 @@ void ssm_process()
 
 						// are we a beam? -MageKing17
 						if (wip->wi_flags[Weapon::Info_Flags::Beam]) {
-							int num_beams = wip->b_info.beam_type == 5 && (int)wip->b_info.t5info.burst_rot_pattern.size() > 1 ?
+							int num_beams = wip->b_info.beam_type == BeamType::OMNI && (int)wip->b_info.t5info.burst_rot_pattern.size() > 1 ?
 								(int)wip->b_info.t5info.burst_rot_pattern.size() : 1;
 							for (int i = 0; i < num_beams; i++) {
 								beam_fire_info fire_info;
