@@ -330,7 +330,7 @@ typedef struct ai_info {
 	fix		path_next_check_time;	//	Last time checked to see if would collide with model.
 	int		path_goal_dist;		// minimum distance to first path point to consider path reached
 	int		path_subsystem_next_check;	// timestamp to next check if subsystem is still visible
-	vec3d	path_depart_orient;		//Rotational orientation associated with the path
+	vec3d	path_depart_rvec;		//Rotational orientation associated with the path
 
 	int		submode;
 	int		previous_submode;		// previous submode, get it?
