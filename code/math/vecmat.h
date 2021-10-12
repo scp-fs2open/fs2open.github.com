@@ -561,6 +561,12 @@ void vm_match_bank(vec3d* out_rvec, const vec3d* goal_fvec, const matrix* match_
 // You will get strange results otherwise.
 void vm_interpolate_angles_quick(angles* dest0, angles* src0, angles* src1, float interp_perc);
 
+// generates a well distributed quasi-random position in a -1 to 1 cube
+// the caller must provide and increment the seed for each call for proper results
+// if being used to fill a space, offset may be needed to properly 'glue together' generated
+// volumes in a well distrubtedness-preserving way
+vec3d vm_well_distributed_rand_vec(int seed, vec3d* offset = nullptr);
+
 /** Compares two vec3ds */
 inline bool operator==(const vec3d& left, const vec3d& right) { return vm_vec_same(&left, &right) != 0; }
 inline bool operator!=(const vec3d& left, const vec3d& right) { return !(left == right); }
@@ -640,25 +646,13 @@ inline matrix& operator-=(matrix& left, const matrix& right)
 }
 
 /**
- * @brief Rotates a vector into the orientation specified by the matrix
+ * @brief Implements matrix multiplication on both 3x3 matrices and 3D vectors
  * @param left The matrix
- * @param right The vector
- * @return The rotated vector
- *
- * @note This actually follows the definition of the * operator in linear algebra. The standard vm_vec_rotate actually
- * implements a multiplication with the transpose of the matrix.
+ * @param right The vector/matrix
+ * @return The multiplied result
  */
-inline vec3d operator*(const matrix& left, const vec3d& right) {
-	vec3d out;
-	vm_vec_unrotate(&out, &right, &left);
-	return out;
-}
-
-inline matrix operator*(const matrix& left, const matrix& right) {
-	matrix out;
-	vm_matrix_x_matrix(&out, &left, &right);
-	return out;
-}
+inline vec3d operator*(const matrix& A, const vec3d& v);
+inline matrix operator*(const matrix& A, const matrix& B);
 
 std::ostream& operator<<(std::ostream& os, const vec3d& vec);
 

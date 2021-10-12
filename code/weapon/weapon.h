@@ -22,6 +22,7 @@
 #include "graphics/generic.h"
 #include "model/model.h"
 #include "particle/ParticleManager.h"
+#include "weapon/beam.h"
 #include "weapon/shockwave.h"
 #include "weapon/swarm.h"
 #include "weapon/trails.h"
@@ -101,7 +102,6 @@ typedef struct weapon {
 
 	int		target_num;						//	Object index of target
 	int		target_sig;						//	So we know if the target is the same one we've been tracking
-	float		nearest_dist;					//	nearest distance yet attained to target
 	fix		creation_time;					//	time at which created, stuffed Missiontime
 	flagset<Weapon::Weapon_Flags> weapon_flags;					//	bit flags defining behavior, see WF_xxxx
 	object*	homing_object;					//	object this weapon is homing on.
@@ -218,7 +218,7 @@ typedef struct type5_beam_info {
 } type5_beam_info;
 
 typedef struct beam_weapon_info {
-	int beam_type;						// beam type
+	BeamType beam_type;						// beam type
 	float beam_life;					// how long it lasts
 	int beam_warmup;					// how long it takes to warmup (in ms)
 	int beam_warmdown;					// how long it takes to warmdown (in ms)
@@ -227,7 +227,7 @@ typedef struct beam_weapon_info {
 	float beam_particle_radius;			// radius of beam particles
 	float beam_particle_angle;			// angle of beam particle spew cone
 	generic_anim beam_particle_ani;		// particle_ani
-	float beam_iff_miss_factor[MAX_IFFS][NUM_SKILL_LEVELS];	// magic # which makes beams miss more. by parent iff and player skill level
+	SCP_map<int, std::array<float, NUM_SKILL_LEVELS>> beam_iff_miss_factor;	// magic # which makes beams miss more. by parent iff and player skill level
 	gamesnd_id beam_loop_sound;				// looping beam sound
 	gamesnd_id beam_warmup_sound;				// warmup sound
 	gamesnd_id beam_warmdown_sound;			// warmdown sound
@@ -389,7 +389,8 @@ struct weapon_info
 	float rearm_rate;							// rate per second at which secondary weapons are loaded during rearming
 	int		reloaded_per_batch;				    // number of munitions rearmed per batch
 	float	weapon_range;						// max range weapon can be effectively fired.  (May be less than life * speed)
-	float WeaponMinRange;           // *Minimum weapon range, default is 0 -Et1
+	float	optimum_range;						// causes ai fighters to prefer this distance when attacking with the weapon
+	float weapon_min_range;           // *Minimum weapon range, default is 0 -Et1
 
 	bool pierce_objects;
 	bool spawn_children_on_pierce;
@@ -549,7 +550,7 @@ struct weapon_info
 
 	int weapon_hitpoints;
 
-	int	burst_shots;
+	int	burst_shots;	// always 1 less than the actual burst length; 0 = no burst, 1 = two-shot burst, 2 = 3-shot, etc
 	float burst_delay;
 	flagset<Weapon::Burst_Flags> burst_flags;
 
@@ -573,6 +574,9 @@ struct weapon_info
 	char			weapon_substitution_pattern_names[MAX_SUBSTITUTION_PATTERNS][NAME_LENGTH]; // weapon names so that we can generate the indexs after sort
 
 	int			score; //Optional score for destroying the weapon
+
+	
+	SCP_map<SCP_string, SCP_string> custom_data;
 
 	decals::creation_info impact_decal;
 
@@ -751,6 +755,20 @@ bool weapon_target_satisfies_lock_restrictions(weapon_info *wip, object* target)
 
 // return if this weapon has iff restrictions, and should ignore normal iff targeting restrictions
 bool weapon_has_iff_restrictions(weapon_info* wip);
+
+// whether secondary weapon wip on shooter is in range of target_world_pos
+bool weapon_secondary_world_pos_in_range(object* shooter, weapon_info* wip, vec3d* target_world_pos);
+
+// Return whether shooter is in range, fov, etc of target_subsys, for multilock
+// also returns the dot to the subsys in out_dot
+// While single target missiles will check these properties as well separately, this function is ONLY used by multilock
+bool weapon_multilock_can_lock_on_subsys(object* shooter, object* target, ship_subsys* target_subsys, weapon_info* wip, float* out_dot = nullptr);
+
+// Return whether shooter is in fov, etc of a target, for multilock
+// does NOT check range
+// also returns the dot to the subsys in out_dot
+// While single target missiles will check these properties as well separately, this function is ONLY used by multilock
+bool weapon_multilock_can_lock_on_target(object* shooter, object* target_objp, weapon_info* wip, float* out_dot = nullptr);
 
 
 #endif

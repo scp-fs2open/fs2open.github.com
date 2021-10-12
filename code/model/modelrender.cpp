@@ -66,7 +66,9 @@ model_render_params::model_render_params() :
 	Animated_effect(-1),
 	Animated_timer(0.0f),
 	Thruster_info(),
-	Normal_alpha(false)
+	Normal_alpha(false),
+	Use_alpha_mult(false),
+	Alpha_mult(1.0f)
 {
 	Warp_scale.xyz.x = 1.0f;
 	Warp_scale.xyz.y = 1.0f;
@@ -344,6 +346,21 @@ float model_render_params::get_outline_thickness() {
 }
 bool model_render_params::uses_thick_outlines() {
 	return Outline_thickness > 0.0f;
+}
+
+void model_render_params::set_alpha_mult(float alpha) {
+	Alpha_mult = alpha;
+	Use_alpha_mult = true;
+}
+
+bool model_render_params::is_alpha_mult_set()
+{
+	return Use_alpha_mult;
+}
+
+float model_render_params::get_alpha_mult()
+{
+	return Alpha_mult;
 }
 
 void model_batch_buffer::reset()
@@ -1173,6 +1190,10 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 			use_blending = true;
 		}
 
+		if (rendering_material->is_alpha_mult_active()) {
+			use_blending = true;
+		}
+
 		if (forced_blend_filter != GR_ALPHABLEND_NONE) {
 			use_blending = true;
 		}
@@ -1191,6 +1212,10 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 
 		gr_alpha_blend blend_mode = model_render_determine_blend_mode(texture_maps[TM_BASE_TYPE], use_blending);
 		gr_zbuffer_type depth_mode = material_determine_depth_mode(use_depth_test, use_blending);
+
+		if (rendering_material->is_alpha_mult_active()) {
+			blend_mode = ALPHA_BLEND_PREMULTIPLIED;
+		}
 
 		rendering_material->set_depth_mode(depth_mode);
 		rendering_material->set_blend_mode(blend_mode);
@@ -2654,6 +2679,15 @@ void model_render_queue(model_render_params* interp, model_draw_list* scene, int
 		rendering_material.set_fog(r, g, b, fog_near, fog_far);
 	} else {
 		rendering_material.set_fog();
+	}
+
+	if (interp->is_alpha_mult_set()) {
+		float alphamult = 1.0f;
+
+		if (interp->is_alpha_mult_set()) {
+			alphamult *= interp->get_alpha_mult();
+		}
+		rendering_material.set_alpha_mult(alphamult);
 	}
 
 	if ( is_outlines_only_htl ) {

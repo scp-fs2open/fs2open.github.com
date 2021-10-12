@@ -163,6 +163,8 @@ void script_parse_table(const char* filename)
 			while (st->ParseCondition(filename));
 			required_string("#End");
 		}
+
+		st->AssayActions();
 	}
 	catch (const parse::ParseException& e)
 	{
@@ -756,6 +758,8 @@ void script_state::Clear()
 	ConditionalHooks.clear();
 	HookVariableValues.clear();
 
+	AssayActions();
+
 	if (LuaState != nullptr) {
 		OnStateDestroy(LuaState);
 
@@ -1137,9 +1141,33 @@ bool script_state::ParseCondition(const char *filename)
 	return true;
 }
 
-void script_state::AddConditionedHook(ConditionedHook hook) { ConditionalHooks.push_back(std::move(hook)); }
+void script_state::AddConditionedHook(ConditionedHook hook) {
+	ConditionalHooks.push_back(std::move(hook));
+	AssayActions();
+}
 
 void script_state::AddGameInitFunction(script_function func) { GameInitFunctions.push_back(std::move(func)); }
+
+// For each possible script_action this maintains an array that records whether any scripts are actually using this action
+// This allows us to avoid significant overhead from checking everything at the potential hook sites, but you must call
+// AssayActions() after modifying ConditionalHooks before returning to normal operation of the scripting system!
+void script_state::AssayActions() {
+	for (bool &i : ActiveActions) {
+		i = false;
+	}
+
+	for (const auto &hook : ConditionalHooks) {
+		for (const auto &action : hook.Actions) {
+			if (action.action_type >= -1 && action.action_type <= CHA_LAST) {
+				ActiveActions[action.action_type] = true;
+			}
+		}
+	}
+}
+
+bool script_state::IsActiveAction(ConditionalActions action_id) {
+	return ActiveActions[action_id];
+}
 
 //*************************CLASS: script_state*************************
 bool script_state::IsOverride(script_hook &hd)

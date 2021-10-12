@@ -8,13 +8,13 @@ namespace unicode {
 text_iterator::text_iterator(const char* in_current_byte, const char* in_range_start_byte, const char* in_range_end_byte) :
 	current_byte(in_current_byte), range_end_byte(in_range_end_byte), range_start_byte(in_range_start_byte) {
 	if (range_end_byte == nullptr) {
-#if SCP_COMPILER_IS_GNU
+#if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic push
 // This suppresses a GCC bug where it thinks that in_current_byte is null in release builds
 #pragma GCC diagnostic ignored "-Wnonnull"
 #endif
 		range_end_byte = in_current_byte + strlen(in_current_byte);
-#if SCP_COMPILER_IS_GNU
+#if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic pop
 #endif
 	}

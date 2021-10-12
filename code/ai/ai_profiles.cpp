@@ -468,7 +468,6 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$firing requires exact los:", AI::Profile_Flags::Require_exact_los);
 
-				profile->ai_path_mode = AI_PATH_MODE_NORMAL;
 				if (optional_string("$ai path mode:"))
 				{
 					stuff_string(buf, F_NAME, NAME_LENGTH);
@@ -507,8 +506,6 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$use POF radius for subsystem path points:", AI::Profile_Flags::Use_subsystem_path_point_radii);
 
-				profile->bay_arrive_speed_mult = 1.0f;
-				profile->bay_depart_speed_mult = 1.0f;
 				if (optional_string("$bay arrive speed multiplier:")) {
 					stuff_float(&profile->bay_arrive_speed_mult);
 				}
@@ -568,7 +565,6 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				//Intention is to expand this feature to include a preference for close or long range weapons
 				//hence using something besides a simple flag.
-				profile->ai_range_aware_secondary_select_mode = AI_RANGE_AWARE_SEC_SEL_MODE_RETAIL;
 				if (optional_string("$AI secondary range awareness:"))
 				{
 					stuff_string(buf, F_NAME, NAME_LENGTH);
@@ -582,6 +578,8 @@ void parse_ai_profiles_tbl(const char *filename)
 				}
 
 				set_flag(profile, "$no shield damage from ship collisions:", AI::Profile_Flags::No_shield_damage_from_ship_collisions);
+
+				set_flag(profile, "$reset last_hit_target_time for player hits:", AI::Profile_Flags::Reset_last_hit_target_time_for_player_hits);
 
 				// if we've been through once already and are at the same place, force a move
 				if (saved_Mp && (saved_Mp == Mp))
@@ -654,10 +652,10 @@ void ai_profile_t::reset()
 
     flags.reset();
 
-    ai_path_mode = 0;
+    ai_path_mode = AI_PATH_MODE_NORMAL;
 	subsystem_path_radii = 0;
-    bay_arrive_speed_mult = 0;
-    bay_depart_speed_mult = 0;
+    bay_arrive_speed_mult = 1.0f;
+    bay_depart_speed_mult = 1.0f;
 	second_order_lead_predict_factor = 0;
 	ai_range_aware_secondary_select_mode = AI_RANGE_AWARE_SEC_SEL_MODE_RETAIL;
 
@@ -736,6 +734,10 @@ void ai_profile_t::reset()
 	// this flag has been enabled ever since 3.7.2
 	if (mod_supports_version(3, 7, 2)) {
 		flags.set(AI::Profile_Flags::Fix_ramming_stationary_targets_bug);
+	}
+	// and this flag has been enabled ever since 3.6.10
+	if (mod_supports_version(3, 6, 10)) {
+		flags.set(AI::Profile_Flags::Reset_last_hit_target_time_for_player_hits);
 	}
 	if (mod_supports_version(21, 4, 0)) {
 		flags.set(AI::Profile_Flags::Fixed_ship_weapon_collision);

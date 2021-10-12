@@ -94,6 +94,8 @@ layout (std140) uniform modelData {
 	int sNormalmapIndex;
 	int sAmbientmapIndex;
 	int sMiscmapIndex;
+
+	float alphaMult;
 };
 
 in VertexOutput {
@@ -261,6 +263,11 @@ void main()
    }
  #endif
 	baseColor = texture(sBasemap, vec3(diffuseTexCoord, float(sBasemapIndex)));
+
+#ifdef FLAG_ALPHA_MULT
+	baseColor.a *= alphaMult;
+#endif
+
 	if ( blend_alpha == 0 && baseColor.a < 0.95 ) discard; // if alpha blending is not on, discard transparent pixels
 	// premultiply alpha if blend_alpha is 1. assume that our blend function is srcColor + (1-Alpha)*destColor.
 	// if blend_alpha is 2, assume blend func is additive and don't modify color
@@ -429,7 +436,15 @@ void main()
 	fragOut0 = baseColor;
 #ifdef FLAG_DEFERRED
 	fragOut1 = vec4(vertIn.position.xyz, 1.0);
-	fragOut2 = vec4(normal, glossData);
+
+	// Anti-glint "trick" based on Valve's "Advanced VR Rendering" talk at GDC2015:
+	// http://media.steampowered.com/apps/valve/2015/Alex_Vlachos_Advanced_VR_Rendering_GDC2015.pdf Page 43
+	// basically make surfaces rougher if local normals change too fast in screenspace 
+	vec2 normDx = dFdx(normal.xy);
+	vec2 normDy = dFdy(normal.xy);
+	float glossGeo = 1.0f - pow(clamp(max(dot(normDx,normDx), dot(normDy,normDy)),0.0,1.0),0.33);
+	fragOut2 = vec4(normal, min(glossData, glossGeo));
+
 	fragOut3 = vec4(specColor.rgb, fresnelFactor);
 	fragOut4 = emissiveColor;
 #endif

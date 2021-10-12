@@ -25,13 +25,14 @@ struct obj_pair;
 struct beam_weapon_info;
 struct vec3d;
 
-// beam types
-#define BEAM_TYPE_A					0				// unidirectional beam
-#define BEAM_TYPE_B					1				// "slash" in one direction
-#define BEAM_TYPE_C					2				// targeting lasers (only lasts one frame)
-#define BEAM_TYPE_D					3				// similar to the type A beams, but takes multiple shots and "chases" fighters around
-#define BEAM_TYPE_E					4				// stupid beam. like type A, only it doesn't aim. it just shoots directly out of the turret
-#define BEAM_TYPE_F					5				// SCP type, highly flexible and configurable
+typedef enum class BeamType {
+	DIRECT_FIRE,	// unidirectional beam; used to be BEAM_TYPE_A
+	SLASHING,		// "slash" in one direction; used to be BEAM_TYPE_B
+	TARGETING,		// targeting lasers (only lasts one frame); used to be BEAM_TYPE_C
+	ANTIFIGHTER,	// similar to the type A beams, but takes multiple shots and "chases" fighters around; used to be BEAM_TYPE_D
+	NORMAL_FIRE,	// stupid beam. like type A, only it doesn't aim. it just shoots directly out of the turret; used to be BEAM_TYPE_E
+	OMNI			// SCP type, highly flexible and configurable; used to be BEAM_TYPE_F
+} BeamType;
 
 // max # of "shots" an individual beam will take
 #define MAX_BEAM_SHOTS				5
@@ -147,7 +148,7 @@ typedef struct beam {
 	// beam info	
 	int		warmup_stamp;			// timestamp for "warming up"
 	int		warmdown_stamp;		// timestamp for "warming down"
-	int		type;						// see BEAM_TYPE_* defines in beam.h
+	BeamType		type;				// the type of beam, direct-fire, slashing, etc
 	float		life_left;				// in seconds
 	float		life_total;				// total life	
 	// this vector has very special meaning. BEFORE performing collision checks, it basically implies a "direction". meaning
@@ -270,7 +271,7 @@ void beam_unpause_sounds();
 void beam_calc_facing_pts(vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, float w, float z_add);
 
 // return the amount of damage which should be applied to a ship. basically, filters friendly fire damage 
-float beam_get_ship_damage(beam *b, object *objp);
+float beam_get_ship_damage(beam *b, object *objp, vec3d* hitpos = nullptr);
 
 
 

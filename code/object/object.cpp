@@ -858,7 +858,7 @@ void obj_move_call_physics(object *objp, float frametime)
 
 				for (int i = 0; i < shipp->weapons.num_secondary_banks; i++) {
 					//if there are no missles left don't bother
-					if (shipp->weapons.secondary_bank_ammo[i] == 0)
+					if (!ship_secondary_has_ammo(&shipp->weapons, i))
 						continue;
 
 					int points = pm->missile_banks[i].num_slots;
@@ -873,7 +873,7 @@ void obj_move_call_physics(object *objp, float frametime)
 					if (points > missles_left) {
 						//there are more slots than missles left, so not all of the slots will have missles drawn on them
 						for (int k = next_point; k < next_point+missles_left; k ++) {
-							float &s_pct = shipp->secondary_point_reload_pct[i][k % points];
+							float &s_pct = shipp->secondary_point_reload_pct.get(i, k % points);
 							if (s_pct < 1.0)
 								s_pct += reload_time * frametime;
 							if (s_pct > 1.0)
@@ -882,7 +882,7 @@ void obj_move_call_physics(object *objp, float frametime)
 					} else {
 						//we don't have to worry about such things
 						for (int k = 0; k < points; k++) {
-							float &s_pct = shipp->secondary_point_reload_pct[i][k];
+							float &s_pct = shipp->secondary_point_reload_pct.get(i, k);
 							if (s_pct < 1.0)
 								s_pct += reload_time * frametime;
 							if (s_pct > 1.0)
@@ -1260,7 +1260,6 @@ void obj_move_all_post(object *objp, float frametime)
 
 			if ( !physics_paused || (objp==Player_obj) ) {
 				ship_process_post( objp, frametime );
-				ship_model_update_instance(objp);
 			}
 
 			// Make any electrical arcs on ships cast light
@@ -1517,6 +1516,25 @@ void obj_move_all(float frametime)
 			}
 		}
 
+		// Submodel movement now happens here, right after physics movement.  It's not excluded by the "immobile" flag.
+		
+		// this flag only affects ship subsystems, not any other type of submodel movement
+		if (objp->type == OBJ_SHIP && !Ships[objp->instance].flags[Ship::Ship_Flags::Subsystem_movement_locked])
+			ship_move_subsystems(objp);
+
+		// do animation on this object
+		// TODO: change stepAnimations to operate on a per-object basis
+		//animation::ModelAnimation::stepAnimations(objp, frametime);
+
+		// finally, do intrinsic rotation on this object
+		// (this happens last because look_at is a type of intrinsic rotation,
+		// and look_at needs to happen last or the angle may be off by a frame)
+		model_do_intrinsic_rotations(objp);
+
+		// For ships, we now have to make sure that all the submodel detail levels remain consistent.
+		if (objp->type == OBJ_SHIP)
+			ship_model_replicate_submodels(objp);
+
 		// move post
 		obj_move_all_post(objp, frametime);
 
@@ -1532,16 +1550,20 @@ void obj_move_all(float frametime)
 			if (objp == Player_obj && Player_ai->target_objnum != -1)
 				target = &Objects[Player_ai->target_objnum];
 
-			Script_system.SetHookObjects(2, "User", objp, "Target", target);
-			Script_system.RunCondition(CHA_ONWPEQUIPPED, objp);
-			Script_system.RemHookVars({"User", "Target"});
+			if (Script_system.IsActiveAction(CHA_ONWPEQUIPPED)) {
+				Script_system.SetHookObjects(2, "User", objp, "Target", target);
+				Script_system.RunCondition(CHA_ONWPEQUIPPED, objp);
+				Script_system.RemHookVars({"User", "Target"});
+			}
 		}
 	}
 
-	// Now that we've moved all the objects, move all the models that use intrinsic rotations.  We do that here because we already handled the
-	// ship models in obj_move_all_post, and this is more or less conceptually close enough to move the rest.  (Originally all models
-	// were intrinsic-rotated here, but for sequencing reasons, intrinsic ship rotations must happen along with regular ship rotations.)
-	model_do_intrinsic_rotations();
+	// TODO: remove; see stepAnimations comment above
+	animation::ModelAnimation::stepAnimations(frametime);
+
+	// Now apply intrinsic movement to things that aren't objects (like skyboxes).  This technically doesn't belong in the object code,
+	// but there isn't really a good place to put this, it doesn't hurt to have this here, and it's conceptually related to what's here.
+	model_do_intrinsic_rotations(nullptr);
 
 	//	After all objects have been moved, move all docked objects.
 	objp = GET_FIRST(&obj_used_list);
@@ -1642,19 +1664,18 @@ void obj_queue_render(object* obj, model_draw_list* scene)
 
 	if ( obj->flags[Object::Object_Flags::Should_be_dead] ) return;
 
-	Script_system.SetHookObject("Self", obj);
-	
-	auto skip_render = Script_system.IsConditionOverride(CHA_OBJECTRENDER, obj);
-	
-	// Always execute the hook content
-	Script_system.RunCondition(CHA_OBJECTRENDER, obj);
-
-	Script_system.RemHookVar("Self");
-
-	if (skip_render) {
-		// Script said that it want's to skip rendering
-		return;
+	if (Script_system.IsActiveAction(CHA_OBJECTRENDER)) {
+		Script_system.SetHookObject("Self", obj);
+		bool skip_render = Script_system.IsConditionOverride(CHA_OBJECTRENDER, obj);
+		// Always execute the hook content
+		Script_system.RunCondition(CHA_OBJECTRENDER, obj);
+		Script_system.RemHookVar("Self");
+		if (skip_render) {
+			// Script said that it want's to skip rendering
+			return;
+		}
 	}
+
 
 	switch ( obj->type ) {
 	case OBJ_NONE:

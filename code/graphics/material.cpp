@@ -688,6 +688,24 @@ bool model_material::uses_thick_outlines() const {
 	return Outline_thickness > 0.0f;
 }
 
+float model_material::get_alpha_mult() const {
+	return Alpha_mult;
+}
+
+bool model_material::is_alpha_mult_active() const {
+	return Use_alpha_mult;
+}
+
+void model_material::set_alpha_mult(float alpha) {
+	Use_alpha_mult = true;
+	Alpha_mult = alpha;
+}
+
+void model_material::reset_alpha_mult() {
+	Use_alpha_mult = false;
+	Alpha_mult = 1.0f;
+}
+
 uint model_material::get_shader_flags() const
 {
 	uint Shader_flags = 0;
@@ -777,6 +795,10 @@ uint model_material::get_shader_flags() const
 
 	if ( uses_thick_outlines() ) {
 		Shader_flags |= SDR_FLAG_MODEL_THICK_OUTLINES;
+	}
+
+	if (is_alpha_mult_active()) {
+		Shader_flags |= SDR_FLAG_MODEL_ALPHA_MULT;
 	}
 
 	return Shader_flags;

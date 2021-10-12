@@ -44,7 +44,7 @@ typedef struct _obj_snd {
 	int		freq;				// valid range: 100 -> 100000 Hz
 	int		flags;			
 	vec3d	offset;			// offset from the center of the object where the sound lives
-	ship_subsys *ss;		//Associated subsystem
+	const ship_subsys *ss;		//Associated subsystem
 } obj_snd;
 
 #define SPEED_SOUND				600.0f				// speed of sound in FreeSpace
@@ -80,6 +80,18 @@ void obj_snd_source_pos(vec3d *sound_pos, obj_snd *osp)
 	// get sound pos in world coords
 	vm_vec_unrotate(&offset_world, &osp->offset, &objp->orient);
 	vm_vec_add(sound_pos, &objp->pos, &offset_world);
+}
+
+// determine what index in this guy the sound is
+int obj_snd_find(object *objp, obj_snd *osp)
+{
+	int idx = 0;
+	for (auto iter = objp->objsnd_num.begin(); iter != objp->objsnd_num.end(); ++iter, ++idx) {
+		if (*iter == (osp - Objsnds)) {
+			return idx;
+		}
+	}
+	return -1;
 }
 
 // ---------------------------------------------------------------------------------------
@@ -332,14 +344,7 @@ int obj_snd_stop_lowest_vol(float new_vol)
         objp = &Objects[lowest_vol_osp->objnum];
 
 	if ( (lowest_vol < new_vol) && (objp != NULL) ) {
-		int idx = 0;
-		// determine what index in this guy the sound is
-		for(SCP_vector<int>::iterator iter = objp->objsnd_num.begin(); iter != objp->objsnd_num.end(); ++iter, ++idx){
-			if(*iter == (lowest_vol_osp - Objsnds)){
-				obj_snd_index = idx;
-				break;
-			}
-		}
+		obj_snd_index = obj_snd_find(objp, lowest_vol_osp);
 
 		if((obj_snd_index == -1) || (obj_snd_index >= (int) objp->objsnd_num.size())){
 			Int3();		// get dave
@@ -471,12 +476,16 @@ void obj_snd_do_frame()
 	for ( osp = GET_FIRST(&obj_snd_list); osp !=END_OF_LIST(&obj_snd_list); osp = GET_NEXT(osp) ) {
 		Assert(osp != NULL);
 		objp = &Objects[osp->objnum];
-		if ( Player_obj == objp && observer_obj == Player_obj ) {
+		if ((Player_obj == objp) && (observer_obj == Player_obj) && !(osp->flags & OS_PLAY_ON_PLAYER)) {
 			// we don't play the engine sound if the view is from the player
+			// unless OS_PLAY_ON_PLAYER was set manually
 			continue;
 		}
 
 		gs = gamesnd_get_game_sound(osp->id);
+		if (gs->flags & GAME_SND_NOT_VALID) {
+			continue;
+		}
 
 		obj_snd_source_pos(&source_pos, osp);
 		distance = vm_vec_dist_quick( &source_pos, &View_position );
@@ -577,7 +586,7 @@ void obj_snd_do_frame()
 
 		go_ahead_flag = TRUE;
 		float max_vol,new_vol;
-		if (!osp->instance.isValid()) {
+		if ( !osp->instance.isValid() ) {
 			if ( distance < gs->max ) {
 				max_vol = gs->volume_range.max();
 				if ( distance <= gs->min ) {
@@ -608,30 +617,35 @@ void obj_snd_do_frame()
 				} // end switch
 
 				if ( go_ahead_flag ) {
-					osp->instance = snd_play_3d(gs, &source_pos, &View_position, add_distance, &objp->phys_info.vel, 1, 1.0f, SND_PRIORITY_TRIPLE_INSTANCE, NULL, 1.0f, 0, true);
+					int is_looping = (osp->flags & OS_LOOPING_DISABLED) ? 0 : 1;
+					osp->instance = snd_play_3d(gs, &source_pos, &View_position, add_distance, &objp->phys_info.vel, is_looping, 1.0f, SND_PRIORITY_TRIPLE_INSTANCE, nullptr, 1.0f, 0, true);
 					if (osp->instance.isValid()) {
 						Num_obj_sounds_playing++;
 					}
 				}
 				Assert(Num_obj_sounds_playing <= MAX_OBJ_SOUNDS_PLAYING);
-
-			} // 		end if ( distance < Snds[osp->id].max )
-		} // 		if ( osp->instance == -1 )
+			}
+		}
 		else {
-			if ( distance > gamesnd_get_game_sound(osp->id)->max ) {
-				int sound_index = -1;
-				int idx = 0;
+			// sound has finished playing and won't be played again
+			if ((osp->flags & OS_LOOPING_DISABLED) && !snd_is_playing(osp->instance)) {
+				auto osp_prev = GET_PREV(osp);
 
-				// determine which sound index it is for this guy
-				for(SCP_vector<int>::iterator iter = objp->objsnd_num.begin(); iter != objp->objsnd_num.end(); ++iter, ++idx){
-					if(*iter == (osp - Objsnds)){
-						sound_index = idx;
-						break;
-					}
-				}
+				// non-looping sounds that have already played once need to be removed from the object sound list
+				int sound_index = obj_snd_find(objp, osp);
+				obj_snd_delete(objp, sound_index, false);
+
+				// don't corrupt the iterating loop (next iteration will move to the deleted osp's next sibling)
+				osp = osp_prev;
+				continue;
+			}
+
+			// currently playing sound has gone past maximum
+			if ( distance > gamesnd_get_game_sound(osp->id)->max ) {
+				int sound_index = obj_snd_find(objp, osp);
 
 				Assert(sound_index != -1);
-				obj_snd_stop(objp, sound_index);						// currently playing sound has gone past maximum
+				obj_snd_stop(objp, sound_index);
 			}
 		}
 
@@ -684,8 +698,10 @@ void obj_snd_do_frame()
 //										sound can be assigned per object).  
 //               >= 0			=> sound was successfully assigned
 //
-int obj_snd_assign(int objnum, gamesnd_id sndnum, vec3d *pos, int flags, ship_subsys *associated_sub)
+int obj_snd_assign(int objnum, gamesnd_id sndnum, const vec3d *pos, int flags, const ship_subsys *associated_sub)
 {
+	Assertion(pos != nullptr, "Sound position must not be null!");
+
 	if(objnum < 0 || objnum > MAX_OBJECTS)
 		return -1;
 
@@ -754,20 +770,17 @@ int obj_snd_assign(int objnum, gamesnd_id sndnum, vec3d *pos, int flags, ship_su
 //
 // parameters:  objnum		=> index of object that sound is being removed from.
 //				index		=> index of sound in objsnd_num
+//				stop_sound	=> whether we stop it (defaults to true)
 //
-void obj_snd_delete(int objnum, int index)
+void obj_snd_delete(object *objp, int index, bool stop_sound)
 {
-	//Sanity checking
-	Assert(objnum > -1 && objnum < MAX_OBJECTS);
-
-	object *objp = &Objects[objnum];
-	
 	Assert(index > -1 && index < (int) objp->objsnd_num.size());
 
 	obj_snd *osp = &Objsnds[objp->objsnd_num[index]];
 
 	//Stop the sound
-	obj_snd_stop(objp, index);
+	if (stop_sound)
+		obj_snd_stop(objp, index);
 
 	// remove objp from the obj_snd_list
 	list_remove( &obj_snd_list, osp );
@@ -815,7 +828,7 @@ void	obj_snd_delete_type(int objnum, gamesnd_id sndnum, ship_subsys *ss)
 			continue;
 		}
 
-		obj_snd_delete(objnum, idx);
+		obj_snd_delete(objp, idx);
 	}
 }
 

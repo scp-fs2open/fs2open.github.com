@@ -83,16 +83,20 @@ int collide_weapon_weapon( obj_pair * pair )
 	//	Rats, do collision detection.
 	if (collide_subdivide(&A->last_pos, &A->pos, A_radius, &B->last_pos, &B->pos, B_radius))
 	{
-		Script_system.SetHookObjects(4, "Self", A, "Object", B, "Weapon", A, "WeaponB", B);
-		Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(B->pos));
-		bool a_override = Script_system.IsConditionOverride(CHA_COLLIDEWEAPON, A);
-		Script_system.RemHookVars({"Self", "Object", "Weapon", "WeaponB", "Hitpos" });
+		bool a_override = false, b_override = false;
 
-		// Yes, this should be reversed.
-		Script_system.SetHookObjects(4, "Self", B, "Object", A, "Weapon", B, "WeaponB", A);
-		Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(A->pos));
-		bool b_override = Script_system.IsConditionOverride(CHA_COLLIDEWEAPON, B);
-		Script_system.RemHookVars({ "Self", "Object", "Weapon", "WeaponB", "Hitpos" });
+		if (Script_system.IsActiveAction(CHA_COLLIDEWEAPON)) {
+			Script_system.SetHookObjects(4, "Self", A, "Object", B, "Weapon", A, "WeaponB", B);
+			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(B->pos));
+			a_override = Script_system.IsConditionOverride(CHA_COLLIDEWEAPON, A);
+			Script_system.RemHookVars({"Self", "Object", "Weapon", "WeaponB", "Hitpos" });
+
+			// Yes, this should be reversed.
+			Script_system.SetHookObjects(4, "Self", B, "Object", A, "Weapon", B, "WeaponB", A);
+			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(A->pos));
+			b_override = Script_system.IsConditionOverride(CHA_COLLIDEWEAPON, B);
+			Script_system.RemHookVars({ "Self", "Object", "Weapon", "WeaponB", "Hitpos" });
+		}
 
 		// damage calculation should not be done on clients, the server will tell the client version of the bomb when to die
 		if(!a_override && !b_override && !MULTIPLAYER_CLIENT)
@@ -172,6 +176,10 @@ int collide_weapon_weapon( obj_pair * pair )
 					}
 				}
 			}
+		}
+
+		if (!Script_system.IsActiveAction(CHA_COLLIDEWEAPON)) {
+			return 1;
 		}
 
 		if(!(b_override && !a_override))

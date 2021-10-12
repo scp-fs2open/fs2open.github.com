@@ -80,11 +80,17 @@ static uint Global_checksum = 0;
 // compatible.  
 #define PM_OBJFILE_MAJOR_VERSION 30
 
-// 21.17 adds support for engine thruster banks linked to specific engine subsystems.
+// 22.01 adds support for external weapon model angle offsets
+// 22.00 fixes the POF byte alignment and introduces the SLC2 chunk
+//
+// 21.18 adds support for external weapon model angle offsets
+// 21.17 adds support for engine thruster banks linked to specific engine subsystems
 // FreeSpace 2 shipped at POF version 21.17
 // Descent: FreeSpace shipped at POF version 20.14
 // See also https://wiki.hard-light.net/index.php/POF_data_structure
-#define PM_LATEST_VERSION	2117
+#define PM_LATEST_ALIGNED_VERSION	2201
+#define PM_LATEST_LEGACY_VERSION	2118
+#define PM_FIRST_ALIGNED_VERSION	2200
 
 static int Model_signature = 0;
 
@@ -141,12 +147,12 @@ SCP_vector<glow_point_bank_override> glowpoint_bank_overrides;
 class intrinsic_rotation
 {
 public:
-	bool is_ship;
+	bool is_object;
 	int model_instance_num;
 	SCP_vector<int> submodel_list;
 
-	intrinsic_rotation(bool _is_ship, int _model_instance_num)
-		: is_ship(_is_ship), model_instance_num(_model_instance_num)
+	intrinsic_rotation(bool _is_object, int _model_instance_num)
+		: is_object(_is_object), model_instance_num(_model_instance_num)
 	{}
 
 	void add_submodel(int _submodel_num, submodel_instance *_submodel_instance_1, float _turn_rate)
@@ -157,7 +163,7 @@ public:
 	}
 };
 
-SCP_vector<intrinsic_rotation> Intrinsic_rotations;
+SCP_unordered_map<int, intrinsic_rotation> Intrinsic_rotations;
 
 
 // Free up a model, getting rid of all its memory
@@ -220,8 +226,12 @@ void model_unload(int modelnum, int force)
 		vm_free(pm->shield.tris);
 	}
 
-	if ( pm->missile_banks )	{
-		vm_free(pm->missile_banks);
+	if (pm->gun_banks) {	// NOLINT
+		delete[] pm->gun_banks;
+	}
+
+	if (pm->missile_banks) {	// NOLINT
+		delete[] pm->missile_banks;
 	}
 
 	if ( pm->docking_bays )	{
@@ -287,10 +297,6 @@ void model_unload(int modelnum, int force)
 
 	if ( pm->lights )	{
 		vm_free(pm->lights);
-	}
-
-	if ( pm->gun_banks )	{
-		vm_free(pm->gun_banks);
 	}
 
 	if ( pm->shield_collision_tree ) {
@@ -1192,8 +1198,8 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 		Warning(LOCATION,"Bad version (%d) in model file <%s>",version,filename);
 		return 0;
 	}
-	if (version > PM_LATEST_VERSION) {
-		Warning(LOCATION, "Model file %s is version %d, but the latest supported version on this build of FSO is %d.  The model may not work correctly.", filename, version, PM_LATEST_VERSION);
+	if ((version > PM_LATEST_LEGACY_VERSION && version < PM_FIRST_ALIGNED_VERSION) || (version > PM_LATEST_ALIGNED_VERSION)) {
+		Warning(LOCATION, "Model file %s is version %d, but the latest supported version on this build of FSO is %d.  The model may not work correctly.", filename, version, version >= PM_FIRST_ALIGNED_VERSION ? PM_LATEST_ALIGNED_VERSION : PM_LATEST_LEGACY_VERSION);
 	}
 
 	pm->version = version;
@@ -1476,7 +1482,6 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 				// note, this should come BEFORE do_new_subsystem() for proper error handling (to avoid both rotating and look-at submodel)
 				if ((p = strstr(props, "$look_at")) != nullptr) {
 					pm->submodel[n].movement_type = MOVEMENT_TYPE_INTRINSIC_ROTATE;
-					pm->flags |= PM_FLAG_HAS_INTRINSIC_ROTATE;
 
 					// we need to work out the correct subobject number later, after all subobjects have been processed
 					pm->submodel[n].look_at_submodel = static_cast<int>(look_at_submodel_names.size());
@@ -1514,7 +1519,6 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 				int idx = prop_string(props, &p, "$dumb_rotate_time", "$dumb_rotate_rate", "$dumb_rotate");
 				if (idx >= 0) {
 					pm->submodel[n].movement_type = MOVEMENT_TYPE_INTRINSIC_ROTATE;
-					pm->flags |= PM_FLAG_HAS_INTRINSIC_ROTATE;
 
 					// do this the same way as regular $rotate
 					char buf[64];
@@ -1789,8 +1793,8 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 					}
 				}
 
-				//ShivanSpS - if pof version is 2118 or higher load bsp_data as it is, otherwise, align it
-				if (pm->version >= 2118)
+				//ShivanSpS - if pof version is 2200 or higher load bsp_data as it is, otherwise, align it
+				if (pm->version >= 2200)
 				{
 					pm->submodel[n].bsp_data_size = cfread_int(fp);
 					if (pm->submodel[n].bsp_data_size > 0) {
@@ -1841,8 +1845,8 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 			}
 
 			case ID_SLDC: // kazan - Shield Collision tree
-			{   //ShivanSpS - if pof version is 2118 or higher ignore SLDC, otherwise convert it to slc2.
-				if (pm->version < 2118) {
+			{   //ShivanSpS - if pof version is 2200 or higher ignore SLDC, otherwise convert it to slc2.
+				if (pm->version < 2200) {
 					//mprintf(("SLDC data is being converted to SLC2.\n"));
 					pm->sldc_size = cfread_int(fp);
 
@@ -1860,9 +1864,9 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 			}
 			break;
 
-			case ID_SLC2: // ShivanSpS -Newer version of the SLDC Shield Collision tree, only pof version 2118.
+			case ID_SLC2: // ShivanSpS -Newer version of the SLDC Shield Collision tree, only pof version 2200.
 			{
-				if (pm->version >= 2118) {
+				if (pm->version >= 2200) {
 					pm->sldc_size = cfread_int(fp);
 					pm->shield_collision_tree = (ubyte*)vm_malloc(pm->sldc_size);
 					cfread(pm->shield_collision_tree, 1, pm->sldc_size, fp);
@@ -1915,49 +1919,56 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 				}
 				break;
 
+			// guns and missiles use almost exactly the same code
 			case ID_GPNT:
-				pm->n_guns = cfread_int(fp);
-
-				if (pm->n_guns > 0) {
-					pm->gun_banks = (w_bank *)vm_malloc(sizeof(w_bank) * pm->n_guns);
-					Assert( pm->gun_banks != NULL );
-
-					for (i = 0; i < pm->n_guns; i++ ) {
-						w_bank *bank = &pm->gun_banks[i];
-
-						bank->num_slots = cfread_int(fp);
-						Assert ( bank->num_slots < MAX_SLOTS );
-						for (j = 0; j < bank->num_slots; j++) {
-							cfread_vector( &(bank->pnt[j]), fp );
-							cfread_vector( &temp_vec, fp );
-							vm_vec_normalize_safe(&temp_vec);
-							bank->norm[j] = temp_vec;
-						}
-					}
-				}
-				break;
-			
 			case ID_MPNT:
-				pm->n_missiles = cfread_int(fp);
+			{
+				int n_weps = cfread_int(fp);
+				w_bank *wep_banks = nullptr;
 
-				if (pm->n_missiles > 0) {
-					pm->missile_banks = (w_bank *)vm_malloc(sizeof(w_bank) * pm->n_missiles);
-					Assert( pm->missile_banks != NULL );
-
-					for (i = 0; i < pm->n_missiles; i++ ) {
-						w_bank *bank = &pm->missile_banks[i];
+				if (n_weps > 0)
+				{
+					wep_banks = new w_bank[n_weps];
+					for (i = 0; i < n_weps; ++i)
+					{
+						w_bank *bank = &wep_banks[i];
 
 						bank->num_slots = cfread_int(fp);
-						Assert ( bank->num_slots < MAX_SLOTS );
-						for (j = 0; j < bank->num_slots; j++) {
-							cfread_vector( &(bank->pnt[j]), fp );
-							cfread_vector( &temp_vec, fp );
-							vm_vec_normalize_safe(&temp_vec);
-							bank->norm[j] = temp_vec;
+						if (bank->num_slots > 0)
+						{
+							bank->pnt = new vec3d[bank->num_slots];
+							bank->norm = new vec3d[bank->num_slots];
+							bank->external_model_angle_offset = new float[bank->num_slots];
+
+							for (j = 0; j < bank->num_slots; ++j)
+							{
+								cfread_vector(&(bank->pnt[j]), fp);
+								cfread_vector(&temp_vec, fp);
+								vm_vec_normalize_safe(&temp_vec);
+								bank->norm[j] = temp_vec;
+
+								// angle offsets are a new POF feature
+								if ((pm->version >= 2118 && pm->version < PM_FIRST_ALIGNED_VERSION) || (pm->version >= 2201))
+									bank->external_model_angle_offset[j] = fl_radians(cfread_float(fp));
+								else
+									bank->external_model_angle_offset[j] = 0.0f;
+							}
 						}
 					}
 				}
+
+				if (id == ID_GPNT)
+				{
+					pm->n_guns = n_weps;
+					pm->gun_banks = wep_banks;
+				}
+				else
+				{
+					pm->n_missiles = n_weps;
+					pm->missile_banks = wep_banks;
+				}
 				break;
+			}
 
 			case ID_DOCK: {
 				char props[MAX_PROP_LEN];
@@ -2579,17 +2590,33 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 					}
 				}
 
+				// certain old models specify the submodel number, so let's maintain compatibilty
+				if (submodel_name != nullptr && can_construe_as_integer(submodel_name)) {
+					pm->submodel[i].look_at_submodel = atoi(submodel_name);
+					submodel_name = nullptr;
+				}
+
 				// did we fail to find it?
 				if (submodel_name != nullptr) {
 					Warning(LOCATION, "Unable to match %s %s $look_at: target %s with a submodel!\n", pm->filename, pm->submodel[i].name, submodel_name);
 					pm->submodel[i].look_at_submodel = -1;
+					pm->submodel[i].movement_type = MOVEMENT_TYPE_NONE;
 				}
 				// are we navel-gazing?
 				else if (pm->submodel[i].look_at_submodel == i) {
 					Warning(LOCATION, "Matched %s %s $look_at: target with its own submodel!  Submodel cannot look at itself!\n", pm->filename, pm->submodel[i].name);
 					pm->submodel[i].look_at_submodel = -1;
+					pm->submodel[i].movement_type = MOVEMENT_TYPE_NONE;
 				}
 			}
+		}
+	}
+
+	// And now look through all the submodels and set the model flag if any are intrinsic-rotating
+	for (i = 0; i < pm->n_models; i++) {
+		if (pm->submodel[i].movement_type == MOVEMENT_TYPE_INTRINSIC_ROTATE) {
+			pm->flags |= PM_FLAG_HAS_INTRINSIC_ROTATE;
+			break;
 		}
 	}
 
@@ -3064,7 +3091,7 @@ int model_load(const  char *filename, int n_subsystems, model_subsystem *subsyst
 	return pm->id;
 }
 
-int model_create_instance(bool is_ship, int model_num)
+int model_create_instance(bool is_object, int model_num)
 {
 	int i = 0;
 	int open_slot = -1;
@@ -3096,7 +3123,7 @@ int model_create_instance(bool is_ship, int model_num)
 
 	// add intrinsic_rotation instances if this model is intrinsic-rotating
 	if (pm->flags & PM_FLAG_HAS_INTRINSIC_ROTATE) {
-		intrinsic_rotation intrinsic_rotate(is_ship, open_slot);
+		intrinsic_rotation intrinsic_rotate(is_object, open_slot);
 
 		for (i = 0; i < pm->n_models; i++) {
 			if (pm->submodel[i].movement_type == MOVEMENT_TYPE_INTRINSIC_ROTATE) {
@@ -3108,7 +3135,7 @@ int model_create_instance(bool is_ship, int model_num)
 		if (intrinsic_rotate.submodel_list.empty()) {
 			Assertion(!intrinsic_rotate.submodel_list.empty(), "This model has the PM_FLAG_HAS_INTRINSIC_ROTATE flag; why doesn't it have an intrinsic-rotating submodel?");
 		} else {
-			Intrinsic_rotations.push_back(intrinsic_rotate);
+			Intrinsic_rotations.insert(std::make_pair(pmi->id, std::move(intrinsic_rotate)));
 		}
 	}
 
@@ -3133,12 +3160,7 @@ void model_delete_instance(int model_instance_num)
 	Polygon_model_instances[model_instance_num] = nullptr;
 
 	// delete intrinsic rotations associated with this instance
-	for (auto intrinsic_it = Intrinsic_rotations.begin(); intrinsic_it != Intrinsic_rotations.end(); ++intrinsic_it) {
-		if (intrinsic_it->model_instance_num == model_instance_num) {
-			Intrinsic_rotations.erase(intrinsic_it);
-			break;
-		}
-	}
+	Intrinsic_rotations.erase(model_instance_num);
 }
 
 // ensure that the subsys path is at least SUBSYS_PATH_DIST from the 
@@ -3882,14 +3904,11 @@ int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, ship_
 		base_smi->canonical_orient = save_base_orient;
 
 	} else {
-		desired_base_angle = 0.0f;
+		desired_base_angle = base_smi->turret_idle_angle;
 		desired_gun_angle = 0.0f;
-		if (turret->n_triggers > 0) {
-			int i;
-			for (i = 0; i<turret->n_triggers; i++) {
-				desired_gun_angle = turret->triggers[i].angle.xyz.x;
-				desired_base_angle = turret->triggers[i].angle.xyz.y;
-			}
+
+		if ((turret->subobj_num != turret->turret_gun_sobj)) {
+			desired_gun_angle = gun_smi->turret_idle_angle;
 		}
 	}
 
@@ -4382,49 +4401,25 @@ void model_set_up_techroom_instance(ship_info *sip, int model_instance_num)
 	{
 		model_subsystem *msp = &sip->subsystems[i];
 
-		for (int j = 0; j < msp->n_triggers; ++j)
-		{
-			if (msp->triggers[j].type == AnimationTriggerType::Initial)
-			{
-				// special case for turrets
-				if (msp->type == SUBSYSTEM_TURRET)
-				{
-					if (msp->subobj_num >= 0)
-					{
-						pmi->submodel[msp->subobj_num].cur_angle = msp->triggers[j].angle.xyz.y;
-						submodel_canonicalize(&pm->submodel[msp->subobj_num], &pmi->submodel[msp->subobj_num], true);
-					}
+		const auto& initialAnims = sip->animations.animationSet[{animation::ModelAnimationTriggerType::Initial, animation::ModelAnimationSet::SUBTYPE_DEFAULT}];
 
-					if ((msp->subobj_num != msp->turret_gun_sobj) && (msp->turret_gun_sobj >= 0))
-					{
-						pmi->submodel[msp->turret_gun_sobj].cur_angle = msp->triggers[j].angle.xyz.x;
-						submodel_canonicalize(&pm->submodel[msp->turret_gun_sobj], &pmi->submodel[msp->turret_gun_sobj], true);
-					}
-				}
-				// we can't support non-turrets, as in modelanim, because we need a ship subsystem but we don't actually have a ship
-			}
+		for (const auto& initialAnim : initialAnims) {
+			initialAnim.second->start(pmi, animation::ModelAnimationDirection::FWD, true);
 		}
 
 		if (msp->subobj_num >= 0)
-			model_update_instance(pm, pmi, msp->subobj_num, empty);
+			model_replicate_submodel_instance(pm, pmi, msp->subobj_num, empty);
 
-		if (msp->turret_gun_sobj >= 0)
-			model_update_instance(pm, pmi, msp->turret_gun_sobj, empty);
+		if ((msp->subobj_num != msp->turret_gun_sobj) && (msp->turret_gun_sobj >= 0))
+			model_replicate_submodel_instance(pm, pmi, msp->turret_gun_sobj, empty);
 	}
-}
-
-void model_update_instance(int model_instance_num, int submodel_num, flagset<Ship::Subsystem_Flags>& flags)
-{
-	auto pmi = model_get_instance(model_instance_num);
-	auto pm = model_get(pmi->model_num);
-	model_update_instance(pm, pmi, submodel_num, flags);
 }
 
 /*
  * This function handles copying submodel instance information to other submodel instances as appropriate.  The copy_from parameter is used for
- * copying data to other LODs, and is only specified from within model_update_instance itself.  The "public" function header omits this parameter.
+ * copying data to other LODs, and is only specified from within this function itself.  The "public" function header omits this parameter.
  */
-void model_update_instance(polymodel *pm, polymodel_instance *pmi, const submodel_instance *copy_from, int submodel_num, flagset<Ship::Subsystem_Flags>& flags)
+void model_replicate_submodel_instance_sub(polymodel *pm, polymodel_instance *pmi, const submodel_instance *copy_from, int submodel_num, flagset<Ship::Subsystem_Flags>& flags)
 {
 	Assert(pm->id == pmi->model_num);
 	
@@ -4477,13 +4472,13 @@ void model_update_instance(polymodel *pm, polymodel_instance *pmi, const submode
 
 	// For all the detail levels of this submodel, set them also.
 	for ( int i=0; i<sm->num_details; i++ )	{
-		model_update_instance( pm, pmi, smi, sm->details[i], flags );
+		model_replicate_submodel_instance_sub( pm, pmi, smi, sm->details[i], flags );
 	}
 }
 
-void model_update_instance(polymodel *pm, polymodel_instance *pmi, int submodel_num, flagset<Ship::Subsystem_Flags>& flags)
+void model_replicate_submodel_instance(polymodel *pm, polymodel_instance *pmi, int submodel_num, flagset<Ship::Subsystem_Flags>& flags)
 {
-	model_update_instance(pm, pmi, nullptr, submodel_num, flags);
+	model_replicate_submodel_instance_sub(pm, pmi, nullptr, submodel_num, flags);
 }
 
 void model_do_intrinsic_rotations_sub(intrinsic_rotation *ir)
@@ -4497,58 +4492,46 @@ void model_do_intrinsic_rotations_sub(intrinsic_rotation *ir)
 	// Handle all submodels which have intrinsic rotation
 	for (auto submodel_num: ir->submodel_list)
 	{
-		// First, calculate the angles for the rotation
 		if (pm->submodel[submodel_num].look_at_submodel >= 0)
 			submodel_look_at(pm, pmi, submodel_num);
 		else
 			submodel_rotate(&pm->submodel[submodel_num], &pmi->submodel[submodel_num]);
-
-		// Now actually rotate the submodel instance
-		// (Since this is an intrinsic rotation, we have no associated subsystem, so pass 0 for subsystem flags.)
-		model_update_instance(pm, pmi, submodel_num, empty);
 	}
 }
 
-// Handle the intrinsic rotations for either a) a single ship model; or b) all non-ship models.  The reason for the two cases is that ship_model_update_instance will
-// be called for each ship via obj_move_all_post, but we also need to handle non-ship models once obj_move_all_post exits.  Since the two processes are almost identical,
-// they are both handled here.
+// Handle the intrinsic rotations for either a) a single object model; or b) all non-object models.
 //
-// This function is quite a bit different than Bobboau's old model_do_dumb_rotation function.  Whereas Bobboau used the brute-force technique of navigating through
-// each model hierarchy as it was rendered, this function should be seen as a version of obj_move_all_post, but for models rather than objects.  In fact, the only reason
-// for the special ship case is that the ship intrinsic rotations kind of need to be handled where all the other ship rotations are.  (Unless you want inconsistent collisions
-// or damage sparks that aren't attached to models.)
+// This function called as part of object movement.  All types of object movement, including intrinsic rotations,
+// should be handled at the same time - unless you want inconsistent collisions or damage sparks that aren't attached to models.
 //
 // -- Goober5000
-void model_do_intrinsic_rotations(int model_instance_num)
+void model_do_intrinsic_rotations(object *objp)
 {
-	// we are handling a specific ship
-	if (model_instance_num >= 0)
+	// we are handling a specific object
+	if (objp)
 	{
-		for (auto intrinsic_it = Intrinsic_rotations.begin(); intrinsic_it != Intrinsic_rotations.end(); ++intrinsic_it)
+		int model_instance_num = object_get_model_instance(objp);
+		if (model_instance_num >= 0)
 		{
-			if (intrinsic_it->model_instance_num == model_instance_num)
+			auto obj_it = Intrinsic_rotations.find(model_instance_num);
+			if (obj_it != Intrinsic_rotations.end())
 			{
-				Assertion(intrinsic_it->is_ship, "This code path is only for ship rotations!  See the comments associated with the model_do_intrinsic_rotations function!");
+				Assertion(obj_it->second.is_object, "Inconsistent intrinsic rotation: an object's rotation is not flagged as belonging to an object!");
 
-				// we're just doing one ship, and in ship_model_update_instance, that ship's angles were already set to zero
-
-				// Now update the angles in the submodels
-				model_do_intrinsic_rotations_sub(&(*intrinsic_it));
-
-				// once we've handled this one ship, we're done
-				break;
+				// update the angles in the submodels
+				model_do_intrinsic_rotations_sub(&obj_it->second);
 			}
 		}
 	}
-	// we are handling all non-ships
+	// we are handling all non-objects (so basically just skyboxes)
 	else
 	{
-		for (auto intrinsic_it = Intrinsic_rotations.begin(); intrinsic_it != Intrinsic_rotations.end(); ++intrinsic_it)
+		for (auto &pair: Intrinsic_rotations)
 		{
-			if (!intrinsic_it->is_ship)
+			if (!pair.second.is_object)
 			{
 				// update the angles in the submodels
-				model_do_intrinsic_rotations_sub(&(*intrinsic_it));
+				model_do_intrinsic_rotations_sub(&pair.second);
 			}
 		}
 	}
@@ -5485,9 +5468,6 @@ void model_subsystem::reset()
         *it = 0;
 
     path_num = 0;
-
-    n_triggers = 0;
-    triggers = NULL;
 
     turret_reset_delay = 0;
 

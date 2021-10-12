@@ -28,6 +28,7 @@
 #include "popup/popup.h"
 #include "ship/ship.h"
 #include "sound/audiostr.h"
+#include "sound/fsspeech.h"
 #include "sound/sound.h"
 #include "weapon/emp.h"
 
@@ -773,9 +774,9 @@ int message_play_training_voice(int index)
 			return Training_voice;
 
 		} else {
-			game_snd_entry tmp_gs;
-			strcpy_s(tmp_gs.filename, Message_waves[index].name);
-			Message_waves[index].num = snd_load(&tmp_gs, 0, 0);
+			game_snd_entry tmp_gse;
+			strcpy_s(tmp_gse.filename, Message_waves[index].name);
+			Message_waves[index].num = snd_load(&tmp_gse, nullptr, 0);
 			if (!Message_waves[index].num.isValid()) {
 				nprintf(("Warning", "Cannot load message wave: %s.  Will not play\n", Message_waves[index].name));
 				return -1;
@@ -925,6 +926,17 @@ void message_training_queue_check()
 
 	if (Training_failure)
 		return;
+
+	if (Dont_preempt_training_voice) {
+		// don't pre-empt any voice files that are playing
+		if (Training_voice >= 0) {
+			auto z = (Training_voice_type) ? audiostream_is_playing(Training_voice_soundstream) : snd_is_playing(Training_voice_snd_handle);
+			if (z)
+				return;
+		}
+		if (fsspeech_playing())
+			return;
+	}
 
 	for (i=0; i<Training_message_queue_count; i++) {
 		if (timestamp_elapsed(Training_message_queue[i].timestamp)) {

@@ -74,6 +74,7 @@ extern Category SubmitDraws;
 extern Category ApplyLights;
 extern Category DrawEffects;
 extern Category SetupNebula;
+extern Category DrawPoofs;
 extern Category DrawStars;
 extern Category DrawShields;
 extern Category DrawBeams;
@@ -89,8 +90,6 @@ extern Category NonrepeatingEvents;
 
 extern Category ParticlesRenderAll;
 extern Category ParticlesMoveAll;
-
-extern Category TrailDraw;
 
 extern Category EnvironmentMapping;
 extern Category BuildShadowMap;

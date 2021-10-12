@@ -40,6 +40,17 @@ const SCP_vector<list_modifier>& get_all_list_modifiers()
 
 // sexp_container functions
 
+bool sexp_container::operator==(const sexp_container &sc) const
+{
+	return container_name == sc.container_name && type == sc.type && opf_type == sc.opf_type &&
+		list_data == sc.list_data && map_data == sc.map_data;
+}
+
+bool sexp_container::name_matches(const sexp_container &container) const
+{
+	return !stricmp(container.container_name.c_str(), container_name.c_str());
+}
+
 bool sexp_container::empty() const
 {
 	return size() == 0;
@@ -55,6 +66,20 @@ int sexp_container::size() const
 		UNREACHABLE("Unknown container type %d", (int)type);
 		return 0;
 	}
+}
+
+static constexpr ContainerType CONTAINER_PERSISTENCE_FLAGS =
+	ContainerType::SAVE_ON_MISSION_CLOSE | ContainerType::SAVE_ON_MISSION_PROGRESS | ContainerType::NETWORK |
+	ContainerType::SAVE_TO_PLAYER_FILE;
+
+ContainerType sexp_container::get_non_persistent_type() const
+{
+	return type & ~CONTAINER_PERSISTENCE_FLAGS;
+}
+
+bool sexp_container::type_matches(const sexp_container &container) const
+{
+	return get_non_persistent_type() == container.get_non_persistent_type();
 }
 
 // sexp_container.h functions
@@ -495,4 +520,16 @@ bool sexp_container_replace_refs_with_values(char* text, size_t max_len)
 	}
 
 	return replaced_anything;
+}
+
+// inspired by sexp_campaign_file_variable_count()
+bool sexp_container_has_persistent_non_eternal_containers()
+{
+	for (const auto &container : Sexp_containers) {
+		if (container.is_persistent() && !container.is_eternal()) {
+			return true;
+		}
+	}
+
+	return false;
 }

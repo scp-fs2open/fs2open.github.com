@@ -110,7 +110,7 @@ namespace Ship {
 		Scramble_messages,			// Goober5000 - all messages sent from this ship appear scrambled
         No_secondary_lockon,        // zookeeper - secondary lock-on disabled
         No_disabled_self_destruct,  // Goober5000 - ship will not self-destruct after 90 seconds if engines or weapons destroyed (c.f. ai_maybe_self_destruct)
-		Rotators_locked,			// The_E -- Rotating subobjects are locked in place
+		Subsystem_movement_locked,	// The_E -- Rotating subsystems are locked in place.
 		Draw_as_wireframe,			// The_E -- Ship will be rendered in wireframe mode
 		Render_without_diffuse,		// The_E -- Ship will be rendered without diffuse map (needed for the lab)
 		Render_without_glowmap,
@@ -123,8 +123,10 @@ namespace Ship {
 		Render_full_detail, 
 		Render_without_light,
 		Render_without_weapons,		// The_E -- Skip weapon model rendering
+		Render_with_alpha_mult,
 		Has_display_name,			// Goober5000
 		Attempting_to_afterburn,    // set and unset by afterburner_start and stop, used by afterburner_min_fuel_to_consume
+		Hide_mission_log,			// Goober5000 - mission log events generated for this ship will not be viewable
 
 		NUM_VALUES
 

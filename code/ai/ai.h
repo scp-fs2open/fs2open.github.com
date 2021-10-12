@@ -405,7 +405,6 @@ typedef struct ai_info {
 
 
 	union {
-	float		lead_scale;							//	Amount to lead current opponent by.
 	float		stay_near_distance;				//	Distance to stay within for AIM_STAY_NEAR mode.
 	};
 
@@ -491,6 +490,9 @@ typedef struct ai_info {
 	int		ai_override_rot_timestamp;		// mark for when to end the current rotational maneuver override
 
 	int form_obj_slotnum;               // for flying in formation object mode, the position in the formation
+
+	int multilock_check_timestamp;		// when to check for multilock next
+	SCP_vector<std::pair<int, ship_subsys*>> ai_missile_locks_firing;  // a list of missile locks (locked objnum, locked subsys) the ai is currently firing
 } ai_info;
 
 // Goober5000
@@ -657,7 +659,7 @@ void ai_start_fly_to_ship(object *objp, int shipnum);
 void ai_fly_to_ship();
 
 //Moved declaration here for player ship -WMC
-void process_subobjects(int objnum);
+void ai_process_subobjects(int objnum);
 
 //SUSHI: Setting ai_info stuff from both ai class and ai profile
 void init_aip_from_class_and_profile(ai_info *aip, ai_class *aicp, ai_profile_t *profile);

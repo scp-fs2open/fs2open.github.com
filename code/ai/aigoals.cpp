@@ -23,6 +23,7 @@
 #include "playerman/player.h"
 #include "scripting/scripting.h"
 #include "ship/ship.h"
+#include "ship/awacs.h"
 #include "weapon/weapon.h"
 
 // Just a reference to this struct being for looking up a ship's team in TVT
@@ -187,6 +188,9 @@ void ai_post_process_mission()
 	object *objp;
 	int i;
 
+	// make sure team visibility is updated first
+	awacs_process();
+
 	// Check ships in player starting wings.  Those ships should follow these rules:
 	// (1) if they have no orders, they should get a form on my wing order
 	// (2) if they have an order, they are free to act on it.
@@ -293,9 +297,11 @@ void ai_clear_ship_goals( ai_info *aip )
 	}
 
 	// add scripting hook for 'On Goals Cleared' --wookieejedi
-	Script_system.SetHookObject("Ship", &Objects[Ships[aip->shipnum].objnum]);
-	Script_system.RunCondition(CHA_ONGOALSCLEARED);
-	Script_system.RemHookVars({"Ship"});
+	if (Script_system.IsActiveAction(CHA_ONGOALSCLEARED)) {
+		Script_system.SetHookObject("Ship", &Objects[Ships[aip->shipnum].objnum]);
+		Script_system.RunCondition(CHA_ONGOALSCLEARED);
+		Script_system.RemHookVars({"Ship"});
+	}
 }
 
 void ai_clear_wing_goals( wing *wingp )

@@ -862,6 +862,10 @@ void process_packet_normal(ubyte* data, header *header_info)
 			process_non_homing_fired_packet(data, header_info);
 			break;
 
+		case ANIMATION_TRIGGERED:
+			process_animation_triggered_packet(data, header_info);
+			break;
+
 		case COUNTERMEASURE_NEW:
 			process_NEW_countermeasure_fired_packet(data, header_info);
 			break;
@@ -1318,11 +1322,6 @@ void multi_do_frame()
 	if (Game_mode & GM_STANDALONE_SERVER) {
 		std_do_gui_frame();
 	}	
-
-	// dogfight nonstandalone players should recalc the escort list every frame
-	if(!(Game_mode & GM_STANDALONE_SERVER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT) && MULTI_IN_MISSION){
-		hud_setup_escort_list(0);
-	}
 
 	// if master then maybe do port forwarding setup/refresh/wait
 	if (Net_player->flags & NETINFO_FLAG_AM_MASTER) {

@@ -59,7 +59,7 @@ void LabRenderer::renderModel(float frametime) {
 	PostProcessing_override = renderFlags[LabRenderFlag::HidePostProcessing];
 
 	if (obj->type == OBJ_SHIP) {
-		Ships[obj->instance].flags.set(Ship::Ship_Flags::Rotators_locked, !renderFlags[LabRenderFlag::RotateSubsystems]);
+		Ships[obj->instance].flags.set(Ship::Ship_Flags::Subsystem_movement_locked, !renderFlags[LabRenderFlag::RotateSubsystems]);
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Draw_as_wireframe, renderFlags[LabRenderFlag::ShowWireframe]);
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_full_detail, renderFlags[LabRenderFlag::ShowFullDetail]);
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_light, renderFlags[LabRenderFlag::NoLighting] || currentMissionBackground == "None");
@@ -72,8 +72,6 @@ void LabRenderer::renderModel(float frametime) {
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_miscmap, renderFlags[LabRenderFlag::NoMiscMap]);
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_weapons, !renderFlags[LabRenderFlag::ShowWeapons]);
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_ambientmap, renderFlags[LabRenderFlag::NoAOMap]);
-
-		ship_model_update_instance(obj);
 
 		Ships[obj->instance].team_name = currentTeamColor;
 
@@ -109,8 +107,7 @@ void LabRenderer::renderModel(float frametime) {
 	}
 
 	obj_move_all(frametime);
-	if (getLabManager()->CurrentMode == LabMode::Ship)
-		process_subobjects(getLabManager()->CurrentObject);
+
 	particle::move_all(frametime);
 	particle::ParticleManager::get()->doFrame(frametime);
 	shockwave_move_all(frametime);
@@ -452,11 +449,10 @@ void LabRenderer::useBackground(const SCP_string& mission_name) {
 	}
 }
 
-LabCamera* LabRenderer::getCurrentCamera() {
+std::unique_ptr<LabCamera> &LabRenderer::getCurrentCamera() {
 	return labCamera;
 }
 
-void LabRenderer::setCurrentCamera(LabCamera* newcam) {
-	delete labCamera;
-	labCamera = newcam;
+void LabRenderer::setCurrentCamera(std::unique_ptr<LabCamera> &newcam) {
+	labCamera = std::move(newcam);
 }

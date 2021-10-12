@@ -1288,7 +1288,7 @@ void control_config_cancel_exit()
 {
 	// Restore all bindings with the backup
 	std::move(Control_config_backup.begin(), Control_config_backup.end(), Control_config.begin());
-	std::move(Axis_map_to_backup, Axis_map_to_backup + JOY_NUM_AXES, Axis_map_to);
+	std::move(Axis_map_to_backup, Axis_map_to_backup + NUM_JOY_AXIS_ACTIONS, Axis_map_to);
 	std::move(Invert_axis_backup, Invert_axis_backup + JOY_NUM_AXES, Invert_axis);
 
 	gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
@@ -2552,9 +2552,11 @@ int check_control(int id, int key)
 		// If we reach this point, then it means this is a continuous control
 		// which has just been released
 
-		Script_system.SetHookVar("Action", 's', Control_config[id].text);
-		Script_system.RunCondition(CHA_ONACTIONSTOPPED, nullptr, id);
-		Script_system.RemHookVar("Action");
+		if (Script_system.IsActiveAction(CHA_ONACTIONSTOPPED)) {
+			Script_system.SetHookVar("Action", 's', Control_config[id].text);
+			Script_system.RunCondition(CHA_ONACTIONSTOPPED, nullptr, id);
+			Script_system.RemHookVar("Action");
+		}
 
 		Control_config[id].continuous_ongoing = false;
 	}
