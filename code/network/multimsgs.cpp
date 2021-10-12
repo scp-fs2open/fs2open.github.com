@@ -7762,7 +7762,6 @@ void process_NEW_primary_fired_packet(ubyte *data, header *hinfo)
 {
 	int offset; 
 	object* objp;	
-	ship *shipp;
 	ushort shooter_sig;	
 
 	// read all packet info
@@ -7784,7 +7783,6 @@ void process_NEW_primary_fired_packet(ubyte *data, header *hinfo)
 	if(objp->instance < 0 || objp->instance >= MAX_SHIPS){
 		return;
 	}
-	shipp = &Ships[objp->instance];
 
 	// if we're in client firing mode, ignore ones for myself	
 	if((Player_obj != nullptr) && (Player_obj == objp)){		
