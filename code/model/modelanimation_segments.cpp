@@ -243,6 +243,12 @@ namespace animation {
 	void ModelAnimationSegmentSetAngle::recalculate(ModelAnimationSubmodelBuffer& /*base*/, polymodel_instance* pmi) {
 		angles angs = vmd_zero_angles;
 		auto submodel_info = m_submodel->findSubmodel(pmi).second;
+		if (submodel_info == nullptr) {
+			m_rot = vmd_identity_matrix;
+			m_duration[pmi->id] = 0.0f;
+			return;
+		}
+
 		switch (submodel_info->movement_axis_id)
 		{
 			case MOVEMENT_AXIS_X:
@@ -316,6 +322,10 @@ namespace animation {
 
 		instance_data& instanceData = m_instances[pmi->id];
 		auto submodel_info = m_submodel->findSubmodel(pmi).second;
+		if (submodel_info == nullptr) {
+			m_duration[pmi->id] = 0.0f;
+			return;
+		}
 
 		if (m_targetAngle.has()) { //If we have an angle specified, use it.
 			if (m_isAbsolute) {
@@ -596,6 +606,10 @@ namespace animation {
 
 		instance_data& instanceData = m_instances[pmi->id];
 		auto submodel_info = m_submodel->findSubmodel(pmi).second;
+		if (submodel_info == nullptr) {
+			m_duration[pmi->id] = 0.0f;
+			return;
+		}
 
 		if (m_target.has()) { //If we have an target specified, use it.
 			instanceData.m_actualTarget = m_target;

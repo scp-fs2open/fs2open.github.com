@@ -320,10 +320,11 @@ namespace animation {
 
 	void ModelAnimationSubmodel::saveCurrentAsBase(polymodel_instance* pmi) {
 		auto submodel = findSubmodel(pmi);
-		if (!submodel.first || !submodel.second)
+		ModelAnimationData<>& data = m_initialData[{ pmi->id }];
+
+		if (!submodel.first || !submodel.second) 
 			return;
 
-		ModelAnimationData<>& data = m_initialData[{ pmi->id }];
 		data.orientation = submodel.first->canonical_orient;
 		//TODO: Once translation is a thing
 		//data.position = m_subsys->submodel_instance_1->offset;
