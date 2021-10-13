@@ -604,6 +604,17 @@ int prop_string(char *props, char **p, const char *option0, const char *option1,
 	return prop_string(props, p, 3, option0, option1, option2);
 }
 
+bool in(const char *str, const char *substr)
+{
+	return stristr(str, substr) != nullptr;
+}
+
+bool in(char *&p, char *str, const char *substr)
+{
+	p = stristr(str, substr);
+	return p != nullptr;
+}
+
 const Model::Subsystem_Flags carry_flags[] = { Model::Subsystem_Flags::Crewpoint, Model::Subsystem_Flags::Rotates, Model::Subsystem_Flags::Triggered, Model::Subsystem_Flags::Artillery, Model::Subsystem_Flags::Stepped_rotate };
 // funciton to copy model data from one subsystem set to another subsystem set.  This function
 // is called when two ships use the same model data, but since the model only gets read in one time,
@@ -664,7 +675,7 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 	char	lcdname[256];
 	int		idx;
 
-	if ( (p = strstr(props, "$name")) != NULL)
+	if (in(p, props, "$name"))
 		get_user_prop_value(p+5, subsystemp->name);
 	else
 		strcpy_s(subsystemp->name, dname);
@@ -681,7 +692,7 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 		float angle;
 
 		subsystemp->type = SUBSYSTEM_TURRET;
-		if ( (p = strstr(props, "$fov")) != NULL )
+		if (in(p, props, "$fov"))
 			get_user_prop_value(p+4, buf);			// get the value of the fov
 		else
 			strcpy_s(buf,"180");
@@ -689,8 +700,8 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 		subsystemp->turret_fov = cosf(angle);
 		subsystemp->turret_num_firing_points = 0;
 
-		if ( (p = strstr(props, "$crewspot")) != NULL) {
-            subsystemp->flags.set(Model::Subsystem_Flags::Crewpoint);
+		if (in(p, props, "$crewspot")) {
+			subsystemp->flags.set(Model::Subsystem_Flags::Crewpoint);
 			get_user_prop_value(p+9, subsystemp->crewspot);
 		}
 
@@ -713,7 +724,7 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 		mprintf(("Subsystem '%s' on ship %s is not recognized as a common subsystem type\n", dname, model_get(model_num)->filename));
 	}
 
-	if ( (strstr(props, "$triggered")) != NULL ) {
+	if (in(props, "$triggered")) {
         subsystemp->flags.set(Model::Subsystem_Flags::Rotates);
         subsystemp->flags.set(Model::Subsystem_Flags::Triggered);
 	}
@@ -726,7 +737,7 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 		}
 	}
 	// Look-At subsystem
-	else if ((p = strstr(props, "$look_at")) != nullptr) {
+	else if (in(p, props, "$look_at")) {
 		// no special subsystem handling needed here, but make sure we didn't specify both methods
 		if (prop_string(props, nullptr, "$rotate") >= 0) {
 			Warning(LOCATION, "Subsystem '%s' on ship %s cannot have both rotation and look-at!", dname, model_get(model_num)->filename);
@@ -754,7 +765,7 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 		}
 
 		// CASE OF WEAPON ROTATION (primary only)
-		if ( (p = strstr(props, "$pbank")) != NULL)	{
+		if (in(p, props, "$pbank"))	{
             subsystemp->flags.set(Model::Subsystem_Flags::Artillery);
 
 			// get which pbank should trigger rotation
@@ -766,13 +777,13 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 		// *** determine how the subsys rotates ***
 
 		// CASE OF STEPPED ROTATION
-		if ( (strstr(props, "$stepped")) != NULL) {
+		if (in(props, "$stepped")) {
 
 			subsystemp->stepped_rotation = new stepped_rotation;
             subsystemp->flags.set(Model::Subsystem_Flags::Stepped_rotate);
 
 			// get number of steps
-			if ( (p = strstr(props, "$steps")) != NULL) {
+			if (in(p, props, "$steps")) {
 				get_user_prop_value(p+6, buf);
 			   subsystemp->stepped_rotation->num_steps = atoi(buf);
 			 } else {
@@ -780,7 +791,7 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 			 }
 
 			// get pause time
-			if ( (p = strstr(props, "$t_paused")) != NULL) {
+			if (in(p, props, "$t_paused")) {
 				get_user_prop_value(p+9, buf);
 			   subsystemp->stepped_rotation->t_pause = (float)atof(buf);
 			 } else {
@@ -788,7 +799,7 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 			 }
 
 			// get transition time - time to go between steps
-			if ( (p = strstr(props, "$t_transit")) != NULL) {
+			if (in(p, props, "$t_transit")) {
 				get_user_prop_value(p+10, buf);
 			    subsystemp->stepped_rotation->t_transit = (float)atof(buf);
 			} else {
@@ -796,7 +807,7 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 			}
 
 			// get fraction of time spent in accel
-			if ( (p = strstr(props, "$fraction_accel")) != NULL) {
+			if (in(p, props, "$fraction_accel")) {
 				get_user_prop_value(p+15, buf);
 			    subsystemp->stepped_rotation->fraction = (float)atof(buf);
 			   Assert(subsystemp->stepped_rotation->fraction > 0 && subsystemp->stepped_rotation->fraction < 0.5);
@@ -1466,7 +1477,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 					sm->movement_axis = vmd_z_vector;
 				}
 				else if (sm->movement_axis_id == MOVEMENT_AXIS_OTHER) {
-					if ((p = strstr(props, "$rotation_axis")) != nullptr) {
+					if (in(p, props, "$rotation_axis")) {
 						if (get_user_vec3d_value(p + 20, &sm->movement_axis, true, sm->name, pm->filename)) {
 							vm_vec_normalize(&sm->movement_axis);
 						} else {
@@ -1480,7 +1491,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 				}
 
 				// note, this should come BEFORE do_new_subsystem() for proper error handling (to avoid both rotating and look-at submodel)
-				if ((p = strstr(props, "$look_at")) != nullptr) {
+				if (in(p, props, "$look_at")) {
 					sm->movement_type = MOVEMENT_TYPE_INTRINSIC_ROTATE;
 
 					// we need to work out the correct subobject number later, after all subobjects have been processed
@@ -1494,7 +1505,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 				}
 
 				// optional extra property for look_at
-				if ((p = strstr(props, "$look_at_offset")) != nullptr) {
+				if (in(p, props, "$look_at_offset")) {
 					auto offset = (float)atof(p + 16);
 
 					// model property is specified in degrees, so convert it
@@ -1547,7 +1558,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 					strcpy_s(sm->name, "unknown object name");
 				}
 
-				if ( ( p = strstr(props, "$special"))!= NULL ) {
+				if (in(p, props, "$special")) {
 					char type[64];
 
 					get_user_prop_value(p+9, type);
@@ -1564,41 +1575,29 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 
 				// ---------- done with submodel movement (except for gun_rotation and sanity checks) ----------
 
-				if (strstr(props, "$no_collisions") != NULL )
-					sm->no_collisions = true;
-				else
-					sm->no_collisions = false;
+				sm->no_collisions = in(props, "$no_collisions");
 
-				if (strstr(props, "$nocollide_this_only") != NULL )
-					sm->nocollide_this_only = true;
-				else
-					sm->nocollide_this_only = false;
+				sm->nocollide_this_only = in(props, "$nocollide_this_only");
 
-				if (strstr(props, "$collide_invisible") != NULL )
-					sm->collide_invisible = true;
-				else
-					sm->collide_invisible = false;
+				sm->collide_invisible = in(props, "$collide_invisible");
 
-				if (strstr(props, "$gun_rotation") != nullptr) {
+				if (in(props, "$gun_rotation")) {
 					sm->gun_rotation = true;
 					sm->can_move = true;		// this is something of a special case because it's rotating without "rotating"
 				} else
 					sm->gun_rotation = false;
 
-				if ( (p = strstr(props, "$lod0_name")) != NULL)
+				if (in(p, props, "$lod0_name"))
 					get_user_prop_value(p+10, sm->lod_name);
 
-				if (strstr(props, "$attach_thrusters") != NULL )
-					sm->attach_thrusters = true;
-				else
-					sm->attach_thrusters = false;
+				sm->attach_thrusters = in(props, "$attach_thrusters");
 
-				if ( (p = strstr(props, "$detail_box:")) != NULL ) {
+				if (in(p, props, "$detail_box:")) {
 					p += 12;
 					while (*p == ' ') p++;
 					sm->use_render_box = atoi(p);
 
-					if ( (p = strstr(props, "$box_offset:")) != NULL ) {
+					if (in(p, props, "$box_offset:")) {
 						p += 12;
 						while (*p == ' ') p++;
 						sm->render_box_offset.xyz.x = (float)strtod(p, (char **)NULL);
@@ -1610,7 +1609,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 						sm->use_render_box_offset = true;
 					}
 
-					if ( (p = strstr(props, "$box_min:")) != NULL ) {
+					if (in(p, props, "$box_min:")) {
 						p += 9;
 						while (*p == ' ') p++;
 						sm->render_box_min.xyz.x = (float)strtod(p, (char **)NULL);
@@ -1622,7 +1621,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 						sm->render_box_min = sm->min;
 					}
 
-					if ( (p = strstr(props, "$box_max:")) != NULL ) {
+					if (in(p, props, "$box_max:")) {
 						p += 9;
 						while (*p == ' ') p++;
 						sm->render_box_max.xyz.x = (float)strtod(p, (char **)NULL);
@@ -1634,18 +1633,18 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 						sm->render_box_max = sm->max;
 					}
 
-					if ( (p = strstr(props, "$do_not_scale_distances")) != nullptr ) {
+					if (in(p, props, "$do_not_scale_distances")) {
 						p += 23;
 						sm->do_not_scale_detail_distances = true;
 					}
 				}
 
-				if ( (p = strstr(props, "$detail_sphere:")) != NULL ) {
+				if (in(p, props, "$detail_sphere:")) {
 					p += 15;
 					while (*p == ' ') p++;
 					sm->use_render_sphere = atoi(p);
 
-					if ( (p = strstr(props, "$radius:")) != NULL ) {
+					if (in(p, props, "$radius:")) {
 						p += 8;
 						while (*p == ' ') p++;
 						sm->render_sphere_radius = (float)strtod(p, (char **)NULL);
@@ -1653,7 +1652,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 						sm->render_sphere_radius = sm->rad;
 					}
 
-					if ( (p = strstr(props, "$offset:")) != NULL ) {
+					if (in(p, props, "$offset:")) {
 						p += 8;
 						while (*p == ' ') p++;
 						sm->render_sphere_offset.xyz.x = (float)strtod(p, (char **)NULL);
@@ -1667,19 +1666,19 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 						sm->render_sphere_offset = vmd_zero_vector;
 					}
 
-					if ( (p = strstr(props, "$do_not_scale_distances")) != nullptr ) {
+					if (in(p, props, "$do_not_scale_distances")) {
 						p += 23;
 						sm->do_not_scale_detail_distances = true;
 					}
 				}
 
 				// KeldorKatarn, with modifications
-				if ( (p = strstr(props, "$uvec")) != nullptr ) {
+				if (in(p, props, "$uvec")) {
 					matrix submodel_orient;
 
 					if (get_user_vec3d_value(p + 5, &submodel_orient.vec.uvec, false, sm->name, pm->filename)) {
 
-						if ((p = strstr(props, "$fvec")) != nullptr) {
+						if (in(p, props, "$fvec")) {
 
 							if (get_user_vec3d_value(p + 5, &submodel_orient.vec.fvec, false, sm->name, pm->filename)) {
 
@@ -1826,7 +1825,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 					}
 				}
 
-				sm->is_thruster = (stristr(sm->name, "thruster") != nullptr);
+				sm->is_thruster = in(sm->name, "thruster");
 
 				// Genghis: if we have a thruster and none of the collision 
 				// properties were provided, then set "nocollide_this_only".
@@ -1835,7 +1834,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 					sm->nocollide_this_only = true;
 				}
 
-				sm->is_damaged = (strstr(sm->name, "-destroyed") != nullptr);
+				sm->is_damaged = in(sm->name, "-destroyed");
 
 				break;
 			}
@@ -1980,7 +1979,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 						dock_bay *bay = &pm->docking_bays[i];
 
 						cfread_string_len( props, MAX_PROP_LEN, fp );
-						if ( (p = strstr(props, "$name"))!= NULL ) {
+						if (in(p, props, "$name")) {
 							get_user_prop_value(p+5, bay->name);
 
 							auto length = strlen(bay->name);
@@ -2191,8 +2190,8 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 							auto length = strlen(props);
 							if (length > 0) {
 								auto base_length = strlen("$engine_subsystem=");
-								char *engine_subsys_start = strstr(props, "$engine_subsystem=");
-								if ( (engine_subsys_start != nullptr) && (strlen(engine_subsys_start + base_length) > 0) ) {
+								char *engine_subsys_start;
+								if (in(engine_subsys_start, props, "$engine_subsystem=") && (strlen(engine_subsys_start + base_length) > 0)) {
 									char *engine_subsys_name = engine_subsys_start + base_length;
 									if (engine_subsys_name[0] == '$') {
 										engine_subsys_name++;
@@ -2328,12 +2327,11 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 					radius = cfread_float( fp );
 
 					// check if $Split
-					p = strstr(name, "$split");
-					if (p != NULL) {
+					if (in(name, "$split")) {
 						pm->split_plane[pm->num_split_plane] = pnt.xyz.z;
 						pm->num_split_plane++;
 						Assert(pm->num_split_plane <= MAX_SPLIT_PLANE);
-					} else if ( ( p = strstr(props_spcl, "$special"))!= NULL ) {
+					} else if (in(p, props_spcl, "$special")) {
 						char type[64];
 
 						get_user_prop_value(p+9, type);
@@ -2342,7 +2340,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 						} else if ( !stricmp(type, "shieldpoint") ) {
 							pm->shield_points.push_back(pnt);
 						}
-					} else if ( strstr(name, "$enginelarge") || strstr(name, "$enginehuge") ){
+					} else if (in(name, "$enginelarge") || in(name, "$enginehuge")) {
 						do_new_subsystem( n_subsystems, subsystems, -1, radius, &pnt, props_spcl, &name[1], pm->id );		// skip the first '$' character of the name
 					} else {
 						nprintf(("Warning", "Unknown special object type %s while reading model %s\n", name, pm->filename));
