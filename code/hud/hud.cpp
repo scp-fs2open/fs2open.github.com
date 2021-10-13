@@ -3822,31 +3822,43 @@ void hud_page_in()
 	}
 }
 
-HudGauge* hud_get_gauge(const char* name)
+HudGauge* hud_get_gauge(const char* name, bool check_all_gauges)
 {
-	const char* gauge_name;
-	size_t j;
+	auto player_sip = Player_ship->ship_info_index < 0 ? nullptr : &Ship_info[Player_ship->ship_info_index];
 
-	// go through all gauges and return the gauge that matches
-	if(!Ship_info[Player_ship->ship_info_index].hud_gauges.empty()) {
-		for(j = 0; j < Ship_info[Player_ship->ship_info_index].hud_gauges.size(); j++) {
-
-			gauge_name = Ship_info[Player_ship->ship_info_index].hud_gauges[j]->getCustomGaugeName();
-			if(!strcmp(name, gauge_name)) {
-				return Ship_info[Player_ship->ship_info_index].hud_gauges[j].get();
+	// go through all gauges for all ships and defaults
+	if (check_all_gauges) {
+		for (auto &si : Ship_info) {
+			for (auto &gauge : si.hud_gauges) {
+				if (!stricmp(name, gauge->getCustomGaugeName())) {
+					return gauge.get();
+				}
 			}
 		}
-	} else {
-		for(j = 0; j < default_hud_gauges.size(); j++) {
-
-			gauge_name = default_hud_gauges[j]->getCustomGaugeName();
-			if(!strcmp(name, gauge_name)) {
-				return default_hud_gauges[j].get();
+		for (auto &gauge : default_hud_gauges) {
+			if (!stricmp(name, gauge->getCustomGaugeName())) {
+				return gauge.get();
+			}
+		}
+	}
+	// if the player is flying a ship with a custom set of gauges, check those
+	else if (player_sip && !player_sip->hud_gauges.empty()) {
+		for (auto &gauge : player_sip->hud_gauges) {
+			if (!stricmp(name, gauge->getCustomGaugeName())) {
+				return gauge.get();
+			}
+		}
+	}
+	// check just the default gauges
+	else {
+		for (auto &gauge : default_hud_gauges) {
+			if (!stricmp(name, gauge->getCustomGaugeName())) {
+				return gauge.get();
 			}
 		}
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 HudGaugeMultiMsg::HudGaugeMultiMsg():
