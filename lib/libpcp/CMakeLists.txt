@@ -1,7 +1,7 @@
 include(CheckStructHasMember)
 
 check_struct_has_member("struct sockaddr" sa_len
-        "sys/types.h sys/socket.h"
+        "sys/socket.h"
         HAVE_SOCKADDR_SA_LEN)
 
 set(LIBPCP_INCLUDE_DIRECTORIES
