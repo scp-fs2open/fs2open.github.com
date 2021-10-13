@@ -1526,10 +1526,10 @@ void obj_move_all(float frametime)
 		// TODO: change stepAnimations to operate on a per-object basis
 		//animation::ModelAnimation::stepAnimations(objp, frametime);
 
-		// finally, do intrinsic rotation on this object
+		// finally, do intrinsic motion on this object
 		// (this happens last because look_at is a type of intrinsic rotation,
 		// and look_at needs to happen last or the angle may be off by a frame)
-		model_do_intrinsic_rotations(objp);
+		model_do_intrinsic_motions(objp);
 
 		// For ships, we now have to make sure that all the submodel detail levels remain consistent.
 		if (objp->type == OBJ_SHIP)
@@ -1563,7 +1563,7 @@ void obj_move_all(float frametime)
 
 	// Now apply intrinsic movement to things that aren't objects (like skyboxes).  This technically doesn't belong in the object code,
 	// but there isn't really a good place to put this, it doesn't hurt to have this here, and it's conceptually related to what's here.
-	model_do_intrinsic_rotations(nullptr);
+	model_do_intrinsic_motions(nullptr);
 
 	//	After all objects have been moved, move all docked objects.
 	objp = GET_FIRST(&obj_used_list);

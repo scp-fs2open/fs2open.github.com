@@ -144,14 +144,14 @@ SCP_vector<glow_point_bank_override> glowpoint_bank_overrides;
 // Goober5000 - reimplementation of Bobboau's $dumb_rotation and $look_at features in a way that works with the rest of the model instance system
 // note: since these data types are only ever used in this file, they don't need to be in model.h
 
-class intrinsic_rotation
+class intrinsic_motion
 {
 public:
 	bool is_object;
 	int model_instance_num;
 	SCP_vector<int> submodel_list;
 
-	intrinsic_rotation(bool _is_object, int _model_instance_num)
+	intrinsic_motion(bool _is_object, int _model_instance_num)
 		: is_object(_is_object), model_instance_num(_model_instance_num)
 	{}
 
@@ -163,7 +163,7 @@ public:
 	}
 };
 
-SCP_unordered_map<int, intrinsic_rotation> Intrinsic_rotations;
+SCP_unordered_map<int, intrinsic_motion> Intrinsic_motions;
 
 
 // Free up a model, getting rid of all its memory
@@ -1492,7 +1492,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 
 				// note, this should come BEFORE do_new_subsystem() for proper error handling (to avoid both rotating and look-at submodel)
 				if (in(p, props, "$look_at")) {
-					sm->movement_type = MOVEMENT_TYPE_INTRINSIC_ROTATE;
+					sm->movement_type = MOVEMENT_TYPE_INTRINSIC;
 
 					// we need to work out the correct subobject number later, after all subobjects have been processed
 					sm->look_at_submodel = static_cast<int>(look_at_submodel_names.size());
@@ -1529,7 +1529,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 				// note, this should come BEFORE do_new_subsystem() for proper error handling (to avoid both rotating and dumb-rotating submodel)
 				int idx = prop_string(props, &p, "$dumb_rotate_time", "$dumb_rotate_rate", "$dumb_rotate");
 				if (idx >= 0) {
-					sm->movement_type = MOVEMENT_TYPE_INTRINSIC_ROTATE;
+					sm->movement_type = MOVEMENT_TYPE_INTRINSIC;
 
 					// do this the same way as regular $rotate
 					char buf[64];
@@ -1758,8 +1758,8 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 					if (sm->movement_type == MOVEMENT_TYPE_ROT) {
 						Warning(LOCATION, "Rotation without rotation axis defined on submodel '%s' of model '%s'!", sm->name, pm->filename);
 					}
-					else if (sm->movement_type == MOVEMENT_TYPE_INTRINSIC_ROTATE) {
-						Warning(LOCATION, "Intrinsic rotation (e.g. dumb-rotate or look-at) without rotation axis defined on submodel '%s' of model '%s'!", sm->name, pm->filename);
+					else if (sm->movement_type == MOVEMENT_TYPE_INTRINSIC) {
+						Warning(LOCATION, "Intrinsic motion (e.g. dumb-rotate or look-at) without rotation axis defined on submodel '%s' of model '%s'!", sm->name, pm->filename);
 					}
 					sm->movement_type = MOVEMENT_TYPE_NONE;
 				}
@@ -2606,10 +2606,10 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 		}
 	}
 
-	// And now look through all the submodels and set the model flag if any are intrinsic-rotating
+	// And now look through all the submodels and set the model flag if any are intrinsic-moving
 	for (i = 0; i < pm->n_models; i++) {
-		if (pm->submodel[i].movement_type == MOVEMENT_TYPE_INTRINSIC_ROTATE) {
-			pm->flags |= PM_FLAG_HAS_INTRINSIC_ROTATE;
+		if (pm->submodel[i].movement_type == MOVEMENT_TYPE_INTRINSIC) {
+			pm->flags |= PM_FLAG_HAS_INTRINSIC_MOTION;
 			break;
 		}
 	}
@@ -3115,21 +3115,21 @@ int model_create_instance(bool is_object, int model_num)
 	if (pm->n_models > 0)
 		pmi->submodel = new submodel_instance[pm->n_models];
 
-	// add intrinsic_rotation instances if this model is intrinsic-rotating
-	if (pm->flags & PM_FLAG_HAS_INTRINSIC_ROTATE) {
-		intrinsic_rotation intrinsic_rotate(is_object, open_slot);
+	// add intrinsic_motion instances if this model is intrinsic-moving
+	if (pm->flags & PM_FLAG_HAS_INTRINSIC_MOTION) {
+		intrinsic_motion motion(is_object, open_slot);
 
 		for (i = 0; i < pm->n_models; i++) {
-			if (pm->submodel[i].movement_type == MOVEMENT_TYPE_INTRINSIC_ROTATE) {
+			if (pm->submodel[i].movement_type == MOVEMENT_TYPE_INTRINSIC) {
 				// note: dumb_turn_rate will be 0.0f for look_at
-				intrinsic_rotate.add_submodel(i, &pmi->submodel[i], pm->submodel[i].dumb_turn_rate);
+				motion.add_submodel(i, &pmi->submodel[i], pm->submodel[i].dumb_turn_rate);
 			}
 		}
 
-		if (intrinsic_rotate.submodel_list.empty()) {
-			Assertion(!intrinsic_rotate.submodel_list.empty(), "This model has the PM_FLAG_HAS_INTRINSIC_ROTATE flag; why doesn't it have an intrinsic-rotating submodel?");
+		if (motion.submodel_list.empty()) {
+			Assertion(!motion.submodel_list.empty(), "This model has the PM_FLAG_HAS_INTRINSIC_MOTION flag; why doesn't it have an intrinsic-moving submodel?");
 		} else {
-			Intrinsic_rotations.insert(std::make_pair(pmi->id, std::move(intrinsic_rotate)));
+			Intrinsic_motions.insert(std::make_pair(pmi->id, std::move(motion)));
 		}
 	}
 
@@ -3153,8 +3153,8 @@ void model_delete_instance(int model_instance_num)
 
 	Polygon_model_instances[model_instance_num] = nullptr;
 
-	// delete intrinsic rotations associated with this instance
-	Intrinsic_rotations.erase(model_instance_num);
+	// delete intrinsic motions associated with this instance
+	Intrinsic_motions.erase(model_instance_num);
 }
 
 // ensure that the subsys path is at least SUBSYS_PATH_DIST from the 
@@ -3576,7 +3576,7 @@ void model_get_rotating_submodel_axis(vec3d *model_axis, vec3d *world_axis, cons
 {
 	Assert(pm->id == pmi->model_num);
 	bsp_info *sm = &pm->submodel[submodel_num];
-	Assert(sm->movement_type == MOVEMENT_TYPE_ROT || sm->movement_type == MOVEMENT_TYPE_INTRINSIC_ROTATE);
+	Assert(sm->movement_type == MOVEMENT_TYPE_ROT || sm->movement_type == MOVEMENT_TYPE_INTRINSIC);
 
 	*model_axis = sm->movement_axis;
 	model_instance_find_world_dir(world_axis, model_axis, pm, pmi, submodel_num, objorient);
@@ -3723,7 +3723,7 @@ void submodel_look_at(polymodel *pm, polymodel_instance *pmi, int submodel_num)
 	auto sm = &pm->submodel[submodel_num];
 	auto smi = &pmi->submodel[submodel_num];
 
-	Assert(sm->movement_type == MOVEMENT_TYPE_INTRINSIC_ROTATE);
+	Assert(sm->movement_type == MOVEMENT_TYPE_INTRINSIC);
 	Assert(sm->look_at_submodel >= 0);
 
 	// save last angles
@@ -4284,7 +4284,7 @@ void model_get_rotating_submodel_list(SCP_vector<int> *submodel_vector, object *
 		if ( !child_submodel_instance->blown_off && (child_submodel->i_replace == -1) && !child_submodel->no_collisions && !child_submodel->nocollide_this_only)	{
 
 			// Only look for submodels that rotate or intrinsic-rotate
-			if (child_submodel->movement_type == MOVEMENT_TYPE_ROT || child_submodel->movement_type == MOVEMENT_TYPE_INTRINSIC_ROTATE) {
+			if (child_submodel->movement_type == MOVEMENT_TYPE_ROT || child_submodel->movement_type == MOVEMENT_TYPE_INTRINSIC) {
 
 				// check submodel rotation is less than max allowed.
 				float delta_angle = get_submodel_delta_angle(child_submodel_instance);
@@ -4475,16 +4475,16 @@ void model_replicate_submodel_instance(polymodel *pm, polymodel_instance *pmi, i
 	model_replicate_submodel_instance_sub(pm, pmi, nullptr, submodel_num, flags);
 }
 
-void model_do_intrinsic_rotations_sub(intrinsic_rotation *ir)
+void model_do_intrinsic_motions_sub(intrinsic_motion *im)
 {
-	polymodel_instance *pmi = model_get_instance(ir->model_instance_num);
+	polymodel_instance *pmi = model_get_instance(im->model_instance_num);
 	Assert(pmi != nullptr);
 	polymodel *pm = model_get(pmi->model_num);
 	Assert(pm != nullptr);
 	flagset<Ship::Subsystem_Flags> empty;
 
-	// Handle all submodels which have intrinsic rotation
-	for (auto submodel_num: ir->submodel_list)
+	// Handle all submodels which have intrinsic motion
+	for (auto submodel_num: im->submodel_list)
 	{
 		if (pm->submodel[submodel_num].look_at_submodel >= 0)
 			submodel_look_at(pm, pmi, submodel_num);
@@ -4493,13 +4493,13 @@ void model_do_intrinsic_rotations_sub(intrinsic_rotation *ir)
 	}
 }
 
-// Handle the intrinsic rotations for either a) a single object model; or b) all non-object models.
+// Handle the intrinsic motions for either a) a single object model; or b) all non-object models.
 //
-// This function called as part of object movement.  All types of object movement, including intrinsic rotations,
+// This function called as part of object movement.  All types of object movement, including intrinsic motions,
 // should be handled at the same time - unless you want inconsistent collisions or damage sparks that aren't attached to models.
 //
 // -- Goober5000
-void model_do_intrinsic_rotations(object *objp)
+void model_do_intrinsic_motions(object *objp)
 {
 	// we are handling a specific object
 	if (objp)
@@ -4507,25 +4507,25 @@ void model_do_intrinsic_rotations(object *objp)
 		int model_instance_num = object_get_model_instance(objp);
 		if (model_instance_num >= 0)
 		{
-			auto obj_it = Intrinsic_rotations.find(model_instance_num);
-			if (obj_it != Intrinsic_rotations.end())
+			auto obj_it = Intrinsic_motions.find(model_instance_num);
+			if (obj_it != Intrinsic_motions.end())
 			{
-				Assertion(obj_it->second.is_object, "Inconsistent intrinsic rotation: an object's rotation is not flagged as belonging to an object!");
+				Assertion(obj_it->second.is_object, "Inconsistent intrinsic motion: an object's motion is not flagged as belonging to an object!");
 
 				// update the angles in the submodels
-				model_do_intrinsic_rotations_sub(&obj_it->second);
+				model_do_intrinsic_motions_sub(&obj_it->second);
 			}
 		}
 	}
 	// we are handling all non-objects (so basically just skyboxes)
 	else
 	{
-		for (auto &pair: Intrinsic_rotations)
+		for (auto &pair: Intrinsic_motions)
 		{
 			if (!pair.second.is_object)
 			{
 				// update the angles in the submodels
-				model_do_intrinsic_rotations_sub(&pair.second);
+				model_do_intrinsic_motions_sub(&pair.second);
 			}
 		}
 	}
@@ -4538,7 +4538,7 @@ void model_init_submodel_axis_pt(polymodel *pm, polymodel_instance *pmi, int sub
 	vec3d p1, v1, p2, v2, int1;
 	Assert(pm->id == pmi->model_num);
 
-	Assert(pm->submodel[submodel_num].movement_type == MOVEMENT_TYPE_ROT || pm->submodel[submodel_num].movement_type == MOVEMENT_TYPE_INTRINSIC_ROTATE);
+	Assert(pm->submodel[submodel_num].movement_type == MOVEMENT_TYPE_ROT || pm->submodel[submodel_num].movement_type == MOVEMENT_TYPE_INTRINSIC);
 	submodel_instance *smi = &pmi->submodel[submodel_num];
 	
 	auto axis = &pm->submodel[submodel_num].movement_axis;
