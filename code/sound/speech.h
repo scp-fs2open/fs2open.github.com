@@ -13,8 +13,6 @@
 
 #if FS2_SPEECH
 
-#define SPCAT_VOICES_ONECORE           L"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Speech_OneCore\\Voices"
-
 bool speech_init();
 void speech_deinit();
 bool speech_play(const char *text);
