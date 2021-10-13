@@ -1391,106 +1391,106 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 
 				n = cfread_int(fp);
 				//mprintf(("SOBJ IDed itself as %d\n", n));
-
 				Assert(n < pm->n_models );
+				auto sm = &pm->submodel[n];
 
 #if defined( FREESPACE2_FORMAT )	
-				pm->submodel[n].rad = cfread_float(fp);		//radius
+				sm->rad = cfread_float(fp);		//radius
 #endif
 
 				parent = cfread_int(fp);
-				pm->submodel[n].parent = parent;
+				sm->parent = parent;
+				auto parent_sm = parent < 0 ? nullptr : &pm->submodel[parent];
 
-//				cfread_vector(&pm->submodel[n].norm,fp);
+//				cfread_vector(&sm->norm,fp);
 //				d = cfread_float(fp);				
-//				cfread_vector(&pm->submodel[n].pnt,fp);
-				cfread_vector(&pm->submodel[n].offset,fp);
+//				cfread_vector(&sm->pnt,fp);
+				cfread_vector(&sm->offset,fp);
 
-//			mprintf(( "Subobj %d, offs = %.1f, %.1f, %.1f\n", n, pm->submodel[n].offset.xyz.x, pm->submodel[n].offset.xyz.y, pm->submodel[n].offset.xyz.z ));
+//			mprintf(( "Subobj %d, offs = %.1f, %.1f, %.1f\n", n, sm->offset.xyz.x, sm->offset.xyz.y, sm->offset.xyz.z ));
 	
 #if defined ( FREESPACE1_FORMAT )
-				pm->submodel[n].rad = cfread_float(fp);		//radius
+				sm->rad = cfread_float(fp);		//radius
 #endif
 
-//				pm->submodel[n].tree_offset = cfread_int(fp);	//offset
-//				pm->submodel[n].data_offset = cfread_int(fp);	//offset
+//				sm->tree_offset = cfread_int(fp);	//offset
+//				sm->data_offset = cfread_int(fp);	//offset
 
-				cfread_vector(&pm->submodel[n].geometric_center,fp);
+				cfread_vector(&sm->geometric_center,fp);
 
-				cfread_vector(&pm->submodel[n].min,fp);
-				cfread_vector(&pm->submodel[n].max,fp);
+				cfread_vector(&sm->min,fp);
+				cfread_vector(&sm->max,fp);
 
-				pm->submodel[n].name[0] = '\0';
+				sm->name[0] = '\0';
 
-				cfread_string_len(pm->submodel[n].name, MAX_NAME_LEN, fp);		// get the name
+				cfread_string_len(sm->name, MAX_NAME_LEN, fp);		// get the name
 				cfread_string_len(props, MAX_PROP_LEN, fp);			// and the user properties
 
 				// Check for unrealistic radii
-				if ( pm->submodel[n].rad <= 0.1f )
-				{
-					Warning(LOCATION, "Submodel <%s> in model <%s> has a radius <= 0.1f\n", pm->submodel[n].name, filename);
+				if ( sm->rad <= 0.1f ) {
+					Warning(LOCATION, "Submodel <%s> in model <%s> has a radius <= 0.1f\n", sm->name, filename);
 				}
 				
 				// sanity first!
-				if (maybe_swap_mins_maxs(&pm->submodel[n].min, &pm->submodel[n].max)) {
-					Warning(LOCATION, "Inverted bounding box on submodel '%s' of model '%s'!  Swapping values to compensate.", pm->submodel[n].name, pm->filename);
+				if (maybe_swap_mins_maxs(&sm->min, &sm->max)) {
+					Warning(LOCATION, "Inverted bounding box on submodel '%s' of model '%s'!  Swapping values to compensate.", sm->name, pm->filename);
 				}
-				model_calc_bound_box(pm->submodel[n].bounding_box, &pm->submodel[n].min, &pm->submodel[n].max);
+				model_calc_bound_box(sm->bounding_box, &sm->min, &sm->max);
 
 				// ---------- submodel movement ----------
 
-				pm->submodel[n].movement_type = cfread_int(fp);
-				pm->submodel[n].movement_axis_id = cfread_int(fp);
+				sm->movement_type = cfread_int(fp);
+				sm->movement_axis_id = cfread_int(fp);
 
 				// change turret movement type to MOVEMENT_TYPE_ROT_SPECIAL
-				if ( stristr(pm->submodel[n].name, "turret") || ((parent >= 0) && (pm->submodel[parent].movement_type == MOVEMENT_TYPE_ROT_SPECIAL)) ) {
-					pm->submodel[n].movement_type = MOVEMENT_TYPE_ROT_SPECIAL;
-				} else if (pm->submodel[n].movement_type == MOVEMENT_TYPE_ROT) {
-					if (stristr(pm->submodel[n].name, "thruster")) {
-						pm->submodel[n].movement_type = MOVEMENT_TYPE_NONE;
+				if ( stristr(sm->name, "turret") || (parent_sm && (parent_sm->movement_type == MOVEMENT_TYPE_ROT_SPECIAL)) ) {
+					sm->movement_type = MOVEMENT_TYPE_ROT_SPECIAL;
+				} else if (sm->movement_type == MOVEMENT_TYPE_ROT) {
+					if (stristr(sm->name, "thruster")) {
+						sm->movement_type = MOVEMENT_TYPE_NONE;
 					} else if(strstr(props, "$triggered")) {
-						pm->submodel[n].movement_type = MOVEMENT_TYPE_TRIGGERED;
+						sm->movement_type = MOVEMENT_TYPE_TRIGGERED;
 					}
 				}
 
 				// determine rotation axis
 				// (the axis is a vector from 0,0,0 to the point specified)
 				// note: the standard axis point definitions are copied from Volition code originally in model_init_submodel_axis_pt
-				if (pm->submodel[n].movement_axis_id == MOVEMENT_AXIS_X) {
-					pm->submodel[n].movement_axis = vmd_x_vector;
+				if (sm->movement_axis_id == MOVEMENT_AXIS_X) {
+					sm->movement_axis = vmd_x_vector;
 				}
-				else if (pm->submodel[n].movement_axis_id == MOVEMENT_AXIS_Y) {
-					pm->submodel[n].movement_axis = vmd_y_vector;
+				else if (sm->movement_axis_id == MOVEMENT_AXIS_Y) {
+					sm->movement_axis = vmd_y_vector;
 				}
-				else if (pm->submodel[n].movement_axis_id == MOVEMENT_AXIS_Z) {
-					pm->submodel[n].movement_axis = vmd_z_vector;
+				else if (sm->movement_axis_id == MOVEMENT_AXIS_Z) {
+					sm->movement_axis = vmd_z_vector;
 				}
-				else if (pm->submodel[n].movement_axis_id == MOVEMENT_AXIS_OTHER) {
+				else if (sm->movement_axis_id == MOVEMENT_AXIS_OTHER) {
 					if ((p = strstr(props, "$rotation_axis")) != nullptr) {
-						if (get_user_vec3d_value(p + 20, &pm->submodel[n].movement_axis, true, pm->submodel[n].name, pm->filename)) {
-							vm_vec_normalize(&pm->submodel[n].movement_axis);
+						if (get_user_vec3d_value(p + 20, &sm->movement_axis, true, sm->name, pm->filename)) {
+							vm_vec_normalize(&sm->movement_axis);
 						} else {
-							Warning(LOCATION, "Failed to parse $rotation_axis on subsystem '%s' on ship %s!", pm->submodel[n].name, pm->filename);
-							pm->submodel[n].movement_type = MOVEMENT_TYPE_NONE;
+							Warning(LOCATION, "Failed to parse $rotation_axis on subsystem '%s' on ship %s!", sm->name, pm->filename);
+							sm->movement_type = MOVEMENT_TYPE_NONE;
 						}
 					} else {
-						Warning(LOCATION, "A $rotation_axis was not specified for subsystem '%s' on ship %s!", pm->submodel[n].name, pm->filename);
-						pm->submodel[n].movement_type = MOVEMENT_TYPE_NONE;
+						Warning(LOCATION, "A $rotation_axis was not specified for subsystem '%s' on ship %s!", sm->name, pm->filename);
+						sm->movement_type = MOVEMENT_TYPE_NONE;
 					}
 				}
 
 				// note, this should come BEFORE do_new_subsystem() for proper error handling (to avoid both rotating and look-at submodel)
 				if ((p = strstr(props, "$look_at")) != nullptr) {
-					pm->submodel[n].movement_type = MOVEMENT_TYPE_INTRINSIC_ROTATE;
+					sm->movement_type = MOVEMENT_TYPE_INTRINSIC_ROTATE;
 
 					// we need to work out the correct subobject number later, after all subobjects have been processed
-					pm->submodel[n].look_at_submodel = static_cast<int>(look_at_submodel_names.size());
+					sm->look_at_submodel = static_cast<int>(look_at_submodel_names.size());
 
 					char submodel_name[MAX_NAME_LEN];
 					get_user_prop_value(p + 9, submodel_name);
 					look_at_submodel_names.push_back(submodel_name);
 				} else {
-					pm->submodel[n].look_at_submodel = -1; // No look_at
+					sm->look_at_submodel = -1; // No look_at
 				}
 
 				// optional extra property for look_at
@@ -1502,7 +1502,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 
 					// check range (the angle is now in radians)
 					if (offset < -PI2 || offset > PI2) {
-						Warning(LOCATION, "Submodel '%s' of model '%s' has a look_at_offset that is outside the range of -360 to 360!", pm->submodel[n].name, pm->filename);
+						Warning(LOCATION, "Submodel '%s' of model '%s' has a look_at_offset that is outside the range of -360 to 360!", sm->name, pm->filename);
 						offset = -1.0f;
 					}
 					// make the angle positive, since negative angles will be set at first look_at call
@@ -1510,15 +1510,15 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 						offset += PI2;
 					}
 
-					pm->submodel[n].look_at_offset = offset;
+					sm->look_at_offset = offset;
 				} else {
-					pm->submodel[n].look_at_offset = -1.0f;
+					sm->look_at_offset = -1.0f;
 				}
 
 				// note, this should come BEFORE do_new_subsystem() for proper error handling (to avoid both rotating and dumb-rotating submodel)
 				int idx = prop_string(props, &p, "$dumb_rotate_time", "$dumb_rotate_rate", "$dumb_rotate");
 				if (idx >= 0) {
-					pm->submodel[n].movement_type = MOVEMENT_TYPE_INTRINSIC_ROTATE;
+					sm->movement_type = MOVEMENT_TYPE_INTRINSIC_ROTATE;
 
 					// do this the same way as regular $rotate
 					char buf[64];
@@ -1529,7 +1529,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 					if (idx == 0) {
 						float turn_time = static_cast<float>(atof(buf));
 						if (turn_time == 0.0f) {
-							Warning(LOCATION, "Dumb-Rotation has a turn time of 0 for subsystem '%s' on ship %s!", pm->submodel[n].name, pm->filename);
+							Warning(LOCATION, "Dumb-Rotation has a turn time of 0 for subsystem '%s' on ship %s!", sm->name, pm->filename);
 							turn_rate = 1.0f;
 						} else {
 							turn_rate = PI2 / turn_time;
@@ -1538,13 +1538,13 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 						turn_rate = static_cast<float>(atof(buf));
 					}
 
-					pm->submodel[n].dumb_turn_rate = turn_rate;
+					sm->dumb_turn_rate = turn_rate;
 				} else {
-					pm->submodel[n].dumb_turn_rate = 0.0f;
+					sm->dumb_turn_rate = 0.0f;
 				}
 
-				if ( pm->submodel[n].name[0] == '\0' ) {
-					strcpy_s(pm->submodel[n].name, "unknown object name");
+				if ( sm->name[0] == '\0' ) {
+					strcpy_s(sm->name, "unknown object name");
 				}
 
 				if ( ( p = strstr(props, "$special"))!= NULL ) {
@@ -1552,124 +1552,124 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 
 					get_user_prop_value(p+9, type);
 					if ( !stricmp(type, "subsystem") ) {	// if we have a subsystem, put it into the list!
-						do_new_subsystem( n_subsystems, subsystems, n, pm->submodel[n].rad, &pm->submodel[n].offset, props, pm->submodel[n].name, pm->id );
+						do_new_subsystem( n_subsystems, subsystems, n, sm->rad, &sm->offset, props, sm->name, pm->id );
 					} else if ( !stricmp(type, "no_rotate") ) {
 						// mark those submodels which should not rotate - ie, those with no subsystem
-						pm->submodel[n].movement_type = MOVEMENT_TYPE_NONE;
+						sm->movement_type = MOVEMENT_TYPE_NONE;
 					} else {
 						// if submodel rotates (via bspgen), then there is either a subsys or special=no_rotate
-						Assert( pm->submodel[n].movement_type != MOVEMENT_TYPE_ROT );
+						Assert( sm->movement_type != MOVEMENT_TYPE_ROT );
 					}
 				}
 
 				// ---------- done with submodel movement (except for gun_rotation and sanity checks) ----------
 
 				if (strstr(props, "$no_collisions") != NULL )
-					pm->submodel[n].no_collisions = true;
+					sm->no_collisions = true;
 				else
-					pm->submodel[n].no_collisions = false;
+					sm->no_collisions = false;
 
 				if (strstr(props, "$nocollide_this_only") != NULL )
-					pm->submodel[n].nocollide_this_only = true;
+					sm->nocollide_this_only = true;
 				else
-					pm->submodel[n].nocollide_this_only = false;
+					sm->nocollide_this_only = false;
 
 				if (strstr(props, "$collide_invisible") != NULL )
-					pm->submodel[n].collide_invisible = true;
+					sm->collide_invisible = true;
 				else
-					pm->submodel[n].collide_invisible = false;
+					sm->collide_invisible = false;
 
 				if (strstr(props, "$gun_rotation") != nullptr) {
-					pm->submodel[n].gun_rotation = true;
-					pm->submodel[n].can_move = true;		// this is something of a special case because it's rotating without "rotating"
+					sm->gun_rotation = true;
+					sm->can_move = true;		// this is something of a special case because it's rotating without "rotating"
 				} else
-					pm->submodel[n].gun_rotation = false;
+					sm->gun_rotation = false;
 
 				if ( (p = strstr(props, "$lod0_name")) != NULL)
-					get_user_prop_value(p+10, pm->submodel[n].lod_name);
+					get_user_prop_value(p+10, sm->lod_name);
 
 				if (strstr(props, "$attach_thrusters") != NULL )
-					pm->submodel[n].attach_thrusters = true;
+					sm->attach_thrusters = true;
 				else
-					pm->submodel[n].attach_thrusters = false;
+					sm->attach_thrusters = false;
 
 				if ( (p = strstr(props, "$detail_box:")) != NULL ) {
 					p += 12;
 					while (*p == ' ') p++;
-					pm->submodel[n].use_render_box = atoi(p);
+					sm->use_render_box = atoi(p);
 
 					if ( (p = strstr(props, "$box_offset:")) != NULL ) {
 						p += 12;
 						while (*p == ' ') p++;
-						pm->submodel[n].render_box_offset.xyz.x = (float)strtod(p, (char **)NULL);
+						sm->render_box_offset.xyz.x = (float)strtod(p, (char **)NULL);
 						while (*p != ',') p++;
-						pm->submodel[n].render_box_offset.xyz.y = (float)strtod(++p, (char **)NULL);
+						sm->render_box_offset.xyz.y = (float)strtod(++p, (char **)NULL);
 						while (*p != ',') p++;
-						pm->submodel[n].render_box_offset.xyz.z = (float)strtod(++p, (char **)NULL);
+						sm->render_box_offset.xyz.z = (float)strtod(++p, (char **)NULL);
 
-						pm->submodel[n].use_render_box_offset = true;
+						sm->use_render_box_offset = true;
 					}
 
 					if ( (p = strstr(props, "$box_min:")) != NULL ) {
 						p += 9;
 						while (*p == ' ') p++;
-						pm->submodel[n].render_box_min.xyz.x = (float)strtod(p, (char **)NULL);
+						sm->render_box_min.xyz.x = (float)strtod(p, (char **)NULL);
 						while (*p != ',') p++;
-						pm->submodel[n].render_box_min.xyz.y = (float)strtod(++p, (char **)NULL);
+						sm->render_box_min.xyz.y = (float)strtod(++p, (char **)NULL);
 						while (*p != ',') p++;
-						pm->submodel[n].render_box_min.xyz.z = (float)strtod(++p, (char **)NULL);
+						sm->render_box_min.xyz.z = (float)strtod(++p, (char **)NULL);
 					} else {
-						pm->submodel[n].render_box_min = pm->submodel[n].min;
+						sm->render_box_min = sm->min;
 					}
 
 					if ( (p = strstr(props, "$box_max:")) != NULL ) {
 						p += 9;
 						while (*p == ' ') p++;
-						pm->submodel[n].render_box_max.xyz.x = (float)strtod(p, (char **)NULL);
+						sm->render_box_max.xyz.x = (float)strtod(p, (char **)NULL);
 						while (*p != ',') p++;
-						pm->submodel[n].render_box_max.xyz.y = (float)strtod(++p, (char **)NULL);
+						sm->render_box_max.xyz.y = (float)strtod(++p, (char **)NULL);
 						while (*p != ',') p++;
-						pm->submodel[n].render_box_max.xyz.z = (float)strtod(++p, (char **)NULL);
+						sm->render_box_max.xyz.z = (float)strtod(++p, (char **)NULL);
 					} else {
-						pm->submodel[n].render_box_max = pm->submodel[n].max;
+						sm->render_box_max = sm->max;
 					}
 
 					if ( (p = strstr(props, "$do_not_scale_distances")) != nullptr ) {
 						p += 23;
-						pm->submodel[n].do_not_scale_detail_distances = true;
+						sm->do_not_scale_detail_distances = true;
 					}
 				}
 
 				if ( (p = strstr(props, "$detail_sphere:")) != NULL ) {
 					p += 15;
 					while (*p == ' ') p++;
-					pm->submodel[n].use_render_sphere = atoi(p);
+					sm->use_render_sphere = atoi(p);
 
 					if ( (p = strstr(props, "$radius:")) != NULL ) {
 						p += 8;
 						while (*p == ' ') p++;
-						pm->submodel[n].render_sphere_radius = (float)strtod(p, (char **)NULL);
+						sm->render_sphere_radius = (float)strtod(p, (char **)NULL);
 					} else {
-						pm->submodel[n].render_sphere_radius = pm->submodel[n].rad;
+						sm->render_sphere_radius = sm->rad;
 					}
 
 					if ( (p = strstr(props, "$offset:")) != NULL ) {
 						p += 8;
 						while (*p == ' ') p++;
-						pm->submodel[n].render_sphere_offset.xyz.x = (float)strtod(p, (char **)NULL);
+						sm->render_sphere_offset.xyz.x = (float)strtod(p, (char **)NULL);
 						while (*p != ',') p++;
-						pm->submodel[n].render_sphere_offset.xyz.y = (float)strtod(++p, (char **)NULL);
+						sm->render_sphere_offset.xyz.y = (float)strtod(++p, (char **)NULL);
 						while (*p != ',') p++;
-						pm->submodel[n].render_sphere_offset.xyz.z = (float)strtod(++p, (char **)NULL);
+						sm->render_sphere_offset.xyz.z = (float)strtod(++p, (char **)NULL);
 
-						pm->submodel[n].use_render_sphere_offset = true;
+						sm->use_render_sphere_offset = true;
 					} else {
-						pm->submodel[n].render_sphere_offset = vmd_zero_vector;
+						sm->render_sphere_offset = vmd_zero_vector;
 					}
 
 					if ( (p = strstr(props, "$do_not_scale_distances")) != nullptr ) {
 						p += 23;
-						pm->submodel[n].do_not_scale_detail_distances = true;
+						sm->do_not_scale_detail_distances = true;
 					}
 				}
 
@@ -1677,11 +1677,11 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 				if ( (p = strstr(props, "$uvec")) != nullptr ) {
 					matrix submodel_orient;
 
-					if (get_user_vec3d_value(p + 5, &submodel_orient.vec.uvec, false, pm->submodel[n].name, pm->filename)) {
+					if (get_user_vec3d_value(p + 5, &submodel_orient.vec.uvec, false, sm->name, pm->filename)) {
 
 						if ((p = strstr(props, "$fvec")) != nullptr) {
 
-							if (get_user_vec3d_value(p + 5, &submodel_orient.vec.fvec, false, pm->submodel[n].name, pm->filename)) {
+							if (get_user_vec3d_value(p + 5, &submodel_orient.vec.fvec, false, sm->name, pm->filename)) {
 
 								vm_vec_normalize(&submodel_orient.vec.uvec);
 								vm_vec_normalize(&submodel_orient.vec.fvec);
@@ -1694,50 +1694,46 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 
 								vm_orthogonalize_matrix(&submodel_orient);
 
-								pm->submodel[n].frame_of_reference = submodel_orient;
+								sm->frame_of_reference = submodel_orient;
 
 							} else {
 								Warning(LOCATION,
 									"Submodel '%s' of model '%s' has an improperly formatted $fvec declaration in its properties."
 									"\n\n$fvec should be followed by 3 numbers separated with commas.",
-									pm->submodel[n].name, filename);
+									sm->name, filename);
 							}
 						} else {
-							Warning(LOCATION, "Improper custom orientation matrix for subsystem %s; you must define both an up vector and a forward vector", pm->submodel[n].name);
+							Warning(LOCATION, "Improper custom orientation matrix for subsystem %s; you must define both an up vector and a forward vector", sm->name);
 						}
 					} else {
 						Warning(LOCATION,
 							"Submodel '%s' of model '%s' has an improperly formatted $uvec declaration in its properties."
 							"\n\n$uvec should be followed by 3 numbers separated with commas.",
-							pm->submodel[n].name, filename);
+							sm->name, filename);
 					}
 				} else {
-					if (parent >= 0) {
-						pm->submodel[n].frame_of_reference = pm->submodel[parent].frame_of_reference;
-					} else {
-						pm->submodel[n].frame_of_reference = vmd_identity_matrix;
-					}
+					sm->frame_of_reference = parent_sm ? parent_sm->frame_of_reference : vmd_identity_matrix;
 				}
 
 				// ---------- submodel rotation sanity checks ----------
 
 				// make sure this is a validly normalized axis
-				if (vm_vec_mag(&pm->submodel[n].movement_axis) < 0.999f || vm_vec_mag(&pm->submodel[n].movement_axis) > 1.001f) {
-					pm->submodel[n].movement_type = MOVEMENT_TYPE_NONE;
+				if (vm_vec_mag(&sm->movement_axis) < 0.999f || vm_vec_mag(&sm->movement_axis) > 1.001f) {
+					sm->movement_type = MOVEMENT_TYPE_NONE;
 				}
 
 				// maybe use the FOR to manipulate the rotation axis
 				// (do this before the compatibility check below to prevent doing it twice)
-				model_maybe_adjust_movement_axis(&pm->submodel[n]);
+				model_maybe_adjust_movement_axis(sm);
 
 				// important compatibility check: if there are multipart turrets without rotation axes defined, define them
 				// also, some of the retail models got the axes wrong, so fix those :-/
 				// what this boils down to is that we must force turret axes for submodels with frame_of_reference defined
 				//		and also for turrets which don't have their axes set to "other"
-				if (parent >= 0 && stristr(pm->submodel[parent].name, "turret"))
+				if (parent_sm && stristr(parent_sm->name, "turret"))
 				{
-					auto base = &pm->submodel[parent];
-					auto gun = &pm->submodel[n];
+					auto base = parent_sm;
+					auto gun = sm;
 
 					if (!vm_matrix_equal(base->frame_of_reference, vmd_identity_matrix)
 						|| (base->movement_axis_id != MOVEMENT_AXIS_OTHER))
@@ -1759,28 +1755,28 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 				}
 
 				// adding a warning if rotation is specified without movement axis.
-				if (pm->submodel[n].movement_axis_id == MOVEMENT_AXIS_NONE) {
-					if (pm->submodel[n].movement_type == MOVEMENT_TYPE_ROT) {
-						Warning(LOCATION, "Rotation without rotation axis defined on submodel '%s' of model '%s'!", pm->submodel[n].name, pm->filename);
+				if (sm->movement_axis_id == MOVEMENT_AXIS_NONE) {
+					if (sm->movement_type == MOVEMENT_TYPE_ROT) {
+						Warning(LOCATION, "Rotation without rotation axis defined on submodel '%s' of model '%s'!", sm->name, pm->filename);
 					}
-					else if (pm->submodel[n].movement_type == MOVEMENT_TYPE_INTRINSIC_ROTATE) {
-						Warning(LOCATION, "Intrinsic rotation (e.g. dumb-rotate or look-at) without rotation axis defined on submodel '%s' of model '%s'!", pm->submodel[n].name, pm->filename);
+					else if (sm->movement_type == MOVEMENT_TYPE_INTRINSIC_ROTATE) {
+						Warning(LOCATION, "Intrinsic rotation (e.g. dumb-rotate or look-at) without rotation axis defined on submodel '%s' of model '%s'!", sm->name, pm->filename);
 					}
-					pm->submodel[n].movement_type = MOVEMENT_TYPE_NONE;
+					sm->movement_type = MOVEMENT_TYPE_NONE;
 				}
 
 				// clear the axis if the submodel doesn't move
 				// (don't clear can_move because of gun_rotation)
-				if (pm->submodel[n].movement_type == MOVEMENT_TYPE_NONE) {
-					pm->submodel[n].movement_axis_id = MOVEMENT_AXIS_NONE;
-					pm->submodel[n].movement_axis = vmd_zero_vector;
+				if (sm->movement_type == MOVEMENT_TYPE_NONE) {
+					sm->movement_axis_id = MOVEMENT_AXIS_NONE;
+					sm->movement_axis = vmd_zero_vector;
 				}
 
 				// Set the can_move field on submodels which are of a rotating type or which have such a parent somewhere down the hierarchy
-				if (pm->submodel[n].movement_type != MOVEMENT_TYPE_NONE) {
-					pm->submodel[n].can_move = true;
-				} else if (pm->submodel[n].parent >= 0 && pm->submodel[pm->submodel[n].parent].can_move) {
-					pm->submodel[n].can_move = true;
+				if (sm->movement_type != MOVEMENT_TYPE_NONE) {
+					sm->can_move = true;
+				} else if (parent_sm && parent_sm->can_move) {
+					sm->can_move = true;
 				}
 
 				// ---------- done submodel rotation sanity checks ----------
@@ -1796,50 +1792,50 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 				//ShivanSpS - if pof version is 2200 or higher load bsp_data as it is, otherwise, align it
 				if (pm->version >= 2200)
 				{
-					pm->submodel[n].bsp_data_size = cfread_int(fp);
-					if (pm->submodel[n].bsp_data_size > 0) {
-						pm->submodel[n].bsp_data = (ubyte*)vm_malloc(pm->submodel[n].bsp_data_size);
-						cfread(pm->submodel[n].bsp_data, 1, pm->submodel[n].bsp_data_size, fp);
-						swap_bsp_data(pm, pm->submodel[n].bsp_data);
+					sm->bsp_data_size = cfread_int(fp);
+					if (sm->bsp_data_size > 0) {
+						sm->bsp_data = (ubyte*)vm_malloc(sm->bsp_data_size);
+						cfread(sm->bsp_data, 1, sm->bsp_data_size, fp);
+						swap_bsp_data(pm, sm->bsp_data);
 					}
 					else {
-						pm->submodel[n].bsp_data = nullptr;
+						sm->bsp_data = nullptr;
 					}
 				}
 				else
 				{
-					pm->submodel[n].bsp_data_size = cfread_int(fp);
-					if (pm->submodel[n].bsp_data_size > 0) {
+					sm->bsp_data_size = cfread_int(fp);
+					if (sm->bsp_data_size > 0) {
 						//mprintf(("BSP_Data is being aligned.\n"));
 
-						std::unique_ptr<ubyte[]> bsp_in(new ubyte[pm->submodel[n].bsp_data_size]);
-						std::unique_ptr<ubyte[]> bsp_out(new ubyte[pm->submodel[n].bsp_data_size * 2]);
+						std::unique_ptr<ubyte[]> bsp_in(new ubyte[sm->bsp_data_size]);
+						std::unique_ptr<ubyte[]> bsp_out(new ubyte[sm->bsp_data_size * 2]);
 
-						cfread(bsp_in.get(), 1, pm->submodel[n].bsp_data_size, fp);
+						cfread(bsp_in.get(), 1, sm->bsp_data_size, fp);
 
-						//mprintf(("BSP_Data was %d bytes in size\n", pm->submodel[n].bsp_data_size));
-						pm->submodel[n].bsp_data_size = align_bsp_data(bsp_in.get(), bsp_out.get(), pm->submodel[n].bsp_data_size);
-						//mprintf(("BSP_Data now is %d bytes in size\n", pm->submodel[n].bsp_data_size));
+						//mprintf(("BSP_Data was %d bytes in size\n", sm->bsp_data_size));
+						sm->bsp_data_size = align_bsp_data(bsp_in.get(), bsp_out.get(), sm->bsp_data_size);
+						//mprintf(("BSP_Data now is %d bytes in size\n", sm->bsp_data_size));
 
-						pm->submodel[n].bsp_data = (ubyte*)vm_malloc(pm->submodel[n].bsp_data_size);
-						memcpy(pm->submodel[n].bsp_data, bsp_out.get(), pm->submodel[n].bsp_data_size);
-						swap_bsp_data(pm, pm->submodel[n].bsp_data);
+						sm->bsp_data = (ubyte*)vm_malloc(sm->bsp_data_size);
+						memcpy(sm->bsp_data, bsp_out.get(), sm->bsp_data_size);
+						swap_bsp_data(pm, sm->bsp_data);
 					}
 					else {
-						pm->submodel[n].bsp_data = nullptr;
+						sm->bsp_data = nullptr;
 					}
 				}
 
-				pm->submodel[n].is_thruster = (stristr(pm->submodel[n].name, "thruster") != nullptr);
+				sm->is_thruster = (stristr(sm->name, "thruster") != nullptr);
 
 				// Genghis: if we have a thruster and none of the collision 
 				// properties were provided, then set "nocollide_this_only".
-				if (pm->submodel[n].is_thruster && !(pm->submodel[n].no_collisions) && !(pm->submodel[n].nocollide_this_only) && !(pm->submodel[n].collide_invisible) )
+				if (sm->is_thruster && !(sm->no_collisions) && !(sm->nocollide_this_only) && !(sm->collide_invisible) )
 				{
-					pm->submodel[n].nocollide_this_only = true;
+					sm->nocollide_this_only = true;
 				}
 
-				pm->submodel[n].is_damaged = (strstr(pm->submodel[n].name, "-destroyed") != nullptr);
+				sm->is_damaged = (strstr(sm->name, "-destroyed") != nullptr);
 
 				break;
 			}
