@@ -4625,14 +4625,14 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		init_path_metadata(metadata);
 
 		//Get +departure and arrival rvec and store on the path_metadata object
-		if (optional_string("+departure rvec:"))
-		{
-			stuff_vec3d(&metadata.departure_rvec);
-		}
-
 		if (optional_string("+arrival rvec:"))
 		{
 			stuff_vec3d(&metadata.arrival_rvec);
+		}
+
+		if (optional_string("+departure rvec:"))
+		{
+			stuff_vec3d(&metadata.departure_rvec);
 		}
 
 		if (optional_string("+arrive speed multiplier:"))
