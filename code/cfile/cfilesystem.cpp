@@ -713,12 +713,23 @@ void cf_search_root_path(int root_index)
 
 		if ( dirp ) {
 			struct dirent *dir = nullptr;
+			SCP_vector<SCP_string> dnames;
 			while ((dir = readdir (dirp)) != NULL)
 			{
-				if (!fnmatch ("*.*", dir->d_name, 0))
+				SCP_string dn(dir->d_name);
+				dnames.push_back(dn);
+			}
+			closedir(dirp);
+
+			// Directory listings in Unix have no guaranteed order, so we sort 
+			std::sort(dnames.begin(), dnames.end(), [](const SCP_string& a, const SCP_string& b) { return a.compare(b) < 0; });
+
+			for (const auto& dn : dnames) {
+				const char *d_name = dn.c_str();
+				if (!fnmatch ("*.*", d_name, 0))
 				{
 					SCP_string fn;
-					sprintf(fn, "%s/%s", search_dir.c_str(), dir->d_name);
+					sprintf(fn, "%s/%s", search_dir.c_str(), d_name);
 
 					struct stat buf;
 					if (stat(fn.c_str(), &buf) == -1) {
@@ -729,13 +740,13 @@ void cf_search_root_path(int root_index)
 						continue;
 					}
 					
-					char *ext = strrchr( dir->d_name, '.' );
+					const char *ext = strrchr( d_name, '.' );
 					if ( ext )	{
 						if ( is_ext_in_list( Pathtypes[i].extensions, ext ) )	{
 							// Found a file!!!!
 							cf_file *file = cf_create_file();
 
-							strcpy_s( file->name_ext, dir->d_name );
+							strcpy_s( file->name_ext, d_name );
 							file->root_index = root_index;
 							file->pathtype_index = i;
 
@@ -753,7 +764,6 @@ void cf_search_root_path(int root_index)
 					}
 				}
 			}
-			closedir(dirp);
 		}
 #endif
 	}
