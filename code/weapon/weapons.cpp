@@ -6098,7 +6098,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		objp->radius = model_get_radius(wip->model_num);
 
 		// Always create an instance in case we need them
-		if (model_get(wip->model_num)->flags & PM_FLAG_HAS_INTRINSIC_ROTATE || !wip->on_create_program.isEmpty()) {
+		if (model_get(wip->model_num)->flags & PM_FLAG_HAS_INTRINSIC_MOTION || !wip->on_create_program.isEmpty()) {
 			wp->model_instance_num = model_create_instance(true, wip->model_num);
 		}
 	} else if ( wip->render_type == WRT_LASER ) {

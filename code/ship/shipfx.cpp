@@ -109,7 +109,7 @@ static void shipfx_subsystem_maybe_create_live_debris(object *ship_objp, ship *s
 	vec3d model_axis, world_axis, rotvel, world_axis_pt;
 	matrix m_rot;	// rotation for debris orient about axis
 
-	if (pm->submodel[submodel_num].movement_type == MOVEMENT_TYPE_ROT || pm->submodel[submodel_num].movement_type == MOVEMENT_TYPE_INTRINSIC_ROTATE) {
+	if (pm->submodel[submodel_num].movement_type == MOVEMENT_TYPE_ROT || pm->submodel[submodel_num].movement_type == MOVEMENT_TYPE_INTRINSIC) {
 		if ( !smi->axis_set ) {
 			model_init_submodel_axis_pt(pm, pmi, submodel_num);
 		}
