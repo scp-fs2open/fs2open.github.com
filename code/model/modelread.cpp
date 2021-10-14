@@ -1600,11 +1600,11 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 					if (in(p, props, "$box_offset:")) {
 						p += 12;
 						while (*p == ' ') p++;
-						sm->render_box_offset.xyz.x = (float)strtod(p, (char **)NULL);
+						sm->render_box_offset.xyz.x = (float)strtod(p, (char **)nullptr);
 						while (*p != ',') p++;
-						sm->render_box_offset.xyz.y = (float)strtod(++p, (char **)NULL);
+						sm->render_box_offset.xyz.y = (float)strtod(++p, (char **)nullptr);
 						while (*p != ',') p++;
-						sm->render_box_offset.xyz.z = (float)strtod(++p, (char **)NULL);
+						sm->render_box_offset.xyz.z = (float)strtod(++p, (char **)nullptr);
 
 						sm->use_render_box_offset = true;
 					}
@@ -1612,11 +1612,11 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 					if (in(p, props, "$box_min:")) {
 						p += 9;
 						while (*p == ' ') p++;
-						sm->render_box_min.xyz.x = (float)strtod(p, (char **)NULL);
+						sm->render_box_min.xyz.x = (float)strtod(p, (char **)nullptr);
 						while (*p != ',') p++;
-						sm->render_box_min.xyz.y = (float)strtod(++p, (char **)NULL);
+						sm->render_box_min.xyz.y = (float)strtod(++p, (char **)nullptr);
 						while (*p != ',') p++;
-						sm->render_box_min.xyz.z = (float)strtod(++p, (char **)NULL);
+						sm->render_box_min.xyz.z = (float)strtod(++p, (char **)nullptr);
 					} else {
 						sm->render_box_min = sm->min;
 					}
@@ -1624,11 +1624,11 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 					if (in(p, props, "$box_max:")) {
 						p += 9;
 						while (*p == ' ') p++;
-						sm->render_box_max.xyz.x = (float)strtod(p, (char **)NULL);
+						sm->render_box_max.xyz.x = (float)strtod(p, (char **)nullptr);
 						while (*p != ',') p++;
-						sm->render_box_max.xyz.y = (float)strtod(++p, (char **)NULL);
+						sm->render_box_max.xyz.y = (float)strtod(++p, (char **)nullptr);
 						while (*p != ',') p++;
-						sm->render_box_max.xyz.z = (float)strtod(++p, (char **)NULL);
+						sm->render_box_max.xyz.z = (float)strtod(++p, (char **)nullptr);
 					} else {
 						sm->render_box_max = sm->max;
 					}
@@ -1647,7 +1647,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 					if (in(p, props, "$radius:")) {
 						p += 8;
 						while (*p == ' ') p++;
-						sm->render_sphere_radius = (float)strtod(p, (char **)NULL);
+						sm->render_sphere_radius = (float)strtod(p, (char **)nullptr);
 					} else {
 						sm->render_sphere_radius = sm->rad;
 					}
@@ -1655,11 +1655,11 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 					if (in(p, props, "$offset:")) {
 						p += 8;
 						while (*p == ' ') p++;
-						sm->render_sphere_offset.xyz.x = (float)strtod(p, (char **)NULL);
+						sm->render_sphere_offset.xyz.x = (float)strtod(p, (char **)nullptr);
 						while (*p != ',') p++;
-						sm->render_sphere_offset.xyz.y = (float)strtod(++p, (char **)NULL);
+						sm->render_sphere_offset.xyz.y = (float)strtod(++p, (char **)nullptr);
 						while (*p != ',') p++;
-						sm->render_sphere_offset.xyz.z = (float)strtod(++p, (char **)NULL);
+						sm->render_sphere_offset.xyz.z = (float)strtod(++p, (char **)nullptr);
 
 						sm->use_render_sphere_offset = true;
 					} else {
