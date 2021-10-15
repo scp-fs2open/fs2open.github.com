@@ -655,7 +655,7 @@ void parse_wi_flags(weapon_info *weaponp, flagset<Weapon::Info_Flags> preset_wi_
                 weaponp->wi_flags.remove(Weapon::Info_Flags::Die_on_lost_lock);
             }
         }
-		else if (!stricmp(NOX("stream"), flag_text.c_str())) {
+        else if (!stricmp(NOX("stream"), flag_text.c_str())) {
 			mprintf(("Ignoring \"stream\" flag on weapon %s...\n", weaponp->name)); // dont warn because its not a big deal, but also because retail has several 'stream' weapons
 		}
         else {
