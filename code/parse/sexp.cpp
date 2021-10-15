@@ -3459,7 +3459,10 @@ void preload_turret_change_weapon(const char *text)
 
 void preload_texture(const char* text)
 {
-	int texture = bm_load(text);
+	if (!stricmp(text, "invisible"))
+		return;
+
+	int texture = bm_load_either(text);
 
 	if (texture < 0) {
 		Warning(LOCATION, "Could not preload texture %s", text);
@@ -17996,7 +17999,6 @@ void sexp_replace_texture(int n)
 		object_ship_wing_point_team oswpt;
 		eval_object_ship_wing_point_team(&oswpt, n);
 
-		// we only handle ships and wings that are present
 		switch (oswpt.type)
 		{
 		case OSWPT_TYPE_PARSE_OBJECT:
@@ -18016,7 +18018,11 @@ void sexp_replace_texture(int n)
 				strcpy(replace.ship_name, ship_entry->name);
 				strcpy(replace.old_texture, old_name);
 				strcpy(replace.new_texture, new_name);
-				replace.new_texture_id = bm_load(new_name);
+
+				if (!stricmp(new_name, "invisible"))
+					replace.new_texture_id = REPLACE_WITH_INVISIBLE;
+				else
+					replace.new_texture_id = bm_load_either(new_name);
 
 				pobjp->replacement_textures.push_back(replace);
 			}
@@ -18052,7 +18058,11 @@ void sexp_replace_texture(int n)
 					strcpy(replace.ship_name, p_objp->name);
 					strcpy(replace.old_texture, old_name);
 					strcpy(replace.new_texture, new_name);
-					replace.new_texture_id = bm_load(new_name);
+
+					if (!stricmp(new_name, "invisible"))
+						replace.new_texture_id = REPLACE_WITH_INVISIBLE;
+					else
+						replace.new_texture_id = bm_load_either(new_name);
 
 					p_objp->replacement_textures.push_back(replace);
 				}
