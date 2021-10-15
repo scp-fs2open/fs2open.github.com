@@ -486,7 +486,6 @@ flag_def_list_new<Weapon::Info_Flags> ai_tgt_weapon_flags[] = {
     { "tag",						Weapon::Info_Flags::Tag,								true, false },
     { "shudder",					Weapon::Info_Flags::Shudder,							true, false },
     { "lockarm",					Weapon::Info_Flags::Lockarm,							true, false },
-    { "stream",						Weapon::Info_Flags::Stream,								true, false },
     { "ballistic",					Weapon::Info_Flags::Ballistic,							true, false },
     { "default in tech database",	Weapon::Info_Flags::Default_in_tech_database,			true, false },
     { "tagged only",				Weapon::Info_Flags::Tagged_only,						true, false },
