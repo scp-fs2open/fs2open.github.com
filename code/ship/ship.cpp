@@ -17238,7 +17238,8 @@ void ship_page_out_textures(int ship_index, bool release)
 		PAGE_OUT_TEXTURE(sip->afterburner_thruster_particles[i].thruster_bitmap.first_frame);
 }
 
-void ship_replace_active_texture(int ship_index, const char* old_name, const char* new_name) {
+void ship_replace_active_texture(int ship_index, const char* old_name, const char* new_name)
+{
 	ship* shipp = &Ships[ship_index];
 	polymodel* pm = model_get(Ship_info[shipp->ship_info_index].model_num);
 	int final_index = -1;
@@ -17253,8 +17254,14 @@ void ship_replace_active_texture(int ship_index, const char* old_name, const cha
 		}
 	}
 
-	if (final_index >= 0) {
-		int texture = bm_load(new_name);
+	if (final_index >= 0)
+	{
+		int texture;
+
+		if (!stricmp(new_name, "invisible"))
+			texture = REPLACE_WITH_INVISIBLE;
+		else
+			texture = bm_load_either(new_name);
 
 		if (shipp->ship_replacement_textures == nullptr) {
 			shipp->ship_replacement_textures = (int*)vm_malloc(MAX_REPLACEMENT_TEXTURES * sizeof(int));
