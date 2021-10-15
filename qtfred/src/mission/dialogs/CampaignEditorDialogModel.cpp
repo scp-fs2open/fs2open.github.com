@@ -4,6 +4,7 @@
 #include "menuui/mainhallmenu.h"
 #include "stats/scoring.h"
 #include "mission/missiongoals.h"
+#include "mission/missionsave.h"
 
 #include <QPlainTextDocumentLayout>
 
@@ -262,6 +263,8 @@ void CampaignEditorDialogModel::supplySubModelLoop(QPlainTextEdit &descr) {
 bool CampaignEditorDialogModel::saveTo(const QString &file) {
 	bool success = _saveTo(file);
 	QMessageBox::information(parent, file, success ? tr("Successfully saved") : tr("Error saving"));
+	//TODO modified=false
+	//TODO error checker
 	return success;
 }
 
@@ -282,9 +285,11 @@ void CampaignEditorDialogModel::checkMissionDrop(const QModelIndex &idx, const Q
 bool CampaignEditorDialogModel::_saveTo(QString file) const {
 	if (file.isEmpty())
 		return false;
-	qPrintable(file.replace('/',DIR_SEPARATOR_CHAR));
-	QMessageBox::information(parent, "", campaignDescr);
-	return false;
+
+	mission_campaign_clear();
+
+	CFred_mission_save save;
+	return !save.save_campaign_file(qPrintable(file.replace('/',DIR_SEPARATOR_CHAR)));
 }
 
 void CampaignEditorDialogModel::missionSelectionChanged(const QItemSelection & selected) {

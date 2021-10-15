@@ -46,8 +46,8 @@ class CFred_mission_save {
 	/**
 	 * @brief Default constructor
 	 */
-	explicit CFred_mission_save(EditorViewport* viewport, MissionFormat format = MissionFormat::STANDARD) :
-		raw_ptr(Parse_text_raw), save_format(format), _editor(viewport->editor), _viewport(viewport) {
+	explicit CFred_mission_save(EditorViewport* viewport = nullptr, MissionFormat format = MissionFormat::STANDARD) :
+		raw_ptr(Parse_text_raw), save_format(format), _editor(viewport ? viewport->editor : nullptr), _viewport(viewport) {
 	}
 
 	/**
@@ -145,6 +145,20 @@ class CFred_mission_save {
 	 * @see save_mission_internal()
 	 */
 	int save_bitmaps();
+
+	/**
+	 * @brief Saves the campaign file to the given full pathname
+	 *
+	 * @param[in] pathname The full pathname to save to
+	 *
+	 * @details Returns the value of CFred_mission_save::err, which is:
+	 *
+	 * @returns 0 for no error, or
+	 * @returns A negative value if an error occurred
+	 *
+	 * @see save_mission_internal()
+	 */
+	int save_campaign_file(const char *pathname);
 
 	/**
 	 * @brief Saves the mission file to the given full pathname
