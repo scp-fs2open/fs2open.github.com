@@ -4651,7 +4651,12 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		path_metadata metadata;
 		init_path_metadata(metadata);
 
-		//Get +departure rvec and store on the path_metadata object
+		//Get +departure and arrival rvec and store on the path_metadata object
+		if (optional_string("+arrival rvec:"))
+		{
+			stuff_vec3d(&metadata.arrival_rvec);
+		}
+
 		if (optional_string("+departure rvec:"))
 		{
 			stuff_vec3d(&metadata.departure_rvec);
@@ -19176,6 +19181,7 @@ static int ship_get_subobj_model_num(ship_info* sip, char* subobj_name)
 void init_path_metadata(path_metadata& metadata)
 {
 	vm_vec_zero(&metadata.departure_rvec);
+	vm_vec_zero(&metadata.arrival_rvec);
 	metadata.arrive_speed_mult = FLT_MIN;
 	metadata.depart_speed_mult = FLT_MIN;
 }

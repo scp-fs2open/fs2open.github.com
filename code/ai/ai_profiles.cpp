@@ -468,6 +468,10 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$firing requires exact los:", AI::Profile_Flags::Require_exact_los);
 
+				set_flag(profile, "$fighterbay arrivals use carrier orientation:", AI::Profile_Flags::Fighterbay_arrivals_use_carrier_orient);
+
+				set_flag(profile, "$fighterbay departures use carrier orientation:", AI::Profile_Flags::Fighterbay_departures_use_carrier_orient);
+
 				if (optional_string("$ai path mode:"))
 				{
 					stuff_string(buf, F_NAME, NAME_LENGTH);
@@ -741,5 +745,8 @@ void ai_profile_t::reset()
 	}
 	if (mod_supports_version(21, 4, 0)) {
 		flags.set(AI::Profile_Flags::Fixed_ship_weapon_collision);
+	}
+	if (mod_supports_version(22, 0, 0)) {
+		flags.set(AI::Profile_Flags::Fighterbay_arrivals_use_carrier_orient);
 	}
 }

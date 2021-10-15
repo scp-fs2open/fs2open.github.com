@@ -2905,13 +2905,11 @@ void create_model_path(object *pl_objp, object *mobjp, int path_num, int subsys_
 	//Get path departure orientation from ships.tbl if it exists, otherwise zero it
 	SCP_string pathName(mp->name);
 	if (osip->pathMetadata.find(pathName) != osip->pathMetadata.end() && !IS_VEC_NULL(&osip->pathMetadata[pathName].departure_rvec))
-	{
-		vm_vec_copy_normalize(&aip->path_depart_orient, &osip->pathMetadata[pathName].departure_rvec);
-	}
+		vm_vec_copy_normalize(&aip->path_depart_rvec, &osip->pathMetadata[pathName].departure_rvec);
+	else if (aip->ai_profile_flags[AI::Profile_Flags::Fighterbay_departures_use_carrier_orient])
+		aip->path_depart_rvec = vmd_x_vector; // this will be later rotated into the carrier's frame of reference
 	else
-	{
-		vm_vec_zero(&aip->path_depart_orient);
-	}
+		vm_vec_zero(&aip->path_depart_rvec);
 
 	aip->ai_flags.remove(AI::AI_Flags::Use_exit_path);	// ensure this flag is cleared
 }
@@ -3727,13 +3725,11 @@ float maybe_recreate_path(object *objp, ai_info *aip, int force_recreate_flag, i
 				model_path	*mp = &model_get(osip->model_num)->paths[aip->mp_index];
 				SCP_string pathName(mp->name);
 				if (osip->pathMetadata.find(pathName) != osip->pathMetadata.end() && !IS_VEC_NULL(&osip->pathMetadata[pathName].departure_rvec))
-				{
-					vm_vec_copy_normalize(&aip->path_depart_orient, &osip->pathMetadata[pathName].departure_rvec);
-				}
+					vm_vec_copy_normalize(&aip->path_depart_rvec, &osip->pathMetadata[pathName].departure_rvec);
+				else if (aip->ai_profile_flags[AI::Profile_Flags::Fighterbay_departures_use_carrier_orient])
+					aip->path_depart_rvec = vmd_x_vector;  // this will be later rotated into the carrier's frame of reference
 				else
-				{
-					vm_vec_zero(&aip->path_depart_orient);
-				}
+					vm_vec_zero(&aip->path_depart_rvec);
 
 				return dist;
 			}
@@ -4111,8 +4107,8 @@ float ai_path_1()
 	// (so you can always have "wheels-down" landings)
 	vec3d rvec;
 	vec3d *prvec = NULL;
-	if ( aip->mode == AIM_BAY_DEPART && !IS_VEC_NULL(&aip->path_depart_orient) ) {
-		vm_vec_unrotate(&rvec, &aip->path_depart_orient, &Objects[aip->path_objnum].orient);
+	if ( aip->mode == AIM_BAY_DEPART && !IS_VEC_NULL(&aip->path_depart_rvec) ) {
+		vm_vec_unrotate(&rvec, &aip->path_depart_rvec, &Objects[aip->path_objnum].orient);
 		prvec = &rvec;
 	}
 
@@ -13141,7 +13137,7 @@ void ai_manage_bay_doors(object *pl_objp, ai_info *aip, bool done)
 //
 // exit:		-1		=>	path could not be located
 //				 0		=> success
-int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, int allowed_path_mask, vec3d *pos, vec3d *fvec)
+int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, int allowed_path_mask)
 {
 	int			path_index, bay_path;
 	pnode		*pnp;
@@ -13160,8 +13156,9 @@ int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, int allowed_path_
 	Assertion(parent_objnum >= 0, "Arriving ship does not have a parent object number.  Has %d instead. Please report!", parent_objnum);
 	object *parent_objp = &Objects[parent_objnum];
 	ship *parent_shipp = &Ships[parent_objp->instance];
+	ship_info* parent_sip = &Ship_info[parent_shipp->ship_info_index];
 
-	polymodel *pm = model_get( Ship_info[parent_shipp->ship_info_index].model_num );
+	polymodel *pm = model_get( parent_sip->model_num );
 	ship_bay *bay = pm->ship_bay;
 
 	if ( bay == nullptr ) {
@@ -13221,12 +13218,13 @@ int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, int allowed_path_
 	// now return to the caller what the starting world pos and starting fvec for the ship will be
 	Assert((aip->path_start >= 0) && (aip->path_start < MAX_PATH_POINTS));
 	pnp = &Path_points[aip->path_start];
-	*pos = pnp->pos;
+	vec3d pos = pnp->pos;
 
 	// calc the forward vector using the starting two points of the path
 	pnp = &Path_points[aip->path_start+1];
 	next_point = &pnp->pos;
-	vm_vec_normalized_dir(fvec, next_point, pos);
+	vec3d fvec;
+	vm_vec_normalized_dir(&fvec, next_point, &pos);
 
 	// record the parent objnum, since we'll need it once we're done with following the path
 	aip->goal_objnum = parent_objnum;
@@ -13247,6 +13245,19 @@ int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, int allowed_path_
 	pl_objp->phys_info.prev_ramp_vel.xyz.y = 0.0f;
 	pl_objp->phys_info.prev_ramp_vel.xyz.z = 0.0f;
 	pl_objp->phys_info.forward_thrust = 0.0f;		// How much the forward thruster is applied.  0-1.
+	pl_objp->pos = pos;
+
+	// use the modder-defined arrival rvec, if applicable
+	vec3d rvec;		vm_vec_zero(&rvec);
+	SCP_string pathName(pm->paths[path_index].name);
+	if (parent_sip->pathMetadata.find(pathName) != parent_sip->pathMetadata.end() && !IS_VEC_NULL(&parent_sip->pathMetadata[pathName].arrival_rvec)) {
+		vm_vec_copy_normalize(&rvec, &parent_sip->pathMetadata[pathName].arrival_rvec);
+		vm_vec_unrotate(&rvec, &rvec, &Objects[aip->path_objnum].orient);
+	}
+	else if (The_mission.ai_profile->flags[AI::Profile_Flags::Fighterbay_arrivals_use_carrier_orient]) {
+		rvec = parent_objp->orient.vec.rvec;
+	}
+	vm_vector_2_matrix(&pl_objp->orient, &fvec, nullptr, IS_VEC_NULL(&rvec) ? nullptr : &rvec);
 
 	return 0;	
 }
@@ -14991,7 +15002,7 @@ void init_ai_object(int objnum)
 	aip->path_next_create_time = timestamp(1);
 	aip->path_create_pos = Objects[objnum].pos;
 	aip->path_create_orient = Objects[objnum].orient;
-	vm_vec_zero(&aip->path_depart_orient);
+	vm_vec_zero(&aip->path_depart_rvec);
 
 	aip->ignore_expire_timestamp = timestamp(1);
 	aip->warp_out_timestamp = 0;
