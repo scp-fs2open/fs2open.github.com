@@ -164,7 +164,7 @@ bool save_preset_file(CC_preset preset, bool overwrite) {
 	CFILE* fp = cfopen(filename.c_str(), "r", CFILE_NORMAL, CF_TYPE_PLAYER_BINDS, false,
 	                  CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 	
-	if (!fp && !overwrite) {
+	if ((fp != NULL) && !overwrite) {
 		mprintf(("PST => Unable to save '%s', file already exists!\n", filename.c_str()));
 		return false;
 	}
