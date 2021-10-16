@@ -825,7 +825,7 @@ ADE_FUNC(sendMessage,
 	if (messageSource == MESSAGE_SOURCE_NONE)
 		message_send_unique_to_player(Messages[messageIdx].name, NULL, MESSAGE_SOURCE_NONE, priority, 0, fl2i(delay * 1000.0f));
 	else
-		message_send_unique_to_player(Messages[messageIdx].name, (void*) sender, messageSource, priority, 0, fl2i(delay * 1000.0f));
+		message_send_unique_to_player(Messages[messageIdx].name, (void*) sender, messageSource, priority, 0, fl2i(delay * 1000.0f), -1, true);
 
 	return ADE_RETURN_TRUE;
 }

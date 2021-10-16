@@ -1618,23 +1618,13 @@ void message_queue_process()
 
 	// play wave first, since need to know duration for picking anim start frame
 	if(message_play_wave(q) == false) {
+		SCP_string speech_text;
 		if (m->persona_index != -1) {
-			SCP_string speech_text = fsspeech_create_speech_text(buf.c_str(), Personas[m->persona_index].speech_tags);
+			speech_text = fsspeech_create_speech_text(buf.c_str(), Personas[m->persona_index].speech_tags);
 			fsspeech_play(FSSPEECH_FROM_INGAME, speech_text.c_str());
-		}
-		else {
-			// Fiction viewer specific, try to find the persona this msg belongs to
-			int possible_index = -1;
-			if (!stricmp(m->name, "VS2Message")) {
-				possible_index = message_persona_name_lookup(q->who_from);
-			}
-			if (possible_index != -1) {
-				SCP_string speech_text = fsspeech_create_speech_text(buf.c_str(), Personas[possible_index].speech_tags);
-				fsspeech_play(FSSPEECH_FROM_INGAME, speech_text.c_str());
-			} else {
-				SCP_string speech_text = fsspeech_create_speech_text(buf.c_str(), nullptr);
-				fsspeech_play(FSSPEECH_FROM_INGAME, speech_text.c_str());
-			}
+		} else {
+			speech_text = fsspeech_create_speech_text(buf.c_str(), nullptr);
+			fsspeech_play(FSSPEECH_FROM_INGAME, speech_text.c_str());
 		}
 	}
 	
@@ -1920,7 +1910,7 @@ int message_filter_multi(int id)
 
 // send_unique_to_player sends a mission unique (specific) message to the player (possibly a multiplayer
 // person).  These messages are *not* the builtin messages
-void message_send_unique_to_player( const char *id, const void *data, int m_source, int priority, int group, int delay, int event_num_to_cancel )
+void message_send_unique_to_player( const char *id, const void *data, int m_source, int priority, int group, int delay, int event_num_to_cancel, bool search_m_persona )
 {
 	int i, source;
 	const char *who_from;
@@ -1969,6 +1959,13 @@ void message_send_unique_to_player( const char *id, const void *data, int m_sour
 				source = HUD_team_get_source(shipp->team);
 			} else if ( m_source == MESSAGE_SOURCE_NONE ) {
 				who_from = "<none>";
+				// if the msg has no source, make sure it has no persona as well: fiction viewer msgs may have a previous persona stored
+				Messages[i].persona_index = -1;
+			}
+
+			// intended to be used to set speech tags for fiction viewer
+			if ( search_m_persona ) {
+				Messages[i].persona_index = message_persona_name_lookup(who_from);
 			}
 
 			// not multiplayer or this message is for me, then queue it
