@@ -15,7 +15,7 @@
 #include "asteroid/asteroid.h"
 #include "cmdline/cmdline.h"
 #include "cmeasure/cmeasure.h"
-#include "debugconsole/console.h"|| !wip->animations.isEmpty()
+#include "debugconsole/console.h"
 #include "fireball/fireballs.h"
 #include "freespace.h"
 #include "gamesnd/gamesnd.h"

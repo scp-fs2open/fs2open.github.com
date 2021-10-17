@@ -2662,7 +2662,7 @@ void ai_turret_execute_behavior(ship *shipp, ship_subsys *ss)
 				if (ss->turret_animation_position == MA_POS_NOT_SET) {
 					bool started = false;
 					//For legacy animations using subtype for turret number
-					started |= Ship_info[shipp->ship_info_index].animations.startAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::TurretFiring, animation::ModelAnimationDirection::FWD, false, false, ss->system_info->subobj_num, true);
+					started |= Ship_info[shipp->ship_info_index].animations.startAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::TurretFiring, animation::ModelAnimationDirection::FWD, false, false, false, ss->system_info->subobj_num, true);
 					//For modern animations using proper triggered-by-subsys name
 					started |= Ship_info[shipp->ship_info_index].animations.start(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::TurretFiring, animation::anim_name_from_subsys(ss->system_info), animation::ModelAnimationDirection::FWD);
 					if (started) {

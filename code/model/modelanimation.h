@@ -79,7 +79,7 @@ namespace animation {
 
 	enum class ModelAnimationDirection { FWD, RWD };
 
-	enum class ModelAnimationState { UNTRIGGERED, RUNNING_FWD, COMPLETED, RUNNING_RWD };
+	enum class ModelAnimationState { UNTRIGGERED, RUNNING_FWD, COMPLETED, RUNNING_RWD, PAUSED };
 
 	enum class ModelAnimationTriggerType : int {
 		None = -1,       // No animation
@@ -254,7 +254,7 @@ namespace animation {
 		void setAnimation(std::shared_ptr<ModelAnimationSegment> animation);
 
 		//Start playing the animation. Will stop other animations that have components running on the same submodels. instant always requires force
-		void start(polymodel_instance* pmi, ModelAnimationDirection direction, bool force = false, bool instant = false, const float* multiOverrideTime = nullptr);
+		void start(polymodel_instance* pmi, ModelAnimationDirection direction, bool force = false, bool instant = false, bool pause = false, const float* multiOverrideTime = nullptr);
 		//Stops the animation. If cleanup is set, it will remove the animation from the list of running animations. Don't call without cleanup unless you know what you are doing
 		void stop(polymodel_instance* pmi, bool cleanup = true);
 
@@ -296,13 +296,13 @@ namespace animation {
 
 		void changeShipName(const SCP_string& name);
 
-		static void stopAnimations();
+		static void stopAnimations(polymodel_instance* pmi = nullptr);
 
 		void clearShipData(polymodel_instance* pmi);
 
-		bool start(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& name, ModelAnimationDirection direction, bool forced = false, bool instant = false, int subtype = SUBTYPE_DEFAULT) const;
-		bool startAll(polymodel_instance* pmi, ModelAnimationTriggerType type, ModelAnimationDirection direction, bool forced = false, bool instant = false, int subtype = SUBTYPE_DEFAULT, bool strict = false) const;
-		bool startDockBayDoors(polymodel_instance* pmi, ModelAnimationDirection direction, bool forced, bool instant, int subtype) const;
+		bool start(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& name, ModelAnimationDirection direction, bool forced = false, bool instant = false, bool pause = false, int subtype = SUBTYPE_DEFAULT) const;
+		bool startAll(polymodel_instance* pmi, ModelAnimationTriggerType type, ModelAnimationDirection direction, bool forced = false, bool instant = false, bool pause = false, int subtype = SUBTYPE_DEFAULT, bool strict = false) const;
+		bool startDockBayDoors(polymodel_instance* pmi, ModelAnimationDirection direction, bool forced, bool instant, bool pause, int subtype) const;
 
 		int getTime(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& name, int subtype = SUBTYPE_DEFAULT) const;
 		int getTimeAll(polymodel_instance* pmi, ModelAnimationTriggerType type, int subtype = SUBTYPE_DEFAULT, bool strict = false) const;

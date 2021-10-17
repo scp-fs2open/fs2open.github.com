@@ -3280,14 +3280,14 @@ void ai_dock_with_object(object *docker, int docker_index, object *dockee, int d
 		polymodel_instance* shipp_pmi = model_get_instance(shipp->model_instance_num);
 		polymodel_instance* goal_shipp_pmi = model_get_instance(goal_shipp->model_instance_num);
 
-		sip->animations.startAll(shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage1, animation::ModelAnimationDirection::FWD, true, true, docker_index);
-		goal_sip->animations.startAll(goal_shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage1, animation::ModelAnimationDirection::FWD, true, true, dockee_index);
-		sip->animations.startAll(shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage2, animation::ModelAnimationDirection::FWD, true, true, docker_index);
-		goal_sip->animations.startAll(goal_shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage2, animation::ModelAnimationDirection::FWD, true, true, dockee_index);
-		sip->animations.startAll(shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage3, animation::ModelAnimationDirection::FWD, true, true, docker_index);
-		goal_sip->animations.startAll(goal_shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage3, animation::ModelAnimationDirection::FWD, true, true, dockee_index);
-		sip->animations.startAll(shipp_pmi, animation::ModelAnimationTriggerType::Docked, animation::ModelAnimationDirection::FWD, true, true, docker_index);
-		goal_sip->animations.startAll(goal_shipp_pmi, animation::ModelAnimationTriggerType::Docked, animation::ModelAnimationDirection::FWD, true, true, dockee_index);
+		sip->animations.startAll(shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage1, animation::ModelAnimationDirection::FWD, true, true, false, docker_index);
+		goal_sip->animations.startAll(goal_shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage1, animation::ModelAnimationDirection::FWD, true, true, false, dockee_index);
+		sip->animations.startAll(shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage2, animation::ModelAnimationDirection::FWD, true, true, false, docker_index);
+		goal_sip->animations.startAll(goal_shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage2, animation::ModelAnimationDirection::FWD, true, true, false, dockee_index);
+		sip->animations.startAll(shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage3, animation::ModelAnimationDirection::FWD, true, true, false, docker_index);
+		goal_sip->animations.startAll(goal_shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage3, animation::ModelAnimationDirection::FWD, true, true, false, dockee_index);
+		sip->animations.startAll(shipp_pmi, animation::ModelAnimationTriggerType::Docked, animation::ModelAnimationDirection::FWD, true, true, false, docker_index);
+		goal_sip->animations.startAll(goal_shipp_pmi, animation::ModelAnimationTriggerType::Docked, animation::ModelAnimationDirection::FWD, true, true, false, dockee_index);
 
 		dock_orient_and_approach(docker, docker_index, dockee, dockee_index, DOA_DOCK_STAY);
 		ai_do_objects_docked_stuff( docker, docker_index, dockee, dockee_index, false );
@@ -10972,19 +10972,19 @@ void ai_dock_do_animations(ship* shipp, int from_dockstage, int to_dockstage, in
 		switch (dockstages_ordered[i + (isDocking ? 1 : 0)]) {
 		case AIS_DOCK_1:
 		case AIS_UNDOCK_3:
-			animations.startAll(pmi, animation::ModelAnimationTriggerType::Docking_Stage1, direction, false, false, dock_index);
+			animations.startAll(pmi, animation::ModelAnimationTriggerType::Docking_Stage1, direction, false, false, false, dock_index);
 			break;
 		case AIS_DOCK_2:
 		case AIS_UNDOCK_2:
-			animations.startAll(pmi, animation::ModelAnimationTriggerType::Docking_Stage2, direction, false, false, dock_index);
+			animations.startAll(pmi, animation::ModelAnimationTriggerType::Docking_Stage2, direction, false, false, false, dock_index);
 			break;
 		case AIS_DOCK_3:
 		case AIS_UNDOCK_1:
-			animations.startAll(pmi, animation::ModelAnimationTriggerType::Docking_Stage3, direction, false, false, dock_index);
+			animations.startAll(pmi, animation::ModelAnimationTriggerType::Docking_Stage3, direction, false, false, false, dock_index);
 			break;
 		case AIS_DOCK_4:
 		case AIS_UNDOCK_0:
-			animations.startAll(pmi, animation::ModelAnimationTriggerType::Docked, direction, false, false, dock_index);
+			animations.startAll(pmi, animation::ModelAnimationTriggerType::Docked, direction, false, false, false, dock_index);
 			break;
 		case AIS_DOCK_0:
 		case AIS_UNDOCK_4:
@@ -11746,7 +11746,7 @@ void ai_process_subobjects(int objnum)
 			if ( (pss->turret_animation_position == MA_POS_READY) && timestamp_elapsed(pss->turret_animation_done_time) ) {
 				bool started = false;
 				//For legacy animations using subtype for turret number
-				started |= Ship_info[shipp->ship_info_index].animations.startAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::TurretFiring, animation::ModelAnimationDirection::RWD, false, false, pss->system_info->subobj_num, true);
+				started |= Ship_info[shipp->ship_info_index].animations.startAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::TurretFiring, animation::ModelAnimationDirection::RWD, false, false, false, pss->system_info->subobj_num, true);
 				//For modern animations using proper triggered-by-subsys name
 				started |= Ship_info[shipp->ship_info_index].animations.start(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::TurretFiring, animation::anim_name_from_subsys(pss->system_info), animation::ModelAnimationDirection::RWD);
 				if (started) {
@@ -13115,7 +13115,7 @@ void ai_manage_bay_doors(object *pl_objp, ai_info *aip, bool done)
 
 	// trigger an open if we need it
 	if ( (parent_ship->bay_doors_status == MA_POS_NOT_SET) && (parent_ship->bay_doors_wanting_open > 0) ) {
-		if (Ship_info[parent_ship->ship_info_index].animations.startDockBayDoors(model_get_instance(parent_ship->model_instance_num), animation::ModelAnimationDirection::FWD, false, false, shipp->bay_doors_launched_from)) {
+		if (Ship_info[parent_ship->ship_info_index].animations.startDockBayDoors(model_get_instance(parent_ship->model_instance_num), animation::ModelAnimationDirection::FWD, false, false, false, shipp->bay_doors_launched_from)) {
 			parent_ship->bay_doors_status = MA_POS_SET;
 			parent_ship->bay_doors_anim_done_time = Ship_info[parent_ship->ship_info_index].animations.getTimeDockBayDoors(model_get_instance(parent_ship->model_instance_num), shipp->bay_doors_launched_from);
 		} else {
@@ -13125,7 +13125,7 @@ void ai_manage_bay_doors(object *pl_objp, ai_info *aip, bool done)
 
 	// if we are already open, and no longer need to be, then close the doors
 	if ( (parent_ship->bay_doors_status == MA_POS_READY) && (parent_ship->bay_doors_wanting_open <= 0) ) {
-		Ship_info[parent_ship->ship_info_index].animations.startDockBayDoors(model_get_instance(parent_ship->model_instance_num), animation::ModelAnimationDirection::RWD, false, false, shipp->bay_doors_launched_from);
+		Ship_info[parent_ship->ship_info_index].animations.startDockBayDoors(model_get_instance(parent_ship->model_instance_num), animation::ModelAnimationDirection::RWD, false, false, false, shipp->bay_doors_launched_from);
 		parent_ship->bay_doors_status = MA_POS_NOT_SET;
 	}
 

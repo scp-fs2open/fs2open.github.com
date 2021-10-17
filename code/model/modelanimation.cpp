@@ -117,22 +117,32 @@ namespace animation {
 			m_animation->calculateAnimation(applyBuffer, instanceData.time, pmi->id);
 			m_animation->executeAnimation(applyBuffer, instanceData.time, prevTime, ModelAnimationDirection::RWD, pmi->id);
 			break;
+		case ModelAnimationState::PAUSED:
+			//Shouldn't happen. Paused Animations are only allowed to be apply only.
+			UNREACHABLE("Tried to play a paused animation without starting it. Get a coder.");
+			break;
 		}
 		
 		return instanceData.state;
 	}
 	
-	void ModelAnimation::start(polymodel_instance* pmi, ModelAnimationDirection direction, bool force, bool instant, const float* multiOverrideTime) {
+	void ModelAnimation::start(polymodel_instance* pmi, ModelAnimationDirection direction, bool force, bool instant, bool pause, const float* multiOverrideTime) {
 		instance_data& instanceData = m_instances[pmi->id];
 
 		if (multiOverrideTime == nullptr && (Game_mode & GM_MULTIPLAYER)) {
 			//We are in multiplayer. Send animation to server to start. Server starts animation online, and sends start request back (which'll have multiOverride == true).
 			//If we _are_ the server, also just start the animation
 
-			send_animation_triggered_packet((int)id, pmi->id, direction, force, instant);
+			send_animation_triggered_packet((int)id, pmi->id, direction, force, instant, pause);
 
 			if(MULTIPLAYER_CLIENT)
 				return;
+		}
+
+		if (pause) {
+			if(instanceData.state != ModelAnimationState::UNTRIGGERED && instanceData.state != ModelAnimationState::COMPLETED)
+				instanceData.state = ModelAnimationState::PAUSED;
+			return;
 		}
 
 		float timeOffset = multiOverrideTime != nullptr ? *multiOverrideTime : 0.0f;
@@ -155,6 +165,7 @@ namespace animation {
 
 				return;
 			case ModelAnimationState::RUNNING_FWD:
+			case ModelAnimationState::PAUSED:
 				//Just pretend we were going in the right direction
 				instanceData.time -= timeOffset;
 
@@ -184,6 +195,7 @@ namespace animation {
 
 				return;
 			case ModelAnimationState::RUNNING_RWD:
+			case ModelAnimationState::PAUSED:
 				//Just pretend we were going in the right direction
 				instanceData.time += timeOffset;
 
@@ -243,17 +255,6 @@ namespace animation {
 
 		const auto& animList = animListIt->second;
 
-		//Object died during animation
-		if (pmi == nullptr) {
-			for (const auto& anim : animList.second) {
-				auto& state = anim->m_instances[pmi->id];
-				state.state = ModelAnimationState::UNTRIGGERED;
-				state.time = 0.0f;
-			}
-
-			return;
-		}
-
 		ModelAnimationSubmodelBuffer applyBuffer;
 		animList.first->initializeSubmodelBuffer(pmi, applyBuffer);
 
@@ -264,8 +265,9 @@ namespace animation {
 				anim->play(frametime, pmi, applyBuffer);
 				break;
 			case ModelAnimationState::COMPLETED:
+			case ModelAnimationState::PAUSED:
 				anim->play(frametime, pmi, applyBuffer, true);
-				//Fully triggered. Keep in buffer in case some other animation starts on that submodel, but don't play without manual starting
+				//Currently not moving. Keep in buffer in case some other animation starts on that submodel, but don't play without manual starting
 				break;
 			case ModelAnimationState::UNTRIGGERED:
 				UNREACHABLE("An untriggered animation should not be in the runningAnimations buffer");
@@ -532,14 +534,22 @@ namespace animation {
 		}
 	}
 
-	void ModelAnimationSet::stopAnimations() {
-		for (const auto& animList : s_runningAnimations) {
-			for (const auto& anim : animList.second.second) {
-				anim->stop(model_get_instance(animList.first), false);
+	void ModelAnimationSet::stopAnimations(polymodel_instance* pmi) {
+		if (pmi != nullptr) {
+			for (const auto& anim : s_runningAnimations[pmi->id].second) {
+				anim->stop(pmi, false);
 			}
+			s_runningAnimations.erase(pmi->id);
 		}
+		else {
+			for (const auto& animList : s_runningAnimations) {
+				for (const auto& anim : animList.second.second) {
+					anim->stop(model_get_instance(animList.first), false);
+				}
+			}
 
-		s_runningAnimations.clear();
+			s_runningAnimations.clear();
+		}
 	}
 
 	void ModelAnimationSet::clearShipData(polymodel_instance* pmi) {
@@ -561,7 +571,7 @@ namespace animation {
 		}
 	}
 
-	bool ModelAnimationSet::start(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& name, ModelAnimationDirection direction, bool forced, bool instant, int subtype) const {
+	bool ModelAnimationSet::start(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& name, ModelAnimationDirection direction, bool forced, bool instant, bool pause, int subtype) const {
 		if (pmi == nullptr)
 			return false;
 
@@ -571,7 +581,7 @@ namespace animation {
 			auto namedAnimations = animations->second.find(name);
 			if (namedAnimations != animations->second.end()) {
 				for (const auto& namedAnimation : namedAnimations->second) {
-					namedAnimation->start(pmi, direction, forced, instant);
+					namedAnimation->start(pmi, direction, forced, instant, pause);
 					started = true;
 				}
 			}
@@ -586,7 +596,7 @@ namespace animation {
 			auto namedAnimations = animations->second.find(name);
 			if (namedAnimations != animations->second.end()) {
 				for (const auto& namedAnimation : namedAnimations->second) {
-					namedAnimation->start(pmi, direction, forced, instant);
+					namedAnimation->start(pmi, direction, forced, instant, pause);
 					started = true;
 				}
 			}
@@ -594,7 +604,7 @@ namespace animation {
 		return started;
 	}
 
-	bool ModelAnimationSet::startAll(polymodel_instance* pmi, ModelAnimationTriggerType type, ModelAnimationDirection direction, bool forced, bool instant, int subtype, bool strict) const {
+	bool ModelAnimationSet::startAll(polymodel_instance* pmi, ModelAnimationTriggerType type, ModelAnimationDirection direction, bool forced, bool instant, bool pause, int subtype, bool strict) const {
 		if (pmi == nullptr)
 			return false;
 
@@ -603,7 +613,7 @@ namespace animation {
 		if (animations != m_animationSet.end()) {
 			for (auto& namedAnimations : animations->second) {
 				for (const auto& namedAnimation : namedAnimations.second) {
-					namedAnimation->start(pmi, direction, forced, instant);
+					namedAnimation->start(pmi, direction, forced, instant, pause);
 					started = true;
 				}
 			}
@@ -617,7 +627,7 @@ namespace animation {
 		if (animations != m_animationSet.end()) {
 			for (auto& namedAnimations : animations->second) {
 				for (const auto& namedAnimation : namedAnimations.second) {
-					namedAnimation->start(pmi, direction, forced, instant);
+					namedAnimation->start(pmi, direction, forced, instant, pause);
 					started = true;
 				}
 			}
@@ -626,7 +636,7 @@ namespace animation {
 	}
 
 	//Yes why of course does this need special handling...
-	bool ModelAnimationSet::startDockBayDoors(polymodel_instance* pmi, ModelAnimationDirection direction, bool forced, bool instant, int subtype) const {
+	bool ModelAnimationSet::startDockBayDoors(polymodel_instance* pmi, ModelAnimationDirection direction, bool forced, bool instant, bool pause, int subtype) const {
 		if (pmi == nullptr)
 			return false;
 
@@ -648,7 +658,7 @@ namespace animation {
 			}
 			for (auto& namedAnimations : animList.second) {
 				for (const auto& namedAnimation : namedAnimations.second) {
-					namedAnimation->start(pmi, direction, forced, instant);
+					namedAnimation->start(pmi, direction, forced, instant, pause);
 					started = true;
 				}
 			}
