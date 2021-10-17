@@ -1172,6 +1172,8 @@ void ship_info::clone(const ship_info& other)
 
 	pathMetadata = other.pathMetadata;
 
+	ship_passive_arcs = other.ship_passive_arcs;
+
 	glowpoint_bank_override_map = other.glowpoint_bank_override_map;
 }
 
@@ -1475,6 +1477,8 @@ void ship_info::move(ship_info&& other)
 	std::swap(displays, other.displays);
 
 	std::swap(pathMetadata, other.pathMetadata);
+
+	std::swap(ship_passive_arcs, other.ship_passive_arcs);
 
 	std::swap(glowpoint_bank_override_map, other.glowpoint_bank_override_map);
 
@@ -1911,6 +1915,8 @@ ship_info::ship_info()
 	pathMetadata.clear();
 
 	glowpoint_bank_override_map.clear();
+
+	ship_passive_arcs.clear();
 }
 
 ship_info::~ship_info()
@@ -4644,6 +4650,31 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		sip->pathMetadata[pathName] = metadata;
 	}
 
+	while (optional_string("$Passive Lightning Arcs:")) {
+		ship_passive_arc_info new_info;
+
+		SCP_string temp1, temp2;
+		vec3d pos1, pos2;
+		required_string("+Submodel 1:");
+		stuff_string(temp1, F_NAME);
+		required_string("+Position 1:");
+		stuff_vec3d(&pos1);
+		required_string("+Submodel 2:");
+		stuff_string(temp2, F_NAME);
+		required_string("+Position 2:");
+		stuff_vec3d(&pos2);
+
+		new_info.pos = std::make_pair(pos1, pos2);
+		new_info.submodels = std::make_pair(temp1, temp2);
+
+		required_string("+Duration:");
+		stuff_float(&new_info.duration);
+		required_string("+Frequency:");
+		stuff_float(&new_info.frequency);
+
+		sip->ship_passive_arcs.push_back(new_info);
+	}
+
 	int n_subsystems = 0;
 	int cont_flag = 1;
 	model_subsystem subsystems[MAX_MODEL_SUBSYSTEMS] = {}; // see model.h for max_model_subsystems
@@ -6325,6 +6356,7 @@ void ship::clear()
 	team_change_time = 0;
 
 	autoaim_fov = 0.0f;
+	passive_arc_next_times.clear();
 }
 bool ship::has_display_name() const {
 	return flags[Ship::Ship_Flags::Has_display_name];
@@ -6609,6 +6641,10 @@ static void ship_set(int ship_index, int objnum, int ship_type)
 	shipp->autoaim_fov = sip->autoaim_fov;
 	shipp->max_shield_regen_per_second = sip->max_shield_regen_per_second;
 	shipp->max_weapon_regen_per_second = sip->max_weapon_regen_per_second;
+	
+	for (i = 0; i < (int)sip->ship_passive_arcs.size(); i++)
+		shipp->passive_arc_next_times.push_back(timestamp(0));
+
 }
 
 /**
@@ -9376,7 +9412,7 @@ void ship_process_post(object * obj, float frametime)
 		}
 
 		if ( obj != Viewer_obj )	{
-			shipfx_do_damaged_arcs_frame( shipp );
+			shipfx_do_lightning_arcs_frame( shipp );
 		}
 
 		// JAS - flicker the thruster bitmaps
