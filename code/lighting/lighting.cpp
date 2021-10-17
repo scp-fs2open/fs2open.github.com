@@ -484,7 +484,7 @@ void scene_lights::addLight(const light *light_ptr)
 	}
 }
 
-void scene_lights::setLightFilter(int objnum, const vec3d *pos, float rad)
+void scene_lights::setLightFilter(const vec3d *pos, float rad)
 {
 	size_t i = 0;
 	// clear out current filtered lights

@@ -77,7 +77,7 @@ public:
 		resetLightState();
 	}
 	void addLight(const light *light_ptr);
-	void setLightFilter(int objnum, const vec3d *pos, float rad);
+	void setLightFilter(const vec3d *pos, float rad);
 	bool setLights(const light_indexing_info *info);
 	void resetLightState();
 	light_indexing_info bufferLights();
