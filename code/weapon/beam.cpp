@@ -1877,12 +1877,12 @@ void beam_add_light_small(beam *bm, object *objp, vec3d *pt_override = NULL)
 	if (bm->warmup_stamp != -1) {	// calculate muzzle light intensity
 		// get warmup pct
 		pct = BEAM_WARMUP_PCT(bm)*0.5f;
-	} else
+	}
 	// if the beam is warming down
-	if (bm->warmdown_stamp != -1) {
+	else if (bm->warmdown_stamp != -1) {
 		// get warmup pct
 		pct = MAX(1.0f - BEAM_WARMDOWN_PCT(bm)*1.3f,0.0f)*0.5f;
-	} 
+	}
 	// otherwise the beam is really firing
 	else {
 		pct = 1.0f;
