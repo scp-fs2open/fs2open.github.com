@@ -45,8 +45,6 @@ typedef struct light {
 	float	radb, radb_squared;				// How big of an area a point light affect.  Is equal to l->intensity / MIN_LIGHT;
 	float	r,g,b;							// The color components of the light
 	float	spec_r,spec_g,spec_b;			// The specular color components of the light
-	int		light_ignore_objnum;			// Don't light this object.  Used to optimize weapons casting light on parents.
-	int		affected_objnum;				// for "unique lights". ie, lights which only affect one object (trust me, its useful)
 	float	cone_angle;						// angle for cone lights
 	float	cone_inner_angle;				// the inner angle for calculating falloff
 	bool	dual_cone;						// should the cone be shining in both directions?
@@ -90,10 +88,10 @@ extern void light_reset();
 // Intensity - how strong the light is.  1.0 will cast light around 5meters or so.
 // r,g,b - only used for colored lighting. Ignored currently.
 extern void light_add_directional(const vec3d *dir, float intensity, float r, float g, float b, float spec_r = 0.0f, float spec_g = 0.0f, float spec_b = 0.0f, bool specular = false);
-extern void light_add_point(const vec3d * pos, float r1, float r2, float intensity, float r, float g, float b, int light_ignore_objnum, float spec_r = 0.0f, float spec_g = 0.0f, float spec_b = 0.0f, bool specular = false);
-extern void light_add_point_unique(const vec3d * pos, float r1, float r2, float intensity, float r, float g, float b, int affected_objnum, float spec_r = 0.0f, float spec_g = 0.0f, float spec_b = 0.0f, bool specular = false);
-extern void light_add_tube(const vec3d *p0, const vec3d *p1, float r1, float r2, float intensity, float r, float g, float b, int affected_objnum, float spec_r = 0.0f, float spec_g = 0.0f, float spec_b = 0.0f, bool specular = false);
-extern void light_add_cone(const vec3d * pos, const vec3d * dir, float angle, float inner_angle, bool dual_cone, float r1, float r2, float intensity, float r, float g, float b, int light_ignore_objnum, float spec_r = 0.0f, float spec_g = 0.0f, float spec_b = 0.0f, bool specular = false);
+extern void light_add_point(const vec3d * pos, float r1, float r2, float intensity, float r, float g, float b,float spec_r = 0.0f, float spec_g = 0.0f, float spec_b = 0.0f, bool specular = false);
+extern void light_add_point_unique(const vec3d * pos, float r1, float r2, float intensity, float r, float g, float b,float spec_r = 0.0f, float spec_g = 0.0f, float spec_b = 0.0f, bool specular = false);
+extern void light_add_tube(const vec3d *p0, const vec3d *p1, float r1, float r2, float intensity, float r, float g, float b, float spec_r = 0.0f, float spec_g = 0.0f, float spec_b = 0.0f, bool specular = false);
+extern void light_add_cone(const vec3d * pos, const vec3d * dir, float angle, float inner_angle, bool dual_cone, float r1, float r2, float intensity, float r, float g, float b, float spec_r = 0.0f, float spec_g = 0.0f, float spec_b = 0.0f, bool specular = false);
 extern void light_rotate_all();
 
 // Same as above only does RGB.

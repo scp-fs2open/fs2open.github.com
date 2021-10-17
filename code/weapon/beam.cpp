@@ -1888,7 +1888,7 @@ void beam_add_light_small(beam *bm, object *objp, vec3d *pt_override = NULL)
 		pct = 1.0f;
 	}
 	// add a unique light
-	light_add_point_unique(&near_pt, light_rad * 0.0001f, light_rad, pct, fr, fg, fb, OBJ_INDEX(objp));
+	light_add_point_unique(&near_pt, light_rad * 0.0001f, light_rad, pct, fr, fg, fb);
 }
 
 // call to add a light source to a large object
@@ -1927,7 +1927,7 @@ void beam_add_light_large(beam *bm, object *objp, vec3d *pt0, vec3d *pt1)
 	float fg = (float)wip->laser_color_1.green / 255.0f;
 	float fb = (float)wip->laser_color_1.blue / 255.0f;
 
-	light_add_tube(pt0, pt1, 1.0f, light_rad, 1.0f * noise, fr, fg, fb, OBJ_INDEX(objp));
+	light_add_tube(pt0, pt1, 1.0f, light_rad, 1.0f * noise, fr, fg, fb);
 }
 
 // mark an object as being lit
