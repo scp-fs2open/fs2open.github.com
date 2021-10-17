@@ -89,7 +89,6 @@ extern void light_reset();
 // r,g,b - only used for colored lighting. Ignored currently.
 extern void light_add_directional(const vec3d *dir, float intensity, float r, float g, float b, float spec_r = 0.0f, float spec_g = 0.0f, float spec_b = 0.0f, bool specular = false);
 extern void light_add_point(const vec3d * pos, float r1, float r2, float intensity, float r, float g, float b,float spec_r = 0.0f, float spec_g = 0.0f, float spec_b = 0.0f, bool specular = false);
-extern void light_add_point_unique(const vec3d * pos, float r1, float r2, float intensity, float r, float g, float b,float spec_r = 0.0f, float spec_g = 0.0f, float spec_b = 0.0f, bool specular = false);
 extern void light_add_tube(const vec3d *p0, const vec3d *p1, float r1, float r2, float intensity, float r, float g, float b, float spec_r = 0.0f, float spec_g = 0.0f, float spec_b = 0.0f, bool specular = false);
 extern void light_add_cone(const vec3d * pos, const vec3d * dir, float angle, float inner_angle, bool dual_cone, float r1, float r2, float intensity, float r, float g, float b, float spec_r = 0.0f, float spec_g = 0.0f, float spec_b = 0.0f, bool specular = false);
 extern void light_rotate_all();

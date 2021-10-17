@@ -221,42 +221,6 @@ void light_add_point(const vec3d *pos, float r1, float r2, float intensity, floa
 	Lights.push_back(l);
 }
 
-void light_add_point_unique(const vec3d *pos, float r1, float r2, float intensity, float r, float g, float b, float spec_r, float spec_g, float spec_b, bool specular)
-{
-	Assertion(r1 > 0.0f, "Invalid radius r1 specified for light: %f. Radius must be > 0.0f. Examine stack trace to determine culprit.\n", r1);
-	Assertion(r2 > 0.0f, "Invalid radius r2 specified for light: %f. Radius must be > 0.0f. Examine stack trace to determine culprit.\n", r2);
-
-	if (Lighting_off) return;
-
-	if (!Lighting_flag) return;
-
-	if(!specular){
-		spec_r = r;
-		spec_g = g;
-		spec_b = b;
-	}
-	light l;
-
-	Num_lights++;
-
-	l.type = Light_Type::Point;
-	l.vec = *pos;
-	l.r = r;
-	l.g = g;
-	l.b = b;
-	l.spec_r = spec_r;
-	l.spec_g = spec_g;
-	l.spec_b = spec_b;
-	l.intensity = intensity;
-	l.rada = r1;
-	l.radb = r2;
-	l.rada_squared = l.rada*l.rada;
-	l.radb_squared = l.radb*l.radb;
-	l.instance = Num_lights-1;
-
-	Lights.push_back(l);
-}
-
 // beams affect every ship except the firing ship
 void light_add_tube(const vec3d *p0, const vec3d *p1, float r1, float r2, float intensity, float r, float g, float b, float spec_r, float spec_g, float spec_b, bool specular)
 {

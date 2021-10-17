@@ -1887,8 +1887,8 @@ void beam_add_light_small(beam *bm, object *objp, vec3d *pt_override = NULL)
 	else {
 		pct = 1.0f;
 	}
-	// add a unique light
-	light_add_point_unique(&near_pt, light_rad * 0.0001f, light_rad, pct, fr, fg, fb);
+	// add a light
+	light_add_point(&near_pt, light_rad * 0.0001f, light_rad, pct, fr, fg, fb);
 }
 
 // call to add a light source to a large object
