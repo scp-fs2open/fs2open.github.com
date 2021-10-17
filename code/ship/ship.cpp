@@ -4697,7 +4697,8 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		stuff_vec3d(&pos2);
 
 		new_info.pos = std::make_pair(pos1, pos2);
-		new_info.submodels = std::make_pair(temp1, temp2);
+		new_info.submodel_strings = std::make_pair(temp1, temp2);
+		new_info.submodels = std::make_pair(-1, -1); // this will be filled later once we have the model
 
 		required_string("+Duration:");
 		stuff_float(&new_info.duration);

@@ -2073,17 +2073,19 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 			ship_passive_arc_info* arc_info = &sip->ship_passive_arcs[passive_arc_info_idx];
 			polymodel* pm = model_get(model_num);
 
-			// find the specified submodels involved
-			int submodel_1 = -1;
-			int submodel_2 = -1;
-			for (int i = 0; i < pm->n_models; i++) {
-				if (!stricmp(pm->submodel[i].name, arc_info->submodels.first.c_str()))
-					submodel_1 = i;
-				if (!stricmp(pm->submodel[i].name, arc_info->submodels.second.c_str()))
-					submodel_2 = i;
+			// find the specified submodels involved, if necessary
+			if (arc_info->submodels.first < 0 || arc_info->submodels.second < 0) {
+				for (int i = 0; i < pm->n_models; i++) {
+					if (!stricmp(pm->submodel[i].name, arc_info->submodel_strings.first.c_str()))
+						arc_info->submodels.first = i;
+					if (!stricmp(pm->submodel[i].name, arc_info->submodel_strings.second.c_str()))
+						arc_info->submodels.second = i;
+				}
 			}
+			int submodel_1 = arc_info->submodels.first;
+			int submodel_2 = arc_info->submodels.second;
 
-			if (submodel_2 > 1 && submodel_2 > 0) {
+			if (submodel_1 >= 0 && submodel_2 >= 0) {
 				// spawn the arc in the first unused slot
 				for (int j = 0; j < MAX_SHIP_ARCS; j++) {
 					if (!timestamp_valid(shipp->arc_timestamp[j])) {

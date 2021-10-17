@@ -904,7 +904,8 @@ extern const ship_registry_entry *ship_registry_get(const char *name);
 #define DOGFIGHT_WEAPON (1<<1)
 
 typedef struct ship_passive_arc_info {
-	std::pair<SCP_string, SCP_string> submodels;
+	std::pair<int, int> submodels;
+	std::pair<SCP_string, SCP_string> submodel_strings; // the string names from parsing, to be looked up and used to fill the above later when the model is ready
 	std::pair<vec3d, vec3d> pos;
 	float duration;
 	float frequency;
