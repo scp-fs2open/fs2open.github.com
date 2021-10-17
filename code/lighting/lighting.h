@@ -7,10 +7,10 @@
  *
 */ 
 
-
-
 #ifndef _LIGHTING_H
 #define _LIGHTING_H
+
+#include "globalincs/pstypes.h"
 
 // Light stuff works like this:
 // At the start of the frame, call light_reset.
