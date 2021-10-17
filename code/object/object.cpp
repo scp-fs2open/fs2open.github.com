@@ -1655,7 +1655,6 @@ void obj_render(object *obj)
 	gr_clear_states();
 
 	gr_reset_lighting();
-	gr_set_lighting(false, false);
 }
 
 void obj_queue_render(object* obj, model_draw_list* scene)

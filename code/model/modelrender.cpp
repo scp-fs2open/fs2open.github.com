@@ -814,7 +814,6 @@ void model_draw_list::build_uniform_buffer() {
 		if ( queued_draw.render_material.is_lit() ) {
 			Scene_light_handler.setLights(&queued_draw.lights);
 		} else {
-			gr_set_lighting(false, false);
 
 			Scene_light_handler.resetLightState();
 		}
@@ -1506,7 +1505,6 @@ void submodel_render_immediate(model_render_params *render_info, polymodel *pm, 
 	gr_clear_states();
 
 	gr_reset_lighting();
-	gr_set_lighting(false, false);
 }
 
 void submodel_render_queue(model_render_params *render_info, model_draw_list *scene, polymodel *pm, polymodel_instance *pmi, int submodel_num, matrix *orient, vec3d * pos)
@@ -2571,7 +2569,6 @@ void model_render_immediate(model_render_params* render_info, int model_num, int
 	gr_clear_states();
 
 	gr_reset_lighting();
-	gr_set_lighting(false, false);
 
 	if ( render_info->get_debug_flags() ) {
 		model_render_debug(model_num, orient, pos, render_info->get_model_flags(), render_info->get_debug_flags(), render_info->get_object_number(), render_info->get_detail_level_lock());

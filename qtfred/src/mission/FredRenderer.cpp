@@ -840,7 +840,6 @@ void FredRenderer::render_one_model_htl(object* objp,
 
 		if (!view().Lighting_on) {
 			j |= MR_NO_LIGHTING;
-			gr_set_lighting(false, false);
 		}
 
 		if (view().FullDetail) {
