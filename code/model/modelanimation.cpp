@@ -742,6 +742,9 @@ namespace animation {
 	}
 
 	bool ModelAnimationSet::start(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& name, ModelAnimationDirection direction, bool forced, bool instant, int subtype) {
+		if (pmi == nullptr)
+			return false;
+
 		bool started = false;
 		auto animations = animationSet.find({ type, subtype });
 		if (animations != animationSet.end()) {
@@ -768,6 +771,9 @@ namespace animation {
 	}
 
 	bool ModelAnimationSet::startAll(polymodel_instance* pmi, ModelAnimationTriggerType type, ModelAnimationDirection direction, bool forced, bool instant, int subtype, bool strict) {
+		if (pmi == nullptr)
+			return false;
+
 		bool started = false;
 		auto animations = animationSet.find({ type, subtype });
 		if (animations != animationSet.end()) {
@@ -793,6 +799,9 @@ namespace animation {
 
 	//Yes why of course does this need special handling...
 	bool ModelAnimationSet::startDockBayDoors(polymodel_instance* pmi, ModelAnimationDirection direction, bool forced, bool instant, int subtype) {
+		if (pmi == nullptr)
+			return false;
+
 		bool started = false;
 		subtype++;
 

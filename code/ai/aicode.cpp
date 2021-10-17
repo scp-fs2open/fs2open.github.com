@@ -10953,16 +10953,22 @@ void ai_cleanup_dock_mode_subjective(object *objp)
 		// get the object being acted upon
 		object		*goal_objp;
 		ship		*goal_shipp;
+		ship_info* goal_sip;
+		polymodel_instance* goal_shipp_pmi;
 		if (aip->goal_objnum >= 0)
 		{
 			goal_objp = &Objects[aip->goal_objnum];
 			Assert(goal_objp->type == OBJ_SHIP);
 			goal_shipp = &Ships[goal_objp->instance];
+			goal_sip = &Ship_info[goal_shipp->ship_info_index];
+			goal_shipp_pmi = model_get_instance(goal_shipp->model_instance_num);
 		}
 		else
 		{
-			goal_objp = NULL;
-			goal_shipp = NULL;
+			goal_objp = nullptr;
+			goal_shipp = nullptr;
+			goal_sip = nullptr;
+			goal_shipp_pmi = nullptr;
 		}
 
 		// get the indexes from the saved parameters
@@ -10970,40 +10976,58 @@ void ai_cleanup_dock_mode_subjective(object *objp)
 		int dockee_index = aip->submode_parm1;
 
 		ship_info* sip = &Ship_info[shipp->ship_info_index];
-		ship_info* goal_sip = &Ship_info[goal_shipp->ship_info_index];
 
 		polymodel_instance* shipp_pmi = model_get_instance(shipp->model_instance_num);
-		polymodel_instance* goal_shipp_pmi = model_get_instance(goal_shipp->model_instance_num);
 
 		// undo all the appropriate triggers
 		switch (aip->submode)
 		{
 			case AIS_UNDOCK_0:
 				sip->animations.startAll(shipp_pmi, animation::ModelAnimationTriggerType::Docked, animation::ModelAnimationDirection::RWD, false, false, docker_index);
-				goal_sip->animations.startAll(goal_shipp_pmi, animation::ModelAnimationTriggerType::Docked, animation::ModelAnimationDirection::RWD, false, false, dockee_index);
 				FALLTHROUGH;
 			case AIS_UNDOCK_1:
 				sip->animations.startAll(shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage3, animation::ModelAnimationDirection::RWD, false, false, docker_index);
-				goal_sip->animations.startAll(goal_shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage3, animation::ModelAnimationDirection::RWD, false, false, dockee_index);
 				FALLTHROUGH;
 			case AIS_UNDOCK_2:
 				sip->animations.startAll(shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage2, animation::ModelAnimationDirection::RWD, false, false, docker_index);
-				goal_sip->animations.startAll(goal_shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage2, animation::ModelAnimationDirection::RWD, false, false, dockee_index);
 				break;
 
 			case AIS_DOCK_4:
 			case AIS_DOCK_4A:
 				sip->animations.startAll(shipp_pmi, animation::ModelAnimationTriggerType::Docked, animation::ModelAnimationDirection::RWD, false, false, docker_index);
-				goal_sip->animations.startAll(goal_shipp_pmi, animation::ModelAnimationTriggerType::Docked, animation::ModelAnimationDirection::RWD, false, false, dockee_index);
 				FALLTHROUGH;
 			case AIS_DOCK_3:
 				sip->animations.startAll(shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage3, animation::ModelAnimationDirection::RWD, false, false, docker_index);
-				goal_sip->animations.startAll(goal_shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage3, animation::ModelAnimationDirection::RWD, false, false, dockee_index);
 				FALLTHROUGH;
 			case AIS_DOCK_2:
 				sip->animations.startAll(shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage2, animation::ModelAnimationDirection::RWD, false, false, docker_index);
+				break;
+		}
+
+		if (goal_sip != nullptr) {
+			switch (aip->submode)
+			{
+			case AIS_UNDOCK_0:
+				goal_sip->animations.startAll(goal_shipp_pmi, animation::ModelAnimationTriggerType::Docked, animation::ModelAnimationDirection::RWD, false, false, dockee_index);
+				FALLTHROUGH;
+			case AIS_UNDOCK_1:
+				goal_sip->animations.startAll(goal_shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage3, animation::ModelAnimationDirection::RWD, false, false, dockee_index);
+				FALLTHROUGH;
+			case AIS_UNDOCK_2:
 				goal_sip->animations.startAll(goal_shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage2, animation::ModelAnimationDirection::RWD, false, false, dockee_index);
 				break;
+
+			case AIS_DOCK_4:
+			case AIS_DOCK_4A:
+				goal_sip->animations.startAll(goal_shipp_pmi, animation::ModelAnimationTriggerType::Docked, animation::ModelAnimationDirection::RWD, false, false, dockee_index);
+				FALLTHROUGH;
+			case AIS_DOCK_3:
+				goal_sip->animations.startAll(goal_shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage3, animation::ModelAnimationDirection::RWD, false, false, dockee_index);
+				FALLTHROUGH;
+			case AIS_DOCK_2:
+				goal_sip->animations.startAll(goal_shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage2, animation::ModelAnimationDirection::RWD, false, false, dockee_index);
+				break;
+			}
 		}
 
 		aip->submode = AIS_UNDOCK_3;
