@@ -51,11 +51,15 @@ namespace particle {
 					source->getOrigin()->applyToParticleInfo(info);
 
 					// make their velocity radial, and based on position, allows for some very cool effects
-					info.vel = pos;
+					vec3d velocity = pos;
 					pos *= m_radius;
 					info.pos += pos;
 
-					vm_vec_scale(&info.vel, m_velocity.next());
+					vm_vec_scale(&velocity, m_velocity.next());
+
+					info.vel *= m_vel_inherit.next();
+					info.vel += velocity;
+
 					m_particleProperties.createParticle(info);
 				}
 			}
@@ -106,6 +110,10 @@ namespace particle {
 					stretch = 1.0f;
 				}
 				m_stretch = stretch;
+			}
+
+			if (optional_string("+Parent Velocity Factor:")) {
+				m_vel_inherit = ::util::parseUniformRange<float>();
 			}
 
 			m_timing = util::EffectTiming::parseTiming();

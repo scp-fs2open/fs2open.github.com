@@ -49,6 +49,8 @@ protected:
 
 	enum {GROW_LEFT, GROW_RIGHT, GROW_DOWN};
 	int grow_mode;
+	bool use_full_wingnames;
+	bool use_expanded_colors;
 
 	int wingmate_offsets[MAX_SHIPS_PER_WING][2];
 
@@ -72,6 +74,8 @@ public:
 	void initWingmate5Offsets(int x, int y);
 	void initWingmate6Offsets(int x, int y);
 	void initGrowMode(int mode);
+	void initUseFullWingnames(bool usefullname);
+	void initUseExpandedColors(bool useexpandedcolors);
 	void pageIn() override;
 	void initialize() override;
 	void render(float frametime) override;

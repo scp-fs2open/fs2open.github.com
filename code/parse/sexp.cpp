@@ -556,6 +556,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "get-collision-group",			OP_GET_COLGROUP_ID,						1,	1,			SEXP_ACTION_OPERATOR,	},
 	{ "change-team-color",				OP_CHANGE_TEAM_COLOR,					3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// The E
 	{ "replace-texture",				OP_REPLACE_TEXTURE,						3,  INT_MAX,	SEXP_ACTION_OPERATOR,   },  // Lafiel
+	{ "set-alpha-multiplier",			OP_SET_ALPHA_MULT,						2,	INT_MAX,	SEXP_ACTION_OPERATOR,   }, //Lafiel
 
 	//Coordinate Manipulation Sub-Category
 	{ "set-object-position",			OP_SET_OBJECT_POSITION,					4,	4,			SEXP_ACTION_OPERATOR,	},	// WMC
@@ -3458,7 +3459,10 @@ void preload_turret_change_weapon(const char *text)
 
 void preload_texture(const char* text)
 {
-	int texture = bm_load(text);
+	if (!stricmp(text, "invisible"))
+		return;
+
+	int texture = bm_load_either(text);
 
 	if (texture < 0) {
 		Warning(LOCATION, "Could not preload texture %s", text);
@@ -17995,7 +17999,6 @@ void sexp_replace_texture(int n)
 		object_ship_wing_point_team oswpt;
 		eval_object_ship_wing_point_team(&oswpt, n);
 
-		// we only handle ships and wings that are present
 		switch (oswpt.type)
 		{
 		case OSWPT_TYPE_PARSE_OBJECT:
@@ -18015,7 +18018,11 @@ void sexp_replace_texture(int n)
 				strcpy(replace.ship_name, ship_entry->name);
 				strcpy(replace.old_texture, old_name);
 				strcpy(replace.new_texture, new_name);
-				replace.new_texture_id = bm_load(new_name);
+
+				if (!stricmp(new_name, "invisible"))
+					replace.new_texture_id = REPLACE_WITH_INVISIBLE;
+				else
+					replace.new_texture_id = bm_load_either(new_name);
 
 				pobjp->replacement_textures.push_back(replace);
 			}
@@ -18051,7 +18058,11 @@ void sexp_replace_texture(int n)
 					strcpy(replace.ship_name, p_objp->name);
 					strcpy(replace.old_texture, old_name);
 					strcpy(replace.new_texture, new_name);
-					replace.new_texture_id = bm_load(new_name);
+
+					if (!stricmp(new_name, "invisible"))
+						replace.new_texture_id = REPLACE_WITH_INVISIBLE;
+					else
+						replace.new_texture_id = bm_load_either(new_name);
 
 					p_objp->replacement_textures.push_back(replace);
 				}
@@ -18061,6 +18072,82 @@ void sexp_replace_texture(int n)
 
 		default:
 			mprintf(("Invalid Shipname in SEXP ship-effect\n"));
+		}
+	}
+}
+
+
+void sexp_set_alphamult(int n)
+{
+	bool is_nan, is_nan_forever;
+
+	int newAlpha = eval_num(n, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever) {
+		return;
+	}
+
+	for (n = CDR(n); n != -1; n = CDR(n))
+	{
+		object_ship_wing_point_team oswpt;
+		eval_object_ship_wing_point_team(&oswpt, n);
+
+		// we only handle ships and wings that are present
+		switch (oswpt.type)
+		{
+		case OSWPT_TYPE_SHIP:
+		{
+			auto ship_entry = oswpt.ship_entry;
+
+			if (ship_entry->status == ShipStatus::PRESENT)
+			{
+				ship* shipp = ship_entry->shipp;
+				shipp->flags.remove(Ship::Ship_Flags::Cloaked);
+				if (newAlpha >= 100) {
+					shipp->alpha_mult = 1.0f;
+					shipp->flags.remove(Ship::Ship_Flags::Render_with_alpha_mult);
+				}
+				else if (newAlpha <= 0) {
+					shipp->alpha_mult = 0.0f;
+					shipp->flags.set(Ship::Ship_Flags::Cloaked);
+				}
+				else {
+					shipp->alpha_mult = ((float)newAlpha) / 100.f;
+					shipp->flags.set(Ship::Ship_Flags::Render_with_alpha_mult);
+				}
+			}
+			break;
+		}
+
+		case OSWPT_TYPE_WING:
+		{
+			auto wp = oswpt.wingp;
+			for (int i = 0; i < wp->current_count; ++i)
+			{
+				if (wp->ship_index[i] >= 0)
+				{
+					ship* shipp = &Ships[wp->ship_index[i]];
+					shipp->flags.remove(Ship::Ship_Flags::Cloaked);
+					if (newAlpha >= 100) {
+						shipp->alpha_mult = 1.0f;
+						shipp->flags.remove(Ship::Ship_Flags::Render_with_alpha_mult);
+					}
+					else if (newAlpha <= 0) {
+						shipp->alpha_mult = 0.0f;
+						shipp->flags.set(Ship::Ship_Flags::Cloaked);
+					}
+					else {
+						shipp->alpha_mult = ((float)newAlpha) / 100.f;
+						shipp->flags.set(Ship::Ship_Flags::Render_with_alpha_mult);
+					}
+				}
+			}
+			break;
+		}
+
+		case OSWPT_TYPE_PARSE_OBJECT:
+		case OSWPT_TYPE_WING_NOT_PRESENT:
+		default:
+			mprintf(("Invalid Shipname in SEXP set-alpha-multiplier. Ship / Wing must be present.\n"));
 		}
 	}
 }
@@ -25929,6 +26016,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_replace_texture(node);
 				break;
 
+			case OP_SET_ALPHA_MULT:
+				sexp_val = SEXP_TRUE;
+				sexp_set_alphamult(node);
+				break;
+
 			default:{
 				// Check if we have a dynamic SEXP with this operator and if there is, execute that
 				auto dynamicSEXP = sexp::get_dynamic_sexp(op_num);
@@ -27042,6 +27134,7 @@ int query_operator_return_type(int op)
 		case OP_TURRET_SET_INACCURACY:
 		case OP_REPLACE_TEXTURE:
 		case OP_NEBULA_CHANGE_FOG_COLOR:
+		case OP_SET_ALPHA_MULT:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -29467,6 +29560,12 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_STRING;
 			else
 				return OPF_SHIP_WING;
+      
+		case OP_SET_ALPHA_MULT:
+			if (argnum == 0)
+				return OPF_POSITIVE;
+			else
+				return OPF_SHIP_WING;
 
 		case OP_IS_LANGUAGE:
 			return OPF_LANGUAGE;
@@ -30970,6 +31069,7 @@ int get_subcategory(int sexp_id)
 		case OP_GET_COLGROUP_ID:
 		case OP_CHANGE_TEAM_COLOR:
 		case OP_REPLACE_TEXTURE:
+		case OP_SET_ALPHA_MULT:
 			return CHANGE_SUBCATEGORY_MODELS_AND_TEXTURES;
 
 		case OP_SET_OBJECT_POSITION:
@@ -35367,6 +35467,13 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t2: Name of the texture to be changed to.\r\n"
 		"\tRest: Name of the ship or wing.\r\n"
 	},
+
+	{ OP_SET_ALPHA_MULT, "set-alpha-multiplier\r\n"
+		"\tSets the opacity of a ship.\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1: Opacity (0 = transparent, 100 = opaque)\r\n"
+		"\tRest: Name of the ship or wing.\r\n"
+	}
 };
 // clang-format on
 

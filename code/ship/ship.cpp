@@ -1051,6 +1051,8 @@ void ship_info::clone(const ship_info& other)
 	strcpy_s(overhead_filename, other.overhead_filename);
 	selection_effect = other.selection_effect;
 
+	wingmen_status_dot_override = other.wingmen_status_dot_override;
+
 	bii_index_ship = other.bii_index_ship;
 	bii_index_ship_with_cargo = other.bii_index_ship_with_cargo;
 	bii_index_wing = other.bii_index_wing;
@@ -1366,6 +1368,8 @@ void ship_info::move(ship_info&& other)
 	std::swap(anim_filename, other.anim_filename);
 	std::swap(overhead_filename, other.overhead_filename);
 	selection_effect = other.selection_effect;
+
+	wingmen_status_dot_override = other.wingmen_status_dot_override;
 
 	bii_index_ship = other.bii_index_ship;
 	bii_index_ship_with_cargo = other.bii_index_ship_with_cargo;
@@ -1788,6 +1792,8 @@ ship_info::ship_info()
 	overhead_filename[0] = '\0';
 
 	selection_effect = Default_ship_select_effect;
+
+	wingmen_status_dot_override = -1;
 
 	bii_index_ship = -1;
 	bii_index_ship_with_cargo = -1;
@@ -4146,6 +4152,27 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		stuff_string(sip->overhead_filename, F_NAME, MAX_FILENAME_LEN);
 	}
 
+	// read in filename for optional animation to use for wingmen dot status --wookieejedi
+	if (optional_string("$Wingmen Gauge Dot Override:")) {
+		stuff_string(name_tmp, F_NAME, sizeof(name_tmp));
+		int wm_dot_idx = -1;
+		int wm_dot_num_frames = 0;
+		wm_dot_idx = bm_load_animation(name_tmp, &wm_dot_num_frames);
+		if ((wm_dot_idx > -1) && (wm_dot_num_frames == 2)) {
+			sip->wingmen_status_dot_override = wm_dot_idx;
+		} else {
+			// two things could have gone wrong, so tell the modder
+			if (wm_dot_idx < 0) {
+				Warning(LOCATION, "Error loading '%s' animation for $Wingmen Gauge Dot Override, "
+					"ignoring and using default dot animation from HUD table.", name_tmp);
+			}
+			if (wm_dot_num_frames != 2) {
+				Warning(LOCATION, "Error, number of frames in '%s' animation for $Wingmen Gauge Dot Override is %i and not 2, "
+					"ignoring and using default dot animation from HUD table.", name_tmp, wm_dot_num_frames);
+			}
+		}
+	}
+
 	// read in briefing stuff
 	if ( optional_string("$Briefing icon:") )
 		sip->bii_index_ship = parse_and_add_briefing_icon_info();
@@ -4630,7 +4657,12 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		path_metadata metadata;
 		init_path_metadata(metadata);
 
-		//Get +departure rvec and store on the path_metadata object
+		//Get +departure and arrival rvec and store on the path_metadata object
+		if (optional_string("+arrival rvec:"))
+		{
+			stuff_vec3d(&metadata.arrival_rvec);
+		}
+
 		if (optional_string("+departure rvec:"))
 		{
 			stuff_vec3d(&metadata.departure_rvec);
@@ -4673,6 +4705,11 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		stuff_float(&new_info.frequency);
 
 		sip->ship_passive_arcs.push_back(new_info);
+	}
+
+	if (optional_string("$Custom data:")) 
+	{
+		parse_string_map(sip->custom_data, "$end_custom_data", "+Val:");
 	}
 
 	int n_subsystems = 0;
@@ -6312,6 +6349,8 @@ void ship::clear()
 	shader_effect_duration = 0;
 	shader_effect_start_time = 0;
 	shader_effect_active = false;
+
+	alpha_mult = 1.0f;
 
 	last_fired_turret = NULL;
 
@@ -8451,6 +8490,7 @@ static void ship_dying_frame(object *objp, int ship_num)
 
 					// Use the position since the ship is going to be invalid soon
 					source.moveTo(&objp->pos);
+					source.setVelocity(&objp->phys_info.vel);
 
 					source.finish();
 				} else {
@@ -9217,45 +9257,31 @@ void ship_evaluate_ai(object* obj, float frametime) {
 	int num = obj->instance;
 	Assertion(obj->type == OBJ_SHIP, "Non-ship object passed to ship_evaluate_ai");
 	Assertion(num >= 0 && num < MAX_SHIPS, "Invalid ship instance num in ship_evaluate_ai");
-	Assertion(Ships[num].objnum == OBJ_INDEX(obj), "Ship objnum does not match its num in OBJ_INDEX in ship_evaluate_ai");
-
 	ship* shipp = &Ships[num];
+	Assertion(shipp->objnum == OBJ_INDEX(obj), "Ship objnum does not match its num in OBJ_INDEX in ship_evaluate_ai");
 
-	//rotate player subobjects since its processed by the ai functions
-	// AL 2-19-98: Fire turret for player if it exists
-	//WMC - changed this to call process_subobjects
-	if ((obj->flags[Object::Object_Flags::Player_ship]) && !Player_use_ai)
-	{
-		ai_info* aip = &Ai_info[Ships[obj->instance].ai_index];
-		if (aip->ai_flags[AI::AI_Flags::Being_repaired, AI::AI_Flags::Awaiting_repair])
-		{
-			if (aip->support_ship_objnum >= 0)
-			{
-				if (vm_vec_dist_quick(&obj->pos, &Objects[aip->support_ship_objnum].pos) < (obj->radius + Objects[aip->support_ship_objnum].radius) * 1.25f)
-					return;
-			}
-		}
-		if (!shipp->flags[Ship::Ship_Flags::Rotators_locked])
-			process_subobjects(OBJ_INDEX(obj));
-	}
+	// seems important
+	if (shipp->ai_index < 0)
+		return;
+
+	// this prevents AI stuff, according to original Volition code
+	if (physics_paused || ai_paused)
+		return;
 
 	// update ship lethality
-	if (Ships[num].ai_index >= 0 ){
-		if (!physics_paused && !ai_paused) {
-			lethality_decay(&Ai_info[Ships[num].ai_index]);
-		}
-	}
+	lethality_decay(&Ai_info[shipp->ai_index]);
 
-	// if the ship is an observer ship don't need to do AI
-	if ( obj->type == OBJ_OBSERVER)  {
-		return;
+	// if we are a player ship and not under AI control, all we do is process our subobjects
+	if ((obj->flags[Object::Object_Flags::Player_ship]) && !Player_use_ai)
+	{
+		// AL 2-19-98: Fire turret for player if it exists
+		//WMC - changed this to call ai_process_subobjects
+		ai_process_subobjects(OBJ_INDEX(obj));
 	}
-
-	// Goober5000 - player may want to use AI
-	if ( (Ships[num].ai_index >= 0) && (!(obj->flags[Object::Object_Flags::Player_ship]) || Player_use_ai) ){
-		if (!physics_paused && !ai_paused){
-			ai_process( obj, Ships[num].ai_index, frametime );
-		}
+	// otherwise we run the full AI pipeline
+	else
+	{
+		ai_process( obj, shipp->ai_index, frametime );
 	}
 }
 
@@ -13507,9 +13533,9 @@ int get_subsystem_pos(vec3d* pos, object* objp, ship_subsys* subsysp)
 }
 
 /**
- * Like ship_model_start but fills submodel instances instead of the submodels themselves
+ * Makes sure all submodel instances for this ship are kept in sync
  */
-void ship_model_update_instance(object *objp)
+void ship_model_replicate_submodels(object *objp)
 {
 	model_subsystem	*psub;
 	ship		*shipp;
@@ -13523,37 +13549,17 @@ void ship_model_update_instance(object *objp)
 	polymodel_instance *pmi = model_get_instance(shipp->model_instance_num);
 	polymodel *pm = model_get(pmi->model_num);
 
-	// Handle subsystem rotations for this ship
 	for ( pss = GET_FIRST(&shipp->subsys_list); pss != END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) ) {
 		psub = pss->system_info;
-		switch (psub->type) {
-			case SUBSYSTEM_RADAR:
-			case SUBSYSTEM_NAVIGATION:
-			case SUBSYSTEM_COMMUNICATION:
-			case SUBSYSTEM_UNKNOWN:
-			case SUBSYSTEM_ENGINE:
-			case SUBSYSTEM_SENSORS:
-			case SUBSYSTEM_WEAPONS:
-			case SUBSYSTEM_SOLAR:
-			case SUBSYSTEM_GAS_COLLECT:
-			case SUBSYSTEM_ACTIVATION:
-			case SUBSYSTEM_TURRET:
-				break;
-			default:
-				Error(LOCATION, "Illegal subsystem type.\n");
-		}
 
 		if ( psub->subobj_num >= 0 )	{
-			model_update_instance(pm, pmi, psub->subobj_num, pss->flags );
+			model_replicate_submodel_instance(pm, pmi, psub->subobj_num, pss->flags );
 		}
 
 		if ( (psub->subobj_num != psub->turret_gun_sobj) && (psub->turret_gun_sobj >= 0) )		{
-			model_update_instance(pm, pmi, psub->turret_gun_sobj, pss->flags );
+			model_replicate_submodel_instance(pm, pmi, psub->turret_gun_sobj, pss->flags );
 		}
 	}
-
-	// Handle intrinsic rotations for this ship
-	model_do_intrinsic_rotations(shipp->model_instance_num);
 }
 
 /**
@@ -17273,7 +17279,8 @@ void ship_page_out_textures(int ship_index, bool release)
 		PAGE_OUT_TEXTURE(sip->afterburner_thruster_particles[i].thruster_bitmap.first_frame);
 }
 
-void ship_replace_active_texture(int ship_index, const char* old_name, const char* new_name) {
+void ship_replace_active_texture(int ship_index, const char* old_name, const char* new_name)
+{
 	ship* shipp = &Ships[ship_index];
 	polymodel* pm = model_get(Ship_info[shipp->ship_info_index].model_num);
 	int final_index = -1;
@@ -17288,8 +17295,14 @@ void ship_replace_active_texture(int ship_index, const char* old_name, const cha
 		}
 	}
 
-	if (final_index >= 0) {
-		int texture = bm_load(new_name);
+	if (final_index >= 0)
+	{
+		int texture;
+
+		if (!stricmp(new_name, "invisible"))
+			texture = REPLACE_WITH_INVISIBLE;
+		else
+			texture = bm_load_either(new_name);
 
 		if (shipp->ship_replacement_textures == nullptr) {
 			shipp->ship_replacement_textures = (int*)vm_malloc(MAX_REPLACEMENT_TEXTURES * sizeof(int));
@@ -18194,6 +18207,24 @@ void ship_do_submodel_rotation(ship *shipp, model_subsystem *psub, ship_subsys *
 		submodel_stepped_rotate(psub, pss->submodel_instance_1);
 	} else {
 		submodel_rotate(psub, pss->submodel_instance_1 );
+	}
+}
+
+void ship_move_subsystems(object *objp)
+{
+	Assertion(objp->type == OBJ_SHIP, "ship_move_subsystems should only be called for ships!  objp type = %d", objp->type);
+	auto shipp = &Ships[objp->instance];
+
+	for (auto pss = GET_FIRST(&shipp->subsys_list); pss != END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss))
+	{
+		auto psub = pss->system_info;
+
+		// Don't process destroyed objects (but allow subobjects with hitpoints disabled -nuke) (but also process subobjects that are allowed to rotate)
+		if (pss->max_hits > 0 && pss->current_hits <= 0.0f && !(psub->flags[Model::Subsystem_Flags::Destroyed_rotation]))
+			continue;
+
+		// do solar/radar/gas/activator rotation here
+		ship_do_submodel_rotation(shipp, psub, pss);
 	}
 }
 
@@ -19186,6 +19217,7 @@ static int ship_get_subobj_model_num(ship_info* sip, char* subobj_name)
 void init_path_metadata(path_metadata& metadata)
 {
 	vm_vec_zero(&metadata.departure_rvec);
+	vm_vec_zero(&metadata.arrival_rvec);
 	metadata.arrive_speed_mult = FLT_MIN;
 	metadata.depart_speed_mult = FLT_MIN;
 }
@@ -19723,6 +19755,10 @@ void ship_render(object* obj, model_draw_list* scene)
 		render_info.set_thruster_info(mst);
 
 		render_flags |= MR_SHOW_THRUSTERS;
+	}
+
+	if (shipp->flags[Ship_Flags::Render_with_alpha_mult]) {
+		render_info.set_alpha_mult(shipp->alpha_mult);
 	}
 
 	// Warp_shipp points to the ship that is going through a

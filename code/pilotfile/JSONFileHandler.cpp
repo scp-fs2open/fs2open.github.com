@@ -21,7 +21,8 @@ const SCP_vector<std::pair<Section, const char*>> SectionMapping {
 	std::pair<Section, const char*>(Section::Variables, "variables"),
 	std::pair<Section, const char*>(Section::Missions, "missions"),
 	std::pair<Section, const char*>(Section::Cutscenes, "cutscenes"),
-	std::pair<Section, const char*>(Section::LastMissions, "last_mission")
+	std::pair<Section, const char*>(Section::LastMissions, "last_mission"),
+	std::pair<Section, const char*>(Section::Containers, "containers")
 };
 
 const char* lookupSectionName(Section s) {

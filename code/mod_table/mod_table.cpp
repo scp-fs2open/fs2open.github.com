@@ -77,6 +77,11 @@ bool Neb_affects_fireballs;
 std::tuple<float, float, float, float> Shadow_distances;
 std::tuple<float, float, float, float> Shadow_distances_cockpit;
 bool Custom_briefing_icons_always_override_standard_icons;
+float Min_pixel_size_thruster;
+float Min_pixel_size_beam;
+float Min_pizel_size_muzzleflash;
+float Min_pixel_size_trail;
+float Min_pixel_size_laser;
 
 SCP_vector<std::pair<SCP_string, gr_capability>> req_render_ext_pairs = {
 	std::make_pair("BPTC Texture Compression", CAPABILITY_BPTC)
@@ -433,6 +438,22 @@ void parse_mod_table(const char *filename)
 			}
 		}
 
+		if (optional_string("$Minimum Pixel Size Thrusters:")) {
+			stuff_float(&Min_pixel_size_thruster);
+		}
+		if (optional_string("$Minimum Pixel Size Beams:")) {
+			stuff_float(&Min_pixel_size_beam);
+		}
+		if (optional_string("$Minimum Pixel Size Muzzle Flashes:")) {
+			stuff_float(&Min_pizel_size_muzzleflash);
+		}
+		if (optional_string("$Minimum Pixel Size Trails:")) {
+			stuff_float(&Min_pixel_size_trail);
+		}
+		if (optional_string("$Minimum Pixel Size Lasers:")) {
+			stuff_float(&Min_pixel_size_laser);
+		}
+
 		optional_string("#NETWORK SETTINGS");
 
 		if (optional_string("$FS2NetD port:")) {
@@ -732,4 +753,9 @@ void mod_table_reset()
 	Shadow_distances = std::make_tuple(200.0f, 600.0f, 2500.0f, 8000.0f); // Default values tuned by Swifty and added here by wookieejedi
 	Shadow_distances_cockpit = std::make_tuple(0.25f, 0.75f, 1.5f, 3.0f); // Default values tuned by wookieejedi and added here by Lafiel
 	Custom_briefing_icons_always_override_standard_icons = false;
+	Min_pixel_size_thruster = 0.0f;
+	Min_pixel_size_beam = 0.0f;
+	Min_pizel_size_muzzleflash = 0.0f;
+	Min_pixel_size_trail = 0.0f;
+	Min_pixel_size_laser = 0.0f;
 }

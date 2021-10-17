@@ -1260,7 +1260,6 @@ void obj_move_all_post(object *objp, float frametime)
 
 			if ( !physics_paused || (objp==Player_obj) ) {
 				ship_process_post( objp, frametime );
-				ship_model_update_instance(objp);
 			}
 
 			// Make any electrical arcs on ships cast light
@@ -1517,6 +1516,25 @@ void obj_move_all(float frametime)
 			}
 		}
 
+		// Submodel movement now happens here, right after physics movement.  It's not excluded by the "immobile" flag.
+		
+		// this flag only affects ship subsystems, not any other type of submodel movement
+		if (objp->type == OBJ_SHIP && !Ships[objp->instance].flags[Ship::Ship_Flags::Subsystem_movement_locked])
+			ship_move_subsystems(objp);
+
+		// do animation on this object
+		// TODO: change stepAnimations to operate on a per-object basis
+		//animation::ModelAnimation::stepAnimations(objp, frametime);
+
+		// finally, do intrinsic motion on this object
+		// (this happens last because look_at is a type of intrinsic rotation,
+		// and look_at needs to happen last or the angle may be off by a frame)
+		model_do_intrinsic_motions(objp);
+
+		// For ships, we now have to make sure that all the submodel detail levels remain consistent.
+		if (objp->type == OBJ_SHIP)
+			ship_model_replicate_submodels(objp);
+
 		// move post
 		obj_move_all_post(objp, frametime);
 
@@ -1540,12 +1558,12 @@ void obj_move_all(float frametime)
 		}
 	}
 
+	// TODO: remove; see stepAnimations comment above
 	animation::ModelAnimation::stepAnimations(frametime);
 
-	// Now that we've moved all the objects, move all the models that use intrinsic rotations.  We do that here because we already handled the
-	// ship models in obj_move_all_post, and this is more or less conceptually close enough to move the rest.  (Originally all models
-	// were intrinsic-rotated here, but for sequencing reasons, intrinsic ship rotations must happen along with regular ship rotations.)
-	model_do_intrinsic_rotations();
+	// Now apply intrinsic movement to things that aren't objects (like skyboxes).  This technically doesn't belong in the object code,
+	// but there isn't really a good place to put this, it doesn't hurt to have this here, and it's conceptually related to what's here.
+	model_do_intrinsic_motions(nullptr);
 
 	//	After all objects have been moved, move all docked objects.
 	objp = GET_FIRST(&obj_used_list);

@@ -747,6 +747,8 @@ public:
 	int shader_effect_start_time;
 	bool shader_effect_active;
 
+	float alpha_mult;
+
 	int last_fired_point[MAX_SHIP_PRIMARY_BANKS]; //for fire point cylceing
 	ship_subsys *last_fired_turret; // which turret has fired last
 
@@ -1054,6 +1056,7 @@ typedef struct ship_collision_physics {
 
 typedef struct path_metadata {
 	vec3d departure_rvec;
+	vec3d arrival_rvec;
 	float arrive_speed_mult;
 	float depart_speed_mult;
 } path_metadata;
@@ -1276,6 +1279,8 @@ public:
 	char	overhead_filename[MAX_FILENAME_LEN];	// filename for animation that plays weapons loadout
 	int 	selection_effect;
 
+	int wingmen_status_dot_override; // optional wingmen dot status animation to use instead of default --wookieejedi
+
 	int bii_index_ship;						// if this ship has a briefing icon that overrides the normal icon set
 	int bii_index_ship_with_cargo;
 	int bii_index_wing;
@@ -1362,6 +1367,8 @@ public:
 	gamesnd_id flyby_snd;					// handle to sound to play with ship flyby
 
 	SCP_map<GameSounds, gamesnd_id> ship_sounds;			// specifies ship-specific sound indexes
+
+	SCP_map<SCP_string, SCP_string> custom_data;
 
 	int num_maneuvering;
 	man_thruster maneuvering[MAX_MAN_THRUSTERS];
@@ -1683,7 +1690,7 @@ extern void shield_hit_close();
 int ship_is_shield_up( object *obj, int quadrant );
 
 //=================================================
-void ship_model_update_instance(object *objp);
+void ship_model_replicate_submodels(object *objp);
 
 //============================================
 extern int ship_find_num_crewpoints(object *objp);
@@ -1915,8 +1922,8 @@ extern bool ship_fighterbays_all_destroyed(ship *shipp);
 // Goober5000
 extern bool ship_subsys_takes_damage(ship_subsys *ss);
 
-// Goober5000 - handles submodel rotation, incorporating conditions such as gun barrels when firing
-extern void ship_do_submodel_rotation(ship *shipp, model_subsystem *psub, ship_subsys *pss);
+// Goober5000 - handles submodel rotation for subsystems, excluding turrets
+extern void ship_move_subsystems(object *objp);
 
 // Goober5000 - shortcut hud stuff
 extern int ship_has_energy_weapons(ship *shipp);

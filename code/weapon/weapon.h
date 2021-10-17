@@ -94,7 +94,7 @@ struct WeaponStateHash {
 typedef struct weapon {
 	int		weapon_info_index;			// index into weapon_info array
 	int		objnum;							// object number for this weapon
-	int		model_instance_num;				// model instance number, if we have any intrinsic-rotating submodels
+	int		model_instance_num;				// model instance number, if we have any intrinsic-moving submodels
 	int		team;								// The team of the ship that fired this
 	int		species;							// The species of the ship that fired thisz
 	float		lifeleft;						// life left on this weapon	
@@ -574,6 +574,9 @@ struct weapon_info
 	char			weapon_substitution_pattern_names[MAX_SUBSTITUTION_PATTERNS][NAME_LENGTH]; // weapon names so that we can generate the indexs after sort
 
 	int			score; //Optional score for destroying the weapon
+
+	
+	SCP_map<SCP_string, SCP_string> custom_data;
 
 	decals::creation_info impact_decal;
 
