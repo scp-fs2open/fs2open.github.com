@@ -2352,8 +2352,7 @@ void brief_voice_play(int stage_num)
 			if (fsspeech_playing()) {
 				return;
 			}
-
-			fsspeech_play(FSSPEECH_FROM_BRIEFING, Briefing->stages[stage_num].text.c_str());
+			fsspeech_play(FSSPEECH_FROM_INGAME, Briefing->stages[stage_num].text.c_str(), Briefing->stages[stage_num].speech_tags.c_str());
 		}
 	} else {
 		if ( audiostream_is_playing( Brief_voices[stage_num]) ) {

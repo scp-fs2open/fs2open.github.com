@@ -1351,6 +1351,14 @@ void parse_cmd_brief(mission * /*pm*/)
 		else
 			Cur_cmd_brief->stage[stage].wave_filename[0] = 0;
 
+		if (optional_string("$persona:")) {
+			char temp_name[NAME_LENGTH];
+			stuff_string(temp_name, F_NAME, NAME_LENGTH);
+			int persona_index = message_persona_name_lookup(temp_name);
+			if (persona_index != -1)
+				Cur_cmd_brief->stage[stage].speech_tags = Personas[persona_index].speech_tags;
+		}
+
 		stage++;
 	}
 
@@ -1421,6 +1429,13 @@ void parse_briefing(mission * /*pm*/, int flags)
 			stuff_string(bs->text, F_MULTITEXT, NULL);
 			required_string("$voice:");
 			stuff_string(bs->voice, F_FILESPEC, MAX_FILENAME_LEN);
+			if (optional_string("$persona:")) {
+				char temp_name[NAME_LENGTH];
+				stuff_string(temp_name, F_NAME, NAME_LENGTH);
+				int persona_index = message_persona_name_lookup(temp_name);
+				if(persona_index != -1)
+					bs->speech_tags = Personas[persona_index].speech_tags;
+			}
 			required_string("$camera_pos:");
 			stuff_vec3d(&bs->camera_pos);
 			required_string("$camera_orient:");
@@ -1648,6 +1663,13 @@ void parse_debriefing_new(mission * /*pm*/)
 			stuff_string(dbs->text, F_MULTITEXT, NULL);
 			required_string("$Voice:");
 			stuff_string(dbs->voice, F_FILESPEC, MAX_FILENAME_LEN);
+			if (optional_string("$persona:")) {
+				char temp_name[NAME_LENGTH];
+				stuff_string(temp_name, F_NAME, NAME_LENGTH);
+				int persona_index = message_persona_name_lookup(temp_name);
+				if (persona_index != -1)
+					dbs->speech_tags = Personas[persona_index].speech_tags;
+			}
 			required_string("$Recommendation text:");
 			stuff_string(dbs->recommendation_text, F_MULTITEXT, NULL);
 		} // end while

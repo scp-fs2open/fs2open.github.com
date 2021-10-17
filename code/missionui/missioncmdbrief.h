@@ -28,6 +28,7 @@ struct cmd_brief_stage {
 	char ani_filename[MAX_FILENAME_LEN];  // associated ani file to play
 	char wave_filename[MAX_FILENAME_LEN]; // associated wav file to play
 	int wave;  // instance number of above
+	SCP_string	speech_tags;
 };
 
 struct cmd_brief {

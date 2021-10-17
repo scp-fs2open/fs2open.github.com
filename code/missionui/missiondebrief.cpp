@@ -1820,7 +1820,7 @@ void debrief_text_init()
 				Num_text_lines += brief_color_text_init(src, Debrief_text_wnd_coords[gr_screen.res][2], default_debriefing_color, 0, MAX_DEBRIEF_LINES, true);
 
 				if (use_sim_speech && !Recommend_active) {
-					fsspeech_stuff_buffer(src);
+					fsspeech_stuff_buffer(src, Debrief_stages[i]->speech_tags.c_str());
 					fsspeech_stuff_buffer("\n");
 				}
 			}

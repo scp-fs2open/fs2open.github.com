@@ -80,7 +80,4 @@
 // from weapon.h (and beam.h)
 #define MAX_BEAM_SECTIONS				5
 
-//for missionmessage.h
-#define MAX_SPEECH_TAGS_LENGTH 200
-
 #endif	// _GLOBALS_H

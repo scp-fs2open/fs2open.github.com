@@ -306,38 +306,28 @@ void persona_parse()
 	if (optional_string("$Speech_Tags:")) {
 		char cstr_temp[NAME_LENGTH];
 		bool voice_name_set = false;
-		SCP_string temp_tags;
 		if (optional_string("+Gender:")) {
 			stuff_string(cstr_temp, F_NAME, NAME_LENGTH);
-			temp_tags.append(fsspeech_write_tag(FSSPEECH_TAG_SET_GENDER,cstr_temp));
+			Personas[Num_personas].speech_tags.append(fsspeech_write_tag(FSSPEECH_TAG_SET_GENDER,cstr_temp));
 		}
 		if (optional_string("+Langid:")) {
 			stuff_string(cstr_temp, F_NAME, NAME_LENGTH);
-			temp_tags.append(fsspeech_write_tag(FSSPEECH_TAG_SET_LANGID, cstr_temp));
+			Personas[Num_personas].speech_tags.append(fsspeech_write_tag(FSSPEECH_TAG_SET_LANGID, cstr_temp));
 		}
 		if (optional_string("+Rate:")) {
 			stuff_string(cstr_temp, F_NAME, NAME_LENGTH);
-			temp_tags.append(fsspeech_write_tag(FSSPEECH_TAG_SET_RATE, cstr_temp));
+			Personas[Num_personas].speech_tags.append(fsspeech_write_tag(FSSPEECH_TAG_SET_RATE, cstr_temp));
 		}
 		if (optional_string("+Pitch:")) {
 			stuff_string(cstr_temp, F_NAME, NAME_LENGTH);
-			temp_tags.append(fsspeech_write_tag(FSSPEECH_TAG_SET_PITCH, cstr_temp));
+			Personas[Num_personas].speech_tags.append(fsspeech_write_tag(FSSPEECH_TAG_SET_PITCH, cstr_temp));
 		}
 		if (optional_string("+Volume:")) {
 			stuff_string(cstr_temp, F_NAME, NAME_LENGTH);
-			temp_tags.append(fsspeech_write_tag(FSSPEECH_TAG_SET_VOLUME, cstr_temp));
+			Personas[Num_personas].speech_tags.append(fsspeech_write_tag(FSSPEECH_TAG_SET_VOLUME, cstr_temp));
 		}
 
-		if (temp_tags.size() < MAX_SPEECH_TAGS_LENGTH) {
-			strcpy(Personas[Num_personas].speech_tags, temp_tags.c_str());
-			mprintf(("Speech tags for %s : %s \n", Personas[Num_personas].name, Personas[Num_personas].speech_tags));
-		}
-		else {
-			mprintf(("Speech tags size for %s is larger than the %d allowed.\n", Personas[Num_personas].name, MAX_SPEECH_TAGS_LENGTH));		
-		}
-	}
-	else {
-		Personas[Num_personas].speech_tags[0] = '\0';
+		mprintf(("Speech tags for %s : %s \n", Personas[Num_personas].name, Personas[Num_personas].speech_tags.c_str()));
 	}
 
 	Num_personas++;
@@ -1618,18 +1608,12 @@ void message_queue_process()
 
 	// play wave first, since need to know duration for picking anim start frame
 	if(message_play_wave(q) == false) {
-		SCP_string speech_text;
 		if (m->persona_index != -1) {
-			speech_text = fsspeech_create_speech_text(buf.c_str(), Personas[m->persona_index].speech_tags);
-			fsspeech_play(FSSPEECH_FROM_INGAME, speech_text.c_str());
+			fsspeech_play(FSSPEECH_FROM_INGAME, buf.c_str(), Personas[m->persona_index].speech_tags.c_str());
 		} else {
-			speech_text = fsspeech_create_speech_text(buf.c_str(), nullptr);
-			fsspeech_play(FSSPEECH_FROM_INGAME, speech_text.c_str());
+			fsspeech_play(FSSPEECH_FROM_INGAME, buf.c_str());
 		}
 	}
-	
-	// Remove speech tags from displayed text
-	fsspeech_remove_tokens(buf);
 
 	// play animation for head
 	message_play_anim(q);

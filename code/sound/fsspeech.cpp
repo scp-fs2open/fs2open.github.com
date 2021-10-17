@@ -10,12 +10,8 @@
 #include "osapi/osregistry.h"
 #include "sound/fsspeech.h"
 #include "sound/speech.h"
-#include <regex>
-
 
 extern int Cmdline_freespace_no_sound;
-
-const size_t MAX_SPEECH_BUFFER_LEN = 4096;
 
 static int speech_inited = 0;
 
@@ -28,8 +24,7 @@ const char *FSSpeech_play_id[FSSPEECH_FROM_MAX] =
 	"SpeechMulti"
 };
 
-char Speech_buffer[MAX_SPEECH_BUFFER_LEN] = "";
-size_t  Speech_buffer_len;
+SCP_string Speech_buffer;
 
 bool fsspeech_init()
 {
@@ -74,7 +69,7 @@ void fsspeech_deinit()
 	speech_inited = 0;
 }
 
-void fsspeech_play(int type, const char *text)
+void fsspeech_play(int type, const char *text, const char* speech_tags)
 {
 	if (!speech_inited) {
 		nprintf(("Speech", "Aborting fsspech_play because speech_inited is false.\n"));
@@ -91,7 +86,13 @@ void fsspeech_play(int type, const char *text)
 		return;
 	}
 
-	speech_play(text);
+	SCP_string speech_text = text;
+	#ifdef _WIN32
+	if (speech_tags != nullptr) {
+		speech_text.insert(0, speech_tags);
+	}
+	#endif
+	speech_play(speech_text.c_str());
 }
 
 void fsspeech_stop()
@@ -116,22 +117,25 @@ void fsspeech_pause(bool playing)
 
 void fsspeech_start_buffer()
 {
-	Speech_buffer_len = 0;
-	Speech_buffer[0] = '\0';
+	Speech_buffer = "";
 }
 
-void fsspeech_stuff_buffer(const char *text)
+void fsspeech_stuff_buffer(const char *text, const char *speech_tags)
 {
 	if (!speech_inited)
 		return;
 
-	size_t len = strlen(text);
-
-	if(Speech_buffer_len + len < MAX_SPEECH_BUFFER_LEN) {
-		strcat_s(Speech_buffer, text);
+	#ifdef _WIN32
+	if (speech_tags != nullptr) {
+		Speech_buffer += speech_tags;
+		Speech_buffer += text;
+		Speech_buffer += fsspeech_write_ending_tags(speech_tags);
+	} else {
+		Speech_buffer += text;
 	}
-
-	Speech_buffer_len += len;
+	#else
+		Speech_buffer += text;
+	#endif
 }
 
 void fsspeech_play_buffer(int type)
@@ -139,7 +143,7 @@ void fsspeech_play_buffer(int type)
 	if (!speech_inited)
 		return;
 
-	fsspeech_play(type, Speech_buffer);
+	fsspeech_play(type, Speech_buffer.c_str());
 }
 
 // Goober5000
@@ -164,55 +168,74 @@ SCP_string fsspeech_write_tag(int type, const char* data)
 	SCP_string tag;
 	#ifdef _WIN32
 	switch (type) {
-		case FSSPEECH_TAG_SET_GENDER: tag.append("<voice required='Gender="); tag.append(data); tag.append("'>"); break;
-		case FSSPEECH_TAG_END_GENDER: tag.append("</voice>"); break;
-		case FSSPEECH_TAG_SET_LANGID: tag.append("<lang langid='"); tag.append(data); tag.append("'>"); break;
-		case FSSPEECH_TAG_END_LANGID: tag.append("</lang>"); break;
-		case FSSPEECH_TAG_SET_RATE: tag.append("<rate speed='"); tag.append(data); tag.append("'>"); break;
-		case FSSPEECH_TAG_END_RATE: tag.append("</rate>"); break;
-		case FSSPEECH_TAG_SET_PITCH: tag.append("<pitch middle='"); tag.append(data); tag.append("'>"); break;
-		case FSSPEECH_TAG_END_PITCH: tag.append("</pitch>"); break;
-		case FSSPEECH_TAG_SET_VOLUME: tag.append("<volume level='"); tag.append(data); tag.append("'>"); break;
-		case FSSPEECH_TAG_END_VOLUME: tag.append("</volume>"); break;
-		case FSSPEECH_TAG_SET_SPELL: tag.append("<spell>"); break;
-		case FSSPEECH_TAG_END_SPELL: tag.append("</spell>"); break;
-		case FSSPEECH_TAG_SET_SILENCE: tag.append("<silence msec='"); tag.append(data); tag.append("'/>"); break;
+		case FSSPEECH_TAG_SET_GENDER:	tag.append("<voice required='Gender="); 
+										tag.append(data); 
+										tag.append("'>"); 
+										break;
+
+		case FSSPEECH_TAG_END_GENDER:	tag.append("</voice>"); 
+										break;
+
+		case FSSPEECH_TAG_SET_LANGID:	tag.append("<lang langid='"); 
+										tag.append(data); 
+										tag.append("'>"); 
+										break;
+
+		case FSSPEECH_TAG_END_LANGID:	tag.append("</lang>"); 
+										break;
+
+		case FSSPEECH_TAG_SET_RATE:		tag.append("<rate speed='"); 
+										tag.append(data); 
+										tag.append("'>"); 
+										break;
+
+		case FSSPEECH_TAG_END_RATE:		tag.append("</rate>"); 
+										break;
+
+		case FSSPEECH_TAG_SET_PITCH:	tag.append("<pitch middle='"); 
+										tag.append(data); 
+										tag.append("'>"); 
+										break;
+
+		case FSSPEECH_TAG_END_PITCH:	tag.append("</pitch>"); 
+										break;
+
+		case FSSPEECH_TAG_SET_VOLUME:	tag.append("<volume level='"); 
+										tag.append(data); 
+										tag.append("'>"); 
+										break;
+
+		case FSSPEECH_TAG_END_VOLUME:	tag.append("</volume>"); 
+										break;
+
+		default:						break;
 	}
-	#else
 	#endif
 	return tag;
 }
 
-void fsspeech_translate_tokens(SCP_string& text)
+SCP_string fsspeech_write_ending_tags(const char* speech_tags)
 {
-	text = std::regex_replace(text, std::regex(R"(\$SIL\$)"), fsspeech_write_tag(FSSPEECH_TAG_SET_SILENCE, "500"));
-	text = std::regex_replace(text, std::regex(R"(\$VOL0\$)"), fsspeech_write_tag(FSSPEECH_TAG_SET_VOLUME, "0"));
-	text = std::regex_replace(text, std::regex(R"(\$VOL1\$)"), fsspeech_write_tag(FSSPEECH_TAG_SET_VOLUME, "25"));
-	text = std::regex_replace(text, std::regex(R"(\$SPELL\$)"), fsspeech_write_tag(FSSPEECH_TAG_SET_SPELL));
-	text = std::regex_replace(text, std::regex(R"(\$EVOL\$)"), fsspeech_write_tag(FSSPEECH_TAG_END_VOLUME));
-	text = std::regex_replace(text, std::regex(R"(\$ESPELL\$)"), fsspeech_write_tag(FSSPEECH_TAG_END_SPELL));
-}
+	SCP_string tags = speech_tags;
+	SCP_string ending_tags;
 
-void fsspeech_remove_tokens(SCP_string& text)
-{
-	text = std::regex_replace(text, std::regex(R"(\$SIL\$)"), "");
-	text = std::regex_replace(text, std::regex(R"(\$VOL0\$)"), "");
-	text = std::regex_replace(text, std::regex(R"(\$VOL1\$)"), "");
-	text = std::regex_replace(text, std::regex(R"(\$SPELL\$)"), "");
-	text = std::regex_replace(text, std::regex(R"(\$EVOL\$)"), "");
-	text = std::regex_replace(text, std::regex(R"(\$ESPELL\$)"), "");
-}
-
-SCP_string fsspeech_create_speech_text(const char* msg_text, const char* speech_tags)
-{
-	SCP_string speech_text = msg_text;
-#ifdef _WIN32
-	fsspeech_translate_tokens(speech_text);
-	if (speech_tags != nullptr) {
-		speech_text.insert(0, speech_tags);
+	#ifdef _WIN32
+	if (tags.find("<voice required=") != SCP_string::npos) {
+		ending_tags += fsspeech_write_tag(FSSPEECH_TAG_END_GENDER);
 	}
-#else
-	fsspeech_remove_tokens(speech_text);
-#endif
-	return speech_text;
+	if (tags.find("<lang langid=") != SCP_string::npos) {
+		ending_tags += fsspeech_write_tag(FSSPEECH_TAG_END_LANGID);
+	}
+	if (tags.find("<rate speed=") != SCP_string::npos) {
+		ending_tags += fsspeech_write_tag(FSSPEECH_TAG_END_RATE);
+	}
+	if (tags.find("<pitch middle=") != SCP_string::npos) {
+		ending_tags += fsspeech_write_tag(FSSPEECH_TAG_END_PITCH);
+	}
+	if (tags.find("<volume level=") != SCP_string::npos) {
+		ending_tags += fsspeech_write_tag(FSSPEECH_TAG_END_VOLUME);
+	}
+	#endif
+
+	return ending_tags;
 }

@@ -185,7 +185,7 @@ typedef struct persona_s {
 	int	flags;
 	int species;
 	bool substitute_missing_messages;
-	char speech_tags[MAX_SPEECH_TAGS_LENGTH];
+	SCP_string speech_tags;
 } Persona;
 
 extern Persona *Personas;

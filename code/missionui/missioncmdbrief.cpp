@@ -298,7 +298,7 @@ void cmd_brief_voice_play(int stage_num)
 		// ok, new text needs speaking
 		Cmd_brief_last_stage = stage;
 		if (stage >= 0) {
-			fsspeech_play(FSSPEECH_FROM_BRIEFING, Cur_cmd_brief->stage[stage_num].text.c_str());
+			fsspeech_play(FSSPEECH_FROM_BRIEFING, Cur_cmd_brief->stage[stage_num].text.c_str(), Cur_cmd_brief->stage[stage_num].speech_tags.c_str());
 		}
 	} else {
 		// are we still on same voice that is currently playing/played?
