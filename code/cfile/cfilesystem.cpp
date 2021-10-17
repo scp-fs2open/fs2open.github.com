@@ -171,7 +171,7 @@ struct _file_list_t {
 	size_t size;
 };
 
-static bool sort_file_list(const _file_list_t a, const _file_list_t b)
+static bool sort_file_list(const _file_list_t &a, const _file_list_t &b)
 {
 	return stricmp(a.name.c_str(), b.name.c_str()) < 0;
 }
@@ -303,7 +303,7 @@ static void cf_init_root_pathtypes(cf_root *root)
 			path = parentPathIter->second;
 		}
 
-		if (path.size() && path.back() != DIR_SEPARATOR_CHAR) {
+		if ( !path.empty() && path.back() != DIR_SEPARATOR_CHAR) {
 			path += DIR_SEPARATOR_CHAR;
 		}
 
@@ -1522,7 +1522,7 @@ int cf_get_file_list(SCP_vector<SCP_string>& list, int pathtype, const char* fil
 	}
 
 	if (Get_file_list_child && !verify_file_list_child() ) {
-		Get_file_list_child = NULL;
+		Get_file_list_child = nullptr;
 	}
 
 	cf_create_default_path_string(filespec, sizeof(filespec) - 1, pathtype, (char*)Get_file_list_child, false,
@@ -1680,7 +1680,7 @@ int cf_get_file_list(int max, char** list, int pathtype, const char* filter, int
 	char filespec[MAX_PATH_LEN];
 
 	if (Get_file_list_child && !verify_file_list_child() ) {
-		Get_file_list_child = NULL;
+		Get_file_list_child = nullptr;
 	}
 
 	cf_create_default_path_string(filespec, sizeof(filespec) - 1, pathtype, (char*)Get_file_list_child, false,
@@ -1855,7 +1855,7 @@ int cf_get_file_list_preallocated(int max, char arr[][MAX_FILENAME_LEN], char** 
 	char filespec[MAX_PATH_LEN];
 
 	if (Get_file_list_child && !verify_file_list_child() ) {
-		Get_file_list_child = NULL;
+		Get_file_list_child = nullptr;
 	}
 
 	// Search the default directories
