@@ -1856,7 +1856,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 				swp->current_secondary_bank = 0;
 			}
 			int bank_to_fire = swp->current_secondary_bank;
-			if ((turret->system_info->flags[Model::Subsystem_Flags::Turret_use_ammo]) && ship_secondary_has_ammo(swp, bank_to_fire)) {
+			if ((turret->system_info->flags[Model::Subsystem_Flags::Turret_use_ammo]) && !ship_secondary_has_ammo(swp, bank_to_fire)) {
 				if (!(turret->system_info->flags[Model::Subsystem_Flags::Use_multiple_guns])) {
 					swp->current_secondary_bank++;
 					if (swp->current_secondary_bank >= swp->num_secondary_banks) {
