@@ -2147,9 +2147,9 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 	}
 
 	// Kill off old sparks
-	for(int i=0; i<MAX_SHIP_ARCS; i++){
-		if(timestamp_valid(shipp->arc_timestamp[i]) && timestamp_elapsed(shipp->arc_timestamp[i])){			
-			shipp->arc_timestamp[i] = timestamp(-1);
+	for(int &arc_stamp : shipp->arc_timestamp){
+		if(timestamp_valid(arc_stamp) && timestamp_elapsed(arc_stamp)){
+			arc_stamp = timestamp(-1);
 		}
 	}
 
