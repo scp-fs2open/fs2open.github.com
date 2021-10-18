@@ -1728,8 +1728,8 @@ bool pilotfile::save_savefile()
 
 	// header and version
 	cfwrite_int(CSG_FILE_ID, cfp);
-	const ubyte version = csg_has_persistent_containers() ? CSG_VERSION : PRE_CONTAINERS_CSG_VERSION;
-	cfwrite_ubyte(version, cfp);
+	const ubyte file_version = csg_has_persistent_containers() ? CSG_VERSION : PRE_CONTAINERS_CSG_VERSION;
+	cfwrite_ubyte(file_version, cfp);
 
 	mprintf(("CSG => Saving '%s' with version %d...\n", filename.c_str(), (int)CSG_VERSION));
 

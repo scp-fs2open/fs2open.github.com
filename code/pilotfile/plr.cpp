@@ -1081,8 +1081,8 @@ bool pilotfile::save_player(player *_p)
 
 	// header and version
 	handler->writeInt("signature", PLR_FILE_ID);
-	const ubyte version = plr_has_persistent_containers() ? PLR_VERSION : PRE_CONTAINERS_PLR_VERSION;
-	handler->writeUByte("version", version);
+	const ubyte file_version = plr_has_persistent_containers() ? PLR_VERSION : PRE_CONTAINERS_PLR_VERSION;
+	handler->writeUByte("version", file_version);
 
 	mprintf(("PLR => Saving '%s' with version %d...\n", filename.c_str(), (int)PLR_VERSION));
 
