@@ -1501,23 +1501,24 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				else {
 					wip->target_restrict = LR_CURRENT_TARGET;
 				}
-				
-				if (optional_string("+Target Lock Objecttypes:")) {
-					if (optional_string("ships")) {
-						wip->target_restrict_objecttypes = LR_Objecttypes::LRO_SHIPS;
-					} else if (optional_string("bombs")) {
-						wip->target_restrict_objecttypes = LR_Objecttypes::LRO_WEAPONS;
-
-						if (wip->target_restrict != LR_ANY_TARGETS) {
-							error_display(0, "+Target Lock Objecttypes: bombs is currently incompatibly with any +Target Lock Restriction but 'any target'");
-							wip->target_restrict = LR_ANY_TARGETS;
-						}
-					}
-				} 
 			}
 			
-				if (optional_string("+Independent Seekers:")) {
+			if (optional_string("+Independent Seekers:")) {
 				stuff_boolean(&wip->multi_lock);
+			}
+
+			if (optional_string("+Target Lock Objecttypes:")) {
+				if (optional_string("ships")) {
+					wip->target_restrict_objecttypes = LR_Objecttypes::LRO_SHIPS;
+				}
+				else if (optional_string("bombs")) {
+					wip->target_restrict_objecttypes = LR_Objecttypes::LRO_WEAPONS;
+
+					if (wip->target_restrict != LR_ANY_TARGETS) {
+						error_display(0, "+Target Lock Objecttypes: bombs is currently incompatibly with any +Target Lock Restriction but 'any target'");
+						wip->target_restrict = LR_ANY_TARGETS;
+					}
+				}
 			}
 
 			if (optional_string("+Trigger Hold:")) {
