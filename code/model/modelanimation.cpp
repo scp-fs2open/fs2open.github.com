@@ -112,13 +112,16 @@ namespace animation {
 			}
 
 			for (const auto& animation : m_submodelAnimation) {
-				ModelAnimationData<> base = animation->s_initialData.at({ pmi->id, animation->m_submodel });
-				ModelAnimationData<true>& previousDelta = (*applyBuffer)[animation->m_submodel].second;
-				(*applyBuffer)[animation->m_submodel].first = animation.get();
+				auto b = animation->s_initialData.find({ pmi->id, animation->m_submodel });
+				if(b != animation->s_initialData.end()){
+					ModelAnimationData<> base = animation->s_initialData.at({ pmi->id, animation->m_submodel });
+					ModelAnimationData<true>& previousDelta = (*applyBuffer)[animation->m_submodel].second;
+					(*applyBuffer)[animation->m_submodel].first = animation.get();
 
-				base.applyDelta(previousDelta);
-				ModelAnimationData<true> delta = animation->play(instanceData.time, prevTime, ModelAnimationDirection::FWD, pmi, base);
-				previousDelta.applyDelta(delta);
+					base.applyDelta(previousDelta);
+					ModelAnimationData<true> delta = animation->play(instanceData.time, prevTime, ModelAnimationDirection::FWD, pmi, base);
+					previousDelta.applyDelta(delta);
+				}
 			}
 			break;
 
