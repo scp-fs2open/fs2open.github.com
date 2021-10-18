@@ -10952,9 +10952,9 @@ void ai_dock_do_animations(ship* shipp, int from_dockstage, int to_dockstage, in
 	if (to_dockstage == AIS_DOCK_4A)
 		to_dockstage = AIS_DOCK_4;
 
-	int currentIdx, targetIdx;
+	size_t currentIdx = 0, targetIdx = 0;
 
-	for (int idx = 0; idx < sizeof(dockstages_ordered) / sizeof(dockstages_ordered[0]); idx++) {
+	for (size_t idx = 0; idx < sizeof(dockstages_ordered) / sizeof(dockstages_ordered[0]); idx++) {
 		if (from_dockstage == dockstages_ordered[idx])
 			currentIdx = idx;
 		if (to_dockstage == dockstages_ordered[idx])
@@ -10962,7 +10962,7 @@ void ai_dock_do_animations(ship* shipp, int from_dockstage, int to_dockstage, in
 	}
 
 	Assertion(targetIdx != currentIdx, "Cannot perform docking animations when not actually switching dock stages.");
-	Assertion(currentIdx < 5 && targetIdx < 5 || currentIdx >= 5 && targetIdx >= 5, "Cannot perform animations from a AIS_DOCK to AIS_UNDOCK stage!");
+	Assertion((currentIdx < 5 && targetIdx < 5) || (currentIdx >= 5 && targetIdx >= 5), "Cannot perform animations from a AIS_DOCK to AIS_UNDOCK stage!");
 
 	bool isDocking = currentIdx < targetIdx;
 	animation::ModelAnimationDirection direction = isDocking ? animation::ModelAnimationDirection::FWD : animation::ModelAnimationDirection::RWD;
@@ -10970,7 +10970,7 @@ void ai_dock_do_animations(ship* shipp, int from_dockstage, int to_dockstage, in
 	const animation::ModelAnimationSet& animations = Ship_info[shipp->ship_info_index].animations;
 	polymodel_instance* pmi = model_get_instance(shipp->model_instance_num);
 
-	for (int i = currentIdx; i != targetIdx; i += isDocking ? 1 : -1) {
+	for (size_t i = currentIdx; i != targetIdx; i += isDocking ? 1 : -1) {
 		switch (dockstages_ordered[i + (isDocking ? 1 : 0)]) {
 		case AIS_DOCK_1:
 		case AIS_UNDOCK_3:
@@ -11012,31 +11012,21 @@ void ai_cleanup_dock_mode_subjective(object *objp)
 		// get the object being acted upon
 		object		*goal_objp;
 		ship		*goal_shipp;
-		ship_info* goal_sip;
-		polymodel_instance* goal_shipp_pmi;
 		if (aip->goal_objnum >= 0)
 		{
 			goal_objp = &Objects[aip->goal_objnum];
 			Assert(goal_objp->type == OBJ_SHIP);
 			goal_shipp = &Ships[goal_objp->instance];
-			goal_sip = &Ship_info[goal_shipp->ship_info_index];
-			goal_shipp_pmi = model_get_instance(goal_shipp->model_instance_num);
 		}
 		else
 		{
 			goal_objp = nullptr;
 			goal_shipp = nullptr;
-			goal_sip = nullptr;
-			goal_shipp_pmi = nullptr;
 		}
 
 		// get the indexes from the saved parameters
 		int docker_index = aip->submode_parm0;
 		int dockee_index = aip->submode_parm1;
-
-		ship_info* sip = &Ship_info[shipp->ship_info_index];
-
-		polymodel_instance* shipp_pmi = model_get_instance(shipp->model_instance_num);
 
 		// undo all the appropriate triggers
 		switch (aip->submode)
