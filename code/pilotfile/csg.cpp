@@ -1376,6 +1376,11 @@ void pilotfile::csg_read_container(sexp_container& container)
 
 void pilotfile::csg_write_containers()
 {
+	if (Campaign.persistent_containers.empty() && Campaign.red_alert_containers.empty()) {
+		mprintf(("CSG => No containers to save.\n"));
+		return;
+	}
+
 	startSection(Section::Containers);
 
 	cfwrite_int((int)Campaign.persistent_containers.size(), cfp);

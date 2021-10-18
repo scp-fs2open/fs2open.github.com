@@ -348,6 +348,11 @@ void pilotfile::plr_read_containers()
 
 void pilotfile::plr_write_containers()
 {
+	if (p->containers.empty()) {
+		mprintf(("PLR => No containers to save.\n"));
+		return;
+	}
+
 	handler->startSectionWrite(Section::Containers);
 
 	handler->startArrayWrite("containers", p->containers.size());
