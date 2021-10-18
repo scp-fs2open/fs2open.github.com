@@ -23,6 +23,7 @@ static const unsigned int CSG_FILE_ID = 0x5f475343;	// "CSG_" in file
 //   1 - Adding support for the player is multi flag
 //   2 - Add language in use when pilot was created
 //	     (due to intel entries using translated text as the primary key)
+static const ubyte PRE_CONTAINERS_PLR_VERSION = 2;
 //   3 - Add SEXP containers
 static const ubyte PLR_VERSION = 3;
 //   0 - initial version
@@ -31,6 +32,7 @@ static const ubyte PLR_VERSION = 3;
 //   3 - remove separate detail settings for campaigns
 //   4 - add CPV rollback for Red Alert missions
 //   5 - save rank to flags for quick access
+ static const ubyte PRE_CONTAINERS_CSG_VERSION = 5;
 //   6 - add SEXP containers
 static const ubyte CSG_VERSION = 6;
 
@@ -153,6 +155,7 @@ class pilotfile {
 		void plr_write_stats_multi();
 		void plr_write_multiplayer();
 		void plr_write_variables();
+		bool plr_has_persistent_containers() const;
 		void plr_write_containers();
 		void plr_write_hud();
 		void plr_write_controls();
@@ -192,6 +195,7 @@ class pilotfile {
 		void csg_write_controls();
 		void csg_write_cutscenes();
 		void csg_write_lastmissions();
+		bool csg_has_persistent_containers() const;
 		void csg_write_containers();
 		void csg_write_container(const sexp_container& container);
 
