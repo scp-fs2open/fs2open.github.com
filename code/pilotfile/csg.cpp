@@ -1374,7 +1374,7 @@ void pilotfile::csg_read_container(sexp_container& container)
 	}
 }
 
-bool pilotfile::csg_has_persistent_containers() const
+bool pilotfile::csg_has_persistent_containers()
 {
 	return !Campaign.persistent_containers.empty() || !Campaign.red_alert_containers.empty();
 }

@@ -195,7 +195,7 @@ class pilotfile {
 		void csg_write_controls();
 		void csg_write_cutscenes();
 		void csg_write_lastmissions();
-		bool csg_has_persistent_containers() const;
+		static bool csg_has_persistent_containers();
 		void csg_write_containers();
 		void csg_write_container(const sexp_container& container);
 
