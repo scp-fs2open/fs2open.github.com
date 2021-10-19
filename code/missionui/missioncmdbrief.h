@@ -29,6 +29,7 @@ struct cmd_brief_stage {
 	char wave_filename[MAX_FILENAME_LEN]; // associated wav file to play
 	int wave;  // instance number of above
 	SCP_string	speech_tags;
+	char persona[NAME_LENGTH];
 };
 
 struct cmd_brief {

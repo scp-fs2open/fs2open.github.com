@@ -593,6 +593,7 @@
 #define IDC_MESSAGE_TEAM                1246
 #define IDC_SHIP_CALLSIGN               1246
 #define IDC_ORIENTATION_H               1246
+#define IDC_BRIEFING_PERSONA            1246
 #define IDC_COMBO6                      1247
 #define IDC_BEHAVIOR3                   1247
 #define IDC_MISSILE2                    1247
@@ -1147,6 +1148,7 @@
 #define IDC_ANIM_LABEL                  1658
 #define IDC_PLAYER_WARPOUT_SPEED_LABEL  1659
 #define IDC_CONTAINER_NAME              1660
+#define IDC_CMDBRIEF_PERSONA            1660
 #define IDC_NEW_CONTAINER_NAME          1661
 #define IDC_CONTAINER_REMOVE            1662
 #define IDC_ADD_NEW_CONTAINER           1663
@@ -1448,9 +1450,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        326
+#define _APS_NEXT_RESOURCE_VALUE        328
 #define _APS_NEXT_COMMAND_VALUE         33102
-#define _APS_NEXT_CONTROL_VALUE         1660
+#define _APS_NEXT_CONTROL_VALUE         1661
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif

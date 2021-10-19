@@ -22,6 +22,8 @@
 #include "sound/audiostr.h"
 #include "localization/localize.h"
 #include "jumpnode/jumpnode.h"
+#include "mission/missionmessage.h"
+#include "sound/fsspeech.h"
 
 
 #ifdef _DEBUG
@@ -44,6 +46,7 @@ debriefing_editor_dlg::debriefing_editor_dlg(CWnd* pParent /*=NULL*/)
 	m_debriefAvg_music = 0;
 	m_debriefFail_music = 0;
 	m_current_debriefing = -1;
+	m_persona = _T("<None>");
 	//}}AFX_DATA_INIT
 
 	modified = 0;
@@ -65,6 +68,7 @@ void debriefing_editor_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_CBIndex(pDX, IDC_SUCCESSFUL_MISSION_TRACK, m_debriefPass_music);
 	DDX_CBIndex(pDX, IDC_DEBRIEFING_TRACK, m_debriefAvg_music);
 	DDX_CBIndex(pDX, IDC_FAILED_MISSION_TRACK, m_debriefFail_music);
+	DDX_CBString(pDX, IDC_DEBRIEFING_PERSONA, m_persona);
 	//}}AFX_DATA_MAP
 
 	DDV_MaxChars(pDX, m_voice, MAX_FILENAME_LEN - 1);
@@ -147,6 +151,14 @@ BOOL debriefing_editor_dlg::OnInitDialog()
 	for (i=0; i<Num_music_files; i++)
 		box->AddString(Spooled_music[i].name);
 
+	// add the persona names into the combo box
+	box = (CComboBox*)GetDlgItem(IDC_DEBRIEFING_PERSONA);
+	box->ResetContent();
+	box->AddString("<None>");
+	for (i = 0; i < Num_personas; i++) {
+		box->AddString(Personas[i].name);
+	}
+
 	m_debriefPass_music = Mission_music[SCORE_DEBRIEF_SUCCESS] + 1;
 	m_debriefAvg_music = Mission_music[SCORE_DEBRIEF_AVERAGE] + 1;
 	m_debriefFail_music = Mission_music[SCORE_DEBRIEF_FAIL] + 1;
@@ -207,6 +219,7 @@ void debriefing_editor_dlg::update_data(int update)
 		deconvert_multiline_string(ptr->recommendation_text, m_rec_text);
 		lcl_fred_replace_stuff(ptr->recommendation_text);
 		string_copy(ptr->voice, m_voice, MAX_FILENAME_LEN);
+		string_copy(ptr->persona, m_persona, NAME_LENGTH);
 	}
 
 	// now get new stage data
@@ -217,6 +230,7 @@ void debriefing_editor_dlg::update_data(int update)
 		convert_multiline_string(m_text, ptr->text);
 		convert_multiline_string(m_rec_text, ptr->recommendation_text);
 		m_voice = ptr->voice;
+		m_persona = ptr->persona;
 		enable = TRUE;
 
 	} else {
@@ -225,6 +239,7 @@ void debriefing_editor_dlg::update_data(int update)
 		m_text = _T("");
 		m_rec_text = _T("");
 		m_voice = _T("");
+		m_persona = _T("<None>");
 		enable = FALSE;
 		m_cur_stage = -1;
 	}
@@ -247,10 +262,12 @@ void debriefing_editor_dlg::update_data(int update)
 	if (Debriefing->num_stages) {
 		GetDlgItem(IDC_DELETE_STAGE) -> EnableWindow(enable);
 		GetDlgItem(IDC_INSERT_STAGE) -> EnableWindow(enable);
+		GetDlgItem(IDC_DEBRIEFING_PERSONA)->EnableWindow(enable);
 
 	} else {
 		GetDlgItem(IDC_DELETE_STAGE) -> EnableWindow(FALSE);
 		GetDlgItem(IDC_INSERT_STAGE) -> EnableWindow(FALSE);
+		GetDlgItem(IDC_DEBRIEFING_PERSONA)->EnableWindow(FALSE);
 	}
 
 	GetDlgItem(IDC_VOICE) -> EnableWindow(enable);
@@ -271,6 +288,7 @@ void debriefing_editor_dlg::OnNext()
 {
 	audiostream_close_file(m_voice_id, 0);
 	m_voice_id = -1;
+	fsspeech_stop();
 
 	m_cur_stage++;
 	update_data();
@@ -280,6 +298,7 @@ void debriefing_editor_dlg::OnPrev()
 {
 	audiostream_close_file(m_voice_id, 0);
 	m_voice_id = -1;
+	fsspeech_stop();
 
 	m_cur_stage--;
 	update_data();
@@ -292,6 +311,7 @@ void debriefing_editor_dlg::OnBrowse()
 
 	audiostream_close_file(m_voice_id, 0);
 	m_voice_id = -1;
+	fsspeech_stop();
 
 	UpdateData(TRUE);
 
@@ -321,6 +341,7 @@ void debriefing_editor_dlg::OnAddStage()
 
 	audiostream_close_file(m_voice_id, 0);
 	m_voice_id = -1;
+	fsspeech_stop();
 
 	m_cur_stage = i = Debriefing->num_stages++;
 	copy_stage(i - 1, i, 1);
@@ -336,6 +357,7 @@ void debriefing_editor_dlg::OnDeleteStage()
 
 	audiostream_close_file(m_voice_id, 0);
 	m_voice_id = -1;
+	fsspeech_stop();
 
 	Assert(Debriefing->num_stages);
 	z = m_cur_stage;
@@ -367,6 +389,7 @@ void debriefing_editor_dlg::OnInsertStage()
 
 	audiostream_close_file(m_voice_id, 0);
 	m_voice_id = -1;
+	fsspeech_stop();
 
 	z = m_cur_stage;
 	m_cur_stage = -1;
@@ -388,6 +411,7 @@ void debriefing_editor_dlg::copy_stage(int from, int to, int clear_formula)
 		Debriefing->stages[to].text = "<Text here>";
 		strcpy_s(Debriefing->stages[to].voice, "none.wav");
 		Debriefing->stages[to].formula = -1;
+		strcpy_s(Debriefing->stages[to].persona, "<None>");
 		return;
 	}
 	
@@ -399,6 +423,7 @@ void debriefing_editor_dlg::copy_stage(int from, int to, int clear_formula)
 	Debriefing->stages[to].text = Debriefing->stages[from].text;
 	strcpy_s( Debriefing->stages[to].voice, Debriefing->stages[from].voice );
 	Debriefing->stages[to].recommendation_text = Debriefing->stages[from].recommendation_text;
+	strcpy_s(Debriefing->stages[to].persona, Debriefing->stages[from].persona);
 }
 
 void debriefing_editor_dlg::OnRclickTree(NMHDR* pNMHDR, LRESULT* pResult) 
@@ -430,6 +455,7 @@ void debriefing_editor_dlg::OnClose()
 {
 	audiostream_close_file(m_voice_id, 0);
 	m_voice_id = -1;
+	fsspeech_stop();
 	m_cur_stage = -1;
 	update_data(1);
 
@@ -492,5 +518,17 @@ void debriefing_editor_dlg::OnPlay()
 
 	if (m_voice_id >= 0) {
 		audiostream_play(m_voice_id, 1.0f, 0);
+	} else {
+		fsspeech_stop();
+		CString temp_persona, temp_text;
+		GetDlgItem(IDC_DEBRIEFING_PERSONA)->GetWindowText(temp_persona);
+		GetDlgItem(IDC_TEXT)->GetWindowText(temp_text);
+		int persona_index = message_persona_name_lookup(temp_persona);
+		if (persona_index != -1) {
+			fsspeech_play(FSSPEECH_FROM_INGAME, temp_text, Personas[persona_index].speech_tags.c_str());
+		}
+		else {
+			fsspeech_play(FSSPEECH_FROM_INGAME, temp_text);
+		}
 	}
 }

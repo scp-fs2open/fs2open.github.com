@@ -70,6 +70,7 @@ public:
 	BOOL	m_flipicon;
 	BOOL	m_use_wing;
 	BOOL	m_use_cargo;
+	CString	m_persona;
 	//}}AFX_DATA
 
 	CBitmap m_play_bm;

@@ -68,6 +68,7 @@
 #include "libs/ffmpeg/FFmpeg.h"
 #include "scripting/scripting.h"
 #include "utils/Random.h"
+#include "sound/fsspeech.h"
 
 #include <direct.h>
 #include "cmdline/cmdline.h"
@@ -470,6 +471,8 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 
 	Script_system.RunInitFunctions();
 	Script_system.RunCondition(CHA_GAMEINIT);
+
+	fsspeech_init();
 
 	return true;
 }

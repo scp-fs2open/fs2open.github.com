@@ -22,6 +22,7 @@
 #include "sound/audiostr.h"
 #include "localization/localize.h"
 #include "mod_table/mod_table.h"
+#include "sound/fsspeech.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -530,6 +531,7 @@ void event_editor::OnButtonOk()
 
 	audiostream_close_file(m_wave_id, 0);
 	m_wave_id = -1;
+	fsspeech_stop();
 
 	save();
 	if (query_modified())
@@ -615,6 +617,7 @@ void event_editor::update_cur_message()
 
 	audiostream_close_file(m_wave_id, 0);
 	m_wave_id = -1;
+	fsspeech_stop();
 
 	if (m_cur_msg < 0) {
 		enable = FALSE;
@@ -862,6 +865,7 @@ void event_editor::OnButtonCancel()
 {
 	audiostream_close_file(m_wave_id, 0);
 	m_wave_id = -1;
+	fsspeech_stop();
 
 	if (query_modified()) {
 		int z = MessageBox("Do you want to keep your changes?", "Close", MB_ICONQUESTION | MB_YESNOCANCEL);
@@ -1438,6 +1442,7 @@ void event_editor::OnBrowseWave()
 
 	audiostream_close_file(m_wave_id, 0);
 	m_wave_id = -1;
+	fsspeech_stop();
 
 	UpdateData(TRUE);
 	if (!stricmp(m_wave_filename, "<None>"))
@@ -1523,6 +1528,7 @@ void event_editor::OnSelchangeWaveFilename()
 
 	audiostream_close_file(m_wave_id, 0);
 	m_wave_id = -1;
+	fsspeech_stop();
 
 	box = (CComboBox *) GetDlgItem(IDC_WAVE_FILENAME);
 	z = box -> GetCurSel();
@@ -1538,6 +1544,7 @@ BOOL event_editor::DestroyWindow()
 {
 	audiostream_close_file(m_wave_id, 0);
 	m_wave_id = -1;
+	fsspeech_stop();
 
 	m_play_bm.DeleteObject();
 	return CDialog::DestroyWindow();
@@ -1558,6 +1565,17 @@ void event_editor::OnPlay()
 
 	if (m_wave_id >= 0) {
 		audiostream_play(m_wave_id, 1.0f, 0);
+	} else {
+		fsspeech_stop();
+		CString temp_persona, temp_text;
+		GetDlgItem(IDC_PERSONA_NAME)->GetWindowText(temp_persona);
+		GetDlgItem(IDC_MESSAGE_TEXT)->GetWindowText(temp_text);
+		int persona_index = message_persona_name_lookup(temp_persona);
+		if (persona_index != -1) {
+			fsspeech_play(FSSPEECH_FROM_INGAME, temp_text, Personas[persona_index].speech_tags.c_str());
+		} else {
+			fsspeech_play(FSSPEECH_FROM_INGAME, temp_text);
+		}
 	}
 }
 

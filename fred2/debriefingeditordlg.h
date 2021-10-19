@@ -34,6 +34,7 @@ public:
 	int		m_debriefAvg_music;
 	int		m_debriefFail_music;
 	int		m_current_debriefing;
+	CString	m_persona;
 	//}}AFX_DATA
 
 	CBitmap m_play_bm;

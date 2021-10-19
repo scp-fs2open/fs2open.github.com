@@ -15,6 +15,8 @@
 #include "cfile/cfile.h"
 #include "sound/audiostr.h"
 #include "localization/localize.h"
+#include "mission/missionmessage.h"
+#include "sound/fsspeech.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -32,6 +34,7 @@ cmd_brief_dlg::cmd_brief_dlg(CWnd* pParent /*=NULL*/)
 	m_text = _T("");
 	m_stage_title = _T("");
 	m_wave_filename = _T("");
+	m_persona = _T("<None>");
 	//}}AFX_DATA_INIT
 
 	m_wave_id = -1;
@@ -45,6 +48,7 @@ void cmd_brief_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_TEXT, m_text);
 	DDX_Text(pDX, IDC_STAGE_TITLE, m_stage_title);
 	DDX_Text(pDX, IDC_WAVE_FILENAME, m_wave_filename);
+	DDX_CBString(pDX, IDC_CMDBRIEF_PERSONA, m_persona);
 	//}}AFX_DATA_MAP
 
 	DDV_MaxChars(pDX, m_ani_filename, MAX_FILENAME_LEN - 1);
@@ -69,6 +73,7 @@ END_MESSAGE_MAP()
 
 BOOL cmd_brief_dlg::OnInitDialog() 
 {
+	int i;
 	Cur_cmd_brief = Cmd_briefs;  // default to first cmd briefing
 	m_cur_stage = 0;
 	last_cmd_brief = NULL;
@@ -76,6 +81,14 @@ BOOL cmd_brief_dlg::OnInitDialog()
 	CDialog::OnInitDialog();
 	m_play_bm.LoadBitmap(IDB_PLAY);
 	((CButton *) GetDlgItem(IDC_PLAY)) -> SetBitmap(m_play_bm);
+
+	// add the persona names into the combo box
+	CComboBox *box = (CComboBox*)GetDlgItem(IDC_CMDBRIEF_PERSONA);
+	box->ResetContent();
+	box->AddString("<None>");
+	for (i = 0; i < Num_personas; i++) {
+		box->AddString(Personas[i].name);
+	}
 
 	update_data();
 	return TRUE;
@@ -97,6 +110,7 @@ void cmd_brief_dlg::update_data(int update)
 
 		string_copy(last_stage->ani_filename, m_ani_filename, MAX_FILENAME_LEN);
 		string_copy(last_stage->wave_filename, m_wave_filename, MAX_FILENAME_LEN);
+		string_copy(last_stage->persona, m_persona, NAME_LENGTH);
 	}
 
 	// load data of new stage into dialog
@@ -108,6 +122,7 @@ void cmd_brief_dlg::update_data(int update)
 		convert_multiline_string(m_text, Cur_cmd_brief->stage[m_cur_stage].text);
 		m_ani_filename = Cur_cmd_brief->stage[m_cur_stage].ani_filename;
 		m_wave_filename = Cur_cmd_brief->stage[m_cur_stage].wave_filename;
+		m_persona = Cur_cmd_brief->stage[m_cur_stage].persona;
 		enable = TRUE;
 
 	} else {
@@ -115,6 +130,7 @@ void cmd_brief_dlg::update_data(int update)
 		m_text = _T("");
 		m_ani_filename = _T("");
 		m_wave_filename = _T("");
+		m_persona = _T("<None>");
 		enable = FALSE;
 		m_cur_stage = -1;
 	}
@@ -137,10 +153,11 @@ void cmd_brief_dlg::update_data(int update)
 	if (Cur_cmd_brief->num_stages) {
 		GetDlgItem(IDC_DELETE_STAGE) -> EnableWindow(enable);
 		GetDlgItem(IDC_INSERT_STAGE) -> EnableWindow(enable);
-
+		GetDlgItem(IDC_CMDBRIEF_PERSONA)->EnableWindow(enable);
 	} else {
 		GetDlgItem(IDC_DELETE_STAGE) -> EnableWindow(FALSE);
 		GetDlgItem(IDC_INSERT_STAGE) -> EnableWindow(FALSE);
+		GetDlgItem(IDC_CMDBRIEF_PERSONA)->EnableWindow(FALSE);
 	}
 
 	GetDlgItem(IDC_WAVE_FILENAME) -> EnableWindow(enable);
@@ -159,6 +176,7 @@ void cmd_brief_dlg::OnOK()
 {
 	audiostream_close_file(m_wave_id, 0);
 	m_wave_id = -1;
+	fsspeech_stop();
 
 	update_data();
 	CDialog::OnOK();
@@ -168,6 +186,7 @@ void cmd_brief_dlg::OnNext()
 {
 	audiostream_close_file(m_wave_id, 0);
 	m_wave_id = -1;
+	fsspeech_stop();
 
 	m_cur_stage++;
 	update_data();
@@ -177,6 +196,7 @@ void cmd_brief_dlg::OnPrev()
 {
 	audiostream_close_file(m_wave_id, 0);
 	m_wave_id = -1;
+	fsspeech_stop();
 
 	m_cur_stage--;
 	update_data();
@@ -191,6 +211,7 @@ void cmd_brief_dlg::OnAddStage()
 
 	audiostream_close_file(m_wave_id, 0);
 	m_wave_id = -1;
+	fsspeech_stop();
 
 	m_cur_stage = i = Cur_cmd_brief->num_stages++;
 	copy_stage(i - 1, i);
@@ -211,6 +232,7 @@ void cmd_brief_dlg::OnInsertStage()
 
 	audiostream_close_file(m_wave_id, 0);
 	m_wave_id = -1;
+	fsspeech_stop();
 
 	z = m_cur_stage;
 	m_cur_stage = -1;
@@ -234,6 +256,7 @@ void cmd_brief_dlg::OnDeleteStage()
 
 	audiostream_close_file(m_wave_id, 0);
 	m_wave_id = -1;
+	fsspeech_stop();
 
 	Assert(Cur_cmd_brief->num_stages);
 	z = m_cur_stage;
@@ -260,11 +283,13 @@ void cmd_brief_dlg::copy_stage(int from, int to)
 		Cur_cmd_brief->stage[to].text = "<Text here>";
 		strcpy_s(Cur_cmd_brief->stage[to].ani_filename, "<default>");
 		strcpy_s(Cur_cmd_brief->stage[to].wave_filename, "none");
+		strcpy_s(Cur_cmd_brief->stage[to].persona, "<None>");
 		return;
 	}
 
 	Cur_cmd_brief->stage[to] = Cur_cmd_brief->stage[from];
 	Cur_cmd_brief->stage[to].text = Cur_cmd_brief->stage[from].text;
+	strcpy_s(Cur_cmd_brief->stage[to].persona, Cur_cmd_brief->stage[from].persona);
 }
 
 void cmd_brief_dlg::OnBrowseAni() 
@@ -293,6 +318,7 @@ void cmd_brief_dlg::OnBrowseWave()
 
 	audiostream_close_file(m_wave_id, 0);
 	m_wave_id = -1;
+	fsspeech_stop();
 
 	UpdateData(TRUE);
 	z = cfile_push_chdir(CF_TYPE_VOICE_CMD_BRIEF);
@@ -312,6 +338,7 @@ BOOL cmd_brief_dlg::DestroyWindow()
 {
 	audiostream_close_file(m_wave_id, 0);
 	m_wave_id = -1;
+	fsspeech_stop();
 
 	m_play_bm.DeleteObject();
 	return CDialog::DestroyWindow();
@@ -332,5 +359,17 @@ void cmd_brief_dlg::OnPlay()
 
 	if (m_wave_id >= 0) {
 		audiostream_play(m_wave_id, 1.0f, 0);
+	} else {
+		fsspeech_stop();
+		CString temp_persona, temp_text;
+		GetDlgItem(IDC_CMDBRIEF_PERSONA)->GetWindowText(temp_persona);
+		GetDlgItem(IDC_TEXT)->GetWindowText(temp_text);
+		int persona_index = message_persona_name_lookup(temp_persona);
+		if (persona_index != -1) {
+			fsspeech_play(FSSPEECH_FROM_INGAME, temp_text, Personas[persona_index].speech_tags.c_str());
+		}
+		else {
+			fsspeech_play(FSSPEECH_FROM_INGAME, temp_text);
+		}
 	}
 }

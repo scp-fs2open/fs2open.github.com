@@ -29,6 +29,7 @@ public:
 	CString	m_text;
 	CString	m_stage_title;
 	CString	m_wave_filename;
+	CString	m_persona;
 	//}}AFX_DATA
 
 	CBitmap m_play_bm;

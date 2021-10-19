@@ -1324,7 +1324,7 @@ BEGIN
     COMBOBOX        IDC_WAVE_FILENAME,303,210,67,110,CBS_DROPDOWN | CBS_AUTOHSCROLL | CBS_SORT | WS_VSCROLL | WS_TABSTOP
     PUSHBUTTON      "Browse",IDC_BROWSE_WAVE,374,210,34,14,0,WS_EX_STATICEDGE
     PUSHBUTTON      "IDB_PLAY",IDC_PLAY,410,210,13,14,BS_BITMAP,WS_EX_TRANSPARENT | WS_EX_STATICEDGE
-    COMBOBOX        IDC_PERSONA_NAME,303,225,67,57,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_PERSONA_NAME,303,226,67,149,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     PUSHBUTTON      "Update Stuff",IDC_UPDATE,373,226,50,14
     COMBOBOX        IDC_MESSAGE_TEAM,304,243,46,76,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     PUSHBUTTON      "OK",ID_OK,324,266,50,14
@@ -1720,6 +1720,8 @@ BEGIN
     GROUPBOX        "Briefing Music",IDC_STATIC,141,7,150,44
     CONTROL         "Use Wing Icon",IDC_USE_WING_ICON,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,298,380,63,10
     CONTROL         "Use Cargo Icon",IDC_USE_CARGO_ICON,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,233,394,65,10
+    COMBOBOX        IDC_BRIEFING_PERSONA,205,53,83,177,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Persona",IDC_STATIC,150,55,27,8
 END
 
 IDD_IGNORE_ORDERS DIALOG 0, 0, 120, 217
@@ -1770,6 +1772,8 @@ BEGIN
     COMBOBOX        IDC_DEBRIEFING_TRACK,359,294,80,180,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     LTEXT           "Failure Music",IDC_STATIC,447,286,53,8
     COMBOBOX        IDC_FAILED_MISSION_TRACK,445,294,80,180,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_DEBRIEFING_PERSONA,404,7,83,177,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Persona",IDC_STATIC,348,9,27,8
 END
 
 IDD_ADJUST_GRID DIALOG 0, 0, 153, 94
@@ -1844,6 +1848,8 @@ BEGIN
     LTEXT           "Ani Filename",IDC_STATIC,209,187,41,8
     LTEXT           "Stage 1 of 9",IDC_STAGE_TITLE,7,10,53,8
     LTEXT           "Wave Filename",IDC_STATIC,209,205,50,8
+    COMBOBOX        IDC_CMDBRIEF_PERSONA,63,185,83,177,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Persona",IDC_STATIC,7,187,27,8
 END
 
 IDD_SHIP_FLAGS DIALOGEX 0, 0, 286, 295
@@ -2962,6 +2968,116 @@ BEGIN
     25, 100, 0, 0,
     25, 100, 0, 0,
     50, 50, 0, 0
+END
+
+IDD_BRIEFING_EDITOR AFX_DIALOG_LAYOUT
+BEGIN
+    0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    50, 50, 50, 0,
+    0, 0, 0, 0
+END
+
+IDD_CMD_BRIEF AFX_DIALOG_LAYOUT
+BEGIN
+    0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    50, 50, 50, 0,
+    0, 0, 0, 0
+END
+
+IDD_DEBRIEFING_EDITOR AFX_DIALOG_LAYOUT
+BEGIN
+    0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    50, 50, 50, 0,
+    0, 0, 0, 0
 END
 
 

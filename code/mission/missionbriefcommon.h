@@ -155,6 +155,7 @@ public:
 	int			num_lines;
 	brief_line	*lines;
 	SCP_string	speech_tags;
+	char		persona[NAME_LENGTH];
 
 	brief_stage( ) 
 		: text( ), camera_time( 0 ), flags( 0 ), formula( -1 ),
@@ -174,6 +175,7 @@ public:
 	char			voice[MAX_FILENAME_LEN];
 	SCP_string	recommendation_text;
 	SCP_string	speech_tags;
+	char		persona[NAME_LENGTH];
 
 	debrief_stage( ) 
 		: formula( -1 ), text( ),

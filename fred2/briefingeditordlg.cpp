@@ -28,6 +28,8 @@
 #include "iff_defs/iff_defs.h"
 #include "sound/audiostr.h"
 #include "localization/localize.h"
+#include "sound/fsspeech.h"
+#include "mission/missionmessage.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -78,6 +80,7 @@ briefing_editor_dlg::briefing_editor_dlg(CWnd* pParent /*=NULL*/)
 	m_flipicon = FALSE;
 	m_use_wing = FALSE;
 	m_use_cargo = FALSE;
+	m_persona = _T("<None>");
 	//}}AFX_DATA_INIT
 	m_voice_id = -1;
 	m_cur_stage = 0;
@@ -113,6 +116,7 @@ void briefing_editor_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_FLIP_ICON, m_flipicon);
 	DDX_Check(pDX, IDC_USE_WING_ICON, m_use_wing);
 	DDX_Check(pDX, IDC_USE_CARGO_ICON, m_use_cargo);
+	DDX_CBString(pDX, IDC_BRIEFING_PERSONA, m_persona);
 	//}}AFX_DATA_MAP
 
 	DDV_MaxChars(pDX, m_voice, MAX_FILENAME_LEN - 1);
@@ -209,6 +213,14 @@ void briefing_editor_dlg::create()
 	for (i=0; i<Num_music_files; i++)
 		box->AddString(Spooled_music[i].name);
 
+	// add the persona names into the combo box
+	box = (CComboBox*)GetDlgItem(IDC_BRIEFING_PERSONA);
+	box->ResetContent();
+	box->AddString("<None>");
+	for (i = 0; i < Num_personas; i++) {
+		box->AddString(Personas[i].name);
+	}
+
 	m_play_bm.LoadBitmap(IDB_PLAY);
 	((CButton *) GetDlgItem(IDC_PLAY)) -> SetBitmap(m_play_bm);
 
@@ -261,6 +273,8 @@ void briefing_editor_dlg::OnClose()
 	update_data(1);
 
 	audiostream_close_file(m_voice_id, 0);
+
+	fsspeech_stop();
 
 	for ( bs = 0; bs < Num_teams; bs++ ) {
 		for (s=0; s<Briefing[bs].num_stages; s++) {
@@ -332,6 +346,7 @@ void briefing_editor_dlg::update_data(int update)
 		ptr->text = buf3;
 		MODIFY(ptr->camera_time, atoi(m_time));
 		string_copy(ptr->voice, m_voice, MAX_FILENAME_LEN, 1);
+		string_copy(ptr->persona, m_persona, NAME_LENGTH, 1);
 		i = ptr->flags;
 		if (m_cut_prev)
 			i |= BS_BACKWARD_CUT;
@@ -513,6 +528,7 @@ void briefing_editor_dlg::update_data(int update)
 		m_cut_prev = (ptr->flags & BS_BACKWARD_CUT) ? 1 : 0;
 		m_cut_next = (ptr->flags & BS_FORWARD_CUT) ? 1 : 0;
 		m_tree.load_tree(ptr->formula);
+		m_persona = ptr->persona;
 
 	} else {
 		m_stage_title = _T("No stages");
@@ -523,6 +539,7 @@ void briefing_editor_dlg::update_data(int update)
 		m_tree.clear_tree();
 		enable = FALSE;
 		m_cur_stage = -1;
+		m_persona = _T("<None>");
 	}
 
 	if (m_cur_stage == Briefing->num_stages - 1)
@@ -543,9 +560,11 @@ void briefing_editor_dlg::update_data(int update)
 	if (Briefing->num_stages) {
 		GetDlgItem(IDC_DELETE_STAGE) -> EnableWindow(enable);
 		GetDlgItem(IDC_INSERT_STAGE) -> EnableWindow(enable);
+		GetDlgItem(IDC_BRIEFING_PERSONA) -> EnableWindow(enable);
 	} else {
 		GetDlgItem(IDC_DELETE_STAGE) -> EnableWindow(FALSE);
 		GetDlgItem(IDC_INSERT_STAGE) -> EnableWindow(FALSE);
+		GetDlgItem(IDC_BRIEFING_PERSONA) -> EnableWindow(FALSE);
 	}
 
 	GetDlgItem(IDC_TIME) -> EnableWindow(enable);
@@ -745,6 +764,7 @@ void briefing_editor_dlg::OnNext()
 	m_cur_stage++;
 	m_cur_icon = -1;
 	audiostream_close_file(m_voice_id, 0);
+	fsspeech_stop();
 	m_voice_id = -1;
 	update_data();
 	OnGotoView();
@@ -755,6 +775,7 @@ void briefing_editor_dlg::OnPrev()
 	m_cur_stage--;
 	m_cur_icon = -1;
 	audiostream_close_file(m_voice_id, 0);
+	fsspeech_stop();
 	m_voice_id = -1;
 	update_data();
 	OnGotoView();
@@ -769,6 +790,7 @@ void briefing_editor_dlg::OnBrowse()
 
 	audiostream_close_file(m_voice_id, 0);
 	m_voice_id = -1;
+	fsspeech_stop();
 
 	if (The_mission.game_type & MISSION_TYPE_TRAINING)
 		z = cfile_push_chdir(CF_TYPE_VOICE_TRAINING);
@@ -798,6 +820,7 @@ void briefing_editor_dlg::OnAddStage()
 	copy_stage(i - 1, i);
 	audiostream_close_file(m_voice_id, 0);
 	m_voice_id = -1;
+	fsspeech_stop();
 	update_data(1);
 }
 
@@ -810,6 +833,7 @@ void briefing_editor_dlg::OnDeleteStage()
 
 	audiostream_close_file(m_voice_id, 0);
 	m_voice_id = -1;
+	fsspeech_stop();
 
 	Assert(Briefing->num_stages);
 	z = m_cur_stage;
@@ -869,6 +893,7 @@ void briefing_editor_dlg::OnInsertStage()
 
 	audiostream_close_file(m_voice_id, 0);
 	m_voice_id = -1;
+	fsspeech_stop();
 
 	z = m_cur_stage;
 	m_cur_stage = -1;
@@ -893,6 +918,7 @@ void briefing_editor_dlg::copy_stage(int from, int to)
 		Briefing->stages[to].camera_time = 500;
 		Briefing->stages[to].num_icons = 0;
 		Briefing->stages[to].formula = Locked_sexp_true;
+		strcpy_s(Briefing->stages[to].persona, "<None>");
 		return;
 	}
 
@@ -906,6 +932,7 @@ void briefing_editor_dlg::copy_stage(int from, int to)
 	Briefing->stages[to].num_icons = Briefing->stages[from].num_icons;
 	Briefing->stages[to].num_lines = Briefing->stages[from].num_lines;
 	Briefing->stages[to].formula = Briefing->stages[from].formula;
+	strcpy_s(Briefing->stages[to].persona, Briefing->stages[from].persona);
 
 	memmove( Briefing->stages[to].icons, Briefing->stages[from].icons, sizeof(brief_icon)*MAX_STAGE_ICONS );
 	memmove( Briefing->stages[to].lines, Briefing->stages[from].lines, sizeof(brief_line)*MAX_BRIEF_STAGE_LINES );
@@ -1361,6 +1388,7 @@ BOOL briefing_editor_dlg::DestroyWindow()
 {
 	m_play_bm.DeleteObject();
 	audiostream_close_file(m_voice_id, 0);
+	fsspeech_stop();
 	return CDialog::DestroyWindow();
 }
 
@@ -1379,6 +1407,18 @@ void briefing_editor_dlg::OnPlay()
 
 	if (m_voice_id >= 0) {
 		audiostream_play(m_voice_id, 1.0f, 0);
+	} else {
+		fsspeech_stop();
+		CString temp_persona, temp_text;
+		GetDlgItem(IDC_BRIEFING_PERSONA)->GetWindowText(temp_persona);
+		GetDlgItem(IDC_TEXT)->GetWindowText(temp_text);
+		int persona_index = message_persona_name_lookup(temp_persona);
+		if (persona_index != -1) {
+			fsspeech_play(FSSPEECH_FROM_INGAME, temp_text, Personas[persona_index].speech_tags.c_str());
+		}
+		else {
+			fsspeech_play(FSSPEECH_FROM_INGAME, temp_text);
+		}
 	}
 }
 

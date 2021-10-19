@@ -970,6 +970,10 @@ int CFred_mission_save::save_briefing()
 			parse_comments();
 			fout(" %s", bs->voice);
 
+			required_string_fred("$persona:");
+			parse_comments();
+			fout(" %s", bs->persona);
+
 			required_string_fred("$camera_pos:");
 			parse_comments();
 			save_vector(bs->camera_pos);
@@ -1391,6 +1395,10 @@ int CFred_mission_save::save_cmd_brief()
 		required_string_fred("+Wave Filename:", "$Ani Filename:");
 		parse_comments();
 		fout(" %s", Cur_cmd_brief->stage[stage].wave_filename);
+
+		required_string_fred("$persona:");
+		parse_comments();
+		fout(" %s", Cur_cmd_brief->stage[stage].persona);
 
 		fso_comment_pop();
 	}
@@ -1886,6 +1894,10 @@ int CFred_mission_save::save_debriefing()
 			required_string_fred("$Voice:");
 			parse_comments();
 			fout(" %s", Debriefing->stages[i].voice);
+
+			required_string_fred("$persona:");
+			parse_comments();
+			fout(" %s", Debriefing->stages[i].persona);
 
 			// XSTR
 			required_string_fred("$Recommendation text:");
