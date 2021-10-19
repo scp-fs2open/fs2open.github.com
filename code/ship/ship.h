@@ -454,7 +454,7 @@ extern ship_flag_name Ship_flag_names[];
 #define DEFAULT_SHIP_PRIMITIVE_SENSOR_RANGE		10000	// Goober5000
 
 #define MAX_DAMAGE_SLOTS	32
-#define MAX_SHIP_ARCS		2		// How many "arcs" can be active at once... Must be less than MAX_ARC_EFFECTS in model.h. 
+#define MAX_SHIP_ARCS		5		// How many "arcs" can be active at once... Must be less than MAX_ARC_EFFECTS in model.h. 
 #define NUM_SUB_EXPL_HANDLES	2	// How many different big ship sub explosion sounds can be played.
 
 #define MAX_SHIP_CONTRAILS		24
@@ -692,7 +692,8 @@ public:
 	vec3d	arc_pts[MAX_SHIP_ARCS][2];			// The endpoints of each arc
 	int		arc_timestamp[MAX_SHIP_ARCS];		// When this times out, the spark goes away.  -1 is not used
 	ubyte		arc_type[MAX_SHIP_ARCS];			// see MARC_TYPE_* defines in model.h
-	int		arc_next_time;							// When the next arc will be created.	
+	int		arc_next_time;							// When the next damage/emp arc will be created.	
+	SCP_vector<int>		passive_arc_next_times;		// When the next passive ship arc will be created.	
 
 	// emp missile stuff
 	float emp_intensity;								// <= 0.0f if no emp effect present
@@ -901,6 +902,14 @@ extern const ship_registry_entry *ship_registry_get(const char *name);
 
 #define REGULAR_WEAPON	(1<<0)
 #define DOGFIGHT_WEAPON (1<<1)
+
+typedef struct ship_passive_arc_info {
+	std::pair<int, int> submodels;
+	std::pair<SCP_string, SCP_string> submodel_strings; // the string names from parsing, to be looked up and used to fill the above later when the model is ready
+	std::pair<vec3d, vec3d> pos;
+	float duration;
+	float frequency;
+} ship_lightning_data;
 
 typedef struct thruster_particles {
 	generic_anim thruster_bitmap;
@@ -1397,6 +1406,8 @@ public:
 	SCP_unordered_map<int, void*> glowpoint_bank_override_map;
 
 	animation::ModelAnimationSet animations;
+
+	SCP_vector<ship_passive_arc_info> ship_passive_arcs;
 
 	ship_info();
 	~ship_info();

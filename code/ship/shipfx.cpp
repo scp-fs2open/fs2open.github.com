@@ -2060,14 +2060,61 @@ const float MAX_ARC_LENGTH_PERCENTAGE = 0.25f;
 
 const float MAX_EMP_ARC_TIMESTAMP = 150.0f;
 
-void shipfx_do_damaged_arcs_frame( ship *shipp )
+void shipfx_do_lightning_arcs_frame( ship *shipp )
 {
-	int i;
-	int should_arc;
 	object *obj = &Objects[shipp->objnum];
-	int model_num = Ship_info[shipp->ship_info_index].model_num;
+	ship_info* sip = &Ship_info[shipp->ship_info_index];
+	int model_num = sip->model_num;
 
-	should_arc = 1;
+	// first do any passive ship arcs, separate from damage or emp arcs
+	for (int passive_arc_info_idx = 0; passive_arc_info_idx < (int)sip->ship_passive_arcs.size(); passive_arc_info_idx++) {
+		if (timestamp_elapsed(shipp->passive_arc_next_times[passive_arc_info_idx])) {
+
+			ship_passive_arc_info* arc_info = &sip->ship_passive_arcs[passive_arc_info_idx];
+			polymodel* pm = model_get(model_num);
+
+			// find the specified submodels involved, if necessary
+			if (arc_info->submodels.first < 0 || arc_info->submodels.second < 0) {
+				for (int i = 0; i < pm->n_models; i++) {
+					if (!stricmp(pm->submodel[i].name, arc_info->submodel_strings.first.c_str()))
+						arc_info->submodels.first = i;
+					if (!stricmp(pm->submodel[i].name, arc_info->submodel_strings.second.c_str()))
+						arc_info->submodels.second = i;
+				}
+			}
+			int submodel_1 = arc_info->submodels.first;
+			int submodel_2 = arc_info->submodels.second;
+
+			if (submodel_1 >= 0 && submodel_2 >= 0) {
+				// spawn the arc in the first unused slot
+				for (int j = 0; j < MAX_SHIP_ARCS; j++) {
+					if (!timestamp_valid(shipp->arc_timestamp[j])) {
+						shipp->arc_timestamp[j] = timestamp((int)(arc_info->duration * 1000));
+
+						vec3d v1, v2, offset;
+						// subtract away the submodel's offset, since these positions were in frame of ref of the whole ship
+						model_find_submodel_offset(&offset, pm, submodel_1);
+						v1 = arc_info->pos.first - offset;
+						model_find_submodel_offset(&offset, pm, submodel_2);
+						v2 = arc_info->pos.second - offset;
+
+						model_instance_find_world_point(&v1, &v1, shipp->model_instance_num, submodel_1, &vmd_identity_matrix, &vmd_zero_vector);
+						shipp->arc_pts[j][0] = v1;
+						model_instance_find_world_point(&v2, &v2, shipp->model_instance_num, submodel_2, &vmd_identity_matrix, &vmd_zero_vector);
+						shipp->arc_pts[j][1] = v2;
+
+						shipp->arc_type[j] = MARC_TYPE_SHIP;
+
+						shipp->passive_arc_next_times[passive_arc_info_idx] = timestamp((int)(arc_info->frequency * 1000));
+						break;
+					}
+				}
+			}
+		}
+	}
+
+	// now handle damage/emp arcs
+	int should_arc = 1;
 	int disrupted_arc=0;
 
 	float damage = get_hull_pct(obj);	
@@ -2100,9 +2147,9 @@ void shipfx_do_damaged_arcs_frame( ship *shipp )
 	}
 
 	// Kill off old sparks
-	for(i=0; i<MAX_SHIP_ARCS; i++){
-		if(timestamp_valid(shipp->arc_timestamp[i]) && timestamp_elapsed(shipp->arc_timestamp[i])){			
-			shipp->arc_timestamp[i] = timestamp(-1);
+	for(int &arc_stamp : shipp->arc_timestamp){
+		if(timestamp_valid(arc_stamp) && timestamp_elapsed(arc_stamp)){
+			arc_stamp = timestamp(-1);
 		}
 	}
 
@@ -2177,7 +2224,7 @@ void shipfx_do_damaged_arcs_frame( ship *shipp )
 		int lifetime = Random::next(a, b);
 
 		// Create the arc effects
-		for (i=0; i<MAX_SHIP_ARCS; i++ )	{
+		for (int i=0; i<MAX_SHIP_ARCS; i++ )	{
 			if ( !timestamp_valid( shipp->arc_timestamp[i] ) )	{
 				shipp->arc_timestamp[i] = timestamp(lifetime);	// live up to a second
 
@@ -2204,7 +2251,7 @@ void shipfx_do_damaged_arcs_frame( ship *shipp )
 				if((shipp->emp_intensity > 0.0f) || (disrupted_arc)){
 					shipp->arc_type[i] = MARC_TYPE_EMP;
 				} else {
-					shipp->arc_type[i] = MARC_TYPE_NORMAL;
+					shipp->arc_type[i] = MARC_TYPE_DAMAGED;
 				}
 					
 				n++;
@@ -2239,7 +2286,7 @@ void shipfx_do_damaged_arcs_frame( ship *shipp )
 	}
 
 	// maybe move arc points around
-	for (i=0; i<MAX_SHIP_ARCS; i++ )	{
+	for (int i=0; i<MAX_SHIP_ARCS; i++ )	{
 		if ( timestamp_valid( shipp->arc_timestamp[i] ) )	{
 			if ( !timestamp_elapsed( shipp->arc_timestamp[i] ) )	{							
 				// Maybe move a vertex....  20% of the time maybe?

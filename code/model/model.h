@@ -225,8 +225,9 @@ typedef struct model_special {
 } model_special;
 
 // model arc types
-#define MARC_TYPE_NORMAL					0		// standard freespace 1 blue lightning arcs
+#define MARC_TYPE_DAMAGED					0		// blue lightning arcs for when the ship is damaged
 #define MARC_TYPE_EMP						1		// EMP blast type arcs
+#define MARC_TYPE_SHIP						2		// arcing lightning thats intrinsically part of the ship
 
 #define MAX_LIVE_DEBRIS	7
 
