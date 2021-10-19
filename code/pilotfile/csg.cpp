@@ -1728,6 +1728,8 @@ bool pilotfile::save_savefile()
 
 	// header and version
 	cfwrite_int(CSG_FILE_ID, cfp);
+	static_assert(CSG_VERSION == PRE_CONTAINERS_CSG_VERSION + 1,
+		"CSG_VERSION shouldn't be bumped beyond containers without removing compatibility fix");
 	const ubyte file_version = csg_has_persistent_containers() ? CSG_VERSION : PRE_CONTAINERS_CSG_VERSION;
 	cfwrite_ubyte(file_version, cfp);
 

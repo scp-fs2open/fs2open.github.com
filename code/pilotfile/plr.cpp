@@ -1081,6 +1081,8 @@ bool pilotfile::save_player(player *_p)
 
 	// header and version
 	handler->writeInt("signature", PLR_FILE_ID);
+	static_assert(PLR_VERSION == PRE_CONTAINERS_PLR_VERSION + 1,
+		"PLR_VERSION shouldn't be bumped beyond containers without removing compatibility fix");
 	const ubyte file_version = plr_has_persistent_containers() ? PLR_VERSION : PRE_CONTAINERS_PLR_VERSION;
 	handler->writeUByte("version", file_version);
 
