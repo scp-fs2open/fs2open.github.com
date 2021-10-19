@@ -176,7 +176,7 @@ void red_alert_voice_play()
 				return;
 			}
 
-			fsspeech_play(FSSPEECH_FROM_BRIEFING, Briefing->stages[0].text.c_str());
+			fsspeech_play(FSSPEECH_FROM_BRIEFING, Briefing->stages[0].text.c_str(), Briefing->stages[0].speech_tags.c_str());
 			Red_alert_voice_started = 1;
 		}
 	} else {
