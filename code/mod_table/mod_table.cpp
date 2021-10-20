@@ -42,7 +42,7 @@ bool Red_alert_applies_to_delayed_ships;
 bool Beams_use_damage_factors;
 float Generic_pain_flash_factor;
 float Shield_pain_flash_factor;
-gameversion::version Targetted_version; // Defaults to retail
+gameversion::version Targeted_version; // Defaults to retail
 SCP_string Window_title;
 bool Unicode_text_mode;
 bool Use_tabled_strings_for_default_language;
@@ -104,13 +104,13 @@ void parse_mod_table(const char *filename)
 		optional_string("#GAME SETTINGS");
 
 		if (optional_string("$Minimum version:") || optional_string("$Target Version:")) {
-			Targetted_version = gameversion::parse_version();
+			Targeted_version = gameversion::parse_version();
 
-			mprintf(("Game Settings Table: Parsed target version of %s\n", gameversion::format_version(Targetted_version).c_str()));
+			mprintf(("Game Settings Table: Parsed target version of %s\n", gameversion::format_version(Targeted_version).c_str()));
 
-			if (!gameversion::check_at_least(Targetted_version)) {
+			if (!gameversion::check_at_least(Targeted_version)) {
 				Error(LOCATION, "This modification needs at least version %s of FreeSpace Open. However, the current is only %s!",
-					gameversion::format_version(Targetted_version).c_str(),
+					gameversion::format_version(Targeted_version).c_str(),
 					gameversion::format_version(gameversion::get_executable_version()).c_str());
 			}
 		}
@@ -691,7 +691,7 @@ void mod_table_init()
 
 bool mod_supports_version(int major, int minor, int build)
 {
-	return Targetted_version >= gameversion::version(major, minor, build, 0);
+	return Targeted_version >= gameversion::version(major, minor, build, 0);
 }
 
 void mod_table_reset()
@@ -718,7 +718,7 @@ void mod_table_reset()
 	Beams_use_damage_factors = false;
 	Generic_pain_flash_factor = 1.0f;
 	Shield_pain_flash_factor = 0.0f;
-	Targetted_version = gameversion::version(2, 0, 0, 0); // Defaults to retail
+	Targeted_version = gameversion::version(2, 0, 0, 0); // Defaults to retail
 	Window_title = "";
 	Unicode_text_mode = false;
 	Use_tabled_strings_for_default_language = false;
