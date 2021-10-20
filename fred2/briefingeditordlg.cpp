@@ -1414,7 +1414,7 @@ void briefing_editor_dlg::OnPlay()
 		GetDlgItem(IDC_TEXT)->GetWindowText(temp_text);
 		int persona_index = message_persona_name_lookup(temp_persona);
 		if (persona_index != -1) {
-			fsspeech_play(FSSPEECH_FROM_INGAME, temp_text, Personas[persona_index].speech_tags.c_str());
+			fsspeech_play(FSSPEECH_FROM_INGAME, temp_text, Personas[persona_index].speech_tags);
 		}
 		else {
 			fsspeech_play(FSSPEECH_FROM_INGAME, temp_text);

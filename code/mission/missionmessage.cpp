@@ -305,29 +305,35 @@ void persona_parse()
 	
 	if (optional_string("$Speech_Tags:")) {
 		char cstr_temp[NAME_LENGTH];
-
+		SCP_string temp_tags;
 		if (optional_string("+Gender:")) {
 			stuff_string(cstr_temp, F_NAME, NAME_LENGTH);
-			Personas[Num_personas].speech_tags.append(fsspeech_write_tag(FSSPEECH_TAG_SET_GENDER,cstr_temp));
+			temp_tags.append(fsspeech_write_tag(FSSPEECH_TAG_SET_GENDER,cstr_temp));
 		}
 		if (optional_string("+Langid:")) {
 			stuff_string(cstr_temp, F_NAME, NAME_LENGTH);
-			Personas[Num_personas].speech_tags.append(fsspeech_write_tag(FSSPEECH_TAG_SET_LANGID, cstr_temp));
+			temp_tags.append(fsspeech_write_tag(FSSPEECH_TAG_SET_LANGID, cstr_temp));
 		}
 		if (optional_string("+Rate:")) {
 			stuff_string(cstr_temp, F_NAME, NAME_LENGTH);
-			Personas[Num_personas].speech_tags.append(fsspeech_write_tag(FSSPEECH_TAG_SET_RATE, cstr_temp));
+			temp_tags.append(fsspeech_write_tag(FSSPEECH_TAG_SET_RATE, cstr_temp));
 		}
 		if (optional_string("+Pitch:")) {
 			stuff_string(cstr_temp, F_NAME, NAME_LENGTH);
-			Personas[Num_personas].speech_tags.append(fsspeech_write_tag(FSSPEECH_TAG_SET_PITCH, cstr_temp));
+			temp_tags.append(fsspeech_write_tag(FSSPEECH_TAG_SET_PITCH, cstr_temp));
 		}
 		if (optional_string("+Volume:")) {
 			stuff_string(cstr_temp, F_NAME, NAME_LENGTH);
-			Personas[Num_personas].speech_tags.append(fsspeech_write_tag(FSSPEECH_TAG_SET_VOLUME, cstr_temp));
+			temp_tags.append(fsspeech_write_tag(FSSPEECH_TAG_SET_VOLUME, cstr_temp));
 		}
 
-		mprintf(("Speech tags for %s : %s \n", Personas[Num_personas].name, Personas[Num_personas].speech_tags.c_str()));
+		if (temp_tags.size() < MAX_SPEECH_TAGS_LENGTH) {
+			strcpy_s(Personas[Num_personas].speech_tags, temp_tags.c_str());
+			mprintf(("Speech tags for %s : %s \n", Personas[Num_personas].name, Personas[Num_personas].speech_tags));
+		}
+		else {
+			mprintf(("Speech tags size for %s is larger than the %d allowed.\n", Personas[Num_personas].name, MAX_SPEECH_TAGS_LENGTH));
+		}
 	}
 
 	Num_personas++;
@@ -1609,7 +1615,7 @@ void message_queue_process()
 	// play wave first, since need to know duration for picking anim start frame
 	if(message_play_wave(q) == false) {
 		if (m->persona_index != -1) {
-			fsspeech_play(FSSPEECH_FROM_INGAME, buf.c_str(), Personas[m->persona_index].speech_tags.c_str());
+			fsspeech_play(FSSPEECH_FROM_INGAME, buf.c_str(), Personas[m->persona_index].speech_tags);
 		} else {
 			fsspeech_play(FSSPEECH_FROM_INGAME, buf.c_str());
 		}

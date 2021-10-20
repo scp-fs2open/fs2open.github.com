@@ -169,6 +169,9 @@ extern SCP_vector<SCP_string> Generic_message_filenames;
 // variable, etc for persona information
 #define MAX_PERSONA_TYPES		4
 
+// for speech tags
+#define MAX_SPEECH_TAGS_LENGTH	300
+
 // flags for personas.  the type flags must be sequential starting from 0, and must match
 // the persona_type_names defined in missionmessage.cpp
 #define PERSONA_FLAG_WINGMAN	(1<<0)
@@ -185,7 +188,7 @@ typedef struct persona_s {
 	int	flags;
 	int species;
 	bool substitute_missing_messages;
-	SCP_string speech_tags;
+	char speech_tags[MAX_SPEECH_TAGS_LENGTH];
 } Persona;
 
 extern Persona *Personas;
