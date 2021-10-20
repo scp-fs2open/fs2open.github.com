@@ -649,7 +649,7 @@ bool scene_lights::setLights(const light_indexing_info *info)
 
 	extern bool Deferred_lighting;
 	if ( Deferred_lighting ) {
-		gr_set_lighting(true, true);
+		gr_set_lighting();
 		return false;
 	}
 
@@ -658,7 +658,7 @@ bool scene_lights::setLights(const light_indexing_info *info)
 
 	// check if there are any lights to actually set
 	if ( num_lights <= 0 ) {
-		gr_set_lighting(true, true);
+		gr_set_lighting();
 		return false;
 	}
 
@@ -672,7 +672,7 @@ bool scene_lights::setLights(const light_indexing_info *info)
 		gr_set_light(&AllLights[light_index]);
 	}
 
-	gr_set_lighting(true, true);
+	gr_set_lighting();
 
 	return true;
 }
