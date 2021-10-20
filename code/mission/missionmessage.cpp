@@ -305,7 +305,7 @@ void persona_parse()
 	
 	if (optional_string("$Speech_Tags:")) {
 		char cstr_temp[NAME_LENGTH];
-		bool voice_name_set = false;
+
 		if (optional_string("+Gender:")) {
 			stuff_string(cstr_temp, F_NAME, NAME_LENGTH);
 			Personas[Num_personas].speech_tags.append(fsspeech_write_tag(FSSPEECH_TAG_SET_GENDER,cstr_temp));
