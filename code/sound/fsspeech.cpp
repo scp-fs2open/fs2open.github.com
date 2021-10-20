@@ -11,6 +11,8 @@
 #include "sound/fsspeech.h"
 #include "sound/speech.h"
 
+#define UNUSED(x) (void)(x)
+
 extern int Cmdline_freespace_no_sound;
 
 static int speech_inited = 0;
@@ -85,12 +87,13 @@ void fsspeech_play(int type, const char *text, const char* speech_tags)
 		nprintf(("Speech", "Aborting fsspeech_play because we aren't supposed to play from type %s.\n", FSSpeech_play_id[type]));
 		return;
 	}
-
 	SCP_string speech_text = text;
 	#ifdef _WIN32
-	if (speech_tags != nullptr) {
-		speech_text.insert(0, speech_tags);
-	}
+		if (speech_tags != nullptr) {
+			speech_text.insert(0, speech_tags);
+		}
+	#else
+	UNUSED(speech_tags);
 	#endif
 	speech_play(speech_text.c_str());
 }
@@ -134,7 +137,8 @@ void fsspeech_stuff_buffer(const char *text, const char *speech_tags)
 		Speech_buffer += text;
 	}
 	#else
-		Speech_buffer += text;
+	UNUSED(speech_tags);
+	Speech_buffer += text;
 	#endif
 }
 
@@ -210,6 +214,9 @@ SCP_string fsspeech_write_tag(int type, const char* data)
 
 		default:						break;
 	}
+	#else
+	UNUSED(data);
+	UNUSED(type);
 	#endif
 	return tag;
 }

@@ -245,13 +245,10 @@ bool speech_set_voice(int voice)
 	CComPtr<IEnumSpObjectTokens>        cpEnum;
 	ULONG                               num_voices = 0;
 
-	//Enumerate the available voices
+	//Enumerate the available voices 
 	hr = SpEnumTokens(SPCAT_VOICES, NULL, NULL, &cpEnum);
 
-	if (FAILED(hr))
-	{
-		return false;
-	}
+	if (FAILED(hr)) return false;
 
     hr = cpEnum->GetCount(&num_voices);
 
