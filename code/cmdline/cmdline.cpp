@@ -193,6 +193,7 @@ Flag exe_params[] =
 	{ "-nosound",			"Disable all sound",						false,	0,									EASY_DEFAULT,					"Audio",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nosound", },
 	{ "-nomusic",			"Disable music",							false,	0,									EASY_DEFAULT,					"Audio",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nomusic", },
 	{ "-no_enhanced_sound",	"Disable enhanced sound",					false,	0,									EASY_DEFAULT,					"Audio",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_enhanced_sound", },
+	{ "-no_speech_tags",	"Disable use of speech tags",				false,	0,									EASY_DEFAULT,					"Audio",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_speech_tags", },
 
 	{ "-portable_mode",		"Store config in portable location",		false,	0,									EASY_DEFAULT,					"Launcher",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-portable_mode", },
 
@@ -393,9 +394,11 @@ int Cmdline_no_screenshake = 0;
 
 // Audio related
 cmdline_parm voice_recognition_arg("-voicer", NULL, AT_NONE);	// Cmdline_voice_recognition
+cmdline_parm nospeech_tags_arg("-no_speech_tags", nullptr, AT_NONE);	// Cmdline_no_speech_tags
 
 int Cmdline_voice_recognition = 0;
 int Cmdline_no_enhanced_sound = 0;
+int Cmdline_no_speech_tags = 0;
 
 // MOD related
 cmdline_parm mod_arg("-mod", "List of folders to overwrite/add-to the default data", AT_STRING, true);	// Cmdline_mod  -- DTP modsupport
@@ -1596,6 +1599,11 @@ bool SetCmdlineParams()
 	// Disable enhanced sound
 	if (noenhancedsound_arg.found()) {
 		Cmdline_no_enhanced_sound = 1;
+	}
+
+	// Disable speech tags
+	if (nospeech_tags_arg.found()) {
+		Cmdline_no_speech_tags = 1;
 	}
 
 	// should we start a network game

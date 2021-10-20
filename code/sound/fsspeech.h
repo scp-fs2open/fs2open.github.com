@@ -9,6 +9,8 @@
 #ifndef _FSSPEECH_H_
 #define _FSSPEECH_H_
 
+#include "globalincs/vmallocator.h"
+
 enum
 {
 	FSSPEECH_FROM_TECHROOM,
