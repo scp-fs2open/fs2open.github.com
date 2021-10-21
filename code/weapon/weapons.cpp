@@ -1500,13 +1500,25 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				}
 				else {
 					wip->target_restrict = LR_CURRENT_TARGET;
-					
 				}
-				
 			}
 			
-				if (optional_string("+Independent Seekers:")) {
+			if (optional_string("+Independent Seekers:")) {
 				stuff_boolean(&wip->multi_lock);
+			}
+
+			if (optional_string("+Target Lock Objecttypes:")) {
+				if (optional_string("ships")) {
+					wip->target_restrict_objecttypes = LR_Objecttypes::LRO_SHIPS;
+				}
+				else if (optional_string("bombs")) {
+					wip->target_restrict_objecttypes = LR_Objecttypes::LRO_WEAPONS;
+
+					if (wip->target_restrict != LR_ANY_TARGETS) {
+						error_display(0, "+Target Lock Objecttypes: bombs is currently incompatibly with any +Target Lock Restriction but 'any target'");
+						wip->target_restrict = LR_ANY_TARGETS;
+					}
+				}
 			}
 
 			if (optional_string("+Trigger Hold:")) {
@@ -8542,6 +8554,7 @@ void weapon_info::reset()
 	this->SwarmWait = SWARM_MISSILE_DELAY;
 
 	this->target_restrict = LR_CURRENT_TARGET;
+	this->target_restrict_objecttypes = LR_Objecttypes::LRO_SHIPS;
 	this->multi_lock = false;
 	this->trigger_lock = false;
 	this->launch_reset_locks = false;
@@ -9212,24 +9225,41 @@ bool weapon_multilock_can_lock_on_subsys(object* shooter, object* target, ship_s
 	return ship_subsystem_in_sight(target, target_subsys, &eye_pos, &gsubpos) == 1;
 }
 
-bool weapon_multilock_can_lock_on_target(object* shooter, object* target_objp, weapon_info* wip, float* out_dot) {
+bool weapon_multilock_can_lock_on_target(object* shooter, object* target_objp, weapon_info* wip, float* out_dot, bool checkWeapons) {
 	Assertion(shooter->type == OBJ_SHIP, "weapon_multilock_can_lock_on_target called with a non-ship shooter");
-	if (target_objp->type != OBJ_SHIP)
+
+	if (target_objp->type != OBJ_SHIP && !checkWeapons) {
 		return false;
+	}
+	else if (target_objp->type != OBJ_WEAPON && checkWeapons) {
+		return false;
+	}
+
 
 	if (hud_target_invalid_awacs(target_objp))
 		return false;
 
-	ship* target_ship = &Ships[target_objp->instance];
-
 	if (target_objp->flags[Object::Object_Flags::Should_be_dead])
 		return false;
+	
+	if (!checkWeapons) {
+		ship* target_ship = &Ships[target_objp->instance];
 
-	if (target_ship->flags[Ship::Ship_Flags::Dying])
-		return false;
+		if (target_ship->flags[Ship::Ship_Flags::Dying])
+			return false;
 
-	if (should_be_ignored(target_ship))
-		return false;
+		if (should_be_ignored(target_ship))
+			return false;
+	}
+	else {
+		weapon* target_weapon = &Weapons[target_objp->instance];
+
+		if (!(Weapon_info[target_weapon->weapon_info_index].wi_flags[Weapon::Info_Flags::Bomb] || Weapon_info[target_weapon->weapon_info_index].wi_flags[Weapon::Info_Flags::Can_be_targeted]))
+			return false;
+
+		if (target_weapon->weapon_flags[Weapon::Weapon_Flags::Destroyed_by_weapon])
+			return false;
+	}
 
 	// if this is part of the same team and doesn't have any iff restrictions, reject lock
 	if (!weapon_has_iff_restrictions(wip) && Ships[shooter->instance].team == obj_team(target_objp))

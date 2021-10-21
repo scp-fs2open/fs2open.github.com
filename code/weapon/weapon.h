@@ -51,6 +51,9 @@ extern int Num_weapon_subtypes;
 #define LR_CURRENT_TARGET_SUBSYS		1		// 
 #define LR_ANY_TARGETS					2
 
+// enum for multilock object type restriction
+enum class LR_Objecttypes { LRO_SHIPS, LRO_WEAPONS };
+
 //particle names go here -nuke
 #define PSPEW_NONE		-1			//used to disable a spew, useful for xmts
 #define PSPEW_DEFAULT	0			//std fs2 pspew
@@ -405,6 +408,7 @@ struct weapon_info
 	int SwarmWait;                  // *Swarm firewait, default is 150  -Et1
 
 	int target_restrict;
+	LR_Objecttypes target_restrict_objecttypes;
 	bool multi_lock;
 	int max_seeking;						// how many seekers can be active at a time if multilock is enabled. A value of one will lock stuff up one by one.
 	int max_seekers_per_target;			// how many seekers can be attached to a target.
@@ -768,7 +772,7 @@ bool weapon_multilock_can_lock_on_subsys(object* shooter, object* target, ship_s
 // does NOT check range
 // also returns the dot to the subsys in out_dot
 // While single target missiles will check these properties as well separately, this function is ONLY used by multilock
-bool weapon_multilock_can_lock_on_target(object* shooter, object* target_objp, weapon_info* wip, float* out_dot = nullptr);
+bool weapon_multilock_can_lock_on_target(object* shooter, object* target_objp, weapon_info* wip, float* out_dot = nullptr, bool checkWeapons = false);
 
 
 #endif
