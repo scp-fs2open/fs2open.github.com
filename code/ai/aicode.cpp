@@ -10939,7 +10939,8 @@ void ai_get_dock_goal_indexes(object *objp, ai_info *aip, ai_goal *aigp, object 
 	}
 }
 
-void ai_dock_do_animations(ship* shipp, int from_dockstage, int to_dockstage, int dock_index) {
+void ai_dock_do_animations(ship* shipp, int from_dockstage, int to_dockstage, int dock_index)
+{
 	if (shipp == nullptr)
 		return;
 
@@ -10952,15 +10953,19 @@ void ai_dock_do_animations(ship* shipp, int from_dockstage, int to_dockstage, in
 	if (to_dockstage == AIS_DOCK_4A)
 		to_dockstage = AIS_DOCK_4;
 
-	size_t currentIdx = 0, targetIdx = 0;
+	constexpr size_t num_dockstages = sizeof(dockstages_ordered) / sizeof(dockstages_ordered[0]);
+	size_t currentIdx = num_dockstages, targetIdx = num_dockstages;
 
-	for (size_t idx = 0; idx < sizeof(dockstages_ordered) / sizeof(dockstages_ordered[0]); idx++) {
+
+	for (size_t idx = 0; idx < num_dockstages; idx++) {
 		if (from_dockstage == dockstages_ordered[idx])
 			currentIdx = idx;
 		if (to_dockstage == dockstages_ordered[idx])
 			targetIdx = idx;
 	}
 
+	Assertion(currentIdx != num_dockstages, "Couldn't find current dockstage %d for docking animations.", from_dockstage);
+	Assertion(targetIdx != num_dockstages, "Couldn't find target dockstage %d for docking animations.", to_dockstage);
 	Assertion(targetIdx != currentIdx, "Cannot perform docking animations when not actually switching dock stages.");
 	Assertion((currentIdx < 5 && targetIdx < 5) || (currentIdx >= 5 && targetIdx >= 5), "Cannot perform animations from a AIS_DOCK to AIS_UNDOCK stage!");
 
@@ -11261,7 +11266,7 @@ void ai_dock()
 		aip->submode = AIS_DOCK_1;
 		aip->submode_start_time = Missiontime;
 		ai_dock_do_animations(shipp, AIS_DOCK_0, AIS_DOCK_1, docker_index);
-		ai_dock_do_animations(goal_shipp, AIS_DOCK_0, AIS_DOCK_1, docker_index);
+		ai_dock_do_animations(goal_shipp, AIS_DOCK_0, AIS_DOCK_1, dockee_index);
 
 		aip->path_start = -1;
 		break;
@@ -11287,7 +11292,7 @@ void ai_dock()
 				aip->submode_start_time = Missiontime;
 
 				ai_dock_do_animations(shipp, AIS_DOCK_1, AIS_DOCK_2, docker_index);
-				ai_dock_do_animations(goal_shipp, AIS_DOCK_1, AIS_DOCK_2, docker_index);
+				ai_dock_do_animations(goal_shipp, AIS_DOCK_1, AIS_DOCK_2, dockee_index);
 
 				aip->path_cur--;
 				Assert(aip->path_cur-aip->path_start >= 0);
@@ -11299,7 +11304,7 @@ void ai_dock()
 					aip->submode_start_time = Missiontime;
 
 					ai_dock_do_animations(shipp, AIS_DOCK_1, AIS_DOCK_2, docker_index);
-					ai_dock_do_animations(goal_shipp, AIS_DOCK_1, AIS_DOCK_2, docker_index);
+					ai_dock_do_animations(goal_shipp, AIS_DOCK_1, AIS_DOCK_2, dockee_index);
 				}
 			}
 		}
@@ -11321,7 +11326,7 @@ void ai_dock()
 			aip->submode_start_time = Missiontime;
 
 			ai_dock_do_animations(shipp, AIS_DOCK_2, AIS_DOCK_1, docker_index);
-			ai_dock_do_animations(goal_shipp, AIS_DOCK_2, AIS_DOCK_1, docker_index);
+			ai_dock_do_animations(goal_shipp, AIS_DOCK_2, AIS_DOCK_1, dockee_index);
 		} else {
 			dist = dock_orient_and_approach(Pl_objp, docker_index, goal_objp, dockee_index, DOA_APPROACH);
 			Assert(dist != UNINITIALIZED_VALUE);
@@ -11337,7 +11342,7 @@ void ai_dock()
 				aip->submode_start_time = Missiontime;
 
 				ai_dock_do_animations(shipp, AIS_DOCK_2, AIS_DOCK_3, docker_index);
-				ai_dock_do_animations(goal_shipp, AIS_DOCK_2, AIS_DOCK_3, docker_index);
+				ai_dock_do_animations(goal_shipp, AIS_DOCK_2, AIS_DOCK_3, dockee_index);
 
 				aip->path_cur++;
 			}
@@ -11358,7 +11363,7 @@ void ai_dock()
 			aip->submode_start_time = Missiontime;
 
 			ai_dock_do_animations(shipp, AIS_DOCK_3, AIS_DOCK_2, docker_index);
-			ai_dock_do_animations(goal_shipp, AIS_DOCK_3, AIS_DOCK_2, docker_index);
+			ai_dock_do_animations(goal_shipp, AIS_DOCK_3, AIS_DOCK_2, dockee_index);
 		} else {
 			rotating_dockpoint_info rdinfo;
 
@@ -11389,7 +11394,7 @@ void ai_dock()
 
 					// start the dock animation
 					ai_dock_do_animations(shipp, AIS_DOCK_3, AIS_DOCK_4, docker_index);
-					ai_dock_do_animations(goal_shipp, AIS_DOCK_3, AIS_DOCK_4, docker_index);
+					ai_dock_do_animations(goal_shipp, AIS_DOCK_3, AIS_DOCK_4, dockee_index);
 
 					if ((Pl_objp == Player_obj) || (goal_objp == Player_obj))
 						joy_ff_docked();  // shake player's joystick a little
@@ -11460,7 +11465,7 @@ void ai_dock()
 				aip->submode_start_time = Missiontime;
 
 				ai_dock_do_animations(shipp, AIS_DOCK_4, AIS_DOCK_2, docker_index);
-				ai_dock_do_animations(goal_shipp, AIS_DOCK_4, AIS_DOCK_2, docker_index);
+				ai_dock_do_animations(goal_shipp, AIS_DOCK_4, AIS_DOCK_2, dockee_index);
 			}
 		}
 		else
@@ -11492,7 +11497,7 @@ void ai_dock()
 			Assert(goal_objp != nullptr);
 
 			ai_dock_do_animations(shipp, AIS_UNDOCK_0, AIS_UNDOCK_1, docker_index);
-			ai_dock_do_animations(goal_shipp, AIS_UNDOCK_0, AIS_UNDOCK_1, docker_index);
+			ai_dock_do_animations(goal_shipp, AIS_UNDOCK_0, AIS_UNDOCK_1, dockee_index);
 
 			// calculate time until animations elapse
 			int time = sip->animations.getTimeAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::Docked, docker_index);
@@ -11560,7 +11565,7 @@ void ai_dock()
 			aip->submode_start_time = Missiontime;
 
 			ai_dock_do_animations(shipp, AIS_UNDOCK_1, AIS_UNDOCK_2, docker_index);
-			ai_dock_do_animations(goal_shipp, AIS_UNDOCK_1, AIS_UNDOCK_2, docker_index);
+			ai_dock_do_animations(goal_shipp, AIS_UNDOCK_1, AIS_UNDOCK_2, dockee_index);
 		}
 		break;
 	}
@@ -11592,7 +11597,7 @@ void ai_dock()
 			aip->submode_start_time = Missiontime;
 
 			ai_dock_do_animations(shipp, AIS_UNDOCK_2, AIS_UNDOCK_3, docker_index);
-			ai_dock_do_animations(goal_shipp, AIS_UNDOCK_2, AIS_UNDOCK_3, docker_index);
+			ai_dock_do_animations(goal_shipp, AIS_UNDOCK_2, AIS_UNDOCK_3, dockee_index);
 
 			// don't add undock log entries for support ships.
 			// Goober5000 - deliberately contravening Volition's above comment - add missionlog for support ships, per Mantis #2999
@@ -11610,7 +11615,7 @@ void ai_dock()
 			aip->submode_start_time = Missiontime;
 
 			ai_dock_do_animations(shipp, AIS_UNDOCK_3, AIS_UNDOCK_4, docker_index);
-			ai_dock_do_animations(goal_shipp, AIS_UNDOCK_3, AIS_UNDOCK_4, docker_index);
+			ai_dock_do_animations(goal_shipp, AIS_UNDOCK_3, AIS_UNDOCK_4, dockee_index);
 		}
 		else
 		{
@@ -11622,7 +11627,7 @@ void ai_dock()
 				aip->submode_start_time = Missiontime;
 
 				ai_dock_do_animations(shipp, AIS_UNDOCK_3, AIS_UNDOCK_4, docker_index);
-				ai_dock_do_animations(goal_shipp, AIS_UNDOCK_3, AIS_UNDOCK_4, docker_index);
+				ai_dock_do_animations(goal_shipp, AIS_UNDOCK_3, AIS_UNDOCK_4, dockee_index);
 			}
 
 			// possible that this flag hasn't been cleared yet.  When aborting a rearm, this submode might
