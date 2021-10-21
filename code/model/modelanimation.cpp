@@ -744,7 +744,10 @@ namespace animation {
 		animationSet = newAnimationSet;
 	}
 
-	bool ModelAnimationSet::start(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& name, ModelAnimationDirection direction, bool forced, bool instant, int subtype) {
+	bool ModelAnimationSet::start(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& name, ModelAnimationDirection direction, bool forced, bool instant, int subtype) const {
+		if (pmi == nullptr)
+			return false;
+
 		bool started = false;
 		auto animations = animationSet.find({ type, subtype });
 		if (animations != animationSet.end()) {
@@ -770,7 +773,10 @@ namespace animation {
 		return started;
 	}
 
-	bool ModelAnimationSet::startAll(polymodel_instance* pmi, ModelAnimationTriggerType type, ModelAnimationDirection direction, bool forced, bool instant, int subtype, bool strict) {
+	bool ModelAnimationSet::startAll(polymodel_instance* pmi, ModelAnimationTriggerType type, ModelAnimationDirection direction, bool forced, bool instant, int subtype, bool strict) const {
+		if (pmi == nullptr)
+			return false;
+
 		bool started = false;
 		auto animations = animationSet.find({ type, subtype });
 		if (animations != animationSet.end()) {
@@ -795,7 +801,10 @@ namespace animation {
 	}
 
 	//Yes why of course does this need special handling...
-	bool ModelAnimationSet::startDockBayDoors(polymodel_instance* pmi, ModelAnimationDirection direction, bool forced, bool instant, int subtype) {
+	bool ModelAnimationSet::startDockBayDoors(polymodel_instance* pmi, ModelAnimationDirection direction, bool forced, bool instant, int subtype) const {
+		if (pmi == nullptr)
+			return false;
+
 		bool started = false;
 		subtype++;
 
@@ -820,7 +829,7 @@ namespace animation {
 		return started;
 	}
 
-	int ModelAnimationSet::getTimeDockBayDoors(polymodel_instance* pmi, int subtype) {
+	int ModelAnimationSet::getTimeDockBayDoors(polymodel_instance* pmi, int subtype) const {
 		float duration = 0.0f;
 		subtype++;
 
@@ -849,7 +858,7 @@ namespace animation {
 		return (int) (duration * 1000);
 	}
 
-	int ModelAnimationSet::getTime(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& name, int subtype) {
+	int ModelAnimationSet::getTime(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& name, int subtype) const {
 		float duration = 0.0f;
 
 		auto animations = animationSet.find({ type, subtype });
@@ -876,7 +885,7 @@ namespace animation {
 		return (int) (duration * 1000);
 	}
 
-	int ModelAnimationSet::getTimeAll(polymodel_instance* pmi, ModelAnimationTriggerType type, int subtype, bool strict) {
+	int ModelAnimationSet::getTimeAll(polymodel_instance* pmi, ModelAnimationTriggerType type, int subtype, bool strict) const {
 		float duration = 0.0f;
 
 		auto animations = animationSet.find({ type, subtype });
