@@ -1714,7 +1714,7 @@ void message_queue_message( int message_num, int priority, int timing, const cha
 		MessageQ[i].source = HUD_SOURCE_TERRAN_CMD;
 	}
 
-	if ( (m_persona != -1) && (Personas[m_persona].flags & PERSONA_FLAG_WINGMAN) ) {
+	if ( MessageQ[i].source != HUD_SOURCE_TERRAN_CMD && (m_persona != -1) && (Personas[m_persona].flags & PERSONA_FLAG_WINGMAN) ) {
 		if ( !strstr(who_from, ".wav") ) {
 			MessageQ[i].flags |= MQF_CHECK_ALIVE;
 		}
