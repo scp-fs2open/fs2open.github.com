@@ -486,7 +486,6 @@ flag_def_list_new<Weapon::Info_Flags> ai_tgt_weapon_flags[] = {
     { "tag",						Weapon::Info_Flags::Tag,								true, false },
     { "shudder",					Weapon::Info_Flags::Shudder,							true, false },
     { "lockarm",					Weapon::Info_Flags::Lockarm,							true, false },
-    { "stream",						Weapon::Info_Flags::Stream,								true, false },
     { "ballistic",					Weapon::Info_Flags::Ballistic,							true, false },
     { "default in tech database",	Weapon::Info_Flags::Default_in_tech_database,			true, false },
     { "tagged only",				Weapon::Info_Flags::Tagged_only,						true, false },
@@ -11215,7 +11214,7 @@ bool in_autoaim_fov(ship *shipp, int bank_to_fire, object *obj)
 // the function.  The check_energy parameter (defaults to 1) tells us whether or not
 // we should check the energy.  It will be 0 when a multiplayer client is firing an AI
 // primary.
-int ship_fire_primary(object * obj, int stream_weapons, int force, bool rollback_shot)
+int ship_fire_primary(object * obj, int force, bool rollback_shot)
 {
 	vec3d		gun_point, pnt, firing_pos, target_position, target_velocity_vec;
 	int			n = obj->instance;
@@ -11293,11 +11292,6 @@ int ship_fire_primary(object * obj, int stream_weapons, int force, bool rollback
 
 	Assert(num_primary_banks > 0);
 	if (num_primary_banks < 1){
-		return 0;
-	}
-
-	// if we're firing stream weapons, but the trigger is not down, do nothing
-	if(stream_weapons && !(shipp->flags[Ship_Flags::Trigger_down])){
 		return 0;
 	}
 
@@ -11380,16 +11374,8 @@ int ship_fire_primary(object * obj, int stream_weapons, int force, bool rollback
 			continue;
 		}
 
-		// Cyborg17 - In rollback mode we don't need to worry about stream weapons or timestamps, because we are recreating an exact shot, anywway.
+		// Cyborg17 - In rollback mode we don't need to worry timestamps, because we are recreating an exact shot, anyway.
 		if (!rollback_shot) {
-			// if we're firing stream weapons and this is a non stream weapon, skip it
-			if (stream_weapons && !(winfo_p->wi_flags[Weapon::Info_Flags::Stream])) {
-				continue;
-			}
-			// if we're firing non stream weapons and this is a stream weapon, skip it
-			if (!stream_weapons && (winfo_p->wi_flags[Weapon::Info_Flags::Stream])) {
-				continue;
-			}
 			// only non-multiplayer clients (single, multi-host) need to do timestamp checking
 			if ( !timestamp_elapsed(swp->next_primary_fire_stamp[bank_to_fire]) ) {
 				continue;

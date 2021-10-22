@@ -768,7 +768,7 @@ void obj_player_fire_stuff( object *objp, control_info ci )
 			// so let's let the new system take over instead by excluding client player shots
 			// on the server.
 			if (!(MULTIPLAYER_MASTER) || (objp == Player_obj)) {
-				ship_fire_primary(objp, 0);
+				ship_fire_primary(objp);
 			}
 			
 		} else {
@@ -943,13 +943,6 @@ void obj_move_call_physics(object *objp, float frametime)
 					pp = Player;
 					obj_player_fire_stuff( objp, pp->ci );				
 				}
-			}
-
-			// fire streaming weapons for ships in here - ALL PLAYERS, regardless of client, single player, server, whatever.
-			// do stream weapon firing for all ships themselves. 
-			if(objp->type == OBJ_SHIP){
-				ship_fire_primary(objp, 1, 0);
-					has_fired = 1;
 			}
 		}
 	}

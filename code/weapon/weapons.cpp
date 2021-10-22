@@ -138,8 +138,8 @@ flag_def_list_new<Weapon::Info_Flags> Weapon_Info_Flags[] = {
     { "shudder",						Weapon::Info_Flags::Shudder,							true, false },
     { "electronics",					Weapon::Info_Flags::Electronics,						true, false },
     { "lockarm",						Weapon::Info_Flags::Lockarm,							true, false },
-    { "beam",							Weapon::Info_Flags::Beam,								true, true }, //special case
-    { "stream",							Weapon::Info_Flags::Stream,								true, false },
+    { "beam",							Weapon::Info_Flags::Beam,								true, true  }, //special case
+    { "stream",							Weapon::Info_Flags::NUM_VALUES,							false, true }, //special case
     { "supercap",						Weapon::Info_Flags::Supercap,							true, false },
     { "countermeasure",					Weapon::Info_Flags::Cmeasure,							true, false },
     { "ballistic",						Weapon::Info_Flags::Ballistic,							true, false },
@@ -655,6 +655,9 @@ void parse_wi_flags(weapon_info *weaponp, flagset<Weapon::Info_Flags> preset_wi_
                 weaponp->wi_flags.remove(Weapon::Info_Flags::Die_on_lost_lock);
             }
         }
+        else if (!stricmp(NOX("stream"), flag_text.c_str())) {
+			mprintf(("Ignoring \"stream\" flag on weapon %s...\n", weaponp->name)); // dont warn because its not a big deal, but also because retail has several 'stream' weapons
+		}
         else {
             Warning(LOCATION, "Unrecognized flag in flag list for weapon %s: \"%s\"", weaponp->name, (*flag).c_str());
         }

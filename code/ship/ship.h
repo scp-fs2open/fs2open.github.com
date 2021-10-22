@@ -1617,7 +1617,7 @@ extern const std::shared_ptr<scripting::Hook> OnShipDeathStartedHook;
 
 extern bool in_autoaim_fov(ship *shipp, int bank_to_fire, object *obj);
 extern int ship_stop_fire_primary(object * obj);
-extern int ship_fire_primary(object * objp, int stream_weapons, int force = 0, bool rollback_shot = false);
+extern int ship_fire_primary(object * objp, int force = 0, bool rollback_shot = false);
 extern int ship_fire_secondary(object * objp, int allow_swarm = 0, bool rollback_shot = false );
 bool ship_start_secondary_fire(object* objp);
 bool ship_stop_secondary_fire(object* objp);

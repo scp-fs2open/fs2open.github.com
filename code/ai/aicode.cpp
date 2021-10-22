@@ -6053,14 +6053,8 @@ int ai_fire_primary_weapon(object *objp)
 
 	set_primary_weapon_linkage(objp);
 	
-	// I think this will properly solve the problem
-	// fire non-streaming weapons
-	ship_fire_primary(objp, 0);
-	
-	// fire streaming weapons
-	shipp->flags.set(Ship::Ship_Flags::Trigger_down);
-	ship_fire_primary(objp, 1);
-	shipp->flags.remove(Ship::Ship_Flags::Trigger_down);
+	ship_fire_primary(objp);
+
 	return 1;//if it got down to here then it tryed to fire
 }
 
