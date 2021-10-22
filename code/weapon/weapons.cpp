@@ -8233,7 +8233,7 @@ void shield_impact_explosion(vec3d *hitpos, object *objp, float radius, int idx)
 // renders another laser bitmap on top of the regular bitmap based on the angle of the camera to the front of the laser
 // the two are cross-faded into each other so it can switch to the more appropriate bitmap depending on the angle
 // returns the alpha multiplier to be used for the main bitmap
-float weapon_render_headon_bitmap(object* wep_objp, vec3d* headp, int bitmap, float width1, float width2, float r, float g, float b){	
+float weapon_render_headon_bitmap(object* wep_objp, vec3d* headp, int bitmap, float width1, float width2, int r, int g, int b){	
 	weapon* wp = &Weapons[wep_objp->instance];
 	weapon_info* wip = &Weapon_info[wp->weapon_info_index];
 
@@ -8366,7 +8366,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 						scaled_head_radius,
 						scaled_tail_radius,
 						alpha, alpha, alpha);
-					alpha *= main_bitmap_alpha_mult;
+					alpha = (int)(alpha * main_bitmap_alpha_mult);
 				}
 
 				batching_add_laser(
@@ -8439,14 +8439,14 @@ void weapon_render(object* obj, model_draw_list *scene)
 				if (The_mission.flags[Mission::Mission_Flags::Fullneb] && Neb_affects_weapons)
 					alpha = (int)(alpha * neb2_get_fog_visibility(&obj->pos, NEB_FOG_VISIBILITY_MULT_WEAPON));
 
-				float r = (c.red * alpha) / 255;
-				float g = (c.green * alpha) / 255;
-				float b = (c.blue * alpha) / 255;
-
 				// Scale the laser so that it always appears some configured amount of pixels wide, no matter the distance.
 				// Only affects width, length remains unchanged.
 				float scaled_head_radius = model_render_get_diameter_clamped_to_min_pixel_size(&headp2, wip->laser_head_radius, Min_pixel_size_laser);
 				float scaled_tail_radius = model_render_get_diameter_clamped_to_min_pixel_size(&tailp, wip->laser_tail_radius, Min_pixel_size_laser);
+
+				int r = (c.red * alpha) / 255;
+				int g = (c.green * alpha) / 255;
+				int b = (c.blue * alpha) / 255;
 
 				// render the head-on bitmap if appropriate and maybe adjust the main bitmap's alpha
 				if (wip->laser_glow_headon_bitmap.first_frame >= 0) {
@@ -8455,9 +8455,9 @@ void weapon_render(object* obj, model_draw_list *scene)
 						scaled_head_radius,
 						scaled_tail_radius,
 						r, g, b);
-					r *= main_bitmap_alpha_mult;
-					g *= main_bitmap_alpha_mult;
-					b *= main_bitmap_alpha_mult;
+					r = (int)(r * main_bitmap_alpha_mult);
+					g = (int)(g * main_bitmap_alpha_mult);
+					b = (int)(b * main_bitmap_alpha_mult);
 				}
 
 				batching_add_laser(
