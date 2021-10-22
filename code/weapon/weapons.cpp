@@ -8404,9 +8404,9 @@ void weapon_render(object* obj, model_draw_list *scene)
 					while (wp->laser_glow_bitmap_frame > wip->laser_glow_bitmap.total_time)
 						wp->laser_glow_bitmap_frame -= wip->laser_glow_bitmap.total_time;
 
-					framenum = fl2i((wp->laser_glow_bitmap_frame * wip->laser_glow_bitmap.num_frames) / wip->laser_glow_bitmap.total_time);
+					framenum = fl2i( (wp->laser_glow_bitmap_frame * wip->laser_glow_bitmap.num_frames) / wip->laser_glow_bitmap.total_time );
 
-					CLAMP(framenum, 0, wip->laser_glow_bitmap.num_frames - 1);
+					CLAMP(framenum, 0, wip->laser_glow_bitmap.num_frames-1);
 				}
 
 				if (wip->laser_glow_headon_bitmap.num_frames > 1) {
