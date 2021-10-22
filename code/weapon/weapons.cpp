@@ -8237,6 +8237,58 @@ void shield_impact_explosion(vec3d *hitpos, object *objp, float radius, int idx)
 					 objp);
 }
 
+// renders another laser bitmap on top of the regular bitmap based on the angle of the camera to the front of the laser
+// the two are cross-faded into each other so it can switch to the more appropriate bitmap depending on the angle
+// returns the alpha multiplier to be used for the main bitmap
+float weapon_render_headon_bitmap(object* wep_objp, vec3d* headp, int bitmap, float width1, float width2, float r, float g, float b){	
+	weapon* wp = &Weapons[wep_objp->instance];
+	weapon_info* wip = &Weapon_info[wp->weapon_info_index];
+
+	vec3d center, reye;
+	vm_vec_avg(&center, headp, &wep_objp->pos);
+	vm_vec_sub(&reye, &Eye_position, &center);
+	vm_vec_normalize(&reye);
+	float ang = vm_vec_delta_ang_norm(&reye, &wep_objp->orient.vec.fvec, nullptr);
+	float head_alpha, side_alpha;
+
+	// get the head vs side apparent proportions
+	if (wip->laser_headon_switch_ang < 0.0f) {
+		head_alpha = ((width1 + width2) / 2) * fabs(cosf(ang));
+		side_alpha = wip->laser_length * fabs(sinf(ang));
+	}
+	else {
+		head_alpha = tanf(wip->laser_headon_switch_ang);
+		side_alpha = 1 / head_alpha;
+		side_alpha = side_alpha * fabs(sinf(ang));
+		head_alpha = head_alpha * fabs(cosf(ang));
+	}
+	head_alpha = powf(head_alpha, wip->laser_headon_switch_rate);
+	side_alpha = powf(side_alpha, wip->laser_headon_switch_rate);
+
+	// turn it into 0..1
+	float head_side_total = head_alpha + side_alpha;
+	head_alpha /= head_side_total;
+	side_alpha /= head_side_total;
+
+	// make the transition instant past 20
+	if (wip->laser_headon_switch_rate >= 20.0f) {
+		if (head_alpha > side_alpha) {
+			head_alpha = 1.0f;
+			side_alpha = 0.0f;
+		}
+		else {
+			head_alpha = 0.0f;
+			side_alpha = 1.0f;
+		}
+	}
+
+	r = (int)(r * head_alpha);   g = (int)(g * head_alpha);   b = (int)(b * head_alpha);
+
+	batching_add_laser(bitmap, headp, width1, &wep_objp->pos, width2, r, g, b);
+
+	return side_alpha;
+}
+
 void weapon_render(object* obj, model_draw_list *scene)
 {
 	int num;
@@ -8314,6 +8366,16 @@ void weapon_render(object* obj, model_draw_list *scene)
 				float scaled_head_radius = model_render_get_diameter_clamped_to_min_pixel_size(&headp, wip->laser_head_radius, Min_pixel_size_laser);
 				float scaled_tail_radius = model_render_get_diameter_clamped_to_min_pixel_size(&obj->pos, wip->laser_tail_radius, Min_pixel_size_laser);
 
+				// render the head-on bitmap if appropriate and maybe adjust the main bitmap's alpha
+				if (wip->laser_headon_bitmap.first_frame >= 0) {
+					float main_bitmap_alpha_mult = weapon_render_headon_bitmap(obj, &headp,
+						wip->laser_headon_bitmap.first_frame + headon_framenum,
+						scaled_head_radius,
+						scaled_tail_radius,
+						alpha, alpha, alpha);
+					alpha *= main_bitmap_alpha_mult;
+				}
+
 				batching_add_laser(
 					wip->laser_bitmap.first_frame + framenum,
 					&headp,
@@ -8354,21 +8416,21 @@ void weapon_render(object* obj, model_draw_list *scene)
 					CLAMP(framenum, 0, wip->laser_glow_bitmap.num_frames - 1);
 				}
 
-				if (wip->laser_headon_bitmap.num_frames > 1) {
+				if (wip->laser_glow_headon_bitmap.num_frames > 1) {
 					wp->laser_headon_bitmap_frame += flFrametime;
 
 					// Sanity checks
-					if (wp->laser_glow_bitmap_frame < 0.0f)
-						wp->laser_glow_bitmap_frame = 0.0f;
-					if (wp->laser_glow_bitmap_frame > 100.0f)
-						wp->laser_glow_bitmap_frame = 0.0f;
+					if (wp->laser_glow_headon_bitmap_frame < 0.0f)
+						wp->laser_glow_headon_bitmap_frame = 0.0f;
+					if (wp->laser_glow_headon_bitmap_frame > 100.0f)
+						wp->laser_glow_headon_bitmap_frame = 0.0f;
 
-					while (wp->laser_glow_bitmap_frame > wip->laser_glow_bitmap.total_time)
-						wp->laser_glow_bitmap_frame -= wip->laser_glow_bitmap.total_time;
+					while (wp->laser_glow_headon_bitmap_frame > wip->laser_glow_headon_bitmap.total_time)
+						wp->laser_glow_headon_bitmap_frame -= wip->laser_glow_headon_bitmap.total_time;
 
-					headon_framenum = fl2i((wp->laser_glow_bitmap_frame * wip->laser_glow_bitmap.num_frames) / wip->laser_glow_bitmap.total_time);
+					headon_framenum = fl2i((wp->laser_glow_headon_bitmap_frame * wip->laser_glow_headon_bitmap.num_frames) / wip->laser_glow_headon_bitmap.total_time);
 
-					CLAMP(headon_framenum, 0, wip->laser_glow_bitmap.num_frames - 1);
+					CLAMP(headon_framenum, 0, wip->laser_glow_headon_bitmap.num_frames - 1);
 				}
 
 				if (wip->wi_flags[Weapon::Info_Flags::Transparent]) {
@@ -8384,10 +8446,26 @@ void weapon_render(object* obj, model_draw_list *scene)
 				if (The_mission.flags[Mission::Mission_Flags::Fullneb] && Neb_affects_weapons)
 					alpha = (int)(alpha * neb2_get_fog_visibility(&obj->pos, NEB_FOG_VISIBILITY_MULT_WEAPON));
 
+				float r = (c.red * alpha) / 255;
+				float g = (c.green * alpha) / 255;
+				float b = (c.blue * alpha) / 255;
+
 				// Scale the laser so that it always appears some configured amount of pixels wide, no matter the distance.
 				// Only affects width, length remains unchanged.
 				float scaled_head_radius = model_render_get_diameter_clamped_to_min_pixel_size(&headp2, wip->laser_head_radius, Min_pixel_size_laser);
 				float scaled_tail_radius = model_render_get_diameter_clamped_to_min_pixel_size(&tailp, wip->laser_tail_radius, Min_pixel_size_laser);
+
+				// render the head-on bitmap if appropriate and maybe adjust the main bitmap's alpha
+				if (wip->laser_glow_headon_bitmap.first_frame >= 0) {
+					float main_bitmap_alpha_mult = weapon_render_headon_bitmap(obj, &headp2,
+						wip->laser_glow_headon_bitmap.first_frame + headon_framenum,
+						scaled_head_radius,
+						scaled_tail_radius,
+						r, g, b);
+					r *= main_bitmap_alpha_mult;
+					g *= main_bitmap_alpha_mult;
+					b *= main_bitmap_alpha_mult;
+				}
 
 				batching_add_laser(
 					wip->laser_glow_bitmap.first_frame + framenum,
@@ -8395,7 +8473,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 					scaled_head_radius * weapon_glow_scale_f,
 					&tailp,
 					scaled_tail_radius * weapon_glow_scale_r,
-					(c.red*alpha)/255, (c.green*alpha)/255, (c.blue*alpha)/255);
+					r, g, b);
 			}
 
 			break;
