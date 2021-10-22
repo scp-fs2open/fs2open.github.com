@@ -712,13 +712,13 @@ void batching_add_beam(int texture, vec3d *start, vec3d *end, float width, float
 	batching_add_beam_internal(batch, texture, start, end, width, &clr, 0.0f);
 }
 
-void batching_add_laser(int texture, vec3d* p0, float width1, vec3d* p1, float width2, int r, int g, int b)
+void batching_add_laser(int texture, vec3d *p0, float width1, vec3d *p1, float width2, int r, int g, int b)
 {
 	if (texture < 0) {
 		Int3();
 	}
 
-	primitive_batch* batch = batching_find_batch(texture, batch_info::FLAT_EMISSIVE);
+	primitive_batch *batch = batching_find_batch(texture, batch_info::FLAT_EMISSIVE);
 
 	batching_add_laser_internal(batch, texture, p0, width1, p1, width2, r, g, b);
 }

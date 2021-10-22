@@ -1100,21 +1100,14 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	}
 
 
-	if (optional_string("@Laser Head-on Transition Angle:")) {
-		if (wip->render_type != WRT_LASER) {
-			mprintf(("WARNING:  Laser head-on bitmap specified on non-LASER type weapon (%s)!\n", wip->name));
-		}
-		else {
-			stuff_float(&wip->laser_headon_switch_ang);
-			wip->laser_headon_switch_ang *= (PI2 / 180.0f);
-		}
+	if (optional_string("@Laser Head-on Transition Angle:")) {		
+		stuff_float(&wip->laser_headon_switch_ang);
+		wip->laser_headon_switch_ang = fl_radians(wip->laser_headon_switch_ang);
 	}
 
 	if (optional_string("@Laser Head-on Transition Rate:")) {
 		stuff_float(&wip->laser_headon_switch_rate);
 	}
-	else
-		wip->laser_headon_switch_rate = 2;
 
 	if(optional_string("@Laser Color:"))
 	{
@@ -8656,6 +8649,7 @@ void weapon_info::reset()
 	generic_anim_init(&this->laser_headon_bitmap);
 	generic_anim_init(&this->laser_glow_headon_bitmap);
 	this->laser_headon_switch_ang = -1.0f;
+	this->laser_headon_switch_rate = 2.0f;
 	this->laser_length = 10.0f;
 	gr_init_color(&this->laser_color_1, 255, 255, 255);
 	gr_init_color(&this->laser_color_2, 255, 255, 255);
