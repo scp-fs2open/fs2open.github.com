@@ -4009,6 +4009,16 @@ void load_gauge_wingman_status(gauge_settings* settings)
 			grow_mode = 2;
 	}
 
+	bool use_full_wingnames = false;
+	if (optional_string("Use Full Wing Names:")) {
+		stuff_boolean(&use_full_wingnames);
+	}
+
+	bool use_expanded_colors = false;
+	if (optional_string("Use Expanded Colors:")) {
+		stuff_boolean(&use_expanded_colors);
+	}
+
 	hud_gauge->initBitmaps(fname_left, fname_middle, fname_right, fname_dots);
 	hud_gauge->initHeaderOffsets(header_offsets[0], header_offsets[1]);
 	hud_gauge->initFixedHeaderPosition(fixed_header_position);
@@ -4025,6 +4035,8 @@ void load_gauge_wingman_status(gauge_settings* settings)
 	hud_gauge->initWingWidth(wing_width);
 	hud_gauge->initRightBgOffset(right_bg_offset);
 	hud_gauge->initGrowMode(grow_mode);
+	hud_gauge->initUseFullWingnames(use_full_wingnames);
+	hud_gauge->initUseExpandedColors(use_expanded_colors);
 
 	gauge_assign_common(settings, std::move(hud_gauge));
 }

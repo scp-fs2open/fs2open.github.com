@@ -53,6 +53,8 @@ namespace particle
 
 		void moveTo(vec3d* pos);
 
+		void setVelocity(vec3d* vel);
+
 		void setOrientationFromNormalizedVec(vec3d* normalizedDir, bool relative = false);
 
 		void setOrientationFromVec(vec3d* dir, bool relative = false);

@@ -1856,7 +1856,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 				swp->current_secondary_bank = 0;
 			}
 			int bank_to_fire = swp->current_secondary_bank;
-			if ((turret->system_info->flags[Model::Subsystem_Flags::Turret_use_ammo]) && (swp->secondary_bank_ammo[bank_to_fire] < 0)) {
+			if ((turret->system_info->flags[Model::Subsystem_Flags::Turret_use_ammo]) && !ship_secondary_has_ammo(swp, bank_to_fire)) {
 				if (!(turret->system_info->flags[Model::Subsystem_Flags::Use_multiple_guns])) {
 					swp->current_secondary_bank++;
 					if (swp->current_secondary_bank >= swp->num_secondary_banks) {
@@ -1935,6 +1935,9 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 
 						for (int j = start_slot; j <= end_slot; j++) {
 							swp->secondary_next_slot[bank_to_fire]++;
+
+							if (Weapon_info[swp->secondary_bank_weapons[bank_to_fire]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo])
+								continue;
 
 							if (swp->secondary_next_slot[bank_to_fire] > (num_slots - 1)){
 								swp->secondary_next_slot[bank_to_fire] = 0;
@@ -2041,7 +2044,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 	turret->flags.set(Ship::Subsystem_Flags::Has_fired); //set has fired flag for scriptng - nuke
 
 	//Fire animation stuff
-	model_anim_start_type(turret, AnimationTriggerType::TurretFired, ANIMATION_SUBTYPE_ALL, 1);
+	Ship_info[parent_ship->ship_info_index].animations.start(model_get_instance(parent_ship->model_instance_num), animation::ModelAnimationTriggerType::TurretFired, animation::anim_name_from_subsys(turret->system_info), animation::ModelAnimationDirection::FWD, true);
 	return true;
 }
 
@@ -2127,10 +2130,12 @@ int Num_find_turret_enemy = 0;
 int Num_turrets_fired = 0;
 
 /**
- * Given a turret tp and its parent parent_objnum, fire from the turret at its enemy.
+ * Previously called ai_fire_from_turret()
+ * Given a ship and a turret subsystem, handle all its behavior, mostly targeting and shooting but also 
+ * all turret movement and resetting when idle
  */
 extern int Nebula_sec_range;
-void ai_fire_from_turret(ship *shipp, ship_subsys *ss)
+void ai_turret_execute_behavior(ship *shipp, ship_subsys *ss)
 {
 	float		weapon_firing_range;
     float		weapon_min_range;			// *Weapon minimum firing range -Et1
@@ -2655,8 +2660,15 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss)
 			{
 				// starting animation checks
 				if (ss->turret_animation_position == MA_POS_NOT_SET) {
-					if ( model_anim_start_type(shipp, AnimationTriggerType::TurretFiring, ss->system_info->subobj_num, 1) ) {
-						ss->turret_animation_done_time = model_anim_get_time_type(shipp, AnimationTriggerType::TurretFiring, ss->system_info->subobj_num);
+					bool started = false;
+					//For legacy animations using subtype for turret number
+					started |= Ship_info[shipp->ship_info_index].animations.startAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::TurretFiring, animation::ModelAnimationDirection::FWD, false, false, ss->system_info->subobj_num, true);
+					//For modern animations using proper triggered-by-subsys name
+					started |= Ship_info[shipp->ship_info_index].animations.start(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::TurretFiring, animation::anim_name_from_subsys(ss->system_info), animation::ModelAnimationDirection::FWD);
+					if (started) {
+						int duration = Ship_info[shipp->ship_info_index].animations.getTimeAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::TurretFiring, ss->system_info->subobj_num, true);
+						int duration2 = Ship_info[shipp->ship_info_index].animations.getTime(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::TurretFiring, animation::anim_name_from_subsys(ss->system_info));
+						ss->turret_animation_done_time = timestamp(duration > duration2 ? duration : duration2);
 						ss->turret_animation_position = MA_POS_SET;
 					}
 				}

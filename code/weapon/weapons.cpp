@@ -43,7 +43,7 @@
 #include "render/batching.h"
 #include "ship/ship.h"
 #include "ship/shiphit.h"
-#include "weapon/beam.h"	// for BEAM_TYPE_? definitions
+#include "weapon/beam.h"	// for BeamType definitions
 #include "weapon/corkscrew.h"
 #include "weapon/emp.h"
 #include "weapon/flak.h"
@@ -186,7 +186,10 @@ flag_def_list_new<Weapon::Info_Flags> Weapon_Info_Flags[] = {
 	{ "require exact los",				Weapon::Info_Flags::Require_exact_los,					true, false },
 	{ "can damage shooter",				Weapon::Info_Flags::Can_damage_shooter,					true, false },
 	{ "heals",							Weapon::Info_Flags::Heals,						        true, false },
+	{ "secondary no ammo",				Weapon::Info_Flags::SecondaryNoAmmo,					true, false },
 	{ "no collide",						Weapon::Info_Flags::No_collide,						    true, false },
+	{ "multilock target dead subsys",   Weapon::Info_Flags::Multilock_target_dead_subsys,		true, false },
+	{ "no evasion",						Weapon::Info_Flags::No_evasion,						    true, false },
 };
 
 const size_t num_weapon_info_flags = sizeof(Weapon_Info_Flags) / sizeof(flag_def_list_new<Weapon::Info_Flags>);
@@ -1530,13 +1533,25 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				}
 				else {
 					wip->target_restrict = LR_CURRENT_TARGET;
-					
 				}
-				
 			}
 			
-				if (optional_string("+Independent Seekers:")) {
+			if (optional_string("+Independent Seekers:")) {
 				stuff_boolean(&wip->multi_lock);
+			}
+
+			if (optional_string("+Target Lock Objecttypes:")) {
+				if (optional_string("ships")) {
+					wip->target_restrict_objecttypes = LR_Objecttypes::LRO_SHIPS;
+				}
+				else if (optional_string("bombs")) {
+					wip->target_restrict_objecttypes = LR_Objecttypes::LRO_WEAPONS;
+
+					if (wip->target_restrict != LR_ANY_TARGETS) {
+						error_display(0, "+Target Lock Objecttypes: bombs is currently incompatibly with any +Target Lock Restriction but 'any target'");
+						wip->target_restrict = LR_ANY_TARGETS;
+					}
+				}
 			}
 
 			if (optional_string("+Trigger Hold:")) {
@@ -2479,7 +2494,19 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	if ( optional_string("$BeamInfo:") ) {
 		// beam type
 		if(optional_string("+Type:")) {
-			stuff_int(&wip->b_info.beam_type);
+			stuff_string(fname, F_NAME, NAME_LENGTH);
+
+			if		(!stricmp(fname, "Direct Fire") || !stricmp(fname, "0")) wip->b_info.beam_type = BeamType::DIRECT_FIRE;
+			else if (!stricmp(fname, "Slashing")    || !stricmp(fname, "1")) wip->b_info.beam_type = BeamType::SLASHING;
+			else if (!stricmp(fname, "Targeting")   || !stricmp(fname, "2")) wip->b_info.beam_type = BeamType::TARGETING;
+			else if (!stricmp(fname, "Antifighter") || !stricmp(fname, "3")) wip->b_info.beam_type = BeamType::ANTIFIGHTER;
+			else if (!stricmp(fname, "Normal Fire") || !stricmp(fname, "4")) wip->b_info.beam_type = BeamType::NORMAL_FIRE;
+			else if (!stricmp(fname, "Omni")        || !stricmp(fname, "5")) wip->b_info.beam_type = BeamType::OMNI;
+			else
+				Warning(LOCATION, "Beam weapon, '%s', has an unknown beam type %s", wip->name, fname);
+		}
+		else if (first_time) {
+			Warning(LOCATION, "Beam weapon, '%s', does not specify a beam type.", wip->name);
 		}
 
 		// how long it lasts
@@ -2531,13 +2558,13 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 					break;
 				}
 				// an unspecified Miss Factor should apply to all IFFs
-				for(iff=0; iff<Num_iffs; iff++) {
+				for(iff=0; iff< (int)Iff_info.size(); iff++) {
 					wip->b_info.beam_iff_miss_factor[iff][idx] = temp;
 				}
 			}
 		}
 		// now check miss factors for each IFF
-		for(iff=0; iff<Num_iffs; iff++) {
+		for(iff=0; iff< (int)Iff_info.size(); iff++) {
 			SCP_string miss_factor_string;
 			sprintf(miss_factor_string, "+%s Miss Factor:", Iff_info[iff].iff_name);
 			if(optional_string(miss_factor_string.c_str())) {
@@ -2575,9 +2602,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			stuff_int(&wip->b_info.beam_shots);
 		}
 
-		// make sure that we have at least one shot so that TYPE_D beams will work
-		if ( (wip->b_info.beam_type == BEAM_TYPE_D) && (wip->b_info.beam_shots < 1) ) {
-			Warning( LOCATION, "Type D beam weapon, '%s', has less than one \"+Shots\" specified!  It must be set to at least 1!!",  wip->name);
+		// make sure that we have at least one shot so that antifighter beams will work
+		if ( (wip->b_info.beam_type == BeamType::ANTIFIGHTER) && (wip->b_info.beam_shots < 1) ) {
+			Warning( LOCATION, "Antifighter beam weapon, '%s', has less than one \"+Shots\" specified!  It must be set to at least 1!!",  wip->name);
 			wip->b_info.beam_shots = 1;
 		}
 		
@@ -3446,6 +3473,11 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	//Optional score for destroying this weapon.
 	if (optional_string("$Score:")) {
 		stuff_int(&wip->score);
+	}
+	
+	if (optional_string("$Custom data:")) 
+	{
+		parse_string_map(wip->custom_data, "$end_custom_data", "+Val:");
 	}
 
 	return w_id;
@@ -4920,7 +4952,7 @@ void weapon_home(object *obj, int num, float frame_time)
 
 	//	See if this weapon is the nearest homing object to the object it is homing on.
 	//	If so, update some fields in the target object's ai_info.
-	if (hobjp != &obj_used_list) {
+	if (hobjp != &obj_used_list && !(wip->wi_flags[Weapon::Info_Flags::No_evasion])) {
 
 		if (hobjp->type == OBJ_SHIP) {
 			ai_info	*aip;
@@ -5322,8 +5354,10 @@ static void weapon_set_state(weapon_info* wip, weapon* wp, WeaponState state)
 	{
 		auto source = particle::ParticleManager::get()->createSource(map_entry->second);
 
-		source.moveToObject(&Objects[wp->objnum], &vmd_zero_vector);
+		object* objp = &Objects[wp->objnum];
+		source.moveToObject(objp, &vmd_zero_vector);
 		source.setWeaponState(wp->weapon_state);
+		source.setVelocity(&objp->phys_info.vel);
 
 		source.finish();
 	}
@@ -5411,6 +5445,7 @@ void weapon_process_post(object * obj, float frame_time)
 						auto particleSource = particle::ParticleManager::get()->createSource(wip->spawn_info[i].spawn_effect);
 						particleSource.moveTo(&obj->pos);
 						particleSource.setOrientationFromVec(&obj->phys_info.vel);
+						particleSource.setVelocity(&obj->phys_info.vel);
 						particleSource.finish();
 					}
 
@@ -5501,54 +5536,7 @@ void weapon_process_post(object * obj, float frame_time)
 	}
 	#else
 		weapon_maybe_play_flyby_sound(obj, wp);
-	#endif	
-	
-	//	If our target is still valid, then update some info.
-	if (wp->target_num != -1) {
-		if (Objects[wp->target_num].signature == wp->target_sig) {
-			float		cur_dist;
-			vec3d	v0;
-
-			vm_vec_avg(&v0, &obj->pos, &obj->last_pos);
-
-			cur_dist = vm_vec_dist_quick(&v0, &Objects[wp->target_num].pos);
-
-			if (cur_dist < wp->nearest_dist) {
-				wp->nearest_dist = cur_dist;
-			} else if (cur_dist > wp->nearest_dist + 1.0f) {
-				float		dot;
-				vec3d	tvec;
-				ai_info	*parent_aip;
-
-				parent_aip = NULL;
-				if (obj->parent != Player_obj-Objects) {
-					parent_aip = &Ai_info[Ships[Objects[obj->parent].instance].ai_index];
-				}
-
-				vm_vec_normalized_dir(&tvec, &v0, &Objects[wp->target_num].pos);
-				dot = vm_vec_dot(&tvec, &Objects[wp->target_num].orient.vec.fvec);
-				wp->target_num = -1;
-
-				//	Learn!  If over-shooting or under-shooting, compensate.
-				//	Really need to compensate for left/right errors.  This does no good against someone circling
-				//	in a plane perpendicular to the attacker's forward vector.
-				if (parent_aip != NULL) {
-					if (cur_dist > 100.0f)
-						parent_aip->lead_scale = 0.0f;
-
-					if (dot < -0.1f){
-						parent_aip->lead_scale += cur_dist/2000.0f;
-					} else if (dot > 0.1f) {
-						parent_aip->lead_scale -= cur_dist/2000.0f;
-					}
-					
-					if (fl_abs(parent_aip->lead_scale) > 1.0f){
-						parent_aip->lead_scale *= 0.9f;
-					}
-				}
-			}
-		}
-	}
+	#endif
 
 	if(wip->wi_flags[Weapon::Info_Flags::Particle_spew] && wp->lssm_stage != 3 ){
 		weapon_maybe_spew_particle(obj);
@@ -5813,7 +5801,6 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 		if ((target_objnum > -1) && (target_objnum < (MAX_OBJECTS)) && can_lock) {
 			wp->target_num = target_objnum;
 			wp->target_sig = Objects[target_objnum].signature;
-			wp->nearest_dist = 99999.0f;
 			if ( (wip->wi_flags[Weapon::Info_Flags::Homing_aspect]) && target_is_locked) {
 				wp->homing_object = &Objects[target_objnum];
 				wp->homing_subsys = target_subsys;
@@ -6197,8 +6184,8 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		objp->radius = model_get_radius(wip->model_num);
 
 		// Always create an instance in case we need them
-		if (model_get(wip->model_num)->flags & PM_FLAG_HAS_INTRINSIC_ROTATE || !wip->on_create_program.isEmpty()) {
-			wp->model_instance_num = model_create_instance(false, wip->model_num);
+		if (model_get(wip->model_num)->flags & PM_FLAG_HAS_INTRINSIC_MOTION || !wip->on_create_program.isEmpty()) {
+			wp->model_instance_num = model_create_instance(true, wip->model_num);
 		}
 	} else if ( wip->render_type == WRT_LASER ) {
 		objp->radius = wip->laser_head_radius;
@@ -7067,6 +7054,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 		auto particleSource = particle::ParticleManager::get()->createSource(wip->impact_weapon_expl_effect);
 		particleSource.moveTo(hitpos);
 		particleSource.setOrientationFromVec(&weapon_obj->phys_info.vel);
+		particleSource.setVelocity(&weapon_obj->phys_info.vel);
 
 		if (hitnormal)
 		{
@@ -7078,6 +7066,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 		auto particleSource = particle::ParticleManager::get()->createSource(wip->dinky_impact_weapon_expl_effect);
 		particleSource.moveTo(hitpos);
 		particleSource.setOrientationFromVec(&weapon_obj->phys_info.vel);
+		particleSource.setVelocity(&weapon_obj->phys_info.vel);
 
 		if (hitnormal)
 		{
@@ -7121,6 +7110,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 				auto primarySource = ParticleManager::get()->createSource(wip->piercing_impact_effect);
 				primarySource.moveTo(&weapon_obj->pos);
 				primarySource.setOrientationMatrix(&weapon_obj->last_orient);
+				primarySource.setVelocity(&weapon_obj->phys_info.vel);
 
 				if (hitnormal)
 				{
@@ -7133,6 +7123,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 					auto secondarySource = ParticleManager::get()->createSource(wip->piercing_impact_secondary_effect);
 					secondarySource.moveTo(&weapon_obj->pos);
 					secondarySource.setOrientationMatrix(&weapon_obj->last_orient);
+					secondarySource.setVelocity(&weapon_obj->phys_info.vel);
 
 					if (hitnormal)
 					{
@@ -8316,12 +8307,21 @@ void weapon_render(object* obj, model_draw_list *scene)
 					alpha = (int)(alpha * neb2_get_fog_visibility(&obj->pos, NEB_FOG_VISIBILITY_MULT_WEAPON));
 
 				vec3d headp;
-
 				vm_vec_scale_add(&headp, &obj->pos, &obj->orient.vec.fvec, wip->laser_length);
 
-				batching_add_laser(wip->laser_bitmap.first_frame + framenum, &headp, wip->laser_head_radius, &obj->pos, wip->laser_tail_radius, 
-					alpha, alpha, alpha, wip->laser_headon_bitmap.first_frame + headon_framenum, wip->laser_headon_switch_ang, wip->laser_headon_switch_rate);
-			}			
+				// Scale the laser so that it always appears some configured amount of pixels wide, no matter the distance.
+				// Only affects width, length remains unchanged.
+				float scaled_head_radius = model_render_get_diameter_clamped_to_min_pixel_size(&headp, wip->laser_head_radius, Min_pixel_size_laser);
+				float scaled_tail_radius = model_render_get_diameter_clamped_to_min_pixel_size(&obj->pos, wip->laser_tail_radius, Min_pixel_size_laser);
+
+				batching_add_laser(
+					wip->laser_bitmap.first_frame + framenum,
+					&headp,
+					scaled_head_radius,
+					&obj->pos,
+					scaled_tail_radius,
+					alpha, alpha, alpha);
+			}
 
 			// maybe draw laser glow bitmap
 			if (wip->laser_glow_bitmap.first_frame >= 0) {
@@ -8384,8 +8384,18 @@ void weapon_render(object* obj, model_draw_list *scene)
 				if (The_mission.flags[Mission::Mission_Flags::Fullneb] && Neb_affects_weapons)
 					alpha = (int)(alpha * neb2_get_fog_visibility(&obj->pos, NEB_FOG_VISIBILITY_MULT_WEAPON));
 
-				batching_add_laser(wip->laser_glow_bitmap.first_frame + framenum, &headp2, wip->laser_head_radius * weapon_glow_scale_f, &tailp, wip->laser_tail_radius * weapon_glow_scale_r, 
-					(c.red*alpha)/255, (c.green*alpha)/255, (c.blue*alpha)/255, wip->laser_glow_headon_bitmap.first_frame + framenum, wip->laser_headon_switch_ang, wip->laser_headon_switch_rate);
+				// Scale the laser so that it always appears some configured amount of pixels wide, no matter the distance.
+				// Only affects width, length remains unchanged.
+				float scaled_head_radius = model_render_get_diameter_clamped_to_min_pixel_size(&headp2, wip->laser_head_radius, Min_pixel_size_laser);
+				float scaled_tail_radius = model_render_get_diameter_clamped_to_min_pixel_size(&tailp, wip->laser_tail_radius, Min_pixel_size_laser);
+
+				batching_add_laser(
+					wip->laser_glow_bitmap.first_frame + framenum,
+					&headp2,
+					scaled_head_radius * weapon_glow_scale_f,
+					&tailp,
+					scaled_tail_radius * weapon_glow_scale_r,
+					(c.red*alpha)/255, (c.green*alpha)/255, (c.blue*alpha)/255);
 			}
 
 			break;
@@ -8648,6 +8658,7 @@ void weapon_info::reset()
 	this->SwarmWait = SWARM_MISSILE_DELAY;
 
 	this->target_restrict = LR_CURRENT_TARGET;
+	this->target_restrict_objecttypes = LR_Objecttypes::LRO_SHIPS;
 	this->multi_lock = false;
 	this->trigger_lock = false;
 	this->launch_reset_locks = false;
@@ -8753,7 +8764,7 @@ void weapon_info::reset()
 	this->lssm_lock_range = 1000000.0f;	//local ssm lock range (optional)
 	this->lssm_warpeffect = FIREBALL_WARP;		//Which fireballtype is used for the warp effect
 
-	this->b_info.beam_type = -1;
+	this->b_info.beam_type = BeamType::DIRECT_FIRE;
 	this->b_info.beam_life = -1.0f;
 	this->b_info.beam_warmup = -1;
 	this->b_info.beam_warmdown = -1;
@@ -8798,7 +8809,7 @@ void weapon_info::reset()
 	generic_anim_init(&this->b_info.beam_glow, NULL);
 	generic_anim_init(&this->b_info.beam_particle_ani, NULL);
 
-	for (i = 0; i < MAX_IFFS; i++)
+	for (i = 0; i < (int)Iff_info.size(); i++)
 		for (j = 0; j < NUM_SKILL_LEVELS; j++)
 			this->b_info.beam_iff_miss_factor[i][j] = 0.00001f;
 
@@ -9288,6 +9299,10 @@ bool weapon_multilock_can_lock_on_subsys(object* shooter, object* target, ship_s
 	if (target_subsys->flags[Ship::Subsystem_Flags::Untargetable])
 		return false;
 
+	//by not checking for max_hits > 0 here, subsys' with disabled hitpoints are also excluded.
+	if (!wip->wi_flags[Weapon::Info_Flags::Multilock_target_dead_subsys] && target_subsys->current_hits <= 0.0f)
+		return false;
+
 	vec3d ss_pos;
 	get_subsystem_world_pos(target, target_subsys, &ss_pos);
 
@@ -9314,24 +9329,41 @@ bool weapon_multilock_can_lock_on_subsys(object* shooter, object* target, ship_s
 	return ship_subsystem_in_sight(target, target_subsys, &eye_pos, &gsubpos) == 1;
 }
 
-bool weapon_multilock_can_lock_on_target(object* shooter, object* target_objp, weapon_info* wip, float* out_dot) {
+bool weapon_multilock_can_lock_on_target(object* shooter, object* target_objp, weapon_info* wip, float* out_dot, bool checkWeapons) {
 	Assertion(shooter->type == OBJ_SHIP, "weapon_multilock_can_lock_on_target called with a non-ship shooter");
-	if (target_objp->type != OBJ_SHIP)
+
+	if (target_objp->type != OBJ_SHIP && !checkWeapons) {
 		return false;
+	}
+	else if (target_objp->type != OBJ_WEAPON && checkWeapons) {
+		return false;
+	}
+
 
 	if (hud_target_invalid_awacs(target_objp))
 		return false;
 
-	ship* target_ship = &Ships[target_objp->instance];
-
 	if (target_objp->flags[Object::Object_Flags::Should_be_dead])
 		return false;
+	
+	if (!checkWeapons) {
+		ship* target_ship = &Ships[target_objp->instance];
 
-	if (target_ship->flags[Ship::Ship_Flags::Dying])
-		return false;
+		if (target_ship->flags[Ship::Ship_Flags::Dying])
+			return false;
 
-	if (should_be_ignored(target_ship))
-		return false;
+		if (should_be_ignored(target_ship))
+			return false;
+	}
+	else {
+		weapon* target_weapon = &Weapons[target_objp->instance];
+
+		if (!(Weapon_info[target_weapon->weapon_info_index].wi_flags[Weapon::Info_Flags::Bomb] || Weapon_info[target_weapon->weapon_info_index].wi_flags[Weapon::Info_Flags::Can_be_targeted]))
+			return false;
+
+		if (target_weapon->weapon_flags[Weapon::Weapon_Flags::Destroyed_by_weapon])
+			return false;
+	}
 
 	// if this is part of the same team and doesn't have any iff restrictions, reject lock
 	if (!weapon_has_iff_restrictions(wip) && Ships[shooter->instance].team == obj_team(target_objp))

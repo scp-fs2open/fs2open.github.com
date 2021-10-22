@@ -544,12 +544,12 @@ void gamesnd_preload_common_sounds()
 		return;
 
 	Assert( Snds.size() <= INT_MAX );
-	for (SCP_vector<game_snd>::iterator gs = Snds.begin(); gs != Snds.end(); ++gs) {
-		if ( gs->preload ) {
-			for (auto& entry : gs->sound_entries) {
+	for (auto& gs: Snds) {
+		if ( gs.preload ) {
+			for (auto& entry : gs.sound_entries) {
 				if ( entry.filename[0] != 0 && strnicmp(entry.filename, NOX("none.wav"), 4) != 0 ) {
 					game_busy( NOX("** preloading common game sounds **") );	// Animate loading cursor... does nothing if loading screen not active.
-					entry.id = snd_load(&entry, gs->flags);
+					entry.id = snd_load(&entry, &gs.flags);
 				}
 			}
 		}
@@ -565,12 +565,12 @@ void gamesnd_load_gameplay_sounds()
 		return;
 
 	Assert( Snds.size() <= INT_MAX );
-	for (SCP_vector<game_snd>::iterator gs = Snds.begin(); gs != Snds.end(); ++gs) {
-		if ( !gs->preload ) { // don't try to load anything that's already preloaded
-			for (auto& entry : gs->sound_entries) {
+	for (auto& gs: Snds) {
+		if ( !gs.preload ) { // don't try to load anything that's already preloaded
+			for (auto& entry : gs.sound_entries) {
 				if (entry.filename[0] != 0 && strnicmp(entry.filename, NOX("none.wav"), 4) != 0) {
 					game_busy(NOX("** preloading gameplay sounds **"));        // Animate loading cursor... does nothing if loading screen not active.
-					entry.id = snd_load(&entry, gs->flags);
+					entry.id = snd_load(&entry, &gs.flags);
 				}
 			}
 		}
@@ -583,8 +583,8 @@ void gamesnd_load_gameplay_sounds()
 void gamesnd_unload_gameplay_sounds()
 {
 	Assert( Snds.size() <= INT_MAX );
-	for (SCP_vector<game_snd>::iterator gs = Snds.begin(); gs != Snds.end(); ++gs) {
-		for (auto& entry : gs->sound_entries) {
+	for (auto& gs: Snds) {
+		for (auto& entry : gs.sound_entries) {
 			if (entry.id.isValid()) {
 				snd_unload(entry.id);
 				entry.id = sound_load_id::invalid();
@@ -602,10 +602,10 @@ void gamesnd_load_interface_sounds()
 		return;
 
 	Assert( Snds_iface.size() < INT_MAX );
-	for (SCP_vector<game_snd>::iterator si = Snds_iface.begin(); si != Snds_iface.end(); ++si) {
-		for (auto& entry : si->sound_entries) {
+	for (auto& gs: Snds) {
+		for (auto& entry : gs.sound_entries) {
 			if ( entry.filename[0] != 0 && strnicmp(entry.filename, NOX("none.wav"), 4) != 0 ) {
-				entry.id = snd_load(&entry, si->flags);
+				entry.id = snd_load(&entry, &gs.flags);
 			}
 		}
 	}
@@ -1349,7 +1349,7 @@ float gamesnd_get_max_duration(game_snd* gs) {
 	for (auto& entry : gs->sound_entries) {
 		if (!entry.id.isValid()) {
 			// Lazily load unloaded sound entries when required
-			entry.id = snd_load(&entry, gs->flags);
+			entry.id = snd_load(&entry, &gs->flags);
 		}
 
 		max_length = std::max(max_length, snd_get_duration(entry.id));

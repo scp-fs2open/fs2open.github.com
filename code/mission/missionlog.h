@@ -71,7 +71,7 @@ extern void mission_log_init();
 
 // adds an entry to the mission log.  The name is a string identifier that is the object
 // of the event.  The multiplayer version of this takes the actual entry number to modify.
-extern void mission_log_add_entry(LogType type, const char *pname, const char *sname, int index = -1);
+extern void mission_log_add_entry(LogType type, const char *pname, const char *sname, int index = -1, int flags = 0);
 extern void mission_log_add_entry_multi(LogType type, const char *pname, const char *sname, int index, fix timestamp,
                                         int flags);
 

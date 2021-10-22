@@ -25,7 +25,7 @@ struct ViewSettings {
 	bool Show_dock_points = false;
 	bool Show_starts = true;
 	bool Show_ships = true;
-	std::array<bool, MAX_IFFS> Show_iff;
+	SCP_vector<bool> Show_iff;
 	bool Show_ship_info = true;
 	bool Show_ship_models = true;
 	bool Show_paths_fred = false;

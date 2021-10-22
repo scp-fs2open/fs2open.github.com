@@ -2,8 +2,10 @@
  * Created by Hassan "Karajorma" Kazmi for the FreeSpace2 Source Code Project.
  * You may not sell or otherwise commercially exploit the source or things you
  * create based on the source.
+ *
+ * This file is in charge of the "game_settings.tbl", colloquially referred to
+ * as the "mod table", and contains many misc FSO specific settings.
  */
-
 
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
@@ -66,6 +68,11 @@ extern bool Neb_affects_fireballs;
 extern std::tuple<float, float, float, float> Shadow_distances;
 extern std::tuple<float, float, float, float> Shadow_distances_cockpit;
 extern bool Custom_briefing_icons_always_override_standard_icons;
+extern float Min_pixel_size_thruster;
+extern float Min_pixel_size_beam;
+extern float Min_pizel_size_muzzleflash;
+extern float Min_pixel_size_trail;
+extern float Min_pixel_size_laser;
 
 void mod_table_init();
 

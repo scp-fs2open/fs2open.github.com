@@ -87,16 +87,22 @@ int is_parenthesis(char ch)
 
 //	Advance global Mp (mission pointer) past all current white space.
 //	Leaves Mp pointing at first non white space character.
-void ignore_white_space()
+void ignore_white_space(const char **pp)
 {
-	while ((*Mp != '\0') && is_white_space(*Mp))
-		Mp++;
+	if (pp == nullptr)
+		pp = const_cast<const char**>(&Mp);
+
+	while ((**pp != '\0') && is_white_space(**pp))
+		(*pp)++;
 }
 
-void ignore_gray_space()
+void ignore_gray_space(const char **pp)
 {
-	while ((*Mp != '\0') && is_gray_space(*Mp))
-		Mp++;
+	if (pp == nullptr)
+		pp = const_cast<const char**>(&Mp);
+
+	while ((**pp != '\0') && is_gray_space(**pp))
+		(*pp)++;
 }
 
 //	Truncate *str, eliminating all trailing white space.
@@ -3054,6 +3060,15 @@ void stuff_vec3d(vec3d *vp)
 	stuff_float(&vp->xyz.z);
 }
 
+void stuff_angles_deg_phb(angles* ap) {
+	stuff_float(&ap->p);
+	stuff_float(&ap->h);
+	stuff_float(&ap->b);
+	ap->p = fl_radians(ap->p);
+	ap->h = fl_radians(ap->h);
+	ap->b = fl_radians(ap->b);
+}
+
 void stuff_parenthesized_vec3d(vec3d *vp)
 {
 	ignore_white_space();
@@ -4213,6 +4228,39 @@ void parse_int_list(int *ilist, size_t size)
 	{
 		stuff_int(&ilist[i]);
 	}
+}
+
+void parse_string_map(SCP_map<SCP_string, SCP_string>& outMap, const char* end_marker, const char* entry_prefix)
+{
+	while(optional_string(entry_prefix)) 
+	{
+		SCP_string temp;
+		stuff_string(temp, F_RAW);
+		
+		drop_white_space(temp);
+		
+		if (temp.empty()) 
+		{
+			Warning(LOCATION, "Empty entry in string map.");
+			continue;
+		}
+		
+		size_t sep = temp.find_first_of(' ');
+
+		SCP_string key = temp.substr(0, sep);
+		SCP_string value = temp.substr(sep+1);
+	
+		//if the modder didn't add a value, make the value an empty string. (Without this, value would instead be an identical string to key)
+		if (sep == SCP_string::npos)
+			value = "";
+
+		
+		drop_white_space(key);
+		drop_white_space(value);
+
+		outMap.emplace(key, value);
+	}
+	required_string(end_marker);
 }
 
 // parse a modular table of type "name_check" and parse it using the specified function callback

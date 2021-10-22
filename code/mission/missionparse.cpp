@@ -312,7 +312,8 @@ flag_def_list_new<Mission::Parse_Object_Flags> Parse_object_flags[] = {
     { "weapons-locked",					Mission::Parse_Object_Flags::SF_Weapons_locked,			true, false },
     { "scramble-messages",				Mission::Parse_Object_Flags::SF_Scramble_messages,		true, false },
     { "no_collide",						Mission::Parse_Object_Flags::OF_No_collide,				true, false },
-	{ "no-disabled-self-destruct",		Mission::Parse_Object_Flags::SF_No_disabled_self_destruct, true, false }
+	{ "no-disabled-self-destruct",		Mission::Parse_Object_Flags::SF_No_disabled_self_destruct, true, false },
+	{ "hide-in-mission-log",			Mission::Parse_Object_Flags::SF_Hide_mission_log,		true, false },
 };
 
 const size_t num_parse_object_flags = sizeof(Parse_object_flags) / sizeof(flag_def_list_new<Mission::Parse_Object_Flags>);
@@ -409,8 +410,9 @@ MONITOR(NumShipDepartures)
 
 const std::shared_ptr<scripting::Hook> OnDepartureStartedHook = scripting::Hook::Factory(
 	"On Departure Started", "Called when a ship starts the departure process.",
-	{ 		
-		{"Ship", "ship", "The ship that has began the depture process."},
+	{
+		{"Self", "ship", "An alias for Ship."},
+		{"Ship", "ship", "The ship that has begun the departure process."},
 	});
 
 // Goober5000
@@ -1475,8 +1477,8 @@ void parse_briefing(mission * /*pm*/, int flags)
 			Assert(bs->num_icons <= MAX_STAGE_ICONS );
 
 			// static alias stuff - stupid, but it seems to be necessary
-			static const char *temp_team_names[MAX_IFFS];
-			for (i = 0; i < Num_iffs; i++)
+			auto temp_team_names = std::unique_ptr<const char* []>(new const char*[Iff_info.size()]);
+			for (i = 0; i < (int)Iff_info.size(); i++)
 				temp_team_names[i] = Iff_info[i].iff_name;
 
 			while (required_string_either("$end_stage", "$start_icon"))
@@ -1510,7 +1512,7 @@ void parse_briefing(mission * /*pm*/, int flags)
 						bi->type = ICON_TRANSPORT_WING;
 				}
 
-				find_and_stuff("$team:", &bi->team, F_NAME, temp_team_names, Num_iffs, "team name");
+				find_and_stuff("$team:", &bi->team, F_NAME, temp_team_names.get(), Iff_info.size(), "team name");
 
 				find_and_stuff("$class:", &bi->ship_class, F_NAME, Ship_class_names, Ship_info.size(), "ship class");
 				bi->modelnum = -1;
@@ -1588,6 +1590,7 @@ void parse_briefing(mission * /*pm*/, int flags)
 				stuff_string(not_used_text, F_MULTITEXT, MAX_ICON_TEXT_LEN);
 				required_string("$end_icon");
 			} // end while
+
 			if (icon_num != bs->num_icons) {
 				error_display(1,
 							  "$num_icons did not match the number of specified icons! %d icons were specified but only %d were parsed.",
@@ -1930,13 +1933,7 @@ int parse_create_object_sub(p_object *p_objp)
 	shipp->special_hitpoints = p_objp->special_hitpoints;
 	shipp->special_shield = p_objp->special_shield;
 
-	for (i=0;i<MAX_IFFS;i++)
-	{
-		for (j=0;j<MAX_IFFS;j++)
-		{
-			shipp->ship_iff_color[i][j] = p_objp->alt_iff_color[i][j];
-		}
-	}
+	shipp->ship_iff_color = p_objp->alt_iff_color;
 
 	shipp->ship_max_shield_strength = p_objp->ship_max_shield_strength;
 	shipp->ship_max_hull_strength =  p_objp->ship_max_hull_strength;
@@ -2115,18 +2112,6 @@ int parse_create_object_sub(p_object *p_objp)
 #endif
 	}
 
-	if (p_objp->flags[Mission::Parse_Object_Flags::SF_Dock_leader])
-		shipp->flags.set(Ship::Ship_Flags::Dock_leader);
-
-	if (p_objp->flags[Mission::Parse_Object_Flags::SF_Warp_broken])
-		shipp->flags.set(Ship::Ship_Flags::Warp_broken);
-
-	if (p_objp->flags[Mission::Parse_Object_Flags::SF_Warp_never])
-		shipp->flags.set(Ship::Ship_Flags::Warp_never);
-
-	if (p_objp->flags[Mission::Parse_Object_Flags::SF_Has_display_name])
-		shipp->flags.set(Ship::Ship_Flags::Has_display_name);
-
 ////////////////////////
 
 
@@ -2264,6 +2249,11 @@ int parse_create_object_sub(p_object *p_objp)
 			}
 			else if (wp->secondary_bank_weapons[j] >= 0)
 			{
+				if (Weapon_info[wp->secondary_bank_weapons[j]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo]) {
+					wp->secondary_bank_ammo[j] = 0;
+					continue;
+				}
+
 				Assertion(Weapon_info[wp->secondary_bank_weapons[j]].cargo_size > 0.0f,
 					"Secondary weapon cargo size <= 0. Ship (%s) Subsystem (%s) Bank (%i) Weapon (%s)",
 					shipp->ship_name, sssp->name, j, Weapon_info[wp->secondary_bank_weapons[j]].name);
@@ -2692,6 +2682,21 @@ void resolve_parse_flags(object *objp, flagset<Mission::Parse_Object_Flags> &par
 
     if (parse_flags[Mission::Parse_Object_Flags::SF_No_disabled_self_destruct])
         shipp->flags.set(Ship::Ship_Flags::No_disabled_self_destruct);
+
+    if (parse_flags[Mission::Parse_Object_Flags::SF_Dock_leader])
+        shipp->flags.set(Ship::Ship_Flags::Dock_leader);
+
+    if (parse_flags[Mission::Parse_Object_Flags::SF_Warp_broken])
+        shipp->flags.set(Ship::Ship_Flags::Warp_broken);
+
+    if (parse_flags[Mission::Parse_Object_Flags::SF_Warp_never])
+        shipp->flags.set(Ship::Ship_Flags::Warp_never);
+
+    if (parse_flags[Mission::Parse_Object_Flags::SF_Has_display_name])
+        shipp->flags.set(Ship::Ship_Flags::Has_display_name);
+
+    if (parse_flags[Mission::Parse_Object_Flags::SF_Hide_mission_log])
+        shipp->flags.set(Ship::Ship_Flags::Hide_mission_log);
 }
 
 void fix_old_special_explosions(p_object *p_objp, int variable_index) 
@@ -2770,7 +2775,7 @@ extern int parse_warp_params(const WarpParams *inherit_from, WarpDirection direc
  */
 int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 {
-	int	i, j, count, delay;
+	int	i, count, delay;
     char name[NAME_LENGTH];
 	ship_info *sip;
 
@@ -2901,12 +2906,11 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 			mprintf(("Using callsign: %s\n", name));
 	}
 
-	// static alias stuff - stupid, but it seems to be necessary
-	static const char *temp_team_names[MAX_IFFS];
-	for (i = 0; i < Num_iffs; i++)
+	auto temp_team_names = std::unique_ptr<const char*[]>(new const char*[Iff_info.size()]);
+	for (i = 0; i < (int)Iff_info.size(); i++)
 		temp_team_names[i] = Iff_info[i].iff_name;
 
-	find_and_stuff("$Team:", &p_objp->team, F_NAME, temp_team_names, Num_iffs, "team name");
+	find_and_stuff("$Team:", &p_objp->team, F_NAME, temp_team_names.get(), Iff_info.size(), "team name");
 
 	// save current team for loadout purposes, so that in multi we always respawn
 	// from the original loadout slot even if the team changes
@@ -3422,14 +3426,8 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 
 	p_objp->wingnum = -1;					// set the wing number to -1 -- possibly to be set later
 	p_objp->pos_in_wing = -1;				// Goober5000
-
-	for (i=0;i<MAX_IFFS;i++)
-	{
-		for (j=0;j<MAX_IFFS;j++)
-		{
-			p_objp->alt_iff_color[i][j] = -1;
-		}
-	}
+	
+	p_objp->alt_iff_color.clear();
 
 	// for multiplayer, assign a network signature to this parse object.  Doing this here will
 	// allow servers to use the signature with clients when creating new ships, instead of having
@@ -5169,7 +5167,7 @@ void parse_goal(mission *pm)
 		stuff_int( &goalp->team );
 
 		// sanity check
-		if (goalp->team < -1 || goalp->team >= Num_iffs) {
+		if (goalp->team < -1 || goalp->team >= (int)Iff_info.size()) {
 			if (Fred_running && !Warned_about_team_out_of_range) {
 				Warning(LOCATION, "+Team: value was out of range in the mission file!  This was probably caused by a bug in an older version of FRED.  Using -1 for now.");
 				Warned_about_team_out_of_range = true;
@@ -5777,6 +5775,87 @@ void parse_sexp_containers()
 	if (optional_string("$Maps")) {
 		stuff_sexp_map_containers();
 		required_string("$End Maps");
+	}
+
+	// jg18 - persistence-related checking
+	// adapted from parse_variables()
+
+	// do this stuff only when playing through a campaign
+	if (Fred_running || !(Game_mode & GM_CAMPAIGN_MODE)) {
+		return;
+	}
+
+	// first update this mission's containers from campaign-persistent containers
+	for (const auto &current_pc : Campaign.persistent_containers) {
+		auto *p_container = get_sexp_container(current_pc.container_name.c_str());
+		if (p_container != nullptr) {
+			auto &container = *p_container;
+
+			// if this is an eternal container that shares the same name as a non-eternal, warn but do nothing
+			if (container.is_eternal()) {
+				error_display(0,
+					"SEXP container %s is marked eternal but has the same name as another persistent container. One of "
+					"these should be renamed to avoid confusion",
+					container.container_name.c_str());
+			} else if (container.is_persistent()) {
+				if (container.type_matches(current_pc)) {
+					// TODO: when network containers are supported, review whether replacement should occur
+					// if one container is marked for network use and the other isn't
+
+					// replace!
+					container = current_pc;
+				} else {
+					error_display(0,
+						"SEXP container %s is marked persistent but its type (%x) doesn't match a similarly named "
+						"persistent container's type (%x). One of "
+						"these should be renamed to avoid confusion",
+						container.container_name.c_str(),
+						(int)container.get_non_persistent_type(),
+						(int)current_pc.get_non_persistent_type());
+				}
+			} else {
+				error_display(0,
+					"SEXP container %s has the same name as another persistent container. One of these should be "
+					"renamed to avoid confusion",
+					container.container_name.c_str());
+			}
+		}
+	}
+
+	// then update this mission's containers from player-persistent containers
+	for (const auto& player_container : Player->containers) {
+		auto *p_container = get_sexp_container(player_container.container_name.c_str());
+		if (p_container != nullptr) {
+			auto &container = *p_container;
+
+			if (container.is_persistent()) {
+				if (player_container.is_eternal() && !container.is_eternal()) {
+					// use the mission's non-eternal container over the player-persistent eternal container
+					continue;
+				} else {
+					if (container.type_matches(player_container)) {
+						// TODO: when network containers are supported, review whether replacement should occur
+						// if one container is marked for network use and the other isn't
+
+						// replace!
+						container = player_container;
+					} else {
+						error_display(0,
+							"SEXP container %s is marked persistent but its type (%x) doesn't match a similarly named "
+							"eternal container's type (%x). One of "
+							"these should be renamed to avoid confusion",
+							container.container_name.c_str(),
+							(int)container.get_non_persistent_type(),
+							(int)player_container.get_non_persistent_type());
+					}
+				}
+			} else {
+				error_display(0,
+					"SEXP container %s has the same name as an eternal container. One of these should be renamed "
+					"to avoid confusion",
+					container.container_name.c_str());
+			}
+		}
 	}
 }
 
@@ -6834,16 +6913,12 @@ int mission_set_arrival_location(int anchor, int location, int dist, int objnum,
 
 	// if arriving from docking bay, then set ai mode and call function as per AL's instructions.
 	if ( location == ARRIVE_FROM_DOCK_BAY ) {
-		vec3d pos, fvec;
-
 		// if we get an error, just let the ship arrive(?)
-		if ( ai_acquire_emerge_path(&Objects[objnum], anchor_objnum, path_mask, &pos, &fvec) == -1 ) {
+		if ( ai_acquire_emerge_path(&Objects[objnum], anchor_objnum, path_mask) == -1 ) {
 			// get MWA or AL -- not sure what to do here when we cannot acquire a path
 			mprintf(("Unable to acquire arrival path on anchor ship %s\n", Ships[shipnum].ship_name));
 			return -1;
 		}
-		Objects[objnum].pos = pos;
-		vm_vector_2_matrix(&Objects[objnum].orient, &fvec, NULL, NULL);
 	} else {
 
 		// AL: ensure dist > 0 (otherwise get errors in vecmat)
@@ -7324,10 +7399,10 @@ int mission_do_departure(object *objp, bool goal_is_to_warp)
 
 	mprintf(("Entered mission_do_departure() for %s\n", shipp->ship_name));
 
-	// add scripting hook for 'On Depature Started' --wookieejedi
-	// hook is placed at the begining of this function to allow the scripter to
+	// add scripting hook for 'On Departure Started' --wookieejedi
+	// hook is placed at the beginning of this function to allow the scripter to
 	// actually have access to the ship's departure decisions before they are all executed
-	OnDepartureStartedHook->run(scripting::hook_param_list(scripting::hook_param("Ship", 'o', objp)));
+	OnDepartureStartedHook->run(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp), scripting::hook_param("Ship", 'o', objp)));
 
 	// abort rearm, because if we entered this function we're either going to depart via hyperspace, depart via bay,
 	// or revert to our default behavior
@@ -7849,7 +7924,7 @@ void mission_bring_in_support_ship( object *requester_objp )
 	vec3d center, warp_in_pos;
 	p_object *pobj;
 	ship *requester_shipp;
-	int i, j, requester_species;
+	int i, requester_species;
 
 	Assert ( requester_objp->type == OBJ_SHIP );
 	requester_shipp = &Ships[requester_objp->instance];	//	MK, 10/23/97, used to be ->type, bogus, no?
@@ -7935,13 +8010,7 @@ void mission_bring_in_support_ship( object *requester_objp )
 
 	pobj->team = requester_shipp->team;
 
-	for (i=0;i<MAX_IFFS;i++)
-	{
-		for (j=0;j<MAX_IFFS;j++)
-		{
-			pobj->alt_iff_color[i][j] = -1;
-		}
-	}
+	pobj->alt_iff_color.clear();
 
 	pobj->behavior = AIM_NONE;		// ASSUMPTION:  the mission file has the string "None" which maps to AIM_NONE
 

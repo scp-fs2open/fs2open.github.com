@@ -41,7 +41,7 @@ extern int model_render_flags_size;
 #define MOVEMENT_TYPE_ROT				1
 #define MOVEMENT_TYPE_ROT_SPECIAL		2	// for turrets only
 #define MOVEMENT_TYPE_TRIGGERED			3	// triggered rotation
-#define MOVEMENT_TYPE_INTRINSIC_ROTATE	4	// intrinsic (non-subsystem-based) rotation
+#define MOVEMENT_TYPE_INTRINSIC			4	// intrinsic (non-subsystem-based) motion
 
 
 // DA 11/13/98 Reordered to account for difference between max and game
@@ -194,9 +194,6 @@ public:
 	int		secondary_bank_capacity[MAX_SHIP_SECONDARY_BANKS];	// capacity of a bank -hoffoss
 	int		path_num;								// path index into polymodel .paths array.  -2 if none exists, -1 if not defined
 
-	int n_triggers;
-	queued_animation *triggers;		//all the triggered animations associated with this object
-
 	int		turret_reset_delay;
 
 	// target priority setting for turrets
@@ -228,8 +225,9 @@ typedef struct model_special {
 } model_special;
 
 // model arc types
-#define MARC_TYPE_NORMAL					0		// standard freespace 1 blue lightning arcs
+#define MARC_TYPE_DAMAGED					0		// blue lightning arcs for when the ship is damaged
 #define MARC_TYPE_EMP						1		// EMP blast type arcs
+#define MARC_TYPE_SHIP						2		// arcing lightning thats intrinsically part of the ship
 
 #define MAX_LIVE_DEBRIS	7
 
@@ -597,7 +595,7 @@ typedef struct insignia {
 #define PM_FLAG_AUTOCEN					(1<<1)					// contains autocentering info	
 #define PM_FLAG_TRANS_BUFFER			(1<<2)					// render transparency buffer
 #define PM_FLAG_BATCHED					(1<<3)					// this model can be batch rendered
-#define PM_FLAG_HAS_INTRINSIC_ROTATE	(1<<4)					// whether this model has an intrinsic rotation submodel somewhere
+#define PM_FLAG_HAS_INTRINSIC_MOTION	(1<<4)					// whether this model has an intrinsic rotation or translation submodel somewhere
 
 // Goober5000
 class texture_info
@@ -805,7 +803,7 @@ void model_instance_free_all();
 // Loads a model from disk and returns the model number it loaded into.
 int model_load(const char *filename, int n_subsystems, model_subsystem *subsystems, int ferror = 1, int duplicate = 0);
 
-int model_create_instance(bool is_ship, int model_num);
+int model_create_instance(bool is_object, int model_num);
 void model_delete_instance(int model_instance_num);
 
 // Goober5000
@@ -982,8 +980,7 @@ extern void model_set_submodel_turn_info(submodel_instance *smi, float turn_rate
 // Sets the submodel instance data in a submodel
 extern void model_set_up_techroom_instance(ship_info *sip, int model_instance_num);
 
-void model_update_instance(int model_instance_num, int submodel_num, flagset<Ship::Subsystem_Flags>& flags);
-void model_update_instance(polymodel *pm, polymodel_instance *pmi, int submodel_num, flagset<Ship::Subsystem_Flags>& flags);
+void model_replicate_submodel_instance(polymodel *pm, polymodel_instance *pmi, int submodel_num, flagset<Ship::Subsystem_Flags>& flags);
 
 // Adds an electrical arcing effect to a submodel
 void model_instance_clear_arcs(polymodel *pm, polymodel_instance *pmi);
@@ -1251,15 +1248,13 @@ void model_page_in_textures(int modelnum, int ship_info_index = -1);
 // given a model, unload all of its textures
 void model_page_out_textures(int model_num, bool release = false);
 
-void model_do_intrinsic_rotations(int model_instance_num = -1);
+void model_do_intrinsic_motions(object *objp);
 
 int model_should_render_engine_glow(int objnum, int bank_obj);
 
 bool model_get_team_color(team_color *clr, const SCP_string &team, const SCP_string &secondaryteam, fix timestamp, int fadetime);
 
 void moldel_calc_facing_pts( vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, float w, float z_add, vec3d *Eyeposition );
-
-void model_render_insignias(polymodel *pm, int detail_level, int bitmap_num);
 
 void model_draw_debug_points( polymodel *pm, bsp_info * submodel, uint flags );
 
