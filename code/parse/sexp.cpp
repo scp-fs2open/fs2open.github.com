@@ -559,6 +559,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "change-team-color",				OP_CHANGE_TEAM_COLOR,					3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// The E
 	{ "replace-texture",				OP_REPLACE_TEXTURE,						3,  INT_MAX,	SEXP_ACTION_OPERATOR,   },  // Lafiel
 	{ "set-alpha-multiplier",			OP_SET_ALPHA_MULT,						2,	INT_MAX,	SEXP_ACTION_OPERATOR,   }, //Lafiel
+	{ "trigger-ship-animation",			OP_TRIGGER_ANIMATION_NEW,				3,	7,			SEXP_ACTION_OPERATOR,	}, //Lafiel
 
 	//Coordinate Manipulation Sub-Category
 	{ "set-object-position",			OP_SET_OBJECT_POSITION,					4,	4,			SEXP_ACTION_OPERATOR,	},	// WMC
@@ -3151,7 +3152,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					return SEXP_CHECK_INVALID_ANIMATION_TYPE;
 
 				break;
-	
+
 			case OPF_TARGET_PRIORITIES:
 				if ( type2 != SEXP_ATOM_STRING )
 					return SEXP_CHECK_TYPE_MISMATCH;
@@ -19722,6 +19723,65 @@ void sexp_trigger_submodel_animation(int node)
 	}
 }
 
+void sexp_trigger_submodel_animation_new(int n)
+{
+	auto ship_entry = eval_ship(n);
+	if (!ship_entry || !ship_entry->shipp)
+		return;
+	n = CDR(n);
+
+	auto animation_type = animation::anim_match_type(CTEXT(n));
+	if (animation_type == animation::ModelAnimationTriggerType::None)
+	{
+		Warning(LOCATION, "Unable to match animation type \"%s\"!", CTEXT(n));
+		return;
+	}
+	n = CDR(n);
+
+	SCP_string triggeredBy(CTEXT(n));
+	n = CDR(n);
+
+	animation::ModelAnimationDirection direction;
+	if (n >= 0)
+	{
+		direction = is_sexp_true(n) ? animation::ModelAnimationDirection::FWD : animation::ModelAnimationDirection::RWD;
+		n = CDR(n);
+	}
+	else
+		direction = animation::ModelAnimationDirection::FWD;
+
+
+	bool forced;
+	if (n >= 0)
+	{
+		forced = is_sexp_true(n);
+		n = CDR(n);
+	}
+	else
+		forced = false;
+
+	bool instant;
+	if (n >= 0)
+	{
+		instant = is_sexp_true(n);
+		n = CDR(n);
+	}
+	else
+		instant = false;
+
+	bool pause;
+	if (n >= 0)
+	{
+		pause = is_sexp_true(n);
+		n = CDR(n);
+	}
+	else
+		pause = false;
+
+	auto animationStartFunc = animation::anim_parse_scripted_start(Ship_info[ship_entry->shipp->ship_info_index].animations, model_get_instance(ship_entry->shipp->model_instance_num), animation_type, triggeredBy).first;
+	animationStartFunc(direction, forced || instant, instant, pause);
+}
+
 void sexp_add_remove_escort(int node)
 {
 	int flag;
@@ -26085,6 +26145,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_set_alphamult(node);
 				break;
 
+			case OP_TRIGGER_ANIMATION_NEW:
+				sexp_val = SEXP_TRUE;
+				sexp_trigger_submodel_animation_new(node);
+				break;
+
 			default:{
 				// Check if we have a dynamic SEXP with this operator and if there is, execute that
 				auto dynamicSEXP = sexp::get_dynamic_sexp(op_num);
@@ -27201,6 +27266,7 @@ int query_operator_return_type(int op)
 		case OP_REPLACE_TEXTURE:
 		case OP_NEBULA_CHANGE_FOG_COLOR:
 		case OP_SET_ALPHA_MULT:
+		case OP_TRIGGER_ANIMATION_NEW:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -29642,6 +29708,16 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_IS_LANGUAGE:
 			return OPF_LANGUAGE;
 
+		case OP_TRIGGER_ANIMATION_NEW:
+			if (argnum == 0)
+				return OPF_SHIP;
+			else if (argnum == 1)
+				return OPF_ANIMATION_TYPE;
+			else if (argnum == 2)
+				return OPF_STRING;
+			else
+				return OPF_BOOL;
+
 		default: {
 			auto dynamicSEXP = sexp::get_dynamic_sexp(op);
 			if (dynamicSEXP != nullptr) {
@@ -31160,6 +31236,7 @@ int get_subcategory(int sexp_id)
 		case OP_CHANGE_TEAM_COLOR:
 		case OP_REPLACE_TEXTURE:
 		case OP_SET_ALPHA_MULT:
+		case OP_TRIGGER_ANIMATION_NEW:
 			return CHANGE_SUBCATEGORY_MODELS_AND_TEXTURES;
 
 		case OP_SET_OBJECT_POSITION:
@@ -35577,6 +35654,18 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"Takes 2 or more arguments...\r\n"
 		"\t1: Opacity (0 = transparent, 100 = opaque)\r\n"
 		"\tRest: Name of the ship or wing.\r\n"
+	},
+
+	{ OP_TRIGGER_ANIMATION_NEW , "trigger-ship-animation\r\n"
+		"\tTriggers an animation on a ship.\r\n"
+		"Takes 3 or more arguments...\r\n"
+		"\t1: The ship to trigger the animation on.\r\n"
+		"\t2: The trigger type of the animation.\r\n"
+		"\t3: The triggered-by value of the animation. Depends on trigger type. Refer to the wiki on *-anim.tbm's.\r\n"
+		"\t4: If the animation should play forwards (true) or backwards (false). Defaults to true.\r\n"
+		"\t5: If the animation should reset before playing. Defaults to false.\r\n"
+		"\t6: If the animation should complete instantly. Defaults to false.\r\n"
+		"\t7: If the animation should pause, instead of playing. Defaults to false.\r\n"
 	}
 };
 // clang-format on

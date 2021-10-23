@@ -360,6 +360,9 @@ namespace animation {
 
 	void anim_set_initial_states(ship* shipp);
 
+	//Returns function bindings to start the targeted animation, and to get its runtime
+	std::pair<std::function<bool(ModelAnimationDirection, bool, bool, bool)>, std::function<int()>> anim_parse_scripted_start(const ModelAnimationSet& set, polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& triggeredBy);
+
 	ModelAnimationTriggerType anim_match_type(const char* p);
 
 	SCP_string anim_name_from_subsys(model_subsystem* ss);

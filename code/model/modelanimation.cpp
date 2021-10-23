@@ -898,6 +898,92 @@ namespace animation {
 		return namelower;
 	}
 
+	std::pair<std::function<bool(ModelAnimationDirection, bool, bool, bool)>, std::function<int()>> anim_parse_scripted_start(const ModelAnimationSet& set, polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& triggeredBy) {
+		int subtype = ModelAnimationSet::SUBTYPE_DEFAULT;
+
+		switch (type) {
+		case ModelAnimationTriggerType::Docking_Stage1:
+		case ModelAnimationTriggerType::Docking_Stage2:
+		case ModelAnimationTriggerType::Docking_Stage3:
+		case ModelAnimationTriggerType::Docked: {
+			//The index of the dock port or name of the dock port.
+			if (can_construe_as_integer(triggeredBy.c_str()))
+				subtype = atoi(triggeredBy.c_str());
+			else 
+				subtype = model_find_dock_name_index(pmi->model_num, triggeredBy.c_str());
+
+			SCP_string dock_name = model_get_dock_name(pmi->model_num, subtype);
+
+			return {
+				[&set, pmi, type, dock_name, subtype](ModelAnimationDirection direction, bool forced, bool instant, bool pause) -> bool {
+					bool started = false;
+					started |= set.start(pmi, type, dock_name, direction, forced, instant, pause);
+					started |= set.start(pmi, type, "", direction, forced, instant, pause);
+					started |= set.startAll(pmi, type, direction, forced, instant, pause, subtype, true);
+					return started;
+				},
+				[&set, pmi, type, dock_name, subtype]() -> int {
+					int time1 = set.getTime(pmi, type, dock_name);
+					int time2 = set.getTime(pmi, type, "");
+					int time3 = set.getTimeAll(pmi, type, subtype, true);
+					return time1 > time2 ? (time1 > time3 ? time1 : time3) : (time2 > time3 ? time2 : time3);
+				}
+			};
+		}
+		case ModelAnimationTriggerType::PrimaryBank:
+		case ModelAnimationTriggerType::SecondaryBank:
+		case ModelAnimationTriggerType::PrimaryFired:
+		case ModelAnimationTriggerType::SecondaryFired:
+			//The index of the bank
+			subtype = atoi(triggeredBy.c_str());
+
+			return {
+				std::bind(&ModelAnimationSet::startAll, std::cref(set), pmi, type, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, subtype, false),
+				std::bind(&ModelAnimationSet::getTimeAll, std::cref(set), pmi, type, subtype, false)
+			};
+
+		case ModelAnimationTriggerType::DockBayDoor: 
+			//Index of the dock bay door
+			subtype = atoi(triggeredBy.c_str());
+
+			return {
+				std::bind(&ModelAnimationSet::startDockBayDoors, std::cref(set), pmi, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, subtype),
+				std::bind(&ModelAnimationSet::getTimeDockBayDoors, std::cref(set), pmi, subtype)
+			};
+
+		case ModelAnimationTriggerType::Scripted:
+			//More accurate name of scripted animation
+		case ModelAnimationTriggerType::TurretFired:
+		case ModelAnimationTriggerType::TurretFiring: {
+			//Name of the turret subsys that needs to be firing
+			char parsedname[NAME_LENGTH];
+			strncpy_s(parsedname, triggeredBy.c_str(), NAME_LENGTH);
+			strlwr(parsedname);
+
+			return {
+				std::bind(&ModelAnimationSet::start, std::cref(set), pmi, type, parsedname, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, subtype),
+				std::bind(&ModelAnimationSet::getTime, std::cref(set), pmi, type, parsedname, subtype)
+			};
+		}
+
+		case ModelAnimationTriggerType::Afterburner:
+		case ModelAnimationTriggerType::WeaponLaunched:
+			//No triggered by specialization
+			return {
+				std::bind(&ModelAnimationSet::startAll, std::cref(set), pmi, type, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, ModelAnimationSet::SUBTYPE_DEFAULT, false),
+				std::bind(&ModelAnimationSet::getTimeAll, std::cref(set), pmi, type, ModelAnimationSet::SUBTYPE_DEFAULT, false)
+			};
+
+		case ModelAnimationTriggerType::Initial:
+		default:
+			// Can't trigger by script
+			Warning(LOCATION, "Animation trigger type %d cannot be triggered by script/SEXP!", type);
+			return {
+				[](ModelAnimationDirection /*direction*/, bool /*forced*/, bool /*instant*/, bool /*pause*/) -> bool { return false; },
+				[]() -> int { return 0; }
+			};
+		}
+	}
 
 	//Parsing functions
 
@@ -972,8 +1058,10 @@ namespace animation {
 
 				if (can_construe_as_integer(parsedname))
 					subtype = atoi(parsedname);
-				else
+				else {
+					strlwr(parsedname);
 					name = parsedname;
+				}
 
 				break;
 			}
@@ -1002,6 +1090,7 @@ namespace animation {
 				//Name of the turret subsys that needs to be firing
 				char parsedname[NAME_LENGTH];
 				stuff_string(parsedname, F_NAME, NAME_LENGTH);
+				strlwr(parsedname);
 				name = parsedname;
 				break;
 			}

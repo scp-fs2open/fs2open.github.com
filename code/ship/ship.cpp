@@ -10089,6 +10089,9 @@ static void ship_model_change(int n, int ship_type)
 	sip = &(Ship_info[ship_type]);
 	objp = &Objects[sp->objnum];
 
+	//Stop Animation on the old model
+	animation::ModelAnimationSet::stopAnimations(model_get_instance(sp->model_instance_num));
+
 	// get new model
 	if (sip->model_num == -1) {
 		sip->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);

@@ -3169,6 +3169,8 @@ void model_delete_instance(int model_instance_num)
 
 	polymodel_instance *pmi = Polygon_model_instances[model_instance_num];
 
+	animation::ModelAnimationSet::stopAnimations(pmi);
+
 	if ( pmi->submodel ) {
 		delete[] pmi->submodel;
 		pmi->submodel = nullptr;
