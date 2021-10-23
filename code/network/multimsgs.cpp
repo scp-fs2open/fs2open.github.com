@@ -8009,7 +8009,7 @@ void process_non_homing_fired_packet(ubyte* data, header* hinfo)
 static constexpr size_t animation_direction_bit = 1 << 0;
 static constexpr size_t animation_forced_bit = 1 << 1;
 static constexpr size_t animation_instant_bit = 1 << 2;
-static constexpr size_t animation_pause_bit = 1 << 2;
+static constexpr size_t animation_pause_bit = 1 << 3;
 
 void send_animation_triggered_packet(int animationId, int pmi, const animation::ModelAnimationDirection& direction, bool force, bool instant, bool pause, const int* /*time*/) {
 	int packet_size;

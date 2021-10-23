@@ -5058,6 +5058,7 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 					case OP_SET_OBJECT_SPEED_Z:
 					case OP_DISTANCE:
 					case OP_SCRIPT_EVAL:
+					case OP_TRIGGER_SUBMODEL_ANIMATION:
 						j = (int) op_menu.size();    // don't allow these operators to be visible
 						break;
 					}
@@ -5126,6 +5127,7 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 					case OP_SET_OBJECT_SPEED_Z:
 					case OP_DISTANCE:
 					case OP_SCRIPT_EVAL:
+					case OP_TRIGGER_SUBMODEL_ANIMATION:
 						j = (int) op_submenu.size();    // don't allow these operators to be visible
 						break;
 					}
