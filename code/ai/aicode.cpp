@@ -10968,23 +10968,36 @@ void ai_dock_do_animations(ship* shipp, int from_dockstage, int to_dockstage, in
 	const animation::ModelAnimationSet& animations = Ship_info[shipp->ship_info_index].animations;
 	polymodel_instance* pmi = model_get_instance(shipp->model_instance_num);
 
+	SCP_string dock_name = model_get_dock_name(Ship_info[shipp->ship_info_index].model_num, dock_index);
+
 	for (size_t i = currentIdx; i != targetIdx; i += isDocking ? 1 : -1) {
 		switch (dockstages_ordered[i + (isDocking ? 1 : 0)]) {
 		case AIS_DOCK_1:
 		case AIS_UNDOCK_3:
-			animations.startAll(pmi, animation::ModelAnimationTriggerType::Docking_Stage1, direction, false, false, false, dock_index);
+			//Catches new-table animations with dock port name
+			animations.start(pmi, animation::ModelAnimationTriggerType::Docking_Stage1, dock_name, direction, false, false, false);
+			//Catches new-table animations with no name and no subtype, as well as legacy-table animations with no subtype
+			animations.start(pmi, animation::ModelAnimationTriggerType::Docking_Stage1, "", direction, false, false, false);
+			//Catches new-table animations with subtype, as well as legacy-table animations with subtype
+			animations.startAll(pmi, animation::ModelAnimationTriggerType::Docking_Stage1, direction, false, false, false, dock_index, true);
 			break;
 		case AIS_DOCK_2:
 		case AIS_UNDOCK_2:
-			animations.startAll(pmi, animation::ModelAnimationTriggerType::Docking_Stage2, direction, false, false, false, dock_index);
+			animations.start(pmi, animation::ModelAnimationTriggerType::Docking_Stage2, dock_name, direction, false, false, false);
+			animations.start(pmi, animation::ModelAnimationTriggerType::Docking_Stage2, "", direction, false, false, false);
+			animations.startAll(pmi, animation::ModelAnimationTriggerType::Docking_Stage2, direction, false, false, false, dock_index, true);
 			break;
 		case AIS_DOCK_3:
 		case AIS_UNDOCK_1:
-			animations.startAll(pmi, animation::ModelAnimationTriggerType::Docking_Stage3, direction, false, false, false, dock_index);
+			animations.start(pmi, animation::ModelAnimationTriggerType::Docking_Stage3, dock_name, direction, false, false, false);
+			animations.start(pmi, animation::ModelAnimationTriggerType::Docking_Stage3, "", direction, false, false, false);
+			animations.startAll(pmi, animation::ModelAnimationTriggerType::Docking_Stage3, direction, false, false, false, dock_index, true);
 			break;
 		case AIS_DOCK_4:
 		case AIS_UNDOCK_0:
-			animations.startAll(pmi, animation::ModelAnimationTriggerType::Docked, direction, false, false, false, dock_index);
+			animations.start(pmi, animation::ModelAnimationTriggerType::Docked, dock_name, direction, false, false, false);
+			animations.start(pmi, animation::ModelAnimationTriggerType::Docked, "", direction, false, false, false);
+			animations.startAll(pmi, animation::ModelAnimationTriggerType::Docked, direction, false, false, false, dock_index, true);
 			break;
 		case AIS_DOCK_0:
 		case AIS_UNDOCK_4:

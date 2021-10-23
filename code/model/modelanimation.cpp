@@ -965,8 +965,18 @@ namespace animation {
 			case ModelAnimationTriggerType::Docking_Stage1:
 			case ModelAnimationTriggerType::Docking_Stage2:
 			case ModelAnimationTriggerType::Docking_Stage3:
-			case ModelAnimationTriggerType::Docked:
-				//The index of the dock port
+			case ModelAnimationTriggerType::Docked: {
+				//The index of the dock port or name of the dock port.
+				char parsedname[NAME_LENGTH];
+				stuff_string(parsedname, F_NAME, NAME_LENGTH);
+
+				if (can_construe_as_integer(parsedname))
+					subtype = atoi(parsedname);
+				else
+					name = parsedname;
+
+				break;
+			}
 			case ModelAnimationTriggerType::PrimaryBank:
 			case ModelAnimationTriggerType::SecondaryBank:
 			case ModelAnimationTriggerType::PrimaryFired:
@@ -1087,6 +1097,7 @@ namespace animation {
 		animation::ModelAnimationTriggerType type = anim_match_type(atype);
 		int subtype = ModelAnimationSet::SUBTYPE_DEFAULT;
 		char sub_name[NAME_LENGTH];
+		SCP_string name = anim_name_from_subsys(sp);
 
 		if (optional_string("+sub_type:")) {
 			stuff_int(&subtype);
@@ -1101,6 +1112,8 @@ namespace animation {
 					subtype += subtype < 0 ? -1 : 1;
 				}
 
+				//Also set name to empty for compatibility with naming and subtyping in the new table while being compatible with legacy subtypes
+				name = "";
 			}
 		}
 
@@ -1171,7 +1184,7 @@ namespace animation {
 
 			//Initial Animations in legacy style will continue to be fully supported and allowed, given the frequency of these (especially for turrets) and the fact that these are more intuitive to be directly in the subsystem section of the ship table, as these are closer to representing a property of the subsystem rather than an animation.
 			//Hence, there will not be any warning displayed if the legacy table is used for these. -Lafiel 
-			sip->animations.emplace(anim, anim_name_from_subsys(sp), animation::ModelAnimationTriggerType::Initial);
+			sip->animations.emplace(anim, name, animation::ModelAnimationTriggerType::Initial);
 		}
 		else {
 			std::shared_ptr<ModelAnimation> anim = ModelAnimation::createAnimation();
@@ -1266,7 +1279,7 @@ namespace animation {
 			anim->setAnimation(mainSegment);
 
 			//TODO maybe handle sub_name? Not documented in Wiki, maybe no one actually uses it...
-			sip->animations.emplace(anim, anim_name_from_subsys(sp), type, subtype);
+			sip->animations.emplace(anim, name, type, subtype);
 
 			mprintf(("Specified deprecated non-initial type animation on subsystem %s of ship class %s. Consider using *-anim.tbm's instead.", sp->subobj_name, sip->name));
 		}
