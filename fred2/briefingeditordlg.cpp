@@ -80,7 +80,7 @@ briefing_editor_dlg::briefing_editor_dlg(CWnd* pParent /*=NULL*/)
 	m_flipicon = FALSE;
 	m_use_wing = FALSE;
 	m_use_cargo = FALSE;
-	m_persona = _T("<None>");
+	m_persona = _T("<None>");;
 	//}}AFX_DATA_INIT
 	m_voice_id = -1;
 	m_cur_stage = 0;
@@ -346,7 +346,7 @@ void briefing_editor_dlg::update_data(int update)
 		ptr->text = buf3;
 		MODIFY(ptr->camera_time, atoi(m_time));
 		string_copy(ptr->voice, m_voice, MAX_FILENAME_LEN, 1);
-		string_copy(ptr->persona, m_persona, NAME_LENGTH, 1);
+		ptr->persona_index = message_persona_name_lookup(m_persona);
 		i = ptr->flags;
 		if (m_cut_prev)
 			i |= BS_BACKWARD_CUT;
@@ -528,8 +528,11 @@ void briefing_editor_dlg::update_data(int update)
 		m_cut_prev = (ptr->flags & BS_BACKWARD_CUT) ? 1 : 0;
 		m_cut_next = (ptr->flags & BS_FORWARD_CUT) ? 1 : 0;
 		m_tree.load_tree(ptr->formula);
-		m_persona = ptr->persona;
-
+		if (ptr->persona_index != -1) {
+			m_persona = Personas[ptr->persona_index].name;
+		} else {
+			m_persona = _T("<None>");
+		}
 	} else {
 		m_stage_title = _T("No stages");
 		m_text = _T("");
@@ -918,7 +921,7 @@ void briefing_editor_dlg::copy_stage(int from, int to)
 		Briefing->stages[to].camera_time = 500;
 		Briefing->stages[to].num_icons = 0;
 		Briefing->stages[to].formula = Locked_sexp_true;
-		strcpy_s(Briefing->stages[to].persona, "<None>");
+		Briefing->stages[to].persona_index = -1;
 		return;
 	}
 
@@ -932,7 +935,7 @@ void briefing_editor_dlg::copy_stage(int from, int to)
 	Briefing->stages[to].num_icons = Briefing->stages[from].num_icons;
 	Briefing->stages[to].num_lines = Briefing->stages[from].num_lines;
 	Briefing->stages[to].formula = Briefing->stages[from].formula;
-	strcpy_s(Briefing->stages[to].persona, Briefing->stages[from].persona);
+	Briefing->stages[to].persona_index = Briefing->stages[from].persona_index;
 
 	memmove( Briefing->stages[to].icons, Briefing->stages[from].icons, sizeof(brief_icon)*MAX_STAGE_ICONS );
 	memmove( Briefing->stages[to].lines, Briefing->stages[from].lines, sizeof(brief_line)*MAX_BRIEF_STAGE_LINES );
@@ -1415,8 +1418,7 @@ void briefing_editor_dlg::OnPlay()
 		int persona_index = message_persona_name_lookup(temp_persona);
 		if (persona_index != -1) {
 			fsspeech_play(FSSPEECH_FROM_INGAME, temp_text, Personas[persona_index].speech_tags);
-		}
-		else {
+		} else {
 			fsspeech_play(FSSPEECH_FROM_INGAME, temp_text);
 		}
 	}

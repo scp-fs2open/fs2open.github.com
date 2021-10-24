@@ -20,6 +20,7 @@
 #include "math/fvi.h"
 #include "mission/missiongrid.h"
 #include "mission/missionparse.h"
+#include "mission/missionmessage.h"
 #include "missionui/missionbrief.h"
 #include "missionui/missioncmdbrief.h"
 #include "missionui/missiondebrief.h"
@@ -2352,7 +2353,11 @@ void brief_voice_play(int stage_num)
 			if (fsspeech_playing()) {
 				return;
 			}
-			fsspeech_play(FSSPEECH_FROM_INGAME, Briefing->stages[stage_num].text.c_str(), Briefing->stages[stage_num].speech_tags.c_str());
+			if (Briefing->stages[stage_num].persona_index != -1) {
+				fsspeech_play(FSSPEECH_FROM_BRIEFING, Briefing->stages[stage_num].text.c_str(), Personas[Briefing->stages[stage_num].persona_index].speech_tags);
+			} else {
+				fsspeech_play(FSSPEECH_FROM_BRIEFING, Briefing->stages[stage_num].text.c_str());
+			}
 		}
 	} else {
 		if ( audiostream_is_playing( Brief_voices[stage_num]) ) {

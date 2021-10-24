@@ -21,6 +21,7 @@
 #include "io/timer.h"
 #include "mission/missionparse.h"
 #include "mission/missionbriefcommon.h"
+#include "mission/missionmessage.h"
 #include "missionui/missioncmdbrief.h"
 #include "missionui/missionscreencommon.h"
 #include "missionui/missionshipchoice.h"
@@ -298,7 +299,11 @@ void cmd_brief_voice_play(int stage_num)
 		// ok, new text needs speaking
 		Cmd_brief_last_stage = stage;
 		if (stage >= 0) {
-			fsspeech_play(FSSPEECH_FROM_BRIEFING, Cur_cmd_brief->stage[stage_num].text.c_str(), Cur_cmd_brief->stage[stage_num].speech_tags.c_str());
+			if (Cur_cmd_brief->stage[stage_num].persona_index != -1) {
+				fsspeech_play(FSSPEECH_FROM_BRIEFING, Cur_cmd_brief->stage[stage_num].text.c_str(), Personas[Cur_cmd_brief->stage[stage_num].persona_index].speech_tags);
+			} else {
+				fsspeech_play(FSSPEECH_FROM_BRIEFING, Cur_cmd_brief->stage[stage_num].text.c_str());
+			}
 		}
 	} else {
 		// are we still on same voice that is currently playing/played?

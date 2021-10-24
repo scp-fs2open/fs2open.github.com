@@ -1352,14 +1352,12 @@ void parse_cmd_brief(mission * /*pm*/)
 			Cur_cmd_brief->stage[stage].wave_filename[0] = 0;
 
 		if (optional_string("$persona:")) {
-			stuff_string(Cur_cmd_brief->stage[stage].persona, F_NAME, NAME_LENGTH);
-			int persona_index = message_persona_name_lookup(Cur_cmd_brief->stage[stage].persona);
-			if (persona_index != -1)
-				Cur_cmd_brief->stage[stage].speech_tags = Personas[persona_index].speech_tags;
+			char temp_persona[NAME_LENGTH];
+			stuff_string(temp_persona, F_NAME, NAME_LENGTH);
+			Cur_cmd_brief->stage[stage].persona_index = message_persona_name_lookup(temp_persona);
 		} else {
-			strcpy_s(Cur_cmd_brief->stage[stage].persona,"<None>");
+			Cur_cmd_brief->stage[stage].persona_index = -1;
 		}
-
 
 		stage++;
 	}
@@ -1432,12 +1430,11 @@ void parse_briefing(mission * /*pm*/, int flags)
 			required_string("$voice:");
 			stuff_string(bs->voice, F_FILESPEC, MAX_FILENAME_LEN);
 			if (optional_string("$persona:")) {
-				stuff_string(bs->persona, F_NAME, NAME_LENGTH);
-				int persona_index = message_persona_name_lookup(bs->persona);
-				if(persona_index != -1)
-					bs->speech_tags = Personas[persona_index].speech_tags;
+				char temp_persona[NAME_LENGTH];
+				stuff_string(temp_persona, F_NAME, NAME_LENGTH);
+				bs->persona_index = message_persona_name_lookup(temp_persona);
 			} else {
-				strcpy_s(bs->persona, "<None>");
+				bs->persona_index = -1;
 			}
 			required_string("$camera_pos:");
 			stuff_vec3d(&bs->camera_pos);
@@ -1667,12 +1664,11 @@ void parse_debriefing_new(mission * /*pm*/)
 			required_string("$Voice:");
 			stuff_string(dbs->voice, F_FILESPEC, MAX_FILENAME_LEN);
 			if (optional_string("$persona:")) {
-				stuff_string(dbs->persona, F_NAME, NAME_LENGTH);
-				int persona_index = message_persona_name_lookup(dbs->persona);
-				if (persona_index != -1)
-					dbs->speech_tags = Personas[persona_index].speech_tags;
+				char temp_persona[NAME_LENGTH];
+				stuff_string(temp_persona, F_NAME, NAME_LENGTH);
+				dbs->persona_index = message_persona_name_lookup(temp_persona);
 			} else {
-				strcpy_s(dbs->persona, "<None>");
+				dbs->persona_index = -1;
 			}
 			required_string("$Recommendation text:");
 			stuff_string(dbs->recommendation_text, F_MULTITEXT, NULL);

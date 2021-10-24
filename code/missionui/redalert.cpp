@@ -24,6 +24,7 @@
 #include "mission/missionbriefcommon.h"
 #include "mission/missioncampaign.h"
 #include "mission/missiongoals.h"
+#include "mission/missionmessage.h"
 #include "missionui/missionscreencommon.h"
 #include "missionui/missionweaponchoice.h"
 #include "missionui/redalert.h"
@@ -175,8 +176,11 @@ void red_alert_voice_play()
 			if (fsspeech_playing()) {
 				return;
 			}
-
-			fsspeech_play(FSSPEECH_FROM_BRIEFING, Briefing->stages[0].text.c_str(), Briefing->stages[0].speech_tags.c_str());
+			if (Briefing->stages[0].persona_index != -1) {
+				fsspeech_play(FSSPEECH_FROM_BRIEFING, Briefing->stages[0].text.c_str(), Personas[Briefing->stages[0].persona_index].speech_tags);
+			} else {
+				fsspeech_play(FSSPEECH_FROM_BRIEFING, Briefing->stages[0].text.c_str());
+			}
 			Red_alert_voice_started = 1;
 		}
 	} else {

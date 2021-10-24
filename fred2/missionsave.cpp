@@ -970,9 +970,11 @@ int CFred_mission_save::save_briefing()
 			parse_comments();
 			fout(" %s", bs->voice);
 
-			required_string_fred("$persona:");
-			parse_comments();
-			fout(" %s", bs->persona);
+			if (bs->persona_index != -1) {
+				required_string_fred("$persona:");
+				parse_comments();
+				fout(" %s", Personas[bs->persona_index].name );
+			}
 
 			required_string_fred("$camera_pos:");
 			parse_comments();
@@ -1396,9 +1398,11 @@ int CFred_mission_save::save_cmd_brief()
 		parse_comments();
 		fout(" %s", Cur_cmd_brief->stage[stage].wave_filename);
 
-		required_string_fred("$persona:");
-		parse_comments();
-		fout(" %s", Cur_cmd_brief->stage[stage].persona);
+		if (Cur_cmd_brief->stage[stage].persona_index != -1) {
+			required_string_fred("$persona:");
+			parse_comments();
+			fout(" %s", Personas[Cur_cmd_brief->stage[stage].persona_index].name);
+		}
 
 		fso_comment_pop();
 	}
@@ -1895,9 +1899,11 @@ int CFred_mission_save::save_debriefing()
 			parse_comments();
 			fout(" %s", Debriefing->stages[i].voice);
 
-			required_string_fred("$persona:");
-			parse_comments();
-			fout(" %s", Debriefing->stages[i].persona);
+			if (Debriefing->stages[i].persona_index != -1) {
+				required_string_fred("$persona:");
+				parse_comments();
+				fout(" %s", Personas[Debriefing->stages[i].persona_index].name);
+			}
 
 			// XSTR
 			required_string_fred("$Recommendation text:");

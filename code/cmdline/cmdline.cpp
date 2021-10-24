@@ -398,7 +398,7 @@ cmdline_parm nospeech_tags_arg("-no_speech_tags", nullptr, AT_NONE);	// Cmdline_
 
 int Cmdline_voice_recognition = 0;
 int Cmdline_no_enhanced_sound = 0;
-int Cmdline_no_speech_tags = 0;
+bool Cmdline_no_speech_tags = false;
 
 // MOD related
 cmdline_parm mod_arg("-mod", "List of folders to overwrite/add-to the default data", AT_STRING, true);	// Cmdline_mod  -- DTP modsupport
@@ -1603,7 +1603,7 @@ bool SetCmdlineParams()
 
 	// Disable speech tags
 	if (nospeech_tags_arg.found()) {
-		Cmdline_no_speech_tags = 1;
+		Cmdline_no_speech_tags = true;
 	}
 
 	// should we start a network game

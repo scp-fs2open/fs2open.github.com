@@ -25,6 +25,7 @@
 #include "mission/missionbriefcommon.h"
 #include "mission/missioncampaign.h"
 #include "mission/missiongoals.h"
+#include "mission/missionmessage.h"
 #include "missionui/chatbox.h"
 #include "missionui/missiondebrief.h"
 #include "missionui/missionpause.h"
@@ -1820,7 +1821,11 @@ void debrief_text_init()
 				Num_text_lines += brief_color_text_init(src, Debrief_text_wnd_coords[gr_screen.res][2], default_debriefing_color, 0, MAX_DEBRIEF_LINES, true);
 
 				if (use_sim_speech && !Recommend_active) {
-					fsspeech_stuff_buffer(src, Debrief_stages[i]->speech_tags.c_str());
+					if (Debrief_stages[i]->persona_index != -1) {
+						fsspeech_stuff_buffer(src, Personas[Debrief_stages[i]->persona_index].speech_tags);
+					} else {
+						fsspeech_stuff_buffer(src);
+					}
 					fsspeech_stuff_buffer("\n");
 				}
 			}

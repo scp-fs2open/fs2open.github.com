@@ -110,7 +110,7 @@ void cmd_brief_dlg::update_data(int update)
 
 		string_copy(last_stage->ani_filename, m_ani_filename, MAX_FILENAME_LEN);
 		string_copy(last_stage->wave_filename, m_wave_filename, MAX_FILENAME_LEN);
-		string_copy(last_stage->persona, m_persona, NAME_LENGTH);
+		last_stage->persona_index = message_persona_name_lookup(m_persona);
 	}
 
 	// load data of new stage into dialog
@@ -122,7 +122,11 @@ void cmd_brief_dlg::update_data(int update)
 		convert_multiline_string(m_text, Cur_cmd_brief->stage[m_cur_stage].text);
 		m_ani_filename = Cur_cmd_brief->stage[m_cur_stage].ani_filename;
 		m_wave_filename = Cur_cmd_brief->stage[m_cur_stage].wave_filename;
-		m_persona = Cur_cmd_brief->stage[m_cur_stage].persona;
+		if (Cur_cmd_brief->stage[m_cur_stage].persona_index != -1) {
+			m_persona = Personas[Cur_cmd_brief->stage[m_cur_stage].persona_index].name;
+		} else {
+			m_persona = _T("<None>");
+		}
 		enable = TRUE;
 
 	} else {
@@ -283,13 +287,13 @@ void cmd_brief_dlg::copy_stage(int from, int to)
 		Cur_cmd_brief->stage[to].text = "<Text here>";
 		strcpy_s(Cur_cmd_brief->stage[to].ani_filename, "<default>");
 		strcpy_s(Cur_cmd_brief->stage[to].wave_filename, "none");
-		strcpy_s(Cur_cmd_brief->stage[to].persona, "<None>");
+		Cur_cmd_brief->stage[to].persona_index = -1;
 		return;
 	}
 
 	Cur_cmd_brief->stage[to] = Cur_cmd_brief->stage[from];
 	Cur_cmd_brief->stage[to].text = Cur_cmd_brief->stage[from].text;
-	strcpy_s(Cur_cmd_brief->stage[to].persona, Cur_cmd_brief->stage[from].persona);
+	Cur_cmd_brief->stage[to].persona_index = Cur_cmd_brief->stage[from].persona_index;
 }
 
 void cmd_brief_dlg::OnBrowseAni() 
@@ -367,8 +371,7 @@ void cmd_brief_dlg::OnPlay()
 		int persona_index = message_persona_name_lookup(temp_persona);
 		if (persona_index != -1) {
 			fsspeech_play(FSSPEECH_FROM_INGAME, temp_text, Personas[persona_index].speech_tags);
-		}
-		else {
+		} else {
 			fsspeech_play(FSSPEECH_FROM_INGAME, temp_text);
 		}
 	}

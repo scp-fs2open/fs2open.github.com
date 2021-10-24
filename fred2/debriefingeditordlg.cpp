@@ -219,7 +219,7 @@ void debriefing_editor_dlg::update_data(int update)
 		deconvert_multiline_string(ptr->recommendation_text, m_rec_text);
 		lcl_fred_replace_stuff(ptr->recommendation_text);
 		string_copy(ptr->voice, m_voice, MAX_FILENAME_LEN);
-		string_copy(ptr->persona, m_persona, NAME_LENGTH);
+		ptr->persona_index = message_persona_name_lookup(m_persona);
 	}
 
 	// now get new stage data
@@ -230,7 +230,11 @@ void debriefing_editor_dlg::update_data(int update)
 		convert_multiline_string(m_text, ptr->text);
 		convert_multiline_string(m_rec_text, ptr->recommendation_text);
 		m_voice = ptr->voice;
-		m_persona = ptr->persona;
+		if (ptr->persona_index != -1) {
+			m_persona = Personas[ptr->persona_index].name;
+		} else {
+			m_persona = _T("<None>");
+		}
 		enable = TRUE;
 
 	} else {
@@ -411,7 +415,7 @@ void debriefing_editor_dlg::copy_stage(int from, int to, int clear_formula)
 		Debriefing->stages[to].text = "<Text here>";
 		strcpy_s(Debriefing->stages[to].voice, "none.wav");
 		Debriefing->stages[to].formula = -1;
-		strcpy_s(Debriefing->stages[to].persona, "<None>");
+		Debriefing->stages[to].persona_index = -1;
 		return;
 	}
 	
@@ -423,7 +427,7 @@ void debriefing_editor_dlg::copy_stage(int from, int to, int clear_formula)
 	Debriefing->stages[to].text = Debriefing->stages[from].text;
 	strcpy_s( Debriefing->stages[to].voice, Debriefing->stages[from].voice );
 	Debriefing->stages[to].recommendation_text = Debriefing->stages[from].recommendation_text;
-	strcpy_s(Debriefing->stages[to].persona, Debriefing->stages[from].persona);
+	Debriefing->stages[to].persona_index = Debriefing->stages[from].persona_index;
 }
 
 void debriefing_editor_dlg::OnRclickTree(NMHDR* pNMHDR, LRESULT* pResult) 
@@ -526,8 +530,7 @@ void debriefing_editor_dlg::OnPlay()
 		int persona_index = message_persona_name_lookup(temp_persona);
 		if (persona_index != -1) {
 			fsspeech_play(FSSPEECH_FROM_INGAME, temp_text, Personas[persona_index].speech_tags);
-		}
-		else {
+		} else {
 			fsspeech_play(FSSPEECH_FROM_INGAME, temp_text);
 		}
 	}

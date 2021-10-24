@@ -12,7 +12,7 @@
 #include "sound/speech.h"
 
 extern int Cmdline_freespace_no_sound;
-extern int Cmdline_no_speech_tags;
+extern bool Cmdline_no_speech_tags;
 
 static int speech_inited = 0;
 
