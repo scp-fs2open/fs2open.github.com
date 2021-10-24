@@ -682,12 +682,12 @@ int ShipFlagsDialogModel::getDestroyedSeconds()
 	return m_destroy_value;
 }
 
-void ShipFlagsDialogModel::setScanable(int state)
+void ShipFlagsDialogModel::setScannable(int state)
 {
 	modify(m_scannable, state);
 }
 
-int ShipFlagsDialogModel::getScanable()
+int ShipFlagsDialogModel::getScannable()
 {
 	return m_scannable;
 }
@@ -1180,7 +1180,6 @@ void ShipFlagsDialogModel::initializeData()
 
 					m_reinforcement = (j < Num_reinforcements) ? 1 : 0;
 
-					;
 				} else {
 
 					m_scannable = tristate_set(shipp->flags[Ship::Ship_Flags::Scannable], m_scannable);

@@ -30,7 +30,7 @@ ShipFlagsDialog::ShipFlagsDialog(QWidget* parent, EditorViewport* viewport)
 		static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
 		this,
 		&ShipFlagsDialog::destroyBeforeMissionSecondsChanged);
-	connect(ui->scannableCheckbox, &QCheckBox::stateChanged, this, &ShipFlagsDialog::scanableChanged);
+	connect(ui->scannableCheckbox, &QCheckBox::stateChanged, this, &ShipFlagsDialog::scannableChanged);
 	connect(ui->cargoKnownCheckbox, &QCheckBox::stateChanged, this, &ShipFlagsDialog::cargoChanged);
 	connect(ui->toggleSubsytemScanningCheckbox,
 		&QCheckBox::stateChanged,
@@ -130,8 +130,8 @@ void ShipFlagsDialog::updateUI()
 	ui->destroyBeforeMissionCheckbox->setCheckState(Qt::CheckState(value));
 	value = _model->getDestroyedSeconds();
 	ui->destroySecondsSpinBox->setValue(value);
-	// Scanable
-	value = _model->getScanable();
+	// Scannable
+	value = _model->getScannable();
 	ui->scannableCheckbox->setCheckState(Qt::CheckState(value));
 	// Cargo known
 	value = _model->getCargoKnown();
@@ -268,9 +268,9 @@ void ShipFlagsDialog::destroyBeforeMissionSecondsChanged(int value)
 	_model->setDestroyedSeconds(value);
 }
 
-void ShipFlagsDialog::scanableChanged(int value)
+void ShipFlagsDialog::scannableChanged(int value)
 {
-	_model->setScanable(value);
+	_model->setScannable(value);
 }
 
 void ShipFlagsDialog::cargoChanged(int value)

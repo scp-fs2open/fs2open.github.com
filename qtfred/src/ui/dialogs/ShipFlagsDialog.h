@@ -33,7 +33,7 @@ class ShipFlagsDialog : public QDialog {
 
 	void destroyBeforeMissionChanged(int);
 	void destroyBeforeMissionSecondsChanged(int);
-	void scanableChanged(int);
+	void scannableChanged(int);
 	void cargoChanged(int);
 	void subsytemScanningChanged(int);
 	void reinforcementChanged(int);

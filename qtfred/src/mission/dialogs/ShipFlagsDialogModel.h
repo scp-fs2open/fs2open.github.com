@@ -77,8 +77,8 @@ class ShipFlagsDialogModel : public AbstractDialogModel {
 	void setDestroyedSeconds(int);
 	int getDestroyedSeconds();
 
-	void setScanable(int);
-	int getScanable();
+	void setScannable(int);
+	int getScannable();
 
 	void setCargoKnown(int);
 	int getCargoKnown();
