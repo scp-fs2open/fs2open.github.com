@@ -1618,7 +1618,7 @@ ADE_FUNC(getSubmodelAnimationTime, l_Ship, "string type, string triggeredBy", "G
 
 	auto animtype = animation::anim_match_type(type);
 	if (animtype == animation::ModelAnimationTriggerType::None)
-		return ADE_RETURN_FALSE;
+		return ade_set_error(L, "f", 0.0f);
 
 	ship* shipp = &Ships[objh->objp->instance];
 	auto animationTimeFunc = animation::anim_parse_scripted_start(Ship_info[shipp->ship_info_index].animations, model_get_instance(shipp->model_instance_num), animtype, trigger).second;
