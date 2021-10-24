@@ -176,6 +176,8 @@ namespace animation {
 			case ModelAnimationState::COMPLETED:
 				//Nothing special to do. Expected case
 				instanceData.time -= timeOffset;
+				if (force)
+					instanceData.time = instant ? 0 : instanceData.duration - timeOffset;
 
 				break;
 			}
@@ -206,6 +208,8 @@ namespace animation {
 			case ModelAnimationState::UNTRIGGERED:
 				//Nothing special to do. Expected case
 				instanceData.time += timeOffset;
+				if (force)
+					instanceData.time = instant ? instanceData.duration : 0 + timeOffset;
 
 				break;
 			}
@@ -938,8 +942,12 @@ namespace animation {
 			subtype = atoi(triggeredBy.c_str());
 
 			return {
-				std::bind(&ModelAnimationSet::startAll, std::cref(set), pmi, type, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, subtype, false),
-				std::bind(&ModelAnimationSet::getTimeAll, std::cref(set), pmi, type, subtype, false)
+				[&set, pmi, type, subtype](ModelAnimationDirection direction, bool forced, bool instant, bool pause) -> bool {
+					return set.startAll(pmi, type, direction, forced, instant, pause, subtype);
+				},
+				[&set, pmi, type, subtype]() -> int {
+					return set.getTimeAll(pmi, type, subtype);
+				}
 			};
 
 		case ModelAnimationTriggerType::DockBayDoor: 
@@ -947,8 +955,12 @@ namespace animation {
 			subtype = atoi(triggeredBy.c_str());
 
 			return {
-				std::bind(&ModelAnimationSet::startDockBayDoors, std::cref(set), pmi, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, subtype),
-				std::bind(&ModelAnimationSet::getTimeDockBayDoors, std::cref(set), pmi, subtype)
+				[&set, pmi, subtype](ModelAnimationDirection direction, bool forced, bool instant, bool pause) -> bool {
+					return set.startDockBayDoors(pmi, direction, forced, instant, pause, subtype);
+				},
+				[&set, pmi, subtype]() -> int {
+					return set.getTimeDockBayDoors(pmi, subtype);
+				}
 			};
 
 		case ModelAnimationTriggerType::Scripted:
@@ -959,10 +971,15 @@ namespace animation {
 			char parsedname[NAME_LENGTH];
 			strncpy_s(parsedname, triggeredBy.c_str(), NAME_LENGTH);
 			strlwr(parsedname);
+			std::string name(parsedname);
 
 			return {
-				std::bind(&ModelAnimationSet::start, std::cref(set), pmi, type, parsedname, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, subtype),
-				std::bind(&ModelAnimationSet::getTime, std::cref(set), pmi, type, parsedname, subtype)
+				[&set, pmi, type, name](ModelAnimationDirection direction, bool forced, bool instant, bool pause) -> bool {
+					return set.start(pmi, type, name, direction, forced, instant, pause);
+				},
+				[&set, pmi, type, name]() -> int {
+					return set.getTime(pmi, type, name);
+				}
 			};
 		}
 
@@ -970,8 +987,12 @@ namespace animation {
 		case ModelAnimationTriggerType::WeaponLaunched:
 			//No triggered by specialization
 			return {
-				std::bind(&ModelAnimationSet::startAll, std::cref(set), pmi, type, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, ModelAnimationSet::SUBTYPE_DEFAULT, false),
-				std::bind(&ModelAnimationSet::getTimeAll, std::cref(set), pmi, type, ModelAnimationSet::SUBTYPE_DEFAULT, false)
+				[&set, type, pmi](ModelAnimationDirection direction, bool forced, bool instant, bool pause) -> bool {
+					return set.startAll(pmi, type, direction, forced, instant, pause);
+				},
+				[&set, type, pmi]() -> int {
+					return set.getTimeAll(pmi, type);
+				}
 			};
 
 		case ModelAnimationTriggerType::Initial:
