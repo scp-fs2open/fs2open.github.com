@@ -464,6 +464,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "ship-subsys-guardian-threshold",	OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD,		3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "self-destruct",					OP_SELF_DESTRUCT,						1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "destroy-instantly",				OP_DESTROY_INSTANTLY,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Admiral MS
+	{ "destroy-instantly-with-debris",	OP_DESTROY_INSTANTLY_WITH_DEBRIS,		1,	INT_MAX,	SEXP_ACTION_OPERATOR,   },	// Asteroth
 	{ "destroy-subsys-instantly",		OP_DESTROY_SUBSYS_INSTANTLY,			2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Admiral MS
 	{ "sabotage-subsystem",				OP_SABOTAGE_SUBSYSTEM,					3,	3,			SEXP_ACTION_OPERATOR,	},
 	{ "repair-subsystem",				OP_REPAIR_SUBSYSTEM,					3,	5,			SEXP_ACTION_OPERATOR,	},
@@ -16295,7 +16296,7 @@ void sexp_ship_vanish(int n)
 	}
 }
 
-void sexp_destroy_instantly(int n)
+void sexp_destroy_instantly(int n, bool with_debris)
 {
 	if (MULTIPLAYER_MASTER)
 		Current_sexp_network_packet.start_callback();
@@ -16313,7 +16314,7 @@ void sexp_destroy_instantly(int n)
 			if (MULTIPLAYER_MASTER)
 				Current_sexp_network_packet.send_ship(ship_entry->shipp);
 
-			ship_destroy_instantly(ship_entry->objp);
+			ship_destroy_instantly(ship_entry->objp, with_debris);
 		}
 	}
 
@@ -24602,7 +24603,8 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_DESTROY_INSTANTLY:
-				sexp_destroy_instantly(node);
+			case OP_DESTROY_INSTANTLY_WITH_DEBRIS:
+				sexp_destroy_instantly(node, (op_num == OP_DESTROY_INSTANTLY_WITH_DEBRIS));
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -26901,6 +26903,7 @@ int query_operator_return_type(int op)
 		case OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD:
 		case OP_SHIP_VANISH:
 		case OP_DESTROY_INSTANTLY:
+		case OP_DESTROY_INSTANTLY_WITH_DEBRIS:
 		case OP_SHIELDS_ON:
 		case OP_SHIELDS_OFF:
 		case OP_SHIP_STEALTHY:
@@ -27427,6 +27430,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_SHIP_NO_GUARDIAN:
 		case OP_SHIP_VANISH:
 		case OP_DESTROY_INSTANTLY:
+		case OP_DESTROY_INSTANTLY_WITH_DEBRIS:
 		case OP_SHIELDS_ON:
 		case OP_SHIELDS_OFF:
 		case OP_SHIP_STEALTHY:
@@ -30995,6 +30999,7 @@ int get_subcategory(int sexp_id)
 		case OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD:
 		case OP_SELF_DESTRUCT:
 		case OP_DESTROY_INSTANTLY:
+		case OP_DESTROY_INSTANTLY_WITH_DEBRIS:
 		case OP_DESTROY_SUBSYS_INSTANTLY:
 		case OP_SABOTAGE_SUBSYSTEM:
 		case OP_REPAIR_SUBSYSTEM:
@@ -34384,6 +34389,11 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tSelf-destructs the named ship without explosion, death roll, or debris.  That is, the ship is instantly gone from the mission and the only indication of what happened is a mission log entry.\r\n"
 		"\tNon-player ship only!\r\n"
 		"\tAll: List of ship names to destroy.\r\n"},
+
+	{ OP_DESTROY_INSTANTLY_WITH_DEBRIS, "destroy-instantly-with-debris\r\n"
+		"\tLike destroy-instantly, but only spawns debris. No explosions, no sound, no deathroll.\r\n"
+		"\tNon-player ship only!\r\n"
+		"\tAll: List of ship names to destroy.\r\n" },
 
 	{ OP_SHIP_CREATE, "ship-create\r\n"
 		"\tCreates a new ship\r\n"

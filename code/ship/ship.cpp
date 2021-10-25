@@ -7817,7 +7817,7 @@ void ship_actually_depart(int shipnum, int method)
 }
 
 // no destruction effects, not for player destruction and multiplayer, only self-destruction
-void ship_destroy_instantly(object *ship_objp)
+void ship_destroy_instantly(object *ship_objp, bool with_debris)
 {
 	Assert(ship_objp->type == OBJ_SHIP);
 	Assert(!(ship_objp == Player_obj));
@@ -7830,6 +7830,9 @@ void ship_destroy_instantly(object *ship_objp)
 	// undocking and death preparation
 	ship_stop_fire_primary(ship_objp);
 	ai_deathroll_start(ship_objp);
+
+	if (with_debris)
+		shipfx_blow_up_model(ship_objp, 0, 0, &ship_objp->pos);
 
 	mission_log_add_entry(LOG_SELF_DESTRUCTED, Ships[ship_objp->instance].ship_name, NULL );
 	
