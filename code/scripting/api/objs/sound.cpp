@@ -124,13 +124,13 @@ ADE_FUNC(isValid, l_SoundEntry, nullptr, "Detects whether handle is valid", "boo
 	return ade_set_args(L, "b", seh->IsValid());
 }
 
-ADE_FUNC(exists, l_SoundEntry, nullptr, "Detects whether handle references a sound that can be loaded", "boolean", "true if exists, false if not, nil if a syntax/type error occurs")
+ADE_FUNC(tryLoad, l_SoundEntry, nullptr, "Detects whether handle references a sound that can be loaded", "boolean", "true if a load succeeded, false if not, nil if a syntax/type error occurs")
 {
 	sound_entry_h *seh;
 	if (!ade_get_args(L, "o", l_SoundEntry.GetPtr(&seh)))
 		return ADE_RETURN_NIL;
 
-	return ade_set_args(L, "b", gamesnd_game_sound_exists(seh->idx));
+	return ade_set_args(L, "b", gamesnd_game_sound_try_load(seh->idx));
 }
 
 sound_h::sound_h() : sound_entry_h() { sig = sound_handle::invalid(); }

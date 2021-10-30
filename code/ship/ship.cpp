@@ -14299,7 +14299,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 				{
 					// Goober5000
 					gamesnd_id sound_index;
-					if (gamesnd_game_sound_exists(GameSounds::BALLISTIC_START_LOAD))
+					if (gamesnd_game_sound_try_load(GameSounds::BALLISTIC_START_LOAD))
 						sound_index = GameSounds::BALLISTIC_START_LOAD;
 					else
 						sound_index = GameSounds::MISSILE_START_LOAD;
@@ -14326,7 +14326,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 	
 						// Goober5000
 						gamesnd_id sound_index;
-						if (gamesnd_game_sound_exists(GameSounds::BALLISTIC_LOAD))
+						if (gamesnd_game_sound_try_load(GameSounds::BALLISTIC_LOAD))
 							sound_index = GameSounds::BALLISTIC_LOAD;
 						else
 							sound_index = GameSounds::MISSILE_LOAD;
@@ -14358,7 +14358,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 				{
 					// Goober5000
 					gamesnd_id sound_index;
-					if (gamesnd_game_sound_exists(GameSounds::BALLISTIC_START_LOAD))
+					if (gamesnd_game_sound_try_load(GameSounds::BALLISTIC_START_LOAD))
 						sound_index = GameSounds::BALLISTIC_START_LOAD;
 					else
 						sound_index = GameSounds::MISSILE_START_LOAD;

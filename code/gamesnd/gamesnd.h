@@ -404,7 +404,7 @@ bool gamesnd_game_sound_valid(gamesnd_id sound);
 /**
 * @brief Checks if the given sound handle can be loaded
 */
-bool gamesnd_game_sound_exists(gamesnd_id sound);
+bool gamesnd_game_sound_try_load(gamesnd_id sound);
 
 /**
  * @brief Checks if the given sound handle is a valid interface sound handle
