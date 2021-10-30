@@ -313,6 +313,7 @@ BOOL cmd_brief_dlg::DestroyWindow()
 	audiostream_close_file(m_wave_id, 0);
 	m_wave_id = -1;
 
+	update_data();
 	m_play_bm.DeleteObject();
 	return CDialog::DestroyWindow();
 }
