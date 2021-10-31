@@ -2230,7 +2230,12 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 						if (type == OPF_SUBSYSTEM_OR_NONE)
 							break;
 						else
+						{
+							if (bad_node)
+								*bad_node = ship_node;
+
 							return SEXP_CHECK_INVALID_SHIP;
+						}
 					}
 
 					ship_class = p_objp->ship_class;
@@ -2717,8 +2722,12 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 						if (!stricmp(CTEXT(z), Campaign.missions[i].name))
 							break;
 
-					if (i >= Campaign.num_missions)
+					if (i >= Campaign.num_missions) {
+						if (bad_node)
+							*bad_node = z;
+
 						return SEXP_CHECK_INVALID_MISSION_NAME;
+					}
 
 					// read the goal/event list from the mission file if both num_goals and num_events
 					// are < 0
