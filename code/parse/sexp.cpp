@@ -2147,7 +2147,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 			case OPF_SUBSYS_OR_GENERIC:
 			{
 				int shipnum,ship_class;
-				int ship_index;				
+				int ship_node;				
 
 				if (type2 != SEXP_ATOM_STRING){
 					return SEXP_CHECK_TYPE_MISMATCH;
@@ -2181,36 +2181,40 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					case OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD:
 					case OP_IS_IN_TURRET_FOV:
 					case OP_TURRET_SET_FORCED_TARGET:
-						ship_index = CDR(CDR(op_node));
+						ship_node = CDR(CDR(op_node));
 						break;
 
 					case OP_BEAM_FIRE:
 					case OP_TURRET_SET_FORCED_SUBSYS_TARGET:
 						if(argnum == 1){
-							ship_index = CDR(op_node);
+							ship_node = CDR(op_node);
 						} else {
-							ship_index = CDR(CDR(CDR(op_node)));
+							ship_node = CDR(CDR(CDR(op_node)));
 						}
 						break;
 
 					case OP_BEAM_FLOATING_FIRE:
-						ship_index = CDDDDDR(CDDR(op_node));
+						ship_node = CDDDDDR(CDDR(op_node));
 						break;
 
 					case OP_QUERY_ORDERS:
-						ship_index = CDR(CDR(CDR(CDR(op_node))));
+						ship_node = CDR(CDR(CDR(CDR(op_node))));
 						break;
 	
 					case OP_WEAPON_CREATE:
-						ship_index = CDDDDDR(CDDDDR(op_node));
+						ship_node = CDDDDDR(CDDDDR(op_node));
 						break;
 
 					default:
-						ship_index = CDR(op_node);
+						ship_node = CDR(op_node);
 						break;
 				}
 
-				auto shipname = CTEXT(ship_index);
+				// we can't check special-arg ships
+				if (Sexp_nodes[ship_node].flags & SNF_SPECIAL_ARG_IN_NODE)
+					break;
+
+				auto shipname = CTEXT(ship_node);
 				shipnum = ship_name_lookup(shipname, 1);
 				if (shipnum >= 0)
 				{
@@ -2543,24 +2547,31 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				break;
 
 			case OPF_AI_GOAL:
+			{
 				if (type2 != OPR_AI_GOAL){
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
-				if (Fred_running) {
-					int ship_num, ship2, w = 0;
+				while (Fred_running) {
+					int ship_num, ship2, wing_num = 0;
 
-					// if it's the "goals" operator, this is part of initial orders, so just assume it's okay
+					// if it's the "goals" operator, this is part of initial orders, so we can't grab the ship from it
 					if (get_operator_const(op_node) == OP_GOALS_ID) {
 						break;
 					}
 
-					ship_num = ship_name_lookup(CTEXT(Sexp_nodes[op_node].rest), 1);	// Goober5000 - include players
+					auto ship_node = Sexp_nodes[op_node].rest;
+
+					// we can't check special-arg ships
+					if (Sexp_nodes[ship_node].flags & SNF_SPECIAL_ARG_IN_NODE)
+						break;
+
+					ship_num = ship_name_lookup(CTEXT(ship_node), 1);	// Goober5000 - include players
 					if (ship_num < 0) {
-						w = wing_name_lookup(CTEXT(Sexp_nodes[op_node].rest));
-						if (w < 0) {
+						wing_num = wing_name_lookup(CTEXT(ship_node));
+						if (wing_num < 0) {
 							if (bad_node){
-								*bad_node = Sexp_nodes[op_node].rest;
+								*bad_node = ship_node;
 							}
 
 							return SEXP_CHECK_INVALID_SHIP;  // should have already been caught earlier, but just in case..
@@ -2577,8 +2588,8 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 						}
 
 					} else {
-						for (i=0; i<Wings[w].wave_count; i++){
-							if (!query_sexp_ai_goal_valid(z, Wings[w].ship_index[i])){
+						for (i=0; i<Wings[wing_num].wave_count; i++){
+							if (!query_sexp_ai_goal_valid(z, Wings[wing_num].ship_index[i])){
 								return SEXP_CHECK_ORDER_NOT_ALLOWED;
 							}
 						}
@@ -2590,6 +2601,9 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 							return SEXP_CHECK_DOCKING_NOT_ALLOWED;
 						}
 					}
+
+					// this is a fake loop that only runs once
+					break;
 				}
 
 				// we should check the syntax of the actual goal!!!!
@@ -2599,6 +2613,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				}
 
 				break;
+			}
 
 			case OPF_SHIP_TYPE:
 				if (type2 != SEXP_ATOM_STRING){
@@ -2681,134 +2696,76 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				break;
 
 			case OPF_GOAL_NAME:
+			case OPF_EVENT_NAME:
 				if (type2 != SEXP_ATOM_STRING)
 					return SEXP_CHECK_TYPE_MISMATCH;
 
 				// we only need to check the campaign list if running in Fred and are in campaign mode.
-				// otherwise, check the set of current goals
-				if ( Fred_running && (mode == SEXP_MODE_CAMPAIGN) ) {
+				// otherwise, check the set of current goals/events
+				if (Fred_running && (mode == SEXP_MODE_CAMPAIGN)) {
 					z = find_parent_operator(node);
 					Assert(z >= 0);
 					z = Sexp_nodes[z].rest;  // first argument of operator should be mission name
 					Assert(z >= 0);
-					for (i=0; i<Campaign.num_missions; i++)
+
+					// can't check special-arg
+					if (Sexp_nodes[z].flags & SNF_SPECIAL_ARG_IN_NODE)
+						break;
+
+					// look for mission
+					for (i = 0; i < Campaign.num_missions; i++)
 						if (!stricmp(CTEXT(z), Campaign.missions[i].name))
 							break;
 
+					if (i >= Campaign.num_missions)
+						return SEXP_CHECK_INVALID_MISSION_NAME;
+
 					// read the goal/event list from the mission file if both num_goals and num_events
 					// are < 0
-					if ((Campaign.missions[i].num_goals <= 0) && (Campaign.missions[i].num_events <= 0) )
+					if ((Campaign.missions[i].num_goals <= 0) && (Campaign.missions[i].num_events <= 0))
 						read_mission_goal_list(i);
-					
-					if (i < Campaign.num_missions) {
-						for (t=0; t<Campaign.missions[i].num_goals; t++)
+
+					if (type == OPF_GOAL_NAME) {
+						for (t = 0; t < Campaign.missions[i].num_goals; t++)
 							if (!stricmp(CTEXT(node), Campaign.missions[i].goals[t].name))
 								break;
 
 						if (t == Campaign.missions[i].num_goals)
 							return SEXP_CHECK_INVALID_GOAL_NAME;
-					}
-				} else {
-					// MWA -- short circuit evaluation of these things for now.
-					if ( (Operators[op].value == OP_PREVIOUS_GOAL_TRUE) || (Operators[op].value == OP_PREVIOUS_GOAL_FALSE) || (Operators[op].value == OP_PREVIOUS_GOAL_INCOMPLETE) )
-						break;
-
-					for (i=0; i<Num_goals; i++)
-						if (!stricmp(CTEXT(node), Mission_goals[i].name))
-							break;
-
-					if (i == Num_goals)
-						return SEXP_CHECK_INVALID_GOAL_NAME;
-				}
-
-				break;
-
-			case OPF_EVENT_NAME:
-				if ( type2 != SEXP_ATOM_STRING )
-					return SEXP_CHECK_TYPE_MISMATCH;
-
-				// like above checking for goals, check events in the campaign only if in Fred
-				// and only if in campaign mode.  Otherwise, check the current set of events
-				if ( Fred_running && (mode == SEXP_MODE_CAMPAIGN) ) {
-					z = find_parent_operator(node);
-					Assert(z >= 0);
-					z = Sexp_nodes[z].rest;  // first argument of operator should be mission name
-					Assert(z >= 0);
-					for (i=0; i<Campaign.num_missions; i++)
-						if (!stricmp(CTEXT(z), Campaign.missions[i].name))
-							break;
-
-					// read the goal/event list from the mission file if both num_goals and num_events
-					// are < 0
-					if ((Campaign.missions[i].num_goals <= 0) && (Campaign.missions[i].num_events <= 0) )
-						read_mission_goal_list(i);
-					
-					if (i < Campaign.num_missions) {
-						for (t=0; t<Campaign.missions[i].num_events; t++)
+					} else if (type == OPF_EVENT_NAME) {
+						for (t = 0; t < Campaign.missions[i].num_events; t++)
 							if (!stricmp(CTEXT(node), Campaign.missions[i].events[t].name))
 								break;
 
 						if (t == Campaign.missions[i].num_events)
 							return SEXP_CHECK_INVALID_EVENT_NAME;
 					}
-				} else {
+				} else if (type == OPF_GOAL_NAME) {
 					// MWA -- short circuit evaluation of these things for now.
-					if ( (Operators[op].value == OP_PREVIOUS_EVENT_TRUE) || (Operators[op].value == OP_PREVIOUS_EVENT_FALSE) || (Operators[op].value == OP_PREVIOUS_EVENT_INCOMPLETE) )
+					if ((Operators[op].value == OP_PREVIOUS_GOAL_TRUE) || (Operators[op].value == OP_PREVIOUS_GOAL_FALSE) || (Operators[op].value == OP_PREVIOUS_GOAL_INCOMPLETE))
 						break;
 
-					for ( i = 0; i < Num_mission_events; i++ ) {
-						if ( !stricmp(CTEXT(node), Mission_events[i].name) )
+					for (i = 0; i < Num_goals; i++)
+						if (!stricmp(CTEXT(node), Mission_goals[i].name))
+							break;
+
+					if (i == Num_goals)
+						return SEXP_CHECK_INVALID_GOAL_NAME;
+				} else if (type == OPF_EVENT_NAME) {
+					// MWA -- short circuit evaluation of these things for now.
+					if ((Operators[op].value == OP_PREVIOUS_EVENT_TRUE) || (Operators[op].value == OP_PREVIOUS_EVENT_FALSE) || (Operators[op].value == OP_PREVIOUS_EVENT_INCOMPLETE))
+						break;
+
+					for (i = 0; i < Num_mission_events; i++) {
+						if (!stricmp(CTEXT(node), Mission_events[i].name))
 							break;
 					}
-					if ( i == Num_mission_events )
+					if (i == Num_mission_events)
 						return SEXP_CHECK_INVALID_EVENT_NAME;
 				}
 				break;
 
 			case OPF_DOCKER_POINT:
-				if (type2 != SEXP_ATOM_STRING)
-					return SEXP_CHECK_TYPE_MISMATCH;
-
-				// This makes massive assumptions about the structure of the SEXP using it. If you add any 
-				// new SEXPs that use this OPF, you will probably need to edit this section to accommodate them.
-				if (Fred_running) {
-					int ship_num, model;
-
-					// Look for the node containing the docker ship as its first argument. For set-docked, we want 
-					// the current SEXP. Otherwise (for ai-dock), we want its parent.
-					if (get_operator_const(op_node) == OP_SET_DOCKED) {
-						z = op_node;
-					}
-					else {
-						z = find_parent_operator(op_node);
-					
-						// if it's the "goals" operator, this is part of initial orders, so just assume it's okay
-						if (get_operator_const(z) == OP_GOALS_ID) {
-							break;
-						}
-					}
-
-					// look for the ship this goal is being assigned to
-					ship_num = ship_name_lookup(CTEXT(Sexp_nodes[z].rest), 1);
-					if (ship_num < 0) {
-						if (bad_node)
-							*bad_node = Sexp_nodes[z].rest;
-
-						return SEXP_CHECK_INVALID_SHIP;  // should have already been caught earlier, but just in case..
-					}
-
-					model = Ship_info[Ships[ship_num].ship_info_index].model_num;
-					z = model_get_num_dock_points(model);
-					for (i=0; i<z; i++)
-						if (!stricmp(CTEXT(node), model_get_dock_name(model, i)))
-							break;
-
-					if (i == z)
-						return SEXP_CHECK_INVALID_DOCKER_POINT;
-				}
-
-				break;
-
 			case OPF_DOCKEE_POINT:
 				if (type2 != SEXP_ATOM_STRING)
 					return SEXP_CHECK_TYPE_MISMATCH;
@@ -2816,24 +2773,39 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				// This makes massive assumptions about the structure of the SEXP using it. If you add any 
 				// new SEXPs that use this OPF, you will probably need to edit this section to accommodate them.
 				if (Fred_running) {
-					int ship_num, model;
+					int ship_num, ship_node = -1, model;
 
-					// If we're using set-docked, we want to look up the ship from the third SEXP argument.
-					if (get_operator_const(op_node) == OP_SET_DOCKED) {
-						//Navigate to the third argument
+					// Look for the node containing the docker/dockee ship. In most cases, we want 
+					// the current SEXP operator, but for ai-dock and the docker, we want its parent.
+					if (get_operator_const(op_node) == OP_AI_DOCK && type == OPF_DOCKER_POINT) {
+						z = find_parent_operator(op_node);
+
+						// if it's the "goals" operator, this is part of initial orders, so we can't grab the ship from it
+						if (get_operator_const(z) == OP_GOALS_ID) {
+							break;
+						}
+
+						ship_node = CDR(z);
+					} else {
 						z = op_node;
-						for (i = 0; i < 3; i++)
-							z = Sexp_nodes[z].rest;
 
-						ship_num = ship_name_lookup(Sexp_nodes[z].text, 1);
-					}
-					else {
-						ship_num = ship_name_lookup(CTEXT(Sexp_nodes[op_node].rest), 1);
+						if (get_operator_const(op_node) == OP_AI_DOCK)	// ai-dock with dockee
+							ship_node = CDR(z);
+						else if (type == OPF_DOCKER_POINT)
+							ship_node = CDR(z);
+						else if (type == OPF_DOCKEE_POINT)
+							ship_node = CDDDR(z);
 					}
 
+					// can't check special-arg or missing node
+					if (ship_node < 0 || Sexp_nodes[ship_node].flags & SNF_SPECIAL_ARG_IN_NODE)
+						break;
+
+					// look for the ship that has this dockpoint
+					ship_num = ship_name_lookup(CTEXT(ship_node), 1);
 					if (ship_num < 0) {
 						if (bad_node)
-							*bad_node = Sexp_nodes[op_node].rest;
+							*bad_node = ship_node;
 
 						return SEXP_CHECK_INVALID_SHIP;  // should have already been caught earlier, but just in case..
 					}
@@ -2845,7 +2817,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 							break;
 
 					if (i == z)
-						return SEXP_CHECK_INVALID_DOCKEE_POINT;
+						return (type == OPF_DOCKER_POINT) ? SEXP_CHECK_INVALID_DOCKER_POINT : SEXP_CHECK_INVALID_DOCKEE_POINT;
 				}
 
 				break;
@@ -33947,9 +33919,9 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_SET_DOCKED, "set-docked\r\n"
 		"\tCauses one ship to become instantly docked to another at the specified docking ports.  Takes 4 arguments...\r\n"
 		"\t1: Docker ship\r\n"
-		"\t1: Docker point\r\n"
-		"\t1: Dockee ship\r\n"
-		"\t1: Dockee point\r\n"
+		"\t2: Docker point\r\n"
+		"\t3: Dockee ship\r\n"
+		"\t4: Dockee point\r\n"
 	},
 
 	{ OP_BEAM_FIRE, "fire-beam\r\n"
