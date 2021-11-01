@@ -2,10 +2,22 @@
 <%def name="build(file)">[url=${file.url}]${file.filename}[/url]</%def>
 
 [b]Change log:[/b] (chronologically ordered)
-PLACEHOLDER
+[b]Bugfixes and behavior changes:[/b] Check these first if something breaks (most of these changes can be reverted / disabled).
+[list]
+[li]Wrap Docking getTime in a timestamp ([gh]#3701[/gh])[/li]
+[li]expand some sexp documentation ([gh]#3671[/gh])[/li]
+[li]Fix warnings concerning ballistic weapons ([gh]#3683[/gh])[/li]
+[li]Initialize team visibility before using it ([gh]#3695[/gh])[/li]
+[li]Actually fix the goal's target being sent ([gh]#3665[/gh])[/li]
+[li]Safety for replace-texture ([gh]#3694[/gh])[/li]
+[li]Fix issue 3685 ([gh]#3688[/gh])[/li]
+[li]Exclude dead subsys from targeting ([gh]#3614[/gh])[/li]
+[li]Fix scripted kills ([gh]#3679[/gh])[/li]
+[li]Fix homing child weapons in niche circumstances ([gh]#3661[/gh])[/li]
+[/list]
 
 [b]Deprecations:[/b]
-PLACEHOLDER
+[list][li]None[/li][/list]
 
 Deprecations are a mechanism in FSO where a certain feature or aspect of the engine has changed or is no longer supported. Since this would normally break existing mods we have the mod table feature "[tt]$Target Version:[/tt]" with which a mod can specify what version of FSO it was developed with. The features listed above will be removed or changed when the target version of a mod is at least the version released in this post.
 
