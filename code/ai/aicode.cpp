@@ -7157,11 +7157,12 @@ void attack_set_accel(ai_info *aip, ship_info *sip, float dist_to_enemy, float d
 	float optimal_range = AI_DEFAULT_ATTACK_APPROACH_DIST;
 	ship_weapon* weapons = &Ships[Pl_objp->instance].weapons;
 	weapon_info* wip = nullptr;
+	ship* shipp = &Ships[Pl_objp->instance];
 
 	// see if we can get a better one
-	if (weapons->num_primary_banks >= 1 && weapons->current_primary_bank >= 0) {
+	if (weapons->num_primary_banks >= 1 && weapons->current_primary_bank >= 0 && !shipp->flags[Ship::Ship_Flags::Primaries_locked]) {
 		wip = &Weapon_info[weapons->primary_bank_weapons[weapons->current_primary_bank]];
-	} else if (weapons->num_secondary_banks >= 1 && weapons->current_secondary_bank >= 0) {
+	} else if (weapons->num_secondary_banks >= 1 && weapons->current_secondary_bank >= 0 && !shipp->flags[Ship::Ship_Flags::Secondaries_locked]) {
 		wip = &Weapon_info[weapons->secondary_bank_weapons[weapons->current_secondary_bank]];
 	}
 
@@ -7173,10 +7174,8 @@ void attack_set_accel(ai_info *aip, ship_info *sip, float dist_to_enemy, float d
 			if (dist_to_enemy > optimal_range + 600.0f) {
 				if (!( Pl_objp->phys_info.flags & PF_AFTERBURNER_ON )) {
 					float percent_left;
-					ship	*shipp;
 					ship_info *sip_local;
 
-					shipp = &Ships[Pl_objp->instance];
 					sip_local = &Ship_info[shipp->ship_info_index];
 
 					if (sip_local->afterburner_fuel_capacity > 0.0f) {
