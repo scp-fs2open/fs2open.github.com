@@ -2209,6 +2209,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 						ship_node = CDR(op_node);
 						break;
 				}
+				Assert(ship_node >= 0);
 
 				// we can't check special-arg ships
 				if (Sexp_nodes[ship_node].flags & SNF_SPECIAL_ARG_IN_NODE)
@@ -2557,7 +2558,13 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
-				while (Fred_running) {
+				// we should check the syntax of the actual goal!!!!
+				z = Sexp_nodes[node].first;
+				if ((z = check_sexp_syntax(z, OPR_AI_GOAL, recursive, bad_node)) != 0){
+					return z;
+				}
+
+				if (Fred_running) {
 					int ship_num, ship2, wing_num = 0;
 
 					// if it's the "goals" operator, this is part of initial orders, so we can't grab the ship from it
@@ -2566,6 +2573,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					}
 
 					auto ship_node = Sexp_nodes[op_node].rest;
+					Assert(ship_node >= 0);
 
 					// we can't check special-arg ships
 					if (Sexp_nodes[ship_node].flags & SNF_SPECIAL_ARG_IN_NODE)
@@ -2606,15 +2614,6 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 							return SEXP_CHECK_DOCKING_NOT_ALLOWED;
 						}
 					}
-
-					// this is a fake loop that only runs once
-					break;
-				}
-
-				// we should check the syntax of the actual goal!!!!
-				z = Sexp_nodes[node].first;
-				if ((z = check_sexp_syntax(z, OPR_AI_GOAL, recursive, bad_node)) != 0){
-					return z;
 				}
 
 				break;
@@ -2729,8 +2728,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 						return SEXP_CHECK_INVALID_MISSION_NAME;
 					}
 
-					// read the goal/event list from the mission file if both num_goals and num_events
-					// are < 0
+					// read the goal/event list from the mission file if both num_goals and num_events are <= 0
 					if ((Campaign.missions[i].num_goals <= 0) && (Campaign.missions[i].num_events <= 0))
 						read_mission_goal_list(i);
 
@@ -2748,9 +2746,11 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 						if (t == Campaign.missions[i].num_events)
 							return SEXP_CHECK_INVALID_EVENT_NAME;
+					} else {
+						UNREACHABLE("type == %d; expected OPF_GOAL_NAME or OPF_EVENT_NAME", type);
 					}
 				} else if (type == OPF_GOAL_NAME) {
-					// MWA -- short circuit evaluation of these things for now.
+					// neither the previous mission nor the previous goal is guaranteed to exist (missions can be developed out of sequence), so we don't need to check them
 					if ((Operators[op].value == OP_PREVIOUS_GOAL_TRUE) || (Operators[op].value == OP_PREVIOUS_GOAL_FALSE) || (Operators[op].value == OP_PREVIOUS_GOAL_INCOMPLETE))
 						break;
 
@@ -2761,7 +2761,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					if (i == Num_goals)
 						return SEXP_CHECK_INVALID_GOAL_NAME;
 				} else if (type == OPF_EVENT_NAME) {
-					// MWA -- short circuit evaluation of these things for now.
+					// neither the previous mission nor the previous event is guaranteed to exist (missions can be developed out of sequence), so we don't need to check them
 					if ((Operators[op].value == OP_PREVIOUS_EVENT_TRUE) || (Operators[op].value == OP_PREVIOUS_EVENT_FALSE) || (Operators[op].value == OP_PREVIOUS_EVENT_INCOMPLETE))
 						break;
 
@@ -2771,6 +2771,8 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					}
 					if (i == Num_mission_events)
 						return SEXP_CHECK_INVALID_EVENT_NAME;
+				} else {
+					UNREACHABLE("type == %d; expected OPF_GOAL_NAME or OPF_EVENT_NAME", type);
 				}
 				break;
 
@@ -2804,10 +2806,13 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 							ship_node = CDR(z);
 						else if (type == OPF_DOCKEE_POINT)
 							ship_node = CDDDR(z);
+						else
+							UNREACHABLE("Unhandled case for OPF_DOCKER_POINT/OPF_DOCKEE_POINT");
 					}
+					Assert(ship_node >= 0);
 
-					// can't check special-arg or missing node
-					if (ship_node < 0 || Sexp_nodes[ship_node].flags & SNF_SPECIAL_ARG_IN_NODE)
+					// can't check special-arg
+					if (Sexp_nodes[ship_node].flags & SNF_SPECIAL_ARG_IN_NODE)
 						break;
 
 					// look for the ship that has this dockpoint
