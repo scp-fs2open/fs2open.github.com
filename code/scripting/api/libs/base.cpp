@@ -80,7 +80,7 @@ ADE_FUNC(rand32,
 		result = Random::next();
 	}
 
-	return ade_set_error(L, "i", result);
+	return ade_set_args(L, "i", result);
 }
 
 ADE_FUNC(rand32f,
@@ -98,7 +98,7 @@ ADE_FUNC(rand32f,
 	if (numargs > 0)
 		result *= _max;
 
-	return ade_set_error(L, "f", _max);
+	return ade_set_args(L, "f", result);
 }
 
 ADE_FUNC(createOrientation,
