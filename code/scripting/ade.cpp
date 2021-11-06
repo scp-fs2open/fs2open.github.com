@@ -264,7 +264,7 @@ static int deprecatedFunctionHandler(lua_State* L)
 {
 	const char* functionName = lua_tostring(L, lua_upvalueindex(1));
 	LuaError(L,
-			 "Deprecated function '%s' has been called that is not available in the targetted engine version. Check "
+			 "Deprecated function '%s' has been called that is not available in the targeted engine version. Check "
 			 "the documentation for a possible replacement.",
 			 functionName);
 	return 0;
