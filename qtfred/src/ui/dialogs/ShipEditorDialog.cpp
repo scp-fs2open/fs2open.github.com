@@ -156,7 +156,9 @@ void ShipEditorDialog::closeEvent(QCloseEvent* event)
 }
 
 void ShipEditorDialog::on_miscButton_clicked()
-{ // TODO:: Flags Dialog
+{
+	auto flagsDialog = new dialogs::ShipFlagsDialog(this, _viewport);
+	flagsDialog->show();
 }
 
 void ShipEditorDialog::on_initialStatusButton_clicked()
