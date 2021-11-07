@@ -30323,14 +30323,21 @@ void sexp_modify_variable(const char *text, int index, bool sexp_callback)
 		SCP_string temp_text = text;
 		sexp_replace_variable_names_with_values(temp_text);
 
+		if (temp_text.length() > TOKEN_LENGTH - 1)
+			Warning(LOCATION, "String too long.  Only %d characters will be assigned to %s.\n\nOriginal string:\n%s", TOKEN_LENGTH - 1, Sexp_variables[index].variable_name, temp_text.c_str());
+
 		// copy to original buffer
-		auto len = temp_text.copy(Sexp_variables[index].text, TOKEN_LENGTH);
+		auto len = temp_text.copy(Sexp_variables[index].text, TOKEN_LENGTH - 1);
 		Sexp_variables[index].text[len] = 0;
 	}
 	else
 	{
+		if (strlen(text) > TOKEN_LENGTH - 1)
+			Warning(LOCATION, "String too long.  Only %d characters will be assigned to %s.\n\nOriginal string:\n%s", TOKEN_LENGTH - 1, Sexp_variables[index].variable_name, text);
+
 		// no variables, so no substitution
-		strcpy_s(Sexp_variables[index].text, text);
+		strncpy(Sexp_variables[index].text, text, TOKEN_LENGTH - 1);
+		Sexp_variables[index].text[TOKEN_LENGTH - 1] = 0;
 	}
 	Sexp_variables[index].type |= SEXP_VARIABLE_MODIFIED;
 
