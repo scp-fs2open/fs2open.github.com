@@ -422,6 +422,8 @@ add_file_folder("Graphics"
 	graphics/2d.h
 	graphics/decal_draw_list.cpp
 	graphics/decal_draw_list.h
+	graphics/debug_sphere.cpp
+	graphics/debug_sphere.h
 	graphics/grbatch.cpp
 	graphics/grbatch.h
 	graphics/grinternal.cpp
