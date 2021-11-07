@@ -1499,11 +1499,11 @@ void hud_update_frame(float  /*frametime*/)
 		Player_ai->current_target_distance = hud_find_target_distance(targetp,Player_obj);
 	}
 
-	int stop_targetting_this_thing = 0;
+	bool stop_targeting_this_thing = false;
 
 	// check to see if the target is still alive
 	if ( targetp->flags[Object::Object_Flags::Should_be_dead] ) {
-		stop_targetting_this_thing = 1;
+		stop_targeting_this_thing = true;
 	}
 
 	Player->target_is_dying = FALSE;
@@ -1516,18 +1516,18 @@ void hud_update_frame(float  /*frametime*/)
 
 		// If it is warping out (or exploded), turn off targeting
 		if ( target_shipp->flags[Ship::Ship_Flags::Depart_warp] || target_shipp->flags[Ship::Ship_Flags::Exploded] ) {
-			stop_targetting_this_thing = 1;
+			stop_targeting_this_thing = true;
 		}
 	}
 
 	// Check if can still be seen in Nebula
 	if ( hud_target_invalid_awacs(targetp) ) {
-		stop_targetting_this_thing = 1;
+		stop_targeting_this_thing = true;
 	}
 
 	// If this was found to be something we shouldn't
 	// target anymore, just remove it
-	if ( stop_targetting_this_thing )	{
+	if ( stop_targeting_this_thing )	{
 		Player_ai->target_objnum = -1;
 		Player_ai->targeted_subsys = NULL;
 		hud_stop_looped_locking_sounds();

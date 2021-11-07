@@ -103,7 +103,7 @@ extern Category RenderMainFrame;
 extern Category RenderHUD;
 extern Category RenderHUDHook;
 extern Category RenderHUDGauge;
-extern Category RenderTargettingBracket;
+extern Category RenderTargetingBracket;
 extern Category RenderNavBracket;
 extern Category MainFrame;
 extern Category PageFlip;
