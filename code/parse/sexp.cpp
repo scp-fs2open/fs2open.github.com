@@ -30316,6 +30316,7 @@ void sexp_modify_variable(const char *text, int index, bool sexp_callback)
 	Assert(index >= 0 && index < MAX_SEXP_VARIABLES);
 	Assert(Sexp_variables[index].type & SEXP_VARIABLE_SET);
 	Assert( !MULTIPLAYER_CLIENT );
+	const size_t maxCopyLen = TOKEN_LENGTH - 1;
 
 	if (strchr(text, '$') != nullptr)
 	{
@@ -30323,21 +30324,21 @@ void sexp_modify_variable(const char *text, int index, bool sexp_callback)
 		SCP_string temp_text = text;
 		sexp_replace_variable_names_with_values(temp_text);
 
-		if (temp_text.length() > TOKEN_LENGTH - 1)
-			Warning(LOCATION, "String too long.  Only %d characters will be assigned to %s.\n\nOriginal string:\n%s", TOKEN_LENGTH - 1, Sexp_variables[index].variable_name, temp_text.c_str());
+		if (temp_text.length() > maxCopyLen)
+			Warning(LOCATION, "String too long.  Only " SIZE_T_ARG " characters will be assigned to %s.\n\nOriginal string:\n%s", maxCopyLen, Sexp_variables[index].variable_name, temp_text.c_str());
 
 		// copy to original buffer
-		auto len = temp_text.copy(Sexp_variables[index].text, TOKEN_LENGTH - 1);
+		auto len = temp_text.copy(Sexp_variables[index].text, maxCopyLen);
 		Sexp_variables[index].text[len] = 0;
 	}
 	else
 	{
-		if (strlen(text) > TOKEN_LENGTH - 1)
-			Warning(LOCATION, "String too long.  Only %d characters will be assigned to %s.\n\nOriginal string:\n%s", TOKEN_LENGTH - 1, Sexp_variables[index].variable_name, text);
+		if (strlen(text) > maxCopyLen)
+			Warning(LOCATION, "String too long.  Only " SIZE_T_ARG " characters will be assigned to %s.\n\nOriginal string:\n%s", maxCopyLen, Sexp_variables[index].variable_name, text);
 
 		// no variables, so no substitution
-		strncpy(Sexp_variables[index].text, text, TOKEN_LENGTH - 1);
-		Sexp_variables[index].text[TOKEN_LENGTH - 1] = 0;
+		strncpy(Sexp_variables[index].text, text, maxCopyLen);
+		Sexp_variables[index].text[maxCopyLen] = 0;
 	}
 	Sexp_variables[index].type |= SEXP_VARIABLE_MODIFIED;
 
