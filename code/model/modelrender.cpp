@@ -814,7 +814,6 @@ void model_draw_list::build_uniform_buffer() {
 		if ( queued_draw.render_material.is_lit() ) {
 			Scene_light_handler.setLights(&queued_draw.lights);
 		} else {
-			gr_set_lighting(false, false);
 
 			Scene_light_handler.resetLightState();
 		}
@@ -866,7 +865,8 @@ void model_render_add_lightning( model_draw_list *scene, model_render_params* in
 		// pick a color based upon arc type
 		switch ( smi->arc_type[i] ) {
 			// "normal", FreeSpace 1 style arcs
-		case MARC_TYPE_NORMAL:
+		case MARC_TYPE_DAMAGED:
+		case MARC_TYPE_SHIP:
 			if ( Random::flip_coin() )	{
 				gr_init_color(&primary, std::get<0>(Arc_color_damage_p1), std::get<1>(Arc_color_damage_p1), std::get<2>(Arc_color_damage_p1));
 			} else {
@@ -1506,7 +1506,6 @@ void submodel_render_immediate(model_render_params *render_info, polymodel *pm, 
 	gr_clear_states();
 
 	gr_reset_lighting();
-	gr_set_lighting(false, false);
 }
 
 void submodel_render_queue(model_render_params *render_info, model_draw_list *scene, polymodel *pm, polymodel_instance *pmi, int submodel_num, matrix *orient, vec3d * pos)
@@ -1936,10 +1935,10 @@ void model_render_glow_points(polymodel *pm, polymodel_instance *pmi, ship *ship
 
 	int cull = gr_set_cull(0);
 
-	glow_point_bank_override *gpo = NULL;
+	glow_point_bank_override *gpo = nullptr;
 	bool override_all = false;
 	SCP_unordered_map<int, void*>::iterator gpoi;
-	ship_info *sip = NULL;
+	ship_info *sip = nullptr;
 
 	if ( shipp ) {
 		sip = &Ship_info[shipp->ship_info_index];
@@ -1959,7 +1958,7 @@ void model_render_glow_points(polymodel *pm, polymodel_instance *pmi, ship *ship
 			if(gpoi != sip->glowpoint_bank_override_map.end()) {
 				gpo = (glow_point_bank_override*) sip->glowpoint_bank_override_map[i];
 			} else {
-				gpo = NULL;
+				gpo = nullptr;
 			}
 		}
 
@@ -1975,11 +1974,11 @@ void model_render_glow_points(polymodel *pm, polymodel_instance *pmi, ship *ship
 		}
 
 		if ((gpo && gpo->off_time_override && !gpo->off_time)?gpo->is_on:bank->is_on) {
-			if ( (shipp != NULL) && !(shipp->glow_point_bank_active[i]) )
+			if ( (shipp != nullptr) && !(shipp->glow_point_bank_active[i]) )
 				continue;
 
 			for (j = 0; j < bank->num_points; j++) {
-				Assert( bank->points != NULL );
+				Assert( bank->points != nullptr );
 				int flick;
 
 				if (pmi != nullptr && pmi->submodel[pm->detail[0]].num_arcs > 0) {
@@ -1996,6 +1995,47 @@ void model_render_glow_points(polymodel *pm, polymodel_instance *pmi, ship *ship
 	} // for bank
 
 	gr_set_cull(cull);
+}
+
+// These scaling functions were adapted from Elecman's code.
+// https://forum.unity.com/threads/this-script-gives-you-objects-screen-size-in-pixels.48966/#post-2107126
+float convert_pixel_size_and_distance_to_diameter(float pixelsize, float distance, float field_of_view_deg, int screen_height)
+{
+	float diameter = (pixelsize * distance * field_of_view_deg) / (fl_degrees(screen_height));
+	return diameter;
+}
+
+// These scaling functions were adapted from Elecman's code.
+// https://forum.unity.com/threads/this-script-gives-you-objects-screen-size-in-pixels.48966/#post-2107126
+float convert_distance_and_diameter_to_pixel_size(float distance, float diameter, float field_of_view_deg, int screen_height)
+{
+	float pixel_size = (diameter * fl_degrees(screen_height)) / (distance * field_of_view_deg);
+	return pixel_size;
+}
+
+float model_render_get_diameter_clamped_to_min_pixel_size(const vec3d* pos, float diameter, float min_pixel_size)
+{
+	// Don't do any scaling math if the pixel size is set to zero.
+	if (min_pixel_size <= FLT_EPSILON)
+		return diameter;
+
+	float distance_to_eye = vm_vec_dist(&Eye_position, pos);
+	float current_pixel_size = convert_distance_and_diameter_to_pixel_size(
+		distance_to_eye,
+		diameter,
+		fl_degrees(Eye_fov),
+		gr_screen.max_h);
+
+	float scaled_diameter = diameter;
+	if (current_pixel_size < min_pixel_size) {
+		scaled_diameter = convert_pixel_size_and_distance_to_diameter(
+			min_pixel_size,
+			distance_to_eye,
+			fl_degrees(Eye_fov),
+			gr_screen.max_h);
+	}
+
+	return scaled_diameter;
 }
 
 void model_queue_render_thrusters(model_render_params *interp, polymodel *pm, int objnum, ship *shipp, matrix *orient, vec3d *pos)
@@ -2145,7 +2185,7 @@ void model_queue_render_thrusters(model_render_params *interp, polymodel *pm, in
 			// adjust for thrust
 			(scale_vec.xyz.x *= thruster_info.length.xyz.x) -= 0.1f;
 			(scale_vec.xyz.y *= thruster_info.length.xyz.y) -= 0.1f;
-			(scale_vec.xyz.z *= thruster_info.length.xyz.z)   -= 0.1f;
+			(scale_vec.xyz.z *= thruster_info.length.xyz.z) -= 0.1f;
 
 			// get magnitude, which we will use as the scaling reference
 			magnitude = vm_vec_normalize(&scale_vec);
@@ -2182,7 +2222,14 @@ void model_queue_render_thrusters(model_render_params *interp, polymodel *pm, in
 					d = 1.0f;
 			}
 
-			float w = gpt->radius * (scale + thruster_info.glow_noise * NOISE_SCALE);
+			// Scale the thrusters so they always appears at least some configured amount of pixels wide.
+			float scaled_thruster_radius = model_render_get_diameter_clamped_to_min_pixel_size(
+				&world_pnt,
+				gpt->radius * 2.0f,
+				Min_pixel_size_thruster);
+			scaled_thruster_radius /= 2.0f;
+
+			float w = scaled_thruster_radius * (scale + thruster_info.glow_noise * NOISE_SCALE);
 
 			// these lines are used by the tertiary glows, thus we will need to project this all of the time
 			g3_transfer_vertex( &p, &world_pnt );
@@ -2523,7 +2570,6 @@ void model_render_immediate(model_render_params* render_info, int model_num, int
 	gr_clear_states();
 
 	gr_reset_lighting();
-	gr_set_lighting(false, false);
 
 	if ( render_info->get_debug_flags() ) {
 		model_render_debug(model_num, orient, pos, render_info->get_model_flags(), render_info->get_debug_flags(), render_info->get_object_number(), render_info->get_detail_level_lock());

@@ -18,6 +18,7 @@
 #include "camera/camera.h"
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
+#include "graphics/generic.h"
 #include "utils/RandomRange.h"
 
 class ship;
@@ -66,7 +67,7 @@ extern char Neb2_texture_name[MAX_FILENAME_LEN];
 typedef struct poof_info {
 	char name[NAME_LENGTH];
 	char bitmap_filename[MAX_FILENAME_LEN];
-	int bitmap;
+	generic_anim bitmap;
 	::util::UniformFloatRange scale;
 	float density;						 // poofs per square meter; can get *really* small but vague approximation is ok at those levels
 	::util::UniformFloatRange rotation;
@@ -75,7 +76,7 @@ typedef struct poof_info {
 
 	poof_info() {
 		bitmap_filename[0] = '\0';
-		bitmap = -1;
+		generic_anim_init(&bitmap);
 		scale = ::util::UniformFloatRange(175.0f, 175.0f);
 		density = 1 / (110.f * 110.f * 110.f);
 		rotation = ::util::UniformFloatRange(-3.7f, 3.7f);
@@ -99,6 +100,7 @@ typedef struct poof {
 	float		rot_speed;		// rotation speed, deg/sec
 	float		flash;			// lightning flash
 	float		alpha;			// base amount of alpha to start with
+	float		anim_time;		// how far along the animation is
 } poof;
 
 extern SCP_vector<poof> Neb2_poofs;

@@ -433,7 +433,7 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 		db->submodel_num = submodel_num;
 	}
 
-	db->model_instance_num = model_create_instance(false, db->model_num);
+	db->model_instance_num = model_create_instance(true, db->model_num);
 
 	float radius = submodel_get_radius(db->model_num, db->submodel_num);
 
@@ -1096,7 +1096,7 @@ void debris_render(object * obj, model_draw_list *scene)
 	if ( vm_vec_dist_quick( &obj->pos, &Eye_position ) < obj->radius*50.0f )	{
 		for (i=0; i<MAX_DEBRIS_ARCS; i++ )	{
 			if ( timestamp_valid( db->arc_timestamp[i] ) )	{
-				model_instance_add_arc( pm, pmi, db->submodel_num, &db->arc_pts[i][0], &db->arc_pts[i][1], MARC_TYPE_NORMAL );
+				model_instance_add_arc( pm, pmi, db->submodel_num, &db->arc_pts[i][0], &db->arc_pts[i][1], MARC_TYPE_DAMAGED );
 			}
 		}
 	}

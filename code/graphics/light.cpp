@@ -294,10 +294,7 @@ void gr_light_init() {
 	gr_lights.reserve(1024);
 }
 
-void gr_set_lighting(bool  /*set*/, bool state) {
-	if (!state) {
-		return;
-	}
+void gr_set_lighting() {
 
 	//Valathil: Sort lights by priority
 	extern bool Deferred_lighting;

@@ -1119,8 +1119,7 @@ ADE_FUNC(firePrimary, l_Ship, NULL, "Fires ship primary bank(s)", "number", "Num
 		return ade_set_error(L, "i", 0);
 
 	int i = 0;
-	i += ship_fire_primary(objh->objp, 0);
-	i += ship_fire_primary(objh->objp, 1);
+	i += ship_fire_primary(objh->objp);
 
 	return ade_set_args(L, "i", i);
 }

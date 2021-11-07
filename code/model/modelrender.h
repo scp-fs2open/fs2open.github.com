@@ -315,6 +315,8 @@ void model_render_arc(vec3d *v1, vec3d *v2, color *primary, color *secondary, fl
 void model_render_insignias(insignia_draw_data *insignia);
 void model_render_set_wireframe_color(color* clr);
 
+float model_render_get_diameter_clamped_to_min_pixel_size(const vec3d* pos, float diameter, float min_pixel_size);
+
 void model_render_determine_color(color *clr, float alpha, gr_alpha_blend blend_mode, bool no_texturing, bool desaturate);
 gr_alpha_blend model_render_determine_blend_mode(int base_bitmap, bool blending);
 

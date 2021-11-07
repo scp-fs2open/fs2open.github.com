@@ -6,6 +6,8 @@
 #include <ui/FredView.h>
 
 #include "ShipInitialStatusDialog.h"
+#include "ShipFlagsDialog.h"
+
 #include <QAbstractButton>
 #include <QtWidgets/QDialog>
 
@@ -64,12 +66,14 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	void enableDisable();
 
 	//column one
-	void shipNameChanged(const QString&);
+	void shipNameChanged();
 	void shipClassChanged(int);
 	void aiClassChanged(int);
 	void teamChanged(int);
 	void cargoChanged();
+	void altNameChanged();
 	void altNameChanged(const QString&);
+	void callsignChanged();
 	void callsignChanged(const QString&);
 
 	//column two

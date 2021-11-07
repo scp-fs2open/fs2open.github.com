@@ -239,6 +239,7 @@ extern int check_for_eoln();
 extern void parse_float_list(float *plist, size_t size);
 extern void parse_int_list(int *ilist, size_t size);
 
+extern void parse_string_map(SCP_map<SCP_string, SCP_string>& mapOut, const char* end_marker, const char* entry_prefix);
 
 // general
 extern void reset_parse(char *text = NULL);

@@ -6,6 +6,7 @@
 #include "particle/ParticleEffect.h"
 #include "particle/ParticleManager.h"
 #include "particle/util/ParticleProperties.h"
+#include "particle/util/EffectTiming.h"
 #include "utils/RandomRange.h"
 
 namespace particle {
@@ -35,6 +36,8 @@ class GenericShapeEffect : public ParticleEffect {
 	ParticleEffectHandle m_particleTrail = ParticleEffectHandle::invalid();
 
 	util::EffectTiming m_timing;
+
+	::util::UniformFloatRange m_vel_inherit;
 
 	TShape m_shape;
 
@@ -108,14 +111,17 @@ class GenericShapeEffect : public ParticleEffect {
 
 				source->getOrigin()->applyToParticleInfo(info);
 
-				info.vel = rotatedVel.vec.fvec;
+				vec3d velocity = rotatedVel.vec.fvec;
 				if (TShape::scale_velocity_deviation()) {
 					// Scale the vector with a random velocity sample and also multiply that with cos(angle between
 					// info.vel and sourceDir) That should produce good looking directions where the maximum velocity is
 					// only achieved when the particle travels directly on the normal/reflect vector
-					vm_vec_scale(&info.vel, vm_vec_dot(&info.vel, &dir));
+					vm_vec_scale(&velocity, vm_vec_dot(&velocity, &dir));
 				}
-				vm_vec_scale(&info.vel, m_velocity.next());
+				vm_vec_scale(&velocity, m_velocity.next());
+
+				info.vel *= m_vel_inherit.next();
+				info.vel += velocity;
 
 				if (m_particleTrail.isValid()) {
 					auto part = m_particleProperties.createPersistentParticle(info);
@@ -177,6 +183,10 @@ class GenericShapeEffect : public ParticleEffect {
 			// This is the deprecated location since this introduces ambiguities in the parsing process
 			m_particleTrail = internal::parseEffectElement();
 			saw_deprecated_effect_location = true;
+		}
+
+		if (optional_string("+Parent Velocity Factor:")) {
+			m_vel_inherit = ::util::parseUniformRange<float>();
 		}
 
 		m_timing = util::EffectTiming::parseTiming();
