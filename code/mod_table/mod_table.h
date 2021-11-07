@@ -68,6 +68,11 @@ extern bool Neb_affects_fireballs;
 extern std::tuple<float, float, float, float> Shadow_distances;
 extern std::tuple<float, float, float, float> Shadow_distances_cockpit;
 extern bool Custom_briefing_icons_always_override_standard_icons;
+extern float Min_pixel_size_thruster;
+extern float Min_pixel_size_beam;
+extern float Min_pizel_size_muzzleflash;
+extern float Min_pixel_size_trail;
+extern float Min_pixel_size_laser;
 
 void mod_table_init();
 

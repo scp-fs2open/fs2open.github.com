@@ -1,0 +1,3 @@
+Mako==1.1.5
+requests==2.26.0
+semantic-version==2.8.5

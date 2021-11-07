@@ -22,6 +22,7 @@
 #include "mission/missionmessage.h"
 #include "mission/missiontraining.h"
 #include "missionui/redalert.h"
+#include "nebula/neb.h"
 #include "parse/parselo.h"
 #include "parse/sexp.h"
 #include "parse/sexp/DynamicSEXP.h"
@@ -555,7 +556,7 @@ ADE_INDEXER(l_Mission_Teams, "number/string IndexOrTeamName", "Teams in the miss
 		idx--;	//Lua->FS2
 	}
 
-	if(idx < 0 || idx >= Num_iffs)
+	if(idx < 0 || idx >= (int)Iff_info.size())
 		return ade_set_error(L, "o", l_Team.Set(-1));
 
 	return ade_set_args(L, "o", l_Team.Set(idx));
@@ -563,7 +564,7 @@ ADE_INDEXER(l_Mission_Teams, "number/string IndexOrTeamName", "Teams in the miss
 
 ADE_FUNC(__len, l_Mission_Teams, NULL, "Number of teams in mission", "number", "Number of teams in mission")
 {
-	return ade_set_args(L, "i", Num_iffs);
+	return ade_set_args(L, "i", Iff_info.size());
 }
 
 //****SUBLIBRARY: Mission/Messages
@@ -1289,6 +1290,16 @@ ADE_FUNC(isNebula, l_Mission, nullptr, "Get whether or not the current mission b
 	return ade_set_args(L, "b", The_mission.flags[Mission::Mission_Flags::Fullneb]);
 }
 
+ADE_VIRTVAR(NebulaSensorRange, l_Mission, "number", "Gets or sets the Neb2_awacs variable.  This is multiplied by a species-specific factor to get the \"scan range\".  Within the scan range, a ship is at least partially targetable (fuzzy blip); within half the scan range, a ship is fully targetable.  Beyond the scan range, a ship is not targetable.", "number", "the Neb2_awacs variable")
+{
+	float range = -1.0f;
+
+	if (ADE_SETTING_VAR && ade_get_args(L, "*f", &range))
+		Neb2_awacs = range;
+
+	return ade_set_args(L, "f", Neb2_awacs);
+}
+
 ADE_FUNC(isSubspace, l_Mission, nullptr, "Get whether or not the current mission being played is set in subspace", "boolean", "true if in subspace, false if not")
 {
 	return ade_set_args(L, "b", The_mission.flags[Mission::Mission_Flags::Subspace]);
@@ -1493,7 +1504,7 @@ static int arrivalListIter(lua_State* L)
 
 	const auto next = GET_NEXT(poh->getObject());
 
-	if (next == END_OF_LIST(&Ship_arrival_list)) {
+	if (next == END_OF_LIST(&Ship_arrival_list) || next == nullptr) {
 		return ADE_RETURN_NIL;
 	}
 
@@ -1505,10 +1516,32 @@ ADE_FUNC(getArrivalList,
 	nullptr,
 	"Get the list of yet to arrive ships for this mission",
 	"iterator<parse_object>",
-	"An iterator across all the yet to arrive ships. Can be used in a for .. in loop")
+	"An iterator across all the yet to arrive ships. Can be used in a for .. in loop. Is not valid for more than one frame.")
 {
 	return ade_set_args(L, "u*o", luacpp::LuaFunction::createFromCFunction(L, arrivalListIter),
 	                    l_ParseObject.Set(parse_object_h(&Ship_arrival_list)));
+}
+
+ADE_FUNC(getShipList,
+	l_Mission,
+	nullptr,
+	"Get an iterator to the list of ships in this mission",
+	"iterator<ship>",
+	"An iterator across all ships in the mission. Can be used in a for .. in loop. Is not valid for more than one frame.")
+{
+	ship_obj* so = &Ship_obj_list;
+
+	return ade_set_args(L, "u", luacpp::LuaFunction::createFromStdFunction(L, [so](lua_State* LInner, const luacpp::LuaValueList& /*params*/) mutable -> luacpp::LuaValueList {
+		//Since the first element of a list is the next element from the head, and we start this function with the the captured "so" object being the head, this GET_NEXT will return the first element on first call of this lambda.
+		//Similarly, an empty list is defined by the head's next element being itself, hence an empty list will immediately return nil just fine
+		so = GET_NEXT(so);
+
+		if (so == END_OF_LIST(&Ship_obj_list) || so == nullptr) {
+			return luacpp::LuaValueList{ luacpp::LuaValue::createNil(LInner) };
+		}
+
+		return luacpp::LuaValueList{ luacpp::LuaValue::createValue(LInner, l_Ship.Set(object_h(&Objects[so->objnum]))) };
+	}));
 }
 
 ADE_FUNC(waitAsync,

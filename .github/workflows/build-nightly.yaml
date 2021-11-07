@@ -210,3 +210,28 @@ jobs:
           DATACORDER_USER: ${{ secrets.DATACORDER_USER }}
           DATACORDER_SSHPASS: ${{ secrets.DATACORDER_PASSWORD }}
         run: $GITHUB_WORKSPACE/ci/linux/upload_dist_package.sh nightly
+
+  post_builds:
+    # Post nightlies if at least one job was successful
+    if: ${{ needs.linux_zip == "success" || needs.windows_zip == "success" }}
+    name: Post builds on Nebula and the forums
+    needs: [linux_zip, windows_zip]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+        name: Checkout
+        with:
+          fetch-depth: '0'
+      - name: Install Python dependencies
+        run: pip install -r ci/post/requirements.txt
+      - name: Post builds
+        env:
+          INDIEGAMES_USER: ${{ secrets.INDIEGAMES_USER }}
+          INDIEGAMES_SSHPASS: ${{ secrets.INDIEGAMES_PASSWORD }}
+          NEBULA_USER: ${{ secrets.NEBULA_USER }}
+          NEBULA_PASSWORD: ${{ secrets.NEBULA_PASSWORD }}
+          HLP_API: ${{ secrets.HLP_API }}
+          HLP_KEY: ${{ secrets.HLP_KEY }}
+          LINUX_RESULT: ${{ needs.linux_zip.result }}
+          WINDOWS_RESULT: ${{ needs.windows_zip.result }}
+        run: python ci/post/main.py nightly

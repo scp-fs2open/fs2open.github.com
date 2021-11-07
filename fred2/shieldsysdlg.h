@@ -9,7 +9,7 @@
 
 
 
-extern int Shield_sys_teams[MAX_IFFS];
+extern SCP_vector<int> Shield_sys_teams;
 extern int Shield_sys_types[MAX_SHIP_CLASSES];
 
 /////////////////////////////////////////////////////////////////////////////

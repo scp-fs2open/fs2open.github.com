@@ -23,6 +23,7 @@
 #include "playerman/player.h"
 #include "scripting/scripting.h"
 #include "ship/ship.h"
+#include "ship/awacs.h"
 #include "weapon/weapon.h"
 
 // Just a reference to this struct being for looking up a ship's team in TVT
@@ -186,6 +187,9 @@ void ai_post_process_mission()
 {
 	object *objp;
 	int i;
+
+	// make sure team visibility is updated first
+	awacs_process();
 
 	// Check ships in player starting wings.  Those ships should follow these rules:
 	// (1) if they have no orders, they should get a form on my wing order

@@ -2882,6 +2882,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_FIREBALL:
 		case OPF_SPECIES:
 		case OPF_LANGUAGE:
+		case OPF_FUNCTIONAL_WHEN_EVAL_TYPE:
 			return 1;
 
 		case OPF_SHIP:
@@ -4704,6 +4705,10 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			list = get_listing_opf_language();
 			break;
 
+		case OPF_FUNCTIONAL_WHEN_EVAL_TYPE:
+			list = get_listing_opf_functional_when_eval_type();
+			break;
+
 		default:
 			Int3();  // unknown OPF code
 			list = NULL;
@@ -5284,7 +5289,7 @@ sexp_list_item *sexp_tree::get_listing_opf_iff()
 	int i;
 	sexp_list_item head;
 
-	for (i=0; i<Num_iffs; i++)
+	for (i=0; i< (int)Iff_info.size(); i++)
 		head.add_data(Iff_info[i].iff_name);
 
 	return head.next;
@@ -5397,7 +5402,7 @@ sexp_list_item *sexp_tree::get_listing_opf_arrival_anchor_all()
 
 	for (restrict_to_players = 0; restrict_to_players < 2; restrict_to_players++)
 	{
-		for (i = 0; i < Num_iffs; i++)
+		for (i = 0; i < (int)Iff_info.size(); i++)
 		{
 			char tmp[NAME_LENGTH + 15];
 			stuff_special_arrival_anchor_name(tmp, i, restrict_to_players, 0);
@@ -5726,7 +5731,7 @@ sexp_list_item *sexp_tree::get_listing_opf_ship_wing_wholeteam()
 	int i;
 	sexp_list_item head;
 
-	for (i = 0; i < Num_iffs; i++)
+	for (i = 0; i < (int)Iff_info.size(); i++)
 		head.add_data(Iff_info[i].iff_name);
 
 	head.add_list(get_listing_opf_ship_wing());
@@ -5739,7 +5744,7 @@ sexp_list_item *sexp_tree::get_listing_opf_ship_wing_shiponteam_point()
 	int i;
 	sexp_list_item head;
 
-	for (i = 0; i < Num_iffs; i++)
+	for (i = 0; i < (int)Iff_info.size(); i++)
 	{
 		char tmp[NAME_LENGTH + 7];
 		sprintf(tmp, "<any %s>", Iff_info[i].iff_name);
@@ -6216,7 +6221,7 @@ sexp_list_item *sexp_tree::get_listing_opf_animation_type()
 {
 	sexp_list_item head;
 
-	for (auto animation_type : Animation_type_names) {
+	for (auto animation_type : animation::Animation_type_names) {
 		head.add_data(animation_type.second);
 	}
 
@@ -6343,6 +6348,16 @@ sexp_list_item *sexp_tree::get_listing_opf_language()	// NOLINT
 
 	for (auto &lang: Lcl_languages)
 		head.add_data(lang.lang_name);
+
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_functional_when_eval_type()	// NOLINT
+{
+	sexp_list_item head;
+
+	for (int i = 0; i < Num_functional_when_eval_types; i++)
+		head.add_data(Functional_when_eval_type[i]);
 
 	return head.next;
 }

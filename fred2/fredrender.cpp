@@ -1822,7 +1822,6 @@ void render_one_model_htl(object *objp) {
 
 		if (!Lighting_on) {
 			j |= MR_NO_LIGHTING;
-			gr_set_lighting(false, false);
 		}
 
 		if (FullDetail) {

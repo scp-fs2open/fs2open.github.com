@@ -265,7 +265,7 @@ class ade_func : public ade_lib_handle {
  * @brief Declare a deprecated API function
  *
  * Immediately after this macro the function body should follow. This function is marked as deprecated and will be
- * handled specially if the targetted engine version is higher than the specified version.
+ * handled specially if the targeted engine version is higher than the specified version.
  *
  * @param name The name of the function, this may not be a string
  * @param parent The library or object containing this function

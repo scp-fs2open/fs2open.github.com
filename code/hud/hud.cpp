@@ -1344,7 +1344,7 @@ void hud_maybe_popup_weapons_gauge()
 		int			i;
 
 		for ( i = 0; i < swp->num_secondary_banks; i++ ) {
-			if ( swp->secondary_bank_ammo[i] > 0 ) {
+			if (ship_secondary_has_ammo(swp, i)) {
 				int ms_till_fire = timestamp_until(swp->next_secondary_fire_stamp[i]);
 				if ( ms_till_fire >= 1000 ) {
 					hud_gauge_popup_start(HUD_WEAPONS_GAUGE, 2500);
@@ -1499,11 +1499,11 @@ void hud_update_frame(float  /*frametime*/)
 		Player_ai->current_target_distance = hud_find_target_distance(targetp,Player_obj);
 	}
 
-	int stop_targetting_this_thing = 0;
+	bool stop_targeting_this_thing = false;
 
 	// check to see if the target is still alive
 	if ( targetp->flags[Object::Object_Flags::Should_be_dead] ) {
-		stop_targetting_this_thing = 1;
+		stop_targeting_this_thing = true;
 	}
 
 	Player->target_is_dying = FALSE;
@@ -1516,18 +1516,18 @@ void hud_update_frame(float  /*frametime*/)
 
 		// If it is warping out (or exploded), turn off targeting
 		if ( target_shipp->flags[Ship::Ship_Flags::Depart_warp] || target_shipp->flags[Ship::Ship_Flags::Exploded] ) {
-			stop_targetting_this_thing = 1;
+			stop_targeting_this_thing = true;
 		}
 	}
 
 	// Check if can still be seen in Nebula
 	if ( hud_target_invalid_awacs(targetp) ) {
-		stop_targetting_this_thing = 1;
+		stop_targeting_this_thing = true;
 	}
 
 	// If this was found to be something we shouldn't
 	// target anymore, just remove it
-	if ( stop_targetting_this_thing )	{
+	if ( stop_targeting_this_thing )	{
 		Player_ai->target_objnum = -1;
 		Player_ai->targeted_subsys = NULL;
 		hud_stop_looped_locking_sounds();
@@ -3822,31 +3822,43 @@ void hud_page_in()
 	}
 }
 
-HudGauge* hud_get_gauge(const char* name)
+HudGauge* hud_get_gauge(const char* name, bool check_all_gauges)
 {
-	const char* gauge_name;
-	size_t j;
+	auto player_sip = Player_ship->ship_info_index < 0 ? nullptr : &Ship_info[Player_ship->ship_info_index];
 
-	// go through all gauges and return the gauge that matches
-	if(!Ship_info[Player_ship->ship_info_index].hud_gauges.empty()) {
-		for(j = 0; j < Ship_info[Player_ship->ship_info_index].hud_gauges.size(); j++) {
-
-			gauge_name = Ship_info[Player_ship->ship_info_index].hud_gauges[j]->getCustomGaugeName();
-			if(!strcmp(name, gauge_name)) {
-				return Ship_info[Player_ship->ship_info_index].hud_gauges[j].get();
+	// go through all gauges for all ships and defaults
+	if (check_all_gauges) {
+		for (auto &si : Ship_info) {
+			for (auto &gauge : si.hud_gauges) {
+				if (!stricmp(name, gauge->getCustomGaugeName())) {
+					return gauge.get();
+				}
 			}
 		}
-	} else {
-		for(j = 0; j < default_hud_gauges.size(); j++) {
-
-			gauge_name = default_hud_gauges[j]->getCustomGaugeName();
-			if(!strcmp(name, gauge_name)) {
-				return default_hud_gauges[j].get();
+		for (auto &gauge : default_hud_gauges) {
+			if (!stricmp(name, gauge->getCustomGaugeName())) {
+				return gauge.get();
+			}
+		}
+	}
+	// if the player is flying a ship with a custom set of gauges, check those
+	else if (player_sip && !player_sip->hud_gauges.empty()) {
+		for (auto &gauge : player_sip->hud_gauges) {
+			if (!stricmp(name, gauge->getCustomGaugeName())) {
+				return gauge.get();
+			}
+		}
+	}
+	// check just the default gauges
+	else {
+		for (auto &gauge : default_hud_gauges) {
+			if (!stricmp(name, gauge->getCustomGaugeName())) {
+				return gauge.get();
 			}
 		}
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 HudGaugeMultiMsg::HudGaugeMultiMsg():

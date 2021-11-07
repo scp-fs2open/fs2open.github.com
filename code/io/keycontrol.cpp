@@ -587,6 +587,10 @@ void debug_max_secondary_weapons(object *objp)
 		if (swp->secondary_bank_weapons[index] >= 0)
 		{
 			weapon_info *wip = &Weapon_info[swp->secondary_bank_weapons[index]];
+
+			if (wip->wi_flags[Weapon::Info_Flags::SecondaryNoAmmo])
+				continue;
+
 			float capacity = (float)sip->secondary_bank_ammo_capacity[index];
 			float size = (float)wip->cargo_size;
 			Assertion(size > 0.0f, "Weapon cargo size for %s must be greater than 0!", wip->name);
@@ -905,7 +909,7 @@ void process_debug_keys(int k)
 				object	*objp = &Objects[Player_ai->target_objnum];
 
 				objp->flags.toggle(Object::Object_Flags::Invulnerable);
-				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Player's target [%s] is %s", 13), Ships[objp->instance].get_display_name(), objp->flags[Object::Object_Flags::Invulnerable] ? XSTR( "now INVULNERABLE!", 11) : XSTR( "no longer invulnerable...", 12));
+				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Player's target [%s] is %s", 13), Ships[objp->instance].ship_name, objp->flags[Object::Object_Flags::Invulnerable] ? XSTR( "now INVULNERABLE!", 11) : XSTR( "no longer invulnerable...", 12));
 			}
 			break;
 
@@ -985,7 +989,7 @@ void process_debug_keys(int k)
 			int *weap = &shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank];
 			*weap = get_next_weapon_looped(*weap, WP_MISSILE);
 
-			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Secondary Weapon forced to %s", 18), Weapon_info[*weap].get_display_name());
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Secondary Weapon forced to %s", 18), Weapon_info[*weap].name);
 			break;
 		}
 
@@ -998,7 +1002,7 @@ void process_debug_keys(int k)
 			int *weap = &shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank];
 			*weap = get_prev_weapon_looped(*weap, WP_MISSILE);
 
-			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Secondary Weapon forced to %s", 18), Weapon_info[*weap].get_display_name());
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Secondary Weapon forced to %s", 18), Weapon_info[*weap].name);
 			break;
 		}
 		
@@ -1027,7 +1031,7 @@ void process_debug_keys(int k)
 			int *weap = &shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank];
 			*weap = get_next_weapon_looped(*weap, WP_LASER);
 			
-			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Primary Weapon forced to %s", 19), Weapon_info[*weap].get_display_name());
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Primary Weapon forced to %s", 19), Weapon_info[*weap].name);
 			break;
 		}
 
@@ -1039,7 +1043,7 @@ void process_debug_keys(int k)
 			int *weap = &shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank];
 			*weap = get_prev_weapon_looped(*weap, WP_LASER);
 		
-			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Primary Weapon forced to %s", 19), Weapon_info[*weap].get_display_name());
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Primary Weapon forced to %s", 19), Weapon_info[*weap].name);
 			break;
 		}
 
@@ -1075,12 +1079,12 @@ void process_debug_keys(int k)
 
 			if (is_support_allowed(obj_to_rearm))
 			{
-				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR("Issuing rearm request for %s", 1610), Ships[obj_to_rearm->instance].get_display_name());
+				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR("Issuing rearm request for %s", 1610), Ships[obj_to_rearm->instance].ship_name);
 				ai_issue_rearm_request(obj_to_rearm);
 			}
 			else
 			{
-				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR("Cannot issue rearm request for %s", 1611), Ships[obj_to_rearm->instance].get_display_name());
+				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR("Cannot issue rearm request for %s", 1611), Ships[obj_to_rearm->instance].ship_name);
 			}
 
 			break;
