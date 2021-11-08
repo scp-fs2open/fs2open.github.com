@@ -2209,8 +2209,7 @@ int CFred_mission_save::save_campaign_file(const char *pathname)
 
 		bool mission_loop = cm.flags & CMISSION_FLAG_HAS_LOOP;
 
-		Assertion(cm.flags ^ CMISSION_FLAG_HAS_FORK, "scpFork campaigns not eligible for saving, use axemFork.\n Should be detected on load.");
-		// editor ensure no multiple loops
+		Assertion(cm.flags ^ CMISSION_FLAG_HAS_FORK, "scpFork campaigns cannot be saved, use axemFork.\n Should be detected on load.");
 
 		if (mission_loop) {
 			required_string_fred("\n+Mission Loop:");

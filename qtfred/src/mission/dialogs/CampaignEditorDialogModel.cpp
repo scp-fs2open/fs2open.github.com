@@ -374,6 +374,14 @@ bool CampaignEditorDialogModel::setCurBrSexp(int sexp) {
 
 void CampaignEditorDialogModel::setCurBrIsLoop(bool isLoop) {
 	if (! getCurBr()) return;
+	if (isLoop)
+		for (auto& br : mnData_it->branches)
+			if (br.loop) {
+				if (QMessageBox::question(parent, "Change loop", "This will make branch to "+br.next+" no longer a loop. Continue?") == QMessageBox::StandardButton::No)
+					return;
+				modify<bool>(br.loop, false);
+			}
+
 	modify<bool>(mnData_it->brData_it->loop, isLoop);
 	int idx = getCurBrIdx();
 	parent->updateUIMission(false);
@@ -439,7 +447,12 @@ CampaignEditorDialogModel::CampaignMissionData::CampaignMissionData(QString file
 	briefingCutscene(cm ? cm->briefing_cutscene : ""),
 	mainhall(cm ? cm->main_hall.c_str() : ""),
 	debriefingPersona(cm ? QString::number(cm->debrief_persona_index) : "")
-{}
+{
+	if (cm && (cm->flags & CMISSION_FLAG_HAS_FORK))
+		QMessageBox::warning(nullptr, "Unsupported campaign feature", "This campaign uses scpFork, which is nonfunctional in FSO and unsupported in FRED. Use axemFork instead.\nAffected mission: " + filename);
+	if (cm && (cm->flags & CMISSION_FLAG_BASTION))
+		QMessageBox::warning(nullptr, "Unsupported campaign feature", "This campaign uses Bastion mainhall flag, which is outdated. Use explicit mainhall settings.\nAffected mission: " + filename);
+}
 
 void CampaignEditorDialogModel::CampaignMissionData::initMissions(
 		const SCP_vector<SCP_string>::const_iterator &m_it,
