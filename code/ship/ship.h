@@ -1610,7 +1610,7 @@ extern int ship_get_num_ships();
 extern void ship_cleanup(int shipnum, int cleanup_mode);
 
 // Goober5000
-extern void ship_destroy_instantly(object *ship_obj);
+extern void ship_destroy_instantly(object *ship_obj, bool with_debris = false);
 extern void ship_actually_depart(int shipnum, int method = SHIP_DEPARTED_WARP);
 
 extern const std::shared_ptr<scripting::Hook> OnShipDeathStartedHook;
