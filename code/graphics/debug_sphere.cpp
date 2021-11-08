@@ -1,6 +1,5 @@
 #include "debug_sphere.h"
 #include "globalincs/vmallocator.h"
-#include "graphics/2d.h"
 #include "render/3d.h"
 
 namespace debug_spheres{
@@ -18,7 +17,6 @@ void clear(){
 	Spheres.clear();
 }
 void render(){
-	color uicolor = gr_screen.current_color;
 	for(auto s : Spheres){
 		g3_draw_sphere_ez(&(s.pos),s.radius);
 	}
