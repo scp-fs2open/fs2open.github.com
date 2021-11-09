@@ -4,7 +4,7 @@
 #include <QtWidgets/QDialog>
 #include <mission/dialogs/ShipEditorDialogModel.h>
 #include <ui/FredView.h>
-
+#include "ShipGoalsDialog.h"
 #include "ShipFlagsDialog.h"
 
 #include <QAbstractButton>
