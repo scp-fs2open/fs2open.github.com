@@ -1413,6 +1413,7 @@ void read_mission_goal_list(int num)
 	char events[MAX_MISSION_EVENTS][NAME_LENGTH];
 	int i, z, event_count, count = 0;
 
+	Assertion(num >= 0 && num < Campaign.num_missions, "mission number out of range!");
 	filename = Campaign.missions[num].name;
 	
 	try
