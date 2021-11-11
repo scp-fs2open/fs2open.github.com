@@ -2085,6 +2085,19 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 			int submodel_1 = arc_info->submodels.first;
 			int submodel_2 = arc_info->submodels.second;
 
+			// see if these submodels are also subsystems, and dont draw if its destroyed
+			bool skip = false;
+			for (ship_subsys* pss = GET_FIRST(&shipp->subsys_list); pss != END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss)) {
+				if (pss->system_info->subobj_num == submodel_1 && pss->max_hits > 0 && pss->current_hits <= 0) {
+					skip = true;
+					break;
+				} else if (pss->system_info->subobj_num == submodel_2 && pss->max_hits > 0 && pss->current_hits <= 0) {
+					skip = true;
+					break;
+				}
+			}
+			if (skip) break;
+
 			if (submodel_1 >= 0 && submodel_2 >= 0) {
 				// spawn the arc in the first unused slot
 				for (int j = 0; j < MAX_SHIP_ARCS; j++) {
