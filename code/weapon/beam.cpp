@@ -1460,7 +1460,8 @@ void beam_render(beam *b, float u_offset)
 			if (result == -1)
 				nearest = b->last_start;
 
-			fade *= neb2_get_fog_visibility(&nearest, NEB_FOG_VISIBILITY_MULT_BEAM(b->beam_light_width));
+			fade *= neb2_get_fog_visibility(&nearest, 
+				Neb2_fog_visibility_beam_const + (b->beam_light_width * Neb2_fog_visibility_beam_scaled_factor));
 		}
 
 		material material_params;
@@ -1574,7 +1575,8 @@ static float get_muzzle_glow_alpha(beam* b)
 	}
 
 	if (The_mission.flags[Mission::Mission_Flags::Fullneb] && Neb_affects_beams) {
-		alpha *= neb2_get_fog_visibility(&b->last_start, NEB_FOG_VISIBILITY_MULT_B_MUZZLE(b->beam_light_width));
+		alpha *= neb2_get_fog_visibility(&b->last_start, 
+			Neb2_fog_visibility_beam_const + (b->beam_light_width * Neb2_fog_visibility_beam_scaled_factor));
 	}
 
 	return alpha;
@@ -1799,14 +1801,17 @@ void beam_calc_facing_pts( vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, floa
 	temp = *pos;
 
 	vm_vec_sub( &rvec, &Eye_position, &temp );
-	vm_vec_normalize( &rvec );	
+	vm_vec_normalize( &rvec );
 
 	vm_vec_cross(&uvec,fvec,&rvec);
 	// VECMAT-ERROR: NULL VEC3D (value of, fvec == rvec)
 	vm_vec_normalize_safe(&uvec);
 
-	vm_vec_scale_add( top, &temp, &uvec, w * 0.5f );
-	vm_vec_scale_add( bot, &temp, &uvec, -w * 0.5f );	
+	// Scale the beam width so that they always appear at least some configured amount of pixels wide.
+	float scaled_w = model_render_get_diameter_clamped_to_min_pixel_size(pos, w, Min_pixel_size_beam);
+
+	vm_vec_scale_add( top, &temp, &uvec, scaled_w * 0.5f );
+	vm_vec_scale_add( bot, &temp, &uvec, -scaled_w * 0.5f );
 }
 
 // light scale factor

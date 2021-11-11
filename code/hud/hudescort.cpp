@@ -680,7 +680,7 @@ void hud_escort_cull_list()
 				} else if (Ships[shipnum].flags[Ship::Ship_Flags::Hidden_from_sensors]) {
 					remove = true;
 				} else if (Ships[shipnum].flags[Ship::Ship_Flags::Stealth]) {
-					if (Ships[shipnum].team != Player_ship->team) {
+					if (Ships[shipnum].team == Player_ship->team) {
 						// friendly stealths are only not seen when explicitly specified
 						if ( Ships[shipnum].flags[Ship::Ship_Flags::Friendly_stealth_invis]) {
 							remove = true;

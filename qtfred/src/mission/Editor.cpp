@@ -17,7 +17,6 @@
 #include <gamesnd/eventmusic.h>
 #include <starfield/nebula.h>
 #include <object/objectdock.h>
-#include <ai/aigoals.h>
 #include <localization/fhash.h>
 
 #include "iff_defs/iff_defs.h" // iff_init
@@ -573,8 +572,8 @@ void Editor::setupCurrentObjectIndices(int selectedObj) {
 		currentObject = selectedObj;
 
 		cur_ship = cur_wing = -1;
-		cur_waypoint_list = NULL;
-		cur_waypoint = NULL;
+		cur_waypoint_list = nullptr;
+		cur_waypoint = nullptr;
 
 		if ((Objects[selectedObj].type == OBJ_SHIP) || (Objects[selectedObj].type == OBJ_START)) {
 			cur_ship = Objects[selectedObj].instance;
@@ -589,7 +588,7 @@ void Editor::setupCurrentObjectIndices(int selectedObj) {
 			}
 		} else if (Objects[selectedObj].type == OBJ_WAYPOINT) {
 			cur_waypoint = find_waypoint_with_instance(Objects[selectedObj].instance);
-			Assert(cur_waypoint != NULL);
+			Assert(cur_waypoint != nullptr);
 			cur_waypoint_list = cur_waypoint->get_parent_list();
 		}
 
@@ -599,8 +598,8 @@ void Editor::setupCurrentObjectIndices(int selectedObj) {
 
 	if (selectedObj == -1 || !Num_objects) {
 		currentObject = cur_ship = cur_wing = -1;
-		cur_waypoint_list = NULL;
-		cur_waypoint = NULL;
+		cur_waypoint_list = nullptr;
+		cur_waypoint = nullptr;
 
 		currentObjectChanged(currentObject);
 		return;
@@ -622,8 +621,8 @@ void Editor::setupCurrentObjectIndices(int selectedObj) {
 	Assert(ptr->type != OBJ_NONE);
 
 	cur_ship = cur_wing = -1;
-	cur_waypoint_list = NULL;
-	cur_waypoint = NULL;
+	cur_waypoint_list = nullptr;
+	cur_waypoint = nullptr;
 
 	if (ptr->type == OBJ_SHIP) {
 		cur_ship = ptr->instance;
@@ -636,7 +635,7 @@ void Editor::setupCurrentObjectIndices(int selectedObj) {
 		}
 	} else if (ptr->type == OBJ_WAYPOINT) {
 		cur_waypoint = find_waypoint_with_instance(ptr->instance);
-		Assert(cur_waypoint != NULL);
+		Assert(cur_waypoint != nullptr);
 		cur_waypoint_list = cur_waypoint->get_parent_list();
 	}
 
@@ -719,7 +718,7 @@ int Editor::create_ship(matrix* orient, vec3d* pos, int ship_type) {
 	// set orders according to whether the ship is on the player ship's team
 	{
 		object* temp_objp;
-		ship* temp_shipp = NULL;
+		ship* temp_shipp = nullptr;
 
 		// find the first player ship
 		for (temp_objp = GET_FIRST(&obj_used_list); temp_objp != END_OF_LIST(&obj_used_list);
@@ -731,7 +730,7 @@ int Editor::create_ship(matrix* orient, vec3d* pos, int ship_type) {
 		}
 
 		// set orders if teams match, or if player couldn't be found
-		if (temp_shipp == NULL || shipp->team == temp_shipp->team) {
+		if (temp_shipp == nullptr || shipp->team == temp_shipp->team) {
 			// if this ship is not a small ship, then make the orders be the default orders without
 			// the depart item
 			if (!(sip->is_small_ship())) {
@@ -2852,6 +2851,13 @@ const char* Editor::get_order_name(int order) {
 			return entry.name;
 
 	return "???";
+}
+const ai_goal_list* Editor::getAi_goal_list()
+{
+	return Ai_goal_list;
+}
+int Editor::getAigoal_list_size() {
+	return sizeof(Ai_goal_list) / sizeof(ai_goal_list);
 }
 SCP_vector<SCP_string> Editor::get_docking_list(int model_index) {
 	int i;

@@ -138,8 +138,8 @@ flag_def_list_new<Weapon::Info_Flags> Weapon_Info_Flags[] = {
     { "shudder",						Weapon::Info_Flags::Shudder,							true, false },
     { "electronics",					Weapon::Info_Flags::Electronics,						true, false },
     { "lockarm",						Weapon::Info_Flags::Lockarm,							true, false },
-    { "beam",							Weapon::Info_Flags::Beam,								true, true }, //special case
-    { "stream",							Weapon::Info_Flags::Stream,								true, false },
+    { "beam",							Weapon::Info_Flags::Beam,								true, true  }, //special case
+    { "stream",							Weapon::Info_Flags::NUM_VALUES,							false, true }, //special case
     { "supercap",						Weapon::Info_Flags::Supercap,							true, false },
     { "countermeasure",					Weapon::Info_Flags::Cmeasure,							true, false },
     { "ballistic",						Weapon::Info_Flags::Ballistic,							true, false },
@@ -655,6 +655,9 @@ void parse_wi_flags(weapon_info *weaponp, flagset<Weapon::Info_Flags> preset_wi_
                 weaponp->wi_flags.remove(Weapon::Info_Flags::Die_on_lost_lock);
             }
         }
+        else if (!stricmp(NOX("stream"), flag_text.c_str())) {
+			mprintf(("Ignoring \"stream\" flag on weapon %s...\n", weaponp->name)); // dont warn because its not a big deal, but also because retail has several 'stream' weapons
+		}
         else {
             Warning(LOCATION, "Unrecognized flag in flag list for weapon %s: \"%s\"", weaponp->name, (*flag).c_str());
         }
@@ -1071,16 +1074,42 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		}
 	}
 
+	if (optional_string("@Laser Head-on Bitmap:")) {
+		stuff_string(fname, F_NAME, NAME_LENGTH);
+
+		if (wip->render_type != WRT_LASER)
+			mprintf(("WARNING:  Laser head-on bitmap specified on non-LASER type weapon (%s)!\n", wip->name));
+		else
+			generic_anim_init(&wip->laser_headon_bitmap, fname);
+	}
+
 	// optional laser glow
 	if ( optional_string("@Laser Glow:") ) {
 		stuff_string(fname, F_NAME, NAME_LENGTH);
 
-		if (wip->render_type != WRT_LASER) {
+		if (wip->render_type != WRT_LASER)
 			mprintf(("WARNING:  Laser glow specified on non-LASER type weapon (%s)!\n", wip->name));
-			Int3();
-		} else {
+		else
 			generic_anim_init(&wip->laser_glow_bitmap, fname);
-		}
+	}
+
+	if (optional_string("@Laser Glow Head-on Bitmap:")) {
+		stuff_string(fname, F_NAME, NAME_LENGTH);
+
+		if (wip->render_type != WRT_LASER)
+			mprintf(("WARNING:  Laser glow head-on bitmap specified on non-LASER type weapon (%s)!\n", wip->name));
+		else
+			generic_anim_init(&wip->laser_glow_headon_bitmap, fname);
+	}
+
+
+	if (optional_string("@Laser Head-on Transition Angle:")) {		
+		stuff_float(&wip->laser_headon_switch_ang);
+		wip->laser_headon_switch_ang = fl_radians(wip->laser_headon_switch_ang);
+	}
+
+	if (optional_string("@Laser Head-on Transition Rate:")) {
+		stuff_float(&wip->laser_headon_switch_rate);
 	}
 
 	if(optional_string("@Laser Color:"))
@@ -1500,13 +1529,25 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				}
 				else {
 					wip->target_restrict = LR_CURRENT_TARGET;
-					
 				}
-				
 			}
 			
-				if (optional_string("+Independent Seekers:")) {
+			if (optional_string("+Independent Seekers:")) {
 				stuff_boolean(&wip->multi_lock);
+			}
+
+			if (optional_string("+Target Lock Objecttypes:")) {
+				if (optional_string("ships")) {
+					wip->target_restrict_objecttypes = LR_Objecttypes::LRO_SHIPS;
+				}
+				else if (optional_string("bombs")) {
+					wip->target_restrict_objecttypes = LR_Objecttypes::LRO_WEAPONS;
+
+					if (wip->target_restrict != LR_ANY_TARGETS) {
+						error_display(0, "+Target Lock Objecttypes: bombs is currently incompatibly with any +Target Lock Restriction but 'any target'");
+						wip->target_restrict = LR_ANY_TARGETS;
+					}
+				}
 			}
 
 			if (optional_string("+Trigger Hold:")) {
@@ -3791,6 +3832,17 @@ void weapon_release_bitmaps()
 				bm_release(wip->laser_glow_bitmap.first_frame);
 				wip->laser_glow_bitmap.first_frame = -1;
 			}
+			
+			// and the head-on bitmaps
+			if (wip->laser_headon_bitmap.first_frame >= 0) {
+				bm_release(wip->laser_headon_bitmap.first_frame);
+				wip->laser_headon_bitmap.first_frame = -1;
+			}
+
+			if (wip->laser_glow_headon_bitmap.first_frame >= 0) {
+				bm_release(wip->laser_glow_headon_bitmap.first_frame);
+				wip->laser_glow_headon_bitmap.first_frame = -1;
+			}
 		}
 
 		if (wip->wi_flags[Weapon::Info_Flags::Beam]) {
@@ -3893,6 +3945,34 @@ void weapon_load_bitmaps(int weapon_index)
 			else if ( generic_anim_load(&wip->laser_glow_bitmap) ) {
 				mprintf(("Could not find a usable glow bitmap for '%s'!\n", wip->name));
 				Warning(LOCATION, "Could not find a usable glow bitmap (%s) for weapon '%s'!\n", wip->laser_glow_bitmap.filename, wip->name);
+			}
+		}
+
+		if (strlen(wip->laser_headon_bitmap.filename)) {
+			wip->laser_headon_bitmap.first_frame = bm_load(wip->laser_headon_bitmap.filename);
+
+			if (wip->laser_headon_bitmap.first_frame >= 0) {
+				wip->laser_headon_bitmap.num_frames = 1;
+				wip->laser_headon_bitmap.total_time = 1;
+			}
+			// fall back to an animated type
+			else if (generic_anim_load(&wip->laser_headon_bitmap)) {
+				mprintf(("Could not find a usable head-on bitmap for '%s'!\n", wip->name));
+				Warning(LOCATION, "Could not find a usable head-on bitmap (%s) for weapon '%s'!\n", wip->laser_headon_bitmap.filename, wip->name);
+			}
+		}
+
+		if (strlen(wip->laser_glow_headon_bitmap.filename)) {
+			wip->laser_glow_headon_bitmap.first_frame = bm_load(wip->laser_glow_headon_bitmap.filename);
+
+			if (wip->laser_glow_headon_bitmap.first_frame >= 0) {
+				wip->laser_glow_headon_bitmap.num_frames = 1;
+				wip->laser_glow_headon_bitmap.total_time = 1;
+			}
+			// fall back to an animated type
+			else if (generic_anim_load(&wip->laser_glow_headon_bitmap)) {
+				mprintf(("Could not find a usable glow head-on bitmap for '%s'!\n", wip->name));
+				Warning(LOCATION, "Could not find a usable glow head-on bitmap (%s) for weapon '%s'!\n", wip->laser_glow_headon_bitmap.filename, wip->name);
 			}
 		}
 	}
@@ -6004,7 +6084,9 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 
 	// init the laser info
 	wp->laser_bitmap_frame = 0.0f;
+	wp->laser_headon_bitmap_frame = 0.0f;
 	wp->laser_glow_bitmap_frame = 0.0f;
+	wp->laser_glow_headon_bitmap_frame = 0.0f;
 
 	// init the weapon state
 	wp->weapon_state = WeaponState::INVALID;
@@ -6098,7 +6180,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		objp->radius = model_get_radius(wip->model_num);
 
 		// Always create an instance in case we need them
-		if (model_get(wip->model_num)->flags & PM_FLAG_HAS_INTRINSIC_ROTATE || !wip->on_create_program.isEmpty()) {
+		if (model_get(wip->model_num)->flags & PM_FLAG_HAS_INTRINSIC_MOTION || !wip->on_create_program.isEmpty()) {
 			wp->model_instance_num = model_create_instance(true, wip->model_num);
 		}
 	} else if ( wip->render_type == WRT_LASER ) {
@@ -7280,6 +7362,8 @@ void weapons_page_in()
 			{
 				bm_page_in_texture( wip->laser_bitmap.first_frame );
 				bm_page_in_texture( wip->laser_glow_bitmap.first_frame );
+				bm_page_in_texture (wip->laser_headon_bitmap.first_frame );
+				bm_page_in_texture (wip->laser_glow_headon_bitmap.first_frame);
 
 				break;
 			}
@@ -7467,6 +7551,8 @@ bool weapon_page_in(int weapon_type)
 		{
 			bm_page_in_texture(wip->laser_bitmap.first_frame);
 			bm_page_in_texture(wip->laser_glow_bitmap.first_frame);
+			bm_page_in_texture(wip->laser_headon_bitmap.first_frame);
+			bm_page_in_texture(wip->laser_glow_headon_bitmap.first_frame);
 
 			break;
 		}
@@ -8147,6 +8233,58 @@ void shield_impact_explosion(vec3d *hitpos, object *objp, float radius, int idx)
 					 objp);
 }
 
+// renders another laser bitmap on top of the regular bitmap based on the angle of the camera to the front of the laser
+// the two are cross-faded into each other so it can switch to the more appropriate bitmap depending on the angle
+// returns the alpha multiplier to be used for the main bitmap
+float weapon_render_headon_bitmap(object* wep_objp, vec3d* headp, int bitmap, float width1, float width2, int r, int g, int b){	
+	weapon* wp = &Weapons[wep_objp->instance];
+	weapon_info* wip = &Weapon_info[wp->weapon_info_index];
+
+	vec3d center, reye;
+	vm_vec_avg(&center, headp, &wep_objp->pos);
+	vm_vec_sub(&reye, &Eye_position, &center);
+	vm_vec_normalize(&reye);
+	float ang = vm_vec_delta_ang_norm(&reye, &wep_objp->orient.vec.fvec, nullptr);
+	float head_alpha, side_alpha;
+
+	// get the head vs side apparent proportions
+	if (wip->laser_headon_switch_ang < 0.0f) {
+		head_alpha = ((width1 + width2) / 2) * fabs(cosf(ang));
+		side_alpha = wip->laser_length * fabs(sinf(ang));
+	}
+	else {
+		head_alpha = tanf(wip->laser_headon_switch_ang);
+		side_alpha = 1 / head_alpha;
+		side_alpha = side_alpha * fabs(sinf(ang));
+		head_alpha = head_alpha * fabs(cosf(ang));
+	}
+	head_alpha = powf(head_alpha, wip->laser_headon_switch_rate);
+	side_alpha = powf(side_alpha, wip->laser_headon_switch_rate);
+
+	// turn it into 0..1
+	float head_side_total = head_alpha + side_alpha;
+	head_alpha /= head_side_total;
+	side_alpha /= head_side_total;
+
+	// make the transition instant past 20
+	if (wip->laser_headon_switch_rate >= 20.0f) {
+		if (head_alpha > side_alpha) {
+			head_alpha = 1.0f;
+			side_alpha = 0.0f;
+		}
+		else {
+			head_alpha = 0.0f;
+			side_alpha = 1.0f;
+		}
+	}
+
+	r = (int)(r * head_alpha);   g = (int)(g * head_alpha);   b = (int)(b * head_alpha);
+
+	batching_add_laser(bitmap, headp, width1, &wep_objp->pos, width2, r, g, b);
+
+	return side_alpha;
+}
+
 void weapon_render(object* obj, model_draw_list *scene)
 {
 	int num;
@@ -8193,6 +8331,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 
 			int alpha = 255;
 			int framenum = 0;
+			int headon_framenum = 0;
 
 			if (wip->laser_bitmap.first_frame >= 0) {					
 				gr_set_color_fast(&wip->laser_color_1);
@@ -8203,18 +8342,44 @@ void weapon_render(object* obj, model_draw_list *scene)
 					framenum = bm_get_anim_frame(wip->laser_bitmap.first_frame, wp->laser_bitmap_frame, wip->laser_bitmap.total_time, true);
 				}
 
+				if (wip->laser_headon_bitmap.num_frames > 1) {
+					wp->laser_headon_bitmap_frame += flFrametime;
+
+					headon_framenum = bm_get_anim_frame(wip->laser_headon_bitmap.first_frame, wp->laser_headon_bitmap_frame, wip->laser_headon_bitmap.total_time, true);
+				}
+
 				if (wip->wi_flags[Weapon::Info_Flags::Transparent])
 					alpha = fl2i(wp->alpha_current * 255.0f);
 
 				if (The_mission.flags[Mission::Mission_Flags::Fullneb] && Neb_affects_weapons)
-					alpha = (int)(alpha * neb2_get_fog_visibility(&obj->pos, NEB_FOG_VISIBILITY_MULT_WEAPON));
+					alpha = (int)(alpha * neb2_get_fog_visibility(&obj->pos, Neb2_fog_visibility_weapon));
 
 				vec3d headp;
-
 				vm_vec_scale_add(&headp, &obj->pos, &obj->orient.vec.fvec, wip->laser_length);
 
-				batching_add_laser(wip->laser_bitmap.first_frame + framenum, &headp, wip->laser_head_radius, &obj->pos, wip->laser_tail_radius, alpha, alpha, alpha);
-			}			
+				// Scale the laser so that it always appears some configured amount of pixels wide, no matter the distance.
+				// Only affects width, length remains unchanged.
+				float scaled_head_radius = model_render_get_diameter_clamped_to_min_pixel_size(&headp, wip->laser_head_radius, Min_pixel_size_laser);
+				float scaled_tail_radius = model_render_get_diameter_clamped_to_min_pixel_size(&obj->pos, wip->laser_tail_radius, Min_pixel_size_laser);
+
+				// render the head-on bitmap if appropriate and maybe adjust the main bitmap's alpha
+				if (wip->laser_headon_bitmap.first_frame >= 0) {
+					float main_bitmap_alpha_mult = weapon_render_headon_bitmap(obj, &headp,
+						wip->laser_headon_bitmap.first_frame + headon_framenum,
+						scaled_head_radius,
+						scaled_tail_radius,
+						alpha, alpha, alpha);
+					alpha = (int)(alpha * main_bitmap_alpha_mult);
+				}
+
+				batching_add_laser(
+					wip->laser_bitmap.first_frame + framenum,
+					&headp,
+					scaled_head_radius,
+					&obj->pos,
+					scaled_tail_radius,
+					alpha, alpha, alpha);
+			}
 
 			// maybe draw laser glow bitmap
 			if (wip->laser_glow_bitmap.first_frame >= 0) {
@@ -8247,6 +8412,23 @@ void weapon_render(object* obj, model_draw_list *scene)
 					CLAMP(framenum, 0, wip->laser_glow_bitmap.num_frames-1);
 				}
 
+				if (wip->laser_glow_headon_bitmap.num_frames > 1) {
+					wp->laser_headon_bitmap_frame += flFrametime;
+
+					// Sanity checks
+					if (wp->laser_glow_headon_bitmap_frame < 0.0f)
+						wp->laser_glow_headon_bitmap_frame = 0.0f;
+					if (wp->laser_glow_headon_bitmap_frame > 100.0f)
+						wp->laser_glow_headon_bitmap_frame = 0.0f;
+
+					while (wp->laser_glow_headon_bitmap_frame > wip->laser_glow_headon_bitmap.total_time)
+						wp->laser_glow_headon_bitmap_frame -= wip->laser_glow_headon_bitmap.total_time;
+
+					headon_framenum = fl2i((wp->laser_glow_headon_bitmap_frame * wip->laser_glow_headon_bitmap.num_frames) / wip->laser_glow_headon_bitmap.total_time);
+
+					CLAMP(headon_framenum, 0, wip->laser_glow_headon_bitmap.num_frames - 1);
+				}
+
 				if (wip->wi_flags[Weapon::Info_Flags::Transparent]) {
 					alpha = fl2i(wp->alpha_current * 255.0f);
 					alpha -= 38; // take 1.5f into account for the normal glow alpha
@@ -8258,9 +8440,36 @@ void weapon_render(object* obj, model_draw_list *scene)
 				}
 
 				if (The_mission.flags[Mission::Mission_Flags::Fullneb] && Neb_affects_weapons)
-					alpha = (int)(alpha * neb2_get_fog_visibility(&obj->pos, NEB_FOG_VISIBILITY_MULT_WEAPON));
+					alpha = (int)(alpha * neb2_get_fog_visibility(&obj->pos, Neb2_fog_visibility_weapon));
 
-				batching_add_laser(wip->laser_glow_bitmap.first_frame + framenum, &headp2, wip->laser_head_radius * weapon_glow_scale_f, &tailp, wip->laser_tail_radius * weapon_glow_scale_r, (c.red*alpha)/255, (c.green*alpha)/255, (c.blue*alpha)/255);
+				// Scale the laser so that it always appears some configured amount of pixels wide, no matter the distance.
+				// Only affects width, length remains unchanged.
+				float scaled_head_radius = model_render_get_diameter_clamped_to_min_pixel_size(&headp2, wip->laser_head_radius, Min_pixel_size_laser);
+				float scaled_tail_radius = model_render_get_diameter_clamped_to_min_pixel_size(&tailp, wip->laser_tail_radius, Min_pixel_size_laser);
+
+				int r = (c.red * alpha) / 255;
+				int g = (c.green * alpha) / 255;
+				int b = (c.blue * alpha) / 255;
+
+				// render the head-on bitmap if appropriate and maybe adjust the main bitmap's alpha
+				if (wip->laser_glow_headon_bitmap.first_frame >= 0) {
+					float main_bitmap_alpha_mult = weapon_render_headon_bitmap(obj, &headp2,
+						wip->laser_glow_headon_bitmap.first_frame + headon_framenum,
+						scaled_head_radius,
+						scaled_tail_radius,
+						r, g, b);
+					r = (int)(r * main_bitmap_alpha_mult);
+					g = (int)(g * main_bitmap_alpha_mult);
+					b = (int)(b * main_bitmap_alpha_mult);
+				}
+
+				batching_add_laser(
+					wip->laser_glow_bitmap.first_frame + framenum,
+					&headp2,
+					scaled_head_radius * weapon_glow_scale_f,
+					&tailp,
+					scaled_tail_radius * weapon_glow_scale_r,
+					r, g, b);
 			}
 
 			break;
@@ -8440,7 +8649,10 @@ void weapon_info::reset()
 
 	generic_anim_init(&this->laser_bitmap);
 	generic_anim_init(&this->laser_glow_bitmap);
-
+	generic_anim_init(&this->laser_headon_bitmap);
+	generic_anim_init(&this->laser_glow_headon_bitmap);
+	this->laser_headon_switch_ang = -1.0f;
+	this->laser_headon_switch_rate = 2.0f;
 	this->laser_length = 10.0f;
 	gr_init_color(&this->laser_color_1, 255, 255, 255);
 	gr_init_color(&this->laser_color_2, 255, 255, 255);
@@ -8521,6 +8733,7 @@ void weapon_info::reset()
 	this->SwarmWait = SWARM_MISSILE_DELAY;
 
 	this->target_restrict = LR_CURRENT_TARGET;
+	this->target_restrict_objecttypes = LR_Objecttypes::LRO_SHIPS;
 	this->multi_lock = false;
 	this->trigger_lock = false;
 	this->launch_reset_locks = false;
@@ -9191,24 +9404,41 @@ bool weapon_multilock_can_lock_on_subsys(object* shooter, object* target, ship_s
 	return ship_subsystem_in_sight(target, target_subsys, &eye_pos, &gsubpos) == 1;
 }
 
-bool weapon_multilock_can_lock_on_target(object* shooter, object* target_objp, weapon_info* wip, float* out_dot) {
+bool weapon_multilock_can_lock_on_target(object* shooter, object* target_objp, weapon_info* wip, float* out_dot, bool checkWeapons) {
 	Assertion(shooter->type == OBJ_SHIP, "weapon_multilock_can_lock_on_target called with a non-ship shooter");
-	if (target_objp->type != OBJ_SHIP)
+
+	if (target_objp->type != OBJ_SHIP && !checkWeapons) {
 		return false;
+	}
+	else if (target_objp->type != OBJ_WEAPON && checkWeapons) {
+		return false;
+	}
+
 
 	if (hud_target_invalid_awacs(target_objp))
 		return false;
 
-	ship* target_ship = &Ships[target_objp->instance];
-
 	if (target_objp->flags[Object::Object_Flags::Should_be_dead])
 		return false;
+	
+	if (!checkWeapons) {
+		ship* target_ship = &Ships[target_objp->instance];
 
-	if (target_ship->flags[Ship::Ship_Flags::Dying])
-		return false;
+		if (target_ship->flags[Ship::Ship_Flags::Dying])
+			return false;
 
-	if (should_be_ignored(target_ship))
-		return false;
+		if (should_be_ignored(target_ship))
+			return false;
+	}
+	else {
+		weapon* target_weapon = &Weapons[target_objp->instance];
+
+		if (!(Weapon_info[target_weapon->weapon_info_index].wi_flags[Weapon::Info_Flags::Bomb] || Weapon_info[target_weapon->weapon_info_index].wi_flags[Weapon::Info_Flags::Can_be_targeted]))
+			return false;
+
+		if (target_weapon->weapon_flags[Weapon::Weapon_Flags::Destroyed_by_weapon])
+			return false;
+	}
 
 	// if this is part of the same team and doesn't have any iff restrictions, reject lock
 	if (!weapon_has_iff_restrictions(wip) && Ships[shooter->instance].team == obj_team(target_objp))

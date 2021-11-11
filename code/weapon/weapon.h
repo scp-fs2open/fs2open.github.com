@@ -51,6 +51,9 @@ extern int Num_weapon_subtypes;
 #define LR_CURRENT_TARGET_SUBSYS		1		// 
 #define LR_ANY_TARGETS					2
 
+// enum for multilock object type restriction
+enum class LR_Objecttypes { LRO_SHIPS, LRO_WEAPONS };
+
 //particle names go here -nuke
 #define PSPEW_NONE		-1			//used to disable a spew, useful for xmts
 #define PSPEW_DEFAULT	0			//std fs2 pspew
@@ -94,7 +97,7 @@ struct WeaponStateHash {
 typedef struct weapon {
 	int		weapon_info_index;			// index into weapon_info array
 	int		objnum;							// object number for this weapon
-	int		model_instance_num;				// model instance number, if we have any intrinsic-rotating submodels
+	int		model_instance_num;				// model instance number, if we have any intrinsic-moving submodels
 	int		team;								// The team of the ship that fired this
 	int		species;							// The species of the ship that fired thisz
 	float		lifeleft;						// life left on this weapon	
@@ -122,8 +125,10 @@ typedef struct weapon {
 	float		thruster_glow_noise;				// Noise for current frame
 
 	// laser stuff
-	float	laser_bitmap_frame;				// used to keep track of which frame the animation should be on
-	float	laser_glow_bitmap_frame;		// used to keep track of which frame the glow animation should be on
+	float	laser_bitmap_frame;				// these are used to keep track of which frame the relevant animations should be on
+	float   laser_headon_bitmap_frame;
+	float	laser_glow_bitmap_frame;	
+	float   laser_glow_headon_bitmap_frame;
 
 	int		pick_big_attack_point_timestamp;	//	Timestamp at which to pick a new point to attack.
 	vec3d	big_attack_point;				//	Target-relative location of attack point.
@@ -336,7 +341,11 @@ struct weapon_info
 	int hud_image_index;					//teh index of the image
 
 	generic_anim laser_bitmap;				// bitmap for a laser
+	generic_anim laser_headon_bitmap;		// optional bitmap for when viewed from ahead/behind
 	generic_anim laser_glow_bitmap;			// optional laser glow bitmap
+	generic_anim laser_glow_headon_bitmap;  // optional headon for the glow
+	float laser_headon_switch_rate;			// how smooth vs sudden the transition between the headon and main bitmap should be
+	float laser_headon_switch_ang;			// at what angle
 
 	float laser_length;
 	color	laser_color_1;						// for cycling between glow colors
@@ -405,6 +414,7 @@ struct weapon_info
 	int SwarmWait;                  // *Swarm firewait, default is 150  -Et1
 
 	int target_restrict;
+	LR_Objecttypes target_restrict_objecttypes;
 	bool multi_lock;
 	int max_seeking;						// how many seekers can be active at a time if multilock is enabled. A value of one will lock stuff up one by one.
 	int max_seekers_per_target;			// how many seekers can be attached to a target.
@@ -768,7 +778,7 @@ bool weapon_multilock_can_lock_on_subsys(object* shooter, object* target, ship_s
 // does NOT check range
 // also returns the dot to the subsys in out_dot
 // While single target missiles will check these properties as well separately, this function is ONLY used by multilock
-bool weapon_multilock_can_lock_on_target(object* shooter, object* target_objp, weapon_info* wip, float* out_dot = nullptr);
+bool weapon_multilock_can_lock_on_target(object* shooter, object* target_objp, weapon_info* wip, float* out_dot = nullptr, bool checkWeapons = false);
 
 
 #endif

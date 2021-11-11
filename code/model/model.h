@@ -41,7 +41,7 @@ extern int model_render_flags_size;
 #define MOVEMENT_TYPE_ROT				1
 #define MOVEMENT_TYPE_ROT_SPECIAL		2	// for turrets only
 #define MOVEMENT_TYPE_TRIGGERED			3	// triggered rotation
-#define MOVEMENT_TYPE_INTRINSIC_ROTATE	4	// intrinsic (non-subsystem-based) rotation
+#define MOVEMENT_TYPE_INTRINSIC			4	// intrinsic (non-subsystem-based) motion
 
 
 // DA 11/13/98 Reordered to account for difference between max and game
@@ -225,8 +225,9 @@ typedef struct model_special {
 } model_special;
 
 // model arc types
-#define MARC_TYPE_NORMAL					0		// standard freespace 1 blue lightning arcs
+#define MARC_TYPE_DAMAGED					0		// blue lightning arcs for when the ship is damaged
 #define MARC_TYPE_EMP						1		// EMP blast type arcs
+#define MARC_TYPE_SHIP						2		// arcing lightning thats intrinsically part of the ship
 
 #define MAX_LIVE_DEBRIS	7
 
@@ -594,7 +595,7 @@ typedef struct insignia {
 #define PM_FLAG_AUTOCEN					(1<<1)					// contains autocentering info	
 #define PM_FLAG_TRANS_BUFFER			(1<<2)					// render transparency buffer
 #define PM_FLAG_BATCHED					(1<<3)					// this model can be batch rendered
-#define PM_FLAG_HAS_INTRINSIC_ROTATE	(1<<4)					// whether this model has an intrinsic rotation submodel somewhere
+#define PM_FLAG_HAS_INTRINSIC_MOTION	(1<<4)					// whether this model has an intrinsic rotation or translation submodel somewhere
 
 // Goober5000
 class texture_info
@@ -1247,7 +1248,7 @@ void model_page_in_textures(int modelnum, int ship_info_index = -1);
 // given a model, unload all of its textures
 void model_page_out_textures(int model_num, bool release = false);
 
-void model_do_intrinsic_rotations(object *objp);
+void model_do_intrinsic_motions(object *objp);
 
 int model_should_render_engine_glow(int objnum, int bank_obj);
 
