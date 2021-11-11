@@ -22479,7 +22479,7 @@ void sexp_show_subtitle(int node)
 
 						if (n != -1)
 						{
-							auto percent = eval_num(n, is_nan, is_nan_forever);
+							int percent = eval_num(n, is_nan, is_nan_forever);
 							if (is_nan || is_nan_forever)
 								return;
 							line_height_factor = percent / 100.0f;
@@ -22587,7 +22587,7 @@ void sexp_show_subtitle_text(int node)
 	float line_height_factor = 1.0f;
 	if (n >= 0)
 	{
-		auto percent = eval_num(n, is_nan, is_nan_forever);
+		int percent = eval_num(n, is_nan, is_nan_forever);
 		if (is_nan || is_nan_forever)
 			return;
 		line_height_factor = percent / 100.0f;
@@ -22623,7 +22623,8 @@ void sexp_show_subtitle_text(int node)
 	Current_sexp_network_packet.send_bool(center_y);
 	Current_sexp_network_packet.send_int(width_pct);
 	Current_sexp_network_packet.send_bool(post_shaded);
-	Current_sexp_network_packet.send_float(line_height_factor);
+ 	// TODO: uncomment when Github ticket #3773 is implemented
+	//Current_sexp_network_packet.send_float(line_height_factor);
 	Current_sexp_network_packet.end_callback();
 }
 
@@ -22657,7 +22658,8 @@ void multi_sexp_show_subtitle_text()
 	Current_sexp_network_packet.get_bool(center_y);
 	Current_sexp_network_packet.get_int(width_pct);
 	Current_sexp_network_packet.get_bool(post_shaded);
-	Current_sexp_network_packet.get_float(line_height_factor);
+	// TODO: uncomment when Github ticket #3773 is implemented
+	//Current_sexp_network_packet.get_float(line_height_factor);
 
 	gr_init_alphacolor(&new_color, red, green, blue, 255);
 
@@ -35151,7 +35153,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t11:\tText green component (0-255) (optional)\r\n"
 		"\t12:\tText blue component (0-255) (optional)\r\n"
 		"\t13:\tDrawn after shading? (optional; defaults to false)\r\n"
-		"\t14:\tLine vertical spacing, as a percentage, for displaying multi-line subtitles (optional; defaults to 100%)\r\n"
+		"\t14:\tLine vertical spacing, as a percentage, for displaying multi-line subtitles (optional; defaults to 100)\r\n"
 	},
 
 	{ OP_CUTSCENES_SHOW_SUBTITLE_TEXT, "show-subtitle-text\r\n"
@@ -35170,7 +35172,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t11:\tText blue component (0-255) (optional)\r\n"
 		"\t12:\tText font (optional)\r\n"
 		"\t13:\tDrawn after shading? (optional; defaults to false)\r\n"
-		"\t14:\tLine vertical spacing, as a percentage, for displaying multi-line subtitles (optional; defaults to 100%)\r\n"
+		"\t14:\tLine vertical spacing, as a percentage, for displaying multi-line subtitles (optional; defaults to 100)\r\n"
 	},
 
 	{ OP_CUTSCENES_SHOW_SUBTITLE_IMAGE, "show-subtitle-image\r\n"
