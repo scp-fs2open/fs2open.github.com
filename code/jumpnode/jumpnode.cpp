@@ -51,7 +51,7 @@ CJumpNode::CJumpNode(const vec3d* position)
 		// set up animation in case of instrinsic_rotate
 		polymodel* pm = model_get(m_modelnum);
 
-		if (pm->flags & PM_FLAG_HAS_INTRINSIC_ROTATE) {
+		if (pm->flags & PM_FLAG_HAS_INTRINSIC_MOTION) {
 			m_polymodel_instance_num = model_create_instance(true, m_modelnum);
 		}
 	}

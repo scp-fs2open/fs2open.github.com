@@ -1096,7 +1096,7 @@ void debris_render(object * obj, model_draw_list *scene)
 	if ( vm_vec_dist_quick( &obj->pos, &Eye_position ) < obj->radius*50.0f )	{
 		for (i=0; i<MAX_DEBRIS_ARCS; i++ )	{
 			if ( timestamp_valid( db->arc_timestamp[i] ) )	{
-				model_instance_add_arc( pm, pmi, db->submodel_num, &db->arc_pts[i][0], &db->arc_pts[i][1], MARC_TYPE_NORMAL );
+				model_instance_add_arc( pm, pmi, db->submodel_num, &db->arc_pts[i][0], &db->arc_pts[i][1], MARC_TYPE_DAMAGED );
 			}
 		}
 	}

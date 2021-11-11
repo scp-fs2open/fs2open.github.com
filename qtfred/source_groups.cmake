@@ -64,6 +64,12 @@ add_file_folder("Source/Mission/Dialogs"
 	src/mission/dialogs/WaypointEditorDialogModel.h
 	src/mission/dialogs/ShipEditorDialogModel.h
 	src/mission/dialogs/ShipEditorDialogModel.cpp
+	src/mission/dialogs/ShipInitialStatusDialogModel.cpp
+	src/mission/dialogs/ShipInitialStatusDialogModel.h
+	src/mission/dialogs/ShipGoalsDialogModel.h
+	src/mission/dialogs/ShipGoalsDialogModel.cpp
+	src/mission/dialogs/ShipFlagsDialogModel.cpp
+	src/mission/dialogs/ShipFlagsDialogModel.h
 )
 
 add_file_folder("Source/UI"
@@ -110,6 +116,12 @@ add_file_folder("Source/UI/Dialogs"
 	src/ui/dialogs/WaypointEditorDialog.h
 	src/ui/dialogs/ShipEditorDialog.h
 	src/ui/dialogs/ShipEditorDialog.cpp
+	src/ui/dialogs/ShipInitialStatusDialog.h
+	src/ui/dialogs/ShipInitialStatusDialog.cpp
+	src/ui/dialogs/ShipGoalsDialog.cpp
+	src/ui/dialogs/ShipGoalsDialog.h
+	src/ui/dialogs/ShipFlagsDialog.h
+	src/ui/dialogs/ShipFlagsDialog.cpp
 )
 
 add_file_folder("Source/UI/Util"
@@ -126,6 +138,8 @@ add_file_folder("Source/UI/Widgets"
     src/ui/widgets/renderwidget.h
 	src/ui/widgets/sexp_tree.cpp
 	src/ui/widgets/sexp_tree.h
+	src/ui/widgets/ShipFlagCheckbox.h
+	src/ui/widgets/ShipFlagCheckbox.cpp
 )
 
 add_file_folder("UI"
@@ -148,6 +162,9 @@ add_file_folder("UI"
 	ui/VoiceActingManager.ui
     ui/WaypointEditorDialog.ui
 	ui/ShipEditorDialog.ui
+	ui/ShipInitialStatus.ui
+	ui/ShipGoalsDialog.ui
+	ui/ShipFlagsDialog.ui
 )
 
 add_file_folder("Resources"

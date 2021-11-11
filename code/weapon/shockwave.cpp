@@ -402,7 +402,7 @@ void shockwave_render(object *objp, model_draw_list *scene)
 
 	float alpha = 1.0f;
 	if (The_mission.flags[Mission::Mission_Flags::Fullneb] && Neb_affects_weapons)
-		alpha *= neb2_get_fog_visibility(&objp->pos, NEB_FOG_VISIBILITY_MULT_SHOCKWAVE);
+		alpha *= neb2_get_fog_visibility(&objp->pos, Neb2_fog_visibility_shockwave);
 
 	if (sw->model_id > -1) {
 		vec3d scale;

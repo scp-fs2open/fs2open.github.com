@@ -285,12 +285,10 @@ matrix *vm_vector_2_matrix(matrix *m, const vec3d *fvec, const vec3d *uvec = nul
 matrix *vm_vector_2_matrix_norm(matrix *m, const vec3d *fvec, const vec3d *uvec = NULL, const vec3d *rvec = NULL);
 
 //rotates a vector through a matrix. returns ptr to dest vector
-//dest CANNOT equal either source
 vec3d *vm_vec_rotate(vec3d *dest, const vec3d *src, const matrix *m);
 
 //rotates a vector through the transpose of the given matrix. 
 //returns ptr to dest vector
-//dest CANNOT equal source
 // This is a faster replacement for this common code sequence:
 //    vm_copy_transpose(&tempm,src_matrix);
 //    vm_vec_rotate(dst_vec,src_vect,&tempm);
@@ -310,7 +308,6 @@ matrix *vm_transpose(matrix *m);
 matrix *vm_copy_transpose(matrix *dest, const matrix *src);
 
 //mulitply 2 matrices, fill in dest.  returns ptr to dest
-//dest CANNOT equal either source
 matrix *vm_matrix_x_matrix(matrix *dest, const matrix *src0, const matrix *src1);
 
 //extract angles from a matrix

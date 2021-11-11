@@ -50,6 +50,7 @@ ship_select::ship_select(CWnd* pParent /*=NULL*/)
 	//}}AFX_DATA_INIT
 
 	// this is stupid
+	IDC_FILTER_SHIPS_IFF.clear();
 	IDC_FILTER_SHIPS_IFF.push_back(IDC_FILTER_SHIPS_IFF_0);
 	IDC_FILTER_SHIPS_IFF.push_back(IDC_FILTER_SHIPS_IFF_1);
 	IDC_FILTER_SHIPS_IFF.push_back(IDC_FILTER_SHIPS_IFF_2);

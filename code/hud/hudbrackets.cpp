@@ -388,7 +388,7 @@ void HudGaugeBrackets::render(float  /*frametime*/)
 
 void HudGaugeBrackets::renderObjectBrackets(object *targetp, color *clr, int w_correction, int h_correction, int flags)
 {
-	TRACE_SCOPE(tracing::RenderTargettingBracket);
+	TRACE_SCOPE(tracing::RenderTargetingBracket);
 
 	int x1,x2,y1,y2;
 	bool draw_box = true;

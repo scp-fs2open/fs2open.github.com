@@ -454,7 +454,7 @@ extern ship_flag_name Ship_flag_names[];
 #define DEFAULT_SHIP_PRIMITIVE_SENSOR_RANGE		10000	// Goober5000
 
 #define MAX_DAMAGE_SLOTS	32
-#define MAX_SHIP_ARCS		2		// How many "arcs" can be active at once... Must be less than MAX_ARC_EFFECTS in model.h. 
+#define MAX_SHIP_ARCS		5		// How many "arcs" can be active at once... Must be less than MAX_ARC_EFFECTS in model.h. 
 #define NUM_SUB_EXPL_HANDLES	2	// How many different big ship sub explosion sounds can be played.
 
 #define MAX_SHIP_CONTRAILS		24
@@ -692,7 +692,8 @@ public:
 	vec3d	arc_pts[MAX_SHIP_ARCS][2];			// The endpoints of each arc
 	int		arc_timestamp[MAX_SHIP_ARCS];		// When this times out, the spark goes away.  -1 is not used
 	ubyte		arc_type[MAX_SHIP_ARCS];			// see MARC_TYPE_* defines in model.h
-	int		arc_next_time;							// When the next arc will be created.	
+	int		arc_next_time;							// When the next damage/emp arc will be created.	
+	SCP_vector<int>		passive_arc_next_times;		// When the next passive ship arc will be created.	
 
 	// emp missile stuff
 	float emp_intensity;								// <= 0.0f if no emp effect present
@@ -902,6 +903,14 @@ extern const ship_registry_entry *ship_registry_get(const char *name);
 #define REGULAR_WEAPON	(1<<0)
 #define DOGFIGHT_WEAPON (1<<1)
 
+typedef struct ship_passive_arc_info {
+	std::pair<int, int> submodels;
+	std::pair<SCP_string, SCP_string> submodel_strings; // the string names from parsing, to be looked up and used to fill the above later when the model is ready
+	std::pair<vec3d, vec3d> pos;
+	float duration;
+	float frequency;
+} ship_lightning_data;
+
 typedef struct thruster_particles {
 	generic_anim thruster_bitmap;
 	float		min_rad;
@@ -1048,6 +1057,7 @@ typedef struct ship_collision_physics {
 
 typedef struct path_metadata {
 	vec3d departure_rvec;
+	vec3d arrival_rvec;
 	float arrive_speed_mult;
 	float depart_speed_mult;
 } path_metadata;
@@ -1397,6 +1407,8 @@ public:
 
 	animation::ModelAnimationSet animations;
 
+	SCP_vector<ship_passive_arc_info> ship_passive_arcs;
+
 	ship_info();
 	~ship_info();
 	void clone(const ship_info& other);
@@ -1598,14 +1610,14 @@ extern int ship_get_num_ships();
 extern void ship_cleanup(int shipnum, int cleanup_mode);
 
 // Goober5000
-extern void ship_destroy_instantly(object *ship_obj);
+extern void ship_destroy_instantly(object *ship_obj, bool with_debris = false);
 extern void ship_actually_depart(int shipnum, int method = SHIP_DEPARTED_WARP);
 
 extern const std::shared_ptr<scripting::Hook> OnShipDeathStartedHook;
 
 extern bool in_autoaim_fov(ship *shipp, int bank_to_fire, object *obj);
 extern int ship_stop_fire_primary(object * obj);
-extern int ship_fire_primary(object * objp, int stream_weapons, int force = 0, bool rollback_shot = false);
+extern int ship_fire_primary(object * objp, int force = 0, bool rollback_shot = false);
 extern int ship_fire_secondary(object * objp, int allow_swarm = 0, bool rollback_shot = false );
 bool ship_start_secondary_fire(object* objp);
 bool ship_stop_secondary_fire(object* objp);

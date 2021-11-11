@@ -346,6 +346,11 @@ void pilotfile::plr_read_containers()
 	handler->endArrayRead();
 }
 
+bool pilotfile::plr_has_persistent_containers() const
+{
+	return !p->containers.empty();
+}
+
 void pilotfile::plr_write_containers()
 {
 	handler->startSectionWrite(Section::Containers);
@@ -1076,7 +1081,10 @@ bool pilotfile::save_player(player *_p)
 
 	// header and version
 	handler->writeInt("signature", PLR_FILE_ID);
-	handler->writeUByte("version", PLR_VERSION);
+	static_assert(PLR_VERSION == PRE_CONTAINERS_PLR_VERSION + 1,
+		"PLR_VERSION shouldn't be bumped beyond containers without removing compatibility fix");
+	const ubyte file_version = plr_has_persistent_containers() ? PLR_VERSION : PRE_CONTAINERS_PLR_VERSION;
+	handler->writeUByte("version", file_version);
 
 	mprintf(("PLR => Saving '%s' with version %d...\n", filename.c_str(), (int)PLR_VERSION));
 
@@ -1097,8 +1105,12 @@ bool pilotfile::save_player(player *_p)
 	plr_write_hud();
 	mprintf(("PLR => Saving:  Variables...\n"));
 	plr_write_variables();
-	mprintf(("PLR => Saving:  Containers...\n"));
-	plr_write_containers();
+	if (plr_has_persistent_containers()) {
+		mprintf(("PLR => Saving:  Containers...\n"));
+		plr_write_containers();
+	} else {
+		mprintf(("PLR => No containers to save.\n"));
+	}
 	mprintf(("PLR => Saving:  Multiplayer...\n"));
 	plr_write_multiplayer();
 	mprintf(("PLR => Saving:  Controls...\n"));

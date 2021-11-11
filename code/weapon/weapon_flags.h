@@ -38,7 +38,6 @@ namespace Weapon {
 		Shudder,							// causes the weapon to shudder. shudder is proportional to the mass and damage of the weapon
 		Mflash,								// has muzzle flash
 		Lockarm,							// if the missile was fired without a lock, it does significanlty less damage on impact
-		Stream,								// handled by "trigger down/trigger up" instead of "fire - wait - fire - wait"
 		Ballistic,							// ballistic primaries - Goober5000
 		Pierce_shields,						// shield pierceing -Bobboau
 		Default_in_tech_database,			// default in tech database - Goober5000
