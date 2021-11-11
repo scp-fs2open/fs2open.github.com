@@ -2068,7 +2068,7 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 
 	// first do any passive ship arcs, separate from damage or emp arcs
 	for (int passive_arc_info_idx = 0; passive_arc_info_idx < (int)sip->ship_passive_arcs.size(); passive_arc_info_idx++) {
-		if (timestamp_elapsed(shipp->passive_arc_next_times[passive_arc_info_idx])) {
+		if (!shipp->flags[Ship::Ship_Flags::No_passive_lightning] && timestamp_elapsed(shipp->passive_arc_next_times[passive_arc_info_idx])) {
 
 			ship_passive_arc_info* arc_info = &sip->ship_passive_arcs[passive_arc_info_idx];
 			polymodel* pm = model_get(model_num);
