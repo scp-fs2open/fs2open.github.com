@@ -1171,7 +1171,7 @@ void gr_render_primitives_2d_immediate(material* material_info,
 
 // _->NEW<-_ NEW new bitmap functions -Bobboau
 // takes a list of rectangles that have assosiated rectangles in a texture
-static void draw_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode, material* render_mat)
+static void draw_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode, material* render_mat, float angle = 0.f)
 {
 	GR_DEBUG_SCOPE("2D Bitmap list");
 
@@ -1193,15 +1193,38 @@ static void draw_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode, 
 	auto vert_list = new vertex[6 * n_bm];
 	float sw = 0.1f;
 
+
+	float rad = 0;
+
+	if (angle != 0) {
+		rad = fl_radians(angle);
+	}
+
 	for (int i = 0; i < n_bm; i++) {
 		// stuff coords
-
+		
 		bitmap_2d_list* b = &list[i].screen_rect;
 		texture_rect_list* t = &list[i].texture_rect;
+		
+		float centerX, centerY = 0;
+
+		if (angle != 0.f) {
+			centerX = (b->x + (b->x + b->w)) / 2.0f;
+			centerY = (b->y + (b->y + b->h)) / 2.0f;
+		}
+
 		// tri one
 		vertex* V = &vert_list[i * 6];
-		V->screen.xyw.x = (float)b->x;
-		V->screen.xyw.y = (float)b->y;
+		
+		if (angle != 0.f) {
+			V->screen.xyw.x = cosf(rad) * (b->x - centerX) - sinf(rad) * (b->y - centerY) + centerX;
+			V->screen.xyw.y = sinf(rad) * (b->x - centerX) + cosf(rad) * (b->y - centerY) + centerY;
+		}
+		else {			
+			V->screen.xyw.x = (float)b->x;
+			V->screen.xyw.y = (float)b->y;
+		}
+		
 		V->screen.xyw.w = sw;
 		V->texture_position.u = (float)t->u0;
 		V->texture_position.v = (float)t->v0;
@@ -1209,8 +1232,15 @@ static void draw_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode, 
 		V->codes = 0;
 
 		V++;
-		V->screen.xyw.x = (float)(b->x + b->w);
-		V->screen.xyw.y = (float)b->y;
+		if (angle != 0.f) {
+			V->screen.xyw.x = cosf(rad) * (b->x + b->w - centerX) - sinf(rad) * (b->y - centerY) + centerX;
+			V->screen.xyw.y = sinf(rad) * (b->x + b->w - centerX) + cosf(rad) * (b->y - centerY) + centerY;
+		}
+		else {
+			V->screen.xyw.x = (float)(b->x + b->w);
+			V->screen.xyw.y = (float)b->y;
+		}
+
 		V->screen.xyw.w = sw;
 		V->texture_position.u = (float)t->u1;
 		V->texture_position.v = (float)t->v0;
@@ -1218,8 +1248,15 @@ static void draw_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode, 
 		V->codes = 0;
 
 		V++;
-		V->screen.xyw.x = (float)(b->x + b->w);
-		V->screen.xyw.y = (float)(b->y + b->h);
+		if (angle != 0.f) {
+			V->screen.xyw.x = cosf(rad) * (b->x + b->w - centerX) - sinf(rad) * (b->y + b->h - centerY) + centerX;
+			V->screen.xyw.y = sinf(rad) * (b->x + b->w - centerX) + cosf(rad) * (b->y + b->h - centerY) + centerY;
+		}
+		else {
+			V->screen.xyw.x = (float)(b->x + b->w);
+			V->screen.xyw.y = (float)(b->y + b->h);
+		}
+
 		V->screen.xyw.w = sw;
 		V->texture_position.u = (float)t->u1;
 		V->texture_position.v = (float)t->v1;
@@ -1228,8 +1265,15 @@ static void draw_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode, 
 
 		// tri two
 		V++;
-		V->screen.xyw.x = (float)b->x;
-		V->screen.xyw.y = (float)b->y;
+		if (angle != 0.f) {
+			V->screen.xyw.x = cosf(rad) * (b->x - centerX) - sinf(rad) * (b->y - centerY) + centerX;
+			V->screen.xyw.y = sinf(rad) * (b->x - centerX) + cosf(rad) * (b->y - centerY) + centerY;
+		}
+		else {			
+			V->screen.xyw.x = (float)b->x;
+			V->screen.xyw.y = (float)b->y;
+		}
+
 		V->screen.xyw.w = sw;
 		V->texture_position.u = (float)t->u0;
 		V->texture_position.v = (float)t->v0;
@@ -1237,8 +1281,15 @@ static void draw_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode, 
 		V->codes = 0;
 
 		V++;
-		V->screen.xyw.x = (float)(b->x + b->w);
-		V->screen.xyw.y = (float)(b->y + b->h);
+		if (angle != 0.f) {
+			V->screen.xyw.x = cosf(rad) * (b->x + b->w - centerX) - sinf(rad) * (b->y + b->h - centerY) + centerX;
+			V->screen.xyw.y = sinf(rad) * (b->x + b->w - centerX) + cosf(rad) * (b->y + b->h - centerY) + centerY;
+		}
+		else {
+			V->screen.xyw.x = (float)(b->x + b->w);
+			V->screen.xyw.y = (float)(b->y + b->h);
+		}
+
 		V->screen.xyw.w = sw;
 		V->texture_position.u = (float)t->u1;
 		V->texture_position.v = (float)t->v1;
@@ -1246,8 +1297,15 @@ static void draw_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode, 
 		V->codes = 0;
 
 		V++;
-		V->screen.xyw.x = (float)b->x;
-		V->screen.xyw.y = (float)(b->y + b->h);
+		if (angle != 0.f) {
+			V->screen.xyw.x = cosf(rad) * (b->x - centerX) - sinf(rad) * (b->y + b->h - centerY) + centerX;
+			V->screen.xyw.y = sinf(rad) * (b->x - centerX) + cosf(rad) * (b->y + b->h - centerY) + centerY;
+		}
+		else {
+			V->screen.xyw.x = (float)b->x;
+			V->screen.xyw.y = (float)(b->y + b->h);
+		}
+
 		V->screen.xyw.w = sw;
 		V->texture_position.u = (float)t->u0;
 		V->texture_position.v = (float)t->v1;
@@ -1260,7 +1318,7 @@ static void draw_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode, 
 	delete[] vert_list;
 }
 
-void gr_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode)
+void gr_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode, float angle)
 {
 	material mat_params;
 	material_set_interface(&mat_params,
@@ -1268,10 +1326,10 @@ void gr_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode)
 		gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER,
 		gr_screen.current_alpha);
 
-	draw_bitmap_list(list, n_bm, resize_mode, &mat_params);
+	draw_bitmap_list(list, n_bm, resize_mode, &mat_params, angle);
 }
 
-void gr_aabitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode)
+void gr_aabitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode, float angle)
 {
 	material render_mat;
 	render_mat.set_blend_mode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
@@ -1281,5 +1339,5 @@ void gr_aabitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode)
 	render_mat.set_cull_mode(false);
 	render_mat.set_texture_type(material::TEX_TYPE_AABITMAP);
 
-	draw_bitmap_list(list, n_bm, resize_mode, &render_mat);
+	draw_bitmap_list(list, n_bm, resize_mode, &render_mat, angle);
 }
