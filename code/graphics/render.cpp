@@ -1206,7 +1206,8 @@ static void draw_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode, 
 		bitmap_2d_list* b = &list[i].screen_rect;
 		texture_rect_list* t = &list[i].texture_rect;
 		
-		float centerX, centerY = 0;
+		float centerX = 0;
+		float centerY = 0;
 
 		if (angle != 0.f) {
 			centerX = (b->x + (b->x + b->w)) / 2.0f;
