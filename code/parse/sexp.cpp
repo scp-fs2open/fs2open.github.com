@@ -1763,12 +1763,15 @@ int check_operator_argument_count(int count, int op)
 }
 
 template <typename T>
-int count_named_items(const char *name, int num, const T* item)
+int count_items_with_name(const char *name, const T* item_array, int num_items)
 {
+	Assert(name != nullptr && item_array != nullptr);
+
 	int count = 0;
-	for (int i = 0; i < num; ++i)
-		if (!stricmp(name, item[i].name))
+	for (int i = 0; i < num_items; ++i)
+		if (!stricmp(name, item_array[i].name))
 			++count;
+
 	return count;
 }
 
@@ -2731,10 +2734,10 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 						break;
 
 					// look for mission
-					count = count_named_items(CTEXT(z), Campaign.num_missions, Campaign.missions);
+					count = count_items_with_name(CTEXT(z), Campaign.missions, Campaign.num_missions);
 
 					// only check for a missing mission -- it's ok if the same mission appears multiple times in the campaign
-					if (count <= 0) {
+					if (count == 0) {
 						if (bad_node)
 							*bad_node = z;
 
@@ -2746,9 +2749,9 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 						read_mission_goal_list(i);
 
 					if (type == OPF_GOAL_NAME) {
-						count = count_named_items(CTEXT(node), Campaign.missions[i].num_goals, Campaign.missions[i].goals);
+						count = count_items_with_name(CTEXT(node), Campaign.missions[i].goals, Campaign.missions[i].num_goals);
 					} else if (type == OPF_EVENT_NAME) {
-						count = count_named_items(CTEXT(node), Campaign.missions[i].num_events, Campaign.missions[i].events);
+						count = count_items_with_name(CTEXT(node), Campaign.missions[i].events, Campaign.missions[i].num_events);
 					} else {
 						UNREACHABLE("type == %d; expected OPF_GOAL_NAME or OPF_EVENT_NAME", type);
 					}
@@ -2757,13 +2760,13 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					if ((Operators[op].value == OP_PREVIOUS_GOAL_TRUE) || (Operators[op].value == OP_PREVIOUS_GOAL_FALSE) || (Operators[op].value == OP_PREVIOUS_GOAL_INCOMPLETE))
 						break;
 
-					count = count_named_items(CTEXT(node), Num_goals, Mission_goals);
+					count = count_items_with_name(CTEXT(node), Mission_goals, Num_goals);
 				} else if (type == OPF_EVENT_NAME) {
 					// neither the previous mission nor the previous event is guaranteed to exist (missions can be developed out of sequence), so we don't need to check them
 					if ((Operators[op].value == OP_PREVIOUS_EVENT_TRUE) || (Operators[op].value == OP_PREVIOUS_EVENT_FALSE) || (Operators[op].value == OP_PREVIOUS_EVENT_INCOMPLETE))
 						break;
 
-					count = count_named_items(CTEXT(node), Num_mission_events, Mission_events);
+					count = count_items_with_name(CTEXT(node), Mission_events, Num_mission_events);
 				} else {
 					UNREACHABLE("type == %d; expected OPF_GOAL_NAME or OPF_EVENT_NAME", type);
 				}
