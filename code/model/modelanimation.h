@@ -84,6 +84,7 @@ namespace animation {
 	enum class ModelAnimationTriggerType : int {
 		None = -1,       // No animation
 		Initial,		 // This is just the position the subobject should be placed in
+		OnSpawn,		 // starts when a ship is being created.
 		Docking_Stage1,	 // following the dock path until just before the end. Triggered when AIS_DOCK_1 begins.
 		Docking_Stage2,	 // drag oneself right to the second last point on the dock path. The old docking-type trigger. Triggered when AIS_DOCK_2 begins.
 		Docking_Stage3,	 // move directly to the dockpoint using thrusters. Triggered when AIS_DOCK_3 begins.

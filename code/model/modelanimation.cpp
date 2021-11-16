@@ -818,10 +818,12 @@ namespace animation {
 		ship_info* sip = &Ship_info[shipp->ship_info_index];
 		sip->animations.clearShipData(model_get_instance(shipp->model_instance_num));
 		sip->animations.startAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::Initial, ModelAnimationDirection::FWD, true, true);
+		sip->animations.startAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::OnSpawn, ModelAnimationDirection::FWD);
 	}
 
 	const std::map<ModelAnimationTriggerType, std::pair<const char*, bool>> Animation_types = {
-	{ModelAnimationTriggerType::Initial, {"initial", false}},
+	{ModelAnimationTriggerType::Initial, {"initial", false}}, //Atypical case. Will only ever be run in fully triggered state and then applied as base transformation
+	{ModelAnimationTriggerType::OnSpawn, {"on-spawn", false}}, //Atypical case. While no reverse trigger occurs, it is also guaranteed to not trigger more than once per model, hence non-resetting animations are fine here.
 	{ModelAnimationTriggerType::Docking_Stage1, {"docking-stage-1", false}},
 	{ModelAnimationTriggerType::Docking_Stage2, {"docking-stage-2", false}},
 	{ModelAnimationTriggerType::Docking_Stage3, {"docking-stage-3", false}},
@@ -985,6 +987,7 @@ namespace animation {
 
 		case ModelAnimationTriggerType::Afterburner:
 		case ModelAnimationTriggerType::WeaponLaunched:
+		case ModelAnimationTriggerType::OnSpawn:
 			//No triggered by specialization
 			return {
 				[&set, type, pmi](ModelAnimationDirection direction, bool forced, bool instant, bool pause) -> bool {
@@ -1119,6 +1122,7 @@ namespace animation {
 			case ModelAnimationTriggerType::Initial:
 			case ModelAnimationTriggerType::Afterburner:
 			case ModelAnimationTriggerType::WeaponLaunched:
+			case ModelAnimationTriggerType::OnSpawn:
 			default:
 				error_display(0, "Animation trigger type %s does not use any trigger specification!", atype);
 				//These shouldn't have further specifications. Ignore
