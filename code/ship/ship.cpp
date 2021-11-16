@@ -558,6 +558,7 @@ ship_flag_name Ship_flag_names[] = {
 	{ Ship_Flags::No_secondary_lockon,			"no-secondary-lock-on" },
 	{ Ship_Flags::No_disabled_self_destruct,	"no-disabled-self-destruct" },
 	{ Ship_Flags::Hide_mission_log,				"hide-in-mission-log" },
+	{ Ship_Flags::No_passive_lightning,			"no-ship-passive-lightning" },
 };
 
 static int Laser_energy_out_snd_timer;	// timer so we play out of laser sound effect periodically
