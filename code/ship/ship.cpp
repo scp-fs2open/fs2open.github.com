@@ -6911,7 +6911,6 @@ void ship_subsys::clear()
 	last_aim_enemy_vel = vmd_zero_vector;
 
 	rof_scaler = 1.0f;
-	turn_rate = 0.0f;
 
 	turret_max_bomb_ownage = -1; 
 	turret_max_target_ownage = -1;
@@ -6945,6 +6944,7 @@ static int subsys_set(int objnum, int ignore_subsys_info)
 	Assert(shipp->model_instance_num >= 0);
 	polymodel_instance *pmi = model_get_instance(shipp->model_instance_num);
 	Assert(pmi->model_num == sinfo->model_num);
+	polymodel* pm = model_get(pmi->model_num);
 
 	for ( i = 0; i < sinfo->n_subsystems; i++ )
 	{
@@ -7031,8 +7031,6 @@ static int subsys_set(int objnum, int ignore_subsys_info)
 		// check the mission flag to possibly free all beam weapons - Goober5000, taken from SEXP.CPP, and moved to subsys_set() by Asteroth
 		if (The_mission.flags[Mission::Mission_Flags::Beam_free_all_by_default]) 
 			ship_system->weapons.flags.set(Ship::Weapon_Flags::Beam_Free);
-
-		ship_system->turn_rate = model_system->turn_rate;
 
 		// Goober5000 - this has to be moved outside back to parse_create_object, because
 		// a lot of the ship creation code is duplicated in several points and overwrites
@@ -7200,9 +7198,8 @@ static int subsys_set(int objnum, int ignore_subsys_info)
         }
 
 		// turn_rate, turn_accel
-		float turn_accel = 0.5f;
 		if (ship_system->submodel_instance_1 != nullptr)
-			model_set_submodel_turn_info(ship_system->submodel_instance_1, model_system->turn_rate, turn_accel);
+			model_set_submodel_instance_motion_info(&pm->submodel[model_system->subobj_num], ship_system->submodel_instance_1);
 	}
 
 	if ( !ignore_subsys_info ) {
@@ -13673,7 +13670,7 @@ void ship_get_eye( vec3d *eye_pos, matrix *eye_orient, object *obj, bool do_slew
 	// element.
 	eye *ep = &(pm->view_positions[shipp->current_viewpoint]);
 
-	if (ep->parent >= 0 && pm->submodel[ep->parent].can_move) {
+	if (ep->parent >= 0 && pm->submodel[ep->parent].flags[Model::Submodel_flags::Can_move]) {
 		find_submodel_instance_point_orient(eye_pos, eye_orient, pm, pmi, ep->parent, &ep->pnt, &vmd_identity_matrix);
 		vec3d tvec = *eye_pos;
 		vm_vec_unrotate(eye_pos, &tvec, &obj->orient);
@@ -19489,7 +19486,7 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 			// create a model instance only if at least one submodel has gun rotation
 			for (int mn = 0; mn < pm->n_models; mn++)
 			{
-				if (pm->submodel[mn].gun_rotation)
+				if (pm->submodel[mn].flags[Model::Submodel_flags::Gun_rotation])
 				{
 					swp->primary_bank_external_model_instance[i] = model_create_instance(false, wip->external_model_num);
 					break;
@@ -19509,7 +19506,7 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 			// spin the submodels by the gun rotation
 			for (int mn = 0; mn < pm->n_models; ++mn)
 			{
-				if (pm->submodel[mn].gun_rotation)
+				if (pm->submodel[mn].flags[Model::Submodel_flags::Gun_rotation])
 				{
 					angles angs = vmd_zero_angles;
 					angs.b = shipp->primary_rotate_ang[i];

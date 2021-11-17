@@ -19618,7 +19618,6 @@ void sexp_reverse_rotating_subsystem(int node)
 			continue;
 
 		// switch direction of rotation
-		rotate->turn_rate *= -1.0f;
 		rotate->submodel_instance_1->current_turn_rate *= -1.0f;
 		rotate->submodel_instance_1->desired_turn_rate *= -1.0f;
 	}

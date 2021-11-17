@@ -420,7 +420,6 @@ public:
 
 	//scaler for setting adjusted turret rof
 	float	rof_scaler;
-	float	turn_rate;
 
 	//Per-turret ownage settings - SUSHI
 	int turret_max_bomb_ownage; 
