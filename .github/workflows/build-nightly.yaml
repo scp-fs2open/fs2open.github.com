@@ -213,10 +213,10 @@ jobs:
 
   post_builds:
     # Post nightlies if at least one job was successful
+    if: ${{ needs.linux_zip == "success" || needs.windows_zip == "success" }}
     name: Post builds on Nebula and the forums
     needs: [linux_zip, windows_zip]
     runs-on: ubuntu-latest
-    if: ${{ needs.linux_zip.result == 'success' || needs.windows_zip.result == 'success' }}
     steps:
       - uses: actions/checkout@v1
         name: Checkout
