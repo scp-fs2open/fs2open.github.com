@@ -8455,8 +8455,8 @@ void weapon_render(object* obj, model_draw_list *scene)
 				if (wip->laser_glow_headon_bitmap.first_frame >= 0) {
 					float main_bitmap_alpha_mult = weapon_render_headon_bitmap(obj, &headp2,
 						wip->laser_glow_headon_bitmap.first_frame + headon_framenum,
-						scaled_head_radius,
-						scaled_tail_radius,
+						scaled_head_radius * weapon_glow_scale_f,
+						scaled_tail_radius * weapon_glow_scale_r,
 						r, g, b);
 					r = (int)(r * main_bitmap_alpha_mult);
 					g = (int)(g * main_bitmap_alpha_mult);
