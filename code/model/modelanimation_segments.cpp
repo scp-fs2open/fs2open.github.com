@@ -332,11 +332,12 @@ namespace animation {
 				const ModelAnimationData<>& submodel = base[m_submodel].first;
 				base[m_submodel].second = true;
 
-				angles absoluteOffset{ 0,0,0 };
-				vm_extract_angles_matrix_alternate(&absoluteOffset, &submodel.orientation);
+				matrix orientTransp, target, diff;
 				const angles& targetAngle = m_targetAngle;
-				for(float angles::* i : pbh)
-					instanceData.m_actualTarget.*i = targetAngle.*i - absoluteOffset.*i;
+				vm_copy_transpose(&orientTransp, &submodel.orientation);
+				vm_angles_2_matrix(&target, &targetAngle);
+				diff = orientTransp * target;
+				vm_extract_angles_matrix_alternate(&instanceData.m_actualTarget, &diff);
 			}
 			else
 				instanceData.m_actualTarget = m_targetAngle;
