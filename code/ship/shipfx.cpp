@@ -232,7 +232,7 @@ static void shipfx_maybe_create_live_debris_at_ship_death( object *ship_objp )
 
 	int live_debris_submodel = -1;
 	for (int idx=0; idx<pm->num_debris_objects; idx++) {
-		if (pm->submodel[pm->debris_objects[idx]].is_live_debris) {
+		if (pm->submodel[pm->debris_objects[idx]].flags[Model::Submodel_flags::Is_live_debris]) {
 			live_debris_submodel = pm->debris_objects[idx];
 
 			// get submodel that produces live debris
@@ -316,7 +316,7 @@ static void shipfx_blow_up_hull(object *obj, polymodel *pm, polymodel_instance *
 
 	bool try_live_debris = true;
 	for (i=0; i<pm->num_debris_objects; i++ )	{
-		if (! pm->submodel[pm->debris_objects[i]].is_live_debris) {
+		if (! pm->submodel[pm->debris_objects[i]].flags[Model::Submodel_flags::Is_live_debris]) {
 			vec3d tmp = ZERO_VECTOR;
 			model_instance_find_world_point(&tmp, &pm->submodel[pm->debris_objects[i]].offset, pm, pmi, 0, &obj->orient, &obj->pos );
 			debris_create( obj, pm->id, pm->debris_objects[i], &tmp, exp_center, 1, 3.0f );
@@ -1574,7 +1574,7 @@ void shipfx_queue_render_ship_halves_and_debris(model_draw_list *scene, clip_shi
 
 			// determine if explosion front has past debris piece
 			// 67 ~ dist expl moves in 2 frames -- maybe fraction works better
-			int is_live_debris = pm->submodel[pm->debris_objects[i]].is_live_debris;
+			bool is_live_debris = pm->submodel[pm->debris_objects[i]].flags[Model::Submodel_flags::Is_live_debris];
 			int create_debris = 0;
 			// front ship
 			if (half_ship->explosion_vel > 0) {
@@ -2673,7 +2673,7 @@ void engine_wash_ship_process(ship *shipp)
 			// set the the necessary submodel instance info needed here. The second
 			// condition is thus a hack to disable the feature while in the lab, and
 			// can be removed if the lab is re-structured accordingly. -zookeeper
-			if ( bank->submodel_num > -1 && pm->submodel[bank->submodel_num].can_move && (gameseq_get_state_idx(GS_STATE_LAB) == -1) ) {
+			if ( bank->submodel_num >= 0 && pm->submodel[bank->submodel_num].flags[Model::Submodel_flags::Can_move] && (gameseq_get_state_idx(GS_STATE_LAB) == -1) ) {
 				model_find_submodel_offset(&submodel_static_offset, pm, bank->submodel_num);
 
 				submodel_rotation = true;
