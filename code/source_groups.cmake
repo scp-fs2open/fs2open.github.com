@@ -730,6 +730,8 @@ add_file_folder("Libs\\\\RenderDoc"
 add_file_folder("Lighting"
 	lighting/lighting.cpp
 	lighting/lighting.h
+	lighting/lighting_profiles.cpp
+	lighting/lighting_profiles.h
 )
 
 # Localization files
