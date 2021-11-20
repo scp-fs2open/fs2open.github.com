@@ -1351,11 +1351,12 @@ ADE_FUNC(loadTexture, l_Graphics, "string Filename, [boolean LoadIfAnimation, bo
 ADE_FUNC(drawImage,
 	l_Graphics,
 	"string|texture fileNameOrTexture, [number X1=0, number Y1=0, number X2, number Y2, number UVX1 = 0.0, number UVY1 "
-	"= 0.0, number UVX2=1.0, number UVY2=1.0, number alpha=1.0, boolean aaImage = false]",
+	"= 0.0, number UVX2=1.0, number UVY2=1.0, number alpha=1.0, boolean aaImage = false, number angle = 0.0]",
 	"Draws an image file or texture. Any image extension passed will be ignored."
 	"The UV variables specify the UV value for each corner of the image. "
 	"In UV coordinates, (0,0) is the top left of the image; (1,1) is the lower right. If aaImage is true, image needs "
-	"to be monochrome and will be drawn tinted with the currently active color.",
+	"to be monochrome and will be drawn tinted with the currently active color."
+	"The angle variable can be used to rotate the image in radians.",
 	"boolean",
 	"Whether image was drawn")
 {
@@ -1373,11 +1374,12 @@ ADE_FUNC(drawImage,
 	float uv_y2=1.0f;
 	float alpha=1.0f;
 	bool aabitmap = false;
+	float angle = 0.f;
 
 	if(lua_isstring(L, 1))
 	{
 		const char* s = nullptr;
-		if (!ade_get_args(L, "s|iiiifffffb", &s, &x1, &y1, &x2, &y2, &uv_x1, &uv_y1, &uv_x2, &uv_y2, &alpha, &aabitmap))
+		if (!ade_get_args(L, "s|iiiifffffbf", &s, &x1, &y1, &x2, &y2, &uv_x1, &uv_y1, &uv_x2, &uv_y2, &alpha, &aabitmap, &angle))
 			return ade_set_error(L, "b", false);
 
 		idx = Script_system.LoadBm(s);
@@ -1389,7 +1391,7 @@ ADE_FUNC(drawImage,
 	{
 		texture_h* th = nullptr;
 		if (!ade_get_args(L,
-				"o|iiiifffffb",
+				"o|iiiifffffbf",
 				l_Texture.GetPtr(&th),
 				&x1,
 				&y1,
@@ -1400,7 +1402,8 @@ ADE_FUNC(drawImage,
 				&uv_x2,
 				&uv_y2,
 				&alpha,
-				&aabitmap))
+				&aabitmap,
+				&angle))
 			return ade_set_error(L, "b", false);
 
 		if (!th->isValid()) {
@@ -1427,9 +1430,9 @@ ADE_FUNC(drawImage,
 	bitmap_rect_list brl = bitmap_rect_list(x1, y1, w, h, uv_x1, uv_y1, uv_x2, uv_y2);
 
 	if (aabitmap) {
-		gr_aabitmap_list(&brl, 1, GR_RESIZE_NONE);
+		gr_aabitmap_list(&brl, 1, GR_RESIZE_NONE, angle);
 	} else {
-		gr_bitmap_list(&brl, 1, GR_RESIZE_NONE);
+		gr_bitmap_list(&brl, 1, GR_RESIZE_NONE, angle);
 	}
 
 	return ADE_RETURN_TRUE;
