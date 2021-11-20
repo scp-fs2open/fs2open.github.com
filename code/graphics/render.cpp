@@ -1054,7 +1054,7 @@ void gr_rect(int x, int y, int w, int h, int resize_mode, float angle) {
 		float offsetX = x + w / 2.0f;
 		float offsetY = y + h / 2.0f;
 		path->translate(offsetX, offsetY);
-		path->rotate(fl_radians(angle));
+		path->rotate(angle);
 		path->translate(-offsetX, -offsetY);
 	}
 	path->rectangle(i2fl(x), i2fl(y), i2fl(w), i2fl(h));
