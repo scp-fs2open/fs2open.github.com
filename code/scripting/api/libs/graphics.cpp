@@ -664,7 +664,7 @@ ADE_FUNC(drawPolygon,
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(drawRectangle, l_Graphics, "number X1, number Y1, number X2, number Y2, [boolean Filled=true, number angle=0.0]", "Draws a rectangle with CurrentColor", nullptr, nullptr)
+ADE_FUNC(drawRectangle, l_Graphics, "number X1, number Y1, number X2, number Y2, [boolean Filled=true, number angle=0.0]", "Draws a rectangle with CurrentColor. May be rotated by passing the angle parameter in radians.", nullptr, nullptr)
 {
 	if(!Gr_inited)
 		return ADE_RETURN_NIL;
@@ -687,22 +687,21 @@ ADE_FUNC(drawRectangle, l_Graphics, "number X1, number Y1, number X2, number Y2,
 			float centerX = (x1 + x2) / 2.0f;
 			float centerY = (y1 + y2) / 2.0f;
 
-			float rad = fl_radians(a);
 			
 
 			//We need to calculate each point individually due to the rotation, as they won't always align horizontally and vertically. 
 			
-			float AX = cosf(rad) * (x1 - centerX) - sinf(rad) * (y1 - centerY) + centerX;
-			float AY = sinf(rad) * (x1 - centerX) + cosf(rad) * (y1 - centerY) + centerY;
+			float AX = cosf(a) * (x1 - centerX) - sinf(a) * (y1 - centerY) + centerX;
+			float AY = sinf(a) * (x1 - centerX) + cosf(a) * (y1 - centerY) + centerY;
 			
-			float BX = cosf(rad) * (x2 - centerX) - sinf(rad) * (y1 - centerY) + centerX;
-			float BY = sinf(rad) * (x2 - centerX) + cosf(rad) * (y1 - centerY) + centerY;
+			float BX = cosf(a) * (x2 - centerX) - sinf(a) * (y1 - centerY) + centerX;
+			float BY = sinf(a) * (x2 - centerX) + cosf(a) * (y1 - centerY) + centerY;
 
-			float CX = cosf(rad) * (x2 - centerX) - sinf(rad) * (y2 - centerY) + centerX;
-			float CY = sinf(rad) * (x2 - centerX) + cosf(rad) * (y2 - centerY) + centerY;
+			float CX = cosf(a) * (x2 - centerX) - sinf(a) * (y2 - centerY) + centerX;
+			float CY = sinf(a) * (x2 - centerX) + cosf(a) * (y2 - centerY) + centerY;
 			
-			float DX = cosf(rad) * (x1 - centerX) - sinf(rad) * (y2 - centerY) + centerX;
-			float DY = sinf(rad) * (x1 - centerX) + cosf(rad) * (y2 - centerY) + centerY;
+			float DX = cosf(a) * (x1 - centerX) - sinf(a) * (y2 - centerY) + centerX;
+			float DY = sinf(a) * (x1 - centerX) + cosf(a) * (y2 - centerY) + centerY;
 
 
 			gr_line(fl2i(AX), fl2i(AY), fl2i(BX), fl2i(BY), GR_RESIZE_NONE);
