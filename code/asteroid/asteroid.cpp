@@ -219,12 +219,12 @@ static bool asteroid_in_inner_bound(asteroid_field *asfieldp, vec3d *pos, float 
 		(pos->xyz.z > asfieldp->inner_min_bound.xyz.z - delta) && (pos->xyz.z < asfieldp->inner_max_bound.xyz.z + delta);
 }
 
-static bool asteroid_ship_is_inside_field(asteroid_field* asfieldp, vec3d* pos, float radius) {
+static bool asteroid_is_ship_inside_field(asteroid_field* asfieldp, vec3d* pos, float radius) {
 
 	radius *= 2.0f;
 
-	return pos->xyz.x + radius > Asteroid_field.min_bound.xyz.x && pos->xyz.x - radius < Asteroid_field.max_bound.xyz.x&&
-		   pos->xyz.y + radius > Asteroid_field.min_bound.xyz.y && pos->xyz.y - radius < Asteroid_field.max_bound.xyz.y&&
+	return pos->xyz.x + radius > Asteroid_field.min_bound.xyz.x && pos->xyz.x - radius < Asteroid_field.max_bound.xyz.x &&
+		   pos->xyz.y + radius > Asteroid_field.min_bound.xyz.y && pos->xyz.y - radius < Asteroid_field.max_bound.xyz.y &&
 	       pos->xyz.z + radius > Asteroid_field.min_bound.xyz.z && pos->xyz.z - radius < Asteroid_field.max_bound.xyz.z &&
 		   !asteroid_in_inner_bound(asfieldp, pos, radius);
 }
@@ -783,14 +783,15 @@ static void maybe_throw_asteroid()
 
 	for (asteroid_target& target : Asteroid_targets) {
 		if (!timestamp_elapsed(target.throw_stamp))
-			return;
+			continue;
 
 		object* target_objp = &Objects[target.objnum];
-		if (!asteroid_ship_is_inside_field(&Asteroid_field, &target_objp->pos, target_objp->radius))
-			return;
-
-		if (target.incoming_asteroids >= The_mission.ai_profile->max_incoming_asteroids[Game_skill_level])
-			return;
+		if (!asteroid_is_ship_inside_field(&Asteroid_field, &target_objp->pos, target_objp->radius))
+			continue;
+		
+		// This should've been greater equal, but alas...
+		if (target.incoming_asteroids > The_mission.ai_profile->max_incoming_asteroids[Game_skill_level])
+			continue;
 
 		nprintf(("AI", "Incoming asteroids to %s: %i\n", Ships[target_objp->instance].ship_name, target.incoming_asteroids));
 
@@ -2079,7 +2080,7 @@ static int set_asteroid_throw_objnum()
 		ship_objp = &Objects[so->objnum];
 
 		if (Ship_info[Ships[ship_objp->instance].ship_info_index].is_big_or_huge()) {
-			if (asteroid_ship_is_inside_field(&Asteroid_field, &ship_objp->pos, ship_objp->radius))
+			if (asteroid_is_ship_inside_field(&Asteroid_field, &ship_objp->pos, ship_objp->radius))
 				return so->objnum;
 		}
 	}
