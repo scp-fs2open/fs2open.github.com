@@ -1194,12 +1194,6 @@ static void draw_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode, 
 	float sw = 0.1f;
 
 
-	float rad = 0;
-
-	if (angle != 0) {
-		rad = fl_radians(angle);
-	}
-
 	for (int i = 0; i < n_bm; i++) {
 		// stuff coords
 		
@@ -1218,8 +1212,8 @@ static void draw_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode, 
 		vertex* V = &vert_list[i * 6];
 		
 		if (angle != 0.f) {
-			V->screen.xyw.x = cosf(rad) * (b->x - centerX) - sinf(rad) * (b->y - centerY) + centerX;
-			V->screen.xyw.y = sinf(rad) * (b->x - centerX) + cosf(rad) * (b->y - centerY) + centerY;
+			V->screen.xyw.x = cosf(angle) * (b->x - centerX) - sinf(angle) * (b->y - centerY) + centerX;
+			V->screen.xyw.y = sinf(angle) * (b->x - centerX) + cosf(angle) * (b->y - centerY) + centerY;
 		}
 		else {			
 			V->screen.xyw.x = (float)b->x;
@@ -1234,8 +1228,8 @@ static void draw_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode, 
 
 		V++;
 		if (angle != 0.f) {
-			V->screen.xyw.x = cosf(rad) * (b->x + b->w - centerX) - sinf(rad) * (b->y - centerY) + centerX;
-			V->screen.xyw.y = sinf(rad) * (b->x + b->w - centerX) + cosf(rad) * (b->y - centerY) + centerY;
+			V->screen.xyw.x = cosf(angle) * (b->x + b->w - centerX) - sinf(angle) * (b->y - centerY) + centerX;
+			V->screen.xyw.y = sinf(angle) * (b->x + b->w - centerX) + cosf(angle) * (b->y - centerY) + centerY;
 		}
 		else {
 			V->screen.xyw.x = (float)(b->x + b->w);
@@ -1250,8 +1244,8 @@ static void draw_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode, 
 
 		V++;
 		if (angle != 0.f) {
-			V->screen.xyw.x = cosf(rad) * (b->x + b->w - centerX) - sinf(rad) * (b->y + b->h - centerY) + centerX;
-			V->screen.xyw.y = sinf(rad) * (b->x + b->w - centerX) + cosf(rad) * (b->y + b->h - centerY) + centerY;
+			V->screen.xyw.x = cosf(angle) * (b->x + b->w - centerX) - sinf(angle) * (b->y + b->h - centerY) + centerX;
+			V->screen.xyw.y = sinf(angle) * (b->x + b->w - centerX) + cosf(angle) * (b->y + b->h - centerY) + centerY;
 		}
 		else {
 			V->screen.xyw.x = (float)(b->x + b->w);
@@ -1267,8 +1261,8 @@ static void draw_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode, 
 		// tri two
 		V++;
 		if (angle != 0.f) {
-			V->screen.xyw.x = cosf(rad) * (b->x - centerX) - sinf(rad) * (b->y - centerY) + centerX;
-			V->screen.xyw.y = sinf(rad) * (b->x - centerX) + cosf(rad) * (b->y - centerY) + centerY;
+			V->screen.xyw.x = cosf(angle) * (b->x - centerX) - sinf(angle) * (b->y - centerY) + centerX;
+			V->screen.xyw.y = sinf(angle) * (b->x - centerX) + cosf(angle) * (b->y - centerY) + centerY;
 		}
 		else {			
 			V->screen.xyw.x = (float)b->x;
@@ -1283,8 +1277,8 @@ static void draw_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode, 
 
 		V++;
 		if (angle != 0.f) {
-			V->screen.xyw.x = cosf(rad) * (b->x + b->w - centerX) - sinf(rad) * (b->y + b->h - centerY) + centerX;
-			V->screen.xyw.y = sinf(rad) * (b->x + b->w - centerX) + cosf(rad) * (b->y + b->h - centerY) + centerY;
+			V->screen.xyw.x = cosf(angle) * (b->x + b->w - centerX) - sinf(angle) * (b->y + b->h - centerY) + centerX;
+			V->screen.xyw.y = sinf(angle) * (b->x + b->w - centerX) + cosf(angle) * (b->y + b->h - centerY) + centerY;
 		}
 		else {
 			V->screen.xyw.x = (float)(b->x + b->w);
@@ -1299,8 +1293,8 @@ static void draw_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode, 
 
 		V++;
 		if (angle != 0.f) {
-			V->screen.xyw.x = cosf(rad) * (b->x - centerX) - sinf(rad) * (b->y + b->h - centerY) + centerX;
-			V->screen.xyw.y = sinf(rad) * (b->x - centerX) + cosf(rad) * (b->y + b->h - centerY) + centerY;
+			V->screen.xyw.x = cosf(angle) * (b->x - centerX) - sinf(angle) * (b->y + b->h - centerY) + centerX;
+			V->screen.xyw.y = sinf(angle) * (b->x - centerX) + cosf(angle) * (b->y + b->h - centerY) + centerY;
 		}
 		else {
 			V->screen.xyw.x = (float)b->x;

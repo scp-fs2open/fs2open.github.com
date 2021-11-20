@@ -1357,7 +1357,7 @@ ADE_FUNC(drawImage,
 	"The UV variables specify the UV value for each corner of the image. "
 	"In UV coordinates, (0,0) is the top left of the image; (1,1) is the lower right. If aaImage is true, image needs "
 	"to be monochrome and will be drawn tinted with the currently active color."
-	"The angle variable can be used to rotate the image, by degrees.",
+	"The angle variable can be used to rotate the image in radians.",
 	"boolean",
 	"Whether image was drawn")
 {
