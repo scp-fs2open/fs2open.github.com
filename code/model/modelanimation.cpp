@@ -35,13 +35,17 @@ namespace animation {
 		
 		if (applyOnly) {
 			for (const auto& animation : m_submodelAnimation) {
-				ModelAnimationData<> base = animation->s_initialData.at({ pmi->id, animation->m_submodel });
-				ModelAnimationData<true>& previousDelta = (*applyBuffer)[animation->m_submodel].second;
-				(*applyBuffer)[animation->m_submodel].first = animation.get();
+				std::pair<int,int> keypair = {pmi->id, animation->m_submodel};
 
-				base.applyDelta(previousDelta);
-				ModelAnimationData<true> delta = animation->play(instanceData.time, instanceData.time, ModelAnimationDirection::FWD, pmi, base, true);
-				previousDelta.applyDelta(delta);
+				if(animation->s_initialData.count(keypair)>0){
+					ModelAnimationData<> base =  animation->s_initialData.at(keypair);
+					ModelAnimationData<true>& previousDelta = (*applyBuffer)[animation->m_submodel].second;
+					(*applyBuffer)[animation->m_submodel].first = animation.get();
+
+					base.applyDelta(previousDelta);
+					ModelAnimationData<true> delta = animation->play(instanceData.time, instanceData.time, ModelAnimationDirection::FWD, pmi, base, true);
+					previousDelta.applyDelta(delta);
+				}
 			}
 
 			return instanceData.state;
@@ -112,9 +116,9 @@ namespace animation {
 			}
 
 			for (const auto& animation : m_submodelAnimation) {
-				auto b = animation->s_initialData.find({ pmi->id, animation->m_submodel });
-				if(b != animation->s_initialData.end()){
-					ModelAnimationData<> base = animation->s_initialData.at({ pmi->id, animation->m_submodel });
+				std::pair<int,int> keypair = {pmi->id, animation->m_submodel};
+				if(animation->s_initialData.count(keypair)>0){
+					ModelAnimationData<> base = animation->s_initialData.at(keypair);
 					ModelAnimationData<true>& previousDelta = (*applyBuffer)[animation->m_submodel].second;
 					(*applyBuffer)[animation->m_submodel].first = animation.get();
 
@@ -139,13 +143,16 @@ namespace animation {
 			}
 
 			for (const auto& animation : m_submodelAnimation) {
-				ModelAnimationData<> base = animation->s_initialData.at({ pmi->id, animation->m_submodel });
-				ModelAnimationData<true>& previousDelta = (*applyBuffer)[animation->m_submodel].second;
-				(*applyBuffer)[animation->m_submodel].first = animation.get();
+				std::pair<int,int> keypair = {pmi->id, animation->m_submodel};
+				if(animation->s_initialData.count(keypair)>0){
+					ModelAnimationData<> base = animation->s_initialData.at(keypair);
+					ModelAnimationData<true>& previousDelta = (*applyBuffer)[animation->m_submodel].second;
+					(*applyBuffer)[animation->m_submodel].first = animation.get();
 
-				base.applyDelta(previousDelta);
-				ModelAnimationData<true> delta = animation->play(instanceData.time, prevTime, ModelAnimationDirection::RWD, pmi, base);
-				previousDelta.applyDelta(delta);
+					base.applyDelta(previousDelta);
+					ModelAnimationData<true> delta = animation->play(instanceData.time, prevTime, ModelAnimationDirection::RWD, pmi, base);
+					previousDelta.applyDelta(delta);
+				}
 			}
 
 			break;
