@@ -37,7 +37,7 @@ namespace animation {
 			for (const auto& animation : m_submodelAnimation) {
 				std::pair<int,int> keypair = {pmi->id, animation->m_submodel};
 
-				if(animation->s_initialData.count(keypair)>0){
+				if(animation->s_initialData.count(keypair) > 0){
 					ModelAnimationData<> base =  animation->s_initialData.at(keypair);
 					ModelAnimationData<true>& previousDelta = (*applyBuffer)[animation->m_submodel].second;
 					(*applyBuffer)[animation->m_submodel].first = animation.get();
@@ -117,7 +117,7 @@ namespace animation {
 
 			for (const auto& animation : m_submodelAnimation) {
 				std::pair<int,int> keypair = {pmi->id, animation->m_submodel};
-				if(animation->s_initialData.count(keypair)>0){
+				if(animation->s_initialData.count(keypair) > 0){
 					ModelAnimationData<> base = animation->s_initialData.at(keypair);
 					ModelAnimationData<true>& previousDelta = (*applyBuffer)[animation->m_submodel].second;
 					(*applyBuffer)[animation->m_submodel].first = animation.get();
@@ -144,7 +144,7 @@ namespace animation {
 
 			for (const auto& animation : m_submodelAnimation) {
 				std::pair<int,int> keypair = {pmi->id, animation->m_submodel};
-				if(animation->s_initialData.count(keypair)>0){
+				if(animation->s_initialData.count(keypair) > 0){
 					ModelAnimationData<> base = animation->s_initialData.at(keypair);
 					ModelAnimationData<true>& previousDelta = (*applyBuffer)[animation->m_submodel].second;
 					(*applyBuffer)[animation->m_submodel].first = animation.get();
