@@ -976,19 +976,19 @@ int model_render_determine_detail(float depth, int  /*obj_num*/, int model_num, 
 
 void model_render_buffers(model_draw_list* scene, model_material *rendering_material, model_render_params* interp, vertex_buffer *buffer, polymodel *pm, int mn, int detail_level, uint tmap_flags)
 {
-	bsp_info *model = NULL;
+	bsp_info *submodel = nullptr;
 	const uint model_flags = interp->get_model_flags();
 	const uint debug_flags = interp->get_debug_flags();
 	const int obj_num = interp->get_object_number();
 
-	Assert(buffer != NULL);
+	Assert(buffer != nullptr);
 	Assert(detail_level >= 0);
 
 	if ( (mn >= 0) && (mn < pm->n_models) ) {
-		model = &pm->submodel[mn];
+		submodel = &pm->submodel[mn];
 	}
 
-	bool render_as_thruster = (model != NULL) && model->is_thruster && (model_flags & MR_SHOW_THRUSTERS);
+	bool render_as_thruster = (submodel != nullptr) && submodel->flags[Model::Submodel_flags::Is_thruster] && (model_flags & MR_SHOW_THRUSTERS);
 
 	vec3d scale;
 
@@ -1265,7 +1265,7 @@ void model_render_children_buffers(model_draw_list* scene, model_material *rende
 
 	const uint model_flags = interp->get_model_flags();
 
-	if (sm->is_thruster) {
+	if (sm->flags[Model::Submodel_flags::Is_thruster]) {
 		if ( !( model_flags & MR_SHOW_THRUSTERS ) ) {
 			return;
 		}
@@ -1309,14 +1309,14 @@ void model_render_children_buffers(model_draw_list* scene, model_material *rende
 	i = sm->first_child;
 
 	while ( i >= 0 ) {
-		if ( !pm->submodel[i].is_thruster ) {
+		if ( !pm->submodel[i].flags[Model::Submodel_flags::Is_thruster] ) {
 			model_render_children_buffers( scene, rendering_material, interp, pm, pmi, i, detail_level, tmap_flags, trans_buffer );
 		}
 
 		i = pm->submodel[i].next_sibling;
 	}
 
-	if ( sm->is_thruster ) {
+	if ( sm->flags[Model::Submodel_flags::Is_thruster] ) {
 		rendering_material->set_lighting(true);
 	}
 
@@ -1444,14 +1444,14 @@ bool model_render_check_detail_box(vec3d *view_pos, polymodel *pm, int submodel_
 	bsp_info *model = &pm->submodel[submodel_num];
 
 	float box_scale = model_render_determine_box_scale();
-	if (model->do_not_scale_detail_distances) {
+	if (model->flags[Model::Submodel_flags::Do_not_scale_detail_distances]) {
 		box_scale = 1.0f;
 	}
 
 	if ( !( flags & MR_FULL_DETAIL ) && model->use_render_box ) {
 		vec3d box_min, box_max, offset;
 
-		if (model->use_render_box_offset) {
+		if (model->flags[Model::Submodel_flags::Use_render_box_offset]) {
 			offset = model->render_box_offset;
 		} else {
 			model_find_submodel_offset(&offset, pm, submodel_num);
@@ -1471,7 +1471,7 @@ bool model_render_check_detail_box(vec3d *view_pos, polymodel *pm, int submodel_
 		// TODO: doesn't consider submodel rotations yet -zookeeper
 		vec3d offset;
 
-		if (model->use_render_sphere_offset) {
+		if (model->flags[Model::Submodel_flags::Use_render_sphere_offset]) {
 			offset = model->render_sphere_offset;
 		} else {
 			model_find_submodel_offset(&offset, pm, submodel_num);
@@ -1644,7 +1644,7 @@ void model_render_glowpoint(int point_num, vec3d *pos, matrix *orient, glow_poin
 	vec3d submodel_static_offset; // The associated submodel's static offset in the ship's frame of reference
 	bool submodel_rotation = false;
 
-	if ( bank->submodel_parent > 0 && pm->submodel[bank->submodel_parent].can_move && shipp != NULL ) {
+	if ( bank->submodel_parent > 0 && pm->submodel[bank->submodel_parent].flags[Model::Submodel_flags::Can_move] && shipp != nullptr ) {
 		model_find_submodel_offset(&submodel_static_offset, pm, bank->submodel_parent);
 
 		submodel_rotation = true;
@@ -2118,7 +2118,7 @@ void model_queue_render_thrusters(model_render_params *interp, polymodel *pm, in
 		// set the the necessary submodel instance info needed here. The second
 		// condition is thus a hack to disable the feature while in the lab, and
 		// can be removed if the lab is re-structured accordingly. -zookeeper
-		if ( bank->submodel_num > -1 && pm->submodel[bank->submodel_num].can_move && (gameseq_get_state_idx(GS_STATE_LAB) == -1) ) {
+		if ( bank->submodel_num > -1 && pm->submodel[bank->submodel_num].flags[Model::Submodel_flags::Can_move] && (gameseq_get_state_idx(GS_STATE_LAB) == -1) ) {
 			model_find_submodel_offset(&submodel_static_offset, pm, bank->submodel_num);
 
 			submodel_rotation = true;
@@ -2821,7 +2821,7 @@ void model_render_queue(model_render_params* interp, model_draw_list* scene, int
 	i = pm->submodel[pm->detail[detail_level]].first_child;
 
 	while( i >= 0 )	{
-		if ( !pm->submodel[i].is_thruster ) {
+		if ( !pm->submodel[i].flags[Model::Submodel_flags::Is_thruster] ) {
 			model_render_children_buffers( scene, &rendering_material, interp, pm, pmi, i, detail_level, tmap_flags, trans_buffer );
 		} else {
 			draw_thrusters = true;
@@ -2858,7 +2858,7 @@ void model_render_queue(model_render_params* interp, model_draw_list* scene, int
 		i = pm->submodel[pm->detail[detail_level]].first_child;
 
 		while( i >= 0 )	{
-			if ( !pm->submodel[i].is_thruster ) {
+			if ( !pm->submodel[i].flags[Model::Submodel_flags::Is_thruster] ) {
 				model_render_children_buffers( scene, &rendering_material, interp, pm, pmi, i, detail_level, tmap_flags, trans_buffer );
 			}
 
@@ -2879,7 +2879,7 @@ void model_render_queue(model_render_params* interp, model_draw_list* scene, int
 		trans_buffer = false;
 
 		while( i >= 0 ) {
-			if (pm->submodel[i].is_thruster) {
+			if (pm->submodel[i].flags[Model::Submodel_flags::Is_thruster]) {
 				model_render_children_buffers( scene, &rendering_material, interp, pm, pmi, i, detail_level, tmap_flags, trans_buffer );
 			}
 			i = pm->submodel[i].next_sibling;

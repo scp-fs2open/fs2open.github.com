@@ -664,7 +664,7 @@ ADE_FUNC(drawPolygon,
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(drawRectangle, l_Graphics, "number X1, number Y1, number X2, number Y2, [boolean Filled=true, number angle=0.0]", "Draws a rectangle with CurrentColor", nullptr, nullptr)
+ADE_FUNC(drawRectangle, l_Graphics, "number X1, number Y1, number X2, number Y2, [boolean Filled=true, number angle=0.0]", "Draws a rectangle with CurrentColor. May be rotated by passing the angle parameter in radians.", nullptr, nullptr)
 {
 	if(!Gr_inited)
 		return ADE_RETURN_NIL;
@@ -687,22 +687,21 @@ ADE_FUNC(drawRectangle, l_Graphics, "number X1, number Y1, number X2, number Y2,
 			float centerX = (x1 + x2) / 2.0f;
 			float centerY = (y1 + y2) / 2.0f;
 
-			float rad = fl_radians(a);
 			
 
 			//We need to calculate each point individually due to the rotation, as they won't always align horizontally and vertically. 
 			
-			float AX = cosf(rad) * (x1 - centerX) - sinf(rad) * (y1 - centerY) + centerX;
-			float AY = sinf(rad) * (x1 - centerX) + cosf(rad) * (y1 - centerY) + centerY;
+			float AX = cosf(a) * (x1 - centerX) - sinf(a) * (y1 - centerY) + centerX;
+			float AY = sinf(a) * (x1 - centerX) + cosf(a) * (y1 - centerY) + centerY;
 			
-			float BX = cosf(rad) * (x2 - centerX) - sinf(rad) * (y1 - centerY) + centerX;
-			float BY = sinf(rad) * (x2 - centerX) + cosf(rad) * (y1 - centerY) + centerY;
+			float BX = cosf(a) * (x2 - centerX) - sinf(a) * (y1 - centerY) + centerX;
+			float BY = sinf(a) * (x2 - centerX) + cosf(a) * (y1 - centerY) + centerY;
 
-			float CX = cosf(rad) * (x2 - centerX) - sinf(rad) * (y2 - centerY) + centerX;
-			float CY = sinf(rad) * (x2 - centerX) + cosf(rad) * (y2 - centerY) + centerY;
+			float CX = cosf(a) * (x2 - centerX) - sinf(a) * (y2 - centerY) + centerX;
+			float CY = sinf(a) * (x2 - centerX) + cosf(a) * (y2 - centerY) + centerY;
 			
-			float DX = cosf(rad) * (x1 - centerX) - sinf(rad) * (y2 - centerY) + centerX;
-			float DY = sinf(rad) * (x1 - centerX) + cosf(rad) * (y2 - centerY) + centerY;
+			float DX = cosf(a) * (x1 - centerX) - sinf(a) * (y2 - centerY) + centerX;
+			float DY = sinf(a) * (x1 - centerX) + cosf(a) * (y2 - centerY) + centerY;
 
 
 			gr_line(fl2i(AX), fl2i(AY), fl2i(BX), fl2i(BY), GR_RESIZE_NONE);
@@ -1352,11 +1351,12 @@ ADE_FUNC(loadTexture, l_Graphics, "string Filename, [boolean LoadIfAnimation, bo
 ADE_FUNC(drawImage,
 	l_Graphics,
 	"string|texture fileNameOrTexture, [number X1=0, number Y1=0, number X2, number Y2, number UVX1 = 0.0, number UVY1 "
-	"= 0.0, number UVX2=1.0, number UVY2=1.0, number alpha=1.0, boolean aaImage = false]",
+	"= 0.0, number UVX2=1.0, number UVY2=1.0, number alpha=1.0, boolean aaImage = false, number angle = 0.0]",
 	"Draws an image file or texture. Any image extension passed will be ignored."
 	"The UV variables specify the UV value for each corner of the image. "
 	"In UV coordinates, (0,0) is the top left of the image; (1,1) is the lower right. If aaImage is true, image needs "
-	"to be monochrome and will be drawn tinted with the currently active color.",
+	"to be monochrome and will be drawn tinted with the currently active color."
+	"The angle variable can be used to rotate the image in radians.",
 	"boolean",
 	"Whether image was drawn")
 {
@@ -1374,11 +1374,12 @@ ADE_FUNC(drawImage,
 	float uv_y2=1.0f;
 	float alpha=1.0f;
 	bool aabitmap = false;
+	float angle = 0.f;
 
 	if(lua_isstring(L, 1))
 	{
 		const char* s = nullptr;
-		if (!ade_get_args(L, "s|iiiifffffb", &s, &x1, &y1, &x2, &y2, &uv_x1, &uv_y1, &uv_x2, &uv_y2, &alpha, &aabitmap))
+		if (!ade_get_args(L, "s|iiiifffffbf", &s, &x1, &y1, &x2, &y2, &uv_x1, &uv_y1, &uv_x2, &uv_y2, &alpha, &aabitmap, &angle))
 			return ade_set_error(L, "b", false);
 
 		idx = Script_system.LoadBm(s);
@@ -1390,7 +1391,7 @@ ADE_FUNC(drawImage,
 	{
 		texture_h* th = nullptr;
 		if (!ade_get_args(L,
-				"o|iiiifffffb",
+				"o|iiiifffffbf",
 				l_Texture.GetPtr(&th),
 				&x1,
 				&y1,
@@ -1401,7 +1402,8 @@ ADE_FUNC(drawImage,
 				&uv_x2,
 				&uv_y2,
 				&alpha,
-				&aabitmap))
+				&aabitmap,
+				&angle))
 			return ade_set_error(L, "b", false);
 
 		if (!th->isValid()) {
@@ -1428,9 +1430,9 @@ ADE_FUNC(drawImage,
 	bitmap_rect_list brl = bitmap_rect_list(x1, y1, w, h, uv_x1, uv_y1, uv_x2, uv_y2);
 
 	if (aabitmap) {
-		gr_aabitmap_list(&brl, 1, GR_RESIZE_NONE);
+		gr_aabitmap_list(&brl, 1, GR_RESIZE_NONE, angle);
 	} else {
-		gr_bitmap_list(&brl, 1, GR_RESIZE_NONE);
+		gr_bitmap_list(&brl, 1, GR_RESIZE_NONE, angle);
 	}
 
 	return ADE_RETURN_TRUE;

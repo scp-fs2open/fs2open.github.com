@@ -1312,7 +1312,7 @@ int multi_oo_pack_data(net_player *pl, object *objp, ushort oo_flags, ubyte *dat
 			
 
 			// retrieve the submodel for rotation info.
-			if (subsystem->system_info->flags[Model::Subsystem_Flags::Rotates, Model::Subsystem_Flags::Dum_rotates]) {
+			if (subsystem->system_info->flags[Model::Subsystem_Flags::Rotates]) {
 				angles *angs_1 = nullptr;
 				angles *angs_2 = nullptr;
 				if (subsystem->submodel_instance_1) {
