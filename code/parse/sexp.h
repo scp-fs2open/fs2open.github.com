@@ -1119,6 +1119,8 @@ struct sexp_cached_data
 	int numeric_literal = 0;				// i.e. a number
 	int ship_registry_index = -1;			// because ship status is pretty common
 	void *pointer = nullptr;				// could be an IFF, a wing, a goal, or other unchanging reference
+	// jg18 - used to ensure sexp_container_CTEXT() is idempotent
+	char sexp_node_text[TOKEN_LENGTH] = "";
 
 	sexp_cached_data() = default;
 
@@ -1133,6 +1135,22 @@ struct sexp_cached_data
 	sexp_cached_data(int _sexp_node_data_type, int _numeric_literal, int _ship_registry_index)
 		: sexp_node_data_type(_sexp_node_data_type), numeric_literal(_numeric_literal), ship_registry_index(_ship_registry_index)
 	{}
+
+	sexp_cached_data(int _sexp_node_data_type, const SCP_string &_sexp_node_text)
+		: sexp_node_data_type(_sexp_node_data_type)
+	{
+		if (_sexp_node_text.empty()) {
+			Warning(LOCATION, "assigning empty string to SEXP node text");
+		} else if (_sexp_node_text.length() >= sizeof(sexp_node_text)) {
+			Warning(LOCATION,
+				"attempt to assign SEXP node text %s which is too long (limit %d)",
+				_sexp_node_text.c_str(),
+				(int)(sizeof(sexp_node_text) - 1));
+		}
+
+		const auto length = _sexp_node_text.copy(sexp_node_text, sizeof(sexp_node_text) - 1);
+		sexp_node_text[length] = 0;
+	}
 };
 
 typedef struct sexp_node {

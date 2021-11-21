@@ -45,10 +45,6 @@ const SCP_vector<list_modifier>& get_all_list_modifiers()
 // CTEXT()-related data
 namespace {
 	const char *Empty_str = "";
-	// Probably way too many now.I suspect someone will want to bump this later.Go ahead if you do, the choice was fairly arbitrary.
-	constexpr int NUM_CTEXT_RETURN_STRINGS = 100;
-	std::array<char[TOKEN_LENGTH], NUM_CTEXT_RETURN_STRINGS> Ctext_strings;
-	int Ctext_strings_last_index = 0;
 } // namespace
 
 
@@ -469,28 +465,18 @@ bool sexp_container_has_persistent_non_eternal_containers()
 	return false;
 }
 
-int container_push_return_string(const SCP_string& result)
-{
-	Assert(Ctext_strings_last_index >= 0);
-
-	// maybe reset if we've already used all the slots
-	if (Ctext_strings_last_index >= NUM_CTEXT_RETURN_STRINGS) {
-		Ctext_strings_last_index = 0;
-	}
-
-	strcpy_s(Ctext_strings[Ctext_strings_last_index], result.c_str());
-
-	// remember to increment the index so that next time the function is called it uses an empty slot. 
-	return Ctext_strings_last_index++;
-}
-
 const char *sexp_container_CTEXT(int node)
 {
+	if (Sexp_nodes[node].cache) {
+		Assert(Sexp_nodes[node].cache->sexp_node_data_type == OPF_CONTAINER_NAME);
+		return Sexp_nodes[node].cache->sexp_node_text;
+	}
+
 	auto *p_container = get_sexp_container(Sexp_nodes[node].text);
 
 	if (!p_container) {
-		Warning(LOCATION, "ctext_for_containers() called for %s, a container which does not exist!", Sexp_nodes[node].text);
-		log_printf(LOGFILE_EVENT_LOG, "ctext_for_containers called for %s, a container which does not exist!", Sexp_nodes[node].text);
+		Warning(LOCATION, "sexp_container_CTEXT() called for %s, a container which does not exist!", Sexp_nodes[node].text);
+		log_printf(LOGFILE_EVENT_LOG, "sexp_container_CTEXT() called for %s, a container which does not exist!", Sexp_nodes[node].text);
 		return Empty_str;
 	}
 
@@ -518,8 +504,10 @@ const char *sexp_container_CTEXT(int node)
 		}
 
 		if (result.front() != sexp_container::DELIM) {
-			const int result_index = container_push_return_string(result);
-			return Ctext_strings[result_index];
+			// cache result to preserve idempotency of CTEXT()
+			Assert(!Sexp_nodes[node].cache);
+			Sexp_nodes[node].cache = new sexp_cached_data(OPF_CONTAINER_NAME, result);
+			return Sexp_nodes[node].cache->sexp_node_text;
 		} else {
 			// we're dealing with a multidimentional container
 			node = CDR(node);
