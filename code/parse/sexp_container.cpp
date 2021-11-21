@@ -469,7 +469,9 @@ const char *sexp_container_CTEXT(int node)
 {
 	if (Sexp_nodes[node].cache) {
 		Assert(Sexp_nodes[node].cache->sexp_node_data_type == OPF_CONTAINER_NAME);
-		return Sexp_nodes[node].cache->sexp_node_text;
+		if (Sexp_nodes[node].cache->sexp_node_text_finalized) {
+			return Sexp_nodes[node].cache->sexp_node_text;
+		}
 	}
 
 	auto *p_container = get_sexp_container(Sexp_nodes[node].text);
@@ -507,6 +509,9 @@ const char *sexp_container_CTEXT(int node)
 			// cache result to preserve idempotency of CTEXT()
 			Assert(!Sexp_nodes[node].cache);
 			Sexp_nodes[node].cache = new sexp_cached_data(OPF_CONTAINER_NAME, result);
+			if (are_containers_modifiable()) {
+				Sexp_nodes[node].cache->sexp_node_text_finalized = true;
+			}
 			return Sexp_nodes[node].cache->sexp_node_text;
 		} else {
 			// we're dealing with a multidimentional container

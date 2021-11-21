@@ -1121,6 +1121,7 @@ struct sexp_cached_data
 	void *pointer = nullptr;				// could be an IFF, a wing, a goal, or other unchanging reference
 	// jg18 - used to ensure sexp_container_CTEXT() is idempotent
 	char sexp_node_text[TOKEN_LENGTH] = "";
+	bool sexp_node_text_finalized = false;
 
 	sexp_cached_data() = default;
 
