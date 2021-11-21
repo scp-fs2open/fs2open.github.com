@@ -3,6 +3,8 @@
 #include "network/multi.h"
 #include "network/multimsgs.h"
 #include "ship/ship.h"
+#include "utils/Random.h"
+
 
 extern float flFrametime;
 
@@ -12,6 +14,7 @@ namespace animation {
 		{ "auto reverse",				animation::Animation_Flags::Auto_Reverse,						true, false },
 		{ "reset at completion",		animation::Animation_Flags::Reset_at_completion,		        true, false },
 		{ "loop",						animation::Animation_Flags::Loop,						        true, false },
+		{ "random starting phase",		animation::Animation_Flags::Random_starting_phase,				true, false },
 	};
 
 	const size_t Num_animation_flags = sizeof(Animation_flags) / sizeof(flag_def_list_new<animation::Animation_Flags>);
@@ -56,6 +59,15 @@ namespace animation {
 
 			instanceData.duration = m_animation->getDuration(pmi->id);
 			instanceData.state = ModelAnimationState::RUNNING_FWD;
+
+			if (m_flags[Animation_Flags::Random_starting_phase]) {
+				instanceData.time = util::Random::next() * util::Random::INV_F_MAX_VALUE * instanceData.duration;
+				//Check if we might be on the way backwards
+				if (m_flags[Animation_Flags::Loop, Animation_Flags::Auto_Reverse] && !m_flags[Animation_Flags::Reset_at_completion] && util::Random::next(2) == 0) {
+					instanceData.state = ModelAnimationState::RUNNING_RWD;
+					break; //In this case, we must delay for a frame
+				}		
+			}
 
 			/* fall-thru */
 		case ModelAnimationState::RUNNING_FWD:
@@ -564,7 +576,8 @@ namespace animation {
 
 	void ModelAnimationSet::apply(polymodel_instance* pmi, const ModelAnimationSubmodelBuffer& applyBuffer) {
 		for (const auto& toApply : applyBuffer) {
-			toApply.first->copyToSubmodel(toApply.second.first, pmi);
+			if(toApply.second.second)
+				toApply.first->copyToSubmodel(toApply.second.first, pmi);
 		}
 	}
 
@@ -572,6 +585,7 @@ namespace animation {
 		for (const auto& submodel : m_submodels) {
 			ModelAnimationData<> base = submodel->getInitialData(pmi);
 			applyBuffer[submodel].first = base;
+			applyBuffer[submodel].second = false;
 		}
 	}
 

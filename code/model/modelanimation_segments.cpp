@@ -188,7 +188,6 @@ namespace animation {
 			//In Absolute mode we need to undo the previously applied rotation to make sure we actually end up at the target rotation despite having only a delta we output, as opposed to just overwriting the value
 			matrix unrotate, target;
 			const ModelAnimationData<>& submodel = base[m_submodel].first;
-			base[m_submodel].second = true;
 
 			vm_copy_transpose(&unrotate, &submodel.orientation);
 			vm_angles_2_matrix(&target, &m_targetAngle);
@@ -203,6 +202,7 @@ namespace animation {
 		data.orientation = m_instances.at(pmi_id).rot;
 
 		base[m_submodel].first.applyDelta(data);
+		base[m_submodel].second = true;
 	}
 
 	void ModelAnimationSegmentSetPHB::exchangeSubmodelPointers(ModelAnimationSet& replaceWith) {
@@ -302,7 +302,7 @@ namespace animation {
 				error_display(1, "Set Angle has no target submodel!");
 		}
 
-		auto segment = std::shared_ptr<ModelAnimationSegmentSetAngle>(new ModelAnimationSegmentSetAngle(submodel, angle));
+		auto segment = std::shared_ptr<ModelAnimationSegmentSetAngle>(new ModelAnimationSegmentSetAngle(submodel, fl_radians(angle)));
 
 		return segment;
 	}
@@ -330,7 +330,6 @@ namespace animation {
 		if (m_targetAngle.has()) { //If we have an angle specified, use it.
 			if (m_isAbsolute) {
 				const ModelAnimationData<>& submodel = base[m_submodel].first;
-				base[m_submodel].second = true;
 
 				matrix orientTransp, target, diff;
 				const angles& targetAngle = m_targetAngle;
