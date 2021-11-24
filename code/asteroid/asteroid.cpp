@@ -597,11 +597,13 @@ void asteroid_create_all()
 
 			// get a valid subtype
 			int subtype = Random::next(NUM_DEBRIS_POFS);
-			while (Asteroid_field.field_debris_type[subtype] == -1) {
-				subtype = (subtype + 1) % NUM_DEBRIS_POFS;
+			for (int i = 0; i < NUM_DEBRIS_POFS; i++) {
+				if (Asteroid_field.field_debris_type[subtype] == -1)
+					subtype = (subtype + 1) % NUM_DEBRIS_POFS;
 			}
 
-			asteroid_create(&Asteroid_field, ASTEROID_TYPE_LARGE, subtype);
+			if (subtype >= 0)
+				asteroid_create(&Asteroid_field, ASTEROID_TYPE_LARGE, subtype);
 		} else {
 			Assert(num_debris_types > 0);
 
@@ -766,20 +768,26 @@ static void asteroid_aim_at_target(object *objp, object *asteroid_objp, float de
 }
 
 /**
+* Sanitizes the Asteroid targets list removing ships that have died/become invalid etc
+*/
+static void sanitize_asteroid_targets_list() {
+	for (size_t i = 0; i < Asteroid_targets.size();) {
+		object* target_objp = &Objects[Asteroid_targets[i].objnum];
+		if (target_objp->type != OBJ_SHIP || target_objp->signature != Asteroid_targets[i].signature) {
+			Asteroid_targets[i] = Asteroid_targets.back();
+			Asteroid_targets.pop_back();
+		}
+		else  // if we needed to cull we should not advance because we just moved a new asteroid target into this spot
+			i++;
+	}
+}
+
+/**
  * Call once per frame to maybe throw some asteroids at one or more ships.
  *
  */
 static void maybe_throw_asteroid()
 {
-	//sanitize the list
-	for (size_t i = 0; i < Asteroid_targets.size();) {
-		object* target_objp = &Objects[Asteroid_targets[i].objnum];
-		if (target_objp->type == OBJ_NONE || target_objp->signature != Asteroid_targets[i].signature) {
-			Asteroid_targets[i] = Asteroid_targets.back();
-			Asteroid_targets.pop_back();
-		} else  // if we needed to cull we should not advance because we just moved a new asteroid target into this spot
-			i++;
-	}
 
 	for (asteroid_target& target : Asteroid_targets) {
 		if (!timestamp_elapsed(target.throw_stamp))
@@ -798,9 +806,14 @@ static void maybe_throw_asteroid()
 		target.throw_stamp = timestamp(1000 + 1200 * target.incoming_asteroids /(Game_skill_level+1));
 
 		int subtype = Random::next(NUM_DEBRIS_POFS);
+		for (int i = 0; i < NUM_DEBRIS_POFS; i++) {
+			if (Asteroid_field.field_debris_type[subtype] == -1)
+				subtype = (subtype + 1) % NUM_DEBRIS_POFS;
+		}
 
-		while (Asteroid_field.field_debris_type[subtype] == -1)
-			subtype = (subtype + 1) % NUM_DEBRIS_POFS;
+		// this really shouldn't happen but just in case...
+		if (subtype < 0)
+			return;
 
 		object *objp = asteroid_create(&Asteroid_field, ASTEROID_TYPE_LARGE, subtype);
 		if (objp != nullptr) {
@@ -2106,6 +2119,8 @@ void asteroid_frame()
 				asteroid_add_target(&Objects[objnum]);
 		}
 	} 
+
+	sanitize_asteroid_targets_list();
 
 	maybe_throw_asteroid();
 }

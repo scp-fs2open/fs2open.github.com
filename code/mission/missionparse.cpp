@@ -2446,11 +2446,10 @@ int parse_create_object_sub(p_object *p_objp)
 	}
 
 	// if this is an asteroid target, add it to the list
-	if (!Asteroid_target_ships.empty()) {
-		for (SCP_string& name : Asteroid_target_ships) {
-			if (strcmp(name.c_str(), shipp->ship_name) == 0) {
-				asteroid_add_target(&Objects[objnum]);
-			}
+	for (SCP_string& name : Asteroid_target_ships) {
+		if (stricmp(name.c_str(), shipp->ship_name) == 0) {
+			asteroid_add_target(&Objects[objnum]);
+			break;
 		}
 	}
 
