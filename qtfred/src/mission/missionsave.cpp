@@ -783,7 +783,7 @@ int CFred_mission_save::save_asteroid_fields()
 			save_vector(Asteroid_field.inner_max_bound);
 		}
 
-		if (!Asteroid_target_ships.is_empty()) {
+		if (!Asteroid_target_ships.empty()) {
 			if (optional_string_fred("$Asteroid Targets:")) {
 				parse_comments();
 				fout(" (");
