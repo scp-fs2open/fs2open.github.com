@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>fso::fred::dialogs::ShpSpecialStatsDialog</class>
- <widget class="QDialog" name="fso::fred::dialogs::ShpSpecialStatsDialog">
+ <class>fso::fred::dialogs::ShipSpecialStatsDialog</class>
+ <widget class="QDialog" name="fso::fred::dialogs::ShipSpecialStatsDialog">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -75,7 +75,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QSpinBox" name="oRadiusSpinbox"/>
+        <widget class="QSpinBox" name="oRadiusSpinBox"/>
        </item>
       </layout>
      </item>
@@ -163,7 +163,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QSpinBox" name="rollTimeSpinbox"/>
+        <widget class="QSpinBox" name="rollTimeSpinBox"/>
        </item>
       </layout>
      </item>
@@ -234,14 +234,34 @@
   <connection>
    <sender>buttonBox</sender>
    <signal>accepted()</signal>
-   <receiver>fso::fred::dialogs::ShpSpecialStatsDialog</receiver>
+   <receiver>fso::fred::dialogs::ShipSpecialStatsDialog</receiver>
    <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+   </hints>
   </connection>
   <connection>
    <sender>buttonBox</sender>
    <signal>rejected()</signal>
-   <receiver>fso::fred::dialogs::ShpSpecialStatsDialog</receiver>
+   <receiver>fso::fred::dialogs::ShipSpecialStatsDialog</receiver>
    <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+   </hints>
   </connection>
  </connections>
 </ui>
