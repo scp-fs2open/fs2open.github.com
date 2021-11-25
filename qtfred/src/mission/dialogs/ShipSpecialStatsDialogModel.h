@@ -11,7 +11,6 @@ namespace fso {
 				template <typename T>
 				void modify(T& a, const T& b);
 				bool _modified = false;
-				bool m_multi_edit;
 				int m_ship;
 
 				int num_selected_ships;
