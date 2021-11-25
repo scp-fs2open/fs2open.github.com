@@ -544,6 +544,11 @@ void asteroid_create_all()
 		return;
 	}
 
+	if (Asteroid_field.num_used_field_debris_types <= 0) {
+		Warning(LOCATION, "An asteroid field is enabled, but no asteroid types were enabled.");
+		return;
+	}
+
 	int max_asteroids = Asteroid_field.num_initial_asteroids; // * (1.0f - 0.1f*(MAX_DETAIL_LEVEL-Detail.asteroid_density)));
 
 	int num_debris_types = 0;
