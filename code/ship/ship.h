@@ -420,7 +420,6 @@ public:
 
 	//scaler for setting adjusted turret rof
 	float	rof_scaler;
-	float	turn_rate;
 
 	//Per-turret ownage settings - SUSHI
 	int turret_max_bomb_ownage; 
@@ -448,7 +447,7 @@ typedef struct ship_flag_name {
 	char flag_name[TOKEN_LENGTH];		// the name written to the mission file for its corresponding parse_object flag
 } ship_flag_name;
 
-#define MAX_SHIP_FLAG_NAMES					20
+#define MAX_SHIP_FLAG_NAMES					21
 extern ship_flag_name Ship_flag_names[];
 
 #define DEFAULT_SHIP_PRIMITIVE_SENSOR_RANGE		10000	// Goober5000
@@ -1610,7 +1609,7 @@ extern int ship_get_num_ships();
 extern void ship_cleanup(int shipnum, int cleanup_mode);
 
 // Goober5000
-extern void ship_destroy_instantly(object *ship_obj);
+extern void ship_destroy_instantly(object *ship_obj, bool with_debris = false);
 extern void ship_actually_depart(int shipnum, int method = SHIP_DEPARTED_WARP);
 
 extern const std::shared_ptr<scripting::Hook> OnShipDeathStartedHook;

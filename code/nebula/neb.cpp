@@ -113,9 +113,22 @@ float Neb2_awacs = -1.0f;
 float Neb2_fog_near_mult = 1.0f;
 float Neb2_fog_far_mult = 1.0f;
 
-
 // this is the percent of visibility at the fog far distance
 const float NEB_FOG_FAR_PCT = 0.1f;
+
+float Neb2_fog_visibility_trail = 1.0f;
+float Neb2_fog_visibility_thruster = 1.5f;
+float Neb2_fog_visibility_weapon = 1.3f;
+float Neb2_fog_visibility_shield = 1.2f;
+float Neb2_fog_visibility_glowpoint = 1.2f;
+float Neb2_fog_visibility_beam_const = 4.0f;
+float Neb2_fog_visibility_beam_scaled_factor = 0.1f;
+float Neb2_fog_visibility_particle_const = 1.0f;
+float Neb2_fog_visibility_particle_scaled_factor = 1.0f / 12.0f;
+float Neb2_fog_visibility_shockwave = 2.5f;
+float Neb2_fog_visibility_fireball_const = 1.2f;
+float Neb2_fog_visibility_fireball_scaled_factor = 1.0f / 12.0f;
+
 
 SCP_vector<poof> Neb2_poofs;
 

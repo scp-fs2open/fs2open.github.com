@@ -461,6 +461,7 @@ void dock_calculate_and_apply_whack_docked_object(vec3d* impulse, const vec3d* w
 // -----------------------
 
 // evaluate a certain function for all docked objects
+// The_Force:: If changed please change in QtFred's ShipInitialStatusDialogModel also
 void dock_evaluate_all_docked_objects(object *objp, dock_function_info *infop, void (*function)(object *, dock_function_info *))
 {
 	Assertion((objp != nullptr) && (infop != nullptr) && (function != nullptr),

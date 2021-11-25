@@ -1551,7 +1551,9 @@ void hud_do_lock_indicators(float frametime)
 			continue;
 		}
 
-		if ( !wip->wi_flags[Weapon::Info_Flags::Multilock_target_dead_subsys] && lock_slot->subsys != nullptr && lock_slot->subsys->current_hits <= 0.0f) {
+		// unless they've flagged the weapon otherwise, discard locks on dead subsystems that aren't the primary target
+		if ( !wip->wi_flags[Weapon::Info_Flags::Multilock_target_dead_subsys] && lock_slot->subsys != nullptr && Player_ai->targeted_subsys != lock_slot->subsys 
+			&& lock_slot->subsys->current_hits <= 0.0f) {
 			ship_clear_lock(lock_slot);
 			continue;
 		}

@@ -640,7 +640,6 @@ void model_copy_subsystems( int n_subsystems, model_subsystem *d_sp, model_subsy
 				dest->pnt = source->pnt;
 				dest->radius = source->radius;
 				dest->type = source->type;
-				dest->turn_rate = source->turn_rate;
 				dest->turret_gun_sobj = source->turret_gun_sobj;
 
                 strcpy_s(dest->name, source->name);
@@ -682,6 +681,11 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 
 	strcpy_s(lcdname, dname);
 	strlwr(lcdname);
+
+	bsp_info* submodelp = nullptr;
+	if (subsystemp->subobj_num >= 0) {
+		submodelp = &model_get(model_num)->submodel[subsystemp->subobj_num];
+	}
 
 	// check the name for its specific type
 	if ( strstr(lcdname, "engine") ) {
@@ -825,7 +829,30 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 
 		// CASE OF NORMAL CONTINUOUS ROTATION
 		else {
-			subsystemp->turn_rate = turn_rate;
+			if (submodelp) {
+				submodelp->default_turn_rate = turn_rate;
+			}
+		}
+
+		float turn_accel = 0.5f;
+		if (in(p, props, "$rotate_accel")) {
+			get_user_prop_value(p + 13, buf);
+
+			if (!stricmp(buf, "instant")) {
+				if (submodelp) {
+					submodelp->flags.set(Model::Submodel_flags::Instant_rotate_accel);
+				}
+				turn_accel = 0.0f;
+			} else {
+				turn_accel = static_cast<float>(atof(buf));
+				if (turn_accel < 0.0f) {
+					Warning(LOCATION, "Model %s, submodel %s, turn acceleration %f cannot be negative!", model_get(model_num)->filename, dname, turn_accel);
+					turn_accel *= -1;
+				}
+			}
+		}
+		if (submodelp) {
+			submodelp->default_turn_accel = turn_accel;
 		}
 	}
 }
@@ -989,7 +1016,7 @@ void create_vertex_buffer(polymodel *pm)
 
 	// figure out which vertices are transparent
 	for ( i = 0; i < pm->n_models; i++ ) {
-		if ( !pm->submodel[i].is_thruster ) {
+		if ( !pm->submodel[i].flags[Model::Submodel_flags::Is_thruster] ) {
 			interp_create_transparency_index_buffer(pm, i);
 		}
 	}
@@ -1549,9 +1576,8 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 						turn_rate = static_cast<float>(atof(buf));
 					}
 
-					sm->dumb_turn_rate = turn_rate;
-				} else {
-					sm->dumb_turn_rate = 0.0f;
+					sm->default_turn_rate = turn_rate;
+					sm->flags.set(Model::Submodel_flags::Instant_rotate_accel);
 				}
 
 				if ( sm->name[0] == '\0' ) {
@@ -1575,22 +1601,21 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 
 				// ---------- done with submodel movement (except for gun_rotation and sanity checks) ----------
 
-				sm->no_collisions = in(props, "$no_collisions");
+				sm->flags.set(Model::Submodel_flags::No_collisions, in(props, "$no_collisions"));
 
-				sm->nocollide_this_only = in(props, "$nocollide_this_only");
+				sm->flags.set(Model::Submodel_flags::Nocollide_this_only, in(props, "$nocollide_this_only"));
 
-				sm->collide_invisible = in(props, "$collide_invisible");
+				sm->flags.set(Model::Submodel_flags::Collide_invisible, in(props, "$collide_invisible"));
 
 				if (in(props, "$gun_rotation")) {
-					sm->gun_rotation = true;
-					sm->can_move = true;		// this is something of a special case because it's rotating without "rotating"
-				} else
-					sm->gun_rotation = false;
+					sm->flags.set(Model::Submodel_flags::Gun_rotation);
+					sm->flags.set(Model::Submodel_flags::Can_move);		// this is something of a special case because it's rotating without "rotating"
+				}
 
 				if (in(p, props, "$lod0_name"))
 					get_user_prop_value(p+10, sm->lod_name);
 
-				sm->attach_thrusters = in(props, "$attach_thrusters");
+				sm->flags.set(Model::Submodel_flags::Attach_thrusters, in(props, "$attach_thrusters"));
 
 				if (in(p, props, "$detail_box:")) {
 					p += 12;
@@ -1606,7 +1631,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 						while (*p != ',') p++;
 						sm->render_box_offset.xyz.z = (float)strtod(++p, (char **)nullptr);
 
-						sm->use_render_box_offset = true;
+						sm->flags.set(Model::Submodel_flags::Use_render_box_offset);
 					}
 
 					if (in(p, props, "$box_min:")) {
@@ -1635,7 +1660,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 
 					if (in(p, props, "$do_not_scale_distances")) {
 						p += 23;
-						sm->do_not_scale_detail_distances = true;
+						sm->flags.set(Model::Submodel_flags::Do_not_scale_detail_distances);
 					}
 				}
 
@@ -1661,14 +1686,14 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 						while (*p != ',') p++;
 						sm->render_sphere_offset.xyz.z = (float)strtod(++p, (char **)nullptr);
 
-						sm->use_render_sphere_offset = true;
+						sm->flags.set(Model::Submodel_flags::Use_render_sphere_offset);
 					} else {
 						sm->render_sphere_offset = vmd_zero_vector;
 					}
 
 					if (in(p, props, "$do_not_scale_distances")) {
 						p += 23;
-						sm->do_not_scale_detail_distances = true;
+						sm->flags.set(Model::Submodel_flags::Do_not_scale_detail_distances);
 					}
 				}
 
@@ -1773,9 +1798,9 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 
 				// Set the can_move field on submodels which are of a rotating type or which have such a parent somewhere down the hierarchy
 				if (sm->movement_type != MOVEMENT_TYPE_NONE) {
-					sm->can_move = true;
-				} else if (parent_sm && parent_sm->can_move) {
-					sm->can_move = true;
+					sm->flags.set(Model::Submodel_flags::Can_move);
+				} else if (parent_sm && parent_sm->flags[Model::Submodel_flags::Can_move]) {
+					sm->flags.set(Model::Submodel_flags::Can_move);
 				}
 
 				// ---------- done submodel rotation sanity checks ----------
@@ -1825,16 +1850,16 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 					}
 				}
 
-				sm->is_thruster = in(sm->name, "thruster");
+				sm->flags.set(Model::Submodel_flags::Is_thruster, in(sm->name, "thruster"));
 
 				// Genghis: if we have a thruster and none of the collision 
 				// properties were provided, then set "nocollide_this_only".
-				if (sm->is_thruster && !(sm->no_collisions) && !(sm->nocollide_this_only) && !(sm->collide_invisible) )
+				if (sm->flags[Model::Submodel_flags::Is_thruster] && !(sm->flags[Model::Submodel_flags::No_collisions, Model::Submodel_flags::Nocollide_this_only, Model::Submodel_flags::Collide_invisible]) )
 				{
-					sm->nocollide_this_only = true;
+					sm->flags.set(Model::Submodel_flags::Nocollide_this_only);
 				}
 
-				sm->is_damaged = in(sm->name, "-destroyed");
+				sm->flags.set(Model::Submodel_flags::Is_damaged, in(sm->name, "-destroyed"));
 
 				break;
 			}
@@ -2940,7 +2965,7 @@ int model_load(const  char *filename, int n_subsystems, model_subsystem *subsyst
 				mprintf(( "Found live debris model for '%s'\n", pm->submodel[i].name ));
 				Assert(pm->submodel[i].num_live_debris < MAX_LIVE_DEBRIS);
 				pm->submodel[i].live_debris[pm->submodel[i].num_live_debris++] = j;
-				pm->submodel[j].is_live_debris = 1;
+				pm->submodel[j].flags.set(Model::Submodel_flags::Is_live_debris);
 
 				// make sure live debris doesn't have a parent
 				pm->submodel[j].parent = -1;
@@ -2973,7 +2998,7 @@ int model_load(const  char *filename, int n_subsystems, model_subsystem *subsyst
 
 		for (j=0; j<pm->num_debris_objects;j++ )	{
 			if ( i == pm->debris_objects[j] )	{
-				sm1->is_damaged = true;
+				sm1->flags.set(Model::Submodel_flags::Is_damaged);
 			} 
 		}
 
@@ -3021,7 +3046,7 @@ int model_load(const  char *filename, int n_subsystems, model_subsystem *subsyst
 				dl2 = SCP_tolower(sm2->name[first_diff]) - 'a';
 
 				// Handle LODs named "detail0/1/2/etc" too (as opposed to "detaila/b/c/etc")
-				if (sm1->parent == -1 && sm2->parent == -1 && !sm1->is_damaged && !sm2->is_damaged && !sm1->is_live_debris && !sm2->is_live_debris) {
+				if (sm1->parent == -1 && sm2->parent == -1 && !sm1->flags[Model::Submodel_flags::Is_damaged, Model::Submodel_flags::Is_live_debris] && !sm2->flags[Model::Submodel_flags::Is_damaged, Model::Submodel_flags::Is_live_debris]) {
 					dl2 = dl2 - dl1;
 					dl1 = 0;
 				}
@@ -3051,7 +3076,7 @@ int model_load(const  char *filename, int n_subsystems, model_subsystem *subsyst
 	TRACE_SCOPE(tracing::ModelParseAllBSPTrees);
 
 	for (i = 0; i < pm->n_models; ++i) {
-		if (!(pm->submodel[i].nocollide_this_only || pm->submodel[i].no_collisions)) {
+		if (!pm->submodel[i].flags[Model::Submodel_flags::Nocollide_this_only, Model::Submodel_flags::No_collisions]) {
 			pm->submodel[i].collision_tree_index = model_create_bsp_collision_tree();
 			bsp_collision_tree* tree             = model_get_bsp_collision_tree(pm->submodel[i].collision_tree_index);
 			model_collide_parse_bsp(tree, pm->submodel[i].bsp_data, pm->version);
@@ -3122,7 +3147,7 @@ int model_create_instance(bool is_object, int model_num)
 		for (i = 0; i < pm->n_models; i++) {
 			if (pm->submodel[i].movement_type == MOVEMENT_TYPE_INTRINSIC) {
 				// note: dumb_turn_rate will be 0.0f for look_at
-				motion.add_submodel(i, &pmi->submodel[i], pm->submodel[i].dumb_turn_rate);
+				motion.add_submodel(i, &pmi->submodel[i], pm->submodel[i].default_turn_rate);
 			}
 		}
 
@@ -3309,7 +3334,7 @@ int model_get_parent_submodel_for_live_debris( int model_num, int live_debris_mo
 {
 	polymodel *pm = model_get(model_num);
 
-	Assert(pm->submodel[live_debris_model_num].is_live_debris == 1);
+	Assert(pm->submodel[live_debris_model_num].flags[Model::Submodel_flags::Is_live_debris]);
 
 	int mn;
 	bsp_info *child;
@@ -3794,26 +3819,33 @@ void submodel_rotate(bsp_info *sm, submodel_instance *smi)
 	smi->prev_angle = smi->cur_angle;
 	smi->canonical_prev_orient = smi->canonical_orient;
 
-	// probably send in a calculated desired turn rate
-	float diff = smi->desired_turn_rate - smi->current_turn_rate;
+	float delta;
 
-	float final_turn_rate;
-	if (diff > 0) {
-		final_turn_rate = smi->current_turn_rate + smi->turn_accel * flFrametime;
-		if (final_turn_rate > smi->desired_turn_rate) {
-			final_turn_rate = smi->desired_turn_rate;
-		}
-	} else if (diff < 0) {
-		final_turn_rate = smi->current_turn_rate - smi->turn_accel * flFrametime;
-		if (final_turn_rate < smi->desired_turn_rate) {
-			final_turn_rate = smi->desired_turn_rate;
-		}
+	if (sm->flags[Model::Submodel_flags::Instant_rotate_accel]) {
+		delta = smi->desired_turn_rate * flFrametime;
+		smi->current_turn_rate = smi->desired_turn_rate;
 	} else {
-		final_turn_rate = smi->desired_turn_rate;
-	}
+		// probably send in a calculated desired turn rate
+		float diff = smi->desired_turn_rate - smi->current_turn_rate;
 
-	float delta = (smi->current_turn_rate + final_turn_rate) * 0.5f * flFrametime;
-	smi->current_turn_rate = final_turn_rate;
+		float final_turn_rate;
+		if (diff > 0) {
+			final_turn_rate = smi->current_turn_rate + smi->turn_accel * flFrametime;
+			if (final_turn_rate > smi->desired_turn_rate) {
+				final_turn_rate = smi->desired_turn_rate;
+			}
+		} else if (diff < 0) {
+			final_turn_rate = smi->current_turn_rate - smi->turn_accel * flFrametime;
+			if (final_turn_rate < smi->desired_turn_rate) {
+				final_turn_rate = smi->desired_turn_rate;
+			}
+		} else {
+			final_turn_rate = smi->desired_turn_rate;
+		}
+
+		delta = (smi->current_turn_rate + final_turn_rate) * 0.5f * flFrametime;
+		smi->current_turn_rate = final_turn_rate;
+	}
 
 	// Apply rotation in the axis of movement
 	smi->cur_angle += delta;
@@ -4081,7 +4113,7 @@ void find_submodel_instance_point(vec3d *outpnt, const polymodel *pm, const poly
 
 		int parent_mn = pm->submodel[mn].parent;
 
-		if (pm->submodel[parent_mn].can_move) {
+		if (pm->submodel[parent_mn].flags[Model::Submodel_flags::Can_move]) {
 			vec3d tvec = offset;
 			vm_vec_unrotate(&offset, &tvec, &pmi->submodel[parent_mn].canonical_orient);
 		}
@@ -4268,7 +4300,7 @@ void model_get_rotating_submodel_list(SCP_vector<int> *submodel_vector, object *
 	polymodel *pm = model_get(model_num);
 	bsp_info *child_submodel = &pm->submodel[pm->detail[0]];
 	
-	if(child_submodel->no_collisions) { // if detail0 has $no_collision set dont check childs
+	if(child_submodel->flags[Model::Submodel_flags::No_collisions]) { // if detail0 has $no_collision set dont check childs
 		return;
 	}
 
@@ -4281,7 +4313,7 @@ void model_get_rotating_submodel_list(SCP_vector<int> *submodel_vector, object *
 		child_submodel_instance = &pmi->submodel[i];
 
 		// Don't check it or its children if it is destroyed or it is a replacement (non-moving)
-		if ( !child_submodel_instance->blown_off && (child_submodel->i_replace == -1) && !child_submodel->no_collisions && !child_submodel->nocollide_this_only)	{
+		if ( !child_submodel_instance->blown_off && (child_submodel->i_replace == -1) && !child_submodel->flags[Model::Submodel_flags::No_collisions, Model::Submodel_flags::Nocollide_this_only])	{
 
 			// Only look for submodels that rotate or intrinsic-rotate
 			if (child_submodel->movement_type == MOVEMENT_TYPE_ROT || child_submodel->movement_type == MOVEMENT_TYPE_INTRINSIC) {
@@ -4376,11 +4408,11 @@ void model_clear_instance(int model_num)
 	interp_clear_instance();
 }
 
-void model_set_submodel_turn_info(submodel_instance *smi, float turn_rate, float turn_accel)
+void model_set_submodel_instance_motion_info(bsp_info *sm, submodel_instance *smi)
 {
 	smi->current_turn_rate = 0.0f;
-	smi->desired_turn_rate = turn_rate;
-	smi->turn_accel = turn_accel;
+	smi->desired_turn_rate = sm->default_turn_rate;
+	smi->turn_accel = sm->default_turn_accel;
 }
 
 // Sets the submodel instance data when a tech room model instance is created.
@@ -5445,7 +5477,6 @@ void model_subsystem::reset()
     rotation_snd = gamesnd_id();
 
     engine_wash_pointer = NULL;
-    turn_rate = 0; 
     weapon_rotation_pbank = 0;
     stepped_rotation = NULL;
 

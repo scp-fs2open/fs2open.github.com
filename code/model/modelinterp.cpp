@@ -2319,7 +2319,7 @@ void interp_fill_detail_index_buffer(SCP_vector<int> &submodel_list, polymodel *
 	for ( i = 0; i < (int)submodel_list.size(); ++i ) {
 		model_num = submodel_list[i];
 
-		if ( pm->submodel[model_num].is_thruster ) {
+		if ( pm->submodel[model_num].flags[Model::Submodel_flags::Is_thruster] ) {
 			continue;
 		}
 
@@ -2355,7 +2355,7 @@ void interp_fill_detail_index_buffer(SCP_vector<int> &submodel_list, polymodel *
 	for ( i = 0; i < (int)submodel_list.size(); ++i ) {
 		model_num = submodel_list[i];
 
-		if (pm->submodel[model_num].is_thruster) {
+		if (pm->submodel[model_num].flags[Model::Submodel_flags::Is_thruster]) {
 			continue;
 		}
 

@@ -170,12 +170,14 @@ void ShipEditorDialog::on_miscButton_clicked()
 
 void ShipEditorDialog::on_initialStatusButton_clicked()
 {
-	// TODO:: Initial Status dialog
+	auto initialStatusDialog = new dialogs::ShipInitialStatusDialog(this, _viewport, _model->multi_edit);
+	initialStatusDialog->show();
 }
 
 void ShipEditorDialog::on_initialOrdersButton_clicked()
 {
-	// TODO:: Initial orders dialog
+	auto GoalsDialog = new dialogs::ShipGoalsDialog(this, _viewport, _model->multi_edit, Ships[_model->single_ship].objnum, -1);
+	GoalsDialog->show();
 
 }
 

@@ -8236,7 +8236,7 @@ void shield_impact_explosion(vec3d *hitpos, object *objp, float radius, int idx)
 // renders another laser bitmap on top of the regular bitmap based on the angle of the camera to the front of the laser
 // the two are cross-faded into each other so it can switch to the more appropriate bitmap depending on the angle
 // returns the alpha multiplier to be used for the main bitmap
-float weapon_render_headon_bitmap(object* wep_objp, vec3d* headp, int bitmap, float width1, float width2, int r, int g, int b){	
+float weapon_render_headon_bitmap(object* wep_objp, vec3d* headp, vec3d* tailp, int bitmap, float width1, float width2, int r, int g, int b){
 	weapon* wp = &Weapons[wep_objp->instance];
 	weapon_info* wip = &Weapon_info[wp->weapon_info_index];
 
@@ -8280,7 +8280,7 @@ float weapon_render_headon_bitmap(object* wep_objp, vec3d* headp, int bitmap, fl
 
 	r = (int)(r * head_alpha);   g = (int)(g * head_alpha);   b = (int)(b * head_alpha);
 
-	batching_add_laser(bitmap, headp, width1, &wep_objp->pos, width2, r, g, b);
+	batching_add_laser(bitmap, headp, width1, tailp, width2, r, g, b);
 
 	return side_alpha;
 }
@@ -8352,7 +8352,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 					alpha = fl2i(wp->alpha_current * 255.0f);
 
 				if (The_mission.flags[Mission::Mission_Flags::Fullneb] && Neb_affects_weapons)
-					alpha = (int)(alpha * neb2_get_fog_visibility(&obj->pos, NEB_FOG_VISIBILITY_MULT_WEAPON));
+					alpha = (int)(alpha * neb2_get_fog_visibility(&obj->pos, Neb2_fog_visibility_weapon));
 
 				vec3d headp;
 				vm_vec_scale_add(&headp, &obj->pos, &obj->orient.vec.fvec, wip->laser_length);
@@ -8364,7 +8364,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 
 				// render the head-on bitmap if appropriate and maybe adjust the main bitmap's alpha
 				if (wip->laser_headon_bitmap.first_frame >= 0) {
-					float main_bitmap_alpha_mult = weapon_render_headon_bitmap(obj, &headp,
+					float main_bitmap_alpha_mult = weapon_render_headon_bitmap(obj, &headp, &obj->pos,
 						wip->laser_headon_bitmap.first_frame + headon_framenum,
 						scaled_head_radius,
 						scaled_tail_radius,
@@ -8440,7 +8440,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 				}
 
 				if (The_mission.flags[Mission::Mission_Flags::Fullneb] && Neb_affects_weapons)
-					alpha = (int)(alpha * neb2_get_fog_visibility(&obj->pos, NEB_FOG_VISIBILITY_MULT_WEAPON));
+					alpha = (int)(alpha * neb2_get_fog_visibility(&obj->pos, Neb2_fog_visibility_weapon));
 
 				// Scale the laser so that it always appears some configured amount of pixels wide, no matter the distance.
 				// Only affects width, length remains unchanged.
@@ -8453,10 +8453,10 @@ void weapon_render(object* obj, model_draw_list *scene)
 
 				// render the head-on bitmap if appropriate and maybe adjust the main bitmap's alpha
 				if (wip->laser_glow_headon_bitmap.first_frame >= 0) {
-					float main_bitmap_alpha_mult = weapon_render_headon_bitmap(obj, &headp2,
+					float main_bitmap_alpha_mult = weapon_render_headon_bitmap(obj, &headp2, &tailp,
 						wip->laser_glow_headon_bitmap.first_frame + headon_framenum,
-						scaled_head_radius,
-						scaled_tail_radius,
+						scaled_head_radius * weapon_glow_scale_f,
+						scaled_tail_radius * weapon_glow_scale_r,
 						r, g, b);
 					r = (int)(r * main_bitmap_alpha_mult);
 					g = (int)(g * main_bitmap_alpha_mult);
