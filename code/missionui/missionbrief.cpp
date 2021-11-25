@@ -1275,6 +1275,9 @@ int brief_setup_closeup(brief_icon *bi)
 
 		break;
 	}
+	if (Closeup_icon->customClass[0] != 0) {
+		strcpy_s(Closeup_icon->closeup_label, Closeup_icon->customClass);
+	}
 	
 	if ( Closeup_icon->modelnum < 0 ) {
 		if ( sip == NULL ) {
