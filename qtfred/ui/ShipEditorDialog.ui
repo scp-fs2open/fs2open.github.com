@@ -300,7 +300,7 @@
          <item row="5" column="0">
           <widget class="QPushButton" name="specialStatsButton">
            <property name="text">
-            <string>Special Exp</string>
+            <string>Special Stats</string>
            </property>
           </widget>
          </item>

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>430</width>
-    <height>256</height>
+    <width>518</width>
+    <height>287</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -15,205 +15,263 @@
   </property>
   <layout class="QHBoxLayout" name="horizontalLayout">
    <item>
-    <layout class="QVBoxLayout" name="explosionLayout">
-     <item>
-      <widget class="QCheckBox" name="explodeCheckBox">
-       <property name="text">
-        <string>Enable Special Explosion</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <layout class="QHBoxLayout" name="damageLayout">
-       <item alignment="Qt::AlignRight">
-        <widget class="QLabel" name="damageLabel">
-         <property name="text">
-          <string>Damage:</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QSpinBox" name="damageSpinBox"/>
-       </item>
-      </layout>
-     </item>
-     <item>
-      <layout class="QHBoxLayout" name="blastLayout">
-       <item alignment="Qt::AlignRight">
-        <widget class="QLabel" name="blastLabel">
-         <property name="text">
-          <string>Blast:</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QSpinBox" name="blastSpinBox"/>
-       </item>
-      </layout>
-     </item>
-     <item>
-      <layout class="QHBoxLayout" name="iDamageRadiusLayout">
-       <item alignment="Qt::AlignRight">
-        <widget class="QLabel" name="iRadiusLabel">
-         <property name="text">
-          <string>Inner Damage Radius:</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QSpinBox" name="iRadiusSpinBox"/>
-       </item>
-      </layout>
-     </item>
-     <item>
-      <layout class="QHBoxLayout" name="oRadiusLayout">
-       <item alignment="Qt::AlignRight">
-        <widget class="QLabel" name="oRadiusLabel">
-         <property name="text">
-          <string>Outer Damage Radius:</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QSpinBox" name="oRadiusSpinBox"/>
-       </item>
-      </layout>
-     </item>
-     <item>
-      <layout class="QHBoxLayout" name="createShockwaveLayout">
-       <item alignment="Qt::AlignLeft">
-        <widget class="QCheckBox" name="createShockwaveCheckBox">
-         <property name="layoutDirection">
-          <enum>Qt::RightToLeft</enum>
-         </property>
-         <property name="text">
-          <string>Create Shockwave:</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <spacer name="createShockwaveSpacer">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-         <property name="sizeType">
-          <enum>QSizePolicy::Preferred</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>40</width>
-           <height>20</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-      </layout>
-     </item>
-     <item>
-      <layout class="QHBoxLayout" name="shockwaveSpeedLayout">
-       <item alignment="Qt::AlignRight">
-        <widget class="QLabel" name="shockwaveSpeedLabel">
-         <property name="text">
-          <string>Shockwave Speed:</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QSpinBox" name="shockwaveSpeedSpinBox"/>
-       </item>
-      </layout>
-     </item>
-     <item>
-      <layout class="QHBoxLayout" name="deathRollLayout">
-       <item alignment="Qt::AlignRight">
-        <widget class="QCheckBox" name="deathRollCheckBox">
-         <property name="layoutDirection">
-          <enum>Qt::RightToLeft</enum>
-         </property>
-         <property name="text">
-          <string>Custom Death Roll Time:</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <spacer name="deathRollSpacer">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-         <property name="sizeType">
-          <enum>QSizePolicy::Preferred</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>40</width>
-           <height>20</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-      </layout>
-     </item>
-     <item>
-      <layout class="QHBoxLayout" name="rollTimeLayout">
-       <item alignment="Qt::AlignRight">
-        <widget class="QLabel" name="rollTimeLabel">
-         <property name="text">
-          <string>Duration (msecs):</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QSpinBox" name="rollTimeSpinBox"/>
-       </item>
-      </layout>
-     </item>
-    </layout>
+    <widget class="QGroupBox" name="expGroupBox">
+     <property name="title">
+      <string>Special Explosion</string>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout">
+      <item>
+       <layout class="QVBoxLayout" name="explosionLayout">
+        <item>
+         <widget class="QCheckBox" name="explodeCheckBox">
+          <property name="text">
+           <string>Enable Special Explosion</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="damageLayout">
+          <item alignment="Qt::AlignRight">
+           <widget class="QLabel" name="damageLabel">
+            <property name="text">
+             <string>Damage:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QSpinBox" name="damageSpinBox">
+            <property name="maximum">
+             <number>2147483647</number>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="damageSpacer">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="blastLayout">
+          <item alignment="Qt::AlignRight">
+           <widget class="QLabel" name="blastLabel">
+            <property name="text">
+             <string>Blast:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QSpinBox" name="blastSpinBox">
+            <property name="maximum">
+             <number>2147483647</number>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="blastSpacer">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="iDamageRadiusLayout">
+          <item alignment="Qt::AlignRight">
+           <widget class="QLabel" name="iRadiusLabel">
+            <property name="text">
+             <string>Inner Damage Radius:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QSpinBox" name="iRadiusSpinBox">
+            <property name="maximum">
+             <number>2147483647</number>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="oRadiusLayout">
+          <item alignment="Qt::AlignRight">
+           <widget class="QLabel" name="oRadiusLabel">
+            <property name="text">
+             <string>Outer Damage Radius:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QSpinBox" name="oRadiusSpinBox">
+            <property name="maximum">
+             <number>2147483647</number>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="createShockwaveLayout">
+          <item alignment="Qt::AlignLeft">
+           <widget class="QCheckBox" name="createShockwaveCheckBox">
+            <property name="layoutDirection">
+             <enum>Qt::LeftToRight</enum>
+            </property>
+            <property name="text">
+             <string>Create Shockwave:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="createShockwaveSpacer">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="shockwaveSpeedLayout">
+          <item alignment="Qt::AlignRight">
+           <widget class="QLabel" name="shockwaveSpeedLabel">
+            <property name="text">
+             <string>Shockwave Speed:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QSpinBox" name="shockwaveSpeedSpinBox">
+            <property name="maximum">
+             <number>2147483647</number>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="deathRollLayout">
+          <item alignment="Qt::AlignRight">
+           <widget class="QCheckBox" name="deathRollCheckBox">
+            <property name="layoutDirection">
+             <enum>Qt::LeftToRight</enum>
+            </property>
+            <property name="text">
+             <string>Custom Death Roll Time:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="deathRollSpacer">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="rollTimeLayout">
+          <item alignment="Qt::AlignRight">
+           <widget class="QLabel" name="rollTimeLabel">
+            <property name="text">
+             <string>Duration (msecs):</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QSpinBox" name="rollTimeSpinBox">
+            <property name="maximum">
+             <number>2147483647</number>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </widget>
    </item>
    <item>
-    <layout class="QVBoxLayout" name="hitsLayout">
-     <item>
-      <widget class="QCheckBox" name="specialShieldCheckBox">
-       <property name="text">
-        <string>Enable Special Shield Hitpoints</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <layout class="QHBoxLayout" name="shieldLayout">
-       <item alignment="Qt::AlignRight">
-        <widget class="QLabel" name="shieldLabel">
-         <property name="text">
-          <string>Shields:</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QSpinBox" name="shieldSpinBox"/>
-       </item>
-      </layout>
-     </item>
-     <item>
-      <widget class="QCheckBox" name="specialHullCheckbox">
-       <property name="text">
-        <string>Enable Special Hitpoints</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <layout class="QHBoxLayout" name="hullLaout">
-       <item alignment="Qt::AlignRight">
-        <widget class="QLabel" name="hullLabel">
-         <property name="text">
-          <string>Hull:</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QSpinBox" name="hullSpinBox"/>
-       </item>
-      </layout>
-     </item>
-    </layout>
+    <widget class="QGroupBox" name="hitsGroupbox">
+     <property name="title">
+      <string>Special Hits</string>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_2">
+      <item>
+       <layout class="QVBoxLayout" name="hitsLayout">
+        <item>
+         <widget class="QCheckBox" name="specialShieldCheckBox">
+          <property name="text">
+           <string>Enable Special Shield Hitpoints</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="shieldLayout">
+          <item alignment="Qt::AlignRight">
+           <widget class="QLabel" name="shieldLabel">
+            <property name="text">
+             <string>Shields:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QSpinBox" name="shieldSpinBox">
+            <property name="maximum">
+             <number>2147483647</number>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="specialHullCheckbox">
+          <property name="text">
+           <string>Enable Special Hitpoints</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="hullLaout">
+          <item alignment="Qt::AlignRight">
+           <widget class="QLabel" name="hullLabel">
+            <property name="text">
+             <string>Hull:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QSpinBox" name="hullSpinBox">
+            <property name="maximum">
+             <number>2147483647</number>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </widget>
    </item>
    <item>
     <widget class="QDialogButtonBox" name="buttonBox">

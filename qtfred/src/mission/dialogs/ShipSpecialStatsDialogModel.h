@@ -41,13 +41,13 @@ namespace fso {
 				void reject() override;
 				bool query_modified();
 
+				//Exp Get/Setters
 				bool getSpecialExp() const;
 				void setSpecialExp(const bool);
 				bool getShockwave() const;
 				void setShockwave(const bool);
 				bool getDeathRoll() const;
 				void setDeathRoll(const bool);
-
 				int getDamage() const;
 				void setDamage(const int);
 				int getBlast() const;
@@ -60,6 +60,16 @@ namespace fso {
 				void setShockwaveSpeed(const int);
 				int getRollDuration() const;
 				void setRollDuration(const int);
+
+				//Hit Get/Setters
+				bool getSpecialShield() const;
+				void setSpecialShield(const bool);
+				int getShield() const;
+				void setShield(const int);
+				bool getSpecialHull() const;
+				void setSpecialHull(const bool);
+				int getHull() const;
+				void setHull(const int);
 			};
 			template <typename T>
 			inline void ShipSpecialStatsDialogModel::modify(T& a, const T& b)

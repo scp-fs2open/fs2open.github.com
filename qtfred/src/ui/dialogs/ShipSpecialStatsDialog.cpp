@@ -10,9 +10,9 @@ namespace fso {
 	namespace fred {
 		namespace dialogs {
 
-			ShipSpecialStatsDialog::ShipSpecialStatsDialog(QWidget* parent, EditorViewport* viewport) : 
-				QDialog(parent), ui(new Ui::ShipSpecialStatsDialog()), _model(new ShipSpecialStatsDialogModel(this, viewport)), 
-				_viewport(viewport) 
+			ShipSpecialStatsDialog::ShipSpecialStatsDialog(QWidget* parent, EditorViewport* viewport) :
+				QDialog(parent), ui(new Ui::ShipSpecialStatsDialog()), _model(new ShipSpecialStatsDialogModel(this, viewport)),
+				_viewport(viewport)
 			{
 				ui->setupUi(this);
 
@@ -30,7 +30,10 @@ namespace fso {
 				connect(ui->deathRollCheckBox, &QCheckBox::toggled, _model.get(), &ShipSpecialStatsDialogModel::setDeathRoll);
 				connect(ui->rollTimeSpinBox, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), _model.get(), &ShipSpecialStatsDialogModel::setRollDuration);
 
-
+				connect(ui->specialShieldCheckBox, &QCheckBox::toggled, _model.get(), &ShipSpecialStatsDialogModel::setSpecialShield);
+				connect(ui->shieldSpinBox, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), _model.get(), &ShipSpecialStatsDialogModel::setShield);
+				connect(ui->specialHullCheckbox, &QCheckBox::toggled, _model.get(), &ShipSpecialStatsDialogModel::setSpecialHull);
+				connect(ui->hullSpinBox, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), _model.get(), &ShipSpecialStatsDialogModel::setHull);
 
 				updateUI();
 
@@ -74,6 +77,41 @@ namespace fso {
 				ui->shockwaveSpeedSpinBox->setValue(_model->getShockwaveSpeed());
 				ui->deathRollCheckBox->setChecked(_model->getDeathRoll());
 				ui->rollTimeSpinBox->setValue(_model->getRollDuration());
+
+				ui->specialShieldCheckBox->setChecked(_model->getSpecialShield());
+				ui->shieldSpinBox->setValue(_model->getShield());
+				ui->specialHullCheckbox->setChecked(_model->getSpecialHull());
+				ui->hullSpinBox->setValue(_model->getHull());
+
+				//Enable/Disable
+				if (_model->getSpecialExp()) {
+					ui->damageSpinBox->setEnabled(true);
+					ui->blastSpinBox->setEnabled(true);
+					ui->iRadiusSpinBox->setEnabled(true);
+					ui->oRadiusSpinBox->setEnabled(true);
+					ui->createShockwaveCheckBox->setEnabled(true);
+					ui->deathRollCheckBox->setEnabled(true);
+					if (_model->getShockwave()) {
+						ui->shockwaveSpeedSpinBox->setEnabled(true);
+					}
+					else { ui->shockwaveSpeedSpinBox->setEnabled(false); }
+					if (_model->getDeathRoll()) {
+						ui->rollTimeSpinBox->setEnabled(true);
+					}
+					else { ui->rollTimeSpinBox->setEnabled(false); }
+				}
+				else {
+					ui->damageSpinBox->setEnabled(false);
+					ui->blastSpinBox->setEnabled(false);
+					ui->iRadiusSpinBox->setEnabled(false);
+					ui->oRadiusSpinBox->setEnabled(false);
+					ui->createShockwaveCheckBox->setEnabled(false);
+					ui->deathRollCheckBox->setEnabled(false);
+					ui->shockwaveSpeedSpinBox->setEnabled(false);
+					ui->rollTimeSpinBox->setEnabled(false);
+				}
+				ui->shieldSpinBox->setEnabled(_model->getSpecialShield());
+				ui->hullSpinBox->setEnabled(_model->getSpecialHull());
 			}
 		}
 	}

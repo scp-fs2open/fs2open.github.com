@@ -200,7 +200,7 @@ namespace fso {
 						Ships[shipp].special_exp_deathroll_time = 0;
 					}
 				}
-
+				_editor->missionChanged();
 				return true;
 			}
 			void ShipSpecialStatsDialogModel::reject()
@@ -286,6 +286,38 @@ namespace fso {
 			void ShipSpecialStatsDialogModel::setRollDuration(const int value)
 			{
 				modify(m_duration, value);
+			}
+			bool ShipSpecialStatsDialogModel::getSpecialShield() const
+			{
+				return m_special_shield_enabled;
+			}
+			void ShipSpecialStatsDialogModel::setSpecialShield(const bool value)
+			{
+				modify(m_special_shield_enabled, value);
+			}
+			int ShipSpecialStatsDialogModel::getShield() const
+			{
+				return m_shields;
+			}
+			void ShipSpecialStatsDialogModel::setShield(const int value)
+			{
+				modify(m_shields, value);
+			}
+			bool ShipSpecialStatsDialogModel::getSpecialHull() const
+			{
+				return m_special_hitpoints_enabled;
+			}
+			void ShipSpecialStatsDialogModel::setSpecialHull(const bool value)
+			{
+				modify(m_special_hitpoints_enabled, value);
+			}
+			int ShipSpecialStatsDialogModel::getHull() const
+			{
+				return m_hull;
+			}
+			void ShipSpecialStatsDialogModel::setHull(const int value)
+			{
+				modify(m_hull, value);
 			}
 		}
 
