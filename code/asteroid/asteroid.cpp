@@ -596,10 +596,16 @@ void asteroid_create_all()
 			// For asteroid, load only large asteroids
 
 			// get a valid subtype
-			int subtype = Random::next(NUM_DEBRIS_POFS);
-			for (int i = 0; i < NUM_DEBRIS_POFS; i++) {
-				if (Asteroid_field.field_debris_type[subtype] == -1)
-					subtype = (subtype + 1) % NUM_DEBRIS_POFS;
+			int counter = Random::next(Asteroid_field.num_used_field_debris_types);
+			int subtype = -1;
+			for (int j = 0; j < NUM_DEBRIS_POFS; j++) {
+				if (Asteroid_field.field_debris_type[j] >= 0) {
+					if (counter == 0) {
+						subtype = j;
+						break;
+					} else
+						counter--;
+				}
 			}
 
 			if (subtype >= 0)
@@ -633,6 +639,7 @@ void asteroid_level_init()
 	SCP_vector<asteroid_info>::iterator ast;
 	for (ast = Asteroid_info.begin(); ast != Asteroid_info.end(); ++ast)
 		ast->damage_type_idx = ast->damage_type_idx_sav;
+	Asteroid_field.num_used_field_debris_types = 0;
 }
 
 /**
@@ -805,10 +812,17 @@ static void maybe_throw_asteroid()
 
 		target.throw_stamp = timestamp(1000 + 1200 * target.incoming_asteroids /(Game_skill_level+1));
 
-		int subtype = Random::next(NUM_DEBRIS_POFS);
+		int counter = Random::next(Asteroid_field.num_used_field_debris_types);
+		int subtype = -1;
 		for (int i = 0; i < NUM_DEBRIS_POFS; i++) {
-			if (Asteroid_field.field_debris_type[subtype] == -1)
-				subtype = (subtype + 1) % NUM_DEBRIS_POFS;
+			if (Asteroid_field.field_debris_type[i] >= 0) {
+				if (counter == 0) {
+					subtype = i;
+					break;
+				}
+				else
+					counter--;
+			}
 		}
 
 		// this really shouldn't happen but just in case...

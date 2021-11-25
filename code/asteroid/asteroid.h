@@ -143,6 +143,7 @@ typedef	struct asteroid_field {
 	field_type_t		field_type;		// active throws and wraps, passive does not
 	debris_genre_t	debris_genre;		// type of debris (ship or asteroid)  [generic type]
 	int				field_debris_type[MAX_ACTIVE_DEBRIS_TYPES];	// one of the debris type defines above
+	int				num_used_field_debris_types;	// how many of the above are used
 } asteroid_field;
 
 extern SCP_vector< asteroid_info > Asteroid_info;
