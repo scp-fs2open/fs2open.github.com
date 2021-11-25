@@ -388,43 +388,34 @@ bool sexp_container_CTEXT_helper(int& node, sexp_container &container, SCP_strin
 			return false;
 		}
 
-		int data_index;
+		int data_index = -1;
 		auto& list_data = container.list_data;
 		auto list_it = list_data.begin();
+		const auto modifier = modifier_to_use->modifier;
 
-		switch (modifier_to_use->modifier) {
+		switch (modifier) {
 		case ListModifier::GET_FIRST:
-			result = list_data.front();
-			return true;
-
-		case ListModifier::GET_LAST:
-			result = list_data.back();
-			return true;
-
 		case ListModifier::REMOVE_FIRST:
 			result = list_data.front();
-			if (are_containers_modifiable()) {
+			if (modifier == ListModifier::REMOVE_FIRST && are_containers_modifiable()) {
 				list_data.pop_front();
 			}
 			return true;
 
+		case ListModifier::GET_LAST:
 		case ListModifier::REMOVE_LAST:
 			result = list_data.back();
-			if (are_containers_modifiable()) {
+			if (modifier == ListModifier::REMOVE_LAST && are_containers_modifiable()) {
 				list_data.pop_back();
 			}
 			return true;
 
 		case ListModifier::GET_RANDOM:
-			data_index = util::Random::next((int)list_data.size());
-			result = *std::next(list_it, data_index);
-			return true;
-
 		case ListModifier::REMOVE_RANDOM:
 			data_index = util::Random::next((int)list_data.size());
 			std::advance(list_it, data_index);
 			result = *list_it;
-			if (are_containers_modifiable()) {
+			if (modifier == ListModifier::REMOVE_RANDOM && are_containers_modifiable()) {
 				list_data.erase(list_it);
 			}
 			return true;
@@ -439,8 +430,9 @@ bool sexp_container_CTEXT_helper(int& node, sexp_container &container, SCP_strin
 			if (is_nan || is_nan_forever) {
 				return false;
 			}
-			Assert(data_index >= 0);
-			Assert(data_index < (int)list_data.size());
+			if (data_index < 0 || data_index >= (int)list_data.size()) {
+				return false;
+			}
 			result = *std::next(list_it, data_index);
 			return true;
 
