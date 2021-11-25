@@ -298,7 +298,7 @@
           <number>0</number>
          </property>
          <item row="5" column="0">
-          <widget class="QPushButton" name="specialExpButton">
+          <widget class="QPushButton" name="specialStatsButton">
            <property name="text">
             <string>Special Exp</string>
            </property>
@@ -367,13 +367,6 @@
           <widget class="QPushButton" name="resetButton">
            <property name="text">
             <string>Reset</string>
-           </property>
-          </widget>
-         </item>
-         <item row="6" column="0">
-          <widget class="QPushButton" name="specialHitsButton">
-           <property name="text">
-            <string>Special Hits</string>
            </property>
           </widget>
          </item>
@@ -751,11 +744,11 @@
    <extends>QTreeView</extends>
    <header>ui/widgets/sexp_tree.h</header>
   </customwidget>
-     <customwidget>
-       <class>fso::fred::ShipFlagCheckbox</class>
-       <extends>QCheckBox</extends>
-       <header>ui/widgets/ShipFlagCheckbox.h</header>
-     </customwidget>
+  <customwidget>
+   <class>fso::fred::ShipFlagCheckbox</class>
+   <extends>QCheckBox</extends>
+   <header>ui/widgets/ShipFlagCheckbox.h</header>
+  </customwidget>
  </customwidgets>
  <resources>
   <include location="../resources/resources.qrc"/>
