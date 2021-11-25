@@ -47,6 +47,16 @@ namespace {
 	const char *Empty_str = "";
 } // namespace
 
+static bool str_prefix(const char* prefix, const char* str)
+{
+	for (; *prefix; ++prefix, ++str) {
+		if (SCP_tolower(*str) != SCP_tolower(*prefix)) {
+			return false;
+		}
+	}
+
+	return true;
+}
 
 // sexp_container functions
 
@@ -90,6 +100,17 @@ ContainerType sexp_container::get_non_persistent_type() const
 bool sexp_container::type_matches(const sexp_container &container) const
 {
 	return get_non_persistent_type() == container.get_non_persistent_type();
+}
+
+// list_modifier functions
+
+bool list_modifier::match_name(const char *other_name) const
+{
+	if (modifier == ListModifier::AT_INDEX) {
+		return str_prefix(name, other_name);
+	} else {
+		return !stricmp(name, other_name);
+	}
 }
 
 // sexp_container.h functions
@@ -283,17 +304,6 @@ sexp_container *get_sexp_container(const char* name) {
 	}
 }
 
-static bool str_prefix(const char* prefix, const char* str)
-{
-	for (; *prefix; ++prefix, ++str) {
-		if (SCP_tolower(*str) != SCP_tolower(*prefix)) {
-			return false;
-		}
-	}
-
-	return true;
-}
-
 /**
 * Tests whether this position in a character array is the start of a container name
 * Returns a pointer to the container or nullptr if not found
@@ -369,7 +379,7 @@ bool sexp_container_CTEXT_helper(int& node, sexp_container &container, SCP_strin
 
 		const list_modifier *modifier_to_use = nullptr;
 		for (const auto &modifier : List_modifiers) {
-			if (!stricmp(modifier_text, modifier.name)) {
+			if (modifier.match_name(modifier_text)) {
 				modifier_to_use = &modifier;
 				break;
 			}

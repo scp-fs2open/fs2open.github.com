@@ -130,7 +130,6 @@ struct sexp_container
 struct list_modifier {
 	enum class Modifier
 	{
-		INVALID = 0,
 		GET_FIRST,
 		GET_LAST,
 		REMOVE_FIRST,
@@ -139,6 +138,8 @@ struct list_modifier {
 		REMOVE_RANDOM,
 		AT_INDEX
 	};
+
+	bool match_name(const char *other_name) const;
 
 	const char *name;
 	const Modifier modifier;
