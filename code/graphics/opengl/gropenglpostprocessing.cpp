@@ -67,18 +67,17 @@ void opengl_post_pass_tonemap()
 
 	Current_shader->program->Uniforms.setTextureUniform("tex", 0);
 	
-	//float exposure = light_profile_manager::exposure()
 	opengl_set_generic_uniform_data<graphics::generic_data::tonemapping_data>(
 		[](graphics::generic_data::tonemapping_data* data) {
-		auto ppc = light_profile_manager::piecewise_values();
-		auto tn = light_profile_manager::tonemapper();
+		auto ppc = lighting_profile::current_piecewise_values();
+		auto tn = lighting_profile::current_tonemapper();
 		data->tonemapper = tn;
 		data->toeS = ppc.toe_strength;
 		data->toeL = ppc.toe_length;
 		data->shoulderS = ppc.shoulder_strength;
 		data->shoulderL = ppc.shoulder_length;
 		data->shoulderA = ppc.shoulder_angle;
-		data->exposure = light_profile_manager::exposure(); });
+		data->exposure = lighting_profile::current_exposure(); });
 
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Scene_ldr_texture, 0);
 

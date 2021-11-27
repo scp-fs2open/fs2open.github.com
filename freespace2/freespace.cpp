@@ -1898,7 +1898,7 @@ void game_init()
 	player_tips_init();				// helpful tips
 	beam_init();
 
-	light_profile::load_profiles();
+	lighting_profile::load_profiles();
 
 	// load the list of pilot pic filenames (for barracks and pilot select popup quick reference)
 	pilot_load_pic_list();	
