@@ -10,7 +10,6 @@
 
 
 
-#include "graphics/debug_sphere.h"
 #ifdef _WIN32
  #include <winsock2.h>	// required to prevent winsock 1.1 being used
  #include <direct.h>
@@ -60,6 +59,7 @@
 #include "gamesequence/gamesequence.h"
 #include "gamesnd/eventmusic.h"
 #include "gamesnd/gamesnd.h"
+#include "graphics/debug_sphere.h"
 #include "graphics/font.h"
 #include "graphics/light.h"
 #include "graphics/matrix.h"
@@ -3420,7 +3420,7 @@ void game_render_frame( camid cid )
 
 
 #ifndef NDEBUG
-	debug_spheres::render();
+	debug_sphere::render();
 	ai_debug_render_stuff();
 	extern void snd_spew_debug_info();
 	snd_spew_debug_info();
