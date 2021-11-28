@@ -31,11 +31,11 @@ namespace fso {
 				bool apply() override;
 				void reject() override;
 
-				const bool query_modified() const;
+				 bool query_modified() const;
 
-				const SCP_vector<int>& getAcceptedOrders() const;
-				const SCP_vector<SCP_string>& getOrderNames() const;
-				const SCP_vector<int>& getCurrentOrders() const;
+				 SCP_vector<int> getAcceptedOrders() const;
+				 SCP_vector<SCP_string> getOrderNames() const;
+				 SCP_vector<int> getCurrentOrders() const;
 				void setCurrentOrder(const int, const int);
 			};
 			template<typename T>

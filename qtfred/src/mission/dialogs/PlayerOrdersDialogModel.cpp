@@ -55,22 +55,22 @@ namespace fso {
 			{
 			}
 
-			const bool PlayerOrdersDialogModel::query_modified() const
+			 bool PlayerOrdersDialogModel::query_modified() const
 			{
 				return _modified;
 			}
 
-			const SCP_vector<int>& PlayerOrdersDialogModel::getAcceptedOrders() const
+			 SCP_vector<int> PlayerOrdersDialogModel::getAcceptedOrders() const
 			{
 				return acceptedOrders;
 			}
 
-			const SCP_vector<SCP_string>& PlayerOrdersDialogModel::getOrderNames() const
+			 SCP_vector<SCP_string> PlayerOrdersDialogModel::getOrderNames() const
 			{
 				return orderNames;
 			}
 
-			const SCP_vector<int>& PlayerOrdersDialogModel::getCurrentOrders() const
+			 SCP_vector<int> PlayerOrdersDialogModel::getCurrentOrders() const
 			{
 				return currentOrders;
 			}

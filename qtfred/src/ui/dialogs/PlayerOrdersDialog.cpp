@@ -56,7 +56,7 @@ namespace fso {
 			void PlayerOrdersDialog::updateUI()
 			{
 				util::SignalBlockers blockers(this);
-				for (int i = 0; i < check_boxes.size(); i++) {
+				for (int i = 0; i < (int)check_boxes.size(); i++) {
 					int state = _model->getCurrentOrders()[i];
 					switch (state) {
 					case 0:
