@@ -14,7 +14,7 @@ namespace fso {
 				ui->setupUi(this);
 				connect(this, &QDialog::accepted, _model.get(), &PlayerOrdersDialogModel::apply);
 				connect(this, &QDialog::rejected, _model.get(), &PlayerOrdersDialogModel::reject);
-				for (int i = 0; i < _model->getAcceptedOrders().size(); i++) {
+				for (int i = 0; i < (int)_model->getAcceptedOrders().size(); i++) {
 					if (_model->getAcceptedOrders()[i]) {
 						check_boxes.push_back(new ShipFlagCheckbox(nullptr));
 						check_boxes[i]->setText(_model->getOrderNames()[i].c_str());

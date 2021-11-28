@@ -152,7 +152,7 @@ namespace fso {
 									}
 									else {
 										// if the order isn't active, and already set, mark as indeterminite.
-										if (currentOrders[i] = 1)
+										if (currentOrders[i] == 1)
 											currentOrders[i] = 2;
 									}
 								}
