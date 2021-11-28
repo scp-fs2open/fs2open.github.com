@@ -88,7 +88,7 @@ void lighting_profile::parse_all()
 	parse_modular_table("*-ltp.tbm", lighting_profile::parse_file);
 }
 
-void lighting_profile::parse_default_section(const char *filename)
+void lighting_profile::parse_default_section()
 {
 	bool keep_going = true;
 	SCP_string buffer;
@@ -108,7 +108,7 @@ void lighting_profile::parse_default_section(const char *filename)
 		keep_going |= optional_parse_into_float("$PPC Toe Strength:",&default_profile.ppc_values.shoulder_angle);
 		keep_going |= optional_parse_into_float("$Exposure:",&default_profile.exposure);
 		//TODO: Handle case when there's no line matched but we haven't hit an #end
-		Assert(keep_going == true);
+		Assert(keep_going);
 	}
 }
 
@@ -130,10 +130,10 @@ void lighting_profile::parse_file(const char *filename)
 		while(check_for_eof()==0 && keep_going){
 			if(optional_string("#DEFAULT PROFILE")){
 				keep_going = true;
-				parse_default_section(filename);
+				parse_default_section();
 			}
 			//TODO: Handle case when there's no line matched but we haven't hit an #end
-			if(keep_going == false)
+			if(!keep_going)
 			{
 				advance_to_eoln(nullptr);
 				keep_going = true;

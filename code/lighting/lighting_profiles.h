@@ -1,5 +1,7 @@
 #pragma once
 
+#include "globalincs/vmallocator.h"
+
 enum TonemapperAlgorithm :int {
 	tnm_Invalid = -1,
 	tnm_Linear = 0,
@@ -40,6 +42,6 @@ private:
 	static lighting_profile default_profile;
 	static void parse_all();
 	static void parse_file(const char *filename);
-	static void parse_default_section(const char *filename);
+	static void parse_default_section();
 	static void add_default_default();
 };
