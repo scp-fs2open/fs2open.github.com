@@ -68,6 +68,7 @@ namespace fso {
 				}
 				ship_count = player_count = escort_count = pship_count = pvalid_count = 0;
 				base_ship = base_player = -1;
+				enable = true;
 				objp = GET_FIRST(&obj_used_list);
 				while (objp != END_OF_LIST(&obj_used_list)) {
 					if ((objp->type == OBJ_SHIP) && (Ships[objp->instance].flags[Ship::Ship_Flags::Escort])) {

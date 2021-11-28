@@ -7,6 +7,7 @@
 #include "ShipGoalsDialog.h"
 #include "ShipInitialStatusDialog.h"
 #include "ShipFlagsDialog.h"
+#include "PlayerOrdersDialog.h"
 
 #include <QAbstractButton>
 #include <QtWidgets/QDialog>

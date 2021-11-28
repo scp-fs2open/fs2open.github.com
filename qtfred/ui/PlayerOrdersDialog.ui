@@ -54,6 +54,13 @@
    </item>
   </layout>
  </widget>
+  <customwidgets>
+  <customwidget>
+   <class>fso::fred::ShipFlagCheckbox</class>
+   <extends>QCheckBox</extends>
+   <header>ui/widgets/ShipFlagCheckbox.h</header>
+  </customwidget>
+ </customwidgets>
  <resources>
   <include location="../resources/resources.qrc"/>
  </resources>
