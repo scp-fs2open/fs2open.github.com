@@ -670,7 +670,6 @@ void drawRectInternal(int x1, int x2, int y1, int y2, bool f = true, float a = 0
 	{
 		gr_set_bitmap(0);  // gr_rect will use the last bitmaps info, so set to zero to flush any previous alpha state
 		gr_rect(x1, y1, x2-x1, y2-y1, GR_RESIZE_NONE, a);
-						   //gr_rect(x1, y1, x2-x1, y2-y1, GR_RESIZE_NONE, a);
 	}
 	else
 	{
@@ -1377,17 +1376,6 @@ ADE_FUNC(loadTexture, l_Graphics, "string Filename, [boolean LoadIfAnimation, bo
 	return ade_set_args(L, "o", l_Texture.Set(texture_h(idx)));
 }
 
-void drawImageInternal(int x1, int y1, int w, int h, float uv_x1, float uv_y1, float uv_x2, float uv_y2, bool aabitmap, float angle) {
-	
-	bitmap_rect_list brl = bitmap_rect_list(x1, y1, w, h, uv_x1, uv_y1, uv_x2, uv_y2);
-
-	if (aabitmap) {
-		gr_aabitmap_list(&brl, 1, GR_RESIZE_NONE, angle);
-	} else {
-		gr_bitmap_list(&brl, 1, GR_RESIZE_NONE, angle);
-	}
-}
-
 ADE_FUNC(drawImage,
 	l_Graphics,
 	"string|texture fileNameOrTexture, [number X1=0, number Y1=0, number X2, number Y2, number UVX1 = 0.0, number UVY1 "
@@ -1483,7 +1471,7 @@ ADE_FUNC(drawImageCentered,
 	l_Graphics,
 	"string|texture fileNameOrTexture, [number X=0, number Y=0, number W, number H, number UVX1 = 0.0, number UVY1 "
 	"= 0.0, number UVX2=1.0, number UVY2=1.0, number alpha=1.0, boolean aaImage = false, number angle = 0.0]",
-	"Draws an image file or texture. Any image extension passed will be ignored."
+	"Draws an image file or texture centered on the X,Y position. Any image extension passed will be ignored."
 	"The UV variables specify the UV value for each corner of the image. "
 	"In UV coordinates, (0,0) is the top left of the image; (1,1) is the lower right. If aaImage is true, image needs "
 	"to be monochrome and will be drawn tinted with the currently active color."
