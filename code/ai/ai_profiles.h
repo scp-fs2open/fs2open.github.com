@@ -114,6 +114,9 @@ public:
 	//Controls if the AI is dumb enough to keep trying to use out-of-range secondaries. 
 	int ai_range_aware_secondary_select_mode;
 
+	// how often turrets shoulds check for new targets, milliseconds
+	float turret_target_recheck_time;
+
     void reset();
 };
 

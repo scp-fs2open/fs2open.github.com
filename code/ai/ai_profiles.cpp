@@ -581,6 +581,16 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$reset last_hit_target_time for player hits:", AI::Profile_Flags::Reset_last_hit_target_time_for_player_hits);
 
+				if (optional_string("$Turret target recheck time:"))
+				{
+					stuff_float(&profile->turret_target_recheck_time);
+					if (profile->turret_target_recheck_time < 0) {
+						Warning(LOCATION, "Turret target recheck time must be positive.");
+						profile->turret_target_recheck_time = 2000.0f;
+					}
+				}
+
+
 				// if we've been through once already and are at the same place, force a move
 				if (saved_Mp && (saved_Mp == Mp))
 				{
@@ -658,6 +668,7 @@ void ai_profile_t::reset()
     bay_depart_speed_mult = 1.0f;
 	second_order_lead_predict_factor = 0;
 	ai_range_aware_secondary_select_mode = AI_RANGE_AWARE_SEC_SEL_MODE_RETAIL;
+	turret_target_recheck_time = 2000.0f;
 
     for (int i = 0; i < NUM_SKILL_LEVELS; ++i) {
         max_incoming_asteroids[i] = 0;
