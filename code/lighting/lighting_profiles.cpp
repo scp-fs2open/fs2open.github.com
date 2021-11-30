@@ -115,26 +115,13 @@ void lighting_profile::parse_file(const char *filename)
 	try
 	{
 		if (filename == nullptr){
-			//Normal parsing uses this:
-			//read_file_text_from_default(defaults_get_file("lighting_profiles.tbl"));
-			//To set the defaults, I intend to set them as virtual table lines before here
-			//so, if no file, gtfo.
+			//All defaults currently handled by lighting_profile.reset()
 			return;
 		}
 		read_file_text(filename, CF_TYPE_TABLES);
 		reset_parse();
-		bool keep_going = true;
-		while(check_for_eof()==0 && keep_going){
-			if(optional_string("#DEFAULT PROFILE")){
-				keep_going = true;
-				parse_default_section();
-			}
-			//TODO: Handle case when there's no line matched but we haven't hit an #end
-			if(!keep_going)
-			{
-				advance_to_eoln(nullptr);
-				keep_going = true;
-			}
+		if(optional_string("#DEFAULT PROFILE")){
+			parse_default_section();
 		}
     }	catch (const parse::ParseException& e)
 	{
