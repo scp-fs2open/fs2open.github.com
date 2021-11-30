@@ -2,6 +2,8 @@
 
 #include "globalincs/vmallocator.h"
 
+//This file handles the lighting_profiles.tbl and -ltp.tbm files. The purpose of these files is to provide control over the HDR lighting pipeline and enviroment, and related matters.
+
 //Tonemapping options, aside from the previous standard UC2, pulled from wookiejedi and qazwsxal's
 //work on testing them for FSO, which itself was based on these references:
 //https://64.github.io/tonemapping/ Delta - Blog by 64: Tone Mapping
