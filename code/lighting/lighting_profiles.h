@@ -48,5 +48,4 @@ private:
 	static void parse_all();
 	static void parse_file(const char *filename);
 	static void parse_default_section();
-	static void add_default_default();
 };
