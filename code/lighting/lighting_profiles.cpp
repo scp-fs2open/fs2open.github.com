@@ -38,31 +38,28 @@ TonemapperAlgorithm lighting_profile::name_to_tonemapper(SCP_string &name)
 		r = tnm_Uncharted;
 	}
 	if(name == "linear"){
-		r = tnm_Invalid;
+		r = tnm_Linear;
 	}
 	if(name == "aces"){
-		r = tnm_Invalid;
+		r = tnm_Aces;
 	}
 	if(name == "aces approximate"){
-		r = tnm_Invalid;
+		r = tnm_Aces_Approx;
 	}
 	if(name == "cineon"){
-		r = tnm_Invalid;
-	}
-	if(name == "cineon"){
-		r = tnm_Invalid;
+		r = tnm_Cineon;
 	}
 	if(name == "reinhard jodie"){
-		r = tnm_Invalid;
+		r = tnm_Reinhard_Jodie;
 	}
 	if(name == "reinhard extended"){
-		r = tnm_Invalid;
+		r = tnm_Reinhard_Extended;
 	}
 	if(name == "PPC"){
-		r = tnm_Invalid;
+		r = tnm_PPC;
 	}
 	if(name == "PPC RGB"){
-		r = tnm_Invalid;
+		r = tnm_PPC_RGB;
 	}
 	return r;
 }
