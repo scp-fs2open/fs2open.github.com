@@ -14,9 +14,12 @@ layout (std140) uniform genericData {
 	float shoulderL;
 	float shoulderA;
 };
+//Tonemapping options, aside from the previous standard UC2, pulled from wookiejedi and qazwsxal's
+//work on testing them for FSO, which itself was based on these references:
+//https://64.github.io/tonemapping/ Delta - Blog by 64: Tone Mapping
+//http://filmicworlds.com/blog/filmic-tonemapping-operators/ Filmic Worlds: Filmic Tonemapping Operators by John Hable
 
-
-vec3 Uncharted2ToneMapping(vec3 hdr_color) // filmic
+vec3 Uncharted2ToneMapping(vec3 hdr_color) // John Hable's filmic
 {
 	float A = 0.15;
 	float B = 0.50;
@@ -29,7 +32,7 @@ vec3 Uncharted2ToneMapping(vec3 hdr_color) // filmic
 	float white = ((W * (A * W + C * B) + D * E) / (W * (A * W + B) + D * F)) - E / F;
 	hdr_color /= white;
 	hdr_color = linear_to_srgb(hdr_color); // return from linear color space to SRGB color space
-	
+
 	return hdr_color;
 }
 
@@ -158,7 +161,7 @@ float funswitch (float x) {
 	float x_tone;
 	if (x <= x0) {
 		x_tone = toe(x);
-	} 	
+	}
 	else if (x <= x1) {
 		x_tone = linear(x);
 	}
@@ -172,8 +175,8 @@ float funswitch (float x) {
 }
 
 vec3 PPC_RGB( vec3 color ) {
-	color = vec3(	funswitch(color.r), 
-				 	funswitch(color.g), 
+	color = vec3(	funswitch(color.r),
+				 	funswitch(color.g),
 					funswitch(color.b));
 
 	return linear_to_srgb(color);
@@ -185,7 +188,7 @@ vec3 PPC( vec3 color ) {
 	float luma_tone;
 	if ( luma <= x0 ) {
 		luma_tone = toe(luma);
-	} 	
+	} 
 	else if ( luma <= x1 ) {
 		luma_tone = linear(luma);
 	}

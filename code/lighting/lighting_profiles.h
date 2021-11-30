@@ -2,6 +2,11 @@
 
 #include "globalincs/vmallocator.h"
 
+//Tonemapping options, aside from the previous standard UC2, pulled from wookiejedi and qazwsxal's
+//work on testing them for FSO, which itself was based on these references:
+//https://64.github.io/tonemapping/ Delta - Blog by 64: Tone Mapping
+//http://filmicworlds.com/blog/filmic-tonemapping-operators/ Filmic Worlds: Filmic Tonemapping Operators by John Hable
+
 enum TonemapperAlgorithm :int {
 	tnm_Invalid = -1,
 	tnm_Linear = 0,
