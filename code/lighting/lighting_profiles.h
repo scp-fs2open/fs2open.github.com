@@ -35,7 +35,7 @@ public:
 	static enum TonemapperAlgorithm name_to_tonemapper(SCP_string &name);
 	static void load_profiles();
 	static TonemapperAlgorithm current_tonemapper();
-	static piecewise_power_curve_values current_piecewise_values();
+	static const piecewise_power_curve_values & current_piecewise_values();
 	static float current_exposure();
 
 	SCP_string name;

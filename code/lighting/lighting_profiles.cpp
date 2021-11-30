@@ -139,7 +139,7 @@ TonemapperAlgorithm lighting_profile::current_tonemapper()
 	return default_profile.tonemapper;
 }
 
-piecewise_power_curve_values lighting_profile::current_piecewise_values()
+const piecewise_power_curve_values & lighting_profile::current_piecewise_values()
 {
 	return default_profile.ppc_values;
 }
