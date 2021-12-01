@@ -13928,6 +13928,9 @@ void sexp_mission_set_nebula(int n)
 		return;
 
 	stars_set_nebula(set_it > 0, static_cast<float>(range));
+
+	// set the mission flag as well, since other stuff depends on it
+	The_mission.flags.set(Mission::Mission_Flags::Fullneb, set_it > 0);
 }
 
 /* freespace.cpp does not have these availiable externally, and we must call
