@@ -9,7 +9,7 @@ namespace animation {
 		static ModelAnimationParseHelper::Registrar reg;
 		std::vector<std::shared_ptr<ModelAnimationSegment>> m_segments;
 
-		virtual ModelAnimationSegment* copy() const override;
+		ModelAnimationSegment* copy() const override;
 		void recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) override;
 		void calculateAnimation(ModelAnimationSubmodelBuffer& base, float time, int pmi_id) const override;
 		void executeAnimation(const ModelAnimationSubmodelBuffer& state, float timeboundLower, float timeboundUpper, ModelAnimationDirection direction, int pmi_id) override;
@@ -26,7 +26,7 @@ namespace animation {
 		static ModelAnimationParseHelper::Registrar reg;
 		std::vector<std::shared_ptr<ModelAnimationSegment>> m_segments;
 
-		virtual ModelAnimationSegment* copy() const override;
+		ModelAnimationSegment* copy() const override;
 		void recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) override;
 		void calculateAnimation(ModelAnimationSubmodelBuffer& base, float time, int pmi_id) const override;
 		void executeAnimation(const ModelAnimationSubmodelBuffer& state, float timeboundLower, float timeboundUpper, ModelAnimationDirection direction, int pmi_id) override;
@@ -43,13 +43,13 @@ namespace animation {
 		static ModelAnimationParseHelper::Registrar reg;
 		float m_time;
 
-		virtual ModelAnimationSegment* copy() const override;
+		ModelAnimationSegment* copy() const override;
 		void recalculate(ModelAnimationSubmodelBuffer& /*base*/, polymodel_instance* pmi) override;
 		void calculateAnimation(ModelAnimationSubmodelBuffer& /*base*/, float /*time*/, int /*pmi_id*/) const override { };
 		void executeAnimation(const ModelAnimationSubmodelBuffer& /*state*/, float /*timeboundLower*/, float /*timeboundUpper*/, ModelAnimationDirection /*direction*/, int /*pmi_id*/) override { };
-		void exchangeSubmodelPointers(ModelAnimationSet& replaceWith) override { };
+		void exchangeSubmodelPointers(ModelAnimationSet& /*replaceWith*/) override { };
 
-		static std::shared_ptr<ModelAnimationSegment> parser(ModelAnimationParseHelper* data);
+		static std::shared_ptr<ModelAnimationSegment> parser(ModelAnimationParseHelper* /*data*/);
 	public:
 		ModelAnimationSegmentWait(float time);
 
@@ -70,7 +70,7 @@ namespace animation {
 		angles m_targetAngle;
 		bool m_isAngleRelative;
 
-		virtual ModelAnimationSegment* copy() const override;
+		ModelAnimationSegment* copy() const override;
 		void recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) override;
 		void calculateAnimation(ModelAnimationSubmodelBuffer& base, float /*time*/, int pmi_id) const override;
 		void executeAnimation(const ModelAnimationSubmodelBuffer& /*state*/, float /*timeboundLower*/, float /*timeboundUpper*/, ModelAnimationDirection /*direction*/, int /*pmi_id*/) override { };
@@ -90,7 +90,7 @@ namespace animation {
 		float m_angle;
 		matrix m_rot;
 
-		virtual ModelAnimationSegment* copy() const override;
+		ModelAnimationSegment* copy() const override;
 		void recalculate(ModelAnimationSubmodelBuffer& /*base*/, polymodel_instance* pmi) override;
 		void calculateAnimation(ModelAnimationSubmodelBuffer& base, float /*time*/, int /*pmi_id*/) const override;
 		void executeAnimation(const ModelAnimationSubmodelBuffer& /*state*/, float /*timeboundLower*/, float /*timeboundUpper*/, ModelAnimationDirection /*direction*/, int /*pmi_id*/) override { };
@@ -124,7 +124,7 @@ namespace animation {
 		optional<angles> m_acceleration;
 		bool m_isAbsolute;
 
-		virtual ModelAnimationSegment* copy() const override;
+		ModelAnimationSegment* copy() const override;
 		void recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) override;
 		void calculateAnimation(ModelAnimationSubmodelBuffer& base, float time, int pmi_id) const override;
 		void executeAnimation(const ModelAnimationSubmodelBuffer& /*state*/, float /*timeboundLower*/, float /*timeboundUpper*/, ModelAnimationDirection /*direction*/, int /*pmi_id*/) override { };
@@ -137,7 +137,7 @@ namespace animation {
 	};
 
 	class ModelAnimationSegmentTranslation : public ModelAnimationSegment {
-		static ModelAnimationParseHelper::Registrar reg;
+		//static ModelAnimationParseHelper::Registrar reg;
 		struct instance_data {
 			vec3d m_actualVelocity;
 			vec3d m_actualTarget; //Usually won't be needed, but if vel + angle is specified, not all angles necessarily end simultaneously.
@@ -158,7 +158,7 @@ namespace animation {
 		optional<vec3d> m_acceleration;
 		enum class CoordinateSystem { COORDS_PARENT, COORDS_LOCAL_AT_START, COORDS_LOCAL_CURRENT } m_coordType;
 
-		virtual ModelAnimationSegment* copy() const override;
+		ModelAnimationSegment* copy() const override;
 		void recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) override;
 		void calculateAnimation(ModelAnimationSubmodelBuffer& base, float time, int pmi_id) const override;
 		void executeAnimation(const ModelAnimationSubmodelBuffer& /*state*/, float /*timeboundLower*/, float /*timeboundUpper*/, ModelAnimationDirection /*direction*/, int /*pmi_id*/) override { };
@@ -186,7 +186,7 @@ namespace animation {
 		gamesnd_id m_during;
 		bool m_flipIfReversed;
 
-		virtual ModelAnimationSegment* copy() const override;
+		ModelAnimationSegment* copy() const override;
 		void recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) override;
 		void calculateAnimation(ModelAnimationSubmodelBuffer& base, float time, int pmi_id) const override;
 		void executeAnimation(const ModelAnimationSubmodelBuffer& state, float timeboundLower, float timeboundUpper, ModelAnimationDirection direction, int pmi_id) override;

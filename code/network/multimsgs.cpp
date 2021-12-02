@@ -8065,7 +8065,7 @@ void process_animation_triggered_packet(ubyte* data, header* hinfo) {
 
 	//Need to broadcast back to other clients
 	if (Net_player->flags & NETINFO_FLAG_AM_MASTER) {
-		send_animation_triggered_packet(animationId, pmi, direction, forced, instant, &time);
+		send_animation_triggered_packet(animationId, pmi, direction, forced, instant, pause, &time);
 	}
 }
 

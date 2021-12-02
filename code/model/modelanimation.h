@@ -150,6 +150,8 @@ namespace animation {
 		}
 	};
 
+	class ModelAnimationSet;
+
 	class ModelAnimationSubmodel {
 	protected:
 		SCP_string m_name;
@@ -290,7 +292,7 @@ namespace animation {
 
 		ModelAnimationSet(SCP_string SIPname = "");
 		ModelAnimationSet(const ModelAnimationSet& other);
-		ModelAnimationSet& operator=(ModelAnimationSet&& other);
+		ModelAnimationSet& operator=(ModelAnimationSet&& other) noexcept;
 		ModelAnimationSet& operator=(const ModelAnimationSet& other);
 
 		//Helper function to shorten animation emplaces
@@ -312,9 +314,9 @@ namespace animation {
 
 		bool isEmpty() const;
 
-		std::shared_ptr<ModelAnimationSubmodel> getSubmodel(SCP_string submodelName);
-		std::shared_ptr<ModelAnimationSubmodel> getSubmodel(SCP_string submodelName, SCP_string SIP_name, bool findBarrel);
-		std::shared_ptr<ModelAnimationSubmodel> getSubmodel(const std::shared_ptr<ModelAnimationSubmodel> other);
+		std::shared_ptr<ModelAnimationSubmodel> getSubmodel(const SCP_string& submodelName);
+		std::shared_ptr<ModelAnimationSubmodel> getSubmodel(const SCP_string& submodelName, const SCP_string& SIP_name, bool findBarrel);
+		std::shared_ptr<ModelAnimationSubmodel> getSubmodel(const std::shared_ptr<ModelAnimationSubmodel>& other);
 	};
 
 	//Start of parsing functions
@@ -341,14 +343,15 @@ namespace animation {
 	public:
 		class Registrar {
 		public:
-			Registrar(SCP_string name, ModelAnimationSegmentParser parser) { s_segmentParsers.emplace(name, parser); }
+			Registrar(const SCP_string& name, const ModelAnimationSegmentParser& parser) { s_segmentParsers.emplace(name, parser); }
 		};
 		
 		std::shared_ptr<ModelAnimationSegment> parseSegment();
-		std::shared_ptr<ModelAnimationSubmodel> parseSubmodel();
 		//Per Animation parsing Data
 		SCP_string m_animationName;
 		std::shared_ptr<ModelAnimationSubmodel> parentSubmodel = nullptr;
+
+		static std::shared_ptr<ModelAnimationSubmodel> parseSubmodel();
 
 		static void parseTables();
 		static void parseAnimsetInfo(ModelAnimationSet& set, ship_info* sip = nullptr);

@@ -31,7 +31,7 @@ namespace animation {
 	}
 
 	void ModelAnimation::setAnimation(std::shared_ptr<ModelAnimationSegment> animation) {
-		m_animation = animation;
+		m_animation = std::move(animation);
 	}
 
 	ModelAnimationState ModelAnimation::play(float frametime, polymodel_instance* pmi, ModelAnimationSubmodelBuffer& applyBuffer, bool applyOnly) {
@@ -467,13 +467,13 @@ namespace animation {
 
 	int ModelAnimationSet::SUBTYPE_DEFAULT = ANIMATION_SUBTYPE_ALL;
 
-	ModelAnimationSet::ModelAnimationSet(SCP_string SIPname) : m_SIPname(SIPname) { };
+	ModelAnimationSet::ModelAnimationSet(SCP_string SIPname) : m_SIPname(std::move(SIPname)) { };
 
 	ModelAnimationSet::ModelAnimationSet(const ModelAnimationSet& other) {
 		operator=(other);
 	}
 
-	ModelAnimationSet& ModelAnimationSet::operator=(ModelAnimationSet&& other) {
+	ModelAnimationSet& ModelAnimationSet::operator=(ModelAnimationSet&& other) noexcept {
 		std::swap(m_submodels, other.m_submodels);
 		std::swap(m_animationSet, other.m_animationSet);
 		std::swap(m_SIPname, other.m_SIPname);
@@ -793,7 +793,7 @@ namespace animation {
 		return true;
 	};
 
-	std::shared_ptr<ModelAnimationSubmodel> ModelAnimationSet::getSubmodel(SCP_string submodelName) {
+	std::shared_ptr<ModelAnimationSubmodel> ModelAnimationSet::getSubmodel(const SCP_string& submodelName) {
 		for (const auto& submodel : m_submodels) {
 			if (!submodel->is_turret && submodel->m_name == submodelName)
 				return submodel;
@@ -804,7 +804,7 @@ namespace animation {
 		return submodel;
 	}
 
-	std::shared_ptr<ModelAnimationSubmodel> ModelAnimationSet::getSubmodel(SCP_string submodelName, SCP_string SIP_name, bool findBarrel) {
+	std::shared_ptr<ModelAnimationSubmodel> ModelAnimationSet::getSubmodel(const SCP_string& submodelName, const SCP_string& SIP_name, bool findBarrel) {
 		for (const auto& submodel : m_submodels) {
 			if (submodel->is_turret && submodel->m_name == submodelName) {
 				auto submodelTurret = ((ModelAnimationSubmodelTurret*)submodel.get());
@@ -818,9 +818,9 @@ namespace animation {
 		return submodel;
 	}
 
-	std::shared_ptr<ModelAnimationSubmodel> ModelAnimationSet::getSubmodel(const std::shared_ptr<ModelAnimationSubmodel> other) {
+	std::shared_ptr<ModelAnimationSubmodel> ModelAnimationSet::getSubmodel(const std::shared_ptr<ModelAnimationSubmodel>& other) {
 		if (other->is_turret) {
-			const ModelAnimationSubmodelTurret* const turret = (const ModelAnimationSubmodelTurret*)other.get();
+			auto const turret = (const ModelAnimationSubmodelTurret*)other.get();
 			return getSubmodel(turret->m_name, m_SIPname, turret->m_findBarrel);
 		}
 		else
@@ -984,10 +984,8 @@ namespace animation {
 		case ModelAnimationTriggerType::TurretFired:
 		case ModelAnimationTriggerType::TurretFiring: {
 			//Name of the turret subsys that needs to be firing
-			char parsedname[NAME_LENGTH];
-			strncpy_s(parsedname, triggeredBy.c_str(), NAME_LENGTH);
-			strlwr(parsedname);
-			std::string name(parsedname);
+			std::string name(triggeredBy);
+			SCP_tolower(name);
 
 			return {
 				[&set, pmi, type, name](ModelAnimationDirection direction, bool forced, bool instant, bool pause) -> bool {
@@ -1015,7 +1013,7 @@ namespace animation {
 		case ModelAnimationTriggerType::Initial:
 		default:
 			// Can't trigger by script
-			Warning(LOCATION, "Animation trigger type %d cannot be triggered by script/SEXP!", type);
+			Warning(LOCATION, "Initial-type animations cannot be triggered by script/SEXP!");
 			return {
 				[](ModelAnimationDirection /*direction*/, bool /*forced*/, bool /*instant*/, bool /*pause*/) -> bool { return false; },
 				[]() -> int { return 0; }
@@ -1037,7 +1035,7 @@ namespace animation {
 		if (segment_parser != s_segmentParsers.end())
 			return segment_parser->second(this);
 		else {
-			error_display(1, "Unknown segment type % s in animation with ID % s!", segment_type, m_animationName.c_str());
+			error_display(1, "Unknown segment type %s in animation with ID %s!", segment_type, m_animationName.c_str());
 			return nullptr;
 		}
 	}
@@ -1082,7 +1080,7 @@ namespace animation {
 		ModelAnimationTriggerType type = anim_match_type(atype);
 
 		int subtype = ModelAnimationSet::SUBTYPE_DEFAULT;
-		SCP_string name = "";
+		SCP_string name;
 
 		if (optional_string("+Triggered By:")) {
 			switch (type) {

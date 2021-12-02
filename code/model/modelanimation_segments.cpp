@@ -3,7 +3,7 @@
 namespace animation {
 
 	ModelAnimationSegment* ModelAnimationSegmentSerial::copy() const {
-		ModelAnimationSegmentSerial* newCopy = new ModelAnimationSegmentSerial();
+		auto newCopy = new ModelAnimationSegmentSerial();
 		for (const auto& segment : m_segments) {
 			newCopy->m_segments.push_back(std::shared_ptr<ModelAnimationSegment>(segment->copy()));
 		}
@@ -64,7 +64,7 @@ namespace animation {
 
 	ModelAnimationParseHelper::Registrar ModelAnimationSegmentSerial::reg("$Segment Sequential:", &parser);
 	std::shared_ptr<ModelAnimationSegment> ModelAnimationSegmentSerial::parser(ModelAnimationParseHelper* data) {
-		auto submodelOverride = data->parseSubmodel();
+		auto submodelOverride = ModelAnimationParseHelper::parseSubmodel();
 
 		ignore_white_space();
 		auto segment = std::shared_ptr<ModelAnimationSegmentSerial>(new ModelAnimationSegmentSerial());
@@ -82,7 +82,7 @@ namespace animation {
 
 
 	ModelAnimationSegment* ModelAnimationSegmentParallel::copy() const {
-		ModelAnimationSegmentParallel* newCopy = new ModelAnimationSegmentParallel();
+		auto newCopy = new ModelAnimationSegmentParallel();
 		for (const auto& segment : m_segments) {
 			newCopy->m_segments.push_back(std::shared_ptr<ModelAnimationSegment>(segment->copy()));
 		}
@@ -134,7 +134,7 @@ namespace animation {
 
 	ModelAnimationParseHelper::Registrar ModelAnimationSegmentParallel::reg("$Segment Parallel:", &parser);
 	std::shared_ptr<ModelAnimationSegment> ModelAnimationSegmentParallel::parser(ModelAnimationParseHelper* data) {
-		auto submodelOverride = data->parseSubmodel();
+		auto submodelOverride = ModelAnimationParseHelper::parseSubmodel();
 
 		ignore_white_space();
 		auto segment = std::shared_ptr<ModelAnimationSegmentParallel>(new ModelAnimationSegmentParallel());
@@ -162,7 +162,7 @@ namespace animation {
 	};
 
 	ModelAnimationParseHelper::Registrar ModelAnimationSegmentWait::reg("$Wait:", &parser);
-	std::shared_ptr<ModelAnimationSegment> ModelAnimationSegmentWait::parser(ModelAnimationParseHelper* data) {
+	std::shared_ptr<ModelAnimationSegment> ModelAnimationSegmentWait::parser(ModelAnimationParseHelper* /*data*/) {
 		required_string("+Time:");
 		float time = 0.0f;
 		stuff_float(&time);
@@ -173,7 +173,7 @@ namespace animation {
 
 
 	ModelAnimationSegmentSetPHB::ModelAnimationSegmentSetPHB(std::shared_ptr<ModelAnimationSubmodel> submodel, const angles& angle, bool isAngleRelative) :
-		m_submodel(submodel), m_targetAngle(angle), m_isAngleRelative(isAngleRelative) { }
+		m_submodel(std::move(submodel)), m_targetAngle(angle), m_isAngleRelative(isAngleRelative) { }
 
 	ModelAnimationSegment* ModelAnimationSegmentSetPHB::copy() const {
 		return new ModelAnimationSegmentSetPHB(*this);
@@ -218,7 +218,7 @@ namespace animation {
 		stuff_angles_deg_phb(&angle);
 		isRelative &= !optional_string("+Absolute");
 
-		auto submodel = data->parseSubmodel();
+		auto submodel = ModelAnimationParseHelper::parseSubmodel();
 
 		if (!submodel) {
 			if (data->parentSubmodel) 
@@ -234,7 +234,7 @@ namespace animation {
 
 
 	ModelAnimationSegmentSetAngle::ModelAnimationSegmentSetAngle(std::shared_ptr<ModelAnimationSubmodel> submodel, float angle) :
-		m_submodel(submodel), m_angle(angle) { }
+		m_submodel(std::move(submodel)), m_angle(angle) { }
 
 	ModelAnimationSegment* ModelAnimationSegmentSetAngle::copy() const {
 		return new ModelAnimationSegmentSetAngle(*this);
@@ -293,7 +293,7 @@ namespace animation {
 		required_string("+Angle:");
 		stuff_float(&angle);
 
-		auto submodel = data->parseSubmodel();
+		auto submodel = ModelAnimationParseHelper::parseSubmodel();
 
 		if (!submodel) {
 			if (data->parentSubmodel)
@@ -311,7 +311,7 @@ namespace animation {
 	constexpr float angles::*pbh[] = { &angles::p, &angles::b, &angles::h };
 
 	ModelAnimationSegmentRotation::ModelAnimationSegmentRotation(std::shared_ptr<ModelAnimationSubmodel> submodel, optional<angles> targetAngle, optional<angles> velocity, optional<float> time, optional<angles> acceleration, bool isAbsolute) :
-		m_submodel(submodel), m_targetAngle(targetAngle), m_velocity(velocity), m_time(time), m_acceleration(acceleration), m_isAbsolute(isAbsolute) { }
+		m_submodel(std::move(submodel)), m_targetAngle(targetAngle), m_velocity(velocity), m_time(time), m_acceleration(acceleration), m_isAbsolute(isAbsolute) { }
 
 	ModelAnimationSegment* ModelAnimationSegmentRotation::copy() const {
 		return new ModelAnimationSegmentRotation(*this);
@@ -335,7 +335,7 @@ namespace animation {
 				const angles& targetAngle = m_targetAngle;
 				vm_copy_transpose(&orientTransp, &submodel.orientation);
 				vm_angles_2_matrix(&target, &targetAngle);
-				diff = orientTransp * target;
+				vm_matrix_x_matrix(&diff, &target, &orientTransp);
 				vm_extract_angles_matrix_alternate(&instanceData.m_actualTarget, &diff);
 			}
 			else
@@ -580,7 +580,7 @@ namespace animation {
 			acceleration = parse;
 		}
 
-		auto submodel = data->parseSubmodel();
+		auto submodel = ModelAnimationParseHelper::parseSubmodel();
 		if (!submodel) {
 			if (data->parentSubmodel)
 				submodel = data->parentSubmodel;
@@ -595,7 +595,7 @@ namespace animation {
 
 
 	ModelAnimationSegmentTranslation::ModelAnimationSegmentTranslation(std::shared_ptr<ModelAnimationSubmodel> submodel, optional<vec3d> target, optional<vec3d> velocity, optional<float> time, optional<vec3d> acceleration, CoordinateSystem coordType) :
-		m_submodel(submodel), m_target(target), m_velocity(velocity), m_time(time), m_acceleration(acceleration), m_coordType(coordType) { }
+		m_submodel(std::move(submodel)), m_target(target), m_velocity(velocity), m_time(time), m_acceleration(acceleration), m_coordType(coordType) { }
 
 	ModelAnimationSegment* ModelAnimationSegmentTranslation::copy() const {
 		return new ModelAnimationSegmentTranslation(*this);
@@ -662,7 +662,7 @@ namespace animation {
 					a.a1d[i] = copysignf(a.a1d[i], d.a1d[i]);
 				instanceData.m_actualAccel = a;
 
-				vec3d at{ 0,0,0 };
+				vec3d at{ {{ 0,0,0}} };
 
 				for (size_t i = 0; i < 3; i++) {
 					float a_abs = fabsf(a.a1d[i]);
@@ -690,9 +690,9 @@ namespace animation {
 			const float& time = m_time;
 			m_duration[pmi->id] = time;
 
-			vec3d actualTime{ 0,0,0 };
-			for (size_t i = 0; i < 3; i++)
-				actualTime.a1d[i] = time;
+			vec3d actualTime{ {{ 0,0,0 }} };
+			for (float& timeAxis : actualTime.a1d)
+				timeAxis = time;
 
 			instanceData.m_actualTime = actualTime;
 
@@ -707,9 +707,9 @@ namespace animation {
 			vec3d& v = instanceData.m_actualVelocity;
 			const vec3d& d = instanceData.m_actualTarget;
 
-			vec3d actualAccel{ 0,0,0 };
-			vec3d accelTime{ 0,0,0 };
-			vec3d actualTime{ 0,0,0 };
+			vec3d actualAccel{ {{ 0,0,0 }} };
+			vec3d accelTime{ {{0,0,0 }} };
+			vec3d actualTime{ {{ 0,0,0 }} };
 
 			for (size_t i = 0; i < 3; i++) {
 				if (d.a1d[i] != 0.0f) {
@@ -766,7 +766,7 @@ namespace animation {
 	void ModelAnimationSegmentTranslation::calculateAnimation(ModelAnimationSubmodelBuffer& base, float time, int pmi_id) const {
 		const instance_data& instanceData = m_instances.at(pmi_id);
 
-		vec3d currentOffset{ 0,0,0 };
+		vec3d currentOffset{ {{ 0,0,0}} };
 
 		if (instanceData.m_actualAccel.has()) {
 			const vec3d& a = instanceData.m_actualAccel;
@@ -815,9 +815,11 @@ namespace animation {
 		case CoordinateSystem::COORDS_LOCAL_AT_START:
 			//Use the local coordinates this submodel had at the start of this animation, if no other animations would be running. Useful for cases where your movement shouldn't be modified by anything else
 			vm_vec_rotate(&finalOffset, &currentOffset, &instanceData.m_rotationAtStart);
+			break;
 		case CoordinateSystem::COORDS_LOCAL_CURRENT:
 			//Use the local coordinates this submodel has right now, including all other animations running. Useful if you want your submodel to move visibly on it's own axes
 			vm_vec_rotate(&finalOffset, &currentOffset, &submodelInstance.first.orientation);
+			break;
 		case CoordinateSystem::COORDS_PARENT:
 		default:
 			//Trivial case. Specified coordinates are assumed to be in relation to this submodel's coordinate system (dependent on its parent's rotation, but not on its own).
@@ -888,7 +890,7 @@ namespace animation {
 			}
 		}
 
-		auto submodel = data->parseSubmodel();
+		auto submodel = ModelAnimationParseHelper::parseSubmodel();
 		if (!submodel) {
 			if (data->parentSubmodel)
 				submodel = data->parentSubmodel;
