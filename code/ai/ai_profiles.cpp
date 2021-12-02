@@ -585,7 +585,7 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$reset last_hit_target_time for player hits:", AI::Profile_Flags::Reset_last_hit_target_time_for_player_hits);
 
-				if (optional_string("$Turret target recheck time:"))
+				if (optional_string("$turret target recheck time:"))
 				{
 					stuff_float(&profile->turret_target_recheck_time);
 					if (profile->turret_target_recheck_time < 0) {
