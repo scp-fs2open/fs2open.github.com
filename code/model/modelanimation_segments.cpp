@@ -836,7 +836,8 @@ namespace animation {
 		m_submodel = replaceWith.getSubmodel(m_submodel);
 	}
 
-	ModelAnimationParseHelper::Registrar ModelAnimationSegmentTranslation::reg("$Translation:", &parser);
+	//ToDo: DIsabled Translation for now until the backend becomes completed.
+	//ModelAnimationParseHelper::Registrar ModelAnimationSegmentTranslation::reg("$Translation:", &parser);
 	std::shared_ptr<ModelAnimationSegment> ModelAnimationSegmentTranslation::parser(ModelAnimationParseHelper* data) {
 		optional<vec3d> offset, velocity, acceleration;
 		optional<float> time;
