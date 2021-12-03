@@ -55,10 +55,10 @@ TonemapperAlgorithm lighting_profile::name_to_tonemapper(SCP_string &name)
 	if(name == "reinhard extended"){
 		r = tnm_Reinhard_Extended;
 	}
-	if(name == "PPC"){
+	if(name == "ppc"){
 		r = tnm_PPC;
 	}
-	if(name == "PPC RGB"){
+	if(name == "ppc rgb"){
 		r = tnm_PPC_RGB;
 	}
 	return r;
