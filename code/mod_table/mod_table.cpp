@@ -514,15 +514,33 @@ void parse_mod_table(const char *filename)
 		optional_string("#SOUND SETTINGS");
 
 		if (optional_string("$Default Sound Volume:")) {
-			stuff_float(&Master_sound_volume);
+			float snd_default;
+			stuff_float(&snd_default);
+			if ((snd_default >= 0) && (snd_default <= 1.0)) {
+				Default_sound_volume = snd_default;
+			} else {
+				error_display(0, "$Default Sound Volume is %f. It is not within 0-1.0 and will not be used. ", snd_default);
+			}
 		}
 
 		if (optional_string("$Default Music Volume:")) {
-			stuff_float(&Master_event_music_volume);
+			float music_default;
+			stuff_float(&music_default);
+			if ((music_default >= 0) && (music_default <= 1.0)) {
+				Default_music_volume = music_default;
+			} else {
+				error_display(0, "$Default Music Volume is %f. It is not within 0-1.0 and will not be used. ", music_default);
+			}
 		}
 
 		if (optional_string("$Default Voice Volume:")) {
-			stuff_float(&Master_voice_volume);
+			float voice_default;
+			stuff_float(&voice_default);
+			if ((voice_default >= 0) && (voice_default <= 1.0)) {
+				Default_voice_volume = voice_default;
+			} else {
+				error_display(0, "$Default Voice Volume is %f. It is not within 0-1.0 and will not be used. ", voice_default);
+			}
 		}
 
 		optional_string("#FRED SETTINGS");
