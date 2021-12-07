@@ -1071,15 +1071,17 @@ int CFred_mission_save::save_briefing()
 
 					fout_ext(" ", "%s", bi->label);
 				}
-				if (drop_white_space(bi->customClass)[0]) {
-					if (optional_string_fred("$Closeup label:")) {
-						parse_comments();
-					}
-					else {
-						fout("\n$Closeup label:");
-					}
+				if (save_format != MissionFormat::RETAIL) {
+					if (drop_white_space(bi->customClass)[0]) {
+						if (optional_string_fred("$Closeup label:")) {
+							parse_comments();
+						}
+						else {
+							fout("\n$Closeup label:");
+						}
 
-					fout_ext(" ", "%s", bi->customClass);
+						fout_ext(" ", "%s", bi->customClass);
+					}
 				}
 
 				if (optional_string_fred("+id:")) {
