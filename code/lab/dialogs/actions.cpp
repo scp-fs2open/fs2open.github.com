@@ -440,32 +440,30 @@ void AnimationTrigger::update(LabMode, int) {
 		for (bool& triggered_secondary_bank : triggered_secondary_banks)
 			triggered_secondary_bank = false;
 
-		const animation::ModelAnimationSet& anims = Ship_info[shipp->ship_info_index].animations;
+		const auto& animTriggers = Ship_info[shipp->ship_info_index].animations.getRegisteredTriggers();
 
-		for (const auto& animList : anims.m_animationSet) {
-			for (const auto& animation : animList.second) {
-				switch (animList.first.first) {
-				case animation::ModelAnimationTriggerType::TurretFiring: {
-					SCP_string name = animation.first;
-					if (animList.first.second != animation::ModelAnimationSet::SUBTYPE_DEFAULT) {
-						//Legacy layer
-						sprintf(name, "Turret Model #%i", animList.first.second);
-					}
-					
-					animations_tree->AddItem(subsystem_headers[animation::ModelAnimationTriggerType::TurretFiring], name, animList.first.second, true, trigger_turret_firing);
-					break;
+		for (const auto& animTrigger : animTriggers) {
+			switch (animTrigger.type) {
+			case animation::ModelAnimationTriggerType::TurretFiring: {
+				SCP_string name = animTrigger.name;
+				if (animTrigger.subtype != animation::ModelAnimationSet::SUBTYPE_DEFAULT) {
+					//Legacy layer
+					sprintf(name, "Turret Model #%i", animTrigger.subtype);
 				}
-				case animation::ModelAnimationTriggerType::TurretFired:
-					animations_tree->AddItem(subsystem_headers[animation::ModelAnimationTriggerType::TurretFired], animation.first, animList.first.second, true, trigger_turret_fired);
-					break;
-				case animation::ModelAnimationTriggerType::Scripted:
-					animations_tree->AddItem(subsystem_headers[animation::ModelAnimationTriggerType::Scripted], animation.first, animList.first.second, true, trigger_scripted);
-					break;
-				default:
-					break;
-				}
-
+				
+				animations_tree->AddItem(subsystem_headers[animation::ModelAnimationTriggerType::TurretFiring], name, animTrigger.subtype, true, trigger_turret_firing);
+				break;
 			}
+			case animation::ModelAnimationTriggerType::TurretFired:
+				animations_tree->AddItem(subsystem_headers[animation::ModelAnimationTriggerType::TurretFired], animTrigger.name, animTrigger.subtype, true, trigger_turret_fired);
+				break;
+			case animation::ModelAnimationTriggerType::Scripted:
+				animations_tree->AddItem(subsystem_headers[animation::ModelAnimationTriggerType::Scripted], animTrigger.name, animTrigger.subtype, true, trigger_scripted);
+				break;
+			default:
+				break;
+			}
+
 		}
 
 		auto shipwide_head = animations_tree->AddItem(nullptr, "Shipwide triggers");

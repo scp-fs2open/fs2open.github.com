@@ -187,7 +187,7 @@ namespace animation {
 		else {
 			//In Absolute mode we need to undo the previously applied rotation to make sure we actually end up at the target rotation despite having only a delta we output, as opposed to just overwriting the value
 			matrix unrotate, target;
-			const ModelAnimationData<>& submodel = base[m_submodel].first;
+			const ModelAnimationData<>& submodel = base[m_submodel].data;
 
 			vm_copy_transpose(&unrotate, &submodel.orientation);
 			vm_angles_2_matrix(&target, &m_targetAngle);
@@ -201,8 +201,8 @@ namespace animation {
 		ModelAnimationData<true> data;
 		data.orientation = m_instances.at(pmi_id).rot;
 
-		base[m_submodel].first.applyDelta(data);
-		base[m_submodel].second = true;
+		base[m_submodel].data.applyDelta(data);
+		base[m_submodel].modified = true;
 	}
 
 	void ModelAnimationSegmentSetPHB::exchangeSubmodelPointers(ModelAnimationSet& replaceWith) {
@@ -278,8 +278,8 @@ namespace animation {
 		ModelAnimationData<true> data;
 		data.orientation = m_rot;
 		
-		base[m_submodel].first.applyDelta(data);
-		base[m_submodel].second = true;
+		base[m_submodel].data.applyDelta(data);
+		base[m_submodel].modified = true;
 	}
 
 	void ModelAnimationSegmentSetAngle::exchangeSubmodelPointers(ModelAnimationSet& replaceWith) {
@@ -329,7 +329,7 @@ namespace animation {
 
 		if (m_targetAngle.has()) { //If we have an angle specified, use it.
 			if (m_isAbsolute) {
-				const ModelAnimationData<>& submodel = base[m_submodel].first;
+				const ModelAnimationData<>& submodel = base[m_submodel].data;
 
 				matrix orientTransp, target, diff;
 				const angles& targetAngle = m_targetAngle;
@@ -537,8 +537,8 @@ namespace animation {
 		ModelAnimationData<true> delta;
 		delta.orientation = orient;
 
-		base[m_submodel].first.applyDelta(delta);
-		base[m_submodel].second = true;
+		base[m_submodel].data.applyDelta(delta);
+		base[m_submodel].modified = true;
 	}
 
 	void ModelAnimationSegmentRotation::exchangeSubmodelPointers(ModelAnimationSet& replaceWith) {
@@ -759,7 +759,7 @@ namespace animation {
 		}
 
 		if (CoordinateSystem::COORDS_LOCAL_AT_START == m_coordType) {
-			instanceData.m_rotationAtStart = base[m_submodel].first.orientation;
+			instanceData.m_rotationAtStart = base[m_submodel].data.orientation;
 		}
 	}
 
@@ -818,7 +818,7 @@ namespace animation {
 			break;
 		case CoordinateSystem::COORDS_LOCAL_CURRENT:
 			//Use the local coordinates this submodel has right now, including all other animations running. Useful if you want your submodel to move visibly on it's own axes
-			vm_vec_rotate(&finalOffset, &currentOffset, &submodelInstance.first.orientation);
+			vm_vec_rotate(&finalOffset, &currentOffset, &submodelInstance.data.orientation);
 			break;
 		case CoordinateSystem::COORDS_PARENT:
 		default:
@@ -830,8 +830,8 @@ namespace animation {
 		ModelAnimationData<true> delta;
 		delta.position = finalOffset;
 
-		submodelInstance.first.applyDelta(delta);
-		submodelInstance.second = true;
+		submodelInstance.data.applyDelta(delta);
+		submodelInstance.modified = true;
 	}
 
 	void ModelAnimationSegmentTranslation::exchangeSubmodelPointers(ModelAnimationSet& replaceWith) {

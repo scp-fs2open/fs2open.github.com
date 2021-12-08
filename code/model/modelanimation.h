@@ -98,7 +98,6 @@ namespace animation {
 		TurretFired,	 // Triggered after a turret has fired -The E
 		PrimaryFired,    // Triggered when a primary weapon has fired.
 		SecondaryFired,  // Triggered when a secondary weapon has fired.
-		WeaponLaunched,  // Triggers on the weapon model once it spawns when fired
 
 		MaxAnimationTypes
 	};
@@ -107,7 +106,7 @@ namespace animation {
 		Auto_Reverse,			//Will make the animation automatically transition into reverse mode as opposed to waiting in a completed state
 		Reset_at_completion,	//Will cause the animation to reset once it completes. This usually only makes sense when the state at the end of the animation is identical to the state at the start of the animation. Incompatible with Auto_reverse
 		Loop,					//Will automatically loop the animation once it completes. Is compatible with Reset_at_completion to loop back from the start instead of reversing. Incompatible with Auto_reverse
-		Random_starting_phase,  //When an animation is started from an untriggered state, will randomize it's time to any possible time of the animation + possibly on the reverse, if the animation would automatically enter that
+		Random_starting_phase,  //When an animation is started from an untriggered state, will randomize its time to any possible time of the animation + possibly on the reverse, if the animation would automatically enter that
 		NUM_VALUES
 	};
 
@@ -203,8 +202,9 @@ namespace animation {
 		std::pair<submodel_instance*, bsp_info*> findSubmodel(polymodel_instance* pmi) override;
 	};
 
+	struct ModelAnimationSubmodelBufferData { ModelAnimationData<> data; bool modified; };
 	//Submodel -> data + was_set
-	using ModelAnimationSubmodelBuffer = std::map<std::shared_ptr<ModelAnimationSubmodel>, std::pair<ModelAnimationData<>, bool>>;
+	using ModelAnimationSubmodelBuffer = std::map<std::shared_ptr<ModelAnimationSubmodel>, ModelAnimationSubmodelBufferData>;
 
 	class ModelAnimationSegment {
 	protected:
@@ -274,11 +274,22 @@ namespace animation {
 		static int SUBTYPE_DEFAULT;
 
 	private:
+		struct RunningAnimationList { const ModelAnimationSet* parentSet; std::list<std::shared_ptr<ModelAnimation>> animationList; };
 		//Polymodel Instance ID -> set + ModelAnimation* list (naturally ordered by beginning time))
-		static std::map<int, std::pair<const ModelAnimationSet*, std::list<std::shared_ptr<ModelAnimation>>>> s_runningAnimations;
+		static std::map<int, RunningAnimationList> s_runningAnimations;
 
 		std::vector< std::shared_ptr<ModelAnimationSubmodel>> m_submodels;
 		SCP_string m_SIPname;
+
+		struct ModelAnimationSubtrigger { 
+			ModelAnimationTriggerType type;
+			int subtype;
+			friend constexpr bool operator<(const ModelAnimationSubtrigger& lhs, const ModelAnimationSubtrigger& rhs) {
+				return lhs.type < rhs.type || (!(rhs.type < lhs.type) && lhs.subtype < rhs.subtype);
+			}
+		};
+		// Trigger Type + Subtype -> (Trigger name -> list of Animation*)
+		std::map <ModelAnimationSubtrigger, std::map <SCP_string, std::vector<std::shared_ptr<ModelAnimation>>>> m_animationSet;
 
 		static void apply(polymodel_instance* pmi, const ModelAnimationSubmodelBuffer& applyBuffer);
 		static void cleanRunning();
@@ -287,9 +298,8 @@ namespace animation {
 
 		friend class ModelAnimation;
 		friend class ModelAnimationParseHelper;
-	public:
-		std::map <std::pair<ModelAnimationTriggerType, int>, std::map <SCP_string, std::vector<std::shared_ptr<ModelAnimation>>>> m_animationSet;
 
+	public:
 		ModelAnimationSet(SCP_string SIPname = "");
 		ModelAnimationSet(const ModelAnimationSet& other);
 		ModelAnimationSet& operator=(ModelAnimationSet&& other) noexcept;
@@ -311,6 +321,9 @@ namespace animation {
 		int getTime(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& name, int subtype = SUBTYPE_DEFAULT) const;
 		int getTimeAll(polymodel_instance* pmi, ModelAnimationTriggerType type, int subtype = SUBTYPE_DEFAULT, bool strict = false) const;
 		int getTimeDockBayDoors(polymodel_instance* pmi, int subtype) const;
+
+		struct RegisteredTrigger { ModelAnimationTriggerType type; int subtype; const SCP_string& name; };
+		std::vector<RegisteredTrigger> getRegisteredTriggers() const;
 
 		bool isEmpty() const;
 

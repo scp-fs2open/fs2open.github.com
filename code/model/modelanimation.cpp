@@ -19,7 +19,7 @@ namespace animation {
 
 	const size_t Num_animation_flags = sizeof(Animation_flags) / sizeof(flag_def_list_new<animation::Animation_Flags>);
 
-	std::map<int, std::pair<const ModelAnimationSet*, std::list<std::shared_ptr<ModelAnimation>>>> ModelAnimationSet::s_runningAnimations;
+	std::map<int, ModelAnimationSet::RunningAnimationList> ModelAnimationSet::s_runningAnimations;
 	std::vector<std::shared_ptr<ModelAnimation>> ModelAnimation::s_animationById;
 
 	ModelAnimation::ModelAnimation(bool isInitialType) : m_set(nullptr), m_isInitialType(isInitialType), id(s_animationById.size()) { }
@@ -50,8 +50,8 @@ namespace animation {
 			//We have a new animation starting up in this phase. Put it in the list of running animations to track and step it later
 			if (!m_isInitialType) {
 				auto& animEntry = ModelAnimationSet::s_runningAnimations[pmi->id];
-				animEntry.first = m_set;
-				animEntry.second.push_back(shared_from_this());
+				animEntry.parentSet = m_set;
+				animEntry.animationList.push_back(shared_from_this());
 			}
 
 			//Store the submodels current data as the base for this animation and calculate this animations parameters
@@ -63,7 +63,7 @@ namespace animation {
 			if (m_flags[Animation_Flags::Random_starting_phase]) {
 				instanceData.time = util::Random::next() * util::Random::INV_F_MAX_VALUE * instanceData.duration;
 				//Check if we might be on the way backwards
-				if (m_flags[Animation_Flags::Loop, Animation_Flags::Auto_Reverse] && !m_flags[Animation_Flags::Reset_at_completion] && util::Random::next(2) == 0) {
+				if (m_flags[Animation_Flags::Loop, Animation_Flags::Auto_Reverse] && !m_flags[Animation_Flags::Reset_at_completion] && util::Random::flip_coin()) {
 					instanceData.state = ModelAnimationState::RUNNING_RWD;
 					break; //In this case, we must delay for a frame
 				}		
@@ -238,7 +238,7 @@ namespace animation {
 
 			//Save the things modified by initial animations as actual baseline
 			for (const auto& initialModified : applyBuffer) {
-				if (!initialModified.second.second)
+				if (!initialModified.second.modified)
 					continue;
 
 				initialModified.first->saveCurrentAsBase(pmi);
@@ -272,9 +272,9 @@ namespace animation {
 		const auto& animList = animListIt->second;
 
 		ModelAnimationSubmodelBuffer applyBuffer;
-		animList.first->initializeSubmodelBuffer(pmi, applyBuffer);
+		animList.parentSet->initializeSubmodelBuffer(pmi, applyBuffer);
 
-		for (const auto& anim : animList.second) {
+		for (const auto& anim : animList.animationList) {
 			switch (anim->m_instances[pmi->id].state) {
 			case ModelAnimationState::RUNNING_FWD:
 			case ModelAnimationState::RUNNING_RWD:
@@ -533,16 +533,16 @@ namespace animation {
 	void ModelAnimationSet::cleanRunning() {
 		auto removeIt = s_runningAnimations.begin();
 		while (removeIt != s_runningAnimations.end()) {
-			auto animIt = removeIt->second.second.cbegin();
-			while (animIt != removeIt->second.second.cend()) {
+			auto animIt = removeIt->second.animationList.cbegin();
+			while (animIt != removeIt->second.animationList.cend()) {
 				if ((*animIt)->m_instances[removeIt->first].state == ModelAnimationState::UNTRIGGERED) {
-					animIt = removeIt->second.second.erase(animIt);
+					animIt = removeIt->second.animationList.erase(animIt);
 				}
 				else
 					animIt++;
 			}
 
-			if (removeIt->second.second.empty()) {
+			if (removeIt->second.animationList.empty()) {
 				removeIt = s_runningAnimations.erase(removeIt);
 			}
 			else
@@ -552,14 +552,14 @@ namespace animation {
 
 	void ModelAnimationSet::stopAnimations(polymodel_instance* pmi) {
 		if (pmi != nullptr) {
-			for (const auto& anim : s_runningAnimations[pmi->id].second) {
+			for (const auto& anim : s_runningAnimations[pmi->id].animationList) {
 				anim->stop(pmi, false);
 			}
 			s_runningAnimations.erase(pmi->id);
 		}
 		else {
 			for (const auto& animList : s_runningAnimations) {
-				for (const auto& anim : animList.second.second) {
+				for (const auto& anim : animList.second.animationList) {
 					anim->stop(model_get_instance(animList.first), false);
 				}
 			}
@@ -576,16 +576,16 @@ namespace animation {
 
 	void ModelAnimationSet::apply(polymodel_instance* pmi, const ModelAnimationSubmodelBuffer& applyBuffer) {
 		for (const auto& toApply : applyBuffer) {
-			if(toApply.second.second)
-				toApply.first->copyToSubmodel(toApply.second.first, pmi);
+			if(toApply.second.modified)
+				toApply.first->copyToSubmodel(toApply.second.data, pmi);
 		}
 	}
 
 	void ModelAnimationSet::initializeSubmodelBuffer(polymodel_instance* pmi, ModelAnimationSubmodelBuffer& applyBuffer) const {
 		for (const auto& submodel : m_submodels) {
 			ModelAnimationData<> base = submodel->getInitialData(pmi);
-			applyBuffer[submodel].first = base;
-			applyBuffer[submodel].second = false;
+			applyBuffer[submodel].data = base;
+			applyBuffer[submodel].modified = false;
 		}
 	}
 
@@ -662,16 +662,16 @@ namespace animation {
 		subtype++;
 
 		for (const auto& animList : m_animationSet) {
-			if (animList.first.first != ModelAnimationTriggerType::DockBayDoor)
+			if (animList.first.type != ModelAnimationTriggerType::DockBayDoor)
 				continue;
 
-			if (animList.first.second != ModelAnimationSet::SUBTYPE_DEFAULT) {
+			if (animList.first.subtype != ModelAnimationSet::SUBTYPE_DEFAULT) {
 				//Trigger on all but x type
-				if (animList.first.second < 0 && animList.first.second == subtype)
+				if (animList.first.subtype < 0 && animList.first.subtype == subtype)
 					continue;
 
 				//Trigger only on x type. For the record, animsubtype 0 cannot happen here.
-				if (animList.first.second > 0 && animList.first.second != subtype)
+				if (animList.first.subtype > 0 && animList.first.subtype != subtype)
 					continue;
 			}
 			for (auto& namedAnimations : animList.second) {
@@ -689,16 +689,16 @@ namespace animation {
 		subtype++;
 
 		for (const auto& animList : m_animationSet) {
-			if (animList.first.first != ModelAnimationTriggerType::DockBayDoor)
+			if (animList.first.type != ModelAnimationTriggerType::DockBayDoor)
 				continue;
 
-			if (animList.first.second != ModelAnimationSet::SUBTYPE_DEFAULT) {
+			if (animList.first.subtype != ModelAnimationSet::SUBTYPE_DEFAULT) {
 				//Trigger on all but x type
-				if (animList.first.second < 0 && animList.first.second == subtype)
+				if (animList.first.subtype < 0 && animList.first.subtype == subtype)
 					continue;
 
 				//Trigger only on x type. For the record, animsubtype 0 cannot happen here.
-				if (animList.first.second > 0 && animList.first.second != subtype)
+				if (animList.first.subtype > 0 && animList.first.subtype != subtype)
 					continue;
 			}
 			for (auto& namedAnimations : animList.second) {
@@ -784,6 +784,18 @@ namespace animation {
 		return (int) (duration * 1000);
 	}
 
+	std::vector<ModelAnimationSet::RegisteredTrigger> ModelAnimationSet::getRegisteredTriggers() const {
+		std::vector<RegisteredTrigger> ret;
+
+		for (const auto& animList : m_animationSet) {
+			for (const auto& animation : animList.second) {
+				ret.push_back({ animList.first.type, animList.first.subtype, animation.first });
+			}
+		}
+
+		return ret;
+	};
+
 	bool ModelAnimationSet::isEmpty() const {
 		for (const auto& animSet : m_animationSet) {
 			if (!animSet.second.empty())
@@ -850,8 +862,7 @@ namespace animation {
 	{ModelAnimationTriggerType::Scripted, {"scripted", false}},
 	{ModelAnimationTriggerType::TurretFired, {"turret-fired", true}},
 	{ModelAnimationTriggerType::PrimaryFired,   {"primary-fired", true}},
-	{ModelAnimationTriggerType::SecondaryFired, {"secondary-fired", true}},
-	{ModelAnimationTriggerType::WeaponLaunched, {"weapon-launched", false}} //Atypical case. While no reverse trigger occurs, it is also guaranteed to not trigger more than once per model, hence non-resetting animations are fine here.
+	{ModelAnimationTriggerType::SecondaryFired, {"secondary-fired", true}}
 	};
 
 	ModelAnimationTriggerType anim_match_type(const char* p)
@@ -946,7 +957,7 @@ namespace animation {
 					int time1 = set.getTime(pmi, type, dock_name);
 					int time2 = set.getTime(pmi, type, "");
 					int time3 = set.getTimeAll(pmi, type, subtype, true);
-					return time1 > time2 ? (time1 > time3 ? time1 : time3) : (time2 > time3 ? time2 : time3);
+					return std::max({ time1, time2, time3 });
 				}
 			};
 		}
@@ -998,7 +1009,6 @@ namespace animation {
 		}
 
 		case ModelAnimationTriggerType::Afterburner:
-		case ModelAnimationTriggerType::WeaponLaunched:
 		case ModelAnimationTriggerType::OnSpawn:
 			//No triggered by specialization
 			return {
@@ -1079,6 +1089,11 @@ namespace animation {
 		stuff_string(atype, F_NAME, NAME_LENGTH);
 		ModelAnimationTriggerType type = anim_match_type(atype);
 
+		if (type == ModelAnimationTriggerType::None) {
+			error_display(1, "Animation with unknown trigger type %s!", atype);
+			return;
+		}
+
 		int subtype = ModelAnimationSet::SUBTYPE_DEFAULT;
 		SCP_string name;
 
@@ -1133,7 +1148,6 @@ namespace animation {
 
 			case ModelAnimationTriggerType::Initial:
 			case ModelAnimationTriggerType::Afterburner:
-			case ModelAnimationTriggerType::WeaponLaunched:
 			case ModelAnimationTriggerType::OnSpawn:
 			default:
 				error_display(0, "Animation trigger type %s does not use any trigger specification!", atype);
