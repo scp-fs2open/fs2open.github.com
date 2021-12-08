@@ -783,6 +783,23 @@ int CFred_mission_save::save_asteroid_fields()
 			save_vector(Asteroid_field.inner_max_bound);
 		}
 
+		if (!Asteroid_target_ships.empty()) {
+			fso_comment_push(";;FSO 22.0.0;;");
+			if (optional_string_fred("$Asteroid Targets:")) {
+				parse_comments();
+				fout(" (");
+			} else {
+				fout_version("\n$Asteroid Targets: (");
+			}
+
+			for (SCP_string& name : Asteroid_target_ships) {				
+				fout(" %s", name.c_str());
+			}
+
+			fout(" )");
+			fso_comment_pop();
+		}
+
 		fso_comment_pop();
 	}
 
