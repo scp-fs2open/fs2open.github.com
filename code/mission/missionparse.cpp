@@ -1543,6 +1543,10 @@ void parse_briefing(mission * /*pm*/, int flags)
 				bi->label[0] = 0;
 				if (optional_string("$label:"))
 					stuff_string(bi->label, F_MESSAGE, MAX_LABEL_LEN);
+				bi->customClass[0] = 0;
+				if (optional_string("$Closeup label:")) {
+					stuff_string(bi->customClass, F_MESSAGE, MAX_LABEL_LEN);
+				}
 
 				if (optional_string("+id:")) {
 					stuff_int(&bi->id);
@@ -2442,6 +2446,14 @@ int parse_create_object_sub(p_object *p_objp)
 			Script_system.SetHookObjects(2, "Ship", &Objects[objnum], "Parent", anchor_objp);
 			Script_system.RunCondition(CHA_ONSHIPARRIVE, &Objects[objnum]);
 			Script_system.RemHookVars({"Ship", "Parent"});
+		}
+	}
+
+	// if this is an asteroid target, add it to the list
+	for (SCP_string& name : Asteroid_target_ships) {
+		if (stricmp(name.c_str(), shipp->ship_name) == 0) {
+			asteroid_add_target(&Objects[objnum]);
+			break;
 		}
 	}
 
@@ -5612,12 +5624,15 @@ void parse_asteroid_fields(mission *pm)
 		if (Asteroid_field.debris_genre == DG_SHIP) {
 			if (optional_string("+Field Debris Type:")) {
 				stuff_int(&Asteroid_field.field_debris_type[0]);
+				count++;
 			}
 			if (optional_string("+Field Debris Type:")) {
 				stuff_int(&Asteroid_field.field_debris_type[1]);
+				count++;
 			}
 			if (optional_string("+Field Debris Type:")) {
 				stuff_int(&Asteroid_field.field_debris_type[2]);
+				count++;
 			}
 		} else {
 			// debris asteroid
@@ -5638,6 +5653,8 @@ void parse_asteroid_fields(mission *pm)
 			}
 		}
 
+		Asteroid_field.num_used_field_debris_types = count;
+
 		bool invalid_asteroids = false;
 		for (int& ast_type : Asteroid_field.field_debris_type) {
 			if (ast_type >= (int)Asteroid_info.size()) {
@@ -5650,8 +5667,9 @@ void parse_asteroid_fields(mission *pm)
 			Warning(LOCATION, "The Asteroid field contains invalid entries!");
 
 		// backward compatibility
-		if ( (Asteroid_field.debris_genre == DG_ASTEROID) && (count == 0) ) {
+		if ( (Asteroid_field.debris_genre == DG_ASTEROID) && (Asteroid_field.num_used_field_debris_types == 0) ) {
 			Asteroid_field.field_debris_type[0] = 0;
+			Asteroid_field.num_used_field_debris_types = 1;
 		}
 
 		required_string("$Average Speed:");
@@ -5685,6 +5703,11 @@ void parse_asteroid_fields(mission *pm)
 			stuff_vec3d(&Asteroid_field.inner_max_bound);
 		} else {
 			Asteroid_field.has_inner_bound = 0;
+		}
+
+		if (optional_string("$Asteroid Targets:")) {
+			stuff_string_list(Asteroid_target_ships);
+			Default_asteroid_throwing_behavior = false;
 		}
 		i++;
 	}

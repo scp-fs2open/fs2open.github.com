@@ -8,6 +8,7 @@
 #include "ShipInitialStatusDialog.h"
 #include "ShipFlagsDialog.h"
 #include "PlayerOrdersDialog.h"
+#include "ShipSpecialStatsDialog.h"
 
 #include <QAbstractButton>
 #include <QtWidgets/QDialog>
@@ -46,8 +47,7 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	void on_resetButton_clicked();
 	void on_weaponsButton_clicked();
 	void on_playerOrdersButton_clicked();
-	void on_specialExpButton_clicked();
-	void on_specialHitsButton_clicked();
+	void on_specialStatsButton_clicked();
 	void on_hideCuesButton_clicked();
 	void on_restrictArrivalPathsButton_clicked();
 	void on_customWarpinButton_clicked();

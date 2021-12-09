@@ -509,8 +509,7 @@ void ShipEditorDialog::enableDisable()
 		ui->miscButton->setEnabled(true);
 		ui->textureReplacementButton->setEnabled(true);
 		ui->altShipClassButton->setEnabled(true);
-		ui->specialExpButton->setEnabled(true);
-		ui->specialHitsButton->setEnabled(true);
+		ui->specialStatsButton->setEnabled(true);
 	} else {
 		ui->shipNameEdit->setEnabled(false);
 		ui->shipClassCombo->setEnabled(false);
@@ -520,8 +519,7 @@ void ShipEditorDialog::enableDisable()
 		ui->miscButton->setEnabled(false);
 		ui->textureReplacementButton->setEnabled(false);
 		ui->altShipClassButton->setEnabled(false);
-		ui->specialExpButton->setEnabled(false);
-		ui->specialHitsButton->setEnabled(false);
+		ui->specialStatsButton->setEnabled(false);
 	}
 
 	// disable textures for multiple ships
@@ -710,13 +708,10 @@ void ShipEditorDialog::on_playerOrdersButton_clicked()
 	auto playerOrdersDialog = new dialogs::PlayerOrdersDialog(this, _viewport, _model->multi_edit);
 	playerOrdersDialog->show();
 }
-void ShipEditorDialog::on_specialExpButton_clicked()
+void ShipEditorDialog::on_specialStatsButton_clicked()
 {
-	// TODO: Special exp dialog
-}
-void ShipEditorDialog::on_specialHitsButton_clicked()
-{
-	// TODO: Special hits dialog
+	auto specialStatsDialog = new dialogs::ShipSpecialStatsDialog(this, _viewport);
+	specialStatsDialog->show();
 }
 void ShipEditorDialog::on_hideCuesButton_clicked()
 {

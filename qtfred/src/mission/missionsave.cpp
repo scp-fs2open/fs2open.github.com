@@ -783,6 +783,23 @@ int CFred_mission_save::save_asteroid_fields()
 			save_vector(Asteroid_field.inner_max_bound);
 		}
 
+		if (!Asteroid_target_ships.empty()) {
+			fso_comment_push(";;FSO 22.0.0;;");
+			if (optional_string_fred("$Asteroid Targets:")) {
+				parse_comments();
+				fout(" (");
+			} else {
+				fout_version("\n$Asteroid Targets: (");
+			}
+
+			for (SCP_string& name : Asteroid_target_ships) {				
+				fout(" %s", name.c_str());
+			}
+
+			fout(" )");
+			fso_comment_pop();
+		}
+
 		fso_comment_pop();
 	}
 
@@ -1070,6 +1087,18 @@ int CFred_mission_save::save_briefing()
 					}
 
 					fout_ext(" ", "%s", bi->label);
+				}
+				if (save_format != MissionFormat::RETAIL) {
+					if (drop_white_space(bi->customClass)[0]) {
+						if (optional_string_fred("$Closeup label:")) {
+							parse_comments();
+						}
+						else {
+							fout("\n$Closeup label:");
+						}
+
+						fout_ext(" ", "%s", bi->customClass);
+					}
 				}
 
 				if (optional_string_fred("+id:")) {
