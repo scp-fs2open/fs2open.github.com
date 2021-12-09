@@ -217,6 +217,11 @@ namespace animation {
 		required_string("+Angle:");
 		stuff_angles_deg_phb(&angle);
 		isRelative &= !optional_string("+Absolute");
+		bool explicitRelative = optional_string("+Relative");
+
+		if (!isRelative && explicitRelative) {
+			error_display(1, "Orientation cannot both be absolute and relative!");
+		}
 
 		auto submodel = ModelAnimationParseHelper::parseSubmodel();
 
@@ -555,7 +560,12 @@ namespace animation {
 			angles parse;
 			stuff_angles_deg_phb(&parse);
 			angle = parse;
-			isAbsolute |= (bool)optional_string("+Absolute");
+			isAbsolute = optional_string("+Absolute");
+			bool relative = optional_string("+Relative");
+
+			if (isAbsolute && relative) {
+				error_display(1, "Rotation cannot both be absolute and relative!");
+			}
 		}
 
 		if (optional_string("+Velocity:")) {
@@ -708,7 +718,7 @@ namespace animation {
 			const vec3d& d = instanceData.m_actualTarget;
 
 			vec3d actualAccel{ {{ 0,0,0 }} };
-			vec3d accelTime{ {{0,0,0 }} };
+			vec3d accelTime{ {{ 0,0,0 }} };
 			vec3d actualTime{ {{ 0,0,0 }} };
 
 			for (size_t i = 0; i < 3; i++) {
@@ -766,7 +776,7 @@ namespace animation {
 	void ModelAnimationSegmentTranslation::calculateAnimation(ModelAnimationSubmodelBuffer& base, float time, int pmi_id) const {
 		const instance_data& instanceData = m_instances.at(pmi_id);
 
-		vec3d currentOffset{ {{ 0,0,0}} };
+		vec3d currentOffset{ {{ 0,0,0 }} };
 
 		if (instanceData.m_actualAccel.has()) {
 			const vec3d& a = instanceData.m_actualAccel;

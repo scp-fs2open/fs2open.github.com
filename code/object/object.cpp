@@ -1516,9 +1516,9 @@ void obj_move_all(float frametime)
 			ship_move_subsystems(objp);
 
 		// do animation on this object
-		int modelnum = object_get_model_instance(objp);
-		if (modelnum > -1) {
-			polymodel_instance* pmi = model_get_instance(modelnum);
+		int model_instance_num = object_get_model_instance(objp);
+		if (model_instance_num > -1) {
+			polymodel_instance* pmi = model_get_instance(model_instance_num);
 			animation::ModelAnimation::stepAnimations(frametime, pmi);
 		}
 
