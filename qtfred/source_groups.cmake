@@ -70,6 +70,8 @@ add_file_folder("Source/Mission/Dialogs"
 	src/mission/dialogs/ShipGoalsDialogModel.cpp
 	src/mission/dialogs/ShipFlagsDialogModel.cpp
 	src/mission/dialogs/ShipFlagsDialogModel.h
+	src/mission/dialogs/ShipSpecialStatsDialogModel.h
+	src/mission/dialogs/ShipSpecialStatsDialogModel.cpp
 )
 
 add_file_folder("Source/UI"
@@ -122,6 +124,8 @@ add_file_folder("Source/UI/Dialogs"
 	src/ui/dialogs/ShipGoalsDialog.h
 	src/ui/dialogs/ShipFlagsDialog.h
 	src/ui/dialogs/ShipFlagsDialog.cpp
+	src/ui/dialogs/ShipSpecialStatsDialog.cpp
+	src/ui/dialogs/ShipSpecialStatsDialog.h
 )
 
 add_file_folder("Source/UI/Util"
@@ -164,6 +168,7 @@ add_file_folder("UI"
 	ui/ShipEditorDialog.ui
 	ui/ShipInitialStatus.ui
 	ui/ShipGoalsDialog.ui
+	ui/ShipSpecialStatsDialog.ui
 	ui/ShipFlagsDialog.ui
 )
 
