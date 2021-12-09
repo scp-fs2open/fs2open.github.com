@@ -588,9 +588,11 @@ void ShipEditorDialog::enableDisable()
 		} else {
 			ui->playerOrdersButton->setEnabled(true);
 		}
-	} else
+	}
+	else {
 		// always enabled when one ship is selected
 		ui->playerOrdersButton->setEnabled(_model->enable);
+	}
 
 	// always enabled if >= 1 ship selected
 	ui->personaCombo->setEnabled(_model->enable);
@@ -703,7 +705,8 @@ void ShipEditorDialog::on_weaponsButton_clicked()
 }
 void ShipEditorDialog::on_playerOrdersButton_clicked()
 {
-	// TODO: player orders dialog
+	auto playerOrdersDialog = new dialogs::PlayerOrdersDialog(this, _viewport, _model->multi_edit);
+	playerOrdersDialog->show();
 }
 void ShipEditorDialog::on_specialStatsButton_clicked()
 {
