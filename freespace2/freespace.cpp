@@ -879,7 +879,7 @@ void game_level_close()
 		mission_brief_common_reset();		// close out parsed briefing/mission stuff
 		cam_close();
 		subtitles_close();
-		animation::ModelAnimation::clearAnimations();
+		animation::ModelAnimationSet::stopAnimations();
 		particle::ParticleManager::get()->clearSources();
 		particle::close();
 		trail_level_close();
@@ -1892,6 +1892,8 @@ void game_init()
 	// fireballs need to be parsed before parsing ships.
 	// they don't need to be inited (data loaded etc.) until the mission starts
 	fireball_parse_tbl();
+
+	animation::ModelAnimationParseHelper::parseTables();
 
 	obj_init();	
 	mflash_game_init();	
