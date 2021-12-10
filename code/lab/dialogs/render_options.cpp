@@ -270,7 +270,7 @@ void RenderOptions::open(Button* /*caller*/) {
 	dialogWindow->AddChild(bloom_sldr);
 	y += bloom_sldr->GetHeight() + 2;
 
-	auto exposure_sldr= new Slider("Exposure", 0, 80, 0, y + 2, set_exposure, dialogWindow->GetWidth());
+	auto exposure_sldr= new Slider("Exposure", 0, 8, 0, y + 2, set_exposure, dialogWindow->GetWidth());
 	exposure_sldr->SetSliderValue(lighting_profile::current_exposure());
 	dialogWindow->AddChild(exposure_sldr);
 	y += exposure_sldr->GetHeight() + 2;
