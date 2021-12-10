@@ -13,7 +13,7 @@ namespace scripting {
 namespace api {
 
 //**********HANDLE: Wing
-ADE_OBJ(l_OSWPT, object_ship_wing_point_team, "oswpt", "OSWPT handle");
+ADE_OBJ(l_OSWPT, object_ship_wing_point_team, "oswpt", "Handle for LuaSEXP arguments that can hold different types (Object/Ship/Wing/Waypoint/Team)");
 
 ADE_FUNC(getType, l_OSWPT, nullptr, "The data-type this OSWPT yields on the get method.", "string", "The name of the data type. Either 'ship', 'parseobject' (a yet-to-spawn ship), 'wing' (can include yet-to-arrive wings with 0 current ships), 'team' (both explicit and ship-on-team), 'waypoint',  or 'none' (either explicitly specified, a ship that doesn't exist anymore, or invalid OSWPT object).")
 {

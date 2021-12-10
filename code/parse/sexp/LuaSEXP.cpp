@@ -40,12 +40,12 @@ SCP_unordered_map<SCP_string, int> parameter_type_mapping{{ "boolean",      OPF_
 														  { "shipclass",    OPF_SHIP_CLASS_NAME },
 														  { "weaponclass",  OPF_WEAPON_NAME },
 														  { "soundentry",   OPF_GAME_SND }, 
-														  { "oswpt-ship+waypoint",   OPF_SHIP_POINT },
-														  { "oswpt-ship+wing",   OPF_SHIP_WING },
-														  { "oswpt-ship+wing+team",   OPF_SHIP_WING_WHOLETEAM },
-														  { "oswpt-ship+wing+team+waypoint",   OPF_SHIP_WING_SHIPONTEAM_POINT },
-														  { "oswpt-ship+wing+waypoint",   OPF_SHIP_WING_POINT },
-														  { "oswpt-ship+wing+waypoint+none",   OPF_SHIP_WING_POINT_OR_NONE }, };
+														  { "ship+waypoint",   OPF_SHIP_POINT },
+														  { "ship+wing",   OPF_SHIP_WING },
+														  { "ship+wing+team",   OPF_SHIP_WING_WHOLETEAM },
+														  { "ship+wing+ship_on_team+waypoint",   OPF_SHIP_WING_SHIPONTEAM_POINT },
+														  { "ship+wing+waypoint",   OPF_SHIP_WING_POINT },
+														  { "ship+wing+waypoint+none",   OPF_SHIP_WING_POINT_OR_NONE }, };
 
 std::pair<SCP_string, int> get_parameter_type(const SCP_string& name)
 {
