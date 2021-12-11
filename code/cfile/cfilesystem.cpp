@@ -1025,6 +1025,7 @@ CFileLocation cf_find_file_location(const char* filespec, int pathtype, bool loc
 		{
 			case CF_TYPE_ROOT:
 			case CF_TYPE_DATA:
+			case CF_TYPE_PLAYERS:
 			case CF_TYPE_SINGLE_PLAYERS:
 			case CF_TYPE_MULTI_PLAYERS:
 			case CF_TYPE_MULTI_CACHE:
@@ -1205,6 +1206,7 @@ CFileLocationExt cf_find_file_location_ext( const char *filename, const int ext_
 			{
 				case CF_TYPE_ROOT:
 				case CF_TYPE_DATA:
+				case CF_TYPE_PLAYERS:
 				case CF_TYPE_SINGLE_PLAYERS:
 				case CF_TYPE_MULTI_PLAYERS:
 				case CF_TYPE_MULTI_CACHE:
