@@ -1068,7 +1068,7 @@ int CFred_mission_save::save_briefing()
 						if (optional_string_fred("$closeup label:"))
 							parse_comments();
 						else
-							fout("\n$closeup label::");
+							fout("\n$closeup label:");
 
 						fout_ext(" ", "%s", bi->closeup_label);
 					}
