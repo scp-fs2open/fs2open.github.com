@@ -10,6 +10,7 @@
 #include "parse/sexp.h"
 #include "parse/sexp/sexp_lookup.h"
 #include "scripting/api/objs/message.h"
+#include "scripting/api/objs/oswpt.h"
 #include "scripting/api/objs/sexpvar.h"
 #include "scripting/api/objs/ship.h"
 #include "scripting/api/objs/shipclass.h"
@@ -38,7 +39,14 @@ SCP_unordered_map<SCP_string, int> parameter_type_mapping{{ "boolean",      OPF_
 														  { "wing",         OPF_WING },
 														  { "shipclass",    OPF_SHIP_CLASS_NAME },
 														  { "weaponclass",  OPF_WEAPON_NAME },
-														  { "soundentry",   OPF_GAME_SND }, };
+														  { "soundentry",   OPF_GAME_SND }, 
+														  { "ship+waypoint",   OPF_SHIP_POINT },
+														  { "ship+wing",   OPF_SHIP_WING },
+														  { "ship+wing+team",   OPF_SHIP_WING_WHOLETEAM },
+														  { "ship+wing+ship_on_team+waypoint",   OPF_SHIP_WING_SHIPONTEAM_POINT },
+														  { "ship+wing+waypoint",   OPF_SHIP_WING_POINT },
+														  { "ship+wing+waypoint+none",   OPF_SHIP_WING_POINT_OR_NONE }, };
+
 std::pair<SCP_string, int> get_parameter_type(const SCP_string& name)
 {
 	SCP_string copy = name;
@@ -229,6 +237,16 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum) const {
 	case OPF_STRING: {
 		auto text = CTEXT(node);
 		return LuaValue::createValue(_action.getLuaState(), text);
+	}
+	case OPF_SHIP_POINT:
+	case OPF_SHIP_WING:
+	case OPF_SHIP_WING_WHOLETEAM:
+	case OPF_SHIP_WING_SHIPONTEAM_POINT:
+	case OPF_SHIP_WING_POINT:
+	case OPF_SHIP_WING_POINT_OR_NONE: {
+		object_ship_wing_point_team oswpt;
+		eval_object_ship_wing_point_team(&oswpt, node);
+		return LuaValue::createValue(_action.getLuaState(), l_OSWPT.Set(oswpt));
 	}
 	default:
 		UNREACHABLE("Unhandled argument type! Someone added an argument type but didn't add handling code to execute().");

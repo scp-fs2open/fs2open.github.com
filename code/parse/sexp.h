@@ -16,6 +16,10 @@
 class ship_subsys;
 class ship;
 class waypoint_list;
+class object;
+class waypoint;
+class p_object;
+struct ship_obj;
 
 // bumped to 30 by Goober5000
 #define	OPERATOR_LENGTH	30  // if this ever exceeds TOKEN_LENGTH, let JasonH know!
@@ -1352,5 +1356,40 @@ extern int Sexp_hud_display_warpout;
 int get_effect_from_name(const char* name);
 
 void maybe_write_to_event_log(int result);
+
+//OSWPT Stuff
+
+#define OSWPT_TYPE_NONE				0
+#define OSWPT_TYPE_SHIP				1
+#define OSWPT_TYPE_WING				2
+#define OSWPT_TYPE_WAYPOINT			3
+#define OSWPT_TYPE_SHIP_ON_TEAM		4	// e.g. <any friendly>
+#define OSWPT_TYPE_WHOLE_TEAM		5	// e.g. Friendly
+#define OSWPT_TYPE_PARSE_OBJECT		6	// a "ship" that hasn't arrived yet
+#define OSWPT_TYPE_EXITED			7
+#define OSWPT_TYPE_WING_NOT_PRESENT	8	// a wing that hasn't arrived yet or is between waves
+
+// Goober5000
+struct object_ship_wing_point_team
+{
+	const char* object_name = nullptr;
+	int type = OSWPT_TYPE_NONE;
+
+	const ship_registry_entry* ship_entry = nullptr;
+	object* objp = nullptr;
+	wing* wingp = nullptr;
+	waypoint* waypointp = nullptr;
+	int team = -1;
+
+	object_ship_wing_point_team() = default;
+	object_ship_wing_point_team(ship* sp);
+	object_ship_wing_point_team(p_object* pop);
+	object_ship_wing_point_team(ship_obj* sop);
+	object_ship_wing_point_team(wing* wp);
+
+	void clear();
+};
+
+void eval_object_ship_wing_point_team(object_ship_wing_point_team* oswpt, int node, const char* ctext_override = nullptr);
 
 #endif

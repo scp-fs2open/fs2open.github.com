@@ -5495,86 +5495,61 @@ int sexp_string_compare(int n, int op)
 	return SEXP_TRUE;
 }
 
-#define OSWPT_TYPE_NONE				0
-#define OSWPT_TYPE_SHIP				1
-#define OSWPT_TYPE_WING				2
-#define OSWPT_TYPE_WAYPOINT			3
-#define OSWPT_TYPE_SHIP_ON_TEAM		4	// e.g. <any friendly>
-#define OSWPT_TYPE_WHOLE_TEAM		5	// e.g. Friendly
-#define OSWPT_TYPE_PARSE_OBJECT		6	// a "ship" that hasn't arrived yet
-#define OSWPT_TYPE_EXITED			7
-#define OSWPT_TYPE_WING_NOT_PRESENT	8	// a wing that hasn't arrived yet or is between waves
-
-// Goober5000
-struct object_ship_wing_point_team
+object_ship_wing_point_team::object_ship_wing_point_team(ship* sp)
+: object_name(sp->ship_name), type(OSWPT_TYPE_SHIP), objp(&Objects[sp->objnum])
 {
-	const char *object_name = nullptr;
-	int type = OSWPT_TYPE_NONE;
-
-	const ship_registry_entry *ship_entry = nullptr;
-	object *objp = nullptr;
-	wing *wingp = nullptr;
-	waypoint *waypointp = nullptr;
-	int team = -1;
-
-	object_ship_wing_point_team() = default;
-
-	object_ship_wing_point_team(ship *sp)
-		: object_name(sp->ship_name), type(OSWPT_TYPE_SHIP), objp(&Objects[sp->objnum])
+	ship_entry = ship_registry_get(sp->ship_name);
+	if (ship_entry->status == EXITED)
 	{
-		ship_entry = ship_registry_get(sp->ship_name);
-		if (ship_entry->status == EXITED) 
-		{
-			type = OSWPT_TYPE_EXITED;
-		}
+		type = OSWPT_TYPE_EXITED;
 	}
+}
 
-	object_ship_wing_point_team(p_object *pop)
-		: object_name(pop->name), type(OSWPT_TYPE_PARSE_OBJECT)
+object_ship_wing_point_team::object_ship_wing_point_team(p_object* pop)
+: object_name(pop->name), type(OSWPT_TYPE_PARSE_OBJECT)
+{
+	ship_entry = ship_registry_get(pop->name);
+}
+
+object_ship_wing_point_team::object_ship_wing_point_team(ship_obj* sop)
+	: object_ship_wing_point_team(&Ships[Objects[sop->objnum].instance])
+{}
+
+object_ship_wing_point_team::object_ship_wing_point_team(wing* wp)
+	: object_name(wp->name), wingp(wp)
+{
+	if (wingp->current_count > 0)
+		type = OSWPT_TYPE_WING;
+	else
+		type = OSWPT_TYPE_WING_NOT_PRESENT;
+
+	// point to wing leader if he is valid
+	if ((wingp->special_ship >= 0) && (wingp->ship_index[wingp->special_ship] >= 0))
 	{
-		ship_entry = ship_registry_get(pop->name);
+		objp = &Objects[Ships[wingp->ship_index[wingp->special_ship]].objnum];
 	}
-
-	object_ship_wing_point_team(ship_obj *sop)
-		: object_ship_wing_point_team(&Ships[Objects[sop->objnum].instance])
-	{}
-
-	object_ship_wing_point_team(wing *wp)
-		: object_name(wp->name), wingp(wp)
+	// boo... well, just point to ship at index 0
+	else
 	{
-		if (wingp->current_count > 0)
-			type = OSWPT_TYPE_WING;
-		else
-			type = OSWPT_TYPE_WING_NOT_PRESENT;
-
-		// point to wing leader if he is valid
-		if ((wingp->special_ship >= 0) && (wingp->ship_index[wingp->special_ship] >= 0))
-		{
-			objp = &Objects[Ships[wingp->ship_index[wingp->special_ship]].objnum];
-		}
-		// boo... well, just point to ship at index 0
-		else
-		{
-			objp = &Objects[Ships[wingp->ship_index[0]].objnum];
-			Warning(LOCATION, "Substituting ship '%s' at index 0 for nonexistent wing leader at index %d!", Ships[objp->instance].ship_name, wingp->special_ship);
-		}
+		objp = &Objects[Ships[wingp->ship_index[0]].objnum];
+		Warning(LOCATION, "Substituting ship '%s' at index 0 for nonexistent wing leader at index %d!", Ships[objp->instance].ship_name, wingp->special_ship);
 	}
+}
 
-	void clear()
-	{
-		object_name = nullptr;
-		type = OSWPT_TYPE_NONE;
+void object_ship_wing_point_team::clear()
+{
+	object_name = nullptr;
+	type = OSWPT_TYPE_NONE;
 
-		ship_entry = nullptr;
-		objp = nullptr;
-		wingp = nullptr;
-		waypointp = nullptr;
-		team = -1;
-	}
-};
+	ship_entry = nullptr;
+	objp = nullptr;
+	wingp = nullptr;
+	waypointp = nullptr;
+	team = -1;
+}
 
 // Goober5000
-void eval_object_ship_wing_point_team(object_ship_wing_point_team *oswpt, int node, const char *ctext_override = nullptr)
+void eval_object_ship_wing_point_team(object_ship_wing_point_team *oswpt, int node, const char *ctext_override)
 {
 	const ship_registry_entry *ship_entry = nullptr;
 	wing *wingp = nullptr;
