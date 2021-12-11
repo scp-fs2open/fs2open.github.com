@@ -1705,7 +1705,7 @@ int cf_get_file_list(int max, char** list, int pathtype, const char* filter, int
 			}
 
 			list[num_files] = reinterpret_cast<char *>(vm_malloc(l + 1));
-			SDL_strlcpy(list[num_files], file.name.c_str(), l);
+			SDL_strlcpy(list[num_files], file.name.c_str(), l+1);
 
 			if (info) {
 				info[num_files].write_time = file.m_time;
