@@ -1280,7 +1280,7 @@ int brief_setup_closeup(brief_icon *bi)
 			strcpy_s(Closeup_icon->closeup_label, sip->get_display_name());
 
 			// Goober5000 - wcsaga doesn't want this
-			if (Ship_types[sip->class_type].flags[Ship::Type_Info_Flags::No_class_display]) {
+			if (!Ship_types[sip->class_type].flags[Ship::Type_Info_Flags::No_class_display]) {
 				strcat_s(Closeup_icon->closeup_label, XSTR(" class", 434));
 			}
 		}
