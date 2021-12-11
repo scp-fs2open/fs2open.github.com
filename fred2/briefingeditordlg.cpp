@@ -61,11 +61,11 @@ briefing_editor_dlg::briefing_editor_dlg(CWnd* pParent /*=NULL*/)
 	m_hilight = FALSE;
 	m_icon_image = -1;
 	m_icon_label = _T("");
+	m_icon_closeup_label = _T("");
 	m_stage_title = _T("");
 	m_text = _T("");
 	m_time = _T("");
 	m_voice = _T("");
-	m_icon_closeup_label = _T("");
 	m_icon_team = -1;
 	m_ship_type = -1;
 	m_change_local = FALSE;
@@ -97,11 +97,11 @@ void briefing_editor_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_HILIGHT, m_hilight);
 	DDX_CBIndex(pDX, IDC_ICON_IMAGE, m_icon_image);
 	DDX_Text(pDX, IDC_ICON_LABEL, m_icon_label);
+	DDX_Text(pDX, IDC_ICON_CLOSEUP_LABEL, m_icon_closeup_label);
 	DDX_Text(pDX, IDC_STAGE_TITLE, m_stage_title);
 	DDX_Text(pDX, IDC_TEXT, m_text);
 	DDX_Text(pDX, IDC_TIME, m_time);
 	DDX_Text(pDX, IDC_VOICE, m_voice);
-	DDX_Text(pDX, IDC_ICON_CLOSEUP_LABEL, m_icon_closeup_label);
 	DDX_CBIndex(pDX, IDC_TEAM, m_icon_team);
 	DDX_CBIndex(pDX, IDC_SHIP_TYPE, m_ship_type);
 	DDX_Check(pDX, IDC_LOCAL, m_change_local);
@@ -564,8 +564,8 @@ void briefing_editor_dlg::update_data(int update)
 		m_icon_image = ptr->icons[m_cur_icon].type;
 		m_icon_team = ptr->icons[m_cur_icon].team;
 		m_icon_label = ptr->icons[m_cur_icon].label;
-		m_ship_type = ptr->icons[m_cur_icon].ship_class;
 		m_icon_closeup_label = ptr->icons[m_cur_icon].closeup_label;
+		m_ship_type = ptr->icons[m_cur_icon].ship_class;
 		m_id = ptr->icons[m_cur_icon].id;
 		enable = TRUE;
 
@@ -578,6 +578,7 @@ void briefing_editor_dlg::update_data(int update)
 		m_icon_team = -1;
 		m_ship_type = -1;
 		m_icon_label = _T("");
+		m_icon_closeup_label = _T("");
 		m_cur_icon = -1;
 		m_id = 0;
 		enable = FALSE;
