@@ -70,7 +70,7 @@ void asteroid_editor::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_DENSITY_SPIN, m_density_spin);
 	DDX_Text(pDX, IDC_AVG_SPEED, m_avg_speed);
 	DDX_Text(pDX, IDC_DENSITY, m_density);
-	DDX_Check(pDX, IDC_ENABLE_ASTEROIDS, m_enable_asteroids);
+//	DDX_Check(pDX, IDC_ENABLE_ASTEROIDS, m_enable_asteroids);
 	DDX_Text(pDX, IDC_MAX_X, m_max_x);
 	DDX_Text(pDX, IDC_MAX_Y, m_max_y);
 	DDX_Text(pDX, IDC_MAX_Z, m_max_z);
@@ -90,7 +90,7 @@ void asteroid_editor::DoDataExchange(CDataExchange* pDX)
 BEGIN_MESSAGE_MAP(asteroid_editor, CDialog)
 	//{{AFX_MSG_MAP(asteroid_editor)
 	ON_WM_INITMENU()
-	ON_BN_CLICKED(IDC_ENABLE_ASTEROIDS, OnEnableAsteroids)
+//	ON_BN_CLICKED(IDC_ENABLE_ASTEROIDS, OnEnableAsteroids)
 	ON_WM_CLOSE()
 	ON_BN_CLICKED(IDC_ENABLE_INNER_BOX, OnEnableInnerBox)
 	ON_BN_CLICKED(IDC_PASSIVE_FIELD, OnPassiveField)

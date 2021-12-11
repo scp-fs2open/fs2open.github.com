@@ -57,7 +57,7 @@ public:
 	CString	m_text;
 	CString	m_time;
 	CString	m_voice;
-	CString	m_icon_text;
+	CString	m_icon_closeup_label;
 	int		m_icon_team;
 	int		m_ship_type;
 	BOOL	m_change_local;

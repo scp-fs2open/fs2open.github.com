@@ -1543,9 +1543,9 @@ void parse_briefing(mission * /*pm*/, int flags)
 				bi->label[0] = 0;
 				if (optional_string("$label:"))
 					stuff_string(bi->label, F_MESSAGE, MAX_LABEL_LEN);
-				bi->customClass[0] = 0;
-				if (optional_string("$Closeup label:")) {
-					stuff_string(bi->customClass, F_MESSAGE, MAX_LABEL_LEN);
+				bi->closeup_label[0] = 0;
+				if (optional_string("$closeup label:")) {
+					stuff_string(bi->closeup_label, F_MESSAGE, MAX_LABEL_LEN);
 				}
 
 				if (optional_string("+id:")) {
