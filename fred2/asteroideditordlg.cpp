@@ -70,7 +70,6 @@ void asteroid_editor::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_DENSITY_SPIN, m_density_spin);
 	DDX_Text(pDX, IDC_AVG_SPEED, m_avg_speed);
 	DDX_Text(pDX, IDC_DENSITY, m_density);
-//	DDX_Check(pDX, IDC_ENABLE_ASTEROIDS, m_enable_asteroids);
 	DDX_Text(pDX, IDC_MAX_X, m_max_x);
 	DDX_Text(pDX, IDC_MAX_Y, m_max_y);
 	DDX_Text(pDX, IDC_MAX_Z, m_max_z);
@@ -90,13 +89,14 @@ void asteroid_editor::DoDataExchange(CDataExchange* pDX)
 BEGIN_MESSAGE_MAP(asteroid_editor, CDialog)
 	//{{AFX_MSG_MAP(asteroid_editor)
 	ON_WM_INITMENU()
-//	ON_BN_CLICKED(IDC_ENABLE_ASTEROIDS, OnEnableAsteroids)
 	ON_WM_CLOSE()
 	ON_BN_CLICKED(IDC_ENABLE_INNER_BOX, OnEnableInnerBox)
 	ON_BN_CLICKED(IDC_PASSIVE_FIELD, OnPassiveField)
 	ON_BN_CLICKED(IDC_FIELD_SHIP, OnFieldShip)
 	ON_BN_CLICKED(IDC_ACTIVE_FIELD, OnActiveField)
 	ON_BN_CLICKED(IDC_FIELD_ASTEROID, OnFieldAsteroid)
+	ON_BN_CLICKED(IDC_ADD_FIELD, OnAddField)
+	ON_BN_CLICKED(IDC_REMOVE_FIELD, OnRemoveField)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -288,9 +288,6 @@ int asteroid_editor::validate_data()
 	return 1;
 }
 
-
-
-
 void asteroid_editor::OnOK()
 {
 	int i;
@@ -309,14 +306,14 @@ void asteroid_editor::OnOK()
 
 BOOL asteroid_editor::OnInitDialog() 
 {
-
-
 	cur_field = 0;
+
 	CDialog::OnInitDialog();
 	update_init();
 	theApp.init_window(&Asteroid_wnd_data, this);
 
 	m_density_spin.SetRange(1, MAX_ASTEROIDS);
+
 	return TRUE;
 }
 
@@ -482,7 +479,6 @@ void asteroid_editor::update_init()
 	((CButton*)GetDlgItem(IDC_SUBTYPE2))->SetCheck(a_field[cur_field].field_debris_type[1] == 1);
 	((CButton*)GetDlgItem(IDC_SUBTYPE3))->SetCheck(a_field[cur_field].field_debris_type[2] == 1);
 
-
 	UpdateData(FALSE);
 	OnEnableAsteroids();
 
@@ -514,6 +510,26 @@ void asteroid_editor::OnEnableAsteroids()
 	GetDlgItem(IDC_SUBTYPE1)->EnableWindow(m_enable_asteroids && (Asteroid_field.debris_genre == DG_ASTEROID));
 	GetDlgItem(IDC_SUBTYPE2)->EnableWindow(m_enable_asteroids && (Asteroid_field.debris_genre == DG_ASTEROID));
 	GetDlgItem(IDC_SUBTYPE3)->EnableWindow(m_enable_asteroids && (Asteroid_field.debris_genre == DG_ASTEROID));
+
+	GetDlgItem(IDC_FIELD_TARGET_LIST)->EnableWindow(m_enable_asteroids);
+	GetDlgItem(IDC_ADD_FIELD_TARGET)->EnableWindow(m_enable_asteroids);
+	GetDlgItem(IDC_REMOVE_FIELD_TARGET)->EnableWindow(m_enable_asteroids);
+
+	// sorta temporary until multiple fields are really enabled
+	((CComboBox*)GetDlgItem(IDC_FIELD_NUM))->Clear();
+	GetDlgItem(IDC_FIELD_NUM)->EnableWindow(m_enable_asteroids);
+	if (m_enable_asteroids) {
+		GetDlgItem(IDC_ADD_FIELD)->EnableWindow(FALSE);
+		GetDlgItem(IDC_REMOVE_FIELD)->EnableWindow(TRUE);
+		((CComboBox*)GetDlgItem(IDC_FIELD_NUM))->AddString("Field 1");
+		((CComboBox*)GetDlgItem(IDC_FIELD_NUM))->SetCurSel(0);
+	}
+	else {
+		GetDlgItem(IDC_ADD_FIELD)->EnableWindow(TRUE);
+		GetDlgItem(IDC_REMOVE_FIELD)->EnableWindow(FALSE);
+		((CComboBox*)GetDlgItem(IDC_FIELD_NUM))->SetCurSel(-1);
+	}
+	UpdateData(FALSE);
 
 	OnEnableInnerBox();
 	OnEnableField();
@@ -671,4 +687,16 @@ void asteroid_editor::OnFieldAsteroid()
 	// force check of asteroid
 	((CButton*)GetDlgItem(IDC_FIELD_ASTEROID))->SetCheck(1);
 	((CButton*)GetDlgItem(IDC_FIELD_SHIP))->SetCheck(0);
+}
+
+void asteroid_editor::OnAddField()
+{
+	m_enable_asteroids = TRUE;
+	OnEnableAsteroids();
+}
+
+void asteroid_editor::OnRemoveField()
+{
+	m_enable_asteroids = FALSE;
+	OnEnableAsteroids();
 }

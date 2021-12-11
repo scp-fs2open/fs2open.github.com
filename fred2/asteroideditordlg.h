@@ -80,6 +80,8 @@ protected:
 	afx_msg void OnFieldShip();
 	afx_msg void OnActiveField();
 	afx_msg void OnFieldAsteroid();
+	afx_msg void OnAddField();
+	afx_msg void OnRemoveField();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 };
