@@ -154,6 +154,29 @@ END_MESSAGE_MAP()
 /////////////////////////////////////////////////////////////////////////////
 // briefing_editor_dlg message handlers
 
+BOOL briefing_editor_dlg::OnInitDialog()
+{
+	CDialog::OnInitDialog();
+
+	//create tool tip controls
+	m_CloseupLabelToolTip = new CToolTipCtrl();
+	m_CloseupLabelToolTip->Create(this);
+
+	CWnd* pWnd = GetDlgItem(IDC_ICON_CLOSEUP_LABEL);
+	m_CloseupLabelToolTip->AddTool(pWnd, "If this is blank, the ship class will be used");
+	m_CloseupLabelToolTip->Activate(TRUE);
+
+	return TRUE;  // return TRUE unless you set the focus to a control
+				  // EXCEPTION: OCX Property Pages should return FALSE
+}
+
+BOOL briefing_editor_dlg::PreTranslateMessage(MSG* pMsg)
+{
+	m_CloseupLabelToolTip->RelayEvent(pMsg);
+
+	return CDialog::PreTranslateMessage(pMsg);
+}
+
 void briefing_editor_dlg::OnInitMenu(CMenu* pMenu)
 {
 	int i;

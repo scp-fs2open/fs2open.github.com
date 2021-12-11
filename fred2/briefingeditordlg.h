@@ -109,6 +109,11 @@ protected:
 
 	void copy_stage(int from, int to);
 
+	CToolTipCtrl* m_CloseupLabelToolTip;
+
+	virtual BOOL OnInitDialog();
+	BOOL PreTranslateMessage(MSG * pMsg);
+
 	// Generated message map functions
 	//{{AFX_MSG(briefing_editor_dlg)
 	afx_msg void OnClose();
