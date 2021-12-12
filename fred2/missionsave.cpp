@@ -778,7 +778,7 @@ int CFred_mission_save::save_asteroid_fields()
 			}
 
 			for (SCP_string& name : Asteroid_target_ships) {				
-				fout(" %s", name.c_str());
+				fout(" \"%s\"", name.c_str());
 			}
 
 			fout(" )");

@@ -13,6 +13,7 @@
 #include "stdafx.h"
 #include "FRED.h"
 #include "AsteroidEditorDlg.h"
+#include "listitemchooser.h"
 #include "starfield/starfield.h"
 #include "FREDDoc.h"
 #include "debris/debris.h"	//	Asteroid stuff.
@@ -55,12 +56,16 @@ asteroid_editor::asteroid_editor(CWnd* pParent /*=NULL*/)
 	m_box_min_x = _T("");
 	m_box_min_y = _T("");
 	m_box_min_z = _T("");
+	m_field_target_index = -1;
+	m_field_targets.clear();
 	//}}AFX_DATA_INIT
 
 	last_field = -1;
 	i=0;
 //	for (i=0; i<MAX_ASTEROID_FIELDS; i++)
 		a_field[i] = Asteroid_field;	//	Only supporting one field per mission.
+
+	m_field_targets = Asteroid_target_ships;
 }
 
 void asteroid_editor::DoDataExchange(CDataExchange* pDX)
@@ -97,6 +102,9 @@ BEGIN_MESSAGE_MAP(asteroid_editor, CDialog)
 	ON_BN_CLICKED(IDC_FIELD_ASTEROID, OnFieldAsteroid)
 	ON_BN_CLICKED(IDC_ADD_FIELD, OnAddField)
 	ON_BN_CLICKED(IDC_REMOVE_FIELD, OnRemoveField)
+	ON_LBN_SELCHANGE(IDC_FIELD_TARGET_LIST, OnFieldTargetChange)
+	ON_BN_CLICKED(IDC_ADD_FIELD_TARGET, OnAddFieldTarget)
+	ON_BN_CLICKED(IDC_REMOVE_FIELD_TARGET, OnRemoveFieldTarget)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -299,6 +307,9 @@ void asteroid_editor::OnOK()
 	for (i=0; i<1 /*MAX_ASTEROID_FIELDS*/; i++)
 		Asteroid_field = a_field[i];
 
+	// asteroid field targets are handled separately
+	Asteroid_target_ships = m_field_targets;
+
 	update_map_window();
 	theApp.record_window_data(&Asteroid_wnd_data, this);
 	CDialog::OnOK();
@@ -320,6 +331,7 @@ BOOL asteroid_editor::OnInitDialog()
 void asteroid_editor::update_init()
 {
 	int num_asteroids, idx, cur_choice;
+	CString str;
 
 	UpdateData(TRUE);
 	if (last_field >= 0) {
@@ -399,6 +411,15 @@ void asteroid_editor::update_init()
 		MODIFY(a_field[last_field].inner_max_bound.xyz.x, (float) atof(m_box_max_x));
 		MODIFY(a_field[last_field].inner_max_bound.xyz.y, (float) atof(m_box_max_y));
 		MODIFY(a_field[last_field].inner_max_bound.xyz.z, (float) atof(m_box_max_z));
+
+		// store current targets
+		auto targetList = ((CListBox*)GetDlgItem(IDC_FIELD_TARGET_LIST));
+		m_field_targets.clear();
+		for (int i = 0; i < targetList->GetCount(); ++i)
+		{
+			targetList->GetText(i, str);
+			m_field_targets.push_back((LPCSTR)str);
+		}
 	}
 
 	Assert(cur_field >= 0);
@@ -515,6 +536,13 @@ void asteroid_editor::OnEnableAsteroids()
 	GetDlgItem(IDC_ADD_FIELD_TARGET)->EnableWindow(m_enable_asteroids);
 	GetDlgItem(IDC_REMOVE_FIELD_TARGET)->EnableWindow(m_enable_asteroids);
 
+	((CListBox*)GetDlgItem(IDC_FIELD_TARGET_LIST))->ResetContent();
+	if (m_enable_asteroids) {
+		for (const auto& target : m_field_targets) {
+			((CListBox*)GetDlgItem(IDC_FIELD_TARGET_LIST))->AddString(target.c_str());
+		}
+	}
+
 	// sorta temporary until multiple fields are really enabled
 	((CComboBox*)GetDlgItem(IDC_FIELD_NUM))->Clear();
 	GetDlgItem(IDC_FIELD_NUM)->EnableWindow(m_enable_asteroids);
@@ -533,6 +561,7 @@ void asteroid_editor::OnEnableAsteroids()
 
 	OnEnableInnerBox();
 	OnEnableField();
+	OnFieldTargetChange();
 }
 
 void asteroid_editor::OnCancel()
@@ -699,4 +728,55 @@ void asteroid_editor::OnRemoveField()
 {
 	m_enable_asteroids = FALSE;
 	OnEnableAsteroids();
+}
+
+void asteroid_editor::OnFieldTargetChange()
+{
+	m_field_target_index = ((CListBox*)GetDlgItem(IDC_FIELD_TARGET_LIST))->GetCurSel();
+	GetDlgItem(IDC_REMOVE_FIELD_TARGET)->EnableWindow(m_field_target_index >= 0);
+}
+
+void asteroid_editor::OnAddFieldTarget()
+{
+	SCP_vector<SCP_string> targets;
+	CString str;
+
+	// add any ship in the mission
+	for (int i = 0; i < MAX_SHIPS; i++)
+	{
+		if (Ships[i].objnum >= 0)
+			targets.push_back(Ships[i].ship_name);
+	}
+
+	ListItemChooser dlg(targets);
+	if (dlg.DoModal() == IDCANCEL)
+		return;
+
+	auto which = dlg.GetChosenIndex();
+	if (which < 0)
+		return;
+	auto new_target = targets[which].c_str();
+
+	// make sure we aren't adding a target that is already in the list
+	if (std::find(m_field_targets.begin(), m_field_targets.end(), new_target) != m_field_targets.end())
+		return;
+
+	auto targetList = ((CListBox*)GetDlgItem(IDC_FIELD_TARGET_LIST));
+	m_field_targets.push_back(new_target);
+	targetList->AddString(new_target);
+
+	OnFieldTargetChange();
+}
+
+void asteroid_editor::OnRemoveFieldTarget()
+{
+	// if we don't have an active item
+	if (m_field_target_index < 0)
+		return;
+
+	// remove the item from the list
+	m_field_targets.erase(m_field_targets.begin() + m_field_target_index);
+	((CListBox*)GetDlgItem(IDC_FIELD_TARGET_LIST))->DeleteString(m_field_target_index);
+
+	OnFieldTargetChange();
 }
