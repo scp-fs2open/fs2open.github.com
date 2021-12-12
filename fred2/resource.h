@@ -97,7 +97,7 @@
 #define IDD_SET_GLOBAL_SHIP_FLAGS       266
 #define IDD_CUSTOM_WING_NAMES           267
 #define IDD_RESTRICT_PATHS              270
-#define IDD_BACKGROUND_CHOOSER          272
+#define IDD_LISTITEM_CHOOSER            272
 #define IDB_DATA_05                     277
 #define IDB_DATA_10                     286
 #define IDD_ALT_SHIP_CLASS              292
@@ -1074,7 +1074,7 @@
 #define IDC_PLAYER_START_CHASE          1583
 #define IDC_RESTRICT_PATHS_LABEL        1584
 #define IDC_PATH_LIST                   1585
-#define IDC_BACKGROUND                  1586
+#define IDC_LISTITEM                    1586
 #define IDC_ENVMAP                      1589
 #define IDC_ENVMAP_BROWSE               1590
 #define IDC_ENTRY_FORMAT                1590
