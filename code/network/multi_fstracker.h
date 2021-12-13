@@ -26,11 +26,6 @@
 #define MSW_STATUS_VALID						0
 #define MSW_STATUS_INVALID						1
 
-// tracker table validation status
-#define TVALID_STATUS_UNKNOWN						-1
-#define TVALID_STATUS_VALID						0
-#define TVALID_STATUS_INVALID						1
-
 //struct vmt_freespace2_struct;
 class scoring_struct;
 struct squad_war_request;
@@ -45,6 +40,7 @@ extern char Multi_fs_tracker_filter[MAX_PATH];
 // used for mod detection
 extern short Multi_fs_tracker_game_id;
 extern SCP_string Multi_fs_tracker_game_name;
+extern SCP_string Multi_fs_tracker_game_tag;
 
 // -----------------------------------------------------------------------------------
 // FREESPACE MASTER TRACKER DECLARATIONS

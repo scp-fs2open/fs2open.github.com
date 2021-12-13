@@ -48,6 +48,7 @@ char Multi_fs_tracker_filter[MAX_PATH] = "";
 // used for mod detection
 short Multi_fs_tracker_game_id = -1;
 SCP_string Multi_fs_tracker_game_name;
+SCP_string Multi_fs_tracker_game_tag;
 
 enum PROBE_FLAGS {
 	PENDING	= (1<<0),
@@ -1156,14 +1157,14 @@ int multi_fs_tracker_validate_mission(char *filename)
 	return MVALID_STATUS_UNKNOWN;
 }
 
-// return a TVALID_STATUS_* constant
-int multi_fs_tracker_validate_table_std()
+// return a MVALID_STATUS_* constant
+int multi_fs_tracker_validate_data_std()
 {
 	int ret_val;
 
 	// wait for a response from the tracker
 	do {
-		ret_val = ValidateTable(nullptr);
+		ret_val = ValidateData(nullptr);
 	} while (ret_val == 0);
 
 	// report on the results
@@ -1171,18 +1172,19 @@ int multi_fs_tracker_validate_table_std()
 		// timeout
 		case -2:
 			// consider timeout to be fatal and cancel validation
-			return -2;	//TVALID_STATUS_UNKNOWN;
+			return -2;	//MVALID_STATUS_UNKNOWN;
 
 		// invalid
 		case -1:
-			return TVALID_STATUS_INVALID;
+			return MVALID_STATUS_INVALID;
 
 		// valid, success
 		case 1:
-			return TVALID_STATUS_VALID;
+			return MVALID_STATUS_VALID;
 	}
 
 	Int3();
+
 	return 0;
 }
 
@@ -1190,9 +1192,9 @@ int multi_fs_tracker_validate_table_std()
 // 1 for timeout
 // 2 for invalid
 // 3 for valid
-int multi_fs_tracker_validate_table_normal()
+int multi_fs_tracker_validate_data_normal()
 {
-	switch ( ValidateTable(nullptr) ) {
+	switch ( ValidateData(nullptr) ) {
 		// timeout
 		case -2:
 			return 1;
@@ -1210,65 +1212,42 @@ int multi_fs_tracker_validate_table_normal()
 	return 0;
 }
 
-// return an TVALID_STATUS_* value, or -2 if the user has "cancelled"
-int multi_fs_tracker_validate_table(const char *filename)
+int multi_fs_tracker_validate_data(const vmt_valid_data_req_struct *vdr, const char *popup_text = nullptr)
 {
-	vmt_validate_mission_req_struct table;
-	char popup_string[512] = "";
-
 	if ( !Multi_fs_tracker_inited ) {
-		return TVALID_STATUS_UNKNOWN;
+		return MVALID_STATUS_UNKNOWN;
 	}
 
-	// get the checksum of the local file
-	SDL_zero(table);
-	SDL_strlcpy(table.file_name, filename, SDL_arraysize(table.file_name));
-
-	if ( !cf_chksum_long(table.file_name, reinterpret_cast<uint *>(&table.checksum)) ) {
-		return TVALID_STATUS_UNKNOWN;
+	if (ValidateData(vdr) != 0) {
+		return MVALID_STATUS_UNKNOWN;
 	}
 
-	// try and validate the table
-	if (ValidateTable(&table) != 0) {
-		return TVALID_STATUS_UNKNOWN;
-	}
-
-	// do frames for standalone and non-standalone
 	if (Game_mode & GM_STANDALONE_SERVER) {
-		int ret_code;
+		std_gen_set_text(popup_text, 1);
 
-		// set the filename in the dialog
-		std_gen_set_text(filename, 2);
-
-		// validate the table
-		ret_code = multi_fs_tracker_validate_table_std();
+		// validate the data
+		int ret_code = multi_fs_tracker_validate_data_std();
 
 		return ret_code;
 	} else {
-		SDL_snprintf(popup_string, SDL_arraysize(popup_string), XSTR("Validating table %s", -1), filename);
-
-		// run a popup
-		switch ( popup_conditional_do(multi_fs_tracker_validate_table_normal, popup_string) ) {
-			// cancel
+		switch ( popup_conditional_do(multi_fs_tracker_validate_data_normal, popup_text) ) {
+			// cancel or timeout, stop processing
 			case 0:
-				TableValidState = VALID_STATE_IDLE;
-				return -2;
-
-			// timeout
 			case 1:
-				return TVALID_STATUS_UNKNOWN;
+				DataValidState = VALID_STATE_IDLE;
+				return -2;
 
 			// invalid
 			case 2:
-				return TVALID_STATUS_INVALID;
+				return MVALID_STATUS_INVALID;
 
 			// valid
 			case 3:
-				return TVALID_STATUS_VALID;
+				return MVALID_STATUS_VALID;
 		}
 	}
 
-	return TVALID_STATUS_UNKNOWN;
+	return MVALID_STATUS_UNKNOWN;
 }
 
 // check all tables with tracker
@@ -1279,7 +1258,9 @@ int multi_fs_tracker_validate_table(const char *filename)
 int multi_fs_tracker_validate_game_data()
 {
 	// should only do this only once per game session
-	static int game_data_status = TVALID_STATUS_UNKNOWN;
+	static int game_data_status = MVALID_STATUS_UNKNOWN;
+	vmt_valid_data_req_struct vdr;
+	char popup_string[512] = "";
 
 	multi_fs_tracker_init();
 
@@ -1287,68 +1268,129 @@ int multi_fs_tracker_validate_game_data()
 		return 1; // assume hacked
 	}
 
-	if (game_data_status == TVALID_STATUS_UNKNOWN) {
-		SCP_vector<SCP_string> table_list;
-		size_t tbl_idx, tbm_idx;
-		int rval;
+	if (game_data_status != MVALID_STATUS_UNKNOWN) {
+		return (game_data_status != MVALID_STATUS_VALID);
+	}
 
-		// grab all tbl and tbm files and send the checksum to tracker
-		// cf_get_file_list() strips ext so we have to do this in parts
-		// let the tracker figure out which files to validate against
 
-		// get all tbl files first
-		cf_get_file_list(table_list, CF_TYPE_TABLES, "*.tbl");
+	SCP_vector<SCP_string> table_list;
+	size_t tbl_idx, tbm_idx;
+	int rval;
 
-		// add ext back on filenames
-		for (tbl_idx = 0; tbl_idx < table_list.size(); ++tbl_idx) {
-			table_list[tbl_idx].append(".tbl");
-		}
+	// grab all tbl and tbm files and send the checksum to tracker
+	// cf_get_file_list() strips ext so we have to do this in parts
+	// let the tracker figure out which files to validate against
 
-		// next grab any tbm files
-		cf_get_file_list(table_list, CF_TYPE_TABLES, "*.tbm");
+	// get all tbl files first
+	cf_get_file_list(table_list, CF_TYPE_TABLES, "*.tbl");
 
-		// and add ext
-		for (tbm_idx = tbl_idx; tbm_idx < table_list.size(); ++tbm_idx) {
-			table_list[tbm_idx].append(".tbm");
-		}
+	// add ext back on filenames
+	for (tbl_idx = 0; tbl_idx < table_list.size(); ++tbl_idx) {
+		table_list[tbl_idx].append(".tbl");
+	}
 
-		// now check with tracker
+	// next grab any tbm files
+	cf_get_file_list(table_list, CF_TYPE_TABLES, "*.tbm");
 
-		if ( !(Game_mode & GM_STANDALONE_SERVER) ) {
-			popup_conditional_create(0, XSTR("&Cancel", 667), XSTR("Validating tables ...", -1));
-		}
+	// and add ext
+	for (tbm_idx = tbl_idx; tbm_idx < table_list.size(); ++tbm_idx) {
+		table_list[tbm_idx].append(".tbm");
+	}
 
-		for (auto &tbl : table_list) {
-			rval = multi_fs_tracker_validate_table( tbl.c_str() );
+	// now check with tracker
+	strcpy_s(popup_string, XSTR("Validating tables ...", -1));
+
+	if ( !(Game_mode & GM_STANDALONE_SERVER) ) {
+		popup_conditional_create(0, XSTR("&Cancel", 667), popup_string);
+	}
+
+	vdr.type = VDR_TYPE_TABLE;
+	vdr.flags = VDR_FLAG_IDENT;
+	vdr.num_files = 0;
+
+	size_t packet_size = 3;	// type, flags, num_files
+
+	for (size_t idx = 0; idx < table_list.size(); ) {
+		const auto &tbl = table_list[idx];
+		const size_t len = sizeof(uint32_t) + tbl.length() + 1;
+
+		if (packet_size+len < MAX_UDP_DATA_LENGH) {
+			valid_data_item item;
+
+			cf_chksum_long(tbl.c_str(), &item.crc);
+			item.name = tbl;
+
+			vdr.files.push_back(item);
+			vdr.num_files++;
+
+			packet_size += len;
+
+			++idx;
+		} else {
+			// so we don't start at 0%
+			if (idx != vdr.num_files) {
+				SDL_snprintf(popup_string, SDL_arraysize(popup_string), XSTR("Validating tables ... %d%%", -1), static_cast<int>(((idx - vdr.num_files) / static_cast<float>(table_list.size())) * 100));
+			}
+
+			// send packet
+			rval = multi_fs_tracker_validate_data(&vdr, popup_string);
+
+			// reset counts for next run
+			packet_size = 3;	// type, flags, num_files
+			vdr.files.clear();
+			vdr.num_files = 0;
 
 			// if anything is valid then update our default
-			if ( (rval == TVALID_STATUS_VALID) && (game_data_status == TVALID_STATUS_UNKNOWN) ) {
-				game_data_status = TVALID_STATUS_VALID;
+			if ( (rval == MVALID_STATUS_VALID) && (game_data_status == MVALID_STATUS_UNKNOWN) ) {
+				game_data_status = MVALID_STATUS_VALID;
 			}
 			// continue processing after invalid for mod ident to fully work
-			else if (rval == TVALID_STATUS_INVALID) {
-				game_data_status = TVALID_STATUS_INVALID;
+			else if (rval == MVALID_STATUS_INVALID) {
+				game_data_status = MVALID_STATUS_INVALID;
 			}
-			// if the popup was canceled then force a recheck on next attempt
+			// if we timed out or the popup was canceled then force a recheck on next attempt
 			else if (rval == -2) {
-				game_data_status = TVALID_STATUS_UNKNOWN;
+				game_data_status = MVALID_STATUS_UNKNOWN;
 				break;
 			}
 		}
+	}
 
-		if ( !(Game_mode & GM_STANDALONE_SERVER) ) {
-			popup_conditional_close();
+	// final packet
+	if (vdr.num_files) {
+		// so we don't start at 0%
+		if (table_list.size() != vdr.num_files) {
+			SDL_snprintf(popup_string, SDL_arraysize(popup_string), XSTR("Validating tables ... %d%%", -1), static_cast<int>(((table_list.size() - vdr.num_files) / static_cast<float>(table_list.size())) * 100));
 		}
 
-		// we should hopefully have a mod id now, so log it
-		if (Multi_fs_tracker_game_id < 0) {
-			ml_printf("PXO Game Ident => FAILED!");
-		} else {
-			ml_printf("PXO Game Ident => %d: %s", Multi_fs_tracker_game_id, Multi_fs_tracker_game_name.c_str());
+		rval = multi_fs_tracker_validate_data(&vdr, popup_string);
+
+		// if anything is valid then update our default
+		if ( (rval == MVALID_STATUS_VALID) && (game_data_status == MVALID_STATUS_UNKNOWN) ) {
+			game_data_status = MVALID_STATUS_VALID;
+		}
+		// continue processing after invalid for mod ident to fully work
+		else if (rval == MVALID_STATUS_INVALID) {
+			game_data_status = MVALID_STATUS_INVALID;
+		}
+		// if the popup was canceled then force a recheck on next attempt
+		else if (rval == -2) {
+			game_data_status = MVALID_STATUS_UNKNOWN;
 		}
 	}
 
-	return (game_data_status != TVALID_STATUS_VALID);
+	if ( !(Game_mode & GM_STANDALONE_SERVER) ) {
+		popup_conditional_close();
+	}
+
+	// we should hopefully have a mod id now, so log it
+	if (Multi_fs_tracker_game_id < 0) {
+		ml_printf("PXO Game Ident => FAILED!");
+	} else {
+		ml_printf("PXO Game Ident => %d: %s", Multi_fs_tracker_game_id, Multi_fs_tracker_game_name.c_str());
+	}
+
+	return (game_data_status != MVALID_STATUS_VALID);
 }
 
 // report on the results of the stats store procedure

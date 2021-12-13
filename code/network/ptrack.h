@@ -60,6 +60,9 @@
 #define UNT_VALID_TBL_REQ			73		// Client asking if this is a valid table
 #define UNT_VALID_TBL_RSP			74		// Server response (code has the answer)
 
+#define UNT_VALID_DATA_REQ			75		// client asking for data validity check
+#define UNT_VALID_DATA_RSP			76		// server response
+
 
 //This is for code
 #define CMD_NEW_USER_ACK			1
@@ -176,6 +179,49 @@ typedef struct squad_war_response {
 	unsigned char accepted;
 } squad_war_response;
 
+// type == UNT_VALID_DATA_REQ and UNT_VAID_DATA_RSP
+enum {
+	VDR_TYPE_TABLE		= 0,
+	VDR_TYPE_MISSION	= 1,
+	VDR_TYPE_SCRIPT		= 2
+};
+
+enum {
+	VDR_FLAG_IDENT		= 1<<0,		// include mod ident in response
+	VDR_FLAG_STATUS		= 1<<1		// include individual file valid status in response
+};
+
+struct valid_data_item {
+	uint32_t crc;
+	SCP_string name;
+};
+
+// NOTE: This is packed manually and should not be associated/copied/cast to the data block!!
+struct vmt_valid_data_req_struct {
+	uint8_t type;
+	uint8_t flags;
+	uint8_t num_files;
+
+	SCP_vector<valid_data_item> files;
+};
+
+// NOTE: This is not used directly but listed here to document the packet
+/*
+struct vmt_valid_data_rsp_struct {
+	uint8_t flags;
+
+	// if VDR_FLAG_IDENT is set
+	short game_id;
+	SCP_string game_tag;
+	SCP_string game_name;
+
+	// if VDR_FLAG_STATUS is set
+	uint8_t status_count;
+	SCP_vector<uint32_t> status;
+};
+*/
+
+
 #pragma pack(push, 1)
 	typedef struct {	
 		unsigned char type;						// type
@@ -266,11 +312,13 @@ void PollPTrackNet();
 #define PXO_ADD_USHORT(d) do { ushort swap = INTEL_SHORT(d); memcpy(data+packet_size, &swap, sizeof(d) ); packet_size += sizeof(d); } while (false)
 #define PXO_ADD_INT(d) do { int swap = INTEL_INT(d); memcpy(data+packet_size, &swap, sizeof(d) ); packet_size += sizeof(d); } while (false)
 #define PXO_ADD_UINT(d) do { uint swap = INTEL_INT(d); memcpy(data+packet_size, &swap, sizeof(d) ); packet_size += sizeof(d); } while (false)
+#define PXO_ADD_STRING(d, l) do { size_t len = SDL_strlcpy(reinterpret_cast<char *>(data+packet_size), reinterpret_cast<const char *>(d), l-packet_size); packet_size += SDL_min(len+1, l-packet_size); } while (0)
 
 #define PXO_GET_DATA(d) do { memcpy(&d, data+offset, sizeof(d) ); offset += sizeof(d); } while(false)
 #define PXO_GET_SHORT(d) do { short swap; memcpy(&swap, data+offset, sizeof(d) ); d = INTEL_SHORT(swap); offset += sizeof(d); } while(false)
 #define PXO_GET_USHORT(d) do { ushort swap; memcpy(&swap, data+offset, sizeof(d) ); d = INTEL_SHORT(swap); offset += sizeof(d); } while(false)
 #define PXO_GET_INT(d) do { int swap; memcpy(&swap, data+offset, sizeof(d) ); d = INTEL_INT(swap); offset += sizeof(d); } while(false)
 #define PXO_GET_UINT(d) do { uint swap; memcpy(&swap, data+offset, sizeof(d) ); d = INTEL_INT(swap); offset += sizeof(d); } while(false)
+#define PXO_GET_STRING(d) do { size_t len = SDL_strlcpy(d, reinterpret_cast<const char *>(data+offset), SDL_arraysize(d)); offset += SDL_min(len+1, SDL_arraysize(d)); } while(0)
 
 #endif
