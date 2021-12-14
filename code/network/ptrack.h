@@ -312,13 +312,13 @@ void PollPTrackNet();
 #define PXO_ADD_USHORT(d) do { ushort swap = INTEL_SHORT(d); memcpy(data+packet_size, &swap, sizeof(d) ); packet_size += sizeof(d); } while (false)
 #define PXO_ADD_INT(d) do { int swap = INTEL_INT(d); memcpy(data+packet_size, &swap, sizeof(d) ); packet_size += sizeof(d); } while (false)
 #define PXO_ADD_UINT(d) do { uint swap = INTEL_INT(d); memcpy(data+packet_size, &swap, sizeof(d) ); packet_size += sizeof(d); } while (false)
-#define PXO_ADD_STRING(d, l) do { size_t len = SDL_strlcpy(reinterpret_cast<char *>(data+packet_size), reinterpret_cast<const char *>(d), l-packet_size); packet_size += SDL_min(len+1, l-packet_size); } while (0)
+#define PXO_ADD_STRING(d, l) do { size_t len = SDL_strlcpy(reinterpret_cast<char *>(data+packet_size), reinterpret_cast<const char *>(d), l-packet_size); packet_size += static_cast<unsigned short>(SDL_min(len+1, l-packet_size)); } while (0)
 
 #define PXO_GET_DATA(d) do { memcpy(&d, data+offset, sizeof(d) ); offset += sizeof(d); } while(false)
 #define PXO_GET_SHORT(d) do { short swap; memcpy(&swap, data+offset, sizeof(d) ); d = INTEL_SHORT(swap); offset += sizeof(d); } while(false)
 #define PXO_GET_USHORT(d) do { ushort swap; memcpy(&swap, data+offset, sizeof(d) ); d = INTEL_SHORT(swap); offset += sizeof(d); } while(false)
 #define PXO_GET_INT(d) do { int swap; memcpy(&swap, data+offset, sizeof(d) ); d = INTEL_INT(swap); offset += sizeof(d); } while(false)
 #define PXO_GET_UINT(d) do { uint swap; memcpy(&swap, data+offset, sizeof(d) ); d = INTEL_INT(swap); offset += sizeof(d); } while(false)
-#define PXO_GET_STRING(d) do { size_t len = SDL_strlcpy(d, reinterpret_cast<const char *>(data+offset), SDL_arraysize(d)); offset += SDL_min(len+1, SDL_arraysize(d)); } while(0)
+#define PXO_GET_STRING(d) do { size_t len = SDL_strlcpy(d, reinterpret_cast<const char *>(data+offset), SDL_arraysize(d)); offset += static_cast<unsigned short>(SDL_min(len+1, SDL_arraysize(d))); } while(0)
 
 #endif

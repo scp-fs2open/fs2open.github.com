@@ -730,7 +730,7 @@ int ValidateSquadWar(squad_war_request *sw_req, squad_war_response *sw_resp)
 // the normal function
 static unsigned short PackValidDataRequest(const vmt_valid_data_req_struct *vreq, ubyte *data)
 {
-	size_t packet_size = 0;
+	unsigned short packet_size = 0;
 
 	PXO_ADD_DATA(vreq->type);
 	PXO_ADD_DATA(vreq->flags);
@@ -743,7 +743,7 @@ static unsigned short PackValidDataRequest(const vmt_valid_data_req_struct *vreq
 		PXO_ADD_STRING(file.name.c_str(), MAX_UDP_DATA_LENGH);
 	}
 
-	return static_cast<unsigned short>(packet_size);
+	return packet_size;
 }
 
 // call with a valid struct to validate a table
