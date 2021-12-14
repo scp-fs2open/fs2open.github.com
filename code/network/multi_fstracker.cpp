@@ -1250,6 +1250,97 @@ int multi_fs_tracker_validate_data(const vmt_valid_data_req_struct *vdr, const c
 	return MVALID_STATUS_UNKNOWN;
 }
 
+// batch validate missions and fill passed struct with results
+// returns:
+//		true if process completed successfully
+//		false if process was terminated from timeout or by cancellation
+bool multi_fs_tracker_validate_mission_list(SCP_vector<multi_create_info> &file_list)
+{
+	vmt_valid_data_req_struct vdr;
+	char popup_string[512] = "";
+	int rval;
+
+	vdr.type = VDR_TYPE_MISSION;
+	vdr.flags = VDR_FLAG_STATUS;
+	vdr.num_files = 0;
+
+	size_t packet_size = 3;	// type, flags, num_files
+
+	for (size_t idx = 0; idx < file_list.size(); ) {
+		auto &entry = file_list[idx];
+		const size_t len = sizeof(uint32_t) + strlen(entry.filename) + 1;
+
+		if (entry.valid_status != MVALID_STATUS_UNKNOWN) {
+			continue;
+		}
+
+		if (packet_size+len < MAX_UDP_DATA_LENGH) {
+			valid_data_item item;
+
+			cf_chksum_long(entry.filename, &item.crc);
+			item.name = entry.filename;
+
+			vdr.files.push_back(item);
+			vdr.num_files++;
+
+			packet_size += len;
+
+			++idx;
+		} else {
+			// so we don't start at 0%
+			if (idx != vdr.num_files) {
+				SDL_snprintf(popup_string, SDL_arraysize(popup_string), XSTR("Validating missions ... %d%%", -1), static_cast<int>(((idx - vdr.num_files) / static_cast<float>(file_list.size())) * 100));
+			}
+
+			// send packet
+			rval = multi_fs_tracker_validate_data(&vdr, popup_string);
+
+			// if it was cancelled then just bail out
+			if (rval == -2) {
+				return false;
+			}
+
+			// set status for each file checked
+			auto istart = idx - vdr.num_files;
+
+			for (auto p = 0; p < vdr.num_files; ++p) {
+				file_list[istart+p].valid_status = IsDataIndexValid(p) ? MVALID_STATUS_VALID : MVALID_STATUS_INVALID;
+			}
+
+			// reset counts for next run
+			packet_size = 3;	// type, flags, num_files
+			vdr.files.clear();
+			vdr.num_files = 0;
+		}
+	}
+
+	// final packet
+	if (vdr.num_files) {
+		// so we don't start at 0%
+		if (file_list.size() != vdr.num_files) {
+			SDL_snprintf(popup_string, SDL_arraysize(popup_string), XSTR("Validating missions ... %d%%", -1), static_cast<int>(((file_list.size() - vdr.num_files) / static_cast<float>(file_list.size())) * 100));
+		}
+
+		// send packet
+		rval = multi_fs_tracker_validate_data(&vdr, popup_string);
+
+		// if it was cancelled then just bail out
+		if (rval == -2) {
+			return false;
+		}
+
+		// set status for each file checked
+		auto istart = file_list.size() - vdr.num_files;
+
+		for (auto p = 0; p < vdr.num_files; ++p) {
+			file_list[istart+p].valid_status = IsDataIndexValid(p) ? MVALID_STATUS_VALID : MVALID_STATUS_INVALID;
+		}
+	}
+
+	// done!
+	return true;
+}
+
 // check all tables with tracker
 // this is hacked data check as well as mod ident (done server side)
 // returns:
