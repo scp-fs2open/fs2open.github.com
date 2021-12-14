@@ -30,6 +30,7 @@
 class scoring_struct;
 struct squad_war_request;
 struct squad_war_result;
+struct netgame_info;
 struct multi_create_info;
 
 // channel to associate when creating a server
