@@ -778,7 +778,7 @@ int CFred_mission_save::save_asteroid_fields()
 			}
 
 			for (SCP_string& name : Asteroid_target_ships) {				
-				fout(" %s", name.c_str());
+				fout(" \"%s\"", name.c_str());
 			}
 
 			fout(" )");
@@ -1064,13 +1064,13 @@ int CFred_mission_save::save_briefing()
 				}
 
 				if (Mission_save_format != FSO_FORMAT_RETAIL) {
-					if (drop_white_space(bi->customClass)[0]) {
-						if (optional_string_fred("$Closeup label:"))
+					if (drop_white_space(bi->closeup_label)[0]) {
+						if (optional_string_fred("$closeup label:"))
 							parse_comments();
 						else
-							fout("\n$Closeup label::");
+							fout("\n$closeup label:");
 
-						fout_ext(" ", "%s", bi->customClass);
+						fout_ext(" ", "%s", bi->closeup_label);
 					}
 				}
 

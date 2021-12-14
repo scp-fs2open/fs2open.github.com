@@ -122,9 +122,7 @@ typedef struct brief_icon {
 	int		team;
 	vec3d	pos;
 	char		label[MAX_LABEL_LEN];
-	char		customClass[MAX_LABEL_LEN];
 	char		closeup_label[MAX_LABEL_LEN];
-//	char		text[MAX_ICON_TEXT_LEN];
 	hud_anim	fadein_anim;
 	hud_anim	fadeout_anim;
 	hud_anim	highlight_anim;
