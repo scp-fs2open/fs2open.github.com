@@ -1400,7 +1400,13 @@ void multi_pxo_do_normal()
 		multi_fs_tracker_init();
 
 		// validate game data first, for initial game/mod ident
-		multi_fs_tracker_validate_game_data();
+		if (multi_fs_tracker_validate_game_data() < 0) {
+			// in the event of a connection failure we should just dump back to the mainhall
+			popup(PF_USE_AFFIRMATIVE_ICON | PF_TITLE_BIG | PF_TITLE_RED, 1, POPUP_OK, XSTR("Failed to connect to Parallax Online!", 947));
+			gameseq_post_event(GS_EVENT_MAIN_MENU);
+
+			return;
+		}
 
 		// validate the current player with the master tracker (will create the pilot on the MT if necessary)
 		validate_code = multi_fs_tracker_validate(0);

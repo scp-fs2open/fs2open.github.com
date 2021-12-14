@@ -1231,11 +1231,15 @@ int multi_fs_tracker_validate_data(const vmt_valid_data_req_struct *vdr, const c
 		return ret_code;
 	} else {
 		switch ( popup_conditional_do(multi_fs_tracker_validate_data_normal, popup_text) ) {
-			// cancel or timeout, stop processing
+			// cancel
 			case 0:
-			case 1:
 				DataValidState = VALID_STATE_IDLE;
 				return -2;
+
+			// timeout
+			case 1:
+				DataValidState = VALID_STATE_IDLE;
+				return -3;
 
 			// invalid
 			case 2:
@@ -1296,7 +1300,7 @@ bool multi_fs_tracker_validate_mission_list(SCP_vector<multi_create_info> &file_
 			rval = multi_fs_tracker_validate_data(&vdr, popup_string);
 
 			// if it was cancelled then just bail out
-			if (rval == -2) {
+			if (rval == -2 || rval == -3) {
 				return false;
 			}
 
@@ -1346,6 +1350,7 @@ bool multi_fs_tracker_validate_mission_list(SCP_vector<multi_create_info> &file_
 // returns:
 //     1 if hacked (or no ident) - stats won't save
 //     0 if ident and not hacked - stats can save
+//    -1 if server connection failed
 int multi_fs_tracker_validate_game_data()
 {
 	// should only do this only once per game session
@@ -1439,10 +1444,22 @@ int multi_fs_tracker_validate_game_data()
 			else if (rval == MVALID_STATUS_INVALID) {
 				game_data_status = MVALID_STATUS_INVALID;
 			}
-			// if we timed out or the popup was canceled then force a recheck on next attempt
+			// if the popup was canceled then force a recheck on next attempt
 			else if (rval == -2) {
 				game_data_status = MVALID_STATUS_UNKNOWN;
 				break;
+			}
+			// if we timed out then log it and return error
+			else if (rval == -3) {
+				game_data_status = MVALID_STATUS_UNKNOWN;
+
+				if ( !(Game_mode & GM_STANDALONE_SERVER) ) {
+					popup_conditional_close();
+				}
+
+				ml_printf("PXO Game Ident timed out!  Unable to connect to server: %s", Multi_options_g.user_tracker_ip);
+
+				return -1;
 			}
 		}
 	}
@@ -1467,6 +1484,18 @@ int multi_fs_tracker_validate_game_data()
 		// if the popup was canceled then force a recheck on next attempt
 		else if (rval == -2) {
 			game_data_status = MVALID_STATUS_UNKNOWN;
+		}
+		// if we timed out then log it and return error
+		else if (rval == -3) {
+			game_data_status = MVALID_STATUS_UNKNOWN;
+
+			if ( !(Game_mode & GM_STANDALONE_SERVER) ) {
+				popup_conditional_close();
+			}
+
+			ml_printf("PXO Game Ident timed out!  Unable to connect to server: %s", Multi_options_g.user_tracker_ip);
+
+			return -1;
 		}
 	}
 
