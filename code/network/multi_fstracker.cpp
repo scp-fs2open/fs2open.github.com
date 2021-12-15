@@ -1274,10 +1274,6 @@ bool multi_fs_tracker_validate_mission_list(SCP_vector<multi_create_info> &file_
 		auto &entry = file_list[idx];
 		const size_t len = sizeof(uint32_t) + strlen(entry.filename) + 1;
 
-		if (entry.valid_status != MVALID_STATUS_UNKNOWN) {
-			continue;
-		}
-
 		if (packet_size+len < MAX_UDP_DATA_LENGH) {
 			valid_data_item item;
 
