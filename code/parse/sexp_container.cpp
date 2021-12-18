@@ -47,18 +47,9 @@ namespace {
 	const char *Empty_str = "";
 } // namespace
 
-static bool str_prefix(const char* prefix, const char* str)
-{
-	for (; *prefix; ++prefix, ++str) {
-		if (SCP_tolower(*str) != SCP_tolower(*prefix)) {
-			return false;
-		}
-	}
+// sexp_container data and functions
+const SCP_string sexp_container::DELIM_STR(1, sexp_container::DELIM);
 
-	return true;
-}
-
-// sexp_container functions
 
 bool sexp_container::operator==(const sexp_container &sc) const
 {
@@ -107,7 +98,8 @@ bool sexp_container::type_matches(const sexp_container &container) const
 bool list_modifier::match_name(const char *other_name) const
 {
 	if (modifier == ListModifier::AT_INDEX) {
-		return str_prefix(name, other_name);
+		// check if modifier is a prefix
+		return !strnicmp(name, other_name, strlen(name));
 	} else {
 		return !stricmp(name, other_name);
 	}
@@ -314,7 +306,7 @@ sexp_container *get_sexp_container_special(const SCP_string& text, size_t start_
 	Assert(start_pos < text.length());
 
 	for (auto &container : Sexp_containers) {
-		if (str_prefix(container.container_name.c_str(), text.c_str())) {
+		if (!strnicmp(container.container_name.c_str(), text.c_str(), container.container_name.length())) {
 			return &container;
 		}
 	}

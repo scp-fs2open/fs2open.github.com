@@ -83,6 +83,7 @@ struct sexp_container
 {
 	// meta-character for containers in text replacement, etc.
 	static constexpr char DELIM = '&';
+	static const SCP_string DELIM_STR;
 	// applies to list data, map keys, and map data
 	static constexpr int VALUE_MAX_LENGTH = NAME_LENGTH - 1; // leave space for null char
 	// leave space for leading/trailing '&' for container multidimensionality
