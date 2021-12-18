@@ -243,8 +243,8 @@ detail_levels Detail_defaults[NUM_DEFAULT_DETAIL_LEVELS] = {
 	{				// Highest level
 		3,			// setting
 					// ===== Analogs (0-MAX_DETAIL_LEVEL) ====
-		3,			// nebula_detail;				// 0=lowest detail, MAX_DETAIL_LEVEL=highest detail
-		3,			// detail_distance;			// 0=lowest MAX_DETAIL_LEVEL=highest		
+		4,			// nebula_detail;				// 0=lowest detail, MAX_DETAIL_LEVEL=highest detail
+		4,			// detail_distance;			// 0=lowest MAX_DETAIL_LEVEL=highest		
 		4,			//	hardware_textures;			// 0=max culling, MAX_DETAIL_LEVEL=no culling
 		4,			//	num_small_debris;			// 0=min number, MAX_DETAIL_LEVEL=max number
 		4,			//	num_particles;				// 0=min number, MAX_DETAIL_LEVEL=max number

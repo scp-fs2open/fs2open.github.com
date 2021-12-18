@@ -1025,6 +1025,7 @@ CFileLocation cf_find_file_location(const char* filespec, int pathtype, bool loc
 		{
 			case CF_TYPE_ROOT:
 			case CF_TYPE_DATA:
+			case CF_TYPE_PLAYERS:
 			case CF_TYPE_SINGLE_PLAYERS:
 			case CF_TYPE_MULTI_PLAYERS:
 			case CF_TYPE_MULTI_CACHE:
@@ -1205,6 +1206,7 @@ CFileLocationExt cf_find_file_location_ext( const char *filename, const int ext_
 			{
 				case CF_TYPE_ROOT:
 				case CF_TYPE_DATA:
+				case CF_TYPE_PLAYERS:
 				case CF_TYPE_SINGLE_PLAYERS:
 				case CF_TYPE_MULTI_PLAYERS:
 				case CF_TYPE_MULTI_CACHE:
@@ -1705,7 +1707,7 @@ int cf_get_file_list(int max, char** list, int pathtype, const char* filter, int
 			}
 
 			list[num_files] = reinterpret_cast<char *>(vm_malloc(l + 1));
-			SDL_strlcpy(list[num_files], file.name.c_str(), l);
+			SDL_strlcpy(list[num_files], file.name.c_str(), l+1);
 
 			if (info) {
 				info[num_files].write_time = file.m_time;

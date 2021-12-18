@@ -86,6 +86,7 @@
 #include "libs/discord/discord.h"
 #include "libs/ffmpeg/FFmpeg.h"
 #include "lighting/lighting.h"
+#include "lighting/lighting_profiles.h"
 #include "localization/localize.h"
 #include "math/staticrand.h"
 #include "menuui/barracks.h"
@@ -878,7 +879,7 @@ void game_level_close()
 		mission_brief_common_reset();		// close out parsed briefing/mission stuff
 		cam_close();
 		subtitles_close();
-		animation::ModelAnimation::clearAnimations();
+		animation::ModelAnimationSet::stopAnimations();
 		particle::ParticleManager::get()->clearSources();
 		particle::close();
 		trail_level_close();
@@ -1892,6 +1893,8 @@ void game_init()
 	// they don't need to be inited (data loaded etc.) until the mission starts
 	fireball_parse_tbl();
 
+	animation::ModelAnimationParseHelper::parseTables();
+
 	obj_init();	
 	mflash_game_init();	
 	armor_init();
@@ -1920,7 +1923,9 @@ void game_init()
 	ssm_init();	
 	player_tips_init();				// helpful tips
 	beam_init();
-	
+
+	lighting_profile::load_profiles();
+
 	// load the list of pilot pic filenames (for barracks and pilot select popup quick reference)
 	pilot_load_pic_list();	
 	pilot_load_squad_pic_list();

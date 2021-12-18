@@ -3046,6 +3046,15 @@ int CFREDView::global_error_check()
 		return internal_error("Jump node count is illegal");
 	}*/
 
+	// do error checking for asteroid targets
+	for (const auto& target_ship : Asteroid_target_ships) {
+		if (ship_name_lookup(target_ship.c_str(), 1) < 0) {
+			if (error("Asteroid target '%s' is not a valid ship", target_ship.c_str())) {
+				return 1;
+			}
+		}
+	}
+
 	fred_check_message_personas();
 
 	return g_err;

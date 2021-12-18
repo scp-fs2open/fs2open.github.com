@@ -3381,6 +3381,10 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		wip->on_create_program = actions::ProgramSet::parseProgramSet("$On Create:", contexts);
 	}
 
+	if (optional_string("$Animations:")) {
+		animation::ModelAnimationParseHelper::parseAnimsetInfo(wip->animations);
+	}
+
 	/* Generate a substitution pattern for this weapon.
 	This pattern is very naive such that it calculates the lowest common denominator as being all of
 	the periods multiplied together.
@@ -6180,7 +6184,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		objp->radius = model_get_radius(wip->model_num);
 
 		// Always create an instance in case we need them
-		if (model_get(wip->model_num)->flags & PM_FLAG_HAS_INTRINSIC_MOTION || !wip->on_create_program.isEmpty()) {
+		if (model_get(wip->model_num)->flags & PM_FLAG_HAS_INTRINSIC_MOTION || !wip->on_create_program.isEmpty() || !wip->animations.isEmpty()) {
 			wp->model_instance_num = model_create_instance(true, wip->model_num);
 		}
 	} else if ( wip->render_type == WRT_LASER ) {
@@ -6376,6 +6380,11 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 
 	if (wip->ambient_snd.isValid()) {
 		obj_snd_assign(objnum, wip->ambient_snd, &vmd_zero_vector , OS_MAIN);
+	}
+
+	//Only try and play animations on POF Weapons
+	if (wip->render_type == WRT_POF && wp->model_instance_num > -1) {
+		wip->animations.startAll(model_get_instance(wp->model_instance_num), animation::ModelAnimationTriggerType::OnSpawn, animation::ModelAnimationDirection::FWD);
 	}
 
 	if (Script_system.IsActiveAction(CHA_ONWEAPONCREATED)) {
@@ -8490,6 +8499,8 @@ void weapon_render(object* obj, model_draw_list *scene)
 			}
 
 			model_clear_instance(wip->model_num);
+
+			render_info.set_object_number(wp->objnum);
 
 			if ( (wip->wi_flags[Weapon::Info_Flags::Thruster]) && ((wp->thruster_bitmap > -1) || (wp->thruster_glow_bitmap > -1)) ) {
 				float ft;

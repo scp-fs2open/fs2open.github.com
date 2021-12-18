@@ -8009,8 +8009,9 @@ void process_non_homing_fired_packet(ubyte* data, header* hinfo)
 static constexpr size_t animation_direction_bit = 1 << 0;
 static constexpr size_t animation_forced_bit = 1 << 1;
 static constexpr size_t animation_instant_bit = 1 << 2;
+static constexpr size_t animation_pause_bit = 1 << 3;
 
-void send_animation_triggered_packet(int animationId, int pmi, const animation::ModelAnimationDirection& direction, bool force, bool instant, const int* /*time*/) {
+void send_animation_triggered_packet(int animationId, int pmi, const animation::ModelAnimationDirection& direction, bool force, bool instant, bool pause, const int* /*time*/) {
 	int packet_size;
 	ubyte data[MAX_PACKET_SIZE];
 
@@ -8021,7 +8022,8 @@ void send_animation_triggered_packet(int animationId, int pmi, const animation::
 	
 	ubyte metadata = (direction == animation::ModelAnimationDirection::RWD ? animation_direction_bit : 0)
 		| (force ? animation_forced_bit : 0)
-		| (instant ? animation_instant_bit : 0);
+		| (instant ? animation_instant_bit : 0)
+		| ( pause ? animation_pause_bit : 0);
 	ADD_DATA(metadata);
 	int actualTimestamp = 0; //If animation desync becomes a problem, send the ping-delay for animation rollback
 	ADD_INT(actualTimestamp);
@@ -8050,19 +8052,20 @@ void process_animation_triggered_packet(ubyte* data, header* hinfo) {
 
 	PACKET_SET_SIZE();
 
-	bool forced, instant;
+	bool forced, instant, pause;
 	animation::ModelAnimationDirection direction;
 	direction = (metadata & (animation_direction_bit)) ? animation::ModelAnimationDirection::RWD : animation::ModelAnimationDirection::FWD;
 	forced = metadata & (animation_forced_bit);
 	instant = metadata & (animation_instant_bit);
+	pause = metadata & (animation_pause_bit);
 
 	float delay = time * 0.001f;
 
-	animation::ModelAnimation::s_animationById[animationId]->start(model_get_instance(pmi), direction, forced, instant, &delay);
+	animation::ModelAnimation::s_animationById[animationId]->start(model_get_instance(pmi), direction, forced, instant, pause, &delay);
 
 	//Need to broadcast back to other clients
 	if (Net_player->flags & NETINFO_FLAG_AM_MASTER) {
-		send_animation_triggered_packet(animationId, pmi, direction, forced, instant, &time);
+		send_animation_triggered_packet(animationId, pmi, direction, forced, instant, pause, &time);
 	}
 }
 
