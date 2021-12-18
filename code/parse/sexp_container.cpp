@@ -461,13 +461,6 @@ bool sexp_container_has_persistent_non_eternal_containers()
 
 const char *sexp_container_CTEXT(int node)
 {
-	if (Sexp_nodes[node].cache) {
-		Assert(Sexp_nodes[node].cache->sexp_node_data_type == OPF_CONTAINER_NAME);
-		if (Sexp_nodes[node].cache->sexp_node_text_finalized) {
-			return Sexp_nodes[node].cache->sexp_node_text;
-		}
-	}
-
 	auto *p_container = get_sexp_container(Sexp_nodes[node].text);
 
 	if (!p_container) {
@@ -500,13 +493,12 @@ const char *sexp_container_CTEXT(int node)
 		}
 
 		if (result.front() != sexp_container::DELIM) {
-			// cache result to preserve idempotency of CTEXT()
-			Assert(!Sexp_nodes[node].cache);
-			Sexp_nodes[node].cache = new sexp_cached_data(OPF_CONTAINER_NAME, result);
-			if (are_containers_modifiable()) {
-				Sexp_nodes[node].cache->sexp_node_text_finalized = true;
+			if (!Sexp_nodes[node].cache) {
+				Sexp_nodes[node].cache = new sexp_cached_data(OPF_CONTAINER_NAME, result);
+			} else {
+				Sexp_nodes[node].cache->update_container_CTEXT_result(result);
 			}
-			return Sexp_nodes[node].cache->sexp_node_text;
+			return Sexp_nodes[node].cache->container_CTEXT_result;
 		} else {
 			// we're dealing with a multidimentional container
 			node = CDR(node);
