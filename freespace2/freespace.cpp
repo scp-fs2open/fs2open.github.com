@@ -1705,8 +1705,15 @@ void game_init()
 		Cmdline_spec = 0;
 		Cmdline_glow = 0;
 		Cmdline_env = 0;
-		Fireball_use_3d_warp = false;
+		Cmdline_height = 0;
 		Cmdline_normal = 0;
+		Cmdline_voice_recognition = 0;
+		Cmdline_freespace_no_sound = 1;
+		Cmdline_freespace_no_music = 1;
+		Cmdline_NoFPSCap = 0;
+		Cmdline_load_all_weapons = 0;
+		Cmdline_enable_3d_shockwave = 0;
+		Fireball_use_3d_warp = false;
 
 		// now init the standalone server code
 		std_init_standalone();
