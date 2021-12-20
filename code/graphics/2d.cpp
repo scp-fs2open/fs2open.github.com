@@ -1605,8 +1605,6 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 		return false;
 	}
 
-	gr_light_init();
-
 	gr_set_palette_internal(Gr_current_palette_name, NULL, 0);
 
 	bm_init();
@@ -1615,13 +1613,17 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 
 	io::mouse::CursorManager::init();
 
-	mprintf(("Initializing path renderer...\n"));
-	graphics::paths::PathRenderer::init();
+	if ( !Is_standalone ) {
+		gr_light_init();
 
-	// Initialize uniform buffer managers
-	uniform_buffer_managers_init();
+		mprintf(("Initializing path renderer...\n"));
+		graphics::paths::PathRenderer::init();
 
-	gpu_heap_init();
+		// Initialize uniform buffer managers
+		uniform_buffer_managers_init();
+
+		gpu_heap_init();
+	}
 
 	mprintf(("Checking graphics capabilities:\n"));
 	mprintf(("  Persistent buffer mapping: %s\n",

@@ -1966,11 +1966,13 @@ void game_init()
 	// convert old pilot files (if they need it)
 	convert_pilot_files();
 
+	if ( !Is_standalone ) {
 #ifdef WITH_FFMPEG
-	libs::ffmpeg::initialize();
+		libs::ffmpeg::initialize();
 #endif
 
-	libs::discord::init();
+		libs::discord::init();
+	}
 
 	nprintf(("General", "Ships.tbl is : %s\n", Game_ships_tbl_valid ? "VALID" : "INVALID!!!!"));
 	nprintf(("General", "Weapons.tbl is : %s\n", Game_weapons_tbl_valid ? "VALID" : "INVALID!!!!"));
@@ -6552,7 +6554,7 @@ int game_main(int argc, char *argv[])
 		return 1;
 	}
 
-	if (!headtracking::init())
+	if (!Is_standalone && !headtracking::init())
 	{
 		mprintf(("Headtracking is not enabled...\n"));
 	}
