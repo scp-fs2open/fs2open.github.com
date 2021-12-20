@@ -902,6 +902,10 @@ void game_level_close()
 		Weapon_energy_cheat = false;
 
 		game_time_level_close();
+
+		if (Game_mode & GM_STANDALONE_SERVER) {
+			model_free_all();			// Free all existing models if standalone server
+		}
 	}
 	else
 	{
