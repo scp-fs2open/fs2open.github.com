@@ -190,6 +190,9 @@ void mission_maybe_play_directive_success_sound();
 
 void mission_goal_exit();
 
+int mission_goal_find_sexp_tree(int root_node);
+int mission_event_find_sexp_tree(int root_node);
+
 int ML_objectives_init(int x, int y, int w, int h);
 void ML_objectives_close();
 void ML_objectives_do_frame(int scroll_offset);

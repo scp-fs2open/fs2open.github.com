@@ -6131,12 +6131,22 @@ bool post_process_mission()
 			// print out an error based on the return value from check_sexp_syntax()
 			// G5K: now entering this statement simply aborts the mission load
 			if ( result ) {
+				SCP_string location_str;
 				SCP_string sexp_str;
 				SCP_string error_msg;
 
+				// it's helpful to point out the goal/event, so do that if we can
+				int index;
+				if ((index = mission_event_find_sexp_tree(i)) >= 0) {
+					sprintf(location_str, "Error in mission event: \"%s\": ", Mission_events[index].name);
+				} else if ((index = mission_goal_find_sexp_tree(i)) >= 0) {
+					sprintf(location_str, "Error in mission goal: \"%s\": ", Mission_goals[index].name);
+				}
+
 				convert_sexp_to_string(sexp_str, i, SEXP_ERROR_CHECK_MODE);
 				truncate_message_lines(sexp_str, 30);
-				sprintf(error_msg, "%s.\n\nIn sexpression: %s\n(Error appears to be: %s)", sexp_error_message(result), sexp_str.c_str(), Sexp_nodes[bad_node].text);
+				
+				sprintf(error_msg, "%s%s.\n\nIn sexpression: %s\n\n(Bad node appears to be: %s)\n", location_str.c_str(), sexp_error_message(result), sexp_str.c_str(), Sexp_nodes[bad_node].text);
 				Warning(LOCATION, "%s", error_msg.c_str());
 
 				// syntax errors are recoverable in Fred but not FS
