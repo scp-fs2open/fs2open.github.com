@@ -1829,20 +1829,31 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 				else
 				{
 					sm->bsp_data_size = cfread_int(fp);
+
 					if (sm->bsp_data_size > 0) {
-						//mprintf(("BSP_Data is being aligned.\n"));
+						auto bsp_data = reinterpret_cast<ubyte *>(vm_malloc(sm->bsp_data_size));
 
-						std::unique_ptr<ubyte[]> bsp_in(new ubyte[sm->bsp_data_size]);
-						std::unique_ptr<ubyte[]> bsp_out(new ubyte[sm->bsp_data_size * 2]);
+						cfread(bsp_data, 1, sm->bsp_data_size, fp);
 
-						cfread(bsp_in.get(), 1, sm->bsp_data_size, fp);
+						auto bsp_data_size_aligned = align_bsp_data(bsp_data, nullptr, sm->bsp_data_size);
 
-						//mprintf(("BSP_Data was %d bytes in size\n", sm->bsp_data_size));
-						sm->bsp_data_size = align_bsp_data(bsp_in.get(), bsp_out.get(), sm->bsp_data_size);
-						//mprintf(("BSP_Data now is %d bytes in size\n", sm->bsp_data_size));
+						if (bsp_data_size_aligned != static_cast<uint>(sm->bsp_data_size)) {
+							auto bsp_data_aligned = reinterpret_cast<ubyte *>(vm_malloc(bsp_data_size_aligned));
 
-						sm->bsp_data = (ubyte*)vm_malloc(sm->bsp_data_size);
-						memcpy(sm->bsp_data, bsp_out.get(), sm->bsp_data_size);
+							align_bsp_data(bsp_data, bsp_data_aligned, sm->bsp_data_size);
+
+							// release unaligned data
+							vm_free(bsp_data);
+							bsp_data = nullptr;
+
+							nprintf(("Model", "BSP ALIGN => %s:%s resized by %d bytes (%d total)\n", pm->filename, sm->name, bsp_data_size_aligned-sm->bsp_data_size, bsp_data_size_aligned));
+
+							sm->bsp_data = bsp_data_aligned;
+							sm->bsp_data_size = bsp_data_size_aligned;
+						} else {
+							sm->bsp_data = bsp_data;
+						}
+
 						swap_bsp_data(pm, sm->bsp_data);
 					}
 					else {
@@ -5586,6 +5597,7 @@ uint convert_sldc_to_slc2(ubyte* sldc, ubyte* slc2, uint tree_size)
 	return new_tree_size;
 }
 
+// if bsp_out is NULL then we just calculate new size
 uint align_bsp_data(ubyte* bsp_in, ubyte* bsp_out, uint bsp_size)
 {
 	//ShivanSpS 
@@ -5612,36 +5624,47 @@ uint align_bsp_data(ubyte* bsp_in, ubyte* bsp_out, uint bsp_size)
 				//mprintf(("BSP DEFPOINTS DATA ALIGNED.\n"));
 				//Get the new size
 				uint newsize = bsp_chunk_size + 4 - (bsp_chunk_size % 4);
-				//Copy the entire chunk to dest
-				memcpy(bsp_out, bsp_in, bsp_chunk_size);
-				//Write the new chunk size on dest
-				memcpy(bsp_out + 4, &newsize, 4);
-				//The the position of vertex data
-				uint vertex_offset;
-				memcpy(&vertex_offset, bsp_in + 16, 4);
-				//Move vertex data to the back of the chunk
-				memmove(bsp_out + vertex_offset + (newsize - bsp_chunk_size), bsp_out + vertex_offset, bsp_chunk_size - vertex_offset);
-				vertex_offset += (newsize - bsp_chunk_size);
-				//Write new vertex offset
-				memcpy(bsp_out + 16, &vertex_offset, 4);
+
+				if (bsp_out) {
+					//Copy the entire chunk to dest
+					memcpy(bsp_out, bsp_in, bsp_chunk_size);
+					//Write the new chunk size on dest
+					memcpy(bsp_out + 4, &newsize, 4);
+					//The the position of vertex data
+					uint vertex_offset;
+					memcpy(&vertex_offset, bsp_in + 16, 4);
+					//Move vertex data to the back of the chunk
+					memmove(bsp_out + vertex_offset + (newsize - bsp_chunk_size), bsp_out + vertex_offset, bsp_chunk_size - vertex_offset);
+					vertex_offset += (newsize - bsp_chunk_size);
+					//Write new vertex offset
+					memcpy(bsp_out + 16, &vertex_offset, 4);
+					//Move pointers
+					bsp_out += newsize;
+				}
+
 				//Move pointers
 				bsp_in += bsp_chunk_size;
-				bsp_out += newsize;
 				copied += newsize;
 			}
 			else {
 				//if aligned just copy it
-				memcpy(bsp_out, bsp_in, bsp_chunk_size);
+				if (bsp_out) {
+					memcpy(bsp_out, bsp_in, bsp_chunk_size);
+					bsp_out += bsp_chunk_size;
+				}
+
 				bsp_in += bsp_chunk_size;
-				bsp_out += bsp_chunk_size;
 				copied += bsp_chunk_size;
 			}
 		}
 		else {
 			//If the chunk is not a defpoint just copy it
-			memcpy(bsp_out, bsp_in, bsp_chunk_size);
+			if (bsp_out) {
+				memcpy(bsp_out, bsp_in, bsp_chunk_size);
+				bsp_out += bsp_chunk_size;
+			}
+
 			bsp_in += bsp_chunk_size;
-			bsp_out += bsp_chunk_size;
 			copied += bsp_chunk_size;
 		}
 	} while (bsp_in < end);
