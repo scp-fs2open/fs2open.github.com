@@ -109,25 +109,25 @@ vec3 linearToneMapping(vec3 hdr_color)
 	hdr_color = linear_to_srgb(hdr_color); // return from linear color space to SRGB color space
 	return hdr_color;
 }
-
-const float toeStrength = toeS; // [0-1]
-const float toeLength = toeL; // [0-1]
-const float shoulderStrength = shoulderS; // in F stops
-const float shoulderLength = shoulderL; // [0-1]
-const float shoulderAngle = shoulderA; // [0-1]
-
+/*
+ float toeStrength = toeS; // [0-1]
+ float toeLength = toeL; // [0-1]
+ float shoulderStrength = shoulderS; // in F stops
+ float shoulderLength = shoulderL; // [0-1]
+ float shoulderAngle = shoulderA; // [0-1]
+*/
 // LEAVE ALONE
-float x0 = toeLength * 0.5f;
-float y0 = (1.0f - toeStrength) * x0;
+float x0 = toeL * 0.5f;
+float y0 = (1.0f - toeS) * x0;
 float remainingY = 1.0f - y0;
 float initialW = x0 + remainingY;
-float y1_offset = (1.0f - shoulderLength) * remainingY;
+float y1_offset = (1.0f - shoulderL) * remainingY;
 float x1 = x0 + y1_offset;
 float y1 = y0 + y1_offset;
-float extraW = exp2(shoulderStrength) - 1.0f;
+float extraW = exp2(shoulderS) - 1.0f;
 float W = initialW + extraW;
-float overshootX = (W * 2.0f) * shoulderStrength + (x0-y0);
-float overshootY = 0.5f * shoulderAngle;
+float overshootX = (W * 2.0f) * shoulderS + (x0-y0);
+float overshootY = 0.5f * shoulderA;
 
 // Assume slope (m) is always 1.0
 float	toe_B = x0/y0;
