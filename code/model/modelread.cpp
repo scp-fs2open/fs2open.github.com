@@ -3110,21 +3110,25 @@ int model_load(const  char *filename, int n_subsystems, model_subsystem *subsyst
 	return pm->id;
 }
 
-int model_create_instance(bool is_object, int model_num)
+int model_create_instance(int objnum, int model_num)
 {
-	int i = 0;
-	int open_slot = -1;
+	Assertion(objnum >= -1 && objnum < MAX_OBJECTS, "objnum must be -1 or a valid object index!");
+	Assertion(model_num >= 0 && model_num < MAX_POLYGON_MODELS, "model_num must be a valid model index!");
+
+	// this will also run a bunch of Assertions
+	auto pm = model_get(model_num);
 
 	// go through model instances and find an empty slot
-	for ( i = 0; i < (int)Polygon_model_instances.size(); i++) {
+	int open_slot = -1;
+	for (int i = 0; i < (int)Polygon_model_instances.size(); i++) {
 		if ( !Polygon_model_instances[i] ) {
 			open_slot = i;
 		}
 	}
 
 	auto pmi = new polymodel_instance;
-
 	pmi->model_num = model_num;
+	pmi->objnum = objnum;
 
 	// if not found, create a slot
 	if ( open_slot < 0 ) {
@@ -3135,16 +3139,14 @@ int model_create_instance(bool is_object, int model_num)
 	}
 	pmi->id = open_slot;
 
-	polymodel *pm = model_get(model_num);
-
 	if (pm->n_models > 0)
 		pmi->submodel = new submodel_instance[pm->n_models];
 
 	// add intrinsic_motion instances if this model is intrinsic-moving
 	if (pm->flags & PM_FLAG_HAS_INTRINSIC_MOTION) {
-		intrinsic_motion motion(is_object, open_slot);
+		intrinsic_motion motion(objnum >= 0, open_slot);
 
-		for (i = 0; i < pm->n_models; i++) {
+		for (int i = 0; i < pm->n_models; i++) {
 			if (pm->submodel[i].movement_type == MOVEMENT_TYPE_INTRINSIC) {
 				// note: dumb_turn_rate will be 0.0f for look_at
 				motion.add_submodel(i, &pmi->submodel[i], pm->submodel[i].default_turn_rate);

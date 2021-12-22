@@ -9882,8 +9882,6 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 
 	sip->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);		// use the highest detail level
 
-	shipp->model_instance_num = model_create_instance(true, sip->model_num);
-
 	if(strlen(sip->cockpit_pof_file))
 	{
 		sip->cockpit_model_num = model_load(sip->cockpit_pof_file, 0, NULL);
@@ -9939,6 +9937,8 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 
 	objnum = obj_create(OBJ_SHIP, -1, n, orient, pos, model_get_radius(sip->model_num), default_ship_object_flags);
 	Assert( objnum >= 0 );
+
+	shipp->model_instance_num = model_create_instance(objnum, sip->model_num);
 
 	shipp->ai_index = ai_get_slot(n);
 	Assert( shipp->ai_index >= 0 );
@@ -10404,7 +10404,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 
 	// create new model instance data
 	// note: this is needed for both subsystem stuff and submodel animation stuff
-	sp->model_instance_num = model_create_instance(true, sip->model_num);
+	sp->model_instance_num = model_create_instance(objnum, sip->model_num);
 
 	// if we have the same warp parameters as the ship class, we will need to update them to point to the new class
 	if (sp->warpin_params_index == sip_orig->warpin_params_index) {
@@ -19500,7 +19500,7 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 			{
 				if (pm->submodel[mn].flags[Model::Submodel_flags::Gun_rotation])
 				{
-					swp->primary_bank_external_model_instance[i] = model_create_instance(false, wip->external_model_num);
+					swp->primary_bank_external_model_instance[i] = model_create_instance(-1, wip->external_model_num);
 					break;
 				}
 			}

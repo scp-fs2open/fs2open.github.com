@@ -1292,7 +1292,7 @@ int brief_setup_closeup(brief_icon *bi)
 			Closeup_icon->modelnum = model_load(pof_filename, 0, NULL);
 		} else {
 			Closeup_icon->modelnum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
-			Closeup_icon->model_instance_num = model_create_instance(false, Closeup_icon->modelnum);
+			Closeup_icon->model_instance_num = model_create_instance(-1, Closeup_icon->modelnum);
 			model_set_up_techroom_instance(sip, Closeup_icon->model_instance_num);
 		}
 	}
