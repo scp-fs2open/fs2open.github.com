@@ -895,6 +895,8 @@ void game_level_close()
 
 		stars_level_close();
 
+		multi_close_oo_and_ship_tracker();
+
 		Pilot.save_savefile();
 
 		// Cybor17 - also, undo cheats.
