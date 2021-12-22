@@ -294,7 +294,7 @@ int bm_load_animation(const char *filename,
 	int *fps = nullptr,
 	int *keyframe = nullptr,
 	float *total_time = nullptr,
-	bool can_drop_frames = 0,
+	bool can_drop_frames = false,
 	int dir_type = CF_TYPE_ANY,
 	bool rethrow_exceptions = false);
 
