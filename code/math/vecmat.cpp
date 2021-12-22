@@ -2228,23 +2228,44 @@ void vm_vec_random_in_circle(vec3d *out, const vec3d *in, const matrix *orient, 
 	vm_rot_point_around_line(out, &temp, fl_radians(frand_range(0.0f, 360.0f)), in, &orient->vec.fvec);
 }
 
+void vm_vec_unit_sphere_point(vec3d *out, float theta_scalar, float phi_scalar)
+{
+	// see https://en.wikipedia.org/wiki/Spherical_coordinate_system
+	const auto theta = theta_scalar * PI;
+	const auto phi = phi_scalar * PI2;
+
+	out->xyz.x = sin(theta) * cos(phi);
+	out->xyz.y = sin(theta) * sin(phi);
+	out->xyz.z = cos(theta);
+}
+
 // given a start vector and a radius, generate a point in a spherical volume
 // if on_surface is true, the point will be on the surface of the sphere
+namespace {
+	util::UniformFloatRange float_range(0.0f, 1.0f);
+}
 void vm_vec_random_in_sphere(vec3d *out, const vec3d *in, float radius, bool on_surface, bool bias_towards_center)
 {
 	vec3d temp;
 
-	float z = util::UniformFloatRange(-1, 1).next(); // Take a 2-sphere slice
-	float phi = util::UniformFloatRange(0.0f, PI2).next();
-	vm_vec_make(&temp, sqrtf(1.0f - z * z) * cosf(phi), sqrtf(1.0f - z * z) * sinf(phi), z); // Using the z-vec as the starting point
+	auto theta_scalar = float_range.next();
+	auto phi_scalar = float_range.next();
+	while (phi_scalar == 1.0f) {
+		phi_scalar = float_range.next();
+	}
+	vm_vec_unit_sphere_point(&temp, theta_scalar, phi_scalar);
 
-	float scalar = util::UniformFloatRange(0.0f, 1.0f).next();
+	float scalar = 1.0f;
 
-	// cube root because scaling inward increases the probability density by the cube of its proximity towards the center
-	if (!bias_towards_center)
-		scalar = powf(scalar, 0.333f);
+	if (!on_surface) {
+		scalar = float_range.next();
 
-	vm_vec_scale_add(out, in, &temp, on_surface ? radius : scalar * radius);
+		// cube root because scaling inward increases the probability density by the cube of its proximity towards the center
+		if (!bias_towards_center)
+			scalar = powf(scalar, 0.333f);
+	}
+
+	vm_vec_scale_add(out, in, &temp, scalar * radius);
 }
 
 // find the nearest point on the line to p. if dist is non-NULL, it is filled in

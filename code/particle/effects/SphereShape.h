@@ -8,6 +8,7 @@
 #include "globalincs/pstypes.h"
 
 #include "math/bitarray.h"
+#include "math/vecmat.h"
 #include "particle/ParticleEffect.h"
 #include "utils/RandomRange.h"
 
@@ -23,16 +24,15 @@ class SphereShape {
 	SphereShape() : m_sphereRange(0.f, 1.f) {}
 
 	matrix getDisplacementMatrix() {
-		auto u = m_sphereRange.next();
-		auto v = m_sphereRange.next();
-
-		auto theta = 2 * PI * u;
-		auto phi = acos(2 * v - 1);
 
 		vec3d vec;
-		vec.xyz.x = sin(theta)*cos(phi);
-		vec.xyz.y = sin(theta)*sin(phi);
-		vec.xyz.z = cos(theta);
+		auto theta_scalar = m_sphereRange.next();
+		auto phi_scalar = m_sphereRange.next();
+		while (phi_scalar == 1.0f) {
+			phi_scalar = m_sphereRange.next();
+		}
+
+		vm_vec_unit_sphere_point(&vec, theta_scalar, phi_scalar);
 
 		matrix m;
 		vm_vector_2_matrix_norm(&m, &vec);
