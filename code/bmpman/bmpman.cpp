@@ -1424,7 +1424,7 @@ static int bm_load_image_data(int handle, int bpp, ushort flags, bool nodebug)
 	return 0;
 }
 
-int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *keyframe, float *total_time, bool can_drop_frames, int dir_type) {
+int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *keyframe, float *total_time, bool can_drop_frames, int dir_type, bool rethrow_exceptions) {
 	int	i, n;
 	anim	the_anim;
 	CFILE	*img_cfp = nullptr;
@@ -1594,10 +1594,15 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 			img_size = the_apng.imgsize();
 		}
 		catch (const apng::ApngException& e) {
-			mprintf(("Failed to load apng: %s\n", e.what() ));
 			if (img_cfp != nullptr)
 				cfclose(img_cfp);
-			return -1;
+			if (rethrow_exceptions) {
+				throw e;
+			}
+			else {
+				mprintf(("Failed to load apng: %s\n", e.what()));
+				return -1;
+			}
 		}
 	}
 	else {

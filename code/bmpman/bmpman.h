@@ -289,7 +289,14 @@ bool bm_release_rendertarget(int handle);
  * @returns The bm number of the first bitmap in the sequence if successful, or
  * @returns A negative value if unsuccessful
  */
-int bm_load_animation(const char *filename, int *nframes = nullptr, int *fps = nullptr, int *keyframe = nullptr, float *total_time = nullptr, bool can_drop_frames = 0, int dir_type = CF_TYPE_ANY);
+int bm_load_animation(const char *filename,
+	int *nframes = nullptr,
+	int *fps = nullptr,
+	int *keyframe = nullptr,
+	float *total_time = nullptr,
+	bool can_drop_frames = 0,
+	int dir_type = CF_TYPE_ANY,
+	bool rethrow_exceptions = false);
 
 /**
  * @brief Loads either animation (bm_load_animation) or still image (bm_load)

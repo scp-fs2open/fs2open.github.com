@@ -4476,12 +4476,17 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		{
 			stuff_string(name_tmp, F_NAME, sizeof(name_tmp));
 			int tex_fps=0, tex_nframes=0, tex_id=-1;;
-			tex_id = bm_load_animation(name_tmp, &tex_nframes, &tex_fps, nullptr, nullptr, true);
-			if(tex_id < 0)
-			{
-				mprintf(("Could not load thruster texture %s as animation. Attempting to load as static image.\n", name_tmp));
-				tex_id = bm_load(name_tmp);
+			try {
+				tex_id = bm_load_animation(name_tmp, &tex_nframes, &tex_fps, nullptr, nullptr, true, CF_TYPE_ANY, true);
+			} catch (const std::exception& e) {
+				mprintf(("Could not load thruster texture %s as animation (%s). Attempting to load as static image.\n",
+					name_tmp,
+					e.what()));
+				tex_id = -1;
 			}
+
+			if(tex_id < 0)
+				tex_id = bm_load(name_tmp);
 			if(tex_id >= 0)
 			{
 				if(mtp->tex_id >= 0) {
