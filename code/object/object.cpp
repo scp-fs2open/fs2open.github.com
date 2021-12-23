@@ -946,10 +946,6 @@ void obj_move_call_physics(object *objp, float frametime)
 			}
 		}
 	}
-	
-	if(has_fired == -1){
-		ship_stop_fire_primary(objp);	//if it hasn't fired do the "has just stoped fireing" stuff
-	}
 
 	//2D MODE
 	//THIS IS A FREAKIN' HACK
