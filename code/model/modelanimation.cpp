@@ -22,13 +22,7 @@ namespace animation {
 	std::map<int, ModelAnimationSet::RunningAnimationList> ModelAnimationSet::s_runningAnimations;
 	std::vector<std::shared_ptr<ModelAnimation>> ModelAnimation::s_animationById;
 
-	ModelAnimation::ModelAnimation(bool isInitialType) : m_set(nullptr), m_isInitialType(isInitialType), id(s_animationById.size()) { }
-
-	std::shared_ptr<ModelAnimation> ModelAnimation::createAnimation(bool isInitialType) {
-		auto ptr = std::shared_ptr<ModelAnimation>(new ModelAnimation(isInitialType));
-		s_animationById.push_back(ptr);
-		return ptr;
-	}
+	ModelAnimation::ModelAnimation(bool isInitialType) : m_set(nullptr), m_isInitialType(isInitialType) { }
 
 	void ModelAnimation::setAnimation(std::shared_ptr<ModelAnimationSegment> animation) {
 		m_animation = std::move(animation);
@@ -141,11 +135,17 @@ namespace animation {
 	void ModelAnimation::start(polymodel_instance* pmi, ModelAnimationDirection direction, bool force, bool instant, bool pause, const float* multiOverrideTime) {
 		instance_data& instanceData = m_instances[pmi->id];
 
-		if (multiOverrideTime == nullptr && (Game_mode & GM_MULTIPLAYER)) {
+		if (multiOverrideTime == nullptr && (Game_mode & GM_MULTIPLAYER) && id != 0) {
 			//We are in multiplayer. Send animation to server to start. Server starts animation online, and sends start request back (which'll have multiOverride == true).
 			//If we _are_ the server, also just start the animation
 
-			send_animation_triggered_packet((int)id, pmi->id, direction, force, instant, pause);
+			object* objp = nullptr;
+
+			if(objp != nullptr)
+				send_animation_triggered_packet(id, objp, 0, direction, force, instant, pause);
+			else {
+				//Find special mode based on id and send
+			}
 
 			if(MULTIPLAYER_CLIENT)
 				return;
@@ -1073,7 +1073,7 @@ namespace animation {
 	}
 
 	void ModelAnimationParseHelper::parseSingleAnimation() {
-		auto animation = std::shared_ptr<ModelAnimation>(ModelAnimation::createAnimation());
+		auto animation = std::shared_ptr<ModelAnimation>(new ModelAnimation());
 
 		ModelAnimationParseHelper helper;
 		required_string("$Name:");
@@ -1169,7 +1169,7 @@ namespace animation {
 
 			if (animation->m_flags[Animation_Flags::Loop]) {
 				//Looping animations for these trigger types are probably unintended as well, but rare cases could exist, hence no explicit warning.
-				mprintf(("Animation %s with trigger type %s has an unexpected loop flag.", helper.m_animationName.c_str(), atype));
+				mprintf(("Animation %s with trigger type %s has an unexpected loop flag.\n", helper.m_animationName.c_str(), atype));
 			}
 		}
 
@@ -1296,7 +1296,7 @@ namespace animation {
 			if (optional_string("+time:"))
 				skip_token();
 
-			std::shared_ptr<ModelAnimation> anim = ModelAnimation::createAnimation(true);
+			auto anim = std::shared_ptr<ModelAnimation>(new ModelAnimation(true));
 
 			char namelower[MAX_NAME_LEN];
 			strncpy(namelower, sp->subobj_name, MAX_NAME_LEN);
@@ -1327,7 +1327,7 @@ namespace animation {
 			sip->animations.emplace(anim, name, animation::ModelAnimationTriggerType::Initial);
 		}
 		else {
-			std::shared_ptr<ModelAnimation> anim = ModelAnimation::createAnimation();
+			auto anim = std::shared_ptr<ModelAnimation>(new ModelAnimation());
 			auto subsys = sip->animations.getSubmodel(sp->subobj_name);
 
 			if (type == ModelAnimationTriggerType::TurretFired) {
@@ -1421,7 +1421,7 @@ namespace animation {
 			//TODO maybe handle sub_name? Not documented in Wiki, maybe no one actually uses it...
 			sip->animations.emplace(anim, name, type, subtype);
 
-			mprintf(("Specified deprecated non-initial type animation on subsystem %s of ship class %s. Consider using *-anim.tbm's instead.", sp->subobj_name, sip->name));
+			mprintf(("Specified deprecated non-initial type animation on subsystem %s of ship class %s. Consider using *-anim.tbm's instead.\n", sp->subobj_name, sip->name));
 		}
 	}
 }

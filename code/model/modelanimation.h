@@ -247,13 +247,12 @@ namespace animation {
 
 		ModelAnimationState play(float frametime, polymodel_instance* pmi, ModelAnimationSubmodelBuffer& applyBuffer, bool applyOnly = false);
 
-		ModelAnimation(bool isInitialType);
 
 		friend class ModelAnimationSet;
 		friend class ModelAnimationParseHelper;
 	public:
 		//Initial type animations must complete within a single frame, and then never modifiy the submodel again. If this is the case, we do not need to remember them being active for massive performance gains with lots of turrets
-		static std::shared_ptr<ModelAnimation> createAnimation(bool isInitialType = false);
+		ModelAnimation(bool isInitialType = false);
 
 		void setAnimation(std::shared_ptr<ModelAnimationSegment> animation);
 
@@ -265,7 +264,7 @@ namespace animation {
 		static void stepAnimations(float frametime, polymodel_instance* pmi);
 
 		static std::vector<std::shared_ptr<ModelAnimation>> s_animationById;
-		const size_t id;
+		unsigned int id = 0;
 	};
 
 

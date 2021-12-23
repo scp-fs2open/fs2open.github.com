@@ -8011,14 +8011,16 @@ static constexpr size_t animation_forced_bit = 1 << 1;
 static constexpr size_t animation_instant_bit = 1 << 2;
 static constexpr size_t animation_pause_bit = 1 << 3;
 
-void send_animation_triggered_packet(int animationId, int pmi, const animation::ModelAnimationDirection& direction, bool force, bool instant, bool pause, const int* /*time*/) {
+void send_animation_triggered_packet(unsigned int animationId, object* parent_object, ushort special_mode, const animation::ModelAnimationDirection& direction, bool force, bool instant, bool pause, const int* /*time*/) {
 	int packet_size;
+	ushort netsig_to_send = special_mode == 0 && parent_object != nullptr ? parent_object->net_signature : (ushort)0;
 	ubyte data[MAX_PACKET_SIZE];
 
 	BUILD_HEADER(ANIMATION_TRIGGERED);
 
 	ADD_INT(animationId);
-	ADD_INT(pmi);
+	ADD_SHORT(netsig_to_send);
+	ADD_SHORT(special_mode); // Currently empty. Reserved to find special pmi's for non-object animations
 	
 	ubyte metadata = (direction == animation::ModelAnimationDirection::RWD ? animation_direction_bit : 0)
 		| (force ? animation_forced_bit : 0)
@@ -8039,14 +8041,16 @@ void send_animation_triggered_packet(int animationId, int pmi, const animation::
 
 void process_animation_triggered_packet(ubyte* data, header* hinfo) {
 	int offset; // linked;	
-	int animationId, pmi;
+	int animationId;
+	ushort netsig, special_mode;
 	ubyte metadata;
 	int time;
 
 	// read all packet info
 	offset = HEADER_LENGTH;
 	GET_INT(animationId);
-	GET_INT(pmi);
+	GET_SHORT(netsig);
+	GET_SHORT(special_mode);
 	GET_DATA(metadata);
 	GET_INT(time);
 
@@ -8061,11 +8065,17 @@ void process_animation_triggered_packet(ubyte* data, header* hinfo) {
 
 	float delay = time * 0.001f;
 
-	animation::ModelAnimation::s_animationById[animationId]->start(model_get_instance(pmi), direction, forced, instant, pause, &delay);
+	object* objp = multi_get_network_object(netsig);
+	if (special_mode == 0 && objp != nullptr) {
+		animation::ModelAnimation::s_animationById[animationId]->start(model_get_instance(object_get_model_instance(objp)), direction, forced, instant, pause, &delay);
+	}
+	else {
+		//Currently empty. Reserved to find special pmi's for non-object animations
+	}
 
 	//Need to broadcast back to other clients
 	if (Net_player->flags & NETINFO_FLAG_AM_MASTER) {
-		send_animation_triggered_packet(animationId, pmi, direction, forced, instant, pause, &time);
+		send_animation_triggered_packet(animationId, objp, special_mode, direction, forced, instant, pause, &time);
 	}
 }
 
