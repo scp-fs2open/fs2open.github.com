@@ -433,8 +433,6 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 		db->submodel_num = submodel_num;
 	}
 
-	db->model_instance_num = model_create_instance(true, db->model_num);
-
 	float radius = submodel_get_radius(db->model_num, db->submodel_num);
 
 	// if its generic, maybe cull it if its too small and far
@@ -549,6 +547,8 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 	
 	obj = &Objects[objnum];
 	pi = &obj->phys_info;
+
+	db->model_instance_num = model_create_instance(objnum, db->model_num);
 
 	// assign the network signature.  The signature will be 0 for non-hull pieces, but since that
 	// is our invalid signature, it should be okay.

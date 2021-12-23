@@ -121,6 +121,8 @@ struct polymodel_instance
 	int id = -1;							// global model_instance num index
 	int model_num = -1;						// global model num index, same as polymodel->id
 	submodel_instance *submodel = nullptr;	// array of submodel instances; mirrors the polymodel->submodel array
+
+	int objnum;								// id of the object using this pmi, or -1 if no object (e.g. skybox) 
 };
 
 #define MAX_MODEL_SUBSYSTEMS		200				// used in ships.cpp (only place?) for local stack variable DTP; bumped to 200
@@ -792,7 +794,7 @@ void model_instance_free_all();
 // Loads a model from disk and returns the model number it loaded into.
 int model_load(const char *filename, int n_subsystems, model_subsystem *subsystems, int ferror = 1, int duplicate = 0);
 
-int model_create_instance(bool is_object, int model_num);
+int model_create_instance(int objnum, int model_num);
 void model_delete_instance(int model_instance_num);
 
 // Goober5000
