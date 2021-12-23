@@ -27,7 +27,7 @@ class SphereShape {
 
 		vec3d vec;
 
-		vm_vec_sphere_point(&vec, m_sphereRange.next(), m_sphereRange.next());
+		vm_vec_unit_sphere_point(&vec, m_sphereRange.next(), m_sphereRange.next());
 
 		matrix m;
 		vm_vector_2_matrix_norm(&m, &vec);
