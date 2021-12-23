@@ -5780,7 +5780,7 @@ void HudGaugeWeaponEnergy::render(float  /*frametime*/)
 		}
 
 		// maybe flash the energy bar
-		for ( i = 0; i < MAX_SHIP_WEAPONS; i++ )
+		for ( i = 0; i < sw->num_primary_banks + sw->num_secondary_banks; i++ )
 		{
 			if ( !timestamp_elapsed(Weapon_flash_info.flash_duration[i]) && Weapon_flash_info.flash_energy[i])
 			{

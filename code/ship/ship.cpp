@@ -12712,7 +12712,7 @@ done_secondary:
 
 	// if we are out of ammo in this bank then don't carry over firing swarm/corkscrew
 	// missiles to a new bank
-	if (!ship_secondary_has_ammo(swp, bank) || shipp->weapon_energy < (shipp->flags[Ship_Flags::Secondary_dual_fire] ? 2 : 1 * wip->energy_consumed)) {
+	if (!ship_secondary_has_ammo(swp, bank) || shipp->weapon_energy < wip->energy_consumed) {
 		// NOTE: these are set to 1 since they will get reduced by 1 in the
 		//       swarm/corkscrew code once this function returns
 
