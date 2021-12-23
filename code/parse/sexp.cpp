@@ -1950,27 +1950,44 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 			type2 = SEXP_ATOM_STRING;
 
 		} else if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER) {
-			const auto *p_container = get_sexp_container(Sexp_nodes[node].text);
-			Assert(p_container != nullptr); // should have been checked in get_sexp()
+			// this is an instance of "Replace Container"
+			const int modifier_node = Sexp_nodes[node].first;
+			if (modifier_node == -1) {
+				return SEXP_CHECK_MISSING_CONTAINER_MODIFIER;
+			}
 
-			switch (type) {
-				case OPF_CONTAINER_NAME:
-				case OPF_LIST_CONTAINER_NAME:
-				case OPF_MAP_CONTAINER_NAME:
-					// set two values for extra certainty
-					// since SEXP_ATOM_CONTAINER == OPR_AI_GOAL (yay untyped enums)
-					type2 = SEXP_ATOM_CONTAINER;
-					z = SEXP_ATOM_CONTAINER;
-					t = (int)p_container->type;
-					break;
-				default:
-					// must be an instance of "Replace Container"
-					// using CTEXT() isn't foolproof because could fail now but be OK in-mission
-					// for now, just skip over the container and continue checking
-					node = Sexp_nodes[node].rest;
-					argnum++;
-					continue;
+			const auto *p_container = get_sexp_container(Sexp_nodes[node].text);
+			Assert(p_container); // name was already checked in get_sexp()
+			const auto &container = *p_container;
+
+			// ignore nested "Replace" uses
+			if (!(Sexp_nodes[modifier_node].type & SEXP_FLAG_VARIABLE) &&
+					(Sexp_nodes[modifier_node].subtype != SEXP_ATOM_CONTAINER)) {
+				if (container.is_list()) {
+					if (Sexp_nodes[modifier_node].subtype != SEXP_ATOM_STRING) {
+						if (bad_node)
+							*bad_node = modifier_node;
+						return SEXP_CHECK_INVALID_LIST_MODIFIER;
+					}
+					// TODO: check if list modifier exists
+				} else if (container.is_map()) {
+					if ((any(container.type & ContainerType::NUMBER_KEYS) &&
+							Sexp_nodes[modifier_node].subtype != SEXP_ATOM_NUMBER) ||
+						(any(container.type & ContainerType::STRING_KEYS) &&
+							Sexp_nodes[modifier_node].subtype != SEXP_ATOM_STRING)) {
+						if (bad_node)
+							*bad_node = modifier_node;
+						return SEXP_CHECK_WRONG_MAP_KEY_TYPE;
+					}
+				} else {
+					UNREACHABLE("Unknown container type %d", (int)container.type);
 				}
+			}
+
+			// not much else we can check here, since validity depends on runtime values, so continue
+			node = Sexp_nodes[node].rest;
+			argnum++;
+			continue;
 
 		} else {
 			UNREACHABLE("SEXP subtype is %d when it should be SEXP_ATOM_LIST, SEXP_ATOM_NUMBER, or SEXP_ATOM_STRING!", Sexp_nodes[node].subtype);
@@ -3391,13 +3408,16 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 			case OPF_CONTAINER_NAME:
 			case OPF_LIST_CONTAINER_NAME:
 			case OPF_MAP_CONTAINER_NAME:
-				if (type2 != SEXP_ATOM_CONTAINER || z != SEXP_ATOM_CONTAINER) {
+			{
+				const auto *p_container = get_sexp_container(Sexp_nodes[node].text);
+				if (!p_container) {
 					return SEXP_CHECK_TYPE_MISMATCH;
-				} else if ((type == OPF_LIST_CONTAINER_NAME && none((ContainerType)t & ContainerType::LIST)) ||
-					(type == OPF_MAP_CONTAINER_NAME && none((ContainerType)t & ContainerType::MAP))) {
+				} else if ((type == OPF_LIST_CONTAINER_NAME && !p_container->is_list()) ||
+						   (type == OPF_MAP_CONTAINER_NAME && !p_container->is_map())) {
 					return SEXP_CHECK_WRONG_CONTAINER_TYPE;
 				}
 				break;
+			}
 
 			default:
 				Error(LOCATION, "Unhandled argument format");
@@ -30291,17 +30311,17 @@ const char *sexp_error_message(int num)
 		case SEXP_CHECK_AMBIGUOUS_EVENT_NAME:
 			return "Ambiguous event name (more than one event with the same name)";
 
-		case SEXP_CHECK_WRONG_CONTAINER_TYPE:
-			return "Wrong container type";
-
-		case SEXP_CHECK_WRONG_CONTAINER_DATA_TYPE:
-			return "Wrong container data type";
+		case SEXP_CHECK_MISSING_CONTAINER_MODIFIER:
+			return "Missing container modifier";
 
 		case SEXP_CHECK_INVALID_LIST_MODIFIER:
 			return "Invalid list modifier";
 
 		case SEXP_CHECK_WRONG_MAP_KEY_TYPE:
 			return "Wrong map key type";
+
+		case SEXP_CHECK_WRONG_CONTAINER_TYPE:
+			return "Wrong container type";
 
 		default:
 			Warning(LOCATION, "Unhandled sexp error code %d!", num);
