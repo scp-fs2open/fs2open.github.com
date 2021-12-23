@@ -475,7 +475,7 @@ uint32_t hash_fnv1a(const void* data, size_t length) {
 	const uint32_t fnv1a_magic_prime = 16777619;
 	uint32_t hash = 2166136261;
 
-	const uint8_t* bytes = reinterpret_cast<const uint8_t*>(data);
+	auto bytes = reinterpret_cast<const uint8_t*>(data);
 
 	for (size_t cnt = 0; cnt < length; cnt++) {
 		hash = (hash ^ bytes[cnt]) * fnv1a_magic_prime;

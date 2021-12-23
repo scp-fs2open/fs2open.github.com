@@ -7,7 +7,8 @@
  *
 */
 
-#include <stdint.h>
+#include <cstdint>
+#include "globalincs/vmallocator.h"
 
 #ifndef __ENCRYPT_H__
 #define __ENCRYPT_H__
