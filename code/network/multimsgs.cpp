@@ -8066,11 +8066,15 @@ void process_animation_triggered_packet(ubyte* data, header* hinfo) {
 	float delay = time * 0.001f;
 
 	object* objp = multi_get_network_object(netsig);
-	if (special_mode == 0 && objp != nullptr) {
-		animation::ModelAnimation::s_animationById[animationId]->start(model_get_instance(object_get_model_instance(objp)), direction, forced, instant, pause, &delay);
-	}
-	else {
-		//Currently empty. Reserved to find special pmi's for non-object animations
+
+	auto animation = animation::ModelAnimationSet::s_animationById.find(animationId);
+	if (animation != animation::ModelAnimationSet::s_animationById.end()) {
+		if (special_mode == 0 && objp != nullptr) {
+			animation->second->start(model_get_instance(object_get_model_instance(objp)), direction, forced, instant, pause, &delay);
+		}
+		else {
+			//Currently empty. Reserved to find special pmi's for non-object animations
+		}
 	}
 
 	//Need to broadcast back to other clients

@@ -7,7 +7,7 @@
  *
 */
 
-
+#include <stdint.h>
 
 #ifndef __ENCRYPT_H__
 #define __ENCRYPT_H__
@@ -29,6 +29,10 @@ void encrypt(char *text, int text_len, char *scrambled_text, int *scrambled_len,
 
 // Decrypt scrambled_text
 void unencrypt(char *scrambled_text, int scrambled_len, char *text, int *text_len);
+
+//A fast platform/std-implementation stable hashing algorithm. Implements the FNV-1a hash algorithm
+uint32_t hash_fnv1a(const SCP_string& string);
+uint32_t hash_fnv1a(const void* data, size_t length);
 
 #endif
 

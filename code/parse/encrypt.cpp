@@ -466,3 +466,20 @@ void encrypt_init()
 
 	Encrypt_inited = 1;
 }
+
+uint32_t hash_fnv1a(const SCP_string& string) {
+	return hash_fnv1a(string.c_str(), string.length() * sizeof(SCP_string::value_type));
+}
+
+uint32_t hash_fnv1a(const void* data, size_t length) {
+	const uint32_t fnv1a_magic_prime = 16777619;
+	uint32_t hash = 2166136261;
+
+	const uint8_t* bytes = reinterpret_cast<const uint8_t*>(data);
+
+	for (size_t cnt = 0; cnt < length; cnt++) {
+		hash = (hash ^ bytes[cnt]) * fnv1a_magic_prime;
+	}
+
+	return hash;
+}
