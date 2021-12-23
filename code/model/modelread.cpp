@@ -3124,7 +3124,6 @@ int model_load(const  char *filename, int n_subsystems, model_subsystem *subsyst
 int model_create_instance(int objnum, int model_num)
 {
 	Assertion(objnum >= -1 && objnum < MAX_OBJECTS, "objnum must be -1 or a valid object index!");
-	Assertion(model_num >= 0 && model_num < MAX_POLYGON_MODELS, "model_num must be a valid model index!");
 
 	// this will also run a bunch of Assertions
 	auto pm = model_get(model_num);
