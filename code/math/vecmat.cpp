@@ -2228,15 +2228,12 @@ void vm_vec_random_in_circle(vec3d *out, const vec3d *in, const matrix *orient, 
 	vm_rot_point_around_line(out, &temp, fl_radians(frand_range(0.0f, 360.0f)), in, &orient->vec.fvec);
 }
 
-void vm_vec_unit_sphere_point(vec3d *out, float theta_scalar, float phi_scalar)
+void vm_vec_sphere_point(vec3d *out, float z_scalar, float phi_scalar)
 {
-	// see https://en.wikipedia.org/wiki/Spherical_coordinate_system
-	const auto theta = theta_scalar * PI;
+	const auto z = (z_scalar * 2.0f) - 1.0f; // convert range to [-1,1]
 	const auto phi = phi_scalar * PI2;
-
-	out->xyz.x = sin(theta) * cos(phi);
-	out->xyz.y = sin(theta) * sin(phi);
-	out->xyz.z = cos(theta);
+	const auto rho = sqrtf(1.0f - z * z);
+	vm_vec_make(out, rho * cosf(phi), rho * sinf(phi), z); // Using the z-vec as the starting point
 }
 
 // given a start vector and a radius, generate a point in a spherical volume
@@ -2248,12 +2245,7 @@ void vm_vec_random_in_sphere(vec3d *out, const vec3d *in, float radius, bool on_
 {
 	vec3d temp;
 
-	auto theta_scalar = float_range.next();
-	auto phi_scalar = float_range.next();
-	while (phi_scalar == 1.0f) {
-		phi_scalar = float_range.next();
-	}
-	vm_vec_unit_sphere_point(&temp, theta_scalar, phi_scalar);
+	vm_vec_sphere_point(&temp, float_range.next(), float_range.next());
 
 	float scalar = 1.0f;
 

@@ -26,13 +26,8 @@ class SphereShape {
 	matrix getDisplacementMatrix() {
 
 		vec3d vec;
-		auto theta_scalar = m_sphereRange.next();
-		auto phi_scalar = m_sphereRange.next();
-		while (phi_scalar == 1.0f) {
-			phi_scalar = m_sphereRange.next();
-		}
 
-		vm_vec_unit_sphere_point(&vec, theta_scalar, phi_scalar);
+		vm_vec_sphere_point(&vec, m_sphereRange.next(), m_sphereRange.next());
 
 		matrix m;
 		vm_vector_2_matrix_norm(&m, &vec);

@@ -487,10 +487,9 @@ void vm_vec_random_cone(vec3d *out, const vec3d *in, float min_angle, float max_
 void vm_vec_random_in_circle(vec3d *out, const vec3d *in, const matrix *orient, float radius, bool on_edge, bool bias_towards_center = false);
 
 
-// compute a location on the unit sphere from spherical scale factors
-// theta_scalar must be in [0.0, 1.0]
-// phi_scalar must be in [0.0, 1.0)
-void vm_vec_unit_sphere_point(vec3d *out, float theta_scalar, float phi_scalar);
+// compute a sphere location from cylindrical scale factors
+// z_scalar and phi_scalar should be in [0.0, 1.0]
+void vm_vec_sphere_point(vec3d *out, float z_scalar, float phi_scalar);
 
 // given a start vector and a radius, generate a point in a spherical volume
 // if on_surface is true, the point will be on the surface of the sphere
