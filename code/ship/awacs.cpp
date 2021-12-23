@@ -459,5 +459,10 @@ int ship_is_visible_by_team(object *target, ship *viewer)
 	int ship_num = target->instance;
 	int team = viewer->team;
 
+	// this can happen in multi, where networking is processed before first frame sim
+	if (Awacs_stamp == -1) {
+		awacs_process();
+	}
+
 	return Ship_visibility_by_team[team][ship_num] ? 1 : 0;
 }
