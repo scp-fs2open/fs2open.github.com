@@ -8013,14 +8013,18 @@ static constexpr size_t animation_pause_bit = 1 << 3;
 
 void send_animation_triggered_packet(unsigned int animationId, object* parent_object, ushort special_mode, const animation::ModelAnimationDirection& direction, bool force, bool instant, bool pause, const int* /*time*/) {
 	int packet_size;
-	ushort netsig_to_send = special_mode == 0 && parent_object != nullptr ? parent_object->net_signature : (ushort)0;
+	ushort netsig_to_send = 0;
 	ubyte data[MAX_PACKET_SIZE];
+
+	Assertion(special_mode != 0 || parent_object != nullptr, "Tried to synchronize an animation with neither an attached object, nor a valid special object mode.");
+	if (special_mode == 0)
+		netsig_to_send = parent_object->net_signature;
 
 	BUILD_HEADER(ANIMATION_TRIGGERED);
 
-	ADD_INT(animationId);
-	ADD_SHORT(netsig_to_send);
-	ADD_SHORT(special_mode); // Currently empty. Reserved to find special pmi's for non-object animations
+	ADD_UINT(animationId);
+	ADD_USHORT(netsig_to_send);
+	ADD_USHORT(special_mode); // Currently empty. Reserved to find special pmi's for non-object animations
 	
 	ubyte metadata = (direction == animation::ModelAnimationDirection::RWD ? animation_direction_bit : 0)
 		| (force ? animation_forced_bit : 0)
@@ -8041,16 +8045,16 @@ void send_animation_triggered_packet(unsigned int animationId, object* parent_ob
 
 void process_animation_triggered_packet(ubyte* data, header* hinfo) {
 	int offset; // linked;	
-	int animationId;
+	unsigned int animationId;
 	ushort netsig, special_mode;
 	ubyte metadata;
 	int time;
 
 	// read all packet info
 	offset = HEADER_LENGTH;
-	GET_INT(animationId);
-	GET_SHORT(netsig);
-	GET_SHORT(special_mode);
+	GET_UINT(animationId);
+	GET_USHORT(netsig);
+	GET_USHORT(special_mode);
 	GET_DATA(metadata);
 	GET_INT(time);
 
