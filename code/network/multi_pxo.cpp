@@ -5439,7 +5439,7 @@ void multi_pxo_ban_parse_banner_file()
 			if (idx < 0){
 				idx = 0;
 			}
-		} while ( !Multi_pxo_banner.ban_file.compare(banners[idx]) );
+		} while (Multi_pxo_banner.ban_file == banners[idx]);
 	}
 
 	// base filename
