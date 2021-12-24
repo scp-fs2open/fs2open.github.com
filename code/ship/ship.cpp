@@ -11585,7 +11585,7 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 					points = num_slots;
 				}
 
-				bool no_energy = shipp->weapon_energy < points* winfo_p->energy_consumed* flFrametime;
+				bool no_energy = shipp->weapon_energy < points * winfo_p->energy_consumed * flFrametime;
 				if (no_energy || (winfo_p->wi_flags[Weapon::Info_Flags::Ballistic] && shipp->weapons.primary_bank_ammo[bank_to_fire] <= 0))
 				{
 					swp->next_primary_fire_stamp[bank_to_fire] = timestamp((int)(next_fire_delay));
@@ -11669,7 +11669,7 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 				// the weapon's energy_consumed to 0 and it'll work just fine. - Goober5000
 
 				// fail unless we're forcing (energy based primaries)
-				bool no_energy = shipp->weapon_energy < points* numtimes* winfo_p->energy_consumed; //was num_slots
+				bool no_energy = shipp->weapon_energy < points * numtimes * winfo_p->energy_consumed; //was num_slots
 				if ( no_energy && !force ) {
 
 					swp->next_primary_fire_stamp[bank_to_fire] = timestamp((int)(next_fire_delay));
