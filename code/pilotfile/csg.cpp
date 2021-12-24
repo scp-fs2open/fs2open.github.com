@@ -1211,8 +1211,8 @@ void pilotfile::csg_write_settings()
 
 void pilotfile::csg_read_controls()
 {
-	if (version < 6) {
-		// Pre CSG-6 compatibility
+	if (version < 7) {
+		// Pre CSG-7 compatibility
 		int idx, list_size;
 		short id1, id2, id3 __UNUSED;
 
@@ -1247,10 +1247,10 @@ void pilotfile::csg_read_controls()
 		return;
 	
 	} else {
-		// >= CSG-6
+		// >= CSG-7
 		char buf[MAX_FILENAME_LEN];
 		memset(buf, '\0', sizeof(buf));
-		cfread_string(buf, 32, cfp);
+		cfread_string(buf, sizeof(buf), cfp);
 
 		auto it = std::find_if(Control_config_presets.begin(), Control_config_presets.end(),
 		                       [buf](const CC_preset& preset) { return preset.name == buf; });
@@ -1269,7 +1269,11 @@ void pilotfile::csg_write_controls()
 {
 	auto it = control_config_get_current_preset();
 
+	startSection(Section::Controls);
+
 	cfwrite_string(it->name.c_str(), cfp);
+
+	endSection();
 }
 
 void pilotfile::csg_read_cutscenes() {

@@ -648,8 +648,8 @@ void pilotfile::plr_write_stats_multi()
 
 void pilotfile::plr_read_controls()
 {
-	if (version < 3) {
-		// PLR < 3
+	if (version < 4) {
+		// PLR < 4
 		short id1, id2;
 		int axi, inv;
 
@@ -659,25 +659,15 @@ void pilotfile::plr_read_controls()
 
 		// strip off extension
 		auto n = preset.name.find_last_of('.');
-		preset.name.resize(n); 
+		preset.name.resize(n);
 		
-		// Check if an auto-generated preset file already exists
-		if (preset_file_exists(preset.name)) {
-			// Does exist, so we use that
-			if (control_config_use_preset_by_name(preset.name)) {
-				Information(LOCATION, "Successfully converted playerfile to v3.  Found and selected presets from previous conversion.");
-			} else {
-				Warning(LOCATION, "Successfully converted playerfile to v3.  Could not select presets from previous conversion, using defaults instead.");
-			}
-			return;
-
-		} // Else, does not exist.  Maybe generate a new preset file with legacy bindings
-
+		// Load in the bindings to Control_config
+		// ...First the digital controls
 		auto list_size = handler->startArrayRead("controls", true);
 		for (size_t idx = 0; idx < list_size; idx++, handler->nextArraySection()) {
 			id1 = handler->readShort("key");
 			id2 = handler->readShort("joystick");
-			handler->readShort("mouse");	// unused, at the moment
+			handler->readShort("mouse");
 
 			if (idx < Control_config.size()) {
 				// Force the bindings into Control_config
@@ -687,6 +677,7 @@ void pilotfile::plr_read_controls()
 		}
 		handler->endArrayRead();
 
+		// ...Then the analog controls
 		auto list_axis = handler->startArrayRead("axes");
 		for (size_t idx = 0; idx < list_axis; idx++, handler->nextArraySection()) {
 			axi = handler->readInt("axis_map");
@@ -707,7 +698,7 @@ void pilotfile::plr_read_controls()
 
 			// Try to save the preset file
 			if (save_preset_file(preset, false)) {
-				Information(LOCATION, "Successfully converted playerfile to v3.  Please rebind your mouse controls, if any.");
+				Information(LOCATION, "Successfully converted playerfile to v4.  Please rebind your mouse controls, if any.");
 			} else {
 				Warning(LOCATION, "Could not save controls preset file (%s) when converting playerfile to v3.", preset.name.c_str());
 			}
@@ -715,7 +706,7 @@ void pilotfile::plr_read_controls()
 		return;
 
 	} else {
-		// read PLR >= 3
+		// read PLR >= 4
 		SCP_string buf = handler->readString("preset");
 
 		auto it = std::find_if(Control_config_presets.begin(), Control_config_presets.end(),
@@ -736,54 +727,10 @@ void pilotfile::plr_write_controls()
 {
 	handler->startSectionWrite(Section::Controls);
 	
+	// As of PLR v4, control bindings are saved outside of the PLR file into PST files.
+	// We now only save the currently selected preset in the PLR file itself.
 	auto it = control_config_get_current_preset();
 	handler->writeString("preset", it->name.c_str());
-
-	// For forward compatibility with old versions of FSO, we must still save the preset to the best of our ability.
-	// This is required because the plr_read will trigger an error and halt FSO execution.
-	handler->startArrayWrite("controls", JOY_AXIS_BEGIN, true);
-	for (size_t idx = 0; idx < JOY_AXIS_BEGIN; idx++) {
-		handler->startSectionWrite(Section::Unnamed);
-
-		// Merge Joy0 and Mouse buttons, Joy0 bind has priority
-		short joy_btn = Control_config[idx].get_btn(CID_JOY0);
-		short mouse_btn = Control_config[idx].get_btn(CID_MOUSE);
-
-		if (joy_btn == -1) {
-			joy_btn = mouse_btn;
-		}
-
-		handler->writeShort("key", Control_config[idx].get_btn(CID_KEYBOARD));
-		handler->writeShort("joystick", joy_btn);
-		handler->writeShort("mouse", -1);
-
-		handler->endSectionWrite();	// Section::Unnamed
-	}
-	handler->endArrayWrite(); // Array::controls
-
-	handler->startArrayWrite("axes", NUM_JOY_AXIS_ACTIONS);
-	for (size_t idx = JOY_AXIS_BEGIN; idx < JOY_AXIS_END; idx++) {
-		handler->startSectionWrite(Section::Unnamed);
-
-		CC_bind *bind_ptr;
-		CC_bind bind;
-		int inverted = 0;
-
-		bind_ptr = Control_config[idx].find(CID_JOY0);
-		if (bind_ptr != nullptr) {
-			bind = *bind_ptr;
-		}
-
-		if ((bind.get_flags() & CCF_INVERTED) == CCF_INVERTED) {
-			inverted = 1;
-		}
-
-		handler->writeInt("axis_map", bind.get_btn());
-		handler->writeInt("invert_axis", inverted);
-
-		handler->endSectionWrite(); // Section::Unnamed
-	}
-	handler->endArrayWrite(); // Array::axes
 
 	handler->endSectionWrite(); // Section::controls
 }
