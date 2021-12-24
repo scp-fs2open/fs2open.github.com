@@ -103,7 +103,7 @@ int lcl_get_current_lang_index()
 {
 	Assertion(Lcl_current_lang >= 0, "Lcl_current_lang should never be negative!");
 
-	if (Lcl_current_lang < NUM_BUILTIN_LANGUAGES)
+	if (Lcl_current_lang < (int)Lcl_languages.size())
 		return Lcl_current_lang;
 
 	return LCL_DEFAULT;
@@ -257,6 +257,10 @@ void parse_stringstbl_quick(const char *filename)
 				// if we have a new language, add it.
 				if (lang_idx == -1) {
 					Lcl_languages.push_back(language);
+
+					if (Lcl_languages.size() > LCL_UNTRANSLATED) {
+						Warning(LOCATION, "Too many custom languages; this will conflict with certain special-case language definitions and cause unexpected behavior");
+					}
 				}
 			}
 		}
