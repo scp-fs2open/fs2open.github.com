@@ -2045,6 +2045,9 @@ int object_get_model(const object *objp)
 
 int object_get_model_instance(const object *objp)
 {
+	if (objp == nullptr)
+		return -1;
+
 	switch (objp->type)
 	{
 		case OBJ_ASTEROID:
