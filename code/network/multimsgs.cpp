@@ -8017,8 +8017,12 @@ void send_animation_triggered_packet(unsigned int animationId, object* parent_ob
 	ubyte data[MAX_PACKET_SIZE];
 
 	Assertion(special_mode != 0 || parent_object != nullptr, "Tried to synchronize an animation with neither an attached object, nor a valid special object mode.");
-	if (special_mode == 0)
+	if (special_mode == 0) {
+		if (parent_object == nullptr)
+			return;
+
 		netsig_to_send = parent_object->net_signature;
+	}
 
 	BUILD_HEADER(ANIMATION_TRIGGERED);
 
@@ -8071,10 +8075,16 @@ void process_animation_triggered_packet(ubyte* data, header* hinfo) {
 
 	object* objp = multi_get_network_object(netsig);
 
+	if (objp == nullptr && special_mode == 0) //This means there is neither a good object, nor a known special mode. Don't even send the animation trigger on, just abort.
+		return;
+
 	auto animation = animation::ModelAnimationSet::s_animationById.find(animationId);
 	if (animation != animation::ModelAnimationSet::s_animationById.end()) {
-		if (special_mode == 0 && objp != nullptr) {
-			animation->second->start(model_get_instance(object_get_model_instance(objp)), direction, forced, instant, pause, &delay);
+		if (special_mode == 0) {
+			//with the above exit condition, this guarantees a non-null objp
+			int model_instance_num = object_get_model_instance(objp);
+			if(model_instance_num > -1)
+				animation->second->start(model_get_instance(model_instance_num), direction, forced, instant, pause, &delay);
 		}
 		else {
 			//Currently empty. Reserved to find special pmi's for non-object animations

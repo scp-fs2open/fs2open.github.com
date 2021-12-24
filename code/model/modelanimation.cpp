@@ -134,6 +134,9 @@ namespace animation {
 	}
 	
 	void ModelAnimation::start(polymodel_instance* pmi, ModelAnimationDirection direction, bool force, bool instant, bool pause, const float* multiOverrideTime) {
+		if (pmi == nullptr)
+			return;
+
 		instance_data& instanceData = m_instances[pmi->id];
 
 		if (multiOverrideTime == nullptr && (Game_mode & GM_MULTIPLAYER) && id != 0) {
