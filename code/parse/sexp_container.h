@@ -141,6 +141,7 @@ struct list_modifier {
 		AT_INDEX
 	};
 
+	static Modifier get_modifier(const char *modifier_name);
 	bool match_name(const char *other_name) const;
 
 	const char *name;
@@ -168,6 +169,6 @@ const SCP_vector<list_modifier> &get_all_list_modifiers();
  */
 sexp_container *get_sexp_container(const char *name);
 
-const char* sexp_container_CTEXT(int node);
+const char *sexp_container_CTEXT(int node);
 
 bool sexp_container_has_persistent_non_eternal_containers();

@@ -95,6 +95,20 @@ bool sexp_container::type_matches(const sexp_container &container) const
 
 // list_modifier functions
 
+list_modifier::Modifier list_modifier::get_modifier(const char *modifier_name)
+{
+	Assert(modifier_name != nullptr);
+
+	for (const auto &modifier_obj : List_modifiers) {
+		if (modifier_obj.match_name(modifier_name)) {
+			return modifier_obj.modifier;
+		}
+	}
+
+	// not found
+	return ListModifier::INVALID;;
+}
+
 bool list_modifier::match_name(const char *other_name) const
 {
 	if (modifier == ListModifier::AT_INDEX) {
@@ -338,7 +352,7 @@ bool are_containers_modifiable()
 }
 
 // TODO: see if this code can be combined with similar code for text replacement
-bool sexp_container_CTEXT_helper(int& node, sexp_container &container, SCP_string &result)
+bool sexp_container_CTEXT_helper(int &node, sexp_container &container, SCP_string &result)
 {
 	if (container.is_map()) {
 		if (container.map_data.empty()) {
@@ -367,33 +381,26 @@ bool sexp_container_CTEXT_helper(int& node, sexp_container &container, SCP_strin
 			return false;
 		}
 
-		const char* modifier_text = CTEXT(node);
+		const char *modifier_name = CTEXT(node);
+		const auto modifier = list_modifier::get_modifier(modifier_name);
 
-		const list_modifier *modifier_to_use = nullptr;
-		for (const auto &modifier : List_modifiers) {
-			if (modifier.match_name(modifier_text)) {
-				modifier_to_use = &modifier;
-				break;
-			}
-		}
 
-		if (!modifier_to_use) {
-			const SCP_string& container_name = container.container_name;
+		if (modifier == ListModifier::INVALID) {
+			const SCP_string &container_name = container.container_name;
 			Warning(LOCATION,
 				"Illegal operation attempted on %s container. There is no modifier called %s.",
 				container_name.c_str(),
-				modifier_text);
+				modifier_name);
 			log_printf(LOGFILE_EVENT_LOG,
 				"Illegal operation attempted on %s container. There is no modifier called %s.",
 				container_name.c_str(),
-				modifier_text);
+				modifier_name);
 			return false;
 		}
 
 		int data_index = -1;
-		auto& list_data = container.list_data;
+		auto &list_data = container.list_data;
 		auto list_it = list_data.begin();
-		const auto modifier = modifier_to_use->modifier;
 
 		switch (modifier) {
 		case ListModifier::GET_FIRST:
@@ -439,7 +446,9 @@ bool sexp_container_CTEXT_helper(int& node, sexp_container &container, SCP_strin
 			return true;
 
 		default:
-			Error(LOCATION, "Unknown modifier type found in container");
+			UNREACHABLE("Unhandled list modifier %d found for container %s",
+				(int)modifier,
+				container.container_name.c_str());
 			break;
 		}
 	}
@@ -470,6 +479,7 @@ const char *sexp_container_CTEXT(int node)
 	}
 
 	node = CAR(node);
+	Assert(node != -1);
 
 	SCP_string result;
 
@@ -503,6 +513,18 @@ const char *sexp_container_CTEXT(int node)
 			// we're dealing with a multidimentional container
 			node = CDR(node);
 
+			if (node == -1) {
+				Warning(LOCATION,
+					"Multidimensional container argument missing for '%s' from container %s!",
+					result.c_str(),
+					container.container_name.c_str());
+				log_printf(LOGFILE_EVENT_LOG,
+					"Multidimensional container argument missing for '%s' from container %s!",
+					result.c_str(),
+					container.container_name.c_str());
+				return Empty_str;
+			}
+
 			// "- 2" because we're skipping the first and last chars, which are/should both be &
 			auto *p_next_container = get_sexp_container(result.substr(1, (result.length() - 2)).c_str());
 
@@ -519,4 +541,3 @@ const char *sexp_container_CTEXT(int node)
 	// we've hit sanity limit; give up
 	return Empty_str;
 }
-

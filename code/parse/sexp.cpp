@@ -1964,12 +1964,12 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 			if (!(Sexp_nodes[modifier_node].type & SEXP_FLAG_VARIABLE) &&
 					(Sexp_nodes[modifier_node].subtype != SEXP_ATOM_CONTAINER)) {
 				if (container.is_list()) {
-					if (Sexp_nodes[modifier_node].subtype != SEXP_ATOM_STRING) {
+					if ((Sexp_nodes[modifier_node].subtype != SEXP_ATOM_STRING) ||
+							(list_modifier::get_modifier(Sexp_nodes[modifier_node].text) == ListModifier::INVALID)) {
 						if (bad_node)
 							*bad_node = modifier_node;
 						return SEXP_CHECK_INVALID_LIST_MODIFIER;
 					}
-					// TODO: check if list modifier exists
 				} else if (container.is_map()) {
 					if ((any(container.type & ContainerType::NUMBER_KEYS) &&
 							Sexp_nodes[modifier_node].subtype != SEXP_ATOM_NUMBER) ||
@@ -1990,7 +1990,9 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 			continue;
 
 		} else {
-			UNREACHABLE("SEXP subtype is %d when it should be SEXP_ATOM_LIST, SEXP_ATOM_NUMBER, or SEXP_ATOM_STRING!", Sexp_nodes[node].subtype);
+			UNREACHABLE("SEXP subtype is %d when it should be SEXP_ATOM_LIST, SEXP_ATOM_NUMBER, SEXP_ATOM_STRING, or "
+						"SEXP_ATOM_CONTAINER!",
+				Sexp_nodes[node].subtype);
 		}
 
 		// variables should only be typechecked. 
