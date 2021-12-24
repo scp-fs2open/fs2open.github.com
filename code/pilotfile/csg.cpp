@@ -1402,11 +1402,6 @@ void pilotfile::csg_read_container(sexp_container& container)
 	}
 }
 
-bool pilotfile::csg_has_persistent_containers()
-{
-	return !Campaign.persistent_containers.empty() || !Campaign.red_alert_containers.empty();
-}
-
 void pilotfile::csg_write_containers()
 {
 	startSection(Section::Containers);
@@ -1756,10 +1751,7 @@ bool pilotfile::save_savefile()
 
 	// header and version
 	cfwrite_int(CSG_FILE_ID, cfp);
-	static_assert(CSG_VERSION == PRE_CONTAINERS_CSG_VERSION + 1,
-		"CSG_VERSION shouldn't be bumped beyond containers without removing compatibility fix");
-	const ubyte file_version = csg_has_persistent_containers() ? CSG_VERSION : PRE_CONTAINERS_CSG_VERSION;
-	cfwrite_ubyte(file_version, cfp);
+	cfwrite_ubyte(CSG_VERSION, cfp);
 
 	mprintf(("CSG => Saving '%s' with version %d...\n", filename.c_str(), (int)CSG_VERSION));
 
@@ -1792,12 +1784,8 @@ bool pilotfile::save_savefile()
 	csg_write_cutscenes();
 	mprintf(("CSG => Saving:  Last Missions...\n"));
 	csg_write_lastmissions();
-	if (csg_has_persistent_containers()) {
-		mprintf(("CSG => Saving:  Containers...\n"));
-		csg_write_containers();
-	} else {
-		mprintf(("CSG => No containers to save.\n"));
-	}
+	mprintf(("CSG => Saving:  Containers...\n"));
+	csg_write_containers();
 
 	// Done!
 	mprintf(("CSG => Saving complete!\n"));
