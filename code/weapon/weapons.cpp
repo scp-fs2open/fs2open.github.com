@@ -3382,7 +3382,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	}
 
 	if (optional_string("$Animations:")) {
-		animation::ModelAnimationParseHelper::parseAnimsetInfo(wip->animations);
+		animation::ModelAnimationParseHelper::parseAnimsetInfo(wip->animations, 'w', wip->name);
 	}
 
 	/* Generate a substitution pattern for this weapon.

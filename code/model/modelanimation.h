@@ -247,13 +247,12 @@ namespace animation {
 
 		ModelAnimationState play(float frametime, polymodel_instance* pmi, ModelAnimationSubmodelBuffer& applyBuffer, bool applyOnly = false);
 
-		ModelAnimation(bool isInitialType);
 
 		friend class ModelAnimationSet;
 		friend class ModelAnimationParseHelper;
 	public:
 		//Initial type animations must complete within a single frame, and then never modifiy the submodel again. If this is the case, we do not need to remember them being active for massive performance gains with lots of turrets
-		static std::shared_ptr<ModelAnimation> createAnimation(bool isInitialType = false);
+		ModelAnimation(bool isInitialType = false);
 
 		void setAnimation(std::shared_ptr<ModelAnimationSegment> animation);
 
@@ -264,14 +263,14 @@ namespace animation {
 
 		static void stepAnimations(float frametime, polymodel_instance* pmi);
 
-		static std::vector<std::shared_ptr<ModelAnimation>> s_animationById;
-		const size_t id;
+		unsigned int id = 0;
 	};
 
 
 	class ModelAnimationSet {
 	public:
 		static int SUBTYPE_DEFAULT;
+		static std::map<unsigned int, std::shared_ptr<ModelAnimation>> s_animationById;
 
 	private:
 		struct RunningAnimationList { const ModelAnimationSet* parentSet; std::list<std::shared_ptr<ModelAnimation>> animationList; };
@@ -306,7 +305,7 @@ namespace animation {
 		ModelAnimationSet& operator=(const ModelAnimationSet& other);
 
 		//Helper function to shorten animation emplaces
-		void emplace(const std::shared_ptr<ModelAnimation>& animation, const SCP_string& name, ModelAnimationTriggerType type = ModelAnimationTriggerType::Scripted, int subtype = SUBTYPE_DEFAULT);
+		void emplace(const std::shared_ptr<ModelAnimation>& animation, const SCP_string& name, ModelAnimationTriggerType type, int subtype, unsigned int uniqueId);
 
 		void changeShipName(const SCP_string& name);
 
@@ -348,6 +347,8 @@ namespace animation {
 		};
 		static std::map<SCP_string, ParsedModelAnimation> s_animationsById;
 
+		static unsigned int getUniqueAnimationID(const SCP_string& animName, char uniquePrefix, const SCP_string& parentName);
+
 		//Internal Parsing Methods
 		static void parseSingleAnimation();
 		static void parseTableFile(const char* filename);
@@ -367,7 +368,8 @@ namespace animation {
 		static std::shared_ptr<ModelAnimationSubmodel> parseSubmodel();
 
 		static void parseTables();
-		static void parseAnimsetInfo(ModelAnimationSet& set, ship_info* sip = nullptr);
+		static void parseAnimsetInfo(ModelAnimationSet& set, ship_info* sip);
+		static void parseAnimsetInfo(ModelAnimationSet& set, char uniqueTypePrefix, const SCP_string& uniqueParentName);
 		//Parses the legacy animation table in ships.tbl of a single subsystem. Currently initial animations only
 		static void parseLegacyAnimationTable(model_subsystem* sp, ship_info* sip);
 	};

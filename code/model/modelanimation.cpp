@@ -2,6 +2,7 @@
 #include "model/modelanimation_segments.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
+#include "parse/encrypt.h"
 #include "ship/ship.h"
 #include "utils/Random.h"
 
@@ -20,15 +21,9 @@ namespace animation {
 	const size_t Num_animation_flags = sizeof(Animation_flags) / sizeof(flag_def_list_new<animation::Animation_Flags>);
 
 	std::map<int, ModelAnimationSet::RunningAnimationList> ModelAnimationSet::s_runningAnimations;
-	std::vector<std::shared_ptr<ModelAnimation>> ModelAnimation::s_animationById;
+	std::map<unsigned int, std::shared_ptr<ModelAnimation>> ModelAnimationSet::s_animationById;
 
-	ModelAnimation::ModelAnimation(bool isInitialType) : m_set(nullptr), m_isInitialType(isInitialType), id(s_animationById.size()) { }
-
-	std::shared_ptr<ModelAnimation> ModelAnimation::createAnimation(bool isInitialType) {
-		auto ptr = std::shared_ptr<ModelAnimation>(new ModelAnimation(isInitialType));
-		s_animationById.push_back(ptr);
-		return ptr;
-	}
+	ModelAnimation::ModelAnimation(bool isInitialType) : m_set(nullptr), m_isInitialType(isInitialType) { }
 
 	void ModelAnimation::setAnimation(std::shared_ptr<ModelAnimationSegment> animation) {
 		m_animation = std::move(animation);
@@ -139,13 +134,22 @@ namespace animation {
 	}
 	
 	void ModelAnimation::start(polymodel_instance* pmi, ModelAnimationDirection direction, bool force, bool instant, bool pause, const float* multiOverrideTime) {
+		if (pmi == nullptr)
+			return;
+
 		instance_data& instanceData = m_instances[pmi->id];
 
-		if (multiOverrideTime == nullptr && (Game_mode & GM_MULTIPLAYER)) {
+		if (multiOverrideTime == nullptr && (Game_mode & GM_MULTIPLAYER) && id != 0) {
 			//We are in multiplayer. Send animation to server to start. Server starts animation online, and sends start request back (which'll have multiOverride == true).
 			//If we _are_ the server, also just start the animation
 
-			send_animation_triggered_packet((int)id, pmi->id, direction, force, instant, pause);
+			object* objp = pmi->objnum > -1 ? &Objects[pmi->objnum] : nullptr;
+
+			if(objp != nullptr)
+				send_animation_triggered_packet(id, objp, 0, direction, force, instant, pause);
+			else {
+				//Find special mode based on id and send
+			}
 
 			if(MULTIPLAYER_CLIENT)
 				return;
@@ -515,18 +519,31 @@ namespace animation {
 		return *this;
 	}
 
-	void ModelAnimationSet::emplace(const std::shared_ptr<ModelAnimation>& animation, const SCP_string& name, ModelAnimationTriggerType type, int subtype) {
+	void ModelAnimationSet::emplace(const std::shared_ptr<ModelAnimation>& animation, const SCP_string& name, ModelAnimationTriggerType type, int subtype, unsigned int uniqueId) {
 		auto newAnim = std::shared_ptr<ModelAnimation>(new ModelAnimation(*animation));
 		newAnim->m_set = this;
 		newAnim->m_animation = std::shared_ptr<ModelAnimationSegment>(animation->m_animation->copy());
 		newAnim->m_animation->exchangeSubmodelPointers(*this);
+		newAnim->id = uniqueId;
+		ModelAnimationSet::s_animationById[uniqueId] = newAnim;
 		m_animationSet[{type, subtype}][name].push_back(newAnim);
 	}
 
 	void ModelAnimationSet::changeShipName(const SCP_string& name) {
+		unsigned int hash_change = hash_fnv1a(m_SIPname) ^ hash_fnv1a(name);
+
 		m_SIPname = name;
 		for (const auto& submodel : m_submodels) {
 			submodel->renameSIP(name);
+		}
+
+		for (const auto& animationTypes : m_animationSet) {
+			for (const auto& animations : animationTypes.second) {
+				for (const auto& animation : animations.second) {
+					animation->id ^= hash_change;
+					ModelAnimationSet::s_animationById[animation->id] = animation;
+				}
+			}
 		}
 	}
 
@@ -1073,7 +1090,7 @@ namespace animation {
 	}
 
 	void ModelAnimationParseHelper::parseSingleAnimation() {
-		auto animation = std::shared_ptr<ModelAnimation>(ModelAnimation::createAnimation());
+		auto animation = std::shared_ptr<ModelAnimation>(new ModelAnimation());
 
 		ModelAnimationParseHelper helper;
 		required_string("$Name:");
@@ -1169,7 +1186,7 @@ namespace animation {
 
 			if (animation->m_flags[Animation_Flags::Loop]) {
 				//Looping animations for these trigger types are probably unintended as well, but rare cases could exist, hence no explicit warning.
-				mprintf(("Animation %s with trigger type %s has an unexpected loop flag.", helper.m_animationName.c_str(), atype));
+				mprintf(("Animation %s with trigger type %s has an unexpected loop flag.\n", helper.m_animationName.c_str(), atype));
 			}
 		}
 
@@ -1198,16 +1215,16 @@ namespace animation {
 
 	}
 
-
 	void ModelAnimationParseHelper::parseTables() {
 		s_animationsById.clear();
 		parse_modular_table("*-anim.tbm", parseTableFile, CF_TYPE_TABLES);
 	}
+
+	unsigned int ModelAnimationParseHelper::getUniqueAnimationID(const SCP_string& animName, char uniquePrefix, const SCP_string& parentName) {
+		return hash_fnv1a(animName + uniquePrefix) ^ hash_fnv1a(parentName);
+	}
 	
-	void ModelAnimationParseHelper::parseAnimsetInfo(ModelAnimationSet& set, ship_info* sip) {
-		if(sip != nullptr)
-			set.changeShipName(sip->name);
-		
+	void ModelAnimationParseHelper::parseAnimsetInfo(ModelAnimationSet& set, char uniqueTypePrefix, const SCP_string& uniqueParentName) {
 		SCP_vector<SCP_string> requestedAnimations;
 		stuff_string_list(requestedAnimations);
 
@@ -1215,12 +1232,20 @@ namespace animation {
 			auto animIt = s_animationsById.find(request);
 			if (animIt != s_animationsById.end()) {
 				const ParsedModelAnimation& foundAnim = animIt->second;
-				set.emplace(foundAnim.anim, foundAnim.name, foundAnim.type, foundAnim.subtype);
+				set.emplace(foundAnim.anim, foundAnim.name, foundAnim.type, foundAnim.subtype, ModelAnimationParseHelper::getUniqueAnimationID(animIt->first, uniqueTypePrefix, uniqueParentName));
 			}
 			else {
 				error_display(0, "Animation with name %s not found!", request.c_str());
 			}
 		}
+	}
+
+	void ModelAnimationParseHelper::parseAnimsetInfo(ModelAnimationSet& set, ship_info* sip) {
+		Assert(sip != nullptr);
+		
+		set.changeShipName(sip->name);
+		
+		ModelAnimationParseHelper::parseAnimsetInfo(set, 's', sip->name);
 	}
 
 
@@ -1296,7 +1321,7 @@ namespace animation {
 			if (optional_string("+time:"))
 				skip_token();
 
-			std::shared_ptr<ModelAnimation> anim = ModelAnimation::createAnimation(true);
+			auto anim = std::shared_ptr<ModelAnimation>(new ModelAnimation(true));
 
 			char namelower[MAX_NAME_LEN];
 			strncpy(namelower, sp->subobj_name, MAX_NAME_LEN);
@@ -1324,10 +1349,10 @@ namespace animation {
 
 			//Initial Animations in legacy style will continue to be fully supported and allowed, given the frequency of these (especially for turrets) and the fact that these are more intuitive to be directly in the subsystem section of the ship table, as these are closer to representing a property of the subsystem rather than an animation.
 			//Hence, there will not be any warning displayed if the legacy table is used for these. -Lafiel 
-			sip->animations.emplace(anim, name, animation::ModelAnimationTriggerType::Initial);
+			sip->animations.emplace(anim, name, ModelAnimationTriggerType::Initial, ModelAnimationSet::SUBTYPE_DEFAULT, ModelAnimationParseHelper::getUniqueAnimationID(name + Animation_types.at(ModelAnimationTriggerType::Initial).first + std::to_string(subtype), 'b', sip->name));
 		}
 		else {
-			std::shared_ptr<ModelAnimation> anim = ModelAnimation::createAnimation();
+			auto anim = std::shared_ptr<ModelAnimation>(new ModelAnimation());
 			auto subsys = sip->animations.getSubmodel(sp->subobj_name);
 
 			if (type == ModelAnimationTriggerType::TurretFired) {
@@ -1419,9 +1444,9 @@ namespace animation {
 			anim->setAnimation(mainSegment);
 
 			//TODO maybe handle sub_name? Not documented in Wiki, maybe no one actually uses it...
-			sip->animations.emplace(anim, name, type, subtype);
+			sip->animations.emplace(anim, name, type, subtype, ModelAnimationParseHelper::getUniqueAnimationID(name + Animation_types.at(type).first + std::to_string(subtype), 'b', sip->name));
 
-			mprintf(("Specified deprecated non-initial type animation on subsystem %s of ship class %s. Consider using *-anim.tbm's instead.", sp->subobj_name, sip->name));
+			mprintf(("Specified deprecated non-initial type animation on subsystem %s of ship class %s. Consider using *-anim.tbm's instead.\n", sp->subobj_name, sip->name));
 		}
 	}
 }

@@ -68,9 +68,10 @@ class player;
 // version 53 - 12/2/2020 big set of packet fixes/upgrades
 // version 54 - 3/20/2021 - Fixes for FSO 21_2 especially better net_sig calc, better missile intercept
 // version 55 - 8/28/2021 Adding multi-compatible animations
+// version 56 - 8/28/2021 Fix animations for 22_0 release
 // STANDALONE_ONLY
 
-#define MULTI_FS_SERVER_VERSION							55
+#define MULTI_FS_SERVER_VERSION							56
 
 #define MULTI_FS_SERVER_COMPATIBLE_VERSION			MULTI_FS_SERVER_VERSION
 
