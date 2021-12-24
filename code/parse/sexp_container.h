@@ -131,6 +131,7 @@ struct sexp_container
 struct list_modifier {
 	enum class Modifier
 	{
+		INVALID = 0,
 		GET_FIRST,
 		GET_LAST,
 		REMOVE_FIRST,
@@ -150,7 +151,7 @@ using ListModifier = list_modifier::Modifier;
 
 // management functions
 void init_sexp_containers();
-void update_sexp_containers(SCP_vector<sexp_container>& containers,
+void update_sexp_containers(SCP_vector<sexp_container> &containers,
 	const SCP_unordered_map<SCP_string, SCP_string, SCP_string_lcase_hash, SCP_string_lcase_equal_to>
 		&renamed_containers);
 

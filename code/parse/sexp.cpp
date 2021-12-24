@@ -1784,7 +1784,7 @@ int count_items_with_name(const char *name, const T* item_array, int num_items)
  */
 int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, int mode)
 {
-	int i = 0, z = 0, t = 0, type, argnum = 0, count, op, type2 = 0, op2;
+	int i = 0, z, t, type, argnum = 0, count, op, type2 = 0, op2;
 	int op_node;
 	int var_index = -1;
 	size_t st;

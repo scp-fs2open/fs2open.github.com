@@ -116,7 +116,7 @@ void init_sexp_containers()
 	Containers_by_name_map.clear();
 }
 
-void update_sexp_containers(SCP_vector<sexp_container>& containers,
+void update_sexp_containers(SCP_vector<sexp_container> &containers,
 	const SCP_unordered_map<SCP_string, SCP_string, SCP_string_lcase_hash, SCP_string_lcase_equal_to>
 		&renamed_containers)
 {
