@@ -486,6 +486,11 @@ void vm_vec_random_cone(vec3d *out, const vec3d *in, float min_angle, float max_
 // if bias_towards_center is true, the probability will be higher towards the center
 void vm_vec_random_in_circle(vec3d *out, const vec3d *in, const matrix *orient, float radius, bool on_edge, bool bias_towards_center = false);
 
+
+// compute a point on the unit sphere from cylindrical coordinate scale factors
+// z_scale and phi_scale should be in [0.0, 1.0]
+void vm_vec_unit_sphere_point(vec3d *out, float z_scale, float phi_scale);
+
 // given a start vector and a radius, generate a point in a spherical volume
 // if on_surface is true, the point will be on the surface of the sphere
 // if bias_towards_center is true, the probability will be higher towards the center
