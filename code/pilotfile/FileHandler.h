@@ -32,7 +32,8 @@ enum class Section {
 	Variables = 0x0012,
 	Missions = 0x0013,
 	Cutscenes = 0x0014,
-	LastMissions = 0x0015
+	LastMissions = 0x0015,
+	Containers = 0x0016
 };
 #if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic pop

@@ -13,7 +13,7 @@
 #include "stdafx.h"
 #include "FRED.h"
 #include "BgBitmapDlg.h"
-#include "backgroundchooser.h"
+#include "listitemchooser.h"
 #include "starfield/starfield.h"
 #include "bmpman/bmpman.h"
 #include "graphics/light.h"
@@ -1254,11 +1254,19 @@ void bg_bitmap_dlg::OnImportBackground()
 
 			if (count > 1)
 			{
-				BackgroundChooser dlg(count);
+				SCP_vector<SCP_string> backgrounds;
+				for (i = 1; i <= count; ++i)
+				{
+					SCP_string str("Background ");
+					str += std::to_string(i);
+					backgrounds.push_back(std::move(str));
+				}
+
+				ListItemChooser dlg(backgrounds);
 				if (dlg.DoModal() == IDCANCEL)
 					return;
 
-				which = dlg.GetChosenBackground();
+				which = dlg.GetChosenIndex();
 			}
 
 			for (i = 0; i < which + 1; i++)

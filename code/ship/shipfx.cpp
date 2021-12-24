@@ -109,7 +109,7 @@ static void shipfx_subsystem_maybe_create_live_debris(object *ship_objp, ship *s
 	vec3d model_axis, world_axis, rotvel, world_axis_pt;
 	matrix m_rot;	// rotation for debris orient about axis
 
-	if (pm->submodel[submodel_num].movement_type == MOVEMENT_TYPE_ROT || pm->submodel[submodel_num].movement_type == MOVEMENT_TYPE_INTRINSIC_ROTATE) {
+	if (pm->submodel[submodel_num].movement_type == MOVEMENT_TYPE_ROT || pm->submodel[submodel_num].movement_type == MOVEMENT_TYPE_INTRINSIC) {
 		if ( !smi->axis_set ) {
 			model_init_submodel_axis_pt(pm, pmi, submodel_num);
 		}
@@ -232,7 +232,7 @@ static void shipfx_maybe_create_live_debris_at_ship_death( object *ship_objp )
 
 	int live_debris_submodel = -1;
 	for (int idx=0; idx<pm->num_debris_objects; idx++) {
-		if (pm->submodel[pm->debris_objects[idx]].is_live_debris) {
+		if (pm->submodel[pm->debris_objects[idx]].flags[Model::Submodel_flags::Is_live_debris]) {
 			live_debris_submodel = pm->debris_objects[idx];
 
 			// get submodel that produces live debris
@@ -316,7 +316,7 @@ static void shipfx_blow_up_hull(object *obj, polymodel *pm, polymodel_instance *
 
 	bool try_live_debris = true;
 	for (i=0; i<pm->num_debris_objects; i++ )	{
-		if (! pm->submodel[pm->debris_objects[i]].is_live_debris) {
+		if (! pm->submodel[pm->debris_objects[i]].flags[Model::Submodel_flags::Is_live_debris]) {
 			vec3d tmp = ZERO_VECTOR;
 			model_instance_find_world_point(&tmp, &pm->submodel[pm->debris_objects[i]].offset, pm, pmi, 0, &obj->orient, &obj->pos );
 			debris_create( obj, pm->id, pm->debris_objects[i], &tmp, exp_center, 1, 3.0f );
@@ -1574,7 +1574,7 @@ void shipfx_queue_render_ship_halves_and_debris(model_draw_list *scene, clip_shi
 
 			// determine if explosion front has past debris piece
 			// 67 ~ dist expl moves in 2 frames -- maybe fraction works better
-			int is_live_debris = pm->submodel[pm->debris_objects[i]].is_live_debris;
+			bool is_live_debris = pm->submodel[pm->debris_objects[i]].flags[Model::Submodel_flags::Is_live_debris];
 			int create_debris = 0;
 			// front ship
 			if (half_ship->explosion_vel > 0) {
@@ -2060,14 +2060,74 @@ const float MAX_ARC_LENGTH_PERCENTAGE = 0.25f;
 
 const float MAX_EMP_ARC_TIMESTAMP = 150.0f;
 
-void shipfx_do_damaged_arcs_frame( ship *shipp )
+void shipfx_do_lightning_arcs_frame( ship *shipp )
 {
-	int i;
-	int should_arc;
 	object *obj = &Objects[shipp->objnum];
-	int model_num = Ship_info[shipp->ship_info_index].model_num;
+	ship_info* sip = &Ship_info[shipp->ship_info_index];
+	int model_num = sip->model_num;
 
-	should_arc = 1;
+	// first do any passive ship arcs, separate from damage or emp arcs
+	for (int passive_arc_info_idx = 0; passive_arc_info_idx < (int)sip->ship_passive_arcs.size(); passive_arc_info_idx++) {
+		if (!shipp->flags[Ship::Ship_Flags::No_passive_lightning] && timestamp_elapsed(shipp->passive_arc_next_times[passive_arc_info_idx])) {
+
+			ship_passive_arc_info* arc_info = &sip->ship_passive_arcs[passive_arc_info_idx];
+			polymodel* pm = model_get(model_num);
+
+			// find the specified submodels involved, if necessary
+			if (arc_info->submodels.first < 0 || arc_info->submodels.second < 0) {
+				for (int i = 0; i < pm->n_models; i++) {
+					if (!stricmp(pm->submodel[i].name, arc_info->submodel_strings.first.c_str()))
+						arc_info->submodels.first = i;
+					if (!stricmp(pm->submodel[i].name, arc_info->submodel_strings.second.c_str()))
+						arc_info->submodels.second = i;
+				}
+			}
+			int submodel_1 = arc_info->submodels.first;
+			int submodel_2 = arc_info->submodels.second;
+
+			// see if these submodels are also subsystems, and dont draw if its destroyed
+			bool skip = false;
+			for (ship_subsys* pss = GET_FIRST(&shipp->subsys_list); pss != END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss)) {
+				if (pss->system_info->subobj_num == submodel_1 && pss->max_hits > 0 && pss->current_hits <= 0) {
+					skip = true;
+					break;
+				} else if (pss->system_info->subobj_num == submodel_2 && pss->max_hits > 0 && pss->current_hits <= 0) {
+					skip = true;
+					break;
+				}
+			}
+			if (skip) break;
+
+			if (submodel_1 >= 0 && submodel_2 >= 0) {
+				// spawn the arc in the first unused slot
+				for (int j = 0; j < MAX_SHIP_ARCS; j++) {
+					if (!timestamp_valid(shipp->arc_timestamp[j])) {
+						shipp->arc_timestamp[j] = timestamp((int)(arc_info->duration * 1000));
+
+						vec3d v1, v2, offset;
+						// subtract away the submodel's offset, since these positions were in frame of ref of the whole ship
+						model_find_submodel_offset(&offset, pm, submodel_1);
+						v1 = arc_info->pos.first - offset;
+						model_find_submodel_offset(&offset, pm, submodel_2);
+						v2 = arc_info->pos.second - offset;
+
+						model_instance_find_world_point(&v1, &v1, shipp->model_instance_num, submodel_1, &vmd_identity_matrix, &vmd_zero_vector);
+						shipp->arc_pts[j][0] = v1;
+						model_instance_find_world_point(&v2, &v2, shipp->model_instance_num, submodel_2, &vmd_identity_matrix, &vmd_zero_vector);
+						shipp->arc_pts[j][1] = v2;
+
+						shipp->arc_type[j] = MARC_TYPE_SHIP;
+
+						shipp->passive_arc_next_times[passive_arc_info_idx] = timestamp((int)(arc_info->frequency * 1000));
+						break;
+					}
+				}
+			}
+		}
+	}
+
+	// now handle damage/emp arcs
+	int should_arc = 1;
 	int disrupted_arc=0;
 
 	float damage = get_hull_pct(obj);	
@@ -2100,9 +2160,9 @@ void shipfx_do_damaged_arcs_frame( ship *shipp )
 	}
 
 	// Kill off old sparks
-	for(i=0; i<MAX_SHIP_ARCS; i++){
-		if(timestamp_valid(shipp->arc_timestamp[i]) && timestamp_elapsed(shipp->arc_timestamp[i])){			
-			shipp->arc_timestamp[i] = timestamp(-1);
+	for(int &arc_stamp : shipp->arc_timestamp){
+		if(timestamp_valid(arc_stamp) && timestamp_elapsed(arc_stamp)){
+			arc_stamp = timestamp(-1);
 		}
 	}
 
@@ -2177,7 +2237,7 @@ void shipfx_do_damaged_arcs_frame( ship *shipp )
 		int lifetime = Random::next(a, b);
 
 		// Create the arc effects
-		for (i=0; i<MAX_SHIP_ARCS; i++ )	{
+		for (int i=0; i<MAX_SHIP_ARCS; i++ )	{
 			if ( !timestamp_valid( shipp->arc_timestamp[i] ) )	{
 				shipp->arc_timestamp[i] = timestamp(lifetime);	// live up to a second
 
@@ -2204,7 +2264,7 @@ void shipfx_do_damaged_arcs_frame( ship *shipp )
 				if((shipp->emp_intensity > 0.0f) || (disrupted_arc)){
 					shipp->arc_type[i] = MARC_TYPE_EMP;
 				} else {
-					shipp->arc_type[i] = MARC_TYPE_NORMAL;
+					shipp->arc_type[i] = MARC_TYPE_DAMAGED;
 				}
 					
 				n++;
@@ -2239,7 +2299,7 @@ void shipfx_do_damaged_arcs_frame( ship *shipp )
 	}
 
 	// maybe move arc points around
-	for (i=0; i<MAX_SHIP_ARCS; i++ )	{
+	for (int i=0; i<MAX_SHIP_ARCS; i++ )	{
 		if ( timestamp_valid( shipp->arc_timestamp[i] ) )	{
 			if ( !timestamp_elapsed( shipp->arc_timestamp[i] ) )	{							
 				// Maybe move a vertex....  20% of the time maybe?
@@ -2626,7 +2686,7 @@ void engine_wash_ship_process(ship *shipp)
 			// set the the necessary submodel instance info needed here. The second
 			// condition is thus a hack to disable the feature while in the lab, and
 			// can be removed if the lab is re-structured accordingly. -zookeeper
-			if ( bank->submodel_num > -1 && pm->submodel[bank->submodel_num].can_move && (gameseq_get_state_idx(GS_STATE_LAB) == -1) ) {
+			if ( bank->submodel_num >= 0 && pm->submodel[bank->submodel_num].flags[Model::Submodel_flags::Can_move] && (gameseq_get_state_idx(GS_STATE_LAB) == -1) ) {
 				model_find_submodel_offset(&submodel_static_offset, pm, bank->submodel_num);
 
 				submodel_rotation = true;

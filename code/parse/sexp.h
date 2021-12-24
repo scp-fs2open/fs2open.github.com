@@ -16,6 +16,10 @@
 class ship_subsys;
 class ship;
 class waypoint_list;
+class object;
+class waypoint;
+class p_object;
+struct ship_obj;
 
 // bumped to 30 by Goober5000
 #define	OPERATOR_LENGTH	30  // if this ever exceeds TOKEN_LENGTH, let JasonH know!
@@ -116,6 +120,7 @@ class waypoint_list;
 #define OPF_FIREBALL			89		// Goober5000 - an entry in fireball.tbl
 #define OPF_SPECIES				90		// Goober5000
 #define OPF_LANGUAGE			91		// Goober5000
+#define OPF_FUNCTIONAL_WHEN_EVAL_TYPE	92	// Goober5000
 
 // Operand return types
 #define	OPR_NUMBER				1	// returns number
@@ -259,7 +264,8 @@ class waypoint_list;
 #define OP_LESS_OR_EQUAL					(0x000f | OP_CATEGORY_LOGICAL)	// Goober5000
 
 #define OP_XOR								(0x0010 | OP_CATEGORY_LOGICAL)	// Goober5000
-#define OP_PERFORM_ACTIONS					(0x0011 | OP_CATEGORY_LOGICAL | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_PERFORM_ACTIONS_BOOL_FIRST		(0x0011 | OP_CATEGORY_LOGICAL | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_PERFORM_ACTIONS_BOOL_LAST		(0x0012 | OP_CATEGORY_LOGICAL | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
 
 #define	OP_GOAL_INCOMPLETE					(0x0000 | OP_CATEGORY_GOAL_EVENT | OP_NONCAMPAIGN_FLAG)
@@ -400,6 +406,7 @@ class waypoint_list;
 #define OP_DISTANCE_BBOX					(0x0055 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Goober5000
 #define OP_DISTANCE_BBOX_SUBSYSTEM			(0x0056 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Goober5000
 #define OP_IS_LANGUAGE						(0x0057 | OP_CATEGORY_STATUS)						// Goober5000
+#define OP_SCRIPT_EVAL_BOOL					(0x0058 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Goober5000
 
 // conditional sexpressions
 #define OP_WHEN								(0x0000 | OP_CATEGORY_CONDITIONAL)
@@ -430,6 +437,7 @@ class waypoint_list;
 #define OP_FIRST_OF							(0x0018 | OP_CATEGORY_CONDITIONAL)	// MageKing17
 #define OP_SWITCH							(0x0019 | OP_CATEGORY_CONDITIONAL)	// Goober5000
 #define OP_FUNCTIONAL_SWITCH				(0x001a | OP_CATEGORY_CONDITIONAL)	// Goober5000
+#define OP_FUNCTIONAL_WHEN					(0x001b | OP_CATEGORY_CONDITIONAL)	// Goober5000
 
 
 // sexpressions with side-effects
@@ -777,6 +785,9 @@ class waypoint_list;
 
 #define OP_REPLACE_TEXTURE					(0x0040 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Lafiel
 #define OP_NEBULA_CHANGE_FOG_COLOR			(0x0041 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Asteroth
+#define OP_SET_ALPHA_MULT					(0x0042 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Lafiel
+#define OP_DESTROY_INSTANTLY_WITH_DEBRIS	(0x0043 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Asteroth
+#define OP_TRIGGER_ANIMATION_NEW			(0x0044 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Lafiel
 
 // defined for AI goals
 #define OP_AI_CHASE							(0x0000 | OP_CATEGORY_AI | OP_NONCAMPAIGN_FLAG)
@@ -1065,6 +1076,10 @@ const char *CTEXT(int n);
 #define SEXP_CHECK_INVALID_SSM_CLASS			-160
 #define SEXP_CHECK_INVALID_FIREBALL				-161
 #define SEXP_CHECK_INVALID_SPECIES				-162
+#define SEXP_CHECK_INVALID_FUNCTIONAL_WHEN_EVAL_TYPE	-163
+#define SEXP_CHECK_MISPLACED_SPECIAL_ARGUMENT	-164
+#define SEXP_CHECK_AMBIGUOUS_GOAL_NAME			-165
+#define SEXP_CHECK_AMBIGUOUS_EVENT_NAME			-166
 
 #define TRAINING_CONTEXT_SPEED		(1<<0)
 #define TRAINING_CONTEXT_FLY_PATH	(1<<1)
@@ -1316,6 +1331,9 @@ extern const char *Sound_environment_option[];
 extern int Num_explosion_options;
 extern const char *Explosion_option[];
 
+extern int Num_functional_when_eval_types;
+extern const char *Functional_when_eval_type[];
+
 //The E
 extern int Num_adjust_audio_options;
 extern const char *Adjust_audio_options[];
@@ -1338,5 +1356,40 @@ extern int Sexp_hud_display_warpout;
 int get_effect_from_name(const char* name);
 
 void maybe_write_to_event_log(int result);
+
+//OSWPT Stuff
+
+#define OSWPT_TYPE_NONE				0
+#define OSWPT_TYPE_SHIP				1
+#define OSWPT_TYPE_WING				2
+#define OSWPT_TYPE_WAYPOINT			3
+#define OSWPT_TYPE_SHIP_ON_TEAM		4	// e.g. <any friendly>
+#define OSWPT_TYPE_WHOLE_TEAM		5	// e.g. Friendly
+#define OSWPT_TYPE_PARSE_OBJECT		6	// a "ship" that hasn't arrived yet
+#define OSWPT_TYPE_EXITED			7
+#define OSWPT_TYPE_WING_NOT_PRESENT	8	// a wing that hasn't arrived yet or is between waves
+
+// Goober5000
+struct object_ship_wing_point_team
+{
+	const char* object_name = nullptr;
+	int type = OSWPT_TYPE_NONE;
+
+	const ship_registry_entry* ship_entry = nullptr;
+	object* objp = nullptr;
+	wing* wingp = nullptr;
+	waypoint* waypointp = nullptr;
+	int team = -1;
+
+	object_ship_wing_point_team() = default;
+	object_ship_wing_point_team(ship* sp);
+	object_ship_wing_point_team(p_object* pop);
+	object_ship_wing_point_team(ship_obj* sop);
+	object_ship_wing_point_team(wing* wp);
+
+	void clear();
+};
+
+void eval_object_ship_wing_point_team(object_ship_wing_point_team* oswpt, int node, const char* ctext_override = nullptr);
 
 #endif

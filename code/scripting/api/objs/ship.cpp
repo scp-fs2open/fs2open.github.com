@@ -1119,8 +1119,7 @@ ADE_FUNC(firePrimary, l_Ship, NULL, "Fires ship primary bank(s)", "number", "Num
 		return ade_set_error(L, "i", 0);
 
 	int i = 0;
-	i += ship_fire_primary(objh->objp, 0);
-	i += ship_fire_primary(objh->objp, 1);
+	i += ship_fire_primary(objh->objp);
 
 	return ade_set_args(L, "i", i);
 }
@@ -1137,7 +1136,9 @@ ADE_FUNC(fireSecondary, l_Ship, NULL, "Fires ship secondary bank(s)", "number", 
 	return ade_set_args(L, "i", ship_fire_secondary(objh->objp, 0));
 }
 
-ADE_FUNC(getAnimationDoneTime, l_Ship, "number Type, number Subtype", "Gets time that animation will be done", "number", "Time (seconds), or 0 if ship handle is invalid")
+ADE_FUNC_DEPRECATED(getAnimationDoneTime, l_Ship, "number Type, number Subtype", "Gets time that animation will be done", "number", "Time (seconds), or 0 if ship handle is invalid",
+	gameversion::version(22, 0, 0, 0),
+	"To account for the new animation tables, please use getSubmodelAnimationTime()")
 {
 	object_h *objh;
 	const char* s = nullptr;
@@ -1148,11 +1149,11 @@ ADE_FUNC(getAnimationDoneTime, l_Ship, "number Type, number Subtype", "Gets time
 	if(!objh->IsValid())
 		return ade_set_error(L, "f", 0.0f);
 
-	auto type = model_anim_match_type(s);
-	if(type == AnimationTriggerType::None)
+	auto type = animation::anim_match_type(s);
+	if(type == animation::ModelAnimationTriggerType::None)
 		return ADE_RETURN_FALSE;
 
-	int time_ms = model_anim_get_time_type(&Ships[objh->objp->instance], type, subtype);
+	int time_ms = Ship_info[Ships[objh->objp->instance].ship_info_index].animations.getTimeAll(model_get_instance(Ships[objh->objp->instance].model_instance_num), type, subtype);
 	float time_s = (float)time_ms / 1000.0f;
 
 	return ade_set_args(L, "f", time_s);
@@ -1544,12 +1545,14 @@ ADE_FUNC(doManeuver,
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(triggerAnimation, l_Ship, "string Type, [number Subtype, boolean Forwards, boolean Instant]",
+ADE_FUNC_DEPRECATED(triggerAnimation, l_Ship, "string Type, [number Subtype, boolean Forwards, boolean Instant]",
 		 "Triggers an animation. Type is the string name of the animation type, "
 			 "Subtype is the subtype number, such as weapon bank #, Forwards and Instant are boolean, defaulting to true & false respectively."
 			 "<br><strong>IMPORTANT: Function is in testing and should not be used with official mod releases</strong>",
 		 "boolean",
-		 "True if successful, false or nil otherwise")
+		 "True if successful, false or nil otherwise",
+	gameversion::version(22, 0, 0, 0),
+	"To account for the new animation tables, please use triggerSubmodelAnimation()")
 {
 	object_h *objh;
 	const char* s = nullptr;
@@ -1562,17 +1565,68 @@ ADE_FUNC(triggerAnimation, l_Ship, "string Type, [number Subtype, boolean Forwar
 	if(!objh->IsValid())
 		return ADE_RETURN_NIL;
 
-	auto type = model_anim_match_type(s);
-	if(type == AnimationTriggerType::None)
+	auto type = animation::anim_match_type(s);
+	if(type == animation::ModelAnimationTriggerType::None)
 		return ADE_RETURN_FALSE;
 
-	int dir = 1;
-	if(!b)
-		dir = -1;
-
-	model_anim_start_type(&Ships[objh->objp->instance], type, subtype, dir, instant);
+	Ship_info[Ships[objh->objp->instance].ship_info_index].animations.startAll(model_get_instance(Ships[objh->objp->instance].model_instance_num), type, b ? animation::ModelAnimationDirection::FWD : animation::ModelAnimationDirection::RWD, instant, instant, false, subtype);
 
 	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(triggerSubmodelAnimation, l_Ship, "string type, string triggeredBy, [boolean forwards = true, boolean resetOnStart = false, boolean completeInstant = false, boolean pause = false]",
+	"Triggers an animation. Type is the string name of the animation type, "
+	"triggeredBy is a closer specification which animation should trigger. See *-anim.tbm specifications. "
+	"Forwards controls the direction of the animation. ResetOnStart will cause the animation to play from its initial state, as opposed to its current state. CompleteInstant will immediately complete the animation. Pause will instead stop the animation at the current state.",
+	"boolean",
+	"True if successful, false or nil otherwise")
+{
+	object_h* objh;
+	const char* type = nullptr;
+	const char* trigger = nullptr;
+	bool forwards = true;
+	bool forced = false;
+	bool instant = false;
+	bool pause = false;
+
+	if (!ade_get_args(L, "oss|bbbb", l_Ship.GetPtr(&objh), &type, &trigger, &forwards, &forced, &instant, &pause))
+		return ADE_RETURN_NIL;
+
+	if (!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	auto animtype = animation::anim_match_type(type);
+	if (animtype == animation::ModelAnimationTriggerType::None)
+		return ADE_RETURN_FALSE;
+
+	ship* shipp = &Ships[objh->objp->instance];
+	auto animationStartFunc = animation::anim_parse_scripted_start(Ship_info[shipp->ship_info_index].animations, model_get_instance(shipp->model_instance_num), animtype, trigger).first;
+
+	return animationStartFunc(forwards ? animation::ModelAnimationDirection::FWD : animation::ModelAnimationDirection::RWD, forced || instant, instant, pause) ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
+}
+
+ADE_FUNC(getSubmodelAnimationTime, l_Ship, "string type, string triggeredBy", "Gets time that animation will be done", "number", "Time (seconds), or 0 if ship handle is invalid")
+{
+	object_h* objh;
+	const char* type = nullptr;
+	const char* trigger = nullptr;
+	if (!ade_get_args(L, "oss", l_Ship.GetPtr(&objh), &type, &trigger))
+		return ade_set_error(L, "f", 0.0f);
+
+	if (!objh->IsValid())
+		return ade_set_error(L, "f", 0.0f);
+
+	auto animtype = animation::anim_match_type(type);
+	if (animtype == animation::ModelAnimationTriggerType::None)
+		return ade_set_error(L, "f", 0.0f);
+
+	ship* shipp = &Ships[objh->objp->instance];
+	auto animationTimeFunc = animation::anim_parse_scripted_start(Ship_info[shipp->ship_info_index].animations, model_get_instance(shipp->model_instance_num), animtype, trigger).second;
+
+	int time_ms = animationTimeFunc();
+	float time_s = (float)time_ms / 1000.0f;
+
+	return ade_set_args(L, "f", time_s);
 }
 
 ADE_FUNC(warpIn, l_Ship, NULL, "Warps ship in", "boolean", "True if successful, or nil if ship handle is invalid")

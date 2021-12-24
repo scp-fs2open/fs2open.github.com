@@ -494,6 +494,15 @@ ADE_FUNC(setColor, l_Graphics, "number Red, number Green, number Blue, [number A
 	return ADE_RETURN_NIL;
 }
 
+ADE_FUNC(getColor, l_Graphics, nullptr, "Gets the active 2D drawing color", "number, number, number, number" , "rgba color which is currently in use for 2D drawing")
+{
+	if(!Gr_inited)
+		return ADE_RETURN_NIL;
+
+	color cur = gr_screen.current_color;
+	return ade_set_args(L, "iiii", (int)cur.red, (int)cur.green, (int)cur.blue, (int)cur.alpha);
+}
+
 ADE_FUNC(setLineWidth, l_Graphics, "[number width=1.0]", "Sets the line width for lines. This call might fail if the specified width is not supported by the graphics implementation. Then the width will be the nearest supported value.", "boolean", "true if succeeded, false otherwise")
 {
 	if(!Gr_inited)
@@ -655,18 +664,8 @@ ADE_FUNC(drawPolygon,
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(drawRectangle, l_Graphics, "number X1, number Y1, number X2, number Y2, [boolean Filled=true, number angle=0.0]", "Draws a rectangle with CurrentColor", nullptr, nullptr)
+void drawRectInternal(int x1, int x2, int y1, int y2, bool f = true, float a = 0.f) 
 {
-	if(!Gr_inited)
-		return ADE_RETURN_NIL;
-
-	int x1,y1,x2,y2;
-	bool f=true;
-	float a = 0;
-
-	if(!ade_get_args(L, "iiii|bf", &x1, &y1, &x2, &y2, &f, &a))
-		return ADE_RETURN_NIL;
-
 	if(f)
 	{
 		gr_set_bitmap(0);  // gr_rect will use the last bitmaps info, so set to zero to flush any previous alpha state
@@ -678,22 +677,19 @@ ADE_FUNC(drawRectangle, l_Graphics, "number X1, number Y1, number X2, number Y2,
 			float centerX = (x1 + x2) / 2.0f;
 			float centerY = (y1 + y2) / 2.0f;
 
-			float rad = fl_radians(a);
-			
-
 			//We need to calculate each point individually due to the rotation, as they won't always align horizontally and vertically. 
 			
-			float AX = cosf(rad) * (x1 - centerX) - sinf(rad) * (y1 - centerY) + centerX;
-			float AY = sinf(rad) * (x1 - centerX) + cosf(rad) * (y1 - centerY) + centerY;
+			float AX = cosf(a) * (x1 - centerX) - sinf(a) * (y1 - centerY) + centerX;
+			float AY = sinf(a) * (x1 - centerX) + cosf(a) * (y1 - centerY) + centerY;
 			
-			float BX = cosf(rad) * (x2 - centerX) - sinf(rad) * (y1 - centerY) + centerX;
-			float BY = sinf(rad) * (x2 - centerX) + cosf(rad) * (y1 - centerY) + centerY;
+			float BX = cosf(a) * (x2 - centerX) - sinf(a) * (y1 - centerY) + centerX;
+			float BY = sinf(a) * (x2 - centerX) + cosf(a) * (y1 - centerY) + centerY;
 
-			float CX = cosf(rad) * (x2 - centerX) - sinf(rad) * (y2 - centerY) + centerX;
-			float CY = sinf(rad) * (x2 - centerX) + cosf(rad) * (y2 - centerY) + centerY;
+			float CX = cosf(a) * (x2 - centerX) - sinf(a) * (y2 - centerY) + centerX;
+			float CY = sinf(a) * (x2 - centerX) + cosf(a) * (y2 - centerY) + centerY;
 			
-			float DX = cosf(rad) * (x1 - centerX) - sinf(rad) * (y2 - centerY) + centerX;
-			float DY = sinf(rad) * (x1 - centerX) + cosf(rad) * (y2 - centerY) + centerY;
+			float DX = cosf(a) * (x1 - centerX) - sinf(a) * (y2 - centerY) + centerX;
+			float DY = sinf(a) * (x1 - centerX) + cosf(a) * (y2 - centerY) + centerY;
 
 
 			gr_line(fl2i(AX), fl2i(AY), fl2i(BX), fl2i(BY), GR_RESIZE_NONE);
@@ -709,6 +705,46 @@ ADE_FUNC(drawRectangle, l_Graphics, "number X1, number Y1, number X2, number Y2,
 			gr_line(x2, y1, x2, y2, GR_RESIZE_NONE);	//Right
 		}
 	}
+
+}
+
+ADE_FUNC(drawRectangle, l_Graphics, "number X1, number Y1, number X2, number Y2, [boolean Filled=true, number angle=0.0]", "Draws a rectangle with CurrentColor. May be rotated by passing the angle parameter in radians.", nullptr, nullptr)
+{
+	if(!Gr_inited)
+		return ADE_RETURN_NIL;
+
+	int x1,y1,x2,y2;
+	bool f=true;
+	float a = 0;
+
+	if(!ade_get_args(L, "iiii|bf", &x1, &y1, &x2, &y2, &f, &a))
+		return ADE_RETURN_NIL;
+	
+	drawRectInternal(x1, x2, y1, y2, f, a);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(drawRectangleCentered, l_Graphics, 
+	"number X, number Y, number Width, number Height, [boolean Filled=true, number angle=0.0]", 
+	"Draws a rectangle centered at X,Y with CurrentColor. May be rotated by passing the angle parameter in radians.", nullptr, nullptr) 
+{
+		if(!Gr_inited)
+		return ADE_RETURN_NIL;
+
+	int x,y,w,h;
+	bool f=true;
+	float a = 0;
+
+	if(!ade_get_args(L, "iiii|bf", &x, &y, &w, &h, &f, &a))
+		return ADE_RETURN_NIL;
+	
+	int x1 = x - (w / 2);
+	int x2 = x + (w / 2);
+	int y1 = y - (h / 2);
+	int y2 = y + (h / 2);
+
+	drawRectInternal(x1, x2, y1, y2, f, a);
 
 	return ADE_RETURN_NIL;
 }
@@ -1343,11 +1379,12 @@ ADE_FUNC(loadTexture, l_Graphics, "string Filename, [boolean LoadIfAnimation, bo
 ADE_FUNC(drawImage,
 	l_Graphics,
 	"string|texture fileNameOrTexture, [number X1=0, number Y1=0, number X2, number Y2, number UVX1 = 0.0, number UVY1 "
-	"= 0.0, number UVX2=1.0, number UVY2=1.0, number alpha=1.0, boolean aaImage = false]",
+	"= 0.0, number UVX2=1.0, number UVY2=1.0, number alpha=1.0, boolean aaImage = false, number angle = 0.0]",
 	"Draws an image file or texture. Any image extension passed will be ignored."
 	"The UV variables specify the UV value for each corner of the image. "
 	"In UV coordinates, (0,0) is the top left of the image; (1,1) is the lower right. If aaImage is true, image needs "
-	"to be monochrome and will be drawn tinted with the currently active color.",
+	"to be monochrome and will be drawn tinted with the currently active color."
+	"The angle variable can be used to rotate the image in radians.",
 	"boolean",
 	"Whether image was drawn")
 {
@@ -1365,11 +1402,12 @@ ADE_FUNC(drawImage,
 	float uv_y2=1.0f;
 	float alpha=1.0f;
 	bool aabitmap = false;
+	float angle = 0.f;
 
 	if(lua_isstring(L, 1))
 	{
 		const char* s = nullptr;
-		if (!ade_get_args(L, "s|iiiifffffb", &s, &x1, &y1, &x2, &y2, &uv_x1, &uv_y1, &uv_x2, &uv_y2, &alpha, &aabitmap))
+		if (!ade_get_args(L, "s|iiiifffffbf", &s, &x1, &y1, &x2, &y2, &uv_x1, &uv_y1, &uv_x2, &uv_y2, &alpha, &aabitmap, &angle))
 			return ade_set_error(L, "b", false);
 
 		idx = Script_system.LoadBm(s);
@@ -1381,7 +1419,7 @@ ADE_FUNC(drawImage,
 	{
 		texture_h* th = nullptr;
 		if (!ade_get_args(L,
-				"o|iiiifffffb",
+				"o|iiiifffffbf",
 				l_Texture.GetPtr(&th),
 				&x1,
 				&y1,
@@ -1392,7 +1430,8 @@ ADE_FUNC(drawImage,
 				&uv_x2,
 				&uv_y2,
 				&alpha,
-				&aabitmap))
+				&aabitmap,
+				&angle))
 			return ade_set_error(L, "b", false);
 
 		if (!th->isValid()) {
@@ -1416,16 +1455,110 @@ ADE_FUNC(drawImage,
 		h = y2-y1;
 
 	gr_set_bitmap(idx, lua_Opacity_type, GR_BITBLT_MODE_NORMAL, alpha);
+
 	bitmap_rect_list brl = bitmap_rect_list(x1, y1, w, h, uv_x1, uv_y1, uv_x2, uv_y2);
 
 	if (aabitmap) {
-		gr_aabitmap_list(&brl, 1, GR_RESIZE_NONE);
+		gr_aabitmap_list(&brl, 1, GR_RESIZE_NONE, angle);
 	} else {
-		gr_bitmap_list(&brl, 1, GR_RESIZE_NONE);
+		gr_bitmap_list(&brl, 1, GR_RESIZE_NONE, angle);
 	}
 
 	return ADE_RETURN_TRUE;
 }
+
+ADE_FUNC(drawImageCentered,
+	l_Graphics,
+	"string|texture fileNameOrTexture, [number X=0, number Y=0, number W, number H, number UVX1 = 0.0, number UVY1 "
+	"= 0.0, number UVX2=1.0, number UVY2=1.0, number alpha=1.0, boolean aaImage = false, number angle = 0.0]",
+	"Draws an image file or texture centered on the X,Y position. Any image extension passed will be ignored."
+	"The UV variables specify the UV value for each corner of the image. "
+	"In UV coordinates, (0,0) is the top left of the image; (1,1) is the lower right. If aaImage is true, image needs "
+	"to be monochrome and will be drawn tinted with the currently active color."
+	"The angle variable can be used to rotate the image in radians.",
+	"boolean",
+	"Whether image was drawn") {
+	if(!Gr_inited)
+		return ade_set_error(L, "b", false);
+
+	int idx;
+	int x = 0;
+	int y = 0;
+	int w=INT_MAX;
+	int h=INT_MAX;
+	float uv_x1=0.0f;
+	float uv_y1=0.0f;
+	float uv_x2=1.0f;
+	float uv_y2=1.0f;
+	float alpha=1.0f;
+	bool aabitmap = false;
+	float angle = 0.f;
+
+	if(lua_isstring(L, 1))
+	{
+		const char* s = nullptr;
+		if (!ade_get_args(L, "s|iiiifffffbf", &s, &x, &y, &w, &h, &uv_x1, &uv_y1, &uv_x2, &uv_y2, &alpha, &aabitmap, &angle))
+			return ade_set_error(L, "b", false);
+
+		idx = Script_system.LoadBm(s);
+
+		if(idx < 0)
+			return ADE_RETURN_FALSE;
+	}
+	else
+	{
+		texture_h* th = nullptr;
+		if (!ade_get_args(L,
+				"o|iiiifffffbf",
+				l_Texture.GetPtr(&th),
+				&x,
+				&y,
+				&h,
+				&w,
+				&uv_x1,
+				&uv_y1,
+				&uv_x2,
+				&uv_y2,
+				&alpha,
+				&aabitmap,
+				&angle))
+			return ade_set_error(L, "b", false);
+
+		if (!th->isValid()) {
+			return ade_set_error(L, "b", false);
+		}
+
+		idx = th->handle;
+	}
+
+	if(!bm_is_valid(idx))
+		return ade_set_error(L, "b", false);
+
+	int original_w, original_h;
+	if(bm_get_info(idx, &original_w, &original_h) < 0)
+		return ADE_RETURN_FALSE;
+
+	if(w==INT_MAX)
+		w = original_w;
+
+	if(h==INT_MAX)
+		h = original_h;
+
+	gr_set_bitmap(idx, lua_Opacity_type, GR_BITBLT_MODE_NORMAL, alpha);
+
+	bitmap_rect_list brl = bitmap_rect_list(x-(w/2), y-(h/2), w, h, uv_x1, uv_y1, uv_x2, uv_y2);
+
+	if (aabitmap) {
+		gr_aabitmap_list(&brl, 1, GR_RESIZE_NONE, angle);
+	} else {
+		gr_bitmap_list(&brl, 1, GR_RESIZE_NONE, angle);
+	}
+
+	return ADE_RETURN_TRUE;
+
+}
+
+
 
 ADE_FUNC_DEPRECATED(drawMonochromeImage,
 	l_Graphics,

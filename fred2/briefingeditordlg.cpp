@@ -61,11 +61,11 @@ briefing_editor_dlg::briefing_editor_dlg(CWnd* pParent /*=NULL*/)
 	m_hilight = FALSE;
 	m_icon_image = -1;
 	m_icon_label = _T("");
+	m_icon_closeup_label = _T("");
 	m_stage_title = _T("");
 	m_text = _T("");
 	m_time = _T("");
 	m_voice = _T("");
-	m_icon_text = _T("");
 	m_icon_team = -1;
 	m_ship_type = -1;
 	m_change_local = FALSE;
@@ -97,11 +97,11 @@ void briefing_editor_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_HILIGHT, m_hilight);
 	DDX_CBIndex(pDX, IDC_ICON_IMAGE, m_icon_image);
 	DDX_Text(pDX, IDC_ICON_LABEL, m_icon_label);
+	DDX_Text(pDX, IDC_ICON_CLOSEUP_LABEL, m_icon_closeup_label);
 	DDX_Text(pDX, IDC_STAGE_TITLE, m_stage_title);
 	DDX_Text(pDX, IDC_TEXT, m_text);
 	DDX_Text(pDX, IDC_TIME, m_time);
 	DDX_Text(pDX, IDC_VOICE, m_voice);
-	DDX_Text(pDX, IDC_ICON_TEXT, m_icon_text);
 	DDX_CBIndex(pDX, IDC_TEAM, m_icon_team);
 	DDX_CBIndex(pDX, IDC_SHIP_TYPE, m_ship_type);
 	DDX_Check(pDX, IDC_LOCAL, m_change_local);
@@ -117,7 +117,7 @@ void briefing_editor_dlg::DoDataExchange(CDataExchange* pDX)
 
 	DDV_MaxChars(pDX, m_voice, MAX_FILENAME_LEN - 1);
 	DDV_MaxChars(pDX, m_icon_label, MAX_LABEL_LEN - 1);
-	DDV_MaxChars(pDX, m_icon_text, MAX_ICON_TEXT_LEN - 1);
+	DDV_MaxChars(pDX, m_icon_closeup_label, MAX_LABEL_LEN - 1);
 }
 
 BEGIN_MESSAGE_MAP(briefing_editor_dlg, CDialog)
@@ -153,6 +153,29 @@ END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
 // briefing_editor_dlg message handlers
+
+BOOL briefing_editor_dlg::OnInitDialog()
+{
+	CDialog::OnInitDialog();
+
+	//create tool tip controls
+	m_CloseupLabelToolTip = new CToolTipCtrl();
+	m_CloseupLabelToolTip->Create(this);
+
+	CWnd* pWnd = GetDlgItem(IDC_ICON_CLOSEUP_LABEL);
+	m_CloseupLabelToolTip->AddTool(pWnd, "If this is blank, the ship class will be used");
+	m_CloseupLabelToolTip->Activate(TRUE);
+
+	return TRUE;  // return TRUE unless you set the focus to a control
+				  // EXCEPTION: OCX Property Pages should return FALSE
+}
+
+BOOL briefing_editor_dlg::PreTranslateMessage(MSG* pMsg)
+{
+	m_CloseupLabelToolTip->RelayEvent(pMsg);
+
+	return CDialog::PreTranslateMessage(pMsg);
+}
 
 void briefing_editor_dlg::OnInitMenu(CMenu* pMenu)
 {
@@ -308,7 +331,7 @@ void briefing_editor_dlg::restore_editor_state()
 
 void briefing_editor_dlg::update_data(int update)
 {
-	char buf[MAX_LABEL_LEN], buf2[MAX_ICON_TEXT_LEN];
+	char buf[MAX_LABEL_LEN];
 	SCP_string buf3;
 	int i, j, l, lines, count, enable = TRUE, valid = 0, invalid = 0;
 	object *objp;
@@ -430,6 +453,7 @@ void briefing_editor_dlg::update_data(int update)
 			}
 
 			ptr->icons[m_last_icon].id = m_id;
+
 			string_copy(buf, m_icon_label, MAX_LABEL_LEN);
 			if (stricmp(ptr->icons[m_last_icon].label, buf) && !m_change_local) {
 				set_modified();
@@ -437,8 +461,16 @@ void briefing_editor_dlg::update_data(int update)
 				while (get_next_icon(m_id))
 					strcpy_s(iconp->label, buf);
 			}
-
 			strcpy_s(ptr->icons[m_last_icon].label, buf);
+
+			string_copy(buf, m_icon_closeup_label, MAX_LABEL_LEN);
+			if (stricmp(ptr->icons[m_last_icon].closeup_label, buf) && !m_change_local) {
+				set_modified();
+				reset_icon_loop(m_last_stage);
+				while (get_next_icon(m_id))
+					strcpy_s(iconp->closeup_label, buf);
+			}
+			strcpy_s(ptr->icons[m_last_icon].closeup_label, buf);
 
 			if ( m_hilight )
 				ptr->icons[m_last_icon].flags |= BI_HIGHLIGHT;
@@ -483,18 +515,6 @@ void briefing_editor_dlg::update_data(int update)
 					iconp->ship_class = m_ship_type;
 			}
 			MODIFY(ptr->icons[m_last_icon].ship_class, m_ship_type);
-
-			deconvert_multiline_string(buf2, m_icon_text, MAX_ICON_TEXT_LEN);
-/*
-			if (stricmp(ptr->icons[m_last_icon].text, buf2) && !m_change_local) {
-				set_modified();
-				reset_icon_loop(m_last_stage);
-				while (get_next_icon(m_id))
-					strcpy_s(iconp->text, buf2);
-			}
-
-			strcpy_s(ptr->icons[m_last_icon].text, buf2);
-*/
 		}
 	}
 
@@ -567,8 +587,8 @@ void briefing_editor_dlg::update_data(int update)
 		m_icon_image = ptr->icons[m_cur_icon].type;
 		m_icon_team = ptr->icons[m_cur_icon].team;
 		m_icon_label = ptr->icons[m_cur_icon].label;
+		m_icon_closeup_label = ptr->icons[m_cur_icon].closeup_label;
 		m_ship_type = ptr->icons[m_cur_icon].ship_class;
-//		m_icon_text = convert_multiline_string(ptr->icons[m_cur_icon].text);
 		m_id = ptr->icons[m_cur_icon].id;
 		enable = TRUE;
 
@@ -581,6 +601,7 @@ void briefing_editor_dlg::update_data(int update)
 		m_icon_team = -1;
 		m_ship_type = -1;
 		m_icon_label = _T("");
+		m_icon_closeup_label = _T("");
 		m_cur_icon = -1;
 		m_id = 0;
 		enable = FALSE;
@@ -595,7 +616,7 @@ void briefing_editor_dlg::update_data(int update)
 	GetDlgItem(IDC_USE_WING_ICON) -> ShowWindow(sip_bii_wing >= 0);
 	GetDlgItem(IDC_USE_CARGO_ICON) -> ShowWindow(sip_bii_cargo >= 0);
 
-	GetDlgItem(IDC_ICON_TEXT) -> EnableWindow(enable);
+	GetDlgItem(IDC_ICON_CLOSEUP_LABEL) -> EnableWindow(enable);
 	GetDlgItem(IDC_ICON_LABEL) -> EnableWindow(enable);
 	GetDlgItem(IDC_ICON_IMAGE) -> EnableWindow(enable && (sip_bii_ship < 0));
 	GetDlgItem(IDC_SHIP_TYPE) -> EnableWindow(enable);

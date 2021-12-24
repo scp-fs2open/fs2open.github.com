@@ -55,8 +55,6 @@ const float LARGE_DEBRIS_WEIGHT = 1.0f;
 
 int	Asteroids_enabled = 1;
 int	Num_asteroids = 0;
-int	Asteroid_throw_objnum = -1;		//	Object index of ship to throw asteroids at.
-int	Next_asteroid_throw;
 
 SCP_vector< asteroid_info > Asteroid_info;
 asteroid			Asteroids[MAX_ASTEROIDS];
@@ -72,6 +70,55 @@ float	Asteroid_icon_closeup_zoom;
 #define	ASTEROID_CHECK_WRAP_TIMESTAMP			2000	// how often an asteroid gets checked for wrapping
 #define	ASTEROID_UPDATE_COLLIDE_TIMESTAMP	2000	// how often asteroid is checked for impending collisions with escort ships
 #define	ASTEROID_MIN_COLLIDE_TIME				24		// time in seconds to check for asteroid colliding
+
+SCP_vector<SCP_string> Asteroid_target_ships;
+bool Default_asteroid_throwing_behavior = true;
+
+typedef struct asteroid_target {
+	int objnum;
+	int signature;
+	int throw_stamp;
+	int incoming_asteroids;
+} asteroid_target;
+
+// if default throwing behavior is enabled, then this should always have at most 1 target or possibly none, determined the retail way
+// if not, then this is whatever number of mission-specified ships (after they arrive, list is sanitized when they exit)
+SCP_vector<asteroid_target> Asteroid_targets;
+
+
+/**
+ * Return number of asteroids expected to collide with a ship.
+ */
+static int count_incident_asteroids(int target_objnum)
+{
+	object* asteroid_objp;
+	int		count;
+
+	count = 0;
+
+	for (asteroid_objp = GET_FIRST(&obj_used_list); asteroid_objp != END_OF_LIST(&obj_used_list); asteroid_objp = GET_NEXT(asteroid_objp)) {
+		if (asteroid_objp->type == OBJ_ASTEROID) {
+			asteroid* asp = &Asteroids[asteroid_objp->instance];
+
+			if (asp->target_objnum == target_objnum) {
+				count++;
+			}
+		}
+	}
+
+	return count;
+}
+
+// add a ship as a new asteroid target
+void asteroid_add_target(object* objp) {
+	asteroid_target new_target;
+	new_target.objnum = OBJ_INDEX(objp);
+	new_target.signature = objp->signature;
+	new_target.throw_stamp = timestamp(Random::next(500, 2000));
+	new_target.incoming_asteroids = count_incident_asteroids(OBJ_INDEX(objp)); // this *should* normally be 0
+
+	Asteroid_targets.push_back(new_target);
+}
 
 /**
  * Force updating of pair stuff for asteroid *objp.
@@ -159,42 +206,27 @@ static float asteroid_cap_speed(int asteroid_info_index, float speed)
 }
 
 /**
- * Returns whether position is inside inner bounding volume
- *
- * Sum together the following: 1 inside x, 2 inside y, 4 inside z
- * inside only when sum = 7
- */
-static int asteroid_in_inner_bound_with_axes(asteroid_field *asfieldp, vec3d *pos, float delta)
-{
-	Assert(asfieldp->has_inner_bound);
-
-	int rval = 0;
-	if ( (pos->xyz.x > asfieldp->inner_min_bound.xyz.x - delta) && (pos->xyz.x < asfieldp->inner_max_bound.xyz.x + delta) ) {
-		rval += 1;
-	}
-
-	if ( (pos->xyz.y > asfieldp->inner_min_bound.xyz.y - delta) && (pos->xyz.y < asfieldp->inner_max_bound.xyz.y + delta) ) {
-		rval += 2;
-	}
-
-	if ( (pos->xyz.z > asfieldp->inner_min_bound.xyz.z - delta) && (pos->xyz.z < asfieldp->inner_max_bound.xyz.z + delta) ) {
-		rval += 4;
-	}
-
-	return rval;
-}
-
-/**
  * Check if asteroid is within inner bound
  * @return 0 if not inside or no inner bound, 1 if inside inner bound
  */
-static int asteroid_in_inner_bound(asteroid_field *asfieldp, vec3d *pos, float delta) {
+static bool asteroid_in_inner_bound(asteroid_field *asfieldp, vec3d *pos, float delta) {
 
-	if (!asfieldp->has_inner_bound) {
-		return 0;
-	}
+	if (!asfieldp->has_inner_bound)
+		return false;
 
-	return (asteroid_in_inner_bound_with_axes(asfieldp, pos, delta) == 7);
+	return (pos->xyz.x > asfieldp->inner_min_bound.xyz.x - delta) && (pos->xyz.x < asfieldp->inner_max_bound.xyz.x + delta) &&
+		(pos->xyz.y > asfieldp->inner_min_bound.xyz.y - delta) && (pos->xyz.y < asfieldp->inner_max_bound.xyz.y + delta) &&
+		(pos->xyz.z > asfieldp->inner_min_bound.xyz.z - delta) && (pos->xyz.z < asfieldp->inner_max_bound.xyz.z + delta);
+}
+
+static bool asteroid_is_ship_inside_field(asteroid_field* asfieldp, vec3d* pos, float radius) {
+
+	radius *= 2.0f;
+
+	return pos->xyz.x + radius > Asteroid_field.min_bound.xyz.x && pos->xyz.x - radius < Asteroid_field.max_bound.xyz.x &&
+		   pos->xyz.y + radius > Asteroid_field.min_bound.xyz.y && pos->xyz.y - radius < Asteroid_field.max_bound.xyz.y &&
+	       pos->xyz.z + radius > Asteroid_field.min_bound.xyz.z && pos->xyz.z - radius < Asteroid_field.max_bound.xyz.z &&
+		   !asteroid_in_inner_bound(asfieldp, pos, radius);
 }
 
 /**
@@ -334,8 +366,8 @@ object *asteroid_create(asteroid_field *asfieldp, int asteroid_type, int asteroi
 	asp->objnum = objnum;
 	asp->model_instance_num = -1;
 
-	if (model_get(asip->model_num[asteroid_subtype])->flags & PM_FLAG_HAS_INTRINSIC_ROTATE) {
-		asp->model_instance_num = model_create_instance(false, asip->model_num[asteroid_subtype]);
+	if (model_get(asip->model_num[asteroid_subtype])->flags & PM_FLAG_HAS_INTRINSIC_MOTION) {
+		asp->model_instance_num = model_create_instance(objnum, asip->model_num[asteroid_subtype]);
 	}
 
 	// Add to Asteroid_used_list
@@ -512,6 +544,11 @@ void asteroid_create_all()
 		return;
 	}
 
+	if (Asteroid_field.num_used_field_debris_types <= 0) {
+		Warning(LOCATION, "An asteroid field is enabled, but no asteroid types were enabled.");
+		return;
+	}
+
 	int max_asteroids = Asteroid_field.num_initial_asteroids; // * (1.0f - 0.1f*(MAX_DETAIL_LEVEL-Detail.asteroid_density)));
 
 	int num_debris_types = 0;
@@ -564,12 +601,20 @@ void asteroid_create_all()
 			// For asteroid, load only large asteroids
 
 			// get a valid subtype
-			int subtype = Random::next(NUM_DEBRIS_POFS);
-			while (Asteroid_field.field_debris_type[subtype] == -1) {
-				subtype = (subtype + 1) % NUM_DEBRIS_POFS;
+			int counter = Random::next(Asteroid_field.num_used_field_debris_types);
+			int subtype = -1;
+			for (int j = 0; j < NUM_DEBRIS_POFS; j++) {
+				if (Asteroid_field.field_debris_type[j] >= 0) {
+					if (counter == 0) {
+						subtype = j;
+						break;
+					} else
+						counter--;
+				}
 			}
 
-			asteroid_create(&Asteroid_field, ASTEROID_TYPE_LARGE, subtype);
+			if (subtype >= 0)
+				asteroid_create(&Asteroid_field, ASTEROID_TYPE_LARGE, subtype);
 		} else {
 			Assert(num_debris_types > 0);
 
@@ -593,11 +638,13 @@ void asteroid_level_init()
 {
 	Asteroid_field.num_initial_asteroids=0;
 	Num_asteroids = 0;
-	Next_asteroid_throw = timestamp(1);
+	Asteroid_targets.clear();
+	Default_asteroid_throwing_behavior = true;
 	asteroid_obj_list_init();
 	SCP_vector<asteroid_info>::iterator ast;
 	for (ast = Asteroid_info.begin(); ast != Asteroid_info.end(); ++ast)
 		ast->damage_type_idx = ast->damage_type_idx_sav;
+	Asteroid_field.num_used_field_debris_types = 0;
 }
 
 /**
@@ -733,52 +780,75 @@ static void asteroid_aim_at_target(object *objp, object *asteroid_objp, float de
 }
 
 /**
- * Call once per frame to maybe throw an asteroid at a ship.
+* Sanitizes the Asteroid targets list removing ships that have died/become invalid etc
+*/
+static void sanitize_asteroid_targets_list() {
+	for (size_t i = 0; i < Asteroid_targets.size();) {
+		object* target_objp = &Objects[Asteroid_targets[i].objnum];
+		if (target_objp->type != OBJ_SHIP || target_objp->signature != Asteroid_targets[i].signature) {
+			Asteroid_targets[i] = Asteroid_targets.back();
+			Asteroid_targets.pop_back();
+		}
+		else  // if we needed to cull we should not advance because we just moved a new asteroid target into this spot
+			i++;
+	}
+}
+
+/**
+ * Call once per frame to maybe throw some asteroids at one or more ships.
  *
- * @param count asteroids already targeted on
  */
-static void maybe_throw_asteroid(int count)
+static void maybe_throw_asteroid()
 {
-	if (!timestamp_elapsed(Next_asteroid_throw)) {
-		return;
-	}
 
-	if (Asteroid_throw_objnum == -1) {
-		return;
-	}
+	for (asteroid_target& target : Asteroid_targets) {
+		if (!timestamp_elapsed(target.throw_stamp))
+			continue;
 
-	nprintf(("AI", "Incoming asteroids: %i\n", count));
+		object* target_objp = &Objects[target.objnum];
+		if (!asteroid_is_ship_inside_field(&Asteroid_field, &target_objp->pos, target_objp->radius))
+			continue;
+		
+		// This should've been greater equal, but alas...
+		if (target.incoming_asteroids > The_mission.ai_profile->max_incoming_asteroids[Game_skill_level])
+			continue;
 
-	if (count > The_mission.ai_profile->max_incoming_asteroids[Game_skill_level])
-		return;
+		nprintf(("AI", "Incoming asteroids to %s: %i\n", Ships[target_objp->instance].ship_name, target.incoming_asteroids));
 
-	Next_asteroid_throw = timestamp(1000 + 1200 * count/(Game_skill_level+1));
+		target.throw_stamp = timestamp(1000 + 1200 * target.incoming_asteroids /(Game_skill_level+1));
 
-	ship_obj	*so;
-	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
-		object *A = &Objects[so->objnum];
-		if (so->objnum == Asteroid_throw_objnum) {
-			int subtype = Random::next(NUM_DEBRIS_POFS);
-			while (Asteroid_field.field_debris_type[subtype] == -1) {
-				subtype = (subtype + 1) % NUM_DEBRIS_POFS;
+		int counter = Random::next(Asteroid_field.num_used_field_debris_types);
+		int subtype = -1;
+		for (int i = 0; i < NUM_DEBRIS_POFS; i++) {
+			if (Asteroid_field.field_debris_type[i] >= 0) {
+				if (counter == 0) {
+					subtype = i;
+					break;
+				}
+				else
+					counter--;
 			}
-			object *objp = asteroid_create(&Asteroid_field, ASTEROID_TYPE_LARGE, subtype);
-			if (objp != NULL) {
-				asteroid_aim_at_target(A, objp, ASTEROID_MIN_COLLIDE_TIME + frand() * 20.0f);
+		}
 
-				// if asteroid is inside inner bound, kill it
-				if (asteroid_in_inner_bound(&Asteroid_field, &objp->pos, 0.0f)) {
-					objp->flags.set(Object::Object_Flags::Should_be_dead);
-				} else {
-					Asteroids[objp->instance].target_objnum = so->objnum;
+		// this really shouldn't happen but just in case...
+		if (subtype < 0)
+			return;
 
-					if ( MULTIPLAYER_MASTER ) {
-						send_asteroid_throw( objp );
-					}
+		object *objp = asteroid_create(&Asteroid_field, ASTEROID_TYPE_LARGE, subtype);
+		if (objp != nullptr) {
+			asteroid_aim_at_target(target_objp, objp, ASTEROID_MIN_COLLIDE_TIME + frand() * 20.0f);
+
+			// if asteroid is inside inner bound, kill it
+			if (asteroid_in_inner_bound(&Asteroid_field, &objp->pos, 0.0f)) {
+				objp->flags.set(Object::Object_Flags::Should_be_dead);
+			} else {
+				Asteroids[objp->instance].target_objnum = target.objnum;
+				target.incoming_asteroids++;
+
+				if ( MULTIPLAYER_MASTER ) {
+					send_asteroid_throw( objp );
 				}
 			}
-
-			return;
 		}
 	}
 
@@ -799,6 +869,13 @@ void asteroid_delete( object * obj )
 
 	if (asp->model_instance_num >= 0)
 		model_delete_instance(asp->model_instance_num);
+
+	if (asp->target_objnum >= 0) {
+		for (asteroid_target& target : Asteroid_targets) {
+			if (asp->target_objnum == target.objnum)
+				target.incoming_asteroids--;
+		}
+	}
 
 	asp->flags = 0;
 	Num_asteroids--;
@@ -838,7 +915,14 @@ static void asteroid_maybe_reposition(object *objp, asteroid_field *asfieldp)
 				} else {
 					// check to ensure player won't see asteroid appear either
 					asteroid_wrap_pos(objp, asfieldp);
-					Asteroids[objp->instance].target_objnum = -1;
+					asteroid* astp = &Asteroids[objp->instance];
+
+					// this doesnt count as a thrown asteroid anymore
+					for (asteroid_target& target : Asteroid_targets)
+						if (target.objnum == astp->target_objnum)
+							target.incoming_asteroids--;
+
+					astp->target_objnum = -1;
 
 					dist = vm_vec_normalized_dir(&vec_to_asteroid, &objp->pos, &Eye_position);
 					dot = vm_vec_dot(&Eye_matrix.vec.fvec, &vec_to_asteroid);
@@ -2013,29 +2097,6 @@ static void asteroid_parse_tbl()
 }
 
 /**
- * Return number of asteroids expected to collide with a ship.
- */
-static int count_incident_asteroids()
-{
-	object	*asteroid_objp;
-	int		count;
-
-	count = 0;
-
-	for ( asteroid_objp = GET_FIRST(&obj_used_list); asteroid_objp !=END_OF_LIST(&obj_used_list); asteroid_objp = GET_NEXT(asteroid_objp) ) {
-		if (asteroid_objp->type == OBJ_ASTEROID ) {
-			asteroid *asp = &Asteroids[asteroid_objp->instance];
-
-			if ( asp->target_objnum >= 0 ) {
-				count++;
-			}
-		}
-	}
-
-	return count;
-}
-
-/**
  * Pick object to throw asteroids at.
  * Pick any capital or big ship inside the bounds of the asteroid field.
  */
@@ -2049,17 +2110,10 @@ static int set_asteroid_throw_objnum()
 
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 		ship_objp = &Objects[so->objnum];
-		float		radius = ship_objp->radius*2.0f;
 
 		if (Ship_info[Ships[ship_objp->instance].ship_info_index].is_big_or_huge()) {
-			if (ship_objp->pos.xyz.x + radius > Asteroid_field.min_bound.xyz.x)
-				if (ship_objp->pos.xyz.y + radius > Asteroid_field.min_bound.xyz.y)
-				if (ship_objp->pos.xyz.z + radius > Asteroid_field.min_bound.xyz.z)
-				if (ship_objp->pos.xyz.x - radius < Asteroid_field.max_bound.xyz.x)
-				if (ship_objp->pos.xyz.y - radius < Asteroid_field.max_bound.xyz.y)
-				if (ship_objp->pos.xyz.z - radius < Asteroid_field.max_bound.xyz.z)
-				if (!asteroid_in_inner_bound(&Asteroid_field, &ship_objp->pos, radius))
-					return so->objnum;
+			if (asteroid_is_ship_inside_field(&Asteroid_field, &ship_objp->pos, ship_objp->radius))
+				return so->objnum;
 		}
 	}
 	return -1;
@@ -2076,9 +2130,18 @@ void asteroid_frame()
 		return;
 	}
 
-	Asteroid_throw_objnum = set_asteroid_throw_objnum();
+	if (Default_asteroid_throwing_behavior) {
+		int objnum = set_asteroid_throw_objnum();
+		if (Asteroid_targets.empty() || Asteroid_targets[0].objnum != objnum) {
+			Asteroid_targets.clear();
+			if (objnum >= 0)
+				asteroid_add_target(&Objects[objnum]);
+		}
+	} 
 
-	maybe_throw_asteroid(count_incident_asteroids());
+	sanitize_asteroid_targets_list();
+
+	maybe_throw_asteroid();
 }
 
 /**

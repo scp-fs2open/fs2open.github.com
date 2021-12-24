@@ -732,6 +732,8 @@ add_file_folder("Libs\\\\RenderDoc"
 add_file_folder("Lighting"
 	lighting/lighting.cpp
 	lighting/lighting.h
+	lighting/lighting_profiles.cpp
+	lighting/lighting_profiles.h
 )
 
 # Localization files
@@ -847,8 +849,6 @@ add_file_folder("mod_table"
 # Model files
 add_file_folder("Model"
 	model/model.h
-	model/modelanim.cpp
-	model/modelanim.h
 	model/modelanimation.cpp
 	model/modelanimation.h
 	model/modelanimation_segments.cpp
@@ -1327,6 +1327,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/option.h
 	scripting/api/objs/order.cpp
 	scripting/api/objs/order.h
+	scripting/api/objs/oswpt.cpp
+	scripting/api/objs/oswpt.h
 	scripting/api/objs/parse_object.cpp
 	scripting/api/objs/parse_object.h
 	scripting/api/objs/particle.cpp

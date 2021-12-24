@@ -18,6 +18,7 @@
 #include "camera/camera.h"
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
+#include "graphics/generic.h"
 #include "utils/RandomRange.h"
 
 class ship;
@@ -41,16 +42,18 @@ extern float Neb2_awacs;
 extern float Neb2_fog_near_mult;
 extern float Neb2_fog_far_mult;
 
-#define NEB_FOG_VISIBILITY_MULT_TRAIL			1.0f
-#define NEB_FOG_VISIBILITY_MULT_THRUSTER		1.5f
-#define NEB_FOG_VISIBILITY_MULT_WEAPON			1.3f
-#define NEB_FOG_VISIBILITY_MULT_SHIELD			1.2f
-#define NEB_FOG_VISIBILITY_MULT_GLOWPOINT		1.2f
-#define NEB_FOG_VISIBILITY_MULT_BEAM(size)		4.0f + (size / 10)
-#define NEB_FOG_VISIBILITY_MULT_B_MUZZLE(size)  NEB_FOG_VISIBILITY_MULT_BEAM(size)
-#define NEB_FOG_VISIBILITY_MULT_PARTICLE(size)  1.0f + (size / 12)
-#define NEB_FOG_VISIBILITY_MULT_SHOCKWAVE		2.5f
-#define NEB_FOG_VISIBILITY_MULT_FIREBALL(size)	1.2f + (size / 12)
+extern float Neb2_fog_visibility_trail;
+extern float Neb2_fog_visibility_thruster;
+extern float Neb2_fog_visibility_weapon;
+extern float Neb2_fog_visibility_shield;
+extern float Neb2_fog_visibility_glowpoint;
+extern float Neb2_fog_visibility_beam_const;
+extern float Neb2_fog_visibility_beam_scaled_factor;
+extern float Neb2_fog_visibility_particle_const;
+extern float Neb2_fog_visibility_particle_scaled_factor;
+extern float Neb2_fog_visibility_shockwave;
+extern float Neb2_fog_visibility_fireball_const;
+extern float Neb2_fog_visibility_fireball_scaled_factor;
 
 extern int Neb2_poof_flags;
 const size_t MAX_NEB2_POOFS = 32;
@@ -66,7 +69,7 @@ extern char Neb2_texture_name[MAX_FILENAME_LEN];
 typedef struct poof_info {
 	char name[NAME_LENGTH];
 	char bitmap_filename[MAX_FILENAME_LEN];
-	int bitmap;
+	generic_anim bitmap;
 	::util::UniformFloatRange scale;
 	float density;						 // poofs per square meter; can get *really* small but vague approximation is ok at those levels
 	::util::UniformFloatRange rotation;
@@ -75,7 +78,7 @@ typedef struct poof_info {
 
 	poof_info() {
 		bitmap_filename[0] = '\0';
-		bitmap = -1;
+		generic_anim_init(&bitmap);
 		scale = ::util::UniformFloatRange(175.0f, 175.0f);
 		density = 1 / (110.f * 110.f * 110.f);
 		rotation = ::util::UniformFloatRange(-3.7f, 3.7f);
@@ -99,6 +102,7 @@ typedef struct poof {
 	float		rot_speed;		// rotation speed, deg/sec
 	float		flash;			// lightning flash
 	float		alpha;			// base amount of alpha to start with
+	float		anim_time;		// how far along the animation is
 } poof;
 
 extern SCP_vector<poof> Neb2_poofs;

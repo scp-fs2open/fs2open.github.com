@@ -1543,6 +1543,10 @@ void parse_briefing(mission * /*pm*/, int flags)
 				bi->label[0] = 0;
 				if (optional_string("$label:"))
 					stuff_string(bi->label, F_MESSAGE, MAX_LABEL_LEN);
+				bi->closeup_label[0] = 0;
+				if (optional_string("$closeup label:")) {
+					stuff_string(bi->closeup_label, F_MESSAGE, MAX_LABEL_LEN);
+				}
 
 				if (optional_string("+id:")) {
 					stuff_int(&bi->id);
@@ -2442,6 +2446,14 @@ int parse_create_object_sub(p_object *p_objp)
 			Script_system.SetHookObjects(2, "Ship", &Objects[objnum], "Parent", anchor_objp);
 			Script_system.RunCondition(CHA_ONSHIPARRIVE, &Objects[objnum]);
 			Script_system.RemHookVars({"Ship", "Parent"});
+		}
+	}
+
+	// if this is an asteroid target, add it to the list
+	for (SCP_string& name : Asteroid_target_ships) {
+		if (stricmp(name.c_str(), shipp->ship_name) == 0) {
+			asteroid_add_target(&Objects[objnum]);
+			break;
 		}
 	}
 
@@ -5612,12 +5624,15 @@ void parse_asteroid_fields(mission *pm)
 		if (Asteroid_field.debris_genre == DG_SHIP) {
 			if (optional_string("+Field Debris Type:")) {
 				stuff_int(&Asteroid_field.field_debris_type[0]);
+				count++;
 			}
 			if (optional_string("+Field Debris Type:")) {
 				stuff_int(&Asteroid_field.field_debris_type[1]);
+				count++;
 			}
 			if (optional_string("+Field Debris Type:")) {
 				stuff_int(&Asteroid_field.field_debris_type[2]);
+				count++;
 			}
 		} else {
 			// debris asteroid
@@ -5638,6 +5653,8 @@ void parse_asteroid_fields(mission *pm)
 			}
 		}
 
+		Asteroid_field.num_used_field_debris_types = count;
+
 		bool invalid_asteroids = false;
 		for (int& ast_type : Asteroid_field.field_debris_type) {
 			if (ast_type >= (int)Asteroid_info.size()) {
@@ -5650,8 +5667,9 @@ void parse_asteroid_fields(mission *pm)
 			Warning(LOCATION, "The Asteroid field contains invalid entries!");
 
 		// backward compatibility
-		if ( (Asteroid_field.debris_genre == DG_ASTEROID) && (count == 0) ) {
+		if ( (Asteroid_field.debris_genre == DG_ASTEROID) && (Asteroid_field.num_used_field_debris_types == 0) ) {
 			Asteroid_field.field_debris_type[0] = 0;
+			Asteroid_field.num_used_field_debris_types = 1;
 		}
 
 		required_string("$Average Speed:");
@@ -5685,6 +5703,11 @@ void parse_asteroid_fields(mission *pm)
 			stuff_vec3d(&Asteroid_field.inner_max_bound);
 		} else {
 			Asteroid_field.has_inner_bound = 0;
+		}
+
+		if (optional_string("$Asteroid Targets:")) {
+			stuff_string_list(Asteroid_target_ships);
+			Default_asteroid_throwing_behavior = false;
 		}
 		i++;
 	}
@@ -5775,6 +5798,87 @@ void parse_sexp_containers()
 	if (optional_string("$Maps")) {
 		stuff_sexp_map_containers();
 		required_string("$End Maps");
+	}
+
+	// jg18 - persistence-related checking
+	// adapted from parse_variables()
+
+	// do this stuff only when playing through a campaign
+	if (Fred_running || !(Game_mode & GM_CAMPAIGN_MODE)) {
+		return;
+	}
+
+	// first update this mission's containers from campaign-persistent containers
+	for (const auto &current_pc : Campaign.persistent_containers) {
+		auto *p_container = get_sexp_container(current_pc.container_name.c_str());
+		if (p_container != nullptr) {
+			auto &container = *p_container;
+
+			// if this is an eternal container that shares the same name as a non-eternal, warn but do nothing
+			if (container.is_eternal()) {
+				error_display(0,
+					"SEXP container %s is marked eternal but has the same name as another persistent container. One of "
+					"these should be renamed to avoid confusion",
+					container.container_name.c_str());
+			} else if (container.is_persistent()) {
+				if (container.type_matches(current_pc)) {
+					// TODO: when network containers are supported, review whether replacement should occur
+					// if one container is marked for network use and the other isn't
+
+					// replace!
+					container = current_pc;
+				} else {
+					error_display(0,
+						"SEXP container %s is marked persistent but its type (%x) doesn't match a similarly named "
+						"persistent container's type (%x). One of "
+						"these should be renamed to avoid confusion",
+						container.container_name.c_str(),
+						(int)container.get_non_persistent_type(),
+						(int)current_pc.get_non_persistent_type());
+				}
+			} else {
+				error_display(0,
+					"SEXP container %s has the same name as another persistent container. One of these should be "
+					"renamed to avoid confusion",
+					container.container_name.c_str());
+			}
+		}
+	}
+
+	// then update this mission's containers from player-persistent containers
+	for (const auto& player_container : Player->containers) {
+		auto *p_container = get_sexp_container(player_container.container_name.c_str());
+		if (p_container != nullptr) {
+			auto &container = *p_container;
+
+			if (container.is_persistent()) {
+				if (player_container.is_eternal() && !container.is_eternal()) {
+					// use the mission's non-eternal container over the player-persistent eternal container
+					continue;
+				} else {
+					if (container.type_matches(player_container)) {
+						// TODO: when network containers are supported, review whether replacement should occur
+						// if one container is marked for network use and the other isn't
+
+						// replace!
+						container = player_container;
+					} else {
+						error_display(0,
+							"SEXP container %s is marked persistent but its type (%x) doesn't match a similarly named "
+							"eternal container's type (%x). One of "
+							"these should be renamed to avoid confusion",
+							container.container_name.c_str(),
+							(int)container.get_non_persistent_type(),
+							(int)player_container.get_non_persistent_type());
+					}
+				}
+			} else {
+				error_display(0,
+					"SEXP container %s has the same name as an eternal container. One of these should be renamed "
+					"to avoid confusion",
+					container.container_name.c_str());
+			}
+		}
 	}
 }
 
@@ -6027,12 +6131,22 @@ bool post_process_mission()
 			// print out an error based on the return value from check_sexp_syntax()
 			// G5K: now entering this statement simply aborts the mission load
 			if ( result ) {
+				SCP_string location_str;
 				SCP_string sexp_str;
 				SCP_string error_msg;
 
+				// it's helpful to point out the goal/event, so do that if we can
+				int index;
+				if ((index = mission_event_find_sexp_tree(i)) >= 0) {
+					sprintf(location_str, "Error in mission event: \"%s\": ", Mission_events[index].name);
+				} else if ((index = mission_goal_find_sexp_tree(i)) >= 0) {
+					sprintf(location_str, "Error in mission goal: \"%s\": ", Mission_goals[index].name);
+				}
+
 				convert_sexp_to_string(sexp_str, i, SEXP_ERROR_CHECK_MODE);
 				truncate_message_lines(sexp_str, 30);
-				sprintf(error_msg, "%s.\n\nIn sexpression: %s\n(Error appears to be: %s)", sexp_error_message(result), sexp_str.c_str(), Sexp_nodes[bad_node].text);
+				
+				sprintf(error_msg, "%s%s.\n\nIn sexpression: %s\n\n(Bad node appears to be: %s)\n", location_str.c_str(), sexp_error_message(result), sexp_str.c_str(), Sexp_nodes[bad_node].text);
 				Warning(LOCATION, "%s", error_msg.c_str());
 
 				// syntax errors are recoverable in Fred but not FS
@@ -6832,16 +6946,12 @@ int mission_set_arrival_location(int anchor, int location, int dist, int objnum,
 
 	// if arriving from docking bay, then set ai mode and call function as per AL's instructions.
 	if ( location == ARRIVE_FROM_DOCK_BAY ) {
-		vec3d pos, fvec;
-
 		// if we get an error, just let the ship arrive(?)
-		if ( ai_acquire_emerge_path(&Objects[objnum], anchor_objnum, path_mask, &pos, &fvec) == -1 ) {
+		if ( ai_acquire_emerge_path(&Objects[objnum], anchor_objnum, path_mask) == -1 ) {
 			// get MWA or AL -- not sure what to do here when we cannot acquire a path
 			mprintf(("Unable to acquire arrival path on anchor ship %s\n", Ships[shipnum].ship_name));
 			return -1;
 		}
-		Objects[objnum].pos = pos;
-		vm_vector_2_matrix(&Objects[objnum].orient, &fvec, NULL, NULL);
 	} else {
 
 		// AL: ensure dist > 0 (otherwise get errors in vecmat)

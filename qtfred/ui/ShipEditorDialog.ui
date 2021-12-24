@@ -265,7 +265,7 @@
             </spacer>
            </item>
            <item>
-            <widget class="QCheckBox" name="playerShipCheckBox">
+            <widget class="fso::fred::ShipFlagCheckbox" name="playerShipCheckBox">
              <property name="text">
               <string>Player Ship</string>
              </property>
@@ -298,9 +298,9 @@
           <number>0</number>
          </property>
          <item row="5" column="0">
-          <widget class="QPushButton" name="specialExpButton">
+          <widget class="QPushButton" name="specialStatsButton">
            <property name="text">
-            <string>Special Exp</string>
+            <string>Special Stats</string>
            </property>
           </widget>
          </item>
@@ -367,13 +367,6 @@
           <widget class="QPushButton" name="resetButton">
            <property name="text">
             <string>Reset</string>
-           </property>
-          </widget>
-         </item>
-         <item row="6" column="0">
-          <widget class="QPushButton" name="specialHitsButton">
-           <property name="text">
-            <string>Special Hits</string>
            </property>
           </widget>
          </item>
@@ -569,7 +562,7 @@
            <widget class="fso::fred::sexp_tree" name="arrivalTree"/>
           </item>
           <item>
-           <widget class="QCheckBox" name="noArrivalWarpCheckBox">
+           <widget class="fso::fred::ShipFlagCheckbox" name="noArrivalWarpCheckBox">
             <property name="text">
              <string>No Warp Effect</string>
             </property>
@@ -707,7 +700,7 @@
            <widget class="fso::fred::sexp_tree" name="departureTree"/>
           </item>
           <item>
-           <widget class="QCheckBox" name="noDepartureWarpCheckBox">
+           <widget class="fso::fred::ShipFlagCheckbox" name="noDepartureWarpCheckBox">
             <property name="text">
              <string>No Warp Effect</string>
             </property>
@@ -750,6 +743,11 @@
    <class>fso::fred::sexp_tree</class>
    <extends>QTreeView</extends>
    <header>ui/widgets/sexp_tree.h</header>
+  </customwidget>
+  <customwidget>
+   <class>fso::fred::ShipFlagCheckbox</class>
+   <extends>QCheckBox</extends>
+   <header>ui/widgets/ShipFlagCheckbox.h</header>
   </customwidget>
  </customwidgets>
  <resources>

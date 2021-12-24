@@ -19,8 +19,6 @@ set(FRED2_SOURCES
 	adjustgriddlg.h
 	asteroideditordlg.cpp
 	asteroideditordlg.h
-	backgroundchooser.cpp
-	backgroundchooser.h
 	bgbitmapdlg.cpp
 	bgbitmapdlg.h
 	briefingeditordlg.cpp
@@ -69,6 +67,8 @@ set(FRED2_SOURCES
 	initialships.h
 	initialstatus.cpp
 	initialstatus.h
+	listitemchooser.cpp
+	listitemchooser.h
 	mainfrm.cpp
 	mainfrm.h
 	management.cpp

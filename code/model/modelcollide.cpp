@@ -468,7 +468,7 @@ void model_collide_tmappoly(ubyte * p)
 	if ( (!(Mc->flags & MC_CHECK_INVISIBLE_FACES)) && (Mc_pm->maps[tmap_num].textures[TM_BASE_TYPE].GetTexture() < 0) )	{
 		// Don't check invisible polygons.
 		//SUSHI: Unless $collide_invisible is set.
-		if (!(Mc_pm->submodel[Mc_submodel].collide_invisible))
+		if (!(Mc_pm->submodel[Mc_submodel].flags[Model::Submodel_flags::Collide_invisible]))
 			return;
 	}
 
@@ -588,7 +588,7 @@ void model_collide_bsp_poly(bsp_collision_tree *tree, int leaf_index)
 			if ( (!(Mc->flags & MC_CHECK_INVISIBLE_FACES)) && (Mc_pm->maps[leaf->tmap_num].textures[TM_BASE_TYPE].GetTexture() < 0) )	{
 				// Don't check invisible polygons.
 				//SUSHI: Unless $collide_invisible is set.
-				if (!(Mc_pm->submodel[Mc_submodel].collide_invisible))
+				if (!(Mc_pm->submodel[Mc_submodel].flags[Model::Submodel_flags::Collide_invisible]))
 					return;
 			}
 		} else {
@@ -1067,8 +1067,8 @@ void mc_check_subobj( int mn )
 	if ( (mn < 0) || (mn>=Mc_pm->n_models) ) return;
 	
 	sm = &Mc_pm->submodel[mn];
-	if (sm->no_collisions) return; // don't do collisions
-	if (sm->nocollide_this_only) goto NoHit; // Don't collide for this model, but keep checking others
+	if (sm->flags[Model::Submodel_flags::No_collisions]) return; // don't do collisions
+	if (sm->flags[Model::Submodel_flags::Nocollide_this_only]) goto NoHit; // Don't collide for this model, but keep checking others
 
 	// Rotate the world check points into the current subobject's 
 	// frame of reference.
@@ -1189,7 +1189,7 @@ NoHit:
 
 		// Don't check it or its children if it is destroyed
 		// or if it's set to no collision
-		if ( !blown_off && !collision_checked && !csm->no_collisions )	{
+		if ( !blown_off && !collision_checked && !csm->flags[Model::Submodel_flags::No_collisions] )	{
 			vm_vec_unrotate(&Mc_base, &csm->offset, &saved_orient);
 			vm_vec_add2(&Mc_base, &saved_base);
 

@@ -642,10 +642,11 @@ void parse_gamesnd_old(game_snd* gs)
 
 	stuff_string(entry.filename, F_NAME, MAX_FILENAME_LEN, ",");
 
-	if (!stricmp(entry.filename, NOX("empty")))
+	if (!stricmp(entry.filename, NOX("empty")) || !stricmp(entry.filename, NOX("none")))
 	{
 		entry.filename[0] = 0;
-		advance_to_eoln(NULL);
+		advance_to_eoln(nullptr);
+		gs->flags |= GAME_SND_NOT_VALID;
 		return;
 	}
 	Mp++;
@@ -860,9 +861,10 @@ void parse_gamesnd_new(game_snd* gs, bool no_create)
 	// Default pitch is 1.0. This is set here in case we don't have a valid file name
 	gs->pitch_range = util::UniformFloatRange(1.0f);
 
-	if (!stricmp(name, NOX("empty")))
+	if (!stricmp(name, NOX("empty")) || !stricmp(name, NOX("none")))
 	{
 		entry->filename[0] = 0;
+		gs->flags |= GAME_SND_NOT_VALID;
 		return;
 	}
 
@@ -1341,6 +1343,24 @@ bool gamesnd_game_sound_valid(gamesnd_id sound) {
 }
 bool gamesnd_interface_sound_valid(interface_snd_id sound) {
 	return sound.isValid() && sound.value() < (int) Snds_iface.size();
+}
+
+bool gamesnd_game_sound_try_load(gamesnd_id sound)
+{
+	if (!gamesnd_game_sound_valid(sound)) {
+		return false;
+	}
+	auto gs = gamesnd_get_game_sound(sound);
+
+	for (auto& entry : gs->sound_entries) {
+		if (!entry.id.isValid()) {
+			// Lazily load unloaded sound entries when required
+			entry.id = snd_load(&entry, &gs->flags);
+		}
+	}
+
+	// check flag
+	return (gs->flags & GAME_SND_NOT_VALID) == 0;
 }
 
 float gamesnd_get_max_duration(game_snd* gs) {

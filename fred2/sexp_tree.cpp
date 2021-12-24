@@ -855,6 +855,7 @@ void sexp_tree::right_clicked(int mode)
 							case OP_SET_OBJECT_SPEED_Z:
 							case OP_DISTANCE:
 							case OP_SCRIPT_EVAL:
+							case OP_TRIGGER_SUBMODEL_ANIMATION:
 								j = (int)op_menu.size();	// don't allow these operators to be visible
 								break;
 						}
@@ -906,6 +907,7 @@ void sexp_tree::right_clicked(int mode)
 							case OP_SET_OBJECT_SPEED_Z:
 							case OP_DISTANCE:
 							case OP_SCRIPT_EVAL:
+							case OP_TRIGGER_SUBMODEL_ANIMATION:
 								j = (int)op_submenu.size();	// don't allow these operators to be visible
 								break;
 						}
@@ -2882,6 +2884,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_FIREBALL:
 		case OPF_SPECIES:
 		case OPF_LANGUAGE:
+		case OPF_FUNCTIONAL_WHEN_EVAL_TYPE:
 			return 1;
 
 		case OPF_SHIP:
@@ -4704,6 +4707,10 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			list = get_listing_opf_language();
 			break;
 
+		case OPF_FUNCTIONAL_WHEN_EVAL_TYPE:
+			list = get_listing_opf_functional_when_eval_type();
+			break;
+
 		default:
 			Int3();  // unknown OPF code
 			list = NULL;
@@ -6216,8 +6223,8 @@ sexp_list_item *sexp_tree::get_listing_opf_animation_type()
 {
 	sexp_list_item head;
 
-	for (auto animation_type : Animation_type_names) {
-		head.add_data(animation_type.second);
+	for (auto animation_type : animation::Animation_types) {
+		head.add_data(animation_type.second.first);
 	}
 
 	return head.next;
@@ -6343,6 +6350,16 @@ sexp_list_item *sexp_tree::get_listing_opf_language()	// NOLINT
 
 	for (auto &lang: Lcl_languages)
 		head.add_data(lang.lang_name);
+
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_functional_when_eval_type()	// NOLINT
+{
+	sexp_list_item head;
+
+	for (int i = 0; i < Num_functional_when_eval_types; i++)
+		head.add_data(Functional_when_eval_type[i]);
 
 	return head.next;
 }

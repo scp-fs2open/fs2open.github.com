@@ -11,6 +11,7 @@
 #include "menuui/techmenu.h"
 #include "network/multi.h"
 #include "osapi/osregistry.h"
+#include "parse/sexp_container.h"
 #include "pilotfile/pilotfile.h"
 #include "pilotfile/BinaryFileHandler.h"
 #include "pilotfile/JSONFileHandler.h"
@@ -302,6 +303,90 @@ void pilotfile::plr_write_variables()
 		handler->writeInt("type", var.type);
 		handler->writeString("text", var.text);
 		handler->writeString("variable_name", var.variable_name);
+
+		handler->endSectionWrite();
+	}
+	handler->endArrayWrite();
+
+	handler->endSectionWrite();
+}
+
+void pilotfile::plr_read_containers()
+{
+	const size_t list_size = handler->startArrayRead("containers");
+
+	p->containers.reserve(list_size);
+	for (size_t idx = 0; idx < list_size; idx++, handler->nextArraySection()) {
+		p->containers.emplace_back();
+		auto& container = p->containers.back();
+
+		container.container_name = handler->readString("container_name");
+
+		container.type = (ContainerType)handler->readInt("type");
+		container.opf_type = handler->readInt("opf_type");
+
+		const int size = handler->readInt("size");
+		Assert(size >= 0);
+
+		if (container.is_list()) {
+			for (int i = 0; i < size; ++i) {
+				SCP_string data_idx_str = SCP_string("data_") + std::to_string(i);
+				container.list_data.emplace_back(handler->readString(data_idx_str.c_str()));
+			}
+		} else if (container.is_map()) {
+			for (int i = 0; i < size; ++i) {
+				SCP_string key_idx_str = SCP_string("key_") + std::to_string(i);
+				SCP_string data_idx_str = SCP_string("data_") + std::to_string(i);
+				SCP_string key = handler->readString(key_idx_str.c_str());
+				SCP_string data = handler->readString(data_idx_str.c_str());
+				container.map_data.emplace(key, data);
+			}
+		} else {
+			UNREACHABLE("Unknown container type %d", (int)container.type);
+		}
+	}
+	handler->endArrayRead();
+}
+
+bool pilotfile::plr_has_persistent_containers() const
+{
+	return !p->containers.empty();
+}
+
+void pilotfile::plr_write_containers()
+{
+	handler->startSectionWrite(Section::Containers);
+
+	handler->startArrayWrite("containers", p->containers.size());
+	for (const auto& container : p->containers) {
+		handler->startSectionWrite(Section::Unnamed);
+
+		handler->writeString("container_name", container.container_name.c_str());
+
+		handler->writeInt("type", (int)container.type);
+		handler->writeInt("opf_type", container.opf_type);
+
+		handler->writeInt("size", container.size());
+
+		int i = 0;
+
+		if (container.is_list()) {
+			for (const auto& data : container.list_data) {
+				SCP_string data_idx_str = SCP_string("data_") + std::to_string(i);
+				handler->writeString(data_idx_str.c_str(), data.c_str());
+				++i;
+			}
+		} else if (container.is_map()) {
+			for (const auto& key_data : container.map_data) {
+				SCP_string key_idx_str = SCP_string("key_") + std::to_string(i);
+				SCP_string data_idx_str = SCP_string("data_") + std::to_string(i);
+				handler->writeString(key_idx_str.c_str(), key_data.first.c_str());
+				handler->writeString(data_idx_str.c_str(), key_data.second.c_str());
+				++i;
+			}
+		} else {
+			UNREACHABLE("Unknown container type %d", (int)container.type);
+		}
 
 		handler->endSectionWrite();
 	}
@@ -840,6 +925,9 @@ void pilotfile::plr_reset_data(bool reset_all)
 	// clear variables
 	p->variables.clear();
 
+	// clear containers
+	p->containers.clear();
+
 	// reset techroom to defaults (CSG will override this, multi will use defaults)
 	tech_reset_to_default();
 }
@@ -953,6 +1041,11 @@ bool pilotfile::load_player(const char* callsign, player* _p, bool force_binary)
 				case Section::Variables:
 					mprintf(("PLR => Parsing:  Variables...\n"));
 					plr_read_variables();
+					break;
+
+				case Section::Containers:
+					mprintf(("PLR => Parsing:  Containers...\n"));
+					plr_read_containers();
 					break;
 
 				case Section::HUD:
@@ -1069,7 +1162,10 @@ bool pilotfile::save_player(player *_p)
 
 	// header and version
 	handler->writeInt("signature", PLR_FILE_ID);
-	handler->writeUByte("version", PLR_VERSION);
+	static_assert(PLR_VERSION == PRE_CONTAINERS_PLR_VERSION + 1,
+		"PLR_VERSION shouldn't be bumped beyond containers without removing compatibility fix");
+	const ubyte file_version = plr_has_persistent_containers() ? PLR_VERSION : PRE_CONTAINERS_PLR_VERSION;
+	handler->writeUByte("version", file_version);
 
 	mprintf(("PLR => Saving '%s' with version %d...\n", filename.c_str(), (int)PLR_VERSION));
 
@@ -1090,6 +1186,12 @@ bool pilotfile::save_player(player *_p)
 	plr_write_hud();
 	mprintf(("PLR => Saving:  Variables...\n"));
 	plr_write_variables();
+	if (plr_has_persistent_containers()) {
+		mprintf(("PLR => Saving:  Containers...\n"));
+		plr_write_containers();
+	} else {
+		mprintf(("PLR => No containers to save.\n"));
+	}
 	mprintf(("PLR => Saving:  Multiplayer...\n"));
 	plr_write_multiplayer();
 	mprintf(("PLR => Saving:  Controls...\n"));

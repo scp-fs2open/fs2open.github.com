@@ -8,6 +8,8 @@
 #include <globalincs/linklist.h>
 #include <ui/util/SignalBlockers.h>
 
+#include "mission/object.h"
+
 #include <QCloseEvent>
 
 namespace fso {
@@ -27,8 +29,7 @@ ShipEditorDialog::ShipEditorDialog(FredView* parent, EditorViewport* viewport)
 	connect(viewport->editor, &Editor::objectMarkingChanged, _model.get(), &ShipEditorDialogModel::apply);
 
 	// Column One
-	connect(ui->shipNameEdit,
-		static_cast<void (QLineEdit::*)(const QString&)>(&QLineEdit::textChanged),
+	connect(ui->shipNameEdit,(&QLineEdit::editingFinished),
 		this,
 		&ShipEditorDialog::shipNameChanged);
 
@@ -48,14 +49,20 @@ ShipEditorDialog::ShipEditorDialog(FredView* parent, EditorViewport* viewport)
 	connect(ui->cargoCombo->lineEdit(), (&QLineEdit::editingFinished), this, &ShipEditorDialog::cargoChanged);
 
 	// ui->cargoCombo->installEventFilter(this);
+	connect(ui->altNameCombo->lineEdit(), SIGNAL(editingFinished()),
+		this,
+		SLOT(altNameChanged()));
 	connect(ui->altNameCombo,
-		static_cast<void (QComboBox::*)(const QString&)>(&QComboBox::editTextChanged),
+		SIGNAL(currentIndexChanged(const QString&)),
 		this,
-		&ShipEditorDialog::altNameChanged);
+		SLOT(altNameChanged(const QString&)));
 	connect(ui->callsignCombo,
-		static_cast<void (QComboBox::*)(const QString&)>(&QComboBox::editTextChanged),
+		SIGNAL(currentIndexChanged(const QString&)),
 		this,
-		&ShipEditorDialog::callsignChanged);
+		SLOT(callsignChanged(const QString&)));
+	connect(ui->callsignCombo->lineEdit(), SIGNAL(editingFinished()),
+		this,
+		SLOT(callsignChanged()));
 
 	// Column Two
 	connect(ui->hotkeyCombo,
@@ -156,17 +163,22 @@ void ShipEditorDialog::closeEvent(QCloseEvent* event)
 }
 
 void ShipEditorDialog::on_miscButton_clicked()
-{ // TODO:: Flags Dialog
+{
+	auto flagsDialog = new dialogs::ShipFlagsDialog(this, _viewport);
+	flagsDialog->show();
 }
 
 void ShipEditorDialog::on_initialStatusButton_clicked()
 {
-	// TODO:: Initial Status dialog
+	auto initialStatusDialog = new dialogs::ShipInitialStatusDialog(this, _viewport, _model->multi_edit);
+	initialStatusDialog->show();
 }
 
 void ShipEditorDialog::on_initialOrdersButton_clicked()
 {
-	// TODO:: Initial orders dialog
+	auto GoalsDialog = new dialogs::ShipGoalsDialog(this, _viewport, _model->multi_edit, Ships[_model->single_ship].objnum, -1);
+	GoalsDialog->show();
+
 }
 
 void ShipEditorDialog::on_tblInfoButton_clicked()
@@ -314,7 +326,7 @@ void ShipEditorDialog::updateArrival()
 		for (restrict_to_players = 0; restrict_to_players < 2; restrict_to_players++) {
 			for (i = 0; i < (int)Iff_info.size(); i++) {
 				char tmp[NAME_LENGTH + 15];
-				_model->stuff_special_arrival_anchor_name(tmp, i, restrict_to_players, 0);
+				stuff_special_arrival_anchor_name(tmp, i, restrict_to_players, 0);
 
 				ui->arrivalTargetCombo->addItem(tmp, QVariant(get_special_anchor(tmp)));
 			}
@@ -323,7 +335,7 @@ void ShipEditorDialog::updateArrival()
 		for (objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
 			if (((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) &&
 				!(objp->flags[Object::Object_Flags::Marked])) {
-				auto ship = _model->get_ship_from_obj(objp);
+				auto ship = get_ship_from_obj(objp);
 				ui->arrivalTargetCombo->addItem(Ships[ship].ship_name, QVariant(ship));
 			}
 		}
@@ -337,7 +349,7 @@ void ShipEditorDialog::updateArrival()
 				pm = model_get(Ship_info[Ships[objp->instance].ship_info_index].model_num);
 				Assert(pm);
 				if (pm->ship_bay && (pm->ship_bay->num_paths > 0)) {
-					auto ship = _model->get_ship_from_obj(objp);
+					auto ship = get_ship_from_obj(objp);
 					ui->arrivalTargetCombo->addItem(Ships[ship].ship_name, QVariant(ship));
 				}
 			}
@@ -394,7 +406,7 @@ void ShipEditorDialog::updateDeparture()
 			pm = model_get(Ship_info[Ships[objp->instance].ship_info_index].model_num);
 			Assert(pm);
 			if (pm->ship_bay && (pm->ship_bay->num_paths > 0)) {
-				auto ship = _model->get_ship_from_obj(objp);
+				auto ship = get_ship_from_obj(objp);
 				ui->departureTargetCombo->addItem(Ships[ship].ship_name, QVariant(ship));
 			}
 		}
@@ -497,8 +509,7 @@ void ShipEditorDialog::enableDisable()
 		ui->miscButton->setEnabled(true);
 		ui->textureReplacementButton->setEnabled(true);
 		ui->altShipClassButton->setEnabled(true);
-		ui->specialExpButton->setEnabled(true);
-		ui->specialHitsButton->setEnabled(true);
+		ui->specialStatsButton->setEnabled(true);
 	} else {
 		ui->shipNameEdit->setEnabled(false);
 		ui->shipClassCombo->setEnabled(false);
@@ -508,8 +519,7 @@ void ShipEditorDialog::enableDisable()
 		ui->miscButton->setEnabled(false);
 		ui->textureReplacementButton->setEnabled(false);
 		ui->altShipClassButton->setEnabled(false);
-		ui->specialExpButton->setEnabled(false);
-		ui->specialHitsButton->setEnabled(false);
+		ui->specialStatsButton->setEnabled(false);
 	}
 
 	// disable textures for multiple ships
@@ -578,9 +588,11 @@ void ShipEditorDialog::enableDisable()
 		} else {
 			ui->playerOrdersButton->setEnabled(true);
 		}
-	} else
+	}
+	else {
 		// always enabled when one ship is selected
 		ui->playerOrdersButton->setEnabled(_model->enable);
+	}
 
 	// always enabled if >= 1 ship selected
 	ui->personaCombo->setEnabled(_model->enable);
@@ -594,7 +606,7 @@ void ShipEditorDialog::enableDisable()
 	}
 }
 
-void ShipEditorDialog::shipNameChanged(const QString& string) { _model->setShipName(string.toStdString()); }
+void ShipEditorDialog::shipNameChanged() { _model->setShipName(ui->shipNameEdit->text().toStdString()); }
 void ShipEditorDialog::shipClassChanged(int index)
 {
 	auto shipClassIdx = ui->shipClassCombo->itemData(index).value<int>();
@@ -611,7 +623,15 @@ void ShipEditorDialog::teamChanged(int index)
 	_model->setTeam(teamIdx);
 }
 void ShipEditorDialog::cargoChanged() { _model->setCargo(ui->cargoCombo->currentText().toStdString()); }
+void ShipEditorDialog::altNameChanged()
+{
+	_model->setAltName(ui->altNameCombo->lineEdit()->text().toStdString());
+}
 void ShipEditorDialog::altNameChanged(const QString& value) { _model->setAltName(value.toStdString()); }
+void ShipEditorDialog::callsignChanged()
+{
+	_model->setCallsign(ui->callsignCombo->lineEdit()->text().toStdString());
+}
 void ShipEditorDialog::callsignChanged(const QString& value) { _model->setCallsign(value.toStdString()); }
 void ShipEditorDialog::hotkeyChanged(int index)
 {
@@ -685,15 +705,13 @@ void ShipEditorDialog::on_weaponsButton_clicked()
 }
 void ShipEditorDialog::on_playerOrdersButton_clicked()
 {
-	// TODO: player orders dialog
+	auto playerOrdersDialog = new dialogs::PlayerOrdersDialog(this, _viewport, _model->multi_edit);
+	playerOrdersDialog->show();
 }
-void ShipEditorDialog::on_specialExpButton_clicked()
+void ShipEditorDialog::on_specialStatsButton_clicked()
 {
-	// TODO: Special exp dialog
-}
-void ShipEditorDialog::on_specialHitsButton_clicked()
-{
-	// TODO: Special hits dialog
+	auto specialStatsDialog = new dialogs::ShipSpecialStatsDialog(this, _viewport);
+	specialStatsDialog->show();
 }
 void ShipEditorDialog::on_hideCuesButton_clicked()
 {

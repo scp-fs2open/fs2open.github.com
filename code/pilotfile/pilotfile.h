@@ -10,6 +10,7 @@
 #include <memory>
 
 class player;
+struct sexp_container;
 
 
 // current pilot constants
@@ -21,17 +22,21 @@ static const unsigned int CSG_FILE_ID = 0x5f475343;	// "CSG_" in file
 //   0 - initial version
 //   1 - Adding support for the player is multi flag
 //   2 - Add language in use when pilot was created
-//       (due to intel entries using translated text as the primary key)
-//   3   Controls are removed, and instead a preset name is saved/loaded
-static const ubyte PLR_VERSION = 3;
+//	     (due to intel entries using translated text as the primary key)
+static const ubyte PRE_CONTAINERS_PLR_VERSION = 2;
+//   3 - Add SEXP containers
+//   4   Controls are removed, and instead a preset name is saved/loaded
+static const ubyte PLR_VERSION = 4;
 //   0 - initial version
 //   1 - re-add recent missions
 //   2 - separate single/multi squad name & pic
 //   3 - remove separate detail settings for campaigns
 //   4 - add CPV rollback for Red Alert missions
 //   5 - save rank to flags for quick access
-//   6 - Controls are removed, and instead a preset name is saved/loaded.
-static const ubyte CSG_VERSION = 6;
+ static const ubyte PRE_CONTAINERS_CSG_VERSION = 5;
+//   6 - add SEXP containers
+//   7 - Controls are removed, and instead a preset name is saved/loaded.
+static const ubyte CSG_VERSION = 7;
 
 typedef struct index_list_t {
 	SCP_string name;
@@ -140,6 +145,8 @@ class pilotfile {
 		void plr_read_stats_multi();
 		void plr_read_multiplayer();
 		void plr_read_variables();
+		void plr_read_containers();
+
 		void plr_read_hud();
 		void plr_read_controls();
 
@@ -150,6 +157,8 @@ class pilotfile {
 		void plr_write_stats_multi();
 		void plr_write_multiplayer();
 		void plr_write_variables();
+		bool plr_has_persistent_containers() const;
+		void plr_write_containers();
 		void plr_write_hud();
 		void plr_write_controls();
 
@@ -172,6 +181,8 @@ class pilotfile {
 		void csg_read_controls();
 		void csg_read_cutscenes();
 		void csg_read_lastmissions();
+		void csg_read_containers();
+		void csg_read_container(sexp_container& container);
 
 		void csg_write_flags();
 		void csg_write_info();
@@ -186,6 +197,9 @@ class pilotfile {
 		void csg_write_controls();
 		void csg_write_cutscenes();
 		void csg_write_lastmissions();
+		static bool csg_has_persistent_containers();
+		void csg_write_containers();
+		void csg_write_container(const sexp_container& container);
 
 		// similar to PLR verify, except we only want the rank
 		bool get_csg_rank(int *rank);

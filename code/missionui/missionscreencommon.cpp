@@ -1571,7 +1571,7 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 		bsp_info *bs = NULL;	//tehe
 		for(int i = 0; i < pm->n_models; i++)
 		{
-			if(!pm->submodel[i].is_thruster)
+			if(!pm->submodel[i].flags[Model::Submodel_flags::Is_thruster])
 			{
 				bs = &pm->submodel[i];
 				break;

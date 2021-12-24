@@ -331,6 +331,7 @@ class sexp_tree: public QTreeWidget {
 	sexp_list_item* get_listing_opf_fireball();
 	sexp_list_item *get_listing_opf_species();
 	sexp_list_item *get_listing_opf_language();
+	sexp_list_item *get_listing_opf_functional_when_eval_type();
 
 
 	int getCurrentItemIndex() const;
