@@ -5115,6 +5115,9 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			// This used realloc originally so we need to copy the existing subsystems to the new storage
 			std::copy(sip->subsystems, sip->subsystems + sip->n_subsystems, subsys_storage.get());
 
+			// done with old storage
+			delete[] sip->subsystems;
+
 			sip->n_subsystems += n_subsystems;
 		}
 		sip->subsystems = subsys_storage.release();
