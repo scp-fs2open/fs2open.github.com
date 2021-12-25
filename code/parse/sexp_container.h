@@ -83,6 +83,7 @@ struct sexp_container
 {
 	// meta-character for containers in text replacement, etc.
 	static constexpr char DELIM = '&';
+	static const SCP_string DELIM_STR;
 	// applies to list data, map keys, and map data
 	static constexpr int VALUE_MAX_LENGTH = NAME_LENGTH - 1; // leave space for null char
 	// leave space for leading/trailing '&' for container multidimensionality
@@ -140,6 +141,9 @@ struct list_modifier {
 		AT_INDEX
 	};
 
+	static Modifier get_modifier(const char *modifier_name);
+	bool match_name(const char *other_name) const;
+
 	const char *name;
 	const Modifier modifier;
 };
@@ -148,7 +152,9 @@ using ListModifier = list_modifier::Modifier;
 
 // management functions
 void init_sexp_containers();
-void update_sexp_containers(SCP_vector<sexp_container>& containers);
+void update_sexp_containers(SCP_vector<sexp_container> &containers,
+	const SCP_unordered_map<SCP_string, SCP_string, SCP_string_lcase_hash, SCP_string_lcase_equal_to>
+		&renamed_containers);
 
 // parsing functions
 void stuff_sexp_list_containers();
@@ -162,5 +168,7 @@ const SCP_vector<list_modifier> &get_all_list_modifiers();
  * Return pointer to a sexp_container by its name, or nullptr if not found
  */
 sexp_container *get_sexp_container(const char *name);
+
+const char *sexp_container_CTEXT(int node);
 
 bool sexp_container_has_persistent_non_eternal_containers();

@@ -120,6 +120,7 @@ typedef struct mission_event {
 	int mission_log_flags;		// flags that are used to determing which events are written to the log
 	SCP_vector<SCP_string> event_log_buffer;
 	SCP_vector<SCP_string> event_log_variable_buffer;
+	SCP_vector<SCP_string> event_log_container_buffer;
 	SCP_vector<SCP_string> event_log_argument_buffer;
 	SCP_vector<SCP_string> backup_log_buffer;
 	int	previous_result;		// result of previous evaluation of event
