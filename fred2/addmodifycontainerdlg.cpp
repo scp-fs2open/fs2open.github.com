@@ -129,10 +129,9 @@ void CAddModifyContainerDlg::set_selected_container()
 
 void CAddModifyContainerDlg::OnOK() 
 {
-	update_sexp_containers(m_containers);
+	update_sexp_containers(m_containers, m_old_to_new_names);
 
 	if (!m_old_to_new_names.empty()) {
-		// TODO: rename nodes in Sexp_nodes
 		// TODO: rename nodes in sexp_tree::tree_nodes
 	}
 

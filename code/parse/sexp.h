@@ -1085,6 +1085,11 @@ const char *CTEXT(int n);
 #define SEXP_CHECK_MISPLACED_SPECIAL_ARGUMENT	-164
 #define SEXP_CHECK_AMBIGUOUS_GOAL_NAME			-165
 #define SEXP_CHECK_AMBIGUOUS_EVENT_NAME			-166
+#define SEXP_CHECK_MISSING_CONTAINER_MODIFIER	-167
+#define SEXP_CHECK_INVALID_LIST_MODIFIER		-168
+#define SEXP_CHECK_WRONG_MAP_KEY_TYPE			-169
+#define SEXP_CHECK_WRONG_CONTAINER_TYPE			-170
+
 
 #define TRAINING_CONTEXT_SPEED		(1<<0)
 #define TRAINING_CONTEXT_FLY_PATH	(1<<1)
@@ -1121,6 +1126,8 @@ struct sexp_cached_data
 	int numeric_literal = 0;				// i.e. a number
 	int ship_registry_index = -1;			// because ship status is pretty common
 	void *pointer = nullptr;				// could be an IFF, a wing, a goal, or other unchanging reference
+	// jg18 - used to store result from sexp_container_CTEXT()
+	char container_CTEXT_result[TOKEN_LENGTH] = "";
 
 	sexp_cached_data() = default;
 
@@ -1135,6 +1142,27 @@ struct sexp_cached_data
 	sexp_cached_data(int _sexp_node_data_type, int _numeric_literal, int _ship_registry_index)
 		: sexp_node_data_type(_sexp_node_data_type), numeric_literal(_numeric_literal), ship_registry_index(_ship_registry_index)
 	{}
+
+	sexp_cached_data(int _sexp_node_data_type, const SCP_string &_container_CTEXT_result)
+		: sexp_node_data_type(_sexp_node_data_type)
+	{
+		update_container_CTEXT_result(_container_CTEXT_result);
+	}
+
+	void update_container_CTEXT_result(const SCP_string &_container_CTEXT_result)
+	{
+		if (_container_CTEXT_result.empty()) {
+			Warning(LOCATION, "assigning empty string to SEXP node text");
+		} else if (_container_CTEXT_result.length() >= sizeof(container_CTEXT_result)) {
+			Warning(LOCATION,
+				"attempt to assign CTEXT() result %s which is too long (limit %d)",
+				_container_CTEXT_result.c_str(),
+				(int)(sizeof(container_CTEXT_result) - 1));
+		}
+
+		const auto length = _container_CTEXT_result.copy(container_CTEXT_result, sizeof(container_CTEXT_result) - 1);
+		container_CTEXT_result[length] = 0;
+	}
 };
 
 typedef struct sexp_node {
@@ -1206,6 +1234,7 @@ extern SCP_vector<int> Current_sexp_operator;
 // event log stuff
 extern SCP_vector<SCP_string> *Current_event_log_buffer;
 extern SCP_vector<SCP_string> *Current_event_log_variable_buffer;
+extern SCP_vector<SCP_string> *Current_event_log_container_buffer;
 extern SCP_vector<SCP_string> *Current_event_log_argument_buffer;
 
 extern void init_sexp();
