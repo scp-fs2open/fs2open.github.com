@@ -1008,9 +1008,9 @@ void message_load_wave(int index, const char *filename)
 		return;
 	}
 
-	game_snd_entry tmp_gs;
-	strcpy_s( tmp_gs.filename, filename );
-	Message_waves[index].num = snd_load( &tmp_gs, 0, 0 );
+	game_snd_entry tmp_gse;
+	strcpy_s(tmp_gse.filename, filename);
+	Message_waves[index].num = snd_load(&tmp_gse, nullptr, 0);
 
 	if (!Message_waves[index].num.isValid())
 		nprintf(("messaging", "Cannot load message wave: %s.  Will not play\n", Message_waves[index].name));

@@ -145,6 +145,8 @@ struct model_uniform_data {
 	int sNormalmapIndex;
 	int sAmbientmapIndex;
 	int sMiscmapIndex;
+
+	float alphaMult;
 };
 
 enum class NanoVGShaderType: int32_t {
@@ -225,8 +227,14 @@ struct passthrough_data {
 
 struct tonemapping_data {
 	float exposure;
-
-	float pad[3];
+	int tonemapper;
+	float toeS;
+	float toeL;
+	
+	float shoulderS;
+	float shoulderL;
+	float shoulderA;
+	float pad[1];
 };
 
 struct smaa_data {

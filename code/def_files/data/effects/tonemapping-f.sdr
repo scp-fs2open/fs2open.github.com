@@ -7,9 +7,19 @@ uniform sampler2D tex;
 
 layout (std140) uniform genericData {
 	float exposure;
+	int tonemapper;
+	float toeS;
+	float toeL;
+	float shoulderS;
+	float shoulderL;
+	float shoulderA;
 };
+//Tonemapping options, aside from the previous standard UC2, pulled from wookiejedi and qazwsxal's
+//work on testing them for FSO, which itself was based on these references:
+//https://64.github.io/tonemapping/ Delta - Blog by 64: Tone Mapping
+//http://filmicworlds.com/blog/filmic-tonemapping-operators/ Filmic Worlds: Filmic Tonemapping Operators by John Hable
 
-vec3 Uncharted2Tonemapping(vec3 hdr_color)
+vec3 Uncharted2ToneMapping(vec3 hdr_color) // John Hable's filmic
 {
 	float A = 0.15;
 	float B = 0.50;
@@ -17,15 +27,215 @@ vec3 Uncharted2Tonemapping(vec3 hdr_color)
 	float D = 0.20;
 	float E = 0.02;
 	float F = 0.30;
-	return ((hdr_color*(A*hdr_color+C*B)+D*E)/(hdr_color*(A*hdr_color+B)+D*F))-E/F;
+	float W = 11.2;
+	hdr_color = ((hdr_color * (A * hdr_color + C * B) + D * E) / (hdr_color * (A * hdr_color + B) + D * F)) - E / F;
+	float white = ((W * (A * W + C * B) + D * E) / (W * (A * W + B) + D * F)) - E / F;
+	hdr_color /= white;
+	hdr_color = linear_to_srgb(hdr_color); // return from linear color space to SRGB color space
+
+	return hdr_color;
 }
+
+vec3 rtt_and_odt_fit(vec3 v)
+{
+    vec3 a = v * (v + 0.0245786f) - 0.000090537f;
+    vec3 b = v * (0.983729f * v + 0.4329510f) + 0.238081f;
+    return a / 	b;
+}
+
+
+const mat3 aces_input = mat3(vec3(0.59719, 0.07600, 0.02840),
+                             vec3(0.35458, 0.90834, 0.13383),
+                             vec3(0.04823, 0.01566, 0.83777)
+                            );
+
+const mat3 aces_output = mat3(vec3( 1.60475, -0.10208, -0.00327),
+                              vec3(-0.53108,  1.10813, -0.07276),
+                              vec3(-0.07367, -0.00605,  1.07602)
+                             );
+
+vec3 aces(vec3 hdr_color)
+{
+    hdr_color = aces_input * hdr_color;
+    hdr_color = rtt_and_odt_fit(hdr_color);
+    hdr_color = aces_output * hdr_color;
+    hdr_color = linear_to_srgb(hdr_color);
+	return hdr_color;
+}
+
+vec3 aces_approx(vec3 hdr_color) // also filmic, higher contrast then Uncharted2ToneMapping
+{
+	const float a = 2.51f;
+	const float b = 0.03f;
+	const float c = 2.43f;
+	const float d = 0.59f;
+	const float e = 0.14f;
+    hdr_color *= 0.6f;
+
+    hdr_color = clamp((hdr_color*(a*hdr_color+b))/(hdr_color*(c*hdr_color+d)+e), 0.0f, 1.0f);
+	hdr_color = linear_to_srgb(hdr_color); // return from linear color space to SRGB color space
+	return hdr_color;
+}
+
+vec3 OptimizedCineonToneMapping( vec3 color ) {
+	// optimized filmic operator by Jim Hejl and Richard Burgess-Dawson
+	color = max( vec3( 0.0 ), color - 0.004 );
+	color =  (color * ( 6.2 * color + 0.5 ) ) / ( color * ( 6.2 * color + 1.7 ) + 0.06 );
+    // linear to sRGB conversion embedded in shader
+    return color;
+}
+
+vec3 rhj_lumaToneMapping(vec3 hdr_color) // reinhard_jodie
+{
+	float luma = dot(hdr_color, vec3(0.2126, 0.7152, 0.0722)); //dot products are a bit more expensive
+	float toneMappedLuma = luma / (1.0 + luma);
+	hdr_color *= toneMappedLuma / luma;
+	hdr_color = linear_to_srgb(hdr_color); // return from linear color space to SRGB color space
+	return hdr_color;
+}
+
+vec3 reinhard_extended(vec3 hdr_color)
+{
+	float max_white = 1.0;
+	vec3 numerator = hdr_color * (1.0f + (hdr_color / vec3(max_white * max_white)));
+    hdr_color = numerator / (1.0f + hdr_color);
+	hdr_color = linear_to_srgb(hdr_color); // return from linear color space to SRGB color space
+	return hdr_color;
+}
+
+vec3 linearToneMapping(vec3 hdr_color)
+{
+	hdr_color = clamp(hdr_color, 0., 1.);
+	hdr_color = linear_to_srgb(hdr_color); // return from linear color space to SRGB color space
+	return hdr_color;
+}
+/*
+ float toeStrength = toeS; // [0-1]
+ float toeLength = toeL; // [0-1]
+ float shoulderStrength = shoulderS; // in F stops
+ float shoulderLength = shoulderL; // [0-1]
+ float shoulderAngle = shoulderA; // [0-1]
+*/
+// LEAVE ALONE
+float x0 = toeL * 0.5f;
+float y0 = (1.0f - toeS) * x0;
+float remainingY = 1.0f - y0;
+float initialW = x0 + remainingY;
+float y1_offset = (1.0f - shoulderL) * remainingY;
+float x1 = x0 + y1_offset;
+float y1 = y0 + y1_offset;
+float extraW = exp2(shoulderS) - 1.0f;
+float W = initialW + extraW;
+float overshootX = (W * 2.0f) * shoulderS + (x0-y0);
+float overshootY = 0.5f * shoulderA;
+
+// Assume slope (m) is always 1.0
+float	toe_B = x0/y0;
+float toe_lnA = log(y0) - toe_B*log(x0);
+float toe( float x ) {
+	return exp(toe_lnA + toe_B * log(x));
+}
+
+float linear( float x ) {
+	// Slope is 1 by definition
+	return y0 + (x - x0);
+}
+
+float sh_x0 = (1.0 + overshootX) - x1;
+float sh_y0 = (1.0 + overshootY) - y1;
+
+float sh_B = sh_x0/sh_y0;
+float sh_lnA = log(sh_y0) - sh_B*log(sh_x0);
+float sh_offsetX = 1.0 + overshootX;
+float sh_offsetY = 1.0 + overshootY;
+
+float shoulder ( float x ) {
+	// Scale is -1 so reverse subtraction to save a mult
+	x = sh_offsetX - x;
+	x = exp(sh_lnA + sh_B * log(x));
+	x = sh_offsetY - x;
+	return x;
+}
+
+float funswitch (float x) {
+	float x_tone;
+	if (x <= x0) {
+		x_tone = toe(x);
+	}
+	else if (x <= x1) {
+		x_tone = linear(x);
+	}
+	else if ( x < sh_offsetX ){
+		x_tone = shoulder(x);
+	}
+	else {
+		x_tone = sh_offsetY;
+	}
+	return x_tone;
+}
+
+vec3 PPC_RGB( vec3 color ) {
+	color = vec3(	funswitch(color.r),
+				 	funswitch(color.g),
+					funswitch(color.b));
+
+	return linear_to_srgb(color);
+}
+
+
+vec3 PPC( vec3 color ) {
+	float luma = dot(color, vec3(0.2126, 0.7152, 0.0722));
+	float luma_tone;
+	if ( luma <= x0 ) {
+		luma_tone = toe(luma);
+	} 
+	else if ( luma <= x1 ) {
+		luma_tone = linear(luma);
+	}
+	else if ( luma < sh_offsetX ){
+		luma_tone = shoulder(luma);
+	}
+	else {
+		luma_tone = sh_offsetY;
+	}
+	return linear_to_srgb(color * luma_tone / luma);
+}
+
 
 void main()
 {
 	vec4 color = texture(tex, fragTexCoord.xy);
-	// Tone mapping using John Hable's Uncharted 2 tonemapping algorithm.
-	float whitepoint = 11.2f; // hardcoded whitepoint value from Hable's algo
-	color.rgb = Uncharted2Tonemapping(color.rgb * exposure) / Uncharted2Tonemapping(vec3(whitepoint));
-	color.rgb = linear_to_srgb(color.rgb); // return from linear color space to SRGB color space
+	color *= exposure;
+
+	switch(tonemapper){
+		case 0:
+			color.rgb = linearToneMapping(color.rgb);
+			break;
+		case 1:
+			color.rgb = Uncharted2ToneMapping(color.rgb);
+			break;
+		case 2:
+			color.rgb = aces(color.rgb);
+			break;
+		case 3:
+			color.rgb = aces_approx(color.rgb);
+			break;
+		case 4:
+			color.rgb = OptimizedCineonToneMapping(color.rgb);
+			break;
+		case 5:
+			color.rgb = rhj_lumaToneMapping(color.rgb);
+			break;
+		case 6:
+			color.rgb = reinhard_extended(color.rgb);
+			break;
+		case 7:
+			color.rgb = PPC(color.rgb);
+			break;
+		case 8:
+			color.rgb = PPC_RGB(color.rgb);
+			break;
+
+	}
 	fragOut0 = vec4(color.rgb, 1.0);
 }

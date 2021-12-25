@@ -2,6 +2,9 @@
  * Created by Hassan "Karajorma" Kazmi for the FreeSpace2 Source Code Project.
  * You may not sell or otherwise commercially exploit the source or things you
  * create based on the source.
+ *
+ * This file is in charge of the "game_settings.tbl", colloquially referred to
+ * as the "mod table", and contains many misc FSO specific settings.
  */
 
 #include "gamesnd/eventmusic.h"
@@ -12,6 +15,7 @@
 #include "mission/missionload.h"
 #include "mission/missionmessage.h"
 #include "missionui/fictionviewer.h"
+#include "nebula/neb.h"
 #include "mod_table/mod_table.h"
 #include "parse/parselo.h"
 #include "sound/sound.h"
@@ -39,10 +43,11 @@ bool Red_alert_applies_to_delayed_ships;
 bool Beams_use_damage_factors;
 float Generic_pain_flash_factor;
 float Shield_pain_flash_factor;
-gameversion::version Targetted_version; // Defaults to retail
+gameversion::version Targeted_version; // Defaults to retail
 SCP_string Window_title;
 bool Unicode_text_mode;
 bool Use_tabled_strings_for_default_language;
+bool Dont_preempt_training_voice;
 SCP_string Movie_subtitle_font;
 bool Enable_scripts_in_fred; // By default FRED does not initialize the scripting system
 SCP_string Window_icon_path;
@@ -72,6 +77,12 @@ bool Neb_affects_particles;
 bool Neb_affects_fireballs;
 std::tuple<float, float, float, float> Shadow_distances;
 std::tuple<float, float, float, float> Shadow_distances_cockpit;
+bool Custom_briefing_icons_always_override_standard_icons;
+float Min_pixel_size_thruster;
+float Min_pixel_size_beam;
+float Min_pizel_size_muzzleflash;
+float Min_pixel_size_trail;
+float Min_pixel_size_laser;
 
 SCP_vector<std::pair<SCP_string, gr_capability>> req_render_ext_pairs = {
 	std::make_pair("BPTC Texture Compression", CAPABILITY_BPTC)
@@ -94,13 +105,13 @@ void parse_mod_table(const char *filename)
 		optional_string("#GAME SETTINGS");
 
 		if (optional_string("$Minimum version:") || optional_string("$Target Version:")) {
-			Targetted_version = gameversion::parse_version();
+			Targeted_version = gameversion::parse_version();
 
-			mprintf(("Game Settings Table: Parsed target version of %s\n", gameversion::format_version(Targetted_version).c_str()));
+			mprintf(("Game Settings Table: Parsed target version of %s\n", gameversion::format_version(Targeted_version).c_str()));
 
-			if (!gameversion::check_at_least(Targetted_version)) {
+			if (!gameversion::check_at_least(Targeted_version)) {
 				Error(LOCATION, "This modification needs at least version %s of FreeSpace Open. However, the current is only %s!",
-					gameversion::format_version(Targetted_version).c_str(),
+					gameversion::format_version(Targeted_version).c_str(),
 					gameversion::format_version(gameversion::get_executable_version()).c_str());
 			}
 		}
@@ -116,13 +127,21 @@ void parse_mod_table(const char *filename)
 		if (optional_string("$Unicode mode:")) {
 			stuff_boolean(&Unicode_text_mode);
 
-			mprintf(("Game settings table: Unicode mode: %s\n", Unicode_text_mode ? "yes" : "no"));
+			mprintf(("Game Settings Table: Unicode mode: %s\n", Unicode_text_mode ? "yes" : "no"));
 		}
+
+		optional_string("#LOCALIZATION SETTINGS");
 
 		if (optional_string("$Use tabled strings for the default language:")) {
 			stuff_boolean(&Use_tabled_strings_for_default_language);
 
-			mprintf(("Game settings table: Use tabled strings (translations) for the default language: %s\n", Use_tabled_strings_for_default_language ? "yes" : "no"));
+			mprintf(("Game Settings Table: Use tabled strings (translations) for the default language: %s\n", Use_tabled_strings_for_default_language ? "yes" : "no"));
+		}
+
+		if (optional_string("$Don't pre-empt training message voice:")) {
+			stuff_boolean(&Dont_preempt_training_voice);
+
+			mprintf(("Game Settings Table: %sre-empting training message voice\n", Dont_preempt_training_voice ? "Not p" : "P"));
 		}
 
 		optional_string("#CAMPAIGN SETTINGS");
@@ -383,20 +402,68 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Render_player_mflash);
 		}
 
+		if (optional_string("$Glowpoint nebula visibility factor:")) {
+			stuff_float(&Neb2_fog_visibility_glowpoint);
+		}
+
+		if (optional_string("$Shield nebula visibility factor:")) {
+			stuff_float(&Neb2_fog_visibility_shield);
+		}
+
+		if (optional_string("$Thruster nebula visibility factor:")) {
+			stuff_float(&Neb2_fog_visibility_thruster);
+		}
+
 		if (optional_string("$Beams affected by nebula visibility:")) {
 			stuff_boolean(&Neb_affects_beams);
+
+			if (optional_string("+Constant visibility factor:")) {
+				stuff_float(&Neb2_fog_visibility_beam_const);
+			}
+
+			if (optional_string("+Scaled visibility factor:")) {
+				stuff_float(&Neb2_fog_visibility_beam_scaled_factor);
+			}
 		}
 
 		if (optional_string("$Weapons affected by nebula visibility:")) {
 			stuff_boolean(&Neb_affects_weapons);
+
+			if (optional_string("+Weapon visibility factor:")) {
+				stuff_float(&Neb2_fog_visibility_weapon);
+			}
+
+			if (optional_string("+Trail visibility factor:")) {
+				stuff_float(&Neb2_fog_visibility_trail);
+			}
+
+			if (optional_string("+Shockwave visibility factor:")) {
+				stuff_float(&Neb2_fog_visibility_shockwave);
+			}
 		}
 
 		if (optional_string("$Particles affected by nebula visibility:")) {
 			stuff_boolean(&Neb_affects_particles);
+
+			if (optional_string("+Constant visibility factor:")) {
+				stuff_float(&Neb2_fog_visibility_particle_const);
+			}
+
+			if (optional_string("+Scaled visibility factor:")) {
+				stuff_float(&Neb2_fog_visibility_particle_scaled_factor);
+			}
 		}
 		
 		if (optional_string("$Fireballs affected by nebula visibility:")) {
 			stuff_boolean(&Neb_affects_fireballs);
+
+			if (optional_string("+Constant visibility factor:")) {
+				stuff_float(&Neb2_fog_visibility_fireball_const);
+			}
+
+			if (optional_string("+Scaled visibility factor:")) {
+				stuff_float(&Neb2_fog_visibility_fireball_scaled_factor);
+			}
 		}
 
 		if (optional_string("$Shadow Cascade Distances:")) {
@@ -420,6 +487,22 @@ void parse_mod_table(const char *filename)
 			}
 		}
 
+		if (optional_string("$Minimum Pixel Size Thrusters:")) {
+			stuff_float(&Min_pixel_size_thruster);
+		}
+		if (optional_string("$Minimum Pixel Size Beams:")) {
+			stuff_float(&Min_pixel_size_beam);
+		}
+		if (optional_string("$Minimum Pixel Size Muzzle Flashes:")) {
+			stuff_float(&Min_pizel_size_muzzleflash);
+		}
+		if (optional_string("$Minimum Pixel Size Trails:")) {
+			stuff_float(&Min_pixel_size_trail);
+		}
+		if (optional_string("$Minimum Pixel Size Lasers:")) {
+			stuff_float(&Min_pixel_size_laser);
+		}
+
 		optional_string("#NETWORK SETTINGS");
 
 		if (optional_string("$FS2NetD port:")) {
@@ -431,15 +514,33 @@ void parse_mod_table(const char *filename)
 		optional_string("#SOUND SETTINGS");
 
 		if (optional_string("$Default Sound Volume:")) {
-			stuff_float(&Master_sound_volume);
+			float snd_default;
+			stuff_float(&snd_default);
+			if ((snd_default >= 0) && (snd_default <= 1.0)) {
+				Default_sound_volume = snd_default;
+			} else {
+				error_display(0, "$Default Sound Volume is %f. It is not within 0-1.0 and will not be used. ", snd_default);
+			}
 		}
 
 		if (optional_string("$Default Music Volume:")) {
-			stuff_float(&Master_event_music_volume);
+			float music_default;
+			stuff_float(&music_default);
+			if ((music_default >= 0) && (music_default <= 1.0)) {
+				Default_music_volume = music_default;
+			} else {
+				error_display(0, "$Default Music Volume is %f. It is not within 0-1.0 and will not be used. ", music_default);
+			}
 		}
 
 		if (optional_string("$Default Voice Volume:")) {
-			stuff_float(&Master_voice_volume);
+			float voice_default;
+			stuff_float(&voice_default);
+			if ((voice_default >= 0) && (voice_default <= 1.0)) {
+				Default_voice_volume = voice_default;
+			} else {
+				error_display(0, "$Default Voice Volume is %f. It is not within 0-1.0 and will not be used. ", voice_default);
+			}
 		}
 
 		optional_string("#FRED SETTINGS");
@@ -626,6 +727,10 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Chase_view_default);
 		}
 		
+		if (optional_string("$Custom briefing icons always override standard icons:")) {
+			stuff_boolean(&Custom_briefing_icons_always_override_standard_icons);
+		}
+
 		required_string("#END");
 	}
 	catch (const parse::ParseException& e)
@@ -653,7 +758,7 @@ void mod_table_init()
 
 bool mod_supports_version(int major, int minor, int build)
 {
-	return Targetted_version >= gameversion::version(major, minor, build, 0);
+	return Targeted_version >= gameversion::version(major, minor, build, 0);
 }
 
 void mod_table_reset()
@@ -680,10 +785,11 @@ void mod_table_reset()
 	Beams_use_damage_factors = false;
 	Generic_pain_flash_factor = 1.0f;
 	Shield_pain_flash_factor = 0.0f;
-	Targetted_version = gameversion::version(2, 0, 0, 0); // Defaults to retail
+	Targeted_version = gameversion::version(2, 0, 0, 0); // Defaults to retail
 	Window_title = "";
 	Unicode_text_mode = false;
 	Use_tabled_strings_for_default_language = false;
+	Dont_preempt_training_voice = false;
 	Movie_subtitle_font = "font01.vf";
 	Enable_scripts_in_fred = false;
 	Window_icon_path = "app_icon_sse";
@@ -713,4 +819,10 @@ void mod_table_reset()
 	Neb_affects_fireballs = false;
 	Shadow_distances = std::make_tuple(200.0f, 600.0f, 2500.0f, 8000.0f); // Default values tuned by Swifty and added here by wookieejedi
 	Shadow_distances_cockpit = std::make_tuple(0.25f, 0.75f, 1.5f, 3.0f); // Default values tuned by wookieejedi and added here by Lafiel
+	Custom_briefing_icons_always_override_standard_icons = false;
+	Min_pixel_size_thruster = 0.0f;
+	Min_pixel_size_beam = 0.0f;
+	Min_pizel_size_muzzleflash = 0.0f;
+	Min_pixel_size_trail = 0.0f;
+	Min_pixel_size_laser = 0.0f;
 }

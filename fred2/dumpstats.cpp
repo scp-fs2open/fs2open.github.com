@@ -273,9 +273,9 @@ void DumpStats::get_background_stats(CString &buffer)
 		buffer += temp;
 
 		// list of poofs
-		for (i=0; i<MAX_NEB2_POOFS; i++) {
+		for (i=0; i<(int)Poof_info.size(); i++) {
 			if ( Neb2_poof_flags & (1<<i) ) {
-				temp.Format("\tNebula poof: %s\r\n", Neb2_poof_filenames[i]);
+				temp.Format("\tNebula poof: %s\r\n", Poof_info[i].name);
 				buffer += temp;
 			}
 		}

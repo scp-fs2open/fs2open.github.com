@@ -1225,7 +1225,6 @@ int brief_setup_closeup(brief_icon *bi)
 	vec3d			tvec;
 
 	Closeup_icon = bi;
-	Closeup_icon->ship_class = bi->ship_class;
 	Closeup_icon->modelnum = -1;
 	Closeup_icon->model_instance_num = -1;
 
@@ -1243,37 +1242,48 @@ int brief_setup_closeup(brief_icon *bi)
 		Closeup_one_revolution_time = ONE_REV_TIME * 3;
 		*/
 		break;
+
 	case ICON_ASTEROID_FIELD:
 		strcpy_s(pof_filename, Asteroid_icon_closeup_model);
-		strcpy_s(Closeup_icon->closeup_label, XSTR( "asteroid", 431));
+		if (Closeup_icon->closeup_label[0] == '\0') {
+			strcpy_s(Closeup_icon->closeup_label, XSTR("asteroid", 431));
+		}
 		Closeup_cam_pos = Asteroid_icon_closeup_position;
 		Closeup_zoom = Asteroid_icon_closeup_zoom;
 		break;
+
 	case ICON_JUMP_NODE:
 		strcpy_s(pof_filename, NOX("subspacenode.pof"));
-		strcpy_s(Closeup_icon->closeup_label, XSTR( "jump node", 432));
+		if (Closeup_icon->closeup_label[0] == '\0') {
+			strcpy_s(Closeup_icon->closeup_label, XSTR("jump node", 432));
+		}
 		vm_vec_make(&Closeup_cam_pos, 0.0f, 0.0f, -2700.0f);
 		Closeup_zoom = 0.5f;
 		Closeup_one_revolution_time = ONE_REV_TIME * 3;
 		break;
+
 	case ICON_UNKNOWN:
 	case ICON_UNKNOWN_WING:
 		strcpy_s(pof_filename, NOX("unknownship.pof"));
-		strcpy_s(Closeup_icon->closeup_label, XSTR( "unknown", 433));
+		if (Closeup_icon->closeup_label[0] == '\0') {
+			strcpy_s(Closeup_icon->closeup_label, XSTR("unknown", 433));
+		}
 		vm_vec_make(&Closeup_cam_pos, 0.0f, 0.0f, -22.0f);
 		Closeup_zoom = 0.5f;
 		break;
+
 	default:
 		Assert( Closeup_icon->ship_class != -1 );
 		sip = &Ship_info[Closeup_icon->ship_class];
 
-		strcpy_s(Closeup_icon->closeup_label, sip->get_display_name());
+		if (Closeup_icon->closeup_label[0] == '\0') {
+			strcpy_s(Closeup_icon->closeup_label, sip->get_display_name());
 
-		// Goober5000 - wcsaga doesn't want this
-		if (Ship_types[sip->class_type].flags[Ship::Type_Info_Flags::No_class_display] ) {
-			strcat_s(Closeup_icon->closeup_label, XSTR( " class", 434));
+			if (!Ship_types[sip->class_type].flags[Ship::Type_Info_Flags::No_class_display]
+				&& (sip->is_small_ship() || sip->is_big_ship() || sip->is_huge_ship() || sip->flags[Ship::Info_Flags::Sentrygun])) {
+					strcat_s(Closeup_icon->closeup_label, XSTR(" class", 434));
+			}
 		}
-
 		break;
 	}
 	
@@ -1282,7 +1292,7 @@ int brief_setup_closeup(brief_icon *bi)
 			Closeup_icon->modelnum = model_load(pof_filename, 0, NULL);
 		} else {
 			Closeup_icon->modelnum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
-			Closeup_icon->model_instance_num = model_create_instance(true, Closeup_icon->modelnum);
+			Closeup_icon->model_instance_num = model_create_instance(-1, Closeup_icon->modelnum);
 			model_set_up_techroom_instance(sip, Closeup_icon->model_instance_num);
 		}
 	}

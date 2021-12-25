@@ -285,12 +285,10 @@ matrix *vm_vector_2_matrix(matrix *m, const vec3d *fvec, const vec3d *uvec = nul
 matrix *vm_vector_2_matrix_norm(matrix *m, const vec3d *fvec, const vec3d *uvec = NULL, const vec3d *rvec = NULL);
 
 //rotates a vector through a matrix. returns ptr to dest vector
-//dest CANNOT equal either source
 vec3d *vm_vec_rotate(vec3d *dest, const vec3d *src, const matrix *m);
 
 //rotates a vector through the transpose of the given matrix. 
 //returns ptr to dest vector
-//dest CANNOT equal source
 // This is a faster replacement for this common code sequence:
 //    vm_copy_transpose(&tempm,src_matrix);
 //    vm_vec_rotate(dst_vec,src_vect,&tempm);
@@ -310,7 +308,6 @@ matrix *vm_transpose(matrix *m);
 matrix *vm_copy_transpose(matrix *dest, const matrix *src);
 
 //mulitply 2 matrices, fill in dest.  returns ptr to dest
-//dest CANNOT equal either source
 matrix *vm_matrix_x_matrix(matrix *dest, const matrix *src0, const matrix *src1);
 
 //extract angles from a matrix
@@ -489,6 +486,11 @@ void vm_vec_random_cone(vec3d *out, const vec3d *in, float min_angle, float max_
 // if bias_towards_center is true, the probability will be higher towards the center
 void vm_vec_random_in_circle(vec3d *out, const vec3d *in, const matrix *orient, float radius, bool on_edge, bool bias_towards_center = false);
 
+
+// compute a point on the unit sphere from cylindrical coordinate scale factors
+// z_scale and phi_scale should be in [0.0, 1.0]
+void vm_vec_unit_sphere_point(vec3d *out, float z_scale, float phi_scale);
+
 // given a start vector and a radius, generate a point in a spherical volume
 // if on_surface is true, the point will be on the surface of the sphere
 // if bias_towards_center is true, the probability will be higher towards the center
@@ -560,6 +562,12 @@ void vm_match_bank(vec3d* out_rvec, const vec3d* goal_fvec, const matrix* match_
 // rot_vel is only used to determine the rotation direction. Assumes that it is not a full 2PI rotation in any axis.  
 // You will get strange results otherwise.
 void vm_interpolate_angles_quick(angles* dest0, angles* src0, angles* src1, float interp_perc);
+
+// generates a well distributed quasi-random position in a -1 to 1 cube
+// the caller must provide and increment the seed for each call for proper results
+// if being used to fill a space, offset may be needed to properly 'glue together' generated
+// volumes in a well distrubtedness-preserving way
+vec3d vm_well_distributed_rand_vec(int seed, vec3d* offset = nullptr);
 
 /** Compares two vec3ds */
 inline bool operator==(const vec3d& left, const vec3d& right) { return vm_vec_same(&left, &right) != 0; }
@@ -640,25 +648,13 @@ inline matrix& operator-=(matrix& left, const matrix& right)
 }
 
 /**
- * @brief Rotates a vector into the orientation specified by the matrix
+ * @brief Implements matrix multiplication on both 3x3 matrices and 3D vectors
  * @param left The matrix
- * @param right The vector
- * @return The rotated vector
- *
- * @note This actually follows the definition of the * operator in linear algebra. The standard vm_vec_rotate actually
- * implements a multiplication with the transpose of the matrix.
+ * @param right The vector/matrix
+ * @return The multiplied result
  */
-inline vec3d operator*(const matrix& left, const vec3d& right) {
-	vec3d out;
-	vm_vec_unrotate(&out, &right, &left);
-	return out;
-}
-
-inline matrix operator*(const matrix& left, const matrix& right) {
-	matrix out;
-	vm_matrix_x_matrix(&out, &left, &right);
-	return out;
-}
+inline vec3d operator*(const matrix& A, const vec3d& v);
+inline matrix operator*(const matrix& A, const matrix& B);
 
 std::ostream& operator<<(std::ostream& os, const vec3d& vec);
 

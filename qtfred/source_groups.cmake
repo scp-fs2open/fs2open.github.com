@@ -2,6 +2,7 @@
 set(source_files)
 
 add_file_folder("Source"
+    src/AssociatedPlainTextDocument.h
     src/CheckedDataListModel.h
     src/FredApplication.cpp
     src/FredApplication.h
@@ -41,6 +42,8 @@ add_file_folder("Source/Mission/Dialogs"
     src/mission/dialogs/AbstractDialogModel.h
 	src/mission/dialogs/AsteroidEditorDialogModel.cpp
 	src/mission/dialogs/AsteroidEditorDialogModel.h
+	src/mission/dialogs/CommandBriefingDialogModel.cpp
+	src/mission/dialogs/CommandBriefingDialogModel.h
 	src/mission/dialogs/CustomWingNamesDialogModel.cpp
 	src/mission/dialogs/CustomWingNamesDialogModel.h
     src/mission/dialogs/FictionViewerDialogModel.cpp
@@ -61,6 +64,16 @@ add_file_folder("Source/Mission/Dialogs"
 	src/mission/dialogs/WaypointEditorDialogModel.h
 	src/mission/dialogs/ShipEditorDialogModel.h
 	src/mission/dialogs/ShipEditorDialogModel.cpp
+	src/mission/dialogs/ShipInitialStatusDialogModel.cpp
+	src/mission/dialogs/ShipInitialStatusDialogModel.h
+	src/mission/dialogs/ShipGoalsDialogModel.h
+	src/mission/dialogs/ShipGoalsDialogModel.cpp
+	src/mission/dialogs/ShipFlagsDialogModel.cpp
+	src/mission/dialogs/ShipFlagsDialogModel.h
+	src/mission/dialogs/PlayerOrdersDialogModel.h
+	src/mission/dialogs/PlayerOrdersDialogModel.cpp
+	src/mission/dialogs/ShipSpecialStatsDialogModel.h
+	src/mission/dialogs/ShipSpecialStatsDialogModel.cpp
 )
 
 add_file_folder("Source/UI"
@@ -79,6 +92,8 @@ add_file_folder("Source/UI/Dialogs"
 	src/ui/dialogs/BackgroundEditorDialog.cpp
     src/ui/dialogs/BriefingEditorDialog.cpp
     src/ui/dialogs/BriefingEditorDialog.h
+	src/ui/dialogs/CommandBriefingDialog.cpp
+	src/ui/dialogs/CommandBriefingDialog.h
 	src/ui/dialogs/CustomWingNamesDialog.cpp
 	src/ui/dialogs/CustomWingNamesDialog.h
     src/ui/dialogs/EventEditorDialog.cpp
@@ -105,6 +120,16 @@ add_file_folder("Source/UI/Dialogs"
 	src/ui/dialogs/WaypointEditorDialog.h
 	src/ui/dialogs/ShipEditorDialog.h
 	src/ui/dialogs/ShipEditorDialog.cpp
+	src/ui/dialogs/ShipInitialStatusDialog.h
+	src/ui/dialogs/ShipInitialStatusDialog.cpp
+	src/ui/dialogs/ShipGoalsDialog.cpp
+	src/ui/dialogs/ShipGoalsDialog.h
+	src/ui/dialogs/ShipFlagsDialog.h
+	src/ui/dialogs/ShipFlagsDialog.cpp
+	src/ui/dialogs/PlayerOrdersDialog.h
+	src/ui/dialogs/PlayerOrdersDialog.cpp
+	src/ui/dialogs/ShipSpecialStatsDialog.cpp
+	src/ui/dialogs/ShipSpecialStatsDialog.h
 )
 
 add_file_folder("Source/UI/Util"
@@ -121,6 +146,8 @@ add_file_folder("Source/UI/Widgets"
     src/ui/widgets/renderwidget.h
 	src/ui/widgets/sexp_tree.cpp
 	src/ui/widgets/sexp_tree.h
+	src/ui/widgets/ShipFlagCheckbox.h
+	src/ui/widgets/ShipFlagCheckbox.cpp
 )
 
 add_file_folder("UI"
@@ -128,6 +155,7 @@ add_file_folder("UI"
 	ui/AsteroidEditorDialog.ui
 	ui/BackgroundEditor.ui
 	ui/BriefingEditorDialog.ui
+	ui/CommandBriefingDialog.ui
 	ui/CustomWingNamesDialog.ui
     ui/EventEditorDialog.ui
 	ui/FictionViewerDialog.ui
@@ -142,6 +170,11 @@ add_file_folder("UI"
 	ui/VoiceActingManager.ui
     ui/WaypointEditorDialog.ui
 	ui/ShipEditorDialog.ui
+	ui/ShipInitialStatus.ui
+	ui/ShipGoalsDialog.ui
+	ui/ShipSpecialStatsDialog.ui
+	ui/ShipFlagsDialog.ui
+	ui/PlayerOrdersDialog.ui
 )
 
 add_file_folder("Resources"

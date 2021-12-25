@@ -768,7 +768,7 @@ void obj_player_fire_stuff( object *objp, control_info ci )
 			// so let's let the new system take over instead by excluding client player shots
 			// on the server.
 			if (!(MULTIPLAYER_MASTER) || (objp == Player_obj)) {
-				ship_fire_primary(objp, 0);
+				ship_fire_primary(objp);
 			}
 			
 		} else {
@@ -858,7 +858,7 @@ void obj_move_call_physics(object *objp, float frametime)
 
 				for (int i = 0; i < shipp->weapons.num_secondary_banks; i++) {
 					//if there are no missles left don't bother
-					if (shipp->weapons.secondary_bank_ammo[i] == 0)
+					if (!ship_secondary_has_ammo(&shipp->weapons, i))
 						continue;
 
 					int points = pm->missile_banks[i].num_slots;
@@ -943,13 +943,6 @@ void obj_move_call_physics(object *objp, float frametime)
 					pp = Player;
 					obj_player_fire_stuff( objp, pp->ci );				
 				}
-			}
-
-			// fire streaming weapons for ships in here - ALL PLAYERS, regardless of client, single player, server, whatever.
-			// do stream weapon firing for all ships themselves. 
-			if(objp->type == OBJ_SHIP){
-				ship_fire_primary(objp, 1, 0);
-					has_fired = 1;
 			}
 		}
 	}
@@ -1260,7 +1253,6 @@ void obj_move_all_post(object *objp, float frametime)
 
 			if ( !physics_paused || (objp==Player_obj) ) {
 				ship_process_post( objp, frametime );
-				ship_model_update_instance(objp);
 			}
 
 			// Make any electrical arcs on ships cast light
@@ -1517,6 +1509,28 @@ void obj_move_all(float frametime)
 			}
 		}
 
+		// Submodel movement now happens here, right after physics movement.  It's not excluded by the "immobile" flag.
+		
+		// this flag only affects ship subsystems, not any other type of submodel movement
+		if (objp->type == OBJ_SHIP && !Ships[objp->instance].flags[Ship::Ship_Flags::Subsystem_movement_locked])
+			ship_move_subsystems(objp);
+
+		// do animation on this object
+		int model_instance_num = object_get_model_instance(objp);
+		if (model_instance_num > -1) {
+			polymodel_instance* pmi = model_get_instance(model_instance_num);
+			animation::ModelAnimation::stepAnimations(frametime, pmi);
+		}
+
+		// finally, do intrinsic motion on this object
+		// (this happens last because look_at is a type of intrinsic rotation,
+		// and look_at needs to happen last or the angle may be off by a frame)
+		model_do_intrinsic_motions(objp);
+
+		// For ships, we now have to make sure that all the submodel detail levels remain consistent.
+		if (objp->type == OBJ_SHIP)
+			ship_model_replicate_submodels(objp);
+
 		// move post
 		obj_move_all_post(objp, frametime);
 
@@ -1532,16 +1546,17 @@ void obj_move_all(float frametime)
 			if (objp == Player_obj && Player_ai->target_objnum != -1)
 				target = &Objects[Player_ai->target_objnum];
 
-			Script_system.SetHookObjects(2, "User", objp, "Target", target);
-			Script_system.RunCondition(CHA_ONWPEQUIPPED, objp);
-			Script_system.RemHookVars({"User", "Target"});
+			if (Script_system.IsActiveAction(CHA_ONWPEQUIPPED)) {
+				Script_system.SetHookObjects(2, "User", objp, "Target", target);
+				Script_system.RunCondition(CHA_ONWPEQUIPPED, objp);
+				Script_system.RemHookVars({"User", "Target"});
+			}
 		}
 	}
 
-	// Now that we've moved all the objects, move all the models that use intrinsic rotations.  We do that here because we already handled the
-	// ship models in obj_move_all_post, and this is more or less conceptually close enough to move the rest.  (Originally all models
-	// were intrinsic-rotated here, but for sequencing reasons, intrinsic ship rotations must happen along with regular ship rotations.)
-	model_do_intrinsic_rotations();
+	// Now apply intrinsic movement to things that aren't objects (like skyboxes).  This technically doesn't belong in the object code,
+	// but there isn't really a good place to put this, it doesn't hurt to have this here, and it's conceptually related to what's here.
+	model_do_intrinsic_motions(nullptr);
 
 	//	After all objects have been moved, move all docked objects.
 	objp = GET_FIRST(&obj_used_list);
@@ -1633,7 +1648,6 @@ void obj_render(object *obj)
 	gr_clear_states();
 
 	gr_reset_lighting();
-	gr_set_lighting(false, false);
 }
 
 void obj_queue_render(object* obj, model_draw_list* scene)
@@ -1642,19 +1656,18 @@ void obj_queue_render(object* obj, model_draw_list* scene)
 
 	if ( obj->flags[Object::Object_Flags::Should_be_dead] ) return;
 
-	Script_system.SetHookObject("Self", obj);
-	
-	auto skip_render = Script_system.IsConditionOverride(CHA_OBJECTRENDER, obj);
-	
-	// Always execute the hook content
-	Script_system.RunCondition(CHA_OBJECTRENDER, obj);
-
-	Script_system.RemHookVar("Self");
-
-	if (skip_render) {
-		// Script said that it want's to skip rendering
-		return;
+	if (Script_system.IsActiveAction(CHA_OBJECTRENDER)) {
+		Script_system.SetHookObject("Self", obj);
+		bool skip_render = Script_system.IsConditionOverride(CHA_OBJECTRENDER, obj);
+		// Always execute the hook content
+		Script_system.RunCondition(CHA_OBJECTRENDER, obj);
+		Script_system.RemHookVar("Self");
+		if (skip_render) {
+			// Script said that it want's to skip rendering
+			return;
+		}
 	}
+
 
 	switch ( obj->type ) {
 	case OBJ_NONE:
@@ -2032,6 +2045,9 @@ int object_get_model(const object *objp)
 
 int object_get_model_instance(const object *objp)
 {
+	if (objp == nullptr)
+		return -1;
+
 	switch (objp->type)
 	{
 		case OBJ_ASTEROID:

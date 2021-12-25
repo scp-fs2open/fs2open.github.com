@@ -28,6 +28,8 @@ public:
 	void changeDisplayedObject(LabMode type, int info_index);
 
 	void close() {
+		animation::ModelAnimationSet::stopAnimations();
+  
 		LabRenderer::close();
 
 		Game_mode &= ~GM_LAB;

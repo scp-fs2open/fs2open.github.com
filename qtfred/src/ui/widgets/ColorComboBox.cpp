@@ -1,6 +1,12 @@
 //
 //
 
+#if defined(_MSC_VER) && _MSC_VER <= 1920
+	// work around MSVC 2015 and 2017 compiler bug
+	// https://bugreports.qt.io/browse/QTBUG-72073
+	#define QT_NO_FLOAT16_OPERATORS
+#endif
+
 #include "ColorComboBox.h"
 
 #include <ship/ship.h>

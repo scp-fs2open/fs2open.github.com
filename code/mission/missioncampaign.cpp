@@ -40,6 +40,7 @@
 #include "missionui/redalert.h"
 #include "parse/parselo.h"
 #include "parse/sexp.h"
+#include "parse/sexp_container.h"
 #include "pilotfile/pilotfile.h"
 #include "playerman/player.h"
 #include "popup/popup.h"
@@ -883,6 +884,9 @@ int mission_campaign_previous_mission()
 	for (auto& ra_variable : Campaign.red_alert_variables) {
 		Campaign.persistent_variables.push_back(ra_variable);
 	}
+
+	// copy backed up containers over
+	Campaign.persistent_containers = Campaign.red_alert_containers;
 	
 	Pilot.save_savefile();
 
@@ -912,16 +916,22 @@ void mission_campaign_eval_next_mission()
 
 	// evaluate mission loop mission (if any) so it can be used if chosen
 	if ( Campaign.missions[cur].flags & CMISSION_FLAG_HAS_LOOP ) {
-		int copy_next_mission = Campaign.next_mission;
+		int saved_next_mission = Campaign.next_mission;
 		// Set temporarily to -1 so we know if loop formula fails to assign
 		Campaign.next_mission = -1;
 		if (Campaign.missions[cur].mission_loop_formula != -1) {
 			flush_sexp_tree(Campaign.missions[cur].mission_loop_formula);  // force formula to be re-evaluated
-			eval_sexp(Campaign.missions[cur].mission_loop_formula);  // this should reset Campaign.next_mission to proper value
+			eval_sexp(Campaign.missions[cur].mission_loop_formula);  // this should set Campaign.next_mission to the loop mission
 		}
 
 		Campaign.loop_mission = Campaign.next_mission;
-		Campaign.next_mission = copy_next_mission;
+		Campaign.next_mission = saved_next_mission;
+
+		// If the loop mission and the next mission are the same, then don't do the loop.  This could be the case if the campaign
+		// only allows us to proceed to the loop mission if certain conditions are met.
+		if (Campaign.loop_mission == Campaign.next_mission) {
+			Campaign.loop_mission = -1;
+		}
 	}
 
 	if (Campaign.next_mission == -1) {
@@ -1079,10 +1089,59 @@ void mission_campaign_store_variables(int persistence_type, bool store_red_alert
 	}
 }
 
+// jg18 - adapted from mission_campaign_store_variables()
+void mission_campaign_store_containers(ContainerType persistence_type, bool store_red_alert)
+{
+	if (!sexp_container_has_persistent_non_eternal_containers()) {
+		// nothing to do
+		return;
+	}
+
+	if (store_red_alert) {
+		Campaign.persistent_containers = Campaign.red_alert_containers;
+	}
+
+	for (const auto &container : get_all_sexp_containers()) {
+		if (!container.is_eternal()) {
+			if (any(container.type & persistence_type)) {
+				// see if we already have a container with this name
+				auto cpc_it = std::find_if(Campaign.persistent_containers.begin(),
+					Campaign.persistent_containers.end(),
+					[container](const sexp_container &cpc) {
+						return cpc.name_matches(container);
+					});
+
+				if (cpc_it != Campaign.persistent_containers.end()) {
+					*cpc_it = container;
+				} else {
+					// new container
+					Campaign.persistent_containers.emplace_back(container);
+				}
+			}
+		} else if (any(persistence_type & ContainerType::SAVE_ON_MISSION_PROGRESS) &&
+				   any(container.type & persistence_type) && container.is_eternal()) {
+			// we might need to save some eternal player-persistent containers
+			auto ppc_it = std::find_if(Player->containers.begin(),
+				Player->containers.end(),
+				[container](const sexp_container &ppc) {
+					return ppc.name_matches(container);
+				});
+
+			if (ppc_it != Player->containers.end()) {
+				*ppc_it = container;
+			} else {
+				// new player-persistent container
+				Player->containers.emplace_back(container);
+			}
+		}
+	}
+}
+
 void mission_campaign_store_goals_and_events_and_variables()
 {
 	mission_campaign_store_goals_and_events();
 	mission_campaign_store_variables(SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS);
+	mission_campaign_store_containers(ContainerType::SAVE_ON_MISSION_PROGRESS);
 }
 
 /**
@@ -1147,7 +1206,9 @@ void mission_campaign_mission_over(bool do_next_mission)
 		}
 
 		// runs the new scripting conditional hook, "On Campaign Mission Accept" --wookieejedi
-		Script_system.RunCondition(CHA_CMISSIONACCEPT);
+		if (Script_system.IsActiveAction(CHA_CMISSIONACCEPT)) {
+			Script_system.RunCondition(CHA_CMISSIONACCEPT);
+		}
 		
 	} else {
 		// free up the goals and events which were just malloced.  It's kind of like erasing any fact
@@ -1274,6 +1335,8 @@ void mission_campaign_clear()
 	memset( Campaign.weapons_allowed, 0, sizeof(Campaign.weapons_allowed) );
 	Campaign.persistent_variables.clear(); 
 	Campaign.red_alert_variables.clear();
+	Campaign.persistent_containers.clear();
+	Campaign.red_alert_containers.clear();
 }
 
 /**
@@ -1350,6 +1413,7 @@ void read_mission_goal_list(int num)
 	char events[MAX_MISSION_EVENTS][NAME_LENGTH];
 	int i, z, event_count, count = 0;
 
+	Assertion(num >= 0 && num < Campaign.num_missions, "mission number out of range!");
 	filename = Campaign.missions[num].name;
 	
 	try
@@ -1861,6 +1925,42 @@ void mission_campaign_save_on_close_variables()
 
 	// store any non-eternal on mission close variables
 	mission_campaign_store_variables(SEXP_VARIABLE_SAVE_ON_MISSION_CLOSE, false);
+}
+
+// jg18 - adapted from mission_campaign_save_on_close_variables()
+void mission_campaign_save_on_close_containers()
+{
+	// make sure we are actually playing a single-player campaign
+	if (!(Game_mode & GM_CAMPAIGN_MODE) || (Campaign.type != CAMPAIGN_TYPE_SINGLE))
+		return;
+
+	// now save containers
+	for (const auto &container : get_all_sexp_containers()) {
+		// we only want the on mission close type. On campaign progress type are dealt with elsewhere
+		if (none(container.type & ContainerType::SAVE_ON_MISSION_CLOSE)) {
+			continue;
+		}
+
+		// deal with eternals
+		if (container.is_eternal()) {
+			// check if container already exists and update it
+			auto ppc_it = std::find_if(Player->containers.begin(),
+				Player->containers.end(),
+				[container](const sexp_container &ppc) {
+					return ppc.name_matches(container);
+				});
+
+			if (ppc_it != Player->containers.end()) {
+				*ppc_it = container;
+			} else {
+				// if not found then add new entry
+				Player->containers.emplace_back(container);
+			}
+		}
+	}
+
+	// store any non-eternal on mission close containers
+	mission_campaign_store_containers(ContainerType::SAVE_ON_MISSION_CLOSE, false);
 }
 
 void mission_campaign_load_failure_popup()

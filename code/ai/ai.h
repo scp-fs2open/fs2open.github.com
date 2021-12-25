@@ -330,7 +330,7 @@ typedef struct ai_info {
 	fix		path_next_check_time;	//	Last time checked to see if would collide with model.
 	int		path_goal_dist;		// minimum distance to first path point to consider path reached
 	int		path_subsystem_next_check;	// timestamp to next check if subsystem is still visible
-	vec3d	path_depart_orient;		//Rotational orientation associated with the path
+	vec3d	path_depart_rvec;		//Rotational orientation associated with the path
 
 	int		submode;
 	int		previous_submode;		// previous submode, get it?
@@ -405,7 +405,6 @@ typedef struct ai_info {
 
 
 	union {
-	float		lead_scale;							//	Amount to lead current opponent by.
 	float		stay_near_distance;				//	Distance to stay within for AIM_STAY_NEAR mode.
 	};
 
@@ -608,7 +607,7 @@ extern int ai_find_goal_index( ai_goal* aigp, int mode, int submode = -1, int pr
 extern void ai_do_safety(object *objp);
 
 // used to get path info for fighter bay emerging and departing
-int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, int path_mask, vec3d *pos, vec3d *fvec);
+int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, int path_mask);
 int ai_acquire_depart_path(object *pl_objp, int parent_objnum, int path_mask);
 
 // used by AiBig.cpp
@@ -660,7 +659,7 @@ void ai_start_fly_to_ship(object *objp, int shipnum);
 void ai_fly_to_ship();
 
 //Moved declaration here for player ship -WMC
-void process_subobjects(int objnum);
+void ai_process_subobjects(int objnum);
 
 //SUSHI: Setting ai_info stuff from both ai class and ai profile
 void init_aip_from_class_and_profile(ai_info *aip, ai_class *aicp, ai_profile_t *profile);

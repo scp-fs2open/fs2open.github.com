@@ -4,6 +4,11 @@
 #include <QtWidgets/QDialog>
 #include <mission/dialogs/ShipEditorDialogModel.h>
 #include <ui/FredView.h>
+#include "ShipGoalsDialog.h"
+#include "ShipInitialStatusDialog.h"
+#include "ShipFlagsDialog.h"
+#include "PlayerOrdersDialog.h"
+#include "ShipSpecialStatsDialog.h"
 
 #include <QAbstractButton>
 #include <QtWidgets/QDialog>
@@ -42,8 +47,7 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	void on_resetButton_clicked();
 	void on_weaponsButton_clicked();
 	void on_playerOrdersButton_clicked();
-	void on_specialExpButton_clicked();
-	void on_specialHitsButton_clicked();
+	void on_specialStatsButton_clicked();
 	void on_hideCuesButton_clicked();
 	void on_restrictArrivalPathsButton_clicked();
 	void on_customWarpinButton_clicked();
@@ -63,12 +67,14 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	void enableDisable();
 
 	//column one
-	void shipNameChanged(const QString&);
+	void shipNameChanged();
 	void shipClassChanged(int);
 	void aiClassChanged(int);
 	void teamChanged(int);
 	void cargoChanged();
+	void altNameChanged();
 	void altNameChanged(const QString&);
+	void callsignChanged();
 	void callsignChanged(const QString&);
 
 	//column two

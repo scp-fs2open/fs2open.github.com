@@ -86,6 +86,7 @@
 #include "libs/discord/discord.h"
 #include "libs/ffmpeg/FFmpeg.h"
 #include "lighting/lighting.h"
+#include "lighting/lighting_profiles.h"
 #include "localization/localize.h"
 #include "math/staticrand.h"
 #include "menuui/barracks.h"
@@ -187,6 +188,7 @@
 #include "weapon/muzzleflash.h"
 #include "weapon/shockwave.h"
 #include "weapon/weapon.h"
+
 
 #include <SDL.h>
 #include <SDL_main.h>
@@ -352,6 +354,28 @@ int Debug_dump_frames = 0;			// Set to 0 to not dump frames, else equal hz to du
 int Player_died_popup_wait = -1;
 
 int Multi_ping_timestamp = -1;
+
+
+const auto OnMissionAboutToEndHook = scripting::Hook::Factory(
+	"On Mission About To End", "Called when a mission is about to end but has not run any mission-ending logic", {});
+
+const auto OnMissionEndHook = scripting::OverridableHook::Factory(
+	"On Mission End", "Called when a mission has ended", {});
+
+const auto OnStateAboutToEndHook = scripting::Hook::Factory(
+	"On State About To End", "Called when a game state is about to end but has not run any state-ending logic",
+	{
+		{"OldState", "gamestate", "The game state that has ended."},
+		{"NewState", "gamestate", "The game state that will begin next."},
+	});
+
+const auto OnStateEndHook = scripting::OverridableHook::Factory(
+	"On State End", "Called when a game state has ended",
+	{
+		{"OldState", "gamestate", "The game state that has ended."},
+		{"NewState", "gamestate", "The game state that will begin next."},
+	});
+
 
 // builtin mission list stuff
 int Game_builtin_mission_count = 92;
@@ -821,9 +845,11 @@ static void game_flash_diminish(float frametime)
 
 void game_level_close()
 {
+	OnMissionAboutToEndHook->run();
+
 	//WMC - this is actually pretty damn dangerous, but I don't want a modder
 	//to accidentally use an override here without realizing it.
-	if(!Script_system.IsConditionOverride(CHA_MISSIONEND))
+	if(!OnMissionEndHook->isOverride())
 	{
 		// save player-persistent variables
 		mission_campaign_save_on_close_variables();	// Goober5000
@@ -853,6 +879,7 @@ void game_level_close()
 		mission_brief_common_reset();		// close out parsed briefing/mission stuff
 		cam_close();
 		subtitles_close();
+		animation::ModelAnimationSet::stopAnimations();
 		particle::ParticleManager::get()->clearSources();
 		particle::close();
 		trail_level_close();
@@ -884,7 +911,7 @@ void game_level_close()
 		Error(LOCATION, "Scripting Mission End override is not fully supported yet.");
 	}
 
-	Script_system.RunCondition(CHA_MISSIONEND);
+	OnMissionEndHook->run();
 }
 
 uint load_gl_init;
@@ -1359,7 +1386,13 @@ bool game_start_mission()
 
 	game_busy( NOX("** starting mission_load() **") );
 	load_mission_load = (uint) time(nullptr);
-	if ( !mission_load(Game_current_mission_filename) ) {
+	bool load_success = mission_load(Game_current_mission_filename);
+	load_mission_load = (uint)(time(nullptr) - load_mission_load);
+
+	// free up memory from parsing the mission
+	stop_parse();
+
+	if ( !load_success ) {
 		if ( !(Game_mode & GM_MULTIPLAYER) ) {
 			popup(PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR( "Attempt to load the mission failed", 169));
 			gameseq_post_event(GS_EVENT_MAIN_MENU);
@@ -1375,11 +1408,15 @@ bool game_start_mission()
 
 		return false;
 	}
-	load_mission_load = (uint) (time(nullptr) - load_mission_load);
 
-	// free up memory from parsing the mission
-	extern void stop_parse();
-	stop_parse();
+	// Since we just freed up memory, now is probably a good time to run the Lua garbage collector.
+	// This is also after the preliminary checks are complete but before things start getting paged in.
+	auto L = Script_system.GetLuaSession();
+	if (L != nullptr)
+	{
+		game_busy(NOX("** cleaning up Lua objects **"));
+		lua_gc(L, LUA_GCCOLLECT, 0);
+	}
 
 	game_busy( NOX("** starting game_post_level_init() **") );
 	load_post_level_init = (uint) time(nullptr);
@@ -1856,6 +1893,8 @@ void game_init()
 	// they don't need to be inited (data loaded etc.) until the mission starts
 	fireball_parse_tbl();
 
+	animation::ModelAnimationParseHelper::parseTables();
+
 	obj_init();	
 	mflash_game_init();	
 	armor_init();
@@ -1884,7 +1923,9 @@ void game_init()
 	ssm_init();	
 	player_tips_init();				// helpful tips
 	beam_init();
-	
+
+	lighting_profile::load_profiles();
+
 	// load the list of pilot pic filenames (for barracks and pilot select popup quick reference)
 	pilot_load_pic_list();	
 	pilot_load_squad_pic_list();
@@ -2954,11 +2995,10 @@ camid game_render_frame_setup()
 
 	vec3d	eye_pos;
 	matrix	eye_orient = vmd_identity_matrix;
-	vec3d	tmp_dir;
+	vec3d	eye_vec;
 
 	static int last_Viewer_mode = 0;
 	static int last_Game_mode = 0;
-	static int last_Viewer_objnum = -1;
 	static float last_FOV = Sexp_fov;
 
 	bool fov_changed = ((last_FOV != Sexp_fov) && (Sexp_fov > 0.0f));
@@ -2975,28 +3015,7 @@ camid game_render_frame_setup()
 
 	// This code is supposed to detect camera "cuts"... like going between
 	// different views.
-
-	// determine if we need to regenerate the nebula
-	if(	(!(last_Viewer_mode & VM_EXTERNAL) && (Viewer_mode & VM_EXTERNAL)) ||							// internal to external 
-			((last_Viewer_mode & VM_EXTERNAL) && !(Viewer_mode & VM_EXTERNAL)) ||							// external to internal
-			(!(last_Viewer_mode & VM_DEAD_VIEW) && (Viewer_mode & VM_DEAD_VIEW)) ||							// non dead-view to dead-view
-			((last_Viewer_mode & VM_DEAD_VIEW) && !(Viewer_mode & VM_DEAD_VIEW)) ||							// dead-view to non dead-view
-			(!(last_Viewer_mode & VM_WARP_CHASE) && (Viewer_mode & VM_WARP_CHASE)) ||						// non warp-chase to warp-chase
-			((last_Viewer_mode & VM_WARP_CHASE) && !(Viewer_mode & VM_WARP_CHASE)) ||						// warp-chase to non warp-chase
-			(!(last_Viewer_mode & VM_OTHER_SHIP) && (Viewer_mode & VM_OTHER_SHIP)) ||						// non other-ship to other-ship
-			((last_Viewer_mode & VM_OTHER_SHIP) && !(Viewer_mode & VM_OTHER_SHIP)) ||						// other-ship to non-other ship
-			(!(last_Viewer_mode & VM_FREECAMERA) && (Viewer_mode & VM_FREECAMERA)) ||
-			((last_Viewer_mode & VM_FREECAMERA) && !(Viewer_mode & VM_FREECAMERA)) ||
-			(!(last_Viewer_mode & VM_TOPDOWN) && (Viewer_mode & VM_TOPDOWN)) ||
-			((last_Viewer_mode & VM_TOPDOWN) && !(Viewer_mode & VM_TOPDOWN)) ||
-			(fov_changed) ||
-			((Viewer_mode & VM_OTHER_SHIP) && (last_Viewer_objnum != Player_ai->target_objnum)) 		// other ship mode, but targets changes
-			) {
-
-		// regenerate the nebula
-		neb2_eye_changed();
-	}		
-
+	bool camera_cut = false;
 	if ( (last_Viewer_mode != Viewer_mode)
 		|| (last_Game_mode != Game_mode)
 		|| (fov_changed)
@@ -3007,7 +3026,8 @@ camid game_render_frame_setup()
 		last_FOV = main_cam->get_fov();
 
 		// Camera moved.  Tell stars & debris to not do blurring.
-		stars_camera_cut();		
+		stars_camera_cut();	
+		camera_cut = true;
 	}
 
 	say_view_target();
@@ -3029,14 +3049,10 @@ camid game_render_frame_setup()
 				//	View from target.
 				Viewer_obj = &Objects[Player_ai->target_objnum];
 
-				last_Viewer_objnum = Player_ai->target_objnum;
-
 				if ( Viewer_obj->type == OBJ_SHIP ) {
 					ship_get_eye( &eye_pos, &eye_orient, Viewer_obj );
 					view_from_player = 0;
 				}
-			} else {
-				last_Viewer_objnum = -1;
 			}
 
 			if(Viewer_obj)
@@ -3048,8 +3064,8 @@ camid game_render_frame_setup()
 				//	View target from player ship.
 				Viewer_obj = nullptr;
 				eye_pos = Player_obj->pos;
-				vm_vec_normalized_dir(&tmp_dir, &Objects[Player_ai->target_objnum].pos, &eye_pos);
-				vm_vector_2_matrix(&eye_orient, &tmp_dir, nullptr, nullptr);
+				vm_vec_normalized_dir(&eye_vec, &Objects[Player_ai->target_objnum].pos, &eye_pos);
+				vm_vector_2_matrix(&eye_orient, &eye_vec, nullptr, nullptr);
 				//rtn_cid = ship_get_followtarget_eye( Player_obj );
 			}
 		} else {
@@ -3080,9 +3096,9 @@ camid game_render_frame_setup()
 
 			eye_pos = Dead_camera_pos;
 
-			vm_vec_normalized_dir(&tmp_dir, &Player_obj->pos, &eye_pos);
+			vm_vec_normalized_dir(&eye_vec, &Player_obj->pos, &eye_pos);
 
-			vm_vector_2_matrix(&eye_orient, &tmp_dir, nullptr, nullptr);
+			vm_vector_2_matrix(&eye_orient, &eye_vec, nullptr, nullptr);
 			Viewer_obj = nullptr;
 		}
 	} 
@@ -3109,13 +3125,9 @@ camid game_render_frame_setup()
 			if (Viewer_mode & VM_OTHER_SHIP) {
 				if (Player_ai->target_objnum != -1){
 					Viewer_obj = &Objects[Player_ai->target_objnum];
-					last_Viewer_objnum = Player_ai->target_objnum;
 				} else {
 					Viewer_mode &= ~VM_OTHER_SHIP;
-					last_Viewer_objnum = -1;
 				}
-			} else {
-				last_Viewer_objnum = -1;
 			}
 
 			if(Viewer_mode & VM_FREECAMERA) {
@@ -3131,50 +3143,59 @@ camid game_render_frame_setup()
 
 				vm_vec_scale_add(&eye_pos, &Viewer_obj->pos, &tm.vec.fvec, Viewer_external_info.current_distance);
 
-				vm_vec_sub(&tmp_dir, &Viewer_obj->pos, &eye_pos);
-				vm_vec_normalize(&tmp_dir);
-				vm_vector_2_matrix(&eye_orient, &tmp_dir, &Viewer_obj->orient.vec.uvec, nullptr);
+				vm_vec_sub(&eye_vec, &Viewer_obj->pos, &eye_pos);
+				vm_vec_normalize(&eye_vec);
+				vm_vector_2_matrix(&eye_orient, &eye_vec, &Viewer_obj->orient.vec.uvec, nullptr);
 				Viewer_obj = nullptr;
 
 				//	Modify the orientation based on head orientation.
 				compute_slew_matrix(&eye_orient, &Viewer_slew_angles);
 
 			} else if ( Viewer_mode & VM_CHASE ) {
-				vec3d	move_dir;
 				vec3d aim_pt;
-				
-				if ( Viewer_obj->phys_info.speed < 62.5f )
-					move_dir = Viewer_obj->phys_info.vel;
-				else {
-					move_dir = Viewer_obj->phys_info.vel;
-					vm_vec_scale(&move_dir, (62.5f/Viewer_obj->phys_info.speed));
-				}
 
 				vec3d tmp_up;
 				matrix eyemat;
 				ship_get_eye(&tmp_up, &eyemat, Viewer_obj, false, false);
 
-				//create a better 3rd person view if this is the player ship
-				if (Viewer_obj==Player_obj)
-				{
-					//get a point 1000m forward of ship
-					vm_vec_copy_scale(&aim_pt,&Viewer_obj->orient.vec.fvec,1000.0f);
-					vm_vec_add2(&aim_pt,&Viewer_obj->pos);
+				eye_pos = Viewer_obj->pos;
 
-					vm_vec_scale_add(&eye_pos, &Viewer_obj->pos, &move_dir, -0.02f * Viewer_obj->radius);
-					vm_vec_scale_add2(&eye_pos, &eyemat.vec.fvec, -2.125f * Viewer_obj->radius - Viewer_chase_info.distance);
-					vm_vec_scale_add2(&eye_pos, &eyemat.vec.uvec, 0.625f * Viewer_obj->radius + 0.35f * Viewer_chase_info.distance);
-					vm_vec_sub(&tmp_dir, &aim_pt, &eye_pos);
-					vm_vec_normalize(&tmp_dir);
+				//get a point far in front of the ship to point the camera at
+				vm_vec_copy_scale(&aim_pt,&Viewer_obj->orient.vec.fvec, Viewer_obj->radius * 100.0f);
+				vm_vec_add2(&aim_pt,&Viewer_obj->pos);
+
+				vec3d chase_view_offset = Ship_info[Ships[Viewer_obj->instance].ship_info_index].chase_view_offset;
+				if (IS_VEC_NULL(&chase_view_offset)) {
+					if (Viewer_obj == Player_obj)
+						chase_view_offset = vm_vec_new(0.0f, 0.625f * Viewer_obj->radius, -2.125f * Viewer_obj->radius);
+					else
+						chase_view_offset = vm_vec_new(0.0f, 0.75f * Viewer_obj->radius, -2.5f * Viewer_obj->radius);
 				}
-				else
-				{
-					vm_vec_scale_add(&eye_pos, &Viewer_obj->pos, &move_dir, -0.02f * Viewer_obj->radius);
-					vm_vec_scale_add2(&eye_pos, &eyemat.vec.fvec, -2.5f * Viewer_obj->radius - Viewer_chase_info.distance);
-					vm_vec_scale_add2(&eye_pos, &eyemat.vec.uvec, 0.75f * Viewer_obj->radius + 0.35f * Viewer_chase_info.distance);
-					vm_vec_sub(&tmp_dir, &Viewer_obj->pos, &eye_pos);
-					vm_vec_normalize(&tmp_dir);
-				}
+
+				//position the camera based on the offset and external camera distance
+				vec3d rotated_chase_view_offset;
+				vm_vec_unrotate(&rotated_chase_view_offset, &chase_view_offset, &Viewer_obj->orient);
+				vm_vec_add2(&eye_pos, &rotated_chase_view_offset);
+				vm_vec_scale_add2(&eye_pos, &eyemat.vec.fvec, -Viewer_chase_info.distance);
+				vm_vec_scale_add2(&eye_pos, &eyemat.vec.uvec, 0.35f * Viewer_chase_info.distance);
+
+				vec3d old_pos;
+				main_cam->get_info(&old_pos, nullptr);
+				bool hyperspace = (Player_ship->flags[Ship::Ship_Flags::Depart_warp] && Warp_params[Player_ship->warpout_params_index].warp_type == WT_HYPERSPACE);
+				if (camera_cut || hyperspace)
+					old_pos = eye_pos;
+
+				// "push" the camera backwards in the direction of its old position based on acceleration to to make it 
+				// feel like the camera is trying to keep up with the ship (based on the rigidity value)
+				vec3d velocity_comp = Viewer_obj->phys_info.vel;
+				vm_vec_scale_add2(&velocity_comp, &Viewer_obj->phys_info.acceleration, (-5.0f / (vm_vec_mag(&Viewer_obj->phys_info.rotvel) * 2.0f + 1)) * flFrametime);
+				vm_vec_scale_add2(&old_pos, &velocity_comp, flFrametime);
+				vec3d eye_mov = eye_pos - old_pos;
+				eye_mov *= exp(-Ship_info[Ships[Viewer_obj->instance].ship_info_index].chase_view_rigidity * flFrametime);
+				eye_pos -= eye_mov;
+
+				vm_vec_sub(&eye_vec, &aim_pt, &eye_pos);
+				vm_vec_normalize(&eye_vec);
 					
 				// JAS: I added the following code because if you slew up using
 				// Descent-style physics, tmp_dir and Viewer_obj->orient.vec.uvec are
@@ -3185,7 +3206,7 @@ camid game_render_frame_setup()
 				tmp_up = eyemat.vec.uvec;
 				vm_vec_scale_add2( &tmp_up, &eyemat.vec.rvec, 0.00001f );
 
-				vm_vector_2_matrix(&eye_orient, &tmp_dir, &tmp_up, nullptr);
+				vm_vector_2_matrix(&eye_orient, &eye_vec, &tmp_up, nullptr);
 				Viewer_obj = nullptr;
 
 				//	Modify the orientation based on head orientation.
@@ -3197,9 +3218,9 @@ camid game_render_frame_setup()
 
 					vec3d warp_pos = Player_obj->pos;
 					shipp->warpout_effect->getWarpPosition(&warp_pos);
-					vm_vec_sub(&tmp_dir, &warp_pos, &eye_pos);
-					vm_vec_normalize(&tmp_dir);
-					vm_vector_2_matrix(&eye_orient, &tmp_dir, &Player_obj->orient.vec.uvec, nullptr);
+					vm_vec_sub(&eye_vec, &warp_pos, &eye_pos);
+					vm_vec_normalize(&eye_vec);
+					vm_vector_2_matrix(&eye_orient, &eye_vec, &Player_obj->orient.vec.uvec, nullptr);
 					Viewer_obj = nullptr;
 			} else if (Viewer_mode & VM_TOPDOWN) {
 					angles rot_angles = { PI_2, 0.0f, 0.0f };
@@ -5017,15 +5038,15 @@ void game_leave_state( int old_state, int new_state )
 			break;
 	}
 
-	using namespace scripting::api;
+	auto script_param_list = scripting::hook_param_list(
+		scripting::hook_param("OldState", 'o', scripting::api::l_GameState.Set(scripting::api::gamestate_h(old_state))),
+		scripting::hook_param("NewState", 'o', scripting::api::l_GameState.Set(scripting::api::gamestate_h(new_state))));
 
-	Script_system.SetHookVar("OldState", 'o', l_GameState.Set(gamestate_h(old_state)));
-	Script_system.SetHookVar("NewState", 'o', l_GameState.Set(gamestate_h(new_state)));
+	OnStateAboutToEndHook->run(script_param_list);
 
-    if (Script_system.IsConditionOverride(CHA_ONSTATEEND))
+	if (OnStateEndHook->isOverride(script_param_list))
 	{
-		Script_system.RunCondition(CHA_ONSTATEEND);
-		Script_system.RemHookVars({"OldState", "NewState"});
+		OnStateEndHook->run(script_param_list);
 		return;
 	}
 
@@ -5453,8 +5474,7 @@ void game_leave_state( int old_state, int new_state )
 	}
 
 	//WMC - Now run scripting stuff
-	Script_system.RunCondition(CHA_ONSTATEEND);
-	Script_system.RemHookVars({"OldState", "NewState"});
+	OnStateEndHook->run(script_param_list);
 }
 
 // variable used for automatic netgame starting/joining

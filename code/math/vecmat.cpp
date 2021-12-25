@@ -808,44 +808,22 @@ matrix *vm_vector_2_matrix_norm(matrix *m, const vec3d *fvec, const vec3d *uvec,
 }
 
 
-//rotates a vector through a matrix. returns ptr to dest vector
-//dest CANNOT equal source
-//
-// Goober5000: FYI, the result of rotating a normalized vector through a rotation matrix will
-// also be a normalized vector.  It took me awhile to verify online that this was true. ;)
+// rotates a vector through a matrix, writes to *dest and returns the pointer
+// if m is a rotation matrix it will preserve the length of *src, so normalised vectors will remain normalised
 vec3d *vm_vec_rotate(vec3d *dest, const vec3d *src, const matrix *m)
 {
-	Assert(dest != src);
-
-	dest->xyz.x = (src->xyz.x*m->vec.rvec.xyz.x)+(src->xyz.y*m->vec.rvec.xyz.y)+(src->xyz.z*m->vec.rvec.xyz.z);
-	dest->xyz.y = (src->xyz.x*m->vec.uvec.xyz.x)+(src->xyz.y*m->vec.uvec.xyz.y)+(src->xyz.z*m->vec.uvec.xyz.z);
-	dest->xyz.z = (src->xyz.x*m->vec.fvec.xyz.x)+(src->xyz.y*m->vec.fvec.xyz.y)+(src->xyz.z*m->vec.fvec.xyz.z);
+	*dest = (*m) * (*src);
 
 	return dest;
 }
 
-//rotates a vector through the transpose of the given matrix. 
-//returns ptr to dest vector
-//dest CANNOT equal source
-// This is a faster replacement for this common code sequence:
-//    vm_copy_transpose(&tempm,src_matrix);
-//    vm_vec_rotate(dst_vec,src_vect,&tempm);
-// Replace with:
-//    vm_vec_unrotate(dst_vec,src_vect, src_matrix)
-//
-// THIS DOES NOT ACTUALLY TRANSPOSE THE SOURCE MATRIX!!! So if
-// you need it transposed later on, you should use the 
-// vm_vec_transpose() / vm_vec_rotate() technique.
-//
-// Goober5000: FYI, the result of rotating a normalized vector through a rotation matrix will
-// also be a normalized vector.  It took me awhile to verify online that this was true. ;)
+// like vm_vec_rotate, but uses the transpose matrix instead. for rotations, this is an inverse.
 vec3d *vm_vec_unrotate(vec3d *dest, const vec3d *src, const matrix *m)
 {
-	Assert(dest != src);
+	matrix mt;
 
-	dest->xyz.x = (src->xyz.x*m->vec.rvec.xyz.x)+(src->xyz.y*m->vec.uvec.xyz.x)+(src->xyz.z*m->vec.fvec.xyz.x);
-	dest->xyz.y = (src->xyz.x*m->vec.rvec.xyz.y)+(src->xyz.y*m->vec.uvec.xyz.y)+(src->xyz.z*m->vec.fvec.xyz.y);
-	dest->xyz.z = (src->xyz.x*m->vec.rvec.xyz.z)+(src->xyz.y*m->vec.uvec.xyz.z)+(src->xyz.z*m->vec.fvec.xyz.z);
+	vm_copy_transpose(&mt, m);
+	*dest = mt * (*src);
 
 	return dest;
 }
@@ -884,27 +862,37 @@ matrix *vm_copy_transpose(matrix *dest, const matrix *src)
 	return dest;
 }
 
-//mulitply 2 matrices, fill in dest.  returns ptr to dest
-//dest CANNOT equal either source
+inline vec3d operator*(const matrix& A, const vec3d& v) {
+	vec3d out;
+
+	out.xyz.x = vm_vec_dot(&A.vec.rvec, &v);
+	out.xyz.y = vm_vec_dot(&A.vec.uvec, &v);
+	out.xyz.z = vm_vec_dot(&A.vec.fvec, &v);
+
+	return out;
+}
+
+inline matrix operator*(const matrix& A, const matrix& B) {
+	matrix BT, out;
+
+	// we transpose B here for concision and also potential vectorisation opportunities
+	vm_copy_transpose(&BT, &B);
+
+	out.vec.rvec = BT * A.vec.rvec;
+	out.vec.uvec = BT * A.vec.uvec;
+	out.vec.fvec = BT * A.vec.fvec;
+
+	return out;
+}
+
+// Old matrix multiplication routine. Note that the order of multiplication is inverted
+// compared to the mathematical standard: formally, this calculates src1 * src0
 matrix *vm_matrix_x_matrix(matrix *dest, const matrix *src0, const matrix *src1)
 {
-	Assert(dest!=src0 && dest!=src1);
-
-	dest->vec.rvec.xyz.x = vm_vec_dot3(src0->vec.rvec.xyz.x,src0->vec.uvec.xyz.x,src0->vec.fvec.xyz.x, &src1->vec.rvec);
-	dest->vec.uvec.xyz.x = vm_vec_dot3(src0->vec.rvec.xyz.x,src0->vec.uvec.xyz.x,src0->vec.fvec.xyz.x, &src1->vec.uvec);
-	dest->vec.fvec.xyz.x = vm_vec_dot3(src0->vec.rvec.xyz.x,src0->vec.uvec.xyz.x,src0->vec.fvec.xyz.x, &src1->vec.fvec);
-
-	dest->vec.rvec.xyz.y = vm_vec_dot3(src0->vec.rvec.xyz.y,src0->vec.uvec.xyz.y,src0->vec.fvec.xyz.y, &src1->vec.rvec);
-	dest->vec.uvec.xyz.y = vm_vec_dot3(src0->vec.rvec.xyz.y,src0->vec.uvec.xyz.y,src0->vec.fvec.xyz.y, &src1->vec.uvec);
-	dest->vec.fvec.xyz.y = vm_vec_dot3(src0->vec.rvec.xyz.y,src0->vec.uvec.xyz.y,src0->vec.fvec.xyz.y, &src1->vec.fvec);
-
-	dest->vec.rvec.xyz.z = vm_vec_dot3(src0->vec.rvec.xyz.z,src0->vec.uvec.xyz.z,src0->vec.fvec.xyz.z, &src1->vec.rvec);
-	dest->vec.uvec.xyz.z = vm_vec_dot3(src0->vec.rvec.xyz.z,src0->vec.uvec.xyz.z,src0->vec.fvec.xyz.z, &src1->vec.uvec);
-	dest->vec.fvec.xyz.z = vm_vec_dot3(src0->vec.rvec.xyz.z,src0->vec.uvec.xyz.z,src0->vec.fvec.xyz.z, &src1->vec.fvec);
+	*dest = (*src1) * (*src0);
 
 	return dest;
 }
-
 
 //extract angles from a matrix
 angles *vm_extract_angles_matrix(angles *a, const matrix *m)
@@ -2240,23 +2228,36 @@ void vm_vec_random_in_circle(vec3d *out, const vec3d *in, const matrix *orient, 
 	vm_rot_point_around_line(out, &temp, fl_radians(frand_range(0.0f, 360.0f)), in, &orient->vec.fvec);
 }
 
+void vm_vec_unit_sphere_point(vec3d *out, float z_scale, float phi_scale)
+{
+	const auto z = (z_scale * 2.0f) - 1.0f; // convert range to [-1,1]
+	const auto phi = phi_scale * PI2;
+	const auto rho = sqrtf(1.0f - z * z);
+	vm_vec_make(out, rho * cosf(phi), rho * sinf(phi), z); // Using the z-vec as the starting point
+}
+
 // given a start vector and a radius, generate a point in a spherical volume
 // if on_surface is true, the point will be on the surface of the sphere
+namespace {
+	util::UniformFloatRange float_range(0.0f, 1.0f);
+}
 void vm_vec_random_in_sphere(vec3d *out, const vec3d *in, float radius, bool on_surface, bool bias_towards_center)
 {
 	vec3d temp;
 
-	float z = util::UniformFloatRange(-1, 1).next(); // Take a 2-sphere slice
-	float phi = util::UniformFloatRange(0.0f, PI2).next();
-	vm_vec_make(&temp, sqrtf(1.0f - z * z) * cosf(phi), sqrtf(1.0f - z * z) * sinf(phi), z); // Using the z-vec as the starting point
+	vm_vec_unit_sphere_point(&temp, float_range.next(), float_range.next());
 
-	float scalar = util::UniformFloatRange(0.0f, 1.0f).next();
+	float scalar = 1.0f;
 
-	// cube root because scaling inward increases the probability density by the cube of its proximity towards the center
-	if (!bias_towards_center)
-		scalar = powf(scalar, 0.333f);
+	if (!on_surface) {
+		scalar = float_range.next();
 
-	vm_vec_scale_add(out, in, &temp, on_surface ? radius : scalar * radius);
+		// cube root because scaling inward increases the probability density by the cube of its proximity towards the center
+		if (!bias_towards_center)
+			scalar = powf(scalar, 0.333f);
+	}
+
+	vm_vec_scale_add(out, in, &temp, scalar * radius);
 }
 
 // find the nearest point on the line to p. if dist is non-NULL, it is filled in
@@ -2841,4 +2842,23 @@ matrix vm_stretch_matrix(const vec3d* stretch_dir, float stretch) {
 
 
 	return vmd_identity_matrix + outer_prod;
+}
+
+// generates a well distributed quasi-random position in a -1 to 1 cube
+// the caller must provide and increment the seed for each call for proper results
+// algorithm taken from http://extremelearning.com.au/unreasonable-effectiveness-of-quasirandom-sequences/
+const float phi3 = 1.220744084f;
+vec3d vm_well_distributed_rand_vec(int seed, vec3d* offset) {
+	vec3d out;
+	if (offset != nullptr) {
+		out.xyz.x = fmod(-fmod(offset->xyz.x, 1.f) + ((1.f / phi3) * seed), 1.f) * 2 - 1;
+		out.xyz.y = fmod(-fmod(offset->xyz.y, 1.f) + ((1.f / (phi3 * phi3)) * seed), 1.f) * 2 - 1;
+		out.xyz.z = fmod(-fmod(offset->xyz.z, 1.f) + ((1.f / (phi3 * phi3 * phi3)) * seed), 1.f) * 2 - 1;
+	}
+	else {
+		out.xyz.x = fmod((1.f / phi3) * seed, 1.f) * 2 - 1;
+		out.xyz.y = fmod((1.f / (phi3 * phi3)) * seed, 1.f) * 2 - 1;
+		out.xyz.z = fmod((1.f / (phi3 * phi3 * phi3)) * seed, 1.f) * 2 - 1;
+	}
+	return out;
 }

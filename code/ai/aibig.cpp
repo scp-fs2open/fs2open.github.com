@@ -781,10 +781,11 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 		float optimal_range = 0.0f;
 		ship_weapon* weapons = &Ships[Pl_objp->instance].weapons;
 		weapon_info* wip = nullptr;
+		ship* shipp = &Ships[Pl_objp->instance];
 
-		if (weapons->num_primary_banks >= 1 && weapons->current_primary_bank >= 0) {
+		if (weapons->num_primary_banks >= 1 && weapons->current_primary_bank >= 0 && !shipp->flags[Ship::Ship_Flags::Primaries_locked]) {
 			wip = &Weapon_info[weapons->primary_bank_weapons[weapons->current_primary_bank]];
-		} else if (weapons->num_secondary_banks >= 1 && weapons->current_secondary_bank >= 0) {
+		} else if (weapons->num_secondary_banks >= 1 && weapons->current_secondary_bank >= 0 && !shipp->flags[Ship::Ship_Flags::Secondaries_locked]) {
 			wip = &Weapon_info[weapons->secondary_bank_weapons[weapons->current_secondary_bank]];
 		}
 
@@ -798,7 +799,6 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 			if (dist_to_enemy > (optimal_range > 0.0f ? optimal_range : (weapon_travel_dist-20))) {
 				accelerate_ship(aip, 1.0f);
 				
-				ship	*shipp = &Ships[Pl_objp->instance];
 				if ((aip->ai_flags[AI::AI_Flags::Free_afterburner_use] || aip->ai_profile_flags[AI::Profile_Flags::Free_afterburner_use]) && !(shipp->flags[Ship::Ship_Flags::Afterburner_locked]) && (dot_to_enemy > 0.75f)) {
 					if (ai_maybe_fire_afterburner(Pl_objp, aip)) {
 						afterburners_start(Pl_objp);
@@ -840,7 +840,6 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 			} else {
 				accelerate_ship(aip, accel);
 
-				ship	*shipp = &Ships[Pl_objp->instance];
 				if ((aip->ai_flags[AI::AI_Flags::Free_afterburner_use] || aip->ai_profile_flags[AI::Profile_Flags::Free_afterburner_use]) && !(shipp->flags[Ship::Ship_Flags::Afterburner_locked]) && (accel > 0.95f)) {
 					if (ai_maybe_fire_afterburner(Pl_objp, aip)) {
 						afterburners_start(Pl_objp);
@@ -928,7 +927,7 @@ static void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy)
 									}
 								}
 
-								if (timestamp_elapsed(swp->next_secondary_fire_stamp[current_bank])) {
+								if (timestamp_elapsed(swp->next_secondary_fire_stamp[current_bank]) && weapon_target_satisfies_lock_restrictions(swip, En_objp)) {
 									float firing_range;
 									if (swip->wi_flags[Weapon::Info_Flags::Local_ssm])
 										firing_range=swip->lssm_lock_range;

@@ -102,6 +102,7 @@ int Id_select_type_start = 0;
 int Id_select_type_waypoint = 0;
 int Hide_ship_cues = 0, Hide_wing_cues = 0;
 int Move_ships_when_undocking = 1;			// true by default
+int Highlight_selectable_subsys = 0;
 
 vec3d original_pos, saved_cam_pos;
 matrix bitmap_matrix_backup, saved_cam_orient = { 0.0f };
@@ -116,7 +117,7 @@ char *names[MAX_OBJECTS], flags[MAX_OBJECTS];
 int obj_count = 0;
 int g_err = 0;
 
-int ID_SHOW_IFF[MAX_IFFS];
+SCP_vector<int> ID_SHOW_IFF;
 
 void view_universe(int just_marked = 0);
 void select_objects();
@@ -250,6 +251,8 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_COMMAND(ID_EDITORS_WAYPOINT, OnEditorsWaypoint)
 	ON_COMMAND(ID_VIEW_OUTLINES, OnViewOutlines)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_OUTLINES, OnUpdateViewOutlines)
+	ON_COMMAND(ID_VIEW_OUTLINES_ON_SELECTED, OnViewOutlinesOnSelected)
+	ON_UPDATE_COMMAND_UI(ID_VIEW_OUTLINES_ON_SELECTED, OnUpdateViewOutlinesOnSelected)
 	ON_UPDATE_COMMAND_UI(ID_NEW_SHIP_TYPE, OnUpdateNewShipType)
 	ON_COMMAND(ID_SHOW_STARFIELD, OnShowStarfield)
 	ON_UPDATE_COMMAND_UI(ID_SHOW_STARFIELD, OnUpdateShowStarfield)
@@ -333,6 +336,8 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_UPDATE_COMMAND_UI(ID_FORMAT_FS1_RETAIL, OnUpdateFormatFs1Retail)
 	ON_COMMAND(ID_MISC_MOVESHIPSWHENUNDOCKING, OnMoveShipsWhenUndocking)
 	ON_UPDATE_COMMAND_UI(ID_MISC_MOVESHIPSWHENUNDOCKING, OnUpdateMoveShipsWhenUndocking)
+	ON_COMMAND(ID_HIGHLIGHT_SUBSYS, OnHighlightSubsys)
+	ON_UPDATE_COMMAND_UI(ID_HIGHLIGHT_SUBSYS, OnUpdateHighlightSubsys)
 	ON_COMMAND(ID_EDITORS_SET_GLOBAL_SHIP_FLAGS, OnEditorsSetGlobalShipFlags)
 	ON_COMMAND(ID_EDITORS_VOICE, OnEditorsVoiceManager)
 	ON_COMMAND(ID_EDITORS_FICTION, OnEditorsFiction)
@@ -366,16 +371,16 @@ CFREDView::CFREDView()
 	//m_ShowWaypoints = TRUE;
 
 	// this is stupid
-	ID_SHOW_IFF[0] = ID_SHOW_IFF_0;
-	ID_SHOW_IFF[1] = ID_SHOW_IFF_1;
-	ID_SHOW_IFF[2] = ID_SHOW_IFF_2;
-	ID_SHOW_IFF[3] = ID_SHOW_IFF_3;
-	ID_SHOW_IFF[4] = ID_SHOW_IFF_4;
-	ID_SHOW_IFF[5] = ID_SHOW_IFF_5;
-	ID_SHOW_IFF[6] = ID_SHOW_IFF_6;
-	ID_SHOW_IFF[7] = ID_SHOW_IFF_7;
-	ID_SHOW_IFF[8] = ID_SHOW_IFF_8;
-	ID_SHOW_IFF[9] = ID_SHOW_IFF_9;
+	ID_SHOW_IFF.push_back(ID_SHOW_IFF_0);
+	ID_SHOW_IFF.push_back(ID_SHOW_IFF_1);
+	ID_SHOW_IFF.push_back(ID_SHOW_IFF_2);
+	ID_SHOW_IFF.push_back(ID_SHOW_IFF_3);
+	ID_SHOW_IFF.push_back(ID_SHOW_IFF_4);
+	ID_SHOW_IFF.push_back(ID_SHOW_IFF_5);
+	ID_SHOW_IFF.push_back(ID_SHOW_IFF_6);
+	ID_SHOW_IFF.push_back(ID_SHOW_IFF_7);
+	ID_SHOW_IFF.push_back(ID_SHOW_IFF_8);
+	ID_SHOW_IFF.push_back(ID_SHOW_IFF_9);
 	
 	m_pGDlg = new CGrid(this);
 
@@ -3041,6 +3046,15 @@ int CFREDView::global_error_check()
 		return internal_error("Jump node count is illegal");
 	}*/
 
+	// do error checking for asteroid targets
+	for (const auto& target_ship : Asteroid_target_ships) {
+		if (ship_name_lookup(target_ship.c_str(), 1) < 0) {
+			if (error("Asteroid target '%s' is not a valid ship", target_ship.c_str())) {
+				return 1;
+			}
+		}
+	}
+
 	fred_check_message_personas();
 
 	return g_err;
@@ -3374,7 +3388,7 @@ int CFREDView::fred_check_sexp(int sexp, int type, const char *msg, ...)
 
 	convert_sexp_to_string(sexp_buf, sexp, SEXP_ERROR_CHECK_MODE);
 	truncate_message_lines(sexp_buf, 30);
-	sprintf(error_buf, "Error in %s: %s\n\nIn sexpression: %s\n\n(Error appears to be: %s)", buf.c_str(), sexp_error_message(z), sexp_buf.c_str(), Sexp_nodes[faulty_node].text);
+	sprintf(error_buf, "Error in %s: %s\n\nIn sexpression: %s\n\n(Bad node appears to be: %s)", buf.c_str(), sexp_error_message(z), sexp_buf.c_str(), Sexp_nodes[faulty_node].text);
 
 	if (z < 0 && z > -100)
 		err = 1;
@@ -3755,6 +3769,18 @@ void CFREDView::OnViewOutlines()
 void CFREDView::OnUpdateViewOutlines(CCmdUI* pCmdUI) 
 {
 	pCmdUI->SetCheck(Show_outlines);
+}
+
+void CFREDView::OnViewOutlinesOnSelected() 
+{
+	Draw_outlines_on_selected_ships = !Draw_outlines_on_selected_ships;
+	theApp.write_ini_file();
+	Update_window = 1;
+}
+
+void CFREDView::OnUpdateViewOutlinesOnSelected(CCmdUI* pCmdUI) 
+{
+	pCmdUI->SetCheck(Draw_outlines_on_selected_ships);
 }
 
 void CFREDView::OnUpdateNewShipType(CCmdUI* pCmdUI) 
@@ -4552,6 +4578,18 @@ void CFREDView::OnMoveShipsWhenUndocking()
 void CFREDView::OnUpdateMoveShipsWhenUndocking(CCmdUI* pCmdUI)
 {
 	pCmdUI->SetCheck(Move_ships_when_undocking);
+}
+
+void CFREDView::OnHighlightSubsys()
+{
+	Highlight_selectable_subsys = !Highlight_selectable_subsys;
+	theApp.write_ini_file();
+	Update_window = 1;
+}
+
+void CFREDView::OnUpdateHighlightSubsys(CCmdUI* pCmdUI)
+{
+	pCmdUI->SetCheck(Highlight_selectable_subsys);
 }
 
 void CFREDView::OnDumpStats()

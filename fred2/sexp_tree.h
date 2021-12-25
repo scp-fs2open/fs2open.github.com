@@ -295,6 +295,7 @@ public:
 	sexp_list_item *get_listing_opf_fireball();
 	sexp_list_item *get_listing_opf_species();
 	sexp_list_item *get_listing_opf_language();
+	sexp_list_item* get_listing_opf_functional_when_eval_type();
 	sexp_list_item *get_listing_opf_sexp_containers(ContainerType con_type);
 	sexp_list_item *get_listing_opf_list_modifiers(bool use_modifier_type);
 	sexp_list_item *get_listing_opf_map_keys(int parent_node, bool use_modifier_type);

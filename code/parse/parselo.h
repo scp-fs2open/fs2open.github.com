@@ -81,7 +81,7 @@ extern void consolidate_double_characters(char *str, char ch);
 // white space
 extern int is_white_space(char ch);
 extern int is_white_space(unicode::codepoint_t cp);
-extern void ignore_white_space();
+extern void ignore_white_space(const char **pp = nullptr);
 extern void drop_trailing_white_space(char *str);
 extern void drop_leading_white_space(char *str);
 extern char *drop_white_space(char *str);
@@ -94,7 +94,7 @@ extern void drop_white_space(SCP_string &str);
 // gray space
 extern int is_gray_space(char ch);
 extern bool is_gray_space(unicode::codepoint_t cp);
-extern void ignore_gray_space();
+extern void ignore_gray_space(const char **pp = nullptr);
 
 // error
 extern int get_line_num();
@@ -206,6 +206,7 @@ extern void stuff_vec3d_list(SCP_vector<vec3d> &vec_list);
 extern size_t stuff_bool_list(bool *blp, size_t max_bools);
 extern void stuff_vec3d(vec3d *vp);
 extern void stuff_matrix(matrix *mp);
+extern void stuff_angles_deg_phb(angles* vp);
 extern void find_and_stuff(const char *id, int *addr, int f_type, const char *strlist[], size_t max, const char *description);
 extern void find_and_stuff_optional(const char *id, int *addr, int f_type, const char * const *strlist, size_t max, const char *description);
 extern int match_and_stuff(int f_type, const char * const *strlist, int max, const char *description);
@@ -238,6 +239,7 @@ extern int check_for_eoln();
 extern void parse_float_list(float *plist, size_t size);
 extern void parse_int_list(int *ilist, size_t size);
 
+extern void parse_string_map(SCP_map<SCP_string, SCP_string>& mapOut, const char* end_marker, const char* entry_prefix);
 
 // general
 extern void reset_parse(char *text = NULL);

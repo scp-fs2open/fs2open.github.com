@@ -3079,20 +3079,7 @@ void multi_update_valid_missions()
 		popup_conditional_create(0, XSTR("&Cancel", 667), XSTR("Validating missions ...", -1));
 	}
 
-	for (idx = 0; idx < Multi_create_mission_list.size(); idx++) {
-		if (Multi_create_mission_list[idx].valid_status != MVALID_STATUS_UNKNOWN) {
-			continue;
-		}
-
-		int rval = multi_fs_tracker_validate_mission(Multi_create_mission_list[idx].filename);
-
-		if (rval == -2) {
-			was_cancelled = true;
-			break;
-		}
-
-		Multi_create_mission_list[idx].valid_status = (char)rval;
-	}
+	was_cancelled = !multi_fs_tracker_validate_mission_list(Multi_create_mission_list);
 
 	if ( !(Game_mode & GM_STANDALONE_SERVER) ) {
 		popup_conditional_close();

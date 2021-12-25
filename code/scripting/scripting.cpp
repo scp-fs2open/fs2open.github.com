@@ -72,7 +72,6 @@ static USED_VARIABLE SCP_vector<std::shared_ptr<BuiltinHook>> Script_actions
 	std::make_shared<BuiltinHook>("On Mouse Moved",			CHA_MOUSEMOVED ),
 	std::make_shared<BuiltinHook>("On Mouse Pressed",		CHA_MOUSEPRESSED ),
 	std::make_shared<BuiltinHook>("On Mouse Released",		CHA_MOUSERELEASED ),
-	std::make_shared<BuiltinHook>("On State End",			CHA_ONSTATEEND ),
 	std::make_shared<BuiltinHook>("On Mission Start",		CHA_MISSIONSTART ),
 	std::make_shared<BuiltinHook>("On HUD Draw",			CHA_HUDDRAW ),
 	std::make_shared<BuiltinHook>("On Ship Collision",		CHA_COLLIDESHIP ),
@@ -81,7 +80,6 @@ static USED_VARIABLE SCP_vector<std::shared_ptr<BuiltinHook>> Script_actions
 	std::make_shared<BuiltinHook>("On Asteroid Collision",	CHA_COLLIDEASTEROID ),
 	std::make_shared<BuiltinHook>("On Object Render",		CHA_OBJECTRENDER ),
 	std::make_shared<BuiltinHook>("On Death",				CHA_DEATH ),
-	std::make_shared<BuiltinHook>("On Mission End",			CHA_MISSIONEND ),
 	std::make_shared<BuiltinHook>("On Weapon Delete",		CHA_ONWEAPONDELETE ),
 	std::make_shared<BuiltinHook>("On Weapon Equipped",		CHA_ONWPEQUIPPED ),
 	std::make_shared<BuiltinHook>("On Weapon Fired",		CHA_ONWPFIRED ),
@@ -163,6 +161,8 @@ void script_parse_table(const char* filename)
 			while (st->ParseCondition(filename));
 			required_string("#End");
 		}
+
+		st->AssayActions();
 	}
 	catch (const parse::ParseException& e)
 	{
@@ -756,6 +756,8 @@ void script_state::Clear()
 	ConditionalHooks.clear();
 	HookVariableValues.clear();
 
+	AssayActions();
+
 	if (LuaState != nullptr) {
 		OnStateDestroy(LuaState);
 
@@ -1137,9 +1139,33 @@ bool script_state::ParseCondition(const char *filename)
 	return true;
 }
 
-void script_state::AddConditionedHook(ConditionedHook hook) { ConditionalHooks.push_back(std::move(hook)); }
+void script_state::AddConditionedHook(ConditionedHook hook) {
+	ConditionalHooks.push_back(std::move(hook));
+	AssayActions();
+}
 
 void script_state::AddGameInitFunction(script_function func) { GameInitFunctions.push_back(std::move(func)); }
+
+// For each possible script_action this maintains an array that records whether any scripts are actually using this action
+// This allows us to avoid significant overhead from checking everything at the potential hook sites, but you must call
+// AssayActions() after modifying ConditionalHooks before returning to normal operation of the scripting system!
+void script_state::AssayActions() {
+	for (bool &i : ActiveActions) {
+		i = false;
+	}
+
+	for (const auto &hook : ConditionalHooks) {
+		for (const auto &action : hook.Actions) {
+			if (action.action_type >= -1 && action.action_type <= CHA_LAST) {
+				ActiveActions[action.action_type] = true;
+			}
+		}
+	}
+}
+
+bool script_state::IsActiveAction(ConditionalActions action_id) {
+	return ActiveActions[action_id];
+}
 
 //*************************CLASS: script_state*************************
 bool script_state::IsOverride(script_hook &hd)

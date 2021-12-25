@@ -21,7 +21,9 @@
 #include "graphics/2d.h"
 #include "graphics/generic.h"
 #include "model/model.h"
+#include "model/modelanimation.h"
 #include "particle/ParticleManager.h"
+#include "weapon/beam.h"
 #include "weapon/shockwave.h"
 #include "weapon/swarm.h"
 #include "weapon/trails.h"
@@ -49,6 +51,9 @@ extern int Num_weapon_subtypes;
 #define LR_CURRENT_TARGET				0		// Only lock current target and subsystem
 #define LR_CURRENT_TARGET_SUBSYS		1		// 
 #define LR_ANY_TARGETS					2
+
+// enum for multilock object type restriction
+enum class LR_Objecttypes { LRO_SHIPS, LRO_WEAPONS };
 
 //particle names go here -nuke
 #define PSPEW_NONE		-1			//used to disable a spew, useful for xmts
@@ -93,7 +98,7 @@ struct WeaponStateHash {
 typedef struct weapon {
 	int		weapon_info_index;			// index into weapon_info array
 	int		objnum;							// object number for this weapon
-	int		model_instance_num;				// model instance number, if we have any intrinsic-rotating submodels
+	int		model_instance_num;				// model instance number, if we have any intrinsic-moving submodels
 	int		team;								// The team of the ship that fired this
 	int		species;							// The species of the ship that fired thisz
 	float		lifeleft;						// life left on this weapon	
@@ -101,7 +106,6 @@ typedef struct weapon {
 
 	int		target_num;						//	Object index of target
 	int		target_sig;						//	So we know if the target is the same one we've been tracking
-	float		nearest_dist;					//	nearest distance yet attained to target
 	fix		creation_time;					//	time at which created, stuffed Missiontime
 	flagset<Weapon::Weapon_Flags> weapon_flags;					//	bit flags defining behavior, see WF_xxxx
 	object*	homing_object;					//	object this weapon is homing on.
@@ -122,8 +126,10 @@ typedef struct weapon {
 	float		thruster_glow_noise;				// Noise for current frame
 
 	// laser stuff
-	float	laser_bitmap_frame;				// used to keep track of which frame the animation should be on
-	float	laser_glow_bitmap_frame;		// used to keep track of which frame the glow animation should be on
+	float	laser_bitmap_frame;				// these are used to keep track of which frame the relevant animations should be on
+	float   laser_headon_bitmap_frame;
+	float	laser_glow_bitmap_frame;	
+	float   laser_glow_headon_bitmap_frame;
 
 	int		pick_big_attack_point_timestamp;	//	Timestamp at which to pick a new point to attack.
 	vec3d	big_attack_point;				//	Target-relative location of attack point.
@@ -218,7 +224,7 @@ typedef struct type5_beam_info {
 } type5_beam_info;
 
 typedef struct beam_weapon_info {
-	int beam_type;						// beam type
+	BeamType beam_type;						// beam type
 	float beam_life;					// how long it lasts
 	int beam_warmup;					// how long it takes to warmup (in ms)
 	int beam_warmdown;					// how long it takes to warmdown (in ms)
@@ -227,7 +233,7 @@ typedef struct beam_weapon_info {
 	float beam_particle_radius;			// radius of beam particles
 	float beam_particle_angle;			// angle of beam particle spew cone
 	generic_anim beam_particle_ani;		// particle_ani
-	float beam_iff_miss_factor[MAX_IFFS][NUM_SKILL_LEVELS];	// magic # which makes beams miss more. by parent iff and player skill level
+	SCP_map<int, std::array<float, NUM_SKILL_LEVELS>> beam_iff_miss_factor;	// magic # which makes beams miss more. by parent iff and player skill level
 	gamesnd_id beam_loop_sound;				// looping beam sound
 	gamesnd_id beam_warmup_sound;				// warmup sound
 	gamesnd_id beam_warmdown_sound;			// warmdown sound
@@ -336,7 +342,11 @@ struct weapon_info
 	int hud_image_index;					//teh index of the image
 
 	generic_anim laser_bitmap;				// bitmap for a laser
+	generic_anim laser_headon_bitmap;		// optional bitmap for when viewed from ahead/behind
 	generic_anim laser_glow_bitmap;			// optional laser glow bitmap
+	generic_anim laser_glow_headon_bitmap;  // optional headon for the glow
+	float laser_headon_switch_rate;			// how smooth vs sudden the transition between the headon and main bitmap should be
+	float laser_headon_switch_ang;			// at what angle
 
 	float laser_length;
 	color	laser_color_1;						// for cycling between glow colors
@@ -405,6 +415,7 @@ struct weapon_info
 	int SwarmWait;                  // *Swarm firewait, default is 150  -Et1
 
 	int target_restrict;
+	LR_Objecttypes target_restrict_objecttypes;
 	bool multi_lock;
 	int max_seeking;						// how many seekers can be active at a time if multilock is enabled. A value of one will lock stuff up one by one.
 	int max_seekers_per_target;			// how many seekers can be attached to a target.
@@ -550,7 +561,7 @@ struct weapon_info
 
 	int weapon_hitpoints;
 
-	int	burst_shots;
+	int	burst_shots;	// always 1 less than the actual burst length; 0 = no burst, 1 = two-shot burst, 2 = 3-shot, etc
 	float burst_delay;
 	flagset<Weapon::Burst_Flags> burst_flags;
 
@@ -575,9 +586,14 @@ struct weapon_info
 
 	int			score; //Optional score for destroying the weapon
 
+	
+	SCP_map<SCP_string, SCP_string> custom_data;
+
 	decals::creation_info impact_decal;
 
 	actions::ProgramSet on_create_program;
+
+	animation::ModelAnimationSet animations;
 
 public:
 	weapon_info();
@@ -765,7 +781,7 @@ bool weapon_multilock_can_lock_on_subsys(object* shooter, object* target, ship_s
 // does NOT check range
 // also returns the dot to the subsys in out_dot
 // While single target missiles will check these properties as well separately, this function is ONLY used by multilock
-bool weapon_multilock_can_lock_on_target(object* shooter, object* target_objp, weapon_info* wip, float* out_dot = nullptr);
+bool weapon_multilock_can_lock_on_target(object* shooter, object* target_objp, weapon_info* wip, float* out_dot = nullptr, bool checkWeapons = false);
 
 
 #endif

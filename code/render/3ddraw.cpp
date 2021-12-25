@@ -501,7 +501,9 @@ void g3_render_rect_oriented(material* mat_info, vec3d *pos, vec3d *norm, float 
 //void render_rotated_bitmap(int texture, float alpha, vertex *pnt, float angle, float rad)
 void g3_render_rect_screen_aligned_rotated(material *mat_params, vertex *pnt, float angle, float rad)
 {
-	rad *= 1.41421356f;//1/0.707, becase these are the points of a square or width and hieght rad
+	// holdover mistake from retail causes these bitmaps to be rendered 41% bigger than rad
+	// this turns radius into the diagonal distance, but the methods below presume manhattan distance (unadjusted radius)
+	rad *= 1.41421356f;
 
 	angle -= Physics_viewer_bank;
 	if ( angle < 0.0f ) {
@@ -739,7 +741,9 @@ void g3_render_rect_screen_aligned_2d(material *mat_params, vertex *pnt, int ori
 // adapted from g3_draw_bitmap_3d
 void g3_render_rect_screen_aligned(material *mat_params, vertex *pnt, int orient, float rad, float depth)
 {
-	rad *= 1.41421356f;//1/0.707, becase these are the points of a square or width and hieght rad
+	// holdover mistake from retail causes these bitmaps to be rendered 41% bigger than rad
+	// this turns radius into the diagonal distance, but the methods below presume manhattan distance (unadjusted radius)
+	rad *= 1.41421356f;
 
 	vec3d PNT(pnt->world);
 	vec3d p[4];

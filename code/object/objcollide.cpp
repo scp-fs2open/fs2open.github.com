@@ -604,10 +604,10 @@ void obj_reset_colliders()
 	Collision_cached_pairs.clear();
 }
 
-void obj_collide_retime_cached_pairs(int checkdly)
+void obj_collide_retime_cached_pairs()
 {
 	for ( auto& pair : Collision_cached_pairs ) {
-		pair.second.next_check_time = timestamp(checkdly);
+		pair.second.next_check_time = timestamp(0);
 	}
 }
 

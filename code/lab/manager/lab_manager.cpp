@@ -7,6 +7,7 @@
 #include "lab/dialogs/backgrounds.h"
 #include "lab/dialogs/actions.h"
 #include "io/key.h"
+#include "asteroid/asteroid.h"
 #include "missionui/missionscreencommon.h"
 #include "debris/debris.h"
 #include "ship/shipfx.h"
@@ -50,6 +51,7 @@ LabManager::LabManager() {
 	debris_init();
 	extern void debris_page_in();
 	debris_page_in();
+	asteroid_level_init();
 	shockwave_level_init();
 	shipfx_flash_init();
 	mflash_page_in(true);
@@ -255,7 +257,7 @@ void LabManager::onFrame(float frametime) {
 					weapons_firing = true;
 					Ships[obj->instance].weapons.current_primary_bank = i;
 
-					ship_fire_primary(obj, 0);
+					ship_fire_primary(obj);
 
 					Ships[obj->instance].weapon_energy = sip->max_weapon_reserve;
 				}

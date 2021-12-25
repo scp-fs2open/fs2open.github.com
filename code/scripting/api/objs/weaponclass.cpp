@@ -399,6 +399,43 @@ ADE_VIRTVAR(Speed, l_Weaponclass, "number", "Weapon max speed, aka $Velocity in 
 	return ade_set_args(L, "f", Weapon_info[idx].max_speed);
 }
 
+
+ADE_VIRTVAR(InnerRadius, l_Weaponclass, "number", "Radius at which the full explosion damage is done. Marks the line where damage attenuation begins. Same as $Inner Radius in weapons.tbl", "number", "Inner Radius, or 0 if handle is invalid")
+{
+	int idx;
+	float irad = 0.0f;
+	if(!ade_get_args(L, "o|f", l_Weaponclass.Get(&idx), &irad))
+		return ade_set_error(L, "f", 0.0f);
+
+	if(idx < 0 || idx >= weapon_info_size())
+		return ade_set_error(L, "f", 0.0f);
+
+	if(ADE_SETTING_VAR) {
+		Weapon_info[idx].shockwave.inner_rad = irad;
+	}
+
+	return ade_set_args(L, "f", Weapon_info[idx].shockwave.inner_rad);
+}
+
+
+ADE_VIRTVAR(OuterRadius, l_Weaponclass, "number", "Maximum Radius at which any damage is done with this weapon. Same as $Outer Radius in weapons.tbl", "number", "Outer Radius, or 0 if handle is invalid")
+{
+	int idx;
+	float orad = 0.0f;
+	if(!ade_get_args(L, "o|f", l_Weaponclass.Get(&idx), &orad))
+		return ade_set_error(L, "f", 0.0f);
+
+	if(idx < 0 || idx >= weapon_info_size())
+		return ade_set_error(L, "f", 0.0f);
+
+	if(ADE_SETTING_VAR) {
+		Weapon_info[idx].shockwave.outer_rad = orad;
+	}
+
+	return ade_set_args(L, "f", Weapon_info[idx].shockwave.outer_rad);
+}
+
+
 ADE_VIRTVAR(Bomb, l_Weaponclass, "boolean", "Is weapon class flagged as bomb", "boolean", "New flag")
 {
 	int idx;
@@ -421,6 +458,42 @@ ADE_VIRTVAR(Bomb, l_Weaponclass, "boolean", "Is weapon class flagged as bomb", "
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;
+}
+
+ADE_VIRTVAR(CustomData, l_Weaponclass, nullptr, "Gets the custom data table for this weapon class", "table", "The weapon class's custom data table") 
+{
+	int idx;
+	if(!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
+		return ADE_RETURN_NIL;
+	
+	if(idx < 0 || idx >= weapon_info_size())
+		return ADE_RETURN_NIL;
+		
+	auto table = luacpp::LuaTable::create(L);
+	
+	weapon_info *wip = &Weapon_info[idx];
+
+	for (const auto& pair : wip->custom_data)
+	{
+		table.addValue(pair.first, pair.second);
+	}
+
+	return ade_set_args(L, "t", &table);	
+}
+
+ADE_FUNC(hasCustomData, l_Weaponclass, nullptr, "Detects whether the weapon class has any custom data", "boolean", "true if the weaponclass's custom_data is not empty, false otherwise") 
+{
+	int idx;
+	if(!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
+		return ADE_RETURN_NIL;
+	
+	if(idx < 0 || idx >= weapon_info_size())
+		return ADE_RETURN_NIL;
+
+	weapon_info *wip = &Weapon_info[idx];
+
+	bool result = !wip->custom_data.empty();
+	return ade_set_args(L, "b", result);
 }
 
 ADE_VIRTVAR(InTechDatabase, l_Weaponclass, "boolean", "Gets or sets whether this weapon class is visible in the tech room", "boolean", "True or false")

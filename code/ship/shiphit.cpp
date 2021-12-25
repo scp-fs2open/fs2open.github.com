@@ -80,6 +80,15 @@ const std::shared_ptr<scripting::Hook> OnPainFlashHook = scripting::Hook::Factor
 		{"Pain_Type", "number", "The type of pain flash displayed: shield = 0 and hull = 1."},
 	});
 
+const std::shared_ptr<scripting::Hook> OnShipDeathStartedHook = scripting::Hook::Factory(
+	"On Ship Death Started", "Called when a ship starts the death process.",
+	{
+		{"Ship", "ship", "The ship that has begun the death process."},
+		{"Killer", "object", "The object responsible for killing the ship.  Could be null."},
+		{"Hitpos", "vector", "The world coordinates of the killing blow.  Could be null."},
+	});
+
+
 //WMC - Camera rough draft stuff
 /*
 camid dead_get_camera()
@@ -300,10 +309,12 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 	}
 
 	// call a scripting hook for the subsystem (regardless of whether it's added to the mission log)
-	Script_system.SetHookObject("Ship", ship_objp);
-	Script_system.SetHookVar("Subsystem", 'o', scripting::api::l_Subsystem.Set(scripting::api::ship_subsys_h(ship_objp, subsys)));
-	Script_system.RunCondition(CHA_ONSUBSYSDEATH, ship_objp);
-	Script_system.RemHookVars({"Ship", "Subsystem"});
+	if (Script_system.IsActiveAction(CHA_ONSUBSYSDEATH)) {
+		Script_system.SetHookObject("Ship", ship_objp);
+		Script_system.SetHookVar("Subsystem", 'o', scripting::api::l_Subsystem.Set(scripting::api::ship_subsys_h(ship_objp, subsys)));
+		Script_system.RunCondition(CHA_ONSUBSYSDEATH, ship_objp);
+		Script_system.RemHookVars({"Ship", "Subsystem"});
+	}
 
 	if (!(subsys->flags[Ship::Subsystem_Flags::No_disappear])) {
 		if (psub->subobj_num > -1) {
@@ -1780,11 +1791,19 @@ static void ship_vaporize(ship *shipp)
 }
 
 //	*ship_objp was hit and we've determined he's been killed!  By *other_obj!
-void ship_hit_kill(object *ship_objp, object *other_obj, vec3d *hitpos, float percent_killed, int self_destruct)
+void ship_hit_kill(object *ship_objp, object *other_obj, vec3d *hitpos, float percent_killed, bool self_destruct, bool always_log_other_obj)
 {
 	Assert(ship_objp);	// Goober5000 - but not other_obj, not only for sexp but also for self-destruct
 
-	if(Script_system.IsConditionOverride(CHA_DEATH, ship_objp))
+	// add scripting hook for 'On Ship Death Started' -- Goober5000
+	// hook is placed at the beginning of this function to allow the scripter to
+	// actually have access to the ship before any death routines (such as mission logging) are executed
+	if (hitpos)
+		OnShipDeathStartedHook->run(scripting::hook_param_list(scripting::hook_param("Ship", 'o', ship_objp), scripting::hook_param("Killer", 'o', other_obj), scripting::hook_param("Hitpos", 'o', scripting::api::l_Vector.Set(*hitpos))));
+	else
+		OnShipDeathStartedHook->run(scripting::hook_param_list(scripting::hook_param("Ship", 'o', ship_objp), scripting::hook_param("Killer", 'o', other_obj)));
+
+	if(Script_system.IsActiveAction(CHA_DEATH) && Script_system.IsConditionOverride(CHA_DEATH, ship_objp))
 	{
 		//WMC - Do scripting stuff
 		Script_system.SetHookObjects(3, "Self", ship_objp, "Ship", ship_objp, "Killer", other_obj);
@@ -1853,7 +1872,21 @@ void ship_hit_kill(object *ship_objp, object *other_obj, vec3d *hitpos, float pe
 				}
 			}
 			killer_damage_percent = (int)(sp->damage_ship[killer_index]/sp->total_damage_received * 100.0f);
-		}		
+		}
+
+		// are we going to insist that other_obj was the killer?
+		if (always_log_other_obj && other_obj) {
+			object *named_objp = other_obj;
+
+			if (named_objp->type != OBJ_SHIP && named_objp->parent >= 0) {
+				named_objp = &Objects[other_obj->parent];
+			}
+			if (named_objp->type == OBJ_SHIP) {
+				killer_objp = nullptr;
+				killer_ship_name = Ships[named_objp->instance].ship_name;
+				killer_damage_percent = (int)(percent_killed * 100.0f);
+			}
+		}
 
 		if(!self_destruct){
 			// multiplayer
@@ -1933,13 +1966,15 @@ void ship_hit_kill(object *ship_objp, object *other_obj, vec3d *hitpos, float pe
 		ship_maybe_lament();
 	}
 
-	Script_system.SetHookObjects(3, "Self", ship_objp, "Ship", ship_objp, "Killer", other_obj);
-	if (hitpos)
-		Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(*hitpos));
-	Script_system.RunCondition(CHA_DEATH, ship_objp);
-	Script_system.RemHookVars({"Self", "Ship", "Killer"});
-	if (hitpos)
-		Script_system.RemHookVar("Hitpos");
+	if (Script_system.IsActiveAction(CHA_DEATH)) {
+		Script_system.SetHookObjects(3, "Self", ship_objp, "Ship", ship_objp, "Killer", other_obj);
+		if (hitpos)
+			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(*hitpos));
+		Script_system.RunCondition(CHA_DEATH, ship_objp);
+		Script_system.RemHookVars({"Self", "Ship", "Killer"});
+		if (hitpos)
+			Script_system.RemHookVar("Hitpos");
+	}
 }
 
 // function to simply explode a ship where it is currently at
@@ -1978,7 +2013,7 @@ void ship_self_destruct( object *objp )
 	}
 
 	// self destruct
-	ship_hit_kill(objp, nullptr, nullptr, 1.0f, 1);	
+	ship_hit_kill(objp, nullptr, nullptr, 1.0f, true);
 }
 
 extern int Homing_hits, Homing_misses;
@@ -2518,7 +2553,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 				}
 
 				if ( !(shipp->flags[Ship::Ship_Flags::Dying]) && !MULTIPLAYER_CLIENT) {  // if not killed, then kill
-					ship_hit_kill(ship_objp, other_obj, hitpos, percent_killed, 0);
+					ship_hit_kill(ship_objp, other_obj, hitpos, percent_killed);
 				}
 			}
 		}

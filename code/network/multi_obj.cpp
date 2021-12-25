@@ -740,7 +740,7 @@ void multi_oo_fire_rollback_shots(int frame_idx)
 			ship_fire_secondary(rollback_shot.shooterp, 1, true);
 		}
 		else {
-			ship_fire_primary(rollback_shot.shooterp, 0, 1, true);
+			ship_fire_primary(rollback_shot.shooterp, 1, true);
 		}
 	}
 
@@ -1312,7 +1312,7 @@ int multi_oo_pack_data(net_player *pl, object *objp, ushort oo_flags, ubyte *dat
 			
 
 			// retrieve the submodel for rotation info.
-			if (subsystem->system_info->flags[Model::Subsystem_Flags::Rotates, Model::Subsystem_Flags::Dum_rotates]) {
+			if (subsystem->system_info->flags[Model::Subsystem_Flags::Rotates]) {
 				angles *angs_1 = nullptr;
 				angles *angs_2 = nullptr;
 				if (subsystem->submodel_instance_1) {
@@ -1393,9 +1393,13 @@ int multi_oo_pack_data(net_player *pl, object *objp, ushort oo_flags, ubyte *dat
 			if ((aip->wp_list != nullptr) && (aip->wp_list->get_waypoints().size() > aip->wp_index)) {
 				target_signature = Objects[aip->wp_list->get_waypoints().at(aip->wp_index).get_objnum()].net_signature;
 			}
-		} // send the target signature.
-		else if (aip->target_objnum != -1) {
-			target_signature = Objects[Ai_info[shipp->ai_index].target_objnum].net_signature;
+		} // send the target signature. 2021 Version!
+		else if ((aip->goals[0].target_name != nullptr) && strlen(aip->goals[0].target_name) != 0) {
+			
+			int instance = ship_name_lookup(aip->goals[0].target_name);
+			if (instance > -1) {
+				target_signature = Objects[Ships[instance].objnum].net_signature;
+			}
 		}
 
 		PACK_BYTE( umode );
@@ -3186,13 +3190,8 @@ void multi_oo_interp(object* objp)
 	if ((objp->instance < 0) || (objp->instance >= MAX_SHIPS)) {
 		return;
 	}
-	// Now that we know we have a valid ship, do stream weapon firing for this ship before we do anything else that makes us abort
+
 	Assert(objp != Player_obj);
-	if (objp != Player_obj) {
-		if (MULTIPLAYER_CLIENT) {
-			ship_fire_primary(objp, 1, 0);
-		}
-	}
 
 	vec3d store_old_pos = objp->pos;
 	ushort net_sig_idx = objp->net_signature;

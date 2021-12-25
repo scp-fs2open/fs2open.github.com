@@ -416,7 +416,6 @@ UI_XSTR Weapon_select_text[GR_NUM_RESOLUTIONS][WEAPON_SELECT_NUM_TEXT] = {
 	}
 };
 
-
 ///////////////////////////////////////////////////////////////////////
 // Carried Icon
 ///////////////////////////////////////////////////////////////////////
@@ -757,7 +756,8 @@ void wl_render_overhead_view(float frametime)
 			if (wl_ship->model_num < 0)
 			{
 				if (sip->pof_file_tech[0] != '\0') {
-					wl_ship->model_num = model_load(sip->pof_file_tech, sip->n_subsystems, &sip->subsystems[0]);
+					//This cannot load into sip->subsystems, as this will overwrite the subsystems model_num to the techroom model, which is decidedly wrong for the mission itself.
+					wl_ship->model_num = model_load(sip->pof_file_tech, 0, nullptr);
 				}
 				else {
 					wl_ship->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
@@ -830,7 +830,8 @@ void wl_render_overhead_view(float frametime)
 		if (wl_ship->model_num < 0)
 		{
 			if (sip->pof_file_tech[0] != '\0') {
-				wl_ship->model_num = model_load(sip->pof_file_tech, sip->n_subsystems, &sip->subsystems[0]);
+				//This cannot load into sip->subsystems, as this will overwrite the subsystems model_num to the techroom model, which is decidedly wrong for the mission itself.
+				wl_ship->model_num = model_load(sip->pof_file_tech, 0, nullptr);
 			}
 			else {
 				wl_ship->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
@@ -3426,7 +3427,11 @@ void wl_bash_ship_weapons(ship_weapon *swp, wss_unit *slot)
 		if ( (slot->wep_count[sidx] > 0) && (slot->wep[sidx] >= 0) ) {
 			swp->secondary_bank_weapons[j] = slot->wep[sidx];
 			swp->secondary_bank_ammo[j] = slot->wep_count[sidx];
-			swp->secondary_bank_start_ammo[j] = (int)std::lround(Ship_info[slot->ship_class].secondary_bank_ammo_capacity[i] / Weapon_info[swp->secondary_bank_weapons[j]].cargo_size);
+
+			if (Weapon_info[slot->wep[sidx]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo])
+				swp->secondary_bank_start_ammo[j] = 0;
+			else
+				swp->secondary_bank_start_ammo[j] = (int)std::lround(Ship_info[slot->ship_class].secondary_bank_ammo_capacity[i] / Weapon_info[swp->secondary_bank_weapons[j]].cargo_size);
 			j++;
 		}
 	}

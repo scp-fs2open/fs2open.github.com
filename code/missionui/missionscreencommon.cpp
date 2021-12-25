@@ -1050,6 +1050,9 @@ int common_scroll_down_pressed(int *start, int size, int max_show)
 
 void common_fire_stage_script_hook(int old_stage, int new_stage)
 {
+	if (!Script_system.IsActiveAction(CHA_ONBRIEFSTAGE)) {
+		return;
+	}
 	// call a scripting hook for switching stages
 	// note that we add 1 because Lua arrays are 1-based
 	Script_system.SetHookVar("OldStage", 'i', old_stage + 1);
@@ -1568,7 +1571,7 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 		bsp_info *bs = NULL;	//tehe
 		for(int i = 0; i < pm->n_models; i++)
 		{
-			if(!pm->submodel[i].is_thruster)
+			if(!pm->submodel[i].flags[Model::Submodel_flags::Is_thruster])
 			{
 				bs = &pm->submodel[i];
 				break;
