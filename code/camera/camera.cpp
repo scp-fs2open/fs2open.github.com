@@ -561,9 +561,9 @@ void warp_camera::get_info(vec3d *position, matrix *orientation)
 #define MAX_SUBTITLE_LINES		64
 subtitle::subtitle(int in_x_pos, int in_y_pos, const char* in_text, const char* in_imageanim, float in_display_time,
 	float in_fade_time, const color *in_text_color, int in_text_fontnum, bool center_x, bool center_y, int in_width,
-	int in_height, bool in_post_shaded)
-	:display_time(-1.0f), fade_time(-1.0f), text_fontnum(-1), time_displayed(-1.0f), time_displayed_end(-1.0f),
-	post_shaded(false)
+	int in_height, bool in_post_shaded, float in_line_height_factor)
+	: display_time(-1.0f), fade_time(-1.0f), text_fontnum(-1), line_height_factor(1.0f),
+	image_id(-1), time_displayed(-1.0f), time_displayed_end(-1.0f), post_shaded(false)
 {
 	// Initialize color
 	gr_init_color(&text_color, 0, 0, 0);
@@ -574,7 +574,6 @@ subtitle::subtitle(int in_x_pos, int in_y_pos, const char* in_text, const char* 
 	memset( imageanim, 0, sizeof(imageanim) );
 	memset( &text_pos, 0, 2*sizeof(int) );
 	memset( &image_pos, 0, 4*sizeof(int) );
-	image_id = -1;
 
 	if ( ((in_text != NULL) && (strlen(in_text) <= 0)) && ((in_imageanim != NULL) && (strlen(in_imageanim) <= 0)) )
 		return;
@@ -586,7 +585,6 @@ subtitle::subtitle(int in_x_pos, int in_y_pos, const char* in_text, const char* 
 		sexp_container_replace_refs_with_values(text_buf);
 		in_text = text_buf.c_str();
 	}
-
 
 	int num_text_lines = 0;
 	const char *text_line_ptrs[MAX_SUBTITLE_LINES];
@@ -610,6 +608,7 @@ subtitle::subtitle(int in_x_pos, int in_y_pos, const char* in_text, const char* 
 	else
 		gr_init_alphacolor(&text_color, 255, 255, 255, 255);
 	text_fontnum = in_text_fontnum;
+	line_height_factor = in_line_height_factor;
 
 	//Setup display and fade time
 	display_time = fl_abs(in_display_time);
@@ -648,7 +647,7 @@ subtitle::subtitle(int in_x_pos, int in_y_pos, const char* in_text, const char* 
 			if(w > tw)
 				tw = w;
 
-			th += h;
+			th += fl2i(line_height_factor * h);
 		}
 
 		// restore old font
@@ -746,7 +745,7 @@ void subtitle::do_frame(float frametime)
 	for(SCP_vector<SCP_string>::iterator line = text_lines.begin(); line != text_lines.end(); ++line)
 	{
 		gr_string(x, y, (char*)line->c_str(), GR_RESIZE_NONE);
-		y += font_height;
+		y += fl2i(line_height_factor * font_height);
 	}
 
 	// restore old font
@@ -795,9 +794,9 @@ subtitle::~subtitle()
 
 void subtitle::clone(const subtitle &sub)
 {
-
 	text_lines = sub.text_lines;
 	text_fontnum = sub.text_fontnum;
+	line_height_factor = sub.line_height_factor;
 
 	// copy the structs
 	text_pos = sub.text_pos;

@@ -499,7 +499,7 @@ void send_non_homing_fired_packet(ship *shipp, int banks_fired, bool secondary =
 void process_non_homing_fired_packet(ubyte *data, header *hinfo);
 
 // animation triggered info
-void send_animation_triggered_packet(int animationId, int pmi, const animation::ModelAnimationDirection& direction, bool force, bool instant, const int* /*time*/ = nullptr);
+void send_animation_triggered_packet(unsigned int animationId, object* parent_object, ushort special_mode, const animation::ModelAnimationDirection& direction, bool force, bool instant, bool pause, const int* /*time*/ = nullptr);
 void process_animation_triggered_packet(ubyte* data, header* hinfo);
 
 // new countermeasure fired info

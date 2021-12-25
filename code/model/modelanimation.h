@@ -66,24 +66,6 @@ public:
 class ship;
 class ship_info;
 
-enum class AnimationTriggerType : int {
-	None = -1,       // No animation
-	Initial,		 // This is just the position the subobject should be placed in
-	Docking_Stage1,	 // following the dock path until just before the end. Triggered when AIS_DOCK_1 begins.
-	Docking_Stage2,	 // drag oneself right to the second last point on the dock path. The old docking-type trigger. Triggered when AIS_DOCK_2 begins.
-	Docking_Stage3,	 // move directly to the dockpoint using thrusters. Triggered when AIS_DOCK_3 begins.
-	Docked,			 // As you dock / the attachment sound is played and the mission log indicates docking. Triggered when AIS_DOCK_4 begins.
-	PrimaryBank,	 // Primary banks
-	SecondaryBank,	 // Secondary banks
-	DockBayDoor,	 // Fighter bays
-	Afterburner,	 // Afterburner -C
-	TurretFiring,	 // Turret shooting -C
-	Scripted,		 // Triggered exclusively by scripting...maybe SEXPs? -C
-	TurretFired,	 // Triggered after a turret has fired -The E
-
-	MaxAnimationTypes
-};
-
 // Model Animation Position settings
 enum EModelAnimationPosition {
 	MA_POS_NOT_SET = 0,	// not yet setup
@@ -97,12 +79,34 @@ namespace animation {
 
 	enum class ModelAnimationDirection { FWD, RWD };
 
-	enum class ModelAnimationState { UNTRIGGERED, RUNNING_FWD, COMPLETED, RUNNING_RWD };
+	enum class ModelAnimationState { UNTRIGGERED, RUNNING_FWD, COMPLETED, RUNNING_RWD, PAUSED };
+
+	enum class ModelAnimationTriggerType : int {
+		None = -1,       // No animation
+		Initial,		 // This is just the position the subobject should be placed in
+		OnSpawn,		 // starts when a ship is being created.
+		Docking_Stage1,	 // following the dock path until just before the end. Triggered when AIS_DOCK_1 begins.
+		Docking_Stage2,	 // drag oneself right to the second last point on the dock path. The old docking-type trigger. Triggered when AIS_DOCK_2 begins.
+		Docking_Stage3,	 // move directly to the dockpoint using thrusters. Triggered when AIS_DOCK_3 begins.
+		Docked,			 // As you dock / the attachment sound is played and the mission log indicates docking. Triggered when AIS_DOCK_4 begins.
+		PrimaryBank,	 // Primary banks
+		SecondaryBank,	 // Secondary banks
+		DockBayDoor,	 // Fighter bays
+		Afterburner,	 // Afterburner -C
+		TurretFiring,	 // Turret shooting -C
+		Scripted,		 // Triggered exclusively by scripting...maybe SEXPs? -C
+		TurretFired,	 // Triggered after a turret has fired -The E
+		PrimaryFired,    // Triggered when a primary weapon has fired.
+		SecondaryFired,  // Triggered when a secondary weapon has fired.
+
+		MaxAnimationTypes
+	};
 
 	FLAG_LIST(Animation_Flags) {
 		Auto_Reverse,			//Will make the animation automatically transition into reverse mode as opposed to waiting in a completed state
-		Reset_at_completion,			//Will cause the animation to reset once it completes. This usually only makes sense when the state at the end of the animation is identical to the state at the start of the animation. Incompatible with Auto_reverse
-
+		Reset_at_completion,	//Will cause the animation to reset once it completes. This usually only makes sense when the state at the end of the animation is identical to the state at the start of the animation. Incompatible with Auto_reverse
+		Loop,					//Will automatically loop the animation once it completes. Is compatible with Reset_at_completion to loop back from the start instead of reversing. Incompatible with Auto_reverse
+		Random_starting_phase,  //When an animation is started from an untriggered state, will randomize its time to any possible time of the animation + possibly on the reverse, if the animation would automatically enter that
 		NUM_VALUES
 	};
 
@@ -145,6 +149,63 @@ namespace animation {
 		}
 	};
 
+	class ModelAnimationSet;
+
+	class ModelAnimationSubmodel {
+	protected:
+		SCP_string m_name;
+		optional<int> m_submodel;
+		bool is_turret = false;
+
+	private:
+		//Polymodel Instance ID -> ModelAnimationData
+		std::map<int, ModelAnimationData<>> m_initialData;
+
+	public:
+		ModelAnimationSubmodel(SCP_string submodelName);
+		virtual ~ModelAnimationSubmodel() = default;
+
+		void reset(polymodel_instance* pmi);
+
+		void saveCurrentAsBase(polymodel_instance* pmi);
+		const ModelAnimationData<>& getInitialData(polymodel_instance* pmi);
+
+		virtual std::pair<submodel_instance*, bsp_info*> findSubmodel(polymodel_instance* pmi);
+	private:
+		//Hack needed for potential cloning of animations due to templates, while still allowing changing the subsystem data for turret retrieval later on.
+		virtual void renameSIP(const SCP_string& /*newSIPname*/) { };
+		virtual ModelAnimationSubmodel* copy() const;
+
+		//Reapply the calculated animation state to the submodel
+		virtual void copyToSubmodel(const ModelAnimationData<>& data, polymodel_instance* pmi);
+
+		friend class ModelAnimationSet;
+	};
+
+	class ModelAnimationSubmodelTurret : public ModelAnimationSubmodel {
+	private:
+		SCP_string m_SIPname;
+		bool m_findBarrel;
+		void copyToSubmodel(const ModelAnimationData<>& data, polymodel_instance* pmi) override;
+
+
+		/*Create a submodel animation by taking the submodel assigned to a subsystem with a given name, or, if requested, the submodel of the turret barrel.
+		Due to how turrets work in FSO, this should never be given a segment that does anything but rotate the turret around its axis
+		*/
+
+		void renameSIP(const SCP_string& newSIPname) override;
+		ModelAnimationSubmodel* copy() const override;
+
+		friend class ModelAnimationSet;
+	public:
+		ModelAnimationSubmodelTurret(SCP_string subsystemName, bool findBarrel, SCP_string SIPname);
+		std::pair<submodel_instance*, bsp_info*> findSubmodel(polymodel_instance* pmi) override;
+	};
+
+	struct ModelAnimationSubmodelBufferData { ModelAnimationData<> data; bool modified; };
+	//Submodel -> data + was_set
+	using ModelAnimationSubmodelBuffer = std::map<std::shared_ptr<ModelAnimationSubmodel>, ModelAnimationSubmodelBufferData>;
+
 	class ModelAnimationSegment {
 	protected:
 
@@ -155,71 +216,19 @@ namespace animation {
 
 		float getDuration(int pmi_id) const;
 
+		//This function needs to provide a deep copy operation that returns a copy of this segment, including with all potential child segments copied as well.
+		virtual ModelAnimationSegment* copy() const = 0;
 		//Will be called to give the animations an opportunity to recalculate based on current ship data, as well as animation data up to that point.
-		virtual void recalculate(const submodel_instance* submodel_instance, const bsp_info* submodel, const ModelAnimationData<>& base, int pmi_id) = 0;
+		virtual void recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) = 0;
 		//This function needs to contain anything that manipulates ModelAnimationData (such as any movement)
-		virtual ModelAnimationData<true> calculateAnimation(const ModelAnimationData<>& base, float time, int pmi_id) const = 0;
+		virtual void calculateAnimation(ModelAnimationSubmodelBuffer& base, float time, int pmi_id) const = 0;
 		//This function needs to contain any animation parts that do not change ModelAnimationData (such as sound or particles)
-		virtual void executeAnimation(const ModelAnimationData<>& state, float timeboundLower, float timeboundUpper, ModelAnimationDirection direction, int pmi_id) = 0;
+		virtual void executeAnimation(const ModelAnimationSubmodelBuffer& state, float timeboundLower, float timeboundUpper, ModelAnimationDirection direction, int pmi_id) = 0;
+		//This function must exchange all held submodel pointers of itself and children with ones acquired from replaceWith.
+		virtual void exchangeSubmodelPointers(ModelAnimationSet& replaceWith) = 0;
 	};
-	
-
-	class ModelAnimationSubmodel {
-	protected:
-		SCP_string m_name;
-		optional<int> m_submodel;
-		
-	private:
-		//Polymodel Instance ID + submodel ID -> ModelAnimationData
-		static std::map<std::pair<int, int>, ModelAnimationData<>> s_initialData;
-
-		std::shared_ptr<ModelAnimationSegment> m_mainSegment;
-
-		friend class ModelAnimation;
-	public:
-		//Create a submodel animation based on the name of the submodel
-		ModelAnimationSubmodel(SCP_string submodelName, std::shared_ptr<ModelAnimationSegment> mainSegment);
-
-		virtual ~ModelAnimationSubmodel() = default;
-
-		//Sets the animation to the specified time and applies it to the submodel
-		ModelAnimationData<true> play(float time, float frametimePrev, ModelAnimationDirection direction, polymodel_instance* pmi, ModelAnimationData<> base, bool applyOnly = false);
-
-		void reset(polymodel_instance* pmi);
-
-		//Hack needed for potential cloning of animations due to templates, while still allowing changing the subsystem data for turret retrieval later on.
-		virtual ModelAnimationSubmodel* copy(const SCP_string& /*newSIPname*/);
-
-	private:
-		void saveCurrentAsBase(polymodel_instance* pmi);
-		//recalculate the animation data (e.g. take this as the base for absolutely defined angles)
-		float recalculate(polymodel_instance* pmi);
-		//Reapply the calculated animation state to the submodel
-		virtual void copyToSubmodel(const ModelAnimationData<>& data, polymodel_instance* pmi);
-		virtual std::pair<submodel_instance*, bsp_info*> findSubmodel(polymodel_instance* pmi);
-	};
-
-	class ModelAnimationSubmodelTurret : public ModelAnimationSubmodel {
-		SCP_string m_SIPname;
-		bool m_findBarrel;
-		void copyToSubmodel(const ModelAnimationData<>& data, polymodel_instance* pmi) override;
-		std::pair<submodel_instance*, bsp_info*> findSubmodel(polymodel_instance* pmi) override;
-	public:
-		/*Create a submodel animation by taking the submodel assigned to a subsystem with a given name, or, if requested, the submodel of the turret barrel.
-		Due to how turrets work in FSO, this should never be given a segment that does anything but rotate the turret around its axis
-		*/
-		ModelAnimationSubmodelTurret(SCP_string subsystemName, bool findBarrel, SCP_string SIPname, std::shared_ptr<ModelAnimationSegment> mainSegment);
-
-		ModelAnimationSubmodel* copy(const SCP_string& newSIPname) override;
-	};
-
 
 	class ModelAnimation : public std::enable_shared_from_this <ModelAnimation> {
-		//Polymodel Instance ID -> ModelAnimation* list (naturally ordered by beginning time)
-		static std::map<int, std::list<std::shared_ptr<ModelAnimation>>> s_runningAnimations;
-
-		std::vector<std::shared_ptr<ModelAnimationSubmodel>> m_submodelAnimation;
-
 		struct instance_data {
 			ModelAnimationState state = ModelAnimationState::UNTRIGGERED;
 			float time = 0.0f;
@@ -228,67 +237,151 @@ namespace animation {
 		//PMI ID -> Instance Data
 		std::map<int, instance_data> m_instances;
 
+		const ModelAnimationSet* m_set;
+
+		std::shared_ptr<ModelAnimationSegment> m_animation;
+
 		bool m_isInitialType;
 
 		flagset<animation::Animation_Flags>	m_flags;
 
-		ModelAnimationState play(float frametime, polymodel_instance* pmi, std::map<int, std::pair<ModelAnimationSubmodel*, ModelAnimationData<true>>>* applyBuffer, bool applyOnly = false);
+		ModelAnimationState play(float frametime, polymodel_instance* pmi, ModelAnimationSubmodelBuffer& applyBuffer, bool applyOnly = false);
 
-		static void apply(polymodel_instance* pmi, std::map<int, std::pair<ModelAnimationSubmodel*, ModelAnimationData<true>>>* applyBuffer);
-		static void cleanRunning();
 
-		friend struct ModelAnimationSet;
-		ModelAnimation(bool isInitialType = false);
+		friend class ModelAnimationSet;
+		friend class ModelAnimationParseHelper;
 	public:
 		//Initial type animations must complete within a single frame, and then never modifiy the submodel again. If this is the case, we do not need to remember them being active for massive performance gains with lots of turrets
-		static std::shared_ptr<ModelAnimation> createAnimation(bool isInitialType = false);
+		ModelAnimation(bool isInitialType = false);
 
-		void addSubmodelAnimation(std::shared_ptr<ModelAnimationSubmodel> animation);
+		void setAnimation(std::shared_ptr<ModelAnimationSegment> animation);
 
 		//Start playing the animation. Will stop other animations that have components running on the same submodels. instant always requires force
-		void start(polymodel_instance* pmi, ModelAnimationDirection direction, bool force = false, bool instant = false, const float* multiOverrideTime = nullptr);
+		void start(polymodel_instance* pmi, ModelAnimationDirection direction, bool force = false, bool instant = false, bool pause = false, const float* multiOverrideTime = nullptr);
 		//Stops the animation. If cleanup is set, it will remove the animation from the list of running animations. Don't call without cleanup unless you know what you are doing
 		void stop(polymodel_instance* pmi, bool cleanup = true);
 
-		static void stepAnimations(float frametime);
-		//Find animations in the running animations list that are fully reset and need to be removed
-		static void clearAnimations();
-		//Parses the legacy animation table in ships.tbl of a single subsystem. Currently initial animations only
-		static void parseLegacyAnimationTable(model_subsystem* sp, ship_info* sip);
-		//static std::shared_ptr<ModelAnimation> parseAnimationTable();
+		static void stepAnimations(float frametime, polymodel_instance* pmi);
 
-		static std::vector<std::shared_ptr<ModelAnimation>> s_animationById;
-		const size_t id;
+		unsigned int id = 0;
 	};
 
 
-	//Use the old modelanim.cpp TriggerType here. Eventually migrate to here.
-	using ModelAnimationTriggerType = ::AnimationTriggerType;
-
-	struct ModelAnimationSet {
+	class ModelAnimationSet {
+	public:
 		static int SUBTYPE_DEFAULT;
+		static std::map<unsigned int, std::shared_ptr<ModelAnimation>> s_animationById;
 
-		std::map <std::pair<ModelAnimationTriggerType, int>, std::map <SCP_string, std::shared_ptr<ModelAnimation>>> animationSet;
+	private:
+		struct RunningAnimationList { const ModelAnimationSet* parentSet; std::list<std::shared_ptr<ModelAnimation>> animationList; };
+		//Polymodel Instance ID -> set + ModelAnimation* list (naturally ordered by beginning time))
+		static std::map<int, RunningAnimationList> s_runningAnimations;
+
+		std::vector< std::shared_ptr<ModelAnimationSubmodel>> m_submodels;
+		SCP_string m_SIPname;
+
+		struct ModelAnimationSubtrigger { 
+			ModelAnimationTriggerType type;
+			int subtype;
+			friend constexpr bool operator<(const ModelAnimationSubtrigger& lhs, const ModelAnimationSubtrigger& rhs) {
+				return lhs.type < rhs.type || (!(rhs.type < lhs.type) && lhs.subtype < rhs.subtype);
+			}
+		};
+		// Trigger Type + Subtype -> (Trigger name -> list of Animation*)
+		std::map <ModelAnimationSubtrigger, std::map <SCP_string, std::vector<std::shared_ptr<ModelAnimation>>>> m_animationSet;
+
+		static void apply(polymodel_instance* pmi, const ModelAnimationSubmodelBuffer& applyBuffer);
+		static void cleanRunning();
+
+		void initializeSubmodelBuffer(polymodel_instance* pmi, ModelAnimationSubmodelBuffer& applyBuffer) const;
+
+		friend class ModelAnimation;
+		friend class ModelAnimationParseHelper;
+
+	public:
+		ModelAnimationSet(SCP_string SIPname = "");
+		ModelAnimationSet(const ModelAnimationSet& other);
+		ModelAnimationSet& operator=(ModelAnimationSet&& other) noexcept;
+		ModelAnimationSet& operator=(const ModelAnimationSet& other);
 
 		//Helper function to shorten animation emplaces
-		void emplace(const std::shared_ptr<ModelAnimation>& animation, const SCP_string& name, ModelAnimationTriggerType type = ModelAnimationTriggerType::Scripted, int subtype = SUBTYPE_DEFAULT);
+		void emplace(const std::shared_ptr<ModelAnimation>& animation, const SCP_string& name, ModelAnimationTriggerType type, int subtype, unsigned int uniqueId);
 
 		void changeShipName(const SCP_string& name);
 
-		bool start(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& name, ModelAnimationDirection direction, bool forced = false, bool instant = false, int subtype = SUBTYPE_DEFAULT) const;
-		bool startAll(polymodel_instance* pmi, ModelAnimationTriggerType type, ModelAnimationDirection direction, bool forced = false, bool instant = false, int subtype = SUBTYPE_DEFAULT, bool strict = false) const;
-		bool startDockBayDoors(polymodel_instance* pmi, ModelAnimationDirection direction, bool forced, bool instant, int subtype) const;
+		static void stopAnimations(polymodel_instance* pmi = nullptr);
+
+		void clearShipData(polymodel_instance* pmi);
+
+		bool start(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& name, ModelAnimationDirection direction, bool forced = false, bool instant = false, bool pause = false, int subtype = SUBTYPE_DEFAULT) const;
+		bool startAll(polymodel_instance* pmi, ModelAnimationTriggerType type, ModelAnimationDirection direction, bool forced = false, bool instant = false, bool pause = false, int subtype = SUBTYPE_DEFAULT, bool strict = false) const;
+		bool startDockBayDoors(polymodel_instance* pmi, ModelAnimationDirection direction, bool forced, bool instant, bool pause, int subtype) const;
 
 		int getTime(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& name, int subtype = SUBTYPE_DEFAULT) const;
 		int getTimeAll(polymodel_instance* pmi, ModelAnimationTriggerType type, int subtype = SUBTYPE_DEFAULT, bool strict = false) const;
 		int getTimeDockBayDoors(polymodel_instance* pmi, int subtype) const;
+
+		struct RegisteredTrigger { ModelAnimationTriggerType type; int subtype; const SCP_string& name; };
+		std::vector<RegisteredTrigger> getRegisteredTriggers() const;
+
+		bool isEmpty() const;
+
+		std::shared_ptr<ModelAnimationSubmodel> getSubmodel(const SCP_string& submodelName);
+		std::shared_ptr<ModelAnimationSubmodel> getSubmodel(const SCP_string& submodelName, const SCP_string& SIP_name, bool findBarrel);
+		std::shared_ptr<ModelAnimationSubmodel> getSubmodel(const std::shared_ptr<ModelAnimationSubmodel>& other);
 	};
 
+	//Start of parsing functions
+	class ModelAnimationParseHelper {
+
+		//Parsing Registrars
+		using ModelAnimationSegmentParser = std::function<std::shared_ptr<ModelAnimationSegment>(ModelAnimationParseHelper*)>;
+		static std::map<SCP_string, ModelAnimationSegmentParser> s_segmentParsers;
+
+		//Parsed Animations
+		struct ParsedModelAnimation {
+			std::shared_ptr<ModelAnimation> anim;
+			ModelAnimationTriggerType type;
+			SCP_string name;
+			int subtype;
+		};
+		static std::map<SCP_string, ParsedModelAnimation> s_animationsById;
+
+		static unsigned int getUniqueAnimationID(const SCP_string& animName, char uniquePrefix, const SCP_string& parentName);
+
+		//Internal Parsing Methods
+		static void parseSingleAnimation();
+		static void parseTableFile(const char* filename);
+
+
+	public:
+		class Registrar {
+		public:
+			Registrar(const SCP_string& name, const ModelAnimationSegmentParser& parser) { s_segmentParsers.emplace(name, parser); }
+		};
+		
+		std::shared_ptr<ModelAnimationSegment> parseSegment();
+		//Per Animation parsing Data
+		SCP_string m_animationName;
+		std::shared_ptr<ModelAnimationSubmodel> parentSubmodel = nullptr;
+
+		static std::shared_ptr<ModelAnimationSubmodel> parseSubmodel();
+
+		static void parseTables();
+		static void parseAnimsetInfo(ModelAnimationSet& set, ship_info* sip);
+		static void parseAnimsetInfo(ModelAnimationSet& set, char uniqueTypePrefix, const SCP_string& uniqueParentName);
+		//Parses the legacy animation table in ships.tbl of a single subsystem. Currently initial animations only
+		static void parseLegacyAnimationTable(model_subsystem* sp, ship_info* sip);
+	};
 	//Start of section of helper functions, mostly to complement the old modelanim functions as required
 
-	extern const std::map<animation::ModelAnimationTriggerType, const char*> Animation_type_names;
+	//Type -> Name + Requires reset flag (== will never be triggered in reverse)
+	extern const std::map<animation::ModelAnimationTriggerType, std::pair<const char*, bool>> Animation_types;
 
 	void anim_set_initial_states(ship* shipp);
+
+	//Returns function bindings to start the targeted animation, and to get its runtime
+	std::pair<std::function<bool(ModelAnimationDirection, bool, bool, bool)>, std::function<int()>> anim_parse_scripted_start(const ModelAnimationSet& set, polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& triggeredBy);
 
 	ModelAnimationTriggerType anim_match_type(const char* p);
 

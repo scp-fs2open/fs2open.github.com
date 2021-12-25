@@ -361,6 +361,69 @@ ADE_FUNC(getCollisionInformation, l_Weapon, nullptr, "Returns the collision info
 		return ade_set_args(L, "o", l_ColInfo.Set(mc_info_h()));
 }
 
+ADE_FUNC(triggerSubmodelAnimation, l_Weapon, "string type, string triggeredBy, [boolean forwards = true, boolean resetOnStart = false, boolean completeInstant = false, boolean pause = false]",
+	"Triggers an animation. Type is the string name of the animation type, "
+	"triggeredBy is a closer specification which animation should trigger. See *-anim.tbm specifications. "
+	"Forwards controls the direction of the animation. ResetOnStart will cause the animation to play from its initial state, as opposed to its current state. CompleteInstant will immediately complete the animation. Pause will instead stop the animation at the current state.",
+	"boolean",
+	"True if successful, false or nil otherwise")
+{
+	object_h* objh;
+	const char* type = nullptr;
+	const char* trigger = nullptr;
+	bool forwards = true;
+	bool forced = false;
+	bool instant = false;
+	bool pause = false;
+
+	if (!ade_get_args(L, "oss|bbbb", l_Weapon.GetPtr(&objh), &type, &trigger, &forwards, &forced, &instant, &pause))
+		return ADE_RETURN_NIL;
+
+	if (!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	weapon* wp = &Weapons[objh->objp->instance];
+	weapon_info* wip = &Weapon_info[wp->weapon_info_index];
+	if(wip->render_type != WRT_POF || wp->model_instance_num < 0)
+		return ADE_RETURN_FALSE;
+
+	auto animtype = animation::anim_match_type(type);
+	if (animtype == animation::ModelAnimationTriggerType::None)
+		return ADE_RETURN_FALSE;
+
+	auto animationStartFunc = animation::anim_parse_scripted_start(wip->animations, model_get_instance(wp->model_instance_num), animtype, trigger).first;
+
+	return animationStartFunc(forwards ? animation::ModelAnimationDirection::FWD : animation::ModelAnimationDirection::RWD, forced || instant, instant, pause) ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
+}
+
+ADE_FUNC(getSubmodelAnimationTime, l_Weapon, "string type, string triggeredBy", "Gets time that animation will be done", "number", "Time (seconds), or 0 if weapon handle is invalid")
+{
+	object_h* objh;
+	const char* type = nullptr;
+	const char* trigger = nullptr;
+	if (!ade_get_args(L, "oss", l_Weapon.GetPtr(&objh), &type, &trigger))
+		return ade_set_error(L, "f", 0.0f);
+
+	if (!objh->IsValid())
+		return ade_set_error(L, "f", 0.0f);
+
+	auto animtype = animation::anim_match_type(type);
+	if (animtype == animation::ModelAnimationTriggerType::None)
+		return ade_set_error(L, "f", 0.0f);
+
+	weapon* wp = &Weapons[objh->objp->instance];
+	weapon_info* wip = &Weapon_info[wp->weapon_info_index];
+	if (wip->render_type != WRT_POF || wp->model_instance_num < 0)
+		return ade_set_error(L, "f", 0.0f);
+
+	auto animationTimeFunc = animation::anim_parse_scripted_start(wip->animations, model_get_instance(wp->model_instance_num), animtype, trigger).second;
+
+	int time_ms = animationTimeFunc();
+	float time_s = (float)time_ms / 1000.0f;
+
+	return ade_set_args(L, "f", time_s);
+}
+
 ADE_FUNC(vanish, l_Weapon, nullptr, "Vanishes this weapon from the mission.", "boolean", "True if the deletion was successful, false otherwise.")
 {
 

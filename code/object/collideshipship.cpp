@@ -241,7 +241,7 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info)
 		
 	pm_light = model_get(Ship_info[light_shipp->ship_info_index].model_num);
 
-	if(pm_light->submodel[pm_light->detail[0]].no_collisions) {
+	if(pm_light->submodel[pm_light->detail[0]].flags[Model::Submodel_flags::No_collisions]) {
 		return 0;
 	}
 

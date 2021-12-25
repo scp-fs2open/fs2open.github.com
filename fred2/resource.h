@@ -97,7 +97,7 @@
 #define IDD_SET_GLOBAL_SHIP_FLAGS       266
 #define IDD_CUSTOM_WING_NAMES           267
 #define IDD_RESTRICT_PATHS              270
-#define IDD_BACKGROUND_CHOOSER          272
+#define IDD_LISTITEM_CHOOSER            272
 #define IDB_DATA_05                     277
 #define IDB_DATA_10                     286
 #define IDD_ALT_SHIP_CLASS              292
@@ -704,6 +704,7 @@
 #define IDC_GOAL_NAME                   1342
 #define IDC_HOTKEY                      1342
 #define IDC_SBITMAP_LIST                1342
+#define IDC_FIELD_TARGET_LIST           1342
 #define IDC_WEAPON_VARIABLES_LIST       1342
 #define IDC_EDIT2                       1343
 #define IDC_AMMO2                       1343
@@ -792,7 +793,7 @@
 #define IDC_PREV                        1382
 #define IDC_PREV_DEBRIEF                1383
 #define IDC_INSERT_STAGE                1384
-#define IDC_ICON_TEXT                   1385
+#define IDC_ICON_CLOSEUP_LABEL          1385
 #define IDC_INSERT                      1385
 #define IDC_GOTO_VIEW                   1388
 #define IDC_SAVE_VIEW                   1389
@@ -1073,7 +1074,7 @@
 #define IDC_PLAYER_START_CHASE          1583
 #define IDC_RESTRICT_PATHS_LABEL        1584
 #define IDC_PATH_LIST                   1585
-#define IDC_BACKGROUND                  1586
+#define IDC_LISTITEM                    1586
 #define IDC_ENVMAP                      1589
 #define IDC_ENVMAP_BROWSE               1590
 #define IDC_ENTRY_FORMAT                1590
@@ -1147,10 +1148,15 @@
 #define IDC_ANIM_LABEL                  1658
 #define IDC_PLAYER_WARPOUT_SPEED_LABEL  1659
 #define IDC_CONTAINER_NAME              1660
+#define IDC_FIELD_NUM                   1660
 #define IDC_NEW_CONTAINER_NAME          1661
+#define IDC_ADD_FIELD                   1661
 #define IDC_CONTAINER_REMOVE            1662
+#define IDC_REMOVE_FIELD                1662
 #define IDC_ADD_NEW_CONTAINER           1663
+#define IDC_ADD_FIELD_TARGET            1663
 #define IDC_CONTAINER_NETWORK           1664
+#define IDC_REMOVE_FIELD_TARGET         1664
 #define IDC_DELETE_CONTAINER            1665
 #define IDC_CONTAINER_NO_PERSIST        1666
 #define IDC_CONTAINER_PLAYER_PERSIST    1667
@@ -1448,9 +1454,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        326
+#define _APS_NEXT_RESOURCE_VALUE        327
 #define _APS_NEXT_COMMAND_VALUE         33102
-#define _APS_NEXT_CONTROL_VALUE         1660
+#define _APS_NEXT_CONTROL_VALUE         1665
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif

@@ -855,6 +855,7 @@ void sexp_tree::right_clicked(int mode)
 							case OP_SET_OBJECT_SPEED_Z:
 							case OP_DISTANCE:
 							case OP_SCRIPT_EVAL:
+							case OP_TRIGGER_SUBMODEL_ANIMATION:
 								j = (int)op_menu.size();	// don't allow these operators to be visible
 								break;
 						}
@@ -906,6 +907,7 @@ void sexp_tree::right_clicked(int mode)
 							case OP_SET_OBJECT_SPEED_Z:
 							case OP_DISTANCE:
 							case OP_SCRIPT_EVAL:
+							case OP_TRIGGER_SUBMODEL_ANIMATION:
 								j = (int)op_submenu.size();	// don't allow these operators to be visible
 								break;
 						}
@@ -6221,8 +6223,8 @@ sexp_list_item *sexp_tree::get_listing_opf_animation_type()
 {
 	sexp_list_item head;
 
-	for (auto animation_type : animation::Animation_type_names) {
-		head.add_data(animation_type.second);
+	for (auto animation_type : animation::Animation_types) {
+		head.add_data(animation_type.second.first);
 	}
 
 	return head.next;

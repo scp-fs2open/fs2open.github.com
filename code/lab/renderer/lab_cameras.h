@@ -51,7 +51,7 @@ public:
 	OrbitCamera() : LabCamera(cam_create("Lab orbit camera")) {}
 
 	SCP_string getUsageInfo() override {
-		return "Hold RMB to rotate the Camera. Hold Shift + LMB to zoom in or out.";
+		return "Hold RMB to rotate the Camera. Hold Shift + RMB to zoom in or out.";
 	}
 
 	SCP_string getOnFrameInfo() override {

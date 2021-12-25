@@ -3381,6 +3381,10 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		wip->on_create_program = actions::ProgramSet::parseProgramSet("$On Create:", contexts);
 	}
 
+	if (optional_string("$Animations:")) {
+		animation::ModelAnimationParseHelper::parseAnimsetInfo(wip->animations, 'w', wip->name);
+	}
+
 	/* Generate a substitution pattern for this weapon.
 	This pattern is very naive such that it calculates the lowest common denominator as being all of
 	the periods multiplied together.
@@ -6180,8 +6184,8 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		objp->radius = model_get_radius(wip->model_num);
 
 		// Always create an instance in case we need them
-		if (model_get(wip->model_num)->flags & PM_FLAG_HAS_INTRINSIC_MOTION || !wip->on_create_program.isEmpty()) {
-			wp->model_instance_num = model_create_instance(true, wip->model_num);
+		if (model_get(wip->model_num)->flags & PM_FLAG_HAS_INTRINSIC_MOTION || !wip->on_create_program.isEmpty() || !wip->animations.isEmpty()) {
+			wp->model_instance_num = model_create_instance(objnum, wip->model_num);
 		}
 	} else if ( wip->render_type == WRT_LASER ) {
 		objp->radius = wip->laser_head_radius;
@@ -6376,6 +6380,11 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 
 	if (wip->ambient_snd.isValid()) {
 		obj_snd_assign(objnum, wip->ambient_snd, &vmd_zero_vector , OS_MAIN);
+	}
+
+	//Only try and play animations on POF Weapons
+	if (wip->render_type == WRT_POF && wp->model_instance_num > -1) {
+		wip->animations.startAll(model_get_instance(wp->model_instance_num), animation::ModelAnimationTriggerType::OnSpawn, animation::ModelAnimationDirection::FWD);
 	}
 
 	if (Script_system.IsActiveAction(CHA_ONWEAPONCREATED)) {
@@ -8236,7 +8245,7 @@ void shield_impact_explosion(vec3d *hitpos, object *objp, float radius, int idx)
 // renders another laser bitmap on top of the regular bitmap based on the angle of the camera to the front of the laser
 // the two are cross-faded into each other so it can switch to the more appropriate bitmap depending on the angle
 // returns the alpha multiplier to be used for the main bitmap
-float weapon_render_headon_bitmap(object* wep_objp, vec3d* headp, int bitmap, float width1, float width2, int r, int g, int b){	
+float weapon_render_headon_bitmap(object* wep_objp, vec3d* headp, vec3d* tailp, int bitmap, float width1, float width2, int r, int g, int b){
 	weapon* wp = &Weapons[wep_objp->instance];
 	weapon_info* wip = &Weapon_info[wp->weapon_info_index];
 
@@ -8280,7 +8289,7 @@ float weapon_render_headon_bitmap(object* wep_objp, vec3d* headp, int bitmap, fl
 
 	r = (int)(r * head_alpha);   g = (int)(g * head_alpha);   b = (int)(b * head_alpha);
 
-	batching_add_laser(bitmap, headp, width1, &wep_objp->pos, width2, r, g, b);
+	batching_add_laser(bitmap, headp, width1, tailp, width2, r, g, b);
 
 	return side_alpha;
 }
@@ -8364,7 +8373,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 
 				// render the head-on bitmap if appropriate and maybe adjust the main bitmap's alpha
 				if (wip->laser_headon_bitmap.first_frame >= 0) {
-					float main_bitmap_alpha_mult = weapon_render_headon_bitmap(obj, &headp,
+					float main_bitmap_alpha_mult = weapon_render_headon_bitmap(obj, &headp, &obj->pos,
 						wip->laser_headon_bitmap.first_frame + headon_framenum,
 						scaled_head_radius,
 						scaled_tail_radius,
@@ -8453,10 +8462,10 @@ void weapon_render(object* obj, model_draw_list *scene)
 
 				// render the head-on bitmap if appropriate and maybe adjust the main bitmap's alpha
 				if (wip->laser_glow_headon_bitmap.first_frame >= 0) {
-					float main_bitmap_alpha_mult = weapon_render_headon_bitmap(obj, &headp2,
+					float main_bitmap_alpha_mult = weapon_render_headon_bitmap(obj, &headp2, &tailp,
 						wip->laser_glow_headon_bitmap.first_frame + headon_framenum,
-						scaled_head_radius,
-						scaled_tail_radius,
+						scaled_head_radius * weapon_glow_scale_f,
+						scaled_tail_radius * weapon_glow_scale_r,
 						r, g, b);
 					r = (int)(r * main_bitmap_alpha_mult);
 					g = (int)(g * main_bitmap_alpha_mult);
@@ -8490,6 +8499,8 @@ void weapon_render(object* obj, model_draw_list *scene)
 			}
 
 			model_clear_instance(wip->model_num);
+
+			render_info.set_object_number(wp->objnum);
 
 			if ( (wip->wi_flags[Weapon::Info_Flags::Thruster]) && ((wp->thruster_bitmap > -1) || (wp->thruster_glow_bitmap > -1)) ) {
 				float ft;

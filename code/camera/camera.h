@@ -123,6 +123,7 @@ private:
 	float fade_time;
 	color text_color;
 	int text_fontnum;
+	float line_height_factor;
 
 	//Done with set
 	char imageanim[MAX_FILENAME_LEN];
@@ -139,7 +140,8 @@ private:
 public:
 	subtitle(int in_x_pos, int in_y_pos, const char* in_text = NULL, const char* in_imageanim = NULL,
 			 float in_display_time = 0, float in_fade_time = 0.0f, const color *in_text_color = NULL, int in_text_fontnum = -1,
-			 bool center_x = false, bool center_y = false, int in_width = 0, int in_height = 0, bool post_shaded=false);
+			 bool center_x = false, bool center_y = false, int in_width = 0, int in_height = 0, bool post_shaded = false,
+			 float in_line_height_factor = 1.0f);
 	~subtitle();
 
     subtitle(const subtitle &sub) { clone(sub); }

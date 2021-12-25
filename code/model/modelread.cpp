@@ -640,7 +640,6 @@ void model_copy_subsystems( int n_subsystems, model_subsystem *d_sp, model_subsy
 				dest->pnt = source->pnt;
 				dest->radius = source->radius;
 				dest->type = source->type;
-				dest->turn_rate = source->turn_rate;
 				dest->turret_gun_sobj = source->turret_gun_sobj;
 
                 strcpy_s(dest->name, source->name);
@@ -682,6 +681,11 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 
 	strcpy_s(lcdname, dname);
 	strlwr(lcdname);
+
+	bsp_info* submodelp = nullptr;
+	if (subsystemp->subobj_num >= 0) {
+		submodelp = &model_get(model_num)->submodel[subsystemp->subobj_num];
+	}
 
 	// check the name for its specific type
 	if ( strstr(lcdname, "engine") ) {
@@ -825,7 +829,30 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 
 		// CASE OF NORMAL CONTINUOUS ROTATION
 		else {
-			subsystemp->turn_rate = turn_rate;
+			if (submodelp) {
+				submodelp->default_turn_rate = turn_rate;
+			}
+		}
+
+		float turn_accel = 0.5f;
+		if (in(p, props, "$rotate_accel")) {
+			get_user_prop_value(p + 13, buf);
+
+			if (!stricmp(buf, "instant")) {
+				if (submodelp) {
+					submodelp->flags.set(Model::Submodel_flags::Instant_rotate_accel);
+				}
+				turn_accel = 0.0f;
+			} else {
+				turn_accel = static_cast<float>(atof(buf));
+				if (turn_accel < 0.0f) {
+					Warning(LOCATION, "Model %s, submodel %s, turn acceleration %f cannot be negative!", model_get(model_num)->filename, dname, turn_accel);
+					turn_accel *= -1;
+				}
+			}
+		}
+		if (submodelp) {
+			submodelp->default_turn_accel = turn_accel;
 		}
 	}
 }
@@ -989,7 +1016,7 @@ void create_vertex_buffer(polymodel *pm)
 
 	// figure out which vertices are transparent
 	for ( i = 0; i < pm->n_models; i++ ) {
-		if ( !pm->submodel[i].is_thruster ) {
+		if ( !pm->submodel[i].flags[Model::Submodel_flags::Is_thruster] ) {
 			interp_create_transparency_index_buffer(pm, i);
 		}
 	}
@@ -1549,9 +1576,8 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 						turn_rate = static_cast<float>(atof(buf));
 					}
 
-					sm->dumb_turn_rate = turn_rate;
-				} else {
-					sm->dumb_turn_rate = 0.0f;
+					sm->default_turn_rate = turn_rate;
+					sm->flags.set(Model::Submodel_flags::Instant_rotate_accel);
 				}
 
 				if ( sm->name[0] == '\0' ) {
@@ -1575,22 +1601,21 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 
 				// ---------- done with submodel movement (except for gun_rotation and sanity checks) ----------
 
-				sm->no_collisions = in(props, "$no_collisions");
+				sm->flags.set(Model::Submodel_flags::No_collisions, in(props, "$no_collisions"));
 
-				sm->nocollide_this_only = in(props, "$nocollide_this_only");
+				sm->flags.set(Model::Submodel_flags::Nocollide_this_only, in(props, "$nocollide_this_only"));
 
-				sm->collide_invisible = in(props, "$collide_invisible");
+				sm->flags.set(Model::Submodel_flags::Collide_invisible, in(props, "$collide_invisible"));
 
 				if (in(props, "$gun_rotation")) {
-					sm->gun_rotation = true;
-					sm->can_move = true;		// this is something of a special case because it's rotating without "rotating"
-				} else
-					sm->gun_rotation = false;
+					sm->flags.set(Model::Submodel_flags::Gun_rotation);
+					sm->flags.set(Model::Submodel_flags::Can_move);		// this is something of a special case because it's rotating without "rotating"
+				}
 
 				if (in(p, props, "$lod0_name"))
 					get_user_prop_value(p+10, sm->lod_name);
 
-				sm->attach_thrusters = in(props, "$attach_thrusters");
+				sm->flags.set(Model::Submodel_flags::Attach_thrusters, in(props, "$attach_thrusters"));
 
 				if (in(p, props, "$detail_box:")) {
 					p += 12;
@@ -1606,7 +1631,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 						while (*p != ',') p++;
 						sm->render_box_offset.xyz.z = (float)strtod(++p, (char **)nullptr);
 
-						sm->use_render_box_offset = true;
+						sm->flags.set(Model::Submodel_flags::Use_render_box_offset);
 					}
 
 					if (in(p, props, "$box_min:")) {
@@ -1635,7 +1660,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 
 					if (in(p, props, "$do_not_scale_distances")) {
 						p += 23;
-						sm->do_not_scale_detail_distances = true;
+						sm->flags.set(Model::Submodel_flags::Do_not_scale_detail_distances);
 					}
 				}
 
@@ -1661,14 +1686,14 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 						while (*p != ',') p++;
 						sm->render_sphere_offset.xyz.z = (float)strtod(++p, (char **)nullptr);
 
-						sm->use_render_sphere_offset = true;
+						sm->flags.set(Model::Submodel_flags::Use_render_sphere_offset);
 					} else {
 						sm->render_sphere_offset = vmd_zero_vector;
 					}
 
 					if (in(p, props, "$do_not_scale_distances")) {
 						p += 23;
-						sm->do_not_scale_detail_distances = true;
+						sm->flags.set(Model::Submodel_flags::Do_not_scale_detail_distances);
 					}
 				}
 
@@ -1773,9 +1798,9 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 
 				// Set the can_move field on submodels which are of a rotating type or which have such a parent somewhere down the hierarchy
 				if (sm->movement_type != MOVEMENT_TYPE_NONE) {
-					sm->can_move = true;
-				} else if (parent_sm && parent_sm->can_move) {
-					sm->can_move = true;
+					sm->flags.set(Model::Submodel_flags::Can_move);
+				} else if (parent_sm && parent_sm->flags[Model::Submodel_flags::Can_move]) {
+					sm->flags.set(Model::Submodel_flags::Can_move);
 				}
 
 				// ---------- done submodel rotation sanity checks ----------
@@ -1804,20 +1829,31 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 				else
 				{
 					sm->bsp_data_size = cfread_int(fp);
+
 					if (sm->bsp_data_size > 0) {
-						//mprintf(("BSP_Data is being aligned.\n"));
+						auto bsp_data = reinterpret_cast<ubyte *>(vm_malloc(sm->bsp_data_size));
 
-						std::unique_ptr<ubyte[]> bsp_in(new ubyte[sm->bsp_data_size]);
-						std::unique_ptr<ubyte[]> bsp_out(new ubyte[sm->bsp_data_size * 2]);
+						cfread(bsp_data, 1, sm->bsp_data_size, fp);
 
-						cfread(bsp_in.get(), 1, sm->bsp_data_size, fp);
+						auto bsp_data_size_aligned = align_bsp_data(bsp_data, nullptr, sm->bsp_data_size);
 
-						//mprintf(("BSP_Data was %d bytes in size\n", sm->bsp_data_size));
-						sm->bsp_data_size = align_bsp_data(bsp_in.get(), bsp_out.get(), sm->bsp_data_size);
-						//mprintf(("BSP_Data now is %d bytes in size\n", sm->bsp_data_size));
+						if (bsp_data_size_aligned != static_cast<uint>(sm->bsp_data_size)) {
+							auto bsp_data_aligned = reinterpret_cast<ubyte *>(vm_malloc(bsp_data_size_aligned));
 
-						sm->bsp_data = (ubyte*)vm_malloc(sm->bsp_data_size);
-						memcpy(sm->bsp_data, bsp_out.get(), sm->bsp_data_size);
+							align_bsp_data(bsp_data, bsp_data_aligned, sm->bsp_data_size);
+
+							// release unaligned data
+							vm_free(bsp_data);
+							bsp_data = nullptr;
+
+							nprintf(("Model", "BSP ALIGN => %s:%s resized by %d bytes (%d total)\n", pm->filename, sm->name, bsp_data_size_aligned-sm->bsp_data_size, bsp_data_size_aligned));
+
+							sm->bsp_data = bsp_data_aligned;
+							sm->bsp_data_size = bsp_data_size_aligned;
+						} else {
+							sm->bsp_data = bsp_data;
+						}
+
 						swap_bsp_data(pm, sm->bsp_data);
 					}
 					else {
@@ -1825,16 +1861,16 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 					}
 				}
 
-				sm->is_thruster = in(sm->name, "thruster");
+				sm->flags.set(Model::Submodel_flags::Is_thruster, in(sm->name, "thruster"));
 
 				// Genghis: if we have a thruster and none of the collision 
 				// properties were provided, then set "nocollide_this_only".
-				if (sm->is_thruster && !(sm->no_collisions) && !(sm->nocollide_this_only) && !(sm->collide_invisible) )
+				if (sm->flags[Model::Submodel_flags::Is_thruster] && !(sm->flags[Model::Submodel_flags::No_collisions, Model::Submodel_flags::Nocollide_this_only, Model::Submodel_flags::Collide_invisible]) )
 				{
-					sm->nocollide_this_only = true;
+					sm->flags.set(Model::Submodel_flags::Nocollide_this_only);
 				}
 
-				sm->is_damaged = in(sm->name, "-destroyed");
+				sm->flags.set(Model::Submodel_flags::Is_damaged, in(sm->name, "-destroyed"));
 
 				break;
 			}
@@ -2940,7 +2976,7 @@ int model_load(const  char *filename, int n_subsystems, model_subsystem *subsyst
 				mprintf(( "Found live debris model for '%s'\n", pm->submodel[i].name ));
 				Assert(pm->submodel[i].num_live_debris < MAX_LIVE_DEBRIS);
 				pm->submodel[i].live_debris[pm->submodel[i].num_live_debris++] = j;
-				pm->submodel[j].is_live_debris = 1;
+				pm->submodel[j].flags.set(Model::Submodel_flags::Is_live_debris);
 
 				// make sure live debris doesn't have a parent
 				pm->submodel[j].parent = -1;
@@ -2973,7 +3009,7 @@ int model_load(const  char *filename, int n_subsystems, model_subsystem *subsyst
 
 		for (j=0; j<pm->num_debris_objects;j++ )	{
 			if ( i == pm->debris_objects[j] )	{
-				sm1->is_damaged = true;
+				sm1->flags.set(Model::Submodel_flags::Is_damaged);
 			} 
 		}
 
@@ -3021,7 +3057,7 @@ int model_load(const  char *filename, int n_subsystems, model_subsystem *subsyst
 				dl2 = SCP_tolower(sm2->name[first_diff]) - 'a';
 
 				// Handle LODs named "detail0/1/2/etc" too (as opposed to "detaila/b/c/etc")
-				if (sm1->parent == -1 && sm2->parent == -1 && !sm1->is_damaged && !sm2->is_damaged && !sm1->is_live_debris && !sm2->is_live_debris) {
+				if (sm1->parent == -1 && sm2->parent == -1 && !sm1->flags[Model::Submodel_flags::Is_damaged, Model::Submodel_flags::Is_live_debris] && !sm2->flags[Model::Submodel_flags::Is_damaged, Model::Submodel_flags::Is_live_debris]) {
 					dl2 = dl2 - dl1;
 					dl1 = 0;
 				}
@@ -3051,7 +3087,7 @@ int model_load(const  char *filename, int n_subsystems, model_subsystem *subsyst
 	TRACE_SCOPE(tracing::ModelParseAllBSPTrees);
 
 	for (i = 0; i < pm->n_models; ++i) {
-		if (!(pm->submodel[i].nocollide_this_only || pm->submodel[i].no_collisions)) {
+		if (!pm->submodel[i].flags[Model::Submodel_flags::Nocollide_this_only, Model::Submodel_flags::No_collisions]) {
 			pm->submodel[i].collision_tree_index = model_create_bsp_collision_tree();
 			bsp_collision_tree* tree             = model_get_bsp_collision_tree(pm->submodel[i].collision_tree_index);
 			model_collide_parse_bsp(tree, pm->submodel[i].bsp_data, pm->version);
@@ -3085,21 +3121,24 @@ int model_load(const  char *filename, int n_subsystems, model_subsystem *subsyst
 	return pm->id;
 }
 
-int model_create_instance(bool is_object, int model_num)
+int model_create_instance(int objnum, int model_num)
 {
-	int i = 0;
-	int open_slot = -1;
+	Assertion(objnum >= -1 && objnum < MAX_OBJECTS, "objnum must be -1 or a valid object index!");
+
+	// this will also run a bunch of Assertions
+	auto pm = model_get(model_num);
 
 	// go through model instances and find an empty slot
-	for ( i = 0; i < (int)Polygon_model_instances.size(); i++) {
+	int open_slot = -1;
+	for (int i = 0; i < (int)Polygon_model_instances.size(); i++) {
 		if ( !Polygon_model_instances[i] ) {
 			open_slot = i;
 		}
 	}
 
 	auto pmi = new polymodel_instance;
-
 	pmi->model_num = model_num;
+	pmi->objnum = objnum;
 
 	// if not found, create a slot
 	if ( open_slot < 0 ) {
@@ -3110,19 +3149,17 @@ int model_create_instance(bool is_object, int model_num)
 	}
 	pmi->id = open_slot;
 
-	polymodel *pm = model_get(model_num);
-
 	if (pm->n_models > 0)
 		pmi->submodel = new submodel_instance[pm->n_models];
 
 	// add intrinsic_motion instances if this model is intrinsic-moving
 	if (pm->flags & PM_FLAG_HAS_INTRINSIC_MOTION) {
-		intrinsic_motion motion(is_object, open_slot);
+		intrinsic_motion motion(objnum >= 0, open_slot);
 
-		for (i = 0; i < pm->n_models; i++) {
+		for (int i = 0; i < pm->n_models; i++) {
 			if (pm->submodel[i].movement_type == MOVEMENT_TYPE_INTRINSIC) {
 				// note: dumb_turn_rate will be 0.0f for look_at
-				motion.add_submodel(i, &pmi->submodel[i], pm->submodel[i].dumb_turn_rate);
+				motion.add_submodel(i, &pmi->submodel[i], pm->submodel[i].default_turn_rate);
 			}
 		}
 
@@ -3143,6 +3180,8 @@ void model_delete_instance(int model_instance_num)
 	Assert(Polygon_model_instances[model_instance_num] != nullptr);
 
 	polymodel_instance *pmi = Polygon_model_instances[model_instance_num];
+
+	animation::ModelAnimationSet::stopAnimations(pmi);
 
 	if ( pmi->submodel ) {
 		delete[] pmi->submodel;
@@ -3309,7 +3348,7 @@ int model_get_parent_submodel_for_live_debris( int model_num, int live_debris_mo
 {
 	polymodel *pm = model_get(model_num);
 
-	Assert(pm->submodel[live_debris_model_num].is_live_debris == 1);
+	Assert(pm->submodel[live_debris_model_num].flags[Model::Submodel_flags::Is_live_debris]);
 
 	int mn;
 	bsp_info *child;
@@ -3794,26 +3833,33 @@ void submodel_rotate(bsp_info *sm, submodel_instance *smi)
 	smi->prev_angle = smi->cur_angle;
 	smi->canonical_prev_orient = smi->canonical_orient;
 
-	// probably send in a calculated desired turn rate
-	float diff = smi->desired_turn_rate - smi->current_turn_rate;
+	float delta;
 
-	float final_turn_rate;
-	if (diff > 0) {
-		final_turn_rate = smi->current_turn_rate + smi->turn_accel * flFrametime;
-		if (final_turn_rate > smi->desired_turn_rate) {
-			final_turn_rate = smi->desired_turn_rate;
-		}
-	} else if (diff < 0) {
-		final_turn_rate = smi->current_turn_rate - smi->turn_accel * flFrametime;
-		if (final_turn_rate < smi->desired_turn_rate) {
-			final_turn_rate = smi->desired_turn_rate;
-		}
+	if (sm->flags[Model::Submodel_flags::Instant_rotate_accel]) {
+		delta = smi->desired_turn_rate * flFrametime;
+		smi->current_turn_rate = smi->desired_turn_rate;
 	} else {
-		final_turn_rate = smi->desired_turn_rate;
-	}
+		// probably send in a calculated desired turn rate
+		float diff = smi->desired_turn_rate - smi->current_turn_rate;
 
-	float delta = (smi->current_turn_rate + final_turn_rate) * 0.5f * flFrametime;
-	smi->current_turn_rate = final_turn_rate;
+		float final_turn_rate;
+		if (diff > 0) {
+			final_turn_rate = smi->current_turn_rate + smi->turn_accel * flFrametime;
+			if (final_turn_rate > smi->desired_turn_rate) {
+				final_turn_rate = smi->desired_turn_rate;
+			}
+		} else if (diff < 0) {
+			final_turn_rate = smi->current_turn_rate - smi->turn_accel * flFrametime;
+			if (final_turn_rate < smi->desired_turn_rate) {
+				final_turn_rate = smi->desired_turn_rate;
+			}
+		} else {
+			final_turn_rate = smi->desired_turn_rate;
+		}
+
+		delta = (smi->current_turn_rate + final_turn_rate) * 0.5f * flFrametime;
+		smi->current_turn_rate = final_turn_rate;
+	}
 
 	// Apply rotation in the axis of movement
 	smi->cur_angle += delta;
@@ -4081,7 +4127,7 @@ void find_submodel_instance_point(vec3d *outpnt, const polymodel *pm, const poly
 
 		int parent_mn = pm->submodel[mn].parent;
 
-		if (pm->submodel[parent_mn].can_move) {
+		if (pm->submodel[parent_mn].flags[Model::Submodel_flags::Can_move]) {
 			vec3d tvec = offset;
 			vm_vec_unrotate(&offset, &tvec, &pmi->submodel[parent_mn].canonical_orient);
 		}
@@ -4268,7 +4314,7 @@ void model_get_rotating_submodel_list(SCP_vector<int> *submodel_vector, object *
 	polymodel *pm = model_get(model_num);
 	bsp_info *child_submodel = &pm->submodel[pm->detail[0]];
 	
-	if(child_submodel->no_collisions) { // if detail0 has $no_collision set dont check childs
+	if(child_submodel->flags[Model::Submodel_flags::No_collisions]) { // if detail0 has $no_collision set dont check childs
 		return;
 	}
 
@@ -4281,7 +4327,7 @@ void model_get_rotating_submodel_list(SCP_vector<int> *submodel_vector, object *
 		child_submodel_instance = &pmi->submodel[i];
 
 		// Don't check it or its children if it is destroyed or it is a replacement (non-moving)
-		if ( !child_submodel_instance->blown_off && (child_submodel->i_replace == -1) && !child_submodel->no_collisions && !child_submodel->nocollide_this_only)	{
+		if ( !child_submodel_instance->blown_off && (child_submodel->i_replace == -1) && !child_submodel->flags[Model::Submodel_flags::No_collisions, Model::Submodel_flags::Nocollide_this_only])	{
 
 			// Only look for submodels that rotate or intrinsic-rotate
 			if (child_submodel->movement_type == MOVEMENT_TYPE_ROT || child_submodel->movement_type == MOVEMENT_TYPE_INTRINSIC) {
@@ -4376,11 +4422,11 @@ void model_clear_instance(int model_num)
 	interp_clear_instance();
 }
 
-void model_set_submodel_turn_info(submodel_instance *smi, float turn_rate, float turn_accel)
+void model_set_submodel_instance_motion_info(bsp_info *sm, submodel_instance *smi)
 {
 	smi->current_turn_rate = 0.0f;
-	smi->desired_turn_rate = turn_rate;
-	smi->turn_accel = turn_accel;
+	smi->desired_turn_rate = sm->default_turn_rate;
+	smi->turn_accel = sm->default_turn_accel;
 }
 
 // Sets the submodel instance data when a tech room model instance is created.
@@ -4395,18 +4441,15 @@ void model_set_up_techroom_instance(ship_info *sip, int model_instance_num)
 	{
 		model_subsystem *msp = &sip->subsystems[i];
 
-		const auto& initialAnims = sip->animations.animationSet[{animation::ModelAnimationTriggerType::Initial, animation::ModelAnimationSet::SUBTYPE_DEFAULT}];
-
-		for (const auto& initialAnim : initialAnims) {
-			initialAnim.second->start(pmi, animation::ModelAnimationDirection::FWD, true);
-		}
-
 		if (msp->subobj_num >= 0)
 			model_replicate_submodel_instance(pm, pmi, msp->subobj_num, empty);
 
 		if ((msp->subobj_num != msp->turret_gun_sobj) && (msp->turret_gun_sobj >= 0))
 			model_replicate_submodel_instance(pm, pmi, msp->turret_gun_sobj, empty);
 	}
+
+	sip->animations.clearShipData(pmi);
+	sip->animations.startAll(pmi, animation::ModelAnimationTriggerType::Initial, animation::ModelAnimationDirection::FWD, true, true);
 }
 
 /*
@@ -5445,7 +5488,6 @@ void model_subsystem::reset()
     rotation_snd = gamesnd_id();
 
     engine_wash_pointer = NULL;
-    turn_rate = 0; 
     weapon_rotation_pbank = 0;
     stepped_rotation = NULL;
 
@@ -5556,6 +5598,7 @@ uint convert_sldc_to_slc2(ubyte* sldc, ubyte* slc2, uint tree_size)
 	return new_tree_size;
 }
 
+// if bsp_out is NULL then we just calculate new size
 uint align_bsp_data(ubyte* bsp_in, ubyte* bsp_out, uint bsp_size)
 {
 	//ShivanSpS 
@@ -5582,36 +5625,47 @@ uint align_bsp_data(ubyte* bsp_in, ubyte* bsp_out, uint bsp_size)
 				//mprintf(("BSP DEFPOINTS DATA ALIGNED.\n"));
 				//Get the new size
 				uint newsize = bsp_chunk_size + 4 - (bsp_chunk_size % 4);
-				//Copy the entire chunk to dest
-				memcpy(bsp_out, bsp_in, bsp_chunk_size);
-				//Write the new chunk size on dest
-				memcpy(bsp_out + 4, &newsize, 4);
-				//The the position of vertex data
-				uint vertex_offset;
-				memcpy(&vertex_offset, bsp_in + 16, 4);
-				//Move vertex data to the back of the chunk
-				memmove(bsp_out + vertex_offset + (newsize - bsp_chunk_size), bsp_out + vertex_offset, bsp_chunk_size - vertex_offset);
-				vertex_offset += (newsize - bsp_chunk_size);
-				//Write new vertex offset
-				memcpy(bsp_out + 16, &vertex_offset, 4);
+
+				if (bsp_out) {
+					//Copy the entire chunk to dest
+					memcpy(bsp_out, bsp_in, bsp_chunk_size);
+					//Write the new chunk size on dest
+					memcpy(bsp_out + 4, &newsize, 4);
+					//The the position of vertex data
+					uint vertex_offset;
+					memcpy(&vertex_offset, bsp_in + 16, 4);
+					//Move vertex data to the back of the chunk
+					memmove(bsp_out + vertex_offset + (newsize - bsp_chunk_size), bsp_out + vertex_offset, bsp_chunk_size - vertex_offset);
+					vertex_offset += (newsize - bsp_chunk_size);
+					//Write new vertex offset
+					memcpy(bsp_out + 16, &vertex_offset, 4);
+					//Move pointers
+					bsp_out += newsize;
+				}
+
 				//Move pointers
 				bsp_in += bsp_chunk_size;
-				bsp_out += newsize;
 				copied += newsize;
 			}
 			else {
 				//if aligned just copy it
-				memcpy(bsp_out, bsp_in, bsp_chunk_size);
+				if (bsp_out) {
+					memcpy(bsp_out, bsp_in, bsp_chunk_size);
+					bsp_out += bsp_chunk_size;
+				}
+
 				bsp_in += bsp_chunk_size;
-				bsp_out += bsp_chunk_size;
 				copied += bsp_chunk_size;
 			}
 		}
 		else {
 			//If the chunk is not a defpoint just copy it
-			memcpy(bsp_out, bsp_in, bsp_chunk_size);
+			if (bsp_out) {
+				memcpy(bsp_out, bsp_in, bsp_chunk_size);
+				bsp_out += bsp_chunk_size;
+			}
+
 			bsp_in += bsp_chunk_size;
-			bsp_out += bsp_chunk_size;
 			copied += bsp_chunk_size;
 		}
 	} while (bsp_in < end);

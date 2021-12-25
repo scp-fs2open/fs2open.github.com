@@ -3046,6 +3046,15 @@ int CFREDView::global_error_check()
 		return internal_error("Jump node count is illegal");
 	}*/
 
+	// do error checking for asteroid targets
+	for (const auto& target_ship : Asteroid_target_ships) {
+		if (ship_name_lookup(target_ship.c_str(), 1) < 0) {
+			if (error("Asteroid target '%s' is not a valid ship", target_ship.c_str())) {
+				return 1;
+			}
+		}
+	}
+
 	fred_check_message_personas();
 
 	return g_err;
@@ -3379,7 +3388,7 @@ int CFREDView::fred_check_sexp(int sexp, int type, const char *msg, ...)
 
 	convert_sexp_to_string(sexp_buf, sexp, SEXP_ERROR_CHECK_MODE);
 	truncate_message_lines(sexp_buf, 30);
-	sprintf(error_buf, "Error in %s: %s\n\nIn sexpression: %s\n\n(Error appears to be: %s)", buf.c_str(), sexp_error_message(z), sexp_buf.c_str(), Sexp_nodes[faulty_node].text);
+	sprintf(error_buf, "Error in %s: %s\n\nIn sexpression: %s\n\n(Bad node appears to be: %s)", buf.c_str(), sexp_error_message(z), sexp_buf.c_str(), Sexp_nodes[faulty_node].text);
 
 	if (z < 0 && z > -100)
 		err = 1;

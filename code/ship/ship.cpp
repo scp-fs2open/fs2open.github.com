@@ -54,7 +54,6 @@
 #include "missionui/redalert.h"
 #include "mod_table/mod_table.h"
 #include "model/model.h"
-#include "model/modelanimation_segments.h"
 #include "model/modelrender.h"
 #include "nebula/neb.h"
 #include "network/multimsgs.h"
@@ -558,6 +557,7 @@ ship_flag_name Ship_flag_names[] = {
 	{ Ship_Flags::No_secondary_lockon,			"no-secondary-lock-on" },
 	{ Ship_Flags::No_disabled_self_destruct,	"no-disabled-self-destruct" },
 	{ Ship_Flags::Hide_mission_log,				"hide-in-mission-log" },
+	{ Ship_Flags::No_passive_lightning,			"no-ship-passive-lightning" },
 };
 
 static int Laser_energy_out_snd_timer;	// timer so we play out of laser sound effect periodically
@@ -1485,7 +1485,7 @@ void ship_info::move(ship_info&& other)
 
 	std::swap(glowpoint_bank_override_map, other.glowpoint_bank_override_map);
 
-	std::swap(animations, other.animations);
+	animations = std::move(other.animations);
 }
 
 #define CHECK_THEN_FREE(attribute) \
@@ -4476,7 +4476,15 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		{
 			stuff_string(name_tmp, F_NAME, sizeof(name_tmp));
 			int tex_fps=0, tex_nframes=0, tex_id=-1;;
-			tex_id = bm_load_animation(name_tmp, &tex_nframes, &tex_fps, nullptr, nullptr, true);
+			try {
+				tex_id = bm_load_animation(name_tmp, &tex_nframes, &tex_fps, nullptr, nullptr, true, CF_TYPE_ANY, true);
+			} catch (const std::exception& e) {
+				mprintf(("Could not load thruster texture %s as animation (%s). Attempting to load as static image.\n",
+					name_tmp,
+					e.what()));
+				tex_id = -1;
+			}
+
 			if(tex_id < 0)
 				tex_id = bm_load(name_tmp);
 			if(tex_id >= 0)
@@ -4488,6 +4496,8 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 				mtp->tex_id = tex_id;
 				mtp->tex_fps = tex_fps;
 				mtp->tex_nframes = tex_nframes;
+			} else {
+				mprintf(("Failed to load thruster texture %s\n", name_tmp));
 			}
 		}
 
@@ -4705,6 +4715,10 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		stuff_float(&new_info.frequency);
 
 		sip->ship_passive_arcs.push_back(new_info);
+	}
+
+	if (optional_string("$Animations:")) {
+		animation::ModelAnimationParseHelper::parseAnimsetInfo(sip->animations, sip);
 	}
 
 	if (optional_string("$Custom data:")) 
@@ -5057,7 +5071,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 				stuff_string(name_tmp, F_NAME, sizeof(name_tmp));
 				if(!stricmp(name_tmp, "triggered"))
 				{
-					animation::ModelAnimation::parseLegacyAnimationTable(sp, sip);
+					animation::ModelAnimationParseHelper::parseLegacyAnimationTable(sp, sip);
 				}
 				else if(!stricmp(name_tmp, "linked"))
 				{
@@ -6911,7 +6925,6 @@ void ship_subsys::clear()
 	last_aim_enemy_vel = vmd_zero_vector;
 
 	rof_scaler = 1.0f;
-	turn_rate = 0.0f;
 
 	turret_max_bomb_ownage = -1; 
 	turret_max_target_ownage = -1;
@@ -6945,6 +6958,7 @@ static int subsys_set(int objnum, int ignore_subsys_info)
 	Assert(shipp->model_instance_num >= 0);
 	polymodel_instance *pmi = model_get_instance(shipp->model_instance_num);
 	Assert(pmi->model_num == sinfo->model_num);
+	polymodel* pm = model_get(pmi->model_num);
 
 	for ( i = 0; i < sinfo->n_subsystems; i++ )
 	{
@@ -7031,8 +7045,6 @@ static int subsys_set(int objnum, int ignore_subsys_info)
 		// check the mission flag to possibly free all beam weapons - Goober5000, taken from SEXP.CPP, and moved to subsys_set() by Asteroth
 		if (The_mission.flags[Mission::Mission_Flags::Beam_free_all_by_default]) 
 			ship_system->weapons.flags.set(Ship::Weapon_Flags::Beam_Free);
-
-		ship_system->turn_rate = model_system->turn_rate;
 
 		// Goober5000 - this has to be moved outside back to parse_create_object, because
 		// a lot of the ship creation code is duplicated in several points and overwrites
@@ -7200,9 +7212,8 @@ static int subsys_set(int objnum, int ignore_subsys_info)
         }
 
 		// turn_rate, turn_accel
-		float turn_accel = 0.5f;
 		if (ship_system->submodel_instance_1 != nullptr)
-			model_set_submodel_turn_info(ship_system->submodel_instance_1, model_system->turn_rate, turn_accel);
+			model_set_submodel_instance_motion_info(&pm->submodel[model_system->subobj_num], ship_system->submodel_instance_1);
 	}
 
 	if ( !ignore_subsys_info ) {
@@ -7651,11 +7662,7 @@ void ship_delete( object * obj )
 	ship_subsystems_delete(&Ships[num]);
 	shipp->objnum = -1;
 
-	for (const auto& animationList : Ship_info[shipp->ship_info_index].animations.animationSet) {
-		for (const auto& animStop : animationList.second) {
-			animStop.second->stop(model_get_instance(shipp->model_instance_num), true);
-		}
-	}
+	animation::ModelAnimationSet::stopAnimations(model_get_instance(shipp->model_instance_num));
 
 	if (shipp->ship_replacement_textures != NULL) {
 		vm_free(shipp->ship_replacement_textures);
@@ -8216,10 +8223,10 @@ static void do_dying_undock_physics(object *dying_objp, ship *dying_shipp)
 		// undo all the docking animations for the docked ship only
 		ship_info* docked_sip = &Ship_info[docked_shipp->ship_info_index];
 
-		docked_sip->animations.startAll(model_get_instance(docked_shipp->model_instance_num), animation::ModelAnimationTriggerType::Docked, animation::ModelAnimationDirection::RWD, false, false, dockee_index);
-		docked_sip->animations.startAll(model_get_instance(docked_shipp->model_instance_num), animation::ModelAnimationTriggerType::Docking_Stage3, animation::ModelAnimationDirection::RWD, false, false, dockee_index);
-		docked_sip->animations.startAll(model_get_instance(docked_shipp->model_instance_num), animation::ModelAnimationTriggerType::Docking_Stage2, animation::ModelAnimationDirection::RWD, false, false, dockee_index);
-		docked_sip->animations.startAll(model_get_instance(docked_shipp->model_instance_num), animation::ModelAnimationTriggerType::Docking_Stage1, animation::ModelAnimationDirection::RWD, false, false, dockee_index);
+		docked_sip->animations.startAll(model_get_instance(docked_shipp->model_instance_num), animation::ModelAnimationTriggerType::Docked, animation::ModelAnimationDirection::RWD, false, false, false, dockee_index);
+		docked_sip->animations.startAll(model_get_instance(docked_shipp->model_instance_num), animation::ModelAnimationTriggerType::Docking_Stage3, animation::ModelAnimationDirection::RWD, false, false, false, dockee_index);
+		docked_sip->animations.startAll(model_get_instance(docked_shipp->model_instance_num), animation::ModelAnimationTriggerType::Docking_Stage2, animation::ModelAnimationDirection::RWD, false, false, false, dockee_index);
+		docked_sip->animations.startAll(model_get_instance(docked_shipp->model_instance_num), animation::ModelAnimationTriggerType::Docking_Stage1, animation::ModelAnimationDirection::RWD, false, false, false, dockee_index);
 
 		// only consider the mass of these two objects, not the whole assembly
 		// (this is inaccurate, but the alternative is a huge mess of extra code for a very small gain in realism)
@@ -9885,8 +9892,6 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 
 	sip->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);		// use the highest detail level
 
-	shipp->model_instance_num = model_create_instance(true, sip->model_num);
-
 	if(strlen(sip->cockpit_pof_file))
 	{
 		sip->cockpit_model_num = model_load(sip->cockpit_pof_file, 0, NULL);
@@ -9942,6 +9947,8 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 
 	objnum = obj_create(OBJ_SHIP, -1, n, orient, pos, model_get_radius(sip->model_num), default_ship_object_flags);
 	Assert( objnum >= 0 );
+
+	shipp->model_instance_num = model_create_instance(objnum, sip->model_num);
 
 	shipp->ai_index = ai_get_slot(n);
 	Assert( shipp->ai_index >= 0 );
@@ -10091,6 +10098,9 @@ static void ship_model_change(int n, int ship_type)
 	sp = &Ships[n];
 	sip = &(Ship_info[ship_type]);
 	objp = &Objects[sp->objnum];
+
+	//Stop Animation on the old model
+	animation::ModelAnimationSet::stopAnimations(model_get_instance(sp->model_instance_num));
 
 	// get new model
 	if (sip->model_num == -1) {
@@ -10404,7 +10414,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 
 	// create new model instance data
 	// note: this is needed for both subsystem stuff and submodel animation stuff
-	sp->model_instance_num = model_create_instance(true, sip->model_num);
+	sp->model_instance_num = model_create_instance(objnum, sip->model_num);
 
 	// if we have the same warp parameters as the ship class, we will need to update them to point to the new class
 	if (sp->warpin_params_index == sip_orig->warpin_params_index) {
@@ -12026,6 +12036,12 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 		if (objp == Player_obj && Player_ai->target_objnum != -1)
 			target = &Objects[Player_ai->target_objnum]; 
 
+		for (int bank = 0; bank < MAX_SHIP_PRIMARY_BANKS; bank++) {
+			if(banks_fired & (1 << bank))
+				//Start Animation in Forced mode: Always restart it from its initial position rather than just flip it to FWD motion if it was still moving. This is to make it work best for uses like recoil.
+				sip->animations.startAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::PrimaryFired, animation::ModelAnimationDirection::FWD, true, false, false, bank);
+		}
+
 		if (Script_system.IsActiveAction(CHA_ONWPFIRED) || Script_system.IsActiveAction(CHA_PRIMARYFIRE)) {
 			Script_system.SetHookObjects(2, "User", objp, "Target", target);
 			Script_system.RunCondition(CHA_ONWPFIRED, objp, 1);
@@ -12719,6 +12735,9 @@ done_secondary:
 			target = NULL;
 		if (objp == Player_obj && Player_ai->target_objnum != -1)
 			target = &Objects[Player_ai->target_objnum];
+
+		//Start Animation in Forced mode: Always restart it from its initial position rather than just flip it to FWD motion if it was still moving. This is to make it work best for uses like recoil.
+		sip->animations.startAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::SecondaryFired, animation::ModelAnimationDirection::FWD, true, false, false, bank);
 
 		if (Script_system.IsActiveAction(CHA_ONWPFIRED) || Script_system.IsActiveAction(CHA_SECONDARYFIRE)) {
 			Script_system.SetHookObjects(2, "User", objp, "Target", target);
@@ -13673,7 +13692,7 @@ void ship_get_eye( vec3d *eye_pos, matrix *eye_orient, object *obj, bool do_slew
 	// element.
 	eye *ep = &(pm->view_positions[shipp->current_viewpoint]);
 
-	if (ep->parent >= 0 && pm->submodel[ep->parent].can_move) {
+	if (ep->parent >= 0 && pm->submodel[ep->parent].flags[Model::Submodel_flags::Can_move]) {
 		find_submodel_instance_point_orient(eye_pos, eye_orient, pm, pmi, ep->parent, &ep->pnt, &vmd_identity_matrix);
 		vec3d tvec = *eye_pos;
 		vm_vec_unrotate(eye_pos, &tvec, &obj->orient);
@@ -16528,7 +16547,7 @@ void ship_primary_changed(ship *sp)
 		// if we are linked now find any body who is down and flip them up
 		for (i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++) {
 			if (swp->primary_animation_position[i] == MA_POS_NOT_SET) {
-				if ( Ship_info[sp->ship_info_index].animations.startAll(model_get_instance(sp->model_instance_num), animation::ModelAnimationTriggerType::PrimaryBank, animation::ModelAnimationDirection::FWD, false, false, i) ) {
+				if ( Ship_info[sp->ship_info_index].animations.startAll(model_get_instance(sp->model_instance_num), animation::ModelAnimationTriggerType::PrimaryBank, animation::ModelAnimationDirection::FWD, false, false, false, i) ) {
 					swp->primary_animation_done_time[i] = Ship_info[sp->ship_info_index].animations.getTimeAll(model_get_instance(sp->model_instance_num), animation::ModelAnimationTriggerType::PrimaryBank, i);
 					swp->primary_animation_position[i] = MA_POS_SET;
 				} else {
@@ -16542,7 +16561,7 @@ void ship_primary_changed(ship *sp)
 			if (i == swp->current_primary_bank) {
 				// if the current bank is down raise it up
 				if (swp->primary_animation_position[i] == MA_POS_NOT_SET) {
-					if (Ship_info[sp->ship_info_index].animations.startAll(model_get_instance(sp->model_instance_num), animation::ModelAnimationTriggerType::PrimaryBank, animation::ModelAnimationDirection::FWD, false, false, i)) {
+					if (Ship_info[sp->ship_info_index].animations.startAll(model_get_instance(sp->model_instance_num), animation::ModelAnimationTriggerType::PrimaryBank, animation::ModelAnimationDirection::FWD, false, false, false, i)) {
 						swp->primary_animation_done_time[i] = Ship_info[sp->ship_info_index].animations.getTimeAll(model_get_instance(sp->model_instance_num), animation::ModelAnimationTriggerType::PrimaryBank, i);
 						swp->primary_animation_position[i] = MA_POS_SET;
 					} else {
@@ -16552,7 +16571,7 @@ void ship_primary_changed(ship *sp)
 			} else {
 				// everyone else should be down, if they are not make them so
 				if (swp->primary_animation_position[i] != MA_POS_NOT_SET) {
-					Ship_info[sp->ship_info_index].animations.startAll(model_get_instance(sp->model_instance_num), animation::ModelAnimationTriggerType::PrimaryBank, animation::ModelAnimationDirection::RWD, false, false, i);
+					Ship_info[sp->ship_info_index].animations.startAll(model_get_instance(sp->model_instance_num), animation::ModelAnimationTriggerType::PrimaryBank, animation::ModelAnimationDirection::RWD, false, false, false, i);
 					swp->primary_animation_position[i] = MA_POS_NOT_SET;
 				}
 			}
@@ -16587,7 +16606,7 @@ void ship_secondary_changed(ship *sp)
 			if (i == swp->current_secondary_bank) {
 				// if the current bank is down raise it up
 				if (swp->secondary_animation_position[i] == MA_POS_NOT_SET) {
-					if (Ship_info[sp->ship_info_index].animations.startAll(model_get_instance(sp->model_instance_num), animation::ModelAnimationTriggerType::SecondaryBank, animation::ModelAnimationDirection::FWD, false, false, i)) {
+					if (Ship_info[sp->ship_info_index].animations.startAll(model_get_instance(sp->model_instance_num), animation::ModelAnimationTriggerType::SecondaryBank, animation::ModelAnimationDirection::FWD, false, false, false, i)) {
 						swp->secondary_animation_done_time[i] = Ship_info[sp->ship_info_index].animations.getTimeAll(model_get_instance(sp->model_instance_num), animation::ModelAnimationTriggerType::SecondaryBank, i);
 						swp->secondary_animation_position[i] = MA_POS_SET;
 					} else {
@@ -16597,7 +16616,7 @@ void ship_secondary_changed(ship *sp)
 			} else {
 				// everyone else should be down, if they are not make them so
 				if (swp->secondary_animation_position[i] != MA_POS_NOT_SET) {
-					Ship_info[sp->ship_info_index].animations.startAll(model_get_instance(sp->model_instance_num), animation::ModelAnimationTriggerType::SecondaryBank, animation::ModelAnimationDirection::RWD, false, false, i);
+					Ship_info[sp->ship_info_index].animations.startAll(model_get_instance(sp->model_instance_num), animation::ModelAnimationTriggerType::SecondaryBank, animation::ModelAnimationDirection::RWD, false, false, false, i);
 					swp->secondary_animation_position[i] = MA_POS_NOT_SET;
 				}
 			}
@@ -17487,17 +17506,17 @@ void object_jettison_cargo(object *objp, object *cargo_objp, float jettison_spee
 
 	ship_info* sip = &Ship_info[shipp->ship_info_index];
 
-	sip->animations.startAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::Docked, animation::ModelAnimationDirection::RWD, false, false, docker_index);
-	sip->animations.startAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::Docking_Stage3, animation::ModelAnimationDirection::RWD, false, false, docker_index);
-	sip->animations.startAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::Docking_Stage2, animation::ModelAnimationDirection::RWD, false, false, docker_index);
-	sip->animations.startAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::Docking_Stage1, animation::ModelAnimationDirection::RWD, false, false, docker_index);
+	sip->animations.startAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::Docked, animation::ModelAnimationDirection::RWD, false, false, false, docker_index);
+	sip->animations.startAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::Docking_Stage3, animation::ModelAnimationDirection::RWD, false, false, false, docker_index);
+	sip->animations.startAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::Docking_Stage2, animation::ModelAnimationDirection::RWD, false, false, false, docker_index);
+	sip->animations.startAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::Docking_Stage1, animation::ModelAnimationDirection::RWD, false, false, false, docker_index);
 
 	ship_info* cargo_sip = &Ship_info[cargo_shipp->ship_info_index];
 
-	cargo_sip->animations.startAll(model_get_instance(cargo_shipp->model_instance_num), animation::ModelAnimationTriggerType::Docked, animation::ModelAnimationDirection::RWD, false, false, dockee_index);
-	cargo_sip->animations.startAll(model_get_instance(cargo_shipp->model_instance_num), animation::ModelAnimationTriggerType::Docking_Stage3, animation::ModelAnimationDirection::RWD, false, false, dockee_index);
-	cargo_sip->animations.startAll(model_get_instance(cargo_shipp->model_instance_num), animation::ModelAnimationTriggerType::Docking_Stage2, animation::ModelAnimationDirection::RWD, false, false, dockee_index);
-	cargo_sip->animations.startAll(model_get_instance(cargo_shipp->model_instance_num), animation::ModelAnimationTriggerType::Docking_Stage1, animation::ModelAnimationDirection::RWD, false, false, dockee_index);
+	cargo_sip->animations.startAll(model_get_instance(cargo_shipp->model_instance_num), animation::ModelAnimationTriggerType::Docked, animation::ModelAnimationDirection::RWD, false, false, false, dockee_index);
+	cargo_sip->animations.startAll(model_get_instance(cargo_shipp->model_instance_num), animation::ModelAnimationTriggerType::Docking_Stage3, animation::ModelAnimationDirection::RWD, false, false, false, dockee_index);
+	cargo_sip->animations.startAll(model_get_instance(cargo_shipp->model_instance_num), animation::ModelAnimationTriggerType::Docking_Stage2, animation::ModelAnimationDirection::RWD, false, false, false, dockee_index);
+	cargo_sip->animations.startAll(model_get_instance(cargo_shipp->model_instance_num), animation::ModelAnimationTriggerType::Docking_Stage1, animation::ModelAnimationDirection::RWD, false, false, false, dockee_index);
 
 	// undock the objects
 	ai_do_objects_undocked_stuff(objp, cargo_objp);
@@ -18155,7 +18174,7 @@ void ship_do_submodel_rotation(ship *shipp, model_subsystem *psub, ship_subsys *
 		return;
 	}
 
-	if (psub->flags[Model::Subsystem_Flags::Triggered] && pss->triggered_rotation_index >= 0) {
+	if (psub->flags[Model::Subsystem_Flags::Triggered]) {
 		//Triggered rotation is handled by animation stepping.
 		//The flag doesn't do anything at all anymore, except prevent other rotation types
 		return;	
@@ -19489,9 +19508,9 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 			// create a model instance only if at least one submodel has gun rotation
 			for (int mn = 0; mn < pm->n_models; mn++)
 			{
-				if (pm->submodel[mn].gun_rotation)
+				if (pm->submodel[mn].flags[Model::Submodel_flags::Gun_rotation])
 				{
-					swp->primary_bank_external_model_instance[i] = model_create_instance(false, wip->external_model_num);
+					swp->primary_bank_external_model_instance[i] = model_create_instance(-1, wip->external_model_num);
 					break;
 				}
 			}
@@ -19509,7 +19528,7 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 			// spin the submodels by the gun rotation
 			for (int mn = 0; mn < pm->n_models; ++mn)
 			{
-				if (pm->submodel[mn].gun_rotation)
+				if (pm->submodel[mn].flags[Model::Submodel_flags::Gun_rotation])
 				{
 					angles angs = vmd_zero_angles;
 					angs.b = shipp->primary_rotate_ang[i];

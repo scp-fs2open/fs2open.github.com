@@ -5,6 +5,24 @@
 
 namespace Model {
 
+	FLAG_LIST(Submodel_flags) {
+		Can_move,						// If true, the position and/or orientation of this submodel can change due to rotation of itself OR a parent
+		Is_live_debris,					// whether current submodel is a live debris model
+		Is_thruster,					// is an engine thruster submodel
+		Is_damaged,						// is a submodel that represents a damaged submodel (e.g. a -destroyed version of some other submodel)
+		Do_not_scale_detail_distances,	// if set should not scale boxes or spheres based on 'model detail' settings
+		Gun_rotation,					// for animated weapon models
+		Instant_rotate_accel,			// rotating submodels instantly reach their desired velocity
+		No_collisions,					// for $no_collisions property - kazan
+		Nocollide_this_only,			//SUSHI: Like no_collisions, but not recursive. For the "replacement" collision model scheme.
+		Collide_invisible,				//SUSHI: If set, this submodel should allow collisions for invisible textures. For the "replacement" collision model scheme.
+		Use_render_box_offset,			// whether an offset has been defined; needed because one can't tell just by looking at render_box_offset
+		Use_render_sphere_offset,		// whether an offset has been defined; needed because one can't tell just by looking at render_sphere_offset
+		Attach_thrusters,				//zookeeper: If set and this submodel or any of its parents rotates, also rotates associated thrusters.
+
+		NUM_VALUES
+	};
+
 	FLAG_LIST(Subsystem_Flags) {
 		Rotates,			// This means the object rotates automatically with "turn_rate"
 		Stepped_rotate,		// This means that the rotation occurs in steps
@@ -24,7 +42,6 @@ namespace Model {
 		No_ss_targeting,	// toggles the subsystem targeting for the turret
 		Turret_reset_idle,	// makes turret reset to their initial position if the target is out of field of view
 		Turret_restricted_fov,	// tells the game to use additional calculations should turret have a limited base fov or elevation
-		Dum_rotates,		// Bobboau
 		Carry_shockwave,	// subsystem - even with 'carry no damage' flag - will carry shockwave damage to the hull
 		Allow_landing,		// This subsystem can be landed on
 		Fov_edge_check,		// Tells the game to use better FOV edge checking with this turret

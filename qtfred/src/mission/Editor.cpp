@@ -2581,7 +2581,7 @@ int Editor::fred_check_sexp(int sexp, int type, const char* msg, ...) {
 	convert_sexp_to_string(sexp_buf, sexp, SEXP_ERROR_CHECK_MODE);
 	truncate_message_lines(sexp_buf, 30);
 	sprintf(error_buf,
-			"Error in %s: %s\n\nIn sexpression: %s\n\n(Error appears to be: %s)",
+			"Error in %s: %s\n\nIn sexpression: %s\n\n(Bad node appears to be: %s)",
 			buf.c_str(),
 			sexp_error_message(z),
 			sexp_buf.c_str(),
