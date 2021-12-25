@@ -166,6 +166,7 @@ int sexp_tree::load_branch(int index, int parent)
 
 	while (index != -1) {
 		int additional_flags = SEXPT_VALID;
+
 		// special check for containers
 		if (parent != -1) {
 			if (tree_nodes[parent].type & SEXPT_CONTAINER) {
@@ -1225,8 +1226,8 @@ void sexp_tree::right_clicked(int mode)
 			}
 
 			// special case don't allow replace data for variable or container names
-			// FIXME TODO: include OPF_*CONTAINER_NAME (generic/list/map) once Part 5 is merged
-			if ( (type != OPF_VARIABLE_NAME) && list) {
+			if ((type != OPF_VARIABLE_NAME) && (type != OPF_CONTAINER_NAME) && (type != OPF_LIST_CONTAINER_NAME) &&
+				(type != OPF_MAP_CONTAINER_NAME) && list) {
 				sexp_list_item *ptr;
 
 				int data_idx = 0;
