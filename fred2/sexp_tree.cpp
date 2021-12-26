@@ -609,7 +609,7 @@ void sexp_tree::update_item(HTREEITEM h)
 // handler for right mouse button clicks.
 void sexp_tree::right_clicked(int mode)
 {
-	int i, j, z, count, op, add_type, replace_type, type, subcategory_id;
+	int i, j, z, count, op, add_type, replace_type, type = 0, subcategory_id;
 	sexp_list_item *list;
 	UINT _flags;
 	HTREEITEM h;
