@@ -1437,6 +1437,14 @@ void sexp_tree::right_clicked(int mode)
 				if (add_type == z)
 					menu.EnableMenuItem(ID_EDIT_PASTE_SPECIAL, MF_ENABLED);
 
+			} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_CONTAINER) {
+				// TODO: check for strictly typed containers
+				const auto* p_container = get_sexp_container(tree_nodes[parent].text);
+				Assert(p_container != nullptr);
+				z = p_container->opf_type;
+				menu.EnableMenuItem(ID_EDIT_PASTE, MF_ENABLED);
+				menu.EnableMenuItem(ID_EDIT_PASTE_SPECIAL, MF_ENABLED);
+
 			} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_NUMBER) {
 				if ((replace_type == OPR_POSITIVE) && (atoi(CTEXT(Sexp_clipboard)) > -1))
 					menu.EnableMenuItem(ID_EDIT_PASTE, MF_ENABLED);
@@ -1449,14 +1457,6 @@ void sexp_tree::right_clicked(int mode)
 
 				else if (add_type == OPR_NUMBER)
 					menu.EnableMenuItem(ID_EDIT_PASTE_SPECIAL, MF_ENABLED);
-
-			} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_CONTAINER) {
-				// TODO: check for strictly typed containers
-				const auto *p_container = get_sexp_container(tree_nodes[parent].text);
-				Assert(p_container != nullptr);
-				z = p_container->opf_type;
-				menu.EnableMenuItem(ID_EDIT_PASTE, MF_ENABLED);
-				menu.EnableMenuItem(ID_EDIT_PASTE_SPECIAL, MF_ENABLED);
 
 			} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_STRING) {
 				if (replace_type == OPR_STRING)
@@ -1545,8 +1545,8 @@ int sexp_tree::edit_label(HTREEITEM h)
 		return 1;
 	}
 
-	// Variables must be edited through dialog box
-	if (tree_nodes[i].type & SEXPT_VARIABLE) {
+	// Variables and containers must be edited through dialog box
+	if (tree_nodes[i].type & (SEXPT_VARIABLE | SEXPT_CONTAINER)) {
 		return 0;
 	}
 
@@ -1934,11 +1934,16 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 	if ((id >= ID_ADD_MENU) && (id < ID_ADD_MENU + 511)) {
 		auto saved_id = id;
 		Assert(item_index >= 0);
-		op = get_operator_index(tree_nodes[item_index].text);
-		Assert(op >= 0);
 
-		auto type = query_operator_argument_type(op, Add_count);
-		list = get_listing_opf(type, item_index, Add_count);
+		if (tree_nodes[item_index].type & SEXPT_CONTAINER) {
+			list = get_listing_opf(OPF_LIST_MODIFIER, tree_nodes[item_index].parent, Add_count, true);
+		} else {
+			op = get_operator_index(tree_nodes[item_index].text);
+			Assert(op >= 0);
+
+			auto type = query_operator_argument_type(op, Add_count);
+			list = get_listing_opf(type, item_index, Add_count);
+		}
 		Assert(list);
 
 		id -= ID_ADD_MENU;
@@ -2125,20 +2130,32 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 
 		case ID_REPLACE_NUMBER:
 			expand_operator(item_index);
-			replace_data("number", (SEXPT_NUMBER | SEXPT_VALID));
+			if (tree_nodes[item_index].type & SEXPT_MODIFIER) {
+				replace_data("number", (SEXPT_NUMBER | SEXPT_MODIFIER | SEXPT_VALID));
+			} else {
+				replace_data("number", (SEXPT_NUMBER | SEXPT_VALID));
+			}
 			EditLabel(tree_nodes[item_index].handle);
-			return 1; 
+			return 1;
 	
 		case ID_REPLACE_STRING:
 			expand_operator(item_index);
-			replace_data("string", (SEXPT_STRING | SEXPT_VALID));
+			if (tree_nodes[item_index].type & SEXPT_MODIFIER) {
+				replace_data("string", (SEXPT_STRING | SEXPT_MODIFIER | SEXPT_VALID));
+			} else {
+				replace_data("string", (SEXPT_STRING | SEXPT_VALID));
+			}
 			EditLabel(tree_nodes[item_index].handle);
-			return 1; 
+			return 1;
 
 		case ID_ADD_STRING:	{
 			int theNode;
-			
-			theNode = add_data("string", (SEXPT_STRING | SEXPT_VALID));
+
+			if (tree_nodes[item_index].type & SEXPT_CONTAINER) {
+				theNode = add_data("string", (SEXPT_STRING | SEXPT_MODIFIER | SEXPT_VALID));
+			} else {
+				theNode = add_data("string", (SEXPT_STRING | SEXPT_VALID));
+			}
 			EditLabel(tree_nodes[theNode].handle);
 			return 1;
 		}
@@ -2146,7 +2163,11 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 		case ID_ADD_NUMBER:	{
 			int theNode;
 
-			theNode = add_data("number", (SEXPT_NUMBER | SEXPT_VALID));
+			if (tree_nodes[item_index].type & SEXPT_CONTAINER) {
+				theNode = add_data("number", (SEXPT_NUMBER | SEXPT_MODIFIER | SEXPT_VALID));
+			} else {
+				theNode = add_data("number", (SEXPT_NUMBER | SEXPT_VALID));
+			}
 			EditLabel(tree_nodes[theNode].handle);
 			return 1;
 		}
@@ -2262,6 +2283,23 @@ void sexp_tree::NodePaste()
 			}
 		}
 
+	} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_CONTAINER) {
+		expand_operator(item_index);
+		const auto *p_container = get_sexp_container(Sexp_nodes[Sexp_clipboard].text);
+		// don't add the default data bcause we're still adding that stuff from the clipboard
+		replace_container_data(*p_container, tree_nodes[item_index].type | SEXPT_CONTAINER, false, true, false);
+		if (Sexp_nodes[Sexp_clipboard].rest != -1) {
+			Warning(LOCATION, "Paste error. Clipboard should contain more data than just the name of the container");
+			// TODO: handle paste error
+		}
+		load_branch(Sexp_nodes[Sexp_clipboard].first, item_index);
+		i = tree_nodes[item_index].child;
+		while (i != -1) {
+			add_sub_tree(i, tree_nodes[item_index].handle);
+			i = tree_nodes[i].next;
+		}
+		// FIXME TODO: what about copy/pasting SEXPT_MODIFIER nodes? Should that even be alllowed?
+
 	} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_NUMBER) {
 		Assert(Sexp_nodes[Sexp_clipboard].rest == -1);
 		if (Sexp_nodes[Sexp_clipboard].type & SEXP_FLAG_VARIABLE) {
@@ -2271,6 +2309,7 @@ void sexp_tree::NodePaste()
 		}
 		else {
 			expand_operator(item_index);
+			// FIXME TODO: if the node is a container modifier, we should include SEXPT_MODIFIER
 			replace_data(CTEXT(Sexp_clipboard), (SEXPT_NUMBER | SEXPT_VALID));
 		}
 
@@ -2283,6 +2322,7 @@ void sexp_tree::NodePaste()
 		}
 		else {
 			expand_operator(item_index);
+			// FIXME TODO: if the node is a container modifier, we should include SEXPT_MODIFIER
 			replace_data(CTEXT(Sexp_clipboard), (SEXPT_STRING | SEXPT_VALID));
 		}
 
@@ -2315,14 +2355,30 @@ void sexp_tree::NodeAddPaste()
 			}
 		}
 
+	} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_CONTAINER) {
+		expand_operator(item_index);
+		add_container_data(Sexp_nodes[Sexp_clipboard].text);
+		if (Sexp_nodes[Sexp_clipboard].rest != -1) {
+			Warning(LOCATION, "Paste error. Clipboard should contain more data than just the name of the container");
+			// TODO: handle paste error
+		}
+		load_branch(Sexp_nodes[Sexp_clipboard].first, item_index);
+		i = tree_nodes[item_index].child;
+		while (i != -1) {
+			add_sub_tree(i, tree_nodes[item_index].handle);
+			i = tree_nodes[i].next;
+		}
+
 	} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_NUMBER) {
 		Assert(Sexp_nodes[Sexp_clipboard].rest == -1);
 		expand_operator(item_index);
+		// FIXME TODO: if the node is a container modifier, we should include SEXPT_MODIFIER
 		add_data(CTEXT(Sexp_clipboard), (SEXPT_NUMBER | SEXPT_VALID));
 
 	} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_STRING) {
 		Assert(Sexp_nodes[Sexp_clipboard].rest == -1);
 		expand_operator(item_index);
+		// FIXME TODO: if the node is a container modifier, we should include SEXPT_MODIFIER
 		add_data(CTEXT(Sexp_clipboard), (SEXPT_STRING | SEXPT_VALID));
 
 	} else
@@ -3634,6 +3690,13 @@ void sexp_tree::verify_and_fix_arguments(int node)
 			is_variable_arg = true;
 			type = get_modify_variable_type(node);
 		}
+		if (tree_nodes[item_index].type & SEXPT_CONTAINER) {
+			// we don't care if the data matches
+			// TODO: revisit if/when strictly typed data becomes supported
+			item_index = tree_nodes[item_index].next;
+			arg_num++;
+			continue;
+		}
 		if (query_restricted_opf_range(type)) {
 			list = get_listing_opf(type, node, arg_num);
 			if (!list && (arg_num >= Operators[op_index].min)) {
@@ -4250,6 +4313,10 @@ void sexp_tree::setup(CEdit *ptr)
 		}
 
 		bitmap.LoadBitmap(IDB_COMMENT);
+		pimagelist->Add(&bitmap, (COLORREF)0xFF00FF);
+		bitmap.DeleteObject();
+
+		bitmap.LoadBitmap(IDB_CONTAINER);
 		pimagelist->Add(&bitmap, (COLORREF)0xFF00FF);
 		bitmap.DeleteObject();
 
