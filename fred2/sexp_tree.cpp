@@ -1935,13 +1935,15 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 		auto saved_id = id;
 		Assert(item_index >= 0);
 
+		int type = 0;
+
 		if (tree_nodes[item_index].type & SEXPT_CONTAINER) {
 			list = get_listing_opf(OPF_LIST_MODIFIER, tree_nodes[item_index].parent, Add_count, true);
 		} else {
 			op = get_operator_index(tree_nodes[item_index].text);
 			Assert(op >= 0);
 
-			auto type = query_operator_argument_type(op, Add_count);
+			type = query_operator_argument_type(op, Add_count);
 			list = get_listing_opf(type, item_index, Add_count);
 		}
 		Assert(list);
@@ -3337,6 +3339,22 @@ int sexp_tree::add_variable_data(const char *data, int type)
 	tree_nodes[node].handle = insert(data, BITMAP_VARIABLE, BITMAP_VARIABLE, tree_nodes[item_index].handle);
 	tree_nodes[node].flags = NOT_EDITABLE;
 	*modified = 1;
+	return node;
+}
+
+// add a (container) data node under operator pointed to by item_index
+int sexp_tree::add_container_data(const char* data)
+{
+	expand_operator(item_index);
+	Assert(data != nullptr);
+	Assert(get_sexp_container(data) != nullptr);
+	int node = allocate_node(item_index);
+	set_node(node, (SEXPT_CONTAINER | SEXPT_VALID), data);
+	tree_nodes[node].handle = insert(data, BITMAP_CONTAINER, BITMAP_CONTAINER, tree_nodes[item_index].handle);
+	tree_nodes[node].flags = NOT_EDITABLE;
+	item_index = node;
+	*modified = 1;
+	// FIXME TODO: caller doesn't use ret value
 	return node;
 }
 
