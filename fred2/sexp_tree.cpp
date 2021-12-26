@@ -2190,6 +2190,11 @@ void sexp_tree::NodeCut()
 	if (item_index < 0)
 		return;
 
+	if (tree_nodes[item_index].type & SEXPT_MODIFIER) {
+		MessageBox("Container modifiers can't be cut without their container.");
+		return;
+	}
+
 	NodeCopy();
 	NodeDelete();
 }
