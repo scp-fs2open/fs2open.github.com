@@ -167,11 +167,9 @@ int sexp_tree::load_branch(int index, int parent)
 	while (index != -1) {
 		int additional_flags = SEXPT_VALID;
 
-		// special check for containers
-		if (parent != -1) {
-			if (tree_nodes[parent].type & SEXPT_CONTAINER) {
-				additional_flags |= SEXPT_MODIFIER;
-			}
+		// special check for container modifiers
+		if ((parent != -1) && (tree_nodes[parent].type & SEXPT_CONTAINER)) {
+			additional_flags |= SEXPT_MODIFIER;
 		}
 
 		Assert(Sexp_nodes[index].type != SEXP_NOT_USED);
@@ -543,7 +541,8 @@ void sexp_tree::add_sub_tree(int node, HTREEITEM root)
 		} else if (tree_nodes[node].type & SEXPT_CONTAINER) {
 			if (tree_nodes[node].child != -1) {
 				// we're at the root of a Replace Container subtree
-				// FIXME TODO: Assert that child's type & SEXPT_MODIFIER?
+				// DISCUSSME: isn't this assertion valid? Shouldn't it be?
+				Assert(tree_nodes[tree_nodes[node].child].type & SEXPT_MODIFIER);
 				add_sub_tree(node, root);
 			} else {
 				tree_nodes[node].handle = insert(tree_nodes[node].text, BITMAP_CONTAINER, BITMAP_CONTAINER, root);
