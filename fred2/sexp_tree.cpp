@@ -2251,6 +2251,11 @@ void sexp_tree::NodeCopy()
 	if (item_index < 0)
 		return;
 
+	if (tree_nodes[item_index].type & SEXPT_MODIFIER) {
+		MessageBox("Container modifiers can't be copied without their container.");
+		return;
+	}
+
 	// If a clipboard already exist, unmark it as persistent and free old clipboard
 	if (Sexp_clipboard != -1) {
 		sexp_unmark_persistent(Sexp_clipboard);
