@@ -131,8 +131,8 @@ void CAddModifyContainerDlg::OnOK()
 {
 	update_sexp_containers(m_containers, m_old_to_new_names);
 
-	if (!m_old_to_new_names.empty()) {
-		// TODO: rename nodes in sexp_tree::tree_nodes
+	for (const auto &renamed_container : m_old_to_new_names) {
+		// FIXME TODO: revise relevant nodes' text in sexp_tree::tree_nodes
 	}
 
 	CDialog::OnOK();
