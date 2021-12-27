@@ -30,12 +30,26 @@ struct piecewise_power_curve_values{
 	float shoulder_angle;
 };
 
+struct piecewise_power_curve_intermediates{
+	float x0;
+	float y0;
+	float x1;
+	float toe_B;
+	float toe_lnA;
+	float sh_B;
+	float sh_lnA;
+	float sh_offsetX;
+	float sh_offsetY;
+};
+
 class lighting_profile{
 public:
 	static enum TonemapperAlgorithm name_to_tonemapper(SCP_string &name);
 	static void load_profiles();
 	static TonemapperAlgorithm current_tonemapper();
 	static const piecewise_power_curve_values & current_piecewise_values();
+	static piecewise_power_curve_intermediates current_piecewise_intermediates();
+	static piecewise_power_curve_intermediates calc_intermediates(piecewise_power_curve_values input);
 	static float current_exposure();
 
 	SCP_string name;
