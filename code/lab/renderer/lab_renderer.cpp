@@ -3,6 +3,7 @@
 #include "lab/wmcgui.h"
 #include "graphics/2d.h"
 #include "graphics/light.h"
+#include "lighting/lighting_profiles.h"
 #include "starfield/starfield.h"
 #include "starfield/nebula.h"
 #include "nebula/neb.h"

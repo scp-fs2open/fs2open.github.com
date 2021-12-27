@@ -1,6 +1,7 @@
 #include "globalincs/pstypes.h"
 #include "globalincs/safe_strings.h"
 #include "globalincs/vmallocator.h"
+#include "def_files/def_files.h"
 #include "lighting/lighting.h"
 #include "lighting/lighting_profiles.h"
 #include "parse/parselo.h"
@@ -180,3 +181,11 @@ piecewise_power_curve_intermediates lighting_profile::calc_intermediates(piecewi
 	return ppci;
 
 }
+void lighting_profile::lab_set_exposure(float exIn){
+	default_profile.exposure = exIn;
+};
+
+
+void lighting_profile::lab_set_tonemapper(TonemapperAlgorithm tnin){
+	default_profile.tonemapper = tnin;
+};

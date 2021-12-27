@@ -3,6 +3,7 @@
 #include "globalincs/pstypes.h"
 #include "globalincs/flagset.h"
 #include "graphics/2d.h"
+#include "lighting/lighting_profiles.h"
 #include "camera/camera.h"
 #include "cmdline/cmdline.h"
 #include "lab/renderer/lab_cameras.h"
@@ -101,6 +102,10 @@ public:
 		Motion_debris_override = false;
 	}
 
+	static void setTonemapper(TonemapperAlgorithm mode) {
+		lighting_profile::lab_set_tonemapper(mode);
+	}
+
 	void useNextTeamColorPreset() {
 		auto color_itr = Team_Colors.find(currentTeamColor);
 
@@ -151,6 +156,12 @@ public:
 		return level; 
 	}
 
+	float setExposureLevel(float level) {
+		exposureLevel = level;
+		lighting_profile::lab_set_exposure(level);
+		return level;
+	}
+
 	void setTextureQuality(TextureQuality quality) { textureQuality = quality; }
 
 	void setTextureOverride(TextureOverride, bool) {};
@@ -165,6 +176,7 @@ private:
 	int ambientFactor;
 	float directionalFactor;
 	int bloomLevel;
+	float exposureLevel;
 	TextureQuality textureQuality;
 	SCP_string currentTeamColor;
 	SCP_string currentMissionBackground;

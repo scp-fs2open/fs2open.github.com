@@ -1,5 +1,6 @@
 #include "lab/labv2_internal.h"
 #include "lab/dialogs/render_options.h"
+#include "lighting/lighting_profiles.h"
 
 void set_model_rotation_flag(Checkbox* caller) {
 	auto value = caller->GetChecked();
@@ -153,6 +154,12 @@ void set_bloom(Slider* caller) {
 	getLabManager()->Renderer->setBloomLevel(fl2i(value));
 }
 
+void set_exposure(Slider* caller) {
+	auto value = caller->GetSliderValue();
+
+	getLabManager()->Renderer->setExposureLevel(value);
+}
+
 void change_detail_texture(Tree* caller) {
 	auto detail = (TextureQuality)caller->GetSelectedItem()->GetData();
 
@@ -163,6 +170,12 @@ void change_aa_setting(Tree* caller) {
 	auto setting = (AntiAliasMode)caller->GetSelectedItem()->GetData();
 
 	LabRenderer::setAAMode(setting);
+}
+
+void change_tonemapper_setting(Tree* caller) {
+	auto setting = (TonemapperAlgorithm)caller->GetSelectedItem()->GetData();
+
+	LabRenderer::setTonemapper(setting);
 }
 
 void RenderOptions::open(Button* /*caller*/) {
@@ -257,6 +270,12 @@ void RenderOptions::open(Button* /*caller*/) {
 	dialogWindow->AddChild(bloom_sldr);
 	y += bloom_sldr->GetHeight() + 2;
 
+	auto exposure_sldr= new Slider("Exposure", 0, 80, 0, y + 2, set_exposure, dialogWindow->GetWidth());
+	exposure_sldr->SetSliderValue(lighting_profile::current_exposure());
+	dialogWindow->AddChild(exposure_sldr);
+	y += exposure_sldr->GetHeight() + 2;
+
+
 	// start tree
 	auto cmp = (Tree*)dialogWindow->AddChild(new Tree("Detail Options Tree", 0, y + 2, nullptr, dialogWindow->GetWidth()));
 
@@ -279,5 +298,16 @@ void RenderOptions::open(Button* /*caller*/) {
 	cmp->AddItem(aa_header, "SMAA Medium", (int)AntiAliasMode::SMAA_Medium, false, change_aa_setting);
 	cmp->AddItem(aa_header, "SMAA High",   (int)AntiAliasMode::SMAA_High,   false, change_aa_setting);
 	cmp->AddItem(aa_header, "SMAA Ultra",  (int)AntiAliasMode::SMAA_Ultra,  false, change_aa_setting);
+
+	auto tonemapper = cmp->AddItem(nullptr, "Tonemapper", 0, false);
+	cmp->AddItem(tonemapper, "Linear", (int)TonemapperAlgorithm::tnm_Linear, false, change_tonemapper_setting );
+	cmp->AddItem(tonemapper, "Uncharted", (int)TonemapperAlgorithm::tnm_Uncharted, false, change_tonemapper_setting );
+	cmp->AddItem(tonemapper, "ACES", (int)TonemapperAlgorithm::tnm_Aces, false, change_tonemapper_setting );
+	cmp->AddItem(tonemapper, "ACES Approximate", (int)TonemapperAlgorithm::tnm_Aces_Approx, false, change_tonemapper_setting );
+	cmp->AddItem(tonemapper, "Cineon", (int)TonemapperAlgorithm::tnm_Cineon, false, change_tonemapper_setting );
+	cmp->AddItem(tonemapper, "Piecewise Power Curve", (int)TonemapperAlgorithm::tnm_PPC, false, change_tonemapper_setting );
+	cmp->AddItem(tonemapper, "Piecewise Power Curve(RGB)", (int)TonemapperAlgorithm::tnm_PPC_RGB, false, change_tonemapper_setting );
+	cmp->AddItem(tonemapper, "Reinhard Extended", (int)TonemapperAlgorithm::tnm_Reinhard_Extended, false, change_tonemapper_setting );
+	cmp->AddItem(tonemapper, "Reinhard Jodie", (int)TonemapperAlgorithm::tnm_Reinhard_Jodie, false, change_tonemapper_setting );
 
 }
