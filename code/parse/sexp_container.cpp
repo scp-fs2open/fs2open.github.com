@@ -541,3 +541,244 @@ const char *sexp_container_CTEXT(int node)
 	// we've hit sanity limit; give up
 	return Empty_str;
 }
+
+// status SEXPs
+int sexp_is_container_empty(int node)
+{
+	const char *container_name = CTEXT(node);
+	const auto *p_container = get_sexp_container(container_name);
+
+	if (!p_container) {
+		Warning(LOCATION, "Container %s does not exist.", container_name);
+		return SEXP_FALSE;
+	}
+
+	const auto &container = *p_container;
+
+	if (container.is_map()) {
+		if (container.map_data.empty()) {
+			return SEXP_TRUE;
+		}
+	} else if (container.is_list()) {
+		if (container.list_data.empty()) {
+			return SEXP_TRUE;
+		}
+	} else {
+		Error(LOCATION,
+			"Unknown container type. Container %s is of type %d and this is not a valid type",
+			container_name,
+			container.type);
+	}
+
+	return SEXP_FALSE;
+}
+
+int sexp_get_container_size(int node)
+{
+	const char *container_name = CTEXT(node);
+	const auto *p_container = get_sexp_container(container_name);
+
+	if (!p_container) {
+		Warning(LOCATION, "Container %s does not exist.", container_name);
+		return 0;
+	}
+
+	const auto &container = *p_container;
+
+	if (container.is_map()) {
+		return (int)container.map_data.size();
+	} else if (container.is_list()) {
+		return (int)container.list_data.size();
+	}
+
+	Error(LOCATION, "Invalid container type: %d", container.type);
+	return 0;
+}
+
+int sexp_list_has_data(int node)
+{
+	const char *container_name = CTEXT(node);
+	const auto *p_container = get_sexp_container(container_name);
+
+	if (!p_container) {
+		Warning(LOCATION, "Container %s does not exist.", container_name);
+		return SEXP_FALSE;
+	}
+
+	const auto &container = *p_container;
+
+	if (!container.is_list()) {
+		Warning(LOCATION, "List-has-data called on non-list container %s.", container_name);
+		return SEXP_FALSE;
+	}
+
+	const auto &list_data = container.list_data;
+
+	node = CDR(node);
+	// there should be at least one string to search for
+	Assert(node != -1);
+
+	SCP_string possible_data;
+	while (node != -1) {
+		// TODO: revisit if traversing the list for every item proves unacceptably slow
+		possible_data = CTEXT(node);
+
+		if (std::find(list_data.begin(), list_data.end(), possible_data) == list_data.end()) {
+			return SEXP_FALSE;
+		}
+
+		node = CDR(node);
+	}
+
+	return SEXP_TRUE;
+}
+
+int sexp_list_data_index(int node)
+{
+	const char *container_name = CTEXT(node);
+	const auto *p_container = get_sexp_container(container_name);
+
+	if (!p_container) {
+		Warning(LOCATION, "Container %s does not exist.", container_name);
+		return -1;
+	}
+
+	const auto &container = *p_container;
+
+	if (!container.is_list()) {
+		Warning(LOCATION, "List-data-index called on non-list container %s.", container_name);
+		return -1;
+	}
+
+	node = CDR(node);
+	Assert(node != -1);
+
+	const SCP_string possible_data = CTEXT(node);
+
+	int data_index = 0;
+	for (const SCP_string &data : container.list_data) {
+		if (possible_data == data) {
+			return data_index;
+		}
+		++data_index;
+	}
+
+	return -1;
+}
+
+int sexp_map_has_key(int node)
+{
+	const char *container_name = CTEXT(node);
+	const auto *p_container = get_sexp_container(container_name);
+
+	if (!p_container) {
+		Warning(LOCATION, "Container %s does not exist.", container_name);
+		return SEXP_FALSE;
+	}
+
+	const auto &container = *p_container;
+
+	if (!container.is_map()) {
+		Warning(LOCATION, "Map-has-key called on non-map container %s.", container_name);
+		return SEXP_FALSE;
+	}
+
+	const auto &map_data = container.map_data;
+
+	node = CDR(node);
+	// there should be at least one key to search for
+	Assert(node != -1);
+
+	SCP_string possible_key;
+	while (node != -1) {
+		possible_key = CTEXT(node);
+		if (map_data.find(possible_key) == map_data.end()) {
+			return SEXP_FALSE;
+		}
+
+		node = CDR(node);
+	}
+
+	return SEXP_TRUE;
+}
+
+/**
+* Check if a SEXP map container has a key whose data matches a specific string.
+* If a third argument (string variable) is provided, store the data's associated key, if a match is found.
+* Returns -1 if the element is not in the container
+*/
+int sexp_map_has_data_item(int node)
+{
+	const char *container_name = CTEXT(node);
+	const auto *p_container = get_sexp_container(container_name);
+
+	if (!p_container) {
+		Warning(LOCATION, "Container %s does not exist.", container_name);
+		return SEXP_FALSE;
+	}
+
+	const auto &container = *p_container;
+
+	if (!container.is_map()) {
+		Warning(LOCATION, "map-has-data-teim called on non-map container %s.", container_name);
+		return SEXP_FALSE;
+	}
+
+	node = CDR(node);
+	Assert(node != -1);
+
+	const SCP_string possible_data = CTEXT(node);
+
+	for (const auto &kv_pair : container.map_data) {
+		if (possible_data == kv_pair.second) {
+			// check for optional variable to store the key
+			node = CDR(node);
+			if (node != -1) {
+				const int var_index = sexp_get_variable_index(node);
+				// DISCUSSME: should we do an explicit if-check instead?
+				Assert(var_index >= 0);
+				// TODO: type checking of string key/var vs. number key/var?
+
+				// assign key to variable
+				sexp_modify_variable(kv_pair.first.c_str(), var_index);
+			}
+
+			return SEXP_TRUE;
+		}
+	}
+
+	return SEXP_FALSE;
+}
+
+int sexp_container_eval_status_sexp(int op_num, int node)
+{
+	switch (op_num) {
+		case OP_IS_CONTAINER_EMPTY:
+			return sexp_is_container_empty(node);
+			break;
+
+		case OP_GET_CONTAINER_SIZE:
+			return sexp_get_container_size(node);
+			break;
+
+		case OP_LIST_HAS_DATA:
+			return sexp_list_has_data(node);
+			break;
+
+		case OP_LIST_DATA_INDEX:
+			return sexp_list_data_index(node);
+			break;
+
+		case OP_MAP_HAS_KEY:
+			return sexp_map_has_key(node);
+			break;
+
+		case OP_MAP_HAS_DATA_ITEM:
+			return sexp_map_has_data_item(node);
+			break;
+
+		default:
+			UNREACHABLE("Unknown container status SEXP operator %d", op_num);
+			return SEXP_FALSE;
+	}
+}
