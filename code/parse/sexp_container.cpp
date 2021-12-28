@@ -541,3 +541,266 @@ const char *sexp_container_CTEXT(int node)
 	// we've hit sanity limit; give up
 	return Empty_str;
 }
+
+// Change SEXPs
+void sexp_add_to_list(int node)
+{
+	const char *container_name = CTEXT(node);
+	auto *p_container = get_sexp_container(container_name);
+
+	if (!p_container) {
+		Warning(LOCATION, "Container %s does not exist.", container_name);
+		return;
+	}
+
+	auto &container = *p_container;
+
+	node = CDR(node);
+	Assert(node != -1);
+
+	const bool add_to_back = is_sexp_true(node);
+
+	node = CDR(node);
+	Assert(node != -1);
+
+	if (!container.is_list()) {
+		Warning(LOCATION, "Container %s is not a list container. Cannot use the add-to-list SEXP with it", container_name);
+		log_string(LOGFILE_EVENT_LOG, "This container is not a list container. Cannot use the add-to-list SEXP with it");
+		return;
+	}
+
+	while (node != -1) {
+		if (add_to_back) {
+			container.list_data.emplace_back(CTEXT(node));
+		} else {
+			container.list_data.emplace_front(CTEXT(node));
+		}
+
+		node = CDR(node);
+	}
+}
+
+void sexp_remove_from_list(int node)
+{
+	const char *container_name = CTEXT(node);
+	auto *p_container = get_sexp_container(container_name);
+
+	if (!p_container) {
+		Warning(LOCATION, "Container %s does not exist.", container_name);
+		return;
+	}
+
+	auto &container = *p_container;
+
+	if (!container.is_list()) {
+		Warning(LOCATION, "Container %s is not a list container. Can not use the remove-from-list SEXP with it", container_name);
+		log_string(LOGFILE_EVENT_LOG, "This container is not a list container. Can not use the remove-from-list SEXP with it");
+		return;
+	}
+
+	node = CDR(node);
+	// there should be at least one string to remove
+	Assert(node != -1);
+
+	auto &list_data = container.list_data;
+
+	SCP_string data_to_remove;
+	while (node != -1) {
+		data_to_remove = CTEXT(node);
+		auto list_it = std::find(list_data.begin(), list_data.end(), data_to_remove);
+		if (list_it != list_data.end()) {
+			list_data.erase(list_it);
+		} else {
+			Warning(LOCATION, "Container %s does not contain an entry called %s. Can not use the remove-from-list SEXP to remove it", container_name, data_to_remove.c_str());
+			log_string(LOGFILE_EVENT_LOG, "Attempt to use remove-from-list SEXP with an entry which is not in the list");
+		}
+
+		node = CDR(node);
+	}
+}
+
+void sexp_add_to_map(int node)
+{
+	const char *container_name = CTEXT(node);
+	auto *p_container = get_sexp_container(container_name);
+
+	if (!p_container) {
+		Warning(LOCATION, "Container %s does not exist.", container_name);
+		return;
+	}
+
+	auto &container = *p_container;
+
+	if (!container.is_map()) {
+		Warning(LOCATION, "Container %s is not a map container. Cannot use the add-to-map SEXP with it", container_name);
+		log_string(LOGFILE_EVENT_LOG, "This container is not a map container. Cannot use the add-to-map SEXP with it");
+		return;
+	}
+
+	auto &map_data = container.map_data;
+
+	node = CDR(node);
+	Assert(node != -1);
+
+	while (node != -1) {
+		// key but no value
+		if (CDR(node) == -1) {
+			char tempbuffer[TOKEN_LENGTH + 256];
+			sprintf(tempbuffer, "Add-to-map requires an even number of entries. The %s key is the last entry. Since there is no value associated with this entry, it will be ignored", CTEXT(node));
+			log_string(LOGFILE_EVENT_LOG, tempbuffer);
+			return;
+		}
+
+		const char *key = CTEXT(node);
+#ifndef NDEBUG
+		if (map_data.find(key) != map_data.end()) {
+			mprintf(
+				("Warning: Key '%s' already exists in map container '%s'. Replacing its data.\n", key, container_name));
+		}
+#endif
+		map_data.emplace(key, CTEXT(CDR(node)));
+
+		// skip the value and move onto the next key
+		node = CDDR(node);
+	}
+}
+
+void sexp_remove_from_map(int node)
+{
+	const char *container_name = CTEXT(node);
+	auto *p_container = get_sexp_container(container_name);
+
+	if (!p_container) {
+		Warning(LOCATION, "Container %s does not exist.", container_name);
+		return;
+	}
+
+	auto &container = *p_container;
+
+	if (!container.is_map()) {
+		Warning(LOCATION, "Container %s is not a map container. Can not use the remove-from-map SEXP with it", container_name);
+		log_string(LOGFILE_EVENT_LOG, "This container is not a map container. Can not use the remove-from-map SEXP with it");
+		return;
+	}
+
+	node = CDR(node);
+	Assert(node != -1);
+
+	SCP_string entry_to_remove;
+	while (node != -1) {
+		entry_to_remove = CTEXT(node);
+		if (container.map_data.erase(entry_to_remove) == 0) {
+			Warning(LOCATION,
+				"Container %s does not contain a key called %s. Can not use the remove-from-map SEXP to remove it",
+				container_name,
+				entry_to_remove.c_str());
+			log_string(LOGFILE_EVENT_LOG, "Attempt to use remove-from-list SEXP with a key which is not in the map");
+		}
+
+		node = CDR(node);
+	}
+}
+
+void sexp_get_map_keys(int node)
+{
+	bool replace_contents = true;
+
+	const char *map_container_name = CTEXT(node);
+	const auto *p_map_container = get_sexp_container(map_container_name);
+
+	if (!p_map_container) {
+		Warning(LOCATION, "Container %s does not exist.", map_container_name);
+		return;
+	}
+
+	node = CDR(node);
+	Assert(node != -1);
+
+	const char *list_container_name = CTEXT(node);
+
+	auto *p_list_container = get_sexp_container(list_container_name);
+
+	if (!p_list_container) {
+		Warning(LOCATION, "Container %s does not exist.", list_container_name);
+		return;
+	}
+
+	const auto &map_container = *p_map_container;
+	auto &list_container = *p_list_container;
+
+	// both containers must be of the correct type. 
+	if (!map_container.is_map() || !list_container.is_list()) {
+		Warning(LOCATION, "Containers must be of the correct types to be used in get-map-keys SEXP.");
+		return;
+	}
+
+	node = CDR(node);
+	if (node != -1) {
+		replace_contents = is_sexp_true(node);
+	}
+
+	if (replace_contents) {
+		list_container.list_data.clear();
+	}
+
+	for (const auto &kv_pair : map_container.map_data) {
+		list_container.list_data.emplace_back(kv_pair.first);
+	}
+}
+
+void sexp_clear_container(int node)
+{
+	const char *container_name = CTEXT(node);
+	auto *p_container = get_sexp_container(container_name);
+
+	if (!p_container) {
+		Warning(LOCATION, "Container %s does not exist.", container_name);
+		return;
+	}
+
+	auto &container = *p_container;
+
+	if (container.is_map()) {
+		container.map_data.clear();
+	} else if (container.is_list()) {
+		container.list_data.clear();
+	} else {
+		Error(LOCATION,
+			"Unknown container type. Container %s is of type %d and this is not a valid type",
+			container_name,
+			(int)container.type);
+	}
+}
+
+int sexp_container_eval_change_sexp(int op_num, int node)
+{
+	switch (op_num) {
+		case OP_CONTAINER_ADD_TO_LIST:
+			sexp_add_to_list(node);
+			return SEXP_TRUE;
+
+		case OP_CONTAINER_REMOVE_FROM_LIST:
+			sexp_remove_from_list(node);
+			return SEXP_TRUE;
+
+		case OP_CONTAINER_ADD_TO_MAP:
+			sexp_add_to_map(node);
+			return SEXP_TRUE;
+
+		case OP_CONTAINER_REMOVE_FROM_MAP:
+			sexp_remove_from_map(node);
+			return SEXP_TRUE;
+
+		case OP_CONTAINER_GET_MAP_KEYS:
+			sexp_get_map_keys(node);
+			return SEXP_TRUE;
+
+		case OP_CLEAR_CONTAINER:
+			sexp_clear_container(node);
+			return SEXP_TRUE;
+
+		default:
+			UNREACHABLE("Unknown container change SEXP operator %d", op_num);
+			return SEXP_FALSE;
+	}
+}

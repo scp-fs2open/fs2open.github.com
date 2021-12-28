@@ -732,6 +732,14 @@ SCP_vector<sexp_oper> Operators = {
 	{ "string-set-substring",			OP_STRING_SET_SUBSTRING,				5,	5,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "modify-variable-xstr",			OP_MODIFY_VARIABLE_XSTR,				3,	3,			SEXP_ACTION_OPERATOR,	},	// m!m
 
+	//Containers Category
+	{ "add-to-list",					OP_CONTAINER_ADD_TO_LIST,				3,	INT_MAX,	SEXP_ACTION_OPERATOR, },	// Karajorma
+	{ "remove-from-list",				OP_CONTAINER_REMOVE_FROM_LIST,			2,	INT_MAX,	SEXP_ACTION_OPERATOR, },	// Karajorma
+	{ "add-to-map",						OP_CONTAINER_ADD_TO_MAP,				3,	INT_MAX,	SEXP_ACTION_OPERATOR, },	// Karajorma
+	{ "remove-from-map",				OP_CONTAINER_REMOVE_FROM_MAP,			2,	INT_MAX,	SEXP_ACTION_OPERATOR, },	// Karajorma
+	{ "get-map-keys",					OP_CONTAINER_GET_MAP_KEYS,				2,	3,			SEXP_ACTION_OPERATOR, },	// Karajorma
+	{ "clear-container",				OP_CLEAR_CONTAINER,						1,	1,			SEXP_ACTION_OPERATOR, },	// Karajorma
+
 	//Other Sub-Category
 	{ "damaged-escort-priority",		OP_DAMAGED_ESCORT_LIST,					3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	//phreak
 	{ "damaged-escort-priority-all",	OP_DAMAGED_ESCORT_LIST_ALL,				1,	MAX_COMPLETE_ESCORT_LIST,	SEXP_ACTION_OPERATOR,	},	// Goober5000
@@ -24353,6 +24361,15 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_CONTAINER_ADD_TO_LIST:
+			case OP_CONTAINER_REMOVE_FROM_LIST:
+			case OP_CONTAINER_ADD_TO_MAP:
+			case OP_CONTAINER_REMOVE_FROM_MAP:
+			case OP_CONTAINER_GET_MAP_KEYS:
+			case OP_CLEAR_CONTAINER:
+				sexp_val = sexp_container_eval_change_sexp(op_num, node);
+				break;
+
 			case OP_TIME_SHIP_DESTROYED:
 			case OP_TIME_WING_DESTROYED:
 			case OP_TIME_SHIP_DEPARTED:
@@ -27357,6 +27374,12 @@ int query_operator_return_type(int op)
 		case OP_NEBULA_CHANGE_FOG_COLOR:
 		case OP_SET_ALPHA_MULT:
 		case OP_TRIGGER_ANIMATION_NEW:
+		case OP_CONTAINER_ADD_TO_LIST:
+		case OP_CONTAINER_REMOVE_FROM_LIST:
+		case OP_CONTAINER_ADD_TO_MAP:
+		case OP_CONTAINER_REMOVE_FROM_MAP:
+		case OP_CONTAINER_GET_MAP_KEYS:
+		case OP_CLEAR_CONTAINER:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -27948,6 +27971,50 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_POSITIVE;
 			} else {
 				return OPF_AMBIGUOUS;
+			}
+
+		case OP_CONTAINER_ADD_TO_LIST:
+			if (argnum == 0) {
+				return OPF_LIST_CONTAINER_NAME;
+			} else if (argnum == 1) {
+				return OPF_BOOL;
+			} else {
+				return OPF_STRING;
+			}
+
+		case OP_CONTAINER_REMOVE_FROM_LIST:
+			if (argnum == 0) {
+				return OPF_LIST_CONTAINER_NAME;
+			} else {
+				return OPF_STRING;
+			}
+
+		case OP_CONTAINER_ADD_TO_MAP:
+		case OP_CONTAINER_REMOVE_FROM_MAP:
+			if (argnum == 0) {
+				return OPF_MAP_CONTAINER_NAME;
+			} else {
+				return OPF_STRING;
+			}
+
+		case OP_CONTAINER_GET_MAP_KEYS:
+			if (argnum == 0) {
+				return OPF_MAP_CONTAINER_NAME;
+			} else if (argnum == 1) {
+				return OPF_LIST_CONTAINER_NAME;
+			} else if (argnum == 2) {
+				return OPF_BOOL;
+			} else {
+				// This shouldn't happen
+				return OPF_NONE;
+			}
+
+		case OP_CLEAR_CONTAINER:
+			if (argnum == 0) {
+				return OPF_CONTAINER_NAME;
+			} else {
+				// This shouldn't happen
+				return OPF_NONE;
 			}
 
 		case OP_HAS_DOCKED:
@@ -31515,6 +31582,14 @@ int get_subcategory(int sexp_id)
 		case OP_MODIFY_VARIABLE_XSTR:
 			return CHANGE_SUBCATEGORY_VARIABLES;
 
+		case OP_CONTAINER_ADD_TO_LIST:
+		case OP_CONTAINER_REMOVE_FROM_LIST:
+		case OP_CONTAINER_ADD_TO_MAP:
+		case OP_CONTAINER_REMOVE_FROM_MAP:
+		case OP_CONTAINER_GET_MAP_KEYS:
+		case OP_CLEAR_CONTAINER:
+			return CHANGE_SUBCATEGORY_CONTAINERS;
+
 		case OP_DAMAGED_ESCORT_LIST:
 		case OP_DAMAGED_ESCORT_LIST_ALL:
 		case OP_SET_SUPPORT_SHIP:
@@ -32759,6 +32834,50 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"Takes 2 arguments...\r\n"
 		"\t1:\tIndex of source variable, from 0 to MAX_SEXP_VARIABLES - 1.\r\n"
 		"\t2:\tIndex of destination variable, from 0 to MAX_SEXP_VARIABLES - 1.  The types of both variables must match." },
+
+	// Karajorma/jg18
+	{ OP_CONTAINER_ADD_TO_LIST, "add-to-list\r\n"
+		"\tAdds a new entry to a SEXP container.\r\n\r\n"
+		"Takes 3 or more arguments...\r\n"
+		"\t1:\tName of the list.\r\n"
+		"\t2:\tIndicates whether to add the data to the start or the end of the list. True means at the end, false means at the start.\r\n"
+		"\tRest:\tThe data to be added. In strictly typed containers, this type must match the type of data of the container.\r\n" },
+
+	// Karajorma/jg18
+	{ OP_CONTAINER_REMOVE_FROM_LIST, "remove-from-list\r\n"
+		"\tRemoves an entry from a SEXP list container.\r\n\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tName of the list.\r\n"
+		"\tRest:\tThe data to be removed.\r\n" },
+
+	// Karajorma/jg18
+	{ OP_CONTAINER_ADD_TO_MAP, "add-to-map\r\n"
+		"\tAdds a new entry to a SEXP container.\r\n\r\n"
+		"Takes 3 or more arguments...\r\n"
+		"\t1:\tName of the map.\r\n"
+		"\t2:\tThe key that will be used to retrieve the data stored in the map. In strictly typed containers, this type of key must match the type of data of the container.\r\n"
+		"\tRest:\tThe value to be added. In strictly typed containers, this type must match the type of data of the class.\r\n" },
+
+	// Karajorma/jg18
+	{ OP_CONTAINER_REMOVE_FROM_MAP, "remove-from-map\r\n"
+		"\tRemoveschange an new entry from a SEXP map container.\r\n\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tName of the map.\r\n"
+		"\tRest:\tThe key that will be used to retrieve the data stored in the map. \r\n" },
+
+	// Karajorma/jg18
+	{ OP_CONTAINER_GET_MAP_KEYS, "get-map-keys\r\n"
+		"\tTakes the keys of a SEXP map container and puts them into a SEXP list container.\r\n\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tName of the map container.\r\n"
+		"\t2:\tName of the list container.\r\n"
+		"\t3:\t(Optional) When true the current contents of the list will be wiped. When false the keys will be appended to the end of the list.\r\n" },
+
+	// Karajorma/jg18
+	{ OP_CLEAR_CONTAINER, "add-to-map\r\n"
+		"\tDeletes the current contents of a SEXP container.\r\n\r\n"
+		"Takes 1 argument...\r\n"
+		"\t1:\tName of the container.\r\n" },
 
 	{ OP_PROTECT_SHIP, "Protect ship (Action operator)\r\n"
 		"\tProtects a ship from being attacked by any enemy ship.  Any ship "
@@ -35817,6 +35936,7 @@ SCP_vector<op_menu_struct> op_submenu =
 	{	"Jump Nodes",					CHANGE_SUBCATEGORY_JUMP_NODES						},
 	{	"Special Effects",				CHANGE_SUBCATEGORY_SPECIAL_EFFECTS					},
 	{	"Variables",					CHANGE_SUBCATEGORY_VARIABLES						},
+	{	"Containers",					CHANGE_SUBCATEGORY_CONTAINERS						},
 	{	"Other",						CHANGE_SUBCATEGORY_OTHER							},
 	{	"Mission",						STATUS_SUBCATEGORY_MISSION							},
 	{	"Player",						STATUS_SUBCATEGORY_PLAYER							},
