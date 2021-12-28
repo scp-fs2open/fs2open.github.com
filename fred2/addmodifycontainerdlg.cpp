@@ -77,6 +77,13 @@ BOOL CAddModifyContainerDlg::OnInitDialog()
 	//grab the existing list of containers and duplicate it. We only update it if the user clicks OK. 
 	m_containers = get_all_sexp_containers();
 
+	// init renaming maps
+	for (const auto &container : m_containers) {
+		const auto &container_name = container.container_name;
+		m_old_to_new_names[container_name] = container_name;
+		m_new_to_old_names[container_name] = container_name;
+	}
+
 	CComboBox *cbox = (CComboBox *) GetDlgItem(IDC_CURRENT_CONTAINER_NAME);
 	cbox->ResetContent();
 
@@ -128,12 +135,10 @@ void CAddModifyContainerDlg::set_selected_container()
 }
 
 void CAddModifyContainerDlg::OnOK() 
-{
-	update_sexp_containers(m_containers, m_old_to_new_names);
 
-	//for (const auto &renamed_container : m_old_to_new_names) {
-	//	// FIXME TODO: revise relevant nodes' text in sexp_tree::tree_nodes
-	//}
+{
+	populate_renamed_containers();
+	update_sexp_containers(m_containers, m_renamed_containers);
 
 	CDialog::OnOK();
 }
@@ -740,6 +745,12 @@ void CAddModifyContainerDlg::OnBnClickedAddNewContainer()
 	cbox->AddString(temp_name); 
 	m_current_container = num_containers() - 1;
 
+	// update renaming maps
+	const SCP_string &new_container_name = new_container.container_name;
+	const SCP_string new_container_marker = create_null_container_name();
+	m_old_to_new_names[new_container_marker] = new_container_name;
+	m_new_to_old_names[new_container_name] = new_container_marker;
+
 	// in case this is the first container
 	if (num_containers() == 1) {
 		cbox->EnableWindow(true);
@@ -775,15 +786,11 @@ void CAddModifyContainerDlg::OnBnClickedRenameContainer()
 		const SCP_string new_name_str = new_name;
 		const SCP_string curr_name = get_current_container().container_name;
 		const auto prev_name_it = m_new_to_old_names.find(curr_name);
-		if (prev_name_it != m_new_to_old_names.end()) {
-			SCP_string orig_name = prev_name_it->second;
-			m_new_to_old_names.erase(curr_name);
-			m_old_to_new_names[orig_name] = new_name_str;
-			m_new_to_old_names[new_name_str] = orig_name;
-		} else {
-			m_old_to_new_names[curr_name] = new_name_str;
-			m_new_to_old_names[new_name_str] = curr_name;
-		}
+		Assert(prev_name_it != m_new_to_old_names.end());
+		const SCP_string prev_name = prev_name_it->second;
+		m_new_to_old_names.erase(curr_name);
+		m_old_to_new_names[prev_name] = new_name_str;
+		m_new_to_old_names[new_name_str] = prev_name;
 
 		container.container_name = new_name;
 		cbox->DeleteString((UINT)m_current_container);
@@ -799,24 +806,19 @@ void CAddModifyContainerDlg::OnBnClickedDeleteContainer()
 
 	char buffer[256];
 
-	// if the container has been renamed, search using the original name
+	// get both current and original names, even if identical
 	const SCP_string curr_name = get_current_container().container_name;
-	SCP_string orig_name;
-	SCP_string name_to_check;
-	const auto prev_name_it = m_new_to_old_names.find(curr_name);
-	if (prev_name_it != m_new_to_old_names.end()) {
-		orig_name = prev_name_it->second;
-		name_to_check = orig_name;
-	} else {
-		name_to_check = curr_name;
-	}
+	const auto orig_name_it = m_new_to_old_names.find(curr_name);
+	Assert(orig_name_it != m_new_to_old_names.end());
+	const SCP_string orig_name = orig_name_it->second;
 
-	const int times_used = m_p_sexp_tree->get_container_usage_count(name_to_check.c_str());
+	const int times_used =
+		is_null_container_name(orig_name) ? 0 : m_p_sexp_tree->get_container_usage_count(orig_name);
 	Assert(times_used >= 0);
 
 	if (times_used > 0) {
 		SCP_string container_name_str = "'" + curr_name + "'";
-		if (!orig_name.empty()) {
+		if (curr_name != orig_name) {
 			container_name_str += " (previously '" + orig_name + "')";
 		}
 		sprintf(buffer,
@@ -834,11 +836,15 @@ void CAddModifyContainerDlg::OnBnClickedDeleteContainer()
 		return;
 	}
 
-	// update renaming maps if needed
-	if (!orig_name.empty()) {
-		m_old_to_new_names.erase(orig_name);
-		m_new_to_old_names.erase(curr_name);
-	}
+	// update renaming maps
+	m_new_to_old_names.erase(curr_name);
+	m_old_to_new_names.erase(orig_name);
+	// FIXME TODO: is inserting a tombstone needed?
+	// 	   if so, filter them out in populate_renamed_containers()
+	//if (!is_null_container_name(orig_name)) {
+	//	const SCP_string container_tombstone = create_null_container_name();
+	//	m_old_to_new_names[orig_name] = container_tombstone;
+	//}
 
 	// prevent sudden change in type selection buttons
 	if (num_containers() == 1) {
@@ -880,3 +886,29 @@ sexp_container &CAddModifyContainerDlg::get_current_container()
 	Assert(m_current_container >= -1 && m_current_container < num_containers());
 	return m_current_container < 0 ? m_dummy_container : m_containers[m_current_container];
 }
+
+void CAddModifyContainerDlg::populate_renamed_containers()
+{
+	for (const auto &old_name_to_new : m_old_to_new_names) {
+		const auto &old_name = old_name_to_new.first;
+		const auto &new_name = old_name_to_new.second;
+		if (!is_null_container_name(old_name) && stricmp(old_name.c_str(), new_name.c_str())) {
+			m_renamed_containers.emplace(old_name, new_name);
+		}
+	}
+}
+
+// static data/functions
+int CAddModifyContainerDlg::m_null_container_counter = 1;
+
+bool CAddModifyContainerDlg::is_null_container_name(const SCP_string &container_name)
+{
+	Assert(!container_name.empty());
+	return container_name[0] == sexp_container::DELIM;
+}
+
+SCP_string CAddModifyContainerDlg::create_null_container_name()
+{
+	return sexp_container::DELIM_STR + std::to_string(m_null_container_counter++);
+}
+
