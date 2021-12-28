@@ -567,7 +567,7 @@ int sexp_is_container_empty(int node)
 		Error(LOCATION,
 			"Unknown container type. Container %s is of type %d and this is not a valid type",
 			container_name,
-			container.type);
+			(int)container.type);
 	}
 
 	return SEXP_FALSE;
@@ -591,7 +591,7 @@ int sexp_get_container_size(int node)
 		return (int)container.list_data.size();
 	}
 
-	Error(LOCATION, "Invalid container type: %d", container.type);
+	Error(LOCATION, "Invalid container type: %d", (int)container.type);
 	return 0;
 }
 
