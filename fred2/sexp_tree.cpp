@@ -1892,6 +1892,12 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 
 		dlg.DoModal();
 
+		for (const auto &renamed_container : dlg.get_renamed_containers()) {
+			const SCP_string &old_name = renamed_container.first;
+			const SCP_string &new_name = renamed_container.second;
+			rename_container_nodes(old_name, new_name);
+		}
+
 		return 1;
 	}
 
@@ -6971,12 +6977,12 @@ int sexp_tree::get_loadout_variable_count(int var_index)
 	return count; 
 }
 
-int sexp_tree::get_container_usage_count(const SCP_string &container_name) const
+int sexp_tree::get_container_usage_count(const SCP_string& container_name) const
 {
 	int count = 0;
 
-	for (int idx = 0; idx < (int)tree_nodes.size(); idx++) {
-		if (is_container_node(idx) && !stricmp(tree_nodes[idx].text, container_name.c_str())) {
+	for (int node_idx = 0; node_idx < (int)tree_nodes.size(); node_idx++) {
+		if (is_matching_container_node(node_idx, container_name)) {
 			count++;
 		}
 	}
@@ -6984,17 +6990,32 @@ int sexp_tree::get_container_usage_count(const SCP_string &container_name) const
 	return count;
 }
 
-bool sexp_tree::is_container_node(int node) const
+void sexp_tree::rename_container_nodes(const SCP_string& old_name, const SCP_string& new_name)
+{
+	Assert(!old_name.empty());
+	Assert(!new_name.empty());
+	Assert(new_name.length() <= sexp_container::NAME_MAX_LENGTH);
+
+	for (int node_idx = 0; node_idx < (int)tree_nodes.size(); node_idx++) {
+		if (is_matching_container_node(node_idx, old_name)) {
+			strcpy_s(tree_nodes[node_idx].text, new_name.c_str());
+		}
+	}
+}
+
+bool sexp_tree::is_matching_container_node(int node, const SCP_string& container_name) const
+{
+	return ((tree_nodes[node].type & (SEXPT_VALID | SEXPT_CONTAINER)) || is_container_argument(node)) &&
+		!stricmp(tree_nodes[node].text, container_name.c_str());
+}
+
+bool sexp_tree::is_container_argument(int node) const
 {
 	Assert(node >= 0);
 	Assert(node < (int)tree_nodes.size());
 
 	if (!(tree_nodes[node].type & SEXPT_VALID)) {
 		return false;
-	}
-
-	if (tree_nodes[node].type & SEXPT_CONTAINER) {
-		return true;
 	}
 
 	// check if it's a SEXP argument of container type
