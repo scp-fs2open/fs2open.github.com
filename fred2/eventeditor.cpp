@@ -857,7 +857,7 @@ void event_editor::OnCancel()
 {
 	// override MFC default behavior and do nothing
 	// the Esc key is used for certain actions inside the events editor
-	// so presseing Esc shouldn't close the window
+	// so pressing Esc shouldn't close the window
 }
 
 // this is called when you click the ID_CANCEL button
