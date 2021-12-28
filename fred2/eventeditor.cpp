@@ -855,6 +855,7 @@ void event_editor::OnDelete()
 // this is called when you hit the escape key..
 void event_editor::OnCancel()
 {
+	OnButtonCancel();
 }
 
 // this is called when you click the ID_CANCEL button
