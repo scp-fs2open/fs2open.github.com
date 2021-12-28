@@ -1583,13 +1583,18 @@ void sexp_tree::edit_bg_color(HTREEITEM h)
 }
 
 // given a tree node, returns the argument type it should be.
-int sexp_tree::query_node_argument_type(int node)
+int sexp_tree::query_node_argument_type(int node) const
 {
-	int argnum = 0; 
 	int parent_node = tree_nodes[node].parent; 
 	Assert(parent_node >= 0);
-	argnum = find_argument_number(parent_node, node); 
+	int argnum = find_argument_number(parent_node, node); 
+	if (argnum < 0) {
+		return OPF_NONE;
+	}
 	int op_num = get_operator_index(tree_nodes[parent_node].text);
+	if (op_num < 0) {
+		return OPF_NONE;
+	}
 	return query_operator_argument_type(op_num, argnum);
 }
 
@@ -5119,7 +5124,7 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 }
 
 // Goober5000
-int sexp_tree::find_argument_number(int parent_node, int child_node)
+int sexp_tree::find_argument_number(int parent_node, int child_node) const
 {
 	int arg_num, current_node;
 
@@ -5144,7 +5149,7 @@ int sexp_tree::find_argument_number(int parent_node, int child_node)
 // Goober5000
 // backtrack through parents until we find the operator matching
 // parent_op, then find the argument we went through
-int sexp_tree::find_ancestral_argument_number(int parent_op, int child_node)
+int sexp_tree::find_ancestral_argument_number(int parent_op, int child_node) const
 {
 	if(child_node == -1)
 		return -1;
@@ -6970,13 +6975,36 @@ int sexp_tree::get_container_usage_count(const SCP_string &container_name) const
 {
 	int count = 0;
 
-	for (uint idx = 0; idx < tree_nodes.size(); idx++) {
-		if (tree_nodes[idx].type & (SEXPT_VALID | SEXPT_CONTAINER)) {
-			if (!stricmp(tree_nodes[idx].text, container_name.c_str())) {
-				count++;
-			}
+	for (int idx = 0; idx < (int)tree_nodes.size(); idx++) {
+		if (is_container_node(idx) && !stricmp(tree_nodes[idx].text, container_name.c_str())) {
+			count++;
 		}
 	}
 
 	return count;
+}
+
+bool sexp_tree::is_container_node(int node) const
+{
+	Assert(node >= 0);
+	Assert(node < (int)tree_nodes.size());
+
+	if (!(tree_nodes[node].type & SEXPT_VALID)) {
+		return false;
+	}
+
+	if (tree_nodes[node].type & SEXPT_CONTAINER) {
+		return true;
+	}
+
+	// check if it's a SEXP argument of container type
+	if (tree_nodes[node].parent == -1) {
+		return false;
+	}
+
+	const int arg_opf_type = query_node_argument_type(node);
+
+	return (arg_opf_type == OPF_CONTAINER_NAME) ||
+		   (arg_opf_type == OPF_LIST_CONTAINER_NAME) ||
+		   (arg_opf_type == OPF_MAP_CONTAINER_NAME);
 }
