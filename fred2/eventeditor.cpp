@@ -855,7 +855,9 @@ void event_editor::OnDelete()
 // this is called when you hit the escape key..
 void event_editor::OnCancel()
 {
-	OnButtonCancel();
+	// override MFC default behavior and do nothing
+	// the Esc key is used for certain actions inside the events editor
+	// so presseing Esc shouldn't close the window
 }
 
 // this is called when you click the ID_CANCEL button
