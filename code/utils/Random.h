@@ -6,7 +6,7 @@ class Random {
 public:
 	static constexpr int MAX_VALUE = 0x7fffffff;
 	static constexpr int HALF_MAX_VALUE = MAX_VALUE / 2;
-	static constexpr float INV_F_MAX_VALUE = 1.0f / MAX_VALUE;
+	static constexpr float INV_F_MAX_VALUE = 1.0f / static_cast<float>(MAX_VALUE);
 
 	// seed(1) will result in RNG using its default seed
 	static void seed(unsigned int val);
