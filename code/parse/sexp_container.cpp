@@ -18,8 +18,6 @@
 #include "utils/Random.h"
 
 static SCP_vector<sexp_container> Sexp_containers;
-static SCP_unordered_map<SCP_string, sexp_container*, SCP_string_lcase_hash, SCP_string_lcase_equal_to>
-	Containers_by_name_map;
 
 
 const SCP_vector<sexp_container> &get_all_sexp_containers()
@@ -127,7 +125,6 @@ bool list_modifier::match_name(const char *other_name) const
 void init_sexp_containers()
 {
 	Sexp_containers.clear();
-	Containers_by_name_map.clear();
 }
 
 void update_sexp_containers(SCP_vector<sexp_container> &containers,
@@ -135,11 +132,6 @@ void update_sexp_containers(SCP_vector<sexp_container> &containers,
 		&renamed_containers)
 {
 	Sexp_containers = std::move(containers);
-
-	Containers_by_name_map.clear();
-	for (auto &container : Sexp_containers) {
-		Containers_by_name_map.emplace(container.container_name, &container);
-	}
 
 	if (!renamed_containers.empty()) {
 		for (int i = 0; i < Num_sexp_nodes; i++) {
@@ -258,15 +250,12 @@ void stuff_sexp_list_containers()
 	SCP_vector<SCP_string>	parsed_data;
 
 	while (required_string_either("$End Lists", "$Name:")) {
-		Sexp_containers.emplace_back();
-		auto &new_list = Sexp_containers.back();
+		sexp_container new_list;
 
 		new_list.type = ContainerType::LIST;
 		if (stuff_one_generic_sexp_container(new_list.container_name, new_list.type, new_list.opf_type, parsed_data)) {
 			std::copy(parsed_data.begin(), parsed_data.end(), back_inserter(new_list.list_data));
-			Containers_by_name_map.emplace(new_list.container_name, &new_list);
-		} else {
-			Sexp_containers.pop_back();
+			Sexp_containers.emplace_back(std::move(new_list));
 		}
 	}
 }
@@ -276,8 +265,7 @@ void stuff_sexp_map_containers()
 	SCP_vector<SCP_string>	parsed_data;
 
 	while (required_string_either("$End Maps", "$Name:")) {
-		Sexp_containers.emplace_back();
-		auto& new_map = Sexp_containers.back();
+		sexp_container new_map;
 
 		new_map.type = ContainerType::MAP;
 		if (stuff_one_generic_sexp_container(new_map.container_name, new_map.type, new_map.opf_type, parsed_data)) {
@@ -293,24 +281,23 @@ void stuff_sexp_map_containers()
 				for (int i = 0; i < (int)parsed_data.size(); i += 2) {
 					new_map.map_data.emplace(parsed_data[i], parsed_data[i + 1]);
 				}
-				Containers_by_name_map.emplace(new_map.container_name, &new_map);
+				Sexp_containers.emplace_back(std::move(new_map));
 			}
-		} else {
-			Sexp_containers.pop_back();
 		}
 	}
 }
 
-sexp_container *get_sexp_container(const char* name) {
+sexp_container *get_sexp_container(const char *name) {
 	Assert(name != nullptr);
 	Assert(strlen(name) > 0);
 
-	auto container_it = Containers_by_name_map.find(name);
-	if (container_it != Containers_by_name_map.end()) {
-		return container_it->second;
-	} else {
-		return nullptr;
+	for (auto &container : Sexp_containers) {
+		if (!stricmp(name, container.container_name.c_str())) {
+			return &container;
+		}
 	}
+
+	return nullptr;
 }
 
 /**
