@@ -160,6 +160,40 @@ void set_exposure(Slider* caller) {
 	getLabManager()->Renderer->setExposureLevel(value);
 }
 
+void set_ppc_ts(Slider* caller) {
+	auto value = caller->GetSliderValue();
+	auto ppcv = lighting_profile::lab_get_ppc();
+	ppcv.toe_strength = value;
+	getLabManager()->Renderer->setPPCValues(ppcv);
+}
+
+void set_ppc_tl(Slider* caller) {
+	auto value = caller->GetSliderValue();
+	auto ppcv = lighting_profile::lab_get_ppc();
+	ppcv.toe_length = value;
+	getLabManager()->Renderer->setPPCValues(ppcv);
+}
+
+void set_ppc_sa(Slider* caller) {
+	auto value = caller->GetSliderValue();
+	auto ppcv = lighting_profile::lab_get_ppc();
+	ppcv.shoulder_angle = value;
+	getLabManager()->Renderer->setPPCValues(ppcv);
+}
+
+void set_ppc_sl(Slider* caller) {
+	auto value = caller->GetSliderValue();
+	auto ppcv = lighting_profile::lab_get_ppc();
+	ppcv.shoulder_length = value;
+	getLabManager()->Renderer->setPPCValues(ppcv);
+}
+
+void set_ppc_ss(Slider* caller) {
+	auto value = caller->GetSliderValue();
+	auto ppcv = lighting_profile::lab_get_ppc();
+	ppcv.shoulder_strength = value;
+	getLabManager()->Renderer->setPPCValues(ppcv);
+}
 void change_detail_texture(Tree* caller) {
 	auto detail = (TextureQuality)caller->GetSelectedItem()->GetData();
 
@@ -274,8 +308,32 @@ void RenderOptions::open(Button* /*caller*/) {
 	exposure_sldr->SetSliderValue(lighting_profile::current_exposure());
 	dialogWindow->AddChild(exposure_sldr);
 	y += exposure_sldr->GetHeight() + 2;
+	auto ppcv = lighting_profile::lab_get_ppc();
 
+	auto ppcts_sldr= new Slider("PPC: Toe Strength", 0, 1, 0, y + 2, set_ppc_ts, dialogWindow->GetWidth());
+	ppcts_sldr->SetSliderValue(ppcv.toe_strength);
+	dialogWindow->AddChild(ppcts_sldr);
+	y += ppcts_sldr->GetHeight() + 2;
 
+	auto ppctl_sldr= new Slider("PPC: Toe Length", 0, 1, 0, y + 2, set_ppc_tl, dialogWindow->GetWidth());
+	ppcts_sldr->SetSliderValue(ppcv.toe_length);
+	dialogWindow->AddChild(ppctl_sldr);
+	y += ppctl_sldr->GetHeight() + 2;
+
+	auto ppcsa_sldr= new Slider("PPC: Shoudler Angle", 0, 1, 0, y + 2, set_ppc_sa, dialogWindow->GetWidth());
+	ppcsa_sldr->SetSliderValue(ppcv.shoulder_angle);
+	dialogWindow->AddChild(ppcsa_sldr);
+	y += ppcsa_sldr->GetHeight() + 2;
+
+	auto ppcsl_sldr= new Slider("PPC: Shoulder Length", 0, 10, 0, y + 2, set_ppc_sl, dialogWindow->GetWidth());
+	ppcsl_sldr->SetSliderValue(ppcv.shoulder_length);
+	dialogWindow->AddChild(ppcsl_sldr);
+	y += ppcsl_sldr->GetHeight() + 2;
+
+	auto ppcss_sldr= new Slider("PPC: Shoulder Strength", 0, 1, 0, y + 2, set_ppc_ss, dialogWindow->GetWidth());
+	ppcss_sldr->SetSliderValue(ppcv.shoulder_strength);
+	dialogWindow->AddChild(ppcss_sldr);
+	y += ppcss_sldr->GetHeight() + 2;
 	// start tree
 	auto cmp = (Tree*)dialogWindow->AddChild(new Tree("Detail Options Tree", 0, y + 2, nullptr, dialogWindow->GetWidth()));
 

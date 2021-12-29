@@ -161,6 +161,10 @@ public:
 		lighting_profile::lab_set_exposure(level);
 		return level;
 	}
+	
+	static void setPPCValues(piecewise_power_curve_values ppcv) {
+		lighting_profile::lab_set_ppc(ppcv);
+	}
 
 	void setTextureQuality(TextureQuality quality) { textureQuality = quality; }
 

@@ -183,9 +183,18 @@ piecewise_power_curve_intermediates lighting_profile::calc_intermediates(piecewi
 }
 void lighting_profile::lab_set_exposure(float exIn){
 	default_profile.exposure = exIn;
-};
+}
 
 
 void lighting_profile::lab_set_tonemapper(TonemapperAlgorithm tnin){
 	default_profile.tonemapper = tnin;
-};
+}
+
+void lighting_profile::lab_set_ppc(piecewise_power_curve_values ppcin ){
+	default_profile.ppc_values = ppcin;
+
+}
+
+piecewise_power_curve_values lighting_profile::lab_get_ppc(){
+	return default_profile.ppc_values;
+}
