@@ -302,6 +302,9 @@ void stuff_sexp_map_containers()
 }
 
 sexp_container *get_sexp_container(const char* name) {
+	Assert(name != nullptr);
+	Assert(strlen(name) > 0);
+
 	auto container_it = Containers_by_name_map.find(name);
 	if (container_it != Containers_by_name_map.end()) {
 		return container_it->second;
