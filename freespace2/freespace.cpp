@@ -856,6 +856,7 @@ void game_level_close()
 
 		// De-Initialize the game subsystems
 		obj_delete_all();
+		obj_reset_colliders();
 		sexp_music_close();	// Goober5000
 		event_music_level_close();
 		game_stop_looped_sounds();
@@ -6676,7 +6677,6 @@ void game_shutdown(void)
 	// Free SEXP resources
 	sexp_shutdown();
 
-	obj_reset_colliders();
 	stars_close();			// clean out anything used by stars code
 
 	// the menu close functions will unload the bitmaps if they were displayed during the game
