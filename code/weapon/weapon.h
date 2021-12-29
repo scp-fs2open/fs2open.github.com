@@ -783,5 +783,8 @@ bool weapon_multilock_can_lock_on_subsys(object* shooter, object* target, ship_s
 // While single target missiles will check these properties as well separately, this function is ONLY used by multilock
 bool weapon_multilock_can_lock_on_target(object* shooter, object* target_objp, weapon_info* wip, float* out_dot = nullptr, bool checkWeapons = false);
 
+// Return whether the weapon has a target it is currently homing on
+bool weapon_has_homing_object(weapon* wp);
+
 
 #endif
