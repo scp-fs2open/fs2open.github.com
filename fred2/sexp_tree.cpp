@@ -539,15 +539,8 @@ void sexp_tree::add_sub_tree(int node, HTREEITEM root)
 			add_sub_tree(node, root);
 
 		} else if (tree_nodes[node].type & SEXPT_CONTAINER) {
-			if (tree_nodes[node].child != -1) {
-				// we're at the root of a Replace Container subtree
-				// DISCUSSME: isn't this assertion valid? Shouldn't it be?
-				Assert(tree_nodes[tree_nodes[node].child].type & SEXPT_MODIFIER);
-				add_sub_tree(node, root);
-			} else {
-				tree_nodes[node].handle = insert(tree_nodes[node].text, BITMAP_CONTAINER, BITMAP_CONTAINER, root);
-				tree_nodes[node].flags = NOT_EDITABLE;
-			}
+			add_sub_tree(node, root);
+
 		} else {
 			Assert(tree_nodes[node].child == -1);
 			if (tree_nodes[node].type & SEXPT_VARIABLE) {
@@ -1892,10 +1885,18 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 
 		dlg.DoModal();
 
+		bool renamed_anything = false;
 		for (const auto &renamed_container : dlg.get_renamed_containers()) {
 			const SCP_string &old_name = renamed_container.first;
 			const SCP_string &new_name = renamed_container.second;
-			rename_container_nodes(old_name, new_name);
+			if (rename_container_nodes(old_name, new_name)) {
+				renamed_anything = true;
+			}
+		}
+
+		if (renamed_anything) {
+			// FIXME: tree doesn't show updated label until editor is closed/reopened
+			*modified = 1;
 		}
 
 		return 1;
@@ -6990,17 +6991,22 @@ int sexp_tree::get_container_usage_count(const SCP_string& container_name) const
 	return count;
 }
 
-void sexp_tree::rename_container_nodes(const SCP_string& old_name, const SCP_string& new_name)
+bool sexp_tree::rename_container_nodes(const SCP_string& old_name, const SCP_string& new_name)
 {
 	Assert(!old_name.empty());
 	Assert(!new_name.empty());
 	Assert(new_name.length() <= sexp_container::NAME_MAX_LENGTH);
 
+	bool renamed_anything = false;
+
 	for (int node_idx = 0; node_idx < (int)tree_nodes.size(); node_idx++) {
 		if (is_matching_container_node(node_idx, old_name)) {
 			strcpy_s(tree_nodes[node_idx].text, new_name.c_str());
+			renamed_anything = true;
 		}
 	}
+
+	return renamed_anything;
 }
 
 bool sexp_tree::is_matching_container_node(int node, const SCP_string& container_name) const

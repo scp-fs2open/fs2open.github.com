@@ -96,9 +96,8 @@ private:
 	const sexp_tree * const m_p_sexp_tree;
 	SCP_vector<sexp_container> m_containers;
 	// two-way map to handle container renaming
-	// even though container names are not case-sensitive, we keep track of any change
-	SCP_unordered_map<SCP_string, SCP_string> m_old_to_new_names;
-	SCP_unordered_map<SCP_string, SCP_string> m_new_to_old_names;
+	SCP_unordered_map<SCP_string, SCP_string, SCP_string_lcase_hash, SCP_string_lcase_equal_to> m_old_to_new_names;
+	SCP_unordered_map<SCP_string, SCP_string, SCP_string_lcase_hash, SCP_string_lcase_equal_to> m_new_to_old_names;
 	// finalized map of renamed containers
 	SCP_unordered_map<SCP_string, SCP_string, SCP_string_lcase_hash, SCP_string_lcase_equal_to> m_renamed_containers;// 
 	// counter to uniquely identify new/deleted containers in the renaming maps
