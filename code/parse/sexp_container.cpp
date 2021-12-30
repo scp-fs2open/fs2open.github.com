@@ -288,7 +288,9 @@ void stuff_sexp_map_containers()
 
 sexp_container *get_sexp_container(const char *name) {
 	Assert(name != nullptr);
-	Assert(strlen(name) > 0);
+	// unlike get_sexp_container_special(), empty name is ok
+	// even if the result will always be nullptr
+	// it can happen if CTEXT() returns empty str
 
 	for (auto &container : Sexp_containers) {
 		if (!stricmp(name, container.container_name.c_str())) {
