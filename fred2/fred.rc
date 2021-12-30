@@ -148,7 +148,7 @@ IDB_DATA_95             BITMAP                  "res\\data95.bmp"
 
 IDB_COMMENT             BITMAP                  "res\\comment.bmp"
 
-IDB_CONTAINER           BITMAP                  "res\\container.bmp"
+IDB_CONTAINER_DATA      BITMAP                  "res\\container_data.bmp"
 
 
 /////////////////////////////////////////////////////////////////////////////

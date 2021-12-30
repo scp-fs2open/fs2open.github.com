@@ -520,7 +520,7 @@ void sexp_tree::add_sub_tree(int node, HTREEITEM root)
 			bitmap = BITMAP_VARIABLE;
 		} else if (tree_nodes[node].type & SEXPT_CONTAINER_DATA) {
 			tree_nodes[node].flags = NOT_EDITABLE;
-			bitmap = BITMAP_CONTAINER;
+			bitmap = BITMAP_CONTAINER_DATA;
 		// FIXME TODO: could SEXPT_MODIFIER happen?
 		} else {
 			tree_nodes[node].flags = EDITABLE;
@@ -3370,7 +3370,7 @@ int sexp_tree::add_container_data(const char* data)
 	Assert(get_sexp_container(data) != nullptr);
 	int node = allocate_node(item_index);
 	set_node(node, (SEXPT_CONTAINER_DATA | SEXPT_VALID), data);
-	tree_nodes[node].handle = insert(data, BITMAP_CONTAINER, BITMAP_CONTAINER, tree_nodes[item_index].handle);
+	tree_nodes[node].handle = insert(data, BITMAP_CONTAINER_DATA, BITMAP_CONTAINER_DATA, tree_nodes[item_index].handle);
 	tree_nodes[node].flags = NOT_EDITABLE;
 	item_index = node;
 	*modified = 1;
@@ -3962,7 +3962,7 @@ void sexp_tree::replace_container_data(const sexp_container &container,
 	}
 
 	set_node(item_index, type, container.container_name.c_str());
-	SetItemImage(h, BITMAP_CONTAINER, BITMAP_CONTAINER);
+	SetItemImage(h, BITMAP_CONTAINER_DATA, BITMAP_CONTAINER_DATA);
 	SetItemText(h, container.container_name.c_str());
 	tree_nodes[item_index].flags = NOT_EDITABLE;
 
@@ -4354,7 +4354,7 @@ void sexp_tree::setup(CEdit *ptr)
 		pimagelist->Add(&bitmap, (COLORREF)0xFF00FF);
 		bitmap.DeleteObject();
 
-		bitmap.LoadBitmap(IDB_CONTAINER);
+		bitmap.LoadBitmap(IDB_CONTAINER_DATA);
 		pimagelist->Add(&bitmap, (COLORREF)0xFF00FF);
 		bitmap.DeleteObject();
 

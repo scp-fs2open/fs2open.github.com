@@ -59,7 +59,7 @@
 #define BITMAP_NUMBERED_DATA	9
 // There are 20 number bitmaps, 9 to 28, counting by 5s from 0 to 95
 #define BITMAP_COMMENT			29
-#define BITMAP_CONTAINER		30
+#define BITMAP_CONTAINER_DATA		30
 
 
 // tree behavior modes (or tree subtype)
