@@ -276,7 +276,6 @@ void stuff_sexp_map_containers()
 				log_printf(LOGFILE_EVENT_LOG,
 					"Data in the SEXP Map container is corrupt. Must be an even number of entries. Instead have %d",
 					(int)parsed_data.size());
-				Sexp_containers.pop_back();
 			} else {
 				for (int i = 0; i < (int)parsed_data.size(); i += 2) {
 					new_map.map_data.emplace(parsed_data[i], parsed_data[i + 1]);
