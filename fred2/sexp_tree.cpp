@@ -1077,12 +1077,12 @@ void sexp_tree::right_clicked(int mode)
 		// change enabled status of 'add' type menu options.
 		add_type = 0;
 
+		// container multidimensionality
 		if (tree_nodes[item_index].type & SEXPT_CONTAINER_DATA) {
 			add_type = OPR_STRING;
 
-			// FIXME TODO: shouldn't we add the list modifiers only if the container is a list
-			//             and then add the map keys instead if the container is a map?
-			// when dealing with multidimentional containers the next thing we want to add could literally be any legal key for any map or the legal entries for a list container. So give the FREDder a hand and offer them the latter.
+			// the next thing we want to add could literally be any legal key for any map or the legal entries for a list container
+			// so give the FREDder a hand and offer the list modifiers, but only the FREDder can know if they're relevant
 			list = get_listing_opf(OPF_LIST_MODIFIER, item_index, Add_count);
 			Assert(list);
 
@@ -1992,7 +1992,7 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 		int type = 0;
 
 		if (tree_nodes[item_index].type & SEXPT_CONTAINER_DATA) {
-			list = get_listing_opf(OPF_LIST_MODIFIER, tree_nodes[item_index].parent, Add_count, true);
+			list = get_listing_opf(OPF_LIST_MODIFIER, tree_nodes[item_index].parent, Add_count);
 		} else {
 			op = get_operator_index(tree_nodes[item_index].text);
 			Assert(op >= 0);
@@ -4794,7 +4794,7 @@ int sexp_tree::query_restricted_opf_range(int opf)
 // the special argument item, but only if it's a child of a when-argument (or similar) sexp.
 // Also only do this if the list has at least one item, because otherwise the argument code
 // would have nothing to select from.
-sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_index, bool modifier)
+sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_index)
 {
 	sexp_list_item head;
 	sexp_list_item *list = NULL;
@@ -5172,11 +5172,11 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			break;
 
 		case OPF_LIST_MODIFIER:
-			list = get_listing_opf_list_modifiers(modifier);
+			list = get_listing_opf_list_modifiers();
 			break;
 
 		case OPF_MAP_KEY:
-			list = get_listing_opf_map_keys(parent_node, modifier);
+			list = get_listing_opf_map_keys(parent_node);
 			break;
 
 		default:
@@ -5295,24 +5295,25 @@ int sexp_tree::get_data_image(int node)
 /**
 * Special version of get_listing_opf that deals with Sexp container modifiers
 */
-sexp_list_item* sexp_tree::modifier_get_listing_opf(int parent_node, int arg_index, int type)
+sexp_list_item *sexp_tree::modifier_get_listing_opf(int parent_node, int arg_index)
 {
-	Assert(tree_nodes[item_index].parent != -1);
-	const auto *p_container = get_sexp_container(tree_nodes[tree_nodes[item_index].parent].text);
+	Assert(parent_node != -1);
+	Assert(tree_nodes[parent_node].type & SEXPT_CONTAINER_DATA);
 
+	const auto *p_container = get_sexp_container(tree_nodes[parent_node].text);
 	Assert(p_container);
+	const auto &container = *p_container;
 
-	if (type == OPF_NULL) {
-		if (p_container->is_list()) {
-			type = OPF_LIST_MODIFIER;
-		} else if (p_container->is_map()) {
-			type = OPF_MAP_KEY;
-		} else {
-			UNREACHABLE("Unknown container type %d", (int)p_container->type);
-		}
+	int type = OPF_NULL;
+	if (container.is_list()) {
+		type = OPF_LIST_MODIFIER;
+	} else if (container.is_map()) {
+		type = OPF_MAP_KEY;
+	} else {
+		UNREACHABLE("Unknown container type %d", (int)p_container->type);
 	}
 
-	return get_listing_opf(type, parent_node, Replace_count, true);
+	return get_listing_opf(type, parent_node, arg_index);
 }
 
 int sexp_tree::get_sibling_place(int node)
@@ -6868,19 +6869,20 @@ sexp_list_item *sexp_tree::get_listing_opf_sexp_containers(ContainerType con_typ
 	return head.next;
 }
 
-sexp_list_item *sexp_tree::get_listing_opf_list_modifiers(bool use_modifier_type)
+sexp_list_item *sexp_tree::get_listing_opf_list_modifiers() const
 {
 	sexp_list_item head;
 
-	const int type = SEXPT_STRING | SEXPT_VALID | (use_modifier_type ? SEXPT_MODIFIER : 0);
+	// in the case of container multidimensionality, the parent might not be a list container
+
 	for (const auto &modifier : get_all_list_modifiers()) {
-		head.add_data(modifier.name, type);
+		head.add_data(modifier.name, SEXPT_VALID | SEXPT_MODIFIER | SEXPT_STRING);
 	}
 
 	return head.next;
 }
 
-sexp_list_item *sexp_tree::get_listing_opf_map_keys(int parent_node, bool use_modifier_type)
+sexp_list_item *sexp_tree::get_listing_opf_map_keys(int parent_node) const
 {
 	sexp_list_item head;
 
@@ -6891,9 +6893,8 @@ sexp_list_item *sexp_tree::get_listing_opf_map_keys(int parent_node, bool use_mo
 	Assert(p_container != nullptr);
 	Assert(p_container->is_map());
 
-	const int type = SEXPT_STRING | SEXPT_VALID | (use_modifier_type ? SEXPT_MODIFIER : 0);
 	for (const auto &kv_pair : p_container->map_data) {
-		head.add_data(kv_pair.first.c_str(), type);
+		head.add_data(kv_pair.first.c_str(), SEXPT_VALID | SEXPT_MODIFIER | SEXPT_STRING);
 	}
 
 	return head.next;

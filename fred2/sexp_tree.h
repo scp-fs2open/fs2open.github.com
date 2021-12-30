@@ -216,8 +216,7 @@ public:
 	int get_data_image(int node);
 
 
-	// FIXME TODO: look for a better approach than adding this parameter
-	sexp_list_item *get_listing_opf(int opf, int parent_node, int arg_index, bool modfier = false);
+	sexp_list_item *get_listing_opf(int opf, int parent_node, int arg_index);
 	sexp_list_item *get_listing_opf_null();
 	sexp_list_item *get_listing_opf_bool(int parent_node = -1);
 	sexp_list_item *get_listing_opf_positive();
@@ -304,9 +303,9 @@ public:
 	sexp_list_item *get_listing_opf_language();
 	sexp_list_item* get_listing_opf_functional_when_eval_type();
 	sexp_list_item *get_listing_opf_sexp_containers(ContainerType con_type);
-	sexp_list_item *modifier_get_listing_opf(int parent_node, int arg_index, int type = OPF_NULL);
-	sexp_list_item *get_listing_opf_list_modifiers(bool use_modifier_type);
-	sexp_list_item *get_listing_opf_map_keys(int parent_node, bool use_modifier_type);
+	sexp_list_item *modifier_get_listing_opf(int parent_node, int arg_index);
+	sexp_list_item *get_listing_opf_list_modifiers() const;
+	sexp_list_item *get_listing_opf_map_keys(int parent_node) const;
 
 	int m_mode;
 	int item_index;
