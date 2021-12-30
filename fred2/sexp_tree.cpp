@@ -201,15 +201,22 @@ int sexp_tree::load_branch(int index, int parent)
 			if (Sexp_nodes[index].type & SEXP_FLAG_VARIABLE) {
 				get_combined_variable_name(combined_var_name, Sexp_nodes[index].text);
 				set_node(cur, (SEXPT_VARIABLE | SEXPT_STRING | additional_flags), combined_var_name);
+			} else if (is_container_argument(cur)) {
+				// container name should only be as SEXP argument
+				Assert(!(additional_flags & SEXPT_MODIFIER));
+				if (get_sexp_container(Sexp_nodes[index].text) != nullptr) {
+					// FIXME TODO: if the above if-check fails, the SEXP is malformed
+					additional_flags |= SEXPT_CONTAINER_NAME;
+				}
+				set_node(cur, (SEXPT_STRING | additional_flags), Sexp_nodes[index].text);
 			} else {
 				set_node(cur, (SEXPT_STRING | additional_flags), Sexp_nodes[index].text);
 			}
 
 		} else if (Sexp_nodes[index].subtype == SEXP_ATOM_CONTAINER) {
 			cur = allocate_node(parent);
-			const auto *p_container = get_sexp_container(Sexp_nodes[index].text);
-			Assertion(p_container != nullptr, "Attempt to load unknown container %s into SEXP tree!", Sexp_nodes[index].text);
-			set_node(cur, (SEXPT_CONTAINER_DATA | SEXPT_STRING | additional_flags), p_container->container_name.c_str());
+			Assertion(get_sexp_container(Sexp_nodes[index].text) != nullptr, "Attempt to load unknown container %s into SEXP tree!", Sexp_nodes[index].text);
+			set_node(cur, (SEXPT_CONTAINER_DATA | SEXPT_STRING | additional_flags), Sexp_nodes[index].text);
 			load_branch(Sexp_nodes[index].first, cur);  // container is new parent now
 
 		} else
@@ -267,7 +274,7 @@ void var_name_from_sexp_tree_text(char *var_name, const char *text)
 
 #define NO_PREVIOUS_NODE -9
 // called recursively to save a tree branch and everything under it
-// SEXPT_MODIFIER requires no special handling here
+// SEXPT_CONTAINER_NAME and SEXPT_MODIFIER require no special handling here
 int sexp_tree::save_branch(int cur, int at_root)
 {
 	int start, node = -1, last = NO_PREVIOUS_NODE;
@@ -464,7 +471,7 @@ void sexp_tree::set_node(int node, int type, const char *text)
 	size_t max_length;
 	if (type & SEXPT_VARIABLE) {
 		max_length = 2 * TOKEN_LENGTH + 2;
-	} else if (type & SEXPT_CONTAINER_DATA) {
+	} else if (type & (SEXPT_CONTAINER_NAME | SEXPT_CONTAINER_DATA)) {
 		max_length = sexp_container::NAME_MAX_LENGTH + 1;
 	} else {
 		max_length = TOKEN_LENGTH;
@@ -518,10 +525,12 @@ void sexp_tree::add_sub_tree(int node, HTREEITEM root)
 		if (tree_nodes[node].type & SEXPT_VARIABLE) {
 			tree_nodes[node].flags = NOT_EDITABLE;
 			bitmap = BITMAP_VARIABLE;
+		} else if (tree_nodes[node].type & SEXPT_CONTAINER_NAME) {
+			tree_nodes[node].flags = NOT_EDITABLE;
+			bitmap = BITMAP_CONTAINER_NAME;
 		} else if (tree_nodes[node].type & SEXPT_CONTAINER_DATA) {
 			tree_nodes[node].flags = NOT_EDITABLE;
 			bitmap = BITMAP_CONTAINER_DATA;
-		// FIXME TODO: could SEXPT_MODIFIER happen?
 		} else {
 			tree_nodes[node].flags = EDITABLE;
 			bitmap = get_data_image(node);
@@ -544,6 +553,9 @@ void sexp_tree::add_sub_tree(int node, HTREEITEM root)
 			Assert(tree_nodes[node].child == -1);
 			if (tree_nodes[node].type & SEXPT_VARIABLE) {
 				tree_nodes[node].handle = insert(tree_nodes[node].text, BITMAP_VARIABLE, BITMAP_VARIABLE, root);
+				tree_nodes[node].flags = NOT_EDITABLE;
+			} else if (tree_nodes[node].type & SEXPT_CONTAINER_NAME) {
+				tree_nodes[node].handle = insert(tree_nodes[node].text, BITMAP_CONTAINER_NAME, BITMAP_CONTAINER_NAME, root);
 				tree_nodes[node].flags = NOT_EDITABLE;
 			// FIXME TODO: handle SEXPT_MODIFIER
 			} else {
@@ -1537,7 +1549,7 @@ int sexp_tree::edit_label(HTREEITEM h)
 	}
 
 	// Variables and containers must be edited through dialog box
-	if (tree_nodes[i].type & (SEXPT_VARIABLE | SEXPT_CONTAINER_DATA)) {
+	if (tree_nodes[i].type & (SEXPT_VARIABLE | SEXPT_CONTAINER_NAME | SEXPT_CONTAINER_DATA)) {
 		return 0;
 	}
 
@@ -4354,6 +4366,10 @@ void sexp_tree::setup(CEdit *ptr)
 		pimagelist->Add(&bitmap, (COLORREF)0xFF00FF);
 		bitmap.DeleteObject();
 
+		bitmap.LoadBitmap(IDB_CONTAINER_NAME);
+		pimagelist->Add(&bitmap, (COLORREF)0xFF00FF);
+		bitmap.DeleteObject();
+
 		bitmap.LoadBitmap(IDB_CONTAINER_DATA);
 		pimagelist->Add(&bitmap, (COLORREF)0xFF00FF);
 		bitmap.DeleteObject();
@@ -7010,8 +7026,9 @@ bool sexp_tree::rename_container_nodes(const SCP_string& old_name, const SCP_str
 
 bool sexp_tree::is_matching_container_node(int node, const SCP_string& container_name) const
 {
-	return ((tree_nodes[node].type & (SEXPT_VALID | SEXPT_CONTAINER_DATA)) || is_container_argument(node)) &&
-		!stricmp(tree_nodes[node].text, container_name.c_str());
+	return (tree_nodes[node].type & SEXPT_VALID) &&
+		   (tree_nodes[node].type & (SEXPT_CONTAINER_NAME | SEXPT_CONTAINER_DATA)) &&
+		   !stricmp(tree_nodes[node].text, container_name.c_str());
 }
 
 bool sexp_tree::is_container_argument(int node) const
@@ -7019,11 +7036,6 @@ bool sexp_tree::is_container_argument(int node) const
 	Assert(node >= 0);
 	Assert(node < (int)tree_nodes.size());
 
-	if (!(tree_nodes[node].type & SEXPT_VALID)) {
-		return false;
-	}
-
-	// check if it's a SEXP argument of container type
 	if (tree_nodes[node].parent == -1) {
 		return false;
 	}

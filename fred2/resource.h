@@ -119,7 +119,8 @@
 #define IDB_DATA_85                     313
 #define IDB_DATA_90                     314
 #define IDB_DATA_95                     315
-#define IDB_CONTAINER_DATA              316
+#define IDB_CONTAINER_NAME              316
+#define IDB_CONTAINER_DATA              317
 #define IDD_FICTION_VIEWER              318
 #define IDD_SOUND_ENVIRONMENT           319
 #define IDD_WARP_PARAMS                 320

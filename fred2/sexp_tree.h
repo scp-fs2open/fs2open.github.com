@@ -28,15 +28,16 @@
 #define SEXPT_UNKNOWN	0x0002
 
 #define SEXPT_VALID		0x1000
-#define SEXPT_TYPE_MASK	0x03ff
+#define SEXPT_TYPE_MASK	0x07ff
 #define SEXPT_TYPE(X)	(SEXPT_TYPE_MASK & X)
 
 #define SEXPT_OPERATOR	0x0010
 #define SEXPT_NUMBER	0x0020
 #define SEXPT_STRING	0x0040
 #define SEXPT_VARIABLE	0x0080
-#define SEXPT_CONTAINER_DATA	0x0100
-#define SEXPT_MODIFIER	0x0200
+#define SEXPT_CONTAINER_NAME	0x0100
+#define SEXPT_CONTAINER_DATA	0x0200
+#define SEXPT_MODIFIER	0x0400
 
 // tree_node flag
 #define NOT_EDITABLE	0x00
@@ -59,7 +60,8 @@
 #define BITMAP_NUMBERED_DATA	9
 // There are 20 number bitmaps, 9 to 28, counting by 5s from 0 to 95
 #define BITMAP_COMMENT			29
-#define BITMAP_CONTAINER_DATA		30
+#define BITMAP_CONTAINER_NAME	30
+#define BITMAP_CONTAINER_DATA	31
 
 
 // tree behavior modes (or tree subtype)
