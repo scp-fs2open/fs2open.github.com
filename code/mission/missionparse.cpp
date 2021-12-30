@@ -6150,7 +6150,8 @@ bool post_process_mission()
 				Warning(LOCATION, "%s", error_msg.c_str());
 
 				// syntax errors are recoverable in Fred but not FS
-				if (!Fred_running) {
+				// save for some non-fatal error types.
+				if (!Fred_running &&!(result == SEXP_CHECK_AMBIGUOUS_EVENT_NAME || result == SEXP_CHECK_AMBIGUOUS_GOAL_NAME)) {
 					return false;
 				}
 			}
