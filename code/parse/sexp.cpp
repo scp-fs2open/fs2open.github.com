@@ -1950,7 +1950,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 			type2 = SEXP_ATOM_STRING;
 
 		} else if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER) {
-			// this is an instance of "Replace Container"
+			// this is an instance of "Replace Container Data"
 			const int modifier_node = Sexp_nodes[node].first;
 			if (modifier_node == -1) {
 				return SEXP_CHECK_MISSING_CONTAINER_MODIFIER;

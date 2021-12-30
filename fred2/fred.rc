@@ -489,7 +489,7 @@ BEGIN
         END
         MENUITEM SEPARATOR
         MENUITEM "Add/Modify Container",        ID_EDIT_SEXP_TREE_EDIT_CONTAINERS
-        POPUP "Replace Container"
+        POPUP "Replace Container Data"
         BEGIN
             MENUITEM "Placeholder",             ID_PLACEHOLDER, GRAYED
         END
