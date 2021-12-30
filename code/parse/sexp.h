@@ -1270,6 +1270,7 @@ extern void update_sexp_references(const char *old_name, const char *new_name, i
 extern int query_referenced_in_sexp(int mode, const char *name, int *node);
 extern int build_sexp_string(SCP_string &accumulator, int cur_node, int level, int mode);
 extern int sexp_query_type_match(int opf, int opr);
+extern bool sexp_recoverable_error(int num);
 extern const char *sexp_error_message(int num);
 extern int count_free_sexp_nodes();
 

@@ -44,7 +44,7 @@ public:
 	{}
 };
 
-SCP_unordered_map<uint, collider_pair> Collision_cached_pairs;
+static SCP_unordered_map<uint, collider_pair> Collision_cached_pairs;
 
 class checkobject;
 extern checkobject CheckObjects[MAX_OBJECTS];

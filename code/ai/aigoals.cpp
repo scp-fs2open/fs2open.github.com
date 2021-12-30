@@ -189,7 +189,9 @@ void ai_post_process_mission()
 	int i;
 
 	// make sure team visibility is updated first
-	awacs_process();
+	if ( !Fred_running ) {
+		awacs_process();
+	}
 
 	// Check ships in player starting wings.  Those ships should follow these rules:
 	// (1) if they have no orders, they should get a form on my wing order
@@ -207,7 +209,6 @@ void ai_post_process_mission()
 				wingp = &Wings[Starting_wings[i]];
 
 				ai_maybe_add_form_goal( wingp );
-
 			}
 		}
 	}

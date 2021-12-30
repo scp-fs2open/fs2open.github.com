@@ -3040,9 +3040,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
-				// Only report invalid gauges in FRED.  Having an invalid gauge in FSO won't hurt,
-				// as all places which use this function check for NULL.
-				if (Fred_running && hud_get_gauge(CTEXT(node), true) == nullptr) {
+				if (hud_get_gauge(CTEXT(node), true) == nullptr) {
 					return SEXP_CHECK_INVALID_CUSTOM_HUD_GAUGE;
 				}
 
@@ -30092,6 +30090,28 @@ int sexp_query_type_match(int opf, int opr)
 	}
 
 	return 0;
+}
+
+bool sexp_recoverable_error(int num)
+{
+	switch (num)
+	{
+		// These two errors may cause mysterious bugs in FSO,
+		// but the mission will run without crashing.
+		case SEXP_CHECK_AMBIGUOUS_EVENT_NAME:
+		case SEXP_CHECK_AMBIGUOUS_GOAL_NAME:
+
+		// Having an invalid gauge in FSO won't hurt,
+		// as all places which call hud_get_gauge() check its return value for NULL.
+		case SEXP_CHECK_INVALID_CUSTOM_HUD_GAUGE:
+
+			return true;
+
+
+		// most errors will halt mission loading
+		default:
+			return false;
+	}
 }
 
 const char *sexp_error_message(int num)

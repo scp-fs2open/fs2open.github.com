@@ -604,7 +604,7 @@ public:
 	void SetText(float the_float);
 	void SetSaveLoc(int *ptr, int save_method, int max_value=INT_MAX, int min_value=INT_MIN);
 	void SetSaveLoc(short int *sint_ptr, int save_method, short int max_value=SHRT_MAX, short int min_value=SHRT_MIN);
-	void SetSaveLoc(float *ptr, int save_method, float max_value=INT_MAX, float min_value=INT_MIN);
+	void SetSaveLoc(float *ptr, int save_method, float max_value=static_cast<float>(INT_MAX), float min_value=static_cast<float>(INT_MIN));
 	void SetSaveLoc(char *ptr, int save_method, uint max_len=UINT_MAX, uint min_len = 0);
 	void SetSaveLoc(ubyte *ptr, int save_method, int max_value=UCHAR_MAX, int min_value=0);
 	void SetSaveStringAlloc(char **ptr, int save_method, int mem_flags, uint max_len=UINT_MAX, uint min_len = 0);

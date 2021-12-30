@@ -2449,13 +2449,15 @@ int stuff_float(float *f, bool optional)
 		Mp = str_start;
 
 	if (success)
+	{
 		retval = 2;
+		diag_printf("Stuffed float: %f\n", *f);
+	}
 	else if (optional)
 		retval = comma ? 1 : 0;
 	else
 		skip_token();
 
-	diag_printf("Stuffed float: %f\n", *f);
 	return retval;
 }
 

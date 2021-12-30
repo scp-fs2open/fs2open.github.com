@@ -133,7 +133,7 @@ vec3d* get_subsystem_world_pos(object* parent_obj, ship_subsys* subsys, vec3d* w
 void	hud_target_change_check();
 
 void hud_show_hostile_triangle();
-void hud_start_flash_weapon(int index);
+void hud_start_flash_weapon(int index, bool flash_energy);
 void hud_update_weapon_flash();
 void hud_process_homing_missiles(void);
 

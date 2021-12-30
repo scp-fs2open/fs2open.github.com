@@ -691,6 +691,12 @@ void cf_search_root_path(int root_index)
 		cf_get_list_of_files(search_path, files, "*.*");
 
 		for (auto &file : files) {
+			auto ext_idx = file.name.rfind('.');
+
+			if ( ext_idx == SCP_string::npos || !is_ext_in_list(Pathtypes[i].extensions, file.name.substr(ext_idx+1).c_str()) ) {
+				continue;
+			}
+
 			cf_file *cfile = cf_create_file();
 
 			SDL_strlcpy(cfile->name_ext, file.name.c_str(), CF_MAX_FILENAME_LENGTH);

@@ -431,6 +431,7 @@ typedef struct weapon_flash
 {
 	int flash_duration[MAX_WEAPON_FLASH_LINES];
 	int flash_next[MAX_WEAPON_FLASH_LINES];
+	bool flash_energy[MAX_WEAPON_FLASH_LINES];
 	int is_bright;
 } weapon_flash;
 weapon_flash Weapon_flash_info;
@@ -1001,6 +1002,7 @@ void hud_weapons_init()
 	for ( int i = 0; i < MAX_WEAPON_FLASH_LINES; i++ ) {
 		Weapon_flash_info.flash_duration[i] = 1;
 		Weapon_flash_info.flash_next[i] = 1;
+		Weapon_flash_info.flash_energy[i] = false;
 	}
 
 	// The E: There used to be a number of checks here. They are no longer needed, as the new HUD code handles it on its own.
@@ -4521,7 +4523,7 @@ void HudGaugeTargetTriangle::render(float  /*frametime*/)
 }
 
 // start the weapon line (on the HUD) flashing
-void hud_start_flash_weapon(int index)
+void hud_start_flash_weapon(int index, bool flash_energy)
 {
 	if ( index >= MAX_WEAPON_FLASH_LINES ) {
 		Int3();	// Get Alan
@@ -4534,6 +4536,7 @@ void hud_start_flash_weapon(int index)
 	}
 
 	Weapon_flash_info.flash_duration[index] = timestamp(TBOX_FLASH_DURATION);
+	Weapon_flash_info.flash_energy[index] = flash_energy;
 }
 
 // maybe change the text color for the weapon line indicated by index
@@ -5776,9 +5779,10 @@ void HudGaugeWeaponEnergy::render(float  /*frametime*/)
 			}
 		}
 
-		for ( i = 0; i < sw->num_primary_banks; i++ )
+		// maybe flash the energy bar
+		for ( i = 0; i < sw->num_primary_banks + sw->num_secondary_banks; i++ )
 		{
-			if ( !timestamp_elapsed(Weapon_flash_info.flash_duration[i]) )
+			if ( !timestamp_elapsed(Weapon_flash_info.flash_duration[i]) && Weapon_flash_info.flash_energy[i])
 			{
 				if ( Weapon_flash_info.is_bright & (1<<i) )
 				{
