@@ -558,7 +558,7 @@ void sexp_tree::add_sub_tree(int node, HTREEITEM root)
 			} else if (tree_nodes[node].type & SEXPT_CONTAINER_NAME) {
 				tree_nodes[node].handle = insert(tree_nodes[node].text, BITMAP_CONTAINER_NAME, BITMAP_CONTAINER_NAME, root);
 				tree_nodes[node].flags = NOT_EDITABLE;
-			// FIXME TODO: handle SEXPT_MODIFIER
+			// SEXPT_MODIFIER doesn't require special treatment here
 			} else {
 				int bmap = get_data_image(node);
 				tree_nodes[node].handle = insert(tree_nodes[node].text, bmap, bmap, root);
@@ -859,9 +859,7 @@ void sexp_tree::right_clicked(int mode)
 
 								if ((op_type == OPF_LIST_CONTAINER_NAME) && !container.is_list()) {
 									flags |= MF_GRAYED;
-								}
-
-								if ((op_type == OPF_MAP_CONTAINER_NAME) && !container.is_map()) {
+								} else if ((op_type == OPF_MAP_CONTAINER_NAME) && !container.is_map()) {
 									flags |= MF_GRAYED;
 								}
 
@@ -1473,7 +1471,7 @@ void sexp_tree::right_clicked(int mode)
 					menu.EnableMenuItem(ID_EDIT_PASTE_SPECIAL, MF_ENABLED);
 
 			} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_CONTAINER) {
-				// TODO: check for strictly typed containers
+				// TODO: check for strictly typed container keys/data
 				const auto* p_container = get_sexp_container(tree_nodes[parent].text);
 				Assert(p_container != nullptr);
 				z = p_container->opf_type;
@@ -1938,7 +1936,6 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 		}
 
 		if (renamed_anything) {
-			// FIXME: tree doesn't show updated label until editor is closed/reopened
 			*modified = 1;
 		}
 
@@ -3427,7 +3424,7 @@ int sexp_tree::add_container_data(const char* data)
 	Assert(data != nullptr);
 	Assert(get_sexp_container(data) != nullptr);
 	int node = allocate_node(item_index);
-	set_node(node, (SEXPT_CONTAINER_DATA | SEXPT_VALID), data);
+	set_node(node, (SEXPT_VALID | SEXPT_CONTAINER_DATA | SEXPT_STRING), data);
 	tree_nodes[node].handle = insert(data, BITMAP_CONTAINER_DATA, BITMAP_CONTAINER_DATA, tree_nodes[item_index].handle);
 	tree_nodes[node].flags = NOT_EDITABLE;
 	item_index = node;
@@ -4021,11 +4018,10 @@ void sexp_tree::replace_container_data(const sexp_container &container,
 			if (p_old_container->is_list()) {
 				// TODO: check for strictly typed data here
 
-				// FIXME TODO: what should be done here?
-				//int old_opf = p_old_container->opf_type; 
-
-				delete_child_nodes = false;
-				set_default_modifier = false;
+				if (container.opf_type == p_old_container->opf_type) {
+					delete_child_nodes = false;
+					set_default_modifier = false;
+				}
 			}
 		}
 	}
@@ -7062,7 +7058,7 @@ int sexp_tree::get_loadout_variable_count(int var_index)
 	return count; 
 }
 
-int sexp_tree::get_container_usage_count(const SCP_string& container_name) const
+int sexp_tree::get_container_usage_count(const SCP_string &container_name) const
 {
 	int count = 0;
 
@@ -7075,7 +7071,7 @@ int sexp_tree::get_container_usage_count(const SCP_string& container_name) const
 	return count;
 }
 
-bool sexp_tree::rename_container_nodes(const SCP_string& old_name, const SCP_string& new_name)
+bool sexp_tree::rename_container_nodes(const SCP_string &old_name, const SCP_string &new_name)
 {
 	Assert(!old_name.empty());
 	Assert(!new_name.empty());
@@ -7086,7 +7082,7 @@ bool sexp_tree::rename_container_nodes(const SCP_string& old_name, const SCP_str
 	for (int node_idx = 0; node_idx < (int)tree_nodes.size(); node_idx++) {
 		if (is_matching_container_node(node_idx, old_name)) {
 			strcpy_s(tree_nodes[node_idx].text, new_name.c_str());
-			// FIXME TODO: get handle and call SetItemText(h, new_name.c_str());
+			SetItemText(tree_nodes[node_idx].handle, new_name.c_str());
 			renamed_anything = true;
 		}
 	}
@@ -7094,7 +7090,7 @@ bool sexp_tree::rename_container_nodes(const SCP_string& old_name, const SCP_str
 	return renamed_anything;
 }
 
-bool sexp_tree::is_matching_container_node(int node, const SCP_string& container_name) const
+bool sexp_tree::is_matching_container_node(int node, const SCP_string &container_name) const
 {
 	return (tree_nodes[node].type & SEXPT_VALID) &&
 		   (tree_nodes[node].type & (SEXPT_CONTAINER_NAME | SEXPT_CONTAINER_DATA)) &&
