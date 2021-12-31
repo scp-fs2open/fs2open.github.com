@@ -1969,7 +1969,7 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 
 	// Add/Modify Container
 	if (id == ID_EDIT_SEXP_TREE_EDIT_CONTAINERS) {
-		CAddModifyContainerDlg dlg(this);
+		CAddModifyContainerDlg dlg(*this);
 
 		dlg.DoModal();
 
