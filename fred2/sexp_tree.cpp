@@ -1540,15 +1540,14 @@ void sexp_tree::right_clicked(int mode)
 		if (!(menu.GetMenuState(ID_DELETE, MF_BYCOMMAND) & MF_GRAYED))
 			menu.EnableMenuItem(ID_EDIT_CUT, MF_ENABLED);
 
-		if (tree_nodes[item_index].type & SEXPT_MODIFIER) {
-			// for now, modifiers don't support cut/copy/paste
-			// these restrictions may be revisited in the future
+		// all of the following restrictions may be revisited in the future
+		if (tree_nodes[item_index].type & (SEXPT_MODIFIER | SEXPT_CONTAINER_NAME)) {
+			// modifiers and container names don't support cut/copy/paste
 			menu.EnableMenuItem(ID_EDIT_CUT, MF_GRAYED);
 			menu.EnableMenuItem(ID_EDIT_COPY, MF_GRAYED);
 			menu.EnableMenuItem(ID_EDIT_PASTE, MF_GRAYED);
 		} else if (tree_nodes[item_index].type & SEXPT_CONTAINER_DATA) {
-			// for now, container data doesn't support add-paste
-			// this restricted may be revisited in the future
+			// container data nodes don't support add-pasting modifiers
 			menu.EnableMenuItem(ID_EDIT_PASTE_SPECIAL, MF_GRAYED);
 		}
 
