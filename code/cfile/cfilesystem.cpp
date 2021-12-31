@@ -80,7 +80,7 @@ typedef struct cf_root_block {
 } cf_root_block;
 
 static int Num_roots = 0;
-static SCP_vector<cf_root_block *> Root_blocks;
+static SCP_vector<std::unique_ptr<cf_root_block>> Root_blocks;
 
 static int Num_path_roots = 0;
 
@@ -106,7 +106,7 @@ typedef struct cf_file_block {
 } cf_file_block;
 
 static uint Num_files = 0;
-static SCP_vector<cf_file_block *> File_blocks;
+static SCP_vector<std::unique_ptr<cf_file_block>> File_blocks;
 
 // Return a pointer to to file 'index'.
 cf_file *cf_get_file(int index)
@@ -126,11 +126,14 @@ cf_file *cf_create_file()
 	size_t offset = Num_files % CF_NUM_FILES_PER_BLOCK;
 
 	if (block >= File_blocks.size()) {
-		File_blocks.resize(File_blocks.size() + CF_MIN_FILE_BLOCKS, nullptr);
-	}
+		// we really don't want to have this use automatic resizing so make sure
+		// to allocate using a set size to avoid too much memory being reserved
+		// with larger file sets
+		if (File_blocks.size() == File_blocks.capacity()) {
+			File_blocks.reserve(File_blocks.size() + CF_MIN_FILE_BLOCKS);
+		}
 
-	if ( !File_blocks[block] ) {
-		File_blocks[block] = new cf_file_block;
+		File_blocks.push_back(std::unique_ptr<cf_file_block>(new cf_file_block));
 	}
 
 	Num_files++;
@@ -162,11 +165,14 @@ cf_root *cf_create_root()
 	size_t offset = Num_roots % CF_NUM_ROOTS_PER_BLOCK;
 
 	if (block >= Root_blocks.size()) {
-		Root_blocks.resize(Root_blocks.size() + CF_MIN_ROOT_BLOCKS, nullptr);
-	}
+		// we really don't want to have this use automatic resizing so make sure
+		// to allocate using a set size to avoid too much memory being reserved
+		// with larger file sets
+		if (Root_blocks.size() == Root_blocks.capacity()) {
+			Root_blocks.reserve(Root_blocks.size() + CF_MIN_ROOT_BLOCKS);
+		}
 
-	if ( !Root_blocks[block] ) {
-		Root_blocks[block] = new cf_root_block;
+		Root_blocks.push_back(std::unique_ptr<cf_root_block>(new cf_root_block));
 	}
 
 	Num_roots++;
@@ -928,27 +934,11 @@ void cf_build_secondary_filelist(const char *cdrom_dir)
 void cf_free_secondary_filelist()
 {
 	// Free the root blocks
-	for (auto &block : Root_blocks) {
-		if (block) {
-			delete block;
-			block = nullptr;
-		}
-	}
-
 	Root_blocks.clear();
-
 	Num_roots = 0;
 
-	// Init the file blocks	
-	for (auto &block : File_blocks) {
-		if (block) {
-			delete block;
-			block = nullptr;
-		}
-	}
-
+	// Free the file blocks
 	File_blocks.clear();
-
 	Num_files = 0;
 }
 
