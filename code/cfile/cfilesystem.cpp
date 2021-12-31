@@ -74,6 +74,9 @@ typedef struct cf_root_sort {
 
 #define CF_NUM_ROOTS_PER_BLOCK		32
 #define CF_MIN_ROOT_BLOCKS			2				// minimum number of root blocks to create on resize
+													// (set to value which fits retail data without resizing)
+
+static_assert(CF_MIN_ROOT_BLOCKS >= 2, "CF_MIN_ROOT_BLOCKS is set below retail threshold!");
 
 typedef struct cf_root_block {
 	cf_root			roots[CF_NUM_ROOTS_PER_BLOCK];
@@ -100,6 +103,9 @@ typedef struct cf_file {
 
 #define CF_NUM_FILES_PER_BLOCK		512
 #define CF_MIN_FILE_BLOCKS			16				// minimum number of file blocks to create on resize
+													// (set to value which fits retail data without resizing)
+
+static_assert(CF_MIN_FILE_BLOCKS >= 16, "CF_MIN_FILE_BLOCKS is set below retail threshold!");
 
 typedef struct cf_file_block {
 	cf_file						files[CF_NUM_FILES_PER_BLOCK];
