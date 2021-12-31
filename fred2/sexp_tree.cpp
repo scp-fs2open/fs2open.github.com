@@ -1348,6 +1348,41 @@ void sexp_tree::right_clicked(int mode)
 				}
 			}
 
+			if (tree_nodes[item_index].type & SEXPT_MODIFIER) {
+				Assert(tree_nodes[parent].type & SEXPT_CONTAINER_DATA);
+
+				if (Replace_count == 0) {
+					const auto *p_container = get_sexp_container(tree_nodes[parent].text);
+					Assert(p_container);
+					const auto &container = *p_container;
+
+					if (container.is_list()) {
+						// the only valid values are either the list modifiers or Replace Variable/Cotnainer Data with string data
+						menu.EnableMenuItem(ID_REPLACE_NUMBER, MF_GRAYED);
+						menu.EnableMenuItem(ID_REPLACE_STRING, MF_GRAYED);
+						menu.EnableMenuItem(ID_EDIT_TEXT, MF_GRAYED);
+						// FIXME TODO: ensure list_modifiers are present in Replace Data submenu
+					} else if (container.is_map()) {
+						if (any(container.type & ContainerType::STRING_KEYS)) {
+							menu.EnableMenuItem(ID_REPLACE_NUMBER, MF_GRAYED);
+							menu.EnableMenuItem(ID_REPLACE_STRING, MF_ENABLED);
+						} else if (any(container.type & ContainerType::NUMBER_KEYS)) {
+							menu.EnableMenuItem(ID_REPLACE_NUMBER, MF_ENABLED);
+							menu.EnableMenuItem(ID_REPLACE_STRING, MF_GRAYED);
+						} else {
+							UNREACHABLE("Map container with type %d has unknown key type", (int)container.type);
+						}
+					} else {
+						UNREACHABLE("Unknown container type %d", (int)container.type);
+					}
+				} else {
+					// multidimensional modifiers can be anything, including possibly a list modifier
+					// the value can be validated only at runtime (i.e., in-mission)
+					menu.EnableMenuItem(ID_REPLACE_NUMBER, MF_ENABLED);
+					menu.EnableMenuItem(ID_REPLACE_STRING, MF_ENABLED);
+				}
+			}
+
 			list->destroy();
 
 		} else {  // top node, so should be a Boolean type.
@@ -1504,6 +1539,18 @@ void sexp_tree::right_clicked(int mode)
 
 		if (!(menu.GetMenuState(ID_DELETE, MF_BYCOMMAND) & MF_GRAYED))
 			menu.EnableMenuItem(ID_EDIT_CUT, MF_ENABLED);
+
+		if (tree_nodes[item_index].type & SEXPT_MODIFIER) {
+			// for now, modifiers don't support cut/copy/paste
+			// these restrictions may be revisited in the future
+			menu.EnableMenuItem(ID_EDIT_CUT, MF_GRAYED);
+			menu.EnableMenuItem(ID_EDIT_COPY, MF_GRAYED);
+			menu.EnableMenuItem(ID_EDIT_PASTE, MF_GRAYED);
+		} else if (tree_nodes[item_index].type & SEXPT_CONTAINER_DATA) {
+			// for now, container data doesn't support add-paste
+			// this restricted may be revisited in the future
+			menu.EnableMenuItem(ID_EDIT_PASTE_SPECIAL, MF_GRAYED);
+		}
 
 		gray_menu_tree(popup_menu);
 		popup_menu->TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON, mouse.x, mouse.y, this);
@@ -2087,10 +2134,13 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 		Assertion((container_index >= 0) && (container_index < (int)containers.size()),
 			"Unknown Container");
 
-		const int type = get_type(item_handle);
+		int type = get_type(item_handle);
 		Assert((type & SEXPT_NUMBER) || (type & SEXPT_STRING));
 
 		// TODO: make sure that combining types in this way is correct
+		// variable/container name don't mix with container data
+		// DISCUSSME: what about variable name as SEXP arg type?
+		type &= ~(SEXPT_VARIABLE | SEXPT_CONTAINER_NAME);
 		replace_container_data(containers[container_index], (type | SEXPT_CONTAINER_DATA), true, true, true);
 
 		HTREEITEM handle = tree_nodes[item_index].handle;
@@ -2256,11 +2306,6 @@ void sexp_tree::NodeCut()
 	if (item_index < 0)
 		return;
 
-	if (tree_nodes[item_index].type & SEXPT_MODIFIER) {
-		MessageBox("Container modifiers can't be cut without their container.");
-		return;
-	}
-
 	NodeCopy();
 	NodeDelete();
 }
@@ -2320,11 +2365,6 @@ void sexp_tree::NodeCopy()
 {
 	if (item_index < 0)
 		return;
-
-	if (tree_nodes[item_index].type & SEXPT_MODIFIER) {
-		MessageBox("Container modifiers can't be copied without their container.");
-		return;
-	}
 
 	// If a clipboard already exist, unmark it as persistent and free old clipboard
 	if (Sexp_clipboard != -1) {
