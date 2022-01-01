@@ -228,12 +228,17 @@ struct passthrough_data {
 struct tonemapping_data {
 	float exposure;
 	int tonemapper;
-	float toeS;
-	float toeL;
-	
-	float shoulderS;
-	float shoulderL;
-	float shoulderA;
+	float x0; //from here on these are for the PPC tonemappers
+	float y0;
+
+	float x1;
+	float toe_B;
+	float toe_lnA;
+	float sh_B;
+
+	float sh_lnA;
+	float sh_offsetX;
+	float sh_offsetY;
 	float pad[1];
 };
 
