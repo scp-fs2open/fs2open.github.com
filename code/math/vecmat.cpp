@@ -10,6 +10,7 @@
 
 
 #include <cstdio>
+#include <numeric>
 #if _M_IX86_FP >= 1
 	#include <xmmintrin.h>
 #endif
@@ -1606,7 +1607,7 @@ float vm_closest_angle_to_matrix(const matrix* mat, const vec3d* rot_axis, float
 	const float z = (a[0]*(m[5]-m[7]) + a[1]*(-m[2]+m[6]) + a[2]*(m[1]-m[3]));
 
 	// If both y and z are close to 0, then the rotation axis points in the same direction as the matrix, thus any orientation r would be perpendicular to m
-	if(fabs(y) < 0.01f && fabs(z) < 0.01f){
+	if(fabs(y) < 0.001f && fabs(z) < 0.001f){
 		*angle = 0.0f;
 		return PI_2;
 	}
@@ -1619,10 +1620,13 @@ float vm_closest_angle_to_matrix(const matrix* mat, const vec3d* rot_axis, float
 	const float sr_pos = sqrtf(1-(sr/(y*y+4*z*z)));
 	const float sr_neg = sqrtf(1+(sr/(y*y+4*z*z)));
 
-	const float solutions[] = {2 * atan2_safe(-2 * sr_neg, -sr_neg*(y*y+sr)/(y*z)),
-							   2 * atan2_safe(2 * sr_neg, sr_neg*(y*y+sr)/(y*z)),
-							   2 * atan2_safe(-2 * sr_pos, -sr_pos*(y*y-sr)/(y*z)),
-							   2 * atan2_safe(2 * sr_pos, sr_pos*(y*y-sr)/(y*z))};
+	//If we support IEEE float handling, we don't need this, the div by 0 will be handled correctly with the INF. If not, do this:
+	const float yz_recip = (!std::numeric_limits<float>::is_iec559 && y*z < 0.001f) ? FLT_MAX : 1.0f / (y * z);
+
+	const float solutions[] = {2 * atan2_safe(-2 * sr_neg, -sr_neg*(y*y+sr) * yz_recip),
+							   2 * atan2_safe(2 * sr_neg, sr_neg*(y*y+sr) * yz_recip),
+							   2 * atan2_safe(-2 * sr_pos, -sr_pos*(y*y-sr) * yz_recip),
+							   2 * atan2_safe(2 * sr_pos, sr_pos*(y*y-sr) * yz_recip)};
 
 	float value = -2.0f;
 	float correct = 0;
