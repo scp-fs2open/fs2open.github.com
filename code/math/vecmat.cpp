@@ -1587,7 +1587,7 @@ void vm_matrix_to_rot_axis_and_angle(const matrix *m, float *theta, vec3d *rot_a
 
 // Given a rotation axis, calculates the angle that results in the rotation closest to the given matrix m.
 // If the axis is equal or very close to the orientation of the matrix, returns false and an angle of 0
-bool vm_closest_angle_to_matrix(const matrix* mat, const vec3d* rot_axis, float* angle){
+float vm_closest_angle_to_matrix(const matrix* mat, const vec3d* rot_axis, float* angle){
 	// The relative rotation between m and the target rotation r (made from axis a and angle x) is m^T.r
 	// The resulting angle between those, as shown by http://www.boris-belousov.net/2016/12/01/quat-dist/ is arccos((tr(m^T.r)-1) / 2)
 
@@ -1602,13 +1602,13 @@ bool vm_closest_angle_to_matrix(const matrix* mat, const vec3d* rot_axis, float*
 	const auto& a = rot_axis->a1d;
 
 	const float w = m[0]+m[4]+m[8];
-	const float y = 2 * ( m[0]*(a[1]*a[1]+a[2]*a[2]) + m[4]*(a[0]*a[0]+a[2]*a[2]) + m[8]*(a[0]*a[0]+a[1]*a[1]) - a[0]*a[1]*(m[1]+m[3]) - a[0]*a[2]*(m[2]+m[6]) - a[1]*a[2]*(m[5]+m[7]));
+	const float y = -2 * ( m[0]*(a[1]*a[1]+a[2]*a[2]) + m[4]*(a[0]*a[0]+a[2]*a[2]) + m[8]*(a[0]*a[0]+a[1]*a[1]) - a[0]*a[1]*(m[1]+m[3]) - a[0]*a[2]*(m[2]+m[6]) - a[1]*a[2]*(m[5]+m[7]));
 	const float z = (a[0]*(m[5]-m[7]) + a[1]*(-m[2]+m[6]) + a[2]*(m[1]-m[3]));
 
 	// If both y and z are close to 0, then the rotation axis points in the same direction as the matrix, thus any orientation r would be perpendicular to m
 	if(fabs(y) < 0.01f && fabs(z) < 0.01f){
 		*angle = 0.0f;
-		return false;
+		return PI_2;
 	}
 
 	// arccos((x-1)/2) is then minimal, when x between -1 and 3 approaches 3
@@ -1642,7 +1642,7 @@ bool vm_closest_angle_to_matrix(const matrix* mat, const vec3d* rot_axis, float*
 		correct += PI2;
 
 	*angle = correct;
-	return true;
+	return acosf_safe((value - 1.0f) * 0.5f);
 }
 
 
