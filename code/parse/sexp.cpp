@@ -1964,11 +1964,27 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 			if (!(Sexp_nodes[modifier_node].type & SEXP_FLAG_VARIABLE) &&
 					(Sexp_nodes[modifier_node].subtype != SEXP_ATOM_CONTAINER)) {
 				if (container.is_list()) {
+					const auto modifier = list_modifier::get_modifier(Sexp_nodes[modifier_node].text);
 					if ((Sexp_nodes[modifier_node].subtype != SEXP_ATOM_STRING) ||
-							(list_modifier::get_modifier(Sexp_nodes[modifier_node].text) == ListModifier::INVALID)) {
+							(modifier == ListModifier::INVALID)) {
 						if (bad_node)
 							*bad_node = modifier_node;
 						return SEXP_CHECK_INVALID_LIST_MODIFIER;
+					}
+					if (modifier == ListModifier::AT_INDEX) {
+						const int list_index_node = CDR(modifier_node);
+						if (list_index_node == -1) {
+							if (bad_node)
+								*bad_node = modifier_node;
+							return SEXP_CHECK_INVALID_LIST_MODIFIER;
+						}
+						// we can't check that index < length because we don't know what the length will be then
+						if (Sexp_nodes[list_index_node].subtype != SEXP_ATOM_NUMBER ||
+								atoi(Sexp_nodes[list_index_node].text) < 0) {
+							if (bad_node)
+								*bad_node = list_index_node;
+							return SEXP_CHECK_INVALID_LIST_MODIFIER;
+						}
 					}
 				} else if (container.is_map()) {
 					if ((any(container.type & ContainerType::NUMBER_KEYS) &&
