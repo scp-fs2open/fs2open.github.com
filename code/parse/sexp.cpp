@@ -1777,6 +1777,38 @@ int count_items_with_name(const char *name, const T* item_array, int num_items)
 	return count;
 }
 
+
+// SEXP type checking for variables and container data
+bool check_data_type(int type, bool is_string, bool is_number)
+{
+	switch (type) {
+		case OPF_NUMBER:
+		case OPF_POSITIVE:
+			return is_number;
+
+		case OPF_AMBIGUOUS:
+		case OPF_GAME_SND:
+		case OPF_FIREBALL:
+		case OPF_WEAPON_BANK_NUMBER:
+			// either type is ok
+			return true;
+
+		default:
+			return is_string;
+	}
+}
+
+bool check_container_data_type(int type, ContainerType con_type)
+{
+	return check_data_type(type,
+		any(con_type & ContainerType::STRING_DATA),
+		any(con_type & ContainerType::NUMBER_DATA));
+}
+
+bool check_variable_data_type(int type, int var_type) {
+	return check_data_type(type, (var_type & SEXP_VARIABLE_STRING), (var_type & SEXP_VARIABLE_NUMBER));
+}
+
 /**
  * Check SEXP syntax
  * @return 0 if ok, negative if there's an error in expression..
@@ -1960,6 +1992,10 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 			Assert(p_container); // name was already checked in get_sexp()
 			const auto &container = *p_container;
 
+			if (!check_container_data_type(type, container.type)) {
+				return SEXP_CHECK_WRONG_CONTAINER_DATA_TYPE;
+			}
+
 			// ignore nested "Replace" uses
 			if (!(Sexp_nodes[modifier_node].type & SEXP_FLAG_VARIABLE) &&
 					(Sexp_nodes[modifier_node].subtype != SEXP_ATOM_CONTAINER)) {
@@ -2016,23 +2052,9 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 			var_index = sexp_get_variable_index(node);
 			Assert(var_index != -1);
 	
-			switch (type) {
-				case OPF_NUMBER:
-				case OPF_POSITIVE:
-					if (!(Sexp_variables[var_index].type & SEXP_VARIABLE_NUMBER)) 
-						return SEXP_CHECK_INVALID_VARIABLE_TYPE; 
-				break;
-
-				case OPF_AMBIGUOUS:
-				case OPF_GAME_SND:
-				case OPF_FIREBALL:
-				case OPF_WEAPON_BANK_NUMBER:
-					break;
-
-				default: 
-					if (!(Sexp_variables[var_index].type & SEXP_VARIABLE_STRING)) 
-						return SEXP_CHECK_INVALID_VARIABLE_TYPE; 
-			}			
+			if (!check_variable_data_type(type, Sexp_variables[var_index].type)) {
+				return SEXP_CHECK_INVALID_VARIABLE_TYPE;
+			}
 			node = Sexp_nodes[node].rest;
 			argnum++;
 			continue; 
@@ -30363,6 +30385,9 @@ const char *sexp_error_message(int num)
 
 		case SEXP_CHECK_WRONG_CONTAINER_TYPE:
 			return "Wrong container type";
+
+		case SEXP_CHECK_WRONG_CONTAINER_DATA_TYPE:
+			return "Wrong container data type";
 
 		default:
 			Warning(LOCATION, "Unhandled sexp error code %d!", num);
