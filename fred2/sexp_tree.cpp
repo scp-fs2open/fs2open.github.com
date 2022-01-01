@@ -807,7 +807,7 @@ void sexp_tree::right_clicked(int mode)
 								if (Sexp_variables[idx].type & SEXP_VARIABLE_SET) {
 									// skip block variables
 									if (Sexp_variables[idx].type & SEXP_VARIABLE_BLOCK) {
-										continue; 
+										continue;
 									}
 
 									UINT flags = MF_STRING | MF_GRAYED;
@@ -849,44 +849,44 @@ void sexp_tree::right_clicked(int mode)
 									replace_variable_menu->AppendMenu(flags, (ID_VARIABLE_MENU + idx), buf);
 								}
 							}
-						}
 
-						// Replace Container Name submenu
-						if (is_container_opf_type(op_type)) {
-							int container_name_index = 0;
-							for (const auto &container : get_all_sexp_containers()) {
-								UINT flags = MF_STRING;
+							// Replace Container Name submenu
+							if (is_container_opf_type(op_type)) {
+								int container_name_index = 0;
+								for (const auto &container : get_all_sexp_containers()) {
+									UINT flags = MF_STRING | MF_GRAYED;
 
-								if ((op_type == OPF_LIST_CONTAINER_NAME) && !container.is_list()) {
-									flags |= MF_GRAYED;
-								} else if ((op_type == OPF_MAP_CONTAINER_NAME) && !container.is_map()) {
-									flags |= MF_GRAYED;
+									if ((op_type == OPF_LIST_CONTAINER_NAME) && container.is_list()) {
+										flags &= ~MF_GRAYED;
+									} else if ((op_type == OPF_MAP_CONTAINER_NAME) && container.is_map()) {
+										flags &= ~MF_GRAYED;
+									}
+
+									replace_container_name_menu->AppendMenu(flags,
+										(ID_CONTAINER_NAME_MENU + container_name_index++),
+										container.container_name.c_str());
 								}
-
-								replace_container_name_menu->AppendMenu(flags,
-									(ID_CONTAINER_NAME_MENU + container_name_index++),
-									container.container_name.c_str());
 							}
-						}
 
-						// Replace Container Data submenu
-						// disallowed on variable-type SEXP args, to prevent FSO/FRED crashes
-						if (op_type != OPF_VARIABLE_NAME) {
-							int container_data_index = 0;
-							for (const auto &container : get_all_sexp_containers()) {
-								UINT flags = MF_STRING;
+							// Replace Container Data submenu
+							// disallowed on variable-type SEXP args, to prevent FSO/FRED crashes
+							if (op_type != OPF_VARIABLE_NAME) {
+								int container_data_index = 0;
+								for (const auto &container : get_all_sexp_containers()) {
+									UINT flags = MF_STRING | MF_GRAYED;
 
-								if ((type & SEXPT_STRING) && none(container.type & ContainerType::STRING_DATA)) {
-									flags |= MF_GRAYED;
+									if ((type & SEXPT_STRING) && any(container.type & ContainerType::STRING_DATA)) {
+										flags &= ~MF_GRAYED;
+									}
+
+									if ((type & SEXPT_NUMBER) && any(container.type & ContainerType::NUMBER_DATA)) {
+										flags &= ~MF_GRAYED;
+									}
+
+									replace_container_data_menu->AppendMenu(flags,
+										(ID_CONTAINER_DATA_MENU + container_data_index++),
+										container.container_name.c_str());
 								}
-
-								if ((type & SEXPT_NUMBER) && none(container.type & ContainerType::NUMBER_DATA)) {
-									flags |= MF_GRAYED;
-								}
-
-								replace_container_data_menu->AppendMenu(flags,
-									(ID_CONTAINER_DATA_MENU + container_data_index++),
-									container.container_name.c_str());
 							}
 						}
 					//}
