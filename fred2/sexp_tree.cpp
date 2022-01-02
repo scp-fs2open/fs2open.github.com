@@ -1076,38 +1076,54 @@ void sexp_tree::right_clicked(int mode)
 
 		// container multidimensionality
 		if (tree_nodes[item_index].type & SEXPT_CONTAINER_DATA) {
-			add_type = OPR_STRING;
+			// using local var for add count to avoid breaking implicit assumptions about Add_count
+			const int modifier_node = tree_nodes[item_index].child;
+			Assert(modifier_node != -1);
+			const int modifier_add_count = count_args(modifier_node);
 
-			// the next thing we want to add could literally be any legal key for any map or the legal entries for a list container
-			// so give the FREDder a hand and offer the list modifiers, but only the FREDder can know if they're relevant
-			list = get_listing_opf(OPF_LIST_MODIFIER, item_index, Add_count);
-			Assert(list);
+			const auto *p_container = get_sexp_container(tree_nodes[item_index].text);
+			Assert(p_container);
 
-			if (list) {
-				sexp_list_item *ptr = nullptr;
+			if (modifier_add_count == 1 && p_container->is_list() &&
+				list_modifier::get_modifier(tree_nodes[modifier_node].text) == ListModifier::AT_INDEX) {
+				// only valid value is a list index
+				add_type = OPR_NUMBER;
+				menu.EnableMenuItem(ID_ADD_NUMBER, MF_ENABLED);
+			} else {
+				// container multidimensionality
+				add_type = OPR_STRING;
 
-				int data_idx = 0;
-				ptr = list;
-				while (ptr) {
-					if (ptr->op >= 0) {
-						// enable operators with correct return type
-						menu.EnableMenuItem(Operators[ptr->op].value, MF_ENABLED);
-					} else {
-						// add data
-						if ((data_idx + 3) % 30) {
-							add_data_menu->AppendMenu(MF_STRING | MF_ENABLED, ID_ADD_MENU + data_idx, ptr->text.c_str());
+				// the next thing we want to add could literally be any legal key for any map or the legal entries for a list container
+				// so give the FREDder a hand and offer the list modifiers, but only the FREDder can know if they're relevant
+				list = get_listing_opf(OPF_LIST_MODIFIER, item_index, Add_count);
+				Assert(list);
+
+				if (list) {
+					sexp_list_item *ptr = nullptr;
+
+					int data_idx = 0;
+					ptr = list;
+					while (ptr) {
+						if (ptr->op >= 0) {
+							// enable operators with correct return type
+							menu.EnableMenuItem(Operators[ptr->op].value, MF_ENABLED);
 						} else {
-							add_data_menu->AppendMenu(MF_MENUBARBREAK | MF_STRING | MF_ENABLED, ID_ADD_MENU + data_idx, ptr->text.c_str());
+							// add data
+							if ((data_idx + 3) % 30) {
+								add_data_menu->AppendMenu(MF_STRING | MF_ENABLED, ID_ADD_MENU + data_idx, ptr->text.c_str());
+							} else {
+								add_data_menu->AppendMenu(MF_MENUBARBREAK | MF_STRING | MF_ENABLED, ID_ADD_MENU + data_idx, ptr->text.c_str());
+							}
 						}
+
+						data_idx++;
+						ptr = ptr->next;
 					}
-
-					data_idx++;
-					ptr = ptr->next;
 				}
-			}
 
-			menu.EnableMenuItem(ID_ADD_NUMBER, MF_ENABLED);
-			menu.EnableMenuItem(ID_ADD_STRING, MF_ENABLED);
+				menu.EnableMenuItem(ID_ADD_NUMBER, MF_ENABLED);
+				menu.EnableMenuItem(ID_ADD_STRING, MF_ENABLED);
+			}
 		} else if (tree_nodes[item_index].flags & OPERAND)	{
 			add_type = OPR_STRING;
 			int child = tree_nodes[item_index].child;
@@ -1248,7 +1264,17 @@ void sexp_tree::right_clicked(int mode)
 
 			// Container modifiers use their own list of possible arguments
 			if (tree_nodes[item_index].type & SEXPT_MODIFIER) {
-				list = modifier_get_listing_opf(parent, Replace_count);
+				const auto *p_container = get_sexp_container(tree_nodes[parent].text);
+				Assert(p_container != nullptr);
+				const int first_modifier = tree_nodes[parent].child;
+				if (Replace_count == 1 && p_container->is_list() &&
+					list_modifier::get_modifier(tree_nodes[first_modifier].text) == ListModifier::AT_INDEX) {
+					// only valid value is a list index (number)
+					list = nullptr;
+					replace_type = OPR_NUMBER;
+				} else {
+					list = modifier_get_listing_opf(parent, Replace_count);
+				}
 			} else {
 				list = get_listing_opf(type, parent, Replace_count);
 			}
@@ -1349,18 +1375,18 @@ void sexp_tree::right_clicked(int mode)
 
 			if (tree_nodes[item_index].type & SEXPT_MODIFIER) {
 				Assert(tree_nodes[parent].type & SEXPT_CONTAINER_DATA);
+				const int first_modifier_node = tree_nodes[parent].child;
+				Assert(first_modifier_node != -1);
+				const auto *p_container = get_sexp_container(tree_nodes[parent].text);
+				Assert(p_container);
+				const auto &container = *p_container;
 
 				if (Replace_count == 0) {
-					const auto *p_container = get_sexp_container(tree_nodes[parent].text);
-					Assert(p_container);
-					const auto &container = *p_container;
-
 					if (container.is_list()) {
 						// the only valid values are either the list modifiers or Replace Variable/Cotnainer Data with string data
 						menu.EnableMenuItem(ID_REPLACE_NUMBER, MF_GRAYED);
 						menu.EnableMenuItem(ID_REPLACE_STRING, MF_GRAYED);
 						menu.EnableMenuItem(ID_EDIT_TEXT, MF_GRAYED);
-						// FIXME TODO: ensure list_modifiers are present in Replace Data submenu
 					} else if (container.is_map()) {
 						if (any(container.type & ContainerType::STRING_KEYS)) {
 							menu.EnableMenuItem(ID_REPLACE_NUMBER, MF_GRAYED);
@@ -1374,6 +1400,11 @@ void sexp_tree::right_clicked(int mode)
 					} else {
 						UNREACHABLE("Unknown container type %d", (int)container.type);
 					}
+				} else if (Replace_count == 1 && container.is_list() &&
+						   list_modifier::get_modifier(tree_nodes[first_modifier_node].text) ==
+							   ListModifier::AT_INDEX) {
+					// only valid value is a list index
+					menu.EnableMenuItem(ID_REPLACE_NUMBER, MF_ENABLED);
 				} else {
 					// multidimensional modifiers can be anything, including possibly a list modifier
 					// the value can be validated only at runtime (i.e., in-mission)
