@@ -63,21 +63,20 @@ extern int timer_get_seconds();				// seconds since program started... not accur
 // scale it correctly.
 #define TIMESTAMP_FREQUENCY 1000
 
-// Call this at least every 600 hours, I would
-// say at the start of each level should do it.
-extern void timestamp_reset();
+// This should be called when the timestamp should stop ticking, e.g when the game is paused.
+// The "sudo" is for cases where we want the time to remain paused, e.g. during level loading,
+//     even if the game loses focus (which would normally unpause when focus is regained)
+void timer_pause_timestamp(bool sudo = false);
 
-// Call this once every frame with the frametime.
-extern void timestamp_inc(fix frametime);
+// This should be called when the timestamp should resume ticking, e.g. when the player is in-mission.
+// See above re: the sudo parameter
+void timer_unpause_timestamp(bool sudo = false);
 
-/**
- * @brief Sets the value of the internal timestamp ticker
- *
- * @warning This function may only be used in special cases! Only use if you are absolutely certain that you need it.
- *
- * @param value The new value of the ticker
- */
-void timestamp_set_value(int value);
+// Save the timestamp corresponding to the beginning of the mission
+void timer_start_mission();
+
+// Calculate the current mission time using the timestamps
+fix timer_get_mission_time();
 
 // To do timing, call this with the interval you
 // want to check.  Then, pass this to timestamp_elapsed

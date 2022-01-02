@@ -457,6 +457,8 @@ void credits_init()
 		}
 	}
 
+	game_start_time();
+
 	// Use this id to trigger the start of music playing on the briefing screen
 	Credits_music_begin_timestamp = timestamp(Credits_music_delay);
 
@@ -661,8 +663,6 @@ void credits_close()
 	}	
 	Credits_bmps.clear();
 
-	credits_stop_music(true);
-
 	Credit_text_parts.clear();
 
 	if (Background_bitmap){
@@ -671,6 +671,11 @@ void credits_close()
 
 	Ui_window.destroy();
 	common_free_interface_palette();		// restore game palette
+
+
+	// non-UI stuff
+	game_stop_time();
+	credits_stop_music(true);
 }
 
 void credits_do_frame(float  /*frametime*/)
@@ -837,7 +842,6 @@ void credits_do_frame(float  /*frametime*/)
 
 	Credits_frametime = temp_time - Credits_last_time;
 	Credits_last_time = temp_time;
-	timestamp_inc(i2f(Credits_frametime) / TIMESTAMP_FREQUENCY);
 
 	float fl_frametime = i2fl(Credits_frametime) / 1000.f;
 	if (keyd_pressed[KEY_LSHIFT]) {

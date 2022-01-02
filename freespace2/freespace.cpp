@@ -227,8 +227,7 @@ void game_reset_view_clip();
 void game_reset_shade_frame();
 void game_post_level_init();
 void game_do_frame(bool set_frametime = true);
-void game_update_missiontime();	// called from game_do_frame() and navmap_do_frame()
-void game_reset_time();
+void game_time_level_init();
 void game_show_framerate();			// draws framerate in lower right corner
 
 struct big_expl_flash {
@@ -306,6 +305,8 @@ fix Game_time_compression = F1_0;
 fix Desired_time_compression = Game_time_compression;
 fix Time_compression_change_rate = 0;
 bool Time_compression_locked = false; //Can the user change time with shift- controls?
+
+static bool Lazily_start_timestamps = false;
 
 // auto-lang stuff
 int detect_lang();
@@ -954,7 +955,7 @@ void game_level_init()
 	batch_reset();
 
 	// Initialize the game subsystems
-	game_reset_time();			// resets time, and resets saved time too
+	game_time_level_init();
 
 	Multi_ping_timestamp = -1;
 
@@ -996,10 +997,11 @@ void game_level_init()
 	asteroid_level_init();
 	control_config_clear_used_status();
 	collide_ship_ship_sounds_init();
-	Missiontime = 0;
+
 	Skybox_timestamp = game_get_overall_frametime();
 	Pre_player_entry = 1;			//	Means the player has not yet entered.
 	Entry_delay_time = 0;			//	Could get overwritten in mission read.
+
 	observer_init();
 	flak_level_init();				// initialize flak - bitmaps, etc
 	ct_level_init();				// initialize ships contrails, etc
@@ -3612,10 +3614,11 @@ void game_simulation_frame()
 	player_maybe_play_all_alone_msg();	// maybe tell the player he is all alone	
 
 	if(!(Game_mode & GM_STANDALONE_SERVER)){		
-		// process some stuff every frame (before frame is rendered)
-		emp_process_local();
+		if ( !Pre_player_entry ){
+			emp_process_local();
 
-		hud_update_frame(flFrametime);						// update hud systems
+			hud_update_frame(flFrametime);						// update hud systems
+		}
 
 		if (!physics_paused)	{
 			// Move particle system
@@ -3634,17 +3637,16 @@ void game_simulation_frame()
 		// subspace missile strikes
 		ssm_process();
 
-		obj_snd_do_frame();						// update the object-linked persistant sounds
+		if ( !Pre_player_entry ){
+			obj_snd_do_frame();						// update the object-linked persistant sounds
 
-		game_maybe_update_sound_environment();
-		snd_update_listener(&Eye_position, &Player_obj->phys_info.vel, &Eye_matrix);
+			game_maybe_update_sound_environment();
+			snd_update_listener(&Eye_position, &Player_obj->phys_info.vel, &Eye_matrix);
 
-// AL: debug code used for testing ambient subspace sound (ie when enabling subspace through debug console)
-#ifndef NDEBUG
-		if ( Game_subspace_effect ) {
-			game_start_subspace_ambient_sound();
+			if ( Game_subspace_effect ) {
+				game_start_subspace_ambient_sound();
+			}
 		}
-#endif
 	}
 
 	// Kick off externally injected operations after the simulation step has finished
@@ -4123,17 +4125,14 @@ void game_frame(bool paused)
 fix Last_time = 0;						// The absolute time of game at end of last frame (beginning of this frame)
 fix Last_delta_time = 0;				// While game is paused, this keeps track of how much elapsed in the frame before paused.
 static int timer_paused=0;
-int saved_timestamp_ticker = -1;
 
-void game_reset_time()
+void game_time_level_init()
 {
-	if((Game_mode & GM_MULTIPLAYER) && (Netgame.game_state == NETGAME_STATE_SERVER_TRANSFER)){
-		return ;
-	}
+	// Pause the time so that timestamps set on initialization will not elapse during mission loading.
+	timer_pause_timestamp(true);
 
-	game_start_time();
-	timestamp_reset();
-	game_stop_time();
+	Missiontime = 0;
+	timer_start_mission();
 }
 
 void game_stop_time()
@@ -4150,12 +4149,12 @@ void game_stop_time()
 		}
 
 		// Stop the timer_tick stuff...
-		saved_timestamp_ticker = timestamp();
+		timer_pause_timestamp();
 	}
 	timer_paused++;
 }
 
-void game_start_time()
+void game_start_time(bool lazy_start)
 {
 	timer_paused--;
 	Assert(timer_paused >= 0);
@@ -4169,10 +4168,10 @@ void game_start_time()
 		Last_time = time - Last_delta_time;		
 
 		// Restore the timer_tick stuff...
-		// Normally, you should never access 'timestamp_ticker', consider this a low-level routine
-		Assert( saved_timestamp_ticker > -1 );		// Called out of order, get JAS
-		timestamp_set_value(saved_timestamp_ticker);
-		saved_timestamp_ticker = -1;
+		// (unless we're lazily starting, in which case defer this until we start running game frames)
+		if (!lazy_start) {
+			timer_unpause_timestamp();
+		}
 	}
 }
 
@@ -4300,8 +4299,6 @@ void game_set_frametime(int state)
 
 	flFrametime = f2fl(Frametime);
 
-	timestamp_inc(Frametime);
-
 	// wrap overall frametime if needed
 	if ( FrametimeOverall > (INT_MAX - F1_0) )
 		FrametimeOverall = 0;
@@ -4314,17 +4311,20 @@ fix game_get_overall_frametime()
 	return FrametimeOverall;
 }
 
-// This is called from game_do_frame(), and from navmap_do_frame() 
 void game_update_missiontime()
 {
-	// TODO JAS: Put in if and move this into game_set_frametime, 
-	// fix navmap to call game_stop/start_time
-	//if ( !timer_paused )	
-		Missiontime += Frametime;
+	Missiontime = timer_get_mission_time();
 }
 
 void game_do_frame(bool set_frametime)
 {
+	// Originally, timestamps didn't start getting incremented until game_set_frametime.
+	// Since we now use the SDL timer, the deferred start of timestamps needs to happen here.
+	if (Lazily_start_timestamps) {
+		timer_unpause_timestamp(true);
+		Lazily_start_timestamps = false;
+	}
+
 	if (set_frametime) {
 		game_set_frametime(GS_STATE_GAME_PLAY);
 	}
@@ -5786,8 +5786,11 @@ void mouse_force_pos(int x, int y);
 							(old_state == GS_STATE_MULTI_MISSION_SYNC)
 						)
 					)
-				)
-					game_start_time();
+				) {
+					// Since there's a bit more setup to do, let's not actually start the timestamps until we are running game frames
+					game_start_time(true);
+					Lazily_start_timestamps = true;
+			}
 
 			// when coming from the multi paused state, reset the timestamps
 			if ( (Game_mode & GM_MULTIPLAYER) && (old_state == GS_STATE_MULTI_PAUSED) ){
@@ -5814,15 +5817,12 @@ void mouse_force_pos(int x, int y);
 			Game_subspace_effect = 0;
 			if (The_mission.flags[Mission::Mission_Flags::Subspace]) {
 				Game_subspace_effect = 1;
-				if( !(Game_mode & GM_STANDALONE_SERVER) ){	
-					game_start_subspace_ambient_sound();
-				}
 			}
 
 			sound_env_set(&Game_sound_env);
 			joy_ff_mission_init(Ship_info[Player_ship->ship_info_index].rotation_time);
 
-			// clear multiplayer button info			i
+			// clear multiplayer button info
 			extern button_info Multi_ship_status_bi;
 			memset(&Multi_ship_status_bi, 0, sizeof(button_info));
 			

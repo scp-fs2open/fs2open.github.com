@@ -24,6 +24,14 @@ static Uint64 Timer_base_value;
 
 static int Timer_inited = 0;
 
+static uint64_t Timer_timestamp_offset_from_counter = 0;
+static uint64_t Timer_timestamp_paused_at_counter = 0;
+
+static uint64_t Timestamp_microseconds_at_mission_start = 0;
+
+// forward declarations
+static uint64_t timestamp_get_microseconds();
+
 
 #define MICROSECONDS_PER_SECOND 1000000
 #define NANOSECONDS_PER_SECOND 1000000000
@@ -55,6 +63,11 @@ void timer_init()
 		Timer_to_nanoseconds = (long double) NANOSECONDS_PER_SECOND / (long double) Timer_perf_counter_freq;
 		Timer_to_microseconds = (long double) MICROSECONDS_PER_SECOND / (long double) Timer_perf_counter_freq;
 		Timer_inited = 1;
+
+		// set up the config so that timestamps are usable
+		// (timestamps are used in the UI and in some init functions, not just within the mission)
+		timer_pause_timestamp();
+		timer_unpause_timestamp();
 
 		atexit(timer_close);
 	}
@@ -112,15 +125,58 @@ std::uint64_t timer_get_nanoseconds()
     return (uint64_t) (time * Timer_to_nanoseconds);
 }
 
+static bool Timer_is_paused = false;
+static bool Timer_sudo_paused = false;
+
+void timer_pause_timestamp(bool sudo)
+{
+	if (sudo)
+		Timer_sudo_paused = true;
+	if (Timer_is_paused)
+		return;
+	Timer_is_paused = true;
+
+	Timer_timestamp_paused_at_counter = get_performance_counter();
+}
+
+void timer_unpause_timestamp(bool sudo)
+{
+	if (Timer_sudo_paused && !sudo)
+		return;
+	if (sudo)
+		Timer_sudo_paused = false;
+	Timer_is_paused = false;
+
+	auto counter = get_performance_counter();
+
+	if (Timer_timestamp_offset_from_counter == 0) {
+		Timer_timestamp_offset_from_counter = counter;
+	} else {
+		// update our offset to take into account the time we were paused
+		Timer_timestamp_offset_from_counter += (counter - Timer_timestamp_paused_at_counter);
+	}
+}
+
+void timer_start_mission()
+{
+	Timestamp_microseconds_at_mission_start = timestamp_get_microseconds();
+}
+
+fix timer_get_mission_time()
+{
+	// convert timestamp to mission time
+	// c.f. timer_get_fixed_seconds
+
+	auto time = (timestamp_get_microseconds() - Timestamp_microseconds_at_mission_start);
+	time *= 65536;
+
+	return (fix)(time / MICROSECONDS_PER_SECOND);
+}
+
+
 // 0 means invalid,
 // 1 means always return true
 // 2 and above actually check the time
-std::uint64_t timestamp_ticker = 2;
-
-void timestamp_reset()
-{
-	timestamp_ticker = 2;
-}
 
 // Restrict all time values between 0 and MAX_TIME
 // so we don't have to use UINTs to calculate rollover.
@@ -128,30 +184,23 @@ void timestamp_reset()
 // something like 1 minute (60000).
 extern const std::uint32_t MAX_TIME = INT_MAX / 2;
 
-static int timestamp_ms() {
-	if (timestamp_ticker <= 2) {
-		// These are special values, don't adjust them
-		return (int)timestamp_ticker;
+static uint64_t timestamp_get_microseconds() {
+
+	// TODO - time compression needs to be handled here
+
+	uint64_t timestamp_raw;
+	if (Timer_is_paused) {
+		timestamp_raw = Timer_timestamp_paused_at_counter;
+	} else {
+		timestamp_raw = get_performance_counter();
 	}
-	return (int)(timestamp_ticker / 1000);
+	timestamp_raw -= Timer_timestamp_offset_from_counter;
+
+	return (uint64_t)(timestamp_raw * Timer_to_microseconds);
 }
 
-void timestamp_inc(fix frametime)
-{
-	// Compute the microseconds, assumes that a fix uses the lower 16 bit for storing the fractional part
-	auto delta = (std::uint64_t)frametime;
-	delta = delta * (MICROSECONDS_PER_SECOND / 65536);
-
-	timestamp_ticker += delta;
-
-	if ( timestamp_ms() > (int)MAX_TIME )	{
-		timestamp_ticker = 2;		// Roll!
-	}
-
-	if (timestamp_ticker < 2 ) {
-		mprintf(("Whoa!!!  timestamp_ticker < 2 -- resetting to 2!!!\n"));
-		timestamp_ticker = 2;
-	}
+static int timestamp_ms() {
+	return (int)(timestamp_get_microseconds() / 1000);
 }
 
 int timestamp(int delta_ms ) {
@@ -223,7 +272,3 @@ bool timestamp_elapsed_safe(int a, int b) {
 
 	return timestamp_ms() >= a || timestamp_ms() < (a - b + 100);
 }
-void timestamp_set_value(int value) {
-	timestamp_ticker = (std::uint64_t) value * 1000;
-}
-

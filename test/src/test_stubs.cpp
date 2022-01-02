@@ -190,7 +190,7 @@ void game_leave_state(int, int){}
 int Test_begin;
 int Debug_octant;
 int Framerate_delay;
-void game_start_time(){}
+void game_start_time(bool){}
 void game_stop_time(){}
 int game_get_default_skill_level(){return 0;}
 int find_freespace_cd(char*){return 0;}

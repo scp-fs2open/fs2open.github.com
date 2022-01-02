@@ -98,7 +98,7 @@ void game_level_close();
 void game_stop_time();
 
 // start the game (mission) timer
-void game_start_time();
+void game_start_time(bool lazy_start = false);
 
 // call whenever in a loop or if you need to get a keypress
 int game_check_key();
