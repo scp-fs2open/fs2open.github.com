@@ -826,7 +826,7 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 		return;
 
 	is_homing = FALSE;
-	if ( target_wip->is_homing() && wp->homing_object != &obj_used_list )
+	if ( target_wip->is_homing() && weapon_has_homing_object(wp) )
 		is_homing = TRUE;
 
 	is_player_missile = FALSE;

@@ -8,11 +8,17 @@ uniform sampler2D tex;
 layout (std140) uniform genericData {
 	float exposure;
 	int tonemapper;
-	float toeS;
-	float toeL;
-	float shoulderS;
-	float shoulderL;
-	float shoulderA;
+	float x0; //from here on these are for the PPC tonemappers
+	float y0;
+
+	float x1;
+	float toe_B;
+	float toe_lnA;
+	float sh_B;
+
+	float sh_lnA;
+	float sh_offsetX;
+	float sh_offsetY;
 };
 //Tonemapping options, aside from the previous standard UC2, pulled from wookiejedi and qazwsxal's
 //work on testing them for FSO, which itself was based on these references:
@@ -109,29 +115,7 @@ vec3 linearToneMapping(vec3 hdr_color)
 	hdr_color = linear_to_srgb(hdr_color); // return from linear color space to SRGB color space
 	return hdr_color;
 }
-/*
- float toeStrength = toeS; // [0-1]
- float toeLength = toeL; // [0-1]
- float shoulderStrength = shoulderS; // in F stops
- float shoulderLength = shoulderL; // [0-1]
- float shoulderAngle = shoulderA; // [0-1]
-*/
-// LEAVE ALONE
-float x0 = toeL * 0.5f;
-float y0 = (1.0f - toeS) * x0;
-float remainingY = 1.0f - y0;
-float initialW = x0 + remainingY;
-float y1_offset = (1.0f - shoulderL) * remainingY;
-float x1 = x0 + y1_offset;
-float y1 = y0 + y1_offset;
-float extraW = exp2(shoulderS) - 1.0f;
-float W = initialW + extraW;
-float overshootX = (W * 2.0f) * shoulderS + (x0-y0);
-float overshootY = 0.5f * shoulderA;
 
-// Assume slope (m) is always 1.0
-float	toe_B = x0/y0;
-float toe_lnA = log(y0) - toe_B*log(x0);
 float toe( float x ) {
 	return exp(toe_lnA + toe_B * log(x));
 }
@@ -140,14 +124,6 @@ float linear( float x ) {
 	// Slope is 1 by definition
 	return y0 + (x - x0);
 }
-
-float sh_x0 = (1.0 + overshootX) - x1;
-float sh_y0 = (1.0 + overshootY) - y1;
-
-float sh_B = sh_x0/sh_y0;
-float sh_lnA = log(sh_y0) - sh_B*log(sh_x0);
-float sh_offsetX = 1.0 + overshootX;
-float sh_offsetY = 1.0 + overshootY;
 
 float shoulder ( float x ) {
 	// Scale is -1 so reverse subtraction to save a mult
