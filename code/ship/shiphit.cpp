@@ -1701,8 +1701,6 @@ void ship_generic_kill_stuff( object *objp, float percent_killed )
 		sp->final_death_time = timestamp(100);
 	}
 
-	//nprintf(("AI", "Time = %7.3f: final_death_time set to %7.3f\n", (float) timestamp_ticker/1000.0f, (float) sp->final_death_time/1000.0f));
-
 	sp->pre_death_explosion_happened = 0;				// The little fireballs haven't came in yet.
 
 	sp->next_fireball = timestamp(0);	//start one right away
