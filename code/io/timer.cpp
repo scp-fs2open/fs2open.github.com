@@ -125,7 +125,7 @@ void timestamp_reset()
 // Restrict all time values between 0 and MAX_TIME
 // so we don't have to use UINTs to calculate rollover.
 // For debugging & testing, you could set this to
-// something like 1 minute (6000).
+// something like 1 minute (60000).
 extern const std::uint32_t MAX_TIME = INT_MAX / 2;
 
 static int timestamp_ms() {
