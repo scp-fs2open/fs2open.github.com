@@ -154,11 +154,13 @@ piecewise_power_curve_intermediates lighting_profile::current_piecewise_intermed
 piecewise_power_curve_intermediates lighting_profile::calc_intermediates(piecewise_power_curve_values input){
 
 	piecewise_power_curve_intermediates ppci;
+
+	//Some safety clamping based on John Hable's implementation: https://github.com/johnhable/fw-public
 	CLAMP(input.toe_length, 0.0f, 1.0f);
 	CLAMP(input.toe_strength, 0.0f, 1.0f);
 	CLAMP(input.shoulder_angle, 0.0f, 1.0f);
 	CLAMP(input.shoulder_length, 0.0f, 1.0f);
-	input.shoulder_strength = fmax(0.0f,input.shoulder_strength);
+	input.shoulder_strength = fmax(0.0f, input.shoulder_strength);
 
 	ppci.x0 = input.toe_length * 0.5f; //L,F,P
 	ppci.y0 = (1.0f - input.toe_strength) * ppci.x0; //L
