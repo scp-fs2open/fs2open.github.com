@@ -302,6 +302,7 @@ public:
 	void reset();
 };
 
+float model_render_get_point_activation(glow_point_bank* bank, glow_point_bank_override* gpo);
 void model_render_immediate(model_render_params* render_info, int model_num, matrix* orient, vec3d* pos, int render = MODEL_RENDER_ALL, bool sort = true);
 void model_render_immediate(model_render_params* render_info, int model_num, int model_instance_num, matrix* orient, vec3d* pos, int render = MODEL_RENDER_ALL, bool sort = true);
 void model_render_queue(model_render_params* render_info, model_draw_list* scene, int model_num, matrix* orient, vec3d* pos);
