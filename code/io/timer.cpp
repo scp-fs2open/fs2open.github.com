@@ -63,7 +63,7 @@ void timer_init()
 fix timer_get_fixed_seconds()
 {
 	if (!Timer_inited) {
-		Int3();					// Make sure you call timer_init before anything that uses timer functions!
+		UNREACHABLE("Make sure you call timer_init before anything that uses timer functions!");
 		return 0;
 	}
 
@@ -81,7 +81,7 @@ fix timer_get_approx_seconds()
 int timer_get_seconds()
 {
 	if (!Timer_inited) {
-		Int3();
+		UNREACHABLE("Make sure you call timer_init before anything that uses timer functions!");
 		return 0;
 	}
 
@@ -91,7 +91,7 @@ int timer_get_seconds()
 int timer_get_milliseconds()
 {
 	if (!Timer_inited) {
-		Int3();					// Make sure you call timer_init before anything that uses timer functions!
+		UNREACHABLE("Make sure you call timer_init before anything that uses timer functions!");
 		return 0;
 	}
 
