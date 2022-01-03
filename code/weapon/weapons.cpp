@@ -4236,8 +4236,6 @@ void weapon_init()
 		Weapons_inited = true;
 	}
 
-	weapon_level_init();
-
 	if (Cmdline_spew_weapon_stats != WeaponSpewType::NONE)
 		weapon_spew_stats(Cmdline_spew_weapon_stats);
 }

@@ -63,7 +63,7 @@ void timer_init()
 fix timer_get_fixed_seconds()
 {
 	if (!Timer_inited) {
-		Int3();					// Make sure you call timer_init before anything that uses timer functions!
+		UNREACHABLE("Make sure you call timer_init before anything that uses timer functions!");
 		return 0;
 	}
 
@@ -81,7 +81,7 @@ fix timer_get_approx_seconds()
 int timer_get_seconds()
 {
 	if (!Timer_inited) {
-		Int3();
+		UNREACHABLE("Make sure you call timer_init before anything that uses timer functions!");
 		return 0;
 	}
 
@@ -91,7 +91,7 @@ int timer_get_seconds()
 int timer_get_milliseconds()
 {
 	if (!Timer_inited) {
-		Int3();					// Make sure you call timer_init before anything that uses timer functions!
+		UNREACHABLE("Make sure you call timer_init before anything that uses timer functions!");
 		return 0;
 	}
 
@@ -125,7 +125,7 @@ void timestamp_reset()
 // Restrict all time values between 0 and MAX_TIME
 // so we don't have to use UINTs to calculate rollover.
 // For debugging & testing, you could set this to
-// something like 1 minute (6000).
+// something like 1 minute (60000).
 extern const std::uint32_t MAX_TIME = INT_MAX / 2;
 
 static int timestamp_ms() {
