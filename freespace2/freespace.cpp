@@ -4135,7 +4135,7 @@ void game_time_level_init()
 	timer_start_mission();
 }
 
-void game_stop_time()
+void game_stop_time(bool by_os_focus)
 {
 	if (timer_paused==0) {
 		fix time;
@@ -4149,12 +4149,13 @@ void game_stop_time()
 		}
 
 		// Stop the timer_tick stuff...
-		timer_pause_timestamp();
+		// We always want to 'sudo' the change, unless this is caused by the focus, because we want the game to have priority in that case
+		timer_pause_timestamp(!by_os_focus);
 	}
 	timer_paused++;
 }
 
-void game_start_time(bool lazy_start)
+void game_start_time(bool by_os_focus)
 {
 	timer_paused--;
 	Assert(timer_paused >= 0);
@@ -4169,8 +4170,9 @@ void game_start_time(bool lazy_start)
 
 		// Restore the timer_tick stuff...
 		// (unless we're lazily starting, in which case defer this until we start running game frames)
-		if (!lazy_start) {
-			timer_unpause_timestamp();
+		if (!Lazily_start_timestamps) {
+			// We always want to 'sudo' the change, unless this is caused by the focus, because we want the game to have priority in that case
+			timer_unpause_timestamp(!by_os_focus);
 		}
 	}
 }
@@ -4400,9 +4402,9 @@ int game_poll()
 		// Cyborg17 - Multiplayer *must not* have its time affected by being in the background.
 		// otherwise, ship interpolation will become inaccurate.
 		if (!os_foreground() && !(Game_mode & GM_MULTIPLAYER)) {
-			game_stop_time();
+			game_stop_time(true);
 			os_sleep(1);
-			game_start_time();
+			game_start_time(true);
 			if ((gameseq_get_state() == GS_STATE_GAME_PLAY) && (!popup_active()) && (!popupdead_is_active())) {
 				game_process_pause_key();
 
@@ -5788,8 +5790,8 @@ void mouse_force_pos(int x, int y);
 					)
 				) {
 					// Since there's a bit more setup to do, let's not actually start the timestamps until we are running game frames
-					game_start_time(true);
 					Lazily_start_timestamps = true;
+					game_start_time();
 			}
 
 			// when coming from the multi paused state, reset the timestamps

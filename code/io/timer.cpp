@@ -66,8 +66,8 @@ void timer_init()
 
 		// set up the config so that timestamps are usable
 		// (timestamps are used in the UI and in some init functions, not just within the mission)
-		timer_pause_timestamp();
-		timer_unpause_timestamp();
+		timer_pause_timestamp(true);
+		timer_unpause_timestamp(true);
 
 		atexit(timer_close);
 	}

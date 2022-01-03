@@ -66,11 +66,11 @@ extern int timer_get_seconds();				// seconds since program started... not accur
 // This should be called when the timestamp should stop ticking, e.g when the game is paused.
 // The "sudo" is for cases where we want the time to remain paused, e.g. during level loading,
 //     even if the game loses focus (which would normally unpause when focus is regained)
-void timer_pause_timestamp(bool sudo = false);
+void timer_pause_timestamp(bool sudo);
 
 // This should be called when the timestamp should resume ticking, e.g. when the player is in-mission.
 // See above re: the sudo parameter
-void timer_unpause_timestamp(bool sudo = false);
+void timer_unpause_timestamp(bool sudo);
 
 // Save the timestamp corresponding to the beginning of the mission
 void timer_start_mission();
