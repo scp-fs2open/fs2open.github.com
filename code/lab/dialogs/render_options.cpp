@@ -308,6 +308,7 @@ void RenderOptions::open(Button* /*caller*/) {
 	exposure_sldr->SetSliderValue(lighting_profile::current_exposure());
 	dialogWindow->AddChild(exposure_sldr);
 	y += exposure_sldr->GetHeight() + 2;
+
 	auto ppcv = lighting_profile::lab_get_ppc();
 
 	auto ppcts_sldr= new Slider("PPC: Toe Strength", 0, 1, 0, y + 2, set_ppc_ts, dialogWindow->GetWidth());
@@ -334,6 +335,7 @@ void RenderOptions::open(Button* /*caller*/) {
 	ppcss_sldr->SetSliderValue(ppcv.shoulder_strength);
 	dialogWindow->AddChild(ppcss_sldr);
 	y += ppcss_sldr->GetHeight() + 2;
+
 	// start tree
 	auto cmp = (Tree*)dialogWindow->AddChild(new Tree("Detail Options Tree", 0, y + 2, nullptr, dialogWindow->GetWidth()));
 
@@ -357,6 +359,7 @@ void RenderOptions::open(Button* /*caller*/) {
 	cmp->AddItem(aa_header, "SMAA High",   (int)AntiAliasMode::SMAA_High,   false, change_aa_setting);
 	cmp->AddItem(aa_header, "SMAA Ultra",  (int)AntiAliasMode::SMAA_Ultra,  false, change_aa_setting);
 
+	//see lighting_profiles.h for documentation and lighting_profiles.cpp for implementation of these options
 	auto tonemapper = cmp->AddItem(nullptr, "Tonemapper", 0, false);
 	cmp->AddItem(tonemapper, "Linear", (int)TonemapperAlgorithm::tnm_Linear, false, change_tonemapper_setting );
 	cmp->AddItem(tonemapper, "Uncharted", (int)TonemapperAlgorithm::tnm_Uncharted, false, change_tonemapper_setting );
