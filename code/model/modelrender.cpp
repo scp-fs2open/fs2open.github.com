@@ -1786,7 +1786,7 @@ void model_render_glowpoint(int point_num, vec3d *pos, matrix *orient, glow_poin
 	}
 }
 
-void model_render_glowpoint_add_light(int point_num, vec3d *pos, matrix *orient, glow_point_bank *bank, glow_point_bank_override *gpo, polymodel *pm, polymodel_instance *pmi, ship* shipp, bool use_depth_buffer)
+void model_render_glowpoint_add_light(int point_num, vec3d *pos, matrix *orient, glow_point_bank *bank, glow_point_bank_override *gpo, polymodel *pm, polymodel_instance *pmi, ship* shipp)
 {
 	if(Detail.lighting <= 3 || !Deferred_lighting || gpo==nullptr || !gpo->is_lightsource) {
 		return;
@@ -2066,7 +2066,7 @@ void model_render_glow_points(polymodel *pm, polymodel_instance *pmi, ship *ship
 					if(render_sprites)
 						model_render_glowpoint(j, pos, orient, bank, gpo, pm, pmi, shipp, use_depth_buffer);
 					if(add_lights)
-						model_render_glowpoint_add_light(j, pos, orient, bank, gpo, pm, pmi, shipp, use_depth_buffer);
+						model_render_glowpoint_add_light(j, pos, orient, bank, gpo, pm, pmi, shipp);
 				} // flick
 			} // for slot
 		} // bank is on
@@ -2992,7 +2992,7 @@ void model_render_queue(model_render_params* interp, model_draw_list* scene, int
 		}
 	}
 }
-void model_render_only_glowpoint_lights(model_render_params* interp, model_draw_list* scene, int model_num, int model_instance_num, matrix* orient, vec3d* pos)
+void model_render_only_glowpoint_lights(model_render_params* interp, int model_num, int model_instance_num, matrix* orient, vec3d* pos)
 {
 	const int objnum = interp->get_object_number();
 	const int model_flags = interp->get_model_flags();

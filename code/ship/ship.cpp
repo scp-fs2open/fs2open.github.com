@@ -19721,7 +19721,7 @@ void ship_render(object* obj, model_draw_list* scene)
 		if (!(Viewer_mode & VM_TOPDOWN))
 		{
 			render_info.set_object_number(OBJ_INDEX(obj));
-			model_render_only_glowpoint_lights(&render_info, scene, sip->model_num, -1, &obj->orient, &obj->pos);
+			model_render_only_glowpoint_lights(&render_info, sip->model_num, -1, &obj->orient, &obj->pos);
 			return;
 		}
 	}
