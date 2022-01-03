@@ -974,7 +974,7 @@ void control_config_use_preset(CC_preset &preset)
 	}
 }
 
-bool control_config_use_preset_by_name(SCP_string name) {
+bool control_config_use_preset_by_name(const SCP_string &name) {
 	auto it = std::find_if(Control_config_presets.begin(), Control_config_presets.end(),
 		[name](CC_preset &preset) {return preset.name == name;});
 
