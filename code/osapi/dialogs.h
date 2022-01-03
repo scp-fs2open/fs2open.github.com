@@ -132,11 +132,11 @@ namespace os
 }
 
 // Make these available in the global namespace for compatibility
-using os::dialogs::LuaError;
-using os::dialogs::Error;
-using os::dialogs::Warning;
-using os::dialogs::ReleaseWarning;
-using os::dialogs::WarningEx;
-using os::dialogs::Information;
+using os::dialogs::LuaError; //NOLINT
+using os::dialogs::Error; //NOLINT
+using os::dialogs::Warning; //NOLINT
+using os::dialogs::ReleaseWarning; //NOLINT
+using os::dialogs::WarningEx; //NOLINT
+using os::dialogs::Information; //NOLINT
 
 #endif // _OSAPI_DIALOGS_H
