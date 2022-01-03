@@ -696,7 +696,7 @@ void control_config_use_preset(CC_preset &preset);
  * @details If the preset does not exist, then defaults are used instead.
  * @see control_config_use_preset()
  */
-bool control_config_use_preset_by_name(SCP_string name);
+bool control_config_use_preset_by_name(const SCP_string &name);
 
 /**
  * @brief Gets the currently used preset
