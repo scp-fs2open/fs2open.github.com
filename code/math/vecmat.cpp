@@ -1603,7 +1603,8 @@ float vm_closest_angle_to_matrix(const matrix* mat, const vec3d* rot_axis, float
 	const auto& a = rot_axis->a1d;
 
 	const float w = m[0]+m[4]+m[8];
-	const float y = -2 * ( m[0]*(a[1]*a[1]+a[2]*a[2]) + m[4]*(a[0]*a[0]+a[2]*a[2]) + m[8]*(a[0]*a[0]+a[1]*a[1]) - a[0]*a[1]*(m[1]+m[3]) - a[0]*a[2]*(m[2]+m[6]) - a[1]*a[2]*(m[5]+m[7]));
+	const float y = -2 * ( m[0]*(a[1]*a[1]+a[2]*a[2]) + m[4]*(a[0]*a[0]+a[2]*a[2]) + m[8]*(a[0]*a[0]+a[1]*a[1]) -
+			      a[0]*a[1]*(m[1]+m[3]) - a[0]*a[2]*(m[2]+m[6]) - a[1]*a[2]*(m[5]+m[7]));
 	const float z = (a[0]*(m[5]-m[7]) + a[1]*(-m[2]+m[6]) + a[2]*(m[1]-m[3]));
 
 	// If both y and z are close to 0, then the rotation axis points in the same direction as the matrix, thus any orientation r would be perpendicular to m
