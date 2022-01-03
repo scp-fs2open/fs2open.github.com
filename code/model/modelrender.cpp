@@ -19,6 +19,7 @@
 #include "graphics/uniforms.h"
 #include "io/timer.h"
 #include "jumpnode/jumpnode.h"
+#include "lighting/lighting.h"
 #include "math/staticrand.h"
 #include "mod_table/mod_table.h"
 #include "nebula/neb.h"
@@ -1734,30 +1735,6 @@ void model_render_glowpoint(int point_num, vec3d *pos, matrix *orient, glow_poin
 						batching_add_bitmap(bitmap_id, &p, 0, (w * 0.5f), d * pulse);
 					}
 				}
-			} //d>0.0f
-
-			if ( Detail.lighting > 3 && Deferred_lighting && gpo && gpo->is_lightsource ) {
-				if ( gpo->lightcone ) {
-					vec3d cone_dir_rot;
-					vec3d cone_dir_model;
-					vec3d cone_dir_world;
-					vec3d cone_dir_screen;
-					vec3d unused;
-
-					if ( gpo->rotating ) {
-						vm_rot_point_around_line(&cone_dir_rot, &gpo->cone_direction, PI * timestamp() * 0.000033333f * gpo->rotation_speed, &vmd_zero_vector, &gpo->rotation_axis);
-					} else {
-						cone_dir_rot = gpo->cone_direction; 
-					}
-
-					find_submodel_instance_point_normal(&unused, &cone_dir_model, pm, pmi, bank->submodel_parent, &unused, &cone_dir_rot);
-					vm_vec_unrotate(&cone_dir_world, &cone_dir_model, orient);
-					vm_vec_rotate(&cone_dir_screen, &cone_dir_world, &Eye_matrix);
-					cone_dir_screen.xyz.z = -cone_dir_screen.xyz.z;
-					light_add_cone(&world_pnt, &cone_dir_screen, gpo->cone_angle, gpo->cone_inner_angle, gpo->dualcone, 1.0f, w * gpo->radius_multi, 1, pulse * gpo->light_color.xyz.x + (1.0f-pulse) * gpo->light_mix_color.xyz.x, pulse * gpo->light_color.xyz.y + (1.0f-pulse) * gpo->light_mix_color.xyz.y, pulse * gpo->light_color.xyz.z + (1.0f-pulse) * gpo->light_mix_color.xyz.z, -1);
-				} else {
-					light_add_point(&world_pnt, 1.0f, w * gpo->radius_multi, 1, pulse * gpo->light_color.xyz.x + (1.0f-pulse) * gpo->light_mix_color.xyz.x, pulse * gpo->light_color.xyz.y + (1.0f-pulse) * gpo->light_mix_color.xyz.y, pulse * gpo->light_color.xyz.z + (1.0f-pulse) * gpo->light_mix_color.xyz.z, -1);
-				}
 			}
 			break;
 		}
@@ -1805,6 +1782,88 @@ void model_render_glowpoint(int point_num, vec3d *pos, matrix *orient, glow_poin
 			}
 
 			break;
+		}
+	}
+}
+
+void model_render_glowpoint_add_light(int point_num, vec3d *pos, matrix *orient, glow_point_bank *bank, glow_point_bank_override *gpo, polymodel *pm, polymodel_instance *pmi, ship* shipp, bool use_depth_buffer)
+{
+	if(Detail.lighting <= 3 || !Deferred_lighting || gpo==nullptr || !gpo->is_lightsource) {
+		return;
+	}
+	glow_point *gpt = &bank->points[point_num];
+	vec3d loc_offset = gpt->pnt;
+	vec3d loc_norm = gpt->norm;
+	vec3d world_pnt;
+	vec3d world_norm;
+	vec3d tempv;
+	vec3d submodel_static_offset; // The associated submodel's static offset in the ship's frame of reference
+	bool submodel_rotation = false;
+
+	if ( bank->submodel_parent > 0 && pm->submodel[bank->submodel_parent].flags[Model::Submodel_flags::Can_move] && shipp != nullptr ) {
+		model_find_submodel_offset(&submodel_static_offset, pm, bank->submodel_parent);
+
+		submodel_rotation = true;
+	}
+
+	if ( submodel_rotation ) {
+		vm_vec_sub(&loc_offset, &gpt->pnt, &submodel_static_offset);
+
+		tempv = loc_offset;
+		find_submodel_instance_point_normal(&loc_offset, &loc_norm, pm, pmi, bank->submodel_parent, &tempv, &loc_norm);
+	}
+
+	vm_vec_unrotate(&world_pnt, &loc_offset, orient);
+	vm_vec_add2(&world_pnt, pos);
+
+	vm_vec_unrotate(&world_norm, &loc_norm, orient);
+
+	if (shipp != nullptr && shipp->warpout_effect != nullptr) {
+		// don't render if its on the wrong side of the portal
+		WarpEffect* warp_effect = nullptr;
+
+		if ((shipp->is_arriving()) && Warp_params[shipp->warpin_params_index].warp_type != WT_HYPERSPACE) {
+			warp_effect = shipp->warpin_effect;
+		}
+		else if ((shipp->flags[Ship::Ship_Flags::Depart_warp]) && Warp_params[shipp->warpout_params_index].warp_type != WT_HYPERSPACE) {
+			warp_effect = shipp->warpout_effect;
+		}
+
+		if (warp_effect != nullptr && point_is_clipped_by_warp(&world_pnt, warp_effect))
+			return;
+	}
+
+	if( (gpo->type_override?gpo->type:bank->type)==0)
+	{
+		float pulse = model_render_get_point_activation(bank, gpo);
+		vec3d lightcolor;
+		//fade between mix and normal color depending on pulse state
+		lightcolor.xyz.x =pulse * gpo->light_color.xyz.x + (1.0f-pulse) * gpo->light_mix_color.xyz.x;
+		lightcolor.xyz.y =pulse * gpo->light_color.xyz.y + (1.0f-pulse) * gpo->light_mix_color.xyz.y;
+		lightcolor.xyz.z =pulse * gpo->light_color.xyz.z + (1.0f-pulse) * gpo->light_mix_color.xyz.z;
+		float light_radius = gpt->radius * gpo->radius_multi;
+		if ( gpo->lightcone ) {
+			vec3d cone_dir_rot;
+			vec3d cone_dir_model;
+			vec3d cone_dir_world;
+			vec3d cone_dir_screen;
+			vec3d unused;
+
+			if ( gpo->rotating ) {
+				vm_rot_point_around_line(&cone_dir_rot, &gpo->cone_direction, PI * timestamp() * 0.000033333f * gpo->rotation_speed, &vmd_zero_vector, &gpo->rotation_axis);
+			} else {
+				cone_dir_rot = gpo->cone_direction;
+			}
+
+			find_submodel_instance_point_normal(&unused, &cone_dir_model, pm, pmi, bank->submodel_parent, &unused, &cone_dir_rot);
+			vm_vec_unrotate(&cone_dir_world, &cone_dir_model, orient);
+			vm_vec_rotate(&cone_dir_screen, &cone_dir_world, &Eye_matrix);
+			cone_dir_screen.xyz.z = -cone_dir_screen.xyz.z;
+			light_add_cone(
+				&world_pnt, &cone_dir_screen, gpo->cone_angle, gpo->cone_inner_angle, gpo->dualcone, 1.0f, light_radius, 1,
+				lightcolor.xyz.x, lightcolor.xyz.y, lightcolor.xyz.z,-1);
+		} else {
+			light_add_point(&world_pnt, 1.0f, light_radius, 1,	lightcolor.xyz.x, lightcolor.xyz.y, lightcolor.xyz.z, -1);
 		}
 	}
 }
@@ -1939,7 +1998,7 @@ void model_render_set_glow_points(polymodel *pm, int objnum)
 	}
 }
 
-void model_render_glow_points(polymodel *pm, polymodel_instance *pmi, ship *shipp, matrix *orient, vec3d *pos, bool use_depth_buffer = true)
+void model_render_glow_points(polymodel *pm, polymodel_instance *pmi, ship *shipp, matrix *orient, vec3d *pos, bool use_depth_buffer = true,bool render_sprites = true, bool add_lights= true)
 {
 	Assert(pmi == nullptr || pm->id == pmi->model_num);
 
@@ -2004,7 +2063,10 @@ void model_render_glow_points(polymodel *pm, polymodel_instance *pmi, ship *ship
 				}
 
 				if (flick == 1) {
-					model_render_glowpoint(j, pos, orient, bank, gpo, pm, pmi, shipp, use_depth_buffer);
+					if(render_sprites)
+						model_render_glowpoint(j, pos, orient, bank, gpo, pm, pmi, shipp, use_depth_buffer);
+					if(add_lights)
+						model_render_glowpoint_add_light(j, pos, orient, bank, gpo, pm, pmi, shipp, use_depth_buffer);
 				} // flick
 			} // for slot
 		} // bank is on
@@ -2928,6 +2990,62 @@ void model_render_queue(model_render_params* interp, model_draw_list* scene, int
 		} else {
 			model_queue_render_thrusters( interp, pm, objnum, shipp, orient, pos );
 		}
+	}
+}
+void model_render_only_glowpoint_lights(model_render_params* interp, model_draw_list* scene, int model_num, int model_instance_num, matrix* orient, vec3d* pos)
+{
+	const int objnum = interp->get_object_number();
+	const int model_flags = interp->get_model_flags();
+
+	polymodel *pm = model_get(model_num);
+	polymodel_instance *pmi = nullptr;
+
+	model_render_set_glow_points(pm, objnum);
+
+	ship *shipp = nullptr;
+	object *objp = nullptr;
+
+	if (objnum >= 0) {
+		objp = &Objects[objnum];
+		int tentative_num = -1;
+
+		if (objp->type == OBJ_SHIP) {
+			shipp = &Ships[objp->instance];
+			tentative_num = shipp->model_instance_num;
+		}
+		else {
+			tentative_num = object_get_model_instance(objp);
+		}
+
+		if (tentative_num >= 0) {
+			model_instance_num = tentative_num;
+		}
+	}
+
+	// is this a skybox with a rotating submodel?
+	extern int Nmodel_num, Nmodel_instance_num;
+	if (model_num == Nmodel_num && Nmodel_instance_num >= 0) {
+		model_instance_num = Nmodel_instance_num;
+	}
+
+	if (model_instance_num >= 0) {
+		pmi = model_get_instance(model_instance_num);
+
+		// This can happen if we supply a HUD target model for a real ship.
+		// The passed parameter was -1 but it was assigned an instance from
+		// the actual object.  Set it back to -1 if there is a mismatch.
+		if (pmi->model_num != pm->id) {
+			model_instance_num = -1;
+			pmi = nullptr;
+		}
+	}
+
+	bool is_outlines_only = (model_flags & MR_NO_POLYS) && ((model_flags & MR_SHOW_OUTLINE_PRESET) || (model_flags & MR_SHOW_OUTLINE));
+	bool is_outlines_only_htl = (model_flags & MR_NO_POLYS) && (model_flags & MR_SHOW_OUTLINE_HTL);
+
+	// start rendering glow points -Bobboau
+	if ( (pm->n_glow_point_banks) && !is_outlines_only && !is_outlines_only_htl && !Glowpoint_override ) {
+		model_render_glow_points(pm, pmi, shipp, orient, pos, Glowpoint_use_depth_buffer,false,true);
 	}
 }
 

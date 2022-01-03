@@ -19716,9 +19716,12 @@ void ship_render(object* obj, model_draw_list* scene)
 		return;
 	}
 
+	model_render_params render_info;
 	if ( obj == Viewer_obj && !Rendering_to_shadow_map ) {
 		if (!(Viewer_mode & VM_TOPDOWN))
 		{
+			render_info.set_object_number(OBJ_INDEX(obj));
+			model_render_only_glowpoint_lights(&render_info, scene, sip->model_num, -1, &obj->orient, &obj->pos);
 			return;
 		}
 	}
@@ -19758,7 +19761,6 @@ void ship_render(object* obj, model_draw_list* scene)
 		
 	ship_render_batch_thrusters(obj);
 
-	model_render_params render_info;
 	
 	if ( !(shipp->flags[Ship_Flags::Disabled]) && !ship_subsys_disrupted(shipp, SUBSYSTEM_ENGINE) && show_thrusters) {
 		mst_info mst;
