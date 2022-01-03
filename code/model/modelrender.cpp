@@ -1814,8 +1814,9 @@ void model_render_glowpoint(int point_num, vec3d *pos, matrix *orient, glow_poin
 */
 float model_render_get_point_activation(glow_point_bank* bank, glow_point_bank_override* gpo)
 {
-	if(!(gpo && gpo->pulse_type)){
-		return 1.0f;}
+	if(gpo == nullptr ||  !(gpo->pulse_type)){
+		return 1.0f;
+	}
 
 	float pulse = 1.0f;
 	int period;
@@ -1831,31 +1832,30 @@ float model_render_get_point_activation(glow_point_bank* bank, glow_point_bank_o
 	}
 
 	int x = 0;
+	int disp_time = gpo->disp_time_override ? gpo->disp_time : bank->disp_time;
+  	int on_time = gpo->on_time_override ? gpo->on_time : bank->on_time;
+  	int off_time = gpo->off_time_override ? gpo->off_time : bank->off_time;
 
-	if ((gpo && gpo->off_time_override) ? gpo->off_time : bank->off_time) {
-		x = (timestamp() - ((gpo && gpo->disp_time_override) ? gpo->disp_time : bank->disp_time)) %
-				(((gpo && gpo->on_time_override) ? gpo->on_time : bank->on_time) +
-					((gpo && gpo->off_time_override) ? gpo->off_time : bank->off_time)) -
-			((gpo && gpo->off_time_override) ? gpo->off_time : bank->off_time);
+	if ( off_time) {
+  		x = (timestamp() - disp_time) % ( on_time + off_time ) - off_time;
 	} else {
-		x = (timestamp() - ((gpo && gpo->disp_time_override) ? gpo->disp_time : bank->disp_time)) % gpo->pulse_period;
+  		x = (timestamp() - disp_time) % gpo->pulse_period;
 	}
 
 	switch (gpo->pulse_type) {
 
 	case PULSE_SIN:
-		pulse = gpo->pulse_bias + gpo->pulse_amplitude * pow(sin(PI2 / period * x), gpo->pulse_exponent);
+		pulse = gpo->pulse_bias + gpo->pulse_amplitude * pow(sin(PI2 / period * x),gpo->pulse_exponent);
 		break;
 
 	case PULSE_COS:
-		pulse = gpo->pulse_bias + gpo->pulse_amplitude * pow(cos(PI2 / period * x), gpo->pulse_exponent);
+		pulse = gpo->pulse_bias + gpo->pulse_amplitude * pow(cos(PI2 / period * x),gpo->pulse_exponent);
 		break;
 
 	case PULSE_SHIFTTRI:
 		x += period / 4;
-		if ((gpo && gpo->off_time_override) ? gpo->off_time : bank->off_time) {
-			x %= (((gpo && gpo->on_time_override) ? gpo->on_time : bank->on_time) +
-				  ((gpo && gpo->off_time_override) ? gpo->off_time : bank->off_time));
+		if(off_time) {
+			x %= on_time + off_time;
 		} else {
 			x %= gpo->pulse_period;
 		}
@@ -1863,21 +1863,21 @@ float model_render_get_point_activation(glow_point_bank* bank, glow_point_bank_o
 
 	case PULSE_TRI:
 		float inv;
-		if (x > period / 2) {
+		if( x > period / 2) {
 			inv = -1;
 		} else {
 			inv = 1;
 		}
-		if (x > period / 4) {
-			pulse = gpo->pulse_bias +
-					gpo->pulse_amplitude * inv * pow(1.0f - ((x - period / 4.0f) * 4 / period), gpo->pulse_exponent);
+		if( x > period / 4) {
+			pulse = gpo->pulse_bias + gpo->pulse_amplitude * inv * pow( 1.0f - ((x - period / 4.0f) * 4 / period) ,gpo->pulse_exponent);
 		} else {
-			pulse = gpo->pulse_bias + gpo->pulse_amplitude * inv * pow((x * 4.0f / period), gpo->pulse_exponent);
+			pulse = gpo->pulse_bias + gpo->pulse_amplitude * inv * pow( (x * 4.0f / period) ,gpo->pulse_exponent);
 		}
 		break;
 	}
 	return pulse;
 }
+
 void model_render_set_glow_points(polymodel *pm, int objnum)
 {
 	int time = timestamp();
