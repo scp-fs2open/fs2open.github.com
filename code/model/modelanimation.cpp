@@ -444,20 +444,18 @@ namespace animation {
 
 	//To handle Multipart-turrets properly, they need a modified version that sets the actual angle, not just the orientation matrix.
 	void ModelAnimationSubmodelTurret::copyToSubmodel(const ModelAnimationData<>& data, polymodel_instance* pmi) {
-		submodel_instance* submodel = findSubmodel(pmi).first;
+		const auto& submodels = findSubmodel(pmi);
+		submodel_instance* submodel = submodels.first;
+		bsp_info* sm = submodels.second;
 
 		if (!submodel)
 			return;
 
 		submodel->canonical_orient = data.orientation;
 
-		float angle;
-		vec3d axis;
-		vm_matrix_to_rot_axis_and_angle(&submodel->canonical_orient, &angle, &axis);
-		while (angle > PI2)
-			angle -= PI2;
-		while (angle < 0.0f)
-			angle += PI2;
+		float angle = 0.0f;
+
+		vm_closest_angle_to_matrix(&submodel->canonical_orient, &sm->movement_axis, &angle);
 
 		submodel->cur_angle = angle;
 		submodel->turret_idle_angle = angle;
