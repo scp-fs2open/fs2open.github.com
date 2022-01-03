@@ -1027,6 +1027,8 @@ CFileLocation cf_find_file_location(const char* filespec, int pathtype, bool loc
 
 
 	for (ui=0; ui<num_search_dirs; ui++ )	{
+		cfs_slow_search = 0;
+
 		switch (search_order[ui])
 		{
 			case CF_TYPE_ROOT:
@@ -1202,6 +1204,8 @@ CFileLocationExt cf_find_file_location_ext( const char *filename, const int ext_
 	strncpy(filespec, filename, MAX_FILENAME_LEN-1);
 
 	for (ui = 0; ui < num_search_dirs; ui++) {
+		cfs_slow_search = 0;
+
 		// always hit the disk if we are looking in only one path
 		if (num_search_dirs == 1) {
 			cfs_slow_search = 1;
