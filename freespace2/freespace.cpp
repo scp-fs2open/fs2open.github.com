@@ -4412,14 +4412,14 @@ int game_poll()
 
 	int k = key_inkey();
 
-	// Move the mouse cursor with the joystick.
+	// Move the mouse cursor with the joystick. Currently uses Joystick0
 	if (os_foreground() && !io::mouse::CursorManager::get()->isCursorShown() && (Use_joy_mouse))	{
 		// Move the mouse cursor with the joystick
 		int mx, my;
 
 		int raw_axis[2];
 
-		joystick_read_raw_axis(2, raw_axis);
+		joystick_read_raw_axis(CID_JOY0, 2, raw_axis);
 
 		int jx = joy_get_scaled_reading(raw_axis[0]);
 		int jy = joy_get_scaled_reading(raw_axis[1]);
@@ -4432,7 +4432,7 @@ int game_poll()
 			mouse_set_pos( mx+dx, my+dy );
 		}
 
-		int j = joy_down(0);
+		int j = joy_down(CC_bind(CID_JOY0, 0));
 		int m = mouse_down(MOUSE_LEFT_BUTTON);
 
 		if ( j != Joymouse_button_status )	{

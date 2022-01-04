@@ -44,6 +44,8 @@ class FileHandler {
  public:
 	virtual ~FileHandler() {}
 
+	virtual void writeByte(const char* name, std::int8_t value) = 0;
+
 	virtual void writeUByte(const char* name, std::uint8_t value) = 0;
 
 	virtual void writeShort(const char* name, std::int16_t value) = 0;
@@ -69,6 +71,8 @@ class FileHandler {
 	virtual void endArrayWrite() = 0;
 
 	virtual void flush() = 0;
+
+	virtual std::int8_t readByte(const char* name) = 0;
 
 	virtual std::uint8_t readUByte(const char* name) = 0;
 
