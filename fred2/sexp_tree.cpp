@@ -1537,11 +1537,24 @@ void sexp_tree::right_clicked(int mode)
 
 			} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_CONTAINER) {
 				// TODO: check for strictly typed container keys/data
-				const auto* p_container = get_sexp_container(tree_nodes[parent].text);
+				const auto *p_container = get_sexp_container(Sexp_nodes[Sexp_clipboard].text);
 				Assert(p_container != nullptr);
-				z = p_container->opf_type;
-				menu.EnableMenuItem(ID_EDIT_PASTE, MF_ENABLED);
-				menu.EnableMenuItem(ID_EDIT_PASTE_SPECIAL, MF_ENABLED);
+				const auto &container = *p_container;
+				if (any(container.type & ContainerType::NUMBER_DATA)) {
+					// there's no way to check for OPR_POSITIVE, since the value
+					// is known only in-mission, so we'll handle OPR_NUMBER only
+					if (replace_type == OPR_NUMBER)
+						menu.EnableMenuItem(ID_EDIT_PASTE, MF_ENABLED);
+					if (add_type == OPR_NUMBER)
+						menu.EnableMenuItem(ID_EDIT_PASTE_SPECIAL, MF_ENABLED);
+				} else if (any(container.type & ContainerType::STRING_DATA)) {
+					if (replace_type == OPR_STRING)
+						menu.EnableMenuItem(ID_EDIT_PASTE, MF_ENABLED);
+					if (add_type == OPR_STRING)
+						menu.EnableMenuItem(ID_EDIT_PASTE_SPECIAL, MF_ENABLED);
+				} else {
+					UNREACHABLE("Unknown container data type %d", (int)container.type);
+				}
 
 			} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_NUMBER) {
 				if ((replace_type == OPR_POSITIVE) && (atoi(CTEXT(Sexp_clipboard)) > -1))
@@ -2166,7 +2179,6 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 		int type = get_type(item_handle);
 		Assert((type & SEXPT_NUMBER) || (type & SEXPT_STRING));
 
-		// TODO: make sure that combining types in this way is correct
 		// variable/container name don't mix with container data
 		// DISCUSSME: what about variable name as SEXP arg type?
 		type &= ~(SEXPT_VARIABLE | SEXPT_CONTAINER_NAME);
@@ -2432,19 +2444,22 @@ void sexp_tree::NodePaste()
 	} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_CONTAINER) {
 		expand_operator(item_index);
 		const auto *p_container = get_sexp_container(Sexp_nodes[Sexp_clipboard].text);
-		// don't add the default data bcause we're still adding that stuff from the clipboard
-		replace_container_data(*p_container, tree_nodes[item_index].type | SEXPT_CONTAINER_DATA, false, true, false);
-		if (Sexp_nodes[Sexp_clipboard].rest != -1) {
-			Warning(LOCATION, "Paste error. Clipboard should contain more data than just the name of the container");
-			// TODO: handle paste error
+		Assert(p_container);
+		const auto &container = *p_container;
+		// this should always be true, but just in case
+		const bool has_modifiers = (Sexp_nodes[Sexp_clipboard].first != -1);
+		int new_type = tree_nodes[item_index].type & ~(SEXPT_VARIABLE | SEXPT_CONTAINER_NAME) | SEXPT_CONTAINER_DATA;
+		replace_container_data(container, new_type, false, true, !has_modifiers);
+		if (has_modifiers) {
+			load_branch(Sexp_nodes[Sexp_clipboard].first, item_index);
+			i = tree_nodes[item_index].child;
+			while (i != -1) {
+				add_sub_tree(i, tree_nodes[item_index].handle);
+				i = tree_nodes[i].next;
+			}
+		} else {
+			add_default_modifier(container);
 		}
-		load_branch(Sexp_nodes[Sexp_clipboard].first, item_index);
-		i = tree_nodes[item_index].child;
-		while (i != -1) {
-			add_sub_tree(i, tree_nodes[item_index].handle);
-			i = tree_nodes[i].next;
-		}
-		// FIXME TODO: what about copy/pasting SEXPT_MODIFIER nodes? Should that even be alllowed?
 
 	} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_NUMBER) {
 		Assert(Sexp_nodes[Sexp_clipboard].rest == -1);
@@ -2455,7 +2470,6 @@ void sexp_tree::NodePaste()
 		}
 		else {
 			expand_operator(item_index);
-			// FIXME TODO: if the node is a container modifier, we should include SEXPT_MODIFIER
 			replace_data(CTEXT(Sexp_clipboard), (SEXPT_NUMBER | SEXPT_VALID));
 		}
 
@@ -2468,7 +2482,6 @@ void sexp_tree::NodePaste()
 		}
 		else {
 			expand_operator(item_index);
-			// FIXME TODO: if the node is a container modifier, we should include SEXPT_MODIFIER
 			replace_data(CTEXT(Sexp_clipboard), (SEXPT_STRING | SEXPT_VALID));
 		}
 
@@ -2504,27 +2517,29 @@ void sexp_tree::NodeAddPaste()
 	} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_CONTAINER) {
 		expand_operator(item_index);
 		add_container_data(Sexp_nodes[Sexp_clipboard].text);
-		if (Sexp_nodes[Sexp_clipboard].rest != -1) {
-			Warning(LOCATION, "Paste error. Clipboard should contain more data than just the name of the container");
-			// TODO: handle paste error
-		}
-		load_branch(Sexp_nodes[Sexp_clipboard].first, item_index);
-		i = tree_nodes[item_index].child;
-		while (i != -1) {
-			add_sub_tree(i, tree_nodes[item_index].handle);
-			i = tree_nodes[i].next;
+		const int modifier_node = Sexp_nodes[Sexp_clipboard].first;
+		if (modifier_node != -1) {
+			load_branch(modifier_node, item_index);
+			i = tree_nodes[item_index].child;
+			while (i != -1) {
+				add_sub_tree(i, tree_nodes[item_index].handle);
+				i = tree_nodes[i].next;
+			}
+		} else {
+			// this shouldn't happen, but just in case
+			const auto *p_container = get_sexp_container(Sexp_nodes[Sexp_clipboard].text);
+			Assert(p_container);
+			add_default_modifier(*p_container);
 		}
 
 	} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_NUMBER) {
 		Assert(Sexp_nodes[Sexp_clipboard].rest == -1);
 		expand_operator(item_index);
-		// FIXME TODO: if the node is a container modifier, we should include SEXPT_MODIFIER
 		add_data(CTEXT(Sexp_clipboard), (SEXPT_NUMBER | SEXPT_VALID));
 
 	} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_STRING) {
 		Assert(Sexp_nodes[Sexp_clipboard].rest == -1);
 		expand_operator(item_index);
-		// FIXME TODO: if the node is a container modifier, we should include SEXPT_MODIFIER
 		add_data(CTEXT(Sexp_clipboard), (SEXPT_STRING | SEXPT_VALID));
 
 	} else
@@ -3487,19 +3502,17 @@ int sexp_tree::add_variable_data(const char *data, int type)
 }
 
 // add a (container) data node under operator pointed to by item_index
-int sexp_tree::add_container_data(const char* data)
+void sexp_tree::add_container_data(const char *container_name)
 {
-	expand_operator(item_index);
-	Assert(data != nullptr);
-	Assert(get_sexp_container(data) != nullptr);
-	int node = allocate_node(item_index);
-	set_node(node, (SEXPT_VALID | SEXPT_CONTAINER_DATA | SEXPT_STRING), data);
-	tree_nodes[node].handle = insert(data, BITMAP_CONTAINER_DATA, BITMAP_CONTAINER_DATA, tree_nodes[item_index].handle);
+	Assert(container_name != nullptr);
+	Assert(get_sexp_container(container_name) != nullptr);
+	const int node = allocate_node(item_index);
+	set_node(node, (SEXPT_VALID | SEXPT_CONTAINER_DATA | SEXPT_STRING), container_name);
+	tree_nodes[node].handle =
+		insert(container_name, BITMAP_CONTAINER_DATA, BITMAP_CONTAINER_DATA, tree_nodes[item_index].handle);
 	tree_nodes[node].flags = NOT_EDITABLE;
 	item_index = node;
 	*modified = 1;
-	// FIXME TODO: caller doesn't use ret value
-	return node;
 }
 
 // add an operator under operator pointed to by item_index.  Updates item_index to point

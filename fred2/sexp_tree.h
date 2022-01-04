@@ -186,7 +186,7 @@ public:
 	void add_operator(const char *op, HTREEITEM h = TVI_ROOT);
 	int add_data(const char *data, int type);
 	int add_variable_data(const char *data, int type);
-	int add_container_data(const char *data); // type info can be retrieved from the container
+	void add_container_data(const char *container_name);
 	void add_sub_tree(int node, HTREEITEM root);
 	int load_sub_tree(int index, bool valid, const char *text);
 	void hilite_item(int node);
