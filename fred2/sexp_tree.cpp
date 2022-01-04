@@ -1538,22 +1538,24 @@ void sexp_tree::right_clicked(int mode)
 			} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_CONTAINER) {
 				// TODO: check for strictly typed container keys/data
 				const auto *p_container = get_sexp_container(Sexp_nodes[Sexp_clipboard].text);
-				Assert(p_container != nullptr);
-				const auto &container = *p_container;
-				if (any(container.type & ContainerType::NUMBER_DATA)) {
-					// there's no way to check for OPR_POSITIVE, since the value
-					// is known only in-mission, so we'll handle OPR_NUMBER only
-					if (replace_type == OPR_NUMBER)
-						menu.EnableMenuItem(ID_EDIT_PASTE, MF_ENABLED);
-					if (add_type == OPR_NUMBER)
-						menu.EnableMenuItem(ID_EDIT_PASTE_SPECIAL, MF_ENABLED);
-				} else if (any(container.type & ContainerType::STRING_DATA)) {
-					if (replace_type == OPR_STRING)
-						menu.EnableMenuItem(ID_EDIT_PASTE, MF_ENABLED);
-					if (add_type == OPR_STRING)
-						menu.EnableMenuItem(ID_EDIT_PASTE_SPECIAL, MF_ENABLED);
-				} else {
-					UNREACHABLE("Unknown container data type %d", (int)container.type);
+				// if-check in case the container was renamed/deleted after the container data was cut/copied
+				if (p_container != nullptr) {
+					const auto &container = *p_container;
+					if (any(container.type & ContainerType::NUMBER_DATA)) {
+						// there's no way to check for OPR_POSITIVE, since the value
+						// is known only in-mission, so we'll handle OPR_NUMBER only
+						if (replace_type == OPR_NUMBER)
+							menu.EnableMenuItem(ID_EDIT_PASTE, MF_ENABLED);
+						if (add_type == OPR_NUMBER)
+							menu.EnableMenuItem(ID_EDIT_PASTE_SPECIAL, MF_ENABLED);
+					} else if (any(container.type & ContainerType::STRING_DATA)) {
+						if (replace_type == OPR_STRING)
+							menu.EnableMenuItem(ID_EDIT_PASTE, MF_ENABLED);
+						if (add_type == OPR_STRING)
+							menu.EnableMenuItem(ID_EDIT_PASTE_SPECIAL, MF_ENABLED);
+					} else {
+						UNREACHABLE("Unknown container data type %d", (int)container.type);
+					}
 				}
 
 			} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_NUMBER) {
