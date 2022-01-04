@@ -1608,9 +1608,15 @@ float vm_closest_angle_to_matrix(const matrix* mat, const vec3d* rot_axis, float
 	const float z = (a[0]*(m[5]-m[7]) + a[1]*(-m[2]+m[6]) + a[2]*(m[1]-m[3]));
 
 	// If both y and z are close to 0, then the rotation axis points in the same direction as the matrix, thus any orientation r would be perpendicular to m
-	if(fabs(y) < 0.001f && fabs(z) < 0.001f){
-		*angle = 0.0f;
-		return PI_2;
+	// If y is 0, the rest of the math simplifies, and we always find the angle at pi/2
+	if(fabs(y) < 0.01f) {
+		if (fabs(z) < 0.01f) {
+			*angle = 0.0f;
+			return PI_2;
+		}
+
+		*angle = PI_2;
+		return acosf_safe((w + z - 1.0f) * 0.5f);
 	}
 
 	// arccos((x-1)/2) is then minimal, when x between -1 and 3 approaches 3
