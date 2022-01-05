@@ -2168,9 +2168,10 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 
 	if ((id >= ID_CONTAINER_NAME_MENU) && (id < ID_CONTAINER_NAME_MENU + 511)) {
 		Assert(item_index >= 0);
+		Assert(is_container_argument(item_index));
 
 		const auto &containers = get_all_sexp_containers();
-		const int container_index = id - ID_CONTAINER_DATA_MENU;
+		const int container_index = id - ID_CONTAINER_NAME_MENU;
 		Assertion((container_index >= 0) && (container_index < (int)containers.size()),
 			"Unknown Container");
 
