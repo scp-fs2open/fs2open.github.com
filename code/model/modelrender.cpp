@@ -3023,7 +3023,6 @@ void model_render_only_glowpoint_lights(model_render_params* interp, int model_n
 	}
 
 	// is this a skybox with a rotating submodel?
-	extern int Nmodel_num, Nmodel_instance_num;
 	if (model_num == Nmodel_num && Nmodel_instance_num >= 0) {
 		model_instance_num = Nmodel_instance_num;
 	}
