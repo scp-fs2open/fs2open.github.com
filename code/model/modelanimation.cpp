@@ -1,5 +1,6 @@
 #include "model/modelanimation.h"
 #include "model/modelanimation_segments.h"
+#include "model/modelanimation_moveables.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
 #include "parse/encrypt.h"
@@ -23,10 +24,23 @@ namespace animation {
 	std::map<int, ModelAnimationSet::RunningAnimationList> ModelAnimationSet::s_runningAnimations;
 	std::map<unsigned int, std::shared_ptr<ModelAnimation>> ModelAnimationSet::s_animationById;
 
-	ModelAnimation::ModelAnimation(bool isInitialType) : m_set(nullptr), m_isInitialType(isInitialType) { }
+	ModelAnimation::ModelAnimation(bool isInitialType, bool isMultiCompatible, bool canStateChange, const ModelAnimationSet* defaultSet)
+		: m_set(defaultSet), m_isInitialType(isInitialType), m_isMultiCompatible(isMultiCompatible), m_canChangeState(canStateChange)
+	{ }
 
 	void ModelAnimation::setAnimation(std::shared_ptr<ModelAnimationSegment> animation) {
 		m_animation = std::move(animation);
+	}
+
+	void ModelAnimation::forceRecalculate(polymodel_instance* pmi) {
+		Assertion(m_canChangeState, "Attempted to force recalculation of an animation that is not allowed to state-change!");
+		if(!m_canChangeState)
+			return;
+
+		instance_data& instanceData = m_instances[pmi->id];
+
+		instanceData.state = ModelAnimationState::NEED_RECALC;
+		instanceData.time = 0;
 	}
 
 	ModelAnimationState ModelAnimation::play(float frametime, polymodel_instance* pmi, ModelAnimationSubmodelBuffer& applyBuffer, bool applyOnly) {
@@ -42,11 +56,18 @@ namespace animation {
 
 		switch (instanceData.state) {
 		case ModelAnimationState::UNTRIGGERED:
+		case ModelAnimationState::NEED_RECALC:
 			//We have a new animation starting up in this phase. Put it in the list of running animations to track and step it later
 			if (!m_isInitialType) {
 				auto& animEntry = ModelAnimationSet::s_runningAnimations[pmi->id];
 				animEntry.parentSet = m_set;
-				animEntry.animationList.push_back(shared_from_this());
+
+				auto thisPtr = shared_from_this();
+
+				//Don't emplace animations that might already be there.
+				//If the animation is not allowed to externally change state, it is guaranteed to not be in the list at this point.
+				if(!m_canChangeState || std::find(animEntry.animationList.begin(), animEntry.animationList.end(), thisPtr) == animEntry.animationList.end())
+					animEntry.animationList.push_back(thisPtr);
 			}
 
 			//Store the submodels current data as the base for this animation and calculate this animations parameters
@@ -139,7 +160,7 @@ namespace animation {
 
 		instance_data& instanceData = m_instances[pmi->id];
 
-		if (multiOverrideTime == nullptr && (Game_mode & GM_MULTIPLAYER) && id != 0) {
+		if (multiOverrideTime == nullptr && m_isMultiCompatible && (Game_mode & GM_MULTIPLAYER) && id != 0) {
 			//We are in multiplayer. Send animation to server to start. Server starts animation online, and sends start request back (which'll have multiOverride == true).
 			//If we _are_ the server, also just start the animation
 
@@ -156,7 +177,7 @@ namespace animation {
 		}
 
 		if (pause) {
-			if(instanceData.state != ModelAnimationState::UNTRIGGERED && instanceData.state != ModelAnimationState::COMPLETED)
+			if(instanceData.state != ModelAnimationState::UNTRIGGERED && instanceData.state != ModelAnimationState::NEED_RECALC && instanceData.state != ModelAnimationState::COMPLETED)
 				instanceData.state = ModelAnimationState::PAUSED;
 			return;
 		}
@@ -167,6 +188,7 @@ namespace animation {
 			switch (instanceData.state) {
 			case ModelAnimationState::RUNNING_RWD:
 			case ModelAnimationState::UNTRIGGERED:
+			case ModelAnimationState::NEED_RECALC:
 				//Cannot reverse-start if it's already running rwd or fully untriggered
 
 				//If forced, reset and play anyways
@@ -222,6 +244,7 @@ namespace animation {
 				instanceData.state = ModelAnimationState::RUNNING_FWD;
 				break;
 			case ModelAnimationState::UNTRIGGERED:
+			case ModelAnimationState::NEED_RECALC:
 				//Nothing special to do. Expected case
 				instanceData.time += timeOffset;
 				if (force)
@@ -282,6 +305,7 @@ namespace animation {
 			switch (anim->m_instances[pmi->id].state) {
 			case ModelAnimationState::RUNNING_FWD:
 			case ModelAnimationState::RUNNING_RWD:
+			case ModelAnimationState::NEED_RECALC:
 				anim->play(frametime, pmi, applyBuffer);
 				break;
 			case ModelAnimationState::COMPLETED:
@@ -478,6 +502,7 @@ namespace animation {
 	ModelAnimationSet& ModelAnimationSet::operator=(ModelAnimationSet&& other) noexcept {
 		std::swap(m_submodels, other.m_submodels);
 		std::swap(m_animationSet, other.m_animationSet);
+		std::swap(m_moveableSet, other.m_moveableSet);
 		std::swap(m_SIPname, other.m_SIPname);
 
 		for (const auto& animationTypes : m_animationSet) {
@@ -513,6 +538,8 @@ namespace animation {
 				}
 			}
 		}
+
+		m_moveableSet = other.m_moveableSet;
 
 		return *this;
 	}
@@ -811,6 +838,21 @@ namespace animation {
 		return ret;
 	};
 
+	bool ModelAnimationSet::updateMoveable(polymodel_instance* pmi, const SCP_string& name, const std::vector<linb::any>& args) const {
+		auto moveable = m_moveableSet.find(name);
+		if (moveable == m_moveableSet.end())
+			return false;
+
+		moveable->second->update(pmi, args);
+		return true;
+	}
+
+	void ModelAnimationSet::initializeMoveables(polymodel_instance* pmi) {
+		for(const auto& moveable : m_moveableSet){
+			moveable.second->initialize(this, pmi);
+		}
+	}
+
 	bool ModelAnimationSet::isEmpty() const {
 		for (const auto& animSet : m_animationSet) {
 			if (!animSet.second.empty())
@@ -857,9 +899,13 @@ namespace animation {
 
 	void anim_set_initial_states(ship* shipp) {
 		ship_info* sip = &Ship_info[shipp->ship_info_index];
-		sip->animations.clearShipData(model_get_instance(shipp->model_instance_num));
-		sip->animations.startAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::Initial, ModelAnimationDirection::FWD, true, true);
-		sip->animations.startAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::OnSpawn, ModelAnimationDirection::FWD);
+
+		polymodel_instance* pmi = model_get_instance(shipp->model_instance_num);
+
+		sip->animations.clearShipData(pmi);
+		sip->animations.startAll(pmi, animation::ModelAnimationTriggerType::Initial, ModelAnimationDirection::FWD, true, true);
+		sip->animations.initializeMoveables(pmi);
+		sip->animations.startAll(pmi, animation::ModelAnimationTriggerType::OnSpawn, ModelAnimationDirection::FWD);
 	}
 
 	const std::map<ModelAnimationTriggerType, std::pair<const char*, bool>> Animation_types = {
@@ -1050,6 +1096,8 @@ namespace animation {
 
 	std::map<SCP_string, ModelAnimationParseHelper::ModelAnimationSegmentParser> ModelAnimationParseHelper::s_segmentParsers;
 	std::map<SCP_string, ModelAnimationParseHelper::ParsedModelAnimation> ModelAnimationParseHelper::s_animationsById;
+	std::map<SCP_string, ModelAnimationParseHelper::ModelAnimationMoveableParser> ModelAnimationParseHelper::s_moveableParsers;
+	std::map<SCP_string, std::shared_ptr<ModelAnimationMoveable>> ModelAnimationParseHelper::s_moveablesById;
 
 	std::shared_ptr<ModelAnimationSegment> ModelAnimationParseHelper::parseSegment() {
 		ignore_white_space();
@@ -1088,7 +1136,7 @@ namespace animation {
 	}
 
 	void ModelAnimationParseHelper::parseSingleAnimation() {
-		auto animation = std::shared_ptr<ModelAnimation>(new ModelAnimation());
+		auto animation = std::shared_ptr<ModelAnimation>(new ModelAnimation(true));
 
 		ModelAnimationParseHelper helper;
 		required_string("$Name:");
@@ -1193,6 +1241,34 @@ namespace animation {
 		s_animationsById.emplace(helper.m_animationName, ParsedModelAnimation { animation, type, name, subtype });
 	}
 
+	void ModelAnimationParseHelper::parseSingleMoveable() {
+		volatile ModelAnimationMoveableOrientation o = ModelAnimationMoveableOrientation(nullptr, angles{ 0,0,0 });
+
+		required_string("$Name:");
+		char animID[NAME_LENGTH];
+		stuff_string(animID, F_NAME, NAME_LENGTH);
+
+		SCP_string name = animID;
+
+		if (s_moveablesById.count(name))
+			error_display(1, "Animation with name %s already exists!", animID);
+
+		required_string("$Type:");
+
+		char segment_type[NAME_LENGTH];
+		stuff_string(segment_type, F_NAME, NAME_LENGTH);
+
+		auto segment_parser = s_moveableParsers.find(segment_type);
+		if (segment_parser != s_moveableParsers.end()){
+			s_moveablesById.emplace(name, segment_parser->second());
+		}
+		else {
+			error_display(1, "Unknown moveable type %s in moveable with ID %s!", segment_type, animID);
+			return;
+		}
+
+	}
+
 	void ModelAnimationParseHelper::parseTableFile(const char* filename) {
 		try {
 			read_file_text(filename, CF_TYPE_TABLES);
@@ -1205,6 +1281,13 @@ namespace animation {
 				parseSingleAnimation();
 				ignore_white_space();
 			}
+
+			if(optional_string("#Moveables")){
+				while (!optional_string("#End")) {
+					parseSingleMoveable();
+					ignore_white_space();
+				}
+			}
 		}
 		catch (const parse::ParseException& e) {
 			mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
@@ -1215,6 +1298,7 @@ namespace animation {
 
 	void ModelAnimationParseHelper::parseTables() {
 		s_animationsById.clear();
+		s_moveablesById.clear();
 		parse_modular_table("*-anim.tbm", parseTableFile, CF_TYPE_TABLES);
 	}
 
@@ -1225,6 +1309,8 @@ namespace animation {
 	void ModelAnimationParseHelper::parseAnimsetInfo(ModelAnimationSet& set, char uniqueTypePrefix, const SCP_string& uniqueParentName) {
 		SCP_vector<SCP_string> requestedAnimations;
 		stuff_string_list(requestedAnimations);
+
+		set.m_animationSet.clear();
 
 		for (const SCP_string& request : requestedAnimations) {
 			auto animIt = s_animationsById.find(request);
@@ -1244,6 +1330,23 @@ namespace animation {
 		set.changeShipName(sip->name);
 		
 		ModelAnimationParseHelper::parseAnimsetInfo(set, 's', sip->name);
+	}
+
+	void ModelAnimationParseHelper::parseMoveablesetInfo(ModelAnimationSet& set) {
+		SCP_vector<SCP_string> requestedAnimations;
+		stuff_string_list(requestedAnimations);
+
+		set.m_moveableSet.clear();
+
+		for (const SCP_string& request : requestedAnimations) {
+			auto animIt = s_moveablesById.find(request);
+			if (animIt != s_moveablesById.end()) {
+				set.m_moveableSet.emplace(animIt->first, animIt->second);
+			}
+			else {
+				error_display(0, "Moveable with name %s not found!", request.c_str());
+			}
+		}
 	}
 
 
@@ -1341,7 +1444,7 @@ namespace animation {
 			}
 			else {
 				auto subsys = sip->animations.getSubmodel(sp->subobj_name);
-				auto rot = std::shared_ptr<ModelAnimationSegmentSetPHB>(new ModelAnimationSegmentSetPHB(subsys, angle, isRelative));
+				auto rot = std::shared_ptr<ModelAnimationSegmentSetOrientation>(new ModelAnimationSegmentSetOrientation(subsys, angle, isRelative));
 				anim->setAnimation(std::move(rot));
 			}
 
@@ -1350,7 +1453,7 @@ namespace animation {
 			sip->animations.emplace(anim, name, ModelAnimationTriggerType::Initial, ModelAnimationSet::SUBTYPE_DEFAULT, ModelAnimationParseHelper::getUniqueAnimationID(name + Animation_types.at(ModelAnimationTriggerType::Initial).first + std::to_string(subtype), 'b', sip->name));
 		}
 		else {
-			auto anim = std::shared_ptr<ModelAnimation>(new ModelAnimation());
+			auto anim = std::shared_ptr<ModelAnimation>(new ModelAnimation(true));
 			auto subsys = sip->animations.getSubmodel(sp->subobj_name);
 
 			if (type == ModelAnimationTriggerType::TurretFired) {

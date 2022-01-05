@@ -12,6 +12,8 @@
 #include <memory>
 #include <map>
 
+#include <linb/any.hpp>
+
 //Since we don't have C++17, this is a small (actually not std conform) implementation of an optional that works for objects with complex constructors
 template<typename T>
 class optional {
@@ -79,7 +81,7 @@ namespace animation {
 
 	enum class ModelAnimationDirection { FWD, RWD };
 
-	enum class ModelAnimationState { UNTRIGGERED, RUNNING_FWD, COMPLETED, RUNNING_RWD, PAUSED };
+	enum class ModelAnimationState { UNTRIGGERED, RUNNING_FWD, COMPLETED, RUNNING_RWD, PAUSED, NEED_RECALC };
 
 	enum class ModelAnimationTriggerType : int {
 		None = -1,       // No animation
@@ -239,22 +241,26 @@ namespace animation {
 
 		const ModelAnimationSet* m_set;
 
-		std::shared_ptr<ModelAnimationSegment> m_animation;
-
+		//True if the animation doesn't need to be kept in running memory, but needs to be applied to a submodels base
 		bool m_isInitialType;
+		//True if the animation is guaranteed to be identical on each client and can be multi-synced
+		bool m_isMultiCompatible;
+		//True if the animation can externally have its state changed. Needs special handling
+		bool m_canChangeState;
 
 		flagset<animation::Animation_Flags>	m_flags;
 
 		ModelAnimationState play(float frametime, polymodel_instance* pmi, ModelAnimationSubmodelBuffer& applyBuffer, bool applyOnly = false);
 
-
 		friend class ModelAnimationSet;
 		friend class ModelAnimationParseHelper;
 	public:
 		//Initial type animations must complete within a single frame, and then never modifiy the submodel again. If this is the case, we do not need to remember them being active for massive performance gains with lots of turrets
-		ModelAnimation(bool isInitialType = false);
+	  	ModelAnimation(bool isInitialType = false, bool isMultiCompatible = true, bool canStateChange = false, const ModelAnimationSet* defaultSet = nullptr);
 
 		void setAnimation(std::shared_ptr<ModelAnimationSegment> animation);
+
+		void forceRecalculate(polymodel_instance* pmi);
 
 		//Start playing the animation. Will stop other animations that have components running on the same submodels. instant always requires force
 		void start(polymodel_instance* pmi, ModelAnimationDirection direction, bool force = false, bool instant = false, bool pause = false, const float* multiOverrideTime = nullptr);
@@ -264,6 +270,22 @@ namespace animation {
 		static void stepAnimations(float frametime, polymodel_instance* pmi);
 
 		unsigned int id = 0;
+		std::shared_ptr<ModelAnimationSegment> m_animation;
+	};
+
+	class ModelAnimationMoveable {
+	protected:
+		struct instance_data {
+			std::shared_ptr<ModelAnimation> animation = nullptr;
+		};
+		//PMI ID -> Instance Data
+		std::map<int, instance_data> m_instances;
+
+	public:
+		virtual ~ModelAnimationMoveable() = default;
+
+		virtual void update(polymodel_instance* pmi, const std::vector<linb::any>& args) = 0;
+		virtual void initialize(ModelAnimationSet* parentSet, polymodel_instance* pmi) = 0;
 	};
 
 
@@ -289,6 +311,7 @@ namespace animation {
 		};
 		// Trigger Type + Subtype -> (Trigger name -> list of Animation*)
 		std::map <ModelAnimationSubtrigger, std::map <SCP_string, std::vector<std::shared_ptr<ModelAnimation>>>> m_animationSet;
+		std::map <SCP_string, std::shared_ptr<ModelAnimationMoveable>> m_moveableSet;
 
 		static void apply(polymodel_instance* pmi, const ModelAnimationSubmodelBuffer& applyBuffer);
 		static void cleanRunning();
@@ -324,6 +347,9 @@ namespace animation {
 		struct RegisteredTrigger { ModelAnimationTriggerType type; int subtype; const SCP_string& name; };
 		std::vector<RegisteredTrigger> getRegisteredTriggers() const;
 
+		bool updateMoveable(polymodel_instance* pmi, const SCP_string& name, const std::vector<linb::any>& args) const;
+		void initializeMoveables(polymodel_instance* pmi);
+
 		bool isEmpty() const;
 
 		std::shared_ptr<ModelAnimationSubmodel> getSubmodel(const SCP_string& submodelName);
@@ -338,6 +364,9 @@ namespace animation {
 		using ModelAnimationSegmentParser = std::function<std::shared_ptr<ModelAnimationSegment>(ModelAnimationParseHelper*)>;
 		static std::map<SCP_string, ModelAnimationSegmentParser> s_segmentParsers;
 
+		using ModelAnimationMoveableParser = std::function<std::shared_ptr<ModelAnimationMoveable>()>;
+		static std::map<SCP_string, ModelAnimationMoveableParser> s_moveableParsers;
+
 		//Parsed Animations
 		struct ParsedModelAnimation {
 			std::shared_ptr<ModelAnimation> anim;
@@ -346,18 +375,24 @@ namespace animation {
 			int subtype;
 		};
 		static std::map<SCP_string, ParsedModelAnimation> s_animationsById;
+		static std::map<SCP_string, std::shared_ptr<ModelAnimationMoveable>> s_moveablesById;
 
 		static unsigned int getUniqueAnimationID(const SCP_string& animName, char uniquePrefix, const SCP_string& parentName);
 
 		//Internal Parsing Methods
 		static void parseSingleAnimation();
+		static void parseSingleMoveable();
 		static void parseTableFile(const char* filename);
 
 
 	public:
-		class Registrar {
+		class Segment {
 		public:
-			Registrar(const SCP_string& name, const ModelAnimationSegmentParser& parser) { s_segmentParsers.emplace(name, parser); }
+			Segment(const SCP_string& name, const ModelAnimationSegmentParser& parser) { s_segmentParsers.emplace(name, parser); }
+		};
+		class Moveable {
+		public:
+			Moveable(const SCP_string& name, const ModelAnimationMoveableParser& parser) { s_moveableParsers.emplace(name, parser); }
 		};
 		
 		std::shared_ptr<ModelAnimationSegment> parseSegment();
@@ -370,6 +405,7 @@ namespace animation {
 		static void parseTables();
 		static void parseAnimsetInfo(ModelAnimationSet& set, ship_info* sip);
 		static void parseAnimsetInfo(ModelAnimationSet& set, char uniqueTypePrefix, const SCP_string& uniqueParentName);
+		static void parseMoveablesetInfo(ModelAnimationSet& set);
 		//Parses the legacy animation table in ships.tbl of a single subsystem. Currently initial animations only
 		static void parseLegacyAnimationTable(model_subsystem* sp, ship_info* sip);
 	};

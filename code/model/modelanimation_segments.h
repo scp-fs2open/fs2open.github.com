@@ -6,7 +6,7 @@ namespace animation {
 
 	//This segment handles multiple generic segments chained after one another
 	class ModelAnimationSegmentSerial : public ModelAnimationSegment {
-		static ModelAnimationParseHelper::Registrar reg;
+		static ModelAnimationParseHelper::Segment reg;
 		std::vector<std::shared_ptr<ModelAnimationSegment>> m_segments;
 
 		ModelAnimationSegment* copy() const override;
@@ -23,7 +23,7 @@ namespace animation {
 
 	//This segment handles multiple generic segments executing in parallel
 	class ModelAnimationSegmentParallel : public ModelAnimationSegment {
-		static ModelAnimationParseHelper::Registrar reg;
+		static ModelAnimationParseHelper::Segment reg;
 		std::vector<std::shared_ptr<ModelAnimationSegment>> m_segments;
 
 		ModelAnimationSegment* copy() const override;
@@ -40,7 +40,7 @@ namespace animation {
 
 	//This segment does nothing but serve as a placeholder taking up time, used primarily in serial segments
 	class ModelAnimationSegmentWait : public ModelAnimationSegment {
-		static ModelAnimationParseHelper::Registrar reg;
+		static ModelAnimationParseHelper::Segment reg;
 		float m_time;
 
 		ModelAnimationSegment* copy() const override;
@@ -56,8 +56,8 @@ namespace animation {
 	};
 
 	//This segment changes or sets a submodels orientation to a defined Pitch Heading and Bank angle.
-	class ModelAnimationSegmentSetPHB : public ModelAnimationSegment {
-		static ModelAnimationParseHelper::Registrar reg;
+	class ModelAnimationSegmentSetOrientation : public ModelAnimationSegment {
+		static ModelAnimationParseHelper::Segment reg;
 		struct instance_data {
 			matrix rot;
 		};
@@ -67,9 +67,13 @@ namespace animation {
 
 		std::shared_ptr<ModelAnimationSubmodel> m_submodel;
 
-		angles m_targetAngle;
+		//configurables:
+	public:
+		optional<angles> m_targetAngle;
+		optional<matrix> m_targetOrientation;
 		bool m_isAngleRelative;
 
+	private:
 		ModelAnimationSegment* copy() const override;
 		void recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) override;
 		void calculateAnimation(ModelAnimationSubmodelBuffer& base, float /*time*/, int pmi_id) const override;
@@ -78,13 +82,13 @@ namespace animation {
 
 		static std::shared_ptr<ModelAnimationSegment> parser(ModelAnimationParseHelper* data);
 	public:
-		ModelAnimationSegmentSetPHB(std::shared_ptr<ModelAnimationSubmodel> submodel, const angles& angle, bool isAngleRelative);
-
+		ModelAnimationSegmentSetOrientation(std::shared_ptr<ModelAnimationSubmodel> submodel, const angles& angle, bool isAngleRelative);
+		ModelAnimationSegmentSetOrientation(std::shared_ptr<ModelAnimationSubmodel> submodel, const matrix& orientation, bool isAngleRelative);
 	};
 
 	//This segment rotates a submodels orientation by a certain amount around its defined rotation axis
 	class ModelAnimationSegmentSetAngle : public ModelAnimationSegment {
-		static ModelAnimationParseHelper::Registrar reg;
+		static ModelAnimationParseHelper::Segment reg;
 		std::shared_ptr<ModelAnimationSubmodel> m_submodel;
 
 		float m_angle;
@@ -104,7 +108,8 @@ namespace animation {
 
 	//This segment rotates a submodels orientation by a certain amount in PBH
 	class ModelAnimationSegmentRotation : public ModelAnimationSegment {
-		static ModelAnimationParseHelper::Registrar reg;
+		friend class ModelAnimationMoveable;
+		static ModelAnimationParseHelper::Segment reg;
 		struct instance_data {
 			angles m_actualVelocity;
 			angles m_actualTarget; //Usually won't be needed, but if vel + angle is specified, not all angles necessarily end simultaneously.
@@ -137,7 +142,7 @@ namespace animation {
 	};
 
 	class ModelAnimationSegmentTranslation : public ModelAnimationSegment {
-		//static ModelAnimationParseHelper::Registrar reg;
+		//static ModelAnimationParseHelper::Segment reg;
 		struct instance_data {
 			vec3d m_actualVelocity;
 			vec3d m_actualTarget; //Usually won't be needed, but if vel + angle is specified, not all angles necessarily end simultaneously.
@@ -171,7 +176,7 @@ namespace animation {
 	};
 
 	class ModelAnimationSegmentSoundDuring : public ModelAnimationSegment {
-		static ModelAnimationParseHelper::Registrar reg;
+		static ModelAnimationParseHelper::Segment reg;
 		std::shared_ptr<ModelAnimationSegment> m_segment;
 
 		struct instance_data {
