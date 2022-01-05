@@ -720,7 +720,7 @@ int sexp_map_has_data_item(int node)
 	const auto &container = *p_container;
 
 	if (!container.is_map()) {
-		Warning(LOCATION, "map-has-data-teim called on non-map container %s.", container_name);
+		Warning(LOCATION, "map-has-data-item called on non-map container %s.", container_name);
 		return SEXP_FALSE;
 	}
 
@@ -734,13 +734,30 @@ int sexp_map_has_data_item(int node)
 			// check for optional variable to store the key
 			node = CDR(node);
 			if (node != -1) {
-				const int var_index = sexp_get_variable_index(node);
-				// DISCUSSME: should we do an explicit if-check instead?
-				Assert(var_index >= 0);
-				// TODO: type checking of string key/var vs. number key/var?
+				int var_index = -1;
+				if (Sexp_nodes[node].type & SEXP_FLAG_VARIABLE) {
+					var_index = sexp_get_variable_index(node);
+				} else {
+					// perhaps the node text is the variable name as data
+					var_index = get_index_sexp_variable_name(Sexp_nodes[node].text);
+				}
 
-				// assign key to variable
-				sexp_modify_variable(kv_pair.first.c_str(), var_index);
+				if (var_index >= 0) {
+					const int var_type = Sexp_variables[var_index].type;
+					if (((var_type & SEXP_VARIABLE_STRING) && any(container.type & ContainerType::STRING_KEYS)) ||
+						((var_type & SEXP_VARIABLE_NUMBER) && any(container.type & ContainerType::NUMBER_KEYS))) {
+						// assign key to variable
+						sexp_modify_variable(kv_pair.first.c_str(), var_index);
+					} else {
+						Warning(LOCATION,
+							"map-has-data-item given optional variable %s whose type doesn't match keys of map "
+							"container %s",
+							Sexp_variables[var_index].variable_name,
+							container.container_name.c_str());
+					}
+				} else {
+					Warning(LOCATION, "map-has-data-item given invalid optional variable %s", Sexp_nodes[node].text);
+				}
 			}
 
 			return SEXP_TRUE;
