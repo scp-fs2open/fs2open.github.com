@@ -4149,15 +4149,29 @@ void sexp_tree::add_default_modifier(const sexp_container &container)
 {
 	sexp_list_item item;
 
+	int type_to_use = (SEXPT_VALID | SEXPT_MODIFIER);
+
 	if (container.is_map()) {
-		item.set_data("<any data>");
+		if (any(container.type & ContainerType::STRING_KEYS)) {
+			item.set_data("<any data>");
+			type_to_use |= SEXPT_STRING;
+		} else if (any(container.type & ContainerType::NUMBER_KEYS)) {
+			item.set_data("0");
+			type_to_use |= SEXPT_NUMBER;
+		} else {
+			UNREACHABLE("Unknown map container key type %d", (int)container.type);
+		}
 	} else if (container.is_list()) {
 		item.set_data(get_all_list_modifiers()[0].name);
+		type_to_use |= SEXPT_STRING;
 	} else {
 		UNREACHABLE("Unknown container type %d", (int)container.type);
 	}
 
-	item.type = (SEXPT_VALID | SEXPT_STRING | SEXPT_MODIFIER);
+	// type should include exactly one
+	Assert((type_to_use & SEXPT_STRING) ^ (type_to_use & SEXPT_NUMBER));
+
+	item.type = type_to_use;
 	add_data(item.text.c_str(), item.type);
 }
 
