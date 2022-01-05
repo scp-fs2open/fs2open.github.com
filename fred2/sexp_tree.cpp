@@ -1231,7 +1231,9 @@ void sexp_tree::right_clicked(int mode)
 				if (count <= Operators[op].min) {
 					menu.EnableMenuItem(ID_DELETE, MF_GRAYED);
 				}
-			} else if ((tree_nodes[parent].type & SEXPT_CONTAINER_DATA) && (count == 1)) {
+			} else if ((tree_nodes[parent].type & SEXPT_CONTAINER_DATA) && (item_index == first_arg)) {
+				// a container data node's initial modifier can't be deleted
+				Assert(tree_nodes[item_index].type & SEXPT_MODIFIER);
 				menu.EnableMenuItem(ID_DELETE, MF_GRAYED);
 			}
 
