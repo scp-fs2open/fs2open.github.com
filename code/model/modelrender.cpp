@@ -1635,7 +1635,8 @@ void submodel_render_queue(model_render_params *render_info, model_draw_list *sc
 	scene->pop_transform();
 }
 
-void model_render_glowpoint(int point_num, vec3d *pos, matrix *orient, glow_point_bank *bank, glow_point_bank_override *gpo, polymodel *pm, polymodel_instance *pmi, ship* shipp, bool use_depth_buffer)
+//Renders the sprite for a glowpoint.
+void model_render_glowpoint_bitmap(int point_num, vec3d *pos, matrix *orient, glow_point_bank *bank, glow_point_bank_override *gpo, polymodel *pm, polymodel_instance *pmi, ship* shipp, bool use_depth_buffer)
 {
 	glow_point *gpt = &bank->points[point_num];
 	vec3d loc_offset = gpt->pnt;
@@ -1786,6 +1787,7 @@ void model_render_glowpoint(int point_num, vec3d *pos, matrix *orient, glow_poin
 	}
 }
 
+//adds the glowpoint's lights, if any, to the lights vector.
 void model_render_glowpoint_add_light(int point_num, vec3d *pos, matrix *orient, glow_point_bank *bank, glow_point_bank_override *gpo, polymodel *pm, polymodel_instance *pmi, ship* shipp)
 {
 	if(Detail.lighting <= 3 || !Deferred_lighting || gpo==nullptr || !gpo->is_lightsource) {
@@ -1867,10 +1869,8 @@ void model_render_glowpoint_add_light(int point_num, vec3d *pos, matrix *orient,
 		}
 	}
 }
-/*
-* Check what the current brightness percentage of a glowpoint is.
-*
-*/
+
+//Returns the current brightness percentage of a glowpoint, from 1.0f to 0.0f
 float model_render_get_point_activation(glow_point_bank* bank, glow_point_bank_override* gpo)
 {
 	if(gpo == nullptr ||  !(gpo->pulse_type)){
@@ -1998,6 +1998,7 @@ void model_render_set_glow_points(polymodel *pm, int objnum)
 	}
 }
 
+//Handle all the glow points of a model being rendered.
 void model_render_glow_points(polymodel *pm, polymodel_instance *pmi, ship *shipp, matrix *orient, vec3d *pos, bool use_depth_buffer = true,bool render_sprites = true, bool add_lights= true)
 {
 	Assert(pmi == nullptr || pm->id == pmi->model_num);
@@ -2063,8 +2064,9 @@ void model_render_glow_points(polymodel *pm, polymodel_instance *pmi, ship *ship
 				}
 
 				if (flick == 1) {
+					//In some cases we want to be able to render only the bitmaps or only the lights
 					if(render_sprites)
-						model_render_glowpoint(j, pos, orient, bank, gpo, pm, pmi, shipp, use_depth_buffer);
+						model_render_glowpoint_bitmap(j, pos, orient, bank, gpo, pm, pmi, shipp, use_depth_buffer);
 					if(add_lights)
 						model_render_glowpoint_add_light(j, pos, orient, bank, gpo, pm, pmi, shipp);
 				} // flick
@@ -2992,6 +2994,8 @@ void model_render_queue(model_render_params* interp, model_draw_list* scene, int
 		}
 	}
 }
+
+//Renders the glowpoint light sources of a model without rendering anything else of the model.
 void model_render_only_glowpoint_lights(model_render_params* interp, int model_num, int model_instance_num, matrix* orient, vec3d* pos)
 {
 	const int objnum = interp->get_object_number();
