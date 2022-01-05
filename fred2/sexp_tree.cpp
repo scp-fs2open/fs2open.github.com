@@ -837,6 +837,10 @@ void sexp_tree::right_clicked(int mode)
 									if (op_type == OPF_NAV_POINT)
 										flags &= ~MF_GRAYED;
 
+									// enable all for container multidimensionality
+									if ((type & SEXPT_MODIFIER) && Replace_count > 0)
+										flags &= ~MF_GRAYED;
+
 									if (!( (idx + 3) % 30)) {
 										flags |= MF_MENUBARBREAK;
 									}
@@ -882,6 +886,10 @@ void sexp_tree::right_clicked(int mode)
 									if ((type & SEXPT_NUMBER) && any(container.type & ContainerType::NUMBER_DATA)) {
 										flags &= ~MF_GRAYED;
 									}
+
+									// enable all for container multidimensionality
+									if ((tree_nodes[item_index].type & SEXPT_MODIFIER) && Replace_count > 0)
+										flags &= ~MF_GRAYED;
 
 									replace_container_data_menu->AppendMenu(flags,
 										(ID_CONTAINER_DATA_MENU + container_data_index++),
