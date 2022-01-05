@@ -255,11 +255,11 @@ texture_target(-1), canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 	position[1] = 0;
 
 	gr_init_alphacolor(&gauge_color, 255, 255, 255, (HUD_color_alpha+1)*16);
-	flash_duration = timestamp(-1);
-	flash_next = timestamp(-1);
+	flash_duration = timestamp(1);
+	flash_next = timestamp(1);
 	flash_status = false;
 
-	popup_timer = timestamp(-1);
+	popup_timer = timestamp(1);
 
 	texture_target_fname[0] = '\0';
 
@@ -289,11 +289,11 @@ canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 		gr_init_alphacolor(&gauge_color, 255, 255, 255, (HUD_color_alpha+1)*16);
 	}
 
-	flash_duration = timestamp(-1);
-	flash_next = timestamp(-1);
+	flash_duration = timestamp(1);
+	flash_next = timestamp(1);
 	flash_status = false;
 
-	popup_timer = timestamp(-1);
+	popup_timer = timestamp(1);
 
 	texture_target_fname[0] = '\0';
 
@@ -321,11 +321,11 @@ textoffset_y(txtoffset_y), texture_target(-1), canvas_w(-1), canvas_h(-1), targe
 		gr_init_alphacolor(&gauge_color, 255, 255, 255, (HUD_color_alpha+1)*16);
 	}
 
-	flash_duration = timestamp(-1);
-	flash_next = timestamp(-1);
+	flash_duration = timestamp(1);
+	flash_next = timestamp(1);
 	flash_status = false;
 
-	popup_timer = timestamp(-1);
+	popup_timer = timestamp(1);
 
 	texture_target_fname[0] = '\0';
 
@@ -604,11 +604,11 @@ int HudGauge::popUpActive()
 
 void HudGauge::resetTimers()
 {
-	flash_duration = timestamp(-1);
-	flash_next = timestamp(-1);
+	flash_duration = timestamp(1);
+	flash_next = timestamp(1);
 	flash_status = false;
 
-	popup_timer = timestamp(-1);
+	popup_timer = timestamp(1);
 }
 
 void HudGauge::startFlashSexp()
