@@ -274,7 +274,10 @@ int multi_fs_tracker_validate(int show_error)
 void multi_fs_tracker_login_freespace()
 {	
 	if(!Multi_fs_tracker_inited){
-		popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,XSTR("Warning, Parallax Online startup failed. Will not be able to play tracker games!",666));
+		if ( !(Game_mode & GM_STANDALONE_SERVER) ) {
+			popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,XSTR("Warning, Parallax Online startup failed. Will not be able to play tracker games!",666));
+		}
+
 		return;
 	}
 
