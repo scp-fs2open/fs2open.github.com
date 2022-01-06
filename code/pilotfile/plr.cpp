@@ -713,6 +713,8 @@ void pilotfile::plr_read_controls()
 							   [buf](const CC_preset& preset) { return preset.name == buf; });
 
 		if (it == Control_config_presets.end()) {
+			Assertion(!Control_config_presets.empty(), "[PLR] Error reading Controls! Control_config_presets empty! Get a coder!");
+
 			// Couldn't find the preset, use defaults
 			ReleaseWarning(LOCATION, "Could not find preset %s, using defaults\n", buf.c_str());
 			it = Control_config_presets.begin();
@@ -730,6 +732,15 @@ void pilotfile::plr_write_controls()
 	// As of PLR v4, control bindings are saved outside of the PLR file into PST files.
 	// We now only save the currently selected preset in the PLR file itself.
 	auto it = control_config_get_current_preset();
+
+	if (it == Control_config_presets.end()) {
+		// No current preset selected. what? Might be a new player...
+		Assertion(!Control_config_presets.empty(), "[PLR] Error saving controls! Control_config_presets empty! Get a coder!");
+
+		// Just bash it to defaults
+		it = Control_config_presets.begin();
+	}
+
 	handler->writeString("preset", it->name.c_str());
 
 	handler->endSectionWrite(); // Section::controls
