@@ -263,7 +263,7 @@ void CampaignEditorDialogModel::supplySubModelLoop(QPlainTextEdit &descr) {
 bool CampaignEditorDialogModel::saveTo(const QString &file) {
 	bool success = _saveTo(file);
 	QMessageBox::information(parent, file, success ? tr("Successfully saved") : tr("Error saving"));
-	//TODO modified=false
+	modified = ! success;
 	//TODO error checker
 	return success;
 }
@@ -281,12 +281,37 @@ void CampaignEditorDialogModel::checkMissionDrop(const QModelIndex &idx, const Q
 	}
 }
 
-//placeholder
 bool CampaignEditorDialogModel::_saveTo(QString file) const {
 	if (file.isEmpty())
 		return false;
 
 	mission_campaign_clear();
+
+	qstrncpy(Campaign.name, qPrintable(campaignName), NAME_LENGTH);
+
+	Campaign.type = campaignTypes.indexOf(campaignType);
+
+	if (! campaignDescr.isEmpty())
+		Campaign.desc = vm_strdup(qPrintable(campaignDescr.toPlainText()));
+
+	//Defined as number of players of first mission
+	Campaign.num_players = getCampaignNumPlayers();
+
+	Campaign.flags = CF_DEFAULT_VALUE;
+	if (campaignTechReset)
+		Campaign.flags |= CF_CUSTOM_TECH_DATABASE;
+
+	for (auto shp_idx_ptr : initialShips.getCheckedData()) {
+		Assertion(shp_idx_ptr, "NULL ship class index in initial ships");
+		Assertion(*shp_idx_ptr < MAX_SHIP_CLASSES, "Illegal ship class index in initial ships: %ld", *shp_idx_ptr);
+		Campaign.ships_allowed[*shp_idx_ptr] = true;
+	}
+
+	for (auto wep_idx_ptr : initialWeapons.getCheckedData()) {
+		Assertion(wep_idx_ptr, "NULL weapon class index in initial weapons");
+		Assertion(*wep_idx_ptr < MAX_WEAPON_TYPES, "Illegal weapon class index in initial weapons: %ld", *wep_idx_ptr);
+		Campaign.weapons_allowed[*wep_idx_ptr] = true;
+	}
 
 	CFred_mission_save save;
 	return !save.save_campaign_file(qPrintable(file.replace('/',DIR_SEPARATOR_CHAR)));
