@@ -1211,7 +1211,7 @@ void pilotfile::csg_write_settings()
 
 void pilotfile::csg_read_controls()
 {
-	if (version < 7) {
+	if (csg_ver < 7) {
 		// Pre CSG-7 compatibility
 		int idx, list_size;
 		short id1, id2, id3 __UNUSED;
