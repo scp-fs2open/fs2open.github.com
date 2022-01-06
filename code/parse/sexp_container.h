@@ -147,7 +147,7 @@ struct list_modifier {
 
 using ListModifier = list_modifier::Modifier;
 
-ListModifier get_list_modifier(const char *modifier_name, bool accept_prefix);
+ListModifier get_list_modifier(const char *modifier_name, bool accept_prefix = false);
 const char *get_list_modifier_name(ListModifier modifier);
 
 // management functions

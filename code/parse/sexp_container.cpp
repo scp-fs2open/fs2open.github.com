@@ -615,7 +615,7 @@ bool sexp_container_CTEXT_helper(int& node, sexp_container& container, SCP_strin
 		}
 
 		const char *modifier_name = CTEXT(node);
-		const auto modifier = get_list_modifier(modifier_name, false);
+		const auto modifier = get_list_modifier(modifier_name);
 
 
 		if (modifier == ListModifier::INVALID) {
