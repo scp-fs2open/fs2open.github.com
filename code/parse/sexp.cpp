@@ -9848,14 +9848,16 @@ int test_argument_nodes_for_condition(int n, int condition_node, int *num_true, 
 		n = CDR(n);
 	}
 
-	int count = 0;
+	// we may only want a subset of the argument list
+	if (threshold >= 0 && Applicable_arguments_temp.size() > (size_t)threshold)
+		Applicable_arguments_temp.resize(threshold);
+
 	// now we write from the temporary store into the real one, reversing the order. We do this because 
 	// Sexp_applicable_argument_list is a stack and we want the first argument in the list to be the first one out
-	while (!Applicable_arguments_temp.empty() && (threshold == -1 || count < threshold))
+	while (!Applicable_arguments_temp.empty())
 	{
 		Sexp_applicable_argument_list.add_data(Applicable_arguments_temp.back());
-		Applicable_arguments_temp.pop_back(); 
-		++count;
+		Applicable_arguments_temp.pop_back();
 	}
 
 	return num_valid_arguments;
