@@ -1256,6 +1256,7 @@ void pilotfile::csg_read_controls()
 		                       [buf](const CC_preset& preset) { return preset.name == buf; });
 
 		if (it == Control_config_presets.end()) {
+			Assertion(!Control_config_presets.empty(), "[CSG] Error reading CSG! Control_config_presets empty; Get a coder!");
 			// Couldn't find the preset, use defaults
 			it = Control_config_presets.begin();
 		}
@@ -1268,6 +1269,15 @@ void pilotfile::csg_read_controls()
 void pilotfile::csg_write_controls()
 {
 	auto it = control_config_get_current_preset();
+
+	if (it == Control_config_presets.end()) {
+		// Normally shouldn't happen, may be a new, blank player
+		// First assert that the presets have been initialized and have at least the defaults preset
+		Assertion(!Control_config_presets.empty(), "[CSG] Error saving CSG! Control_config_presets empty; Get a coder!");
+
+		// Next, just bash the current preset to be defaults
+		it = Control_config_presets.begin();
+	}
 
 	startSection(Section::Controls);
 
