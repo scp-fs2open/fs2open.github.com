@@ -32,6 +32,7 @@
 #include "object/objectshield.h"
 #include "object/objectsnd.h"
 #include "observer/observer.h"
+#include "scripting/hook_api.h"
 #include "scripting/scripting.h"
 #include "playerman/player.h"
 #include "radar/radar.h"
@@ -1644,6 +1645,12 @@ void obj_render(object *obj)
 	gr_reset_lighting();
 }
 
+const std::shared_ptr<scripting::Hook> OnObjectPostRenderHook = scripting::Hook::Factory(
+	"On Object Post Render", "Called immediately after an object is rendered.",
+	{
+		{"Object", "object", "The object that was rendered."},
+	});
+
 void obj_queue_render(object* obj, model_draw_list* scene)
 {
 	TRACE_SCOPE(tracing::QueueRender);
@@ -1711,6 +1718,8 @@ void obj_queue_render(object* obj, model_draw_list* scene)
 	default:
 		Error( LOCATION, "Unhandled obj type %d in obj_render", obj->type );
 	}
+
+	OnObjectPostRenderHook->run(scripting::hook_param_list(scripting::hook_param("Object", 'o', obj)));
 }
 
 void obj_init_all_ships_physics()
