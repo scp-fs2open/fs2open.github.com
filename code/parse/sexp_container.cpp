@@ -93,14 +93,16 @@ bool sexp_container::type_matches(const sexp_container &container) const
 	return get_non_persistent_type() == container.get_non_persistent_type();
 }
 
-// list_modifier functions
+// ListModifier-related functions
 
-list_modifier::Modifier list_modifier::get_modifier(const char *modifier_name)
+ListModifier get_list_modifier(const char *modifier_name, bool accept_prefix)
 {
 	Assert(modifier_name != nullptr);
 
 	for (const auto &modifier_obj : List_modifiers) {
-		if (modifier_obj.match_name(modifier_name)) {
+		if (accept_prefix && !strnicmp(modifier_obj.name, modifier_name, strlen(modifier_obj.name))) {
+			return modifier_obj.modifier;
+		} else if (!accept_prefix && !stricmp(modifier_obj.name, modifier_name)) {
 			return modifier_obj.modifier;
 		}
 	}
@@ -109,14 +111,18 @@ list_modifier::Modifier list_modifier::get_modifier(const char *modifier_name)
 	return ListModifier::INVALID;;
 }
 
-bool list_modifier::match_name(const char *other_name) const
+const char *get_list_modifier_name(const ListModifier modifier)
 {
-	if (modifier == ListModifier::AT_INDEX) {
-		// check if modifier is a prefix
-		return !strnicmp(name, other_name, strlen(name));
-	} else {
-		return !stricmp(name, other_name);
+	Assert(modifier != ListModifier::INVALID);
+
+	for (const auto &modifier_obj : List_modifiers) {
+		if (modifier_obj.modifier == modifier) {
+			return modifier_obj.name;
+		}
 	}
+
+	UNREACHABLE("get_list_modifier_name() given unknown modifier %d", (int)modifier);
+	return Empty_str;
 }
 
 // sexp_container.h functions
@@ -377,16 +383,9 @@ bool get_replace_text_for_modifier(const SCP_string &text,
 			return false;
 		}
 
-		const list_modifier *modifier_to_use = nullptr;
+		const auto modifier = get_list_modifier(text.c_str() + lookHere, true);
 
-		for (const auto &modifier : List_modifiers) {
-			if (!strnicmp(modifier.name, text.c_str() + lookHere, strlen(modifier.name))) {
-				modifier_to_use = &modifier;
-				break;
-			}
-		}
-
-		if (!modifier_to_use) {
+		if (modifier == ListModifier::INVALID) {
 			Warning(LOCATION,
 				"sexp_container_replace_refs_with_values() found a list container called %s to replace but the modifer "
 				"is not recognised",
@@ -394,13 +393,14 @@ bool get_replace_text_for_modifier(const SCP_string &text,
 			return false;
 		}
 
+		const size_t modifier_length = strlen(get_list_modifier_name(modifier));
 		int data_index = 0;
 		size_t number_length = 0;
 		SCP_string number_string;
 		auto &list_data = container.list_data;
 		auto list_it = list_data.begin();
 
-		switch (modifier_to_use->modifier) {
+		switch (modifier) {
 		case ListModifier::GET_FIRST:
 			replacement_text = list_data.front();
 			break;
@@ -432,7 +432,7 @@ bool get_replace_text_for_modifier(const SCP_string &text,
 			break;
 
 		case ListModifier::AT_INDEX:
-			number_string = text.substr(lookHere + strlen(modifier_to_use->name));
+			number_string = text.substr(lookHere + modifier_length);
 			Assert(!number_string.empty());
 			data_index = atoi(number_string.c_str());
 			if (data_index < 0 || data_index >= (int)list_data.size()) {
@@ -453,10 +453,10 @@ bool get_replace_text_for_modifier(const SCP_string &text,
 			return false;
 		}
 
-		num_chars_to_replace += strlen(modifier_to_use->name);
+		num_chars_to_replace += modifier_length;
 
 		// for the "At" modifier, we need to include the chars used by the index
-		if (modifier_to_use->modifier == ListModifier::AT_INDEX) {
+		if (modifier == ListModifier::AT_INDEX) {
 			num_chars_to_replace += number_length;
 		}
 	}
@@ -614,8 +614,8 @@ bool sexp_container_CTEXT_helper(int& node, sexp_container& container, SCP_strin
 			return false;
 		}
 
-		const char* modifier_name = CTEXT(node);
-		const auto modifier = list_modifier::get_modifier(modifier_name);
+		const char *modifier_name = CTEXT(node);
+		const auto modifier = get_list_modifier(modifier_name, false);
 
 
 		if (modifier == ListModifier::INVALID) {

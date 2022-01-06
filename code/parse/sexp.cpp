@@ -1965,7 +1965,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					(Sexp_nodes[modifier_node].subtype != SEXP_ATOM_CONTAINER)) {
 				if (container.is_list()) {
 					if ((Sexp_nodes[modifier_node].subtype != SEXP_ATOM_STRING) ||
-							(list_modifier::get_modifier(Sexp_nodes[modifier_node].text) == ListModifier::INVALID)) {
+							(get_list_modifier(Sexp_nodes[modifier_node].text, false) == ListModifier::INVALID)) {
 						if (bad_node)
 							*bad_node = modifier_node;
 						return SEXP_CHECK_INVALID_LIST_MODIFIER;
