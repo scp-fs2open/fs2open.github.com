@@ -1820,6 +1820,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 	int op_node;
 	int var_index = -1;
 	size_t st;
+	const sexp_container *p_container = nullptr;
 
 	Assert(node >= 0 && node < Num_sexp_nodes);
 	Assert(Sexp_nodes[node].type != SEXP_NOT_USED);
@@ -1988,18 +1989,18 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				return SEXP_CHECK_MISSING_CONTAINER_MODIFIER;
 			}
 
-			const auto *p_container = get_sexp_container(Sexp_nodes[node].text);
-			Assert(p_container); // name was already checked in get_sexp()
-			const auto &container = *p_container;
+			const auto *p_container_data = get_sexp_container(Sexp_nodes[node].text);
+			Assert(p_container_data); // name was already checked in get_sexp()
+			const auto &container_data = *p_container_data;
 
-			if (!check_container_data_type(type, container.type)) {
+			if (!check_container_data_type(type, container_data.type)) {
 				return SEXP_CHECK_WRONG_CONTAINER_DATA_TYPE;
 			}
 
 			// ignore nested "Replace" uses
 			if (!(Sexp_nodes[modifier_node].type & SEXP_FLAG_VARIABLE) &&
 					(Sexp_nodes[modifier_node].subtype != SEXP_ATOM_CONTAINER)) {
-				if (container.is_list()) {
+				if (container_data.is_list()) {
 					const auto modifier = list_modifier::get_modifier(Sexp_nodes[modifier_node].text);
 					if ((Sexp_nodes[modifier_node].subtype != SEXP_ATOM_STRING) ||
 							(modifier == ListModifier::INVALID)) {
@@ -2022,17 +2023,17 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 							return SEXP_CHECK_INVALID_LIST_MODIFIER;
 						}
 					}
-				} else if (container.is_map()) {
-					if ((any(container.type & ContainerType::NUMBER_KEYS) &&
+				} else if (container_data.is_map()) {
+					if ((any(container_data.type & ContainerType::NUMBER_KEYS) &&
 							Sexp_nodes[modifier_node].subtype != SEXP_ATOM_NUMBER) ||
-						(any(container.type & ContainerType::STRING_KEYS) &&
+						(any(container_data.type & ContainerType::STRING_KEYS) &&
 							Sexp_nodes[modifier_node].subtype != SEXP_ATOM_STRING)) {
 						if (bad_node)
 							*bad_node = modifier_node;
 						return SEXP_CHECK_WRONG_MAP_KEY_TYPE;
 					}
 				} else {
-					UNREACHABLE("Unknown container type %d", (int)container.type);
+					UNREACHABLE("Unknown container type %d", (int)container_data.type);
 				}
 			}
 
@@ -2646,7 +2647,56 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 			// Goober5000
 			case OPF_ANYTHING:
-				break;
+				// jg18 - check SEXP args for container data/keys
+				switch (get_operator_const(op_node)) {
+					case OP_LIST_HAS_DATA:
+					case OP_LIST_DATA_INDEX:
+					case OP_MAP_HAS_DATA_ITEM:
+					case OP_CONTAINER_ADD_TO_LIST:
+					case OP_CONTAINER_REMOVE_FROM_LIST:
+						Assert(p_container);
+						if ((any(p_container->type & ContainerType::STRING_DATA) && (type2 != SEXP_ATOM_STRING)) ||
+							((any(p_container->type & ContainerType::NUMBER_DATA) && (type2 != OPR_NUMBER) &&
+								(type2 != OPR_POSITIVE)))) {
+							return SEXP_CHECK_WRONG_CONTAINER_DATA_TYPE;
+						}
+						break;
+
+					case OP_MAP_HAS_KEY:
+					case OP_CONTAINER_REMOVE_FROM_MAP:
+						Assert(p_container);
+						Assert(p_container->is_map());
+						if ((any(p_container->type & ContainerType::STRING_KEYS) && (type2 != SEXP_ATOM_STRING)) ||
+							((any(p_container->type & ContainerType::NUMBER_KEYS) && (type2 != OPR_NUMBER) &&
+								(type2 != OPR_POSITIVE)))) {
+							return SEXP_CHECK_WRONG_MAP_KEY_TYPE;
+						}
+						break;
+
+					case OP_CONTAINER_ADD_TO_MAP:
+						Assert(p_container);
+						Assert(p_container->is_map());
+						if (argnum % 2 != 0) {
+							// map key
+							if ((any(p_container->type & ContainerType::STRING_KEYS) && (type2 != SEXP_ATOM_STRING)) ||
+								((any(p_container->type & ContainerType::NUMBER_KEYS) && (type2 != OPR_NUMBER) &&
+									(type2 != OPR_POSITIVE)))) {
+								return SEXP_CHECK_WRONG_MAP_KEY_TYPE;
+							}
+						} else {
+							// map data
+							if ((any(p_container->type & ContainerType::STRING_DATA) && (type2 != SEXP_ATOM_STRING)) ||
+								((any(p_container->type & ContainerType::NUMBER_DATA) && (type2 != OPR_NUMBER) &&
+									(type2 != OPR_POSITIVE)))) {
+								return SEXP_CHECK_WRONG_CONTAINER_DATA_TYPE;
+							}
+						}
+						break;
+
+					default:
+						// no check needed
+						break;
+				}
 
 			case OPF_AI_GOAL:
 			{
