@@ -290,6 +290,13 @@ namespace animation {
 			ModelAnimationSet::cleanRunning();
 	}
 
+	float ModelAnimation::getTime(int pmi_id) const{
+		auto instance = m_instances.find(pmi_id);
+		if (instance != m_instances.end())
+			return instance->second.time;
+		return 0.0f;
+	}
+
 	void ModelAnimation::stepAnimations(float frametime, polymodel_instance* pmi) {
 		auto animListIt = ModelAnimationSet::s_runningAnimations.find(pmi->id);
 
@@ -1243,7 +1250,8 @@ namespace animation {
 
 	void ModelAnimationParseHelper::parseSingleMoveable() {
 		volatile ModelAnimationMoveableOrientation o = ModelAnimationMoveableOrientation(nullptr, angles{ 0,0,0 });
-
+		volatile ModelAnimationMoveableRotation r = ModelAnimationMoveableRotation(nullptr, angles{ 0,0,0 }, angles{0,0,0}, optional<angles>());
+		
 		required_string("$Name:");
 		char animID[NAME_LENGTH];
 		stuff_string(animID, F_NAME, NAME_LENGTH);

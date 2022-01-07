@@ -173,7 +173,9 @@ namespace animation {
 
 	ModelAnimationSegmentSetOrientation::ModelAnimationSegmentSetOrientation(std::shared_ptr<ModelAnimationSubmodel> submodel, const angles& angle, bool isAngleRelative) :
 		m_submodel(std::move(submodel)), m_targetAngle(angle), m_isAngleRelative(isAngleRelative) { }
-
+	ModelAnimationSegmentSetOrientation::ModelAnimationSegmentSetOrientation(std::shared_ptr<ModelAnimationSubmodel> submodel, const matrix& orientation, bool isAngleRelative) :
+			m_submodel(std::move(submodel)), m_targetOrientation(orientation), m_isAngleRelative(isAngleRelative) { }
+		
 	ModelAnimationSegment* ModelAnimationSegmentSetOrientation::copy() const {
 		return new ModelAnimationSegmentSetOrientation(*this);
 	}

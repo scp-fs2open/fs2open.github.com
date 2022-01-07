@@ -7,8 +7,12 @@ namespace animation {
 	//This segment handles multiple generic segments chained after one another
 	class ModelAnimationSegmentSerial : public ModelAnimationSegment {
 		static ModelAnimationParseHelper::Segment reg;
+		
+		//configureables:
+	public:
 		std::vector<std::shared_ptr<ModelAnimationSegment>> m_segments;
 
+	private:
 		ModelAnimationSegment* copy() const override;
 		void recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) override;
 		void calculateAnimation(ModelAnimationSubmodelBuffer& base, float time, int pmi_id) const override;
@@ -24,8 +28,12 @@ namespace animation {
 	//This segment handles multiple generic segments executing in parallel
 	class ModelAnimationSegmentParallel : public ModelAnimationSegment {
 		static ModelAnimationParseHelper::Segment reg;
+		
+		//configureables:
+	public:
 		std::vector<std::shared_ptr<ModelAnimationSegment>> m_segments;
 
+	private:
 		ModelAnimationSegment* copy() const override;
 		void recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) override;
 		void calculateAnimation(ModelAnimationSubmodelBuffer& base, float time, int pmi_id) const override;
@@ -41,8 +49,12 @@ namespace animation {
 	//This segment does nothing but serve as a placeholder taking up time, used primarily in serial segments
 	class ModelAnimationSegmentWait : public ModelAnimationSegment {
 		static ModelAnimationParseHelper::Segment reg;
+
+		//configureables:
+	public:
 		float m_time;
 
+	private:
 		ModelAnimationSegment* copy() const override;
 		void recalculate(ModelAnimationSubmodelBuffer& /*base*/, polymodel_instance* pmi) override;
 		void calculateAnimation(ModelAnimationSubmodelBuffer& /*base*/, float /*time*/, int /*pmi_id*/) const override { };
@@ -65,10 +77,9 @@ namespace animation {
 		//PMI ID -> Instance Data
 		std::map<int, instance_data> m_instances;
 
-		std::shared_ptr<ModelAnimationSubmodel> m_submodel;
-
 		//configurables:
 	public:
+		std::shared_ptr<ModelAnimationSubmodel> m_submodel;
 		optional<angles> m_targetAngle;
 		optional<matrix> m_targetOrientation;
 		bool m_isAngleRelative;
@@ -89,11 +100,14 @@ namespace animation {
 	//This segment rotates a submodels orientation by a certain amount around its defined rotation axis
 	class ModelAnimationSegmentSetAngle : public ModelAnimationSegment {
 		static ModelAnimationParseHelper::Segment reg;
-		std::shared_ptr<ModelAnimationSubmodel> m_submodel;
 
+		//configurables:
+	public:
+		std::shared_ptr<ModelAnimationSubmodel> m_submodel;
 		float m_angle;
 		matrix m_rot;
 
+	private:
 		ModelAnimationSegment* copy() const override;
 		void recalculate(ModelAnimationSubmodelBuffer& /*base*/, polymodel_instance* pmi) override;
 		void calculateAnimation(ModelAnimationSubmodelBuffer& base, float /*time*/, int /*pmi_id*/) const override;
@@ -120,15 +134,17 @@ namespace animation {
 
 		//PMI ID -> Instance Data
 		std::map<int, instance_data> m_instances;
-
+		
+		//configurables:
+	public:
 		std::shared_ptr<ModelAnimationSubmodel> m_submodel;
-
 		optional<angles> m_targetAngle;
 		optional<angles> m_velocity;
 		optional<float> m_time;
 		optional<angles> m_acceleration;
 		bool m_isAbsolute;
 
+	private:
 		ModelAnimationSegment* copy() const override;
 		void recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) override;
 		void calculateAnimation(ModelAnimationSubmodelBuffer& base, float time, int pmi_id) const override;
@@ -155,14 +171,16 @@ namespace animation {
 		//PMI ID -> Instance Data
 		std::map<int, instance_data> m_instances;
 
+		//configurables:
+	public:
 		std::shared_ptr<ModelAnimationSubmodel> m_submodel;
-
 		optional<vec3d> m_target;
 		optional<vec3d> m_velocity;
 		optional<float> m_time;
 		optional<vec3d> m_acceleration;
 		enum class CoordinateSystem { COORDS_PARENT, COORDS_LOCAL_AT_START, COORDS_LOCAL_CURRENT } m_coordType;
 
+	private:
 		ModelAnimationSegment* copy() const override;
 		void recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) override;
 		void calculateAnimation(ModelAnimationSubmodelBuffer& base, float time, int pmi_id) const override;
@@ -186,11 +204,14 @@ namespace animation {
 		//PMI ID -> Instance Data
 		std::map<int, instance_data> m_instances;
 
+		//configurables:
+	public:
 		gamesnd_id m_start;
 		gamesnd_id m_end;
 		gamesnd_id m_during;
 		bool m_flipIfReversed;
-
+		
+	private:
 		ModelAnimationSegment* copy() const override;
 		void recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) override;
 		void calculateAnimation(ModelAnimationSubmodelBuffer& base, float time, int pmi_id) const override;

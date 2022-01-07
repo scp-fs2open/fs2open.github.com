@@ -124,8 +124,8 @@ namespace animation {
 			position(other.position),
 			orientation(other.orientation) {};
 
-		maybe_optional<vec3d> position;
 		maybe_optional<matrix> orientation;
+		maybe_optional<vec3d> position;
 
 		//This might be a performance bottleneck, but it's the cleanest I can make this without if constexpr and not repeating this code for both types of MAD.
 		void applyDelta(const ModelAnimationData<true>& delta) {
@@ -267,6 +267,8 @@ namespace animation {
 		//Stops the animation. If cleanup is set, it will remove the animation from the list of running animations. Don't call without cleanup unless you know what you are doing
 		void stop(polymodel_instance* pmi, bool cleanup = true);
 
+		float getTime(int pmi_id) const;
+		
 		static void stepAnimations(float frametime, polymodel_instance* pmi);
 
 		unsigned int id = 0;
