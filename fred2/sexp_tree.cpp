@@ -1601,7 +1601,9 @@ void sexp_tree::right_clicked(int mode)
 			menu.EnableMenuItem(ID_EDIT_CUT, MF_GRAYED);
 			menu.EnableMenuItem(ID_EDIT_COPY, MF_GRAYED);
 			menu.EnableMenuItem(ID_EDIT_PASTE, MF_GRAYED);
-		} else if (tree_nodes[item_index].type & SEXPT_CONTAINER_DATA) {
+		}
+		// can't use else-if here, because container data is a valid modifier
+		if (tree_nodes[item_index].type & SEXPT_CONTAINER_DATA) {
 			// container data nodes don't support add-pasting modifiers
 			menu.EnableMenuItem(ID_EDIT_PASTE_SPECIAL, MF_GRAYED);
 		}
