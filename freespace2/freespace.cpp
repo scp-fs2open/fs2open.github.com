@@ -4207,6 +4207,7 @@ void game_set_frametime(int state)
 {
 	fix thistime;
 	float frame_cap_diff;
+	bool do_pre_player_skip = false;
 
 	thistime = timer_get_fixed_seconds();
 
@@ -4220,8 +4221,10 @@ void game_set_frametime(int state)
 #endif
 
 	//	If player hasn't entered mission yet, make frame take 1/4 second.
-	if ((Pre_player_entry) && (state == GS_STATE_GAME_PLAY))
+	if ((Pre_player_entry) && (state == GS_STATE_GAME_PLAY)) {
 		Frametime = F1_0/4;
+		do_pre_player_skip = true;
+	}
 #ifndef NDEBUG
 	else if ((Debug_dump_frames) && (state == GS_STATE_GAME_PLAY)) {				// note link to above if!!!!!
 	
@@ -4300,6 +4303,10 @@ void game_set_frametime(int state)
 	Last_frame_timestamp = timestamp();
 
 	flFrametime = f2fl(Frametime);
+
+	// before the player enters the mission, we blitz through time
+	if (do_pre_player_skip)
+		timer_adjust(flFrametime);
 
 	// wrap overall frametime if needed
 	if ( FrametimeOverall > (INT_MAX - F1_0) )

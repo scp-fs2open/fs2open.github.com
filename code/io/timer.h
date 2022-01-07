@@ -72,6 +72,10 @@ void timer_pause_timestamp(bool sudo);
 // See above re: the sudo parameter
 void timer_unpause_timestamp(bool sudo);
 
+// This should only be called before the player has entered the mission!
+// Calling this function will render inaccurate any timestamps that have been saved.
+void timer_adjust(float delta);
+
 // Save the timestamp corresponding to the beginning of the mission
 void timer_start_mission();
 

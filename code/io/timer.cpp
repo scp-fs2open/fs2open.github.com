@@ -157,6 +157,21 @@ void timer_unpause_timestamp(bool sudo)
 	}
 }
 
+void timer_adjust(float delta)
+{
+	Assertion(Timer_inited, "Timer should be initialized at this point!");
+	Assertion(Timer_timestamp_offset_from_counter != 0 && Timer_timestamp_paused_at_counter != 0 && Timestamp_microseconds_at_mission_start != 0,
+		"Warranty void if these variables have not been set!");
+
+	auto microseconds = (long double) delta * MICROSECONDS_PER_SECOND;
+	auto timer_delta = (uint64_t) (microseconds / Timer_to_microseconds);
+
+	// adjust all the internal variables so it is as if the timer jumped forward
+	Timestamp_microseconds_at_mission_start -= (uint64_t) microseconds;
+	Timer_timestamp_offset_from_counter -= timer_delta;
+	Timer_timestamp_paused_at_counter -= timer_delta;
+}
+
 void timer_start_mission()
 {
 	Timestamp_microseconds_at_mission_start = timestamp_get_microseconds();
