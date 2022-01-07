@@ -32837,45 +32837,48 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	// Karajorma/jg18
 	{ OP_CONTAINER_ADD_TO_LIST, "add-to-list\r\n"
-		"\tAdds a new entry to a SEXP container.\r\n\r\n"
+		"\tAdds new entries to a list container.\r\n\r\n"
 		"Takes 3 or more arguments...\r\n"
-		"\t1:\tName of the list.\r\n"
+		"\t1:\tName of the list container.\r\n"
 		"\t2:\tIndicates whether to add the data to the start or the end of the list. True means at the end, false means at the start.\r\n"
-		"\tRest:\tThe data to be added. In strictly typed containers, this type must match the type of data of the container.\r\n" },
+		"\tRest:\tThe data to be added." },
 
 	// Karajorma/jg18
 	{ OP_CONTAINER_REMOVE_FROM_LIST, "remove-from-list\r\n"
-		"\tRemoves an entry from a SEXP list container.\r\n\r\n"
+		"\tRemoves entries from a list container.\r\n\r\n"
 		"Takes 2 or more arguments...\r\n"
-		"\t1:\tName of the list.\r\n"
-		"\tRest:\tThe data to be removed.\r\n" },
+		"\t1:\tName of the list container.\r\n"
+		"\tRest:\tThe data to be removed." },
 
 	// Karajorma/jg18
 	{ OP_CONTAINER_ADD_TO_MAP, "add-to-map\r\n"
-		"\tAdds a new entry to a SEXP container.\r\n\r\n"
+		"\tAdds new entries to a map container.\r\n"
+		"\tIf the map container already has data associated with the provided key, the data is replaced.\r\n\r\n"
 		"Takes 3 or more arguments...\r\n"
-		"\t1:\tName of the map.\r\n"
-		"\t2:\tThe key that will be used to retrieve the data stored in the map. In strictly typed containers, this type of key must match the type of data of the container.\r\n"
-		"\tRest:\tThe value to be added. In strictly typed containers, this type must match the type of data of the class.\r\n" },
+		"\t1:\tName of the map container.\r\n"
+		"\t2:\tKey that will be used to retrieve the data stored in the map.\r\n"
+		"\t3:\tData that will be associated with the provided key.\r\n"
+		"\tRest:\tAdditional pairs of arguments of a key and its associated data." },
 
 	// Karajorma/jg18
 	{ OP_CONTAINER_REMOVE_FROM_MAP, "remove-from-map\r\n"
-		"\tRemoveschange an new entry from a SEXP map container.\r\n\r\n"
+		"\tRemoves entries by their keys from a map container.\r\n"
+		"\tIgnores keys that are not associated with data in the map container.\r\n\r\n"
 		"Takes 2 or more arguments...\r\n"
-		"\t1:\tName of the map.\r\n"
-		"\tRest:\tThe key that will be used to retrieve the data stored in the map. \r\n" },
+		"\t1:\tName of the map container.\r\n"
+		"\tRest:\tKey whose data will be removed." },
 
 	// Karajorma/jg18
 	{ OP_CONTAINER_GET_MAP_KEYS, "get-map-keys\r\n"
-		"\tTakes the keys of a SEXP map container and puts them into a SEXP list container.\r\n\r\n"
-		"Takes 2 or more arguments...\r\n"
+		"\tTakes the keys of a map container and puts them into a list container.\r\n\r\n"
+		"Takes 2 or 3 arguments...\r\n"
 		"\t1:\tName of the map container.\r\n"
 		"\t2:\tName of the list container.\r\n"
-		"\t3:\t(Optional) When true the current contents of the list will be wiped. When false the keys will be appended to the end of the list.\r\n" },
+		"\t3:\t(Optional) When true, the current contents of the list will be wiped. When false, the keys will be appended to the end of the list." },
 
 	// Karajorma/jg18
 	{ OP_CLEAR_CONTAINER, "add-to-map\r\n"
-		"\tDeletes the current contents of a SEXP container.\r\n\r\n"
+		"\tDeletes the current contents of a container.\r\n\r\n"
 		"Takes 1 argument...\r\n"
 		"\t1:\tName of the container.\r\n" },
 
