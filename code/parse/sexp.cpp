@@ -33577,50 +33577,50 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t5: String variable to hold the result\r\n" },
 
 	// Karajorma/jg18
-	{ OP_IS_CONTAINER_EMPTY, "Is Container Empty (Boolean operator)\r\n"
+	{ OP_IS_CONTAINER_EMPTY, "is-container-empty (Boolean operator)\r\n"
 		"\tReturns true if the specified container has no elements in it.\r\n\r\n"
 		"Takes 1 argument...\r\n"
 		"\t1:\tName of the container." },
 
 	// Karajorma/jg18
 	{ OP_GET_CONTAINER_SIZE, "get-container-size (Status operator)\r\n"
-		"\tReturns the number of elements in the specified container (or 0 if empty).\r\n\r\n"
+		"\tReturns the number of elements in the specified container, or 0 if empty.\r\n\r\n"
 		"Takes 1 argument...\r\n"
 		"\t1:\tName of the container." },
 
 	// Karajorma/jg18
-	{ OP_LIST_HAS_DATA, "List-has-data (Boolean operator)\r\n"
-		"\tReturns true if the specified list container has elements which match the supplied strings.\r\n\r\n"
+	{ OP_LIST_HAS_DATA, "list-has-data (Boolean operator)\r\n"
+		"\tReturns true if the specified list container has elements which match the supplied values.\r\n\r\n"
 		"Takes 2 or more arguments...\r\n"
-		"\t1:\tName of the list container."
-		"\tRest:\tString that might be in the list container" },
+		"\t1:\tName of the list container.\r\n"
+		"\tRest:\tValue that might be in the list container" },
 
 	// Karajorma/jg18
-	{ OP_LIST_DATA_INDEX, "List-data-index\r\n"
-		"\tReturns the index (starting at 0) for the supplied string in the list container.\r\n"
-		"\tIf the supplied string is not present in the container, returns -1\r\n"
+	{ OP_LIST_DATA_INDEX, "list-data-index\r\n"
+		"\tReturns the index (starting at 0) for the supplied value in the list container.\r\n"
+		"\tIf the supplied value is not in the container, returns -1.\r\n\r\n"
 		"Takes 2 arguments...\r\n"
-		"\t1:\tName of the list container."
-		"\t2:\tString that might be in the list container" },
+		"\t1:\tName of the list container.\r\n"
+		"\t2:\tValue that might be in the list container" },
 
 	// Karajorma/jg18
-	{ OP_MAP_HAS_KEY, "Map-has-key (Boolean operator)\r\n"
-		"\tReturns true if the specified map container has keys that match the supplied strings.\r\n\r\n"
+	{ OP_MAP_HAS_KEY, "map-has-key (Boolean operator)\r\n"
+		"\tReturns true if the specified map container has keys that match the supplied values.\r\n\r\n"
 		"Takes 2 or more arguments...\r\n"
-		"\t1:\tName of the container."
-		"\tRest:\tString that might be a key in the map container" },
+		"\t1:\tName of the map container.\r\n"
+		"\tRest:\tValue that might be a key in the map container" },
 
 	// Karajorma/jg18
-	{ OP_MAP_HAS_DATA_ITEM, "Map-has-data-item (Boolean operator)\r\n"
-		"\tReturns true if the specified map container has a key whose data matches the supplied string.\r\n\r\n"
-		"\tIf a variable is also supplied, three cases are possible:\r\n\r\n"
-		"\t\t(1) If a single key has the supplied string as its data, the key is stored in the variable.\r\n\r\n"
-		"\t\t(2) If multiple keys have the supplied string as their data, one of those keys is stored in the variable. The key may not be the same every time.\r\n\r\n"
-		"\t\t(3) If there is no key that has the supplied string as its data, the variable is left unchanged.\r\n\r\n"
+	{ OP_MAP_HAS_DATA_ITEM, "map-has-data-item (Boolean operator)\r\n"
+		"\tReturns true if the specified map container has a key whose data matches the supplied value.\r\n"
+		"\tIf a variable is also supplied, three cases are possible:\r\n"
+		"\t\t(1) If a single key has the supplied value as its data, the key is stored in the variable.\r\n"
+		"\t\t(2) If multiple keys have the supplied value as their data, one of those keys is stored in the variable. The key may not be the same every time.\r\n"
+		"\t\t(3) If there is no key that has the supplied value as its data, the variable is left unchanged.\r\n\r\n"
 		"Takes either 2 or 3 arguments...\r\n"
-		"\t1:\tName of the container."
-		"\t2:\tString that might be data associated with a key in the map container."
-		"\t3:\tString variable to hold a map key associated with the data, if one exists (optional)." },
+		"\t1:\tName of the map container.\r\n"
+		"\t2:\tValue that might be data associated with a key in the map container.\r\n"
+		"\t3:\tVariable to hold a map key associated with the data, if one exists (optional). The variable type must match the key type." },
 
 	// Karajorma
 	{ OP_DEBUG, "debug\r\n"
