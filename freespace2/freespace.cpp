@@ -3944,8 +3944,10 @@ void game_frame(bool paused)
 			}
 		}
 	
-		if (Missiontime > Entry_delay_time)
+		if (Pre_player_entry && Missiontime > Entry_delay_time) {
 			Pre_player_entry = 0;
+			event_music_set_start_delay();
+		}
 
 		//	Note: These are done even before the player enters, else buffers can overflow.
 		if (! (Game_mode & GM_STANDALONE_SERVER)){
