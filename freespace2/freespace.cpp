@@ -345,11 +345,6 @@ extern void ssm_process();
 // I figure out how to get the username into the file
 //LOCAL char freespace_build_time[] = "Compiled on:"__DATE__" "__TIME__" by "__USER__;
 
-// defines and variables used for dumping frame for making trailers.
-#ifndef NDEBUG
-int Debug_dump_frames = 0;			// Set to 0 to not dump frames, else equal hz to dump. (15 or 30 probably)
-#endif
-
 // amount of time to wait after the player has died before we display the death died popup
 #define PLAYER_DIED_POPUP_WAIT		2500
 int Player_died_popup_wait = -1;
@@ -2101,11 +2096,6 @@ void game_show_framerate()
 			gr_printf_no_resize( gr_screen.center_offset_x + 20, gr_screen.center_offset_y + 100 - line_height, "BMPMAN: %d/%d", bmpman_count_bitmaps(), bmpman_count_available_slots() );
 		}
 	}
-
-#ifndef NDEBUG
-	if ( Debug_dump_frames )
-		return;
-#endif	
 
 	// possibly show control checking info
 	control_check_indicate();
@@ -4227,22 +4217,6 @@ void game_set_frametime(int state)
 		Frametime = F1_0/4;
 		do_pre_player_skip = true;
 	}
-#ifndef NDEBUG
-	else if ((Debug_dump_frames) && (state == GS_STATE_GAME_PLAY)) {				// note link to above if!!!!!
-	
-		fix frame_speed = F1_0 / Debug_dump_frames;
-
-		if (Frametime > frame_speed ){
-			nprintf(("warning","slow frame: %x\n",(int)Frametime));
-		} else {			
-			do {
-				thistime = timer_get_fixed_seconds();
-				Frametime = thistime - Last_time;
-			} while (Frametime < frame_speed );			
-		}
-		Frametime = frame_speed;
-	}
-#endif
 
 	Assertion( Framerate_cap > 0, "Framerate cap %d is too low. Needs to be a positive, non-zero number", Framerate_cap );
 
@@ -4934,7 +4908,7 @@ void game_process_event( int current_state, int event )
 			break;
 
 		case GS_EVENT_GAME_INIT:
-			// see if the command line option has been set to use the last pilot, and act acoordingly
+			// see if the command line option has been set to use the last pilot, and act accordingly
 			if( player_select_get_last_pilot() ) {	
 				// always enter the main menu -- do the automatic network startup stuff elsewhere
 				// so that we still have valid checks for networking modes, etc.
