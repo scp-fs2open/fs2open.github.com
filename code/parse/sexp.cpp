@@ -19882,7 +19882,7 @@ void sexp_update_moveable_animation(int node)
 	std::vector<linb::any> args;
 
 	while(node >= 0) {
-		args.push_back(eval_num(node, is_nan, is_nan_forever));
+		args.emplace_back(eval_num(node, is_nan, is_nan_forever));
 		node = CDR(node);
 	}
 

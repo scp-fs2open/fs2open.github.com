@@ -124,8 +124,8 @@ namespace animation {
 			position(other.position),
 			orientation(other.orientation) {};
 
-		maybe_optional<matrix> orientation;
 		maybe_optional<vec3d> position;
+		maybe_optional<matrix> orientation;
 
 		//This might be a performance bottleneck, but it's the cleanest I can make this without if constexpr and not repeating this code for both types of MAD.
 		void applyDelta(const ModelAnimationData<true>& delta) {

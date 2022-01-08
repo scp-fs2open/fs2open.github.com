@@ -1140,7 +1140,6 @@ namespace animation {
 	}
 
 	void ModelAnimationParseHelper::parseSingleAnimation() {
-		auto animation = std::shared_ptr<ModelAnimation>(new ModelAnimation(true));
 
 		ModelAnimationParseHelper helper;
 		required_string("$Name:");
@@ -1155,12 +1154,14 @@ namespace animation {
 		char atype[NAME_LENGTH];
 		stuff_string(atype, F_NAME, NAME_LENGTH);
 		ModelAnimationTriggerType type = anim_match_type(atype);
-
+		
 		if (type == ModelAnimationTriggerType::None) {
 			error_display(1, "Animation with unknown trigger type %s!", atype);
 			return;
 		}
 
+		auto animation = std::shared_ptr<ModelAnimation>(new ModelAnimation(type == ModelAnimationTriggerType::Initial));
+		
 		int subtype = ModelAnimationSet::SUBTYPE_DEFAULT;
 		SCP_string name;
 
@@ -1458,7 +1459,7 @@ namespace animation {
 			sip->animations.emplace(anim, name, ModelAnimationTriggerType::Initial, ModelAnimationSet::SUBTYPE_DEFAULT, ModelAnimationParseHelper::getUniqueAnimationID(name + Animation_types.at(ModelAnimationTriggerType::Initial).first + std::to_string(subtype), 'b', sip->name));
 		}
 		else {
-			auto anim = std::shared_ptr<ModelAnimation>(new ModelAnimation(true));
+			auto anim = std::shared_ptr<ModelAnimation>(new ModelAnimation());
 			auto subsys = sip->animations.getSubmodel(sp->subobj_name);
 
 			if (type == ModelAnimationTriggerType::TurretFired) {

@@ -4,7 +4,7 @@
 namespace animation {
 
 	ModelAnimationMoveableOrientation::ModelAnimationMoveableOrientation(std::shared_ptr<ModelAnimationSubmodel> submodel, const angles& defaultOrient) :
-		m_submodel(submodel), m_defaultPosOrient(defaultOrient) { }
+		m_submodel(std::move(submodel)), m_defaultPosOrient(defaultOrient) { }
 
 	void ModelAnimationMoveableOrientation::update(polymodel_instance* pmi, const std::vector<linb::any>& args) {
 		if(args.size() < 3){
@@ -51,7 +51,7 @@ namespace animation {
 
 
 	ModelAnimationMoveableRotation::ModelAnimationMoveableRotation(std::shared_ptr<ModelAnimationSubmodel> submodel, const angles& defaultOrient, const angles& velocity, const optional<angles>& acceleration) :
-			m_submodel(submodel), m_defaultPosOrient(defaultOrient), m_velocity(velocity), m_acceleration(acceleration) { }
+			m_submodel(std::move(submodel)), m_defaultPosOrient(defaultOrient), m_velocity(velocity), m_acceleration(acceleration) { }
 
 	void ModelAnimationMoveableRotation::update(polymodel_instance* pmi, const std::vector<linb::any>& args) {
 		if(args.size() < 3){

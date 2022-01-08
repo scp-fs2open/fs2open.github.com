@@ -194,10 +194,10 @@ namespace animation {
 
 			vm_copy_transpose(&unrotate, &submodel.orientation);
 
-			m_targetAngle.if_filled([&target, pmi_id](const angles& targetAngle) -> void {
+			m_targetAngle.if_filled([&target](const angles& targetAngle) -> void {
 				vm_angles_2_matrix(&target, &targetAngle);
 			});
-			m_targetOrientation.if_filled([&target, pmi_id](const matrix& targetOrient) -> void {
+			m_targetOrientation.if_filled([&target](const matrix& targetOrient) -> void {
 				target = targetOrient;
 			});
 
