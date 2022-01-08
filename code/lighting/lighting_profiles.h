@@ -51,6 +51,11 @@ public:
 	static piecewise_power_curve_intermediates current_piecewise_intermediates();
 	static piecewise_power_curve_intermediates calc_intermediates(piecewise_power_curve_values input);
 	static float current_exposure();
+	static void lab_set_exposure(float exIn);
+	static void lab_set_tonemapper(TonemapperAlgorithm tnin);
+	static void lab_set_ppc(piecewise_power_curve_values ppcin );
+	static piecewise_power_curve_values lab_get_ppc();
+
 
 	SCP_string name;
     TonemapperAlgorithm tonemapper;
