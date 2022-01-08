@@ -722,7 +722,7 @@ void game_sunspot_process(float frametime)
 			for(idx=0; idx<n_lights; idx++)	{
 				bool in_shadow = shipfx_eye_in_shadow(&Eye_position, Viewer_obj, idx);
 
-				if (gr_lightshafts_enabled() || !in_shadow) {
+				if (gr_lightshafts_enabled() && !in_shadow) {
 					vec3d light_dir;				
 					light_get_global_dir(&light_dir, idx);
 
