@@ -36,8 +36,7 @@ namespace animation {
 
 		anim->start(pmi,ModelAnimationDirection::FWD);
 	}
-
-	ModelAnimationParseHelper::Moveable ModelAnimationMoveableOrientation::reg("Orientation", &parser);
+	
 	std::shared_ptr<ModelAnimationMoveable> ModelAnimationMoveableOrientation::parser() {
 		required_string("+Angle:");
 		angles angle;
@@ -108,8 +107,7 @@ namespace animation {
 
 		anim->start(pmi,ModelAnimationDirection::FWD);
 	}
-
-	ModelAnimationParseHelper::Moveable ModelAnimationMoveableRotation::reg("Rotation", &parser);
+	
 	std::shared_ptr<ModelAnimationMoveable> ModelAnimationMoveableRotation::parser() {
 		required_string("+Angle:");
 		angles angle;

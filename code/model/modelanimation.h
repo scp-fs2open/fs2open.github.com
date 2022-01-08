@@ -388,15 +388,6 @@ namespace animation {
 
 
 	public:
-		class Segment {
-		public:
-			Segment(const SCP_string& name, const ModelAnimationSegmentParser& parser) { s_segmentParsers.emplace(name, parser); }
-		};
-		class Moveable {
-		public:
-			Moveable(const SCP_string& name, const ModelAnimationMoveableParser& parser) { s_moveableParsers.emplace(name, parser); }
-		};
-		
 		std::shared_ptr<ModelAnimationSegment> parseSegment();
 		//Per Animation parsing Data
 		SCP_string m_animationName;

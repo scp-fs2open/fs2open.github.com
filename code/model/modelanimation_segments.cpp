@@ -61,8 +61,7 @@ namespace animation {
 	void ModelAnimationSegmentSerial::addSegment(std::shared_ptr<ModelAnimationSegment> segment) {
 		m_segments.push_back(std::move(segment));
 	}
-
-	ModelAnimationParseHelper::Segment ModelAnimationSegmentSerial::reg("$Segment Sequential:", &parser);
+	
 	std::shared_ptr<ModelAnimationSegment> ModelAnimationSegmentSerial::parser(ModelAnimationParseHelper* data) {
 		auto submodelOverride = ModelAnimationParseHelper::parseSubmodel();
 
@@ -131,8 +130,7 @@ namespace animation {
 	void ModelAnimationSegmentParallel::addSegment(std::shared_ptr<ModelAnimationSegment> segment) {
 		m_segments.push_back(std::move(segment));
 	}
-
-	ModelAnimationParseHelper::Segment ModelAnimationSegmentParallel::reg("$Segment Parallel:", &parser);
+	
 	std::shared_ptr<ModelAnimationSegment> ModelAnimationSegmentParallel::parser(ModelAnimationParseHelper* data) {
 		auto submodelOverride = ModelAnimationParseHelper::parseSubmodel();
 
@@ -160,8 +158,7 @@ namespace animation {
 	void ModelAnimationSegmentWait::recalculate(ModelAnimationSubmodelBuffer& /*base*/, polymodel_instance* pmi) {
 		m_duration[pmi->id] = m_time;
 	};
-
-	ModelAnimationParseHelper::Segment ModelAnimationSegmentWait::reg("$Wait:", &parser);
+	
 	std::shared_ptr<ModelAnimationSegment> ModelAnimationSegmentWait::parser(ModelAnimationParseHelper* /*data*/) {
 		required_string("+Time:");
 		float time = 0.0f;
@@ -221,8 +218,7 @@ namespace animation {
 	void ModelAnimationSegmentSetOrientation::exchangeSubmodelPointers(ModelAnimationSet& replaceWith) {
 		m_submodel = replaceWith.getSubmodel(m_submodel);
 	}
-
-	ModelAnimationParseHelper::Segment ModelAnimationSegmentSetOrientation::reg("$Set Orientation:", &parser);
+	
 	std::shared_ptr<ModelAnimationSegment> ModelAnimationSegmentSetOrientation::parser(ModelAnimationParseHelper* data) {
 		angles angle;
 		bool isRelative = true;
@@ -303,8 +299,7 @@ namespace animation {
 	void ModelAnimationSegmentSetAngle::exchangeSubmodelPointers(ModelAnimationSet& replaceWith) {
 		m_submodel = replaceWith.getSubmodel(m_submodel);
 	}
-
-	ModelAnimationParseHelper::Segment ModelAnimationSegmentSetAngle::reg("$Set Angle:", &parser);
+	
 	std::shared_ptr<ModelAnimationSegment> ModelAnimationSegmentSetAngle::parser(ModelAnimationParseHelper* data) {
 		float angle;
 
@@ -562,8 +557,7 @@ namespace animation {
 	void ModelAnimationSegmentRotation::exchangeSubmodelPointers(ModelAnimationSet& replaceWith) {
 		m_submodel = replaceWith.getSubmodel(m_submodel);
 	}
-
-	ModelAnimationParseHelper::Segment ModelAnimationSegmentRotation::reg("$Rotation:", &parser);
+	
 	std::shared_ptr<ModelAnimationSegment> ModelAnimationSegmentRotation::parser(ModelAnimationParseHelper* data) {
 		optional<angles> angle, velocity, acceleration;
 		optional<float> time;
@@ -982,8 +976,7 @@ namespace animation {
 		if (m_end.isValid()) 
 			m_instances[pmi_id].currentlyPlaying = snd_play(gamesnd_get_game_sound(m_end));
 	}
-
-	ModelAnimationParseHelper::Segment ModelAnimationSegmentSoundDuring::reg("$Sound During:", &parser);
+	
 	std::shared_ptr<ModelAnimationSegment> ModelAnimationSegmentSoundDuring::parser(ModelAnimationParseHelper* data) {
 		gamesnd_id start_sound;
 		gamesnd_id loop_sound;

@@ -1100,10 +1100,7 @@ namespace animation {
 	}
 
 	//Parsing functions
-
-	std::map<SCP_string, ModelAnimationParseHelper::ModelAnimationSegmentParser> ModelAnimationParseHelper::s_segmentParsers;
 	std::map<SCP_string, ModelAnimationParseHelper::ParsedModelAnimation> ModelAnimationParseHelper::s_animationsById;
-	std::map<SCP_string, ModelAnimationParseHelper::ModelAnimationMoveableParser> ModelAnimationParseHelper::s_moveableParsers;
 	std::map<SCP_string, std::shared_ptr<ModelAnimationMoveable>> ModelAnimationParseHelper::s_moveablesById;
 
 	std::shared_ptr<ModelAnimationSegment> ModelAnimationParseHelper::parseSegment() {
@@ -1558,4 +1555,22 @@ namespace animation {
 			mprintf(("Specified deprecated non-initial type animation on subsystem %s of ship class %s. Consider using *-anim.tbm's instead.\n", sp->subobj_name, sip->name));
 		}
 	}
+
+	std::map<SCP_string, ModelAnimationParseHelper::ModelAnimationSegmentParser> ModelAnimationParseHelper::s_segmentParsers = {
+		{"$Segment Sequential:", 	ModelAnimationSegmentSerial::parser},
+		{"$Segment Parallel:", 	ModelAnimationSegmentParallel::parser},
+		{"$Wait:", 				ModelAnimationSegmentWait::parser},
+		{"$Set Orientation:", 	ModelAnimationSegmentSetOrientation::parser},
+		{"$Set Angle:", 			ModelAnimationSegmentSetAngle::parser},
+		{"$Rotation:",		 	ModelAnimationSegmentRotation::parser},
+	//	{"$Translation:", 		ModelAnimationSegmentTranslation::parser},
+		{"$Sound During:", 		ModelAnimationSegmentSoundDuring::parser}
+	};
+	
+	std::map<SCP_string, ModelAnimationParseHelper::ModelAnimationMoveableParser> ModelAnimationParseHelper::s_moveableParsers = {
+		{"Orientation", 			ModelAnimationMoveableOrientation::parser},
+		{"Rotation", 				ModelAnimationMoveableRotation::parser}
+	};
+
+	
 }
