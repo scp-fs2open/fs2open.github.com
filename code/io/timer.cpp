@@ -22,15 +22,15 @@
 static Uint64 Timer_perf_counter_freq = 0;	// perf counter frequency - number of ticks per second
 static Uint64 Timer_base_value;
 
-static int Timer_inited = 0;
+static bool Timer_inited = false;
 
 static uint64_t Timer_timestamp_offset_from_counter = 0;
 static uint64_t Timer_timestamp_paused_at_counter = 0;
 
 static uint64_t Timestamp_microseconds_at_mission_start = 0;
 
-// forward declarations
-static uint64_t timestamp_get_microseconds();
+static bool Timer_is_paused = false;
+static bool Timer_sudo_paused = false;
 
 
 #define MICROSECONDS_PER_SECOND 1000000
@@ -51,7 +51,7 @@ static uint64_t get_performance_counter()
 void timer_close()
 {
 	if ( Timer_inited )	{
-		Timer_inited = 0;
+		Timer_inited = false;
 	}
 }
 
@@ -62,7 +62,7 @@ void timer_init()
 		Timer_base_value = SDL_GetPerformanceCounter();
 		Timer_to_nanoseconds = (long double) NANOSECONDS_PER_SECOND / (long double) Timer_perf_counter_freq;
 		Timer_to_microseconds = (long double) MICROSECONDS_PER_SECOND / (long double) Timer_perf_counter_freq;
-		Timer_inited = 1;
+		Timer_inited = true;
 
 		// set up the config so that timestamps are usable
 		// (timestamps are used in the UI and in some init functions, not just within the mission)
@@ -72,6 +72,8 @@ void timer_init()
 		atexit(timer_close);
 	}
 }
+
+// ======================================== getting time ========================================
 
 fix timer_get_fixed_seconds()
 {
@@ -125,8 +127,104 @@ std::uint64_t timer_get_nanoseconds()
     return (uint64_t) (time * Timer_to_nanoseconds);
 }
 
-static bool Timer_is_paused = false;
-static bool Timer_sudo_paused = false;
+static uint64_t timestamp_get_microseconds() {
+
+	// TODO - time compression needs to be handled here
+
+	uint64_t timestamp_raw;
+	if (Timer_is_paused) {
+		timestamp_raw = Timer_timestamp_paused_at_counter;
+	} else {
+		timestamp_raw = get_performance_counter();
+	}
+	timestamp_raw -= Timer_timestamp_offset_from_counter;
+
+	return (uint64_t)(timestamp_raw * Timer_to_microseconds);
+}
+
+static int timestamp_ms() {
+	return (int)(timestamp_get_microseconds() / 1000);
+}
+
+int timestamp() {
+	return timestamp_ms();
+}
+
+// ======================================== checking timestamps ========================================
+
+// Restrict all time values between 0 and MAX_TIME
+// so we don't have to use UINTs to calculate rollover.
+// For debugging & testing, you could set this to
+// something like 1 minute (60000).
+extern const std::uint32_t MAX_TIME = INT_MAX / 2;
+
+int timestamp(int delta_ms ) {
+	int t2;
+	if (delta_ms < 0 ) return 0;
+	if (delta_ms == 0 ) return 1;
+	t2 = timestamp_ms() + delta_ms;
+	if ( t2 > (int)MAX_TIME )	{
+		// wrap!!!
+		t2 = delta_ms - (MAX_TIME-timestamp_ms());
+	}
+	if (t2 < 2 ) t2 = 2;	// hack??
+	return t2;
+}
+
+//	Returns milliseconds until timestamp will elapse.
+//	Negative value gives milliseconds ago that timestamp elapsed.
+int timestamp_until(int stamp) {
+	// JAS: FIX
+	// HACK!! This doesn't handle rollover!
+	// (Will it ever happen?)
+
+	return stamp - timestamp_ms();
+
+/*
+	uint	delta;
+
+	delta = stamp - timestamp_ticker;
+
+
+	if (delta > UINT_MAX/2)
+		delta = UINT_MAX - delta + 1;
+	else if (delta < - ( (int) (UINT_MAX/2)))
+		delta = UINT_MAX + delta + 1;
+
+	return delta;
+*/
+}
+
+int timestamp_has_time_elapsed(int stamp, int time) {
+	int t;
+
+	if (time <= 0)
+		return 1;
+
+	t = stamp + time;
+	if (t <= timestamp_ms())
+		return 1;  // if we are unlucky enough to have it wrap on us, this will assume time has elapsed.
+
+	return 0;
+}
+
+bool timestamp_elapsed(int stamp) {
+	if (stamp == 0) {
+		return false;
+	}
+
+	return timestamp_ms() >= stamp;
+}
+
+bool timestamp_elapsed_safe(int a, int b) {
+	if (a == 0) {
+		return true;
+	}
+
+	return timestamp_ms() >= a || timestamp_ms() < (a - b + 100);
+}
+
+// ======================================== pausing/unpausing/adjusting ========================================
 
 void timer_pause_timestamp(bool sudo)
 {
@@ -206,6 +304,8 @@ void timer_adjust_microseconds(uint64_t delta_microseconds, TIMER_DIRECTION dir)
 	}
 }
 
+// ======================================== mission-specific stuff ========================================
+
 void timer_start_mission()
 {
 	Timestamp_microseconds_at_mission_start = timestamp_get_microseconds();
@@ -226,104 +326,4 @@ fix timer_get_mission_time()
 	time *= 65536;
 
 	return (fix)(time / MICROSECONDS_PER_SECOND);
-}
-
-
-// 0 means invalid,
-// 1 means always return true
-// 2 and above actually check the time
-
-// Restrict all time values between 0 and MAX_TIME
-// so we don't have to use UINTs to calculate rollover.
-// For debugging & testing, you could set this to
-// something like 1 minute (60000).
-extern const std::uint32_t MAX_TIME = INT_MAX / 2;
-
-static uint64_t timestamp_get_microseconds() {
-
-	// TODO - time compression needs to be handled here
-
-	uint64_t timestamp_raw;
-	if (Timer_is_paused) {
-		timestamp_raw = Timer_timestamp_paused_at_counter;
-	} else {
-		timestamp_raw = get_performance_counter();
-	}
-	timestamp_raw -= Timer_timestamp_offset_from_counter;
-
-	return (uint64_t)(timestamp_raw * Timer_to_microseconds);
-}
-
-static int timestamp_ms() {
-	return (int)(timestamp_get_microseconds() / 1000);
-}
-
-int timestamp(int delta_ms ) {
-	int t2;
-	if (delta_ms < 0 ) return 0;
-	if (delta_ms == 0 ) return 1;
-	t2 = timestamp_ms() + delta_ms;
-	if ( t2 > (int)MAX_TIME )	{
-		// wrap!!!
-		t2 = delta_ms - (MAX_TIME-timestamp_ms());
-	}
-	if (t2 < 2 ) t2 = 2;	// hack??
-	return t2;
-}
-
-//	Returns milliseconds until timestamp will elapse.
-//	Negative value gives milliseconds ago that timestamp elapsed.
-int timestamp_until(int stamp) {
-	// JAS: FIX
-	// HACK!! This doesn't handle rollover!
-	// (Will it ever happen?)
-
-	return stamp - timestamp_ms();
-
-/*
-	uint	delta;
-
-	delta = stamp - timestamp_ticker;
-
-
-	if (delta > UINT_MAX/2)
-		delta = UINT_MAX - delta + 1;
-	else if (delta < - ( (int) (UINT_MAX/2)))
-		delta = UINT_MAX + delta + 1;
-
-	return delta;
-*/
-}
-
-// alternate timestamp functions.  The way these work is you call xtimestamp() to get the
-// current counter value, and then call
-int timestamp() {
-	return timestamp_ms();
-}
-
-int timestamp_has_time_elapsed(int stamp, int time) {
-	int t;
-
-	if (time <= 0)
-		return 1;
-
-	t = stamp + time;
-	if (t <= timestamp_ms())
-		return 1;  // if we are unlucky enough to have it wrap on us, this will assume time has elapsed.
-
-	return 0;
-}
-bool timestamp_elapsed(int stamp) {
-	if (stamp == 0) {
-		return false;
-	}
-
-	return timestamp_ms() >= stamp;
-}
-bool timestamp_elapsed_safe(int a, int b) {
-	if (a == 0) {
-		return true;
-	}
-
-	return timestamp_ms() >= a || timestamp_ms() < (a - b + 100);
 }
