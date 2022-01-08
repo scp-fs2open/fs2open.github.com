@@ -63,28 +63,14 @@ extern int timer_get_seconds();				// seconds since program started... not accur
 // scale it correctly.
 #define TIMESTAMP_FREQUENCY 1000
 
-// This should be called when the timestamp should stop ticking, e.g when the game is paused.
-// The "sudo" is for cases where we want the time to remain paused, e.g. during level loading,
-//     even if the game loses focus (which would normally unpause when focus is regained)
-void timer_pause_timestamp(bool sudo);
+// use this call to get the current counter value (which represents the time at the time
+// this function is called).  I.e. it doesn't return a count that would be in the future,
+// but the count that is right now.
+int timestamp();
 
-// This should be called when the timestamp should resume ticking, e.g. when the player is in-mission.
-// See above re: the sudo parameter
-void timer_unpause_timestamp(bool sudo);
-
-enum class TIMER_DIRECTION { FORWARD, BACKWARD };
-// Use with caution!
-void timer_adjust(float delta_seconds, TIMER_DIRECTION dir);
-void timer_adjust_microseconds(uint64_t delta_microseconds, TIMER_DIRECTION dir);
-
-// Save the timestamp corresponding to the beginning of the mission
-void timer_start_mission();
-
-// Restore the timestamp corresponding to the beginning of the mission, since we essentially start time twice
-void timer_revert_to_mission_start();
-
-// Calculate the current mission time using the timestamps
-fix timer_get_mission_time();
+inline bool timestamp_valid(int stamp) {
+	return stamp != 0;
+}
 
 // To do timing, call this with the interval you
 // want to check.  Then, pass this to timestamp_elapsed
@@ -99,16 +85,18 @@ fix timer_get_mission_time();
 // pass n > 0 for timestamp n milliseconds in the future.
 int timestamp(int delta_ms );
 
-// use this call to get the current counter value (which represents the time at the time
-// this function is called).  I.e. it doesn't return a count that would be in the future,
-// but the count that is right now.
-int timestamp();
-
 // gets a timestamp randomly between a and b milliseconds in
 // the future.
 inline int timestamp_rand(int a, int b) {
 	return timestamp(Random::next(a, b));
 }
+
+//	Returns milliseconds until timestamp will elapse.
+int timestamp_until(int stamp);
+
+// checks if a specified time (in milliseconds) has elapsed past the given timestamp (which
+// should be obtained from timestamp() or timestamp(x) with a positive x)
+int timestamp_has_time_elapsed(int stamp, int time);
 
 // Example that makes a ship fire in 1/2 second
 
@@ -120,19 +108,38 @@ inline int timestamp_rand(int a, int b) {
 
 bool timestamp_elapsed( int stamp );
 
-inline bool timestamp_valid(int stamp) {
-	return stamp != 0;
-}
-
-//	Returns millliseconds until timestamp will elapse.
-int timestamp_until(int stamp);
-
-// checks if a specified time (in milliseconds) has elapsed past the given timestamp (which
-// should be obtained from timestamp() or timestamp(x) with a positive x)
-int timestamp_has_time_elapsed(int stamp, int time);
-
 // safer version of timestamp
 bool timestamp_elapsed_safe(int a, int b);
 
+//=================================================================
+//               T I M E S T A M P   A D J U S T M E N T
+//=================================================================
+
+// This should be called when the timestamp should stop ticking, e.g when the game is paused.
+// The "sudo" is for cases where we want the time to remain paused, e.g. during level loading,
+//     even if the game loses focus (which would normally unpause when focus is regained)
+void timer_pause_timestamp(bool sudo);
+
+// This should be called when the timestamp should resume ticking, e.g. when the player is in-mission.
+// See above re: the sudo parameter
+void timer_unpause_timestamp(bool sudo);
+
+enum class TIMER_DIRECTION { FORWARD, BACKWARD };
+// Use with caution!
+void timer_adjust(float delta_seconds, TIMER_DIRECTION dir);
+void timer_adjust_microseconds(uint64_t delta_microseconds, TIMER_DIRECTION dir);
+
+//=================================================================
+//               M I S S I O N   T I M E
+//=================================================================
+
+// Save the timestamp corresponding to the beginning of the mission
+void timer_start_mission();
+
+// Restore the timestamp corresponding to the beginning of the mission, since we essentially start time twice
+void timer_revert_to_mission_start();
+
+// Calculate the current mission time using the timestamps
+fix timer_get_mission_time();
 
 #endif
