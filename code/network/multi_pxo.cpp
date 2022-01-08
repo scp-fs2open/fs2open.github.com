@@ -2660,7 +2660,7 @@ void multi_pxo_blit_channels()
 
 		// next item
 		moveup = moveup->next;
-	} while((moveup != Multi_pxo_channels) && (disp_count < gr_get_dyanmic_font_lines(Multi_pxo_max_chan_display[gr_screen.res])));
+	} while((moveup != Multi_pxo_channels) && (disp_count < gr_get_dynamic_font_lines(Multi_pxo_max_chan_display[gr_screen.res])));
 }
 
 /**
@@ -2692,7 +2692,7 @@ void multi_pxo_scroll_channels_down()
 	}
 
 	// if we can't scroll further without going past the end of the viewable list, don't
-	if((Multi_pxo_channel_start_index + gr_get_dyanmic_font_lines(Multi_pxo_max_chan_display[gr_screen.res]) >= Multi_pxo_channel_count)){
+	if((Multi_pxo_channel_start_index + gr_get_dynamic_font_lines(Multi_pxo_max_chan_display[gr_screen.res]) >= Multi_pxo_channel_count)){
 		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return;
 	}
@@ -3070,7 +3070,7 @@ void multi_pxo_blit_players()
 
 		// next item
 		moveup = moveup->next;
-	} while((moveup != Multi_pxo_players) && (disp_count < gr_get_dyanmic_font_lines(Multi_pxo_max_player_display[gr_screen.res])));
+	} while((moveup != Multi_pxo_players) && (disp_count < gr_get_dynamic_font_lines(Multi_pxo_max_player_display[gr_screen.res])));
 }
 
 /**
@@ -3111,7 +3111,7 @@ void multi_pxo_scroll_players_down()
 	}
 	
 	// if we can move down
-	if(count >= gr_get_dyanmic_font_lines(Multi_pxo_max_player_display[gr_screen.res])){
+	if(count >= gr_get_dynamic_font_lines(Multi_pxo_max_player_display[gr_screen.res])){
 		Multi_pxo_player_start = Multi_pxo_player_start->next;
 		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 	} else {
@@ -3254,7 +3254,7 @@ void multi_pxo_chat_add_line(const char *txt, int mode)
 	}
 
 	// set the count
-	Multi_pxo_chat_slider.set_numberItems(Multi_pxo_chat_count > gr_get_dyanmic_font_lines(Multi_pxo_max_chat_display[gr_screen.res]) ? Multi_pxo_chat_count - gr_get_dyanmic_font_lines(Multi_pxo_max_chat_display[gr_screen.res]) : 0, 0);		// the 0 means don't reset
+	Multi_pxo_chat_slider.set_numberItems(Multi_pxo_chat_count > gr_get_dynamic_font_lines(Multi_pxo_max_chat_display[gr_screen.res]) ? Multi_pxo_chat_count - gr_get_dynamic_font_lines(Multi_pxo_max_chat_display[gr_screen.res]) : 0, 0);		// the 0 means don't reset
 
 	multi_pxo_goto_bottom();
 }
@@ -3373,7 +3373,7 @@ void multi_pxo_chat_blit()
 	disp_count = 0;
 	y_start = Multi_pxo_chat_coords[gr_screen.res][1];
 	line_height = gr_get_font_height() + 1;
-	while((moveup != nullptr) && (moveup != Multi_pxo_chat_add) && (disp_count < (gr_get_dyanmic_font_lines(Multi_pxo_max_chat_display[gr_screen.res])))){
+	while((moveup != nullptr) && (moveup != Multi_pxo_chat_add) && (disp_count < (gr_get_dynamic_font_lines(Multi_pxo_max_chat_display[gr_screen.res])))){
 		switch(moveup->mode){
 		// if this is text from the server, display it all "bright"
 		case CHAT_MODE_SERVER:				
@@ -3448,7 +3448,7 @@ void multi_pxo_goto_bottom()
 	}
 	
 	// if we have less than the displayable amount of lines, do nothing
-	if(Multi_pxo_chat_count <= gr_get_dyanmic_font_lines(Multi_pxo_max_chat_display[gr_screen.res])){
+	if(Multi_pxo_chat_count <= gr_get_dynamic_font_lines(Multi_pxo_max_chat_display[gr_screen.res])){
 		Multi_pxo_chat_start = Multi_pxo_chat;						
 		
 		// nothing to do for the slider
@@ -3460,7 +3460,7 @@ void multi_pxo_goto_bottom()
 	{
 		// otherwise move back the right # of items
 		backup = Multi_pxo_chat_add;	
-		for(idx=0; idx<gr_get_dyanmic_font_lines(Multi_pxo_max_chat_display[gr_screen.res]); idx++){
+		for(idx=0; idx<gr_get_dynamic_font_lines(Multi_pxo_max_chat_display[gr_screen.res]); idx++){
 			Assert(backup->prev != NULL);
 			backup = backup->prev;		
 		}
@@ -3511,7 +3511,7 @@ int multi_pxo_can_scroll_down()
 	}
 	
 	// check if we can move down, return accordingly
-	if (count > gr_get_dyanmic_font_lines(Multi_pxo_max_chat_display[gr_screen.res])) {
+	if (count > gr_get_dynamic_font_lines(Multi_pxo_max_chat_display[gr_screen.res])) {
 		return 1;
 	} else {
 		return 0;

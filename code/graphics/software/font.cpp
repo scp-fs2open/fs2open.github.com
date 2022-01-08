@@ -667,7 +667,7 @@ int gr_get_font_height()
 	}
 }
 
-int gr_get_dyanmic_font_lines(int number_default_lines) {
+int gr_get_dynamic_font_lines(int number_default_lines) {
 	return fl2i((number_default_lines * 10) / (gr_get_font_height() + 1));
 }
 
