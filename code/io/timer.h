@@ -129,6 +129,8 @@ enum class TIMER_DIRECTION { FORWARD, BACKWARD };
 void timer_adjust(float delta_seconds, TIMER_DIRECTION dir);
 void timer_adjust_microseconds(uint64_t delta_microseconds, TIMER_DIRECTION dir);
 
+void timer_update_time_compression();
+
 //=================================================================
 //               M I S S I O N   T I M E
 //=================================================================

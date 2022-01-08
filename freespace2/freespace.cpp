@@ -4185,6 +4185,8 @@ void change_time_compression(float multiplier)
 
 	Desired_time_compression = Game_time_compression = modified;
 	Time_compression_change_rate = 0;
+
+	timer_update_time_compression();
 }
 
 void set_time_compression(float multiplier, float change_time)
@@ -4193,6 +4195,8 @@ void set_time_compression(float multiplier, float change_time)
 	{
 		Game_time_compression = Desired_time_compression = fl2f(multiplier);
 		Time_compression_change_rate = 0;
+
+		timer_update_time_compression();
 		return;
 	}
 
@@ -4265,10 +4269,16 @@ void game_set_frametime(int state)
 	{
 		bool ascending = Desired_time_compression > Game_time_compression;
 		if(Time_compression_change_rate)
+		{
 			Game_time_compression += fixmul(Time_compression_change_rate, Frametime);
+			timer_update_time_compression();
+		}
 		if((ascending && Game_time_compression > Desired_time_compression)
 			|| (!ascending && Game_time_compression < Desired_time_compression))
+		{
 			Game_time_compression = Desired_time_compression;
+			timer_update_time_compression();
+		}
 	}
 
 	Frametime = fixmul(Frametime, Game_time_compression);
