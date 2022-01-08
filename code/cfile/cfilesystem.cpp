@@ -72,46 +72,55 @@ typedef struct cf_root_sort {
 	int				cf_type;
 } cf_root_sort;
 
-#define CF_NUM_ROOTS_PER_BLOCK   32
-#define CF_MAX_ROOT_BLOCKS			256				// Can store 32*256 = 8192 Roots
-#define CF_MAX_ROOTS					(CF_NUM_ROOTS_PER_BLOCK * CF_MAX_ROOT_BLOCKS)
+#define CF_NUM_ROOTS_PER_BLOCK		32
+#define CF_MIN_ROOT_BLOCKS			2				// minimum number of root blocks to create on resize
+													// (set to value which fits retail data without resizing)
+
+static_assert(CF_MIN_ROOT_BLOCKS >= 2, "CF_MIN_ROOT_BLOCKS is set below retail threshold!");
 
 typedef struct cf_root_block {
 	cf_root			roots[CF_NUM_ROOTS_PER_BLOCK];
 } cf_root_block;
 
 static int Num_roots = 0;
-static cf_root_block  *Root_blocks[CF_MAX_ROOT_BLOCKS];
+static SCP_vector<std::unique_ptr<cf_root_block>> Root_blocks;
 
 static int Num_path_roots = 0;
 
 // Created by searching all roots in order.   This means Files is then sorted by precedence.
 typedef struct cf_file {
-	char		name_ext[CF_MAX_FILENAME_LENGTH];	// Filename and extension
+	SCP_string	name_ext;	// Filename and extension
 	int			root_index;							// Where in Roots this is located
 	int			pathtype_index;						// Where in Paths this is located
 	time_t		write_time;							// When it was last written
 	int			size;								// How big it is in bytes
 	int			pack_offset;						// For pack files, where it is at.   0 if not in a pack file.  This can be used to tell if in a pack file.
-	char*		real_name;							// For real files, the full path
+	SCP_string	real_name;							// For real files, the full path
 	const void*	data;								// For in-memory files, the data pointer
+
+	cf_file() : root_index(0), pathtype_index(0), write_time(0), size(0), pack_offset(0), data(nullptr) {}
 } cf_file;
 
-#define CF_NUM_FILES_PER_BLOCK   512
-#define CF_MAX_FILE_BLOCKS			128						// Can store 512*128 = 65536 files
+#define CF_NUM_FILES_PER_BLOCK		512
+#define CF_MIN_FILE_BLOCKS			16				// minimum number of file blocks to create on resize
+													// (set to value which fits retail data without resizing)
+
+static_assert(CF_MIN_FILE_BLOCKS >= 16, "CF_MIN_FILE_BLOCKS is set below retail threshold!");
 
 typedef struct cf_file_block {
 	cf_file						files[CF_NUM_FILES_PER_BLOCK];
 } cf_file_block;
 
 static uint Num_files = 0;
-static cf_file_block  *File_blocks[CF_MAX_FILE_BLOCKS];
+static SCP_vector<std::unique_ptr<cf_file_block>> File_blocks;
 
 // Return a pointer to to file 'index'.
 cf_file *cf_get_file(int index)
 {
-	int block = index / CF_NUM_FILES_PER_BLOCK;
-	int offset = index % CF_NUM_FILES_PER_BLOCK;
+	size_t block = index / CF_NUM_FILES_PER_BLOCK;
+	size_t offset = index % CF_NUM_FILES_PER_BLOCK;
+
+	Assertion(block < File_blocks.size(), "File index is outside of block range!");
 
 	return &File_blocks[block]->files[offset];
 }
@@ -119,15 +128,18 @@ cf_file *cf_get_file(int index)
 // Create a new file and return a pointer to it.
 cf_file *cf_create_file()
 {
-	Assertion(Num_files < CF_NUM_FILES_PER_BLOCK * CF_MAX_FILE_BLOCKS, "Too many files found. CFile cannot handle more than %d files.\n", CF_NUM_FILES_PER_BLOCK * CF_MAX_FILE_BLOCKS);
+	size_t block = Num_files / CF_NUM_FILES_PER_BLOCK;
+	size_t offset = Num_files % CF_NUM_FILES_PER_BLOCK;
 
-	uint block = Num_files / CF_NUM_FILES_PER_BLOCK;
-	uint offset = Num_files % CF_NUM_FILES_PER_BLOCK;
-	
-	if ( File_blocks[block] == NULL )	{
-		File_blocks[block] = (cf_file_block *)vm_malloc( sizeof(cf_file_block) );
-		Assert( File_blocks[block] != NULL);
-		memset(File_blocks[block], 0, sizeof(cf_file_block));
+	if (block >= File_blocks.size()) {
+		// we really don't want to have this use automatic resizing so make sure
+		// to allocate using a set size to avoid too much memory being reserved
+		// with larger file sets
+		if (File_blocks.size() == File_blocks.capacity()) {
+			File_blocks.reserve(File_blocks.size() + CF_MIN_FILE_BLOCKS);
+		}
+
+		File_blocks.push_back(std::unique_ptr<cf_file_block>(new cf_file_block));
 	}
 
 	Num_files++;
@@ -140,11 +152,13 @@ extern int cfile_inited;
 // Create a new root and return a pointer to it.  The structure is assumed unitialized.
 cf_root *cf_get_root(int n)
 {
-	int block = n / CF_NUM_ROOTS_PER_BLOCK;
-	int offset = n % CF_NUM_ROOTS_PER_BLOCK;
+	size_t block = n / CF_NUM_ROOTS_PER_BLOCK;
+	size_t offset = n % CF_NUM_ROOTS_PER_BLOCK;
 
 	if (!cfile_inited)
 		return NULL;
+
+	Assertion(block < Root_blocks.size(), "Root index is outside of block range!");
 
 	return &Root_blocks[block]->roots[offset];
 }
@@ -153,11 +167,18 @@ cf_root *cf_get_root(int n)
 // Create a new root and return a pointer to it.  The structure is assumed unitialized.
 cf_root *cf_create_root()
 {
-	int block = Num_roots / CF_NUM_ROOTS_PER_BLOCK;
-	int offset = Num_roots % CF_NUM_ROOTS_PER_BLOCK;
-	
-	if ( Root_blocks[block] == NULL )	{
-		Root_blocks[block] = new cf_root_block;
+	size_t block = Num_roots / CF_NUM_ROOTS_PER_BLOCK;
+	size_t offset = Num_roots % CF_NUM_ROOTS_PER_BLOCK;
+
+	if (block >= Root_blocks.size()) {
+		// we really don't want to have this use automatic resizing so make sure
+		// to allocate using a set size to avoid too much memory being reserved
+		// with larger file sets
+		if (Root_blocks.size() == Root_blocks.capacity()) {
+			Root_blocks.reserve(Root_blocks.size() + CF_MIN_ROOT_BLOCKS);
+		}
+
+		Root_blocks.push_back(std::unique_ptr<cf_root_block>(new cf_root_block));
 	}
 
 	Num_roots++;
@@ -699,15 +720,13 @@ void cf_search_root_path(int root_index)
 
 			cf_file *cfile = cf_create_file();
 
-			SDL_strlcpy(cfile->name_ext, file.name.c_str(), CF_MAX_FILENAME_LENGTH);
+			cfile->name_ext = file.name;
 			cfile->root_index = root_index;
 			cfile->pathtype_index = i;
 			cfile->write_time = file.m_time;
 			cfile->size = static_cast<int>(file.size);
 			cfile->pack_offset = 0;
-
-			SCP_string full_name = search_path + DIR_SEPARATOR_STR + file.name;
-			cfile->real_name = vm_strdup(full_name.c_str());
+			cfile->real_name = search_path + DIR_SEPARATOR_STR + file.name;
 
 			++num_files;
 		}
@@ -816,7 +835,8 @@ void cf_search_root_pack(int root_index)
 						if ( is_ext_in_list( Pathtypes[j].extensions, ext ) )	{
 							// Found a file!!!!
 							cf_file *file = cf_create_file();
-							strcpy_s( file->name_ext, find.filename );
+
+							file->name_ext = find.filename;
 							file->root_index = root_index;
 							file->pathtype_index = j;
 							file->write_time = (time_t)find.write_time;
@@ -867,7 +887,7 @@ void cf_search_memory_root(int root_index) {
 
 		cf_file *file = cf_create_file();
 
-		strcpy_s( file->name_ext, default_file.filename );
+		file->name_ext = default_file.filename;
 		file->root_index = root_index;
 		file->pathtype_index = pathtype;
 		file->write_time = time(nullptr); // Just assume that memory files were last written to just now
@@ -903,21 +923,8 @@ void cf_build_file_list()
 
 void cf_build_secondary_filelist(const char *cdrom_dir)
 {
-	int i;
-
 	// Assume no files
-	Num_roots = 0;
-	Num_files = 0;
-
-	// Init the root blocks
-	for (i=0; i<CF_MAX_ROOT_BLOCKS; i++ )	{
-		Root_blocks[i] = NULL;
-	}
-
-	// Init the file blocks	
-	for (i=0; i<CF_MAX_FILE_BLOCKS; i++ )	{
-		File_blocks[i] = NULL;
-	}
+	cf_free_secondary_filelist();
 
 	mprintf(( "Building file index...\n" ));
 	
@@ -932,32 +939,12 @@ void cf_build_secondary_filelist(const char *cdrom_dir)
 
 void cf_free_secondary_filelist()
 {
-	int i;
-
 	// Free the root blocks
-	for (i=0; i<CF_MAX_ROOT_BLOCKS; i++ )	{
-		if ( Root_blocks[i] )	{
-			delete Root_blocks[i];
-			Root_blocks[i] = NULL;
-		}
-	}
+	Root_blocks.clear();
 	Num_roots = 0;
 
-	// Init the file blocks	
-	for (i=0; i<CF_MAX_FILE_BLOCKS; i++ )	{
-		if ( File_blocks[i] )	{
-			// Free file paths
-			for (auto& f : File_blocks[i]->files) {
-				if (f.real_name) {
-					vm_free(f.real_name);
-					f.real_name = nullptr;
-				}
-			}
-
-			vm_free( File_blocks[i] );
-			File_blocks[i] = NULL;
-		}
-	}
+	// Free the file blocks
+	File_blocks.clear();
 	Num_files = 0;
 }
 
@@ -1092,7 +1079,7 @@ CFileLocation cf_find_file_location(const char* filespec, int pathtype, bool loc
 			strncpy(longname, filespec, MAX_PATH_LEN - 1);
 
 			if ( lcl_add_dir_to_path_with_filename(longname, MAX_PATH_LEN - 1) ) {
-				if ( !stricmp(longname, f->name_ext) ) {
+				if ( !stricmp(longname, f->name_ext.c_str()) ) {
 					CFileLocation res(true);
 					res.size = static_cast<size_t>(f->size);
 					res.offset = (size_t)f->pack_offset;
@@ -1120,7 +1107,7 @@ CFileLocation cf_find_file_location(const char* filespec, int pathtype, bool loc
 		}
 
 		// file either not localized or localized version not found
-		if ( !stricmp(filespec, f->name_ext) ) {
+		if ( !stricmp(filespec, f->name_ext.c_str()) ) {
 			CFileLocation res(true);
 			res.size = static_cast<size_t>(f->size);
 			res.offset = (size_t)f->pack_offset;
@@ -1291,17 +1278,17 @@ CFileLocationExt cf_find_file_location_ext( const char *filename, const int ext_
 			continue;
 
 		// ... check that our names are the same length (accounting for the missing extension on our own name)
-		if ( strlen(f->name_ext) != filespec_len_big )
+		if (f->name_ext.length() != filespec_len_big )
 			continue;
 
 		// ... check that we match the base filename
-		if ( strnicmp(f->name_ext, filespec, filespec_len) != 0 )
+		if ( strnicmp(f->name_ext.c_str(), filespec, filespec_len) != 0 )
 			continue;
 
 		// ... make sure that it's one of our supported types
 		bool found_one = false;
 		for (cur_ext = 0; cur_ext < ext_num; cur_ext++) {
-			if ( stristr(f->name_ext, ext_list[cur_ext]) ) {
+			if ( stristr(f->name_ext.c_str(), ext_list[cur_ext]) ) {
 				found_one = true;
 				break;
 			}
@@ -1338,7 +1325,7 @@ CFileLocationExt cf_find_file_location_ext( const char *filename, const int ext_
 				strncpy(longname, filespec, MAX_PATH_LEN - 1);
 
 				if ( lcl_add_dir_to_path_with_filename(longname, MAX_PATH_LEN - 1) ) {
-					if ( !stricmp(longname, f->name_ext) ) {
+					if ( !stricmp(longname, f->name_ext.c_str()) ) {
 						CFileLocationExt res(cur_ext);
 						res.found = true;
 						res.size = static_cast<size_t>(f->size);
@@ -1370,7 +1357,7 @@ CFileLocationExt cf_find_file_location_ext( const char *filename, const int ext_
 			}
 
 			// file either not localized or localized version not found
-			if ( !stricmp(filespec, f->name_ext) ) {
+			if ( !stricmp(filespec, f->name_ext.c_str()) ) {
 				CFileLocationExt res(cur_ext);
 				res.found = true;
 				res.size = static_cast<size_t>(f->size);
@@ -1512,10 +1499,8 @@ static int cf_file_already_in_list( SCP_vector<SCP_string> &list, const char *fi
 int cf_get_file_list(SCP_vector<SCP_string>& list, int pathtype, const char* filter, int sort,
                      SCP_vector<file_list_info>* info, uint32_t location_flags)
 {
-	char *ptr;
 	uint i;
 	int own_flag = 0;
-	size_t l;
 	SCP_vector<file_list_info> my_info;
 	file_list_info tinfo;
 
@@ -1592,11 +1577,11 @@ int cf_get_file_list(SCP_vector<SCP_string>& list, int pathtype, const char* fil
 				}
 			}
 
-			if ( !cf_matches_spec( filter,f->name_ext))	{
+			if ( !cf_matches_spec(filter, f->name_ext.c_str()) ) {
 				continue;
 			}
 
-			if ( cf_file_already_in_list(list, f->name_ext))	{
+			if ( cf_file_already_in_list(list, f->name_ext.c_str()) ) {
 				continue;
 			}
 
@@ -1610,16 +1595,12 @@ int cf_get_file_list(SCP_vector<SCP_string>& list, int pathtype, const char* fil
 				continue;
 			}
 
-			if ( !Get_file_list_filter || (*Get_file_list_filter)(f->name_ext) ) {
+			if ( !Get_file_list_filter || (*Get_file_list_filter)(f->name_ext.c_str()) ) {
 				//mprintf(( "Found '%s' in root %d path %d\n", f->name_ext, f->root_index, f->pathtype_index ));
 
-				ptr = strrchr(f->name_ext, '.');
-				if (ptr)
-					l = (size_t)(ptr - f->name_ext);
-				else
-					l = strlen(f->name_ext);
+				auto pos = f->name_ext.rfind('.');
 
-				list.push_back( SCP_string(f->name_ext, l) );
+				list.push_back( f->name_ext.substr(0, pos) );
 
 				if (info) {
 					tinfo.write_time = f->write_time;
@@ -1671,7 +1652,6 @@ int cf_file_already_in_list( int num_files, char **list, const char *filename )
 int cf_get_file_list(int max, char** list, int pathtype, const char* filter, int sort, file_list_info* info,
                      uint32_t location_flags)
 {
-	char *ptr;
 	uint i;
 	int num_files = 0, own_flag = 0;
 	size_t l;
@@ -1708,16 +1688,16 @@ int cf_get_file_list(int max, char** list, int pathtype, const char* filter, int
 		}
 
 		if ( !Get_file_list_filter || (*Get_file_list_filter)(file.name.c_str()) ) {
-			SCP_string::size_type pos = file.name.find_last_of('.');
+			auto pos = file.name.rfind('.');
 
 			if (pos != SCP_string::npos) {
 				l = pos;
 			} else {
-				l = file.name.size();
+				l = file.name.length();
 			}
 
 			list[num_files] = reinterpret_cast<char *>(vm_malloc(l + 1));
-			SDL_strlcpy(list[num_files], file.name.c_str(), l+1);
+			SDL_strlcpy(list[num_files], file.name.substr(0, l).c_str(), l+1);
 
 			if (info) {
 				info[num_files].write_time = file.m_time;
@@ -1758,11 +1738,11 @@ int cf_get_file_list(int max, char** list, int pathtype, const char* filter, int
 			if (num_files >= max)
 				break;
 			
-			if ( !cf_matches_spec( filter,f->name_ext))	{
+			if ( !cf_matches_spec(filter, f->name_ext.c_str())) {
 				continue;
 			}
 
-			if ( cf_file_already_in_list(num_files,list,f->name_ext))	{
+			if ( cf_file_already_in_list(num_files, list, f->name_ext.c_str()) ) {
 				continue;
 			}
 
@@ -1776,18 +1756,20 @@ int cf_get_file_list(int max, char** list, int pathtype, const char* filter, int
 				continue;
 			}
 
-			if ( !Get_file_list_filter || (*Get_file_list_filter)(f->name_ext) ) {
+			if ( !Get_file_list_filter || (*Get_file_list_filter)(f->name_ext.c_str()) ) {
 
 				//mprintf(( "Found '%s' in root %d path %d\n", f->name_ext, f->root_index, f->pathtype_index ));
 
-					ptr = strrchr(f->name_ext, '.');
-					if (ptr)
-						l = ptr - f->name_ext;
-					else
-						l = strlen(f->name_ext);
+					auto pos = f->name_ext.rfind('.');
+
+					if (pos != SCP_string::npos) {
+						l = pos;
+					} else {
+						l = f->name_ext.length();
+					}
 
 					list[num_files] = (char *)vm_malloc(l + 1);
-					strncpy(list[num_files], f->name_ext, l);
+					strncpy(list[num_files], f->name_ext.c_str(), l);
 					list[num_files][l] = 0;
 
 				if (info)	{
@@ -1936,11 +1918,11 @@ int cf_get_file_list_preallocated(int max, char arr[][MAX_FILENAME_LEN], char** 
 						
 				break;
 
-			if ( !cf_matches_spec( filter,f->name_ext))	{
+			if ( !cf_matches_spec(filter, f->name_ext.c_str()) ) {
 				continue;
 			}
 
-			if ( cf_file_already_in_list_preallocated( num_files, arr, f->name_ext ))	{
+			if ( cf_file_already_in_list_preallocated(num_files, arr, f->name_ext.c_str()) ) {
 				continue;
 			}
 
@@ -1954,11 +1936,11 @@ int cf_get_file_list_preallocated(int max, char arr[][MAX_FILENAME_LEN], char** 
 				continue;
 			}
 
-			if ( !Get_file_list_filter || (*Get_file_list_filter)(f->name_ext) ) {
+			if ( !Get_file_list_filter || (*Get_file_list_filter)(f->name_ext.c_str()) ) {
 
 				//mprintf(( "Found '%s' in root %d path %d\n", f->name_ext, f->root_index, f->pathtype_index ));
 
-				strncpy(arr[num_files], f->name_ext, MAX_FILENAME_LEN - 1 );
+				strncpy(arr[num_files], f->name_ext.c_str(), MAX_FILENAME_LEN - 1 );
 				char *ptr = strrchr(arr[num_files], '.');
 				if ( ptr ) {
 					*ptr = 0;
