@@ -1584,7 +1584,7 @@ void control_config_close()
 	Undo_controls.clear();
 }
 
-SCP_vector<CC_preset>::iterator control_config_get_current_preset() {
+SCP_vector<CC_preset>::iterator control_config_get_current_preset(bool invert_agnostic) {
 	// Find the matching preset.
 	// We do this instead of relying on Defaults_cycle_pos because the player may end up duplicating a preset
 	auto it = Control_config_presets.begin();
@@ -1600,19 +1600,39 @@ SCP_vector<CC_preset>::iterator control_config_get_current_preset() {
 				continue;
 			}
 
-			// Check Primary
-			if (!Control_config[i].first.invert_agnostic_equals(it->bindings[i].first)) {
-				// Isn't a match, stop checking this preset
-				is_match = false;
-				break;
-			}
+			if (invert_agnostic) {
+				// Check for binding equality, ignoring invert flag
+				// Check Primary
+				if (!Control_config[i].first.invert_agnostic_equals(it->bindings[i].first)) {
+					// Isn't a match, stop checking this preset
+					is_match = false;
+					break;
+				}
 
-			// Check Secondary
-			if (!Control_config[i].second.invert_agnostic_equals(it->bindings[i].second)) {
-				// Isn't a match, stop checking this preset
-				is_match = false;
-				break;
+				// Check Secondary
+				if (!Control_config[i].second.invert_agnostic_equals(it->bindings[i].second)) {
+					// Isn't a match, stop checking this preset
+					is_match = false;
+					break;
+				}
+
+			} else {
+				// Check for binding exact equality
+				// Check Primary
+				if (Control_config[i].first != it->bindings[i].first) {
+					// Isn't a match, stop checking this preset
+					is_match = false;
+					break;
+				}
+
+				// Check Secondary
+				if (Control_config[i].second != it->bindings[i].second) {
+					// Isn't a match, stop checking this preset
+					is_match = false;
+					break;
+				}
 			}
+			
 		}
 
 		if (is_match) {
