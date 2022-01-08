@@ -254,14 +254,37 @@
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="btnFredMission">
-             <property name="enabled">
-              <bool>false</bool>
+            <layout class="QVBoxLayout" name="layoutModMission">
+             <property name="spacing">
+              <number>0</number>
              </property>
-             <property name="text">
-              <string>FRED Mission</string>
+             <property name="sizeConstraint">
+              <enum>QLayout::SetMinimumSize</enum>
              </property>
-            </widget>
+             <item>
+              <widget class="QPushButton" name="btnFredMission">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
+               <property name="text">
+                <string>FRED Mission</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="btnFirstMission">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
+               <property name="text">
+                <string>First Mission</string>
+               </property>
+               <property name="checkable">
+                <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+            </layout>
            </item>
           </layout>
          </item>
@@ -439,8 +462,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>597</width>
-            <height>883</height>
+            <width>607</width>
+            <height>889</height>
            </rect>
           </property>
          </widget>

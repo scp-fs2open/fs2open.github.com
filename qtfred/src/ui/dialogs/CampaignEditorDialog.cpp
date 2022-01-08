@@ -38,6 +38,11 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget *_parent, EditorViewport *_vi
 		if(result() == Rejected)
 			qobject_cast<FredView*>(parent)->loadMissionFile(model->getCurMnFilename());
 	});
+	connect(ui->btnFirstMission, &QPushButton::clicked, this, [&](bool toggledOn){
+		Assertion(toggledOn, "Should not be able to unset first mission");
+		model->setCurMnFirst();
+		updateUIMission(false);
+	});
 	connect(ui->btnExit, &QPushButton::clicked, this, &CampaignEditorDialog::reject);
 
 	QMenu *menFile { new QMenu(this) };
@@ -125,6 +130,8 @@ void CampaignEditorDialog::updateUISpec() {
 void CampaignEditorDialog::updateUIMission(bool updateBranch) {
 	util::SignalBlockers blockers(this);
 
+	ui->btnFirstMission->setEnabled(model->getCurMnIncluded() && ! model->getCurMnFirst());
+	ui->btnFirstMission->setChecked(model->getCurMnFirst());
 	ui->btnFredMission->setEnabled(model->getCurMnFredable());
 	ui->txbMissionDescr->setText(model->getCurMnDescr());
 

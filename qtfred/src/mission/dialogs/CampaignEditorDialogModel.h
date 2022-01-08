@@ -58,6 +58,9 @@ public:
 	inline const QString& getCurMnFilename() const { return mnData_it ? mnData_it->filename : qstrEmpty; }
 	inline bool getCurMnIncluded() const {
 		return mnData_idx.isValid() && mnData_idx.data(Qt::CheckStateRole) == Qt::Checked; }
+	inline bool getCurMnFirst() const {
+		return mnData_it && mnData_it->filename == firstMission;
+	}
 	inline bool getCurMnFredable() const { return mnData_it && mnData_it->fredable; }
 	inline const QString& getCurMnDescr() const { return mnData_it ? mnData_it->notes : qstrEmpty; }
 	inline const QString& getCurMnBriefingCutscene() const { return mnData_it ? mnData_it->briefingCutscene : qstrEmpty; }
@@ -104,7 +107,7 @@ public:
 	inline bool missionDropped() const { return ! droppedMissions.isEmpty(); }
 
 private slots:
-	void checkMissionDrop(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles);
+	void trackMissionUncheck(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles);
 	inline void flagModified() { modified = true; }
 
 public: //clang
@@ -130,6 +133,7 @@ public slots:
 
 	void missionSelectionChanged(const QItemSelection &selected);
 
+	void setCurMnFirst();
 	inline void setCurMnBriefingCutscene(const QString &briefingCutscene) {
 		if (! mnData_it) return;
 		modify<QString>(mnData_it->mainhall, briefingCutscene); }
@@ -236,6 +240,7 @@ private:
 	CheckedDataListModel<std::ptrdiff_t> initialShips;
 	CheckedDataListModel<std::ptrdiff_t> initialWeapons;
 	CheckedDataListModel<CampaignMissionData> missionData;
+	QString firstMission{""};
 
 // Model state -- specs
 	QString campaignName;

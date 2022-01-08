@@ -131,13 +131,16 @@ CampaignEditorDialogModel::CampaignEditorDialogModel(CampaignEditorDialog* _pare
 		connectBranches(false, &Campaign);
 	}
 
+	if (Campaign.num_missions > 0)
+		firstMission = Campaign.missions[0].name;
+
 	connect(&campaignDescr, &QTextDocument::contentsChanged, this, &CampaignEditorDialogModel::flagModified);
 	connect(&initialShips, &QAbstractListModel::dataChanged, this, &CampaignEditorDialogModel::flagModified);
 	connect(&initialWeapons, &QAbstractListModel::dataChanged, this, &CampaignEditorDialogModel::flagModified);
 	connect(&missionData, &QAbstractListModel::rowsAboutToBeInserted, this, [&](){mnData_it = nullptr; mnData_idx = QModelIndex();});
 	connect(&missionData, &QAbstractListModel::dataChanged, this, [&](){connectBranches();});
 	connect(&missionData, &QAbstractListModel::dataChanged, this, &CampaignEditorDialogModel::flagModified);
-	connect(&missionData, &QAbstractListModel::dataChanged, this, &CampaignEditorDialogModel::checkMissionDrop);
+	connect(&missionData, &QAbstractListModel::dataChanged, this, &CampaignEditorDialogModel::trackMissionUncheck);
 }
 
 void CampaignEditorDialogModel::supplySubModels(QListView &ships, QListView &weps, QListView &missions, QPlainTextEdit &descr) {
@@ -208,10 +211,10 @@ QList<QAction *> CampaignEditorDialogModel::getContextMenuExtras(QObject *menu_p
 int CampaignEditorDialogModel::getCampaignNumPlayers() const {
 	if (campaignType == campaignTypes[0])
 		return 0;
-	auto checked = missionData.getCheckedData();
-	if (checked.empty())
-		return 0;
-	return (**checked.cbegin()).nPlayers;
+	for (auto mn : missionData.getCheckedData())
+		if (mn->filename == firstMission)
+			return mn->nPlayers;
+	return 0;
 }
 
 void CampaignEditorDialogModel::connectBranches(bool uiUpdate, const campaign *cpgn) {
@@ -268,15 +271,37 @@ bool CampaignEditorDialogModel::saveTo(const QString &file) {
 	return success;
 }
 
-void CampaignEditorDialogModel::checkMissionDrop(const QModelIndex &idx, const QModelIndex &bottomRight, const QVector<int> &roles) {
+void CampaignEditorDialogModel::trackMissionUncheck(const QModelIndex &idx, const QModelIndex &bottomRight, const QVector<int> &roles) {
 	Assert(idx == bottomRight);
 	Assert(missionData.internalData(idx));
 
-	if (roles.contains(Qt::CheckStateRole)	&& ! missionData.internalData(idx)->fredable) {
-		if (missionData.data(idx, Qt::CheckStateRole).toBool()) {
-			droppedMissions.removeAll(missionData.data(idx).toString());
+	if (roles.contains(Qt::CheckStateRole)) {
+		auto mn = missionData.internalData(idx);
+		bool checked = missionData.data(idx, Qt::CheckStateRole).toBool();
+
+		//must always have first mission, or no missions
+		if (! missionData.getCheckedData().empty()) {
+			if (! checked) {
+				if (mn->filename == firstMission) {
+					QMessageBox::information(parent, tr("First Mission"), tr("You cannot remove the first mission of a campaign,\nunless it is the only one. Choose another to be first."));
+					missionData.setData(idx, Qt::Checked, Qt::CheckStateRole);
+					return;
+				}
+			} else	if (firstMission == "" && missionData.getCheckedData().size() == 1)
+				firstMission = mn->filename;
 		} else {
-			droppedMissions.append(missionData.data(idx).toString());
+			firstMission = "";
+		}
+
+		//as unfredable (=packaged/missing) missions are only loaded when specified
+		//in the campaign file, unchecking them will make them unreachable after save/reload.
+		//Warn on save if that happens.
+		if(! mn->fredable) {
+			if (checked) {
+				droppedMissions.removeAll(mn->filename);
+			} else {
+				droppedMissions.append(mn->filename);
+			}
 		}
 	}
 }
@@ -329,6 +354,22 @@ void CampaignEditorDialogModel::missionSelectionChanged(const QItemSelection & s
 		mnData_idx = changed;
 	}
 	parent->updateUIMission();
+}
+
+void CampaignEditorDialogModel::setCurMnFirst(){
+	if ( !mnData_it) return;
+	QMessageBox::StandardButton resBtn = QMessageBox::Yes;
+	if (firstMission != qstrEmpty) {
+		resBtn = QMessageBox::question( parent, tr("Change first mission?"),
+										tr("Do you want to replace\n")
+										+ firstMission
+										+ tr("\nas first mission?"),
+										QMessageBox::Yes | QMessageBox::No,
+										QMessageBox::Yes );
+	}
+
+	if (resBtn == QMessageBox::Yes)
+		modify<QString>(firstMission, mnData_it->filename);
 }
 
 int CampaignEditorDialogModel::addCurMnBranchTo(const QModelIndex *other, bool flip) {
