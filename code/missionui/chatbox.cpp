@@ -342,7 +342,7 @@ void chatbox_set_mode(int mode_flags)
 		Chatbox_begin_x = Chatbox_small_display_coords[gr_screen.res][CHATBOX_X_COORD];
 		Chatbox_begin_y = Chatbox_small_display_coords[gr_screen.res][CHATBOX_Y_COORD];
 		Chatbox_disp_w = Chatbox_small_display_coords[gr_screen.res][CHATBOX_W_COORD];
-		Chatbox_max_lines = Chatbox_small_max_lines[gr_screen.res];
+		Chatbox_max_lines = gr_get_dyanmic_font_lines(Chatbox_small_max_lines[gr_screen.res]);
 		Chatbox_inputbox_x = Chatbox_small_input_coords[gr_screen.res][CHATBOX_X_COORD];
 		Chatbox_inputbox_w = Chatbox_small_input_coords[gr_screen.res][CHATBOX_W_COORD];
 		Chatbox_textenter_y = Chatbox_small_input_coords[gr_screen.res][CHATBOX_Y_COORD];		
@@ -358,7 +358,7 @@ void chatbox_set_mode(int mode_flags)
 		Chatbox_begin_x = Chatbox_big_display_coords[gr_screen.res][CHATBOX_X_COORD];
 		Chatbox_begin_y = Chatbox_big_display_coords[gr_screen.res][CHATBOX_Y_COORD];
 		Chatbox_disp_w = Chatbox_big_display_coords[gr_screen.res][CHATBOX_W_COORD];
-		Chatbox_max_lines = Chatbox_big_max_lines[gr_screen.res];
+		Chatbox_max_lines = gr_get_dyanmic_font_lines(Chatbox_big_max_lines[gr_screen.res]);
 		Chatbox_inputbox_x = Chatbox_big_input_coords[gr_screen.res][CHATBOX_X_COORD];
 		Chatbox_inputbox_w = Chatbox_big_input_coords[gr_screen.res][CHATBOX_W_COORD];
 		Chatbox_textenter_y = Chatbox_big_input_coords[gr_screen.res][CHATBOX_Y_COORD];		
@@ -373,7 +373,7 @@ void chatbox_set_mode(int mode_flags)
 		Chatbox_begin_x = Chatbox_p_display_coords[gr_screen.res][CHATBOX_X_COORD];
 		Chatbox_begin_y = Chatbox_p_display_coords[gr_screen.res][CHATBOX_Y_COORD];
 		Chatbox_disp_w = Chatbox_p_display_coords[gr_screen.res][CHATBOX_W_COORD];
-		Chatbox_max_lines = Chatbox_p_max_lines[gr_screen.res];
+		Chatbox_max_lines = gr_get_dyanmic_font_lines(Chatbox_p_max_lines[gr_screen.res]);
 		Chatbox_inputbox_x = Chatbox_p_input_coords[gr_screen.res][CHATBOX_X_COORD];
 		Chatbox_inputbox_w = Chatbox_p_input_coords[gr_screen.res][CHATBOX_W_COORD];
 		Chatbox_textenter_y = Chatbox_p_input_coords[gr_screen.res][CHATBOX_Y_COORD];

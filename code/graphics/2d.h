@@ -983,6 +983,9 @@ extern void gr_get_string_size( int *w, int *h, const char * text, int len = 999
 // Returns the height of the current font
 extern int gr_get_font_height();
 
+// Returns a scaled amount of lines per the current font --wookieejedi
+extern int gr_get_dyanmic_font_lines(int number_default_lines);
+
 extern io::mouse::Cursor* Web_cursor;
 
 // Called by OS when application gets/looses focus

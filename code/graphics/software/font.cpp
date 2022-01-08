@@ -667,6 +667,10 @@ int gr_get_font_height()
 	}
 }
 
+int gr_get_dyanmic_font_lines(int number_default_lines) {
+	return fl2i((number_default_lines * 10) / (gr_get_font_height() + 1));
+}
+
 void gr_get_string_size(int *w1, int *h1, const char *text, int len)
 {
 	if (!FontManager::isReady())
