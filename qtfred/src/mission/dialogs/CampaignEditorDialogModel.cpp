@@ -25,13 +25,13 @@ static QString loadFile(QString file, const QString& campaignType) {
 		mission_campaign_clear();
 		Campaign.type = campaignType.isEmpty() ? CAMPAIGN_TYPE_SINGLE :
 												 CampaignEditorDialogModel::campaignTypes.indexOf(campaignType);
-		return QString();
+		return {};
 	}
 	//FRED is to enforce that only on new campaigns a campaign type may be given
 	Assert(campaignType.isEmpty());
 	parse_init(false);
 	if (mission_campaign_load(qPrintable(file.replace('/',DIR_SEPARATOR_CHAR)), nullptr, 0))
-		return QString();
+		return {};
 
 	return Campaign.filename;
 }
@@ -399,13 +399,15 @@ bool CampaignEditorDialogModel::setCurBrSexp(int sexp) {
 
 void CampaignEditorDialogModel::setCurBrIsLoop(bool isLoop) {
 	if (! getCurBr()) return;
-	if (isLoop)
-		for (auto& br : mnData_it->branches)
+	if (isLoop) {
+		for (auto& br : mnData_it->branches) {
 			if (br.loop) {
 				if (QMessageBox::question(parent, "Change loop", "This will make branch to "+br.next+" no longer a loop. Continue?") == QMessageBox::StandardButton::No)
 					return;
 				modify<bool>(br.loop, false);
 			}
+		}
+	}
 
 	modify<bool>(mnData_it->brData_it->loop, isLoop);
 	int idx = getCurBrIdx();

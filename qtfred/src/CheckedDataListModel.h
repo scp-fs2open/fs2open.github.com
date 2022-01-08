@@ -88,11 +88,11 @@ public:
 
 	QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override {
 		if (!index.isValid())
-			return QVariant();
+			return {};
 
 		auto srow = static_cast<size_t>(index.row());
 		if (srow >= items.size())
-			return QVariant();
+			return {};
 
 		if (role == Qt::DisplayRole)
 			return items[srow]._text;
@@ -101,7 +101,7 @@ public:
 		else if (items[srow]._color != Qt::color0 && role == Qt::ForegroundRole)
 			return QBrush(items[srow]._color);
 		else
-			return QVariant();
+			return {};
 	}
 
 	inline const T* internalData(const QModelIndex &index) const {

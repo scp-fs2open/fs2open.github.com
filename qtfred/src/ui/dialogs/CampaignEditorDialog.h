@@ -1,5 +1,4 @@
-#ifndef CAMPAIGNEDITORDIALOG_H
-#define CAMPAIGNEDITORDIALOG_H
+#pragma once
 
 #include <QDialog>
 #include <QtWidgets/QMenuBar>
@@ -9,8 +8,8 @@
 
 #include <memory>
 
-#include <mission/dialogs/CampaignEditorDialogModel.h>
-#include <ui/widgets/sexp_tree.h>
+#include "mission/dialogs/CampaignEditorDialogModel.h"
+#include "ui/widgets/sexp_tree.h"
 
 namespace fso {
 namespace fred {
@@ -66,5 +65,3 @@ private slots:
 }
 }
 }
-
-#endif // CAMPAIGNEDITORDIALOG_H

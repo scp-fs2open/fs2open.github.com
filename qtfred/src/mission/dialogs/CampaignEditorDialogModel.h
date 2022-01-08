@@ -1,5 +1,4 @@
-#ifndef CAMPAIGNEDITORDIALOGMODEL_H
-#define CAMPAIGNEDITORDIALOGMODEL_H
+#pragma once
 
 #include "mission/dialogs/AbstractDialogModel.h"
 #include "ui/dialogs/CampaignEditorDialog.h"
@@ -248,4 +247,3 @@ private:
 }
 }
 }
-#endif // CAMPAIGNEDITORDIALOGMODEL_H
