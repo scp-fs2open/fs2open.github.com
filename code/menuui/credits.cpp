@@ -457,8 +457,6 @@ void credits_init()
 		}
 	}
 
-	game_start_time();
-
 	// Use this id to trigger the start of music playing on the briefing screen
 	Credits_music_begin_timestamp = timestamp(Credits_music_delay);
 
@@ -674,7 +672,6 @@ void credits_close()
 
 
 	// non-UI stuff
-	game_stop_time();
 	credits_stop_music(true);
 }
 

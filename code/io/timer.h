@@ -72,11 +72,16 @@ void timer_pause_timestamp(bool sudo);
 // See above re: the sudo parameter
 void timer_unpause_timestamp(bool sudo);
 
+enum class TIMER_DIRECTION { FORWARD, BACKWARD };
 // Use with caution!
-void timer_adjust(float delta_seconds);
+void timer_adjust(float delta_seconds, TIMER_DIRECTION dir);
+void timer_adjust_microseconds(uint64_t delta_microseconds, TIMER_DIRECTION dir);
 
 // Save the timestamp corresponding to the beginning of the mission
 void timer_start_mission();
+
+// Restore the timestamp corresponding to the beginning of the mission, since we essentially start time twice
+void timer_revert_to_mission_start();
 
 // Calculate the current mission time using the timestamps
 fix timer_get_mission_time();

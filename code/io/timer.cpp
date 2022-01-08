@@ -157,24 +157,64 @@ void timer_unpause_timestamp(bool sudo)
 	}
 }
 
-void timer_adjust(float delta_seconds)
+void timer_adjust(float delta_seconds, TIMER_DIRECTION dir)
+{
+	Assertion(Timer_inited, "Timer should be initialized at this point!");
+	Assertion(Timer_timestamp_offset_from_counter != 0 && Timer_timestamp_paused_at_counter != 0 && Timestamp_microseconds_at_mission_start != 0,
+		"Warranty void if these variables have not been set!");
+	Assertion(delta_seconds > 0.0f, "The delta should be positive!");
+
+	auto delta_microseconds = (long double) delta_seconds * MICROSECONDS_PER_SECOND;
+	auto delta_timer = (uint64_t) (delta_microseconds / Timer_to_microseconds);
+
+	// adjust all the internal variables so it is as if the timer jumped forward or backward
+	if (dir == TIMER_DIRECTION::FORWARD)
+	{
+		Timestamp_microseconds_at_mission_start -= (uint64_t) delta_microseconds;
+		Timer_timestamp_offset_from_counter -= delta_timer;
+		Timer_timestamp_paused_at_counter -= delta_timer;
+	}
+	else
+	{
+		Timestamp_microseconds_at_mission_start += (uint64_t) delta_microseconds;
+		Timer_timestamp_offset_from_counter += delta_timer;
+		Timer_timestamp_paused_at_counter += delta_timer;
+	}
+}
+
+
+void timer_adjust_microseconds(uint64_t delta_microseconds, TIMER_DIRECTION dir)
 {
 	Assertion(Timer_inited, "Timer should be initialized at this point!");
 	Assertion(Timer_timestamp_offset_from_counter != 0 && Timer_timestamp_paused_at_counter != 0 && Timestamp_microseconds_at_mission_start != 0,
 		"Warranty void if these variables have not been set!");
 
-	auto microseconds = (long double) delta_seconds * MICROSECONDS_PER_SECOND;
-	auto timer_delta = (uint64_t) (microseconds / Timer_to_microseconds);
+	auto delta_timer = (uint64_t) ((long double) delta_microseconds / Timer_to_microseconds);
 
-	// adjust all the internal variables so it is as if the timer jumped forward
-	Timestamp_microseconds_at_mission_start -= (uint64_t) microseconds;
-	Timer_timestamp_offset_from_counter -= timer_delta;
-	Timer_timestamp_paused_at_counter -= timer_delta;
+	// adjust all the internal variables so it is as if the timer jumped forward or backward
+	if (dir == TIMER_DIRECTION::FORWARD)
+	{
+		Timestamp_microseconds_at_mission_start -= (uint64_t) delta_microseconds;
+		Timer_timestamp_offset_from_counter -= delta_timer;
+		Timer_timestamp_paused_at_counter -= delta_timer;
+	}
+	else
+	{
+		Timestamp_microseconds_at_mission_start += (uint64_t) delta_microseconds;
+		Timer_timestamp_offset_from_counter += delta_timer;
+		Timer_timestamp_paused_at_counter += delta_timer;
+	}
 }
 
 void timer_start_mission()
 {
 	Timestamp_microseconds_at_mission_start = timestamp_get_microseconds();
+}
+
+void timer_revert_to_mission_start()
+{
+	auto delta_microseconds = (timestamp_get_microseconds() - Timestamp_microseconds_at_mission_start);
+	timer_adjust_microseconds(delta_microseconds, TIMER_DIRECTION::BACKWARD);
 }
 
 fix timer_get_mission_time()

@@ -228,6 +228,7 @@ void game_reset_shade_frame();
 void game_post_level_init();
 void game_do_frame(bool set_frametime = true);
 void game_time_level_init();
+void game_time_level_close();
 void game_show_framerate();			// draws framerate in lower right corner
 
 struct big_expl_flash {
@@ -305,8 +306,6 @@ fix Game_time_compression = F1_0;
 fix Desired_time_compression = Game_time_compression;
 fix Time_compression_change_rate = 0;
 bool Time_compression_locked = false; //Can the user change time with shift- controls?
-
-static bool Lazily_start_timestamps = false;
 
 // auto-lang stuff
 int detect_lang();
@@ -902,6 +901,7 @@ void game_level_close()
 		extern bool Weapon_energy_cheat;
 		Weapon_energy_cheat = false;
 
+		game_time_level_close();
 	}
 	else
 	{
@@ -1342,6 +1342,9 @@ void game_post_level_init()
 	freespace_mission_load_stuff();
 
 	mission_process_alt_types();
+
+	// Now that loading is complete, resume time so that timestamps used in the briefing screens will work
+	game_start_time();
 
 	// m!m Make hv.Player available in "On Mission Start" hook
 	if(Player_obj)
@@ -4116,20 +4119,26 @@ void game_frame(bool paused)
 
 fix Last_time = 0;						// The absolute time of game at end of last frame (beginning of this frame)
 fix Last_delta_time = 0;				// While game is paused, this keeps track of how much elapsed in the frame before paused.
-static int timer_paused=0;
+static bool Time_paused=false;
 
 void game_time_level_init()
 {
-	// Pause the time so that timestamps set on initialization will not elapse during mission loading.
-	timer_pause_timestamp(true);
+	// stop time while we're loading so that timestamps set on initialization will all be consistent, among other things
+	game_stop_time();
 
 	Missiontime = 0;
 	timer_start_mission();
 }
 
+void game_time_level_close()
+{
+	// resume time so that other things, e.g. main hall, can use timestamps
+	game_start_time();
+}
+
 void game_stop_time(bool by_os_focus)
 {
-	if (timer_paused==0) {
+	if (!Time_paused) {
 		fix time;
 		time = timer_get_fixed_seconds();
 		// Save how much time progressed so far in the frame so we can
@@ -4144,14 +4153,12 @@ void game_stop_time(bool by_os_focus)
 		// We always want to 'sudo' the change, unless this is caused by the focus, because we want the game to have priority in that case
 		timer_pause_timestamp(!by_os_focus);
 	}
-	timer_paused++;
+	Time_paused = true;
 }
 
 void game_start_time(bool by_os_focus)
 {
-	timer_paused--;
-	Assert(timer_paused >= 0);
-	if (timer_paused==0) {
+	if (Time_paused) {
 		fix time;
 		time = timer_get_fixed_seconds();
 		// Take current time, and set it backwards to account for time
@@ -4161,12 +4168,10 @@ void game_start_time(bool by_os_focus)
 		Last_time = time - Last_delta_time;		
 
 		// Restore the timer_tick stuff...
-		// (unless we're lazily starting, in which case defer this until we start running game frames)
-		if (!Lazily_start_timestamps) {
-			// We always want to 'sudo' the change, unless this is caused by the focus, because we want the game to have priority in that case
-			timer_unpause_timestamp(!by_os_focus);
-		}
+		// We always want to 'sudo' the change, unless this is caused by the focus, because we want the game to have priority in that case
+		timer_unpause_timestamp(!by_os_focus);
 	}
+	Time_paused = false;
 }
 
 void lock_time_compression(bool is_locked)
@@ -4282,7 +4287,7 @@ void game_set_frametime(int state)
 
 	// before the player enters the mission, we blitz through time
 	if (do_pre_player_skip)
-		timer_adjust(flFrametime);
+		timer_adjust(flFrametime, TIMER_DIRECTION::FORWARD);
 
 	// wrap overall frametime if needed
 	if ( FrametimeOverall > (INT_MAX - F1_0) )
@@ -4303,11 +4308,9 @@ void game_update_missiontime()
 
 void game_do_frame(bool set_frametime)
 {
-	// Originally, timestamps didn't start getting incremented until game_set_frametime.
-	// Since we now use the SDL timer, the deferred start of timestamps needs to happen here.
-	if (Lazily_start_timestamps) {
-		timer_unpause_timestamp(true);
-		Lazily_start_timestamps = false;
+	if (Missiontime == 0) {
+		// reset the timestamps to the beginning, since they were running in the briefing screens
+		timer_revert_to_mission_start();
 	}
 
 	if (set_frametime) {
@@ -5162,6 +5165,7 @@ void game_leave_state( int old_state, int new_state )
 				if (Game_mode & GM_IN_MISSION) {
 					weapon_unpause_sounds();
 					audiostream_unpause_all();
+					game_start_time();
 				}
 			}
 			break;
@@ -5192,7 +5196,9 @@ void game_leave_state( int old_state, int new_state )
 			joy_ff_stop_effects();
 
 			// stop game time under certain conditions
-			if ( end_mission || (Game_mode & GM_NORMAL) || ((Game_mode & GM_MULTIPLAYER) && (new_state == GS_STATE_MULTI_PAUSED)) ){
+			if ( end_mission || 
+				((Game_mode & GM_NORMAL) && (new_state != GS_STATE_DEATH_DIED) && (new_state != GS_STATE_DEATH_BLEW_UP)) ||
+				((Game_mode & GM_MULTIPLAYER) && (new_state == GS_STATE_MULTI_PAUSED)) ){
 				game_stop_time();
 			}
 
@@ -5669,6 +5675,7 @@ void game_enter_state( int old_state, int new_state )
 				if (Game_mode & GM_IN_MISSION) {
 					weapon_pause_sounds();
 					audiostream_pause_all();
+					game_stop_time();
 				}
 			}
 			break;
@@ -5772,8 +5779,6 @@ void mouse_force_pos(int x, int y);
 						)
 					)
 				) {
-					// Since there's a bit more setup to do, let's not actually start the timestamps until we are running game frames
-					Lazily_start_timestamps = true;
 					game_start_time();
 			}
 
@@ -6562,6 +6567,8 @@ int game_main(int argc, char *argv[])
 	if (!Is_standalone) {
 		movie::play("intro.mve");
 	}
+
+	game_start_time();
 
 	if (Is_standalone) {
 		gameseq_post_event(GS_EVENT_STANDALONE_MAIN);
