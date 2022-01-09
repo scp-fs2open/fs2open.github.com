@@ -250,6 +250,8 @@ void timer_unpause_timestamp(bool sudo)
 		return;
 	if (sudo)
 		Timer_sudo_paused = false;
+	if (!Timer_is_paused)
+		return;
 	Timer_is_paused = false;
 
 	auto counter = get_performance_counter();

@@ -4148,12 +4148,12 @@ void game_stop_time(bool by_os_focus)
 		if (Last_delta_time < 0) {
 			Last_delta_time = 0;
 		}
-
-		// Stop the timer_tick stuff...
-		// We always want to 'sudo' the change, unless this is caused by the focus, because we want the game to have priority in that case
-		timer_pause_timestamp(!by_os_focus);
 	}
 	Time_paused = true;
+
+	// Stop the timer_tick stuff...
+	// We always want to 'sudo' the change, unless this is caused by the focus, because we want the game to have priority in that case
+	timer_pause_timestamp(!by_os_focus);
 }
 
 void game_start_time(bool by_os_focus)
@@ -4166,12 +4166,12 @@ void game_start_time(bool by_os_focus)
 		// will be correct when it goes to calculate the frametime next
 		// frame.
 		Last_time = time - Last_delta_time;		
-
-		// Restore the timer_tick stuff...
-		// We always want to 'sudo' the change, unless this is caused by the focus, because we want the game to have priority in that case
-		timer_unpause_timestamp(!by_os_focus);
 	}
 	Time_paused = false;
+
+	// Restore the timer_tick stuff...
+	// We always want to 'sudo' the change, unless this is caused by the focus, because we want the game to have priority in that case
+	timer_unpause_timestamp(!by_os_focus);
 }
 
 void lock_time_compression(bool is_locked)
