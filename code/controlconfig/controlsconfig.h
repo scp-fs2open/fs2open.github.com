@@ -701,10 +701,12 @@ bool control_config_use_preset_by_name(const SCP_string &name);
 /**
  * @brief Gets the currently used preset
  *
+ * @param[in] invert_agnostic  If true, check the bindings in Control_config against the preset, ignoring inversion flags
+ * 
  * @returns an iterator to the current preset, or
  * @returns ::iterator Control_config_presets.end() if current bindings are not in a preset
  */
-SCP_vector<CC_preset>::iterator control_config_get_current_preset();
+SCP_vector<CC_preset>::iterator control_config_get_current_preset(bool invert_agnostic = false);
 
 /*!
  * Returns the IoActionId (index within Control_config[]) of a control bound to the given key
