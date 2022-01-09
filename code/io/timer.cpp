@@ -27,8 +27,9 @@ static bool Timer_inited = false;
 static uint64_t Timer_timestamp_offset_from_counter = 0;
 static uint64_t Timer_timestamp_paused_at_counter = 0;
 
-static float Timer_time_compression_multiplier = 1.0f;
-static uint64_t Timer_time_compression_microseconds_offset = 0;
+static fix Timestamp_current_time_compression = F1_0;
+static float Timestamp_time_compression_multiplier = 1.0f;
+static uint64_t Timestamp_time_compression_microseconds_offset = 0;
 
 static bool Timer_is_paused = false;
 static bool Timer_sudo_paused = false;
@@ -130,7 +131,7 @@ std::uint64_t timer_get_nanoseconds()
     return static_cast<uint64_t>(time * Timer_to_nanoseconds);
 }
 
-static uint64_t timestamp_get_microseconds()
+static uint64_t timestamp_get_raw()
 {
 	uint64_t timestamp_raw;
 	if (Timer_is_paused) {
@@ -140,7 +141,12 @@ static uint64_t timestamp_get_microseconds()
 	}
 	timestamp_raw -= Timer_timestamp_offset_from_counter;
 
-	return Timer_time_compression_microseconds_offset + static_cast<uint64_t>(timestamp_raw * Timer_to_microseconds * Timer_time_compression_multiplier);
+	return timestamp_raw;
+}
+
+static uint64_t timestamp_get_microseconds()
+{
+	return Timestamp_time_compression_microseconds_offset + static_cast<uint64_t>(timestamp_get_raw() * Timer_to_microseconds * Timestamp_time_compression_multiplier);
 }
 
 static int timestamp_ms() {
@@ -292,13 +298,13 @@ void timer_adjust_microseconds(uint64_t delta_microseconds, TIMER_DIRECTION dir)
 	// adjust all the internal variables so it is as if the timer jumped forward or backward
 	if (dir == TIMER_DIRECTION::FORWARD)
 	{
-		Timestamp_microseconds_at_mission_start -= static_cast<uint64_t>(delta_microseconds);
+		Timestamp_microseconds_at_mission_start -= delta_microseconds;
 		Timer_timestamp_offset_from_counter -= delta_timer;
 		Timer_timestamp_paused_at_counter -= delta_timer;
 	}
 	else
 	{
-		Timestamp_microseconds_at_mission_start += static_cast<uint64_t>(delta_microseconds);
+		Timestamp_microseconds_at_mission_start += delta_microseconds;
 		Timer_timestamp_offset_from_counter += delta_timer;
 		Timer_timestamp_paused_at_counter += delta_timer;
 	}
@@ -307,9 +313,25 @@ void timer_adjust_microseconds(uint64_t delta_microseconds, TIMER_DIRECTION dir)
 extern fix Game_time_compression;
 void timer_update_time_compression()
 {
-	Timer_time_compression_multiplier = static_cast<float>(Game_time_compression) / F1_0;
+	// if no change, no need to update
+	if (Game_time_compression == Timestamp_current_time_compression) {
+		return;
+	}
 
-	// TODO
+	// grab the independent variable of the equation before we change anything
+	auto timestamp_raw = timestamp_get_raw();
+
+	// we need to move the counter offset to make the raw timestamp zero (so that it can start ticking with a new multiplier)
+	Timer_timestamp_offset_from_counter += timestamp_raw;
+	Timer_timestamp_paused_at_counter += timestamp_raw;
+
+	// add the accumulated time so we don't lose any of it
+	auto delta_microseconds = static_cast<uint64_t>(timestamp_raw * Timer_to_microseconds * Timestamp_time_compression_multiplier);
+	Timestamp_time_compression_microseconds_offset += delta_microseconds;
+
+	// now we can set the new info
+	Timestamp_current_time_compression = Game_time_compression;
+	Timestamp_time_compression_multiplier = static_cast<float>(Game_time_compression) / F1_0;
 }
 
 // ======================================== mission-specific stuff ========================================
