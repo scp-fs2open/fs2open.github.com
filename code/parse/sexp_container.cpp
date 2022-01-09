@@ -183,7 +183,7 @@ bool stuff_one_generic_sexp_container(SCP_string &name, ContainerType &type, int
 		opf_type = OPF_NUMBER;
 	} else if (!stricmp(temp_type_string.c_str(), "String")) {
 		type |= ContainerType::STRING_DATA;
-		opf_type = OPF_ANYTHING;
+		opf_type = OPF_STRING;
 	} else {
 		Warning(LOCATION, "Unknown SEXP Container type %s found", temp_type_string.c_str());
 		log_printf(LOGFILE_EVENT_LOG, "Unknown SEXP Container type %s found", temp_type_string.c_str());

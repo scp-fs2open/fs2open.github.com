@@ -223,7 +223,7 @@ void CAddModifyContainerDlg::OnTypeString()
 	Assert(container.empty());
 	container.type &= ~ContainerType::NUMBER_DATA;
 	container.type |= ContainerType::STRING_DATA;
-	container.opf_type = OPF_ANYTHING;
+	container.opf_type = OPF_STRING;
 }
 
 void CAddModifyContainerDlg::set_data_type()

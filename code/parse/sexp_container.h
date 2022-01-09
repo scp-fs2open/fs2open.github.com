@@ -91,7 +91,7 @@ struct sexp_container
 
 	SCP_string container_name;
 	ContainerType type = ContainerType::LIST | ContainerType::STRING_DATA;
-	int opf_type = OPF_ANYTHING;
+	int opf_type = OPF_STRING;
 
 	SCP_list<SCP_string> list_data;
 	SCP_unordered_map<SCP_string, SCP_string> map_data;
