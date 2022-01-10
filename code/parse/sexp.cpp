@@ -27979,14 +27979,14 @@ int query_operator_argument_type(int op, int argnum)
 			} else if (argnum == 1) {
 				return OPF_BOOL;
 			} else {
-				return OPF_ANYTHING;
+				return OPF_STRING;
 			}
 
 		case OP_CONTAINER_REMOVE_FROM_LIST:
 			if (argnum == 0) {
 				return OPF_LIST_CONTAINER_NAME;
 			} else {
-				return OPF_ANYTHING;
+				return OPF_STRING;
 			}
 
 		case OP_CONTAINER_ADD_TO_MAP:
@@ -27994,7 +27994,7 @@ int query_operator_argument_type(int op, int argnum)
 			if (argnum == 0) {
 				return OPF_MAP_CONTAINER_NAME;
 			} else {
-				return OPF_ANYTHING;
+				return OPF_STRING;
 			}
 
 		case OP_CONTAINER_GET_MAP_KEYS:
