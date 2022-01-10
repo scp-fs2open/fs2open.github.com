@@ -5432,7 +5432,18 @@ sexp_list_item *sexp_tree::modifier_get_listing_opf(int parent_node, int arg_ind
 		UNREACHABLE("Unknown container type %d", (int)p_container->type);
 	}
 
-	return get_listing_opf(type, parent_node, arg_index);
+	auto *list = get_listing_opf(type, parent_node, arg_index);
+	Assert(list);
+
+	// in case get_listing_opf() added options like "<argument>"
+	// prevents assertion failures later
+	auto *p_item = list;
+	while (p_item) {
+		p_item->type |= SEXPT_MODIFIER;
+		p_item = p_item->next;
+	}
+
+	return list;
 }
 
 int sexp_tree::get_sibling_place(int node)
