@@ -19883,6 +19883,10 @@ void sexp_update_moveable_animation(int node)
 
 	while(node >= 0) {
 		args.emplace_back(eval_num(node, is_nan, is_nan_forever));
+		
+		if(is_nan || is_nan_forever)
+			Warning(LOCATION, "Value for moveable %s on ship %s was NaN!", name.c_str(), ship_entry->name);
+		
 		node = CDR(node);
 	}
 

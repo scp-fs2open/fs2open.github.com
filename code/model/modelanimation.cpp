@@ -56,7 +56,6 @@ namespace animation {
 
 		switch (instanceData.state) {
 		case ModelAnimationState::UNTRIGGERED:
-		case ModelAnimationState::NEED_RECALC:
 			//We have a new animation starting up in this phase. Put it in the list of running animations to track and step it later
 			if (!m_isInitialType) {
 				auto& animEntry = ModelAnimationSet::s_runningAnimations[pmi->id];
@@ -66,10 +65,11 @@ namespace animation {
 
 				//Don't emplace animations that might already be there.
 				//If the animation is not allowed to externally change state, it is guaranteed to not be in the list at this point.
-				if(!m_canChangeState || std::find(animEntry.animationList.begin(), animEntry.animationList.end(), thisPtr) == animEntry.animationList.end())
-					animEntry.animationList.push_back(thisPtr);
+				animEntry.animationList.push_back(thisPtr);
 			}
 
+			/* fall-thru */
+		case ModelAnimationState::NEED_RECALC:
 			//Store the submodels current data as the base for this animation and calculate this animations parameters
 			m_animation->recalculate(applyBuffer, pmi);
 
