@@ -7007,12 +7007,22 @@ sexp_list_item *sexp_tree::get_listing_opf_map_keys(int parent_node) const
 	Assert(tree_nodes[parent_node].type & SEXPT_CONTAINER_DATA);
 
 	const auto *p_container = get_sexp_container(tree_nodes[parent_node].text);
-
 	Assert(p_container != nullptr);
-	Assert(p_container->is_map());
 
-	for (const auto &kv_pair : p_container->map_data) {
-		head.add_data(kv_pair.first.c_str(), SEXPT_VALID | SEXPT_MODIFIER | SEXPT_STRING);
+	const auto &container = *p_container;
+	Assert(container.is_map());
+
+	int type = SEXPT_VALID | SEXPT_MODIFIER;
+	if (any(container.type & ContainerType::STRING_KEYS)) {
+		type |= SEXPT_STRING;
+	} else if (any(container.type & ContainerType::NUMBER_KEYS)) {
+		type |= SEXPT_NUMBER;
+	} else {
+		UNREACHABLE("Unknown map container key type %d", (int)container.type);
+	}
+
+	for (const auto &kv_pair : container.map_data) {
+		head.add_data(kv_pair.first.c_str(), type);
 	}
 
 	return head.next;
