@@ -1904,9 +1904,9 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 							points = 1;
 						}
 
-						if (swp->primary_bank_ammo[bank_to_fire] > 0) {
+						if (swp->primary_bank_ammo[bank_to_fire] >= points) {
 							swp->primary_bank_ammo[bank_to_fire] -= points;
-						} else if ((swp->primary_bank_ammo[bank_to_fire] == 0) && !(The_mission.ai_profile->flags[AI::Profile_Flags::Prevent_negative_turret_ammo])) {
+						} else if ((swp->primary_bank_ammo[bank_to_fire] >= 0) && !(The_mission.ai_profile->flags[AI::Profile_Flags::Prevent_negative_turret_ammo])) {
 							swp->primary_bank_ammo[bank_to_fire] -= points;
 						} else if (!(turret->system_info->flags[Model::Subsystem_Flags::Use_multiple_guns]) && (swp->primary_bank_ammo[bank_to_fire] < 0)) {
 							swp->current_primary_bank++;
