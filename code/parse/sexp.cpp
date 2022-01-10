@@ -2647,56 +2647,57 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 			// Goober5000
 			case OPF_ANYTHING:
-				// jg18 - check SEXP args for container data/keys
-				switch (get_operator_const(op_node)) {
-					case OP_LIST_HAS_DATA:
-					case OP_LIST_DATA_INDEX:
-					case OP_MAP_HAS_DATA_ITEM:
-					case OP_CONTAINER_ADD_TO_LIST:
-					case OP_CONTAINER_REMOVE_FROM_LIST:
-						Assert(p_container);
-						if ((any(p_container->type & ContainerType::STRING_DATA) && (type2 != SEXP_ATOM_STRING)) ||
-							((any(p_container->type & ContainerType::NUMBER_DATA) && (type2 != OPR_NUMBER) &&
-								(type2 != OPR_POSITIVE)))) {
-							return SEXP_CHECK_WRONG_CONTAINER_DATA_TYPE;
-						}
-						break;
+				// FIXME TODO: move to OPF_CONTAINER_DATA/OPF_MAP_CONTIANER_KEY
+				//// jg18 - check SEXP args for container data/keys
+				//switch (get_operator_const(op_node)) {
+				//	case OP_LIST_HAS_DATA:
+				//	case OP_LIST_DATA_INDEX:
+				//	case OP_MAP_HAS_DATA_ITEM:
+				//	case OP_CONTAINER_ADD_TO_LIST:
+				//	case OP_CONTAINER_REMOVE_FROM_LIST:
+				//		Assert(p_container);
+				//		if ((any(p_container->type & ContainerType::STRING_DATA) && (type2 != SEXP_ATOM_STRING)) ||
+				//			((any(p_container->type & ContainerType::NUMBER_DATA) && (type2 != OPR_NUMBER) &&
+				//				(type2 != OPR_POSITIVE)))) {
+				//			return SEXP_CHECK_WRONG_CONTAINER_DATA_TYPE;
+				//		}
+				//		break;
 
-					case OP_MAP_HAS_KEY:
-					case OP_CONTAINER_REMOVE_FROM_MAP:
-						Assert(p_container);
-						Assert(p_container->is_map());
-						if ((any(p_container->type & ContainerType::STRING_KEYS) && (type2 != SEXP_ATOM_STRING)) ||
-							((any(p_container->type & ContainerType::NUMBER_KEYS) && (type2 != OPR_NUMBER) &&
-								(type2 != OPR_POSITIVE)))) {
-							return SEXP_CHECK_WRONG_MAP_KEY_TYPE;
-						}
-						break;
+				//	case OP_MAP_HAS_KEY:
+				//	case OP_CONTAINER_REMOVE_FROM_MAP:
+				//		Assert(p_container);
+				//		Assert(p_container->is_map());
+				//		if ((any(p_container->type & ContainerType::STRING_KEYS) && (type2 != SEXP_ATOM_STRING)) ||
+				//			((any(p_container->type & ContainerType::NUMBER_KEYS) && (type2 != OPR_NUMBER) &&
+				//				(type2 != OPR_POSITIVE)))) {
+				//			return SEXP_CHECK_WRONG_MAP_KEY_TYPE;
+				//		}
+				//		break;
 
-					case OP_CONTAINER_ADD_TO_MAP:
-						Assert(p_container);
-						Assert(p_container->is_map());
-						if (argnum % 2 != 0) {
-							// map key
-							if ((any(p_container->type & ContainerType::STRING_KEYS) && (type2 != SEXP_ATOM_STRING)) ||
-								((any(p_container->type & ContainerType::NUMBER_KEYS) && (type2 != OPR_NUMBER) &&
-									(type2 != OPR_POSITIVE)))) {
-								return SEXP_CHECK_WRONG_MAP_KEY_TYPE;
-							}
-						} else {
-							// map data
-							if ((any(p_container->type & ContainerType::STRING_DATA) && (type2 != SEXP_ATOM_STRING)) ||
-								((any(p_container->type & ContainerType::NUMBER_DATA) && (type2 != OPR_NUMBER) &&
-									(type2 != OPR_POSITIVE)))) {
-								return SEXP_CHECK_WRONG_CONTAINER_DATA_TYPE;
-							}
-						}
-						break;
+				//	case OP_CONTAINER_ADD_TO_MAP:
+				//		Assert(p_container);
+				//		Assert(p_container->is_map());
+				//		if (argnum % 2 != 0) {
+				//			// map key
+				//			if ((any(p_container->type & ContainerType::STRING_KEYS) && (type2 != SEXP_ATOM_STRING)) ||
+				//				((any(p_container->type & ContainerType::NUMBER_KEYS) && (type2 != OPR_NUMBER) &&
+				//					(type2 != OPR_POSITIVE)))) {
+				//				return SEXP_CHECK_WRONG_MAP_KEY_TYPE;
+				//			}
+				//		} else {
+				//			// map data
+				//			if ((any(p_container->type & ContainerType::STRING_DATA) && (type2 != SEXP_ATOM_STRING)) ||
+				//				((any(p_container->type & ContainerType::NUMBER_DATA) && (type2 != OPR_NUMBER) &&
+				//					(type2 != OPR_POSITIVE)))) {
+				//				return SEXP_CHECK_WRONG_CONTAINER_DATA_TYPE;
+				//			}
+				//		}
+				//		break;
 
-					default:
-						// no check needed
-						break;
-				}
+				//	default:
+				//		// no check needed
+				//		break;
+				//}
 				break;
 
 			case OPF_AI_GOAL:
