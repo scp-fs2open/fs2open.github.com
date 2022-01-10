@@ -761,5 +761,6 @@ void ai_profile_t::reset()
 	}
 	if (mod_supports_version(22, 0, 0)) {
 		flags.set(AI::Profile_Flags::Fighterbay_arrivals_use_carrier_orient);
+		flags.set(AI::Profile_Flags::Prevent_negative_turret_ammo);
 	}
 }
