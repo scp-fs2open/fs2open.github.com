@@ -11,6 +11,7 @@
 
 
 #include "cfile/cfile.h"
+#include "cmdline/cmdline.h"
 #include "controlconfig/controlsconfig.h"
 #include "controlconfig/presets.h"
 #include "debugconsole/console.h"
@@ -482,7 +483,12 @@ int joy_get_scaled_reading(int raw)
 
 	raw -= JOY_AXIS_CENTER;
 
-	dead_zone = (JOY_AXIS_MAX - JOY_AXIS_MIN) * Joy_dead_zone_size / 100;
+	if (Cmdline_deadzone >= 0)	{
+		dead_zone = (JOY_AXIS_MAX - JOY_AXIS_MIN) * Cmdline_deadzone / 200; //Making this div by 200, the max deadzone value in cmdline is 100, which is more intuitive
+	}
+	else{
+		dead_zone = (JOY_AXIS_MAX - JOY_AXIS_MIN) * Joy_dead_zone_size / 100;
+	}
 
 	if (raw < -dead_zone) {
 		rng = JOY_AXIS_CENTER - JOY_AXIS_MIN - dead_zone;

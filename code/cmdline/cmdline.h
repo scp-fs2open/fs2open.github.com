@@ -90,6 +90,7 @@ extern int Cmdline_warp_flash;
 extern int Cmdline_autopilot_interruptable;
 extern int Cmdline_stretch_menu;
 extern int Cmdline_no_screenshake;
+extern int Cmdline_deadzone;
 
 // Audio related
 extern int Cmdline_voice_recognition;

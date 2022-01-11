@@ -542,6 +542,11 @@ void options_tab_setup(int  /*set_palette*/)
 			Options_sliders[gr_screen.res][i].slider.enable();
 			Options_sliders[gr_screen.res][i].slider.unhide();
 		}		
+		if (Cmdline_deadzone >= 0){
+			//Deadzone is being set by the command line 
+			Options_sliders[gr_screen.res][OPT_JOY_DEADZONE_SLIDER].slider.disable();
+			Options_sliders[gr_screen.res][OPT_JOY_DEADZONE_SLIDER].slider.hide();
+		}
 	} else {
 		for(i=0; i<NUM_OPTIONS_SLIDERS; i++){
 			Options_sliders[gr_screen.res][i].slider.hide();
@@ -553,6 +558,7 @@ void options_tab_setup(int  /*set_palette*/)
 		Options_sliders[gr_screen.res][OPT_SKILL_SLIDER].slider.disable();
 		Ui_window.use_hack_to_get_around_stupid_problem_flag = 0;
 	}
+
 
 	// do other special processing
 	switch (Tab) {
@@ -613,6 +619,11 @@ void options_change_tab(int n)
 		for(idx=0; idx<NUM_OPTIONS_SLIDERS; idx++){
 			Options_sliders[gr_screen.res][idx].slider.enable();
 			Options_sliders[gr_screen.res][idx].slider.unhide();
+		}
+		if (Cmdline_deadzone >= 0){
+			//Deadzone is being set by the command line 
+			Options_sliders[gr_screen.res][OPT_JOY_DEADZONE_SLIDER].slider.disable();
+			Options_sliders[gr_screen.res][OPT_JOY_DEADZONE_SLIDER].slider.hide();
 		}
 	} else {
 		Options_bogus.hide();
@@ -988,6 +999,12 @@ void options_menu_init()
 	Options_sliders[gr_screen.res][OPT_SKILL_SLIDER].slider.pos = Game_skill_level;
 
 	Gamma_colors_inited = 0;
+
+	if (Cmdline_deadzone >= 0){
+		//Deadzone is being set by the command line 
+		Options_sliders[gr_screen.res][OPT_JOY_DEADZONE_SLIDER].slider.disable();
+		Options_sliders[gr_screen.res][OPT_JOY_DEADZONE_SLIDER].slider.hide();
+	}
 
 	Options_menu_inited = 1;
 

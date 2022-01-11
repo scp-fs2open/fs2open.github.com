@@ -382,6 +382,7 @@ cmdline_parm use_warp_flash("-warp_flash", NULL, AT_NONE);	// Cmdline_warp_flash
 cmdline_parm allow_autpilot_interrupt("-no_ap_interrupt", NULL, AT_NONE);
 cmdline_parm stretch_menu("-stretch_menu", NULL, AT_NONE);	// Cmdline_stretch_menu
 cmdline_parm no_screenshake("-no_screenshake", nullptr, AT_NONE); // Cmdline_no_screenshake
+cmdline_parm deadzone("-deadzone", "Sets the joystick deadzone. Integer value from 0 to 100. Disables deadzone slider in the in-game Options menu.", AT_INT); //Cmdline_deadzone
 
 int Cmdline_3dwarp = 0;
 int Cmdline_ship_choice_3d = 0;
@@ -390,6 +391,7 @@ int Cmdline_warp_flash = 0;
 int Cmdline_autopilot_interruptable = 1;
 int Cmdline_stretch_menu = 0;
 int Cmdline_no_screenshake = 0;
+int Cmdline_deadzone = -1;
 
 // Audio related
 cmdline_parm voice_recognition_arg("-voicer", NULL, AT_NONE);	// Cmdline_voice_recognition
@@ -1826,6 +1828,10 @@ bool SetCmdlineParams()
 		Cmdline_no_screenshake = 1;
 	}
 	
+	if (deadzone.found()){
+		Cmdline_deadzone = deadzone.get_int();
+	}
+
 	if ( stretch_menu.found() )	{
 		Cmdline_stretch_menu = 1;
 	}
