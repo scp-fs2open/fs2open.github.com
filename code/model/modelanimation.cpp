@@ -62,9 +62,7 @@ namespace animation {
 				animEntry.parentSet = m_set;
 
 				auto thisPtr = shared_from_this();
-
-				//Don't emplace animations that might already be there.
-				//If the animation is not allowed to externally change state, it is guaranteed to not be in the list at this point.
+				
 				animEntry.animationList.push_back(thisPtr);
 			}
 
@@ -1257,7 +1255,7 @@ namespace animation {
 		SCP_string name = animID;
 
 		if (s_moveablesById.count(name))
-			error_display(1, "Animation with name %s already exists!", animID);
+			error_display(1, "Moveable with name %s already exists!", animID);
 
 		required_string("$Type:");
 
@@ -1269,7 +1267,7 @@ namespace animation {
 			s_moveablesById.emplace(name, segment_parser->second());
 		}
 		else {
-			error_display(1, "Unknown moveable type %s in moveable with ID %s!", segment_type, animID);
+			error_display(1, "Could not create moveable %s: Unknown moveable type %s!", animID, segment_type);
 			return;
 		}
 

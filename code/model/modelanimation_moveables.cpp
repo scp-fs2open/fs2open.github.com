@@ -23,7 +23,7 @@ namespace animation {
 			setOrientation.m_targetAngle = angles{fl_radians((float)p), fl_radians((float)b), fl_radians((float)h)};
 		}
 		catch(const linb::bad_any_cast& e){
-			Error(LOCATION, "Failed to parse update for orientation moveable: %s", e.what());
+			Error(LOCATION, "Argument error trying to update orientation moveable: %s", e.what());
 		}
 	}
 
@@ -44,7 +44,7 @@ namespace animation {
 
 		auto submodel = ModelAnimationParseHelper::parseSubmodel();
 		if(submodel == nullptr)
-			error_display(1, "Orientation Moveable has no target submodel!");
+			error_display(1, "Could not create moveable! Moveable Orientation has no target submodel!");
 
 		return std::shared_ptr<ModelAnimationMoveableOrientation>(new ModelAnimationMoveableOrientation(submodel, angle));
 	}
@@ -85,7 +85,7 @@ namespace animation {
 			rotation.m_targetAngle = angles{fl_radians((float)p), fl_radians((float)b), fl_radians((float)h)};
 		}
 		catch(const linb::bad_any_cast& e){
-			Error(LOCATION, "Failed to parse update for rotation moveable: %s", e.what());
+			Error(LOCATION, "Argument error trying to update rotation moveable: %s", e.what());
 		}
 	}
 
@@ -126,7 +126,7 @@ namespace animation {
 
 		auto submodel = ModelAnimationParseHelper::parseSubmodel();
 		if(submodel == nullptr)
-			error_display(1, "Orientation Rotation has no target submodel!");
+			error_display(1, "Could not create moveable! Moveable Rotation has no target submodel!");
 
 		return std::shared_ptr<ModelAnimationMoveableRotation>(new ModelAnimationMoveableRotation(submodel, angle, velocity, acceleration));
 	}
