@@ -4233,6 +4233,10 @@ void weapon_init()
 		// do post-parse cleanup
 		weapon_do_post_parse();
 
+		// allocate this once after we load the weapons
+		if (used_weapons == nullptr)
+			used_weapons = new int[Weapon_info.size()];
+
 		Weapons_inited = true;
 	}
 
@@ -4331,9 +4335,6 @@ void weapon_level_init()
 
 	// emp effect
 	emp_level_init();
-
-	if (used_weapons == nullptr)
-		used_weapons = new int[Weapon_info.size()];
 
 	// clear out used_weapons between missions
 	memset(used_weapons, 0, Weapon_info.size() * sizeof(int));
@@ -7282,10 +7283,8 @@ void weapon_mark_as_used(int weapon_type)
 	if (weapon_type < 0)
 		return;
 
-	if ( used_weapons == NULL )
-		return;
-
-	Assert( weapon_type < weapon_info_size() );
+	Assert(used_weapons != nullptr);
+	Assert(weapon_type < weapon_info_size());
 
 	if (weapon_type < weapon_info_size()) {
 		used_weapons[weapon_type]++;

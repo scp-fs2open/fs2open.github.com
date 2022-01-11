@@ -1230,7 +1230,8 @@ void pilotfile::csg_read_controls()
 		}
 
 		// Check that these bindings are in a preset.
-		auto it = control_config_get_current_preset();
+		// CSG doesn't save invert flags, so use agnostic equals
+		auto it = control_config_get_current_preset(true);
 		if (it == Control_config_presets.end()) {
 			// Not a preset, create one and its file
 			CC_preset preset;

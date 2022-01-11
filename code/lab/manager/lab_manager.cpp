@@ -55,6 +55,7 @@ LabManager::LabManager() {
 	shockwave_level_init();
 	shipfx_flash_init();
 	mflash_page_in(true);
+	weapon_level_init();
 	beam_level_init();
 	particle::init();
 
