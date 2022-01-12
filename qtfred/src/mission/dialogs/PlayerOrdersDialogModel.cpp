@@ -14,21 +14,20 @@ namespace fso {
 
 			bool PlayerOrdersDialogModel::apply()
 			{
-				int orders_accepted;
+				std::set<size_t> orders_accepted;
 				object* objp;
 
 				if (!m_multi) {
-					orders_accepted = 0;
 					for (int i = 0; i < m_num_checks_active; i++) {
 						if (currentOrders[i] == 1)
-							orders_accepted |= acceptedOrders[i];
+							orders_accepted.insert(acceptedOrders[i]);
 					}
 					Ships[_editor->cur_ship].orders_accepted = orders_accepted;
 				}
 				else {
 					for (objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
 						if (((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) && (objp->flags[Object::Object_Flags::Marked])) {
-							Ships[objp->instance].orders_accepted = 0;
+							Ships[objp->instance].orders_accepted.clear();
 							for (int i = 0; i < m_num_checks_active; i++) {
 								int box_value;
 
@@ -40,9 +39,9 @@ namespace fso {
 
 								// if the button is set, then set the bit, otherwise, clear the bit
 								if (box_value == 1)
-									Ships[objp->instance].orders_accepted |= acceptedOrders[i];
+									Ships[objp->instance].orders_accepted.insert(acceptedOrders[i]);
 								else
-									Ships[objp->instance].orders_accepted &= ~(acceptedOrders[i]);
+									Ships[objp->instance].orders_accepted.erase(acceptedOrders[i]);
 							}
 						}
 					}
@@ -83,7 +82,7 @@ namespace fso {
 			}
 
 			void PlayerOrdersDialogModel::initialiseData() {
-				int default_orders;
+				std::set<size_t> default_orders;
 
 				object* objp;
 
@@ -91,13 +90,11 @@ namespace fso {
 					default_orders = ship_get_default_orders_accepted(&Ship_info[Ships[_editor->cur_ship].ship_info_index]);
 				}
 				else {
-					default_orders = 0;
 					for (objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
 						if (((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) && (objp->flags[Object::Object_Flags::Marked])) {
-							int these_orders;
-
-							these_orders = ship_get_default_orders_accepted(&Ship_info[Ships[objp->instance].ship_info_index]);
-							if (default_orders == 0) {
+							const std::set<size_t>& these_orders = ship_get_default_orders_accepted(&Ship_info[Ships[objp->instance].ship_info_index]);
+							
+							if (default_orders.empty()) {
 								default_orders = these_orders;
 							}
 							else { Assert(default_orders == these_orders); }
@@ -105,23 +102,20 @@ namespace fso {
 					}
 				}
 				m_num_checks_active = 0;
-				acceptedOrders.resize(NUM_COMM_ORDER_ITEMS);
-				orderNames.resize(NUM_COMM_ORDER_ITEMS);
-				for (int i = 0; i < NUM_COMM_ORDER_ITEMS; i++)
+				acceptedOrders.resize(Player_orders.size());
+				orderNames.resize(Player_orders.size());
+				for (size_t order_id : default_orders)
 				{
-					if (default_orders & Comm_orders[i].item)
-					{
-						orderNames[m_num_checks_active] = Comm_orders[i].name;
-						acceptedOrders[m_num_checks_active] = Comm_orders[i].item;
-						m_num_checks_active++;
-					}
+					orderNames[m_num_checks_active] = Player_orders[order_id].localized_name;
+					acceptedOrders[m_num_checks_active] = order_id;
+					m_num_checks_active++;
 				}
 
 				currentOrders.resize(m_num_checks_active);
 				if (!m_multi) {
-					int orders_accepted = Ships[_editor->cur_ship].orders_accepted;
+					const std::set<size_t>& orders_accepted = Ships[_editor->cur_ship].orders_accepted;
 					for (int i = 0; i < m_num_checks_active; i++) {
-						if (acceptedOrders[i] & orders_accepted)
+						if (orders_accepted.find(acceptedOrders[i]) != orders_accepted.end())
 							currentOrders[i] = 1;
 					}
 				}
@@ -129,7 +123,7 @@ namespace fso {
 					int first_time;
 
 					first_time = 1;
-					int orders_accepted;
+					std::set<size_t> orders_accepted;
 					for (objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
 						if (((objp->type == OBJ_START) || (objp->type == OBJ_SHIP)) && (objp->flags[Object::Object_Flags::Marked])) {
 
@@ -137,7 +131,7 @@ namespace fso {
 							orders_accepted = Ships[objp->instance].orders_accepted;
 							if (first_time) {
 								for (int i = 0; i < m_num_checks_active; i++) {
-									if (acceptedOrders[i] & orders_accepted)
+									if (orders_accepted.find(acceptedOrders[i]) != orders_accepted.end())
 										currentOrders[i] = 1;
 								}
 								first_time = 0;
@@ -145,7 +139,7 @@ namespace fso {
 							else {
 								for (int i = 0; i < m_num_checks_active; i++) {
 									// see if the order matches the check box order
-									if (acceptedOrders[i] & orders_accepted) {
+									if (orders_accepted.find(acceptedOrders[i]) != orders_accepted.end()) {
 										// if it matches, if it is not already set, then it is indeterminate.
 										if (!(currentOrders[i] == 1))
 											currentOrders[i] = 2;;

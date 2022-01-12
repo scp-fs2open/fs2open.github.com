@@ -33,8 +33,6 @@ class object;
 // defines for messages that can be sent from the player.  Defined at bitfields so that we can enable
 // and disable messages on a message by message basis
 
-#define NUM_COMM_ORDER_ITEMS		16
-
 #define ATTACK_TARGET_ITEM			(1<<0)
 #define DISABLE_TARGET_ITEM			(1<<1)
 #define DISARM_TARGET_ITEM			(1<<2)
@@ -61,20 +59,15 @@ class object;
 // used for Message box gauge
 #define NUM_MBOX_FRAMES		3
 
-// data structure to hold character string of commands for comm menu
-typedef struct comm_order {
-	SCP_string name;
-	int item;
-} comm_order;
+typedef struct player_order {
+	SCP_string parse_name;
+	SCP_string hud_name;
+	int hud_xstr;
+	int id = -1;
+	SCP_string localized_name = "";
+} player_order;
 
-typedef struct sexp_com_order{ 
-	const char *name;
-	int xstring; 
-	int item; 
-}sexp_com_order;
-
-extern comm_order Comm_orders[];
-extern sexp_com_order Sexp_comm_orders[];
+extern std::vector<player_order> Player_orders;
 
 // following defines are the set of possible commands that can be given to a ship.  A mission designer
 // might not allow some messages

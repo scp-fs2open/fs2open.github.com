@@ -163,7 +163,7 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	int pship_count; // a total count of the player ships not marked
 	int single_ship;
 	int player_ship;
-	int ship_orders;
+	std::set<size_t> ship_orders;
 	static int tristate_set(int val, int cur_state);
 
 	//int pship, current_orders;

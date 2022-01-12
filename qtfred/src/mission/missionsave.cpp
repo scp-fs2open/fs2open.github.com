@@ -11,6 +11,7 @@
 #include <ai/aigoals.h>
 #include <asteroid/asteroid.h>
 #include <cfile/cfile.h>
+#include <hud/hudsquadmsg.h>
 #include <gamesnd/eventmusic.h>
 #include <globalincs/linklist.h>
 #include <globalincs/version.h>
@@ -3433,7 +3434,10 @@ int CFred_mission_save::save_objects()
 				fout("\n+Orders Accepted:");
 			}
 
-			fout(" %d\t\t;! note that this is a bitfield!!!", shipp->orders_accepted);
+			int bitfield = 0;
+			for(size_t order : shipp->orders_accepted)
+				bitfield |= Player_orders[order].id;
+			fout(" %d\t\t;! note that this is a bitfield!!!", bitfield);
 		}
 
 		if (shipp->group >= 0) {

@@ -4213,8 +4213,8 @@ sexp_list_item* sexp_tree::get_listing_opf_ai_order() {
 	int i;
 	sexp_list_item head;
 
-	for (i = 0; i < NUM_COMM_ORDER_ITEMS; i++) {
-		head.add_data(Comm_orders[i].name.c_str());
+	for (const auto& order : Player_orders) {
+		head.add_data(order.hud_name.c_str());
 	}
 
 	return head.next;
