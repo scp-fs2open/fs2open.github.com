@@ -142,6 +142,7 @@ namespace AI {
 		Reset_last_hit_target_time_for_player_hits,
 		Fighterbay_arrivals_use_carrier_orient, 
 		Fighterbay_departures_use_carrier_orient,
+		Prevent_negative_turret_ammo,
 
 		NUM_VALUES
 	};
