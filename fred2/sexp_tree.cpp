@@ -860,7 +860,10 @@ void sexp_tree::right_clicked(int mode)
 								for (const auto &container : get_all_sexp_containers()) {
 									UINT flags = MF_STRING | MF_GRAYED;
 
-									if ((op_type == OPF_LIST_CONTAINER_NAME) && container.is_list()) {
+									if (op_type == OPF_CONTAINER_NAME) {
+										// allow all containers
+										flags &= ~MF_GRAYED;
+									} else if ((op_type == OPF_LIST_CONTAINER_NAME) && container.is_list()) {
 										flags &= ~MF_GRAYED;
 									} else if ((op_type == OPF_MAP_CONTAINER_NAME) && container.is_map()) {
 										flags &= ~MF_GRAYED;
@@ -2734,7 +2737,8 @@ int sexp_tree::add_default_operator(int op_index, int argnum)
 
 	} else {
 		// special case for sexps that take variables
-		if (query_operator_argument_type(op_index, argnum) == OPF_VARIABLE_NAME) {
+		const int op_type = query_operator_argument_type(op_index, argnum);
+		if (op_type == OPF_VARIABLE_NAME) {
 			int sexp_var_index = get_index_sexp_variable_name(item.text);
 			Assert(sexp_var_index != -1);
 			int type = SEXPT_VALID | SEXPT_VARIABLE;
@@ -2749,6 +2753,10 @@ int sexp_tree::add_default_operator(int op_index, int argnum)
 			char node_text[2*TOKEN_LENGTH + 2];
 			sprintf(node_text, "%s(%s)", item.text.c_str(), Sexp_variables[sexp_var_index].text);
 			add_variable_data(node_text, type);
+		}
+		else if (item.type & SEXPT_CONTAINER_NAME) {
+			Assert(is_container_opf_type(op_type));
+			add_container_name(item.text.c_str());
 		}
 		// modify-variable data type depends on type of variable being modified
 		// (we know this block is handling the second argument since it's not OPF_VARIABLE_NAME)
@@ -3511,6 +3519,22 @@ int sexp_tree::add_variable_data(const char *data, int type)
 	node = allocate_node(item_index);
 	set_node(node, type, data);
 	tree_nodes[node].handle = insert(data, BITMAP_VARIABLE, BITMAP_VARIABLE, tree_nodes[item_index].handle);
+	tree_nodes[node].flags = NOT_EDITABLE;
+	*modified = 1;
+	return node;
+}
+
+// add a container name node under operator pointed to by item_index
+int sexp_tree::add_container_name(const char *container_name)
+{
+	Assert(container_name != nullptr);
+	Assert(get_sexp_container(container_name) != nullptr);
+
+	expand_operator(item_index);
+	int node = allocate_node(item_index);
+	set_node(node, (SEXPT_VALID | SEXPT_CONTAINER_NAME | SEXPT_STRING), container_name);
+	tree_nodes[node].handle =
+		insert(container_name, BITMAP_CONTAINER_NAME, BITMAP_CONTAINER_NAME, tree_nodes[item_index].handle);
 	tree_nodes[node].flags = NOT_EDITABLE;
 	*modified = 1;
 	return node;
@@ -6980,7 +7004,7 @@ sexp_list_item *sexp_tree::get_listing_opf_sexp_containers(ContainerType con_typ
 
 	for (const auto &container : get_all_sexp_containers()) {
 		if (any(container.type & con_type)) {
-			head.add_data(container.container_name.c_str());
+			head.add_data(container.container_name.c_str(), (SEXPT_CONTAINER_NAME | SEXPT_STRING | SEXPT_VALID));
 		}
 	}
 
