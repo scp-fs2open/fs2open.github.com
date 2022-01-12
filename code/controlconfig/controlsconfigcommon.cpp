@@ -1068,18 +1068,18 @@ void control_config_common_init()
  */
 void control_config_common_close()
 {
-	// free strings	
-	for (int idx = 0; idx < NUM_AXIS_TEXT; idx++) {
-		if (Axis_text[idx] != nullptr) {
-			vm_free(Axis_text[idx]);
-			Axis_text[idx] = nullptr;
+	// free strings
+	for (auto&& text : Axis_text) {
+		if (text != nullptr) {
+			vm_free(text);
+			text = nullptr;
 		}
 	}
 
-	for (int idx = 0; idx < NUM_MOUSE_TEXT; idx++) {
-		if (Mouse_button_text[idx] != nullptr) {
-			vm_free(Mouse_button_text[idx]);
-			Mouse_button_text[idx] = nullptr;
+	for (auto&& text : Mouse_button_text) {
+		if (text != nullptr) {
+			vm_free(text);
+			text = nullptr;
 		}
 	}
 }
