@@ -1007,7 +1007,6 @@ void control_config_common_init()
 	load_preset_files();
 
 	// Init control label localization
-
 	if (Unicode_text_mode) {
 		if (Lcl_gr) {
 			Scan_code_text = Scan_code_text_german_u;
@@ -1045,6 +1044,23 @@ void control_config_common_init()
 		}
 	}
 
+	// Old XSTR indices have been put beside their corresponding label in case we use them again
+	Axis_text[0] = vm_strdup(XSTR("X Axis", 1647));		// XSTR 1021 - "Joystick/Mouse X Axis"
+	Axis_text[1] = vm_strdup(XSTR("Y Axis", 1648));		// XSTR 1022 - "Joystick/Mouse Y Axis"
+	Axis_text[2] = vm_strdup(XSTR("Z Axis", 1649));		// XSTR 1023 - "Joystick Z Axis"
+	Axis_text[3] = vm_strdup(XSTR("rX Axis", 1650));	// XSTR 1024 - "Joystick rX Axis"
+	Axis_text[4] = vm_strdup(XSTR("rY Axis", 1651));	// XSTR 1025 - "Joystick rY Axis"
+	Axis_text[5] = vm_strdup(XSTR("rZ Axis", 1652));	// XSTR 1026 - "Joystick rZ Axis"
+
+	Mouse_button_text[0] = vm_strdup(XSTR("Left Button", 1027));
+	Mouse_button_text[1] = vm_strdup(XSTR("Right Button", 1028));
+	Mouse_button_text[2] = vm_strdup(XSTR("Mid Button", 1029));
+	Mouse_button_text[3] = vm_strdup(XSTR("X1 Button", 1653));
+	Mouse_button_text[4] = vm_strdup(XSTR("X2 Button", 1654));
+	Mouse_button_text[5] = vm_strdup(XSTR("Wheel Up", 1655));
+	Mouse_button_text[6] = vm_strdup(XSTR("Wheel Down", 1656));
+	Mouse_button_text[7] = vm_strdup(XSTR("Wheel Left", 1657));
+	Mouse_button_text[8] = vm_strdup(XSTR("Wheel Right", 1658));
 }
 
 /*
@@ -1052,6 +1068,20 @@ void control_config_common_init()
  */
 void control_config_common_close()
 {
+	// free strings
+	for (auto&& text : Axis_text) {
+		if (text != nullptr) {
+			vm_free(text);
+			text = nullptr;
+		}
+	}
+
+	for (auto&& text : Mouse_button_text) {
+		if (text != nullptr) {
+			vm_free(text);
+			text = nullptr;
+		}
+	}
 }
 
 SCP_map<SCP_string, short> mKeyNameToVal;
