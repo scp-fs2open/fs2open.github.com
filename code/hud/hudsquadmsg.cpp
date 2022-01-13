@@ -157,22 +157,22 @@ int keys_used[] = {	KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_
 SCP_string  Comm_order_types[NUM_COMM_ORDER_TYPES];
 
 std::vector<player_order> Player_orders = {
-	{"attack ship",   "Destroy my target",  299, ATTACK_TARGET_ITEM},
-	{"disable ship",  "Disable my target",	300, DISABLE_TARGET_ITEM },
-	{"disarm ship",	  "Disarm my target",	301, DISARM_TARGET_ITEM },
-	{"disable subsys","Destroy subsystem",	302, DISABLE_SUBSYSTEM_ITEM },
-	{"guard ship",	  "Protect my target",	303, PROTECT_TARGET_ITEM },
-	{"ignore ship",   "Ignore my target",	304, IGNORE_TARGET_ITEM },
-	{"form on wing","Form on my wing",	305, FORMATION_ITEM },
-	{"cover me",	"Cover me",			306, COVER_ME_ITEM },
-	{"attack any",	"Engage enemy",		307, ENGAGE_ENEMY_ITEM },
-	{"dock", "Capture my target",	308, CAPTURE_TARGET_ITEM},
-	{"rearm me", "Rearm me",			309, REARM_REPAIR_ME_ITEM},
-	{"abort rearm", "Abort rearm",		310, ABORT_REARM_REPAIR_ITEM},
-	{"depart", "Depart",				311, DEPART_ITEM},
-	{"stay near me", "Stay near me",		-1, STAY_NEAR_ME_ITEM},
-	{"stay near ship", "Stay near my target",-1, STAY_NEAR_TARGET_ITEM},
-	{"keep safe dist", "Keep safe distance", -1, KEEP_SAFE_DIST_ITEM}
+	player_order("attack ship",   "Destroy my target",  299, ATTACK_TARGET_ITEM),
+	player_order("disable ship",  "Disable my target",	300, DISABLE_TARGET_ITEM ),
+	player_order("disarm ship",	  "Disarm my target",	301, DISARM_TARGET_ITEM ),
+	player_order("disable subsys","Destroy subsystem",	302, DISABLE_SUBSYSTEM_ITEM ),
+	player_order("guard ship",	  "Protect my target",	303, PROTECT_TARGET_ITEM ),
+	player_order("ignore ship",   "Ignore my target",	304, IGNORE_TARGET_ITEM ),
+	player_order("form on wing","Form on my wing",	305, FORMATION_ITEM ),
+	player_order("cover me",	"Cover me",			306, COVER_ME_ITEM ),
+	player_order("attack any",	"Engage enemy",		307, ENGAGE_ENEMY_ITEM ),
+	player_order("dock", "Capture my target",	308, CAPTURE_TARGET_ITEM),
+	player_order("rearm me", "Rearm me",			309, REARM_REPAIR_ME_ITEM),
+	player_order("abort rearm", "Abort rearm",		310, ABORT_REARM_REPAIR_ITEM),
+	player_order("depart", "Depart",				311, DEPART_ITEM),
+	player_order("stay near me", "Stay near me",		-1, STAY_NEAR_ME_ITEM),
+	player_order("stay near ship", "Stay near my target",-1, STAY_NEAR_TARGET_ITEM),
+	player_order("keep safe dist", "Keep safe distance", -1, KEEP_SAFE_DIST_ITEM)
 };
 
 void hud_init_comm_orders()
@@ -194,17 +194,17 @@ void hud_init_comm_orders()
 		Comm_order_types[i] = temp_comm_order_types[i];
 	}
 
-	for(auto& player_order : Player_orders) {
-		player_order.localized_name = XSTR(player_order.hud_name.c_str(), player_order.hud_xstr);
+	for(auto& order : Player_orders) {
+		order.localized_name = XSTR(order.hud_name.c_str(), order.hud_xstr);
 	}
 }
 
 // Text to display on the messaging menu when using the shortcut keys
 const char *comm_order_get_text(int item)
 {
-	for(const auto& player_order : Player_orders){
-		if(player_order.id == item)
-			return player_order.localized_name.c_str();
+	for(const auto& order : Player_orders){
+		if(order.id == item)
+			return order.localized_name.c_str();
 	}
 	
 	UNREACHABLE("Did not find order with id %d!", item);
@@ -827,7 +827,7 @@ bool hud_squadmsg_is_target_order_valid(int order, int find_order, ai_info *aip 
 	}
 
 	// if order is disable subsystem, and no subsystem targeted or no hits, then order not valid
-	if ( (Player_orders[order].id == DISABLE_SUBSYSTEM_ITEM) && ((aip->targeted_subsys == NULL) || (aip->targeted_subsys->current_hits <= 0.0f)) ){
+	if ( (Player_orders[order].id == DISABLE_SUBSYSTEM_ITEM) && ((aip->targeted_subsys == nullptr) || (aip->targeted_subsys->current_hits <= 0.0f)) ){
 		return false;
 	}
 
@@ -1939,7 +1939,7 @@ void hud_squadmsg_ship_command()
 	Num_menu_items = 0;
 	for(size_t order_id : default_orders) {
 		Assert (Num_menu_items < MAX_MENU_ITEMS);
-		MsgItems[Num_menu_items].text = Player_orders[order_id].localized_name.c_str();
+		MsgItems[Num_menu_items].text = Player_orders[order_id].localized_name;
 		MsgItems[Num_menu_items].instance = Player_orders[order_id].id;
 		MsgItems[Num_menu_items].active = 0;
 		// check the bit to see if the command is active
@@ -2411,7 +2411,7 @@ int hud_query_order_issued(const char *to, const char *order_name, const char *t
 	}
 
 	
-	for (i = 0; i < Player_orders.size(); i++)
+	for (i = 0; i < (int) Player_orders.size(); i++)
 		if (!stricmp(order_name, Player_orders[i].hud_name.c_str()))
 			order = Player_orders[i].id;
 

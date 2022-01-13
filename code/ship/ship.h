@@ -968,7 +968,7 @@ typedef struct ship_type_info {
 		: debris_max_speed( 0.f ),
 		  ff_multiplier( 0.f ), emp_multiplier( 0.f ),
 		  fog_start_dist( 0.f ), fog_complete_dist( 0.f ),
-		  ai_valid_goals( 0 ), ai_player_orders( ), ai_active_dock( 0 ), ai_passive_dock( 0 ),
+		  ai_valid_goals( 0 ), ai_active_dock( 0 ), ai_passive_dock( 0 ),
 		  vaporize_chance( 0.f )
 
 	{

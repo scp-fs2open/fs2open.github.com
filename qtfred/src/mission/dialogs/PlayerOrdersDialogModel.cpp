@@ -107,7 +107,7 @@ namespace fso {
 				for (size_t order_id : default_orders)
 				{
 					orderNames[m_num_checks_active] = Player_orders[order_id].localized_name;
-					acceptedOrders[m_num_checks_active] = order_id;
+					acceptedOrders[m_num_checks_active] = (int) order_id;
 					m_num_checks_active++;
 				}
 

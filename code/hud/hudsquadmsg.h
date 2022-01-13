@@ -63,8 +63,9 @@ typedef struct player_order {
 	SCP_string parse_name;
 	SCP_string hud_name;
 	int hud_xstr;
-	int id = -1;
-	SCP_string localized_name = "";
+	int id;
+	SCP_string localized_name;
+	player_order(SCP_string parsename, SCP_string hudname, int hudxstr, int orderid = 0) : parse_name(std::move(parsename)), hud_name(std::move(hudname)), hud_xstr(hudxstr), id(orderid), localized_name("") { }
 } player_order;
 
 extern std::vector<player_order> Player_orders;

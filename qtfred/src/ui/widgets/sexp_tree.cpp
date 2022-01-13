@@ -4210,7 +4210,6 @@ sexp_list_item* sexp_tree::get_listing_opf_event_name(int parent_node) {
 }
 
 sexp_list_item* sexp_tree::get_listing_opf_ai_order() {
-	int i;
 	sexp_list_item head;
 
 	for (const auto& order : Player_orders) {

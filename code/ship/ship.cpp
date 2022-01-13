@@ -116,8 +116,6 @@ extern bool splodeing;
 extern float splode_level;
 extern int splodeingtexture;
 
-extern std::vector<player_order> Player_orders;
-
 #define SHIP_REPAIR_SUBSYSTEM_RATE	0.01f
 
 // The minimum required fuel to engage afterburners
