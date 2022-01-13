@@ -2107,7 +2107,7 @@ int parse_create_object_sub(p_object *p_objp)
 			std::set<size_t> default_orders, remaining_orders;
 			
 			default_orders = ship_get_default_orders_accepted(&Ship_info[shipp->ship_info_index]);
-			std::set_intersection(p_objp->orders_accepted.begin(), p_objp->orders_accepted.end(), default_orders.begin(), default_orders.end(),
+			std::set_difference(p_objp->orders_accepted.begin(), p_objp->orders_accepted.end(), default_orders.begin(), default_orders.end(),
 								  std::inserter(remaining_orders, remaining_orders.begin()));
 			if (!remaining_orders.empty())
 			{
