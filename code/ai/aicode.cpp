@@ -13274,7 +13274,14 @@ int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, int allowed_path_
 	else if (The_mission.ai_profile->flags[AI::Profile_Flags::Fighterbay_arrivals_use_carrier_orient]) {
 		rvec = parent_objp->orient.vec.rvec;
 	}
-	vm_vector_2_matrix(&pl_objp->orient, &fvec, nullptr, IS_VEC_NULL(&rvec) ? nullptr : &rvec);
+
+	// use parent ship uvec, if applicable
+	vec3d uvec;		vm_vec_zero(&uvec);
+	if (The_mission.ai_profile->flags[AI::Profile_Flags::Fighterbay_arrivals_use_carrier_orient]) {
+		uvec = parent_objp->orient.vec.uvec;
+	}
+
+	vm_vector_2_matrix(&pl_objp->orient, &fvec, IS_VEC_NULL(&uvec) ? nullptr : &uvec, IS_VEC_NULL(&rvec) ? nullptr : &rvec);
 
 	return 0;	
 }
