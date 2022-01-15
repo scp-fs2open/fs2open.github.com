@@ -13264,21 +13264,21 @@ int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, int allowed_path_
 	pl_objp->phys_info.forward_thrust = 0.0f;		// How much the forward thruster is applied.  0-1.
 	pl_objp->pos = pos;
 
-	// use the modder-defined arrival rvec, if applicable
 	vec3d rvec;		vm_vec_zero(&rvec);
+	vec3d uvec;		vm_vec_zero(&uvec);
+
+	// use the modder-defined arrival rvec, if applicable
 	SCP_string pathName(pm->paths[path_index].name);
 	if (parent_sip->pathMetadata.find(pathName) != parent_sip->pathMetadata.end() && !IS_VEC_NULL(&parent_sip->pathMetadata[pathName].arrival_rvec)) {
 		vm_vec_copy_normalize(&rvec, &parent_sip->pathMetadata[pathName].arrival_rvec);
 		vm_vec_unrotate(&rvec, &rvec, &Objects[aip->path_objnum].orient);
 	}
 	else if (The_mission.ai_profile->flags[AI::Profile_Flags::Fighterbay_arrivals_use_carrier_orient]) {
-		rvec = parent_objp->orient.vec.rvec;
-	}
-
-	// use parent ship uvec, if applicable
-	vec3d uvec;		vm_vec_zero(&uvec);
-	if (The_mission.ai_profile->flags[AI::Profile_Flags::Fighterbay_arrivals_use_carrier_orient]) {
+		// using only the flag provides a way for modders to use a quick option (though not 100% perfect)
+		// also, it is more intuitive that the carrier's uvec is preferable to attempt to match first
+		// this avoids unintutive scenarios like rear-facing arrivals ending up side down
 		uvec = parent_objp->orient.vec.uvec;
+		rvec = parent_objp->orient.vec.rvec;
 	}
 
 	vm_vector_2_matrix(&pl_objp->orient, &fvec, IS_VEC_NULL(&uvec) ? nullptr : &uvec, IS_VEC_NULL(&rvec) ? nullptr : &rvec);
