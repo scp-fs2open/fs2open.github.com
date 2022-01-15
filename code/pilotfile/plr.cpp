@@ -1,4 +1,6 @@
 
+#include "controlconfig/controlsconfig.h"
+#include "controlconfig/presets.h"
 #include "freespace.h"
 #include "gamesnd/eventmusic.h"
 #include "hud/hudconfig.h"
@@ -346,11 +348,6 @@ void pilotfile::plr_read_containers()
 	handler->endArrayRead();
 }
 
-bool pilotfile::plr_has_persistent_containers() const
-{
-	return !p->containers.empty();
-}
-
 void pilotfile::plr_write_containers()
 {
 	handler->startSectionWrite(Section::Containers);
@@ -651,65 +648,102 @@ void pilotfile::plr_write_stats_multi()
 
 void pilotfile::plr_read_controls()
 {
-	short id1, id2;
-	int axi, inv;
+	if (version < 4) {
+		// PLR < 4
+		short id1, id2;
+		int axi, inv;
 
-	auto list_size = handler->startArrayRead("controls", true);
-	for (size_t idx = 0; idx < list_size; idx++, handler->nextArraySection()) {
-		id1 = handler->readShort("key");
-		id2 = handler->readShort("joystick");
-		handler->readShort("mouse");	// unused, at the moment
+		// Set up preset name, we'll populate the rest of the preset's data later
+		CC_preset preset;
+		preset.name = filename;
 
-		if (idx < Control_config.size()) {
-			Control_config[idx].take(CC_bind(CID_KEYBOARD, id1), 0);
-			Control_config[idx].take(CC_bind(CID_JOY0, id2), 1);
+		// strip off extension
+		auto n = preset.name.find_last_of('.');
+		preset.name.resize(n);
+		
+		// Load in the bindings to Control_config
+		// ...First the digital controls
+		auto list_size = handler->startArrayRead("controls", true);
+		for (size_t idx = 0; idx < list_size; idx++, handler->nextArraySection()) {
+			id1 = handler->readShort("key");
+			id2 = handler->readShort("joystick");
+			handler->readShort("mouse");
+
+			if (idx < Control_config.size()) {
+				// Force the bindings into Control_config
+				Control_config[idx].take(CC_bind(CID_KEYBOARD, id1), 0);
+				Control_config[idx].take(CC_bind(CID_JOY0, id2), 1);
+			}
 		}
-	}
-	handler->endArrayRead();
+		handler->endArrayRead();
 
-	auto list_axis = handler->startArrayRead("axes");
-	for (size_t idx = 0; idx < list_axis; idx++, handler->nextArraySection()) {
-		axi = handler->readInt("axis_map");
-		inv = handler->readInt("invert_axis");
+		// ...Then the analog controls
+		auto list_axis = handler->startArrayRead("axes");
+		for (size_t idx = 0; idx < list_axis; idx++, handler->nextArraySection()) {
+			axi = handler->readInt("axis_map");
+			inv = handler->readInt("invert_axis");
 
-		if (idx < NUM_JOY_AXIS_ACTIONS) {
-			Axis_map_to[idx] = axi;
-			Invert_axis[idx] = inv;
+			if (idx < NUM_JOY_AXIS_ACTIONS) {
+				Control_config[idx + JOY_AXIS_BEGIN].take(CC_bind(CID_JOY0, static_cast<short>(axi), CCF_AXIS), 0);
+				Control_config[idx + JOY_AXIS_BEGIN].invert(inv != 0);
+			}
 		}
+		handler->endArrayRead();
+
+		// Check that these bindings are in a preset.  If it is not, create a new preset file
+		auto it = control_config_get_current_preset();
+		if (it == Control_config_presets.end()) {
+			std::copy(Control_config.begin(), Control_config.end(), std::back_inserter(preset.bindings));
+			Control_config_presets.push_back(preset);
+
+			// Try to save the preset file
+			if (save_preset_file(preset, false)) {
+				Information(LOCATION, "Successfully converted playerfile to v4.  Please rebind your mouse controls, if any.");
+			} else {
+				Warning(LOCATION, "Could not save controls preset file (%s) when converting playerfile to v3.", preset.name.c_str());
+			}
+		}
+		return;
+
+	} else {
+		// read PLR >= 4
+		SCP_string buf = handler->readString("preset");
+
+		auto it = std::find_if(Control_config_presets.begin(), Control_config_presets.end(),
+							   [buf](const CC_preset& preset) { return preset.name == buf; });
+
+		if (it == Control_config_presets.end()) {
+			Assertion(!Control_config_presets.empty(), "[PLR] Error reading Controls! Control_config_presets empty! Get a coder!");
+
+			// Couldn't find the preset, use defaults
+			ReleaseWarning(LOCATION, "Could not find preset %s, using defaults\n", buf.c_str());
+			it = Control_config_presets.begin();
+		}
+
+		control_config_use_preset(*it);
+		return;
 	}
-	handler->endArrayRead();
 }
 
 void pilotfile::plr_write_controls()
 {
 	handler->startSectionWrite(Section::Controls);
+	
+	// As of PLR v4, control bindings are saved outside of the PLR file into PST files.
+	// We now only save the currently selected preset in the PLR file itself.
+	auto it = control_config_get_current_preset();
 
-	// For some unknown reason, the old code used a short for the array length here...
-	handler->startArrayWrite("controls", Control_config.size(), true);
-	for (auto &item : Control_config) {
-		handler->startSectionWrite(Section::Unnamed);
+	if (it == Control_config_presets.end()) {
+		// No current preset selected. what? Might be a new player...
+		Assertion(!Control_config_presets.empty(), "[PLR] Error saving controls! Control_config_presets empty! Get a coder!");
 
-		handler->writeShort("key", item.get_btn(CID_KEYBOARD));
-		handler->writeShort("joystick", item.get_btn(CID_JOY0));
-		// placeholder? for future mouse_id?
-		handler->writeShort("mouse", -1);
-
-		handler->endSectionWrite();
+		// Just bash it to defaults
+		it = Control_config_presets.begin();
 	}
-	handler->endArrayWrite();
 
-	handler->startArrayWrite("axes", NUM_JOY_AXIS_ACTIONS);
-	for (size_t idx = 0; idx < NUM_JOY_AXIS_ACTIONS; idx++) {
-		handler->startSectionWrite(Section::Unnamed);
+	handler->writeString("preset", it->name.c_str());
 
-		handler->writeInt("axis_map", Axis_map_to[idx]);
-		handler->writeInt("invert_axis", Invert_axis[idx]);
-
-		handler->endSectionWrite();
-	}
-	handler->endArrayWrite();
-
-	handler->endSectionWrite();
+	handler->endSectionWrite(); // Section::controls
 }
 
 void pilotfile::plr_read_settings()
@@ -1081,10 +1115,7 @@ bool pilotfile::save_player(player *_p)
 
 	// header and version
 	handler->writeInt("signature", PLR_FILE_ID);
-	static_assert(PLR_VERSION == PRE_CONTAINERS_PLR_VERSION + 1,
-		"PLR_VERSION shouldn't be bumped beyond containers without removing compatibility fix");
-	const ubyte file_version = plr_has_persistent_containers() ? PLR_VERSION : PRE_CONTAINERS_PLR_VERSION;
-	handler->writeUByte("version", file_version);
+	handler->writeUByte("version", PLR_VERSION);
 
 	mprintf(("PLR => Saving '%s' with version %d...\n", filename.c_str(), (int)PLR_VERSION));
 
@@ -1105,12 +1136,8 @@ bool pilotfile::save_player(player *_p)
 	plr_write_hud();
 	mprintf(("PLR => Saving:  Variables...\n"));
 	plr_write_variables();
-	if (plr_has_persistent_containers()) {
-		mprintf(("PLR => Saving:  Containers...\n"));
-		plr_write_containers();
-	} else {
-		mprintf(("PLR => No containers to save.\n"));
-	}
+	mprintf(("PLR => Saving:  Containers...\n"));
+	plr_write_containers();
 	mprintf(("PLR => Saving:  Multiplayer...\n"));
 	plr_write_multiplayer();
 	mprintf(("PLR => Saving:  Controls...\n"));

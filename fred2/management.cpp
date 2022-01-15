@@ -146,11 +146,6 @@ int create_ship(matrix *orient, vec3d *pos, int ship_type);
 int query_ship_name_duplicate(int ship);
 char *reg_read_string( char *section, char *name, char *default_value );
 
-extern int Nmodel_num;
-extern int Nmodel_instance_num;
-extern matrix Nmodel_orient;
-extern int Nmodel_bitmap;
-
 void string_copy(char *dest, const CString &src, size_t max_len, int modify)
 {
 	if (modify)

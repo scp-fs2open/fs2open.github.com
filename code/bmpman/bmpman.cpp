@@ -1120,7 +1120,7 @@ static int bm_load_info(BM_TYPE type, const char *filename, CFILE *img_cfp, int 
 	return 0;
 }
 
-int bm_load(const char *real_filename) {
+int bm_load(const char *real_filename, int dir_type) {
 	int free_slot = -1;
 	int w, h, bpp = 8;
 	int rc = 0;
@@ -1164,11 +1164,11 @@ int bm_load(const char *real_filename) {
 	// Lets find out what type it is
 	{
 		// see if it's already loaded (checks for any type with filename)
-		if (bm_load_sub_fast(filename, &handle))
+		if (bm_load_sub_fast(filename, &handle, dir_type))
 			return handle;
 
 		// if we are still here then we need to fall back to a file-based search
-		int rval = bm_load_sub_slow(filename, BM_NUM_TYPES, bm_ext_list, &img_cfp);
+		int rval = bm_load_sub_slow(filename, BM_NUM_TYPES, bm_ext_list, &img_cfp, dir_type);
 
 		if (rval < 0)
 			return -1;
@@ -1224,7 +1224,7 @@ int bm_load(const char *real_filename) {
 	entry->bm.palette = nullptr;
 	entry->num_mipmaps = mm_lvl;
 	entry->mem_taken = (size_t)bm_size;
-	entry->dir_type = CF_TYPE_ANY;
+	entry->dir_type = dir_type;
 	entry->handle = handle;
 
 	entry->load_count++;
@@ -1235,8 +1235,8 @@ int bm_load(const char *real_filename) {
 	return handle;
 }
 
-int bm_load(const SCP_string& filename) {
-	return bm_load(filename.c_str());
+int bm_load(const SCP_string& filename, int dir_type) {
+	return bm_load(filename.c_str(), dir_type);
 }
 
 bool bm_load_and_parse_eff(const char *filename, int dir_type, int *nframes, int *nfps, int *key, BM_TYPE *type) {
@@ -1794,7 +1794,7 @@ int bm_load_either(const char *filename, int *nframes, int *fps, int *keyframe, 
 		*fps = 0;
 	int tidx = bm_load_animation(filename, nframes, fps, keyframe, nullptr, can_drop_frames, dir_type);
 	if (tidx == -1) {
-		tidx = bm_load(filename);
+		tidx = bm_load(filename, dir_type);
 		if (tidx != -1 && nframes != NULL)
 			*nframes = 1;
 	}

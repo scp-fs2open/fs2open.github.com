@@ -659,7 +659,7 @@ void event_music_first_pattern()
 			audiostream_stop( Patterns[Current_pattern].handle );
 	}
 
-	Pattern_timer_id = 2000;	// start music delay
+	Pattern_timer_id = timestamp(2000);	// start music delay
 	
 	Event_music_begun = FALSE;
 	if ( Event_Music_battle_started == TRUE ) {

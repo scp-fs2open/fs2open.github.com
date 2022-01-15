@@ -560,6 +560,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "replace-texture",				OP_REPLACE_TEXTURE,						3,  INT_MAX,	SEXP_ACTION_OPERATOR,   },  // Lafiel
 	{ "set-alpha-multiplier",			OP_SET_ALPHA_MULT,						2,	INT_MAX,	SEXP_ACTION_OPERATOR,   }, //Lafiel
 	{ "trigger-ship-animation",			OP_TRIGGER_ANIMATION_NEW,				3,	7,			SEXP_ACTION_OPERATOR,	}, //Lafiel
+	{ "update-moveable-animation",		OP_UPDATE_MOVEABLE,						2,	INT_MAX,	SEXP_ACTION_OPERATOR,	}, //Lafiel
 
 	//Coordinate Manipulation Sub-Category
 	{ "set-object-position",			OP_SET_OBJECT_POSITION,					4,	4,			SEXP_ACTION_OPERATOR,	},	// WMC
@@ -9941,14 +9942,16 @@ int test_argument_nodes_for_condition(int n, int condition_node, int *num_true, 
 		n = CDR(n);
 	}
 
-	int count = 0;
+	// we may only want a subset of the argument list
+	if (threshold >= 0 && Applicable_arguments_temp.size() > (size_t)threshold)
+		Applicable_arguments_temp.resize(threshold);
+
 	// now we write from the temporary store into the real one, reversing the order. We do this because 
 	// Sexp_applicable_argument_list is a stack and we want the first argument in the list to be the first one out
-	while (!Applicable_arguments_temp.empty() && (threshold == -1 || count < threshold))
+	while (!Applicable_arguments_temp.empty())
 	{
 		Sexp_applicable_argument_list.add_data(Applicable_arguments_temp.back());
-		Applicable_arguments_temp.pop_back(); 
-		++count;
+		Applicable_arguments_temp.pop_back();
 	}
 
 	return num_valid_arguments;
@@ -19954,6 +19957,35 @@ void sexp_trigger_submodel_animation_new(int n)
 	animationStartFunc(direction, forced || instant, instant, pause);
 }
 
+void sexp_update_moveable_animation(int node)
+{
+	bool is_nan, is_nan_forever;
+
+	auto ship_entry = eval_ship(node);
+	if (!ship_entry || !ship_entry->shipp)
+		return;
+
+	node = CDR(node);
+
+	SCP_string name(CTEXT(node));
+
+	node = CDR(node);
+
+	//For now this only contains integers. It is very much feasible though that certain moveables might be updateable with strings and other non-numbers. For this, the C-side of the moveable code already supports other types
+	std::vector<linb::any> args;
+
+	while(node >= 0) {
+		args.emplace_back(eval_num(node, is_nan, is_nan_forever));
+		
+		if(is_nan || is_nan_forever)
+			Warning(LOCATION, "Value for moveable %s on ship %s was NaN!", name.c_str(), ship_entry->name);
+		
+		node = CDR(node);
+	}
+
+	Ship_info[ship_entry->shipp->ship_info_index].animations.updateMoveable(model_get_instance(ship_entry->shipp->model_instance_num), name, args);
+}
+
 void sexp_add_remove_escort(int node)
 {
 	int flag;
@@ -26331,6 +26363,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_trigger_submodel_animation_new(node);
 				break;
 
+			case OP_UPDATE_MOVEABLE:
+				sexp_val = SEXP_TRUE;
+				sexp_update_moveable_animation(node);
+				break;
+
 			default:{
 				// Check if we have a dynamic SEXP with this operator and if there is, execute that
 				auto dynamicSEXP = sexp::get_dynamic_sexp(op_num);
@@ -27448,6 +27485,7 @@ int query_operator_return_type(int op)
 		case OP_NEBULA_CHANGE_FOG_COLOR:
 		case OP_SET_ALPHA_MULT:
 		case OP_TRIGGER_ANIMATION_NEW:
+		case OP_UPDATE_MOVEABLE:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -29899,6 +29937,14 @@ int query_operator_argument_type(int op, int argnum)
 			else
 				return OPF_BOOL;
 
+		case OP_UPDATE_MOVEABLE:
+			if(argnum == 0)
+				return OPF_SHIP;
+			else if(argnum == 1)
+				return OPF_STRING;
+			else
+				return OPF_NUMBER;
+
 		default: {
 			auto dynamicSEXP = sexp::get_dynamic_sexp(op);
 			if (dynamicSEXP != nullptr) {
@@ -31461,6 +31507,7 @@ int get_subcategory(int sexp_id)
 		case OP_REPLACE_TEXTURE:
 		case OP_SET_ALPHA_MULT:
 		case OP_TRIGGER_ANIMATION_NEW:
+		case OP_UPDATE_MOVEABLE:
 			return CHANGE_SUBCATEGORY_MODELS_AND_TEXTURES;
 
 		case OP_SET_OBJECT_POSITION:
@@ -35890,6 +35937,14 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t5: If the animation should reset before playing. Defaults to false.\r\n"
 		"\t6: If the animation should complete instantly. Defaults to false.\r\n"
 		"\t7: If the animation should pause, instead of playing. Defaults to false.\r\n"
+	},
+
+	{ OP_UPDATE_MOVEABLE , "update-moveable-animation\r\n"
+		"\tUpdates the data for a moveable animation.\r\n"
+		"Takes 2 and more arguments...\r\n"
+		"\t1: The ship to update the moveable for.\r\n"
+		"\t2: The name of the moveable.\r\n"
+		"\tRest: The data for the moveable. Depends on moveable type. Refer to the wiki on *-anim.tbm's.\r\n"
 	}
 };
 // clang-format on

@@ -34,6 +34,7 @@ bool Enable_external_shaders;
 bool Enable_external_default_scripts;
 int Default_detail_level;
 bool Full_color_head_anis;
+bool Dont_automatically_select_turret_when_targeting_ship;
 bool Weapons_inherit_parent_collision_group;
 bool Flight_controls_follow_eyepoint_orientation;
 int FS2NetD_port;
@@ -240,6 +241,10 @@ void parse_mod_table(const char *filename)
 			bool temp;
 			stuff_boolean(&temp);
 			Full_color_head_anis = !temp;
+		}
+
+		if (optional_string("$Don't automatically select a turret when targeting a ship:")) {
+			stuff_boolean(&Dont_automatically_select_turret_when_targeting_ship);
 		}
 
 		optional_string("#SEXP SETTINGS");
@@ -776,6 +781,7 @@ void mod_table_reset()
 	Enable_external_default_scripts             = false;
 	Default_detail_level = 3; // "very high" seems a reasonable default in 2012 -zookeeper
 	Full_color_head_anis = false;
+	Dont_automatically_select_turret_when_targeting_ship = false;
 	Weapons_inherit_parent_collision_group = false;
 	Flight_controls_follow_eyepoint_orientation = false;
 	FS2NetD_port = 0;

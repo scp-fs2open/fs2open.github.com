@@ -35,6 +35,7 @@
 #include "parse/parselo.h"
 #include "render/3dinternal.h"
 #include "ship/ship.h"
+#include "starfield/starfield.h"
 #include "weapon/weapon.h"
 #include "tracing/tracing.h"
 
@@ -402,7 +403,6 @@ void model_instance_free_all()
 	}
 
 	// clear skybox model instance if we have one; it is not an object and therefore has no <object>_delete function which would remove the instance
-	extern int Nmodel_instance_num;
 	Nmodel_instance_num = -1;
 
 	Polygon_model_instances.clear();
