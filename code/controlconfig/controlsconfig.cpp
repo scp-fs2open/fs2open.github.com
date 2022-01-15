@@ -562,22 +562,44 @@ CC_bind control_config_detect_axis()
 	found_axis:;
 
 	if (j == CID_JOY_MAX) {
-		j = CID_NONE;
-	}
-
-	if ( (j == CID_NONE) && Use_mouse_to_fly ) {
 		// Nothing found amongst the joysticks. Check the mouse.
 		mouse_get_delta( &dx, &dy, &dz );
 
-		if ( (dx > deadzone) || (dx < -deadzone) ) {
+		if (Use_mouse_to_fly) {
+			// Treat mouse as Joy0
+			j = CID_JOY0;
+
+			if ((dx > deadzone) || (dx < -deadzone)) {
+				axis = JOY_X_AXIS;
+
+			} else if ((dy > deadzone) || (dy < -deadzone)) {
+				axis = JOY_Y_AXIS;
+
+			} else if ((dz > deadzone) || (dz < -deadzone)) {
+				axis = JOY_Z_AXIS;
+
+			} else {
+				// Nothing detected
+				j = CID_NONE;
+			}
+
+		} else {
+			// Treat mouse as mouse
 			j = CID_MOUSE;
-			axis = MOUSE_X_AXIS;
-		} else if ( (dy > deadzone) || (dy < -deadzone) ) {
-			j = CID_MOUSE;
-			axis = MOUSE_Y_AXIS;
-		} else if ( (dz > deadzone) || (dz < -deadzone) ) {
-			j = CID_MOUSE;
-			axis = MOUSE_Z_AXIS;
+
+			if ((dx > deadzone) || (dx < -deadzone)) {
+				axis = MOUSE_X_AXIS;
+
+			} else if ((dy > deadzone) || (dy < -deadzone)) {
+				axis = MOUSE_Y_AXIS;
+
+			} else if ((dz > deadzone) || (dz < -deadzone)) {
+				axis = MOUSE_Z_AXIS;
+
+			} else {
+				// Nothing detected
+				j = CID_NONE;
+			}
 		}
 	}
 	
@@ -2646,9 +2668,12 @@ void scale_invert(const CC_bind &bind,
 	case CID_MOUSE:
 		factor = (float)Mouse_sensitivity + 1.77f;
 		factor = factor * factor / frame_time / 0.6f;
-		if (!Use_mouse_to_fly) {
+		if (Use_mouse_to_fly) {
+			// Mouse is treated as Joy0, Nullify controls bound to the mouse axis to prevent cross talk
+			axis_out[action] = 0;
 			return;
-		}
+
+		} // else Mouse is treated as mouse, get the axis values
 
 		dx = axis_in[MOUSE_ID][btn];
 		maybe_invert(bind.is_inverted(), type, dx);
@@ -2700,8 +2725,13 @@ void control_get_axes_readings(int *axis_v, float frame_time)
 	}
 
 	// Read raw mouse, stuff in axes_values[0]
-	if (Use_mouse_to_fly) {
+	if (!Use_mouse_to_fly) {
+		// treat mouse as mouse
 		mouse_get_delta(&axe[MOUSE_ID][MOUSE_X_AXIS], &axe[MOUSE_ID][MOUSE_Y_AXIS], &axe[MOUSE_ID][MOUSE_Z_AXIS]);
+
+	} else {
+		// treat mouse as Joy0
+		mouse_get_delta(&axe[CID_JOY0][MOUSE_X_AXIS], &axe[CID_JOY0][MOUSE_Y_AXIS], &axe[CID_JOY0][MOUSE_Z_AXIS]);
 	}
 
 	for (int action = 0; action < Action::NUM_VALUES; ++action) {
