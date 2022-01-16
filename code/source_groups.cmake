@@ -145,6 +145,8 @@ add_file_folder("ControlConfig"
 	controlconfig/controlsconfig.cpp
 	controlconfig/controlsconfig.h
 	controlconfig/controlsconfigcommon.cpp
+	controlconfig/presets.cpp
+	controlconfig/presets.h
 )
 
 # Cutscene files
@@ -849,6 +851,8 @@ add_file_folder("Model"
 	model/model.h
 	model/modelanimation.cpp
 	model/modelanimation.h
+	model/modelanimation_moveables.cpp
+	model/modelanimation_moveables.h
 	model/modelanimation_segments.cpp
 	model/modelanimation_segments.h
 	model/modelcollide.cpp

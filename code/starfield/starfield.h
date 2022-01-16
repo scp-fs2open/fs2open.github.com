@@ -43,7 +43,12 @@ typedef struct background_t {
 extern int Cur_background;
 extern SCP_vector<background_t> Backgrounds;
 
+// skybox model
+extern int Nmodel_num;
+extern int Nmodel_instance_num;
+extern matrix Nmodel_orient;
 extern int Nmodel_flags;
+extern int Nmodel_bitmap;
 
 extern bool Motion_debris_override;
 

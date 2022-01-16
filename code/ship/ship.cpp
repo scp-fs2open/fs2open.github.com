@@ -4721,6 +4721,11 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		animation::ModelAnimationParseHelper::parseAnimsetInfo(sip->animations, sip);
 	}
 
+	if (optional_string("$Animation Moveables:")) {
+		animation::ModelAnimationParseHelper::parseMoveablesetInfo(sip->animations);
+	}
+
+
 	if (optional_string("$Custom data:")) 
 	{
 		parse_string_map(sip->custom_data, "$end_custom_data", "+Val:");
@@ -5114,6 +5119,9 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		} else {
 			// This used realloc originally so we need to copy the existing subsystems to the new storage
 			std::copy(sip->subsystems, sip->subsystems + sip->n_subsystems, subsys_storage.get());
+
+			// done with old storage
+			delete[] sip->subsystems;
 
 			sip->n_subsystems += n_subsystems;
 		}
@@ -10948,12 +10956,12 @@ int ship_launch_countermeasure(object *objp, int rand_val)
 /**
  * See if enough time has elapsed to play fail sound again
  */
-void ship_maybe_play_primary_fail_sound()
+void ship_maybe_do_primary_fail_sound_hud(bool depleted_energy)
 {
 	ship_weapon *swp = &Player_ship->weapons;
 	int stampval;
 
-	hud_start_flash_weapon(swp->current_primary_bank);
+	hud_start_flash_weapon(swp->current_primary_bank, depleted_energy);
 
 	if ( timestamp_elapsed(Laser_energy_out_snd_timer) )
 	{
@@ -10974,9 +10982,9 @@ void ship_maybe_play_primary_fail_sound()
 /**
  * See if enough time has elapsed to play secondary fail sound again
  */
-static int ship_maybe_play_secondary_fail_sound(weapon_info *wip)
+static int ship_maybe_do_secondary_fail_sound_hud(weapon_info *wip, bool depleted_energy)
 {
-	hud_start_flash_weapon(Player_ship->weapons.num_primary_banks + Player_ship->weapons.current_secondary_bank);
+	hud_start_flash_weapon(Player_ship->weapons.num_primary_banks + Player_ship->weapons.current_secondary_bank, depleted_energy);
 
 	if ( timestamp_elapsed(Missile_out_snd_timer) ) {
 		
@@ -11518,7 +11526,7 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 		// functional, which should be cool.  		
 		if ( ship_weapon_maybe_fail(shipp) && !force) {
 			if ( obj == Player_obj ) {
-				ship_maybe_play_primary_fail_sound();
+				ship_maybe_do_primary_fail_sound_hud(false);
 			}
 			ship_stop_fire_primary_bank(obj, bank_to_fire);
 			continue;
@@ -11585,13 +11593,13 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 					points = num_slots;
 				}
 
-				if ( shipp->weapon_energy < points*winfo_p->energy_consumed*flFrametime || 
-					(winfo_p->wi_flags[Weapon::Info_Flags::Ballistic] && shipp->weapons.primary_bank_ammo[bank_to_fire] <= 0))
+				bool no_energy = shipp->weapon_energy < points * winfo_p->energy_consumed * flFrametime;
+				if (no_energy || (winfo_p->wi_flags[Weapon::Info_Flags::Ballistic] && shipp->weapons.primary_bank_ammo[bank_to_fire] <= 0))
 				{
 					swp->next_primary_fire_stamp[bank_to_fire] = timestamp((int)(next_fire_delay));
 					if ( obj == Player_obj )
 					{
-						ship_maybe_play_primary_fail_sound();
+						ship_maybe_do_primary_fail_sound_hud(no_energy);
 					}
 					ship_stop_fire_primary_bank(obj, bank_to_fire);
 					continue;
@@ -11669,13 +11677,13 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 				// the weapon's energy_consumed to 0 and it'll work just fine. - Goober5000
 
 				// fail unless we're forcing (energy based primaries)
-				if ( (shipp->weapon_energy < points*numtimes * winfo_p->energy_consumed)			//was num_slots
-				 && !force ) {
+				bool no_energy = shipp->weapon_energy < points * numtimes * winfo_p->energy_consumed; //was num_slots
+				if ( no_energy && !force ) {
 
 					swp->next_primary_fire_stamp[bank_to_fire] = timestamp((int)(next_fire_delay));
 					if ( obj == Player_obj )
 					{
-						ship_maybe_play_primary_fail_sound();
+						ship_maybe_do_primary_fail_sound_hud(no_energy);
 					}
 					ship_stop_fire_primary_bank(obj, bank_to_fire);
 					continue;
@@ -11707,7 +11715,7 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 					{
 						if ( obj == Player_obj )
 						{
-							ship_maybe_play_primary_fail_sound();
+							ship_maybe_do_primary_fail_sound_hud(false);
 						}
 						else
 						{
@@ -11862,7 +11870,7 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 							if (weapon_objnum == -1) {
 								// Weapon most likely failed to fire
 								if (obj == Player_obj) {
-									ship_maybe_play_primary_fail_sound();
+									ship_maybe_do_primary_fail_sound_hud(false);
 								}
 								continue;
 							}
@@ -12436,7 +12444,7 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 	if ( !(Game_mode & GM_MULTIPLAYER) || MULTIPLAYER_MASTER ) {
 		if ( ship_weapon_maybe_fail(shipp) ) {
 			if ( obj == Player_obj ) 
-				if ( ship_maybe_play_secondary_fail_sound(wip) ) {
+				if ( ship_maybe_do_secondary_fail_sound_hud(wip, false) ) {
 					HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Cannot fire %s due to weapons system damage", 489), Weapon_info[weapon_idx].get_display_name());
 				}
 			goto done_secondary;
@@ -12506,13 +12514,11 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 			check_ammo = 0;
 		}
 
-		if (Weapon_info[swp->secondary_bank_weapons[bank]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo]) {
-			check_ammo = 0;
-		}
-
-		if ( check_ammo && ( swp->secondary_bank_ammo[bank] <= 0) ) {
+		bool no_ammo_needed = Weapon_info[swp->secondary_bank_weapons[bank]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo];
+		bool no_energy = shipp->weapon_energy < wip->energy_consumed;
+		if ( check_ammo && ((swp->secondary_bank_ammo[bank] <= 0 && !no_ammo_needed) || no_energy)) {
 			if ( shipp->objnum == OBJ_INDEX(Player_obj) ) {
-				if ( ship_maybe_play_secondary_fail_sound(wip) ) {
+				if (ship_maybe_do_secondary_fail_sound_hud(wip, no_energy) ) {
 //					HUD_sourced_printf(HUD_SOURCE_HIDDEN, "No %s missiles left in bank", Weapon_info[swp->secondary_bank_weapons[bank]].name);
 				}
 			}
@@ -12538,11 +12544,12 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 		}
 
 		int start_slot, end_slot;
+		no_energy = shipp->weapon_energy < 2 * wip->energy_consumed; // whether there's enough energy for at least 1 shot was checked above
 
 		if ( shipp->flags[Ship_Flags::Secondary_dual_fire] && num_slots > 1) {
 			start_slot = swp->secondary_next_slot[bank];
 			// AL 11-19-97: Ensure enough ammo remains when firing linked secondary weapons
-			if ( check_ammo && (swp->secondary_bank_ammo[bank] < 2) ) {
+			if ( check_ammo && ((swp->secondary_bank_ammo[bank] < 2 && !no_ammo_needed) || no_energy) ) {
 				end_slot = start_slot;
 			} else {
 				end_slot = start_slot+1;
@@ -12614,7 +12621,7 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 			if (weapon_num == -1) {
 				// Weapon most likely failed to fire
 				if (obj == Player_obj) {
-					ship_maybe_play_secondary_fail_sound(wip);
+					ship_maybe_do_secondary_fail_sound_hud(wip, false);
 				}
 				continue;
 			}
@@ -12647,6 +12654,8 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 				if ( !Weapon_energy_cheat ){
 					if(!Weapon_info[swp->secondary_bank_weapons[bank]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo])
 						swp->secondary_bank_ammo[bank]--;
+
+					shipp->weapon_energy -= wip->energy_consumed;
 				}
 			}
 		}
@@ -12711,7 +12720,7 @@ done_secondary:
 
 	// if we are out of ammo in this bank then don't carry over firing swarm/corkscrew
 	// missiles to a new bank
-	if (!ship_secondary_has_ammo(swp, bank)) {
+	if (!ship_secondary_has_ammo(swp, bank) || shipp->weapon_energy < wip->energy_consumed) {
 		// NOTE: these are set to 1 since they will get reduced by 1 in the
 		//       swarm/corkscrew code once this function returns
 

@@ -4233,10 +4233,12 @@ void weapon_init()
 		// do post-parse cleanup
 		weapon_do_post_parse();
 
+		// allocate this once after we load the weapons
+		if (used_weapons == nullptr)
+			used_weapons = new int[Weapon_info.size()];
+
 		Weapons_inited = true;
 	}
-
-	weapon_level_init();
 
 	if (Cmdline_spew_weapon_stats != WeaponSpewType::NONE)
 		weapon_spew_stats(Cmdline_spew_weapon_stats);
@@ -4333,9 +4335,6 @@ void weapon_level_init()
 
 	// emp effect
 	emp_level_init();
-
-	if (used_weapons == nullptr)
-		used_weapons = new int[Weapon_info.size()];
 
 	// clear out used_weapons between missions
 	memset(used_weapons, 0, Weapon_info.size() * sizeof(int));
@@ -5100,7 +5099,7 @@ void weapon_home(object *obj, int num, float frame_time)
 		if ((dist_to_target < flFrametime * obj->phys_info.speed * 4.0f + 10.0f) &&
             (old_dot < wip->fov) &&
             (wp->lifeleft > 0.01f) &&
-            (wp->homing_object != &obj_used_list) &&
+            (weapon_has_homing_object(wp)) &&
             (wp->homing_object->type == OBJ_SHIP) && 
             (wip->subtype != WP_LASER))				
         {
@@ -5257,7 +5256,7 @@ void weapon_process_pre( object *obj, float  frame_time)
 	//WMC - Maybe detonate weapon anyway!
 	if(wip->det_radius > 0.0f)
 	{
-		if((wp->homing_object != &obj_used_list) && (wp->homing_object->type != 0))
+		if((weapon_has_homing_object(wp)) && (wp->homing_object->type != 0))
 		{
 			if(!IS_VEC_NULL(&wp->homing_pos) && vm_vec_dist(&wp->homing_pos, &obj->pos) <= wip->det_radius)
 			{
@@ -5382,8 +5381,8 @@ static void weapon_update_state(weapon* wp)
 			weapon_set_state(wip, wp, WeaponState::FREEFLIGHT);
 			infree_flight = true;
 		}
-		else if (lifetime >= fl2f(wip->free_flight_time) &&        // V indicates a valid homing_objp V
-			(lifetime - Frametime) <= fl2f(wip->free_flight_time) && wp->homing_object != &obj_used_list)
+		else if (lifetime >= fl2f(wip->free_flight_time) && 
+			(lifetime - Frametime) <= fl2f(wip->free_flight_time) && weapon_has_homing_object(wp))
 		{
 			weapon_set_state(wip, wp, WeaponState::IGNITION);
 			infree_flight = true;
@@ -5391,8 +5390,8 @@ static void weapon_update_state(weapon* wp)
 	}
 
 	if (!infree_flight)
-	{    // V same here; means no homing_objp V
-		if (wp->homing_object == &obj_used_list)
+	{
+		if (!weapon_has_homing_object(wp))
 		{
 			weapon_set_state(wip, wp, WeaponState::UNHOMED_FLIGHT);
 		}
@@ -5559,7 +5558,7 @@ void weapon_process_post(object * obj, float frame_time)
 		if ((wp->lssm_stage==1) && (timestamp_elapsed(wp->lssm_warpout_time)))
 		{
 			//if we don't have a lock at this point, just stay in normal space
-			if (wp->homing_object == &obj_used_list)
+			if (!weapon_has_homing_object(wp))
 			{
 				wp->lssm_stage=0;
 				return;
@@ -5704,10 +5703,10 @@ void weapon_process_post(object * obj, float frame_time)
 		switch (wip->in_flight_play_type)
 		{
 		case TARGETED:
-			play_sound = wp->homing_object != &obj_used_list;
+			play_sound = weapon_has_homing_object(wp);
 			break;
 		case UNTARGETED:
-			play_sound = wp->homing_object == &obj_used_list;
+			play_sound = !weapon_has_homing_object(wp);
 			break;
 		case ALWAYS:
 			play_sound = true;
@@ -6508,7 +6507,7 @@ void spawn_child_weapons(object *objp, int spawn_index_override)
 				fire_info.accuracy = 0.000001f;		// this will guarantee a hit
 				fire_info.shooter = &Objects[parent_num];
 				fire_info.turret = NULL;
-				if (child_wip->wi_flags[Weapon::Info_Flags::Inherit_parent_target] && wp->homing_object != &obj_used_list)
+				if (child_wip->wi_flags[Weapon::Info_Flags::Inherit_parent_target] && weapon_has_homing_object(wp))
 					fire_info.target = wp->homing_object;
 				else
 					fire_info.target =  nullptr;
@@ -6531,7 +6530,7 @@ void spawn_child_weapons(object *objp, int spawn_index_override)
 				weapon_objnum = weapon_create(&pos, &orient, child_id, parent_num, -1, wp->weapon_flags[Weapon::Weapon_Flags::Locked_when_fired], 1);
 
 				//if the child inherits parent target, do it only if the parent weapon was locked to begin with
-				if ((child_wip->wi_flags[Weapon::Info_Flags::Inherit_parent_target]) && (wp->homing_object != &obj_used_list))
+				if ((child_wip->wi_flags[Weapon::Info_Flags::Inherit_parent_target]) && (weapon_has_homing_object(wp)))
 				{
 					//Deal with swarm weapons
 					if (wp->swarm_info_ptr != nullptr) {
@@ -6997,7 +6996,7 @@ bool weapon_armed(weapon *wp, bool hit_target)
 			return false;
 		}
 		if(wip->arm_radius && (!hit_target)) {
-			if(wp->homing_object == &obj_used_list)
+			if(!weapon_has_homing_object(wp))
 				return false;
 			if(IS_VEC_NULL(&wp->homing_pos) || vm_vec_dist(&wobj->pos, &wp->homing_pos) > wip->arm_radius)
 				return false;
@@ -7043,7 +7042,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 	objnum = wp->objnum;
 
 	// check if the weapon actually hit the intended target
-	if (wp->homing_object != &obj_used_list)
+	if (weapon_has_homing_object(wp))
 		if (wp->homing_object == other_obj)
 			hit_target = true;
 
@@ -7284,10 +7283,8 @@ void weapon_mark_as_used(int weapon_type)
 	if (weapon_type < 0)
 		return;
 
-	if ( used_weapons == NULL )
-		return;
-
-	Assert( weapon_type < weapon_info_size() );
+	Assert(used_weapons != nullptr);
+	Assert(weapon_type < weapon_info_size());
 
 	if (weapon_type < weapon_info_size()) {
 		used_weapons[weapon_type]++;
@@ -9463,4 +9460,8 @@ bool weapon_multilock_can_lock_on_target(object* shooter, object* target_objp, w
 		*out_dot = dot;
 
 	return weapon_target_satisfies_lock_restrictions(wip, target_objp);
+}
+
+bool weapon_has_homing_object(weapon* wp) {
+	return wp->homing_object != &obj_used_list;
 }

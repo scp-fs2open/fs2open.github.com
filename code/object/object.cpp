@@ -829,8 +829,6 @@ void obj_move_call_physics(object *objp, float frametime)
 {
 	TRACE_SCOPE(tracing::Physics);
 
-	int has_fired = -1;	//stop fireing stuff-Bobboau
-
 	//	Do physics for objects with OF_PHYSICS flag set and with some engine strength remaining.
 	if ( objp->flags[Object::Object_Flags::Physics] ) {
 		// only set phys info if ship is not dead
@@ -945,10 +943,6 @@ void obj_move_call_physics(object *objp, float frametime)
 				}
 			}
 		}
-	}
-	
-	if(has_fired == -1){
-		ship_stop_fire_primary(objp);	//if it hasn't fired do the "has just stoped fireing" stuff
 	}
 
 	//2D MODE

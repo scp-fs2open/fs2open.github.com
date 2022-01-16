@@ -25,6 +25,7 @@ extern bool Enable_external_shaders;
 extern bool Enable_external_default_scripts;
 extern int Default_detail_level;
 extern bool Full_color_head_anis;
+extern bool Dont_automatically_select_turret_when_targeting_ship;
 extern bool Weapons_inherit_parent_collision_group;
 extern bool Flight_controls_follow_eyepoint_orientation;
 extern int FS2NetD_port;

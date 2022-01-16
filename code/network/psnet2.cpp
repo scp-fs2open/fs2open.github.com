@@ -125,13 +125,15 @@ static int Nettimeout = NETTIMEOUT;
 #define RNT_I_AM_HERE		7
 
 #pragma pack(push, 1)
-typedef struct {
+typedef struct reliable_header {
 	ubyte		type;					// packet type
 	ubyte		compressed;				//
 	ushort		seq;					// sequence packet 0-65535 used for ACKing also
 	ushort		data_len;				// length of data
 	float		send_time;				// Time the packet was sent, if an ACK the time the packet being ACK'd was sent.
 	ubyte		data[MAX_PACKET_SIZE];	// Packet data
+
+	reliable_header() : type(0), compressed(0), seq(0), data_len(0), send_time(0.0f) {}
 } reliable_header;
 #pragma pack(pop)
 

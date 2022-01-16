@@ -722,7 +722,7 @@ void game_sunspot_process(float frametime)
 			for(idx=0; idx<n_lights; idx++)	{
 				bool in_shadow = shipfx_eye_in_shadow(&Eye_position, Viewer_obj, idx);
 
-				if (gr_lightshafts_enabled() || !in_shadow) {
+				if (gr_lightshafts_enabled() && !in_shadow) {
 					vec3d light_dir;				
 					light_get_global_dir(&light_dir, idx);
 
@@ -856,6 +856,7 @@ void game_level_close()
 
 		// De-Initialize the game subsystems
 		obj_delete_all();
+		obj_reset_colliders();
 		sexp_music_close();	// Goober5000
 		event_music_level_close();
 		game_stop_looped_sounds();
@@ -4411,14 +4412,14 @@ int game_poll()
 
 	int k = key_inkey();
 
-	// Move the mouse cursor with the joystick.
+	// Move the mouse cursor with the joystick. Currently uses Joystick0
 	if (os_foreground() && !io::mouse::CursorManager::get()->isCursorShown() && (Use_joy_mouse))	{
 		// Move the mouse cursor with the joystick
 		int mx, my;
 
 		int raw_axis[2];
 
-		joystick_read_raw_axis(2, raw_axis);
+		joystick_read_raw_axis(CID_JOY0, 2, raw_axis);
 
 		int jx = joy_get_scaled_reading(raw_axis[0]);
 		int jy = joy_get_scaled_reading(raw_axis[1]);
@@ -4431,7 +4432,7 @@ int game_poll()
 			mouse_set_pos( mx+dx, my+dy );
 		}
 
-		int j = joy_down(0);
+		int j = joy_down(CC_bind(CID_JOY0, 0));
 		int m = mouse_down(MOUSE_LEFT_BUTTON);
 
 		if ( j != Joymouse_button_status )	{
@@ -6676,7 +6677,6 @@ void game_shutdown(void)
 	// Free SEXP resources
 	sexp_shutdown();
 
-	obj_reset_colliders();
 	stars_close();			// clean out anything used by stars code
 
 	// the menu close functions will unload the bitmaps if they were displayed during the game
