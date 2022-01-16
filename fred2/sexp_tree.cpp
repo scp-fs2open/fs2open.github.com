@@ -4182,7 +4182,7 @@ void sexp_tree::add_default_modifier(const sexp_container &container)
 
 	if (container.is_map()) {
 		if (any(container.type & ContainerType::STRING_KEYS)) {
-			item.set_data("<any data>");
+			item.set_data("<any string>");
 			type_to_use |= SEXPT_STRING;
 		} else if (any(container.type & ContainerType::NUMBER_KEYS)) {
 			item.set_data("0");
