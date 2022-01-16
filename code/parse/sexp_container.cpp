@@ -95,14 +95,14 @@ bool sexp_container::type_matches(const sexp_container &container) const
 
 // ListModifier-related functions
 
-ListModifier get_list_modifier(const char *modifier_name, bool accept_prefix)
+ListModifier get_list_modifier(const char *text, bool accept_prefix)
 {
-	Assert(modifier_name != nullptr);
+	Assert(text != nullptr);
 
 	for (const auto &modifier_obj : List_modifiers) {
-		if (accept_prefix && !strnicmp(modifier_obj.name, modifier_name, strlen(modifier_obj.name))) {
+		if (accept_prefix && !strnicmp(modifier_obj.name, text, strlen(modifier_obj.name))) {
 			return modifier_obj.modifier;
-		} else if (!accept_prefix && !stricmp(modifier_obj.name, modifier_name)) {
+		} else if (!accept_prefix && !stricmp(modifier_obj.name, text)) {
 			return modifier_obj.modifier;
 		}
 	}
@@ -320,13 +320,15 @@ sexp_container *get_sexp_container(const char* name) {
 * Tests whether this position in a character array is the start of a container name
 * Returns a pointer to the container or nullptr if not found
 **/
-sexp_container *get_sexp_container_special(const SCP_string& text, size_t start_pos)
+sexp_container *get_sexp_container_special(const SCP_string &text, size_t start_pos)
 {
 	Assert(!text.empty());
 	Assert(start_pos < text.length());
 
 	for (auto &container : Sexp_containers) {
-		if (!strnicmp(container.container_name.c_str(), text.c_str(), container.container_name.length())) {
+		// in case one container's name is a prefix of another's, include terminating DELIM
+		const SCP_string name_to_find = container.container_name + sexp_container::DELIM_STR;
+		if (!strnicmp(text.c_str() + start_pos, name_to_find.c_str(), name_to_find.length())) {
 			return &container;
 		}
 	}
@@ -484,7 +486,7 @@ bool sexp_container_replace_refs_with_values(SCP_string& text)
 		// found?
 		if (foundHere != SCP_string::npos && foundHere != text.length() - 1) {
 			// see if a container starts at the next char
-			auto* p_container = get_sexp_container_special(text, foundHere + 1);
+			auto *p_container = get_sexp_container_special(text, foundHere + 1);
 			if (p_container != nullptr) {
 				// we want to replace either &list_container&list_modifier& or &map_container&map_key&
 
