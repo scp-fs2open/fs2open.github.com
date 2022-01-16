@@ -867,8 +867,6 @@ void sexp_tree::right_clicked(int mode)
 										flags &= ~MF_GRAYED;
 									} else if ((op_type == OPF_MAP_CONTAINER_NAME) && container.is_map()) {
 										flags &= ~MF_GRAYED;
-									} else {
-										UNREACHABLE("Unhandled container name operand type %d", op_type);
 									}
 
 									replace_container_name_menu->AppendMenu(flags,
