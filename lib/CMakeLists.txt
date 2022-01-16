@@ -51,4 +51,6 @@ add_subdirectory(mdns)
 
 add_subdirectory(variant)
 
+add_subdirectory(any)
+
 ADD_SUBDIRECTORY(lz4)
