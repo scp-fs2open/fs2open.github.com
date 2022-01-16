@@ -45,6 +45,21 @@ namespace {
 	const char *Empty_str = "";
 } // namespace
 
+// map_container_hash impl
+
+uint32_t map_container_hash::operator()(const SCP_string &str) const
+{
+	// hash function recipe from Effective Java, Item 9
+	// occasional overflow is expected and not a problem
+	// map key matching is case-sensitive
+	uint32_t result = 42u; // arbitrary non-zero number
+	for (char c : str) {
+		result = result * 31 + c;
+	}
+
+	return result;
+}
+
 // sexp_container data and functions
 const SCP_string sexp_container::DELIM_STR(1, sexp_container::DELIM);
 
