@@ -44,7 +44,8 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void newMission();
 
  private slots:
-	void on_actionSave_As_triggered(bool);
+	 void on_actionSave_As_triggered(bool);
+	 void on_actionSave_triggered(bool);
 	void on_actionExit_triggered(bool);
 
 	void on_actionConstrainX_triggered(bool enabled);
@@ -187,6 +188,8 @@ class FredView: public QMainWindow, public IDialogProvider {
 	QMenu* _controlModeMenu = nullptr;
 	QAction* _controlModeCamera = nullptr;
 	QAction* _controlModeCurrentShip = nullptr;
+
+	QString saveName = nullptr;
 
 	std::unique_ptr<Ui::FredView> ui;
 
