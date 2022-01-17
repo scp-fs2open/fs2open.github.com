@@ -29889,14 +29889,14 @@ int query_operator_argument_type(int op, int argnum)
 			if (argnum == 0) {
 				return OPF_LIST_CONTAINER_NAME;
 			} else {
-				return OPF_STRING;
+				return OPF_CONTAINER_VALUE;
 			}
 
 		case OP_LIST_DATA_INDEX:
 			if (argnum == 0) {
 				return OPF_LIST_CONTAINER_NAME;
 			} else if (argnum == 1) {
-				return OPF_STRING;
+				return OPF_CONTAINER_VALUE;
 			} else {
 				// This shouldn't happen
 				return OPF_NONE;
@@ -29906,14 +29906,14 @@ int query_operator_argument_type(int op, int argnum)
 			if (argnum == 0) {
 				return OPF_MAP_CONTAINER_NAME;
 			} else {
-				return OPF_STRING;
+				return OPF_CONTAINER_VALUE;
 			}
 
 		case OP_MAP_HAS_DATA_ITEM:
 			if (argnum == 0) {
 				return OPF_MAP_CONTAINER_NAME;
 			} else if (argnum == 1) {
-				return OPF_STRING;
+				return OPF_CONTAINER_VALUE;
 			} else if (argnum == 2) {
 				return OPF_VARIABLE_NAME;
 			} else {
