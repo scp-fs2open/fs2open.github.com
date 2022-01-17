@@ -474,6 +474,10 @@ void vm_quaternion_rotate(matrix *m, float theta, const vec3d *u);
 // Takes a rotation matrix and returns the axis and angle needed to generate it
 void vm_matrix_to_rot_axis_and_angle(const matrix *m, float *theta, vec3d *rot_axis);
 
+// Given a rotation axis, calculates the angle that results in the rotation closest to the given matrix m. Returns the angle between the matrix orientation and the closest axis angle orientation
+// If the axis is equal or very close to the orientation of the matrix, returns a distance of Pi/2 and an angle of 0
+float vm_closest_angle_to_matrix(const matrix* mat, const vec3d* rot_axis, float* angle);
+
 // interpolate between 2 vectors. t goes from 0.0 to 1.0. at
 void vm_vec_interp_constant(vec3d *out, const vec3d *v1, const vec3d *v2, float t);
 

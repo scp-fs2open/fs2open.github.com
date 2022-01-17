@@ -177,7 +177,7 @@ void clear_bm_lookup_cache();
  * @returns The bitmap number if successful, else
  * @returns a negative value if not
  */
-int bm_load(const char* filename);
+int bm_load(const char* filename, int dir_type = CF_TYPE_ANY);
 
 /**
  * @brief Loads a bitmap so we can draw with it later. (Preferred version)
@@ -187,7 +187,7 @@ int bm_load(const char* filename);
  * @returns The bitmap number if successful, else
  * @returns a negative value if not
  */
-int bm_load(const SCP_string& filename);
+int bm_load(const SCP_string& filename, int dir_type = CF_TYPE_ANY);
 
 /**
  * @brief Reloads a bitmap as a duplicate.

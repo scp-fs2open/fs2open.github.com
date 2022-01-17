@@ -116,7 +116,7 @@ ADE_VIRTVAR(Target, l_Weapon, "object", "Target of weapon. Value may also be a d
 	{
 		if(newh && newh->IsValid())
 		{
-			if(wp->target_sig != newh->sig)
+			if(wp->target_sig != newh->sig || !weapon_has_homing_object(wp))
 			{
 				weapon_set_tracking_info(OBJ_INDEX(objh->objp), objh->objp->parent, OBJ_INDEX(newh->objp), 1);
 			}
@@ -198,7 +198,7 @@ ADE_VIRTVAR(HomingObject, l_Weapon, "object", "Object that weapon will home in o
 		}
 	}
 
-	if(wp->homing_object == &obj_used_list)
+	if(!weapon_has_homing_object(wp))
 		return ade_set_args(L, "o", l_Object.Set(object_h()));
 	else
 		return ade_set_object_with_breed(L, OBJ_INDEX(wp->homing_object));

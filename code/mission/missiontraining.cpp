@@ -636,8 +636,8 @@ char *translate_message_token(char *str)
  */
 SCP_string message_translate_tokens(const char *text)
 {
-	char temp[40], *ptr;
-	const char *toke1, *toke2;
+	char temp[40];
+	const char *ptr, *toke1, *toke2;
 	int r;
 	SCP_string buf;
 
@@ -659,7 +659,7 @@ SCP_string message_translate_tokens(const char *text)
 				strncpy(temp, text, toke2 - text);  // isolate token into seperate buffer
 				temp[toke2 - text] = 0;  // null terminate string
 				ptr = translate_key(temp);  // try and translate key
-				if (ptr) {  // was key translated properly?
+				if (ptr != nullptr) {  // was key translated properly?
 					if (!stricmp(ptr, NOX("none")) && (Training_bind_warning != Missiontime)) {
 						if ( The_mission.game_type & MISSION_TYPE_TRAINING ) {
 							r = popup(PF_TITLE_BIG | PF_TITLE_RED, 2, XSTR( "&Bind Control", 424), XSTR( "&Abort mission", 425),
