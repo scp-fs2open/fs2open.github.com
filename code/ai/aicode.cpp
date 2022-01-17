@@ -13251,7 +13251,7 @@ int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, int allowed_path_
 
 	//This is kind of hacky, but allows for hangarbay animations to trigger even if the player is not accompanied by AI.
 	//Since it doesn't really keep track of this, it won't ever tell the bay door that the player has fully left for it to close again.
-	if (Player_obj == pl_objp)
+	if (pl_objp->flags[Object::Object_Flags::Player_ship])
 		ai_manage_bay_doors(pl_objp, aip, false);
 
 	//due to the door animations the ship has to remain still until the doors are open
