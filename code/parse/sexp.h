@@ -792,12 +792,13 @@ struct ship_obj;
 #define OP_SET_ALPHA_MULT					(0x0042 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Lafiel
 #define OP_DESTROY_INSTANTLY_WITH_DEBRIS	(0x0043 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Asteroth
 #define OP_TRIGGER_ANIMATION_NEW			(0x0044 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Lafiel
-#define OP_CONTAINER_ADD_TO_LIST			(0x0045 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma/jg18
-#define OP_CONTAINER_REMOVE_FROM_LIST		(0x0046 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma/jg18
-#define OP_CONTAINER_ADD_TO_MAP				(0x0047 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma/jg18
-#define OP_CONTAINER_REMOVE_FROM_MAP		(0x0048 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma/jg18
-#define OP_CONTAINER_GET_MAP_KEYS			(0x0049 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma/jg18
-#define OP_CLEAR_CONTAINER					(0x004a | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma/jg18
+#define OP_UPDATE_MOVEABLE					(0x0045 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Lafiel
+#define OP_CONTAINER_ADD_TO_LIST			(0x0046 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma/jg18
+#define OP_CONTAINER_REMOVE_FROM_LIST		(0x0047 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma/jg18
+#define OP_CONTAINER_ADD_TO_MAP				(0x0048 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma/jg18
+#define OP_CONTAINER_REMOVE_FROM_MAP		(0x0049 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma/jg18
+#define OP_CONTAINER_GET_MAP_KEYS			(0x004a | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma/jg18
+#define OP_CLEAR_CONTAINER					(0x004b | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma/jg18
 
 // defined for AI goals
 #define OP_AI_CHASE							(0x0000 | OP_CATEGORY_AI | OP_NONCAMPAIGN_FLAG)
@@ -1275,6 +1276,7 @@ extern void update_sexp_references(const char *old_name, const char *new_name, i
 extern int query_referenced_in_sexp(int mode, const char *name, int *node);
 extern int build_sexp_string(SCP_string &accumulator, int cur_node, int level, int mode);
 extern int sexp_query_type_match(int opf, int opr);
+extern bool sexp_recoverable_error(int num);
 extern const char *sexp_error_message(int num);
 extern int count_free_sexp_nodes();
 

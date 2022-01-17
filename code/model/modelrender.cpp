@@ -27,6 +27,7 @@
 #include "render/batching.h"
 #include "ship/ship.h"
 #include "ship/shipfx.h"
+#include "starfield/starfield.h"
 #include "tracing/tracing.h"
 #include "weapon/weapon.h"
 
@@ -2642,7 +2643,6 @@ void model_render_queue(model_render_params* interp, model_draw_list* scene, int
 	}
 
 	// is this a skybox with a rotating submodel?
-	extern int Nmodel_num, Nmodel_instance_num;
 	if (model_num == Nmodel_num && Nmodel_instance_num >= 0) {
 		model_instance_num = Nmodel_instance_num;
 	}

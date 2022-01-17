@@ -10,6 +10,7 @@
 
 
 #include <cstdio>
+#include <numeric>
 #if _M_IX86_FP >= 1
 	#include <xmmintrin.h>
 #endif
@@ -1584,6 +1585,78 @@ void vm_matrix_to_rot_axis_and_angle(const matrix *m, float *theta, vec3d *rot_a
 		vm_vec_normalize(rot_axis);
 	}
 }
+
+// Given a rotation axis, calculates the angle that results in the rotation closest to the given matrix m.
+// If the axis is equal or very close to the orientation of the matrix, returns false and an angle of 0
+float vm_closest_angle_to_matrix(const matrix* mat, const vec3d* rot_axis, float* angle){
+	// The relative rotation between m and the target rotation r (made from axis a and angle x) is m^T.r
+	// The resulting angle between those, as shown by http://www.boris-belousov.net/2016/12/01/quat-dist/ is arccos((tr(m^T.r)-1) / 2)
+
+	// tr(m^T.r) simplifies to the following:
+	// tr = m[0]+m[4]+m[8] - 2( m[0]*(a[1]^2+a[2]^2) + m[4]*(a[0]^2+a[2]^2) + m[8]*(a[0]^2+a[1]^2) -
+	//                          a[0]*a[1]*(m[1]+m[3]) - a[0]*a[2]*(m[2]+m[6]) - a[1]*a[2]*(m[5]+m[7])) * sin(1/2 * x)^2
+	//					   + (a[0]*(m[5]-m[7]) + a[1]*(-m[2]+m[6]) + a[2]*(m[1]-m[3])) * sin(x)
+
+	// The factor before the sine squared will be calculated as y, the factor before the sine as z, the summand as w:
+
+	const auto& m = mat->a1d;
+	const auto& a = rot_axis->a1d;
+
+	const float w = m[0]+m[4]+m[8];
+	const float y = -2 * ( m[0]*(a[1]*a[1]+a[2]*a[2]) + m[4]*(a[0]*a[0]+a[2]*a[2]) + m[8]*(a[0]*a[0]+a[1]*a[1]) -
+			      a[0]*a[1]*(m[1]+m[3]) - a[0]*a[2]*(m[2]+m[6]) - a[1]*a[2]*(m[5]+m[7]));
+	const float z = (a[0]*(m[5]-m[7]) + a[1]*(-m[2]+m[6]) + a[2]*(m[1]-m[3]));
+
+	// If both y and z are close to 0, then the rotation axis points in the same direction as the matrix, thus any orientation r would be perpendicular to m
+	// If y is 0, the rest of the math simplifies, and we always find the angle at pi/2 or -pi/2
+	if(fabs(y) < 0.001f) {
+		if (fabs(z) < 0.001f) {
+			*angle = 0.0f;
+			return PI_2;
+		}
+
+		*angle = copysignf(PI_2, z);
+		
+		return acosf_safe((w + abs(z) - 1.0f) * 0.5f);
+	}
+
+	// arccos((x-1)/2) is then minimal, when x between -1 and 3 approaches 3
+	// Thus we are looking for the maximum of a term in the form of f(x)=w+y*sin(x/2)^2+z*sin(x)
+	// This maximum can be on one of the four solutions of f'(x)=0, not counting periodic repetitions
+
+	const float sr = sqrtf(y*y*y*y+4*y*y*z*z);
+	const float sr_pos = sqrtf(1-(sr/(y*y+4*z*z)));
+	const float sr_neg = sqrtf(1+(sr/(y*y+4*z*z)));
+
+	//If we support IEEE float handling, we don't need this, the div by 0 will be handled correctly with the INF. If not, do this:
+	const float yz_recip = (!std::numeric_limits<float>::is_iec559 && y*z < 0.001f) ? FLT_MAX : 1.0f / (y * z);
+
+	const float solutions[] = {2 * atan2_safe(-2 * sr_neg, -sr_neg*(y*y+sr) * yz_recip),
+							   2 * atan2_safe(2 * sr_neg, sr_neg*(y*y+sr) * yz_recip),
+							   2 * atan2_safe(-2 * sr_pos, -sr_pos*(y*y-sr) * yz_recip),
+							   2 * atan2_safe(2 * sr_pos, sr_pos*(y*y-sr) * yz_recip)};
+
+	float value = -2.0f;
+	float correct = 0;
+	//For whichever of these, w+y*sin(x/2)^2+z*sin(x) is closest to 3 / larger (since the result is between -1 and 3) is our target angle
+	for(float solution : solutions){
+		float currentVal = w + y * sinf(solution * 0.5f) * sinf(solution * 0.5f) + z * sinf(solution);
+		if(currentVal > value){
+			value = currentVal;
+			correct = solution;
+		}
+	}
+
+	Assertion(value > -1.5f, "Did not find solution for closest angle & axis to matrix.");
+
+	// Since atanf can yield -pi/2 to pi/2, we could get negative results here. Convert to 0 to 2Pi
+	while (correct < 0.0f)
+		correct += PI2;
+
+	*angle = correct;
+	return acosf_safe((value - 1.0f) * 0.5f);
+}
+
 
 // --------------------------------------------------------------------------------------
 

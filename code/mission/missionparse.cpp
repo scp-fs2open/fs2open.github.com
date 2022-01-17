@@ -4227,7 +4227,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 		// base + total_arrived_count (before adding 1)
 		// Cyborg -- The original ships in the wave have their net_signature set at mission parse
 		// so only do this if this is a subsequent wave.
-		if (Game_mode & GM_MULTIPLAYER && wingp->num_waves > 1)
+		if (Game_mode & GM_MULTIPLAYER && wingp->current_wave > 1)
 		{
 			// Cyborg -- Also, then we need to subtract the original wave's number of fighters 
 			// and also subtract 1 to use the wing's starting signature
@@ -6150,7 +6150,7 @@ bool post_process_mission()
 				Warning(LOCATION, "%s", error_msg.c_str());
 
 				// syntax errors are recoverable in Fred but not FS
-				if (!Fred_running) {
+				if (!Fred_running && !sexp_recoverable_error(result)) {
 					return false;
 				}
 			}

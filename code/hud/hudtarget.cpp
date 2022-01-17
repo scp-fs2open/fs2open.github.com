@@ -489,10 +489,17 @@ ship_subsys *advance_subsys(ship_subsys *cur, int next_flag)
 // select a sorted turret subsystem on a ship if no other subsys has been selected
 void hud_maybe_set_sorted_turret_subsys(ship *shipp)
 {
+	// this targeting behavior was introduced in FS2, so mods may not want to use it
+	// (the FS2 behavior makes FSPort's Playing Judas harder than it was designed to be)
+	if (Dont_automatically_select_turret_when_targeting_ship) {
+		return;
+	}
+
 	Assert((Player_ai->target_objnum >= 0) && (Player_ai->target_objnum < MAX_OBJECTS));
 	if (!((Player_ai->target_objnum >= 0) && (Player_ai->target_objnum < MAX_OBJECTS))) {
 		return;
 	}
+
 	Assert(Objects[Player_ai->target_objnum].type == OBJ_SHIP);
 	if (Objects[Player_ai->target_objnum].type != OBJ_SHIP) {
 		return;
@@ -503,7 +510,6 @@ void hud_maybe_set_sorted_turret_subsys(ship *shipp)
 			hud_target_live_turret(1, 1);
 		}
 	}
-
 }
 
 // -----------------------------------------------------------------------
@@ -1229,7 +1235,7 @@ void hud_target_common(int team_mask, int next_flag)
 				target_found = TRUE;
 				set_target_objnum( Player_ai, OBJ_INDEX(A) );
 				hud_shield_hit_reset(A);
-				// if ship is BIG|HUGE and last subsys is NULL, get turret
+
 				hud_maybe_set_sorted_turret_subsys(shipp);
 				hud_restore_subsystem_target(shipp);
 			}
@@ -1684,7 +1690,7 @@ void hud_target_newest_ship()
 	if (newest_obj) {
 		set_target_objnum( Player_ai, OBJ_INDEX(newest_obj) );
 		hud_shield_hit_reset(newest_obj);
-		// if BIG|HUGE and no selected subsystem, get sorted turret
+
 		hud_maybe_set_sorted_turret_subsys(&Ships[newest_obj->instance]);
 		hud_restore_subsystem_target(&Ships[newest_obj->instance]);
 	}
@@ -2375,9 +2381,8 @@ void hud_target_targets_target()
 	// if we've reached here, found player target's target
 	set_target_objnum( Player_ai, tt_objnum );
 	hud_shield_hit_reset(&Objects[tt_objnum]);
-	if (Objects[tt_objnum].type == OBJ_SHIP) {
-		hud_maybe_set_sorted_turret_subsys(&Ships[Objects[tt_objnum].instance]);
-	}
+
+	hud_maybe_set_sorted_turret_subsys(&Ships[Objects[tt_objnum].instance]);
 	hud_restore_subsystem_target(&Ships[Objects[tt_objnum].instance]);
 	return;
 
@@ -2595,8 +2600,8 @@ void hud_target_in_reticle_old()
 	if ( target_obj != NULL ) {
 		set_target_objnum( Player_ai, OBJ_INDEX(target_obj) );
 		hud_shield_hit_reset(target_obj);
+
 		if ( target_obj->type == OBJ_SHIP ) {
-			// if BIG|HUGE, maybe set subsys to turret
 			hud_maybe_set_sorted_turret_subsys(&Ships[target_obj->instance]);
 			hud_restore_subsystem_target(&Ships[target_obj->instance]);
 		}
@@ -4660,11 +4665,9 @@ void hud_target_next_list(int hostile, int next_flag, int team_mask, int attacke
 	object *nearest_object = select_next_target_by_distance((next_flag != 0), valid_team_mask, attacked_objnum);
 
 	if (nearest_object != NULL) {
-		// set new target
 		set_target_objnum( Player_ai, OBJ_INDEX(nearest_object) );
 		hud_shield_hit_reset(nearest_object);
 
-		// maybe set new turret subsystem
 		hud_maybe_set_sorted_turret_subsys(&Ships[nearest_object->instance]);
 		hud_restore_subsystem_target(&Ships[nearest_object->instance]);
 	}

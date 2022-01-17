@@ -164,10 +164,21 @@ void FredView::openLoadMissionDIalog() {
 void FredView::on_actionExit_triggered(bool) {
 	close();
 }
+
+void FredView::on_actionSave_triggered(bool state) {
+	CFred_mission_save save(_viewport);
+
+	if (saveName.isEmpty()) {
+		on_actionSave_As_triggered(state);
+		return;
+	}
+
+	save.save_mission_file(saveName.replace('/', DIR_SEPARATOR_CHAR).toUtf8().constData());
+}
 void FredView::on_actionSave_As_triggered(bool) {
 	CFred_mission_save save(_viewport);
 
-	QString saveName = QFileDialog::getSaveFileName(this, tr("Save mission"), QString(), tr("FS2 missions (*.fs2)"));
+	saveName = QFileDialog::getSaveFileName(this, tr("Save mission"), QString(), tr("FS2 missions (*.fs2)"));
 
 	if (saveName.isEmpty()) {
 		return;

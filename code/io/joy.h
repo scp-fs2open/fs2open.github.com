@@ -10,8 +10,10 @@
 #ifndef __JOY_H__
 #define __JOY_H__
 
+#include "controlconfig/controlsconfig.h"
 #include "globalincs/pstypes.h"
 
+#include "libs/jansson.h"
 #include "SDL_joystick.h"
 
 // z64: Moved up here for compatibility. Bye bye, organization!
@@ -226,7 +228,16 @@ namespace io
 			 */
 			void handleJoyEvent(const SDL_Event &evt);
 
+			/**
+			 * @brief Prints joystick info to log
+			 */
 			void printInfo();
+
+			/**
+			 * @brief Like printInfo, but returns info as a JSON object
+			 */
+			json_t* getJSON();
+
 		private:
 			Joystick(const Joystick &);
 			Joystick &operator=(const Joystick &);
@@ -241,13 +252,13 @@ namespace io
 			void handleButtonEvent(const SDL_JoyButtonEvent& evt);
 			void handleHatEvent(const SDL_JoyHatEvent& evt);
 
-			int _device_id; //!< The SDL device index
+			int _device_id; //!< The OS device index
 			SDL_Joystick *_joystick; //!< The SDL joystick handle
 
-			SCP_string _guidStr; //!< The GUID string
-			SCP_string _name; //!< The joystick name
-
-			SDL_JoystickID _id; //!< The instance ID
+			SCP_string _guidStr;    //!< The GUID string
+			SCP_string _name;       //!< The joystick name
+			SDL_JoystickID _id;     //!< The instance ID
+			bool _isHaptic = false; //!< If this joystick supports haptic feedback
 
 			SCP_vector<Sint16> _axisValues; //!< The current axes values
 			SCP_vector<coord2d> _ballValues; //!< The ball values
@@ -277,9 +288,15 @@ namespace io
 
 		/**
 		 * @brief Initializes the joystick subsystem
+		 *
+		 * @param[in] no_register if true, init won't try to register joysticks for use.
+		 *
 		 * @return @c true when successfully initialized
+		 *
+		 * @details Registration involves setting up listeners and grabbing the selected joystick from the registry.
+		 * Should no_register be true, the only init done is the SDL systems needed to query joystick information
 		 */
-		bool init();
+		bool init(bool no_register = false);
 
 		/**
 		 * @brief Gets number of connected joysticks
@@ -297,48 +314,47 @@ namespace io
 		Joystick *getJoystick(size_t index);
 
 		/**
-		 * @brief Gets the primary joystick
-		 * @return The joystick pointer, may be @c nullptr of no primary joystick
-		 *
-		 * @warning This function may be removed in the future when multi-joystick support is implemented
+		 * @brief Gets the Joystick with the given cid
+		 * @return The joystick pointer, may be @c nullptr if unassigned or invalid cid
 		 */
-		Joystick *getCurrentJoystick();
+		Joystick *getPlayerJoystick(short cid);
+
+		/**
+		 * @brief Gets the number of active player joysticks
+		 * @return 0 If no player joysticks are bound or active, or
+		 * @return the number of player joysticks
+		 */
+		int getPlayerJoystickCount();
 
 		/**
 		 * @brief Frees resources of the joystick subsystem
 		 */
 		void shutdown();
 
-		struct JoystickInformation {
-			SCP_string name;
-			SCP_string guid;
-
-			uint32_t num_axes;
-			uint32_t num_balls;
-			uint32_t num_buttons;
-			uint32_t num_hats;
-
-			bool is_haptic;
-		};
-
-		SCP_vector<JoystickInformation> getJoystickInformations();
+		/**
+		 * @brief Called from cmdline -get_info, gets Joy info JSON and shuts down SDL_JOYSTICK subsystem.
+		 */
+		json_t* getJsonArray();
 	}
 }
 
-// For now this is a constant for the rest of the engine
-const int JOY_NUM_AXES = 6;
-
 const int JOY_AXIS_MIN = 0;
-const int JOY_AXIS_CENTER = 32768;
+const int JOY_AXIS_CENTER = 32768;	//  = JOY_AXIS_MIN + ((JOY_AXIS_MAX - JOY_AXIS_MIN) / 2)
 const int JOY_AXIS_MAX = 65536;
+const int JOY_AXIS_RANGE = (JOY_AXIS_MAX - JOY_AXIS_MIN) / 2;	// Currently equal to JOY_AXIS_CENTER
 
-int joystick_read_raw_axis(int num_axes, int *axis);
+int joystick_read_raw_axis(short cid, int num_axes, int *axis);
 
-float joy_down_time(int btn);
+float joy_down_time(const CC_bind &bind);
 
-int joy_down_count(int btn, int reset_count);
+int joy_down_count(const CC_bind &bind, int reset_count);
 
-int joy_down(int btn);
+int joy_down(const CC_bind &bind);
+
+/**
+ * Checks if the given joystick is present or not
+ */
+bool joy_present(short cid);
 
 
 #endif	/* __JOY_H__ */
