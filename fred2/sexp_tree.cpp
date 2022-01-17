@@ -1113,7 +1113,7 @@ void sexp_tree::right_clicked(int mode)
 
 				// the next thing we want to add could literally be any legal key for any map or the legal entries for a list container
 				// so give the FREDder a hand and offer the list modifiers, but only the FREDder can know if they're relevant
-				list = get_listing_opf(OPF_LIST_MODIFIER, item_index, Add_count);
+				list = get_container_multidim_modifiers(item_index);
 				Assert(list);
 
 				if (list) {
@@ -1298,7 +1298,7 @@ void sexp_tree::right_clicked(int mode)
 					list = nullptr;
 					replace_type = OPR_NUMBER;
 				} else {
-					list = modifier_get_listing_opf(parent, Replace_count);
+					list = get_container_modifiers(parent);
 				}
 			} else {
 				list = get_listing_opf(type, parent, Replace_count);
@@ -2112,7 +2112,7 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 		int type = 0;
 
 		if (tree_nodes[item_index].type & SEXPT_CONTAINER_DATA) {
-			list = get_listing_opf(OPF_LIST_MODIFIER, tree_nodes[item_index].parent, Add_count);
+			list = get_container_multidim_modifiers(item_index);
 		} else {
 			op = get_operator_index(tree_nodes[item_index].text);
 			Assert(op >= 0);
@@ -2163,7 +2163,7 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 		Assert(tree_nodes[item_index].parent >= 0);
 
 		if (tree_nodes[item_index].type & SEXPT_MODIFIER) {
-			list = modifier_get_listing_opf(tree_nodes[item_index].parent, Replace_count);
+			list = get_container_modifiers(tree_nodes[item_index].parent);
 		} else {
 			op = get_operator_index(tree_nodes[tree_nodes[item_index].parent].text);
 			Assert(op >= 0);
@@ -3439,12 +3439,6 @@ int sexp_tree::query_default_argument_available(int op, int i)
 					return 1;
 				}
 			}
-			return 0;
-
-		case OPF_LIST_MODIFIER:
-			return 1;
-
-		case OPF_MAP_KEY:	// without knowing which map we are dealing with, there is no possible way to know if any keys are defined for it
 			return 0;
 
 		default:
@@ -4952,7 +4946,6 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 {
 	sexp_list_item head;
 	sexp_list_item *list = NULL;
-	int w_arg, e_arg;
 
 	switch (opf) {
 		case OPF_NONE:
@@ -5325,14 +5318,6 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			list = get_listing_opf_sexp_containers(ContainerType::MAP);
 			break;
 
-		case OPF_LIST_MODIFIER:
-			list = get_listing_opf_list_modifiers();
-			break;
-
-		case OPF_MAP_KEY:
-			list = get_listing_opf_map_keys(parent_node);
-			break;
-
 		case OPF_CONTAINER_VALUE:
 			list = nullptr;
 			break;
@@ -5350,10 +5335,8 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 	}
 
 	// skip the special argument if we aren't at the right spot in when-argument or
-	// every-time-argument... meaning if either w_arg or e_arg is >= 1, we can continue
-	w_arg = find_ancestral_argument_number(OP_WHEN_ARGUMENT, parent_node);
-	e_arg = find_ancestral_argument_number(OP_EVERY_TIME_ARGUMENT, parent_node);
-	if (w_arg < 1 && e_arg < 1 /* && the same for any future _ARGUMENT sexps */ ) {
+	// every-time-argument
+	if (!is_node_eligible_for_special_argument(parent_node)) {
 		return list;
 	}
 
@@ -5450,39 +5433,37 @@ int sexp_tree::get_data_image(int node)
 	return BITMAP_NUMBERED_DATA + idx;
 }
 
-/**
-* Special version of get_listing_opf that deals with Sexp container modifiers
-*/
-sexp_list_item *sexp_tree::modifier_get_listing_opf(int parent_node, int arg_index)
+sexp_list_item *sexp_tree::get_container_modifiers(int con_data_node) const
 {
-	Assert(parent_node != -1);
-	Assert(tree_nodes[parent_node].type & SEXPT_CONTAINER_DATA);
+	Assert(con_data_node != -1);
+	Assert(tree_nodes[con_data_node].type & SEXPT_CONTAINER_DATA);
 
-	const auto *p_container = get_sexp_container(tree_nodes[parent_node].text);
+	const auto *p_container = get_sexp_container(tree_nodes[con_data_node].text);
 	Assert(p_container);
 	const auto &container = *p_container;
 
-	int type = OPF_NULL;
+	sexp_list_item head;
+	sexp_list_item *list = nullptr;
+
 	if (container.is_list()) {
-		type = OPF_LIST_MODIFIER;
+		list = get_list_container_modifiers();
 	} else if (container.is_map()) {
-		type = OPF_MAP_KEY;
+		// start the list with "<argument>" if relevant
+		if (is_node_eligible_for_special_argument(con_data_node) &&
+			any(container.type & ContainerType::STRING_KEYS)) {
+			head.add_data(SEXP_ARGUMENT_STRING, (SEXPT_VALID | SEXPT_STRING | SEXPT_MODIFIER));
+		}
+
+		list = get_map_container_modifiers(con_data_node);
 	} else {
 		UNREACHABLE("Unknown container type %d", (int)p_container->type);
 	}
 
-	auto *list = get_listing_opf(type, parent_node, arg_index);
-	Assert(list);
-
-	// in case get_listing_opf() added options like "<argument>"
-	// prevents assertion failures later
-	auto *p_item = list;
-	while (p_item) {
-		p_item->type |= SEXPT_MODIFIER;
-		p_item = p_item->next;
+	if (list) {
+		head.add_list(list);
 	}
 
-	return list;
+	return head.next;
 }
 
 int sexp_tree::get_sibling_place(int node)
@@ -7038,11 +7019,9 @@ sexp_list_item *sexp_tree::get_listing_opf_sexp_containers(ContainerType con_typ
 	return head.next;
 }
 
-sexp_list_item *sexp_tree::get_listing_opf_list_modifiers() const
+sexp_list_item *sexp_tree::get_list_container_modifiers() const
 {
 	sexp_list_item head;
-
-	// in the case of container multidimensionality, the parent might not be a list container
 
 	for (const auto &modifier : get_all_list_modifiers()) {
 		head.add_data(modifier.name, SEXPT_VALID | SEXPT_MODIFIER | SEXPT_STRING);
@@ -7052,26 +7031,23 @@ sexp_list_item *sexp_tree::get_listing_opf_list_modifiers() const
 }
 
 // FIXME TODO: if you use this function with remove-from-map SEXP, don't use SEXPT_MODIFIER
-sexp_list_item *sexp_tree::get_listing_opf_map_keys(int parent_node) const
+sexp_list_item *sexp_tree::get_map_container_modifiers(int con_data_node) const
 {
 	sexp_list_item head;
 
-	Assert(tree_nodes[parent_node].type & SEXPT_CONTAINER_DATA);
+	Assert(tree_nodes[con_data_node].type & SEXPT_CONTAINER_DATA);
 
-	const auto *p_container = get_sexp_container(tree_nodes[parent_node].text);
+	const auto *p_container = get_sexp_container(tree_nodes[con_data_node].text);
 	Assert(p_container != nullptr);
 
 	const auto &container = *p_container;
 	Assert(container.is_map());
 
 	int type = SEXPT_VALID | SEXPT_MODIFIER;
-	SCP_string fallback_value;
 	if (any(container.type & ContainerType::STRING_KEYS)) {
 		type |= SEXPT_STRING;
-		fallback_value = "<any string>";
 	} else if (any(container.type & ContainerType::NUMBER_KEYS)) {
 		type |= SEXPT_NUMBER;
-		fallback_value = "0";
 	} else {
 		UNREACHABLE("Unknown map container key type %d", (int)container.type);
 	}
@@ -7080,15 +7056,40 @@ sexp_list_item *sexp_tree::get_listing_opf_map_keys(int parent_node) const
 		head.add_data(kv_pair.first.c_str(), type);
 	}
 
-	// if the map is empty, ensure list isn't empty
-	// empty map may be ok, since the mission might use add-to-map
-	if (head.next == nullptr) {
-		Assert(!fallback_value.empty());
-		// TODO: issue Warning() to let FREDder know?
-		head.add_data(fallback_value.c_str(), type);
+	return head.next;
+}
+
+// get potential options for container multidimensional modifiers
+// the value could be either string or number, checked in-mission
+sexp_list_item *sexp_tree::get_container_multidim_modifiers(int con_data_node) const
+{
+	Assert(con_data_node != -1);
+	Assert(tree_nodes[con_data_node].type & SEXPT_CONTAINER_DATA);
+
+	sexp_list_item head;
+
+	if (is_node_eligible_for_special_argument(con_data_node)) {
+		head.add_data(SEXP_ARGUMENT_STRING, (SEXPT_VALID | SEXPT_STRING | SEXPT_MODIFIER));
 	}
 
+	// the FREDder might want to use a list modifier
+	sexp_list_item *list = get_list_container_modifiers();
+	Assert(list);
+
+	head.add_list(list);
+
+
 	return head.next;
+}
+
+// given a node's parent, check if node is eligible for being used with the special argument
+bool sexp_tree::is_node_eligible_for_special_argument(int parent_node) const
+{
+	Assert(parent_node != -1);
+
+	const int w_arg = find_ancestral_argument_number(OP_WHEN_ARGUMENT, parent_node);
+	const int e_arg = find_ancestral_argument_number(OP_EVERY_TIME_ARGUMENT, parent_node);
+	return w_arg >= 1 || e_arg >= 1; /* || the same for any future _ARGUMENT sexps */
 }
 
 // Deletes sexp_variable from sexp_tree.
