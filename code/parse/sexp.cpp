@@ -30264,6 +30264,7 @@ int sexp_query_type_match(int opf, int opr)
 
 		// Goober5000
 		case OPF_ANYTHING:
+		case OPF_CONTAINER_VALUE: // jg18
 			// don't match any operators, only data
 			return 0;
 

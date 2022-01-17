@@ -796,6 +796,13 @@ void sexp_tree::right_clicked(int mode)
 						{
 							type = SEXPT_NUMBER | SEXPT_STRING;
 						}
+
+						// jg18 - container values (container data/map keys) can be anything
+						// the type is checked in check_sexp_syntax()
+						if (op_type == OPF_CONTAINER_VALUE)
+						{
+							type = SEXPT_NUMBER | SEXPT_STRING;
+						}
 						
 						if ( (type & SEXPT_STRING) || (type & SEXPT_NUMBER) ) {
 
@@ -1201,6 +1208,11 @@ void sexp_tree::right_clicked(int mode)
 
 			} else if (type == OPF_AI_GOAL) {
 				add_type = OPR_AI_GOAL;
+
+			} else if (type == OPF_CONTAINER_VALUE) {
+				// allow both strings and numbers
+				// types are checked in check_sepx_syntax()
+				menu.EnableMenuItem(ID_ADD_NUMBER, MF_ENABLED);
 			}
 
 			// add_type unchanged from above
@@ -1348,6 +1360,11 @@ void sexp_tree::right_clicked(int mode)
 				// avoid the default OPR_STRING
 				// that way, Replace Data with String won't be enabled
 				replace_type = type;
+
+			} else if (type == OPF_CONTAINER_VALUE) {
+				// allow strings and numbers
+				// type is checked in check_sexp_syntax()
+				menu.EnableMenuItem(ID_REPLACE_NUMBER, MF_ENABLED);
 			}
 
 			// default to string
@@ -3191,6 +3208,10 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 			str = "<Custom hud gauge>";
 			break;
 
+		case OPF_CONTAINER_VALUE:
+			str = "<container value>";
+			break;
+
 		default:
 			str = "<new default required!>";
 			break;
@@ -3292,6 +3313,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_SPECIES:
 		case OPF_LANGUAGE:
 		case OPF_FUNCTIONAL_WHEN_EVAL_TYPE:
+		case OPF_CONTAINER_VALUE:
 			return 1;
 
 		case OPF_SHIP:
@@ -4910,6 +4932,7 @@ int sexp_tree::query_restricted_opf_range(int opf)
 		// Goober5000 - these are needed too (otherwise the arguments revert to their defaults)
 		case OPF_STRING:
 		case OPF_ANYTHING:
+		case OPF_CONTAINER_VALUE: // jg18
 			return 0;
 	}
 
@@ -5308,6 +5331,10 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 
 		case OPF_MAP_KEY:
 			list = get_listing_opf_map_keys(parent_node);
+			break;
+
+		case OPF_CONTAINER_VALUE:
+			list = nullptr;
 			break;
 
 		default:
