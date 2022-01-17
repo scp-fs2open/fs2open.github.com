@@ -7051,6 +7051,7 @@ sexp_list_item *sexp_tree::get_listing_opf_list_modifiers() const
 	return head.next;
 }
 
+// FIXME TODO: if you use this function with remove-from-map SEXP, don't use SEXPT_MODIFIER
 sexp_list_item *sexp_tree::get_listing_opf_map_keys(int parent_node) const
 {
 	sexp_list_item head;
@@ -7064,16 +7065,27 @@ sexp_list_item *sexp_tree::get_listing_opf_map_keys(int parent_node) const
 	Assert(container.is_map());
 
 	int type = SEXPT_VALID | SEXPT_MODIFIER;
+	SCP_string fallback_value;
 	if (any(container.type & ContainerType::STRING_KEYS)) {
 		type |= SEXPT_STRING;
+		fallback_value = "<any string>";
 	} else if (any(container.type & ContainerType::NUMBER_KEYS)) {
 		type |= SEXPT_NUMBER;
+		fallback_value = "0";
 	} else {
 		UNREACHABLE("Unknown map container key type %d", (int)container.type);
 	}
 
 	for (const auto &kv_pair : container.map_data) {
 		head.add_data(kv_pair.first.c_str(), type);
+	}
+
+	// if the map is empty, ensure list isn't empty
+	// empty map may be ok, since the mission might use add-to-map
+	if (head.next == nullptr) {
+		Assert(!fallback_value.empty());
+		// TODO: issue Warning() to let FREDder know?
+		head.add_data(fallback_value.c_str(), type);
 	}
 
 	return head.next;
