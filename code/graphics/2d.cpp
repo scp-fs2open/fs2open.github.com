@@ -1613,11 +1613,11 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 
 	io::mouse::CursorManager::init();
 
+	mprintf(("Initializing path renderer...\n"));
+	graphics::paths::PathRenderer::init();
+
 	if ( !Is_standalone ) {
 		gr_light_init();
-
-		mprintf(("Initializing path renderer...\n"));
-		graphics::paths::PathRenderer::init();
 
 		// Initialize uniform buffer managers
 		uniform_buffer_managers_init();
