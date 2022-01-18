@@ -4127,7 +4127,7 @@ void game_time_level_init()
 	game_stop_time();
 
 	Missiontime = 0;
-	timer_start_mission();
+	timestamp_start_mission();
 }
 
 void game_time_level_close()
@@ -4153,7 +4153,7 @@ void game_stop_time(bool by_os_focus)
 
 	// Stop the timer_tick stuff...
 	// We always want to 'sudo' the change, unless this is caused by the focus, because we want the game to have priority in that case
-	timer_pause_timestamp(!by_os_focus);
+	timestamp_pause(!by_os_focus);
 }
 
 void game_start_time(bool by_os_focus)
@@ -4171,7 +4171,7 @@ void game_start_time(bool by_os_focus)
 
 	// Restore the timer_tick stuff...
 	// We always want to 'sudo' the change, unless this is caused by the focus, because we want the game to have priority in that case
-	timer_unpause_timestamp(!by_os_focus);
+	timestamp_unpause(!by_os_focus);
 }
 
 void lock_time_compression(bool is_locked)
@@ -4186,7 +4186,7 @@ void change_time_compression(float multiplier)
 	Desired_time_compression = Game_time_compression = modified;
 	Time_compression_change_rate = 0;
 
-	timer_update_time_compression();
+	timestamp_update_time_compression();
 }
 
 void set_time_compression(float multiplier, float change_time)
@@ -4196,7 +4196,7 @@ void set_time_compression(float multiplier, float change_time)
 		Game_time_compression = Desired_time_compression = fl2f(multiplier);
 		Time_compression_change_rate = 0;
 
-		timer_update_time_compression();
+		timestamp_update_time_compression();
 		return;
 	}
 
@@ -4271,13 +4271,13 @@ void game_set_frametime(int state)
 		if(Time_compression_change_rate)
 		{
 			Game_time_compression += fixmul(Time_compression_change_rate, Frametime);
-			timer_update_time_compression();
+			timestamp_update_time_compression();
 		}
 		if((ascending && Game_time_compression > Desired_time_compression)
 			|| (!ascending && Game_time_compression < Desired_time_compression))
 		{
 			Game_time_compression = Desired_time_compression;
-			timer_update_time_compression();
+			timestamp_update_time_compression();
 		}
 	}
 
@@ -4297,7 +4297,7 @@ void game_set_frametime(int state)
 
 	// before the player enters the mission, we blitz through time
 	if (do_pre_player_skip)
-		timer_adjust(flFrametime, TIMER_DIRECTION::FORWARD);
+		timestamp_adjust_seconds(flFrametime, TIMER_DIRECTION::FORWARD);
 
 	// wrap overall frametime if needed
 	if ( FrametimeOverall > (INT_MAX - F1_0) )
@@ -4313,14 +4313,14 @@ fix game_get_overall_frametime()
 
 void game_update_missiontime()
 {
-	Missiontime = timer_get_mission_time();
+	Missiontime = timestamp_get_mission_time();
 }
 
 void game_do_frame(bool set_frametime)
 {
 	if (Missiontime == 0) {
 		// reset the timestamps to the beginning, since they were running in the briefing screens
-		timer_revert_to_mission_start();
+		timestamp_revert_to_mission_start();
 	}
 
 	if (set_frametime) {

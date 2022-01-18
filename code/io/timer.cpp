@@ -24,24 +24,25 @@ static Uint64 Timer_base_value;
 
 static bool Timer_inited = false;
 
-static uint64_t Timer_timestamp_offset_from_counter = 0;
-static uint64_t Timer_timestamp_paused_at_counter = 0;
-
-static fix Timestamp_current_time_compression = F1_0;
-static float Timestamp_time_compression_multiplier = 1.0f;
-static uint64_t Timestamp_time_compression_microseconds_offset = 0;
-
-static bool Timer_is_paused = false;
-static bool Timer_sudo_paused = false;
-
-static uint64_t Timestamp_microseconds_at_mission_start = 0;
-
-
 #define MICROSECONDS_PER_SECOND 1000000
 #define NANOSECONDS_PER_SECOND 1000000000
 
 static long double Timer_to_microseconds;
 static long double Timer_to_nanoseconds;
+
+
+static uint64_t Timestamp_offset_from_counter = 0;
+static uint64_t Timestamp_paused_at_counter = 0;
+
+static fix Timestamp_current_time_compression = F1_0;
+static float Timestamp_time_compression_multiplier = 1.0f;
+static uint64_t Timestamp_time_compression_microseconds_offset = 0;
+
+static bool Timestamp_is_paused = false;
+static bool Timestamp_sudo_paused = false;
+
+static uint64_t Timestamp_microseconds_at_mission_start = 0;
+
 
 static uint64_t get_performance_counter()
 {
@@ -70,8 +71,8 @@ void timer_init()
 
 		// set up the config so that timestamps are usable
 		// (timestamps are used in the UI and in some init functions, not just within the mission)
-		timer_pause_timestamp(true);
-		timer_unpause_timestamp(true);
+		timestamp_pause(true);
+		timestamp_unpause(true);
 
 		atexit(timer_close);
 	}
@@ -134,12 +135,12 @@ std::uint64_t timer_get_nanoseconds()
 static uint64_t timestamp_get_raw()
 {
 	uint64_t timestamp_raw;
-	if (Timer_is_paused) {
-		timestamp_raw = Timer_timestamp_paused_at_counter;
+	if (Timestamp_is_paused) {
+		timestamp_raw = Timestamp_paused_at_counter;
 	} else {
 		timestamp_raw = get_performance_counter();
 	}
-	timestamp_raw -= Timer_timestamp_offset_from_counter;
+	timestamp_raw -= Timestamp_offset_from_counter;
 
 	return timestamp_raw;
 }
@@ -233,41 +234,41 @@ bool timestamp_elapsed_safe(int a, int b) {
 
 // ======================================== pausing/unpausing/adjusting ========================================
 
-void timer_pause_timestamp(bool sudo)
+void timestamp_pause(bool sudo)
 {
 	if (sudo)
-		Timer_sudo_paused = true;
-	if (Timer_is_paused)
+		Timestamp_sudo_paused = true;
+	if (Timestamp_is_paused)
 		return;
-	Timer_is_paused = true;
+	Timestamp_is_paused = true;
 
-	Timer_timestamp_paused_at_counter = get_performance_counter();
+	Timestamp_paused_at_counter = get_performance_counter();
 }
 
-void timer_unpause_timestamp(bool sudo)
+void timestamp_unpause(bool sudo)
 {
-	if (Timer_sudo_paused && !sudo)
+	if (Timestamp_sudo_paused && !sudo)
 		return;
 	if (sudo)
-		Timer_sudo_paused = false;
-	if (!Timer_is_paused)
+		Timestamp_sudo_paused = false;
+	if (!Timestamp_is_paused)
 		return;
-	Timer_is_paused = false;
+	Timestamp_is_paused = false;
 
 	auto counter = get_performance_counter();
 
-	if (Timer_timestamp_offset_from_counter == 0) {
-		Timer_timestamp_offset_from_counter = counter;
+	if (Timestamp_offset_from_counter == 0) {
+		Timestamp_offset_from_counter = counter;
 	} else {
 		// update our offset to take into account the time we were paused
-		Timer_timestamp_offset_from_counter += (counter - Timer_timestamp_paused_at_counter);
+		Timestamp_offset_from_counter += (counter - Timestamp_paused_at_counter);
 	}
 }
 
-void timer_adjust(float delta_seconds, TIMER_DIRECTION dir)
+void timestamp_adjust_seconds(float delta_seconds, TIMER_DIRECTION dir)
 {
 	Assertion(Timer_inited, "Timer should be initialized at this point!");
-	Assertion(Timer_timestamp_offset_from_counter != 0 && Timer_timestamp_paused_at_counter != 0 && Timestamp_microseconds_at_mission_start != 0,
+	Assertion(Timestamp_offset_from_counter != 0 && Timestamp_paused_at_counter != 0 && Timestamp_microseconds_at_mission_start != 0,
 		"Warranty void if these variables have not been set!");
 	Assertion(delta_seconds > 0.0f, "The delta should be positive!");
 
@@ -278,21 +279,21 @@ void timer_adjust(float delta_seconds, TIMER_DIRECTION dir)
 	if (dir == TIMER_DIRECTION::FORWARD)
 	{
 		Timestamp_microseconds_at_mission_start -= static_cast<uint64_t>(delta_microseconds);
-		Timer_timestamp_offset_from_counter -= delta_timer;
-		Timer_timestamp_paused_at_counter -= delta_timer;
+		Timestamp_offset_from_counter -= delta_timer;
+		Timestamp_paused_at_counter -= delta_timer;
 	}
 	else
 	{
 		Timestamp_microseconds_at_mission_start += static_cast<uint64_t>(delta_microseconds);
-		Timer_timestamp_offset_from_counter += delta_timer;
-		Timer_timestamp_paused_at_counter += delta_timer;
+		Timestamp_offset_from_counter += delta_timer;
+		Timestamp_paused_at_counter += delta_timer;
 	}
 }
 
-void timer_adjust_microseconds(uint64_t delta_microseconds, TIMER_DIRECTION dir)
+void timestamp_adjust_microseconds(uint64_t delta_microseconds, TIMER_DIRECTION dir)
 {
 	Assertion(Timer_inited, "Timer should be initialized at this point!");
-	Assertion(Timer_timestamp_offset_from_counter != 0 && Timer_timestamp_paused_at_counter != 0 && Timestamp_microseconds_at_mission_start != 0,
+	Assertion(Timestamp_offset_from_counter != 0 && Timestamp_paused_at_counter != 0 && Timestamp_microseconds_at_mission_start != 0,
 		"Warranty void if these variables have not been set!");
 
 	auto delta_timer = static_cast<uint64_t>(static_cast<long double>(delta_microseconds) / Timer_to_microseconds);
@@ -301,19 +302,19 @@ void timer_adjust_microseconds(uint64_t delta_microseconds, TIMER_DIRECTION dir)
 	if (dir == TIMER_DIRECTION::FORWARD)
 	{
 		Timestamp_microseconds_at_mission_start -= delta_microseconds;
-		Timer_timestamp_offset_from_counter -= delta_timer;
-		Timer_timestamp_paused_at_counter -= delta_timer;
+		Timestamp_offset_from_counter -= delta_timer;
+		Timestamp_paused_at_counter -= delta_timer;
 	}
 	else
 	{
 		Timestamp_microseconds_at_mission_start += delta_microseconds;
-		Timer_timestamp_offset_from_counter += delta_timer;
-		Timer_timestamp_paused_at_counter += delta_timer;
+		Timestamp_offset_from_counter += delta_timer;
+		Timestamp_paused_at_counter += delta_timer;
 	}
 }
 
 extern fix Game_time_compression;
-void timer_update_time_compression()
+void timestamp_update_time_compression()
 {
 	// if no change, no need to update
 	if (Game_time_compression == Timestamp_current_time_compression) {
@@ -324,8 +325,8 @@ void timer_update_time_compression()
 	auto timestamp_raw = timestamp_get_raw();
 
 	// we need to move the counter offset to make the raw timestamp zero (so that it can start ticking with a new multiplier)
-	Timer_timestamp_offset_from_counter += timestamp_raw;
-	Timer_timestamp_paused_at_counter += timestamp_raw;
+	Timestamp_offset_from_counter += timestamp_raw;
+	Timestamp_paused_at_counter += timestamp_raw;
 
 	// add the accumulated time so we don't lose any of it
 	auto delta_microseconds = static_cast<uint64_t>(timestamp_raw * Timer_to_microseconds * Timestamp_time_compression_multiplier);
@@ -338,18 +339,18 @@ void timer_update_time_compression()
 
 // ======================================== mission-specific stuff ========================================
 
-void timer_start_mission()
+void timestamp_start_mission()
 {
 	Timestamp_microseconds_at_mission_start = timestamp_get_microseconds();
 }
 
-void timer_revert_to_mission_start()
+void timestamp_revert_to_mission_start()
 {
 	auto delta_microseconds = (timestamp_get_microseconds() - Timestamp_microseconds_at_mission_start);
-	timer_adjust_microseconds(delta_microseconds, TIMER_DIRECTION::BACKWARD);
+	timestamp_adjust_microseconds(delta_microseconds, TIMER_DIRECTION::BACKWARD);
 }
 
-fix timer_get_mission_time()
+fix timestamp_get_mission_time()
 {
 	// convert timestamp to mission time
 	// c.f. timer_get_fixed_seconds

@@ -118,30 +118,32 @@ bool timestamp_elapsed_safe(int a, int b);
 // This should be called when the timestamp should stop ticking, e.g when the game is paused.
 // The "sudo" is for cases where we want the time to remain paused, e.g. during level loading,
 //     even if the game loses focus (which would normally unpause when focus is regained)
-void timer_pause_timestamp(bool sudo);
+void timestamp_pause(bool sudo);
 
 // This should be called when the timestamp should resume ticking, e.g. when the player is in-mission.
 // See above re: the sudo parameter
-void timer_unpause_timestamp(bool sudo);
+void timestamp_unpause(bool sudo);
 
 enum class TIMER_DIRECTION { FORWARD, BACKWARD };
-// Use with caution!
-void timer_adjust(float delta_seconds, TIMER_DIRECTION dir);
-void timer_adjust_microseconds(uint64_t delta_microseconds, TIMER_DIRECTION dir);
+// Alters the timestamp time forward or backward.  Use with caution!
+void timestamp_adjust_seconds(float delta_seconds, TIMER_DIRECTION dir);
+void timestamp_adjust_microseconds(uint64_t delta_microseconds, TIMER_DIRECTION dir);
 
-void timer_update_time_compression();
+// This should be called when the game time compression is changed in any way, so that
+// the timestamp will be consistent with the faster or slower time.
+void timestamp_update_time_compression();
 
 //=================================================================
 //               M I S S I O N   T I M E
 //=================================================================
 
 // Save the timestamp corresponding to the beginning of the mission
-void timer_start_mission();
+void timestamp_start_mission();
 
 // Restore the timestamp corresponding to the beginning of the mission, since we essentially start time twice
-void timer_revert_to_mission_start();
+void timestamp_revert_to_mission_start();
 
 // Calculate the current mission time using the timestamps
-fix timer_get_mission_time();
+fix timestamp_get_mission_time();
 
 #endif
