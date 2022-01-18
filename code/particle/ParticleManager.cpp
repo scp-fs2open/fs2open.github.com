@@ -222,7 +222,7 @@ ParticleEffectHandle ParticleManager::addEffect(ParticleEffectPtr effect)
 	if (Is_standalone) {
 		delete effect;
 
-		return ParticleEffectHandle();
+		return ParticleEffectHandle::invalid();
 	}
 
 	Assertion(effect, "Invalid effect pointer passed!");
