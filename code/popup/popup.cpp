@@ -575,7 +575,7 @@ void popup_close(popup_info *pi, int screen_id)
 	Popup_is_active = 0;
 	Popup_running_state = 0;
 
-	// anytime in single player, and multiplayer, not in mission, go ahead and stop time
+	// anytime in single player, and multiplayer, not in mission, go ahead and resume time
 	if ( (Game_mode & GM_NORMAL) || ((Game_mode & GM_MULTIPLAYER) && !(Game_mode & GM_IN_MISSION)) )
 		game_start_time();
 }

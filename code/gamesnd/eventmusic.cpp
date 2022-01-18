@@ -659,7 +659,7 @@ void event_music_first_pattern()
 			audiostream_stop( Patterns[Current_pattern].handle );
 	}
 
-	Pattern_timer_id = 2000;	// start music delay
+	Pattern_timer_id = timestamp(-1);	// don't let this start quite yet; see event_music_set_start_delay()
 	
 	Event_music_begun = FALSE;
 	if ( Event_Music_battle_started == TRUE ) {
@@ -668,6 +668,13 @@ void event_music_first_pattern()
 	else {
 		Current_pattern = SONG_NRML_1;
 	}
+}
+
+// Event music was originally hard-coded to start at 2 seconds, regardless of the timestamp.  Since the default player entry delay is 1 second,
+// this yields a relative start time of 1 second.  Mission start will now use relative rather than absolute delay.
+void event_music_set_start_delay()
+{
+	Pattern_timer_id = timestamp(1000);
 }
 
 // -------------------------------------------------------------------------------------------------
