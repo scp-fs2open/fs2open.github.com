@@ -58,6 +58,8 @@ typedef struct fireball_info {
 	fireball_lod		lod[MAX_FIREBALL_LOD];
 	float				exp_color[3];	// red, green, blue
 
+	bool	use_3d_warp;
+
 	char	warp_glow[NAME_LENGTH];
 	int		warp_glow_bitmap;
 	char	warp_ball[NAME_LENGTH];
