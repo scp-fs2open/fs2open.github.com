@@ -229,7 +229,7 @@ std::unique_ptr<DecoderStatus> initializeStatus(std::unique_ptr<InputStream>& st
 
 	auto ctx = stream->m_ctx->ctx();
 
-	auto videoStream = av_find_best_stream(ctx, AVMEDIA_TYPE_VIDEO, -1, -1, &status->videoCodec, 0);
+	auto videoStream = av_find_best_stream(ctx, AVMEDIA_TYPE_VIDEO, -1, -1, nullptr, 0);
 	if (videoStream < 0) {
 		if (videoStream == AVERROR_STREAM_NOT_FOUND) {
 			mprintf(("FFmpeg: No video stream found in file!\n"));
@@ -242,10 +242,17 @@ std::unique_ptr<DecoderStatus> initializeStatus(std::unique_ptr<InputStream>& st
 		return nullptr;
 	}
 
+	status->videoCodec = avcodec_find_decoder(ctx->streams[videoStream]->codecpar->codec_id);
+
+	if ( !status->videoCodec ) {
+		mprintf(("FFmpeg: Cannot find decoder for video stream!\n"));
+		return nullptr;
+	}
+
 	int audioStream = -1;
 
 	if (properties.with_audio) {
-		audioStream = av_find_best_stream(ctx, AVMEDIA_TYPE_AUDIO, -1, videoStream, &status->audioCodec, 0);
+		audioStream = av_find_best_stream(ctx, AVMEDIA_TYPE_AUDIO, -1, videoStream, nullptr, 0);
 		if (audioStream < 0) {
 			if (audioStream == AVERROR_STREAM_NOT_FOUND) {
 				mprintf(("FFmpeg: No audio stream found in file!\n"));
@@ -254,6 +261,12 @@ std::unique_ptr<DecoderStatus> initializeStatus(std::unique_ptr<InputStream>& st
 			} else {
 				mprintf(("FFmpeg: Unknown error while finding audio stream!\n"));
 			}
+		}
+
+		status->audioCodec = avcodec_find_decoder(ctx->streams[audioStream]->codecpar->codec_id);
+
+		if ( !status->audioCodec ) {
+			mprintf(("FFmpeg: Cannot find decoder for audio stream!\n"));
 		}
 	}
 

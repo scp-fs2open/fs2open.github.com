@@ -24,13 +24,13 @@ struct DecoderStatus {
 	int videoStreamIndex = -1;
 	AVStream* videoStream = nullptr;
 	CodecContextParameters videoCodecPars;
-	AVCodec* videoCodec = nullptr;
+	const AVCodec* videoCodec = nullptr;
 	AVCodecContext* videoCodecCtx = nullptr;
 
 	int audioStreamIndex = -1;
 	AVStream* audioStream = nullptr;
 	CodecContextParameters audioCodecPars;
-	AVCodec* audioCodec = nullptr;
+	const AVCodec* audioCodec = nullptr;
 	AVCodecContext* audioCodecCtx = nullptr;
 
 	// Subtitles are a bit different since they max come from a different file
