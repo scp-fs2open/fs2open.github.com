@@ -144,10 +144,9 @@ class sexp_list_item {
 	int type;
 	int op;
 	SCP_string text;
-	int flags;
 	sexp_list_item* next;
 
-	sexp_list_item() : flags(0), next(NULL) {
+	sexp_list_item() : next(NULL) {
 	}
 
 	void set_op(int op_num);

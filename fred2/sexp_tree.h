@@ -98,10 +98,9 @@ public:
 	int type;
 	int op;
 	SCP_string text;
-	int flags;
 	sexp_list_item *next;
 
-	sexp_list_item() : flags(0), next(NULL) {}
+	sexp_list_item() : next(NULL) {}
 
 	void set_op(int op_num);
 	void set_data(const char *str, int t = (SEXPT_STRING | SEXPT_VALID));
