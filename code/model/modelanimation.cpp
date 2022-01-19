@@ -182,83 +182,29 @@ namespace animation {
 
 		float timeOffset = multiOverrideTime != nullptr ? *multiOverrideTime : 0.0f;
 
-		if (direction == ModelAnimationDirection::RWD) {
-			switch (instanceData.state) {
-			case ModelAnimationState::RUNNING_RWD:
-			case ModelAnimationState::UNTRIGGERED:
-			case ModelAnimationState::NEED_RECALC:
-				//Cannot reverse-start if it's already running rwd or fully untriggered
-
-				//If forced, reset and play anyways
-				if (force) {
-					//This needs to recalculate first, so start it as if it were going forwards, and then set it's time and continue on
-					if (instanceData.state == ModelAnimationState::UNTRIGGERED)
-						start(pmi, ModelAnimationDirection::FWD, true);
-					instanceData.time = instant ? 0 : instanceData.duration - timeOffset;
-					instanceData.state = ModelAnimationState::RUNNING_RWD;
-					break;
-				}
-
-				return;
-			case ModelAnimationState::RUNNING_FWD:
-			case ModelAnimationState::PAUSED:
-				//Just pretend we were going in the right direction
-				instanceData.time -= timeOffset;
-
-				if (force)
-					instanceData.time = instant ? 0 : instanceData.duration - timeOffset;
-				instanceData.state = ModelAnimationState::RUNNING_RWD;
-				break;
-			case ModelAnimationState::COMPLETED:
-				//Nothing special to do. Expected case
-				instanceData.time -= timeOffset;
-				if (force)
-					instanceData.time = instant ? 0 : instanceData.duration - timeOffset;
-
-				break;
-			}
-		}
-		else {
-			switch (instanceData.state) {
-			case ModelAnimationState::RUNNING_FWD:
-			case ModelAnimationState::COMPLETED:
-				//Cannot start if it's already running fwd or fully triggered
-
-				//If forced, reset and play anyways
-				if (force) {
-					instanceData.time = instant ? instanceData.duration : 0 + timeOffset;
-					instanceData.state = ModelAnimationState::RUNNING_FWD;
-					break;
-				}
-
-				return;
-			case ModelAnimationState::RUNNING_RWD:
-			case ModelAnimationState::PAUSED:
-				//Just pretend we were going in the right direction
-				instanceData.time += timeOffset;
-
-				if (force)
-					instanceData.time = instant ? instanceData.duration : 0 + timeOffset;
-				instanceData.state = ModelAnimationState::RUNNING_FWD;
-				break;
-			case ModelAnimationState::UNTRIGGERED:
-			case ModelAnimationState::NEED_RECALC:
-				//Nothing special to do. Expected case
-				instanceData.time += timeOffset;
-				if (force)
-					instanceData.time = instant ? instanceData.duration : 0 + timeOffset;
-
-				break;
-			}
-		}
-
 		//Make sure to recalculate the animation here, as otherwise we cannot inquire about things like length after starting.
 		//Don't apply just yet if it's a non-initial type, as there might be other animations this'd need to depend upon
 		ModelAnimationSubmodelBuffer applyBuffer;
 		m_set->initializeSubmodelBuffer(pmi, applyBuffer);
 		play(0, pmi, applyBuffer);
+		
+		if (direction == ModelAnimationDirection::RWD) {
+			instanceData.state = ModelAnimationState::RUNNING_RWD;
+			instanceData.time -= timeOffset;
+			if (force)
+				instanceData.time = instant ? 0 : instanceData.duration - timeOffset;
+		}
+		else {
+			instanceData.state = ModelAnimationState::RUNNING_FWD;
+			instanceData.time += timeOffset;
+			if (force)
+				instanceData.time = instant ? instanceData.duration : 0 + timeOffset;
+		}
+		
 		//Since initial types never get stepped, they need to be manually applied here once.
 		if (m_isInitialType) {
+			m_set->initializeSubmodelBuffer(pmi, applyBuffer);
+			play(0, pmi, applyBuffer);
 			ModelAnimationSet::apply(pmi, applyBuffer);
 
 			//Save the things modified by initial animations as actual baseline

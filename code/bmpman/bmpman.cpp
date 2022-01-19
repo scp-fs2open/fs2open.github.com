@@ -1152,6 +1152,7 @@ int bm_load(const char *real_filename, int dir_type) {
 	if (Is_standalone) {
 		char standalone_filename[MAX_FILENAME_LEN] = "right_bracket";
 		strcpy_s(filename, standalone_filename);
+		dir_type = CF_TYPE_INTERFACE;
 	}
 
 	// safety catch for strcat...
@@ -1466,6 +1467,7 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 	if (Is_standalone) {
 		char standalone_filename[MAX_FILENAME_LEN] = "cursorweb";
 		strcpy_s(filename, standalone_filename);
+		dir_type = CF_TYPE_INTERFACE;
 	}
 
 	// safety catch for strcat...
