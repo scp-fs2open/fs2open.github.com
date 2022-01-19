@@ -2234,7 +2234,7 @@ void sexp_list_item::set_data(const char *str, int t)
 void sexp_list_item::set_data_dup(const char *str, int t)
 {
 	op = -1;
-	text = strdup(str);
+	text = str;
 	flags |= SEXP_ITEM_F_DUP;
 	type = t;
 }
@@ -2283,7 +2283,7 @@ void sexp_list_item::add_data_dup(const char *str, int t)
 		ptr = ptr->next;
 
 	ptr->next = item;
-	item->set_data(strdup(str), t);
+	item->set_data(str, t);
 	item->flags |= SEXP_ITEM_F_DUP;
 }
 
