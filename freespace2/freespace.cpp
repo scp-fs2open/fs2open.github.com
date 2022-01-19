@@ -895,6 +895,8 @@ void game_level_close()
 
 		stars_level_close();
 
+		multi_close_oo_and_ship_tracker();
+
 		Pilot.save_savefile();
 
 		// Cybor17 - also, undo cheats.
@@ -902,6 +904,18 @@ void game_level_close()
 		Weapon_energy_cheat = false;
 
 		game_time_level_close();
+
+		if (Game_mode & GM_STANDALONE_SERVER) {
+			model_free_all();			// Free all existing models if standalone server
+
+			// clean out interp data as it's better to allocate as needed here instead
+			// of letting it use a bunch of memory
+			extern void model_deallocate_interp_data();
+			model_deallocate_interp_data();
+
+			extern void model_collide_free_point_list();
+			model_collide_free_point_list();
+		}
 	}
 	else
 	{
@@ -1701,8 +1715,15 @@ void game_init()
 		Cmdline_spec = 0;
 		Cmdline_glow = 0;
 		Cmdline_env = 0;
-		Fireball_use_3d_warp = false;
+		Cmdline_height = 0;
 		Cmdline_normal = 0;
+		Cmdline_voice_recognition = 0;
+		Cmdline_freespace_no_sound = 1;
+		Cmdline_freespace_no_music = 1;
+		Cmdline_NoFPSCap = 0;
+		Cmdline_load_all_weapons = 0;
+		Cmdline_enable_3d_shockwave = 0;
+		Fireball_use_3d_warp = false;
 
 		// now init the standalone server code
 		std_init_standalone();
@@ -1966,11 +1987,13 @@ void game_init()
 	// convert old pilot files (if they need it)
 	convert_pilot_files();
 
+	if ( !Is_standalone ) {
 #ifdef WITH_FFMPEG
-	libs::ffmpeg::initialize();
+		libs::ffmpeg::initialize();
 #endif
 
-	libs::discord::init();
+		libs::discord::init();
+	}
 
 	nprintf(("General", "Ships.tbl is : %s\n", Game_ships_tbl_valid ? "VALID" : "INVALID!!!!"));
 	nprintf(("General", "Weapons.tbl is : %s\n", Game_weapons_tbl_valid ? "VALID" : "INVALID!!!!"));
@@ -6552,7 +6575,7 @@ int game_main(int argc, char *argv[])
 		return 1;
 	}
 
-	if (!headtracking::init())
+	if (!Is_standalone && !headtracking::init())
 	{
 		mprintf(("Headtracking is not enabled...\n"));
 	}
