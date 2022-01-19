@@ -146,7 +146,7 @@ class sexp_list_item {
 	SCP_string text;
 	sexp_list_item* next;
 
-	sexp_list_item() : next(NULL) {
+	sexp_list_item() : next(nullptr) {
 	}
 
 	void set_op(int op_num);

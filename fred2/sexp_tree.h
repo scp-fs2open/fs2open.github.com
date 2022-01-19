@@ -100,7 +100,7 @@ public:
 	SCP_string text;
 	sexp_list_item *next;
 
-	sexp_list_item() : next(NULL) {}
+	sexp_list_item() : next(nullptr) {}
 
 	void set_op(int op_num);
 	void set_data(const char *str, int t = (SEXPT_STRING | SEXPT_VALID));
