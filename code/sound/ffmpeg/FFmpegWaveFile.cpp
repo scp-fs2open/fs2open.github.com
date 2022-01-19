@@ -132,18 +132,24 @@ FFmpegWaveFile::~FFmpegWaveFile()
 	m_ctx.reset();
 }
 
-AVCodec* sound::ffmpeg::FFmpegWaveFile::prepareOpened()
+const AVCodec* sound::ffmpeg::FFmpegWaveFile::prepareOpened()
 {
     using namespace libs::ffmpeg;
     auto ctx = m_ctx->ctx();
 
-    AVCodec* audio_codec = nullptr;
+    const AVCodec* audio_codec = nullptr;
 
-    m_audioStreamIndex   = av_find_best_stream(ctx, AVMEDIA_TYPE_AUDIO, -1, -1, &audio_codec, 0);
+    m_audioStreamIndex   = av_find_best_stream(ctx, AVMEDIA_TYPE_AUDIO, -1, -1, nullptr, 0);
     if (m_audioStreamIndex < 0) {
         throw FFmpegException("Failed to find audio stream in file.");
     }
     m_audioStream = ctx->streams[m_audioStreamIndex];
+
+	audio_codec = avcodec_find_decoder(m_audioStream->codecpar->codec_id);
+
+	if ( !audio_codec ) {
+		throw FFmpegException("Failed to find decoder for audio stream in file.");
+	}
 
     int err;
 #if LIBAVCODEC_VERSION_INT > AV_VERSION_INT(57, 24, 255)
@@ -229,7 +235,7 @@ bool FFmpegWaveFile::Open(const char* pszFilename, bool keep_ext)
 
 		m_ctx    = FFmpegContext::createContext(cfp);
 
-        AVCodec* audio_codec = prepareOpened();
+        const AVCodec* audio_codec = prepareOpened();
 
 		nprintf(("SOUND", "SOUND => %s => Using codec %s (%s)\n", filename, audio_codec->long_name, audio_codec->name));
 	} catch (const FFmpegException& e) {
@@ -255,7 +261,7 @@ bool FFmpegWaveFile::OpenMem(const uint8_t* snddata, size_t snd_len)
 	try {
 		m_ctx    = FFmpegContext::createContextMem(snddata, snd_len);
 
-        AVCodec* audio_codec = prepareOpened();
+        const AVCodec* audio_codec = prepareOpened();
 
 		nprintf(("SOUND", "SOUND => %s => Using codec %s (%s)\n", "soundfile-in-memory", audio_codec->long_name, audio_codec->name));
 	} catch (const FFmpegException& e) {
