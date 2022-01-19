@@ -2089,7 +2089,7 @@ int parse_create_object_sub(p_object *p_objp)
 	if (p_objp->flags[Mission::Parse_Object_Flags::Knossos_warp_in])
 	{
         Objects[objnum].flags.set(Object::Object_Flags::Special_warpin);
-		Knossos_warp_ani_used = 1;
+		Knossos_warp_ani_used = true;
 	}
 
 	// set the orders that this ship will accept.  It will have already been set to default from the
@@ -3456,7 +3456,7 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 	// Goober5000 - preload stuff for certain object flags
 	// (done after parsing object, but before creating it)
 	if (p_objp->flags[Mission::Parse_Object_Flags::Knossos_warp_in])
-		Knossos_warp_ani_used = 1;
+		Knossos_warp_ani_used = true;
 
 	// this is a valid/legal ship to create
 	return 1;

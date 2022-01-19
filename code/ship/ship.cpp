@@ -16911,7 +16911,7 @@ void ship_page_in()
 
 		// check if we are going to use a Knossos device and make sure the special warp ani gets pre-loaded
 		if ( Ship_info[Ships[i].ship_info_index].flags[Ship::Info_Flags::Knossos_device] )
-			Knossos_warp_ani_used = 1;
+			Knossos_warp_ani_used = true;
 
 		// mark any weapons as being used, saves memory and time if we don't load them all
 		ship_weapon *swp = &Ships[i].weapons;

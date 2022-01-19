@@ -143,7 +143,7 @@ int fireball_asteroid_explosion_type(asteroid_info *aip);
 float fireball_wormhole_intensity( fireball *fb );
 
 // Goober5000
-extern int Knossos_warp_ani_used;
+extern bool Knossos_warp_ani_used;
 
 extern bool Fireball_use_3d_warp;
 

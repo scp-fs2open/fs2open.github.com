@@ -26,7 +26,7 @@
 #include <cstdlib>
 
 
-int Knossos_warp_ani_used;
+bool Knossos_warp_ani_used;
 
 #define WARPHOLE_GROW_TIME		(2.35f)	// time for warphole to reach max size (also time to shrink to nothing once it begins to shrink)
 
@@ -470,7 +470,7 @@ void fireball_init()
 	Unused_fireball_indices.reserve(INTITIAL_FIREBALL_CONTAINTER_SIZE);
 
 	// Goober5000 - reset Knossos warp flag
-	Knossos_warp_ani_used = 0;
+	Knossos_warp_ani_used = false;
 }
 
 MONITOR( NumFireballsRend )
