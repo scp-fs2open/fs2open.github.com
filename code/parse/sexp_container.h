@@ -149,14 +149,14 @@ struct list_modifier {
 		AT_INDEX
 	};
 
-	static Modifier get_modifier(const char *modifier_name);
-	bool match_name(const char *other_name) const;
-
 	const char *name;
 	const Modifier modifier;
 };
 
 using ListModifier = list_modifier::Modifier;
+
+ListModifier get_list_modifier(const char *text, bool accept_prefix = false);
+const char *get_list_modifier_name(ListModifier modifier);
 
 // management functions
 void init_sexp_containers();

@@ -106,14 +106,16 @@ bool sexp_container::type_matches(const sexp_container &container) const
 	return get_non_persistent_type() == container.get_non_persistent_type();
 }
 
-// list_modifier functions
+// ListModifier-related functions
 
-list_modifier::Modifier list_modifier::get_modifier(const char *modifier_name)
+ListModifier get_list_modifier(const char *text, bool accept_prefix)
 {
-	Assert(modifier_name != nullptr);
+	Assert(text != nullptr);
 
 	for (const auto &modifier_obj : List_modifiers) {
-		if (modifier_obj.match_name(modifier_name)) {
+		if (accept_prefix && !strnicmp(modifier_obj.name, text, strlen(modifier_obj.name))) {
+			return modifier_obj.modifier;
+		} else if (!accept_prefix && !stricmp(modifier_obj.name, text)) {
 			return modifier_obj.modifier;
 		}
 	}
@@ -122,14 +124,18 @@ list_modifier::Modifier list_modifier::get_modifier(const char *modifier_name)
 	return ListModifier::INVALID;;
 }
 
-bool list_modifier::match_name(const char *other_name) const
+const char *get_list_modifier_name(const ListModifier modifier)
 {
-	if (modifier == ListModifier::AT_INDEX) {
-		// check if modifier is a prefix
-		return !strnicmp(name, other_name, strlen(name));
-	} else {
-		return !stricmp(name, other_name);
+	Assert(modifier != ListModifier::INVALID);
+
+	for (const auto &modifier_obj : List_modifiers) {
+		if (modifier_obj.modifier == modifier) {
+			return modifier_obj.name;
+		}
 	}
+
+	UNREACHABLE("get_list_modifier_name() given unknown modifier %d", (int)modifier);
+	return Empty_str;
 }
 
 // sexp_container.h functions
@@ -388,7 +394,7 @@ bool sexp_container_CTEXT_helper(int &node, sexp_container &container, SCP_strin
 		}
 
 		const char *modifier_name = CTEXT(node);
-		const auto modifier = list_modifier::get_modifier(modifier_name);
+		const auto modifier = get_list_modifier(modifier_name);
 
 
 		if (modifier == ListModifier::INVALID) {

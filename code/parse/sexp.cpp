@@ -2088,7 +2088,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 			if (!(Sexp_nodes[modifier_node].type & SEXP_FLAG_VARIABLE) &&
 					(Sexp_nodes[modifier_node].subtype != SEXP_ATOM_CONTAINER)) {
 				if (data_container.is_list()) {
-					const auto modifier = list_modifier::get_modifier(Sexp_nodes[modifier_node].text);
+					const auto modifier = get_list_modifier(Sexp_nodes[modifier_node].text);
 					if ((Sexp_nodes[modifier_node].subtype != SEXP_ATOM_STRING) ||
 							(modifier == ListModifier::INVALID)) {
 						if (bad_node)
