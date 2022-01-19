@@ -38,7 +38,7 @@ struct DecoderStatus {
 	int subtitleStreamIndex = -1;
 	AVStream* subtitleStream = nullptr;
 	CodecContextParameters subtitleCodecPars;
-	AVCodec* subtitleCodec = nullptr;
+	const AVCodec* subtitleCodec = nullptr;
 	AVCodecContext* subtitleCodecCtx = nullptr;
 
 	DecoderStatus();
