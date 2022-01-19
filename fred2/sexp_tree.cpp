@@ -2228,17 +2228,6 @@ void sexp_list_item::set_data(const char *str, int t)
 	type = t;
 }
 
-// initialize node, type data, allocating memory for the text
-// Defaults: t = SEXPT_STRING
-//
-void sexp_list_item::set_data_dup(const char *str, int t)
-{
-	op = -1;
-	text = str;
-	flags |= SEXP_ITEM_F_DUP;
-	type = t;
-}
-
 // add a node to end of list
 //
 void sexp_list_item::add_op(int op_num)
@@ -2268,23 +2257,6 @@ void sexp_list_item::add_data(const char *str, int t)
 
 	ptr->next = item;
 	item->set_data(str, t);
-}
-
-// add a node to end of list, allocating memory for the text
-// Defaults: t = SEXPT_STRING
-//
-void sexp_list_item::add_data_dup(const char *str, int t)
-{
-	sexp_list_item *item, *ptr;
-
-	item = new sexp_list_item;
-	ptr = this;
-	while (ptr->next)
-		ptr = ptr->next;
-
-	ptr->next = item;
-	item->set_data(str, t);
-	item->flags |= SEXP_ITEM_F_DUP;
 }
 
 // add an sexp list to end of another list (join lists)
@@ -2468,9 +2440,8 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 						break;
 				}
 
-				// Goober5000 - set_data_dup is required if we're passing a variable
 				sprintf(sexp_str_token, "%d", temp);
-				item->set_data_dup(sexp_str_token, (SEXPT_NUMBER | SEXPT_VALID));
+				item->set_data(sexp_str_token, (SEXPT_NUMBER | SEXPT_VALID));
 			}
 			else if (Operators[op].value == OP_WARP_EFFECT)
 			{
@@ -2490,9 +2461,8 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 						break;
 				}
 
-				// Goober5000 - set_data_dup is required if we're passing a variable
 				sprintf(sexp_str_token, "%d", temp);
-				item->set_data_dup(sexp_str_token, (SEXPT_NUMBER | SEXPT_VALID));
+				item->set_data(sexp_str_token, (SEXPT_NUMBER | SEXPT_VALID));
 			}
 			else if (Operators[op].value == OP_CHANGE_BACKGROUND)
 			{
@@ -2517,7 +2487,7 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 				}
 
 				sprintf(sexp_str_token, "%d", temp);
-				item->set_data_dup(sexp_str_token, (SEXPT_NUMBER | SEXPT_VALID));
+				item->set_data(sexp_str_token, (SEXPT_NUMBER | SEXPT_VALID));
 			}
 			else if (Operators[op].value == OP_ADD_SUN_BITMAP)
 			{
@@ -2528,7 +2498,7 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 					temp = 100;
 
 				sprintf(sexp_str_token, "%d", temp);
-				item->set_data_dup(sexp_str_token, (SEXPT_NUMBER | SEXPT_VALID));
+				item->set_data(sexp_str_token, (SEXPT_NUMBER | SEXPT_VALID));
 			}
 			else if (Operators[op].value == OP_MISSION_SET_NEBULA)
 			{
@@ -5279,7 +5249,7 @@ sexp_list_item *sexp_tree::get_listing_opf_point()
 		for (j = 0; (uint) j < ii->get_waypoints().size(); ++j)
 		{
 			sprintf(buf, "%s:%d", ii->get_name(), j + 1);
-			head.add_data_dup(buf);
+			head.add_data(buf);
 		}
 	}
 
@@ -5409,7 +5379,7 @@ sexp_list_item *sexp_tree::get_listing_opf_arrival_anchor_all()
 			char tmp[NAME_LENGTH + 15];
 			stuff_special_arrival_anchor_name(tmp, i, restrict_to_players, 0);
 
-			head.add_data_dup(tmp);
+			head.add_data(tmp);
 		}
 	}
 
@@ -5623,7 +5593,7 @@ sexp_list_item *sexp_tree::get_listing_opf_sound_environment()
 
 	head.add_data(SEXP_NONE_STRING);
 	for (int i = 0; i  < (int)EFX_presets.size(); i++) {
-		head.add_data_dup(EFX_presets[i].name.c_str());
+		head.add_data(EFX_presets[i].name.c_str());
 	}
 
 	return head.next;
@@ -5691,7 +5661,7 @@ sexp_list_item *sexp_tree::get_listing_opf_ship_effect()
 	sexp_list_item head;
 	
 	for (SCP_vector<ship_effect>::iterator sei = Ship_effects.begin(); sei != Ship_effects.end(); ++sei) {
-		head.add_data_dup(sei->name);
+		head.add_data(sei->name);
 	}
 
 	return head.next;
@@ -5751,7 +5721,7 @@ sexp_list_item *sexp_tree::get_listing_opf_ship_wing_shiponteam_point()
 		char tmp[NAME_LENGTH + 7];
 		sprintf(tmp, "<any %s>", Iff_info[i].iff_name);
 		strlwr(tmp);
-		head.add_data_dup(tmp);
+		head.add_data(tmp);
 	}
 
 	head.add_list(get_listing_opf_ship_wing_point());
@@ -5870,7 +5840,7 @@ sexp_list_item *sexp_tree::get_listing_opf_keypress()
 		auto btn = Default_config[i].get_btn(CID_KEYBOARD);
 
 		if ((btn >= 0) && !Control_config[i].disabled) {
-			head.add_data_dup(textify_scancode(btn));
+			head.add_data(textify_scancode(btn));
 		}
 	}
 
@@ -6178,9 +6148,9 @@ sexp_list_item *sexp_tree::get_listing_opf_post_effect()
 	SCP_vector<SCP_string> ppe_names;
 	gr_get_post_process_effect_names(ppe_names);
 	for (i=0; i < ppe_names.size(); i++) {
-		head.add_data_dup(ppe_names[i].c_str());
+		head.add_data(ppe_names[i].c_str());
 	}
-	head.add_data_dup("lightshafts");
+	head.add_data("lightshafts");
 
 	return head.next;
 }
@@ -6250,7 +6220,7 @@ sexp_list_item *sexp_tree::get_listing_opf_mission_moods()
 {
 	sexp_list_item head;
 	for (SCP_vector<SCP_string>::iterator iter = Builtin_moods.begin(); iter != Builtin_moods.end(); ++iter) {
-		head.add_data_dup(iter->c_str());
+		head.add_data(iter->c_str());
 	}
 
 	return head.next;
@@ -6262,15 +6232,15 @@ sexp_list_item *sexp_tree::get_listing_opf_ship_flags()
 	sexp_list_item head;
 	// object flags
 	for ( i = 0; i < MAX_OBJECT_FLAG_NAMES; i++) {
-		head.add_data_dup(Object_flag_names[i].flag_name);
+		head.add_data(Object_flag_names[i].flag_name);
 	}
 	// ship flags
 	for ( i = 0; i < MAX_SHIP_FLAG_NAMES; i++) {
-		head.add_data_dup(Ship_flag_names[i].flag_name);
+		head.add_data(Ship_flag_names[i].flag_name);
 	}
 	// ai flags
 	for ( i = 0; i < MAX_AI_FLAG_NAMES; i++) {
-		head.add_data_dup(Ai_flag_names[i].flag_name);
+		head.add_data(Ai_flag_names[i].flag_name);
 	}
 
 	return head.next;
@@ -6281,7 +6251,7 @@ sexp_list_item *sexp_tree::get_listing_opf_team_colors()
 	sexp_list_item head;
 	head.add_data("None");
 	for (SCP_map<SCP_string, team_color>::iterator tcolor = Team_Colors.begin(); tcolor != Team_Colors.end(); ++tcolor) {
-		head.add_data_dup(tcolor->first.c_str());
+		head.add_data(tcolor->first.c_str());
 	}
 
 	return head.next;
