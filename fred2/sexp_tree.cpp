@@ -2077,8 +2077,8 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 		int type = get_type(item_handle);
 		Assert( (type & SEXPT_NUMBER) || (type & SEXPT_STRING) );
 
-		// don't do type check for modify-variable
-		if (Modify_variable) {
+		// don't do type check for modify-variable or OPF_CONTAINER_VALUE (can be either type)
+		if (Modify_variable || query_node_argument_type(item_index) == OPF_CONTAINER_VALUE) {
 			if (Sexp_variables[var_idx].type & SEXP_VARIABLE_NUMBER) {
 				type = SEXPT_NUMBER;
 			} else if (Sexp_variables[var_idx].type & SEXP_VARIABLE_STRING) {
