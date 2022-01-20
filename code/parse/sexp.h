@@ -1332,9 +1332,6 @@ extern int get_subcategory(int sexp_id);
 // Goober5000
 extern void sexp_music_close();
 
-// Goober5000
-extern bool Knossos_warp_ani_used;
-
 //WMC - moved here from FRED
 typedef struct sexp_help_struct {
 	int id;
