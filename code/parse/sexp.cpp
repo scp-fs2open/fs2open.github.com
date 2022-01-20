@@ -3818,7 +3818,7 @@ int get_sexp()
 
 			case OP_SET_SPECIAL_WARPOUT_NAME:
 				// set flag for taylor
-				Knossos_warp_ani_used = 1;
+				Knossos_warp_ani_used = true;
 				break;
 
 			case OP_MISSION_SET_NEBULA:
@@ -3834,9 +3834,9 @@ int get_sexp()
 
 				// set flag for taylor
 				if (CAR(n) != -1 || Sexp_nodes[n].flags & SNF_SPECIAL_ARG_IN_NODE)		// if it's evaluating a sexp or a special argument
-					Knossos_warp_ani_used = 1;												// set flag just in case
+					Knossos_warp_ani_used = true;											// set flag just in case
 				else if (atoi(CTEXT(n)) != 0)											// if it's not the default 0
-					Knossos_warp_ani_used = 1;												// set flag just in case
+					Knossos_warp_ani_used = true;											// set flag just in case
 				break;
 
 			case OP_SET_SKYBOX_MODEL:
