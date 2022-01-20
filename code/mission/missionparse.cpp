@@ -3458,6 +3458,12 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 	if (p_objp->flags[Mission::Parse_Object_Flags::Knossos_warp_in])
 		Knossos_warp_ani_used = true;
 
+	// check the warp parameters too
+	if (p_objp->warpin_params_index >= 0 && (Warp_params[p_objp->warpin_params_index].warp_type == WT_KNOSSOS || Warp_params[p_objp->warpin_params_index].warp_type == WT_DEFAULT_THEN_KNOSSOS))
+		Knossos_warp_ani_used = true;
+	if (p_objp->warpout_params_index >= 0 && (Warp_params[p_objp->warpout_params_index].warp_type == WT_KNOSSOS || Warp_params[p_objp->warpout_params_index].warp_type == WT_DEFAULT_THEN_KNOSSOS))
+		Knossos_warp_ani_used = true;
+
 	// this is a valid/legal ship to create
 	return 1;
 }
