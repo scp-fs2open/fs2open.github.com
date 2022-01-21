@@ -37,6 +37,10 @@ public:
 			return T();
 		}
 	}
+	
+	inline const T* operator&() const {
+		return filled ? &data.t : nullptr;
+	}
 
 	inline bool has() const {
 		return filled;

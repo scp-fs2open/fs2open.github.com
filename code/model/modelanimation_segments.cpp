@@ -321,7 +321,7 @@ namespace animation {
 	}
 
 
-	constexpr float angles::*pbh[] = { &angles::p, &angles::b, &angles::h };
+	static constexpr float angles::*pbh[] = { &angles::p, &angles::b, &angles::h };
 
 	ModelAnimationSegmentRotation::ModelAnimationSegmentRotation(std::shared_ptr<ModelAnimationSubmodel> submodel, optional<angles> targetAngle, optional<angles> velocity, optional<float> time, optional<angles> acceleration, bool isAbsolute) :
 		m_submodel(std::move(submodel)), m_targetAngle(targetAngle), m_velocity(velocity), m_time(time), m_acceleration(acceleration), m_isAbsolute(isAbsolute) { }
@@ -994,6 +994,107 @@ namespace animation {
 
 		auto segment = std::shared_ptr<ModelAnimationSegmentSoundDuring>(new ModelAnimationSegmentSoundDuring(data->parseSegment(), start_sound, end_sound, loop_sound, flipIfReversed));
 
+		return segment;
+	}
+
+
+	ModelAnimationSegmentIK::ModelAnimationSegmentIK(const vec3d& targetPosition, const optional<matrix>& targetRotation)
+		: m_targetPosition(targetPosition), m_targetRotation(targetRotation) { }
+	
+	ModelAnimationSegment* ModelAnimationSegmentIK::copy() const {
+		auto* copy = new ModelAnimationSegmentIK(*this);
+		copy->m_segment = std::shared_ptr<ModelAnimationSegmentParallel>(static_cast<ModelAnimationSegmentParallel*>(m_segment->copy()));
+		
+		for(size_t i = 0; i < m_chain.size(); ++i){
+			copy->m_chain[i].animSegment = std::static_pointer_cast<ModelAnimationSegmentRotation>(copy->m_segment->m_segments[i]);
+		}
+		
+		return copy;
+	};
+	
+	void ModelAnimationSegmentIK::recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) {
+		auto ik = std::unique_ptr<ik_solver>(new ik_solver_fabrik());
+		
+		for(const auto& chainlink : m_chain)
+			ik->addNode(chainlink.submodel->findSubmodel(pmi).second, chainlink.constraint.get());
+		
+		ik->solve(m_targetPosition, &m_targetRotation);
+		
+		auto chainlink_it = m_chain.cbegin();
+		for(const auto& solvedlink : *ik){
+			angles converted;
+			vm_extract_angles_matrix_alternate(&converted, &solvedlink.calculatedRot);
+			chainlink_it++->animSegment->m_targetAngle = converted;
+		}
+		
+		std::static_pointer_cast<ModelAnimationSegment>(m_segment)->recalculate(base, pmi);
+		m_duration[pmi->id] = m_segment->getDuration(pmi->id);
+	};
+	
+	void ModelAnimationSegmentIK::calculateAnimation(ModelAnimationSubmodelBuffer& base, float time, int pmi_id) const {
+		std::static_pointer_cast<ModelAnimationSegment>(m_segment)->calculateAnimation(base, time, pmi_id);
+	};
+	
+	void ModelAnimationSegmentIK::exchangeSubmodelPointers(ModelAnimationSet& replaceWith) {
+		std::static_pointer_cast<ModelAnimationSegment>(m_segment)->exchangeSubmodelPointers(replaceWith);
+
+		for(auto& chainlink : m_chain)
+			chainlink.submodel = replaceWith.getSubmodel(chainlink.submodel);
+	};
+	
+	std::shared_ptr<ModelAnimationSegment> ModelAnimationSegmentIK::parser(ModelAnimationParseHelper* data) {		
+		
+		vec3d targetPosition;
+		optional<matrix> targetRotation;
+		
+		required_string("+Target Position:");
+		stuff_vec3d(&targetPosition);
+		
+		if(optional_string("+Target Orientation:")){
+			matrix targetRot;
+			angles angle;
+			stuff_angles_deg_phb(&angle);
+
+			vm_angles_2_matrix(&targetRot, &angle);
+			
+			targetRotation = targetRot;
+		}
+		
+		auto segment = std::shared_ptr<ModelAnimationSegmentIK>(new ModelAnimationSegmentIK(targetPosition, targetRotation));
+		auto parallel = std::shared_ptr<ModelAnimationSegmentParallel>(new ModelAnimationSegmentParallel());
+		segment->m_segment = parallel;
+		
+		while(optional_string("$Chain Link:")){
+			auto submodel = ModelAnimationParseHelper::parseSubmodel();
+
+			std::shared_ptr<ik_constraint> constraint;
+			if(optional_string("+Constraint:")){
+				int type = required_string_one_of(1, "Window");
+				switch(type){
+					case 0: { //Window
+						angles window;
+						required_string("+Window Size:");
+						stuff_angles_deg_phb(&window);
+						constraint = std::shared_ptr<ik_constraint>(new ik_constraint_window(window));
+						break;
+					}
+					case 1: { //Hinge
+						constraint = std::shared_ptr<ik_constraint>(new ik_constraint_hinge());
+						break;
+					}
+					default:
+						UNREACHABLE("IK constraint of unknown type specified!");
+						break;
+				}
+			}
+			else
+				constraint = std::shared_ptr<ik_constraint>(new ik_constraint());
+			
+			auto rotation = std::shared_ptr<ModelAnimationSegmentRotation>(new ModelAnimationSegmentRotation(submodel, optional<angles>({0,0,0}), optional<angles>(), 5, optional<angles>(), true));
+			parallel->addSegment(rotation);
+			segment->m_chain.push_back({submodel, constraint, rotation});
+		}
+		
 		return segment;
 	}
 }

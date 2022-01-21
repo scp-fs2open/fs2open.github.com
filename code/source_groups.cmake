@@ -753,6 +753,8 @@ add_file_folder("Math"
 	math/floating.h
 	math/fvi.cpp
 	math/fvi.h
+        math/ik_solver.cpp
+        math/ik_solver.h
 	math/spline.cpp
 	math/spline.h
 	math/staticrand.cpp
