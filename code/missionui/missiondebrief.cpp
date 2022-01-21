@@ -2037,13 +2037,13 @@ void debrief_close()
 						scoring_backout_accept(sc);
 
 						if (Net_player == &Net_players[i]) {
-							Pilot.update_stats_backout( sc );
+							Pilot.update_stats_backout( sc, (The_mission.game_type == MISSION_TYPE_TRAINING) );
 						}
 					}
 				}
 			} else {
 				scoring_backout_accept( &Player->stats );
-				Pilot.update_stats_backout( &Player->stats );
+				Pilot.update_stats_backout( &Player->stats, (The_mission.game_type == MISSION_TYPE_TRAINING) );
 			}
 		}
 	} else {
@@ -2054,7 +2054,7 @@ void debrief_close()
 				Campaign.next_mission = Campaign.current_mission;
 			}
 			scoring_backout_accept( &Player->stats );
-			Pilot.update_stats_backout( &Player->stats );
+			Pilot.update_stats_backout( &Player->stats, (The_mission.game_type == MISSION_TYPE_TRAINING) );
 		}
 	}
 
