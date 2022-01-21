@@ -108,7 +108,7 @@ BOOL ignore_orders_dlg::OnInitDialog()
 		// Need to add more checkboxes.
 		if (m_num_checks_active >= MAX_CHECKBOXES)
 		{
-			Warning("Tried to add more orders than FRED2 has checkboxes for them (can be max %d)!", MAX_CHECKBOXES);
+			Warning(LOCATION, "Tried to add more orders than FRED2 has checkboxes for them (can be max %d)!", MAX_CHECKBOXES);
 			break;
 		}
 
