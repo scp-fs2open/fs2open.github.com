@@ -276,7 +276,11 @@ void timestamp_adjust_pause_offset(int delta_milliseconds)
 	Assertion(delta_milliseconds > 0, "Pausing for a negative amount of time doesn't make sense.  Also, negative numbers won't work with uint64_t.");
 
 	// act like we were paused for a certain period of time, even though we weren't
-	Timestamp_offset_from_counter += static_cast<uint64_t>(static_cast<uint64_t>(delta_milliseconds) * 1000 / Timer_to_microseconds);
+	if (Timestamp_offset_from_counter == 0) {
+		Timestamp_offset_from_counter = get_performance_counter();
+	} else {
+		Timestamp_offset_from_counter += static_cast<uint64_t>(static_cast<uint64_t>(delta_milliseconds) * 1000 / Timer_to_microseconds);
+	}
 }
 
 void timestamp_adjust_seconds(float delta_seconds, TIMER_DIRECTION dir)
