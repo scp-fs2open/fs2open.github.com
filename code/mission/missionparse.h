@@ -550,9 +550,6 @@ int get_mission_info(const char *filename, mission *missionp = NULL, bool basic 
 // Goober5000
 void parse_dock_one_docked_object(p_object *pobjp, p_object *parent_pobjp);
 
-// Goober5000
-extern int Knossos_warp_ani_used;
-
 // Karajorma
 void swap_parse_object(p_object *p_obj, int ship_class);
 void clear_texture_replacements();

@@ -83,7 +83,6 @@ extern int Cmdline_rearm_timer;
 extern int Cmdline_targetinfo;
 
 // Gameplay related
-extern int Cmdline_3dwarp;
 extern int Cmdline_ship_choice_3d;
 extern int Cmdline_weapon_choice_3d;
 extern int Cmdline_warp_flash;

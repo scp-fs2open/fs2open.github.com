@@ -207,26 +207,40 @@ int model_interp_get_texture(texture_info *tinfo, fix base_frametime);
 
 void model_deallocate_interp_data()
 {
-	if (Interp_verts != NULL)
+	if (Interp_verts != nullptr) {
 		vm_free(Interp_verts);
+		Interp_verts = nullptr;
+	}
 
-	if (Interp_points != NULL)
+	if (Interp_points != nullptr) {
 		vm_free(Interp_points);
+		Interp_points = nullptr;
+	}
 
-	if (Interp_splode_points != NULL)
+	if (Interp_splode_points != nullptr) {
 		vm_free(Interp_splode_points);
+		Interp_splode_points = nullptr;
+	}
 
-	if (Interp_splode_verts != NULL)
+	if (Interp_splode_verts != nullptr) {
 		vm_free(Interp_splode_verts);
+		Interp_splode_verts = nullptr;
+	}
 
-	if (Interp_norms != NULL)
+	if (Interp_norms != nullptr) {
 		vm_free(Interp_norms);
+		Interp_norms = nullptr;
+	}
 
-	if (Interp_light_applied != NULL)
+	if (Interp_light_applied != nullptr) {
 		vm_free(Interp_light_applied);
+		Interp_light_applied = nullptr;
+	}
 
-	if (Interp_lighting_temp.lights != NULL)
+	if (Interp_lighting_temp.lights != nullptr) {
 		vm_free(Interp_lighting_temp.lights);
+		Interp_lighting_temp.lights = nullptr;
+	}
 
 	Num_interp_verts_allocated = 0;
 	Num_interp_norms_allocated = 0;

@@ -62,6 +62,10 @@ SingleParticleEffect* SingleParticleEffect::createInstance(int effectID, float m
 	Assertion(minSize <= maxSize, "Maximum size %f is more than minimum size %f!", maxSize, minSize);
 	Assertion(minSize >= 0.0f, "Minimum size may not be less than zero, got %f!", minSize);
 
+	if (Is_standalone) {
+		return nullptr;
+	}
+
 	auto effectPtr = new SingleParticleEffect("");
 	effectPtr->m_particleProperties.m_bitmap_list.push_back(effectID);
 	effectPtr->m_particleProperties.m_bitmap_range = ::util::UniformRange<size_t>(0, effectPtr->m_particleProperties.m_bitmap_list.size() - 1);
