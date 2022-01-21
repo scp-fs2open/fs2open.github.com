@@ -124,6 +124,10 @@ void timestamp_pause(bool sudo);
 // See above re: the sudo parameter
 void timestamp_unpause(bool sudo);
 
+// for timestamp handling during debugging
+bool timestamp_is_paused();
+void timestamp_adjust_pause_offset(int delta_milliseconds);
+
 enum class TIMER_DIRECTION { FORWARD, BACKWARD };
 // Alters the timestamp time forward or backward.  Use with caution!
 void timestamp_adjust_seconds(float delta_seconds, TIMER_DIRECTION dir);
