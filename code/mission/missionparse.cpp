@@ -28,6 +28,7 @@
 #include "globalincs/linklist.h"
 #include "hud/hudescort.h"
 #include "hud/hudets.h"
+#include "hud/hudsquadmsg.h"
 #include "hud/hudwingmanstatus.h"
 #include "iff_defs/iff_defs.h"
 #include "io/timer.h"
@@ -335,7 +336,6 @@ const char *Mission_event_log_flags[MAX_MISSION_EVENT_LOG_FLAGS] = {
 	"last trigger",
 	"state change",
 };
-
 
 //XSTR:ON
 
@@ -2104,11 +2104,12 @@ int parse_create_object_sub(p_object *p_objp)
 #ifndef NDEBUG
 		if (Fred_running)
 		{
-			int default_orders, remaining_orders;
+			std::set<size_t> default_orders, remaining_orders;
 			
 			default_orders = ship_get_default_orders_accepted(&Ship_info[shipp->ship_info_index]);
-			remaining_orders = p_objp->orders_accepted & ~default_orders;
-			if (remaining_orders)
+			std::set_difference(p_objp->orders_accepted.begin(), p_objp->orders_accepted.end(), default_orders.begin(), default_orders.end(),
+								  std::inserter(remaining_orders, remaining_orders.begin()));
+			if (!remaining_orders.empty())
 			{
 				Warning(LOCATION, "Ship %s has orders which it will accept that are\nnot part of default orders accepted.\n\nPlease reedit this ship and change the orders again\n", shipp->ship_name);
 			}
@@ -3316,9 +3317,19 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
     // set that this ship will actually listen to
     if (optional_string("+Orders Accepted:"))
     {
-        stuff_int(&p_objp->orders_accepted);
-        if (p_objp->orders_accepted != -1)
-            p_objp->flags.set(Mission::Parse_Object_Flags::SF_Use_unique_orders);
+		p_objp->orders_accepted.clear();
+		
+		int tmp_orders;
+        stuff_int(&tmp_orders);
+		
+        if (tmp_orders != -1) {
+			p_objp->flags.set(Mission::Parse_Object_Flags::SF_Use_unique_orders);
+
+			for(size_t j = 0; j < Player_orders.size(); j++){
+				if(Player_orders[j].id & tmp_orders)
+					p_objp->orders_accepted.insert(j);
+			}
+		}
     }
 
 	p_objp->group = 0;
@@ -4388,7 +4399,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 		// of orders from the leader
 		if ( Fred_running ) {
 			Assert( wingp->ship_index[wingp->special_ship] != -1 );
-			int orders = Ships[wingp->ship_index[0]].orders_accepted;
+			const std::set<size_t>& orders = Ships[wingp->ship_index[0]].orders_accepted;
 			for (it = 0; it < wingp->current_count; it++ ) {
 				if (it == wingp->special_ship)
 					continue;

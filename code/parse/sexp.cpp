@@ -11670,8 +11670,7 @@ void sexp_allow_treason (int n)
 void sexp_set_player_orders(int n) 
 {
 	bool allow_order;
-	int orders = 0;
-	int i, default_orders; 
+	std::set<size_t> orders;
 
 	auto ship_entry = eval_ship(n);
 	if (!ship_entry || !ship_entry->shipp) {
@@ -11680,18 +11679,15 @@ void sexp_set_player_orders(int n)
 	auto shipp = ship_entry->shipp;
 
 	// we need to know which orders this ship class can accept.
-	default_orders = ship_get_default_orders_accepted(&Ship_info[shipp->ship_info_index]);
+	const std::set<size_t> &default_orders = ship_get_default_orders_accepted(&Ship_info[shipp->ship_info_index]);
 	n = CDR(n);
 	allow_order = is_sexp_true(n);
 	n = CDR(n);
 	do {
-		for (i = 0 ; i < NUM_COMM_ORDER_ITEMS ; i++) {
-			// since it's the cheaper test, test first if the ship will even accept this order first
-			if (default_orders & Sexp_comm_orders[i].item) {
-				if (!stricmp(CTEXT(n), Sexp_comm_orders[i].name)) {
-					orders |= Sexp_comm_orders[i].item;
-					break;
-				}
+		for( size_t order : default_orders){
+			if (!stricmp(CTEXT(n), Player_orders[order].hud_name.c_str())) {
+				orders.insert(order);
+				break;
 			}
 		}
 
@@ -11700,10 +11696,13 @@ void sexp_set_player_orders(int n)
 		
 	// set or unset the orders
 	if (allow_order) {
-		shipp->orders_accepted |= orders;
+		shipp->orders_accepted.insert(orders.begin(), orders.end());
 	}
 	else {
-		shipp->orders_accepted &= ~orders;
+		std::set<size_t> diff;
+		std::set_difference(shipp->orders_accepted.begin(), shipp->orders_accepted.end(), orders.begin(), orders.end(),
+							std::inserter(diff, diff.end()));
+		shipp->orders_accepted = diff;
 	}
 }
 
