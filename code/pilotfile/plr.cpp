@@ -770,6 +770,9 @@ void pilotfile::plr_write_controls()
 
 		} else if (mouse >= 0) {
 			handler->writeInt("axis_map", mouse);
+
+		} else {
+			handler->writeInt("axis_map", -1);
 		}
 		
 		handler->writeInt("invert_axis", item.is_inverted() ? 1 : 0);
