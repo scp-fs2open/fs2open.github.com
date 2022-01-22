@@ -224,6 +224,7 @@ void game_unpause() {}
 //Time stuff
 bool Time_compression_locked;
 float flRealframetime;
+int Last_frame_timestamp = 0;
 void lock_time_compression(bool  /*is_locked*/){}
 void change_time_compression(float  /*multiplier*/){}
 void set_time_compression(float  /*multiplier*/, float  /*change_time*/){}

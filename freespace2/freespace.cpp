@@ -4142,7 +4142,8 @@ void game_frame(bool paused)
 
 fix Last_time = 0;						// The absolute time of game at end of last frame (beginning of this frame)
 fix Last_delta_time = 0;				// While game is paused, this keeps track of how much elapsed in the frame before paused.
-static bool Time_paused=false;
+int Last_frame_timestamp = 0;
+static bool Time_paused = false;
 
 void game_time_level_init()
 {
@@ -4281,6 +4282,13 @@ void game_set_frametime(int state)
 	if (Frametime > MAX_FRAMETIME)	{
 #ifndef NDEBUG
 		mprintf(("Frame %2i too long!!: frametime = %.3f (%.3f)\n", Framecount, f2fl(Frametime), f2fl(debug_frametime)));
+
+		// If the frame took more than 5 seconds, assume we're tracing through a debugger.  If timestamps are running, correct the elapsed time.
+		if (!Cmdline_slow_frames_ok && !timestamp_is_paused() && (Last_frame_timestamp != 0) && (f2fl(Frametime) > 5.0f)) {
+			auto delta_timestamp = timestamp() - Last_frame_timestamp;
+			mprintf(("Adjusting timestamp by %2i milliseconds to compensate\n", delta_timestamp));
+			timestamp_adjust_pause_offset(delta_timestamp);
+		}
 #endif
 		Frametime = MAX_FRAMETIME;
 	}

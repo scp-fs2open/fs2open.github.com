@@ -265,6 +265,24 @@ void timestamp_unpause(bool sudo)
 	}
 }
 
+bool timestamp_is_paused()
+{
+	return Timestamp_is_paused;
+}
+
+void timestamp_adjust_pause_offset(int delta_milliseconds)
+{
+	Assertion(!Timestamp_is_paused, "This function is not needed if the game is actually paused.");
+	Assertion(delta_milliseconds > 0, "Pausing for a negative amount of time doesn't make sense.  Also, negative numbers won't work with uint64_t.");
+
+	// act like we were paused for a certain period of time, even though we weren't
+	if (Timestamp_offset_from_counter == 0) {
+		Timestamp_offset_from_counter = get_performance_counter();
+	} else {
+		Timestamp_offset_from_counter += static_cast<uint64_t>(static_cast<uint64_t>(delta_milliseconds) * 1000 / Timer_to_microseconds);
+	}
+}
+
 void timestamp_adjust_seconds(float delta_seconds, TIMER_DIRECTION dir)
 {
 	Assertion(Timer_inited, "Timer should be initialized at this point!");
