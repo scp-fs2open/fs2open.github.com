@@ -486,6 +486,7 @@ typedef struct dock_bay {
 	int		type_flags;					// indicates what this docking bay can be used for (i.e. cargo/rearm, etc)
 	int		num_spline_paths;			// number of spline paths which lead to this docking bay
 	int		*splines;					// array of indices into the Spline_path array
+	int		parent_submodel;			// if this dockpoint should be relative to a submodel instead of the main model
 	char		name[MAX_NAME_LEN];		// name of this docking location
 	vec3d	pnt[MAX_DOCK_SLOTS];
 	vec3d	norm[MAX_DOCK_SLOTS];
