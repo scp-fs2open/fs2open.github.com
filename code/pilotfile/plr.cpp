@@ -698,7 +698,19 @@ void pilotfile::plr_read_controls()
 
 			// Try to save the preset file
 			if (save_preset_file(preset, false)) {
-				Information(LOCATION, "Successfully converted playerfile to v4.  Please rebind your mouse controls, if any.");
+				os::dialogs::Information(LOCATION, "Successfully converted playerfile to v4.  Please rebind your mouse controls within the Options -> Controls Config menu.");
+				
+				SCP_string infostring;
+				infostring += "  Due to technical difficulties, playerfiles versions v4 and up are incompatible with FSO versions older than FSO 22.0.\n\n";
+				infostring += "  Your bindings are now saved in a preset file within /data/players/presets, and are used by FSO versions 22.0 and newer.\n\n";
+				infostring += "  However, when trying to play in older FSO versions, your bindings will revert to the defaults while playing in that older version.\n\n";
+				infostring += "  This is done in order to address several issues:\n";
+				infostring += "  1) To prevent older FSO versions from crashing when attempting to load the new playerfile\n";
+				infostring += "  2) To prevent auto-conversions of bindings that you already have a preset for\n\n";
+				infostring += "  You will see this infobox every time the bindings in your playerfile are different from the defaults, including the invert flag of any axis.\n\n";
+				infostring += "  Thus, it is *highly* recommended that you should create another pilot if you still wish to play in FSO versions older than 22.0";
+
+				os::dialogs::Information(LOCATION, infostring.c_str());
 			} else {
 				Warning(LOCATION, "Could not save controls preset file (%s) when converting playerfile to v3.", preset.name.c_str());
 			}
@@ -730,7 +742,7 @@ void pilotfile::plr_write_controls()
 	handler->startSectionWrite(Section::Controls);
 	
 	// As of PLR v4, control bindings are saved outside of the PLR file into PST files.
-	// We now only save the currently selected preset in the PLR file itself.
+	// Save the currently selected preset
 	auto it = control_config_get_current_preset();
 
 	if (it == Control_config_presets.end()) {
@@ -742,6 +754,34 @@ void pilotfile::plr_write_controls()
 	}
 
 	handler->writeString("preset", it->name.c_str());
+
+	// For forward compatibility with old versions of FSO, we must still save the bindings in the PLR file.
+	// This is required because the plr_read will trigger an error and halt FSO execution.
+	// Just save the default bindings, so that next time the PLRv4+ conversion happens it won't dupe another preset.
+	handler->startArrayWrite("controls", JOY_AXIS_BEGIN, true);
+	const auto default_bindings = Control_config_presets[0].bindings;
+
+	for (size_t idx = 0; idx < JOY_AXIS_BEGIN; idx++) {
+		handler->startSectionWrite(Section::Unnamed);
+
+		handler->writeShort("key", default_bindings[idx].get_btn(CID_KEYBOARD));
+		handler->writeShort("joystick", default_bindings[idx].get_btn(CID_JOY0);
+		handler->writeShort("mouse", -1);
+
+		handler->endSectionWrite();	// Section::Unnamed
+	}
+	handler->endArrayWrite(); // Array::controls
+
+	handler->startArrayWrite("axes", NUM_JOY_AXIS_ACTIONS);
+	for (size_t idx = JOY_AXIS_BEGIN; idx < JOY_AXIS_END; idx++) {
+		handler->startSectionWrite(Section::Unnamed);
+
+		handler->writeInt("axis_map", default_bindings[idx].get_btn(CID_JOY0));
+		handler->writeInt("invert_axis", (default_bindings[idx].is_inverted() ? 1 : 0));
+
+		handler->endSectionWrite(); // Section::Unnamed
+	}
+	handler->endArrayWrite(); // Array::axes
 
 	handler->endSectionWrite(); // Section::controls
 }
