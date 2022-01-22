@@ -220,6 +220,8 @@ Flag exe_params[] =
 	{ "-set_cpu_affinity",	"Sets processor affinity to config value",	true,	0,									EASY_DEFAULT,					"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-set_cpu_affinity", },
 	{ "-nograb",			"Disables mouse grabbing",					true,	0,									EASY_DEFAULT,					"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nograb", },
 	{ "-noshadercache",		"Disables the shader cache",				true,	0,									EASY_DEFAULT,					"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-noshadercache", },
+	{ "-prefer_ipv4",		"Prefer IPv4 DNS lookups",					true,	0,									EASY_DEFAULT,					"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-prefer_ipv4", },
+	{ "-prefer_ipv6",		"Prefer IPv6 DNS lookups",					true,	0,									EASY_DEFAULT,					"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-prefer_ipv6", },
 #ifdef WIN32
 	{ "-fix_registry",	"Use a different registry path",				true,	0,									EASY_DEFAULT,					"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-fix_registry", },
 #endif
@@ -437,6 +439,8 @@ cmdline_parm no_geo_sdr_effects("-no_geo_effects", NULL, AT_NONE);
 cmdline_parm set_cpu_affinity("-set_cpu_affinity", NULL, AT_NONE);
 cmdline_parm nograb_arg("-nograb", NULL, AT_NONE);
 cmdline_parm noshadercache_arg("-noshadercache", NULL, AT_NONE);
+cmdline_parm prefer_ipv4_arg("-prefer_ipv4", NULL, AT_NONE);
+cmdline_parm prefer_ipv6_arg("-prefer_ipv6", NULL, AT_NONE);
 #ifdef WIN32
 cmdline_parm fix_registry("-fix_registry", NULL, AT_NONE);
 #endif
@@ -455,6 +459,8 @@ bool Cmdline_no_geo_sdr_effects = false;
 bool Cmdline_set_cpu_affinity = false;
 bool Cmdline_nograb = false;
 bool Cmdline_noshadercache = false;
+bool Cmdline_prefer_ipv4 = false;
+bool Cmdline_prefer_ipv6 = false;
 #ifdef WIN32
 bool Cmdline_alternate_registry_path = false;
 #endif
@@ -2248,6 +2254,22 @@ bool SetCmdlineParams()
 				Gr_aa_mode = AntiAliasMode::SMAA_Ultra;
 				break;
 			}
+		}
+	}
+
+	if (prefer_ipv4_arg.found()) {
+		Cmdline_prefer_ipv4 = true;
+	}
+
+	if (prefer_ipv6_arg.found()) {
+		Cmdline_prefer_ipv6 = true;
+
+		// Rule 2: Not both
+		if (Cmdline_prefer_ipv4) {
+			ReleaseWarning(LOCATION, "Cannot set preference for both IPv4 and IPv6! Reverting to default behavior...\n");
+
+			Cmdline_prefer_ipv4 = false;
+			Cmdline_prefer_ipv6 = false;
 		}
 	}
  

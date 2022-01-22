@@ -122,6 +122,8 @@ extern bool Cmdline_no_geo_sdr_effects;
 extern bool Cmdline_set_cpu_affinity;
 extern bool Cmdline_nograb;
 extern bool Cmdline_noshadercache;
+extern bool Cmdline_prefer_ipv4;
+extern bool Cmdline_prefer_ipv6;
 #ifdef WIN32
 extern bool Cmdline_alternate_registry_path;
 #endif
