@@ -671,11 +671,11 @@ BEGIN
     LTEXT           L"Copyright \x00A9 1999 Volition, Inc.  All Rights Reserved",IDC_STATIC,39,17,164,8
     DEFPUSHBUTTON   "OK",IDOK,229,7,48,14,WS_GROUP
     LTEXT           """FRED2 is the omega of all giant unwieldy pieces of code. It's big, it's horrifying, and it just doesn't care. View it at your own risk."" - Dave Baranec",IDC_STATIC,39,62,238,20
-    LTEXT           "Ported to OGL by RT",IDC_STATIC,39,40,68,8
-    LTEXT           "Bravely maintained by Goober5000 and WMCoolmon",IDC_STATIC,39,32,181,8
+    LTEXT           "Ported to OpenGL by RandomTiger",IDC_STATIC,39,40,130,8
+    LTEXT           "Bravely maintained by Goober5000",IDC_STATIC,39,32,181,8
     PUSHBUTTON      "Report a Bug",IDC_BUG,227,24,50,14
     PUSHBUTTON      "Visit Forums",IDC_FORUMS,227,41,50,14
-    LTEXT           "Original fs2_open OGL port by Phreak and Fry_Day",IDC_STATIC,39,49,161,8
+    LTEXT           "Original FS2_Open OpenGL port by Phreak and Fry_Day",IDC_STATIC,39,49,161,8
 END
 
 IDD_SHIP_EDITBAR DIALOGEX 0, 0, 293, 52
