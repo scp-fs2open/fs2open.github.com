@@ -150,6 +150,7 @@ extern bool Cmdline_show_video_info;
 extern bool Cmdline_debug_window;
 extern bool Cmdline_graphics_debug_output;
 extern bool Cmdline_log_to_stdout;
+extern bool Cmdline_slow_frames_ok;
 
 enum class WeaponSpewType { NONE = 0, STANDARD, ALL };
 extern WeaponSpewType Cmdline_spew_weapon_stats;

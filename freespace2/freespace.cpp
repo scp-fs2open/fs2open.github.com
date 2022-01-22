@@ -4284,7 +4284,7 @@ void game_set_frametime(int state)
 		mprintf(("Frame %2i too long!!: frametime = %.3f (%.3f)\n", Framecount, f2fl(Frametime), f2fl(debug_frametime)));
 
 		// If the frame took more than 5 seconds, assume we're tracing through a debugger.  If timestamps are running, correct the elapsed time.
-		if (!timestamp_is_paused() && (Last_frame_timestamp != 0) && (f2fl(Frametime) > 5.0f)) {
+		if (!Cmdline_slow_frames_ok && !timestamp_is_paused() && (Last_frame_timestamp != 0) && (f2fl(Frametime) > 5.0f)) {
 			auto delta_timestamp = timestamp() - Last_frame_timestamp;
 			mprintf(("Adjusting timestamp by %2i milliseconds to compensate\n", delta_timestamp));
 			timestamp_adjust_pause_offset(delta_timestamp);
