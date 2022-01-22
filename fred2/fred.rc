@@ -675,7 +675,7 @@ BEGIN
     LTEXT           "Bravely maintained by Goober5000",IDC_STATIC,39,32,181,8
     PUSHBUTTON      "Report a Bug",IDC_BUG,227,24,50,14
     PUSHBUTTON      "Visit Forums",IDC_FORUMS,227,41,50,14
-    LTEXT           "Original FS2_Open OpenGL port by Phreak and Fry_Day",IDC_STATIC,39,49,161,8
+    LTEXT           "Original FSO OpenGL port by Phreak and Fry_Day",IDC_STATIC,39,49,161,8
 END
 
 IDD_SHIP_EDITBAR DIALOGEX 0, 0, 293, 52
