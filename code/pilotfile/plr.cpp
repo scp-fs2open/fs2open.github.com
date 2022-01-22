@@ -740,7 +740,46 @@ void pilotfile::plr_read_controls()
 void pilotfile::plr_write_controls()
 {
 	handler->startSectionWrite(Section::Controls);
-	
+
+	// Save the default bindings to prevent crash. See github issue 3902
+	auto& Control_config_default = Control_config_presets[0].bindings;
+	handler->startArrayWrite("controls", JOY_AXIS_BEGIN, true);
+	for (size_t i = 0; i < JOY_AXIS_BEGIN; i++) {
+		auto& item = Control_config_default[i];
+		handler->startSectionWrite(Section::Unnamed);
+
+		handler->writeShort("key", item.get_btn(CID_KEYBOARD));
+		handler->writeShort("joystick", item.get_btn(CID_JOY0));
+		handler->writeShort("mouse", -1);
+
+		handler->endSectionWrite();
+	}
+	handler->endArrayWrite();
+
+	handler->startArrayWrite("axes", NUM_JOY_AXIS_ACTIONS);
+	for (size_t idx = JOY_AXIS_BEGIN; idx < JOY_AXIS_END; idx++) {
+		auto& item = Control_config_default[idx];
+
+		handler->startSectionWrite(Section::Unnamed);
+
+		// Combine mouse and joy0 to joy0 axis.  Needed because controlsconfigdefaults.tbl may change the defaults.
+		int joy = static_cast<int>(item.get_btn(CID_JOY0));
+		int mouse = static_cast<int>(item.get_btn(CID_MOUSE));
+		if (joy >= 0) {
+			handler->writeInt("axis_map", joy);
+
+		} else if (mouse >= 0) {
+			handler->writeInt("axis_map", mouse);
+		}
+		
+		handler->writeInt("invert_axis", item.is_inverted() ? 1 : 0);
+
+		handler->endSectionWrite();
+	}
+	handler->endArrayWrite();
+	// End issue 3902
+
+
 	// As of PLR v4, control bindings are saved outside of the PLR file into PST files.
 	// Save the currently selected preset
 	auto it = control_config_get_current_preset();
@@ -754,34 +793,6 @@ void pilotfile::plr_write_controls()
 	}
 
 	handler->writeString("preset", it->name.c_str());
-
-	// For forward compatibility with old versions of FSO, we must still save the bindings in the PLR file.
-	// This is required because the plr_read will trigger an error and halt FSO execution.
-	// Just save the default bindings, so that next time the PLRv4+ conversion happens it won't dupe another preset.
-	handler->startArrayWrite("controls", JOY_AXIS_BEGIN, true);
-	const auto default_bindings = Control_config_presets[0].bindings;
-
-	for (size_t idx = 0; idx < JOY_AXIS_BEGIN; idx++) {
-		handler->startSectionWrite(Section::Unnamed);
-
-		handler->writeShort("key", default_bindings[idx].get_btn(CID_KEYBOARD));
-		handler->writeShort("joystick", default_bindings[idx].get_btn(CID_JOY0);
-		handler->writeShort("mouse", -1);
-
-		handler->endSectionWrite();	// Section::Unnamed
-	}
-	handler->endArrayWrite(); // Array::controls
-
-	handler->startArrayWrite("axes", NUM_JOY_AXIS_ACTIONS);
-	for (size_t idx = JOY_AXIS_BEGIN; idx < JOY_AXIS_END; idx++) {
-		handler->startSectionWrite(Section::Unnamed);
-
-		handler->writeInt("axis_map", default_bindings[idx].get_btn(CID_JOY0));
-		handler->writeInt("invert_axis", (default_bindings[idx].is_inverted() ? 1 : 0));
-
-		handler->endSectionWrite(); // Section::Unnamed
-	}
-	handler->endArrayWrite(); // Array::axes
 
 	handler->endSectionWrite(); // Section::controls
 }
