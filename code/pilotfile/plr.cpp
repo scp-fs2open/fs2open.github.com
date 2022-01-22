@@ -710,7 +710,7 @@ void pilotfile::plr_read_controls()
 				infostring += "  You will see this infobox every time the bindings in your playerfile are different from the defaults, including the invert flag of any axis.\n\n";
 				infostring += "  Thus, it is *highly* recommended that you should create another pilot if you still wish to play in FSO versions older than 22.0";
 
-				os::dialogs::Information(LOCATION, infostring.c_str());
+				os::dialogs::Information(LOCATION, "%s", infostring.c_str());
 			} else {
 				Warning(LOCATION, "Could not save controls preset file (%s) when converting playerfile to v3.", preset.name.c_str());
 			}
