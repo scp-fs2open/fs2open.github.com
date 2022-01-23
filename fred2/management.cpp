@@ -585,12 +585,16 @@ int create_ship(matrix *orient, vec3d *pos, int ship_type)
 			if (!(sip->is_small_ship()))
 			{
 				shipp->orders_accepted = ship_get_default_orders_accepted( sip );
-				shipp->orders_accepted &= ~DEPART_ITEM;
+
+				for(size_t i = 0; i < Player_orders.size(); i++) {
+					if (Player_orders[i].id & DEPART_ITEM)
+						shipp->orders_accepted.erase(i);
+				}
 			}
 		}
 		else
 		{
-			shipp->orders_accepted = 0;
+			shipp->orders_accepted.clear();
 		}
 	}
 	

@@ -230,40 +230,6 @@ flag_def_list_new<Thruster_Flags> Man_types[] = {
 
 const size_t Num_man_types = sizeof(Man_types) / sizeof(flag_def_list_new<Thruster_Flags>);
 
-// Goober5000 - I figured we should keep this separate
-// from Comm_orders, considering how I redid it :p
-// (and also because we may want to change either
-// the order text or the flag text in the future)
-flag_def_list Player_orders[] = {
-	// common stuff
-	{ "attack ship",		ATTACK_TARGET_ITEM,		0 },
-	{ "disable ship",		DISABLE_TARGET_ITEM,	0 },
-	{ "disarm ship",		DISARM_TARGET_ITEM,		0 },
-	{ "disable subsys",		DISABLE_SUBSYSTEM_ITEM,	0 },
-	{ "guard ship",			PROTECT_TARGET_ITEM,	0 },
-	{ "ignore ship",		IGNORE_TARGET_ITEM,		0 },
-	{ "form on wing",		FORMATION_ITEM,			0 },
-	{ "cover me",			COVER_ME_ITEM,			0 },
-	{ "attack any",			ENGAGE_ENEMY_ITEM,		0 },
-
-	// transports mostly
-	{ "dock",				CAPTURE_TARGET_ITEM,	0 },
-
-	// support ships
-	{ "rearm me",			REARM_REPAIR_ME_ITEM,	0 },
-	{ "abort rearm",		ABORT_REARM_REPAIR_ITEM,	0 },
-
-	// all ships
-	{ "depart",				DEPART_ITEM,			0 },
-
-	// extra stuff for support
-	{ "stay near me",		STAY_NEAR_ME_ITEM,		0 },
-	{ "stay near ship",		STAY_NEAR_TARGET_ITEM,	0 },
-	{ "keep safe dist",		KEEP_SAFE_DIST_ITEM,	0 }
-};
-
-const int Num_player_orders = sizeof(Player_orders)/sizeof(flag_def_list);
-
 // Use the last parameter here to tell the parser whether to stuff the flag into flags or flags2
 flag_def_list_new<Model::Subsystem_Flags> Subsystem_flags[] = {
 	{ "untargetable",			    Model::Subsystem_Flags::Untargetable,		                true, false },
@@ -5344,7 +5310,14 @@ static void parse_ship_type(const char *filename, const bool replace)
 		}
 
 		if(optional_string("+Player Orders:")) {
-			parse_string_flag_list(&stp->ai_player_orders, Player_orders, Num_player_orders);
+			SCP_vector<SCP_string> slp;
+			stuff_string_list(slp);
+			
+			for(size_t i = 0; i < Player_orders.size(); i++){
+				if(std::find(slp.begin(), slp.end(), Player_orders[i].parse_name) != slp.end()){
+					stp->ai_player_orders.insert(i);
+				}
+			}
 		}
 
 		if(optional_string("+Auto attacks:")) {
@@ -6118,12 +6091,13 @@ int ship_get_type(char* output, ship_info *sip)
  *
  * This value might get overridden by a value in the mission file.
  */
-int ship_get_default_orders_accepted( ship_info *sip )
+const std::set<size_t>& ship_get_default_orders_accepted( ship_info *sip )
 {
 	if(sip->class_type >= 0) {
 		return Ship_types[sip->class_type].ai_player_orders;
 	} else {
-		return 0;
+		static std::set<size_t> inv_class_set;
+		return inv_class_set;
 	}
 }
 
@@ -6229,7 +6203,7 @@ void ship::clear()
 	departure_delay = 0;
 
 	wingnum = -1;
-	orders_accepted = 0;
+	orders_accepted.clear();
 
 	subsys_list.clear();
 	// since these aren't cleared by clear()
@@ -10801,8 +10775,8 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	// (this avoids wiping the orders if we're e.g. changing between fighter classes)
 	if (Fred_running)
 	{
-		int old_defaults = ship_get_default_orders_accepted(sip_orig);
-		int new_defaults = ship_get_default_orders_accepted(sip);
+		const std::set<size_t>& old_defaults = ship_get_default_orders_accepted(sip_orig);
+		const std::set<size_t>& new_defaults = ship_get_default_orders_accepted(sip);
 
 		if (old_defaults != new_defaults)
 			sp->orders_accepted = new_defaults;
@@ -16909,10 +16883,6 @@ void ship_page_in()
 		nprintf(( "Paging","Found ship '%s'\n", Ships[i].ship_name ));
 		ship_class_used[Ships[i].ship_info_index]++;
 
-		// check if we are going to use a Knossos device and make sure the special warp ani gets pre-loaded
-		if ( Ship_info[Ships[i].ship_info_index].flags[Ship::Info_Flags::Knossos_device] )
-			Knossos_warp_ani_used = 1;
-
 		// mark any weapons as being used, saves memory and time if we don't load them all
 		ship_weapon *swp = &Ships[i].weapons;
 
@@ -19721,9 +19691,13 @@ void ship_render(object* obj, model_draw_list* scene)
 		return;
 	}
 
+	model_render_params render_info;
 	if ( obj == Viewer_obj && !Rendering_to_shadow_map ) {
 		if (!(Viewer_mode & VM_TOPDOWN))
 		{
+			render_info.set_object_number(OBJ_INDEX(obj));
+			//To allow the player ship to cast light from first person we must still handle it's glowpoints here.
+			model_render_only_glowpoint_lights(&render_info, sip->model_num, -1, &obj->orient, &obj->pos);
 			return;
 		}
 	}
@@ -19763,7 +19737,6 @@ void ship_render(object* obj, model_draw_list* scene)
 		
 	ship_render_batch_thrusters(obj);
 
-	model_render_params render_info;
 	
 	if ( !(shipp->flags[Ship_Flags::Disabled]) && !ship_subsys_disrupted(shipp, SUBSYSTEM_ENGINE) && show_thrusters) {
 		mst_info mst;
