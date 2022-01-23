@@ -50,7 +50,8 @@ namespace fso {
 			void ShipEditorDialogModel::initializeData() {
 				int type, wing = -1;
 				int cargo = 0, base_ship, base_player, pship = -1;
-				int escort_count, current_orders;
+				int escort_count;
+				std::set<size_t> current_orders;
 				pship_count = 0;  // a total count of the player ships not marked
 				player_count = 0;
 				ship_count = 0;
@@ -58,7 +59,7 @@ namespace fso {
 				total_count = 0;
 				pvalid_count = 0;
 				player_ship = 0;
-				ship_orders = 0;
+				ship_orders.clear();
 				object* objp;
 				if (The_mission.game_type & MISSION_TYPE_MULTI) {
 					mission_type = 0;  // multi player mission
@@ -122,7 +123,7 @@ namespace fso {
 
 				player_ship = single_ship = -1;
 
-				ship_orders = 0;				// assume they are all the same type
+				ship_orders.clear();				// assume they are all the same type
 				if (ship_count) {
 					if (!multi_edit) {
 						Assert((ship_count == 1) && (base_ship >= 0));
@@ -154,11 +155,11 @@ namespace fso {
 								}
 								// 'and' in the ship type of this ship to our running bitfield
 								current_orders = ship_get_default_orders_accepted(&Ship_info[Ships[i].ship_info_index]);
-								if (!ship_orders) {
+								if (ship_orders.empty()) {
 									ship_orders = current_orders;
 								}
 								else if (ship_orders != current_orders) {
-									ship_orders = -1;
+									ship_orders = {std::numeric_limits<size_t>::max()};
 								}
 
 								if (Ships[i].flags[Ship::Ship_Flags::Escort]) {

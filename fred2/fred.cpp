@@ -672,7 +672,7 @@ void CAboutDlg::DoDataExchange(CDataExchange* pDX) {
 }
 
 void CAboutDlg::OnBug() {
-	char *path = "http://scp.indiegames.us/mantis/";
+	char *path = "https://github.com/scp-fs2open/fs2open.github.com/issues";
 
 	char buffer[MAX_PATH];
 	sprintf(buffer, "explorer.exe \"%s\"", path);
@@ -681,7 +681,7 @@ void CAboutDlg::OnBug() {
 }
 
 void CAboutDlg::OnForums() {
-	char *path = "http://www.hard-light.net/forums/";
+	char *path = "https://www.hard-light.net/forums/";
 
 	char buffer[MAX_PATH];
 	sprintf(buffer, "explorer.exe \"%s\"", path);

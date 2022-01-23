@@ -1208,7 +1208,6 @@ ADE_FUNC(loadMission, l_Mission, "string missionName", "Loads a mission", "boole
 	gr_post_process_set_defaults();
 
 	//NOW do the loading stuff
-	game_stop_time();
 	get_mission_info(s, &The_mission, false);
 	game_level_init();
 

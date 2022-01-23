@@ -1493,9 +1493,6 @@ void standalone_main_init()
 	multi_xfer_reset();
 	multi_xfer_force_dir(CF_TYPE_MULTI_CACHE);
 
-	// reset timer
-	timestamp_reset();
-
 	// setup a blank pilot (this is a standalone usage only!)
 	Pilot.load_player(NULL);
 

@@ -2445,7 +2445,6 @@ int CFREDView::global_error_check()
 	int bs, i, j, n, s, t, z, ai, count, ship, wing, obj, team, point, multi;
 	object *ptr;
 	brief_stage *sp;
-	int starting_orders;
 
 	g_err = multi = 0;
 	if ( The_mission.game_type & MISSION_TYPE_MULTI )
@@ -2992,9 +2991,10 @@ int CFREDView::global_error_check()
 
 	// for all wings, be sure that the orders accepted for all ships are the same for all ships
 	// in the wing
-	starting_orders = -1;
+	//std::set<size_t> starting_orders { std::numeric_limits<size_t>::max() };
 	for (i=0; i<MAX_WINGS; i++) {
-		int default_orders, starting_wing;
+		int starting_wing;
+		std::set<size_t> default_orders;
 
 		if ( !Wings[i].wave_count ){
 			continue;
@@ -3009,10 +3009,9 @@ int CFREDView::global_error_check()
 // Goober5000				return 1;
 			}
 		}
-
-		default_orders = 0;
+		
 		for ( j = 0; j < Wings[i].wave_count; j++ ) {
-			int orders;
+			std::set<size_t> orders;
 
 			orders = Ships[Wings[i].ship_index[j]].orders_accepted;
 			if ( j == 0 ) {

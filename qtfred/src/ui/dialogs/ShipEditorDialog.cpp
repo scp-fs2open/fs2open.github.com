@@ -583,7 +583,7 @@ void ShipEditorDialog::enableDisable()
 		// ships are the same type.  the ship_type variable holds the ship types
 		// for all ships.  Determine how may bits set and enable/diable window
 		// as appropriate
-		if (_model->ship_orders == -1) {
+		if (_model->ship_orders.find(std::numeric_limits<size_t>::max()) != _model->ship_orders.end()) {
 			ui->playerOrdersButton->setEnabled(false);
 		} else {
 			ui->playerOrdersButton->setEnabled(true);

@@ -1645,7 +1645,8 @@ void game_process_cheats(int k)
 		ship *shipp = &Ships[Objects[objnum].instance];
 		shipp->ship_name[0] = '\0';
 		shipp->display_name.clear();
-		shipp->orders_accepted = (1<<NUM_COMM_ORDER_ITEMS)-1;
+		for(size_t j = 0; j < Player_orders.size(); j++)
+			shipp->orders_accepted.insert(j);
 
 		// Goober5000 - stolen from support ship creation
 		// create a name for the ship.  use "Volition Bravos #".  look for collisions until one isn't found anymore

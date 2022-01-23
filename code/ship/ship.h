@@ -34,6 +34,7 @@
 #include "ai/ai.h"
 
 #include <string>
+#include <set>
 #include <particle/ParticleManager.h>
 
 class object;
@@ -601,7 +602,7 @@ public:
 	int	departure_delay;		// time in seconds after sexp is true that we delay.
 
 	int	wingnum;								// wing number this ship is in.  -1 if in no wing, Wing array index otherwise
-	int	orders_accepted;					// set of orders this ship will accept from the player.
+	std::set<size_t> orders_accepted;					// set of orders this ship will accept from the player.
 
 	// Subsystem fields.  The subsys_list is a list of all subsystems (which might include multiple types
 	// of a particular subsystem, like engines).  The subsys_info struct is information for particular
@@ -947,7 +948,7 @@ typedef struct ship_type_info {
 
 	//AI
 	int	ai_valid_goals;
-	int ai_player_orders;
+	std::set<size_t> ai_player_orders;
 	int ai_active_dock;
 	int ai_passive_dock;
 	SCP_vector<int> ai_actively_pursues;
@@ -967,7 +968,7 @@ typedef struct ship_type_info {
 		: debris_max_speed( 0.f ),
 		  ff_multiplier( 0.f ), emp_multiplier( 0.f ),
 		  fog_start_dist( 0.f ), fog_complete_dist( 0.f ),
-		  ai_valid_goals( 0 ), ai_player_orders( 0 ), ai_active_dock( 0 ), ai_passive_dock( 0 ),
+		  ai_valid_goals( 0 ), ai_active_dock( 0 ), ai_passive_dock( 0 ),
 		  vaporize_chance( 0.f )
 
 	{
@@ -1733,7 +1734,7 @@ extern void ship_clear_ship_type_counts();
 extern void ship_add_ship_type_count( int ship_info_index, int num );
 
 extern int ship_get_type(char* output, ship_info* sip);
-extern int ship_get_default_orders_accepted( ship_info *sip );
+extern const std::set<size_t>& ship_get_default_orders_accepted( ship_info *sip );
 extern int ship_query_general_type(int ship);
 extern int ship_class_query_general_type(int ship_class);
 extern int ship_query_general_type(ship *shipp);
