@@ -38,10 +38,10 @@ AboutDialog::AboutDialog(QWidget* parent) : QDialog(parent), ui(new Ui::AboutDia
 AboutDialog::~AboutDialog() {
 }
 void AboutDialog::onBugPressed() {
-	QDesktopServices::openUrl(QUrl("http://scp.indiegames.us/mantis/", QUrl::TolerantMode));
+	QDesktopServices::openUrl(QUrl("https://github.com/scp-fs2open/fs2open.github.com/issues", QUrl::TolerantMode));
 }
 void AboutDialog::onForumsPressed() {
-	QDesktopServices::openUrl(QUrl("http://www.hard-light.net/forums/", QUrl::TolerantMode));
+	QDesktopServices::openUrl(QUrl("https://www.hard-light.net/forums/", QUrl::TolerantMode));
 }
 void AboutDialog::onAboutQtPressed() {
 	QApplication::aboutQt();

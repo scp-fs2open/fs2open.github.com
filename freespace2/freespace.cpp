@@ -227,8 +227,8 @@ void game_reset_view_clip();
 void game_reset_shade_frame();
 void game_post_level_init();
 void game_do_frame(bool set_frametime = true);
-void game_update_missiontime();	// called from game_do_frame() and navmap_do_frame()
-void game_reset_time();
+void game_time_level_init();
+void game_time_level_close();
 void game_show_framerate();			// draws framerate in lower right corner
 
 struct big_expl_flash {
@@ -343,11 +343,6 @@ extern void ssm_process();
 // commented out for now until
 // I figure out how to get the username into the file
 //LOCAL char freespace_build_time[] = "Compiled on:"__DATE__" "__TIME__" by "__USER__;
-
-// defines and variables used for dumping frame for making trailers.
-#ifndef NDEBUG
-int Debug_dump_frames = 0;			// Set to 0 to not dump frames, else equal hz to dump. (15 or 30 probably)
-#endif
 
 // amount of time to wait after the player has died before we display the death died popup
 #define PLAYER_DIED_POPUP_WAIT		2500
@@ -901,12 +896,27 @@ void game_level_close()
 
 		stars_level_close();
 
+		multi_close_oo_and_ship_tracker();
+
 		Pilot.save_savefile();
 
 		// Cybor17 - also, undo cheats.
 		extern bool Weapon_energy_cheat;
 		Weapon_energy_cheat = false;
 
+		game_time_level_close();
+
+		if (Game_mode & GM_STANDALONE_SERVER) {
+			model_free_all();			// Free all existing models if standalone server
+
+			// clean out interp data as it's better to allocate as needed here instead
+			// of letting it use a bunch of memory
+			extern void model_deallocate_interp_data();
+			model_deallocate_interp_data();
+
+			extern void model_collide_free_point_list();
+			model_collide_free_point_list();
+		}
 	}
 	else
 	{
@@ -955,7 +965,7 @@ void game_level_init()
 	batch_reset();
 
 	// Initialize the game subsystems
-	game_reset_time();			// resets time, and resets saved time too
+	game_time_level_init();
 
 	Multi_ping_timestamp = -1;
 
@@ -997,10 +1007,11 @@ void game_level_init()
 	asteroid_level_init();
 	control_config_clear_used_status();
 	collide_ship_ship_sounds_init();
-	Missiontime = 0;
+
 	Skybox_timestamp = game_get_overall_frametime();
 	Pre_player_entry = 1;			//	Means the player has not yet entered.
 	Entry_delay_time = 0;			//	Could get overwritten in mission read.
+
 	observer_init();
 	flak_level_init();				// initialize flak - bitmaps, etc
 	ct_level_init();				// initialize ships contrails, etc
@@ -1346,6 +1357,9 @@ void game_post_level_init()
 	freespace_mission_load_stuff();
 
 	mission_process_alt_types();
+
+	// Now that loading is complete, resume time so that timestamps used in the briefing screens will work
+	game_start_time();
 
 	// m!m Make hv.Player available in "On Mission Start" hook
 	if(Player_obj)
@@ -1702,8 +1716,15 @@ void game_init()
 		Cmdline_spec = 0;
 		Cmdline_glow = 0;
 		Cmdline_env = 0;
-		Fireball_use_3d_warp = false;
+		Cmdline_height = 0;
 		Cmdline_normal = 0;
+		Cmdline_voice_recognition = 0;
+		Cmdline_freespace_no_sound = 1;
+		Cmdline_freespace_no_music = 1;
+		Cmdline_NoFPSCap = 0;
+		Cmdline_load_all_weapons = 0;
+		Cmdline_enable_3d_shockwave = 0;
+		Fireball_use_3d_warp = false;
 
 		// now init the standalone server code
 		std_init_standalone();
@@ -1967,11 +1988,13 @@ void game_init()
 	// convert old pilot files (if they need it)
 	convert_pilot_files();
 
+	if ( !Is_standalone ) {
 #ifdef WITH_FFMPEG
-	libs::ffmpeg::initialize();
+		libs::ffmpeg::initialize();
 #endif
 
-	libs::discord::init();
+		libs::discord::init();
+	}
 
 	nprintf(("General", "Ships.tbl is : %s\n", Game_ships_tbl_valid ? "VALID" : "INVALID!!!!"));
 	nprintf(("General", "Weapons.tbl is : %s\n", Game_weapons_tbl_valid ? "VALID" : "INVALID!!!!"));
@@ -2100,11 +2123,6 @@ void game_show_framerate()
 			gr_printf_no_resize( gr_screen.center_offset_x + 20, gr_screen.center_offset_y + 100 - line_height, "BMPMAN: %d/%d", bmpman_count_bitmaps(), bmpman_count_available_slots() );
 		}
 	}
-
-#ifndef NDEBUG
-	if ( Debug_dump_frames )
-		return;
-#endif	
 
 	// possibly show control checking info
 	control_check_indicate();
@@ -3613,10 +3631,11 @@ void game_simulation_frame()
 	player_maybe_play_all_alone_msg();	// maybe tell the player he is all alone	
 
 	if(!(Game_mode & GM_STANDALONE_SERVER)){		
-		// process some stuff every frame (before frame is rendered)
-		emp_process_local();
+		if ( !Pre_player_entry ){
+			emp_process_local();
 
-		hud_update_frame(flFrametime);						// update hud systems
+			hud_update_frame(flFrametime);						// update hud systems
+		}
 
 		if (!physics_paused)	{
 			// Move particle system
@@ -3635,17 +3654,16 @@ void game_simulation_frame()
 		// subspace missile strikes
 		ssm_process();
 
-		obj_snd_do_frame();						// update the object-linked persistant sounds
+		if ( !Pre_player_entry ){
+			obj_snd_do_frame();						// update the object-linked persistant sounds
 
-		game_maybe_update_sound_environment();
-		snd_update_listener(&Eye_position, &Player_obj->phys_info.vel, &Eye_matrix);
+			game_maybe_update_sound_environment();
+			snd_update_listener(&Eye_position, &Player_obj->phys_info.vel, &Eye_matrix);
 
-// AL: debug code used for testing ambient subspace sound (ie when enabling subspace through debug console)
-#ifndef NDEBUG
-		if ( Game_subspace_effect ) {
-			game_start_subspace_ambient_sound();
+			if ( Game_subspace_effect ) {
+				game_start_subspace_ambient_sound();
+			}
 		}
-#endif
 	}
 
 	// Kick off externally injected operations after the simulation step has finished
@@ -3943,8 +3961,10 @@ void game_frame(bool paused)
 			}
 		}
 	
-		if (Missiontime > Entry_delay_time)
+		if (Pre_player_entry && Missiontime > Entry_delay_time) {
 			Pre_player_entry = 0;
+			event_music_set_start_delay();
+		}
 
 		//	Note: These are done even before the player enters, else buffers can overflow.
 		if (! (Game_mode & GM_STANDALONE_SERVER)){
@@ -4123,23 +4143,27 @@ void game_frame(bool paused)
 
 fix Last_time = 0;						// The absolute time of game at end of last frame (beginning of this frame)
 fix Last_delta_time = 0;				// While game is paused, this keeps track of how much elapsed in the frame before paused.
-static int timer_paused=0;
-int saved_timestamp_ticker = -1;
+int Last_frame_timestamp = 0;
+static bool Time_paused = false;
 
-void game_reset_time()
+void game_time_level_init()
 {
-	if((Game_mode & GM_MULTIPLAYER) && (Netgame.game_state == NETGAME_STATE_SERVER_TRANSFER)){
-		return ;
-	}
-
-	game_start_time();
-	timestamp_reset();
+	// stop time while we're loading so that timestamps set on initialization will all be consistent, among other things
 	game_stop_time();
+
+	Missiontime = 0;
+	timestamp_start_mission();
 }
 
-void game_stop_time()
+void game_time_level_close()
 {
-	if (timer_paused==0) {
+	// resume time so that other things, e.g. main hall, can use timestamps
+	game_start_time();
+}
+
+void game_stop_time(bool by_os_focus)
+{
+	if (!Time_paused) {
 		fix time;
 		time = timer_get_fixed_seconds();
 		// Save how much time progressed so far in the frame so we can
@@ -4149,18 +4173,17 @@ void game_stop_time()
 		if (Last_delta_time < 0) {
 			Last_delta_time = 0;
 		}
-
-		// Stop the timer_tick stuff...
-		saved_timestamp_ticker = timestamp();
 	}
-	timer_paused++;
+	Time_paused = true;
+
+	// Stop the timer_tick stuff...
+	// We always want to 'sudo' the change, unless this is caused by the focus, because we want the game to have priority in that case
+	timestamp_pause(!by_os_focus);
 }
 
-void game_start_time()
+void game_start_time(bool by_os_focus)
 {
-	timer_paused--;
-	Assert(timer_paused >= 0);
-	if (timer_paused==0) {
+	if (Time_paused) {
 		fix time;
 		time = timer_get_fixed_seconds();
 		// Take current time, and set it backwards to account for time
@@ -4168,13 +4191,12 @@ void game_start_time()
 		// will be correct when it goes to calculate the frametime next
 		// frame.
 		Last_time = time - Last_delta_time;		
-
-		// Restore the timer_tick stuff...
-		// Normally, you should never access 'timestamp_ticker', consider this a low-level routine
-		Assert( saved_timestamp_ticker > -1 );		// Called out of order, get JAS
-		timestamp_set_value(saved_timestamp_ticker);
-		saved_timestamp_ticker = -1;
 	}
+	Time_paused = false;
+
+	// Restore the timer_tick stuff...
+	// We always want to 'sudo' the change, unless this is caused by the focus, because we want the game to have priority in that case
+	timestamp_unpause(!by_os_focus);
 }
 
 void lock_time_compression(bool is_locked)
@@ -4188,6 +4210,8 @@ void change_time_compression(float multiplier)
 
 	Desired_time_compression = Game_time_compression = modified;
 	Time_compression_change_rate = 0;
+
+	timestamp_update_time_compression();
 }
 
 void set_time_compression(float multiplier, float change_time)
@@ -4196,6 +4220,8 @@ void set_time_compression(float multiplier, float change_time)
 	{
 		Game_time_compression = Desired_time_compression = fl2f(multiplier);
 		Time_compression_change_rate = 0;
+
+		timestamp_update_time_compression();
 		return;
 	}
 
@@ -4207,6 +4233,7 @@ void game_set_frametime(int state)
 {
 	fix thistime;
 	float frame_cap_diff;
+	bool do_pre_player_skip = false;
 
 	thistime = timer_get_fixed_seconds();
 
@@ -4220,24 +4247,10 @@ void game_set_frametime(int state)
 #endif
 
 	//	If player hasn't entered mission yet, make frame take 1/4 second.
-	if ((Pre_player_entry) && (state == GS_STATE_GAME_PLAY))
+	if ((Pre_player_entry) && (state == GS_STATE_GAME_PLAY)) {
 		Frametime = F1_0/4;
-#ifndef NDEBUG
-	else if ((Debug_dump_frames) && (state == GS_STATE_GAME_PLAY)) {				// note link to above if!!!!!
-	
-		fix frame_speed = F1_0 / Debug_dump_frames;
-
-		if (Frametime > frame_speed ){
-			nprintf(("warning","slow frame: %x\n",(int)Frametime));
-		} else {			
-			do {
-				thistime = timer_get_fixed_seconds();
-				Frametime = thistime - Last_time;
-			} while (Frametime < frame_speed );			
-		}
-		Frametime = frame_speed;
+		do_pre_player_skip = true;
 	}
-#endif
 
 	Assertion( Framerate_cap > 0, "Framerate cap %d is too low. Needs to be a positive, non-zero number", Framerate_cap );
 
@@ -4270,6 +4283,13 @@ void game_set_frametime(int state)
 	if (Frametime > MAX_FRAMETIME)	{
 #ifndef NDEBUG
 		mprintf(("Frame %2i too long!!: frametime = %.3f (%.3f)\n", Framecount, f2fl(Frametime), f2fl(debug_frametime)));
+
+		// If the frame took more than 5 seconds, assume we're tracing through a debugger.  If timestamps are running, correct the elapsed time.
+		if (!Cmdline_slow_frames_ok && !timestamp_is_paused() && (Last_frame_timestamp != 0) && (f2fl(Frametime) > 5.0f)) {
+			auto delta_timestamp = timestamp() - Last_frame_timestamp;
+			mprintf(("Adjusting timestamp by %2i milliseconds to compensate\n", delta_timestamp));
+			timestamp_adjust_pause_offset(delta_timestamp);
+		}
 #endif
 		Frametime = MAX_FRAMETIME;
 	}
@@ -4281,10 +4301,16 @@ void game_set_frametime(int state)
 	{
 		bool ascending = Desired_time_compression > Game_time_compression;
 		if(Time_compression_change_rate)
+		{
 			Game_time_compression += fixmul(Time_compression_change_rate, Frametime);
+			timestamp_update_time_compression();
+		}
 		if((ascending && Game_time_compression > Desired_time_compression)
 			|| (!ascending && Game_time_compression < Desired_time_compression))
+		{
 			Game_time_compression = Desired_time_compression;
+			timestamp_update_time_compression();
+		}
 	}
 
 	Frametime = fixmul(Frametime, Game_time_compression);
@@ -4301,7 +4327,9 @@ void game_set_frametime(int state)
 
 	flFrametime = f2fl(Frametime);
 
-	timestamp_inc(Frametime);
+	// before the player enters the mission, we blitz through time
+	if (do_pre_player_skip)
+		timestamp_adjust_seconds(flFrametime, TIMER_DIRECTION::FORWARD);
 
 	// wrap overall frametime if needed
 	if ( FrametimeOverall > (INT_MAX - F1_0) )
@@ -4315,17 +4343,18 @@ fix game_get_overall_frametime()
 	return FrametimeOverall;
 }
 
-// This is called from game_do_frame(), and from navmap_do_frame() 
 void game_update_missiontime()
 {
-	// TODO JAS: Put in if and move this into game_set_frametime, 
-	// fix navmap to call game_stop/start_time
-	//if ( !timer_paused )	
-		Missiontime += Frametime;
+	Missiontime = timestamp_get_mission_time();
 }
 
 void game_do_frame(bool set_frametime)
 {
+	if (Missiontime == 0) {
+		// reset the timestamps to the beginning, since they were running in the briefing screens
+		timestamp_revert_to_mission_start();
+	}
+
 	if (set_frametime) {
 		game_set_frametime(GS_STATE_GAME_PLAY);
 	}
@@ -4401,9 +4430,9 @@ int game_poll()
 		// Cyborg17 - Multiplayer *must not* have its time affected by being in the background.
 		// otherwise, ship interpolation will become inaccurate.
 		if (!os_foreground() && !(Game_mode & GM_MULTIPLAYER)) {
-			game_stop_time();
+			game_stop_time(true);
 			os_sleep(1);
-			game_start_time();
+			game_start_time(true);
 			if ((gameseq_get_state() == GS_STATE_GAME_PLAY) && (!popup_active()) && (!popupdead_is_active())) {
 				game_process_pause_key();
 
@@ -4924,7 +4953,7 @@ void game_process_event( int current_state, int event )
 			break;
 
 		case GS_EVENT_GAME_INIT:
-			// see if the command line option has been set to use the last pilot, and act acoordingly
+			// see if the command line option has been set to use the last pilot, and act accordingly
 			if( player_select_get_last_pilot() ) {	
 				// always enter the main menu -- do the automatic network startup stuff elsewhere
 				// so that we still have valid checks for networking modes, etc.
@@ -5178,6 +5207,7 @@ void game_leave_state( int old_state, int new_state )
 				if (Game_mode & GM_IN_MISSION) {
 					weapon_unpause_sounds();
 					audiostream_unpause_all();
+					game_start_time();
 				}
 			}
 			break;
@@ -5208,7 +5238,9 @@ void game_leave_state( int old_state, int new_state )
 			joy_ff_stop_effects();
 
 			// stop game time under certain conditions
-			if ( end_mission || (Game_mode & GM_NORMAL) || ((Game_mode & GM_MULTIPLAYER) && (new_state == GS_STATE_MULTI_PAUSED)) ){
+			if ( end_mission || 
+				((Game_mode & GM_NORMAL) && (new_state != GS_STATE_DEATH_DIED) && (new_state != GS_STATE_DEATH_BLEW_UP)) ||
+				((Game_mode & GM_MULTIPLAYER) && (new_state == GS_STATE_MULTI_PAUSED)) ){
 				game_stop_time();
 			}
 
@@ -5685,6 +5717,7 @@ void game_enter_state( int old_state, int new_state )
 				if (Game_mode & GM_IN_MISSION) {
 					weapon_pause_sounds();
 					audiostream_pause_all();
+					game_stop_time();
 				}
 			}
 			break;
@@ -5787,8 +5820,9 @@ void mouse_force_pos(int x, int y);
 							(old_state == GS_STATE_MULTI_MISSION_SYNC)
 						)
 					)
-				)
+				) {
 					game_start_time();
+			}
 
 			// when coming from the multi paused state, reset the timestamps
 			if ( (Game_mode & GM_MULTIPLAYER) && (old_state == GS_STATE_MULTI_PAUSED) ){
@@ -5815,15 +5849,12 @@ void mouse_force_pos(int x, int y);
 			Game_subspace_effect = 0;
 			if (The_mission.flags[Mission::Mission_Flags::Subspace]) {
 				Game_subspace_effect = 1;
-				if( !(Game_mode & GM_STANDALONE_SERVER) ){	
-					game_start_subspace_ambient_sound();
-				}
 			}
 
 			sound_env_set(&Game_sound_env);
 			joy_ff_mission_init(Ship_info[Player_ship->ship_info_index].rotation_time);
 
-			// clear multiplayer button info			i
+			// clear multiplayer button info
 			extern button_info Multi_ship_status_bi;
 			memset(&Multi_ship_status_bi, 0, sizeof(button_info));
 			
@@ -6553,7 +6584,7 @@ int game_main(int argc, char *argv[])
 		return 1;
 	}
 
-	if (!headtracking::init())
+	if (!Is_standalone && !headtracking::init())
 	{
 		mprintf(("Headtracking is not enabled...\n"));
 	}
@@ -6578,6 +6609,8 @@ int game_main(int argc, char *argv[])
 	if (!Is_standalone) {
 		movie::play("intro.mve");
 	}
+
+	game_start_time();
 
 	if (Is_standalone) {
 		gameseq_post_event(GS_EVENT_STANDALONE_MAIN);

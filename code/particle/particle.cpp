@@ -91,6 +91,12 @@ namespace particle
 	// Reset everything between levels
 	void init()
 	{
+		if (Is_standalone)
+		{
+			Particles_enabled = 0;
+			return;
+		}
+
 		// FIRE!!!
 		if (Anim_bitmap_id_fire == -1)
 		{
@@ -119,6 +125,11 @@ namespace particle
 
 	void page_in()
 	{
+		if (!Particles_enabled)
+		{
+			return;
+		}
+
 		bm_page_in_texture(Anim_bitmap_id_fire);
 		bm_page_in_texture(Anim_bitmap_id_smoke);
 		bm_page_in_texture(Anim_bitmap_id_smoke2);

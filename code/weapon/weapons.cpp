@@ -5349,7 +5349,7 @@ static void weapon_set_state(weapon_info* wip, weapon* wp, WeaponState state)
 
 	auto map_entry = wip->state_effects.find(wp->weapon_state);
 
-	if (map_entry != wip->state_effects.end())
+	if ((map_entry != wip->state_effects.end()) && map_entry->second.isValid())
 	{
 		auto source = particle::ParticleManager::get()->createSource(map_entry->second);
 

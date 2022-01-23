@@ -14,7 +14,7 @@
 #include "controlconfig/controlsconfig.h"
 #include "controlconfig/presets.h"
 #include "debugconsole/console.h"
-#include "freespace.h"
+#include "../freespace2/freespace.h"
 #include "gamehelp/contexthelp.h"
 #include "gamesequence/gamesequence.h"
 #include "gamesnd/gamesnd.h"
@@ -2720,7 +2720,6 @@ void control_get_axes_readings(int *axis_v, float frame_time)
 	}
 }
 
-int Last_frame_timestamp;
 void control_used(int id)
 {
 	// if we have set this key to be ignored, ignore it

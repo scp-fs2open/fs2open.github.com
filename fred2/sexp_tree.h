@@ -77,8 +77,6 @@
 #define ROOT_DELETED	1
 #define ROOT_RENAMED	2
 
-#define SEXP_ITEM_F_DUP	(1<<0)
-
 /*
  * Notes: An sexp_tree_item is basically a node in a tree.  The sexp_tree is an array of
  * these node items.
@@ -104,18 +102,15 @@ public:
 	int type;
 	int op;
 	SCP_string text;
-	int flags;
 	sexp_list_item *next;
 
-	sexp_list_item() : flags(0), next(NULL) {}
+	sexp_list_item() : next(nullptr) {}
 
 	void set_op(int op_num);
 	void set_data(const char *str, int t = (SEXPT_STRING | SEXPT_VALID));
-	void set_data_dup(const char *str, int t = (SEXPT_STRING | SEXPT_VALID));
 
 	void add_op(int op_num);
 	void add_data(const char *str, int t = (SEXPT_STRING | SEXPT_VALID));
-	void add_data_dup(const char *str, int t = (SEXPT_STRING | SEXPT_VALID));
 	void add_list(sexp_list_item *list);
 
 	void shallow_copy(const sexp_list_item *src);

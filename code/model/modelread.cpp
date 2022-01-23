@@ -1159,8 +1159,7 @@ void model_calc_bound_box( vec3d *box, vec3d *big_mn, vec3d *big_mx)
 	box[7].xyz.x = big_mn->xyz.x; box[7].xyz.y = big_mx->xyz.y; box[7].xyz.z = big_mx->xyz.z;
 }
 
-
-void model_maybe_adjust_movement_axis(bsp_info *sm)
+void maybe_adjust_movement_axis(bsp_info *sm)
 {
 	// if we have a FOR, we need to transform the movement axis and make it a non-standard one
 	if (!vm_matrix_equal(sm->frame_of_reference, vmd_identity_matrix) && (sm->movement_type != MOVEMENT_TYPE_NONE) && (sm->movement_axis_id != MOVEMENT_AXIS_NONE)) {
@@ -1169,6 +1168,31 @@ void model_maybe_adjust_movement_axis(bsp_info *sm)
 		sm->movement_axis = new_axis;
 		sm->movement_axis_id = MOVEMENT_AXIS_OTHER;
 	}
+}
+
+void resolve_submodel_index(const polymodel *pm, const char *requester, const char *field, int &submodel_index, const SCP_vector<SCP_string> &submodel_list)
+{
+	auto submodel_name = submodel_list[submodel_index].c_str();
+
+	// search for this submodel name among all submodels
+	for (int j = 0; j < pm->n_models; j++) {
+		if (!stricmp(submodel_name, pm->submodel[j].name)) {
+			nprintf(("Model", "NOTE: Matched %s %s %s %s with subobject id %d\n", pm->filename, requester, field, submodel_name, j));
+
+			// set the correct submodel reference, and we're done
+			submodel_index = j;
+			return;
+		}
+	}
+
+	// models could specify the submodel number, so let's maintain compatibilty
+	if (can_construe_as_integer(submodel_name)) {
+		submodel_index = atoi(submodel_name);
+		return;
+	}
+
+	Warning(LOCATION, "Unable to match %s %s %s %s with a submodel!\n", pm->filename, requester, field, submodel_name);
+	submodel_index = -1;
 }
 
 
@@ -1260,8 +1284,9 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 	len = cfread_int(fp);
 	next_chunk = cftell(fp) + len;
 
-	// keep track of any look_at submodels we might notice
+	// keep track of any submodels we might notice
 	SCP_vector<SCP_string> look_at_submodel_names;
+	SCP_vector<SCP_string> dock_parent_submodel_names;
 
 	while (!cfeof(fp)) {
 
@@ -1748,7 +1773,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 
 				// maybe use the FOR to manipulate the rotation axis
 				// (do this before the compatibility check below to prevent doing it twice)
-				model_maybe_adjust_movement_axis(sm);
+				maybe_adjust_movement_axis(sm);
 
 				// important compatibility check: if there are multipart turrets without rotation axes defined, define them
 				// also, some of the retail models got the axes wrong, so fix those :-/
@@ -1765,7 +1790,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 						base->movement_axis_id = MOVEMENT_AXIS_Y;
 						base->movement_axis = vmd_y_vector;
 						base->movement_type = MOVEMENT_TYPE_ROT_SPECIAL;
-						model_maybe_adjust_movement_axis(base);
+						maybe_adjust_movement_axis(base);
 					}
 
 					if (!vm_matrix_equal(gun->frame_of_reference, vmd_identity_matrix)
@@ -1774,7 +1799,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 						gun->movement_axis_id = MOVEMENT_AXIS_X;
 						gun->movement_axis = vmd_x_vector;
 						gun->movement_type = MOVEMENT_TYPE_ROT_SPECIAL;
-						model_maybe_adjust_movement_axis(gun);
+						maybe_adjust_movement_axis(gun);
 					}
 				}
 
@@ -2048,6 +2073,18 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 								bay->splines[j] = cfread_int(fp);
 						} else {
 							bay->splines = NULL;
+						}
+
+						// see if this dockpoint should be anchored to a submodel
+						if (in(p, props, "$parent_submodel")) {
+							// we need to work out the correct subobject number later, after all subobjects have been processed
+							bay->parent_submodel = static_cast<int>(dock_parent_submodel_names.size());
+
+							char submodel_name[MAX_NAME_LEN];
+							get_user_prop_value(p + 16, submodel_name);
+							dock_parent_submodel_names.push_back(submodel_name);
+						} else {
+							bay->parent_submodel = -1; // No submodel
 						}
 
 						// determine what this docking bay can be used for
@@ -2602,43 +2639,34 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 		next_chunk = cftell(fp) + len;
 	}
 
-	// Now that we've processed all the chunks, resolve the look_at submodels if we have any
-	if (!look_at_submodel_names.empty()) {
-		for (i = 0; i < pm->n_models; i++) {
-			if (pm->submodel[i].look_at_submodel >= 0) {
-				const char *submodel_name = look_at_submodel_names[pm->submodel[i].look_at_submodel].c_str();
+	// Now that we've processed all the chunks, resolve the submodel indexes if we have any...
 
-				// search for this submodel name among all submodels
-				for (j = 0; j < pm->n_models; j++) {
-					if (!stricmp(submodel_name, pm->submodel[j].name)) {
-						nprintf(("Model", "NOTE: Matched %s %s $look_at: target %s with subobject id %d\n", pm->filename, pm->submodel[i].name, submodel_name, j));
+	// handle look_at
+	for (i = 0; i < pm->n_models; i++) {
+		auto sm = &pm->submodel[i];
 
-						// set the correct submodel reference, and set the char* to null as a found-flag
-						pm->submodel[i].look_at_submodel = j;
-						submodel_name = nullptr;
-						break;
-					}
-				}
+		if (sm->look_at_submodel >= 0) {
+			resolve_submodel_index(pm, sm->name, "$look_at target", sm->look_at_submodel, look_at_submodel_names);
 
-				// certain old models specify the submodel number, so let's maintain compatibilty
-				if (submodel_name != nullptr && can_construe_as_integer(submodel_name)) {
-					pm->submodel[i].look_at_submodel = atoi(submodel_name);
-					submodel_name = nullptr;
-				}
-
-				// did we fail to find it?
-				if (submodel_name != nullptr) {
-					Warning(LOCATION, "Unable to match %s %s $look_at: target %s with a submodel!\n", pm->filename, pm->submodel[i].name, submodel_name);
-					pm->submodel[i].look_at_submodel = -1;
-					pm->submodel[i].movement_type = MOVEMENT_TYPE_NONE;
-				}
-				// are we navel-gazing?
-				else if (pm->submodel[i].look_at_submodel == i) {
-					Warning(LOCATION, "Matched %s %s $look_at: target with its own submodel!  Submodel cannot look at itself!\n", pm->filename, pm->submodel[i].name);
-					pm->submodel[i].look_at_submodel = -1;
-					pm->submodel[i].movement_type = MOVEMENT_TYPE_NONE;
-				}
+			// if we couldn't find it, we shouldn't move
+			if (sm->look_at_submodel < 0) {
+				sm->movement_type = MOVEMENT_TYPE_NONE;
 			}
+			// are we navel-gazing?
+			else if (sm->look_at_submodel == i) {
+				Warning(LOCATION, "Matched %s %s $look_at: target with its own submodel!  Submodel cannot look at itself!\n", pm->filename, sm->name);
+				sm->look_at_submodel = -1;
+				sm->movement_type = MOVEMENT_TYPE_NONE;
+			}
+		}
+	}
+
+	// handle dockpoint parent_submodels
+	for (i = 0; i < pm->n_docks; i++) {
+		auto dock = &pm->docking_bays[i];
+
+		if (dock->parent_submodel >= 0) {
+			resolve_submodel_index(pm, dock->name, "$parent_submodel", dock->parent_submodel, dock_parent_submodel_names);
 		}
 	}
 

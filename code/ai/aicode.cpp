@@ -9480,6 +9480,14 @@ int find_parent_rotating_submodel(polymodel *pm, int dock_index)
 	Assertion(dock_index >= 0 && dock_index < pm->n_docks, "for model %s, dock_index %d must be >= 0 and < %d!", pm->filename, dock_index, pm->n_docks);
 	int path_num, submodel;
 
+	// if this is explicitly defined, then we're done
+	if (pm->docking_bays[dock_index].parent_submodel >= 0)
+	{
+		return pm->docking_bays[dock_index].parent_submodel;
+	}
+
+	// otherwise infer the submodel using the path...
+
 	// make sure we have a spline path to check against before going any further
 	if (pm->docking_bays[dock_index].num_spline_paths <= 0)
 	{
@@ -13251,7 +13259,7 @@ int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, int allowed_path_
 
 	//This is kind of hacky, but allows for hangarbay animations to trigger even if the player is not accompanied by AI.
 	//Since it doesn't really keep track of this, it won't ever tell the bay door that the player has fully left for it to close again.
-	if (Player_obj == pl_objp)
+	if (pl_objp->flags[Object::Object_Flags::Player_ship])
 		ai_manage_bay_doors(pl_objp, aip, false);
 
 	//due to the door animations the ship has to remain still until the doors are open

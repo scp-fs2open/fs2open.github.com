@@ -107,6 +107,7 @@ void	event_music_parse_musictbl(const char *filename);
 void	event_music_change_pattern(int new_pattern);
 int	event_music_return_current_pattern();
 void	event_music_first_pattern();
+void event_music_set_start_delay();
 int	event_music_battle_start();
 int	event_music_enemy_arrival();
 int	event_music_friendly_arrival();

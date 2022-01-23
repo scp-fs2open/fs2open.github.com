@@ -301,7 +301,9 @@ public:
 	void render_all(gr_zbuffer_type depth_mode = ZBUFFER_TYPE_DEFAULT);
 	void reset();
 };
-
+void model_render_only_glowpoint_lights(model_render_params* interp, int model_num, int model_instance_num, matrix* orient, vec3d* pos);
+float model_render_get_point_activation(glow_point_bank* bank, glow_point_bank_override* gpo);
+void model_render_glowpoint_add_light(int point_num, vec3d *pos, matrix *orient, glow_point_bank *bank, glow_point_bank_override *gpo, polymodel *pm, polymodel_instance *pmi, ship* shipp);
 void model_render_immediate(model_render_params* render_info, int model_num, matrix* orient, vec3d* pos, int render = MODEL_RENDER_ALL, bool sort = true);
 void model_render_immediate(model_render_params* render_info, int model_num, int model_instance_num, matrix* orient, vec3d* pos, int render = MODEL_RENDER_ALL, bool sort = true);
 void model_render_queue(model_render_params* render_info, model_draw_list* scene, int model_num, matrix* orient, vec3d* pos);

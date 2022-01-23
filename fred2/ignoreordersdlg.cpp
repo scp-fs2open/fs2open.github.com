@@ -62,7 +62,8 @@ END_MESSAGE_MAP()
 
 BOOL ignore_orders_dlg::OnInitDialog() 
 {
-	int i, default_orders, last_bottom, orders_accepted;
+	int i, last_bottom;
+	std::set<size_t> default_orders, orders_accepted;
 	RECT	window_size;
 	char buf[128];
 	object *objp;
@@ -87,13 +88,11 @@ BOOL ignore_orders_dlg::OnInitDialog()
 	} else {
 		// we are doing multiple edit on ships.  We just need to get default orders for
 		// the first marked ship since they'd better all be the same anyway!!!
-		default_orders = 0;
+		default_orders.clear();
 		for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
 			if (((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) && (objp->flags[Object::Object_Flags::Marked])) {
-				int these_orders;
-
-				these_orders = ship_get_default_orders_accepted( &Ship_info[Ships[objp->instance].ship_info_index] );
-				if ( default_orders == 0 )
+				const std::set<size_t>& these_orders = ship_get_default_orders_accepted( &Ship_info[Ships[objp->instance].ship_info_index] );
+				if ( default_orders.empty() )
 					default_orders = these_orders;
 				else if ( default_orders != these_orders )
 					Int3();
@@ -104,22 +103,19 @@ BOOL ignore_orders_dlg::OnInitDialog()
 
 	// set the checkboxes for the orders accepted
 	m_num_checks_active = 0;
-	for (i = 0; i < NUM_COMM_ORDER_ITEMS; i++ )
-	{
-		if (default_orders & Comm_orders[i].item)
+	for (size_t order_id : default_orders){
+		// Not enough space to display checkboxes for all comm orders!
+		// Need to add more checkboxes.
+		if (m_num_checks_active >= MAX_CHECKBOXES)
 		{
-			// Not enough space to display checkboxes for all comm orders!
-			// Need to add more checkboxes.
-			if (m_num_checks_active >= MAX_CHECKBOXES)
-			{
-				Int3();
-				break;
-			}
-
-			check_boxes[m_num_checks_active].button->SetWindowText(Comm_orders[i].name.c_str());
-			check_boxes[m_num_checks_active].id = Comm_orders[i].item;
-			m_num_checks_active++;
+			Warning(LOCATION, "Tried to add more orders than FRED2 has checkboxes for them (can be max %d)!", MAX_CHECKBOXES);
+			break;
 		}
+
+		check_boxes[m_num_checks_active].button->SetWindowText(Player_orders[order_id].localized_name.c_str());
+		check_boxes[m_num_checks_active].id = (int)order_id;
+		m_num_checks_active++;
+	
 	}
 
 	// resize the dialog by shrinking the height by the number of checkboxes that
@@ -150,7 +146,7 @@ BOOL ignore_orders_dlg::OnInitDialog()
 	if ( m_ship >= 0 ) {
 		orders_accepted = Ships[m_ship].orders_accepted;
 		for ( i = 0; i < m_num_checks_active; i++ ) {
-			if ( check_boxes[i].id & orders_accepted )
+			if ( orders_accepted.find(check_boxes[i].id) != orders_accepted.end() )
 				check_boxes[i].button->SetCheck(1);
 		}
 	} else {
@@ -164,14 +160,14 @@ BOOL ignore_orders_dlg::OnInitDialog()
 				orders_accepted = Ships[objp->instance].orders_accepted;
 				if ( first_time ) {
 					for ( i = 0; i < m_num_checks_active; i++ ) {
-						if ( check_boxes[i].id & orders_accepted )
+						if ( orders_accepted.find(check_boxes[i].id) != orders_accepted.end() )
 							check_boxes[i].button->SetCheck(1);
 					}
 					first_time = 0;
 				} else {
 					for ( i = 0; i < m_num_checks_active; i++ ) {
 						// see if the order matches the check box order
-						if ( check_boxes[i].id & orders_accepted ) {
+						if ( orders_accepted.find(check_boxes[i].id) != orders_accepted.end() ) {
 							// if it matches, if it is not already set, then it is indeterminate.
 							if ( !check_boxes[i].button->GetCheck() )
 								check_boxes[i].button->SetCheck(2);
@@ -199,21 +195,21 @@ BOOL ignore_orders_dlg::OnInitDialog()
 // variable based on the state of the checkboxes
 void ignore_orders_dlg::OnOK() 
 {
-	int orders_accepted, i;
+	std::set<size_t> orders_accepted;
+	int i;
 	object *objp;
 
 	// clear out the orders, then set the bits according to which check boxes are set
 	if ( m_ship >= 0 ) {
-		orders_accepted = 0;
 		for ( i = 0; i < m_num_checks_active; i++ ) {
 			if ( check_boxes[i].button->GetCheck() )
-				orders_accepted |= check_boxes[i].id;
+				orders_accepted.insert(check_boxes[i].id);
 		}
 		Ships[m_ship].orders_accepted = orders_accepted;
 	} else {
 		for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
 			if (((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) && (objp->flags[Object::Object_Flags::Marked])) {
-				Ships[objp->instance].orders_accepted = 0;
+				Ships[objp->instance].orders_accepted.clear();
 				for ( i = 0; i < m_num_checks_active; i++ ) {
 					int box_value;
 
@@ -225,9 +221,9 @@ void ignore_orders_dlg::OnOK()
 
 					// if the button is set, then set the bit, otherwise, clear the bit
 					if ( box_value == 1 )
-						Ships[objp->instance].orders_accepted |= check_boxes[i].id;
+						Ships[objp->instance].orders_accepted.insert(check_boxes[i].id);
 					else
-						Ships[objp->instance].orders_accepted &= ~(check_boxes[i].id);
+						Ships[objp->instance].orders_accepted.erase(check_boxes[i].id);
 				}
 			}
 		}

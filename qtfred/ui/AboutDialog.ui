@@ -126,7 +126,7 @@
         </sizepolicy>
        </property>
        <property name="text">
-        <string>Ported to OGL by RT</string>
+        <string>Ported to OpenGL by RandomTiger</string>
        </property>
        <property name="wordWrap">
         <bool>false</bool>
@@ -142,7 +142,7 @@
         </sizepolicy>
        </property>
        <property name="text">
-        <string>Original fs2_open OGL port by Phreak and Fry_Day</string>
+        <string>Original FSO OpenGL port by Phreak and Fry_Day</string>
        </property>
        <property name="wordWrap">
         <bool>false</bool>
@@ -168,7 +168,7 @@
         <enum>QFrame::NoFrame</enum>
        </property>
        <property name="text">
-        <string>&quot;Fred2 is the omega of all giant unwieldy pieces of code. Its big, its horrifying, and it just doesn't care. View it at your own risk.&quot; - Dave Baranec</string>
+        <string>&quot;FRED2 is the omega of all giant unwieldy pieces of code. It's big, it's horrifying, and it just doesn't care. View it at your own risk.&quot; - Dave Baranec</string>
        </property>
        <property name="wordWrap">
         <bool>true</bool>
