@@ -701,14 +701,11 @@ void pilotfile::plr_read_controls()
 				os::dialogs::Information(LOCATION, "Successfully converted playerfile to v4.  Please rebind your mouse controls within the Options -> Controls Config menu.");
 				
 				SCP_string infostring;
-				infostring += "  Due to technical difficulties, playerfiles versions v4 and up are incompatible with FSO versions older than FSO 22.0.\n\n";
-				infostring += "  Your bindings are now saved in a preset file within /data/players/presets, and are used by FSO versions 22.0 and newer.\n\n";
-				infostring += "  However, when trying to play in older FSO versions, your bindings will revert to the defaults while playing in that older version.\n\n";
-				infostring += "  This is done in order to address several issues:\n";
-				infostring += "  1) To prevent older FSO versions from crashing when attempting to load the new playerfile\n";
-				infostring += "  2) To prevent auto-conversions of bindings that you already have a preset for\n\n";
-				infostring += "  You will see this infobox every time the bindings in your playerfile are different from the defaults, including the invert flag of any axis.\n\n";
-				infostring += "  Thus, it is *highly* recommended that you should create another pilot if you still wish to play in FSO versions older than 22.0";
+				infostring += "Due to technical difficulties, playerfiles versions v4 and up are incompatible with FSO versions older than FSO 22.0.\n\n";
+
+				infostring += "Should you try to use this pilot on a pre - 22.0 version of FSO, your control bindings will revert to the defaults.\n\n";
+
+				infostring += "Please visit https://wiki.hard-light.net/index.php/Frequently_Asked_Questions for more information.";
 
 				os::dialogs::Information(LOCATION, "%s", infostring.c_str());
 			} else {
