@@ -659,7 +659,12 @@ void event_music_first_pattern()
 			audiostream_stop( Patterns[Current_pattern].handle );
 	}
 
-	Pattern_timer_id = timestamp(-1);	// don't let this start quite yet; see event_music_set_start_delay()
+	// if we really are initializing the level
+	if (Missiontime == 0) {
+		Pattern_timer_id = timestamp(-1);	// don't let this start quite yet; see event_music_set_start_delay()
+	} else {
+		Pattern_timer_id = timestamp(0);	// start immediately
+	}
 	
 	Event_music_begun = FALSE;
 	if ( Event_Music_battle_started == TRUE ) {
