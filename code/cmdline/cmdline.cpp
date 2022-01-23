@@ -439,8 +439,8 @@ cmdline_parm no_geo_sdr_effects("-no_geo_effects", NULL, AT_NONE);
 cmdline_parm set_cpu_affinity("-set_cpu_affinity", NULL, AT_NONE);
 cmdline_parm nograb_arg("-nograb", NULL, AT_NONE);
 cmdline_parm noshadercache_arg("-noshadercache", NULL, AT_NONE);
-cmdline_parm prefer_ipv4_arg("-prefer_ipv4", NULL, AT_NONE);
-cmdline_parm prefer_ipv6_arg("-prefer_ipv6", NULL, AT_NONE);
+cmdline_parm prefer_ipv4_arg("-prefer_ipv4", nullptr, AT_NONE);
+cmdline_parm prefer_ipv6_arg("-prefer_ipv6", nullptr, AT_NONE);
 #ifdef WIN32
 cmdline_parm fix_registry("-fix_registry", NULL, AT_NONE);
 #endif
