@@ -299,9 +299,14 @@ public:
 	sexp_list_item *get_listing_opf_language();
 	sexp_list_item* get_listing_opf_functional_when_eval_type();
 	sexp_list_item *get_listing_opf_sexp_containers(ContainerType con_type);
-	sexp_list_item *modifier_get_listing_opf(int parent_node, int arg_index);
-	sexp_list_item *get_listing_opf_list_modifiers() const;
-	sexp_list_item *get_listing_opf_map_keys(int parent_node) const;
+
+	// container modifier options for container data nodes
+	sexp_list_item *get_container_modifiers(int con_data_node) const;
+	sexp_list_item *get_list_container_modifiers() const;
+	sexp_list_item *get_map_container_modifiers(int con_data_node) const;
+	sexp_list_item *get_container_multidim_modifiers(int con_data_node) const;
+
+	bool is_node_eligible_for_special_argument(int parent_node) const;
 
 	int m_mode;
 	int item_index;
