@@ -645,8 +645,13 @@ void sexp_add_to_map(int node)
 	while (node != -1) {
 		// key but no value
 		if (CDR(node) == -1) {
-			char tempbuffer[TOKEN_LENGTH + 256];
-			sprintf(tempbuffer, "Add-to-map requires an even number of entries. The %s key is the last entry. Since there is no value associated with this entry, it will be ignored", CTEXT(node));
+			char tempbuffer[256];
+			snprintf(tempbuffer,
+				sizeof(tempbuffer),
+				"add-to-map SEXP with map container %s was provided a key %s with no associated data",
+				container_name,
+				CTEXT(node));
+			Warning(LOCATION, tempbuffer);
 			log_string(LOGFILE_EVENT_LOG, tempbuffer);
 			return;
 		}
