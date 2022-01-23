@@ -495,8 +495,8 @@ SCP_vector<sexp_oper> Operators = {
 	{ "jettison-cargo",					OP_JETTISON_CARGO_NEW,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "set-docked",						OP_SET_DOCKED,							4,	4,			SEXP_ACTION_OPERATOR,	},	// Sushi
 	{ "cargo-no-deplete",				OP_CARGO_NO_DEPLETE,					1,	2,			SEXP_ACTION_OPERATOR,	},
-	{ "set-scanned",					OP_SET_SCANNED,							1,	2,			SEXP_ACTION_OPERATOR,	},
-	{ "set-unscanned",					OP_SET_UNSCANNED,						1,	2,			SEXP_ACTION_OPERATOR,	},
+	{ "set-scanned",					OP_SET_SCANNED,							1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
+	{ "set-unscanned",					OP_SET_UNSCANNED,						1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	
 	//Armor and Damage Types Sub-Category
 	{ "set-armor-type",					OP_SET_ARMOR_TYPE,						4,	INT_MAX,	SEXP_ACTION_OPERATOR,	},  // FUBAR
