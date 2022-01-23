@@ -698,7 +698,16 @@ void pilotfile::plr_read_controls()
 
 			// Try to save the preset file
 			if (save_preset_file(preset, false)) {
-				Information(LOCATION, "Successfully converted playerfile to v4.  Please rebind your mouse controls, if any.");
+				os::dialogs::Information(LOCATION, "Successfully converted playerfile to v4.  Please rebind your mouse controls within the Options -> Controls Config menu.");
+				
+				SCP_string infostring;
+				infostring += "Due to technical difficulties, playerfiles versions v4 and up are incompatible with FSO versions older than FSO 22.0.\n\n";
+
+				infostring += "Should you try to use this pilot on a pre - 22.0 version of FSO, your control bindings will revert to the defaults.\n\n";
+
+				infostring += "Please visit https://wiki.hard-light.net/index.php/Frequently_Asked_Questions for more information.";
+
+				os::dialogs::Information(LOCATION, "%s", infostring.c_str());
 			} else {
 				Warning(LOCATION, "Could not save controls preset file (%s) when converting playerfile to v3.", preset.name.c_str());
 			}
@@ -728,9 +737,51 @@ void pilotfile::plr_read_controls()
 void pilotfile::plr_write_controls()
 {
 	handler->startSectionWrite(Section::Controls);
-	
+
+	// Save the default bindings to prevent crash. See github issue 3902
+	auto& Control_config_default = Control_config_presets[0].bindings;
+	handler->startArrayWrite("controls", JOY_AXIS_BEGIN, true);
+	for (size_t i = 0; i < JOY_AXIS_BEGIN; i++) {
+		auto& item = Control_config_default[i];
+		handler->startSectionWrite(Section::Unnamed);
+
+		handler->writeShort("key", item.get_btn(CID_KEYBOARD));
+		handler->writeShort("joystick", item.get_btn(CID_JOY0));
+		handler->writeShort("mouse", -1);
+
+		handler->endSectionWrite();
+	}
+	handler->endArrayWrite();
+
+	handler->startArrayWrite("axes", NUM_JOY_AXIS_ACTIONS);
+	for (size_t idx = JOY_AXIS_BEGIN; idx < JOY_AXIS_END; idx++) {
+		auto& item = Control_config_default[idx];
+
+		handler->startSectionWrite(Section::Unnamed);
+
+		// Combine mouse and joy0 to joy0 axis.  Needed because controlsconfigdefaults.tbl may change the defaults.
+		int joy = static_cast<int>(item.get_btn(CID_JOY0));
+		int mouse = static_cast<int>(item.get_btn(CID_MOUSE));
+		if (joy >= 0) {
+			handler->writeInt("axis_map", joy);
+
+		} else if (mouse >= 0) {
+			handler->writeInt("axis_map", mouse);
+
+		} else {
+			handler->writeInt("axis_map", -1);
+		}
+		
+		handler->writeInt("invert_axis", item.is_inverted() ? 1 : 0);
+
+		handler->endSectionWrite();
+	}
+	handler->endArrayWrite();
+	// End issue 3902
+
+
 	// As of PLR v4, control bindings are saved outside of the PLR file into PST files.
-	// We now only save the currently selected preset in the PLR file itself.
+	// Save the currently selected preset
 	auto it = control_config_get_current_preset();
 
 	if (it == Control_config_presets.end()) {
