@@ -1344,60 +1344,13 @@ bool multi_fs_tracker_validate_mission_list(SCP_vector<multi_create_info> &file_
 	return true;
 }
 
-// check all tables with tracker
-// this is hacked data check as well as mod ident (done server side)
-// returns:
-//     1 if hacked (or no ident) - stats won't save
-//     0 if ident and not hacked - stats can save
-//    -1 if server connection failed
-int multi_fs_tracker_validate_game_data()
+static int validate_table_list(const SCP_vector<SCP_string> &table_list, int &game_data_status)
 {
-	// should only do this only once per game session
-	static int game_data_status = MVALID_STATUS_UNKNOWN;
 	vmt_valid_data_req_struct vdr;
 	char popup_string[512] = "";
-
-	multi_fs_tracker_init();
-
-	if ( !Multi_fs_tracker_inited ) {
-		return 1; // assume hacked
-	}
-
-	if (game_data_status != MVALID_STATUS_UNKNOWN) {
-		return (game_data_status != MVALID_STATUS_VALID);
-	}
-
-
-	SCP_vector<SCP_string> table_list;
-	size_t tbl_idx, tbm_idx;
 	int rval;
 
-	// grab all tbl and tbm files and send the checksum to tracker
-	// cf_get_file_list() strips ext so we have to do this in parts
-	// let the tracker figure out which files to validate against
-
-	// get all tbl files first
-	cf_get_file_list(table_list, CF_TYPE_TABLES, "*.tbl");
-
-	// add ext back on filenames
-	for (tbl_idx = 0; tbl_idx < table_list.size(); ++tbl_idx) {
-		table_list[tbl_idx].append(".tbl");
-	}
-
-	// next grab any tbm files
-	cf_get_file_list(table_list, CF_TYPE_TABLES, "*.tbm");
-
-	// and add ext
-	for (tbm_idx = tbl_idx; tbm_idx < table_list.size(); ++tbm_idx) {
-		table_list[tbm_idx].append(".tbm");
-	}
-
-	// now check with tracker
 	strcpy_s(popup_string, XSTR("Validating tables ...", -1));
-
-	if ( !(Game_mode & GM_STANDALONE_SERVER) ) {
-		popup_conditional_create(0, XSTR("&Cancel", 667), popup_string);
-	}
 
 	vdr.type = VDR_TYPE_TABLE;
 	vdr.flags = VDR_FLAG_IDENT;
@@ -1496,6 +1449,89 @@ int multi_fs_tracker_validate_game_data()
 
 			return -1;
 		}
+	}
+
+	return 0;
+}
+
+// check all tables with tracker
+// this is hacked data check as well as mod ident (done server side)
+// returns:
+//     1 if hacked (or no ident) - stats won't save
+//     0 if ident and not hacked - stats can save
+//    -1 if server connection failed
+int multi_fs_tracker_validate_game_data()
+{
+	// should only do this only once per game session
+	static int game_data_status = MVALID_STATUS_UNKNOWN;
+	char popup_string[512] = "";
+
+	multi_fs_tracker_init();
+
+	if ( !Multi_fs_tracker_inited ) {
+		return 1; // assume hacked
+	}
+
+	if (game_data_status != MVALID_STATUS_UNKNOWN) {
+		return (game_data_status != MVALID_STATUS_VALID);
+	}
+
+
+	SCP_vector<SCP_string> table_list;
+	size_t tbl_idx, tbm_idx;
+	int rval;
+
+	// grab all tbl and tbm files and send the checksum to tracker
+	// cf_get_file_list() strips ext so we have to do this in parts
+	// let the tracker figure out which files to validate against
+
+	// get all tbl files first
+	cf_get_file_list(table_list, CF_TYPE_TABLES, "*.tbl");
+
+	// add ext back on filenames
+	for (tbl_idx = 0; tbl_idx < table_list.size(); ++tbl_idx) {
+		table_list[tbl_idx].append(".tbl");
+	}
+
+	// next grab any tbm files
+	cf_get_file_list(table_list, CF_TYPE_TABLES, "*.tbm");
+
+	// and add ext
+	for (tbm_idx = tbl_idx; tbm_idx < table_list.size(); ++tbm_idx) {
+		table_list[tbm_idx].append(".tbm");
+	}
+
+	// now check with tracker
+	strcpy_s(popup_string, XSTR("Validating tables ...", -1));
+
+	if ( !(Game_mode & GM_STANDALONE_SERVER) ) {
+		popup_conditional_create(0, XSTR("&Cancel", 667), popup_string);
+	}
+
+	rval = validate_table_list(table_list, game_data_status);
+
+	// if the connection timed out then maybe try a fallback...
+	if ( (rval == -1) && (psnet_get_ip_mode() == PSNET_IP_MODE_DUAL) ) {
+		// the default preference is IPv6, so fall back to IPv4
+		// otherwise move to 4 or 6 depending on current preference
+
+		if ( !Cmdline_prefer_ipv4 && !Cmdline_prefer_ipv6 ) {
+			Cmdline_prefer_ipv4 = true;
+		} else if (Cmdline_prefer_ipv4) {
+			Cmdline_prefer_ipv4 = false;
+			Cmdline_prefer_ipv6 = true;
+		} else if (Cmdline_prefer_ipv6) {
+			Cmdline_prefer_ipv4 = true;
+			Cmdline_prefer_ipv6 = false;
+		}
+
+		// now we have to re-init the low-level tracker connections
+		InitValidateClient();
+		InitPilotTrackerClient();
+		InitGameTrackerClient(GT_FS2OPEN);
+
+		// and try to validate again
+		validate_table_list(table_list, game_data_status);
 	}
 
 	if ( !(Game_mode & GM_STANDALONE_SERVER) ) {
