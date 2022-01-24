@@ -137,7 +137,6 @@ namespace animation {
 				}
 				else
 					stop(pmi, false);
-				break;
 			}
 
 			m_animation->calculateAnimation(applyBuffer, instanceData.time, pmi->id);

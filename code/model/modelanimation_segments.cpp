@@ -25,9 +25,8 @@ namespace animation {
 	}
 
 	void ModelAnimationSegmentSerial::calculateAnimation(ModelAnimationSubmodelBuffer& base, float time, int pmi_id) const {
-
 		size_t animationCnt = 0;
-		while (time > 0.0f && animationCnt < m_segments.size()) {
+		while (time >= 0.0f && animationCnt < m_segments.size()) {
 			float timeLocal = time;
 			//Make sure that each segment actually stops at its end
 			if (timeLocal > m_segments[animationCnt]->getDuration(pmi_id))
