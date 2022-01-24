@@ -1975,11 +1975,11 @@ void control_config_do_frame(float frametime)
 					}
 
 					for (i=0; i<MOUSE_NUM_BUTTONS; i++) {
-						CC_bind bind(cid, static_cast<short>(i));
+						CC_bind mouse_bind(cid, static_cast<short>(i));
 
-						if (mouse_down(bind)) {
+						if (mouse_down(mouse_bind)) {
 							Assert(!Control_config[z].is_axis());
-							control_config_bind(z, bind, Selected_item);
+							control_config_bind(z, mouse_bind, Selected_item);
 
 							strcpy_s(bound_string, Joy_button_text[i]);
 							done = true;
