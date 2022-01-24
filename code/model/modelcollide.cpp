@@ -247,7 +247,7 @@ static void mc_check_sphereline_face( int nv, vec3d ** verts, vec3d * plane_pnt,
 			Mc->hit_point = hit_point;
 			Mc->hit_normal = *plane_norm;
 			Mc->hit_submodel = Mc_submodel;			
-			Mc->edge_hit = 0;
+			Mc->edge_hit = false;
 
 			if ( uvl_list )	{
 				Mc->hit_u = u;
@@ -315,7 +315,7 @@ static void mc_check_sphereline_face( int nv, vec3d ** verts, vec3d * plane_pnt,
 				Mc->hit_dist = sphere_time;
 				Mc->hit_point = hit_point;
 				Mc->hit_submodel = Mc_submodel;
-				Mc->edge_hit = 1;
+				Mc->edge_hit = true;
 				if ( ntmap < 0 ) {
 					Mc->hit_bitmap = -1;
 				} else {
@@ -1217,7 +1217,7 @@ int model_collide(mc_info *mc_info_obj)
 	Mc->num_hits = 0;				// How many collisions were found
 	Mc->shield_hit_tri = -1;	// Assume we won't hit any shield polygons
 	Mc->hit_bitmap = -1;
-	Mc->edge_hit = 0;
+	Mc->edge_hit = false;
 
 	if ( (Mc->flags & MC_CHECK_SHIELD) && (Mc->flags & MC_CHECK_MODEL) )	{
 		Error( LOCATION, "Checking both shield and model!\n" );

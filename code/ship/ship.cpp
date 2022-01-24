@@ -6743,7 +6743,7 @@ void ship_recalc_subsys_strength( ship *shipp )
                     ship_system->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Turret_rotation);
                 }
             }
-            if ((ship_system->flags[Subsystem_Flags::Rotates]) && (ship_system->system_info->rotation_snd.isValid()) && !(ship_system->subsys_snd_flags[Ship::Subsys_Sound_Flags::Rotate]))
+            if ((ship_system->flags[Ship::Subsystem_Flags::Rotates]) && (ship_system->system_info->rotation_snd.isValid()) && !(ship_system->subsys_snd_flags[Ship::Subsys_Sound_Flags::Rotate]))
             {
                 obj_snd_assign(shipp->objnum, ship_system->system_info->rotation_snd, &ship_system->system_info->pnt, OS_SUBSYS_ROTATION, ship_system);
                 ship_system->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Rotate);
@@ -17530,15 +17530,15 @@ void object_jettison_cargo(object *objp, object *cargo_objp, float jettison_spee
 	if (jettison_new)
 	{
 		// new method uses dockpoint normals and user-specified force
-		extern void find_adjusted_dockpoint_info(vec3d * global_dock_point, matrix * dock_orient, object * objp, polymodel * pm, int submodel, int dock_index);
-		extern int find_parent_rotating_submodel(polymodel *pm, int dock_index);
+		extern void find_adjusted_dockpoint_info(vec3d *global_dock_point, matrix *dock_orient, object *objp, polymodel *pm, int submodel, int dock_index);
+		extern int find_parent_moving_submodel(polymodel *pm, int dock_index);
 
 		int model_num = Ship_info[shipp->ship_info_index].model_num;
 		polymodel *pm = model_get(model_num);
-		int docker_rotating_submodel = find_parent_rotating_submodel(pm, docker_index);
+		int docker_moving_submodel = find_parent_moving_submodel(pm, docker_index);
 		matrix dock_orient;
 
-		find_adjusted_dockpoint_info(&pos, &dock_orient, objp, pm, docker_rotating_submodel, docker_index);
+		find_adjusted_dockpoint_info(&pos, &dock_orient, objp, pm, docker_moving_submodel, docker_index);
 
 		// set for relative separation speed (see also do_dying_undock_physics)
 		vm_vec_copy_scale(&impulse, &dock_orient.vec.fvec, jettison_speed * cargo_objp->phys_info.mass);
