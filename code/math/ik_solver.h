@@ -58,6 +58,7 @@ public:
 		return false;
 	};
 	
+	virtual ~ik_constraint() = default;
 };
 
 class ik_constraint_hinge : public ik_constraint{

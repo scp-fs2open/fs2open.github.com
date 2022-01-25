@@ -1083,6 +1083,12 @@ namespace animation {
 		
 		while(optional_string("$Chain Link:")){
 			auto submodel = ModelAnimationParseHelper::parseSubmodel();
+			if (!submodel) {
+				if (data->parentSubmodel)
+					submodel = data->parentSubmodel;
+				else
+					error_display(1, "IK chain link has no target submodel!");
+			}
 
 			optional<angles> acceleration;
 			if(optional_string("+Acceleration:")){

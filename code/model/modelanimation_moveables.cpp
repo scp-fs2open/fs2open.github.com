@@ -181,7 +181,7 @@ namespace animation {
 			}
 
 			ik.m_targetRotation = orient;
-			ik.m_targetPosition = vec3d{{x * 0.01f, y * 0.01f, z * 0.01f}};
+			ik.m_targetPosition = vec3d{{{x * 0.01f, y * 0.01f, z * 0.01f}}};
 		}
 		catch(const linb::bad_any_cast& e){
 			Error(LOCATION, "Argument error trying to update rotation moveable: %s", e.what());
