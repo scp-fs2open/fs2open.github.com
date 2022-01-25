@@ -228,11 +228,10 @@ namespace animation {
 		
 		//PMI ID -> Instance Data
 		std::map<int, instance_data> m_instances;
-		std::vector<chainlink_data> m_chain;
-		std::shared_ptr<ModelAnimationSegmentParallel> m_segment;
-		
 	public:
 		
+		std::vector<chainlink_data> m_chain;
+		std::shared_ptr<ModelAnimationSegmentParallel> m_segment;
 		vec3d m_targetPosition;
 		optional<matrix> m_targetRotation;
 	private:

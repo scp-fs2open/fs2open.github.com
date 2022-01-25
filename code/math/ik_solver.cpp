@@ -153,13 +153,17 @@ void ik_node::calculateGlobalRotation(const ik_node& child) {
 	vec3d rotax;
 	vec3d n_off;
 	vec3d n_diff = child.calculatedPos - calculatedPos;
-
 	vm_vec_copy_normalize(&n_off, &child.submodel->offset);
+	vm_vec_normalize(&n_diff);
+	
+	vec3d checkSafeTransform = n_diff - n_off;
+	if(vm_vec_mag(&checkSafeTransform) <= 0.001){
+		calculatedRot = IDENTITY_MATRIX;
+		return;
+	}
 	
 	vm_vec_cross(&rotax, &n_off, &n_diff);
 	vm_vec_normalize(&rotax);
-
-	vm_vec_normalize(&n_diff);
 
 	vm_quaternion_rotate(&calculatedRot, acosf(vm_vec_dot(&n_diff, &n_off)), &rotax);
 }
