@@ -60,6 +60,22 @@ ADE_VIRTVAR(HUDDefaultGaugeCount, l_HUD, "number", "Specifies the amount of HUD 
 	return ade_set_args(L, "i", amount);
 }
 
+ADE_FUNC(getHUDConfigShowStatus, l_HUD, "number gaugeIndex", "Gets the HUD configuration show status for the specified default HUD gauge.", "boolean", "Returns show status or nil if gauge invalid")
+{
+	int idx = -1;
+
+	if (!ade_get_args(L, "i", &idx))
+		return ADE_RETURN_NIL;
+
+	if ((idx < 0) || (idx >= default_hud_gauges.size()))
+		return ADE_RETURN_NIL;
+
+	if (hud_config_show_flag_is_set(idx))
+		return ADE_RETURN_TRUE;
+	else
+		return ADE_RETURN_FALSE;
+}
+
 ADE_FUNC(setHUDGaugeColor, l_HUD,
          "number gaugeIndex, [number red, number green, number blue, number alpha]",
          "Modifies color used to draw the gauge in the pilot config", "boolean", "If the operation was successful")
