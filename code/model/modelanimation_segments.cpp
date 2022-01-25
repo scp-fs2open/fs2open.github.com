@@ -1014,9 +1014,22 @@ namespace animation {
 	
 	void ModelAnimationSegmentIK::recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) {
 		auto ik = std::unique_ptr<ik_solver>(new ik_solver_fabrik());
+
+		polymodel* pm = model_get(pmi->model_num);
+		bsp_info* lastSubmodel = nullptr;
 		
-		for(const auto& chainlink : m_chain)
-			ik->addNode(chainlink.submodel->findSubmodel(pmi).second, chainlink.constraint.get());
+		for(const auto& chainlink : m_chain) {
+			bsp_info* submodel = chainlink.submodel->findSubmodel(pmi).second;
+			if(lastSubmodel != nullptr) {
+				//Validate chain for current POF
+				if(&pm->submodel[submodel->parent] != lastSubmodel){
+					Error(LOCATION, "Tried to perform IK on a non-continuous chain. Submodel %s must be an immediate child of the previous chain-link's submodel %s.", submodel->name, lastSubmodel->name);
+				}
+			}
+			lastSubmodel = submodel;
+			
+			ik->addNode(submodel, chainlink.constraint.get());
+		}
 		
 		ik->solve(m_targetPosition, &m_targetRotation);
 		
@@ -1060,6 +1073,10 @@ namespace animation {
 			targetRotation = targetRot;
 		}
 		
+		required_string("+Time:");
+		float time;
+		stuff_float(&time);
+		
 		auto segment = std::shared_ptr<ModelAnimationSegmentIK>(new ModelAnimationSegmentIK(targetPosition, targetRotation));
 		auto parallel = std::shared_ptr<ModelAnimationSegmentParallel>(new ModelAnimationSegmentParallel());
 		segment->m_segment = parallel;
@@ -1067,6 +1084,13 @@ namespace animation {
 		while(optional_string("$Chain Link:")){
 			auto submodel = ModelAnimationParseHelper::parseSubmodel();
 
+			optional<angles> acceleration;
+			if(optional_string("+Acceleration:")){
+				angles accel;
+				stuff_angles_deg_phb(&accel);
+				acceleration = accel;
+			}
+			
 			std::shared_ptr<ik_constraint> constraint;
 			if(optional_string("+Constraint:")){
 				int type = required_string_one_of(2, "Window", "Hinge");
@@ -1096,7 +1120,7 @@ namespace animation {
 			else
 				constraint = std::shared_ptr<ik_constraint>(new ik_constraint());
 			
-			auto rotation = std::shared_ptr<ModelAnimationSegmentRotation>(new ModelAnimationSegmentRotation(submodel, optional<angles>({0,0,0}), optional<angles>(), 5, optional<angles>(), true));
+			auto rotation = std::shared_ptr<ModelAnimationSegmentRotation>(new ModelAnimationSegmentRotation(submodel, optional<angles>({0,0,0}), optional<angles>(), time, acceleration, true));
 			parallel->addSegment(rotation);
 			segment->m_chain.push_back({submodel, constraint, rotation});
 		}
