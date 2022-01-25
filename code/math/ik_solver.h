@@ -10,6 +10,7 @@ struct ik_node{
 	const ik_constraint* constraint;
 	
 	vec3d calculatedPos = ZERO_VECTOR;
+	vec3d lastPos = ZERO_VECTOR;
 	matrix calculatedRot = IDENTITY_MATRIX;
 	float distance = 0.0f;
 	
@@ -53,14 +54,18 @@ public:
 	/* 
 	 * Return true if the local rotation was modified by the constraint
 	 * */
-	virtual bool constrain(matrix& /*localRot*/) const {
+	virtual bool constrain(matrix& /*localRot*/, bool /*backwardsPass*/ = false) const {
 		return false;
 	};
 	
 };
 
 class ik_constraint_hinge : public ik_constraint{
-
+	vec3d axis;
+public:
+	ik_constraint_hinge(const vec3d& _axis);
+	
+	bool constrain(matrix& localRot, bool backwardsPass) const override;
 };
 
 class ik_constraint_window : public ik_constraint{
@@ -68,5 +73,5 @@ class ik_constraint_window : public ik_constraint{
 public:
 	ik_constraint_window(const angles& _absLimit);
 	
-	bool constrain(matrix& localRot) const override;
+	bool constrain(matrix& localRot, bool backwardsPass) const override;
 };

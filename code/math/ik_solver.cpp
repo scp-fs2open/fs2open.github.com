@@ -22,6 +22,9 @@ void ik_solver_fabrik::solve(const vec3d& targetPos, const matrix* targetOrient)
 	while(iterationCounter++ < m_maxIterations && endEffectorDistance > m_targetDistance && endEffectorDistanceDelta > m_minProgress) {
 		endEffectorDistanceDelta = endEffectorDistance;
 
+		for(auto& node : m_nodes)
+			node.lastPos = node.calculatedPos;
+		
 		m_nodes.back().calculatedPos = targetPos;
 		
 		//Backwards pass
@@ -51,7 +54,7 @@ void ik_solver_fabrik::solve(const vec3d& targetPos, const matrix* targetOrient)
 			vm_matrix_x_matrix(&localRot, &child.calculatedRot, &localRot);
 
 			// Check if constraint requires change of local rotation
-			if(child.constraint->constrain(localRot)){
+			if(child.constraint->constrain(localRot, true)){
 				// Reposition parent to fulfill child local rotation constraint by changing parent global rotation
 				
 				// Convert new local rotation of child and global rotation of child to new parent global rotation
@@ -65,7 +68,7 @@ void ik_solver_fabrik::solve(const vec3d& targetPos, const matrix* targetOrient)
 			}
 		}
 		
-		//Technically the base node would now need to be rotation constrained, but since the parent position is reset anyways for the forwards pass with a fixed base, this has no effect
+		//Technically the base node would now need to be rotation constrained, but since the base position is reset anyways for the forwards pass with a fixed base, this has no effect
 		
 		m_nodes.front().calculatedPos = ZERO_VECTOR;
 		m_nodes.front().calculatedRot = IDENTITY_MATRIX;
@@ -128,6 +131,16 @@ void ik_solver_fabrik::solve(const vec3d& targetPos, const matrix* targetOrient)
 		endEffectorDistanceDelta -= endEffectorDistance;
 	}
 	
+	if (endEffectorDistanceDelta < 0.0f) {
+		// Solution got worse, likely a singularity from hinges or something. Restore last good solution
+		for(auto& node : m_nodes)
+			node.calculatedPos = node.lastPos;
+
+		for(size_t i = 0; i < m_nodes.size() - 1; ++i) {
+			m_nodes[i].calculateGlobalRotation(m_nodes[i + 1]);
+		}
+	}
+	
 	//Localize rotations
 	for(size_t i = m_nodes.size() - 1; i > 0; --i) {
 		matrix parent = m_nodes[i - 1].calculatedRot;
@@ -153,9 +166,30 @@ void ik_node::calculateGlobalRotation(const ik_node& child) {
 
 static constexpr float angles::*pbh[] = { &angles::p, &angles::b, &angles::h };
 
+ik_constraint_hinge::ik_constraint_hinge(const vec3d& _axis) : axis(_axis) { }
+
+bool ik_constraint_hinge::constrain(matrix& localRot, bool /*backwardsPass*/) const {
+	float angle;
+	
+	float distance = vm_closest_angle_to_matrix(&localRot, &axis, &angle);
+	
+	// Tolerance for off-axis.
+	if(distance < fl_radians(0.5f)){
+		return false;
+	}
+
+	/*if(backwardsPass){
+		 TODO: If Hinge joints cause singularities in FABRIK, this might need random perturbations on the backwards pass
+	}*/
+	
+	vm_quaternion_rotate(&localRot, angle, &axis);
+	
+	return true;
+}
+
 ik_constraint_window::ik_constraint_window(const angles& _absLimit) : absLimit(_absLimit) { }
 
-bool ik_constraint_window::constrain(matrix& localRot) const {
+bool ik_constraint_window::constrain(matrix& localRot, bool /*backwardsPass*/) const {
 	//Convert to angles
 	angles currentAngles;
 	vm_extract_angles_matrix_alternate(&currentAngles, &localRot);
@@ -167,7 +201,7 @@ bool ik_constraint_window::constrain(matrix& localRot) const {
 		const float absAngle = abs(currentAngles.*i);
 		if(absAngle > absLimit.*i){
 			needsClamp = true;
-			currentAngles.*i = copysignf(std::max(absAngle, absLimit.*i), currentAngles.*i);
+			currentAngles.*i = copysignf(std::min(absAngle, absLimit.*i), currentAngles.*i);
 		}
 	}
 	

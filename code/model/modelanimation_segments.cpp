@@ -1069,17 +1069,23 @@ namespace animation {
 
 			std::shared_ptr<ik_constraint> constraint;
 			if(optional_string("+Constraint:")){
-				int type = required_string_one_of(1, "Window");
+				int type = required_string_one_of(2, "Window", "Hinge");
 				switch(type){
 					case 0: { //Window
 						angles window;
+						required_string("Window");
 						required_string("+Window Size:");
 						stuff_angles_deg_phb(&window);
 						constraint = std::shared_ptr<ik_constraint>(new ik_constraint_window(window));
 						break;
 					}
 					case 1: { //Hinge
-						constraint = std::shared_ptr<ik_constraint>(new ik_constraint_hinge());
+						vec3d axis;
+						required_string("Hinge");
+						required_string("+Axis:");
+						stuff_vec3d(&axis);
+						vm_vec_normalize(&axis);
+						constraint = std::shared_ptr<ik_constraint>(new ik_constraint_hinge(axis));
 						break;
 					}
 					default:
