@@ -67,7 +67,7 @@ ADE_FUNC(getHUDConfigShowStatus, l_HUD, "number gaugeIndex", "Gets the HUD confi
 	if (!ade_get_args(L, "i", &idx))
 		return ADE_RETURN_NIL;
 
-	if ((idx < 0) || (idx >= default_hud_gauges.size()))
+	if ((idx < 0) || (idx >= (int)default_hud_gauges.size()))
 		return ADE_RETURN_NIL;
 
 	if (hud_config_show_flag_is_set(idx))
