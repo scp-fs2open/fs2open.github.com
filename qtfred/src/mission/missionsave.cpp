@@ -1126,7 +1126,7 @@ int CFred_mission_save::save_briefing()
 					fout(" %d", (bi->flags & BI_USE_WING_ICON) ? 1 : 0);
 				}
 
-				if ((Mission_save_format != FSO_FORMAT_RETAIL) && (bi->flags & BI_USE_CARGO_ICON)) {
+				if ((save_format != MissionFormat::RETAIL) && (bi->flags & BI_USE_CARGO_ICON)) {
 					required_string_fred("$use cargo icon:");
 					parse_comments();
 					fout(" %d", (bi->flags & BI_USE_CARGO_ICON) ? 1 : 0);
