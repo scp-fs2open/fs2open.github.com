@@ -147,6 +147,42 @@ namespace animation {
 
 	};
 
+	
+	//This segment rotates a submodels orientation by a certain amount in PBH
+	class ModelAnimationSegmentAxisRotation : public ModelAnimationSegment {
+		struct instance_data {
+			float m_actualVelocity;
+			float m_actualTarget;
+			float m_actualTime;
+			optional<float> m_actualAccel;
+			optional<float> m_accelTime;
+		};
+
+		//PMI ID -> Instance Data
+		std::map<int, instance_data> m_instances;
+
+		//configurables:
+	public:
+		std::shared_ptr<ModelAnimationSubmodel> m_submodel;
+		optional<float> m_targetAngle;
+		optional<float> m_velocity;
+		optional<float> m_time;
+		optional<float> m_acceleration;
+		vec3d m_axis;
+
+	private:
+		ModelAnimationSegment* copy() const override;
+		void recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) override;
+		void calculateAnimation(ModelAnimationSubmodelBuffer& base, float time, int pmi_id) const override;
+		void executeAnimation(const ModelAnimationSubmodelBuffer& /*state*/, float /*timeboundLower*/, float /*timeboundUpper*/, ModelAnimationDirection /*direction*/, int /*pmi_id*/) override { };
+		void exchangeSubmodelPointers(ModelAnimationSet& replaceWith) override;
+
+	public:
+		static std::shared_ptr<ModelAnimationSegment> parser(ModelAnimationParseHelper* data);
+		ModelAnimationSegmentAxisRotation(std::shared_ptr<ModelAnimationSubmodel> submodel, optional<float> targetAngle, optional<float> velocity, optional<float> time, optional<float> acceleration, const vec3d& axis);
+
+	};
+
 	class ModelAnimationSegmentTranslation : public ModelAnimationSegment {
 		struct instance_data {
 			vec3d m_actualVelocity;
