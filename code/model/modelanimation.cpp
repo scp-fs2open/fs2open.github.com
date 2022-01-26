@@ -645,6 +645,27 @@ namespace animation {
 		return started;
 	}
 
+	bool ModelAnimationSet::startBlanket(polymodel_instance* pmi, ModelAnimationTriggerType type, ModelAnimationDirection direction, bool forced, bool instant, bool pause) const {
+		if (pmi == nullptr)
+			return false;
+
+		bool started = false;
+		
+		for(const auto& animations : m_animationSet) {
+			if(animations.first.type != type)
+				continue;
+			
+			for (const auto& namedAnimation : animations.second){
+				for(const auto& animation : namedAnimation.second){
+					animation->start(pmi, direction, forced, instant, pause);
+					started = true;
+				}
+			}
+		}
+		
+		return started;
+	}
+
 	//Yes why of course does this need special handling...
 	bool ModelAnimationSet::startDockBayDoors(polymodel_instance* pmi, ModelAnimationDirection direction, bool forced, bool instant, bool pause, int subtype) const {
 		if (pmi == nullptr)
