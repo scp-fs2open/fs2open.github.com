@@ -173,7 +173,7 @@ namespace animation {
 	private:
 		ModelAnimationSegment* copy() const override;
 		void recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) override;
-		void calculateAnimation(ModelAnimationSubmodelBuffer& base, float time, int pmi_id) const override;
+		void calculateAnimation(ModelAnimationSubmodelBuffer& /*base*/, float time, int pmi_id) const override;
 		void executeAnimation(const ModelAnimationSubmodelBuffer& /*state*/, float /*timeboundLower*/, float /*timeboundUpper*/, ModelAnimationDirection /*direction*/, int /*pmi_id*/) override { };
 		void exchangeSubmodelPointers(ModelAnimationSet& replaceWith) override;
 

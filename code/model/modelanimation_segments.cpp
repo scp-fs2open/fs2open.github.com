@@ -619,7 +619,7 @@ namespace animation {
 		return new ModelAnimationSegmentAxisRotation(*this);
 	}
 
-	void ModelAnimationSegmentAxisRotation::recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) {
+	void ModelAnimationSegmentAxisRotation::recalculate(ModelAnimationSubmodelBuffer& /*base*/, polymodel_instance* pmi) {
 		Assertion(!(m_targetAngle.has() ^ m_velocity.has() ^ m_time.has()), "Tried to run over- or underdefined rotation. Define exactly two out of 'time', 'velocity', and 'angle'!");
 
 		instance_data& instanceData = m_instances[pmi->id];
@@ -647,9 +647,8 @@ namespace animation {
 				a = copysignf(a, v);
 				instanceData.m_actualAccel = a;
 				instanceData.m_accelTime = fmaxf(v / a, t / 2.0f);
-
-				for (float angles::* i : pbh)
-					instanceData.m_actualTarget = 2.0f * v / a <= t ? (v * (a * t - v)) / a: a * (t * t / 4.0f);
+				
+				instanceData.m_actualTarget = 2.0f * v / a <= t ? (v * (a * t - v)) / a: a * (t * t / 4.0f);
 
 			}
 			else { //Don't consider acceleration, assume instant velocity.
@@ -711,7 +710,6 @@ namespace animation {
 
 			float actualAccel = 0;
 			float accelTime = 0;
-			float actualTime = 0;
 			
 			if (d != 0.0f) {
 				if (v == 0.0f) {
@@ -732,16 +730,16 @@ namespace animation {
 					float dv = d / v;
 
 					if (dv >= va) {
-						actualTime = va + dv;
+						duration = va + dv;
 						accelTime = va;
 					}
 					else {
-						actualTime = 2.0f * sqrtf(d / a);
-						accelTime = actualTime / 2.0f;
+						duration = 2.0f * sqrtf(d / a);
+						accelTime = duration / 2.0f;
 					}
 				}
 				else {
-					actualTime = d / v;
+					duration = d / v;
 				}
 			}
 			
@@ -751,7 +749,7 @@ namespace animation {
 				instanceData.m_accelTime = accelTime;
 			}
 
-			instanceData.m_actualTime = actualTime;
+			instanceData.m_actualTime = duration;
 		}
 	}
 
