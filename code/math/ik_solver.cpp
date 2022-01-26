@@ -4,7 +4,9 @@ ik_solver_fabrik::ik_solver_fabrik(unsigned int maxIterations, float targetDista
 	: m_maxIterations(maxIterations), m_targetDistance(targetDistance), m_minProgress(minProgress) { }
 
 void ik_solver_fabrik::solve(const vec3d& targetPos, const matrix* targetOrient) {
-
+	//Implementation of the paper "FABRIK: A fast iterative solver for the Inverse Kinematics problem"
+	//http://andreasaristidou.com/publications/papers/FABRIK.pdf
+	
 	Assertion(m_nodes.size() > 1, "Node-list for IK does not contain at least two nodes.");
 	
 	//Calculate distances and set up nodes
@@ -107,7 +109,7 @@ void ik_solver_fabrik::solve(const vec3d& targetPos, const matrix* targetOrient)
 			}
 		}
 		
-		//After positioning the end effector, it now needs to be oriented correctly. If we have a target orientation use it, otherwise assume it's parents rotation. Then constrain.
+		//After positioning the end effector, it now needs to be oriented correctly. If we have a target orientation use it, otherwise assume its parents rotation. Then constrain.
 		{
 			const matrix& parentRot = m_nodes[m_nodes.size() - 2].calculatedRot;
 			// Find end effector target
