@@ -1,5 +1,6 @@
 #pragma once
 
+#include "math/ik_solver.h"
 #include "model/modelanimation.h"
 
 namespace animation {
@@ -11,13 +12,13 @@ namespace animation {
 		std::vector<std::shared_ptr<ModelAnimationSegment>> m_segments;
 
 	private:
-		ModelAnimationSegment* copy() const override;
 		void recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) override;
 		void calculateAnimation(ModelAnimationSubmodelBuffer& base, float time, int pmi_id) const override;
 		void executeAnimation(const ModelAnimationSubmodelBuffer& state, float timeboundLower, float timeboundUpper, ModelAnimationDirection direction, int pmi_id) override;
 		void exchangeSubmodelPointers(ModelAnimationSet& replaceWith) override;
 
 	public:
+		ModelAnimationSegment* copy() const override;
 		static std::shared_ptr<ModelAnimationSegment> parser(ModelAnimationParseHelper* data);
 		void addSegment(std::shared_ptr<ModelAnimationSegment> segment);
 
@@ -30,13 +31,13 @@ namespace animation {
 		std::vector<std::shared_ptr<ModelAnimationSegment>> m_segments;
 
 	private:
-		ModelAnimationSegment* copy() const override;
 		void recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) override;
 		void calculateAnimation(ModelAnimationSubmodelBuffer& base, float time, int pmi_id) const override;
 		void executeAnimation(const ModelAnimationSubmodelBuffer& state, float timeboundLower, float timeboundUpper, ModelAnimationDirection direction, int pmi_id) override;
 		void exchangeSubmodelPointers(ModelAnimationSet& replaceWith) override;
 
 	public:
+		ModelAnimationSegment* copy() const override;
 		static std::shared_ptr<ModelAnimationSegment> parser(ModelAnimationParseHelper* data);
 		void addSegment(std::shared_ptr<ModelAnimationSegment> segment);
 
@@ -169,12 +170,12 @@ namespace animation {
 		enum class CoordinateSystem { COORDS_PARENT, COORDS_LOCAL_AT_START, COORDS_LOCAL_CURRENT } m_coordType;
 
 	private:
+
 		ModelAnimationSegment* copy() const override;
 		void recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) override;
 		void calculateAnimation(ModelAnimationSubmodelBuffer& base, float time, int pmi_id) const override;
 		void executeAnimation(const ModelAnimationSubmodelBuffer& /*state*/, float /*timeboundLower*/, float /*timeboundUpper*/, ModelAnimationDirection /*direction*/, int /*pmi_id*/) override { };
 		void exchangeSubmodelPointers(ModelAnimationSet& replaceWith) override;
-
 	public:
 		static std::shared_ptr<ModelAnimationSegment> parser(ModelAnimationParseHelper* data);
 		ModelAnimationSegmentTranslation(std::shared_ptr<ModelAnimationSubmodel> submodel, optional<vec3d> target, optional<vec3d> velocity, optional<float> time, optional<vec3d> acceleration, CoordinateSystem coordType = CoordinateSystem::COORDS_PARENT);
@@ -211,6 +212,37 @@ namespace animation {
 	public:
 		static std::shared_ptr<ModelAnimationSegment> parser(ModelAnimationParseHelper* data);
 		ModelAnimationSegmentSoundDuring(std::shared_ptr<ModelAnimationSegment> segment, gamesnd_id start, gamesnd_id end, gamesnd_id during, bool flipIfReversed = false);
+
+	};
+	
+	class ModelAnimationSegmentIK : public ModelAnimationSegment {
+		struct instance_data {
+			
+		};
+
+		struct chainlink_data{
+			std::shared_ptr<ModelAnimationSubmodel> submodel;
+			std::shared_ptr<ik_constraint> constraint;
+			std::shared_ptr<ModelAnimationSegmentRotation> animSegment;
+		};
+		
+		//PMI ID -> Instance Data
+		std::map<int, instance_data> m_instances;
+	public:
+		
+		std::vector<chainlink_data> m_chain;
+		std::shared_ptr<ModelAnimationSegmentParallel> m_segment;
+		vec3d m_targetPosition;
+		optional<matrix> m_targetRotation;
+	private:
+		ModelAnimationSegment* copy() const override;
+		void recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) override;
+		void calculateAnimation(ModelAnimationSubmodelBuffer& base, float time, int pmi_id) const override;
+		void executeAnimation(const ModelAnimationSubmodelBuffer& /*state*/, float /*timeboundLower*/, float /*timeboundUpper*/, ModelAnimationDirection /*direction*/, int /*pmi_id*/) override { };
+		void exchangeSubmodelPointers(ModelAnimationSet& replaceWith) override;
+	public:
+		static std::shared_ptr<ModelAnimationSegment> parser(ModelAnimationParseHelper* data);
+		ModelAnimationSegmentIK(const vec3d& targetPosition, const optional<matrix>& targetRotation);
 
 	};
 

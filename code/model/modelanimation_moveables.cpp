@@ -131,4 +131,148 @@ namespace animation {
 		return std::shared_ptr<ModelAnimationMoveableRotation>(new ModelAnimationMoveableRotation(submodel, angle, velocity, acceleration));
 	}
 
+
+	ModelAnimationMoveableIK::ModelAnimationMoveableIK(std::vector<moveable_chainlink> chain, float time) :
+		m_time(time), m_chain(std::move(chain)) { }
+
+	void ModelAnimationMoveableIK::update(polymodel_instance* pmi, const std::vector<linb::any>& args) {
+		if(args.size() < 3){
+			Error(LOCATION,"Tried updating moveable IK with too few (%d of 3) arguments!", (int) args.size());
+			return;
+		}
+
+		auto& anim = m_instances[pmi->id].animation;
+
+		try {
+			auto x = linb::any_cast<int>(args[0]), y = linb::any_cast<int>(args[1]), z = linb::any_cast<int>(args[2]);
+
+			optional<matrix> orient;
+			if(args.size() >= 6 && args[3].type() == typeid(int)) {
+				auto p = linb::any_cast<int>(args[3]), h = linb::any_cast<int>(args[4]), b = linb::any_cast<int>(args[5]);
+				
+				matrix rot;
+				angles ang{ fl_radians(p), fl_radians(b), fl_radians(h) };
+				vm_angles_2_matrix(&rot, &ang);
+				orient = rot;
+			}
+			
+			auto& sequence = *std::static_pointer_cast<ModelAnimationSegmentSerial>(anim->m_animation);
+			auto& setOrientationParallel = *std::static_pointer_cast<ModelAnimationSegmentParallel>(sequence.m_segments[0]);
+			auto& ik = *std::static_pointer_cast<ModelAnimationSegmentIK>(sequence.m_segments[1]);
+
+			ModelAnimationSubmodelBuffer buffer;
+			for(const auto& segment : setOrientationParallel.m_segments){
+				auto& orientation = *std::static_pointer_cast<ModelAnimationSegmentSetOrientation>(segment);
+				buffer[orientation.m_submodel].data.orientation = IDENTITY_MATRIX;
+			}
+			
+			//Will now only contain the delta of the IK
+			sequence.m_segments[1]->calculateAnimation(buffer, anim->getTime(pmi->id), pmi->id);
+
+			anim->forceRecalculate(pmi);
+
+			for(const auto& segment : setOrientationParallel.m_segments){
+				auto& orientation = *std::static_pointer_cast<ModelAnimationSegmentSetOrientation>(segment);
+				matrix startOrient = orientation.m_targetOrientation;
+				matrix newOrient;
+				//Apply rotation to old default state
+				vm_matrix_x_matrix(&newOrient, &startOrient, &buffer[orientation.m_submodel].data.orientation);
+				orientation.m_targetOrientation = newOrient;
+			}
+
+			ik.m_targetRotation = orient;
+			ik.m_targetPosition = vec3d{{{x * 0.01f, y * 0.01f, z * 0.01f}}};
+		}
+		catch(const linb::bad_any_cast& e){
+			Error(LOCATION, "Argument error trying to update rotation moveable: %s", e.what());
+		}
+	}
+	
+	void ModelAnimationMoveableIK::initialize(ModelAnimationSet* parentSet, polymodel_instance* pmi) {
+		auto& anim = m_instances[pmi->id].animation;
+
+		anim = std::shared_ptr<ModelAnimation>(new ModelAnimation(false, false, true, parentSet));
+
+		auto sequence = std::shared_ptr<ModelAnimationSegmentSerial>(new ModelAnimationSegmentSerial());
+		auto parallelSetOrient = std::shared_ptr<ModelAnimationSegmentParallel>(new ModelAnimationSegmentParallel());
+		for(const auto& link : m_chain) {
+			auto submodel = parentSet->getSubmodel(link.submodel);
+			parallelSetOrient->addSegment(std::shared_ptr<ModelAnimationSegment>(new ModelAnimationSegmentSetOrientation(submodel, vmd_identity_matrix, true)));
+		}
+		sequence->addSegment(parallelSetOrient);
+		
+		auto parallelIK = std::shared_ptr<ModelAnimationSegmentParallel>(new ModelAnimationSegmentParallel());
+		vec3d startPos = ZERO_VECTOR;
+		
+		for(size_t i = 1; i < m_chain.size(); ++i) {
+			startPos += parentSet->getSubmodel(m_chain[i].submodel)->findSubmodel(pmi).second->offset;
+		}
+		
+		auto segment = std::shared_ptr<ModelAnimationSegmentIK>(new ModelAnimationSegmentIK(startPos, optional<matrix>()));
+		segment->m_segment = parallelIK;
+		
+		for(const auto& link : m_chain) {
+			auto submodel = parentSet->getSubmodel(link.submodel);
+			auto rotation = std::shared_ptr<ModelAnimationSegmentRotation>(new ModelAnimationSegmentRotation(submodel, optional<angles>({0,0,0}), optional<angles>(), m_time, link.acceleration, true));
+			parallelIK->addSegment(rotation);
+			segment->m_chain.push_back({submodel, link.constraint, rotation});
+		}
+		
+		sequence->addSegment(segment);
+		
+		anim->setAnimation(sequence);
+
+		anim->start(pmi,ModelAnimationDirection::FWD);
+	}
+	
+	std::shared_ptr<ModelAnimationMoveable> ModelAnimationMoveableIK::parser() {
+		required_string("+Time:");
+		float time;
+		stuff_float(&time);
+
+		std::vector<moveable_chainlink> chain;
+
+		while (optional_string("$Chain Link:")) {
+			auto submodel = ModelAnimationParseHelper::parseSubmodel();
+
+			optional<angles> acceleration;
+			if (optional_string("+Acceleration:")) {
+				angles accel;
+				stuff_angles_deg_phb(&accel);
+				acceleration = accel;
+			}
+
+			std::shared_ptr<ik_constraint> constraint;
+			if (optional_string("+Constraint:")) {
+				int type = required_string_one_of(2, "Window", "Hinge");
+				switch (type) {
+					case 0: { //Window
+						angles window;
+						required_string("Window");
+						required_string("+Window Size:");
+						stuff_angles_deg_phb(&window);
+						constraint = std::shared_ptr<ik_constraint>(new ik_constraint_window(window));
+						break;
+					}
+					case 1: { //Hinge
+						vec3d axis;
+						required_string("Hinge");
+						required_string("+Axis:");
+						stuff_vec3d(&axis);
+						vm_vec_normalize(&axis);
+						constraint = std::shared_ptr<ik_constraint>(new ik_constraint_hinge(axis));
+						break;
+					}
+					default:
+						UNREACHABLE("IK constraint of unknown type specified!");
+						break;
+				}
+			} else
+				constraint = std::shared_ptr<ik_constraint>(new ik_constraint());
+
+			chain.push_back({submodel, constraint, acceleration});
+		}
+		
+		return std::shared_ptr<ModelAnimationMoveable>(new ModelAnimationMoveableIK(chain, time));
+	}
 }
