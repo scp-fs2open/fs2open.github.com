@@ -1537,6 +1537,7 @@ namespace animation {
 	std::map<SCP_string, ModelAnimationParseHelper::ModelAnimationMoveableParser> ModelAnimationParseHelper::s_moveableParsers = {
 		{"Orientation", 			ModelAnimationMoveableOrientation::parser},
 		{"Rotation", 				ModelAnimationMoveableRotation::parser},
+		{"Axis Rotation", 		ModelAnimationMoveableAxisRotation::parser},
 		{"Inverse Kinematics", 	ModelAnimationMoveableIK::parser}
 	};
 
