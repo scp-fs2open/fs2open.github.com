@@ -136,7 +136,7 @@ namespace animation {
 			m_submodel(std::move(submodel)), m_velocity(velocity), m_acceleration(acceleration), m_axis(axis) { }
 
 	void ModelAnimationMoveableAxisRotation::update(polymodel_instance* pmi, const std::vector<linb::any>& args) {
-		if(args.size() < 1){
+		if(args.empty()){
 			Error(LOCATION,"Tried updating moveable axis rotation with too few (%d of 1) arguments!", (int) args.size());
 			return;
 		}
