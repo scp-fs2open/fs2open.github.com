@@ -1528,6 +1528,7 @@ namespace animation {
 		{"$Set Orientation:", 	ModelAnimationSegmentSetOrientation::parser},
 		{"$Set Angle:", 			ModelAnimationSegmentSetAngle::parser},
 		{"$Rotation:",		 	ModelAnimationSegmentRotation::parser},
+		{"$Axis Rotation:", 	ModelAnimationSegmentAxisRotation::parser},
 	//	{"$Translation:", 		ModelAnimationSegmentTranslation::parser},
 		{"$Sound During:", 		ModelAnimationSegmentSoundDuring::parser},
 		{"$Inverse Kinematics:", 	ModelAnimationSegmentIK::parser}
@@ -1536,6 +1537,7 @@ namespace animation {
 	std::map<SCP_string, ModelAnimationParseHelper::ModelAnimationMoveableParser> ModelAnimationParseHelper::s_moveableParsers = {
 		{"Orientation", 			ModelAnimationMoveableOrientation::parser},
 		{"Rotation", 				ModelAnimationMoveableRotation::parser},
+		{"Axis Rotation", 		ModelAnimationMoveableAxisRotation::parser},
 		{"Inverse Kinematics", 	ModelAnimationMoveableIK::parser}
 	};
 

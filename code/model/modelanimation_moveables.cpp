@@ -132,6 +132,85 @@ namespace animation {
 	}
 
 
+	ModelAnimationMoveableAxisRotation::ModelAnimationMoveableAxisRotation(std::shared_ptr<ModelAnimationSubmodel> submodel, const float& velocity, const optional<float>& acceleration, const vec3d& axis) :
+			m_submodel(std::move(submodel)), m_velocity(velocity), m_acceleration(acceleration), m_axis(axis) { }
+
+	void ModelAnimationMoveableAxisRotation::update(polymodel_instance* pmi, const std::vector<linb::any>& args) {
+		if(args.empty()){
+			Error(LOCATION,"Tried updating moveable axis rotation with too few (%d of 1) arguments!", (int) args.size());
+			return;
+		}
+
+		auto& anim = m_instances[pmi->id].animation;
+
+		try {
+			auto ang = linb::any_cast<int>(args[0]);
+			
+			auto& sequence = *std::static_pointer_cast<ModelAnimationSegmentSerial>(anim->m_animation);
+			auto& setOrientation = *std::static_pointer_cast<ModelAnimationSegmentSetOrientation>(sequence.m_segments[0]);
+			auto& rotation = *std::static_pointer_cast<ModelAnimationSegmentAxisRotation>(sequence.m_segments[1]);
+
+			ModelAnimationSubmodelBuffer buffer;
+			buffer[rotation.m_submodel].data.orientation = IDENTITY_MATRIX;
+			//Will now only contain the delta of the rotation
+			sequence.m_segments[1]->calculateAnimation(buffer, anim->getTime(pmi->id), pmi->id);
+
+			anim->forceRecalculate(pmi);
+
+			matrix startOrient = setOrientation.m_targetOrientation;
+			matrix newOrient;
+			//Apply rotation to old default state
+			vm_matrix_x_matrix(&newOrient, &startOrient, &buffer[rotation.m_submodel].data.orientation);
+			setOrientation.m_targetOrientation = newOrient;
+
+			rotation.m_targetAngle = fl_radians((float)ang);
+		}
+		catch(const linb::bad_any_cast& e){
+			Error(LOCATION, "Argument error trying to update rotation moveable: %s", e.what());
+		}
+	}
+
+	void ModelAnimationMoveableAxisRotation::initialize(ModelAnimationSet* parentSet, polymodel_instance* pmi) {
+		auto& anim = m_instances[pmi->id].animation;
+
+		anim = std::shared_ptr<ModelAnimation>(new ModelAnimation(false, false, true, parentSet));
+
+		auto submodel = parentSet->getSubmodel(m_submodel);
+
+		auto sequence = std::shared_ptr<ModelAnimationSegmentSerial>(new ModelAnimationSegmentSerial());
+		sequence->addSegment(std::shared_ptr<ModelAnimationSegment>(new ModelAnimationSegmentSetOrientation(submodel, vmd_identity_matrix, true)));
+		sequence->addSegment(std::shared_ptr<ModelAnimationSegment>(new ModelAnimationSegmentAxisRotation(submodel, 0, m_velocity, optional<float>(), m_acceleration, m_axis)));
+
+		anim->setAnimation(sequence);
+
+		anim->start(pmi,ModelAnimationDirection::FWD);
+	}
+
+	std::shared_ptr<ModelAnimationMoveable> ModelAnimationMoveableAxisRotation::parser() {
+		required_string("+Axis:");
+		vec3d axis;
+		stuff_vec3d(&axis);
+
+		required_string("+Velocity:");
+		float velocity;
+		stuff_float(&velocity);
+		velocity = fl_radians(velocity);
+
+		optional<float> acceleration;
+		if (optional_string("+Acceleration:")) {
+			float parse;
+			stuff_float(&parse);
+			acceleration = fl_radians(parse);
+		}
+
+		auto submodel = ModelAnimationParseHelper::parseSubmodel();
+		if(submodel == nullptr)
+			error_display(1, "Could not create moveable! Moveable Axis Rotation has no target submodel!");
+
+		return std::shared_ptr<ModelAnimationMoveableAxisRotation>(new ModelAnimationMoveableAxisRotation(submodel, velocity, acceleration, axis));
+	}
+
+
 	ModelAnimationMoveableIK::ModelAnimationMoveableIK(std::vector<moveable_chainlink> chain, float time) :
 		m_time(time), m_chain(std::move(chain)) { }
 

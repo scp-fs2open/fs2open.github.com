@@ -31,6 +31,20 @@ namespace animation {
 		void initialize(ModelAnimationSet* parentSet, polymodel_instance* pmi) override;
 	};
 
+	class ModelAnimationMoveableAxisRotation : public ModelAnimationMoveable {
+		std::shared_ptr<ModelAnimationSubmodel> m_submodel;
+		float m_velocity;
+		optional<float> m_acceleration;
+		vec3d m_axis;
+
+	public:
+		static std::shared_ptr<ModelAnimationMoveable> parser();
+		ModelAnimationMoveableAxisRotation(std::shared_ptr<ModelAnimationSubmodel> submodel, const float& velocity, const optional<float>& acceleration, const vec3d& axis);
+
+		void update(polymodel_instance* pmi, const std::vector<linb::any>& args) override;
+		void initialize(ModelAnimationSet* parentSet, polymodel_instance* pmi) override;
+	};
+
 	class ModelAnimationMoveableIK : public ModelAnimationMoveable {
 		float m_time;
 		
