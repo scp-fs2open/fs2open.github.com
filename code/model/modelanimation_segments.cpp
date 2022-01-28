@@ -1214,6 +1214,9 @@ namespace animation {
 	}
 
 	void ModelAnimationSegmentSoundDuring::playStartSnd(int pmi_id) {
+		if (snd_is_playing(m_instances[pmi_id].currentlyPlaying))
+			snd_stop(m_instances[pmi_id].currentlyPlaying);
+		
 		if(m_start.isValid())
 			m_instances[pmi_id].currentlyPlaying = snd_play(gamesnd_get_game_sound(m_start));
 	}
