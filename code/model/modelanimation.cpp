@@ -430,10 +430,6 @@ namespace animation {
 		submodel->canonical_orient = data.orientation;
 
 		float angle = 0.0f;
-
-		angles test;
-		vm_extract_angles_matrix_alternate(&test, &submodel->canonical_orient);
-		
 		vm_closest_angle_to_matrix(&submodel->canonical_orient, &sm->movement_axis, &angle);
 
 		submodel->cur_angle = angle;
