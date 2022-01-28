@@ -904,8 +904,8 @@ void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num,
 
 		if (!subsystem_stricmp(subobj_name, subsystemp->subobj_name))
 		{
-			//commented by Goober5000 because this is also set when the table is parsed
-			//subsystemp->flags = 0;
+			if (subobj_num >= 0)
+				model_get(model_num)->submodel[subobj_num].subsys_num = i;
 
 			subsystemp->subobj_num = subobj_num;
 			subsystemp->turret_gun_sobj = -1;
@@ -942,40 +942,19 @@ void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num,
 
 }
 
-void print_family_tree( polymodel *obj, int modelnum, const char * ident, int islast )
+void print_family_tree(polymodel *obj)
 {
-	char temp[50];
+	mprintf(("PRINTING POLYMODEL TREE\n"));
+	mprintf(("%s\n", obj->filename));
 
-	if ( modelnum < 0 ) return;
-	if (obj==NULL) return;
+	model_iterate_submodel_tree(obj, obj->detail[0], [&](int submodel, int level, bool /*isLeaf*/)
+		{
+			mprintf(("  "));
+			for (int i = 0; i < level; i++)
+				mprintf(("  "));
 
-	if (ident[0] == '\0')	{
-		mprintf(( " %s", obj->submodel[modelnum].name ));
-		sprintf( temp, " " );
-	} else if ( islast ) 	{
-		mprintf(( "%s:%s", ident, obj->submodel[modelnum].name ));
-		sprintf( temp, "%s  ", ident );
-	} else {
-		mprintf(( "%s:%s", ident, obj->submodel[modelnum].name ));
-		sprintf( temp, "%s ", ident );
-	}
-
-	mprintf(( "\n" ));
-
-	int child = obj->submodel[modelnum].first_child;
-	while( child > -1 )	{
-		if ( obj->submodel[child].next_sibling < 0 )
-			print_family_tree( obj, child, temp,1 );
-		else
-			print_family_tree( obj, child, temp,0 );
-		child = obj->submodel[child].next_sibling;
-	}
-}
-
-void dump_object_tree(polymodel *obj)
-{
-	print_family_tree( obj, 0, "", 0 );
-	key_getch();
+			mprintf(("%s\n", obj->submodel[submodel].name));
+		});
 }
 
 void create_family_tree(polymodel *obj)
@@ -2363,6 +2342,10 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 								Assertion( n_slots > 0, "Turret %s in model %s has no firing points.\n", subsystemp->name, pm->filename);
 
 								subsystemp->turret_num_firing_points = n_slots;
+
+								// copy the subsystem index that the gun base submodel should have at this point
+								Assertion(pm->submodel[parent].subsys_num >= 0, "Turret gun base should have a subsystem index!");
+								pm->submodel[physical_parent].subsys_num = pm->submodel[parent].subsys_num;
 
 								break;
 							}
@@ -4357,7 +4340,7 @@ void model_get_rotating_submodel_list(SCP_vector<int> *submodel_vector, object *
 		// Don't check it or its children if it is destroyed or it is a replacement (non-moving)
 		if ( !child_submodel_instance->blown_off && (child_submodel->i_replace == -1) && !child_submodel->flags[Model::Submodel_flags::No_collisions, Model::Submodel_flags::Nocollide_this_only])	{
 
-			// Only look for submodels that rotate or intrinsic-rotate
+			// Look for submodels that rotate or intrinsic-rotate
 			if (child_submodel->movement_type == MOVEMENT_TYPE_ROT || child_submodel->movement_type == MOVEMENT_TYPE_INTRINSIC) {
 
 				// check submodel rotation is less than max allowed.
@@ -4365,6 +4348,10 @@ void model_get_rotating_submodel_list(SCP_vector<int> *submodel_vector, object *
 				if (delta_angle < MAX_SUBMODEL_COLLISION_ROT_ANGLE) {
 					submodel_vector->push_back(i);
 				}
+			}
+			// Also look for submodels that aren't subsystems but still move
+			else if (child_submodel->subsys_num < 0 && child_submodel->flags[Model::Submodel_flags::Can_move]) {
+				submodel_vector->push_back(i);
 			}
 		}
 		i = child_submodel->next_sibling;
@@ -4465,19 +4452,16 @@ void model_set_up_techroom_instance(ship_info *sip, int model_instance_num)
 	auto pm = model_get(pmi->model_num);
 	flagset<Ship::Subsystem_Flags> empty;
 
-	for (int i = 0; i < sip->n_subsystems; ++i)
-	{
-		model_subsystem *msp = &sip->subsystems[i];
-
-		if (msp->subobj_num >= 0)
-			model_replicate_submodel_instance(pm, pmi, msp->subobj_num, empty);
-
-		if ((msp->subobj_num != msp->turret_gun_sobj) && (msp->turret_gun_sobj >= 0))
-			model_replicate_submodel_instance(pm, pmi, msp->turret_gun_sobj, empty);
-	}
-
 	sip->animations.clearShipData(pmi);
 	sip->animations.startAll(pmi, animation::ModelAnimationTriggerType::Initial, animation::ModelAnimationDirection::FWD, true, true);
+
+	model_iterate_submodel_tree(pm, pm->detail[0], [&](int submodel, int /*level*/, bool /*isLeaf*/)
+		{
+			auto sm = &pm->submodel[submodel];
+
+			if (sm->flags[Model::Submodel_flags::Can_move])
+				model_replicate_submodel_instance(pm, pmi, submodel, empty);
+		});
 }
 
 /*

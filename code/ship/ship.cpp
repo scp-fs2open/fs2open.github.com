@@ -6968,7 +6968,7 @@ static int subsys_set(int objnum, int ignore_subsys_info)
 			ship_system->submodel_instance_2 = &pmi->submodel[model_system->turret_gun_sobj];
 		}
 
-		// if the table has set an name copy it
+		// if the table has set an alt name copy it
 		if (ship_system->system_info->alt_sub_name[0] != '\0') {
 			strcpy_s(ship_system->sub_name, ship_system->system_info->alt_sub_name);
 		}
@@ -13533,14 +13533,19 @@ void ship_model_replicate_submodels(object *objp)
 	ship		*shipp;
 	ship_subsys	*pss;
 
+	flagset<Ship::Subsystem_Flags> empty;
+
 	Assert(objp != NULL);
 	Assert(objp->instance >= 0);
 	Assert(objp->type == OBJ_SHIP);
 
 	shipp = &Ships[objp->instance];
+
 	polymodel_instance *pmi = model_get_instance(shipp->model_instance_num);
 	polymodel *pm = model_get(pmi->model_num);
 
+	// Keep submodels belonging to subsystems in sync
+	// (This needs to be done from the subsystem perspective because subsystem flags may affect things)
 	for ( pss = GET_FIRST(&shipp->subsys_list); pss != END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) ) {
 		psub = pss->system_info;
 
@@ -13552,6 +13557,24 @@ void ship_model_replicate_submodels(object *objp)
 			model_replicate_submodel_instance(pm, pmi, psub->turret_gun_sobj, pss->flags );
 		}
 	}
+
+	// Keep other movable submodels in sync
+	model_iterate_submodel_tree(pm, pm->detail[0], [&](int submodel, int /*level*/, bool /*isLeaf*/)
+		{
+			auto sm = &pm->submodel[submodel];
+
+			// skip submodels that belong to subsystems since we already updated them above
+			// (Turrets are tricky because they have two submodels per subsystem, but because the subsystem index is copied
+			// when the model is read, both submodels are correctly skipped here.)
+			if (sm->subsys_num >= 0)
+				return;
+
+			// the only non-subsystem submodels that need to be updated are the ones that can move
+			if (!sm->flags[Model::Submodel_flags::Can_move])
+				return;
+
+			model_replicate_submodel_instance(pm, pmi, submodel, empty);
+		});
 }
 
 /**
