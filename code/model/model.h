@@ -303,6 +303,8 @@ public:
 
 	flagset<Model::Submodel_flags> flags;
 
+	int subsys_num = -1;			// subsystem number; index to ship_info->subsystems; the counterpart of model_subsystem->subobj_num
+
 	vec3d	offset;					// 3d offset from parent object
 	matrix	frame_of_reference;		// used to be called 'orientation' - this is just used for setting the rotation axis and the animation angles
 
@@ -781,6 +783,29 @@ public:
 	
 	vertex_buffer detail_buffers[MAX_MODEL_DETAIL_LEVELS];
 };
+
+// Iterate over a submodel tree, starting at the given submodel root node, and running the given function for each node.  The function's signature should be:
+//
+// void func(int submodel, int level, bool isLeaf);
+//
+// The "level" parameter indicates how deep the nesting level is, and the "isLeaf" parameter indicates whether the submodel is a leaf node.
+// To find the model's detail0 root node, use pm->submodel[pm->detail[0]].
+template <typename Func>
+void model_iterate_submodel_tree(polymodel* pm, int submodel, Func func, int level = 0)
+{
+	Assertion(pm != nullptr, "pm must not be null!");
+	Assertion(submodel >= 0 && submodel < pm->n_models, "submodel must be in range!");
+
+	auto child = pm->submodel[submodel].first_child;
+
+	func(submodel, level, child < 0);
+
+	while (child >= 0)
+	{
+		model_iterate_submodel_tree(pm, child, func, level + 1);
+		child = pm->submodel[child].next_sibling;
+	}
+}
 
 // Call once to initialize the model system
 void model_init();
