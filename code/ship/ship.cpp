@@ -13531,7 +13531,6 @@ void ship_model_replicate_submodels(object *objp)
 {
 	model_subsystem	*psub;
 	ship		*shipp;
-	ship_info	*sip;
 	ship_subsys	*pss;
 
 	flagset<Ship::Subsystem_Flags> empty;
@@ -13541,7 +13540,6 @@ void ship_model_replicate_submodels(object *objp)
 	Assert(objp->type == OBJ_SHIP);
 
 	shipp = &Ships[objp->instance];
-	sip = &Ship_info[shipp->ship_info_index];
 
 	polymodel_instance *pmi = model_get_instance(shipp->model_instance_num);
 	polymodel *pm = model_get(pmi->model_num);
@@ -13561,7 +13559,7 @@ void ship_model_replicate_submodels(object *objp)
 	}
 
 	// Keep other movable submodels in sync
-	model_iterate_submodel_tree(pm, pm->detail[0], [&](int submodel, int level, bool isLeaf)
+	model_iterate_submodel_tree(pm, pm->detail[0], [&](int submodel, int /*level*/, bool /*isLeaf*/)
 		{
 			auto sm = &pm->submodel[submodel];
 

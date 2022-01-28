@@ -947,7 +947,7 @@ void print_family_tree(polymodel *obj)
 	mprintf(("PRINTING POLYMODEL TREE\n"));
 	mprintf(("%s\n", obj->filename));
 
-	model_iterate_submodel_tree(obj, obj->detail[0], [&](int submodel, int level, bool isLeaf)
+	model_iterate_submodel_tree(obj, obj->detail[0], [&](int submodel, int level, bool /*isLeaf*/)
 		{
 			mprintf(("  "));
 			for (int i = 0; i < level; i++)
@@ -4340,7 +4340,7 @@ void model_get_rotating_submodel_list(SCP_vector<int> *submodel_vector, object *
 		// Don't check it or its children if it is destroyed or it is a replacement (non-moving)
 		if ( !child_submodel_instance->blown_off && (child_submodel->i_replace == -1) && !child_submodel->flags[Model::Submodel_flags::No_collisions, Model::Submodel_flags::Nocollide_this_only])	{
 
-			// Only look for submodels that rotate or intrinsic-rotate
+			// Look for submodels that rotate or intrinsic-rotate
 			if (child_submodel->movement_type == MOVEMENT_TYPE_ROT || child_submodel->movement_type == MOVEMENT_TYPE_INTRINSIC) {
 
 				// check submodel rotation is less than max allowed.
@@ -4348,6 +4348,10 @@ void model_get_rotating_submodel_list(SCP_vector<int> *submodel_vector, object *
 				if (delta_angle < MAX_SUBMODEL_COLLISION_ROT_ANGLE) {
 					submodel_vector->push_back(i);
 				}
+			}
+			// Also look for submodels that aren't subsystems but still move
+			else if (child_submodel->subsys_num < 0 && child_submodel->flags[Model::Submodel_flags::Can_move]) {
+				submodel_vector->push_back(i);
 			}
 		}
 		i = child_submodel->next_sibling;
@@ -4451,7 +4455,7 @@ void model_set_up_techroom_instance(ship_info *sip, int model_instance_num)
 	sip->animations.clearShipData(pmi);
 	sip->animations.startAll(pmi, animation::ModelAnimationTriggerType::Initial, animation::ModelAnimationDirection::FWD, true, true);
 
-	model_iterate_submodel_tree(pm, pm->detail[0], [&](int submodel, int level, bool isLeaf)
+	model_iterate_submodel_tree(pm, pm->detail[0], [&](int submodel, int /*level*/, bool /*isLeaf*/)
 		{
 			auto sm = &pm->submodel[submodel];
 
