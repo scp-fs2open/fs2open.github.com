@@ -321,6 +321,8 @@ namespace animation {
 		if (!submodel.first || !submodel.second) 
 			return;
 
+		submodel.second->flags.set(Model::Submodel_flags::Can_move);
+		
 		data.orientation = submodel.first->canonical_orient;
 		//TODO: Once translation is a thing
 		//data.position = m_subsys->submodel_instance_1->offset;
@@ -429,6 +431,9 @@ namespace animation {
 
 		float angle = 0.0f;
 
+		angles test;
+		vm_extract_angles_matrix_alternate(&test, &submodel->canonical_orient);
+		
 		vm_closest_angle_to_matrix(&submodel->canonical_orient, &sm->movement_axis, &angle);
 
 		submodel->cur_angle = angle;
