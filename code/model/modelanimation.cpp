@@ -308,6 +308,7 @@ namespace animation {
 		if (!submodel)
 			return;
 
+		submodel->canonical_prev_orient = submodel->canonical_orient;
 		submodel->canonical_orient = data.orientation;
 
 		//TODO: Once translation is a thing
@@ -321,6 +322,11 @@ namespace animation {
 		if (!submodel.first || !submodel.second) 
 			return;
 
+		if(!submodel.second->flags[Model::Submodel_flags::Can_move]){
+			mprintf(("Submodel %s of model %s is animated and has movement enabled.\n", submodel.second->name, model_get(pmi->model_num)->filename));
+			submodel.second->flags.set(Model::Submodel_flags::Can_move);
+		}
+		
 		data.orientation = submodel.first->canonical_orient;
 		//TODO: Once translation is a thing
 		//data.position = m_subsys->submodel_instance_1->offset;
@@ -425,10 +431,10 @@ namespace animation {
 		if (!submodel)
 			return;
 
+		submodel->canonical_prev_orient = submodel->canonical_orient;
 		submodel->canonical_orient = data.orientation;
 
 		float angle = 0.0f;
-
 		vm_closest_angle_to_matrix(&submodel->canonical_orient, &sm->movement_axis, &angle);
 
 		submodel->cur_angle = angle;
