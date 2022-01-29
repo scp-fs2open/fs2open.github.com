@@ -308,6 +308,7 @@ namespace animation {
 		if (!submodel)
 			return;
 
+		submodel->canonical_prev_orient = submodel->canonical_orient;
 		submodel->canonical_orient = data.orientation;
 
 		//TODO: Once translation is a thing
@@ -430,6 +431,7 @@ namespace animation {
 		if (!submodel)
 			return;
 
+		submodel->canonical_prev_orient = submodel->canonical_orient;
 		submodel->canonical_orient = data.orientation;
 
 		float angle = 0.0f;
