@@ -548,9 +548,6 @@ int create_ship(matrix *orient, vec3d *pos, int ship_type)
 	if (query_ship_name_duplicate(Objects[obj].instance))
 		fix_ship_name(Objects[obj].instance);
 
-	// set up model stuff - only needs to be done once, not every frame
-	model_set_up_techroom_instance(sip, shipp->model_instance_num);
-
 	// default stuff according to species and IFF
 	shipp->team = Species_info[Ship_info[shipp->ship_info_index].species].default_iff;
 	resolve_parse_flags(&Objects[obj], Iff_info[shipp->team].default_parse_flags);
