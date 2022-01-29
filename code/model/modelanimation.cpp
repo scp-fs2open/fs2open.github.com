@@ -321,7 +321,10 @@ namespace animation {
 		if (!submodel.first || !submodel.second) 
 			return;
 
-		submodel.second->flags.set(Model::Submodel_flags::Can_move);
+		if(!submodel.second->flags[Model::Submodel_flags::Can_move]){
+			mprintf(("Submodel %s of model %s is animated and has movement enabled.\n", submodel.second->name, model_get(pmi->model_num)->filename));
+			submodel.second->flags.set(Model::Submodel_flags::Can_move);
+		}
 		
 		data.orientation = submodel.first->canonical_orient;
 		//TODO: Once translation is a thing
