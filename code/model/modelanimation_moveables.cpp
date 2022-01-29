@@ -21,6 +21,8 @@ namespace animation {
 
 			auto& setOrientation = *std::static_pointer_cast<ModelAnimationSegmentSetOrientation>(anim->m_animation);
 			setOrientation.m_targetAngle = angles{fl_radians((float)p), fl_radians((float)b), fl_radians((float)h)};
+			
+			anim->start(pmi, ModelAnimationDirection::FWD);
 		}
 		catch(const linb::bad_any_cast& e){
 			Error(LOCATION, "Argument error trying to update orientation moveable: %s", e.what());
@@ -83,6 +85,8 @@ namespace animation {
 			setOrientation.m_targetOrientation = newOrient;
 			
 			rotation.m_targetAngle = angles{fl_radians((float)p), fl_radians((float)b), fl_radians((float)h)};
+
+			anim->start(pmi, ModelAnimationDirection::FWD);
 		}
 		catch(const linb::bad_any_cast& e){
 			Error(LOCATION, "Argument error trying to update rotation moveable: %s", e.what());
@@ -164,6 +168,8 @@ namespace animation {
 			setOrientation.m_targetOrientation = newOrient;
 
 			rotation.m_targetAngle = fl_radians((float)ang);
+
+			anim->start(pmi, ModelAnimationDirection::FWD);
 		}
 		catch(const linb::bad_any_cast& e){
 			Error(LOCATION, "Argument error trying to update rotation moveable: %s", e.what());
@@ -261,6 +267,8 @@ namespace animation {
 
 			ik.m_targetRotation = orient;
 			ik.m_targetPosition = vec3d{{{x * 0.01f, y * 0.01f, z * 0.01f}}};
+
+			anim->start(pmi, ModelAnimationDirection::FWD);
 		}
 		catch(const linb::bad_any_cast& e){
 			Error(LOCATION, "Argument error trying to update rotation moveable: %s", e.what());
