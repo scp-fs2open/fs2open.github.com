@@ -356,6 +356,7 @@ namespace animation {
 
 		bool updateMoveable(polymodel_instance* pmi, const SCP_string& name, const std::vector<linb::any>& args) const;
 		void initializeMoveables(polymodel_instance* pmi);
+		std::vector<SCP_string> getRegisteredMoveables() const;
 
 		bool isEmpty() const;
 
@@ -413,7 +414,7 @@ namespace animation {
 	extern const std::map<animation::ModelAnimationTriggerType, std::pair<const char*, bool>> Animation_types;
 
 	void anim_set_initial_states(ship* shipp);
-
+	
 	//Returns function bindings to start the targeted animation, and to get its runtime
 	std::pair<std::function<bool(ModelAnimationDirection, bool, bool, bool)>, std::function<int()>> anim_parse_scripted_start(const ModelAnimationSet& set, polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& triggeredBy);
 

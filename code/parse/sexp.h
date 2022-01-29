@@ -124,6 +124,7 @@ struct ship_obj;
 #define OPF_CONTAINER_NAME		93		// Karajorma/jg18 - The name of a SEXP container
 #define OPF_LIST_CONTAINER_NAME	94		// Karajorma/jg18 - The name of a SEXP list container
 #define OPF_MAP_CONTAINER_NAME	95		// Karajorma/jg18 - The name of a SEXP map container
+#define OPF_ANIMATION_NAME 		96		// Lafiel
 
 // Operand return types
 #define	OPR_NUMBER				1	// returns number
@@ -1088,6 +1089,7 @@ const char *CTEXT(int n);
 #define SEXP_CHECK_INVALID_LIST_MODIFIER		-168
 #define SEXP_CHECK_WRONG_MAP_KEY_TYPE			-169
 #define SEXP_CHECK_WRONG_CONTAINER_TYPE			-170
+#define SEXP_CHECK_INVALID_ANIMATION			-171
 
 
 #define TRAINING_CONTEXT_SPEED		(1<<0)

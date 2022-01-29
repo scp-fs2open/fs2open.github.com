@@ -2345,6 +2345,101 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				break;
 			}
 
+			case OPF_ANIMATION_NAME: {
+				// OP 1 is always the ship
+
+				int shipnum,ship_class;
+				int ship_node;
+
+				if (type2 != SEXP_ATOM_STRING){
+					return SEXP_CHECK_TYPE_MISMATCH;
+				}
+
+				ship_node = CDR(op_node);
+
+				// we can't check special-arg ships
+				if (Sexp_nodes[ship_node].flags & SNF_SPECIAL_ARG_IN_NODE)
+					break;
+
+				auto shipname = CTEXT(ship_node);
+				shipnum = ship_name_lookup(shipname, 1);
+				if (shipnum >= 0)
+				{
+					ship_class = Ships[shipnum].ship_info_index;
+				}
+				else
+				{
+					// must try to find the ship in the arrival list
+					p_object *p_objp = mission_parse_get_arrival_ship(shipname);
+
+					if (!p_objp)
+					{
+						if (type == OPF_SUBSYSTEM_OR_NONE)
+							break;
+						else
+						{
+							if (bad_node)
+								*bad_node = ship_node;
+
+							return SEXP_CHECK_INVALID_SHIP;
+						}
+					}
+
+					ship_class = p_objp->ship_class;
+				}
+
+				const auto& animSet = Ship_info[ship_class].animations;
+				switch(get_operator_const(op_node)) {	
+					case OP_TRIGGER_ANIMATION_NEW: {
+						//Second OP trigger type
+						//Third OP triggered by
+						auto triggerType = animation::anim_match_type(CTEXT(CDR(ship_node)));
+						
+						const auto& animations = animSet.getRegisteredTriggers();
+						
+						const char* triggeredBy = CTEXT(CDDR(ship_node));
+						
+						if(std::find_if(animations.cbegin(), animations.cend(), [triggerType, triggeredBy](const std::remove_reference<decltype(animations)>::type::value_type& animation) -> bool {
+							if (animation.type != triggerType)
+								return false;
+
+							// Since Dock Bay animations can be tables as NOT on door x, technically doors not tabled for can be valid targets. Just allow anything here.
+							if(animation.type == animation::ModelAnimationTriggerType::DockBayDoor)
+								return true;
+							
+							if(animation.subtype != animation::ModelAnimationSet::SUBTYPE_DEFAULT){
+								if(!can_construe_as_integer(triggeredBy))
+									return false;
+								
+								int triggeredBySubtype = atoi(triggeredBy);
+								int animationSubtype = animation.subtype;
+								
+								return triggeredBySubtype == animationSubtype;
+							}
+							else{
+								return animation.name == triggeredBy;
+							}
+						}) == animations.cend())
+							return SEXP_CHECK_INVALID_ANIMATION;
+						
+						break;
+					}
+					case OP_UPDATE_MOVEABLE: {
+						//Second OP name
+						SCP_string name = CTEXT(CDR(ship_node));
+						
+						const auto& moveables = animSet.getRegisteredMoveables();
+						
+						if(std::find(moveables.cbegin(), moveables.cend(), name) == moveables.cend())
+							return SEXP_CHECK_INVALID_ANIMATION;
+						
+						break;
+					}
+				}
+
+				break;		
+			}
+			
 			case OPF_SUBSYSTEM_TYPE:
 				for (i = 0; i < SUBSYSTEM_MAX; i++)
 				{
@@ -29839,7 +29934,7 @@ int query_operator_argument_type(int op, int argnum)
 			else if (argnum == 1)
 				return OPF_ANIMATION_TYPE;
 			else if (argnum == 2)
-				return OPF_STRING;
+				return OPF_ANIMATION_NAME;
 			else
 				return OPF_BOOL;
 
@@ -29847,7 +29942,7 @@ int query_operator_argument_type(int op, int argnum)
 			if(argnum == 0)
 				return OPF_SHIP;
 			else if(argnum == 1)
-				return OPF_STRING;
+				return OPF_ANIMATION_NAME;
 			else
 				return OPF_NUMBER;
 
@@ -30389,6 +30484,9 @@ const char *sexp_error_message(int num)
 
 		case SEXP_CHECK_WRONG_CONTAINER_TYPE:
 			return "Wrong container type";
+			
+		case SEXP_CHECK_INVALID_ANIMATION:
+			return "Invalid animation specifier";
 
 		default:
 			Warning(LOCATION, "Unhandled sexp error code %d!", num);

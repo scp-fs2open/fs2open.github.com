@@ -830,6 +830,16 @@ namespace animation {
 		}
 	}
 
+	std::vector<SCP_string> ModelAnimationSet::getRegisteredMoveables() const {
+		std::vector<SCP_string> ret;
+
+		for (const auto& moveable : m_moveableSet) {
+			ret.push_back(moveable.first);
+		}
+
+		return ret;
+	};
+
 	bool ModelAnimationSet::isEmpty() const {
 		for (const auto& animSet : m_animationSet) {
 			if (!animSet.second.empty())
