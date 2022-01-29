@@ -685,7 +685,8 @@ void pilotfile::plr_read_controls()
 
 			if (idx < NUM_JOY_AXIS_ACTIONS) {
 				Control_config[idx + JOY_AXIS_BEGIN].take(CC_bind(CID_JOY0, static_cast<short>(axi), CCF_AXIS), 0);
-				Control_config[idx + JOY_AXIS_BEGIN].invert(inv != 0);
+				Control_config[idx + JOY_AXIS_BEGIN].first.invert(inv != 0);
+				Control_config[idx + JOY_AXIS_BEGIN].second.invert(inv != 0);
 			}
 		}
 		handler->endArrayRead();
@@ -772,7 +773,7 @@ void pilotfile::plr_write_controls()
 			handler->writeInt("axis_map", -1);
 		}
 		
-		handler->writeInt("invert_axis", item.is_inverted() ? 1 : 0);
+		handler->writeInt("invert_axis", (item.first.is_inverted() || item.second.is_inverted()) ? 1 : 0);
 
 		handler->endSectionWrite();
 	}
