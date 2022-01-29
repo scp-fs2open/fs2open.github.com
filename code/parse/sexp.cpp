@@ -35933,7 +35933,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"Takes 3 or more arguments...\r\n"
 		"\t1: The ship to trigger the animation on.\r\n"
 		"\t2: The trigger type of the animation.\r\n"
-		"\t3: The triggered-by value of the animation. Depends on trigger type. Refer to the wiki on *-anim.tbm's.\r\n"
+		"\t3: The triggered-by value of the animation. Must be the same as in the table for the animation. Leave blank if not specified in the table.\r\n"
+		"\t\tException: fighterbay-type animations must specify the number of the fighter bay path.\r\n"
 		"\t4: If the animation should play forwards (true) or backwards (false). Defaults to true.\r\n"
 		"\t5: If the animation should reset before playing. Defaults to false.\r\n"
 		"\t6: If the animation should complete instantly. Defaults to false.\r\n"
@@ -35945,7 +35946,16 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"Takes 2 and more arguments...\r\n"
 		"\t1: The ship to update the moveable for.\r\n"
 		"\t2: The name of the moveable.\r\n"
-		"\tRest: The data for the moveable. Depends on moveable type. Refer to the wiki on *-anim.tbm's.\r\n"
+		"\tRest: The data for the moveable. Depends on moveable type. Refer to the table below:\r\n\r\n"
+		"Orientation:\r\n"
+		"\tThree numbers, x, y, z rotation respectively, in degrees\r\n"
+		"Rotation:\r\n"
+		"\tThree numbers, x, y, z rotation respectively, in degrees\r\n"
+		"Axis Rotation:\r\n"
+		"\tOne number, rotation angle in degrees\r\n"
+		"Inverse Kinematics:\r\n"
+		"\tThree required numbers: x, y, z position target relative to base, in 1/100th meters\r\n"
+		"\tThree optional numbers: x, y, z rotation target relative to base, in degrees\r\n"
 	}
 };
 // clang-format on
