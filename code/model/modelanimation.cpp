@@ -391,10 +391,9 @@ namespace animation {
 		//Do we know if we were told to find the barrel submodel or not? This implies we have a subsystem name, not a submodel name
 		else {
 
-			int sip_index = ship_info_lookup(m_SIPname.c_str());
-			if (sip_index < 0)
+			if (pmi->objnum < 0)
 				return { nullptr, nullptr };
-			ship_info* sip = &Ship_info[sip_index];
+			ship_info* sip = &Ship_info[Ships[Objects[pmi->objnum].instance].ship_info_index];
 
 			for (int i = 0; i < sip->n_subsystems; i++) {
 				if (!subsystem_stricmp(sip->subsystems[i].subobj_name, m_name.c_str())) {
@@ -463,10 +462,14 @@ namespace animation {
 
 		for (const auto& animationTypes : m_animationSet) {
 			for (const auto& animations : animationTypes.second) {
-				for(const auto& animation : animations.second)
+				for (const auto& animation : animations.second) {
+					animation->m_animation->exchangeSubmodelPointers(*this);
 					animation->m_set = this;
+				}
 			}
 		}
+
+
 
 		return *this;
 	}
