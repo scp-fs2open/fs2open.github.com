@@ -43,7 +43,7 @@ auto FovOption = options::OptionBuilder<float>("Graphics.FOV", "Field Of View", 
                      .finish();
 
 //*************************CLASS: camera*************************
-//This is where the camera class beings! :D
+//This is where the camera class begins! :D
 camera::camera(const char *in_name, int in_signature)
 {
 	set_name(in_name);
@@ -305,6 +305,9 @@ void camera::get_info(vec3d *position, matrix *orientation)
 	
 	eye* eyep = NULL;
 	vec3d host_normal;
+	matrix host_orient;
+	bool use_host_orient = false;
+
 	//POSITION
 	if(!(flags & CAM_STATIONARY_POS) || object_host.IsValid())
 	{
@@ -349,7 +352,16 @@ void camera::get_info(vec3d *position, matrix *orientation)
 				else
 				{
 					if (pmi != nullptr)
-						model_instance_find_world_point(&c_pos, &pt, pm, pmi, object_host_submodel, &objp->orient, &objp->pos);
+					{
+						vec3d c_pos_in;
+						find_submodel_instance_point_orient(&c_pos_in, &host_orient, pm, pmi, object_host_submodel, &pt, &vmd_identity_matrix);
+
+						host_orient = host_orient * objp->orient;
+						use_host_orient = true;
+
+						vm_vec_unrotate(&c_pos, &c_pos_in, &objp->orient);
+						vm_vec_add2(&c_pos, &objp->pos);
+					}
 					else
 						model_find_world_point( &c_pos, &pt, pm, object_host_submodel, &objp->orient, &objp->pos );
 				}
@@ -394,7 +406,7 @@ void camera::get_info(vec3d *position, matrix *orientation)
 
 				//If we don't have a submodel or don't have the model use object pos
 				//Otherwise, find the submodel pos as it is rotated
-				if(object_target_submodel < 0 || target_pm == NULL)
+				if (object_target_submodel < 0 || target_pm == nullptr)
 				{
 					target_pos = target_objp->pos;
 				}
@@ -417,6 +429,10 @@ void camera::get_info(vec3d *position, matrix *orientation)
 				{
 					vm_vector_2_matrix(&c_ori, &host_normal, vm_vec_same(&host_normal, &object_host.objp->orient.vec.uvec)?NULL:&object_host.objp->orient.vec.uvec, NULL);
 					target_set = true;
+				}
+				else if (use_host_orient)
+				{
+					c_ori = host_orient;
 				}
 				else
 				{
