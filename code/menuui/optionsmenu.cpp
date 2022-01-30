@@ -538,17 +538,17 @@ void options_tab_setup(int  /*set_palette*/)
 
 	// maybe enable/disable controls based upon current tab
 	if (Tab == OPTIONS_TAB) {
-		for(i=0; i<NUM_OPTIONS_SLIDERS; i++){
+		for(i=0; i<NUM_OPTIONS_SLIDERS; i++) {
 			Options_sliders[gr_screen.res][i].slider.enable();
 			Options_sliders[gr_screen.res][i].slider.unhide();
 		}		
-		if (Cmdline_deadzone >= 0){
+		if (Cmdline_deadzone >= 0) {
 			//Deadzone is being set by the command line 
 			Options_sliders[gr_screen.res][OPT_JOY_DEADZONE_SLIDER].slider.disable();
 			Options_sliders[gr_screen.res][OPT_JOY_DEADZONE_SLIDER].slider.hide();
 		}
 	} else {
-		for(i=0; i<NUM_OPTIONS_SLIDERS; i++){
+		for(i=0; i<NUM_OPTIONS_SLIDERS; i++) {
 			Options_sliders[gr_screen.res][i].slider.hide();
 			Options_sliders[gr_screen.res][i].slider.disable();
 		}		

@@ -483,10 +483,11 @@ int joy_get_scaled_reading(int raw)
 
 	raw -= JOY_AXIS_CENTER;
 
-	if (Cmdline_deadzone >= 0)	{
-		dead_zone = (JOY_AXIS_MAX - JOY_AXIS_MIN) * Cmdline_deadzone / 200; //Making this div by 200, the max deadzone value in cmdline is 100, which is more intuitive
-	}
-	else{
+	if (Cmdline_deadzone >= 0) {
+		dead_zone = (JOY_AXIS_MAX - JOY_AXIS_MIN) * Cmdline_deadzone / 200; 
+		//Making this div by 200 is what allows us to have the granularity of 0 to 100 in the cmdline. 
+		//This allows a larger deadzone than the original maximum, all the way to the stick's full range.
+	} else {
 		dead_zone = (JOY_AXIS_MAX - JOY_AXIS_MIN) * Joy_dead_zone_size / 100;
 	}
 
