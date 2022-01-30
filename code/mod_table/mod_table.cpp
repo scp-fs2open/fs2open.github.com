@@ -27,6 +27,7 @@ bool Fixed_turret_collisions;
 bool Damage_impacted_subsystem_first;
 bool Cutscene_camera_displays_hud;
 bool Alternate_chaining_behavior;
+bool Use_host_orientation_for_set_camera_facing;
 int Default_ship_select_effect;
 int Default_weapon_select_effect;
 int Default_fiction_viewer_ui;
@@ -266,6 +267,16 @@ void parse_mod_table(const char *filename)
 			}
 			else {
 				mprintf(("Game Settings Table: Using standard event chaining behavior\n"));
+			}
+		}
+
+		if (optional_string("$Use host orientation for set-camera-facing:")) {
+			stuff_boolean(&Use_host_orientation_for_set_camera_facing);
+			if (Use_host_orientation_for_set_camera_facing) {
+				mprintf(("Game Settings Table: Using host orientation for set-camera-facing\n"));
+			}
+			else {
+				mprintf(("Game Settings Table: Using identity orientation for set-camera-facing\n"));
 			}
 		}
 
@@ -774,6 +785,7 @@ void mod_table_reset()
 	Damage_impacted_subsystem_first = false;
 	Cutscene_camera_displays_hud = false;
 	Alternate_chaining_behavior = false;
+	Use_host_orientation_for_set_camera_facing = false;
 	Default_ship_select_effect = 2;
 	Default_weapon_select_effect = 2;
 	Default_fiction_viewer_ui = -1;
