@@ -2056,7 +2056,14 @@ void HudGaugeDamage::render(float  /*frametime*/)
 		psub = pss->system_info;
 		strength = ship_get_subsystem_strength(Player_ship, psub->type);
 		if ( strength < 1 ) {
-			screen_integrity = fl2i(strength*100);
+			// display the actual health of this specific subsystem --wookieejedi
+			if (pss->max_hits > 0) {
+				// get percentage if this subsystem has hitpoints to begin with
+				screen_integrity = fl2i((pss->current_hits / pss->max_hits) * 100);
+			} else {
+				// subsystems with no starting hitpoints can never be damaged, so they are always full health
+				screen_integrity = 1;
+			}
 			if ( screen_integrity == 0 ) {
 				if ( strength > 0 ) {
 					screen_integrity = 1;
