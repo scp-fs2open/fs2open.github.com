@@ -53,7 +53,7 @@ flag_def_list model_render_flags[] =
   	 
 int model_render_flags_size = sizeof(model_render_flags)/sizeof(flag_def_list);
 
-#define MAX_SUBMODEL_COLLISION_ANGLE	(PI / 6.0f)		// max 30 degrees per frame
+#define MAX_SUBMODEL_COLLISION_ANGULAR_VELOCITY		(PI / 6.0f)		// max 30 degrees per frame
 
 // info for special polygon lists
 
@@ -1138,16 +1138,10 @@ void model_calc_bound_box( vec3d *box, vec3d *big_mn, vec3d *big_mx)
 	box[7].xyz.x = big_mn->xyz.x; box[7].xyz.y = big_mx->xyz.y; box[7].xyz.z = big_mx->xyz.z;
 }
 
-void determine_submodel_movement(bool is_rotation, const char *filename, bsp_info *sm, char *props, SCP_vector<SCP_string> &look_at_submodel_names)
+void extract_movement_info(const bsp_info *sm, bool is_rotation, int *&movement_axis_id, vec3d *&movement_axis, int *&movement_type)
 {
-	const char *axis_string;
-	int *movement_axis_id, *movement_type;
-	vec3d *movement_axis;
-	char *p;
-
 	if (is_rotation)
 	{
-		axis_string = "$rotation_axis";
 		movement_axis_id = &sm->rotation_axis_id;
 		movement_axis = &sm->rotation_axis;
 		movement_type = &sm->rotation_type;
@@ -1155,11 +1149,19 @@ void determine_submodel_movement(bool is_rotation, const char *filename, bsp_inf
 	else
 	{
 		UNREACHABLE("Not yet implemented");
-		axis_string = nullptr;
 		movement_axis_id = nullptr;
 		movement_axis = nullptr;
 		movement_type = nullptr;
 	}
+}
+
+void determine_submodel_movement(bool is_rotation, const char *filename, bsp_info *sm, char *props, SCP_vector<SCP_string> &look_at_submodel_names)
+{
+	int *movement_axis_id, *movement_type;
+	vec3d *movement_axis;
+	char *p;
+
+	extract_movement_info(sm, is_rotation, movement_axis_id, movement_axis, movement_type);
 
 	// determine movement axis
 	// (the axis is a vector from 0,0,0 to the point specified)
@@ -1172,6 +1174,8 @@ void determine_submodel_movement(bool is_rotation, const char *filename, bsp_inf
 		*movement_axis = vmd_z_vector;
 	else if (*movement_axis_id == MOVEMENT_AXIS_OTHER)
 	{
+		auto axis_string = "$rotation_axis";
+
 		if (in(p, props, axis_string))
 		{
 			if (get_user_vec3d_value(p + 20, movement_axis, true, sm->name, filename))
@@ -1269,19 +1273,7 @@ void maybe_adjust_movement_axis(bool is_rotation, bsp_info *sm)
 	int *movement_axis_id, *movement_type;
 	vec3d *movement_axis;
 
-	if (is_rotation)
-	{
-		movement_axis_id = &sm->rotation_axis_id;
-		movement_axis = &sm->rotation_axis;
-		movement_type = &sm->rotation_type;
-	}
-	else
-	{
-		UNREACHABLE("Not yet implemented");
-		movement_axis_id = nullptr;
-		movement_axis = nullptr;
-		movement_type = nullptr;
-	}
+	extract_movement_info(sm, is_rotation, movement_axis_id, movement_axis, movement_type);
 
 	// if we have a frame of reference, we need to transform the movement axis and make it a non-standard one
 	if (!vm_matrix_equal(sm->frame_of_reference, vmd_identity_matrix) && (*movement_type != MOVEMENT_TYPE_NONE) && (*movement_axis_id != MOVEMENT_AXIS_NONE))
@@ -1298,19 +1290,7 @@ void do_movement_sanity_checks(bool is_rotation, bsp_info *sm, bsp_info *parent_
 	int *movement_axis_id, *movement_type;
 	vec3d *movement_axis;
 
-	if (is_rotation)
-	{
-		movement_axis_id = &sm->rotation_axis_id;
-		movement_axis = &sm->rotation_axis;
-		movement_type = &sm->rotation_type;
-	}
-	else
-	{
-		UNREACHABLE("Not yet implemented");
-		movement_axis_id = nullptr;
-		movement_axis = nullptr;
-		movement_type = nullptr;
-	}
+	extract_movement_info(sm, is_rotation, movement_axis_id, movement_axis, movement_type);
 
 	// make sure this is a validly normalized axis
 	if (vm_vec_mag(movement_axis) < 0.999f || vm_vec_mag(movement_axis) > 1.001f)
@@ -4374,7 +4354,7 @@ int rotating_submodel_has_ship_subsys(int submodel, ship *shipp)
  * Get all submodel indexes that satisfy the following:
  * 1) Have the rotating or intrinsic-rotating movement type
  * 2) Are currently rotating (i.e. actually moving and not part of the superstructure due to being destroyed or replaced)
- * 3) Are not rotating too far for collision detection (c.f. MAX_SUBMODEL_COLLISION_ANGLE)
+ * 3) Are not rotating too far for collision detection (c.f. MAX_SUBMODEL_COLLISION_ANGULAR_VELOCITY)
  */
 void model_get_moving_submodel_list(SCP_vector<int> &submodel_vector, const object *objp)
 {
@@ -4427,7 +4407,7 @@ void model_get_moving_submodel_list(SCP_vector<int> &submodel_vector, const obje
 
 				// check submodel rotation is less than max allowed.
 				float delta_angle = get_submodel_delta_angle(child_submodel_instance);
-				if (delta_angle < MAX_SUBMODEL_COLLISION_ANGLE) {
+				if (delta_angle < MAX_SUBMODEL_COLLISION_ANGULAR_VELOCITY) {
 					submodel_vector.push_back(i);
 				}
 			}
