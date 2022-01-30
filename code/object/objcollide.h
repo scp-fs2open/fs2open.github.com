@@ -30,10 +30,10 @@ struct collision_info_struct {
 	float		hit_time;				// time normalized [0,1] when sphere hits model
 	float		impulse;					// damage scales according to impulse
 	vec3d	light_rel_vel;			// velocity of light relative to heavy before collison
-	int		collide_rotate;		// if collision is detected purely from rotation
+	bool	collide_rotate;		// if collision is being detected purely from rotation (or submodel movement)
 	int		submodel_num;			// submodel of heavy object that is hit
-	int		edge_hit;				// if edge is hit, need to change collision normal
-	int		submodel_rot_hit;		// if collision is against rotating submodel
+	bool	edge_hit;				// if edge is hit, need to change collision normal
+	bool	submodel_move_hit;		// if collision is against a moving submodel
 	bool	is_landing;			//SUSHI: Maybe treat current collision as a landing
 };
 
@@ -61,9 +61,7 @@ extern SCP_vector<int> Collision_sort_list;
 
 #define COLLISION_OF(a,b) (((a)<<8)|(b))
 
-#define SUBMODEL_NO_ROT_HIT	0
-#define SUBMODEL_ROT_HIT		1
-void set_hit_struct_info(collision_info_struct *hit, mc_info *mc, int submodel_rot_hit);
+void set_hit_struct_info(collision_info_struct *hit, mc_info *mc, bool submodel_move_hit);
 
 void obj_add_collider(int obj_index);
 void obj_remove_collider(int obj_index);

@@ -434,7 +434,7 @@ namespace animation {
 		submodel->canonical_orient = data.orientation;
 
 		float angle = 0.0f;
-		vm_closest_angle_to_matrix(&submodel->canonical_orient, &sm->movement_axis, &angle);
+		vm_closest_angle_to_matrix(&submodel->canonical_orient, &sm->rotation_axis, &angle);
 
 		submodel->cur_angle = angle;
 		submodel->turret_idle_angle = angle;

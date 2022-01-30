@@ -262,7 +262,7 @@ namespace animation {
 			return;
 		}
 
-		switch (submodel_info->movement_axis_id)
+		switch (submodel_info->rotation_axis_id)
 		{
 			case MOVEMENT_AXIS_X:
 			angs.p = m_angle;
@@ -280,7 +280,7 @@ namespace animation {
 			break;
 
 		default:
-			vm_quaternion_rotate(&m_rot, m_angle, &submodel_info->movement_axis);
+			vm_quaternion_rotate(&m_rot, m_angle, &submodel_info->rotation_axis);
 			break;
 		}
 

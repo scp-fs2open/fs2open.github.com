@@ -541,14 +541,14 @@ int collide_remove_weapons( )
 
 }
 
-void set_hit_struct_info(collision_info_struct *hit, mc_info *mc, int submodel_rot_hit)
+void set_hit_struct_info(collision_info_struct *hit, mc_info *mc, bool submodel_move_hit)
 {
 	hit->edge_hit = mc->edge_hit;
 	hit->hit_pos = mc->hit_point_world;
 	hit->hit_time = mc->hit_dist;
 	hit->submodel_num = mc->hit_submodel;
 
-	hit->submodel_rot_hit = submodel_rot_hit;
+	hit->submodel_move_hit = submodel_move_hit;
 }
 
 //Previously, this was done with 
