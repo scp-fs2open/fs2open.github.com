@@ -2103,12 +2103,14 @@ static void parse_ship(const char *filename, bool replace)
 		}
 	}
 
-	if (new_name && !sip->flags[Ship::Info_Flags::Has_display_name]) {
-		// if this name has a hash, create a default display name
-		if (get_pointer_to_first_hash_symbol(sip->name)) {
-			strcpy_s(sip->display_name, sip->name);
-			end_string_at_first_hash_symbol(sip->display_name);
-			sip->flags.set(Ship::Info_Flags::Has_display_name);
+	if (new_name) {
+		if (!sip->flags[Ship::Info_Flags::Has_display_name]) {
+			// if this name has a hash, create a default display name
+			if (get_pointer_to_first_hash_symbol(sip->name)) {
+				strcpy_s(sip->display_name, sip->name);
+				end_string_at_first_hash_symbol(sip->display_name);
+				sip->flags.set(Ship::Info_Flags::Has_display_name);
+			}
 		}
 
 		sip->animations.changeShipName(sip->name);
