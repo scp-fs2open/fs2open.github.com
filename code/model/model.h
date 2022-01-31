@@ -109,6 +109,9 @@ struct submodel_instance
 	vec3d	arc_pts[MAX_ARC_EFFECTS][2];
 	ubyte		arc_type[MAX_ARC_EFFECTS];							// see MARC_TYPE_* defines
 
+	//SMI-Specific movement axis. Only valid in MOVEMENT_TYPE_TRIGGERED.
+	vec3d	rotation_axis;
+
 	submodel_instance()
 	{
 		memset(&arc_pts, 0, MAX_ARC_EFFECTS * 2 * sizeof(vec3d));
