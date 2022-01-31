@@ -476,8 +476,8 @@ int multi_find_prev_frame_idx()
 // Finds the first frame that is before the incoming timestamp.
 int multi_ship_record_find_frame(int client_frame, int time_elapsed)
 {	
-	// frame coming in from the client is too old to be used.
-	if (Oo_info.cur_frame_index - client_frame >= MAX_FRAMES_RECORDED) {
+	// frame coming in from the client is too old to be used. (The -1 prevents an edge case bug at very high pings)
+	if (Oo_info.cur_frame_index - client_frame >= MAX_FRAMES_RECORDED - 1) {
 		return -1;
 	}
 
@@ -639,6 +639,7 @@ void multi_ship_record_do_rollback()
 		}
 
 		objp = &Objects[cur_ship.objnum];
+
 		if (objp == nullptr || objp->type != OBJ_SHIP) {
 			continue;
 		}
@@ -674,16 +675,20 @@ void multi_ship_record_do_rollback()
 
 	// now we need to figure out which frame will start the rollback simulation
 	int frame_idx = Oo_info.cur_frame_index + 1;
+
 	if (frame_idx >= MAX_FRAMES_RECORDED) {
 		frame_idx = 0;
 	}
 
 	// loop through them
 	while (frame_idx != Oo_info.cur_frame_index) {
+
 		if (!Oo_info.rollback_shots_to_be_fired[frame_idx].empty()) {
 			break;
 		}
+
 		frame_idx++;
+
 		if (frame_idx >= MAX_FRAMES_RECORDED) {
 			frame_idx = 0;
 		}
@@ -736,6 +741,7 @@ void multi_oo_fire_rollback_shots(int frame_idx)
 	for (auto & rollback_shot : Oo_info.rollback_shots_to_be_fired[frame_idx]) {
 		rollback_shot.shooterp->pos = rollback_shot.pos;
 		rollback_shot.shooterp->orient = rollback_shot.orient;
+
 		if (rollback_shot.secondary_shot) {
 			ship_fire_secondary(rollback_shot.shooterp, 1, true);
 		}
@@ -2566,6 +2572,7 @@ void multi_init_oo_and_ship_tracker()
 
 	Oo_info.number_of_frames = 0;
 	Oo_info.cur_frame_index = 0;
+
 	for (int i = 0; i < MAX_FRAMES_RECORDED; i++) { // NOLINT
 		Oo_info.timestamps[i] = MAX_TIME; // This needs to be Max time (or at least some absurdly high number) for rollback to work correctly
 	}
@@ -2574,6 +2581,7 @@ void multi_init_oo_and_ship_tracker()
 	Oo_info.rollback_weapon_object_number.clear();
 	Oo_info.rollback_collide_list.clear();
 	Oo_info.rollback_ships.clear();
+
 	for (int i = 0; i < MAX_FRAMES_RECORDED; i++) { // NOLINT
 		Oo_info.rollback_shots_to_be_fired[i].clear();
 		Oo_info.rollback_shots_to_be_fired[i].reserve(20);
