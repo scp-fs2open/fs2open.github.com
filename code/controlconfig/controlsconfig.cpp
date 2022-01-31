@@ -2700,7 +2700,7 @@ void scale_invert(const CC_bind &bind,
 			maybe_invert(bind.is_inverted(), type, dx);
 			axis_out[action] += (int)((float)dx * factor);
 		}
-		// Flow into normal joystick readings
+		FALLTHROUGH;
 
 	case CID_JOY1:
 	case CID_JOY2:
