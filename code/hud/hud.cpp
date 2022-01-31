@@ -3046,10 +3046,22 @@ void hud_set_dim_color()
 /**
  * @brief Will set the color to the IFF color based on the team
  *
- * @param objp			Object to test for team color to base on
+ * @param objp			Pointer to object whose team will be queried to set HUD gauge color
  * @param is_bright		Default parameter (value 0) which uses bright version of IFF color
  */
-void hud_set_iff_color(object *objp, int is_bright)
+void hud_set_iff_color(object* objp, int is_bright) {
+
+	gr_set_color_fast(hud_get_iff_color(objp, is_bright));
+
+}
+
+/**
+ * @brief Will get the color to the IFF color based on the team
+ *
+ * @param objp			Pointer to object whose team will be queried to get HUD gauge color
+ * @param is_bright		Default parameter (value 0) which uses bright version of IFF color
+ */
+color* hud_get_iff_color(object* objp, int is_bright)
 {
 	color *use_color;
 
@@ -3076,7 +3088,7 @@ void hud_set_iff_color(object *objp, int is_bright)
 		}
 	}
 
-	gr_set_color_fast(use_color);
+	return use_color;
 }
 
 /**
