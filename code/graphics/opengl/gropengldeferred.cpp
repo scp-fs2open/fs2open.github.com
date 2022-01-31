@@ -441,9 +441,9 @@ void gr_opengl_deferred_light_cylinder_init(int segments) // Generate a VBO of a
 			deferred_light_cylinder_vbo = 0;
 
 			vm_free(Indices);
-			Indices = NULL;
+			Indices = nullptr;
 			vm_free(Vertices);
-			Vertices = NULL;
+			Vertices = nullptr;
 			return;
 		}
 
@@ -463,9 +463,9 @@ void gr_opengl_deferred_light_cylinder_init(int segments) // Generate a VBO of a
 			deferred_light_cylinder_ibo = 0;
 
 			vm_free(Indices);
-			Indices = NULL;
+			Indices = nullptr;
 			vm_free(Vertices);
-			Vertices = NULL;
+			Vertices = nullptr;
 			return;
 		}
 
@@ -473,9 +473,9 @@ void gr_opengl_deferred_light_cylinder_init(int segments) // Generate a VBO of a
 	}
 
 	vm_free(Indices);
-	Indices = NULL;
+	Indices = nullptr;
 	vm_free(Vertices);
-	Vertices = NULL;
+	Vertices = nullptr;
 }
 
 static GLuint deferred_light_sphere_vbo = 0;
@@ -541,9 +541,9 @@ void gr_opengl_deferred_light_sphere_init(int rings, int segments) // Generate a
 			deferred_light_sphere_vbo = 0;
 			
 			vm_free(Vertices);
-			Vertices = NULL;
+			Vertices = nullptr;
 			vm_free(Indices);
-			Indices = NULL;
+			Indices = nullptr;
 			return;
 		}
 
@@ -563,9 +563,9 @@ void gr_opengl_deferred_light_sphere_init(int rings, int segments) // Generate a
 			deferred_light_sphere_ibo = 0;
 			
 			vm_free(Vertices);
-			Vertices = NULL;
+			Vertices = nullptr;
 			vm_free(Indices);
-			Indices = NULL;
+			Indices = nullptr;
 			return;
 		}
 
@@ -573,9 +573,9 @@ void gr_opengl_deferred_light_sphere_init(int rings, int segments) // Generate a
 	}
 	
 	vm_free(Vertices);
-	Vertices = NULL;
+	Vertices = nullptr;
 	vm_free(Indices);
-	Indices = NULL;
+	Indices = nullptr;
 }
 
 void opengl_draw_sphere()
