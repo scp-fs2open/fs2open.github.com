@@ -25,6 +25,13 @@ extern int Player_select_very_first_pilot;
 // functions for selecting single/multiplayer pilots at the very beginning of FreeSpace
 void player_select_init();
 void player_select_do();
+
+/**
+ * Playermenu closing handler
+ * 
+ * @details Called by game_leave_state when leaving GS_STATE_INITIAL_PLAYER_SELECT, finalizes player selection and
+ * prepares to enter the mainhall.
+ */
 void player_select_close();
 
 // function to check whether we found a "last pilot". loads this pilot in if possible and returns true, or false otherwise

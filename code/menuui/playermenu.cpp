@@ -574,17 +574,39 @@ void player_select_button_pressed(int n)
 	case ACCEPT_BUTTON:
 		// make sure he has a valid pilot selected
 		if (Player_select_pilot < 0) {
+			// error: invalid selection
 			popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,XSTR( "You must select a valid pilot first", 378));
-		} else {
-			if (valid_pilot_lang(Pilots[Player_select_pilot])) {
-				player_select_commit();
-			} else {
-				popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,XSTR(
-					"Selected pilot was created with a different language\n"
-					"to the currently active language.\n\n"
-					"Please select a different pilot or change the language", 1637));
+			goto player_select_nocommit;
+		}
+		
+		if (!valid_pilot_lang(Pilots[Player_select_pilot])) {
+			// error: Different language
+			popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,XSTR(
+				"Selected pilot was created with a different language\n"
+				"to the currently active language.\n\n"
+				"Please select a different pilot or change the language", 1637));
+			goto player_select_nocommit;
+		}
+		
+		if (Player->flags & PLAYER_FLAGS_PLR_VER_LOWER) {
+			// warning: Selected player is older than the expected version
+			int sel = popup(PF_BODY_RED, 2, POPUP_YES, POPUP_NO, "Selected pilot was created with an older version of Freespace.\n"
+				"Should you continue with this pilot, it will be updated to version %i.\n"
+				"This update is irreversible and may make the pilot incompatible with older versions.\n"
+				"Please visit https://wiki.hard-light.net/index.php/Frequently_Asked_Questions for more information.\n\n"
+
+				"Do you wish to continue?", PLR_VERSION);
+
+			if (sel != 0) {
+				// Player either hit No or the popup was aborted, so bail
+				goto player_select_nocommit;
 			}
 		}
+		
+		// If we got here, then everything checks out!
+		player_select_commit();
+
+player_select_nocommit:		// ...unless we skipped to here
 		break;
 
 	case CLONE_BUTTON:
