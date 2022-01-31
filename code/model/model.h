@@ -36,11 +36,13 @@ extern int model_render_flags_size;
 #define MAX_NAME_LEN			32
 #define MAX_ARC_EFFECTS		8
 
+// For POF compatibility reasons, the first four of these should not be renumbered.
 #define MOVEMENT_TYPE_NONE			-1
-#define MOVEMENT_TYPE_REGULAR		0
-#define MOVEMENT_TYPE_TURRET		1	// for turrets only
-#define MOVEMENT_TYPE_TRIGGERED		2
-#define MOVEMENT_TYPE_INTRINSIC		3	// intrinsic (non-subsystem-based)
+#define MOVEMENT_TYPE_UNUSED		0	// previously MOVEMENT_TYPE_POS
+#define MOVEMENT_TYPE_REGULAR		1	// previously MOVEMENT_TYPE_ROT
+#define MOVEMENT_TYPE_TURRET		2	// for turrets only
+#define MOVEMENT_TYPE_TRIGGERED		3
+#define MOVEMENT_TYPE_INTRINSIC		4	// intrinsic (non-subsystem-based)
 
 
 // DA 11/13/98 Reordered to account for difference between max and game
