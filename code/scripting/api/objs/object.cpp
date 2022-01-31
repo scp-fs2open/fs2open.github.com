@@ -603,10 +603,10 @@ ADE_FUNC(getIFFColor, l_Object, "number, number, number",
 	object_h* objh;
 
 	if (!ade_get_args(L, "o", l_Object.GetPtr(&objh)))
-		return ade_set_error(L, "iii", ADE_RETURN_NIL, ADE_RETURN_NIL, ADE_RETURN_NIL);
+		return ADE_RETURN_NIL;
 
 	if (!objh->IsValid())
-		return ade_set_error(L, "iii", ADE_RETURN_NIL, ADE_RETURN_NIL, ADE_RETURN_NIL);
+		return ADE_RETURN_NIL;
 
 	auto objp = objh->objp;
 	color* col = hud_get_iff_color(objp);
