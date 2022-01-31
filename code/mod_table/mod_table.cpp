@@ -86,6 +86,8 @@ float Min_pizel_size_muzzleflash;
 float Min_pixel_size_trail;
 float Min_pixel_size_laser;
 
+void mod_table_set_version_flags();
+
 SCP_vector<std::pair<SCP_string, gr_capability>> req_render_ext_pairs = {
 	std::make_pair("BPTC Texture Compression", CAPABILITY_BPTC)
 };
@@ -116,6 +118,9 @@ void parse_mod_table(const char *filename)
 					gameversion::format_version(Targeted_version).c_str(),
 					gameversion::format_version(gameversion::get_executable_version()).c_str());
 			}
+
+			// whenever we specify a version, set the flags for that version
+			mod_table_set_version_flags();
 		}
 
 		if (optional_string("$Window title:")) {
@@ -790,7 +795,7 @@ void mod_table_reset()
 	Default_weapon_select_effect = 2;
 	Default_fiction_viewer_ui = -1;
 	Enable_external_shaders = false;
-	Enable_external_default_scripts             = false;
+	Enable_external_default_scripts = false;
 	Default_detail_level = 3; // "very high" seems a reasonable default in 2012 -zookeeper
 	Full_color_head_anis = false;
 	Dont_automatically_select_turret_when_targeting_ship = false;
@@ -843,4 +848,14 @@ void mod_table_reset()
 	Min_pizel_size_muzzleflash = 0.0f;
 	Min_pixel_size_trail = 0.0f;
 	Min_pixel_size_laser = 0.0f;
+}
+
+void mod_table_set_version_flags()
+{
+	if (mod_supports_version(22, 0, 0)) {
+		Fixed_turret_collisions = true;
+		Shockwaves_damage_all_obj_types_once = true;
+		Framerate_independent_turning = true;					// this is already true, but let's re-emphasize it
+		Use_host_orientation_for_set_camera_facing = true;		// this is essentially a bugfix
+	}
 }
