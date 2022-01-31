@@ -626,7 +626,7 @@ void multi_ship_record_do_rollback()
 	if (!Oo_info.rollback_mode) {
 		return;
 	}
-	nprintf(("Network","At least one multiplayer rollback shot is being simulated this frame.\n"));
+
 	int net_sig_idx;
 	object* objp;
 
@@ -700,6 +700,8 @@ void multi_ship_record_do_rollback()
 	if (frame_idx == Oo_info.cur_frame_index) {
 		return;
 	}
+
+	nprintf(("Network","At least one multiplayer rollback shot is being simulated this frame.\n"));
 
 	do {
 		// move all ships to their recorded positions
