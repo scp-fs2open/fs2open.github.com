@@ -863,29 +863,6 @@ matrix *vm_copy_transpose(matrix *dest, const matrix *src)
 	return dest;
 }
 
-inline vec3d operator*(const matrix& A, const vec3d& v) {
-	vec3d out;
-
-	out.xyz.x = vm_vec_dot(&A.vec.rvec, &v);
-	out.xyz.y = vm_vec_dot(&A.vec.uvec, &v);
-	out.xyz.z = vm_vec_dot(&A.vec.fvec, &v);
-
-	return out;
-}
-
-inline matrix operator*(const matrix& A, const matrix& B) {
-	matrix BT, out;
-
-	// we transpose B here for concision and also potential vectorisation opportunities
-	vm_copy_transpose(&BT, &B);
-
-	out.vec.rvec = BT * A.vec.rvec;
-	out.vec.uvec = BT * A.vec.uvec;
-	out.vec.fvec = BT * A.vec.fvec;
-
-	return out;
-}
-
 // Old matrix multiplication routine. Note that the order of multiplication is inverted
 // compared to the mathematical standard: formally, this calculates src1 * src0
 matrix *vm_matrix_x_matrix(matrix *dest, const matrix *src0, const matrix *src1)

@@ -75,7 +75,7 @@ public:
 	object *get_object_target();
 	int get_object_target_submodel();
 	float get_fov();
-	void get_info(vec3d *position, matrix *orientation);
+	void get_info(vec3d *position, matrix *orientation, bool apply_camera_orientation = true);
 
 	//Is
 	bool is_empty(){return sig < 0;}
