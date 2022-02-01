@@ -167,7 +167,10 @@ namespace animation {
 			vm_matrix_x_matrix(&newOrient, &startOrient, &buffer[rotation.m_submodel].data.orientation);
 			setOrientation.m_targetOrientation = newOrient;
 
-			rotation.m_targetAngle = fl_radians((float)ang);
+			float currentAngle;
+			vm_closest_angle_to_matrix(&newOrient, &m_axis, &currentAngle);
+			
+			rotation.m_targetAngle = fl_radians((float)ang) - currentAngle;
 
 			anim->start(pmi, ModelAnimationDirection::FWD);
 		}
