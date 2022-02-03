@@ -1982,6 +1982,8 @@ void misc_anim_init(main_hall_defines &m, bool first_time, int base_num)
 		m.misc_anim_delay.back().push_back(-1);
 		m.misc_anim_delay.back().push_back(0);
 		m.misc_anim_delay.back().push_back(0);
+
+		// set the default initial delay to -1 
 		m.misc_anim_initial_delay.push_back(-1);
 
 		// misc_anim_paused
@@ -2371,6 +2373,8 @@ void parse_one_main_hall(bool replace, int num_resolutions, int &hall_idx, int &
 			// anim delay
 			required_string("+Misc anim delay:");
 			stuff_int(&m->misc_anim_initial_delay.at(idx));
+			// We do not set the first value in misc_anim_delay, as it is used as a timestamp that gets
+			// updated dynamically when the mainhall initializes.
 			stuff_int(&m->misc_anim_delay.at(idx).at(1));
 			stuff_int(&m->misc_anim_delay.at(idx).at(2));
 		}
