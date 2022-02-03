@@ -4766,8 +4766,10 @@ int sexp_atoi(int node)
 
 	int num = atoi(CTEXT(node));
 
-	// cache the value, unless this node is a variable or argument because the value may change
-	if (!(Sexp_nodes[node].type & SEXP_FLAG_VARIABLE) && !(Sexp_nodes[node].flags & SNF_SPECIAL_ARG_IN_NODE))
+	// cache the value, unless this node is a variable, argument, or container data, because the value may change
+	if (!(Sexp_nodes[node].type & SEXP_FLAG_VARIABLE) &&
+		!(Sexp_nodes[node].flags & SNF_SPECIAL_ARG_IN_NODE) &&
+		(Sexp_nodes[node].subtype != SEXP_ATOM_CONTAINER))
 		Sexp_nodes[node].cache = new sexp_cached_data(OPF_NUMBER, num, -1);
 
 	return num;
@@ -24215,7 +24217,8 @@ int eval_sexp(int cur_node, int referenced_node)
 		}
 	}
 
-	if (Sexp_nodes[cur_node].first != -1) {
+	// ignore for container data, because their "first" is a container modifier
+	if ((Sexp_nodes[cur_node].first != -1) && (Sexp_nodes[cur_node].subtype != SEXP_ATOM_CONTAINER)) {
 		node = CAR(cur_node);
 		sexp_val = eval_sexp(node);
 		Sexp_nodes[cur_node].value = Sexp_nodes[node].value;	// higher level node gets node value
