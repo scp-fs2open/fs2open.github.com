@@ -2373,8 +2373,10 @@ void parse_one_main_hall(bool replace, int num_resolutions, int &hall_idx, int &
 			// anim delay
 			required_string("+Misc anim delay:");
 			stuff_int(&m->misc_anim_initial_delay.at(idx));
-			// We do not set the first value in misc_anim_delay, as it is used as a timestamp that gets
-			// updated dynamically when the mainhall initializes.
+
+			// We set the first value here to -1; if the first delay parameter is set to something that isn't
+			// -1, we will replace it with a proper timestamp while loading up the mainhall for presentation.
+			m->misc_anim_delay.at(idx).at(0) = -1;
 			stuff_int(&m->misc_anim_delay.at(idx).at(1));
 			stuff_int(&m->misc_anim_delay.at(idx).at(2));
 		}
