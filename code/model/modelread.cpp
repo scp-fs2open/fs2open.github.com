@@ -53,7 +53,7 @@ flag_def_list model_render_flags[] =
   	 
 int model_render_flags_size = sizeof(model_render_flags)/sizeof(flag_def_list);
 
-#define MAX_SUBMODEL_COLLISION_ROT_ANGLE (PI / 6.0f)	// max 30 degrees per frame
+#define MAX_SUBMODEL_COLLISION_ANGULAR_VELOCITY		(PI / 6.0f)		// max 30 degrees per frame
 
 // info for special polygon lists
 
@@ -478,7 +478,7 @@ void get_user_prop_value(char *buf, char *value)
 }
 
 // routine to parse out a vec3d from a user property field of an object
-bool get_user_vec3d_value(char *buf, vec3d *value, bool require_brackets, char* submodel_name, char* filename)
+bool get_user_vec3d_value(char *buf, vec3d *value, bool require_brackets, const char *submodel_name, const char *filename)
 {
 	float f1, f2, f3;
 	char closing_bracket = '\0';
@@ -616,7 +616,7 @@ bool in(char *&p, char *str, const char *substr)
 }
 
 const Model::Subsystem_Flags carry_flags[] = { Model::Subsystem_Flags::Crewpoint, Model::Subsystem_Flags::Rotates, Model::Subsystem_Flags::Triggered, Model::Subsystem_Flags::Artillery, Model::Subsystem_Flags::Stepped_rotate };
-// funciton to copy model data from one subsystem set to another subsystem set.  This function
+// Function to copy model data from one subsystem set to another subsystem set.  This function
 // is called when two ships use the same model data, but since the model only gets read in one time,
 // the subsystem data is only present in one location.  The ship code will call this routine to fix
 // this situation by copying stuff from the source subsystem set to the dest subsystem set.
@@ -729,8 +729,8 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 	}
 
 	if (in(props, "$triggered")) {
-        subsystemp->flags.set(Model::Subsystem_Flags::Rotates);
-        subsystemp->flags.set(Model::Subsystem_Flags::Triggered);
+		subsystemp->flags.set(Model::Subsystem_Flags::Rotates);
+		subsystemp->flags.set(Model::Subsystem_Flags::Triggered);
 	}
 
 	// Dumb-Rotating subsystem
@@ -769,8 +769,8 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 		}
 
 		// CASE OF WEAPON ROTATION (primary only)
-		if (in(p, props, "$pbank"))	{
-            subsystemp->flags.set(Model::Subsystem_Flags::Artillery);
+		if (in(p, props, "$pbank")) {
+			subsystemp->flags.set(Model::Subsystem_Flags::Artillery);
 
 			// get which pbank should trigger rotation
 			get_user_prop_value(p+6, buf);
@@ -904,8 +904,8 @@ void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num,
 
 		if (!subsystem_stricmp(subobj_name, subsystemp->subobj_name))
 		{
-			//commented by Goober5000 because this is also set when the table is parsed
-			//subsystemp->flags = 0;
+			if (subobj_num >= 0)
+				model_get(model_num)->submodel[subobj_num].subsys_num = i;
 
 			subsystemp->subobj_num = subobj_num;
 			subsystemp->turret_gun_sobj = -1;
@@ -942,40 +942,19 @@ void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num,
 
 }
 
-void print_family_tree( polymodel *obj, int modelnum, const char * ident, int islast )
+void print_family_tree(polymodel *obj)
 {
-	char temp[50];
+	mprintf(("PRINTING POLYMODEL TREE\n"));
+	mprintf(("%s\n", obj->filename));
 
-	if ( modelnum < 0 ) return;
-	if (obj==NULL) return;
+	model_iterate_submodel_tree(obj, obj->detail[0], [&](int submodel, int level, bool /*isLeaf*/)
+		{
+			mprintf(("  "));
+			for (int i = 0; i < level; i++)
+				mprintf(("  "));
 
-	if (ident[0] == '\0')	{
-		mprintf(( " %s", obj->submodel[modelnum].name ));
-		sprintf( temp, " " );
-	} else if ( islast ) 	{
-		mprintf(( "%s:%s", ident, obj->submodel[modelnum].name ));
-		sprintf( temp, "%s  ", ident );
-	} else {
-		mprintf(( "%s:%s", ident, obj->submodel[modelnum].name ));
-		sprintf( temp, "%s ", ident );
-	}
-
-	mprintf(( "\n" ));
-
-	int child = obj->submodel[modelnum].first_child;
-	while( child > -1 )	{
-		if ( obj->submodel[child].next_sibling < 0 )
-			print_family_tree( obj, child, temp,1 );
-		else
-			print_family_tree( obj, child, temp,0 );
-		child = obj->submodel[child].next_sibling;
-	}
-}
-
-void dump_object_tree(polymodel *obj)
-{
-	print_family_tree( obj, 0, "", 0 );
-	key_getch();
+			mprintf(("%s\n", obj->submodel[submodel].name));
+		});
 }
 
 void create_family_tree(polymodel *obj)
@@ -1159,15 +1138,225 @@ void model_calc_bound_box( vec3d *box, vec3d *big_mn, vec3d *big_mx)
 	box[7].xyz.x = big_mn->xyz.x; box[7].xyz.y = big_mx->xyz.y; box[7].xyz.z = big_mx->xyz.z;
 }
 
-void maybe_adjust_movement_axis(bsp_info *sm)
+void extract_movement_info(bsp_info *sm, bool is_rotation, int *&movement_axis_id, vec3d *&movement_axis, int *&movement_type)
 {
-	// if we have a FOR, we need to transform the movement axis and make it a non-standard one
-	if (!vm_matrix_equal(sm->frame_of_reference, vmd_identity_matrix) && (sm->movement_type != MOVEMENT_TYPE_NONE) && (sm->movement_axis_id != MOVEMENT_AXIS_NONE)) {
-		vec3d new_axis;
-		vm_vec_unrotate(&new_axis, &sm->movement_axis, &sm->frame_of_reference);
-		sm->movement_axis = new_axis;
-		sm->movement_axis_id = MOVEMENT_AXIS_OTHER;
+	if (is_rotation)
+	{
+		movement_axis_id = &sm->rotation_axis_id;
+		movement_axis = &sm->rotation_axis;
+		movement_type = &sm->rotation_type;
 	}
+	else
+	{
+		UNREACHABLE("Not yet implemented");
+		movement_axis_id = nullptr;
+		movement_axis = nullptr;
+		movement_type = nullptr;
+	}
+}
+
+void determine_submodel_movement(bool is_rotation, const char *filename, bsp_info *sm, char *props, SCP_vector<SCP_string> &look_at_submodel_names)
+{
+	int *movement_axis_id, *movement_type;
+	vec3d *movement_axis;
+	char *p;
+
+	extract_movement_info(sm, is_rotation, movement_axis_id, movement_axis, movement_type);
+
+	// determine movement axis
+	// (the axis is a vector from 0,0,0 to the point specified)
+	// note: the standard axis point definitions are copied from Volition code originally in model_init_submodel_axis_pt
+	if (*movement_axis_id == MOVEMENT_AXIS_X)
+		*movement_axis = vmd_x_vector;
+	else if (*movement_axis_id == MOVEMENT_AXIS_Y)
+		*movement_axis = vmd_y_vector;
+	else if (*movement_axis_id == MOVEMENT_AXIS_Z)
+		*movement_axis = vmd_z_vector;
+	else if (*movement_axis_id == MOVEMENT_AXIS_OTHER)
+	{
+		auto axis_string = "$rotation_axis";
+
+		if (in(p, props, axis_string))
+		{
+			if (get_user_vec3d_value(p + 20, movement_axis, true, sm->name, filename))
+				vm_vec_normalize(movement_axis);
+			else
+			{
+				Warning(LOCATION, "Failed to parse %s on subsystem '%s' on ship %s!", axis_string, sm->name, filename);
+				*movement_type = MOVEMENT_TYPE_NONE;
+			}
+		}
+		else
+		{
+			Warning(LOCATION, "A %s was not specified for subsystem '%s' on ship %s!", axis_string, sm->name, filename);
+			*movement_type = MOVEMENT_TYPE_NONE;
+		}
+	}
+
+	if (is_rotation)
+	{
+		// note, this should come BEFORE do_new_subsystem() for proper error handling (to avoid both rotating and look-at submodel)
+		if (in(p, props, "$look_at"))
+		{
+			sm->rotation_type = MOVEMENT_TYPE_INTRINSIC;
+
+			// we need to work out the correct subobject number later, after all subobjects have been processed
+			sm->look_at_submodel = static_cast<int>(look_at_submodel_names.size());
+
+			char submodel_name[MAX_NAME_LEN];
+			get_user_prop_value(p + 9, submodel_name);
+			look_at_submodel_names.push_back(submodel_name);
+		}
+		else
+			sm->look_at_submodel = -1; // No look_at
+
+		// optional extra property for look_at
+		if (in(p, props, "$look_at_offset"))
+		{
+			auto offset = (float)atof(p + 16);
+
+			// model property is specified in degrees, so convert it
+			offset = fl_radians(offset);
+
+			// check range (the angle is now in radians)
+			if (offset < -PI2 || offset > PI2)
+			{
+				Warning(LOCATION, "Submodel '%s' of model '%s' has a look_at_offset that is outside the range of -360 to 360!", sm->name, filename);
+				offset = -1.0f;
+			}
+			// make the angle positive, since negative angles will be set at first look_at call
+			else if (offset < 0.0f)
+				offset += PI2;
+
+			sm->look_at_offset = offset;
+		}
+		else
+			sm->look_at_offset = -1.0f;
+	}
+
+	if (is_rotation)
+	{
+		// note, this should come BEFORE do_new_subsystem() for proper error handling (to avoid both rotating and dumb-rotating submodel)
+		int idx = prop_string(props, &p, "$dumb_rotate_time", "$dumb_rotate_rate", "$dumb_rotate");
+		if (idx >= 0)
+		{
+			sm->rotation_type = MOVEMENT_TYPE_INTRINSIC;
+
+			// do this the same way as regular $rotate
+			char buf[64];
+			get_user_prop_value(p, buf);
+
+			// for past SCP compatibility, $dumb_rotate means $dumb_rotate_rate
+			float turn_rate;
+			if (idx == 0)
+			{
+				auto turn_time = static_cast<float>(atof(buf));
+				if (turn_time == 0.0f)
+				{
+					Warning(LOCATION, "Dumb-Rotation has a turn time of 0 for subsystem '%s' on ship %s!", sm->name, filename);
+					turn_rate = 1.0f;
+				}
+				else
+					turn_rate = PI2 / turn_time;
+			}
+			else
+				turn_rate = static_cast<float>(atof(buf));
+
+			sm->default_turn_rate = turn_rate;
+			sm->flags.set(Model::Submodel_flags::Instant_rotate_accel);
+		}
+	}
+}
+
+void maybe_adjust_movement_axis(bool is_rotation, bsp_info *sm)
+{
+	int *movement_axis_id, *movement_type;
+	vec3d *movement_axis;
+
+	extract_movement_info(sm, is_rotation, movement_axis_id, movement_axis, movement_type);
+
+	// if we have a frame of reference, we need to transform the movement axis and make it a non-standard one
+	if (!vm_matrix_equal(sm->frame_of_reference, vmd_identity_matrix) && (*movement_type != MOVEMENT_TYPE_NONE) && (*movement_axis_id != MOVEMENT_AXIS_NONE))
+	{
+		vec3d new_axis;
+		vm_vec_unrotate(&new_axis, movement_axis, &sm->frame_of_reference);
+		*movement_axis = new_axis;
+		*movement_axis_id = MOVEMENT_AXIS_OTHER;
+	}
+}
+
+void do_movement_sanity_checks(bool is_rotation, bsp_info *sm, bsp_info *parent_sm, const char *filename)
+{
+	int *movement_axis_id, *movement_type;
+	vec3d *movement_axis;
+
+	extract_movement_info(sm, is_rotation, movement_axis_id, movement_axis, movement_type);
+
+	// make sure this is a validly normalized axis
+	if (vm_vec_mag(movement_axis) < 0.999f || vm_vec_mag(movement_axis) > 1.001f)
+		*movement_type = MOVEMENT_TYPE_NONE;
+
+	// maybe use the FOR to manipulate the axes
+	// (do this before the compatibility check below to prevent doing it twice)
+	maybe_adjust_movement_axis(is_rotation, sm);
+
+	if (is_rotation)
+	{
+		// important compatibility check: if there are multipart turrets without rotation axes defined, define them
+		// also, some of the retail models got the axes wrong, so fix those :-/
+		// what this boils down to is that we must force turret axes for submodels with frame_of_reference defined
+		//     and also for turrets which don't have their axes set to "other"
+		if (parent_sm && in(parent_sm->name, "turret"))
+		{
+			auto base = parent_sm;
+			auto gun = sm;
+
+			if (!vm_matrix_equal(base->frame_of_reference, vmd_identity_matrix)
+				|| (base->rotation_axis_id != MOVEMENT_AXIS_OTHER))
+			{
+				base->rotation_axis_id = MOVEMENT_AXIS_Y;
+				base->rotation_axis = vmd_y_vector;
+				base->rotation_type = MOVEMENT_TYPE_TURRET;
+				maybe_adjust_movement_axis(true, base);
+			}
+
+			if (!vm_matrix_equal(gun->frame_of_reference, vmd_identity_matrix)
+				|| (gun->rotation_axis_id != MOVEMENT_AXIS_OTHER))
+			{
+				gun->rotation_axis_id = MOVEMENT_AXIS_X;
+				gun->rotation_axis = vmd_x_vector;
+				gun->rotation_type = MOVEMENT_TYPE_TURRET;
+				maybe_adjust_movement_axis(true, gun);
+			}
+		}
+	}
+
+	// add a warning if movement is specified without movement axis.
+	if (*movement_axis_id == MOVEMENT_AXIS_NONE)
+	{
+		auto str = is_rotation ? "rotation" : "translation";
+
+		if (*movement_type == MOVEMENT_TYPE_REGULAR)
+			Warning(LOCATION, "%s without %s axis defined on submodel '%s' of model '%s'!", str, str, sm->name, filename);
+		else if (*movement_type == MOVEMENT_TYPE_INTRINSIC)
+			Warning(LOCATION, "Intrinsic %s (e.g. dumb-rotate or look-at) without %s axis defined on submodel '%s' of model '%s'!", str, str, sm->name, filename);
+
+		*movement_type = MOVEMENT_TYPE_NONE;
+	}
+
+	// clear the axis if the submodel doesn't move
+	// (don't clear can_move because of gun_rotation)
+	if (*movement_type == MOVEMENT_TYPE_NONE)
+	{
+		*movement_axis_id = MOVEMENT_AXIS_NONE;
+		*movement_axis = vmd_zero_vector;
+	}
+
+	// Set the can_move field on submodels which are of a moving type or which have such a parent somewhere down the hierarchy
+	if (*movement_type != MOVEMENT_TYPE_NONE)
+		sm->flags.set(Model::Submodel_flags::Can_move);
+	else if (parent_sm && parent_sm->flags[Model::Submodel_flags::Can_move])
+		sm->flags.set(Model::Submodel_flags::Can_move);
 }
 
 void resolve_submodel_index(const polymodel *pm, const char *requester, const char *field, int &submodel_index, const SCP_vector<SCP_string> &submodel_list)
@@ -1502,108 +1691,21 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 
 				// ---------- submodel movement ----------
 
-				sm->movement_type = cfread_int(fp);
-				sm->movement_axis_id = cfread_int(fp);
+				sm->rotation_type = cfread_int(fp);
+				sm->rotation_axis_id = cfread_int(fp);
 
-				// change turret movement type to MOVEMENT_TYPE_ROT_SPECIAL
-				if ( stristr(sm->name, "turret") || (parent_sm && (parent_sm->movement_type == MOVEMENT_TYPE_ROT_SPECIAL)) ) {
-					sm->movement_type = MOVEMENT_TYPE_ROT_SPECIAL;
-				} else if (sm->movement_type == MOVEMENT_TYPE_ROT) {
-					if (stristr(sm->name, "thruster")) {
-						sm->movement_type = MOVEMENT_TYPE_NONE;
-					} else if(strstr(props, "$triggered")) {
-						sm->movement_type = MOVEMENT_TYPE_TRIGGERED;
+				// change turret rotation type to MOVEMENT_TYPE_TURRET
+				if ( in(sm->name, "turret") || (parent_sm && (parent_sm->rotation_type == MOVEMENT_TYPE_TURRET)) ) {
+					sm->rotation_type = MOVEMENT_TYPE_TURRET;
+				} else if (sm->rotation_type == MOVEMENT_TYPE_REGULAR) {
+					if (in(sm->name, "thruster")) {
+						sm->rotation_type = MOVEMENT_TYPE_NONE;
+					} else if (in(props, "$triggered")) {
+						sm->rotation_type = MOVEMENT_TYPE_TRIGGERED;
 					}
 				}
 
-				// determine rotation axis
-				// (the axis is a vector from 0,0,0 to the point specified)
-				// note: the standard axis point definitions are copied from Volition code originally in model_init_submodel_axis_pt
-				if (sm->movement_axis_id == MOVEMENT_AXIS_X) {
-					sm->movement_axis = vmd_x_vector;
-				}
-				else if (sm->movement_axis_id == MOVEMENT_AXIS_Y) {
-					sm->movement_axis = vmd_y_vector;
-				}
-				else if (sm->movement_axis_id == MOVEMENT_AXIS_Z) {
-					sm->movement_axis = vmd_z_vector;
-				}
-				else if (sm->movement_axis_id == MOVEMENT_AXIS_OTHER) {
-					if (in(p, props, "$rotation_axis")) {
-						if (get_user_vec3d_value(p + 20, &sm->movement_axis, true, sm->name, pm->filename)) {
-							vm_vec_normalize(&sm->movement_axis);
-						} else {
-							Warning(LOCATION, "Failed to parse $rotation_axis on subsystem '%s' on ship %s!", sm->name, pm->filename);
-							sm->movement_type = MOVEMENT_TYPE_NONE;
-						}
-					} else {
-						Warning(LOCATION, "A $rotation_axis was not specified for subsystem '%s' on ship %s!", sm->name, pm->filename);
-						sm->movement_type = MOVEMENT_TYPE_NONE;
-					}
-				}
-
-				// note, this should come BEFORE do_new_subsystem() for proper error handling (to avoid both rotating and look-at submodel)
-				if (in(p, props, "$look_at")) {
-					sm->movement_type = MOVEMENT_TYPE_INTRINSIC;
-
-					// we need to work out the correct subobject number later, after all subobjects have been processed
-					sm->look_at_submodel = static_cast<int>(look_at_submodel_names.size());
-
-					char submodel_name[MAX_NAME_LEN];
-					get_user_prop_value(p + 9, submodel_name);
-					look_at_submodel_names.push_back(submodel_name);
-				} else {
-					sm->look_at_submodel = -1; // No look_at
-				}
-
-				// optional extra property for look_at
-				if (in(p, props, "$look_at_offset")) {
-					auto offset = (float)atof(p + 16);
-
-					// model property is specified in degrees, so convert it
-					offset = fl_radians(offset);
-
-					// check range (the angle is now in radians)
-					if (offset < -PI2 || offset > PI2) {
-						Warning(LOCATION, "Submodel '%s' of model '%s' has a look_at_offset that is outside the range of -360 to 360!", sm->name, pm->filename);
-						offset = -1.0f;
-					}
-					// make the angle positive, since negative angles will be set at first look_at call
-					else if (offset < 0.0f) {
-						offset += PI2;
-					}
-
-					sm->look_at_offset = offset;
-				} else {
-					sm->look_at_offset = -1.0f;
-				}
-
-				// note, this should come BEFORE do_new_subsystem() for proper error handling (to avoid both rotating and dumb-rotating submodel)
-				int idx = prop_string(props, &p, "$dumb_rotate_time", "$dumb_rotate_rate", "$dumb_rotate");
-				if (idx >= 0) {
-					sm->movement_type = MOVEMENT_TYPE_INTRINSIC;
-
-					// do this the same way as regular $rotate
-					char buf[64];
-					get_user_prop_value(p, buf);
-
-					// for past SCP compatibility, $dumb_rotate means $dumb_rotate_rate
-					float turn_rate;
-					if (idx == 0) {
-						float turn_time = static_cast<float>(atof(buf));
-						if (turn_time == 0.0f) {
-							Warning(LOCATION, "Dumb-Rotation has a turn time of 0 for subsystem '%s' on ship %s!", sm->name, pm->filename);
-							turn_rate = 1.0f;
-						} else {
-							turn_rate = PI2 / turn_time;
-						}
-					} else {
-						turn_rate = static_cast<float>(atof(buf));
-					}
-
-					sm->default_turn_rate = turn_rate;
-					sm->flags.set(Model::Submodel_flags::Instant_rotate_accel);
-				}
+				determine_submodel_movement(true, pm->filename, sm, props, look_at_submodel_names);
 
 				if ( sm->name[0] == '\0' ) {
 					strcpy_s(sm->name, "unknown object name");
@@ -1617,10 +1719,10 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 						do_new_subsystem( n_subsystems, subsystems, n, sm->rad, &sm->offset, props, sm->name, pm->id );
 					} else if ( !stricmp(type, "no_rotate") ) {
 						// mark those submodels which should not rotate - ie, those with no subsystem
-						sm->movement_type = MOVEMENT_TYPE_NONE;
+						sm->rotation_type = MOVEMENT_TYPE_NONE;
 					} else {
 						// if submodel rotates (via bspgen), then there is either a subsys or special=no_rotate
-						Assert( sm->movement_type != MOVEMENT_TYPE_ROT );
+						Assert( sm->rotation_type != MOVEMENT_TYPE_REGULAR );
 					}
 				}
 
@@ -1764,72 +1866,11 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 					sm->frame_of_reference = parent_sm ? parent_sm->frame_of_reference : vmd_identity_matrix;
 				}
 
-				// ---------- submodel rotation sanity checks ----------
+				// ---------- submodel movement sanity checks ----------
 
-				// make sure this is a validly normalized axis
-				if (vm_vec_mag(&sm->movement_axis) < 0.999f || vm_vec_mag(&sm->movement_axis) > 1.001f) {
-					sm->movement_type = MOVEMENT_TYPE_NONE;
-				}
+				do_movement_sanity_checks(true, sm, parent_sm, pm->filename);
 
-				// maybe use the FOR to manipulate the rotation axis
-				// (do this before the compatibility check below to prevent doing it twice)
-				maybe_adjust_movement_axis(sm);
-
-				// important compatibility check: if there are multipart turrets without rotation axes defined, define them
-				// also, some of the retail models got the axes wrong, so fix those :-/
-				// what this boils down to is that we must force turret axes for submodels with frame_of_reference defined
-				//		and also for turrets which don't have their axes set to "other"
-				if (parent_sm && stristr(parent_sm->name, "turret"))
-				{
-					auto base = parent_sm;
-					auto gun = sm;
-
-					if (!vm_matrix_equal(base->frame_of_reference, vmd_identity_matrix)
-						|| (base->movement_axis_id != MOVEMENT_AXIS_OTHER))
-					{
-						base->movement_axis_id = MOVEMENT_AXIS_Y;
-						base->movement_axis = vmd_y_vector;
-						base->movement_type = MOVEMENT_TYPE_ROT_SPECIAL;
-						maybe_adjust_movement_axis(base);
-					}
-
-					if (!vm_matrix_equal(gun->frame_of_reference, vmd_identity_matrix)
-						|| (gun->movement_axis_id != MOVEMENT_AXIS_OTHER))
-					{
-						gun->movement_axis_id = MOVEMENT_AXIS_X;
-						gun->movement_axis = vmd_x_vector;
-						gun->movement_type = MOVEMENT_TYPE_ROT_SPECIAL;
-						maybe_adjust_movement_axis(gun);
-					}
-				}
-
-				// adding a warning if rotation is specified without movement axis.
-				if (sm->movement_axis_id == MOVEMENT_AXIS_NONE) {
-					if (sm->movement_type == MOVEMENT_TYPE_ROT) {
-						Warning(LOCATION, "Rotation without rotation axis defined on submodel '%s' of model '%s'!", sm->name, pm->filename);
-					}
-					else if (sm->movement_type == MOVEMENT_TYPE_INTRINSIC) {
-						Warning(LOCATION, "Intrinsic motion (e.g. dumb-rotate or look-at) without rotation axis defined on submodel '%s' of model '%s'!", sm->name, pm->filename);
-					}
-					sm->movement_type = MOVEMENT_TYPE_NONE;
-				}
-
-				// clear the axis if the submodel doesn't move
-				// (don't clear can_move because of gun_rotation)
-				if (sm->movement_type == MOVEMENT_TYPE_NONE) {
-					sm->movement_axis_id = MOVEMENT_AXIS_NONE;
-					sm->movement_axis = vmd_zero_vector;
-				}
-
-				// Set the can_move field on submodels which are of a rotating type or which have such a parent somewhere down the hierarchy
-				if (sm->movement_type != MOVEMENT_TYPE_NONE) {
-					sm->flags.set(Model::Submodel_flags::Can_move);
-				} else if (parent_sm && parent_sm->flags[Model::Submodel_flags::Can_move]) {
-					sm->flags.set(Model::Submodel_flags::Can_move);
-				}
-
-				// ---------- done submodel rotation sanity checks ----------
-
+				// ---------- done submodel movement sanity checks ----------
 
 				{
 					int nchunks = cfread_int( fp );		// Throw away nchunks
@@ -2364,6 +2405,10 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 
 								subsystemp->turret_num_firing_points = n_slots;
 
+								// copy the subsystem index that the gun base submodel should have at this point
+								Assertion(pm->submodel[parent].subsys_num >= 0, "Turret gun base should have a subsystem index!");
+								pm->submodel[physical_parent].subsys_num = pm->submodel[parent].subsys_num;
+
 								break;
 							}
 						}
@@ -2650,13 +2695,13 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 
 			// if we couldn't find it, we shouldn't move
 			if (sm->look_at_submodel < 0) {
-				sm->movement_type = MOVEMENT_TYPE_NONE;
+				sm->rotation_type = MOVEMENT_TYPE_NONE;
 			}
 			// are we navel-gazing?
 			else if (sm->look_at_submodel == i) {
 				Warning(LOCATION, "Matched %s %s $look_at: target with its own submodel!  Submodel cannot look at itself!\n", pm->filename, sm->name);
 				sm->look_at_submodel = -1;
-				sm->movement_type = MOVEMENT_TYPE_NONE;
+				sm->rotation_type = MOVEMENT_TYPE_NONE;
 			}
 		}
 	}
@@ -2672,7 +2717,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 
 	// And now look through all the submodels and set the model flag if any are intrinsic-moving
 	for (i = 0; i < pm->n_models; i++) {
-		if (pm->submodel[i].movement_type == MOVEMENT_TYPE_INTRINSIC) {
+		if (pm->submodel[i].rotation_type == MOVEMENT_TYPE_INTRINSIC) {
 			pm->flags |= PM_FLAG_HAS_INTRINSIC_MOTION;
 			break;
 		}
@@ -3185,7 +3230,7 @@ int model_create_instance(int objnum, int model_num)
 		intrinsic_motion motion(objnum >= 0, open_slot);
 
 		for (int i = 0; i < pm->n_models; i++) {
-			if (pm->submodel[i].movement_type == MOVEMENT_TYPE_INTRINSIC) {
+			if (pm->submodel[i].rotation_type == MOVEMENT_TYPE_INTRINSIC) {
 				// note: dumb_turn_rate will be 0.0f for look_at
 				motion.add_submodel(i, &pmi->submodel[i], pm->submodel[i].default_turn_rate);
 			}
@@ -3643,9 +3688,9 @@ void model_get_rotating_submodel_axis(vec3d *model_axis, vec3d *world_axis, cons
 {
 	Assert(pm->id == pmi->model_num);
 	bsp_info *sm = &pm->submodel[submodel_num];
-	Assert(sm->movement_type == MOVEMENT_TYPE_ROT || sm->movement_type == MOVEMENT_TYPE_INTRINSIC);
+	Assert(sm->rotation_type == MOVEMENT_TYPE_REGULAR || sm->rotation_type == MOVEMENT_TYPE_INTRINSIC);
 
-	*model_axis = sm->movement_axis;
+	*model_axis = sm->rotation_axis;
 	model_instance_find_world_dir(world_axis, model_axis, pm, pmi, submodel_num, objorient);
 }
 
@@ -3664,7 +3709,7 @@ void submodel_canonicalize(bsp_info *sm, submodel_instance *smi, bool clamp)
 	}
 
 	// get the matrix and the angles
-	switch (sm->movement_axis_id)
+	switch (sm->rotation_axis_id)
 	{
 		case MOVEMENT_AXIS_X:
 		{
@@ -3691,7 +3736,7 @@ void submodel_canonicalize(bsp_info *sm, submodel_instance *smi, bool clamp)
 		}
 
 		default:
-			vm_quaternion_rotate(&smi->canonical_orient, smi->cur_angle, &sm->movement_axis);
+			vm_quaternion_rotate(&smi->canonical_orient, smi->cur_angle, &sm->rotation_axis);
 			break;
 	}
 }
@@ -3706,18 +3751,18 @@ void submodel_stepped_rotate(model_subsystem *psub, submodel_instance *smi)
 	polymodel *pm = model_get(psub->model_num);
 	bsp_info *sm = &pm->submodel[psub->subobj_num];
 
-	if ( sm->movement_type != MOVEMENT_TYPE_ROT ) return;
+	if ( sm->rotation_type != MOVEMENT_TYPE_REGULAR ) return;
 
 	// get active rotation time this frame
 	int end_stamp = timestamp();
 	// just to make sure this issue wont pop up again... might cause odd jerking in some extremely odd situations
 	// but given that those issues would require the timer to be reseted in any case it probably wont hurt
 	float rotation_time;
-	if ((end_stamp - smi->step_zero_timestamp) < 0) {
-		smi->step_zero_timestamp = end_stamp;
+	if ((end_stamp - smi->turn_step_zero_timestamp) < 0) {
+		smi->turn_step_zero_timestamp = end_stamp;
 		rotation_time = 0.0f;
 	} else {
-		rotation_time = 0.001f * (end_stamp - smi->step_zero_timestamp);
+		rotation_time = 0.001f * (end_stamp - smi->turn_step_zero_timestamp);
 	}
 	//Assert(rotation_time >= 0);
 
@@ -3741,7 +3786,7 @@ void submodel_stepped_rotate(model_subsystem *psub, submodel_instance *smi)
 
 	if (cur_step >= psub->stepped_rotation->num_steps) {
 		// I don;t know why, but removing this line makes it all good.
-		// sii->step_zero_timestamp += int(1000.0f * (psub->stepped_rotation->num_steps * step_time) + 0.5f);
+		// sii->turn_step_zero_timestamp += int(1000.0f * (psub->stepped_rotation->num_steps * step_time) + 0.5f);
 
 		// reset cur_step (use mod to handle physics/ai pause)
 		cur_step = cur_step % psub->stepped_rotation->num_steps;
@@ -3790,7 +3835,7 @@ void submodel_look_at(polymodel *pm, polymodel_instance *pmi, int submodel_num)
 	auto sm = &pm->submodel[submodel_num];
 	auto smi = &pmi->submodel[submodel_num];
 
-	Assert(sm->movement_type == MOVEMENT_TYPE_INTRINSIC);
+	Assert(sm->rotation_type == MOVEMENT_TYPE_INTRINSIC);
 	Assert(sm->look_at_submodel >= 0);
 
 	// save last angles
@@ -3803,7 +3848,7 @@ void submodel_look_at(polymodel *pm, polymodel_instance *pmi, int submodel_num)
 
 	//------------
 	// Project the destination point onto the submodel base plane
-	model_instance_find_world_dir(&world_axis, &sm->movement_axis, pm, pmi, sm->parent, &vmd_identity_matrix);
+	model_instance_find_world_dir(&world_axis, &sm->rotation_axis, pm, pmi, sm->parent, &vmd_identity_matrix);
 	model_instance_find_world_point(&world_pos, &vmd_zero_vector, pm, pmi, submodel_num, &vmd_identity_matrix, &vmd_zero_vector);
 
 	vm_project_point_onto_plane(&planar_dst, &dst, &world_axis, &world_pos);
@@ -3848,7 +3893,7 @@ void submodel_rotate(model_subsystem *psub, submodel_instance *smi)
 	polymodel *pm = model_get(psub->model_num);
 	sm = &pm->submodel[psub->subobj_num];
 
-	if ( sm->movement_type != MOVEMENT_TYPE_ROT ) return;
+	if ( sm->rotation_type != MOVEMENT_TYPE_REGULAR ) return;
 
 	submodel_rotate(sm, smi);
 }
@@ -3931,7 +3976,7 @@ int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, ship_
 
 		//------------
 		// Project the destination point onto the turret base plane
-		model_instance_find_world_dir(&world_axis, &base_sm->movement_axis, pm, pmi, base_sm->parent, &objp->orient);
+		model_instance_find_world_dir(&world_axis, &base_sm->rotation_axis, pm, pmi, base_sm->parent, &objp->orient);
 		model_instance_find_world_point(&world_pos, &vmd_zero_vector, pm, pmi, turret->subobj_num, &objp->orient, &objp->pos);
 
 		vm_project_point_onto_plane(&planar_dst, dst, &world_axis, &world_pos);
@@ -3946,12 +3991,12 @@ int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, ship_
 		//------------
 		// Pretend the base is pointing directly at the target
 		save_base_orient = base_smi->canonical_orient;
-		vm_quaternion_rotate(&base_smi->canonical_orient, desired_base_angle, &base_sm->movement_axis);
+		vm_quaternion_rotate(&base_smi->canonical_orient, desired_base_angle, &base_sm->rotation_axis);
 
 		//------------
 		// Project the destination point onto the turret gun plane with the base in the desired orientation
 		// NOTE: the rotation axis is given in the model's reference frame, so it needs to be rotated when the base is rotated
-		model_instance_find_world_dir(&world_axis, &gun_sm->movement_axis, pm, pmi, gun_sm->parent, &objp->orient);
+		model_instance_find_world_dir(&world_axis, &gun_sm->rotation_axis, pm, pmi, gun_sm->parent, &objp->orient);
 		model_instance_find_world_point(&world_pos, &vmd_zero_vector, pm, pmi, turret->turret_gun_sobj, &objp->orient, &objp->pos);
 
 		vm_project_point_onto_plane(&planar_dst, dst, &world_axis, &world_pos);
@@ -4309,9 +4354,9 @@ int rotating_submodel_has_ship_subsys(int submodel, ship *shipp)
  * Get all submodel indexes that satisfy the following:
  * 1) Have the rotating or intrinsic-rotating movement type
  * 2) Are currently rotating (i.e. actually moving and not part of the superstructure due to being destroyed or replaced)
- * 3) Are not rotating too far for collision detection (c.f. MAX_SUBMODEL_COLLISION_ROT_ANGLE)
+ * 3) Are not rotating too far for collision detection (c.f. MAX_SUBMODEL_COLLISION_ANGULAR_VELOCITY)
  */
-void model_get_rotating_submodel_list(SCP_vector<int> *submodel_vector, object *objp)
+void model_get_moving_submodel_list(SCP_vector<int> &submodel_vector, const object *objp)
 {
 	Assert(objp->type == OBJ_SHIP || objp->type == OBJ_WEAPON || objp->type == OBJ_ASTEROID);
 	
@@ -4357,21 +4402,25 @@ void model_get_rotating_submodel_list(SCP_vector<int> *submodel_vector, object *
 		// Don't check it or its children if it is destroyed or it is a replacement (non-moving)
 		if ( !child_submodel_instance->blown_off && (child_submodel->i_replace == -1) && !child_submodel->flags[Model::Submodel_flags::No_collisions, Model::Submodel_flags::Nocollide_this_only])	{
 
-			// Only look for submodels that rotate or intrinsic-rotate
-			if (child_submodel->movement_type == MOVEMENT_TYPE_ROT || child_submodel->movement_type == MOVEMENT_TYPE_INTRINSIC) {
+			// Look for submodels that rotate or intrinsic-rotate
+			if (child_submodel->rotation_type == MOVEMENT_TYPE_REGULAR || child_submodel->rotation_type == MOVEMENT_TYPE_INTRINSIC) {
 
 				// check submodel rotation is less than max allowed.
 				float delta_angle = get_submodel_delta_angle(child_submodel_instance);
-				if (delta_angle < MAX_SUBMODEL_COLLISION_ROT_ANGLE) {
-					submodel_vector->push_back(i);
+				if (delta_angle < MAX_SUBMODEL_COLLISION_ANGULAR_VELOCITY) {
+					submodel_vector.push_back(i);
 				}
+			}
+			// Also look for submodels that aren't subsystems but still move
+			else if (child_submodel->subsys_num < 0 && child_submodel->flags[Model::Submodel_flags::Can_move]) {
+				submodel_vector.push_back(i);
 			}
 		}
 		i = child_submodel->next_sibling;
 	}
 }
 
-void model_get_submodel_tree_list(SCP_vector<int> &submodel_vector, polymodel* pm, int mn)
+void model_get_submodel_tree_list(SCP_vector<int> &submodel_vector, const polymodel *pm, int mn)
 {
 	if ( pm->submodel[mn].buffer.model_list != NULL ) {
 		submodel_vector.push_back(mn);
@@ -4465,19 +4514,16 @@ void model_set_up_techroom_instance(ship_info *sip, int model_instance_num)
 	auto pm = model_get(pmi->model_num);
 	flagset<Ship::Subsystem_Flags> empty;
 
-	for (int i = 0; i < sip->n_subsystems; ++i)
-	{
-		model_subsystem *msp = &sip->subsystems[i];
-
-		if (msp->subobj_num >= 0)
-			model_replicate_submodel_instance(pm, pmi, msp->subobj_num, empty);
-
-		if ((msp->subobj_num != msp->turret_gun_sobj) && (msp->turret_gun_sobj >= 0))
-			model_replicate_submodel_instance(pm, pmi, msp->turret_gun_sobj, empty);
-	}
-
 	sip->animations.clearShipData(pmi);
 	sip->animations.startAll(pmi, animation::ModelAnimationTriggerType::Initial, animation::ModelAnimationDirection::FWD, true, true);
+
+	model_iterate_submodel_tree(pm, pm->detail[0], [&](int submodel, int /*level*/, bool /*isLeaf*/)
+		{
+			auto sm = &pm->submodel[submodel];
+
+			if (sm->flags[Model::Submodel_flags::Can_move])
+				model_replicate_submodel_instance(pm, pmi, submodel, empty);
+		});
 }
 
 /*
@@ -4566,7 +4612,7 @@ void model_do_intrinsic_motions_sub(intrinsic_motion *im)
 
 // Handle the intrinsic motions for either a) a single object model; or b) all non-object models.
 //
-// This function called as part of object movement.  All types of object movement, including intrinsic motions,
+// This function called as part of object movement.  All types of object movement, including intrinsic rotations and translations,
 // should be handled at the same time - unless you want inconsistent collisions or damage sparks that aren't attached to models.
 //
 // -- Goober5000
@@ -4583,7 +4629,7 @@ void model_do_intrinsic_motions(object *objp)
 			{
 				Assertion(obj_it->second.is_object, "Inconsistent intrinsic motion: an object's motion is not flagged as belonging to an object!");
 
-				// update the angles in the submodels
+				// update the submodels
 				model_do_intrinsic_motions_sub(&obj_it->second);
 			}
 		}
@@ -4595,7 +4641,7 @@ void model_do_intrinsic_motions(object *objp)
 		{
 			if (!pair.second.is_object)
 			{
-				// update the angles in the submodels
+				// update the submodels
 				model_do_intrinsic_motions_sub(&pair.second);
 			}
 		}
@@ -4609,16 +4655,16 @@ void model_init_submodel_axis_pt(polymodel *pm, polymodel_instance *pmi, int sub
 	vec3d p1, v1, p2, v2, int1;
 	Assert(pm->id == pmi->model_num);
 
-	Assert(pm->submodel[submodel_num].movement_type == MOVEMENT_TYPE_ROT || pm->submodel[submodel_num].movement_type == MOVEMENT_TYPE_INTRINSIC);
+	Assert(pm->submodel[submodel_num].rotation_type == MOVEMENT_TYPE_REGULAR || pm->submodel[submodel_num].rotation_type == MOVEMENT_TYPE_INTRINSIC);
 	submodel_instance *smi = &pmi->submodel[submodel_num];
 	
-	auto axis = &pm->submodel[submodel_num].movement_axis;
+	auto axis = &pm->submodel[submodel_num].rotation_axis;
 
 	// find 2 fixed points in submodel RF
 	// these will be rotated to about the axis an angle of 0 and PI and we'll find the intersection of the
 	// two lines to find a point on the axis
 
-	// since the movement axis is now arbitrary, we can't simply pick points on the other two axes;
+	// since the rotation axis is now arbitrary, we can't simply pick points on the other two axes;
 	// we need to generate some suitably orthogonal points
 
 	// first find the standard vector that's the most orthongonal-ish

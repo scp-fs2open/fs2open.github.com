@@ -1096,7 +1096,8 @@ void control_config_toggle_invert()
 	switch (Selected_item) {
 	case selItem::None:
 		// both
-		item.invert_toggle();
+		item.first.invert_toggle();
+		item.second.invert_toggle();
 		break;
 	case selItem::Primary:
 		// first

@@ -1548,7 +1548,7 @@ void obj_move_all(float frametime)
 		}
 	}
 
-	// Now apply intrinsic movement to things that aren't objects (like skyboxes).  This technically doesn't belong in the object code,
+	// Now apply intrinsic motion to things that aren't objects (like skyboxes).  This technically doesn't belong in the object code,
 	// but there isn't really a good place to put this, it doesn't hurt to have this here, and it's conceptually related to what's here.
 	model_do_intrinsic_motions(nullptr);
 

@@ -2103,12 +2103,14 @@ static void parse_ship(const char *filename, bool replace)
 		}
 	}
 
-	if (new_name && !sip->flags[Ship::Info_Flags::Has_display_name]) {
-		// if this name has a hash, create a default display name
-		if (get_pointer_to_first_hash_symbol(sip->name)) {
-			strcpy_s(sip->display_name, sip->name);
-			end_string_at_first_hash_symbol(sip->display_name);
-			sip->flags.set(Ship::Info_Flags::Has_display_name);
+	if (new_name) {
+		if (!sip->flags[Ship::Info_Flags::Has_display_name]) {
+			// if this name has a hash, create a default display name
+			if (get_pointer_to_first_hash_symbol(sip->name)) {
+				strcpy_s(sip->display_name, sip->name);
+				end_string_at_first_hash_symbol(sip->display_name);
+				sip->flags.set(Ship::Info_Flags::Has_display_name);
+			}
 		}
 
 		sip->animations.changeShipName(sip->name);
@@ -6743,7 +6745,7 @@ void ship_recalc_subsys_strength( ship *shipp )
                     ship_system->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Turret_rotation);
                 }
             }
-            if ((ship_system->flags[Subsystem_Flags::Rotates]) && (ship_system->system_info->rotation_snd.isValid()) && !(ship_system->subsys_snd_flags[Ship::Subsys_Sound_Flags::Rotate]))
+            if ((ship_system->flags[Ship::Subsystem_Flags::Rotates]) && (ship_system->system_info->rotation_snd.isValid()) && !(ship_system->subsys_snd_flags[Ship::Subsys_Sound_Flags::Rotate]))
             {
                 obj_snd_assign(shipp->objnum, ship_system->system_info->rotation_snd, &ship_system->system_info->pnt, OS_SUBSYS_ROTATION, ship_system);
                 ship_system->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Rotate);
@@ -6968,7 +6970,7 @@ static int subsys_set(int objnum, int ignore_subsys_info)
 			ship_system->submodel_instance_2 = &pmi->submodel[model_system->turret_gun_sobj];
 		}
 
-		// if the table has set an name copy it
+		// if the table has set an alt name copy it
 		if (ship_system->system_info->alt_sub_name[0] != '\0') {
 			strcpy_s(ship_system->sub_name, ship_system->system_info->alt_sub_name);
 		}
@@ -13533,14 +13535,19 @@ void ship_model_replicate_submodels(object *objp)
 	ship		*shipp;
 	ship_subsys	*pss;
 
+	flagset<Ship::Subsystem_Flags> empty;
+
 	Assert(objp != NULL);
 	Assert(objp->instance >= 0);
 	Assert(objp->type == OBJ_SHIP);
 
 	shipp = &Ships[objp->instance];
+
 	polymodel_instance *pmi = model_get_instance(shipp->model_instance_num);
 	polymodel *pm = model_get(pmi->model_num);
 
+	// Keep submodels belonging to subsystems in sync
+	// (This needs to be done from the subsystem perspective because subsystem flags may affect things)
 	for ( pss = GET_FIRST(&shipp->subsys_list); pss != END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) ) {
 		psub = pss->system_info;
 
@@ -13552,6 +13559,24 @@ void ship_model_replicate_submodels(object *objp)
 			model_replicate_submodel_instance(pm, pmi, psub->turret_gun_sobj, pss->flags );
 		}
 	}
+
+	// Keep other movable submodels in sync
+	model_iterate_submodel_tree(pm, pm->detail[0], [&](int submodel, int /*level*/, bool /*isLeaf*/)
+		{
+			auto sm = &pm->submodel[submodel];
+
+			// skip submodels that belong to subsystems since we already updated them above
+			// (Turrets are tricky because they have two submodels per subsystem, but because the subsystem index is copied
+			// when the model is read, both submodels are correctly skipped here.)
+			if (sm->subsys_num >= 0)
+				return;
+
+			// the only non-subsystem submodels that need to be updated are the ones that can move
+			if (!sm->flags[Model::Submodel_flags::Can_move])
+				return;
+
+			model_replicate_submodel_instance(pm, pmi, submodel, empty);
+		});
 }
 
 /**
@@ -17507,15 +17532,15 @@ void object_jettison_cargo(object *objp, object *cargo_objp, float jettison_spee
 	if (jettison_new)
 	{
 		// new method uses dockpoint normals and user-specified force
-		extern void find_adjusted_dockpoint_info(vec3d * global_dock_point, matrix * dock_orient, object * objp, polymodel * pm, int submodel, int dock_index);
-		extern int find_parent_rotating_submodel(polymodel *pm, int dock_index);
+		extern void find_adjusted_dockpoint_info(vec3d *global_dock_point, matrix *dock_orient, object *objp, polymodel *pm, int submodel, int dock_index);
+		extern int find_parent_moving_submodel(polymodel *pm, int dock_index);
 
 		int model_num = Ship_info[shipp->ship_info_index].model_num;
 		polymodel *pm = model_get(model_num);
-		int docker_rotating_submodel = find_parent_rotating_submodel(pm, docker_index);
+		int docker_moving_submodel = find_parent_moving_submodel(pm, docker_index);
 		matrix dock_orient;
 
-		find_adjusted_dockpoint_info(&pos, &dock_orient, objp, pm, docker_rotating_submodel, docker_index);
+		find_adjusted_dockpoint_info(&pos, &dock_orient, objp, pm, docker_moving_submodel, docker_index);
 
 		// set for relative separation speed (see also do_dying_undock_physics)
 		vm_vec_copy_scale(&impulse, &dock_orient.vec.fvec, jettison_speed * cargo_objp->phys_info.mass);

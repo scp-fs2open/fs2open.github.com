@@ -4287,8 +4287,11 @@ void game_set_frametime(int state)
 		// If the frame took more than 5 seconds, assume we're tracing through a debugger.  If timestamps are running, correct the elapsed time.
 		if (!Cmdline_slow_frames_ok && !timestamp_is_paused() && (Last_frame_timestamp != 0) && (f2fl(Frametime) > 5.0f)) {
 			auto delta_timestamp = timestamp() - Last_frame_timestamp;
-			mprintf(("Adjusting timestamp by %2i milliseconds to compensate\n", delta_timestamp));
-			timestamp_adjust_pause_offset(delta_timestamp);
+			// could be 0 if we have time compression slowed to a crawl
+			if (delta_timestamp > 0) {
+				mprintf(("Adjusting timestamp by %2i milliseconds to compensate\n", delta_timestamp));
+				timestamp_adjust_pause_offset(delta_timestamp);
+			}
 		}
 #endif
 		Frametime = MAX_FRAMETIME;
@@ -4329,7 +4332,7 @@ void game_set_frametime(int state)
 
 	// before the player enters the mission, we blitz through time
 	if (do_pre_player_skip)
-		timestamp_adjust_seconds(flFrametime, TIMER_DIRECTION::FORWARD);
+		timestamp_adjust_seconds(flRealframetime, TIMER_DIRECTION::FORWARD);
 
 	// wrap overall frametime if needed
 	if ( FrametimeOverall > (INT_MAX - F1_0) )

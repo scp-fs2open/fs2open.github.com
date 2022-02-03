@@ -36,12 +36,13 @@ extern int model_render_flags_size;
 #define MAX_NAME_LEN			32
 #define MAX_ARC_EFFECTS		8
 
-#define MOVEMENT_TYPE_NONE				-1
-#define MOVEMENT_TYPE_POS				0
-#define MOVEMENT_TYPE_ROT				1
-#define MOVEMENT_TYPE_ROT_SPECIAL		2	// for turrets only
-#define MOVEMENT_TYPE_TRIGGERED			3	// triggered rotation
-#define MOVEMENT_TYPE_INTRINSIC			4	// intrinsic (non-subsystem-based) motion
+// For POF compatibility reasons, the first four of these should not be renumbered.
+#define MOVEMENT_TYPE_NONE			-1
+#define MOVEMENT_TYPE_UNUSED		0	// previously MOVEMENT_TYPE_POS
+#define MOVEMENT_TYPE_REGULAR		1	// previously MOVEMENT_TYPE_ROT
+#define MOVEMENT_TYPE_TURRET		2	// for turrets only
+#define MOVEMENT_TYPE_TRIGGERED		3
+#define MOVEMENT_TYPE_INTRINSIC		4	// intrinsic (non-subsystem-based)
 
 
 // DA 11/13/98 Reordered to account for difference between max and game
@@ -87,13 +88,13 @@ struct submodel_instance
 	float	current_turn_rate = 0.0f;
 	float	desired_turn_rate = 0.0f;
 	float	turn_accel = 0.0f;
-	int		step_zero_timestamp = timestamp();		// timestamp determines when next step is to begin (for stepped rotation)
+	int		turn_step_zero_timestamp = timestamp();		// timestamp determines when next step is to begin (for stepped rotation)
 
-	vec3d	point_on_axis;							// in ship RF
+	vec3d	point_on_axis = vmd_zero_vector;		// in ship RF
 	bool	axis_set = false;
-	bool	blown_off = false;						// If set, this subobject is blown off
 
-	bool collision_checked = false;
+	bool	blown_off = false;						// If set, this subobject is blown off
+	bool	collision_checked = false;
 
 	// These fields are the true standard reference for submodel rotation.  They should seldom be read directly
 	// and should almost never be written directly.  In most cases, coders should prefer cur_angle and prev_angle.
@@ -294,14 +295,17 @@ public:
 	}
 
 	char	name[MAX_NAME_LEN];						// name of the subsystem.  Probably displayed on HUD
-	int		movement_type = -1;						// -1 if no movement, otherwise rotational or positional movement -- subobjects only
-	vec3d	movement_axis = vmd_zero_vector;		// which axis this subobject moves or rotates on.
-	int		movement_axis_id = -1;					// for optimization
+
+	int		rotation_type = MOVEMENT_TYPE_NONE;
+	vec3d	rotation_axis = vmd_zero_vector;		// which axis this subobject rotates on.
+	int		rotation_axis_id = MOVEMENT_AXIS_NONE;	// for optimization
 
 	float	default_turn_rate = 0.0f;
 	float	default_turn_accel = 0.0f;
 
 	flagset<Model::Submodel_flags> flags;
+
+	int subsys_num = -1;			// subsystem number; index to ship_info->subsystems; the counterpart of model_subsystem->subobj_num
 
 	vec3d	offset;					// 3d offset from parent object
 	matrix	frame_of_reference;		// used to be called 'orientation' - this is just used for setting the rotation axis and the animation angles
@@ -782,6 +786,29 @@ public:
 	vertex_buffer detail_buffers[MAX_MODEL_DETAIL_LEVELS];
 };
 
+// Iterate over a submodel tree, starting at the given submodel root node, and running the given function for each node.  The function's signature should be:
+//
+// void func(int submodel, int level, bool isLeaf);
+//
+// The "level" parameter indicates how deep the nesting level is, and the "isLeaf" parameter indicates whether the submodel is a leaf node.
+// To find the model's detail0 root node, use pm->submodel[pm->detail[0]].
+template <typename Func>
+void model_iterate_submodel_tree(polymodel* pm, int submodel, Func func, int level = 0)
+{
+	Assertion(pm != nullptr, "pm must not be null!");
+	Assertion(submodel >= 0 && submodel < pm->n_models, "submodel must be in range!");
+
+	auto child = pm->submodel[submodel].first_child;
+
+	func(submodel, level, child < 0);
+
+	while (child >= 0)
+	{
+		model_iterate_submodel_tree(pm, child, func, level + 1);
+		child = pm->submodel[child].next_sibling;
+	}
+}
+
 // Call once to initialize the model system
 void model_init();
 
@@ -946,11 +973,11 @@ extern void find_submodel_instance_point_normal(vec3d *outpnt, vec3d *outnorm, c
 extern void find_submodel_instance_point_orient(vec3d *outpnt, matrix *outorient, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const vec3d *submodel_pnt, const matrix *submodel_orient);
 extern void find_submodel_instance_world_point(vec3d *outpnt, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient, const vec3d *objpos);
 
-// Given a polygon model index, find a list of rotating submodels to be used for collision
-void model_get_rotating_submodel_list(SCP_vector<int> *submodel_vector, object *objp);
+// Given a polygon model index, find a list of moving submodels to be used for collision
+void model_get_moving_submodel_list(SCP_vector<int> &submodel_vector, const object *objp);
 
 // Given a polygon model index, get a list of a model tree starting from that index
-void model_get_submodel_tree_list(SCP_vector<int> &submodel_vector, polymodel* pm, int mn);
+void model_get_submodel_tree_list(SCP_vector<int> &submodel_vector, const polymodel *pm, int mn);
 
 // For a rotating submodel, find a point on the axis
 void model_init_submodel_axis_pt(polymodel *pm, polymodel_instance *pmi, int submodel_num);
@@ -1038,7 +1065,7 @@ typedef struct mc_info {
 	float		hit_u, hit_v;		// Where on hit_bitmap the ray hit.  Invalid if hit_bitmap < 0
 	int		shield_hit_tri;	// Which triangle on the shield got hit or -1 if none
 	vec3d	hit_normal;			//	Vector normal of polygon of collision.  (This is in submodel RF)
-	int		edge_hit;			// Set if an edge got hit.  Only valid if MC_CHECK_THICK is set.	
+	bool		edge_hit;			// Set if an edge got hit.  Only valid if MC_CHECK_THICK is set.	
 	ubyte		*f_poly;				// pointer to flat poly where we intersected
 	ubyte		*t_poly;				// pointer to tmap poly where we intersected
 	bsp_collision_leaf *bsp_leaf;
@@ -1067,7 +1094,7 @@ inline void mc_info_init(mc_info *mc)
 	mc->hit_u = 0; mc->hit_v = 0;
 	mc->shield_hit_tri = -1;
 	mc->hit_normal = vmd_zero_vector;
-	mc->edge_hit = 0;
+	mc->edge_hit = false;
 	mc->f_poly = nullptr;
 	mc->t_poly = nullptr;
 	mc->bsp_leaf = nullptr;

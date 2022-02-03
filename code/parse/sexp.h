@@ -124,7 +124,8 @@ struct ship_obj;
 #define OPF_CONTAINER_NAME		93		// Karajorma/jg18 - The name of a SEXP container
 #define OPF_LIST_CONTAINER_NAME	94		// Karajorma/jg18 - The name of a SEXP list container
 #define OPF_MAP_CONTAINER_NAME	95		// Karajorma/jg18 - The name of a SEXP map container
-#define OPF_CONTAINER_VALUE		96		// jg18 - Container data and map container keys
+#define OPF_ANIMATION_NAME 		96		// Lafiel
+#define OPF_CONTAINER_VALUE		98		// jg18 - Container data and map container keys
 
 // Operand return types
 #define	OPR_NUMBER				1	// returns number
@@ -1097,11 +1098,12 @@ const char *CTEXT(int n);
 #define SEXP_CHECK_MISPLACED_SPECIAL_ARGUMENT	-164
 #define SEXP_CHECK_AMBIGUOUS_GOAL_NAME			-165
 #define SEXP_CHECK_AMBIGUOUS_EVENT_NAME			-166
-#define SEXP_CHECK_MISSING_CONTAINER_MODIFIER	-167
-#define SEXP_CHECK_INVALID_LIST_MODIFIER		-168
-#define SEXP_CHECK_WRONG_MAP_KEY_TYPE			-169
-#define SEXP_CHECK_WRONG_CONTAINER_TYPE			-170
-#define SEXP_CHECK_WRONG_CONTAINER_DATA_TYPE			-171
+#define SEXP_CHECK_INVALID_ANIMATION			-167
+#define SEXP_CHECK_MISSING_CONTAINER_MODIFIER	-168
+#define SEXP_CHECK_INVALID_LIST_MODIFIER		-169
+#define SEXP_CHECK_WRONG_MAP_KEY_TYPE			-170
+#define SEXP_CHECK_WRONG_CONTAINER_TYPE			-171
+#define SEXP_CHECK_WRONG_CONTAINER_DATA_TYPE	-172
 
 
 #define TRAINING_CONTEXT_SPEED		(1<<0)
