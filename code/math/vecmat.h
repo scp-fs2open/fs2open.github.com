@@ -601,7 +601,7 @@ inline vec3d& operator-=(vec3d& left, const vec3d& right)
 	return left;
 }
 
-inline vec3d operator*(vec3d& left, float right)
+inline vec3d operator*(const vec3d& left, float right)
 {
 	vec3d out;
 	vm_vec_copy_scale(&out, &left, right);
@@ -613,7 +613,7 @@ inline vec3d& operator*=(vec3d& left, float right)
 	return left;
 }
 
-inline vec3d operator/(vec3d& left, float right)
+inline vec3d operator/(const vec3d& left, float right)
 {
 	vec3d out;
 	vm_vec_copy_scale(&out, &left, 1.0f / right);
@@ -652,13 +652,41 @@ inline matrix& operator-=(matrix& left, const matrix& right)
 }
 
 /**
- * @brief Implements matrix multiplication on both 3x3 matrices and 3D vectors
+ * @brief Implements matrix multiplication on 3D vectors
  * @param left The matrix
- * @param right The vector/matrix
+ * @param right The vector
  * @return The multiplied result
  */
-inline vec3d operator*(const matrix& A, const vec3d& v);
-inline matrix operator*(const matrix& A, const matrix& B);
+inline vec3d operator*(const matrix& A, const vec3d& v)
+{
+	vec3d out;
+
+	out.xyz.x = vm_vec_dot(&A.vec.rvec, &v);
+	out.xyz.y = vm_vec_dot(&A.vec.uvec, &v);
+	out.xyz.z = vm_vec_dot(&A.vec.fvec, &v);
+
+	return out;
+}
+
+/**
+ * @brief Implements matrix multiplication on 3x3 matrices
+ * @param left The matrix
+ * @param right The matrix
+ * @return The multiplied result
+ */
+inline matrix operator*(const matrix& A, const matrix& B)
+{
+	matrix BT, out;
+
+	// we transpose B here for concision and also potential vectorisation opportunities
+	vm_copy_transpose(&BT, &B);
+
+	out.vec.rvec = BT * A.vec.rvec;
+	out.vec.uvec = BT * A.vec.uvec;
+	out.vec.fvec = BT * A.vec.fvec;
+
+	return out;
+}
 
 std::ostream& operator<<(std::ostream& os, const vec3d& vec);
 

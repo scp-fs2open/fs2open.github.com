@@ -21,8 +21,8 @@
 #include "weapon/trails.h"
 #include "render/batching.h"
 
-int Num_trails;
-trail Trails;
+static int Num_trails = 0;
+static trail Trails;
 
 // Reset everything between levels
 void trail_level_init()
@@ -33,6 +33,10 @@ void trail_level_init()
 
 void trail_level_close()
 {
+	if ( !Num_trails ) {
+		return;
+	}
+
 	trail *nextp;
 	for(trail *trailp = Trails.next; trailp != &Trails; trailp = nextp)
 	{

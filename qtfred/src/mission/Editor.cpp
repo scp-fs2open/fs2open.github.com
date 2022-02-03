@@ -735,10 +735,14 @@ int Editor::create_ship(matrix* orient, vec3d* pos, int ship_type) {
 			// the depart item
 			if (!(sip->is_small_ship())) {
 				shipp->orders_accepted = ship_get_default_orders_accepted(sip);
-				shipp->orders_accepted &= ~DEPART_ITEM;
+
+				for(size_t i = 0; i < Player_orders.size(); i++) {
+					if (Player_orders[i].id & DEPART_ITEM)
+						shipp->orders_accepted.erase(i);
+				}
 			}
 		} else {
-			shipp->orders_accepted = 0;
+			shipp->orders_accepted.clear();
 		}
 	}
 
@@ -2450,7 +2454,7 @@ int Editor::global_error_check_impl() {
 	// for all wings, be sure that the orders accepted for all ships are the same for all ships
 	// in the wing
 	for (i = 0; i < MAX_WINGS; i++) {
-		int default_orders, starting_wing;
+		int starting_wing;
 
 		if (!Wings[i].wave_count) {
 			continue;
@@ -2468,11 +2472,9 @@ int Editor::global_error_check_impl() {
 			}
 		}
 
-		default_orders = 0;
+		std::set<size_t> default_orders;
 		for (j = 0; j < Wings[i].wave_count; j++) {
-			int orders;
-
-			orders = Ships[Wings[i].ship_index[j]].orders_accepted;
+			const std::set<size_t>& orders = Ships[Wings[i].ship_index[j]].orders_accepted;
 			if (j == 0) {
 				default_orders = orders;
 			} else if (default_orders != orders) {

@@ -476,8 +476,8 @@ int multi_find_prev_frame_idx()
 // Finds the first frame that is before the incoming timestamp.
 int multi_ship_record_find_frame(int client_frame, int time_elapsed)
 {	
-	// frame coming in from the client is too old to be used.
-	if (Oo_info.cur_frame_index - client_frame >= MAX_FRAMES_RECORDED) {
+	// frame coming in from the client is too old to be used. (The -1 prevents an edge case bug at very high pings)
+	if (Oo_info.cur_frame_index - client_frame >= MAX_FRAMES_RECORDED - 1) {
 		return -1;
 	}
 
@@ -626,7 +626,7 @@ void multi_ship_record_do_rollback()
 	if (!Oo_info.rollback_mode) {
 		return;
 	}
-	nprintf(("Network","At least one multiplayer rollback shot is being simulated this frame.\n"));
+
 	int net_sig_idx;
 	object* objp;
 
@@ -639,6 +639,7 @@ void multi_ship_record_do_rollback()
 		}
 
 		objp = &Objects[cur_ship.objnum];
+
 		if (objp == nullptr || objp->type != OBJ_SHIP) {
 			continue;
 		}
@@ -674,16 +675,20 @@ void multi_ship_record_do_rollback()
 
 	// now we need to figure out which frame will start the rollback simulation
 	int frame_idx = Oo_info.cur_frame_index + 1;
+
 	if (frame_idx >= MAX_FRAMES_RECORDED) {
 		frame_idx = 0;
 	}
 
 	// loop through them
 	while (frame_idx != Oo_info.cur_frame_index) {
+
 		if (!Oo_info.rollback_shots_to_be_fired[frame_idx].empty()) {
 			break;
 		}
+
 		frame_idx++;
+
 		if (frame_idx >= MAX_FRAMES_RECORDED) {
 			frame_idx = 0;
 		}
@@ -695,6 +700,8 @@ void multi_ship_record_do_rollback()
 	if (frame_idx == Oo_info.cur_frame_index) {
 		return;
 	}
+
+	nprintf(("Network","At least one multiplayer rollback shot is being simulated this frame.\n"));
 
 	do {
 		// move all ships to their recorded positions
@@ -736,6 +743,7 @@ void multi_oo_fire_rollback_shots(int frame_idx)
 	for (auto & rollback_shot : Oo_info.rollback_shots_to_be_fired[frame_idx]) {
 		rollback_shot.shooterp->pos = rollback_shot.pos;
 		rollback_shot.shooterp->orient = rollback_shot.orient;
+
 		if (rollback_shot.secondary_shot) {
 			ship_fire_secondary(rollback_shot.shooterp, 1, true);
 		}
@@ -2566,6 +2574,7 @@ void multi_init_oo_and_ship_tracker()
 
 	Oo_info.number_of_frames = 0;
 	Oo_info.cur_frame_index = 0;
+
 	for (int i = 0; i < MAX_FRAMES_RECORDED; i++) { // NOLINT
 		Oo_info.timestamps[i] = MAX_TIME; // This needs to be Max time (or at least some absurdly high number) for rollback to work correctly
 	}
@@ -2574,6 +2583,7 @@ void multi_init_oo_and_ship_tracker()
 	Oo_info.rollback_weapon_object_number.clear();
 	Oo_info.rollback_collide_list.clear();
 	Oo_info.rollback_ships.clear();
+
 	for (int i = 0; i < MAX_FRAMES_RECORDED; i++) { // NOLINT
 		Oo_info.rollback_shots_to_be_fired[i].clear();
 		Oo_info.rollback_shots_to_be_fired[i].reserve(20);
@@ -2687,6 +2697,52 @@ void multi_init_oo_and_ship_tracker()
 	for(int i=0; i<MAX_PLAYERS; i++){ // NOLINT
 		Net_players[i].s_info.rate_stamp = timestamp( (int)(1000.0f / (float)OO_gran) );
 	}
+}
+
+// release and reset object update info
+void multi_close_oo_and_ship_tracker()
+{
+	if ( !(Game_mode & GM_MULTIPLAYER) ) {
+		return;
+	}
+
+	// Part 1: Get the non-repeating parts of the struct set.
+	Oo_info.ref_timestamp = -1;
+	Oo_info.most_recent_updated_net_signature = 0;
+	Oo_info.most_recent_frame = 0;
+
+	for (int i = 0; i < MAX_PLAYERS; i++) { // NOLINT
+		Oo_info.received_frametimes[i].clear();
+		Oo_info.received_frametimes[i].shrink_to_fit();
+	}
+
+	Oo_info.number_of_frames = 0;
+	Oo_info.cur_frame_index = 0;
+
+	for (int i = 0; i < MAX_FRAMES_RECORDED; i++) { // NOLINT
+		Oo_info.timestamps[i] = MAX_TIME; // This needs to be Max time (or at least some absurdly high number) for rollback to work correctly
+	}
+
+	Oo_info.rollback_mode = false;
+	Oo_info.rollback_weapon_object_number.clear();
+	Oo_info.rollback_weapon_object_number.shrink_to_fit();
+	Oo_info.rollback_collide_list.clear();
+	Oo_info.rollback_collide_list.shrink_to_fit();
+	Oo_info.rollback_ships.clear();
+	Oo_info.rollback_ships.shrink_to_fit();
+
+	for (int i = 0; i < MAX_FRAMES_RECORDED; i++) { // NOLINT
+		Oo_info.rollback_shots_to_be_fired[i].clear();
+		Oo_info.rollback_shots_to_be_fired[i].shrink_to_fit();
+	}
+
+	// Part 2: Init/Reset the repeating parts of the struct.
+	Oo_info.frame_info.clear();
+	Oo_info.frame_info.shrink_to_fit();
+	Oo_info.player_frame_info.clear();
+	Oo_info.player_frame_info.shrink_to_fit();
+	Oo_info.interp.clear();
+	Oo_info.interp.shrink_to_fit();
 }
 
 

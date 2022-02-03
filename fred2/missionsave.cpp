@@ -26,6 +26,7 @@
 #include "gamesnd/eventmusic.h"
 #include "globalincs/linklist.h"
 #include "globalincs/version.h"
+#include "hud/hudsquadmsg.h"
 #include "iff_defs/iff_defs.h"
 #include "jumpnode/jumpnode.h"
 #include "lighting/lighting.h"
@@ -1095,6 +1096,12 @@ int CFred_mission_save::save_briefing()
 					required_string_fred("$use wing icon:");
 					parse_comments();
 					fout(" %d", (bi->flags & BI_USE_WING_ICON) ? 1 : 0);
+				}
+
+				if ((Mission_save_format != FSO_FORMAT_RETAIL) && (bi->flags & BI_USE_CARGO_ICON)) {
+					required_string_fred("$use cargo icon:");
+					parse_comments();
+					fout(" %d", (bi->flags & BI_USE_CARGO_ICON) ? 1 : 0);
 				}
 
 				required_string_fred("$multi_text");
@@ -3644,7 +3651,10 @@ int CFred_mission_save::save_objects()
 			else
 				fout("\n+Orders Accepted:");
 
-			fout(" %d\t\t;! note that this is a bitfield!!!", shipp->orders_accepted);
+			int bitfield = 0;
+			for(size_t order : shipp->orders_accepted)
+				bitfield |= Player_orders[order].id;
+			fout(" %d\t\t;! note that this is a bitfield!!!", bitfield);
 		}
 
 		if (shipp->group >= 0) {

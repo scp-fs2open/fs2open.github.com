@@ -495,8 +495,8 @@ SCP_vector<sexp_oper> Operators = {
 	{ "jettison-cargo",					OP_JETTISON_CARGO_NEW,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "set-docked",						OP_SET_DOCKED,							4,	4,			SEXP_ACTION_OPERATOR,	},	// Sushi
 	{ "cargo-no-deplete",				OP_CARGO_NO_DEPLETE,					1,	2,			SEXP_ACTION_OPERATOR,	},
-	{ "set-scanned",					OP_SET_SCANNED,							1,	2,			SEXP_ACTION_OPERATOR,	},
-	{ "set-unscanned",					OP_SET_UNSCANNED,						1,	2,			SEXP_ACTION_OPERATOR,	},
+	{ "set-scanned",					OP_SET_SCANNED,							1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
+	{ "set-unscanned",					OP_SET_UNSCANNED,						1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	
 	//Armor and Damage Types Sub-Category
 	{ "set-armor-type",					OP_SET_ARMOR_TYPE,						4,	INT_MAX,	SEXP_ACTION_OPERATOR,	},  // FUBAR
@@ -2345,6 +2345,101 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				break;
 			}
 
+			case OPF_ANIMATION_NAME: {
+				// OP 1 is always the ship
+
+				int shipnum,ship_class;
+				int ship_node;
+
+				if (type2 != SEXP_ATOM_STRING){
+					return SEXP_CHECK_TYPE_MISMATCH;
+				}
+
+				ship_node = CDR(op_node);
+
+				// we can't check special-arg ships
+				if (Sexp_nodes[ship_node].flags & SNF_SPECIAL_ARG_IN_NODE)
+					break;
+
+				auto shipname = CTEXT(ship_node);
+				shipnum = ship_name_lookup(shipname, 1);
+				if (shipnum >= 0)
+				{
+					ship_class = Ships[shipnum].ship_info_index;
+				}
+				else
+				{
+					// must try to find the ship in the arrival list
+					p_object *p_objp = mission_parse_get_arrival_ship(shipname);
+
+					if (!p_objp)
+					{
+						if (type == OPF_SUBSYSTEM_OR_NONE)
+							break;
+						else
+						{
+							if (bad_node)
+								*bad_node = ship_node;
+
+							return SEXP_CHECK_INVALID_SHIP;
+						}
+					}
+
+					ship_class = p_objp->ship_class;
+				}
+
+				const auto& animSet = Ship_info[ship_class].animations;
+				switch(get_operator_const(op_node)) {	
+					case OP_TRIGGER_ANIMATION_NEW: {
+						//Second OP trigger type
+						//Third OP triggered by
+						auto triggerType = animation::anim_match_type(CTEXT(CDR(ship_node)));
+						
+						const auto& animations = animSet.getRegisteredTriggers();
+						
+						const char* triggeredBy = CTEXT(CDDR(ship_node));
+						
+						if(std::find_if(animations.cbegin(), animations.cend(), [triggerType, triggeredBy](const std::remove_reference<decltype(animations)>::type::value_type& animation) -> bool {
+							if (animation.type != triggerType)
+								return false;
+
+							// Since Dock Bay animations can be tables as NOT on door x, technically doors not tabled for can be valid targets. Just allow anything here.
+							if(animation.type == animation::ModelAnimationTriggerType::DockBayDoor)
+								return true;
+							
+							if(animation.subtype != animation::ModelAnimationSet::SUBTYPE_DEFAULT){
+								if(!can_construe_as_integer(triggeredBy))
+									return false;
+								
+								int triggeredBySubtype = atoi(triggeredBy);
+								int animationSubtype = animation.subtype;
+								
+								return triggeredBySubtype == animationSubtype;
+							}
+							else{
+								return animation.name == triggeredBy;
+							}
+						}) == animations.cend())
+							return SEXP_CHECK_INVALID_ANIMATION;
+						
+						break;
+					}
+					case OP_UPDATE_MOVEABLE: {
+						//Second OP name
+						SCP_string name = CTEXT(CDR(ship_node));
+						
+						const auto& moveables = animSet.getRegisteredMoveables();
+						
+						if(std::find(moveables.cbegin(), moveables.cend(), name) == moveables.cend())
+							return SEXP_CHECK_INVALID_ANIMATION;
+						
+						break;
+					}
+				}
+
+				break;		
+			}
+			
 			case OPF_SUBSYSTEM_TYPE:
 				for (i = 0; i < SUBSYSTEM_MAX; i++)
 				{
@@ -3818,7 +3913,7 @@ int get_sexp()
 
 			case OP_SET_SPECIAL_WARPOUT_NAME:
 				// set flag for taylor
-				Knossos_warp_ani_used = 1;
+				Knossos_warp_ani_used = true;
 				break;
 
 			case OP_MISSION_SET_NEBULA:
@@ -3834,9 +3929,9 @@ int get_sexp()
 
 				// set flag for taylor
 				if (CAR(n) != -1 || Sexp_nodes[n].flags & SNF_SPECIAL_ARG_IN_NODE)		// if it's evaluating a sexp or a special argument
-					Knossos_warp_ani_used = 1;												// set flag just in case
+					Knossos_warp_ani_used = true;											// set flag just in case
 				else if (atoi(CTEXT(n)) != 0)											// if it's not the default 0
-					Knossos_warp_ani_used = 1;												// set flag just in case
+					Knossos_warp_ani_used = true;											// set flag just in case
 				break;
 
 			case OP_SET_SKYBOX_MODEL:
@@ -11671,8 +11766,7 @@ void sexp_allow_treason (int n)
 void sexp_set_player_orders(int n) 
 {
 	bool allow_order;
-	int orders = 0;
-	int i, default_orders; 
+	std::set<size_t> orders;
 
 	auto ship_entry = eval_ship(n);
 	if (!ship_entry || !ship_entry->shipp) {
@@ -11681,18 +11775,15 @@ void sexp_set_player_orders(int n)
 	auto shipp = ship_entry->shipp;
 
 	// we need to know which orders this ship class can accept.
-	default_orders = ship_get_default_orders_accepted(&Ship_info[shipp->ship_info_index]);
+	const std::set<size_t> &default_orders = ship_get_default_orders_accepted(&Ship_info[shipp->ship_info_index]);
 	n = CDR(n);
 	allow_order = is_sexp_true(n);
 	n = CDR(n);
 	do {
-		for (i = 0 ; i < NUM_COMM_ORDER_ITEMS ; i++) {
-			// since it's the cheaper test, test first if the ship will even accept this order first
-			if (default_orders & Sexp_comm_orders[i].item) {
-				if (!stricmp(CTEXT(n), Sexp_comm_orders[i].name)) {
-					orders |= Sexp_comm_orders[i].item;
-					break;
-				}
+		for( size_t order : default_orders){
+			if (!stricmp(CTEXT(n), Player_orders[order].hud_name.c_str())) {
+				orders.insert(order);
+				break;
 			}
 		}
 
@@ -11701,10 +11792,13 @@ void sexp_set_player_orders(int n)
 		
 	// set or unset the orders
 	if (allow_order) {
-		shipp->orders_accepted |= orders;
+		shipp->orders_accepted.insert(orders.begin(), orders.end());
 	}
 	else {
-		shipp->orders_accepted &= ~orders;
+		std::set<size_t> diff;
+		std::set_difference(shipp->orders_accepted.begin(), shipp->orders_accepted.end(), orders.begin(), orders.end(),
+							std::inserter(diff, diff.end()));
+		shipp->orders_accepted = diff;
 	}
 }
 
@@ -29843,7 +29937,7 @@ int query_operator_argument_type(int op, int argnum)
 			else if (argnum == 1)
 				return OPF_ANIMATION_TYPE;
 			else if (argnum == 2)
-				return OPF_STRING;
+				return OPF_ANIMATION_NAME;
 			else
 				return OPF_BOOL;
 
@@ -29851,7 +29945,7 @@ int query_operator_argument_type(int op, int argnum)
 			if(argnum == 0)
 				return OPF_SHIP;
 			else if(argnum == 1)
-				return OPF_STRING;
+				return OPF_ANIMATION_NAME;
 			else
 				return OPF_NUMBER;
 
@@ -30393,6 +30487,9 @@ const char *sexp_error_message(int num)
 
 		case SEXP_CHECK_WRONG_CONTAINER_TYPE:
 			return "Wrong container type";
+			
+		case SEXP_CHECK_INVALID_ANIMATION:
+			return "Invalid animation specifier";
 
 		default:
 			Warning(LOCATION, "Unhandled sexp error code %d!", num);
@@ -35839,7 +35936,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"Takes 3 or more arguments...\r\n"
 		"\t1: The ship to trigger the animation on.\r\n"
 		"\t2: The trigger type of the animation.\r\n"
-		"\t3: The triggered-by value of the animation. Depends on trigger type. Refer to the wiki on *-anim.tbm's.\r\n"
+		"\t3: The triggered-by value of the animation. Must be the same as in the table for the animation. Leave blank if not specified in the table.\r\n"
+		"\t\tException: fighterbay-type animations must specify the number of the fighter bay path.\r\n"
 		"\t4: If the animation should play forwards (true) or backwards (false). Defaults to true.\r\n"
 		"\t5: If the animation should reset before playing. Defaults to false.\r\n"
 		"\t6: If the animation should complete instantly. Defaults to false.\r\n"
@@ -35851,7 +35949,16 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"Takes 2 and more arguments...\r\n"
 		"\t1: The ship to update the moveable for.\r\n"
 		"\t2: The name of the moveable.\r\n"
-		"\tRest: The data for the moveable. Depends on moveable type. Refer to the wiki on *-anim.tbm's.\r\n"
+		"\tRest: The data for the moveable. Depends on moveable type. Refer to the table below:\r\n\r\n"
+		"Orientation:\r\n"
+		"\tThree numbers, x, y, z rotation respectively, in degrees\r\n"
+		"Rotation:\r\n"
+		"\tThree numbers, x, y, z rotation respectively, in degrees\r\n"
+		"Axis Rotation:\r\n"
+		"\tOne number, rotation angle in degrees\r\n"
+		"Inverse Kinematics:\r\n"
+		"\tThree required numbers: x, y, z position target relative to base, in 1/100th meters\r\n"
+		"\tThree optional numbers: x, y, z rotation target relative to base, in degrees\r\n"
 	}
 };
 // clang-format on

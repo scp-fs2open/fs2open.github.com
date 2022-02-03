@@ -590,6 +590,7 @@ void cmd_brief_init(int team)
 		Uses_scroll_buttons = 0;	// nope, sorry
 		Cmd_brief_background_bitmap = mission_ui_background_load(NULL, Cmd_brief_fname[Uses_scroll_buttons][gr_screen.res]);
 	}
+	mprintf(("Command Briefing UI: %s scroll buttons\n", Uses_scroll_buttons != 0 ? "Using" : "Not using"));
 
 	Ui_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
 	Ui_window.set_mask_bmap(Cmd_brief_mask[Uses_scroll_buttons][gr_screen.res]);

@@ -2751,7 +2751,7 @@ void copy_xlate_model_path_points(object *objp, model_path *mp, int dir, int cou
 	int		pp_index;		//	index in Path_points at which to store point, if this is a modify-in-place (pnp ! NULL)
 	int		start_index, finish_index;
 	vec3d submodel_offset, local_vert;
-	bool rotating_submodel;
+	bool moving_submodel;
 	
 	//	Initialize pp_index.
 	//	If pnp == NULL, that means we're creating new points.  If not NULL, then modify in place.
@@ -2772,24 +2772,24 @@ void copy_xlate_model_path_points(object *objp, model_path *mp, int dir, int cou
 	auto pmi = model_get_instance(Ships[objp->instance].model_instance_num);
 	auto pm = model_get(pmi->model_num);
 
-	// Goober5000 - check for rotating submodels
-	if ((mp->parent_submodel >= 0) && (pm->submodel[mp->parent_submodel].movement_type >= 0))
+	// Goober5000 - check for moving submodels
+	if ((mp->parent_submodel >= 0) && (pm->submodel[mp->parent_submodel].rotation_type >= 0))
 	{
-		rotating_submodel = true;
+		moving_submodel = true;
 
 		model_find_submodel_offset(&submodel_offset, pm, mp->parent_submodel);
 	}
 	else
 	{
-		rotating_submodel = false;
+		moving_submodel = false;
 	}
 
 	int offset = 0;
 	for (i=start_index; i != finish_index; i += dir)
 	{
 		//	Globalize the point.
-		// Goober5000 - handle rotating submodels
-		if (rotating_submodel)
+		// Goober5000 - handle moving submodels
+		if (moving_submodel)
 		{
 			// movement... find location of point like with docking code and spark generation
 			vm_vec_sub(&local_vert, &mp->verts[i].pos, &submodel_offset);
@@ -9473,12 +9473,20 @@ void set_goal_dock_orient(matrix *dom, matrix *docker_dock_orient, matrix *docke
 }
 
 // Goober5000
-// Return the rotating submodel on which is mounted the specified dockpoint, or -1 for none.
-int find_parent_rotating_submodel(polymodel *pm, int dock_index)
+// Return the moving submodel on which is mounted the specified dockpoint, or -1 for none.
+int find_parent_moving_submodel(polymodel *pm, int dock_index)
 {
 	Assertion(pm != nullptr, "pm cannot be null!");
 	Assertion(dock_index >= 0 && dock_index < pm->n_docks, "for model %s, dock_index %d must be >= 0 and < %d!", pm->filename, dock_index, pm->n_docks);
 	int path_num, submodel;
+
+	// if this is explicitly defined, then we're done
+	if (pm->docking_bays[dock_index].parent_submodel >= 0)
+	{
+		return pm->docking_bays[dock_index].parent_submodel;
+	}
+
+	// otherwise infer the submodel using the path...
 
 	// make sure we have a spline path to check against before going any further
 	if (pm->docking_bays[dock_index].num_spline_paths <= 0)
@@ -9496,7 +9504,7 @@ int find_parent_rotating_submodel(polymodel *pm, int dock_index)
 		submodel = pm->paths[path_num].parent_submodel;
 
 		// submodel must exist and must move
-		if ((submodel >= 0) && (submodel < pm->n_models) && (pm->submodel[submodel].movement_type >= 0))
+		if ((submodel >= 0) && (submodel < pm->n_models) && (pm->submodel[submodel].rotation_type >= 0))
 		{
 			return submodel;
 		}
@@ -9514,7 +9522,7 @@ void find_adjusted_dockpoint_info(vec3d *global_dock_point, matrix *global_dock_
 
 	vec3d fvec, uvec;
 
-	// are we basing this off a rotating submodel?
+	// are we basing this off a moving submodel?
 	if (submodel >= 0)
 	{
 		vec3d submodel_offset;
@@ -9524,7 +9532,7 @@ void find_adjusted_dockpoint_info(vec3d *global_dock_point, matrix *global_dock_
 		auto pmi = model_get_instance(shipp->model_instance_num);
 		Assert(pmi->model_num == pm->id);
 
-		// calculate the dockpoint locations relative to the unrotated submodel
+		// calculate the dockpoint locations relative to the submodel in its original position
 		model_find_submodel_offset(&submodel_offset, pm, submodel);
 		vm_vec_sub(&local_p0, &pm->docking_bays[dock_index].pnt[0], &submodel_offset);
 		vm_vec_sub(&local_p1, &pm->docking_bays[dock_index].pnt[1], &submodel_offset);
@@ -9603,30 +9611,30 @@ float dock_orient_and_approach(object *docker_objp, int docker_index, object *do
 	Assert(pm1->docking_bays[dockee_index].num_slots == 2);
 
 
-	// Goober5000 - check if we're attached to a rotating submodel
-	int dockee_rotating_submodel = find_parent_rotating_submodel(pm1, dockee_index);
+	// Goober5000 - check if we're attached to a moving submodel
+	int dockee_moving_submodel = find_parent_moving_submodel(pm1, dockee_index);
 
 	matrix docker_dock_orient, dockee_dock_orient;
 	// Goober5000 - move docking points with submodels if necessary, for both docker and dockee
 	find_adjusted_dockpoint_info(&docker_point, &docker_dock_orient, docker_objp, pm0, -1, docker_index);
-	find_adjusted_dockpoint_info(&dockee_point, &dockee_dock_orient, dockee_objp, pm1, dockee_rotating_submodel, dockee_index);
+	find_adjusted_dockpoint_info(&dockee_point, &dockee_dock_orient, dockee_objp, pm1, dockee_moving_submodel, dockee_index);
 
 	// Goober5000
 	vec3d submodel_pos = ZERO_VECTOR;
 	float submodel_radius = 0.0f;
 	float submodel_omega = 0.0f;
-	if ((dockee_rotating_submodel >= 0) && (dock_mode != DOA_DOCK_STAY))
+	if ((dockee_moving_submodel >= 0) && (dock_mode != DOA_DOCK_STAY))
 	{
 		vec3d submodel_offset;
 
 		// get submodel center
-		model_find_submodel_offset(&submodel_offset, pm1, dockee_rotating_submodel);
+		model_find_submodel_offset(&submodel_offset, pm1, dockee_moving_submodel);
 		vm_vec_add(&submodel_pos, &dockee_objp->pos, &submodel_offset);
 
 		polymodel_instance *pmi1 = model_get_instance(Ships[dockee_objp->instance].model_instance_num);
 
 		// get angular velocity of dockpoint
-		submodel_omega = pmi1->submodel[dockee_rotating_submodel].current_turn_rate;
+		submodel_omega = pmi1->submodel[dockee_moving_submodel].current_turn_rate;
 
 		// get radius to dockpoint
 		submodel_radius = vm_vec_dist(&submodel_pos, &dockee_point);
@@ -9640,7 +9648,7 @@ float dock_orient_and_approach(object *docker_objp, int docker_index, object *do
 	rdinfo->docker_point = docker_point;
 	rdinfo->dockee_point = dockee_point;
 	rdinfo->dock_mode = dock_mode;
-	rdinfo->submodel = dockee_rotating_submodel;
+	rdinfo->submodel = dockee_moving_submodel;
 	rdinfo->submodel_pos = submodel_pos;
 	rdinfo->submodel_r = submodel_radius;
 	rdinfo->submodel_w = submodel_omega;
@@ -9700,8 +9708,8 @@ float dock_orient_and_approach(object *docker_objp, int docker_index, object *do
 		} else
 			ss1 = 2.0f;
 
-		// if we're docking to a rotating submodel, speed up translation
-		if (dockee_rotating_submodel >= 0)
+		// if we're docking to a moving submodel, speed up translation
+		if (dockee_moving_submodel >= 0)
 			ss1 = 2.0f;
 
 		speed_scale *= 1.0f + ss1;
@@ -13251,7 +13259,7 @@ int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, int allowed_path_
 
 	//This is kind of hacky, but allows for hangarbay animations to trigger even if the player is not accompanied by AI.
 	//Since it doesn't really keep track of this, it won't ever tell the bay door that the player has fully left for it to close again.
-	if (Player_obj == pl_objp)
+	if (pl_objp->flags[Object::Object_Flags::Player_ship])
 		ai_manage_bay_doors(pl_objp, aip, false);
 
 	//due to the door animations the ship has to remain still until the doors are open

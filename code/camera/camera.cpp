@@ -44,7 +44,7 @@ auto FovOption = options::OptionBuilder<float>("Graphics.FOV", "Field Of View", 
                      .finish();
 
 //*************************CLASS: camera*************************
-//This is where the camera class beings! :D
+//This is where the camera class begins! :D
 camera::camera(const char *in_name, int in_signature)
 {
 	set_name(in_name);
@@ -238,12 +238,15 @@ void camera::set_rotation_facing(vec3d *in_target, float in_rotation_time, float
 {
 	matrix temp_matrix = IDENTITY_MATRIX;
 
-	if(in_target != NULL)
+	if (in_target != nullptr)
 	{
-		vec3d position = vmd_zero_vector;
-		this->get_info(&position, NULL);
+		vec3d position;
+		matrix orient_buf;
+		auto orient = Use_host_orientation_for_set_camera_facing ? &orient_buf : nullptr;
 
-		if(in_target->xyz.x == position.xyz.x && in_target->xyz.y == position.xyz.y && in_target->xyz.z == position.xyz.z)
+		this->get_info(&position, orient, false);
+
+		if (vm_vec_same(in_target, &position))
 		{
 			Warning(LOCATION, "Camera tried to point to self");
 			return;
@@ -251,7 +254,21 @@ void camera::set_rotation_facing(vec3d *in_target, float in_rotation_time, float
 
 		vec3d targetvec;
 		vm_vec_normalized_dir(&targetvec, in_target, &position);
-		vm_vector_2_matrix(&temp_matrix, &targetvec, NULL, NULL);
+
+		if (Use_host_orientation_for_set_camera_facing)
+		{
+			// point along the target vector, but using the host orient's roll
+			vm_vector_2_matrix(&temp_matrix, &targetvec, &orient->vec.uvec, nullptr);
+
+			// we need the difference between the camera's current orient and the orient we want
+			vm_transpose(orient);
+			temp_matrix = temp_matrix * *orient;
+		}
+		else
+		{
+			// point directly along the target vector
+			vm_vector_2_matrix(&temp_matrix, &targetvec, nullptr, nullptr);
+		}
 	}
 
 	set_rotation(&temp_matrix, in_rotation_time, in_rotation_acceleration_time, in_rotation_deceleration_time);
@@ -299,13 +316,16 @@ float camera::get_fov()
 }
 
 eye* get_submodel_eye(polymodel *pm, int submodel_num);
-void camera::get_info(vec3d *position, matrix *orientation)
+void camera::get_info(vec3d *position, matrix *orientation, bool apply_camera_orientation)
 {
 	if(position == NULL && orientation == NULL)
 		return;
 	
 	eye* eyep = NULL;
 	vec3d host_normal;
+	matrix host_orient = vmd_identity_matrix;
+	bool use_host_orient = false;
+
 	//POSITION
 	if(!(flags & CAM_STATIONARY_POS) || object_host.IsValid())
 	{
@@ -350,7 +370,16 @@ void camera::get_info(vec3d *position, matrix *orientation)
 				else
 				{
 					if (pmi != nullptr)
-						model_instance_find_world_point(&c_pos, &pt, pm, pmi, object_host_submodel, &objp->orient, &objp->pos);
+					{
+						vec3d c_pos_in;
+						find_submodel_instance_point_orient(&c_pos_in, &host_orient, pm, pmi, object_host_submodel, &pt, &vmd_identity_matrix);
+
+						host_orient = host_orient * objp->orient;
+						use_host_orient = true;
+
+						vm_vec_unrotate(&c_pos, &c_pos_in, &objp->orient);
+						vm_vec_add2(&c_pos, &objp->pos);
+					}
 					else
 						model_find_world_point( &c_pos, &pt, pm, object_host_submodel, &objp->orient, &objp->pos );
 				}
@@ -368,7 +397,7 @@ void camera::get_info(vec3d *position, matrix *orientation)
 		}
 	}
 
-	if(position != NULL)
+	if (position != nullptr)
 		*position = c_pos;
 
 	//ORIENTATION
@@ -379,32 +408,32 @@ void camera::get_info(vec3d *position, matrix *orientation)
 		{
 			if(object_target.IsValid())
 			{
-				object *objp = object_target.objp;
-				int model_num = object_get_model(objp);
-				polymodel *pm = nullptr;
-				polymodel_instance *pmi = nullptr;
+				object *target_objp = object_target.objp;
+				int model_num = object_get_model(target_objp);
+				polymodel *target_pm = nullptr;
+				polymodel_instance *target_pmi = nullptr;
 				vec3d target_pos = vmd_zero_vector;
 				
 				//See if we can get the model
 				if(model_num >= 0)
 				{
-					pm = model_get(model_num);
-					if (objp->type == OBJ_SHIP)
-						pmi = model_get_instance(Ships[objp->instance].model_instance_num);
+					target_pm = model_get(model_num);
+					if (target_objp->type == OBJ_SHIP)
+						target_pmi = model_get_instance(Ships[target_objp->instance].model_instance_num);
 				}
 
 				//If we don't have a submodel or don't have the model use object pos
 				//Otherwise, find the submodel pos as it is rotated
-				if(object_target_submodel < 0 || pm == NULL)
+				if (object_target_submodel < 0 || target_pm == nullptr)
 				{
-					target_pos = objp->pos;
+					target_pos = target_objp->pos;
 				}
 				else
 				{
-					if (pmi != nullptr)
-						model_instance_find_world_point(&target_pos, &vmd_zero_vector, pm, pmi, object_target_submodel, &objp->orient, &objp->pos);
+					if (target_pmi != nullptr)
+						model_instance_find_world_point(&target_pos, &vmd_zero_vector, target_pm, target_pmi, object_target_submodel, &target_objp->orient, &target_objp->pos);
 					else
-						model_find_world_point( &target_pos, &vmd_zero_vector, pm, object_target_submodel, &objp->orient, &objp->pos );
+						model_find_world_point( &target_pos, &vmd_zero_vector, target_pm, object_target_submodel, &target_objp->orient, &target_objp->pos );
 				}
 
 				vec3d targetvec;
@@ -419,6 +448,10 @@ void camera::get_info(vec3d *position, matrix *orientation)
 					vm_vector_2_matrix(&c_ori, &host_normal, vm_vec_same(&host_normal, &object_host.objp->orient.vec.uvec)?NULL:&object_host.objp->orient.vec.uvec, NULL);
 					target_set = true;
 				}
+				else if (use_host_orient)
+				{
+					c_ori = host_orient;
+				}
 				else
 				{
 					c_ori = object_host.objp->orient;
@@ -429,24 +462,32 @@ void camera::get_info(vec3d *position, matrix *orientation)
 				c_ori = vmd_identity_matrix;
 			}
 
-			matrix mtxA = c_ori;
-			matrix mtxB = IDENTITY_MATRIX;
-			float pos = 0.0f;
-			for(int i = 0; i < 9; i++)
+			//Do custom orientation stuff, if needed
+			if (func_custom_orientation != nullptr && !target_set)
 			{
-				ori[i].get(&pos, NULL);
-				mtxB.a1d[i] = pos;
+				func_custom_orientation(this, &c_ori);
 			}
-			vm_matrix_x_matrix(&c_ori, &mtxA, &mtxB);
 
-			vm_orthogonalize_matrix(&c_ori);
+			// only do this if we want to find where the camera is actually pointing;
+			// skip this if we just want the orientation of the host
+			if (apply_camera_orientation)
+			{
+				matrix mtxA = c_ori;
+				matrix mtxB = IDENTITY_MATRIX;
+				float pos = 0.0f;
+				for (int i = 0; i < 9; i++)
+				{
+					ori[i].get(&pos, nullptr);
+					mtxB.a1d[i] = pos;
+				}
+				vm_matrix_x_matrix(&c_ori, &mtxA, &mtxB);
+
+				vm_orthogonalize_matrix(&c_ori);
+			}
 		}
-		//Do custom orientation stuff, if needed
-		if(func_custom_orientation != NULL && !target_set)
-		{
-			func_custom_orientation(this, &c_ori);
-		}
-		*orientation = c_ori;
+
+		if (orientation != nullptr)
+			*orientation = c_ori;
 	}
 }
 
