@@ -44,6 +44,25 @@ ADE_VIRTVAR(Model, l_ColInfo, "model", "The model this collision info is about",
 	return ade_set_args(L, "o", l_Model.Set(model_h(modelNum)));
 }
 
+ADE_FUNC(getCollisionSubmodel, l_ColInfo, nullptr, "The submodel where the collision occurred, if applicable", "submodel", "The submodel, or nil if none")
+{
+	mc_info_h *info;
+	submodel_h *sh = nullptr;
+
+	if (!ade_get_args(L, "o|o", l_ColInfo.GetPtr(&info), l_Submodel.GetPtr(&sh)))
+		return ade_set_error(L, "o", l_Submodel.Set(submodel_h()));
+
+	if (!info->IsValid())
+		return ade_set_error(L, "o", l_Submodel.Set(submodel_h()));
+
+	mc_info *collide = info->Get();
+
+	if (collide->hit_submodel < 0)
+		return ADE_RETURN_NIL;
+
+	return ade_set_args(L, "o", l_Submodel.Set(submodel_h(collide->model_num, collide->hit_submodel)));
+}
+
 ADE_FUNC(getCollisionDistance, l_ColInfo, NULL, "The distance to the closest collision point", "number", "distance or -1 on error")
 {
 	mc_info_h* info;

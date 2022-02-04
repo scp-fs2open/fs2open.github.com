@@ -4683,6 +4683,19 @@ void model_instance_add_arc(polymodel *pm, polymodel_instance *pmi, int sub_mode
 	}
 }
 
+int model_find_submodel_index(int modelnum, const char *name)
+{
+	auto pm = model_get(modelnum);
+
+	for (int i = 0; i < pm->n_models; i++)
+	{
+		if (!stricmp(pm->submodel[i].name, name))
+			return i;
+	}
+
+	return -1;
+}
+
 // function to return an index into the docking_bays array which matches the criteria passed
 // to this function.  dock_type is one of the DOCK_TYPE_XXX defines in model.h
 // Goober5000 - now finds more than one dockpoint of this type

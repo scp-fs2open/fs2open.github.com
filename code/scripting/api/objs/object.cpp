@@ -3,6 +3,7 @@
 
 #include "enums.h"
 #include "mc_info.h"
+#include "modelinstance.h"
 #include "object.h"
 #include "physics_info.h"
 #include "shields.h"
@@ -169,6 +170,25 @@ ADE_VIRTVAR(LastOrientation, l_Object, "orientation", "Object world orientation 
 	}
 
 	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&objh->objp->last_orient)));
+}
+
+ADE_VIRTVAR(ModelInstance, l_Object, "modelinstance", "model instance used by this object", "modelinstance", "Model instance, nil if this object does not have one, or invalid model instance handle if object handle is invalid")
+{
+	object_h* objh;
+	if (!ade_get_args(L, "o", l_Object.GetPtr(&objh)))
+		return ade_set_error(L, "o", l_ModelInstance.Set(modelinstance_h()));
+
+	if (!objh->IsValid())
+		return ade_set_error(L, "o", l_ModelInstance.Set(modelinstance_h()));
+
+	if (ADE_SETTING_VAR)
+		LuaError(L, "Assigning model instances is not implemented");
+
+	int id = object_get_model_instance(objh->objp);
+	if (id < 0)
+		return ADE_RETURN_NIL;
+
+	return ade_set_args(L, "o", l_ModelInstance.Set(modelinstance_h(id)));
 }
 
 ADE_VIRTVAR(Physics, l_Object, "physics", "Physics data used to move ship between frames", "physics", "Physics data, or invalid physics handle if object handle is invalid")

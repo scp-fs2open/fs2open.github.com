@@ -1033,6 +1033,8 @@ void submodel_get_cross_sectional_avg_pos(int model_num, int submodel_num, float
 // generates a random position more or less inside-ish a mesh at a particular z slice
 void submodel_get_cross_sectional_random_pos(int model_num, int submodel_num, float z_slice_pos, vec3d* pos);
   
+extern int model_find_submodel_index(int modelnum, const char *name);
+
 // gets the index into the docking_bays array of the specified type of docking point
 // Returns the index.  second functions returns the index of the docking bay with
 // the specified name
