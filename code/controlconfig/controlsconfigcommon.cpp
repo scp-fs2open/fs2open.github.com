@@ -2601,20 +2601,6 @@ CC_bind* CCB::find_flags(const char mask) {
 	return nullptr;
 }
 
-void CCB::invert(bool inv) {
-	first.invert(inv);
-	second.invert(inv);
-}
-
-void CCB::invert_toggle() {
-	first.invert_toggle();
-	second.invert_toggle();
-}
-
-bool CCB::is_inverted() const {
-	return first.is_inverted() && second.is_inverted();
-}
-
 bool CCI::is_axis() {
 	switch (type) {
 	case CC_TYPE_AXIS_ABS:

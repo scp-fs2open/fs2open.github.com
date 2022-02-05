@@ -137,7 +137,6 @@ namespace animation {
 				}
 				else
 					stop(pmi, false);
-				break;
 			}
 
 			m_animation->calculateAnimation(applyBuffer, instanceData.time, pmi->id);
@@ -309,6 +308,7 @@ namespace animation {
 		if (!submodel)
 			return;
 
+		submodel->canonical_prev_orient = submodel->canonical_orient;
 		submodel->canonical_orient = data.orientation;
 
 		//TODO: Once translation is a thing
@@ -322,6 +322,11 @@ namespace animation {
 		if (!submodel.first || !submodel.second) 
 			return;
 
+		if(!submodel.second->flags[Model::Submodel_flags::Can_move]){
+			mprintf(("Submodel %s of model %s is animated and has movement enabled.\n", submodel.second->name, model_get(pmi->model_num)->filename));
+			submodel.second->flags.set(Model::Submodel_flags::Can_move);
+		}
+		
 		data.orientation = submodel.first->canonical_orient;
 		//TODO: Once translation is a thing
 		//data.position = m_subsys->submodel_instance_1->offset;
@@ -386,10 +391,9 @@ namespace animation {
 		//Do we know if we were told to find the barrel submodel or not? This implies we have a subsystem name, not a submodel name
 		else {
 
-			int sip_index = ship_info_lookup(m_SIPname.c_str());
-			if (sip_index < 0)
+			if (pmi->objnum < 0)
 				return { nullptr, nullptr };
-			ship_info* sip = &Ship_info[sip_index];
+			ship_info* sip = &Ship_info[Ships[Objects[pmi->objnum].instance].ship_info_index];
 
 			for (int i = 0; i < sip->n_subsystems; i++) {
 				if (!subsystem_stricmp(sip->subsystems[i].subobj_name, m_name.c_str())) {
@@ -426,11 +430,11 @@ namespace animation {
 		if (!submodel)
 			return;
 
+		submodel->canonical_prev_orient = submodel->canonical_orient;
 		submodel->canonical_orient = data.orientation;
 
 		float angle = 0.0f;
-
-		vm_closest_angle_to_matrix(&submodel->canonical_orient, &sm->movement_axis, &angle);
+		vm_closest_angle_to_matrix(&submodel->canonical_orient, &sm->rotation_axis, &angle);
 
 		submodel->cur_angle = angle;
 		submodel->turret_idle_angle = angle;
@@ -458,10 +462,14 @@ namespace animation {
 
 		for (const auto& animationTypes : m_animationSet) {
 			for (const auto& animations : animationTypes.second) {
-				for(const auto& animation : animations.second)
+				for (const auto& animation : animations.second) {
+					animation->m_animation->exchangeSubmodelPointers(*this);
 					animation->m_set = this;
+				}
 			}
 		}
+
+
 
 		return *this;
 	}
@@ -646,6 +654,27 @@ namespace animation {
 		return started;
 	}
 
+	bool ModelAnimationSet::startBlanket(polymodel_instance* pmi, ModelAnimationTriggerType type, ModelAnimationDirection direction, bool forced, bool instant, bool pause) const {
+		if (pmi == nullptr)
+			return false;
+
+		bool started = false;
+		
+		for(const auto& animations : m_animationSet) {
+			if(animations.first.type != type)
+				continue;
+			
+			for (const auto& namedAnimation : animations.second){
+				for(const auto& animation : namedAnimation.second){
+					animation->start(pmi, direction, forced, instant, pause);
+					started = true;
+				}
+			}
+		}
+		
+		return started;
+	}
+
 	//Yes why of course does this need special handling...
 	bool ModelAnimationSet::startDockBayDoors(polymodel_instance* pmi, ModelAnimationDirection direction, bool forced, bool instant, bool pause, int subtype) const {
 		if (pmi == nullptr)
@@ -803,6 +832,16 @@ namespace animation {
 			moveable.second->initialize(this, pmi);
 		}
 	}
+
+	std::vector<SCP_string> ModelAnimationSet::getRegisteredMoveables() const {
+		std::vector<SCP_string> ret;
+
+		for (const auto& moveable : m_moveableSet) {
+			ret.push_back(moveable.first);
+		}
+
+		return ret;
+	};
 
 	bool ModelAnimationSet::isEmpty() const {
 		for (const auto& animSet : m_animationSet) {
@@ -1508,13 +1547,17 @@ namespace animation {
 		{"$Set Orientation:", 	ModelAnimationSegmentSetOrientation::parser},
 		{"$Set Angle:", 			ModelAnimationSegmentSetAngle::parser},
 		{"$Rotation:",		 	ModelAnimationSegmentRotation::parser},
+		{"$Axis Rotation:", 	ModelAnimationSegmentAxisRotation::parser},
 	//	{"$Translation:", 		ModelAnimationSegmentTranslation::parser},
-		{"$Sound During:", 		ModelAnimationSegmentSoundDuring::parser}
+		{"$Sound During:", 		ModelAnimationSegmentSoundDuring::parser},
+		{"$Inverse Kinematics:", 	ModelAnimationSegmentIK::parser}
 	};
 	
 	std::map<SCP_string, ModelAnimationParseHelper::ModelAnimationMoveableParser> ModelAnimationParseHelper::s_moveableParsers = {
 		{"Orientation", 			ModelAnimationMoveableOrientation::parser},
-		{"Rotation", 				ModelAnimationMoveableRotation::parser}
+		{"Rotation", 				ModelAnimationMoveableRotation::parser},
+		{"Axis Rotation", 		ModelAnimationMoveableAxisRotation::parser},
+		{"Inverse Kinematics", 	ModelAnimationMoveableIK::parser}
 	};
 
 	
