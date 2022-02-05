@@ -1162,26 +1162,59 @@ ADE_FUNC(drawOffscreenIndicator, l_Graphics, "object Object, [boolean draw=true,
 #define MAX_TEXT_LINES		256
 static const char *BooleanValues[] = {"False", "True"};
 
-ADE_FUNC(drawString, l_Graphics, "string Message, [number X1, number Y1, number X2, number Y2]",
-		 "Draws a string. Use x1/y1 to control position, x2/y2 to limit textbox size."
-			 "Text will automatically move onto new lines, if x2/y2 is specified."
-			 "Additionally, calling drawString with only a string argument will automatically"
-			 "draw that string below the previously drawn string (or 0,0 if no strings"
-			 "have been drawn yet",
-		 "number",
-		 "Number of lines drawn, or 0 on failure")
+static int drawString_sub(lua_State *L, bool use_resize_arg)
 {
 	if(!Gr_inited)
 		return ade_set_error(L, "i", 0);
 
-	int x=NextDrawStringPos[0];
+	enum_h resize_arg;
+	int resize_mode = use_resize_arg ? GR_RESIZE_FULL : GR_RESIZE_NONE;
+
+	int x = NextDrawStringPos[0];
 	int y = NextDrawStringPos[1];
 
 	const char *s = "(null)";
 	int x2=-1,y2=-1;
 	int num_lines = 0;
 
-	if(lua_isboolean(L, 1))
+	if (use_resize_arg)
+	{
+		if (!ade_get_args(L, "o", l_Enum.Get(&resize_arg)))
+			return ade_set_error(L, "i", 0);
+
+		// so that ade_get_args below will read the correct positions
+		internal::Ade_get_args_skip++;
+
+		if (resize_arg.IsValid())
+		{
+			switch (resize_arg.index)
+			{
+				case LE_GR_RESIZE_NONE:
+					resize_mode = GR_RESIZE_NONE;
+					break;
+				case LE_GR_RESIZE_FULL:
+					resize_mode = GR_RESIZE_FULL;
+					break;
+				case LE_GR_RESIZE_FULL_CENTER:
+					resize_mode = GR_RESIZE_FULL_CENTER;
+					break;
+				case LE_GR_RESIZE_MENU:
+					resize_mode = GR_RESIZE_MENU;
+					break;
+				case LE_GR_RESIZE_MENU_ZOOMED:
+					resize_mode = GR_RESIZE_MENU_ZOOMED;
+					break;
+				case LE_GR_RESIZE_MENU_NO_OFFSET:
+					resize_mode = GR_RESIZE_MENU_NO_OFFSET;
+					break;
+				default:
+					Warning(LOCATION, "Invalid resize index %d in gr.drawStringResized", resize_arg.index);
+					break;
+			}
+		}
+	}
+
+	if (lua_isboolean(L, 1 + internal::Ade_get_args_skip))
 	{
 		bool b = false;
 		if(!ade_get_args(L, "b|iiii", &b, &x, &y, &x2, &y2))
@@ -1192,7 +1225,7 @@ ADE_FUNC(drawString, l_Graphics, "string Message, [number X1, number Y1, number 
 		else
 			s = BooleanValues[0];
 	}
-	else if(lua_isstring(L, 1))
+	else if (lua_isstring(L, 1 + internal::Ade_get_args_skip))
 	{
 		if(!ade_get_args(L, "s|iiii", &s, &x, &y, &x2, &y2))
 			return ade_set_error(L, "i", 0);
@@ -1206,7 +1239,7 @@ ADE_FUNC(drawString, l_Graphics, "string Message, [number X1, number Y1, number 
 	if(x2 < 0)
 	{
 		num_lines = 1;
-		gr_string(x,y,s,GR_RESIZE_NONE);
+		gr_string(x,y,s,resize_mode);
 
 		int height = 0;
 		gr_get_string_size(NULL, &height, s);
@@ -1243,7 +1276,7 @@ ADE_FUNC(drawString, l_Graphics, "string Message, [number X1, number Y1, number 
 			buf[len] = '\0';
 
 			//Draw the string
-			gr_string(x,curr_y,buf,GR_RESIZE_NONE);
+			gr_string(x,curr_y,buf,resize_mode);
 
 			//Free the string we made
 			delete[] buf;
@@ -1262,6 +1295,61 @@ ADE_FUNC(drawString, l_Graphics, "string Message, [number X1, number Y1, number 
 		NextDrawStringPos[1] = curr_y;
 	}
 	return ade_set_error(L, "i", num_lines);
+}
+
+ADE_FUNC(drawString, l_Graphics, "string or boolean Message, [number X1, number Y1, number X2, number Y2]",
+	"Draws a string at its native size (not scaled for screen resolution). Use x1/y1 to control position, x2/y2 to limit textbox size."
+	"Text will automatically move onto new lines, if x2/y2 is specified."
+	"Additionally, calling drawString with only a string argument will automatically"
+	"draw that string below the previously drawn string (or 0,0 if no strings"
+	"have been drawn yet",
+	"number",
+	"Number of lines drawn, or 0 on failure")
+{
+	return drawString_sub(L, false);
+}
+
+ADE_FUNC(drawStringResized, l_Graphics, "enum ResizeMode, string or boolean Message, [number X1, number Y1, number X2, number Y2]",
+	"Draws a string, scaled according to the GR_RESIZE_* parameter. Use x1/y1 to control position, x2/y2 to limit textbox size."
+	"Text will automatically move onto new lines, if x2/y2 is specified, however the line spacing will probably not be correct."
+	"Additionally, calling drawString with only a string argument will automatically"
+	"draw that string below the previously drawn string (or 0,0 if no strings"
+	"have been drawn yet",
+	"number",
+	"Number of lines drawn, or 0 on failure")
+{
+	return drawString_sub(L, true);
+}
+
+ADE_FUNC(setScreenScale, l_Graphics, "number width, number height, [number zoom_x, number zoom_y, number max_x, number max_y, number center_x, number center_y, boolean force_stretch]",
+	"Calls gr_set_screen_scale with the specified parameters.  This is useful for adjusting the drawing of graphics or text to be the same apparent size regardless of resolution.",
+	nullptr, nullptr)
+{
+	if (!Gr_inited)
+		return ADE_RETURN_NIL;
+
+	int x, y;
+	int zoom_x = -1, zoom_y = -1;
+	int max_x = gr_screen.max_w, max_y = gr_screen.max_h;
+	int center_x = gr_screen.center_w, center_y = gr_screen.center_h;
+	bool force_stretch = false;
+
+	if (!ade_get_args(L, "ii|iiiiiib", &x, &y, &zoom_x, &zoom_y, &max_x, &max_y, &center_x, &center_y, &force_stretch))
+		return ADE_RETURN_NIL;
+
+	gr_set_screen_scale(x, y, zoom_x, zoom_y, max_x, max_y, center_x, center_y, force_stretch);
+
+	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(resetScreenScale, l_Graphics, nullptr, "Rolls back the most recent call to setScreenScale.", nullptr, nullptr)
+{
+	if (!Gr_inited)
+		return ADE_RETURN_NIL;
+
+	gr_reset_screen_scale();
+
+	return ADE_RETURN_TRUE;
 }
 
 ADE_FUNC(getStringWidth, l_Graphics, "string String", "Gets string width", "number", "String width, or 0 on failure")
