@@ -80,7 +80,7 @@ static int getDefaultGaugeIndex(lua_State* L)
 	}
 }
 
-ADE_FUNC(getHUDConfigShowStatus, l_HUD, "number gaugeIndex (zero-based) or string", "Gets the HUD configuration show status for the specified default HUD gauge.", "boolean", "Returns show status or nil if gauge invalid")
+ADE_FUNC(getHUDConfigShowStatus, l_HUD, "number|string gaugeNameOrIndex", "Gets the HUD configuration show status for the specified default HUD gauge.", "boolean", "Returns show status or nil if gauge invalid")
 {
 	int idx = getDefaultGaugeIndex(L);
 
@@ -94,7 +94,7 @@ ADE_FUNC(getHUDConfigShowStatus, l_HUD, "number gaugeIndex (zero-based) or strin
 }
 
 ADE_FUNC(setHUDGaugeColor, l_HUD,
-         "number gaugeIndex (zero-based) or string, [number red, number green, number blue, number alpha]",
+         "number|string gaugeNameOrIndex, [number red, number green, number blue, number alpha]",
          "Modifies color used to draw the gauge in the pilot config", "boolean", "If the operation was successful")
 {
 	int idx = getDefaultGaugeIndex(L);
@@ -116,7 +116,7 @@ ADE_FUNC(setHUDGaugeColor, l_HUD,
 
 ADE_FUNC(getHUDGaugeColor,
 	l_HUD,
-	"number gaugeIndex (zero-based) or string",
+	"number|string gaugeNameOrIndex",
 	"Color specified in the config to draw the gauge",
 	"number, number, number, number",
 	"Red, green, blue, and alpha of the gauge")
@@ -132,7 +132,7 @@ ADE_FUNC(getHUDGaugeColor,
 }
 
 ADE_FUNC(setHUDGaugeColorInMission, l_HUD,
-         "number gaugeIndex (zero-based) or string, [number red, number green, number blue, number alpha]",
+         "number|string gaugeNameOrIndex, [number red, number green, number blue, number alpha]",
          "Set color currently used to draw the gauge", "boolean", "If the operation was successful")
 {
 	int idx = getDefaultGaugeIndex(L);
@@ -154,7 +154,7 @@ ADE_FUNC(setHUDGaugeColorInMission, l_HUD,
 
 ADE_FUNC(getHUDGaugeColorInMission,
 	l_HUD,
-	"number gaugeIndex (zero-based) or string",
+	"number|string gaugeNameOrIndex",
 	"Color currently used to draw the gauge",
 	"number, number, number, number",
 	"Red, green, blue, and alpha of the gauge")

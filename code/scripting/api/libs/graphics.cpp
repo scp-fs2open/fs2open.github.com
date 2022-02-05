@@ -1297,7 +1297,7 @@ static int drawString_sub(lua_State *L, bool use_resize_arg)
 	return ade_set_error(L, "i", num_lines);
 }
 
-ADE_FUNC(drawString, l_Graphics, "string or boolean Message, [number X1, number Y1, number X2, number Y2]",
+ADE_FUNC(drawString, l_Graphics, "string|boolean Message, [number X1, number Y1, number X2, number Y2]",
 	"Draws a string at its native size (not scaled for screen resolution). Use x1/y1 to control position, x2/y2 to limit textbox size."
 	"Text will automatically move onto new lines, if x2/y2 is specified."
 	"Additionally, calling drawString with only a string argument will automatically"
@@ -1309,7 +1309,7 @@ ADE_FUNC(drawString, l_Graphics, "string or boolean Message, [number X1, number 
 	return drawString_sub(L, false);
 }
 
-ADE_FUNC(drawStringResized, l_Graphics, "enum ResizeMode, string or boolean Message, [number X1, number Y1, number X2, number Y2]",
+ADE_FUNC(drawStringResized, l_Graphics, "enumeration ResizeMode, string|boolean Message, [number X1, number Y1, number X2, number Y2]",
 	"Draws a string, scaled according to the GR_RESIZE_* parameter. Use x1/y1 to control position, x2/y2 to limit textbox size."
 	"Text will automatically move onto new lines, if x2/y2 is specified, however the line spacing will probably not be correct."
 	"Additionally, calling drawString with only a string argument will automatically"
