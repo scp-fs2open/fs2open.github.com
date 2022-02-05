@@ -176,7 +176,7 @@ ADE_FUNC(getHUDGaugeHandle, l_HUD, "string Name", "Returns a handle to a specifi
 		return ADE_RETURN_NIL;
 	HudGauge* gauge = nullptr;
 
-	gauge = hud_get_gauge(name);
+	gauge = hud_get_custom_gauge(name);
 	if (gauge == nullptr)
 	{
 		int idx = hud_get_default_gauge_index(name);

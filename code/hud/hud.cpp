@@ -3856,7 +3856,7 @@ void hud_page_in()
 	}
 }
 
-HudGauge* hud_get_gauge(const char* name, bool check_all_gauges)
+HudGauge* hud_get_custom_gauge(const char* name, bool check_all_gauges)
 {
 	auto player_sip = Player_ship->ship_info_index < 0 ? nullptr : &Ship_info[Player_ship->ship_info_index];
 

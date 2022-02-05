@@ -553,7 +553,7 @@ public:
 	void render(float frametime) override;
 };
 
-HudGauge* hud_get_gauge(const char* name, bool check_all_gauges = false);
+HudGauge* hud_get_custom_gauge(const char* name, bool check_all_gauges = false);
 int hud_get_default_gauge_index(const char* name);
 
 extern SCP_vector<std::unique_ptr<HudGauge>> default_hud_gauges;
