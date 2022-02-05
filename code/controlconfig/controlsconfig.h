@@ -499,21 +499,6 @@ public:
 	 * Returns a pointer to first, or second, whichever has *all* flags in the given mask
 	 */
 	CC_bind* find_flags(const char);
-
-	/*!
-	 * Sets the inversion state of both bindings
-	 */
-	void invert(bool);
-
-	/*!
-	 * Toggles the inversion state of Primary and copies it to Secondary
-	 */
-	void invert_toggle();
-
-	/*!
-	 * Is true if both bindings are inverted, false otherwise
-	 */
-	bool is_inverted() const;
 };
 
 /*!

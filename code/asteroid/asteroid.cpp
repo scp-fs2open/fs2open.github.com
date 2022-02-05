@@ -1034,11 +1034,11 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 	// find the light object's position in the heavy object's reference frame at last frame and also in this frame.
 	vec3d p0_temp, p0_rotated;
 		
-	// Collision detection from rotation enabled if at rotaion is less than 30 degree in frame
+	// Collision detection from rotation enabled if at rotation is less than 30 degree in frame
 	// This should account for all ships
 	if ( (vm_vec_mag_squared( &heavy->phys_info.rotvel ) * flFrametime*flFrametime) < (PI*PI/36) ) {
 		// collide_rotate calculate (1) start position and (2) relative velocity
-		asteroid_hit_info->collide_rotate = 1;
+		asteroid_hit_info->collide_rotate = true;
 		vm_vec_rotate( &p0_temp, &p0, &heavy->last_orient );
 		vm_vec_unrotate( &p0_rotated, &p0_temp, &heavy->orient );
 		mc.p0 = &p0_rotated;				// Point 1 of ray to check
@@ -1046,11 +1046,11 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 		vm_vec_scale( &asteroid_hit_info->light_rel_vel, 1/flFrametime );
 		// HACK - this applies to big ships warping in/out of asteroid fields - not sure what it does
 		if (vm_vec_mag(&asteroid_hit_info->light_rel_vel) > 300) {
-			asteroid_hit_info->collide_rotate = 0;
+			asteroid_hit_info->collide_rotate = false;
 			vm_vec_sub( &asteroid_hit_info->light_rel_vel, &lighter->phys_info.vel, &heavy->phys_info.vel );
 		}
 	} else {
-		asteroid_hit_info->collide_rotate = 0;
+		asteroid_hit_info->collide_rotate = false;
 		vm_vec_sub( &asteroid_hit_info->light_rel_vel, &lighter->phys_info.vel, &heavy->phys_info.vel );
 	}
 
@@ -1082,12 +1082,12 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 
 			// Do collision the cool new way
 			if ( asteroid_hit_info->collide_rotate ) {
-				// We collide with the sphere, find the list of rotating submodels and test one at a time
+				// We collide with the sphere, find the list of moving submodels and test one at a time
 				SCP_vector<int> submodel_vector;
-				model_get_rotating_submodel_list(&submodel_vector, heavy_obj);
+				model_get_moving_submodel_list(submodel_vector, heavy_obj);
 
-				// turn off all rotating submodels, collide against only 1 at a time.
-				// turn off collision detection for all rotating submodels
+				// turn off all moving submodels, collide against only 1 at a time.
+				// turn off collision detection for all moving submodels
 				for (auto submodel: submodel_vector) {
 					pmi->submodel[submodel].collision_checked = true;
 				}
@@ -1123,10 +1123,10 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 							mc_ret_val = 1;
 
 							// set up asteroid_hit_info common
-							set_hit_struct_info(asteroid_hit_info, &mc, SUBMODEL_ROT_HIT);
+							set_hit_struct_info(asteroid_hit_info, &mc, true);
 
 							// set up asteroid_hit_info for rotating submodel
-							if (asteroid_hit_info->edge_hit == 0) {
+							if (!asteroid_hit_info->edge_hit) {
 								model_instance_find_world_dir(&asteroid_hit_info->collision_normal, &mc.hit_normal, pm, pmi, mc.hit_submodel, &heavy_obj->orient);
 							}
 
@@ -1155,10 +1155,10 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 				if (mc.hit_dist < asteroid_hit_info->hit_time) {
 					mc_ret_val = 1;
 
-					set_hit_struct_info(asteroid_hit_info, &mc, SUBMODEL_NO_ROT_HIT);
+					set_hit_struct_info(asteroid_hit_info, &mc, false);
 
 					// get collision normal if not edge hit
-					if (asteroid_hit_info->edge_hit == 0) {
+					if (!asteroid_hit_info->edge_hit) {
 						model_instance_find_world_dir(&asteroid_hit_info->collision_normal, &mc.hit_normal, pm, pmi, mc.hit_submodel, &heavy_obj->orient);
 					}
 
@@ -1184,7 +1184,7 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 		mc_ret_val = model_collide(&mc);
 
 		if (mc_ret_val) {
-			set_hit_struct_info(asteroid_hit_info, &mc, SUBMODEL_NO_ROT_HIT);
+			set_hit_struct_info(asteroid_hit_info, &mc, false);
 
 			// set normal if not edge hit
 			if ( !asteroid_hit_info->edge_hit ) {

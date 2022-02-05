@@ -658,7 +658,7 @@ ADE_FUNC(findNearestPointOnLine,
 ADE_FUNC(perturb,
 	l_Vector,
 	"number angle1, [number angle2]",
-	"Create a new normalized vector, randomly perturbed around a given (normalized) vector.  Angles are in radians.  If only one angle is specified, it is the max angle.  If both are specified, the first is the minimum and the second is the maximum.",
+	"Create a new normalized vector, randomly perturbed around a given (normalized) vector.  Angles are in degrees.  If only one angle is specified, it is the max angle.  If both are specified, the first is the minimum and the second is the maximum.",
 	"vector",
 	"A vector, somewhat perturbed from the experience")
 {
@@ -680,7 +680,7 @@ ADE_FUNC(perturb,
 ADE_FUNC(perturb,
 	l_Matrix,
 	"number angle1, [number angle2]",
-	"Create a new normalized vector, randomly perturbed around a cone in the given orientation.  Angles are in radians.  If only one angle is specified, it is the max angle.  If both are specified, the first is the minimum and the second is the maximum.",
+	"Create a new normalized vector, randomly perturbed around a cone in the given orientation.  Angles are in degrees.  If only one angle is specified, it is the max angle.  If both are specified, the first is the minimum and the second is the maximum.",
 	"vector",
 	"A vector, somewhat perturbed from the experience")
 {

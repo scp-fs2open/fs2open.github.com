@@ -2753,7 +2753,11 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 		case OPF_CUSTOM_HUD_GAUGE:
 			str = "<Custom hud gauge>";
 			break;
-
+			
+		case OPF_ANIMATION_NAME:
+			str = "<Animation trigger name>";
+			break;			
+			
 		default:
 			str = "<new default required!>";
 			break;
@@ -2855,6 +2859,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_SPECIES:
 		case OPF_LANGUAGE:
 		case OPF_FUNCTIONAL_WHEN_EVAL_TYPE:
+		case OPF_ANIMATION_NAME:
 			return 1;
 
 		case OPF_SHIP:
@@ -4680,6 +4685,10 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 		case OPF_FUNCTIONAL_WHEN_EVAL_TYPE:
 			list = get_listing_opf_functional_when_eval_type();
 			break;
+			
+		case OPF_ANIMATION_NAME:
+			list = get_listing_opf_animation_name(parent_node);
+			break;
 
 		default:
 			Int3();  // unknown OPF code
@@ -6330,6 +6339,60 @@ sexp_list_item *sexp_tree::get_listing_opf_functional_when_eval_type()	// NOLINT
 	for (int i = 0; i < Num_functional_when_eval_types; i++)
 		head.add_data(Functional_when_eval_type[i]);
 
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_animation_name(int parent_node)
+{
+	int op, child, sh;
+	sexp_list_item head;
+
+	Assert(parent_node >= 0);
+
+	// get the operator type of the node
+	op = get_operator_const(tree_nodes[parent_node].text);
+
+	// first child node
+	child = tree_nodes[parent_node].child;
+	Assert(child >= 0);
+	sh = ship_name_lookup(tree_nodes[child].text, 1);
+
+	switch(op) {
+		case OP_TRIGGER_ANIMATION_NEW: {
+			child = tree_nodes[child].next;
+			auto triggerType = animation::anim_match_type(tree_nodes[child].text);
+
+			for(const auto& animation : Ship_info[Ships[sh].ship_info_index].animations.getRegisteredTriggers()){
+				if(animation.type != triggerType)
+					continue;
+
+				if(animation.subtype != animation::ModelAnimationSet::SUBTYPE_DEFAULT) {
+					int animationSubtype = animation.subtype;
+
+					if(animation.type == animation::ModelAnimationTriggerType::DockBayDoor){
+						//Because of the old system, this is this weird exception. Don't explicitly suggest the NOT doors, as they cannot be explicitly targeted anyways
+						if(animation.subtype < 0)
+							continue;
+
+						animationSubtype--;
+					}
+
+					head.add_data(std::to_string(animationSubtype).c_str());
+				}
+				else
+					head.add_data(animation.name.c_str());
+			}
+
+			break;
+		}
+
+		case OP_UPDATE_MOVEABLE:
+			for(const auto& moveable : Ship_info[Ships[sh].ship_info_index].animations.getRegisteredMoveables())
+				head.add_data(moveable.c_str());
+				
+			break;
+	}
+	
 	return head.next;
 }
 

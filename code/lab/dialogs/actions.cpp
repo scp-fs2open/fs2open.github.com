@@ -137,7 +137,7 @@ void trigger_animation(Tree* caller) {
 
 		auto anim_type = static_cast<animation::ModelAnimationTriggerType>(caller->GetSelectedItem()->GetData());
 
-		Ship_info[shipp->ship_info_index].animations.startAll(model_get_instance(shipp->model_instance_num), anim_type, manual_animations[anim_type] ? animation::ModelAnimationDirection::RWD : animation::ModelAnimationDirection::FWD);
+		Ship_info[shipp->ship_info_index].animations.startBlanket(model_get_instance(shipp->model_instance_num), anim_type, manual_animations[anim_type] ? animation::ModelAnimationDirection::RWD : animation::ModelAnimationDirection::FWD);
 		manual_animations[anim_type] = !manual_animations[anim_type];
 	}
 }

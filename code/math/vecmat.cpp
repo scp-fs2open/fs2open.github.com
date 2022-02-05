@@ -863,29 +863,6 @@ matrix *vm_copy_transpose(matrix *dest, const matrix *src)
 	return dest;
 }
 
-inline vec3d operator*(const matrix& A, const vec3d& v) {
-	vec3d out;
-
-	out.xyz.x = vm_vec_dot(&A.vec.rvec, &v);
-	out.xyz.y = vm_vec_dot(&A.vec.uvec, &v);
-	out.xyz.z = vm_vec_dot(&A.vec.fvec, &v);
-
-	return out;
-}
-
-inline matrix operator*(const matrix& A, const matrix& B) {
-	matrix BT, out;
-
-	// we transpose B here for concision and also potential vectorisation opportunities
-	vm_copy_transpose(&BT, &B);
-
-	out.vec.rvec = BT * A.vec.rvec;
-	out.vec.uvec = BT * A.vec.uvec;
-	out.vec.fvec = BT * A.vec.fvec;
-
-	return out;
-}
-
 // Old matrix multiplication routine. Note that the order of multiplication is inverted
 // compared to the mathematical standard: formally, this calculates src1 * src0
 matrix *vm_matrix_x_matrix(matrix *dest, const matrix *src0, const matrix *src1)
@@ -1608,34 +1585,41 @@ float vm_closest_angle_to_matrix(const matrix* mat, const vec3d* rot_axis, float
 	const float z = (a[0]*(m[5]-m[7]) + a[1]*(-m[2]+m[6]) + a[2]*(m[1]-m[3]));
 
 	// If both y and z are close to 0, then the rotation axis points in the same direction as the matrix, thus any orientation r would be perpendicular to m
-	// If y is 0, the rest of the math simplifies, and we always find the angle at pi/2 or -pi/2
-	if(fabs(y) < 0.001f) {
-		if (fabs(z) < 0.001f) {
-			*angle = 0.0f;
-			return PI_2;
-		}
-
+	// If y or z is 0, the rest of the math simplifies
+	const float ay = fabs(y);
+	const float az = fabs(z);
+	if(ay < 0.001f && az < 0.001f){
+		*angle = 0.0f;
+		return PI_2;
+	}
+	else if(ay < 0.001f) {
 		*angle = copysignf(PI_2, z);
 		
-		return acosf_safe((w + abs(z) - 1.0f) * 0.5f);
+		return acosf_safe((w + az - 1.0f) * 0.5f);
 	}
-
+	
 	// arccos((x-1)/2) is then minimal, when x between -1 and 3 approaches 3
 	// Thus we are looking for the maximum of a term in the form of f(x)=w+y*sin(x/2)^2+z*sin(x)
 	// This maximum can be on one of the four solutions of f'(x)=0, not counting periodic repetitions
 
-	const float sr = sqrtf(y*y*y*y+4*y*y*z*z);
-	const float sr_pos = sqrtf(1-(sr/(y*y+4*z*z)));
-	const float sr_neg = sqrtf(1+(sr/(y*y+4*z*z)));
+	std::array<float,4> solutions;
 
-	//If we support IEEE float handling, we don't need this, the div by 0 will be handled correctly with the INF. If not, do this:
-	const float yz_recip = (!std::numeric_limits<float>::is_iec559 && y*z < 0.001f) ? FLT_MAX : 1.0f / (y * z);
+	if(az < 0.001f) {
+		solutions = {PI, PI2, PI + PI2, 2.0f * PI2};
+	}
+	else {
+		const float sr = sqrtf(y * y * y * y + 4 * y * y * z * z);
+		const float sr_neg = sqrtf(1 - (sr / (y * y + 4 * z * z)));
+		const float sr_pos = sqrtf(1 + (sr / (y * y + 4 * z * z)));
 
-	const float solutions[] = {2 * atan2_safe(-2 * sr_neg, -sr_neg*(y*y+sr) * yz_recip),
-							   2 * atan2_safe(2 * sr_neg, sr_neg*(y*y+sr) * yz_recip),
-							   2 * atan2_safe(-2 * sr_pos, -sr_pos*(y*y-sr) * yz_recip),
-							   2 * atan2_safe(2 * sr_pos, sr_pos*(y*y-sr) * yz_recip)};
+		//If we support IEEE float handling, we don't need this, the div by 0 will be handled correctly with the INF. If not, do this:
+		const float yz_recip = (!std::numeric_limits<float>::is_iec559 && y * z < 0.001f) ? FLT_MAX : 1.0f / (y * z);
 
+		solutions = { 2 * atan2_safe(-sr_neg * (y * y + sr) * yz_recip, -2 * sr_neg),
+					  2 * atan2_safe(sr_neg * (y * y + sr) * yz_recip, 2 * sr_neg),
+					  2 * atan2_safe(-sr_pos * (y * y - sr) * yz_recip, -2 * sr_pos),
+					  2 * atan2_safe(sr_pos * (y * y - sr) * yz_recip, 2 * sr_pos) };
+	}
 	float value = -2.0f;
 	float correct = 0;
 	//For whichever of these, w+y*sin(x/2)^2+z*sin(x) is closest to 3 / larger (since the result is between -1 and 3) is our target angle
@@ -1649,9 +1633,12 @@ float vm_closest_angle_to_matrix(const matrix* mat, const vec3d* rot_axis, float
 
 	Assertion(value > -1.5f, "Did not find solution for closest angle & axis to matrix.");
 
-	// Since atanf can yield -pi/2 to pi/2, we could get negative results here. Convert to 0 to 2Pi
+	// Convert to 0 to 2Pi
 	while (correct < 0.0f)
 		correct += PI2;
+
+	while (correct > PI2)
+		correct -= PI2;
 
 	*angle = correct;
 	return acosf_safe((value - 1.0f) * 0.5f);

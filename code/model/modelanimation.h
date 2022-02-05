@@ -37,6 +37,10 @@ public:
 			return T();
 		}
 	}
+	
+	inline const T* operator&() const {
+		return filled ? &data.t : nullptr;
+	}
 
 	inline bool has() const {
 		return filled;
@@ -340,6 +344,7 @@ namespace animation {
 
 		bool start(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& name, ModelAnimationDirection direction, bool forced = false, bool instant = false, bool pause = false, int subtype = SUBTYPE_DEFAULT) const;
 		bool startAll(polymodel_instance* pmi, ModelAnimationTriggerType type, ModelAnimationDirection direction, bool forced = false, bool instant = false, bool pause = false, int subtype = SUBTYPE_DEFAULT, bool strict = false) const;
+		bool startBlanket(polymodel_instance* pmi, ModelAnimationTriggerType type, ModelAnimationDirection direction, bool forced = false, bool instant = false, bool pause = false) const;
 		bool startDockBayDoors(polymodel_instance* pmi, ModelAnimationDirection direction, bool forced, bool instant, bool pause, int subtype) const;
 
 		int getTime(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& name, int subtype = SUBTYPE_DEFAULT) const;
@@ -351,6 +356,7 @@ namespace animation {
 
 		bool updateMoveable(polymodel_instance* pmi, const SCP_string& name, const std::vector<linb::any>& args) const;
 		void initializeMoveables(polymodel_instance* pmi);
+		std::vector<SCP_string> getRegisteredMoveables() const;
 
 		bool isEmpty() const;
 
@@ -408,7 +414,7 @@ namespace animation {
 	extern const std::map<animation::ModelAnimationTriggerType, std::pair<const char*, bool>> Animation_types;
 
 	void anim_set_initial_states(ship* shipp);
-
+	
 	//Returns function bindings to start the targeted animation, and to get its runtime
 	std::pair<std::function<bool(ModelAnimationDirection, bool, bool, bool)>, std::function<int()>> anim_parse_scripted_start(const ModelAnimationSet& set, polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& triggeredBy);
 

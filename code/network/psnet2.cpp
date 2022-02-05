@@ -629,6 +629,10 @@ bool psnet_init_my_addr()
 		}
 	}
 
+	if ( (Psnet_ip_mode == PSNET_IP_MODE_DUAL) && (Cmdline_prefer_ipv4 || Cmdline_prefer_ipv6) ) {
+		ml_printf("Prefering IPv%d connections where possible", Cmdline_prefer_ipv4 ? 4 : 6);
+	}
+
 	return true;
 }
 
@@ -1148,7 +1152,14 @@ bool psnet_get_addr(const char *host, const char *port, SOCKADDR_STORAGE *addr, 
 		return false;
 	}
 
-	const bool prefer_v4 = ((flags & ADDR_FLAG_PREFER_IPV4) && (Psnet_ip_mode == PSNET_IP_MODE_DUAL));
+	if (Cmdline_prefer_ipv4) {
+		flags |= ADDR_FLAG_PREFER_IPV4;
+	} else if (Cmdline_prefer_ipv6) {
+		flags &= ~ADDR_FLAG_PREFER_IPV4;
+	}
+
+	const bool prefer_v6 = ((Psnet_ip_mode == PSNET_IP_MODE_DUAL) && Cmdline_prefer_ipv6);
+	const bool prefer_v4 = ((Psnet_ip_mode == PSNET_IP_MODE_DUAL) && (flags & ADDR_FLAG_PREFER_IPV4));
 
 	for (auto *srv = srvinfo; srv != nullptr; srv = srv->ai_next) {
 		if ( (srv->ai_family == AF_INET) || (srv->ai_family == AF_INET6) ) {
@@ -1169,6 +1180,11 @@ bool psnet_get_addr(const char *host, const char *port, SOCKADDR_STORAGE *addr, 
 			}
 
 			success = true;
+
+			// if we would prefer an IPv6 address then maybe keep looking
+			if ( prefer_v6 && addr && (srv->ai_family == AF_INET) ) {
+				continue;
+			}
 
 			// if we would prefer an IPv4 address then maybe keep looking
 			if ( prefer_v4 && addr && (srv->ai_family == AF_INET6) ) {
