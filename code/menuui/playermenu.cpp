@@ -154,8 +154,8 @@ int Player_select_num_pilots;						// # of pilots on the list
 int Player_select_list_start;						// index of first list item to start displaying in the box
 int Player_select_pilot;							// index into the Pilot array of which is selected as the active pilot
 int Player_select_input_mode;						// 0 if the player _isn't_ typing a callsign, 1 if he is
-char Pilots_arr[MAX_PILOTS][MAX_FILENAME_LEN];
-char *Pilots[MAX_PILOTS];
+char Pilots_arr[MAX_PILOTS][MAX_FILENAME_LEN];		// Filename of associated Pilot. Same idx as Pilots[]
+char *Pilots[MAX_PILOTS];							// Pilot callsigns
 int Player_select_clone_flag;						// clone the currently selected pilot
 char Player_select_last_pilot[CALLSIGN_LEN + 10];	// callsign of the last used pilot, or none if there wasn't one
 int Player_select_last_is_multi;
@@ -204,26 +204,75 @@ void player_select_eval_very_first_pilot();
 void player_select_commit();
 void player_select_cancel_create();
 
-/*
- * validate that a pilot/player was created with the same language FSO is currently using
- *
- * @param pilots callsign
- * @note not longer needed if intel entry "primary keys" change to a non-translated value
- */
-bool valid_pilot_lang(const char *callsign)
-{
-	char pilot_lang[LCL_LANG_NAME_LEN+1], current_lang[LCL_LANG_NAME_LEN+1];
+
+bool valid_pilot(const char* callsign, bool no_popup) {
+	char pilot_lang[LCL_LANG_NAME_LEN + 1];
+	char current_lang[LCL_LANG_NAME_LEN + 1];
+	int player_flags = 0;
+
 	SCP_string filename = callsign;
+	filename == ".json";
+	
+	if (!Pilot.verify(filename.c_str(), NULL, pilot_lang, &player_flags)) {
+		if (!no_popup) {
+			popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, "Unable to open pilot!");
+		}
 
-	filename += ".json";
+		return false;
+	};
+
+	// verify pilot language = current FSO language
 	lcl_get_language_name(current_lang);
+	if (strcmp(current_lang, pilot_lang) != 0) {
+		// error: Different language
+		if (!no_popup) {
+			popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR(
+				"Selected pilot was created with a different language\n"
+				"to the currently active language.\n\n"
+				"Please select a different pilot or change the language", 1637));
+		}
+		return false;
+	}
 
-	if (Pilot.verify(filename.c_str(), NULL, pilot_lang)) {
-		if (!strcmp(current_lang, pilot_lang)) {
-			return true;
+	// verify pilot flags raised by Pilot::verify()
+	// if no_popup == true, assume sel = 0
+	if ((player_flags & PLAYER_FLAGS_PLR_VER_LOWER) && (!no_popup)) {
+		// warning: Selected player is older than the expected version
+		int sel = popup(PF_BODY_RED, 2, POPUP_YES, POPUP_NO, "Selected pilot was created with an older version of Freespace.\n"
+						"Should you continue with this pilot, it will be updated to version %i.\n"
+						"This update is irreversible and may make the pilot incompatible with older versions.\n"
+						"Please visit https://wiki.hard-light.net/index.php/Frequently_Asked_Questions for more information.\n\n"
+
+						"Do you wish to continue?", PLR_VERSION);
+
+		if (sel != 0) {
+			// Player either hit No or the popup was aborted, so bail
+			return false;
 		}
 	}
-	return false;
+
+	// All validation checks passed
+	return true;
+}
+
+/**
+ * @brief Handler for button Accept
+ */
+void player_select_on_accept() {
+	// make sure he has a valid pilot selected
+	if (Player_select_pilot < 0) {
+		// error: invalid selection
+		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("You must select a valid pilot first", 378));
+		return;
+	}
+
+	if (!valid_pilot(Pilots[Player_select_pilot])) {
+		// not a valid pilot, bail
+		return;
+	}
+
+	// If we got here, then everything checks out!
+	player_select_commit();
 }
 
 // basically, gray out all controls (gray == 1), or ungray the controls (gray == 0)
@@ -572,41 +621,7 @@ void player_select_button_pressed(int n)
 		break;
 
 	case ACCEPT_BUTTON:
-		// make sure he has a valid pilot selected
-		if (Player_select_pilot < 0) {
-			// error: invalid selection
-			popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,XSTR( "You must select a valid pilot first", 378));
-			goto player_select_nocommit;
-		}
-		
-		if (!valid_pilot_lang(Pilots[Player_select_pilot])) {
-			// error: Different language
-			popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,XSTR(
-				"Selected pilot was created with a different language\n"
-				"to the currently active language.\n\n"
-				"Please select a different pilot or change the language", 1637));
-			goto player_select_nocommit;
-		}
-		
-		if (Player->flags & PLAYER_FLAGS_PLR_VER_LOWER) {
-			// warning: Selected player is older than the expected version
-			int sel = popup(PF_BODY_RED, 2, POPUP_YES, POPUP_NO, "Selected pilot was created with an older version of Freespace.\n"
-				"Should you continue with this pilot, it will be updated to version %i.\n"
-				"This update is irreversible and may make the pilot incompatible with older versions.\n"
-				"Please visit https://wiki.hard-light.net/index.php/Frequently_Asked_Questions for more information.\n\n"
-
-				"Do you wish to continue?", PLR_VERSION);
-
-			if (sel != 0) {
-				// Player either hit No or the popup was aborted, so bail
-				goto player_select_nocommit;
-			}
-		}
-		
-		// If we got here, then everything checks out!
-		player_select_commit();
-
-player_select_nocommit:		// ...unless we skipped to here
+		player_select_on_accept();
 		break;
 
 	case CLONE_BUTTON:

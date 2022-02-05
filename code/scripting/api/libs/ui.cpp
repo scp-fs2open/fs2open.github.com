@@ -187,7 +187,7 @@ ADE_FUNC(checkPilotLanguage, l_UserInterface_PilotSelect, "string callsign",
 		return ADE_RETURN_FALSE;
 	}
 
-	return ade_set_args(L, "b", valid_pilot_lang(callsign));
+	return ade_set_args(L, "b", valid_pilot(callsign, true));
 }
 
 ADE_FUNC(selectPilot, l_UserInterface_PilotSelect, "string callsign, boolean is_multi",

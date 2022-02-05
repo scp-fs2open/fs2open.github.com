@@ -47,8 +47,20 @@ void player_tips_close();
 // select screen but let us not overwrite current values with defaults when we aren't - taylor
 extern int Player_select_screen_active;
 
-// check the pilots language
-bool valid_pilot_lang(const char *callsign);
+/**
+ * @brief Validates the pilot with the given callsign
+ * 
+ * @param[in] callsign The pilot's name/callsign
+ * @param[in] no_popup If true, supress any popups from being shown
+ * 
+ * @return FALSE If pilot language is NOT the same as the current language,or
+ * @return FALSE If the player selected NO on any popup warnings, or
+ * 
+ * @return TRUE otherwise
+ * 
+ * @note This function calls blocking popup dialogs and should only be used within menus
+ */
+bool valid_pilot(const char *callsign, bool no_popup = false);
 
 SCP_vector<SCP_string> player_select_enumerate_pilots();
 
