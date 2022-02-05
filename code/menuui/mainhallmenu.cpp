@@ -566,8 +566,11 @@ void main_hall_init(const SCP_string &main_hall_name)
 				Main_hall_misc_anim.at(idx).direction |= GENERIC_ANIM_DIRECTION_NOLOOP;
 		}
 
-		// null out the delay timestamps
-		Main_hall->misc_anim_delay.at(idx).at(0) = -1;
+		//If we have a defined initial delay for this misc anim, use it
+		if (Main_hall->misc_anim_initial_delay.at(idx) != -1)
+			Main_hall->misc_anim_delay.at(idx).at(0) = timestamp(Main_hall->misc_anim_initial_delay.at(idx));
+		else
+			Main_hall->misc_anim_delay.at(idx).at(0) = -1;
 
 		// start paused
 		Main_hall->misc_anim_paused.at(idx) = true;
@@ -1964,6 +1967,7 @@ void misc_anim_init(main_hall_defines &m, bool first_time, int base_num)
 		m.misc_anim_special_sounds.clear();
 		m.misc_anim_special_trigger.clear();
 		m.misc_anim_sound_flag.clear();
+		m.misc_anim_initial_delay.clear();
 	}
 
 	for (int idx = base_num; idx < m.num_misc_animations; idx++) {
@@ -1978,6 +1982,9 @@ void misc_anim_init(main_hall_defines &m, bool first_time, int base_num)
 		m.misc_anim_delay.back().push_back(-1);
 		m.misc_anim_delay.back().push_back(0);
 		m.misc_anim_delay.back().push_back(0);
+
+		// set the default initial delay to -1 
+		m.misc_anim_initial_delay.push_back(-1);
 
 		// misc_anim_paused
 		m.misc_anim_paused.push_back(1); // default is paused
@@ -2365,7 +2372,11 @@ void parse_one_main_hall(bool replace, int num_resolutions, int &hall_idx, int &
 		for (int idx = base_num; idx < m->num_misc_animations; idx++) {
 			// anim delay
 			required_string("+Misc anim delay:");
-			stuff_int(&m->misc_anim_delay.at(idx).at(0));
+			stuff_int(&m->misc_anim_initial_delay.at(idx));
+
+			// We set the first value here to -1; if the first delay parameter is set to something that isn't
+			// -1, we will replace it with a proper timestamp while loading up the mainhall for presentation.
+			m->misc_anim_delay.at(idx).at(0) = -1;
 			stuff_int(&m->misc_anim_delay.at(idx).at(1));
 			stuff_int(&m->misc_anim_delay.at(idx).at(2));
 		}
