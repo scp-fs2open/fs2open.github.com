@@ -68,6 +68,18 @@ SCP_string player_get_last_player();
 
 void player_finish_select(const char* callsign, bool is_multi);
 
+/**
+ * Creates a new pilot
+ * 
+ * @param[in] callsign	Name of the new pilot
+ * @param[in] is_multi	True if this is a multiplayer pilot, False otherwise
+ * @param[in] copy_from_callsign	If not null, copy the pilot with the given name
+ * 
+ * @returns true if successful or
+ * @returns false otherwise
+ * 
+ * @note Used by scripting
+ */
 bool player_create_new_pilot(const char* callsign, bool is_multi, const char* copy_from_callsign = nullptr);
 
 #endif

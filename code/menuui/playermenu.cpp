@@ -211,7 +211,7 @@ bool valid_pilot(const char* callsign, bool no_popup) {
 	int player_flags = 0;
 
 	SCP_string filename = callsign;
-	filename == ".json";
+	filename += ".json";
 	
 	if (!Pilot.verify(filename.c_str(), NULL, pilot_lang, &player_flags)) {
 		if (!no_popup) {
@@ -554,19 +554,27 @@ void player_select_close()
 	if ( !Pilot.load_player(Pilots[Player_select_pilot], Player) ) {
 		Error(LOCATION,"Couldn't load pilot file, bailing");
 		Player = NULL;
-	} else {
-		// NOTE: this may fail if there is no current campaign, it's not fatal
-		Pilot.load_savefile(Player, Player->current_campaign);
+		return;
 	}
+	
+	// read in the current campaign
+	// NOTE: this may fail if there is no current campaign, it's not fatal
+	Pilot.load_savefile(Player, Player->current_campaign);
 
+	// Set singleplayer/multiplayer mode in Player
 	if (Player_select_mode == PLAYER_SELECT_MODE_MULTI) {
 		Player->player_was_multi = 1;
 	} else {
 		Player->player_was_multi = 0;
 	}
 
+	// save the pilot file to a version that we work with
+	Pilot.save_player(Player);
+
+	// Update the LastPlayer key in the registry
 	os_config_write_string(nullptr, "LastPlayer", Player->callsign);
 
+	// Maybe use a different main hall (debug console)
 	if (Player_select_force_main_hall != "") {
 		main_hall_init(Player_select_force_main_hall);
 	}

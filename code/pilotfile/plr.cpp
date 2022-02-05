@@ -934,9 +934,6 @@ void pilotfile::plr_close()
 		handler.reset();
 	}
 
-	// clear any special flags first
-	p->flags &= ~(PLAYER_FLAGS_PLR_VER_CONTROLS | PLAYER_FLAGS_PLR_VER_LOWER);
-
 	p = NULL;
 	filename = "";
 
