@@ -33034,11 +33034,13 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	// Karajorma/jg18
 	{ OP_CONTAINER_GET_MAP_KEYS, "get-map-keys\r\n"
-		"\tTakes the keys of a map container and puts them into a list container.\r\n\r\n"
+		"\tCopies a map container's keys in no particular order into a list container.\r\n"
+		"\tThe list container's data type must match the map container's key type.\r\n"
+		"\tBy default, the list container is cleared before the keys are copied.\r\n\r\n"
 		"Takes 2 or 3 arguments...\r\n"
 		"\t1:\tName of the map container.\r\n"
 		"\t2:\tName of the list container.\r\n"
-		"\t3:\t(Optional) When true, the current contents of the list will be wiped. When false, the keys will be appended to the end of the list." },
+		"\t3:\t(Optional) When true, the list container's current contents are deleted. When false, the keys are appended to the end of the list." },
 
 	// Karajorma/jg18
 	{ OP_CLEAR_CONTAINER, "add-to-map\r\n"
