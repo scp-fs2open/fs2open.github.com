@@ -651,7 +651,7 @@ void sexp_add_to_map(int node)
 				"add-to-map SEXP with map container %s was provided a key %s with no associated data",
 				container_name,
 				CTEXT(node));
-			Warning(LOCATION, tempbuffer);
+			Warning(LOCATION, "%s", tempbuffer);
 			log_string(LOGFILE_EVENT_LOG, tempbuffer);
 			return;
 		}
