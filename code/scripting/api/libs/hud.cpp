@@ -62,21 +62,21 @@ ADE_VIRTVAR(HUDDefaultGaugeCount, l_HUD, "number", "Specifies the number of HUD 
 
 static int getDefaultGaugeIndex(lua_State* L)
 {
-	if (lua_isstring(L, 1))
-	{
-		const char* name;
-		if (!ade_get_args(L, "s", &name))
-			return -1;
-
-		return hud_get_default_gauge_index(name);
-	}
-	else
+	if (lua_isnumber(L, 1))
 	{
 		int idx = -1;
 		if (!ade_get_args(L, "i", &idx))
 			return -1;
 
 		return idx;
+	}
+	else
+	{
+		const char* name;
+		if (!ade_get_args(L, "s", &name))
+			return -1;
+
+		return hud_get_default_gauge_index(name);
 	}
 }
 
