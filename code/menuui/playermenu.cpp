@@ -213,7 +213,7 @@ bool valid_pilot(const char* callsign, bool no_popup) {
 	SCP_string filename = callsign;
 	filename += ".json";
 	
-	if (!Pilot.verify(filename.c_str(), NULL, pilot_lang, &player_flags)) {
+	if (!Pilot.verify(filename.c_str(), nullptr, pilot_lang, &player_flags)) {
 		if (!no_popup) {
 			popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, "Unable to open pilot!");
 		}
