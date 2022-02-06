@@ -4448,6 +4448,7 @@ void detonate_nearby_missiles(object* killer_objp, object* missile_objp)
 						killer_infop->name, killer_objp->signature,
 						Weapon_info[Weapons[missile_objp->instance].weapon_info_index].name, missile_objp->signature, Framecount));
 			wp->lifeleft = 0.2f;
+			wp->weapon_flags.set(Weapon::Weapon_Flags::Begun_detonation);
 		}
 		return;
 	}
@@ -4466,6 +4467,7 @@ void detonate_nearby_missiles(object* killer_objp, object* missile_objp)
 									killer_infop->name, killer_objp->signature,
 									Weapon_info[Weapons[objp->instance].weapon_info_index].name, objp->signature, Framecount));
 						wp->lifeleft = 0.2f;
+						wp->weapon_flags.set(Weapon::Weapon_Flags::Begun_detonation);
 					}
 				}
 			}
@@ -4800,6 +4802,7 @@ void weapon_home(object *obj, int num, float frame_time)
 			else if (wip->is_locked_homing() && wip->wi_flags[Weapon::Info_Flags::Die_on_lost_lock]) {
 				if (wp->lifeleft > 0.5f) {
 					wp->lifeleft = frand_range(0.1f, 0.5f); // randomise a bit to avoid multiple missiles detonating in one frame
+					wp->weapon_flags.set(Weapon::Weapon_Flags::Begun_detonation);
 				}
 				return;
 			}
@@ -5096,14 +5099,36 @@ void weapon_home(object *obj, int num, float frame_time)
 		//	If a weapon has missed its target, detonate it.
 		//	This solves the problem of a weapon circling the center of a subsystem that has been blown away.
 		//	Problem: It does not do impact damage, just proximity damage.
-		if ((dist_to_target < flFrametime * obj->phys_info.speed * 4.0f + 10.0f) &&
-            (old_dot < wip->fov) &&
-            (wp->lifeleft > 0.01f) &&
+		if ((!wp->weapon_flags[Weapon::Weapon_Flags::Begun_detonation]) && 
+			(old_dot < wip->fov) &&
+			(dist_to_target < flFrametime * obj->phys_info.speed * 4.0f + 10.0f) &&
             (weapon_has_homing_object(wp)) &&
             (wp->homing_object->type == OBJ_SHIP) && 
             (wip->subtype != WP_LASER))				
         {
-            wp->lifeleft = 0.01f;
+			if (Fixed_missile_detonation)
+			{
+				// try to be smart about this... if we have a submodel, and it's not destroyed, give the missile enough time to reach the other side of it
+				if (wp->homing_subsys && wp->homing_subsys->submodel_instance_1 && !wp->homing_subsys->submodel_instance_1->blown_off)
+				{
+					auto pm = model_get(Ship_info[Ships[wp->homing_object->instance].ship_info_index].model_num);
+					auto sm = &pm->submodel[wp->homing_subsys->system_info->subobj_num];
+					wp->lifeleft = sm->rad / obj->phys_info.speed;
+				}
+				// otherwise detonate the missile immediately
+				else
+				{
+					wp->lifeleft = 0.001f;
+				}
+			}
+			else
+			{
+				// retail just detonates the missile immediately
+				wp->lifeleft = 0.001f;
+			}
+
+			// this flag is needed so we don't prolong the missile's life by repeatedly detonating it
+			wp->weapon_flags.set(Weapon::Weapon_Flags::Begun_detonation);
         }
 
 		//	Only lead target if more than one second away.  Otherwise can miss target.  I think this
@@ -5478,7 +5503,7 @@ void weapon_process_post(object * obj, float frame_time)
 				}
 
 			} else {
-				weapon_detonate(obj);									
+				weapon_detonate(obj);
 			}
 			if (wip->is_homing()) {
 				Homing_misses++;
@@ -6941,7 +6966,8 @@ void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos
 
 			objp->hull_strength -= damage;
 			if (objp->hull_strength < 0.0f) {
-				Weapons[objp->instance].lifeleft = 0.01f;
+				Weapons[objp->instance].lifeleft = 0.001f;
+				Weapons[objp->instance].weapon_flags.set(Weapon::Weapon_Flags::Begun_detonation);
 				Weapons[objp->instance].weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
 			}
 			break;

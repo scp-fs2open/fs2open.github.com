@@ -107,6 +107,7 @@ namespace Weapon {
 		Overridden_homing,          // Homing is overridden by an external source (probably scripting)
 		Multi_homing_update_needed, // this is a newly spawned homing weapon which needs to update client machines
 		Multi_Update_Sent,			// Marks this missile as already being updated once by the server
+		Begun_detonation,			// The engine has set this weapon to detonate momentarily
 
 		NUM_VALUES
 	};
