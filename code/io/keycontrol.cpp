@@ -784,7 +784,8 @@ void process_debug_keys(int k)
 					ship_apply_local_damage( objp, Player_obj, &objp->pos, 1.0f, -1, MISS_SHIELDS, CREATE_SPARKS);
 					break;
 				case OBJ_WEAPON:
-					Weapons[objp->instance].lifeleft = 0.01f;
+					Weapons[objp->instance].lifeleft = 0.001f;
+					Weapons[objp->instance].weapon_flags.set(Weapon::Weapon_Flags::Begun_detonation);
 					break;
 				}
 			}
