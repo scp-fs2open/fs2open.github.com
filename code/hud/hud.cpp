@@ -509,6 +509,21 @@ void HudGauge::setGaugeColor(int bright_index)
 	gr_set_color_fast(&gauge_color);	
 }
 
+bool HudGauge::isCustom()
+{
+	return custom_gauge;
+}
+
+int HudGauge::getBaseWidth()
+{
+	return base_w;
+}
+
+int HudGauge::getBaseHeight()
+{
+	return base_h;
+}
+
 int HudGauge::getConfigType()
 {
 	//return gauge_type;
@@ -3841,7 +3856,7 @@ void hud_page_in()
 	}
 }
 
-HudGauge* hud_get_gauge(const char* name, bool check_all_gauges)
+HudGauge* hud_get_custom_gauge(const char* name, bool check_all_gauges)
 {
 	auto player_sip = Player_ship->ship_info_index < 0 ? nullptr : &Ship_info[Player_ship->ship_info_index];
 
@@ -3868,16 +3883,40 @@ HudGauge* hud_get_gauge(const char* name, bool check_all_gauges)
 			}
 		}
 	}
-	// check just the default gauges
-	else {
-		for (auto &gauge : default_hud_gauges) {
-			if (!stricmp(name, gauge->getCustomGaugeName())) {
-				return gauge.get();
+
+	return nullptr;
+}
+
+int hud_get_default_gauge_index(const char *name)
+{
+	int config_type = -1;
+
+	// default gauges had two different lists
+	for (int i = 0; i < NUM_HUD_GAUGES; i++) {
+		if (!strcmp(Legacy_HUD_gauges[i].hud_gauge_text, name)) {
+			config_type = i;
+			break;
+		}
+	}
+
+	if (config_type < 0) {
+		for (int i = 0; i < Num_hud_gauge_types; i++) {
+			if (!stricmp(name, Hud_gauge_types[i].name)) {
+				config_type = Hud_gauge_types[i].def;
+				break;
 			}
 		}
 	}
 
-	return nullptr;
+	if (config_type >= 0) {
+		for (int i = 0; i < (int)default_hud_gauges.size(); i++) {
+			if (default_hud_gauges[i]->getConfigType() == config_type) {
+				return i;
+			}
+		}
+	}
+
+	return -1;
 }
 
 HudGaugeMultiMsg::HudGaugeMultiMsg():
