@@ -236,13 +236,14 @@ bool valid_pilot(const char* callsign, bool no_popup) {
 
 	// verify pilot flags raised by Pilot::verify()
 	// if no_popup == true, assume sel = 0
-	if ((player_flags & PLAYER_FLAGS_PLR_VER_LOWER) && (!no_popup)) {
-		// warning: Selected player is older than the expected version
-		int sel = popup(PF_BODY_RED, 2, POPUP_YES, POPUP_NO, "Selected pilot was created with an older version of Freespace.\n"
-						"Should you continue with this pilot, it will be updated to version %i.\n"
-						"This update is irreversible and may make the pilot incompatible with older versions.\n"
+	if ((player_flags & (PLAYER_FLAGS_PLR_VER_LOWER | PLAYER_FLAGS_PLR_VER_HIGHER)) && (!no_popup)) {
+		// warning: Selected player version is different than the expected version
+		int sel = popup(PF_TITLE_BIG | PF_TITLE_RED, 2, POPUP_YES, POPUP_NO, "Warning!\n\n"
+						"Selected pilot was created with a different version of Freespace.\n\n"
+						"Should you continue with this pilot, it will be converted to version %i.\n\n"
+						"This update is irreversible and may make the pilot incompatible with other versions.\n\n"
+						"It is highly recommended that you clone this pilot and then use the clone instead.\n\n"
 						"Please visit https://wiki.hard-light.net/index.php/Frequently_Asked_Questions for more information.\n\n"
-
 						"Do you wish to continue?", PLR_VERSION);
 
 		if (sel != 0) {
@@ -1453,6 +1454,26 @@ void player_tips_popup()
 			break;
 		}
 	} while(ret > 0);
+}
+
+void player_tips_controls() {
+	if (Player->save_flags & PLAYER_FLAGS_PLR_VER_CONTROLS) {
+		// Special case. Since the Controls5 PR is significantly different from retail, users must be informed
+		// of changes regarding their bindings
+
+		Player->save_flags &= ~PLAYER_FLAGS_PLR_VER_CONTROLS;	// Clear the flag, since we're notifying the user right now
+
+		int sel = popup(PF_NO_SPECIAL_BUTTONS | PF_TITLE_BIG | PF_TITLE_GREEN, 2, POPUP_OK, XSTR("Don't show me this again", 1443),
+						"Notice!\n\n"
+						"The currently selected pilot was from a version older than FSO 22.0.\n\n"
+						"It is strongly recommended that you verify your control bindings within the Options -> Control Config menu.\n");
+
+		if (sel == 1) {
+			// Don't show me this again!
+			Pilot.save_player(Player);
+			Pilot.save_savefile();
+		}
+	}
 }
 
 SCP_vector<SCP_string> player_select_enumerate_pilots() {

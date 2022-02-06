@@ -1011,15 +1011,6 @@ bool pilotfile::load_player(const char* callsign, player* _p, bool force_binary)
 	// version, now used
 	plr_ver = handler->readUByte("version");
 
-	// Flags to signal the main UI the state of the loaded player file
-	if (plr_ver < 4) {
-		p->flags |= PLAYER_FLAGS_PLR_VER_CONTROLS;
-	}
-
-	if (plr_ver < PLR_VERSION) {
-		p->flags |= PLAYER_FLAGS_PLR_VER_LOWER;
-	}
-
 	mprintf(("PLR => Loading '%s' with version %d...\n", filename.c_str(), plr_ver));
 
 	//true resets everything, false sets up file verify.
@@ -1110,6 +1101,19 @@ bool pilotfile::load_player(const char* callsign, player* _p, bool force_binary)
 	player_set_squad_bitmap(p, p->m_squad_filename, true);
 
 	hud_squadmsg_save_keys();
+
+	// Flags to signal the main UI the state of the loaded player file
+	// Do these here after player_read_flags() so they don't get trashed!
+	if (plr_ver < 4) {
+		p->save_flags |= PLAYER_FLAGS_PLR_VER_CONTROLS;
+	}
+
+	if (plr_ver < PLR_VERSION) {
+		p->flags |= PLAYER_FLAGS_PLR_VER_LOWER;
+
+	} else if (plr_ver > PLR_VERSION) {
+		p->flags |= PLAYER_FLAGS_PLR_VER_HIGHER;
+	}
 
 	mprintf(("PLR => Loading complete!\n"));
 
@@ -1247,15 +1251,6 @@ bool pilotfile::verify(const char *fname, int *rank, char *valid_language, int* 
 	// version, now used
 	plr_ver = handler->readUByte("version");
 
-	// Flags to signal the main UI the state of the loaded player file
-	if (plr_ver < 4) {
-		p->flags |= PLAYER_FLAGS_PLR_VER_CONTROLS;
-	}
-
-	if (plr_ver < PLR_VERSION) {
-		p->flags |= PLAYER_FLAGS_PLR_VER_LOWER;
-	}
-
 	mprintf(("PLR => Verifying '%s' with version %d...\n", filename.c_str(), plr_ver));
 
 	// true resets everything, false sets up file verify.
@@ -1301,6 +1296,19 @@ bool pilotfile::verify(const char *fname, int *rank, char *valid_language, int* 
 		}
 	}
 	handler->endSectionRead();
+
+	// Flags to signal the main UI the state of the loaded player file
+	// Do these here after player_read_flags() so they don't get trashed!
+	if (plr_ver < 4) {
+		p->save_flags |= PLAYER_FLAGS_PLR_VER_CONTROLS;
+	}
+
+	if (plr_ver < PLR_VERSION) {
+		p->flags |= PLAYER_FLAGS_PLR_VER_LOWER;
+
+	} else if (plr_ver > PLR_VERSION) {
+		p->flags |= PLAYER_FLAGS_PLR_VER_HIGHER;
+	}
 
 	if (valid_language) {
 		strcpy(valid_language, p->language);

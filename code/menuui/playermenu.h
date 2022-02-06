@@ -41,7 +41,7 @@ int player_select_get_last_pilot();
 void player_tips_init();
 void player_tips_close();
 void player_tips_popup();
-void player_tips_close();
+void player_tips_controls();
 
 // quick check to make sure we always load default campaign savefile values when loading from the pilot
 // select screen but let us not overwrite current values with defaults when we aren't - taylor

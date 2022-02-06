@@ -1035,15 +1035,7 @@ void main_hall_do(float frametime)
 	}
 
 	// Display a popup if playermenu loaded a player file with a different version than expected
-	if (Player->flags & PLAYER_FLAGS_PLR_VER_CONTROLS) {
-		// Special case. Since the Controls5 PR is significantly different from retail, users must be informed
-		// of changes regarding their bindings
-
-		Player->flags &= ~PLAYER_FLAGS_PLR_VER_CONTROLS;	// Clear the flag, since we're notifying the user right now
-
-		popup(0, 1, POPUP_OK, "The currently selected pilot was from a version older than FSO 22.0.\n"
-			"It is strongly recommended that you verify your control bindings within the Options -> Control Config menu.\n\n");
-	}
+	player_tips_controls();
 
 	// maybe run the player tips popup
 	player_tips_popup();
