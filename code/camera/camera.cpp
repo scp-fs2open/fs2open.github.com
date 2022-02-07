@@ -259,9 +259,13 @@ void camera::set_rotation_facing(vec3d *in_target, float in_rotation_time, float
 			// point along the target vector, but using the host orient's roll
 			vm_vector_2_matrix(&temp_matrix, &targetvec, &orient->vec.uvec, nullptr);
 
-			// we need the difference between the camera's current orient and the orient we want
-			vm_transpose(orient);
-			temp_matrix = temp_matrix * *orient;
+			// if we have a host, we need the difference between the camera's current orient and the orient we want
+			// if not, we will later set the absolute orientation, rather than the orientation relative to the host
+			if (object_host.IsValid())
+			{
+				vm_transpose(orient);
+				temp_matrix = temp_matrix * *orient;
+			}
 		}
 		else
 		{
@@ -485,8 +489,7 @@ void camera::get_info(vec3d *position, matrix *orientation, bool apply_camera_or
 			}
 		}
 
-		if (orientation != nullptr)
-			*orientation = c_ori;
+		*orientation = c_ori;
 	}
 }
 
