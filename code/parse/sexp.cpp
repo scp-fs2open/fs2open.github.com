@@ -5519,11 +5519,13 @@ int sexp_not(int n)
 		if (CAR(n) != -1)
 		{
 			result = is_sexp_true(CAR(n));
+			// We translate _KNOWN_* values to their basic equivalent to prevent any accidental short-circuiting
+			// behaviour that may occur when NOT is used in an argument evaluation context
 			if ( Sexp_nodes[CAR(n)].value == SEXP_KNOWN_FALSE || Sexp_nodes[CAR(n)].value == SEXP_NAN_FOREVER )
-				return SEXP_TRUE;												// not KNOWN_FALSE == KNOWN_TRUE;
-			else if ( Sexp_nodes[CAR(n)].value == SEXP_KNOWN_TRUE )		// not KNOWN_TRUE == KNOWN_FALSE
+				return SEXP_TRUE;												
+			else if ( Sexp_nodes[CAR(n)].value == SEXP_KNOWN_TRUE )		
 				return SEXP_FALSE;
-			else if ( Sexp_nodes[CAR(n)].value == SEXP_NAN )				// not NAN == TRUE (I think)
+			else if ( Sexp_nodes[CAR(n)].value == SEXP_NAN )				
 				return SEXP_TRUE;
 		}
 		// this should never happen, because all arguments which return logical values are operators
