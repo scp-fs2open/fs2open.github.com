@@ -5520,9 +5520,9 @@ int sexp_not(int n)
 		{
 			result = is_sexp_true(CAR(n));
 			if ( Sexp_nodes[CAR(n)].value == SEXP_KNOWN_FALSE || Sexp_nodes[CAR(n)].value == SEXP_NAN_FOREVER )
-				return SEXP_KNOWN_TRUE;												// not KNOWN_FALSE == KNOWN_TRUE;
+				return SEXP_TRUE;												// not KNOWN_FALSE == KNOWN_TRUE;
 			else if ( Sexp_nodes[CAR(n)].value == SEXP_KNOWN_TRUE )		// not KNOWN_TRUE == KNOWN_FALSE
-				return SEXP_KNOWN_FALSE;
+				return SEXP_FALSE;
 			else if ( Sexp_nodes[CAR(n)].value == SEXP_NAN )				// not NAN == TRUE (I think)
 				return SEXP_TRUE;
 		}
