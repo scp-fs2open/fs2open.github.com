@@ -400,6 +400,7 @@ void var_name_from_sexp_tree_text(char* var_name, const char* text) {
 
 #define NO_PREVIOUS_NODE -9
 // called recursively to save a tree branch and everything under it
+// SEXPT_CONTAINER_NAME and SEXPT_MODIFIER require no special handling here
 int sexp_tree::save_branch(int cur, int at_root) {
 	int start, node = -1, last = NO_PREVIOUS_NODE;
 	char var_name_text[TOKEN_LENGTH];
@@ -413,6 +414,11 @@ int sexp_tree::save_branch(int cur, int at_root) {
 			if ((tree_nodes[cur].parent >= 0) && !at_root) {
 				node = alloc_sexp("", SEXP_LIST, SEXP_ATOM_LIST, node, -1);
 			}
+		} else if (tree_nodes[cur].type & SEXPT_CONTAINER_DATA) {
+			Assertion(get_sexp_container(tree_nodes[cur].text) != nullptr,
+				"Attempt to save unknown container %s from SEXP tree!",
+				tree_nodes[cur].text);
+			node = alloc_sexp(tree_nodes[cur].text, SEXP_ATOM, SEXP_ATOM_CONTAINER, save_branch(tree_nodes[cur].child), -1);
 		} else if (tree_nodes[cur].type & SEXPT_NUMBER) {
 			// allocate number, maybe variable
 			if (tree_nodes[cur].type & SEXPT_VARIABLE) {
@@ -750,11 +756,16 @@ int sexp_tree::identify_arg_type(int node) {
 
 // given a tree node, returns the argument type it should be.
 int sexp_tree::query_node_argument_type(int node) const {
-	int argnum = 0;
 	int parent_node = tree_nodes[node].parent;
 	Assert(parent_node >= 0);
-	argnum = find_argument_number(parent_node, node);
+	int argnum = find_argument_number(parent_node, node);
+	if (argnum < 0) {
+		return OPF_NONE;
+	}
 	int op_num = get_operator_index(tree_nodes[parent_node].text);
+	if (op_num < 0) {
+		return OPF_NONE;
+	}
 	return query_operator_argument_type(op_num, argnum);
 }
 
@@ -4865,46 +4876,6 @@ int sexp_tree::get_loadout_variable_count(int var_index) {
 	return count;
 }
 
-int sexp_tree::get_container_usage_count(const SCP_string& container_name) const
-{
-	int count = 0;
-
-	for (int node_idx = 0; node_idx < (int)tree_nodes.size(); node_idx++) {
-		if (is_matching_container_node(node_idx, container_name)) {
-			count++;
-		}
-	}
-
-	return count;
-}
-
-bool sexp_tree::rename_container_nodes(const SCP_string& old_name, const SCP_string& new_name)
-{
-	Assert(!old_name.empty());
-	Assert(!new_name.empty());
-	Assert(new_name.length() <= sexp_container::NAME_MAX_LENGTH);
-
-	bool renamed_anything = false;
-
-	for (int node_idx = 0; node_idx < (int)tree_nodes.size(); node_idx++) {
-		if (is_matching_container_node(node_idx, old_name)) {
-			strcpy_s(tree_nodes[node_idx].text, new_name.c_str());
-			Assert(tree_nodes[node_idx].handle);
-			tree_nodes[node_idx].handle->setText(0, QString::fromStdString(new_name));
-			renamed_anything = true;
-		}
-	}
-
-	return renamed_anything;
-}
-
-bool sexp_tree::is_matching_container_node(int node, const SCP_string& container_name) const
-{
-	return (tree_nodes[node].type & SEXPT_VALID) &&
-		(tree_nodes[node].type & (SEXPT_CONTAINER_NAME | SEXPT_CONTAINER_DATA)) &&
-		!stricmp(tree_nodes[node].text, container_name.c_str());
-}
-
 bool sexp_tree::is_container_argument(int node) const
 {
 	Assert(node >= 0);
@@ -5003,7 +4974,16 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 
 	auto replace_variable_menu = popup_menu->addMenu(tr("Replace Variable"));
 
-	// FIXME TODO: insert context menu items for containers
+	popup_menu->addSeparator();
+
+	popup_menu->addSection("Containers");
+
+	auto add_modoify_container_act = popup_menu->addAction(tr("Add/Modify Container"), this, []() {});
+	add_modoify_container_act->setEnabled(false);
+	auto replace_container_name_act = popup_menu->addAction(tr("Replace Container Name"), this, []() {});
+	replace_container_name_act->setEnabled(false);
+	auto replace_container_data_act = popup_menu->addAction(tr("Replace Container Data"), this, []() {});
+	replace_container_data_act->setEnabled(false);
 
 	update_help(h);
 	//SelectDropTarget(h);  // WTF: Why was this here???
