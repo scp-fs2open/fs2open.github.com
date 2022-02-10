@@ -594,6 +594,8 @@ void sexp_tree::set_node(int node, int type, const char* text) {
 	size_t max_length;
 	if (type & SEXPT_VARIABLE) {
 		max_length = 2 * TOKEN_LENGTH + 2;
+	} else if (type & (SEXPT_CONTAINER_NAME | SEXPT_CONTAINER_DATA)) {
+		max_length = sexp_container::NAME_MAX_LENGTH + 1;
 	} else {
 		max_length = TOKEN_LENGTH;
 	}
@@ -651,7 +653,7 @@ void sexp_tree::add_sub_tree(int node, QTreeWidgetItem* root) {
 			tree_nodes[node].flags = NOT_EDITABLE;
 			bitmap = NodeImage::CONTAINER_NAME;
 		} else if (tree_nodes[node].type & SEXPT_CONTAINER_DATA) {
-			tree_nodes[node].handle->setFlags(tree_nodes[node].handle->flags().setFlag(Qt::ItemIsEditable, false));
+			//tree_nodes[node].handle->setFlags(tree_nodes[node].handle->flags().setFlag(Qt::ItemIsEditable, false));
 			tree_nodes[node].flags = NOT_EDITABLE;
 			bitmap = NodeImage::CONTAINER_DATA;
 		} else {
@@ -1401,6 +1403,10 @@ int sexp_tree::get_default_value(sexp_list_item* item, char* text_buf, int op, i
 	case OPF_ANIMATION_NAME:
 		str = "<Animation trigger name>";
 		break;
+
+	case OPF_CONTAINER_VALUE:
+		str = "<container value>";
+		break;
 			
 	default:
 		str = "<new default required!>";
@@ -1504,6 +1510,7 @@ int sexp_tree::query_default_argument_available(int op, int i) {
 	case OPF_LANGUAGE:
 	case OPF_FUNCTIONAL_WHEN_EVAL_TYPE:
 	case OPF_ANIMATION_NAME:	
+	case OPF_CONTAINER_VALUE:
 		return 1;
 
 	case OPF_SHIP:
@@ -1624,6 +1631,25 @@ int sexp_tree::query_default_argument_available(int op, int i) {
 
 	case OPF_MISSION_MOOD:
 		return Builtin_moods.empty() ? 0 : 1;
+
+	case OPF_CONTAINER_NAME:
+		return get_all_sexp_containers().empty() ? 0 : 1;
+
+	case OPF_LIST_CONTAINER_NAME:
+		for (const auto& container : get_all_sexp_containers()) {
+			if (container.is_list()) {
+				return 1;
+			}
+		}
+		return 0;
+
+	case OPF_MAP_CONTAINER_NAME:
+		for (const auto& container : get_all_sexp_containers()) {
+			if (container.is_map()) {
+				return 1;
+			}
+		}
+		return 0;
 
 	default:
 		Int3();
@@ -3075,6 +3101,22 @@ sexp_list_item* sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 	case OPF_ANIMATION_NAME:
 		list = get_listing_opf_animation_name(parent_node);
 		break;	
+
+	case OPF_CONTAINER_NAME:
+		list = get_listing_opf_sexp_containers(ContainerType::LIST | ContainerType::MAP);
+		break;
+
+	case OPF_LIST_CONTAINER_NAME:
+		list = get_listing_opf_sexp_containers(ContainerType::LIST);
+		break;
+
+	case OPF_MAP_CONTAINER_NAME:
+		list = get_listing_opf_sexp_containers(ContainerType::MAP);
+		break;
+
+	case OPF_CONTAINER_VALUE:
+		list = nullptr;
+		break;
 		
 	default:
 		Int3();  // unknown OPF code
@@ -4719,6 +4761,19 @@ sexp_list_item *sexp_tree::get_listing_opf_animation_name(int parent_node)
 	return head.next;
 }
 
+sexp_list_item *sexp_tree::get_listing_opf_sexp_containers(ContainerType con_type)
+{
+	sexp_list_item head;
+
+	for (const auto &container : get_all_sexp_containers()) {
+		if (any(container.type & con_type)) {
+			head.add_data(container.container_name.c_str(), (SEXPT_CONTAINER_NAME | SEXPT_STRING | SEXPT_VALID));
+		}
+	}
+
+	return head.next;
+}
+
 // Deletes sexp_variable from sexp_tree.
 // resets tree to not include given variable, and resets text and type
 void sexp_tree::delete_sexp_tree_variable(const char* var_name) {
@@ -4913,6 +4968,8 @@ void sexp_tree::customMenuHandler(const QPoint& pos) {
 		return;
 	}
 
+
+
 	auto menu = buildContextMenu(h);
 
 	menu->exec(mapToGlobal(pos));
@@ -5001,6 +5058,17 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 	if (item_index >= 0) {
 		// get type of sexp_tree item clicked on
 		type = get_type(h);
+
+		// TEMP: return a grayed-out mennu for container-related nodes until qtFRED supports them
+		if (type & (SEXPT_CONTAINER_NAME | SEXPT_CONTAINER_DATA | SEXPT_MODIFIER)) {
+			// disable all the things
+			for (auto *action : popup_menu->actions()) {
+				action->setEnabled(false);
+			}
+			util::propagate_disabled_status(popup_menu.get());
+			return popup_menu;
+		}
+
 
 		int parent = tree_nodes[item_index].parent;
 		if (parent >= 0) {
