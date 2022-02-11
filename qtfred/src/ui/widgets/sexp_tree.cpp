@@ -6425,7 +6425,7 @@ void sexp_tree::pasteActionHandler() {
 		const auto &container = *p_container;
 		// this should always be true, but just in case
 		const bool has_modifiers = (Sexp_nodes[Sexp_clipboard].first != -1);
-		int new_type = tree_nodes[item_index].type & ~(SEXPT_VARIABLE | SEXPT_CONTAINER_NAME) | SEXPT_CONTAINER_DATA;
+		int new_type = tree_nodes[item_index].type & (~(SEXPT_VARIABLE | SEXPT_CONTAINER_NAME) | SEXPT_CONTAINER_DATA);
 		replace_container_data(container, new_type, false, true, !has_modifiers);
 		if (has_modifiers) {
 			load_branch(Sexp_nodes[Sexp_clipboard].first, item_index);
