@@ -645,19 +645,15 @@ void sexp_tree::add_sub_tree(int node, QTreeWidgetItem* root) {
 		bitmap = NodeImage::OPERATOR;
 	} else {
 		if (tree_nodes[node].type & SEXPT_VARIABLE) {
-			tree_nodes[node].handle->setFlags(tree_nodes[node].handle->flags().setFlag(Qt::ItemIsEditable, false));
 			tree_nodes[node].flags = NOT_EDITABLE;
 			bitmap = NodeImage::VARIABLE;
 		} else if (tree_nodes[node].type & SEXPT_CONTAINER_NAME) {
-			tree_nodes[node].handle->setFlags(tree_nodes[node].handle->flags().setFlag(Qt::ItemIsEditable, false));
 			tree_nodes[node].flags = NOT_EDITABLE;
 			bitmap = NodeImage::CONTAINER_NAME;
 		} else if (tree_nodes[node].type & SEXPT_CONTAINER_DATA) {
-			//tree_nodes[node].handle->setFlags(tree_nodes[node].handle->flags().setFlag(Qt::ItemIsEditable, false));
 			tree_nodes[node].flags = NOT_EDITABLE;
 			bitmap = NodeImage::CONTAINER_DATA;
 		} else {
-			tree_nodes[node].handle->setFlags(tree_nodes[node].handle->flags().setFlag(Qt::ItemIsEditable, true));
 			tree_nodes[node].flags = EDITABLE;
 			bitmap = get_data_image(node);
 		}
@@ -665,25 +661,23 @@ void sexp_tree::add_sub_tree(int node, QTreeWidgetItem* root) {
 
 	root = tree_nodes[node].handle = insert(tree_nodes[node].text, bitmap, root);
 
+	tree_nodes[node].handle->setFlags(
+		tree_nodes[node].handle->flags().setFlag(Qt::ItemIsEditable, (tree_nodes[node].flags & EDITABLE)));
+
 	node = node2;
 	while (node != -1) {
 		Assert(node >= 0 && node < (int) tree_nodes.size());
 		Assert(tree_nodes[node].type & SEXPT_VALID);
-		if (tree_nodes[node].type & SEXPT_OPERATOR) {
-			add_sub_tree(node, root);
-
-		} else if (tree_nodes[node].type & SEXPT_CONTAINER_DATA) {
+		if (tree_nodes[node].type & (SEXPT_OPERATOR | SEXPT_CONTAINER_DATA)) {
 			add_sub_tree(node, root);
 
 		} else {
 			Assert(tree_nodes[node].child == -1);
 			if (tree_nodes[node].type & SEXPT_VARIABLE) {
 				tree_nodes[node].handle = insert(tree_nodes[node].text, NodeImage::VARIABLE, root);
-				tree_nodes[node].handle->setFlags(tree_nodes[node].handle->flags().setFlag(Qt::ItemIsEditable, false));
 				tree_nodes[node].flags = NOT_EDITABLE;
 			} else if (tree_nodes[node].type & SEXPT_CONTAINER_NAME) {
 				tree_nodes[node].handle = insert(tree_nodes[node].text, NodeImage::CONTAINER_NAME, root);
-				tree_nodes[node].handle->setFlags(tree_nodes[node].handle->flags().setFlag(Qt::ItemIsEditable, false));
 				tree_nodes[node].flags = NOT_EDITABLE;
 			// SEXPT_MODIFIER doesn't require special treatment here
 			} else {
@@ -691,6 +685,9 @@ void sexp_tree::add_sub_tree(int node, QTreeWidgetItem* root) {
 				tree_nodes[node].handle = insert(tree_nodes[node].text, bmap, root);
 				tree_nodes[node].flags = EDITABLE;
 			}
+
+			tree_nodes[node].handle->setFlags(
+				tree_nodes[node].handle->flags().setFlag(Qt::ItemIsEditable, (tree_nodes[node].flags & EDITABLE)));
 		}
 
 		node = tree_nodes[node].next;

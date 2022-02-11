@@ -544,10 +544,7 @@ void sexp_tree::add_sub_tree(int node, HTREEITEM root)
 	while (node != -1) {
 		Assert(node >= 0 && node < (int)tree_nodes.size());
 		Assert(tree_nodes[node].type & SEXPT_VALID);
-		if (tree_nodes[node].type & SEXPT_OPERATOR)	{
-			add_sub_tree(node, root);
-
-		} else if (tree_nodes[node].type & SEXPT_CONTAINER_DATA) {
+		if (tree_nodes[node].type & (SEXPT_OPERATOR | SEXPT_CONTAINER_DATA)) {
 			add_sub_tree(node, root);
 
 		} else {
