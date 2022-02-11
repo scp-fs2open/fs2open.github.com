@@ -1432,6 +1432,7 @@ void sexp_tree::right_clicked(int mode)
 							   ListModifier::AT_INDEX) {
 					// only valid value is a list index
 					menu.EnableMenuItem(ID_REPLACE_NUMBER, MF_ENABLED);
+					menu.EnableMenuItem(ID_REPLACE_STRING, MF_GRAYED);
 				} else {
 					// multidimensional modifiers can be anything, including possibly a list modifier
 					// the value can be validated only at runtime (i.e., in-mission)
