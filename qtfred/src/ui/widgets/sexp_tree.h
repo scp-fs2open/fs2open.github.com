@@ -232,6 +232,8 @@ class sexp_tree: public QTreeWidget {
 	int add_operator(const char* op, QTreeWidgetItem* h = nullptr);
 	int add_data(const char* new_data, int type);
 	int add_variable_data(const char* new_data, int type);
+	int add_container_name(const char* container_name);
+	void add_container_data(const char* container_name);
 	void add_sub_tree(int node, QTreeWidgetItem* root);
 	int load_sub_tree(int index, bool valid, const char* text);
 	void hilite_item(int node);
@@ -345,11 +347,11 @@ class sexp_tree: public QTreeWidget {
 	sexp_list_item *get_listing_opf_language();
 	sexp_list_item *get_listing_opf_functional_when_eval_type();
 	sexp_list_item *get_listing_opf_animation_name(int parent_node);
-	sexp_list_item *get_listing_opf_sexp_containers(ContainerType con_type);
+	static sexp_list_item *get_listing_opf_sexp_containers(ContainerType con_type);
 
 	// container modifier options for container data nodes
 	sexp_list_item *get_container_modifiers(int con_data_node) const;
-	sexp_list_item *get_list_container_modifiers() const;
+	static sexp_list_item *get_list_container_modifiers();
 	sexp_list_item *get_map_container_modifiers(int con_data_node) const;
 	sexp_list_item *get_container_multidim_modifiers(int con_data_node) const;
 
