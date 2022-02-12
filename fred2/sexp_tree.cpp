@@ -6972,14 +6972,14 @@ sexp_list_item *sexp_tree::get_listing_opf_language()	// NOLINT
 	return head.next;
 }
 
-sexp_list_item* sexp_tree::get_listing_opf_functional_when_eval_type()	// NOLINT
+sexp_list_item *sexp_tree::get_listing_opf_functional_when_eval_type()	// NOLINT
 {
 	sexp_list_item head;
 
 	for (int i = 0; i < Num_functional_when_eval_types; i++)
 		head.add_data(Functional_when_eval_type[i]);
 
-		return head.next;
+	return head.next;
 }
 
 sexp_list_item *sexp_tree::get_listing_opf_animation_name(int parent_node)
