@@ -29,7 +29,7 @@ char Game_current_mission_filename[MAX_FILENAME_LEN];
 CFILE *Working_demo;
 struct beam_info;
 bool Env_cubemap_drawn = false;
-int Multi_ping_timestamp = -1;
+UI_TIMESTAMP Multi_ping_timestamp;
 int Sun_drew = 0;
 
 int Fred_running = 0;

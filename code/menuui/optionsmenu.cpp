@@ -243,7 +243,7 @@ static int Music_volume_int;
 static int Voice_volume_int;
 
 static sound_handle Voice_vol_handle = sound_handle::invalid();
-int Options_notify_stamp = -1;
+UI_TIMESTAMP Options_notify_stamp;
 char Options_notify_string[200];
 
 // called whenever accept is hit
@@ -478,16 +478,16 @@ void options_play_voice_clip()
 void options_add_notify(const char *str)
 {
 	strcpy_s(Options_notify_string, str);
-	Options_notify_stamp = timestamp(OPTIONS_NOTIFY_TIME);
+	Options_notify_stamp = ui_timestamp(OPTIONS_NOTIFY_TIME);
 }
 
 void options_notify_do_frame()
 {
 	int w,h;
 
-	if (Options_notify_stamp != -1) {
-		if (timestamp_elapsed(Options_notify_stamp)) {
-			Options_notify_stamp = -1;
+	if (Options_notify_stamp.isValid()) {
+		if (ui_timestamp_elapsed(Options_notify_stamp)) {
+			Options_notify_stamp = UI_TIMESTAMP::invalid();
 
 		} else {
 			gr_get_string_size(&w, &h, Options_notify_string);

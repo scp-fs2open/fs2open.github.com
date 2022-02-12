@@ -205,14 +205,14 @@ void movie_display_loop(Player* player, PlaybackState* state) {
 	auto fpsCapSave = Cmdline_NoFPSCap;
 	Cmdline_NoFPSCap = 1;
 
-	auto lastDisplayTimestamp = timer_get_microseconds();
+	auto lastDisplayTime = timer_get_microseconds();
 	while (state->playing) {
 		TRACE_SCOPE(tracing::CutsceneStep);
 
-		auto timestamp = timer_get_microseconds();
+		auto now = timer_get_microseconds();
 
-		auto passed = timestamp - lastDisplayTimestamp;
-		lastDisplayTimestamp = timestamp;
+		auto passed = now - lastDisplayTime;
+		lastDisplayTime = now;
 
 		if (player->isPlaybackReady()) {
 			// Play as long as the player reports that there is more to display

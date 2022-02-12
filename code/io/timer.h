@@ -14,11 +14,15 @@
 
 #include "globalincs/pstypes.h"
 
+#include "utils/ID.h"
 #include "utils/Random.h"
 
 #include <cstdint>
 
 using Random = util::Random;
+
+struct ui_timestamp_tag {};
+typedef util::ID<ui_timestamp_tag, int, -1> UI_TIMESTAMP;
 
 //==========================================================================
 // This installs the timer services and interrupts at the rate specified by
@@ -68,6 +72,9 @@ extern int timer_get_seconds();				// seconds since program started... not accur
 // but the count that is right now.
 int timestamp();
 
+// same, but for use in the UI, so not subject to time compression or pauses
+UI_TIMESTAMP ui_timestamp();
+
 inline bool timestamp_valid(int stamp) {
 	return stamp != 0;
 }
@@ -83,7 +90,8 @@ inline bool timestamp_valid(int stamp) {
 // pass -1 for an invalid timestamp that will never time out
 // pass 0 for a timestamp that is instantly timed out
 // pass n > 0 for timestamp n milliseconds in the future.
-int timestamp(int delta_ms );
+int timestamp(int delta_ms);
+UI_TIMESTAMP ui_timestamp(int delta_ms);
 
 // gets a timestamp randomly between a and b milliseconds in
 // the future.
@@ -107,6 +115,7 @@ int timestamp_has_time_elapsed(int stamp, int time);
 //   fire_laser();
 
 bool timestamp_elapsed( int stamp );
+bool ui_timestamp_elapsed( UI_TIMESTAMP stamp );
 
 // safer version of timestamp
 bool timestamp_elapsed_safe(int a, int b);

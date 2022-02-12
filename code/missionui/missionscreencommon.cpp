@@ -63,8 +63,8 @@ int Mouse_down_last_frame = 0;
 // Timers used to flash buttons after timeouts
 #define MSC_FLASH_AFTER_TIME	60000		//	time before flashing a button
 #define MSC_FLASH_INTERVAL		200		// time between flashes
-int Flash_timer;								//	timestamp used to start flashing
-int Flash_toggle;								// timestamp used to toggle flashing
+UI_TIMESTAMP Flash_timer;						// timestamp used to start flashing
+UI_TIMESTAMP Flash_toggle;						// timestamp used to toggle flashing
 int Flash_bright;								// state of button to flash
 
 //////////////////////////////////////////////////////////////////
@@ -345,7 +345,7 @@ void common_music_init(int score_index)
 
 	briefing_load_music(file_name.c_str());
 	// Use this id to trigger the start of music playing on the briefing screen
-	Briefing_music_begin_timestamp = timestamp(BRIEFING_MUSIC_DELAY);
+	Briefing_music_begin_timestamp = ui_timestamp(BRIEFING_MUSIC_DELAY);
 }
 
 void common_music_do()
@@ -355,8 +355,8 @@ void common_music_do()
 	}
 
 	// Use this id to trigger the start of music playing on the briefing screen
-	if ( timestamp_elapsed( Briefing_music_begin_timestamp) ) {
-		Briefing_music_begin_timestamp = 0;
+	if ( ui_timestamp_elapsed(Briefing_music_begin_timestamp) ) {
+		Briefing_music_begin_timestamp = UI_TIMESTAMP::invalid();
 		briefing_start_music();
 	}
 }
@@ -457,17 +457,17 @@ void common_free_interface_palette()
 // Init timers used for flashing buttons
 void common_flash_button_init()
 {
-	Flash_timer = timestamp(MSC_FLASH_AFTER_TIME);
-	Flash_toggle = 1;
+	Flash_timer = ui_timestamp(MSC_FLASH_AFTER_TIME);
+	Flash_toggle = UI_TIMESTAMP(1);
 	Flash_bright = 0;
 }
 
 // determine if we should draw a button as bright
 int common_flash_bright()
 {
-	if ( timestamp_elapsed(Flash_timer) ) {
-		if ( timestamp_elapsed(Flash_toggle) ) {
-			Flash_toggle = timestamp(MSC_FLASH_INTERVAL);
+	if ( ui_timestamp_elapsed(Flash_timer) ) {
+		if ( ui_timestamp_elapsed(Flash_toggle) ) {
+			Flash_toggle = ui_timestamp(MSC_FLASH_INTERVAL);
 			Flash_bright ^= 1;
 		}
 	}
