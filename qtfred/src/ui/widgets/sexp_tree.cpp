@@ -5265,6 +5265,7 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 	auto replace_op_menu = popup_menu->addMenu(tr("Replace Operator"));
 
 	auto replace_data_menu = popup_menu->addMenu(tr("Replace Data"));
+	// TODO: when are implemented, preserve a node's SEXPT_MODIFIER type, if applicable
 	auto replace_number_act = replace_data_menu->addAction(tr("Number"), this, []() {});
 	replace_number_act->setEnabled(false);
 	auto replace_string_act = replace_data_menu->addAction(tr("String"), this, []() {});
@@ -6501,15 +6502,21 @@ void sexp_tree::insertOperatorAction(int op) {
 	modified();
 }
 void sexp_tree::addNumberDataHandler() {
-	int theNode;
+	int theType = SEXPT_NUMBER | SEXPT_VALID;
+	if (tree_nodes[item_index].type & SEXPT_CONTAINER_DATA) {
+		theType |= SEXPT_MODIFIER;
+	}
 
-	theNode = add_data("number", (SEXPT_NUMBER | SEXPT_VALID));
+	int theNode = add_data("number", theType);
 	beginItemEdit(tree_nodes[theNode].handle);
 }
 void sexp_tree::addStringDataHandler() {
-	int theNode;
+	int theType = SEXPT_STRING | SEXPT_VALID;
+	if (tree_nodes[item_index].type & SEXPT_CONTAINER_DATA) {
+		theType |= SEXPT_MODIFIER;
+	}
 
-	theNode = add_data("string", (SEXPT_STRING | SEXPT_VALID));
+	int theNode = add_data("string", theType);
 	beginItemEdit(tree_nodes[theNode].handle);
 }
 void sexp_tree::beginItemEdit(QTreeWidgetItem* item) {
@@ -6521,10 +6528,8 @@ void sexp_tree::addReplaceTypedDataHandler(int data_idx, bool replace) {
 	const int op_node = replace ? tree_nodes[item_index].parent : item_index;
 
 	sexp_list_item *list = nullptr;
-	int extra_type_flags = 0;
 	if (tree_nodes[op_node].type & SEXPT_CONTAINER_DATA) {
 		// container data modifier
-		extra_type_flags |= SEXPT_MODIFIER;
 		if (replace && Replace_count == 0) {
 			list = get_container_modifiers(op_node);
 		} else {
@@ -6548,7 +6553,6 @@ void sexp_tree::addReplaceTypedDataHandler(int data_idx, bool replace) {
 
 	Assert((SEXPT_TYPE(ptr->type) != SEXPT_OPERATOR) && (ptr->op < 0));
 	expand_operator(item_index);
-	ptr->type |= extra_type_flags;
 	if (replace) {
 		replace_data(ptr->text.c_str(), ptr->type);
 	} else {
