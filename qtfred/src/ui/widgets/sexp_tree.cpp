@@ -6518,18 +6518,25 @@ void sexp_tree::beginItemEdit(QTreeWidgetItem* item) {
 }
 void sexp_tree::addReplaceTypedDataHandler(int data_idx, bool replace) {
 	Assert(item_index >= 0);
-	int op;
-	if (replace) {
-		op = get_operator_index(tree_nodes[tree_nodes[item_index].parent].text);
+	const int op_node = replace ? tree_nodes[item_index].parent : item_index;
+
+	sexp_list_item *list = nullptr;
+	int extra_type_flags = 0;
+	if (tree_nodes[op_node].type & SEXPT_CONTAINER_DATA) {
+		// container data modifier
+		extra_type_flags |= SEXPT_MODIFIER;
+		if (replace && Replace_count == 0) {
+			list = get_container_modifiers(op_node);
+		} else {
+			list = get_container_multidim_modifiers(op_node);
+		}
 	} else {
-		op = get_operator_index(tree_nodes[item_index].text);
+		int op = get_operator_index(tree_nodes[op_node].text);
+		Assert(op >= 0);
+		auto argcount = replace ? Replace_count : Add_count;
+		auto type = query_operator_argument_type(op, argcount);
+		list = get_listing_opf(type, item_index, argcount);
 	}
-	Assert(op >= 0);
-
-	auto argcount = replace ? Replace_count : Add_count;
-
-	auto type = query_operator_argument_type(op, argcount);
-	auto list = get_listing_opf(type, item_index, argcount);
 	Assert(list);
 
 	auto ptr = list;
@@ -6541,6 +6548,7 @@ void sexp_tree::addReplaceTypedDataHandler(int data_idx, bool replace) {
 
 	Assert((SEXPT_TYPE(ptr->type) != SEXPT_OPERATOR) && (ptr->op < 0));
 	expand_operator(item_index);
+	ptr->type |= extra_type_flags;
 	if (replace) {
 		replace_data(ptr->text.c_str(), ptr->type);
 	} else {
