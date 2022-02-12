@@ -5736,7 +5736,7 @@ void sexp_tree::handleItemChange(QTreeWidgetItem* item, int  /*column*/) {
 
 	if (update_node) {
 		modified();
-		strncpy(tree_nodes[node].text, str.toStdString().c_str(), len);
+		strncpy(tree_nodes[node].text, str.toUtf8().constData(), len);
 		tree_nodes[node].text[len] = 0;
 
 		// let's make sure we aren't introducing any invalid characters, per Mantis #2893
