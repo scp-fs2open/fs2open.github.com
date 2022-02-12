@@ -186,8 +186,8 @@ int timestamp(int delta_ms) {
 
 UI_TIMESTAMP ui_timestamp(int delta_ms) {
 	int t2;
-	if (delta_ms < 0 ) return UI_TIMESTAMP(0);
-	if (delta_ms == 0 ) return UI_TIMESTAMP(1);
+	if (delta_ms < 0 ) return UI_TIMESTAMP::never();
+	if (delta_ms == 0 ) return UI_TIMESTAMP::immediate();
 	t2 = timer_get_milliseconds() + delta_ms;
 	if ( t2 > (int)MAX_TIME )	{
 		// wrap!!!
@@ -199,7 +199,8 @@ UI_TIMESTAMP ui_timestamp(int delta_ms) {
 
 //	Returns milliseconds until timestamp will elapse.
 //	Negative value gives milliseconds ago that timestamp elapsed.
-int timestamp_until(int stamp) {
+int timestamp_until(int stamp)
+{
 	// JAS: FIX
 	// HACK!! This doesn't handle rollover!
 	// (Will it ever happen?)
@@ -219,6 +220,16 @@ int timestamp_until(int stamp) {
 
 	return delta;
 */
+}
+
+int ui_timestamp_until(UI_TIMESTAMP stamp)
+{
+	if (!stamp.isValid() || stamp.isNever())
+		return INT_MAX;
+	if (stamp.isImmediate())
+		return 0;
+
+	return stamp.value() - timer_get_milliseconds();
 }
 
 int timestamp_has_time_elapsed(int stamp, int time) {
@@ -243,16 +254,14 @@ bool timestamp_elapsed(int stamp) {
 }
 
 bool ui_timestamp_elapsed(UI_TIMESTAMP ui_stamp) {
-	if (!ui_stamp.isValid()) {
+	if (!ui_stamp.isValid() || ui_stamp.isNever()) {
 		return false;
 	}
-
-	int stamp = ui_stamp.value();
-	if (stamp == 0) {
-		return false;
+	if (ui_stamp.isImmediate()) {
+		return true;
 	}
 
-	return timer_get_milliseconds() >= stamp;
+	return timer_get_milliseconds() >= ui_stamp.value();
 }
 
 bool timestamp_elapsed_safe(int a, int b) {

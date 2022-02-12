@@ -38,15 +38,15 @@ void UI_BUTTON::create(UI_WINDOW *wnd, const char *_text, int _x, int _y, int _w
 
 	// initialize variables
 	m_flags = 0;
-	next_repeat = UI_TIMESTAMP::invalid();
+	next_repeat = UI_TIMESTAMP::never();
 	m_just_highlighted_function = NULL;		// assume there is no callback
 	m_disabled_function = NULL;				// ditto
 	if (do_repeat) {
 		m_flags |= BF_REPEATS;
-		next_repeat = UI_TIMESTAMP(1);
+		next_repeat = UI_TIMESTAMP::immediate();
 	}
 
-	m_press_linger = UI_TIMESTAMP(1);
+	m_press_linger = UI_TIMESTAMP::immediate();
 	first_callback = 1;
 
 	hotkey_if_focus = KEY_SPACEBAR;
@@ -232,7 +232,7 @@ void UI_BUTTON::process(int focus)
 	maybe_show_custom_cursor();
 
 	if ( !mouse_on_me ) {
-		next_repeat = UI_TIMESTAMP::invalid();
+		next_repeat = UI_TIMESTAMP::never();
 	} else {
 		m_flags |= BF_HIGHLIGHTED;
 		if ( !(old_flags & BF_HIGHLIGHTED) ) {
@@ -280,7 +280,7 @@ void UI_BUTTON::process(int focus)
 
 	// handler for button not down
 	if ( !(m_flags & BF_DOWN) ) {
-		next_repeat = UI_TIMESTAMP::invalid();
+		next_repeat = UI_TIMESTAMP::never();
 		if ( (old_flags & BF_DOWN) && !(old_flags & BF_CLICKED) )  // check for release of mouse, not hotkey
 			m_flags |= BF_JUST_RELEASED;
 
@@ -407,8 +407,8 @@ void UI_BUTTON::press_button()
 // reset the "pressed" timestamps
 void UI_BUTTON::reset_timestamps()
 {
-	m_press_linger = UI_TIMESTAMP(1);
-	next_repeat = UI_TIMESTAMP::invalid();
+	m_press_linger = UI_TIMESTAMP::immediate();
+	next_repeat = UI_TIMESTAMP::never();
 }
 
 void UI_BUTTON::skip_first_highlight_callback()
@@ -421,10 +421,10 @@ void UI_BUTTON::repeatable(int yes)
 {
 	if(yes){
 		m_flags |= BF_REPEATS;
-		next_repeat = UI_TIMESTAMP(1);
+		next_repeat = UI_TIMESTAMP::immediate();
 	} else {
 		m_flags &= ~(BF_REPEATS);
-		next_repeat = UI_TIMESTAMP::invalid();
+		next_repeat = UI_TIMESTAMP::never();
 	}
 }
 

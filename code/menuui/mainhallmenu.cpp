@@ -626,7 +626,7 @@ void main_hall_init(const SCP_string &main_hall_name)
 	main_hall_start_music();
 
 	// initialize the main hall notify text
-	Main_hall_notify_stamp = UI_TIMESTAMP(1);
+	Main_hall_notify_stamp = UI_TIMESTAMP::immediate();
 
 	// initialize the random intercom sound stuff
 	Main_hall_next_intercom_sound = 0;
@@ -1628,7 +1628,7 @@ void main_hall_notify_do()
 	if (Main_hall_notify_stamp.isValid()) {
 		// if the text time has expired
 		if (ui_timestamp_elapsed(Main_hall_notify_stamp)) {
-			strcpy_s(Main_hall_notify_text,"");
+			strcpy_s(Main_hall_notify_text, "");
 			Main_hall_notify_stamp = UI_TIMESTAMP::invalid();
 		} else {
 			int w,h;

@@ -14,15 +14,29 @@
 
 #include "globalincs/pstypes.h"
 
-#include "utils/ID.h"
+#include "utils/id.h"
 #include "utils/Random.h"
 
 #include <cstdint>
 
 using Random = util::Random;
 
+// "strong typedef", based on similar usage in gamesnd
 struct ui_timestamp_tag {};
-typedef util::ID<ui_timestamp_tag, int, -1> UI_TIMESTAMP;
+class UI_TIMESTAMP : public util::ID<ui_timestamp_tag, int, -1>
+{
+public:
+	static UI_TIMESTAMP invalid() { return {}; }
+	static UI_TIMESTAMP never() { return UI_TIMESTAMP(0); }
+	static UI_TIMESTAMP immediate() { return UI_TIMESTAMP(1); }
+
+	UI_TIMESTAMP() = default;
+	explicit UI_TIMESTAMP(int val) : ID(val) { }
+
+	inline bool isNever() const { return m_val == 0; }
+	inline bool isImmediate() const { return m_val == 1; }
+};
+
 
 //==========================================================================
 // This installs the timer services and interrupts at the rate specified by
@@ -101,6 +115,7 @@ inline int timestamp_rand(int a, int b) {
 
 //	Returns milliseconds until timestamp will elapse.
 int timestamp_until(int stamp);
+int ui_timestamp_until(UI_TIMESTAMP stamp);
 
 // checks if a specified time (in milliseconds) has elapsed past the given timestamp (which
 // should be obtained from timestamp() or timestamp(x) with a positive x)

@@ -458,7 +458,7 @@ void common_free_interface_palette()
 void common_flash_button_init()
 {
 	Flash_timer = ui_timestamp(MSC_FLASH_AFTER_TIME);
-	Flash_toggle = UI_TIMESTAMP(1);
+	Flash_toggle = UI_TIMESTAMP::immediate();
 	Flash_bright = 0;
 }
 

@@ -1801,7 +1801,7 @@ void control_config_do_frame(float frametime)
 	int font_height = gr_get_font_height();
 	int select_tease_line = -1;  // line mouse is down on, but won't be selected until button released
 	static float timer = 0.0f;
-	static UI_TIMESTAMP bound_timestamp = UI_TIMESTAMP::invalid();
+	static UI_TIMESTAMP bound_timestamp;
 	static char bound_string[40];
 	
 	timer += frametime;

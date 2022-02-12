@@ -127,7 +127,7 @@ namespace io
 			if (mAnimationFrames.size() > 1)
 			{
 				// We are animated, compute the current frame
-				float diffSeconds = i2fl(ui_timestamp().value() - mBeginTimeStamp.value()) / TIMESTAMP_FREQUENCY;
+				float diffSeconds = i2fl(-ui_timestamp_until(mBeginTimeStamp)) / TIMESTAMP_FREQUENCY;
 
 				// Use the bmpman function for this. That also ensures that APNG cursors work correctly 
 				auto frameIndex = static_cast<size_t>(bm_get_anim_frame(mBitmapHandle, diffSeconds, 0.0f, true));

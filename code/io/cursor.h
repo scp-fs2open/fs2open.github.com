@@ -37,7 +37,7 @@ namespace io
 			 * @brief Default constructor
 			 * @param bitmap The bitmap handle of the cursor. The cursor takes ownership over this handle
 			 */
-			explicit Cursor(int bitmap) : mBitmapHandle(bitmap), mBeginTimeStamp(), mLastFrame(static_cast<size_t>(-1)) {}
+			explicit Cursor(int bitmap) : mBitmapHandle(bitmap), mLastFrame(static_cast<size_t>(-1)) {}
 
 			/**
 			 * @brief Move constructor
