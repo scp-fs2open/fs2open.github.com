@@ -24027,7 +24027,7 @@ const char *sexp_get_result_as_text(int result)
 /**
 * Checks the mission logs flags for this event and writes to the log if this has been asked for
 */
-void add_to_event_log_buffer(int op_num, int result)
+void add_to_event_log_buffer(int node, int op_num, int result)
 {
 	Assertion ((Current_event_log_buffer != nullptr) &&
 				(Current_event_log_variable_buffer != nullptr)&& 
@@ -24041,6 +24041,14 @@ void add_to_event_log_buffer(int op_num, int result)
 
 	char buffer[TOKEN_LENGTH];
 	SCP_string tmp; 
+
+	// indent the operators according to their depth
+	int n = node;
+	while (n >= 0) {
+		tmp.append("  ");
+		n = find_parent_operator(n);
+	}
+
 	tmp.append(Operators[op_num].text);
 	tmp.append(" returned ");
 
@@ -24067,8 +24075,9 @@ void add_to_event_log_buffer(int op_num, int result)
 	}
 
 	if (!Current_event_log_variable_buffer->empty()) {
-		tmp.append("\nVariables:\n");
+		tmp.append("\nVariables:");
 		while (!Current_event_log_variable_buffer->empty()) {
+			tmp.append("\n");
 			tmp.append(Current_event_log_variable_buffer->back());
 			Current_event_log_variable_buffer->pop_back();
 			tmp.append("[");
@@ -24079,8 +24088,9 @@ void add_to_event_log_buffer(int op_num, int result)
 	}
 
 	if (!Current_event_log_container_buffer->empty()) {
-		tmp.append("\nContainers:\n");
+		tmp.append("\nContainers:");
 		while (!Current_event_log_container_buffer->empty()) {
+			tmp.append("\n");
 			tmp.append(Current_event_log_container_buffer->back());
 			Current_event_log_container_buffer->pop_back();
 		}
@@ -24117,7 +24127,7 @@ int eval_sexp(int cur_node, int referenced_node)
 				op_index = get_operator_index(CAR(cur_node));
 
 			// log the known value
-			add_to_event_log_buffer(op_index, Sexp_nodes[cur_node].value);
+			add_to_event_log_buffer(cur_node, op_index, Sexp_nodes[cur_node].value);
 		}
 
 		// now do a quick return whether or not we log, per the comment above about trapping known sexpressions
@@ -26347,7 +26357,7 @@ int eval_sexp(int cur_node, int referenced_node)
 		}
 
 		if (Log_event) {
-			add_to_event_log_buffer(get_operator_index(cur_node), sexp_val);
+			add_to_event_log_buffer(cur_node, get_operator_index(cur_node), sexp_val);
 		}
 
 		Assert(!Current_sexp_operator.empty()); 
