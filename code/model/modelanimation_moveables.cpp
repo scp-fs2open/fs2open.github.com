@@ -169,7 +169,10 @@ namespace animation {
 
 			float currentAngle;
 			vm_closest_angle_to_matrix(&newOrient, &m_axis, &currentAngle);
-			
+			//CurrentAngle is 0 to 2Pi, convert to -pi to pi
+			if (currentAngle > PI)
+				currentAngle -= PI2;
+
 			rotation.m_targetAngle = fl_radians((float)ang) - currentAngle;
 
 			anim->start(pmi, ModelAnimationDirection::FWD);
