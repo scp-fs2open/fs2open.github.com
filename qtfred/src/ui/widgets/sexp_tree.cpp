@@ -5265,10 +5265,9 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 	auto replace_op_menu = popup_menu->addMenu(tr("Replace Operator"));
 
 	auto replace_data_menu = popup_menu->addMenu(tr("Replace Data"));
-	// TODO: when are implemented, preserve a node's SEXPT_MODIFIER type, if applicable
-	auto replace_number_act = replace_data_menu->addAction(tr("Number"), this, []() {});
+	auto replace_number_act = replace_data_menu->addAction(tr("Number"), this, [this]() { replaceNumberDataHandler(); });
 	replace_number_act->setEnabled(false);
-	auto replace_string_act = replace_data_menu->addAction(tr("String"), this, []() {});
+	auto replace_string_act = replace_data_menu->addAction(tr("String"), this, [this]() { replaceStringDataHandler(); });
 	replace_string_act->setEnabled(false);
 	replace_data_menu->addSeparator();
 
@@ -6518,6 +6517,26 @@ void sexp_tree::addStringDataHandler() {
 
 	int theNode = add_data("string", theType);
 	beginItemEdit(tree_nodes[theNode].handle);
+}
+void sexp_tree::replaceNumberDataHandler() {
+	expand_operator(item_index);
+	int type = SEXPT_NUMBER | SEXPT_VALID;
+	if (tree_nodes[item_index].type & SEXPT_MODIFIER) {
+		type |= SEXPT_MODIFIER;
+	}
+
+	replace_data("number", type);
+	beginItemEdit(tree_nodes[item_index].handle);
+}
+void sexp_tree::replaceStringDataHandler() {
+	expand_operator(item_index);
+	int type = SEXPT_STRING | SEXPT_VALID;
+	if (tree_nodes[item_index].type & SEXPT_MODIFIER) {
+		type |= SEXPT_MODIFIER;
+	}
+
+	replace_data("string", type);
+	beginItemEdit(tree_nodes[item_index].handle);
 }
 void sexp_tree::beginItemEdit(QTreeWidgetItem* item) {
 	_currently_editing = true;
