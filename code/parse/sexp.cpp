@@ -5518,6 +5518,15 @@ int sexp_not(int n)
 	{
 		if (CAR(n) != -1)
 		{
+			// The "known" property is sticky.  It's not known-vs-not-known, it is known-[true-or-false].
+			// The opposite of known-true is not unknown, it is known-false.
+			//
+			// Think of it in the context of a ship exiting a mission.  If a ship's cargo was scanned,
+			// then after the ship exits, that sexp will always return known-true.  There is no possibility
+			// of it ever becoming something other than true, so it's known. Similarly, the inverse of that
+			// is known-false, because there is no possibility of the inverse ever becoming something other
+			// than false.
+
 			result = is_sexp_true(CAR(n));
 			if ( Sexp_nodes[CAR(n)].value == SEXP_KNOWN_FALSE || Sexp_nodes[CAR(n)].value == SEXP_NAN_FOREVER )
 				return SEXP_KNOWN_TRUE;												// not KNOWN_FALSE == KNOWN_TRUE;
@@ -9043,56 +9052,41 @@ int sexp_is_cargo_known( int n, bool check_delay )
 		bool is_known = false;
 		count++;
 
-		// see if we have already checked this entry
-		if ( Sexp_nodes[n].value == SEXP_KNOWN_TRUE )
+		auto ship_entry = eval_ship(n);
+		if (!ship_entry)
+			return SEXP_FALSE;
+		if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
+			return SEXP_CANT_EVAL;
+
+		// see if the ship has already exited the mission (either through departure or destruction)
+		if (ship_entry->exited_index >= 0)
 		{
-			is_known = true;
+			// if not known, the whole thing is known false
+			if ( !(Ships_exited[ship_entry->exited_index].flags[Ship::Exit_Flags::Cargo_known]) )
+				return SEXP_KNOWN_FALSE;
+
+			// check the delay of when we found out
+			time_known = Missiontime - Ships_exited[ship_entry->exited_index].time_cargo_revealed;
+			if ( f2i(time_known) >= delay )
+				is_known = true;
 		}
-		else
+		// ship is in mission
+		else if (ship_entry->shipp)
 		{
-			auto ship_entry = eval_ship(n);
-			if (!ship_entry)
-				return SEXP_FALSE;
-			if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
-				return SEXP_CANT_EVAL;
-
-			// see if the ship has already exited the mission (either through departure or destruction)
-			if (ship_entry->exited_index >= 0)
+			if ( ship_entry->shipp->flags[Ship::Ship_Flags::Cargo_revealed] )
 			{
-				// if not known, the whole thing is known false
-				if ( !(Ships_exited[ship_entry->exited_index].flags[Ship::Exit_Flags::Cargo_known]) )
-					return SEXP_KNOWN_FALSE;
-
-				// check the delay of when we found out
-				time_known = Missiontime - Ships_exited[ship_entry->exited_index].time_cargo_revealed;
+				time_known = Missiontime - ship_entry->shipp->time_cargo_revealed;
 				if ( f2i(time_known) >= delay )
-				{
 					is_known = true;
-
-					// here is the only place in the new sexp that this can be known true
-					Sexp_nodes[n].value = SEXP_KNOWN_TRUE;
-				}
 			}
-			// ship is in mission
-			else if (ship_entry->shipp)
-			{
-				if ( ship_entry->shipp->flags[Ship::Ship_Flags::Cargo_revealed] )
-				{
-					time_known = Missiontime - ship_entry->shipp->time_cargo_revealed;
-					if ( f2i(time_known) >= delay )
-						is_known = true;
-				}
-			}
-			// ship probably vanished
-			else
-				return SEXP_NAN_FOREVER;
 		}
+		// ship probably vanished
+		else
+			return SEXP_NAN_FOREVER;
 
-		// if cargo is known, mark our variable, but not the sexp, because it may change later
+		// if cargo is known, mark our variable
 		if ( is_known )
-		{
 			num_known++;
-		}
 
 		n = CDR(n);
 	}
@@ -9156,71 +9150,54 @@ int sexp_cap_subsys_cargo_known_delay(int n)
 		bool is_known = false;
 		count++;
 
-		// see if we have already checked this entry
-		if ( Sexp_nodes[n].value == SEXP_KNOWN_TRUE )
+		// get subsys name
+		auto subsys_name = CTEXT(n);
+
+		// see if the ship has already exited the mission (either through departure or destruction)
+		if (ship_entry->status == ShipStatus::EXITED)
 		{
-			is_known = true;
+			// check the delay of when we found out...
+			// Since there is no way to keep track of subsystem status once a ship has departed
+			// or has been destroyed, check the mission log.  This will work in 99.9999999% of
+			// all cases; however, if the mission designer repeatedly sets and resets the scanned
+			// status of the subsystem, the mission log will only return the first occurrence of the
+			// subsystem cargo being revealed (regardless of whether it was first hidden using
+			// set-unscanned).  Normally, ships keep track of cargo data in the subsystem struct,
+			// but once the ship has left the mission, the subsystem linked list is purged,
+			// causing the loss of this information.  I judged the significant rework of the
+			// subsystem code not worth the rare instance that this sexp may be required to work
+			// in this way, especially since this problem only occurs after the ship departs.  If
+			// the mission designer really needs this functionality, he or she can achieve the
+			// same result with creative combinations of event chaining and is-event-true.
+			if (!mission_log_get_time(LOG_CAP_SUBSYS_CARGO_REVEALED, ship_entry->name, subsys_name, &time_known))
+			{
+				// if not known, the whole thing is known false
+				return SEXP_KNOWN_FALSE;
+			}
+
+			if (f2i(Missiontime - time_known) >= delay)
+				is_known = true;
 		}
+		// ship is in mission
 		else
 		{
-			// get subsys name
-			auto subsys_name = CTEXT(n);
+			int cargo_revealed(0);
+			fix time_revealed(0);
 
-			// see if the ship has already exited the mission (either through departure or destruction)
-			if (ship_entry->status == ShipStatus::EXITED)
+			// get flags
+			get_cap_subsys_cargo_flags(ship_entry->shipp, subsys_name, &cargo_revealed, &time_revealed);
+
+			if (cargo_revealed)
 			{
-				// check the delay of when we found out...
-				// Since there is no way to keep track of subsystem status once a ship has departed
-				// or has been destroyed, check the mission log.  This will work in 99.9999999% of
-				// all cases; however, if the mission designer repeatedly sets and resets the scanned
-				// status of the subsystem, the mission log will only return the first occurrence of the
-				// subsystem cargo being revealed (regardless of whether it was first hidden using
-				// set-unscanned).  Normally, ships keep track of cargo data in the subsystem struct,
-				// but once/ the ship has left the mission, the subsystem linked list is purged,
-				// causing the loss of this information.  I judged the significant rework of the
-				// subsystem code not worth the rare instance that this sexp may be required to work
-				// in this way, especially since this problem only occurs after the ship departs.  If
-				// the mission designer really needs this functionality, he or she can achieve the
-				// same result with creative combinations of event chaining and is-event-true.
-				if (!mission_log_get_time(LOG_CAP_SUBSYS_CARGO_REVEALED, ship_entry->name, subsys_name, &time_known))
-				{
-					// if not known, the whole thing is known false
-					return SEXP_KNOWN_FALSE;
-				}
-
-				if (f2i(Missiontime - time_known) >= delay)
-				{
+				time_known = Missiontime - time_revealed;
+				if ( f2i(time_known) >= delay )
 					is_known = true;
-
-					// here is the only place in the new sexp that this can be known true
-					Sexp_nodes[n].value = SEXP_KNOWN_TRUE;
-				}
-			}
-			// ship is in mission
-			else
-			{
-				int cargo_revealed(0);
-				fix time_revealed(0);
-
-				// get flags
-				get_cap_subsys_cargo_flags(ship_entry->shipp, subsys_name, &cargo_revealed, &time_revealed);
-
-				if (cargo_revealed)
-				{
-					time_known = Missiontime - time_revealed;
-					if ( f2i(time_known) >= delay )
-					{
-						is_known = true;
-					}
-				}
 			}
 		}
 
-		// if cargo is known, mark our variable, but not the sexp, because it may change later
-		if (is_known)
-		{
+		// if cargo is known, mark our variable
+		if ( is_known )
 			num_known++;
-		}
 
 		n = CDR(n);
 	}
@@ -9305,53 +9282,42 @@ int sexp_has_been_tagged_delay(int n)
 		bool is_known = false;
 		count++;
 
-		// see if we have already checked this entry
-		if ( Sexp_nodes[n].value == SEXP_KNOWN_TRUE )
+		auto ship_entry = eval_ship(n);
+		if (!ship_entry)
+			return SEXP_FALSE;
+		if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
+			return SEXP_CANT_EVAL;
+
+		// see if the ship has already exited the mission (either through departure or destruction).  If so,
+		// grab the status of the tag from this list
+		if (ship_entry->exited_index >= 0)
 		{
-			is_known = true;
+			if ( !(Ships_exited[ship_entry->exited_index].flags[Ship::Exit_Flags::Been_tagged]) )
+				return SEXP_KNOWN_FALSE;
+
+			// check the delay of when we found out.  We use the ship died time which isn't entirely accurate
+			// but won't cause huge delays.
+			time_known = Missiontime - Ships_exited[ship_entry->exited_index].time;
+			if ( f2i(time_known) >= delay )
+				is_known = true;
 		}
-		else
+		// ship is in mission
+		else if (ship_entry->shipp)
 		{
-			auto ship_entry = eval_ship(n);
-			if (!ship_entry)
-				return SEXP_FALSE;
-			if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
-				return SEXP_CANT_EVAL;
-
-			// see if the ship has already exited the mission (either through departure or destruction).  If so,
-			// grab the status of the tag from this list
-			if (ship_entry->exited_index >= 0)
+			if ( ship_entry->shipp->time_first_tagged != 0 )
 			{
-				if ( !(Ships_exited[ship_entry->exited_index].flags[Ship::Exit_Flags::Been_tagged]) )
-					return SEXP_KNOWN_FALSE;
-
-				// check the delay of when we found out.  We use the ship died time which isn't entirely accurate
-				// but won't cause huge delays.
-				time_known = Missiontime - Ships_exited[ship_entry->exited_index].time;
+				time_known = Missiontime - ship_entry->shipp->time_first_tagged;
 				if ( f2i(time_known) >= delay )
 					is_known = true;
 			}
-			// ship is in mission
-			else if (ship_entry->shipp)
-			{
-				if ( ship_entry->shipp->time_first_tagged != 0 )
-				{
-					time_known = Missiontime - ship_entry->shipp->time_first_tagged;
-					if ( f2i(time_known) >= delay )
-						is_known = true;
-				}
-			}
-			// ship probably vanished
-			else
-				return SEXP_NAN_FOREVER;
 		}
+		// ship probably vanished
+		else
+			return SEXP_NAN_FOREVER;
 
-		// if ship is tagged, mark our variable and this sexpression.
+		// if ship is tagged, mark our variable
 		if ( is_known )
-		{
 			num_known++;
-			Sexp_nodes[n].value = SEXP_KNOWN_TRUE;
-		}
 
 		n = CDR(n);
 	}
@@ -33693,8 +33659,10 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t4:\tShip name at which the above named team should fire the above named weapon." },
 
 	{ OP_AND_IN_SEQUENCE, "And in sequence (Boolean operator)\r\n"
-		"\tReturns true if all of its arguments have become true in the order they are "
-		"listed in.\r\n\r\n"
+		"\tReturns true if all of its arguments have become true in the order they are listed in.\r\n"
+		"NOTE 1: This is more strict than might be apparent.  If argument 2 becomes true while argument 1 is still pending, then the operator will immediately "
+		"return false because the arguments did not become true in the correct sequence.\r\n"
+		"NOTE 2: This operator should not be used with when-argument or any -argument SEXPs because its method of caching arguments is not compatible.\r\n"
 		"Returns a boolean value.  Takes 2 or more boolean arguments." },
 
 	{ OP_SKILL_LEVEL_AT_LEAST, "Skill level at least (Boolean operator)\r\n"
