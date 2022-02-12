@@ -168,9 +168,6 @@ void timestamp_update_time_compression();
 // Save the timestamp corresponding to the beginning of the mission
 void timestamp_start_mission();
 
-// Restore the timestamp corresponding to the beginning of the mission, since we essentially start time twice
-void timestamp_revert_to_mission_start();
-
 // Calculate the current mission time using the timestamps
 fix timestamp_get_mission_time();
 

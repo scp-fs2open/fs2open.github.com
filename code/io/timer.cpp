@@ -379,12 +379,6 @@ void timestamp_start_mission()
 	Timestamp_microseconds_at_mission_start = timestamp_get_microseconds();
 }
 
-void timestamp_revert_to_mission_start()
-{
-	auto delta_microseconds = (timestamp_get_microseconds() - Timestamp_microseconds_at_mission_start);
-	timestamp_adjust_microseconds(delta_microseconds, TIMER_DIRECTION::BACKWARD);
-}
-
 fix timestamp_get_mission_time()
 {
 	// convert timestamp to mission time

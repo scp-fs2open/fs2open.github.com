@@ -1357,9 +1357,6 @@ void game_post_level_init()
 
 	mission_process_alt_types();
 
-	// Now that loading is complete, resume time so that timestamps used in the briefing screens will work
-	game_start_time();
-
 	// m!m Make hv.Player available in "On Mission Start" hook
 	if(Player_obj)
 		Script_system.SetHookObject("Player", Player_obj);
@@ -4352,11 +4349,6 @@ void game_update_missiontime()
 
 void game_do_frame(bool set_frametime)
 {
-	if (Missiontime == 0) {
-		// reset the timestamps to the beginning, since they were running in the briefing screens
-		timestamp_revert_to_mission_start();
-	}
-
 	if (set_frametime) {
 		game_set_frametime(GS_STATE_GAME_PLAY);
 	}
