@@ -229,24 +229,21 @@ bool valid_pilot(const char* callsign, bool no_popup) {
 			popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR(
 				"Selected pilot was created with a different language\n"
 				"to the currently active language.\n\n"
-				"Please select a different pilot or change the language", 1637));
+				"Please select a different pilot or change the language.", 1637));
 		}
 		return false;
 	}
 
 	// verify pilot flags raised by Pilot::verify()
 	// if no_popup == true, assume sel = 0
-	if ((player_flags & (PLAYER_FLAGS_PLR_VER_LOWER | PLAYER_FLAGS_PLR_VER_HIGHER)) && (!no_popup)) {
+	if ((player_flags & (PLAYER_FLAGS_PLR_VER_IS_LOWER | PLAYER_FLAGS_PLR_VER_IS_HIGHER)) && (!no_popup)) {
 		// warning: Selected player version is different than the expected version
 		int sel = popup(PF_TITLE_BIG | PF_TITLE_RED, 2, POPUP_YES, POPUP_NO, XSTR(
-						"Warning!\n\n"
-						"Selected pilot was created with a different version of Freespace.\n\n"
-						"Should you continue with this pilot, it will be converted to version %i.\n\n"
-						"This update is irreversible and may make the pilot incompatible with other versions.\n\n"
-						"It is highly recommended that you clone this pilot and then use the clone instead.\n\n"
-						"Please visit https://wiki.hard-light.net/index.php/Frequently_Asked_Questions for more information.\n\n"
-						"Do you wish to continue?", 1663),
-						PLR_VERSION);
+			"Warning!\n\n"
+			"This pilot was created with a different version of FreeSpace.  If you continue, it will be converted to version %i.\n\n"
+			"Please consider cloning the pilot instead, so that the original pilot will remain compatible with the other version.  Visit https://wiki.hard-light.net/index.php/Frequently_Asked_Questions for more information.\n\n"
+			"Do you wish to continue?", 1663),
+			PLR_VERSION);
 
 		if (sel != 0) {
 			// Player either hit No or the popup was aborted, so bail
@@ -1459,16 +1456,16 @@ void player_tips_popup()
 }
 
 void player_tips_controls() {
-	if (Player->save_flags & PLAYER_FLAGS_PLR_VER_CONTROLS) {
+	if (Player->save_flags & PLAYER_FLAGS_PLR_VER_PRE_CONTROLS5) {
 		// Special case. Since the Controls5 PR is significantly different from retail, users must be informed
 		// of changes regarding their bindings
 
-		Player->save_flags &= ~PLAYER_FLAGS_PLR_VER_CONTROLS;	// Clear the flag, since we're notifying the user right now
+		Player->save_flags &= ~PLAYER_FLAGS_PLR_VER_PRE_CONTROLS5;	// Clear the flag, since we're notifying the user right now
 
 		int sel = popup(PF_NO_SPECIAL_BUTTONS | PF_TITLE_BIG | PF_TITLE_GREEN, 2, POPUP_OK, XSTR("Don't show me this again", 1443),
-						XSTR("Notice!\n\n"
-						"The currently selected pilot was from a version older than FSO 22.0.\n\n"
-						"It is strongly recommended that you verify your control bindings within the Options -> Control Config menu.\n", 1664));
+			XSTR("Notice!\n\n"
+			"The currently selected pilot was converted from a version older than FSO 22.0.\n\n"
+			"It is strongly recommended that you verify your control bindings within the Options -> Control Config menu.", 1664));
 
 		if (sel == 1) {
 			// Don't show me this again!

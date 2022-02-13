@@ -271,8 +271,8 @@ TEST_F(PilotPlayerFileTest, binaryToJSONConversion) {
 	ASSERT_TRUE(loader.load_player("asdf", &json_plr, false));
 
 	// Ignore version flags since the .plr -> .json conversion is not a pure clone
-	#define IGNORE_FLAGS PLAYER_FLAGS_PLR_VER_LOWER | PLAYER_FLAGS_PLR_VER_HIGHER
-	#define IGNORE_SAVE_FLAGS PLAYER_FLAGS_PLR_VER_CONTROLS
+	#define IGNORE_FLAGS PLAYER_FLAGS_PLR_VER_IS_LOWER | PLAYER_FLAGS_PLR_VER_IS_HIGHER
+	#define IGNORE_SAVE_FLAGS PLAYER_FLAGS_PLR_VER_PRE_CONTROLS5
 
 	binary_plr.flags |= IGNORE_FLAGS;
 	binary_plr.save_flags |= IGNORE_SAVE_FLAGS;

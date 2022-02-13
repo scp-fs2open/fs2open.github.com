@@ -1105,14 +1105,14 @@ bool pilotfile::load_player(const char* callsign, player* _p, bool force_binary)
 	// Flags to signal the main UI the state of the loaded player file
 	// Do these here after player_read_flags() so they don't get trashed!
 	if (plr_ver < 4) {
-		p->save_flags |= PLAYER_FLAGS_PLR_VER_CONTROLS;
+		p->save_flags |= PLAYER_FLAGS_PLR_VER_PRE_CONTROLS5;
 	}
 
 	if (plr_ver < PLR_VERSION) {
-		p->flags |= PLAYER_FLAGS_PLR_VER_LOWER;
+		p->flags |= PLAYER_FLAGS_PLR_VER_IS_LOWER;
 
 	} else if (plr_ver > PLR_VERSION) {
-		p->flags |= PLAYER_FLAGS_PLR_VER_HIGHER;
+		p->flags |= PLAYER_FLAGS_PLR_VER_IS_HIGHER;
 	}
 
 	mprintf(("PLR => Loading complete!\n"));
@@ -1300,14 +1300,14 @@ bool pilotfile::verify(const char *fname, int *rank, char *valid_language, int* 
 	// Flags to signal the main UI the state of the loaded player file
 	// Do these here after player_read_flags() so they don't get trashed!
 	if (plr_ver < 4) {
-		p->save_flags |= PLAYER_FLAGS_PLR_VER_CONTROLS;
+		p->save_flags |= PLAYER_FLAGS_PLR_VER_PRE_CONTROLS5;
 	}
 
 	if (plr_ver < PLR_VERSION) {
-		p->flags |= PLAYER_FLAGS_PLR_VER_LOWER;
+		p->flags |= PLAYER_FLAGS_PLR_VER_IS_LOWER;
 
 	} else if (plr_ver > PLR_VERSION) {
-		p->flags |= PLAYER_FLAGS_PLR_VER_HIGHER;
+		p->flags |= PLAYER_FLAGS_PLR_VER_IS_HIGHER;
 	}
 
 	if (valid_language) {
