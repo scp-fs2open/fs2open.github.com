@@ -127,7 +127,7 @@ int Conflict_warning_coords[GR_NUM_RESOLUTIONS][2] = {
 
 // for flashing the conflict text
 #define CONFLICT_FLASH_TIME	250
-int Conflict_stamp = -1;
+UI_TIMESTAMP Conflict_stamp;
 int Conflict_bright = 0;
 
 #define LIST_BUTTONS_MAX	42
@@ -1462,7 +1462,7 @@ void control_config_init()
 	help_overlay_set_state(Control_config_overlay_id,gr_screen.res,0);
 
 	// reset conflict flashing
-	Conflict_stamp = -1;
+	Conflict_stamp = UI_TIMESTAMP::invalid();
 
 	for (i=0; i<NUM_BUTTONS; i++) {
 		b = &CC_Buttons[gr_screen.res][i];
@@ -1801,7 +1801,7 @@ void control_config_do_frame(float frametime)
 	int font_height = gr_get_font_height();
 	int select_tease_line = -1;  // line mouse is down on, but won't be selected until button released
 	static float timer = 0.0f;
-	static int bound_timestamp = 0;
+	static UI_TIMESTAMP bound_timestamp;
 	static char bound_string[40];
 	
 	timer += frametime;
@@ -1859,7 +1859,7 @@ void control_config_do_frame(float frametime)
 		if (k == KEY_ESC) {
 			// Cancel bind if ESC is pressed
 			strcpy_s(bound_string, XSTR("Canceled", 206));
-			bound_timestamp = timestamp(2500);
+			bound_timestamp = ui_timestamp(2500);
 			control_config_do_cancel();
 
 		} else if (Control_config[z].is_axis()) {
@@ -1960,7 +1960,7 @@ void control_config_do_frame(float frametime)
 		if (done) {
 			// done with binding mode, clean up and prepare for display
 			font::force_fit_string(bound_string, 39, Conflict_wnd_coords[gr_screen.res][CONTROL_W_COORD]);
-			bound_timestamp = timestamp(2500);
+			bound_timestamp = ui_timestamp(2500);
 			control_config_conflict_check();
 			control_config_list_prepare();
 			control_config_do_cancel();
@@ -2271,10 +2271,10 @@ void control_config_do_frame(float frametime)
 
 	if (z) {
 		// maybe switch from bright to normal
-		if((Conflict_stamp == -1) || timestamp_elapsed(Conflict_stamp)){
+		if (!Conflict_stamp.isValid() || ui_timestamp_elapsed(Conflict_stamp)){
 			Conflict_bright = !Conflict_bright;
 
-			Conflict_stamp = timestamp(CONFLICT_FLASH_TIME);
+			Conflict_stamp = ui_timestamp(CONFLICT_FLASH_TIME);
 		}
 
 		// set color and font
@@ -2298,7 +2298,7 @@ void control_config_do_frame(float frametime)
 		font::set_font(font::FONT1);
 	} else {
 		// might as well always reset the conflict stamp
-		Conflict_stamp = -1;
+		Conflict_stamp = UI_TIMESTAMP::invalid();
 	}
 
 	// Find if a tab button was pressed
@@ -2397,7 +2397,7 @@ void control_config_do_frame(float frametime)
 		gr_set_color_fast(&Color_text_normal);
 		gr_get_string_size(&w, NULL, bound_string);
 		gr_printf_menu(x - w / 2, y - font_height / 2, "%s", bound_string);
-		if (timestamp_elapsed(bound_timestamp)) {
+		if (ui_timestamp_elapsed(bound_timestamp)) {
 			*bound_string = 0;
 		}
 	}

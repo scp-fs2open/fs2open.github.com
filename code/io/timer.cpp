@@ -158,15 +158,20 @@ int timestamp() {
 	return timestamp_ms();
 }
 
+UI_TIMESTAMP ui_timestamp() {
+	return UI_TIMESTAMP(timer_get_milliseconds());
+}
+
 // ======================================== checking timestamps ========================================
 
 // Restrict all time values between 0 and MAX_TIME
 // so we don't have to use UINTs to calculate rollover.
 // For debugging & testing, you could set this to
 // something like 1 minute (60000).
+// Although this is around 12.4 days (1073741823 milliseconds).
 extern const std::uint32_t MAX_TIME = INT_MAX / 2;
 
-int timestamp(int delta_ms ) {
+int timestamp(int delta_ms) {
 	int t2;
 	if (delta_ms < 0 ) return 0;
 	if (delta_ms == 0 ) return 1;
@@ -179,9 +184,23 @@ int timestamp(int delta_ms ) {
 	return t2;
 }
 
+UI_TIMESTAMP ui_timestamp(int delta_ms) {
+	int t2;
+	if (delta_ms < 0 ) return UI_TIMESTAMP::never();
+	if (delta_ms == 0 ) return UI_TIMESTAMP::immediate();
+	t2 = timer_get_milliseconds() + delta_ms;
+	if ( t2 > (int)MAX_TIME )	{
+		// wrap!!!
+		t2 = delta_ms - (MAX_TIME-timer_get_milliseconds());
+	}
+	if (t2 < 2 ) t2 = 2;	// hack??
+	return UI_TIMESTAMP(t2);
+}
+
 //	Returns milliseconds until timestamp will elapse.
 //	Negative value gives milliseconds ago that timestamp elapsed.
-int timestamp_until(int stamp) {
+int timestamp_until(int stamp)
+{
 	// JAS: FIX
 	// HACK!! This doesn't handle rollover!
 	// (Will it ever happen?)
@@ -203,6 +222,16 @@ int timestamp_until(int stamp) {
 */
 }
 
+int ui_timestamp_until(UI_TIMESTAMP stamp)
+{
+	if (!stamp.isValid() || stamp.isNever())
+		return INT_MAX;
+	if (stamp.isImmediate())
+		return 0;
+
+	return stamp.value() - timer_get_milliseconds();
+}
+
 int timestamp_has_time_elapsed(int stamp, int time) {
 	int t;
 
@@ -222,6 +251,17 @@ bool timestamp_elapsed(int stamp) {
 	}
 
 	return timestamp_ms() >= stamp;
+}
+
+bool ui_timestamp_elapsed(UI_TIMESTAMP ui_stamp) {
+	if (!ui_stamp.isValid() || ui_stamp.isNever()) {
+		return false;
+	}
+	if (ui_stamp.isImmediate()) {
+		return true;
+	}
+
+	return timer_get_milliseconds() >= ui_stamp.value();
 }
 
 bool timestamp_elapsed_safe(int a, int b) {
@@ -337,12 +377,6 @@ void timestamp_update_time_compression()
 void timestamp_start_mission()
 {
 	Timestamp_microseconds_at_mission_start = timestamp_get_microseconds();
-}
-
-void timestamp_revert_to_mission_start()
-{
-	auto delta_microseconds = (timestamp_get_microseconds() - Timestamp_microseconds_at_mission_start);
-	timestamp_adjust_microseconds(delta_microseconds, TIMER_DIRECTION::BACKWARD);
 }
 
 fix timestamp_get_mission_time()

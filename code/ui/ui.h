@@ -203,8 +203,8 @@ class UI_BUTTON : public UI_GADGET
 
 		char *text;
 		int position;			// indicates position of button (0 - up, 1 - down by mouse click 2 - down by keypress
-		int next_repeat;		// timestamp for next repeat if held down
-		int m_press_linger;	// timestamp for hold a pressed state animation
+		UI_TIMESTAMP next_repeat;		// timestamp for next repeat if held down
+		UI_TIMESTAMP m_press_linger;	// timestamp for hold a pressed state animation
 		int hotkey_if_focus;	// hotkey for button that only works if it has focus
 		int force_draw_frame;	// frame number to draw next time (override default)
 		int first_callback;		// true until first time callback function is called for button highlight

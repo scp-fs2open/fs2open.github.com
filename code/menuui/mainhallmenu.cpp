@@ -258,7 +258,7 @@ static int Main_hall_paused = 0;
 #define MAIN_HALL_NOTIFY_TIME	3500
 
 // timestamp for the notification messages
-int Main_hall_notify_stamp = -1;
+UI_TIMESTAMP Main_hall_notify_stamp;
 
 // text to display as the current notification message
 char Main_hall_notify_text[300]="";
@@ -626,7 +626,7 @@ void main_hall_init(const SCP_string &main_hall_name)
 	main_hall_start_music();
 
 	// initialize the main hall notify text
-	Main_hall_notify_stamp = 1;
+	Main_hall_notify_stamp = UI_TIMESTAMP::immediate();
 
 	// initialize the random intercom sound stuff
 	Main_hall_next_intercom_sound = 0;
@@ -1616,7 +1616,7 @@ void main_hall_handle_random_intercom_sounds()
 void main_hall_set_notify_string(const char *str)
 {
 	strcpy_s(Main_hall_notify_text,str);
-	Main_hall_notify_stamp = timestamp(MAIN_HALL_NOTIFY_TIME);
+	Main_hall_notify_stamp = ui_timestamp(MAIN_HALL_NOTIFY_TIME);
 }
 
 /**
@@ -1625,11 +1625,11 @@ void main_hall_set_notify_string(const char *str)
 void main_hall_notify_do()
 {
 	// check to see if we should try and do something
-	if (Main_hall_notify_stamp != -1) {
+	if (Main_hall_notify_stamp.isValid()) {
 		// if the text time has expired
-		if (timestamp_elapsed(Main_hall_notify_stamp)) {
-			strcpy_s(Main_hall_notify_text,"");
-			Main_hall_notify_stamp = -1;
+		if (ui_timestamp_elapsed(Main_hall_notify_stamp)) {
+			strcpy_s(Main_hall_notify_text, "");
+			Main_hall_notify_stamp = UI_TIMESTAMP::invalid();
 		} else {
 			int w,h;
 

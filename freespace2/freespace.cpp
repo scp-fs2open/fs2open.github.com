@@ -346,9 +346,9 @@ extern void ssm_process();
 
 // amount of time to wait after the player has died before we display the death died popup
 #define PLAYER_DIED_POPUP_WAIT		2500
-int Player_died_popup_wait = -1;
+UI_TIMESTAMP Player_died_popup_wait;
 
-int Multi_ping_timestamp = -1;
+UI_TIMESTAMP Multi_ping_timestamp;
 
 
 const auto OnMissionAboutToEndHook = scripting::Hook::Factory(
@@ -966,7 +966,7 @@ void game_level_init()
 	// Initialize the game subsystems
 	game_time_level_init();
 
-	Multi_ping_timestamp = -1;
+	Multi_ping_timestamp = UI_TIMESTAMP::invalid();
 
 	obj_init();						// Must be inited before the other systems
 
@@ -1356,9 +1356,6 @@ void game_post_level_init()
 	freespace_mission_load_stuff();
 
 	mission_process_alt_types();
-
-	// Now that loading is complete, resume time so that timestamps used in the briefing screens will work
-	game_start_time();
 
 	// m!m Make hv.Player available in "On Mission Start" hook
 	if(Player_obj)
@@ -4068,13 +4065,13 @@ void game_frame(bool paused)
 					if(Net_player->flags & NETINFO_FLAG_WARPING_OUT){
 						multi_handle_sudden_mission_end();
 						send_debrief_event();
-					} else if((Player_died_popup_wait != -1) && (timestamp_elapsed(Player_died_popup_wait))){
-						Player_died_popup_wait = -1;
+					} else if (Player_died_popup_wait.isValid() && ui_timestamp_elapsed(Player_died_popup_wait)) {
+						Player_died_popup_wait = UI_TIMESTAMP::invalid();
 						popupdead_start();
 					}
 				} else {
-					if((Player_died_popup_wait != -1) && (timestamp_elapsed(Player_died_popup_wait))){
-						Player_died_popup_wait = -1;
+					if (Player_died_popup_wait.isValid() && ui_timestamp_elapsed(Player_died_popup_wait)) {
+						Player_died_popup_wait = UI_TIMESTAMP::invalid();
 						popupdead_start();
 					}
 				}
@@ -4352,11 +4349,6 @@ void game_update_missiontime()
 
 void game_do_frame(bool set_frametime)
 {
-	if (Missiontime == 0) {
-		// reset the timestamps to the beginning, since they were running in the briefing screens
-		timestamp_revert_to_mission_start();
-	}
-
 	if (set_frametime) {
 		game_set_frametime(GS_STATE_GAME_PLAY);
 	}
@@ -5942,7 +5934,7 @@ void mouse_force_pos(int x, int y);
 
 			// timestamp how long we should wait before displaying the died popup
 			if ( !popupdead_is_active() ) {
-				Player_died_popup_wait = timestamp(PLAYER_DIED_POPUP_WAIT);
+				Player_died_popup_wait = ui_timestamp(PLAYER_DIED_POPUP_WAIT);
 			}
 			break;
 

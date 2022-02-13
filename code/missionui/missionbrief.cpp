@@ -74,7 +74,7 @@ static int	Brief_playing_fade_sound;
 hud_anim		Fade_anim;
 
 int	Briefing_music_handle = -1;
-int	Briefing_music_begin_timestamp = 0;
+UI_TIMESTAMP Briefing_music_begin_timestamp;
 
 int Briefing_overlay_id = -1;
 
