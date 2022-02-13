@@ -1037,6 +1037,9 @@ void main_hall_do(float frametime)
 		}
 	}
 
+	// Display a popup if playermenu loaded a player file with a different version than expected
+	player_tips_controls();
+
 	// maybe run the player tips popup
 	player_tips_popup();
 
