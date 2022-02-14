@@ -1465,7 +1465,7 @@ void player_tips_controls() {
 		int sel = popup(PF_NO_SPECIAL_BUTTONS | PF_TITLE_BIG | PF_TITLE_GREEN, 2, POPUP_OK, XSTR("Don't show me this again", 1443),
 			XSTR("Notice!\n\n"
 			"The currently selected pilot was converted from a version older than FSO 22.0.\n\n"
-			"It is strongly recommended that you verify your control bindings within the Options -> Control Config screen, as well as verify your Mouse Input Mode (formerly Mouse Off/On) within the Options screen.", 1664));
+			"It is strongly recommended that you verify your control bindings within the Options -> Control Config menu.", 1664));
 
 		if (sel == 1) {
 			// Don't show me this again!
