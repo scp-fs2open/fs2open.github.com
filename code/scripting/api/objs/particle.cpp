@@ -173,7 +173,7 @@ ADE_VIRTVAR(TracerLength, l_Particle, "number", "The tracer legth of the particl
 	return ade_set_args(L, "f", -1.0f);
 }
 
-ADE_VIRTVAR(AttachedObject, l_Particle, "object", "The object this particle is attached to. If valid the position will be relativ to this object and the velocity will be ignored.", "object", "Attached object or invalid object handle on error")
+ADE_VIRTVAR(AttachedObject, l_Particle, "object", "The object this particle is attached to. If valid the position will be relative to this object and the velocity will be ignored.", "object", "Attached object or invalid object handle on error")
 {
 	particle_h *ph = NULL;
 	object_h *newObj = nullptr;
@@ -192,7 +192,7 @@ ADE_VIRTVAR(AttachedObject, l_Particle, "object", "The object this particle is a
 			ph->Get().lock()->attached_objnum = newObj->objp->signature;
 	}
 
-	return ade_set_args(L, "o", l_Object.Set(object_h(&Objects[ph->Get().lock()->attached_objnum])));
+	return ade_set_object_with_breed(L, ph->Get().lock()->attached_objnum);
 }
 
 ADE_FUNC(isValid, l_Particle, NULL, "Detects whether this handle is valid", "boolean", "true if valid false if not")
