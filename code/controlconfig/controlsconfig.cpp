@@ -562,22 +562,44 @@ CC_bind control_config_detect_axis()
 	found_axis:;
 
 	if (j == CID_JOY_MAX) {
-		j = CID_NONE;
-	}
-
-	if ( (j == CID_NONE) && Use_mouse_to_fly ) {
 		// Nothing found amongst the joysticks. Check the mouse.
 		mouse_get_delta( &dx, &dy, &dz );
 
-		if ( (dx > deadzone) || (dx < -deadzone) ) {
+		if (Use_mouse_to_fly) {
+			// Treat mouse as Joy0
+			j = CID_JOY0;
+
+			if ((dx > deadzone) || (dx < -deadzone)) {
+				axis = JOY_X_AXIS;
+
+			} else if ((dy > deadzone) || (dy < -deadzone)) {
+				axis = JOY_Y_AXIS;
+
+			} else if ((dz > deadzone) || (dz < -deadzone)) {
+				axis = JOY_Z_AXIS;
+
+			} else {
+				// Nothing detected
+				j = CID_NONE;
+			}
+
+		} else {
+			// Treat mouse as mouse
 			j = CID_MOUSE;
-			axis = MOUSE_X_AXIS;
-		} else if ( (dy > deadzone) || (dy < -deadzone) ) {
-			j = CID_MOUSE;
-			axis = MOUSE_Y_AXIS;
-		} else if ( (dz > deadzone) || (dz < -deadzone) ) {
-			j = CID_MOUSE;
-			axis = MOUSE_Z_AXIS;
+
+			if ((dx > deadzone) || (dx < -deadzone)) {
+				axis = MOUSE_X_AXIS;
+
+			} else if ((dy > deadzone) || (dy < -deadzone)) {
+				axis = MOUSE_Y_AXIS;
+
+			} else if ((dz > deadzone) || (dz < -deadzone)) {
+				axis = MOUSE_Z_AXIS;
+
+			} else {
+				// Nothing detected
+				j = CID_NONE;
+			}
 		}
 	}
 	
@@ -1941,11 +1963,23 @@ void control_config_do_frame(float frametime)
 					}
 				}
 
-				if (i == NUM_BUTTONS) {  // no buttons pressed, go ahead with polling the mouse
+				if (i == NUM_BUTTONS) {
+					// no buttons pressed, go ahead with polling the mouse
+					CID cid;
+					if (Use_mouse_to_fly) {
+						// treat mouse as Joy0
+						cid = CID_JOY0;
+					} else {
+						// treat mouse as mouse
+						cid = CID_MOUSE;
+					}
+
 					for (i=0; i<MOUSE_NUM_BUTTONS; i++) {
-						if (mouse_down(CC_bind(CID_MOUSE, static_cast<short>(i)))) {
+						CC_bind mouse_bind(cid, static_cast<short>(i));
+
+						if (mouse_down(mouse_bind)) {
 							Assert(!Control_config[z].is_axis());
-							control_config_bind(z, CC_bind(CID_MOUSE, static_cast<short>(i)), Selected_item);
+							control_config_bind(z, mouse_bind, Selected_item);
 
 							strcpy_s(bound_string, Joy_button_text[i]);
 							done = true;
@@ -2642,13 +2676,17 @@ void scale_invert(const CC_bind &bind,
 	const auto cid = bind.get_cid();
 	const auto btn = bind.get_btn();
 
+	factor = (float)Mouse_sensitivity + 1.77f;
+	factor = factor * factor / frame_time / 0.6f;
+
 	switch (cid) {
 	case CID_MOUSE:
-		factor = (float)Mouse_sensitivity + 1.77f;
-		factor = factor * factor / frame_time / 0.6f;
-		if (!Use_mouse_to_fly) {
+		if (Use_mouse_to_fly) {
+			// Mouse is treated as Joy0, Nullify controls bound to the mouse axis to prevent cross talk
+			axis_out[action] = 0;
 			return;
-		}
+
+		} // else Mouse is treated as mouse, get the axis values
 
 		dx = axis_in[MOUSE_ID][btn];
 		maybe_invert(bind.is_inverted(), type, dx);
@@ -2656,6 +2694,14 @@ void scale_invert(const CC_bind &bind,
 		break;
 
 	case CID_JOY0:
+		if (Use_mouse_to_fly) {
+			// Mouse is treated as Joy0
+			dx = axis_in[MOUSE_ID][btn];
+			maybe_invert(bind.is_inverted(), type, dx);
+			axis_out[action] += (int)((float)dx * factor);
+		}
+		FALLTHROUGH;
+
 	case CID_JOY1:
 	case CID_JOY2:
 	case CID_JOY3:
@@ -2699,10 +2745,8 @@ void control_get_axes_readings(int *axis_v, float frame_time)
 		joystick_read_raw_axis(j, JOY_NUM_AXES, axe[j]);
 	}
 
-	// Read raw mouse, stuff in axes_values[0]
-	if (Use_mouse_to_fly) {
-		mouse_get_delta(&axe[MOUSE_ID][MOUSE_X_AXIS], &axe[MOUSE_ID][MOUSE_Y_AXIS], &axe[MOUSE_ID][MOUSE_Z_AXIS]);
-	}
+	// Read raw mouse
+	mouse_get_delta(&axe[MOUSE_ID][MOUSE_X_AXIS], &axe[MOUSE_ID][MOUSE_Y_AXIS], &axe[MOUSE_ID][MOUSE_Z_AXIS]);
 
 	for (int action = 0; action < Action::NUM_VALUES; ++action) {
 		CCI & item = Control_config[action + JOY_AXIS_BEGIN];
