@@ -2681,16 +2681,13 @@ void scale_invert(const CC_bind &bind,
 
 	switch (cid) {
 	case CID_MOUSE:
-		if (Use_mouse_to_fly) {
-			// Mouse is treated as Joy0, Nullify controls bound to the mouse axis to prevent cross talk
-			axis_out[action] = 0;
-			return;
+		if (!Use_mouse_to_fly) {
+			// Mouse is treated as mouse, get the axis values
+			dx = axis_in[MOUSE_ID][btn];
+			maybe_invert(bind.is_inverted(), type, dx);
+			axis_out[action] += (int)((float)dx * factor);
 
-		} // else Mouse is treated as mouse, get the axis values
-
-		dx = axis_in[MOUSE_ID][btn];
-		maybe_invert(bind.is_inverted(), type, dx);
-		axis_out[action] += (int)((float)dx * factor);
+		} // else, Mouse is treated as joy, ignore and let CID_JOY0 case handle it on next call
 		break;
 
 	case CID_JOY0:
