@@ -243,13 +243,13 @@ ADE_VIRTVAR(Radius, l_Model, "number", "Model radius (Used for collision & culli
 	return ade_set_args(L, "f", pm->rad);
 }
 
-ADE_FUNC(isValid, l_Model, NULL, "True if valid, false or nil if not", "boolean", "Detects whether handle is valid")
+ADE_FUNC(isValid, l_Model, nullptr, "True if valid, false or nil if not", "boolean", "Detects whether handle is valid")
 {
 	model_h *mdl;
 	if(!ade_get_args(L, "o", l_Model.GetPtr(&mdl)))
 		return ADE_RETURN_NIL;
 
-	return mdl->IsValid();
+	return ade_set_args(L, "b", mdl->IsValid());
 }
 
 
