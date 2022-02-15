@@ -746,7 +746,7 @@ ADE_FUNC(getParent, l_Subsystem, NULL, "The object parent of this subsystem, is 
 	if (!sso->isSubsystemValid())
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
-	return ade_set_args(L, "o", l_Object.Set(object_h(sso->objp)));
+	return ade_set_object_with_breed(L, OBJ_INDEX(sso->objp));
 }
 
 ADE_FUNC(isInViewFrom, l_Subsystem, "vector from",

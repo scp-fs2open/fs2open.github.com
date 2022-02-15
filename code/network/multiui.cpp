@@ -292,12 +292,12 @@ int Multi_common_msg_y[GR_NUM_RESOLUTIONS] = {
 };
 
 char Multi_common_notify_text[200];
-int Multi_common_notify_stamp;
+UI_TIMESTAMP Multi_common_notify_stamp;
 
 void multi_common_notify_init()
 {
 	strcpy_s(Multi_common_notify_text,"");
-	Multi_common_notify_stamp = -1;
+	Multi_common_notify_stamp = UI_TIMESTAMP::invalid();
 }
 
 // add a notification string, drawing appropriately depending on the state/screen we're in
@@ -305,16 +305,16 @@ void multi_common_add_notify(const char *str)
 {
 	if(str){
 		strcpy_s(Multi_common_notify_text,str);
-		Multi_common_notify_stamp = timestamp(MULTI_COMMON_NOTIFY_TIME);
+		Multi_common_notify_stamp = ui_timestamp(MULTI_COMMON_NOTIFY_TIME);
 	}
 }
 
 // process/display notification messages
 void multi_common_notify_do()
 {
-	if(Multi_common_notify_stamp != -1){
-		if(timestamp_elapsed(Multi_common_notify_stamp)){
-			Multi_common_notify_stamp = -1;
+	if (Multi_common_notify_stamp.isValid()){
+		if (ui_timestamp_elapsed(Multi_common_notify_stamp)){
+			Multi_common_notify_stamp = UI_TIMESTAMP::invalid();
 		} else {
 			int w,h,y;
 			gr_get_string_size(&w,&h,Multi_common_notify_text);

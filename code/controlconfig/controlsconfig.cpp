@@ -127,7 +127,7 @@ int Conflict_warning_coords[GR_NUM_RESOLUTIONS][2] = {
 
 // for flashing the conflict text
 #define CONFLICT_FLASH_TIME	250
-int Conflict_stamp = -1;
+UI_TIMESTAMP Conflict_stamp;
 int Conflict_bright = 0;
 
 #define LIST_BUTTONS_MAX	42
@@ -562,22 +562,44 @@ CC_bind control_config_detect_axis()
 	found_axis:;
 
 	if (j == CID_JOY_MAX) {
-		j = CID_NONE;
-	}
-
-	if ( (j == CID_NONE) && Use_mouse_to_fly ) {
 		// Nothing found amongst the joysticks. Check the mouse.
 		mouse_get_delta( &dx, &dy, &dz );
 
-		if ( (dx > deadzone) || (dx < -deadzone) ) {
+		if (Use_mouse_to_fly) {
+			// Treat mouse as Joy0
+			j = CID_JOY0;
+
+			if ((dx > deadzone) || (dx < -deadzone)) {
+				axis = JOY_X_AXIS;
+
+			} else if ((dy > deadzone) || (dy < -deadzone)) {
+				axis = JOY_Y_AXIS;
+
+			} else if ((dz > deadzone) || (dz < -deadzone)) {
+				axis = JOY_Z_AXIS;
+
+			} else {
+				// Nothing detected
+				j = CID_NONE;
+			}
+
+		} else {
+			// Treat mouse as mouse
 			j = CID_MOUSE;
-			axis = MOUSE_X_AXIS;
-		} else if ( (dy > deadzone) || (dy < -deadzone) ) {
-			j = CID_MOUSE;
-			axis = MOUSE_Y_AXIS;
-		} else if ( (dz > deadzone) || (dz < -deadzone) ) {
-			j = CID_MOUSE;
-			axis = MOUSE_Z_AXIS;
+
+			if ((dx > deadzone) || (dx < -deadzone)) {
+				axis = MOUSE_X_AXIS;
+
+			} else if ((dy > deadzone) || (dy < -deadzone)) {
+				axis = MOUSE_Y_AXIS;
+
+			} else if ((dz > deadzone) || (dz < -deadzone)) {
+				axis = MOUSE_Z_AXIS;
+
+			} else {
+				// Nothing detected
+				j = CID_NONE;
+			}
 		}
 	}
 	
@@ -1462,7 +1484,7 @@ void control_config_init()
 	help_overlay_set_state(Control_config_overlay_id,gr_screen.res,0);
 
 	// reset conflict flashing
-	Conflict_stamp = -1;
+	Conflict_stamp = UI_TIMESTAMP::invalid();
 
 	for (i=0; i<NUM_BUTTONS; i++) {
 		b = &CC_Buttons[gr_screen.res][i];
@@ -1801,7 +1823,7 @@ void control_config_do_frame(float frametime)
 	int font_height = gr_get_font_height();
 	int select_tease_line = -1;  // line mouse is down on, but won't be selected until button released
 	static float timer = 0.0f;
-	static int bound_timestamp = 0;
+	static UI_TIMESTAMP bound_timestamp;
 	static char bound_string[40];
 	
 	timer += frametime;
@@ -1859,7 +1881,7 @@ void control_config_do_frame(float frametime)
 		if (k == KEY_ESC) {
 			// Cancel bind if ESC is pressed
 			strcpy_s(bound_string, XSTR("Canceled", 206));
-			bound_timestamp = timestamp(2500);
+			bound_timestamp = ui_timestamp(2500);
 			control_config_do_cancel();
 
 		} else if (Control_config[z].is_axis()) {
@@ -1941,11 +1963,23 @@ void control_config_do_frame(float frametime)
 					}
 				}
 
-				if (i == NUM_BUTTONS) {  // no buttons pressed, go ahead with polling the mouse
+				if (i == NUM_BUTTONS) {
+					// no buttons pressed, go ahead with polling the mouse
+					CID cid;
+					if (Use_mouse_to_fly) {
+						// treat mouse as Joy0
+						cid = CID_JOY0;
+					} else {
+						// treat mouse as mouse
+						cid = CID_MOUSE;
+					}
+
 					for (i=0; i<MOUSE_NUM_BUTTONS; i++) {
-						if (mouse_down(CC_bind(CID_MOUSE, static_cast<short>(i)))) {
+						CC_bind mouse_bind(cid, static_cast<short>(i));
+
+						if (mouse_down(mouse_bind)) {
 							Assert(!Control_config[z].is_axis());
-							control_config_bind(z, CC_bind(CID_MOUSE, static_cast<short>(i)), Selected_item);
+							control_config_bind(z, mouse_bind, Selected_item);
 
 							strcpy_s(bound_string, Joy_button_text[i]);
 							done = true;
@@ -1960,7 +1994,7 @@ void control_config_do_frame(float frametime)
 		if (done) {
 			// done with binding mode, clean up and prepare for display
 			font::force_fit_string(bound_string, 39, Conflict_wnd_coords[gr_screen.res][CONTROL_W_COORD]);
-			bound_timestamp = timestamp(2500);
+			bound_timestamp = ui_timestamp(2500);
 			control_config_conflict_check();
 			control_config_list_prepare();
 			control_config_do_cancel();
@@ -2271,10 +2305,10 @@ void control_config_do_frame(float frametime)
 
 	if (z) {
 		// maybe switch from bright to normal
-		if((Conflict_stamp == -1) || timestamp_elapsed(Conflict_stamp)){
+		if (!Conflict_stamp.isValid() || ui_timestamp_elapsed(Conflict_stamp)){
 			Conflict_bright = !Conflict_bright;
 
-			Conflict_stamp = timestamp(CONFLICT_FLASH_TIME);
+			Conflict_stamp = ui_timestamp(CONFLICT_FLASH_TIME);
 		}
 
 		// set color and font
@@ -2298,7 +2332,7 @@ void control_config_do_frame(float frametime)
 		font::set_font(font::FONT1);
 	} else {
 		// might as well always reset the conflict stamp
-		Conflict_stamp = -1;
+		Conflict_stamp = UI_TIMESTAMP::invalid();
 	}
 
 	// Find if a tab button was pressed
@@ -2397,7 +2431,7 @@ void control_config_do_frame(float frametime)
 		gr_set_color_fast(&Color_text_normal);
 		gr_get_string_size(&w, NULL, bound_string);
 		gr_printf_menu(x - w / 2, y - font_height / 2, "%s", bound_string);
-		if (timestamp_elapsed(bound_timestamp)) {
+		if (ui_timestamp_elapsed(bound_timestamp)) {
 			*bound_string = 0;
 		}
 	}
@@ -2642,20 +2676,29 @@ void scale_invert(const CC_bind &bind,
 	const auto cid = bind.get_cid();
 	const auto btn = bind.get_btn();
 
+	factor = (float)Mouse_sensitivity + 1.77f;
+	factor = factor * factor / frame_time / 0.6f;
+
 	switch (cid) {
 	case CID_MOUSE:
-		factor = (float)Mouse_sensitivity + 1.77f;
-		factor = factor * factor / frame_time / 0.6f;
 		if (!Use_mouse_to_fly) {
-			return;
-		}
+			// Mouse is treated as mouse, get the axis values
+			dx = axis_in[MOUSE_ID][btn];
+			maybe_invert(bind.is_inverted(), type, dx);
+			axis_out[action] += (int)((float)dx * factor);
 
-		dx = axis_in[MOUSE_ID][btn];
-		maybe_invert(bind.is_inverted(), type, dx);
-		axis_out[action] += (int)((float)dx * factor);
+		} // else, Mouse is treated as joy, ignore and let CID_JOY0 case handle it on next call
 		break;
 
 	case CID_JOY0:
+		if (Use_mouse_to_fly) {
+			// Mouse is treated as Joy0
+			dx = axis_in[MOUSE_ID][btn];
+			maybe_invert(bind.is_inverted(), type, dx);
+			axis_out[action] += (int)((float)dx * factor);
+		}
+		FALLTHROUGH;
+
 	case CID_JOY1:
 	case CID_JOY2:
 	case CID_JOY3:
@@ -2699,10 +2742,8 @@ void control_get_axes_readings(int *axis_v, float frame_time)
 		joystick_read_raw_axis(j, JOY_NUM_AXES, axe[j]);
 	}
 
-	// Read raw mouse, stuff in axes_values[0]
-	if (Use_mouse_to_fly) {
-		mouse_get_delta(&axe[MOUSE_ID][MOUSE_X_AXIS], &axe[MOUSE_ID][MOUSE_Y_AXIS], &axe[MOUSE_ID][MOUSE_Z_AXIS]);
-	}
+	// Read raw mouse
+	mouse_get_delta(&axe[MOUSE_ID][MOUSE_X_AXIS], &axe[MOUSE_ID][MOUSE_Y_AXIS], &axe[MOUSE_ID][MOUSE_Z_AXIS]);
 
 	for (int action = 0; action < Action::NUM_VALUES; ++action) {
 		CCI & item = Control_config[action + JOY_AXIS_BEGIN];

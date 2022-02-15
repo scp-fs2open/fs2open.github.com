@@ -93,16 +93,14 @@ void pilotfile::plr_read_flags()
 	// if there's a valid CSG, this will be overwritten
 	p->stats.rank = handler->readInt("multi_rank");
 
-	if (version > 0) 
-	{
+	if (plr_ver > 0) {
 		p->player_was_multi = handler->readInt("was_multi");
-	} else 
-	{
+	} else {
 		p->player_was_multi = 0; // Default to single player
 	}
 
 	// which language was this pilot created with
-	if (version > 1) {
+	if (plr_ver > 1) {
 		handler->readString("language", p->language, sizeof(p->language));
 	} else {
 		// if we don't know, default to the current language setting
@@ -648,7 +646,7 @@ void pilotfile::plr_write_stats_multi()
 
 void pilotfile::plr_read_controls()
 {
-	if (version < 4) {
+	if (plr_ver < 4) {
 		// PLR < 4
 		short id1, id2;
 		int axi, inv;
@@ -698,19 +696,8 @@ void pilotfile::plr_read_controls()
 			Control_config_presets.push_back(preset);
 
 			// Try to save the preset file
-			if (save_preset_file(preset, false)) {
-				os::dialogs::Information(LOCATION, "Successfully converted playerfile to v4.  Please rebind your mouse controls within the Options -> Controls Config menu.");
-				
-				SCP_string infostring;
-				infostring += "Due to technical difficulties, playerfiles versions v4 and up are incompatible with FSO versions older than FSO 22.0.\n\n";
-
-				infostring += "Should you try to use this pilot on a pre - 22.0 version of FSO, your control bindings will revert to the defaults.\n\n";
-
-				infostring += "Please visit https://wiki.hard-light.net/index.php/Frequently_Asked_Questions for more information.";
-
-				os::dialogs::Information(LOCATION, "%s", infostring.c_str());
-			} else {
-				Warning(LOCATION, "Could not save controls preset file (%s) when converting playerfile to v3.", preset.name.c_str());
+			if (!save_preset_file(preset, false)) {
+				Warning(LOCATION, "Could not save controls preset file (%s)", preset.name.c_str());
 			}
 		}
 		return;
@@ -957,6 +944,8 @@ void pilotfile::plr_close()
 
 	m_have_flags = false;
 	m_have_info = false;
+
+	plr_ver = PLR_VERSION_INVALID;
 }
 
 bool pilotfile::load_player(const char* callsign, player* _p, bool force_binary)
@@ -1020,9 +1009,9 @@ bool pilotfile::load_player(const char* callsign, player* _p, bool force_binary)
 	}
 
 	// version, now used
-	version = handler->readUByte("version");
+	plr_ver = handler->readUByte("version");
 
-	mprintf(("PLR => Loading '%s' with version %d...\n", filename.c_str(), version));
+	mprintf(("PLR => Loading '%s' with version %d...\n", filename.c_str(), plr_ver));
 
 	//true resets everything, false sets up file verify.
 	plr_reset_data(true);
@@ -1112,6 +1101,19 @@ bool pilotfile::load_player(const char* callsign, player* _p, bool force_binary)
 	player_set_squad_bitmap(p, p->m_squad_filename, true);
 
 	hud_squadmsg_save_keys();
+
+	// Flags to signal the main UI the state of the loaded player file
+	// Do these here after player_read_flags() so they don't get trashed!
+	if (plr_ver < 4) {
+		p->save_flags |= PLAYER_FLAGS_PLR_VER_PRE_CONTROLS5;
+	}
+
+	if (plr_ver < PLR_VERSION) {
+		p->flags |= PLAYER_FLAGS_PLR_VER_IS_LOWER;
+
+	} else if (plr_ver > PLR_VERSION) {
+		p->flags |= PLAYER_FLAGS_PLR_VER_IS_HIGHER;
+	}
 
 	mprintf(("PLR => Loading complete!\n"));
 
@@ -1209,7 +1211,7 @@ bool pilotfile::save_player(player *_p)
 	return true;
 }
 
-bool pilotfile::verify(const char *fname, int *rank, char *valid_language)
+bool pilotfile::verify(const char *fname, int *rank, char *valid_language, int* flags)
 {
 	player t_plr;
 
@@ -1247,9 +1249,9 @@ bool pilotfile::verify(const char *fname, int *rank, char *valid_language)
 	}
 
 	// version, now used
-	version = handler->readUByte("version");
+	plr_ver = handler->readUByte("version");
 
-	mprintf(("PLR => Verifying '%s' with version %d...\n", filename.c_str(), version));
+	mprintf(("PLR => Verifying '%s' with version %d...\n", filename.c_str(), plr_ver));
 
 	// true resets everything, false sets up file verify.
 	plr_reset_data(false);
@@ -1295,12 +1297,31 @@ bool pilotfile::verify(const char *fname, int *rank, char *valid_language)
 	}
 	handler->endSectionRead();
 
+	// Flags to signal the main UI the state of the loaded player file
+	// Do these here after player_read_flags() so they don't get trashed!
+	if (plr_ver < 4) {
+		p->save_flags |= PLAYER_FLAGS_PLR_VER_PRE_CONTROLS5;
+	}
+
+	if (plr_ver < PLR_VERSION) {
+		p->flags |= PLAYER_FLAGS_PLR_VER_IS_LOWER;
+
+	} else if (plr_ver > PLR_VERSION) {
+		p->flags |= PLAYER_FLAGS_PLR_VER_IS_HIGHER;
+	}
+
 	if (valid_language) {
 		strcpy(valid_language, p->language);
 	}
 
 	// need to cleanup early to ensure everything is OK for use in the CSG next
 	// also means we can't use *p from now on, use t_plr instead for a few vars
+
+	// Save any player flags, if caller wants them
+	if (flags != nullptr) {
+		*flags = p->flags;
+	}
+
 	plr_close();
 
 	if (rank) {

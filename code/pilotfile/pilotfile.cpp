@@ -18,6 +18,9 @@ pilotfile::pilotfile()
 
 	cfp = NULL;
 	p = NULL;
+
+	plr_ver = PLR_VERSION_INVALID;
+	csg_ver = PLR_VERSION_INVALID;
 }
 
 pilotfile::~pilotfile()

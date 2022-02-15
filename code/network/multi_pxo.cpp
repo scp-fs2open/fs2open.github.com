@@ -912,7 +912,7 @@ void multi_pxo_run_medals();
 #define MULTI_PXO_NOTIFY_Y					435
 
 char Multi_pxo_notify_text[MAX_PXO_TEXT_LEN];
-int Multi_pxo_notify_stamp = -1;
+UI_TIMESTAMP Multi_pxo_notify_stamp;
 
 // add a notification string
 void multi_pxo_notify_add(const char *txt);
@@ -4873,7 +4873,7 @@ void multi_pxo_notify_add(const char *txt)
 	strcpy_s(Multi_pxo_notify_text, txt);
 
 	// set the timestamp
-	Multi_pxo_notify_stamp = timestamp(MULTI_PXO_NOTIFY_TIME);
+	Multi_pxo_notify_stamp = ui_timestamp(MULTI_PXO_NOTIFY_TIME);
 }
 
 /**
@@ -4884,13 +4884,13 @@ void multi_pxo_notify_blit()
 	int w;
 
 	// if the timestamp is -1, do nothing
-	if(Multi_pxo_notify_stamp == -1){
+	if (!Multi_pxo_notify_stamp.isValid()){
 		return;
 	}
 
 	// if it has expired, do nothing
-	if(timestamp_elapsed(Multi_pxo_notify_stamp)){
-		Multi_pxo_notify_stamp = -1;
+	if (ui_timestamp_elapsed(Multi_pxo_notify_stamp)){
+		Multi_pxo_notify_stamp = UI_TIMESTAMP::invalid();
 	}
 
 	// otherwise blit the text

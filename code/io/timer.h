@@ -14,11 +14,29 @@
 
 #include "globalincs/pstypes.h"
 
+#include "utils/id.h"
 #include "utils/Random.h"
 
 #include <cstdint>
 
 using Random = util::Random;
+
+// "strong typedef", based on similar usage in gamesnd
+struct ui_timestamp_tag {};
+class UI_TIMESTAMP : public util::ID<ui_timestamp_tag, int, -1>
+{
+public:
+	static UI_TIMESTAMP invalid() { return {}; }
+	static UI_TIMESTAMP never() { return UI_TIMESTAMP(0); }
+	static UI_TIMESTAMP immediate() { return UI_TIMESTAMP(1); }
+
+	UI_TIMESTAMP() = default;
+	explicit UI_TIMESTAMP(int val) : ID(val) { }
+
+	inline bool isNever() const { return m_val == 0; }
+	inline bool isImmediate() const { return m_val == 1; }
+};
+
 
 //==========================================================================
 // This installs the timer services and interrupts at the rate specified by
@@ -68,6 +86,9 @@ extern int timer_get_seconds();				// seconds since program started... not accur
 // but the count that is right now.
 int timestamp();
 
+// same, but for use in the UI, so not subject to time compression or pauses
+UI_TIMESTAMP ui_timestamp();
+
 inline bool timestamp_valid(int stamp) {
 	return stamp != 0;
 }
@@ -83,7 +104,8 @@ inline bool timestamp_valid(int stamp) {
 // pass -1 for an invalid timestamp that will never time out
 // pass 0 for a timestamp that is instantly timed out
 // pass n > 0 for timestamp n milliseconds in the future.
-int timestamp(int delta_ms );
+int timestamp(int delta_ms);
+UI_TIMESTAMP ui_timestamp(int delta_ms);
 
 // gets a timestamp randomly between a and b milliseconds in
 // the future.
@@ -93,6 +115,7 @@ inline int timestamp_rand(int a, int b) {
 
 //	Returns milliseconds until timestamp will elapse.
 int timestamp_until(int stamp);
+int ui_timestamp_until(UI_TIMESTAMP stamp);
 
 // checks if a specified time (in milliseconds) has elapsed past the given timestamp (which
 // should be obtained from timestamp() or timestamp(x) with a positive x)
@@ -107,6 +130,7 @@ int timestamp_has_time_elapsed(int stamp, int time);
 //   fire_laser();
 
 bool timestamp_elapsed( int stamp );
+bool ui_timestamp_elapsed( UI_TIMESTAMP stamp );
 
 // safer version of timestamp
 bool timestamp_elapsed_safe(int a, int b);
@@ -143,9 +167,6 @@ void timestamp_update_time_compression();
 
 // Save the timestamp corresponding to the beginning of the mission
 void timestamp_start_mission();
-
-// Restore the timestamp corresponding to the beginning of the mission, since we essentially start time twice
-void timestamp_revert_to_mission_start();
 
 // Calculate the current mission time using the timestamps
 fix timestamp_get_mission_time();

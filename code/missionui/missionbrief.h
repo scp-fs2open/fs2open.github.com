@@ -41,7 +41,7 @@ extern UI_INPUTBOX	Common_multi_text_inputbox[3];
 // Sounds
 #define		BRIEFING_MUSIC_DELAY	2500		// 650 ms delay before briefing music starts
 extern int	Briefing_music_handle;
-extern int	Briefing_music_begin_timestamp;
+extern UI_TIMESTAMP	Briefing_music_begin_timestamp;
 
 extern int Briefing_overlay_id;
 
