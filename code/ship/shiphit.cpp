@@ -469,7 +469,8 @@ void do_subobj_heal_stuff(object* ship_objp, object* other_obj, vec3d* hitpos, i
 				// if the subsystem is a turret and the hit submodel is its barrel,
 				// get the distance between the hit and the turret barrel center
 				auto pmi = model_get_instance(ship_p->model_instance_num);
-				find_submodel_instance_world_point(&g_subobj_pos, model_get(pmi->model_num), pmi, submodel_num, &ship_objp->orient, &ship_objp->pos);
+				auto pm = model_get(pmi->model_num);
+				model_instance_find_world_point(&g_subobj_pos, &vmd_zero_vector, pm, pmi, submodel_num, &ship_objp->orient, &ship_objp->pos);
 				dist = vm_vec_dist_quick(&hitpos2, &g_subobj_pos);
 
 				// Healing attenuation range of barrel radius * 2 makes full healing
@@ -788,7 +789,7 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 					pmi = model_get_instance(ship_p->model_instance_num);
 					pm = model_get(pmi->model_num);
 				}
-				find_submodel_instance_world_point(&g_subobj_pos, pm, pmi, submodel_num, &ship_objp->orient, &ship_objp->pos);
+				model_instance_find_world_point(&g_subobj_pos, &vmd_zero_vector, pm, pmi, submodel_num, &ship_objp->orient, &ship_objp->pos);
 				dist = vm_vec_dist_quick(&hitpos2, &g_subobj_pos);
 
 				// Damage attenuation range of barrel radius * 2 makes full damage

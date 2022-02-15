@@ -366,7 +366,7 @@ void camera::get_info(vec3d *position, matrix *orientation, bool apply_camera_or
 					Assertion(objp->type == OBJ_SHIP, "This part of the code expects the object to be a ship");
 
 					vec3d c_pos_in;
-					find_submodel_instance_point_normal(&c_pos_in, &host_normal, pm, pmi, eyep->parent, &eyep->pnt, &eyep->norm);
+					model_instance_find_world_point_normal(&c_pos_in, &host_normal, &eyep->pnt, &eyep->norm, pm, pmi, eyep->parent);
 					vm_vec_unrotate(&c_pos, &c_pos_in, &objp->orient);
 					vm_vec_add2(&c_pos, &objp->pos);
 				}
@@ -374,14 +374,8 @@ void camera::get_info(vec3d *position, matrix *orientation, bool apply_camera_or
 				{
 					if (pmi != nullptr)
 					{
-						vec3d c_pos_in;
-						find_submodel_instance_point_orient(&c_pos_in, &host_orient, pm, pmi, object_host_submodel, &pt, &vmd_identity_matrix);
-
-						host_orient = host_orient * objp->orient;
+						model_instance_find_world_point_orient(&c_pos, &host_orient, &pt, &vmd_identity_matrix, pm, pmi, object_host_submodel, &objp->orient, &objp->pos);
 						use_host_orient = true;
-
-						vm_vec_unrotate(&c_pos, &c_pos_in, &objp->orient);
-						vm_vec_add2(&c_pos, &objp->pos);
 					}
 					else
 						model_find_world_point( &c_pos, &pt, pm, object_host_submodel, &objp->orient, &objp->pos );

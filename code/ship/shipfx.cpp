@@ -2702,7 +2702,7 @@ void engine_wash_ship_process(ship *shipp)
 
 					// Gets the final offset and normal in the ship's frame of reference
 					temp = loc_pos;
-					find_submodel_instance_point_normal(&loc_pos, &loc_norm, pm, pmi, bank->submodel_num, &temp, &loc_norm);
+					model_instance_find_world_point_normal(&loc_pos, &loc_norm, &temp, &loc_norm, pm, pmi, bank->submodel_num);
 				}
 
 				// get world pos of thruster
