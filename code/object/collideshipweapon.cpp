@@ -74,7 +74,7 @@ static void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, vec3
 	vec3d force;
 
 	vec3d worldNormal;
-	model_instance_find_world_dir(&worldNormal, &hit_dir, pm, pmi, submodel_num, &pship_obj->orient);
+	model_instance_local_to_global_dir(&worldNormal, &hit_dir, pm, pmi, submodel_num, &pship_obj->orient);
 
 	// Apply hit & damage & stuff to weapon
 	weapon_hit(weapon_obj, pship_obj,  world_hitpos, quadrant_num, &worldNormal);

@@ -117,7 +117,7 @@ ADE_FUNC(getCollisionNormal, l_ColInfo, "[boolean local]", "The collision normal
 			auto pmi = model_get_instance(collide->model_instance_num);
 			auto pm = model_get(pmi->model_num);
 
-			model_instance_find_world_dir(&normal, &collide->hit_normal, pm, pmi, collide->hit_submodel, collide->orient);
+			model_instance_local_to_global_dir(&normal, &collide->hit_normal, pm, pmi, collide->hit_submodel, collide->orient);
 
 			return ade_set_args(L, "o", l_Vector.Set(normal));
 		}

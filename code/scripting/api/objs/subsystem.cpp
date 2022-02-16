@@ -671,7 +671,7 @@ ADE_FUNC(getTurretHeading, l_Subsystem, NULL, "Returns the turrets forward vecto
 	auto pmi = model_get_instance(Ships[objp->instance].model_instance_num);
 	auto pm = model_get(pmi->model_num);
 
-	model_instance_find_world_dir(&gvec, &sso->ss->system_info->turret_norm, pm, pmi, sso->ss->system_info->turret_gun_sobj, &objp->orient);
+	model_instance_local_to_global_dir(&gvec, &sso->ss->system_info->turret_norm, pm, pmi, sso->ss->system_info->turret_gun_sobj, &objp->orient);
 
 	vec3d out;
 	vm_vec_rotate(&out, &gvec, &objp->orient);

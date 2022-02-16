@@ -8309,7 +8309,7 @@ static void ship_dying_frame(object *objp, int ship_num)
 				// Gets two random points on the surface of a submodel
 				submodel_get_two_random_points_better(pm->id, pm->detail[0], &pnt1, &pnt2);
 
-				model_instance_find_world_point(&outpnt, &pnt1, shipp->model_instance_num, pm->detail[0], &objp->orient, &objp->pos );
+				model_instance_local_to_global_point(&outpnt, &pnt1, shipp->model_instance_num, pm->detail[0], &objp->orient, &objp->pos );
 
 				float rad = objp->radius*0.1f;
 				
@@ -8424,7 +8424,7 @@ static void ship_dying_frame(object *objp, int ship_num)
 				submodel_get_two_random_points_better(pm->id, pm->detail[0], &pnt1, &pnt2);
 
 				vm_vec_avg( &tmp, &pnt1, &pnt2 );
-				model_instance_find_world_point(&outpnt, &tmp, pm, pmi, pm->detail[0], &objp->orient, &objp->pos );
+				model_instance_local_to_global_point(&outpnt, &tmp, pm, pmi, pm->detail[0], &objp->orient, &objp->pos );
 
 				float rad = objp->radius*0.40f;
 
@@ -13520,7 +13520,7 @@ int get_subsystem_pos(vec3d* pos, object* objp, ship_subsys* subsysp)
 
 		auto pmi = model_get_instance(Ships[objp->instance].model_instance_num);
 		auto pm = model_get(pmi->model_num);
-		model_instance_find_world_point(pos, &vmd_zero_vector, pm, pmi, mss->subobj_num, &objp->orient, &objp->pos);
+		model_instance_local_to_global_point(pos, &vmd_zero_vector, pm, pmi, mss->subobj_num, &objp->orient, &objp->pos);
 	}
 
 	return 1;
@@ -13701,7 +13701,7 @@ void ship_get_eye( vec3d *eye_pos, matrix *eye_orient, object *obj, bool do_slew
 	eye *ep = &(pm->view_positions[shipp->current_viewpoint]);
 
 	if (ep->parent >= 0 && pm->submodel[ep->parent].flags[Model::Submodel_flags::Can_move]) {
-		model_instance_find_world_point_orient(eye_pos, eye_orient, &ep->pnt, &vmd_identity_matrix, pm, pmi, ep->parent);
+		model_instance_local_to_global_point_orient(eye_pos, eye_orient, &ep->pnt, &vmd_identity_matrix, pm, pmi, ep->parent);
 		vec3d tvec = *eye_pos;
 		vm_vec_unrotate(eye_pos, &tvec, &obj->orient);
 		vm_vec_add2(eye_pos, &obj->pos);
@@ -13709,7 +13709,7 @@ void ship_get_eye( vec3d *eye_pos, matrix *eye_orient, object *obj, bool do_slew
 		matrix tempmat = *eye_orient;
 		vm_matrix_x_matrix(eye_orient, &obj->orient, &tempmat);
 	} else {
-		model_instance_find_world_point( eye_pos, &ep->pnt, shipp->model_instance_num, ep->parent, &obj->orient, from_origin ? &vmd_zero_vector : &obj->pos );
+		model_instance_local_to_global_point( eye_pos, &ep->pnt, shipp->model_instance_num, ep->parent, &obj->orient, from_origin ? &vmd_zero_vector : &obj->pos );
 		*eye_orient = obj->orient;
 	}
 

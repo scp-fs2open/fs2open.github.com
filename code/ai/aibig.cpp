@@ -407,7 +407,7 @@ int ai_big_maybe_follow_subsys_path(int do_dot_check)
 
 			// get world pos of eye (stored in geye)
 			ep = &(pm->view_positions[shipp->current_viewpoint]);
-			model_instance_find_world_point( &geye, &ep->pnt, pm, pmi, 0, &Pl_objp->orient, &Pl_objp->pos );
+			model_instance_local_to_global_point( &geye, &ep->pnt, pm, pmi, 0, &Pl_objp->orient, &Pl_objp->pos );
 			
 			// get world pos of subsystem
 			vm_vec_unrotate(&gsubpos, &aip->targeted_subsys->system_info->pnt, &En_objp->orient);
@@ -549,7 +549,7 @@ bool ai_new_maybe_reposition_attack_subsys() {
 
 	// get world pos of eye (stored in geye)
 	ep = &(pm->view_positions[Ships[Pl_objp->instance].current_viewpoint]);
-	model_find_world_point(&geye, &ep->pnt, pm->id, 0, &Pl_objp->orient, &Pl_objp->pos);
+	model_local_to_global_point(&geye, &ep->pnt, pm->id, 0, &Pl_objp->orient, &Pl_objp->pos);
 
 	// get world pos of subsystem
 	vm_vec_unrotate(&gsubpos, &aip->targeted_subsys->system_info->pnt, &En_objp->orient);
