@@ -483,12 +483,12 @@ ADE_FUNC(XSTR,
 	return ade_set_args(L, "s", translated.c_str());
 }
 
-ADE_FUNC(translateTokens, 
+ADE_FUNC(replaceTokens, 
 	l_Base, 
 	"string text", 
-	"Returns a string that translates any default control binding to current binding (same as Directive Text). Default binding must be encapsulated by '$$' to be translated.",
+	"Returns a string that replaces any default control binding to current binding (same as Directive Text). Default binding must be encapsulated by '$$' for replacement to work.",
 	"string",
-	"Translated string or nil if invalid")
+	"Updated string or nil if invalid")
 {
 	const char* untranslated_str;
 	if (!ade_get_args(L, "s", &untranslated_str)) {
@@ -500,12 +500,12 @@ ADE_FUNC(translateTokens,
 	return ade_set_args(L, "s", translated_str.c_str());
 }
 
-ADE_FUNC(replaceVariableValue,
+ADE_FUNC(replaceVariables,
 	l_Base,
 	"string text",
-	"Returns a string that translates any variable name to the variable value (same as text in Briefings, Debriefings, or Messages). Variable name must be preceeded by '$' to be translated.",
+	"Returns a string that replaces any variable name with the variable value (same as text in Briefings, Debriefings, or Messages). Variable name must be preceeded by '$' for replacement to work.",
 	"string",
-	"Translated string or nil if invalid")
+	"Updated string or nil if invalid")
 {
 	const char* untranslated_str;
 	if (!ade_get_args(L, "s", &untranslated_str)) {
