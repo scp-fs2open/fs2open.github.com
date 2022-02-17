@@ -1657,7 +1657,7 @@ void model_render_glowpoint_bitmap(int point_num, vec3d *pos, matrix *orient, gl
 		vm_vec_sub(&loc_offset, &gpt->pnt, &submodel_static_offset);
 
 		tempv = loc_offset;
-		model_instance_find_world_point_normal(&loc_offset, &loc_norm, &tempv, &loc_norm, pm, pmi, bank->submodel_parent);
+		model_instance_local_to_global_point_dir(&loc_offset, &loc_norm, &tempv, &loc_norm, pm, pmi, bank->submodel_parent);
 	}
 
 	vm_vec_unrotate(&world_pnt, &loc_offset, orient);
@@ -1812,7 +1812,7 @@ void model_render_glowpoint_add_light(int point_num, vec3d *pos, matrix *orient,
 		vm_vec_sub(&loc_offset, &gpt->pnt, &submodel_static_offset);
 
 		tempv = loc_offset;
-		model_instance_find_world_point_normal(&loc_offset, &loc_norm, &tempv, &loc_norm, pm, pmi, bank->submodel_parent);
+		model_instance_local_to_global_point_dir(&loc_offset, &loc_norm, &tempv, &loc_norm, pm, pmi, bank->submodel_parent);
 	}
 
 	vm_vec_unrotate(&world_pnt, &loc_offset, orient);
@@ -1856,7 +1856,7 @@ void model_render_glowpoint_add_light(int point_num, vec3d *pos, matrix *orient,
 				cone_dir_rot = gpo->cone_direction;
 			}
 
-			model_instance_find_world_dir(&cone_dir_model, &cone_dir_rot, pm, pmi, bank->submodel_parent);
+			model_instance_local_to_global_dir(&cone_dir_model, &cone_dir_rot, pm, pmi, bank->submodel_parent);
 			vm_vec_unrotate(&cone_dir_world, &cone_dir_model, orient);
 			vm_vec_rotate(&cone_dir_screen, &cone_dir_world, &Eye_matrix);
 			cone_dir_screen.xyz.z = -cone_dir_screen.xyz.z;
@@ -2221,7 +2221,7 @@ void model_queue_render_thrusters(model_render_params *interp, polymodel *pm, in
 				if (pmi == nullptr)
 					pmi = model_get_instance(shipp->model_instance_num);
 
-				model_instance_find_world_point_normal(&loc_offset, &loc_norm, &tempv, &loc_norm, pm, pmi, bank->submodel_num);
+				model_instance_local_to_global_point_dir(&loc_offset, &loc_norm, &tempv, &loc_norm, pm, pmi, bank->submodel_num);
 			}
 
 			vm_vec_unrotate(&world_pnt, &loc_offset, orient);

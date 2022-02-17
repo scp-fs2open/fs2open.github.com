@@ -405,7 +405,7 @@ matrix4 getDecalTransform(Decal& decal) {
 	auto pm = model_get(pmi->model_num);
 
 	vec3d worldPos;
-	model_instance_find_world_point(&worldPos,
+	model_instance_local_to_global_point(&worldPos,
 									&decal.position,
 									pm,
 									pmi,
@@ -414,7 +414,7 @@ matrix4 getDecalTransform(Decal& decal) {
 									&objp->pos);
 
 	vec3d worldDir;
-	model_instance_find_world_dir(&worldDir,
+	model_instance_local_to_global_dir(&worldDir,
 								  &decal.orientation.vec.fvec,
 								  pm,
 								  pmi,
@@ -422,7 +422,7 @@ matrix4 getDecalTransform(Decal& decal) {
 								  &objp->orient);
 
 	vec3d worldUp;
-	model_instance_find_world_dir(&worldUp,
+	model_instance_local_to_global_dir(&worldUp,
 								  &decal.orientation.vec.fvec,
 								  pm,
 								  pmi,

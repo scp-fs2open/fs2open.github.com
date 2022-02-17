@@ -3691,7 +3691,7 @@ void model_get_rotating_submodel_axis(vec3d *model_axis, vec3d *world_axis, cons
 	Assert(sm->rotation_type == MOVEMENT_TYPE_REGULAR || sm->rotation_type == MOVEMENT_TYPE_INTRINSIC);
 
 	*model_axis = sm->rotation_axis;
-	model_instance_find_world_dir(world_axis, model_axis, pm, pmi, submodel_num, objorient);
+	model_instance_local_to_global_dir(world_axis, model_axis, pm, pmi, submodel_num, objorient);
 }
 
 // Normalize the submodel angle and convert float angle to angles struct
@@ -3844,18 +3844,18 @@ void submodel_look_at(polymodel *pm, polymodel_instance *pmi, int submodel_num)
 
 	//------------
 	// Calculate the destination point in world coordinates
-	model_instance_find_world_point(&dst, &vmd_zero_vector, pm, pmi, sm->look_at_submodel, &vmd_identity_matrix, &vmd_zero_vector);
+	model_instance_local_to_global_point(&dst, &vmd_zero_vector, pm, pmi, sm->look_at_submodel, &vmd_identity_matrix, &vmd_zero_vector);
 
 	//------------
 	// Project the destination point onto the submodel base plane
-	model_instance_find_world_dir(&world_axis, &sm->rotation_axis, pm, pmi, sm->parent, &vmd_identity_matrix);
-	model_instance_find_world_point(&world_pos, &vmd_zero_vector, pm, pmi, submodel_num, &vmd_identity_matrix, &vmd_zero_vector);
+	model_instance_local_to_global_dir(&world_axis, &sm->rotation_axis, pm, pmi, sm->parent, &vmd_identity_matrix);
+	model_instance_local_to_global_point(&world_pos, &vmd_zero_vector, pm, pmi, submodel_num, &vmd_identity_matrix, &vmd_zero_vector);
 
 	vm_project_point_onto_plane(&planar_dst, &dst, &world_axis, &world_pos);
 
 	//------------
 	// Calculate angle to rotate towards projected point
-	model_instance_find_world_dir(&rotated_vec, &sm->frame_of_reference.vec.fvec, pm, pmi, sm->parent, &vmd_identity_matrix);
+	model_instance_local_to_global_dir(&rotated_vec, &sm->frame_of_reference.vec.fvec, pm, pmi, sm->parent, &vmd_identity_matrix);
 	vm_vec_sub(&dir, &planar_dst, &world_pos);
 	vm_vec_normalize(&dir);
 	smi->cur_angle = vm_vec_delta_ang_norm(&rotated_vec, &dir, &world_axis);
@@ -3976,14 +3976,14 @@ int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, ship_
 
 		//------------
 		// Project the destination point onto the turret base plane
-		model_instance_find_world_dir(&world_axis, &base_sm->rotation_axis, pm, pmi, base_sm->parent, &objp->orient);
-		model_instance_find_world_point(&world_pos, &vmd_zero_vector, pm, pmi, turret->subobj_num, &objp->orient, &objp->pos);
+		model_instance_local_to_global_dir(&world_axis, &base_sm->rotation_axis, pm, pmi, base_sm->parent, &objp->orient);
+		model_instance_local_to_global_point(&world_pos, &vmd_zero_vector, pm, pmi, turret->subobj_num, &objp->orient, &objp->pos);
 
 		vm_project_point_onto_plane(&planar_dst, dst, &world_axis, &world_pos);
 
 		//------------
 		// Calculate base angle to rotate towards projected point
-		model_instance_find_world_dir(&rotated_vec, &base_sm->frame_of_reference.vec.fvec, pm, pmi, base_sm->parent, &objp->orient);
+		model_instance_local_to_global_dir(&rotated_vec, &base_sm->frame_of_reference.vec.fvec, pm, pmi, base_sm->parent, &objp->orient);
 		vm_vec_sub(&dir, &planar_dst, &world_pos);
 		vm_vec_normalize(&dir);
 		desired_base_angle = vm_vec_delta_ang_norm(&rotated_vec, &dir, &world_axis);
@@ -3996,14 +3996,14 @@ int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, ship_
 		//------------
 		// Project the destination point onto the turret gun plane with the base in the desired orientation
 		// NOTE: the rotation axis is given in the model's reference frame, so it needs to be rotated when the base is rotated
-		model_instance_find_world_dir(&world_axis, &gun_sm->rotation_axis, pm, pmi, gun_sm->parent, &objp->orient);
-		model_instance_find_world_point(&world_pos, &vmd_zero_vector, pm, pmi, turret->turret_gun_sobj, &objp->orient, &objp->pos);
+		model_instance_local_to_global_dir(&world_axis, &gun_sm->rotation_axis, pm, pmi, gun_sm->parent, &objp->orient);
+		model_instance_local_to_global_point(&world_pos, &vmd_zero_vector, pm, pmi, turret->turret_gun_sobj, &objp->orient, &objp->pos);
 
 		vm_project_point_onto_plane(&planar_dst, dst, &world_axis, &world_pos);
 
 		//------------
 		// Calculate gun angle to rotate towards projected point
-		model_instance_find_world_dir(&rotated_vec, &gun_sm->frame_of_reference.vec.uvec, pm, pmi, gun_sm->parent, &objp->orient);
+		model_instance_local_to_global_dir(&rotated_vec, &gun_sm->frame_of_reference.vec.uvec, pm, pmi, gun_sm->parent, &objp->orient);
 		vm_vec_sub(&dir, &planar_dst, &world_pos);
 		vm_vec_normalize(&dir);
 		desired_gun_angle = vm_vec_delta_ang_norm(&rotated_vec, &dir, &world_axis);
@@ -4090,28 +4090,15 @@ int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, ship_
 // For a submodel, return its overall offset from the main model.
 void model_find_submodel_offset(vec3d *outpnt, const polymodel *pm, int submodel_num)
 {
-	vm_vec_zero(outpnt);
-	int mn = submodel_num;
-
-	//instance up the tree for this point
-	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
-		vm_vec_add2(outpnt, &pm->submodel[mn].offset);
-
-		mn = pm->submodel[mn].parent;
-	}
+	model_local_to_global_point(outpnt, &vmd_zero_vector, pm, submodel_num);
 }
 
-void model_find_world_point(vec3d *outpnt, const vec3d *mpnt, int model_num, int submodel_num, const matrix *objorient, const vec3d *objpos)
+void model_local_to_global_point(vec3d *outpnt, const vec3d *mpnt, int model_num, int submodel_num, const matrix *objorient, const vec3d *objpos)
 {
-	return model_find_world_point(outpnt, mpnt, model_get(model_num), submodel_num, objorient, objpos);
+	return model_local_to_global_point(outpnt, mpnt, model_get(model_num), submodel_num, objorient, objpos);
 }
 
-// Given a point (pnt) that is in submodel_num's frame of
-// reference, and given the object's orient and position, 
-// return the point in 3-space in outpnt.
-// Or, if the orient or position is nullptr,
-// return the point in the model's reference frame.
-void model_find_world_point(vec3d *outpnt, const vec3d *mpnt, const polymodel *pm, int submodel_num, const matrix *objorient, const vec3d *objpos)
+void model_local_to_global_point(vec3d *outpnt, const vec3d *mpnt, const polymodel *pm, int submodel_num, const matrix *objorient, const vec3d *objpos)
 {
 	vec3d pnt;
 	int mn;
@@ -4136,14 +4123,14 @@ void model_find_world_point(vec3d *outpnt, const vec3d *mpnt, const polymodel *p
 	}
 }
 
-void model_instance_find_world_point(vec3d *outpnt, const vec3d *mpnt, int model_instance_num, int submodel_num, const matrix *objorient, const vec3d *objpos)
+void model_instance_local_to_global_point(vec3d *outpnt, const vec3d *mpnt, int model_instance_num, int submodel_num, const matrix *objorient, const vec3d *objpos)
 {
 	auto pmi = model_get_instance(model_instance_num);
 	auto pm = model_get(pmi->model_num);
-	return model_instance_find_world_point(outpnt, mpnt, pm, pmi, submodel_num, objorient, objpos);
+	return model_instance_local_to_global_point(outpnt, mpnt, pm, pmi, submodel_num, objorient, objpos);
 }
 
-void model_instance_find_world_point(vec3d *outpnt, const vec3d *mpnt, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient, const vec3d *objpos)
+void model_instance_local_to_global_point(vec3d *outpnt, const vec3d *mpnt, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient, const vec3d *objpos)
 {
 	vec3d pnt;
 	vec3d tpnt;
@@ -4170,7 +4157,7 @@ void model_instance_find_world_point(vec3d *outpnt, const vec3d *mpnt, const pol
 	}
 }
 
-void world_find_model_instance_point(vec3d *out, vec3d *world_pt, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *orient, const vec3d *pos)
+void model_instance_world_to_local_point(vec3d *out, vec3d *world_pt, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *orient, const vec3d *pos)
 {
 	Assert(pm->id == pmi->model_num);
 	Assert( (pm->submodel[submodel_num].parent == pm->detail[0]) || (pm->submodel[submodel_num].parent == -1) );
@@ -4191,29 +4178,15 @@ void world_find_model_instance_point(vec3d *out, vec3d *world_pt, const polymode
 	vm_vec_rotate(out, &tempv2, &pmi->submodel[submodel_num].canonical_orient);
 }
 
-/**
- * Finds the current location and rotation (in the ship's frame of reference) of
- * a submodel point, taking into account the rotations of the submodel and any
- * parent submodels it might have.
- *  
- * If the object parameters are supplied, the location will be in world coordinates;
- * otherwise it will be in the model's reference frame.
- *
- * @param *outpnt Output point
- * @param *outnorm Output normal
- * @param model_instance_num Index into Polygon_model_instances
- * @param submodel_num The number of the submodel we're interested in
- * @param *submodel_pnt The point whose current position we want, in the submodel's frame of reference
- * @param *submodel_norm The normal whose current direction we want, in the ship's frame of reference
- */
-void model_instance_find_world_point_normal(vec3d *outpnt, vec3d *outnorm, const vec3d *submodel_pnt, const vec3d *submodel_norm, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient, const vec3d *objpos)
+void model_instance_local_to_global_point_dir(vec3d *out_pnt, vec3d *out_dir, const vec3d *in_pnt, const vec3d *in_dir, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient, const vec3d *objpos)
 {
 	vec3d pnt, tpnt, dir, tdir;
 	int mn;
 	Assert(pm->id == pmi->model_num);
+	Assertion(vm_vec_is_normalized(in_dir), "Input vector must be normalized!");
 
-	pnt = *submodel_pnt;
-	dir = *submodel_norm;
+	pnt = *in_pnt;
+	dir = *in_dir;
 	mn = submodel_num;
 
 	// instance up the tree for this point
@@ -4229,35 +4202,17 @@ void model_instance_find_world_point_normal(vec3d *outpnt, vec3d *outnorm, const
 
 	// now instance for the entire object
 	if (objorient && objpos) {
-		vm_vec_unrotate(outpnt, &pnt, objorient);
-		vm_vec_add2(outpnt, objpos);
+		vm_vec_unrotate(out_pnt, &pnt, objorient);
+		vm_vec_add2(out_pnt, objpos);
 
-		vm_vec_unrotate(outnorm, &dir, objorient);
+		vm_vec_unrotate(out_dir, &dir, objorient);
 	} else {
-		*outpnt = pnt;
-		*outnorm = dir;
+		*out_pnt = pnt;
+		*out_dir = dir;
 	}
 }
 
-/**
- * Same as above, except that this takes and
- * returns matrices instead of normals.
- *  
- * Finds the current location and rotation of
- * a submodel point, taking into account the rotations of the submodel and any
- * parent submodels it might have.
- * 
- * If the object parameters are supplied, the location will be in world coordinates;
- * otherwise it will be in the model's reference frame.
- *
- * @param *outpnt Output point
- * @param *outorient Output matrix
- * @param model_instance_num Index into Polygon_model_instances
- * @param submodel_num The number of the submodel we're interested in
- * @param *submodel_pnt The point whose current position we want, in the submodel's frame of reference
- * @param *submodel_orient The local matrix whose current orientation in the ship's frame of reference we want
- */
-void model_instance_find_world_point_orient(vec3d *outpnt, matrix *outorient, const vec3d *submodel_pnt, const matrix *submodel_orient, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient, const vec3d *objpos)
+void model_instance_local_to_global_point_orient(vec3d *outpnt, matrix *outorient, const vec3d *submodel_pnt, const matrix *submodel_orient, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient, const vec3d *objpos)
 {
 	vec3d pnt, tpnt;
 	matrix orient;
@@ -4396,20 +4351,16 @@ void model_get_submodel_tree_list(SCP_vector<int> &submodel_vector, const polymo
 	}
 }
 
-void model_find_world_dir(vec3d *out_dir, const vec3d *in_dir, int model_num, int submodel_num, const matrix *objorient)
+void model_local_to_global_dir(vec3d *out_dir, const vec3d *in_dir, int model_num, int submodel_num, const matrix *objorient)
 {
-	model_find_world_dir(out_dir, in_dir, model_get(model_num), submodel_num, objorient);
+	model_local_to_global_dir(out_dir, in_dir, model_get(model_num), submodel_num, objorient);
 }
 
-// Given a direction (pnt) that is in submodel_num's frame of
-// reference, and given the object's orient and position, 
-// return the direction in 3-space in outpnt.
-// Or, if the orient or position is nullptr,
-// return the direction in the model's reference frame.
-void model_find_world_dir(vec3d *out_dir, const vec3d *in_dir, const polymodel *pm, int submodel_num, const matrix *objorient)
+void model_local_to_global_dir(vec3d *out_dir, const vec3d *in_dir, const polymodel *pm, int submodel_num, const matrix *objorient)
 {
 	SCP_UNUSED(pm);
 	SCP_UNUSED(submodel_num);
+	Assertion(vm_vec_is_normalized(in_dir), "Input vector must be normalized!");
 
 	//now instance for the entire object
 	if (objorient) {
@@ -4419,20 +4370,20 @@ void model_find_world_dir(vec3d *out_dir, const vec3d *in_dir, const polymodel *
 	}
 }
 
-// the same as model_find_world_dir - just taking model instance data into account
-void model_instance_find_world_dir(vec3d *out_dir, const vec3d *in_dir, int model_instance_num, int submodel_num, const matrix *objorient, bool use_submodel_parent)
+void model_instance_local_to_global_dir(vec3d *out_dir, const vec3d *in_dir, int model_instance_num, int submodel_num, const matrix *objorient, bool use_submodel_parent)
 {
 	auto pmi = model_get_instance(model_instance_num);
 	auto pm = model_get(pmi->model_num);
-	model_instance_find_world_dir(out_dir, in_dir, pm, pmi, use_submodel_parent ? pm->submodel[submodel_num].parent : submodel_num, objorient);
+	model_instance_local_to_global_dir(out_dir, in_dir, pm, pmi, use_submodel_parent ? pm->submodel[submodel_num].parent : submodel_num, objorient);
 }
 
-void model_instance_find_world_dir(vec3d *out_dir, const vec3d *in_dir, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient)
+void model_instance_local_to_global_dir(vec3d *out_dir, const vec3d *in_dir, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient)
 {
 	vec3d pnt;
 	vec3d tpnt;
 	int mn;
 	Assert(pm->id == pmi->model_num);
+	Assertion(vm_vec_is_normalized(in_dir), "Input vector must be normalized!");
 
 	pnt = *in_dir;
 	mn = submodel_num;
@@ -4670,14 +4621,14 @@ void model_init_submodel_axis_pt(polymodel *pm, polymodel_instance *pmi, int sub
 	// find two points rotated into model RF when angs set to 0
 	smi->cur_angle = 0.0f;
 	submodel_canonicalize(&pm->submodel[submodel_num], smi, false);
-	model_instance_find_world_point(&p1, &mpoint1, pm, pmi, submodel_num, &vmd_identity_matrix, &vmd_zero_vector);
-	model_instance_find_world_point(&p2, &mpoint2, pm, pmi, submodel_num, &vmd_identity_matrix, &vmd_zero_vector);
+	model_instance_local_to_global_point(&p1, &mpoint1, pm, pmi, submodel_num, &vmd_identity_matrix, &vmd_zero_vector);
+	model_instance_local_to_global_point(&p2, &mpoint2, pm, pmi, submodel_num, &vmd_identity_matrix, &vmd_zero_vector);
 
 	// find two points rotated into model RF when angs set to PI
 	smi->cur_angle = PI;
 	submodel_canonicalize(&pm->submodel[submodel_num], smi, false);
-	model_instance_find_world_point(&v1, &mpoint1, pm, pmi, submodel_num, &vmd_identity_matrix, &vmd_zero_vector);
-	model_instance_find_world_point(&v2, &mpoint2, pm, pmi, submodel_num, &vmd_identity_matrix, &vmd_zero_vector);
+	model_instance_local_to_global_point(&v1, &mpoint1, pm, pmi, submodel_num, &vmd_identity_matrix, &vmd_zero_vector);
+	model_instance_local_to_global_point(&v2, &mpoint2, pm, pmi, submodel_num, &vmd_identity_matrix, &vmd_zero_vector);
 
 	// reset submodel angs
 	smi->cur_angle = save_angle;

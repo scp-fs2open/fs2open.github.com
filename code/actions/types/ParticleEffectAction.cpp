@@ -43,7 +43,7 @@ ActionResult ParticleEffectAction::execute(ProgramLocals& locals) const
 		auto pmi = model_get_instance(instance);
 		auto pm = model_get(pmi->model_num);
 
-		model_instance_find_world_point_orient(&local_pos,
+		model_instance_local_to_global_point_orient(&local_pos,
 			&local_orient,
 			&locals.localPosition,
 			&locals.localOrient,
