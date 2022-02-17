@@ -66,7 +66,7 @@ bool submodel_h::IsValid()
 }
 
 
-ADE_VIRTVAR(Submodels, l_Model, "Submodels", "Submodels", "Submodels", "Model submodels, or an invalid modelsubmodels handle if the model handle is invalid")
+ADE_VIRTVAR(Submodels, l_Model, nullptr, "Model submodels", "submodels", "Model submodels, or an invalid submodels handle if the model handle is invalid")
 {
 	model_h *mdl = nullptr;
 	if (!ade_get_args(L, "o", l_Model.GetPtr(&mdl)))
@@ -82,7 +82,7 @@ ADE_VIRTVAR(Submodels, l_Model, "Submodels", "Submodels", "Submodels", "Model su
 	return ade_set_args(L, "o", l_ModelSubmodels.Set(modelsubmodels_h(pm)));
 }
 
-ADE_VIRTVAR(Textures, l_Model, "modeltextures_h", "Model textures", "modeltextures_h", "Model textures, or an invalid modeltextures handle if the model handle is invalid")
+ADE_VIRTVAR(Textures, l_Model, nullptr, "Model textures", "textures", "Model textures, or an invalid textures handle if the model handle is invalid")
 {
 	model_h *mdl = NULL;
 	modeltextures_h *oth = NULL;
@@ -101,7 +101,7 @@ ADE_VIRTVAR(Textures, l_Model, "modeltextures_h", "Model textures", "modeltextur
 	return ade_set_args(L, "o", l_ModelTextures.Set(modeltextures_h(pm)));
 }
 
-ADE_VIRTVAR(Thrusters, l_Model, "thrusters", "Model thrusters", "thrusters", "Thrusters of the model or invalid handle")
+ADE_VIRTVAR(Thrusters, l_Model, nullptr, "Model thrusters", "thrusters", "Model thrusters, or an invalid thrusters handle if the model handle is invalid")
 {
 	model_h *mdl = NULL;
 	thrusters_h *oth = NULL;
@@ -119,7 +119,7 @@ ADE_VIRTVAR(Thrusters, l_Model, "thrusters", "Model thrusters", "thrusters", "Th
 	return ade_set_args(L, "o", l_Thrusters.Set(thrusters_h(pm)));
 }
 
-ADE_VIRTVAR(Eyepoints, l_Model, "eyepoints", "Model eyepoints", "eyepoints", "Array of eyepoints or invalid handle on error")
+ADE_VIRTVAR(Eyepoints, l_Model, nullptr, "Model eyepoints", "eyepoints", "Array of eyepoints, or an invalid eyepoints handle if the model handle is invalid")
 {
 	model_h *mdl = NULL;
 	eyepoints_h *eph = NULL;
@@ -137,7 +137,7 @@ ADE_VIRTVAR(Eyepoints, l_Model, "eyepoints", "Model eyepoints", "eyepoints", "Ar
 	return ade_set_args(L, "o", l_Eyepoints.Set(eyepoints_h(pm)));
 }
 
-ADE_VIRTVAR(Dockingbays, l_Model, "dockingbays", "Docking bays handle of model", "dockingbays", "Array of docking bays on this model, or invalid handle on error")
+ADE_VIRTVAR(Dockingbays, l_Model, nullptr, "Model docking bays", "dockingbays", "Array of docking bays, or an invalid dockingbays handle if the model handle is invalid")
 {
 	model_h *mdl = NULL;
 	dockingbays_h *dbh = NULL;
@@ -397,7 +397,7 @@ ADE_FUNC(isValid, l_Submodel, nullptr, "True if valid, false or nil if not", "bo
 
 
 //**********HANDLE: modelsubmodels
-ADE_OBJ(l_ModelSubmodels, modelsubmodels_h, "Submodels", "Array of submodels");
+ADE_OBJ(l_ModelSubmodels, modelsubmodels_h, "submodels", "Array of submodels");
 
 modelsubmodels_h::modelsubmodels_h(polymodel* pm) : model_h(pm){}
 modelsubmodels_h::modelsubmodels_h() : model_h(){}
@@ -460,7 +460,7 @@ ADE_FUNC(isValid, l_ModelSubmodels, nullptr, "Detects whether handle is valid", 
 
 
 //**********HANDLE: modeltextures
-ADE_OBJ(l_ModelTextures, modeltextures_h, "modeltextures_h", "Array of materials");
+ADE_OBJ(l_ModelTextures, modeltextures_h, "textures", "Array of textures");
 
 modeltextures_h::modeltextures_h(polymodel* pm) : model_h(pm){}
 modeltextures_h::modeltextures_h() : model_h(){}

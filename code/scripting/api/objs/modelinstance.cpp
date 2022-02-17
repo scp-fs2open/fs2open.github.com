@@ -94,7 +94,7 @@ ADE_FUNC(getObject, l_ModelInstance, nullptr, "Returns the object that this inst
 	return ade_set_object_with_breed(L, mih->Get()->objnum);
 }
 
-ADE_VIRTVAR(SubmodelInstances, l_ModelInstance, "SubmodelInstances", "Submodel instances", "SubmodelInstances", "Model submodel instances, or an invalid modelsubmodelinstances handle if the model instance handle is invalid")
+ADE_VIRTVAR(SubmodelInstances, l_ModelInstance, nullptr, "Submodel instances", "submodel_instances", "Model submodel instances, or an invalid modelsubmodelinstances handle if the model instance handle is invalid")
 {
 	modelinstance_h *mih = nullptr;
 	if (!ade_get_args(L, "o", l_ModelInstance.GetPtr(&mih)))
@@ -237,7 +237,7 @@ ADE_FUNC(isValid, l_SubmodelInstance, nullptr, "True if valid, false or nil if n
 }
 
 
-ADE_OBJ(l_ModelSubmodelInstances, modelsubmodelinstances_h, "modelsubmodelinstances_h", "Array of submodel instances");
+ADE_OBJ(l_ModelSubmodelInstances, modelsubmodelinstances_h, "submodel_instances", "Array of submodel instances");
 
 modelsubmodelinstances_h::modelsubmodelinstances_h(polymodel_instance *pmi) : modelinstance_h(pmi){}
 modelsubmodelinstances_h::modelsubmodelinstances_h() : modelinstance_h(){}
