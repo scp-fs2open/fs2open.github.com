@@ -9,7 +9,7 @@
 namespace scripting {
 namespace api {
 
-ADE_OBJ(l_ModelInstance, modelinstance_h, "modelinstance", "Model instance handle");
+ADE_OBJ(l_ModelInstance, modelinstance_h, "model_instance", "Model instance handle");
 
 modelinstance_h::modelinstance_h(int pmi_id)
 {
@@ -31,7 +31,7 @@ bool modelinstance_h::IsValid()
 }
 
 
-ADE_OBJ(l_SubmodelInstance, submodelinstance_h, "submodelinstance", "Submodel instance handle");
+ADE_OBJ(l_SubmodelInstance, submodelinstance_h, "submodel_instance", "Submodel instance handle");
 
 submodelinstance_h::submodelinstance_h(int pmi_id, int submodel_num)
 	: _submodel_num(submodel_num)
@@ -94,7 +94,7 @@ ADE_FUNC(getObject, l_ModelInstance, nullptr, "Returns the object that this inst
 	return ade_set_object_with_breed(L, mih->Get()->objnum);
 }
 
-ADE_VIRTVAR(SubmodelInstances, l_ModelInstance, "modelsubmodelinstances_h", "Model submodel instances", "modelsubmodelinstances_h", "Model submodel instances, or an invalid modelsubmodelinstances handle if the model instance handle is invalid")
+ADE_VIRTVAR(SubmodelInstances, l_ModelInstance, "SubmodelInstances", "Submodel instances", "SubmodelInstances", "Model submodel instances, or an invalid modelsubmodelinstances handle if the model instance handle is invalid")
 {
 	modelinstance_h *mih = nullptr;
 	if (!ade_get_args(L, "o", l_ModelInstance.GetPtr(&mih)))
@@ -119,7 +119,7 @@ ADE_FUNC(isValid, l_ModelInstance, nullptr, "True if valid, false or nil if not"
 	return ade_set_args(L, "b", mih->IsValid());
 }
 
-ADE_VIRTVAR(Orientation, l_SubmodelInstance, "orientation", "Gets or sets the submodel instance orientation (world orientation)", "orientation", "Orientation, or null orientation if handle is invalid")
+ADE_VIRTVAR(Orientation, l_SubmodelInstance, "orientation", "Gets or sets the submodel instance orientation (world orientation)", "orientation", "Orientation, or identity orientation if handle is not valid")
 {
 	submodelinstance_h *smih;
 	matrix_h *mh = nullptr;
@@ -147,7 +147,7 @@ ADE_VIRTVAR(Orientation, l_SubmodelInstance, "orientation", "Gets or sets the su
 	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&smih->Get()->canonical_orient)));
 }
 
-ADE_FUNC(findWorldPoint, l_SubmodelInstance, "vector", "Calculates the world coordinates of a point in a submodel's frame of reference", "vector", "Point, or null vector if handle is invalid")
+ADE_FUNC(findWorldPoint, l_SubmodelInstance, "vector", "Calculates the world coordinates of a point in a submodel's frame of reference", "vector", "Point, or empty vector if handle is not valid")
 {
 	submodelinstance_h *smih;
 	vec3d pnt, outpnt;
@@ -162,11 +162,11 @@ ADE_FUNC(findWorldPoint, l_SubmodelInstance, "vector", "Calculates the world coo
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 	auto objp = &Objects[pmi->objnum];
 
-	model_instance_find_world_point(&outpnt, &pnt, pmi->id, smih->GetSubmodelIndex(), &objp->orient, &objp->pos);
+	model_instance_local_to_global_point(&outpnt, &pnt, pmi->id, smih->GetSubmodelIndex(), &objp->orient, &objp->pos);
 	return ade_set_args(L, "o", l_Vector.Set(outpnt));
 }
 
-ADE_FUNC(findWorldDir, l_SubmodelInstance, "vector", "Calculates the world direction of a vector in a submodel's frame of reference", "vector", "Vector, or null vector if handle is invalid")
+ADE_FUNC(findWorldDir, l_SubmodelInstance, "vector", "Calculates the world direction of a vector in a submodel's frame of reference", "vector", "Vector, or empty vector if handle is not valid")
 {
 	submodelinstance_h *smih;
 	vec3d dir, outdir;
@@ -181,7 +181,7 @@ ADE_FUNC(findWorldDir, l_SubmodelInstance, "vector", "Calculates the world direc
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 	auto objp = &Objects[pmi->objnum];
 
-	model_instance_find_world_dir(&outdir, &dir, smih->GetModel(), pmi, smih->GetSubmodelIndex(), &objp->orient);
+	model_instance_local_to_global_dir(&outdir, &dir, smih->GetModel(), pmi, smih->GetSubmodelIndex(), &objp->orient);
 	return ade_set_args(L, "o", l_Vector.Set(outdir));
 }
 
@@ -201,11 +201,11 @@ bool findObjectPointAndOrientationSub(lua_State *L, bool use_object, vec3d *outp
 		return false;
 	auto objp = &Objects[pmi->objnum];
 
-	model_instance_find_world_point_orient(outpnt, outorient, &local_pnt, local_orient->GetMatrix(), smih->GetModel(), pmi, smih->GetSubmodelIndex(), use_object ? &objp->orient : nullptr, use_object ? &objp->pos : nullptr);
+	model_instance_local_to_global_point_orient(outpnt, outorient, &local_pnt, local_orient->GetMatrix(), smih->GetModel(), pmi, smih->GetSubmodelIndex(), use_object ? &objp->orient : nullptr, use_object ? &objp->pos : nullptr);
 	return true;
 }
 
-ADE_FUNC(findObjectPointAndOrientation, l_SubmodelInstance, "vector, orientation", "Calculates the coordinates and orientation, in an object's frame of reference, of a point and orientation in a submodel's frame of reference", "vector, orientation", "Vector and orientation, or null values if a handle is invalid")
+ADE_FUNC(findObjectPointAndOrientation, l_SubmodelInstance, "vector, orientation", "Calculates the coordinates and orientation, in an object's frame of reference, of a point and orientation in a submodel's frame of reference", "vector, orientation", "Vector and orientation, or empty values if a handle is invalid")
 {
 	vec3d pnt;
 	matrix orient;
@@ -216,7 +216,7 @@ ADE_FUNC(findObjectPointAndOrientation, l_SubmodelInstance, "vector, orientation
 	return ade_set_args(L, "oo", l_Vector.Set(pnt), l_Matrix.Set(matrix_h(&orient)));
 }
 
-ADE_FUNC(findWorldPointAndOrientation, l_SubmodelInstance, "vector, orientation", "Calculates the world coordinates and orientation of a point and orientation in a submodel's frame of reference", "vector, orientation", "Vector and orientation, or null values if a handle is invalid")
+ADE_FUNC(findWorldPointAndOrientation, l_SubmodelInstance, "vector, orientation", "Calculates the world coordinates and orientation of a point and orientation in a submodel's frame of reference", "vector, orientation", "Vector and orientation, or empty values if a handle is invalid")
 {
 	vec3d pnt;
 	matrix orient;
@@ -261,7 +261,7 @@ ADE_FUNC(__len, l_ModelSubmodelInstances, nullptr, "Number of submodel instances
 	return ade_set_args(L, "i", pm->n_models);
 }
 
-ADE_INDEXER(l_ModelSubmodelInstances, "submodelinstance", "number|string IndexOrName", "submodelinstance", "Model submodel instances, or invalid modelsubmodelinstances handle if model instance handle is invalid")
+ADE_INDEXER(l_ModelSubmodelInstances, "submodel_instance", "number|string IndexOrName", "submodel_instance", "Model submodel instances, or invalid modelsubmodelinstances handle if model instance handle is invalid")
 {
 	modelsubmodelinstances_h *msih = nullptr;
 	int index = -1;

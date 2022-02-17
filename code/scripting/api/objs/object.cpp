@@ -172,7 +172,7 @@ ADE_VIRTVAR(LastOrientation, l_Object, "orientation", "Object world orientation 
 	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&objh->objp->last_orient)));
 }
 
-ADE_VIRTVAR(ModelInstance, l_Object, "modelinstance", "model instance used by this object", "modelinstance", "Model instance, nil if this object does not have one, or invalid model instance handle if object handle is invalid")
+ADE_VIRTVAR(ModelInstance, l_Object, nullptr, "model instance used by this object", "modelinstance", "Model instance, nil if this object does not have one, or invalid model instance handle if object handle is invalid")
 {
 	object_h* objh;
 	if (!ade_get_args(L, "o", l_Object.GetPtr(&objh)))

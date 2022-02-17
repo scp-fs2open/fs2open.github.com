@@ -66,7 +66,7 @@ bool submodel_h::IsValid()
 }
 
 
-ADE_VIRTVAR(Submodels, l_Model, "modelsubmodels_h", "Model submodels", "modelsubmodels_h", "Model submodels, or an invalid modelsubmodels handle if the model handle is invalid")
+ADE_VIRTVAR(Submodels, l_Model, "Submodels", "Submodels", "Submodels", "Model submodels, or an invalid modelsubmodels handle if the model handle is invalid")
 {
 	model_h *mdl = nullptr;
 	if (!ade_get_args(L, "o", l_Model.GetPtr(&mdl)))
@@ -155,7 +155,7 @@ ADE_VIRTVAR(Dockingbays, l_Model, "dockingbays", "Docking bays handle of model",
 	return ade_set_args(L, "o", l_Dockingbays.Set(dockingbays_h(pm)));
 }
 
-ADE_VIRTVAR(BoundingBoxMax, l_Model, "vector", "Model bounding box maximum", "vector", "Model bounding box, or an empty vector if the handle is invalid")
+ADE_VIRTVAR(BoundingBoxMax, l_Model, "vector", "Model bounding box maximum", "vector", "Model bounding box, or an empty vector if the handle is not valid")
 {
 	model_h *mdl = NULL;
 	vec3d *v = NULL;
@@ -177,7 +177,7 @@ ADE_VIRTVAR(BoundingBoxMax, l_Model, "vector", "Model bounding box maximum", "ve
 	return ade_set_args(L, "o", l_Vector.Set(pm->maxs));
 }
 
-ADE_VIRTVAR(BoundingBoxMin, l_Model, "vector", "Model bounding box minimum", "vector", "Model bounding box, or an empty vector if the handle is invalid")
+ADE_VIRTVAR(BoundingBoxMin, l_Model, "vector", "Model bounding box minimum", "vector", "Model bounding box, or an empty vector if the handle is not valid")
 {
 	model_h *mdl = NULL;
 	vec3d *v = NULL;
@@ -199,7 +199,7 @@ ADE_VIRTVAR(BoundingBoxMin, l_Model, "vector", "Model bounding box minimum", "ve
 	return ade_set_args(L, "o", l_Vector.Set(pm->mins));
 }
 
-ADE_VIRTVAR(Filename, l_Model, "string", "Model filename", "string", "Model filename, or an empty string if the handle is invalid")
+ADE_VIRTVAR(Filename, l_Model, "string", "Model filename", "string", "Model filename, or an empty string if the handle is not valid")
 {
 	model_h *mdl = NULL;
 	const char* s = nullptr;
@@ -278,7 +278,7 @@ ADE_VIRTVAR(Radius, l_Model, "number", "Model radius (Used for collision & culli
 	return ade_set_args(L, "f", pm->rad);
 }
 
-ADE_FUNC(getDetailRoot, l_Model, "[number detailLevel]", "Returns the root submodel of the specified detail level - 0 for detail0, etc.", "submodel", "A submodel")
+ADE_FUNC(getDetailRoot, l_Model, "[number detailLevel]", "Returns the root submodel of the specified detail level - 0 for detail0, etc.", "submodel", "A submodel, or an invalid submodel if handle is not valid")
 {
 	model_h *mdl;
 	int detail = 0;
@@ -299,7 +299,7 @@ ADE_FUNC(isValid, l_Model, nullptr, "True if valid, false or nil if not", "boole
 {
 	model_h *mdl;
 	if (!ade_get_args(L, "o", l_Model.GetPtr(&mdl)))
-		return ADE_RETURN_NIL;
+		return ADE_RETURN_FALSE;
 
 	return ade_set_args(L, "b", mdl->IsValid());
 }
@@ -320,7 +320,7 @@ ADE_VIRTVAR(Name, l_Submodel, nullptr, "Gets the submodel's name", "string", "Th
 	return ade_set_args(L, "s", smh->GetSubmodel()->name);
 }
 
-ADE_VIRTVAR(Offset, l_Submodel, nullptr, "Gets the submodel's offset from its parent submodel", "vector", "The offset vector or a null vector if invalid")
+ADE_VIRTVAR(Offset, l_Submodel, nullptr, "Gets the submodel's offset from its parent submodel", "vector", "The offset vector or a empty vector if invalid")
 {
 	submodel_h *smh = nullptr;
 
@@ -352,7 +352,7 @@ ADE_VIRTVAR(Radius, l_Submodel, nullptr, "Gets the submodel's radius", "number",
 	return ade_set_args(L, "f", smh->GetSubmodel()->rad);
 }
 
-ADE_FUNC(getFirstChild, l_Submodel, nullptr, "Gets the first child submodel of this submodel", "submodel", "A submodel, or nil if there is no child")
+ADE_FUNC(getFirstChild, l_Submodel, nullptr, "Gets the first child submodel of this submodel", "submodel", "A submodel, or nil if there is no child, or an invalid submodel if the handle is not valid")
 {
 	submodel_h *smh = nullptr;
 
@@ -369,7 +369,7 @@ ADE_FUNC(getFirstChild, l_Submodel, nullptr, "Gets the first child submodel of t
 	return ade_set_args(L, "o", l_Submodel.Set(submodel_h(smh->GetModel(), sm->first_child)));
 }
 
-ADE_FUNC(getNextSibling, l_Submodel, nullptr, "Gets the next sibling submodel of this submodel", "submodel", "A submodel, or nil if there are no remaining siblings")
+ADE_FUNC(getNextSibling, l_Submodel, nullptr, "Gets the next sibling submodel of this submodel", "submodel", "A submodel, or nil if there are no remaining siblings, or an invalid submodel if the handle is not valid")
 {
 	submodel_h *smh = nullptr;
 
@@ -390,14 +390,14 @@ ADE_FUNC(isValid, l_Submodel, nullptr, "True if valid, false or nil if not", "bo
 {
 	submodel_h *smh;
 	if (!ade_get_args(L, "o", l_Submodel.GetPtr(&smh)))
-		return ADE_RETURN_NIL;
+		return ADE_RETURN_FALSE;
 
 	return ade_set_args(L, "b", smh->IsValid());
 }
 
 
 //**********HANDLE: modelsubmodels
-ADE_OBJ(l_ModelSubmodels, modelsubmodels_h, "modelsubmodels_h", "Array of submodels");
+ADE_OBJ(l_ModelSubmodels, modelsubmodels_h, "Submodels", "Array of submodels");
 
 modelsubmodels_h::modelsubmodels_h(polymodel* pm) : model_h(pm){}
 modelsubmodels_h::modelsubmodels_h() : model_h(){}
@@ -453,7 +453,7 @@ ADE_FUNC(isValid, l_ModelSubmodels, nullptr, "Detects whether handle is valid", 
 {
 	modelsubmodels_h *msh;
 	if (!ade_get_args(L, "o", l_ModelSubmodels.GetPtr(&msh)))
-		return ADE_RETURN_NIL;
+		return ADE_RETURN_FALSE;
 
 	return ade_set_args(L, "b", msh->IsValid());
 }
@@ -537,7 +537,7 @@ ADE_FUNC(isValid, l_ModelTextures, NULL, "Detects whether handle is valid", "boo
 {
 	modeltextures_h *mth;
 	if(!ade_get_args(L, "o", l_ModelTextures.GetPtr(&mth)))
-		return ADE_RETURN_NIL;
+		return ADE_RETURN_FALSE;
 
 	return ade_set_args(L, "b", mth->IsValid());
 }
@@ -679,7 +679,7 @@ ADE_FUNC(isValid, l_Thrusters, NULL, "Detects whether handle is valid", "boolean
 {
 	thrusters_h *trh;
 	if(!ade_get_args(L, "o", l_Thrusters.GetPtr(&trh)))
-		return ADE_RETURN_NIL;
+		return ADE_RETURN_FALSE;
 
 	return ade_set_args(L, "b", trh->IsValid());
 }
@@ -951,7 +951,7 @@ ADE_FUNC(getName, l_Dockingbay, NULL, "Gets the name of this docking bay", "stri
 	return ade_set_args(L, "s", dbp->name);
 }
 
-ADE_FUNC(getPoint, l_Dockingbay, "number index", "Gets the location of a docking point in this bay", "vector", "The local location or null vector on error")
+ADE_FUNC(getPoint, l_Dockingbay, "number index", "Gets the location of a docking point in this bay", "vector", "The local location or empty vector on error")
 {
 	dockingbay_h* dbh = NULL;
 	int index = -1;
@@ -979,7 +979,7 @@ ADE_FUNC(getPoint, l_Dockingbay, "number index", "Gets the location of a docking
 	return ade_set_args(L, "o", l_Vector.Set(dbp->pnt[index]));
 }
 
-ADE_FUNC(getNormal, l_Dockingbay, "number index", "Gets the normal of a docking point in this bay", "vector", "The normal vector or null vector on error")
+ADE_FUNC(getNormal, l_Dockingbay, "number index", "Gets the normal of a docking point in this bay", "vector", "The normal vector or empty vector on error")
 {
 	dockingbay_h* dbh = NULL;
 	int index = -1;
@@ -1062,7 +1062,7 @@ ADE_FUNC(isValid, l_Dockingbay, NULL, "Detects whether is valid or not", "number
 
 	if (!ade_get_args(L, "o", l_Dockingbay.GetPtr(&dbh)))
 	{
-		return ade_set_error(L, "i", 0);
+		return ADE_RETURN_FALSE;
 	}
 
 	if (dbh == NULL)
