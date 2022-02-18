@@ -125,7 +125,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          files: ${{ steps.generate_package.outputs.package_name }}
+          files: ${{ steps.generate_package.outputs.package_path }}
 
   build_windows:
     strategy:
@@ -247,10 +247,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          files: ${{ steps.generate_package.outputs.package_name }}
+          files: ${{ steps.generate_package.outputs.package_path }}
       - name: Upload debug symbols
         uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          files: ${{ steps.generate_package.outputs.debug_name }}
+          files: ${{ steps.generate_package.outputs.debug_path }}
