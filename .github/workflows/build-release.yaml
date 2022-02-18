@@ -121,14 +121,11 @@ jobs:
         working-directory: ./builds
         run: $GITHUB_WORKSPACE/ci/linux/create_dist_pack.sh Linux
       - name: Upload result package
-        uses: actions/upload-release-asset@v1
+        uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.extractUploadUrl.outputs.upload_url }}
-          asset_path: ${{ steps.generate_package.outputs.package_path }}
-          asset_name: ${{ steps.generate_package.outputs.package_name }}
-          asset_content_type: ${{ steps.generate_package.outputs.package_mime }}
+          files: ${{ steps.generate_package.outputs.package_name }}
 
   build_windows:
     strategy:
@@ -246,20 +243,14 @@ jobs:
           SIMD: ${{ matrix.simd }}
         run: $GITHUB_WORKSPACE/ci/linux/create_dist_pack.sh Windows
       - name: Upload result package
-        uses: actions/upload-release-asset@v1
+        uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.extractUploadUrl.outputs.upload_url }}
-          asset_path: ${{ steps.generate_package.outputs.package_path }}
-          asset_name: ${{ steps.generate_package.outputs.package_name }}
-          asset_content_type: ${{ steps.generate_package.outputs.package_mime }}
+          files: ${{ steps.generate_package.outputs.package_name }}
       - name: Upload debug symbols
-        uses: actions/upload-release-asset@v1
+        uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.extractUploadUrl.outputs.upload_url }}
-          asset_path: ${{ steps.generate_package.outputs.debug_path }}
-          asset_name: ${{ steps.generate_package.outputs.debug_name }}
-          asset_content_type: ${{ steps.generate_package.outputs.debug_mime }}
+          files: ${{ steps.generate_package.outputs.debug_name }}
