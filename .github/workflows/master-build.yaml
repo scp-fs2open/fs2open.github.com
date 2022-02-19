@@ -13,7 +13,7 @@ jobs:
     strategy:
       matrix:
         configuration: [Debug, Release]
-        compiler: [gcc-5, gcc-10]
+        compiler: [gcc-10]
         cmake_options: [""]
         include:
           # Also include configurations that check if the code compiles without the graphics backends

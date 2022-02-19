@@ -63,7 +63,7 @@ jobs:
       - name: Configure CMake
         env:
           CONFIGURATION: ${{ matrix.configuration }}
-          COMPILER: gcc-5
+          COMPILER: gcc-10
         run: $GITHUB_WORKSPACE/ci/linux/configure_cmake.sh
       - name: Compile
         working-directory: ./build
