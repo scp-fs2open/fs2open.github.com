@@ -272,6 +272,7 @@ jobs:
     runs-on: ubuntu-latest
     container: ghcr.io/scp-fs2open/sftp_upload:sha-748b19d
     strategy:
+      fail-fast: false  # Run the other jobs in the matrix instead of failing them
       matrix:
         arch: [Win32, x64]
         simd: [SSE2, AVX]
