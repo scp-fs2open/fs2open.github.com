@@ -5502,6 +5502,7 @@ void model_subsystem::reset()
 
     awacs_intensity = 0.0f;
     awacs_radius = 0.0f;
+    scan_time = -1;
 
     for (auto it = std::begin(primary_banks); it != std::end(primary_banks); ++it)
         *it = 0;

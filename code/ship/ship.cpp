@@ -1028,6 +1028,8 @@ void ship_info::clone(const ship_info& other)
 	scan_time = other.scan_time;
 	scan_range_normal = other.scan_range_normal;
 	scan_range_capital = other.scan_range_capital;
+	scanning_time_multiplier = other.scanning_time_multiplier;
+	scanning_range_multiplier = other.scanning_range_multiplier;
 
 	ask_help_shield_percent = other.ask_help_shield_percent;
 	ask_help_hull_percent = other.ask_help_hull_percent;
@@ -1346,6 +1348,8 @@ void ship_info::move(ship_info&& other)
 	scan_time = other.scan_time;
 	scan_range_normal = other.scan_range_normal;
 	scan_range_capital = other.scan_range_capital;
+	scanning_time_multiplier = other.scanning_time_multiplier;
+	scanning_range_multiplier = other.scanning_range_multiplier;
 
 	ask_help_shield_percent = other.ask_help_shield_percent;
 	ask_help_hull_percent = other.ask_help_hull_percent;
@@ -1770,6 +1774,8 @@ ship_info::ship_info()
 	scan_time = 2000;
 	scan_range_normal = CARGO_REVEAL_MIN_DIST;
 	scan_range_capital = CAP_CARGO_REVEAL_MIN_DIST;
+	scanning_time_multiplier = 1.0f;
+	scanning_range_multiplier = 1.0f;
 
 	ask_help_shield_percent = DEFAULT_ASK_HELP_SHIELD_PERCENT;
 	ask_help_hull_percent = DEFAULT_ASK_HELP_HULL_PERCENT;
@@ -3962,6 +3968,12 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	if(optional_string("$Scan range Capital:"))
 		stuff_float(&sip->scan_range_capital);
 
+	if(optional_string("$Scanning time multiplier:"))
+		stuff_float(&sip->scanning_time_multiplier);
+
+	if(optional_string("$Scanning range multiplier:"))
+		stuff_float(&sip->scanning_range_multiplier);
+
 	if (optional_string("$Ask Help Shield Percent:")) {
 		float help_shield_val;
 		stuff_float(&help_shield_val);
@@ -4781,6 +4793,10 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 				sp->path_num = -1;
 				sp->turret_max_fov = 1.0f;
 
+				sp->awacs_intensity = 0.0f;
+				sp->awacs_radius = 0.0f;
+				sp->scan_time = -1;
+
 				sp->turret_reset_delay = 2000;
 
 				sp->num_target_priorities = 0;
@@ -4868,12 +4884,15 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 				stuff_float(&sp->turret_gun_rotation_snd_mult);
 				
 			// Get any AWACS info
-			sp->awacs_intensity = 0.0f;
 			if(optional_string("$AWACS:")){
 				sfo_return = stuff_float_optional(&sp->awacs_intensity);
 				if(sfo_return > 0)
 					stuff_float_optional(&sp->awacs_radius);
 				sip->flags.set(Ship::Info_Flags::Has_awacs);
+			}
+
+			if(optional_string("$Scan time:")){
+				stuff_int(&sp->scan_time);
 			}
 
 			if(optional_string("$Maximum Barrel Elevation:")){

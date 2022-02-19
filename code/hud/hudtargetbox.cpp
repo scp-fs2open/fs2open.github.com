@@ -693,7 +693,7 @@ void HudGaugeTargetBox::renderTargetShip(object *target_objp)
 	setGaugeColor();
 
 	renderTargetShipInfo(target_objp);
-	maybeRenderCargoScan(target_sip);
+	maybeRenderCargoScan(target_sip, Player_ai->targeted_subsys);
 }
 
 /**
@@ -1871,16 +1871,21 @@ void hud_update_cargo_scan_sound()
 /**
  * If the player is scanning for cargo, draw some cool scanning lines on the target monitor
  */
-void HudGaugeTargetBox::maybeRenderCargoScan(ship_info *target_sip)
+void HudGaugeTargetBox::maybeRenderCargoScan(ship_info *target_sip, ship_subsys *target_subsys)
 {
 	int x1, y1, x2, y2;
-	int scan_time;				// time required to scan ship
+	float scan_time;				// time required to scan ship
 
 	if ( Player->cargo_inspect_time <= 0  ) {
 		return;
 	}
 
-	scan_time = target_sip->scan_time;
+	if (target_subsys && target_subsys->system_info->scan_time > 0)
+		scan_time = i2fl(target_subsys->system_info->scan_time);
+	else
+		scan_time = i2fl(target_sip->scan_time);
+	scan_time *= Ship_info[Player_ship->ship_info_index].scanning_time_multiplier;
+
 	setGaugeColor(HUD_C_BRIGHT);
 
 	// draw horizontal scan line
