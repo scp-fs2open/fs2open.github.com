@@ -190,6 +190,8 @@ public:
 	float		awacs_intensity;						// awacs intensity of this subsystem
 	float		awacs_radius;							// radius of effect of the AWACS
 
+	int		scan_time;							// overrides ship class scan time if >0
+
 	int		primary_banks[MAX_SHIP_PRIMARY_BANKS];					// default primary weapons -hoffoss
 	int		primary_bank_capacity[MAX_SHIP_PRIMARY_BANKS];		// capacity of a bank - Goober5000
 	int		secondary_banks[MAX_SHIP_SECONDARY_BANKS];				// default secondary weapons -hoffoss
