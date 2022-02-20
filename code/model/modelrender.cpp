@@ -1657,7 +1657,12 @@ void model_render_glowpoint_bitmap(int point_num, vec3d *pos, matrix *orient, gl
 		vm_vec_sub(&loc_offset, &gpt->pnt, &submodel_static_offset);
 
 		tempv = loc_offset;
-		model_instance_local_to_global_point_dir(&loc_offset, &loc_norm, &tempv, &loc_norm, pm, pmi, bank->submodel_parent);
+		if (IS_VEC_NULL(&loc_norm)) {	// zero vectors are allowed for glowpoint norms
+			model_instance_local_to_global_point(&loc_offset, &tempv, pm, pmi, bank->submodel_parent);
+		} else {
+			vec3d tempn = loc_norm;
+			model_instance_local_to_global_point_dir(&loc_offset, &loc_norm, &tempv, &tempn, pm, pmi, bank->submodel_parent);
+		}
 	}
 
 	vm_vec_unrotate(&world_pnt, &loc_offset, orient);
@@ -1812,7 +1817,12 @@ void model_render_glowpoint_add_light(int point_num, vec3d *pos, matrix *orient,
 		vm_vec_sub(&loc_offset, &gpt->pnt, &submodel_static_offset);
 
 		tempv = loc_offset;
-		model_instance_local_to_global_point_dir(&loc_offset, &loc_norm, &tempv, &loc_norm, pm, pmi, bank->submodel_parent);
+		if (IS_VEC_NULL(&loc_norm)) {	// zero vectors are allowed for glowpoint norms
+			model_instance_local_to_global_point(&loc_offset, &tempv, pm, pmi, bank->submodel_parent);
+		} else {
+			vec3d tempn = loc_norm;
+			model_instance_local_to_global_point_dir(&loc_offset, &loc_norm, &tempv, &tempn, pm, pmi, bank->submodel_parent);
+		}
 	}
 
 	vm_vec_unrotate(&world_pnt, &loc_offset, orient);
@@ -2216,12 +2226,17 @@ void model_queue_render_thrusters(model_render_params *interp, polymodel *pm, in
 
 			if ( submodel_rotation ) {
 				vm_vec_sub(&loc_offset, &gpt->pnt, &submodel_static_offset);
-				tempv = loc_offset;
 
 				if (pmi == nullptr)
 					pmi = model_get_instance(shipp->model_instance_num);
 
-				model_instance_local_to_global_point_dir(&loc_offset, &loc_norm, &tempv, &loc_norm, pm, pmi, bank->submodel_num);
+				tempv = loc_offset;
+				if (IS_VEC_NULL(&loc_norm)) {	// zero vectors are allowed for glowpoint norms
+					model_instance_local_to_global_point(&loc_offset, &tempv, pm, pmi, bank->submodel_num);
+				} else {
+					vec3d tempn = loc_norm;
+					model_instance_local_to_global_point_dir(&loc_offset, &loc_norm, &tempv, &tempn, pm, pmi, bank->submodel_num);
+				}
 			}
 
 			vm_vec_unrotate(&world_pnt, &loc_offset, orient);
