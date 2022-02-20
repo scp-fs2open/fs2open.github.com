@@ -3573,6 +3573,13 @@ void mission_parse_maybe_create_parse_object(p_object *pobjp)
 				// Make sure that the ship is marked as destroyed so the AI doesn't freak out later
 				ship_add_exited_ship(&Ships[objp->instance], Ship::Exit_Flags::Destroyed);
 
+				// Same with the ship registry so that SEXPs don't refer to phantom ships
+				auto entry = &Ship_registry[Ship_registry_map[pobjp->name]];
+				entry->status = ShipStatus::EXITED;
+				entry->objp = nullptr;
+				entry->shipp = nullptr;
+				entry->cleanup_mode = SHIP_DESTROYED;
+
 				// once the ship is exploded, find the debris pieces belonging to this object, mark them
 				// as not to expire, and move them forward in time N seconds
 				for (auto &db: Debris)
