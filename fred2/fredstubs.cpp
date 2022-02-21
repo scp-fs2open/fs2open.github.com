@@ -183,6 +183,7 @@ int Test_begin;
 int Debug_octant;
 int Framerate_delay;
 void game_start_time(bool){}
+bool game_time_is_stopped(){return false;}
 void game_stop_time(bool){}
 int game_get_default_skill_level(){return 0;}
 int find_freespace_cd(char*){return 0;}

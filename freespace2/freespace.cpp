@@ -4177,6 +4177,11 @@ void game_stop_time(bool by_os_focus)
 	timestamp_pause(!by_os_focus);
 }
 
+bool game_time_is_stopped()
+{
+	return Time_paused;
+}
+
 void game_start_time(bool by_os_focus)
 {
 	if (Time_paused) {
