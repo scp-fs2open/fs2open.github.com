@@ -4229,15 +4229,13 @@ int get_enemy_team_range(object *my_objp, float range, int enemy_team_mask, vec3
                     if (count == 0) {
                         *min_vec = objp->pos;
                         *max_vec = objp->pos;
-                        count++;
-                    }
-                    else {
+                    } else {
                         update_min_max(objp->pos.xyz.x, &min_vec->xyz.x, &max_vec->xyz.x);
                         update_min_max(objp->pos.xyz.y, &min_vec->xyz.y, &max_vec->xyz.y);
                         update_min_max(objp->pos.xyz.z, &min_vec->xyz.z, &max_vec->xyz.z);
                     }
+                    count++;
                 }
-
         }
     }
 
@@ -4253,7 +4251,7 @@ void ai_safety_pick_spot(object *objp)
 	int		objnum;
 	int		enemy_team_mask;
 	vec3d	min_vec, max_vec;
-	vec3d	vec_to_center, center;
+	vec3d	fvec_from_center, center;
 	vec3d	goal_pos;
 
 	objnum = OBJ_INDEX(objp);
@@ -4262,9 +4260,9 @@ void ai_safety_pick_spot(object *objp)
 
 	if (get_enemy_team_range(objp, 1000.0f, enemy_team_mask, &min_vec, &max_vec)) {
 		vm_vec_avg(&center, &min_vec, &max_vec);
-		vm_vec_normalized_dir(&vec_to_center, &center, &objp->pos);
+		vm_vec_normalized_dir(&fvec_from_center, &objp->pos, &center);
 
-		vm_vec_scale_add(&goal_pos, &center, &vec_to_center, 2000.0f);
+		vm_vec_scale_add(&goal_pos, &center, &fvec_from_center, 2000.0f);
 	} else
 		vm_vec_scale_add(&goal_pos, &objp->pos, &objp->orient.vec.fvec, 100.0f);
 
@@ -4292,6 +4290,11 @@ float ai_safety_goto_spot(object *objp)
 		set_accel_for_target_speed(objp, sip->max_speed * dot_val);
 	} else
 		set_accel_for_target_speed(objp, sip->max_speed * dot_val * (dist/200.0f + 0.2f));
+
+	if (The_mission.ai_profile->flags[AI::Profile_Flags::Fix_keep_safe_distance]) {
+		// hey, let's try actually aiming toward our goal!
+		turn_towards_point(objp, &aip->goal_point, nullptr, 0.0f);
+	}
 
 	return dist;
 }
