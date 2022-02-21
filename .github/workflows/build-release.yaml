@@ -266,6 +266,7 @@ jobs:
         with:
           name: windows-${{ matrix.configuration }}-${{ matrix.arch }}-${{ matrix.simd }}
           path: ${{ github.workspace }}/build/install/*
+
   windows_zip:
     name: Build Windows distribution zip
     needs: build_windows
@@ -276,30 +277,36 @@ jobs:
       matrix:
         arch: [Win32, x64]
         simd: [SSE2, AVX]
+
     steps:
       - uses: actions/checkout@v1
         name: Checkout
         with:
           submodules: true
           fetch-depth: '0'
+
       - name: Download upload URL
         uses: actions/download-artifact@v1
         with:
           name: upload_url
           path: .
+
       - name: Extract upload URL
         id: extractUploadUrl
         run: echo "::set-output name=upload_url::$(cat upload_url)"
+
       - name: Download Release builds
         uses: actions/download-artifact@v2
         with:
           name: windows-Release-${{ matrix.arch }}-${{ matrix.simd }}
           path: builds
+
       - name: Download FastDebug builds
         uses: actions/download-artifact@v2
         with:
           name: windows-FastDebug-${{ matrix.arch }}-${{ matrix.simd }}
           path: builds
+
       - name: Create Distribution package
         id: generate_package
         working-directory: ./builds
@@ -308,15 +315,24 @@ jobs:
           ARCH: ${{ matrix.arch }}
           SIMD: ${{ matrix.simd }}
         run: $GITHUB_WORKSPACE/ci/linux/create_dist_pack.sh Windows
+
       - name: Upload result package
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ steps.generate_package.outputs.package_name }}
+          path: ${{ steps.generate_package.outputs.package_path }}
+
+      - name: Upload debug package
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ steps.generate_package.outputs.debug_name }}
+          path: ${{ steps.generate_package.outputs.debug_path }}
+
+      - name: Publish packages
         uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          files: ${{ steps.generate_package.outputs.package_path }}
-      - name: Upload debug symbols
-        uses: softprops/action-gh-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          files: ${{ steps.generate_package.outputs.debug_path }}
+          files: |
+            ${{ steps.generate_package.outputs.package_path }}
+            ${{ steps.generate_package.outputs.debug_path }}
