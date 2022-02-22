@@ -208,10 +208,8 @@ namespace animation {
 
 			//Save the things modified by initial animations as actual baseline
 			for (const auto& initialModified : applyBuffer) {
-				if (!initialModified.second.modified)
-					continue;
-
-				initialModified.first->saveCurrentAsBase(pmi);
+				if (initialModified.second.modified)
+					initialModified.first->saveCurrentAsBase(pmi);
 			}
 		}
 	}
@@ -276,7 +274,10 @@ namespace animation {
 		ModelAnimationSet::cleanRunning();
 	}
 
-	ModelAnimationSubmodel::ModelAnimationSubmodel(SCP_string submodelName) : m_name(std::move(submodelName)) { }
+	ModelAnimationSubmodel::ModelAnimationSubmodel(SCP_string submodelName) {
+		SCP_tolower(submodelName);
+		m_name = std::move(submodelName);
+	}
 
 	ModelAnimationSubmodel* ModelAnimationSubmodel::copy() const {
 		return new ModelAnimationSubmodel(*this);
@@ -852,7 +853,9 @@ namespace animation {
 		return true;
 	};
 
-	std::shared_ptr<ModelAnimationSubmodel> ModelAnimationSet::getSubmodel(const SCP_string& submodelName) {
+	std::shared_ptr<ModelAnimationSubmodel> ModelAnimationSet::getSubmodel(SCP_string submodelName) {
+		SCP_tolower(submodelName);
+
 		for (const auto& submodel : m_submodels) {
 			if (!submodel->is_turret && submodel->m_name == submodelName)
 				return submodel;
@@ -863,7 +866,9 @@ namespace animation {
 		return submodel;
 	}
 
-	std::shared_ptr<ModelAnimationSubmodel> ModelAnimationSet::getSubmodel(const SCP_string& submodelName, const SCP_string& SIP_name, bool findBarrel) {
+	std::shared_ptr<ModelAnimationSubmodel> ModelAnimationSet::getSubmodel(SCP_string submodelName, const SCP_string& SIP_name, bool findBarrel) {
+		SCP_tolower(submodelName);
+
 		for (const auto& submodel : m_submodels) {
 			if (submodel->is_turret && submodel->m_name == submodelName) {
 				auto submodelTurret = ((ModelAnimationSubmodelTurret*)submodel.get());
