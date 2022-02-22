@@ -274,7 +274,10 @@ namespace animation {
 		ModelAnimationSet::cleanRunning();
 	}
 
-	ModelAnimationSubmodel::ModelAnimationSubmodel(SCP_string submodelName) : m_name(std::move(submodelName)) { }
+	ModelAnimationSubmodel::ModelAnimationSubmodel(SCP_string submodelName) {
+		SCP_tolower(submodelName);
+		m_name = std::move(submodelName);
+	}
 
 	ModelAnimationSubmodel* ModelAnimationSubmodel::copy() const {
 		return new ModelAnimationSubmodel(*this);
