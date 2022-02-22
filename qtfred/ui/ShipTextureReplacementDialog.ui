@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>fso::fred::dialogs::ShipTextureReplacementDialog</class>
+ <widget class="QDialog" name="fso::fred::dialogs::ShipTextureReplacementDialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>399</width>
+    <height>194</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Texture Replacement</string>
+  </property>
+  <property name="modal">
+   <bool>true</bool>
+  </property>
+  <layout class="QHBoxLayout" name="horizontalLayout">
+   <item>
+    <widget class="QGroupBox" name="currentTextureGroupBox">
+     <property name="title">
+      <string>Current Textures</string>
+     </property>
+     <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <item>
+       <widget class="QListView" name="currentTexturesListView"/>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <layout class="QVBoxLayout" name="newTexturesLayout">
+     <item>
+      <layout class="QGridLayout" name="mainTextureLayout">
+       <item row="1" column="2">
+        <widget class="QLineEdit" name="newTextureLineEdit"/>
+       </item>
+       <item row="1" column="0">
+        <widget class="QLabel" name="newTextureLabel">
+         <property name="text">
+          <string>New Texture</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <widget class="QGroupBox" name="subTextureBox">
+       <property name="title">
+        <string>Other Maps</string>
+       </property>
+       <layout class="QGridLayout" name="gridLayout_2">
+        <item row="0" column="3">
+         <widget class="QLineEdit" name="SubTextureLineEdit"/>
+        </item>
+        <item row="0" column="0">
+         <widget class="QLabel" name="SubTextureLabel">
+          <property name="text">
+           <string>Template</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QCheckBox" name="useSubTexturecheckbox">
+          <property name="text">
+           <string>Use</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="2">
+         <widget class="QCheckBox" name="inheritSubTextureCheckbox">
+          <property name="text">
+           <string>Inherit</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <resources>
+  <include location="../resources/resources.qrc"/>
+ </resources>
+ <connections/>
+</ui>
