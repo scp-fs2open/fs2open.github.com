@@ -360,8 +360,8 @@ namespace animation {
 
 		bool isEmpty() const;
 
-		std::shared_ptr<ModelAnimationSubmodel> getSubmodel(const SCP_string& submodelName);
-		std::shared_ptr<ModelAnimationSubmodel> getSubmodel(const SCP_string& submodelName, const SCP_string& SIP_name, bool findBarrel);
+		std::shared_ptr<ModelAnimationSubmodel> getSubmodel(SCP_string submodelName);
+		std::shared_ptr<ModelAnimationSubmodel> getSubmodel(SCP_string submodelName, const SCP_string& SIP_name, bool findBarrel);
 		std::shared_ptr<ModelAnimationSubmodel> getSubmodel(const std::shared_ptr<ModelAnimationSubmodel>& other);
 	};
 
