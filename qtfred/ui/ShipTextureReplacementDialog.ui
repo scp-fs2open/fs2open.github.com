@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>399</width>
-    <height>194</height>
+    <width>371</width>
+    <height>273</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -24,7 +24,7 @@
      </property>
      <layout class="QHBoxLayout" name="horizontalLayout_2">
       <item>
-       <widget class="QListView" name="currentTexturesListView"/>
+       <widget class="QListView" name="TexturesList"/>
       </item>
      </layout>
     </widget>
@@ -51,31 +51,182 @@
         <string>Other Maps</string>
        </property>
        <layout class="QGridLayout" name="gridLayout_2">
-        <item row="0" column="3">
-         <widget class="QLineEdit" name="SubTextureLineEdit"/>
-        </item>
-        <item row="0" column="0">
-         <widget class="QLabel" name="SubTextureLabel">
-          <property name="text">
-           <string>Template</string>
-          </property>
-         </widget>
-        </item>
         <item row="0" column="1">
-         <widget class="QCheckBox" name="useSubTexturecheckbox">
+         <widget class="QCheckBox" name="useMiscTexturecheckbox">
           <property name="text">
-           <string>Use</string>
+           <string>Replace</string>
           </property>
          </widget>
         </item>
-        <item row="0" column="2">
-         <widget class="QCheckBox" name="inheritSubTextureCheckbox">
+        <item row="5" column="3">
+         <widget class="QLineEdit" name="AmbiantTextureLineEdit"/>
+        </item>
+        <item row="0" column="3">
+         <widget class="QLineEdit" name="MiscTextureLineEdit"/>
+        </item>
+        <item row="1" column="3">
+         <widget class="QLineEdit" name="ShineTextureLineEdit"/>
+        </item>
+        <item row="4" column="3">
+         <widget class="QLineEdit" name="HeightTextureLineEdit"/>
+        </item>
+        <item row="3" column="2">
+         <widget class="QCheckBox" name="inheritNormalTextureCheckbox">
           <property name="text">
            <string>Inherit</string>
           </property>
          </widget>
         </item>
+        <item row="2" column="3">
+         <widget class="QLineEdit" name="GlowTextureLineEdit"/>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="ShineTextureLabel">
+          <property name="text">
+           <string>Shine</string>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="0">
+         <widget class="QLabel" name="HeightTextureLabel">
+          <property name="text">
+           <string>Height</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="0">
+         <widget class="QLabel" name="MiscTextureLabel">
+          <property name="text">
+           <string>Misc</string>
+          </property>
+         </widget>
+        </item>
+        <item row="5" column="1">
+         <widget class="QCheckBox" name="useAmbiantTexturecheckbox">
+          <property name="text">
+           <string>Replace</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <widget class="QCheckBox" name="useGlowTexturecheckbox">
+          <property name="text">
+           <string>Replace</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="GlowTextureLabel">
+          <property name="text">
+           <string>Glow</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="2">
+         <widget class="QCheckBox" name="inheritGlowTextureCheckbox">
+          <property name="text">
+           <string>Inherit</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="1">
+         <widget class="QCheckBox" name="useNormalTexturecheckbox">
+          <property name="text">
+           <string>Replace</string>
+          </property>
+         </widget>
+        </item>
+        <item row="5" column="2">
+         <widget class="QCheckBox" name="inheritAmbiantTextureCheckbox">
+          <property name="text">
+           <string>Inherit</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="2">
+         <widget class="QCheckBox" name="inheritMiscTextureCheckbox">
+          <property name="text">
+           <string>Inherit</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="2">
+         <widget class="QCheckBox" name="inheritShineTextureCheckbox">
+          <property name="text">
+           <string>Inherit</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QCheckBox" name="useShineTexturecheckbox">
+          <property name="text">
+           <string>Replace</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="0">
+         <widget class="QLabel" name="NormalTextureLabel">
+          <property name="text">
+           <string>Normal</string>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="2">
+         <widget class="QCheckBox" name="inheritHeightTextureCheckbox">
+          <property name="text">
+           <string>Inherit</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="3">
+         <widget class="QLineEdit" name="NormalTextureLineEdit"/>
+        </item>
+        <item row="4" column="1">
+         <widget class="QCheckBox" name="useHeightTexturecheckbox">
+          <property name="text">
+           <string>Replace</string>
+          </property>
+         </widget>
+        </item>
+        <item row="5" column="0">
+         <widget class="QLabel" name="AmbiantTextureLabel">
+          <property name="text">
+           <string>AO</string>
+          </property>
+         </widget>
+        </item>
+        <item row="6" column="0">
+         <widget class="QLabel" name="ReflectTextureLabel">
+          <property name="text">
+           <string>Reflect</string>
+          </property>
+         </widget>
+        </item>
+        <item row="6" column="1">
+         <widget class="QCheckBox" name="useReflectTexturecheckbox">
+          <property name="text">
+           <string>Replace</string>
+          </property>
+         </widget>
+        </item>
+        <item row="6" column="2">
+         <widget class="QCheckBox" name="inheritReflectTextureCheckbox">
+          <property name="text">
+           <string>Inherit</string>
+          </property>
+         </widget>
+        </item>
+        <item row="6" column="3">
+         <widget class="QLineEdit" name="ReflectTextureLineEdit"/>
+        </item>
        </layout>
+      </widget>
+     </item>
+     <item>
+      <widget class="QDialogButtonBox" name="buttonBox">
+       <property name="standardButtons">
+        <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+       </property>
       </widget>
      </item>
     </layout>
@@ -85,5 +236,38 @@
  <resources>
   <include location="../resources/resources.qrc"/>
  </resources>
- <connections/>
+ <connections>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>accepted()</signal>
+   <receiver>fso::fred::dialogs::ShipTextureReplacementDialog</receiver>
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>296</x>
+     <y>179</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>200</x>
+     <y>100</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>rejected()</signal>
+   <receiver>fso::fred::dialogs::ShipTextureReplacementDialog</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>296</x>
+     <y>179</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>200</x>
+     <y>100</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>
