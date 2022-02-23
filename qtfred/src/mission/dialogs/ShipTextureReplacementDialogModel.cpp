@@ -381,6 +381,21 @@ namespace fso {
 												texture_set(&(*ii), &(*end));
 											}
 										}
+
+										if (end != Fred_texture_replacements.end())
+											Fred_texture_replacements.erase(end, Fred_texture_replacements.end());
+
+										// now put the new entries on the end of the list
+										texture_replace tr;
+										strcpy_s(tr.old_texture, defaultTextures[index].c_str());
+										strcpy_s(tr.new_texture, fullName.c_str());
+										strcpy_s(tr.ship_name, Ships[_editor->cur_ship].ship_name);
+										tr.new_texture_id = -1;
+										tr.from_table = false;
+
+										// assign to global FRED array
+										Fred_texture_replacements.push_back(tr);
+										_editor->missionChanged();
 									}
 									else {
 										object* objp = nullptr;
@@ -403,6 +418,21 @@ namespace fso {
 														texture_set(&(*ii), &(*end));
 													}
 												}
+
+												if (end != Fred_texture_replacements.end())
+													Fred_texture_replacements.erase(end, Fred_texture_replacements.end());
+
+												// now put the new entries on the end of the list
+												texture_replace tr;
+												strcpy_s(tr.old_texture, defaultTextures[index].c_str());
+												strcpy_s(tr.new_texture, fullName.c_str());
+												strcpy_s(tr.ship_name, shipp->ship_name);
+												tr.new_texture_id = -1;
+												tr.from_table = false;
+
+												// assign to global FRED array
+												Fred_texture_replacements.push_back(tr);
+												_editor->missionChanged();
 											}
 
 											objp = GET_NEXT(objp);
@@ -448,6 +478,21 @@ namespace fso {
 											texture_set(&(*ii), &(*end));
 										}
 									}
+
+									if (end != Fred_texture_replacements.end())
+										Fred_texture_replacements.erase(end, Fred_texture_replacements.end());
+
+									// now put the new entries on the end of the list
+									texture_replace tr;
+									strcpy_s(tr.old_texture, defaultTextures[index].c_str());
+									strcpy_s(tr.new_texture, fullName.c_str());
+									strcpy_s(tr.ship_name, Ships[_editor->cur_ship].ship_name);
+									tr.new_texture_id = -1;
+									tr.from_table = false;
+
+									// assign to global FRED array
+									Fred_texture_replacements.push_back(tr);
+									_editor->missionChanged();
 								}
 								else {
 									object* objp = nullptr;
@@ -470,6 +515,21 @@ namespace fso {
 													texture_set(&(*ii), &(*end));
 												}
 											}
+
+											if (end != Fred_texture_replacements.end())
+												Fred_texture_replacements.erase(end, Fred_texture_replacements.end());
+
+											// now put the new entries on the end of the list
+											texture_replace tr;
+											strcpy_s(tr.old_texture, defaultTextures[index].c_str());
+											strcpy_s(tr.new_texture, fullName.c_str());
+											strcpy_s(tr.ship_name, shipp->ship_name);
+											tr.new_texture_id = -1;
+											tr.from_table = false;
+
+											// assign to global FRED array
+											Fred_texture_replacements.push_back(tr);
+											_editor->missionChanged();
 										}
 
 										objp = GET_NEXT(objp);
