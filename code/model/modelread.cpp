@@ -5620,11 +5620,14 @@ uint align_bsp_data(ubyte* bsp_in, ubyte* bsp_out, uint bsp_size)
 	do {
 		//Read Chunk type and size
 		memcpy(&bsp_chunk_type, bsp_in, 4);
-		memcpy(&bsp_chunk_size, bsp_in + 4, 4);
-
+		
 		//Chunk type 0 is EOF, but the size is read as 0, it needs to be adjusted
-		if (bsp_chunk_type == 0)
+		if (bsp_chunk_type == 0) {
 			bsp_chunk_size = 4;
+		}
+		else {
+			memcpy(&bsp_chunk_size, bsp_in + 4, 4);
+		}
 
 		//mprintf(("|%d | %d|\n",bsp_chunk_type,bsp_chunk_size));
 
