@@ -255,7 +255,7 @@ namespace fso {
 			}
 			void ShipTextureReplacementDialog::setMain()
 			{
-				SCP_string newText = "";
+				SCP_string newText;
 				if (!ui->newTextureLineEdit->text().isEmpty()) {
 					newText = ui->newTextureLineEdit->text().toStdString();
 				}
@@ -263,7 +263,7 @@ namespace fso {
 			}
 			void ShipTextureReplacementDialog::setMisc()
 			{
-				SCP_string newText = "";
+				SCP_string newText;
 				if (!ui->MiscTextureLineEdit->text().isEmpty()) {
 					 newText = ui->MiscTextureLineEdit->text().toStdString();
 					_model->setMap(row, "misc", newText);
@@ -271,7 +271,7 @@ namespace fso {
 			}
 			void ShipTextureReplacementDialog::setGlow()
 			{
-				SCP_string newText = "";
+				SCP_string newText;
 				if (!ui->GlowTextureLineEdit->text().isEmpty()) {
 					 newText = ui->GlowTextureLineEdit->text().toStdString();
 					_model->setMap(row, "glow", newText);
@@ -279,15 +279,15 @@ namespace fso {
 			}
 			void ShipTextureReplacementDialog::setShine()
 			{
-				SCP_string newText = "";
+				SCP_string newText;
 				if (!ui->ShineTextureLineEdit->text().isEmpty()) {
-					const SCP_string newText = ui->ShineTextureLineEdit->text().toStdString();
+					newText = ui->ShineTextureLineEdit->text().toStdString();
 					_model->setMap(row, "shine", newText);
 				}
 			}
 			void ShipTextureReplacementDialog::setNormal()
 			{
-				SCP_string newText = "";
+				SCP_string newText;
 				if (!ui->NormalTextureLineEdit->text().isEmpty()) {
 					 newText = ui->NormalTextureLineEdit->text().toStdString();
 					_model->setMap(row, "normal", newText);
@@ -295,25 +295,25 @@ namespace fso {
 			}
 			void ShipTextureReplacementDialog::setHeight()
 			{
-				SCP_string newText = "";
+				SCP_string newText;
 				if (!ui->HeightTextureLineEdit->text().isEmpty()) {
-					 SCP_string newText = ui->HeightTextureLineEdit->text().toStdString();
+					 newText = ui->HeightTextureLineEdit->text().toStdString();
 					_model->setMap(row, "height", newText);
 				}
 			}
 			void ShipTextureReplacementDialog::setAo()
 			{
-				SCP_string newText = "";
+				SCP_string newText;
 				if (!ui->AmbiantTextureLineEdit->text().isEmpty()) {
-					SCP_string newText = ui->AmbiantTextureLineEdit->text().toStdString();
+					newText = ui->AmbiantTextureLineEdit->text().toStdString();
 					_model->setMap(row, "ao", newText);
 				}
 			}
 			void ShipTextureReplacementDialog::setReflect()
 			{
-				SCP_string newText = "";
+				SCP_string newText;
 				if (!ui->ReflectTextureLineEdit->text().isEmpty()) {
-					SCP_string newText = ui->ReflectTextureLineEdit->text().toStdString();
+					newText = ui->ReflectTextureLineEdit->text().toStdString();
 					_model->setMap(row, "reflect", newText);
 				}
 			}

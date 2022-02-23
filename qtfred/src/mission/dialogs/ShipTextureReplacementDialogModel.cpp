@@ -48,7 +48,7 @@ namespace fso {
 
 					// check for duplicate textures in list
 					duplicate = -1;
-					for (int k = 0; k < defaultTextures.size(); k++)
+					for (int k = 0; k < (int)defaultTextures.size(); k++)
 					{
 						if (!stricmp(defaultTextures[k].c_str(), texture_file))
 						{
@@ -72,23 +72,23 @@ namespace fso {
 				}
 
 				if (!m_multi) {
-					for (SCP_vector<texture_replace>::iterator ii = Fred_texture_replacements.begin(); ii != Fred_texture_replacements.end(); ++ii)
+					for (auto& Fred_texture_replacement : Fred_texture_replacements)
 					{
-						if (!stricmp(Ships[_editor->cur_ship].ship_name, ii->ship_name) && !(ii->from_table))
+						if (!stricmp(Ships[_editor->cur_ship].ship_name, Fred_texture_replacement.ship_name) && !(Fred_texture_replacement.from_table))
 						{
-							SCP_string pureName = strlwr(ii->old_texture);
+							SCP_string pureName = Fred_texture_replacement.old_texture;
 							auto npos = pureName.find_last_of('-');
 							if (npos != SCP_string::npos) {
 								pureName = pureName.substr(0, pureName.find_last_of('-'));
 							}
 
 							// look for corresponding old texture
-							for (int i = 0; i < defaultTextures.size(); i++)
+							for (int i = 0; i < (int)defaultTextures.size(); i++)
 							{
 								// if match
 								if (!stricmp(defaultTextures[i].c_str(), pureName.c_str()))
 								{
-									SCP_string newText = strlwr(ii->new_texture);
+									SCP_string newText = Fred_texture_replacement.new_texture;
 									npos = newText.find_last_of('-');
 									SCP_string type;
 									if (npos != SCP_string::npos) {
@@ -193,7 +193,8 @@ namespace fso {
 						//mprintf(( "ignoring extension on file '%s'\n", texture_file ));
 						*p = 0;
 					}
-					SCP_string subMapClean = strlwr(subMap);
+					SCP_string subMapClean = subMap;
+					SCP_tolower(subMapClean);
 					SCP_string type;
 					auto npos = subMapClean.find_last_of('-');
 					if (npos != SCP_string::npos) {
@@ -352,7 +353,7 @@ namespace fso {
 				return dest;
 			}
 
-			void ShipTextureReplacementDialogModel::saveSubMap(int index, SCP_string type) {
+			void ShipTextureReplacementDialogModel::saveSubMap(const int index, const SCP_string& type) {
 				SCP_string fullName;
 				if (replaceMap[index][type]) {
 					if (inheritMap[index][type]) {
@@ -549,7 +550,7 @@ namespace fso {
 				}
 			}
 
-			bool ShipTextureReplacementDialogModel::testTexture(SCP_string fullName)
+			bool ShipTextureReplacementDialogModel::testTexture(const SCP_string& fullName)
 			{
 				int temp_bmp, temp_frames, temp_fps;
 				if (fullName == "invisible") {
@@ -560,13 +561,9 @@ namespace fso {
 					temp_bmp = bm_load(fullName);
 					if (temp_bmp < 0)
 					{
-						temp_bmp = bm_load_animation(fullName.c_str(), &temp_frames, &temp_fps, nullptr, nullptr, nullptr, true);
+						temp_bmp = bm_load_animation(fullName.c_str(), &temp_frames, &temp_fps, nullptr, nullptr, false, true);
 					}
-					if (temp_bmp < 0)
-					{
-						return false;
-					}
-					return true;
+					return temp_bmp < 0;
 				}
 			}
 
@@ -576,15 +573,16 @@ namespace fso {
 			}
 			SCP_string ShipTextureReplacementDialogModel::getDefaultName(const int index) const
 			{
-				Assert(index <= defaultTextures.size());
+				Assert(index <= (int)defaultTextures.size());
 				return defaultTextures[index];
 			}
 			void ShipTextureReplacementDialogModel::setMap(const int index, const SCP_string& type, const SCP_string& newName)
 			{
-				Assert(index <= currentTextures.size());
-				SCP_map<SCP_string, SCP_string>::const_iterator pos = currentTextures[index].find(type);
+				Assert(index < (int)currentTextures.size());
+				auto pos = currentTextures[index].find(type);
 				if (pos == currentTextures[index].end()) {
 					//handle the error
+					error_display(1, "Tried to set non existant map type %s. Get a programmer", type.c_str());
 				}
 				else {
 					modify(currentTextures[index][type], newName);
@@ -592,10 +590,11 @@ namespace fso {
 
 			}
 			SCP_string ShipTextureReplacementDialogModel::getMap(const int index, const SCP_string& type) const {
-				Assert(index <= currentTextures.size());
-				SCP_map<SCP_string, SCP_string>::const_iterator pos = currentTextures[index].find(type);
+				Assert(index < (int)currentTextures.size());
+				auto pos = currentTextures[index].find(type);
 				if (pos == currentTextures[index].end()) {
-					//handle the error
+					error_display(1, "Asked for non existant map type %s. Get a programmer", type.c_str());
+					return nullptr;
 				}
 				else {
 					return pos->second;
@@ -603,23 +602,28 @@ namespace fso {
 			}
 			SCP_map<SCP_string, bool> ShipTextureReplacementDialogModel::getSubtypesForMap(int index) const
 			{
+				Assert(index < (int)currentTextures.size());
 				return subTypesAvailable[index];
 			}
 			SCP_map<SCP_string, bool> ShipTextureReplacementDialogModel::getReplace(int index) const
 			{
+				Assert(index < (int)currentTextures.size());
 				return replaceMap[index];
 			}
 			SCP_map<SCP_string, bool> ShipTextureReplacementDialogModel::getInherit(int index) const
 			{
+				Assert(index < (int)currentTextures.size());
 				return inheritMap[index];
 			}
 
 			void ShipTextureReplacementDialogModel::setReplace(const int index, const SCP_string& type, const bool state)
 			{
+				Assert(index < (int)currentTextures.size());
 				modify(replaceMap[index][type], state);
 			}
 			void ShipTextureReplacementDialogModel::setInherit(const int index, const SCP_string& type, const bool state)
 			{
+				Assert(index < (int)currentTextures.size());
 				modify(inheritMap[index][type], state);
 			}
 			void ShipTextureReplacementDialogModel::set_modified()

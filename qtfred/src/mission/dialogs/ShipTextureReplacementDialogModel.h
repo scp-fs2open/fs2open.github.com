@@ -29,9 +29,9 @@ namespace fso {
 				SCP_vector<SCP_string> defaultTextures;
 				SCP_vector<SCP_map<SCP_string, SCP_string>> currentTextures;
 				bool mainChanged = false;
-				void saveSubMap(int index, SCP_string type);
-				bool testTexture(SCP_string);
-				texture_replace* texture_set(texture_replace* dest, const texture_replace* src);
+				void saveSubMap(const int index, const SCP_string& type);
+				static bool testTexture(const SCP_string&);
+				static texture_replace* texture_set(texture_replace* dest, const texture_replace* src);
 			public:
 				ShipTextureReplacementDialogModel(QObject* parent, EditorViewport* viewport, bool multi);
 
