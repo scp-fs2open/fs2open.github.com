@@ -569,7 +569,7 @@ namespace fso {
 
 			int ShipTextureReplacementDialogModel::getSize() const
 			{
-				return defaultTextures.size();
+				return (int)defaultTextures.size();
 			}
 			SCP_string ShipTextureReplacementDialogModel::getDefaultName(const int index) const
 			{
