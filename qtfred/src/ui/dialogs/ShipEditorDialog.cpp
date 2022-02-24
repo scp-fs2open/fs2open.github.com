@@ -523,9 +523,7 @@ void ShipEditorDialog::enableDisable()
 	}
 
 	// disable textures for multiple ships
-	if (_model->multi_edit) {
-		ui->textureReplacementButton->setEnabled(false);
-	}
+		ui->textureReplacementButton->setEnabled(_model->texenable);
 
 	ui->AIClassCombo->setEnabled(_model->enable);
 	ui->cargoCombo->setEnabled(_model->enable);
