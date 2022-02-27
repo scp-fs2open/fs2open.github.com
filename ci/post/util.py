@@ -1,3 +1,5 @@
+# miscellaneous utilities
+
 import os
 import time
 from functools import wraps
@@ -6,11 +8,14 @@ from requests import RequestException
 
 GLOBAL_TIMEOUT = 30
 
-
 def retry_multi(max_retries):
-    """
-    Retry a function `max_retries` times.
-    This has been copied from https://stackoverflow.com/a/23892489
+    """!
+    @brief Decorator - Retry a function `max_retries` times.
+    
+    @param [in] `max_retries` Maximum number of times to retry the decorated function before giving up
+
+    @details  Intended for use with functions from the `request` module, only catches `RequestException`'s
+    @note This has been copied from https://stackoverflow.com/a/23892489
     """
 
     def retry(func):
@@ -34,4 +39,8 @@ def retry_multi(max_retries):
 
 
 def expand_config_vars(config):
+    """
+    @brief Expands the shell variable for the repo string from `config`
+    """
+
     config["git"]["repo"] = os.path.expandvars(config["git"]["repo"])

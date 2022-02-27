@@ -1,12 +1,26 @@
-import re
+import re # regex module
 from ftplib import FTP, error_perm
 from typing import List, Tuple, Dict
 
-import requests
+import requests  # HTTP requests module
 
-from util import retry_multi, GLOBAL_TIMEOUT
+from util import retry_multi, GLOBAL_TIMEOUT	# from util.py
+
 
 class ReleaseFile:
+    """! Class representing a Released file on Nebula
+
+    `name`: str
+        Mod (or build) name,
+    `url`: str
+        Primary host URL,
+    `group`: str
+        Mod group string,
+    `subgroup`: str
+        Mod subgroup string,
+    `mirrors`: List[str]
+        List of URL's of FTP mirrors
+    """
     def __init__(self, name, url, group, subgroup=None, mirrors=None):
         if mirrors is None:
             mirrors = []
@@ -27,6 +41,17 @@ class ReleaseFile:
 
 
 class SourceFile:
+    """! Class represeting a source file
+
+    `name`: str
+        File name,
+    `url`: str
+        FTP URL,
+    `group`
+        <unknown>
+ 
+    @details More details
+    """
     def __init__(self, name, url, group):
         self.group = group
         self.url = url
@@ -34,7 +59,17 @@ class SourceFile:
 
 
 def get_release_files(tag_name, config) -> Tuple[List[ReleaseFile], Dict[str, SourceFile]]:
-    @retry_multi(5)
+    """!
+    @brief Brief description
+
+    @param[in] `tag_name` Git tag of the current release
+    @param[in] `config`   c
+    @returns List[ReleaseFile]
+    @returns Dict[str, SourceFile]
+
+    @details More details
+    """
+    @retry_multi(5)	# retry at most 5 times
     def execute_request(path):
         headers = {
             "Accept": "application/vnd.github.v3+json"
@@ -43,7 +78,7 @@ def get_release_files(tag_name, config) -> Tuple[List[ReleaseFile], Dict[str, So
 
         response = requests.get(url, headers=headers, timeout=GLOBAL_TIMEOUT)
 
-        response.raise_for_status()
+        response.raise_for_status() # Raise a RequestException if we failed, and trigger retry
 
         return response.json()
 
@@ -82,6 +117,16 @@ def get_release_files(tag_name, config) -> Tuple[List[ReleaseFile], Dict[str, So
 
 
 def get_ftp_files(build_type, tag_name, config):
+    """!
+    @brief Brief description
+    
+    @param [in] build_type Description for build_type
+    @param [in] tag_name   Description for tag_name
+    @param [in] config     Description for config
+    @return Return description
+
+    @details More details
+    """
     tag_regex = re.compile("nightly_(.*)")
     build_group_regex = re.compile("nightly_.*-builds-([^.]+).*")
 

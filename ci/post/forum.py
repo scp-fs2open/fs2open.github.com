@@ -9,6 +9,18 @@ from file_list import ReleaseFile
 
 
 class FileGroup:
+    """! Represents a file group
+
+    `name`: str
+        Name of this group
+    `files`: List[ReleaseFile]
+        List of files within this group
+    `mainFile`: str
+        If this FileGroup has a subgroup, `mainFile` is the head of that group
+    `subFiles`: List[ReleaseFile]
+        Files within a subgroup
+    """
+
     def __init__(self, name, files: List[ReleaseFile]):
         self.files = files
         self.name = name
