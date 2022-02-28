@@ -2178,6 +2178,22 @@ void stars_draw_background()
 // call this to set a specific model as the background model
 void stars_set_background_model(const char *model_name, const char *texture_name, int flags)
 {
+	int new_model = -1;
+	int new_bitmap = -1;
+
+	if (model_name != nullptr && *model_name != '\0') {
+		new_model = model_load(model_name, 0, nullptr, -1);
+
+		if (texture_name != nullptr && *texture_name != '\0') {
+			new_bitmap = bm_load(texture_name);
+		}
+	}
+
+	// see if we are actually changing anything
+	if (Nmodel_num == new_model && Nmodel_bitmap == new_bitmap && Nmodel_flags == flags) {
+		return;
+	}
+
 	if (Nmodel_bitmap >= 0) {
 		bm_unload(Nmodel_bitmap);
 		Nmodel_bitmap = -1;
@@ -2194,18 +2210,14 @@ void stars_set_background_model(const char *model_name, const char *texture_name
 	}
 
 	Nmodel_flags = flags;
-
-	if ( (model_name == NULL) || (*model_name == '\0') )
-		return;
-
-	Nmodel_num = model_load(model_name, 0, NULL, -1);
-	Nmodel_bitmap = bm_load(texture_name);
+	Nmodel_num = new_model;
+	Nmodel_bitmap = new_bitmap;
 
 	if (Nmodel_num >= 0) {
 		model_page_in_textures(Nmodel_num);
 
-		if (model_get(Nmodel_num)->flags & PM_FLAG_HAS_INTRINSIC_ROTATE) {
-			Nmodel_instance_num = model_create_instance(false, Nmodel_num);
+		if (model_get(Nmodel_num)->flags & PM_FLAG_HAS_INTRINSIC_MOTION) {
+			Nmodel_instance_num = model_create_instance(-1, Nmodel_num);
 		}
 	}
 

@@ -12,6 +12,7 @@
 #ifndef _MOUSE_H
 #define _MOUSE_H
 
+#include "controlconfig/controlsconfig.h"
 #include "globalincs/pstypes.h"
 
 extern int Mouse_sensitivity;
@@ -56,13 +57,27 @@ extern void mouse_set_pos(int xpos,int ypos);
 #define HIGHEST_MOUSE_WHEEL     MOUSE_WHEEL_RIGHT
 
 /**
- * @brief Returns the number of times button n went from up to down since last call
+ * Checks how many times the given mouse button went down since last check
+ *
+ * @returns 0 if the CC_bind is not CID_MOUSE when Use_mouse_to_fly == false, or
+ * @returns 0 if the CC_bind is not CID_JOY0 when Use_mouse_to_fly == true, or
+ * @returns 0 if the button id >= NUM_MOUSE_BUTTONS, or
+ * @returns 0 if the button did not go down, or
+ *
+ * @returns the number of times the button went down
+ */
+int mouse_down_count(const CC_bind &bind, int reset_count = 1);
+
+/**
+ * Checks how many times the given mouse button went down since last check
  */
 int mouse_down_count(int n, int reset_count = 1);
 
 /**
  * @brief Returns the number of times button n went from down to up since last call
  */
+int mouse_up_count(const CC_bind &bind);
+
 int mouse_up_count(int n);
 
 /**
@@ -70,7 +85,22 @@ int mouse_up_count(int n);
  */
 void mouse_flush();
 
-int mouse_down(int btn);			// returns 1 if mouse button btn is down, 0 otherwise
+/**
+ * Checks if the given mouse button is down
+ * 
+ * @returns 0 if the CC_bind is not CID_MOUSE when Use_mouse_to_fly == false, or
+ * @returns 0 if the CC_bind is not CID_JOY0 when Use_mouse_to_fly == true, or
+ * @returns 0 if the button id >= NUM_MOUSE_BUTTONS, or
+ * @returns 0 if the button is not down, or
+ * 
+ * @returns 1 if the given button is down
+ */
+int mouse_down(const CC_bind &bind);
+
+/**
+ * Returns 1 if any of the given mouse buttons are down. 0 otherwise
+ */
+int mouse_down(int btn);
 
 void mouse_reset_deltas();
 void mouse_get_delta(int *dx = NULL, int *dy = NULL, int *dz = NULL);
@@ -83,5 +113,11 @@ void mouse_event(int x, int y, int dx, int dy);
 void mousewheel_motion(int x, int y, bool reversed);
 
 extern void mouse_force_pos(int x, int y);
+
+/**
+ * Get the closest distance of a bit mask to 0
+ * @note use this to translate mouse button masks to button id's
+ */
+short bit_distance(short x);
 
 #endif

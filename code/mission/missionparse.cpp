@@ -28,6 +28,7 @@
 #include "globalincs/linklist.h"
 #include "hud/hudescort.h"
 #include "hud/hudets.h"
+#include "hud/hudsquadmsg.h"
 #include "hud/hudwingmanstatus.h"
 #include "iff_defs/iff_defs.h"
 #include "io/timer.h"
@@ -335,7 +336,6 @@ const char *Mission_event_log_flags[MAX_MISSION_EVENT_LOG_FLAGS] = {
 	"last trigger",
 	"state change",
 };
-
 
 //XSTR:ON
 
@@ -1543,6 +1543,10 @@ void parse_briefing(mission * /*pm*/, int flags)
 				bi->label[0] = 0;
 				if (optional_string("$label:"))
 					stuff_string(bi->label, F_MESSAGE, MAX_LABEL_LEN);
+				bi->closeup_label[0] = 0;
+				if (optional_string("$closeup label:")) {
+					stuff_string(bi->closeup_label, F_MESSAGE, MAX_LABEL_LEN);
+				}
 
 				if (optional_string("+id:")) {
 					stuff_int(&bi->id);
@@ -1583,6 +1587,13 @@ void parse_briefing(mission * /*pm*/, int flags)
 					stuff_int(&val);
 					if ( val>0 ) {
 						bi->flags |= BI_USE_WING_ICON;
+					}
+				}
+
+				if (optional_string("$use cargo icon:")) {
+					stuff_int(&val);
+					if (val > 0) {
+						bi->flags |= BI_USE_CARGO_ICON;
 					}
 				}
 
@@ -2085,7 +2096,7 @@ int parse_create_object_sub(p_object *p_objp)
 	if (p_objp->flags[Mission::Parse_Object_Flags::Knossos_warp_in])
 	{
         Objects[objnum].flags.set(Object::Object_Flags::Special_warpin);
-		Knossos_warp_ani_used = 1;
+		Knossos_warp_ani_used = true;
 	}
 
 	// set the orders that this ship will accept.  It will have already been set to default from the
@@ -2100,11 +2111,12 @@ int parse_create_object_sub(p_object *p_objp)
 #ifndef NDEBUG
 		if (Fred_running)
 		{
-			int default_orders, remaining_orders;
+			std::set<size_t> default_orders, remaining_orders;
 			
 			default_orders = ship_get_default_orders_accepted(&Ship_info[shipp->ship_info_index]);
-			remaining_orders = p_objp->orders_accepted & ~default_orders;
-			if (remaining_orders)
+			std::set_difference(p_objp->orders_accepted.begin(), p_objp->orders_accepted.end(), default_orders.begin(), default_orders.end(),
+								  std::inserter(remaining_orders, remaining_orders.begin()));
+			if (!remaining_orders.empty())
 			{
 				Warning(LOCATION, "Ship %s has orders which it will accept that are\nnot part of default orders accepted.\n\nPlease reedit this ship and change the orders again\n", shipp->ship_name);
 			}
@@ -2442,6 +2454,14 @@ int parse_create_object_sub(p_object *p_objp)
 			Script_system.SetHookObjects(2, "Ship", &Objects[objnum], "Parent", anchor_objp);
 			Script_system.RunCondition(CHA_ONSHIPARRIVE, &Objects[objnum]);
 			Script_system.RemHookVars({"Ship", "Parent"});
+		}
+	}
+
+	// if this is an asteroid target, add it to the list
+	for (SCP_string& name : Asteroid_target_ships) {
+		if (stricmp(name.c_str(), shipp->ship_name) == 0) {
+			asteroid_add_target(&Objects[objnum]);
+			break;
 		}
 	}
 
@@ -3304,9 +3324,19 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
     // set that this ship will actually listen to
     if (optional_string("+Orders Accepted:"))
     {
-        stuff_int(&p_objp->orders_accepted);
-        if (p_objp->orders_accepted != -1)
-            p_objp->flags.set(Mission::Parse_Object_Flags::SF_Use_unique_orders);
+		p_objp->orders_accepted.clear();
+		
+		int tmp_orders;
+        stuff_int(&tmp_orders);
+		
+        if (tmp_orders != -1) {
+			p_objp->flags.set(Mission::Parse_Object_Flags::SF_Use_unique_orders);
+
+			for(size_t j = 0; j < Player_orders.size(); j++){
+				if(Player_orders[j].id & tmp_orders)
+					p_objp->orders_accepted.insert(j);
+			}
+		}
     }
 
 	p_objp->group = 0;
@@ -3444,7 +3474,13 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 	// Goober5000 - preload stuff for certain object flags
 	// (done after parsing object, but before creating it)
 	if (p_objp->flags[Mission::Parse_Object_Flags::Knossos_warp_in])
-		Knossos_warp_ani_used = 1;
+		Knossos_warp_ani_used = true;
+
+	// check the warp parameters too
+	if (p_objp->warpin_params_index >= 0 && (Warp_params[p_objp->warpin_params_index].warp_type == WT_KNOSSOS || Warp_params[p_objp->warpin_params_index].warp_type == WT_DEFAULT_THEN_KNOSSOS))
+		Knossos_warp_ani_used = true;
+	if (p_objp->warpout_params_index >= 0 && (Warp_params[p_objp->warpout_params_index].warp_type == WT_KNOSSOS || Warp_params[p_objp->warpout_params_index].warp_type == WT_DEFAULT_THEN_KNOSSOS))
+		Knossos_warp_ani_used = true;
 
 	// this is a valid/legal ship to create
 	return 1;
@@ -3536,6 +3572,13 @@ void mission_parse_maybe_create_parse_object(p_object *pobjp)
 
 				// Make sure that the ship is marked as destroyed so the AI doesn't freak out later
 				ship_add_exited_ship(&Ships[objp->instance], Ship::Exit_Flags::Destroyed);
+
+				// Same with the ship registry so that SEXPs don't refer to phantom ships
+				auto entry = &Ship_registry[Ship_registry_map[pobjp->name]];
+				entry->status = ShipStatus::EXITED;
+				entry->objp = nullptr;
+				entry->shipp = nullptr;
+				entry->cleanup_mode = SHIP_DESTROYED;
 
 				// once the ship is exploded, find the debris pieces belonging to this object, mark them
 				// as not to expire, and move them forward in time N seconds
@@ -3808,7 +3851,7 @@ void process_loadout_objects()
 	}
 }
 
-extern int Multi_ping_timestamp;
+extern UI_TIMESTAMP Multi_ping_timestamp;
 void parse_objects(mission *pm, int flag)
 {	
 	Assert(pm != NULL);
@@ -3836,10 +3879,10 @@ void parse_objects(mission *pm, int flag)
 		//      during this loading process
 		if (Game_mode & GM_MULTIPLAYER)
 		{
-			if ((Multi_ping_timestamp == -1) || (Multi_ping_timestamp <= timer_get_milliseconds()))
+			if (!Multi_ping_timestamp.isValid() || ui_timestamp_elapsed(Multi_ping_timestamp))
 			{
 				multi_ping_send_all();
-				Multi_ping_timestamp = timer_get_milliseconds() + 10000; // timeout is 10 seconds between pings
+				Multi_ping_timestamp = ui_timestamp(10000); // timeout is 10 seconds between pings
 			}
 		}
 	}
@@ -4215,7 +4258,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 		// base + total_arrived_count (before adding 1)
 		// Cyborg -- The original ships in the wave have their net_signature set at mission parse
 		// so only do this if this is a subsequent wave.
-		if (Game_mode & GM_MULTIPLAYER && wingp->num_waves > 1)
+		if (Game_mode & GM_MULTIPLAYER && wingp->current_wave > 1)
 		{
 			// Cyborg -- Also, then we need to subtract the original wave's number of fighters 
 			// and also subtract 1 to use the wing's starting signature
@@ -4370,7 +4413,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 		// of orders from the leader
 		if ( Fred_running ) {
 			Assert( wingp->ship_index[wingp->special_ship] != -1 );
-			int orders = Ships[wingp->ship_index[0]].orders_accepted;
+			const std::set<size_t>& orders = Ships[wingp->ship_index[0]].orders_accepted;
 			for (it = 0; it < wingp->current_count; it++ ) {
 				if (it == wingp->special_ship)
 					continue;
@@ -5612,12 +5655,15 @@ void parse_asteroid_fields(mission *pm)
 		if (Asteroid_field.debris_genre == DG_SHIP) {
 			if (optional_string("+Field Debris Type:")) {
 				stuff_int(&Asteroid_field.field_debris_type[0]);
+				count++;
 			}
 			if (optional_string("+Field Debris Type:")) {
 				stuff_int(&Asteroid_field.field_debris_type[1]);
+				count++;
 			}
 			if (optional_string("+Field Debris Type:")) {
 				stuff_int(&Asteroid_field.field_debris_type[2]);
+				count++;
 			}
 		} else {
 			// debris asteroid
@@ -5638,6 +5684,8 @@ void parse_asteroid_fields(mission *pm)
 			}
 		}
 
+		Asteroid_field.num_used_field_debris_types = count;
+
 		bool invalid_asteroids = false;
 		for (int& ast_type : Asteroid_field.field_debris_type) {
 			if (ast_type >= (int)Asteroid_info.size()) {
@@ -5650,8 +5698,9 @@ void parse_asteroid_fields(mission *pm)
 			Warning(LOCATION, "The Asteroid field contains invalid entries!");
 
 		// backward compatibility
-		if ( (Asteroid_field.debris_genre == DG_ASTEROID) && (count == 0) ) {
+		if ( (Asteroid_field.debris_genre == DG_ASTEROID) && (Asteroid_field.num_used_field_debris_types == 0) ) {
 			Asteroid_field.field_debris_type[0] = 0;
+			Asteroid_field.num_used_field_debris_types = 1;
 		}
 
 		required_string("$Average Speed:");
@@ -5685,6 +5734,11 @@ void parse_asteroid_fields(mission *pm)
 			stuff_vec3d(&Asteroid_field.inner_max_bound);
 		} else {
 			Asteroid_field.has_inner_bound = 0;
+		}
+
+		if (optional_string("$Asteroid Targets:")) {
+			stuff_string_list(Asteroid_target_ships);
+			Default_asteroid_throwing_behavior = false;
 		}
 		i++;
 	}
@@ -6108,16 +6162,26 @@ bool post_process_mission()
 			// print out an error based on the return value from check_sexp_syntax()
 			// G5K: now entering this statement simply aborts the mission load
 			if ( result ) {
+				SCP_string location_str;
 				SCP_string sexp_str;
 				SCP_string error_msg;
 
+				// it's helpful to point out the goal/event, so do that if we can
+				int index;
+				if ((index = mission_event_find_sexp_tree(i)) >= 0) {
+					sprintf(location_str, "Error in mission event: \"%s\": ", Mission_events[index].name);
+				} else if ((index = mission_goal_find_sexp_tree(i)) >= 0) {
+					sprintf(location_str, "Error in mission goal: \"%s\": ", Mission_goals[index].name);
+				}
+
 				convert_sexp_to_string(sexp_str, i, SEXP_ERROR_CHECK_MODE);
 				truncate_message_lines(sexp_str, 30);
-				sprintf(error_msg, "%s.\n\nIn sexpression: %s\n(Error appears to be: %s)", sexp_error_message(result), sexp_str.c_str(), Sexp_nodes[bad_node].text);
+				
+				sprintf(error_msg, "%s%s.\n\nIn sexpression: %s\n\n(Bad node appears to be: %s)\n", location_str.c_str(), sexp_error_message(result), sexp_str.c_str(), Sexp_nodes[bad_node].text);
 				Warning(LOCATION, "%s", error_msg.c_str());
 
 				// syntax errors are recoverable in Fred but not FS
-				if (!Fred_running) {
+				if (!Fred_running && !sexp_recoverable_error(result)) {
 					return false;
 				}
 			}
@@ -6913,16 +6977,12 @@ int mission_set_arrival_location(int anchor, int location, int dist, int objnum,
 
 	// if arriving from docking bay, then set ai mode and call function as per AL's instructions.
 	if ( location == ARRIVE_FROM_DOCK_BAY ) {
-		vec3d pos, fvec;
-
 		// if we get an error, just let the ship arrive(?)
-		if ( ai_acquire_emerge_path(&Objects[objnum], anchor_objnum, path_mask, &pos, &fvec) == -1 ) {
+		if ( ai_acquire_emerge_path(&Objects[objnum], anchor_objnum, path_mask) == -1 ) {
 			// get MWA or AL -- not sure what to do here when we cannot acquire a path
 			mprintf(("Unable to acquire arrival path on anchor ship %s\n", Ships[shipnum].ship_name));
 			return -1;
 		}
-		Objects[objnum].pos = pos;
-		vm_vector_2_matrix(&Objects[objnum].orient, &fvec, NULL, NULL);
 	} else {
 
 		// AL: ensure dist > 0 (otherwise get errors in vecmat)

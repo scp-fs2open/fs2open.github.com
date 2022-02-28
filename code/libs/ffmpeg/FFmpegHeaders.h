@@ -6,6 +6,7 @@
 #pragma warning(disable: 4244) // conversion from 'int' to '*'
 
 extern "C" {
+#include <libavcodec/avcodec.h>
 #include <libavcodec/version.h>
 #include <libavformat/avformat.h>
 #include <libswscale/swscale.h>

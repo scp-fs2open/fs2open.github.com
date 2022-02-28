@@ -145,6 +145,8 @@ add_file_folder("ControlConfig"
 	controlconfig/controlsconfig.cpp
 	controlconfig/controlsconfig.h
 	controlconfig/controlsconfigcommon.cpp
+	controlconfig/presets.cpp
+	controlconfig/presets.h
 )
 
 # Cutscene files
@@ -730,6 +732,8 @@ add_file_folder("Libs\\\\RenderDoc"
 add_file_folder("Lighting"
 	lighting/lighting.cpp
 	lighting/lighting.h
+	lighting/lighting_profiles.cpp
+	lighting/lighting_profiles.h
 )
 
 # Localization files
@@ -749,6 +753,8 @@ add_file_folder("Math"
 	math/floating.h
 	math/fvi.cpp
 	math/fvi.h
+        math/ik_solver.cpp
+        math/ik_solver.h
 	math/spline.cpp
 	math/spline.h
 	math/staticrand.cpp
@@ -847,6 +853,8 @@ add_file_folder("Model"
 	model/model.h
 	model/modelanimation.cpp
 	model/modelanimation.h
+	model/modelanimation_moveables.cpp
+	model/modelanimation_moveables.h
 	model/modelanimation_segments.cpp
 	model/modelanimation_segments.h
 	model/modelcollide.cpp
@@ -1313,6 +1321,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/message.h
 	scripting/api/objs/model.cpp
 	scripting/api/objs/model.h
+	scripting/api/objs/modelinstance.cpp
+	scripting/api/objs/modelinstance.h
 	scripting/api/objs/model_path.cpp
 	scripting/api/objs/model_path.h
 	scripting/api/objs/movie_player.cpp
@@ -1323,6 +1333,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/option.h
 	scripting/api/objs/order.cpp
 	scripting/api/objs/order.h
+	scripting/api/objs/oswpt.cpp
+	scripting/api/objs/oswpt.h
 	scripting/api/objs/parse_object.cpp
 	scripting/api/objs/parse_object.h
 	scripting/api/objs/particle.cpp

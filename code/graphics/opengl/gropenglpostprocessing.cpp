@@ -16,6 +16,7 @@
 #include "graphics/util/uniform_structs.h"
 #include "io/timer.h"
 #include "lighting/lighting.h"
+#include "lighting/lighting_profiles.h"
 #include "mod_table/mod_table.h"
 #include "nebula/neb.h"
 #include "parse/parselo.h"
@@ -24,7 +25,6 @@
 
 extern bool PostProcessing_override;
 extern int opengl_check_framebuffer();
-
 // Needed to track where the FXAA shaders are
 // In case we don't find the shaders at all, this override is needed
 bool fxaa_unavailable = false;
@@ -66,9 +66,22 @@ void opengl_post_pass_tonemap()
 	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_TONEMAPPING, 0));
 
 	Current_shader->program->Uniforms.setTextureUniform("tex", 0);
-
+	
 	opengl_set_generic_uniform_data<graphics::generic_data::tonemapping_data>(
-		[](graphics::generic_data::tonemapping_data* data) { data->exposure = 4.0f; });
+		[](graphics::generic_data::tonemapping_data* data) {
+		auto ppc = lighting_profile::current_piecewise_intermediates();
+		auto tn = lighting_profile::current_tonemapper();
+		data->tonemapper = tn;
+		data->sh_B = ppc.sh_B;
+		data->sh_lnA = ppc.sh_lnA;
+		data->sh_offsetX =ppc.sh_offsetX;
+		data->sh_offsetY = ppc.sh_offsetY;
+		data->toe_B = ppc.toe_B;
+		data->toe_lnA = ppc.toe_lnA;
+		data->x0 = ppc.x0;
+		data->x1 = ppc.x1;
+		data->y0 = ppc.y0; 
+		data->exposure = lighting_profile::current_exposure(); });
 
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Scene_ldr_texture, 0);
 

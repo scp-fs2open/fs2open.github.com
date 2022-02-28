@@ -2751,7 +2751,7 @@ void copy_xlate_model_path_points(object *objp, model_path *mp, int dir, int cou
 	int		pp_index;		//	index in Path_points at which to store point, if this is a modify-in-place (pnp ! NULL)
 	int		start_index, finish_index;
 	vec3d submodel_offset, local_vert;
-	bool rotating_submodel;
+	bool moving_submodel;
 	
 	//	Initialize pp_index.
 	//	If pnp == NULL, that means we're creating new points.  If not NULL, then modify in place.
@@ -2772,28 +2772,28 @@ void copy_xlate_model_path_points(object *objp, model_path *mp, int dir, int cou
 	auto pmi = model_get_instance(Ships[objp->instance].model_instance_num);
 	auto pm = model_get(pmi->model_num);
 
-	// Goober5000 - check for rotating submodels
-	if ((mp->parent_submodel >= 0) && (pm->submodel[mp->parent_submodel].movement_type >= 0))
+	// Goober5000 - check for moving submodels
+	if ((mp->parent_submodel >= 0) && (pm->submodel[mp->parent_submodel].rotation_type >= 0))
 	{
-		rotating_submodel = true;
+		moving_submodel = true;
 
 		model_find_submodel_offset(&submodel_offset, pm, mp->parent_submodel);
 	}
 	else
 	{
-		rotating_submodel = false;
+		moving_submodel = false;
 	}
 
 	int offset = 0;
 	for (i=start_index; i != finish_index; i += dir)
 	{
 		//	Globalize the point.
-		// Goober5000 - handle rotating submodels
-		if (rotating_submodel)
+		// Goober5000 - handle moving submodels
+		if (moving_submodel)
 		{
 			// movement... find location of point like with docking code and spark generation
 			vm_vec_sub(&local_vert, &mp->verts[i].pos, &submodel_offset);
-			model_instance_find_world_point(&v1, &local_vert, pm, pmi, mp->parent_submodel, &objp->orient, &objp->pos);
+			model_instance_local_to_global_point(&v1, &local_vert, pm, pmi, mp->parent_submodel, &objp->orient, &objp->pos);
 		}
 		else
 		{
@@ -2905,13 +2905,11 @@ void create_model_path(object *pl_objp, object *mobjp, int path_num, int subsys_
 	//Get path departure orientation from ships.tbl if it exists, otherwise zero it
 	SCP_string pathName(mp->name);
 	if (osip->pathMetadata.find(pathName) != osip->pathMetadata.end() && !IS_VEC_NULL(&osip->pathMetadata[pathName].departure_rvec))
-	{
-		vm_vec_copy_normalize(&aip->path_depart_orient, &osip->pathMetadata[pathName].departure_rvec);
-	}
+		vm_vec_copy_normalize(&aip->path_depart_rvec, &osip->pathMetadata[pathName].departure_rvec);
+	else if (aip->ai_profile_flags[AI::Profile_Flags::Fighterbay_departures_use_carrier_orient])
+		aip->path_depart_rvec = vmd_x_vector; // this will be later rotated into the carrier's frame of reference
 	else
-	{
-		vm_vec_zero(&aip->path_depart_orient);
-	}
+		vm_vec_zero(&aip->path_depart_rvec);
 
 	aip->ai_flags.remove(AI::AI_Flags::Use_exit_path);	// ensure this flag is cleared
 }
@@ -3282,14 +3280,14 @@ void ai_dock_with_object(object *docker, int docker_index, object *dockee, int d
 		polymodel_instance* shipp_pmi = model_get_instance(shipp->model_instance_num);
 		polymodel_instance* goal_shipp_pmi = model_get_instance(goal_shipp->model_instance_num);
 
-		sip->animations.startAll(shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage1, animation::ModelAnimationDirection::FWD, true, true, docker_index);
-		goal_sip->animations.startAll(goal_shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage1, animation::ModelAnimationDirection::FWD, true, true, dockee_index);
-		sip->animations.startAll(shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage2, animation::ModelAnimationDirection::FWD, true, true, docker_index);
-		goal_sip->animations.startAll(goal_shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage2, animation::ModelAnimationDirection::FWD, true, true, dockee_index);
-		sip->animations.startAll(shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage3, animation::ModelAnimationDirection::FWD, true, true, docker_index);
-		goal_sip->animations.startAll(goal_shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage3, animation::ModelAnimationDirection::FWD, true, true, dockee_index);
-		sip->animations.startAll(shipp_pmi, animation::ModelAnimationTriggerType::Docked, animation::ModelAnimationDirection::FWD, true, true, docker_index);
-		goal_sip->animations.startAll(goal_shipp_pmi, animation::ModelAnimationTriggerType::Docked, animation::ModelAnimationDirection::FWD, true, true, dockee_index);
+		sip->animations.startAll(shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage1, animation::ModelAnimationDirection::FWD, true, true, false, docker_index);
+		goal_sip->animations.startAll(goal_shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage1, animation::ModelAnimationDirection::FWD, true, true, false, dockee_index);
+		sip->animations.startAll(shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage2, animation::ModelAnimationDirection::FWD, true, true, false, docker_index);
+		goal_sip->animations.startAll(goal_shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage2, animation::ModelAnimationDirection::FWD, true, true, false, dockee_index);
+		sip->animations.startAll(shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage3, animation::ModelAnimationDirection::FWD, true, true, false, docker_index);
+		goal_sip->animations.startAll(goal_shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage3, animation::ModelAnimationDirection::FWD, true, true, false, dockee_index);
+		sip->animations.startAll(shipp_pmi, animation::ModelAnimationTriggerType::Docked, animation::ModelAnimationDirection::FWD, true, true, false, docker_index);
+		goal_sip->animations.startAll(goal_shipp_pmi, animation::ModelAnimationTriggerType::Docked, animation::ModelAnimationDirection::FWD, true, true, false, dockee_index);
 
 		dock_orient_and_approach(docker, docker_index, dockee, dockee_index, DOA_DOCK_STAY);
 		ai_do_objects_docked_stuff( docker, docker_index, dockee, dockee_index, false );
@@ -3589,7 +3587,7 @@ void ai_set_positions(object *pl_objp, object *en_objp, ai_info *aip, vec3d *pla
 }
 
 /**
- * Updates AI aim automatically based on targetted enemy.
+ * Updates AI aim automatically based on targeted enemy.
  *
  * @param aip Pointer to AI info
  */
@@ -3727,13 +3725,11 @@ float maybe_recreate_path(object *objp, ai_info *aip, int force_recreate_flag, i
 				model_path	*mp = &model_get(osip->model_num)->paths[aip->mp_index];
 				SCP_string pathName(mp->name);
 				if (osip->pathMetadata.find(pathName) != osip->pathMetadata.end() && !IS_VEC_NULL(&osip->pathMetadata[pathName].departure_rvec))
-				{
-					vm_vec_copy_normalize(&aip->path_depart_orient, &osip->pathMetadata[pathName].departure_rvec);
-				}
+					vm_vec_copy_normalize(&aip->path_depart_rvec, &osip->pathMetadata[pathName].departure_rvec);
+				else if (aip->ai_profile_flags[AI::Profile_Flags::Fighterbay_departures_use_carrier_orient])
+					aip->path_depart_rvec = vmd_x_vector;  // this will be later rotated into the carrier's frame of reference
 				else
-				{
-					vm_vec_zero(&aip->path_depart_orient);
-				}
+					vm_vec_zero(&aip->path_depart_rvec);
 
 				return dist;
 			}
@@ -4111,8 +4107,8 @@ float ai_path_1()
 	// (so you can always have "wheels-down" landings)
 	vec3d rvec;
 	vec3d *prvec = NULL;
-	if ( aip->mode == AIM_BAY_DEPART && !IS_VEC_NULL(&aip->path_depart_orient) ) {
-		vm_vec_unrotate(&rvec, &aip->path_depart_orient, &Objects[aip->path_objnum].orient);
+	if ( aip->mode == AIM_BAY_DEPART && !IS_VEC_NULL(&aip->path_depart_rvec) ) {
+		vm_vec_unrotate(&rvec, &aip->path_depart_rvec, &Objects[aip->path_objnum].orient);
 		prvec = &rvec;
 	}
 
@@ -4233,15 +4229,13 @@ int get_enemy_team_range(object *my_objp, float range, int enemy_team_mask, vec3
                     if (count == 0) {
                         *min_vec = objp->pos;
                         *max_vec = objp->pos;
-                        count++;
-                    }
-                    else {
+                    } else {
                         update_min_max(objp->pos.xyz.x, &min_vec->xyz.x, &max_vec->xyz.x);
                         update_min_max(objp->pos.xyz.y, &min_vec->xyz.y, &max_vec->xyz.y);
                         update_min_max(objp->pos.xyz.z, &min_vec->xyz.z, &max_vec->xyz.z);
                     }
+                    count++;
                 }
-
         }
     }
 
@@ -4257,7 +4251,7 @@ void ai_safety_pick_spot(object *objp)
 	int		objnum;
 	int		enemy_team_mask;
 	vec3d	min_vec, max_vec;
-	vec3d	vec_to_center, center;
+	vec3d	fvec_from_center, center;
 	vec3d	goal_pos;
 
 	objnum = OBJ_INDEX(objp);
@@ -4266,9 +4260,9 @@ void ai_safety_pick_spot(object *objp)
 
 	if (get_enemy_team_range(objp, 1000.0f, enemy_team_mask, &min_vec, &max_vec)) {
 		vm_vec_avg(&center, &min_vec, &max_vec);
-		vm_vec_normalized_dir(&vec_to_center, &center, &objp->pos);
+		vm_vec_normalized_dir(&fvec_from_center, &objp->pos, &center);
 
-		vm_vec_scale_add(&goal_pos, &center, &vec_to_center, 2000.0f);
+		vm_vec_scale_add(&goal_pos, &center, &fvec_from_center, 2000.0f);
 	} else
 		vm_vec_scale_add(&goal_pos, &objp->pos, &objp->orient.vec.fvec, 100.0f);
 
@@ -4296,6 +4290,11 @@ float ai_safety_goto_spot(object *objp)
 		set_accel_for_target_speed(objp, sip->max_speed * dot_val);
 	} else
 		set_accel_for_target_speed(objp, sip->max_speed * dot_val * (dist/200.0f + 0.2f));
+
+	if (The_mission.ai_profile->flags[AI::Profile_Flags::Fix_keep_safe_distance]) {
+		// hey, let's try actually aiming toward our goal!
+		turn_towards_point(objp, &aip->goal_point, nullptr, 0.0f);
+	}
 
 	return dist;
 }
@@ -6057,14 +6056,8 @@ int ai_fire_primary_weapon(object *objp)
 
 	set_primary_weapon_linkage(objp);
 	
-	// I think this will properly solve the problem
-	// fire non-streaming weapons
-	ship_fire_primary(objp, 0);
-	
-	// fire streaming weapons
-	shipp->flags.set(Ship::Ship_Flags::Trigger_down);
-	ship_fire_primary(objp, 1);
-	shipp->flags.remove(Ship::Ship_Flags::Trigger_down);
+	ship_fire_primary(objp);
+
 	return 1;//if it got down to here then it tryed to fire
 }
 
@@ -6721,7 +6714,7 @@ void render_path_points(object *objp)
 
 	if (pm->n_docks) {
 		dock_point = pm->docking_bays[0].pnt[0];
-		model_instance_find_world_point(&global_dock_point, &dock_point, pm, pmi, 0, &dobjp->orient, &dobjp->pos );
+		model_instance_local_to_global_point(&global_dock_point, &dock_point, pm, pmi, 0, &dobjp->orient, &dobjp->pos );
 		g3_rotate_vertex(&v, &global_dock_point);
 		gr_set_color(255, 255, 255);
 		g3_draw_sphere( &v, 1.5f);
@@ -7167,11 +7160,12 @@ void attack_set_accel(ai_info *aip, ship_info *sip, float dist_to_enemy, float d
 	float optimal_range = AI_DEFAULT_ATTACK_APPROACH_DIST;
 	ship_weapon* weapons = &Ships[Pl_objp->instance].weapons;
 	weapon_info* wip = nullptr;
+	ship* shipp = &Ships[Pl_objp->instance];
 
 	// see if we can get a better one
-	if (weapons->num_primary_banks >= 1 && weapons->current_primary_bank >= 0) {
+	if (weapons->num_primary_banks >= 1 && weapons->current_primary_bank >= 0 && !shipp->flags[Ship::Ship_Flags::Primaries_locked]) {
 		wip = &Weapon_info[weapons->primary_bank_weapons[weapons->current_primary_bank]];
-	} else if (weapons->num_secondary_banks >= 1 && weapons->current_secondary_bank >= 0) {
+	} else if (weapons->num_secondary_banks >= 1 && weapons->current_secondary_bank >= 0 && !shipp->flags[Ship::Ship_Flags::Secondaries_locked]) {
 		wip = &Weapon_info[weapons->secondary_bank_weapons[weapons->current_secondary_bank]];
 	}
 
@@ -7183,10 +7177,8 @@ void attack_set_accel(ai_info *aip, ship_info *sip, float dist_to_enemy, float d
 			if (dist_to_enemy > optimal_range + 600.0f) {
 				if (!( Pl_objp->phys_info.flags & PF_AFTERBURNER_ON )) {
 					float percent_left;
-					ship	*shipp;
 					ship_info *sip_local;
 
-					shipp = &Ships[Pl_objp->instance];
 					sip_local = &Ship_info[shipp->ship_info_index];
 
 					if (sip_local->afterburner_fuel_capacity > 0.0f) {
@@ -9484,12 +9476,20 @@ void set_goal_dock_orient(matrix *dom, matrix *docker_dock_orient, matrix *docke
 }
 
 // Goober5000
-// Return the rotating submodel on which is mounted the specified dockpoint, or -1 for none.
-int find_parent_rotating_submodel(polymodel *pm, int dock_index)
+// Return the moving submodel on which is mounted the specified dockpoint, or -1 for none.
+int find_parent_moving_submodel(polymodel *pm, int dock_index)
 {
 	Assertion(pm != nullptr, "pm cannot be null!");
 	Assertion(dock_index >= 0 && dock_index < pm->n_docks, "for model %s, dock_index %d must be >= 0 and < %d!", pm->filename, dock_index, pm->n_docks);
 	int path_num, submodel;
+
+	// if this is explicitly defined, then we're done
+	if (pm->docking_bays[dock_index].parent_submodel >= 0)
+	{
+		return pm->docking_bays[dock_index].parent_submodel;
+	}
+
+	// otherwise infer the submodel using the path...
 
 	// make sure we have a spline path to check against before going any further
 	if (pm->docking_bays[dock_index].num_spline_paths <= 0)
@@ -9507,7 +9507,7 @@ int find_parent_rotating_submodel(polymodel *pm, int dock_index)
 		submodel = pm->paths[path_num].parent_submodel;
 
 		// submodel must exist and must move
-		if ((submodel >= 0) && (submodel < pm->n_models) && (pm->submodel[submodel].movement_type >= 0))
+		if ((submodel >= 0) && (submodel < pm->n_models) && (pm->submodel[submodel].rotation_type >= 0))
 		{
 			return submodel;
 		}
@@ -9525,7 +9525,7 @@ void find_adjusted_dockpoint_info(vec3d *global_dock_point, matrix *global_dock_
 
 	vec3d fvec, uvec;
 
-	// are we basing this off a rotating submodel?
+	// are we basing this off a moving submodel?
 	if (submodel >= 0)
 	{
 		vec3d submodel_offset;
@@ -9535,20 +9535,20 @@ void find_adjusted_dockpoint_info(vec3d *global_dock_point, matrix *global_dock_
 		auto pmi = model_get_instance(shipp->model_instance_num);
 		Assert(pmi->model_num == pm->id);
 
-		// calculate the dockpoint locations relative to the unrotated submodel
+		// calculate the dockpoint locations relative to the submodel in its original position
 		model_find_submodel_offset(&submodel_offset, pm, submodel);
 		vm_vec_sub(&local_p0, &pm->docking_bays[dock_index].pnt[0], &submodel_offset);
 		vm_vec_sub(&local_p1, &pm->docking_bays[dock_index].pnt[1], &submodel_offset);
 
 		// find the dynamic positions of the dockpoints
 		vec3d global_p0, global_p1;
-		model_instance_find_world_point(&global_p0, &local_p0, pm, pmi, submodel, &objp->orient, &objp->pos);
-		model_instance_find_world_point(&global_p1, &local_p1, pm, pmi, submodel, &objp->orient, &objp->pos);
+		model_instance_local_to_global_point(&global_p0, &local_p0, pm, pmi, submodel, &objp->orient, &objp->pos);
+		model_instance_local_to_global_point(&global_p1, &local_p1, pm, pmi, submodel, &objp->orient, &objp->pos);
 		vm_vec_avg(global_dock_point, &global_p0, &global_p1);
 		vm_vec_normalized_dir(&uvec, &global_p1, &global_p0);
 
 		// find the normal of the first dockpoint
-		model_instance_find_world_dir(&fvec, &pm->docking_bays[dock_index].norm[0], pm, pmi, submodel, &objp->orient);
+		model_instance_local_to_global_dir(&fvec, &pm->docking_bays[dock_index].norm[0], pm, pmi, submodel, &objp->orient);
 
 		vm_vector_2_matrix(global_dock_orient, &fvec, &uvec);
 	}
@@ -9614,30 +9614,30 @@ float dock_orient_and_approach(object *docker_objp, int docker_index, object *do
 	Assert(pm1->docking_bays[dockee_index].num_slots == 2);
 
 
-	// Goober5000 - check if we're attached to a rotating submodel
-	int dockee_rotating_submodel = find_parent_rotating_submodel(pm1, dockee_index);
+	// Goober5000 - check if we're attached to a moving submodel
+	int dockee_moving_submodel = find_parent_moving_submodel(pm1, dockee_index);
 
 	matrix docker_dock_orient, dockee_dock_orient;
 	// Goober5000 - move docking points with submodels if necessary, for both docker and dockee
 	find_adjusted_dockpoint_info(&docker_point, &docker_dock_orient, docker_objp, pm0, -1, docker_index);
-	find_adjusted_dockpoint_info(&dockee_point, &dockee_dock_orient, dockee_objp, pm1, dockee_rotating_submodel, dockee_index);
+	find_adjusted_dockpoint_info(&dockee_point, &dockee_dock_orient, dockee_objp, pm1, dockee_moving_submodel, dockee_index);
 
 	// Goober5000
 	vec3d submodel_pos = ZERO_VECTOR;
 	float submodel_radius = 0.0f;
 	float submodel_omega = 0.0f;
-	if ((dockee_rotating_submodel >= 0) && (dock_mode != DOA_DOCK_STAY))
+	if ((dockee_moving_submodel >= 0) && (dock_mode != DOA_DOCK_STAY))
 	{
 		vec3d submodel_offset;
 
 		// get submodel center
-		model_find_submodel_offset(&submodel_offset, pm1, dockee_rotating_submodel);
+		model_find_submodel_offset(&submodel_offset, pm1, dockee_moving_submodel);
 		vm_vec_add(&submodel_pos, &dockee_objp->pos, &submodel_offset);
 
 		polymodel_instance *pmi1 = model_get_instance(Ships[dockee_objp->instance].model_instance_num);
 
 		// get angular velocity of dockpoint
-		submodel_omega = pmi1->submodel[dockee_rotating_submodel].current_turn_rate;
+		submodel_omega = pmi1->submodel[dockee_moving_submodel].current_turn_rate;
 
 		// get radius to dockpoint
 		submodel_radius = vm_vec_dist(&submodel_pos, &dockee_point);
@@ -9651,7 +9651,7 @@ float dock_orient_and_approach(object *docker_objp, int docker_index, object *do
 	rdinfo->docker_point = docker_point;
 	rdinfo->dockee_point = dockee_point;
 	rdinfo->dock_mode = dock_mode;
-	rdinfo->submodel = dockee_rotating_submodel;
+	rdinfo->submodel = dockee_moving_submodel;
 	rdinfo->submodel_pos = submodel_pos;
 	rdinfo->submodel_r = submodel_radius;
 	rdinfo->submodel_w = submodel_omega;
@@ -9711,8 +9711,8 @@ float dock_orient_and_approach(object *docker_objp, int docker_index, object *do
 		} else
 			ss1 = 2.0f;
 
-		// if we're docking to a rotating submodel, speed up translation
-		if (dockee_rotating_submodel >= 0)
+		// if we're docking to a moving submodel, speed up translation
+		if (dockee_moving_submodel >= 0)
 			ss1 = 2.0f;
 
 		speed_scale *= 1.0f + ss1;
@@ -10943,6 +10943,83 @@ void ai_get_dock_goal_indexes(object *objp, ai_info *aip, ai_goal *aigp, object 
 	}
 }
 
+void ai_dock_do_animations(ship* shipp, int from_dockstage, int to_dockstage, int dock_index)
+{
+	if (shipp == nullptr)
+		return;
+
+	//ordered DOCK / UNDOCK in order of "docked more".
+	const int dockstages_ordered[] = { AIS_DOCK_0, AIS_DOCK_1, AIS_DOCK_2, AIS_DOCK_3, AIS_DOCK_4, AIS_UNDOCK_4, AIS_UNDOCK_3, AIS_UNDOCK_2, AIS_UNDOCK_1, AIS_UNDOCK_0 };
+
+	//AIS_DOCK_4A behaves identical to AIS_DOCK_4 here
+	if (from_dockstage == AIS_DOCK_4A)
+		from_dockstage = AIS_DOCK_4;
+	if (to_dockstage == AIS_DOCK_4A)
+		to_dockstage = AIS_DOCK_4;
+
+	constexpr size_t num_dockstages = sizeof(dockstages_ordered) / sizeof(dockstages_ordered[0]);
+	size_t currentIdx = num_dockstages, targetIdx = num_dockstages;
+
+
+	for (size_t idx = 0; idx < num_dockstages; idx++) {
+		if (from_dockstage == dockstages_ordered[idx])
+			currentIdx = idx;
+		if (to_dockstage == dockstages_ordered[idx])
+			targetIdx = idx;
+	}
+
+	Assertion(currentIdx != num_dockstages, "Couldn't find current dockstage %d for docking animations.", from_dockstage);
+	Assertion(targetIdx != num_dockstages, "Couldn't find target dockstage %d for docking animations.", to_dockstage);
+	Assertion(targetIdx != currentIdx, "Cannot perform docking animations when not actually switching dock stages.");
+	Assertion((currentIdx < 5 && targetIdx < 5) || (currentIdx >= 5 && targetIdx >= 5), "Cannot perform animations from a AIS_DOCK to AIS_UNDOCK stage!");
+
+	bool isDocking = currentIdx < targetIdx;
+	animation::ModelAnimationDirection direction = isDocking ? animation::ModelAnimationDirection::FWD : animation::ModelAnimationDirection::RWD;
+
+	const animation::ModelAnimationSet& animations = Ship_info[shipp->ship_info_index].animations;
+	polymodel_instance* pmi = model_get_instance(shipp->model_instance_num);
+
+	SCP_string dock_name = model_get_dock_name(Ship_info[shipp->ship_info_index].model_num, dock_index);
+
+	for (size_t i = currentIdx; i != targetIdx; i += isDocking ? 1 : -1) {
+		switch (dockstages_ordered[i + (isDocking ? 1 : 0)]) {
+		case AIS_DOCK_1:
+		case AIS_UNDOCK_3:
+			//Catches new-table animations with dock port name
+			animations.start(pmi, animation::ModelAnimationTriggerType::Docking_Stage1, dock_name, direction, false, false, false);
+			//Catches new-table animations with no name and no subtype, as well as legacy-table animations with no subtype
+			animations.start(pmi, animation::ModelAnimationTriggerType::Docking_Stage1, "", direction, false, false, false);
+			//Catches new-table animations with subtype, as well as legacy-table animations with subtype
+			animations.startAll(pmi, animation::ModelAnimationTriggerType::Docking_Stage1, direction, false, false, false, dock_index, true);
+			break;
+		case AIS_DOCK_2:
+		case AIS_UNDOCK_2:
+			animations.start(pmi, animation::ModelAnimationTriggerType::Docking_Stage2, dock_name, direction, false, false, false);
+			animations.start(pmi, animation::ModelAnimationTriggerType::Docking_Stage2, "", direction, false, false, false);
+			animations.startAll(pmi, animation::ModelAnimationTriggerType::Docking_Stage2, direction, false, false, false, dock_index, true);
+			break;
+		case AIS_DOCK_3:
+		case AIS_UNDOCK_1:
+			animations.start(pmi, animation::ModelAnimationTriggerType::Docking_Stage3, dock_name, direction, false, false, false);
+			animations.start(pmi, animation::ModelAnimationTriggerType::Docking_Stage3, "", direction, false, false, false);
+			animations.startAll(pmi, animation::ModelAnimationTriggerType::Docking_Stage3, direction, false, false, false, dock_index, true);
+			break;
+		case AIS_DOCK_4:
+		case AIS_UNDOCK_0:
+			animations.start(pmi, animation::ModelAnimationTriggerType::Docked, dock_name, direction, false, false, false);
+			animations.start(pmi, animation::ModelAnimationTriggerType::Docked, "", direction, false, false, false);
+			animations.startAll(pmi, animation::ModelAnimationTriggerType::Docked, direction, false, false, false, dock_index, true);
+			break;
+		case AIS_DOCK_0:
+		case AIS_UNDOCK_4:
+		default:
+			//No animation here
+			break;
+		}
+	}
+
+}
+
 // Goober5000 - clean up my own dock mode
 void ai_cleanup_dock_mode_subjective(object *objp)
 {
@@ -10965,48 +11042,29 @@ void ai_cleanup_dock_mode_subjective(object *objp)
 		}
 		else
 		{
-			goal_objp = NULL;
-			goal_shipp = NULL;
+			goal_objp = nullptr;
+			goal_shipp = nullptr;
 		}
 
 		// get the indexes from the saved parameters
 		int docker_index = aip->submode_parm0;
 		int dockee_index = aip->submode_parm1;
 
-		ship_info* sip = &Ship_info[shipp->ship_info_index];
-		ship_info* goal_sip = &Ship_info[goal_shipp->ship_info_index];
-
-		polymodel_instance* shipp_pmi = model_get_instance(shipp->model_instance_num);
-		polymodel_instance* goal_shipp_pmi = model_get_instance(goal_shipp->model_instance_num);
-
 		// undo all the appropriate triggers
 		switch (aip->submode)
 		{
 			case AIS_UNDOCK_0:
-				sip->animations.startAll(shipp_pmi, animation::ModelAnimationTriggerType::Docked, animation::ModelAnimationDirection::RWD, false, false, docker_index);
-				goal_sip->animations.startAll(goal_shipp_pmi, animation::ModelAnimationTriggerType::Docked, animation::ModelAnimationDirection::RWD, false, false, dockee_index);
-				FALLTHROUGH;
 			case AIS_UNDOCK_1:
-				sip->animations.startAll(shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage3, animation::ModelAnimationDirection::RWD, false, false, docker_index);
-				goal_sip->animations.startAll(goal_shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage3, animation::ModelAnimationDirection::RWD, false, false, dockee_index);
-				FALLTHROUGH;
 			case AIS_UNDOCK_2:
-				sip->animations.startAll(shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage2, animation::ModelAnimationDirection::RWD, false, false, docker_index);
-				goal_sip->animations.startAll(goal_shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage2, animation::ModelAnimationDirection::RWD, false, false, dockee_index);
+				ai_dock_do_animations(shipp, aip->submode, AIS_UNDOCK_3, docker_index);
+				ai_dock_do_animations(goal_shipp, aip->submode, AIS_UNDOCK_3, dockee_index);
 				break;
-
 			case AIS_DOCK_4:
 			case AIS_DOCK_4A:
-				sip->animations.startAll(shipp_pmi, animation::ModelAnimationTriggerType::Docked, animation::ModelAnimationDirection::RWD, false, false, docker_index);
-				goal_sip->animations.startAll(goal_shipp_pmi, animation::ModelAnimationTriggerType::Docked, animation::ModelAnimationDirection::RWD, false, false, dockee_index);
-				FALLTHROUGH;
 			case AIS_DOCK_3:
-				sip->animations.startAll(shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage3, animation::ModelAnimationDirection::RWD, false, false, docker_index);
-				goal_sip->animations.startAll(goal_shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage3, animation::ModelAnimationDirection::RWD, false, false, dockee_index);
-				FALLTHROUGH;
 			case AIS_DOCK_2:
-				sip->animations.startAll(shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage2, animation::ModelAnimationDirection::RWD, false, false, docker_index);
-				goal_sip->animations.startAll(goal_shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage2, animation::ModelAnimationDirection::RWD, false, false, dockee_index);
+				ai_dock_do_animations(shipp, aip->submode, AIS_DOCK_1, docker_index);
+				ai_dock_do_animations(goal_shipp, aip->submode, AIS_DOCK_1, dockee_index);
 				break;
 		}
 
@@ -11210,11 +11268,11 @@ void ai_dock()
 		aip->submode_parm0 = docker_index;
 		aip->submode_parm1 = dockee_index;
 
-		Assert(goal_objp != nullptr);
-		ship_info *goal_sip = &Ship_info[goal_shipp->ship_info_index];
 		ai_path();
 		if (aip->path_length < 4)
 		{
+			Assert(goal_objp != nullptr);
+			ship_info *goal_sip = &Ship_info[goal_shipp->ship_info_index];
 			char *goal_ship_class_name = goal_sip->name;
 			char *goal_dock_path_name = model_get(goal_sip->model_num)->paths[aip->mp_index].name;
 
@@ -11224,8 +11282,8 @@ void ai_dock()
 
 		aip->submode = AIS_DOCK_1;
 		aip->submode_start_time = Missiontime;
-		sip->animations.startAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::Docking_Stage1, animation::ModelAnimationDirection::FWD, false, false, docker_index);
-		goal_sip->animations.startAll(model_get_instance(goal_shipp->model_instance_num), animation::ModelAnimationTriggerType::Docking_Stage1, animation::ModelAnimationDirection::FWD, false, false, dockee_index);
+		ai_dock_do_animations(shipp, AIS_DOCK_0, AIS_DOCK_1, docker_index);
+		ai_dock_do_animations(goal_shipp, AIS_DOCK_0, AIS_DOCK_1, dockee_index);
 
 		aip->path_start = -1;
 		break;
@@ -11250,11 +11308,8 @@ void ai_dock()
 				aip->submode = AIS_DOCK_2;
 				aip->submode_start_time = Missiontime;
 
-				Assert(goal_objp != nullptr);
-				ship_info* goal_sip = &Ship_info[goal_shipp->ship_info_index];
-
-				sip->animations.startAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::Docking_Stage2, animation::ModelAnimationDirection::FWD, false, false, docker_index);
-				goal_sip->animations.startAll(model_get_instance(goal_shipp->model_instance_num), animation::ModelAnimationTriggerType::Docking_Stage2, animation::ModelAnimationDirection::FWD, false, false, dockee_index);
+				ai_dock_do_animations(shipp, AIS_DOCK_1, AIS_DOCK_2, docker_index);
+				ai_dock_do_animations(goal_shipp, AIS_DOCK_1, AIS_DOCK_2, dockee_index);
 
 				aip->path_cur--;
 				Assert(aip->path_cur-aip->path_start >= 0);
@@ -11265,11 +11320,8 @@ void ai_dock()
 					aip->submode = AIS_DOCK_2;
 					aip->submode_start_time = Missiontime;
 
-					Assert(goal_objp != nullptr);
-					ship_info* goal_sip = &Ship_info[goal_shipp->ship_info_index];
-
-					sip->animations.startAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::Docking_Stage2, animation::ModelAnimationDirection::FWD, false, false, docker_index);
-					goal_sip->animations.startAll(model_get_instance(goal_shipp->model_instance_num), animation::ModelAnimationTriggerType::Docking_Stage2, animation::ModelAnimationDirection::FWD, false, false, dockee_index);
+					ai_dock_do_animations(shipp, AIS_DOCK_1, AIS_DOCK_2, docker_index);
+					ai_dock_do_animations(goal_shipp, AIS_DOCK_1, AIS_DOCK_2, dockee_index);
 				}
 			}
 		}
@@ -11290,11 +11342,8 @@ void ai_dock()
 			aip->submode = AIS_DOCK_1;
 			aip->submode_start_time = Missiontime;
 
-			Assert(goal_objp != nullptr);
-			ship_info* goal_sip = &Ship_info[goal_shipp->ship_info_index];
-
-			sip->animations.startAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::Docking_Stage2, animation::ModelAnimationDirection::RWD, false, false, docker_index);
-			goal_sip->animations.startAll(model_get_instance(goal_shipp->model_instance_num), animation::ModelAnimationTriggerType::Docking_Stage2, animation::ModelAnimationDirection::RWD, false, false, dockee_index);
+			ai_dock_do_animations(shipp, AIS_DOCK_2, AIS_DOCK_1, docker_index);
+			ai_dock_do_animations(goal_shipp, AIS_DOCK_2, AIS_DOCK_1, dockee_index);
 		} else {
 			dist = dock_orient_and_approach(Pl_objp, docker_index, goal_objp, dockee_index, DOA_APPROACH);
 			Assert(dist != UNINITIALIZED_VALUE);
@@ -11309,11 +11358,8 @@ void ai_dock()
 				aip->submode = AIS_DOCK_3;
 				aip->submode_start_time = Missiontime;
 
-				Assert(goal_objp != nullptr);
-				ship_info* goal_sip = &Ship_info[goal_shipp->ship_info_index];
-
-				sip->animations.startAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::Docking_Stage3, animation::ModelAnimationDirection::FWD, false, false, docker_index);
-				goal_sip->animations.startAll(model_get_instance(goal_shipp->model_instance_num), animation::ModelAnimationTriggerType::Docking_Stage3, animation::ModelAnimationDirection::FWD, false, false, dockee_index);
+				ai_dock_do_animations(shipp, AIS_DOCK_2, AIS_DOCK_3, docker_index);
+				ai_dock_do_animations(goal_shipp, AIS_DOCK_2, AIS_DOCK_3, dockee_index);
 
 				aip->path_cur++;
 			}
@@ -11333,11 +11379,8 @@ void ai_dock()
 			aip->submode = AIS_DOCK_2;
 			aip->submode_start_time = Missiontime;
 
-			Assert(goal_objp != nullptr);
-			ship_info* goal_sip = &Ship_info[goal_shipp->ship_info_index];
-
-			sip->animations.startAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::Docking_Stage3, animation::ModelAnimationDirection::RWD, false, false, docker_index);
-			goal_sip->animations.startAll(model_get_instance(goal_shipp->model_instance_num), animation::ModelAnimationTriggerType::Docking_Stage3, animation::ModelAnimationDirection::RWD, false, false, dockee_index);
+			ai_dock_do_animations(shipp, AIS_DOCK_3, AIS_DOCK_2, docker_index);
+			ai_dock_do_animations(goal_shipp, AIS_DOCK_3, AIS_DOCK_2, dockee_index);
 		} else {
 			rotating_dockpoint_info rdinfo;
 
@@ -11367,11 +11410,8 @@ void ai_dock()
 					snd_play_3d( gamesnd_get_game_sound(GameSounds::DOCK_ATTACH), &Pl_objp->pos, &View_position );
 
 					// start the dock animation
-					Assert(goal_objp != nullptr);
-					ship_info* goal_sip = &Ship_info[goal_shipp->ship_info_index];
-
-					sip->animations.startAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::Docked, animation::ModelAnimationDirection::FWD, false, false, docker_index);
-					goal_sip->animations.startAll(model_get_instance(goal_shipp->model_instance_num), animation::ModelAnimationTriggerType::Docked, animation::ModelAnimationDirection::FWD, false, false, dockee_index);
+					ai_dock_do_animations(shipp, AIS_DOCK_3, AIS_DOCK_4, docker_index);
+					ai_dock_do_animations(goal_shipp, AIS_DOCK_3, AIS_DOCK_4, dockee_index);
 
 					if ((Pl_objp == Player_obj) || (goal_objp == Player_obj))
 						joy_ff_docked();  // shake player's joystick a little
@@ -11441,16 +11481,8 @@ void ai_dock()
 				aip->submode = AIS_DOCK_2;
 				aip->submode_start_time = Missiontime;
 
-				Assert(goal_objp != nullptr);
-				ship_info* goal_sip = &Ship_info[goal_shipp->ship_info_index];
-
-				polymodel_instance* shipp_pmi = model_get_instance(shipp->model_instance_num);
-				polymodel_instance* goal_shipp_pmi = model_get_instance(goal_shipp->model_instance_num);
-
-				sip->animations.startAll(shipp_pmi, animation::ModelAnimationTriggerType::Docked, animation::ModelAnimationDirection::RWD, false, false, docker_index);
-				goal_sip->animations.startAll(goal_shipp_pmi, animation::ModelAnimationTriggerType::Docked, animation::ModelAnimationDirection::RWD, false, false, dockee_index);
-				sip->animations.startAll(shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage3, animation::ModelAnimationDirection::RWD, false, false, docker_index);
-				goal_sip->animations.startAll(goal_shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage3, animation::ModelAnimationDirection::RWD, false, false, dockee_index);
+				ai_dock_do_animations(shipp, AIS_DOCK_4, AIS_DOCK_2, docker_index);
+				ai_dock_do_animations(goal_shipp, AIS_DOCK_4, AIS_DOCK_2, dockee_index);
 			}
 		}
 		else
@@ -11480,15 +11512,19 @@ void ai_dock()
 
 			// start the detach animation (opposite of the dock animation)
 			Assert(goal_objp != nullptr);
-			ship_info* goal_sip = &Ship_info[goal_shipp->ship_info_index];
 
-			sip->animations.startAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::Docked, animation::ModelAnimationDirection::RWD, false, false, docker_index);
-			goal_sip->animations.startAll(model_get_instance(goal_shipp->model_instance_num), animation::ModelAnimationTriggerType::Docked, animation::ModelAnimationDirection::RWD, false, false, dockee_index);
+			ai_dock_do_animations(shipp, AIS_UNDOCK_0, AIS_UNDOCK_1, docker_index);
+			ai_dock_do_animations(goal_shipp, AIS_UNDOCK_0, AIS_UNDOCK_1, dockee_index);
 
 			// calculate time until animations elapse
-			int time1 = sip->animations.getTimeAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::Docked, docker_index);
-			int time2 = goal_sip->animations.getTimeAll(model_get_instance(goal_shipp->model_instance_num), animation::ModelAnimationTriggerType::Docked, dockee_index);
-			aip->mode_time = timestamp(MAX(time1, time2));
+			int time = sip->animations.getTimeAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::Docked, docker_index);
+
+			if (goal_shipp != nullptr) {
+				ship_info* goal_sip = &Ship_info[goal_shipp->ship_info_index];
+				int time2 = goal_sip->animations.getTimeAll(model_get_instance(goal_shipp->model_instance_num), animation::ModelAnimationTriggerType::Docked, dockee_index);
+				time = MAX(time, time2);
+			}
+			aip->mode_time = timestamp(time);
 		}
 
 		// if not enough time has passed, just wait
@@ -11545,11 +11581,8 @@ void ai_dock()
 			aip->submode = AIS_UNDOCK_2;
 			aip->submode_start_time = Missiontime;
 
-			Assert(goal_objp != nullptr);
-			ship_info* goal_sip = &Ship_info[goal_shipp->ship_info_index];
-
-			sip->animations.startAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::Docking_Stage3, animation::ModelAnimationDirection::RWD, false, false, docker_index);
-			goal_sip->animations.startAll(model_get_instance(goal_shipp->model_instance_num), animation::ModelAnimationTriggerType::Docking_Stage3, animation::ModelAnimationDirection::RWD, false, false, dockee_index);
+			ai_dock_do_animations(shipp, AIS_UNDOCK_1, AIS_UNDOCK_2, docker_index);
+			ai_dock_do_animations(goal_shipp, AIS_UNDOCK_1, AIS_UNDOCK_2, dockee_index);
 		}
 		break;
 	}
@@ -11580,11 +11613,8 @@ void ai_dock()
 			aip->submode = AIS_UNDOCK_3;
 			aip->submode_start_time = Missiontime;
 
-			Assert(goal_objp != nullptr);
-			ship_info* goal_sip = &Ship_info[goal_shipp->ship_info_index];
-
-			sip->animations.startAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::Docking_Stage2, animation::ModelAnimationDirection::RWD, false, false, docker_index);
-			goal_sip->animations.startAll(model_get_instance(goal_shipp->model_instance_num), animation::ModelAnimationTriggerType::Docking_Stage2, animation::ModelAnimationDirection::RWD, false, false, dockee_index);
+			ai_dock_do_animations(shipp, AIS_UNDOCK_2, AIS_UNDOCK_3, docker_index);
+			ai_dock_do_animations(goal_shipp, AIS_UNDOCK_2, AIS_UNDOCK_3, dockee_index);
 
 			// don't add undock log entries for support ships.
 			// Goober5000 - deliberately contravening Volition's above comment - add missionlog for support ships, per Mantis #2999
@@ -11601,11 +11631,8 @@ void ai_dock()
 			aip->submode = AIS_UNDOCK_4;
 			aip->submode_start_time = Missiontime;
 
-			Assert(goal_objp != nullptr);
-			ship_info* goal_sip = &Ship_info[goal_shipp->ship_info_index];
-
-			sip->animations.startAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::Docking_Stage1, animation::ModelAnimationDirection::RWD, false, false, docker_index);
-			goal_sip->animations.startAll(model_get_instance(goal_shipp->model_instance_num), animation::ModelAnimationTriggerType::Docking_Stage1, animation::ModelAnimationDirection::RWD, false, false, dockee_index);
+			ai_dock_do_animations(shipp, AIS_UNDOCK_3, AIS_UNDOCK_4, docker_index);
+			ai_dock_do_animations(goal_shipp, AIS_UNDOCK_3, AIS_UNDOCK_4, dockee_index);
 		}
 		else
 		{
@@ -11616,11 +11643,8 @@ void ai_dock()
 				aip->submode = AIS_UNDOCK_4;
 				aip->submode_start_time = Missiontime;
 
-				Assert(goal_objp != nullptr);
-				ship_info* goal_sip = &Ship_info[goal_shipp->ship_info_index];
-
-				sip->animations.startAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::Docking_Stage1, animation::ModelAnimationDirection::RWD, false, false, docker_index);
-				goal_sip->animations.startAll(model_get_instance(goal_shipp->model_instance_num), animation::ModelAnimationTriggerType::Docking_Stage1, animation::ModelAnimationDirection::RWD, false, false, dockee_index);
+				ai_dock_do_animations(shipp, AIS_UNDOCK_3, AIS_UNDOCK_4, docker_index);
+				ai_dock_do_animations(goal_shipp, AIS_UNDOCK_3, AIS_UNDOCK_4, dockee_index);
 			}
 
 			// possible that this flag hasn't been cleared yet.  When aborting a rearm, this submode might
@@ -11746,7 +11770,7 @@ void ai_process_subobjects(int objnum)
 			if ( (pss->turret_animation_position == MA_POS_READY) && timestamp_elapsed(pss->turret_animation_done_time) ) {
 				bool started = false;
 				//For legacy animations using subtype for turret number
-				started |= Ship_info[shipp->ship_info_index].animations.startAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::TurretFiring, animation::ModelAnimationDirection::RWD, false, false, pss->system_info->subobj_num, true);
+				started |= Ship_info[shipp->ship_info_index].animations.startAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::TurretFiring, animation::ModelAnimationDirection::RWD, false, false, false, pss->system_info->subobj_num, true);
 				//For modern animations using proper triggered-by-subsys name
 				started |= Ship_info[shipp->ship_info_index].animations.start(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::TurretFiring, animation::anim_name_from_subsys(pss->system_info), animation::ModelAnimationDirection::RWD);
 				if (started) {
@@ -13115,7 +13139,7 @@ void ai_manage_bay_doors(object *pl_objp, ai_info *aip, bool done)
 
 	// trigger an open if we need it
 	if ( (parent_ship->bay_doors_status == MA_POS_NOT_SET) && (parent_ship->bay_doors_wanting_open > 0) ) {
-		if (Ship_info[parent_ship->ship_info_index].animations.startDockBayDoors(model_get_instance(parent_ship->model_instance_num), animation::ModelAnimationDirection::FWD, false, false, shipp->bay_doors_launched_from)) {
+		if (Ship_info[parent_ship->ship_info_index].animations.startDockBayDoors(model_get_instance(parent_ship->model_instance_num), animation::ModelAnimationDirection::FWD, false, false, false, shipp->bay_doors_launched_from)) {
 			parent_ship->bay_doors_status = MA_POS_SET;
 			parent_ship->bay_doors_anim_done_time = Ship_info[parent_ship->ship_info_index].animations.getTimeDockBayDoors(model_get_instance(parent_ship->model_instance_num), shipp->bay_doors_launched_from);
 		} else {
@@ -13125,7 +13149,7 @@ void ai_manage_bay_doors(object *pl_objp, ai_info *aip, bool done)
 
 	// if we are already open, and no longer need to be, then close the doors
 	if ( (parent_ship->bay_doors_status == MA_POS_READY) && (parent_ship->bay_doors_wanting_open <= 0) ) {
-		Ship_info[parent_ship->ship_info_index].animations.startDockBayDoors(model_get_instance(parent_ship->model_instance_num), animation::ModelAnimationDirection::RWD, false, false, shipp->bay_doors_launched_from);
+		Ship_info[parent_ship->ship_info_index].animations.startDockBayDoors(model_get_instance(parent_ship->model_instance_num), animation::ModelAnimationDirection::RWD, false, false, false, shipp->bay_doors_launched_from);
 		parent_ship->bay_doors_status = MA_POS_NOT_SET;
 	}
 
@@ -13141,7 +13165,7 @@ void ai_manage_bay_doors(object *pl_objp, ai_info *aip, bool done)
 //
 // exit:		-1		=>	path could not be located
 //				 0		=> success
-int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, int allowed_path_mask, vec3d *pos, vec3d *fvec)
+int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, int allowed_path_mask)
 {
 	int			path_index, bay_path;
 	pnode		*pnp;
@@ -13160,8 +13184,9 @@ int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, int allowed_path_
 	Assertion(parent_objnum >= 0, "Arriving ship does not have a parent object number.  Has %d instead. Please report!", parent_objnum);
 	object *parent_objp = &Objects[parent_objnum];
 	ship *parent_shipp = &Ships[parent_objp->instance];
+	ship_info* parent_sip = &Ship_info[parent_shipp->ship_info_index];
 
-	polymodel *pm = model_get( Ship_info[parent_shipp->ship_info_index].model_num );
+	polymodel *pm = model_get( parent_sip->model_num );
 	ship_bay *bay = pm->ship_bay;
 
 	if ( bay == nullptr ) {
@@ -13221,12 +13246,13 @@ int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, int allowed_path_
 	// now return to the caller what the starting world pos and starting fvec for the ship will be
 	Assert((aip->path_start >= 0) && (aip->path_start < MAX_PATH_POINTS));
 	pnp = &Path_points[aip->path_start];
-	*pos = pnp->pos;
+	vec3d pos = pnp->pos;
 
 	// calc the forward vector using the starting two points of the path
 	pnp = &Path_points[aip->path_start+1];
 	next_point = &pnp->pos;
-	vm_vec_normalized_dir(fvec, next_point, pos);
+	vec3d fvec;
+	vm_vec_normalized_dir(&fvec, next_point, &pos);
 
 	// record the parent objnum, since we'll need it once we're done with following the path
 	aip->goal_objnum = parent_objnum;
@@ -13236,7 +13262,7 @@ int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, int allowed_path_
 
 	//This is kind of hacky, but allows for hangarbay animations to trigger even if the player is not accompanied by AI.
 	//Since it doesn't really keep track of this, it won't ever tell the bay door that the player has fully left for it to close again.
-	if (Player_obj == pl_objp)
+	if (pl_objp->flags[Object::Object_Flags::Player_ship])
 		ai_manage_bay_doors(pl_objp, aip, false);
 
 	//due to the door animations the ship has to remain still until the doors are open
@@ -13247,6 +13273,26 @@ int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, int allowed_path_
 	pl_objp->phys_info.prev_ramp_vel.xyz.y = 0.0f;
 	pl_objp->phys_info.prev_ramp_vel.xyz.z = 0.0f;
 	pl_objp->phys_info.forward_thrust = 0.0f;		// How much the forward thruster is applied.  0-1.
+	pl_objp->pos = pos;
+
+	vec3d rvec;		vm_vec_zero(&rvec);
+	vec3d uvec;		vm_vec_zero(&uvec);
+
+	// use the modder-defined arrival rvec, if applicable
+	SCP_string pathName(pm->paths[path_index].name);
+	if (parent_sip->pathMetadata.find(pathName) != parent_sip->pathMetadata.end() && !IS_VEC_NULL(&parent_sip->pathMetadata[pathName].arrival_rvec)) {
+		vm_vec_copy_normalize(&rvec, &parent_sip->pathMetadata[pathName].arrival_rvec);
+		vm_vec_unrotate(&rvec, &rvec, &Objects[aip->path_objnum].orient);
+	}
+	else if (The_mission.ai_profile->flags[AI::Profile_Flags::Fighterbay_arrivals_use_carrier_orient]) {
+		// using only the flag provides a way for modders to use a quick option (though not 100% perfect)
+		// also, it is more intuitive that the carrier's uvec is preferable to attempt to match first
+		// this avoids unintutive scenarios like rear-facing arrivals ending up side down
+		uvec = parent_objp->orient.vec.uvec;
+		rvec = parent_objp->orient.vec.rvec;
+	}
+
+	vm_vector_2_matrix(&pl_objp->orient, &fvec, IS_VEC_NULL(&uvec) ? nullptr : &uvec, IS_VEC_NULL(&rvec) ? nullptr : &rvec);
 
 	return 0;	
 }
@@ -14991,7 +15037,7 @@ void init_ai_object(int objnum)
 	aip->path_next_create_time = timestamp(1);
 	aip->path_create_pos = Objects[objnum].pos;
 	aip->path_create_orient = Objects[objnum].orient;
-	vm_vec_zero(&aip->path_depart_orient);
+	vm_vec_zero(&aip->path_depart_rvec);
 
 	aip->ignore_expire_timestamp = timestamp(1);
 	aip->warp_out_timestamp = 0;

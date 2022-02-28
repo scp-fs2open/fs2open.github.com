@@ -22,6 +22,7 @@
 #include "mission/missionmessage.h"
 #include "mission/missiontraining.h"
 #include "missionui/redalert.h"
+#include "nebula/neb.h"
 #include "parse/parselo.h"
 #include "parse/sexp.h"
 #include "parse/sexp/DynamicSEXP.h"
@@ -1207,7 +1208,6 @@ ADE_FUNC(loadMission, l_Mission, "string missionName", "Loads a mission", "boole
 	gr_post_process_set_defaults();
 
 	//NOW do the loading stuff
-	game_stop_time();
 	get_mission_info(s, &The_mission, false);
 	game_level_init();
 
@@ -1287,6 +1287,16 @@ ADE_FUNC(isInCampaign, l_Mission, NULL, "Get whether or not the current mission 
 ADE_FUNC(isNebula, l_Mission, nullptr, "Get whether or not the current mission being played is set in a nebula", "boolean", "true if in nebula, false if not")
 {
 	return ade_set_args(L, "b", The_mission.flags[Mission::Mission_Flags::Fullneb]);
+}
+
+ADE_VIRTVAR(NebulaSensorRange, l_Mission, "number", "Gets or sets the Neb2_awacs variable.  This is multiplied by a species-specific factor to get the \"scan range\".  Within the scan range, a ship is at least partially targetable (fuzzy blip); within half the scan range, a ship is fully targetable.  Beyond the scan range, a ship is not targetable.", "number", "the Neb2_awacs variable")
+{
+	float range = -1.0f;
+
+	if (ADE_SETTING_VAR && ade_get_args(L, "*f", &range))
+		Neb2_awacs = range;
+
+	return ade_set_args(L, "f", Neb2_awacs);
 }
 
 ADE_FUNC(isSubspace, l_Mission, nullptr, "Get whether or not the current mission being played is set in subspace", "boolean", "true if in subspace, false if not")

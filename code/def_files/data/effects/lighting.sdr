@@ -4,14 +4,8 @@ const int LT_POINT			= 1;		// A point light, like an explosion
 const int LT_TUBE			= 2;		// A tube light, like a fluorescent light
 const int LT_CONE			= 3;		// A cone light, like a flood light
 
-const float SPEC_INTENSITY_POINT		= 5.3 ;// Point light
-const float SPEC_INTENSITY_DIRECTIONAL	= 3.0 ;// Directional light
-const float SPECULAR_FACTOR				= 1.75;
-const float SPECULAR_ALPHA				= 0.1;
 const float SPEC_FACTOR_NO_SPEC_MAP		= 0.1;
-const float ENV_ALPHA_FACTOR			= 0.3;
 const float GLOW_MAP_INTENSITY			= 1.5;
-const float AMBIENT_LIGHT_BOOST			= 1.0;
 const float GLOW_MAP_SRGB_MULTIPLIER	= 3.0;
 
 vec3 FresnelSchlick(vec3 specColor, vec3 light, vec3 halfVec)

@@ -38,6 +38,8 @@ class JSONFileHandler: public FileHandler {
 
 	~JSONFileHandler() override;
 
+	void writeByte(const char* name, std::int8_t value) override;
+
 	void writeUByte(const char* name, std::uint8_t value) override;
 
 	void writeShort(const char* name, std::int16_t value) override;
@@ -66,6 +68,7 @@ class JSONFileHandler: public FileHandler {
 
 	void flush() override;
 
+	std::int8_t readByte(const char* name) override;
 
 	std::uint8_t readUByte(const char* name) override;
 

@@ -21,8 +21,8 @@
 #include "weapon/trails.h"
 #include "render/batching.h"
 
-int Num_trails;
-trail Trails;
+static int Num_trails = 0;
+static trail Trails;
 
 // Reset everything between levels
 void trail_level_init()
@@ -33,6 +33,10 @@ void trail_level_init()
 
 void trail_level_close()
 {
+	if ( !Num_trails ) {
+		return;
+	}
+
 	trail *nextp;
 	for(trail *trailp = Trails.next; trailp != &Trails; trailp = nextp)
 	{
@@ -178,7 +182,7 @@ void trail_render( trail * trailp )
 		}
 
 		if (The_mission.flags[Mission::Mission_Flags::Fullneb] && Neb_affects_weapons)
-			current_alpha = (ubyte)(current_alpha * neb2_get_fog_visibility(&trailp->pos[n], NEB_FOG_VISIBILITY_MULT_TRAIL));
+			current_alpha = (ubyte)(current_alpha * neb2_get_fog_visibility(&trailp->pos[n], Neb2_fog_visibility_trail));
 
 		// get the direction of the trail
 		vec3d trail_direction;

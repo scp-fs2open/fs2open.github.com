@@ -1460,7 +1460,8 @@ void beam_render(beam *b, float u_offset)
 			if (result == -1)
 				nearest = b->last_start;
 
-			fade *= neb2_get_fog_visibility(&nearest, NEB_FOG_VISIBILITY_MULT_BEAM(b->beam_light_width));
+			fade *= neb2_get_fog_visibility(&nearest, 
+				Neb2_fog_visibility_beam_const + (b->beam_light_width * Neb2_fog_visibility_beam_scaled_factor));
 		}
 
 		material material_params;
@@ -1574,7 +1575,8 @@ static float get_muzzle_glow_alpha(beam* b)
 	}
 
 	if (The_mission.flags[Mission::Mission_Flags::Fullneb] && Neb_affects_beams) {
-		alpha *= neb2_get_fog_visibility(&b->last_start, NEB_FOG_VISIBILITY_MULT_B_MUZZLE(b->beam_light_width));
+		alpha *= neb2_get_fog_visibility(&b->last_start, 
+			Neb2_fog_visibility_beam_const + (b->beam_light_width * Neb2_fog_visibility_beam_scaled_factor));
 	}
 
 	return alpha;
@@ -3684,7 +3686,7 @@ void beam_handle_collisions(beam *b)
 			vec3d worldNormal;
 			if (Objects[target].type == OBJ_SHIP) {
 				auto shipp = &Ships[Objects[target].instance];
-				model_instance_find_world_dir(&worldNormal,
+				model_instance_local_to_global_dir(&worldNormal,
 											  &b->f_collisions[idx].cinfo.hit_normal,
 											  shipp->model_instance_num,
 											  b->f_collisions[idx].cinfo.submodel_num,
@@ -3795,7 +3797,7 @@ void beam_handle_collisions(beam *b)
 					vec3d worldNormal;
 					if (Objects[target].type == OBJ_SHIP) {
 						auto shipp = &Ships[Objects[target].instance];
-						model_instance_find_world_dir(&worldNormal,
+						model_instance_local_to_global_dir(&worldNormal,
 													  &b->f_collisions[idx].cinfo.hit_normal,
 													  shipp->model_instance_num,
 													  b->f_collisions[idx].cinfo.submodel_num,
@@ -3946,8 +3948,8 @@ int beam_ok_to_fire(beam *b)
 		if (shipp->weapon_energy <= 0.0f ) {
 
 			if ( OBJ_INDEX(Player_obj) == shipp->objnum && !(b->life_left>0.0f)) {
-				extern void ship_maybe_play_primary_fail_sound();
-				ship_maybe_play_primary_fail_sound();
+				extern void ship_maybe_do_primary_fail_sound_hud(bool depleted_energy);
+				ship_maybe_do_primary_fail_sound_hud(true);
 			}
 
 			return 0;
@@ -3984,7 +3986,7 @@ int beam_ok_to_fire(beam *b)
 				turret_normal = b->objp->orient.vec.fvec;
                 b->subsys->system_info->flags.remove(Model::Subsystem_Flags::Turret_restricted_fov);
 			} else {
-				model_instance_find_world_dir(&turret_normal, &b->subsys->system_info->turret_norm, Ships[b->objp->instance].model_instance_num, b->subsys->system_info->subobj_num, &b->objp->orient, true);
+				model_instance_local_to_global_dir(&turret_normal, &b->subsys->system_info->turret_norm, Ships[b->objp->instance].model_instance_num, b->subsys->system_info->subobj_num, &b->objp->orient, true);
 			}
 
 			if (!(turret_fov_test(b->subsys, &turret_normal, &aim_dir))) {

@@ -59,7 +59,8 @@ bool *Lcl_unexpected_tstring_check = nullptr;
 // the english version (in the code) to a foreign version (in the table).  Thus, if you
 // add a new string to the code, you must assign it a new index.  Use the number below for
 // that index and increase the number below by one.
-#define XSTR_SIZE	1647
+// retail XSTR_SIZE = 1570
+#define XSTR_SIZE	1667
 
 
 // struct to allow for strings.tbl-determined x offset
@@ -103,7 +104,7 @@ int lcl_get_current_lang_index()
 {
 	Assertion(Lcl_current_lang >= 0, "Lcl_current_lang should never be negative!");
 
-	if (Lcl_current_lang < NUM_BUILTIN_LANGUAGES)
+	if (Lcl_current_lang < (int)Lcl_languages.size())
 		return Lcl_current_lang;
 
 	return LCL_DEFAULT;
@@ -257,6 +258,10 @@ void parse_stringstbl_quick(const char *filename)
 				// if we have a new language, add it.
 				if (lang_idx == -1) {
 					Lcl_languages.push_back(language);
+
+					if (Lcl_languages.size() > LCL_UNTRANSLATED) {
+						Warning(LOCATION, "Too many custom languages; this will conflict with certain special-case language definitions and cause unexpected behavior");
+					}
 				}
 			}
 		}

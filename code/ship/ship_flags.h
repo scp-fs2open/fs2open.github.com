@@ -127,6 +127,7 @@ namespace Ship {
 		Has_display_name,			// Goober5000
 		Attempting_to_afterburn,    // set and unset by afterburner_start and stop, used by afterburner_min_fuel_to_consume
 		Hide_mission_log,			// Goober5000 - mission log events generated for this ship will not be viewable
+		No_passive_lightning,		// Asteroth - disables ship passive lightning
 
 		NUM_VALUES
 

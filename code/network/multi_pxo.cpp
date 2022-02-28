@@ -912,7 +912,7 @@ void multi_pxo_run_medals();
 #define MULTI_PXO_NOTIFY_Y					435
 
 char Multi_pxo_notify_text[MAX_PXO_TEXT_LEN];
-int Multi_pxo_notify_stamp = -1;
+UI_TIMESTAMP Multi_pxo_notify_stamp;
 
 // add a notification string
 void multi_pxo_notify_add(const char *txt);
@@ -1016,6 +1016,9 @@ void multi_pxo_help_button_pressed(int n);
 // http banner stuff ---------------------------------------------
 InetGetFile *Multi_pxo_ban_get = NULL;
 
+#define PXO_BANNER_SWAP_TIME			120000
+static int Multi_pxo_ban_swap_stamp = 0;
+
 // banners file
 #define PXO_BANNERS_CONFIG_FILE			"pxobanners.cfg"
 
@@ -1043,9 +1046,9 @@ UI_BUTTON Multi_pxo_ban_button;
 
 // banners
 typedef struct pxo_banner {	
-	char	ban_file[MAX_FILENAME_LEN+1];						// base filename of the banner
-	char	ban_file_url[MULTI_OPTIONS_STRING_LEN+1];		// full url of the file to get (convenient)
-	char	ban_url[MULTI_OPTIONS_STRING_LEN+1];			// url to go to when clicked
+	SCP_string	ban_file;			// base filename of the banner
+	SCP_string	ban_file_url;		// full url of the file to get (convenient)
+	SCP_string	ban_url;			// url to go to when clicked
 	int	ban_bitmap;												// banner bitmap	
 } pxo_banner;
 
@@ -1065,7 +1068,7 @@ void multi_pxo_ban_process();
 void multi_pxo_ban_close();
 
 // parse the banners file and maybe fill in Multi_pxo_dl_file[]
-void multi_pxo_ban_parse_banner_file(int choose_existing);
+void multi_pxo_ban_parse_banner_file();
 
 // any bitmap or info or whatever
 void multi_pxo_ban_draw();
@@ -1400,7 +1403,13 @@ void multi_pxo_do_normal()
 		multi_fs_tracker_init();
 
 		// validate game data first, for initial game/mod ident
-		multi_fs_tracker_validate_game_data();
+		if (multi_fs_tracker_validate_game_data() < 0) {
+			// in the event of a connection failure we should just dump back to the mainhall
+			popup(PF_USE_AFFIRMATIVE_ICON | PF_TITLE_BIG | PF_TITLE_RED, 1, POPUP_OK, XSTR("Failed to connect to Parallax Online!", 947));
+			gameseq_post_event(GS_EVENT_MAIN_MENU);
+
+			return;
+		}
 
 		// validate the current player with the master tracker (will create the pilot on the MT if necessary)
 		validate_code = multi_fs_tracker_validate(0);
@@ -1519,6 +1528,11 @@ void multi_pxo_blit_all()
 // process common stuff
 void multi_pxo_process_common()
 {
+	// skip if we haven't logged into the tracker yet
+	if (Multi_pxo_must_validate) {
+		return;
+	}
+
 	// process the channel list (select, etc)
 	multi_pxo_process_channels();
 
@@ -2646,7 +2660,7 @@ void multi_pxo_blit_channels()
 
 		// next item
 		moveup = moveup->next;
-	} while((moveup != Multi_pxo_channels) && (disp_count < Multi_pxo_max_chan_display[gr_screen.res]));
+	} while((moveup != Multi_pxo_channels) && (disp_count < gr_get_dynamic_font_lines(Multi_pxo_max_chan_display[gr_screen.res])));
 }
 
 /**
@@ -2678,7 +2692,7 @@ void multi_pxo_scroll_channels_down()
 	}
 
 	// if we can't scroll further without going past the end of the viewable list, don't
-	if((Multi_pxo_channel_start_index + Multi_pxo_max_chan_display[gr_screen.res]) >= Multi_pxo_channel_count){
+	if((Multi_pxo_channel_start_index + gr_get_dynamic_font_lines(Multi_pxo_max_chan_display[gr_screen.res]) >= Multi_pxo_channel_count)){
 		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return;
 	}
@@ -3056,7 +3070,7 @@ void multi_pxo_blit_players()
 
 		// next item
 		moveup = moveup->next;
-	} while((moveup != Multi_pxo_players) && (disp_count < Multi_pxo_max_player_display[gr_screen.res]));
+	} while((moveup != Multi_pxo_players) && (disp_count < gr_get_dynamic_font_lines(Multi_pxo_max_player_display[gr_screen.res])));
 }
 
 /**
@@ -3097,7 +3111,7 @@ void multi_pxo_scroll_players_down()
 	}
 	
 	// if we can move down
-	if(count >= Multi_pxo_max_player_display[gr_screen.res]){
+	if(count >= gr_get_dynamic_font_lines(Multi_pxo_max_player_display[gr_screen.res])){
 		Multi_pxo_player_start = Multi_pxo_player_start->next;
 		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 	} else {
@@ -3240,7 +3254,7 @@ void multi_pxo_chat_add_line(const char *txt, int mode)
 	}
 
 	// set the count
-	Multi_pxo_chat_slider.set_numberItems(Multi_pxo_chat_count > Multi_pxo_max_chat_display[gr_screen.res] ? Multi_pxo_chat_count - Multi_pxo_max_chat_display[gr_screen.res] : 0, 0);		// the 0 means don't reset
+	Multi_pxo_chat_slider.set_numberItems(Multi_pxo_chat_count > gr_get_dynamic_font_lines(Multi_pxo_max_chat_display[gr_screen.res]) ? Multi_pxo_chat_count - gr_get_dynamic_font_lines(Multi_pxo_max_chat_display[gr_screen.res]) : 0, 0);		// the 0 means don't reset
 
 	multi_pxo_goto_bottom();
 }
@@ -3359,7 +3373,7 @@ void multi_pxo_chat_blit()
 	disp_count = 0;
 	y_start = Multi_pxo_chat_coords[gr_screen.res][1];
 	line_height = gr_get_font_height() + 1;
-	while((moveup != NULL) && (moveup != Multi_pxo_chat_add) && (disp_count < (Multi_pxo_max_chat_display[gr_screen.res]))){
+	while((moveup != nullptr) && (moveup != Multi_pxo_chat_add) && (disp_count < (gr_get_dynamic_font_lines(Multi_pxo_max_chat_display[gr_screen.res])))){
 		switch(moveup->mode){
 		// if this is text from the server, display it all "bright"
 		case CHAT_MODE_SERVER:				
@@ -3434,7 +3448,7 @@ void multi_pxo_goto_bottom()
 	}
 	
 	// if we have less than the displayable amount of lines, do nothing
-	if(Multi_pxo_chat_count <= Multi_pxo_max_chat_display[gr_screen.res]){
+	if(Multi_pxo_chat_count <= gr_get_dynamic_font_lines(Multi_pxo_max_chat_display[gr_screen.res])){
 		Multi_pxo_chat_start = Multi_pxo_chat;						
 		
 		// nothing to do for the slider
@@ -3446,7 +3460,7 @@ void multi_pxo_goto_bottom()
 	{
 		// otherwise move back the right # of items
 		backup = Multi_pxo_chat_add;	
-		for(idx=0; idx<Multi_pxo_max_chat_display[gr_screen.res]; idx++){
+		for(idx=0; idx<gr_get_dynamic_font_lines(Multi_pxo_max_chat_display[gr_screen.res]); idx++){
 			Assert(backup->prev != NULL);
 			backup = backup->prev;		
 		}
@@ -3497,7 +3511,7 @@ int multi_pxo_can_scroll_down()
 	}
 	
 	// check if we can move down, return accordingly
-	if (count > Multi_pxo_max_chat_display[gr_screen.res]) {
+	if (count > gr_get_dynamic_font_lines(Multi_pxo_max_chat_display[gr_screen.res])) {
 		return 1;
 	} else {
 		return 0;
@@ -4780,7 +4794,7 @@ void multi_pxo_pinfo_close()
 
 	// unload the bitmap
 	if(Multi_pxo_pinfo_bitmap != -1){
-		bm_unload(Multi_pxo_pinfo_bitmap);
+		bm_release(Multi_pxo_pinfo_bitmap);
 	}
 
 	// free the stats labels strings
@@ -4859,7 +4873,7 @@ void multi_pxo_notify_add(const char *txt)
 	strcpy_s(Multi_pxo_notify_text, txt);
 
 	// set the timestamp
-	Multi_pxo_notify_stamp = timestamp(MULTI_PXO_NOTIFY_TIME);
+	Multi_pxo_notify_stamp = ui_timestamp(MULTI_PXO_NOTIFY_TIME);
 }
 
 /**
@@ -4870,13 +4884,13 @@ void multi_pxo_notify_blit()
 	int w;
 
 	// if the timestamp is -1, do nothing
-	if(Multi_pxo_notify_stamp == -1){
+	if (!Multi_pxo_notify_stamp.isValid()){
 		return;
 	}
 
 	// if it has expired, do nothing
-	if(timestamp_elapsed(Multi_pxo_notify_stamp)){
-		Multi_pxo_notify_stamp = -1;
+	if (ui_timestamp_elapsed(Multi_pxo_notify_stamp)){
+		Multi_pxo_notify_stamp = UI_TIMESTAMP::invalid();
 	}
 
 	// otherwise blit the text
@@ -4980,7 +4994,7 @@ void multi_pxo_help_close()
 	int idx, idx2;
 
 	// unload any bitmaps
-	bm_unload(Multi_pxo_help_bitmap);		
+	bm_release(Multi_pxo_help_bitmap);
 	
 	// destroy the UI_WINDOW
 	Multi_pxo_help_window.destroy();
@@ -5136,6 +5150,8 @@ void multi_pxo_ban_init()
 	// zero the active banner bitmap
 	Multi_pxo_banner.ban_bitmap = -1;	
 
+	Multi_pxo_ban_swap_stamp = 0;
+
 	// are we doing banners at all?
 	if ( os_config_read_uint(nullptr, "PXOBanners", 1) && strlen(Multi_options_g.pxo_banner_url) ) {
 		// if we're already in idle mode, we're done downloading for this instance of freespace. pick a random image we already have
@@ -5155,9 +5171,9 @@ void multi_pxo_ban_init()
 
 	// zero the active banner bitmap
 	Multi_pxo_banner.ban_bitmap = -1;	
-	strcpy_s(Multi_pxo_banner.ban_file, "");
-	strcpy_s(Multi_pxo_banner.ban_file_url, "");
-	strcpy_s(Multi_pxo_banner.ban_url, "");	
+	Multi_pxo_banner.ban_file.clear();
+	Multi_pxo_banner.ban_file_url.clear();
+	Multi_pxo_banner.ban_url.clear();
 }
 
 /**
@@ -5165,21 +5181,38 @@ void multi_pxo_ban_init()
  */
 void multi_pxo_ban_process()
 {
-	char url_string[512] = "";
-	char local_file[512] = "";
+	SCP_string url_string;
+	SCP_string local_file;
+
+	// if they've been here long enough, maybe swap out the banner
+	if ((Multi_pxo_ban_mode == PXO_BAN_MODE_IDLE) && timestamp_elapsed(Multi_pxo_ban_swap_stamp)) {
+		Multi_pxo_ban_mode = PXO_BAN_MODE_IMAGES_STARTUP;
+		Multi_pxo_ban_swap_stamp = 0;
+	}
 
 	// process stuff
 	switch(Multi_pxo_ban_mode){
 	// start downloading list
 	case PXO_BAN_MODE_LIST_STARTUP:		
 		// remote file
-		sprintf(url_string, "%s/%s", Multi_options_g.pxo_banner_url, PXO_BANNERS_CONFIG_FILE);
+		url_string = Multi_options_g.pxo_banner_url;
+
+		if (url_string.back() != '/') {
+			url_string.push_back('/');
+		}
+
+		url_string += PXO_BANNERS_CONFIG_FILE;
+
+		// add game tag if we've got one (for mod-specific banner config)
+		if ( !Multi_fs_tracker_game_tag.empty() ) {
+			url_string += "?tag=" + Multi_fs_tracker_game_tag;
+		}
 
 		// local file
-		cf_create_default_path_string(local_file, sizeof(local_file) - 1, CF_TYPE_MULTI_CACHE, PXO_BANNERS_CONFIG_FILE);
+		cf_create_default_path_string(local_file, CF_TYPE_MULTI_CACHE, PXO_BANNERS_CONFIG_FILE);
 
 		// try creating the file get object
-		Multi_pxo_ban_get = new InetGetFile(url_string, local_file, CF_TYPE_MULTI_CACHE);
+		Multi_pxo_ban_get = new InetGetFile(url_string.c_str(), local_file.c_str(), CF_TYPE_MULTI_CACHE);
 
 		// bad
 		if (Multi_pxo_ban_get == NULL) {
@@ -5216,25 +5249,25 @@ void multi_pxo_ban_process()
 	// start downloading files
 	case PXO_BAN_MODE_IMAGES_STARTUP:
 		// first thing - parse the banners file and pick a file
-		multi_pxo_ban_parse_banner_file(0);
+		multi_pxo_ban_parse_banner_file();
 
 		// if we have no active file, we're done
-		if ( (strlen(Multi_pxo_banner.ban_file) <= 0) || (strlen(Multi_pxo_banner.ban_file_url) <= 0) ) {
+		if ( Multi_pxo_banner.ban_file.empty() || Multi_pxo_banner.ban_file_url.empty() ) {
 			Multi_pxo_ban_mode = PXO_BAN_MODE_IDLE;
 			break;
 		}
 
 		// if the file already exists, we're done
-		if ( cf_exists(Multi_pxo_banner.ban_file, CF_TYPE_MULTI_CACHE) ) {
+		if ( cf_exists(Multi_pxo_banner.ban_file.c_str(), CF_TYPE_MULTI_CACHE) ) {
 			Multi_pxo_ban_mode = PXO_BAN_MODE_IMAGES_DONE;
 			break;
 		}
 
 		// otherwise try and download it				
-		cf_create_default_path_string(local_file, sizeof(local_file) - 1, CF_TYPE_MULTI_CACHE, Multi_pxo_banner.ban_file);
+		cf_create_default_path_string(local_file, CF_TYPE_MULTI_CACHE, Multi_pxo_banner.ban_file.c_str());
 
 		// try creating the file get object
-		Multi_pxo_ban_get = new InetGetFile(Multi_pxo_banner.ban_file_url, local_file, CF_TYPE_MULTI_CACHE);
+		Multi_pxo_ban_get = new InetGetFile(Multi_pxo_banner.ban_file_url.c_str(), local_file.c_str(), CF_TYPE_MULTI_CACHE);
 
 		// bad
 		if (Multi_pxo_ban_get == NULL) {
@@ -5271,8 +5304,14 @@ void multi_pxo_ban_process()
 	// done downloading - maybe load an image
 	case PXO_BAN_MODE_IMAGES_DONE:
 		// make sure we have a valid filename
-		if (Multi_pxo_banner.ban_file[0] != '\0')
+		if ( !Multi_pxo_banner.ban_file.empty() ) {
+			// if we have a loaded bitmap, unload it
+			if (Multi_pxo_banner.ban_bitmap != -1) {
+				bm_release(Multi_pxo_banner.ban_bitmap);
+			}
+
 			Multi_pxo_banner.ban_bitmap = bm_load(Multi_pxo_banner.ban_file);
+		}
 
 		// now we're idle
 		Multi_pxo_ban_mode = PXO_BAN_MODE_IDLE;
@@ -5284,12 +5323,17 @@ void multi_pxo_ban_process()
 		if ( Multi_pxo_ban_button.pressed() ) {
 			multi_pxo_ban_clicked();
 		}
+
+		// set time to choose a new banner to show
+		if ( !Multi_pxo_ban_swap_stamp ) {
+			Multi_pxo_ban_swap_stamp = timestamp(PXO_BANNER_SWAP_TIME);
+		}
 		break;
 
 	case PXO_BAN_MODE_CHOOSE_RANDOM:
-		// first thing - parse the banners file and pick a file
-		multi_pxo_ban_parse_banner_file(1);
-		Multi_pxo_ban_mode = PXO_BAN_MODE_IMAGES_DONE;
+		// just bounce back to IMAGES_STARTUP, which will pick a new banner
+		// image and download it if necessary
+		Multi_pxo_ban_mode = PXO_BAN_MODE_IMAGES_STARTUP;
 		break;
 	}
 }
@@ -5308,7 +5352,7 @@ void multi_pxo_ban_close()
 
 	// if we have a loaded bitmap, unload it
 	if(Multi_pxo_banner.ban_bitmap != -1){
-		bm_unload(Multi_pxo_banner.ban_bitmap);
+		bm_release(Multi_pxo_banner.ban_bitmap);
 		Multi_pxo_banner.ban_bitmap = -1;
 	}
 }
@@ -5316,20 +5360,14 @@ void multi_pxo_ban_close()
 /**
  * Parse the banners file and maybe fill in Multi_pxo_dl_file
  */
-void multi_pxo_ban_parse_banner_file(int choose_existing)
+void multi_pxo_ban_parse_banner_file()
 {
 	char file_url[512] = "";
 	char banners[10][512];
 	char urls[10][512];
-	int exists[10];
-	int exist_count;
 	int num_banners, idx;
-	CFILE *in = cfopen(PXO_BANNERS_CONFIG_FILE, "rt", CFILE_NORMAL, CF_TYPE_MULTI_CACHE);
 
-	Multi_pxo_banner.ban_bitmap = -1;
-	strcpy_s(Multi_pxo_banner.ban_file, "");
-	strcpy_s(Multi_pxo_banner.ban_file_url, "");
-	strcpy_s(Multi_pxo_banner.ban_url, "");		
+	CFILE *in = cfopen(PXO_BANNERS_CONFIG_FILE, "rt", CFILE_NORMAL, CF_TYPE_MULTI_CACHE);
 
 	// bad
 	if(in == NULL){
@@ -5388,78 +5426,36 @@ void multi_pxo_ban_parse_banner_file(int choose_existing)
 		return;
 	}
 
-	// if we're only selecting files which already exist (previously downloaded)
-	if(choose_existing){
-		// non exist
-		for(idx=0; idx<10; idx++){
-			exists[idx] = 0;
-		}
+	idx = 0;
 
-		// build a list of existing files
-		exist_count = 0;
-		for (idx = 0; idx < num_banners; idx++) {
-			if ( cf_exists(banners[idx], CF_TYPE_MULTI_CACHE) ) {
-				exists[idx] = 1;
-				exist_count++;
+	if (num_banners > 1) {
+		do {
+			// randomly pick a file for download
+			idx = (int)frand_range(0.0f, (float)num_banners);
+
+			if (idx >= num_banners){
+				idx = num_banners - 1;
 			}
-		}
-
-		// bogus
-		if(exist_count <= 0){
-			return;
-		}
-
-		// select one
-		int select = (int)frand_range(0.0f, (float)exist_count);
-		if(select >= exist_count){
-			select = exist_count - 1;
-		}
-		if(select < 0){
-			select = 0;
-		}
-		for(idx=0; idx<exist_count; idx++){
-			if(select == 0){
-				break;
+			if (idx < 0){
+				idx = 0;
 			}
-			if(exists[idx]){
-				select--;
-			}
-		}
-
-		// valid?
-		if(idx < exist_count){
-			// base filename
-			strncpy(Multi_pxo_banner.ban_file, banners[idx], MAX_FILENAME_LEN);
-
-			// get the full file url
-			strncpy(Multi_pxo_banner.ban_file_url, file_url, MULTI_OPTIONS_STRING_LEN);
-			strncat(Multi_pxo_banner.ban_file_url, banners[idx], MULTI_OPTIONS_STRING_LEN);
-
-			// url of where to go to when clicked
-			strncpy(Multi_pxo_banner.ban_url, urls[idx], MULTI_OPTIONS_STRING_LEN);		
-		}
+		} while (Multi_pxo_banner.ban_file == banners[idx]);
 	}
-	// randomly pick a file for download
-	else {			
-		idx = (int)frand_range(0.0f, (float)num_banners);
-		
-		if(idx >= num_banners){
-			idx = num_banners - 1;
-		} 
-		if(idx < 0){
-			idx = 0;
-		}
 
-		// base filename
-		strcpy_s(Multi_pxo_banner.ban_file, banners[idx]);
+	// base filename
+	Multi_pxo_banner.ban_file = banners[idx];
 
-		// get the full file url
-		strcpy_s(Multi_pxo_banner.ban_file_url, file_url);
-		strcat_s(Multi_pxo_banner.ban_file_url, banners[idx]);
+	// get the full file url
+	Multi_pxo_banner.ban_file_url = file_url;
 
-		// url of where to go to when clicked
-		strcpy_s(Multi_pxo_banner.ban_url, urls[idx]);
+	if (Multi_pxo_banner.ban_file_url.back() != '/') {
+		Multi_pxo_banner.ban_file_url.push_back('/');
 	}
+
+	Multi_pxo_banner.ban_file_url.append(banners[idx]);
+
+	// url of where to go to when clicked
+	Multi_pxo_banner.ban_url = urls[idx];
 }
 
 /**
@@ -5470,7 +5466,7 @@ void multi_pxo_ban_draw()
 	// if we have a valid bitmap
 	if(Multi_pxo_banner.ban_bitmap >= 0){
 		// if the mouse is over the banner button, highlight with a rectangle
-		if(Multi_pxo_ban_button.is_mouse_on()){
+		if (Multi_pxo_ban_button.is_mouse_on() && !Multi_pxo_banner.ban_url.empty()) {
 			gr_set_color_fast(&Color_bright_blue);
 			gr_rect(Pxo_ban_coords[gr_screen.res][0] - 1, Pxo_ban_coords[gr_screen.res][1] - 1, Pxo_ban_coords[gr_screen.res][2] + 2, Pxo_ban_coords[gr_screen.res][3] + 2, GR_RESIZE_MENU);
 		}
@@ -5487,7 +5483,7 @@ void multi_pxo_ban_draw()
 void multi_pxo_ban_clicked()
 {
 	// if we have a valid bitmap and URL, launch the URL
-	if((Multi_pxo_banner.ban_bitmap >= 0) && (Multi_pxo_banner.ban_url[0] != '\0')){
-		multi_pxo_url(Multi_pxo_banner.ban_url);
+	if ( (Multi_pxo_banner.ban_bitmap >= 0) && !Multi_pxo_banner.ban_url.empty() ) {
+		multi_pxo_url(Multi_pxo_banner.ban_url.c_str());
 	}
 }

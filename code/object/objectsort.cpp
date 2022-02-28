@@ -356,7 +356,6 @@ void obj_render_queue_all()
 	gr_zbuffer_set(ZBUFFER_TYPE_READ);
 
 	gr_reset_lighting();
-	gr_set_lighting(false, false);
 
 	// now render transparent meshes
 	scene.render_all(ZBUFFER_TYPE_READ);
@@ -375,7 +374,6 @@ void obj_render_queue_all()
 	gr_clear_states();
 
 	gr_reset_lighting();
-	gr_set_lighting(false, false);
 
 	batching_render_all();
 
@@ -387,5 +385,4 @@ void obj_render_queue_all()
 	gr_clear_states();
 
 	gr_reset_lighting();
-	gr_set_lighting(false, false);
 }

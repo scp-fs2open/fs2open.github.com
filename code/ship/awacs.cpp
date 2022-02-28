@@ -27,11 +27,10 @@
 
 // timestamp for updating AWACS stuff
 #define AWACS_STAMP_TIME			1000
-int Awacs_stamp = -1;
+static int Awacs_stamp = -1;
 
 // total awacs levels for all teams
-SCP_vector<float> Awacs_team;	// total AWACS capabilities for each team
-float Awacs_level;					// Awacs_friendly - Awacs_hostile
+static SCP_vector<float> Awacs_team;	// total AWACS capabilities for each team				// Awacs_friendly - Awacs_hostile
 
 // list of all AWACS sources
 #define MAX_AWACS					30
@@ -40,14 +39,14 @@ typedef struct awacs_entry {
 	ship_subsys *subsys;
 	object *objp;
 } awacs_entry;
-awacs_entry Awacs[MAX_AWACS];
-int Awacs_count = 0;
+static awacs_entry Awacs[MAX_AWACS];
+static int Awacs_count = 0;
 
 // TEAM SHIP VISIBILITY
 // team-wide shared visibility info
 // at start of each frame (maybe timestamp), compute visibility 
 
-SCP_vector<std::bitset<MAX_SHIPS>> Ship_visibility_by_team;
+static SCP_vector<std::bitset<MAX_SHIPS>> Ship_visibility_by_team;
 
 // ----------------------------------------------------------------------------------------------------
 // AWACS FORWARD DECLARATIONS
@@ -67,8 +66,22 @@ void team_visibility_update();
 // call when initializing level, before parsing mission
 void awacs_level_init()
 {
+	static bool arrays_initted = false;
+
 	// set the update timestamp to -1 
 	Awacs_stamp = -1;
+
+	if ( !arrays_initted ) {
+		Awacs_team.reserve(Iff_info.size());
+		Ship_visibility_by_team.reserve(Iff_info.size());
+
+		for (auto idx = 0; idx < (int)Iff_info.size(); idx++) {
+			Awacs_team.push_back(0.0f);
+			Ship_visibility_by_team.emplace_back();
+		}
+
+		arrays_initted = true;
+	}
 }
 
 // call every frame to process AWACS details
@@ -99,15 +112,8 @@ void awacs_update_all_levels()
 	ship_obj *moveup;	
 	ship *shipp;
 	ship_subsys *ship_system;
-	int idx;
 
 	// zero all levels
-	Awacs_level = 0.0f;
-	for (idx = 0; idx < (int)Iff_info.size(); idx++) {
-		Awacs_team.push_back(0.0f);
-		Ship_visibility_by_team.emplace_back();
-	}
-
 	Awacs_count = 0;
 
 	// we need to traverse all subsystems on all ships	
@@ -458,6 +464,11 @@ int ship_is_visible_by_team(object *target, ship *viewer)
 	// now evaluate this the old way
 	int ship_num = target->instance;
 	int team = viewer->team;
+
+	// this can happen in multi, where networking is processed before first frame sim
+	if (Awacs_stamp == -1) {
+		awacs_process();
+	}
 
 	return Ship_visibility_by_team[team][ship_num] ? 1 : 0;
 }

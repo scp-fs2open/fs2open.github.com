@@ -1,4 +1,6 @@
 
+#include "controlconfig/controlsconfig.h"
+#include "controlconfig/presets.h"
 #include "freespace.h"
 #include "gamesnd/eventmusic.h"
 #include "hud/hudconfig.h"
@@ -91,16 +93,14 @@ void pilotfile::plr_read_flags()
 	// if there's a valid CSG, this will be overwritten
 	p->stats.rank = handler->readInt("multi_rank");
 
-	if (version > 0) 
-	{
+	if (plr_ver > 0) {
 		p->player_was_multi = handler->readInt("was_multi");
-	} else 
-	{
+	} else {
 		p->player_was_multi = 0; // Default to single player
 	}
 
 	// which language was this pilot created with
-	if (version > 1) {
+	if (plr_ver > 1) {
 		handler->readString("language", p->language, sizeof(p->language));
 	} else {
 		// if we don't know, default to the current language setting
@@ -646,47 +646,95 @@ void pilotfile::plr_write_stats_multi()
 
 void pilotfile::plr_read_controls()
 {
-	short id1, id2;
-	int axi, inv;
+	if (plr_ver < 4) {
+		// PLR < 4
+		short id1, id2;
+		int axi, inv;
 
-	auto list_size = handler->startArrayRead("controls", true);
-	for (size_t idx = 0; idx < list_size; idx++, handler->nextArraySection()) {
-		id1 = handler->readShort("key");
-		id2 = handler->readShort("joystick");
-		handler->readShort("mouse");	// unused, at the moment
+		// Set up preset name, we'll populate the rest of the preset's data later
+		CC_preset preset;
+		preset.name = filename;
 
-		if (idx < Control_config.size()) {
-			Control_config[idx].take(CC_bind(CID_KEYBOARD, id1), 0);
-			Control_config[idx].take(CC_bind(CID_JOY0, id2), 1);
+		// strip off extension
+		auto n = preset.name.find_last_of('.');
+		preset.name.resize(n);
+		
+		// Load in the bindings to Control_config
+		// ...First the digital controls
+		auto list_size = handler->startArrayRead("controls", true);
+		for (size_t idx = 0; idx < list_size; idx++, handler->nextArraySection()) {
+			id1 = handler->readShort("key");
+			id2 = handler->readShort("joystick");
+			handler->readShort("mouse");
+
+			if (idx < Control_config.size()) {
+				// Force the bindings into Control_config
+				Control_config[idx].take(CC_bind(CID_KEYBOARD, id1), 0);
+				Control_config[idx].take(CC_bind(CID_JOY0, id2), 1);
+			}
 		}
-	}
-	handler->endArrayRead();
+		handler->endArrayRead();
 
-	auto list_axis = handler->startArrayRead("axes");
-	for (size_t idx = 0; idx < list_axis; idx++, handler->nextArraySection()) {
-		axi = handler->readInt("axis_map");
-		inv = handler->readInt("invert_axis");
+		// ...Then the analog controls
+		auto list_axis = handler->startArrayRead("axes");
+		for (size_t idx = 0; idx < list_axis; idx++, handler->nextArraySection()) {
+			axi = handler->readInt("axis_map");
+			inv = handler->readInt("invert_axis");
 
-		if (idx < NUM_JOY_AXIS_ACTIONS) {
-			Axis_map_to[idx] = axi;
-			Invert_axis[idx] = inv;
+			if (idx < NUM_JOY_AXIS_ACTIONS) {
+				Control_config[idx + JOY_AXIS_BEGIN].take(CC_bind(CID_JOY0, static_cast<short>(axi), CCF_AXIS), 0);
+				Control_config[idx + JOY_AXIS_BEGIN].first.invert(inv != 0);
+				Control_config[idx + JOY_AXIS_BEGIN].second.invert(inv != 0);
+			}
 		}
+		handler->endArrayRead();
+
+		// Check that these bindings are in a preset.  If it is not, create a new preset file
+		auto it = control_config_get_current_preset();
+		if (it == Control_config_presets.end()) {
+			std::copy(Control_config.begin(), Control_config.end(), std::back_inserter(preset.bindings));
+			Control_config_presets.push_back(preset);
+
+			// Try to save the preset file
+			if (!save_preset_file(preset, false)) {
+				Warning(LOCATION, "Could not save controls preset file (%s)", preset.name.c_str());
+			}
+		}
+		return;
+
+	} else {
+		// read PLR >= 4
+		SCP_string buf = handler->readString("preset");
+
+		auto it = std::find_if(Control_config_presets.begin(), Control_config_presets.end(),
+							   [buf](const CC_preset& preset) { return preset.name == buf; });
+
+		if (it == Control_config_presets.end()) {
+			Assertion(!Control_config_presets.empty(), "[PLR] Error reading Controls! Control_config_presets empty! Get a coder!");
+
+			// Couldn't find the preset, use defaults
+			ReleaseWarning(LOCATION, "Could not find preset %s, using defaults\n", buf.c_str());
+			it = Control_config_presets.begin();
+		}
+
+		control_config_use_preset(*it);
+		return;
 	}
-	handler->endArrayRead();
 }
 
 void pilotfile::plr_write_controls()
 {
 	handler->startSectionWrite(Section::Controls);
 
-	// For some unknown reason, the old code used a short for the array length here...
-	handler->startArrayWrite("controls", Control_config.size(), true);
-	for (auto &item : Control_config) {
+	// Save the default bindings to prevent crash. See github issue 3902
+	auto& Control_config_default = Control_config_presets[0].bindings;
+	handler->startArrayWrite("controls", JOY_AXIS_BEGIN, true);
+	for (size_t i = 0; i < JOY_AXIS_BEGIN; i++) {
+		auto& item = Control_config_default[i];
 		handler->startSectionWrite(Section::Unnamed);
 
 		handler->writeShort("key", item.get_btn(CID_KEYBOARD));
 		handler->writeShort("joystick", item.get_btn(CID_JOY0));
-		// placeholder? for future mouse_id?
 		handler->writeShort("mouse", -1);
 
 		handler->endSectionWrite();
@@ -694,17 +742,47 @@ void pilotfile::plr_write_controls()
 	handler->endArrayWrite();
 
 	handler->startArrayWrite("axes", NUM_JOY_AXIS_ACTIONS);
-	for (size_t idx = 0; idx < NUM_JOY_AXIS_ACTIONS; idx++) {
+	for (size_t idx = JOY_AXIS_BEGIN; idx < JOY_AXIS_END; idx++) {
+		auto& item = Control_config_default[idx];
+
 		handler->startSectionWrite(Section::Unnamed);
 
-		handler->writeInt("axis_map", Axis_map_to[idx]);
-		handler->writeInt("invert_axis", Invert_axis[idx]);
+		// Combine mouse and joy0 to joy0 axis.  Needed because controlsconfigdefaults.tbl may change the defaults.
+		int joy = static_cast<int>(item.get_btn(CID_JOY0));
+		int mouse = static_cast<int>(item.get_btn(CID_MOUSE));
+		if (joy >= 0) {
+			handler->writeInt("axis_map", joy);
+
+		} else if (mouse >= 0) {
+			handler->writeInt("axis_map", mouse);
+
+		} else {
+			handler->writeInt("axis_map", -1);
+		}
+		
+		handler->writeInt("invert_axis", (item.first.is_inverted() || item.second.is_inverted()) ? 1 : 0);
 
 		handler->endSectionWrite();
 	}
 	handler->endArrayWrite();
+	// End issue 3902
 
-	handler->endSectionWrite();
+
+	// As of PLR v4, control bindings are saved outside of the PLR file into PST files.
+	// Save the currently selected preset
+	auto it = control_config_get_current_preset();
+
+	if (it == Control_config_presets.end()) {
+		// No current preset selected. what? Might be a new player...
+		Assertion(!Control_config_presets.empty(), "[PLR] Error saving controls! Control_config_presets empty! Get a coder!");
+
+		// Just bash it to defaults
+		it = Control_config_presets.begin();
+	}
+
+	handler->writeString("preset", it->name.c_str());
+
+	handler->endSectionWrite(); // Section::controls
 }
 
 void pilotfile::plr_read_settings()
@@ -866,6 +944,8 @@ void pilotfile::plr_close()
 
 	m_have_flags = false;
 	m_have_info = false;
+
+	plr_ver = PLR_VERSION_INVALID;
 }
 
 bool pilotfile::load_player(const char* callsign, player* _p, bool force_binary)
@@ -929,9 +1009,9 @@ bool pilotfile::load_player(const char* callsign, player* _p, bool force_binary)
 	}
 
 	// version, now used
-	version = handler->readUByte("version");
+	plr_ver = handler->readUByte("version");
 
-	mprintf(("PLR => Loading '%s' with version %d...\n", filename.c_str(), version));
+	mprintf(("PLR => Loading '%s' with version %d...\n", filename.c_str(), plr_ver));
 
 	//true resets everything, false sets up file verify.
 	plr_reset_data(true);
@@ -1021,6 +1101,19 @@ bool pilotfile::load_player(const char* callsign, player* _p, bool force_binary)
 	player_set_squad_bitmap(p, p->m_squad_filename, true);
 
 	hud_squadmsg_save_keys();
+
+	// Flags to signal the main UI the state of the loaded player file
+	// Do these here after player_read_flags() so they don't get trashed!
+	if (plr_ver < 4) {
+		p->save_flags |= PLAYER_FLAGS_PLR_VER_PRE_CONTROLS5;
+	}
+
+	if (plr_ver < PLR_VERSION) {
+		p->flags |= PLAYER_FLAGS_PLR_VER_IS_LOWER;
+
+	} else if (plr_ver > PLR_VERSION) {
+		p->flags |= PLAYER_FLAGS_PLR_VER_IS_HIGHER;
+	}
 
 	mprintf(("PLR => Loading complete!\n"));
 
@@ -1118,7 +1211,7 @@ bool pilotfile::save_player(player *_p)
 	return true;
 }
 
-bool pilotfile::verify(const char *fname, int *rank, char *valid_language)
+bool pilotfile::verify(const char *fname, int *rank, char *valid_language, int* flags)
 {
 	player t_plr;
 
@@ -1156,9 +1249,9 @@ bool pilotfile::verify(const char *fname, int *rank, char *valid_language)
 	}
 
 	// version, now used
-	version = handler->readUByte("version");
+	plr_ver = handler->readUByte("version");
 
-	mprintf(("PLR => Verifying '%s' with version %d...\n", filename.c_str(), version));
+	mprintf(("PLR => Verifying '%s' with version %d...\n", filename.c_str(), plr_ver));
 
 	// true resets everything, false sets up file verify.
 	plr_reset_data(false);
@@ -1204,12 +1297,31 @@ bool pilotfile::verify(const char *fname, int *rank, char *valid_language)
 	}
 	handler->endSectionRead();
 
+	// Flags to signal the main UI the state of the loaded player file
+	// Do these here after player_read_flags() so they don't get trashed!
+	if (plr_ver < 4) {
+		p->save_flags |= PLAYER_FLAGS_PLR_VER_PRE_CONTROLS5;
+	}
+
+	if (plr_ver < PLR_VERSION) {
+		p->flags |= PLAYER_FLAGS_PLR_VER_IS_LOWER;
+
+	} else if (plr_ver > PLR_VERSION) {
+		p->flags |= PLAYER_FLAGS_PLR_VER_IS_HIGHER;
+	}
+
 	if (valid_language) {
 		strcpy(valid_language, p->language);
 	}
 
 	// need to cleanup early to ensure everything is OK for use in the CSG next
 	// also means we can't use *p from now on, use t_plr instead for a few vars
+
+	// Save any player flags, if caller wants them
+	if (flags != nullptr) {
+		*flags = p->flags;
+	}
+
 	plr_close();
 
 	if (rank) {

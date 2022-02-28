@@ -90,7 +90,7 @@ Category RenderMainFrame("Render frame", true);
 Category RenderHUD("Render HUD", true);
 Category RenderHUDHook("Render HUD Scripting Hook", true);
 Category RenderHUDGauge("Render HUD Gauge", true);
-Category RenderTargettingBracket("Render Target bracket", true);
+Category RenderTargetingBracket("Render Target bracket", true);
 Category RenderNavBracket("Render Nav bracket", true);
 Category MainFrame("Main Frame", true);
 Category PageFlip("Page flip", true);

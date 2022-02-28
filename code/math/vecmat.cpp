@@ -10,6 +10,7 @@
 
 
 #include <cstdio>
+#include <numeric>
 #if _M_IX86_FP >= 1
 	#include <xmmintrin.h>
 #endif
@@ -862,29 +863,6 @@ matrix *vm_copy_transpose(matrix *dest, const matrix *src)
 	return dest;
 }
 
-inline vec3d operator*(const matrix& A, const vec3d& v) {
-	vec3d out;
-
-	out.xyz.x = vm_vec_dot(&A.vec.rvec, &v);
-	out.xyz.y = vm_vec_dot(&A.vec.uvec, &v);
-	out.xyz.z = vm_vec_dot(&A.vec.fvec, &v);
-
-	return out;
-}
-
-inline matrix operator*(const matrix& A, const matrix& B) {
-	matrix BT, out;
-
-	// we transpose B here for concision and also potential vectorisation opportunities
-	vm_copy_transpose(&BT, &B);
-
-	out.vec.rvec = BT * A.vec.rvec;
-	out.vec.uvec = BT * A.vec.uvec;
-	out.vec.fvec = BT * A.vec.fvec;
-
-	return out;
-}
-
 // Old matrix multiplication routine. Note that the order of multiplication is inverted
 // compared to the mathematical standard: formally, this calculates src1 * src0
 matrix *vm_matrix_x_matrix(matrix *dest, const matrix *src0, const matrix *src1)
@@ -1585,6 +1563,88 @@ void vm_matrix_to_rot_axis_and_angle(const matrix *m, float *theta, vec3d *rot_a
 	}
 }
 
+// Given a rotation axis, calculates the angle that results in the rotation closest to the given matrix m.
+// If the axis is equal or very close to the orientation of the matrix, returns false and an angle of 0
+float vm_closest_angle_to_matrix(const matrix* mat, const vec3d* rot_axis, float* angle){
+	// The relative rotation between m and the target rotation r (made from axis a and angle x) is m^T.r
+	// The resulting angle between those, as shown by http://www.boris-belousov.net/2016/12/01/quat-dist/ is arccos((tr(m^T.r)-1) / 2)
+
+	// tr(m^T.r) simplifies to the following:
+	// tr = m[0]+m[4]+m[8] - 2( m[0]*(a[1]^2+a[2]^2) + m[4]*(a[0]^2+a[2]^2) + m[8]*(a[0]^2+a[1]^2) -
+	//                          a[0]*a[1]*(m[1]+m[3]) - a[0]*a[2]*(m[2]+m[6]) - a[1]*a[2]*(m[5]+m[7])) * sin(1/2 * x)^2
+	//					   + (a[0]*(m[5]-m[7]) + a[1]*(-m[2]+m[6]) + a[2]*(m[1]-m[3])) * sin(x)
+
+	// The factor before the sine squared will be calculated as y, the factor before the sine as z, the summand as w:
+
+	const auto& m = mat->a1d;
+	const auto& a = rot_axis->a1d;
+
+	const float w = m[0]+m[4]+m[8];
+	const float y = -2 * ( m[0]*(a[1]*a[1]+a[2]*a[2]) + m[4]*(a[0]*a[0]+a[2]*a[2]) + m[8]*(a[0]*a[0]+a[1]*a[1]) -
+			      a[0]*a[1]*(m[1]+m[3]) - a[0]*a[2]*(m[2]+m[6]) - a[1]*a[2]*(m[5]+m[7]));
+	const float z = (a[0]*(m[5]-m[7]) + a[1]*(-m[2]+m[6]) + a[2]*(m[1]-m[3]));
+
+	// If both y and z are close to 0, then the rotation axis points in the same direction as the matrix, thus any orientation r would be perpendicular to m
+	// If y or z is 0, the rest of the math simplifies
+	const float ay = fabs(y);
+	const float az = fabs(z);
+	if(ay < 0.001f && az < 0.001f){
+		*angle = 0.0f;
+		return PI_2;
+	}
+	else if(ay < 0.001f) {
+		*angle = copysignf(PI_2, z);
+		
+		return acosf_safe((w + az - 1.0f) * 0.5f);
+	}
+	
+	// arccos((x-1)/2) is then minimal, when x between -1 and 3 approaches 3
+	// Thus we are looking for the maximum of a term in the form of f(x)=w+y*sin(x/2)^2+z*sin(x)
+	// This maximum can be on one of the four solutions of f'(x)=0, not counting periodic repetitions
+
+	std::array<float,4> solutions;
+
+	if(az < 0.001f) {
+		solutions = {PI, PI2, PI + PI2, 2.0f * PI2};
+	}
+	else {
+		const float sr = sqrtf(y * y * y * y + 4 * y * y * z * z);
+		const float sr_neg = sqrtf(1 - (sr / (y * y + 4 * z * z)));
+		const float sr_pos = sqrtf(1 + (sr / (y * y + 4 * z * z)));
+
+		//If we support IEEE float handling, we don't need this, the div by 0 will be handled correctly with the INF. If not, do this:
+		const float yz_recip = (!std::numeric_limits<float>::is_iec559 && y * z < 0.001f) ? FLT_MAX : 1.0f / (y * z);
+
+		solutions = { 2 * atan2_safe(-sr_neg * (y * y + sr) * yz_recip, -2 * sr_neg),
+					  2 * atan2_safe(sr_neg * (y * y + sr) * yz_recip, 2 * sr_neg),
+					  2 * atan2_safe(-sr_pos * (y * y - sr) * yz_recip, -2 * sr_pos),
+					  2 * atan2_safe(sr_pos * (y * y - sr) * yz_recip, 2 * sr_pos) };
+	}
+	float value = -2.0f;
+	float correct = 0;
+	//For whichever of these, w+y*sin(x/2)^2+z*sin(x) is closest to 3 / larger (since the result is between -1 and 3) is our target angle
+	for(float solution : solutions){
+		float currentVal = w + y * sinf(solution * 0.5f) * sinf(solution * 0.5f) + z * sinf(solution);
+		if(currentVal > value){
+			value = currentVal;
+			correct = solution;
+		}
+	}
+
+	Assertion(value > -1.5f, "Did not find solution for closest angle & axis to matrix.");
+
+	// Convert to 0 to 2Pi
+	while (correct < 0.0f)
+		correct += PI2;
+
+	while (correct > PI2)
+		correct -= PI2;
+
+	*angle = correct;
+	return acosf_safe((value - 1.0f) * 0.5f);
+}
+
+
 // --------------------------------------------------------------------------------------
 
 
@@ -2228,23 +2288,36 @@ void vm_vec_random_in_circle(vec3d *out, const vec3d *in, const matrix *orient, 
 	vm_rot_point_around_line(out, &temp, fl_radians(frand_range(0.0f, 360.0f)), in, &orient->vec.fvec);
 }
 
+void vm_vec_unit_sphere_point(vec3d *out, float z_scale, float phi_scale)
+{
+	const auto z = (z_scale * 2.0f) - 1.0f; // convert range to [-1,1]
+	const auto phi = phi_scale * PI2;
+	const auto rho = sqrtf(1.0f - z * z);
+	vm_vec_make(out, rho * cosf(phi), rho * sinf(phi), z); // Using the z-vec as the starting point
+}
+
 // given a start vector and a radius, generate a point in a spherical volume
 // if on_surface is true, the point will be on the surface of the sphere
+namespace {
+	util::UniformFloatRange float_range(0.0f, 1.0f);
+}
 void vm_vec_random_in_sphere(vec3d *out, const vec3d *in, float radius, bool on_surface, bool bias_towards_center)
 {
 	vec3d temp;
 
-	float z = util::UniformFloatRange(-1, 1).next(); // Take a 2-sphere slice
-	float phi = util::UniformFloatRange(0.0f, PI2).next();
-	vm_vec_make(&temp, sqrtf(1.0f - z * z) * cosf(phi), sqrtf(1.0f - z * z) * sinf(phi), z); // Using the z-vec as the starting point
+	vm_vec_unit_sphere_point(&temp, float_range.next(), float_range.next());
 
-	float scalar = util::UniformFloatRange(0.0f, 1.0f).next();
+	float scalar = 1.0f;
 
-	// cube root because scaling inward increases the probability density by the cube of its proximity towards the center
-	if (!bias_towards_center)
-		scalar = powf(scalar, 0.333f);
+	if (!on_surface) {
+		scalar = float_range.next();
 
-	vm_vec_scale_add(out, in, &temp, on_surface ? radius : scalar * radius);
+		// cube root because scaling inward increases the probability density by the cube of its proximity towards the center
+		if (!bias_towards_center)
+			scalar = powf(scalar, 0.333f);
+	}
+
+	vm_vec_scale_add(out, in, &temp, scalar * radius);
 }
 
 // find the nearest point on the line to p. if dist is non-NULL, it is filled in

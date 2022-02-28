@@ -2445,7 +2445,6 @@ int CFREDView::global_error_check()
 	int bs, i, j, n, s, t, z, ai, count, ship, wing, obj, team, point, multi;
 	object *ptr;
 	brief_stage *sp;
-	int starting_orders;
 
 	g_err = multi = 0;
 	if ( The_mission.game_type & MISSION_TYPE_MULTI )
@@ -2992,9 +2991,10 @@ int CFREDView::global_error_check()
 
 	// for all wings, be sure that the orders accepted for all ships are the same for all ships
 	// in the wing
-	starting_orders = -1;
+	//std::set<size_t> starting_orders { std::numeric_limits<size_t>::max() };
 	for (i=0; i<MAX_WINGS; i++) {
-		int default_orders, starting_wing;
+		int starting_wing;
+		std::set<size_t> default_orders;
 
 		if ( !Wings[i].wave_count ){
 			continue;
@@ -3009,10 +3009,9 @@ int CFREDView::global_error_check()
 // Goober5000				return 1;
 			}
 		}
-
-		default_orders = 0;
+		
 		for ( j = 0; j < Wings[i].wave_count; j++ ) {
-			int orders;
+			std::set<size_t> orders;
 
 			orders = Ships[Wings[i].ship_index[j]].orders_accepted;
 			if ( j == 0 ) {
@@ -3045,6 +3044,15 @@ int CFREDView::global_error_check()
 	if (Num_jump_nodes < 0){
 		return internal_error("Jump node count is illegal");
 	}*/
+
+	// do error checking for asteroid targets
+	for (const auto& target_ship : Asteroid_target_ships) {
+		if (ship_name_lookup(target_ship.c_str(), 1) < 0) {
+			if (error("Asteroid target '%s' is not a valid ship", target_ship.c_str())) {
+				return 1;
+			}
+		}
+	}
 
 	fred_check_message_personas();
 
@@ -3379,7 +3387,7 @@ int CFREDView::fred_check_sexp(int sexp, int type, const char *msg, ...)
 
 	convert_sexp_to_string(sexp_buf, sexp, SEXP_ERROR_CHECK_MODE);
 	truncate_message_lines(sexp_buf, 30);
-	sprintf(error_buf, "Error in %s: %s\n\nIn sexpression: %s\n\n(Error appears to be: %s)", buf.c_str(), sexp_error_message(z), sexp_buf.c_str(), Sexp_nodes[faulty_node].text);
+	sprintf(error_buf, "Error in %s: %s\n\nIn sexpression: %s\n\n(Bad node appears to be: %s)", buf.c_str(), sexp_error_message(z), sexp_buf.c_str(), Sexp_nodes[faulty_node].text);
 
 	if (z < 0 && z > -100)
 		err = 1;

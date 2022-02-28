@@ -146,11 +146,6 @@ int create_ship(matrix *orient, vec3d *pos, int ship_type);
 int query_ship_name_duplicate(int ship);
 char *reg_read_string( char *section, char *name, char *default_value );
 
-extern int Nmodel_num;
-extern int Nmodel_instance_num;
-extern matrix Nmodel_orient;
-extern int Nmodel_bitmap;
-
 void string_copy(char *dest, const CString &src, size_t max_len, int modify)
 {
 	if (modify)
@@ -408,6 +403,8 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	
 	gamesnd_parse_soundstbl();		// needs to be loaded after species stuff but before interface/weapon/ship stuff - taylor
 	mission_brief_common_init();	
+
+	animation::ModelAnimationParseHelper::parseTables();
 	obj_init();
 	model_free_all();				// Free all existing models
 	ai_init();
@@ -551,9 +548,6 @@ int create_ship(matrix *orient, vec3d *pos, int ship_type)
 	if (query_ship_name_duplicate(Objects[obj].instance))
 		fix_ship_name(Objects[obj].instance);
 
-	// set up model stuff - only needs to be done once, not every frame
-	model_set_up_techroom_instance(sip, shipp->model_instance_num);
-
 	// default stuff according to species and IFF
 	shipp->team = Species_info[Ship_info[shipp->ship_info_index].species].default_iff;
 	resolve_parse_flags(&Objects[obj], Iff_info[shipp->team].default_parse_flags);
@@ -588,12 +582,16 @@ int create_ship(matrix *orient, vec3d *pos, int ship_type)
 			if (!(sip->is_small_ship()))
 			{
 				shipp->orders_accepted = ship_get_default_orders_accepted( sip );
-				shipp->orders_accepted &= ~DEPART_ITEM;
+
+				for(size_t i = 0; i < Player_orders.size(); i++) {
+					if (Player_orders[i].id & DEPART_ITEM)
+						shipp->orders_accepted.erase(i);
+				}
 			}
 		}
 		else
 		{
-			shipp->orders_accepted = 0;
+			shipp->orders_accepted.clear();
 		}
 	}
 	
@@ -848,6 +846,7 @@ void clear_mission()
 
 	strcpy_s(Mission_parse_storm_name, "none");
 
+	animation::ModelAnimationParseHelper::parseTables();
 	obj_init();
 	model_free_all();				// Free all existing models
 	ai_init();

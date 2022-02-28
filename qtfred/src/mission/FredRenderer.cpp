@@ -142,12 +142,19 @@ void draw_asteroid_field() {
 	}
 }
 
-void fredhtl_render_subsystem_bounding_box(subsys_to_render* s2r) {
+void fredhtl_render_subsystem_bounding_box(subsys_to_render *s2r)
+{
 	vertex text_center;
-	polymodel* pm = model_get(Ship_info[Ships[s2r->ship_obj->instance].ship_info_index].model_num);
-	int subobj_num = s2r->cur_subsys->system_info->subobj_num;
-	bsp_info* bsp = &pm->submodel[subobj_num];
-	char buf[256];
+	SCP_string buf;
+
+	auto objp = s2r->ship_obj;
+	auto ss = s2r->cur_subsys;
+
+	auto pmi = model_get_instance(Ships[objp->instance].model_instance_num);
+	auto pm = model_get(pmi->model_num);
+	int subobj_num = ss->system_info->subobj_num;
+
+	auto bsp = &pm->submodel[subobj_num];
 
 	vec3d front_top_left = bsp->bounding_box[7];
 	vec3d front_top_right = bsp->bounding_box[6];
@@ -162,9 +169,19 @@ void fredhtl_render_subsystem_bounding_box(subsys_to_render* s2r) {
 
 	enable_htl();
 
+	// get into the frame of reference of the submodel
+	int g3_count = 1;
+	g3_start_instance_matrix(&objp->pos, &objp->orient, true);
+	int mn = subobj_num;
+	while ((mn >= 0) && (pm->submodel[mn].parent >= 0))
+	{
+		g3_start_instance_matrix(&pm->submodel[mn].offset, &pmi->submodel[mn].canonical_orient, true);
+		g3_count++;
+		mn = pm->submodel[mn].parent;
+	}
+
+
 	//draw a cube around the subsystem
-	g3_start_instance_matrix(&s2r->ship_obj->pos, &s2r->ship_obj->orient, true);
-	g3_start_instance_matrix(&bsp->offset, &vmd_identity_matrix, true);
 	g3_draw_htl_line(&front_top_left, &front_top_right);
 	g3_draw_htl_line(&front_top_right, &front_bot_right);
 	g3_draw_htl_line(&front_bot_right, &front_bot_left);
@@ -182,9 +199,9 @@ void fredhtl_render_subsystem_bounding_box(subsys_to_render* s2r) {
 
 
 	//draw another cube around a gun for a two-part turret
-	if ((s2r->cur_subsys->system_info->turret_gun_sobj >= 0)
-		&& (s2r->cur_subsys->system_info->turret_gun_sobj != s2r->cur_subsys->system_info->subobj_num)) {
-		bsp_info* bsp_turret = &pm->submodel[s2r->cur_subsys->system_info->turret_gun_sobj];
+	if ((ss->system_info->turret_gun_sobj >= 0) && (ss->system_info->turret_gun_sobj != ss->system_info->subobj_num))
+	{
+		bsp_info *bsp_turret = &pm->submodel[ss->system_info->turret_gun_sobj];
 
 		front_top_left = bsp_turret->bounding_box[7];
 		front_top_right = bsp_turret->bounding_box[6];
@@ -195,7 +212,7 @@ void fredhtl_render_subsystem_bounding_box(subsys_to_render* s2r) {
 		back_bot_left = bsp_turret->bounding_box[0];
 		back_bot_right = bsp_turret->bounding_box[1];
 
-		g3_start_instance_matrix(&bsp_turret->offset, &vmd_identity_matrix, true);
+		g3_start_instance_matrix(&bsp_turret->offset, &pmi->submodel[ss->system_info->turret_gun_sobj].canonical_orient, true);
 
 		g3_draw_htl_line(&front_top_left, &front_top_right);
 		g3_draw_htl_line(&front_top_right, &front_bot_right);
@@ -215,42 +232,42 @@ void fredhtl_render_subsystem_bounding_box(subsys_to_render* s2r) {
 		g3_done_instance(true);
 	}
 
-	g3_done_instance(true);
-	g3_done_instance(true);
+	for (int i = 0; i < g3_count; i++)
+		g3_done_instance(true);
 
 	disable_htl();
 
 	// get text
-	strcpy_s(buf, s2r->cur_subsys->system_info->subobj_name);
+	buf = ss->system_info->subobj_name;
 
 	// add weapons if present
-	for (int i = 0; i < s2r->cur_subsys->weapons.num_primary_banks; ++i)
+	for (int i = 0; i < ss->weapons.num_primary_banks; ++i)
 	{
-		int wi = s2r->cur_subsys->weapons.primary_bank_weapons[i];
+		int wi = ss->weapons.primary_bank_weapons[i];
 		if (wi >= 0)
 		{
-			strcat_s(buf, "\n");
-			strcat_s(buf, Weapon_info[wi].name);
+			buf += "\n";
+			buf += Weapon_info[wi].name;
 		}
 	}
-	for (int i = 0; i < s2r->cur_subsys->weapons.num_secondary_banks; ++i)
+	for (int i = 0; i < ss->weapons.num_secondary_banks; ++i)
 	{
-		int wi = s2r->cur_subsys->weapons.secondary_bank_weapons[i];
+		int wi = ss->weapons.secondary_bank_weapons[i];
 		if (wi >= 0)
 		{
-			strcat_s(buf, "\n");
-			strcat_s(buf, Weapon_info[wi].name);
+			buf += "\n";
+			buf += Weapon_info[wi].name;
 		}
 	}
 
 	//draw the text.  rotate the center of the subsystem into place before finding out where to put the text
 	vec3d center_pt;
-	vm_vec_unrotate(&center_pt, &bsp->offset, &s2r->ship_obj->orient);
-	vm_vec_add2(&center_pt, &s2r->ship_obj->pos);
+	vm_vec_unrotate(&center_pt, &bsp->offset, &objp->orient);
+	vm_vec_add2(&center_pt, &objp->pos);
 	g3_rotate_vertex(&text_center, &center_pt);
 	g3_project_vertex(&text_center);
 	gr_set_color_fast(&colour_white);
-	gr_string((int) text_center.screen.xyw.x, (int) text_center.screen.xyw.y, buf);
+	gr_string( (int)text_center.screen.xyw.x,  (int)text_center.screen.xyw.y, buf.c_str() );
 }
 
 void render_active_rect(bool box_marking, const Marking_box& marking_box) {
@@ -840,7 +857,6 @@ void FredRenderer::render_one_model_htl(object* objp,
 
 		if (!view().Lighting_on) {
 			j |= MR_NO_LIGHTING;
-			gr_set_lighting(false, false);
 		}
 
 		if (view().FullDetail) {

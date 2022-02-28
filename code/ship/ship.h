@@ -34,6 +34,7 @@
 #include "ai/ai.h"
 
 #include <string>
+#include <set>
 #include <particle/ParticleManager.h>
 
 class object;
@@ -420,7 +421,6 @@ public:
 
 	//scaler for setting adjusted turret rof
 	float	rof_scaler;
-	float	turn_rate;
 
 	//Per-turret ownage settings - SUSHI
 	int turret_max_bomb_ownage; 
@@ -448,13 +448,13 @@ typedef struct ship_flag_name {
 	char flag_name[TOKEN_LENGTH];		// the name written to the mission file for its corresponding parse_object flag
 } ship_flag_name;
 
-#define MAX_SHIP_FLAG_NAMES					20
+#define MAX_SHIP_FLAG_NAMES					21
 extern ship_flag_name Ship_flag_names[];
 
 #define DEFAULT_SHIP_PRIMITIVE_SENSOR_RANGE		10000	// Goober5000
 
 #define MAX_DAMAGE_SLOTS	32
-#define MAX_SHIP_ARCS		2		// How many "arcs" can be active at once... Must be less than MAX_ARC_EFFECTS in model.h. 
+#define MAX_SHIP_ARCS		5		// How many "arcs" can be active at once... Must be less than MAX_ARC_EFFECTS in model.h. 
 #define NUM_SUB_EXPL_HANDLES	2	// How many different big ship sub explosion sounds can be played.
 
 #define MAX_SHIP_CONTRAILS		24
@@ -602,7 +602,7 @@ public:
 	int	departure_delay;		// time in seconds after sexp is true that we delay.
 
 	int	wingnum;								// wing number this ship is in.  -1 if in no wing, Wing array index otherwise
-	int	orders_accepted;					// set of orders this ship will accept from the player.
+	std::set<size_t> orders_accepted;					// set of orders this ship will accept from the player.
 
 	// Subsystem fields.  The subsys_list is a list of all subsystems (which might include multiple types
 	// of a particular subsystem, like engines).  The subsys_info struct is information for particular
@@ -692,7 +692,8 @@ public:
 	vec3d	arc_pts[MAX_SHIP_ARCS][2];			// The endpoints of each arc
 	int		arc_timestamp[MAX_SHIP_ARCS];		// When this times out, the spark goes away.  -1 is not used
 	ubyte		arc_type[MAX_SHIP_ARCS];			// see MARC_TYPE_* defines in model.h
-	int		arc_next_time;							// When the next arc will be created.	
+	int		arc_next_time;							// When the next damage/emp arc will be created.	
+	SCP_vector<int>		passive_arc_next_times;		// When the next passive ship arc will be created.	
 
 	// emp missile stuff
 	float emp_intensity;								// <= 0.0f if no emp effect present
@@ -902,6 +903,14 @@ extern const ship_registry_entry *ship_registry_get(const char *name);
 #define REGULAR_WEAPON	(1<<0)
 #define DOGFIGHT_WEAPON (1<<1)
 
+typedef struct ship_passive_arc_info {
+	std::pair<int, int> submodels;
+	std::pair<SCP_string, SCP_string> submodel_strings; // the string names from parsing, to be looked up and used to fill the above later when the model is ready
+	std::pair<vec3d, vec3d> pos;
+	float duration;
+	float frequency;
+} ship_lightning_data;
+
 typedef struct thruster_particles {
 	generic_anim thruster_bitmap;
 	float		min_rad;
@@ -939,7 +948,7 @@ typedef struct ship_type_info {
 
 	//AI
 	int	ai_valid_goals;
-	int ai_player_orders;
+	std::set<size_t> ai_player_orders;
 	int ai_active_dock;
 	int ai_passive_dock;
 	SCP_vector<int> ai_actively_pursues;
@@ -959,7 +968,7 @@ typedef struct ship_type_info {
 		: debris_max_speed( 0.f ),
 		  ff_multiplier( 0.f ), emp_multiplier( 0.f ),
 		  fog_start_dist( 0.f ), fog_complete_dist( 0.f ),
-		  ai_valid_goals( 0 ), ai_player_orders( 0 ), ai_active_dock( 0 ), ai_passive_dock( 0 ),
+		  ai_valid_goals( 0 ), ai_active_dock( 0 ), ai_passive_dock( 0 ),
 		  vaporize_chance( 0.f )
 
 	{
@@ -1048,6 +1057,7 @@ typedef struct ship_collision_physics {
 
 typedef struct path_metadata {
 	vec3d departure_rvec;
+	vec3d arrival_rvec;
 	float arrive_speed_mult;
 	float depart_speed_mult;
 } path_metadata;
@@ -1282,6 +1292,8 @@ public:
 	int	scan_time;							// time to scan this ship (in ms)
 	float scan_range_normal;                // this ship can scan other normal/small ships at this range
 	float scan_range_capital;               // this ship can scan other capital/large ships at this range
+	float scanning_time_multiplier;			// when this ship is doing the scanning, the factor to apply to scan time
+	float scanning_range_multiplier;		// ditto for scan range
 
 	float ask_help_shield_percent;
 	float ask_help_hull_percent;
@@ -1396,6 +1408,8 @@ public:
 	SCP_unordered_map<int, void*> glowpoint_bank_override_map;
 
 	animation::ModelAnimationSet animations;
+
+	SCP_vector<ship_passive_arc_info> ship_passive_arcs;
 
 	ship_info();
 	~ship_info();
@@ -1598,14 +1612,14 @@ extern int ship_get_num_ships();
 extern void ship_cleanup(int shipnum, int cleanup_mode);
 
 // Goober5000
-extern void ship_destroy_instantly(object *ship_obj);
+extern void ship_destroy_instantly(object *ship_obj, bool with_debris = false);
 extern void ship_actually_depart(int shipnum, int method = SHIP_DEPARTED_WARP);
 
 extern const std::shared_ptr<scripting::Hook> OnShipDeathStartedHook;
 
 extern bool in_autoaim_fov(ship *shipp, int bank_to_fire, object *obj);
 extern int ship_stop_fire_primary(object * obj);
-extern int ship_fire_primary(object * objp, int stream_weapons, int force = 0, bool rollback_shot = false);
+extern int ship_fire_primary(object * objp, int force = 0, bool rollback_shot = false);
 extern int ship_fire_secondary(object * objp, int allow_swarm = 0, bool rollback_shot = false );
 bool ship_start_secondary_fire(object* objp);
 bool ship_stop_secondary_fire(object* objp);
@@ -1722,7 +1736,7 @@ extern void ship_clear_ship_type_counts();
 extern void ship_add_ship_type_count( int ship_info_index, int num );
 
 extern int ship_get_type(char* output, ship_info* sip);
-extern int ship_get_default_orders_accepted( ship_info *sip );
+extern const std::set<size_t>& ship_get_default_orders_accepted( ship_info *sip );
 extern int ship_query_general_type(int ship);
 extern int ship_class_query_general_type(int ship_class);
 extern int ship_query_general_type(ship *shipp);

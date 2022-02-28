@@ -38,7 +38,6 @@ namespace Weapon {
 		Shudder,							// causes the weapon to shudder. shudder is proportional to the mass and damage of the weapon
 		Mflash,								// has muzzle flash
 		Lockarm,							// if the missile was fired without a lock, it does significanlty less damage on impact
-		Stream,								// handled by "trigger down/trigger up" instead of "fire - wait - fire - wait"
 		Ballistic,							// ballistic primaries - Goober5000
 		Pierce_shields,						// shield pierceing -Bobboau
 		Default_in_tech_database,			// default in tech database - Goober5000
@@ -108,6 +107,7 @@ namespace Weapon {
 		Overridden_homing,          // Homing is overridden by an external source (probably scripting)
 		Multi_homing_update_needed, // this is a newly spawned homing weapon which needs to update client machines
 		Multi_Update_Sent,			// Marks this missile as already being updated once by the server
+		Begun_detonation,			// The engine has set this weapon to detonate momentarily
 
 		NUM_VALUES
 	};

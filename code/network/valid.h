@@ -18,8 +18,8 @@
 //Function prototypes
 
 extern int MissionValidState;
-extern int TableValidState;
 extern int SquadWarValidState;
+extern int DataValidState;
 
 //Call with a valid struct to validate a user
 //Call with NULL to poll
@@ -60,7 +60,11 @@ int ValidateMission(vmt_validate_mission_req_struct *valid_msn);
 // query the usertracker to validate a squad war match
 int ValidateSquadWar(squad_war_request *sw_req, squad_war_response *sw_resp);
 
-// query the usertracker to validate a table
-int ValidateTable(vmt_validate_mission_req_struct *valid_tbl);
+// query the usertracker to validate game data (tables, missions, scripts)
+int ValidateData(const vmt_valid_data_req_struct *vreq);
+
+// for batched validation, returns true if file at idx was valid or not
+// (only when VDR_FLAG_STATUS is set)
+bool IsDataIndexValid(const unsigned int idx);
 
 #endif

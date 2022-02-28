@@ -80,13 +80,6 @@ float Minimum_player_warpout_time = 3.0f;
 #endif
 
 /**
- * @brief Reads and combines the axes from the player's joystick and mouse.
- * @param[out] axis       Pointer to axes array
- * @param[in]  frame_time The frame time when this was called
- */
-void playercontrol_read_stick(int *axis, float frame_time);
-
-/**
  * @brief Slew angles chase towards a value like they're on a spring.
  *
  * @param[in,out] ap The current view angles. Is modified towards target angles.
@@ -151,7 +144,7 @@ void view_modify(angles *ma, angles *da, float max_p, float max_h)
 	float   u = 0;
 
 	// Analog inputs
-	int axis[NUM_JOY_AXIS_ACTIONS];
+	int axis[Action::NUM_VALUES];
 	float h = 0.0f;
 	float p = 0.0f;
 
@@ -223,11 +216,11 @@ void view_modify(angles *ma, angles *da, float max_p, float max_h)
 		t = (check_control_timef(YAW_RIGHT) - check_control_timef(YAW_LEFT));
 		u = (check_control_timef(PITCH_FORWARD) - check_control_timef(PITCH_BACK));
 
-		playercontrol_read_stick(axis, flRealframetime);
+		control_get_axes_readings(axis, flRealframetime);
 
 		// Does the same thing as t and u but for the joystick input 
-		h = f2fl(axis[JOY_HEADING_AXIS]);
-		p = -f2fl(axis[JOY_PITCH_AXIS]);
+		h = f2fl(axis[Action::HEADING]);
+		p = -f2fl(axis[Action::PITCH]);
 	}
 
 	// Combine Analog and Digital slew commands
@@ -543,74 +536,10 @@ void player_control_reset_ci( control_info *ci )
 	ci->forward_cruise_percent = oldspeed;
 }
 
-/**
- * @brief Reads the joystick Pitch, Bank, and Heading axes.
- *
- * @param[out] axis       The axis array to store the scaled joystick position. (Must have a size of NUM_JOY_AXIS_ACTIONS)
- * @param[in]  frame_time The frame time at which this function is called.
- *
- * @details This is its own function because we only want to read it at a certain rate, since it takes time.
- */
-void playercontrol_read_stick(int *axis, float frame_time)
-{
-	int i;
-
-	// Read the stick
-	control_get_axes_readings(&axis[0], &axis[1], &axis[2], &axis[3], &axis[4]);
-
-	if (Use_mouse_to_fly) {
-		int dx, dy, dz;
-		float factor;
-
-		factor = (float) Mouse_sensitivity + 1.77f;
-		factor = factor * factor / frame_time / 0.6f;
-
-		mouse_get_delta(&dx, &dy, &dz);
-		int x_axis, y_axis, z_axis;
-		x_axis = y_axis = z_axis = -1;
-
-		for (i = 0; i < NUM_JOY_AXIS_ACTIONS; i++) {
-			switch(Axis_map_to[i])
-			{
-			case JOY_X_AXIS:
-				x_axis = i;
-				break;
-			case JOY_Y_AXIS:
-				y_axis = i;
-				break;
-			case JOY_Z_AXIS:
-				z_axis = i;
-				break;
-			}
-		}
-
-		if (x_axis >= 0) {
-			if (Invert_axis[x_axis]) {
-				dx = -dx;
-			}
-			axis[x_axis] += (int) ((float) dx * factor);
-		}
-
-		if (y_axis >= 0) {
-			if (Invert_axis[y_axis]) {
-				dy = -dy;
-			}
-			axis[y_axis] += (int) ((float) dy * factor);
-		}
-
-		if (z_axis >= 0) {
-			if (Invert_axis[z_axis]) {
-				dz = -dz;
-			}
-			axis[z_axis] += (int) ((float) dz * factor);
-		}
-	}
-}
-
 void read_keyboard_controls( control_info * ci, float frame_time, physics_info *pi )
 {
 	float kh=0.0f, scaled, newspeed, delta, oldspeed;
-	int axis[NUM_JOY_AXIS_ACTIONS];
+	int axis[Action::NUM_VALUES];
 	static int afterburner_last = 0;
 	static float analog_throttle_last = 9e9f;
 	static int override_analog_throttle = 0; 
@@ -805,41 +734,36 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 		// code to read joystick axis for pitch/heading.  Code to read joystick buttons
 		// for bank.
 		if ( !(Game_mode & GM_DEAD) )	{
-			playercontrol_read_stick(axis, frame_time);
+			control_get_axes_readings(axis, frame_time);
 		} else {
 			axis[0] = axis[1] = axis[2] = axis[3] = axis[4] = 0;
 		}
 
 		if (Viewer_mode & VM_CAMERA_LOCKED) {
 			// Player has control of the ship
-			if (Axis_map_to[JOY_HEADING_AXIS] >= 0) {
-				// check the heading on the x axis
-				if ( check_control(BANK_WHEN_PRESSED) ) {
-					delta = f2fl( axis[JOY_HEADING_AXIS] );
-					if ( (delta > 0.05f) || (delta < -0.05f) ) {
-						ci->bank -= delta;
-					}
-				} else {
-					ci->heading += f2fl( axis[JOY_HEADING_AXIS] );
+			// Set heading
+			if ( check_control(BANK_WHEN_PRESSED) ) {
+				delta = f2fl( axis[Action::HEADING] );
+				if ( (delta > 0.05f) || (delta < -0.05f) ) {
+					ci->bank -= delta;
 				}
+			} else {
+				ci->heading += f2fl( axis[Action::HEADING] );
 			}
-			// check the pitch on the y axis
-			if (Axis_map_to[JOY_PITCH_AXIS] >= 0) {
-				ci->pitch -= f2fl( axis[JOY_PITCH_AXIS] );
-			}
+			// Set pitch
+			ci->pitch -= f2fl( axis[Action::PITCH] );
+
 		} else {
 			// Player has control of the camera
 			ci->pitch = 0.0f;
 			ci->heading = 0.0f;
 		}
 
-		if (Axis_map_to[JOY_BANK_AXIS] >= 0) {
-			ci->bank -= f2fl( axis[JOY_BANK_AXIS] ) * 1.5f;
-		}
+		// Set bank
+		ci->bank -= f2fl( axis[Action::BANK] ) * 1.5f;
 
-		// axis 2 is for throttle
-		if (Axis_map_to[JOY_ABS_THROTTLE_AXIS] >= 0) {
-			scaled = (float) axis[JOY_ABS_THROTTLE_AXIS] * 1.2f / (float) F1_0 - 0.1f;  // convert to -0.1 - 1.1 range
+		if (!Control_config[JOY_ABS_THROTTLE_AXIS].empty()) {
+			scaled = (float) axis[Action::ABS_THROTTLE] * 1.2f / (float) F1_0 - 0.1f;  // convert to -0.1 - 1.1 range
 			oldspeed = ci->forward_cruise_percent;
 
 			newspeed = (1.0f - scaled) * 100.0f;
@@ -852,8 +776,8 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 			}
 		}
 
-		if (Axis_map_to[JOY_REL_THROTTLE_AXIS] >= 0)
-			ci->forward_cruise_percent += f2fl(axis[JOY_REL_THROTTLE_AXIS]) * 100.0f * frame_time;
+		if (!Control_config[JOY_REL_THROTTLE_AXIS].empty())
+			ci->forward_cruise_percent += f2fl(axis[Action::REL_THROTTLE]) * 100.0f * frame_time;
 
 		CLAMP(ci->forward_cruise_percent, 0, 100);
 
@@ -1649,7 +1573,10 @@ int player_inspect_cargo(float frametime, char *outstr)
 
 	// see if player is within inspection range
 	ship_info* player_sip = &Ship_info[Player_ship->ship_info_index];
-	if ( Player_ai->current_target_distance < MAX(player_sip->scan_range_normal, (cargo_objp->radius + player_sip->scan_range_normal - CARGO_RADIUS_REAL_DELTA)) ) {
+	float scan_dist = MAX(player_sip->scan_range_normal, (cargo_objp->radius + player_sip->scan_range_normal - CARGO_RADIUS_REAL_DELTA));
+	scan_dist *= player_sip->scanning_range_multiplier;
+
+	if ( Player_ai->current_target_distance < scan_dist ) {
 
 		// check if player is facing cargo, do not proceed with inspection if not
 		vm_vec_normalized_dir(&vec_to_cargo, &cargo_objp->pos, &Player_obj->pos);
@@ -1674,7 +1601,10 @@ int player_inspect_cargo(float frametime, char *outstr)
 		else
 			strcpy(outstr,XSTR( "scanning", 89));
 
-		if ( Player->cargo_inspect_time > cargo_sip->scan_time ) {
+		float scan_time = i2fl(cargo_sip->scan_time);
+		scan_time *= player_sip->scanning_time_multiplier;
+
+		if ( Player->cargo_inspect_time > scan_time ) {
 			ship_do_cargo_revealed( cargo_sp );
 			snd_play( gamesnd_get_game_sound(GameSounds::CARGO_REVEAL), 0.0f );
 			Player->cargo_inspect_time = 0;
@@ -1756,9 +1686,9 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 	} else {
 		scan_dist = MAX(player_sip->scan_range_normal, (subsys_rad + player_sip->scan_range_normal - CARGO_RADIUS_REAL_DELTA));
 	}
+	scan_dist *= player_sip->scanning_range_multiplier;
 
 	if ( Player_ai->current_target_distance < scan_dist ) {
-
 		// check if player is facing cargo, do not proceed with inspection if not
 		vm_vec_normalized_dir(&vec_to_cargo, &subsys_pos, &Player_obj->pos);
 		dot = vm_vec_dot(&vec_to_cargo, &Player_obj->orient.vec.fvec);
@@ -1785,7 +1715,14 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 		else
 			strcpy(outstr,XSTR( "scanning", 89));
 
-		if ( Player->cargo_inspect_time > cargo_sip->scan_time ) {
+		float scan_time;
+		if (subsys->system_info->scan_time > 0)
+			scan_time = i2fl(subsys->system_info->scan_time);
+		else
+			scan_time = i2fl(cargo_sip->scan_time);
+		scan_time *= player_sip->scanning_time_multiplier;
+
+		if ( Player->cargo_inspect_time > scan_time ) {
 			ship_do_cap_subsys_cargo_revealed( cargo_sp, subsys, 0);
 			snd_play( gamesnd_get_game_sound(GameSounds::CARGO_REVEAL), 0.0f );
 			Player->cargo_inspect_time = 0;

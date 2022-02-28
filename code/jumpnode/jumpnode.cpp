@@ -47,13 +47,6 @@ CJumpNode::CJumpNode(const vec3d* position)
 		Warning(LOCATION, "Could not load default model for %s", m_name);
 	} else {
 		m_radius = model_get_radius(m_modelnum);
-
-		// set up animation in case of instrinsic_rotate
-		polymodel* pm = model_get(m_modelnum);
-
-		if (pm->flags & PM_FLAG_HAS_INTRINSIC_ROTATE) {
-			m_polymodel_instance_num = model_create_instance(true, m_modelnum);
-		}
 	}
 	
     m_pos.xyz.x = position->xyz.x;
@@ -64,6 +57,15 @@ CJumpNode::CJumpNode(const vec3d* position)
     flagset<Object::Object_Flags> default_flags;
     default_flags.set(Object::Object_Flags::Renders);
     m_objnum = obj_create(OBJ_JUMP_NODE, -1, -1, NULL, &m_pos, m_radius, default_flags);
+
+	if (m_modelnum >= 0) {
+		// set up animation in case of instrinsic_rotate
+		polymodel* pm = model_get(m_modelnum);
+
+		if (pm->flags & PM_FLAG_HAS_INTRINSIC_MOTION) {
+			m_polymodel_instance_num = model_create_instance(m_objnum, m_modelnum);
+		}
+	}
 }
 
 CJumpNode::CJumpNode(CJumpNode&& other) noexcept

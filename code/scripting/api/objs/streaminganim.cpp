@@ -195,13 +195,13 @@ ADE_FUNC(getWidth, l_streaminganim, nullptr, "Get the width of the animation in 
 	return ade_set_args(L, "i", sah->ga.width);
 }
 
-ADE_FUNC(isValid, l_streaminganim, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
+ADE_FUNC(isValid, l_streaminganim, nullptr, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
 {
 	streaminganim_h* sah;
 	if(!ade_get_args(L, "o", l_streaminganim.GetPtr(&sah)))
 		return ADE_RETURN_NIL;
 
-	return sah->IsValid();
+	return ade_set_args(L, "b", sah->IsValid());
 }
 
 ADE_FUNC(preload, l_streaminganim, NULL, "Load all apng animations into memory, enabling apng frame cache if not already enabled", "boolean", "true if preload was successful, nil if a syntax/type error occurs")

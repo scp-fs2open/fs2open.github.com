@@ -26,15 +26,12 @@
 #define MSW_STATUS_VALID						0
 #define MSW_STATUS_INVALID						1
 
-// tracker table validation status
-#define TVALID_STATUS_UNKNOWN						-1
-#define TVALID_STATUS_VALID						0
-#define TVALID_STATUS_INVALID						1
-
 //struct vmt_freespace2_struct;
 class scoring_struct;
 struct squad_war_request;
 struct squad_war_result;
+struct netgame_info;
+struct multi_create_info;
 
 // channel to associate when creating a server
 extern char Multi_fs_tracker_channel[MAX_PATH];
@@ -45,6 +42,7 @@ extern char Multi_fs_tracker_filter[MAX_PATH];
 // used for mod detection
 extern short Multi_fs_tracker_game_id;
 extern SCP_string Multi_fs_tracker_game_name;
+extern SCP_string Multi_fs_tracker_game_tag;
 
 // -----------------------------------------------------------------------------------
 // FREESPACE MASTER TRACKER DECLARATIONS
@@ -91,6 +89,9 @@ void multi_stats_tracker_to_fs(vmt_stats_struct *vmt, scoring_struct *fs);
 
 // return an MVALID_STATUS_* value, or -2 if the user has "cancelled"
 int multi_fs_tracker_validate_mission(char *filename);
+
+// return true if all missions were checked, false if the user has "cancelled"
+bool multi_fs_tracker_validate_mission_list(SCP_vector<multi_create_info> &file_list);
 
 // return an MSW_STATUS_* value
 int multi_fs_tracker_validate_sw(squad_war_request *sw_req, char *bad_reply, const size_t max_reply_len);

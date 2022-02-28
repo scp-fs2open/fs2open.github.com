@@ -258,7 +258,7 @@ static int Main_hall_paused = 0;
 #define MAIN_HALL_NOTIFY_TIME	3500
 
 // timestamp for the notification messages
-int Main_hall_notify_stamp = -1;
+UI_TIMESTAMP Main_hall_notify_stamp;
 
 // text to display as the current notification message
 char Main_hall_notify_text[300]="";
@@ -566,8 +566,11 @@ void main_hall_init(const SCP_string &main_hall_name)
 				Main_hall_misc_anim.at(idx).direction |= GENERIC_ANIM_DIRECTION_NOLOOP;
 		}
 
-		// null out the delay timestamps
-		Main_hall->misc_anim_delay.at(idx).at(0) = -1;
+		//If we have a defined initial delay for this misc anim, use it
+		if (Main_hall->misc_anim_initial_delay.at(idx) != -1)
+			Main_hall->misc_anim_delay.at(idx).at(0) = timestamp(Main_hall->misc_anim_initial_delay.at(idx));
+		else
+			Main_hall->misc_anim_delay.at(idx).at(0) = -1;
 
 		// start paused
 		Main_hall->misc_anim_paused.at(idx) = true;
@@ -623,7 +626,7 @@ void main_hall_init(const SCP_string &main_hall_name)
 	main_hall_start_music();
 
 	// initialize the main hall notify text
-	Main_hall_notify_stamp = 1;
+	Main_hall_notify_stamp = UI_TIMESTAMP::immediate();
 
 	// initialize the random intercom sound stuff
 	Main_hall_next_intercom_sound = 0;
@@ -1033,6 +1036,9 @@ void main_hall_do(float frametime)
 				break;
 		}
 	}
+
+	// Display a popup if playermenu loaded a player file with a different version than expected
+	player_tips_controls();
 
 	// maybe run the player tips popup
 	player_tips_popup();
@@ -1613,7 +1619,7 @@ void main_hall_handle_random_intercom_sounds()
 void main_hall_set_notify_string(const char *str)
 {
 	strcpy_s(Main_hall_notify_text,str);
-	Main_hall_notify_stamp = timestamp(MAIN_HALL_NOTIFY_TIME);
+	Main_hall_notify_stamp = ui_timestamp(MAIN_HALL_NOTIFY_TIME);
 }
 
 /**
@@ -1622,11 +1628,11 @@ void main_hall_set_notify_string(const char *str)
 void main_hall_notify_do()
 {
 	// check to see if we should try and do something
-	if (Main_hall_notify_stamp != -1) {
+	if (Main_hall_notify_stamp.isValid()) {
 		// if the text time has expired
-		if (timestamp_elapsed(Main_hall_notify_stamp)) {
-			strcpy_s(Main_hall_notify_text,"");
-			Main_hall_notify_stamp = -1;
+		if (ui_timestamp_elapsed(Main_hall_notify_stamp)) {
+			strcpy_s(Main_hall_notify_text, "");
+			Main_hall_notify_stamp = UI_TIMESTAMP::invalid();
 		} else {
 			int w,h;
 
@@ -1964,6 +1970,7 @@ void misc_anim_init(main_hall_defines &m, bool first_time, int base_num)
 		m.misc_anim_special_sounds.clear();
 		m.misc_anim_special_trigger.clear();
 		m.misc_anim_sound_flag.clear();
+		m.misc_anim_initial_delay.clear();
 	}
 
 	for (int idx = base_num; idx < m.num_misc_animations; idx++) {
@@ -1978,6 +1985,9 @@ void misc_anim_init(main_hall_defines &m, bool first_time, int base_num)
 		m.misc_anim_delay.back().push_back(-1);
 		m.misc_anim_delay.back().push_back(0);
 		m.misc_anim_delay.back().push_back(0);
+
+		// set the default initial delay to -1 
+		m.misc_anim_initial_delay.push_back(-1);
 
 		// misc_anim_paused
 		m.misc_anim_paused.push_back(1); // default is paused
@@ -2365,7 +2375,11 @@ void parse_one_main_hall(bool replace, int num_resolutions, int &hall_idx, int &
 		for (int idx = base_num; idx < m->num_misc_animations; idx++) {
 			// anim delay
 			required_string("+Misc anim delay:");
-			stuff_int(&m->misc_anim_delay.at(idx).at(0));
+			stuff_int(&m->misc_anim_initial_delay.at(idx));
+
+			// We set the first value here to -1; if the first delay parameter is set to something that isn't
+			// -1, we will replace it with a proper timestamp while loading up the mainhall for presentation.
+			m->misc_anim_delay.at(idx).at(0) = -1;
 			stuff_int(&m->misc_anim_delay.at(idx).at(1));
 			stuff_int(&m->misc_anim_delay.at(idx).at(2));
 		}

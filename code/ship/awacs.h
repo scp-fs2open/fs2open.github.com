@@ -23,10 +23,6 @@ class ship;
 
 // DAVE'S OFFICIAL DEFINITION OF AWACS
 
-// total awacs levels for all teams
-extern SCP_vector<float> Awacs_team;	// total AWACS capabilities for each team
-extern float Awacs_level;				// Awacs_friendly - Awacs_hostile
-
 // ----------------------------------------------------------------------------------------------------
 // AWACS FUNCTIONS
 //

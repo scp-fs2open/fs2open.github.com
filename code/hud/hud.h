@@ -268,6 +268,10 @@ public:
 	void initCockpitTarget(const char* display_name, int _target_x, int _target_y, int _target_w, int _target_h, int _canvas_w, int _canvas_h);
 	void initRenderStatus(bool render);
 
+	bool isCustom();
+	int getBaseWidth();
+	int getBaseHeight();
+
 	int getConfigType();
 	int getObjectType();
 	void getPosition(int *x, int *y);
@@ -549,7 +553,8 @@ public:
 	void render(float frametime) override;
 };
 
-HudGauge* hud_get_gauge(const char* name);
+HudGauge* hud_get_custom_gauge(const char* name, bool check_all_gauges = false);
+int hud_get_default_gauge_index(const char* name);
 
 extern SCP_vector<std::unique_ptr<HudGauge>> default_hud_gauges;
 

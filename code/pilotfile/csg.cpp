@@ -1,4 +1,6 @@
 
+#include "controlconfig/controlsconfig.h"
+#include "controlconfig/presets.h"
 #include "cutscene/cutscenes.h"
 #include "freespace.h"
 #include "gamesnd/eventmusic.h"
@@ -1209,37 +1211,78 @@ void pilotfile::csg_write_settings()
 
 void pilotfile::csg_read_controls()
 {
-	int idx, list_size;
-	short id1, id2, id3 __UNUSED;
+	if (csg_ver < 7) {
+		// Pre CSG-7 compatibility
+		int idx, list_size;
+		short id1, id2, id3 __UNUSED;
 
-	list_size = (int)cfread_ushort(cfp);
+		list_size = (int)cfread_ushort(cfp);
 
-	for (idx = 0; idx < list_size; idx++) {
-		id1 = cfread_short(cfp);
-		id2 = cfread_short(cfp);
-		id3 = cfread_short(cfp);	// unused, at the moment
+		for (idx = 0; idx < list_size; idx++) {
+			id1 = cfread_short(cfp);
+			id2 = cfread_short(cfp);
+			id3 = cfread_short(cfp);	// unused, at the moment
 
-		if (idx < CCFG_MAX) {
-			Control_config[idx].take(CC_bind(CID_KEYBOARD, id1), 0);
-			Control_config[idx].take(CC_bind(CID_JOY0, id2), 1);
+			if (idx < CCFG_MAX) {
+				Control_config[idx].take(CC_bind(CID_KEYBOARD, id1), 0);
+				Control_config[idx].take(CC_bind(CID_JOY0, id2), 1);
+			}
 		}
+
+		// Check that these bindings are in a preset.
+		// CSG doesn't save invert flags, so use agnostic equals
+		auto it = control_config_get_current_preset(true);
+		if (it == Control_config_presets.end()) {
+			// Not a preset, create one and its file
+			CC_preset preset;
+			preset.name = filename;
+
+			// strip off extension
+			auto n = preset.name.find_last_of('.');
+			preset.name.resize(n);
+
+			std::copy(Control_config.begin(), Control_config.end(), std::back_inserter(preset.bindings));
+			Control_config_presets.push_back(preset);
+			save_preset_file(preset, true);
+		}
+		return;
+	
+	} else {
+		// >= CSG-7
+		char buf[MAX_FILENAME_LEN];
+		memset(buf, '\0', sizeof(buf));
+		cfread_string(buf, sizeof(buf), cfp);
+
+		auto it = std::find_if(Control_config_presets.begin(), Control_config_presets.end(),
+		                       [buf](const CC_preset& preset) { return preset.name == buf; });
+
+		if (it == Control_config_presets.end()) {
+			Assertion(!Control_config_presets.empty(), "[CSG] Error reading CSG! Control_config_presets empty; Get a coder!");
+			// Couldn't find the preset, use defaults
+			it = Control_config_presets.begin();
+		}
+
+		control_config_use_preset(*it);
+		return;
 	}
 }
 
 void pilotfile::csg_write_controls()
 {
-	int idx;
+	auto it = control_config_get_current_preset();
+
+	if (it == Control_config_presets.end()) {
+		// Normally shouldn't happen, may be a new, blank player
+		// First assert that the presets have been initialized and have at least the defaults preset
+		Assertion(!Control_config_presets.empty(), "[CSG] Error saving CSG! Control_config_presets empty; Get a coder!");
+
+		// Next, just bash the current preset to be defaults
+		it = Control_config_presets.begin();
+	}
 
 	startSection(Section::Controls);
 
-	cfwrite_ushort(CCFG_MAX, cfp);
-
-	for (idx = 0; idx < CCFG_MAX; idx++) {
-		cfwrite_short(Control_config[idx].get_btn(CID_KEYBOARD), cfp);
-		cfwrite_short(Control_config[idx].get_btn(CID_JOY0), cfp);
-		// placeholder? for future mouse_id?
-		cfwrite_short(-1, cfp);
-	}
+	cfwrite_string(it->name.c_str(), cfp);
 
 	endSection();
 }
@@ -1491,6 +1534,8 @@ void pilotfile::csg_close()
 
 	m_have_flags = false;
 	m_have_info = false;
+
+	csg_ver = PLR_VERSION_INVALID;
 }
 
 bool pilotfile::load_savefile(player *_p, const char *campaign)
