@@ -1,4 +1,3 @@
-from itertools import groupby
 from typing import List
 
 import requests
@@ -6,40 +5,6 @@ import semantic_version
 from mako.template import Template
 
 from file_list import ReleaseFile
-
-
-class FileGroup:
-    """! Represents a file group
-
-    `name`: str
-        Name of this group
-    `files`: List[ReleaseFile]
-        List of files within this group
-    `mainFile`: str
-        If this FileGroup has a subgroup, `mainFile` is the head of that group
-    `subFiles`: List[ReleaseFile]
-        Files within a subgroup
-    """
-
-    def __init__(self, name, files: List[ReleaseFile]):
-        self.files = files
-        self.name = name
-
-        if len(files) == 1:
-            self.mainFile = files[0]
-            self.subFiles = {}
-        else:
-            self.mainFile = None
-            subFiles = []
-            for file in files:
-                # We only have subcategories for Windows where SSE2 is the main group
-                if file.subgroup == "SSE2":
-                    self.mainFile = file
-                else:
-                    subFiles.append(file)
-
-            self.subFiles = dict(((x[0], next(x[1])) for x in groupby(subFiles, lambda f: f.subgroup)))
-
 
 
 class ForumAPI:

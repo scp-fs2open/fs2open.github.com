@@ -1,5 +1,6 @@
 import re # regex module
 from ftplib import FTP, error_perm
+from itertools import groupby
 from typing import List, Tuple, Dict
 
 import requests  # HTTP requests module
@@ -56,6 +57,39 @@ class SourceFile:
         self.group = group
         self.url = url
         self.name = name
+
+
+class FileGroup:
+    """! Represents a file group
+
+    `name`: str
+        Name of this group
+    `files`: List[ReleaseFile]
+        List of files within this group
+    `mainFile`: str
+        If this FileGroup has a subgroup, `mainFile` is the head of that group
+    `subFiles`: List[ReleaseFile]
+        Files within a subgroup
+    """
+
+    def __init__(self, name, files: List[ReleaseFile]):
+        self.files = files
+        self.name = name
+
+        if len(files) == 1:
+            self.mainFile = files[0]
+            self.subFiles = {}
+        else:
+            self.mainFile = None
+            subFiles = []
+            for file in files:
+                # We only have subcategories for Windows where SSE2 is the main group
+                if file.subgroup == "SSE2":
+                    self.mainFile = file
+                else:
+                    subFiles.append(file)
+
+            self.subFiles = dict(((x[0], next(x[1])) for x in groupby(subFiles, lambda f: f.subgroup)))
 
 
 def get_release_files(tag_name, config) -> Tuple[List[ReleaseFile], Dict[str, SourceFile]]:
@@ -135,7 +169,7 @@ def get_ftp_files(build_type, tag_name, config) -> List[ReleaseFile] :
     @param [in] `tag_name`   Github tag name of the release
     @param [in] `config`     config metadata set in main.py
     """
-    
+
     tag_regex = re.compile("nightly_(.*)")
     build_group_regex = re.compile("nightly_.*-builds-([^.]+).*")
 
