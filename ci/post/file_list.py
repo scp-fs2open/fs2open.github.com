@@ -59,22 +59,31 @@ class SourceFile:
 
 
 def get_release_files(tag_name, config) -> Tuple[List[ReleaseFile], Dict[str, SourceFile]]:
-    """!
-    @brief Brief description
+    """! Brief Gets the binary and source files from the Github Release server
 
     @param[in] `tag_name` Git tag of the current release
-    @param[in] `config`   c
-    @returns List[ReleaseFile]
-    @returns Dict[str, SourceFile]
+    @param[in] `config`   confi metadata set in main.py
 
-    @details More details
+    @returns `List[ReleaseFile]`        List of release files
+    @returns `Dict[str, SourceFile]`    Dictionary of source files
+
+    @details Sends an `HTTP GET` request to github using their REST API to retrieve metadata.  The files are not
+        actually downloaded here, just their metadata is gathered and organized in their respective container for later
+        use.
     """
+
     @retry_multi(5)	# retry at most 5 times
     def execute_request(path):
+        """!
+        @brief Performs a GET request with the given path. To be used with Github's REST API.
+        @returns If successful, returns a .JSON object
+        """
         headers = {
             "Accept": "application/vnd.github.v3+json"
         }
         url = "https://api.github.com" + path
+
+        # GET https://api.github.com/<path> Accept: "application/vnd.github.v3+json"
 
         response = requests.get(url, headers=headers, timeout=GLOBAL_TIMEOUT)
 
@@ -82,12 +91,14 @@ def get_release_files(tag_name, config) -> Tuple[List[ReleaseFile], Dict[str, So
 
         return response.json()
 
-    build_group_regex = re.compile("fs2_open_.*-builds-([^.-]*)(-([^.]*))?.*")
-    source_file_regex = re.compile("fs2_open_.*-source-([^.]*)?.*")
+    build_group_regex = re.compile("fs2_open_.*-builds-([^.-]*)(-([^.]*))?.*")  # regex for matching binary .zip's and .7z's
+    source_file_regex = re.compile("fs2_open_.*-source-([^.]*)?.*") # regex for matching source .zip's and .7z's
 
+    # Get the github release metadata of the given tag name
     response = execute_request(
         "/repos/{}/{}/releases/tags/{}".format(config["github"]["user"], config["github"]["repo"], tag_name))
 
+    # Extract the binary and source files from the response["asset"] metadata
     binary_files = []
     source_files = {}
     for asset in response["assets"]:
@@ -116,29 +127,31 @@ def get_release_files(tag_name, config) -> Tuple[List[ReleaseFile], Dict[str, So
     return binary_files, source_files
 
 
-def get_ftp_files(build_type, tag_name, config):
+def get_ftp_files(build_type, tag_name, config) -> List[ReleaseFile] :
     """!
-    @brief Brief description
+    @brief Gets file metadata for nightlies hosted on FTP, as determined by config["ftp"] attributes
     
-    @param [in] build_type Description for build_type
-    @param [in] tag_name   Description for tag_name
-    @param [in] config     Description for config
-    @return Return description
-
-    @details More details
+    @param [in] `build_type` Unknown
+    @param [in] `tag_name`   Github tag name of the release
+    @param [in] `config`     config metadata set in main.py
     """
+    
     tag_regex = re.compile("nightly_(.*)")
     build_group_regex = re.compile("nightly_.*-builds-([^.]+).*")
 
     files = []
     try:
         with FTP(config["ftp"]["host"], config["ftp"]["user"], config["ftp"]["pass"]) as ftp:
+            # extract version
             version_str = tag_regex.match(tag_name).group(1)
 
+            # extract filepath w/ version
+            # then list all ftp hits with that path
             path_template = config["ftp"]["path"]
             path = path_template.format(type=build_type, version=version_str)
             file_entries = list(ftp.mlsd(path, ["type"]))
 
+            # get all ftp hits of type file
             for entry in file_entries:
                 if entry[1]["type"] == "file":
                     files.append(entry[0])
@@ -148,6 +161,7 @@ def get_ftp_files(build_type, tag_name, config):
 
     out_data = []
     for file in files:
+        # from the file list, extract only nightly files
         file_match = build_group_regex.match(file)
         if file_match is None:
             print("Ignoring non nightly file '{}'".format(file))
@@ -161,6 +175,7 @@ def get_ftp_files(build_type, tag_name, config):
         if "x64" in group_match:
             group_match = group_match.replace("x64", "Win64")
 
+        # construct the download URL list for all mirrors.  The first listed ftp location is taken as the Primary
         for mirror in config["ftp"]["mirrors"]:
             download_url = mirror.format(type=build_type, version=version_str, file=file)
             if primary_url is None:
@@ -168,6 +183,7 @@ def get_ftp_files(build_type, tag_name, config):
             else:
                 mirrors.append(download_url)
 
+        # Form the List[ReleaseFile] list with the download URL links
         out_data.append(ReleaseFile(file, primary_url, group_match, None, mirrors))
 
     return out_data
