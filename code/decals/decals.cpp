@@ -421,9 +421,14 @@ matrix4 getDecalTransform(Decal& decal) {
 								  decal.submodel,
 								  &objp->orient);
 
+	// The decal API sees the "direction" of a decal to be along the normal of the surface it is attached to. However,
+	// this will lead to a situation where we would look at the decal texture "from behind" causing the texture to
+	// appear flipped. We fix that here for the graphics transform.
+	vm_vec_scale(&worldDir, -1.0f);
+
 	vec3d worldUp;
 	model_instance_local_to_global_dir(&worldUp,
-								  &decal.orientation.vec.fvec,
+								  &decal.orientation.vec.uvec,
 								  pm,
 								  pmi,
 								  decal.submodel,

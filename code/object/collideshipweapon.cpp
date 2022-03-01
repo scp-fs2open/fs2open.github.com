@@ -132,8 +132,13 @@ static void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, vec3
 
 	// Add impact decal
 	if (quadrant_num == -1 && wip->impact_decal.definition_handle >= 0) {
+		// Use the weapon orientation to augment the orientation computation. This is a very basic variant where only
+		// the object itself is taken into account
+		vec3d weapon_up;
+		vm_vec_rotate(&weapon_up, &weapon_obj->orient.vec.uvec, &pship_obj->orient);
+
 		matrix decal_orient;
-		vm_vector_2_matrix_norm(&decal_orient, &hit_dir); // hit_dir is already normalized so we can use the more efficient function
+		vm_vector_2_matrix_norm(&decal_orient, &hit_dir, &weapon_up); // hit_dir is already normalized so we can use the more efficient function
 
 		decals::addDecal(wip->impact_decal, pship_obj, submodel_num, *hitpos, decal_orient);
 	}
