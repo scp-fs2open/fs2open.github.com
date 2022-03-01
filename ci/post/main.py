@@ -172,7 +172,6 @@ def main():
 		# split the file list into a dictionary of {group: files} pairs using `groupby()`
 		# Since `groupby()` returns a iterator reference to the original files list, we have to do a weird hand toss
 		# to save it as a dictionary
-		## NOTE z64: Uhhh, FileGroup is in forum.py why did this work???
 		## NOTE z64: files need to be sorted or else key duplication will occur!
 		groups = {key: file_list.FileGroup(key, list(group)) for key, group in groupby(files, lambda g: g.group)}
 
