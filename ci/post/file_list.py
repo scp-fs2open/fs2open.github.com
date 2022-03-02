@@ -165,7 +165,7 @@ def get_ftp_files(build_type, tag_name, config) -> List[ReleaseFile] :
     """!
     @brief Gets file metadata for nightlies hosted on FTP, as determined by config["ftp"] attributes
     
-    @param [in] `build_type` Unknown
+    @param [in] `build_type` Unknown str
     @param [in] `tag_name`   Github tag name of the release
     @param [in] `config`     config metadata set in main.py
     """

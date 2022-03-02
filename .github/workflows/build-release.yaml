@@ -336,3 +336,13 @@ jobs:
           files: |
             ${{ steps.generate_package.outputs.package_path }}
             ${{ steps.generate_package.outputs.debug_path }}
+
+  post:
+    name: Post builds to Nebula and Forum
+    needs: [build_linux, build_windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: scp-fs2open/fs2open.github.com/.github/workflows/post-build.yaml@main
+        with:
+          linux_result: needs.build_linux.result
+          windows_result: needs.build_windows.result
