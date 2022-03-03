@@ -344,3 +344,4 @@ jobs:
     with:
       linux_result: ${{ needs.build_linux.result }}
       windows_result: ${{ needs.build_windows.result }}
+      releaseTag: ${{ github.ref_name }}
