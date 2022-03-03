@@ -29,7 +29,7 @@ env:
   NEBULA_PASSWORD: ${{ secrets.NEBULA_PASSWORD }}
   HLP_API: ${{ secrets.HLP_API }}
   HLP_KEY: ${{ secrets.HLP_KEY }}
-  RELEASE_TAG: ${{ github.events.inputs.releaseTag }}
+  RELEASE_TAG: success # ${{ github.events.inputs.releaseTag }}
 
 jobs:
   post_builds:
@@ -60,5 +60,4 @@ jobs:
         run: |
           echo "releaseTag= ${{ github.events.inputs.releaseTag }}"
           echo "RELEASE_TAG=" $RELEASE_TAG
-          echo "LINUX_RESULT=" $LINUX_RESULT
         #  python ci/post/main.py release
