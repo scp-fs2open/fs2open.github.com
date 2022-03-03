@@ -60,4 +60,5 @@ jobs:
         run: |
           echo "releaseTag= ${{ github.events.inputs.releaseTag }}"
           echo "RELEASE_TAG=" $RELEASE_TAG
+          echo "LINUX_RESULT=" $LINUX_RESULT
         #  python ci/post/main.py release
