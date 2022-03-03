@@ -1901,6 +1901,9 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 
 						cfread(bsp_data, 1, sm->bsp_data_size, fp);
 
+						// byte swap first thing
+						swap_bsp_data(pm, bsp_data);
+
 						auto bsp_data_size_aligned = align_bsp_data(bsp_data, nullptr, sm->bsp_data_size);
 
 						if (bsp_data_size_aligned != static_cast<uint>(sm->bsp_data_size)) {
@@ -1919,8 +1922,6 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 						} else {
 							sm->bsp_data = bsp_data;
 						}
-
-						swap_bsp_data(pm, sm->bsp_data);
 					}
 					else {
 						sm->bsp_data = nullptr;
