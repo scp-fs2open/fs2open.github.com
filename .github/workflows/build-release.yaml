@@ -342,6 +342,6 @@ jobs:
     needs: [build_linux, build_windows]
     runs-on: ubuntu-latest
     uses: ./.github/workflows/post-build-release.yaml
-      with:
-        linux_result: needs.build_linux.result
-        windows_result: needs.build_windows.result
+    with:
+      linux_result: needs.build_linux.result
+      windows_result: needs.build_windows.result
