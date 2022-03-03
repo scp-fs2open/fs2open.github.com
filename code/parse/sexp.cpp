@@ -651,6 +651,8 @@ SCP_vector<sexp_oper> Operators = {
 	{ "use-autopilot",					OP_NAV_USEAP,							1,	1,			SEXP_ACTION_OPERATOR,	},	//kazan
 	{ "select-nav",						OP_NAV_SELECT,							1,	1,			SEXP_ACTION_OPERATOR,	},	//Talon1024
 	{ "unselect-nav",					OP_NAV_UNSELECT,						0,	0,			SEXP_ACTION_OPERATOR,	},	//Talon1024
+	{ "set-nav-color",					OP_NAV_SET_COLOR,						4,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	//Goober5000
+	{ "set-nav-visited-color",			OP_NAV_SET_VISITED_COLOR,				4,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	//Goober5000
 
 	//Cutscene Sub-Category
 	{ "set-cutscene-bars",				OP_CUTSCENES_SET_CUTSCENE_BARS,			0,	1,			SEXP_ACTION_OPERATOR,	},
@@ -20759,6 +20761,24 @@ void select_unselect_nav(int node, bool select_it)
 		DeselectNav();
 }
 
+void set_nav_color(int node, bool visited)
+{
+	std::array<ubyte, 3> rgb;
+	bool is_nan, is_nan_forever;
+
+	eval_array<ubyte>(rgb, node, is_nan, is_nan_forever, [](int num)->ubyte {
+		CLAMP(num, 0, 255);
+		return static_cast<ubyte>(num);
+		});
+
+	while (node >= 0)
+	{
+		auto nav_name = CTEXT(node);
+		Nav_SetColor(nav_name, visited, rgb[0], rgb[1], rgb[2]);
+		node = CDR(node);
+	}
+}
+
 //*************************************************************************************************
 
 int sexp_is_tagged(int node)
@@ -26087,6 +26107,12 @@ int eval_sexp(int cur_node, int referenced_node)
 				select_unselect_nav(node, op_num == OP_NAV_SELECT);
 				break;
 
+			case OP_NAV_SET_COLOR:
+			case OP_NAV_SET_VISITED_COLOR:
+				set_nav_color(node, op_num == OP_NAV_SET_VISITED_COLOR);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_SCRAMBLE_MESSAGES:
 			case OP_UNSCRAMBLE_MESSAGES:
 				sexp_scramble_messages(node, op_num == OP_SCRAMBLE_MESSAGES );
@@ -27335,6 +27361,8 @@ int query_operator_return_type(int op)
 		case OP_NAV_USEAP:
 		case OP_NAV_SELECT:
 		case OP_NAV_UNSELECT:
+		case OP_NAV_SET_COLOR:
+		case OP_NAV_SET_VISITED_COLOR:
 		case OP_HUD_SET_TEXT:
 		case OP_HUD_SET_TEXT_NUM:
 		case OP_HUD_SET_MESSAGE:
@@ -29587,6 +29615,13 @@ int query_operator_argument_type(int op, int argnum)
 			else
 				return OPF_SHIP;
 
+		case OP_NAV_SET_COLOR:
+		case OP_NAV_SET_VISITED_COLOR:
+			if (argnum >= 0 && argnum <= 2)
+				return OPF_POSITIVE;
+			else
+				return OPF_STRING;
+
 		//<Cutscenes>
 		case OP_SCRAMBLE_MESSAGES:
 		case OP_UNSCRAMBLE_MESSAGES:
@@ -31572,6 +31607,8 @@ int get_subcategory(int sexp_id)
 		case OP_NAV_USEAP:
 		case OP_NAV_SELECT:
 		case OP_NAV_UNSELECT:
+		case OP_NAV_SET_COLOR:
+		case OP_NAV_SET_VISITED_COLOR:
 			return CHANGE_SUBCATEGORY_NAV;
 
 		case OP_CUTSCENES_SET_CUTSCENE_BARS:
@@ -31910,7 +31947,25 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_NAV_UNSELECT, "nav-deselect (Action operator)\r\n"
 		"\tDeselects any navpoint selected.\r\n\r\n"
 		"Takes no arguments..." },
-	
+
+	{ OP_NAV_SET_COLOR, "nav-set-color (Action operator)\r\n"
+		"\tSets the color used by this navpoint on the HUD.\r\n\r\n"
+		"Takes 4 or more arguments...\r\n"
+		"\t1:\tRed value\r\n"
+		"\t2:\tGreen value\r\n"
+		"\t3:\tBlue value\r\n"
+		"\tRest:\tNavpoints that should use this color\r\n"
+	},
+
+	{ OP_NAV_SET_VISITED_COLOR, "nav-set-visited-color (Action operator)\r\n"
+		"\tSets the color used by this navpoint on the HUD after it has been visited.\r\n\r\n"
+		"Takes 4 or more arguments...\r\n"
+		"\t1:\tRed value\r\n"
+		"\t2:\tGreen value\r\n"
+		"\t3:\tBlue value\r\n"
+		"\tRest:\tNavpoints that should use this color\r\n"
+	},
+
 	// -------------------------- -------------------------- -------------------------- 
 
 	// Goober5000
