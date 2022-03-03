@@ -48,7 +48,7 @@ jobs:
         run: python ci/post/main.py release
       
       - name: Post Builds (Manual trigger)
-        if: ${{ github.event_name == 'workflow_distpatch' }}
+        if: ${{ github.event_name == 'workflow_dispatch' }}
         # assume user knows what they're doing...
         env:
           LINUX_RESULT: success
