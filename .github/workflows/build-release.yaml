@@ -339,9 +339,8 @@ jobs:
 
   post_build:
     name: Post builds to Nebula and Forum
-    needs: [build_linux, build_windows]
-    runs-on: ubuntu-latest
+    needs: [linux_zip, windows_zip]
     uses: ./.github/workflows/post-build-release.yaml
     with:
-      linux_result: needs.build_linux.result
-      windows_result: needs.build_windows.result
+      linux_result: ${{ needs.build_linux.result }}
+      windows_result: ${{ needs.build_windows.result }}

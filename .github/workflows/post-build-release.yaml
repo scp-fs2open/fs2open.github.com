@@ -6,8 +6,10 @@ on:
     inputs:
       linux_result:   # job.result; either success, failure, canceled or skipped
         required: true
+        type: boolean
       windows_result: # job.result
         required: true
+        type: boolean
 
   workflow_dispatch:
     # Trigger manually from Github
