@@ -33,7 +33,7 @@ jobs:
       NEBULA_PASSWORD: ${{ secrets.NEBULA_PASSWORD }}
       HLP_API: ${{ secrets.HLP_API }}
       HLP_KEY: ${{ secrets.HLP_KEY }}
-      RELEASE_TAG: ${{ inputs.releaseTag }}
+      RELEASE_TAG: ${{ github.events.inputs.releaseTag }}
       
     steps:
       - name: Checkout
@@ -58,6 +58,6 @@ jobs:
           LINUX_RESULT: success
           WINDOWS_RESULT: success
         run: |
-          echo "releaseTag= ${{ inputs.releaseTag }}"
+          echo "releaseTag= ${{ github.events.inputs.releaseTag }}"
           echo "RELEASE_TAG=" $RELEASE_TAG
           python ci/post/main.py release
