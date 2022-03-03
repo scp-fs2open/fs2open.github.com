@@ -22,19 +22,19 @@ on:
         required: true
         type: string
 
+env:
+  INDIEGAMES_USER: ${{ secrets.INDIEGAMES_USER }}
+  INDIEGAMES_SSHPASS: ${{ secrets.INDIEGAMES_PASSWORD }}
+  NEBULA_USER: ${{ secrets.NEBULA_USER }}
+  NEBULA_PASSWORD: ${{ secrets.NEBULA_PASSWORD }}
+  HLP_API: ${{ secrets.HLP_API }}
+  HLP_KEY: ${{ secrets.HLP_KEY }}
+  RELEASE_TAG: ${{ github.events.inputs.releaseTag }}
+
 jobs:
   post_builds:
     name: Post builds on Nebula and the forums
     runs-on: ubuntu-latest
-    environment:
-      INDIEGAMES_USER: ${{ secrets.INDIEGAMES_USER }}
-      INDIEGAMES_SSHPASS: ${{ secrets.INDIEGAMES_PASSWORD }}
-      NEBULA_USER: ${{ secrets.NEBULA_USER }}
-      NEBULA_PASSWORD: ${{ secrets.NEBULA_PASSWORD }}
-      HLP_API: ${{ secrets.HLP_API }}
-      HLP_KEY: ${{ secrets.HLP_KEY }}
-      RELEASE_TAG: ${{ github.events.inputs.releaseTag }}
-      
     steps:
       - name: Checkout
         uses: actions/checkout@v1
