@@ -124,7 +124,7 @@ def main():
 		print("ERROR: Invalid release mode %s passed. Expected release or nightly!" % sys.argv[1])
 		sys.exit(1)
 
-	tag_name = os.path.basename(os.environ["GITHUB_REF"])	##!< commit tag string
+	tag_name = os.environ["RELEASE_TAG"]	##!< commit tag string
 	date = datetime.now()	##!< current date
 	version = get_source_version(date.strftime(DATEFORMAT_VERSION))	##!< form full version string
 	success = os.environ["LINUX_RESULT"] == "success" and os.environ["WINDOWS_RESULT"] == "success"	##!< true if both linux and windows builds successful

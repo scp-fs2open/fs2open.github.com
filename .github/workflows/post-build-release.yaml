@@ -10,6 +10,9 @@ on:
       windows_result: # job.result
         required: true
         type: boolean
+      releaseTag:
+        required: true
+        type: string
 
   workflow_dispatch:
     # Trigger manually from Github
@@ -17,6 +20,7 @@ on:
       releaseTag:
         description: Release Tag
         required: true
+        type: string
         default: ''
 
 jobs:
@@ -30,6 +34,7 @@ jobs:
       NEBULA_PASSWORD: ${{ secrets.NEBULA_PASSWORD }}
       HLP_API: ${{ secrets.HLP_API }}
       HLP_KEY: ${{ secrets.HLP_KEY }}
+      RELEASE_TAG: ${{ inputs.releaseTag }}
       
     steps:
       - name: Checkout
@@ -53,4 +58,7 @@ jobs:
         env:
           LINUX_RESULT: success
           WINDOWS_RESULT: success
-        run: python ci/post/main.py release
+        run: |
+          echo "releaseTag= ${{ inputs.releaseTag }}"
+          echo "RELEASE_TAG=" $RELEASE_TAG
+          python ci/post/main.py release
