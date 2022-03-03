@@ -21,7 +21,6 @@ on:
         description: Release Tag
         required: true
         type: string
-        default: ''
 
 jobs:
   post_builds:
