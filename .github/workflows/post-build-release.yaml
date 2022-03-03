@@ -38,21 +38,17 @@ jobs:
       - name: Install Python dependencies
         run: pip install -r ci/post/requirements.txt
 
-      - name: Set env vars (Auto trigger)
+      - name: Post Builds (Auto trigger)
         if: ${{ github.event_name == 'workflow_call' }}
         env:
           LINUX_RESULT: ${{ inputs.linux_result }}
           WINDOWS_RESULT: ${{ inputs.windows_result }}
+        run: python ci/post/main.py release
       
-      - name: Set env vars (Manual trigger)
+      - name: Post Builds (Manual trigger)
         if: ${{ github.event_name == 'workflow_distpatch' }}
         # assume user knows what they're doing...
         env:
           LINUX_RESULT: success
           WINDOWS_RESULT: success
-
-      - name: Post builds
-        # use env var's set by post_builds job
-        # if: triggered by workflow
-
         run: python ci/post/main.py release
