@@ -10,9 +10,9 @@ on:
       windows_result: # job.result
         required: true
         type: boolean
-      releaseTag:
-        required: true
-        type: string
+  #    releaseTag:
+  #      required: true
+  #      type: string
 
   workflow_dispatch:
     # Trigger manually from Github
@@ -36,20 +36,20 @@ jobs:
     name: Post builds on Nebula and the forums
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v1
-        with:
-          fetch-depth: '0'
+      #- name: Checkout
+      #  uses: actions/checkout@v1
+      #  with:
+      #    fetch-depth: '0'
 
-      - name: Install Python dependencies
-        run: pip install -r ci/post/requirements.txt
+      #- name: Install Python dependencies
+      #  run: pip install -r ci/post/requirements.txt
 
-      - name: Post Builds (Auto trigger)
-        if: ${{ github.event_name == 'workflow_call' }}
-        env:
-          LINUX_RESULT: ${{ inputs.linux_result }}
-          WINDOWS_RESULT: ${{ inputs.windows_result }}
-        run: python ci/post/main.py release
+      #- name: Post Builds (Auto trigger)
+      #  if: ${{ github.event_name == 'workflow_call' }}
+      #  env:
+      #    LINUX_RESULT: ${{ inputs.linux_result }}
+      #    WINDOWS_RESULT: ${{ inputs.windows_result }}
+      #  run: python ci/post/main.py release
       
       - name: Post Builds (Manual trigger)
         if: ${{ github.event_name == 'workflow_dispatch' }}
@@ -60,4 +60,4 @@ jobs:
         run: |
           echo "releaseTag= ${{ github.events.inputs.releaseTag }}"
           echo "RELEASE_TAG=" $RELEASE_TAG
-          python ci/post/main.py release
+        #  python ci/post/main.py release
