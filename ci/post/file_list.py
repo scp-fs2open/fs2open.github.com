@@ -39,6 +39,9 @@ class ReleaseFile:
 
         self.hash = None
         self.size = 0
+    
+    def __repr__(self):
+        return repr((self.name))
 
 
 class SourceFile:
@@ -130,7 +133,7 @@ def get_release_files(tag_name, config) -> Tuple[List[ReleaseFile], Dict[str, So
 
     # Get the github release metadata of the given tag name
     response = execute_request(
-        "/repos/{}/{}/releases/tags/{}".format(config["github"]["user"], config["github"]["repo"], tag_name))
+        "/repos/{}/releases/tags/{}".format(config["github"]["repo"], tag_name))
 
     # Extract the binary and source files from the response["asset"] metadata
     binary_files = []
@@ -157,6 +160,8 @@ def get_release_files(tag_name, config) -> Tuple[List[ReleaseFile], Dict[str, So
             group = group_match.group(1)
 
             source_files[group] = SourceFile(name, url, group)
+
+    binary_files.sort(key=lambda ReleaseFile: ReleaseFile.name)
 
     return binary_files, source_files
 

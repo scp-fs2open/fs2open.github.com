@@ -4,6 +4,7 @@ import traceback
 
 import requests
 
+from file_list import ReleaseFile
 from util import retry_multi, GLOBAL_TIMEOUT
 
 metadata = {

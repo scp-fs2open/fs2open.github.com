@@ -181,6 +181,12 @@ jobs:
         working-directory: ./builds
         run: $GITHUB_WORKSPACE/ci/linux/create_dist_pack.sh Linux
       - name: Upload result package
+        # Stash the result to artifact filespace
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ steps.generate_package.outputs.package_name }}
+          path: ${{ steps.generate_package.outputs.package_path }}
+      - name: Publish result package
         # publish the zipped result
         uses: softprops/action-gh-release@v1
         env:
@@ -344,3 +350,4 @@ jobs:
     with:
       linux_result: ${{ needs.build_linux.result }}
       windows_result: ${{ needs.build_windows.result }}
+      releaseTag: ${{ github.ref_name }}

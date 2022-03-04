@@ -86,8 +86,7 @@ def main():
 	# Aggregate configuration data in a dictionary
 	config = {
 		"github": {
-			"user": "scp-fs2open",
-			"repo": "fs2open.github.com",
+			"repo": os.environ["GITHUB_REPO"],
 		},
 		"ftp": {
 			"host": "scp.indiegames.us",
@@ -124,13 +123,14 @@ def main():
 		print("ERROR: Invalid release mode %s passed. Expected release or nightly!" % sys.argv[1])
 		sys.exit(1)
 
-	tag_name = os.path.basename(os.environ["GITHUB_REF"])	##!< commit tag string
+	tag_name = os.environ["RELEASE_TAG"]	##!< commit tag string
 	date = datetime.now()	##!< current date
 	version = get_source_version(date.strftime(DATEFORMAT_VERSION))	##!< form full version string
 	success = os.environ["LINUX_RESULT"] == "success" and os.environ["WINDOWS_RESULT"] == "success"	##!< true if both linux and windows builds successful
 
 	# check that tag_name is actually in the git repo and find the previous tag release
-	tags = check_output(("git", "for-each-ref", "--sort=-taggerdate", "--format", "%(tag)", "refs/tags")).splitlines()	# retrieve all tags in the repo by using git on the shell
+	tags = check_output(("git", "for-each-ref", "--sort=-taggerdate", "--format='%(tag)'", "refs/tags"), text=True).splitlines()	# retrieve all tags in the repo by using git on the shell
+	# NOTE: check_output returns canonical string representation. use repr() on strings its being compared to
 	previous_tag = None
 	found = False
 
@@ -138,10 +138,10 @@ def main():
 		if found:
 			# Look for the "previous" tag with the same configuration ('release_' or 'nightly_')
 			# Assumes older tags have a higher index than newer
-			if tag.startswith(sys.argv[1] + "_"):
+			if tag.startswith("\'" + sys.argv[1] + "_"):
 				previous_tag = tag
 				break
-		elif tag == tag_name:
+		elif tag == repr(tag_name):
 			# Ok, found the tag
 			found = True
 
@@ -174,12 +174,34 @@ def main():
 		# to save it as a dictionary
 		## NOTE z64: files need to be sorted or else key duplication will occur!
 		groups = {key: file_list.FileGroup(key, list(group)) for key, group in groupby(files, lambda g: g.group)}
+		
+		# Error check for all group keys and subkeys to be used in the mako.  Do this here for better debugging QoL
+		if "Win32" in groups.keys():
+			if "AVX" not in groups["Win32"].subFiles.keys():
+				print("ERROR: No Win32-AVX builds were detected!")
+				sys.exit(1)
+		else:
+			print("ERROR: No Win32 builds were detected!")
+			sys.exit(1)
 
-		print(installer.render_installer_config(version, groups, config))
+		if "Win64" in groups.keys():
+			if "AVX" not in groups["Win64"].subFiles.keys():
+				print("ERROR: No x64-AVX builds were detected!")
+				sys.exit(1)
+		else:
+			print("ERROR: Now x64 builds were detected!")
+			sys.exit(1)
+		
+		if "Linux" not in groups.keys():
+			print("ERROR: No Linux builds were detected!")
+			sys.exit(1)
+		
+		# z64: What dose this do???
+		# print(installer.render_installer_config(version, groups, config))
 
 		# Publish release builds to Nebula
 		nebula.submit_release(
-			nebula.render_nebula_release(version, "rc" if version.prerelease else "stable", "files", config),
+			nebula.render_nebula_release(version, "rc" if version.prerelease else "stable", files, config),
 			config)
 
 		# Publish forum post, using the release.mako template
@@ -187,6 +209,7 @@ def main():
 		fapi.post_release(date.strftime(DATEFORMAT_FORUM), version, groups, sources)
 
 	else:
+		# Dead for now, nightly publish is done elsewhere
 		# Nightly specific action
 		if not tag_name.startswith("nightly_"):
 			# safety check tag is from a nightly
