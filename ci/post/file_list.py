@@ -130,7 +130,7 @@ def get_release_files(tag_name, config) -> Tuple[List[ReleaseFile], Dict[str, So
 
     # Get the github release metadata of the given tag name
     response = execute_request(
-        "/repos/{}/{}/releases/tags/{}".format(config["github"]["user"], config["github"]["repo"], tag_name))
+        "/repos/{}/releases/tags/{}".format(config["github"]["repo"], tag_name))
 
     # Extract the binary and source files from the response["asset"] metadata
     binary_files = []

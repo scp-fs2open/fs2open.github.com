@@ -23,6 +23,7 @@ on:
         type: string
 
 env:
+  GITHUB_REPO: ${{ github.repository }} # repo this workflow was called from
   INDIEGAMES_USER: ${{ secrets.INDIEGAMES_USER }}
   INDIEGAMES_SSHPASS: ${{ secrets.INDIEGAMES_PASSWORD }}
   NEBULA_USER: ${{ secrets.NEBULA_USER }}
