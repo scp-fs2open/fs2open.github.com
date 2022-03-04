@@ -58,5 +58,5 @@ jobs:
           WINDOWS_RESULT: success
         run: |
           echo "releaseTag= ${{ github.event.inputs.releaseTag }}"
-          echo "RELEASE_TAG=" $RELEASE_TAG
+          echo "repository= ${{ github.repository }}"
           python ci/post/main.py release

@@ -86,8 +86,7 @@ def main():
 	# Aggregate configuration data in a dictionary
 	config = {
 		"github": {
-			"user": "scp-fs2open",
-			"repo": "fs2open.github.com",
+			"repo": os.environ["GITHUB_REPO"],
 		},
 		"ftp": {
 			"host": "scp.indiegames.us",
