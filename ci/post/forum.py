@@ -14,7 +14,7 @@ class ForumAPI:
     def create_post(self, title, content, board):
         print(self.config["hlp"]["api"])
         print(self.config["hlp"]["key"])
-        if (self.config["hlp"]["api"] == None) or (self.config["hlp"]["key"] == None):
+        if (self.config["hlp"]["api"] == "") or (self.config["hlp"]["key"] == ""):
             print("Post failed! No API or API_KEY given!")
             return
 
