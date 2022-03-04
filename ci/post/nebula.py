@@ -51,7 +51,7 @@ subdirs = {
 }
 
 
-def render_nebula_release(version, stability, files: list[ReleaseFile], config):
+def render_nebula_release(version, stability, files, config):
     meta = metadata.copy()
     meta['version'] = str(version)
     meta['stability'] = stability  # This can be one of ('stable', 'rc', 'nightly')
