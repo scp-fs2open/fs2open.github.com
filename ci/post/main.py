@@ -130,7 +130,8 @@ def main():
 	success = os.environ["LINUX_RESULT"] == "success" and os.environ["WINDOWS_RESULT"] == "success"	##!< true if both linux and windows builds successful
 
 	# check that tag_name is actually in the git repo and find the previous tag release
-	tags = check_output(("git", "for-each-ref", "--sort=-taggerdate", "--format='%(tag)'", "refs/tags")).splitlines()	# retrieve all tags in the repo by using git on the shell
+	tags = check_output(("git", "for-each-ref", "--sort=-taggerdate", "--format='%(tag)'", "refs/tags"), text=True).splitlines()	# retrieve all tags in the repo by using git on the shell
+	# NOTE: check_output returns canonical string representation. use repr() on strings its being compared to
 	previous_tag = None
 	found = False
 
@@ -138,10 +139,10 @@ def main():
 		if found:
 			# Look for the "previous" tag with the same configuration ('release_' or 'nightly_')
 			# Assumes older tags have a higher index than newer
-			if tag.startswith(sys.argv[1] + "_"):
+			if tag.startswith("\'" + sys.argv[1] + "_"):
 				previous_tag = tag
 				break
-		elif tag == tag_name:
+		elif tag == repr(tag_name):
 			# Ok, found the tag
 			found = True
 
