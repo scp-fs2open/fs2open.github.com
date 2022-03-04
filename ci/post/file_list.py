@@ -39,6 +39,9 @@ class ReleaseFile:
 
         self.hash = None
         self.size = 0
+    
+    def __repr__(self):
+        return repr((self.name))
 
 
 class SourceFile:
@@ -158,7 +161,8 @@ def get_release_files(tag_name, config) -> Tuple[List[ReleaseFile], Dict[str, So
 
             source_files[group] = SourceFile(name, url, group)
 
-    print(binary_files)
+    binary_files.sort(key=lambda ReleaseFile: ReleaseFile.name)
+
     return binary_files, source_files
 
 
