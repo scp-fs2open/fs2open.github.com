@@ -12,6 +12,10 @@ class ForumAPI:
         self.config = config
 
     def create_post(self, title, content, board):
+        if (self.config["hlp"]["api"] == None) or (self.config["hlp"]["key"] == None):
+            print("Post failed! No API or API_KEY given!")
+            return
+
         resp = requests.post(self.config["hlp"]["api"], data={
             "api_key": self.config["hlp"]["key"],
             "board": str(board),
@@ -20,7 +24,7 @@ class ForumAPI:
         })
 
         if resp.text != "OK":
-            print("Post failed!")
+            print("Post failed! Response: %s" %resp.text)
 
     def post_nightly(self, date, revision, files, log, success):
         print("Posting nightly thread...")
