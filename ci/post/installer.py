@@ -81,9 +81,7 @@ def get_hashed_file_list(file: ReleaseFile, session: requests.Session = None, ha
 
 
 def render_installer_config(version, groups, config):
-    # filename=config["templates"]["installer"]
-    # NOTE: z64: no idea what this originally was intended to be, forced to "release"
-    template = Template(filename=config["templates"]["release"], module_directory='/tmp/mako_modules')
+    template = Template(filename=config["templates"]["installer"], module_directory='/tmp/mako_modules')
     return template.render(**{
         "version": version,
         "groups": groups,

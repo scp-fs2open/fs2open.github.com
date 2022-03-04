@@ -174,13 +174,34 @@ def main():
 		# to save it as a dictionary
 		## NOTE z64: files need to be sorted or else key duplication will occur!
 		groups = {key: file_list.FileGroup(key, list(group)) for key, group in groupby(files, lambda g: g.group)}
-		print(groups["Win32"])
-		print(groups["Win64"])
+		
+		# Error check for all group keys and subkeys to be used in the mako.  Do this here for better debugging QoL
+		if "Win32" in groups.keys:
+			if "AVX" not in groups["Win32"].subFiles.keys():
+				print("ERROR: No Win32-AVX builds were detected!")
+				sys.exit(1)
+		else:
+			print("ERROR: No Win32 builds were detected!")
+			sys.exit(1)
+
+		if "Win64" in groups.keys:
+			if "AVX" not in groups["Win64"].subFiles.keys():
+				print("ERROR: No x64-AVX builds were detected!")
+				sys.exit(1)
+		else:
+			print("ERROR: Now x64 builds were detected!")
+			sys.exit(1)
+		
+		if "Linux" not in groups.keys:
+			print("ERROR: No Linux builds were detected!")
+			sys.exit(1)
+		
+		# z64: What dose this do???
 		print(installer.render_installer_config(version, groups, config))
 
 		# Publish release builds to Nebula
 		nebula.submit_release(
-			nebula.render_nebula_release(version, "rc" if version.prerelease else "stable", "files", config),
+			nebula.render_nebula_release(version, "rc" if version.prerelease else "stable", files, config),
 			config)
 
 		# Publish forum post, using the release.mako template
@@ -188,6 +209,7 @@ def main():
 		fapi.post_release(date.strftime(DATEFORMAT_FORUM), version, groups, sources)
 
 	else:
+		# Dead for now, nightly publish is done elsewhere
 		# Nightly specific action
 		if not tag_name.startswith("nightly_"):
 			# safety check tag is from a nightly
