@@ -197,7 +197,7 @@ def main():
 			sys.exit(1)
 		
 		# z64: What dose this do???
-		print(installer.render_installer_config(version, groups, config))
+		# print(installer.render_installer_config(version, groups, config))
 
 		# Publish release builds to Nebula
 		nebula.submit_release(
