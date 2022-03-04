@@ -174,7 +174,8 @@ def main():
 		# to save it as a dictionary
 		## NOTE z64: files need to be sorted or else key duplication will occur!
 		groups = {key: file_list.FileGroup(key, list(group)) for key, group in groupby(files, lambda g: g.group)}
-		print(groups)
+		print(groups["Win32"])
+		print(groups["Win64"])
 		print(installer.render_installer_config(version, groups, config))
 
 		# Publish release builds to Nebula
