@@ -1215,8 +1215,8 @@ bool pilotfile::verify(const char *fname, int *rank, char *valid_language, int* 
 {
 	player t_plr;
 
-	// Ensure t_plr is cleanly init
-	t_plr.reset();
+	t_plr.reset();	// Ensure t_plr is cleanly init
+	p = &t_plr;		// Set player* so the rest of the file handler can work
 
 	filename = fname;
 
