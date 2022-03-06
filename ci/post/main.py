@@ -62,22 +62,41 @@ def _match_version_number(text, regex):
 	return int(match.group(1))
 	
 
-def get_source_version(date_version):
+def get_source_version(date_version: datetime, tag_name: str) -> semantic_version.Version:
 	"""! Retrieves the build's version from `version.cmake`, forms it as a string, and appends the date
 
 	@param[in] `date_version` Date this build is published for release
+	@param[in] 'tag_name'     Tag of this release, used to determine if release, rc, or nightly
 
-	@return String of the form `MAJOR_VERSION.MINOR_VERSION.BUILD_VERSION-date`
+	@return String of the form `MAJOR_VERSION.MINOR_VERSION.BUILD_VERSION-date`, ' MAJOR_VERS
 	"""
-	
+	major = minor = build = version = 0
 	with open(os.path.join("..", "..", "cmake", "version.cmake"), "r") as f:
 		filetext = f.read()
-
 		major = _match_version_number(filetext, MAJOR_VERSION_PATTERN)
 		minor = _match_version_number(filetext, MINOR_VERSION_PATTERN)
 		build = _match_version_number(filetext, BUILD_VERSION_PATTERN)
 
-		return semantic_version.Version("{}.{}.{}-{}".format(major, minor, build, date_version))
+	if "release" in tag_name.lower():
+		version = semantic_version.Version("{}.{}.{}".format(major, minor, build))
+
+	elif "nightly" in tag_name.lower():
+		version = semantic_version.Version("{}.{}.{}-{}".format(major, minor, build, date_version))
+	
+	elif "rc" in tag_name.lower():
+		# Release canidates retain an internal version unstable, but external version is the tagname
+		# tag_name format is release_<year>_<major>_<minor>_RC<build>
+		x = tag_name.upper().split("_")
+		# "release" = x[0], year = x[1], major = x[2], minor = x[3], build = x[4], 
+		version = semantic_version.Version("{}.{}.{}-{}".format(x[1], x[2], x[3], x[4]))
+		version.prerelease = True
+
+	else:	
+		print("ERROR: malformed tag_name %s" % tag_name)
+		sys.exit(1)
+
+	print("version: {}".format(version))
+	return version
 
 
 def main():
@@ -125,7 +144,7 @@ def main():
 
 	tag_name = os.environ["RELEASE_TAG"]	##!< commit tag string
 	date = datetime.now()	##!< current date
-	version = get_source_version(date.strftime(DATEFORMAT_VERSION))	##!< form full version string
+	version = get_source_version(date.strftime(DATEFORMAT_VERSION), tag_name)	##!< form full version string
 	success = os.environ["LINUX_RESULT"] == "success" and os.environ["WINDOWS_RESULT"] == "success"	##!< true if both linux and windows builds successful
 
 	# check that tag_name is actually in the git repo and find the previous tag release
@@ -189,7 +208,7 @@ def main():
 				print("ERROR: No x64-AVX builds were detected!")
 				sys.exit(1)
 		else:
-			print("ERROR: Now x64 builds were detected!")
+			print("ERROR: No x64 builds were detected!")
 			sys.exit(1)
 		
 		if "Linux" not in groups.keys():
