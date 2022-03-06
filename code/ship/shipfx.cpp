@@ -3429,14 +3429,7 @@ int WE_Default::warpStart()
 
 	// determine the warping speed
 	if (direction == WarpDirection::WARP_OUT)
-	{
 		warping_speed = ship_get_warpout_speed(objp, sip, half_length, warping_dist);
-
-		// this is Volition behavior; we probably will want an AI profiles flag for this so that the ship could use its tabled speed
-		if (objp == Player_obj) {
-			warping_speed = 0.8f*objp->phys_info.max_vel.xyz.z;
-		}
-	}
 	else
 		warping_speed = warping_dist / warping_time;
 

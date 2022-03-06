@@ -999,7 +999,8 @@ void read_player_controls(object *objp, float frametime)
 				target_warpout_speed = ship_get_warpout_speed(objp);
 
 				// check if warp ability has been disabled
-				if (!(Warpout_forced) && !(ship_can_warp_full_check(&Ships[objp->instance]))) {
+				// but only in the first stage
+				if (!(Warpout_forced) && !(ship_can_warp_full_check(&Ships[objp->instance])) && (Player->control_mode == PCM_WARPOUT_STAGE1)) {
 					HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "Cannot warp out at this time.", 81));
 					snd_play(gamesnd_get_game_sound(GameSounds::PLAYER_WARP_FAIL));
 					gameseq_post_event( GS_EVENT_PLAYER_WARPOUT_STOP );
