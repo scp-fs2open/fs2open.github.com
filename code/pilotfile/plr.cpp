@@ -1215,8 +1215,8 @@ bool pilotfile::verify(const char *fname, int *rank, char *valid_language, int* 
 {
 	player t_plr;
 
-	// set player ptr first thing
-	p = &t_plr;
+	t_plr.reset();	// Ensure t_plr is cleanly init
+	p = &t_plr;		// Set player* so the rest of the file handler can work
 
 	filename = fname;
 
@@ -1300,26 +1300,25 @@ bool pilotfile::verify(const char *fname, int *rank, char *valid_language, int* 
 	// Flags to signal the main UI the state of the loaded player file
 	// Do these here after player_read_flags() so they don't get trashed!
 	if (plr_ver < 4) {
-		p->save_flags |= PLAYER_FLAGS_PLR_VER_PRE_CONTROLS5;
+		t_plr.save_flags |= PLAYER_FLAGS_PLR_VER_PRE_CONTROLS5;
 	}
 
 	if (plr_ver < PLR_VERSION) {
-		p->flags |= PLAYER_FLAGS_PLR_VER_IS_LOWER;
+		t_plr.flags |= PLAYER_FLAGS_PLR_VER_IS_LOWER;
 
 	} else if (plr_ver > PLR_VERSION) {
-		p->flags |= PLAYER_FLAGS_PLR_VER_IS_HIGHER;
+		t_plr.flags |= PLAYER_FLAGS_PLR_VER_IS_HIGHER;
 	}
 
 	if (valid_language) {
-		strcpy(valid_language, p->language);
+		strcpy(valid_language, t_plr.language);
 	}
 
 	// need to cleanup early to ensure everything is OK for use in the CSG next
-	// also means we can't use *p from now on, use t_plr instead for a few vars
 
 	// Save any player flags, if caller wants them
 	if (flags != nullptr) {
-		*flags = p->flags;
+		*flags = t_plr.flags;
 	}
 
 	plr_close();
