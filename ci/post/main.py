@@ -77,13 +77,7 @@ def get_source_version(date_version: datetime, tag_name: str) -> semantic_versio
 		minor = _match_version_number(filetext, MINOR_VERSION_PATTERN)
 		build = _match_version_number(filetext, BUILD_VERSION_PATTERN)
 
-	if "release" in tag_name.lower():
-		version = semantic_version.Version("{}.{}.{}".format(major, minor, build))
-
-	elif "nightly" in tag_name.lower():
-		version = semantic_version.Version("{}.{}.{}-{}".format(major, minor, build, date_version))
-	
-	elif "rc" in tag_name.lower():
+	if "rc" in tag_name.lower():
 		# Release canidates retain an internal version unstable, but external version is the tagname
 		# tag_name format is release_<year>_<major>_<minor>_RC<build>
 		x = tag_name.upper().split("_")
@@ -91,6 +85,12 @@ def get_source_version(date_version: datetime, tag_name: str) -> semantic_versio
 		version = semantic_version.Version("{}.{}.{}-{}".format(x[1], x[2], x[3], x[4]))
 		version.prerelease = True
 
+	elif "release" in tag_name.lower():
+		version = semantic_version.Version("{}.{}.{}".format(major, minor, build))
+
+	elif "nightly" in tag_name.lower():
+		version = semantic_version.Version("{}.{}.{}-{}".format(major, minor, build, date_version))
+	
 	else:	
 		print("ERROR: malformed tag_name %s" % tag_name)
 		sys.exit(1)
