@@ -83,7 +83,6 @@ def get_source_version(date_version: datetime, tag_name: str) -> semantic_versio
 		x = tag_name.upper().split("_")
 		# "release" = x[0], year = x[1], major = x[2], minor = x[3], build = x[4], 
 		version = semantic_version.Version("{}.{}.{}-{}".format(x[1], x[2], x[3], x[4]))
-		version.prerelease = True
 
 	elif "release" in tag_name.lower():
 		version = semantic_version.Version("{}.{}.{}".format(major, minor, build))
@@ -96,6 +95,7 @@ def get_source_version(date_version: datetime, tag_name: str) -> semantic_versio
 		sys.exit(1)
 
 	print("version: {}".format(version))
+	print("version.prerelease: {}".format(version.prerelease))
 	return version
 
 
