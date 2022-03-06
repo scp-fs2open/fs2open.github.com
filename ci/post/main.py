@@ -66,9 +66,11 @@ def get_source_version(date_version: datetime, tag_name: str) -> semantic_versio
 	"""! Retrieves the build's version from `version.cmake`, forms it as a string, and appends the date
 
 	@param[in] `date_version` Date this build is published for release
-	@param[in] 'tag_name'     Tag of this release, used to determine if release, rc, or nightly
+	@param[in] `tag_name`     Tag of this release, used to determine if release, rc, or nightly
 
-	@return String of the form `MAJOR_VERSION.MINOR_VERSION.BUILD_VERSION-date`, ' MAJOR_VERS
+	@return If release: `MAJOR_VERSION.MINOR_VERSION.BUILD_VERSION` from version.cmake, or
+	@return If rc:      `MAJOR_VERSION.MINOR_VERSION.BUILD_VERSION` from tag_name, or
+	@return If nightly: `MAJOR_VERSION.MINOR_VERSION.BUILD_VERSION-date` from version.cmake
 	"""
 	major = minor = build = version = 0
 	with open(os.path.join("..", "..", "cmake", "version.cmake"), "r") as f:
@@ -78,8 +80,9 @@ def get_source_version(date_version: datetime, tag_name: str) -> semantic_versio
 		build = _match_version_number(filetext, BUILD_VERSION_PATTERN)
 
 	if "rc" in tag_name.lower():
-		# Release canidates retain an internal version unstable, but external version is the tagname
-		# tag_name format is release_<year>_<major>_<minor>_RC<build>
+		# Release candidates idenfity with their unstable version (ex: 21.5.0-03052022) within the game and the logs, but
+		# the builds are named with the target release version (ex: 22.0.0).  Since this script works on the builds we
+		# need to grab the target release version from tag_name
 		x = tag_name.upper().split("_")
 		# "release" = x[0], year = x[1], major = x[2], minor = x[3], build = x[4], 
 		version = semantic_version.Version("{}.{}.{}-{}".format(x[1], x[2], x[3], x[4]))
