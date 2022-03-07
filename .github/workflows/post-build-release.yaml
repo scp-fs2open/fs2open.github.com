@@ -38,18 +38,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v1
+        uses: actions/checkout@v3
         with:
           fetch-depth: '0'
+
       - name: Install Python dependencies
         run: pip install -r ci/post/requirements.txt
+
       - name: Post Builds (Auto trigger)
         if: ${{ github.event_name == 'workflow_call' }}
         env:
           LINUX_RESULT: ${{ github.event.inputs.linux_result }}
           WINDOWS_RESULT: ${{ github.event.inputs.windows_result }}
         run: python ci/post/main.py release
-      
+
       - name: Post Builds (Manual trigger)
         if: ${{ github.event_name == 'workflow_dispatch' }}
         # assume user knows what they're doing...
