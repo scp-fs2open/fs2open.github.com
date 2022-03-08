@@ -3519,18 +3519,15 @@ polymodel_instance* model_get_instance(int model_instance_num)
 // note that x1,y1,x2,y2 aren't clipped to 2d screen coordinates!
 int model_find_2d_bound_min(int model_num,matrix *orient, vec3d * pos,int *x1, int *y1, int *x2, int *y2 )
 {
-	polymodel * po;
 	int n_valid_pts;
 	int i, x,y,min_x, min_y, max_x, max_y;
 	int rval = 0;
 
-	po = model_get(model_num);
+	polymodel* pm = model_get(model_num);
 
 	g3_start_instance_matrix(pos,orient,false);
 	
 	n_valid_pts = 0;
-
-	int hull = po->detail[0];
 
 	min_x = min_y = max_x = max_y = 0;
 
@@ -3538,7 +3535,7 @@ int model_find_2d_bound_min(int model_num,matrix *orient, vec3d * pos,int *x1, i
 		vertex pt;
 		ubyte flags;
 
-		flags = g3_rotate_vertex(&pt,&po->submodel[hull].bounding_box[i]);
+		flags = g3_rotate_vertex(&pt,&pm->bounding_box[i]);
 		if ( !(flags&CC_BEHIND) ) {
 			g3_project_vertex(&pt);
 
