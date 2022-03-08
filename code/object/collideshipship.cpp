@@ -576,7 +576,7 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 			//This method of doing things is kinda fake for now, _especially_ in this case, as we basically just approximate this submodel rotating like its parent.
 			//A proper rewrite for how this stuff is calculated is in order
 			do {
-				Assertion(pm >= 0, "Couldn't find the submodel that is rotating for a collision with a submodel with rotating parent.");
+				Assertion(rot_sm >= 0, "Couldn't find the submodel that is rotating for a collision with a submodel with rotating parent.");
 				rotation_axis = pm->submodel[rot_sm].rotation_type != MOVEMENT_TYPE_TRIGGERED ? &pm->submodel[rot_sm].rotation_axis : &pmi->submodel[rot_sm].rotation_axis;
 				rotation_speed = pmi->submodel[rot_sm].current_turn_rate;
 				rot_sm = pm->submodel[rot_sm].parent;
