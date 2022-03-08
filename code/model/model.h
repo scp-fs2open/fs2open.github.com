@@ -983,24 +983,42 @@ extern void model_local_to_global_dir(vec3d *out_dir, const vec3d *in_dir, int m
 // If objorient and objpos are supplied, this will be world space; otherwise it will be the model's space.
 extern void model_local_to_global_dir(vec3d *out_dir, const vec3d *in_dir, const polymodel *pm, int submodel_num, const matrix *objorient = nullptr);
 
-// Given a direction (or normal) in a submodel's local frame of reference, transform it to a global frame of reference, taking into account submodel rotations..
+// Given a direction (or normal) in a submodel's local frame of reference, transform it to a global frame of reference, taking into account submodel rotations.
 // If objorient and objpos are supplied, this will be world space; otherwise it will be the model's space.
 extern void model_instance_local_to_global_dir(vec3d *out_dir, const vec3d *in_dir, int model_instance_num, int submodel_num, const matrix *objorient = nullptr, bool use_submodel_parent = false);
-// Given a direction (or normal) in a submodel's local frame of reference, transform it to a global frame of reference, taking into account submodel rotations..
+// Given a direction (or normal) in a submodel's local frame of reference, transform it to a global frame of reference, taking into account submodel rotations.
 // If objorient and objpos are supplied, this will be world space; otherwise it will be the model's space.
 extern void model_instance_local_to_global_dir(vec3d *out_dir, const vec3d *in_dir, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient = nullptr);
-
-// Given a point in world coordinates, transform it to a submodel's local frame of reference.
-// This is special purpose code, specific for model collision.
-// NOTE - this code ASSUMES submodel is 1 level down from hull (detail[0])
-// TODO - fix this function to work for all submodel levels
-extern void model_instance_world_to_local_point(vec3d *out, vec3d *world_pt, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *orient, const vec3d *pos);
 
 // Combines model_instance_local_to_global_point and model_instance_local_to_global_dir into one function.
 extern void model_instance_local_to_global_point_dir(vec3d *outpnt, vec3d *outnorm, const vec3d *submodel_pnt, const vec3d *submodel_norm, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient = nullptr, const vec3d *objpos = nullptr);
 
 // Combines model_instance_local_to_global_point and the matrix equivalent of model_instance_local_to_global_dir into one function.
 extern void model_instance_local_to_global_point_orient(vec3d *outpnt, matrix *outorient, const vec3d *submodel_pnt, const matrix *submodel_orient, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient = nullptr, const vec3d *objpos = nullptr);
+
+
+// Given a point in a global frame of reference, transform it to a submodel's local frame of reference, taking into account submodel rotations.
+// If objorient and objpos are supplied, the global frame will be world space; otherwise it will be the model's space.
+extern void model_instance_global_to_local_point(vec3d *outpnt, const vec3d *mpnt, int model_instance_num, int submodel_num, const matrix *objorient = nullptr, const vec3d *objpos = nullptr);
+// Given a point in a global frame of reference, transform it to a submodel's local frame of reference, taking into account submodel rotations.
+// If objorient and objpos are supplied, the global frame will be world space; otherwise it will be the model's space.
+extern void model_instance_global_to_local_point(vec3d *outpnt, const vec3d *mpnt, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient = nullptr, const vec3d *objpos = nullptr);
+
+// Given a direction (or normal) in a global frame of reference, transform it to a submodel's local frame of reference, taking into account submodel rotations.
+// If objorient is supplied, the global frame will be world space; otherwise it will be the model's space.
+extern void model_instance_global_to_local_dir(vec3d *out_dir, const vec3d *in_dir, int model_instance_num, int submodel_num, const matrix *objorient = nullptr, bool use_submodel_parent = false);
+// Given a direction (or normal) in a global frame of reference, transform it to a submodel's local frame of reference, taking into account submodel rotations.
+// If objorient is supplied, the global frame will be world space; otherwise it will be the model's space.
+extern void model_instance_global_to_local_dir(vec3d *out_dir, const vec3d *in_dir, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient = nullptr);
+
+
+// TODO remove --------
+// Given a point in world coordinates, transform it to a submodel's local frame of reference.
+// This is special purpose code, specific for model collision.
+// NOTE - this code ASSUMES submodel is 1 level down from hull (detail[0])
+// TODO - fix this function to work for all submodel levels
+extern void model_instance_world_to_local_point(vec3d* out, vec3d* world_pt, const polymodel* pm, const polymodel_instance* pmi, int submodel_num, const matrix* orient, const vec3d* pos);
+// TODO remove --------
 
 // ------- end of submodel transformations -------
 
