@@ -795,7 +795,7 @@ public:
 // The "level" parameter indicates how deep the nesting level is, and the "isLeaf" parameter indicates whether the submodel is a leaf node.
 // To find the model's detail0 root node, use pm->submodel[pm->detail[0]].
 template <typename Func, typename... AdditionalParams>
-void model_iterate_submodel_tree(polymodel* pm, int submodel, Func func, int level = 0, AdditionalParams... params)
+void model_iterate_submodel_tree(polymodel* pm, int submodel, Func func, int level, AdditionalParams... params)
 {
 	Assertion(pm != nullptr, "pm must not be null!");
 	Assertion(submodel >= 0 && submodel < pm->n_models, "submodel must be in range!");
@@ -809,6 +809,13 @@ void model_iterate_submodel_tree(polymodel* pm, int submodel, Func func, int lev
 		model_iterate_submodel_tree(pm, child, func, level + 1, params...);
 		child = pm->submodel[child].next_sibling;
 	}
+}
+
+//This wrapper function is needed due to a bug in clang versions before 11 which breaks default parameters before parameter packs
+template <typename Func>
+inline void model_iterate_submodel_tree(polymodel* pm, int submodel, Func func)
+{
+	model_iterate_submodel_tree(pm, submodel, func, 0);
 }
 
 // Call once to initialize the model system
