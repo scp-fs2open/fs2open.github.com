@@ -16,7 +16,7 @@ float error(vec3d* val, vec3d target) {
 
 class SubmodelLocalizeTest : public test::FSTestFixture {
 public:
-	SubmodelLocalizeTest() : test::FSTestFixture() { pushModDir("model"); }
+	SubmodelLocalizeTest() { pushModDir("model"); }
 
 protected:
 	void SetUp() override {
