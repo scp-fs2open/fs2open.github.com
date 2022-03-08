@@ -318,7 +318,7 @@ namespace animation {
 
 		float deltaAngle;
 		vm_matrix_to_rot_axis_and_angle(&delta, &deltaAngle, &submodel->rotation_axis);
-		submodel->current_turn_rate = deltaAngle * flFrametime;
+		submodel->current_turn_rate = deltaAngle / flFrametime;
 
 		//TODO: Once translation is a thing
 		//m_subsys->submodel_instance_1->offset = data.position;
