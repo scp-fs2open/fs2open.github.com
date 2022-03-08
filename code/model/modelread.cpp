@@ -3690,9 +3690,9 @@ void model_get_rotating_submodel_axis(vec3d *model_axis, vec3d *world_axis, cons
 {
 	Assert(pm->id == pmi->model_num);
 	bsp_info *sm = &pm->submodel[submodel_num];
-	Assert(sm->rotation_type == MOVEMENT_TYPE_REGULAR || sm->rotation_type == MOVEMENT_TYPE_INTRINSIC);
+	Assert(sm->rotation_type == MOVEMENT_TYPE_REGULAR || sm->rotation_type == MOVEMENT_TYPE_INTRINSIC || sm->rotation_type == MOVEMENT_TYPE_TRIGGERED);
 
-	*model_axis = sm->rotation_axis;
+	*model_axis = sm->rotation_type == MOVEMENT_TYPE_TRIGGERED ? pmi->submodel[submodel_num].rotation_axis : sm->rotation_axis;
 	model_instance_local_to_global_dir(world_axis, model_axis, pm, pmi, submodel_num, objorient);
 }
 
@@ -4621,86 +4621,6 @@ void model_do_intrinsic_motions(object *objp)
 			}
 		}
 	}
-}
-
-// Finds a point on the rotation axis of a submodel, used in collision, generally find rotational velocity
-void model_init_submodel_axis_pt(polymodel *pm, polymodel_instance *pmi, int submodel_num)
-{
-	vec3d mpoint1, mpoint2;
-	vec3d p1, v1, p2, v2, int1;
-	Assert(pm->id == pmi->model_num);
-
-	Assert(pm->submodel[submodel_num].rotation_type == MOVEMENT_TYPE_REGULAR || pm->submodel[submodel_num].rotation_type == MOVEMENT_TYPE_INTRINSIC);
-	submodel_instance *smi = &pmi->submodel[submodel_num];
-	
-	auto axis = &pm->submodel[submodel_num].rotation_axis;
-
-	// find 2 fixed points in submodel RF
-	// these will be rotated to about the axis an angle of 0 and PI and we'll find the intersection of the
-	// two lines to find a point on the axis
-
-	// since the rotation axis is now arbitrary, we can't simply pick points on the other two axes;
-	// we need to generate some suitably orthogonal points
-
-	// first find the standard vector that's the most orthongonal-ish
-	vec3d *stdaxis;
-	float dotx = fl_abs(vm_vec_dot(axis, &vmd_x_vector));
-	float doty = fl_abs(vm_vec_dot(axis, &vmd_y_vector));
-	float dotz = fl_abs(vm_vec_dot(axis, &vmd_z_vector));
-	if (dotx < doty) {
-		if (dotx < dotz) {
-			stdaxis = &vmd_x_vector;
-		} else {
-			stdaxis = &vmd_z_vector;
-		}
-	} else {
-		if (doty < dotz) {
-			stdaxis = &vmd_y_vector;
-		} else {
-			stdaxis = &vmd_z_vector;
-		}
-	}
-
-	// now find a vector perpendicular to the axis
-	vm_vec_cross(&mpoint1, axis, stdaxis);
-
-	// now find another vector perpendicular to the axis and the first perpendicular vector
-	vm_vec_cross(&mpoint2, axis, &mpoint1);
-
-	// copy submodel angs
-	float save_angle = smi->cur_angle;
-	matrix save_orient = smi->canonical_orient;
-
-	// find two points rotated into model RF when angs set to 0
-	smi->cur_angle = 0.0f;
-	submodel_canonicalize(&pm->submodel[submodel_num], smi, false);
-	model_instance_local_to_global_point(&p1, &mpoint1, pm, pmi, submodel_num, &vmd_identity_matrix, &vmd_zero_vector);
-	model_instance_local_to_global_point(&p2, &mpoint2, pm, pmi, submodel_num, &vmd_identity_matrix, &vmd_zero_vector);
-
-	// find two points rotated into model RF when angs set to PI
-	smi->cur_angle = PI;
-	submodel_canonicalize(&pm->submodel[submodel_num], smi, false);
-	model_instance_local_to_global_point(&v1, &mpoint1, pm, pmi, submodel_num, &vmd_identity_matrix, &vmd_zero_vector);
-	model_instance_local_to_global_point(&v2, &mpoint2, pm, pmi, submodel_num, &vmd_identity_matrix, &vmd_zero_vector);
-
-	// reset submodel angs
-	smi->cur_angle = save_angle;
-	smi->canonical_orient = save_orient;
-
-	// find direction vectors of the two lines
-	vm_vec_sub2(&v1, &p1);
-	vm_vec_sub2(&v2, &p2);
-
-	// find the intersection of the two lines
-	float s, t;
-	fvi_two_lines_in_3space(&p1, &v1, &p2, &v2, &s, &t);
-
-	// find the actual intersection points
-	vm_vec_scale_add(&int1, &p1, &v1, s);
-
-	// set flag to init
-	smi->point_on_axis = int1;
-	smi->axis_set = true;
 }
 
 void model_instance_clear_arcs(polymodel *pm, polymodel_instance *pmi)

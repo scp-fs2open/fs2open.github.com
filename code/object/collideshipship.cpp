@@ -566,25 +566,26 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 			pm = NULL;
 		}
 		
-		if ( pmi != nullptr ) {
+		if ( pmi != nullptr ) { 
 			auto smi = &pmi->submodel[ship_ship_hit_info->submodel_num];
-
-			// set point on axis of rotating submodel if not already set.
-			if ( !smi->axis_set ) {
-				model_init_submodel_axis_pt(pm, pmi, ship_ship_hit_info->submodel_num);
-			}
 
 			vec3d omega, r_rot;
 
+			const vec3d& rotation_axis = pm->submodel[ship_ship_hit_info->submodel_num].rotation_type != MOVEMENT_TYPE_TRIGGERED ? pm->submodel[ship_ship_hit_info->submodel_num].rotation_axis : smi->rotation_axis;
+
 			// get world rotational velocity of rotating submodel
-			model_instance_local_to_global_dir(&omega, &pm->submodel[ship_ship_hit_info->submodel_num].rotation_axis, pm, pmi, ship_ship_hit_info->submodel_num, &heavy->orient);
+			model_instance_local_to_global_dir(&omega, &rotation_axis, pm, pmi, ship_ship_hit_info->submodel_num, &heavy->orient);
 
 			vm_vec_scale(&omega, smi->current_turn_rate);
 
-			// world coords for r_rot
-			vec3d temp;
-			vm_vec_unrotate(&temp, &smi->point_on_axis, &heavy->orient);
-			vm_vec_sub(&r_rot, &ship_ship_hit_info->hit_pos, &temp);
+			// world coords for r_rot.
+			// TODO replace Zero vector with submodel instance translation
+			vec3d temp = ZERO_VECTOR;
+			vm_vec_sub2(&temp, &ship_ship_hit_info->hit_pos);
+			float dist = vm_vec_mag(&temp);
+			vm_vec_scale(&temp, 1.0f / dist);
+			model_instance_local_to_global_dir(&r_rot, &temp, pm, pmi, ship_ship_hit_info->submodel_num, &heavy->orient);
+			vm_vec_scale(&r_rot, dist);
 
 			vm_vec_cross(&local_vel_from_submodel, &omega, &r_rot);
 		} else {

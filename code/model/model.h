@@ -90,9 +90,6 @@ struct submodel_instance
 	float	turn_accel = 0.0f;
 	int		turn_step_zero_timestamp = timestamp();		// timestamp determines when next step is to begin (for stepped rotation)
 
-	vec3d	point_on_axis = vmd_zero_vector;		// in ship RF
-	bool	axis_set = false;
-
 	bool	blown_off = false;						// If set, this subobject is blown off
 	bool	collision_checked = false;
 
@@ -1027,9 +1024,6 @@ void model_get_moving_submodel_list(SCP_vector<int> &submodel_vector, const obje
 
 // Given a polygon model index, get a list of a model tree starting from that index
 void model_get_submodel_tree_list(SCP_vector<int> &submodel_vector, const polymodel *pm, int mn);
-
-// For a rotating submodel, find a point on the axis
-void model_init_submodel_axis_pt(polymodel *pm, polymodel_instance *pmi, int submodel_num);
 
 // Clears all the submodel instances stored in a model to their defaults.
 extern void model_clear_instance(int model_num);
