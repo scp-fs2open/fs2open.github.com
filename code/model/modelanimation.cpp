@@ -324,6 +324,15 @@ namespace animation {
 		//m_subsys->submodel_instance_1->offset = data.position;
 	}
 
+	void ModelAnimationSubmodel::resetPhysicsData(polymodel_instance* pmi) {
+		submodel_instance* submodel = findSubmodel(pmi).first;
+		if (!submodel)
+			return;
+
+		submodel->canonical_prev_orient = submodel->canonical_orient;
+		submodel->current_turn_rate = 0.0f;
+	}
+
 	void ModelAnimationSubmodel::saveCurrentAsBase(polymodel_instance* pmi) {
 		auto submodel = findSubmodel(pmi);
 		ModelAnimationData<>& data = m_initialData[{ pmi->id }];
@@ -591,8 +600,10 @@ namespace animation {
 
 	void ModelAnimationSet::apply(polymodel_instance* pmi, const ModelAnimationSubmodelBuffer& applyBuffer) {
 		for (const auto& toApply : applyBuffer) {
-			if(toApply.second.modified)
+			if (toApply.second.modified)
 				toApply.first->copyToSubmodel(toApply.second.data, pmi);
+			else
+				toApply.first->resetPhysicsData(pmi);
 		}
 	}
 
