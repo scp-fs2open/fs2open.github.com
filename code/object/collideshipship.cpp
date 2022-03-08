@@ -567,16 +567,24 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 		}
 		
 		if ( pmi != nullptr ) { 
-			auto smi = &pmi->submodel[ship_ship_hit_info->submodel_num];
-
 			vec3d omega, r_rot;
 
-			const vec3d& rotation_axis = pm->submodel[ship_ship_hit_info->submodel_num].rotation_type != MOVEMENT_TYPE_TRIGGERED ? pm->submodel[ship_ship_hit_info->submodel_num].rotation_axis : smi->rotation_axis;
-
+			const vec3d* rotation_axis; 
+			float rotation_speed;
+			int rot_sm = ship_ship_hit_info->submodel_num;
+			//A non normalized rotation axis is almost certainly an unset one (and thus 0). This happens when this submodel is not rotating, but its parent is.
+			//This method of doing things is kinda fake for now, _especially_ in this case, as we basically just approximate this submodel rotating like its parent.
+			//A proper rewrite for how this stuff is calculated is in order
+			do {
+				Assertion(pm >= 0, "Couldn't find the submodel that is rotating for a collision with a submodel with rotating parent.");
+				rotation_axis = pm->submodel[rot_sm].rotation_type != MOVEMENT_TYPE_TRIGGERED ? &pm->submodel[rot_sm].rotation_axis : &pmi->submodel[rot_sm].rotation_axis;
+				rotation_speed = pmi->submodel[rot_sm].current_turn_rate;
+				rot_sm = pm->submodel[rot_sm].parent;
+			} while (!vm_vec_is_normalized(rotation_axis)); 
 			// get world rotational velocity of rotating submodel
-			model_instance_local_to_global_dir(&omega, &rotation_axis, pm, pmi, ship_ship_hit_info->submodel_num, &heavy->orient);
+			model_instance_local_to_global_dir(&omega, rotation_axis, pm, pmi, ship_ship_hit_info->submodel_num, &heavy->orient);
 
-			vm_vec_scale(&omega, smi->current_turn_rate);
+			vm_vec_scale(&omega, -rotation_speed);
 
 			// world coords for r_rot.
 			// TODO replace Zero vector with submodel instance translation
