@@ -40,6 +40,7 @@
 #include "tracing/tracing.h"
 
 #include <algorithm>
+#include <stack>
 
 flag_def_list model_render_flags[] =
 {
@@ -4244,6 +4245,78 @@ void model_instance_local_to_global_point_orient(vec3d *outpnt, matrix *outorien
 		*outpnt = pnt;
 		*outorient = orient;
 	}
+}
+
+void model_instance_global_to_local_point(vec3d* outpnt, const vec3d* mpnt, int model_instance_num, int submodel_num, const matrix* objorient, const vec3d* objpos) {
+	auto pmi = model_get_instance(model_instance_num);
+	auto pm = model_get(pmi->model_num);
+	return model_instance_global_to_local_point(outpnt, mpnt, pm, pmi, submodel_num, objorient, objpos);
+}
+
+void model_instance_global_to_local_point(vec3d* outpnt, const vec3d* mpnt, const polymodel* pm, const polymodel_instance* pmi, int submodel_num, const matrix* objorient, const vec3d* objpos) {
+	Assert(pm->id == pmi->model_num);
+
+	std::stack<std::pair<const matrix*, const vec3d*>> submodelStack;
+
+	int mn = submodel_num;
+
+	//Go up the chain of parents to build a stack of transformations from parent -> child
+	while ((mn >= 0) && (pm->submodel[mn].parent >= 0)) {
+		submodelStack.emplace(&pmi->submodel[mn].canonical_orient, &pm->submodel[mn].offset);
+		mn = pm->submodel[mn].parent;
+	}
+
+	if(objorient != nullptr && objpos != nullptr)
+		submodelStack.emplace(objorient, objpos);
+	
+	vec3d resultPnt = *mpnt;
+
+	while (!submodelStack.empty()) {
+		const auto& transform = submodelStack.top();
+
+		vm_vec_sub2(&resultPnt, transform.second);
+		vm_vec_rotate(&resultPnt, &resultPnt, transform.first);
+
+		submodelStack.pop();
+	}
+
+	*outpnt = resultPnt;
+}
+
+void model_instance_global_to_local_dir(vec3d* out_dir, const vec3d* in_dir, int model_instance_num, int submodel_num, const matrix* objorient, bool use_submodel_parent) {
+	auto pmi = model_get_instance(model_instance_num);
+	auto pm = model_get(pmi->model_num);
+	model_instance_global_to_local_dir(out_dir, in_dir, pm, pmi, use_submodel_parent ? pm->submodel[submodel_num].parent : submodel_num, objorient);
+}
+
+void model_instance_global_to_local_dir(vec3d* out_dir, const vec3d* in_dir, const polymodel* pm, const polymodel_instance* pmi, int submodel_num, const matrix* objorient) {
+	Assert(pm->id == pmi->model_num);
+	Assertion(vm_vec_is_normalized(in_dir), "Input vector must be normalized!");
+
+	std::stack<const matrix*> submodelStack;
+
+	int mn = submodel_num;
+
+	//Go up the chain of parents to build a stack of transformations from parent -> child
+	while ((mn >= 0) && (pm->submodel[mn].parent >= 0)) {
+		submodelStack.push(&pmi->submodel[mn].canonical_orient);
+		mn = pm->submodel[mn].parent;
+	}
+
+	if (objorient != nullptr)
+		submodelStack.push(objorient);
+
+	vec3d resultDir = *in_dir;
+
+	while (!submodelStack.empty()) {
+		const auto& transform = submodelStack.top();
+
+		vm_vec_rotate(&resultDir, &resultDir, transform);
+
+		submodelStack.pop();
+	}
+
+	*out_dir = resultDir;
 }
 
 // Verify rotating submodel has corresponding ship subsystem -- info in which to store rotation angle
