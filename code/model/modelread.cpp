@@ -859,7 +859,7 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 }
 
 // used in collision code to check if submodel rotates too far
-float get_submodel_delta_angle(submodel_instance *smi)
+float get_submodel_delta_angle(const submodel_instance *smi)
 {
 	// find the angle
 	float delta_angle = smi->cur_angle - smi->prev_angle;
@@ -4159,27 +4159,6 @@ void model_instance_local_to_global_point(vec3d *outpnt, const vec3d *mpnt, cons
 	}
 }
 
-void model_instance_world_to_local_point(vec3d *out, vec3d *world_pt, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *orient, const vec3d *pos)
-{
-	Assert(pm->id == pmi->model_num);
-	Assert( (pm->submodel[submodel_num].parent == pm->detail[0]) || (pm->submodel[submodel_num].parent == -1) );
-
-	vec3d tempv1, tempv2;
-
-	// get into ship RF
-	vm_vec_sub(&tempv1, world_pt, pos);
-	vm_vec_rotate(&tempv2, &tempv1, orient);
-
-	if (pm->submodel[submodel_num].parent == -1) {
-		*out  = tempv2;
-		return;
-	}
-
-	// put into submodel RF
-	vm_vec_sub2(&tempv2, &pm->submodel[submodel_num].offset);
-	vm_vec_rotate(out, &tempv2, &pmi->submodel[submodel_num].canonical_orient);
-}
-
 void model_instance_local_to_global_point_dir(vec3d *out_pnt, vec3d *out_dir, const vec3d *in_pnt, const vec3d *in_dir, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient, const vec3d *objpos)
 {
 	vec3d pnt, tpnt, dir, tdir;
@@ -4247,13 +4226,13 @@ void model_instance_local_to_global_point_orient(vec3d *outpnt, matrix *outorien
 	}
 }
 
-void model_instance_global_to_local_point(vec3d* outpnt, const vec3d* mpnt, int model_instance_num, int submodel_num, const matrix* objorient, const vec3d* objpos) {
+void model_instance_global_to_local_point(vec3d* outpnt, const vec3d* mpnt, int model_instance_num, int submodel_num, const matrix* objorient, const vec3d* objpos, bool use_last_frame) {
 	auto pmi = model_get_instance(model_instance_num);
 	auto pm = model_get(pmi->model_num);
-	return model_instance_global_to_local_point(outpnt, mpnt, pm, pmi, submodel_num, objorient, objpos);
+	return model_instance_global_to_local_point(outpnt, mpnt, pm, pmi, submodel_num, objorient, objpos, use_last_frame);
 }
 
-void model_instance_global_to_local_point(vec3d* outpnt, const vec3d* mpnt, const polymodel* pm, const polymodel_instance* pmi, int submodel_num, const matrix* objorient, const vec3d* objpos) {
+void model_instance_global_to_local_point(vec3d* outpnt, const vec3d* mpnt, const polymodel* pm, const polymodel_instance* pmi, int submodel_num, const matrix* objorient, const vec3d* objpos, bool use_last_frame) {
 	Assert(pm->id == pmi->model_num);
 
 	std::stack<std::pair<const matrix*, const vec3d*>> submodelStack;
@@ -4262,7 +4241,10 @@ void model_instance_global_to_local_point(vec3d* outpnt, const vec3d* mpnt, cons
 
 	//Go up the chain of parents to build a stack of transformations from parent -> child
 	while ((mn >= 0) && (pm->submodel[mn].parent >= 0)) {
-		submodelStack.emplace(&pmi->submodel[mn].canonical_orient, &pm->submodel[mn].offset);
+		if(use_last_frame)
+			submodelStack.emplace(&pmi->submodel[mn].canonical_prev_orient, &pm->submodel[mn].offset);
+		else
+			submodelStack.emplace(&pmi->submodel[mn].canonical_orient, &pm->submodel[mn].offset);
 		mn = pm->submodel[mn].parent;
 	}
 
@@ -4283,13 +4265,13 @@ void model_instance_global_to_local_point(vec3d* outpnt, const vec3d* mpnt, cons
 	*outpnt = resultPnt;
 }
 
-void model_instance_global_to_local_dir(vec3d* out_dir, const vec3d* in_dir, int model_instance_num, int submodel_num, const matrix* objorient, bool use_submodel_parent) {
+void model_instance_global_to_local_dir(vec3d* out_dir, const vec3d* in_dir, int model_instance_num, int submodel_num, const matrix* objorient, bool use_submodel_parent, bool use_last_frame) {
 	auto pmi = model_get_instance(model_instance_num);
 	auto pm = model_get(pmi->model_num);
 	model_instance_global_to_local_dir(out_dir, in_dir, pm, pmi, use_submodel_parent ? pm->submodel[submodel_num].parent : submodel_num, objorient);
 }
 
-void model_instance_global_to_local_dir(vec3d* out_dir, const vec3d* in_dir, const polymodel* pm, const polymodel_instance* pmi, int submodel_num, const matrix* objorient) {
+void model_instance_global_to_local_dir(vec3d* out_dir, const vec3d* in_dir, const polymodel* pm, const polymodel_instance* pmi, int submodel_num, const matrix* objorient, bool use_last_frame) {
 	Assert(pm->id == pmi->model_num);
 	Assertion(vm_vec_is_normalized(in_dir), "Input vector must be normalized!");
 
@@ -4299,7 +4281,10 @@ void model_instance_global_to_local_dir(vec3d* out_dir, const vec3d* in_dir, con
 
 	//Go up the chain of parents to build a stack of transformations from parent -> child
 	while ((mn >= 0) && (pm->submodel[mn].parent >= 0)) {
-		submodelStack.push(&pmi->submodel[mn].canonical_orient);
+		if (use_last_frame)
+			submodelStack.push(&pmi->submodel[mn].canonical_prev_orient);
+		else
+			submodelStack.push(&pmi->submodel[mn].canonical_orient);
 		mn = pm->submodel[mn].parent;
 	}
 
@@ -4375,39 +4360,33 @@ void model_get_moving_submodel_list(SCP_vector<int> &submodel_vector, const obje
 	}
 
 	polymodel *pm = model_get(model_num);
-	bsp_info *child_submodel = &pm->submodel[pm->detail[0]];
-	
-	if(child_submodel->flags[Model::Submodel_flags::No_collisions]) { // if detail0 has $no_collision set dont check childs
-		return;
-	}
-
 	polymodel_instance *pmi = model_get_instance(model_instance_num);
-	submodel_instance *child_submodel_instance;
+	
+	
+	model_iterate_submodel_tree(pm, pm->detail[0], [pm, pmi, &submodel_vector](int submodel, int /*currentLevel*/, bool /*isLeaf*/, bool& isMoving, bool& skipChildren) {
+		if (skipChildren)
+			return;
 
-	int i = child_submodel->first_child;
-	while ( i >= 0 )	{
-		child_submodel = &pm->submodel[i];
-		child_submodel_instance = &pmi->submodel[i];
+		const auto& child_submodel = pm->submodel[submodel];
+		const auto& child_submodel_instance = pmi->submodel[submodel];
 
-		// Don't check it or its children if it is destroyed or it is a replacement (non-moving)
-		if ( !child_submodel_instance->blown_off && (child_submodel->i_replace == -1) && !child_submodel->flags[Model::Submodel_flags::No_collisions, Model::Submodel_flags::Nocollide_this_only])	{
-
-			// Look for submodels that rotate or intrinsic-rotate
-			if (child_submodel->rotation_type == MOVEMENT_TYPE_REGULAR || child_submodel->rotation_type == MOVEMENT_TYPE_INTRINSIC) {
-
-				// check submodel rotation is less than max allowed.
-				float delta_angle = get_submodel_delta_angle(child_submodel_instance);
-				if (delta_angle < MAX_SUBMODEL_COLLISION_ANGULAR_VELOCITY) {
-					submodel_vector.push_back(i);
-				}
-			}
-			// Also look for submodels that aren't subsystems but still move
-			else if (child_submodel->subsys_num < 0 && child_submodel->flags[Model::Submodel_flags::Can_move]) {
-				submodel_vector.push_back(i);
-			}
+		if (child_submodel.flags[Model::Submodel_flags::No_collisions] || child_submodel_instance.blown_off || child_submodel.i_replace != -1) {
+			skipChildren = true;
+			return;
 		}
-		i = child_submodel->next_sibling;
-	}
+
+		if (child_submodel.rotation_type == MOVEMENT_TYPE_REGULAR || child_submodel.rotation_type == MOVEMENT_TYPE_INTRINSIC) {
+			float delta_angle = get_submodel_delta_angle(&child_submodel_instance);
+			isMoving |= delta_angle < MAX_SUBMODEL_COLLISION_ANGULAR_VELOCITY;
+		}
+		else if (child_submodel.flags[Model::Submodel_flags::Can_move]) {
+			isMoving = true;
+		}
+
+
+		if (isMoving && !child_submodel.flags[Model::Submodel_flags::Nocollide_this_only])
+			submodel_vector.push_back(submodel);
+		}, 0, false, false);
 }
 
 void model_get_submodel_tree_list(SCP_vector<int> &submodel_vector, const polymodel *pm, int mn)

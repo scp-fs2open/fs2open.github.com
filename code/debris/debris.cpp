@@ -865,7 +865,8 @@ int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, co
 				}
 
 				// reset flags to check MC_CHECK_MODEL | MC_CHECK_SPHERELINE and maybe MC_CHECK_INVISIBLE_FACES and MC_SUBMODEL_INSTANCE
-				mc.flags = copy_flags | MC_SUBMODEL_INSTANCE;
+				// Only check single submodel now, since children of moving submodels are handled as moving as well
+				mc.flags = copy_flags | MC_SUBMODEL;
 
 				if (Ship_info[Ships[pship_obj->instance].ship_info_index].collision_lod > -1) {
 					mc.lod = Ship_info[Ships[pship_obj->instance].ship_info_index].collision_lod;
@@ -878,15 +879,9 @@ int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, co
 					// turn on just one submodel for collision test
 					smi->collision_checked = false;
 
-					// set angles for last frame (need to set to prev to get p0)
-					matrix copy_matrix = smi->canonical_orient;
-
 					// find the start and end positions of the sphere in submodel RF
-					smi->canonical_orient = smi->canonical_prev_orient;
-					model_instance_world_to_local_point(&p0, &light_obj->last_pos, pm, pmi, submodel, &heavy_obj->last_orient, &heavy_obj->last_pos);
-
-					smi->canonical_orient = copy_matrix;
-					model_instance_world_to_local_point(&p1, &light_obj->pos, pm, pmi, submodel, &heavy_obj->orient, &heavy_obj->pos);
+					model_instance_global_to_local_point(&p0, &light_obj->last_pos, pm, pmi, submodel, &heavy_obj->last_orient, &heavy_obj->last_pos, true);
+					model_instance_global_to_local_point(&p1, &light_obj->pos, pm, pmi, submodel, &heavy_obj->orient, &heavy_obj->pos);
 
 					mc.p0 = &p0;
 					mc.p1 = &p1;

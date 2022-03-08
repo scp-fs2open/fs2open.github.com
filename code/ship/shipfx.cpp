@@ -138,7 +138,7 @@ static void shipfx_subsystem_maybe_create_live_debris(object *ship_objp, ship *s
 		model_instance_local_to_global_point(&start_world_pos, &pm->submodel[live_debris_submodel].offset, pm, pmi, live_debris_submodel, &ship_objp->orient, &ship_objp->pos );
 
 		// convert to model coord of underlying submodel
-		model_instance_world_to_local_point(&start_model_pos, &start_world_pos, pm, pmi, submodel_num, &ship_objp->orient, &ship_objp->pos);
+		model_instance_global_to_local_point(&start_model_pos, &start_world_pos, pm, pmi, submodel_num, &ship_objp->orient, &ship_objp->pos);
 
 		// rotate from submodel coord to world coords
 		model_instance_local_to_global_point(&end_world_pos, &start_model_pos, pm, pmi, submodel_num, &ship_objp->orient, &ship_objp->pos);
