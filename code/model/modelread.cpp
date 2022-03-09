@@ -4370,6 +4370,7 @@ void model_get_moving_submodel_list(SCP_vector<int> &submodel_vector, const obje
 		const auto& child_submodel = pm->submodel[submodel];
 		const auto& child_submodel_instance = pmi->submodel[submodel];
 
+		// Don't check it or its children if it is destroyed or it is a replacement (non-moving)
 		if (child_submodel.flags[Model::Submodel_flags::No_collisions] || child_submodel_instance.blown_off || child_submodel.i_replace != -1) {
 			skipChildren = true;
 			return;

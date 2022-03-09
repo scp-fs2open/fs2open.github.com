@@ -1092,7 +1092,6 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 					pmi->submodel[submodel].collision_checked = true;
 				}
 
-				// reset flags to check MC_CHECK_MODEL | MC_CHECK_SPHERELINE and maybe MC_CHECK_INVISIBLE_FACES and MC_SUBMODEL_INSTANCE
 				// Only check single submodel now, since children of moving submodels are handled as moving as well
 				mc.flags = copy_flags | MC_SUBMODEL;
 

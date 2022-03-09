@@ -1015,15 +1015,6 @@ extern void model_instance_global_to_local_dir(vec3d *out_dir, const vec3d *in_d
 // If objorient is supplied, the global frame will be world space; otherwise it will be the model's space.
 extern void model_instance_global_to_local_dir(vec3d *out_dir, const vec3d *in_dir, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient = nullptr, bool use_last_frame = false);
 
-
-// TODO remove --------
-// Given a point in world coordinates, transform it to a submodel's local frame of reference.
-// This is special purpose code, specific for model collision.
-// NOTE - this code ASSUMES submodel is 1 level down from hull (detail[0])
-// TODO - fix this function to work for all submodel levels
-//extern void model_instance_world_to_local_point(vec3d* out, vec3d* world_pt, const polymodel* pm, const polymodel_instance* pmi, int submodel_num, const matrix* orient, const vec3d* pos);
-// TODO remove --------
-
 // ------- end of submodel transformations -------
 
 // Given a polygon model index, find a list of moving submodels to be used for collision
