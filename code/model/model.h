@@ -975,10 +975,10 @@ extern void model_local_to_global_point(vec3d *outpnt, const vec3d *mpnt, const 
 
 // Given a point in a submodel's local frame of reference, transform it to a global frame of reference, taking into account submodel rotations.
 // If objorient and objpos are supplied, this will be world space; otherwise it will be the model's space.
-extern void model_instance_local_to_global_point(vec3d *outpnt, const vec3d *mpnt, int model_instance_num, int submodel_num, const matrix *objorient = nullptr, const vec3d *objpos = nullptr);
+extern void model_instance_local_to_global_point(vec3d *outpnt, const vec3d *mpnt, int model_instance_num, int submodel_num, const matrix *objorient = nullptr, const vec3d *objpos = nullptr, bool use_last_frame = false);
 // Given a point in a submodel's local frame of reference, transform it to a global frame of reference, taking into account submodel rotations.
 // If objorient and objpos are supplied, this will be world space; otherwise it will be the model's space.
-extern void model_instance_local_to_global_point(vec3d *outpnt, const vec3d *mpnt, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient = nullptr, const vec3d *objpos = nullptr);
+extern void model_instance_local_to_global_point(vec3d *outpnt, const vec3d *mpnt, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient = nullptr, const vec3d *objpos = nullptr, bool use_last_frame = false);
 
 // Given a direction (or normal) in a submodel's local frame of reference, transform it to a global frame of reference.
 // If objorient and objpos are supplied, this will be world space; otherwise it will be the model's space.

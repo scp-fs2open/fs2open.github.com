@@ -566,35 +566,16 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 		}
 		
 		if ( pmi != nullptr ) { 
-			vec3d omega, r_rot;
+			//Find the global movement of the position that hit the ship
+			vec3d last_frame_col_pos, col_pos;
+			model_instance_local_to_global_point(&last_frame_col_pos, &ship_ship_hit_info->hit_pos, pm, pmi, ship_ship_hit_info->submodel_num, &heavy->orient, &heavy->pos, true);
+			model_instance_local_to_global_point(&col_pos, &ship_ship_hit_info->hit_pos, pm, pmi, ship_ship_hit_info->submodel_num, &heavy->orient, &heavy->pos);
 
-			const vec3d* rotation_axis; 
-			float rotation_speed;
-			int rot_sm = ship_ship_hit_info->submodel_num;
-			//A non normalized rotation axis is almost certainly an unset one (and thus 0). This happens when this submodel is not rotating, but its parent is.
-			//This method of doing things is kinda fake for now, _especially_ in this case, as we basically just approximate this submodel rotating like its parent.
-			//A proper rewrite for how this stuff is calculated is in order
-			do {
-				Assertion(rot_sm >= 0, "Couldn't find the submodel that is rotating for a collision with a submodel with rotating parent.");
-				rotation_axis = pm->submodel[rot_sm].rotation_type != MOVEMENT_TYPE_TRIGGERED ? &pm->submodel[rot_sm].rotation_axis : &pmi->submodel[rot_sm].rotation_axis;
-				rotation_speed = pmi->submodel[rot_sm].current_turn_rate;
-				rot_sm = pm->submodel[rot_sm].parent;
-			} while (!vm_vec_is_normalized(rotation_axis)); 
-			// get world rotational velocity of rotating submodel
-			model_instance_local_to_global_dir(&omega, rotation_axis, pm, pmi, ship_ship_hit_info->submodel_num, &heavy->orient);
+			//Calculate the movement speed from that
+			vm_vec_sub(&local_vel_from_submodel, &col_pos, &last_frame_col_pos);
 
-			vm_vec_scale(&omega, -rotation_speed);
-
-			// world coords for r_rot.
-			// TODO replace Zero vector with submodel instance translation
-			vec3d temp = ZERO_VECTOR;
-			vm_vec_sub2(&temp, &ship_ship_hit_info->hit_pos);
-			float dist = vm_vec_mag(&temp);
-			vm_vec_scale(&temp, 1.0f / dist);
-			model_instance_local_to_global_dir(&r_rot, &temp, pm, pmi, ship_ship_hit_info->submodel_num, &heavy->orient);
-			vm_vec_scale(&r_rot, dist);
-
-			vm_vec_cross(&local_vel_from_submodel, &omega, &r_rot);
+			//By artificially inflating moving submodel collision speed by 20%, the chance to accidentally tunnel through fast (~100m/s) moving submodels is drastically reduced with only very little noticeable in-game change
+			vm_vec_scale2(&local_vel_from_submodel, 1.2f, flFrametime);
 		} else {
 			vm_vec_zero(&local_vel_from_submodel);
 		}
