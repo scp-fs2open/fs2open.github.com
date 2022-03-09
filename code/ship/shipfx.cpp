@@ -109,16 +109,13 @@ static void shipfx_subsystem_maybe_create_live_debris(object *ship_objp, ship *s
 	vec3d model_axis, world_axis, rotvel, world_axis_pt;
 	matrix m_rot;	// rotation for debris orient about axis
 
-	if (pm->submodel[submodel_num].rotation_type == MOVEMENT_TYPE_REGULAR || pm->submodel[submodel_num].rotation_type == MOVEMENT_TYPE_INTRINSIC) {
-		if ( !smi->axis_set ) {
-			model_init_submodel_axis_pt(pm, pmi, submodel_num);
-		}
-
+	if (pm->submodel[submodel_num].rotation_type == MOVEMENT_TYPE_REGULAR || pm->submodel[submodel_num].rotation_type == MOVEMENT_TYPE_INTRINSIC || pm->submodel[submodel_num].rotation_type == MOVEMENT_TYPE_TRIGGERED){
 		// get the rotvel
 		model_get_rotating_submodel_axis(&model_axis, &world_axis, pm, pmi, submodel_num, &ship_objp->orient);
 		vm_vec_copy_scale(&rotvel, &world_axis, smi->current_turn_rate);
 
-		model_instance_local_to_global_point(&world_axis_pt, &smi->point_on_axis, pm, pmi, submodel_num, &ship_objp->orient, &ship_objp->pos);
+		//TODO replace zero_vector with translation offset of submodel
+		model_instance_local_to_global_point(&world_axis_pt, &vmd_zero_vector, pm, pmi, submodel_num, &ship_objp->orient, &ship_objp->pos);
 
 		vm_quaternion_rotate(&m_rot, smi->cur_angle, &model_axis);
 	} else {
@@ -138,7 +135,7 @@ static void shipfx_subsystem_maybe_create_live_debris(object *ship_objp, ship *s
 		model_instance_local_to_global_point(&start_world_pos, &pm->submodel[live_debris_submodel].offset, pm, pmi, live_debris_submodel, &ship_objp->orient, &ship_objp->pos );
 
 		// convert to model coord of underlying submodel
-		model_instance_world_to_local_point(&start_model_pos, &start_world_pos, pm, pmi, submodel_num, &ship_objp->orient, &ship_objp->pos);
+		model_instance_global_to_local_point(&start_model_pos, &start_world_pos, pm, pmi, submodel_num, &ship_objp->orient, &ship_objp->pos);
 
 		// rotate from submodel coord to world coords
 		model_instance_local_to_global_point(&end_world_pos, &start_model_pos, pm, pmi, submodel_num, &ship_objp->orient, &ship_objp->pos);

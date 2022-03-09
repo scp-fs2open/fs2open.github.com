@@ -312,8 +312,25 @@ namespace animation {
 		submodel->canonical_prev_orient = submodel->canonical_orient;
 		submodel->canonical_orient = data.orientation;
 
+		matrix delta;
+		vm_copy_transpose(&delta, &submodel->canonical_prev_orient);
+		vm_matrix_x_matrix(&delta, &submodel->canonical_orient, &delta);
+
+		float deltaAngle;
+		vm_matrix_to_rot_axis_and_angle(&delta, &deltaAngle, &submodel->rotation_axis);
+		submodel->current_turn_rate = deltaAngle / flFrametime;
+
 		//TODO: Once translation is a thing
 		//m_subsys->submodel_instance_1->offset = data.position;
+	}
+
+	void ModelAnimationSubmodel::resetPhysicsData(polymodel_instance* pmi) {
+		submodel_instance* submodel = findSubmodel(pmi).first;
+		if (!submodel)
+			return;
+
+		submodel->canonical_prev_orient = submodel->canonical_orient;
+		submodel->current_turn_rate = 0.0f;
 	}
 
 	void ModelAnimationSubmodel::saveCurrentAsBase(polymodel_instance* pmi) {
@@ -326,6 +343,10 @@ namespace animation {
 		if(!submodel.second->flags[Model::Submodel_flags::Can_move]){
 			mprintf(("Submodel %s of model %s is animated and has movement enabled.\n", submodel.second->name, model_get(pmi->model_num)->filename));
 			submodel.second->flags.set(Model::Submodel_flags::Can_move);
+
+			if (submodel.second->rotation_type == MOVEMENT_TYPE_NONE) {
+				submodel.second->rotation_type = MOVEMENT_TYPE_TRIGGERED;
+			}
 		}
 		
 		data.orientation = submodel.first->canonical_orient;
@@ -436,6 +457,7 @@ namespace animation {
 
 		float angle = 0.0f;
 		vm_closest_angle_to_matrix(&submodel->canonical_orient, &sm->rotation_axis, &angle);
+		submodel->rotation_axis = sm->rotation_axis;
 
 		submodel->cur_angle = angle;
 		submodel->turret_idle_angle = angle;
@@ -578,8 +600,10 @@ namespace animation {
 
 	void ModelAnimationSet::apply(polymodel_instance* pmi, const ModelAnimationSubmodelBuffer& applyBuffer) {
 		for (const auto& toApply : applyBuffer) {
-			if(toApply.second.modified)
+			if (toApply.second.modified)
 				toApply.first->copyToSubmodel(toApply.second.data, pmi);
+			else
+				toApply.first->resetPhysicsData(pmi);
 		}
 	}
 

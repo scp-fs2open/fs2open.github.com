@@ -265,8 +265,8 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info)
 				pmi->submodel[submodel].collision_checked = true;
 			}
 
-			// reset flags to check MC_CHECK_MODEL | MC_CHECK_SPHERELINE and maybe MC_CHECK_INVISIBLE_FACES and MC_SUBMODEL_INSTANCE
-			mc.flags = copy_flags | MC_SUBMODEL_INSTANCE;
+			// Only check single submodel now, since children of moving submodels are handled as moving as well
+			mc.flags = copy_flags | MC_SUBMODEL;
 
 			if (heavy_sip->collision_lod > -1) {
 				mc.lod = heavy_sip->collision_lod;
@@ -285,15 +285,9 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info)
 					continue;
 				}
 
-				// set angles for last frame
-				matrix copy_matrix = smi->canonical_orient;
-
 				// find the start and end positions of the sphere in submodel RF
-				smi->canonical_orient = smi->canonical_prev_orient;
-				model_instance_world_to_local_point(&p0, &light_obj->last_pos, pm, pmi, submodel, &heavy_obj->last_orient, &heavy_obj->last_pos);
-
-				smi->canonical_orient = copy_matrix;
-				model_instance_world_to_local_point(&p1, &light_obj->pos, pm, pmi, submodel, &heavy_obj->orient, &heavy_obj->pos);
+				model_instance_global_to_local_point(&p0, &light_obj->last_pos, pm, pmi, submodel, &heavy_obj->last_orient, &heavy_obj->last_pos, true);
+				model_instance_global_to_local_point(&p1, &light_obj->pos, pm, pmi, submodel, &heavy_obj->orient, &heavy_obj->pos);
 
 				mc.p0 = &p0;
 				mc.p1 = &p1;
@@ -571,25 +565,34 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 			pm = NULL;
 		}
 		
-		if ( pmi != nullptr ) {
-			auto smi = &pmi->submodel[ship_ship_hit_info->submodel_num];
-
-			// set point on axis of rotating submodel if not already set.
-			if ( !smi->axis_set ) {
-				model_init_submodel_axis_pt(pm, pmi, ship_ship_hit_info->submodel_num);
-			}
-
+		if ( pmi != nullptr ) { 
 			vec3d omega, r_rot;
 
+			const vec3d* rotation_axis; 
+			float rotation_speed;
+			int rot_sm = ship_ship_hit_info->submodel_num;
+			//A non normalized rotation axis is almost certainly an unset one (and thus 0). This happens when this submodel is not rotating, but its parent is.
+			//This method of doing things is kinda fake for now, _especially_ in this case, as we basically just approximate this submodel rotating like its parent.
+			//A proper rewrite for how this stuff is calculated is in order
+			do {
+				Assertion(rot_sm >= 0, "Couldn't find the submodel that is rotating for a collision with a submodel with rotating parent.");
+				rotation_axis = pm->submodel[rot_sm].rotation_type != MOVEMENT_TYPE_TRIGGERED ? &pm->submodel[rot_sm].rotation_axis : &pmi->submodel[rot_sm].rotation_axis;
+				rotation_speed = pmi->submodel[rot_sm].current_turn_rate;
+				rot_sm = pm->submodel[rot_sm].parent;
+			} while (!vm_vec_is_normalized(rotation_axis)); 
 			// get world rotational velocity of rotating submodel
-			model_instance_local_to_global_dir(&omega, &pm->submodel[ship_ship_hit_info->submodel_num].rotation_axis, pm, pmi, ship_ship_hit_info->submodel_num, &heavy->orient);
+			model_instance_local_to_global_dir(&omega, rotation_axis, pm, pmi, ship_ship_hit_info->submodel_num, &heavy->orient);
 
-			vm_vec_scale(&omega, smi->current_turn_rate);
+			vm_vec_scale(&omega, -rotation_speed);
 
-			// world coords for r_rot
-			vec3d temp;
-			vm_vec_unrotate(&temp, &smi->point_on_axis, &heavy->orient);
-			vm_vec_sub(&r_rot, &ship_ship_hit_info->hit_pos, &temp);
+			// world coords for r_rot.
+			// TODO replace Zero vector with submodel instance translation
+			vec3d temp = ZERO_VECTOR;
+			vm_vec_sub2(&temp, &ship_ship_hit_info->hit_pos);
+			float dist = vm_vec_mag(&temp);
+			vm_vec_scale(&temp, 1.0f / dist);
+			model_instance_local_to_global_dir(&r_rot, &temp, pm, pmi, ship_ship_hit_info->submodel_num, &heavy->orient);
+			vm_vec_scale(&r_rot, dist);
 
 			vm_vec_cross(&local_vel_from_submodel, &omega, &r_rot);
 		} else {

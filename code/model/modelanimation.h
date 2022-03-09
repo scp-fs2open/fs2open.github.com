@@ -185,6 +185,8 @@ namespace animation {
 		//Reapply the calculated animation state to the submodel
 		virtual void copyToSubmodel(const ModelAnimationData<>& data, polymodel_instance* pmi);
 
+		void resetPhysicsData(polymodel_instance* pmi);
+
 		friend class ModelAnimationSet;
 	};
 
