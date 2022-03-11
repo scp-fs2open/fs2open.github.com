@@ -4161,7 +4161,6 @@ void model_instance_local_to_global_point_dir(vec3d *out_pnt, vec3d *out_dir, co
 	vec3d pnt, tpnt, dir, tdir;
 	int mn;
 	Assert(pm->id == pmi->model_num);
-	Assertion(vm_vec_is_normalized(in_dir), "Input vector must be normalized!");
 
 	pnt = *in_pnt;
 	dir = *in_dir;
@@ -4270,7 +4269,6 @@ void model_instance_global_to_local_dir(vec3d* out_dir, const vec3d* in_dir, int
 
 void model_instance_global_to_local_dir(vec3d* out_dir, const vec3d* in_dir, const polymodel* pm, const polymodel_instance* pmi, int submodel_num, const matrix* objorient, bool use_last_frame) {
 	Assert(pm->id == pmi->model_num);
-	Assertion(vm_vec_is_normalized(in_dir), "Input vector must be normalized!");
 
 	std::stack<const matrix*> submodelStack;
 
@@ -4411,7 +4409,6 @@ void model_local_to_global_dir(vec3d *out_dir, const vec3d *in_dir, const polymo
 {
 	SCP_UNUSED(pm);
 	SCP_UNUSED(submodel_num);
-	Assertion(vm_vec_is_normalized(in_dir), "Input vector must be normalized!");
 
 	//now instance for the entire object
 	if (objorient) {
