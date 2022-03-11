@@ -4434,7 +4434,6 @@ void model_instance_local_to_global_dir(vec3d *out_dir, const vec3d *in_dir, con
 	vec3d tpnt;
 	int mn;
 	Assert(pm->id == pmi->model_num);
-	Assertion(vm_vec_is_normalized(in_dir), "Input vector must be normalized!");
 
 	pnt = *in_dir;
 	mn = submodel_num;
