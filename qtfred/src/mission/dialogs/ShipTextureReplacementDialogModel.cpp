@@ -451,9 +451,7 @@ namespace fso {
 							}
 						}
 						else {
-							SCP_string buf;
-							sprintf(buf, "Cannot use inherited data without changing the main texture name. Ignoring %s map change.", type.c_str());
-							error_display(0, buf.c_str());
+							error_display(0, "Cannot use inherited data without changing the main texture name. Ignoring %s map change.", type.c_str());
 						}
 					}
 					else {
