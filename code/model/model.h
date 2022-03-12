@@ -1099,7 +1099,7 @@ typedef struct mc_info {
 	int		hit_bitmap;			// Which texture got hit.  -1 if not a textured poly
 	float		hit_u, hit_v;		// Where on hit_bitmap the ray hit.  Invalid if hit_bitmap < 0
 	int		shield_hit_tri;	// Which triangle on the shield got hit or -1 if none
-	vec3d	hit_normal;			//	Vector normal of polygon of collision.  (This is in submodel RF)
+	vec3d	hit_normal;			//	Vector normal of polygon of collision (This is in submodel RF). CAN BE ZERO, if edge_hit is true
 	bool		edge_hit;			// Set if an edge got hit.  Only valid if MC_CHECK_THICK is set.	
 	ubyte		*f_poly;				// pointer to flat poly where we intersected
 	ubyte		*t_poly;				// pointer to tmap poly where we intersected
