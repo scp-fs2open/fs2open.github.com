@@ -451,7 +451,9 @@ namespace fso {
 							}
 						}
 						else {
-							error_display(0, "You told us to replace the -misc map with inherited data but didnt change the main texture name. Ignoring -misc map change");
+							SCP_string buf;
+							sprintf(buf, "Cannot use inherited data without changing the main texture name. Ignoring %s map change.", type.c_str());
+							error_display(0, buf.c_str());
 						}
 					}
 					else {
