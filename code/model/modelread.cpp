@@ -3696,6 +3696,8 @@ void model_get_rotating_submodel_axis(vec3d *model_axis, vec3d *world_axis, cons
 // Normalize the submodel angle and convert float angle to angles struct
 void submodel_canonicalize(bsp_info *sm, submodel_instance *smi, bool clamp)
 {
+	smi->canonical_prev_orient = smi->canonical_orient;
+
 	if (clamp)
 	{
 		// normalize the angle so that we are within a valid range:
@@ -3767,7 +3769,6 @@ void submodel_stepped_rotate(model_subsystem *psub, submodel_instance *smi)
 
 	// save last angles
 	smi->prev_angle = smi->cur_angle;
-	smi->canonical_prev_orient = smi->canonical_orient;
 
 	// angular displacement of one step
 	float step_size = (PI2 / psub->stepped_rotation->num_steps);
@@ -3903,7 +3904,6 @@ void submodel_rotate(bsp_info *sm, submodel_instance *smi)
 {
 	// save last angles
 	smi->prev_angle = smi->cur_angle;
-	smi->canonical_prev_orient = smi->canonical_orient;
 
 	float delta;
 

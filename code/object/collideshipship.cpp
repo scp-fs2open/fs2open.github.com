@@ -565,7 +565,8 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 			pm = NULL;
 		}
 		
-		if ( pmi != nullptr ) { 
+		//Previously, a side effect of moving submodel collision excluded turrets from imparting momentum to colliders
+		if ( pmi != nullptr && pm->submodel[ship_ship_hit_info->submodel_num].rotation_type != MOVEMENT_TYPE_TURRET) {
 			//Find the global movement of the position that hit the ship
 			vec3d last_frame_col_pos, col_pos;
 			model_instance_local_to_global_point(&last_frame_col_pos, &ship_ship_hit_info->hit_pos, pm, pmi, ship_ship_hit_info->submodel_num, &heavy->orient, &heavy->pos, true);
