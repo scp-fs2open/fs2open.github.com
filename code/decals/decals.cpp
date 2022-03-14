@@ -244,6 +244,9 @@ struct Decal {
 		if (!object.IsValid()) {
 			return false;
 		}
+		if (object.objp->flags[Object::Object_Flags::Should_be_dead]) {
+			return false;
+		}
 
 		if (orig_obj_type != object.objp->type) {
 			mprintf(("Decal object type for object %d has changed from %s to %s. Please let m!m know about this\n",
@@ -270,6 +273,9 @@ struct Decal {
 			if (smi->blown_off) {
 				return false;
 			}
+		} else {
+			Assertion(false, "Only ships are currently supported for decals!");
+			return false;
 		}
 
 		return true;
