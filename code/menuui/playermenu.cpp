@@ -1328,7 +1328,8 @@ void player_select_cancel_create()
 	Player_select_autoaccept = 0;
 }
 
-DCF(bastion,"Sets the player to be on the bastion (or any other main hall)")
+// See also the mainhall command in mainhallmenu.cpp
+DCF(bastion, "Temporarily sets the player to be on the Bastion (or any other main hall)")
 {
 	int idx;
 	
@@ -1339,7 +1340,10 @@ DCF(bastion,"Sets the player to be on the bastion (or any other main hall)")
 
 	if (dc_optional_string_either("help", "--help")) {
 		dc_printf("Usage: bastion [index]\n");
-		dc_printf("    [index] -- optional main hall index; if not supplied, defaults to 1\n");
+		dc_printf("       bastion status | ?\n");
+		dc_printf("       bastion --status | --?\n");
+		dc_printf("[index] -- optional main hall index; if not supplied, defaults to 1\n\n");
+		dc_printf("Note: 'mainhall' is an updated version of 'bastion'\n");
 		return;
 	}
 
