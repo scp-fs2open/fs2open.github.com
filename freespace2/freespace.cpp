@@ -2722,7 +2722,7 @@ void do_timing_test(float frame_time)
 	}
 }
 
-DCF(dcf_fov, "Change the field of view of the main camera")
+DCF(fov, "Change the field of view of the main camera")
 {
 	camera *cam = Main_camera.getCamera();
 	bool process = true;
@@ -2765,7 +2765,6 @@ DCF(dcf_fov, "Change the field of view of the main camera")
 		cam->set_fov(value);
 	}
 }
-
 
 DCF(framerate_cap, "Sets the framerate cap")
 {
