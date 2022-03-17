@@ -8,10 +8,25 @@ from file_list import ReleaseFile
 
 
 class ForumAPI:
+    POST_SIZE_MAX = 50000
+    """!
+    Maximum number of characters allowed in a post, including BBCode (03/17/2022)
+
+    Check with HLP admins occasionally to verify this limit, they can set it in the forum's admin panel
+    """
+
     def __init__(self, config):
         self.config = config
 
     def create_post(self, title, content, board):
+        """!
+        @brief Create a post on the forums
+
+        @param[in] title    Title of the post
+        @param[in] content  Body of the post
+        @param[in] board    Which board/forum to post to
+        """
+
         print(self.config["hlp"]["api"])
         print(self.config["hlp"]["key"])
         if (self.config["hlp"]["api"] == "") or (self.config["hlp"]["key"] == ""):
@@ -29,6 +44,15 @@ class ForumAPI:
             print("Post failed! Response: %s" %resp.text)
 
     def post_nightly(self, date, revision, files, log, success):
+        """!
+        @brief Post a new Nightly topic on the forums using nightly.mako
+
+        @param[in] date         The date to use
+        @param[in] version      The build's version
+        @param[in] groups       dict[Any, file_list.FileGroup]; FileGroups of SSE2, AVX, etc.
+        @param[in] sources      URL's of builds on github or fs2net
+        """
+
         print("Posting nightly thread...")
 
         title = "Nightly: {} - Revision {}".format(date, revision)
@@ -46,6 +70,15 @@ class ForumAPI:
         self.create_post(title, rendered, self.config["nightly"]["hlp_board"])
 
     def post_release(self, date, version: semantic_version.Version, groups, sources):
+        """!
+        @brief Post a new Release topic on the forums using release.mako.
+
+        @param[in] date         The date to use
+        @param[in] version      The build's version
+        @param[in] groups       dict[Any, file_list.FileGroup]; FileGroups of SSE2, AVX, etc.
+        @param[in] sources      URL's of builds on github or fs2net
+        """
+
         print("Posting release thread...")
 
         title = "Release: {}".format(version)
