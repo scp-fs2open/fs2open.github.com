@@ -3733,7 +3733,7 @@ void game_maybe_do_dead_popup(float frametime)
 		}
 
 		if ( leave_popup ) {
-			popupdead_close();
+			popupdead_close(true);
 		}
 	}
 }
@@ -5340,43 +5340,31 @@ void game_leave_state( int old_state, int new_state )
 			break;
 
 		case GS_STATE_DEATH_DIED:
-			if (end_mission) {
-				Game_mode &= ~GM_DEAD_DIED;
-
-				if ( !(Game_mode & GM_MULTIPLAYER) ) {
-					if (new_state == GS_STATE_DEBRIEF) {
-						freespace_stop_mission();
-					}
-				} else {
-					// early end while respawning or blowing up in a multiplayer game
-					if ( (new_state == GS_STATE_DEBRIEF) || (new_state == GS_STATE_MULTI_DOGFIGHT_DEBRIEF) ) {
-						game_stop_time();
-						freespace_stop_mission();
-					}
-				}
-			}
-
-			break;
-
 		case GS_STATE_DEATH_BLEW_UP:
 			if (end_mission) {
-				Game_mode &= ~GM_DEAD_BLEW_UP;
+				if (old_state == GS_STATE_DEATH_DIED) {
+					Game_mode &= ~GM_DEAD_DIED;
+				} else if (old_state == GS_STATE_DEATH_BLEW_UP) {
+					Game_mode &= ~GM_DEAD_BLEW_UP;
+				}
 
-				// for single player, we might reload mission, etc.  For multiplayer, look at my new state
-				// to determine if I should do anything.
-				if ( !(Game_mode & GM_MULTIPLAYER) ) {
-					freespace_stop_mission();
-				} else {
-					// if we are not respawing as an observer or as a player, our new state will not
-					// be gameplay state.
-					if ( (new_state != GS_STATE_GAME_PLAY) && (new_state != GS_STATE_MULTI_PAUSED) ) {
-						game_stop_time();									// hasn't been called yet!!
+				if (new_state != GS_STATE_DEATH_BLEW_UP) {
+					if ( !(Game_mode & GM_MULTIPLAYER) ) {
+						popupdead_close();			// it's usually closed by this point, but not always (e.g. if end-mission is called)
 						freespace_stop_mission();
+					} else {
+						// early end while respawning or blowing up in a multiplayer game
+						// if we are not respawing as an observer or as a player, our new state will not
+						// be gameplay state.
+						if ( (new_state != GS_STATE_GAME_PLAY) && (new_state != GS_STATE_MULTI_PAUSED) ) {
+							game_stop_time();
+							popupdead_close();
+							freespace_stop_mission();
+						}
 					}
 				}
 			}
 			break;
-
 
 		case GS_STATE_CREDITS:
 			credits_close();
