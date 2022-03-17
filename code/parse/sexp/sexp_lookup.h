@@ -1,6 +1,7 @@
 #pragma once
 
 #include "parse/sexp/DynamicSEXP.h"
+#include "parse/sexp.h"
 
 namespace sexp {
 
@@ -13,8 +14,11 @@ namespace sexp {
  * usable!
  *
  * @param sexp The sexp to add
+ * @param type The type of the SEXP
+ * 
+ * @return The operator id of the SEXP
  */
-void add_dynamic_sexp(std::unique_ptr<DynamicSEXP>&& sexp);
+int add_dynamic_sexp(std::unique_ptr<DynamicSEXP>&& sexp, int type = SEXP_ACTION_OPERATOR);
 
 /**
  * @brief Given an operator constant, return the associated dynamic SEXP

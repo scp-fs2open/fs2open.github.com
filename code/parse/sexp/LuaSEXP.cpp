@@ -25,9 +25,9 @@
 
 using namespace luacpp;
 
-namespace {
+namespace sexp {
 
-SCP_unordered_map<SCP_string, int> parameter_type_mapping{{ "boolean",      OPF_BOOL },
+static SCP_unordered_map<SCP_string, int> parameter_type_mapping{{ "boolean",      OPF_BOOL },
 														  { "number",       OPF_NUMBER },
 														  { "ship",         OPF_SHIP },
 														  { "shipname",     OPF_SHIP },
@@ -47,7 +47,7 @@ SCP_unordered_map<SCP_string, int> parameter_type_mapping{{ "boolean",      OPF_
 														  { "ship+wing+waypoint",   OPF_SHIP_WING_POINT },
 														  { "ship+wing+waypoint+none",   OPF_SHIP_WING_POINT_OR_NONE }, };
 
-std::pair<SCP_string, int> get_parameter_type(const SCP_string& name)
+std::pair<SCP_string, int> LuaSEXP::get_parameter_type(const SCP_string& name)
 {
 	SCP_string copy = name;
 	SCP_tolower(copy);
@@ -60,10 +60,10 @@ std::pair<SCP_string, int> get_parameter_type(const SCP_string& name)
 	}
 }
 
-SCP_unordered_map<SCP_string, int> return_type_mapping{{ "number",  OPR_NUMBER },
+static SCP_unordered_map<SCP_string, int> return_type_mapping{{ "number",  OPR_NUMBER },
 													   { "boolean", OPR_BOOL },
 													   { "nothing", OPR_NULL }, };
-int get_return_type(const SCP_string& name)
+int LuaSEXP::get_return_type(const SCP_string& name)
 {
 	SCP_string copy = name;
 	SCP_tolower(copy);
@@ -76,7 +76,7 @@ int get_return_type(const SCP_string& name)
 	}
 }
 
-int get_category(const SCP_string& name) {
+int LuaSEXP::get_category(const SCP_string& name) {
 	for (auto& subcat : op_menu) {
 		if (subcat.name == name) {
 			return subcat.id;
@@ -86,7 +86,7 @@ int get_category(const SCP_string& name) {
 	return -1;
 }
 
-int get_subcategory(const SCP_string& name, int category) {
+int LuaSEXP::get_subcategory(const SCP_string& name, int category) {
 	for (auto& subcat : op_submenu) {
 		if (subcat.name == name && (subcat.id & OP_CATEGORY_MASK) == category) {
 			return subcat.id;
@@ -95,10 +95,6 @@ int get_subcategory(const SCP_string& name, int category) {
 
 	return -1;
 }
-
-}
-
-namespace sexp {
 
 LuaSEXP::LuaSEXP(const SCP_string& name) : DynamicSEXP(name) {
 }

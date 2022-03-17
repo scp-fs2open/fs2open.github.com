@@ -22,6 +22,7 @@
 #include "ai/aibig.h"
 #include "ai/aigoals.h"
 #include "ai/aiinternal.h"
+#include "ai/ailua.h"
 #include "asteroid/asteroid.h"
 #include "autopilot/autopilot.h"
 #include "cmeasure/cmeasure.h"
@@ -133,6 +134,8 @@ const char *Mode_text[MAX_AI_BEHAVIORS] = {
 	"BAY_DEPART",
 	"SENTRYGUN",
 	"WARP_OUT",
+	"FLY_TO_SHIP",
+	"LUA_AI"
 };
 
 //	Submode text is only valid for CHASE mode.
@@ -12959,6 +12962,7 @@ void maybe_evade_dumbfire_weapon(ai_info *aip)
 	case AIM_SENTRYGUN:
 	case AIM_WARP_OUT:
 	case AIM_FLY_TO_SHIP:
+	case AIM_LUA:
 		return;
 	default:
 		Int3();	//	Bogus mode!
@@ -13027,6 +13031,7 @@ void maybe_evade_dumbfire_weapon(ai_info *aip)
 		case AIM_BAY_EMERGE:
 		case AIM_BAY_DEPART:
 		case AIM_SENTRYGUN:
+		case AIM_LUA:
 			break;
 		default:
 			Int3();	//	Bogus mode!
@@ -13611,6 +13616,9 @@ void ai_execute_behavior(ai_info *aip)
 	case AIM_GET_BEHIND:
 		// FIXME: got this from TBP and added it here to skip the Int3() but don't really want to handle it
 		// properly until after 3.6.7 just to avoid delaying release or breaking something - taylor
+		break;
+	case AIM_LUA:
+		ai_lua(&Ships[Pl_objp->instance]);
 		break;
 	default:
 		Int3();		//	This should never happen -- MK, 5/12/97	

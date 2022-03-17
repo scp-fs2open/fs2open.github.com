@@ -23,6 +23,7 @@
 #include <cstdint>
 
 #include "ai/aigoals.h"
+#include "ai/ailua.h"
 #include "asteroid/asteroid.h"
 #include "autopilot/autopilot.h"
 #include "camera/camera.h"
@@ -30664,7 +30665,14 @@ int query_sexp_ai_goal_valid(int sexp_ai_goal, int ship_num)
 		if (Sexp_ai_goal_links[i].op_code == sexp_ai_goal)
 			break;
 
-	Assert(i < Num_sexp_ai_goal_links);
+	if (i >= Num_sexp_ai_goal_links) {
+		//is a luaAI?
+		Assert(ai_lua_has_mode(sexp_ai_goal));
+
+		return true;
+	}
+
+
 	return ai_query_goal_valid(ship_num, Sexp_ai_goal_links[i].ai_goal);
 }
 

@@ -11,6 +11,7 @@
 
 
 #include "ai/aigoals.h"
+#include "ai/ailua.h"
 #include "globalincs/linklist.h"
 #include "mission/missionlog.h"
 #include "mission/missionparse.h"
@@ -240,8 +241,8 @@ int ai_query_goal_valid( int ship, int ai_goal_type )
 {
 	int accepted;
 
-	if (ai_goal_type == AI_GOAL_NONE)
-		return 1;  // anything can have no orders.
+	if (ai_goal_type == AI_GOAL_NONE || ai_goal_type == AI_GOAL_LUA)
+		return 1;  // anything can have no orders or Lua'd orders.
 
 	accepted = 0;
 
@@ -1041,7 +1042,24 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_goal *aigp, char *actor_name )
 		break;
 
 	default:
-		Int3();			// get ALLENDER -- invalid ai-goal specified for ai object!!!!
+		const ai_mode_lua* luaAIMode = ai_lua_find_mode(op);
+		if(luaAIMode != nullptr){
+			//Found a LuaAI mode sexp for this
+			int localnode = CDR(node);
+			
+			aigp->ai_mode = AI_GOAL_LUA;
+			aigp->ai_submode = op;
+			
+			if(luaAIMode->needsTarget) {
+				eval_object_ship_wing_point_team(&aigp->lua_ai_target, localnode);
+				localnode = CDR(localnode);
+			}
+
+			aigp->priority = atoi( CTEXT(localnode) );
+		}
+		else {
+			UNREACHABLE("Invalid SEXP-OP number %d for an AI goal!", op);
+		}
 	}
 
 	if ( aigp->priority > MAX_GOAL_PRIORITY ) {
@@ -1218,7 +1236,23 @@ int ai_remove_goal_sexp_sub( int sexp, ai_goal* aigp )
 		goalmode = AI_GOAL_IGNORE_NEW;
 		break;
 	default:
-		Int3( );
+		const ai_mode_lua* luaAIMode = ai_lua_find_mode(op);
+		if(luaAIMode != nullptr){
+			//Found a LuaAI mode sexp for this
+			int localnode = CDR(node);
+
+			goalmode = AI_GOAL_LUA;
+			goalsubmode = op;
+
+			if(luaAIMode->needsTarget) {
+				localnode = CDR(localnode);
+			}
+
+			priority = localnode >= 0 ? atoi( CTEXT(localnode) ) : -1;
+		}
+		else {
+			UNREACHABLE("Invalid SEXP-OP number %d for an AI goal!", op);
+		}
 		break;
 	};
 	
@@ -1425,7 +1459,8 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 	//  these orders are always achievable.
 	if ( (aigp->ai_mode == AI_GOAL_KEEP_SAFE_DISTANCE)
 		|| (aigp->ai_mode == AI_GOAL_CHASE_ANY) || (aigp->ai_mode == AI_GOAL_STAY_STILL)
-		|| (aigp->ai_mode == AI_GOAL_PLAY_DEAD) || (aigp->ai_mode == AI_GOAL_PLAY_DEAD_PERSISTENT) )
+		|| (aigp->ai_mode == AI_GOAL_PLAY_DEAD) || (aigp->ai_mode == AI_GOAL_PLAY_DEAD_PERSISTENT) 
+		|| (aigp->ai_mode == AI_GOAL_LUA))
 		return AI_GOAL_ACHIEVABLE;
 
 	// warp (depart) only achievable if there's somewhere to depart to
@@ -2391,6 +2426,10 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 		Assert( shipnum >= 0 );
 		other_obj = &Objects[Ships[shipnum].objnum];
 		ai_rearm_repair( objp, current_goal->docker.index, other_obj, current_goal->dockee.index );
+		break;
+		
+	case AI_GOAL_LUA:
+		ai_lua_start(current_goal, objp);
 		break;
 
 	default:

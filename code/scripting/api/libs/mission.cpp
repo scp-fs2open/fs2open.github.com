@@ -28,9 +28,11 @@
 #include "parse/sexp.h"
 #include "parse/sexp/DynamicSEXP.h"
 #include "parse/sexp/LuaSEXP.h"
+#include "parse/sexp/LuaAISEXP.h"
 #include "parse/sexp/sexp_lookup.h"
 #include "scripting/api/LuaPromise.h"
 #include "scripting/api/objs/LuaSEXP.h"
+#include "scripting/api/objs/luaaisexp.h"
 #include "scripting/api/objs/asteroid.h"
 #include "scripting/api/objs/background_element.h"
 #include "scripting/api/objs/beam.h"
@@ -1556,6 +1558,44 @@ ADE_INDEXER(l_Mission_LuaSEXPs, "string Name", "Gets a handle of a Lua SEXP", "L
 	}
 
 	return ade_set_args(L, "o", l_LuaSEXP.Set(lua_sexp_h(static_cast<sexp::LuaSEXP*>(dynamicSEXP))));
+}
+
+ADE_LIB_DERIV(l_Mission_LuaAISEXPs, "LuaAISEXPs", NULL, "Lua AI SEXPs", l_Mission);
+
+ADE_INDEXER(l_Mission_LuaAISEXPs, "string Name", "Gets a handle of a Lua SEXP", "LuaAISEXP", "Lua AI SEXP handle or invalid handle on error")
+{
+	const char* name = nullptr;
+	if (!ade_get_args(L, "*s", &name)) {
+		return ade_set_error(L, "o", l_LuaAISEXP.Set(lua_ai_sexp_h()));
+	}
+
+	if (name == nullptr) {
+		return ade_set_error(L, "o", l_LuaAISEXP.Set(lua_ai_sexp_h()));
+	}
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "Setting of Lua AI SEXPs is not supported!");
+	}
+
+	auto op = get_operator_const(name);
+
+	if (op == 0) {
+		LuaError(L, "SEXP '%s' is not known to the SEXP system!", name);
+		return ade_set_args(L, "o", l_LuaAISEXP.Set(lua_ai_sexp_h()));
+	}
+
+	auto dynamicSEXP = sexp::get_dynamic_sexp(op);
+
+	if (dynamicSEXP == nullptr) {
+		return ade_set_args(L, "o", l_LuaAISEXP.Set(lua_ai_sexp_h()));
+	}
+
+	if (typeid(*dynamicSEXP) != typeid(sexp::LuaAISEXP)) {
+		LuaError(L, "Specified dynamic SEXP name does not refer to a Lua SEXP!");
+		return ade_set_error(L, "o", l_LuaAISEXP.Set(lua_ai_sexp_h()));
+	}
+
+	return ade_set_args(L, "o", l_LuaAISEXP.Set(lua_ai_sexp_h(static_cast<sexp::LuaAISEXP*>(dynamicSEXP))));
 }
 
 static int arrivalListIter(lua_State* L)
