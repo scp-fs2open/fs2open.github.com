@@ -4289,33 +4289,40 @@ void model_instance_global_to_local_dir(vec3d* out_dir, const vec3d* in_dir, int
 void model_instance_global_to_local_dir(vec3d* out_dir, const vec3d* in_dir, const polymodel* pm, const polymodel_instance* pmi, int submodel_num, const matrix* objorient, bool use_last_frame) {
 	Assert(pm->id == pmi->model_num);
 
-	std::stack<const matrix*> submodelStack;
+	constexpr int preallocatedStackDepth = 5;
+	const matrix* preallocatedStack[preallocatedStackDepth];
+
+	auto submodelStack = pm->submodel[submodel_num].depth <= preallocatedStackDepth ? preallocatedStack : new const matrix*[pm->submodel[submodel_num].depth];
+	int stackCounter = 0;
 
 	int mn = submodel_num;
 
 	//Go up the chain of parents to build a stack of transformations from parent -> child
 	while ((mn >= 0) && (pm->submodel[mn].parent >= 0)) {
 		if (use_last_frame)
-			submodelStack.push(&pmi->submodel[mn].canonical_prev_orient);
+			submodelStack[stackCounter++] = &pmi->submodel[mn].canonical_prev_orient;
 		else
-			submodelStack.push(&pmi->submodel[mn].canonical_orient);
+			submodelStack[stackCounter++] = &pmi->submodel[mn].canonical_orient;
 		mn = pm->submodel[mn].parent;
 	}
 
 	if (objorient != nullptr)
-		submodelStack.push(objorient);
+		submodelStack[stackCounter++] = objorient;
+
+	stackCounter--;
 
 	vec3d resultDir = *in_dir;
 
-	while (!submodelStack.empty()) {
-		const auto& transform = submodelStack.top();
+	while (stackCounter >= 0) {
+		const auto& transform = submodelStack[stackCounter--];
 
 		vm_vec_rotate(&resultDir, &resultDir, transform);
-
-		submodelStack.pop();
 	}
 
 	*out_dir = resultDir;
+
+	if (pm->submodel[submodel_num].depth > preallocatedStackDepth)
+		delete[] submodelStack;
 }
 
 // Verify rotating submodel has corresponding ship subsystem -- info in which to store rotation angle
