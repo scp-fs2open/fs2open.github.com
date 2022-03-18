@@ -36,6 +36,10 @@ protected:
 		pm->submodel[1].offset = vec3d{ {{0, 1, 0}} };
 		pm->submodel[2].offset = vec3d{ {{0, 1, 0}} };
 
+		pm->submodel[0].depth = 1;
+		pm->submodel[1].depth = 2;
+		pm->submodel[2].depth = 3;
+
 		pmi->submodel[0].canonical_orient = vmd_identity_matrix;
 		angles ang{ PI_2, 0.0f, 0.0f };
 		vm_angles_2_matrix(&pmi->submodel[1].canonical_orient, &ang);
