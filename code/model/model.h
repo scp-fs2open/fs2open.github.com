@@ -336,6 +336,7 @@ public:
 	int		num_children;			// How many children this model has
 	int		first_child;			// The first_child of this model, -1 if none
 	int		next_sibling;			// This submodel's next sibling, -1 if none
+	int		depth;					// How many levels deep this subobject sits
 
 	int		num_details;			// How many submodels are lower detail "mirrors" of this submodel
 	int		details[MAX_MODEL_DETAIL_LEVELS];		// A list of all the lower detail "mirrors" of this submodel
