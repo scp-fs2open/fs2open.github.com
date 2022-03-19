@@ -209,7 +209,7 @@ namespace animation {
 			//Save the things modified by initial animations as actual baseline
 			for (const auto& initialModified : applyBuffer) {
 				if (initialModified.second.modified)
-					initialModified.first->saveCurrentAsBase(pmi);
+					initialModified.first->saveCurrentAsBase(pmi, true);
 			}
 		}
 	}
@@ -333,7 +333,7 @@ namespace animation {
 		submodel->current_turn_rate = 0.0f;
 	}
 
-	void ModelAnimationSubmodel::saveCurrentAsBase(polymodel_instance* pmi) {
+	void ModelAnimationSubmodel::saveCurrentAsBase(polymodel_instance* pmi, bool isInitialType) {
 		auto submodel = findSubmodel(pmi);
 		ModelAnimationData<>& data = m_initialData[{ pmi->id }];
 
@@ -352,6 +352,10 @@ namespace animation {
 		data.orientation = submodel.first->canonical_orient;
 		//TODO: Once translation is a thing
 		//data.position = m_subsys->submodel_instance_1->offset;
+
+		//In this case, we just initial-type initialized the submodel. Properly set its last frame data as well
+		if(isInitialType)
+			submodel.first->canonical_prev_orient = submodel.first->canonical_orient;
 	}
 
 	std::pair<submodel_instance*, bsp_info*> ModelAnimationSubmodel::findSubmodel(polymodel_instance* pmi) {
