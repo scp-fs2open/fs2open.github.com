@@ -173,7 +173,7 @@ namespace animation {
 
 		void reset(polymodel_instance* pmi);
 
-		void saveCurrentAsBase(polymodel_instance* pmi);
+		void saveCurrentAsBase(polymodel_instance* pmi, bool isInitialType = false);
 		const ModelAnimationData<>& getInitialData(polymodel_instance* pmi);
 
 		virtual std::pair<submodel_instance*, bsp_info*> findSubmodel(polymodel_instance* pmi);
