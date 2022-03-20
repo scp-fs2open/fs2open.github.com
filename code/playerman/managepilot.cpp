@@ -17,6 +17,7 @@
 #include "io/joy.h"
 #include "io/mouse.h"
 #include "menuui/playermenu.h"
+#include "menuui/readyroom.h"
 #include "menuui/techmenu.h"
 #include "mission/missionbriefcommon.h"
 #include "mission/missioncampaign.h"
@@ -163,6 +164,8 @@ void init_new_pilot(player *p, int reset)
 	}
 
 	pilot_set_start_campaign(p);
+
+	OnCampaignBeginHook->run(scripting::hook_param_list(scripting::hook_param("Campaign", 's', p->current_campaign)));
 }
 
 int local_num_campaigns = 0;
