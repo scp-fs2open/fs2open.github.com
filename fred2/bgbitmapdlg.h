@@ -57,7 +57,6 @@ public:
 	int		m_neb2_texture;
 	BOOL		m_subspace;
 	BOOL		m_fullneb;
-	int		m_poofs[MAX_NEB2_POOFS];
 	BOOL	m_toggle_trails;
 	CString	m_storm_name;
 	CString s_name;
