@@ -113,6 +113,7 @@ namespace animation {
 		Reset_at_completion,	//Will cause the animation to reset once it completes. This usually only makes sense when the state at the end of the animation is identical to the state at the start of the animation. Incompatible with Auto_reverse
 		Loop,					//Will automatically loop the animation once it completes. Is compatible with Reset_at_completion to loop back from the start instead of reversing. Incompatible with Auto_reverse
 		Random_starting_phase,  //When an animation is started from an untriggered state, will randomize its time to any possible time of the animation + possibly on the reverse, if the animation would automatically enter that
+		Pause_on_reverse,		//Will cause any start in RWD direction to behave as a call to pause the animation. Required (and also only really useful) when a looping animation is supposed to be triggered by an internal engine trigger
 		NUM_VALUES
 	};
 
