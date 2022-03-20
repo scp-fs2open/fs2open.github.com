@@ -267,7 +267,6 @@ bool CampaignEditorDialogModel::saveTo(const QString &file) {
 	bool success = _saveTo(file);
 	QMessageBox::information(parent, file, success ? tr("Successfully saved") : tr("Error saving"));
 	modified = ! success;
-	//TODO error checker
 	return success;
 }
 
@@ -312,7 +311,7 @@ bool CampaignEditorDialogModel::_saveTo(QString file) const {
 
 	mission_campaign_clear();
 
-	qstrncpy(Campaign.name, qPrintable(campaignName), NAME_LENGTH);
+	strncpy(Campaign.name, qPrintable(campaignName), NAME_LENGTH);
 
 	Campaign.type = campaignTypes.indexOf(campaignType);
 
@@ -336,6 +335,124 @@ bool CampaignEditorDialogModel::_saveTo(QString file) const {
 		Assertion(wep_idx_ptr, "NULL weapon class index in initial weapons");
 		Assertion(*wep_idx_ptr < MAX_WEAPON_TYPES, "Illegal weapon class index in initial weapons: %ld", *wep_idx_ptr);
 		Campaign.weapons_allowed[*wep_idx_ptr] = true;
+	}
+
+	if (firstMission.length() > 0) {
+		static const QString PAST_BRANCHES{};
+		SCP_unordered_set<const CampaignMissionData*> unsaved{missionData.getCheckedData()};
+		SCP_queue<const QString*> saveNext{};
+		int i=0, lvl=0, pos=0;
+
+		saveNext.push(&firstMission);
+		do {
+			// traversal
+			if (saveNext.empty())
+				saveNext.push(&(*unsaved.cbegin())->filename);
+			while (! saveNext.empty()) {
+				const QString *mnName = saveNext.front();
+				saveNext.pop();
+
+				if (mnName == &PAST_BRANCHES) {
+					if (pos > 0) {
+						++lvl;
+						pos = 0;}
+					continue;
+				}
+
+				auto it = std::find_if(unsaved.cbegin(), unsaved.cend(),
+									   [&](const CampaignMissionData *mn_ptr) {
+					 return mn_ptr->filename == *mnName;	});
+				const CampaignMissionData *mn;
+				if (it != unsaved.cend()) {
+					mn = *it;
+					unsaved.erase(it);
+				}
+				else {
+					continue;
+				}
+
+				for (const auto &br : mn->branches)
+					saveNext.push(&br.next);
+				saveNext.push(&PAST_BRANCHES);
+
+				// saving
+				cmission &cm = Campaign.missions[i++];
+
+				cm.name = vm_strdup(qPrintable(*mnName));
+				strncpy(cm.briefing_cutscene, qPrintable(mn->briefingCutscene), NAME_LENGTH);
+				cm.main_hall = mn->mainhall.toStdString();
+
+				//Bastion flag unsupported in missionLoad
+				cm.flags = 0;
+				cm.debrief_persona_index = static_cast<ubyte>(mn->debriefingPersona.toUShort());
+
+				using BranchType = CampaignBranchData::BranchType;
+				cm.formula =
+						alloc_sexp("cond", SEXP_ATOM, SEXP_ATOM_OPERATOR, -1, -1);
+				int *cond_arms_ptr = &Sexp_nodes[cm.formula].rest;
+				bool flag_last_branch = false;
+				for (const auto &br : mn->branches) {
+					if (br.type == BranchType::INVALID) {
+						QMessageBox::warning(nullptr, "Can't save", "Invalid branch: From " + mn->filename + " to " + br.next);
+						return false;
+					}
+					if (br.type == BranchType::NEXT_NOT_FOUND)
+						QMessageBox::warning(nullptr, "Potential Campaign Bug", "Saving branch to unknown mission: " + br.next);
+					if (! br.loop) { //build formula from nonloop branches
+						if (flag_last_branch)
+							QMessageBox::warning(nullptr, "Potential Campaign Bug", "Branch is unreachable due to previous \"true\" condition: " + br.next);
+						if (br.sexp == Locked_sexp_true)
+							flag_last_branch = true;
+						int nextsexp = (br.type != BranchType::END) ?
+									alloc_sexp("next-mission", SEXP_ATOM, SEXP_ATOM_OPERATOR, -1,
+											   alloc_sexp(qPrintable(br.next), SEXP_ATOM, SEXP_ATOM_STRING, -1, -1))
+								  : alloc_sexp("end-of-campaign", SEXP_ATOM, SEXP_ATOM_OPERATOR, -1, -1);
+
+						*cond_arms_ptr =
+								alloc_sexp("", SEXP_LIST, -1,
+										alloc_sexp("", SEXP_LIST, -1, br.sexp,
+												   alloc_sexp("", SEXP_LIST, -1, nextsexp, -1)), -1);
+
+						cond_arms_ptr = &Sexp_nodes[*cond_arms_ptr].rest;
+					} else { //flag & save for loop
+						Assertion(cm.flags ^ CMISSION_FLAG_HAS_LOOP, "UI should have stopped attempt at multiple loops");
+						cm.flags |= CMISSION_FLAG_HAS_LOOP;
+
+						QString descr = br.loopDescr->toPlainText();
+						if (descr.isEmpty())
+							cm.mission_branch_desc = nullptr;
+						else
+							cm.mission_branch_desc = vm_strdup(qPrintable(descr));
+
+						if (br.loopAnim.isEmpty())
+							cm.mission_branch_brief_anim = nullptr;
+						else
+							cm.mission_branch_brief_anim = vm_strdup(qPrintable(br.loopAnim));
+
+						if (br.loopVoice.isEmpty())
+							cm.mission_branch_brief_sound = nullptr;
+						else
+							cm.mission_branch_brief_sound = vm_strdup(qPrintable(br.loopVoice));
+
+						int nextsexp =
+								alloc_sexp("next-mission", SEXP_ATOM, SEXP_ATOM_OPERATOR, -1,
+										   alloc_sexp(qPrintable(br.next), SEXP_ATOM, SEXP_ATOM_STRING, -1, -1));
+						int cond_arms =
+								alloc_sexp("", SEXP_LIST, -1,
+										alloc_sexp("", SEXP_LIST, -1, br.sexp,
+												   alloc_sexp("", SEXP_LIST, -1, nextsexp, -1)), -1);
+						cm.mission_loop_formula =
+								alloc_sexp("cond", SEXP_ATOM, SEXP_ATOM_OPERATOR, -1, cond_arms);
+
+
+					}
+				}
+
+				cm.level = lvl;
+				cm.pos = pos++;
+			}
+		} while (! unsaved.empty());
+		Campaign.num_missions = i;
 	}
 
 	CFred_mission_save save;
