@@ -433,6 +433,7 @@ void gr_opengl_deferred_light_cylinder_init(int segments) // Generate a VBO of a
 	// make sure we have one
 	if (deferred_light_cylinder_vbo) {
 		glBindBuffer(GL_ARRAY_BUFFER, deferred_light_cylinder_vbo);
+		glBufferData(GL_ARRAY_BUFFER, nVertex * sizeof(float), nullptr, GL_STATIC_DRAW);
 		glBufferData(GL_ARRAY_BUFFER, nVertex * sizeof(float), Vertices, GL_STATIC_DRAW);
 
 		// just in case
@@ -455,6 +456,7 @@ void gr_opengl_deferred_light_cylinder_init(int segments) // Generate a VBO of a
 	// make sure we have one
 	if (deferred_light_cylinder_ibo) {
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, deferred_light_cylinder_ibo);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, nIndex * sizeof(ushort), nullptr, GL_STATIC_DRAW);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, nIndex * sizeof(ushort), Indices, GL_STATIC_DRAW);
 
 		// just in case
@@ -533,6 +535,7 @@ void gr_opengl_deferred_light_sphere_init(int rings, int segments) // Generate a
 	// make sure we have one
 	if (deferred_light_sphere_vbo) {
 		glBindBuffer(GL_ARRAY_BUFFER, deferred_light_sphere_vbo);
+		glBufferData(GL_ARRAY_BUFFER, nVertex * sizeof(float), nullptr, GL_STATIC_DRAW);
 		glBufferData(GL_ARRAY_BUFFER, nVertex * sizeof(float), Vertices, GL_STATIC_DRAW);
 
 		// just in case
@@ -555,6 +558,7 @@ void gr_opengl_deferred_light_sphere_init(int rings, int segments) // Generate a
 	// make sure we have one
 	if (deferred_light_sphere_ibo) {
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, deferred_light_sphere_ibo);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, nIndex * sizeof(ushort), nullptr, GL_STATIC_DRAW);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, nIndex * sizeof(ushort), Indices, GL_STATIC_DRAW);
 
 		// just in case

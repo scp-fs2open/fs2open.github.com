@@ -308,8 +308,9 @@ void* gr_opengl_map_buffer(gr_buffer_handle handle)
 	Assertion(GLAD_GL_ARB_buffer_storage != 0, "Persistent mapping is not available in this OpenGL context!");
 
 	opengl_bind_buffer_object(handle);
+	glBufferData(buffer_obj.type, buffer_obj.size, nullptr, buffer_obj.gl_usage);
 	return glMapBufferRange(buffer_obj.type, 0, buffer_obj.size,
-	                        GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_FLUSH_EXPLICIT_BIT);
+	                        GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_FLUSH_EXPLICIT_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
 }
 void gr_opengl_flush_mapped_buffer(gr_buffer_handle handle, size_t offset, size_t size)
 {
