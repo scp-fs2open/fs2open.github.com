@@ -15031,6 +15031,9 @@ void init_ai_object(int objnum)
 	aip->next_predict_pos_time = 0;
 	aip->next_aim_pos_time = 0;
 
+	aip->next_dynamic_path_check_time = timestamp(0);
+	vm_vec_zero(&aip->last_dynamic_path_goal);
+
 	aip->afterburner_stop_time = 0;
 	aip->last_objsig_hit = -1;				// object signature of the ship most recently hit by aip
 
