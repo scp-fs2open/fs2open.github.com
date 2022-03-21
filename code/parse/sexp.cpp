@@ -1372,8 +1372,9 @@ int free_one_sexp(int num)
  *
  * Should only be called on an atom or a list, and not an operator.  If on a list, the 
  * list and everything in it will be freed (including the operator).
+ * calling_node defaults to -1
  */
-int free_sexp(int num)
+int free_sexp(int num, int calling_node)
 {
 	int i, rest, count = 0;
 
@@ -1393,20 +1394,20 @@ int free_sexp(int num)
 	count++;
 
 	i = Sexp_nodes[num].first;
-	while (i != -1)
+	while (i != -1) 
 	{
-		count += free_sexp(i);
+		count += free_sexp(i, num);
 		i = Sexp_nodes[i].rest;
 	}
 
 	rest = Sexp_nodes[num].rest;
-	for (i = 0; i < Num_sexp_nodes; i++)
+	if (calling_node >= 0) 
 	{
-		if (Sexp_nodes[i].first == num)
-			Sexp_nodes[i].first = rest;
+		if (Sexp_nodes[calling_node].first == num)
+			Sexp_nodes[calling_node].first = rest;
 
-		if (Sexp_nodes[i].rest == num)
-			Sexp_nodes[i].rest = rest;
+		if (Sexp_nodes[calling_node].rest == num)
+			Sexp_nodes[calling_node].rest = rest;
 	}
 
 	return count;  // total elements freed up.
