@@ -1701,7 +1701,9 @@ int opengl_set_render_target( int slot, int face, int is_static )
 		return 0;
 	}
 
-	if ( !glIsFramebuffer(fbo->framebuffer_id) /*|| !glIsRenderbufferEXT(fbo->renderbuffer_id)*/ ) {
+	// Since framebuffer_id is only ever 0 or assigned by glGenFramebuffer, it must be valid if not 0
+	// This check previously queried !glIsFramebuffer(fbo->framebuffer_id) for the same effect but at significantly higher performance costs.
+	if ( fbo->framebuffer_id == 0 ) {
 		Int3();
 		return 0;
 	}

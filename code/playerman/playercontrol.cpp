@@ -999,7 +999,8 @@ void read_player_controls(object *objp, float frametime)
 				target_warpout_speed = ship_get_warpout_speed(objp);
 
 				// check if warp ability has been disabled
-				if (!(Warpout_forced) && !(ship_can_warp_full_check(&Ships[objp->instance]))) {
+				// but only in the first stage
+				if (!(Warpout_forced) && !(ship_can_warp_full_check(&Ships[objp->instance])) && (Player->control_mode == PCM_WARPOUT_STAGE1)) {
 					HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "Cannot warp out at this time.", 81));
 					snd_play(gamesnd_get_game_sound(GameSounds::PLAYER_WARP_FAIL));
 					gameseq_post_event( GS_EVENT_PLAYER_WARPOUT_STOP );
@@ -1573,7 +1574,10 @@ int player_inspect_cargo(float frametime, char *outstr)
 
 	// see if player is within inspection range
 	ship_info* player_sip = &Ship_info[Player_ship->ship_info_index];
-	if ( Player_ai->current_target_distance < MAX(player_sip->scan_range_normal, (cargo_objp->radius + player_sip->scan_range_normal - CARGO_RADIUS_REAL_DELTA)) ) {
+	float scan_dist = MAX(player_sip->scan_range_normal, (cargo_objp->radius + player_sip->scan_range_normal - CARGO_RADIUS_REAL_DELTA));
+	scan_dist *= player_sip->scanning_range_multiplier;
+
+	if ( Player_ai->current_target_distance < scan_dist ) {
 
 		// check if player is facing cargo, do not proceed with inspection if not
 		vm_vec_normalized_dir(&vec_to_cargo, &cargo_objp->pos, &Player_obj->pos);
@@ -1598,7 +1602,10 @@ int player_inspect_cargo(float frametime, char *outstr)
 		else
 			strcpy(outstr,XSTR( "scanning", 89));
 
-		if ( Player->cargo_inspect_time > cargo_sip->scan_time ) {
+		float scan_time = i2fl(cargo_sip->scan_time);
+		scan_time *= player_sip->scanning_time_multiplier;
+
+		if ( Player->cargo_inspect_time > scan_time ) {
 			ship_do_cargo_revealed( cargo_sp );
 			snd_play( gamesnd_get_game_sound(GameSounds::CARGO_REVEAL), 0.0f );
 			Player->cargo_inspect_time = 0;
@@ -1680,9 +1687,9 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 	} else {
 		scan_dist = MAX(player_sip->scan_range_normal, (subsys_rad + player_sip->scan_range_normal - CARGO_RADIUS_REAL_DELTA));
 	}
+	scan_dist *= player_sip->scanning_range_multiplier;
 
 	if ( Player_ai->current_target_distance < scan_dist ) {
-
 		// check if player is facing cargo, do not proceed with inspection if not
 		vm_vec_normalized_dir(&vec_to_cargo, &subsys_pos, &Player_obj->pos);
 		dot = vm_vec_dot(&vec_to_cargo, &Player_obj->orient.vec.fvec);
@@ -1709,7 +1716,14 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 		else
 			strcpy(outstr,XSTR( "scanning", 89));
 
-		if ( Player->cargo_inspect_time > cargo_sip->scan_time ) {
+		float scan_time;
+		if (subsys->system_info->scan_time > 0)
+			scan_time = i2fl(subsys->system_info->scan_time);
+		else
+			scan_time = i2fl(cargo_sip->scan_time);
+		scan_time *= player_sip->scanning_time_multiplier;
+
+		if ( Player->cargo_inspect_time > scan_time ) {
 			ship_do_cap_subsys_cargo_revealed( cargo_sp, subsys, 0);
 			snd_play( gamesnd_get_game_sound(GameSounds::CARGO_REVEAL), 0.0f );
 			Player->cargo_inspect_time = 0;

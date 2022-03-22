@@ -3686,7 +3686,7 @@ void beam_handle_collisions(beam *b)
 			vec3d worldNormal;
 			if (Objects[target].type == OBJ_SHIP) {
 				auto shipp = &Ships[Objects[target].instance];
-				model_instance_find_world_dir(&worldNormal,
+				model_instance_local_to_global_dir(&worldNormal,
 											  &b->f_collisions[idx].cinfo.hit_normal,
 											  shipp->model_instance_num,
 											  b->f_collisions[idx].cinfo.submodel_num,
@@ -3797,7 +3797,7 @@ void beam_handle_collisions(beam *b)
 					vec3d worldNormal;
 					if (Objects[target].type == OBJ_SHIP) {
 						auto shipp = &Ships[Objects[target].instance];
-						model_instance_find_world_dir(&worldNormal,
+						model_instance_local_to_global_dir(&worldNormal,
 													  &b->f_collisions[idx].cinfo.hit_normal,
 													  shipp->model_instance_num,
 													  b->f_collisions[idx].cinfo.submodel_num,
@@ -3986,7 +3986,7 @@ int beam_ok_to_fire(beam *b)
 				turret_normal = b->objp->orient.vec.fvec;
                 b->subsys->system_info->flags.remove(Model::Subsystem_Flags::Turret_restricted_fov);
 			} else {
-				model_instance_find_world_dir(&turret_normal, &b->subsys->system_info->turret_norm, Ships[b->objp->instance].model_instance_num, b->subsys->system_info->subobj_num, &b->objp->orient, true);
+				model_instance_local_to_global_dir(&turret_normal, &b->subsys->system_info->turret_norm, Ships[b->objp->instance].model_instance_num, b->subsys->system_info->subobj_num, &b->objp->orient, true);
 			}
 
 			if (!(turret_fov_test(b->subsys, &turret_normal, &aim_dir))) {

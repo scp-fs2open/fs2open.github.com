@@ -24,6 +24,7 @@
 int Directive_wait_time;
 bool True_loop_argument_sexps;
 bool Fixed_turret_collisions;
+bool Fixed_missile_detonation;
 bool Damage_impacted_subsystem_first;
 bool Cutscene_camera_displays_hud;
 bool Alternate_chaining_behavior;
@@ -593,6 +594,10 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Fixed_turret_collisions);
 		}
 
+		if (optional_string("$Fixed Missile Detonation:")) {
+			stuff_boolean(&Fixed_missile_detonation);
+		}
+
 		if (optional_string("$Damage Impacted Subsystem First:")) {
 			stuff_boolean(&Damage_impacted_subsystem_first);
 		}
@@ -787,6 +792,7 @@ void mod_table_reset()
 	Directive_wait_time = 3000;
 	True_loop_argument_sexps = false;
 	Fixed_turret_collisions = false;
+	Fixed_missile_detonation = false;
 	Damage_impacted_subsystem_first = false;
 	Cutscene_camera_displays_hud = false;
 	Alternate_chaining_behavior = false;
@@ -854,6 +860,7 @@ void mod_table_set_version_flags()
 {
 	if (mod_supports_version(22, 0, 0)) {
 		Fixed_turret_collisions = true;
+		Fixed_missile_detonation = true;
 		Shockwaves_damage_all_obj_types_once = true;
 		Framerate_independent_turning = true;					// this is already true, but let's re-emphasize it
 		Use_host_orientation_for_set_camera_facing = true;		// this is essentially a bugfix

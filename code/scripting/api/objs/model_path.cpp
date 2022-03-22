@@ -54,7 +54,7 @@ ADE_VIRTVAR(Position, l_ModelPathPoint, "vector", "The current, global position 
 	auto pm = model_get(pmi->model_num);
 
 	vec3d world_pos;
-	model_instance_find_world_point(&world_pos, &p->point, pm, pmi, 0, &objp->orient, &objp->pos);
+	model_instance_local_to_global_point(&world_pos, &p->point, pm, pmi, 0, &objp->orient, &objp->pos);
 
 	return ade_set_error(L, "o", l_Vector.Set(world_pos));
 }

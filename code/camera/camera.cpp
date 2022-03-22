@@ -260,9 +260,13 @@ void camera::set_rotation_facing(vec3d *in_target, float in_rotation_time, float
 			// point along the target vector, but using the host orient's roll
 			vm_vector_2_matrix(&temp_matrix, &targetvec, &orient->vec.uvec, nullptr);
 
-			// we need the difference between the camera's current orient and the orient we want
-			vm_transpose(orient);
-			temp_matrix = temp_matrix * *orient;
+			// if we have a host, we need the difference between the camera's current orient and the orient we want
+			// if not, we will later set the absolute orientation, rather than the orientation relative to the host
+			if (object_host.IsValid())
+			{
+				vm_transpose(orient);
+				temp_matrix = temp_matrix * *orient;
+			}
 		}
 		else
 		{
@@ -363,7 +367,7 @@ void camera::get_info(vec3d *position, matrix *orientation, bool apply_camera_or
 					Assertion(objp->type == OBJ_SHIP, "This part of the code expects the object to be a ship");
 
 					vec3d c_pos_in;
-					find_submodel_instance_point_normal(&c_pos_in, &host_normal, pm, pmi, eyep->parent, &eyep->pnt, &eyep->norm);
+					model_instance_local_to_global_point_dir(&c_pos_in, &host_normal, &eyep->pnt, &eyep->norm, pm, pmi, eyep->parent);
 					vm_vec_unrotate(&c_pos, &c_pos_in, &objp->orient);
 					vm_vec_add2(&c_pos, &objp->pos);
 				}
@@ -371,17 +375,11 @@ void camera::get_info(vec3d *position, matrix *orientation, bool apply_camera_or
 				{
 					if (pmi != nullptr)
 					{
-						vec3d c_pos_in;
-						find_submodel_instance_point_orient(&c_pos_in, &host_orient, pm, pmi, object_host_submodel, &pt, &vmd_identity_matrix);
-
-						host_orient = host_orient * objp->orient;
+						model_instance_local_to_global_point_orient(&c_pos, &host_orient, &pt, &vmd_identity_matrix, pm, pmi, object_host_submodel, &objp->orient, &objp->pos);
 						use_host_orient = true;
-
-						vm_vec_unrotate(&c_pos, &c_pos_in, &objp->orient);
-						vm_vec_add2(&c_pos, &objp->pos);
 					}
 					else
-						model_find_world_point( &c_pos, &pt, pm, object_host_submodel, &objp->orient, &objp->pos );
+						model_local_to_global_point( &c_pos, &pt, pm, object_host_submodel, &objp->orient, &objp->pos );
 				}
 			}
 		}
@@ -431,9 +429,9 @@ void camera::get_info(vec3d *position, matrix *orientation, bool apply_camera_or
 				else
 				{
 					if (target_pmi != nullptr)
-						model_instance_find_world_point(&target_pos, &vmd_zero_vector, target_pm, target_pmi, object_target_submodel, &target_objp->orient, &target_objp->pos);
+						model_instance_local_to_global_point(&target_pos, &vmd_zero_vector, target_pm, target_pmi, object_target_submodel, &target_objp->orient, &target_objp->pos);
 					else
-						model_find_world_point( &target_pos, &vmd_zero_vector, target_pm, object_target_submodel, &target_objp->orient, &target_objp->pos );
+						model_local_to_global_point( &target_pos, &vmd_zero_vector, target_pm, object_target_submodel, &target_objp->orient, &target_objp->pos );
 				}
 
 				vec3d targetvec;
@@ -486,8 +484,7 @@ void camera::get_info(vec3d *position, matrix *orientation, bool apply_camera_or
 			}
 		}
 
-		if (orientation != nullptr)
-			*orientation = c_ori;
+		*orientation = c_ori;
 	}
 }
 

@@ -38,15 +38,15 @@ void UI_BUTTON::create(UI_WINDOW *wnd, const char *_text, int _x, int _y, int _w
 
 	// initialize variables
 	m_flags = 0;
-	next_repeat = 0;
+	next_repeat = UI_TIMESTAMP::never();
 	m_just_highlighted_function = NULL;		// assume there is no callback
 	m_disabled_function = NULL;				// ditto
 	if (do_repeat) {
 		m_flags |= BF_REPEATS;
-		next_repeat = 1;
+		next_repeat = UI_TIMESTAMP::immediate();
 	}
 
-	m_press_linger = 1;
+	m_press_linger = UI_TIMESTAMP::immediate();
 	first_callback = 1;
 
 	hotkey_if_focus = KEY_SPACEBAR;
@@ -232,7 +232,7 @@ void UI_BUTTON::process(int focus)
 	maybe_show_custom_cursor();
 
 	if ( !mouse_on_me ) {
-		next_repeat = 0;
+		next_repeat = UI_TIMESTAMP::never();
 	} else {
 		m_flags |= BF_HIGHLIGHTED;
 		if ( !(old_flags & BF_HIGHLIGHTED) ) {
@@ -280,7 +280,7 @@ void UI_BUTTON::process(int focus)
 
 	// handler for button not down
 	if ( !(m_flags & BF_DOWN) ) {
-		next_repeat = 0;
+		next_repeat = UI_TIMESTAMP::never();
 		if ( (old_flags & BF_DOWN) && !(old_flags & BF_CLICKED) )  // check for release of mouse, not hotkey
 			m_flags |= BF_JUST_RELEASED;
 
@@ -296,27 +296,27 @@ void UI_BUTTON::process(int focus)
 	// check if button just went down this frame
 	if ( !(old_flags & BF_DOWN) ) {
 		m_flags |= BF_JUST_PRESSED;
-		m_press_linger = timestamp(100);
+		m_press_linger = ui_timestamp(100);
 		if (user_function)
 			user_function();
 
 		if (m_flags & BF_REPEATS) {
-			next_repeat = timestamp(B_REPEAT_TIME * 3);
+			next_repeat = ui_timestamp(B_REPEAT_TIME * 3);
 			m_flags |= BF_CLICKED;
 		}
 	}
 
 	// check if a repeat event should occur
-	if ( timestamp_elapsed(next_repeat) && (m_flags & BF_REPEATS) ) {
-		next_repeat = timestamp(B_REPEAT_TIME);
+	if ( ui_timestamp_elapsed(next_repeat) && (m_flags & BF_REPEATS) ) {
+		next_repeat = ui_timestamp(B_REPEAT_TIME);
 		m_flags |= BF_CLICKED;
-		m_press_linger = timestamp(100);
+		m_press_linger = ui_timestamp(100);
 	}
 
 	// check for double click occurance
 	if (B1_DOUBLE_CLICKED && mouse_on_me) {
 		m_flags |= BF_DOUBLE_CLICKED;
-		m_press_linger = timestamp(100);
+		m_press_linger = ui_timestamp(100);
 	}
 }
 
@@ -362,7 +362,7 @@ int UI_BUTTON::just_highlighted()
 // how the button is being drawn, if you want to think of it that way.
 int UI_BUTTON::button_down()
 {
-	if ( (m_flags & BF_DOWN) || !timestamp_elapsed(m_press_linger) )
+	if ( (m_flags & BF_DOWN) || !ui_timestamp_elapsed(m_press_linger) )
 		return TRUE;
 	else
  		return FALSE;
@@ -407,8 +407,8 @@ void UI_BUTTON::press_button()
 // reset the "pressed" timestamps
 void UI_BUTTON::reset_timestamps()
 {
-	m_press_linger = 1;
-	next_repeat = 0;
+	m_press_linger = UI_TIMESTAMP::immediate();
+	next_repeat = UI_TIMESTAMP::never();
 }
 
 void UI_BUTTON::skip_first_highlight_callback()
@@ -421,10 +421,10 @@ void UI_BUTTON::repeatable(int yes)
 {
 	if(yes){
 		m_flags |= BF_REPEATS;
-		next_repeat = 1;
+		next_repeat = UI_TIMESTAMP::immediate();
 	} else {
 		m_flags &= ~(BF_REPEATS);
-		next_repeat = 0;
+		next_repeat = UI_TIMESTAMP::never();
 	}
 }
 

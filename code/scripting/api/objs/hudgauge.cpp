@@ -10,7 +10,17 @@ namespace api {
 
 ADE_OBJ(l_HudGauge, HudGauge*, "HudGauge", "HUD Gauge handle");
 
-ADE_VIRTVAR(Name, l_HudGauge, "string", "Custom HUD Gauge name", "string", "Custom HUD Gauge name, or nil if handle is invalid")
+ADE_FUNC(isCustom, l_HudGauge, nullptr, "Custom HUD Gauge status", "boolean", "Returns true if this is a custom HUD gauge, or false if it is a non-custom (default) HUD gauge")
+{
+	HudGauge* gauge;
+
+	if (!ade_get_args(L, "o", l_HudGauge.Get(&gauge)))
+		return ADE_RETURN_NIL;
+
+	return ade_set_args(L, "b", gauge->isCustom());
+}
+
+ADE_VIRTVAR(Name, l_HudGauge, "string", "Custom HUD Gauge name", "string", "Custom HUD Gauge name, or blank if this is a default gauge, or nil if handle is invalid")
 {
 	HudGauge* gauge;
 
@@ -23,7 +33,7 @@ ADE_VIRTVAR(Name, l_HudGauge, "string", "Custom HUD Gauge name", "string", "Cust
 	return ade_set_args(L, "s", gauge->getCustomGaugeName());
 }
 
-ADE_VIRTVAR(Text, l_HudGauge, "string", "Custom HUD Gauge text", "string", "Custom HUD Gauge text, or nil if handle is invalid")
+ADE_VIRTVAR(Text, l_HudGauge, "string", "Custom HUD Gauge text", "string", "Custom HUD Gauge text, or blank if this is a default gauge, or nil if handle is invalid")
 {
 	HudGauge* gauge;
 	const char* text = nullptr;
@@ -40,6 +50,16 @@ ADE_VIRTVAR(Text, l_HudGauge, "string", "Custom HUD Gauge text", "string", "Cust
 	}
 
 	return ade_set_args(L, "s", gauge->getCustomGaugeText());
+}
+
+ADE_FUNC(getBaseResolution, l_HudGauge, nullptr, "Returns the base width and base height (which may be different from the screen width and height) used by the specified HUD gauge.",
+	"number, number", "Base width and height")
+{
+	HudGauge* gauge;
+	if (!ade_get_args(L, "o", l_HudGauge.Get(&gauge)))
+		return ADE_RETURN_NIL;
+
+	return ade_set_args(L, "ii", gauge->getBaseWidth(), gauge->getBaseHeight());
 }
 
 ADE_VIRTVAR(RenderFunction,

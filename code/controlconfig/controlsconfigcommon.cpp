@@ -1604,7 +1604,7 @@ void control_config_common_read_section(int s, bool first_override) {
 		// Key assignment and modifiers
 		if (optional_string("$Key Default:")) {
 			if (optional_string("NONE")) {
-				new_binding.take(CC_bind(CID_KEYBOARD, -1), -1);
+				key = -1;
 			} else {
 				stuff_string(szTempBuffer, F_NAME);
 				key = mKeyNameToVal[szTempBuffer];

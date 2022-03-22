@@ -11,7 +11,6 @@ namespace api {
 class model_h
 {
  protected:
-	int mid;
 	polymodel *model;
 
  public:
@@ -26,6 +25,35 @@ class model_h
 	bool IsValid();
 };
 DECLARE_ADE_OBJ(l_Model, model_h);
+
+class submodel_h
+{
+protected:
+	polymodel *model;
+	int submodel_num;
+
+public:
+	explicit submodel_h(int n_modelnum, int n_submodelnum);
+	explicit submodel_h(polymodel *n_model, int n_submodelnum);
+	submodel_h();
+
+	polymodel *GetModel();
+	int GetModelID();
+
+	bsp_info *GetSubmodel();
+	int GetSubmodelIndex();
+
+	bool IsValid();
+};
+DECLARE_ADE_OBJ(l_Submodel, submodel_h);
+
+class modelsubmodels_h : public model_h
+{
+ public:
+	 modelsubmodels_h(polymodel *pm);
+	 modelsubmodels_h();
+};
+DECLARE_ADE_OBJ(l_ModelSubmodels, modelsubmodels_h);
 
 class modeltextures_h : public model_h
 {

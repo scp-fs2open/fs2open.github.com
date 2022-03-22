@@ -40,6 +40,7 @@
 #include "tracing/tracing.h"
 
 #include <algorithm>
+#include <stack>
 
 flag_def_list model_render_flags[] =
 {
@@ -858,7 +859,7 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 }
 
 // used in collision code to check if submodel rotates too far
-float get_submodel_delta_angle(submodel_instance *smi)
+float get_submodel_delta_angle(const submodel_instance *smi)
 {
 	// find the angle
 	float delta_angle = smi->cur_angle - smi->prev_angle;
@@ -1653,6 +1654,16 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 				parent = cfread_int(fp);
 				sm->parent = parent;
 				auto parent_sm = parent < 0 ? nullptr : &pm->submodel[parent];
+				sm->depth = 1;
+				{
+					int parent_sm_id = parent;
+					while (parent_sm_id >= 0) {
+						sm->depth++;
+						parent_sm_id = pm->submodel[parent_sm_id].parent;
+					}
+				}
+
+
 
 //				cfread_vector(&sm->norm,fp);
 //				d = cfread_float(fp);				
@@ -1901,6 +1912,9 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 
 						cfread(bsp_data, 1, sm->bsp_data_size, fp);
 
+						// byte swap first thing
+						swap_bsp_data(pm, bsp_data);
+
 						auto bsp_data_size_aligned = align_bsp_data(bsp_data, nullptr, sm->bsp_data_size);
 
 						if (bsp_data_size_aligned != static_cast<uint>(sm->bsp_data_size)) {
@@ -1919,8 +1933,6 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 						} else {
 							sm->bsp_data = bsp_data;
 						}
-
-						swap_bsp_data(pm, sm->bsp_data);
 					}
 					else {
 						sm->bsp_data = nullptr;
@@ -3519,18 +3531,15 @@ polymodel_instance* model_get_instance(int model_instance_num)
 // note that x1,y1,x2,y2 aren't clipped to 2d screen coordinates!
 int model_find_2d_bound_min(int model_num,matrix *orient, vec3d * pos,int *x1, int *y1, int *x2, int *y2 )
 {
-	polymodel * po;
 	int n_valid_pts;
 	int i, x,y,min_x, min_y, max_x, max_y;
 	int rval = 0;
 
-	po = model_get(model_num);
+	polymodel* pm = model_get(model_num);
 
 	g3_start_instance_matrix(pos,orient,false);
 	
 	n_valid_pts = 0;
-
-	int hull = po->detail[0];
 
 	min_x = min_y = max_x = max_y = 0;
 
@@ -3538,7 +3547,7 @@ int model_find_2d_bound_min(int model_num,matrix *orient, vec3d * pos,int *x1, i
 		vertex pt;
 		ubyte flags;
 
-		flags = g3_rotate_vertex(&pt,&po->submodel[hull].bounding_box[i]);
+		flags = g3_rotate_vertex(&pt,&pm->bounding_box[i]);
 		if ( !(flags&CC_BEHIND) ) {
 			g3_project_vertex(&pt);
 
@@ -3688,15 +3697,17 @@ void model_get_rotating_submodel_axis(vec3d *model_axis, vec3d *world_axis, cons
 {
 	Assert(pm->id == pmi->model_num);
 	bsp_info *sm = &pm->submodel[submodel_num];
-	Assert(sm->rotation_type == MOVEMENT_TYPE_REGULAR || sm->rotation_type == MOVEMENT_TYPE_INTRINSIC);
+	Assert(sm->rotation_type == MOVEMENT_TYPE_REGULAR || sm->rotation_type == MOVEMENT_TYPE_INTRINSIC || sm->rotation_type == MOVEMENT_TYPE_TRIGGERED);
 
-	*model_axis = sm->rotation_axis;
-	model_instance_find_world_dir(world_axis, model_axis, pm, pmi, submodel_num, objorient);
+	*model_axis = sm->rotation_type == MOVEMENT_TYPE_TRIGGERED ? pmi->submodel[submodel_num].rotation_axis : sm->rotation_axis;
+	model_instance_local_to_global_dir(world_axis, model_axis, pm, pmi, submodel_num, objorient);
 }
 
 // Normalize the submodel angle and convert float angle to angles struct
 void submodel_canonicalize(bsp_info *sm, submodel_instance *smi, bool clamp)
 {
+	smi->canonical_prev_orient = smi->canonical_orient;
+
 	if (clamp)
 	{
 		// normalize the angle so that we are within a valid range:
@@ -3768,7 +3779,6 @@ void submodel_stepped_rotate(model_subsystem *psub, submodel_instance *smi)
 
 	// save last angles
 	smi->prev_angle = smi->cur_angle;
-	smi->canonical_prev_orient = smi->canonical_orient;
 
 	// angular displacement of one step
 	float step_size = (PI2 / psub->stepped_rotation->num_steps);
@@ -3844,18 +3854,18 @@ void submodel_look_at(polymodel *pm, polymodel_instance *pmi, int submodel_num)
 
 	//------------
 	// Calculate the destination point in world coordinates
-	model_instance_find_world_point(&dst, &vmd_zero_vector, pm, pmi, sm->look_at_submodel, &vmd_identity_matrix, &vmd_zero_vector);
+	model_instance_local_to_global_point(&dst, &vmd_zero_vector, pm, pmi, sm->look_at_submodel, &vmd_identity_matrix, &vmd_zero_vector);
 
 	//------------
 	// Project the destination point onto the submodel base plane
-	model_instance_find_world_dir(&world_axis, &sm->rotation_axis, pm, pmi, sm->parent, &vmd_identity_matrix);
-	model_instance_find_world_point(&world_pos, &vmd_zero_vector, pm, pmi, submodel_num, &vmd_identity_matrix, &vmd_zero_vector);
+	model_instance_local_to_global_dir(&world_axis, &sm->rotation_axis, pm, pmi, sm->parent, &vmd_identity_matrix);
+	model_instance_local_to_global_point(&world_pos, &vmd_zero_vector, pm, pmi, submodel_num, &vmd_identity_matrix, &vmd_zero_vector);
 
 	vm_project_point_onto_plane(&planar_dst, &dst, &world_axis, &world_pos);
 
 	//------------
 	// Calculate angle to rotate towards projected point
-	model_instance_find_world_dir(&rotated_vec, &sm->frame_of_reference.vec.fvec, pm, pmi, sm->parent, &vmd_identity_matrix);
+	model_instance_local_to_global_dir(&rotated_vec, &sm->frame_of_reference.vec.fvec, pm, pmi, sm->parent, &vmd_identity_matrix);
 	vm_vec_sub(&dir, &planar_dst, &world_pos);
 	vm_vec_normalize(&dir);
 	smi->cur_angle = vm_vec_delta_ang_norm(&rotated_vec, &dir, &world_axis);
@@ -3904,7 +3914,6 @@ void submodel_rotate(bsp_info *sm, submodel_instance *smi)
 {
 	// save last angles
 	smi->prev_angle = smi->cur_angle;
-	smi->canonical_prev_orient = smi->canonical_orient;
 
 	float delta;
 
@@ -3976,14 +3985,14 @@ int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, ship_
 
 		//------------
 		// Project the destination point onto the turret base plane
-		model_instance_find_world_dir(&world_axis, &base_sm->rotation_axis, pm, pmi, base_sm->parent, &objp->orient);
-		model_instance_find_world_point(&world_pos, &vmd_zero_vector, pm, pmi, turret->subobj_num, &objp->orient, &objp->pos);
+		model_instance_local_to_global_dir(&world_axis, &base_sm->rotation_axis, pm, pmi, base_sm->parent, &objp->orient);
+		model_instance_local_to_global_point(&world_pos, &vmd_zero_vector, pm, pmi, turret->subobj_num, &objp->orient, &objp->pos);
 
 		vm_project_point_onto_plane(&planar_dst, dst, &world_axis, &world_pos);
 
 		//------------
 		// Calculate base angle to rotate towards projected point
-		model_instance_find_world_dir(&rotated_vec, &base_sm->frame_of_reference.vec.fvec, pm, pmi, base_sm->parent, &objp->orient);
+		model_instance_local_to_global_dir(&rotated_vec, &base_sm->frame_of_reference.vec.fvec, pm, pmi, base_sm->parent, &objp->orient);
 		vm_vec_sub(&dir, &planar_dst, &world_pos);
 		vm_vec_normalize(&dir);
 		desired_base_angle = vm_vec_delta_ang_norm(&rotated_vec, &dir, &world_axis);
@@ -3996,14 +4005,14 @@ int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, ship_
 		//------------
 		// Project the destination point onto the turret gun plane with the base in the desired orientation
 		// NOTE: the rotation axis is given in the model's reference frame, so it needs to be rotated when the base is rotated
-		model_instance_find_world_dir(&world_axis, &gun_sm->rotation_axis, pm, pmi, gun_sm->parent, &objp->orient);
-		model_instance_find_world_point(&world_pos, &vmd_zero_vector, pm, pmi, turret->turret_gun_sobj, &objp->orient, &objp->pos);
+		model_instance_local_to_global_dir(&world_axis, &gun_sm->rotation_axis, pm, pmi, gun_sm->parent, &objp->orient);
+		model_instance_local_to_global_point(&world_pos, &vmd_zero_vector, pm, pmi, turret->turret_gun_sobj, &objp->orient, &objp->pos);
 
 		vm_project_point_onto_plane(&planar_dst, dst, &world_axis, &world_pos);
 
 		//------------
 		// Calculate gun angle to rotate towards projected point
-		model_instance_find_world_dir(&rotated_vec, &gun_sm->frame_of_reference.vec.uvec, pm, pmi, gun_sm->parent, &objp->orient);
+		model_instance_local_to_global_dir(&rotated_vec, &gun_sm->frame_of_reference.vec.uvec, pm, pmi, gun_sm->parent, &objp->orient);
 		vm_vec_sub(&dir, &planar_dst, &world_pos);
 		vm_vec_normalize(&dir);
 		desired_gun_angle = vm_vec_delta_ang_norm(&rotated_vec, &dir, &world_axis);
@@ -4090,26 +4099,15 @@ int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, ship_
 // For a submodel, return its overall offset from the main model.
 void model_find_submodel_offset(vec3d *outpnt, const polymodel *pm, int submodel_num)
 {
-	vm_vec_zero(outpnt);
-	int mn = submodel_num;
-
-	//instance up the tree for this point
-	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
-		vm_vec_add2(outpnt, &pm->submodel[mn].offset);
-
-		mn = pm->submodel[mn].parent;
-	}
+	model_local_to_global_point(outpnt, &vmd_zero_vector, pm, submodel_num);
 }
 
-void model_find_world_point(vec3d *outpnt, vec3d *mpnt, int model_num, int submodel_num, const matrix *objorient, const vec3d *objpos)
+void model_local_to_global_point(vec3d *outpnt, const vec3d *mpnt, int model_num, int submodel_num, const matrix *objorient, const vec3d *objpos)
 {
-	return model_find_world_point(outpnt, mpnt, model_get(model_num), submodel_num, objorient, objpos);
+	return model_local_to_global_point(outpnt, mpnt, model_get(model_num), submodel_num, objorient, objpos);
 }
 
-// Given a point (pnt) that is in submodel_num's frame of
-// reference, and given the object's orient and position, 
-// return the point in 3-space in outpnt.
-void model_find_world_point(vec3d *outpnt, vec3d *mpnt, const polymodel *pm, int submodel_num, const matrix *objorient, const vec3d *objpos)
+void model_local_to_global_point(vec3d *outpnt, const vec3d *mpnt, const polymodel *pm, int submodel_num, const matrix *objorient, const vec3d *objpos)
 {
 	vec3d pnt;
 	int mn;
@@ -4126,18 +4124,22 @@ void model_find_world_point(vec3d *outpnt, vec3d *mpnt, const polymodel *pm, int
 	}
 
 	//now instance for the entire object
-	vm_vec_unrotate(outpnt,&pnt,objorient);
-	vm_vec_add2(outpnt,objpos);
+	if (objorient && objpos) {
+		vm_vec_unrotate(outpnt, &pnt, objorient);
+		vm_vec_add2(outpnt, objpos);
+	} else {
+		*outpnt = pnt;
+	}
 }
 
-void model_instance_find_world_point(vec3d *outpnt, vec3d *mpnt, int model_instance_num, int submodel_num, const matrix *objorient, const vec3d *objpos)
+void model_instance_local_to_global_point(vec3d *outpnt, const vec3d *mpnt, int model_instance_num, int submodel_num, const matrix *objorient, const vec3d *objpos, bool use_last_frame)
 {
 	auto pmi = model_get_instance(model_instance_num);
 	auto pm = model_get(pmi->model_num);
-	return model_instance_find_world_point(outpnt, mpnt, pm, pmi, submodel_num, objorient, objpos);
+	return model_instance_local_to_global_point(outpnt, mpnt, pm, pmi, submodel_num, objorient, objpos, use_last_frame);
 }
 
-void model_instance_find_world_point(vec3d *outpnt, vec3d *mpnt, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient, const vec3d *objpos)
+void model_instance_local_to_global_point(vec3d *outpnt, const vec3d *mpnt, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient, const vec3d *objpos, bool use_last_frame)
 {
 	vec3d pnt;
 	vec3d tpnt;
@@ -4149,184 +4151,178 @@ void model_instance_find_world_point(vec3d *outpnt, vec3d *mpnt, const polymodel
 
 	//instance up the tree for this point
 	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
-		vm_vec_unrotate(&tpnt, &pnt, &pmi->submodel[mn].canonical_orient);
+		vm_vec_unrotate(&tpnt, &pnt, use_last_frame ? &pmi->submodel[mn].canonical_prev_orient : &pmi->submodel[mn].canonical_orient);
 		vm_vec_add(&pnt, &tpnt, &pm->submodel[mn].offset);
 
 		mn = pm->submodel[mn].parent;
 	}
 
 	//now instance for the entire object
-	vm_vec_unrotate(outpnt,&pnt,objorient);
-	vm_vec_add2(outpnt,objpos);
+	if (objorient && objpos) {
+		vm_vec_unrotate(outpnt, &pnt, objorient);
+		vm_vec_add2(outpnt, objpos);
+	} else {
+		*outpnt = pnt;
+	}
 }
 
-void world_find_model_instance_point(vec3d *out, vec3d *world_pt, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *orient, const vec3d *pos)
+void model_instance_local_to_global_point_dir(vec3d *out_pnt, vec3d *out_dir, const vec3d *in_pnt, const vec3d *in_dir, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient, const vec3d *objpos)
 {
+	vec3d pnt, tpnt, dir, tdir;
+	int mn;
 	Assert(pm->id == pmi->model_num);
-	Assert( (pm->submodel[submodel_num].parent == pm->detail[0]) || (pm->submodel[submodel_num].parent == -1) );
 
-	vec3d tempv1, tempv2;
+	pnt = *in_pnt;
+	dir = *in_dir;
+	mn = submodel_num;
 
-	// get into ship RF
-	vm_vec_sub(&tempv1, world_pt, pos);
-	vm_vec_rotate(&tempv2, &tempv1, orient);
+	// instance up the tree for this point
+	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
+		vm_vec_unrotate(&tpnt, &pnt, &pmi->submodel[mn].canonical_orient);
+		vm_vec_add(&pnt, &tpnt, &pm->submodel[mn].offset);
 
-	if (pm->submodel[submodel_num].parent == -1) {
-		*out  = tempv2;
-		return;
+		vm_vec_unrotate(&tdir, &dir, &pmi->submodel[mn].canonical_orient);
+		dir = tdir;
+
+		mn = pm->submodel[mn].parent;
 	}
 
-	// put into submodel RF
-	vm_vec_sub2(&tempv2, &pm->submodel[submodel_num].offset);
-	vm_vec_rotate(out, &tempv2, &pmi->submodel[submodel_num].canonical_orient);
+	// now instance for the entire object
+	if (objorient && objpos) {
+		vm_vec_unrotate(out_pnt, &pnt, objorient);
+		vm_vec_add2(out_pnt, objpos);
+
+		vm_vec_unrotate(out_dir, &dir, objorient);
+	} else {
+		*out_pnt = pnt;
+		*out_dir = dir;
+	}
 }
 
-/**
- * Finds the current location of a submodel (in the ship's frame of reference),
- * taking into account the rotations of any parent submodels it might have.
- *  
- * @param *outpnt Output point
- * @param model_instance_num Index into Polygon_model_instances
- * @param submodel_num The number of the submodel we're interested in
- */
-void find_submodel_instance_point(vec3d *outpnt, const polymodel *pm, const polymodel_instance *pmi, int submodel_num)
+void model_instance_local_to_global_point_orient(vec3d *outpnt, matrix *outorient, const vec3d *submodel_pnt, const matrix *submodel_orient, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient, const vec3d *objpos)
 {
+	vec3d pnt, tpnt;
+	matrix orient;
+	int mn;
 	Assert(pm->id == pmi->model_num);
-	vm_vec_zero(outpnt);
+
+	pnt = *submodel_pnt;
+	orient = *submodel_orient;
+	mn = submodel_num;
+
+	// instance up the tree for this point
+	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
+		vm_vec_unrotate(&tpnt, &pnt, &pmi->submodel[mn].canonical_orient);
+		vm_vec_add(&pnt, &tpnt, &pm->submodel[mn].offset);
+
+		orient = orient * pmi->submodel[mn].canonical_orient;
+
+		mn = pm->submodel[mn].parent;
+	}
+
+	// now instance for the entire object
+	if (objorient && objpos) {
+		vm_vec_unrotate(outpnt, &pnt, objorient);
+		vm_vec_add2(outpnt, objpos);
+
+		*outorient = orient * *objorient;
+	} else {
+		*outpnt = pnt;
+		*outorient = orient;
+	}
+}
+
+void model_instance_global_to_local_point(vec3d* outpnt, const vec3d* mpnt, int model_instance_num, int submodel_num, const matrix* objorient, const vec3d* objpos, bool use_last_frame) {
+	auto pmi = model_get_instance(model_instance_num);
+	auto pm = model_get(pmi->model_num);
+	return model_instance_global_to_local_point(outpnt, mpnt, pm, pmi, submodel_num, objorient, objpos, use_last_frame);
+}
+
+void model_instance_global_to_local_point(vec3d* outpnt, const vec3d* mpnt, const polymodel* pm, const polymodel_instance* pmi, int submodel_num, const matrix* objorient, const vec3d* objpos, bool use_last_frame) {
+	Assert(pm->id == pmi->model_num);
+
+	constexpr int preallocatedStackDepth = 5;
+	std::pair<const matrix*, const vec3d*> preallocatedStack[preallocatedStackDepth];
+
+	auto submodelStack = pm->submodel[submodel_num].depth <= preallocatedStackDepth ? preallocatedStack : new std::pair<const matrix*, const vec3d*>[pm->submodel[submodel_num].depth];
+	int stackCounter = 0;
 
 	int mn = submodel_num;
-	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
-		vec3d offset = pm->submodel[mn].offset;
 
-		int parent_mn = pm->submodel[mn].parent;
-
-		if (pm->submodel[parent_mn].flags[Model::Submodel_flags::Can_move]) {
-			vec3d tvec = offset;
-			vm_vec_unrotate(&offset, &tvec, &pmi->submodel[parent_mn].canonical_orient);
-		}
-
-		vm_vec_add2(outpnt, &offset);
-
-		mn = parent_mn;
+	//Go up the chain of parents to build a stack of transformations from parent -> child
+	while ((mn >= 0) && (pm->submodel[mn].parent >= 0)) {
+		if(use_last_frame)
+			submodelStack[stackCounter].first = &pmi->submodel[mn].canonical_prev_orient;
+		else
+			submodelStack[stackCounter].first = &pmi->submodel[mn].canonical_orient;
+		submodelStack[stackCounter++].second = &pm->submodel[mn].offset;
+		mn = pm->submodel[mn].parent;
 	}
+
+	if (objorient != nullptr && objpos != nullptr) {
+		submodelStack[stackCounter].first = objorient;
+		submodelStack[stackCounter++].second = objpos;
+	}
+	stackCounter--;
+		
+	vec3d resultPnt = *mpnt;
+
+	while (stackCounter >= 0) {
+		const auto& transform = submodelStack[stackCounter--];
+
+		vm_vec_sub2(&resultPnt, transform.second);
+		vm_vec_rotate(&resultPnt, &resultPnt, transform.first);
+	}
+
+	*outpnt = resultPnt;
+
+	if (pm->submodel[submodel_num].depth > preallocatedStackDepth)
+		delete[] submodelStack;
 }
 
-/**
- * Finds the current location and rotation (in the ship's frame of reference) of
- * a submodel point, taking into account the rotations of the submodel and any
- * parent submodels it might have.
- *  
- * @param *outpnt Output point
- * @param *outnorm Output normal
- * @param model_instance_num Index into Polygon_model_instances
- * @param submodel_num The number of the submodel we're interested in
- * @param *submodel_pnt The point which's current position we want, in the submodel's frame of reference
- * @param *submodel_norm The normal which's current direction we want, in the ship's frame of reference
- */
-void find_submodel_instance_point_normal(vec3d *outpnt, vec3d *outnorm, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const vec3d *submodel_pnt, const vec3d *submodel_norm)
-{
+void model_instance_global_to_local_dir(vec3d* out_dir, const vec3d* in_dir, int model_instance_num, int submodel_num, const matrix* objorient, bool use_submodel_parent, bool use_last_frame) {
+	auto pmi = model_get_instance(model_instance_num);
+	auto pm = model_get(pmi->model_num);
+	model_instance_global_to_local_dir(out_dir, in_dir, pm, pmi, use_submodel_parent ? pm->submodel[submodel_num].parent : submodel_num, objorient, use_last_frame);
+}
+
+void model_instance_global_to_local_dir(vec3d* out_dir, const vec3d* in_dir, const polymodel* pm, const polymodel_instance* pmi, int submodel_num, const matrix* objorient, bool use_last_frame) {
 	Assert(pm->id == pmi->model_num);
-	*outnorm = *submodel_norm;
-	vm_vec_zero(outpnt);
+
+	constexpr int preallocatedStackDepth = 5;
+	const matrix* preallocatedStack[preallocatedStackDepth];
+
+	auto submodelStack = pm->submodel[submodel_num].depth <= preallocatedStackDepth ? preallocatedStack : new const matrix*[pm->submodel[submodel_num].depth];
+	int stackCounter = 0;
 
 	int mn = submodel_num;
-	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
-		vec3d offset = pm->submodel[mn].offset;
 
-		if ( mn == submodel_num) {
-			vec3d submodel_pnt_offset = *submodel_pnt;
-
-			vec3d tvec = submodel_pnt_offset;
-			vm_vec_unrotate(&submodel_pnt_offset, &tvec, &pmi->submodel[mn].canonical_orient);
-
-			vec3d tnorm = *outnorm;
-			vm_vec_unrotate(outnorm, &tnorm, &pmi->submodel[mn].canonical_orient);
-
-			vm_vec_add2(&offset, &submodel_pnt_offset);
-		}
-
-		int parent_mn = pm->submodel[mn].parent;
-
-		vec3d tvec = offset;
-		vm_vec_unrotate(&offset, &tvec, &pmi->submodel[parent_mn].canonical_orient);
-
-		vec3d tnorm = *outnorm;
-		vm_vec_unrotate(outnorm, &tnorm, &pmi->submodel[parent_mn].canonical_orient);
-
-		vm_vec_add2(outpnt, &offset);
-
-		mn = parent_mn;
+	//Go up the chain of parents to build a stack of transformations from parent -> child
+	while ((mn >= 0) && (pm->submodel[mn].parent >= 0)) {
+		if (use_last_frame)
+			submodelStack[stackCounter++] = &pmi->submodel[mn].canonical_prev_orient;
+		else
+			submodelStack[stackCounter++] = &pmi->submodel[mn].canonical_orient;
+		mn = pm->submodel[mn].parent;
 	}
-}
 
-/**
- * Same as find_submodel_instance_point_normal, except that this takes and
- * returns matrices instead of normals.
- *  
- * Finds the current location and rotation (in the ship's frame of reference) of
- * a submodel point, taking into account the rotations of the submodel and any
- * parent submodels it might have.
- *
- * @param *outpnt Output point
- * @param *outorient Output matrix
- * @param model_instance_num Index into Polygon_model_instances
- * @param submodel_num The number of the submodel we're interested in
- * @param *submodel_pnt The point which's current position we want, in the submodel's frame of reference
- * @param *submodel_orient The local matrix which's current orientation in the ship's frame of reference we want
- */
-void find_submodel_instance_point_orient(vec3d *outpnt, matrix *outorient, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const vec3d *submodel_pnt, const matrix *submodel_orient)
-{
-	Assert(pm->id == pmi->model_num);
-	*outorient = *submodel_orient;
-	vm_vec_zero(outpnt);
+	if (objorient != nullptr)
+		submodelStack[stackCounter++] = objorient;
 
-	int mn = submodel_num;
-	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
-		vec3d offset = pm->submodel[mn].offset;
+	stackCounter--;
 
-		if ( mn == submodel_num) {
-			vec3d submodel_pnt_offset = *submodel_pnt;
+	vec3d resultDir = *in_dir;
 
-			vec3d tvec = submodel_pnt_offset;
-			vm_vec_unrotate(&submodel_pnt_offset, &tvec, &pmi->submodel[mn].canonical_orient);
+	while (stackCounter >= 0) {
+		const auto& transform = submodelStack[stackCounter--];
 
-			matrix tnorm = *outorient;
-			vm_matrix_x_matrix(outorient, &tnorm, &pmi->submodel[mn].canonical_orient);
-
-			vm_vec_add2(&offset, &submodel_pnt_offset);
-		}
-
-		int parent_mn = pm->submodel[mn].parent;
-
-		vec3d tvec = offset;
-		vm_vec_unrotate(&offset, &tvec, &pmi->submodel[parent_mn].canonical_orient);
-
-		matrix tnorm = *outorient;
-		vm_matrix_x_matrix(outorient, &tnorm, &pmi->submodel[parent_mn].canonical_orient);
-
-		vm_vec_add2(outpnt, &offset);
-
-		mn = parent_mn;
+		vm_vec_rotate(&resultDir, &resultDir, transform);
 	}
-}
 
-/**
- * Finds the current world location of a submodel, taking into account the
- * rotations of any parent submodels it might have.
- *  
- * @param *outpnt Output point
- * @param model_instance_num Index into Polygon_model_instances
- * @param submodel_num The number of the submodel we're interested in
- */
-void find_submodel_instance_world_point(vec3d *outpnt, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient, const vec3d *objpos)
-{
-	vec3d loc_pnt;
-	Assert(pm->id == pmi->model_num);
+	*out_dir = resultDir;
 
-	find_submodel_instance_point(&loc_pnt, pm, pmi, submodel_num);
-
-	vm_vec_unrotate(outpnt, &loc_pnt, objorient);
-	vm_vec_add2(outpnt, objpos);
+	if (pm->submodel[submodel_num].depth > preallocatedStackDepth)
+		delete[] submodelStack;
 }
 
 // Verify rotating submodel has corresponding ship subsystem -- info in which to store rotation angle
@@ -4385,39 +4381,34 @@ void model_get_moving_submodel_list(SCP_vector<int> &submodel_vector, const obje
 	}
 
 	polymodel *pm = model_get(model_num);
-	bsp_info *child_submodel = &pm->submodel[pm->detail[0]];
-	
-	if(child_submodel->flags[Model::Submodel_flags::No_collisions]) { // if detail0 has $no_collision set dont check childs
-		return;
-	}
-
 	polymodel_instance *pmi = model_get_instance(model_instance_num);
-	submodel_instance *child_submodel_instance;
+	
+	
+	model_iterate_submodel_tree(pm, pm->detail[0], [pm, pmi, &submodel_vector](int submodel, int /*currentLevel*/, bool /*isLeaf*/, bool& isMoving, bool& skipChildren) {
+		if (skipChildren)
+			return;
 
-	int i = child_submodel->first_child;
-	while ( i >= 0 )	{
-		child_submodel = &pm->submodel[i];
-		child_submodel_instance = &pmi->submodel[i];
+		const auto& child_submodel = pm->submodel[submodel];
+		const auto& child_submodel_instance = pmi->submodel[submodel];
 
 		// Don't check it or its children if it is destroyed or it is a replacement (non-moving)
-		if ( !child_submodel_instance->blown_off && (child_submodel->i_replace == -1) && !child_submodel->flags[Model::Submodel_flags::No_collisions, Model::Submodel_flags::Nocollide_this_only])	{
-
-			// Look for submodels that rotate or intrinsic-rotate
-			if (child_submodel->rotation_type == MOVEMENT_TYPE_REGULAR || child_submodel->rotation_type == MOVEMENT_TYPE_INTRINSIC) {
-
-				// check submodel rotation is less than max allowed.
-				float delta_angle = get_submodel_delta_angle(child_submodel_instance);
-				if (delta_angle < MAX_SUBMODEL_COLLISION_ANGULAR_VELOCITY) {
-					submodel_vector.push_back(i);
-				}
-			}
-			// Also look for submodels that aren't subsystems but still move
-			else if (child_submodel->subsys_num < 0 && child_submodel->flags[Model::Submodel_flags::Can_move]) {
-				submodel_vector.push_back(i);
-			}
+		if (child_submodel.flags[Model::Submodel_flags::No_collisions] || child_submodel_instance.blown_off || child_submodel.i_replace != -1) {
+			skipChildren = true;
+			return;
 		}
-		i = child_submodel->next_sibling;
-	}
+
+		if (child_submodel.rotation_type == MOVEMENT_TYPE_REGULAR || child_submodel.rotation_type == MOVEMENT_TYPE_INTRINSIC) {
+			float delta_angle = get_submodel_delta_angle(&child_submodel_instance);
+			isMoving |= delta_angle < MAX_SUBMODEL_COLLISION_ANGULAR_VELOCITY;
+		}
+		else if (child_submodel.flags[Model::Submodel_flags::Can_move]) {
+			isMoving = true;
+		}
+
+
+		if (isMoving && !child_submodel.flags[Model::Submodel_flags::Nocollide_this_only])
+			submodel_vector.push_back(submodel);
+		}, 0, false, false);
 }
 
 void model_get_submodel_tree_list(SCP_vector<int> &submodel_vector, const polymodel *pm, int mn)
@@ -4435,32 +4426,32 @@ void model_get_submodel_tree_list(SCP_vector<int> &submodel_vector, const polymo
 	}
 }
 
-void model_find_world_dir(vec3d *out_dir, const vec3d *in_dir, int model_num, int submodel_num, const matrix *objorient)
+void model_local_to_global_dir(vec3d *out_dir, const vec3d *in_dir, int model_num, int submodel_num, const matrix *objorient)
 {
-	model_find_world_dir(out_dir, in_dir, model_get(model_num), submodel_num, objorient);
+	model_local_to_global_dir(out_dir, in_dir, model_get(model_num), submodel_num, objorient);
 }
 
-// Given a direction (pnt) that is in submodel_num's frame of
-// reference, and given the object's orient and position, 
-// return the point in 3-space in outpnt.
-void model_find_world_dir(vec3d *out_dir, const vec3d *in_dir, const polymodel *pm, int submodel_num, const matrix *objorient)
+void model_local_to_global_dir(vec3d *out_dir, const vec3d *in_dir, const polymodel *pm, int submodel_num, const matrix *objorient)
 {
 	SCP_UNUSED(pm);
 	SCP_UNUSED(submodel_num);
 
 	//now instance for the entire object
-	vm_vec_unrotate(out_dir, in_dir, objorient);
+	if (objorient) {
+		vm_vec_unrotate(out_dir, in_dir, objorient);
+	} else {
+		*out_dir = *in_dir;
+	}
 }
 
-// the same as model_find_world_dir - just taking model instance data into account
-void model_instance_find_world_dir(vec3d *out_dir, const vec3d *in_dir, int model_instance_num, int submodel_num, const matrix *objorient, bool use_submodel_parent)
+void model_instance_local_to_global_dir(vec3d *out_dir, const vec3d *in_dir, int model_instance_num, int submodel_num, const matrix *objorient, bool use_submodel_parent)
 {
 	auto pmi = model_get_instance(model_instance_num);
 	auto pm = model_get(pmi->model_num);
-	model_instance_find_world_dir(out_dir, in_dir, pm, pmi, use_submodel_parent ? pm->submodel[submodel_num].parent : submodel_num, objorient);
+	model_instance_local_to_global_dir(out_dir, in_dir, pm, pmi, use_submodel_parent ? pm->submodel[submodel_num].parent : submodel_num, objorient);
 }
 
-void model_instance_find_world_dir(vec3d *out_dir, const vec3d *in_dir, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient)
+void model_instance_local_to_global_dir(vec3d *out_dir, const vec3d *in_dir, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient)
 {
 	vec3d pnt;
 	vec3d tpnt;
@@ -4479,7 +4470,11 @@ void model_instance_find_world_dir(vec3d *out_dir, const vec3d *in_dir, const po
 	}
 
 	// now instance for the entire object
-	vm_vec_unrotate(out_dir, &pnt, objorient);
+	if (objorient) {
+		vm_vec_unrotate(out_dir, &pnt, objorient);
+	} else {
+		*out_dir = pnt;
+	}
 }
 
 
@@ -4648,86 +4643,6 @@ void model_do_intrinsic_motions(object *objp)
 	}
 }
 
-// Finds a point on the rotation axis of a submodel, used in collision, generally find rotational velocity
-void model_init_submodel_axis_pt(polymodel *pm, polymodel_instance *pmi, int submodel_num)
-{
-	vec3d mpoint1, mpoint2;
-	vec3d p1, v1, p2, v2, int1;
-	Assert(pm->id == pmi->model_num);
-
-	Assert(pm->submodel[submodel_num].rotation_type == MOVEMENT_TYPE_REGULAR || pm->submodel[submodel_num].rotation_type == MOVEMENT_TYPE_INTRINSIC);
-	submodel_instance *smi = &pmi->submodel[submodel_num];
-	
-	auto axis = &pm->submodel[submodel_num].rotation_axis;
-
-	// find 2 fixed points in submodel RF
-	// these will be rotated to about the axis an angle of 0 and PI and we'll find the intersection of the
-	// two lines to find a point on the axis
-
-	// since the rotation axis is now arbitrary, we can't simply pick points on the other two axes;
-	// we need to generate some suitably orthogonal points
-
-	// first find the standard vector that's the most orthongonal-ish
-	vec3d *stdaxis;
-	float dotx = fl_abs(vm_vec_dot(axis, &vmd_x_vector));
-	float doty = fl_abs(vm_vec_dot(axis, &vmd_y_vector));
-	float dotz = fl_abs(vm_vec_dot(axis, &vmd_z_vector));
-	if (dotx < doty) {
-		if (dotx < dotz) {
-			stdaxis = &vmd_x_vector;
-		} else {
-			stdaxis = &vmd_z_vector;
-		}
-	} else {
-		if (doty < dotz) {
-			stdaxis = &vmd_y_vector;
-		} else {
-			stdaxis = &vmd_z_vector;
-		}
-	}
-
-	// now find a vector perpendicular to the axis
-	vm_vec_cross(&mpoint1, axis, stdaxis);
-
-	// now find another vector perpendicular to the axis and the first perpendicular vector
-	vm_vec_cross(&mpoint2, axis, &mpoint1);
-
-	// copy submodel angs
-	float save_angle = smi->cur_angle;
-	matrix save_orient = smi->canonical_orient;
-
-	// find two points rotated into model RF when angs set to 0
-	smi->cur_angle = 0.0f;
-	submodel_canonicalize(&pm->submodel[submodel_num], smi, false);
-	model_instance_find_world_point(&p1, &mpoint1, pm, pmi, submodel_num, &vmd_identity_matrix, &vmd_zero_vector);
-	model_instance_find_world_point(&p2, &mpoint2, pm, pmi, submodel_num, &vmd_identity_matrix, &vmd_zero_vector);
-
-	// find two points rotated into model RF when angs set to PI
-	smi->cur_angle = PI;
-	submodel_canonicalize(&pm->submodel[submodel_num], smi, false);
-	model_instance_find_world_point(&v1, &mpoint1, pm, pmi, submodel_num, &vmd_identity_matrix, &vmd_zero_vector);
-	model_instance_find_world_point(&v2, &mpoint2, pm, pmi, submodel_num, &vmd_identity_matrix, &vmd_zero_vector);
-
-	// reset submodel angs
-	smi->cur_angle = save_angle;
-	smi->canonical_orient = save_orient;
-
-	// find direction vectors of the two lines
-	vm_vec_sub2(&v1, &p1);
-	vm_vec_sub2(&v2, &p2);
-
-	// find the intersection of the two lines
-	float s, t;
-	fvi_two_lines_in_3space(&p1, &v1, &p2, &v2, &s, &t);
-
-	// find the actual intersection points
-	vm_vec_scale_add(&int1, &p1, &v1, s);
-
-	// set flag to init
-	smi->point_on_axis = int1;
-	smi->axis_set = true;
-}
-
 void model_instance_clear_arcs(polymodel *pm, polymodel_instance *pmi)
 {
 	Assert(pm->id == pmi->model_num);
@@ -4759,6 +4674,19 @@ void model_instance_add_arc(polymodel *pm, polymodel_instance *pmi, int sub_mode
 		smi->arc_pts[smi->num_arcs][1] = *v2;
 		smi->num_arcs++;
 	}
+}
+
+int model_find_submodel_index(int modelnum, const char *name)
+{
+	auto pm = model_get(modelnum);
+
+	for (int i = 0; i < pm->n_models; i++)
+	{
+		if (!stricmp(pm->submodel[i].name, name))
+			return i;
+	}
+
+	return -1;
 }
 
 // function to return an index into the docking_bays array which matches the criteria passed
@@ -5567,6 +5495,7 @@ void model_subsystem::reset()
 
     awacs_intensity = 0.0f;
     awacs_radius = 0.0f;
+    scan_time = -1;
 
     for (auto it = std::begin(primary_banks); it != std::end(primary_banks); ++it)
         *it = 0;
@@ -5684,11 +5613,14 @@ uint align_bsp_data(ubyte* bsp_in, ubyte* bsp_out, uint bsp_size)
 	do {
 		//Read Chunk type and size
 		memcpy(&bsp_chunk_type, bsp_in, 4);
-		memcpy(&bsp_chunk_size, bsp_in + 4, 4);
-
+		
 		//Chunk type 0 is EOF, but the size is read as 0, it needs to be adjusted
-		if (bsp_chunk_type == 0)
+		if (bsp_chunk_type == 0) {
 			bsp_chunk_size = 4;
+		}
+		else {
+			memcpy(&bsp_chunk_size, bsp_in + 4, 4);
+		}
 
 		//mprintf(("|%d | %d|\n",bsp_chunk_type,bsp_chunk_size));
 

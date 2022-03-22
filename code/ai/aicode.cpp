@@ -2793,7 +2793,7 @@ void copy_xlate_model_path_points(object *objp, model_path *mp, int dir, int cou
 		{
 			// movement... find location of point like with docking code and spark generation
 			vm_vec_sub(&local_vert, &mp->verts[i].pos, &submodel_offset);
-			model_instance_find_world_point(&v1, &local_vert, pm, pmi, mp->parent_submodel, &objp->orient, &objp->pos);
+			model_instance_local_to_global_point(&v1, &local_vert, pm, pmi, mp->parent_submodel, &objp->orient, &objp->pos);
 		}
 		else
 		{
@@ -4229,15 +4229,13 @@ int get_enemy_team_range(object *my_objp, float range, int enemy_team_mask, vec3
                     if (count == 0) {
                         *min_vec = objp->pos;
                         *max_vec = objp->pos;
-                        count++;
-                    }
-                    else {
+                    } else {
                         update_min_max(objp->pos.xyz.x, &min_vec->xyz.x, &max_vec->xyz.x);
                         update_min_max(objp->pos.xyz.y, &min_vec->xyz.y, &max_vec->xyz.y);
                         update_min_max(objp->pos.xyz.z, &min_vec->xyz.z, &max_vec->xyz.z);
                     }
+                    count++;
                 }
-
         }
     }
 
@@ -4253,7 +4251,7 @@ void ai_safety_pick_spot(object *objp)
 	int		objnum;
 	int		enemy_team_mask;
 	vec3d	min_vec, max_vec;
-	vec3d	vec_to_center, center;
+	vec3d	fvec_from_center, center;
 	vec3d	goal_pos;
 
 	objnum = OBJ_INDEX(objp);
@@ -4262,9 +4260,9 @@ void ai_safety_pick_spot(object *objp)
 
 	if (get_enemy_team_range(objp, 1000.0f, enemy_team_mask, &min_vec, &max_vec)) {
 		vm_vec_avg(&center, &min_vec, &max_vec);
-		vm_vec_normalized_dir(&vec_to_center, &center, &objp->pos);
+		vm_vec_normalized_dir(&fvec_from_center, &objp->pos, &center);
 
-		vm_vec_scale_add(&goal_pos, &center, &vec_to_center, 2000.0f);
+		vm_vec_scale_add(&goal_pos, &center, &fvec_from_center, 2000.0f);
 	} else
 		vm_vec_scale_add(&goal_pos, &objp->pos, &objp->orient.vec.fvec, 100.0f);
 
@@ -4292,6 +4290,11 @@ float ai_safety_goto_spot(object *objp)
 		set_accel_for_target_speed(objp, sip->max_speed * dot_val);
 	} else
 		set_accel_for_target_speed(objp, sip->max_speed * dot_val * (dist/200.0f + 0.2f));
+
+	if (The_mission.ai_profile->flags[AI::Profile_Flags::Fix_keep_safe_distance]) {
+		// hey, let's try actually aiming toward our goal!
+		turn_towards_point(objp, &aip->goal_point, nullptr, 0.0f);
+	}
 
 	return dist;
 }
@@ -6711,7 +6714,7 @@ void render_path_points(object *objp)
 
 	if (pm->n_docks) {
 		dock_point = pm->docking_bays[0].pnt[0];
-		model_instance_find_world_point(&global_dock_point, &dock_point, pm, pmi, 0, &dobjp->orient, &dobjp->pos );
+		model_instance_local_to_global_point(&global_dock_point, &dock_point, pm, pmi, 0, &dobjp->orient, &dobjp->pos );
 		g3_rotate_vertex(&v, &global_dock_point);
 		gr_set_color(255, 255, 255);
 		g3_draw_sphere( &v, 1.5f);
@@ -9539,13 +9542,13 @@ void find_adjusted_dockpoint_info(vec3d *global_dock_point, matrix *global_dock_
 
 		// find the dynamic positions of the dockpoints
 		vec3d global_p0, global_p1;
-		model_instance_find_world_point(&global_p0, &local_p0, pm, pmi, submodel, &objp->orient, &objp->pos);
-		model_instance_find_world_point(&global_p1, &local_p1, pm, pmi, submodel, &objp->orient, &objp->pos);
+		model_instance_local_to_global_point(&global_p0, &local_p0, pm, pmi, submodel, &objp->orient, &objp->pos);
+		model_instance_local_to_global_point(&global_p1, &local_p1, pm, pmi, submodel, &objp->orient, &objp->pos);
 		vm_vec_avg(global_dock_point, &global_p0, &global_p1);
 		vm_vec_normalized_dir(&uvec, &global_p1, &global_p0);
 
 		// find the normal of the first dockpoint
-		model_instance_find_world_dir(&fvec, &pm->docking_bays[dock_index].norm[0], pm, pmi, submodel, &objp->orient);
+		model_instance_local_to_global_dir(&fvec, &pm->docking_bays[dock_index].norm[0], pm, pmi, submodel, &objp->orient);
 
 		vm_vector_2_matrix(global_dock_orient, &fvec, &uvec);
 	}
@@ -10840,7 +10843,7 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 		Int3();			// bogus type of repair info
 	}
 
-	// repair_objp might be NULL is we are cleaning up this mode because of the support ship
+	// repair_objp might be NULL if we are cleaning up this mode because of the support ship
 	// getting killed.
 	if ( repair_objp ) {
         Ai_info[Ships[repair_objp->instance].ai_index].warp_out_timestamp = stamp;

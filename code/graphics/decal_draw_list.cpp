@@ -149,8 +149,10 @@ void decal_draw_list::render() {
 	source.Ibuffer_handle = box_index_buffer;
 
 	// Bind the global data only once
-	gr_bind_uniform_buffer(uniform_block_type::DecalGlobals, 0, sizeof(graphics::decal_globals),
-	                       _buffer.bufferHandle());
+	gr_bind_uniform_buffer(uniform_block_type::DecalGlobals,
+		_buffer.getBufferOffset(0),
+		sizeof(graphics::decal_globals),
+		_buffer.bufferHandle());
 	gr_screen.gf_start_decal_pass();
 
 	for (auto& draw : _draws) {

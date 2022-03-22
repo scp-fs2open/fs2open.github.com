@@ -3283,7 +3283,7 @@ char *split_str_once(char *src, int max_pixel_w)
 
 	len = (int)strlen(src);
 	for (i=0; i<len; i++) {
-		gr_get_string_size(&w, nullptr, src, i);
+		gr_get_string_size(&w, nullptr, src, i + 1);
 
 		if (w <= max_pixel_w) {
 			if (src[i] == '\n') {  // reached natural end of line

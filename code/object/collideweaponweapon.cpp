@@ -112,9 +112,11 @@ int collide_weapon_weapon( obj_pair * pair )
 			if (wipA->weapon_hitpoints > 0) {
 				if (wipB->weapon_hitpoints > 0) {		//	Two bombs collide, detonate both.
 					if ((wipA->wi_flags[Weapon::Info_Flags::Bomb]) && (wipB->wi_flags[Weapon::Info_Flags::Bomb])) {
-						wpA->lifeleft = 0.01f;
-						wpB->lifeleft = 0.01f;
+						wpA->lifeleft = 0.001f;
+						wpA->weapon_flags.set(Weapon::Weapon_Flags::Begun_detonation);
 						wpA->weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
+						wpB->lifeleft = 0.001f;
+						wpB->weapon_flags.set(Weapon::Weapon_Flags::Begun_detonation);
 						wpB->weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
 					} else {
 						A->hull_strength -= bDamage;
@@ -130,29 +132,35 @@ int collide_weapon_weapon( obj_pair * pair )
 						}
 						
 						if (A->hull_strength < 0.0f) {
-							wpA->lifeleft = 0.01f;
+							wpA->lifeleft = 0.001f;
+							wpA->weapon_flags.set(Weapon::Weapon_Flags::Begun_detonation);
 							wpA->weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
 						}
 						if (B->hull_strength < 0.0f) {
-							wpB->lifeleft = 0.01f;
+							wpB->lifeleft = 0.001f;
+							wpB->weapon_flags.set(Weapon::Weapon_Flags::Begun_detonation);
 							wpB->weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
 						}
 					}
 				} else {
 					A->hull_strength -= bDamage;
-					wpB->lifeleft = 0.01f;
+					wpB->lifeleft = 0.001f;
+					wpB->weapon_flags.set(Weapon::Weapon_Flags::Begun_detonation);
 					wpB->weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
 					if (A->hull_strength < 0.0f) {
-						wpA->lifeleft = 0.01f;
+						wpA->lifeleft = 0.001f;
+						wpA->weapon_flags.set(Weapon::Weapon_Flags::Begun_detonation);
 						wpA->weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
 					}
 				}
 			} else if (wipB->weapon_hitpoints > 0) {
 				B->hull_strength -= aDamage;
-				wpA->lifeleft = 0.01f;
+				wpA->lifeleft = 0.001f;
+				wpA->weapon_flags.set(Weapon::Weapon_Flags::Begun_detonation);
 				wpA->weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
 				if (B->hull_strength < 0.0f) {
-					wpB->lifeleft = 0.01f;
+					wpB->lifeleft = 0.001f;
+					wpB->weapon_flags.set(Weapon::Weapon_Flags::Begun_detonation);
 					wpB->weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
 				}
 			}

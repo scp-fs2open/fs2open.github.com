@@ -50,8 +50,6 @@
 #define IS_LIST_PRIMARY(x)			(Weapon_info[x].subtype != WP_MISSILE)
 #define IS_LIST_SECONDARY(x)		(Weapon_info[x].subtype == WP_MISSILE)
 
-extern int Multi_ping_timestamp;
-
 //////////////////////////////////////////////////////////////////
 // Game-wide globals
 //////////////////////////////////////////////////////////////////

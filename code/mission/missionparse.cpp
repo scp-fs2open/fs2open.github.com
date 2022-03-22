@@ -3573,6 +3573,13 @@ void mission_parse_maybe_create_parse_object(p_object *pobjp)
 				// Make sure that the ship is marked as destroyed so the AI doesn't freak out later
 				ship_add_exited_ship(&Ships[objp->instance], Ship::Exit_Flags::Destroyed);
 
+				// Same with the ship registry so that SEXPs don't refer to phantom ships
+				auto entry = &Ship_registry[Ship_registry_map[pobjp->name]];
+				entry->status = ShipStatus::EXITED;
+				entry->objp = nullptr;
+				entry->shipp = nullptr;
+				entry->cleanup_mode = SHIP_DESTROYED;
+
 				// once the ship is exploded, find the debris pieces belonging to this object, mark them
 				// as not to expire, and move them forward in time N seconds
 				for (auto &db: Debris)
@@ -3844,7 +3851,7 @@ void process_loadout_objects()
 	}
 }
 
-extern int Multi_ping_timestamp;
+extern UI_TIMESTAMP Multi_ping_timestamp;
 void parse_objects(mission *pm, int flag)
 {	
 	Assert(pm != NULL);
@@ -3872,10 +3879,10 @@ void parse_objects(mission *pm, int flag)
 		//      during this loading process
 		if (Game_mode & GM_MULTIPLAYER)
 		{
-			if ((Multi_ping_timestamp == -1) || (Multi_ping_timestamp <= timer_get_milliseconds()))
+			if (!Multi_ping_timestamp.isValid() || ui_timestamp_elapsed(Multi_ping_timestamp))
 			{
 				multi_ping_send_all();
-				Multi_ping_timestamp = timer_get_milliseconds() + 10000; // timeout is 10 seconds between pings
+				Multi_ping_timestamp = ui_timestamp(10000); // timeout is 10 seconds between pings
 			}
 		}
 	}
