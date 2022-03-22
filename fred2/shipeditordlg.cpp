@@ -1194,6 +1194,11 @@ int CShipEditorDlg::update_data(int redraw)
 					strcpy_s(Reinforcements[i].name, str);
 				}
 
+			if (Ships[single_ship].has_display_name()) {
+				Ships[single_ship].flags.remove(Ship::Ship_Flags::Has_display_name);
+				Ships[single_ship].display_name = "";
+			}
+
 			Update_window = 1;
 		}
 	}
