@@ -1028,6 +1028,8 @@ void ship_info::clone(const ship_info& other)
 	scan_time = other.scan_time;
 	scan_range_normal = other.scan_range_normal;
 	scan_range_capital = other.scan_range_capital;
+	scanning_time_multiplier = other.scanning_time_multiplier;
+	scanning_range_multiplier = other.scanning_range_multiplier;
 
 	ask_help_shield_percent = other.ask_help_shield_percent;
 	ask_help_hull_percent = other.ask_help_hull_percent;
@@ -1346,6 +1348,8 @@ void ship_info::move(ship_info&& other)
 	scan_time = other.scan_time;
 	scan_range_normal = other.scan_range_normal;
 	scan_range_capital = other.scan_range_capital;
+	scanning_time_multiplier = other.scanning_time_multiplier;
+	scanning_range_multiplier = other.scanning_range_multiplier;
 
 	ask_help_shield_percent = other.ask_help_shield_percent;
 	ask_help_hull_percent = other.ask_help_hull_percent;
@@ -1770,6 +1774,8 @@ ship_info::ship_info()
 	scan_time = 2000;
 	scan_range_normal = CARGO_REVEAL_MIN_DIST;
 	scan_range_capital = CAP_CARGO_REVEAL_MIN_DIST;
+	scanning_time_multiplier = 1.0f;
+	scanning_range_multiplier = 1.0f;
 
 	ask_help_shield_percent = DEFAULT_ASK_HELP_SHIELD_PERCENT;
 	ask_help_hull_percent = DEFAULT_ASK_HELP_HULL_PERCENT;
@@ -3962,6 +3968,12 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	if(optional_string("$Scan range Capital:"))
 		stuff_float(&sip->scan_range_capital);
 
+	if(optional_string("$Scanning time multiplier:"))
+		stuff_float(&sip->scanning_time_multiplier);
+
+	if(optional_string("$Scanning range multiplier:"))
+		stuff_float(&sip->scanning_range_multiplier);
+
 	if (optional_string("$Ask Help Shield Percent:")) {
 		float help_shield_val;
 		stuff_float(&help_shield_val);
@@ -4781,6 +4793,10 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 				sp->path_num = -1;
 				sp->turret_max_fov = 1.0f;
 
+				sp->awacs_intensity = 0.0f;
+				sp->awacs_radius = 0.0f;
+				sp->scan_time = -1;
+
 				sp->turret_reset_delay = 2000;
 
 				sp->num_target_priorities = 0;
@@ -4868,12 +4884,15 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 				stuff_float(&sp->turret_gun_rotation_snd_mult);
 				
 			// Get any AWACS info
-			sp->awacs_intensity = 0.0f;
 			if(optional_string("$AWACS:")){
 				sfo_return = stuff_float_optional(&sp->awacs_intensity);
 				if(sfo_return > 0)
 					stuff_float_optional(&sp->awacs_radius);
 				sip->flags.set(Ship::Info_Flags::Has_awacs);
+			}
+
+			if(optional_string("$Scan time:")){
+				stuff_int(&sp->scan_time);
 			}
 
 			if(optional_string("$Maximum Barrel Elevation:")){
@@ -8309,7 +8328,7 @@ static void ship_dying_frame(object *objp, int ship_num)
 				// Gets two random points on the surface of a submodel
 				submodel_get_two_random_points_better(pm->id, pm->detail[0], &pnt1, &pnt2);
 
-				model_instance_find_world_point(&outpnt, &pnt1, shipp->model_instance_num, pm->detail[0], &objp->orient, &objp->pos );
+				model_instance_local_to_global_point(&outpnt, &pnt1, shipp->model_instance_num, pm->detail[0], &objp->orient, &objp->pos );
 
 				float rad = objp->radius*0.1f;
 				
@@ -8424,7 +8443,7 @@ static void ship_dying_frame(object *objp, int ship_num)
 				submodel_get_two_random_points_better(pm->id, pm->detail[0], &pnt1, &pnt2);
 
 				vm_vec_avg( &tmp, &pnt1, &pnt2 );
-				model_instance_find_world_point(&outpnt, &tmp, pm, pmi, pm->detail[0], &objp->orient, &objp->pos );
+				model_instance_local_to_global_point(&outpnt, &tmp, pm, pmi, pm->detail[0], &objp->orient, &objp->pos );
 
 				float rad = objp->radius*0.40f;
 
@@ -13520,7 +13539,7 @@ int get_subsystem_pos(vec3d* pos, object* objp, ship_subsys* subsysp)
 
 		auto pmi = model_get_instance(Ships[objp->instance].model_instance_num);
 		auto pm = model_get(pmi->model_num);
-		find_submodel_instance_world_point(pos, pm, pmi, mss->subobj_num, &objp->orient, &objp->pos);
+		model_instance_local_to_global_point(pos, &vmd_zero_vector, pm, pmi, mss->subobj_num, &objp->orient, &objp->pos);
 	}
 
 	return 1;
@@ -13701,7 +13720,7 @@ void ship_get_eye( vec3d *eye_pos, matrix *eye_orient, object *obj, bool do_slew
 	eye *ep = &(pm->view_positions[shipp->current_viewpoint]);
 
 	if (ep->parent >= 0 && pm->submodel[ep->parent].flags[Model::Submodel_flags::Can_move]) {
-		find_submodel_instance_point_orient(eye_pos, eye_orient, pm, pmi, ep->parent, &ep->pnt, &vmd_identity_matrix);
+		model_instance_local_to_global_point_orient(eye_pos, eye_orient, &ep->pnt, &vmd_identity_matrix, pm, pmi, ep->parent);
 		vec3d tvec = *eye_pos;
 		vm_vec_unrotate(eye_pos, &tvec, &obj->orient);
 		vm_vec_add2(eye_pos, &obj->pos);
@@ -13709,7 +13728,7 @@ void ship_get_eye( vec3d *eye_pos, matrix *eye_orient, object *obj, bool do_slew
 		matrix tempmat = *eye_orient;
 		vm_matrix_x_matrix(eye_orient, &obj->orient, &tempmat);
 	} else {
-		model_instance_find_world_point( eye_pos, &ep->pnt, shipp->model_instance_num, ep->parent, &obj->orient, from_origin ? &vmd_zero_vector : &obj->pos );
+		model_instance_local_to_global_point( eye_pos, &ep->pnt, shipp->model_instance_num, ep->parent, &obj->orient, from_origin ? &vmd_zero_vector : &obj->pos );
 		*eye_orient = obj->orient;
 	}
 

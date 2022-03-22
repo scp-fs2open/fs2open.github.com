@@ -500,13 +500,16 @@ int popupdead_do_frame(float  /*frametime*/)
 }
 
 // Close down the dead popup
-void popupdead_close()
+void popupdead_close(bool play_sound)
 {
 	if ( !Popupdead_active ) {
 		return;
 	}
 
-	gamesnd_play_iface(InterfaceSounds::POPUP_DISAPPEAR);
+	if (play_sound) {
+		gamesnd_play_iface(InterfaceSounds::POPUP_DISAPPEAR);
+	}
+
 	Popupdead_window.destroy();
 	game_flush();
 	

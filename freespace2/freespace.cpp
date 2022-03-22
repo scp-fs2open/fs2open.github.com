@@ -2723,7 +2723,7 @@ void do_timing_test(float frame_time)
 	}
 }
 
-DCF(dcf_fov, "Change the field of view of the main camera")
+DCF(fov, "Change the field of view of the main camera")
 {
 	camera *cam = Main_camera.getCamera();
 	bool process = true;
@@ -2766,7 +2766,6 @@ DCF(dcf_fov, "Change the field of view of the main camera")
 		cam->set_fov(value);
 	}
 }
-
 
 DCF(framerate_cap, "Sets the framerate cap")
 {
@@ -3735,7 +3734,7 @@ void game_maybe_do_dead_popup(float frametime)
 		}
 
 		if ( leave_popup ) {
-			popupdead_close();
+			popupdead_close(true);
 		}
 	}
 }
@@ -4176,6 +4175,11 @@ void game_stop_time(bool by_os_focus)
 	// Stop the timer_tick stuff...
 	// We always want to 'sudo' the change, unless this is caused by the focus, because we want the game to have priority in that case
 	timestamp_pause(!by_os_focus);
+}
+
+bool game_time_is_stopped()
+{
+	return Time_paused;
 }
 
 void game_start_time(bool by_os_focus)
@@ -5337,43 +5341,31 @@ void game_leave_state( int old_state, int new_state )
 			break;
 
 		case GS_STATE_DEATH_DIED:
-			if (end_mission) {
-				Game_mode &= ~GM_DEAD_DIED;
-
-				if ( !(Game_mode & GM_MULTIPLAYER) ) {
-					if (new_state == GS_STATE_DEBRIEF) {
-						freespace_stop_mission();
-					}
-				} else {
-					// early end while respawning or blowing up in a multiplayer game
-					if ( (new_state == GS_STATE_DEBRIEF) || (new_state == GS_STATE_MULTI_DOGFIGHT_DEBRIEF) ) {
-						game_stop_time();
-						freespace_stop_mission();
-					}
-				}
-			}
-
-			break;
-
 		case GS_STATE_DEATH_BLEW_UP:
 			if (end_mission) {
-				Game_mode &= ~GM_DEAD_BLEW_UP;
+				if (old_state == GS_STATE_DEATH_DIED) {
+					Game_mode &= ~GM_DEAD_DIED;
+				} else if (old_state == GS_STATE_DEATH_BLEW_UP) {
+					Game_mode &= ~GM_DEAD_BLEW_UP;
+				}
 
-				// for single player, we might reload mission, etc.  For multiplayer, look at my new state
-				// to determine if I should do anything.
-				if ( !(Game_mode & GM_MULTIPLAYER) ) {
-					freespace_stop_mission();
-				} else {
-					// if we are not respawing as an observer or as a player, our new state will not
-					// be gameplay state.
-					if ( (new_state != GS_STATE_GAME_PLAY) && (new_state != GS_STATE_MULTI_PAUSED) ) {
-						game_stop_time();									// hasn't been called yet!!
+				if (new_state != GS_STATE_DEATH_BLEW_UP) {
+					if ( !(Game_mode & GM_MULTIPLAYER) ) {
+						popupdead_close();			// it's usually closed by this point, but not always (e.g. if end-mission is called)
 						freespace_stop_mission();
+					} else {
+						// early end while respawning or blowing up in a multiplayer game
+						// if we are not respawing as an observer or as a player, our new state will not
+						// be gameplay state.
+						if ( (new_state != GS_STATE_GAME_PLAY) && (new_state != GS_STATE_MULTI_PAUSED) ) {
+							game_stop_time();
+							popupdead_close();
+							freespace_stop_mission();
+						}
 					}
 				}
 			}
 			break;
-
 
 		case GS_STATE_CREDITS:
 			credits_close();

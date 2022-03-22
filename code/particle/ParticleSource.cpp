@@ -321,7 +321,7 @@ void ParticleSource::initializeThrusterOffset(weapon*  /*wp*/, weapon_info* wip)
 	// Only use the first point in the bank
 	auto point = &thruster->points[0];
 
-	model_find_world_point(&this->m_origin.m_offset, &point->pnt, pm, thruster->submodel_num,
+	model_local_to_global_point(&this->m_origin.m_offset, &point->pnt, pm, thruster->submodel_num,
 						   &vmd_identity_matrix, &vmd_zero_vector);
 }
 

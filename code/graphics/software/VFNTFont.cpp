@@ -49,7 +49,7 @@ namespace font
 
 		bool checkLength = textLen >= 0;
 
-		if (text != NULL) {
+		if (text != nullptr && textLen != 0) {
 			h += fl2i(this->getHeight());
 			while (*text)
 			{

@@ -6381,7 +6381,7 @@ void sexp_tree::handleItemChange(QTreeWidgetItem* item, int  /*column*/) {
 
 	if (update_node) {
 		modified();
-		auto strBytes = str.toUtf8();
+		auto strBytes = str.toUtf8(); // avoid using dangling ptr
 		strncpy(tree_nodes[node].text, strBytes.constData(), len);
 		tree_nodes[node].text[len] = 0;
 

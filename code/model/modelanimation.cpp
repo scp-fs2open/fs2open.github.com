@@ -208,10 +208,8 @@ namespace animation {
 
 			//Save the things modified by initial animations as actual baseline
 			for (const auto& initialModified : applyBuffer) {
-				if (!initialModified.second.modified)
-					continue;
-
-				initialModified.first->saveCurrentAsBase(pmi);
+				if (initialModified.second.modified)
+					initialModified.first->saveCurrentAsBase(pmi, true);
 			}
 		}
 	}
@@ -276,7 +274,10 @@ namespace animation {
 		ModelAnimationSet::cleanRunning();
 	}
 
-	ModelAnimationSubmodel::ModelAnimationSubmodel(SCP_string submodelName) : m_name(std::move(submodelName)) { }
+	ModelAnimationSubmodel::ModelAnimationSubmodel(SCP_string submodelName) {
+		SCP_tolower(submodelName);
+		m_name = std::move(submodelName);
+	}
 
 	ModelAnimationSubmodel* ModelAnimationSubmodel::copy() const {
 		return new ModelAnimationSubmodel(*this);
@@ -311,11 +312,28 @@ namespace animation {
 		submodel->canonical_prev_orient = submodel->canonical_orient;
 		submodel->canonical_orient = data.orientation;
 
+		matrix delta;
+		vm_copy_transpose(&delta, &submodel->canonical_prev_orient);
+		vm_matrix_x_matrix(&delta, &submodel->canonical_orient, &delta);
+
+		float deltaAngle;
+		vm_matrix_to_rot_axis_and_angle(&delta, &deltaAngle, &submodel->rotation_axis);
+		submodel->current_turn_rate = deltaAngle / flFrametime;
+
 		//TODO: Once translation is a thing
 		//m_subsys->submodel_instance_1->offset = data.position;
 	}
 
-	void ModelAnimationSubmodel::saveCurrentAsBase(polymodel_instance* pmi) {
+	void ModelAnimationSubmodel::resetPhysicsData(polymodel_instance* pmi) {
+		submodel_instance* submodel = findSubmodel(pmi).first;
+		if (!submodel)
+			return;
+
+		submodel->canonical_prev_orient = submodel->canonical_orient;
+		submodel->current_turn_rate = 0.0f;
+	}
+
+	void ModelAnimationSubmodel::saveCurrentAsBase(polymodel_instance* pmi, bool isInitialType) {
 		auto submodel = findSubmodel(pmi);
 		ModelAnimationData<>& data = m_initialData[{ pmi->id }];
 
@@ -325,11 +343,19 @@ namespace animation {
 		if(!submodel.second->flags[Model::Submodel_flags::Can_move]){
 			mprintf(("Submodel %s of model %s is animated and has movement enabled.\n", submodel.second->name, model_get(pmi->model_num)->filename));
 			submodel.second->flags.set(Model::Submodel_flags::Can_move);
+
+			if (submodel.second->rotation_type == MOVEMENT_TYPE_NONE) {
+				submodel.second->rotation_type = MOVEMENT_TYPE_TRIGGERED;
+			}
 		}
 		
 		data.orientation = submodel.first->canonical_orient;
 		//TODO: Once translation is a thing
 		//data.position = m_subsys->submodel_instance_1->offset;
+
+		//In this case, we just initial-type initialized the submodel. Properly set its last frame data as well
+		if(isInitialType)
+			submodel.first->canonical_prev_orient = submodel.first->canonical_orient;
 	}
 
 	std::pair<submodel_instance*, bsp_info*> ModelAnimationSubmodel::findSubmodel(polymodel_instance* pmi) {
@@ -435,6 +461,7 @@ namespace animation {
 
 		float angle = 0.0f;
 		vm_closest_angle_to_matrix(&submodel->canonical_orient, &sm->rotation_axis, &angle);
+		submodel->rotation_axis = sm->rotation_axis;
 
 		submodel->cur_angle = angle;
 		submodel->turret_idle_angle = angle;
@@ -577,8 +604,10 @@ namespace animation {
 
 	void ModelAnimationSet::apply(polymodel_instance* pmi, const ModelAnimationSubmodelBuffer& applyBuffer) {
 		for (const auto& toApply : applyBuffer) {
-			if(toApply.second.modified)
+			if (toApply.second.modified)
 				toApply.first->copyToSubmodel(toApply.second.data, pmi);
+			else
+				toApply.first->resetPhysicsData(pmi);
 		}
 	}
 
@@ -852,7 +881,9 @@ namespace animation {
 		return true;
 	};
 
-	std::shared_ptr<ModelAnimationSubmodel> ModelAnimationSet::getSubmodel(const SCP_string& submodelName) {
+	std::shared_ptr<ModelAnimationSubmodel> ModelAnimationSet::getSubmodel(SCP_string submodelName) {
+		SCP_tolower(submodelName);
+
 		for (const auto& submodel : m_submodels) {
 			if (!submodel->is_turret && submodel->m_name == submodelName)
 				return submodel;
@@ -863,7 +894,9 @@ namespace animation {
 		return submodel;
 	}
 
-	std::shared_ptr<ModelAnimationSubmodel> ModelAnimationSet::getSubmodel(const SCP_string& submodelName, const SCP_string& SIP_name, bool findBarrel) {
+	std::shared_ptr<ModelAnimationSubmodel> ModelAnimationSet::getSubmodel(SCP_string submodelName, const SCP_string& SIP_name, bool findBarrel) {
+		SCP_tolower(submodelName);
+
 		for (const auto& submodel : m_submodels) {
 			if (submodel->is_turret && submodel->m_name == submodelName) {
 				auto submodelTurret = ((ModelAnimationSubmodelTurret*)submodel.get());

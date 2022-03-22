@@ -129,6 +129,8 @@ static popup_info Popup_info;
 static int Popup_flags;
 static int Popup_screen_id = -1;
 
+static bool Popup_time_was_stopped_in_init = false;
+
 static int Title_coords[GR_NUM_RESOLUTIONS][5] =
 {
 	{ // GR_640
@@ -477,8 +479,12 @@ int popup_init(popup_info *pi, int flags)
 	}
 
 	// anytime in single player, and multiplayer, not in mission, go ahead and stop time
+	Popup_time_was_stopped_in_init = false;
 	if ( (Game_mode & GM_NORMAL) || ((Game_mode & GM_MULTIPLAYER) && !(Game_mode & GM_IN_MISSION)) ){
-		game_stop_time();
+		if (!game_time_is_stopped()) {
+			game_stop_time();
+			Popup_time_was_stopped_in_init = true;
+		}
 	}
 
 	// create base window
@@ -578,8 +584,8 @@ void popup_close(popup_info *pi, int screen_id)
 	Popup_is_active = 0;
 	Popup_running_state = 0;
 
-	// anytime in single player, and multiplayer, not in mission, go ahead and resume time
-	if ( (Game_mode & GM_NORMAL) || ((Game_mode & GM_MULTIPLAYER) && !(Game_mode & GM_IN_MISSION)) )
+	// if we had previously stopped time, go ahead and resume time
+	if ( Popup_time_was_stopped_in_init )
 		game_start_time();
 }
 

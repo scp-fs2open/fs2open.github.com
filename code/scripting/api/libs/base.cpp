@@ -8,8 +8,10 @@
 #include "freespace.h"
 
 #include "gamesequence/gamesequence.h"
+#include "mission/missiontraining.h"
 #include "network/multi.h"
 #include "parse/parselo.h"
+#include "parse/sexp.h"
 #include "pilotfile/pilotfile.h"
 #include "playerman/player.h"
 #include "scripting/api/objs/bytearray.h"
@@ -479,6 +481,41 @@ ADE_FUNC(XSTR,
 	lcl_ext_localize(xstr, translated);
 
 	return ade_set_args(L, "s", translated.c_str());
+}
+
+ADE_FUNC(replaceTokens, 
+	l_Base, 
+	"string text", 
+	"Returns a string that replaces any default control binding to current binding (same as Directive Text). Default binding must be encapsulated by '$$' for replacement to work.",
+	"string",
+	"Updated string or nil if invalid")
+{
+	const char* untranslated_str;
+	if (!ade_get_args(L, "s", &untranslated_str)) {
+		return ADE_RETURN_NIL;
+	}
+
+	SCP_string translated_str = message_translate_tokens(untranslated_str);
+
+	return ade_set_args(L, "s", translated_str.c_str());
+}
+
+ADE_FUNC(replaceVariables,
+	l_Base,
+	"string text",
+	"Returns a string that replaces any variable name with the variable value (same as text in Briefings, Debriefings, or Messages). Variable name must be preceeded by '$' for replacement to work.",
+	"string",
+	"Updated string or nil if invalid")
+{
+	const char* untranslated_str;
+	if (!ade_get_args(L, "s", &untranslated_str)) {
+		return ADE_RETURN_NIL;
+	}
+
+	SCP_string translated_str = untranslated_str;
+	sexp_replace_variable_names_with_values(translated_str);
+
+	return ade_set_args(L, "s", translated_str.c_str());
 }
 
 ADE_FUNC(inMissionEditor, l_Base, nullptr, "Determine if the current script is running in the mission editor (e.g. FRED2). This should be used to control which code paths will be executed even if running in the editor.", "boolean", "true when we are in the mission editor, false otherwise") {

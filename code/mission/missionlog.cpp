@@ -672,6 +672,7 @@ void message_log_add_segs(const char *source_string, int msg_color, int flags = 
 			break;
 		}
 
+		Assertion(Num_log_lines < MAX_LOG_LINES, "Too many log lines!  There might have been a text split failure.");
 		Num_log_lines++;
 		X = ACTION_X;
 		str = split;

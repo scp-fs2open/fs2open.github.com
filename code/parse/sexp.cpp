@@ -1372,8 +1372,9 @@ int free_one_sexp(int num)
  *
  * Should only be called on an atom or a list, and not an operator.  If on a list, the 
  * list and everything in it will be freed (including the operator).
+ * calling_node defaults to -1
  */
-int free_sexp(int num)
+int free_sexp(int num, int calling_node)
 {
 	int i, rest, count = 0;
 
@@ -1393,20 +1394,20 @@ int free_sexp(int num)
 	count++;
 
 	i = Sexp_nodes[num].first;
-	while (i != -1)
+	while (i != -1) 
 	{
-		count += free_sexp(i);
+		count += free_sexp(i, num);
 		i = Sexp_nodes[i].rest;
 	}
 
 	rest = Sexp_nodes[num].rest;
-	for (i = 0; i < Num_sexp_nodes; i++)
+	if (calling_node >= 0) 
 	{
-		if (Sexp_nodes[i].first == num)
-			Sexp_nodes[i].first = rest;
+		if (Sexp_nodes[calling_node].first == num)
+			Sexp_nodes[calling_node].first = rest;
 
-		if (Sexp_nodes[i].rest == num)
-			Sexp_nodes[i].rest = rest;
+		if (Sexp_nodes[calling_node].rest == num)
+			Sexp_nodes[calling_node].rest = rest;
 	}
 
 	return count;  // total elements freed up.
@@ -2526,7 +2527,8 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 						
 						const auto& animations = animSet.getRegisteredTriggers();
 						
-						const char* triggeredBy = CTEXT(CDDR(ship_node));
+						SCP_string triggeredBy = CTEXT(CDDR(ship_node));
+						SCP_tolower(triggeredBy);
 						
 						if(std::find_if(animations.cbegin(), animations.cend(), [triggerType, triggeredBy](const std::remove_reference<decltype(animations)>::type::value_type& animation) -> bool {
 							if (animation.type != triggerType)
@@ -2537,10 +2539,10 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 								return true;
 							
 							if(animation.subtype != animation::ModelAnimationSet::SUBTYPE_DEFAULT){
-								if(!can_construe_as_integer(triggeredBy))
+								if(!can_construe_as_integer(triggeredBy.c_str()))
 									return false;
 								
-								int triggeredBySubtype = atoi(triggeredBy);
+								int triggeredBySubtype = atoi(triggeredBy.c_str());
 								int animationSubtype = animation.subtype;
 								
 								return triggeredBySubtype == animationSubtype;
@@ -2556,6 +2558,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					case OP_UPDATE_MOVEABLE: {
 						//Second OP name
 						SCP_string name = CTEXT(CDR(ship_node));
+						SCP_tolower(name);
 						
 						const auto& moveables = animSet.getRegisteredMoveables();
 						

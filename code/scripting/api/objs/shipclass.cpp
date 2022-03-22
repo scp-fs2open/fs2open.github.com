@@ -475,6 +475,38 @@ ADE_VIRTVAR(PowerOutput, l_Shipclass, "number", "Gets or sets a ship class' powe
 	return ade_set_args(L, "f", Ship_info[idx].power_output);
 }
 
+ADE_VIRTVAR(ScanningTimeMultiplier, l_Shipclass, nullptr, "Time multiplier for scans performed by this ship class", "number", "Scanning time multiplier, or 0 if handle is invalid")
+{
+	int idx;
+	if(!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
+		return ade_set_error(L, "f", 0.0f);
+
+	if(idx < 0 || idx >= ship_info_size())
+		return ade_set_error(L, "f", 0.0f);
+
+	if(ADE_SETTING_VAR) {
+		LuaError(L, "Setting ScanningTimeMultiplier is not supported");
+	}
+
+	return ade_set_args(L, "f", Ship_info[idx].scanning_time_multiplier);
+}
+
+ADE_VIRTVAR(ScanningRangeMultiplier, l_Shipclass, nullptr, "Range multiplier for scans performed by this ship class", "number", "Scanning range multiplier, or 0 if handle is invalid")
+{
+	int idx;
+	if(!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
+		return ade_set_error(L, "f", 0.0f);
+
+	if(idx < 0 || idx >= ship_info_size())
+		return ade_set_error(L, "f", 0.0f);
+
+	if(ADE_SETTING_VAR) {
+		LuaError(L, "Setting ScanningRangeMultiplier is not supported");
+	}
+
+	return ade_set_args(L, "f", Ship_info[idx].scanning_range_multiplier);
+}
+
 ADE_VIRTVAR(CustomData, l_Shipclass, nullptr, "Gets the custom data table for this ship class", "table", "The ship class's custom data table") 
 {
 	int idx;

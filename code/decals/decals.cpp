@@ -244,6 +244,9 @@ struct Decal {
 		if (!object.IsValid()) {
 			return false;
 		}
+		if (object.objp->flags[Object::Object_Flags::Should_be_dead]) {
+			return false;
+		}
 
 		if (orig_obj_type != object.objp->type) {
 			mprintf(("Decal object type for object %d has changed from %s to %s. Please let m!m know about this\n",
@@ -270,6 +273,9 @@ struct Decal {
 			if (smi->blown_off) {
 				return false;
 			}
+		} else {
+			Assertion(false, "Only ships are currently supported for decals!");
+			return false;
 		}
 
 		return true;
@@ -405,7 +411,7 @@ matrix4 getDecalTransform(Decal& decal) {
 	auto pm = model_get(pmi->model_num);
 
 	vec3d worldPos;
-	model_instance_find_world_point(&worldPos,
+	model_instance_local_to_global_point(&worldPos,
 									&decal.position,
 									pm,
 									pmi,
@@ -414,16 +420,21 @@ matrix4 getDecalTransform(Decal& decal) {
 									&objp->pos);
 
 	vec3d worldDir;
-	model_instance_find_world_dir(&worldDir,
+	model_instance_local_to_global_dir(&worldDir,
 								  &decal.orientation.vec.fvec,
 								  pm,
 								  pmi,
 								  decal.submodel,
 								  &objp->orient);
 
+	// The decal API sees the "direction" of a decal to be along the normal of the surface it is attached to. However,
+	// this will lead to a situation where we would look at the decal texture "from behind" causing the texture to
+	// appear flipped. We fix that here for the graphics transform.
+	vm_vec_scale(&worldDir, -1.0f);
+
 	vec3d worldUp;
-	model_instance_find_world_dir(&worldUp,
-								  &decal.orientation.vec.fvec,
+	model_instance_local_to_global_dir(&worldUp,
+								  &decal.orientation.vec.uvec,
 								  pm,
 								  pmi,
 								  decal.submodel,

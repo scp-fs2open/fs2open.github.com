@@ -11,6 +11,7 @@
 
 
 #include "cfile/cfile.h"
+#include "cmdline/cmdline.h"
 #include "controlconfig/controlsconfig.h"
 #include "controlconfig/presets.h"
 #include "debugconsole/console.h"
@@ -482,7 +483,13 @@ int joy_get_scaled_reading(int raw)
 
 	raw -= JOY_AXIS_CENTER;
 
-	dead_zone = (JOY_AXIS_MAX - JOY_AXIS_MIN) * Joy_dead_zone_size / 100;
+	if (Cmdline_deadzone >= 0) {
+		dead_zone = (JOY_AXIS_MAX - JOY_AXIS_MIN) * Cmdline_deadzone / 200; 
+		//Making this div by 200 is what allows us to have the granularity of 0 to 100 in the cmdline. 
+		//This allows a larger deadzone than the original maximum, all the way to the stick's full range.
+	} else {
+		dead_zone = (JOY_AXIS_MAX - JOY_AXIS_MIN) * Joy_dead_zone_size / 100;
+	}
 
 	if (raw < -dead_zone) {
 		rng = JOY_AXIS_CENTER - JOY_AXIS_MIN - dead_zone;
