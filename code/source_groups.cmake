@@ -1321,6 +1321,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/message.h
 	scripting/api/objs/model.cpp
 	scripting/api/objs/model.h
+	scripting/api/objs/modelinstance.cpp
+	scripting/api/objs/modelinstance.h
 	scripting/api/objs/model_path.cpp
 	scripting/api/objs/model_path.h
 	scripting/api/objs/movie_player.cpp

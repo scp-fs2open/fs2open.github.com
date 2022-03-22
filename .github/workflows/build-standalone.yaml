@@ -8,6 +8,7 @@ on:
 
 jobs:
   build_images:
+    if: github.repository == 'scp-fs2open/fs2open.github.com'
     strategy:
       matrix:
         configuration: [FastDebug, Release]

@@ -303,12 +303,29 @@ void mouse_flush()
 
 int mouse_down_count(const CC_bind &bind, int reset_count)
 {
-	if (bind.get_cid() != CID_MOUSE) {
+	// Bail if the incoming bind is not the right CID according to mouse-fly mode
+	auto CID = bind.get_cid();
+	if (Use_mouse_to_fly) {
+		// Mouse is Joy0 in this mode
+		if (CID != CID_JOY0) {
+			return 0;
+		}
+	} else {
+		// Mouse is Mouse in this mode
+		if (CID != CID_MOUSE) {
+			return 0;
+		}
+	}
+
+	int btn = bind.get_btn();
+
+	if (btn > MOUSE_NUM_BUTTONS) {
 		return 0;
 	}
 
-	int n = 1 << bind.get_btn();
-	return mouse_down_count(n, reset_count);
+	btn = 1 << btn;
+
+	return mouse_down_count(btn, reset_count);
 }
 
 int mouse_down_count(int n, int reset_count) {
@@ -423,10 +440,27 @@ int mouse_up_count(int n) {
 
 int mouse_down(const CC_bind &bind)
 {
-	if (bind.get_cid() != CID_MOUSE) {
+	// Bail if the incoming bind is not the right CID according to mouse-fly mode
+	auto CID = bind.get_cid();
+	if (Use_mouse_to_fly) {
+		// Mouse is Joy0 in this mode
+		if (CID != CID_JOY0) {
+			return 0;
+		}
+	} else {
+		// Mouse is Mouse in this mode
+		if (CID != CID_MOUSE) {
+			return 0;
+		}
+	}
+
+	int btn = bind.get_btn();
+
+	if (btn >= MOUSE_NUM_BUTTONS) {
 		return 0;
 	}
-	int btn = 1 << bind.get_btn();
+
+	btn = 1 << btn;
 
 	return mouse_down(btn);
 }

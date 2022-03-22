@@ -60,7 +60,7 @@ bool *Lcl_unexpected_tstring_check = nullptr;
 // add a new string to the code, you must assign it a new index.  Use the number below for
 // that index and increase the number below by one.
 // retail XSTR_SIZE = 1570
-#define XSTR_SIZE	1662
+#define XSTR_SIZE	1667
 
 
 // struct to allow for strings.tbl-determined x offset
@@ -744,13 +744,14 @@ bool lcl_ext_localize_sub(const char *in, char *text_str, char *out, size_t max_
 			break;
 		ch += 4;
 
-		attempted_xstr = true;
-
 		// the next non-whitespace char should be a (
 		ignore_white_space(&ch);
 		if (*ch != '(')
 			break;
 		ch++;
+
+		// by not setting the flag until after the parenthesis, XSTR by itself can be plain text, but XSTR( starts a tag
+		attempted_xstr = true;
 
 		// the next should be a quote
 		ignore_white_space(&ch);
@@ -913,13 +914,14 @@ bool lcl_ext_localize_sub(const SCP_string &in, SCP_string &text_str, SCP_string
 			break;
 		ch += 4;
 
-		attempted_xstr = true;
-
 		// the next non-whitespace char should be a (
 		ignore_white_space(&ch);
 		if (*ch != '(')
 			break;
 		ch++;
+
+		// by not setting the flag until after the parenthesis, XSTR by itself can be plain text, but XSTR( starts a tag
+		attempted_xstr = true;
 
 		// the next should be a quote
 		ignore_white_space(&ch);

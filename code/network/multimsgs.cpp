@@ -2761,8 +2761,6 @@ void process_weapon_kill_packet(ubyte *data, header *hinfo )
 	}
 
 	weapon_detonate(missile);
-	missile->flags.set(Object::Object_Flags::Should_be_dead);
-	Weapons[missile->instance].lifeleft = -1.0f;
 }
 
 // send a packet indicating a ship should be created

@@ -145,9 +145,9 @@ void ik_solver_fabrik::solve(const vec3d& targetPos, const matrix* targetOrient)
 	
 	//Localize rotations
 	for(size_t i = m_nodes.size() - 1; i > 0; --i) {
-		matrix parent = m_nodes[i - 1].calculatedRot;
-		vm_transpose(&parent);
-		vm_matrix_x_matrix(&m_nodes[i].calculatedRot, &m_nodes[i].calculatedRot, &parent);
+		matrix parent;
+		vm_copy_transpose(&parent, &m_nodes[i - 1].calculatedRot);
+		vm_matrix_x_matrix(&m_nodes[i].calculatedRot, &parent, &m_nodes[i].calculatedRot);
 	}
 }
 

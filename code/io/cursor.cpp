@@ -80,7 +80,7 @@ namespace io
 			this->mLastFrame = other.mLastFrame;
 			
 			other.mBitmapHandle = -1;
-			other.mBeginTimeStamp= -1;
+			other.mBeginTimeStamp = UI_TIMESTAMP::invalid();
 			other.mLastFrame = static_cast<size_t>(-1);
 			
 			return *this;
@@ -112,7 +112,7 @@ namespace io
 			if (mAnimationFrames.size() > 1)
 			{
 				// Animated, set the begin and do everything else in setCurrentFrame()
-				mBeginTimeStamp = timestamp();
+				mBeginTimeStamp = ui_timestamp();
 				mLastFrame = static_cast<size_t>(-1);
 			}
 			else
@@ -127,7 +127,7 @@ namespace io
 			if (mAnimationFrames.size() > 1)
 			{
 				// We are animated, compute the current frame
-				float diffSeconds = i2fl(timestamp() - mBeginTimeStamp) / TIMESTAMP_FREQUENCY;
+				float diffSeconds = i2fl(-ui_timestamp_until(mBeginTimeStamp)) / TIMESTAMP_FREQUENCY;
 
 				// Use the bmpman function for this. That also ensures that APNG cursors work correctly 
 				auto frameIndex = static_cast<size_t>(bm_get_anim_frame(mBitmapHandle, diffSeconds, 0.0f, true));

@@ -74,7 +74,7 @@ static void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, vec3
 	vec3d force;
 
 	vec3d worldNormal;
-	model_instance_find_world_dir(&worldNormal, &hit_dir, pm, pmi, submodel_num, &pship_obj->orient);
+	model_instance_local_to_global_dir(&worldNormal, &hit_dir, pm, pmi, submodel_num, &pship_obj->orient);
 
 	// Apply hit & damage & stuff to weapon
 	weapon_hit(weapon_obj, pship_obj,  world_hitpos, quadrant_num, &worldNormal);
@@ -132,8 +132,12 @@ static void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, vec3
 
 	// Add impact decal
 	if (quadrant_num == -1 && wip->impact_decal.definition_handle >= 0) {
+		// Use the weapon orientation to augment the orientation computation.
+		vec3d weapon_up;
+		model_instance_global_to_local_dir(&weapon_up, &weapon_obj->orient.vec.uvec, pm, pmi, submodel_num, &pship_obj->orient);
+
 		matrix decal_orient;
-		vm_vector_2_matrix_norm(&decal_orient, &hit_dir); // hit_dir is already normalized so we can use the more efficient function
+		vm_vector_2_matrix_norm(&decal_orient, &hit_dir, &weapon_up); // hit_dir is already normalized so we can use the more efficient function
 
 		decals::addDecal(wip->impact_decal, pship_obj, submodel_num, *hitpos, decal_orient);
 	}
@@ -497,6 +501,8 @@ static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, f
 				// check if we're colliding against "invisible" ship
 				if (!(shipp->flags[Ship::Ship_Flags::Dont_collide_invis])) {
 					wp->lifeleft = 0.001f;
+					wp->weapon_flags.set(Weapon::Weapon_Flags::Begun_detonation);
+
 					if (ship_objp == Player_obj)
 						nprintf(("Jim", "Frame %i: Weapon %d set to detonate, dist = %7.3f.\n", Framecount, OBJ_INDEX(weapon_objp), dist));
 					valid_hit_occurred = 1;

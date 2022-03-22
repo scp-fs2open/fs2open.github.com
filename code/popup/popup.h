@@ -19,6 +19,8 @@
 #define POPUP_YES						XSTR("&Yes", 505)
 #define POPUP_NO						XSTR("&No", 506)
 
+#define POPUP_DEFAULT_VALID_CHARS "_.-"	// Default string of valid non-alphanumeric characters that popup_input may accept
+
 ///////////////////////////////////////////////////
 // flags
 ///////////////////////////////////////////////////
@@ -100,8 +102,9 @@ int popup_till_condition( int(*condition)() , ...);
  * @param[in] caption           Caption text of the prompt
  * @param[in] max_output_len    (Optional) Maximum string length of the input text
  * @param[in] default_input     (Optional) Default input text
+ * @param[in] vchar             (Optional) Valid character whitelist for non-alphanumeric characters. If nullptr, no non-alphanumeric characters are accepted
  */
-char *popup_input(int flags, const char *caption, int max_output_len = -1, const char *default_input = "");
+char *popup_input(int flags, const char *caption, int max_output_len = -1, const char *default_input = "", const char *vchar = POPUP_DEFAULT_VALID_CHARS);
 
 int popup_active();
 

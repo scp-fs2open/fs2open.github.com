@@ -907,7 +907,20 @@ void event_editor::insert_handler(int old, int node)
 
 void event_editor::save()
 {
-	int m = (m_cur_msg >= 0) ? m_cur_msg : m_cur_msg_old;
+	int m;
+
+	if (m_cur_msg >= 0) {
+		m = m_cur_msg;
+	} else {
+		// the current message could be -1 because the message list
+		// lost focus, so remember the last focused message
+		// (but make sure it's valid)
+		if (m_cur_msg_old >= 0 && m_cur_msg_old < m_num_messages) {
+			m = m_cur_msg_old;
+		} else {
+			m = -1;
+		}
+	}
 
 	save_event(cur_event);
 	save_message(m);

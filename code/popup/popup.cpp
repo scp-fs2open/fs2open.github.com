@@ -33,6 +33,7 @@
 #define POPUP_MAX_LINES				30					// max lines of text allowed
 #define POPUP_MAX_CHARS				2048				// total max chars 
 #define POPUP_INPUT_MAX_CHARS		255				// max length of input string
+#define POPUP_MAX_VALID_CHARS		32				// maximum number of unique non-alphanumeric characters in the input whitelist
 
 #define POPUP_NOCHANGE				100
 #define POPUP_ABORT					101
@@ -77,6 +78,7 @@ typedef struct popup_info
 	char	input_text[POPUP_INPUT_MAX_CHARS];						// input box text (if this is an inputbox popup)
 	int	max_input_text_len;
 	int	web_cursor_flag[POPUP_MAX_CHOICES];						// flag for using web cursor over button
+	char valid_chars[POPUP_MAX_VALID_CHARS];					// whitelist of non-alphanumeric characters used for popup_input
 } popup_info;
 
 ////////////////////////////////////////////////////////////////
@@ -126,6 +128,8 @@ static int Popup_should_die=0;			// popup should quit during the next iteration 
 static popup_info Popup_info;
 static int Popup_flags;
 static int Popup_screen_id = -1;
+
+static bool Popup_time_was_stopped_in_init = false;
 
 static int Title_coords[GR_NUM_RESOLUTIONS][5] =
 {
@@ -475,8 +479,12 @@ int popup_init(popup_info *pi, int flags)
 	}
 
 	// anytime in single player, and multiplayer, not in mission, go ahead and stop time
+	Popup_time_was_stopped_in_init = false;
 	if ( (Game_mode & GM_NORMAL) || ((Game_mode & GM_MULTIPLAYER) && !(Game_mode & GM_IN_MISSION)) ){
-		game_stop_time();
+		if (!game_time_is_stopped()) {
+			game_stop_time();
+			Popup_time_was_stopped_in_init = true;
+		}
 	}
 
 	// create base window
@@ -531,6 +539,7 @@ int popup_init(popup_info *pi, int flags)
 	if(flags & PF_INPUT){
 		Popup_input.create(&Popup_window, Popup_text_coords[gr_screen.res][0], pbg->coords[1] + Popup_input_y_offset[gr_screen.res], Popup_text_coords[gr_screen.res][2], pi->max_input_text_len, pi->input_text, UI_INPUTBOX_FLAG_INVIS | UI_INPUTBOX_FLAG_ESC_CLR | UI_INPUTBOX_FLAG_ESC_FOC | UI_INPUTBOX_FLAG_KEYTHRU | UI_INPUTBOX_FLAG_TEXT_CEN);
 		Popup_input.set_focus();
+		Popup_input.set_valid_chars(pi->valid_chars);
 	}	
 	
 	Popup_default_choice=0;
@@ -575,8 +584,8 @@ void popup_close(popup_info *pi, int screen_id)
 	Popup_is_active = 0;
 	Popup_running_state = 0;
 
-	// anytime in single player, and multiplayer, not in mission, go ahead and resume time
-	if ( (Game_mode & GM_NORMAL) || ((Game_mode & GM_MULTIPLAYER) && !(Game_mode & GM_IN_MISSION)) )
+	// if we had previously stopped time, go ahead and resume time
+	if ( Popup_time_was_stopped_in_init )
 		game_start_time();
 }
 
@@ -1102,7 +1111,7 @@ int popup_till_condition(int (*condition)(), ...)
 }
 
 // popup to return the value from an input box
-char *popup_input(int flags, const char *caption, int max_output_len, const char *default_input)
+char *popup_input(int flags, const char *caption, int max_output_len, const char *default_input, const char *vchar)
 {
 	if ( Popup_is_active ) {
 		Int3();		// should never happen
@@ -1132,6 +1141,13 @@ char *popup_input(int flags, const char *caption, int max_output_len, const char
 	// zero the popup input text and set default, if provided
 	memset(Popup_info.input_text, 0, POPUP_INPUT_MAX_CHARS);
 	strcpy_s(Popup_info.input_text, default_input);
+
+	// Set the character whitelist for non-alphanumerics
+	if (vchar != nullptr) {
+		strcpy_s(Popup_info.valid_chars, vchar);
+	} else {
+		memset(Popup_info.valid_chars, 0, POPUP_MAX_VALID_CHARS);
+	}
 	
 	gamesnd_play_iface(InterfaceSounds::POPUP_APPEAR); 	// play sound when popup appears
 

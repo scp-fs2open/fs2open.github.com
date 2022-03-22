@@ -1002,9 +1002,9 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 				vec3d normal;
 
 				if (mc.model_instance_num >= 0)
-					model_instance_find_world_dir(&normal, &mc.hit_normal, mc.model_instance_num, mc.hit_submodel, mc.orient);
+					model_instance_local_to_global_dir(&normal, &mc.hit_normal, mc.model_instance_num, mc.hit_submodel, mc.orient);
 				else
-					model_find_world_dir(&normal, &mc.hit_normal, mc.model_num, mc.hit_submodel, mc.orient);
+					model_local_to_global_dir(&normal, &mc.hit_normal, mc.model_num, mc.hit_submodel, mc.orient);
 
 				*hitnormal = normal;
 			}
@@ -1092,8 +1092,8 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 					pmi->submodel[submodel].collision_checked = true;
 				}
 
-				// reset flags to check MC_CHECK_MODEL | MC_CHECK_SPHERELINE and maybe MC_CHECK_INVISIBLE_FACES and MC_SUBMODEL_INSTANCE
-				mc.flags = copy_flags | MC_SUBMODEL_INSTANCE;
+				// Only check single submodel now, since children of moving submodels are handled as moving as well
+				mc.flags = copy_flags | MC_SUBMODEL;
 
 				// check each submodel in turn
 				for (auto submodel: submodel_vector) {
@@ -1102,15 +1102,9 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 					// turn on just one submodel for collision test
 					smi->collision_checked = false;
 
-					// set angles for last frame (need to set to prev to get p0)
-					matrix copy_matrix = smi->canonical_orient;
-
 					// find the start and end positions of the sphere in submodel RF
-					smi->canonical_orient = smi->canonical_prev_orient;
-					world_find_model_instance_point(&p0, &light_obj->last_pos, pm, pmi, submodel, &heavy_obj->last_orient, &heavy_obj->last_pos);
-
-					smi->canonical_orient = copy_matrix;
-					world_find_model_instance_point(&p1, &light_obj->pos, pm, pmi, submodel, &heavy_obj->orient, &heavy_obj->pos);
+					model_instance_global_to_local_point(&p0, &light_obj->last_pos, pm, pmi, submodel, &heavy_obj->last_orient, &heavy_obj->last_pos, true);
+					model_instance_global_to_local_point(&p1, &light_obj->pos, pm, pmi, submodel, &heavy_obj->orient, &heavy_obj->pos);
 
 					mc.p0 = &p0;
 					mc.p1 = &p1;
@@ -1127,14 +1121,14 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 
 							// set up asteroid_hit_info for rotating submodel
 							if (!asteroid_hit_info->edge_hit) {
-								model_instance_find_world_dir(&asteroid_hit_info->collision_normal, &mc.hit_normal, pm, pmi, mc.hit_submodel, &heavy_obj->orient);
+								model_instance_local_to_global_dir(&asteroid_hit_info->collision_normal, &mc.hit_normal, pm, pmi, mc.hit_submodel, &heavy_obj->orient);
 							}
 
 							// find position in submodel RF of light object at collison
 							vec3d int_light_pos, diff;
 							vm_vec_sub(&diff, mc.p1, mc.p0);
 							vm_vec_scale_add(&int_light_pos, mc.p0, &diff, mc.hit_dist);
-							model_instance_find_world_point(&asteroid_hit_info->light_collision_cm_pos, &int_light_pos, pm, pmi, mc.hit_submodel, &heavy_obj->orient, &zero);
+							model_instance_local_to_global_point(&asteroid_hit_info->light_collision_cm_pos, &int_light_pos, pm, pmi, mc.hit_submodel, &heavy_obj->orient, &zero);
 						}
 					}
 					// Don't look at this submodel again
@@ -1159,7 +1153,7 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 
 					// get collision normal if not edge hit
 					if (!asteroid_hit_info->edge_hit) {
-						model_instance_find_world_dir(&asteroid_hit_info->collision_normal, &mc.hit_normal, pm, pmi, mc.hit_submodel, &heavy_obj->orient);
+						model_instance_local_to_global_dir(&asteroid_hit_info->collision_normal, &mc.hit_normal, pm, pmi, mc.hit_submodel, &heavy_obj->orient);
 					}
 
 					// find position in submodel RF of light object at collison

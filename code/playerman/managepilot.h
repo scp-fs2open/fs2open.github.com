@@ -29,6 +29,14 @@ extern char Pilot_squad_images_arr[MAX_PILOT_IMAGES][MAX_FILENAME_LEN];
 extern char *Pilot_squad_image_names[MAX_PILOT_IMAGES];
 extern int Num_pilot_squad_images;
 
+/**
+ * Initilizes the given player
+ * 
+ * @param[in] p The player to initialize
+ * @param[in] reset If 0, don't touch the player settings, only reset scoring and campaign progress
+ * 
+ * @note Is used for creating new pilots as well as cloning
+ */
 void init_new_pilot(player *p, int reset = 1);
 
 // load up the list of pilot image filenames (do this at game startup as well as barracks startup)

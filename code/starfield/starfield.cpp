@@ -2784,6 +2784,13 @@ void stars_pack_backgrounds()
 	Backgrounds.erase(
 		std::remove_if(Backgrounds.begin(), Backgrounds.end(), stars_background_empty),
 		Backgrounds.end());
+
+	// in FRED, make sure we always have at least one background
+	if (Fred_running)
+	{
+		if (Backgrounds.empty())
+			Backgrounds.emplace_back();
+	}
 }
 
 static void render_environment(int i, vec3d *eye_pos, matrix *new_orient, float new_zoom)
