@@ -76,6 +76,7 @@
 #include "render/batching.h"
 #include "scripting/api/objs/vecmath.h"
 #include "ship/afterburner.h"
+#include "ship/awacs.h"
 #include "ship/ship.h"
 #include "ship/shipcontrails.h"
 #include "ship/shipfx.h"
@@ -20138,4 +20139,57 @@ bool ship_stop_secondary_fire(object* objp)
 
 bool ship_secondary_has_ammo(ship_weapon* swp, int bank_index) {
 	return swp->secondary_bank_ammo[bank_index] > 0 || Weapon_info[swp->secondary_bank_weapons[bank_index]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo];
+}
+
+
+
+/**
+ * Determine if ship visible on radar
+ *
+ * @return 0 - not visible
+ * @return 1 - marginally targetable (jiggly on radar)
+ * @return 2 - fully targetable
+ */
+int ship_check_visibility(const ship* viewed, ship* viewer)
+{
+	if (!viewer) {
+		// if the second argument is not supplied, default to the player, per retail
+		if (Game_mode & GM_MULTIPLAYER) {
+			mprintf(("In multiplayer shared_check_ship_visibility must have two arguments!  Defaulting to the first "
+					 "player.\n"));
+
+			// to make allowances for buggy missions (such as retail), just pick the first player
+			// if we actually have no valid players, viewer_shipp will be NULL, but that's ok
+			for (int i = 0; i < MAX_PLAYERS; ++i) {
+				int shipnum = multi_get_player_ship(i);
+				if (shipnum >= 0) {
+					viewer = &Ships[shipnum];
+					break;
+				}
+			}
+		} else
+			viewer = Player_ship;
+	}
+
+	object* viewed_obj = &Objects[viewer->objnum];
+	int ship_is_visible = 0;
+	//There are cases where the player is not a ship, so the above logic could result in still not having any valid ship pointer.
+	if(!viewer)
+		return ship_is_visible;
+	// get ship's *radar* visiblity
+	if (ship_is_visible_by_team(viewed_obj, viewer)) {
+		ship_is_visible = 2;
+	}
+
+	// only check awacs level if ship is not visible by team
+	if (!ship_is_visible) {
+		float awacs_level = awacs_get_level(viewed_obj, viewer);
+		if (awacs_level >= 1.0f) {
+			ship_is_visible = 2;
+		} else if (awacs_level > 0) {
+			ship_is_visible = 1;
+		}
+	}
+
+	return ship_is_visible;
 }
