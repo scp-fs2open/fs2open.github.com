@@ -346,9 +346,9 @@ extern void ssm_process();
 
 // amount of time to wait after the player has died before we display the death died popup
 #define PLAYER_DIED_POPUP_WAIT		2500
-int Player_died_popup_wait = -1;
+UI_TIMESTAMP Player_died_popup_wait;
 
-int Multi_ping_timestamp = -1;
+UI_TIMESTAMP Multi_ping_timestamp;
 
 
 const auto OnMissionAboutToEndHook = scripting::Hook::Factory(
@@ -966,7 +966,7 @@ void game_level_init()
 	// Initialize the game subsystems
 	game_time_level_init();
 
-	Multi_ping_timestamp = -1;
+	Multi_ping_timestamp = UI_TIMESTAMP::invalid();
 
 	obj_init();						// Must be inited before the other systems
 
@@ -1356,9 +1356,6 @@ void game_post_level_init()
 	freespace_mission_load_stuff();
 
 	mission_process_alt_types();
-
-	// Now that loading is complete, resume time so that timestamps used in the briefing screens will work
-	game_start_time();
 
 	// m!m Make hv.Player available in "On Mission Start" hook
 	if(Player_obj)
@@ -2725,7 +2722,7 @@ void do_timing_test(float frame_time)
 	}
 }
 
-DCF(dcf_fov, "Change the field of view of the main camera")
+DCF(fov, "Change the field of view of the main camera")
 {
 	camera *cam = Main_camera.getCamera();
 	bool process = true;
@@ -2768,7 +2765,6 @@ DCF(dcf_fov, "Change the field of view of the main camera")
 		cam->set_fov(value);
 	}
 }
-
 
 DCF(framerate_cap, "Sets the framerate cap")
 {
@@ -3737,7 +3733,7 @@ void game_maybe_do_dead_popup(float frametime)
 		}
 
 		if ( leave_popup ) {
-			popupdead_close();
+			popupdead_close(true);
 		}
 	}
 }
@@ -4068,13 +4064,13 @@ void game_frame(bool paused)
 					if(Net_player->flags & NETINFO_FLAG_WARPING_OUT){
 						multi_handle_sudden_mission_end();
 						send_debrief_event();
-					} else if((Player_died_popup_wait != -1) && (timestamp_elapsed(Player_died_popup_wait))){
-						Player_died_popup_wait = -1;
+					} else if (Player_died_popup_wait.isValid() && ui_timestamp_elapsed(Player_died_popup_wait)) {
+						Player_died_popup_wait = UI_TIMESTAMP::invalid();
 						popupdead_start();
 					}
 				} else {
-					if((Player_died_popup_wait != -1) && (timestamp_elapsed(Player_died_popup_wait))){
-						Player_died_popup_wait = -1;
+					if (Player_died_popup_wait.isValid() && ui_timestamp_elapsed(Player_died_popup_wait)) {
+						Player_died_popup_wait = UI_TIMESTAMP::invalid();
 						popupdead_start();
 					}
 				}
@@ -4178,6 +4174,11 @@ void game_stop_time(bool by_os_focus)
 	// Stop the timer_tick stuff...
 	// We always want to 'sudo' the change, unless this is caused by the focus, because we want the game to have priority in that case
 	timestamp_pause(!by_os_focus);
+}
+
+bool game_time_is_stopped()
+{
+	return Time_paused;
 }
 
 void game_start_time(bool by_os_focus)
@@ -4352,11 +4353,6 @@ void game_update_missiontime()
 
 void game_do_frame(bool set_frametime)
 {
-	if (Missiontime == 0) {
-		// reset the timestamps to the beginning, since they were running in the briefing screens
-		timestamp_revert_to_mission_start();
-	}
-
 	if (set_frametime) {
 		game_set_frametime(GS_STATE_GAME_PLAY);
 	}
@@ -5344,43 +5340,31 @@ void game_leave_state( int old_state, int new_state )
 			break;
 
 		case GS_STATE_DEATH_DIED:
-			if (end_mission) {
-				Game_mode &= ~GM_DEAD_DIED;
-
-				if ( !(Game_mode & GM_MULTIPLAYER) ) {
-					if (new_state == GS_STATE_DEBRIEF) {
-						freespace_stop_mission();
-					}
-				} else {
-					// early end while respawning or blowing up in a multiplayer game
-					if ( (new_state == GS_STATE_DEBRIEF) || (new_state == GS_STATE_MULTI_DOGFIGHT_DEBRIEF) ) {
-						game_stop_time();
-						freespace_stop_mission();
-					}
-				}
-			}
-
-			break;
-
 		case GS_STATE_DEATH_BLEW_UP:
 			if (end_mission) {
-				Game_mode &= ~GM_DEAD_BLEW_UP;
+				if (old_state == GS_STATE_DEATH_DIED) {
+					Game_mode &= ~GM_DEAD_DIED;
+				} else if (old_state == GS_STATE_DEATH_BLEW_UP) {
+					Game_mode &= ~GM_DEAD_BLEW_UP;
+				}
 
-				// for single player, we might reload mission, etc.  For multiplayer, look at my new state
-				// to determine if I should do anything.
-				if ( !(Game_mode & GM_MULTIPLAYER) ) {
-					freespace_stop_mission();
-				} else {
-					// if we are not respawing as an observer or as a player, our new state will not
-					// be gameplay state.
-					if ( (new_state != GS_STATE_GAME_PLAY) && (new_state != GS_STATE_MULTI_PAUSED) ) {
-						game_stop_time();									// hasn't been called yet!!
+				if (new_state != GS_STATE_DEATH_BLEW_UP) {
+					if ( !(Game_mode & GM_MULTIPLAYER) ) {
+						popupdead_close();			// it's usually closed by this point, but not always (e.g. if end-mission is called)
 						freespace_stop_mission();
+					} else {
+						// early end while respawning or blowing up in a multiplayer game
+						// if we are not respawing as an observer or as a player, our new state will not
+						// be gameplay state.
+						if ( (new_state != GS_STATE_GAME_PLAY) && (new_state != GS_STATE_MULTI_PAUSED) ) {
+							game_stop_time();
+							popupdead_close();
+							freespace_stop_mission();
+						}
 					}
 				}
 			}
 			break;
-
 
 		case GS_STATE_CREDITS:
 			credits_close();
@@ -5942,7 +5926,7 @@ void mouse_force_pos(int x, int y);
 
 			// timestamp how long we should wait before displaying the died popup
 			if ( !popupdead_is_active() ) {
-				Player_died_popup_wait = timestamp(PLAYER_DIED_POPUP_WAIT);
+				Player_died_popup_wait = ui_timestamp(PLAYER_DIED_POPUP_WAIT);
 			}
 			break;
 

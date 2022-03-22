@@ -121,7 +121,7 @@ public:
 	void renderTargetIntegrity(int disabled, int force_obj_num = -1);
 	int maybeFlashElement(int index, int flash_fast=0);
 	void renderTargetShipInfo(object *target_objp);
-	void maybeRenderCargoScan(ship_info *target_sip);
+	void maybeRenderCargoScan(ship_info *target_sip, ship_subsys *target_subsys);
 	void initFlashTimer(int index);
 	void showTargetData(float frametime);
 };

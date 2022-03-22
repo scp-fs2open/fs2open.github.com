@@ -266,13 +266,19 @@ void ai_remove_ship_goal( ai_info *aip, int index )
 	// ai goal code look
 	Assert ( index >= 0 );			// must have a valid goal
 
+	if (index == aip->active_goal)
+	{
+		// rearm/repair needs a bit of extra cleanup
+		if (aip->goals[index].ai_mode == AI_GOAL_REARM_REPAIR)
+			ai_abort_rearm_request(&Objects[Ships[aip->shipnum].objnum]);
+
+		aip->active_goal = AI_GOAL_NONE;
+	}
+
 	aip->goals[index].ai_mode = AI_GOAL_NONE;
 	aip->goals[index].signature = -1;
 	aip->goals[index].priority = -1;
 	aip->goals[index].flags.reset(); // must reset the flags since not doing so will screw up goal sorting.
-
-	if ( index == aip->active_goal )
-		aip->active_goal = AI_GOAL_NONE;
 
 	// mwa -- removed this line 8/5/97.  Just because we remove a goal doesn't mean to do the default
 	// behavior.  We will make the call commented out below in a more reasonable location

@@ -97,6 +97,8 @@ void game_level_close();
 // stop the game (mission) timer
 void game_stop_time(bool by_os_focus = false);
 
+bool game_time_is_stopped();
+
 // start the game (mission) timer
 void game_start_time(bool by_os_focus = false);
 

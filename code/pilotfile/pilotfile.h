@@ -36,6 +36,9 @@ static const ubyte PLR_VERSION = 4;
 //   7 - Controls are removed, and instead a preset name is saved/loaded.
 static const ubyte CSG_VERSION = 7;
 
+// pilotfile::version and pilotfile::csg_version value when a file isn't loaded (or was just closed)
+static const ubyte PLR_VERSION_INVALID = 0xFF;
+
 typedef struct index_list_t {
 	SCP_string name;
 	int index{ -1 };
@@ -73,7 +76,15 @@ class pilotfile {
 		pilotfile();
 		~pilotfile();
 
+		/**
+		 * @brief Loads the PLR file (or player .JSON)
+		 * @note Keep ::verify() up to date if you change anything in load_player
+		 */
 		bool load_player(const char *callsign, player *_p = nullptr, bool force_binary = false);
+
+		/**
+		 * @brief Loads the CSG file
+		 */
 		bool load_savefile(player *_p, const char *campaign);
 
 		bool save_player(player *_p = nullptr);
@@ -84,8 +95,24 @@ class pilotfile {
 		void update_stats_backout(scoring_struct *stats, bool training = false);
 		void reset_stats();
 
-		// for checking to see if a PLR file is basically valid
-		bool verify(const char *fname, int *rank = nullptr, char *valid_language = nullptr);
+		/**
+		 * Verifies a pilot file with the given filename
+		 * 
+		 * @param[in]  filename     The filename of the pilot file to test. Must have the .JSON extension.
+		 * @param[out] rank         If not nullptr, retrieve the rank in the current campaign or from multi
+		 * @param[out] valid_language   If not nullptr, retrieve the pilot's language
+		 * @param[out] flags            If not nullptr, retrieve any Player flags raised during verification
+		 * 
+		 * @returns false if a JSON handler error occurs, or
+		 * @returns false if a Section::Invalid occurs, or
+		 * @returns false if plr_id != PLR_FILE_ID, or
+		 * @returns false if the JSON file could not be parsed, or
+		 * @returns false if the file could not be opened, or
+		 * @returns false if filename.size() == 4, or
+		 * 
+		 * @returns true if the file is verified
+		 */
+		bool verify(const char *fname, int *rank = nullptr, char *valid_language = nullptr, int* flags = nullptr);
 
 		// whether current campaign savefile has valid data to work with
 		bool is_invalid()
@@ -102,7 +129,7 @@ class pilotfile {
 		SCP_string filename;
 		player *p;
 
-		int version;
+		ubyte plr_ver;
 		ubyte csg_ver;
 
 		// some sections are required before others...
@@ -110,7 +137,7 @@ class pilotfile {
 		bool m_have_info;
 
 		// set in case data appears wrong, so we can avoid loading/saving campaign savefile
-		bool m_data_invalid;
+		bool m_data_invalid;	// z64: Not used currently
 
 		// overall content list, can include reference to more than current
 		// mod/campaign provides

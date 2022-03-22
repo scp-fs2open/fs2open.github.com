@@ -154,8 +154,8 @@ int Player_select_num_pilots;						// # of pilots on the list
 int Player_select_list_start;						// index of first list item to start displaying in the box
 int Player_select_pilot;							// index into the Pilot array of which is selected as the active pilot
 int Player_select_input_mode;						// 0 if the player _isn't_ typing a callsign, 1 if he is
-char Pilots_arr[MAX_PILOTS][MAX_FILENAME_LEN];
-char *Pilots[MAX_PILOTS];
+char Pilots_arr[MAX_PILOTS][MAX_FILENAME_LEN];		// Filename of associated Pilot. Same idx as Pilots[]
+char *Pilots[MAX_PILOTS];							// Pilot callsigns
 int Player_select_clone_flag;						// clone the currently selected pilot
 char Player_select_last_pilot[CALLSIGN_LEN + 10];	// callsign of the last used pilot, or none if there wasn't one
 int Player_select_last_is_multi;
@@ -204,26 +204,75 @@ void player_select_eval_very_first_pilot();
 void player_select_commit();
 void player_select_cancel_create();
 
-/*
- * validate that a pilot/player was created with the same language FSO is currently using
- *
- * @param pilots callsign
- * @note not longer needed if intel entry "primary keys" change to a non-translated value
- */
-bool valid_pilot_lang(const char *callsign)
-{
-	char pilot_lang[LCL_LANG_NAME_LEN+1], current_lang[LCL_LANG_NAME_LEN+1];
+
+bool valid_pilot(const char* callsign, bool no_popup) {
+	char pilot_lang[LCL_LANG_NAME_LEN + 1];
+	char current_lang[LCL_LANG_NAME_LEN + 1];
+	int player_flags = 0;
+
 	SCP_string filename = callsign;
-
 	filename += ".json";
-	lcl_get_language_name(current_lang);
+	
+	if (!Pilot.verify(filename.c_str(), nullptr, pilot_lang, &player_flags)) {
+		if (!no_popup) {
+			popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Unable to open pilot file %s!", 1662), filename.c_str());
+		}
 
-	if (Pilot.verify(filename.c_str(), NULL, pilot_lang)) {
-		if (!strcmp(current_lang, pilot_lang)) {
-			return true;
+		return false;
+	};
+
+	// verify pilot language = current FSO language
+	lcl_get_language_name(current_lang);
+	if (strcmp(current_lang, pilot_lang) != 0) {
+		// error: Different language
+		if (!no_popup) {
+			popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR(
+				"Selected pilot was created with a different language\n"
+				"to the currently active language.\n\n"
+				"Please select a different pilot or change the language.", 1637));
+		}
+		return false;
+	}
+
+	// verify pilot flags raised by Pilot::verify()
+	// if no_popup == true, assume sel = 0
+	if ((player_flags & (PLAYER_FLAGS_PLR_VER_IS_LOWER | PLAYER_FLAGS_PLR_VER_IS_HIGHER)) && (!no_popup)) {
+		// warning: Selected player version is different than the expected version
+		int sel = popup(PF_TITLE_BIG | PF_TITLE_RED, 2, POPUP_YES, POPUP_NO, XSTR(
+			"Warning!\n\n"
+			"This pilot was created with a different version of FreeSpace.  If you continue, it will be converted to version %i.\n\n"
+			"Please consider cloning the pilot instead, so that the original pilot will remain compatible with the other version.  Visit https://wiki.hard-light.net/index.php/Frequently_Asked_Questions for more information.\n\n"
+			"Do you wish to continue?", 1663),
+			PLR_VERSION);
+
+		if (sel != 0) {
+			// Player either hit No or the popup was aborted, so bail
+			return false;
 		}
 	}
-	return false;
+
+	// All validation checks passed
+	return true;
+}
+
+/**
+ * @brief Handler for button Accept
+ */
+void player_select_on_accept() {
+	// make sure he has a valid pilot selected
+	if (Player_select_pilot < 0) {
+		// error: invalid selection
+		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("You must select a valid pilot first", 378));
+		return;
+	}
+
+	if (!valid_pilot(Pilots[Player_select_pilot])) {
+		// not a valid pilot, bail
+		return;
+	}
+
+	// If we got here, then everything checks out!
+	player_select_commit();
 }
 
 // basically, gray out all controls (gray == 1), or ungray the controls (gray == 0)
@@ -505,19 +554,27 @@ void player_select_close()
 	if ( !Pilot.load_player(Pilots[Player_select_pilot], Player) ) {
 		Error(LOCATION,"Couldn't load pilot file, bailing");
 		Player = NULL;
-	} else {
-		// NOTE: this may fail if there is no current campaign, it's not fatal
-		Pilot.load_savefile(Player, Player->current_campaign);
+		return;
 	}
+	
+	// read in the current campaign
+	// NOTE: this may fail if there is no current campaign, it's not fatal
+	Pilot.load_savefile(Player, Player->current_campaign);
 
+	// Set singleplayer/multiplayer mode in Player
 	if (Player_select_mode == PLAYER_SELECT_MODE_MULTI) {
 		Player->player_was_multi = 1;
 	} else {
 		Player->player_was_multi = 0;
 	}
 
+	// save the pilot file to a version that we work with
+	Pilot.save_player(Player);
+
+	// Update the LastPlayer key in the registry
 	os_config_write_string(nullptr, "LastPlayer", Player->callsign);
 
+	// Maybe use a different main hall (debug console)
 	if (Player_select_force_main_hall != "") {
 		main_hall_init(Player_select_force_main_hall);
 	}
@@ -572,19 +629,7 @@ void player_select_button_pressed(int n)
 		break;
 
 	case ACCEPT_BUTTON:
-		// make sure he has a valid pilot selected
-		if (Player_select_pilot < 0) {
-			popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,XSTR( "You must select a valid pilot first", 378));
-		} else {
-			if (valid_pilot_lang(Pilots[Player_select_pilot])) {
-				player_select_commit();
-			} else {
-				popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,XSTR(
-					"Selected pilot was created with a different language\n"
-					"to the currently active language.\n\n"
-					"Please select a different pilot or change the language", 1637));
-			}
-		}
+		player_select_on_accept();
 		break;
 
 	case CLONE_BUTTON:
@@ -1283,7 +1328,8 @@ void player_select_cancel_create()
 	Player_select_autoaccept = 0;
 }
 
-DCF(bastion,"Sets the player to be on the bastion (or any other main hall)")
+// See also the mainhall command in mainhallmenu.cpp
+DCF(bastion, "Temporarily sets the player to be on the Bastion (or any other main hall)")
 {
 	int idx;
 	
@@ -1294,7 +1340,10 @@ DCF(bastion,"Sets the player to be on the bastion (or any other main hall)")
 
 	if (dc_optional_string_either("help", "--help")) {
 		dc_printf("Usage: bastion [index]\n");
-		dc_printf("    [index] -- optional main hall index; if not supplied, defaults to 1\n");
+		dc_printf("       bastion status | ?\n");
+		dc_printf("       bastion --status | --?\n");
+		dc_printf("[index] -- optional main hall index; if not supplied, defaults to 1\n\n");
+		dc_printf("Note: 'mainhall' is an updated version of 'bastion'\n");
 		return;
 	}
 
@@ -1408,6 +1457,26 @@ void player_tips_popup()
 			break;
 		}
 	} while(ret > 0);
+}
+
+void player_tips_controls() {
+	if (Player->save_flags & PLAYER_FLAGS_PLR_VER_PRE_CONTROLS5) {
+		// Special case. Since the Controls5 PR is significantly different from retail, users must be informed
+		// of changes regarding their bindings
+
+		Player->save_flags &= ~PLAYER_FLAGS_PLR_VER_PRE_CONTROLS5;	// Clear the flag, since we're notifying the user right now
+
+		int sel = popup(PF_NO_SPECIAL_BUTTONS | PF_TITLE_BIG | PF_TITLE_GREEN, 2, POPUP_OK, XSTR("Don't show me this again", 1443),
+			XSTR("Notice!\n\n"
+			"The currently selected pilot was converted from a version older than FSO 22.0.\n\n"
+			"It is strongly recommended that you verify your control bindings within the Options -> Control Config screen, as well as verify your Mouse Input Mode (formerly Mouse Off/On) within the Options screen.", 1664));
+
+		if (sel == 1) {
+			// Don't show me this again!
+			Pilot.save_player(Player);
+			Pilot.save_savefile();
+		}
+	}
 }
 
 SCP_vector<SCP_string> player_select_enumerate_pilots() {

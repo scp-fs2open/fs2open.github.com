@@ -173,7 +173,7 @@ namespace animation {
 
 		void reset(polymodel_instance* pmi);
 
-		void saveCurrentAsBase(polymodel_instance* pmi);
+		void saveCurrentAsBase(polymodel_instance* pmi, bool isInitialType = false);
 		const ModelAnimationData<>& getInitialData(polymodel_instance* pmi);
 
 		virtual std::pair<submodel_instance*, bsp_info*> findSubmodel(polymodel_instance* pmi);
@@ -184,6 +184,8 @@ namespace animation {
 
 		//Reapply the calculated animation state to the submodel
 		virtual void copyToSubmodel(const ModelAnimationData<>& data, polymodel_instance* pmi);
+
+		void resetPhysicsData(polymodel_instance* pmi);
 
 		friend class ModelAnimationSet;
 	};
@@ -360,8 +362,8 @@ namespace animation {
 
 		bool isEmpty() const;
 
-		std::shared_ptr<ModelAnimationSubmodel> getSubmodel(const SCP_string& submodelName);
-		std::shared_ptr<ModelAnimationSubmodel> getSubmodel(const SCP_string& submodelName, const SCP_string& SIP_name, bool findBarrel);
+		std::shared_ptr<ModelAnimationSubmodel> getSubmodel(SCP_string submodelName);
+		std::shared_ptr<ModelAnimationSubmodel> getSubmodel(SCP_string submodelName, const SCP_string& SIP_name, bool findBarrel);
 		std::shared_ptr<ModelAnimationSubmodel> getSubmodel(const std::shared_ptr<ModelAnimationSubmodel>& other);
 	};
 

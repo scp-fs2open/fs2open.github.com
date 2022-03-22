@@ -1534,6 +1534,8 @@ void pilotfile::csg_close()
 
 	m_have_flags = false;
 	m_have_info = false;
+
+	csg_ver = PLR_VERSION_INVALID;
 }
 
 bool pilotfile::load_savefile(player *_p, const char *campaign)

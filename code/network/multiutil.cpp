@@ -82,7 +82,7 @@
 extern int ascii_table[];
 extern int shifted_ascii_table[];
 
-extern int Multi_ping_timestamp;
+extern UI_TIMESTAMP Multi_ping_timestamp;
 
 // network object management
 ushort Next_ship_signature;										// next permanent network signature to assign to an object
@@ -4009,9 +4009,9 @@ void send_debrief_event() {
 void multi_send_anti_timeout_ping()
 {
 	if (Game_mode & GM_MULTIPLAYER) {
-		if ( (Multi_ping_timestamp == -1) || (Multi_ping_timestamp <= timer_get_milliseconds()) ) {
+		if (!Multi_ping_timestamp.isValid() || ui_timestamp_elapsed(Multi_ping_timestamp)) {
 			multi_ping_send_all();
-			Multi_ping_timestamp = timer_get_milliseconds() + 10000; // timeout is 10 seconds between pings
+			Multi_ping_timestamp = ui_timestamp(10000); // timeout is 10 seconds between pings
 		}
 	}
 }

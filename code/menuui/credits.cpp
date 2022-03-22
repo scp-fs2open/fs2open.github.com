@@ -200,7 +200,7 @@ static credits_screen_buttons Buttons[NUM_BUTTONS][GR_NUM_RESOLUTIONS] = {
 
 static char Credits_music_name[NAME_LENGTH];
 static int	Credits_music_handle = -1;
-static int	Credits_music_begin_timestamp;
+static UI_TIMESTAMP	Credits_music_begin_timestamp;
 
 static int	Credits_frametime;		// frametime of credits_do_frame() loop in ms
 static int	Credits_last_time;		// timestamp used to calc frametime (in ms)
@@ -458,7 +458,7 @@ void credits_init()
 	}
 
 	// Use this id to trigger the start of music playing on the briefing screen
-	Credits_music_begin_timestamp = timestamp(Credits_music_delay);
+	Credits_music_begin_timestamp = ui_timestamp(Credits_music_delay);
 
 	Credits_frametime = 0;
 	Credits_last_time = timer_get_milliseconds();
@@ -684,8 +684,8 @@ void credits_do_frame(float  /*frametime*/)
 	int bx2, by2, bw2, bh2;
 
 	// Use this id to trigger the start of music playing on the credits screen
-	if ( timestamp_elapsed(Credits_music_begin_timestamp) ) {
-		Credits_music_begin_timestamp = 0;
+	if ( ui_timestamp_elapsed(Credits_music_begin_timestamp) ) {
+		Credits_music_begin_timestamp = UI_TIMESTAMP::invalid();
 		credits_start_music();
 	}
 

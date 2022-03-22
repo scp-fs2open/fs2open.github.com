@@ -1292,6 +1292,8 @@ public:
 	int	scan_time;							// time to scan this ship (in ms)
 	float scan_range_normal;                // this ship can scan other normal/small ships at this range
 	float scan_range_capital;               // this ship can scan other capital/large ships at this range
+	float scanning_time_multiplier;			// when this ship is doing the scanning, the factor to apply to scan time
+	float scanning_range_multiplier;		// ditto for scan range
 
 	float ask_help_shield_percent;
 	float ask_help_hull_percent;
