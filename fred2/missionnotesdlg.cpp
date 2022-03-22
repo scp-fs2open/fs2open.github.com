@@ -421,14 +421,14 @@ BOOL CMissionNotesDlg::OnInitDialog()
 
 	box = (CComboBox *) GetDlgItem(IDC_EVENT_MUSIC);
 	box->AddString("None");
-	for (i=0; i<Num_soundtracks; i++){
-		box->AddString(Soundtracks[i].name);		
+	for (auto &st: Soundtracks) {
+		box->AddString(st.name);
 	}
 
 	box = (CComboBox *) GetDlgItem(IDC_SUBSTITUTE_EVENT_MUSIC);
 	box->AddString("None");
-	for (i=0; i<Num_soundtracks; i++){
-		box->AddString(Soundtracks[i].name);		
+	for (auto &st: Soundtracks) {
+		box->AddString(st.name);
 	}
 
 	box = (CComboBox *) GetDlgItem(IDC_COMMAND_PERSONA);

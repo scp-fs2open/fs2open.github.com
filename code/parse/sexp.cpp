@@ -2593,18 +2593,10 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				if (Cmdline_freespace_no_music)
 					break;
 
-				for (i=0; i<Num_soundtracks; i++)
-				{
-					if (!stricmp(CTEXT(node), Soundtracks[i].name))
-					{
-						break;
-					}
-				}
+				if (event_music_get_soundtrack_index(CTEXT(node)) >= 0)
+					break;
 
-				if (i == Num_soundtracks)
-					return SEXP_CHECK_INVALID_SOUNDTRACK_NAME;
-
-				break;
+				return SEXP_CHECK_INVALID_SOUNDTRACK_NAME;
 
 			case OPF_SHIP_WITH_BAY:
 			{
