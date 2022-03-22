@@ -133,7 +133,10 @@ void neb2_init();
 void neb2_level_init();
 
 // initialize nebula stuff - call from game_post_level_init(), so the mission has been loaded
-void neb2_post_level_init();
+void neb2_post_level_init(bool fog_color_override);
+
+// helper function, used in above and in FRED
+void neb2_generate_fog_color(const char *fog_color_palette, ubyte fog_color[]);
 
 // shutdown nebula stuff
 void neb2_level_close();

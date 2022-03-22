@@ -46,6 +46,10 @@ bg_bitmap_dlg::bg_bitmap_dlg(CWnd* pParent) : CDialog(bg_bitmap_dlg::IDD, pParen
 	m_neb2_texture = 0;
 	m_subspace = FALSE;
 	m_fullneb = FALSE;
+	m_fog_color_override = FALSE;
+	m_fog_r = 0;
+	m_fog_g = 0;
+	m_fog_b = 0;
 	m_toggle_trails = FALSE;
 
 	s_pitch = 0;
@@ -90,6 +94,7 @@ void bg_bitmap_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_CBIndex(pDX, IDC_NEB2_TEXTURE, m_neb2_texture);
 	DDX_Check(pDX, IDC_SUBSPACE, m_subspace);
 	DDX_Check(pDX, IDC_FULLNEB, m_fullneb);
+	DDX_Check(pDX, IDC_NEB2_PALETTE_OVERRIDE, m_fog_color_override);
 
 	DDX_Check(pDX, IDC_NEB2_TOGGLE_TRAILS, m_toggle_trails);
 	DDX_Text(pDX, IDC_SUN1, s_name);
@@ -131,6 +136,12 @@ void bg_bitmap_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_SKY_FLAG_CLAMP, m_sky_flag_6);
 	DDX_Text(pDX, IDC_NEB2_FAR_MULTIPLIER, m_neb_far_multi);
 	DDX_Text(pDX, IDC_NEB2_NEAR_MULTIPLIER, m_neb_near_multi);
+	DDX_Text(pDX, IDC_NEB2_FOG_R, m_fog_r);
+	DDV_MinMaxInt(pDX, m_fog_r, 0, 255);
+	DDX_Text(pDX, IDC_NEB2_FOG_G, m_fog_g);
+	DDV_MinMaxInt(pDX, m_fog_g, 0, 255);
+	DDX_Text(pDX, IDC_NEB2_FOG_B, m_fog_b);
+	DDV_MinMaxInt(pDX, m_fog_b, 0, 255);
 	//}}AFX_DATA_MAP
 }
 
@@ -140,6 +151,8 @@ BEGIN_MESSAGE_MAP(bg_bitmap_dlg, CDialog)
 	ON_CBN_SELCHANGE(IDC_NEBCOLOR, OnSelchangeNebcolor)
 	ON_CBN_SELCHANGE(IDC_NEBPATTERN, OnSelchangeNebpattern)
 	ON_BN_CLICKED(IDC_FULLNEB, OnFullNeb)
+	ON_BN_CLICKED(IDC_NEB2_PALETTE_OVERRIDE, OnNeb2PaletteOverride)
+	ON_CBN_SELCHANGE(IDC_NEB2_TEXTURE, OnSelchangeNeb2Texture)
 	ON_WM_HSCROLL()
 	ON_LBN_SELCHANGE(IDC_SUN1_LIST, OnSunChange)
 	ON_BN_CLICKED(IDC_ADD_SUN, OnAddSun)
@@ -179,6 +192,9 @@ BEGIN_MESSAGE_MAP(bg_bitmap_dlg, CDialog)
 	ON_EN_KILLFOCUS(IDC_SKYBOX_B, OnKillfocusSkyboxB)
 	ON_EN_KILLFOCUS(IDC_SKYBOX_H, OnKillfocusSkyboxH)
 	ON_BN_CLICKED(IDC_ENVMAP_BROWSE, OnEnvmapBrowse)
+	ON_EN_KILLFOCUS(IDC_NEB2_FOG_R, OnKillfocusNeb2FogR)
+	ON_EN_KILLFOCUS(IDC_NEB2_FOG_G, OnKillfocusNeb2FogG)
+	ON_EN_KILLFOCUS(IDC_NEB2_FOG_B, OnKillfocusNeb2FogB)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -270,12 +286,12 @@ void bg_bitmap_dlg::create()
 		m_neb_intensity = CString(itoa((int)Neb2_awacs, whee, 10));
 	}
 		
+	m_fullneb = The_mission.flags[Mission::Mission_Flags::Fullneb] ? TRUE : FALSE;
+	m_fog_color_override = The_mission.flags[Mission::Mission_Flags::Neb2_fog_color_override] ? TRUE : FALSE;
+
 	// determine if a full Neb2 is active - load in the full nebula filenames or the partial neb
 	// filenames
-	m_fullneb = (The_mission.flags[Mission::Mission_Flags::Fullneb]) ? 1 : 0;
-	if(m_fullneb){
-		((CButton*)GetDlgItem(IDC_FULLNEB))->SetCheck(1);
-	} else {
+	if (!m_fullneb) {
 		// since there is no "none" option for the full nebulas
 		m_nebula_index = Nebula_index + 1;		
 	
@@ -287,7 +303,17 @@ void bg_bitmap_dlg::create()
 		m_pitch = Nebula_pitch;
 		m_bank = Nebula_bank;
 		m_heading = Nebula_heading;
+
+		// no full nebula, no override
+		m_fog_color_override = FALSE;
 	}
+
+	((CButton*)GetDlgItem(IDC_FULLNEB))->SetCheck(m_fullneb);
+	((CButton*)GetDlgItem(IDC_NEB2_PALETTE_OVERRIDE))->SetCheck(m_fog_color_override);
+
+	m_fog_r = Neb2_fog_color[0];
+	m_fog_g = Neb2_fog_color[1];
+	m_fog_b = Neb2_fog_color[2];
 
 	m_toggle_trails = (The_mission.flags[Mission::Mission_Flags::Toggle_ship_trails]) ? 1 : 0;
 	((CButton*)GetDlgItem(IDC_NEB2_TOGGLE_TRAILS))->SetCheck(m_toggle_trails);
@@ -383,6 +409,16 @@ void bg_bitmap_dlg::OnClose()
 		Nebula_index = m_nebula_index - 1;
 		Neb2_awacs = -1.0f;
 		strcpy_s(Neb2_texture_name, "");
+
+		// no full nebula, no override
+		m_fog_color_override = FALSE;
+	}
+
+	The_mission.flags.set(Mission::Mission_Flags::Neb2_fog_color_override, m_fog_color_override == TRUE);
+	if (m_fog_color_override) {
+		Neb2_fog_color[0] = (ubyte)m_fog_r;
+		Neb2_fog_color[1] = (ubyte)m_fog_g;
+		Neb2_fog_color[2] = (ubyte)m_fog_b;
 	}
 
 	// check for no ship trails -C
@@ -519,7 +555,7 @@ void bg_bitmap_dlg::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar *pScrollBar)
 // when the user toggled the "Full Nebula" button
 void bg_bitmap_dlg::OnFullNeb()
 {		
-	// determine what state we're in	
+	// determine what state we're in
 	UpdateData(TRUE);
 
 	if (m_fullneb) {
@@ -534,9 +570,9 @@ void bg_bitmap_dlg::OnFullNeb()
 		GetDlgItem(IDC_NEB2_FAR_MULTIPLIER)->EnableWindow(TRUE);
 
 		GetDlgItem(IDC_NEB2_PALETTE_OVERRIDE)->EnableWindow(TRUE);
-		GetDlgItem(IDC_NEB2_FOG_R)->EnableWindow(TRUE);
-		GetDlgItem(IDC_NEB2_FOG_G)->EnableWindow(TRUE);
-		GetDlgItem(IDC_NEB2_FOG_B)->EnableWindow(TRUE);
+		GetDlgItem(IDC_NEB2_FOG_R)->EnableWindow(m_fog_color_override);
+		GetDlgItem(IDC_NEB2_FOG_G)->EnableWindow(m_fog_color_override);
+		GetDlgItem(IDC_NEB2_FOG_B)->EnableWindow(m_fog_color_override);
 
 		GetDlgItem(IDC_NEB2_TOGGLE_TRAILS)->EnableWindow(TRUE);
 
@@ -570,6 +606,33 @@ void bg_bitmap_dlg::OnFullNeb()
 		GetDlgItem(IDC_NEB2_FOG_B)->EnableWindow(FALSE);
 
 		GetDlgItem(IDC_NEB2_TOGGLE_TRAILS)->EnableWindow(FALSE);
+	}
+}
+
+void bg_bitmap_dlg::OnNeb2PaletteOverride()
+{
+	UpdateData(TRUE);
+
+	GetDlgItem(IDC_NEB2_FOG_R)->EnableWindow(m_fog_color_override);
+	GetDlgItem(IDC_NEB2_FOG_G)->EnableWindow(m_fog_color_override);
+	GetDlgItem(IDC_NEB2_FOG_B)->EnableWindow(m_fog_color_override);
+
+	OnSelchangeNeb2Texture();
+}
+
+void bg_bitmap_dlg::OnSelchangeNeb2Texture()
+{
+	UpdateData(TRUE);
+
+	// regenerate the palette colors
+	if (m_fog_color_override)
+	{
+		ubyte rgb[3];
+		neb2_generate_fog_color(m_neb2_texture >= 0 ? Neb2_bitmap_filenames[m_neb2_texture] : "", rgb);
+		m_fog_r = rgb[0];
+		m_fog_g = rgb[1];
+		m_fog_b = rgb[2];
+		UpdateData(FALSE);
 	}
 }
 
@@ -970,7 +1033,7 @@ void bg_bitmap_dlg::get_data_float(int id, float *var, float min, float max)
 	*var = (float)atof(buf);
 	sprintf(max_ch,"%.3f",max);
 	sprintf(min_ch,"%.3f",min);
-	CString error_msg = "Please Enter a number between ";
+	CString error_msg = "Please enter a number between ";
 	error_msg += min_ch;
 	error_msg += " and ";
 	error_msg += max_ch;
@@ -1000,7 +1063,7 @@ void bg_bitmap_dlg::get_data_int(int id, int *var, int min, int max)
 
 	sprintf(max_ch,"%d",max);
 	sprintf(min_ch,"%d",min);
-	CString error_msg = "Please Enter a number between ";
+	CString error_msg = "Please enter a number between ";
 	error_msg += min_ch;
 	error_msg += " and ";
 	error_msg += max_ch;
@@ -1205,6 +1268,20 @@ void bg_bitmap_dlg::OnKillfocusSkyboxH()
 	OnOrientationChange();
 }
 
+void bg_bitmap_dlg::OnKillfocusNeb2FogR()
+{
+	get_data_int(IDC_NEB2_FOG_R, &m_fog_r, 0, 255);
+}
+
+void bg_bitmap_dlg::OnKillfocusNeb2FogG()
+{
+	get_data_int(IDC_NEB2_FOG_G, &m_fog_g, 0, 255);
+}
+
+void bg_bitmap_dlg::OnKillfocusNeb2FogB()
+{
+	get_data_int(IDC_NEB2_FOG_B, &m_fog_b, 0, 255);
+}
 
 extern void parse_one_background(background_t *background);
 

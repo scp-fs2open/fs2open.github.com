@@ -5513,13 +5513,15 @@ void parse_bitmaps(mission *pm)
 	if (optional_string("+Neb2:")) {
 		nebula = true;
 		stuff_string(Neb2_texture_name, F_NAME, MAX_FILENAME_LEN);
-	} else if (optional_string("+Neb2Color:")) {
+	}
+	if (optional_string("+Neb2Color:")) {
 		nebula = true;
 		int neb_colors[3];
 		stuff_int_list(neb_colors, 3, RAW_INTEGER_TYPE);
 		Neb2_fog_color[0] = (ubyte)neb_colors[0];
 		Neb2_fog_color[1] = (ubyte)neb_colors[1];
 		Neb2_fog_color[2] = (ubyte)neb_colors[2];
+		pm->flags |= Mission::Mission_Flags::Neb2_fog_color_override;
 	}
 	if (nebula) {
 		required_string("+Neb2Flags:");			
@@ -5527,7 +5529,7 @@ void parse_bitmaps(mission *pm)
 
 		// initialize neb effect. its gross to do this here, but Fred is dumb so I have no choice ... :(
 		if(Fred_running && (pm->flags[Mission::Mission_Flags::Fullneb])){
-			neb2_post_level_init();
+			neb2_post_level_init(pm->flags[Mission::Mission_Flags::Neb2_fog_color_override]);
 		}
 	}
 
