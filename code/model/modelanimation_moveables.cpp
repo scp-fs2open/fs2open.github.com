@@ -74,15 +74,11 @@ namespace animation {
 			ModelAnimationSubmodelBuffer buffer;
 			buffer[rotation.m_submodel].data.orientation = IDENTITY_MATRIX;
 			//Will now only contain the delta of the rotation
-			sequence.m_segments[1]->calculateAnimation(buffer, anim->getTime(pmi->id), pmi->id);
+			anim->m_animation->calculateAnimation(buffer, anim->getTime(pmi->id), pmi->id);
 			
 			anim->forceRecalculate(pmi);
 			
-			matrix startOrient = setOrientation.m_targetOrientation;
-			matrix newOrient;
-			//Apply rotation to old default state
-			vm_matrix_x_matrix(&newOrient, &startOrient, &buffer[rotation.m_submodel].data.orientation);
-			setOrientation.m_targetOrientation = newOrient;
+			setOrientation.m_targetOrientation = buffer[rotation.m_submodel].data.orientation;
 			
 			rotation.m_targetAngle = angles{fl_radians((float)p), fl_radians((float)b), fl_radians((float)h)};
 
@@ -258,17 +254,13 @@ namespace animation {
 			}
 			
 			//Will now only contain the delta of the IK
-			sequence.m_segments[1]->calculateAnimation(buffer, anim->getTime(pmi->id), pmi->id);
+			anim->m_animation->calculateAnimation(buffer, anim->getTime(pmi->id), pmi->id);
 
 			anim->forceRecalculate(pmi);
 
 			for(const auto& segment : setOrientationParallel.m_segments){
 				auto& orientation = *std::static_pointer_cast<ModelAnimationSegmentSetOrientation>(segment);
-				matrix startOrient = orientation.m_targetOrientation;
-				matrix newOrient;
-				//Apply rotation to old default state
-				vm_matrix_x_matrix(&newOrient, &startOrient, &buffer[orientation.m_submodel].data.orientation);
-				orientation.m_targetOrientation = newOrient;
+				orientation.m_targetOrientation = buffer[orientation.m_submodel].data.orientation;
 			}
 
 			ik.m_targetRotation = orient;
