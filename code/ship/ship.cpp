@@ -9961,15 +9961,17 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 	// Cyborg17 - The final check here was supposed to prevent duplicate names from being on the mission log and causing chaos,
 	// but it breaks multi, so there will just be a warning on debug instead.
 	if ((ship_name == nullptr) || (ship_name_lookup(ship_name) >= 0) /*|| (ship_find_exited_ship_by_name(ship_name) >= 0)*/) {
+		// regular name, regular suffix
 		char suffix[NAME_LENGTH];
+		strcpy_s(shipp->ship_name, Ship_info[ship_type].name);
 		sprintf(suffix, NOX(" %d"), n);
 
-		// ensure complete ship name doesn't overflow the buffer
-		auto name_len = std::min(NAME_LENGTH - strlen(suffix) - 1, strlen(Ship_info[ship_type].name));
-		Assert(name_len > 0);
+		// default names shouldn't have a hashed suffix
+		end_string_at_first_hash_symbol(shipp->ship_name);
 
-		strncpy(shipp->ship_name, Ship_info[ship_type].name, name_len);
-		strcpy(shipp->ship_name + name_len, suffix);
+		// build it
+		Assert(strlen(shipp->ship_name) + strlen(suffix) < NAME_LENGTH - 1);
+		strcat_s(shipp->ship_name, suffix);
 	} else {
 		if (ship_find_exited_ship_by_name(ship_name) >= 0 && !(Game_mode & GM_MULTIPLAYER)) {
 			Warning(LOCATION, "Newly-arrived ship %s has been given the same name as a ship previously destroyed in-mission. This can cause unpredictable SEXP behavior. Correct your mission file or scripts to prevent duplicates.", ship_name);

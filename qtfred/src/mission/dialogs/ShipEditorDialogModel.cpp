@@ -523,11 +523,15 @@ namespace fso {
 						_editor->ai_update_goal_references(REF_TYPE_SHIP, old_name, str);
 						_editor->update_texture_replacements(old_name, str);
 						for (i = 0; i < Num_reinforcements; i++) {
-
 							if (!strcmp(old_name, Reinforcements[i].name)) {
 								Assert(strlen(str) < NAME_LENGTH);
 								strcpy_s(Reinforcements[i].name, str);
 							}
+						}
+
+						if (Ships[single_ship].has_display_name()) {
+							Ships[single_ship].flags.remove(Ship::Ship_Flags::Has_display_name);
+							Ships[single_ship].display_name = "";
 						}
 
 						_editor->missionChanged();
