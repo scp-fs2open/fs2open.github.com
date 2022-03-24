@@ -93,7 +93,7 @@ struct oo_packet_and_interp_tracking {
 	bool prev_packet_positionless;		// a flag that marks if the last packet as having no new position or orientation info.
 
 	float pos_time_delta;				// How much time passed between position packets, in the same format as flFrametime
-	int pos_timestamp;					// Time that FSO processes the most recent position packet
+	fix pos_timestamp;					// Time that FSO processes the most recent position packet
 	vec3d old_packet_position;			// The last packet's pos
 	vec3d new_packet_position;			// The current packet's pos
 	vec3d position_error;				// Position error that is removed over a few frames
@@ -150,7 +150,7 @@ struct oo_unsimulated_shots {
 struct oo_general_info {
 	// info that helps us figure out what is the best reference object available when sending a rollback shot.
 	// We go by what is the most recent object update packet received, and then by distance.
-	int ref_timestamp;							// what time did we receive the reference object
+	fix ref_missiontime;							// what time did we receive the reference object
 	ushort most_recent_updated_net_signature;	// what is the net signature of the reference object.
 	int most_recent_frame;					// what is the frame from the update of most recently updated object.
 
@@ -165,7 +165,7 @@ struct oo_general_info {
 	int number_of_frames;									// how many frames have we gone through, total.
 	ubyte cur_frame_index;									// the current frame index (to access the recorded info)
 
-	int timestamps[MAX_FRAMES_RECORDED];					// The timestamp for the recorded frame
+	fix timestamps[MAX_FRAMES_RECORDED];					// The timestamp for the recorded frame
 	SCP_vector<oo_ship_position_records> frame_info;		// Actually keeps track of ship physics info.  Uses net_signature as its index.
 	SCP_vector<oo_netplayer_records> player_frame_info;		// keeps track of player targets and what has been sent to each player. Uses player as the index
 
@@ -460,7 +460,7 @@ void multi_ship_record_increment_frame()
 		Oo_info.cur_frame_index = 0;
 	}
 
-	Oo_info.timestamps[Oo_info.cur_frame_index] = timestamp();
+	Oo_info.timestamps[Oo_info.cur_frame_index] = Missiontime;
 }
 
 // returns the last frame's index.
@@ -491,7 +491,7 @@ int multi_ship_record_find_frame(int client_frame, int time_elapsed)
 
 	// Now we look for the frame that the client is saying to look for. 
 	// get the timestamp we are looking for.
-	int target_timestamp = Oo_info.timestamps[frame] + time_elapsed;
+	fix target_timestamp = Oo_info.timestamps[frame] + time_elapsed; // FIXME!
 
 	for (int i = Oo_info.cur_frame_index - 2; i > -1; i--) {
 
@@ -541,10 +541,10 @@ matrix multi_ship_record_lookup_orientation(object* objp, int frame)
 }
 
 // figure out how many items we may have to create
-void multi_ship_record_add_timestamp(int pl_id, ubyte timestamp, int seq_num) {
+void multi_ship_record_add_missiontime(int pl_id, ubyte timestamp, int seq_num) {
 
 	// sanity!
-	Assertion((pl_id < MAX_PLAYERS) && (pl_id >= 0) && (seq_num >= 0), "Somehow multi_ship_record_add_timestamp() was passed a nonsense value, please report these values: pl_id %d, seq_num %d", pl_id, seq_num);
+	Assertion((pl_id < MAX_PLAYERS) && (pl_id >= 0) && (seq_num >= 0), "Somehow multi_ship_record_add_missiontime() was passed a nonsense value, please report these values: pl_id %d, seq_num %d", pl_id, seq_num);
 
 	int temp_diff = seq_num - (int)Oo_info.received_frametimes[pl_id].size() + 1;
 	// if it already has enough slots, just fill in the value, because it really should be the same as before.
@@ -819,7 +819,7 @@ void multi_ship_record_rank_seq_num(object* objp, int seq_num)
 	if (seq_num > Oo_info.most_recent_frame || Oo_info.most_recent_updated_net_signature == 0) {
 		Oo_info.most_recent_updated_net_signature = objp->net_signature;
 		Oo_info.most_recent_frame = seq_num;
-		Oo_info.ref_timestamp = timestamp();
+		Oo_info.ref_missiontime = Missiontime;
 
 	} // if this packet is from the same frame, the closer ship makes for a slightly more accurate reference point
 	else if (seq_num == Oo_info.most_recent_frame) {
@@ -828,7 +828,7 @@ void multi_ship_record_rank_seq_num(object* objp, int seq_num)
 		if ( (temp_reference_object == nullptr) || vm_vec_dist_squared(&temp_reference_object->pos, &Objects[Player->objnum].pos) > vm_vec_dist_squared(&objp->pos, &Objects[Player->objnum].pos) ) {
 			Oo_info.most_recent_updated_net_signature = objp->net_signature;
 			Oo_info.most_recent_frame = seq_num;
-			Oo_info.ref_timestamp = timestamp();
+			Oo_info.ref_missiontime = Missiontime;
 		}
 	}
 }
@@ -845,10 +845,10 @@ int multi_client_lookup_frame_idx()
 	return Oo_info.most_recent_frame;
 }
 
-// Quick lookup for the most recently received timestamp.
-int multi_client_lookup_frame_timestamp()
+// Quick lookup for the most recently received missiontime.
+fix multi_client_lookup_frame_missiontime()
 {
-	return Oo_info.ref_timestamp;
+	return Oo_info.ref_missiontime;
 }
 
 // Resets what info we have sent and interpolation info for a respawn
@@ -1796,7 +1796,7 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num)
 				adjust_interp_pos = true;
 			}
 
-			interp_data->pos_timestamp = timestamp();
+			interp_data->pos_timestamp = Missiontime;
 
 		} // if we actually received a slightly old frame...
 		else if (seq_num > interp_data->prev_pos_comparison_frame){
@@ -2543,7 +2543,7 @@ void multi_oo_process_update(ubyte *data, header *hinfo)
 	GET_DATA(timestamp);
 	GET_DATA(stop);
 	
-	multi_ship_record_add_timestamp(pl->player_id, timestamp, seq_num);
+	multi_ship_record_add_missiontime(pl->player_id, timestamp, seq_num);
 
 	while(stop == 0xff){
 		// process the data
@@ -2564,7 +2564,7 @@ void multi_init_oo_and_ship_tracker()
 	// setup initial object update info	
 	// Part 1: Get the non-repeating parts of the struct set.
 
-	Oo_info.ref_timestamp = -1;
+	Oo_info.ref_missiontime = 0;
 	Oo_info.most_recent_updated_net_signature = 0;
 	Oo_info.most_recent_frame = 0;
 	for (int i = 0; i < MAX_PLAYERS; i++) { // NOLINT
@@ -2707,7 +2707,7 @@ void multi_close_oo_and_ship_tracker()
 	}
 
 	// Part 1: Get the non-repeating parts of the struct set.
-	Oo_info.ref_timestamp = -1;
+	Oo_info.ref_missiontime = 0;
 	Oo_info.most_recent_updated_net_signature = 0;
 	Oo_info.most_recent_frame = 0;
 
@@ -3268,7 +3268,7 @@ void multi_oo_interp(object* objp)
 	} // once there are enough data points, we begin interpolating.
 	else {
 		// figure out how much time has passed
-		int temp_numerator = timestamp() - interp_data->pos_timestamp;
+		int temp_numerator = Missiontime - interp_data->pos_timestamp;
 
 		// add the ~1/2 of ping to keep the players in better sync
 		if (MULTIPLAYER_MASTER) {
@@ -3442,7 +3442,8 @@ void multi_oo_calc_interp_splines(int player_id, object* objp, matrix *new_orien
 	float delta = multi_oo_calc_pos_time_difference(player_id, net_sig_idx);
 	// if an error or invalid value, use the local timestamps instead of those received. Should be rare.
 	if (delta <= 0.0f) {
-		delta = (float)(timestamp() - Oo_info.interp[net_sig_idx].pos_timestamp) / TIMESTAMP_FREQUENCY;
+		fix pre_delta = (Missiontime - Oo_info.interp[net_sig_idx].pos_timestamp);
+		delta = f2fl(pre_delta);
 	}
 
 	Oo_info.interp[net_sig_idx].pos_time_delta = delta;
