@@ -126,14 +126,7 @@ public:
 			return false;
 
 		if (data(index, role) != value) {
-			items[srow]._checked = value == Qt::Checked;
-			if (items[srow]._checked) {
-				checkeds.insert(&items[srow].internalData());
-				checkedsConst.insert(&items[srow].internalData());
-			} else {
-				checkeds.erase(&items[srow].internalData());
-				checkedsConst.erase(&items[srow].internalData());
-			}
+			items[srow]._checked = (value == Qt::Checked);
 			dataChanged(index, index, QVector<int>() << role);
 			return true;
 		} else
@@ -148,12 +141,25 @@ public:
 			return defaultFlags;
 	}
 
-	inline const SCP_unordered_set<T*>& getCheckedData() {
-		return checkeds;
+private:
+	template<typename V>
+	inline void getCheckedData2(SCP_unordered_set<V*> &set) {
+		for (auto& it : items)
+			if (it._checked)
+				set.insert(&it.internalData());
 	}
 
-	inline const SCP_unordered_set<const T*>& getCheckedData() const {
-		return checkedsConst;
+public:
+	inline const SCP_unordered_set<T*> getCheckedData() {
+		SCP_unordered_set<T*> ret{items.size() / 2};
+		getCheckedData2(ret);
+		return ret;
+	}
+
+	inline const SCP_unordered_set<const T*> getCheckedData() const {
+		SCP_unordered_set<const T*> ret{items.size() / 2};
+		const_cast<CheckedDataListModel<T>*>(this)->getCheckedData2(ret);
+		return ret;
 	}
 
 	struct Iterator
@@ -213,10 +219,6 @@ public:
 	template<class... Args>
 	inline void initRow(Args&&... args) {
 		items.emplace_back(std::forward<Args>(args)...);
-		if (items.back()._checked) {
-			checkeds.insert(&items.back().internalData());
-			checkedsConst.insert(&items.back().internalData());
-		}
 	}
 
 	template<class... Args>
@@ -234,8 +236,6 @@ public:
 
 private:
 	SCP_vector<RowData<T>> items;
-	SCP_unordered_set<T*> checkeds;
-	SCP_unordered_set<const T*> checkedsConst;
 };
 }
 }
