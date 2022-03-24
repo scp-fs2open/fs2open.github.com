@@ -7842,10 +7842,10 @@ void send_non_homing_fired_packet(ship* shipp, int banks_or_number_of_missiles_f
 
 	// We need the time elpased, so send the last frame we got from the server and how much time has happened since then.
 	int last_received_frame = multi_client_lookup_frame_idx();
-	auto time_elapsed = (ushort)(timestamp() - multi_client_lookup_frame_timestamp());
+	fix time_elapsed = Missiontime - multi_client_lookup_frame_missiontime();
 
 	ADD_INT(last_received_frame);
-	ADD_USHORT(time_elapsed);
+	ADD_INT(time_elapsed);
 
 	// Save the transposed matrix so that we can optimize and use it twice.
 	matrix ref_ori;
