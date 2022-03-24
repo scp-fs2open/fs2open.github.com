@@ -80,52 +80,146 @@ ADE_FUNC(isMouseButtonDown,
 	return ade_set_args(L, "b", rtn);
 }
 
-static int AxisInverted_sub(Joy_axis_index joy_axis, lua_State* L)
+static int AxisActionInverted_sub(int AxisAction, int ordinal, lua_State* L)
 {
-	Assertion(joy_axis == JOY_X_AXIS || joy_axis == JOY_Y_AXIS || joy_axis == JOY_Z_AXIS, "Only the X, Y, and Z axes are supported for now.");
-
 	bool b;
 	if (!ade_get_args(L, "*|b", &b))
 		return ade_set_error(L, "b", false);
 
-	int axis = -1;
-	for (int i = 0; i < NUM_JOY_AXIS_ACTIONS; ++i)
-	{
-		if (Axis_map_to[i] == joy_axis)
-		{
-			axis = i;
-			break;
-		}
-	}
+	if ((AxisAction < JOY_HEADING_AXIS) || (AxisAction > JOY_REL_THROTTLE_AXIS))
+		return ade_set_error(L, "b", false);	// invalid IoActionId
 
-	if (axis < 0)
+	CC_bind *bind;
+	if (ordinal == 0)
+		bind = &Control_config[AxisAction].first;
+	else if (ordinal == 1)
+		bind = &Control_config[AxisAction].second;
+	else
 	{
-		LuaError(L, "Control axis %d not found!", static_cast<int>(joy_axis));
+		UNREACHABLE("Currently only primary and secondary bindings are supported!");
 		return ADE_RETURN_NIL;
 	}
 
 	if (ADE_SETTING_VAR)
-		Invert_axis[axis] = b ? 1 : 0;
+		bind->invert(b);
 
-	if (Invert_axis[axis] != 0)
+	if (bind->is_inverted())
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;
 }
 
-ADE_VIRTVAR(XAxisInverted, l_Mouse, "boolean inverted", "Gets or sets whether the X-axis is inverted", "boolean", "True/false")
+ADE_VIRTVAR_DEPRECATED(XAxisInverted, l_Mouse, "boolean inverted", "Gets or sets whether the heading axis action's primary binding is inverted", "boolean", "True/false", gameversion::version(21, 6), "Deprecated in favor of HeadingAxisInverted")
 {
-	return AxisInverted_sub(JOY_X_AXIS, L);
+	return AxisActionInverted_sub(JOY_HEADING_AXIS, 0, L);
 }
 
-ADE_VIRTVAR(YAxisInverted, l_Mouse, "boolean inverted", "Gets or sets whether the Y-axis is inverted", "boolean", "True/false")
+ADE_VIRTVAR_DEPRECATED(YAxisInverted, l_Mouse, "boolean inverted", "Gets or sets whether the pitch axis action's primary binding is inverted", "boolean", "True/false", gameversion::version(21, 6), "Deprecated in favor of PitchAxisInverted")
 {
-	return AxisInverted_sub(JOY_Y_AXIS, L);
+	return AxisActionInverted_sub(JOY_PITCH_AXIS, 0, L);
 }
 
-ADE_VIRTVAR(ZAxisInverted, l_Mouse, "boolean inverted", "Gets or sets whether the Z-axis is inverted", "boolean", "True/false")
+ADE_VIRTVAR_DEPRECATED(ZAxisInverted, l_Mouse, "boolean inverted", "Gets or sets whether the bank axis action's primary binding is inverted", "boolean", "True/false", gameversion::version(21, 6), "Deprecated in favor of BankAxisInverted")
 {
-	return AxisInverted_sub(JOY_Z_AXIS, L);
+	return AxisActionInverted_sub(JOY_BANK_AXIS, 0, L);
+}
+
+ADE_VIRTVAR(HeadingAxisPrimaryInverted, l_Mouse, "boolean inverted", "Gets or sets whether the heading axis action's primary binding is inverted", "boolean", "True/false")
+{
+	return AxisActionInverted_sub(JOY_HEADING_AXIS, 0, L);
+}
+
+ADE_VIRTVAR(HeadingAxisSecondaryInverted, l_Mouse, "boolean inverted", "Gets or sets whether the heading axis action's secondary binding is inverted", "boolean", "True/false")
+{
+	return AxisActionInverted_sub(JOY_HEADING_AXIS, 1, L);
+}
+
+ADE_VIRTVAR(PitchAxisPrimaryInverted, l_Mouse, "boolean inverted", "Gets or sets whether the pitch axis action's primary binding is inverted", "boolean", "True/false")
+{
+	return AxisActionInverted_sub(JOY_PITCH_AXIS, 0, L);
+}
+
+ADE_VIRTVAR(PitchAxisSecondaryInverted, l_Mouse, "boolean inverted", "Gets or sets whether the pitch axis action's secondary binding is inverted", "boolean", "True/false")
+{
+	return AxisActionInverted_sub(JOY_PITCH_AXIS, 1, L);
+}
+
+ADE_VIRTVAR(BankAxisPrimaryInverted, l_Mouse, "boolean inverted", "Gets or sets whether the bank axis action's primary binding is inverted", "boolean", "True/false")
+{
+	return AxisActionInverted_sub(JOY_BANK_AXIS, 0, L);
+}
+
+ADE_VIRTVAR(BankAxisSecondaryInverted, l_Mouse, "boolean inverted", "Gets or sets whether the bank axis action's secondary binding is inverted", "boolean", "True/false")
+{
+	return AxisActionInverted_sub(JOY_BANK_AXIS, 1, L);
+}
+
+ADE_VIRTVAR(AbsoluteThrottleAxisPrimaryInverted, l_Mouse, "boolean inverted", "Gets or sets whether the absolute throttle axis action's primary binding is inverted", "boolean", "True/false")
+{
+	return AxisActionInverted_sub(JOY_ABS_THROTTLE_AXIS, 0, L);
+}
+
+ADE_VIRTVAR(AbsoluteThrottleAxisSecondaryInverted, l_Mouse, "boolean inverted", "Gets or sets whether the absolute throttle axis action's secondary binding is inverted", "boolean", "True/false")
+{
+	return AxisActionInverted_sub(JOY_ABS_THROTTLE_AXIS, 1, L);
+}
+
+ADE_VIRTVAR(RelativeThrottleAxisPrimaryInverted, l_Mouse, "boolean inverted", "Gets or sets whether the relative throttle axis action's primary binding is inverted", "boolean", "True/false")
+{
+	return AxisActionInverted_sub(JOY_REL_THROTTLE_AXIS, 0, L);
+}
+
+ADE_VIRTVAR(RelativeThrottleAxisSecondaryInverted, l_Mouse, "boolean inverted", "Gets or sets whether the relative throttle axis action's secondary binding is inverted", "boolean", "True/false")
+{
+	return AxisActionInverted_sub(JOY_REL_THROTTLE_AXIS, 1, L);
+}
+
+ADE_FUNC(AxisInverted, l_Mouse, "number cid, number axis, boolean inverted", "Gets or sets the given Joystick or Mouse axis inversion state.  Mouse cid = -1, Joystick cid = [0, 3]", "boolean", "True/false")
+{
+	int joy = CID_NONE;
+	int axis = -1;
+	bool inverted = false;
+	int n = ade_get_args(L, "ii|b", &joy, &axis, &inverted);
+
+	if (n == 0)
+		return ade_set_error(L, "b", false);	// no arguments passed
+
+	if ((joy < CID_JOY0) || (CID_JOY_MAX <= joy) || (joy != CID_MOUSE))
+		return ade_set_error(L, "b", false);	// Invalid cid
+
+	if ((axis < 0) || (axis > JOY_NUM_AXES))
+		return ade_set_error(L, "b", false);	// invalid axis
+
+	// Find the binding that has the given joy.
+	// This is a bit obtuse since inversion is on the config side instead of on the joystick side
+	CC_bind *A = nullptr;
+	for (int i = JOY_HEADING_AXIS; i <= JOY_REL_THROTTLE_AXIS; ++i)
+	{
+		CC_bind B(static_cast<CID>(joy), static_cast<short>(axis), CCF_AXIS);
+		A = Control_config[i].find(B);
+		if (A != nullptr)
+			break;
+
+		// the binding we're looking for could be inverted
+		CC_bind C(static_cast<CID>(joy), static_cast<short>(axis), CCF_AXIS | CCF_INVERTED);
+		A = Control_config[i].find(C);
+		if (A != nullptr)
+			break;
+	}
+
+	// TODO Should this be an error or silent false?
+	if (A == nullptr)
+		return ade_set_error(L, "b", false);	// Axis not bound
+
+	if (n > 2)
+	{
+		A->invert(inverted);
+	}
+
+	if (A->is_inverted())
+		return ADE_RETURN_TRUE;
+	else
+		return ADE_RETURN_FALSE;
 }
 
 ADE_FUNC(setCursorImage, l_Mouse, "string filename", "Sets mouse cursor image, and allows you to lock/unlock the image. (A locked cursor may only be changed with the unlock parameter)", "boolean", "true if successful, false otherwise")

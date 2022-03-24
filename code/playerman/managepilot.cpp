@@ -88,7 +88,7 @@ void init_new_pilot(player *p, int reset)
 	if (reset) {
 		hud_set_default_hud_config(p);		// use a default hud config
 
-		control_config_reset_defaults();		// get a default keyboard config
+		control_config_use_preset(Control_config_presets[0]);		// get a default keyboard config
 		player_set_pilot_defaults(p);			// set up any player struct defaults
 
 		// set the default detail level based on tabling rather than the above method
@@ -116,6 +116,7 @@ void init_new_pilot(player *p, int reset)
 		snd_set_voice_volume(Default_voice_volume);
 
 		p->variables.clear();
+		p->containers.clear();
 	}
 
 	// unassigned squadron
@@ -529,6 +530,7 @@ void player::reset()
 	show_skip_popup = 0;
 
 	variables.clear();
+	containers.clear();
 
 	death_message = "";
 
@@ -685,6 +687,8 @@ void player::assign(const player *other)
 		variables.push_back(temp);
 	}
 
+	containers = other->containers;
+
 	death_message = other->death_message;
 
 	memcpy(&lua_ci, &other->lua_ci, sizeof(control_info));
@@ -795,8 +799,8 @@ bool operator==(const player& lhs, const player& rhs) {
 		&& lhs.insignia_texture == rhs.insignia_texture && lhs.tips == rhs.tips
 		&& lhs.shield_penalty_stamp == rhs.shield_penalty_stamp
 		&& lhs.failures_this_session == rhs.failures_this_session && lhs.show_skip_popup == rhs.show_skip_popup
-		&& lhs.variables == rhs.variables && lhs.death_message == rhs.death_message && lhs.lua_ci == rhs.lua_ci
-		&& lhs.lua_bi == rhs.lua_bi && lhs.lua_bi_full == rhs.lua_bi_full
+		&& lhs.variables == rhs.variables && lhs.containers == rhs.containers && lhs.death_message == rhs.death_message
+		&& lhs.lua_ci == rhs.lua_ci && lhs.lua_bi == rhs.lua_bi && lhs.lua_bi_full == rhs.lua_bi_full
 		&& lhs.player_was_multi == rhs.player_was_multi && !strcmp(lhs.language, rhs.language);
 }
 bool operator!=(const player& lhs, const player& rhs) {

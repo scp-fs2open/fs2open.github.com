@@ -167,7 +167,7 @@ void shipfx_do_shockwave_stuff(ship *shipp, shockwave_create_info *sci);
 // =================================================
 //          ELECTRICAL SPARKS ON DAMAGED SHIPS EFFECT STUFF
 // =================================================
-void shipfx_do_damaged_arcs_frame( ship *shipp );
+void shipfx_do_lightning_arcs_frame( ship *shipp );
 
 
 // =================================================

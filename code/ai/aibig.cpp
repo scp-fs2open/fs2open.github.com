@@ -407,7 +407,7 @@ int ai_big_maybe_follow_subsys_path(int do_dot_check)
 
 			// get world pos of eye (stored in geye)
 			ep = &(pm->view_positions[shipp->current_viewpoint]);
-			model_instance_find_world_point( &geye, &ep->pnt, pm, pmi, 0, &Pl_objp->orient, &Pl_objp->pos );
+			model_instance_local_to_global_point( &geye, &ep->pnt, pm, pmi, 0, &Pl_objp->orient, &Pl_objp->pos );
 			
 			// get world pos of subsystem
 			vm_vec_unrotate(&gsubpos, &aip->targeted_subsys->system_info->pnt, &En_objp->orient);
@@ -549,7 +549,7 @@ bool ai_new_maybe_reposition_attack_subsys() {
 
 	// get world pos of eye (stored in geye)
 	ep = &(pm->view_positions[Ships[Pl_objp->instance].current_viewpoint]);
-	model_find_world_point(&geye, &ep->pnt, pm->id, 0, &Pl_objp->orient, &Pl_objp->pos);
+	model_local_to_global_point(&geye, &ep->pnt, pm->id, 0, &Pl_objp->orient, &Pl_objp->pos);
 
 	// get world pos of subsystem
 	vm_vec_unrotate(&gsubpos, &aip->targeted_subsys->system_info->pnt, &En_objp->orient);
@@ -781,10 +781,11 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 		float optimal_range = 0.0f;
 		ship_weapon* weapons = &Ships[Pl_objp->instance].weapons;
 		weapon_info* wip = nullptr;
+		ship* shipp = &Ships[Pl_objp->instance];
 
-		if (weapons->num_primary_banks >= 1 && weapons->current_primary_bank >= 0) {
+		if (weapons->num_primary_banks >= 1 && weapons->current_primary_bank >= 0 && !shipp->flags[Ship::Ship_Flags::Primaries_locked]) {
 			wip = &Weapon_info[weapons->primary_bank_weapons[weapons->current_primary_bank]];
-		} else if (weapons->num_secondary_banks >= 1 && weapons->current_secondary_bank >= 0) {
+		} else if (weapons->num_secondary_banks >= 1 && weapons->current_secondary_bank >= 0 && !shipp->flags[Ship::Ship_Flags::Secondaries_locked]) {
 			wip = &Weapon_info[weapons->secondary_bank_weapons[weapons->current_secondary_bank]];
 		}
 
@@ -798,7 +799,6 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 			if (dist_to_enemy > (optimal_range > 0.0f ? optimal_range : (weapon_travel_dist-20))) {
 				accelerate_ship(aip, 1.0f);
 				
-				ship	*shipp = &Ships[Pl_objp->instance];
 				if ((aip->ai_flags[AI::AI_Flags::Free_afterburner_use] || aip->ai_profile_flags[AI::Profile_Flags::Free_afterburner_use]) && !(shipp->flags[Ship::Ship_Flags::Afterburner_locked]) && (dot_to_enemy > 0.75f)) {
 					if (ai_maybe_fire_afterburner(Pl_objp, aip)) {
 						afterburners_start(Pl_objp);
@@ -840,7 +840,6 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 			} else {
 				accelerate_ship(aip, accel);
 
-				ship	*shipp = &Ships[Pl_objp->instance];
 				if ((aip->ai_flags[AI::AI_Flags::Free_afterburner_use] || aip->ai_profile_flags[AI::Profile_Flags::Free_afterburner_use]) && !(shipp->flags[Ship::Ship_Flags::Afterburner_locked]) && (accel > 0.95f)) {
 					if (ai_maybe_fire_afterburner(Pl_objp, aip)) {
 						afterburners_start(Pl_objp);

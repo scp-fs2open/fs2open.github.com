@@ -247,7 +247,7 @@ static void mc_check_sphereline_face( int nv, vec3d ** verts, vec3d * plane_pnt,
 			Mc->hit_point = hit_point;
 			Mc->hit_normal = *plane_norm;
 			Mc->hit_submodel = Mc_submodel;			
-			Mc->edge_hit = 0;
+			Mc->edge_hit = false;
 
 			if ( uvl_list )	{
 				Mc->hit_u = u;
@@ -315,7 +315,7 @@ static void mc_check_sphereline_face( int nv, vec3d ** verts, vec3d * plane_pnt,
 				Mc->hit_dist = sphere_time;
 				Mc->hit_point = hit_point;
 				Mc->hit_submodel = Mc_submodel;
-				Mc->edge_hit = 1;
+				Mc->edge_hit = true;
 				if ( ntmap < 0 ) {
 					Mc->hit_bitmap = -1;
 				} else {
@@ -468,7 +468,7 @@ void model_collide_tmappoly(ubyte * p)
 	if ( (!(Mc->flags & MC_CHECK_INVISIBLE_FACES)) && (Mc_pm->maps[tmap_num].textures[TM_BASE_TYPE].GetTexture() < 0) )	{
 		// Don't check invisible polygons.
 		//SUSHI: Unless $collide_invisible is set.
-		if (!(Mc_pm->submodel[Mc_submodel].collide_invisible))
+		if (!(Mc_pm->submodel[Mc_submodel].flags[Model::Submodel_flags::Collide_invisible]))
 			return;
 	}
 
@@ -588,7 +588,7 @@ void model_collide_bsp_poly(bsp_collision_tree *tree, int leaf_index)
 			if ( (!(Mc->flags & MC_CHECK_INVISIBLE_FACES)) && (Mc_pm->maps[leaf->tmap_num].textures[TM_BASE_TYPE].GetTexture() < 0) )	{
 				// Don't check invisible polygons.
 				//SUSHI: Unless $collide_invisible is set.
-				if (!(Mc_pm->submodel[Mc_submodel].collide_invisible))
+				if (!(Mc_pm->submodel[Mc_submodel].flags[Model::Submodel_flags::Collide_invisible]))
 					return;
 			}
 		} else {
@@ -1067,8 +1067,8 @@ void mc_check_subobj( int mn )
 	if ( (mn < 0) || (mn>=Mc_pm->n_models) ) return;
 	
 	sm = &Mc_pm->submodel[mn];
-	if (sm->no_collisions) return; // don't do collisions
-	if (sm->nocollide_this_only) goto NoHit; // Don't collide for this model, but keep checking others
+	if (sm->flags[Model::Submodel_flags::No_collisions]) return; // don't do collisions
+	if (sm->flags[Model::Submodel_flags::Nocollide_this_only]) goto NoHit; // Don't collide for this model, but keep checking others
 
 	// Rotate the world check points into the current subobject's 
 	// frame of reference.
@@ -1189,7 +1189,7 @@ NoHit:
 
 		// Don't check it or its children if it is destroyed
 		// or if it's set to no collision
-		if ( !blown_off && !collision_checked && !csm->no_collisions )	{
+		if ( !blown_off && !collision_checked && !csm->flags[Model::Submodel_flags::No_collisions] )	{
 			vm_vec_unrotate(&Mc_base, &csm->offset, &saved_orient);
 			vm_vec_add2(&Mc_base, &saved_base);
 
@@ -1217,7 +1217,7 @@ int model_collide(mc_info *mc_info_obj)
 	Mc->num_hits = 0;				// How many collisions were found
 	Mc->shield_hit_tri = -1;	// Assume we won't hit any shield polygons
 	Mc->hit_bitmap = -1;
-	Mc->edge_hit = 0;
+	Mc->edge_hit = false;
 
 	if ( (Mc->flags & MC_CHECK_SHIELD) && (Mc->flags & MC_CHECK_MODEL) )	{
 		Error( LOCATION, "Checking both shield and model!\n" );
@@ -1323,9 +1323,9 @@ int model_collide(mc_info *mc_info_obj)
 			vm_vec_add2(&Mc->hit_point_world, Mc->pos);
 		} else {
 			if ( Mc_pmi ) {
-				model_instance_find_world_point(&Mc->hit_point_world, &Mc->hit_point, Mc_pm, Mc_pmi, Mc->hit_submodel, Mc->orient, Mc->pos);
+				model_instance_local_to_global_point(&Mc->hit_point_world, &Mc->hit_point, Mc_pm, Mc_pmi, Mc->hit_submodel, Mc->orient, Mc->pos);
 			} else {
-				model_find_world_point(&Mc->hit_point_world, &Mc->hit_point, Mc_pm, Mc->hit_submodel, Mc->orient, Mc->pos);
+				model_local_to_global_point(&Mc->hit_point_world, &Mc->hit_point, Mc_pm, Mc->hit_submodel, Mc->orient, Mc->pos);
 			}
 		}
 	}

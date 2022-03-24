@@ -66,6 +66,8 @@ TARGET_LINK_LIBRARIES(code PUBLIC jansson)
 
 target_link_libraries(code PUBLIC variant)
 
+target_link_libraries(code PUBLIC any)
+
 # Headers for standalone "gui" on UNIX
 IF(UNIX)
 	TARGET_LINK_LIBRARIES(code PUBLIC ${MONGOOSE_LIBS})

@@ -1042,10 +1042,18 @@ bool message_filename_is_generic(char *filename)
 	return false;
 }
 
+bool message_filename_has_fs1_wingman_prefix(const char *filename)
+{
+	Assert(filename != nullptr);
+	return (filename[0] >= '1' && filename[0] <= '6'
+		&& filename[1] == '_'
+		&& filename[2] != '\0');
+}
+
 // Play wave file associated with message
 // input: m		=>		pointer to message description
 //
-// note: changes Messave_wave_duration, Playing_messages[].wave, and Message_waves[].num
+// note: changes Message_wave_duration, Playing_messages[].wave, and Message_waves[].num
 bool message_play_wave( message_q *q )
 {
 	int index;
@@ -1063,24 +1071,16 @@ bool message_play_wave( message_q *q )
 			return false;
 
 		// if we need to bash the wave name because of "conversion" to terran command, do it here
-		if ( q->flags & MQF_CONVERT_TO_COMMAND ) {
-			char *p, new_filename[MAX_FILENAME_LEN];
+		// Look for "[1-6]_" at the front of the message.  If found, then convert to TC_*
+		if ( q->flags & MQF_CONVERT_TO_COMMAND && message_filename_has_fs1_wingman_prefix(filename) ) {
+			char temp[MAX_FILENAME_LEN];
 
 			Message_waves[index].num = sound_load_id::invalid(); // forces us to reload the message
 
-			// bash the filename here. Look for "[1-6]_" at the front of the message.  If found, then
-			// convert to TC_*
-			p = strchr(filename, '_' );
-			if ( p == NULL ) {
-				mprintf(("Cannot convert %s to terran command wave -- find Sandeep or Allender\n", Message_waves[index].name));
-				return false;
-			}
-
 			// prepend the command name, and then the rest of the filename.
-			p++;
-			strcpy_s( new_filename, COMMAND_WAVE_PREFIX );
-			strcat_s( new_filename, p );
-			strcpy_s( filename, new_filename );
+			strcpy_s( temp, COMMAND_WAVE_PREFIX );
+			strcat_s( temp, &filename[2] );
+			strcpy_s( filename, temp );
 		}
 
 		// load the sound file into memory
@@ -1194,7 +1194,13 @@ void message_play_anim( message_q *q )
 		// so the correct head plays.
 		if ( q->flags & MQF_CONVERT_TO_COMMAND ) {
 			persona_index = The_mission.command_persona;
-			strcpy_s( ani_name, COMMAND_HEAD_PREFIX );
+
+			// if this is a FS1 message, swap the head
+			if (m->wave_info.index >= 0) {
+				if (message_filename_has_fs1_wingman_prefix(Message_waves[m->wave_info.index].name)) {
+					strcpy_s(ani_name, COMMAND_HEAD_PREFIX);
+				}
+			}
 		}
 
 		// Goober5000 - guard against negative array indexing; this way, if no persona was
@@ -1705,17 +1711,17 @@ void message_queue_message( int message_num, int priority, int timing, const cha
 	if (sexp_replace_variable_names_with_values(temp_buf, MESSAGE_LENGTH))
 		MessageQ[i].special_message = vm_strdup(temp_buf);
 
-	// SPECIAL HACK -- if the who_from is terran command, and there is a wingman persona attached
-	// to this message, then set a bit to tell the wave/anim playing code to play the command version
-	// of the wave and head
 	MessageQ[i].flags = 0;
-	if ( !stricmp(who_from, The_mission.command_sender) && (m_persona != -1) && (Personas[m_persona].flags & PERSONA_FLAG_WINGMAN) ) {
-		MessageQ[i].flags |= MQF_CONVERT_TO_COMMAND;
-		MessageQ[i].source = HUD_SOURCE_TERRAN_CMD;
-	}
 
+	// wingman personas have their alive status checked
 	if ( (m_persona != -1) && (Personas[m_persona].flags & PERSONA_FLAG_WINGMAN) ) {
-		if ( !strstr(who_from, ".wav") ) {
+		// SPECIAL HACK -- if the who_from is terran command, and there is a wingman persona attached
+		// to this message, then set a bit to tell the wave/anim playing code to play the command version
+		// of the wave and head
+		if ( !stricmp(who_from, The_mission.command_sender) ) {
+			MessageQ[i].flags |= MQF_CONVERT_TO_COMMAND;
+			MessageQ[i].source = HUD_SOURCE_TERRAN_CMD;
+		} else {
 			MessageQ[i].flags |= MQF_CHECK_ALIVE;
 		}
 	}

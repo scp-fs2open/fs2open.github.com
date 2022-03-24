@@ -862,6 +862,10 @@ void process_packet_normal(ubyte* data, header *header_info)
 			process_non_homing_fired_packet(data, header_info);
 			break;
 
+		case ANIMATION_TRIGGERED:
+			process_animation_triggered_packet(data, header_info);
+			break;
+
 		case COUNTERMEASURE_NEW:
 			process_NEW_countermeasure_fired_packet(data, header_info);
 			break;
@@ -1489,9 +1493,6 @@ void standalone_main_init()
 	multi_xfer_reset();
 	multi_xfer_force_dir(CF_TYPE_MULTI_CACHE);
 
-	// reset timer
-	timestamp_reset();
-
 	// setup a blank pilot (this is a standalone usage only!)
 	Pilot.load_player(NULL);
 
@@ -1552,6 +1553,7 @@ void standalone_main_init()
 	}
 
 	// clear out various things
+	animation::ModelAnimationParseHelper::parseTables();
 	psnet_flush();
 	game_flush();
 	ship_init();

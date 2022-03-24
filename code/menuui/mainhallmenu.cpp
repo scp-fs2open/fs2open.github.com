@@ -14,6 +14,7 @@
 #include "anim/animplay.h"
 #include "anim/packunpack.h"
 #include "cmdline/cmdline.h"
+#include "debugconsole/console.h"
 #include "gamehelp/contexthelp.h"
 #include "gamesequence/gamesequence.h"
 #include "gamesnd/eventmusic.h"
@@ -258,7 +259,7 @@ static int Main_hall_paused = 0;
 #define MAIN_HALL_NOTIFY_TIME	3500
 
 // timestamp for the notification messages
-int Main_hall_notify_stamp = -1;
+UI_TIMESTAMP Main_hall_notify_stamp;
 
 // text to display as the current notification message
 char Main_hall_notify_text[300]="";
@@ -406,6 +407,49 @@ void main_hall_campaign_cheat()
 	if (ret != nullptr) {
 		mission_campaign_jump_to_mission(ret);
 	}
+}
+
+DCF(mainhall, "Temporarily sets the player to be on any main hall.  Can be used in the main hall screen.")
+{
+	if (dc_optional_string_either("help", "--help"))
+	{
+		dc_printf("Usage: mainhall [index or name]\n");
+		dc_printf("       mainhall status | ?\n");
+		dc_printf("       mainhall --status | --?\n");
+		dc_printf("[index or name] -- optional main hall identifier; if not supplied, defaults to the first main hall\n");
+		return;
+	}
+
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?"))
+	{
+		if (Main_hall_inited && Main_hall)
+		{
+			auto quote = can_construe_as_integer(Main_hall->name.c_str()) ? "" : "'";
+			dc_printf("Player is on main hall %s%s%s\n", quote, Main_hall->name.c_str(), quote);
+		}
+		else
+			dc_printf("Main hall not currently initialized!\n");
+		return;
+	}
+
+	SCP_string name;
+	dc_maybe_stuff_string(name);
+
+	if (!Main_hall_inited)
+	{
+		auto quote = can_construe_as_integer(name.c_str()) ? "" : "'";
+		dc_printf("Main hall not currently initialized.  Setting player select override main hall to %s%s%s.\n", quote, name.empty() ? "0" : name.c_str(), quote);
+
+		extern SCP_string Player_select_force_main_hall;
+		Player_select_force_main_hall = name;
+		return;
+	}
+
+	main_hall_close();
+	main_hall_init(name);
+
+	auto quote = can_construe_as_integer(Main_hall->name.c_str()) ? "" : "'";
+	dc_printf("Player is now on main hall %s%s%s\n", quote, Main_hall->name.c_str(), quote);
 }
 
 // -------------------------------------------------------------------------------------------------------------------
@@ -566,8 +610,11 @@ void main_hall_init(const SCP_string &main_hall_name)
 				Main_hall_misc_anim.at(idx).direction |= GENERIC_ANIM_DIRECTION_NOLOOP;
 		}
 
-		// null out the delay timestamps
-		Main_hall->misc_anim_delay.at(idx).at(0) = -1;
+		//If we have a defined initial delay for this misc anim, use it
+		if (Main_hall->misc_anim_initial_delay.at(idx) != -1)
+			Main_hall->misc_anim_delay.at(idx).at(0) = timestamp(Main_hall->misc_anim_initial_delay.at(idx));
+		else
+			Main_hall->misc_anim_delay.at(idx).at(0) = -1;
 
 		// start paused
 		Main_hall->misc_anim_paused.at(idx) = true;
@@ -623,7 +670,7 @@ void main_hall_init(const SCP_string &main_hall_name)
 	main_hall_start_music();
 
 	// initialize the main hall notify text
-	Main_hall_notify_stamp = 1;
+	Main_hall_notify_stamp = UI_TIMESTAMP::immediate();
 
 	// initialize the random intercom sound stuff
 	Main_hall_next_intercom_sound = 0;
@@ -1033,6 +1080,9 @@ void main_hall_do(float frametime)
 				break;
 		}
 	}
+
+	// Display a popup if playermenu loaded a player file with a different version than expected
+	player_tips_controls();
 
 	// maybe run the player tips popup
 	player_tips_popup();
@@ -1613,7 +1663,7 @@ void main_hall_handle_random_intercom_sounds()
 void main_hall_set_notify_string(const char *str)
 {
 	strcpy_s(Main_hall_notify_text,str);
-	Main_hall_notify_stamp = timestamp(MAIN_HALL_NOTIFY_TIME);
+	Main_hall_notify_stamp = ui_timestamp(MAIN_HALL_NOTIFY_TIME);
 }
 
 /**
@@ -1622,11 +1672,11 @@ void main_hall_set_notify_string(const char *str)
 void main_hall_notify_do()
 {
 	// check to see if we should try and do something
-	if (Main_hall_notify_stamp != -1) {
+	if (Main_hall_notify_stamp.isValid()) {
 		// if the text time has expired
-		if (timestamp_elapsed(Main_hall_notify_stamp)) {
-			strcpy_s(Main_hall_notify_text,"");
-			Main_hall_notify_stamp = -1;
+		if (ui_timestamp_elapsed(Main_hall_notify_stamp)) {
+			strcpy_s(Main_hall_notify_text, "");
+			Main_hall_notify_stamp = UI_TIMESTAMP::invalid();
 		} else {
 			int w,h;
 
@@ -1839,7 +1889,7 @@ main_hall_defines* main_hall_get_pointer(const SCP_string &name_to_find)
 	unsigned int i;
 
 	for (i = 0; i < Main_hall_defines.size(); i++) {
-		if (Main_hall_defines.at(i).at(0).name == name_to_find) {
+		if (!stricmp(Main_hall_defines.at(i).at(0).name.c_str(), name_to_find.c_str())) {
 			return &Main_hall_defines.at(i).at(main_hall_get_resolution_index(i));
 		}
 	}
@@ -1859,7 +1909,7 @@ int main_hall_get_index(const SCP_string &name_to_find)
 	unsigned int i;
 
 	for (i = 0; i < Main_hall_defines.size(); i++) {
-		if (Main_hall_defines.at(i).at(0).name == name_to_find) {
+		if (!stricmp(Main_hall_defines.at(i).at(0).name.c_str(), name_to_find.c_str())) {
 			return i;
 		}
 	}
@@ -1964,6 +2014,7 @@ void misc_anim_init(main_hall_defines &m, bool first_time, int base_num)
 		m.misc_anim_special_sounds.clear();
 		m.misc_anim_special_trigger.clear();
 		m.misc_anim_sound_flag.clear();
+		m.misc_anim_initial_delay.clear();
 	}
 
 	for (int idx = base_num; idx < m.num_misc_animations; idx++) {
@@ -1978,6 +2029,9 @@ void misc_anim_init(main_hall_defines &m, bool first_time, int base_num)
 		m.misc_anim_delay.back().push_back(-1);
 		m.misc_anim_delay.back().push_back(0);
 		m.misc_anim_delay.back().push_back(0);
+
+		// set the default initial delay to -1 
+		m.misc_anim_initial_delay.push_back(-1);
 
 		// misc_anim_paused
 		m.misc_anim_paused.push_back(1); // default is paused
@@ -2365,7 +2419,11 @@ void parse_one_main_hall(bool replace, int num_resolutions, int &hall_idx, int &
 		for (int idx = base_num; idx < m->num_misc_animations; idx++) {
 			// anim delay
 			required_string("+Misc anim delay:");
-			stuff_int(&m->misc_anim_delay.at(idx).at(0));
+			stuff_int(&m->misc_anim_initial_delay.at(idx));
+
+			// We set the first value here to -1; if the first delay parameter is set to something that isn't
+			// -1, we will replace it with a proper timestamp while loading up the mainhall for presentation.
+			m->misc_anim_delay.at(idx).at(0) = -1;
 			stuff_int(&m->misc_anim_delay.at(idx).at(1));
 			stuff_int(&m->misc_anim_delay.at(idx).at(2));
 		}

@@ -99,6 +99,9 @@ class model_render_params
 
 	float Outline_thickness = -1.0f;
 
+	bool Use_alpha_mult;
+	float Alpha_mult;
+
 	model_render_params(const model_render_params&) = delete;
 	model_render_params& operator=(const model_render_params&) = delete;
 public:
@@ -125,10 +128,12 @@ public:
 	void set_thruster_info(mst_info &info);
 	void set_normal_alpha(float min, float max);
 	void set_outline_thickness(float thick);
+	void set_alpha_mult(float alpha);
 
 	bool is_clip_plane_set();
 	bool is_team_color_set();
 	bool is_normal_alpha_set();
+	bool is_alpha_mult_set();
 	bool uses_thick_outlines();
 
 	uint get_model_flags();
@@ -153,6 +158,7 @@ public:
 	float get_normal_alpha_min();
 	float get_normal_alpha_max();
 	float get_outline_thickness();
+	float get_alpha_mult();
 };
 
 struct arc_effect
@@ -295,7 +301,9 @@ public:
 	void render_all(gr_zbuffer_type depth_mode = ZBUFFER_TYPE_DEFAULT);
 	void reset();
 };
-
+void model_render_only_glowpoint_lights(model_render_params* interp, int model_num, int model_instance_num, matrix* orient, vec3d* pos);
+float model_render_get_point_activation(glow_point_bank* bank, glow_point_bank_override* gpo);
+void model_render_glowpoint_add_light(int point_num, vec3d *pos, matrix *orient, glow_point_bank *bank, glow_point_bank_override *gpo, polymodel *pm, polymodel_instance *pmi, ship* shipp);
 void model_render_immediate(model_render_params* render_info, int model_num, matrix* orient, vec3d* pos, int render = MODEL_RENDER_ALL, bool sort = true);
 void model_render_immediate(model_render_params* render_info, int model_num, int model_instance_num, matrix* orient, vec3d* pos, int render = MODEL_RENDER_ALL, bool sort = true);
 void model_render_queue(model_render_params* render_info, model_draw_list* scene, int model_num, matrix* orient, vec3d* pos);
@@ -308,6 +316,8 @@ bool model_render_check_detail_box(vec3d *view_pos, polymodel *pm, int submodel_
 void model_render_arc(vec3d *v1, vec3d *v2, color *primary, color *secondary, float arc_width);
 void model_render_insignias(insignia_draw_data *insignia);
 void model_render_set_wireframe_color(color* clr);
+
+float model_render_get_diameter_clamped_to_min_pixel_size(const vec3d* pos, float diameter, float min_pixel_size);
 
 void model_render_determine_color(color *clr, float alpha, gr_alpha_blend blend_mode, bool no_texturing, bool desaturate);
 gr_alpha_blend model_render_determine_blend_mode(int base_bitmap, bool blending);

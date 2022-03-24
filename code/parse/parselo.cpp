@@ -2449,13 +2449,15 @@ int stuff_float(float *f, bool optional)
 		Mp = str_start;
 
 	if (success)
+	{
 		retval = 2;
+		diag_printf("Stuffed float: %f\n", *f);
+	}
 	else if (optional)
 		retval = comma ? 1 : 0;
 	else
 		skip_token();
 
-	diag_printf("Stuffed float: %f\n", *f);
 	return retval;
 }
 
@@ -3060,6 +3062,15 @@ void stuff_vec3d(vec3d *vp)
 	stuff_float(&vp->xyz.z);
 }
 
+void stuff_angles_deg_phb(angles* ap) {
+	stuff_float(&ap->p);
+	stuff_float(&ap->h);
+	stuff_float(&ap->b);
+	ap->p = fl_radians(ap->p);
+	ap->h = fl_radians(ap->h);
+	ap->b = fl_radians(ap->b);
+}
+
 void stuff_parenthesized_vec3d(vec3d *vp)
 {
 	ignore_white_space();
@@ -3272,7 +3283,7 @@ char *split_str_once(char *src, int max_pixel_w)
 
 	len = (int)strlen(src);
 	for (i=0; i<len; i++) {
-		gr_get_string_size(&w, nullptr, src, i);
+		gr_get_string_size(&w, nullptr, src, i + 1);
 
 		if (w <= max_pixel_w) {
 			if (src[i] == '\n') {  // reached natural end of line
@@ -4219,6 +4230,39 @@ void parse_int_list(int *ilist, size_t size)
 	{
 		stuff_int(&ilist[i]);
 	}
+}
+
+void parse_string_map(SCP_map<SCP_string, SCP_string>& outMap, const char* end_marker, const char* entry_prefix)
+{
+	while(optional_string(entry_prefix)) 
+	{
+		SCP_string temp;
+		stuff_string(temp, F_RAW);
+		
+		drop_white_space(temp);
+		
+		if (temp.empty()) 
+		{
+			Warning(LOCATION, "Empty entry in string map.");
+			continue;
+		}
+		
+		size_t sep = temp.find_first_of(' ');
+
+		SCP_string key = temp.substr(0, sep);
+		SCP_string value = temp.substr(sep+1);
+	
+		//if the modder didn't add a value, make the value an empty string. (Without this, value would instead be an identical string to key)
+		if (sep == SCP_string::npos)
+			value = "";
+
+		
+		drop_white_space(key);
+		drop_white_space(value);
+
+		outMap.emplace(key, value);
+	}
+	required_string(end_marker);
 }
 
 // parse a modular table of type "name_check" and parse it using the specified function callback

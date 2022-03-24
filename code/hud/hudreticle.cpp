@@ -544,7 +544,7 @@ void HudGaugeThrottle::render(float  /*frametime*/)
 	percent_aburn_max = 0.0f;
 	if ( percent_max > 1 ) {
 		percent_max = 1.0f;
-		percent_aburn_max = (current_speed - max_speed) / (sip->afterburner_max_vel.xyz.z - max_speed);
+		percent_aburn_max = (current_speed - max_speed) / (Player_obj->phys_info.afterburner_max_vel.xyz.z - max_speed);
 		if ( percent_aburn_max > 1.0f ) {
 			percent_aburn_max = 1.0f;
 		}

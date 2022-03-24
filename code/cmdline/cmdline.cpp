@@ -220,6 +220,8 @@ Flag exe_params[] =
 	{ "-set_cpu_affinity",	"Sets processor affinity to config value",	true,	0,									EASY_DEFAULT,					"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-set_cpu_affinity", },
 	{ "-nograb",			"Disables mouse grabbing",					true,	0,									EASY_DEFAULT,					"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nograb", },
 	{ "-noshadercache",		"Disables the shader cache",				true,	0,									EASY_DEFAULT,					"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-noshadercache", },
+	{ "-prefer_ipv4",		"Prefer IPv4 DNS lookups",					true,	0,									EASY_DEFAULT,					"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-prefer_ipv4", },
+	{ "-prefer_ipv6",		"Prefer IPv6 DNS lookups",					true,	0,									EASY_DEFAULT,					"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-prefer_ipv6", },
 #ifdef WIN32
 	{ "-fix_registry",	"Use a different registry path",				true,	0,									EASY_DEFAULT,					"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-fix_registry", },
 #endif
@@ -251,6 +253,8 @@ Flag exe_params[] =
 	{ "-json_profiling",	"Generate JSON profiling output",			true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-json_profiling", },
 	{ "-debug_window",		"Enable the debug window",					true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-debug_window", },
 	{ "-gr_debug",		"Output graphics debug information",			true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-gr_debug", },
+	{ "-stdout_log",		"Output log file to stdout",				true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-stdout_log", },
+	{ "-slow_frames_ok",	"Don't adjust timestamps for slow frames",	true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-slow_frames_ok", },
 };
 // clang-format on
 
@@ -375,21 +379,23 @@ int Cmdline_rearm_timer = 0;
 int Cmdline_targetinfo = 0;
 
 // Gameplay related
-cmdline_parm use_3dwarp("-3dwarp", NULL, AT_NONE);			// Cmdline_3dwarp
-cmdline_parm ship_choice_3d_arg("-ship_choice_3d", NULL, AT_NONE);	// Cmdline_ship_choice_3d
-cmdline_parm weapon_choice_3d_arg("-weapon_choice_3d", NULL, AT_NONE);	// Cmdline_weapon_choice_3d
-cmdline_parm use_warp_flash("-warp_flash", NULL, AT_NONE);	// Cmdline_warp_flash
-cmdline_parm allow_autpilot_interrupt("-no_ap_interrupt", NULL, AT_NONE);
-cmdline_parm stretch_menu("-stretch_menu", NULL, AT_NONE);	// Cmdline_stretch_menu
+cmdline_parm use_3dwarp("-3dwarp", nullptr, AT_NONE);			// Is now Fireball_use_3d_warp
+cmdline_parm ship_choice_3d_arg("-ship_choice_3d", nullptr, AT_NONE);	// Cmdline_ship_choice_3d
+cmdline_parm weapon_choice_3d_arg("-weapon_choice_3d", nullptr, AT_NONE);	// Cmdline_weapon_choice_3d
+cmdline_parm use_warp_flash("-warp_flash", nullptr, AT_NONE);	// Cmdline_warp_flash
+cmdline_parm allow_autpilot_interrupt("-no_ap_interrupt", nullptr, AT_NONE);
+cmdline_parm stretch_menu("-stretch_menu", nullptr, AT_NONE);	// Cmdline_stretch_menu
 cmdline_parm no_screenshake("-no_screenshake", nullptr, AT_NONE); // Cmdline_no_screenshake
+cmdline_parm deadzone("-deadzone", 
+"Sets the joystick deadzone. Integer value from 0 to 100 as a percentage of the joystick's range (100% would make the stick do nothing). Disables deadzone slider in the in-game Options menu.", AT_INT); //Cmdline_deadzone
 
-int Cmdline_3dwarp = 0;
 int Cmdline_ship_choice_3d = 0;
 int Cmdline_weapon_choice_3d = 0;
 int Cmdline_warp_flash = 0;
 int Cmdline_autopilot_interruptable = 1;
 int Cmdline_stretch_menu = 0;
 int Cmdline_no_screenshake = 0;
+int Cmdline_deadzone = -1;
 
 // Audio related
 cmdline_parm voice_recognition_arg("-voicer", NULL, AT_NONE);	// Cmdline_voice_recognition
@@ -436,6 +442,8 @@ cmdline_parm no_geo_sdr_effects("-no_geo_effects", NULL, AT_NONE);
 cmdline_parm set_cpu_affinity("-set_cpu_affinity", NULL, AT_NONE);
 cmdline_parm nograb_arg("-nograb", NULL, AT_NONE);
 cmdline_parm noshadercache_arg("-noshadercache", NULL, AT_NONE);
+cmdline_parm prefer_ipv4_arg("-prefer_ipv4", nullptr, AT_NONE);
+cmdline_parm prefer_ipv6_arg("-prefer_ipv6", nullptr, AT_NONE);
 #ifdef WIN32
 cmdline_parm fix_registry("-fix_registry", NULL, AT_NONE);
 #endif
@@ -454,6 +462,8 @@ bool Cmdline_no_geo_sdr_effects = false;
 bool Cmdline_set_cpu_affinity = false;
 bool Cmdline_nograb = false;
 bool Cmdline_noshadercache = false;
+bool Cmdline_prefer_ipv4 = false;
+bool Cmdline_prefer_ipv6 = false;
 #ifdef WIN32
 bool Cmdline_alternate_registry_path = false;
 #endif
@@ -487,6 +497,7 @@ cmdline_parm frame_profile_arg("-profile_frame_time", NULL, AT_NONE); //Cmdline_
 cmdline_parm debug_window_arg("-debug_window", NULL, AT_NONE);	// Cmdline_debug_window
 cmdline_parm graphics_debug_output_arg("-gr_debug", nullptr, AT_NONE); // Cmdline_graphics_debug_output
 cmdline_parm log_to_stdout_arg("-stdout_log", nullptr, AT_NONE); // Cmdline_log_to_stdout
+cmdline_parm slow_frames_ok_arg("-slow_frames_ok", nullptr, AT_NONE);	// Cmdline_slow_frames_ok
 
 
 char *Cmdline_start_mission = NULL;
@@ -519,6 +530,7 @@ bool Cmdline_show_video_info = false;
 bool Cmdline_debug_window = false;
 bool Cmdline_graphics_debug_output = false;
 bool Cmdline_log_to_stdout = false;
+bool Cmdline_slow_frames_ok = false;
 
 // Other
 cmdline_parm get_flags_arg(GET_FLAGS_STRING, "Output the launcher flags file", AT_STRING);
@@ -1319,6 +1331,7 @@ static json_t* json_get_v1() {
 		json_array_append_new(caps_array, json_string("No D3D"));
 		json_array_append_new(caps_array, json_string("New Sound"));
 		json_array_append_new(caps_array, json_string("SDL"));
+		json_array_append_new(caps_array, json_string("Multijoy"));
 
 		json_object_set_new(root, "caps", caps_array);
 	}
@@ -1410,24 +1423,7 @@ static json_t* json_get_v1() {
 		json_object_set_new(root, "openal", openal_obj);
 	}
 	{
-		auto joystick_array = json_array();
-
-		auto joysticks = io::joystick::getJoystickInformations();
-		for (auto& info : joysticks) {
-			auto joystick_obj = json_object();
-
-			json_object_set_new(joystick_obj, "name", json_string(info.name.c_str()));
-			json_object_set_new(joystick_obj, "guid", json_string(info.guid.c_str()));
-
-			json_object_set_new(joystick_obj, "num_axes", json_integer(info.num_axes));
-			json_object_set_new(joystick_obj, "num_balls", json_integer(info.num_balls));
-			json_object_set_new(joystick_obj, "num_buttons", json_integer(info.num_buttons));
-			json_object_set_new(joystick_obj, "num_hats", json_integer(info.num_hats));
-
-			json_object_set_new(joystick_obj, "is_haptic", json_boolean(info.is_haptic));
-
-			json_array_append_new(joystick_array, joystick_obj);
-		}
+		auto joystick_array = io::joystick::getJsonArray();
 
 		json_object_set_new(root, "joysticks", joystick_array);
 	}
@@ -1842,6 +1838,10 @@ bool SetCmdlineParams()
 		Cmdline_no_screenshake = 1;
 	}
 	
+	if ( deadzone.found() ) {
+		Cmdline_deadzone = deadzone.get_int();
+	}
+
 	if ( stretch_menu.found() )	{
 		Cmdline_stretch_menu = 1;
 	}
@@ -2158,6 +2158,10 @@ bool SetCmdlineParams()
 		Cmdline_log_to_stdout = true;
 	}
 
+	if (slow_frames_ok_arg.found()) {
+		Cmdline_slow_frames_ok = true;
+	}
+
 	if (show_video_info.found())
 	{
 		Cmdline_show_video_info = true;
@@ -2257,6 +2261,22 @@ bool SetCmdlineParams()
 				Gr_aa_mode = AntiAliasMode::SMAA_Ultra;
 				break;
 			}
+		}
+	}
+
+	if (prefer_ipv4_arg.found()) {
+		Cmdline_prefer_ipv4 = true;
+	}
+
+	if (prefer_ipv6_arg.found()) {
+		Cmdline_prefer_ipv6 = true;
+
+		// Rule 2: Not both
+		if (Cmdline_prefer_ipv4) {
+			ReleaseWarning(LOCATION, "Cannot set preference for both IPv4 and IPv6! Reverting to default behavior...\n");
+
+			Cmdline_prefer_ipv4 = false;
+			Cmdline_prefer_ipv6 = false;
 		}
 	}
  

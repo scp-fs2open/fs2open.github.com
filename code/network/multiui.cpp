@@ -144,7 +144,7 @@ void multi_common_scroll_text_up()
 void multi_common_scroll_text_down()
 {
 	Multi_common_top_text_line++;
-	if ( (Multi_common_num_text_lines - Multi_common_top_text_line) < Multi_common_text_max_display[gr_screen.res] ) {
+	if ( (Multi_common_num_text_lines - Multi_common_top_text_line) < gr_get_dynamic_font_lines(Multi_common_text_max_display[gr_screen.res]) ) {
 		Multi_common_top_text_line--;
 		if ( !mouse_down(MOUSE_LEFT_BUTTON) ){
 			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
@@ -157,11 +157,11 @@ void multi_common_scroll_text_down()
 void multi_common_move_to_bottom()
 {
 	// if there's nowhere to scroll down, do nothing
-	if(Multi_common_num_text_lines <= Multi_common_text_max_display[gr_screen.res]){
+	if(Multi_common_num_text_lines <= gr_get_dynamic_font_lines(Multi_common_text_max_display[gr_screen.res])){
 		return;
 	}
 		
-	Multi_common_top_text_line = Multi_common_num_text_lines - Multi_common_text_max_display[gr_screen.res];
+	Multi_common_top_text_line = Multi_common_num_text_lines - gr_get_dynamic_font_lines(Multi_common_text_max_display[gr_screen.res]);
 }
 
 void multi_common_set_text(const char *str,int auto_scroll)
@@ -257,14 +257,14 @@ void multi_common_render_text()
 	line_count = 0;
 	gr_set_color_fast(&Color_text_normal);
 	for ( i = Multi_common_top_text_line; i < Multi_common_num_text_lines; i++ ) {
-		if ( line_count >= Multi_common_text_max_display[gr_screen.res] ){
+		if ( line_count >= gr_get_dynamic_font_lines(Multi_common_text_max_display[gr_screen.res]) ){
 			break;	
 		}
 		gr_string(Multi_common_text_coords[gr_screen.res][0], Multi_common_text_coords[gr_screen.res][1] + (line_count*fh), Multi_common_text[i], GR_RESIZE_MENU);		
 		line_count++;
 	}
 
-	if ( (Multi_common_num_text_lines - Multi_common_top_text_line) > Multi_common_text_max_display[gr_screen.res] ) {
+	if ( (Multi_common_num_text_lines - Multi_common_top_text_line) > gr_get_dynamic_font_lines(Multi_common_text_max_display[gr_screen.res]) ) {
 		gr_set_color_fast(&Color_more_bright);
 		gr_string(Multi_common_text_coords[gr_screen.res][0], (Multi_common_text_coords[gr_screen.res][1] + Multi_common_text_coords[gr_screen.res][3])-5, XSTR("more",755), GR_RESIZE_MENU);
 	}
@@ -292,12 +292,12 @@ int Multi_common_msg_y[GR_NUM_RESOLUTIONS] = {
 };
 
 char Multi_common_notify_text[200];
-int Multi_common_notify_stamp;
+UI_TIMESTAMP Multi_common_notify_stamp;
 
 void multi_common_notify_init()
 {
 	strcpy_s(Multi_common_notify_text,"");
-	Multi_common_notify_stamp = -1;
+	Multi_common_notify_stamp = UI_TIMESTAMP::invalid();
 }
 
 // add a notification string, drawing appropriately depending on the state/screen we're in
@@ -305,16 +305,16 @@ void multi_common_add_notify(const char *str)
 {
 	if(str){
 		strcpy_s(Multi_common_notify_text,str);
-		Multi_common_notify_stamp = timestamp(MULTI_COMMON_NOTIFY_TIME);
+		Multi_common_notify_stamp = ui_timestamp(MULTI_COMMON_NOTIFY_TIME);
 	}
 }
 
 // process/display notification messages
 void multi_common_notify_do()
 {
-	if(Multi_common_notify_stamp != -1){
-		if(timestamp_elapsed(Multi_common_notify_stamp)){
-			Multi_common_notify_stamp = -1;
+	if (Multi_common_notify_stamp.isValid()){
+		if (ui_timestamp_elapsed(Multi_common_notify_stamp)){
+			Multi_common_notify_stamp = UI_TIMESTAMP::invalid();
 		} else {
 			int w,h,y;
 			gr_get_string_size(&w,&h,Multi_common_notify_text);
@@ -3553,7 +3553,7 @@ void multi_create_setup_list_data(int mode)
 	}
 
 	// reset the slider
-	Multi_create_slider.set_numberItems(Multi_create_list_count > Multi_create_list_max_display[gr_screen.res] ? Multi_create_list_count-Multi_create_list_max_display[gr_screen.res] : 0);
+	Multi_create_slider.set_numberItems(Multi_create_list_count > gr_get_dynamic_font_lines(Multi_create_list_max_display[gr_screen.res]) ? Multi_create_list_count-gr_get_dynamic_font_lines(Multi_create_list_max_display[gr_screen.res]) : 0);
 }
 
 void multi_create_game_init()
@@ -4457,7 +4457,7 @@ void multi_create_list_scroll_up()
 
 void multi_create_list_scroll_down()
 {
-	if((Multi_create_list_count - Multi_create_list_start) > Multi_create_list_max_display[gr_screen.res]){
+	if((Multi_create_list_count - Multi_create_list_start) > gr_get_dynamic_font_lines(Multi_create_list_max_display[gr_screen.res])){
 		Multi_create_list_start++;		
 
 		gamesnd_play_iface(InterfaceSounds::SCROLL);
@@ -4554,7 +4554,7 @@ void multi_create_list_load_missions()
 		file_list = NULL;
 	}
 
-	Multi_create_slider.set_numberItems(int(Multi_create_mission_list.size()) > Multi_create_list_max_display[gr_screen.res] ? int(Multi_create_mission_list.size())-Multi_create_list_max_display[gr_screen.res] : 0);
+	Multi_create_slider.set_numberItems(int(Multi_create_mission_list.size()) > gr_get_dynamic_font_lines(Multi_create_list_max_display[gr_screen.res]) ? int(Multi_create_mission_list.size())-gr_get_dynamic_font_lines(Multi_create_list_max_display[gr_screen.res]) : 0);
 
 	// maybe create a standalone dialog
 	if (Game_mode & GM_STANDALONE_SERVER) {
@@ -4705,7 +4705,7 @@ void multi_create_list_do()
 		}
 		
 		// see if we should drop out
-		if(count == Multi_create_list_max_display[gr_screen.res]){
+		if(count == gr_get_dynamic_font_lines(Multi_create_list_max_display[gr_screen.res])){
 			break;
 		}
 

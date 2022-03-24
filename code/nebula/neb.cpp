@@ -113,9 +113,22 @@ float Neb2_awacs = -1.0f;
 float Neb2_fog_near_mult = 1.0f;
 float Neb2_fog_far_mult = 1.0f;
 
-
 // this is the percent of visibility at the fog far distance
 const float NEB_FOG_FAR_PCT = 0.1f;
+
+float Neb2_fog_visibility_trail = 1.0f;
+float Neb2_fog_visibility_thruster = 1.5f;
+float Neb2_fog_visibility_weapon = 1.3f;
+float Neb2_fog_visibility_shield = 1.2f;
+float Neb2_fog_visibility_glowpoint = 1.2f;
+float Neb2_fog_visibility_beam_const = 4.0f;
+float Neb2_fog_visibility_beam_scaled_factor = 0.1f;
+float Neb2_fog_visibility_particle_const = 1.0f;
+float Neb2_fog_visibility_particle_scaled_factor = 1.0f / 12.0f;
+float Neb2_fog_visibility_shockwave = 2.5f;
+float Neb2_fog_visibility_fireball_const = 1.2f;
+float Neb2_fog_visibility_fireball_scaled_factor = 1.0f / 12.0f;
+
 
 SCP_vector<poof> Neb2_poofs;
 
@@ -138,12 +151,6 @@ const auto ModelDetailOption = options::OptionBuilder<int>("Graphics.NebulaDetai
 // --------------------------------------------------------------------------------------------------------
 // NEBULA FORWARD DECLARATIONS
 //
-
-// return the alpha the passed poof should be rendered with, for a 2 shell nebula
-float neb2_get_alpha_2shell(float inner_radius, float outer_radius, float magic_num, vec3d *v);
-
-// return an alpha value for a bitmap offscreen based upon "break" value
-float neb2_get_alpha_offscreen(float sx, float sy, float incoming_alpha);
 
 // do a pre-render of the background nebula
 void neb2_pre_render(camid cid);
@@ -196,12 +203,17 @@ void neb2_init()
 
 					strcpy_s(new_poof.name, name);
 
+					generic_anim_init(&new_poof.bitmap, name);
+
 					Poof_info.push_back(new_poof);
 				} else if (optional_string("$Name:")) { // new style
 					stuff_string(new_poof.name, F_NAME, NAME_LENGTH);
 
 					required_string("$Bitmap:");
-					stuff_string(new_poof.bitmap_filename, F_NAME, MAX_FILENAME_LEN);
+					stuff_string(name, F_NAME, MAX_FILENAME_LEN);
+
+					strcpy_s(new_poof.bitmap_filename, name);
+					generic_anim_init(&new_poof.bitmap, name);
 
 					if (optional_string("$Scale:"))
 						new_poof.scale = ::util::parseUniformRange<float>(0.01f, 100000.0f);
@@ -360,8 +372,17 @@ void neb2_post_level_init()
 
 	// load in all nebula bitmaps
 	for (poof_info &pinfo : Poof_info) {
-		if (pinfo.bitmap < 0) {
-			pinfo.bitmap = bm_load(pinfo.bitmap_filename);
+		if (pinfo.bitmap.first_frame < 0) {
+			pinfo.bitmap.first_frame = bm_load(pinfo.bitmap_filename);
+
+			if (pinfo.bitmap.first_frame >= 0) {
+				pinfo.bitmap.num_frames = 1;
+				pinfo.bitmap.total_time = 1.0f;
+			}		// fall back to an animated type
+			else if (generic_anim_load(&pinfo.bitmap)) {
+				mprintf(("Could not find a usable bitmap for nebula poof '%s'!\n", pinfo.name));
+				Warning(LOCATION, "Could not find a usable bitmap (%s) for nebula poof '%s'!\n", pinfo.bitmap_filename, pinfo.name);
+			}
 		}
 	}
 
@@ -422,9 +443,9 @@ void neb2_level_close()
 
 	// unload all nebula bitmaps
 	for (poof_info& pinfo : Poof_info) {
-		if (pinfo.bitmap >= 0) {
-			bm_release(pinfo.bitmap);
-			pinfo.bitmap = -1;
+		if (pinfo.bitmap.first_frame >= 0) {
+			bm_release(pinfo.bitmap.first_frame);
+			pinfo.bitmap.first_frame = -1;
 		}
 	}
 
@@ -487,8 +508,8 @@ void neb2_page_in()
 	// load in all nebula bitmaps
 	if ( (The_mission.flags[Mission::Mission_Flags::Fullneb]) || Nebula_sexp_used ) {
 		for (size_t idx = 0; idx < Poof_info.size(); idx++) {
-			if (Poof_info[idx].bitmap >= 0 && poof_is_used(idx)) {
-				bm_page_in_texture(Poof_info[idx].bitmap);
+			if (Poof_info[idx].bitmap.first_frame >= 0 && poof_is_used(idx)) {
+				bm_page_in_texture(Poof_info[idx].bitmap.first_frame);
 			}
 		}
 	}
@@ -664,6 +685,7 @@ void new_poof(size_t poof_info_idx, vec3d* pos) {
 	new_poof.pt = *pos;
 	new_poof.rot_speed = fl_radians(pinfo->rotation.next());
 	new_poof.alpha = pinfo->alpha.next();
+	new_poof.anim_time = frand_range(0.0f, pinfo->bitmap.total_time);
 	vm_vec_rand_vec(&new_poof.up_vec);
 
 	Neb2_poofs.push_back(new_poof);
@@ -767,8 +789,16 @@ void neb2_render_poofs()
 		poof_info* pinfo = &Poof_info[pf.poof_info_index];
 
 		// Miss this one out if the id is -1
-		if (pinfo->bitmap < 0)
+		if (pinfo->bitmap.first_frame < 0)
 			continue;
+
+		// do animation upkeep
+		int framenum = 0;
+		if (pinfo->bitmap.num_frames > 1) {
+			pf.anim_time += flFrametime;
+
+			framenum = bm_get_anim_frame(pinfo->bitmap.first_frame, pf.anim_time, pinfo->bitmap.total_time, true);
+		}
 
 		// generate the bitmap orient
 		// If the bitmap is large and distant and points in the view fvec direction (like retail poofs do) this looks good when moving,
@@ -812,7 +842,7 @@ void neb2_render_poofs()
 			continue;
 
 		// render!
-		batching_add_polygon(pinfo->bitmap, &pf.pt, &orient, pf.radius, pf.radius, alpha);
+		batching_add_polygon(pinfo->bitmap.first_frame + framenum, &pf.pt, &orient, pf.radius, pf.radius, alpha);
 	}
 
 	// gr_set_color_fast(&Color_bright_red);

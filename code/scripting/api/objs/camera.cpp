@@ -123,7 +123,7 @@ ADE_VIRTVAR(Self, l_Camera, "object", "New mount object", "object", "Camera obje
 		cid.getCamera()->set_object_host(oh->objp);
 	}
 
-	return ade_set_args(L, "o", l_Object.Set(object_h(cid.getCamera()->get_object_host())));
+	return ade_set_object_with_breed(L, OBJ_INDEX(cid.getCamera()->get_object_host()));
 }
 
 ADE_VIRTVAR(SelfSubsystem, l_Camera, "subsystem", "New mount object subsystem", "subsystem", "Subsystem that the camera is mounted on")
@@ -178,7 +178,7 @@ ADE_VIRTVAR(Target, l_Camera, "object", "New target object", "object", "Camera t
 		cid.getCamera()->set_object_target(oh->objp);
 	}
 
-	return ade_set_args(L, "o", l_Object.Set(object_h(cid.getCamera()->get_object_target())));
+	return ade_set_object_with_breed(L, OBJ_INDEX(cid.getCamera()->get_object_target()));
 }
 
 ADE_VIRTVAR(TargetSubsystem, l_Camera, "subsystem", "New target subsystem", "subsystem", "Subsystem that the camera is pointed at")

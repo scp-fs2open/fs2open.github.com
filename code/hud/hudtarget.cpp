@@ -431,6 +431,7 @@ typedef struct weapon_flash
 {
 	int flash_duration[MAX_WEAPON_FLASH_LINES];
 	int flash_next[MAX_WEAPON_FLASH_LINES];
+	bool flash_energy[MAX_WEAPON_FLASH_LINES];
 	int is_bright;
 } weapon_flash;
 weapon_flash Weapon_flash_info;
@@ -488,10 +489,17 @@ ship_subsys *advance_subsys(ship_subsys *cur, int next_flag)
 // select a sorted turret subsystem on a ship if no other subsys has been selected
 void hud_maybe_set_sorted_turret_subsys(ship *shipp)
 {
+	// this targeting behavior was introduced in FS2, so mods may not want to use it
+	// (the FS2 behavior makes FSPort's Playing Judas harder than it was designed to be)
+	if (Dont_automatically_select_turret_when_targeting_ship) {
+		return;
+	}
+
 	Assert((Player_ai->target_objnum >= 0) && (Player_ai->target_objnum < MAX_OBJECTS));
 	if (!((Player_ai->target_objnum >= 0) && (Player_ai->target_objnum < MAX_OBJECTS))) {
 		return;
 	}
+
 	Assert(Objects[Player_ai->target_objnum].type == OBJ_SHIP);
 	if (Objects[Player_ai->target_objnum].type != OBJ_SHIP) {
 		return;
@@ -502,7 +510,6 @@ void hud_maybe_set_sorted_turret_subsys(ship *shipp)
 			hud_target_live_turret(1, 1);
 		}
 	}
-
 }
 
 // -----------------------------------------------------------------------
@@ -1001,6 +1008,7 @@ void hud_weapons_init()
 	for ( int i = 0; i < MAX_WEAPON_FLASH_LINES; i++ ) {
 		Weapon_flash_info.flash_duration[i] = 1;
 		Weapon_flash_info.flash_next[i] = 1;
+		Weapon_flash_info.flash_energy[i] = false;
 	}
 
 	// The E: There used to be a number of checks here. They are no longer needed, as the new HUD code handles it on its own.
@@ -1227,7 +1235,7 @@ void hud_target_common(int team_mask, int next_flag)
 				target_found = TRUE;
 				set_target_objnum( Player_ai, OBJ_INDEX(A) );
 				hud_shield_hit_reset(A);
-				// if ship is BIG|HUGE and last subsys is NULL, get turret
+
 				hud_maybe_set_sorted_turret_subsys(shipp);
 				hud_restore_subsystem_target(shipp);
 			}
@@ -1682,7 +1690,7 @@ void hud_target_newest_ship()
 	if (newest_obj) {
 		set_target_objnum( Player_ai, OBJ_INDEX(newest_obj) );
 		hud_shield_hit_reset(newest_obj);
-		// if BIG|HUGE and no selected subsystem, get sorted turret
+
 		hud_maybe_set_sorted_turret_subsys(&Ships[newest_obj->instance]);
 		hud_restore_subsystem_target(&Ships[newest_obj->instance]);
 	}
@@ -2373,9 +2381,8 @@ void hud_target_targets_target()
 	// if we've reached here, found player target's target
 	set_target_objnum( Player_ai, tt_objnum );
 	hud_shield_hit_reset(&Objects[tt_objnum]);
-	if (Objects[tt_objnum].type == OBJ_SHIP) {
-		hud_maybe_set_sorted_turret_subsys(&Ships[Objects[tt_objnum].instance]);
-	}
+
+	hud_maybe_set_sorted_turret_subsys(&Ships[Objects[tt_objnum].instance]);
 	hud_restore_subsystem_target(&Ships[Objects[tt_objnum].instance]);
 	return;
 
@@ -2593,8 +2600,8 @@ void hud_target_in_reticle_old()
 	if ( target_obj != NULL ) {
 		set_target_objnum( Player_ai, OBJ_INDEX(target_obj) );
 		hud_shield_hit_reset(target_obj);
+
 		if ( target_obj->type == OBJ_SHIP ) {
-			// if BIG|HUGE, maybe set subsys to turret
 			hud_maybe_set_sorted_turret_subsys(&Ships[target_obj->instance]);
 			hud_restore_subsystem_target(&Ships[target_obj->instance]);
 		}
@@ -4304,19 +4311,38 @@ void HudGaugeLeadSight::render(float  /*frametime*/)
 	}
 }
 
-// hud_cease_subsystem_targeting() will cease targeting the current targets subsystems
-//
 void hud_cease_subsystem_targeting(bool print_message)
 {
 	int ship_index;
 
-	ship_index = Objects[Player_ai->target_objnum].instance;
-	if ( ship_index < 0 )
+	Assertion(Player_ai->target_objnum < MAX_OBJECTS, "Invalid player target objnum");
+
+	if (Player_ai->target_objnum < 0) {
+		// Nothing selected
+		if (print_message) {
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR("No target selected.", 322));
+			snd_play(gamesnd_get_game_sound(GameSounds::TARGET_FAIL));
+		}
 		return;
+	}
+
+	if (Objects[Player_ai->target_objnum].type != OBJ_SHIP) {
+		// Object isn't a ship, so it doesn't have any subsystems
+		if (print_message) {
+			snd_play(gamesnd_get_game_sound(GameSounds::TARGET_FAIL));
+		}
+		return;
+	}
+
+	ship_index = Objects[Player_ai->target_objnum].instance;
+
+	Assertion(ship_index >= 0 && ship_index < MAX_SHIPS, "Invalid ship index");
+	Assertion(Player_num >= 0 && Player_num < MAX_PLAYERS, "Invalid player number");
 
 	Ships[ship_index].last_targeted_subobject[Player_num] = NULL;
 	Player_ai->targeted_subsys = NULL;
 	Player_ai->targeted_subsys_parent = -1;
+
 	if ( print_message ) {
 		HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "Deactivating sub-system targeting", 324));
 	}
@@ -4325,14 +4351,14 @@ void hud_cease_subsystem_targeting(bool print_message)
 	hud_lock_reset();
 }
 
-// hud_cease_targeting() will cease targeting main target and subsystem
-// does not turn off auto-targeting by default
 void hud_cease_targeting(bool deliberate)
 {
-	set_target_objnum( Player_ai, -1 );
+	// Turn off subsys targeting before we invalidate the player target_objnum...
 	hud_cease_subsystem_targeting(false);
+	set_target_objnum(Player_ai, -1);
 
 	if (deliberate) {
+		// Player wants to stop targeting, so turn off auto-target so we don't immediately aquire another target
 		Players[Player_num].flags &= ~PLAYER_FLAGS_AUTO_TARGETING;
 		HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR("Deactivating targeting system", 325));
 	}
@@ -4502,7 +4528,7 @@ void HudGaugeTargetTriangle::render(float  /*frametime*/)
 }
 
 // start the weapon line (on the HUD) flashing
-void hud_start_flash_weapon(int index)
+void hud_start_flash_weapon(int index, bool flash_energy)
 {
 	if ( index >= MAX_WEAPON_FLASH_LINES ) {
 		Int3();	// Get Alan
@@ -4515,6 +4541,7 @@ void hud_start_flash_weapon(int index)
 	}
 
 	Weapon_flash_info.flash_duration[index] = timestamp(TBOX_FLASH_DURATION);
+	Weapon_flash_info.flash_energy[index] = flash_energy;
 }
 
 // maybe change the text color for the weapon line indicated by index
@@ -4638,11 +4665,9 @@ void hud_target_next_list(int hostile, int next_flag, int team_mask, int attacke
 	object *nearest_object = select_next_target_by_distance((next_flag != 0), valid_team_mask, attacked_objnum);
 
 	if (nearest_object != NULL) {
-		// set new target
 		set_target_objnum( Player_ai, OBJ_INDEX(nearest_object) );
 		hud_shield_hit_reset(nearest_object);
 
-		// maybe set new turret subsystem
 		hud_maybe_set_sorted_turret_subsys(&Ships[nearest_object->instance]);
 		hud_restore_subsystem_target(&Ships[nearest_object->instance]);
 	}
@@ -5757,9 +5782,10 @@ void HudGaugeWeaponEnergy::render(float  /*frametime*/)
 			}
 		}
 
-		for ( i = 0; i < sw->num_primary_banks; i++ )
+		// maybe flash the energy bar
+		for ( i = 0; i < sw->num_primary_banks + sw->num_secondary_banks; i++ )
 		{
-			if ( !timestamp_elapsed(Weapon_flash_info.flash_duration[i]) )
+			if ( !timestamp_elapsed(Weapon_flash_info.flash_duration[i]) && Weapon_flash_info.flash_energy[i])
 			{
 				if ( Weapon_flash_info.is_bright & (1<<i) )
 				{
@@ -6128,7 +6154,7 @@ void HudGaugeWeapons::render(float  /*frametime*/)
 			}
 
 			// show the cooldown time
-			if ( (sw->secondary_bank_ammo[i] > 0) && (sw->current_secondary_bank >= 0) ) {
+			if ((sw->current_secondary_bank >= 0) && ship_secondary_has_ammo(sw, i)) {
 				int ms_till_fire = timestamp_until(sw->next_secondary_fire_stamp[sw->current_secondary_bank]);
 				if ( (ms_till_fire >= 500) && ((wip->fire_wait >= 1 ) || (ms_till_fire > wip->fire_wait*1000)) ) {
 					renderPrintf(position[0] + Weapon_sreload_offset_x, name_y, EG_NULL, "%d", (int)std::lround(ms_till_fire/1000.0f));
@@ -6139,14 +6165,16 @@ void HudGaugeWeapons::render(float  /*frametime*/)
 			renderString(position[0] + Weapon_sname_offset_x, name_y, i ? EG_WEAPON_S1 : EG_WEAPON_S2, weapon_name);
 		}
 
-		int ammo=sw->secondary_bank_ammo[i];
+		if (!Weapon_info[sw->secondary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo]) {
+			int ammo=sw->secondary_bank_ammo[i];
 
-		// print out the ammo right justified
-		sprintf(ammo_str, "%d", ammo);
-		hud_num_make_mono(ammo_str, font_num);
-		gr_get_string_size(&w, &h, ammo_str);
+			// print out the ammo right justified
+			sprintf(ammo_str, "%d", ammo);
+			hud_num_make_mono(ammo_str, font_num);
+			gr_get_string_size(&w, &h, ammo_str);
 
-		renderString(position[0] + Weapon_sammo_offset_x - w, name_y, EG_NULL, ammo_str);
+			renderString(position[0] + Weapon_sammo_offset_x - w, name_y, EG_NULL, ammo_str);
+		}
 
 		if(i != 0) {
 			y += secondary_text_h;
@@ -7037,7 +7065,7 @@ void HudGaugeSecondaryWeapons::render(float  /*frametime*/)
 			}
 
 			// show the cooldown time
-			if ( (sw->secondary_bank_ammo[i] > 0) && (sw->current_secondary_bank >= 0) ) {
+			if ((sw->current_secondary_bank >= 0) && ship_secondary_has_ammo(sw, i)) {
 				int ms_till_fire = timestamp_until(sw->next_secondary_fire_stamp[sw->current_secondary_bank]);
 				if ( (ms_till_fire >= 500) && ((wip->fire_wait >= 1 ) || (ms_till_fire > wip->fire_wait*1000)) ) {
 					renderPrintf(position[0] + _sreload_offset_x, position[1] + text_y_offset, EG_NULL, "%d", (int)std::lround(ms_till_fire/1000.0f));
@@ -7047,14 +7075,16 @@ void HudGaugeSecondaryWeapons::render(float  /*frametime*/)
 			renderString(position[0] + _sname_offset_x, position[1] + text_y_offset, i ? EG_WEAPON_S1 : EG_WEAPON_S2, weapon_name);
 		}
 
-		int ammo = sw->secondary_bank_ammo[i];
+		if (!Weapon_info[sw->secondary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo]) {
+			int ammo = sw->secondary_bank_ammo[i];
 
-		// print out the ammo right justified
-		sprintf(ammo_str, "%d", ammo);
-		hud_num_make_mono(ammo_str, font_num);
-		gr_get_string_size(&w, &h, ammo_str);
+			// print out the ammo right justified
+			sprintf(ammo_str, "%d", ammo);
+			hud_num_make_mono(ammo_str, font_num);
+			gr_get_string_size(&w, &h, ammo_str);
 
-		renderString(position[0] + _sammo_offset_x - w, position[1] + text_y_offset, EG_NULL, ammo_str);
+			renderString(position[0] + _sammo_offset_x - w, position[1] + text_y_offset, EG_NULL, ammo_str);
+		}
 
 		bg_y_offset += _background_entry_h;
 		text_y_offset += _entry_h;

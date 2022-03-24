@@ -53,11 +53,11 @@ public:
 	BOOL	m_hilight;
 	int		m_icon_image;
 	CString	m_icon_label;
+	CString	m_icon_closeup_label;
 	CString	m_stage_title;
 	CString	m_text;
 	CString	m_time;
 	CString	m_voice;
-	CString	m_icon_text;
 	int		m_icon_team;
 	int		m_ship_type;
 	BOOL	m_change_local;
@@ -108,6 +108,11 @@ protected:
 	int line_marked[MAX_BRIEF_STAGE_LINES];
 
 	void copy_stage(int from, int to);
+
+	CToolTipCtrl* m_CloseupLabelToolTip;
+
+	virtual BOOL OnInitDialog();
+	BOOL PreTranslateMessage(MSG * pMsg);
 
 	// Generated message map functions
 	//{{AFX_MSG(briefing_editor_dlg)

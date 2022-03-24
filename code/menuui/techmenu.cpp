@@ -335,7 +335,7 @@ void techroom_select_new_entry()
 		if (Techroom_ship_model_instance >= 0) {
 			model_delete_instance(Techroom_ship_model_instance);
 		}
-		Techroom_ship_model_instance = model_create_instance(true, Techroom_ship_modelnum);
+		Techroom_ship_model_instance = model_create_instance(-1, Techroom_ship_modelnum);
 
 		model_set_up_techroom_instance(sip, Techroom_ship_model_instance);
 

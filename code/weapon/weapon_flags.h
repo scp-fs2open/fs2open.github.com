@@ -38,7 +38,6 @@ namespace Weapon {
 		Shudder,							// causes the weapon to shudder. shudder is proportional to the mass and damage of the weapon
 		Mflash,								// has muzzle flash
 		Lockarm,							// if the missile was fired without a lock, it does significanlty less damage on impact
-		Stream,								// handled by "trigger down/trigger up" instead of "fire - wait - fire - wait"
 		Ballistic,							// ballistic primaries - Goober5000
 		Pierce_shields,						// shield pierceing -Bobboau
 		Default_in_tech_database,			// default in tech database - Goober5000
@@ -87,7 +86,10 @@ namespace Weapon {
 		Require_exact_los,					// If secondary or in turret, will only fire if ship has line of sight to target
 		Can_damage_shooter,					// this weapon and any of its descendants can damage its shooter - Asteroth
 		Heals,								// 'damage' heals instead of actually damaging - Asteroth
+		SecondaryNoAmmo,					// Secondaries that only use energy
 		No_collide,
+		Multilock_target_dead_subsys,
+		No_evasion,							// AI will not attempt to dodge this weapon - Asteroth
 
         NUM_VALUES
 	};
@@ -105,6 +107,7 @@ namespace Weapon {
 		Overridden_homing,          // Homing is overridden by an external source (probably scripting)
 		Multi_homing_update_needed, // this is a newly spawned homing weapon which needs to update client machines
 		Multi_Update_Sent,			// Marks this missile as already being updated once by the server
+		Begun_detonation,			// The engine has set this weapon to detonate momentarily
 
 		NUM_VALUES
 	};

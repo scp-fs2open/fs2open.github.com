@@ -95,10 +95,12 @@ void game_level_close();
 // gameplay stuff -----------------------------------------------------
 
 // stop the game (mission) timer
-void game_stop_time();
+void game_stop_time(bool by_os_focus = false);
+
+bool game_time_is_stopped();
 
 // start the game (mission) timer
-void game_start_time();
+void game_start_time(bool by_os_focus = false);
 
 // call whenever in a loop or if you need to get a keypress
 int game_check_key();

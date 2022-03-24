@@ -80,7 +80,7 @@ cf_pathtype Pathtypes[CF_MAX_PATH_TYPES]  = {
 	{ CF_TYPE_SINGLE_PLAYERS,		"data" DIR_SEPARATOR_STR "players" DIR_SEPARATOR_STR "single",				".pl2 .cs2 .plr .csg .css .json",	CF_TYPE_PLAYERS	},
 	{ CF_TYPE_MULTI_PLAYERS,		"data" DIR_SEPARATOR_STR "players" DIR_SEPARATOR_STR "multi",				".plr .json",						CF_TYPE_PLAYERS	},
 	{ CF_TYPE_CACHE,				"data" DIR_SEPARATOR_STR "cache",											".clr .tmp .bx",					CF_TYPE_DATA	}, 	//clr=cached color
-	{ CF_TYPE_MULTI_CACHE,			"data" DIR_SEPARATOR_STR "multidata",										".pcx .png .dds .fs2 .txt",				CF_TYPE_DATA	},
+	{ CF_TYPE_MULTI_CACHE,			"data" DIR_SEPARATOR_STR "multidata",										".pcx .png .jpg .dds .fs2 .txt",		CF_TYPE_DATA	},
 	{ CF_TYPE_MISSIONS,				"data" DIR_SEPARATOR_STR "missions",										".fs2 .fc2 .ntl .ssv",				CF_TYPE_DATA	},
 	{ CF_TYPE_CONFIG,				"data" DIR_SEPARATOR_STR "config",											".cfg .tbl .tbm .xml .csv",			CF_TYPE_DATA	},
 	{ CF_TYPE_DEMOS,				"data" DIR_SEPARATOR_STR "demos",											".fsd",								CF_TYPE_DATA	},
@@ -91,6 +91,7 @@ cf_pathtype Pathtypes[CF_MAX_PATH_TYPES]  = {
 	{ CF_TYPE_FREDDOCS,				"data" DIR_SEPARATOR_STR "freddocs",										".html",							CF_TYPE_DATA	},
 	{ CF_TYPE_INTERFACE_MARKUP,		"data" DIR_SEPARATOR_STR "interface" DIR_SEPARATOR_STR "markup",			".rml",								CF_TYPE_INTERFACE	},
 	{ CF_TYPE_INTERFACE_CSS,		"data" DIR_SEPARATOR_STR "interface" DIR_SEPARATOR_STR "css",				".rcss",							CF_TYPE_INTERFACE	},
+	{ CF_TYPE_PLAYER_BINDS,			"data" DIR_SEPARATOR_STR "players" DIR_SEPARATOR_STR "presets",				".json",							CF_TYPE_PLAYERS	},
 };
 // clang-format on
 

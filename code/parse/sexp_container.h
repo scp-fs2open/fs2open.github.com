@@ -83,6 +83,7 @@ struct sexp_container
 {
 	// meta-character for containers in text replacement, etc.
 	static constexpr char DELIM = '&';
+	static const SCP_string DELIM_STR;
 	// applies to list data, map keys, and map data
 	static constexpr int VALUE_MAX_LENGTH = NAME_LENGTH - 1; // leave space for null char
 	// leave space for leading/trailing '&' for container multidimensionality
@@ -94,6 +95,8 @@ struct sexp_container
 
 	SCP_list<SCP_string> list_data;
 	SCP_unordered_map<SCP_string, SCP_string> map_data;
+
+	bool operator==(const sexp_container &sc) const;
 
 	inline bool is_list() const
 	{
@@ -115,8 +118,14 @@ struct sexp_container
 		return any(type & (ContainerType::SAVE_ON_MISSION_PROGRESS | ContainerType::SAVE_ON_MISSION_CLOSE));
 	}
 
+	bool name_matches(const sexp_container &container) const;
 	bool empty() const;
 	int size() const;
+
+	// get type without persistence flags
+	ContainerType get_non_persistent_type() const;
+	// matching is performed only on non-persistence flags
+	bool type_matches(const sexp_container &container) const;
 };
 
 struct list_modifier {
@@ -132,6 +141,9 @@ struct list_modifier {
 		AT_INDEX
 	};
 
+	static Modifier get_modifier(const char *modifier_name);
+	bool match_name(const char *other_name) const;
+
 	const char *name;
 	const Modifier modifier;
 };
@@ -140,7 +152,9 @@ using ListModifier = list_modifier::Modifier;
 
 // management functions
 void init_sexp_containers();
-void update_sexp_containers(SCP_vector<sexp_container>& containers);
+void update_sexp_containers(SCP_vector<sexp_container> &containers,
+	const SCP_unordered_map<SCP_string, SCP_string, SCP_string_lcase_hash, SCP_string_lcase_equal_to>
+		&renamed_containers);
 
 // parsing functions
 void stuff_sexp_list_containers();
@@ -154,3 +168,7 @@ const SCP_vector<list_modifier> &get_all_list_modifiers();
  * Return pointer to a sexp_container by its name, or nullptr if not found
  */
 sexp_container *get_sexp_container(const char *name);
+
+const char *sexp_container_CTEXT(int node);
+
+bool sexp_container_has_persistent_non_eternal_containers();

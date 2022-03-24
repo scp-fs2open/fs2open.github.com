@@ -101,7 +101,7 @@ class FFmpegWaveFile : public IAudioFile {
 	void setResamplingProperties(const ResampleProperties& resampleProps) override;
 
   private:
-    AVCodec* prepareOpened();
+    const AVCodec* prepareOpened();
 
 	size_t handleDecodedFrame(AVFrame* av_frame, uint8_t* out_buffer, size_t buffer_size);
 

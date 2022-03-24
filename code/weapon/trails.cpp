@@ -21,8 +21,8 @@
 #include "weapon/trails.h"
 #include "render/batching.h"
 
-int Num_trails;
-trail Trails;
+static int Num_trails = 0;
+static trail Trails;
 
 // Reset everything between levels
 void trail_level_init()
@@ -33,6 +33,10 @@ void trail_level_init()
 
 void trail_level_close()
 {
+	if ( !Num_trails ) {
+		return;
+	}
+
 	trail *nextp;
 	for(trail *trailp = Trails.next; trailp != &Trails; trailp = nextp)
 	{
@@ -91,6 +95,9 @@ void trail_calc_facing_pts( vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, flo
 	vm_vec_cross(&uvec,fvec,&rvec);
 	if (!IS_VEC_NULL(&uvec))
 		vm_vec_normalize(&uvec);
+
+	// Scale the trails so that they are always at least some configured amount of pixels across.
+	w = model_render_get_diameter_clamped_to_min_pixel_size(pos, w, Min_pixel_size_trail);
 
 	vm_vec_scale_add( top, pos, &uvec, w * 0.5f );
 	vm_vec_scale_add( bot, pos, &uvec, -w * 0.5f );
@@ -152,7 +159,6 @@ void trail_render( trail * trailp )
 	float a_size = (ti->a_end - ti->a_start);
 	int num_faded_sections = ti->n_fade_out_sections;
 
-
 	vec3d prev_top, prev_bot; vm_vec_zero(&prev_top); vm_vec_zero(&prev_bot);
 	float prev_U = 0;
 	ubyte prev_alpha = 0;
@@ -176,7 +182,7 @@ void trail_render( trail * trailp )
 		}
 
 		if (The_mission.flags[Mission::Mission_Flags::Fullneb] && Neb_affects_weapons)
-			current_alpha = (ubyte)(current_alpha * neb2_get_fog_visibility(&trailp->pos[n], NEB_FOG_VISIBILITY_MULT_TRAIL));
+			current_alpha = (ubyte)(current_alpha * neb2_get_fog_visibility(&trailp->pos[n], Neb2_fog_visibility_trail));
 
 		// get the direction of the trail
 		vec3d trail_direction;

@@ -23,6 +23,7 @@
 #include "playerman/player.h"
 #include "scripting/scripting.h"
 #include "ship/ship.h"
+#include "ship/awacs.h"
 #include "weapon/weapon.h"
 
 // Just a reference to this struct being for looking up a ship's team in TVT
@@ -187,6 +188,11 @@ void ai_post_process_mission()
 	object *objp;
 	int i;
 
+	// make sure team visibility is updated first
+	if ( !Fred_running ) {
+		awacs_process();
+	}
+
 	// Check ships in player starting wings.  Those ships should follow these rules:
 	// (1) if they have no orders, they should get a form on my wing order
 	// (2) if they have an order, they are free to act on it.
@@ -203,7 +209,6 @@ void ai_post_process_mission()
 				wingp = &Wings[Starting_wings[i]];
 
 				ai_maybe_add_form_goal( wingp );
-
 			}
 		}
 	}
@@ -261,13 +266,19 @@ void ai_remove_ship_goal( ai_info *aip, int index )
 	// ai goal code look
 	Assert ( index >= 0 );			// must have a valid goal
 
+	if (index == aip->active_goal)
+	{
+		// rearm/repair needs a bit of extra cleanup
+		if (aip->goals[index].ai_mode == AI_GOAL_REARM_REPAIR)
+			ai_abort_rearm_request(&Objects[Ships[aip->shipnum].objnum]);
+
+		aip->active_goal = AI_GOAL_NONE;
+	}
+
 	aip->goals[index].ai_mode = AI_GOAL_NONE;
 	aip->goals[index].signature = -1;
 	aip->goals[index].priority = -1;
 	aip->goals[index].flags.reset(); // must reset the flags since not doing so will screw up goal sorting.
-
-	if ( index == aip->active_goal )
-		aip->active_goal = AI_GOAL_NONE;
 
 	// mwa -- removed this line 8/5/97.  Just because we remove a goal doesn't mean to do the default
 	// behavior.  We will make the call commented out below in a more reasonable location

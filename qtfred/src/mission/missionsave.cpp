@@ -12,6 +12,7 @@
 #include <ai/aigoals.h>
 #include <asteroid/asteroid.h>
 #include <cfile/cfile.h>
+#include <hud/hudsquadmsg.h>
 #include <gamesnd/eventmusic.h>
 #include <globalincs/linklist.h>
 #include <globalincs/version.h>
@@ -784,6 +785,23 @@ int CFred_mission_save::save_asteroid_fields()
 			save_vector(Asteroid_field.inner_max_bound);
 		}
 
+		if (!Asteroid_target_ships.empty()) {
+			fso_comment_push(";;FSO 22.0.0;;");
+			if (optional_string_fred("$Asteroid Targets:")) {
+				parse_comments();
+				fout(" (");
+			} else {
+				fout_version("\n$Asteroid Targets: (");
+			}
+
+			for (SCP_string& name : Asteroid_target_ships) {				
+				fout(" \"%s\"", name.c_str());
+			}
+
+			fout(" )");
+			fso_comment_pop();
+		}
+
 		fso_comment_pop();
 	}
 
@@ -1072,6 +1090,18 @@ int CFred_mission_save::save_briefing()
 
 					fout_ext(" ", "%s", bi->label);
 				}
+				if (save_format != MissionFormat::RETAIL) {
+					if (drop_white_space(bi->closeup_label)[0]) {
+						if (optional_string_fred("$closeup label:")) {
+							parse_comments();
+						}
+						else {
+							fout("\n$closeup label:");
+						}
+
+						fout_ext(" ", "%s", bi->closeup_label);
+					}
+				}
 
 				if (optional_string_fred("+id:")) {
 					parse_comments();
@@ -1095,6 +1125,12 @@ int CFred_mission_save::save_briefing()
 					required_string_fred("$use wing icon:");
 					parse_comments();
 					fout(" %d", (bi->flags & BI_USE_WING_ICON) ? 1 : 0);
+				}
+
+				if ((save_format != MissionFormat::RETAIL) && (bi->flags & BI_USE_CARGO_ICON)) {
+					required_string_fred("$use cargo icon:");
+					parse_comments();
+					fout(" %d", (bi->flags & BI_USE_CARGO_ICON) ? 1 : 0);
 				}
 
 				required_string_fred("$multi_text");
@@ -3599,7 +3635,10 @@ int CFred_mission_save::save_objects()
 				fout("\n+Orders Accepted:");
 			}
 
-			fout(" %d\t\t;! note that this is a bitfield!!!", shipp->orders_accepted);
+			int bitfield = 0;
+			for(size_t order : shipp->orders_accepted)
+				bitfield |= Player_orders[order].id;
+			fout(" %d\t\t;! note that this is a bitfield!!!", bitfield);
 		}
 
 		if (shipp->group >= 0) {

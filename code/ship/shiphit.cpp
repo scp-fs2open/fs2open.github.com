@@ -80,6 +80,15 @@ const std::shared_ptr<scripting::Hook> OnPainFlashHook = scripting::Hook::Factor
 		{"Pain_Type", "number", "The type of pain flash displayed: shield = 0 and hull = 1."},
 	});
 
+const std::shared_ptr<scripting::Hook> OnShipDeathStartedHook = scripting::Hook::Factory(
+	"On Ship Death Started", "Called when a ship starts the death process.",
+	{
+		{"Ship", "ship", "The ship that has begun the death process."},
+		{"Killer", "object", "The object responsible for killing the ship.  Could be null."},
+		{"Hitpos", "vector", "The world coordinates of the killing blow.  Could be null."},
+	});
+
+
 //WMC - Camera rough draft stuff
 /*
 camid dead_get_camera()
@@ -460,7 +469,8 @@ void do_subobj_heal_stuff(object* ship_objp, object* other_obj, vec3d* hitpos, i
 				// if the subsystem is a turret and the hit submodel is its barrel,
 				// get the distance between the hit and the turret barrel center
 				auto pmi = model_get_instance(ship_p->model_instance_num);
-				find_submodel_instance_world_point(&g_subobj_pos, model_get(pmi->model_num), pmi, submodel_num, &ship_objp->orient, &ship_objp->pos);
+				auto pm = model_get(pmi->model_num);
+				model_instance_local_to_global_point(&g_subobj_pos, &vmd_zero_vector, pm, pmi, submodel_num, &ship_objp->orient, &ship_objp->pos);
 				dist = vm_vec_dist_quick(&hitpos2, &g_subobj_pos);
 
 				// Healing attenuation range of barrel radius * 2 makes full healing
@@ -779,7 +789,7 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 					pmi = model_get_instance(ship_p->model_instance_num);
 					pm = model_get(pmi->model_num);
 				}
-				find_submodel_instance_world_point(&g_subobj_pos, pm, pmi, submodel_num, &ship_objp->orient, &ship_objp->pos);
+				model_instance_local_to_global_point(&g_subobj_pos, &vmd_zero_vector, pm, pmi, submodel_num, &ship_objp->orient, &ship_objp->pos);
 				dist = vm_vec_dist_quick(&hitpos2, &g_subobj_pos);
 
 				// Damage attenuation range of barrel radius * 2 makes full damage
@@ -1354,7 +1364,7 @@ static int choose_next_spark(object *ship_objp, vec3d *hitpos)
 	// get the world hitpos for all sparks
 	for (spark_num=0; spark_num<num_sparks; spark_num++) {
 		if (shipp->sparks[spark_num].submodel_num != -1) {
-			model_instance_find_world_point(&world_hitpos[spark_num], &shipp->sparks[spark_num].pos, pm, pmi, shipp->sparks[spark_num].submodel_num, &ship_objp->orient, &ship_objp->pos);
+			model_instance_local_to_global_point(&world_hitpos[spark_num], &shipp->sparks[spark_num].pos, pm, pmi, shipp->sparks[spark_num].submodel_num, &ship_objp->orient, &ship_objp->pos);
 		} else {
 			// rotate sparks correctly with current ship orient
 			vm_vec_unrotate(&world_hitpos[spark_num], &shipp->sparks[spark_num].pos, &ship_objp->orient);
@@ -1468,10 +1478,10 @@ static void ship_hit_create_sparks(object *ship_objp, vec3d *hitpos, int submode
 	if (instancing) {
 		// get the hit position in the subobject RF
 		vec3d temp_zero, temp_x, temp_y, temp_z;
-		model_instance_find_world_point(&temp_zero, &vmd_zero_vector, pm, pmi, submodel_num, &ship_objp->orient, &ship_objp->pos);
-		model_instance_find_world_point(&temp_x, &vmd_x_vector, pm, pmi, submodel_num, &ship_objp->orient, &ship_objp->pos);
-		model_instance_find_world_point(&temp_y, &vmd_y_vector, pm, pmi, submodel_num, &ship_objp->orient, &ship_objp->pos);
-		model_instance_find_world_point(&temp_z, &vmd_z_vector, pm, pmi, submodel_num, &ship_objp->orient, &ship_objp->pos);
+		model_instance_local_to_global_point(&temp_zero, &vmd_zero_vector, pm, pmi, submodel_num, &ship_objp->orient, &ship_objp->pos);
+		model_instance_local_to_global_point(&temp_x, &vmd_x_vector, pm, pmi, submodel_num, &ship_objp->orient, &ship_objp->pos);
+		model_instance_local_to_global_point(&temp_y, &vmd_y_vector, pm, pmi, submodel_num, &ship_objp->orient, &ship_objp->pos);
+		model_instance_local_to_global_point(&temp_z, &vmd_z_vector, pm, pmi, submodel_num, &ship_objp->orient, &ship_objp->pos);
 
 		// find submodel x,y,z axes
 		vm_vec_sub2(&temp_x, &temp_zero);
@@ -1692,8 +1702,6 @@ void ship_generic_kill_stuff( object *objp, float percent_killed )
 		sp->final_death_time = timestamp(100);
 	}
 
-	//nprintf(("AI", "Time = %7.3f: final_death_time set to %7.3f\n", (float) timestamp_ticker/1000.0f, (float) sp->final_death_time/1000.0f));
-
 	sp->pre_death_explosion_happened = 0;				// The little fireballs haven't came in yet.
 
 	sp->next_fireball = timestamp(0);	//start one right away
@@ -1782,9 +1790,17 @@ static void ship_vaporize(ship *shipp)
 }
 
 //	*ship_objp was hit and we've determined he's been killed!  By *other_obj!
-void ship_hit_kill(object *ship_objp, object *other_obj, vec3d *hitpos, float percent_killed, int self_destruct)
+void ship_hit_kill(object *ship_objp, object *other_obj, vec3d *hitpos, float percent_killed, bool self_destruct, bool always_log_other_obj)
 {
 	Assert(ship_objp);	// Goober5000 - but not other_obj, not only for sexp but also for self-destruct
+
+	// add scripting hook for 'On Ship Death Started' -- Goober5000
+	// hook is placed at the beginning of this function to allow the scripter to
+	// actually have access to the ship before any death routines (such as mission logging) are executed
+	if (hitpos)
+		OnShipDeathStartedHook->run(scripting::hook_param_list(scripting::hook_param("Ship", 'o', ship_objp), scripting::hook_param("Killer", 'o', other_obj), scripting::hook_param("Hitpos", 'o', scripting::api::l_Vector.Set(*hitpos))));
+	else
+		OnShipDeathStartedHook->run(scripting::hook_param_list(scripting::hook_param("Ship", 'o', ship_objp), scripting::hook_param("Killer", 'o', other_obj)));
 
 	if(Script_system.IsActiveAction(CHA_DEATH) && Script_system.IsConditionOverride(CHA_DEATH, ship_objp))
 	{
@@ -1855,7 +1871,21 @@ void ship_hit_kill(object *ship_objp, object *other_obj, vec3d *hitpos, float pe
 				}
 			}
 			killer_damage_percent = (int)(sp->damage_ship[killer_index]/sp->total_damage_received * 100.0f);
-		}		
+		}
+
+		// are we going to insist that other_obj was the killer?
+		if (always_log_other_obj && other_obj) {
+			object *named_objp = other_obj;
+
+			if (named_objp->type != OBJ_SHIP && named_objp->parent >= 0) {
+				named_objp = &Objects[other_obj->parent];
+			}
+			if (named_objp->type == OBJ_SHIP) {
+				killer_objp = nullptr;
+				killer_ship_name = Ships[named_objp->instance].ship_name;
+				killer_damage_percent = (int)(percent_killed * 100.0f);
+			}
+		}
 
 		if(!self_destruct){
 			// multiplayer
@@ -1982,7 +2012,7 @@ void ship_self_destruct( object *objp )
 	}
 
 	// self destruct
-	ship_hit_kill(objp, nullptr, nullptr, 1.0f, 1);	
+	ship_hit_kill(objp, nullptr, nullptr, 1.0f, true);
 }
 
 extern int Homing_hits, Homing_misses;
@@ -2522,7 +2552,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 				}
 
 				if ( !(shipp->flags[Ship::Ship_Flags::Dying]) && !MULTIPLAYER_CLIENT) {  // if not killed, then kill
-					ship_hit_kill(ship_objp, other_obj, hitpos, percent_killed, 0);
+					ship_hit_kill(ship_objp, other_obj, hitpos, percent_killed);
 				}
 			}
 		}

@@ -855,6 +855,9 @@ void event_editor::OnDelete()
 // this is called when you hit the escape key..
 void event_editor::OnCancel()
 {
+	// override MFC default behavior and do nothing
+	// the Esc key is used for certain actions inside the events editor
+	// so pressing Esc shouldn't close the window
 }
 
 // this is called when you click the ID_CANCEL button
@@ -904,7 +907,20 @@ void event_editor::insert_handler(int old, int node)
 
 void event_editor::save()
 {
-	int m = (m_cur_msg >= 0) ? m_cur_msg : m_cur_msg_old;
+	int m;
+
+	if (m_cur_msg >= 0) {
+		m = m_cur_msg;
+	} else {
+		// the current message could be -1 because the message list
+		// lost focus, so remember the last focused message
+		// (but make sure it's valid)
+		if (m_cur_msg_old >= 0 && m_cur_msg_old < m_num_messages) {
+			m = m_cur_msg_old;
+		} else {
+			m = -1;
+		}
+	}
 
 	save_event(cur_event);
 	save_message(m);

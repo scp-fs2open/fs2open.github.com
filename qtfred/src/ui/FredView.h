@@ -44,7 +44,8 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void newMission();
 
  private slots:
-	void on_actionSave_As_triggered(bool);
+	 void on_actionSave_As_triggered(bool);
+	 void on_actionSave_triggered(bool);
 	void on_actionExit_triggered(bool);
 
 	void on_actionConstrainX_triggered(bool enabled);
@@ -153,6 +154,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void on_mission_loaded(const std::string& filepath);
 
 	void connectActionToViewSetting(QAction* option, bool* destination);
+	void connectActionToViewSetting(QAction* option, std::vector<bool>* vector, size_t idx);
 
 	void on_actionControlModeCamera_triggered(bool enabled);
 	void on_actionControlModeCurrentShip_triggered(bool enabled);
@@ -187,6 +189,8 @@ class FredView: public QMainWindow, public IDialogProvider {
 	QMenu* _controlModeMenu = nullptr;
 	QAction* _controlModeCamera = nullptr;
 	QAction* _controlModeCurrentShip = nullptr;
+
+	QString saveName = nullptr;
 
 	std::unique_ptr<Ui::FredView> ui;
 

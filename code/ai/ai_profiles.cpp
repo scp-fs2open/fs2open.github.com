@@ -468,6 +468,10 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$firing requires exact los:", AI::Profile_Flags::Require_exact_los);
 
+				set_flag(profile, "$fighterbay arrivals use carrier orientation:", AI::Profile_Flags::Fighterbay_arrivals_use_carrier_orient);
+
+				set_flag(profile, "$fighterbay departures use carrier orientation:", AI::Profile_Flags::Fighterbay_departures_use_carrier_orient);
+
 				if (optional_string("$ai path mode:"))
 				{
 					stuff_string(buf, F_NAME, NAME_LENGTH);
@@ -581,6 +585,20 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$reset last_hit_target_time for player hits:", AI::Profile_Flags::Reset_last_hit_target_time_for_player_hits);
 
+				if (optional_string("$turret target recheck time:"))
+				{
+					stuff_float(&profile->turret_target_recheck_time);
+					if (profile->turret_target_recheck_time < 0) {
+						Warning(LOCATION, "Turret target recheck time must be positive.");
+						profile->turret_target_recheck_time = 2000.0f;
+					}
+				}
+
+				set_flag(profile, "$prevent negative turret ammo:", AI::Profile_Flags::Prevent_negative_turret_ammo);
+
+				set_flag(profile, "$fix keep-safe-distance:", AI::Profile_Flags::Fix_keep_safe_distance);
+
+
 				// if we've been through once already and are at the same place, force a move
 				if (saved_Mp && (saved_Mp == Mp))
 				{
@@ -658,6 +676,7 @@ void ai_profile_t::reset()
     bay_depart_speed_mult = 1.0f;
 	second_order_lead_predict_factor = 0;
 	ai_range_aware_secondary_select_mode = AI_RANGE_AWARE_SEC_SEL_MODE_RETAIL;
+	turret_target_recheck_time = 2000.0f;
 
     for (int i = 0; i < NUM_SKILL_LEVELS; ++i) {
         max_incoming_asteroids[i] = 0;
@@ -741,5 +760,10 @@ void ai_profile_t::reset()
 	}
 	if (mod_supports_version(21, 4, 0)) {
 		flags.set(AI::Profile_Flags::Fixed_ship_weapon_collision);
+	}
+	if (mod_supports_version(22, 0, 0)) {
+		flags.set(AI::Profile_Flags::Fighterbay_arrivals_use_carrier_orient);
+		flags.set(AI::Profile_Flags::Prevent_negative_turret_ammo);
+		flags.set(AI::Profile_Flags::Fix_keep_safe_distance);
 	}
 }

@@ -10,6 +10,7 @@
 #include <memory>
 
 class player;
+struct sexp_container;
 
 
 // current pilot constants
@@ -22,14 +23,21 @@ static const unsigned int CSG_FILE_ID = 0x5f475343;	// "CSG_" in file
 //   1 - Adding support for the player is multi flag
 //   2 - Add language in use when pilot was created
 //	     (due to intel entries using translated text as the primary key)
-static const ubyte PLR_VERSION = 2;
+//   3 - Add SEXP containers
+//   4   Controls are removed, and instead a preset name is saved/loaded
+static const ubyte PLR_VERSION = 4;
 //   0 - initial version
 //   1 - re-add recent missions
 //   2 - separate single/multi squad name & pic
 //   3 - remove separate detail settings for campaigns
 //   4 - add CPV rollback for Red Alert missions
 //   5 - save rank to flags for quick access
-static const ubyte CSG_VERSION = 5;
+//   6 - add SEXP containers
+//   7 - Controls are removed, and instead a preset name is saved/loaded.
+static const ubyte CSG_VERSION = 7;
+
+// pilotfile::version and pilotfile::csg_version value when a file isn't loaded (or was just closed)
+static const ubyte PLR_VERSION_INVALID = 0xFF;
 
 typedef struct index_list_t {
 	SCP_string name;
@@ -68,7 +76,15 @@ class pilotfile {
 		pilotfile();
 		~pilotfile();
 
+		/**
+		 * @brief Loads the PLR file (or player .JSON)
+		 * @note Keep ::verify() up to date if you change anything in load_player
+		 */
 		bool load_player(const char *callsign, player *_p = nullptr, bool force_binary = false);
+
+		/**
+		 * @brief Loads the CSG file
+		 */
 		bool load_savefile(player *_p, const char *campaign);
 
 		bool save_player(player *_p = nullptr);
@@ -79,8 +95,24 @@ class pilotfile {
 		void update_stats_backout(scoring_struct *stats, bool training = false);
 		void reset_stats();
 
-		// for checking to see if a PLR file is basically valid
-		bool verify(const char *fname, int *rank = nullptr, char *valid_language = nullptr);
+		/**
+		 * Verifies a pilot file with the given filename
+		 * 
+		 * @param[in]  filename     The filename of the pilot file to test. Must have the .JSON extension.
+		 * @param[out] rank         If not nullptr, retrieve the rank in the current campaign or from multi
+		 * @param[out] valid_language   If not nullptr, retrieve the pilot's language
+		 * @param[out] flags            If not nullptr, retrieve any Player flags raised during verification
+		 * 
+		 * @returns false if a JSON handler error occurs, or
+		 * @returns false if a Section::Invalid occurs, or
+		 * @returns false if plr_id != PLR_FILE_ID, or
+		 * @returns false if the JSON file could not be parsed, or
+		 * @returns false if the file could not be opened, or
+		 * @returns false if filename.size() == 4, or
+		 * 
+		 * @returns true if the file is verified
+		 */
+		bool verify(const char *fname, int *rank = nullptr, char *valid_language = nullptr, int* flags = nullptr);
 
 		// whether current campaign savefile has valid data to work with
 		bool is_invalid()
@@ -97,7 +129,7 @@ class pilotfile {
 		SCP_string filename;
 		player *p;
 
-		int version;
+		ubyte plr_ver;
 		ubyte csg_ver;
 
 		// some sections are required before others...
@@ -105,7 +137,7 @@ class pilotfile {
 		bool m_have_info;
 
 		// set in case data appears wrong, so we can avoid loading/saving campaign savefile
-		bool m_data_invalid;
+		bool m_data_invalid;	// z64: Not used currently
 
 		// overall content list, can include reference to more than current
 		// mod/campaign provides
@@ -138,6 +170,8 @@ class pilotfile {
 		void plr_read_stats_multi();
 		void plr_read_multiplayer();
 		void plr_read_variables();
+		void plr_read_containers();
+
 		void plr_read_hud();
 		void plr_read_controls();
 
@@ -148,6 +182,7 @@ class pilotfile {
 		void plr_write_stats_multi();
 		void plr_write_multiplayer();
 		void plr_write_variables();
+		void plr_write_containers();
 		void plr_write_hud();
 		void plr_write_controls();
 
@@ -170,6 +205,8 @@ class pilotfile {
 		void csg_read_controls();
 		void csg_read_cutscenes();
 		void csg_read_lastmissions();
+		void csg_read_containers();
+		void csg_read_container(sexp_container& container);
 
 		void csg_write_flags();
 		void csg_write_info();
@@ -184,6 +221,8 @@ class pilotfile {
 		void csg_write_controls();
 		void csg_write_cutscenes();
 		void csg_write_lastmissions();
+		void csg_write_containers();
+		void csg_write_container(const sexp_container& container);
 
 		// similar to PLR verify, except we only want the rank
 		bool get_csg_rank(int *rank);

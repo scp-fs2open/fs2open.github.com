@@ -230,6 +230,7 @@ enum shader_type {
 #define SDR_FLAG_MODEL_AMBIENT_MAP	(1<<19)
 #define SDR_FLAG_MODEL_NORMAL_ALPHA	(1<<20)
 #define SDR_FLAG_MODEL_THICK_OUTLINES (1<<21) // Renders the model geometry as an outline with configurable line width
+#define SDR_FLAG_MODEL_ALPHA_MULT (1<<22) 
 
 #define SDR_FLAG_PARTICLE_POINT_GEN			(1<<0)
 
@@ -981,6 +982,9 @@ extern void gr_get_string_size( int *w, int *h, const char * text, int len = 999
 
 // Returns the height of the current font
 extern int gr_get_font_height();
+
+// Returns a scaled amount of lines per the current font --wookieejedi
+extern int gr_get_dynamic_font_lines(int number_default_lines);
 
 extern io::mouse::Cursor* Web_cursor;
 

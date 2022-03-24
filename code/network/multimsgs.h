@@ -29,6 +29,7 @@ struct beam_info;
 class ship_subsys;
 struct log_entry;
 struct beam_fire_info;
+namespace animation { enum class ModelAnimationDirection; }
 
 // macros for building up packets -- to save on time and typing.  Important to note that local variables
 // must be named correctly
@@ -496,6 +497,10 @@ void process_NEW_primary_fired_packet(ubyte* data, header* hinfo);
 // new primary fired info
 void send_non_homing_fired_packet(ship *shipp, int banks_fired, bool secondary = false);
 void process_non_homing_fired_packet(ubyte *data, header *hinfo);
+
+// animation triggered info
+void send_animation_triggered_packet(unsigned int animationId, object* parent_object, ushort special_mode, const animation::ModelAnimationDirection& direction, bool force, bool instant, bool pause, const int* /*time*/ = nullptr);
+void process_animation_triggered_packet(ubyte* data, header* hinfo);
 
 // new countermeasure fired info
 void send_NEW_countermeasure_fired_packet(object *objp, int cmeasure_count, int rand_val);

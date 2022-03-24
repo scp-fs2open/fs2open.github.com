@@ -70,7 +70,7 @@ int Om_mode = OM_MODE_NONE;
 #define OM_NOTIFY_TIME								8000
 #define OM_NOTIFY_Y									430
 #define OM_NOTIFY_Y2									440
-int Om_notify_stamp = -1;
+UI_TIMESTAMP Om_notify_stamp;
 char Om_notify_string[255];
 
 // load all background bitmaps
@@ -630,7 +630,7 @@ void options_multi_add_notify(const char *str)
 	} 		
 
 	// set the timestamp
-	Om_notify_stamp = timestamp(OM_NOTIFY_TIME);
+	Om_notify_stamp = ui_timestamp(OM_NOTIFY_TIME);
 }
 
 // process and blit any notification messages
@@ -646,13 +646,13 @@ void options_multi_notify_process()
 	int line_height;
 	
 	// if there is no timestamp, do nothing
-	if(Om_notify_stamp == -1){
+	if (!Om_notify_stamp.isValid()){
 		return;
 	}
 
 	// otherwise, if it has elapsed, unset it
-	if(timestamp_elapsed(Om_notify_stamp)){
-		Om_notify_stamp = -1;
+	if (ui_timestamp_elapsed(Om_notify_stamp)){
+		Om_notify_stamp = UI_TIMESTAMP::invalid();
 		return;
 	}
 
@@ -2291,7 +2291,7 @@ void options_multi_select()
 	Om_mode = OM_MODE_GENERAL;
 
 	// clear any notification messages
-	Om_notify_stamp = -1;	
+	Om_notify_stamp = UI_TIMESTAMP::invalid();
 
 	// enable all the protocol controls
 	options_multi_enable_protocol_controls();	
