@@ -848,7 +848,9 @@ namespace animation {
 	};
 
 	bool ModelAnimationSet::updateMoveable(polymodel_instance* pmi, const SCP_string& name, const std::vector<linb::any>& args) const {
-		auto moveable = m_moveableSet.find(name);
+		SCP_string lowername = name;
+		SCP_tolower(lowername);
+		auto moveable = m_moveableSet.find(lowername);
 		if (moveable == m_moveableSet.end())
 			return false;
 
@@ -1271,6 +1273,7 @@ namespace animation {
 		stuff_string(animID, F_NAME, NAME_LENGTH);
 
 		SCP_string name = animID;
+		SCP_tolower(name);
 
 		if (s_moveablesById.count(name))
 			error_display(1, "Moveable with name %s already exists!", animID);
@@ -1360,7 +1363,8 @@ namespace animation {
 
 		set.m_moveableSet.clear();
 
-		for (const SCP_string& request : requestedAnimations) {
+		for (SCP_string request : requestedAnimations) {
+			SCP_tolower(request);
 			auto animIt = s_moveablesById.find(request);
 			if (animIt != s_moveablesById.end()) {
 				set.m_moveableSet.emplace(animIt->first, animIt->second);
