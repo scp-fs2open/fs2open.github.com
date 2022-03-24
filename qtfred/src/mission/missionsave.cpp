@@ -2215,7 +2215,7 @@ int CFred_mission_save::save_campaign_file(const char *pathname)
 			fout(" %s", cm.main_hall.c_str());
 		} else {
 			// save Bastion flag properly
-			fout(" %d", cm.flags | ((cm.main_hall != "") ? CMISSION_FLAG_BASTION : 0));
+			fout(" %d", cm.flags | ((! cm.main_hall.empty()) ? CMISSION_FLAG_BASTION : 0));
 		}
 
 		if (cm.debrief_persona_index > 0) {
@@ -2302,7 +2302,7 @@ int CFred_mission_save::save_campaign_file(const char *pathname)
 
 	required_string_fred("#End");
 	parse_comments(2);
-	token_found = NULL;
+	token_found = nullptr;
 	parse_comments();
 	fout("\n");
 

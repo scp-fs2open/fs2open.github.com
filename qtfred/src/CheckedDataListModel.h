@@ -150,13 +150,13 @@ private:
 	}
 
 public:
-	inline const SCP_unordered_set<T*> getCheckedData() {
+	inline SCP_unordered_set<T*> getCheckedData() {
 		SCP_unordered_set<T*> ret{items.size() / 2};
 		getCheckedData2(ret);
 		return ret;
 	}
 
-	inline const SCP_unordered_set<const T*> getCheckedData() const {
+	inline SCP_unordered_set<const T*> getCheckedData() const {
 		SCP_unordered_set<const T*> ret{items.size() / 2};
 		const_cast<CheckedDataListModel<T>*>(this)->getCheckedData2(ret);
 		return ret;
