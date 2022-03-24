@@ -106,7 +106,7 @@ ushort multi_client_lookup_ref_obj_net_sig();
 int multi_client_lookup_frame_idx();
 
 // Quick lookup for the most recently received timestamp.
-int multi_client_lookup_frame_timestamp();
+fix multi_client_lookup_frame_missiontime();
 
 // reset all the necessary info for respawning player.
 void multi_oo_respawn_reset_info(ushort net_sig);
