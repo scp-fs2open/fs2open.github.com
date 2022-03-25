@@ -364,6 +364,34 @@ int LuaSEXP::getCategory() {
 	}
 	return _category;
 }
+bool LuaSEXP::parseCheckEndOfDescription() {
+	// Since we're stuffing strings, this is the best way to "unstuff" a string
+	// if we determine we're finished with the description - and we also want
+	// to preserve whitespace (which the parser eats) while building the description
+	pause_parse();
+
+	// look for any token that can follow $Description
+	auto possible_tokens =
+	{
+		"$Operator:",
+		"#End",
+		"$Repeat",
+		"$Parameter:"
+	};
+
+	bool found = false;
+	for (auto token : possible_tokens)
+	{
+		if (optional_string(token))
+		{
+			found = true;
+			break;
+		}
+	}
+
+	unpause_parse();
+	return found;
+}
 void LuaSEXP::parseTable() {
 	required_string("$Category:");
 	SCP_string category;
@@ -439,10 +467,36 @@ void LuaSEXP::parseTable() {
 
 	required_string("$Description:");
 
-	SCP_string description;
+	SCP_string description, extra;
 	stuff_string(description, F_NAME);
+	while (!parseCheckEndOfDescription()) {
+		while (skip_eoln()) {
+			description += "\r\n";
+		}
+		stuff_string(extra, F_NAME);
+		description += extra;
+	}
 
-	help_text << "\t" << description << "\r\n";
+	help_text << "\t" << description << "\r\n\r\n";
+
+	// argument string
+	help_text << "Takes ";
+	if (_max_args == INT_MAX) {
+		help_text << _min_args << " or more arguments:";
+	} else {
+		if (_max_args == 0) {
+			help_text << "no arguments.";
+		} else if (_min_args == _max_args) {
+			help_text << _min_args << " argument";
+			if (_min_args > 1) {
+				help_text << "s";
+			}
+			help_text << ":";
+		} else {
+			help_text << _min_args << " to " << _max_args << " arguments:";
+		}
+	}
+	help_text << "\r\n";
 
 	bool variable_arg_part = false;
 	if (optional_string("$Repeat")) {
