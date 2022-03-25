@@ -9,6 +9,7 @@
 
 #include <cstdio>
 #include <cstdarg>
+#include <exception>
 #include <string>
 
 #include "cfile/cfile.h"
@@ -16,12 +17,14 @@
 #include "controlconfig/presets.h"
 #include "debugconsole/console.h"
 #include "def_files/def_files.h"
+#include "globalincs/pstypes.h"
 #include "globalincs/systemvars.h"
 #include "io/joy.h"
 #include "io/key.h"
 #include "io/mouse.h"
 #include "localization/localize.h"
 #include "options/Option.h"
+#include "osapi/dialogs.h"
 #include "parse/parselo.h"
 
 #include <map>
@@ -1607,7 +1610,12 @@ void control_config_common_read_section(int s, bool first_override) {
 				key = -1;
 			} else {
 				stuff_string(szTempBuffer, F_NAME);
-				key = mKeyNameToVal[szTempBuffer];
+				try{
+					key = mKeyNameToVal.at(szTempBuffer);
+				}
+				catch(std::out_of_range&){
+					Warning(LOCATION,"Table tried to set default for a key that doesn't exist: %s",szTempBuffer.c_str());
+				}
 			}
 		}
 
@@ -1640,7 +1648,12 @@ void control_config_common_read_section(int s, bool first_override) {
 			// Config menu options
 			if (optional_string("$Category:")) {
 				stuff_string(szTempBuffer, F_NAME);
-				item->tab = mCCTabNameToVal[szTempBuffer];
+				try{
+					item->tab = mCCTabNameToVal.at(szTempBuffer);
+				}
+				catch(std::out_of_range&){
+					Warning(LOCATION,"Table refered to a key category that doesn't exist: %s",szTempBuffer.c_str());
+				}
 			}
 
 			if (optional_string("$Text:")) {
@@ -1655,7 +1668,12 @@ void control_config_common_read_section(int s, bool first_override) {
 
 			if (optional_string("$Type:")) {
 				stuff_string(szTempBuffer, F_NAME);
-				item->type = mCCTypeNameToVal[szTempBuffer];
+				try{
+					item->type = mCCTypeNameToVal.at(szTempBuffer);
+				}
+				catch(std::out_of_range&){
+					Warning(LOCATION,"Table refered to a key type that doesn't exist: %s",szTempBuffer.c_str());
+				}
 			}
 
 			// Gameplay options
