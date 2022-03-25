@@ -1612,8 +1612,8 @@ void control_config_common_read_section(int s, bool first_override) {
 				stuff_string(szTempBuffer, F_NAME);
 				try {
 					key = mKeyNameToVal.at(szTempBuffer);
-				} catch(std::out_of_range&) {
-					Warning(LOCATION,"'$Key Default:' entry for invalid key: %s",szTempBuffer.c_str());
+				} catch (std::out_of_range&) {
+					Warning(LOCATION,"Table tried to set '$Key Default' for a key that doesn't exist: %s",szTempBuffer.c_str());
 				}
 			}
 		}
@@ -1649,8 +1649,8 @@ void control_config_common_read_section(int s, bool first_override) {
 				stuff_string(szTempBuffer, F_NAME);
 				try {
 					item->tab = mCCTabNameToVal.at(szTempBuffer);
-				} catch(std::out_of_range&) {
-					Warning(LOCATION," '$Category:' entry is invalid key category: %s",szTempBuffer.c_str());
+				} catch (std::out_of_range&) {
+					Warning(LOCATION,"Table tried to set '$Category' for a category that doesn't exist: %s",szTempBuffer.c_str());
 				}
 			}
 
@@ -1668,8 +1668,8 @@ void control_config_common_read_section(int s, bool first_override) {
 				stuff_string(szTempBuffer, F_NAME);
 				try {
 					item->type = mCCTypeNameToVal.at(szTempBuffer);
-				} catch(std::out_of_range&) {
-					Warning(LOCATION,"'$Type:' value is invalid key type: %s",szTempBuffer.c_str());
+				} catch (std::out_of_range&) {
+					Warning(LOCATION,"Table tried to set '$Type' for a type that doesn't exist: %s",szTempBuffer.c_str());
 				}
 			}
 
