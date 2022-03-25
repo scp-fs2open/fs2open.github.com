@@ -1652,7 +1652,7 @@ void control_config_common_read_section(int s, bool first_override) {
 					item->tab = mCCTabNameToVal.at(szTempBuffer);
 				}
 				catch(std::out_of_range&){
-					Warning(LOCATION,"Table refered to a key category that doesn't exist: %s",szTempBuffer.c_str());
+					Warning(LOCATION,"Table referred to a key category that doesn't exist: %s",szTempBuffer.c_str());
 				}
 			}
 
@@ -1672,7 +1672,7 @@ void control_config_common_read_section(int s, bool first_override) {
 					item->type = mCCTypeNameToVal.at(szTempBuffer);
 				}
 				catch(std::out_of_range&){
-					Warning(LOCATION,"Table refered to a key type that doesn't exist: %s",szTempBuffer.c_str());
+					Warning(LOCATION,"Table referred to a key type that doesn't exist: %s",szTempBuffer.c_str());
 				}
 			}
 
