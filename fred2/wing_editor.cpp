@@ -61,6 +61,8 @@ wing_editor::wing_editor(CWnd* pParent /*=NULL*/)
 	m_no_arrival_message = FALSE;
 	m_no_arrival_warp = FALSE;
 	m_no_departure_warp = FALSE;
+	m_same_arrival_warp_when_docked = FALSE;
+	m_same_departure_warp_when_docked = FALSE;
 	m_no_dynamic = FALSE;
 	//}}AFX_DATA_INIT
 	modified = 0;
@@ -96,6 +98,8 @@ void wing_editor::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_NO_ARRIVAL_MESSAGE, m_no_arrival_message);
 	DDX_Check(pDX, IDC_NO_ARRIVAL_WARP, m_no_arrival_warp);
 	DDX_Check(pDX, IDC_NO_DEPARTURE_WARP, m_no_departure_warp);
+	DDX_Check(pDX, IDC_SAME_ARRIVAL_WARP_WHEN_DOCKED, m_same_arrival_warp_when_docked);
+	DDX_Check(pDX, IDC_SAME_DEPARTURE_WARP_WHEN_DOCKED, m_same_departure_warp_when_docked);
 	DDX_Check(pDX, IDC_NO_DYNAMIC, m_no_dynamic);
 	//}}AFX_DATA_MAP
 
@@ -289,10 +293,12 @@ void wing_editor::initialize_data_safe(int full_update)
 		m_reinforcement = FALSE;
 		m_hotkey = 0;
 		m_ignore_count = 0;
-		m_no_arrival_music = 0;
-		m_no_arrival_message = 0;
-		m_no_arrival_warp = 0;
-		m_no_departure_warp = 0;
+		m_no_arrival_music = FALSE;
+		m_no_arrival_message = FALSE;
+		m_no_arrival_warp = FALSE;
+		m_no_departure_warp = FALSE;
+		m_same_arrival_warp_when_docked = FALSE;
+		m_same_departure_warp_when_docked = FALSE;
 		m_no_dynamic = 0;
 		player_enabled = enable = FALSE;
 
@@ -394,25 +400,14 @@ void wing_editor::initialize_data_safe(int full_update)
 		else
 			m_ignore_count = 0;
 
-		if (Wings[cur_wing].flags[Ship::Wing_Flags::No_arrival_music])
-			m_no_arrival_music = 1;
-		else
-			m_no_arrival_music = 0;
+		m_no_arrival_music = Wings[cur_wing].flags[Ship::Wing_Flags::No_arrival_music] ? TRUE : FALSE;
+		m_no_arrival_message = Wings[cur_wing].flags[Ship::Wing_Flags::No_arrival_message] ? TRUE : FALSE;
 
-		if ( Wings[cur_wing].flags[Ship::Wing_Flags::No_arrival_message] )
-			m_no_arrival_message = 1;
-		else
-			m_no_arrival_message = 0;
+		m_no_arrival_warp = Wings[cur_wing].flags[Ship::Wing_Flags::No_arrival_warp] ? TRUE : FALSE;
+		m_no_departure_warp = Wings[cur_wing].flags[Ship::Wing_Flags::No_departure_warp] ? TRUE : FALSE;
 
-		if ( Wings[cur_wing].flags[Ship::Wing_Flags::No_arrival_warp] )
-			m_no_arrival_warp = 1;
-		else
-			m_no_arrival_warp = 0;
-
-		if ( Wings[cur_wing].flags[Ship::Wing_Flags::No_departure_warp] )
-			m_no_departure_warp = 1;
-		else
-			m_no_departure_warp = 0;
+		m_same_arrival_warp_when_docked = Wings[cur_wing].flags[Ship::Wing_Flags::Same_arrival_warp_when_docked] ? TRUE : FALSE;
+		m_same_departure_warp_when_docked = Wings[cur_wing].flags[Ship::Wing_Flags::Same_departure_warp_when_docked] ? TRUE : FALSE;
 
 		ptr = (CComboBox *) GetDlgItem(IDC_WING_SPECIAL_SHIP);
 		ptr->ResetContent();
@@ -496,6 +491,8 @@ void wing_editor::initialize_data_safe(int full_update)
 	GetDlgItem(IDC_NO_ARRIVAL_MESSAGE)->EnableWindow(enable);
 	GetDlgItem(IDC_NO_ARRIVAL_WARP)->EnableWindow(enable);
 	GetDlgItem(IDC_NO_DEPARTURE_WARP)->EnableWindow(enable);
+	GetDlgItem(IDC_SAME_ARRIVAL_WARP_WHEN_DOCKED)->EnableWindow(enable);
+	GetDlgItem(IDC_SAME_DEPARTURE_WARP_WHEN_DOCKED)->EnableWindow(enable);
 
 	if (cur_wing >= 0) {
 		enable = TRUE;
@@ -883,6 +880,29 @@ void wing_editor::update_data_safe()
         if (Wings[cur_wing].flags[Ship::Wing_Flags::No_departure_warp])
             set_modified();
         Wings[cur_wing].flags.remove(Ship::Wing_Flags::No_departure_warp);
+    }
+
+    // set the same warp effect for wings flag
+    if (m_same_arrival_warp_when_docked) {
+        if (!(Wings[cur_wing].flags[Ship::Wing_Flags::Same_arrival_warp_when_docked]))
+            set_modified();
+        Wings[cur_wing].flags.set(Ship::Wing_Flags::Same_arrival_warp_when_docked);
+    }
+    else {
+        if (Wings[cur_wing].flags[Ship::Wing_Flags::Same_arrival_warp_when_docked])
+            set_modified();
+        Wings[cur_wing].flags.remove(Ship::Wing_Flags::Same_arrival_warp_when_docked);
+    }
+    // set the same warp effect for wings flag
+    if (m_same_departure_warp_when_docked) {
+        if (!(Wings[cur_wing].flags[Ship::Wing_Flags::Same_departure_warp_when_docked]))
+            set_modified();
+        Wings[cur_wing].flags.set(Ship::Wing_Flags::Same_departure_warp_when_docked);
+    }
+    else {
+        if (Wings[cur_wing].flags[Ship::Wing_Flags::Same_departure_warp_when_docked])
+            set_modified();
+        Wings[cur_wing].flags.remove(Ship::Wing_Flags::Same_departure_warp_when_docked);
     }
 
     if (m_no_dynamic) {

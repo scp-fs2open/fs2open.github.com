@@ -812,6 +812,8 @@
 #define IDC_CHECK2                      1415
 #define IDC_SPECIAL_EXP                 1415
 #define IDC_SPECIAL_HITPOINTS           1416
+#define IDC_SAME_ARRIVAL_WARP_WHEN_DOCKED 1417
+#define IDC_SAME_DEPARTURE_WARP_WHEN_DOCKED 1418
 #define IDC_EVENT_SCORE                 1419
 #define IDC_PROPAGATE_ICONS             1420
 #define IDC_LOCAL                       1421

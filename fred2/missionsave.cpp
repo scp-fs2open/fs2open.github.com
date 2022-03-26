@@ -3455,6 +3455,10 @@ int CFred_mission_save::save_objects()
 				fout(" \"no_collide\"");
 			if (shipp->flags[Ship::Ship_Flags::No_disabled_self_destruct])
 				fout(" \"no-disabled-self-destruct\"");
+			if (shipp->flags[Ship::Ship_Flags::Same_arrival_warp_when_docked])
+				fout(" \"same-arrival-warp-when-docked\"");
+			if (shipp->flags[Ship::Ship_Flags::Same_departure_warp_when_docked])
+				fout(" \"same-departure-warp-when-docked\"");
 			fout(" )");
 		}
 		// -----------------------------------------------------------
@@ -4577,6 +4581,15 @@ int CFred_mission_save::save_wings()
 			fout(" \"no-departure-warp\"");
 		if (Wings[i].flags[Ship::Wing_Flags::No_dynamic])
 			fout(" \"no-dynamic\"");
+		if (Mission_save_format != FSO_FORMAT_RETAIL)
+		{
+			if (Wings[i].flags[Ship::Wing_Flags::Nav_carry])
+				fout(" \"nav-carry-status\"");
+			if (Wings[i].flags[Ship::Wing_Flags::Same_arrival_warp_when_docked])
+				fout(" \"same-arrival-warp-when-docked\"");
+			if (Wings[i].flags[Ship::Wing_Flags::Same_departure_warp_when_docked])
+				fout(" \"same-departure-warp-when-docked\"");
+		}
 
 		fout(" )");
 

@@ -100,6 +100,8 @@ namespace Mission {
         SF_No_disabled_self_destruct,
 		SF_Has_display_name,
 		SF_Hide_mission_log,
+		SF_Same_arrival_warp_when_docked,
+		SF_Same_departure_warp_when_docked,
 
 		NUM_VALUES
 	};

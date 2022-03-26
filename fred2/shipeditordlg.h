@@ -91,14 +91,16 @@ public:
 // Dialog Data
 	//{{AFX_DATA(CShipEditorDlg)
 	enum { IDD = IDD_SHIP_EDITOR };
-	CButton	m_no_departure_warp;
 	CButton	m_no_arrival_warp;
+	CButton	m_no_departure_warp;
+	CButton	m_same_arrival_warp_when_docked;
+	CButton	m_same_departure_warp_when_docked;
 	CButton	m_player_ship;
 	CSpinButtonCtrl	m_destroy_spin;
-	CSpinButtonCtrl	m_departure_delay_spin;
 	CSpinButtonCtrl	m_arrival_delay_spin;
-	sexp_tree	m_departure_tree;
+	CSpinButtonCtrl	m_departure_delay_spin;
 	sexp_tree	m_arrival_tree;
+	sexp_tree	m_departure_tree;
 	CString	m_ship_name;
 	CString	m_cargo1;
 	int		m_ship_class;
@@ -159,6 +161,8 @@ protected:
 	afx_msg void OnPlayerShip();
 	afx_msg void OnNoArrivalWarp();
 	afx_msg void OnNoDepartureWarp();
+	afx_msg void OnSameArrivalWarpWhenDocked();
+	afx_msg void OnSameDepartureWarpWhenDocked();
 	afx_msg void OnSelchangeDepartureLocation();
 	afx_msg void OnSelchangeHotkey();
 	afx_msg void OnFlags();
