@@ -1832,48 +1832,44 @@ void CShipEditorDlg::OnSelchangedDepartureTree(NMHDR* pNMHDR, LRESULT* pResult)
 	*pResult = 0;
 }
 
+void CShipEditorDlg::calc_help_height()
+{
+	CRect minihelp, help;
+
+	GetDlgItem(IDC_MINI_HELP_BOX)->GetWindowRect(minihelp);
+	GetDlgItem(IDC_HELP_BOX)->GetWindowRect(help);
+	help_height = (help.bottom - minihelp.top) + 10;
+}
+
 void CShipEditorDlg::calc_cue_height()
 {
-	CRect cue, help;
+	CRect cue;
 
 	GetDlgItem(IDC_CUE_FRAME)->GetWindowRect(cue);
-	cue_height = (cue.bottom - cue.top)+20;
-	if (Show_sexp_help){
-		GetDlgItem(IDC_HELP_BOX)->GetWindowRect(help);
-		cue_height += (help.bottom - help.top);
-	}
-
-	if (Hide_ship_cues) {
-		((CButton *) GetDlgItem(IDC_HIDE_CUES)) -> SetCheck(1);
-		OnHideCues();
-	}
+	cue_height = (cue.bottom - cue.top) + 10;
 }
 
 void CShipEditorDlg::show_hide_sexp_help()
 {
-	CRect rect, help;
-	GetDlgItem(IDC_HELP_BOX)->GetWindowRect(help);
-	float box_size = (float)(help.bottom - help.top);
+	CRect rect;
 
-	if (Show_sexp_help){
-		cue_height += (int)box_size;
-	} else {
-		cue_height -= (int)box_size;
-	}
-
-	if (((CButton *) GetDlgItem(IDC_HIDE_CUES)) -> GetCheck()){
+	if (((CButton *) GetDlgItem(IDC_HIDE_CUES)) -> GetCheck())
 		return;
-	}
 
 	GetWindowRect(rect);
 
-	if (Show_sexp_help){
-		rect.bottom += (LONG)box_size;
-	} else {
-		rect.bottom -= (LONG)box_size;
-	}
+	if (Show_sexp_help)
+		rect.bottom += help_height;
+	else
+		rect.bottom -= help_height;
 
 	MoveWindow(rect);
+}
+
+void CShipEditorDlg::show_hide_cues()
+{
+	((CButton*)GetDlgItem(IDC_HIDE_CUES))->SetCheck(Hide_ship_cues ? TRUE : FALSE);
+	OnHideCues();
 }
 
 void CShipEditorDlg::OnHideCues() 
@@ -1881,12 +1877,18 @@ void CShipEditorDlg::OnHideCues()
 	CRect rect;
 
 	GetWindowRect(rect);
+
 	if (((CButton *) GetDlgItem(IDC_HIDE_CUES)) -> GetCheck()) {
 		rect.bottom -= cue_height;
-		Hide_ship_cues = 1;
+		if (Show_sexp_help)
+			rect.bottom -= help_height;
 
+		Hide_ship_cues = 1;
 	} else {
 		rect.bottom += cue_height;
+		if (Show_sexp_help)
+			rect.bottom += help_height;
+
 		Hide_ship_cues = 0;
 	}
 

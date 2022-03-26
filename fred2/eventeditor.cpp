@@ -181,7 +181,7 @@ void maybe_add_head(CComboBox *box, char* name)
 
 BOOL event_editor::OnInitDialog() 
 {
-	int i, adjust = 0;
+	int i;
 	BOOL r = TRUE;
 	CListBox *list;
 	CComboBox *box;
@@ -191,10 +191,7 @@ BOOL event_editor::OnInitDialog()
 	m_play_bm.LoadBitmap(IDB_PLAY);
 	((CButton *) GetDlgItem(IDC_PLAY)) -> SetBitmap(m_play_bm);
 
-	if (!Show_sexp_help)
-		adjust = -SEXP_HELP_BOX_SIZE;
-
-	theApp.init_window(&Events_wnd_data, this, adjust);
+	theApp.init_window(&Events_wnd_data, this, 0);
 	m_event_tree.setup((CEdit *) GetDlgItem(IDC_HELP_BOX));
 	load_tree();
 	create_tree();
