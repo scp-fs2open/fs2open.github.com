@@ -7899,7 +7899,7 @@ void process_non_homing_fired_packet(ubyte* data, header* hinfo)
 		secondary = true;
 	}
 
-	ushort time_elapsed;
+	fix time_elapsed;
 	ushort target_ref;
 	int client_frame;
 	angles adjustment_angles, player_ship_angles;
@@ -7909,7 +7909,7 @@ void process_non_homing_fired_packet(ubyte* data, header* hinfo)
 	//finish processing the packet 
 	GET_USHORT(target_ref);
 	GET_INT(client_frame);
-	GET_USHORT(time_elapsed);
+	GET_INT(time_elapsed);
 	GET_FLOAT(distance);
 	GET_VECTOR(ref_to_ship_vec);
 	GET_FLOAT(adjustment_angles.b);
@@ -7950,12 +7950,11 @@ void process_non_homing_fired_packet(ubyte* data, header* hinfo)
 	}
 
 	// figure out correct start frame
-	int frame = multi_ship_record_find_frame(client_frame, (int)time_elapsed);
+	int frame = multi_ship_record_find_frame(client_frame, time_elapsed);
 
 	if (frame > -1) {
 		// adjust time so that we can interpolate the position and orientation that was seen on the client.
-		int time_after_frame = multi_ship_record_find_time_after_frame(client_frame, frame, (int)time_elapsed);
-		Assertion(time_after_frame >= 0, "Primary fire packet processor found an invalid time_after_frame of %d", time_after_frame);
+		fix time_after = multi_ship_record_find_time_after_frame(client_frame, frame, time_elapsed);
 
 		vec3d new_tar_pos = multi_ship_record_lookup_position(objp_ref, frame);
 		matrix new_tar_ori = multi_ship_record_lookup_orientation(objp_ref, frame);
@@ -7988,7 +7987,7 @@ void process_non_homing_fired_packet(ubyte* data, header* hinfo)
 		// Now multiply the two matrices to find the orientation of the firing ship.
 		matrix new_player_ori;
 		vm_matrix_x_matrix(&new_player_ori, &old_player_ori, &temp_ori);
-		multi_ship_record_add_rollback_shot(objp, &new_player_pos, &new_player_ori, frame, secondary);
+		multi_ship_record_add_rollback_shot(objp, &new_player_pos, &new_player_ori, frame, secondary, time_after);
 
 	}	// if the new way fails for some reason, use the old way.
 	else {
