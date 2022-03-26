@@ -39,9 +39,8 @@
 // OBJECT UPDATE STRUCTS
 // 
 
-extern const std::uint32_t MAX_TIME;
-constexpr int TIMESTAMP_OUT_IF_ERROR = 17; // The default value to send for a timestamp if FSO makes a mistake and calculates a negative timestamp.(instead of a crash, just guess)
-constexpr int OO_MAIN_HEADER_SIZE = 6;  // two ubytes and an int
+const std::uint32_t MAX_FIX_TIME = 2147483647;
+constexpr int OO_MAIN_HEADER_SIZE = 8;  // one ubyte, one fix, and an int
 
 
 // One frame record per ship with each contained array holding one element for each frame.
@@ -54,7 +53,7 @@ struct oo_ship_position_records {
 
 // keeps track of what has been sent to each player, helps cut down on bandwidth, allowing only new information to be sent instead of old.
 struct oo_info_sent_to_players {	
-	int timestamp;					// The overall timestamp which is used to decide if a new packet should be sent to this player for this ship.
+	fix next_update;					// The missiontime when a new packet should be sent to this player for this ship.
 
 	vec3d position;					// If they are stationary, there's no need to update their position.
 	float hull;						// no need to send hull if hull hasn't changed.
@@ -144,6 +143,7 @@ struct oo_unsimulated_shots {
 	vec3d pos;				// the relative position calculated from the non-homing packet.
 	matrix orient;			// the relative orientation from the non-homing packet.
 	bool secondary_shot;	// is this a dumbfire missile shot?
+	fix time_after;			// to be implemented.  Allows the firerer of the shot to actually be in the right place when they fire
 };
 
 // our main struct for keeping track of all interpolation and oo packet info.
@@ -156,7 +156,7 @@ struct oo_general_info {
 
 	// The previously received frametimes.  One entry for *every* frame, received or not, up to the last received frame.
 	// For frames it does not receive, it assumes that the frame time is the same as the frames around it.
-	SCP_vector<ubyte> received_frametimes[MAX_PLAYERS];
+	SCP_vector<fix> received_frametimes[MAX_PLAYERS];
 
 	// Frame tracking info, we can have up to INT_MAX frames, but to save on bandwidth and memory we have to "wrap"
 	// the index.  Cur_frame_index goes up to MAX_FRAMES_RECORDED and makes info easy to access, wrap_count counts 
@@ -165,7 +165,7 @@ struct oo_general_info {
 	int number_of_frames;									// how many frames have we gone through, total.
 	ubyte cur_frame_index;									// the current frame index (to access the recorded info)
 
-	fix timestamps[MAX_FRAMES_RECORDED];					// The timestamp for the recorded frame
+	fix mission_times[MAX_FRAMES_RECORDED];					// The timestamp for the recorded frame
 	SCP_vector<oo_ship_position_records> frame_info;		// Actually keeps track of ship physics info.  Uses net_signature as its index.
 	SCP_vector<oo_netplayer_records> player_frame_info;		// keeps track of player targets and what has been sent to each player. Uses player as the index
 
@@ -194,7 +194,7 @@ bool Afterburn_hack = false;			// HACK!!!
 int multi_find_prev_frame_idx();
 
 // quickly lookup how much time has passed since the given frame.
-uint multi_ship_record_get_time_elapsed(int original_frame, int new_frame);
+fix multi_ship_record_get_time_elapsed(int original_frame, int new_frame);
 
 // fire the rollback weapons that are in the rollback struct
 void multi_oo_fire_rollback_shots(int frame_idx);
@@ -243,8 +243,8 @@ float multi_oo_calc_pos_time_difference(int player_id, int net_sig_idx);
 #define OO_VIEW_CONE_DOT			(0.1f)
 #define OO_VIEW_DIFF_TOL			(0.15f)			// if the dotproducts differ this far between frames, he's coming into view
 
-// no timestamp should ever have sat for longer than this. 
-#define OO_MAX_TIMESTAMP			2500
+// no timestamp should ever have sat for longer than this. Originally 2500
+#define OO_MAX_TIMESTAMP			164000
 
 // distance class
 #define OO_NEAR						0
@@ -255,71 +255,73 @@ float multi_oo_calc_pos_time_difference(int player_id, int net_sig_idx);
 #define OO_FAR_DIST					(1400.0f)
 
 // how often we should send full hull/shield updates
-#define OO_HULL_SHIELD_TIME		600
-#define OO_SUBSYS_TIME				1000
+#define OO_HULL_SHIELD_TIME		39000	// originally 600
+#define OO_SUBSYS_TIME				65536	// originally 1000
 
 // timestamp values for object update times based on client's update level.
+// Notice everything is now in fix format.  Turns out Timestamp() is not always accurate in mutli,
+// see other multi functions and packets.
 // Cyborg17 - This is the one update number I have adjusted, because it's the player's target.
-int Multi_oo_target_update_times[MAX_OBJ_UPDATE_LEVELS] = 
+fix Multi_oo_target_update_times[MAX_OBJ_UPDATE_LEVELS] = 
 {
-	50, 				// 20x a second 
-	50, 				// 20x a second
-	20,				// 50x a second
-	20,				// 50x a second
+	3200, 				// 20x a second, originally 50
+	3200, 				// 20x a second, originally 50
+	1300,				// 50x a second, originally 20
+	1300,				// 50x a second, originally 20
 };
 
-// for near ships
-int Multi_oo_front_near_update_times[MAX_OBJ_UPDATE_LEVELS] =
+// for near ships in fix format
+fix Multi_oo_front_near_update_times[MAX_OBJ_UPDATE_LEVELS] =
 {
-	150,				// low update
-	100,				// medium update
-	66,				// high update
-	66,				// LAN update
+	9750,				// low update, originally 150, ~ 6x a second
+	6500,				// medium update, orginally 100, 10x a second 
+	4300,				// high update, orginally 66, ~ 15x a second
+	4300,				// LAN update, orginally 66, ~ 15x a second
 };
 
-// for medium ships
-int Multi_oo_front_medium_update_times[MAX_OBJ_UPDATE_LEVELS] =
+// for medium ships in fix format
+fix Multi_oo_front_medium_update_times[MAX_OBJ_UPDATE_LEVELS] =
 {
-	250,				// low update
-	180, 				// medium update
-	120,				// high update
-	66,					// LAN update
+	16400,				// low update, originally 250, 4x a second
+	11700, 				// medium update, originally 180, ~ 5.5x a second
+	7800,				// high update, originally 120, ~ 8x a second
+	4300,				// LAN update, orginally 66, ~ 15x a second
 };
 
-// for far ships
-int Multi_oo_front_far_update_times[MAX_OBJ_UPDATE_LEVELS] =
+// for far ships in fix format
+fix Multi_oo_front_far_update_times[MAX_OBJ_UPDATE_LEVELS] =
 {
-	750,				// low update
-	350, 				// medium update
-	150, 				// high update
-	66,					// LAN update
+	49100,				// low update, originally 750, 1.3x a second
+	22900, 				// medium update, originally 350, ~ 3x a second
+	9750, 				// high update, originally 150, ~ 6.6x a second
+	4300,					// LAN update, originally 66, ~ 15x a second
 };
 
-// for near ships
-int Multi_oo_rear_near_update_times[MAX_OBJ_UPDATE_LEVELS] = 
+// for near ships in fix format
+fix Multi_oo_rear_near_update_times[MAX_OBJ_UPDATE_LEVELS] = 
 {
-	300,				// low update
-	200,				// medium update
-	100,				// high update
-	66,					// LAN update
+	19000,				// low update, originally 300, ~ 3.3x a second
+	13500,				// medium update, originally 200, 5x a second
+	6500,				// high update, originally 100, 10x a second
+	4300,					// LAN update, originally 66, ~15x a second
 };
 
-// for medium ships
-int Multi_oo_rear_medium_update_times[MAX_OBJ_UPDATE_LEVELS] = 
+// for medium ships in fix format
+fix Multi_oo_rear_medium_update_times[MAX_OBJ_UPDATE_LEVELS] = 
 {
-	800,				// low update
-	600,				// medium update
-	300,				// high update
-	66,					// LAN update
+	52400,				// low update, originally 800, 1.25x a second
+	38000,				// medium update, originally 600, ~1.7x a second
+	19000,				// high update, originally 300, ~3.3x a second
+	4300,					// LAN update, originally 66, ~15x a second
 };
 
-// for far ships
-int Multi_oo_rear_far_update_times[MAX_OBJ_UPDATE_LEVELS] = 
+// for far ships in fix format
+fix Multi_oo_rear_far_update_times[MAX_OBJ_UPDATE_LEVELS] = 
 {
-	2500, 				// low update
-	1500,				// medium update
-	400,				// high update
-	66,					// LAN update
+	164000, 				// low update, originally 2500, .4x a second
+	95000,				// medium update, originally 1500, ~ .7x a second
+	27000,				// high update, originally 400, 2.5x a second
+	4300,					// LAN update, originally 66, ~15x a second
 };
 
 // ship index list for possibly sorting ships based upon distance, etc
@@ -460,7 +462,7 @@ void multi_ship_record_increment_frame()
 		Oo_info.cur_frame_index = 0;
 	}
 
-	Oo_info.timestamps[Oo_info.cur_frame_index] = Missiontime;
+	Oo_info.mission_times[Oo_info.cur_frame_index] = Missiontime;
 }
 
 // returns the last frame's index.
@@ -474,7 +476,7 @@ int multi_find_prev_frame_idx()
 }
 
 // Finds the first frame that is before the incoming timestamp.
-int multi_ship_record_find_frame(int client_frame, int time_elapsed)
+int multi_ship_record_find_frame(int client_frame, fix time_elapsed)
 {	
 	// frame coming in from the client is too old to be used. (The -1 prevents an edge case bug at very high pings)
 	if (Oo_info.cur_frame_index - client_frame >= MAX_FRAMES_RECORDED - 1) {
@@ -491,12 +493,12 @@ int multi_ship_record_find_frame(int client_frame, int time_elapsed)
 
 	// Now we look for the frame that the client is saying to look for. 
 	// get the timestamp we are looking for.
-	fix target_timestamp = Oo_info.timestamps[frame] + time_elapsed; // FIXME!
+	fix target_timestamp = Oo_info.mission_times[frame] + time_elapsed;
 
 	for (int i = Oo_info.cur_frame_index - 2; i > -1; i--) {
 
 		// Check to see if the client's timestamp matches the recorded frames.
-		if ((Oo_info.timestamps[i] <= target_timestamp) && (Oo_info.timestamps[i + 1] > target_timestamp)) {
+		if ((Oo_info.mission_times[i] <= target_timestamp) && (Oo_info.mission_times[i + 1] > target_timestamp)) {
 			return i;
 		}
 		else if (i == frame) {
@@ -505,13 +507,13 @@ int multi_ship_record_find_frame(int client_frame, int time_elapsed)
 	}
 
 	// Check for an end of the wrap condition.
-	if ((Oo_info.timestamps[MAX_FRAMES_RECORDED - 1] <= target_timestamp) && (Oo_info.timestamps[0] > target_timestamp)) {
+	if ((Oo_info.mission_times[MAX_FRAMES_RECORDED - 1] <= target_timestamp) && (Oo_info.mission_times[0] > target_timestamp)) {
 		return MAX_FRAMES_RECORDED - 1;
 	}
 
 	// Check the oldest frames.
 	for (int i = MAX_FRAMES_RECORDED - 2; i > Oo_info.cur_frame_index; i--) {
-		if ((Oo_info.timestamps[i] <= target_timestamp) && (Oo_info.timestamps[i + 1] > target_timestamp)) {
+		if ((Oo_info.mission_times[i] <= target_timestamp) && (Oo_info.mission_times[i + 1] > target_timestamp)) {
 			return i;
 		}
 		else if (i == frame) {
@@ -541,12 +543,13 @@ matrix multi_ship_record_lookup_orientation(object* objp, int frame)
 }
 
 // figure out how many items we may have to create
-void multi_ship_record_add_missiontime(int pl_id, ubyte timestamp, int seq_num) {
+void multi_ship_record_add_missiontime(int pl_id, fix timestamp, int seq_num) {
 
 	// sanity!
 	Assertion((pl_id < MAX_PLAYERS) && (pl_id >= 0) && (seq_num >= 0), "Somehow multi_ship_record_add_missiontime() was passed a nonsense value, please report these values: pl_id %d, seq_num %d", pl_id, seq_num);
 
 	int temp_diff = seq_num - (int)Oo_info.received_frametimes[pl_id].size() + 1;
+
 	// if it already has enough slots, just fill in the value, because it really should be the same as before.
 	if (temp_diff <= 0) {
 		Oo_info.received_frametimes[pl_id].at(seq_num) = timestamp;
@@ -565,7 +568,7 @@ void multi_ship_record_add_missiontime(int pl_id, ubyte timestamp, int seq_num) 
 
 
 // quickly lookup how much time has passed between two frames.
-uint multi_ship_record_get_time_elapsed(int original_frame, int new_frame) 
+fix multi_ship_record_get_time_elapsed(int original_frame, int new_frame) 
 {
 	// Bogus values
 	Assertion(original_frame <= MAX_FRAMES_RECORDED, "Function multi_ship_record_get_time_elapsed() got passed an invalid original frame, this is a code error, please report. ");
@@ -574,15 +577,15 @@ uint multi_ship_record_get_time_elapsed(int original_frame, int new_frame)
 		return 0;
 	}
 
-	return Oo_info.timestamps[new_frame] - Oo_info.timestamps[original_frame];
+	return Oo_info.mission_times[new_frame] - Oo_info.mission_times[original_frame];
 }
 
-// figures out how much time has passed bwetween the two frames.
-int multi_ship_record_find_time_after_frame(int starting_frame, int ending_frame, int time_elapsed) 
+// figures out how much time has passed between the two frames.
+fix multi_ship_record_find_time_after_frame(int starting_frame, int ending_frame, fix time_elapsed) 
 {
 	starting_frame = starting_frame % MAX_FRAMES_RECORDED;
 
-	int return_value = time_elapsed - (Oo_info.timestamps[ending_frame] - Oo_info.timestamps[starting_frame]);
+	fix return_value = time_elapsed - (Oo_info.mission_times[ending_frame] - Oo_info.mission_times[starting_frame]);
 	return return_value;
 }
 
@@ -606,7 +609,7 @@ void multi_ship_record_add_rollback_wep(int wep_objnum)
 }
 
 // This stores the information we got from the client to create later.
-void multi_ship_record_add_rollback_shot(object* pobjp, vec3d* pos, matrix* orient, int frame, bool secondary) 
+void multi_ship_record_add_rollback_shot(object* pobjp, vec3d* pos, matrix* orient, int frame, fix time_after, bool secondary) 
 {
 	Oo_info.rollback_mode = true;
 
@@ -615,6 +618,7 @@ void multi_ship_record_add_rollback_shot(object* pobjp, vec3d* pos, matrix* orie
 	new_shot.pos = *pos;
 	new_shot.orient = *orient;
 	new_shot.secondary_shot = secondary;
+	new_shot.time_after = time_after;
 
 	Oo_info.rollback_shots_to_be_fired[frame].push_back(new_shot);	
 }
@@ -783,7 +787,8 @@ void multi_oo_simulate_rollback_shots(int frame_idx)
 	}
 
 	// calculate the float version of the frametime.
-	float frametime = (float)multi_ship_record_get_time_elapsed(prev_frame, frame_idx) / (float)TIMESTAMP_FREQUENCY;
+	fix fix_frametime = multi_ship_record_get_time_elapsed(prev_frame, frame_idx);
+	float frametime = f2fl(fix_frametime);
 
 	// push the weapons forward.
 	for (auto& weap_objnum : Oo_info.rollback_weapon_object_number) {
@@ -862,7 +867,7 @@ void multi_oo_respawn_reset_info(ushort net_sig)
 
 	// When a player respawns, they keep their net signature, so clean up all the info that could mess things up in the future.
 	for (auto & player_record : Oo_info.player_frame_info) {
-		player_record.last_sent[net_sig].timestamp = -1;
+		player_record.last_sent[net_sig].next_update = 0;
 		player_record.last_sent[net_sig].position = vmd_zero_vector;
 		player_record.last_sent[net_sig].hull = -1.0f;
 		player_record.last_sent[net_sig].ai_mode = -1;
@@ -2160,9 +2165,9 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num)
 }
 
 // reset the timestamp appropriately for the passed in object
-void multi_oo_reset_timestamp(net_player *pl, object *objp, int range, int in_cone)
+void multi_oo_reset_next_update(net_player *pl, object *objp, int range, int in_cone)
 {
-	int stamp = 0;	
+	fix stamp = 0;	
 
 	// if this is the guy's target, 
 	if((pl->s_info.target_objnum != -1) && (pl->s_info.target_objnum == OBJ_INDEX(objp))){
@@ -2204,7 +2209,7 @@ void multi_oo_reset_timestamp(net_player *pl, object *objp, int range, int in_co
 
 	// reset the timestamp for this object
 	if(objp->type == OBJ_SHIP){
-		Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].timestamp = timestamp(stamp);
+		Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].next_update = Missiontime + stamp;
 	} 
 }
 
@@ -2212,7 +2217,7 @@ void multi_oo_reset_timestamp(net_player *pl, object *objp, int range, int in_co
 int multi_oo_maybe_update(net_player *pl, object *obj, ubyte *data)
 {
 	ushort oo_flags = 0;
-	int stamp;
+	fix stamp;
 	int player_index;
 	vec3d player_eye;
 	vec3d obj_dot;
@@ -2232,13 +2237,13 @@ int multi_oo_maybe_update(net_player *pl, object *obj, ubyte *data)
 
 	// determine what the timestamp is for this object
 	if(obj->type == OBJ_SHIP){
-		stamp = Oo_info.player_frame_info[pl->player_id].last_sent[net_sig_idx].timestamp;
+		stamp = Oo_info.player_frame_info[pl->player_id].last_sent[net_sig_idx].next_update;
 	} else {
 		return 0;
 	}
 
-	// stamp hasn't popped yet
-	if((stamp != -1) && !timestamp_elapsed_safe(stamp, OO_MAX_TIMESTAMP)){
+	// stamp hasn't popped yet. The last conditional double checks that we have a valid interval
+	if((stamp != 0) && ((Missiontime - stamp) >= 0) && ((stamp - Missiontime) < OO_MAX_TIMESTAMP)){
 		return 0;
 	}
 	
@@ -2275,7 +2280,7 @@ int multi_oo_maybe_update(net_player *pl, object *obj, ubyte *data)
 	}
 
 	// reset the timestamp for the next update for this guy
-	multi_oo_reset_timestamp(pl, obj, range, in_cone);
+	multi_oo_reset_next_update(pl, obj, range, in_cone);
 	
 	// position should be almost constant, except for ships that aren't moving.
 	if ( (Oo_info.player_frame_info[pl->player_id].last_sent[net_sig_idx].position != obj->pos) && (vm_vec_mag_quick(&obj->phys_info.vel) > 0.0f ) ) {
@@ -2394,24 +2399,9 @@ void multi_oo_process_all(net_player *pl)
 	ADD_INT(Oo_info.number_of_frames);
 
 	// also the timestamp.
-	int temp_timestamp = (Oo_info.timestamps[Oo_info.cur_frame_index] - Oo_info.timestamps[multi_find_prev_frame_idx()]);
+	fix time_out = Oo_info.mission_times[Oo_info.cur_frame_index];
 
-	// only the very longest frames are going to have greater than 255 ms, so cap it at that.
-	if (temp_timestamp > 255) {
-		temp_timestamp = 255;
-
-	} else if (temp_timestamp < 0 ){
-		// this should only happen when the game is just starting, because the previous timestamp is nonsense.
-		if (Oo_info.number_of_frames > 1) {
-			// Send to the log if we're getting negative times. 
-			mprintf(("Somehow the object update packet is calculating a negative time differential in multi_oo_send_control_info. Value: %d. It's going to guess on a correct value. Please investigate.\n", temp_timestamp));
-		}
-		temp_timestamp = TIMESTAMP_OUT_IF_ERROR; // average amount of time per frame on a 60fps machine
-	}
-
-	// finish adding the timestamp
-	auto time_out = (ubyte)temp_timestamp;
-	ADD_DATA(time_out);
+	ADD_INT(time_out);
 
 	ubyte stop;
 	int add_size;	
@@ -2468,7 +2458,7 @@ void multi_oo_process_all(net_player *pl)
 			BUILD_HEADER(OBJECT_UPDATE);
 			// Cyborg17 - regurgitate shared header
 			ADD_INT(Oo_info.number_of_frames);
-			ADD_DATA(time_out);
+			ADD_INT(time_out);
 		}
 
 		if(add_size){
@@ -2535,12 +2525,12 @@ void multi_oo_process_update(ubyte *data, header *hinfo)
 	}
 
 	int seq_num;
-	ubyte timestamp;
+	fix timestamp;
 	ubyte stop;	
 
 	// TODO: ADD COMPLICATED TIMESTAMP LOGIC HERE
 	GET_INT(seq_num);
-	GET_DATA(timestamp);
+	GET_INT(timestamp);
 	GET_DATA(stop);
 	
 	multi_ship_record_add_missiontime(pl->player_id, timestamp, seq_num);
@@ -2576,7 +2566,7 @@ void multi_init_oo_and_ship_tracker()
 	Oo_info.cur_frame_index = 0;
 
 	for (int i = 0; i < MAX_FRAMES_RECORDED; i++) { // NOLINT
-		Oo_info.timestamps[i] = MAX_TIME; // This needs to be Max time (or at least some absurdly high number) for rollback to work correctly
+		Oo_info.mission_times[i] = MAX_FIX_TIME; // This needs to be Max time (or at least some absurdly high number) for rollback to work correctly
 	}
 
 	Oo_info.rollback_mode = false;
@@ -2611,7 +2601,7 @@ void multi_init_oo_and_ship_tracker()
 	int cur = 0;
 	oo_info_sent_to_players temp_sent_to_player;
 
-	temp_sent_to_player.timestamp = timestamp(cur);
+	temp_sent_to_player.next_update = Missiontime;
 	temp_sent_to_player.position = vmd_zero_vector;
 	temp_sent_to_player.hull = 0.0f;
 	temp_sent_to_player.ai_mode = 0;
@@ -2720,7 +2710,7 @@ void multi_close_oo_and_ship_tracker()
 	Oo_info.cur_frame_index = 0;
 
 	for (int i = 0; i < MAX_FRAMES_RECORDED; i++) { // NOLINT
-		Oo_info.timestamps[i] = MAX_TIME; // This needs to be Max time (or at least some absurdly high number) for rollback to work correctly
+		Oo_info.mission_times[i] = MAX_FIX_TIME; // This needs to be Max time (or at least some absurdly high number) for rollback to work correctly
 	}
 
 	Oo_info.rollback_mode = false;
@@ -2767,18 +2757,9 @@ void multi_oo_send_control_info()
 	ADD_INT(Oo_info.number_of_frames);
 
 	// also the timestamp.
-	int temp_timestamp = (Oo_info.timestamps[Oo_info.cur_frame_index] - Oo_info.timestamps[multi_find_prev_frame_idx()]);
+	fix time_out = Oo_info.mission_times[Oo_info.cur_frame_index];
 
-	// only the very longest frames are going to have greater than 255 ms, so cap it at that.
-	if (temp_timestamp > 255) {
-		temp_timestamp = 255;
-	} else if (temp_timestamp < 0) {
-		// Send to the log if we're getting negative times.  
-		mprintf(("Somehow the object update packet is calculating negative time differential in multi_oo_send_control_info. Value: %d. It's going to guess on a correct value. Please investigate.\n", temp_timestamp));
-		temp_timestamp = TIMESTAMP_OUT_IF_ERROR;
-	}
-	auto time_out = (ubyte)temp_timestamp;
-	ADD_DATA(time_out);
+	ADD_INT(time_out);
 
 	// pos and orient always
 	oo_flags = OO_POS_AND_ORIENT_NEW;		
@@ -2840,18 +2821,9 @@ void multi_oo_send_changed_object(object *changedobj)
 	ADD_INT(Oo_info.number_of_frames);
 
 	// also the timestamp.
-	int temp_timestamp = (Oo_info.timestamps[Oo_info.cur_frame_index] - Oo_info.timestamps[multi_find_prev_frame_idx()]);
+	fix time_out = (Oo_info.mission_times[Oo_info.cur_frame_index] - Oo_info.mission_times[multi_find_prev_frame_idx()]);
 
-	// only the very longest frames are going to have greater than 255 ms, so cap it at that.
-	if (temp_timestamp > 255) {
-		temp_timestamp = 255;
-	} else if (temp_timestamp < 0) {
-		// Send to the log if we're getting negative times.  
-		mprintf(("Somehow the object update packet is calculating negative time differential in multi_oo_send_control_info. Value: %d. It's going to guess on a correct value. Please investigate.\n", temp_timestamp));
-		temp_timestamp = TIMESTAMP_OUT_IF_ERROR;
-	}
-	auto time_out = (ubyte)temp_timestamp;
-	ADD_DATA(time_out);
+	ADD_INT(time_out);
 
 	// pos and orient always
 	oo_flags = (OO_POS_AND_ORIENT_NEW);
