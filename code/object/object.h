@@ -18,6 +18,7 @@
 #include "object/object_flags.h"
 #include "physics/physics.h"
 #include "utils/event.h"
+#include "network/multi_interpolate.h"
 
 #include <functional>
 
@@ -147,6 +148,8 @@ public:
 	util::event<void, object*> pre_move_event;
 	util::event<void, object*> post_move_event;
 
+	interpolation_manager interp_info;
+
 	object();
 	~object();
 	void clear();
@@ -202,6 +205,8 @@ extern int Highest_ever_object_index;
 extern object obj_free_list;
 extern object obj_used_list;
 extern object obj_create_list;
+
+extern ushort Test_subject;
 
 extern int render_total;
 extern int render_order[MAX_OBJECTS];

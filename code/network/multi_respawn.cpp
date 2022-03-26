@@ -351,7 +351,7 @@ int multi_respawn_common_stuff(p_object *pobjp)
 	}
 
 	// need to make sure that we will update this object and that the frame tracker knows this is a valid ship again.
-	multi_oo_respawn_reset_info(objp->net_signature);
+	multi_oo_respawn_reset_info(objp);
 
 	pobjp->respawn_count++;
 

@@ -63,7 +63,7 @@ struct weapon;
 // This section is almost all server side
 
 // Add a new ship *ON IN-GAME SHIP CREATION* to the tracking struct
-void multi_ship_record_add_ship(int obj_num);
+void multi_rollback_ship_record_add_ship(int obj_num);
 
 // Update the tracking struct whenver the object is updated in-game
 void multi_ship_record_update_all();
@@ -109,7 +109,7 @@ int multi_client_lookup_frame_idx();
 int multi_client_lookup_frame_timestamp();
 
 // reset all the necessary info for respawning player.
-void multi_oo_respawn_reset_info(ushort net_sig);
+void multi_oo_respawn_reset_info(object* objp);
 
 // ---------------------------------------------------------------------------------------------------
 // OBJECT UPDATE FUNCTIONS
@@ -133,15 +133,6 @@ void multi_oo_send_changed_object(object *changedobj);
 
 // reset all sequencing info
 void multi_oo_reset_sequencing();
-
-// is this object one which needs to go through the interpolation
-int multi_oo_is_interp_object(object *objp);
-
-// interp position and orientation
-void multi_oo_interp(object *objp);
-
-// Cyborg17 - sort through subsystems to make sure we only update the ones we need to update.
-//int multi_pack_required_subsytems(ship* shipp, ubyte* data, int packet_size, int header_bytes);
 
 
 // ---------------------------------------------------------------------------------------------------
@@ -170,13 +161,10 @@ int multi_oo_rate_exceeded(net_player *pl);
 // if it is ok for me to send a control info (will be ~N times a second)
 int multi_oo_cirate_can_send();
 
-// temporarily sets this as a client interpolated ship 
-void multi_oo_set_client_simulation_mode(ushort netsig);
-
-// display any oo info on the hud
-void multi_oo_display();
-
 // notify of a player join
 void multi_oo_player_reset_all(net_player *pl = NULL);
+
+// is this object one which needs to go through the interpolation
+int multi_oo_is_interp_object(object *objp);
 
 #endif
