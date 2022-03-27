@@ -47,6 +47,7 @@ private:
 	int initialized;
 	int multi_edit;
 	int always_on_top;
+	int help_height;
 	int cue_height;
 	int mission_type;  // indicates if single player(1) or multiplayer(0)
 	CView*	m_pSEView;
@@ -65,8 +66,10 @@ public:
 	int p_enable;  // used to enable(1)/disable(0) controls based on if a player ship
 
 	int tristate_set(int val, int cur_state);
-	void show_hide_sexp_help();
+	void calc_help_height();
 	void calc_cue_height();
+	void show_hide_sexp_help();
+	void show_hide_cues();
 	int verify();
 	void OnInitMenu(CMenu *m);
 	void OnOK();
