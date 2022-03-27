@@ -922,17 +922,7 @@ void copy_control_info(control_info *dest_ci, control_info *src_ci, int control_
 		return;
 
 	// check which type of controls are being copied --wookieejedi
-	if (control_copy_method & LGC_STEERING) {
-		if (src_ci == nullptr) {
-			dest_ci->pitch = 0.0f;
-			dest_ci->heading = 0.0f;
-			dest_ci->bank = 0.0f;
-		} else {
-			dest_ci->pitch = src_ci->pitch;
-			dest_ci->heading = src_ci->heading;
-			dest_ci->bank = src_ci->bank;
-		}
-	} else if (control_copy_method & LGC_FULL) {
+	if (control_copy_method & LGC_FULL) {
 		if (src_ci == nullptr) {
 			dest_ci->pitch = 0.0f;
 			dest_ci->vertical = 0.0f;
@@ -952,7 +942,17 @@ void copy_control_info(control_info *dest_ci, control_info *src_ci, int control_
 			dest_ci->bank = src_ci->bank;
 			dest_ci->forward = src_ci->forward;
 			dest_ci->forward_cruise_percent = src_ci->forward_cruise_percent;
-		}	
+		}
+	} else if (control_copy_method & LGC_STEERING) {
+		if (src_ci == nullptr) {
+			dest_ci->pitch = 0.0f;
+			dest_ci->heading = 0.0f;
+			dest_ci->bank = 0.0f;
+		} else {
+			dest_ci->pitch = src_ci->pitch;
+			dest_ci->heading = src_ci->heading;
+			dest_ci->bank = src_ci->bank;
+		}
 	}
 
 }
