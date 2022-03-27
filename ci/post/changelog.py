@@ -132,6 +132,7 @@ def main():
             if pull['number'] not in changelog:
                 # only add if the key isn't there already
                 changelog[pull['number']] = {
+                    "date":     merge_date,
                     "title":    pull['title'],
                     "labels":   pull['labels'],
                     "url":      pull['html_url']
@@ -143,10 +144,11 @@ def main():
 
 
     # Write the changelog to file
+    # 2021-09-28 | (#3661) Fix homing child weapons in niche circumstances 
     print("Writing to change.log...")
     str = ''
     for key, value in changelog.items():
-        str += "{} ({})\n".format(value['title'], key)
+        str += "{} | (#{}) {} \n".format(value['date'].strftime("%Y-%m-%d"), key, value['title'])
     
     with open("change.log", "w") as file:
         file.write(str)
