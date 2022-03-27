@@ -6455,7 +6455,7 @@ void spawn_child_weapons(object *objp, int spawn_index_override)
 	parent_num = objp->parent;
 
 	if (parent_num >= 0) {
-		if ((Objects[parent_num].type != objp->parent_type) || (Objects[parent_num].signature != objp->parent_sig)) {
+		if (Objects[parent_num].signature != objp->parent_sig) {
 			mprintf(("Warning: Parent of spawn weapon does not exist.  Not spawning.\n"));
 			return;
 		}
