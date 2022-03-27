@@ -569,7 +569,6 @@ void obj_add_collider(int obj_index)
 	CheckObjects[obj_index].signature = objp->signature;
     CheckObjects[obj_index].flags = objp->flags - Object::Object_Flags::Not_in_coll;
 	CheckObjects[obj_index].parent_sig = objp->parent_sig;
-	CheckObjects[obj_index].parent_type = objp->parent_type;
 #endif
 
 	if(!(objp->flags[Object::Object_Flags::Not_in_coll])){
