@@ -561,6 +561,8 @@
 #define ID_NUMBERS                      1229
 #define ID_SHIPS                        1230
 #define ID_WINGS                        1231
+#define IDC_TRANSFORM_INDEPENDENT       1233
+#define IDC_TRANSFORM_RELATIVE          1234
 #define IDC_POSITION_X                  1235
 #define IDC_POSITION_Y                  1236
 #define IDC_POSITION_Z                  1237
