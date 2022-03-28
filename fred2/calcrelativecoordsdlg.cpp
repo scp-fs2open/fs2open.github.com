@@ -152,14 +152,19 @@ void calc_relative_coords_dlg::update_coords()
 	// distance
 	m_distance.Format("%.01f", vm_vec_dist(&origin_pos, &satellite_pos));
 
-	// calc change in orientation
-	vec3d relative_vec;
-	matrix relative_m;
-	vm_vec_sub(&relative_vec, &satellite_pos, &origin_pos);
-	vm_vector_2_matrix(&relative_m, &relative_vec, &Objects[origin_objnum].orient.vec.uvec);
+	// transform the coordinate frame
+	vec3d delta_vec, local_vec;
+	vm_vec_sub(&delta_vec, &satellite_pos, &origin_pos);
+	if (Objects[origin_objnum].type != OBJ_WAYPOINT)
+		vm_vec_rotate(&local_vec, &delta_vec, &Objects[origin_objnum].orient);
 
+	// find the orientation
+	matrix m;
+	vm_vector_2_matrix(&m, &local_vec);
+
+	// find the angles
 	angles ang;
-	vm_extract_angles_matrix(&ang, &relative_m);
+	vm_extract_angles_matrix(&ang, &m);
 	m_orientation_p.Format("%.01f", orient_editor::to_degrees(ang.p));
 	m_orientation_b.Format("%.01f", orient_editor::to_degrees(ang.b));
 	m_orientation_h.Format("%.01f", orient_editor::to_degrees(ang.h));
