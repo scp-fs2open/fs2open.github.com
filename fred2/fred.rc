@@ -365,6 +365,7 @@ BEGIN
         MENUITEM "Mark Wing\tW",                33038
         MENUITEM "Adjust Grid",                 33032
         MENUITEM "Calculate Relative Coordinates", 33030
+        MENUITEM "Point Ships Using UVec",      33101
         MENUITEM "Move Ships When Undocking",   33098, CHECKED
         MENUITEM "Mission Statistics\tCtrl+Shift+D", 33067
         MENUITEM SEPARATOR
@@ -3106,6 +3107,7 @@ BEGIN
                             "When setting initially docked ships to initially undocked, move the smaller ship away from the dockpoint by one ship length"
     ID_EDIT_CLONEMARKEDOBJECTS 
                             "Clone every marked object in-place, like Ctrl-drag without the dragging"
+    ID_MISC_POINTUSINGUVEC  "When using the Object Editor to point ships, take the ship's current up-vector into account"
 END
 
 STRINGTABLE

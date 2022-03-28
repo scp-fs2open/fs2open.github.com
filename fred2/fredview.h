@@ -300,6 +300,8 @@ protected:
 	afx_msg void OnUpdateFormatFs1Retail(CCmdUI* pCmdUI);
 	afx_msg void OnMoveShipsWhenUndocking();
 	afx_msg void OnUpdateMoveShipsWhenUndocking(CCmdUI* pCmdUI);
+	afx_msg void OnPointUsingUvec();
+	afx_msg void OnUpdatePointUsingUvec(CCmdUI* pCmdUI);
 	afx_msg void OnHighlightSubsys();
 	afx_msg void OnUpdateHighlightSubsys(CCmdUI* pCmdUI);
 	afx_msg void OnEditorsSetGlobalShipFlags();
@@ -364,6 +366,7 @@ extern int Id_select_type_waypoint;
 extern int Hide_ship_cues, Hide_wing_cues;
 extern int Move_ships_when_undocking;
 extern int Highlight_selectable_subsys;
+extern int Point_using_uvec;
 
 extern Marking_box marking_box;
 extern object_orient_pos	rotation_backup[MAX_OBJECTS];

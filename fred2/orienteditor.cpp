@@ -344,7 +344,9 @@ void orient_editor::actually_point_object(object *ptr)
 			return;  // can't point to itself.
 		}
 
-		vm_vector_2_matrix(&m, &v, NULL, NULL);
+		auto uvec = Point_using_uvec ? &ptr->orient.vec.uvec : nullptr;
+
+		vm_vector_2_matrix(&m, &v, uvec, nullptr);
 		ptr->orient = m;
 	}
 }
