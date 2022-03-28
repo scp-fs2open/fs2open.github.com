@@ -237,6 +237,6 @@ public:
 private:
 	SCP_vector<RowData<T>> items;
 };
-}
-}
+} // namespace fred
+} // namespace fso
 #endif // CHECKEDDATALISTMODEL_H

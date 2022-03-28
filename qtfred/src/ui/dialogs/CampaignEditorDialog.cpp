@@ -48,8 +48,8 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget *_parent, EditorViewport *_vi
 	QMenu *menFile { new QMenu(this) };
 	ui->btnMenu->setMenu(menFile);
 	QMenu *menFileNew { menFile->addMenu(tr("&New")) };
-	for (auto& t: model->campaignTypes)
-		menFileNew->addAction(t, this, &CampaignEditorDialog::fileNew);
+	for (auto& campaignType: model->campaignTypes)
+		menFileNew->addAction(campaignType, this, &CampaignEditorDialog::fileNew);
 	menFile->addSeparator();
 
 	menFile->addAction(tr("&Open..."), this, &CampaignEditorDialog::fileOpen, tr("Ctrl+O"));

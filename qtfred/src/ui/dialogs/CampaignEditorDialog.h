@@ -62,6 +62,6 @@ private slots:
 	void btnErrorCheckerClicked();
 };
 
-}
-}
-}
+} // namespace dialogs
+} // namespace fred
+} // namespace fso

@@ -191,7 +191,7 @@ bool SexpTreeEditorInterface::requireCampaignOperators() const {
 	return false;
 }
 QList<QAction *> SexpTreeEditorInterface::getContextMenuExtras(QObject */*parent*/) {
-	return QList<QAction *>();
+	return {};
 }
 SexpTreeEditorInterface::~SexpTreeEditorInterface() = default;
 
