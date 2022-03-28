@@ -23,6 +23,8 @@ public:
 	void OnOK();
 	orient_editor(CWnd* pParent = NULL);   // standard constructor
 
+	static float to_degrees(float radians);
+
 // Dialog Data
 	//{{AFX_DATA(orient_editor)
 	enum { IDD = IDD_ORIENT_EDITOR };
@@ -65,10 +67,10 @@ protected:
 	afx_msg void OnClose();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
+
 private:
 	float convert(const CString &str);
 	bool close(float val, const CString &str);
-	float to_degrees(float radians);
 	int total;
 	int index[MAX_OBJECTS];
 	void actually_point_object(object *ptr);

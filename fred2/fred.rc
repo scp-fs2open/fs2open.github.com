@@ -364,6 +364,7 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "Mark Wing\tW",                33038
         MENUITEM "Adjust Grid",                 33032
+        MENUITEM "Calculate Relative Coordinates", 33030
         MENUITEM "Move Ships When Undocking",   33098, CHECKED
         MENUITEM "Mission Statistics\tCtrl+Shift+D", 33067
         MENUITEM SEPARATOR
@@ -1804,6 +1805,25 @@ BEGIN
     LTEXT           "X Level",IDC_STATIC,69,50,25,8
 END
 
+IDD_CALC_RELATIVE_COORDS DIALOG 0, 0, 311, 155
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Calculate Relative Coordinates"
+FONT 8, "MS Sans Serif"
+BEGIN
+    LTEXT           "Origin",IDC_STATIC,7,7,30,10
+    LISTBOX         IDC_ORIGIN_LIST,7,17,98,131,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Satellite",IDC_STATIC,112,7,30,10
+    LISTBOX         IDC_SATELLITE_LIST,112,17,98,131,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Distance:",IDC_STATIC,222,19,30,10
+    EDITTEXT        IDC_DISTANCE,255,17,49,14,ES_READONLY | WS_TABSTOP
+    LTEXT           "P:",IDC_STATIC,245,51,8,8
+    EDITTEXT        IDC_ORIENTATION_P,255,49,49,14,ES_READONLY | WS_TABSTOP
+    LTEXT           "B:",IDC_STATIC,245,67,8,8
+    EDITTEXT        IDC_ORIENTATION_B,255,65,49,14,ES_READONLY | WS_TABSTOP
+    LTEXT           "H:",IDC_STATIC,245,83,8,8
+    EDITTEXT        IDC_ORIENTATION_H,255,81,49,14,ES_READONLY | WS_TABSTOP
+END
+
 IDD_SHIELD_SYS DIALOG 0, 0, 192, 106
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Shield System Editor"
@@ -2510,6 +2530,14 @@ BEGIN
     END
 
     IDD_ADJUST_GRID, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 146
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 87
+    END
+
+    IDD_CALC_RELATIVE_COORDS, DIALOG
     BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 146
@@ -3254,6 +3282,7 @@ END
 STRINGTABLE
 BEGIN
     ID_LOOKAT_OBJ           "Rotate camera around selected object\nRotate around object (Alt+R)"
+    ID_CALC_RELATIVE_COORDS "Calculate orientation and distance relative to an origin object"
 END
 
 STRINGTABLE

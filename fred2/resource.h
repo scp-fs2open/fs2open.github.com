@@ -77,6 +77,7 @@
 #define IDR_ASTEROID_FIELD_MENU         232
 #define IDR_CPGN_VIEW_OFF               233
 #define IDR_CPGN_VIEW_ON                234
+#define IDD_CALC_RELATIVE_COORDS        235
 #define IDD_INITIAL_SHIPS               238
 #define IDB_CHAINED                     239
 #define IDD_CMD_BRIEF                   242
@@ -1165,6 +1166,9 @@
 #define IDC_CONTAINER_CAMPAIGN_PERSIST  1668
 #define IDC_CONTAINER_ETERNAL_PERSIST   1669
 #define IDC_RENAME_CONTAINER            1670
+#define IDC_ORIGIN_LIST                 1671
+#define IDC_SATELLITE_LIST              1672
+#define IDC_DISTANCE                    1673
 #define ID_FILE_MISSIONNOTES            32771
 #define ID_DUPLICATE                    32774
 #define ID_VIEW_ROTATE                  32775
@@ -1386,6 +1390,7 @@
 #define ID_SET_GROUP7                   33027
 #define ID_SET_GROUP8                   33028
 #define ID_SET_GROUP9                   33029
+#define ID_CALC_RELATIVE_COORDS         33030
 #define ID_END_EDIT                     33031
 #define ID_EDITORS_ADJUST_GRID          33032
 #define ID_EDITORS_SHIELD_SYS           33033
