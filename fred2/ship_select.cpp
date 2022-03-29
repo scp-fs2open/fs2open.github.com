@@ -160,13 +160,11 @@ BOOL ship_select::OnInitDialog()
 		if (i < (int)Iff_info.size())
 		{
 			GetDlgItem(IDC_FILTER_SHIPS_IFF[i])->SetWindowText(Iff_info[i].iff_name);
+			GetDlgItem(IDC_FILTER_SHIPS_IFF[i])->EnableWindow(m_filter_ships);
 		}
 
 		GetDlgItem(IDC_FILTER_SHIPS_IFF[i])->ShowWindow(i < (int)Iff_info.size());
 	}
-
-	for (i = 0; i < (int)Iff_info.size(); i++)
-		GetDlgItem(IDC_FILTER_SHIPS_IFF[i])->EnableWindow(m_filter_ships);
 
 	wlist_size = wplist_size = 0;
 	wing_index.clear();
