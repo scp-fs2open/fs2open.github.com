@@ -139,9 +139,65 @@ public:
 			return ptr != rhs.ptr;
 		}
 
-		T&& operator*()
+		T& operator*()
 		{
-			return std::move(*ptr);
+			return *ptr;
+		}
+	};
+
+	class const_iterator
+	{
+		const T* ptr;
+
+	public:
+		const_iterator(const T* x)
+			: ptr(x)
+		{}
+
+		const_iterator(const const_iterator& it)
+			: ptr(it.ptr)
+		{}
+
+		const_iterator& operator++()
+		{
+			ptr = GET_NEXT(ptr);
+			return *this;
+		}
+
+		const_iterator operator++(int)
+		{
+			const_iterator tmp(*this);
+			operator++();
+			return tmp;
+		}
+
+		const_iterator& operator--()
+		{
+			ptr = GET_PREV(ptr);
+			return *this;
+		}
+
+		const_iterator operator--(int)
+		{
+			const_iterator tmp(*this);
+			operator--();
+			return tmp;
+		}
+
+		bool operator==(const const_iterator& rhs) const
+		{
+			return ptr == rhs.ptr;
+
+		}
+
+		bool operator!=(const const_iterator& rhs) const
+		{
+			return ptr != rhs.ptr;
+		}
+
+		const T& operator*()
+		{
+			return *ptr;
 		}
 	};
 
@@ -153,6 +209,16 @@ public:
 	iterator end() const
 	{
 		return iterator(END_OF_LIST(head));
+	}
+
+	const_iterator cbegin() const
+	{
+		return const_iterator(GET_FIRST(head));
+	}
+
+	const_iterator cend() const
+	{
+		return const_iterator(END_OF_LIST(head));
 	}
 
 	volition_linked_list(T* ptr)
