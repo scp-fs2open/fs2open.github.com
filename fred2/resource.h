@@ -986,7 +986,6 @@
 #define IDC_ST_OVERRIDE_NEB             1545
 #define IDC_MAINHALL_LABEL              1545
 #define IDC_3D_WARP_EFFECT              1545
-#define IDC_ALLOW_DOCK_TREES            1545
 #define IDC_NEB2_FOG_R                  1545
 #define IDC_MISSION_OPTIONS             1546
 #define IDC_PLAYER_START_AI             1546
