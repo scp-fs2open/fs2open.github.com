@@ -83,6 +83,7 @@ do {												\
 #define NOT_EMPTY(head)		((head)->next != (head))
 #define EMPTY(head)			((head) == nullptr || (head)->next == (head))
 
+// Note that since these iterators operate on pointer collections, the dereference of an iterator using operator* returns a pointer.
 template <class T>
 class volition_linked_list
 {
@@ -139,9 +140,14 @@ public:
 			return ptr != rhs.ptr;
 		}
 
-		T& operator*()
+		T*& operator*()
 		{
-			return *ptr;
+			return ptr;
+		}
+
+		T* operator->()
+		{
+			return ptr;
 		}
 	};
 
@@ -195,9 +201,14 @@ public:
 			return ptr != rhs.ptr;
 		}
 
-		const T& operator*()
+		const T*& operator*()
 		{
-			return *ptr;
+			return ptr;
+		}
+
+		const T* operator->()
+		{
+			return ptr;
 		}
 	};
 
