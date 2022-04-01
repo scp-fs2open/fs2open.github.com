@@ -6,8 +6,8 @@ if (EXISTS "${PROJECT_SOURCE_DIR}/version_override.cmake")
     include("${PROJECT_SOURCE_DIR}/version_override.cmake")
 endif()
 
-set_if_not_defined(FSO_VERSION_MAJOR 21)
-set_if_not_defined(FSO_VERSION_MINOR 5)
+set_if_not_defined(FSO_VERSION_MAJOR 22)
+set_if_not_defined(FSO_VERSION_MINOR 0)
 set_if_not_defined(FSO_VERSION_BUILD 0)
 
 # A numeric revision e.g. the CI build number
