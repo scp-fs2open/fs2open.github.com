@@ -63,7 +63,7 @@ def _match_version_number(text, regex):
 	
 
 def get_source_version(date_version: datetime, tag_name: str) -> semantic_version.Version:
-	"""! Retrieves the build's version from `version.cmake`, forms it as a string, and appends the date
+	"""! Retrieves the build's version from the tag name, forms it as a string, and appends the date
 
 	@param[in] `date_version` Date this build is published for release
 	@param[in] `tag_name`     Tag of this release, used to determine if release, rc, or nightly
@@ -71,34 +71,35 @@ def get_source_version(date_version: datetime, tag_name: str) -> semantic_versio
 	@return If release: `MAJOR_VERSION.MINOR_VERSION.BUILD_VERSION` from version.cmake, or
 	@return If rc:      `MAJOR_VERSION.MINOR_VERSION.BUILD_VERSION` from tag_name, or
 	@return If nightly: `MAJOR_VERSION.MINOR_VERSION.BUILD_VERSION-date` from version.cmake
-	"""
-	major = minor = build = version = 0
-	with open(os.path.join("..", "..", "cmake", "version.cmake"), "r") as f:
-		filetext = f.read()
-		major = _match_version_number(filetext, MAJOR_VERSION_PATTERN)
-		minor = _match_version_number(filetext, MINOR_VERSION_PATTERN)
-		build = _match_version_number(filetext, BUILD_VERSION_PATTERN)
 
+	@note This is the version used to identify in Nebula and the forums.  version_override.cmake is used for the builds
+	  made by CI tools and version.cmake is used for builds made by devs.
+	"""
+
+	print("Parsing version from tag_name...")
 	if "rc" in tag_name.lower():
 		# Release candidates idenfity with their unstable version (ex: 21.5.0-03052022) within the game and the logs, but
 		# the builds are named with the target release version (ex: 22.0.0).  Since this script works on the builds we
 		# need to grab the target release version from tag_name
 		x = tag_name.upper().split("_")
-		# "release" = x[0], year = x[1], major = x[2], minor = x[3], build = x[4], 
+		# "release" = x[0], year = x[1], major = x[2], minor = x[3], candidate = x[4], 
 		version = semantic_version.Version("{}.{}.{}-{}".format(x[1], x[2], x[3], x[4]))
 
 	elif "release" in tag_name.lower():
-		version = semantic_version.Version("{}.{}.{}".format(major, minor, build))
+		x = tag_name.upper().split("_")
+		# "release" = x[0], year = x[1], major = x[2], minor = x[3], candidate = x[4], 
+		version = semantic_version.Version("{}.{}.{}".format(x[1], x[2], x[3]))
 
 	elif "nightly" in tag_name.lower():
-		version = semantic_version.Version("{}.{}.{}-{}".format(major, minor, build, date_version))
+		print("  ERROR: \'nightly\' post-build not implemented yet!")
+		sys.exit(1)
 	
 	else:	
-		print("ERROR: malformed tag_name %s" % tag_name)
+		print("  ERROR: malformed tag_name %s" % tag_name)
 		sys.exit(1)
 
-	print("version: {}".format(version))
-	print("version.prerelease: {}".format(version.prerelease))
+	print("  version: {}".format(version))
+	print("  version.prerelease: {}".format(version.prerelease))
 	return version
 
 
