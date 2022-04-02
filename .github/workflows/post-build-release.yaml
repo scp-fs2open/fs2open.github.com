@@ -6,10 +6,10 @@ on:
     inputs:
       linux_result:   # job.result; either success, failure, canceled or skipped
         required: true
-        type: boolean
+        type: string
       windows_result: # job.result
         required: true
-        type: boolean
+        type: string
       releaseTag:
         required: true
         type: string

@@ -155,12 +155,29 @@ def main():
 		print("ERROR: Invalid release mode %s passed. Expected release or nightly!" % sys.argv[1])
 		sys.exit(1)
 
+	# bail if any build subflows failed
+	success = ((os.environ["LINUX_RESULT"] == "success") and (os.environ["WINDOWS_RESULT"] == "success"))	##!< true if both linux and windows builds successful
+	if not success:
+		print("ERROR: One or more builds failed to publish!")
+		sys.exit(1)
+	
+	# bail if tag_name doesn't match with sys.argv[1]
+	if (sys.argv[1] == "release") and (not tag_name.startswith("release_")):
+		print("ERROR: Invalid tag name detected. Expected release_ prefix for release builds but found %s (full ref = %s)" % tag_name, os.environ["GITHUB_REF"])
+		sys.exit(1)
+
+	if (sys.argv[1] == "nightly") and (not tag_name.startswith("nightly_")):
+		print("ERROR: Invalid tag name detected. Expected nightly_ prefix for nightly builds but found %s (full ref = %s)" % tag_name, os.environ["GITHUB_REF"])
+		sys.exit(1)
+
+
+	# Populate version and date
 	tag_name = os.environ["RELEASE_TAG"]	##!< commit tag string
 	date = datetime.now()	##!< current date
 	version = get_source_version(date.strftime(DATEFORMAT_VERSION), tag_name)	##!< form full version string
-	success = os.environ["LINUX_RESULT"] == "success" and os.environ["WINDOWS_RESULT"] == "success"	##!< true if both linux and windows builds successful
-
-	# check that tag_name is actually in the git repo and find the previous tag release
+	
+	# check that tag_name is in the
+	# find the previous tag release (used by nightly)
 	tags = check_output(("git", "for-each-ref", "--sort=-taggerdate", "--format='%(tag)'", "refs/tags"), text=True).splitlines()	# retrieve all tags in the repo by using git on the shell
 	# NOTE: check_output returns canonical string representation. use repr() on strings its being compared to
 	previous_tag = None
@@ -182,21 +199,17 @@ def main():
 		print("ERROR: Couldn't find tag %s in repo!" % tag_name)
 		sys.exit(1)
 
-	if not previous_tag:
+	if (sys.argv[1] == "nightly") and (not previous_tag):
 		# couldn't find previous tag, bail
 		print("ERROR: Could not find a previous tag for %s!" % tag_name)
 		sys.exit(1)
 
 	if sys.argv[1] == "release":
 		# Release specific action
-		if not tag_name.startswith("release_"):
-			# Safety check tag is from a release
-			print("ERROR: Invalid tag name detected. Expected release_ prefix for release builds but found %s (full ref = %s)" % tag_name, os.environ["GITHUB_REF"])
-			sys.exit(1)
-
+		print("Retrieving file list...")
 		files, sources = file_list.get_release_files(tag_name, config)
 
-		print("Hashing files")
+		print("Hashing files...")
 		for file in files:
 			installer.get_hashed_file_list(file)
 
@@ -232,30 +245,27 @@ def main():
 		# print(installer.render_installer_config(version, groups, config))
 
 		# Publish release builds to Nebula
+		print("Publishing to Nebula...")
 		nebula.submit_release(
 			nebula.render_nebula_release(version, "rc" if version.prerelease else "stable", files, config),
 			config)
 
 		# Publish forum post, using the release.mako template
+		print("Publishing to Hard-light.net...")
 		fapi = forum.ForumAPI(config)
 		fapi.post_release(date.strftime(DATEFORMAT_FORUM), version, groups, sources)
 
 	else:
 		# Dead for now, nightly publish is done elsewhere
 		# Nightly specific action
-		if not tag_name.startswith("nightly_"):
-			# safety check tag is from a nightly
-			print("ERROR: Invalid tag name detected. Expected nightly_ prefix for nightly builds but found %s (full ref = %s)" % tag_name, os.environ["GITHUB_REF"])
-			sys.exit(1)
-
-		print("Retrieving file list")
+		print("Retrieving file list...")
 		files = file_list.get_ftp_files("nightly", tag_name, config)
 
-		print("Hashing files")
+		print("Hashing files...")
 		for file in files:
 			installer.get_hashed_file_list(file)
 
-		# Publish nightly builds to Nebula
+		print("Publishing to Nebula...")
 		nebula.submit_release(
 			nebula.render_nebula_release(version, "nightly", files, config),
 			config)
@@ -264,8 +274,12 @@ def main():
 		log = check_output(("git", "log", "%s^..%s^" % (previous_tag, tag_name), "--no-merges", "--stat", "--pretty=format:\"%s\"" % LOG_FORMAT.strip()))
 
 		# Publish forum post, using the nighty.mako template
+		print("Publishing to Hard-light.net...")
 		fapi = forum.ForumAPI(config)
 		fapi.post_nightly(date.strftime(DATEFORMAT_FORUM), os.environ["GITHUB_SHA"], files, log, success)
+
+	print("Done!")
+
 
 if __name__ == "__main__":
 	main()
