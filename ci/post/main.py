@@ -41,6 +41,8 @@ import forum
 MAJOR_VERSION_PATTERN = re.compile("set_if_not_defined\(FSO_VERSION_MAJOR (\d+)\)")
 MINOR_VERSION_PATTERN = re.compile("set_if_not_defined\(FSO_VERSION_MINOR (\d+)\)")
 BUILD_VERSION_PATTERN = re.compile("set_if_not_defined\(FSO_VERSION_BUILD (\d+)\)")
+REVISION_VERSION_PATTERN = re.compile("set_if_not_defined\(FSO_VERSION_REVISION (\d+)\)")
+REVISION_STR_VERSION_PATTERN = re.compile("set_if_not_defined\(FSO_VERSION_REVISION_STR (\d+)\)")
 
 LOG_FORMAT = """
 ------------------------------------------------------------------------%n
@@ -63,36 +65,43 @@ def _match_version_number(text, regex):
 	
 
 def get_source_version(date_version: datetime, tag_name: str) -> semantic_version.Version:
-	"""! Retrieves the build's version from the tag name, forms it as a string, and appends the date
+	"""! Retrieves the version string from version_override.cmake (and version.cmake)
 
 	@param[in] `date_version` Date this build is published for release
 	@param[in] `tag_name`     Tag of this release, used to determine if release, rc, or nightly
 
-	@return If release: `MAJOR_VERSION.MINOR_VERSION.BUILD_VERSION` from version.cmake, or
-	@return If rc:      `MAJOR_VERSION.MINOR_VERSION.BUILD_VERSION` from tag_name, or
-	@return If nightly: `MAJOR_VERSION.MINOR_VERSION.BUILD_VERSION-date` from version.cmake
+	@return If release: `FSO_VERSION_MAJOR.FSO_VERSION_MINOR.FSO_VERSION_BUILD`
+	@return If rc:      `FSO_VERSION_MAJOR.FSO_VERSION_MINOR.FSO_VERSION_BUILD-FSO_VERSION_REVISION_STR`
+	@return If nightly: `FSO_VERSION_MAJOR.FSO_VERSION_MINOR.FSO_VERSION_BUILD-FSO_VERSION_REVISION_STR` (uses both version_override.cmake and version.cmake)
 
 	@note This is the version used to identify in Nebula and the forums.  version_override.cmake is used for the builds
 	  made by CI tools and version.cmake is used for builds made by devs.
 	"""
 
-	print("Parsing version from tag_name...")
+	with open(os.path.join("..", "..", "version_override.cmake"), "r") as f:
+		filetext = f.read()
+		major = _match_version_number(filetext, MAJOR_VERSION_PATTERN)
+		minor = _match_version_number(filetext, MINOR_VERSION_PATTERN)
+		build = _match_version_number(filetext, BUILD_VERSION_PATTERN)
+	#	revision = _match_version_number(filetext, REVISION_VERSION_PATTERN)
+		revision_str = _match_version_number(filetext, REVISION_STR_VERSION_PATTERN)
+
+	print("Parsing version_override.cmake...")
 	if "rc" in tag_name.lower():
-		# Release candidates idenfity with their unstable version (ex: 21.5.0-03052022) within the game and the logs, but
-		# the builds are named with the target release version (ex: 22.0.0).  Since this script works on the builds we
-		# need to grab the target release version from tag_name
-		x = tag_name.upper().split("_")
-		# "release" = x[0], year = x[1], major = x[2], minor = x[3], candidate = x[4], 
-		version = semantic_version.Version("{}.{}.{}-{}".format(x[1], x[2], x[3], x[4]))
+		version = semantic_version.Version("{}.{}.{}-{}".format(major, minor, build, revision_str))
 
 	elif "release" in tag_name.lower():
-		x = tag_name.upper().split("_")
-		# "release" = x[0], year = x[1], major = x[2], minor = x[3], candidate = x[4], 
-		version = semantic_version.Version("{}.{}.{}".format(x[1], x[2], x[3]))
+		version = semantic_version.Version("{}.{}.{}".format(major, minor, build))
 
 	elif "nightly" in tag_name.lower():
-		print("  ERROR: \'nightly\' post-build not implemented yet!")
-		sys.exit(1)
+		# Nightly's version_override.cmake only has FSO_VERSION_REVISION and FSO_VERSION_REVISION_STR set
+		# So, we have to pull the rest of the version string from version.cmake
+		print("Parsing version.cmake...")
+		with open(os.path.join("..", "..", "cmake", "version.cmake"), "r") as f:
+			major = _match_version_number(filetext, MAJOR_VERSION_PATTERN)
+			minor = _match_version_number(filetext, MINOR_VERSION_PATTERN)
+			build = _match_version_number(filetext, BUILD_VERSION_PATTERN)
+		version = semantic_version.Version("{}.{}.{}-{}".format(major, minor, build, revision_str))
 	
 	else:	
 		print("  ERROR: malformed tag_name %s" % tag_name)
@@ -258,4 +267,5 @@ def main():
 		fapi = forum.ForumAPI(config)
 		fapi.post_nightly(date.strftime(DATEFORMAT_FORUM), os.environ["GITHUB_SHA"], files, log, success)
 
-main()
+if __name__ == "__main__":
+	main()
