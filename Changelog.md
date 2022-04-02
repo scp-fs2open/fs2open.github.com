@@ -3,6 +3,44 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+
+## [22.0.0] - 2022-04-01 ([Thread](https://www.hard-light.net/forums/index.php?topic=98125.0))
+### Changed
+- Controls5 PR (aka multi-joy)
+- Timing system upgrade
+- Model animation code upgrades
+
+
+## [21.4.0] - 2021-09-27 ([Thread](https://www.hard-light.net/forums/index.php?topic=97802.0))
+### Changed
+- Multiple features; see thread
+- Multiple bugfixes; see thread
+
+
+## [21.2.0] - 2021-05-02 ([Thread](https://www.hard-light.net/forums/index.php?topic=97561.0))
+### Changed
+- Added a dynamic action system for more modder control of effects
+- Removed fireball limit
+- Fixed bomb intercept in multiplayer
+- Changed nebula fog distance from a linear to exponential model
+- Turrets on moving subobjects enabled
+- LZ4 Compression added for game files
+
+
+## [21.0.0] - 2021-01-27 ([Thread](https://www.hard-light.net/forums/index.php?topic=97293.0))
+### Changed
+- More OpenGL optimizations
+- Full type information output for Lua documentation. Very useful for writing Lua scripts.
+- A new -weaponspew command-line option for printing MediaVP-style statistics, plus a weapon comparison spreadsheet, to the debug log.
+- Improved ship lookup behavior in SEXPs for improved performance.
+- BPTC/BC7 texture compression support
+- Refactoring and new features for the ship lab.
+- Missile multi-lock. It's finally in an official build!
+- Enhancements to the model code in preparation for cool features in 21.2.
+- IPv6 support for multiplayer
+- A lot of general fixes for multiplayer.
+
+
 ## [19.0.0] - 2020-01-25 ([Thread](https://www.hard-light.net/forums/index.php?topic=96226.0))
 ### Meta
 - With this release we decided to drop the "`3.Major_revision.Minor_revision`" versioning scheme in favor of a year based scheme since the Major and Minor versions did not have much meaning anymore. Instead the scheme will now be "`<year>.<number that is incremented every release>.0`". The last 0 is still there because some of our systems expect that. It will be gone at some point.
@@ -24,6 +62,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Replaced Blinn-Phong BRDF with GGX BRDF
 ### Fixed
 - Refactored bitmap slot handling and removed the fixed upper limit on the number of bitmaps. No more bmpman corruption!
+
 
 ## [3.8.0] - 2017-08-22 ([Release Thread](https://www.hard-light.net/forums/index.php?topic=93812.0))
 ### Added
@@ -48,6 +87,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Enhanced sound (up to 128 channels)
 ### Fixed
 - "Tons" of bugfixes
+
 
 ## [3.7.2] - 2015-04-23 ([Release thread](http://www.hard-light.net/forums/index.php?topic=89597.0))
 ### Added
@@ -79,15 +119,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Raised the per-model debris limit to 48 (previously 32).
 - Increased the per-frame debris limit to 96 (previously 64)
 
+
 ## [3.6.18] - 2013-03-01 ([Release thread](http://www.hard-light.net/forums/index.php?topic=83889.0))
 ### Fixed
 - Critical damage bug which caused heavy balance issues in the game
+
 
 ## [3.6.16] - 2013-01-31 ([Release thread](http://www.hard-light.net/forums/index.php?topic=83577.0))
 ### Added
 - Diaspora TC support
 ### Changed
 - Performance Improvements
+
 
 ## [3.6.14] - 2012-10-23 - ([Release thread](https://www.hard-light.net/forums/index.php?topic=82648.0))
 ### Added
