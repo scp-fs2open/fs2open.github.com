@@ -267,6 +267,8 @@ extern pnode	*Ppfp;			//	Free pointer in path points.
 // Goober5000 (based on the "you can only remember 7 things in short-term memory" assumption)
 #define MAX_IGNORE_NEW_OBJECTS	7
 
+#define AI_DYNAMIC_PATH_RECHECK_DELAY 1*1000
+
 typedef struct ai_info {
 	flagset<AI::AI_Flags> ai_flags;				//	Special flags for AI behavior.
 	int		shipnum;					// Ship using this slot, -1 means none.
@@ -342,6 +344,9 @@ typedef struct ai_info {
 	int		submode_parm0;			//	parameter specific to current submode
 	int		submode_parm1;			//	SUSHI: Another optional parameter
 	fix		next_predict_pos_time;			//	Next time to predict position.
+
+	int		next_dynamic_path_check_time;	//ETP: Time of next path check in ai_new_maybe_reposition_attack_subsys
+	vec3d	last_dynamic_path_goal;			//ETP: Remebers last target location in ai_new_maybe_reposition_attack_subsys
 
 	//SUSHI: like last_predicted_enemy_pos, but for aiming (which currently ignores predicted position)
 	//Unlike the predicted position stuff, also takes into account velocity

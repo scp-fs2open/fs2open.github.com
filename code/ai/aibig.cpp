@@ -560,61 +560,69 @@ bool ai_new_maybe_reposition_attack_subsys() {
 		return false;
 
 	// not in sight, gotta get there
-	vec3d tgt2pl = Pl_objp->pos - target_objp->pos;
-	vec3d tgt2subsys = gsubpos - target_objp->pos;
-	float pl_dist = vm_vec_mag(&tgt2pl);
-	float subsys_dist = vm_vec_mag(&tgt2subsys) * 1.3f; // add a bit to this, we don't want to go directly at the subsys, we want to go above it
-
-	float angle2subsys = vm_vec_delta_ang(&tgt2pl, &tgt2subsys, nullptr);
-	float angle2goal = angle2subsys;
-	if (angle2goal > 1.2f) // let's not try to go more than about 70 degrees around the ship
-		angle2goal = 1.2f;
-
-	// we'll start by travelling along the sphere at our current distance around the ship
-	// remember that goal_pos will be relative to our target_ship (so we can scale in and out easily)
-	vec3d goal_pos, cross;
-	vm_vec_cross(&cross, &tgt2pl, &tgt2subsys);
-	vm_vec_normalize(&cross);
-	vm_vec_negate(&cross);
-	vm_rot_point_around_line(&goal_pos, &tgt2pl, angle2goal, &vmd_zero_vector, &cross);
-
-	// then scale in (or out) towards our subsys
-	vec3d world_goal_pos;
-	float new_radius = ((subsys_dist - pl_dist) * (angle2goal / angle2subsys)) + pl_dist;
-	vm_vec_copy_scale(&world_goal_pos, &goal_pos, new_radius / pl_dist);
-	world_goal_pos += target_objp->pos;
-
 	vec3d* good_pos = nullptr;
-	if (pp_collide(&Pl_objp->pos, &world_goal_pos, target_objp, Pl_objp->radius * 4.0f)) {
-		// ok best case won't work
-		if (pl_dist > subsys_dist) {
-			//we're farther away than the subsys, let's try at our current distance
-			world_goal_pos = goal_pos + target_objp->pos;
-			if (!pp_collide(&Pl_objp->pos, &world_goal_pos, target_objp, Pl_objp->radius * 4.0f))
+	// For performance reasons we only recheck once a second, otherwise we reuse the last found target.
+	if (timestamp_elapsed(aip->next_dynamic_path_check_time)) {
+		vec3d tgt2pl = Pl_objp->pos - target_objp->pos;
+		vec3d tgt2subsys = gsubpos - target_objp->pos;
+		float pl_dist = vm_vec_mag(&tgt2pl);
+		float subsys_dist = vm_vec_mag(&tgt2subsys) * 1.3f; // add a bit to this, we don't want to go directly at the subsys, we want to go above it
+
+		float angle2subsys = vm_vec_delta_ang(&tgt2pl, &tgt2subsys, nullptr);
+		float angle2goal = angle2subsys;
+		if (angle2goal > 1.2f) // let's not try to go more than about 70 degrees around the ship
+			angle2goal = 1.2f;
+
+		// we'll start by travelling along the sphere at our current distance around the ship
+		// remember that goal_pos will be relative to our target_ship (so we can scale in and out easily)
+		vec3d goal_pos, cross;
+		vm_vec_cross(&cross, &tgt2pl, &tgt2subsys);
+		vm_vec_normalize(&cross);
+		vm_vec_negate(&cross);
+		vm_rot_point_around_line(&goal_pos, &tgt2pl, angle2goal, &vmd_zero_vector, &cross);
+
+		// then scale in (or out) towards our subsys
+		vec3d world_goal_pos;
+		float new_radius = ((subsys_dist - pl_dist) * (angle2goal / angle2subsys)) + pl_dist;
+		vm_vec_copy_scale(&world_goal_pos, &goal_pos, new_radius / pl_dist);
+		world_goal_pos += target_objp->pos;
+
+		if (pp_collide(&Pl_objp->pos, &world_goal_pos, target_objp, Pl_objp->radius * 4.0f)) {
+			// ok best case won't work
+			if (pl_dist > subsys_dist) {
+				//we're farther away than the subsys, let's try at our current distance
+				world_goal_pos = goal_pos + target_objp->pos;
+				if (!pp_collide(&Pl_objp->pos, &world_goal_pos, target_objp, Pl_objp->radius * 4.0f))
+					good_pos = &world_goal_pos;
+			}
+
+			// ok, let's start moving it away and see if that's better
+			for (float i = 1.0f; i < 4.0f; i += 1.0f) {
+				if (good_pos)
+					break;
+
+				vm_vec_copy_scale(&world_goal_pos, &goal_pos, (new_radius / pl_dist) * powf(1.3f,i));
+				world_goal_pos += target_objp->pos;
+				if (!pp_collide(&Pl_objp->pos, &world_goal_pos, target_objp, Pl_objp->radius * 4.0f))
+					good_pos = &world_goal_pos;
+			}
+
+			// welp this sucks, just run away i guess
+			if (!good_pos) {
+				vm_vec_copy_normalize(&world_goal_pos, &tgt2pl);
+				world_goal_pos *= target_objp->radius + pl_dist;
+				world_goal_pos += target_objp->pos;
 				good_pos = &world_goal_pos;
+			}
 		}
-
-		// ok, let's start moving it away and see if that's better
-		for (float i = 1.0f; i < 4.0f; i += 1.0f) {
-			if (good_pos)
-				break;
-
-			vm_vec_copy_scale(&world_goal_pos, &goal_pos, (new_radius / pl_dist) * powf(1.3f,i));
-			world_goal_pos += target_objp->pos;
-			if (!pp_collide(&Pl_objp->pos, &world_goal_pos, target_objp, Pl_objp->radius * 4.0f))
-				good_pos = &world_goal_pos;
-		}
-
-		// welp this sucks, just run away i guess
-		if (!good_pos) {
-			vm_vec_copy_normalize(&world_goal_pos, &tgt2pl);
-			world_goal_pos *= target_objp->radius + pl_dist;
-			world_goal_pos += target_objp->pos;
+		else
 			good_pos = &world_goal_pos;
-		}
+		aip->next_dynamic_path_check_time = timestamp( AI_DYNAMIC_PATH_RECHECK_DELAY );
+
 	}
-	else
-		good_pos = &world_goal_pos;
+	else{ //Not enough time has passed till recheck.
+		good_pos = &aip->last_dynamic_path_goal;
+	}
 
 	ai_turn_towards_vector(good_pos, Pl_objp, nullptr, nullptr, 0.0f, 0);
 	float subsys_distance = vm_vec_dist(&Pl_objp->pos, &gsubpos);
