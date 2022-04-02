@@ -26,6 +26,9 @@ class LuaSEXP : public DynamicSEXP {
 	std::pair<SCP_string, int> getArgumentInternalType(int argnum) const;
 	luacpp::LuaValue sexpToLua(int node, int argnum) const;
 
+	// just a helper for parseTable
+	static bool parseCheckEndOfDescription();
+
  public:
 	explicit LuaSEXP(const SCP_string& name);
 

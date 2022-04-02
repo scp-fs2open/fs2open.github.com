@@ -353,6 +353,19 @@ void advance_to_next_white()
 	}
 }
 
+// If the parser is at an eoln, move past it
+bool skip_eoln()
+{
+	auto old_Mp = Mp;
+
+	if (*Mp == '\r')
+		Mp++;
+	if (*Mp == '\n')
+		Mp++;
+
+	return old_Mp != Mp;
+}
+
 // Search for specified string, skipping everything up to that point.  Returns 1 if found,
 // 0 if string wasn't found (and hit end of file), or -1 if not found, but end of checking
 // block was reached.
