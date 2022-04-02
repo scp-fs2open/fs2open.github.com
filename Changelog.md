@@ -15,6 +15,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Changed
 - Multiple features; see thread
 - Multiple bugfixes; see thread
+### Deprecations
+- `script-eval` has been deprecated in favor of `script-eval-block`
+- renamed `hud-set-retail-gauge-active` to `hud-set-builtin-gauge-active`
 
 
 ## [21.2.0] - 2021-05-02 ([Thread](https://www.hard-light.net/forums/index.php?topic=97561.0))
@@ -39,6 +42,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Enhancements to the model code in preparation for cool features in 21.2.
 - IPv6 support for multiplayer
 - A lot of general fixes for multiplayer.
+### Deprecated
+- Dropped support for Windows XP
+- Scripting:
+  - `ba.getFrametime()`: The parameter value was used incorrectly inside the implementation. To avoid breaking existing scripts and to improve readability this has been split into `ba.getMissionFrametime()` and `ba.getRealFrametime()`.
+  - `gr.drawMonochromeImage()`: `gr.drawImage()` got a new parameter for drawing monochrome images and is more flexible in general so the monochrome variant is no longer needed.
 
 
 ## [19.0.0] - 2020-01-25 ([Thread](https://www.hard-light.net/forums/index.php?topic=96226.0))
