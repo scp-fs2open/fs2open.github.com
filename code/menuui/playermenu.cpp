@@ -1334,7 +1334,7 @@ DCF(bastion, "Temporarily sets the player to be on the Bastion (or any other mai
 	int idx;
 	
 	if(gameseq_get_state() != GS_STATE_INITIAL_PLAYER_SELECT) {
-		dc_printf("This command can only be run while in the initial player select screen.\n");
+		dc_printf("This command can only be run while in the initial player select screen.  Try using the 'mainhall' command.\n");
 		return;
 	}
 
