@@ -1817,6 +1817,9 @@ BOOL event_sexp_tree::OnToolTipText(UINT id, NMHDR *pNMHDR, LRESULT *pResult)
 
 void event_sexp_tree::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 {
+	static CRect rect;
+	static bool drawBorder = false;
+
 	NMTVCUSTOMDRAW *pcd = (NMTVCUSTOMDRAW *)pNMHDR;
 	switch (pcd->nmcd.dwDrawStage)
 	{
@@ -1826,8 +1829,10 @@ void event_sexp_tree::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 
 		case CDDS_ITEMPREPAINT:
 		{
-			HTREEITEM hItem = (HTREEITEM)pcd->nmcd.dwItemSpec;
+			drawBorder = false;
+			*pResult = CDRF_DODEFAULT;
 
+			HTREEITEM hItem = (HTREEITEM)pcd->nmcd.dwItemSpec;
 			if (hItem)
 			{
 				int ea_idx = event_annotation_lookup(hItem);
@@ -1845,11 +1850,30 @@ void event_sexp_tree::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 							pcd->clrText = RGB(255, 255, 255);
 
 						pcd->clrTextBk = RGB(ea->r, ea->g, ea->b);
+
+						// if this is selected, save some information for drawing a border later
+						if (pcd->nmcd.uItemState & CDIS_SELECTED)
+						{
+							drawBorder = true;
+							GetItemRect((HTREEITEM)pcd->nmcd.dwItemSpec, &rect, TRUE);
+							// we want to get the CDDS_ITEMPOSTPAINT notification
+							*pResult = CDRF_NOTIFYPOSTPAINT;
+						}
 					}
 				}
 			}
+			break;
+		}
 
-			*pResult = CDRF_DODEFAULT;
+		case CDDS_ITEMPOSTPAINT:
+		{
+			// see Solution 2 here: https://www.codeproject.com/Questions/685172/CTreeCtrl-with-Item-Border
+			if (drawBorder)
+			{
+				SelectObject(pcd->nmcd.hdc, CreatePen(PS_INSIDEFRAME, 2, RGB(0, 0, 0)));
+				SelectObject(pcd->nmcd.hdc, GetStockObject(HOLLOW_BRUSH));
+				Rectangle(pcd->nmcd.hdc, rect.left, rect.top, rect.right, rect.bottom);
+			}
 			break;
 		}
 	}
