@@ -20171,7 +20171,7 @@ int ship_check_visibility(const ship* viewed, ship* viewer)
 			viewer = Player_ship;
 	}
 
-	object* viewed_obj = &Objects[viewer->objnum];
+	object* viewed_obj = &Objects[viewed->objnum];
 	int ship_is_visible = 0;
 	//There are cases where the player is not a ship, so the above logic could result in still not having any valid ship pointer.
 	if(!viewer)
