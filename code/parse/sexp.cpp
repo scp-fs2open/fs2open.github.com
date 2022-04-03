@@ -14252,7 +14252,8 @@ void sexp_remove_background_bitmap(int n, bool is_sun)
 
 void sexp_nebula_change_storm(int n)
 {
-	if (!(The_mission.flags[Mission::Mission_Flags::Fullneb])) return;
+	if (!(The_mission.flags[Mission::Mission_Flags::Fullneb]))
+		return;
 	
 	nebl_set_storm(CTEXT(n));
 }
@@ -14277,16 +14278,19 @@ void sexp_nebula_toggle_poof(int n)
 
 void sexp_nebula_change_pattern(int n)
 {
-	if (!(The_mission.flags[Mission::Mission_Flags::Fullneb])) return;
+	if (!(The_mission.flags[Mission::Mission_Flags::Fullneb]))
+		return;
 	
 	strcpy_s(Neb2_texture_name,(CTEXT(n)));
+	The_mission.flags.remove(Mission::Mission_Flags::Neb2_fog_color_override);
 
-	neb2_post_level_init();
+	neb2_post_level_init(The_mission.flags[Mission::Mission_Flags::Neb2_fog_color_override]);
 }
 
 void sexp_nebula_change_fog_color(int node)
 {
-	if (!(The_mission.flags[Mission::Mission_Flags::Fullneb])) return;
+	if (!(The_mission.flags[Mission::Mission_Flags::Fullneb]))
+		return;
 
 	int red, green, blue = 0;
 	bool is_nan, is_nan_forever;
@@ -14304,6 +14308,8 @@ void sexp_nebula_change_fog_color(int node)
 	Neb2_fog_color[0] = (ubyte)red;
 	Neb2_fog_color[1] = (ubyte)green;
 	Neb2_fog_color[2] = (ubyte)blue;
+
+	The_mission.flags |= Mission::Mission_Flags::Neb2_fog_color_override;
 }
 
 /**

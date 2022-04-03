@@ -814,13 +814,27 @@ int CFred_mission_save::save_bitmaps()
 
 	// neb2 stuff
 	if (The_mission.flags[Mission::Mission_Flags::Fullneb]) {
+		fout("\n");
 		required_string_fred("+Neb2:");
 		parse_comments();
-		fout(" %s\n", Neb2_texture_name);
+		fout(" %s", Neb2_texture_name);
+
+		if (Mission_save_format != FSO_FORMAT_RETAIL && The_mission.flags[Mission::Mission_Flags::Neb2_fog_color_override]) {
+			if (optional_string_fred("+Neb2Color:")) {
+				parse_comments();
+			} else {
+				fout("\n+Neb2Color:");
+			}
+			fout(" (");
+			for (auto c : Neb2_fog_color) {
+				fout(" %d", c);
+			}
+			fout(" )");
+		}
 
 		required_string_fred("+Neb2Flags:");
 		parse_comments();
-		fout(" %d\n", Neb2_poof_flags);
+		fout(" %d", Neb2_poof_flags);
 	}
 	// neb 1 stuff
 	else {

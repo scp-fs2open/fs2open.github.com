@@ -749,6 +749,7 @@
 #define IDC_SHIELDS                     1348
 #define IDC_ABBREV_MISSION              1348
 #define IDC_SQUADRON_WING_NAME_5        1348
+#define IDC_NEB2_POOF_LIST              1348
 #define IDC_DOCKED                      1349
 #define IDC_EXAMPLE                     1349
 #define IDC_SQUADRON_WING_NAME_3        1349
@@ -957,13 +958,7 @@
 #define IDC_SBITMAP_SCALE_SPIN          1529
 #define IDC_SBITMAP_SCALE_Y             1529
 #define IDC_LASER_PROTECT_SHIP          1529
-#define IDC_POOF0                       1530
 #define IDC_MISSILE_PROTECT_SHIP        1530
-#define IDC_POOF1                       1531
-#define IDC_POOF2                       1532
-#define IDC_POOF3                       1533
-#define IDC_POOF4                       1534
-#define IDC_POOF5                       1535
 #define IDC_SBITMAP_DIV_X               1536
 #define IDC_SBITMAP_DIV_Y               1537
 #define IDC_STATS_TEXT                  1537
@@ -979,17 +974,21 @@
 #define IDC_SBITMAP_H_SPIN2             1541
 #define IDC_SKYBOX_H_SPIN               1541
 #define IDC_SPECS_TOGGLE_TRAILS         1542
+#define IDC_NEB2_FOG_B                  1542
 #define IDC_SUPPORT_REPAIR              1543
 #define IDC_SUPPORT_REPAIRS_HULL        1543
 #define IDC_WING_SQUAD_LOGO_BUTTON      1543
+#define IDC_NEB2_FOG_G                  1543
 #define IDC_BEAM_FREE_ALL_BY_DEFAULT    1544
-#define IDC_NEB_TOGGLE_TRAILS           1544
+#define IDC_NEB2_TOGGLE_TRAILS          1544
 #define IDC_ST_OVERRIDE_NEB             1545
 #define IDC_MAINHALL_LABEL              1545
 #define IDC_3D_WARP_EFFECT              1545
 #define IDC_ALLOW_DOCK_TREES            1545
+#define IDC_NEB2_FOG_R                  1545
 #define IDC_MISSION_OPTIONS             1546
 #define IDC_PLAYER_START_AI             1546
+#define IDC_NEB2_PALETTE_OVERRIDE       1546
 #define IDC_CUSTOM_TECH_DB              1547
 #define IDC_USE_AUTOPILOT_CINEMATICS    1547
 #define IDC_2D_MISSION                  1548
@@ -1109,9 +1108,9 @@
 #define IDC_IMMOBILE                    1631
 #define IDC_DISABLE_ETS2                1632
 #define IDC_CLOAKED                     1632
-#define IDC_NEB_NEAR_MULTIPLIER         1632
+#define IDC_NEB2_NEAR_MULTIPLIER        1632
 #define IDC_EDIT6                       1633
-#define IDC_NEB_FAR_MULTIPLIER          1634
+#define IDC_NEB2_FAR_MULTIPLIER         1634
 #define IDC_MISSION_LOG_TRUE            1635
 #define IDC_MISSION_LOG_FALSE           1636
 #define IDC_MISSION_LOG_STATE_CHANGE    1637
@@ -1445,7 +1444,7 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        327
+#define _APS_NEXT_RESOURCE_VALUE        328
 #define _APS_NEXT_COMMAND_VALUE         33102
 #define _APS_NEXT_CONTROL_VALUE         1665
 #define _APS_NEXT_SYMED_VALUE           105
