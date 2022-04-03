@@ -1222,7 +1222,7 @@ void ship_select_blit_ship_info()
 	if(Ship_select_ship_info_text[0] != '\0'){
 		// split the string into multiple lines
 		// MageKing17: Changed to use the widths determined by Yarn here: http://scp.indiegames.us/mantis/view.php?id=3144#c16516
-		n_lines = split_str(Ship_select_ship_info_text, gr_screen.res == GR_640 ? 204 : 328, n_chars, p_str, MAX_NUM_SHIP_DESC_LINES, 0);
+		n_lines = split_str(Ship_select_ship_info_text, gr_screen.res == GR_640 ? 204 : 328, n_chars, p_str, MAX_NUM_SHIP_DESC_LINES, SHIP_SELECT_SHIP_INFO_MAX_LINE_LEN);
 
 		// copy the split up lines into the text lines array
 		for (int idx = 0;idx<n_lines;idx++ ) {
@@ -2414,12 +2414,10 @@ int create_wings()
 	ss_wing_info		*wb;
 	ss_slot_info		*ws;
 	wing					*wp;
-	p_object				*p_objp;
 
 	int shipnum, objnum, slot_index;
 	int cleanup_ship_index[MAX_WING_SLOTS];
 	int i,j,k;
-	int found_pobj;
 
 	Assert( (Ss_wings != NULL) && (Wss_slots != NULL) );
 
@@ -2451,21 +2449,22 @@ int create_wings()
 					objnum = OBJ_INDEX(Player_obj);
 					shipnum = Objects[objnum].instance;
 				} else {
-					if ( wb->is_late) {
-						found_pobj = 0;
-						for ( p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp) ) {
-							if ( p_objp->wingnum == WING_INDEX(wp) ) {
-								if ( ws->sa_index == POBJ_INDEX(p_objp) ) {
-									p_objp->ship_class = Wss_slots[slot_index].ship_class;
-									wl_update_parse_object_weapons(p_objp, &Wss_slots[i*MAX_WING_SLOTS+j]);
-									found_pobj = 1;
-									break;
-								}
+					// We should always update the parse object information, even if the ship is present at start,
+					// because the wing might have more than one wave or scripting functions might need accurate data
+					bool found_pobj = false;
+					for ( auto &p_obj: Parse_objects ) {
+						if ( p_obj.wingnum == WING_INDEX(wp) ) {
+							if ( p_obj.pos_in_wing == j ) {
+								p_obj.ship_class = Wss_slots[slot_index].ship_class;
+								wl_update_parse_object_weapons(&p_obj, &Wss_slots[i*MAX_WING_SLOTS+j]);
+								found_pobj = true;
+								break;
 							}
 						}
-						Assert(found_pobj);
 					}
-					else {
+					Assert(found_pobj);
+
+					if (!wb->is_late) {
 						// AL 10/04/97
 						// Change the ship type of the ship if different than current.
 						// NOTE: This will reset the weapons for this ship.  I think this is

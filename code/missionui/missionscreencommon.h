@@ -64,8 +64,8 @@ extern int Mouse_down_last_frame;
 extern int Wing_slot_empty_bitmap;
 extern int Wing_slot_disabled_bitmap;
 
-extern int Flash_timer;				//	timestamp used to start flashing
-extern int Flash_toggle;			// timestamp used to toggle flashing
+extern UI_TIMESTAMP Flash_timer;	// timestamp used to start flashing
+extern UI_TIMESTAMP Flash_toggle;	// timestamp used to toggle flashing
 extern int Flash_bright;			// state of button to flash
 
 void common_button_do(int i);
@@ -203,8 +203,8 @@ void wss_maybe_restore_loadout();
 void wss_direct_restore_loadout();
 
 int wss_get_mode(int from_slot, int from_list, int to_slot, int to_list, int wl_ship_slot);
-int store_wss_data(ubyte *block, int max_size, interface_snd_id sound,int player_index);
-int restore_wss_data(ubyte *block);
+int store_wss_data(ubyte *data, const unsigned int max_size, interface_snd_id sound, int player_index);
+int restore_wss_data(ubyte *data);
 
 class ship_info;
 void draw_model_icon(int model_id, int flags, float closeup_zoom, int x1, int x2, int y1, int y2, ship_info* sip = NULL, int resize_mode = GR_RESIZE_FULL, const vec3d *closeup_pos = &vmd_zero_vector);

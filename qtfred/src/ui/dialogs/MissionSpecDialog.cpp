@@ -79,6 +79,7 @@ MissionSpecDialog::MissionSpecDialog(FredView* parent, EditorViewport* viewport)
 	connect(ui->toggleAutopilotCinematics, &QCheckBox::toggled, this, [this](bool param) {flagToggled(param, Mission::Mission_Flags::Use_ap_cinematics); });
 	connect(ui->toggleHardcodedAutopilot, &QCheckBox::toggled, this, [this](bool param) {flagToggled(param, Mission::Mission_Flags::Deactivate_ap); });
 	connect(ui->toggleAIControlStart, &QCheckBox::toggled, this, [this](bool param) {flagToggled(param, Mission::Mission_Flags::Player_start_ai); });
+	connect(ui->toggleChaseViewStart, &QCheckBox::toggled, this, [this](bool param) {flagToggled(param, Mission::Mission_Flags::Player_start_chase_view); });
 	connect(ui->toggle2DMission, &QCheckBox::toggled, this, [this](bool param) {flagToggled(param, Mission::Mission_Flags::Mission_2d); });
 	connect(ui->toggleGoalsInBriefing, &QCheckBox::toggled, this, [this](bool param) {flagToggled(param, Mission::Mission_Flags::Always_show_goals); });
 	connect(ui->toggleMissionEndToMainhall, &QCheckBox::toggled, this, [this](bool param) {flagToggled(param, Mission::Mission_Flags::End_to_mainhall); });
@@ -236,6 +237,7 @@ void MissionSpecDialog::updateFlags() {
 	auto flags = _model->getMissionFlags();
 	ui->toggle2DMission->setChecked(flags[Mission::Mission_Flags::Mission_2d]);
 	ui->toggleAIControlStart->setChecked(flags[Mission::Mission_Flags::Player_start_ai]);
+	ui->toggleChaseViewStart->setChecked(flags[Mission::Mission_Flags::Player_start_chase_view]);
 	ui->toggleAllTeamsAtWar->setChecked(flags[Mission::Mission_Flags::All_attack]);
 	ui->toggleAutopilotCinematics->setChecked(flags[Mission::Mission_Flags::Use_ap_cinematics]);
 	ui->toggleBeamFreeDefault->setChecked(flags[Mission::Mission_Flags::Beam_free_all_by_default]);

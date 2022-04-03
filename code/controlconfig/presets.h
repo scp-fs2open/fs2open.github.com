@@ -203,7 +203,9 @@ private:
  * @param[in] overwrite If true, overwrite existing preset file which have the same name as the given preset
  *
  * @returns True    if successful, or
- * @returns False   otherwise
+ * @returns False   Preset does not have a name, or
+ * @returns False   Preset file exists and overwrite == false, or
+ * @returns False   Preset file .JSON could not be written
  */
 bool save_preset_file(CC_preset preset, bool overwrite);
 
@@ -220,3 +222,9 @@ void load_preset_files();
  * @returns iterator to Control_config_presets.end() otherwise
  */
 SCP_vector<CC_preset>::iterator preset_find_duplicate(const CC_preset& new_preset);
+
+
+/**
+ * @brief Returns true if a preset file with the given name exists.
+ */
+bool preset_file_exists(SCP_string name);

@@ -43,7 +43,12 @@ typedef struct background_t {
 extern int Cur_background;
 extern SCP_vector<background_t> Backgrounds;
 
+// skybox model
+extern int Nmodel_num;
+extern int Nmodel_instance_num;
+extern matrix Nmodel_orient;
 extern int Nmodel_flags;
+extern int Nmodel_bitmap;
 
 extern bool Motion_debris_override;
 
@@ -130,7 +135,7 @@ void stars_preload_background(const char *token);
 void stars_preload_sun_bitmap(const char *fname);
 void stars_preload_background_bitmap(const char *fname);
 
-void stars_set_nebula(bool activate);
+void stars_set_nebula(bool activate, float range);
 
 void stars_load_debris(int fullneb = 0);
 

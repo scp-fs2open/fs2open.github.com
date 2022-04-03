@@ -11,10 +11,11 @@
 
 
 #include "cfile/cfile.h"
+#include "cmdline/cmdline.h"
 #include "controlconfig/controlsconfig.h"
 #include "controlconfig/presets.h"
 #include "debugconsole/console.h"
-#include "freespace.h"
+#include "../freespace2/freespace.h"
 #include "gamehelp/contexthelp.h"
 #include "gamesequence/gamesequence.h"
 #include "gamesnd/gamesnd.h"
@@ -118,16 +119,16 @@ int Conflict_wnd_coords[GR_NUM_RESOLUTIONS][4] = {
 // conflict warning anim coords
 int Conflict_warning_coords[GR_NUM_RESOLUTIONS][2] = {
 	{
-		-1, 420			// GR_640
+		320, 420			// GR_640
 	},
 	{
-		-1, 669			// GR_1024
+		512, 669			// GR_1024
 	}
 };
 
 // for flashing the conflict text
 #define CONFLICT_FLASH_TIME	250
-int Conflict_stamp = -1;
+UI_TIMESTAMP Conflict_stamp;
 int Conflict_bright = 0;
 
 #define LIST_BUTTONS_MAX	42
@@ -164,13 +165,9 @@ SCP_vector<CCI> Control_config_backup;
 Undo_system Undo_controls;
 
 // all this stuff is localized/externalized
-#define NUM_AXIS_TEXT			JOY_NUM_AXES
-#define NUM_MOUSE_TEXT			5
-#define NUM_MOUSE_AXIS_TEXT		2
 #define NUM_INVERT_TEXT			2	
-char *Joy_axis_text[NUM_AXIS_TEXT];
+char *Axis_text[NUM_AXIS_TEXT];
 char *Mouse_button_text[NUM_MOUSE_TEXT];
-char *Mouse_axis_text[NUM_MOUSE_AXIS_TEXT];
 char *Invert_text[NUM_INVERT_TEXT];
 
 int Control_check_count = 0;
@@ -276,11 +273,11 @@ UI_XSTR CC_text[GR_NUM_RESOLUTIONS][CC_NUM_TEXT] = {
 		{ "Alt",				1510,		12,	440,	UI_XSTR_COLOR_GREEN, -1, &CC_Buttons[0][ALT_TOGGLE].button },
 		{ "Shift",			1511,		50,	440,	UI_XSTR_COLOR_GREEN, -1, &CC_Buttons[0][SHIFT_TOGGLE].button },
 		{ "Invert",			1342,		155,	440,	UI_XSTR_COLOR_GREEN, -1, &CC_Buttons[0][INVERT_AXIS].button },
-		{ "Cancel",			641,		397,	45,	UI_XSTR_COLOR_PINK, -1, &CC_Buttons[0][CANCEL_BUTTON].button },
+		{ "Cancel",			641,		401,	45,	UI_XSTR_COLOR_PINK, -1, &CC_Buttons[0][CANCEL_BUTTON].button },
 		{ "Undo",			1343,		586,	386,	UI_XSTR_COLOR_GREEN, -1, &CC_Buttons[0][UNDO_BUTTON].button },
-		{ "Defaults",		1344,		568,	45,	UI_XSTR_COLOR_GREEN, -1, &CC_Buttons[0][RESET_BUTTON].button },
-		{ "Search",			1345,		453,	45,	UI_XSTR_COLOR_GREEN, -1, &CC_Buttons[0][SEARCH_MODE].button },
-		{ "Bind",			1346,		519,	45,	UI_XSTR_COLOR_PINK, -1, &CC_Buttons[0][BIND_BUTTON].button },
+		{ "Next Preset",	1661,		553,	45,	UI_XSTR_COLOR_GREEN, -1, &CC_Buttons[0][RESET_BUTTON].button },
+		{ "Search",			1345,		458,	45,	UI_XSTR_COLOR_GREEN, -1, &CC_Buttons[0][SEARCH_MODE].button },
+		{ "Bind",			1346,		517,	45,	UI_XSTR_COLOR_PINK, -1, &CC_Buttons[0][BIND_BUTTON].button },
 		{ "Help",			928,		500,	440,	UI_XSTR_COLOR_GREEN, -1, &CC_Buttons[0][HELP_BUTTON].button },
 		{ "Accept",			1035,		571,	412,	UI_XSTR_COLOR_PINK, -1, &CC_Buttons[0][ACCEPT_BUTTON].button },
 		{ "Clear",			1347,		417,	386,	UI_XSTR_COLOR_GREEN, -1, &CC_Buttons[0][CLEAR_OTHER_BUTTON].button },
@@ -300,7 +297,7 @@ UI_XSTR CC_text[GR_NUM_RESOLUTIONS][CC_NUM_TEXT] = {
 		{ "Invert",			1342,		254,	704,	UI_XSTR_COLOR_GREEN, -1, &CC_Buttons[1][INVERT_AXIS].button },
 		{ "Cancel",			641,		655,	71,	UI_XSTR_COLOR_PINK, -1, &CC_Buttons[1][CANCEL_BUTTON].button },
 		{ "Undo",			1343,		938,	619,	UI_XSTR_COLOR_GREEN, -1, &CC_Buttons[1][UNDO_BUTTON].button },
-		{ "Defaults",		1344,		923,	71,	UI_XSTR_COLOR_GREEN, -1, &CC_Buttons[1][RESET_BUTTON].button },
+		{ "Next Preset",	1661,		913,	71,	UI_XSTR_COLOR_GREEN, -1, &CC_Buttons[1][RESET_BUTTON].button },
 		{ "Search",			1345,		746,	71,	UI_XSTR_COLOR_GREEN, -1, &CC_Buttons[1][SEARCH_MODE].button },
 		{ "Bind",			1346,		846,	71,	UI_XSTR_COLOR_PINK, -1, &CC_Buttons[1][BIND_BUTTON].button },
 		{ "Help",			928,		800,	704,	UI_XSTR_COLOR_GREEN, -1, &CC_Buttons[1][HELP_BUTTON].button },
@@ -486,7 +483,13 @@ int joy_get_scaled_reading(int raw)
 
 	raw -= JOY_AXIS_CENTER;
 
-	dead_zone = (JOY_AXIS_MAX - JOY_AXIS_MIN) * Joy_dead_zone_size / 100;
+	if (Cmdline_deadzone >= 0) {
+		dead_zone = (JOY_AXIS_MAX - JOY_AXIS_MIN) * Cmdline_deadzone / 200; 
+		//Making this div by 200 is what allows us to have the granularity of 0 to 100 in the cmdline. 
+		//This allows a larger deadzone than the original maximum, all the way to the stick's full range.
+	} else {
+		dead_zone = (JOY_AXIS_MAX - JOY_AXIS_MIN) * Joy_dead_zone_size / 100;
+	}
 
 	if (raw < -dead_zone) {
 		rng = JOY_AXIS_CENTER - JOY_AXIS_MIN - dead_zone;
@@ -566,22 +569,44 @@ CC_bind control_config_detect_axis()
 	found_axis:;
 
 	if (j == CID_JOY_MAX) {
-		j = CID_NONE;
-	}
-
-	if ( (j == CID_NONE) && Use_mouse_to_fly ) {
 		// Nothing found amongst the joysticks. Check the mouse.
 		mouse_get_delta( &dx, &dy, &dz );
 
-		if ( (dx > deadzone) || (dx < -deadzone) ) {
+		if (Use_mouse_to_fly) {
+			// Treat mouse as Joy0
+			j = CID_JOY0;
+
+			if ((dx > deadzone) || (dx < -deadzone)) {
+				axis = JOY_X_AXIS;
+
+			} else if ((dy > deadzone) || (dy < -deadzone)) {
+				axis = JOY_Y_AXIS;
+
+			} else if ((dz > deadzone) || (dz < -deadzone)) {
+				axis = JOY_Z_AXIS;
+
+			} else {
+				// Nothing detected
+				j = CID_NONE;
+			}
+
+		} else {
+			// Treat mouse as mouse
 			j = CID_MOUSE;
-			axis = MOUSE_X_AXIS;
-		} else if ( (dy > deadzone) || (dy < -deadzone) ) {
-			j = CID_MOUSE;
-			axis = MOUSE_Y_AXIS;
-		} else if ( (dz > deadzone) || (dz < -deadzone) ) {
-			j = CID_MOUSE;
-			axis = MOUSE_Z_AXIS;
+
+			if ((dx > deadzone) || (dx < -deadzone)) {
+				axis = MOUSE_X_AXIS;
+
+			} else if ((dy > deadzone) || (dy < -deadzone)) {
+				axis = MOUSE_Y_AXIS;
+
+			} else if ((dz > deadzone) || (dz < -deadzone)) {
+				axis = MOUSE_Z_AXIS;
+
+			} else {
+				// Nothing detected
+				j = CID_NONE;
+			}
 		}
 	}
 	
@@ -618,37 +643,37 @@ void control_config_conflict_check()
 				continue;
 			}
 
-			if (item_i.disabled && (item_i.has_first(item_j) || item_i.has_second(item_j))) {
+			if (item_i.disabled && (item_i.has_first_conflict(item_j) || item_i.has_second_conflict(item_j))) {
 				// item_i conflicts with item_j and is disabled.  Silently clear item_i
 				item_i.clear();
 			}
 
-			if (item_j.disabled && (item_j.has_first(item_i) || item_j.has_second(item_i))) {
+			if (item_j.disabled && (item_j.has_first_conflict(item_i) || item_j.has_second_conflict(item_i))) {
 				// item_j conflicts with item_i and is disabled.  Silently clear item_j
 				item_j.clear();
 			}
 
 			// Clearly a headache
 			// This mess is needed so that only the conflicting bind is highlighted instead of both of them
-			if (item_i.has_first(item_j)) {
+			if (item_i.has_first_conflict(item_j)) {
 				// item_i's first binding has conflict
 				Conflicts[i].first = j;
 				Conflicts_tabs[ item_i.tab ] = 1;
 			}
 
-			if (item_i.has_second(item_j)) {
+			if (item_i.has_second_conflict(item_j)) {
 				// item_i's second binding has conflict
 				Conflicts[i].second = j;
 				Conflicts_tabs[ item_i.tab ] = 1;
 			}
 
-			if (item_j.has_first(item_i)) {
+			if (item_j.has_first_conflict(item_i)) {
 				// item_j's first binding has conflict
 				Conflicts[j].first = i;
 				Conflicts_tabs[item_j.tab] = 1;
 			}
 
-			if (item_j.has_second(item_i)) {
+			if (item_j.has_second_conflict(item_i)) {
 				// item_j's second binding has conflict
 				Conflicts[j].second = i;
 				Conflicts_tabs[ item_j.tab ] = 1;
@@ -707,7 +732,7 @@ int cc_line_query_visible(int n)
  */
 void control_config_bind(int i, const CC_bind &new_bind, selItem order)
 {
-	int sel;
+	int sel = -1;
 	switch (order) {
 		// Bind states. Saving covered by below
 		case selItem::Primary:
@@ -722,9 +747,9 @@ void control_config_bind(int i, const CC_bind &new_bind, selItem order)
 			sel = -1;
 			break;
 
+		// Error
 		default:
-			UNREACHABLE("Notice: Unknown order (%i) passed to control_config_bind_btn. Ignoring.\n", static_cast<int>(order));
-			return;
+			UNREACHABLE("Unknown order (%i) passed to control_config_bind_btn.", static_cast<int>(order));
 	}
 
 	// Save both bindings, because ::take() can clear the other binding if it is equal.
@@ -803,7 +828,7 @@ int control_config_remove_binding()
 
 	default:
 		// Coder forgot to add a case!
-		Int3();
+		UNREACHABLE("Unhandled selItem case.");
 	}
 
 	control_config_conflict_check();
@@ -847,13 +872,13 @@ int control_config_clear_other()
 
 		auto &other = Control_config[i];
 
-		if (other.has_first(selected)) {
+		if (other.has_first_conflict(selected)) {
 			stack.save(other.first);
 			other.first.clear();
 			total++;
 		}
 
-		if (other.has_second(selected)) {
+		if (other.has_second_conflict(selected)) {
 			stack.save(other.second);
 			other.second.clear();
 			total++;
@@ -913,15 +938,22 @@ int control_config_clear_all()
  */
 int control_config_do_reset()
 {
-	int i, total = 0;
-	const int CCFG_SIZE = static_cast<int>(Control_config.size());
+	int total = 0;
 	Undo_stack stack;
 	auto &default_bindings = Control_config_presets[Defaults_cycle_pos].bindings;
 
 	// first, determine how many bindings need to be changed
-	for (i = 0; i < CCFG_SIZE; ++i) {
-		if ((Control_config[i].first != default_bindings[i].first) ||
-			(Control_config[i].second != default_bindings[i].second)) {
+	for (size_t e = 0; e < Control_config.size(); ++e) {
+		auto item = Control_config[e];
+		auto default_item = default_bindings[e];
+
+		if (item.disabled) {
+			// skip
+			continue;
+		}
+
+		if ((item.first != default_item.first) ||
+		    (item.second != default_item.second)) {
 			total++;
 		}
 	}
@@ -969,6 +1001,22 @@ void control_config_use_preset(CC_preset &preset)
 		Control_config[i].first = bindings[i].first;
 		Control_config[i].second = bindings[i].second;
 	}
+}
+
+bool control_config_use_preset_by_name(const SCP_string &name) {
+	auto it = std::find_if(Control_config_presets.begin(), Control_config_presets.end(),
+		[name](CC_preset &preset) {return preset.name == name;});
+
+	if (it == Control_config_presets.end()) {
+		// Couldn't find, use defaults
+		it = Control_config_presets.begin();
+		mprintf(("CCFG => Could not find preset with name %s, using defaults.", name.c_str()));
+		return false;
+	}
+
+	control_config_use_preset(*it);
+
+	return true;
 }
 
 void control_config_scroll_screen_up()
@@ -1077,7 +1125,8 @@ void control_config_toggle_invert()
 	switch (Selected_item) {
 	case selItem::None:
 		// both
-		item.invert_toggle();
+		item.first.invert_toggle();
+		item.second.invert_toggle();
 		break;
 	case selItem::Primary:
 		// first
@@ -1088,7 +1137,8 @@ void control_config_toggle_invert()
 		item.second.invert_toggle();
 		break;
 	default:
-		UNREACHABLE("Unhandled selItem in control_config_toggle_invert(): %i\n", static_cast<int>(Selected_item));
+		// unhandled
+		mprintf(("Unhandled selItem in control_config_toggle_invert(): %i", static_cast<int>(Selected_item)));
 	}
 }
 
@@ -1285,6 +1335,28 @@ int control_config_accept()
  */
 void control_config_cancel_exit()
 {
+	// Check if any changes were made
+	if (control_config_get_current_preset() == Control_config_presets.end()) {
+		// Changes were made, prompt the user first.
+		int flags = PF_TITLE_WHITE;
+		int choice = popup(flags, 2, POPUP_NO, POPUP_YES, "You have unsaved changes.\n\n\n Do you wish to continue without saving?");
+
+		switch (choice) {
+			case -1:	// Aborted
+			case 1:		// Selected Yes (continue without saving)
+				// Either aborted (with Esc) or selected Yes (do not save)
+				// continue with backup restore and post event
+				break;
+			case 0:
+				// Selected No (do not exit)
+				return;
+				break;
+
+			default:
+				UNREACHABLE("Unknown popup choice %i", choice);
+		}
+	}
+
 	// Restore all bindings with the backup
 	std::move(Control_config_backup.begin(), Control_config_backup.end(), Control_config.begin());
 
@@ -1428,7 +1500,7 @@ void control_config_init()
 	help_overlay_set_state(Control_config_overlay_id,gr_screen.res,0);
 
 	// reset conflict flashing
-	Conflict_stamp = -1;
+	Conflict_stamp = UI_TIMESTAMP::invalid();
 
 	for (i=0; i<NUM_BUTTONS; i++) {
 		b = &CC_Buttons[gr_screen.res][i];
@@ -1482,20 +1554,7 @@ void control_config_init()
 	Scroll_offset = Selected_line = 0;
 	control_config_conflict_check();
 
-	// setup strings					
-	Joy_axis_text[0] = vm_strdup(XSTR("X Axis", 1021));
-	Joy_axis_text[1] = vm_strdup(XSTR("Y Axis", 1022));
-	Joy_axis_text[2] = vm_strdup(XSTR("Z Axis", 1023));
-	Joy_axis_text[3] = vm_strdup(XSTR("rX Axis", 1024));
-	Joy_axis_text[4] = vm_strdup(XSTR("rY Axis", 1025));
-	Joy_axis_text[5] = vm_strdup(XSTR("rZ Axis", 1026));
-	Mouse_button_text[0] = vm_strdup("");
-	Mouse_button_text[1] = vm_strdup(XSTR("Left Button", 1027));
-	Mouse_button_text[2] = vm_strdup(XSTR("Right Button", 1028));
-	Mouse_button_text[3] = vm_strdup(XSTR("Mid Button", 1029));
-	Mouse_button_text[4] = vm_strdup("");	// TODO Mousewheel and X1, X2
-	Mouse_axis_text[0] = vm_strdup(XSTR("L/R", 1030));
-	Mouse_axis_text[1] = vm_strdup(XSTR("U/B", 1031));
+	// setup strings
 	Invert_text[0] = vm_strdup(XSTR("N", 1032));
 	Invert_text[1] = vm_strdup(XSTR("Y", 1033));
 
@@ -1521,29 +1580,11 @@ void control_config_close()
 		Pilot.save_savefile();
 	}
 
-	// free strings	
-	for(idx=0; idx<NUM_AXIS_TEXT; idx++){
-		if(Joy_axis_text[idx] != NULL){
-			vm_free(Joy_axis_text[idx]);
-			Joy_axis_text[idx] = NULL;
-		}
-	}
-	for(idx=0; idx<NUM_MOUSE_TEXT; idx++){
-		if(Mouse_button_text[idx] != NULL){
-			vm_free(Mouse_button_text[idx]);
-			Mouse_button_text[idx] = NULL;
-		}
-	}
-	for(idx=0; idx<NUM_MOUSE_AXIS_TEXT; idx++){
-		if(Mouse_axis_text[idx] != NULL){
-			vm_free(Mouse_axis_text[idx]);
-			Mouse_axis_text[idx] = NULL;
-		}
-	}
-	for(idx=0; idx<NUM_INVERT_TEXT; idx++){
-		if(Invert_text[idx] != NULL){
+	// free strings
+	for (idx = 0; idx < NUM_INVERT_TEXT; idx++) {
+		if (Invert_text[idx] != nullptr) {
 			vm_free(Invert_text[idx]);
-			Invert_text[idx] = NULL;
+			Invert_text[idx] = nullptr;
 		}
 	}
 
@@ -1554,7 +1595,7 @@ void control_config_close()
 	Undo_controls.clear();
 }
 
-SCP_vector<CC_preset>::iterator control_config_get_current_preset() {
+SCP_vector<CC_preset>::iterator control_config_get_current_preset(bool invert_agnostic) {
 	// Find the matching preset.
 	// We do this instead of relying on Defaults_cycle_pos because the player may end up duplicating a preset
 	auto it = Control_config_presets.begin();
@@ -1570,19 +1611,39 @@ SCP_vector<CC_preset>::iterator control_config_get_current_preset() {
 				continue;
 			}
 
-			// Check Primary
-			if (Control_config[i].first != it->bindings[i].first) {
-				// Isn't a match, stop checking this preset
-				is_match = false;
-				break;
-			}
+			if (invert_agnostic) {
+				// Check for binding equality, ignoring invert flag
+				// Check Primary
+				if (!Control_config[i].first.invert_agnostic_equals(it->bindings[i].first)) {
+					// Isn't a match, stop checking this preset
+					is_match = false;
+					break;
+				}
 
-			// Check Secondary
-			if (Control_config[i].second != it->bindings[i].second) {
-				// Isn't a match, stop checking this preset
-				is_match = false;
-				break;
+				// Check Secondary
+				if (!Control_config[i].second.invert_agnostic_equals(it->bindings[i].second)) {
+					// Isn't a match, stop checking this preset
+					is_match = false;
+					break;
+				}
+
+			} else {
+				// Check for binding exact equality
+				// Check Primary
+				if (Control_config[i].first != it->bindings[i].first) {
+					// Isn't a match, stop checking this preset
+					is_match = false;
+					break;
+				}
+
+				// Check Secondary
+				if (Control_config[i].second != it->bindings[i].second) {
+					// Isn't a match, stop checking this preset
+					is_match = false;
+					break;
+				}
 			}
+			
 		}
 
 		if (is_match) {
@@ -1605,10 +1666,9 @@ void control_config_draw_selected_preset() {
 	auto preset_it = control_config_get_current_preset();
 
 	if (preset_it != Control_config_presets.end()) {
-		sprintf(preset_str, "Controls: %s", preset_it->name.c_str());
-		
+		sprintf(preset_str, XSTR("Preset: %s", 1659), preset_it->name.c_str());		
 	} else {
-		sprintf(preset_str, "Controls: custom");
+		sprintf(preset_str, XSTR("Preset: custom", 1660), "");
 	}
 
 	// Draw the string
@@ -1778,7 +1838,7 @@ void control_config_do_frame(float frametime)
 	int font_height = gr_get_font_height();
 	int select_tease_line = -1;  // line mouse is down on, but won't be selected until button released
 	static float timer = 0.0f;
-	static int bound_timestamp = 0;
+	static UI_TIMESTAMP bound_timestamp;
 	static char bound_string[40];
 	
 	timer += frametime;
@@ -1836,7 +1896,7 @@ void control_config_do_frame(float frametime)
 		if (k == KEY_ESC) {
 			// Cancel bind if ESC is pressed
 			strcpy_s(bound_string, XSTR("Canceled", 206));
-			bound_timestamp = timestamp(2500);
+			bound_timestamp = ui_timestamp(2500);
 			control_config_do_cancel();
 
 		} else if (Control_config[z].is_axis()) {
@@ -1918,11 +1978,23 @@ void control_config_do_frame(float frametime)
 					}
 				}
 
-				if (i == NUM_BUTTONS) {  // no buttons pressed, go ahead with polling the mouse
+				if (i == NUM_BUTTONS) {
+					// no buttons pressed, go ahead with polling the mouse
+					CID cid;
+					if (Use_mouse_to_fly) {
+						// treat mouse as Joy0
+						cid = CID_JOY0;
+					} else {
+						// treat mouse as mouse
+						cid = CID_MOUSE;
+					}
+
 					for (i=0; i<MOUSE_NUM_BUTTONS; i++) {
-						if (mouse_down(CC_bind(CID_MOUSE, static_cast<short>(i)))) {
+						CC_bind mouse_bind(cid, static_cast<short>(i));
+
+						if (mouse_down(mouse_bind)) {
 							Assert(!Control_config[z].is_axis());
-							control_config_bind(z, CC_bind(CID_MOUSE, static_cast<short>(i)), Selected_item);
+							control_config_bind(z, mouse_bind, Selected_item);
 
 							strcpy_s(bound_string, Joy_button_text[i]);
 							done = true;
@@ -1937,7 +2009,7 @@ void control_config_do_frame(float frametime)
 		if (done) {
 			// done with binding mode, clean up and prepare for display
 			font::force_fit_string(bound_string, 39, Conflict_wnd_coords[gr_screen.res][CONTROL_W_COORD]);
-			bound_timestamp = timestamp(2500);
+			bound_timestamp = ui_timestamp(2500);
 			control_config_conflict_check();
 			control_config_list_prepare();
 			control_config_do_cancel();
@@ -2248,10 +2320,10 @@ void control_config_do_frame(float frametime)
 
 	if (z) {
 		// maybe switch from bright to normal
-		if((Conflict_stamp == -1) || timestamp_elapsed(Conflict_stamp)){
+		if (!Conflict_stamp.isValid() || ui_timestamp_elapsed(Conflict_stamp)){
 			Conflict_bright = !Conflict_bright;
 
-			Conflict_stamp = timestamp(CONFLICT_FLASH_TIME);
+			Conflict_stamp = ui_timestamp(CONFLICT_FLASH_TIME);
 		}
 
 		// set color and font
@@ -2268,12 +2340,14 @@ void control_config_do_frame(float frametime)
 		int sw, sh;
 		gr_get_string_size(&sw, &sh, conflict_str);
 
-		gr_string((gr_screen.max_w / 2) - (sw / 2), Conflict_warning_coords[gr_screen.res][1], conflict_str, GR_RESIZE_MENU);
+		x = Conflict_warning_coords[gr_screen.res][CONTROL_X_COORD] - (sw / 2);
+		y = Conflict_warning_coords[gr_screen.res][CONTROL_Y_COORD];
+		gr_printf_menu(x, y, "%s", conflict_str);
 
 		font::set_font(font::FONT1);
 	} else {
 		// might as well always reset the conflict stamp
-		Conflict_stamp = -1;
+		Conflict_stamp = UI_TIMESTAMP::invalid();
 	}
 
 	// Find if a tab button was pressed
@@ -2372,7 +2446,7 @@ void control_config_do_frame(float frametime)
 		gr_set_color_fast(&Color_text_normal);
 		gr_get_string_size(&w, NULL, bound_string);
 		gr_printf_menu(x - w / 2, y - font_height / 2, "%s", bound_string);
-		if (timestamp_elapsed(bound_timestamp)) {
+		if (ui_timestamp_elapsed(bound_timestamp)) {
 			*bound_string = 0;
 		}
 	}
@@ -2553,9 +2627,11 @@ int check_control(int id, int key)
 		// If we reach this point, then it means this is a continuous control
 		// which has just been released
 
-		Script_system.SetHookVar("Action", 's', Control_config[id].text);
-		Script_system.RunCondition(CHA_ONACTIONSTOPPED, nullptr, id);
-		Script_system.RemHookVar("Action");
+		if (Script_system.IsActiveAction(CHA_ONACTIONSTOPPED)) {
+			Script_system.SetHookVar("Action", 's', Control_config[id].text);
+			Script_system.RunCondition(CHA_ONACTIONSTOPPED, nullptr, id);
+			Script_system.RemHookVar("Action");
+		}
 
 		Control_config[id].continuous_ongoing = false;
 	}
@@ -2616,34 +2692,45 @@ void scale_invert(const CC_bind &bind,
 	const int MOUSE_ID = CID_JOY_MAX;	// Joy axes go in front here, mouse gets tacked on the end
 	float factor = 0.0f;
 	int dx = 0;
+	const auto cid = bind.get_cid();
+	const auto btn = bind.get_btn();
 
-	switch (bind.cid) {
+	factor = (float)Mouse_sensitivity + 1.77f;
+	factor = factor * factor / frame_time / 0.6f;
+
+	switch (cid) {
 	case CID_MOUSE:
-		factor = (float)Mouse_sensitivity + 1.77f;
-		factor = factor * factor / frame_time / 0.6f;
 		if (!Use_mouse_to_fly) {
-			return;
-		}
+			// Mouse is treated as mouse, get the axis values
+			dx = axis_in[MOUSE_ID][btn];
+			maybe_invert(bind.is_inverted(), type, dx);
+			axis_out[action] += (int)((float)dx * factor);
 
-		dx = axis_in[MOUSE_ID][bind.btn];
-		maybe_invert(bind.is_inverted(), type, dx);
-		axis_out[action] += (int)((float)dx * factor);
+		} // else, Mouse is treated as joy, ignore and let CID_JOY0 case handle it on next call
 		break;
 
 	case CID_JOY0:
+		if (Use_mouse_to_fly) {
+			// Mouse is treated as Joy0
+			dx = axis_in[MOUSE_ID][btn];
+			maybe_invert(bind.is_inverted(), type, dx);
+			axis_out[action] += (int)((float)dx * factor);
+		}
+		FALLTHROUGH;
+
 	case CID_JOY1:
 	case CID_JOY2:
 	case CID_JOY3:
 		switch (type) {
 		case CC_TYPE_AXIS_ABS:
-			dx = joy_get_unscaled_reading(axis_in[bind.cid][bind.btn]);
+			dx = joy_get_unscaled_reading(axis_in[cid][btn]);
 			break;
 
 		case CC_TYPE_AXIS_REL:
 		case CC_TYPE_AXIS_BTN_NEG:
 		case CC_TYPE_AXIS_BTN_POS:
 		default:
-			dx = joy_get_scaled_reading(axis_in[bind.cid][bind.btn]);
+			dx = joy_get_scaled_reading(axis_in[cid][btn]);
 			break;
 		}
 		
@@ -2674,10 +2761,8 @@ void control_get_axes_readings(int *axis_v, float frame_time)
 		joystick_read_raw_axis(j, JOY_NUM_AXES, axe[j]);
 	}
 
-	// Read raw mouse, stuff in axes_values[0]
-	if (Use_mouse_to_fly) {
-		mouse_get_delta(&axe[MOUSE_ID][MOUSE_X_AXIS], &axe[MOUSE_ID][MOUSE_Y_AXIS], &axe[MOUSE_ID][MOUSE_Z_AXIS]);
-	}
+	// Read raw mouse
+	mouse_get_delta(&axe[MOUSE_ID][MOUSE_X_AXIS], &axe[MOUSE_ID][MOUSE_Y_AXIS], &axe[MOUSE_ID][MOUSE_Z_AXIS]);
 
 	for (int action = 0; action < Action::NUM_VALUES; ++action) {
 		const IoActionId action_id = static_cast<IoActionId>(action + JOY_AXIS_BEGIN);
@@ -2719,7 +2804,6 @@ void control_get_axes_readings(int *axis_v, float frame_time)
 	}
 }
 
-int Last_frame_timestamp;
 void control_used(int id)
 {
 	// if we have set this key to be ignored, ignore it

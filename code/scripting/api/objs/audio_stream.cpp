@@ -11,8 +11,8 @@ ADE_OBJ(l_AudioStream, int, "audio_stream", "An audio stream handle");
 
 ADE_FUNC(play,
 	l_AudioStream,
-	"[number volume = -1.0 /* By default uses preset volume of the stream type */, boolean loop = false]",
-	"Starts playing the audio stream",
+   "[number volume = -1.0 /* By default sets the last used volume of this stream, if applicable. Otherwise, uses preset volume of the stream type */, boolean loop = false]",
+    "Starts playing the audio stream",
 	"boolean",
 	"true on success, false otherwise")
 {
@@ -130,6 +130,21 @@ ADE_FUNC(isPlaying,
 	}
 
 	return ade_set_args(L, "b", audiostream_is_playing(streamHandle) != 0);
+}
+
+ADE_FUNC(setVolume,	l_AudioStream, "number volume", "Sets the volume of the audio stream, 0 - 1", "boolean", "true on success, false otherwise")
+{
+	int streamHandle = -1;
+	float volume = -1.0f;
+	if (!ade_get_args(L, "of", l_AudioStream.Get(&streamHandle), &volume)) {
+		return ADE_RETURN_FALSE;
+	}
+
+	if (streamHandle < 0) {
+		return ADE_RETURN_FALSE;
+	}
+	audiostream_set_volume(streamHandle, volume);
+	return ADE_RETURN_TRUE;
 }
 
 ADE_FUNC(isValid,

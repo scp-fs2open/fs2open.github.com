@@ -1,18 +1,19 @@
 
 #include "graphics/render.h"
+
 #include "graphics/material.h"
 #include "graphics/matrix.h"
-#include "graphics/software/font_internal.h"
+#include "graphics/paths/PathRenderer.h"
 #include "graphics/software/FSFont.h"
 #include "graphics/software/NVGFont.h"
 #include "graphics/software/VFNTFont.h"
-#include "graphics/paths/PathRenderer.h"
-
-#include "mod_table/mod_table.h"
+#include "graphics/software/font_internal.h"
 #include "localization/localize.h"
-#include "matrix.h"
+#include "mod_table/mod_table.h"
+#include "render/3d.h"
 
-static void gr_flash_internal(int r, int g, int b, int a, bool alpha_flash) {
+static void gr_flash_internal(int r, int g, int b, int a, bool alpha_flash)
+{
 	CLAMP(r, 0, 255);
 	CLAMP(g, 0, 255);
 	CLAMP(b, 0, 255);
@@ -1046,9 +1047,16 @@ void gr_curve(int xc, int yc, int r, int direction, int resize_mode) {
 	endDrawing(path);
 }
 
-void gr_rect(int x, int y, int w, int h, int resize_mode) {
+void gr_rect(int x, int y, int w, int h, int resize_mode, float angle) {
 	auto path = beginDrawing(resize_mode);
-
+	if (angle != 0) {
+		// If we don't do this translation before and after rotating, the rotation will use 0,0 as the pivot, flinging the rectangle far away. 
+		float offsetX = x + w / 2.0f;
+		float offsetY = y + h / 2.0f;
+		path->translate(offsetX, offsetY);
+		path->rotate(angle);
+		path->translate(-offsetX, -offsetY);
+	}
 	path->rectangle(i2fl(x), i2fl(y), i2fl(w), i2fl(h));
 	path->setFillColor(&gr_screen.current_color);
 	path->fill();
@@ -1148,14 +1156,183 @@ void gr_render_primitives_immediate(material* material_info,
 }
 
 void gr_render_primitives_2d_immediate(material* material_info,
-									   primitive_type prim_type,
-									   vertex_layout* layout,
-									   int n_verts,
-									   void* data,
-									   size_t size) {
+	primitive_type prim_type,
+	vertex_layout* layout,
+	int n_verts,
+	void* data,
+	size_t size)
+{
 	gr_set_2d_matrix();
 
 	gr_render_primitives_immediate(material_info, prim_type, layout, n_verts, data, size);
 
 	gr_end_2d_matrix();
+}
+
+// _->NEW<-_ NEW new bitmap functions -Bobboau
+// takes a list of rectangles that have assosiated rectangles in a texture
+static void draw_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode, material* render_mat, float angle = 0.f)
+{
+	GR_DEBUG_SCOPE("2D Bitmap list");
+
+	// adapted from g3_draw_2d_poly_bitmap_list
+
+	for (int i = 0; i < n_bm; i++) {
+		bitmap_2d_list* l = &list[i].screen_rect;
+
+		// if no valid hight or width values were given get some from the bitmap
+		if ((l->w <= 0) || (l->h <= 0)) {
+			bm_get_info(gr_screen.current_bitmap, &l->w, &l->h, nullptr, nullptr, nullptr);
+		}
+
+		if (resize_mode != GR_RESIZE_NONE && (gr_screen.custom_size || (gr_screen.rendering_to_texture != -1))) {
+			gr_resize_screen_pos(&l->x, &l->y, &l->w, &l->h, resize_mode);
+		}
+	}
+
+	auto vert_list = new vertex[6 * n_bm];
+	float sw = 0.1f;
+
+
+	for (int i = 0; i < n_bm; i++) {
+		// stuff coords
+		
+		bitmap_2d_list* b = &list[i].screen_rect;
+		texture_rect_list* t = &list[i].texture_rect;
+		
+		float centerX = 0;
+		float centerY = 0;
+
+		if (angle != 0.f) {
+			centerX = (b->x + (b->x + b->w)) / 2.0f;
+			centerY = (b->y + (b->y + b->h)) / 2.0f;
+		}
+
+		// tri one
+		vertex* V = &vert_list[i * 6];
+		
+		if (angle != 0.f) {
+			V->screen.xyw.x = cosf(angle) * (b->x - centerX) - sinf(angle) * (b->y - centerY) + centerX;
+			V->screen.xyw.y = sinf(angle) * (b->x - centerX) + cosf(angle) * (b->y - centerY) + centerY;
+		}
+		else {			
+			V->screen.xyw.x = (float)b->x;
+			V->screen.xyw.y = (float)b->y;
+		}
+		
+		V->screen.xyw.w = sw;
+		V->texture_position.u = (float)t->u0;
+		V->texture_position.v = (float)t->v0;
+		V->flags = PF_PROJECTED;
+		V->codes = 0;
+
+		V++;
+		if (angle != 0.f) {
+			V->screen.xyw.x = cosf(angle) * (b->x + b->w - centerX) - sinf(angle) * (b->y - centerY) + centerX;
+			V->screen.xyw.y = sinf(angle) * (b->x + b->w - centerX) + cosf(angle) * (b->y - centerY) + centerY;
+		}
+		else {
+			V->screen.xyw.x = (float)(b->x + b->w);
+			V->screen.xyw.y = (float)b->y;
+		}
+
+		V->screen.xyw.w = sw;
+		V->texture_position.u = (float)t->u1;
+		V->texture_position.v = (float)t->v0;
+		V->flags = PF_PROJECTED;
+		V->codes = 0;
+
+		V++;
+		if (angle != 0.f) {
+			V->screen.xyw.x = cosf(angle) * (b->x + b->w - centerX) - sinf(angle) * (b->y + b->h - centerY) + centerX;
+			V->screen.xyw.y = sinf(angle) * (b->x + b->w - centerX) + cosf(angle) * (b->y + b->h - centerY) + centerY;
+		}
+		else {
+			V->screen.xyw.x = (float)(b->x + b->w);
+			V->screen.xyw.y = (float)(b->y + b->h);
+		}
+
+		V->screen.xyw.w = sw;
+		V->texture_position.u = (float)t->u1;
+		V->texture_position.v = (float)t->v1;
+		V->flags = PF_PROJECTED;
+		V->codes = 0;
+
+		// tri two
+		V++;
+		if (angle != 0.f) {
+			V->screen.xyw.x = cosf(angle) * (b->x - centerX) - sinf(angle) * (b->y - centerY) + centerX;
+			V->screen.xyw.y = sinf(angle) * (b->x - centerX) + cosf(angle) * (b->y - centerY) + centerY;
+		}
+		else {			
+			V->screen.xyw.x = (float)b->x;
+			V->screen.xyw.y = (float)b->y;
+		}
+
+		V->screen.xyw.w = sw;
+		V->texture_position.u = (float)t->u0;
+		V->texture_position.v = (float)t->v0;
+		V->flags = PF_PROJECTED;
+		V->codes = 0;
+
+		V++;
+		if (angle != 0.f) {
+			V->screen.xyw.x = cosf(angle) * (b->x + b->w - centerX) - sinf(angle) * (b->y + b->h - centerY) + centerX;
+			V->screen.xyw.y = sinf(angle) * (b->x + b->w - centerX) + cosf(angle) * (b->y + b->h - centerY) + centerY;
+		}
+		else {
+			V->screen.xyw.x = (float)(b->x + b->w);
+			V->screen.xyw.y = (float)(b->y + b->h);
+		}
+
+		V->screen.xyw.w = sw;
+		V->texture_position.u = (float)t->u1;
+		V->texture_position.v = (float)t->v1;
+		V->flags = PF_PROJECTED;
+		V->codes = 0;
+
+		V++;
+		if (angle != 0.f) {
+			V->screen.xyw.x = cosf(angle) * (b->x - centerX) - sinf(angle) * (b->y + b->h - centerY) + centerX;
+			V->screen.xyw.y = sinf(angle) * (b->x - centerX) + cosf(angle) * (b->y + b->h - centerY) + centerY;
+		}
+		else {
+			V->screen.xyw.x = (float)b->x;
+			V->screen.xyw.y = (float)(b->y + b->h);
+		}
+
+		V->screen.xyw.w = sw;
+		V->texture_position.u = (float)t->u0;
+		V->texture_position.v = (float)t->v1;
+		V->flags = PF_PROJECTED;
+		V->codes = 0;
+	}
+
+	g3_render_primitives_textured(render_mat, vert_list, 6 * n_bm, PRIM_TYPE_TRIS, true);
+
+	delete[] vert_list;
+}
+
+void gr_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode, float angle)
+{
+	material mat_params;
+	material_set_interface(&mat_params,
+		gr_screen.current_bitmap,
+		gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER,
+		gr_screen.current_alpha);
+
+	draw_bitmap_list(list, n_bm, resize_mode, &mat_params, angle);
+}
+
+void gr_aabitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode, float angle)
+{
+	material render_mat;
+	render_mat.set_blend_mode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
+	render_mat.set_depth_mode(ZBUFFER_TYPE_NONE);
+	render_mat.set_texture_map(TM_BASE_TYPE, gr_screen.current_bitmap);
+	render_mat.set_color(gr_screen.current_color);
+	render_mat.set_cull_mode(false);
+	render_mat.set_texture_type(material::TEX_TYPE_AABITMAP);
+
+	draw_bitmap_list(list, n_bm, resize_mode, &render_mat, angle);
 }

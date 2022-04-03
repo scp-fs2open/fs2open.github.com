@@ -12,6 +12,7 @@
 #include "mission/missionload.h"
 #include "missionui/missionscreencommon.h"
 #include "missionui/missionshipchoice.h"
+#include "parse/sexp_container.h"
 #include "pilotfile/pilotfile.h"
 #include "playerman/player.h"
 #include "ship/ship.h"
@@ -968,6 +969,7 @@ void pilotfile::csg_write_redalert()
 void pilotfile::csg_read_hud()
 {
 	int idx;
+	int strikes = 0;
 
 	// flags
 	HUD_config.show_flags = cfread_int(cfp);
@@ -982,16 +984,28 @@ void pilotfile::csg_read_hud()
 	HUD_config.rp_flags = cfread_int(cfp);
 	HUD_config.rp_dist = cfread_int(cfp);
 	if (HUD_config.rp_dist < 0 || HUD_config.rp_dist >= RR_MAX_RANGES) {
-		Warning(LOCATION, "Campaign file has invalid radar range %d, setting to default.\n", HUD_config.rp_dist);
+		ReleaseWarning(LOCATION, "Campaign file has invalid radar range %d, setting to default.\n", HUD_config.rp_dist);
 		HUD_config.rp_dist = RR_INFINITY;
+		strikes++;
 	}
 
 	// basic colors
 	HUD_config.main_color = cfread_int(cfp);
-	HUD_color_alpha = cfread_int(cfp);
+	if (HUD_config.main_color < 0 || HUD_config.main_color >= HUD_COLOR_SIZE) {
+		ReleaseWarning(LOCATION, "Campaign file has invalid main color selection %i, setting to default.\n", HUD_config.main_color);
+		HUD_config.main_color = HUD_COLOR_GREEN;
+		strikes++;
+	}
 
-	if (HUD_color_alpha < HUD_COLOR_ALPHA_USER_MIN) {
+	HUD_color_alpha = cfread_int(cfp);
+	if (HUD_color_alpha < HUD_COLOR_ALPHA_USER_MIN || HUD_color_alpha > HUD_COLOR_ALPHA_USER_MAX) {
+		ReleaseWarning(LOCATION, "Campaign file has invalid alpha color %i, setting to default.\n", HUD_color_alpha);
 		HUD_color_alpha = HUD_COLOR_ALPHA_DEFAULT;
+		strikes++;
+	}
+
+	if (strikes == 3) {
+		ReleaseWarning(LOCATION, "Campaign file has too many hud config errors, and is likely corrupted. Please verify and save your settings in the hud config menu.");
 	}
 
 	hud_config_record_color(HUD_config.main_color);
@@ -1197,8 +1211,8 @@ void pilotfile::csg_write_settings()
 
 void pilotfile::csg_read_controls()
 {
-	if (version < 6) {
-		// Pre CSG-6 compatibility
+	if (csg_ver < 7) {
+		// Pre CSG-7 compatibility
 		int idx, list_size;
 		short id1, id2, id3 __UNUSED;
 
@@ -1216,7 +1230,8 @@ void pilotfile::csg_read_controls()
 		}
 
 		// Check that these bindings are in a preset.
-		auto it = control_config_get_current_preset();
+		// CSG doesn't save invert flags, so use agnostic equals
+		auto it = control_config_get_current_preset(true);
 		if (it == Control_config_presets.end()) {
 			// Not a preset, create one and its file
 			CC_preset preset;
@@ -1233,15 +1248,16 @@ void pilotfile::csg_read_controls()
 		return;
 	
 	} else {
-		// >= CSG-6
+		// >= CSG-7
 		char buf[MAX_FILENAME_LEN];
 		memset(buf, '\0', sizeof(buf));
-		cfread_string(buf, 32, cfp);
+		cfread_string(buf, sizeof(buf), cfp);
 
 		auto it = std::find_if(Control_config_presets.begin(), Control_config_presets.end(),
 		                       [buf](const CC_preset& preset) { return preset.name == buf; });
 
 		if (it == Control_config_presets.end()) {
+			Assertion(!Control_config_presets.empty(), "[CSG] Error reading CSG! Control_config_presets empty; Get a coder!");
 			// Couldn't find the preset, use defaults
 			it = Control_config_presets.begin();
 		}
@@ -1255,13 +1271,20 @@ void pilotfile::csg_write_controls()
 {
 	auto it = control_config_get_current_preset();
 
-	if (it != Control_config_presets.end()) {
-		cfwrite_string(it->name.c_str(), cfp);
+	if (it == Control_config_presets.end()) {
+		// Normally shouldn't happen, may be a new, blank player
+		// First assert that the presets have been initialized and have at least the defaults preset
+		Assertion(!Control_config_presets.empty(), "[CSG] Error saving CSG! Control_config_presets empty; Get a coder!");
 
-	} else {
-		Warning(LOCATION, "CSG => Tried to save to campaign file with invalid preset! Using default preset.");
-		cfwrite_string(Control_config_presets[0].name.c_str(), cfp);
+		// Next, just bash the current preset to be defaults
+		it = Control_config_presets.begin();
 	}
+
+	startSection(Section::Controls);
+
+	cfwrite_string(it->name.c_str(), cfp);
+
+	endSection();
 }
 
 void pilotfile::csg_read_cutscenes() {
@@ -1341,6 +1364,100 @@ void pilotfile::csg_write_lastmissions()
 	endSection();
 }
 
+void pilotfile::csg_read_containers()
+{
+	const int num_containers = cfread_int(cfp);
+
+	for (int idx = 0; idx < num_containers; idx++) {
+		Campaign.persistent_containers.emplace_back();
+		auto& container = Campaign.persistent_containers.back();
+		csg_read_container(container);
+	}
+
+	Campaign.red_alert_containers.clear();
+
+	const int redalert_num_containers = cfread_int(cfp);
+
+	for (int idx = 0; idx < redalert_num_containers; idx++) {
+		Campaign.red_alert_containers.emplace_back();
+		auto& ra_container = Campaign.red_alert_containers.back();
+		csg_read_container(ra_container);
+	}
+}
+
+void pilotfile::csg_read_container(sexp_container& container)
+{
+	char temp_buf[NAME_LENGTH];
+	memset(temp_buf, 0, sizeof(temp_buf));
+
+	cfread_string_len(temp_buf, sizeof(temp_buf), cfp);
+	container.container_name = temp_buf;
+
+	container.type = (ContainerType)cfread_int(cfp);
+	container.opf_type = cfread_int(cfp);
+
+	const int size = cfread_int(cfp);
+
+	if (container.is_list()) {
+		for (int i = 0; i < size; ++i) {
+			cfread_string_len(temp_buf, sizeof(temp_buf), cfp);
+			container.list_data.emplace_back(temp_buf);
+		}
+	} else if (container.is_map()) {
+		char temp_key[NAME_LENGTH];
+		memset(temp_key, 0, sizeof(temp_key));
+
+		for (int i = 0; i < size; ++i) {
+			cfread_string_len(temp_key, sizeof(temp_key), cfp);
+			cfread_string_len(temp_buf, sizeof(temp_buf), cfp);
+			container.map_data.emplace(temp_key, temp_buf);
+		}
+	} else {
+		UNREACHABLE("Unknown container type %d", (int)container.type);
+	}
+}
+
+void pilotfile::csg_write_containers()
+{
+	startSection(Section::Containers);
+
+	cfwrite_int((int)Campaign.persistent_containers.size(), cfp);
+
+	for (const auto& container : Campaign.persistent_containers) {
+		Assert(!container.is_eternal()); // eternal containers should be written to player file
+		csg_write_container(container);
+	}
+
+	cfwrite_int((int)Campaign.red_alert_containers.size(), cfp);
+
+	for (const auto& ra_container : Campaign.red_alert_containers) {
+		csg_write_container(ra_container);
+	}
+
+	endSection();
+}
+
+void pilotfile::csg_write_container(const sexp_container &container)
+{
+	cfwrite_string_len(container.container_name.c_str(), cfp);
+	cfwrite_int((int)container.type, cfp);
+	cfwrite_int(container.opf_type, cfp);
+
+	cfwrite_int(container.size(), cfp);
+	if (container.is_list()) {
+		for (const auto& data : container.list_data) {
+			cfwrite_string_len(data.c_str(), cfp);
+		}
+	} else if (container.is_map()) {
+		for (const auto& key_data : container.map_data) {
+			cfwrite_string_len(key_data.first.c_str(), cfp);
+			cfwrite_string_len(key_data.second.c_str(), cfp);
+		}
+	} else {
+		UNREACHABLE("Unknown container type %d", (int)container.type);
+	}
+}
+
 void pilotfile::csg_reset_data()
 {
 	int idx;
@@ -1417,6 +1534,8 @@ void pilotfile::csg_close()
 
 	m_have_flags = false;
 	m_have_info = false;
+
+	csg_ver = PLR_VERSION_INVALID;
 }
 
 bool pilotfile::load_savefile(player *_p, const char *campaign)
@@ -1557,6 +1676,11 @@ bool pilotfile::load_savefile(player *_p, const char *campaign)
 					csg_read_lastmissions();
 					break;
 
+				case Section::Containers:
+					mprintf(("CSG => Parsing:  Containers...\n"));
+					csg_read_containers();
+					break;
+
 				default:
 					mprintf(("CSG => Skipping unknown section 0x%04x!\n", (uint32_t)section_id));
 					break;
@@ -1677,6 +1801,8 @@ bool pilotfile::save_savefile()
 	csg_write_cutscenes();
 	mprintf(("CSG => Saving:  Last Missions...\n"));
 	csg_write_lastmissions();
+	mprintf(("CSG => Saving:  Containers...\n"));
+	csg_write_containers();
 
 	// Done!
 	mprintf(("CSG => Saving complete!\n"));

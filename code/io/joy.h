@@ -255,10 +255,10 @@ namespace io
 			int _device_id; //!< The OS device index
 			SDL_Joystick *_joystick; //!< The SDL joystick handle
 
-			SCP_string _guidStr; //!< The GUID string
-			SCP_string _name; //!< The joystick name
-
-			SDL_JoystickID _id; //!< The instance ID
+			SCP_string _guidStr;    //!< The GUID string
+			SCP_string _name;       //!< The joystick name
+			SDL_JoystickID _id;     //!< The instance ID
+			bool _isHaptic = false; //!< If this joystick supports haptic feedback
 
 			SCP_vector<Sint16> _axisValues; //!< The current axes values
 			SCP_vector<coord2d> _ballValues; //!< The ball values
@@ -331,20 +331,11 @@ namespace io
 		 */
 		void shutdown();
 
-		struct JoystickInformation {
-			SCP_string name;
-			SCP_string guid;
-
-			uint32_t num_axes;
-			uint32_t num_balls;
-			uint32_t num_buttons;
-			uint32_t num_hats;
-
-			bool is_haptic;
-		};
-
-		SCP_vector<JoystickInformation> getJoystickInformations();
-
+		/**
+		 * @brief Called from cmdline -get_info, gets Joy info JSON and shuts down SDL_JOYSTICK subsystem.
+		 */
+		json_t* getJsonArray();
+		
 		/**
 		 * @brief Called from cmdline -joy_info, Prints Joy info JSON to STDOUT and shuts down SDL_JOYSTICK subsystem.
 		 */

@@ -266,6 +266,13 @@ void sim_room_load_mission_icons();
 void sim_room_unload_mission_icons();
 void sim_room_blit_icons(int line_index, int y_start, fs_builtin_mission *fb = NULL, int is_md = 0);
 
+const std::shared_ptr<scripting::Hook> OnCampaignBeginHook = scripting::Hook::Factory(
+	"On Campaign Begin", "Called when a campaign is started from the beginning or is reset",
+	{
+		{ "Campaign", "string", "The campaign filename (without the extension)" },
+	});
+
+
 // Finds a hash value for mission filename
 //
 // returns hash value
@@ -275,7 +282,7 @@ int hash_filename(const char *filename) {
 	
 	// Don't hash .fsm extension, convert all to upper case
 	for (int i=0; i < ((signed int)(strlen(filename)) - 4); i++) {
-		hash_val = (hash_val << 4) + toupper(*ptr++);
+		hash_val = (hash_val << 4) + SCP_toupper(*ptr++);
 	}
 
 	return int(hash_val % CAMPAIGN_MISSION_HASH_SIZE);
@@ -477,8 +484,12 @@ int build_standalone_mission_list_do_frame()
 			// activate tstrings check
 			Lcl_unexpected_tstring_check = &lcl_weirdness;
 
-			// check if we can list the mission, if loading basic info didn't return an error code, and if we didn't find an unexpected XSTR mismatch
+			// check if we can list the mission, if loading basic info didn't return an error code, and if we didn't find an XSTR mismatch
 			bool condition = !mission_is_ignored(filename) && !get_mission_info(filename) && !lcl_weirdness;
+
+			// maybe log
+			if (lcl_weirdness)
+				mprintf(("Skipping %s due to XSTR mismatch\n", filename));
 
 			// deactivate tstrings check
 			Lcl_unexpected_tstring_check = nullptr;
@@ -1510,7 +1521,7 @@ void set_new_campaign_line(int n)
 	str = Campaign_descs[Selected_campaign_index];
 	Num_info_lines = 0;
 	if (str) {
-		Num_info_lines = split_str(str, Cr_info_coords[gr_screen.res][2], Info_text_line_size, Info_text_ptrs, MAX_INFO_LINES);
+		Num_info_lines = split_str(str, Cr_info_coords[gr_screen.res][2], Info_text_line_size, Info_text_ptrs, MAX_INFO_LINES, MAX_INFO_LINE_LEN);
 		Assert(Num_info_lines >= 0);
 	}
 
@@ -1549,6 +1560,8 @@ void campaign_reset(const SCP_string& campaign_file) {
 		// reset tech database to what's in the tables
 		tech_reset_to_default();
 	}
+
+	OnCampaignBeginHook->run(scripting::hook_param_list(scripting::hook_param("Campaign", 's', Campaign.filename)));
 }
 
 // returns: 0 = success, !0 = aborted or failed
@@ -1660,7 +1673,10 @@ void campaign_select_campaign(const SCP_string& campaign_file)
 				// reset tech database to what's in the tables
 				tech_reset_to_default();
 			}
+
+			OnCampaignBeginHook->run(scripting::hook_param_list(scripting::hook_param("Campaign", 's', Campaign.filename)));
 		}
+
 		// that's all we need to do for now; the campaign loading status will be checked again when we try to load the
 		// campaign in the ready room
 	}

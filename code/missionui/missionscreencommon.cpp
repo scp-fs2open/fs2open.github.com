@@ -63,8 +63,8 @@ int Mouse_down_last_frame = 0;
 // Timers used to flash buttons after timeouts
 #define MSC_FLASH_AFTER_TIME	60000		//	time before flashing a button
 #define MSC_FLASH_INTERVAL		200		// time between flashes
-int Flash_timer;								//	timestamp used to start flashing
-int Flash_toggle;								// timestamp used to toggle flashing
+UI_TIMESTAMP Flash_timer;						// timestamp used to start flashing
+UI_TIMESTAMP Flash_toggle;						// timestamp used to toggle flashing
 int Flash_bright;								// state of button to flash
 
 //////////////////////////////////////////////////////////////////
@@ -345,7 +345,7 @@ void common_music_init(int score_index)
 
 	briefing_load_music(file_name.c_str());
 	// Use this id to trigger the start of music playing on the briefing screen
-	Briefing_music_begin_timestamp = timestamp(BRIEFING_MUSIC_DELAY);
+	Briefing_music_begin_timestamp = ui_timestamp(BRIEFING_MUSIC_DELAY);
 }
 
 void common_music_do()
@@ -355,8 +355,8 @@ void common_music_do()
 	}
 
 	// Use this id to trigger the start of music playing on the briefing screen
-	if ( timestamp_elapsed( Briefing_music_begin_timestamp) ) {
-		Briefing_music_begin_timestamp = 0;
+	if ( ui_timestamp_elapsed(Briefing_music_begin_timestamp) ) {
+		Briefing_music_begin_timestamp = UI_TIMESTAMP::invalid();
 		briefing_start_music();
 	}
 }
@@ -457,17 +457,17 @@ void common_free_interface_palette()
 // Init timers used for flashing buttons
 void common_flash_button_init()
 {
-	Flash_timer = timestamp(MSC_FLASH_AFTER_TIME);
-	Flash_toggle = 1;
+	Flash_timer = ui_timestamp(MSC_FLASH_AFTER_TIME);
+	Flash_toggle = UI_TIMESTAMP::immediate();
 	Flash_bright = 0;
 }
 
 // determine if we should draw a button as bright
 int common_flash_bright()
 {
-	if ( timestamp_elapsed(Flash_timer) ) {
-		if ( timestamp_elapsed(Flash_toggle) ) {
-			Flash_toggle = timestamp(MSC_FLASH_INTERVAL);
+	if ( ui_timestamp_elapsed(Flash_timer) ) {
+		if ( ui_timestamp_elapsed(Flash_toggle) ) {
+			Flash_toggle = ui_timestamp(MSC_FLASH_INTERVAL);
 			Flash_bright ^= 1;
 		}
 	}
@@ -1050,6 +1050,9 @@ int common_scroll_down_pressed(int *start, int size, int max_show)
 
 void common_fire_stage_script_hook(int old_stage, int new_stage)
 {
+	if (!Script_system.IsActiveAction(CHA_ONBRIEFSTAGE)) {
+		return;
+	}
 	// call a scripting hook for switching stages
 	// note that we add 1 because Lua arrays are 1-based
 	Script_system.SetHookVar("OldStage", 'i', old_stage + 1);
@@ -1340,11 +1343,12 @@ int wss_get_mode(int from_slot, int from_list, int to_slot, int to_list, int wl_
 }
 
 // store all the unit data and pool data 
-int store_wss_data(ubyte *block, int max_size, interface_snd_id sound,int player_index)
+int store_wss_data(ubyte *data, __UNUSED const unsigned int max_size, interface_snd_id sound, int player_index)
 {
-	int j, i,offset=0;	
-	short player_id;	
-	short ishort;
+	int j, i, packet_size = 0;
+	ubyte val;
+	short player_id;
+	ushort pool_size;
 
 	// this function assumes that the data is going to be used over the network
 	// so make a non-network version of this function if needed
@@ -1354,72 +1358,64 @@ int store_wss_data(ubyte *block, int max_size, interface_snd_id sound,int player
 	if ( !(Game_mode & GM_MULTIPLAYER) )
 		return 0;
 
-
-	// write the ship pool 
-	for ( i = 0; i < ship_info_size(); i++ ) {
-		if ( Ss_pool[i] > 0 ) {	
-			block[offset++] = (ubyte)i;
-			Assert( Ss_pool[i] < UCHAR_MAX );
-			
-			// take care of sign issues
-			if(Ss_pool[i] == -1){
-				block[offset++] = 0xff;
-			} else {
-				block[offset++] = (ubyte)Ss_pool[i];
-			}
+	// write the ship pool
+	pool_size = 0;
+	for (i = 0; i < ship_info_size(); i++) {
+		if (Ss_pool[i] > 0) {
+			++pool_size;
 		}
 	}
 
-	block[offset++] = 0xff;	// signals start of weapons pool
+	ADD_USHORT(pool_size);
+
+	Assertion((((sizeof(short)+sizeof(short)) * pool_size) + packet_size) < max_size, "Size of ship pool exceeds max data size!");
+
+	for (i = 0; i < ship_info_size(); i++) {
+		if (Ss_pool[i] > 0) {
+			ADD_SHORT(static_cast<short>(i));
+			ADD_SHORT(static_cast<short>(Ss_pool[i]));
+		}
+	}
 
 	// write the weapon pool
-	for ( i = 0; i < weapon_info_size(); i++ ) {
-		if ( Wl_pool[i] > 0 ) {
-			block[offset++] = (ubyte)i;
-			ishort = INTEL_SHORT( (short)Wl_pool[i] );
-			memcpy(block+offset, &ishort, sizeof(short));
-			offset += sizeof(short);
+	pool_size = 0;
+	for (i = 0; i < weapon_info_size(); i++) {
+		if (Wl_pool[i] > 0) {
+			++pool_size;
+		}
+	}
+
+	ADD_USHORT(pool_size);
+
+	Assertion((((sizeof(short)+sizeof(short)) * pool_size) + packet_size) < max_size, "Size of weapon pool exceeds max data size!");
+
+	for (i = 0; i < weapon_info_size(); i++) {
+		if (Wl_pool[i] > 0) {
+			ADD_SHORT(static_cast<short>(i));
+			ADD_SHORT(static_cast<short>(Wl_pool[i]));
 		}
 	}
 
 	// write the unit data
+	val = MAX_WSS_SLOTS;
+	ADD_DATA(val);
+	val = MAX_SHIP_WEAPONS;
+	ADD_DATA(val);
 
-	block[offset++] = 0xff; // signals start of unit data
+	Assertion((((sizeof(short) + ((sizeof(short)+sizeof(short)) * MAX_SHIP_WEAPONS)) * MAX_WSS_SLOTS) + packet_size) < max_size, "Size of wss data exceeds max data size!");
 
-	for ( i=0; i<MAX_WSS_SLOTS; i++ ) {
-		Assert( Wss_slots[i].ship_class < UCHAR_MAX );
-		if(Wss_slots[i].ship_class == -1){
-			block[offset++] = 0xff;
-		} else {
-			block[offset++] = (ubyte)(Wss_slots[i].ship_class);
+	for (i = 0; i < MAX_WSS_SLOTS; i++) {
+		ADD_SHORT(static_cast<short>(Wss_slots[i].ship_class));
+
+		for (j = 0; j < MAX_SHIP_WEAPONS; j++) {
+			ADD_SHORT(static_cast<short>(Wss_slots[i].wep[j]));
+			Assert(Wss_slots[i].wep_count[j] < SHRT_MAX);
+			ADD_SHORT(static_cast<short>(Wss_slots[i].wep_count[j]));
 		}
-		for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
-			// take care of sign issues
-			Assert( Wss_slots[i].wep[j] < UCHAR_MAX );			
-			if(Wss_slots[i].wep[j] == -1){
-				block[offset++] = 0xff;
-			} else {
-				block[offset++] = (ubyte)(Wss_slots[i].wep[j]);
-			}
-
-			Assert( Wss_slots[i].wep_count[j] < SHRT_MAX );
-			ishort = INTEL_SHORT( (short)Wss_slots[i].wep_count[j] );
-
-			memcpy(&(block[offset]), &(ishort), sizeof(short) );
-			offset += sizeof(short);
-		}
-
-		// mwa -- old way below -- too much space
-		//memcpy(block+offset, &Wss_slots[i], sizeof(wss_unit));
-		//offset += sizeof(wss_unit);
 	}
 
 	// any sound index
-	if(!sound.isValid()){
-		block[offset++] = 0xff;
-	} else {
-		block[offset++] = (ubyte)sound.value();
-	}
+	ADD_SHORT(static_cast<short>(sound.value()));
 
 	// add a netplayer address to identify who should play the sound
 	player_id = -1;
@@ -1428,20 +1424,19 @@ int store_wss_data(ubyte *block, int max_size, interface_snd_id sound,int player
 		player_id = Net_players[player_index].player_id;		
 	}
 
-	player_id = INTEL_SHORT( player_id );
-	memcpy(block+offset,&player_id,sizeof(player_id));
-	offset += sizeof(player_id);
+	ADD_SHORT(player_id);
 
-	Assert( offset < max_size );
-	return offset;
+	Assert( packet_size < static_cast<int>(max_size) );
+	return packet_size;
 }
 
-int restore_wss_data(ubyte *block)
+int restore_wss_data(ubyte *data)
 {
-	int	i, j, sanity, offset=0;
-	ubyte	b1, b2,sound;	
-	short ishort;
-	short player_id;	
+	int	i, j, offset = 0;
+	ubyte num_slots, num_weapons;
+	short b1, b2;
+	short player_id, sound;
+	ushort pool_size;
 
 	// this function assumes that the data is going to be used over the network
 	// so make a non-network version of this function if needed
@@ -1452,86 +1447,73 @@ int restore_wss_data(ubyte *block)
 		return 0;
 
 	// restore ship pool
-	sanity=0;
 	memset(Ss_pool, 0, MAX_SHIP_CLASSES*sizeof(int));
-	for (;;) {
-		if ( sanity++ > MAX_SHIP_CLASSES ) {
-			Int3();
-			break;
-		}
+	GET_USHORT(pool_size);
 
-		b1 = block[offset++];
-		if ( b1 == 0xff ) {
-			break;
-		}
-	
-		// take care of sign issues
-		b2 = block[offset++];
-		if(b2 == 0xff){
-			Ss_pool[b1] = -1;
-		} else {
+	for (i = 0; i < pool_size; i++) {
+		GET_SHORT(b1);
+		GET_SHORT(b2);
+
+		if (b1 < MAX_SHIP_CLASSES) {
 			Ss_pool[b1] = b2;
 		}
 	}
 
 	// restore weapons pool
-	sanity=0;
 	memset(Wl_pool, 0, MAX_WEAPON_TYPES*sizeof(int));
-	for (;;) {
-		if ( sanity++ > MAX_WEAPON_TYPES ) {
-			Int3();
-			break;
-		}
+	GET_USHORT(pool_size);
 
-		b1 = block[offset++];
-		if ( b1 == 0xff ) {
-			break;
+	for (i = 0; i < pool_size; i++) {
+		GET_SHORT(b1);
+		GET_SHORT(b2);
+
+		if (b1 < MAX_SHIP_CLASSES) {
+			Wl_pool[b1] = b2;
 		}
-	
-		memcpy(&ishort, block+offset, sizeof(short));
-		offset += sizeof(short);
-		Wl_pool[b1] = INTEL_SHORT( ishort );
 	}
 
-	for ( i=0; i<MAX_WSS_SLOTS; i++ ) {
-		if(block[offset] == 0xff){
-			Wss_slots[i].ship_class = -1;
-		} else {
-			Wss_slots[i].ship_class = block[offset];
+
+	// restore unit data
+	for (i = 0; i < MAX_WSS_SLOTS; i++) {
+		Wss_slots[i].ship_class = -1;
+
+		for (j = 0; j < MAX_SHIP_WEAPONS; j++) {
+			Wss_slots[i].wep[j] = -1;
+			Wss_slots[i].wep_count[j] = 0;
 		}
-		offset++;		
-		for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
-			// take care of sign issues
-			if(block[offset] == 0xff){
-				Wss_slots[i].wep[j] = -1;
-				offset++;
-			} else {
-				Wss_slots[i].wep[j] = (int)(block[offset++]);
-			}
-		
-			memcpy( &ishort, &(block[offset]), sizeof(short) );
-			ishort = INTEL_SHORT( ishort );
-			Wss_slots[i].wep_count[j] = (int)ishort;
-			offset += sizeof(short);
+	}
+
+	GET_DATA(num_slots);
+	GET_DATA(num_weapons);
+
+	for (i = 0; i < num_slots; i++) {
+		GET_SHORT(b1);
+
+		if (i < MAX_WSS_SLOTS) {
+			Wss_slots[i].ship_class = b1;
 		}
 
-		// mwa -- old way below
-		//memcpy(&Wss_slots[i], block+offset, sizeof(wss_unit));
-		//offset += sizeof(wss_unit);
+		for (j = 0; j < num_weapons; j++) {
+			GET_SHORT(b1);
+			GET_SHORT(b2);
+
+			if ( (i < MAX_WSS_SLOTS) && (j < MAX_SHIP_WEAPONS) ) {
+				Wss_slots[i].wep[j] = b1;
+				Wss_slots[i].wep_count[j] = b2;
+			}
+		}
 	}
 
 	// read in the sound data
-	sound = block[offset++];					// the sound index
+	GET_SHORT(sound);
 
 	// read in the player address
-	memcpy(&player_id,block+offset,sizeof(player_id));
-	player_id = INTEL_SHORT( player_id );
-	offset += sizeof(short);
+	GET_SHORT(player_id);
 	
 	// determine if I'm the guy who should be playing the sound
 	if((Net_player != NULL) && (Net_player->player_id == player_id)){
 		// play the sound
-		if(sound != 0xff){
+		if (sound >= 0) {
 			gamesnd_play_iface(static_cast<InterfaceSounds>(sound));
 		}
 	}
@@ -1589,7 +1571,7 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 		bsp_info *bs = NULL;	//tehe
 		for(int i = 0; i < pm->n_models; i++)
 		{
-			if(!pm->submodel[i].is_thruster)
+			if(!pm->submodel[i].flags[Model::Submodel_flags::Is_thruster])
 			{
 				bs = &pm->submodel[i];
 				break;

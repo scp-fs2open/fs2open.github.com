@@ -274,85 +274,176 @@ void	brief_set_text_color(char color_tag);
 extern void get_camera_limits(const matrix *start_camera, const matrix *end_camera, float time, vec3d *acc_max, vec3d *w_max);
 int brief_text_wipe_finished();
 
+// parses, fills and returns a briefing_icon_info struct
+briefing_icon_info parse_briefing_icons() {
+	char name[MAX_FILENAME_LEN];
+	briefing_icon_info bii;
+
+	// parse regular frames
+	required_string("$Name:");
+	stuff_string(name, F_NAME, MAX_FILENAME_LEN);
+	generic_anim_init(&bii.regular, name);
+
+	// parse fade frames
+	required_string("$Name:");
+	stuff_string(name, F_NAME, MAX_FILENAME_LEN);
+	hud_anim_init(&bii.fade, 0, 0, name);
+
+	// parse highlighting frames
+	required_string("$Name:");
+	stuff_string(name, F_NAME, MAX_FILENAME_LEN);
+	hud_anim_init(&bii.highlight, 0, 0, name);
+
+	return bii;
+}
+
+// parses and adds a briefing_icon_info into the global vector
+int add_briefing_icons() {
+	briefing_icon_info bii = parse_briefing_icons();
+
+	Briefing_icon_info.push_back(bii);
+
+	return (int)Briefing_icon_info.size() - 1;
+}
+
+void brief_icon_parse_cleanup() {
+
+	// assign "borrows" icons
+	for (species_info &spinfo : Species_info) {
+		if (spinfo.borrows_bii_index_species < 0)
+			continue;
+
+		int lender_species = spinfo.borrows_bii_index_species;
+
+		for (int i = 0; i < MIN_BRIEF_ICONS; i++) {
+			spinfo.bii_indices[i] = Species_info[lender_species].bii_indices[i];
+		}
+	}
+
+	SCP_string errormsg = "The following species are missing briefing icons:\n";
+	bool missing_icons = false;
+
+	for (species_info spinfo : Species_info) {
+		bool missing_icon_species = false;
+		for (int i = 0; i < MIN_BRIEF_ICONS; i++) {
+			if (spinfo.bii_indices[i] < 0) {
+				mprintf(("Species %s missing %s icon\n", spinfo.species_name, Icon_names[i]));
+				missing_icons = missing_icon_species = true;
+			}
+		}
+		
+		if (missing_icon_species) {
+			errormsg += spinfo.species_name;
+			errormsg += "\n";
+		}
+			
+	}
+
+	if (missing_icons) {
+		errormsg += "An exact list of the missing entries has been logged.";
+		Warning(LOCATION, "%s", errormsg.c_str());
+	}
+}
+
 // --------------------------------------------------------------------------------------
 //	brief_parse_icon_tbl()
 //
 //
-void brief_parse_icon_tbl()
+void brief_parse_icon_tbl(const char* filename)
 {
-	int icon;
 	size_t species;
 	char name[MAX_FILENAME_LEN];
 
 	Assert(!Species_info.empty());
-	const size_t max_icons = Species_info.size() * MIN_BRIEF_ICONS;
 
 	try
 	{
-		read_file_text("icons.tbl", CF_TYPE_TABLES);
+		read_file_text(filename, CF_TYPE_TABLES);
 		reset_parse();
 
 		required_string("#Start");
 
-		Briefing_icon_info.clear();
-		while (required_string_either("#End", "$Name:"))
-		{
-			if (Briefing_icon_info.size() >= max_icons) {
+		// get all the species who are using unique icons (i.e. not borrowing from another species)
+		SCP_vector<int> unique_icons_species;
+		for (int i = 0; i < (int)Species_info.size(); i++) {
+			if (Species_info[i].borrows_bii_index_species == -1)
+				unique_icons_species.push_back(i);
+		}
+
+		bool new_style_parsing = false;
+		if (check_for_string("$Species:"))
+			new_style_parsing = true;
+
+		if (new_style_parsing) {
+			while (optional_string("$Species:")) {
+				stuff_string(name, F_NAME, MAX_FILENAME_LEN);
+				int spinfo_index = species_info_lookup(name);
+
+				if (spinfo_index < 0) {
+					Warning(LOCATION, "Unable to find species %s, in icons.tbl.", name);
+				}
+
+				while (optional_string("$Icon Type:")) {
+					stuff_string(name, F_NAME, MAX_FILENAME_LEN);
+					// find the matching icon type
+					int icon_type = [&]() {
+						for (int i = 0; i < MIN_BRIEF_ICONS; i++) {
+							if (strcmp(Icon_names[i], name) == 0) {
+								// found it
+								return i;
+							}
+						}
+						// couldnt find it...
+						return -1;
+					}();
+
+					if (icon_type < 0) {
+						Warning(LOCATION, "Icon Type %s is invalid, in icons.tbl.", name);
+					}
+
+					int &existing_bii_index = Species_info[spinfo_index].bii_indices[icon_type];
+
+					if (existing_bii_index >= 0) { // overwriting
+						briefing_icon_info bii = parse_briefing_icons();
+						if (icon_type >= 0 && spinfo_index >= 0)
+							Briefing_icon_info[existing_bii_index] = bii;
+					} else { // adding a new one
+						int new_bii_index = add_briefing_icons();
+						if (icon_type >= 0 && spinfo_index >= 0)
+							existing_bii_index = new_bii_index;
+					}
+
+				}
+			}
+		}
+		else { // old style
+			for (int icon_type = 0; icon_type < MIN_BRIEF_ICONS; icon_type++) { // NOLINT(modernize-loop-convert)
+				for (species = 0; species < unique_icons_species.size(); species++) {
+					// if this check isn't true we're missing entries and will complain about it later in brief_icon_parse_cleanup()
+					if (check_for_string("$Name:"))
+						Species_info[unique_icons_species[species]].bii_indices[icon_type] = add_briefing_icons();
+				}
+			}
+
+			const size_t max_icons = unique_icons_species.size() * MIN_BRIEF_ICONS;
+			if (!check_for_string("#End"))
 				Warning(LOCATION, "Too many icons in icons.tbl; only the first " SIZE_T_ARG " will be used", max_icons);
-				skip_to_start_of_string("#End");
-				break;
-			}
-
-			briefing_icon_info bii;
-
-			// parse regular frames
-			required_string("$Name:");
-			stuff_string(name, F_NAME, MAX_FILENAME_LEN);
-			generic_anim_init(&bii.regular, name);
-
-			// parse fade frames
-			required_string("$Name:");
-			stuff_string(name, F_NAME, MAX_FILENAME_LEN);
-			hud_anim_init(&bii.fade, 0, 0, name);
-
-			// parse highlighting frames
-			required_string("$Name:");
-			stuff_string(name, F_NAME, MAX_FILENAME_LEN);
-			hud_anim_init(&bii.highlight, 0, 0, name);
-
-			// add it to the collection
-			Briefing_icon_info.push_back(bii);
-		}
-		required_string("#End");
-
-
-		// now assign the icons to their species
-		const size_t num_species_covered = Briefing_icon_info.size() / MIN_BRIEF_ICONS;
-		size_t bii_index = 0;
-		for (icon = 0; icon < MIN_BRIEF_ICONS; icon++)
-		{
-			for (species = 0; species < num_species_covered; species++)
-				Species_info[species].bii_index[icon] = (int)(bii_index++);
-		}
-
-		// error check
-		if (num_species_covered < Species_info.size())
-		{
-			SCP_string errormsg = "The following species are missing icon info in icons.tbl:\n";
-
-			for (species = num_species_covered; species < Species_info.size(); species++)
-			{
-				errormsg += Species_info[species].species_name;
-				errormsg += "\n";
-			}
-
-			Error(LOCATION, "%s", errormsg.c_str());
 		}
 	}
 	catch (const parse::ParseException& e)
 	{
 		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", "icons.tbl", e.what()));
 	}
+}
+
+void brief_icons_init() {
+	Briefing_icon_info.clear();
+
+	brief_parse_icon_tbl("icons.tbl");
+
+	parse_modular_table(NOX("*-ico.tbm"), brief_parse_icon_tbl);
+
+	brief_icon_parse_cleanup();
 }
 
 void brief_set_icon_color(int team)
@@ -463,6 +554,7 @@ void mission_brief_common_reset()
 					memset( Briefings[i].stages[j].icons, 0, sizeof(brief_icon) * MAX_STAGE_ICONS );
 					Briefings[i].stages[j].icons->ship_class = -1;
 					Briefings[i].stages[j].icons->modelnum = -1;
+					Briefings[i].stages[j].icons->model_instance_num = -1;
 					Briefings[i].stages[j].icons->bitmap_id = -1;
 				}
 
@@ -557,8 +649,21 @@ briefing_icon_info *brief_get_icon_info(brief_icon *bi)
 		return NULL;
 	ship_info *sip = &Ship_info[bi->ship_class];
 
+	bool allow_override = true;
+	switch (bi->type)
+	{
+		case ICON_PLANET:
+		case ICON_ASTEROID_FIELD:
+		case ICON_WAYPOINT:
+		case ICON_UNKNOWN:
+		case ICON_UNKNOWN_WING:
+		case ICON_JUMP_NODE:
+			allow_override = false;
+			break;
+	}
+
 	// ship info might override the usual briefing icon
-	if (sip->bii_index_ship >= 0)
+	if ((allow_override || Custom_briefing_icons_always_override_standard_icons) && sip->bii_index_ship >= 0)
 	{
 		if (bi->flags & BI_USE_WING_ICON)
 		{
@@ -595,7 +700,7 @@ briefing_icon_info *brief_get_icon_info(brief_icon *bi)
 	if (sip->species < 0)
 		return NULL;
 
-	int bii_index = Species_info[sip->species].bii_index[bi->type];
+	int bii_index = Species_info[sip->species].bii_indices[bi->type];
 	if (bii_index < 0)
 		return NULL;
 
@@ -1589,7 +1694,7 @@ int brief_color_text_init(const char* src, int w, const char default_color, int 
 	}
 
 	Assert(src != NULL);
-	n_lines = split_str(src, w, n_chars, p_str, BRIEF_META_CHAR);
+	n_lines = split_str(src, w, n_chars, p_str, MAX_BRIEF_LINE_LEN, BRIEF_META_CHAR);
 	Assert(n_lines >= 0);
 
 	//for compatability reasons truncate text from everything except the fiction viewer

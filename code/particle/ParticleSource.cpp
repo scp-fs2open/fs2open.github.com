@@ -6,7 +6,8 @@
 namespace particle {
 SourceOrigin::SourceOrigin() : m_originType(SourceOriginType::NONE),
 							   m_weaponState(WeaponState::INVALID),
-							   m_offset(vmd_zero_vector) {
+							   m_offset(vmd_zero_vector),
+	                           m_velocity(vmd_zero_vector) {
 }
 
 void SourceOrigin::getGlobalPosition(vec3d* posOut) const {
@@ -89,6 +90,8 @@ void SourceOrigin::applyToParticleInfo(particle_info& info, bool allowRelative) 
 		info.attached_objnum = -1;
 		info.attached_sig = -1;
 	}
+
+	info.vel = getVelocity();
 }
 
 vec3d SourceOrigin::getVelocity() const {
@@ -98,8 +101,16 @@ vec3d SourceOrigin::getVelocity() const {
 		case SourceOriginType::PARTICLE:
 			return m_origin.m_particle.lock()->velocity;
 		default:
-			return vmd_zero_vector;
+			return m_velocity;
 	}
+}
+
+void SourceOrigin::setVelocity(vec3d* vel) {
+	Assertion(vel, "Invalid vector pointer passed!");
+	if (!vel)
+		return;
+
+	m_velocity = *vel;
 }
 
 void SourceOrigin::setWeaponState(WeaponState state) {
@@ -165,22 +176,22 @@ bool SourceOrigin::isValid() const {
 
 SourceOrientation::SourceOrientation() : m_orientation(vmd_identity_matrix) {}
 
-void SourceOrientation::setFromVector(const vec3d& vec) {
+void SourceOrientation::setFromVector(const vec3d& vec, bool relative) {
 	vec3d workVec = vec;
 
 	vm_vec_normalize(&workVec);
 
-	this->setFromNormalizedVector(workVec);
+	this->setFromNormalizedVector(workVec, relative);
 }
 
-void SourceOrientation::setFromNormalizedVector(const vec3d& vec) {
+void SourceOrientation::setFromNormalizedVector(const vec3d& vec, bool relative) {
 	vm_vector_2_matrix_norm(&m_orientation, &vec);
-	m_isRelative = false;
+	m_isRelative = relative;
 }
 
-void SourceOrientation::setFromMatrix(const matrix& mat) {
+void SourceOrientation::setFromMatrix(const matrix& mat, bool relative) {
 	m_orientation = mat;
-	m_isRelative = false;
+	m_isRelative = relative;
 }
 
 void SourceOrientation::setNormal(const vec3d& normal) {
@@ -310,7 +321,7 @@ void ParticleSource::initializeThrusterOffset(weapon*  /*wp*/, weapon_info* wip)
 	// Only use the first point in the bank
 	auto point = &thruster->points[0];
 
-	model_find_world_point(&this->m_origin.m_offset, &point->pnt, wip->model_num, thruster->submodel_num,
+	model_local_to_global_point(&this->m_origin.m_offset, &point->pnt, pm, thruster->submodel_num,
 						   &vmd_identity_matrix, &vmd_zero_vector);
 }
 

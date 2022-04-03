@@ -164,6 +164,8 @@ void multi_port_forward_close()
 		ml_string("Port forward => Shutdown");
 	}
 
+	free(PF_pcp_ctx);	// system call, allocated in lib  ** don't change! **
+
 	PF_pcp_ctx = nullptr;
 	PF_pcp_flow = nullptr;
 

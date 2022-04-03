@@ -17,6 +17,7 @@
 #include "io/joy.h"
 #include "io/mouse.h"
 #include "menuui/playermenu.h"
+#include "menuui/readyroom.h"
 #include "menuui/techmenu.h"
 #include "mission/missionbriefcommon.h"
 #include "mission/missioncampaign.h"
@@ -116,6 +117,7 @@ void init_new_pilot(player *p, int reset)
 		snd_set_voice_volume(Default_voice_volume);
 
 		p->variables.clear();
+		p->containers.clear();
 	}
 
 	// unassigned squadron
@@ -162,6 +164,8 @@ void init_new_pilot(player *p, int reset)
 	}
 
 	pilot_set_start_campaign(p);
+
+	OnCampaignBeginHook->run(scripting::hook_param_list(scripting::hook_param("Campaign", 's', p->current_campaign)));
 }
 
 int local_num_campaigns = 0;
@@ -279,7 +283,7 @@ void pilot_set_random_pic(player *p)
 		strcpy_s(p->image_filename, "");
 	} else {
 		// pick a random name from the list
-		int random_index = rand() % Num_pilot_images;
+		int random_index = Random::next(Num_pilot_images);
 		Assert((random_index >= 0) && (random_index < Num_pilot_images));
 		strcpy_s(p->image_filename, Pilot_images_arr[random_index]);
 	}	
@@ -299,7 +303,7 @@ void pilot_set_random_squad_pic(player *p)
 		player_set_squad_bitmap(p, "", false);
 	} else {
 		// pick a random name from the list
-		int random_index = rand() % Num_pilot_squad_images;		
+		int random_index = Random::next(Num_pilot_squad_images);
 		Assert((random_index >= 0) && (random_index < Num_pilot_squad_images));
 		player_set_squad_bitmap(p, Pilot_squad_images_arr[random_index], true);
 		player_set_squad_bitmap(p, Pilot_squad_images_arr[random_index], false);
@@ -529,6 +533,7 @@ void player::reset()
 	show_skip_popup = 0;
 
 	variables.clear();
+	containers.clear();
 
 	death_message = "";
 
@@ -685,6 +690,8 @@ void player::assign(const player *other)
 		variables.push_back(temp);
 	}
 
+	containers = other->containers;
+
 	death_message = other->death_message;
 
 	memcpy(&lua_ci, &other->lua_ci, sizeof(control_info));
@@ -795,8 +802,8 @@ bool operator==(const player& lhs, const player& rhs) {
 		&& lhs.insignia_texture == rhs.insignia_texture && lhs.tips == rhs.tips
 		&& lhs.shield_penalty_stamp == rhs.shield_penalty_stamp
 		&& lhs.failures_this_session == rhs.failures_this_session && lhs.show_skip_popup == rhs.show_skip_popup
-		&& lhs.variables == rhs.variables && lhs.death_message == rhs.death_message && lhs.lua_ci == rhs.lua_ci
-		&& lhs.lua_bi == rhs.lua_bi && lhs.lua_bi_full == rhs.lua_bi_full
+		&& lhs.variables == rhs.variables && lhs.containers == rhs.containers && lhs.death_message == rhs.death_message
+		&& lhs.lua_ci == rhs.lua_ci && lhs.lua_bi == rhs.lua_bi && lhs.lua_bi_full == rhs.lua_bi_full
 		&& lhs.player_was_multi == rhs.player_was_multi && !strcmp(lhs.language, rhs.language);
 }
 bool operator!=(const player& lhs, const player& rhs) {

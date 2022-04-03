@@ -120,6 +120,7 @@ typedef struct mission_event {
 	int mission_log_flags;		// flags that are used to determing which events are written to the log
 	SCP_vector<SCP_string> event_log_buffer;
 	SCP_vector<SCP_string> event_log_variable_buffer;
+	SCP_vector<SCP_string> event_log_container_buffer;
 	SCP_vector<SCP_string> event_log_argument_buffer;
 	SCP_vector<SCP_string> backup_log_buffer;
 	int	previous_result;		// result of previous evaluation of event
@@ -132,6 +133,22 @@ extern int Mission_goal_timestamp;
 extern int Event_index;  // used by sexp code to tell what event it came from
 extern bool Log_event;
 extern bool Snapshot_all_events;
+
+
+// only used in FRED
+struct event_annotation
+{
+	void *handle = nullptr;			// the handle of the tree node in the event editor.  This is an HTREEITEM in FRED and TBD in qtFRED.
+	int item_image = -1;			// the previous image of the tree node (replaced by a comment icon when there is a comment)
+	SCP_list<int> path;				// a way to find the node that the annotation represents:
+									// the first number is the event, the second number is the node on the first layer, etc.
+	SCP_string comment;
+	ubyte r = 255;
+	ubyte g = 255;
+	ubyte b = 255;
+};
+extern SCP_vector<event_annotation> Event_annotations;
+
 
 // prototypes
 void	mission_init_goals( void );
@@ -165,7 +182,17 @@ void mission_goal_validation_change( int goal_num, bool valid );
 void mission_event_set_directive_special(int event);
 void mission_event_unset_directive_special(int event);
 
+// Cyborg - set the directive completion sound timestamp
+void mission_event_set_completion_sound_timestamp();
+
+// Maybe play a directive success sound... need to poll since the sound is delayed from when
+// the directive is actually satisfied.
+void mission_maybe_play_directive_success_sound();
+
 void mission_goal_exit();
+
+int mission_goal_find_sexp_tree(int root_node);
+int mission_event_find_sexp_tree(int root_node);
 
 int ML_objectives_init(int x, int y, int w, int h);
 void ML_objectives_close();

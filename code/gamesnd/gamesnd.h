@@ -372,6 +372,8 @@ interface_snd_id gamesnd_get_by_iface_tbl_index(int index);
 // Does all parsing for a sound.  Returns true if a sound was successfully parsed.
 bool parse_game_sound(const char* tag, gamesnd_id* idx_dest);
 
+gamesnd_id parse_game_sound_inline();
+
 void parse_iface_sound(const char* tag, interface_snd_id* idx_dest);
 void parse_iface_sound_list(const char* tag, SCP_vector<interface_snd_id>& destination, const char* object_name, bool scp_list = false);
 
@@ -398,6 +400,11 @@ game_snd* gamesnd_get_interface_sound(interface_snd_id handle);
  * @return @c true if the handle is valid
  */
 bool gamesnd_game_sound_valid(gamesnd_id sound);
+
+/**
+* @brief Checks if the given sound handle can be loaded
+*/
+bool gamesnd_game_sound_try_load(gamesnd_id sound);
 
 /**
  * @brief Checks if the given sound handle is a valid interface sound handle

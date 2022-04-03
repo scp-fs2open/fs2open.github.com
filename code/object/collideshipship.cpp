@@ -19,6 +19,7 @@
 #include "hud/hudshield.h"
 #include "io/joy_ff.h"
 #include "io/timer.h"
+#include "network/multi.h"
 #include "object/objcollide.h"
 #include "object/object.h"
 #include "object/objectdock.h"
@@ -69,16 +70,14 @@ static bool check_for_docking_collision(object *objp1, object *objp2)
 	}
 
 
-	if (aip1->mode == AIM_DOCK) {
-		if (dock_check_find_docked_object(&Objects[aip1->goal_objnum], objp2)){
+	if (aip1->mode == AIM_DOCK && aip1->goal_objnum >= 0 && aip1->goal_objnum < MAX_OBJECTS) {
+		if (dock_check_find_docked_object(&Objects[aip1->goal_objnum], objp2))
 			return true;
-		}
 	}
 
-	if (aip2->mode == AIM_DOCK) {
-		if (dock_check_find_docked_object(&Objects[aip2->goal_objnum], objp1)){
+	if (aip2->mode == AIM_DOCK && aip2->goal_objnum >= 0 && aip2->goal_objnum < MAX_OBJECTS) {
+		if (dock_check_find_docked_object(&Objects[aip2->goal_objnum], objp1))
 			return true;
-		}
 	}
 
 	return false;
@@ -190,11 +189,11 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info)
 	// find the light object's position in the heavy object's reference frame at last frame and also in this frame.
 	vec3d p0_temp, p0_rotated;
 	
-	// Collision detection from rotation enabled if at max rotaional velocity and 5fps, rotation is less than PI/2
+	// Collision detection from rotation enabled if at max rotational velocity and 5fps, rotation is less than PI/2
 	// This should account for all ships
 	if ( (vm_vec_mag_squared( &heavy_obj->phys_info.max_rotvel ) * .04) < (PI*PI/4) ) {
 		// collide_rotate calculate (1) start position and (2) relative velocity
-		ship_ship_hit_info->collide_rotate = 1;
+		ship_ship_hit_info->collide_rotate = true;
 		vm_vec_rotate(&p0_temp, &p0, &heavy_obj->last_orient);
 		vm_vec_unrotate(&p0_rotated, &p0_temp, &heavy_obj->orient);
 		mc.p0 = &p0_rotated;				// Point 1 of ray to check
@@ -210,7 +209,7 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info)
 			Warned_about_fast_rotational_collisions = true;
 		}
 #endif
-		ship_ship_hit_info->collide_rotate = 0;
+		ship_ship_hit_info->collide_rotate = false;
 		mc.p0 = &p0;							// Point 1 of ray to check
 		vm_vec_sub(&ship_ship_hit_info->light_rel_vel, &light_obj->phys_info.vel, &heavy_obj->phys_info.vel);
 	}
@@ -237,14 +236,12 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info)
 	// first test against the sphere - if this fails then don't do any submodel tests
 	mc.flags = MC_ONLY_SPHERE | MC_CHECK_SPHERELINE;
 
-	SCP_vector<int> submodel_vector;
 	int valid_hit_occured = 0;
 	polymodel *pm_light;
-	polymodel_instance *pmi;
 		
 	pm_light = model_get(Ship_info[light_shipp->ship_info_index].model_num);
 
-	if(pm_light->submodel[pm_light->detail[0]].no_collisions) {
+	if(pm_light->submodel[pm_light->detail[0]].flags[Model::Submodel_flags::No_collisions]) {
 		return 0;
 	}
 
@@ -253,78 +250,76 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info)
 		// Set earliest hit time
 		ship_ship_hit_info->hit_time = FLT_MAX;
 
+		auto pmi = model_get_instance(heavy_shipp->model_instance_num);
+		auto pm = model_get(pmi->model_num);
+
 		// Do collision the cool new way
 		if ( ship_ship_hit_info->collide_rotate ) {
-			SCP_vector<int>::iterator smv;
+			// We collide with the sphere, find the list of moving submodels and test one at a time
+			SCP_vector<int> submodel_vector;
+			model_get_moving_submodel_list(submodel_vector, heavy_obj);
 
-			model_get_rotating_submodel_list(&submodel_vector, heavy_obj);
-
-			pmi = model_get_instance(heavy_shipp->model_instance_num);
-
-			// turn off all rotating submodels and test for collision
-			for (smv = submodel_vector.begin(); smv != submodel_vector.end(); ++smv) {
-				pmi->submodel[*smv].collision_checked = true;
+			// turn off all moving submodels, collide against only 1 at a time.
+			// turn off collision detection for all moving submodels
+			for (auto submodel : submodel_vector) {
+				pmi->submodel[submodel].collision_checked = true;
 			}
 
-			// reset flags to check MC_CHECK_MODEL | MC_CHECK_SPHERELINE and maybe MC_CHECK_INVISIBLE_FACES and MC_SUBMODEL_INSTANCE
-			mc.flags = copy_flags | MC_SUBMODEL_INSTANCE;
+			// Only check single submodel now, since children of moving submodels are handled as moving as well
+			mc.flags = copy_flags | MC_SUBMODEL;
 
 			if (heavy_sip->collision_lod > -1) {
 				mc.lod = heavy_sip->collision_lod;
 			}
 
 			// check each submodel in turn
-			for (smv = submodel_vector.begin(); smv != submodel_vector.end(); ++smv) {
-				// turn on submodel for collision test
-				pmi->submodel[*smv].collision_checked = false;
+			for (auto submodel : submodel_vector) {
+				auto smi = &pmi->submodel[submodel];
 
-				if (pmi->submodel[*smv].blown_off)
+				// turn on just one submodel for collision test
+				smi->collision_checked = false;
+
+				if (smi->blown_off)
 				{
-					pmi->submodel[*smv].collision_checked = true;
+					smi->collision_checked = true;
 					continue;
 				}
 
-				// set angles for last frame
-				angles copy_angles = pmi->submodel[*smv].angs;
-
 				// find the start and end positions of the sphere in submodel RF
-				pmi->submodel[*smv].angs = pmi->submodel[*smv].prev_angs;
-				world_find_model_instance_point(&p0, &light_obj->last_pos, pmi, *smv, &heavy_obj->last_orient, &heavy_obj->last_pos);
-
-				pmi->submodel[*smv].angs = copy_angles;
-				world_find_model_instance_point(&p1, &light_obj->pos, pmi, *smv, &heavy_obj->orient, &heavy_obj->pos);
+				model_instance_global_to_local_point(&p0, &light_obj->last_pos, pm, pmi, submodel, &heavy_obj->last_orient, &heavy_obj->last_pos, true);
+				model_instance_global_to_local_point(&p1, &light_obj->pos, pm, pmi, submodel, &heavy_obj->orient, &heavy_obj->pos);
 
 				mc.p0 = &p0;
 				mc.p1 = &p1;
 
 				mc.orient = &vmd_identity_matrix;
-				mc.submodel_num = *smv;
+				mc.submodel_num = submodel;
 
 				if ( model_collide(&mc) ) {
 					if (mc.hit_dist < ship_ship_hit_info->hit_time ) {
 						valid_hit_occured = 1;
 
 						// set up ship_ship_hit_info common
-						set_hit_struct_info(ship_ship_hit_info, &mc, SUBMODEL_ROT_HIT);
-						model_instance_find_world_point(&ship_ship_hit_info->hit_pos, &mc.hit_point, mc.model_instance_num, mc.hit_submodel, &heavy_obj->orient, &zero);
+						set_hit_struct_info(ship_ship_hit_info, &mc, true);
+						model_instance_local_to_global_point(&ship_ship_hit_info->hit_pos, &mc.hit_point, pm, pmi, mc.hit_submodel, &heavy_obj->orient, &zero);
 
 						// set up ship_ship_hit_info for rotating submodel
-						if (ship_ship_hit_info->edge_hit == 0) {
-							model_instance_find_obj_dir(&ship_ship_hit_info->collision_normal, &mc.hit_normal, mc.model_instance_num, mc.hit_submodel, &heavy_obj->orient);
+						if (!ship_ship_hit_info->edge_hit) {
+							model_instance_local_to_global_dir(&ship_ship_hit_info->collision_normal, &mc.hit_normal, pm, pmi, mc.hit_submodel, &heavy_obj->orient);
 						}
 
 						// find position in submodel RF of light object at collison
 						vec3d int_light_pos, diff;
 						vm_vec_sub(&diff, mc.p1, mc.p0);
 						vm_vec_scale_add(&int_light_pos, mc.p0, &diff, mc.hit_dist);
-						model_instance_find_world_point(&ship_ship_hit_info->light_collision_cm_pos, &int_light_pos, mc.model_instance_num, mc.hit_submodel, &heavy_obj->orient, &zero);
+						model_instance_local_to_global_point(&ship_ship_hit_info->light_collision_cm_pos, &int_light_pos, pm, pmi, mc.hit_submodel, &heavy_obj->orient, &zero);
 					}
 				}
 			}
 
 		}
 
-		// Recover and do usual ship_ship collision, but without rotating submodels
+		// Now complete base model collision checks that do not take into account rotating submodels.
 		mc.flags = copy_flags;
 		*mc.p0 = copy_p0;
 		*mc.p1 = copy_p1;
@@ -336,11 +331,11 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info)
 			if (mc.hit_dist < ship_ship_hit_info->hit_time) {
 				valid_hit_occured = 1;
 
-				set_hit_struct_info(ship_ship_hit_info, &mc, SUBMODEL_NO_ROT_HIT);
+				set_hit_struct_info(ship_ship_hit_info, &mc, false);
 
 				// get collision normal if not edge hit
-				if (ship_ship_hit_info->edge_hit == 0) {
-					model_instance_find_obj_dir(&ship_ship_hit_info->collision_normal, &mc.hit_normal, mc.model_instance_num, mc.hit_submodel, &heavy_obj->orient);
+				if (!ship_ship_hit_info->edge_hit) {
+					model_instance_local_to_global_dir(&ship_ship_hit_info->collision_normal, &mc.hit_normal, pm, pmi, mc.hit_submodel, &heavy_obj->orient);
 				}
 
 				// find position in submodel RF of light object at collison
@@ -549,7 +544,7 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 	// if collision from rotating submodel of heavy obj, add in vel from rotvel of submodel
 	vec3d local_vel_from_submodel;
 
-	if (ship_ship_hit_info->submodel_rot_hit == 1) {
+	if (ship_ship_hit_info->submodel_move_hit) {
 		polymodel *pm;
 		polymodel_instance *pmi = NULL;
 		int model_instance_num = -1;
@@ -570,35 +565,18 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 			pm = NULL;
 		}
 		
-		if ( pmi != NULL && pmi->submodel[ship_ship_hit_info->submodel_num].sii != NULL ) {
-			// set point on axis of rotating submodel if not already set.
-			if ( !pmi->submodel[ship_ship_hit_info->submodel_num].sii->axis_set ) {
-				model_init_submodel_axis_pt(pmi->submodel[ship_ship_hit_info->submodel_num].sii, pm->id, ship_ship_hit_info->submodel_num);
-			}
+		//Previously, a side effect of moving submodel collision excluded turrets from imparting momentum to colliders
+		if ( pmi != nullptr && pm->submodel[ship_ship_hit_info->submodel_num].rotation_type != MOVEMENT_TYPE_TURRET) {
+			//Find the global movement of the position that hit the ship
+			vec3d last_frame_col_pos, col_pos;
+			model_instance_local_to_global_point(&last_frame_col_pos, &ship_ship_hit_info->hit_pos, pm, pmi, ship_ship_hit_info->submodel_num, &heavy->orient, &heavy->pos, true);
+			model_instance_local_to_global_point(&col_pos, &ship_ship_hit_info->hit_pos, pm, pmi, ship_ship_hit_info->submodel_num, &heavy->orient, &heavy->pos);
 
-			vec3d omega, axis, r_rot;
-			if ( pm->submodel[ship_ship_hit_info->submodel_num].movement_axis == MOVEMENT_AXIS_X ) {
-				axis = vmd_x_vector;
-			} else if ( pm->submodel[ship_ship_hit_info->submodel_num].movement_axis == MOVEMENT_AXIS_Y ) {
-				axis = vmd_y_vector;
-			} else if ( pm->submodel[ship_ship_hit_info->submodel_num].movement_axis == MOVEMENT_AXIS_Z ) {
-				axis = vmd_z_vector;
-			} else {
-				// must be one of these axes or submodel_rot_hit is incorrectly set
-				Int3();
-			}
+			//Calculate the movement speed from that
+			vm_vec_sub(&local_vel_from_submodel, &col_pos, &last_frame_col_pos);
 
-			// get world rotational velocity of rotating submodel
-			model_instance_find_obj_dir(&omega, &axis, model_instance_num, ship_ship_hit_info->submodel_num, &heavy->orient);
-
-			vm_vec_scale(&omega, pmi->submodel[ship_ship_hit_info->submodel_num].sii->current_turn_rate);
-
-			// world coords for r_rot
-			vec3d temp;
-			vm_vec_unrotate(&temp, &pmi->submodel[ship_ship_hit_info->submodel_num].sii->point_on_axis, &heavy->orient);
-			vm_vec_sub(&r_rot, &ship_ship_hit_info->hit_pos, &temp);
-
-			vm_vec_cross(&local_vel_from_submodel, &omega, &r_rot);
+			//By artificially inflating moving submodel collision speed by 20%, the chance to accidentally tunnel through fast (~100m/s) moving submodels is drastically reduced with only very little noticeable in-game change
+			vm_vec_scale2(&local_vel_from_submodel, 1.2f, flFrametime);
 		} else {
 			vm_vec_zero(&local_vel_from_submodel);
 		}
@@ -848,7 +826,7 @@ static void mcp_1(object *player_objp, object *planet_objp)
 	if (dist > planet_radius*PLANET_DAMAGE_RANGE)
 		return;
 
-	ship_apply_global_damage( player_objp, planet_objp, NULL, PLANET_DAMAGE_SCALE * flFrametime * (float)pow((planet_radius*PLANET_DAMAGE_RANGE)/dist, 3.0f) );
+	ship_apply_global_damage( player_objp, planet_objp, NULL, PLANET_DAMAGE_SCALE * flFrametime * (float)pow((planet_radius*PLANET_DAMAGE_RANGE)/dist, 3.0f), -1 );
 
 	if ((Missiontime - Last_planet_damage_time > F1_0) || (Missiontime < Last_planet_damage_time)) {
 		HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "Too close to planet.  Taking damage!", 465));
@@ -1154,16 +1132,20 @@ int collide_ship_ship( obj_pair * pair )
 
 		if ( hit )
 		{
-			Script_system.SetHookObjects(4, "Self", A, "Object", B, "Ship", A, "ShipB", B);
-			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(world_hit_pos));
-			bool a_override = Script_system.IsConditionOverride(CHA_COLLIDESHIP, A);
-			Script_system.RemHookVars({ "Self", "Object", "Ship", "ShipB", "Hitpos" });
+			bool a_override = false, b_override = false;
 
-			// Yes, this should be reversed.
-			Script_system.SetHookObjects(4, "Self", B, "Object", A, "Ship", B, "ShipB", A);
-			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(world_hit_pos));
-			bool b_override = Script_system.IsConditionOverride(CHA_COLLIDESHIP, B);
-			Script_system.RemHookVars({ "Self", "Object", "Ship", "ShipB", "Hitpos" });
+			if (Script_system.IsActiveAction(CHA_COLLIDESHIP)) {
+				Script_system.SetHookObjects(4, "Self", A, "Object", B, "Ship", A, "ShipB", B);
+				Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(world_hit_pos));
+				a_override = Script_system.IsConditionOverride(CHA_COLLIDESHIP, A);
+				Script_system.RemHookVars({ "Self", "Object", "Ship", "ShipB", "Hitpos" });
+
+				// Yes, this should be reversed.
+				Script_system.SetHookObjects(4, "Self", B, "Object", A, "Ship", B, "ShipB", A);
+				Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(world_hit_pos));
+				b_override = Script_system.IsConditionOverride(CHA_COLLIDESHIP, B);
+				Script_system.RemHookVars({ "Self", "Object", "Ship", "ShipB", "Hitpos" });
+			}
 
 			if(!a_override && !b_override)
 			{
@@ -1326,31 +1308,86 @@ int collide_ship_ship( obj_pair * pair )
 				if (!ship_ship_hit_info.is_landing) {
 					//	Scale damage based on skill level for player.
 					if ((LightOne->flags[Object::Object_Flags::Player_ship]) || (HeavyOne->flags[Object::Object_Flags::Player_ship])) {
-						damage *= (float) (Game_skill_level*Game_skill_level+1)/(NUM_SKILL_LEVELS+1);
+
+						// Cyborg17 - Pretty hackish, but it's our best option, limit the amount of times a collision can
+						// happen to multiplayer clients, because otherwise the server can kill clients far too quickly.
+						// So here it goes, first only do this on the master (has an intrinsic multiplayer check) 
+						if (MULTIPLAYER_MASTER) {
+							// check to see if both colliding ships are player ships
+							bool second_player_check = false;
+							if ((LightOne->flags[Object::Object_Flags::Player_ship]) && (HeavyOne->flags[Object::Object_Flags::Player_ship]))
+								second_player_check = true;
+
+							// iterate through each player
+							for (net_player & current_player : Net_players) {
+								// check that this player's ship is valid, and that it's not the server ship.
+								if ((current_player.m_player != nullptr) && !(current_player.flags & NETINFO_FLAG_AM_MASTER) && (current_player.m_player->objnum > 0) && current_player.m_player->objnum < MAX_OBJECTS) {
+									// check that one of the colliding ships is this player's ship
+									if ((LightOne == &Objects[current_player.m_player->objnum]) || (HeavyOne == &Objects[current_player.m_player->objnum])) {
+										// finally if the host is also a player, ignore making these adjustments for him because he is in a pure simulation.
+										if (&Ships[Objects[current_player.m_player->objnum].instance] != Player_ship) {
+											// temp set this as an uninterpolated ship, to make the collision look more natural until the next update comes in.
+											multi_oo_set_client_simulation_mode(Objects[current_player.m_player->objnum].net_signature);
+
+											// check to see if it has been long enough since the last collision, if not negate the damage
+											if (!timestamp_elapsed(current_player.s_info.player_collision_timestamp)) {
+												damage = 0.0f;
+											} else {
+												// make the usual adjustments
+												damage *= (float)(Game_skill_level * Game_skill_level + 1) / (NUM_SKILL_LEVELS + 1);
+												// if everything is good to go, set the timestamp for the next collision
+												current_player.s_info.player_collision_timestamp = timestamp(PLAYER_COLLISION_TIMESTAMP);
+											}
+										}
+
+										// did we find the player we were looking for?
+										if (!second_player_check) {
+											break;
+										// if we found one of the players we were looking for, set this to false so that the next one breaks the loop
+										} else {
+											second_player_check = false;
+										}
+									}
+								}
+							}
+						// if not in multiplayer, just do the damage adjustment.
+						} else {
+							damage *= (float) (Game_skill_level*Game_skill_level+1)/(NUM_SKILL_LEVELS+1);
+						}
 					} else if (Ships[LightOne->instance].team == Ships[HeavyOne->instance].team) {
 						//	Decrease damage if non-player ships and not large.
 						//	Looks dumb when fighters are taking damage from bumping into each other.
 						if ((LightOne->radius < 50.0f) && (HeavyOne->radius <50.0f)) {
 							damage /= 4.0f;
 						}
-					}
-					
-					float dam2 = (100.0f * damage/LightOne->phys_info.mass);
+					}					
 
-					int	quadrant_num = get_ship_quadrant_from_global(&world_hit_pos, ship_ship_hit_info.heavy);
-					if ((ship_ship_hit_info.heavy->flags[Object::Object_Flags::No_shields]) || !ship_is_shield_up(ship_ship_hit_info.heavy, quadrant_num) ) {
-						quadrant_num = -1;
+					int	quadrant_num = -1;					
+					if (!The_mission.ai_profile->flags[AI::Profile_Flags::No_shield_damage_from_ship_collisions] && !(ship_ship_hit_info.heavy->flags[Object::Object_Flags::No_shields])) {
+						quadrant_num = get_ship_quadrant_from_global(&world_hit_pos, ship_ship_hit_info.heavy);
+						if (!ship_is_shield_up(ship_ship_hit_info.heavy, quadrant_num))
+							quadrant_num = -1;
 					}
 
-					ship_apply_local_damage(ship_ship_hit_info.heavy, ship_ship_hit_info.light, &world_hit_pos, 100.0f * damage/HeavyOne->phys_info.mass, quadrant_num, CREATE_SPARKS, ship_ship_hit_info.submodel_num, &ship_ship_hit_info.collision_normal);
+					float damage_heavy = (100.0f * damage / HeavyOne->phys_info.mass);
+					ship_apply_local_damage(ship_ship_hit_info.heavy, ship_ship_hit_info.light, &world_hit_pos, damage_heavy, light_shipp->collision_damage_type_idx, 
+						quadrant_num, CREATE_SPARKS, ship_ship_hit_info.submodel_num, &ship_ship_hit_info.collision_normal);
+
 					hud_shield_quadrant_hit(ship_ship_hit_info.heavy, quadrant_num);
 
 					// don't draw sparks (using sphere hitpos)
-					ship_apply_local_damage(ship_ship_hit_info.light, ship_ship_hit_info.heavy, &world_hit_pos, dam2, MISS_SHIELDS, NO_SPARKS, -1, &ship_ship_hit_info.collision_normal);
+					float damage_light = (100.0f * damage / LightOne->phys_info.mass);
+					ship_apply_local_damage(ship_ship_hit_info.light, ship_ship_hit_info.heavy, &world_hit_pos, damage_light, heavy_shipp->collision_damage_type_idx, 
+						MISS_SHIELDS, NO_SPARKS, -1, &ship_ship_hit_info.collision_normal);
+
 					hud_shield_quadrant_hit(ship_ship_hit_info.light, -1);
 
 					maybe_push_little_ship_from_fast_big_ship(ship_ship_hit_info.heavy, ship_ship_hit_info.light, ship_ship_hit_info.impulse, &ship_ship_hit_info.collision_normal);
 				}
+			}
+
+			if (!Script_system.IsActiveAction(CHA_COLLIDESHIP)) {
+				return 0;
 			}
 
 			if(!(b_override && !a_override))

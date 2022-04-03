@@ -25,7 +25,8 @@
 #define LCL_FRENCH						2
 #define LCL_POLISH						3
 
-#define LCL_UNTRANSLATED				10	// this should be higher than the highest builtin language
+#define LCL_UNTRANSLATED				100		// this should be higher than the highest builtin or custom language index
+#define LCL_RETAIL_HYBRID				101		// ditto; this is the weird retail behavior where internal is translated but external isn't
 #define	LCL_DEFAULT						0
 
 // for language name strings
@@ -70,6 +71,10 @@ extern bool *Lcl_unexpected_tstring_check;
 // LOCALIZE FUNCTIONS
 //
 
+// get an index we can use to look into the array, since we now have three different ways of using English
+// (translated, untranslated, and hybrid: internal translated, external untranslated)
+int lcl_get_current_lang_index();
+
 // initialize localization, if no language is passed - use the language specified in the registry
 void lcl_init(int lang = -1);
 
@@ -100,8 +105,8 @@ ubyte lcl_get_font_index(int font_num);
 int lcl_add_dir_to_path_with_filename(char *current_path, size_t path_max);
 
 // Goober5000
-void lcl_replace_stuff(char *text, size_t max_len);
-void lcl_replace_stuff(SCP_string &text);
+void lcl_replace_stuff(char *text, size_t max_len, bool force = false);
+void lcl_replace_stuff(SCP_string &text, bool force = false);
 
 // Karajorma
 void lcl_fred_replace_stuff(char *text, size_t max_len);

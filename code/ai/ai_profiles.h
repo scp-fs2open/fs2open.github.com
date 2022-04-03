@@ -17,6 +17,9 @@
 // AI Path types
 #define	AI_PATH_MODE_NORMAL 0
 #define	AI_PATH_MODE_ALT1	1
+
+#define	AI_RANGE_AWARE_SEC_SEL_MODE_RETAIL 0
+#define	AI_RANGE_AWARE_SEC_SEL_MODE_AWARE 1
 	
 #define MAX_AI_PROFILES	5
 
@@ -107,6 +110,12 @@ public:
 
 	// How much 0-1 of a second-order lead prediction factor to add to lead indicators. Affects only the HUD indicator, and autoaim.
 	float second_order_lead_predict_factor;
+	
+	//Controls if the AI is dumb enough to keep trying to use out-of-range secondaries. 
+	int ai_range_aware_secondary_select_mode;
+
+	// how often turrets shoulds check for new targets, milliseconds
+	float turret_target_recheck_time;
 
     void reset();
 };

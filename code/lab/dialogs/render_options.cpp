@@ -1,5 +1,6 @@
 #include "lab/labv2_internal.h"
 #include "lab/dialogs/render_options.h"
+#include "lighting/lighting_profiles.h"
 
 void set_model_rotation_flag(Checkbox* caller) {
 	auto value = caller->GetChecked();
@@ -47,6 +48,12 @@ void set_spec_flag(Checkbox* caller) {
 	auto value = caller->GetChecked();
 
 	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::NoSpecularMap, !value);
+}
+
+void set_reflect_flag(Checkbox* caller) {
+	auto value = caller->GetChecked();
+
+	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::NoReflectMap, !value);
 }
 
 void set_env_flag(Checkbox* caller) {
@@ -147,6 +154,46 @@ void set_bloom(Slider* caller) {
 	getLabManager()->Renderer->setBloomLevel(fl2i(value));
 }
 
+void set_exposure(Slider* caller) {
+	auto value = caller->GetSliderValue();
+
+	getLabManager()->Renderer->setExposureLevel(value);
+}
+
+void set_ppc_ts(Slider* caller) {
+	auto value = caller->GetSliderValue();
+	auto ppcv = lighting_profile::lab_get_ppc();
+	ppcv.toe_strength = value;
+	getLabManager()->Renderer->setPPCValues(ppcv);
+}
+
+void set_ppc_tl(Slider* caller) {
+	auto value = caller->GetSliderValue();
+	auto ppcv = lighting_profile::lab_get_ppc();
+	ppcv.toe_length = value;
+	getLabManager()->Renderer->setPPCValues(ppcv);
+}
+
+void set_ppc_sa(Slider* caller) {
+	auto value = caller->GetSliderValue();
+	auto ppcv = lighting_profile::lab_get_ppc();
+	ppcv.shoulder_angle = value;
+	getLabManager()->Renderer->setPPCValues(ppcv);
+}
+
+void set_ppc_sl(Slider* caller) {
+	auto value = caller->GetSliderValue();
+	auto ppcv = lighting_profile::lab_get_ppc();
+	ppcv.shoulder_length = value;
+	getLabManager()->Renderer->setPPCValues(ppcv);
+}
+
+void set_ppc_ss(Slider* caller) {
+	auto value = caller->GetSliderValue();
+	auto ppcv = lighting_profile::lab_get_ppc();
+	ppcv.shoulder_strength = value;
+	getLabManager()->Renderer->setPPCValues(ppcv);
+}
 void change_detail_texture(Tree* caller) {
 	auto detail = (TextureQuality)caller->GetSelectedItem()->GetData();
 
@@ -159,12 +206,19 @@ void change_aa_setting(Tree* caller) {
 	LabRenderer::setAAMode(setting);
 }
 
+void change_tonemapper_setting(Tree* caller) {
+	auto setting = (TonemapperAlgorithm)caller->GetSelectedItem()->GetData();
+
+	LabRenderer::setTonemapper(setting);
+}
+
 void RenderOptions::open(Button* /*caller*/) {
 	if (dialogWindow != nullptr)
 		return;
 
 	dialogWindow = (DialogWindow*)getLabManager()->Screen->Add(new DialogWindow("Render Options", gr_screen.center_offset_x + gr_screen.center_w - 300, gr_screen.center_offset_y + 200));
-	dialogWindow->SetOwner(this);
+	Assert(Opener != nullptr);
+	dialogWindow->SetOwner(Opener->getDialog());
 
 	dialogWindow->DeleteChildren();
 
@@ -191,6 +245,9 @@ void RenderOptions::open(Button* /*caller*/) {
 	y += cbp->GetHeight() + 2;
 
 	cbp = (Checkbox*)dialogWindow->AddChild(new Checkbox("No Specular Map", 2, y, set_spec_flag));
+	y += cbp->GetHeight() + 2;
+
+	cbp = (Checkbox*)dialogWindow->AddChild(new Checkbox("No Reflection Map", 2, y, set_reflect_flag));
 	y += cbp->GetHeight() + 2;
 
 	cbp = (Checkbox*)dialogWindow->AddChild(new Checkbox("No Environment Map", 2, y, set_env_flag));
@@ -243,9 +300,41 @@ void RenderOptions::open(Button* /*caller*/) {
 	y += direct_sldr->GetHeight() + 2;
 
 	auto bloom_sldr = new Slider("Bloom", 0, 200, 0, y + 2, set_bloom, dialogWindow->GetWidth());
-	bloom_sldr->SetSliderValue((float)Cmdline_bloom_intensity);
+	bloom_sldr->SetSliderValue((float)gr_bloom_intensity());
 	dialogWindow->AddChild(bloom_sldr);
 	y += bloom_sldr->GetHeight() + 2;
+
+	auto exposure_sldr= new Slider("Exposure", 0, 8, 0, y + 2, set_exposure, dialogWindow->GetWidth());
+	exposure_sldr->SetSliderValue(lighting_profile::current_exposure());
+	dialogWindow->AddChild(exposure_sldr);
+	y += exposure_sldr->GetHeight() + 2;
+
+	auto ppcv = lighting_profile::lab_get_ppc();
+
+	auto ppcts_sldr= new Slider("PPC: Toe Strength", 0, 1, 0, y + 2, set_ppc_ts, dialogWindow->GetWidth());
+	ppcts_sldr->SetSliderValue(ppcv.toe_strength);
+	dialogWindow->AddChild(ppcts_sldr);
+	y += ppcts_sldr->GetHeight() + 2;
+
+	auto ppctl_sldr= new Slider("PPC: Toe Length", 0, 1, 0, y + 2, set_ppc_tl, dialogWindow->GetWidth());
+	ppcts_sldr->SetSliderValue(ppcv.toe_length);
+	dialogWindow->AddChild(ppctl_sldr);
+	y += ppctl_sldr->GetHeight() + 2;
+
+	auto ppcsa_sldr= new Slider("PPC: Shoudler Angle", 0, 1, 0, y + 2, set_ppc_sa, dialogWindow->GetWidth());
+	ppcsa_sldr->SetSliderValue(ppcv.shoulder_angle);
+	dialogWindow->AddChild(ppcsa_sldr);
+	y += ppcsa_sldr->GetHeight() + 2;
+
+	auto ppcsl_sldr= new Slider("PPC: Shoulder Length", 0, 10, 0, y + 2, set_ppc_sl, dialogWindow->GetWidth());
+	ppcsl_sldr->SetSliderValue(ppcv.shoulder_length);
+	dialogWindow->AddChild(ppcsl_sldr);
+	y += ppcsl_sldr->GetHeight() + 2;
+
+	auto ppcss_sldr= new Slider("PPC: Shoulder Strength", 0, 1, 0, y + 2, set_ppc_ss, dialogWindow->GetWidth());
+	ppcss_sldr->SetSliderValue(ppcv.shoulder_strength);
+	dialogWindow->AddChild(ppcss_sldr);
+	y += ppcss_sldr->GetHeight() + 2;
 
 	// start tree
 	auto cmp = (Tree*)dialogWindow->AddChild(new Tree("Detail Options Tree", 0, y + 2, nullptr, dialogWindow->GetWidth()));
@@ -269,5 +358,17 @@ void RenderOptions::open(Button* /*caller*/) {
 	cmp->AddItem(aa_header, "SMAA Medium", (int)AntiAliasMode::SMAA_Medium, false, change_aa_setting);
 	cmp->AddItem(aa_header, "SMAA High",   (int)AntiAliasMode::SMAA_High,   false, change_aa_setting);
 	cmp->AddItem(aa_header, "SMAA Ultra",  (int)AntiAliasMode::SMAA_Ultra,  false, change_aa_setting);
+
+	//see lighting_profiles.h for documentation and lighting_profiles.cpp for implementation of these options
+	auto tonemapper = cmp->AddItem(nullptr, "Tonemapper", 0, false);
+	cmp->AddItem(tonemapper, "Linear", (int)TonemapperAlgorithm::tnm_Linear, false, change_tonemapper_setting );
+	cmp->AddItem(tonemapper, "Uncharted", (int)TonemapperAlgorithm::tnm_Uncharted, false, change_tonemapper_setting );
+	cmp->AddItem(tonemapper, "ACES", (int)TonemapperAlgorithm::tnm_Aces, false, change_tonemapper_setting );
+	cmp->AddItem(tonemapper, "ACES Approximate", (int)TonemapperAlgorithm::tnm_Aces_Approx, false, change_tonemapper_setting );
+	cmp->AddItem(tonemapper, "Cineon", (int)TonemapperAlgorithm::tnm_Cineon, false, change_tonemapper_setting );
+	cmp->AddItem(tonemapper, "Piecewise Power Curve", (int)TonemapperAlgorithm::tnm_PPC, false, change_tonemapper_setting );
+	cmp->AddItem(tonemapper, "Piecewise Power Curve(RGB)", (int)TonemapperAlgorithm::tnm_PPC_RGB, false, change_tonemapper_setting );
+	cmp->AddItem(tonemapper, "Reinhard Extended", (int)TonemapperAlgorithm::tnm_Reinhard_Extended, false, change_tonemapper_setting );
+	cmp->AddItem(tonemapper, "Reinhard Jodie", (int)TonemapperAlgorithm::tnm_Reinhard_Jodie, false, change_tonemapper_setting );
 
 }

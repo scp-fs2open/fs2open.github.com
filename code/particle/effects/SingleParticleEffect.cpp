@@ -28,7 +28,8 @@ bool SingleParticleEffect::processSource(ParticleSource* source) {
 		particle_info info;
 
 		source->getOrigin()->applyToParticleInfo(info);
-		info.vel = vmd_zero_vector;
+
+		info.vel *= m_vel_inherit.next();
 
 		m_particleProperties.createParticle(info);
 	}
@@ -39,6 +40,10 @@ bool SingleParticleEffect::processSource(ParticleSource* source) {
 
 void SingleParticleEffect::parseValues(bool nocreate) {
 	m_particleProperties.parse(nocreate);
+
+	if (optional_string("+Parent Velocity Factor:")) {
+		m_vel_inherit = ::util::parseUniformRange<float>();
+	}
 
 	m_timing = util::EffectTiming::parseTiming();
 }
@@ -56,6 +61,10 @@ SingleParticleEffect* SingleParticleEffect::createInstance(int effectID, float m
 	Assertion(bm_is_valid(effectID), "Invalid effect id %d passed!", effectID);
 	Assertion(minSize <= maxSize, "Maximum size %f is more than minimum size %f!", maxSize, minSize);
 	Assertion(minSize >= 0.0f, "Minimum size may not be less than zero, got %f!", minSize);
+
+	if (Is_standalone) {
+		return nullptr;
+	}
 
 	auto effectPtr = new SingleParticleEffect("");
 	effectPtr->m_particleProperties.m_bitmap_list.push_back(effectID);

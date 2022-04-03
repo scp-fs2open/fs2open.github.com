@@ -59,13 +59,6 @@ IMPLEMENT_DYNCREATE(CFREDDoc, CDocument)
 
 BEGIN_MESSAGE_MAP(CFREDDoc, CDocument)
 	//{{AFX_MSG_MAP(CFREDDoc)
-	ON_COMMAND(ID_EDIT_DELETE, OnEditDelete)
-	ON_COMMAND(ID_DUPLICATE, OnDuplicate)
-	ON_COMMAND(ID_EDIT_COPY, OnEditCopy)
-	ON_COMMAND(ID_EDIT_CUT, OnEditCut)
-	ON_COMMAND(ID_EDIT_HOLD, OnEditHold)
-	ON_COMMAND(ID_EDIT_FETCH, OnEditFetch)
-	ON_COMMAND(ID_EDIT_PASTE, OnEditPaste)
 	ON_COMMAND(ID_EDIT_UNDO, OnEditUndo)
 	ON_COMMAND(ID_FILE_IMPORT_FSM, OnFileImportFSM)
 	//}}AFX_MSG_MAP
@@ -364,42 +357,8 @@ bool CFREDDoc::load_mission(char *pathname, int flags) {
 	return true;
 }
 
-void CFREDDoc::OnDuplicate() {
-	// TODO: Add your command handler code here
-
-}
-
 void CFREDDoc::OnEditClearAll() {
 	DeleteContents();
-}
-
-void CFREDDoc::OnEditCopy() {
-	// TODO: Add your command handler code here
-
-}
-
-void CFREDDoc::OnEditCut() {
-	// TODO: Add your command handler code here
-
-}
-
-void CFREDDoc::OnEditDelete() {
-	// TODO: Add your command handler code here
-}
-
-void CFREDDoc::OnEditFetch() {
-	// TODO: Add your command handler code here
-
-}
-
-void CFREDDoc::OnEditHold() {
-	// TODO: Add your command handler code here
-
-}
-
-void CFREDDoc::OnEditPaste() {
-	// TODO: Add your command handler code here
-
 }
 
 void CFREDDoc::OnEditUndo() {
@@ -766,7 +725,6 @@ SerializeInt(fp, mode, objp->signature);
 SerializeInt(fp, mode, objp->type);
 SerializeInt(fp, mode, objp->parent);
 SerializeInt(fp, mode, objp->parent_sig);
-SerializeInt(fp, mode, objp->parent_type);
 SerializeInt(fp, mode, objp->instance);
 SerializeInt(fp, mode, objp->flags);
 SerializeInt(fp, mode, objp->flags2);	// Goober5000 - code is obsolete, but I added this just in case

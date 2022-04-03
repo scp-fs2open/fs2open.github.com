@@ -82,8 +82,7 @@ bool mission_is_ignored(const char *filename)
 {
 	SCP_string filename_no_ext = filename;
 	drop_extension(filename_no_ext);
-	std::transform(filename_no_ext.begin(), filename_no_ext.end(), filename_no_ext.begin(),
-	               [](char c) { return (char)::tolower(c); });
+	SCP_tolower(filename_no_ext);
 
 	for (auto &ii: Ignored_missions) {
 		if (ii == filename_no_ext) {

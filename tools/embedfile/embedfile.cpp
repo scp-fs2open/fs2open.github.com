@@ -22,7 +22,7 @@ bool casecmp(const char* strA, const char* strB) {
 	}
 
 	for (size_t i = 0; i < lenA; i++) {
-		if (toupper(strA[i]) != toupper(strB[i])) {
+		if (toupper(static_cast<unsigned char>(strA[i])) != toupper(static_cast<unsigned char>(strB[i]))) {
 			return false;
 		}
 	}
@@ -171,7 +171,8 @@ void do_text_content(std::ifstream& file_in, std::ofstream& file_out,
 void write_header(std::ostream& out, const std::string& fieldName, bool text_content, bool wxWidgets_image) {
 	std::string headerDefine(fieldName);
 
-	std::transform(fieldName.begin(), fieldName.end(), headerDefine.begin(), [](char c) { return (char)::toupper(c); });
+	std::transform(fieldName.begin(), fieldName.end(), headerDefine.begin(),
+	               [](char c) { return static_cast<char>(::toupper(static_cast<unsigned char>(c))); });
 
 	headerDefine = "SCP_" + headerDefine + "_H";
 

@@ -10,6 +10,7 @@
 
 
 #include <cstdio>
+#include <numeric>
 #if _M_IX86_FP >= 1
 	#include <xmmintrin.h>
 #endif
@@ -100,7 +101,7 @@ float atan2_safe(float y, float x)
 float vm_vec_projection_parallel(vec3d *component, const vec3d *src, const vec3d *unit_vec)
 {
 	float mag;
-	Assert( vm_vec_mag(unit_vec) > 0.999f  &&  vm_vec_mag(unit_vec) < 1.001f );
+	Assertion(vm_vec_is_normalized(unit_vec), "unit_vec must be normalized!");
 
 	mag = vm_vec_dot(src, unit_vec);
 	vm_vec_copy_scale(component, unit_vec, mag);
@@ -115,7 +116,7 @@ float vm_vec_projection_parallel(vec3d *component, const vec3d *src, const vec3d
 void vm_vec_projection_onto_plane(vec3d *projection, const vec3d *src, const vec3d *unit_normal)
 {
 	float mag;
-	Assert( vm_vec_mag(unit_normal) > 0.999f  &&  vm_vec_mag(unit_normal) < 1.001f );
+	Assertion(vm_vec_is_normalized(unit_normal), "unit_normal must be normalized!");
 
 	mag = vm_vec_dot(src, unit_normal);
 	*projection = *src;
@@ -132,7 +133,7 @@ void vm_project_point_onto_plane(vec3d *new_point, const vec3d *point, const vec
 {
 	float D;		// plane constant in Ax+By+Cz+D = 0   or   dot(X,n) - dot(Xp,n) = 0, so D = -dot(Xp,n)
 	float dist;
-	Assert( vm_vec_mag(plane_normal) > 0.999f  &&  vm_vec_mag(plane_normal) < 1.001f );
+	Assertion(vm_vec_is_normalized(plane_normal), "plane_normal must be normalized!");
 
 	D = -vm_vec_dot(plane_point, plane_normal);
 	dist = vm_vec_dot(point, plane_normal) + D;
@@ -155,6 +156,17 @@ void vm_set_identity(matrix *m)
 	m->vec.rvec.xyz.x = 1.0f;	m->vec.rvec.xyz.y = 0.0f;	m->vec.rvec.xyz.z = 0.0f;
 	m->vec.uvec.xyz.x = 0.0f;	m->vec.uvec.xyz.y = 1.0f;	m->vec.uvec.xyz.z = 0.0f;
 	m->vec.fvec.xyz.x = 0.0f;	m->vec.fvec.xyz.y = 0.0f;	m->vec.fvec.xyz.z = 1.0f;
+}
+
+vec3d vm_vec_new(float x, float y, float z)
+{
+	vec3d vec;
+
+	vec.xyz.x = x;
+	vec.xyz.y = y;
+	vec.xyz.z = z;
+
+	return vec;
 }
 
 //adds two vectors, fills in dest, returns ptr to dest
@@ -388,6 +400,12 @@ float vm_vec_dist(const vec3d *v0, const vec3d *v1)
 	return t1;
 }
 
+bool vm_vec_is_normalized(const vec3d *v)
+{
+	// By the standards of FSO, it is sufficient to check that the magnitude is close to 1.
+	return vm_vec_mag(v) > 0.999f && vm_vec_mag(v) < 1.001f;
+}
+
 //normalize a vector. returns mag of source vec (always greater than zero)
 float vm_vec_copy_normalize(vec3d *dest, const vec3d *src)
 {
@@ -540,10 +558,12 @@ vec3d *vm_vec_perp(vec3d *dest, const vec3d *p0, const vec3d *p1,const vec3d *p2
 
 //computes the delta angle between two vectors.
 //vectors need not be normalized. if they are, call vm_vec_delta_ang_norm()
-//the forward vector (third parameter) can be NULL, in which case the absolute
-//value of the angle in returned.  Otherwise the angle around that vector is
-//returned.
-float vm_vec_delta_ang(const vec3d *v0, const vec3d *v1, const vec3d *fvec)
+//the up vector (third parameter) can be NULL, in which case the absolute
+//value of the angle in returned.  
+//Otherwise, the delta ang will be positive if the v0 -> v1 direction from the
+//point of view of uvec is clockwise, negative if counterclockwise.
+//This vector should be orthogonal to v0 and v1
+float vm_vec_delta_ang(const vec3d *v0, const vec3d *v1, const vec3d *uvec)
 {
 	float t;
 	vec3d t0,t1,t2;
@@ -551,10 +571,10 @@ float vm_vec_delta_ang(const vec3d *v0, const vec3d *v1, const vec3d *fvec)
 	vm_vec_copy_normalize(&t0,v0);
 	vm_vec_copy_normalize(&t1,v1);
 
-	if (NULL == fvec) {
+	if (uvec == nullptr) {
 		t = vm_vec_delta_ang_norm(&t0, &t1, NULL);
 	} else {
-		vm_vec_copy_normalize(&t2,fvec);
+		vm_vec_copy_normalize(&t2,uvec);
 		t = vm_vec_delta_ang_norm(&t0,&t1,&t2);
 	}
 
@@ -562,16 +582,16 @@ float vm_vec_delta_ang(const vec3d *v0, const vec3d *v1, const vec3d *fvec)
 }
 
 //computes the delta angle between two normalized vectors.
-float vm_vec_delta_ang_norm(const vec3d *v0, const vec3d *v1, const vec3d *fvec)
+float vm_vec_delta_ang_norm(const vec3d *v0, const vec3d *v1, const vec3d *uvec)
 {
 	float a;
 	vec3d t;
 
-	a = acosf(vm_vec_dot(v0,v1));
+	a = acosf_safe(vm_vec_dot(v0,v1));
 
-	if (fvec) {
+	if (uvec) {
 		vm_vec_cross(&t,v0,v1);
-		if ( vm_vec_dot(&t,fvec) < 0.0 )	{
+		if ( vm_vec_dot(&t,uvec) < 0.0 )	{
 			a = -a;
 		}
 	}
@@ -789,44 +809,22 @@ matrix *vm_vector_2_matrix_norm(matrix *m, const vec3d *fvec, const vec3d *uvec,
 }
 
 
-//rotates a vector through a matrix. returns ptr to dest vector
-//dest CANNOT equal source
-//
-// Goober5000: FYI, the result of rotating a normalized vector through a rotation matrix will
-// also be a normalized vector.  It took me awhile to verify online that this was true. ;)
+// rotates a vector through a matrix, writes to *dest and returns the pointer
+// if m is a rotation matrix it will preserve the length of *src, so normalised vectors will remain normalised
 vec3d *vm_vec_rotate(vec3d *dest, const vec3d *src, const matrix *m)
 {
-	Assert(dest != src);
-
-	dest->xyz.x = (src->xyz.x*m->vec.rvec.xyz.x)+(src->xyz.y*m->vec.rvec.xyz.y)+(src->xyz.z*m->vec.rvec.xyz.z);
-	dest->xyz.y = (src->xyz.x*m->vec.uvec.xyz.x)+(src->xyz.y*m->vec.uvec.xyz.y)+(src->xyz.z*m->vec.uvec.xyz.z);
-	dest->xyz.z = (src->xyz.x*m->vec.fvec.xyz.x)+(src->xyz.y*m->vec.fvec.xyz.y)+(src->xyz.z*m->vec.fvec.xyz.z);
+	*dest = (*m) * (*src);
 
 	return dest;
 }
 
-//rotates a vector through the transpose of the given matrix. 
-//returns ptr to dest vector
-//dest CANNOT equal source
-// This is a faster replacement for this common code sequence:
-//    vm_copy_transpose(&tempm,src_matrix);
-//    vm_vec_rotate(dst_vec,src_vect,&tempm);
-// Replace with:
-//    vm_vec_unrotate(dst_vec,src_vect, src_matrix)
-//
-// THIS DOES NOT ACTUALLY TRANSPOSE THE SOURCE MATRIX!!! So if
-// you need it transposed later on, you should use the 
-// vm_vec_transpose() / vm_vec_rotate() technique.
-//
-// Goober5000: FYI, the result of rotating a normalized vector through a rotation matrix will
-// also be a normalized vector.  It took me awhile to verify online that this was true. ;)
+// like vm_vec_rotate, but uses the transpose matrix instead. for rotations, this is an inverse.
 vec3d *vm_vec_unrotate(vec3d *dest, const vec3d *src, const matrix *m)
 {
-	Assert(dest != src);
+	matrix mt;
 
-	dest->xyz.x = (src->xyz.x*m->vec.rvec.xyz.x)+(src->xyz.y*m->vec.uvec.xyz.x)+(src->xyz.z*m->vec.fvec.xyz.x);
-	dest->xyz.y = (src->xyz.x*m->vec.rvec.xyz.y)+(src->xyz.y*m->vec.uvec.xyz.y)+(src->xyz.z*m->vec.fvec.xyz.y);
-	dest->xyz.z = (src->xyz.x*m->vec.rvec.xyz.z)+(src->xyz.y*m->vec.uvec.xyz.z)+(src->xyz.z*m->vec.fvec.xyz.z);
+	vm_copy_transpose(&mt, m);
+	*dest = mt * (*src);
 
 	return dest;
 }
@@ -865,27 +863,14 @@ matrix *vm_copy_transpose(matrix *dest, const matrix *src)
 	return dest;
 }
 
-//mulitply 2 matrices, fill in dest.  returns ptr to dest
-//dest CANNOT equal either source
+// Old matrix multiplication routine. Note that the order of multiplication is inverted
+// compared to the mathematical standard: formally, this calculates src1 * src0
 matrix *vm_matrix_x_matrix(matrix *dest, const matrix *src0, const matrix *src1)
 {
-	Assert(dest!=src0 && dest!=src1);
-
-	dest->vec.rvec.xyz.x = vm_vec_dot3(src0->vec.rvec.xyz.x,src0->vec.uvec.xyz.x,src0->vec.fvec.xyz.x, &src1->vec.rvec);
-	dest->vec.uvec.xyz.x = vm_vec_dot3(src0->vec.rvec.xyz.x,src0->vec.uvec.xyz.x,src0->vec.fvec.xyz.x, &src1->vec.uvec);
-	dest->vec.fvec.xyz.x = vm_vec_dot3(src0->vec.rvec.xyz.x,src0->vec.uvec.xyz.x,src0->vec.fvec.xyz.x, &src1->vec.fvec);
-
-	dest->vec.rvec.xyz.y = vm_vec_dot3(src0->vec.rvec.xyz.y,src0->vec.uvec.xyz.y,src0->vec.fvec.xyz.y, &src1->vec.rvec);
-	dest->vec.uvec.xyz.y = vm_vec_dot3(src0->vec.rvec.xyz.y,src0->vec.uvec.xyz.y,src0->vec.fvec.xyz.y, &src1->vec.uvec);
-	dest->vec.fvec.xyz.y = vm_vec_dot3(src0->vec.rvec.xyz.y,src0->vec.uvec.xyz.y,src0->vec.fvec.xyz.y, &src1->vec.fvec);
-
-	dest->vec.rvec.xyz.z = vm_vec_dot3(src0->vec.rvec.xyz.z,src0->vec.uvec.xyz.z,src0->vec.fvec.xyz.z, &src1->vec.rvec);
-	dest->vec.uvec.xyz.z = vm_vec_dot3(src0->vec.rvec.xyz.z,src0->vec.uvec.xyz.z,src0->vec.fvec.xyz.z, &src1->vec.uvec);
-	dest->vec.fvec.xyz.z = vm_vec_dot3(src0->vec.rvec.xyz.z,src0->vec.uvec.xyz.z,src0->vec.fvec.xyz.z, &src1->vec.fvec);
+	*dest = (*src1) * (*src0);
 
 	return dest;
 }
-
 
 //extract angles from a matrix
 angles *vm_extract_angles_matrix(angles *a, const matrix *m)
@@ -936,21 +921,11 @@ angles *vm_extract_angles_matrix_alternate(angles *a, const matrix *m)
 	Assert(a != NULL);
 	Assert(m != NULL);
 
-	// Extract pitch from m32, being careful for domain errors with
-	// asin().  We could have values slightly out of range due to
-	// floating point arithmetic.
-	float sp = -m->vec.fvec.xyz.y;
-	if (sp <= -1.0f) {
-		a->p = -PI_2;	// -pi/2
-	} else if (sp >= 1.0f) {
-		a->p = PI_2;	// pi/2
-	} else {
-		a->p = asinf(sp);
-	}
+	a->p = asinf_safe(-m->vec.fvec.xyz.y);
 
 	// Check for the Gimbal lock case, giving a slight tolerance
 	// for numerical imprecision
-	if (fabs(sp) > 0.9999f) {
+	if (fabs(m->vec.fvec.xyz.y) > 0.9999f) {
 		// We are looking straight up or down.
 		// Slam bank to zero and just set heading
 		a->b = 0.0f;
@@ -973,7 +948,7 @@ static angles *vm_extract_angles_vector_normalized(angles *a, const vec3d *v)
 
 	a->b = 0.0f;		//always zero bank
 
-	a->p = asinf(-v->xyz.y);
+	a->p = asinf_safe(-v->xyz.y);
 
 	a->h = atan2_safe(v->xyz.z,v->xyz.x);
 
@@ -1526,7 +1501,7 @@ void vm_matrix_to_rot_axis_and_angle(const matrix *m, float *theta, vec3d *rot_a
 
 		vm_vec_make(rot_axis, 1.0f, 0.0f, 0.0f);
 	} else if (cos_theta > -0.999999875f) { // angle is within limits between 0 and PI
-		*theta = acosf(cos_theta);
+		*theta = acosf_safe(cos_theta);
 		Assert( !fl_is_nan(*theta) );
 
 		rot_axis->xyz.x = (m->vec.uvec.xyz.z - m->vec.fvec.xyz.y);
@@ -1587,6 +1562,88 @@ void vm_matrix_to_rot_axis_and_angle(const matrix *m, float *theta, vec3d *rot_a
 		vm_vec_normalize(rot_axis);
 	}
 }
+
+// Given a rotation axis, calculates the angle that results in the rotation closest to the given matrix m.
+// If the axis is equal or very close to the orientation of the matrix, returns false and an angle of 0
+float vm_closest_angle_to_matrix(const matrix* mat, const vec3d* rot_axis, float* angle){
+	// The relative rotation between m and the target rotation r (made from axis a and angle x) is m^T.r
+	// The resulting angle between those, as shown by http://www.boris-belousov.net/2016/12/01/quat-dist/ is arccos((tr(m^T.r)-1) / 2)
+
+	// tr(m^T.r) simplifies to the following:
+	// tr = m[0]+m[4]+m[8] - 2( m[0]*(a[1]^2+a[2]^2) + m[4]*(a[0]^2+a[2]^2) + m[8]*(a[0]^2+a[1]^2) -
+	//                          a[0]*a[1]*(m[1]+m[3]) - a[0]*a[2]*(m[2]+m[6]) - a[1]*a[2]*(m[5]+m[7])) * sin(1/2 * x)^2
+	//					   + (a[0]*(m[5]-m[7]) + a[1]*(-m[2]+m[6]) + a[2]*(m[1]-m[3])) * sin(x)
+
+	// The factor before the sine squared will be calculated as y, the factor before the sine as z, the summand as w:
+
+	const auto& m = mat->a1d;
+	const auto& a = rot_axis->a1d;
+
+	const float w = m[0]+m[4]+m[8];
+	const float y = -2 * ( m[0]*(a[1]*a[1]+a[2]*a[2]) + m[4]*(a[0]*a[0]+a[2]*a[2]) + m[8]*(a[0]*a[0]+a[1]*a[1]) -
+			      a[0]*a[1]*(m[1]+m[3]) - a[0]*a[2]*(m[2]+m[6]) - a[1]*a[2]*(m[5]+m[7]));
+	const float z = (a[0]*(m[5]-m[7]) + a[1]*(-m[2]+m[6]) + a[2]*(m[1]-m[3]));
+
+	// If both y and z are close to 0, then the rotation axis points in the same direction as the matrix, thus any orientation r would be perpendicular to m
+	// If y or z is 0, the rest of the math simplifies
+	const float ay = fabs(y);
+	const float az = fabs(z);
+	if(ay < 0.001f && az < 0.001f){
+		*angle = 0.0f;
+		return PI_2;
+	}
+	else if(ay < 0.001f) {
+		*angle = copysignf(PI_2, z);
+		
+		return acosf_safe((w + az - 1.0f) * 0.5f);
+	}
+	
+	// arccos((x-1)/2) is then minimal, when x between -1 and 3 approaches 3
+	// Thus we are looking for the maximum of a term in the form of f(x)=w+y*sin(x/2)^2+z*sin(x)
+	// This maximum can be on one of the four solutions of f'(x)=0, not counting periodic repetitions
+
+	std::array<float,4> solutions;
+
+	if(az < 0.001f) {
+		solutions = {PI, PI2, PI + PI2, 2.0f * PI2};
+	}
+	else {
+		const float sr = sqrtf(y * y * y * y + 4 * y * y * z * z);
+		const float sr_neg = sqrtf(1 - (sr / (y * y + 4 * z * z)));
+		const float sr_pos = sqrtf(1 + (sr / (y * y + 4 * z * z)));
+
+		//If we support IEEE float handling, we don't need this, the div by 0 will be handled correctly with the INF. If not, do this:
+		const float yz_recip = (!std::numeric_limits<float>::is_iec559 && y * z < 0.001f) ? FLT_MAX : 1.0f / (y * z);
+
+		solutions = { 2 * atan2_safe(-sr_neg * (y * y + sr) * yz_recip, -2 * sr_neg),
+					  2 * atan2_safe(sr_neg * (y * y + sr) * yz_recip, 2 * sr_neg),
+					  2 * atan2_safe(-sr_pos * (y * y - sr) * yz_recip, -2 * sr_pos),
+					  2 * atan2_safe(sr_pos * (y * y - sr) * yz_recip, 2 * sr_pos) };
+	}
+	float value = -2.0f;
+	float correct = 0;
+	//For whichever of these, w+y*sin(x/2)^2+z*sin(x) is closest to 3 / larger (since the result is between -1 and 3) is our target angle
+	for(float solution : solutions){
+		float currentVal = w + y * sinf(solution * 0.5f) * sinf(solution * 0.5f) + z * sinf(solution);
+		if(currentVal > value){
+			value = currentVal;
+			correct = solution;
+		}
+	}
+
+	Assertion(value > -1.5f, "Did not find solution for closest angle & axis to matrix.");
+
+	// Convert to 0 to 2Pi
+	while (correct < 0.0f)
+		correct += PI2;
+
+	while (correct > PI2)
+		correct -= PI2;
+
+	*angle = correct;
+	return acosf_safe((value - 1.0f) * 0.5f);
+}
+
 
 // --------------------------------------------------------------------------------------
 
@@ -1947,7 +2004,7 @@ void vm_angular_move_forward_vec(const vec3d* goal_f, const matrix* orient, cons
 		vm_vec_rotate(&local_rot_axis, &rot_axis, orient);
 
 		// derive theta from sin(theta) for better accuracy
-		vm_vec_copy_scale(&theta_goal, &local_rot_axis, (cos_theta > 0 ? asinf(sin_theta) : PI - asinf(sin_theta)) / sin_theta);
+		vm_vec_copy_scale(&theta_goal, &local_rot_axis, (cos_theta > 0 ? asinf_safe(sin_theta) : PI - asinf_safe(sin_theta)) / sin_theta);
 		
 		// reset z to delta_bank, because it just got cleared
 		theta_goal.xyz.z = delta_bank;
@@ -2155,7 +2212,7 @@ void vm_vec_interp_constant(vec3d *out, const vec3d *v0, const vec3d *v1, float 
 	vm_vec_normalize(&cross);
 
 	// get the total angle between the 2 vectors
-	total_ang = -(acosf(vm_vec_dot(v0, v1)));
+	total_ang = -(acosf_safe(vm_vec_dot(v0, v1)));
 
 	// rotate around the cross product vector by the appropriate angle
 	vm_rot_point_around_line(out, v0, t * total_ang, &vmd_zero_vector, &cross);
@@ -2215,30 +2272,52 @@ void vm_vec_random_cone(vec3d *out, const vec3d *in, float min_angle, float max_
 
 // given a start vector, an orientation, and a radius, generate a point on the plane of the circle
 // if on_edge is true, the point will be on the edge of the circle
-void vm_vec_random_in_circle(vec3d *out, const vec3d *in, const matrix *orient, float radius, bool on_edge)
+void vm_vec_random_in_circle(vec3d *out, const vec3d *in, const matrix *orient, float radius, bool on_edge, bool bias_towards_center)
 {
 	vec3d temp;
+	float scalar = frand();
 
-	// point somewhere in the plane
-	vm_vec_scale_add(&temp, in, &orient->vec.rvec, on_edge ? radius : frand_range(0.0f, radius));
+	// sqrt because scaling inward increases the probability density by the square of its proximity towards the center
+	if (!bias_towards_center)
+		scalar = sqrtf(scalar);
+
+	// point somewhere in the plane, maybe scaled inward
+	vm_vec_scale_add(&temp, in, &orient->vec.rvec, on_edge ? radius : scalar * radius);
 
 	// rotate to a random point on the circle
-	vm_rot_point_around_line(out, &temp, fl_radians(frand_range(0.0f, 359.0f)), in, &orient->vec.fvec);
+	vm_rot_point_around_line(out, &temp, fl_radians(frand_range(0.0f, 360.0f)), in, &orient->vec.fvec);
+}
+
+void vm_vec_unit_sphere_point(vec3d *out, float z_scale, float phi_scale)
+{
+	const auto z = (z_scale * 2.0f) - 1.0f; // convert range to [-1,1]
+	const auto phi = phi_scale * PI2;
+	const auto rho = sqrtf(1.0f - z * z);
+	vm_vec_make(out, rho * cosf(phi), rho * sinf(phi), z); // Using the z-vec as the starting point
 }
 
 // given a start vector and a radius, generate a point in a spherical volume
 // if on_surface is true, the point will be on the surface of the sphere
-void vm_vec_random_in_sphere(vec3d *out, const vec3d *in, float radius, bool on_surface)
+namespace {
+	util::UniformFloatRange float_range(0.0f, 1.0f);
+}
+void vm_vec_random_in_sphere(vec3d *out, const vec3d *in, float radius, bool on_surface, bool bias_towards_center)
 {
 	vec3d temp;
 
-	// Uniformly distributing each coordinate of a vector then normalizing results in a uniform sphere distribution
-	util::UniformFloatRange coords(-1.0f,1.0f);
-	vm_vec_make( &temp, coords.next(), coords.next(), coords.next() );
-	vm_vec_normalize(&temp);
+	vm_vec_unit_sphere_point(&temp, float_range.next(), float_range.next());
 
-	// We then add the scaled result to the initial position to get the final position
-	vm_vec_scale_add(out, in, &temp, on_surface ? radius : util::UniformFloatRange(0.0f, radius).next());
+	float scalar = 1.0f;
+
+	if (!on_surface) {
+		scalar = float_range.next();
+
+		// cube root because scaling inward increases the probability density by the cube of its proximity towards the center
+		if (!bias_towards_center)
+			scalar = powf(scalar, 0.333f);
+	}
+
+	vm_vec_scale_add(out, in, &temp, scalar * radius);
 }
 
 // find the nearest point on the line to p. if dist is non-NULL, it is filled in
@@ -2806,4 +2885,40 @@ void vm_interpolate_angles_quick(angles *dest0, angles *src0, angles *src1, floa
 	dest0->p = src0->p + (arc_measures.p * interp_perc);
 	dest0->h = src0->h + (arc_measures.h * interp_perc);
 	dest0->b = src0->b + (arc_measures.b * interp_perc);
+}
+
+std::ostream& operator<<(std::ostream& os, const vec3d& vec)
+{
+	os << "vec3d<" << vec.xyz.x << ", " << vec.xyz.y << ", " << vec.xyz.z << ">";
+	return os;
+}
+
+matrix vm_stretch_matrix(const vec3d* stretch_dir, float stretch) {
+	matrix outer_prod;
+	vm_vec_outer_product(&outer_prod, stretch_dir);
+
+	for (float& i : outer_prod.a1d)
+		i *= stretch - 1.f;
+
+
+	return vmd_identity_matrix + outer_prod;
+}
+
+// generates a well distributed quasi-random position in a -1 to 1 cube
+// the caller must provide and increment the seed for each call for proper results
+// algorithm taken from http://extremelearning.com.au/unreasonable-effectiveness-of-quasirandom-sequences/
+const float phi3 = 1.220744084f;
+vec3d vm_well_distributed_rand_vec(int seed, vec3d* offset) {
+	vec3d out;
+	if (offset != nullptr) {
+		out.xyz.x = fmod(-fmod(offset->xyz.x, 1.f) + ((1.f / phi3) * seed), 1.f) * 2 - 1;
+		out.xyz.y = fmod(-fmod(offset->xyz.y, 1.f) + ((1.f / (phi3 * phi3)) * seed), 1.f) * 2 - 1;
+		out.xyz.z = fmod(-fmod(offset->xyz.z, 1.f) + ((1.f / (phi3 * phi3 * phi3)) * seed), 1.f) * 2 - 1;
+	}
+	else {
+		out.xyz.x = fmod((1.f / phi3) * seed, 1.f) * 2 - 1;
+		out.xyz.y = fmod((1.f / (phi3 * phi3)) * seed, 1.f) * 2 - 1;
+		out.xyz.z = fmod((1.f / (phi3 * phi3 * phi3)) * seed, 1.f) * 2 - 1;
+	}
+	return out;
 }

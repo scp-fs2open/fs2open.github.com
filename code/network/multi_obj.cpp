@@ -88,6 +88,7 @@ struct oo_packet_and_interp_tracking {
 	int prev_pack_pos_frame;			// the prev position packet arrival frame
 
 	bool client_simulation_mode;		// if the packets come in too late, a toggle to sim things like normal
+										// now also triggered after a ship-ship collision
 
 	bool prev_packet_positionless;		// a flag that marks if the last packet as having no new position or orientation info.
 
@@ -475,8 +476,8 @@ int multi_find_prev_frame_idx()
 // Finds the first frame that is before the incoming timestamp.
 int multi_ship_record_find_frame(int client_frame, int time_elapsed)
 {	
-	// frame coming in from the client is too old to be used.
-	if (Oo_info.cur_frame_index - client_frame >= MAX_FRAMES_RECORDED) {
+	// frame coming in from the client is too old to be used. (The -1 prevents an edge case bug at very high pings)
+	if (Oo_info.cur_frame_index - client_frame >= MAX_FRAMES_RECORDED - 1) {
 		return -1;
 	}
 
@@ -625,7 +626,7 @@ void multi_ship_record_do_rollback()
 	if (!Oo_info.rollback_mode) {
 		return;
 	}
-	nprintf(("Network","At least one multiplayer rollback shot is being simulated this frame.\n"));
+
 	int net_sig_idx;
 	object* objp;
 
@@ -638,7 +639,8 @@ void multi_ship_record_do_rollback()
 		}
 
 		objp = &Objects[cur_ship.objnum];
-		if (objp == nullptr) {
+
+		if (objp == nullptr || objp->type != OBJ_SHIP) {
 			continue;
 		}
 
@@ -673,16 +675,20 @@ void multi_ship_record_do_rollback()
 
 	// now we need to figure out which frame will start the rollback simulation
 	int frame_idx = Oo_info.cur_frame_index + 1;
+
 	if (frame_idx >= MAX_FRAMES_RECORDED) {
 		frame_idx = 0;
 	}
 
 	// loop through them
 	while (frame_idx != Oo_info.cur_frame_index) {
+
 		if (!Oo_info.rollback_shots_to_be_fired[frame_idx].empty()) {
 			break;
 		}
+
 		frame_idx++;
+
 		if (frame_idx >= MAX_FRAMES_RECORDED) {
 			frame_idx = 0;
 		}
@@ -694,6 +700,8 @@ void multi_ship_record_do_rollback()
 	if (frame_idx == Oo_info.cur_frame_index) {
 		return;
 	}
+
+	nprintf(("Network","At least one multiplayer rollback shot is being simulated this frame.\n"));
 
 	do {
 		// move all ships to their recorded positions
@@ -735,11 +743,12 @@ void multi_oo_fire_rollback_shots(int frame_idx)
 	for (auto & rollback_shot : Oo_info.rollback_shots_to_be_fired[frame_idx]) {
 		rollback_shot.shooterp->pos = rollback_shot.pos;
 		rollback_shot.shooterp->orient = rollback_shot.orient;
+
 		if (rollback_shot.secondary_shot) {
 			ship_fire_secondary(rollback_shot.shooterp, 1, true);
 		}
 		else {
-			ship_fire_primary(rollback_shot.shooterp, 0, 1, true);
+			ship_fire_primary(rollback_shot.shooterp, 1, true);
 		}
 	}
 
@@ -1311,39 +1320,52 @@ int multi_oo_pack_data(net_player *pl, object *objp, ushort oo_flags, ubyte *dat
 			
 
 			// retrieve the submodel for rotation info.
-			if (subsystem->system_info->flags[Model::Subsystem_Flags::Rotates, Model::Subsystem_Flags::Dum_rotates]) {
+			if (subsystem->system_info->flags[Model::Subsystem_Flags::Rotates]) {
+				angles *angs_1 = nullptr;
+				angles *angs_2 = nullptr;
+				if (subsystem->submodel_instance_1) {
+					angs_1 = new angles;
+					vm_extract_angles_matrix_alternate(angs_1, &subsystem->submodel_instance_1->canonical_orient);
+				}
+				if (subsystem->submodel_instance_2) {
+					angs_2 = new angles;
+					vm_extract_angles_matrix_alternate(angs_2, &subsystem->submodel_instance_2->canonical_orient);
+				}
 
 				// here we're checking to see if the subsystems rotated enough to send.
-				if (subsystem->submodel_info_1.angs.b != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_1b[i]) {
+				if (angs_1 != nullptr && angs_1->b != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_1b[i]) {
 					flags[i] |= OO_SUBSYS_ROTATION_1b;
-					subsys_data.push_back(subsystem->submodel_info_1.angs.b / PI2);
+					subsys_data.push_back(angs_1->b / PI2);
 				}
 
-				if (subsystem->submodel_info_1.angs.h != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_1h[i]) {
+				if (angs_1 != nullptr && angs_1->h != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_1h[i]) {
 					flags[i] |= OO_SUBSYS_ROTATION_1h;
-					subsys_data.push_back(subsystem->submodel_info_1.angs.h / PI2);
+					subsys_data.push_back(angs_1->h / PI2);
 				}
 
-				if (subsystem->submodel_info_1.angs.p != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_1p[i]) {
+				if (angs_1 != nullptr && angs_1->p != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_1p[i]) {
 					flags[i] |= OO_SUBSYS_ROTATION_1p;
-					subsys_data.push_back(subsystem->submodel_info_1.angs.p / PI2);
+					subsys_data.push_back(angs_1->p / PI2);
 				}
 
-				if (subsystem->submodel_info_2.angs.b != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_2b[i]) {
+				if (angs_2 != nullptr && angs_2->b != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_2b[i]) {
 					flags[i] |= OO_SUBSYS_ROTATION_2b;
-					subsys_data.push_back(subsystem->submodel_info_2.angs.b / PI2);
+					subsys_data.push_back(angs_2->b / PI2);
 				}
 
-				if (subsystem->submodel_info_2.angs.h != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_2h[i]) {
+				if (angs_2 != nullptr && angs_2->h != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_2h[i]) {
 					flags[i] |= OO_SUBSYS_ROTATION_2h;
-					subsys_data.push_back(subsystem->submodel_info_2.angs.h / PI2);
+					subsys_data.push_back(angs_2->h / PI2);
 				}
 
-				if (subsystem->submodel_info_2.angs.p != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_2p[i]) {
+				if (angs_2 != nullptr && angs_2->p != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_2p[i]) {
 					flags[i] |= OO_SUBSYS_ROTATION_2p;
-					subsys_data.push_back(subsystem->submodel_info_2.angs.p / PI2);
+					subsys_data.push_back(angs_2->p / PI2);
 				}
 
+				// clang says deleting null pointer has no effect
+				delete angs_1;
+				delete angs_2;
 			}
 			i++;
 		}
@@ -1379,9 +1401,13 @@ int multi_oo_pack_data(net_player *pl, object *objp, ushort oo_flags, ubyte *dat
 			if ((aip->wp_list != nullptr) && (aip->wp_list->get_waypoints().size() > aip->wp_index)) {
 				target_signature = Objects[aip->wp_list->get_waypoints().at(aip->wp_index).get_objnum()].net_signature;
 			}
-		} // send the target signature.
-		else if (aip->target_objnum != -1) {
-			target_signature = Objects[Ai_info[shipp->ai_index].target_objnum].net_signature;
+		} // send the target signature. 2021 Version!
+		else if ((aip->goals[0].target_name != nullptr) && strlen(aip->goals[0].target_name) != 0) {
+			
+			int instance = ship_name_lookup(aip->goals[0].target_name);
+			if (instance > -1) {
+				target_signature = Objects[Ships[instance].objnum].net_signature;
+			}
 		}
 
 		PACK_BYTE( umode );
@@ -1914,41 +1940,73 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num)
 					data_idx++;
 				}
 
+				angles *prev_angs_1 = nullptr;
+				angles *prev_angs_2 = nullptr;
+				angles *angs_1 = nullptr;
+				angles *angs_2 = nullptr;
+				if (subsysp->submodel_instance_1) {
+					prev_angs_1 = new angles;
+					angs_1 = new angles;
+					vm_extract_angles_matrix_alternate(prev_angs_1, &subsysp->submodel_instance_1->canonical_prev_orient);
+					vm_extract_angles_matrix_alternate(angs_1, &subsysp->submodel_instance_1->canonical_orient);
+				}
+				if (subsysp->submodel_instance_2) {
+					prev_angs_2 = new angles;
+					angs_2 = new angles;
+					vm_extract_angles_matrix_alternate(prev_angs_2, &subsysp->submodel_instance_2->canonical_prev_orient);
+					vm_extract_angles_matrix_alternate(angs_2, &subsysp->submodel_instance_2->canonical_orient);
+				}
+
 				if (flags[i] & OO_SUBSYS_ROTATION_1b) {
-					subsysp->submodel_info_1.prev_angs.b = subsysp->submodel_info_1.angs.b;
-					subsysp->submodel_info_1.angs.b = (subsys_data[data_idx] * PI2);
+					prev_angs_1->b = angs_1->b;
+					angs_1->b = (subsys_data[data_idx] * PI2);
 					data_idx++;
 				}
 
 				if (flags[i] & OO_SUBSYS_ROTATION_1h) {
-					subsysp->submodel_info_1.prev_angs.h = subsysp->submodel_info_1.angs.h;
-					subsysp->submodel_info_1.angs.h = (subsys_data[data_idx] * PI2);
+					prev_angs_1->h = angs_1->h;
+					angs_1->h = (subsys_data[data_idx] * PI2);
 					data_idx++;
 				}
 
 				if (flags[i] & OO_SUBSYS_ROTATION_1p) {
-					subsysp->submodel_info_1.prev_angs.p = subsysp->submodel_info_1.angs.p;
-					subsysp->submodel_info_1.angs.p = (subsys_data[data_idx] * PI2);
+					prev_angs_1->p = angs_1->p;
+					angs_1->p = (subsys_data[data_idx] * PI2);
 					data_idx++;
 				}
 
 				if (flags[i] & OO_SUBSYS_ROTATION_2b) {
-					subsysp->submodel_info_2.prev_angs.b = subsysp->submodel_info_2.angs.b;
-					subsysp->submodel_info_2.angs.b = (subsys_data[data_idx] * PI2);
+					prev_angs_2->b = angs_2->b;
+					angs_2->b = (subsys_data[data_idx] * PI2);
 					data_idx++;
 				}
 
 				if (flags[i] & OO_SUBSYS_ROTATION_2h) {
-					subsysp->submodel_info_2.prev_angs.h = subsysp->submodel_info_2.angs.h;
-					subsysp->submodel_info_2.angs.h = (subsys_data[data_idx] * PI2);
+					prev_angs_2->h = angs_2->h;
+					angs_2->h = (subsys_data[data_idx] * PI2);
 					data_idx++;
 				}
 
 				if (flags[i] & OO_SUBSYS_ROTATION_2p) {
-					subsysp->submodel_info_2.prev_angs.p = subsysp->submodel_info_2.angs.p;
-					subsysp->submodel_info_2.angs.p = (subsys_data[data_idx] * PI2);
+					prev_angs_2->p = angs_2->p;
+					angs_2->p = (subsys_data[data_idx] * PI2);
 					data_idx++;
 				}
+
+				// fix up the matrixes
+				if (flags[i] & OO_SUBSYS_ROTATION_1) {
+					vm_angles_2_matrix(&subsysp->submodel_instance_1->canonical_prev_orient, prev_angs_1);
+					vm_angles_2_matrix(&subsysp->submodel_instance_1->canonical_orient, angs_1);
+					delete prev_angs_1;
+					delete angs_1;
+				}
+				if (flags[i] & OO_SUBSYS_ROTATION_2) {
+					vm_angles_2_matrix(&subsysp->submodel_instance_2->canonical_prev_orient, prev_angs_2);
+					vm_angles_2_matrix(&subsysp->submodel_instance_2->canonical_orient, angs_2);
+					delete prev_angs_2;
+					delete angs_2;
+				}
+
 				subsysp = GET_NEXT(subsysp);
 
 			}
@@ -2041,6 +2099,13 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num)
 			object *objp = multi_get_network_object( dock_sig );
 			if(objp != nullptr){
 				Ai_info[shipp->ai_index].support_ship_objnum = OBJ_INDEX(objp);
+				if ((objp->instance > -1) && (objp->type == OBJ_SHIP)) {
+					Ai_info[shipp->ai_index].goals[0].target_name = Ships[objp->instance].ship_name;
+					Ai_info[shipp->ai_index].goals[0].target_signature = objp->signature;
+				} else {
+					Ai_info[shipp->ai_index].goals[0].target_name = nullptr;
+					Ai_info[shipp->ai_index].goals[0].target_signature = 0;
+				}
 			}
 		}			
 	} 
@@ -2339,7 +2404,7 @@ void multi_oo_process_all(net_player *pl)
 		// this should only happen when the game is just starting, because the previous timestamp is nonsense.
 		if (Oo_info.number_of_frames > 1) {
 			// Send to the log if we're getting negative times. 
-			mprintf(("Somehow the object update packet is calculating a negative time differential in multi_oo_send_control_info. Value: %d. It's going to guess on a correct value. Please investigate.", temp_timestamp));
+			mprintf(("Somehow the object update packet is calculating a negative time differential in multi_oo_send_control_info. Value: %d. It's going to guess on a correct value. Please investigate.\n", temp_timestamp));
 		}
 		temp_timestamp = TIMESTAMP_OUT_IF_ERROR; // average amount of time per frame on a 60fps machine
 	}
@@ -2460,7 +2525,7 @@ void multi_oo_process_update(ubyte *data, header *hinfo)
 	net_player *pl = nullptr;	
 
 	// determine what player this came from 
-	player_index = find_player_id(hinfo->id);
+	player_index = find_player_index(hinfo->id);
 	if(player_index != -1){						
 		pl = &Net_players[player_index];
 	}
@@ -2509,6 +2574,7 @@ void multi_init_oo_and_ship_tracker()
 
 	Oo_info.number_of_frames = 0;
 	Oo_info.cur_frame_index = 0;
+
 	for (int i = 0; i < MAX_FRAMES_RECORDED; i++) { // NOLINT
 		Oo_info.timestamps[i] = MAX_TIME; // This needs to be Max time (or at least some absurdly high number) for rollback to work correctly
 	}
@@ -2517,6 +2583,7 @@ void multi_init_oo_and_ship_tracker()
 	Oo_info.rollback_weapon_object_number.clear();
 	Oo_info.rollback_collide_list.clear();
 	Oo_info.rollback_ships.clear();
+
 	for (int i = 0; i < MAX_FRAMES_RECORDED; i++) { // NOLINT
 		Oo_info.rollback_shots_to_be_fired[i].clear();
 		Oo_info.rollback_shots_to_be_fired[i].reserve(20);
@@ -2632,6 +2699,52 @@ void multi_init_oo_and_ship_tracker()
 	}
 }
 
+// release and reset object update info
+void multi_close_oo_and_ship_tracker()
+{
+	if ( !(Game_mode & GM_MULTIPLAYER) ) {
+		return;
+	}
+
+	// Part 1: Get the non-repeating parts of the struct set.
+	Oo_info.ref_timestamp = -1;
+	Oo_info.most_recent_updated_net_signature = 0;
+	Oo_info.most_recent_frame = 0;
+
+	for (int i = 0; i < MAX_PLAYERS; i++) { // NOLINT
+		Oo_info.received_frametimes[i].clear();
+		Oo_info.received_frametimes[i].shrink_to_fit();
+	}
+
+	Oo_info.number_of_frames = 0;
+	Oo_info.cur_frame_index = 0;
+
+	for (int i = 0; i < MAX_FRAMES_RECORDED; i++) { // NOLINT
+		Oo_info.timestamps[i] = MAX_TIME; // This needs to be Max time (or at least some absurdly high number) for rollback to work correctly
+	}
+
+	Oo_info.rollback_mode = false;
+	Oo_info.rollback_weapon_object_number.clear();
+	Oo_info.rollback_weapon_object_number.shrink_to_fit();
+	Oo_info.rollback_collide_list.clear();
+	Oo_info.rollback_collide_list.shrink_to_fit();
+	Oo_info.rollback_ships.clear();
+	Oo_info.rollback_ships.shrink_to_fit();
+
+	for (int i = 0; i < MAX_FRAMES_RECORDED; i++) { // NOLINT
+		Oo_info.rollback_shots_to_be_fired[i].clear();
+		Oo_info.rollback_shots_to_be_fired[i].shrink_to_fit();
+	}
+
+	// Part 2: Init/Reset the repeating parts of the struct.
+	Oo_info.frame_info.clear();
+	Oo_info.frame_info.shrink_to_fit();
+	Oo_info.player_frame_info.clear();
+	Oo_info.player_frame_info.shrink_to_fit();
+	Oo_info.interp.clear();
+	Oo_info.interp.shrink_to_fit();
+}
+
 
 // send control info for a client (which is basically a "reverse" object update)
 void multi_oo_send_control_info()
@@ -2661,7 +2774,7 @@ void multi_oo_send_control_info()
 		temp_timestamp = 255;
 	} else if (temp_timestamp < 0) {
 		// Send to the log if we're getting negative times.  
-		mprintf(("Somehow the object update packet is calculating negative time differential in multi_oo_send_control_info. Value: %d. It's going to guess on a correct value. Please investigate.", temp_timestamp));
+		mprintf(("Somehow the object update packet is calculating negative time differential in multi_oo_send_control_info. Value: %d. It's going to guess on a correct value. Please investigate.\n", temp_timestamp));
 		temp_timestamp = TIMESTAMP_OUT_IF_ERROR;
 	}
 	auto time_out = (ubyte)temp_timestamp;
@@ -2734,7 +2847,7 @@ void multi_oo_send_changed_object(object *changedobj)
 		temp_timestamp = 255;
 	} else if (temp_timestamp < 0) {
 		// Send to the log if we're getting negative times.  
-		mprintf(("Somehow the object update packet is calculating negative time differential in multi_oo_send_control_info. Value: %d. It's going to guess on a correct value. Please investigate.", temp_timestamp));
+		mprintf(("Somehow the object update packet is calculating negative time differential in multi_oo_send_control_info. Value: %d. It's going to guess on a correct value. Please investigate.\n", temp_timestamp));
 		temp_timestamp = TIMESTAMP_OUT_IF_ERROR;
 	}
 	auto time_out = (ubyte)temp_timestamp;
@@ -3133,13 +3246,8 @@ void multi_oo_interp(object* objp)
 	if ((objp->instance < 0) || (objp->instance >= MAX_SHIPS)) {
 		return;
 	}
-	// Now that we know we have a valid ship, do stream weapon firing for this ship before we do anything else that makes us abort
+
 	Assert(objp != Player_obj);
-	if (objp != Player_obj) {
-		if (MULTIPLAYER_CLIENT) {
-			ship_fire_primary(objp, 1, 0);
-		}
-	}
 
 	vec3d store_old_pos = objp->pos;
 	ushort net_sig_idx = objp->net_signature;
@@ -3187,7 +3295,7 @@ void multi_oo_interp(object* objp)
 			objp->orient = interp_data->new_orientation;
 			objp->phys_info.vel = vmd_zero_vector;
 		} // Overshoting in this frame or some edge case bug. Just sim the ship from the known values.
-		else if (time_factor > 4.0f || time_factor < 1.0f) {
+		else if (time_factor > 4.0f || time_factor < 1.0f || interp_data->client_simulation_mode) {
 			// if transitioning to uninterpolated movement, we need to jump to the end of the simulated points 
 			// and then simulate forward some if there's extra time. 
 			float regular_sim_delta;
@@ -3202,6 +3310,7 @@ void multi_oo_interp(object* objp)
 				regular_sim_delta = flFrametime;
 			}
 			// Continue simulating if we have time that we need to simulate and exclude fake values.
+			// Note, whenever client_simulation_mode is on the following will be true.
 			if (regular_sim_delta > 0.001f && regular_sim_delta < 0.500f) {
 				// make sure to bash desired velocity and rotational velocity in this case.
 				objp->phys_info.desired_vel = interp_data->cur_pack_des_vel;
@@ -3333,7 +3442,7 @@ void multi_oo_calc_interp_splines(int player_id, object* objp, matrix *new_orien
 	float delta = multi_oo_calc_pos_time_difference(player_id, net_sig_idx);
 	// if an error or invalid value, use the local timestamps instead of those received. Should be rare.
 	if (delta <= 0.0f) {
-		delta = (float)(timestamp() - Oo_info.received_frametimes[player_id].at(Oo_info.interp[net_sig_idx].pos_timestamp)) / TIMESTAMP_FREQUENCY;
+		delta = (float)(timestamp() - Oo_info.interp[net_sig_idx].pos_timestamp) / TIMESTAMP_FREQUENCY;
 	}
 
 	Oo_info.interp[net_sig_idx].pos_time_delta = delta;
@@ -3395,6 +3504,9 @@ void multi_oo_calc_interp_splines(int player_id, object* objp, matrix *new_orien
 
 	// Set the points to the bezier
 	Oo_info.interp[net_sig_idx].pos_spline.bez_set_points(3, pts);
+
+	// unset client mode, now that we have brand new data!
+	Oo_info.interp[net_sig_idx].client_simulation_mode = false;
 }
 
 // Calculates how much time has gone by between the two most recent frames 
@@ -3432,6 +3544,16 @@ float multi_oo_calc_pos_time_difference(int player_id, int net_sig_idx)
 	temp_sum /= TIMESTAMP_FREQUENCY; // convert from timestamp to float frame time
 
 	return temp_sum;
+}
+
+// temporarily sets this as a client interpolated ship 
+void multi_oo_set_client_simulation_mode(ushort netsig) 
+{
+	if (netsig == 0 || netsig >= Oo_info.interp.size()) {
+		return;
+	}
+
+	Oo_info.interp[netsig].client_simulation_mode = true;
 }
 
 bool display_oo_bez = false;

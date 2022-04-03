@@ -103,13 +103,7 @@ void create_wing_dlg::OnOK()
 		ptr = GET_NEXT(ptr);
 	}
 
-	for (i=0; i<Num_iffs; i++) {
-		if (!stricmp(m_name, Iff_info[i].iff_name)) {
-			msg.Format("The name \"%s\" is already being used by a team", static_cast<LPCTSTR>(m_name));
-			MessageBox(msg);
-			return;
-		}
-	}
+	// We don't need to check teams.  "Unknown" is a valid name and also an IFF.
 
 	for ( i=0; i < (int)Ai_tp_list.size(); i++) {
 		if (!stricmp(m_name, Ai_tp_list[i].name)) {

@@ -57,7 +57,14 @@ extern void mouse_set_pos(int xpos,int ypos);
 #define HIGHEST_MOUSE_WHEEL     MOUSE_WHEEL_RIGHT
 
 /**
- * @brief Returns the number of times button n went from up to down since last call
+ * Checks how many times the given mouse button went down since last check
+ *
+ * @returns 0 if the CC_bind is not CID_MOUSE when Use_mouse_to_fly == false, or
+ * @returns 0 if the CC_bind is not CID_JOY0 when Use_mouse_to_fly == true, or
+ * @returns 0 if the button id >= NUM_MOUSE_BUTTONS, or
+ * @returns 0 if the button did not go down, or
+ *
+ * @returns the number of times the button went down
  */
 int mouse_down_count(const CC_bind &bind, int reset_count = 1);
 
@@ -76,7 +83,14 @@ int mouse_up_count(int n);
 void mouse_flush();
 
 /**
- * Returns 1 if the given mouse button down, 0 otherwise
+ * Checks if the given mouse button is down
+ * 
+ * @returns 0 if the CC_bind is not CID_MOUSE when Use_mouse_to_fly == false, or
+ * @returns 0 if the CC_bind is not CID_JOY0 when Use_mouse_to_fly == true, or
+ * @returns 0 if the button id >= NUM_MOUSE_BUTTONS, or
+ * @returns 0 if the button is not down, or
+ * 
+ * @returns 1 if the given button is down
  */
 int mouse_down(const CC_bind &bind);
 

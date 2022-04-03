@@ -200,7 +200,7 @@ static credits_screen_buttons Buttons[NUM_BUTTONS][GR_NUM_RESOLUTIONS] = {
 
 static char Credits_music_name[NAME_LENGTH];
 static int	Credits_music_handle = -1;
-static int	Credits_music_begin_timestamp;
+static UI_TIMESTAMP	Credits_music_begin_timestamp;
 
 static int	Credits_frametime;		// frametime of credits_do_frame() loop in ms
 static int	Credits_last_time;		// timestamp used to calc frametime (in ms)
@@ -446,7 +446,7 @@ void credits_init()
 	// we could conceivably have specified a number of images but not an index,
 	// so if that's the case, set the value here
 	if (Credits_artwork_index < 0) {
-		Credits_artwork_index = rand() % Credits_num_images;
+		Credits_artwork_index = Random::next(Credits_num_images);
 	}
 
 	int credits_spooled_music_index = event_music_get_spooled_music_index(Credits_music_name);	
@@ -458,7 +458,7 @@ void credits_init()
 	}
 
 	// Use this id to trigger the start of music playing on the briefing screen
-	Credits_music_begin_timestamp = timestamp(Credits_music_delay);
+	Credits_music_begin_timestamp = ui_timestamp(Credits_music_delay);
 
 	Credits_frametime = 0;
 	Credits_last_time = timer_get_milliseconds();
@@ -661,8 +661,6 @@ void credits_close()
 	}	
 	Credits_bmps.clear();
 
-	credits_stop_music(true);
-
 	Credit_text_parts.clear();
 
 	if (Background_bitmap){
@@ -671,6 +669,10 @@ void credits_close()
 
 	Ui_window.destroy();
 	common_free_interface_palette();		// restore game palette
+
+
+	// non-UI stuff
+	credits_stop_music(true);
 }
 
 void credits_do_frame(float  /*frametime*/)
@@ -682,8 +684,8 @@ void credits_do_frame(float  /*frametime*/)
 	int bx2, by2, bw2, bh2;
 
 	// Use this id to trigger the start of music playing on the credits screen
-	if ( timestamp_elapsed(Credits_music_begin_timestamp) ) {
-		Credits_music_begin_timestamp = 0;
+	if ( ui_timestamp_elapsed(Credits_music_begin_timestamp) ) {
+		Credits_music_begin_timestamp = UI_TIMESTAMP::invalid();
 		credits_start_music();
 	}
 
@@ -837,7 +839,6 @@ void credits_do_frame(float  /*frametime*/)
 
 	Credits_frametime = temp_time - Credits_last_time;
 	Credits_last_time = temp_time;
-	timestamp_inc(i2f(Credits_frametime) / TIMESTAMP_FREQUENCY);
 
 	float fl_frametime = i2fl(Credits_frametime) / 1000.f;
 	if (keyd_pressed[KEY_LSHIFT]) {

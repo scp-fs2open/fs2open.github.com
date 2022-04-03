@@ -606,23 +606,7 @@ int wing_editor::update_data(int redraw)
 			ptr = GET_NEXT(ptr);
 		}
 
-		for (i=0; i<Num_iffs; i++) {
-			if (!stricmp(m_wing_name, Iff_info[i].iff_name)) 
-			{
-				if (bypass_errors)
-					return 1;
-
-				bypass_errors = 1;
-				z = MessageBox("This wing name is already being used by a team.\n"
-					"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
-
-				if (z == IDCANCEL)
-					return -1;
-
-				m_wing_name = _T(Wings[cur_wing].name);
-				UpdateData(FALSE);
-			}
-		}
+		// We don't need to check teams.  "Unknown" is a valid name and also an IFF.
 
 		for ( i=0; i < (int)Ai_tp_list.size(); i++) {
 			if (!stricmp(m_wing_name, Ai_tp_list[i].name)) 
@@ -1133,53 +1117,63 @@ void wing_editor::OnSelchangedDepartureTree(NMHDR* pNMHDR, LRESULT* pResult)
 	*pResult = 0;
 }
 
+void wing_editor::calc_help_height()
+{
+	CRect minihelp, help;
+
+	GetDlgItem(IDC_MINI_HELP_BOX)->GetWindowRect(minihelp);
+	GetDlgItem(IDC_HELP_BOX)->GetWindowRect(help);
+	help_height = (help.bottom - minihelp.top) + 10;
+}
+
 void wing_editor::calc_cue_height()
 {
 	CRect cue;
 
 	GetDlgItem(IDC_CUE_FRAME)->GetWindowRect(cue);
-	cue_height = cue.bottom - cue.top + 10;
-	if (Show_sexp_help)
-		cue_height += SEXP_HELP_BOX_SIZE;
-
-	if (Hide_wing_cues) {
-		((CButton *) GetDlgItem(IDC_HIDE_CUES)) -> SetCheck(1);
-		OnHideCues();
-	}
+	cue_height = (cue.bottom - cue.top) + 10;
 }
 
 void wing_editor::show_hide_sexp_help()
 {
 	CRect rect;
 
-	if (Show_sexp_help)
-		cue_height += SEXP_HELP_BOX_SIZE;
-	else
-		cue_height -= SEXP_HELP_BOX_SIZE;
-
 	if (((CButton *) GetDlgItem(IDC_HIDE_CUES)) -> GetCheck())
 		return;
 
 	GetWindowRect(rect);
+
 	if (Show_sexp_help)
-		rect.bottom += SEXP_HELP_BOX_SIZE;
+		rect.bottom += help_height;
 	else
-		rect.bottom -= SEXP_HELP_BOX_SIZE;
+		rect.bottom -= help_height;
 
 	MoveWindow(rect);
 }
 
-void wing_editor::OnHideCues() 
+void wing_editor::show_hide_cues()
+{
+	((CButton*)GetDlgItem(IDC_HIDE_CUES))->SetCheck(Hide_wing_cues ? TRUE : FALSE);
+	OnHideCues();
+}
+
+void wing_editor::OnHideCues()
 {
 	CRect rect;
 
 	GetWindowRect(rect);
+
 	if (((CButton *) GetDlgItem(IDC_HIDE_CUES)) -> GetCheck()) {
 		rect.bottom -= cue_height;
-		Hide_wing_cues = 1;
+		if (Show_sexp_help)
+			rect.bottom -= help_height;
 
+		Hide_wing_cues = 1;
 	} else {
 		rect.bottom += cue_height;
+		if (Show_sexp_help)
+			rect.bottom += help_height;
+
 		Hide_wing_cues = 0;
 	}
 

@@ -30,7 +30,6 @@ extern char *Cmdline_game_password;
 extern char *Cmdline_rank_above;
 extern char *Cmdline_rank_below;
 extern int Cmdline_cd_check;
-extern int Cmdline_client_dodamage;
 extern int Cmdline_closed_game;
 extern int Cmdline_freespace_no_music;
 extern int Cmdline_freespace_no_sound;
@@ -84,13 +83,13 @@ extern int Cmdline_rearm_timer;
 extern int Cmdline_targetinfo;
 
 // Gameplay related
-extern int Cmdline_3dwarp;
 extern int Cmdline_ship_choice_3d;
 extern int Cmdline_weapon_choice_3d;
 extern int Cmdline_warp_flash;
 extern int Cmdline_autopilot_interruptable;
 extern int Cmdline_stretch_menu;
 extern int Cmdline_no_screenshake;
+extern int Cmdline_deadzone;
 
 // Audio related
 extern int Cmdline_voice_recognition;
@@ -124,6 +123,8 @@ extern bool Cmdline_no_geo_sdr_effects;
 extern bool Cmdline_set_cpu_affinity;
 extern bool Cmdline_nograb;
 extern bool Cmdline_noshadercache;
+extern bool Cmdline_prefer_ipv4;
+extern bool Cmdline_prefer_ipv6;
 #ifdef WIN32
 extern bool Cmdline_alternate_registry_path;
 #endif
@@ -144,6 +145,7 @@ extern int Cmdline_reparse_mainhall;
 extern bool Cmdline_profile_write_file;
 extern bool Cmdline_no_unfocus_pause;
 extern bool Cmdline_benchmark_mode;
+extern const char *Cmdline_pilot;
 extern bool Cmdline_noninteractive;
 extern bool Cmdline_json_profiling;
 extern bool Cmdline_frame_profile;
@@ -151,6 +153,7 @@ extern bool Cmdline_show_video_info;
 extern bool Cmdline_debug_window;
 extern bool Cmdline_graphics_debug_output;
 extern bool Cmdline_log_to_stdout;
+extern bool Cmdline_slow_frames_ok;
 
 enum class WeaponSpewType { NONE = 0, STANDARD, ALL };
 extern WeaponSpewType Cmdline_spew_weapon_stats;

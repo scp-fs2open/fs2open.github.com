@@ -84,28 +84,36 @@ namespace particle
 		}
 	}
 
-	void ParticleSourceWrapper::setOrientationFromNormalizedVec(vec3d* normalizedDir)
+	void ParticleSourceWrapper::setVelocity(vec3d* vel)
 	{
 		for (auto& source : m_sources)
 		{
-			source->getOrientation()->setFromNormalizedVector(*normalizedDir);
+			source->getOrigin()->setVelocity(vel);
+		}
+	}
+
+	void ParticleSourceWrapper::setOrientationFromNormalizedVec(vec3d* normalizedDir, bool relative)
+	{
+		for (auto& source : m_sources)
+		{
+			source->getOrientation()->setFromNormalizedVector(*normalizedDir, relative);
 		}
 	}
 
 
-	void ParticleSourceWrapper::setOrientationFromVec(vec3d* dir)
+	void ParticleSourceWrapper::setOrientationFromVec(vec3d* dir, bool relative)
 	{
 		for (auto& source : m_sources)
 		{
-			source->getOrientation()->setFromVector(*dir);
+			source->getOrientation()->setFromVector(*dir, relative);
 		}
 	}
 
-	void ParticleSourceWrapper::setOrientationMatrix(matrix* mtx)
+	void ParticleSourceWrapper::setOrientationMatrix(matrix* mtx, bool relative)
 	{
 		for (auto& source : m_sources)
 		{
-			source->getOrientation()->setFromMatrix(*mtx);
+			source->getOrientation()->setFromMatrix(*mtx, relative);
 		}
 	}
 

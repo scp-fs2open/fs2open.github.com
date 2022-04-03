@@ -406,7 +406,7 @@ void multi_team_handle_drop()
 			int team_check = team0_cap ? 1 : 0;
 			for(idx=0; idx<MAX_PLAYERS; idx++){
 				if(MULTI_CONNECTED(Net_players[idx]) && (Net_players[idx].flags & NETINFO_FLAG_TEAM_CAPTAIN) && (Net_players[idx].p_info.team == team_check)){			
-					send_host_captain_change_packet(Net_players[idx].player_id, 1);
+					send_host_captain_change_packet(Net_players[idx].player_id, true);
 				}
 			}
 			return;
@@ -626,7 +626,7 @@ void multi_team_process_packet(unsigned char *data, header *hinfo)
 	int offset = HEADER_LENGTH;		
 
 	// find out who is sending this data	
-	player_index = find_player_id(hinfo->id);	
+	player_index = find_player_index(hinfo->id);	
 
 	// get the packet opcode
 	GET_DATA(code);
@@ -645,7 +645,7 @@ void multi_team_process_packet(unsigned char *data, header *hinfo)
 		GET_INT(req_team);
 
 		// if i'm the host of the game, process here		
-		req_index = find_player_id(player_id);
+		req_index = find_player_index(player_id);
 		if( (req_index == -1) || (player_index == -1) ){
 			nprintf(("Network","Could not find player to process team change request !\n"));
 		} else {
@@ -764,7 +764,7 @@ int multi_team_process_team_update(ubyte *data)
 
 		// do a player lookup
 		if(!MULTIPLAYER_MASTER){
-			player_index = find_player_id(player_id);
+			player_index = find_player_index(player_id);
 			if(player_index != -1){
 				// set his team correctly
 				if(flags & (1<<0)){

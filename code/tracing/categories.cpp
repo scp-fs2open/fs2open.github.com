@@ -13,6 +13,7 @@ bool Category::usesGPUCounter() const {
 }
 
 Category LuaOnFrame("LUA On Frame", true);
+Category LuaHooks("LUA hooks", true);
 
 Category DrawSceneTexture("Draw scene texture", true);
 Category UpdateDistortion("Update distortion", true);
@@ -60,6 +61,7 @@ Category SubmitDraws("Submit Draws", true);
 Category ApplyLights("Apply Lights", true);
 Category DrawEffects("Draw Effects", true);
 Category SetupNebula("Setup Nebula", true);
+Category DrawPoofs("Draw Poofs", true);
 Category DrawStars("Draw Stars", true);
 Category DrawShields("Draw Shields", true);
 Category DrawBeams("Draw Beams", true);
@@ -76,8 +78,6 @@ Category NonrepeatingEvents("Nonrepeating events", false);
 Category ParticlesRenderAll("Render particles", true);
 Category ParticlesMoveAll("Move particles", false);
 
-Category TrailDraw("Trail Draw", true);
-
 Category EnvironmentMapping("Environment Mapping", true);
 Category BuildShadowMap("Build Shadow Map", true);
 Category RenderScene("Render scene", true);
@@ -90,7 +90,7 @@ Category RenderMainFrame("Render frame", true);
 Category RenderHUD("Render HUD", true);
 Category RenderHUDHook("Render HUD Scripting Hook", true);
 Category RenderHUDGauge("Render HUD Gauge", true);
-Category RenderTargettingBracket("Render Target bracket", true);
+Category RenderTargetingBracket("Render Target bracket", true);
 Category RenderNavBracket("Render Nav bracket", true);
 Category MainFrame("Main Frame", true);
 Category PageFlip("Page flip", true);
@@ -143,4 +143,6 @@ Category RenderDecals("Render all decals", true);
 Category RenderSingleDecal("Render single decal", true);
 Category GpuHeapAllocate("GPU heap allocate", false);
 Category GpuHeapDeallocate("GPU heap deallocate", false);
+
+Category ProgramStepOne("Step one program", false);
 }

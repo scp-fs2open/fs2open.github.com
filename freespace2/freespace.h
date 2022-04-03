@@ -64,9 +64,6 @@ extern int Game_ships_tbl_valid;
 // if the weapons.tbl the player has is valid
 extern int Game_weapons_tbl_valid;
 
-// to disable networking at runtime
-extern int Networking_disabled;
-
 // this is a mission actually designed at Volition
 #define MAX_BUILTIN_MISSIONS					100
 #define FSB_FROM_VOLITION						(1<<0)			// we made it in-house
@@ -98,10 +95,12 @@ void game_level_close();
 // gameplay stuff -----------------------------------------------------
 
 // stop the game (mission) timer
-void game_stop_time();
+void game_stop_time(bool by_os_focus = false);
+
+bool game_time_is_stopped();
 
 // start the game (mission) timer
-void game_start_time();
+void game_start_time(bool by_os_focus = false);
 
 // call whenever in a loop or if you need to get a keypress
 int game_check_key();

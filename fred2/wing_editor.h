@@ -18,6 +18,7 @@ class wing_editor : public CDialog
 {
 // Construction
 public:
+	int help_height;
 	int cue_height;
 	int bypass_errors;
 	int modified;
@@ -25,8 +26,10 @@ public:
 
 	void initialize_data_safe(int full_update);
 	void update_data_safe();
-	void show_hide_sexp_help();
+	void calc_help_height();
 	void calc_cue_height();
+	void show_hide_sexp_help();
+	void show_hide_cues();
 	int verify();
 	wing_editor(CWnd* pParent = NULL);   // standard constructor
 	BOOL Create();

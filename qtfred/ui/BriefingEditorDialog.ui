@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>620</width>
-    <height>725</height>
+    <width>622</width>
+    <height>732</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -100,6 +100,13 @@
         </item>
         <item row="1" column="0">
          <layout class="QGridLayout" name="iconInfo">
+          <item row="3" column="0">
+           <widget class="QLabel" name="iconImage">
+            <property name="text">
+             <string>Icon Image</string>
+            </property>
+           </widget>
+          </item>
           <item row="0" column="0">
            <widget class="QLabel" name="iconID">
             <property name="text">
@@ -109,6 +116,23 @@
           </item>
           <item row="0" column="1">
            <widget class="QLineEdit" name="iconIDEdit"/>
+          </item>
+          <item row="5" column="0">
+           <widget class="QLabel" name="iconTeam">
+            <property name="text">
+             <string>Team</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="0">
+           <widget class="QLabel" name="iconShipType">
+            <property name="text">
+             <string>Ship Type</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="1">
+           <widget class="QComboBox" name="iconImageCombo"/>
           </item>
           <item row="1" column="0">
            <widget class="QLabel" name="iconLabel">
@@ -120,35 +144,21 @@
           <item row="1" column="1">
            <widget class="QLineEdit" name="iconLabelEdit"/>
           </item>
-          <item row="2" column="0">
-           <widget class="QLabel" name="iconImage">
-            <property name="text">
-             <string>Icon Image</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="1">
-           <widget class="QComboBox" name="iconImageCombo"/>
-          </item>
-          <item row="3" column="0">
-           <widget class="QLabel" name="iconShipType">
-            <property name="text">
-             <string>Ship Type</string>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="1">
-           <widget class="QComboBox" name="iconShipTypeCombo"/>
-          </item>
-          <item row="4" column="0">
-           <widget class="QLabel" name="iconTeam">
-            <property name="text">
-             <string>Team</string>
-            </property>
-           </widget>
+          <item row="5" column="1">
+           <widget class="QComboBox" name="iconTeamCombo"/>
           </item>
           <item row="4" column="1">
-           <widget class="QComboBox" name="iconTeamCombo"/>
+           <widget class="QComboBox" name="iconShipTypeCombo"/>
+          </item>
+          <item row="2" column="1">
+           <widget class="QLineEdit" name="iconcloseupLabel"/>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="closeup">
+            <property name="text">
+             <string>Closeup Label</string>
+            </property>
+           </widget>
           </item>
          </layout>
         </item>

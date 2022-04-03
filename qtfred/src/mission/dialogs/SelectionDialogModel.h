@@ -39,7 +39,7 @@ class SelectionDialogModel : public AbstractDialogModel {
 	bool _filter_ships = true;
 	bool _filter_starts = true;
 	bool _filter_waypoints = true;
-	std::array<bool, MAX_IFFS> _filter_iff;
+	SCP_vector<bool> _filter_iff;
 
  public:
 	bool apply() override;

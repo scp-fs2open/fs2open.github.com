@@ -342,7 +342,7 @@ void chatbox_set_mode(int mode_flags)
 		Chatbox_begin_x = Chatbox_small_display_coords[gr_screen.res][CHATBOX_X_COORD];
 		Chatbox_begin_y = Chatbox_small_display_coords[gr_screen.res][CHATBOX_Y_COORD];
 		Chatbox_disp_w = Chatbox_small_display_coords[gr_screen.res][CHATBOX_W_COORD];
-		Chatbox_max_lines = Chatbox_small_max_lines[gr_screen.res];
+		Chatbox_max_lines = gr_get_dynamic_font_lines(Chatbox_small_max_lines[gr_screen.res]);
 		Chatbox_inputbox_x = Chatbox_small_input_coords[gr_screen.res][CHATBOX_X_COORD];
 		Chatbox_inputbox_w = Chatbox_small_input_coords[gr_screen.res][CHATBOX_W_COORD];
 		Chatbox_textenter_y = Chatbox_small_input_coords[gr_screen.res][CHATBOX_Y_COORD];		
@@ -358,7 +358,7 @@ void chatbox_set_mode(int mode_flags)
 		Chatbox_begin_x = Chatbox_big_display_coords[gr_screen.res][CHATBOX_X_COORD];
 		Chatbox_begin_y = Chatbox_big_display_coords[gr_screen.res][CHATBOX_Y_COORD];
 		Chatbox_disp_w = Chatbox_big_display_coords[gr_screen.res][CHATBOX_W_COORD];
-		Chatbox_max_lines = Chatbox_big_max_lines[gr_screen.res];
+		Chatbox_max_lines = gr_get_dynamic_font_lines(Chatbox_big_max_lines[gr_screen.res]);
 		Chatbox_inputbox_x = Chatbox_big_input_coords[gr_screen.res][CHATBOX_X_COORD];
 		Chatbox_inputbox_w = Chatbox_big_input_coords[gr_screen.res][CHATBOX_W_COORD];
 		Chatbox_textenter_y = Chatbox_big_input_coords[gr_screen.res][CHATBOX_Y_COORD];		
@@ -373,7 +373,7 @@ void chatbox_set_mode(int mode_flags)
 		Chatbox_begin_x = Chatbox_p_display_coords[gr_screen.res][CHATBOX_X_COORD];
 		Chatbox_begin_y = Chatbox_p_display_coords[gr_screen.res][CHATBOX_Y_COORD];
 		Chatbox_disp_w = Chatbox_p_display_coords[gr_screen.res][CHATBOX_W_COORD];
-		Chatbox_max_lines = Chatbox_p_max_lines[gr_screen.res];
+		Chatbox_max_lines = gr_get_dynamic_font_lines(Chatbox_p_max_lines[gr_screen.res]);
 		Chatbox_inputbox_x = Chatbox_p_input_coords[gr_screen.res][CHATBOX_X_COORD];
 		Chatbox_inputbox_w = Chatbox_p_input_coords[gr_screen.res][CHATBOX_W_COORD];
 		Chatbox_textenter_y = Chatbox_p_input_coords[gr_screen.res][CHATBOX_Y_COORD];
@@ -802,7 +802,7 @@ void chatbox_add_line(const char *msg, int pid, int add_id)
 	Assert(strlen(msg_extra) < (CHATBOX_STRING_LEN - 2));	
 
 	// split the text up into as many lines as necessary
-	n_lines = split_str(msg_extra, Chatbox_disp_w, n_chars, p_str, 3);
+	n_lines = split_str(msg_extra, Chatbox_disp_w, n_chars, p_str, 3, CHATBOX_STRING_LEN);
 	Assert(n_lines != -1);	
 
 	// setup the first line -- be sure to clear out the line
@@ -835,7 +835,7 @@ void chatbox_add_line(const char *msg, int pid, int add_id)
 	// if we have more than 1 line, re-split everything so that the rest are indented
 	if(n_lines > 1){
 		// split up the string after the first break-marker
-		n_lines = split_str(msg_extra + n_chars[0],Chatbox_disp_w - CHAT_LINE_INDENT,n_chars,p_str,3);
+		n_lines = split_str(msg_extra + n_chars[0],Chatbox_disp_w - CHAT_LINE_INDENT,n_chars,p_str,3, CHATBOX_STRING_LEN);
 		Assert(n_lines != -1);		
 
 		// setup these remaining lines

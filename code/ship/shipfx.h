@@ -32,11 +32,11 @@ struct matrix;
 void shipfx_emit_spark( int n, int sn );
 
 // Does the special effects to blow a subsystem off a ship
-extern void shipfx_blow_off_subsystem(object *ship_obj,ship *ship_p,ship_subsys *subsys, vec3d *exp_center, bool no_explosion = false);
+extern void shipfx_blow_off_subsystem(object *ship_obj, ship *ship_p, ship_subsys *subsys, vec3d *exp_center, bool no_explosion = false);
 
-// Creates "ndebris" pieces of debris on random verts of the the "submodel" in the 
+// Creates "ndebris" pieces of debris on random verts of the "submodel" in the 
 // ship's model.
-extern void shipfx_blow_up_model(object *obj,int model, int submodel, int ndebris, vec3d *exp_center);
+extern void shipfx_blow_up_model(object *obj, int submodel, int ndebris, vec3d *exp_center);
 
 
 // =================================================
@@ -167,7 +167,7 @@ void shipfx_do_shockwave_stuff(ship *shipp, shockwave_create_info *sci);
 // =================================================
 //          ELECTRICAL SPARKS ON DAMAGED SHIPS EFFECT STUFF
 // =================================================
-void shipfx_do_damaged_arcs_frame( ship *shipp );
+void shipfx_do_lightning_arcs_frame( ship *shipp );
 
 
 // =================================================

@@ -6,3 +6,7 @@ code/executor/ @asarium
 code/scpui/ @asarium
 
 code/scripting/ @asarium
+
+code/controlconfig/ @z64555
+
+code/model/modelanimation*.* @bmagnu

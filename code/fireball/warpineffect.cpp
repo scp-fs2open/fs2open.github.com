@@ -91,14 +91,14 @@ void warpin_queue_render(model_draw_list *scene, object *obj, matrix *orient, ve
 
 			g3_transfer_vertex( &verts[4], &vecs[4] );
 
-			float alpha = (The_mission.flags[Mission::Mission_Flags::Fullneb]) ? (1.0f - neb2_get_fog_intensity(obj)) : 1.0f;
+			float alpha = (The_mission.flags[Mission::Mission_Flags::Fullneb]) ? neb2_get_fog_visibility(&obj->pos, 1.0f) : 1.0f;
 
 			//batch_add_bitmap(warp_glow_bitmap, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT, &verts[4], 0, r, alpha);
 			batching_add_bitmap(warp_glow_bitmap, &verts[4], 0, r, alpha);
 		}
 	}
 
-	if ( (warp_model_id >= 0) && (warp_3d || Fireball_use_3d_warp) ) {
+	if ( (warp_model_id >= 0) && (warp_3d) ) {
 		model_render_params render_info;
 
 		float scale = radius / 25.0f;

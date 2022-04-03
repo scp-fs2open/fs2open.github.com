@@ -2,8 +2,10 @@
  * Created by Hassan "Karajorma" Kazmi for the FreeSpace2 Source Code Project.
  * You may not sell or otherwise commercially exploit the source or things you
  * create based on the source.
+ *
+ * This file is in charge of the "game_settings.tbl", colloquially referred to
+ * as the "mod table", and contains many misc FSO specific settings.
  */
-
 
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
@@ -13,9 +15,11 @@
 extern int Directive_wait_time;
 extern bool True_loop_argument_sexps;
 extern bool Fixed_turret_collisions;
+extern bool Fixed_missile_detonation;
 extern bool Damage_impacted_subsystem_first;
 extern bool Cutscene_camera_displays_hud;
 extern bool Alternate_chaining_behavior;
+extern bool Use_host_orientation_for_set_camera_facing;
 extern int Default_ship_select_effect;
 extern int Default_weapon_select_effect;
 extern int Default_fiction_viewer_ui;
@@ -23,6 +27,7 @@ extern bool Enable_external_shaders;
 extern bool Enable_external_default_scripts;
 extern int Default_detail_level;
 extern bool Full_color_head_anis;
+extern bool Dont_automatically_select_turret_when_targeting_ship;
 extern bool Weapons_inherit_parent_collision_group;
 extern bool Flight_controls_follow_eyepoint_orientation;
 extern int FS2NetD_port;
@@ -35,6 +40,7 @@ extern float Shield_pain_flash_factor;
 extern SCP_string Window_title;
 extern bool Unicode_text_mode;
 extern bool Use_tabled_strings_for_default_language;
+extern bool Dont_preempt_training_voice;
 extern SCP_string Movie_subtitle_font;
 extern bool Enable_scripts_in_fred;
 extern SCP_string Window_icon_path;
@@ -56,7 +62,20 @@ extern SCP_vector<gr_capability> Required_render_ext;
 extern float Weapon_SS_Threshold_Turret_Inaccuracy;
 extern bool Framerate_independent_turning;
 extern bool Ai_respect_tabled_turntime_rotdamp;
+extern bool Chase_view_default;
 extern bool Render_player_mflash;
+extern bool Neb_affects_beams;
+extern bool Neb_affects_weapons;
+extern bool Neb_affects_particles;
+extern bool Neb_affects_fireballs;
+extern std::tuple<float, float, float, float> Shadow_distances;
+extern std::tuple<float, float, float, float> Shadow_distances_cockpit;
+extern bool Custom_briefing_icons_always_override_standard_icons;
+extern float Min_pixel_size_thruster;
+extern float Min_pixel_size_beam;
+extern float Min_pizel_size_muzzleflash;
+extern float Min_pixel_size_trail;
+extern float Min_pixel_size_laser;
 
 void mod_table_init();
 

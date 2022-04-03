@@ -16,7 +16,13 @@ bool lua_sexp_h::isValid() {
 
 ADE_OBJ(l_LuaSEXP, lua_sexp_h, "LuaSEXP", "Lua SEXP handle");
 
-ADE_VIRTVAR(Action, l_LuaSEXP, "function action", "The action of this SEXP", "function", "The action function or nil on error") {
+ADE_VIRTVAR(Action,
+	l_LuaSEXP,
+	"function(any... args) => void action",
+	"The action of this SEXP",
+	"function(any... args) => void action",
+	"The action function or nil on error")
+{
 	lua_sexp_h lua_sexp;
 	luacpp::LuaFunction action_arg;
 	if (!ade_get_args(L, "o|u", l_LuaSEXP.Get(&lua_sexp), &action_arg)) {

@@ -12,7 +12,7 @@ namespace api {
 //**********LIBRARY: Mission
 ADE_LIB(l_Options, "Options", "opt", "Options library");
 
-ADE_VIRTVAR(Options, l_Options, nullptr, "The available options.", ade_type_array("option"), "A table of all the options.")
+ADE_VIRTVAR(Options, l_Options, nullptr, "The available options.", "option[]", "A table of all the options.")
 {
 	using namespace luacpp;
 
@@ -29,10 +29,13 @@ ADE_VIRTVAR(Options, l_Options, nullptr, "The available options.", ade_type_arra
 	return ade_set_args(L, "t", &table);
 }
 
-ADE_FUNC(persistChanges, l_Options, nullptr,
-         "Persist any changes made to the options system. Options can be incapable of applying changes immediately in "
-         "which case they are returned here.",
-         ade_type_array("option"), "The options that did not support changing their value")
+ADE_FUNC(persistChanges,
+	l_Options,
+	nullptr,
+	"Persist any changes made to the options system. Options can be incapable of applying changes immediately in "
+	"which case they are returned here.",
+	"option[]",
+	"The options that did not support changing their value")
 {
 	using namespace luacpp;
 

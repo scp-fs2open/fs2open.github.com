@@ -50,7 +50,7 @@ inline void strlwr(char *s) {
 		return;
 
 	while (*s) {
-		*s = (char) tolower(*s);
+		*s = (char) tolower((unsigned char) *s);
 		s++;
 	}
 }

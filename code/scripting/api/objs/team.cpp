@@ -27,7 +27,7 @@ ADE_VIRTVAR(Name, l_Team, "string", "Team name", "string", "Team name, or empty 
 	if(!ade_get_args(L, "o|s", l_Team.Get(&tdx), &s))
 		return ade_set_error(L, "s", "");
 
-	if(tdx < 0 || tdx > Num_iffs)
+	if(tdx < 0 || tdx >= (int)Iff_info.size())
 		return ade_set_error(L, "s", "");
 
 	if(ADE_SETTING_VAR && s != nullptr) {
@@ -39,15 +39,19 @@ ADE_VIRTVAR(Name, l_Team, "string", "Team name", "string", "Team name, or empty 
 	return ade_set_args(L, "s", Iff_info[tdx].iff_name);
 }
 
-ADE_FUNC(getColor, l_Team, nullptr, "Gets the IFF color of the specified Team",
-         ade_type_info({"number", "number", "number"}), "rgb color for the specified team or nil if invalid")
+ADE_FUNC(getColor,
+	l_Team,
+	nullptr,
+	"Gets the IFF color of the specified Team",
+	"number, number, number",
+	"rgb color for the specified team or nil if invalid")
 {
 	int idx;
 	int r,g,b;
 	if(!ade_get_args(L, "o", l_Team.Get(&idx)))
 		return ADE_RETURN_NIL;
 
-	if(idx < 0 || idx >= Num_iffs)
+	if(idx < 0 || idx >= (int)Iff_info.size())
 		return ADE_RETURN_NIL;
 
 	color* col = iff_get_color_by_team(idx, 0, 0);
@@ -65,7 +69,7 @@ ADE_FUNC(isValid, l_Team, NULL, "Detects whether handle is valid", "boolean", "t
 	if(!ade_get_args(L, "o", l_Team.Get(&idx)))
 		return ADE_RETURN_NIL;
 
-	if(idx < 0 || idx >= Num_iffs)
+	if(idx < 0 || idx >= (int)Iff_info.size())
 		return ADE_RETURN_FALSE;
 
 	return ADE_RETURN_TRUE;

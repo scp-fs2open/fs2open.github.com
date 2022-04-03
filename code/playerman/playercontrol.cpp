@@ -917,31 +917,45 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 	}
 }
 
-void copy_control_info(control_info *dest_ci, control_info *src_ci)
+void copy_control_info(control_info *dest_ci, control_info *src_ci, int control_copy_method)
 {
-	if (dest_ci == NULL)
+	if (dest_ci == nullptr)
 		return;
 
-	if (src_ci == NULL) {
-		dest_ci->pitch = 0.0f;
-		dest_ci->vertical = 0.0f;
-		dest_ci->heading = 0.0f;
-		dest_ci->sideways = 0.0f;
-		dest_ci->bank = 0.0f;
-		dest_ci->forward = 0.0f;
-		dest_ci->forward_cruise_percent = 0.0f;
-		dest_ci->fire_countermeasure_count = 0;
-		dest_ci->fire_secondary_count = 0;
-		dest_ci->fire_primary_count = 0;
-	} else {
-		dest_ci->pitch = src_ci->pitch;
-		dest_ci->vertical = src_ci->vertical;
-		dest_ci->heading = src_ci->heading;
-		dest_ci->sideways = src_ci->sideways;
-		dest_ci->bank = src_ci->bank;
-		dest_ci->forward = src_ci->forward;
-		dest_ci->forward_cruise_percent = src_ci->forward_cruise_percent;
+	// check which type of controls are being copied --wookieejedi
+	if (control_copy_method & LGC_FULL) {
+		if (src_ci == nullptr) {
+			dest_ci->pitch = 0.0f;
+			dest_ci->vertical = 0.0f;
+			dest_ci->heading = 0.0f;
+			dest_ci->sideways = 0.0f;
+			dest_ci->bank = 0.0f;
+			dest_ci->forward = 0.0f;
+			dest_ci->forward_cruise_percent = 0.0f;
+			dest_ci->fire_countermeasure_count = 0;
+			dest_ci->fire_secondary_count = 0;
+			dest_ci->fire_primary_count = 0;
+		} else {
+			dest_ci->pitch = src_ci->pitch;
+			dest_ci->vertical = src_ci->vertical;
+			dest_ci->heading = src_ci->heading;
+			dest_ci->sideways = src_ci->sideways;
+			dest_ci->bank = src_ci->bank;
+			dest_ci->forward = src_ci->forward;
+			dest_ci->forward_cruise_percent = src_ci->forward_cruise_percent;
+		}
+	} else if (control_copy_method & LGC_STEERING) {
+		if (src_ci == nullptr) {
+			dest_ci->pitch = 0.0f;
+			dest_ci->heading = 0.0f;
+			dest_ci->bank = 0.0f;
+		} else {
+			dest_ci->pitch = src_ci->pitch;
+			dest_ci->heading = src_ci->heading;
+			dest_ci->bank = src_ci->bank;
+		}
 	}
+
 }
 
 void read_player_controls(object *objp, float frametime)
@@ -971,15 +985,10 @@ void read_player_controls(object *objp, float frametime)
 					Player->ci.control_flags |= CIF_INSTANTANEOUS_ACCELERATION;
 			}
 
-			if ( lua_game_control & LGC_STEERING ) {
-				// make sure to copy the control before reseting it
-				Player->lua_ci = Player->ci;
-				copy_control_info(&(Player->ci), NULL);
-			} else if ( lua_game_control & LGC_FULL ) {
-				control_info temp;
+			if ((lua_game_control & LGC_STEERING) || (lua_game_control & LGC_FULL)) {
 				// first copy over the new values, then reset
-				temp = Player->ci;
-				copy_control_info(&(Player->ci), &(Player->lua_ci));
+				control_info temp = Player->ci;
+				copy_control_info(&(Player->ci), &(Player->lua_ci), lua_game_control);
 				Player->lua_ci = temp;
 			} else {
 				// just copy the ci should that be needed in scripting
@@ -1000,7 +1009,8 @@ void read_player_controls(object *objp, float frametime)
 				target_warpout_speed = ship_get_warpout_speed(objp);
 
 				// check if warp ability has been disabled
-				if (!(Warpout_forced) && !(ship_can_warp_full_check(&Ships[objp->instance]))) {
+				// but only in the first stage
+				if (!(Warpout_forced) && !(ship_can_warp_full_check(&Ships[objp->instance])) && (Player->control_mode == PCM_WARPOUT_STAGE1)) {
 					HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "Cannot warp out at this time.", 81));
 					snd_play(gamesnd_get_game_sound(GameSounds::PLAYER_WARP_FAIL));
 					gameseq_post_event( GS_EVENT_PLAYER_WARPOUT_STOP );
@@ -1304,7 +1314,15 @@ void player_level_init()
 	Viewer_external_info.preferred_distance = 0.0f;
 	Viewer_external_info.current_distance = 0.0f;
 
-	Viewer_mode = 0;
+	
+	if (Chase_view_default || The_mission.flags[Mission::Mission_Flags::Player_start_chase_view])
+	{
+		Viewer_mode = VM_CHASE;
+	}
+	else
+	{
+		Viewer_mode = 0;
+	}
  
 	Player_obj = NULL;
 	Player_ship = NULL;
@@ -1566,7 +1584,10 @@ int player_inspect_cargo(float frametime, char *outstr)
 
 	// see if player is within inspection range
 	ship_info* player_sip = &Ship_info[Player_ship->ship_info_index];
-	if ( Player_ai->current_target_distance < MAX(player_sip->scan_range_normal, (cargo_objp->radius + player_sip->scan_range_normal - CARGO_RADIUS_REAL_DELTA)) ) {
+	float scan_dist = MAX(player_sip->scan_range_normal, (cargo_objp->radius + player_sip->scan_range_normal - CARGO_RADIUS_REAL_DELTA));
+	scan_dist *= player_sip->scanning_range_multiplier;
+
+	if ( Player_ai->current_target_distance < scan_dist ) {
 
 		// check if player is facing cargo, do not proceed with inspection if not
 		vm_vec_normalized_dir(&vec_to_cargo, &cargo_objp->pos, &Player_obj->pos);
@@ -1591,7 +1612,10 @@ int player_inspect_cargo(float frametime, char *outstr)
 		else
 			strcpy(outstr,XSTR( "scanning", 89));
 
-		if ( Player->cargo_inspect_time > cargo_sip->scan_time ) {
+		float scan_time = i2fl(cargo_sip->scan_time);
+		scan_time *= player_sip->scanning_time_multiplier;
+
+		if ( Player->cargo_inspect_time > scan_time ) {
 			ship_do_cargo_revealed( cargo_sp );
 			snd_play( gamesnd_get_game_sound(GameSounds::CARGO_REVEAL), 0.0f );
 			Player->cargo_inspect_time = 0;
@@ -1673,9 +1697,9 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 	} else {
 		scan_dist = MAX(player_sip->scan_range_normal, (subsys_rad + player_sip->scan_range_normal - CARGO_RADIUS_REAL_DELTA));
 	}
+	scan_dist *= player_sip->scanning_range_multiplier;
 
 	if ( Player_ai->current_target_distance < scan_dist ) {
-
 		// check if player is facing cargo, do not proceed with inspection if not
 		vm_vec_normalized_dir(&vec_to_cargo, &subsys_pos, &Player_obj->pos);
 		dot = vm_vec_dot(&vec_to_cargo, &Player_obj->orient.vec.fvec);
@@ -1702,7 +1726,14 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 		else
 			strcpy(outstr,XSTR( "scanning", 89));
 
-		if ( Player->cargo_inspect_time > cargo_sip->scan_time ) {
+		float scan_time;
+		if (subsys->system_info->scan_time > 0)
+			scan_time = i2fl(subsys->system_info->scan_time);
+		else
+			scan_time = i2fl(cargo_sip->scan_time);
+		scan_time *= player_sip->scanning_time_multiplier;
+
+		if ( Player->cargo_inspect_time > scan_time ) {
 			ship_do_cap_subsys_cargo_revealed( cargo_sp, subsys, 0);
 			snd_play( gamesnd_get_game_sound(GameSounds::CARGO_REVEAL), 0.0f );
 			Player->cargo_inspect_time = 0;
@@ -1950,7 +1981,7 @@ void player_maybe_play_all_alone_msg()
 	}
 
 	// met all the requirements, now only play 50% of the time :)
-	if ( rand()&1 ) {
+	if (Random::flip_coin()) {
 		message_send_builtin_to_player(MESSAGE_ALL_ALONE, NULL, MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_ANYTIME, 0, 0, -1, -1);
 	}
 	Player->flags |= PLAYER_FLAGS_NO_CHECK_ALL_ALONE_MSG;

@@ -32,6 +32,8 @@ namespace Ship {
 		No_disappear,				// prevents submodel from disappearing when subsys destroyed
         Autorepair_if_disabled,     // Allows the subsystem to repair itself even when disabled - MageKing17
         No_autorepair_if_disabled,  // Inversion of the above; allow a specific subsystem not to repair itself after being disabled if the ship has the "repair disabled subsystems" flag - MageKing17
+		Forced_target,				// The turrets current target is being forced by SEXP, and won't let it go until it dies or is cleared by SEXP
+		Forced_subsys_target,		// The turrets current subsystem target is being forced by SEXP, implies Forced_target
 
 		NUM_VALUES
 	};
@@ -108,7 +110,7 @@ namespace Ship {
 		Scramble_messages,			// Goober5000 - all messages sent from this ship appear scrambled
         No_secondary_lockon,        // zookeeper - secondary lock-on disabled
         No_disabled_self_destruct,  // Goober5000 - ship will not self-destruct after 90 seconds if engines or weapons destroyed (c.f. ai_maybe_self_destruct)
-		Rotators_locked,			// The_E -- Rotating subobjects are locked in place
+		Subsystem_movement_locked,	// The_E -- Rotating subsystems are locked in place.
 		Draw_as_wireframe,			// The_E -- Ship will be rendered in wireframe mode
 		Render_without_diffuse,		// The_E -- Ship will be rendered without diffuse map (needed for the lab)
 		Render_without_glowmap,
@@ -117,11 +119,15 @@ namespace Ship {
 		Render_without_heightmap,
 		Render_without_ambientmap,
 		Render_without_miscmap,
+		Render_without_reflectmap,
 		Render_full_detail, 
 		Render_without_light,
 		Render_without_weapons,		// The_E -- Skip weapon model rendering
+		Render_with_alpha_mult,
 		Has_display_name,			// Goober5000
 		Attempting_to_afterburn,    // set and unset by afterburner_start and stop, used by afterburner_min_fuel_to_consume
+		Hide_mission_log,			// Goober5000 - mission log events generated for this ship will not be viewable
+		No_passive_lightning,		// Asteroth - disables ship passive lightning
 
 		NUM_VALUES
 
@@ -196,6 +202,7 @@ namespace Ship {
 		Instantaneous_acceleration,		// Goober5000
 		Has_display_name,				// Goober5000
 		Large_ship_deathroll,			// Asteroth - big ships dont normally deathroll, this makes them do it!
+		No_impact_debris,				// wookieejedi - Don't spawn the small debris on impact
 
 		NUM_VALUES
 	};
@@ -230,6 +237,7 @@ namespace Ship {
         AI_turrets_attack,
         AI_can_form_wing,
         AI_protected_on_cripple,
+		Targeted_by_huge_Ignored_by_small_only,
 
         NUM_VALUES
     };

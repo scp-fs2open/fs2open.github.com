@@ -55,6 +55,8 @@ class SourceOrigin {
 
 	vec3d m_offset;
 
+	vec3d m_velocity;
+
  public:
 	/**
 	 * @brief Initializes the origin with default values
@@ -123,6 +125,12 @@ class SourceOrigin {
 	 */
 	void moveToParticle(const WeakParticlePtr& weakParticlePtr);
 
+	/**
+	* @brief Sets the velocity of the source, will not move the source, but particles created may inherit this velocity
+	* @param vel The world velocity
+	*/
+	void setVelocity(vec3d* vel);
+
 	friend class ParticleSource;
 };
 
@@ -155,18 +163,18 @@ class SourceOrientation {
 	 *
 	 * @param vec The vector to create the matrix from
 	 */
-	void setFromVector(const vec3d& vec);
+	void setFromVector(const vec3d& vec, bool relative = false);
 
 	/**
 	 * @brief Sets the direction from an already normalized vector
 	 *
 	 * @param vec The normalized vector
 	 */
-	void setFromNormalizedVector(const vec3d& vec);
+	void setFromNormalizedVector(const vec3d& vec, bool relative = false);
 
 	void setNormal(const vec3d& normal);
 
-	void setFromMatrix(const matrix& mat);
+	void setFromMatrix(const matrix& mat, bool relative = false);
 
 	vec3d getDirectionVector(const SourceOrigin* origin) const;
 

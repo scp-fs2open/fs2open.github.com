@@ -123,7 +123,6 @@ public:
 	char			type;				// what type of object this is... robot, weapon, hostage, powerup, fireball
 	int				parent;			// This object's parent.
 	int				parent_sig;		// This object's parent's signature
-	char			parent_type;	// This object's parent's type
 	int				instance;		// which instance.  ie.. if type is Robot, then this indexes into the Robots array
 	flagset<Object::Object_Flags> flags;			// misc flags.  Call obj_set_flags to change this.
 	vec3d			pos;				// absolute x,y,z coordinate of center of object
@@ -181,7 +180,6 @@ public:
 	int	signature;
 	flagset<Object::Object_Flags>	flags;
 	int	parent_sig;
-	int	parent_type;
 
     checkobject();
 };
@@ -215,7 +213,7 @@ extern object *Player_obj;	// Which object is the player. Has to be valid.
 // given it's pointer.  This way, we can replace it with a macro
 // to check that the pointer is valid for debugging.
 // This code will break in 64 bit builds when we have more than 2^31 objects but that will probably never happen
-#define OBJ_INDEX(objp) (int)(objp-Objects)
+#define OBJ_INDEX(objp) static_cast<int>(objp-Objects)
 
 /*
  *		FUNCTIONS
@@ -231,7 +229,7 @@ void obj_shutdown();
 //object.  Returns 0 if failed, otherwise object index.
 //You can pass 0 for parent if you don't care about that.
 //You can pass null for orient and/or pos if you don't care.
-int obj_create(ubyte type,int parent_obj, int instance, matrix * orient, vec3d * pos, float radius, const flagset<Object::Object_Flags> &flags );
+int obj_create(ubyte type,int parent_obj, int instance, matrix * orient, vec3d * pos, float radius, const flagset<Object::Object_Flags> &flags, bool essential = true );
 
 void obj_render(object* obj);
 
@@ -344,6 +342,7 @@ bool object_get_gliding(object *objp);
 bool object_glide_forced(object* objp);
 int obj_get_by_signature(int sig);
 int object_get_model(const object *objp);
+int object_get_model_instance(const object *objp);
 
 void obj_render_queue_all();
 

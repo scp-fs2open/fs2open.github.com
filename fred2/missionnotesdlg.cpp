@@ -67,6 +67,7 @@ CMissionNotesDlg::CMissionNotesDlg(CWnd* pParent /*=NULL*/) : CDialog(CMissionNo
 	m_support_repairs_hull = FALSE;
 	m_beam_free_all_by_default = FALSE;
 	m_player_start_using_ai = FALSE;
+	m_player_start_chase_view = FALSE;
 	m_no_briefing = FALSE;
 	m_no_debriefing = FALSE;
 	m_autpilot_cinematics = FALSE;
@@ -120,6 +121,7 @@ void CMissionNotesDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_SUPPORT_REPAIRS_HULL, m_support_repairs_hull);
 	DDX_Check(pDX, IDC_BEAM_FREE_ALL_BY_DEFAULT, m_beam_free_all_by_default);
 	DDX_Check(pDX, IDC_PLAYER_START_AI, m_player_start_using_ai);
+	DDX_Check(pDX, IDC_PLAYER_START_CHASE, m_player_start_chase_view);
 	DDX_Check(pDX, IDC_NO_BRIEFING, m_no_briefing);
 	DDX_Check(pDX, IDC_NO_DEBRIEFING, m_no_debriefing);
 	DDX_Check(pDX, IDC_USE_AUTOPILOT_CINEMATICS, m_autpilot_cinematics);
@@ -273,6 +275,9 @@ void CMissionNotesDlg::OnOK()
 	// set player AI by default
     The_mission.flags.set(Mission::Mission_Flags::Player_start_ai, m_player_start_using_ai != 0);
 
+	// set player chase view
+    The_mission.flags.set(Mission::Mission_Flags::Player_start_chase_view, m_player_start_chase_view != 0);
+
 	// set briefing
     The_mission.flags.set(Mission::Mission_Flags::No_briefing, m_no_briefing != 0);
 
@@ -394,6 +399,7 @@ BOOL CMissionNotesDlg::OnInitDialog()
 	m_support_repairs_hull = (The_mission.flags[Mission::Mission_Flags::Support_repairs_hull]) ? 1 : 0;
 	m_beam_free_all_by_default = (The_mission.flags[Mission::Mission_Flags::Beam_free_all_by_default]) ? 1 : 0;
 	m_player_start_using_ai = (The_mission.flags[Mission::Mission_Flags::Player_start_ai]) ? 1 : 0;
+	m_player_start_chase_view = (The_mission.flags[Mission::Mission_Flags::Player_start_chase_view]) ? 1 : 0;
 	m_no_briefing = (The_mission.flags[Mission::Mission_Flags::No_briefing]) ? 1 : 0;
 	m_no_debriefing = (The_mission.flags[Mission::Mission_Flags::Toggle_debriefing]) ? 1 : 0;
 	m_autpilot_cinematics = (The_mission.flags[Mission::Mission_Flags::Use_ap_cinematics]) ? 1 : 0;

@@ -12,25 +12,30 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
-// text_view_dlg dialog
+// TextViewDlg dialog
 
-class text_view_dlg : public CDialog
+class TextViewDlg : public CDialog
 {
 // Construction
 public:
-	void set(int ship);
-	text_view_dlg(CWnd* pParent = NULL);   // standard constructor
+	TextViewDlg(CWnd* pParent = nullptr);   // standard constructor
+
+	void LoadShipsTblText(const ship_info *sip);
+	void SetText(const CString &text);
+	void GetText(CString &text);
+
+	void SetCaption(const CString &caption);
+	void SetEditable(bool editable);
 
 // Dialog Data
-	//{{AFX_DATA(text_view_dlg)
+	//{{AFX_DATA(TextViewDlg)
 	enum { IDD = IDD_TEXT_VIEW };
 	CString	m_edit;
 	//}}AFX_DATA
 
-
 // Overrides
 	// ClassWizard generated virtual function overrides
-	//{{AFX_VIRTUAL(text_view_dlg)
+	//{{AFX_VIRTUAL(TextViewDlg)
 	protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
 	//}}AFX_VIRTUAL
@@ -39,8 +44,14 @@ public:
 protected:
 
 	// Generated message map functions
-	//{{AFX_MSG(text_view_dlg)
+	//{{AFX_MSG(TextViewDlg)
+	afx_msg BOOL OnInitDialog();
+	afx_msg void OnClose();
 	afx_msg void OnSetfocusEdit1();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
+
+	CString m_original_text;
+	CString m_caption;
+	bool m_editable;
 };

@@ -267,6 +267,8 @@ extern pnode	*Ppfp;			//	Free pointer in path points.
 // Goober5000 (based on the "you can only remember 7 things in short-term memory" assumption)
 #define MAX_IGNORE_NEW_OBJECTS	7
 
+#define AI_DYNAMIC_PATH_RECHECK_DELAY 1*1000
+
 typedef struct ai_info {
 	flagset<AI::AI_Flags> ai_flags;				//	Special flags for AI behavior.
 	int		shipnum;					// Ship using this slot, -1 means none.
@@ -330,7 +332,7 @@ typedef struct ai_info {
 	fix		path_next_check_time;	//	Last time checked to see if would collide with model.
 	int		path_goal_dist;		// minimum distance to first path point to consider path reached
 	int		path_subsystem_next_check;	// timestamp to next check if subsystem is still visible
-	vec3d	path_depart_orient;		//Rotational orientation associated with the path
+	vec3d	path_depart_rvec;		//Rotational orientation associated with the path
 
 	int		submode;
 	int		previous_submode;		// previous submode, get it?
@@ -342,6 +344,9 @@ typedef struct ai_info {
 	int		submode_parm0;			//	parameter specific to current submode
 	int		submode_parm1;			//	SUSHI: Another optional parameter
 	fix		next_predict_pos_time;			//	Next time to predict position.
+
+	int		next_dynamic_path_check_time;	//ETP: Time of next path check in ai_new_maybe_reposition_attack_subsys
+	vec3d	last_dynamic_path_goal;			//ETP: Remebers last target location in ai_new_maybe_reposition_attack_subsys
 
 	//SUSHI: like last_predicted_enemy_pos, but for aiming (which currently ignores predicted position)
 	//Unlike the predicted position stuff, also takes into account velocity
@@ -405,7 +410,6 @@ typedef struct ai_info {
 
 
 	union {
-	float		lead_scale;							//	Amount to lead current opponent by.
 	float		stay_near_distance;				//	Distance to stay within for AIM_STAY_NEAR mode.
 	};
 
@@ -491,6 +495,9 @@ typedef struct ai_info {
 	int		ai_override_rot_timestamp;		// mark for when to end the current rotational maneuver override
 
 	int form_obj_slotnum;               // for flying in formation object mode, the position in the formation
+
+	int multilock_check_timestamp;		// when to check for multilock next
+	SCP_vector<std::pair<int, ship_subsys*>> ai_missile_locks_firing;  // a list of missile locks (locked objnum, locked subsys) the ai is currently firing
 } ai_info;
 
 // Goober5000
@@ -561,7 +568,7 @@ const char *ai_get_goal_target_name(const char *name, int *index);
 void ai_clear_goal_target_names();
 
 extern void init_ai_system(void);
-extern void ai_attack_object(object *attacker, object *attacked, ship_subsys *ssp, int ship_info_index = -1);
+extern void ai_attack_object(object *attacker, object *attacked, int ship_info_index = -1);
 extern void ai_evade_object(object *evader, object *evaded);
 extern void ai_ignore_object(object *ignorer, object *ignored, int ignore_new);
 extern void ai_ignore_wing(object *ignorer, int wingnum);
@@ -605,7 +612,7 @@ extern int ai_find_goal_index( ai_goal* aigp, int mode, int submode = -1, int pr
 extern void ai_do_safety(object *objp);
 
 // used to get path info for fighter bay emerging and departing
-int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, int path_mask, vec3d *pos, vec3d *fvec);
+int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, int path_mask);
 int ai_acquire_depart_path(object *pl_objp, int parent_objnum, int path_mask);
 
 // used by AiBig.cpp
@@ -657,7 +664,7 @@ void ai_start_fly_to_ship(object *objp, int shipnum);
 void ai_fly_to_ship();
 
 //Moved declaration here for player ship -WMC
-void process_subobjects(int objnum);
+void ai_process_subobjects(int objnum);
 
 //SUSHI: Setting ai_info stuff from both ai class and ai profile
 void init_aip_from_class_and_profile(ai_info *aip, ai_class *aicp, ai_profile_t *profile);

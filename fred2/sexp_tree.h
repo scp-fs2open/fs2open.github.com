@@ -27,13 +27,15 @@
 #define SEXPT_UNKNOWN	0x0002
 
 #define SEXPT_VALID		0x1000
-#define SEXPT_TYPE_MASK	0x00ff
+#define SEXPT_TYPE_MASK	0x03ff
 #define SEXPT_TYPE(X)	(SEXPT_TYPE_MASK & X)
 
 #define SEXPT_OPERATOR	0x0010
 #define SEXPT_NUMBER	0x0020
 #define SEXPT_STRING	0x0040
 #define SEXPT_VARIABLE	0x0080
+#define SEXPT_CONTAINER	0x0100
+#define SEXPT_MODIFIER	0x0200
 
 // tree_node flag
 #define NOT_EDITABLE	0x00
@@ -53,9 +55,9 @@
 #define BITMAP_BLACK_DOT		8
 #define BITMAP_BLUE_DOT			BITMAP_ROOT
 #define BITMAP_RED_DOT			BITMAP_ROOT_DIRECTIVE
-#define BITMAP_NUMBERED_DATA		9
-//Therefore NEXT DEFINE should be 9+12 or 21
-
+#define BITMAP_NUMBERED_DATA	9
+// There are 20 number bitmaps, 9 to 28, counting by 5s from 0 to 95
+#define BITMAP_COMMENT			29
 
 
 // tree behavior modes (or tree subtype)
@@ -70,8 +72,6 @@
 // various tree operations notification codes (to be handled by derived class)
 #define ROOT_DELETED	1
 #define ROOT_RENAMED	2
-
-#define SEXP_ITEM_F_DUP	(1<<0)
 
 /*
  * Notes: An sexp_tree_item is basically a node in a tree.  The sexp_tree is an array of
@@ -98,18 +98,15 @@ public:
 	int type;
 	int op;
 	SCP_string text;
-	int flags;
 	sexp_list_item *next;
 
-	sexp_list_item() : flags(0), next(NULL) {}
+	sexp_list_item() : next(nullptr) {}
 
 	void set_op(int op_num);
 	void set_data(const char *str, int t = (SEXPT_STRING | SEXPT_VALID));
-	void set_data_dup(const char *str, int t = (SEXPT_STRING | SEXPT_VALID));
 
 	void add_op(int op_num);
 	void add_data(const char *str, int t = (SEXPT_STRING | SEXPT_VALID));
-	void add_data_dup(const char *str, int t = (SEXPT_STRING | SEXPT_VALID));
 	void add_list(sexp_list_item *list);
 
 	void shallow_copy(const sexp_list_item *src);
@@ -154,6 +151,8 @@ public:
 	void merge_operator(int node);
 	int end_label_edit(TVITEMA &item);
 	int edit_label(HTREEITEM h);
+	virtual void edit_comment(HTREEITEM h);
+	virtual void edit_bg_color(HTREEITEM h);
 	int identify_arg_type(int node);
 	int count_args(int node);
 	void right_clicked(int mode = 0);
@@ -168,7 +167,6 @@ public:
 	void reset_handles();
 	int save_tree(int node = -1);
 	void load_tree(int index, const char *deflt = "true");
-	void add_one_arg_operator(const char *op, const char *data, int type);
 	void add_operator(const char *op, HTREEITEM h = TVI_ROOT);
 	int add_data(const char *data, int type);
 	int add_variable_data(const char *data, int type);
@@ -183,6 +181,7 @@ public:
 	int get_modify_variable_type(int parent);
 	int get_variable_count(const char *var_name);
 	int get_loadout_variable_count(int var_index);
+	int get_container_usage_count(const char *container_name) const;
 
 	// Goober5000
 	int find_argument_number(int parent_node, int child_node);
@@ -229,7 +228,6 @@ public:
 	sexp_list_item *get_listing_opf_medal_name();
 	sexp_list_item *get_listing_opf_weapon_name();
 	sexp_list_item *get_listing_opf_ship_class_name();
-	sexp_list_item *get_listing_opf_hud_gauge_name();
 	sexp_list_item *get_listing_opf_huge_weapon();
 	sexp_list_item *get_listing_opf_ship_not_player();
 	sexp_list_item *get_listing_opf_jump_nodes();
@@ -268,7 +266,8 @@ public:
 	sexp_list_item *get_listing_opf_explosion_option();
 	sexp_list_item *get_listing_opf_adjust_audio_volume();
 	sexp_list_item *get_listing_opf_weapon_banks();
-	sexp_list_item *get_listing_opf_hud_gauge();
+	sexp_list_item *get_listing_opf_builtin_hud_gauge();
+	sexp_list_item *get_listing_opf_custom_hud_gauge();
 	sexp_list_item *get_listing_opf_ship_effect();
 	sexp_list_item *get_listing_opf_animation_type();
 	sexp_list_item *get_listing_opf_mission_moods();
@@ -278,6 +277,9 @@ public:
 	sexp_list_item *get_listing_opf_game_snds();
 	sexp_list_item *get_listing_opf_fireball();
 	sexp_list_item *get_listing_opf_species();
+	sexp_list_item *get_listing_opf_language();
+	sexp_list_item *get_listing_opf_functional_when_eval_type();
+	sexp_list_item *get_listing_opf_animation_name(int parent_node);
 
 	int m_mode;
 	int item_index;
@@ -304,8 +306,16 @@ protected:
 	afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
 	afx_msg void OnDestroy();
 	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
-	afx_msg void OnKeydown(NMHDR* pNMHDR, LRESULT* pResult);
+	afx_msg void OnKeyDown(NMHDR* pNMHDR, LRESULT* pResult);
 	//}}AFX_MSG
+
+	virtual void NodeCut();
+	virtual void NodeDelete();
+	virtual void NodeCopy();
+	virtual void NodePaste();
+	virtual void NodeAddPaste();
+
+	void update_item(HTREEITEM handle);
 
 	int load_branch(int index, int parent);
 	int save_branch(int cur, int at_root = 0);

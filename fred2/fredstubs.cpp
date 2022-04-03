@@ -27,9 +27,8 @@ char Game_current_mission_filename[MAX_FILENAME_LEN];
 CFILE *Working_demo;
 struct beam_info;
 bool Env_cubemap_drawn = false;
-int Multi_ping_timestamp = -1;
+UI_TIMESTAMP Multi_ping_timestamp;
 int Sun_drew = 0;
-int Networking_disabled = 0;
 
 bool running_unittests = false;
 
@@ -183,8 +182,9 @@ void game_leave_state(int, int){}
 int Test_begin;
 int Debug_octant;
 int Framerate_delay;
-void game_start_time(){}
-void game_stop_time(){}
+void game_start_time(bool){}
+bool game_time_is_stopped(){return false;}
+void game_stop_time(bool){}
 int game_get_default_skill_level(){return 0;}
 int find_freespace_cd(char*){return 0;}
 void game_do_state_common(int, int){}
@@ -217,6 +217,7 @@ void game_unpause() {}
 //Time stuff
 bool Time_compression_locked;
 float flRealframetime;
+int Last_frame_timestamp = 0;
 void lock_time_compression(bool is_locked){}
 void change_time_compression(float multiplier){}
 void set_time_compression(float multiplier, float change_time){}

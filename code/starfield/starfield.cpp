@@ -27,10 +27,12 @@
 #include "options/Option.h"
 #include "parse/parselo.h"
 #include "render/3d.h"
+#include "render/batching.h"
 #include "starfield/nebula.h"
 #include "starfield/starfield.h"
 #include "starfield/supernova.h"
 #include "tracing/tracing.h"
+#include "utils/Random.h"
 
 #define MAX_DEBRIS_VCLIPS			4
 #define DEBRIS_ROT_MIN				10000
@@ -41,19 +43,16 @@
 
 typedef struct {
 	vec3d pos;
-	vec3d last_pos;
-	int active;
 	int vclip;
 	float size;
-} old_debris;
+} motion_debris;
 
-const int MAX_DEBRIS = 200;
+const int MAX_DEBRIS = 300;
 const int MAX_STARS = 2000;
-const float MAX_DIST = 50.0f;
-const float MAX_DIST_RANGE = 60.0f;
+const float MAX_DIST_RANGE = 80.0f;
 const float MIN_DIST_RANGE = 14.0f;
-const float BASE_SIZE = 0.12f;
-float BASE_SIZE_NEB = 0.5f;
+const float BASE_SIZE = 0.04f;
+const float BASE_SIZE_NEB = 0.15f;
 
 static int Subspace_model_inner = -1;
 static int Subspace_model_outer = -1;
@@ -147,7 +146,7 @@ typedef struct vDist {
 
 star Stars[MAX_STARS];
 
-old_debris odebris[MAX_DEBRIS];
+motion_debris Motion_debris[MAX_DEBRIS];
 
 
 typedef struct debris_vclip {
@@ -869,26 +868,26 @@ void stars_post_level_init()
 	for (i=0; i<MAX_STARS; i++) {
 		dist = dist_max;
 		while (dist >= dist_max) {
-			v.xyz.x = (float) ((myrand() & RND_MAX_MASK) - HALF_RND_MAX);
-			v.xyz.y = (float) ((myrand() & RND_MAX_MASK) - HALF_RND_MAX);
-			v.xyz.z = (float) ((myrand() & RND_MAX_MASK) - HALF_RND_MAX);
+			v.xyz.x = (float) ((Random::next() & RND_MAX_MASK) - HALF_RND_MAX);
+			v.xyz.y = (float) ((Random::next() & RND_MAX_MASK) - HALF_RND_MAX);
+			v.xyz.z = (float) ((Random::next() & RND_MAX_MASK) - HALF_RND_MAX);
 
 			dist = v.xyz.x * v.xyz.x + v.xyz.y * v.xyz.y + v.xyz.z * v.xyz.z;
 		}
 		vm_vec_copy_normalize(&Stars[i].pos, &v);
 
 		{
-			red= (ubyte)(myrand() % 63 +192);		//192-255
-			green= (ubyte)(myrand() % 63 +192);		//192-255
-			blue= (ubyte)(myrand() % 63 +192);		//192-255
-			alpha = (ubyte)(myrand () % 192 + 24);	//24-216
+			red = (ubyte)Random::next(192, 255);
+			green = (ubyte)Random::next(192, 255);
+			blue = (ubyte)Random::next(192, 255);
+			alpha = (ubyte)Random::next(24, 216);
 
 			gr_init_alphacolor(&Stars[i].col, red, green, blue, alpha, AC_TYPE_BLEND);
 		}
 
 	}
 
-	memset( &odebris, 0, sizeof(old_debris) * MAX_DEBRIS );
+	memset( &Motion_debris, 0, sizeof(motion_debris) * MAX_DEBRIS );
 
 	
 	for (i=0; i<8; i++ ) {
@@ -918,6 +917,32 @@ void stars_post_level_init()
 	// FRED doesn't do normal page_in stuff so we need to load up the bitmaps here instead
 	if (Fred_running) {
 		stars_load_all_bitmaps();
+
+		// see whether we are missing any suns or bitmaps
+		for (i = 0; i < (int)Backgrounds.size(); ++i) {
+			SCP_string failed_suns;
+			for (auto &sun : Backgrounds[i].suns) {
+				if (stars_find_sun(sun.filename) < 0) {
+					failed_suns += sun.filename;
+					failed_suns += "\n";
+				}
+			}
+
+			SCP_string failed_bitmaps;
+			for (auto &bitmap : Backgrounds[i].bitmaps) {
+				if (stars_find_bitmap(bitmap.filename) < 0) {
+					failed_bitmaps += bitmap.filename;
+					failed_bitmaps += "\n";
+				}
+			}
+
+			if (!failed_suns.empty()) {
+				Warning(LOCATION, "In Background %d, failed to load the following suns:\n%s", (i + 1), failed_suns.c_str());
+			}
+			if (!failed_bitmaps.empty()) {
+				Warning(LOCATION, "In Background %d, failed to load the following bitmaps:\n%s", (i + 1), failed_bitmaps.c_str());
+			}
+		}
 	}
 
 	starfield_generate_bitmap_buffers();
@@ -1085,14 +1110,13 @@ DCF(stars,"Set parameters for starfield")
 }
 //XSTR:ON
 
-int reload_old_debris = 1;		// If set to one, then reload all the last_pos of the debris
-
+bool refresh_motion_debris = true; // If set to true, then regenerate the positions of motion debris
 // Call this if camera "cuts" or moves long distances
 // so blur effect doesn't draw lines all over the screen.
 void stars_camera_cut()
 {
 	last_stars_filled = 0;
-	reload_old_debris = 1;
+	refresh_motion_debris = true;
 }
 
 //#define TIME_STAR_CODE		// enable to time star code
@@ -1701,15 +1725,10 @@ void stars_draw_stars()
 	path->restoreState();
 }
 
-void stars_draw_debris()
+void stars_draw_motion_debris()
 {
 	GR_DEBUG_SCOPE("Draw motion debris");
 	TRACE_SCOPE(tracing::DrawMotionDebris);
-
-	int i;
-	float vdist;
-	vec3d tmp;
-	vertex p;
 
 	if (Motion_debris_override)
 		return;
@@ -1718,42 +1737,31 @@ void stars_draw_debris()
 		return;
 	}
 
-	gr_set_color( 0, 0, 0 );
+	for (motion_debris &mdebris : Motion_debris) {
+		float vdist = vm_vec_dist(&mdebris.pos, &Eye_position);
 
-	old_debris * d = odebris; 
+		if ((vdist < MIN_DIST_RANGE) || (vdist > MAX_DIST_RANGE)) {
+			// if we just had a camera "cut" and should refresh the debris then generate in the sphere, else just on its surface
+			vm_vec_random_in_sphere(&mdebris.pos, &Eye_position, MAX_DIST_RANGE, !refresh_motion_debris);
+			vdist = vm_vec_dist(&mdebris.pos, &Eye_position);
 
-	for (i=0; i<MAX_DEBRIS; i++, d++ ) {
-		if (!d->active)	{
-			d->pos.xyz.x = f2fl(myrand() - RAND_MAX_2);
-			d->pos.xyz.y = f2fl(myrand() - RAND_MAX_2);
-			d->pos.xyz.z = f2fl(myrand() - RAND_MAX_2);
-
-			vm_vec_normalize(&d->pos);
-
-			vm_vec_scale(&d->pos, MAX_DIST);
-			vm_vec_add2(&d->pos, &Eye_position );
-			d->active = 1;
-			d->vclip = i % MAX_DEBRIS_VCLIPS;	//rand()
+			mdebris.vclip = Random::next(MAX_DEBRIS_VCLIPS);	//rand()
 
 			// if we're in full neb mode
+			const float size_multiplier = i2fl(Random::next(4));
 			if((The_mission.flags[Mission::Mission_Flags::Fullneb]) && (Neb2_render_mode != NEB2_RENDER_NONE)) {
-				d->size = i2fl(myrand() % 4)*BASE_SIZE_NEB;
+				mdebris.size = size_multiplier * BASE_SIZE_NEB;
 			} else {
-				d->size = i2fl(myrand() % 4)*BASE_SIZE;
+				mdebris.size = size_multiplier * BASE_SIZE;
 			}
-
-			vm_vec_sub( &d->last_pos, &d->pos, &Eye_position );
 		}
 
-		if ( reload_old_debris ) {
-			vm_vec_sub( &d->last_pos, &d->pos, &Eye_position );
-		}
-			
-		g3_rotate_vertex(&p, &d->pos);
+		vertex pnt;
+		g3_rotate_vertex(&pnt, &mdebris.pos);
 
-		if (p.codes == 0) {
-			int frame = Missiontime / (DEBRIS_ROT_MIN + (i % DEBRIS_ROT_RANGE) * DEBRIS_ROT_RANGE_SCALER);
-			frame %= Debris_vclips[d->vclip].nframes;
+		if (pnt.codes == 0) {
+			int frame = Missiontime / (DEBRIS_ROT_MIN + (1 % DEBRIS_ROT_RANGE) * DEBRIS_ROT_RANGE_SCALER);
+			frame %= Debris_vclips[mdebris.vclip].nframes;
 
 			float alpha;
 
@@ -1762,23 +1770,18 @@ void stars_draw_debris()
 			} else {
 				alpha = 1.0f;
 			}
-			
-			vm_vec_add( &tmp, &d->last_pos, &Eye_position );
-			//g3_draw_laser( &d->pos,d->size,&tmp,d->size, TMAP_FLAG_TEXTURED|TMAP_FLAG_XPARENT, 25.0f );
-			material mat_params;
-			material_set_unlit(&mat_params, Debris_vclips[d->vclip].bm + frame, alpha, true, true);
-			g3_render_laser_2d(&mat_params, &d->pos, d->size, &tmp, d->size, 25.0f);
+
+			// scale alpha from 0 at max range to full at 60% range
+			alpha *= (vdist - MAX_DIST_RANGE) / -(MAX_DIST_RANGE * 0.6f);
+
+			g3_transfer_vertex(&pnt, &mdebris.pos);
+
+			batching_add_bitmap(Debris_vclips[mdebris.vclip].bm + frame, &pnt, 0, mdebris.size, alpha);
 		}
-
-		vm_vec_sub( &d->last_pos, &d->pos, &Eye_position );
-
-		vdist = vm_vec_mag_quick(&d->last_pos);
-
-		if ( (vdist < MIN_DIST_RANGE) || (vdist > MAX_DIST_RANGE) )
-			d->active = 0;
 	}
 
-	reload_old_debris = 0;
+	if (refresh_motion_debris)
+		refresh_motion_debris = false;
 }
 
 void stars_draw(int show_stars, int show_suns, int  /*show_nebulas*/, int show_subspace, int env, bool in_mission)
@@ -1827,7 +1830,7 @@ void stars_draw(int show_stars, int show_suns, int  /*show_nebulas*/, int show_s
 #endif
 
 	if ( !Rendering_to_env && (Game_detail_flags & DETAIL_FLAG_MOTION) && (!Fred_running) && (supernova_active() < 3) && in_mission)	{
-		stars_draw_debris();
+		stars_draw_motion_debris();
 	}
 
 	//if we're not drawing them, quit here
@@ -2175,6 +2178,22 @@ void stars_draw_background()
 // call this to set a specific model as the background model
 void stars_set_background_model(const char *model_name, const char *texture_name, int flags)
 {
+	int new_model = -1;
+	int new_bitmap = -1;
+
+	if (model_name != nullptr && *model_name != '\0') {
+		new_model = model_load(model_name, 0, nullptr, -1);
+
+		if (texture_name != nullptr && *texture_name != '\0') {
+			new_bitmap = bm_load(texture_name);
+		}
+	}
+
+	// see if we are actually changing anything
+	if (Nmodel_num == new_model && Nmodel_bitmap == new_bitmap && Nmodel_flags == flags) {
+		return;
+	}
+
 	if (Nmodel_bitmap >= 0) {
 		bm_unload(Nmodel_bitmap);
 		Nmodel_bitmap = -1;
@@ -2191,18 +2210,14 @@ void stars_set_background_model(const char *model_name, const char *texture_name
 	}
 
 	Nmodel_flags = flags;
-
-	if ( (model_name == NULL) || (*model_name == '\0') )
-		return;
-
-	Nmodel_num = model_load(model_name, 0, NULL, -1);
-	Nmodel_bitmap = bm_load(texture_name);
+	Nmodel_num = new_model;
+	Nmodel_bitmap = new_bitmap;
 
 	if (Nmodel_num >= 0) {
 		model_page_in_textures(Nmodel_num);
 
-		if (model_get(Nmodel_num)->flags & PM_FLAG_HAS_INTRINSIC_ROTATE) {
-			Nmodel_instance_num = model_create_instance(false, Nmodel_num);
+		if (model_get(Nmodel_num)->flags & PM_FLAG_HAS_INTRINSIC_MOTION) {
+			Nmodel_instance_num = model_create_instance(-1, Nmodel_num);
 		}
 	}
 
@@ -2279,7 +2294,9 @@ int stars_add_sun_entry(starfield_list_entry *sun_ptr)
 	idx = stars_find_sun(sun_ptr->filename);
 
 	if (idx == -1) {
-		Warning(LOCATION, "Trying to add a sun '%s' that does not exist in stars.tbl!", sun_ptr->filename);
+		if (!Fred_running) {
+			Warning(LOCATION, "Trying to add a sun '%s' that does not exist in stars.tbl!", sun_ptr->filename);
+		}
 		return -1;
 	}
 
@@ -2373,7 +2390,9 @@ int stars_add_bitmap_entry(starfield_list_entry *sle)
 	idx = stars_find_bitmap(sle->filename);
 
 	if (idx == -1) {
-		Warning(LOCATION, "Trying to add a bitmap '%s' that does not exist in stars.tbl!", sle->filename);
+		if (!Fred_running) {
+			Warning(LOCATION, "Trying to add a bitmap '%s' that does not exist in stars.tbl!", sle->filename);
+		}
 		return -1;
 	}
 
@@ -2510,7 +2529,7 @@ const char *stars_get_name_from_instance(int index, bool is_a_sun)
 }
 
 // WMC/Goober5000
-void stars_set_nebula(bool activate)
+void stars_set_nebula(bool activate, float range)
 {
     The_mission.flags.set(Mission::Mission_Flags::Fullneb, activate);
 	
@@ -2518,20 +2537,27 @@ void stars_set_nebula(bool activate)
 	{
 		Toggle_text_alpha = TOGGLE_TEXT_NEBULA_ALPHA;
 		HUD_contrast = 1;
-		if(Fred_running) {
+
+		Neb2_render_mode = NEB2_RENDER_HTL;
+		Neb2_awacs = range;
+		if (Neb2_awacs < 0.1f)
+			Neb2_awacs = 3000.0f;	// this is also the default in the background editor
+
+		// this function is not currently called in FRED, but this would be needed for FRED support
+		if (Fred_running)
+		{
 			Neb2_render_mode = NEB2_RENDER_POF;
 			stars_set_background_model(BACKGROUND_MODEL_FILENAME, Neb2_texture_name);
 			stars_set_background_orientation();
-		} else {
-			Neb2_render_mode = NEB2_RENDER_HTL;
 		}
-		neb2_eye_changed();
 	}
 	else
 	{
 		Toggle_text_alpha = TOGGLE_TEXT_NORMAL_ALPHA;
-		Neb2_render_mode = NEB2_RENDER_NONE;
 		HUD_contrast = 0;
+
+		Neb2_render_mode = NEB2_RENDER_NONE;
+		Neb2_awacs = -1.0f;
 	}
 
 	// (DahBlount)
@@ -2676,7 +2702,7 @@ int stars_get_first_valid_background()
 				if (stars_find_bitmap(background->bitmaps[j].filename) < 0)
 				{
 					mprintf(("Failed to load bitmap %s for background %d, falling back to background %d\n",
-						background->suns[j].filename, i + 1, i + 2));
+						background->bitmaps[j].filename, i + 1, i + 2));
 					valid = false;
 					break;
 				}
@@ -2758,6 +2784,13 @@ void stars_pack_backgrounds()
 	Backgrounds.erase(
 		std::remove_if(Backgrounds.begin(), Backgrounds.end(), stars_background_empty),
 		Backgrounds.end());
+
+	// in FRED, make sure we always have at least one background
+	if (Fred_running)
+	{
+		if (Backgrounds.empty())
+			Backgrounds.emplace_back();
+	}
 }
 
 static void render_environment(int i, vec3d *eye_pos, matrix *new_orient, float new_zoom)

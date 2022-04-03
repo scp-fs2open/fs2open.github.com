@@ -22,6 +22,7 @@
 #include "mission/missionmessage.h"
 #include "mission/missiontraining.h"
 #include "missionui/redalert.h"
+#include "nebula/neb.h"
 #include "parse/parselo.h"
 #include "parse/sexp.h"
 #include "parse/sexp/DynamicSEXP.h"
@@ -555,7 +556,7 @@ ADE_INDEXER(l_Mission_Teams, "number/string IndexOrTeamName", "Teams in the miss
 		idx--;	//Lua->FS2
 	}
 
-	if(idx < 0 || idx >= Num_iffs)
+	if(idx < 0 || idx >= (int)Iff_info.size())
 		return ade_set_error(L, "o", l_Team.Set(-1));
 
 	return ade_set_args(L, "o", l_Team.Set(idx));
@@ -563,7 +564,7 @@ ADE_INDEXER(l_Mission_Teams, "number/string IndexOrTeamName", "Teams in the miss
 
 ADE_FUNC(__len, l_Mission_Teams, NULL, "Number of teams in mission", "number", "Number of teams in mission")
 {
-	return ade_set_args(L, "i", Num_iffs);
+	return ade_set_args(L, "i", Iff_info.size());
 }
 
 //****SUBLIBRARY: Mission/Messages
@@ -705,26 +706,27 @@ ADE_INDEXER(l_Mission_Fireballs, "number Index", "Gets handle to a fireball obje
 	if (!ade_get_args(L, "*i", &idx))
 		return ade_set_error(L, "o", l_Fireball.Set(object_h()));
 
-	//Remember, Lua indices start at 0.
+	//Remember, Lua indices start at 1.
 	int count = 1;
 
-	for (int i = 0; i < MAX_FIREBALLS; i++)
-	{
-		if (Fireballs[i].fireball_info_index < 0 || Fireballs[i].objnum < 0 || Objects[Fireballs[i].objnum].type != OBJ_FIREBALL)
+	for (auto& current_fireball : Fireballs) {
+		if (current_fireball.fireball_info_index < 0 || current_fireball.objnum < 0 || Objects[current_fireball.objnum].type != OBJ_FIREBALL)
 			continue;
 
 		if (count == idx) {
-			return ade_set_args(L, "o", l_Fireball.Set(object_h(&Objects[Fireballs[i].objnum])));
+			return ade_set_args(L, "o", l_Fireball.Set(object_h(&Objects[current_fireball.objnum])));
 		}
 
 		count++;
+
 	}
 
 	return ade_set_error(L, "o", l_Fireball.Set(object_h()));
 }
 ADE_FUNC(__len, l_Mission_Fireballs, NULL, "Number of fireball objects in mission. Note that this is only accurate for one frame.", "number", "Number of fireball objects in mission")
 {
-	return ade_set_args(L, "i", Num_fireballs);
+	int count = fireball_get_count();
+	return ade_set_args(L, "i", count);
 }
 
 ADE_FUNC(addMessage, l_Mission, "string name, string text, [persona persona]", "Adds a message", "message", "The new message or invalid handle on error")
@@ -882,8 +884,8 @@ ADE_FUNC(sendPlainMessage,
 ADE_FUNC(createShip,
 	l_Mission,
 	"[string Name, shipclass Class /* First ship class by default */, orientation Orientation=null, vector Position /* "
-	"null vector by default */, team Team]",
-	"Creates a ship and returns a handle to it using the specified name, class, world orientation, and world position",
+	"null vector by default */, team Team, boolean ShowInMissionLog /* true by default */]",
+	"Creates a ship and returns a handle to it using the specified name, class, world orientation, and world position; and logs it in the mission log unless specified otherwise",
 	"ship",
 	"Ship handle, or invalid ship handle if ship couldn't be created")
 {
@@ -892,7 +894,8 @@ ADE_FUNC(createShip,
 	matrix_h* orient = nullptr;
 	vec3d pos        = vmd_zero_vector;
 	int team         = -1;
-	ade_get_args(L, "|soooo", &name, l_Shipclass.Get(&sclass), l_Matrix.GetPtr(&orient), l_Vector.Get(&pos), l_Team.Get(&team));
+	bool show_in_log = true;
+	ade_get_args(L, "|soooob", &name, l_Shipclass.Get(&sclass), l_Matrix.GetPtr(&orient), l_Vector.Get(&pos), l_Team.Get(&team), &show_in_log);
 
 	matrix *real_orient = &vmd_identity_matrix;
 	if(orient != NULL)
@@ -907,23 +910,36 @@ ADE_FUNC(createShip,
 	int obj_idx = ship_create(real_orient, &pos, sclass, name);
 
 	if(obj_idx >= 0) {
+		auto shipp = &Ships[Objects[obj_idx].instance];
+
 		if (team >= 0) {
-			Ships[Objects[obj_idx].instance].team = team;
+			shipp->team = team;
 		}
 
-		model_page_in_textures(Ship_info[sclass].model_num, sclass);
+		ship_info* sip = &Ship_info[sclass];
+
+		model_page_in_textures(sip->model_num, sclass);
 
 		ship_set_warp_effects(&Objects[obj_idx]);
 
-		if (Ship_info[sclass].flags[Ship::Info_Flags::Intrinsic_no_shields]) {
+		// if this name has a hash, create a default display name
+		if (get_pointer_to_first_hash_symbol(shipp->ship_name)) {
+			shipp->display_name = shipp->ship_name;
+			end_string_at_first_hash_symbol(shipp->display_name);
+			shipp->flags.set(Ship::Ship_Flags::Has_display_name);
+		}
+
+		if (sip->flags[Ship::Info_Flags::Intrinsic_no_shields]) {
 			Objects[obj_idx].flags.set(Object::Object_Flags::No_shields);
 		}
 
-		mission_log_add_entry(LOG_SHIP_ARRIVED, Ships[Objects[obj_idx].instance].ship_name, nullptr);
+		mission_log_add_entry(LOG_SHIP_ARRIVED, shipp->ship_name, nullptr, -1, show_in_log ? 0 : MLF_HIDDEN);
 
-		Script_system.SetHookObjects(2, "Ship", &Objects[obj_idx], "Parent", NULL);
-		Script_system.RunCondition(CHA_ONSHIPARRIVE, &Objects[obj_idx]);
-		Script_system.RemHookVars({"Ship", "Parent"});
+		if (Script_system.IsActiveAction(CHA_ONSHIPARRIVE)) {
+			Script_system.SetHookObjects(2, "Ship", &Objects[obj_idx], "Parent", NULL);
+			Script_system.RunCondition(CHA_ONSHIPARRIVE, &Objects[obj_idx]);
+			Script_system.RemHookVars({"Ship", "Parent"});
+		}
 
 		return ade_set_args(L, "o", l_Ship.Set(object_h(&Objects[obj_idx])));
 	} else
@@ -1192,7 +1208,6 @@ ADE_FUNC(loadMission, l_Mission, "string missionName", "Loads a mission", "boole
 	gr_post_process_set_defaults();
 
 	//NOW do the loading stuff
-	game_stop_time();
 	get_mission_info(s, &The_mission, false);
 	game_level_init();
 
@@ -1267,6 +1282,26 @@ ADE_FUNC(isInCampaign, l_Mission, NULL, "Get whether or not the current mission 
 	}
 
 	return ade_set_args(L, "b", b);
+}
+
+ADE_FUNC(isNebula, l_Mission, nullptr, "Get whether or not the current mission being played is set in a nebula", "boolean", "true if in nebula, false if not")
+{
+	return ade_set_args(L, "b", The_mission.flags[Mission::Mission_Flags::Fullneb]);
+}
+
+ADE_VIRTVAR(NebulaSensorRange, l_Mission, "number", "Gets or sets the Neb2_awacs variable.  This is multiplied by a species-specific factor to get the \"scan range\".  Within the scan range, a ship is at least partially targetable (fuzzy blip); within half the scan range, a ship is fully targetable.  Beyond the scan range, a ship is not targetable.", "number", "the Neb2_awacs variable")
+{
+	float range = -1.0f;
+
+	if (ADE_SETTING_VAR && ade_get_args(L, "*f", &range))
+		Neb2_awacs = range;
+
+	return ade_set_args(L, "f", Neb2_awacs);
+}
+
+ADE_FUNC(isSubspace, l_Mission, nullptr, "Get whether or not the current mission being played is set in subspace", "boolean", "true if in subspace, false if not")
+{
+	return ade_set_args(L, "b", The_mission.flags[Mission::Mission_Flags::Subspace]);
 }
 
 ADE_FUNC(getMissionTitle, l_Mission, NULL, "Get the title of the current mission", "string", "The mission title or an empty string if currently not in mission") {
@@ -1468,7 +1503,7 @@ static int arrivalListIter(lua_State* L)
 
 	const auto next = GET_NEXT(poh->getObject());
 
-	if (next == END_OF_LIST(&Ship_arrival_list)) {
+	if (next == END_OF_LIST(&Ship_arrival_list) || next == nullptr) {
 		return ADE_RETURN_NIL;
 	}
 
@@ -1479,11 +1514,55 @@ ADE_FUNC(getArrivalList,
 	l_Mission,
 	nullptr,
 	"Get the list of yet to arrive ships for this mission",
-	ade_type_iterator("parse_object"),
-	"An iterator across all the yet to arrive ships. Can be used in a for .. in loop")
+	"iterator<parse_object>",
+	"An iterator across all the yet to arrive ships. Can be used in a for .. in loop. Is not valid for more than one frame.")
 {
 	return ade_set_args(L, "u*o", luacpp::LuaFunction::createFromCFunction(L, arrivalListIter),
 	                    l_ParseObject.Set(parse_object_h(&Ship_arrival_list)));
+}
+
+ADE_FUNC(getShipList,
+	l_Mission,
+	nullptr,
+	"Get an iterator to the list of ships in this mission",
+	"iterator<ship>",
+	"An iterator across all ships in the mission. Can be used in a for .. in loop. Is not valid for more than one frame.")
+{
+	ship_obj* so = &Ship_obj_list;
+
+	return ade_set_args(L, "u", luacpp::LuaFunction::createFromStdFunction(L, [so](lua_State* LInner, const luacpp::LuaValueList& /*params*/) mutable -> luacpp::LuaValueList {
+		//Since the first element of a list is the next element from the head, and we start this function with the the captured "so" object being the head, this GET_NEXT will return the first element on first call of this lambda.
+		//Similarly, an empty list is defined by the head's next element being itself, hence an empty list will immediately return nil just fine
+		so = GET_NEXT(so);
+
+		if (so == END_OF_LIST(&Ship_obj_list) || so == nullptr) {
+			return luacpp::LuaValueList{ luacpp::LuaValue::createNil(LInner) };
+		}
+
+		return luacpp::LuaValueList{ luacpp::LuaValue::createValue(LInner, l_Ship.Set(object_h(&Objects[so->objnum]))) };
+	}));
+}
+
+ADE_FUNC(getMissileList,
+	l_Mission,
+	nullptr,
+	"Get an iterator to the list of missiles in this mission",
+	"iterator<weapon>",
+	"An iterator across all missiles in the mission. Can be used in a for .. in loop. Is not valid for more than one frame.")
+{
+	missile_obj* mo = &Missile_obj_list;
+
+	return ade_set_args(L, "u", luacpp::LuaFunction::createFromStdFunction(L, [mo](lua_State* LInner, const luacpp::LuaValueList& /*params*/) mutable -> luacpp::LuaValueList {
+		//Since the first element of a list is the next element from the head, and we start this function with the the captured "mo" object being the head, this GET_NEXT will return the first element on first call of this lambda.
+		//Similarly, an empty list is defined by the head's next element being itself, hence an empty list will immediately return nil just fine
+		mo = GET_NEXT(mo);
+
+		if (mo == END_OF_LIST(&Missile_obj_list) || mo == nullptr) {
+			return luacpp::LuaValueList{ luacpp::LuaValue::createNil(LInner) };
+		}
+
+		return luacpp::LuaValueList{ luacpp::LuaValue::createValue(LInner, l_Weapon.Set(object_h(&Objects[mo->objnum]))) };
+	}));
 }
 
 ADE_FUNC(waitAsync,

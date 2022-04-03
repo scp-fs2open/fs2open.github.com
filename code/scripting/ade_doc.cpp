@@ -4,10 +4,9 @@
 
 namespace scripting {
 
-ade_type_info::ade_type_info(std::initializer_list<ade_type_info> tuple_types)
-	: _type(ade_type_info_type::Tuple), _elements(tuple_types)
+ade_type_info::ade_type_info(const ade_type_tuple& tupleType)
+	: _type(ade_type_info_type::Tuple), _elements(tupleType.getElementTypes())
 {
-	Assertion(tuple_types.size() >= 1, "Tuples must have more than one element!");
 }
 ade_type_info::ade_type_info(const char* single_type) : _type(ade_type_info_type::Simple)
 {
@@ -110,6 +109,9 @@ const ade_type_info& ade_type_iterator::getElementType() const { return _element
 
 ade_type_alternative::ade_type_alternative(SCP_vector<ade_type_info> elements) : _elements(std::move(elements)) {}
 const SCP_vector<ade_type_info>& ade_type_alternative::getElementTypes() const { return _elements; }
+
+ade_type_tuple::ade_type_tuple(SCP_vector<ade_type_info> elements) : _elements(std::move(elements)) {}
+const SCP_vector<ade_type_info>& ade_type_tuple::getElementTypes() const { return _elements; }
 
 ade_type_function::ade_type_function(ade_type_info returnType, SCP_vector<ade_type_info> argumentTypes)
 	: _returnType(std::move(returnType)), _argumentTypes(std::move(argumentTypes))

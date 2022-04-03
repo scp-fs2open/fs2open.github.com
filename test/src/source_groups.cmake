@@ -6,6 +6,13 @@ add_file_folder(""
     test_stubs.cpp
 )
 
+add_file_folder("Actions"
+)
+
+add_file_folder("Actions\\\\Expression"
+	actions/expression/test_ExpressionParser.cpp
+)
+
 add_file_folder("CFile"
     cfile/cfile.cpp
 )
@@ -30,6 +37,10 @@ add_file_folder("menuui"
 
 add_file_folder("mod"
     mod/test_mod_table.cpp
+)
+
+add_file_folder("model"
+    model/test_modelread.cpp
 )
 
 add_file_folder("Parse"

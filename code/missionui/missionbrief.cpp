@@ -21,6 +21,7 @@
 #include "globalincs/linklist.h"
 #include "graphics/font.h"
 #include "graphics/matrix.h"
+#include "graphics/shadows.h"
 #include "hud/hud.h"
 #include "io/key.h"
 #include "io/mouse.h"
@@ -73,7 +74,7 @@ static int	Brief_playing_fade_sound;
 hud_anim		Fade_anim;
 
 int	Briefing_music_handle = -1;
-int	Briefing_music_begin_timestamp = 0;
+UI_TIMESTAMP Briefing_music_begin_timestamp;
 
 int Briefing_overlay_id = -1;
 
@@ -704,8 +705,13 @@ brief_icon *brief_get_closeup_icon()
 // stop showing the closeup view of an icon
 void brief_turn_off_closeup_icon()
 {
-	// turn off closup
+	// turn off closeup
 	if ( Closeup_icon != NULL ) {
+		if (Closeup_icon->model_instance_num >= 0) {
+			model_delete_instance(Closeup_icon->model_instance_num);
+			Closeup_icon->model_instance_num = -1;
+		}
+
 		gamesnd_play_iface(InterfaceSounds::BRIEF_ICON_SELECT);
 		Closeup_icon = NULL;
 		Closeup_close_button.disable();
@@ -784,14 +790,17 @@ void brief_set_default_closeup()
  */
 void brief_compact_stages()
 {
-	int num, before, result, i;
+	int num, before, i;
 
 	before = Briefing->num_stages;
 
 	num = 0;
 	while ( num < Briefing->num_stages ) {
-		result = eval_sexp( Briefing->stages[num].formula );
-		if ( !result ) {
+		if ( eval_sexp(Briefing->stages[num].formula) ) {
+			// Goober5000 - replace any variables (probably persistent variables) with their values
+			sexp_replace_variable_names_with_values(Briefing->stages[num].text);
+		} else {
+			// clean up unused briefing stage
 			Briefing->stages[num].text = "";
 
 			if ( Briefing->stages[num].icons != NULL ) {
@@ -830,8 +839,6 @@ void brief_compact_stages()
 //
 void brief_init()
 {
-	int i;
-
 	// for multiplayer, change the state in my netplayer structure
 	// and initialize the briefing chat area thingy
 	if ( Game_mode & GM_MULTIPLAYER ){
@@ -851,10 +858,6 @@ void brief_init()
 	} else {
 		Briefing = &Briefings[0];			
 	}
-
-	// Goober5000 - replace any variables (probably persistent variables) with their values
-	for (i = 0; i < Briefing->num_stages; i++)
-		sexp_replace_variable_names_with_values(Briefing->stages[i].text);
 
 	Brief_last_auto_advance = 0;
 
@@ -1043,10 +1046,6 @@ void brief_render_closeup(int ship_class, float frametime)
 
 	g3_start_frame(1);
 	g3_set_view_matrix(&Closeup_cam_pos, &view_orient, Closeup_zoom);
-
-
-	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
-	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 	
 	// the following is copied from menuui/techmenu.cpp ... it works heehee :D  - delt.
 	// lighting for techroom
@@ -1068,6 +1067,19 @@ void brief_render_closeup(int ship_class, float frametime)
 	model_render_params render_info;
 	render_info.set_detail_level_lock(0);
 
+	if (Shadow_quality != ShadowQuality::Disabled)
+	{
+		auto pm = model_get(Closeup_icon->modelnum);
+
+		gr_reset_clip();
+		shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, gr_screen.clip_aspect, -Closeup_cam_pos.xyz.z + pm->rad, -Closeup_cam_pos.xyz.z + pm->rad + 200.0f, -Closeup_cam_pos.xyz.z + pm->rad + 2000.0f, -Closeup_cam_pos.xyz.z + pm->rad + 10000.0f);
+		render_info.set_flags(MR_NO_TEXTURING | MR_NO_LIGHTING | MR_AUTOCENTER);
+
+		model_render_immediate(&render_info, Closeup_icon->modelnum, Closeup_icon->model_instance_num, &Closeup_orient, &Closeup_pos);
+		shadows_end_render();
+		gr_set_clip(Closeup_region[gr_screen.res][0], Closeup_region[gr_screen.res][1], w, h, GR_RESIZE_MENU);
+	}
+
 	if ( Closeup_icon->type == ICON_JUMP_NODE) {
 		render_info.set_color(HUD_color_red, HUD_color_green, HUD_color_blue);
 		render_info.set_flags(MR_NO_LIGHTING | MR_AUTOCENTER | MR_NO_POLYS | MR_SHOW_OUTLINE_HTL | MR_NO_TEXTURING);
@@ -1075,7 +1087,10 @@ void brief_render_closeup(int ship_class, float frametime)
 		render_info.set_flags(MR_AUTOCENTER);
 	}
 
-	model_render_immediate( &render_info, Closeup_icon->modelnum, &Closeup_orient, &Closeup_pos );
+	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+	gr_set_view_matrix(&Eye_position, &Eye_matrix);
+
+	model_render_immediate( &render_info, Closeup_icon->modelnum, Closeup_icon->model_instance_num, &Closeup_orient, &Closeup_pos );
 
     The_mission.flags.set(Mission::Mission_Flags::Fullneb, neb_restore);
 
@@ -1198,28 +1213,6 @@ void brief_set_closeup_pos(brief_icon * /*bi*/)
 	Closeup_x1 = (int)std::lround(320 - Closeup_coords[gr_screen.res][BRIEF_W_COORD]/2.0f);
 }
 
-void brief_get_closeup_ship_modelnum(brief_icon *ci)
-{
-	object	*objp;
-	ship		*sp;
-
-	// find the model number for the ship to display
-	for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
-
-		if ( objp == &obj_used_list || objp->type != OBJ_SHIP ) {
-			continue;
-		}
-		
-		sp = &Ships[objp->instance];
-		if ( sp->ship_info_index == ci->ship_class ) {
-			ci->ship_class = sp->ship_info_index;
-			ci->modelnum = Ship_info[sp->ship_info_index].model_num;
-			ci->radius = objp->radius;
-			break;
-		}
-	}
-}
-
 // -------------------------------------------------------------------------------------
 // brief_setup_closeup()
 //
@@ -1232,8 +1225,8 @@ int brief_setup_closeup(brief_icon *bi)
 	vec3d			tvec;
 
 	Closeup_icon = bi;
-	Closeup_icon->ship_class = bi->ship_class;
 	Closeup_icon->modelnum = -1;
+	Closeup_icon->model_instance_num = -1;
 
 	Closeup_one_revolution_time = ONE_REV_TIME;
 
@@ -1249,47 +1242,62 @@ int brief_setup_closeup(brief_icon *bi)
 		Closeup_one_revolution_time = ONE_REV_TIME * 3;
 		*/
 		break;
+
 	case ICON_ASTEROID_FIELD:
 		strcpy_s(pof_filename, Asteroid_icon_closeup_model);
-		strcpy_s(Closeup_icon->closeup_label, XSTR( "asteroid", 431));
+		if (Closeup_icon->closeup_label[0] == '\0') {
+			strcpy_s(Closeup_icon->closeup_label, XSTR("asteroid", 431));
+		}
 		Closeup_cam_pos = Asteroid_icon_closeup_position;
 		Closeup_zoom = Asteroid_icon_closeup_zoom;
 		break;
+
 	case ICON_JUMP_NODE:
 		strcpy_s(pof_filename, NOX("subspacenode.pof"));
-		strcpy_s(Closeup_icon->closeup_label, XSTR( "jump node", 432));
+		if (Closeup_icon->closeup_label[0] == '\0') {
+			strcpy_s(Closeup_icon->closeup_label, XSTR("jump node", 432));
+		}
 		vm_vec_make(&Closeup_cam_pos, 0.0f, 0.0f, -2700.0f);
 		Closeup_zoom = 0.5f;
 		Closeup_one_revolution_time = ONE_REV_TIME * 3;
 		break;
+
 	case ICON_UNKNOWN:
 	case ICON_UNKNOWN_WING:
 		strcpy_s(pof_filename, NOX("unknownship.pof"));
-		strcpy_s(Closeup_icon->closeup_label, XSTR( "unknown", 433));
+		if (Closeup_icon->closeup_label[0] == '\0') {
+			strcpy_s(Closeup_icon->closeup_label, XSTR("unknown", 433));
+		}
 		vm_vec_make(&Closeup_cam_pos, 0.0f, 0.0f, -22.0f);
 		Closeup_zoom = 0.5f;
 		break;
+
 	default:
-		brief_get_closeup_ship_modelnum(Closeup_icon);
 		Assert( Closeup_icon->ship_class != -1 );
 		sip = &Ship_info[Closeup_icon->ship_class];
 
-		strcpy_s(Closeup_icon->closeup_label, sip->get_display_name());
+		if (Closeup_icon->closeup_label[0] == '\0') {
+			strcpy_s(Closeup_icon->closeup_label, sip->get_display_name());
 
-		// Goober5000 - wcsaga doesn't want this
-		if (Ship_types[sip->class_type].flags[Ship::Type_Info_Flags::No_class_display] ) {
-			strcat_s(Closeup_icon->closeup_label, XSTR( " class", 434));
+			if (!Ship_types[sip->class_type].flags[Ship::Type_Info_Flags::No_class_display]
+				&& (sip->is_small_ship() || sip->is_big_ship() || sip->is_huge_ship() || sip->flags[Ship::Info_Flags::Sentrygun])) {
+					strcat_s(Closeup_icon->closeup_label, XSTR(" class", 434));
+			}
 		}
-
 		break;
 	}
 	
-	if ( Closeup_icon->modelnum == -1 ) {
+	if ( Closeup_icon->modelnum < 0 ) {
 		if ( sip == NULL ) {
 			Closeup_icon->modelnum = model_load(pof_filename, 0, NULL);
 		} else {
 			Closeup_icon->modelnum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+			Closeup_icon->model_instance_num = model_create_instance(-1, Closeup_icon->modelnum);
+			model_set_up_techroom_instance(sip, Closeup_icon->model_instance_num);
 		}
+	}
+
+	if ( Closeup_icon->modelnum >= 0 ) {
 		Closeup_icon->radius = model_get_radius(Closeup_icon->modelnum);
 	}
 

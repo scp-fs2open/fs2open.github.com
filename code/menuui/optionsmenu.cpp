@@ -243,7 +243,7 @@ static int Music_volume_int;
 static int Voice_volume_int;
 
 static sound_handle Voice_vol_handle = sound_handle::invalid();
-int Options_notify_stamp = -1;
+UI_TIMESTAMP Options_notify_stamp;
 char Options_notify_string[200];
 
 // called whenever accept is hit
@@ -388,9 +388,9 @@ UI_XSTR Options_text[GR_NUM_RESOLUTIONS][OPTIONS_NUM_TEXT] = {
 		{ "Effects",			1370,	20,	130,	UI_XSTR_COLOR_GREEN,	-1, &Options_bogus },
 		{ "Music",				1371,	20,	165,	UI_XSTR_COLOR_GREEN,	-1, &Options_bogus },
 		{ "Voice",				1372,	20,	199,	UI_XSTR_COLOR_GREEN,	-1, &Options_bogus },
-		{ "Mouse",				1373,	14,	249,	UI_XSTR_COLOR_GREEN,	-1, &Options_bogus },
-		{ "Off",					1286,	20,	273,	UI_XSTR_COLOR_GREEN,	-1, &Buttons[0][MOUSE_OFF].button },
-		{ "On",					1285,	83,	273,	UI_XSTR_COLOR_GREEN,	-1, &Buttons[0][MOUSE_ON].button },
+		{ "Mouse Input Mode",	1665,	10,	249,	UI_XSTR_COLOR_GREEN,	-1, &Options_bogus },
+		{ "Mouse",				1373,	10,	273,	UI_XSTR_COLOR_GREEN,	-1, &Buttons[0][MOUSE_OFF].button },
+		{ "Joy-0",				1666,	70,	273,	UI_XSTR_COLOR_GREEN,	-1, &Buttons[0][MOUSE_ON].button },
 		{ "Sensitivity",		1529,	20,	297,	UI_XSTR_COLOR_GREEN,	-1, &Options_sliders[0][OPT_MOUSE_SENS_SLIDER].slider },
 		{ "Skill Level",		1509,	533,	58,	UI_XSTR_COLOR_GREEN,	-1, &Options_bogus },
 		{ "Brightness",		1375,	532,	133,	UI_XSTR_COLOR_GREEN,	-1, &Options_bogus },
@@ -444,9 +444,9 @@ UI_XSTR Options_text[GR_NUM_RESOLUTIONS][OPTIONS_NUM_TEXT] = {
 		{ "Effects",			1370,	33,	209,	UI_XSTR_COLOR_GREEN,	-1, &Options_bogus },
 		{ "Music",				1371,	33,	264,	UI_XSTR_COLOR_GREEN,	-1, &Options_bogus },
 		{ "Voice",				1372,	33,	319,	UI_XSTR_COLOR_GREEN,	-1, &Options_bogus },
-		{ "Mouse",				1373,	23,	399,	UI_XSTR_COLOR_GREEN,	-1, &Options_bogus },
-		{ "Off",					1286,	32,	437,	UI_XSTR_COLOR_GREEN,	-1, &Buttons[1][MOUSE_OFF].button },
-		{ "On",					1285,	134,	437,	UI_XSTR_COLOR_GREEN,	-1, &Buttons[1][MOUSE_ON].button },
+		{ "Mouse Input Mode",	1665,	22,		399,	UI_XSTR_COLOR_GREEN,	-1, &Options_bogus },
+		{ "Mouse",				1373,	22,		437,	UI_XSTR_COLOR_GREEN,	-1, &Buttons[1][MOUSE_OFF].button },
+		{ "Joy-0",				1666,	124,	437,	UI_XSTR_COLOR_GREEN,	-1, &Buttons[1][MOUSE_ON].button },
 		{ "Sensitivity",		1529,	34,	477,	UI_XSTR_COLOR_GREEN,	-1, &Options_sliders[1][OPT_MOUSE_SENS_SLIDER].slider },
 		{ "Skill Level",		1509,	854,	93,	UI_XSTR_COLOR_GREEN,	-1, &Options_bogus },
 		{ "Brightness",		1375,	852,	214,	UI_XSTR_COLOR_GREEN,	-1, &Options_bogus },
@@ -470,7 +470,7 @@ void options_play_voice_clip()
 	auto gs = gamesnd_get_interface_sound(InterfaceSounds::VOICE_SLIDER_CLIP);
 	auto entry = gamesnd_choose_entry(gs);
 
-	auto snd_id = snd_load(entry, gs->flags, 0);
+	auto snd_id = snd_load(entry, &gs->flags, 0);
 
 	Voice_vol_handle = snd_play_raw( snd_id, 0.0f, 1.0f, SND_PRIORITY_SINGLE_INSTANCE );
 }
@@ -478,16 +478,16 @@ void options_play_voice_clip()
 void options_add_notify(const char *str)
 {
 	strcpy_s(Options_notify_string, str);
-	Options_notify_stamp = timestamp(OPTIONS_NOTIFY_TIME);
+	Options_notify_stamp = ui_timestamp(OPTIONS_NOTIFY_TIME);
 }
 
 void options_notify_do_frame()
 {
 	int w,h;
 
-	if (Options_notify_stamp != -1) {
-		if (timestamp_elapsed(Options_notify_stamp)) {
-			Options_notify_stamp = -1;
+	if (Options_notify_stamp.isValid()) {
+		if (ui_timestamp_elapsed(Options_notify_stamp)) {
+			Options_notify_stamp = UI_TIMESTAMP::invalid();
 
 		} else {
 			gr_get_string_size(&w, &h, Options_notify_string);
@@ -538,12 +538,17 @@ void options_tab_setup(int  /*set_palette*/)
 
 	// maybe enable/disable controls based upon current tab
 	if (Tab == OPTIONS_TAB) {
-		for(i=0; i<NUM_OPTIONS_SLIDERS; i++){
+		for(i=0; i<NUM_OPTIONS_SLIDERS; i++) {
 			Options_sliders[gr_screen.res][i].slider.enable();
 			Options_sliders[gr_screen.res][i].slider.unhide();
 		}		
+		if (Cmdline_deadzone >= 0) {
+			//Deadzone is being set by the command line 
+			Options_sliders[gr_screen.res][OPT_JOY_DEADZONE_SLIDER].slider.disable();
+			Options_sliders[gr_screen.res][OPT_JOY_DEADZONE_SLIDER].slider.hide();
+		}
 	} else {
-		for(i=0; i<NUM_OPTIONS_SLIDERS; i++){
+		for(i=0; i<NUM_OPTIONS_SLIDERS; i++) {
 			Options_sliders[gr_screen.res][i].slider.hide();
 			Options_sliders[gr_screen.res][i].slider.disable();
 		}		
@@ -553,6 +558,7 @@ void options_tab_setup(int  /*set_palette*/)
 		Options_sliders[gr_screen.res][OPT_SKILL_SLIDER].slider.disable();
 		Ui_window.use_hack_to_get_around_stupid_problem_flag = 0;
 	}
+
 
 	// do other special processing
 	switch (Tab) {
@@ -586,11 +592,6 @@ void options_change_tab(int n)
 
 	switch (n) {
 		case MULTIPLAYER_TAB:
-			if ( Networking_disabled ) {
-				game_feature_disabled_popup();
-				return;
-			}
-
 			if ( !Options_multi_inited ) {
 				// init multiplayer
 				options_multi_init(&Ui_window);
@@ -618,6 +619,11 @@ void options_change_tab(int n)
 		for(idx=0; idx<NUM_OPTIONS_SLIDERS; idx++){
 			Options_sliders[gr_screen.res][idx].slider.enable();
 			Options_sliders[gr_screen.res][idx].slider.unhide();
+		}
+		if (Cmdline_deadzone >= 0){
+			//Deadzone is being set by the command line 
+			Options_sliders[gr_screen.res][OPT_JOY_DEADZONE_SLIDER].slider.disable();
+			Options_sliders[gr_screen.res][OPT_JOY_DEADZONE_SLIDER].slider.hide();
 		}
 	} else {
 		Options_bogus.hide();
@@ -994,6 +1000,12 @@ void options_menu_init()
 
 	Gamma_colors_inited = 0;
 
+	if (Cmdline_deadzone >= 0){
+		//Deadzone is being set by the command line 
+		Options_sliders[gr_screen.res][OPT_JOY_DEADZONE_SLIDER].slider.disable();
+		Options_sliders[gr_screen.res][OPT_JOY_DEADZONE_SLIDER].slider.hide();
+	}
+
 	Options_menu_inited = 1;
 
 	// hide options crap
@@ -1358,7 +1370,6 @@ void options_detail_sliders_update()
 
 	// modify nebula stuff
 	Detail.nebula_detail = Detail_sliders[gr_screen.res][NEBULA_DETAIL_SLIDER].slider.pos;
-	neb2_set_detail_level(Detail.nebula_detail);
 
 	Detail.hardware_textures = Detail_sliders[gr_screen.res][HARDWARE_TEXTURES_SLIDER].slider.pos;
 	Detail.num_small_debris = Detail_sliders[gr_screen.res][SHARD_CULLING_SLIDER].slider.pos;

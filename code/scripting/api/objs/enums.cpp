@@ -1,6 +1,8 @@
 
 #include "enums.h"
 
+#include "mission/missionparse.h"
+#include "object/objectsnd.h"
 #include "scripting/ade.h"
 
 namespace scripting {
@@ -102,7 +104,33 @@ flag_def_list Enumerations[] = {
 	{"CONTEXT_INVALID", LE_CONTEXT_INVALID, 0},
 	{"FIREBALL_MEDIUM_EXPLOSION", LE_FIREBALL_MEDIUM_EXPLOSION, 0},
 	{"FIREBALL_LARGE_EXPLOSION", LE_FIREBALL_LARGE_EXPLOSION, 0},
-	{"FIREBALL_WARP_EFFECT", LE_FIREBALL_WARP_EFFECT, 0}
+	{"FIREBALL_WARP_EFFECT", LE_FIREBALL_WARP_EFFECT, 0},
+	{"GR_RESIZE_NONE", LE_GR_RESIZE_NONE, 0},
+	{"GR_RESIZE_FULL", LE_GR_RESIZE_FULL, 0},
+	{"GR_RESIZE_FULL_CENTER", LE_GR_RESIZE_FULL_CENTER, 0},
+	{"GR_RESIZE_MENU", LE_GR_RESIZE_MENU, 0},
+	{"GR_RESIZE_MENU_ZOOMED", LE_GR_RESIZE_MENU_ZOOMED, 0},
+	{"GR_RESIZE_MENU_NO_OFFSET", LE_GR_RESIZE_MENU_NO_OFFSET, 0},
+	// the following OS_ definitions use bitfield values, not the indexes in enums.h
+	{"OS_NONE", 0, 0},
+	{"OS_MAIN", OS_MAIN, 0},
+	{"OS_TURRET_BASE_ROTATION", OS_TURRET_BASE_ROTATION, 0},
+	{"OS_TURRET_GUN_ROTATION", OS_TURRET_GUN_ROTATION, 0},
+	{"OS_SUBSYS_ALIVE", OS_SUBSYS_ALIVE, 0},
+	{"OS_SUBSYS_DEAD", OS_SUBSYS_DEAD, 0},
+	{"OS_SUBSYS_DAMAGED", OS_SUBSYS_DAMAGED, 0},
+	{"OS_SUBSYS_ROTATION", OS_SUBSYS_ROTATION, 0},
+	{"OS_PLAY_ON_PLAYER", OS_PLAY_ON_PLAYER, 0},
+	{"OS_LOOPING_DISABLED", OS_LOOPING_DISABLED, 0},
+	// end of OS_ definitions
+	// these also use values that aren't in enums.h
+	{ "MOVIE_PRE_FICTION", MOVIE_PRE_FICTION, 0 },
+	{ "MOVIE_PRE_CMD_BRIEF", MOVIE_PRE_CMD_BRIEF, 0 },
+	{ "MOVIE_PRE_BRIEF", MOVIE_PRE_BRIEF, 0 },
+	{ "MOVIE_PRE_GAME", MOVIE_PRE_GAME, 0 },
+	{ "MOVIE_PRE_DEBRIEF", MOVIE_PRE_DEBRIEF, 0 },
+	{ "MOVIE_END_CAMPAIGN", MOVIE_END_CAMPAIGN, 0 },
+	// end of MOVIE_ definitions
 };
 // clang-format on
 
@@ -192,6 +220,21 @@ ADE_FUNC(__eq,
 	}
 
 	return ade_set_args(L, "b", e1->index == e2->index);
+}
+
+ADE_VIRTVAR(IntValue, l_Enum, "enumeration", "Internal value of the enum.  Probably not useful unless this enum is a bitfield or corresponds to a #define somewhere else in the source code.", "number", "Integer (index) value of the enum")
+{
+	enum_h* e = nullptr;
+	if (!ade_get_args(L, "o", l_Enum.GetPtr(&e))) {
+		return ade_set_args(L, "i", -1);
+	}
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "IntValue is read only!");
+		return ADE_RETURN_NIL;
+	}
+
+	return ade_set_args(L, "i", e->index);
 }
 
 }

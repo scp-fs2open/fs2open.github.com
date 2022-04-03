@@ -2,9 +2,11 @@
 #include <gtest/gtest.h>
 #include <math/vecmat.h>
 #include <math/staticrand.h>
+#include <utils/Random.h>
 
 #include "util/FSTestFixture.h"
 
+using Random = util::Random;
 
 // "Correct" answers for matrix functions provided by Wolfram Mathematica 11
 // Vector function tests oringially made by The_E
@@ -38,7 +40,7 @@ protected:
 	void SetUp() override 
 	{ 
 		test::FSTestFixture::SetUp(); 
-		srand(1); 
+		Random::seed(1);
 	}
 	void TearDown() override { test::FSTestFixture::TearDown(); }
 };
@@ -173,8 +175,8 @@ TEST_F(VecmatTest, test_vm_vec_add)
 	for (size_t loop = 0; loop < 1000; ++loop) {
 		vec3d v1, v2, v3;
 
-		static_randvec_unnormalized(rand32(), &v1);
-		static_randvec_unnormalized(rand32(), &v2);
+		static_randvec_unnormalized(Random::next(), &v1);
+		static_randvec_unnormalized(Random::next(), &v2);
 
 		vm_vec_add(&v3, &v1, &v2);
 
@@ -193,8 +195,8 @@ TEST_F(VecmatTest, test_vm_vec_sub)
 	for (size_t loop = 0; loop < 1000; ++loop) {
 		vec3d v1, v2, v3;
 
-		static_randvec_unnormalized(rand32(), &v1);
-		static_randvec_unnormalized(rand32(), &v2);
+		static_randvec_unnormalized(Random::next(), &v1);
+		static_randvec_unnormalized(Random::next(), &v2);
 
 		vm_vec_sub(&v3, &v1, &v2);
 
@@ -213,8 +215,8 @@ TEST_F(VecmatTest, test_vm_vec_add2)
 	for (size_t loop = 0; loop < 1000; ++loop) {
 		vec3d v1, v2, v1backup;
 
-		static_randvec_unnormalized(rand32(), &v1);
-		static_randvec_unnormalized(rand32(), &v2);
+		static_randvec_unnormalized(Random::next(), &v1);
+		static_randvec_unnormalized(Random::next(), &v2);
 
 		v1backup.xyz = v1.xyz;
 
@@ -235,8 +237,8 @@ TEST_F(VecmatTest, test_vm_vec_sub2)
 	for (size_t loop = 0; loop < 1000; ++loop) {
 		vec3d v1, v2, v1backup;
 
-		static_randvec_unnormalized(rand32(), &v1);
-		static_randvec_unnormalized(rand32(), &v2);
+		static_randvec_unnormalized(Random::next(), &v1);
+		static_randvec_unnormalized(Random::next(), &v2);
 
 		v1backup.xyz = v1.xyz;
 
@@ -259,7 +261,7 @@ TEST_F(VecmatTest, test_vm_vec_avg)
 		vec3d vAvg;
 
 		for (size_t i = 0; i < 2; i++) {
-			static_randvec_unnormalized(rand32(), &vArray[i]);
+			static_randvec_unnormalized(Random::next(), &vArray[i]);
 		}
 
 		vm_vec_avg(&vAvg, &vArray[0], &vArray[1]);
@@ -289,7 +291,7 @@ TEST_F(VecmatTest, test_vm_vec_avg3)
 		vec3d vAvg;
 
 		for (size_t i = 0; i < 3; i++) {
-			static_randvec_unnormalized(rand32(), &vArray[i]);
+			static_randvec_unnormalized(Random::next(), &vArray[i]);
 		}
 
 		vm_vec_avg3(&vAvg, &vArray[0], &vArray[1], &vArray[2]);
@@ -319,7 +321,7 @@ TEST_F(VecmatTest, test_vm_vec_avg4)
 		vec3d vAvg;
 
 		for (size_t i = 0; i < 4; i++) {
-			static_randvec_unnormalized(rand32(), &vArray[i]);
+			static_randvec_unnormalized(Random::next(), &vArray[i]);
 		}
 
 		vm_vec_avg4(&vAvg, &vArray[0], &vArray[1], &vArray[2], &vArray[3]);
@@ -349,7 +351,7 @@ TEST_F(VecmatTest, test_vm_vec_avg_n)
 		vec3d vAvg;
 
 		for (size_t i = 0; i < 1000; i++) {
-			static_randvec_unnormalized(rand32(), &vArray[i]);
+			static_randvec_unnormalized(Random::next(), &vArray[i]);
 		}
 
 		vm_vec_avg_n(&vAvg, 1000, vArray);
@@ -377,11 +379,11 @@ TEST_F(VecmatTest, test_vm_vec_scale)
 	for (size_t loop = 0; loop < 1000; ++loop) {
 		vec3d v1, v1Unscaled;
 
-		static_randvec_unnormalized(rand32(), &v1);
+		static_randvec_unnormalized(Random::next(), &v1);
 
 		v1Unscaled.xyz = v1.xyz;
 
-		auto rand_scale = static_randf(rand32());
+		auto rand_scale = static_randf(Random::next());
 
 		vm_vec_scale(&v1, rand_scale);
 
@@ -397,11 +399,11 @@ TEST_F(VecmatTest, test_vm_vec4_scale)
 		vec4 v1, v1Unscaled;
 
 		for (size_t i = 0; i < 4; ++i) {
-			v1.a1d[i] = static_randf(rand32());
+			v1.a1d[i] = static_randf(Random::next());
 			v1Unscaled.a1d[i] = v1.a1d[i];
 		}
 
-		auto rand_scale = static_randf(rand32());
+		auto rand_scale = static_randf(Random::next());
 
 		vm_vec_scale(&v1, rand_scale);
 
@@ -417,11 +419,11 @@ TEST_F(VecmatTest, test_vm_vec_copy_scale)
 	for (size_t loop = 0; loop < 1000; ++loop) {
 		vec3d v1, v1Unscaled, v2;
 
-		static_randvec_unnormalized(rand32(), &v1);
+		static_randvec_unnormalized(Random::next(), &v1);
 
 		v1Unscaled.xyz = v1.xyz;
 
-		auto rand_scale = static_randf(rand32());
+		auto rand_scale = static_randf(Random::next());
 
 		vm_vec_copy_scale(&v2, &v1, rand_scale);
 
@@ -436,10 +438,10 @@ TEST_F(VecmatTest, test_vm_vec_scale_add)
 	for (size_t loop = 0; loop < 1000; ++loop) {
 		vec3d v1, v2, v3;
 
-		static_randvec_unnormalized(rand32(), &v1);
-		static_randvec_unnormalized(rand32(), &v2);
+		static_randvec_unnormalized(Random::next(), &v1);
+		static_randvec_unnormalized(Random::next(), &v2);
 
-		auto rand_scale = static_randf(rand32());
+		auto rand_scale = static_randf(Random::next());
 
 		vm_vec_scale_add(&v3, &v1, &v2, rand_scale);
 
@@ -454,10 +456,10 @@ TEST_F(VecmatTest, test_vm_vec_scale_sub)
 	for (size_t loop = 0; loop < 1000; ++loop) {
 		vec3d v1, v2, v3;
 
-		static_randvec_unnormalized(rand32(), &v1);
-		static_randvec_unnormalized(rand32(), &v2);
+		static_randvec_unnormalized(Random::next(), &v1);
+		static_randvec_unnormalized(Random::next(), &v2);
 
-		auto rand_scale = static_randf(rand32());
+		auto rand_scale = static_randf(Random::next());
 
 		vm_vec_scale_sub(&v3, &v1, &v2, rand_scale);
 
@@ -472,12 +474,12 @@ TEST_F(VecmatTest, test_vm_vec_scale_add2)
 	for (size_t loop = 0; loop < 1000; ++loop) {
 		vec3d v1, v2, v1Unscaled;
 
-		static_randvec_unnormalized(rand32(), &v1);
-		static_randvec_unnormalized(rand32(), &v2);
+		static_randvec_unnormalized(Random::next(), &v1);
+		static_randvec_unnormalized(Random::next(), &v2);
 
 		v1Unscaled.xyz = v1.xyz;
 
-		auto rand_scale = static_randf(rand32());
+		auto rand_scale = static_randf(Random::next());
 
 		vm_vec_scale_add2(&v1, &v2, rand_scale);
 
@@ -492,12 +494,12 @@ TEST_F(VecmatTest, test_vm_vec_scale2)
 	for (size_t loop = 0; loop < 1000; ++loop) {
 		vec3d v1, v1Unscaled;
 
-		static_randvec_unnormalized(rand32(), &v1);
+		static_randvec_unnormalized(Random::next(), &v1);
 
 		v1Unscaled.xyz = v1.xyz;
 
-		auto rand_scale_n = static_randf(rand32());
-		auto rand_scale_d = static_randf(rand32());
+		auto rand_scale_n = static_randf(Random::next());
+		auto rand_scale_d = static_randf(Random::next());
 
 		vm_vec_scale2(&v1, rand_scale_n, rand_scale_d);
 
@@ -513,7 +515,7 @@ TEST_F(VecmatTest, test_vm_vec_project_parallel)
 	//vector onto the unit vectors
 	//expect that only the component of the respective unit vector remains
 	vec3d v1;
-	static_randvec(rand32(), &v1);
+	static_randvec(Random::next(), &v1);
 
 	vec3d unit1 = {};
 	unit1.xyz.x = 1.0f;
@@ -550,7 +552,7 @@ TEST_F(VecmatTest, test_vm_vec_project_parallel)
 TEST_F(VecmatTest, test_vm_vec_project_plane)
 {
 	vec3d v1;
-	static_randvec(rand32(), &v1);
+	static_randvec(Random::next(), &v1);
 
 	vec3d unit1 = {};
 	unit1.xyz.x = 1.0f;
@@ -585,7 +587,7 @@ TEST_F(VecmatTest, test_vm_vec_mag)
 	for (size_t loop = 0; loop < 1000; ++loop) {
 		vec3d v;
 
-		static_randvec_unnormalized(rand32(), &v);
+		static_randvec_unnormalized(Random::next(), &v);
 
 		auto magnitude = fl_sqrt((v.xyz.x * v.xyz.x) + (v.xyz.y * v.xyz.y) + (v.xyz.z * v.xyz.z));
 
@@ -597,7 +599,7 @@ TEST_F(VecmatTest, test_vm_vec_mag_squared) {
 	for (size_t loop = 0; loop < 1000; ++loop) {
 		vec3d v;
 
-		static_randvec_unnormalized(rand32(), &v);
+		static_randvec_unnormalized(Random::next(), &v);
 
 		auto magnitude = (v.xyz.x * v.xyz.x) + (v.xyz.y * v.xyz.y) + (v.xyz.z * v.xyz.z);
 
@@ -609,8 +611,8 @@ TEST_F(VecmatTest, test_vm_vec_dist) {
 	for (size_t loop = 0; loop < 1000; ++loop) {
 		vec3d v1, v2, t;
 
-		static_randvec_unnormalized(rand32(), &v1);
-		static_randvec_unnormalized(rand32(), &v2);
+		static_randvec_unnormalized(Random::next(), &v1);
+		static_randvec_unnormalized(Random::next(), &v2);
 
 		auto distance = vm_vec_dist(&v1, &v2);
 
@@ -626,8 +628,8 @@ TEST_F(VecmatTest, test_vm_vec_dist_squared)
 	for (size_t loop = 0; loop < 1000; ++loop) {
 		vec3d v1, v2, t;
 
-		static_randvec_unnormalized(rand32(), &v1);
-		static_randvec_unnormalized(rand32(), &v2);
+		static_randvec_unnormalized(Random::next(), &v1);
+		static_randvec_unnormalized(Random::next(), &v2);
 
 		auto distance = vm_vec_dist_squared(&v1, &v2);
 
@@ -643,7 +645,7 @@ TEST_F(VecmatTest, test_vm_vec_normalize)
 	for (size_t loop = 0; loop < 1000; ++loop) {
 		vec3d v, vBackup;
 
-		static_randvec_unnormalized(rand32(), &v);
+		static_randvec_unnormalized(Random::next(), &v);
 		vBackup.xyz = v.xyz;
 
 		auto magnitude = vm_vec_normalize(&v);
@@ -665,7 +667,7 @@ TEST_F(VecmatTest, test_vm_vec_copy_normalize)
 	for (size_t loop = 0; loop < 1000; ++loop) {
 		vec3d v1, v2, vBackup;
 
-		static_randvec_unnormalized(rand32(), &v1);
+		static_randvec_unnormalized(Random::next(), &v1);
 		vBackup.xyz = v1.xyz;
 
 		auto magnitude = vm_vec_copy_normalize(&v2, &v1);

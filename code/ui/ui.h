@@ -203,8 +203,8 @@ class UI_BUTTON : public UI_GADGET
 
 		char *text;
 		int position;			// indicates position of button (0 - up, 1 - down by mouse click 2 - down by keypress
-		int next_repeat;		// timestamp for next repeat if held down
-		int m_press_linger;	// timestamp for hold a pressed state animation
+		UI_TIMESTAMP next_repeat;		// timestamp for next repeat if held down
+		UI_TIMESTAMP m_press_linger;	// timestamp for hold a pressed state animation
 		int hotkey_if_focus;	// hotkey for button that only works if it has focus
 		int force_draw_frame;	// frame number to draw next time (override default)
 		int first_callback;		// true until first time callback function is called for button highlight
@@ -304,22 +304,113 @@ class UI_INPUTBOX : public UI_GADGET
 		os::events::ListenerIdentifier textListener;
 		bool handle_textInputEvent(const SDL_Event& event);
 
-		int	validate_input(int chr);
 		void add_input(int chr, int *key_used);
+
+		/**
+		 * @brief Checks if the given chr is a valid character
+		 * 
+		 * @param[in] chr The character to validate
+		 * 
+		 * @return 0   If an invalid character was passed, or
+		 * @return chr If the character is valid
+		 * 
+		 * @details Rejects control characters and characters that are in the invalid_chars blacklist string, Accepts
+		 *   alphanumeric characters and characters that are in the valid_chars whitelist string
+		*/
+		int validate_input(int chr);
+		
+		/**
+		 * @brief Inits the cursor for the input box
+		*/
 		void init_cursor();
 
+		/**
+		 * @brief Draws the input box according to its mode and settings.
+		*/
 		void draw() override;
+
+		/**
+		 * @brief Processes mouse and keyboard input
+		 * 
+		 * @param[in] focus Focus state of this widget
+		 * 
+		 * @details If focus is not 0, or the widget is selected, the mouse and keyboard input is processed.
+		*/
 		void process(int focus = 0) override;
+
+		/**
+		 * @brief De-inits the widget, vm_free'ing relevant strings and other relevant heap elements
+		*/
 		void destroy() override;
 
 	public:
+		/**
+		 * @brief Creates an input box gadget
+		 * @param[in] wnd Pointer to parent window
+		 * @param[in] _x        horizontal anchor position (pixels)
+		 * @param[in] _y        vertical anchor position (pixels)
+		 * @param[in] _w        width (pixels)
+		 * @param[in] _textlen  maximum number of characters acceptable in a line
+		 * @param[in] _text     initial text value
+		 * @param[in] _flags    any of UI_INPUTBOX_FLAG* flags
+		 * @param[in] pixel_lim     width, in pixels, to limit the input string. Set this to -1 to ignore.
+		 * @param[in] clr       color of the input text as defined in uidefs.h
+		 * 
+		 * @note _h is not a specified param and is instead automatically determined by the font size of the input text
+		*/
 		void create(UI_WINDOW *wnd, int _x, int _y, int _w, int _textlen, const char *_text, int _flags = 0, int pixel_lim = -1, color *clr = NULL);
+		
+		/**
+		 * @brief Sets the whitelist of all characters allowed for input
+		 * 
+		 * @param[in] vchars String of all characters that are whitelisted.  May be nullptr.
+		 * 
+		 * @note Alpha [a-z, A-Z] and Numeric [0-9] characters are implicity whitelisted. May be affected by locale.
+		*/
 		void set_valid_chars(const char *vchars);
+		
+		/**
+		 * @brief Sets the blacklist of all characters not allowed for input
+		 * 
+		 * @param[in] ichars String of al lcharacters that are blacklisted.  May be nullptr.
+		 * 
+		 * @note Non-printable and control characters are implicitly blacklisted
+		*/
 		void set_invalid_chars(const char *ichars);
+		
+		/**
+		 * @brief Returns 1 if the input text has changed
+		 * 
+		 * @return changed_flag, 0 for no change, 1 for change occured
+		 * 
+		 * @note Does not clear changed_flag on use
+		*/
 		int changed();
+		
+		/**
+		 * @brief Returns 1 if the Enter key was pressed
+		*/
 		int pressed();
-		void get_text(char *out);
+
+		/**
+		 * @brief Retrieves the string currently in the inputbox
+		 * @param[out] out Destination char[] to copy the string to
+		*/
+		void get_text(char* out);
+		
+		/**
+		 * @brief Sets the string in the inputbox
+		 * @param[in] in Source char[] to copy the string from
+		*/
 		void set_text(const char *in);
+		
+		/**
+		 * @brief Appends the given string to the input string
+		 * 
+		 * @param in String to append
+		 * 
+		 * @note Takes in as much of the input string as possible, truncating once textlen is exceeded
+		*/
 		void append_text(const char *in);
 };
 

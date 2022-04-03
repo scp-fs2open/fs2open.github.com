@@ -3,6 +3,7 @@
 #include "lab/wmcgui.h"
 #include "graphics/2d.h"
 #include "graphics/light.h"
+#include "lighting/lighting_profiles.h"
 #include "starfield/starfield.h"
 #include "starfield/nebula.h"
 #include "nebula/neb.h"
@@ -59,7 +60,7 @@ void LabRenderer::renderModel(float frametime) {
 	PostProcessing_override = renderFlags[LabRenderFlag::HidePostProcessing];
 
 	if (obj->type == OBJ_SHIP) {
-		Ships[obj->instance].flags.set(Ship::Ship_Flags::Rotators_locked, !renderFlags[LabRenderFlag::RotateSubsystems]);
+		Ships[obj->instance].flags.set(Ship::Ship_Flags::Subsystem_movement_locked, !renderFlags[LabRenderFlag::RotateSubsystems]);
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Draw_as_wireframe, renderFlags[LabRenderFlag::ShowWireframe]);
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_full_detail, renderFlags[LabRenderFlag::ShowFullDetail]);
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_light, renderFlags[LabRenderFlag::NoLighting] || currentMissionBackground == "None");
@@ -67,12 +68,11 @@ void LabRenderer::renderModel(float frametime) {
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_glowmap, renderFlags[LabRenderFlag::NoGlowMap]);
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_normalmap, renderFlags[LabRenderFlag::NoNormalMap]);
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_specmap, renderFlags[LabRenderFlag::NoSpecularMap]);
+		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_reflectmap, renderFlags[LabRenderFlag::NoReflectMap]);
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_heightmap, renderFlags[LabRenderFlag::NoHeightMap]);
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_miscmap, renderFlags[LabRenderFlag::NoMiscMap]);
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_weapons, !renderFlags[LabRenderFlag::ShowWeapons]);
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_ambientmap, renderFlags[LabRenderFlag::NoAOMap]);
-
-		ship_model_update_instance(obj);
 
 		Ships[obj->instance].team_name = currentTeamColor;
 
@@ -108,8 +108,7 @@ void LabRenderer::renderModel(float frametime) {
 	}
 
 	obj_move_all(frametime);
-	if (getLabManager()->CurrentMode == LabMode::Ship)
-		process_subobjects(getLabManager()->CurrentObject);
+
 	particle::move_all(frametime);
 	particle::ParticleManager::get()->doFrame(frametime);
 	shockwave_move_all(frametime);
@@ -308,11 +307,22 @@ void LabRenderer::useBackground(const SCP_string& mission_name) {
 			gr_set_ambient_light(ambient_light_level & 0xff, (ambient_light_level >> 8) & 0xff,
 				(ambient_light_level >> 16) & 0xff);
 
-			strcpy_s(Neb2_texture_name, "Eraseme3");
+			strcpy_s(Neb2_texture_name, "");
 			Neb2_poof_flags = ((1 << 0) | (1 << 1) | (1 << 2) | (1 << 3) | (1 << 4) | (1 << 5));
+			bool nebula = false;
 			if (optional_string("+Neb2:")) {
+				nebula = true;
 				stuff_string(Neb2_texture_name, F_NAME, MAX_FILENAME_LEN);
+			} else if (optional_string("+Neb2Color:")) {
+				nebula = true;
+				int neb_colors[3];
+				stuff_int_list(neb_colors, 3, RAW_INTEGER_TYPE);
+				Neb2_fog_color[0] = (ubyte)neb_colors[0];
+				Neb2_fog_color[1] = (ubyte)neb_colors[1];
+				Neb2_fog_color[2] = (ubyte)neb_colors[2];
+			}
 
+			if (nebula){
 				required_string("+Neb2Flags:");
 				stuff_int(&Neb2_poof_flags);
 
@@ -440,11 +450,10 @@ void LabRenderer::useBackground(const SCP_string& mission_name) {
 	}
 }
 
-LabCamera* LabRenderer::getCurrentCamera() {
+std::unique_ptr<LabCamera> &LabRenderer::getCurrentCamera() {
 	return labCamera;
 }
 
-void LabRenderer::setCurrentCamera(LabCamera* newcam) {
-	delete labCamera;
-	labCamera = newcam;
+void LabRenderer::setCurrentCamera(std::unique_ptr<LabCamera> &newcam) {
+	labCamera = std::move(newcam);
 }

@@ -18,6 +18,7 @@
 #include "localization/localize.h"
 #include "network/multi_options.h"
 #include "parse/sexp.h"
+#include "parse/sexp_container.h"
 #include "physics/physics.h"
 #include "sound/sound.h"
 #include "stats/scoring.h" // for scoring/stats
@@ -51,8 +52,11 @@
 #define PLAYER_FLAGS_KILLED_SELF_UNKNOWN			(1<<16)		// player died by his own hand
 #define PLAYER_FLAGS_KILLED_SELF_MISSILES			(1<<17)		// player died by his own missile
 #define PLAYER_FLAGS_KILLED_SELF_SHOCKWAVE		(1<<18)		// player died by his own shockwave
+#define PLAYER_FLAGS_PLR_VER_PRE_CONTROLS5		(1<<19)		// loaded PLR file's plr_ver is a pre-controls5 version
+#define PLAYER_FLAGS_PLR_VER_IS_LOWER			(1<<20)		// loaded PLR file's plr_ver is lower than PLR_VERSION
+#define PLAYER_FLAGS_PLR_VER_IS_HIGHER			(1<<21)		// loaded PLR file's plr_ver is higher than PLR_VERSION
 
-#define PLAYER_KILLED_SELF						( PLAYER_FLAGS_KILLED_SELF_MISSILES | PLAYER_FLAGS_KILLED_SELF_SHOCKWAVE )
+#define PLAYER_KILLED_SELF						( PLAYER_FLAGS_KILLED_SELF_UNKNOWN | PLAYER_FLAGS_KILLED_SELF_MISSILES | PLAYER_FLAGS_KILLED_SELF_SHOCKWAVE )
 
 #define PCM_NORMAL				0	// normal flying mode
 #define PCM_WARPOUT_STAGE1		1	// speed up to 40 km/s
@@ -199,6 +203,9 @@ public:
 
 	// player-persistent variables - Goober5000
 	SCP_vector<sexp_variable>	variables;
+
+	// player-persistent containers - jg18
+	SCP_vector<sexp_container>	containers;
 
 	SCP_string		death_message;								// Goober5000
 

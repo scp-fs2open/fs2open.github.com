@@ -45,6 +45,7 @@
 #include "sound/ds.h"
 #include "globalincs/alphacolors.h"
 #include "localization/localize.h"
+#include "AddModifyContainerDlg.h"
 
 #define TREE_NODE_INCREMENT	100
 
@@ -70,7 +71,7 @@ BEGIN_MESSAGE_MAP(sexp_tree, CTreeCtrl)
 	ON_WM_LBUTTONUP()
 	ON_WM_DESTROY()
 	ON_WM_LBUTTONDOWN()
-	ON_NOTIFY_REFLECT(TVN_KEYDOWN, OnKeydown)
+	ON_NOTIFY_REFLECT(TVN_KEYDOWN, OnKeyDown)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -546,18 +547,23 @@ int sexp_tree::load_sub_tree(int index, bool valid, const char *text)
 
 void sexp_tree::setup_selected(HTREEITEM h)
 {
-	uint i;
-
-	item_index = -1;
-	item_handle = h;
 	if (!h)
-		item_handle = GetSelectedItem();
+		h = GetSelectedItem();
 
-	for (i=0; i<tree_nodes.size(); i++)
-		if (tree_nodes[i].handle == item_handle) {
+	update_item(h);
+}
+
+void sexp_tree::update_item(HTREEITEM h)
+{
+	item_handle = h;
+	item_index = -1;
+
+	for (int i = 0; i < (int)tree_nodes.size(); ++i) {
+		if (tree_nodes[i].handle == h) {
 			item_index = i;
 			break;
 		}
+	}
 }
 
 // handler for right mouse button clicks.
@@ -644,12 +650,18 @@ void sexp_tree::right_clicked(int mode)
 		replace_variable_menu->DeleteMenu(ID_PLACEHOLDER, MF_BYCOMMAND);
 
 		// get item_index
-		item_index = -1;
-		for (i=0; i<(int)tree_nodes.size(); i++) {
-			if (tree_nodes[i].handle == h) {
-				item_index = i;
-				break;
-			}
+		update_item(h);
+
+		// annotations only work in the event editor
+		if (m_mode == MODE_EVENTS)
+		{
+			menu.EnableMenuItem(ID_EDIT_COMMENT, MF_ENABLED);
+			menu.EnableMenuItem(ID_EDIT_BG_COLOR, MF_ENABLED);
+		}
+		else
+		{
+			menu.EnableMenuItem(ID_EDIT_COMMENT, MF_GRAYED);
+			menu.EnableMenuItem(ID_EDIT_BG_COLOR, MF_GRAYED);
 		}
 
 		/*
@@ -842,6 +854,8 @@ void sexp_tree::right_clicked(int mode)
 							case OP_SET_OBJECT_SPEED_Y:
 							case OP_SET_OBJECT_SPEED_Z:
 							case OP_DISTANCE:
+							case OP_SCRIPT_EVAL:
+							case OP_TRIGGER_SUBMODEL_ANIMATION:
 								j = (int)op_menu.size();	// don't allow these operators to be visible
 								break;
 						}
@@ -892,6 +906,8 @@ void sexp_tree::right_clicked(int mode)
 							case OP_SET_OBJECT_SPEED_Y:
 							case OP_SET_OBJECT_SPEED_Z:
 							case OP_DISTANCE:
+							case OP_SCRIPT_EVAL:
+							case OP_TRIGGER_SUBMODEL_ANIMATION:
 								j = (int)op_submenu.size();	// don't allow these operators to be visible
 								break;
 						}
@@ -909,12 +925,8 @@ void sexp_tree::right_clicked(int mode)
 		}
 
 		// find local index (i) of current item (from its handle)
-		SelectItem(item_handle = h);
-		for (i=0; i<(int)tree_nodes.size(); i++) {
-			if (tree_nodes[i].handle == h) {
-				break;
-			}
-		}
+		SelectItem(h);
+		update_item(h);
 
 		// special case: item is a ROOT node, and a label that can be edited (not an item in the sexp tree)
 		if ((item_index == -1) && (m_mode & ST_LABELED_ROOT)) {
@@ -978,11 +990,19 @@ void sexp_tree::right_clicked(int mode)
 						menu.EnableMenuItem(Operators[ptr->op].value, MF_ENABLED);
 
 					} else {
+						UINT flags = MF_STRING | MF_ENABLED;
+
+						if (!((data_idx + 3) % 30)) {
+							flags |= MF_MENUBARBREAK;
+						}
+
 						// add data
-						if ( (data_idx + 3) % 30) {
-							add_data_menu->AppendMenu(MF_STRING | MF_ENABLED, ID_ADD_MENU + data_idx, ptr->text.c_str());
+						if (type == OPF_VARIABLE_NAME) {
+							char buf[128];
+							sprintf(buf, "%s (%s)", Sexp_variables[data_idx].variable_name, Sexp_variables[data_idx].text);
+							add_data_menu->AppendMenu(flags, ID_ADD_MENU + data_idx, buf);
 						} else {
-							add_data_menu->AppendMenu(MF_MENUBARBREAK | MF_STRING | MF_ENABLED, ID_ADD_MENU + data_idx, ptr->text.c_str());
+							add_data_menu->AppendMenu(flags, ID_ADD_MENU + data_idx, ptr->text.c_str());
 						}
 					}
 
@@ -1409,6 +1429,16 @@ int sexp_tree::edit_label(HTREEITEM h)
 */
 }
 
+void sexp_tree::edit_comment(HTREEITEM h)
+{
+	// Not implemented in the base class
+}
+
+void sexp_tree::edit_bg_color(HTREEITEM h)
+{
+	// Not implemented in the base class
+}
+
 // given a tree node, returns the argument type it should be.
 int sexp_tree::query_node_argument_type(int node)
 {
@@ -1588,7 +1618,6 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 
 	id = LOWORD(wParam);
 
-
 	// Add variable
 	if (id == ID_SEXP_TREE_ADD_VARIABLE) {
 		CAddVariableDlg dlg;
@@ -1709,6 +1738,14 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 		return 1;
 	}
 
+	// Add/Modify Container
+	if (id == ID_EDIT_SEXP_TREE_EDIT_CONTAINERS) {
+		CAddModifyContainerDlg dlg(this);
+
+		dlg.DoModal();
+
+		return 1;
+	}
 
 	// check if REPLACE_VARIABLE_MENU
 	if ( (id >= ID_VARIABLE_MENU) && (id < ID_VARIABLE_MENU + 511)) {
@@ -1751,6 +1788,7 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 
 
 	if ((id >= ID_ADD_MENU) && (id < ID_ADD_MENU + 511)) {
+		auto saved_id = id;
 		Assert(item_index >= 0);
 		op = get_operator_index(tree_nodes[item_index].text);
 		Assert(op >= 0);
@@ -1769,8 +1807,29 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 
 		Assert((SEXPT_TYPE(ptr->type) != SEXPT_OPERATOR) && (ptr->op < 0));
 		expand_operator(item_index);
-		add_data(ptr->text.c_str(), ptr->type);
+		node = add_data(ptr->text.c_str(), ptr->type);
 		list->destroy();
+
+		// bolted-on ugly hack
+		if (type == OPF_VARIABLE_NAME) {
+			auto var_idx = saved_id - ID_ADD_MENU;
+			auto saved_item_index = item_index;
+
+			if (Sexp_variables[var_idx].type & SEXP_VARIABLE_NUMBER) {
+				type = SEXPT_NUMBER;
+			}
+			else if (Sexp_variables[var_idx].type & SEXP_VARIABLE_STRING) {
+				type = SEXPT_STRING;
+			}
+			else {
+				UNREACHABLE("Unknown sexp variable type");
+			}
+
+			item_index = node;
+			replace_variable_data(var_idx, (type | SEXPT_VARIABLE));
+			item_index = saved_item_index;
+		}
+
 		return 1;
 	}
 
@@ -1859,97 +1918,15 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 
 	switch (id) {
 		case ID_EDIT_COPY:
-			// If a clipboard already exist, unmark it as persistent and free old clipboard
-			if (Sexp_clipboard != -1) {
-				sexp_unmark_persistent(Sexp_clipboard);
-				free_sexp2(Sexp_clipboard);
-			}
-
-			// Allocate new clipboard and mark persistent
-			Sexp_clipboard = save_branch(item_index, 1);
-			sexp_mark_persistent(Sexp_clipboard);
+			NodeCopy();
 			return 1;
 
 		case ID_EDIT_PASTE:
-			// the following assumptions are made..
-			Assert((Sexp_clipboard > -1) && (Sexp_nodes[Sexp_clipboard].type != SEXP_NOT_USED));
-			Assert(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_LIST);
-
-			if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_OPERATOR) {
-				expand_operator(item_index);
-				replace_operator(CTEXT(Sexp_clipboard));
-				if (Sexp_nodes[Sexp_clipboard].rest != -1) {
-					load_branch(Sexp_nodes[Sexp_clipboard].rest, item_index);
-					i = tree_nodes[item_index].child;
-					while (i != -1) {
-						add_sub_tree(i, tree_nodes[item_index].handle);
-						i = tree_nodes[i].next;
-					}
-				}
-
-			} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_NUMBER) {
-				Assert(Sexp_nodes[Sexp_clipboard].rest == -1);
-				if (Sexp_nodes[Sexp_clipboard].type & SEXP_FLAG_VARIABLE) {
-					int var_idx = get_index_sexp_variable_name(Sexp_nodes[Sexp_clipboard].text);
-					Assert(var_idx > -1);
-					replace_variable_data(var_idx, (SEXPT_VARIABLE | SEXPT_NUMBER | SEXPT_VALID));
-				}
-				else {
-					expand_operator(item_index);
-					replace_data(CTEXT(Sexp_clipboard), (SEXPT_NUMBER | SEXPT_VALID));
-				}
-
-			} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_STRING) {
-				Assert(Sexp_nodes[Sexp_clipboard].rest == -1);
-				if (Sexp_nodes[Sexp_clipboard].type & SEXP_FLAG_VARIABLE) {
-					int var_idx = get_index_sexp_variable_name(Sexp_nodes[Sexp_clipboard].text);
-					Assert(var_idx > -1);
-					replace_variable_data(var_idx, (SEXPT_VARIABLE | SEXPT_STRING | SEXPT_VALID));
-				}
-				else {
-					expand_operator(item_index);
-					replace_data(CTEXT(Sexp_clipboard), (SEXPT_STRING | SEXPT_VALID));
-				}
-
-			} else
-				Assert(0);  // unknown and/or invalid sexp type
-
-			expand_branch(item_handle);
-
+			NodePaste();
 			return 1;
 
 		case ID_EDIT_PASTE_SPECIAL:  // add paste, instead of replace.
-			// the following assumptions are made..
-			Assert((Sexp_clipboard > -1) && (Sexp_nodes[Sexp_clipboard].type != SEXP_NOT_USED));
-			Assert(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_LIST);
-
-			if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_OPERATOR) {
-				expand_operator(item_index);
-				add_operator(CTEXT(Sexp_clipboard));
-				if (Sexp_nodes[Sexp_clipboard].rest != -1) {
-					load_branch(Sexp_nodes[Sexp_clipboard].rest, item_index);
-					i = tree_nodes[item_index].child;
-					while (i != -1) {
-						add_sub_tree(i, tree_nodes[item_index].handle);
-						i = tree_nodes[i].next;
-					}
-				}
-
-			} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_NUMBER) {
-				Assert(Sexp_nodes[Sexp_clipboard].rest == -1);
-				expand_operator(item_index);
-				add_data(CTEXT(Sexp_clipboard), (SEXPT_NUMBER | SEXPT_VALID));
-
-			} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_STRING) {
-				Assert(Sexp_nodes[Sexp_clipboard].rest == -1);
-				expand_operator(item_index);
-				add_data(CTEXT(Sexp_clipboard), (SEXPT_STRING | SEXPT_VALID));
-
-			} else
-				Assert(0);  // unknown and/or invalid sexp type
-
-			expand_branch(item_handle);
-
+			NodeAddPaste();
 			return 1;
 
 /*		case ID_SPLIT_LINE:
@@ -1969,9 +1946,16 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 				*modified = 1;
 				EditLabel(item_handle);
 			}
-
 			return 1;
-	
+
+		case ID_EDIT_COMMENT:
+			edit_comment(item_handle);
+			return 1;
+
+		case ID_EDIT_BG_COLOR:
+			edit_bg_color(item_handle);
+			return 1;
+
 		case ID_REPLACE_NUMBER:
 			expand_operator(item_index);
 			replace_data("number", (SEXPT_NUMBER | SEXPT_VALID));
@@ -2001,66 +1985,183 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 		}
 
 		case ID_EDIT_CUT:
-			if (Sexp_clipboard != -1) {
-				sexp_unmark_persistent(Sexp_clipboard);
-				free_sexp2(Sexp_clipboard);
-			}
-
-			Sexp_clipboard = save_branch(item_index, 1);
-			sexp_mark_persistent(Sexp_clipboard);
-			// fall through to ID_DELETE case.
-
-		case ID_DELETE:	{
-			int parent, theNode;
-			HTREEITEM h_parent;
-
-			if ((m_mode & ST_ROOT_DELETABLE) && (item_index == -1)) {
-				item_index = (int)GetItemData(item_handle);
-				if (m_mode == MODE_GOALS) {
-					Assert(Goal_editor_dlg);
-					theNode = Goal_editor_dlg->handler(ROOT_DELETED, item_index);
-
-				} else if (m_mode == MODE_EVENTS) {
-					Assert(Event_editor_dlg);
-					theNode = Event_editor_dlg->handler(ROOT_DELETED, item_index);
-
-				} else {
-					Assert(m_mode == MODE_CAMPAIGN);
-					theNode = Campaign_tree_formp->handler(ROOT_DELETED, item_index);
-				}
-
-				Assert(theNode >= 0);
-				free_node2(theNode);
-				DeleteItem(item_handle);
-				*modified = 1;
-				return 1;
-			}
-
-			Assert(item_index >= 0);
-			h_parent = GetParentItem(item_handle);
-			parent = tree_nodes[item_index].parent;
-			if ((parent == -1) && (m_mode == MODE_EVENTS))
-				Int3();  // no longer used, temporary to check if called still.
-
-			Assert(parent != -1 && tree_nodes[parent].handle == h_parent);
-			free_node(item_index);
-			DeleteItem(item_handle);
-
-			theNode = tree_nodes[parent].child;
-/*			if (node != -1 && tree_nodes[node].next == -1 && tree_nodes[node].child == -1) {
-				sprintf(buf, "%s %s", tree_nodes[parent].text, tree_nodes[node].text);
-				SetItem(h_parent, TVIF_TEXT, buf, 0, 0, 0, 0, 0);
-				tree_nodes[parent].flags = OPERAND | EDITABLE;
-				tree_nodes[node].flags = COMBINED;
-				DeleteItem(tree_nodes[node].handle);
-			}*/
-
-			*modified = 1;
+			NodeCut();
 			return 1;
-		}
+
+		case ID_DELETE:
+			NodeDelete();
+			return 1;
 	}
 	
 	return CTreeCtrl::OnCommand(wParam, lParam);
+}
+
+void sexp_tree::NodeCut()
+{
+	if (item_index < 0)
+		return;
+
+	NodeCopy();
+	NodeDelete();
+}
+
+void sexp_tree::NodeDelete()
+{
+	int parent, theNode;
+	HTREEITEM h_parent;
+
+	if ((m_mode & ST_ROOT_DELETABLE) && (item_index == -1)) {
+		item_index = (int)GetItemData(item_handle);
+		if (m_mode == MODE_GOALS) {
+			Assert(Goal_editor_dlg);
+			theNode = Goal_editor_dlg->handler(ROOT_DELETED, item_index);
+
+		} else if (m_mode == MODE_EVENTS) {
+			Assert(Event_editor_dlg);
+			theNode = Event_editor_dlg->handler(ROOT_DELETED, item_index);
+
+		} else {
+			Assert(m_mode == MODE_CAMPAIGN);
+			theNode = Campaign_tree_formp->handler(ROOT_DELETED, item_index);
+		}
+
+		Assert(theNode >= 0);
+		free_node2(theNode);
+		DeleteItem(item_handle);
+		*modified = 1;
+		return;
+	}
+
+	Assert(item_index >= 0);
+	h_parent = GetParentItem(item_handle);
+	parent = tree_nodes[item_index].parent;
+
+	// can't delete the root node
+	if (parent < 0)
+		return;
+
+	Assert(parent != -1 && tree_nodes[parent].handle == h_parent);
+	free_node(item_index);
+	DeleteItem(item_handle);
+
+	theNode = tree_nodes[parent].child;
+/*			if (node != -1 && tree_nodes[node].next == -1 && tree_nodes[node].child == -1) {
+		sprintf(buf, "%s %s", tree_nodes[parent].text, tree_nodes[node].text);
+		SetItem(h_parent, TVIF_TEXT, buf, 0, 0, 0, 0, 0);
+		tree_nodes[parent].flags = OPERAND | EDITABLE;
+		tree_nodes[node].flags = COMBINED;
+		DeleteItem(tree_nodes[node].handle);
+	}*/
+
+	*modified = 1;
+}
+
+void sexp_tree::NodeCopy()
+{
+	if (item_index < 0)
+		return;
+
+	// If a clipboard already exist, unmark it as persistent and free old clipboard
+	if (Sexp_clipboard != -1) {
+		sexp_unmark_persistent(Sexp_clipboard);
+		free_sexp2(Sexp_clipboard);
+	}
+
+	// Allocate new clipboard and mark persistent
+	Sexp_clipboard = save_branch(item_index, 1);
+	sexp_mark_persistent(Sexp_clipboard);
+}
+
+void sexp_tree::NodePaste()
+{
+	if (item_index < 0)
+		return;
+
+	int i;
+
+	// the following assumptions are made..
+	Assert((Sexp_clipboard > -1) && (Sexp_nodes[Sexp_clipboard].type != SEXP_NOT_USED));
+	Assert(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_LIST);
+
+	if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_OPERATOR) {
+		expand_operator(item_index);
+		replace_operator(CTEXT(Sexp_clipboard));
+		if (Sexp_nodes[Sexp_clipboard].rest != -1) {
+			load_branch(Sexp_nodes[Sexp_clipboard].rest, item_index);
+			i = tree_nodes[item_index].child;
+			while (i != -1) {
+				add_sub_tree(i, tree_nodes[item_index].handle);
+				i = tree_nodes[i].next;
+			}
+		}
+
+	} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_NUMBER) {
+		Assert(Sexp_nodes[Sexp_clipboard].rest == -1);
+		if (Sexp_nodes[Sexp_clipboard].type & SEXP_FLAG_VARIABLE) {
+			int var_idx = get_index_sexp_variable_name(Sexp_nodes[Sexp_clipboard].text);
+			Assert(var_idx > -1);
+			replace_variable_data(var_idx, (SEXPT_VARIABLE | SEXPT_NUMBER | SEXPT_VALID));
+		}
+		else {
+			expand_operator(item_index);
+			replace_data(CTEXT(Sexp_clipboard), (SEXPT_NUMBER | SEXPT_VALID));
+		}
+
+	} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_STRING) {
+		Assert(Sexp_nodes[Sexp_clipboard].rest == -1);
+		if (Sexp_nodes[Sexp_clipboard].type & SEXP_FLAG_VARIABLE) {
+			int var_idx = get_index_sexp_variable_name(Sexp_nodes[Sexp_clipboard].text);
+			Assert(var_idx > -1);
+			replace_variable_data(var_idx, (SEXPT_VARIABLE | SEXPT_STRING | SEXPT_VALID));
+		}
+		else {
+			expand_operator(item_index);
+			replace_data(CTEXT(Sexp_clipboard), (SEXPT_STRING | SEXPT_VALID));
+		}
+
+	} else
+		Assert(0);  // unknown and/or invalid sexp type
+
+	expand_branch(item_handle);
+}
+
+void sexp_tree::NodeAddPaste()
+{
+	if (item_index < 0)
+		return;
+
+	int i;
+
+	// the following assumptions are made..
+	Assert((Sexp_clipboard > -1) && (Sexp_nodes[Sexp_clipboard].type != SEXP_NOT_USED));
+	Assert(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_LIST);
+
+	if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_OPERATOR) {
+		expand_operator(item_index);
+		add_operator(CTEXT(Sexp_clipboard));
+		if (Sexp_nodes[Sexp_clipboard].rest != -1) {
+			load_branch(Sexp_nodes[Sexp_clipboard].rest, item_index);
+			i = tree_nodes[item_index].child;
+			while (i != -1) {
+				add_sub_tree(i, tree_nodes[item_index].handle);
+				i = tree_nodes[i].next;
+			}
+		}
+
+	} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_NUMBER) {
+		Assert(Sexp_nodes[Sexp_clipboard].rest == -1);
+		expand_operator(item_index);
+		add_data(CTEXT(Sexp_clipboard), (SEXPT_NUMBER | SEXPT_VALID));
+
+	} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_STRING) {
+		Assert(Sexp_nodes[Sexp_clipboard].rest == -1);
+		expand_operator(item_index);
+		add_data(CTEXT(Sexp_clipboard), (SEXPT_STRING | SEXPT_VALID));
+
+	} else
+		Assert(0);  // unknown and/or invalid sexp type
+
+	expand_branch(item_handle);
 }
 
 // adds to or replaces (based on passed in flag) the current operator
@@ -2127,17 +2228,6 @@ void sexp_list_item::set_data(const char *str, int t)
 	type = t;
 }
 
-// initialize node, type data, allocating memory for the text
-// Defaults: t = SEXPT_STRING
-//
-void sexp_list_item::set_data_dup(const char *str, int t)
-{
-	op = -1;
-	text = strdup(str);
-	flags |= SEXP_ITEM_F_DUP;
-	type = t;
-}
-
 // add a node to end of list
 //
 void sexp_list_item::add_op(int op_num)
@@ -2167,23 +2257,6 @@ void sexp_list_item::add_data(const char *str, int t)
 
 	ptr->next = item;
 	item->set_data(str, t);
-}
-
-// add a node to end of list, allocating memory for the text
-// Defaults: t = SEXPT_STRING
-//
-void sexp_list_item::add_data_dup(const char *str, int t)
-{
-	sexp_list_item *item, *ptr;
-
-	item = new sexp_list_item;
-	ptr = this;
-	while (ptr->next)
-		ptr = ptr->next;
-
-	ptr->next = item;
-	item->set_data(strdup(str), t);
-	item->flags |= SEXP_ITEM_F_DUP;
 }
 
 // add an sexp list to end of another list (join lists)
@@ -2367,9 +2440,8 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 						break;
 				}
 
-				// Goober5000 - set_data_dup is required if we're passing a variable
 				sprintf(sexp_str_token, "%d", temp);
-				item->set_data_dup(sexp_str_token, (SEXPT_NUMBER | SEXPT_VALID));
+				item->set_data(sexp_str_token, (SEXPT_NUMBER | SEXPT_VALID));
 			}
 			else if (Operators[op].value == OP_WARP_EFFECT)
 			{
@@ -2389,9 +2461,8 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 						break;
 				}
 
-				// Goober5000 - set_data_dup is required if we're passing a variable
 				sprintf(sexp_str_token, "%d", temp);
-				item->set_data_dup(sexp_str_token, (SEXPT_NUMBER | SEXPT_VALID));
+				item->set_data(sexp_str_token, (SEXPT_NUMBER | SEXPT_VALID));
 			}
 			else if (Operators[op].value == OP_CHANGE_BACKGROUND)
 			{
@@ -2416,7 +2487,7 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 				}
 
 				sprintf(sexp_str_token, "%d", temp);
-				item->set_data_dup(sexp_str_token, (SEXPT_NUMBER | SEXPT_VALID));
+				item->set_data(sexp_str_token, (SEXPT_NUMBER | SEXPT_VALID));
 			}
 			else if (Operators[op].value == OP_ADD_SUN_BITMAP)
 			{
@@ -2427,7 +2498,14 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 					temp = 100;
 
 				sprintf(sexp_str_token, "%d", temp);
-				item->set_data_dup(sexp_str_token, (SEXPT_NUMBER | SEXPT_VALID));
+				item->set_data(sexp_str_token, (SEXPT_NUMBER | SEXPT_VALID));
+			}
+			else if (Operators[op].value == OP_MISSION_SET_NEBULA)
+			{
+				if (i == 0)
+					item->set_data("1", (SEXPT_NUMBER | SEXPT_VALID));
+				else
+					item->set_data("3000", (SEXPT_NUMBER | SEXPT_VALID));
 			}
 			else if (Operators[op].value == OP_MODIFY_VARIABLE)
 			{
@@ -2524,6 +2602,11 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 			// if no hardcoded default, just use the listing default
 			break;
 		}
+
+		// new default value
+		case OPF_PRIORITY:
+			item->set_data("Normal", (SEXPT_STRING | SEXPT_VALID));
+			return 0;
 	}
 
 	list = get_listing_opf(type, index, i);
@@ -2667,10 +2750,14 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 			str = "<Effect Name>";
 			break;
 
-		case OPF_HUD_GAUGE:
-			str = "Messages";
+		case OPF_CUSTOM_HUD_GAUGE:
+			str = "<Custom hud gauge>";
 			break;
-
+			
+		case OPF_ANIMATION_NAME:
+			str = "<Animation trigger name>";
+			break;			
+			
 		default:
 			str = "<new default required!>";
 			break;
@@ -2723,7 +2810,6 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_WEAPON_NAME:
 		case OPF_INTEL_NAME:
 		case OPF_SHIP_CLASS_NAME:
-		case OPF_HUD_GAUGE_NAME:
 		case OPF_HUGE_WEAPON:
 		case OPF_JUMP_NODE_NAME:
 		case OPF_AMBIGUOUS:
@@ -2760,7 +2846,8 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_AUDIO_VOLUME_OPTION:
 		case OPF_WEAPON_BANK_NUMBER:
 		case OPF_MESSAGE_OR_STRING:
-		case OPF_HUD_GAUGE:
+		case OPF_BUILTIN_HUD_GAUGE:
+		case OPF_CUSTOM_HUD_GAUGE:
 		case OPF_SHIP_EFFECT:
 		case OPF_ANIMATION_TYPE:
 		case OPF_SHIP_FLAG:
@@ -2770,6 +2857,9 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_GAME_SND:
 		case OPF_FIREBALL:
 		case OPF_SPECIES:
+		case OPF_LANGUAGE:
+		case OPF_FUNCTIONAL_WHEN_EVAL_TYPE:
+		case OPF_ANIMATION_NAME:
 			return 1;
 
 		case OPF_SHIP:
@@ -3875,6 +3965,10 @@ void sexp_tree::setup(CEdit *ptr)
 			bitmap.DeleteObject();
 		}
 
+		bitmap.LoadBitmap(IDB_COMMENT);
+		pimagelist->Add(&bitmap, (COLORREF)0xFF00FF);
+		bitmap.DeleteObject();
+
 		SetImageList(pimagelist, TVSIL_NORMAL);
 	}
 }
@@ -3969,7 +4063,7 @@ void sexp_tree::update_help(HTREEITEM h)
 		return;
 
 	mini_help_box = (CEdit *) GetParent()->GetDlgItem(IDC_MINI_HELP_BOX);
-	if (!mini_help_box || !::IsWindow(mini_help_box->m_hWnd))
+	if (mini_help_box && !::IsWindow(mini_help_box->m_hWnd))
 		return;
 
 	for (i=0; i<(int)tree_nodes.size(); i++)
@@ -3978,13 +4072,15 @@ void sexp_tree::update_help(HTREEITEM h)
 
 	if ((i >= (int)tree_nodes.size()) || !tree_nodes[i].type) {
 		help_box->SetWindowText("");
-		mini_help_box->SetWindowText("");
+		if (mini_help_box)
+			mini_help_box->SetWindowText("");
 		return;
 	}
 
 	if (SEXPT_TYPE(tree_nodes[i].type) == SEXPT_OPERATOR)
 	{
-		mini_help_box->SetWindowText("");
+		if (mini_help_box)
+			mini_help_box->SetWindowText("");
 	}
 	else
 	{
@@ -4074,7 +4170,8 @@ void sexp_tree::update_help(HTREEITEM h)
 				sprintf(buffer, "%d:", sibling_place);
 			}
 
-			mini_help_box->SetWindowText(buffer);
+			if (mini_help_box)
+				mini_help_box->SetWindowText(buffer);
 		}
 
 		if (index >= 0) {
@@ -4139,13 +4236,59 @@ int sexp_tree::find_text(const char *text, int *find)
 	return find_count;
 }
 			
-
-void sexp_tree::OnKeydown(NMHDR *pNMHDR, LRESULT *pResult) 
+void sexp_tree::OnKeyDown(NMHDR *pNMHDR, LRESULT *pResult) 
 {
 	int key;
 	TV_KEYDOWN *pTVKeyDown = (TV_KEYDOWN *) pNMHDR;
 
 	key = pTVKeyDown->wVKey;
+
+	// Handle clipboard operations for the sexp_tree and its subclasses.  The *proper* way to do this
+	// would be to catch the WM_CUT, WM_COPY, and WM_PASTE messages, but I wasn't able to get it to work
+	// despite considerable research and effort.  So this achieves the same result by just catching
+	// the shortcut keys instead of the messages they produce.  Unfortunately one still hears an error
+	// beep caused by the fumbled WM_CUT, WM_COPY, or WM_PASTE message landing somewhere unknown.
+	// 
+	// Only capture keys on the nodes when we're not currently editing their text
+	//
+	if (GetEditControl() == nullptr)
+	{
+		if (GetKeyState(VK_CONTROL) & 0x8000)
+		{
+			// Currently the item_index and item_handle are only updated
+			// when right-clicking, so we need to do another update
+			// before processing the key press.  Ideally they should be
+			// updated when the selection changes, but there are some
+			// hidden side-effects to making it selection-dependent
+			// that are difficult to track down.			
+			if (key == 'X')
+			{
+				update_item(GetSelectedItem());
+				NodeCut();
+			}
+			else if (key == 'C')
+			{
+				update_item(GetSelectedItem());
+				NodeCopy();
+			}
+			else if (key == 'V')
+			{
+				update_item(GetSelectedItem());
+				NodePaste();
+			}
+			else if (key == 'P')
+			{
+				update_item(GetSelectedItem());
+				auto orig_handle = item_handle;
+				NodeAddPaste();
+
+				// when using the keyboard shortcut, stay on the original node after pasting
+				SelectItem(orig_handle);
+				update_item(orig_handle);
+			}
+		}
+	}
+
 	if (key == VK_SPACE)
 		EditLabel(GetSelectedItem());
 
@@ -4378,10 +4521,6 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			list = get_listing_opf_ship_class_name();
 			break;
 
-		case OPF_HUD_GAUGE_NAME:
-			list = get_listing_opf_hud_gauge_name();
-			break;
-
 		case OPF_HUGE_WEAPON:
 			list = get_listing_opf_huge_weapon();
 			break;
@@ -4502,8 +4641,12 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			list = get_listing_opf_message();
 			break;
 
-		case OPF_HUD_GAUGE:
-			list = get_listing_opf_hud_gauge();
+		case OPF_BUILTIN_HUD_GAUGE:
+			list = get_listing_opf_builtin_hud_gauge();
+			break;
+
+		case OPF_CUSTOM_HUD_GAUGE:
+			list = get_listing_opf_custom_hud_gauge();
 			break;
 
 		case OPF_SHIP_EFFECT:
@@ -4536,6 +4679,18 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 
 		case OPF_SPECIES:
 			list = get_listing_opf_species();
+			break;
+
+		case OPF_LANGUAGE:
+			list = get_listing_opf_language();
+			break;
+
+		case OPF_FUNCTIONAL_WHEN_EVAL_TYPE:
+			list = get_listing_opf_functional_when_eval_type();
+			break;
+			
+		case OPF_ANIMATION_NAME:
+			list = get_listing_opf_animation_name(parent_node);
 			break;
 
 		default:
@@ -4929,6 +5084,7 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 		case OP_MISSILE_LOCKED:
 		case OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD:
 		case OP_IS_IN_TURRET_FOV:
+		case OP_TURRET_SET_FORCED_TARGET:
 			// iterate to the next field
 			child = tree_nodes[child].next;
 			break;
@@ -4978,6 +5134,16 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 			Assert(child >= 0);
 			child = tree_nodes[child].next;
 			break;
+
+		// this sexp checks the third entry, but only for the 4th argument
+		case OP_TURRET_SET_FORCED_SUBSYS_TARGET:
+			if (arg_index >= 3) {
+				child = tree_nodes[child].next;
+				Assert(child >= 0);
+				child = tree_nodes[child].next;
+			}
+			break;
+
 	}
 
 	// now find the ship and add all relevant subsystems
@@ -5095,7 +5261,7 @@ sexp_list_item *sexp_tree::get_listing_opf_point()
 		for (j = 0; (uint) j < ii->get_waypoints().size(); ++j)
 		{
 			sprintf(buf, "%s:%d", ii->get_name(), j + 1);
-			head.add_data_dup(buf);
+			head.add_data(buf);
 		}
 	}
 
@@ -5107,7 +5273,7 @@ sexp_list_item *sexp_tree::get_listing_opf_iff()
 	int i;
 	sexp_list_item head;
 
-	for (i=0; i<Num_iffs; i++)
+	for (i=0; i< (int)Iff_info.size(); i++)
 		head.add_data(Iff_info[i].iff_name);
 
 	return head.next;
@@ -5220,12 +5386,12 @@ sexp_list_item *sexp_tree::get_listing_opf_arrival_anchor_all()
 
 	for (restrict_to_players = 0; restrict_to_players < 2; restrict_to_players++)
 	{
-		for (i = 0; i < Num_iffs; i++)
+		for (i = 0; i < (int)Iff_info.size(); i++)
 		{
 			char tmp[NAME_LENGTH + 15];
 			stuff_special_arrival_anchor_name(tmp, i, restrict_to_players, 0);
 
-			head.add_data_dup(tmp);
+			head.add_data(tmp);
 		}
 	}
 
@@ -5439,7 +5605,7 @@ sexp_list_item *sexp_tree::get_listing_opf_sound_environment()
 
 	head.add_data(SEXP_NONE_STRING);
 	for (int i = 0; i  < (int)EFX_presets.size(); i++) {
-		head.add_data_dup(EFX_presets[i].name.c_str());
+		head.add_data(EFX_presets[i].name.c_str());
 	}
 
 	return head.next;
@@ -5465,7 +5631,7 @@ sexp_list_item *sexp_tree::get_listing_opf_adjust_audio_volume()
 	return head.next;
 }
 
-sexp_list_item *sexp_tree::get_listing_opf_hud_gauge() 
+sexp_list_item *sexp_tree::get_listing_opf_builtin_hud_gauge() 
 {
 	sexp_list_item head;
 
@@ -5475,12 +5641,39 @@ sexp_list_item *sexp_tree::get_listing_opf_hud_gauge()
 	return head.next;
 }
 
-sexp_list_item *sexp_tree::get_listing_opf_ship_effect() 
+sexp_list_item *sexp_tree::get_listing_opf_custom_hud_gauge()
+{
+	sexp_list_item head;
+	SCP_unordered_set<SCP_string> all_gauges;
+
+	for (auto &gauge : default_hud_gauges)
+	{
+		all_gauges.insert(gauge->getCustomGaugeName());
+		head.add_data(gauge->getCustomGaugeName());
+	}
+
+	for (auto &si : Ship_info)
+	{
+		for (auto &gauge : si.hud_gauges)
+		{
+			// avoid duplicating any HUD gauges
+			if (all_gauges.count(gauge->getCustomGaugeName()) == 0)
+			{
+				all_gauges.insert(gauge->getCustomGaugeName());
+				head.add_data(gauge->getCustomGaugeName());
+			}
+		}
+	}
+
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_ship_effect()
 {
 	sexp_list_item head;
 	
 	for (SCP_vector<ship_effect>::iterator sei = Ship_effects.begin(); sei != Ship_effects.end(); ++sei) {
-		head.add_data_dup(sei->name);
+		head.add_data(sei->name);
 	}
 
 	return head.next;
@@ -5522,7 +5715,7 @@ sexp_list_item *sexp_tree::get_listing_opf_ship_wing_wholeteam()
 	int i;
 	sexp_list_item head;
 
-	for (i = 0; i < Num_iffs; i++)
+	for (i = 0; i < (int)Iff_info.size(); i++)
 		head.add_data(Iff_info[i].iff_name);
 
 	head.add_list(get_listing_opf_ship_wing());
@@ -5535,12 +5728,12 @@ sexp_list_item *sexp_tree::get_listing_opf_ship_wing_shiponteam_point()
 	int i;
 	sexp_list_item head;
 
-	for (i = 0; i < Num_iffs; i++)
+	for (i = 0; i < (int)Iff_info.size(); i++)
 	{
 		char tmp[NAME_LENGTH + 7];
 		sprintf(tmp, "<any %s>", Iff_info[i].iff_name);
 		strlwr(tmp);
-		head.add_data_dup(tmp);
+		head.add_data(tmp);
 	}
 
 	head.add_list(get_listing_opf_ship_wing_point());
@@ -5653,11 +5846,13 @@ sexp_list_item *sexp_tree::get_listing_opf_ship_type()
 sexp_list_item *sexp_tree::get_listing_opf_keypress()
 {
 	sexp_list_item head;
+	const auto& Default_config = Control_config_presets[0].bindings;
 
-	const auto& default_bindings = Control_config_presets[0].bindings;
 	for (size_t i = 0; i < Control_config.size(); ++i) {
-		if ((default_bindings[i].first.btn > 0) && !Control_config[i].disabled) {
-			head.add_data_dup(textify_scancode(default_bindings[i].first.btn));
+		auto btn = Default_config[i].get_btn(CID_KEYBOARD);
+
+		if ((btn >= 0) && !Control_config[i].disabled) {
+			head.add_data(textify_scancode(btn));
 		}
 	}
 
@@ -5699,11 +5894,10 @@ sexp_list_item *sexp_tree::get_listing_opf_event_name(int parent_node)
 
 sexp_list_item *sexp_tree::get_listing_opf_ai_order()
 {
-	int i;
 	sexp_list_item head;
 
-	for (i=0; i<NUM_COMM_ORDER_ITEMS; i++)
-		head.add_data(Comm_orders[i].name.c_str());
+	for (const auto& order : Player_orders)
+		head.add_data(order.hud_name.c_str());
 
 	return head.next;
 }
@@ -5784,17 +5978,6 @@ sexp_list_item *sexp_tree::get_listing_opf_ship_class_name()
 
 	for (auto &si : Ship_info)
 		head.add_data(si.name);
-
-	return head.next;
-}
-
-sexp_list_item *sexp_tree::get_listing_opf_hud_gauge_name()
-{
-	int i;
-	sexp_list_item head;
-
-	for (i=0; i<NUM_HUD_GAUGES; i++)
-		head.add_data(HUD_gauge_text[i]);
 
 	return head.next;
 }
@@ -5948,11 +6131,10 @@ sexp_list_item *sexp_tree::get_listing_opf_nebula_storm_type()
 sexp_list_item *sexp_tree::get_listing_opf_nebula_poof()
 {
 	sexp_list_item head;
-	int i;
 
-	for (i=0; i < MAX_NEB2_POOFS; i++)
+	for (poof_info &pf : Poof_info)
 	{
-		head.add_data(Neb2_poof_filenames[i]);
+		head.add_data(pf.name);
 	}
 
 	return head.next;
@@ -5977,9 +6159,9 @@ sexp_list_item *sexp_tree::get_listing_opf_post_effect()
 	SCP_vector<SCP_string> ppe_names;
 	gr_get_post_process_effect_names(ppe_names);
 	for (i=0; i < ppe_names.size(); i++) {
-		head.add_data_dup(ppe_names[i].c_str());
+		head.add_data(ppe_names[i].c_str());
 	}
-	head.add_data_dup("lightshafts");
+	head.add_data("lightshafts");
 
 	return head.next;
 }
@@ -6022,8 +6204,8 @@ sexp_list_item *sexp_tree::get_listing_opf_animation_type()
 {
 	sexp_list_item head;
 
-	for (auto animation_type : Animation_type_names) {
-		head.add_data(animation_type.second);
+	for (auto animation_type : animation::Animation_types) {
+		head.add_data(animation_type.second.first);
 	}
 
 	return head.next;
@@ -6049,7 +6231,7 @@ sexp_list_item *sexp_tree::get_listing_opf_mission_moods()
 {
 	sexp_list_item head;
 	for (SCP_vector<SCP_string>::iterator iter = Builtin_moods.begin(); iter != Builtin_moods.end(); ++iter) {
-		head.add_data_dup(iter->c_str());
+		head.add_data(iter->c_str());
 	}
 
 	return head.next;
@@ -6061,15 +6243,15 @@ sexp_list_item *sexp_tree::get_listing_opf_ship_flags()
 	sexp_list_item head;
 	// object flags
 	for ( i = 0; i < MAX_OBJECT_FLAG_NAMES; i++) {
-		head.add_data_dup(Object_flag_names[i].flag_name);
+		head.add_data(Object_flag_names[i].flag_name);
 	}
 	// ship flags
 	for ( i = 0; i < MAX_SHIP_FLAG_NAMES; i++) {
-		head.add_data_dup(Ship_flag_names[i].flag_name);
+		head.add_data(Ship_flag_names[i].flag_name);
 	}
 	// ai flags
 	for ( i = 0; i < MAX_AI_FLAG_NAMES; i++) {
-		head.add_data_dup(Ai_flag_names[i].flag_name);
+		head.add_data(Ai_flag_names[i].flag_name);
 	}
 
 	return head.next;
@@ -6080,7 +6262,7 @@ sexp_list_item *sexp_tree::get_listing_opf_team_colors()
 	sexp_list_item head;
 	head.add_data("None");
 	for (SCP_map<SCP_string, team_color>::iterator tcolor = Team_Colors.begin(); tcolor != Team_Colors.end(); ++tcolor) {
-		head.add_data_dup(tcolor->first.c_str());
+		head.add_data(tcolor->first.c_str());
 	}
 
 	return head.next;
@@ -6140,6 +6322,80 @@ sexp_list_item *sexp_tree::get_listing_opf_species()	// NOLINT
 	for (auto &species : Species_info)
 		head.add_data(species.species_name);
 
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_language()	// NOLINT
+{
+	sexp_list_item head;
+
+	for (auto &lang: Lcl_languages)
+		head.add_data(lang.lang_name);
+
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_functional_when_eval_type()	// NOLINT
+{
+	sexp_list_item head;
+
+	for (int i = 0; i < Num_functional_when_eval_types; i++)
+		head.add_data(Functional_when_eval_type[i]);
+
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_animation_name(int parent_node)
+{
+	int op, child, sh;
+	sexp_list_item head;
+
+	Assert(parent_node >= 0);
+
+	// get the operator type of the node
+	op = get_operator_const(tree_nodes[parent_node].text);
+
+	// first child node
+	child = tree_nodes[parent_node].child;
+	Assert(child >= 0);
+	sh = ship_name_lookup(tree_nodes[child].text, 1);
+
+	switch(op) {
+		case OP_TRIGGER_ANIMATION_NEW: {
+			child = tree_nodes[child].next;
+			auto triggerType = animation::anim_match_type(tree_nodes[child].text);
+
+			for(const auto& animation : Ship_info[Ships[sh].ship_info_index].animations.getRegisteredTriggers()){
+				if(animation.type != triggerType)
+					continue;
+
+				if(animation.subtype != animation::ModelAnimationSet::SUBTYPE_DEFAULT) {
+					int animationSubtype = animation.subtype;
+
+					if(animation.type == animation::ModelAnimationTriggerType::DockBayDoor){
+						//Because of the old system, this is this weird exception. Don't explicitly suggest the NOT doors, as they cannot be explicitly targeted anyways
+						if(animation.subtype < 0)
+							continue;
+
+						animationSubtype--;
+					}
+
+					head.add_data(std::to_string(animationSubtype).c_str());
+				}
+				else
+					head.add_data(animation.name.c_str());
+			}
+
+			break;
+		}
+
+		case OP_UPDATE_MOVEABLE:
+			for(const auto& moveable : Ship_info[Ships[sh].ship_info_index].animations.getRegisteredMoveables())
+				head.add_data(moveable.c_str());
+				
+			break;
+	}
+	
 	return head.next;
 }
 
@@ -6303,4 +6559,21 @@ int sexp_tree::get_loadout_variable_count(int var_index)
 	}
 	
 	return count; 
+}
+
+int sexp_tree::get_container_usage_count(const char* container_name) const
+{
+	const SCP_string container_name_str = sexp_container::DELIM + container_name + sexp_container::DELIM;
+
+	int count = 0;
+
+	for (uint idx = 0; idx < tree_nodes.size(); idx++) {
+		if (tree_nodes[idx].type & (SEXPT_VALID | SEXPT_CONTAINER)) {
+			if (!stricmp(tree_nodes[idx].text, container_name_str.c_str())) {
+				count++;
+			}
+		}
+	}
+
+	return count;
 }

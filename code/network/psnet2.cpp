@@ -125,13 +125,15 @@ static int Nettimeout = NETTIMEOUT;
 #define RNT_I_AM_HERE		7
 
 #pragma pack(push, 1)
-typedef struct {
+typedef struct reliable_header {
 	ubyte		type;					// packet type
 	ubyte		compressed;				//
 	ushort		seq;					// sequence packet 0-65535 used for ACKing also
 	ushort		data_len;				// length of data
 	float		send_time;				// Time the packet was sent, if an ACK the time the packet being ACK'd was sent.
 	ubyte		data[MAX_PACKET_SIZE];	// Packet data
+
+	reliable_header() : type(0), compressed(0), seq(0), data_len(0), send_time(0.0f) {}
 } reliable_header;
 #pragma pack(pop)
 
@@ -627,6 +629,10 @@ bool psnet_init_my_addr()
 		}
 	}
 
+	if ( (Psnet_ip_mode == PSNET_IP_MODE_DUAL) && (Cmdline_prefer_ipv4 || Cmdline_prefer_ipv6) ) {
+		ml_printf("Prefering IPv%d connections where possible", Cmdline_prefer_ipv4 ? 4 : 6);
+	}
+
 	return true;
 }
 
@@ -697,7 +703,7 @@ bool psnet_string_to_addr(const char *text, net_addr *address)
 				address->port = static_cast<uint16_t>(port_num);
 			}
 		} catch (...) {
-			mprintf(("Invalid port number in psnet_string_to_addr()"));
+			mprintf(("Invalid port number in psnet_string_to_addr()\n"));
 		}
 	}
 
@@ -1146,7 +1152,14 @@ bool psnet_get_addr(const char *host, const char *port, SOCKADDR_STORAGE *addr, 
 		return false;
 	}
 
-	const bool prefer_v4 = ((flags & ADDR_FLAG_PREFER_IPV4) && (Psnet_ip_mode == PSNET_IP_MODE_DUAL));
+	if (Cmdline_prefer_ipv4) {
+		flags |= ADDR_FLAG_PREFER_IPV4;
+	} else if (Cmdline_prefer_ipv6) {
+		flags &= ~ADDR_FLAG_PREFER_IPV4;
+	}
+
+	const bool prefer_v6 = ((Psnet_ip_mode == PSNET_IP_MODE_DUAL) && Cmdline_prefer_ipv6);
+	const bool prefer_v4 = ((Psnet_ip_mode == PSNET_IP_MODE_DUAL) && (flags & ADDR_FLAG_PREFER_IPV4));
 
 	for (auto *srv = srvinfo; srv != nullptr; srv = srv->ai_next) {
 		if ( (srv->ai_family == AF_INET) || (srv->ai_family == AF_INET6) ) {
@@ -1167,6 +1180,11 @@ bool psnet_get_addr(const char *host, const char *port, SOCKADDR_STORAGE *addr, 
 			}
 
 			success = true;
+
+			// if we would prefer an IPv6 address then maybe keep looking
+			if ( prefer_v6 && addr && (srv->ai_family == AF_INET) ) {
+				continue;
+			}
 
 			// if we would prefer an IPv4 address then maybe keep looking
 			if ( prefer_v4 && addr && (srv->ai_family == AF_INET6) ) {

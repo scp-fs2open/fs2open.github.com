@@ -113,7 +113,7 @@ ADE_FUNC(getValue,
 	l_Promise,
 	nullptr,
 	"Gets the resolved value of this promise. Causes an error when used on an unresolved or errored promise!",
-	"unknown",
+	"any",
 	"The resolved values.")
 {
 	LuaPromise* promise = nullptr;
@@ -143,7 +143,7 @@ ADE_FUNC(getErrorValue,
 	l_Promise,
 	nullptr,
 	"Gets the error value of this promise. Causes an error when used on an unresolved or resolved promise!",
-	"unknown",
+	"any",
 	"The error values.")
 {
 	LuaPromise* promise = nullptr;

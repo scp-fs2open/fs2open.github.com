@@ -102,6 +102,7 @@ int Id_select_type_start = 0;
 int Id_select_type_waypoint = 0;
 int Hide_ship_cues = 0, Hide_wing_cues = 0;
 int Move_ships_when_undocking = 1;			// true by default
+int Highlight_selectable_subsys = 0;
 
 vec3d original_pos, saved_cam_pos;
 matrix bitmap_matrix_backup, saved_cam_orient = { 0.0f };
@@ -116,7 +117,7 @@ char *names[MAX_OBJECTS], flags[MAX_OBJECTS];
 int obj_count = 0;
 int g_err = 0;
 
-int ID_SHOW_IFF[MAX_IFFS];
+SCP_vector<int> ID_SHOW_IFF;
 
 void view_universe(int just_marked = 0);
 void select_objects();
@@ -250,6 +251,8 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_COMMAND(ID_EDITORS_WAYPOINT, OnEditorsWaypoint)
 	ON_COMMAND(ID_VIEW_OUTLINES, OnViewOutlines)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_OUTLINES, OnUpdateViewOutlines)
+	ON_COMMAND(ID_VIEW_OUTLINES_ON_SELECTED, OnViewOutlinesOnSelected)
+	ON_UPDATE_COMMAND_UI(ID_VIEW_OUTLINES_ON_SELECTED, OnUpdateViewOutlinesOnSelected)
 	ON_UPDATE_COMMAND_UI(ID_NEW_SHIP_TYPE, OnUpdateNewShipType)
 	ON_COMMAND(ID_SHOW_STARFIELD, OnShowStarfield)
 	ON_UPDATE_COMMAND_UI(ID_SHOW_STARFIELD, OnUpdateShowStarfield)
@@ -333,6 +336,8 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_UPDATE_COMMAND_UI(ID_FORMAT_FS1_RETAIL, OnUpdateFormatFs1Retail)
 	ON_COMMAND(ID_MISC_MOVESHIPSWHENUNDOCKING, OnMoveShipsWhenUndocking)
 	ON_UPDATE_COMMAND_UI(ID_MISC_MOVESHIPSWHENUNDOCKING, OnUpdateMoveShipsWhenUndocking)
+	ON_COMMAND(ID_HIGHLIGHT_SUBSYS, OnHighlightSubsys)
+	ON_UPDATE_COMMAND_UI(ID_HIGHLIGHT_SUBSYS, OnUpdateHighlightSubsys)
 	ON_COMMAND(ID_EDITORS_SET_GLOBAL_SHIP_FLAGS, OnEditorsSetGlobalShipFlags)
 	ON_COMMAND(ID_EDITORS_VOICE, OnEditorsVoiceManager)
 	ON_COMMAND(ID_EDITORS_FICTION, OnEditorsFiction)
@@ -366,16 +371,16 @@ CFREDView::CFREDView()
 	//m_ShowWaypoints = TRUE;
 
 	// this is stupid
-	ID_SHOW_IFF[0] = ID_SHOW_IFF_0;
-	ID_SHOW_IFF[1] = ID_SHOW_IFF_1;
-	ID_SHOW_IFF[2] = ID_SHOW_IFF_2;
-	ID_SHOW_IFF[3] = ID_SHOW_IFF_3;
-	ID_SHOW_IFF[4] = ID_SHOW_IFF_4;
-	ID_SHOW_IFF[5] = ID_SHOW_IFF_5;
-	ID_SHOW_IFF[6] = ID_SHOW_IFF_6;
-	ID_SHOW_IFF[7] = ID_SHOW_IFF_7;
-	ID_SHOW_IFF[8] = ID_SHOW_IFF_8;
-	ID_SHOW_IFF[9] = ID_SHOW_IFF_9;
+	ID_SHOW_IFF.push_back(ID_SHOW_IFF_0);
+	ID_SHOW_IFF.push_back(ID_SHOW_IFF_1);
+	ID_SHOW_IFF.push_back(ID_SHOW_IFF_2);
+	ID_SHOW_IFF.push_back(ID_SHOW_IFF_3);
+	ID_SHOW_IFF.push_back(ID_SHOW_IFF_4);
+	ID_SHOW_IFF.push_back(ID_SHOW_IFF_5);
+	ID_SHOW_IFF.push_back(ID_SHOW_IFF_6);
+	ID_SHOW_IFF.push_back(ID_SHOW_IFF_7);
+	ID_SHOW_IFF.push_back(ID_SHOW_IFF_8);
+	ID_SHOW_IFF.push_back(ID_SHOW_IFF_9);
 	
 	m_pGDlg = new CGrid(this);
 
@@ -1145,13 +1150,9 @@ LRESULT CFREDView::OnGoodbye(WPARAM wParam, LPARAM lParam)
 
 void CFREDView::OnEditorsShips() 
 {
-	int adjust = 0;
-
 	Assert(Ship_editor_dialog.GetSafeHwnd());
-	if (!Show_sexp_help)
-		adjust = -SEXP_HELP_BOX_SIZE;
 
-	if (!theApp.init_window(&Ship_wnd_data, &Ship_editor_dialog, adjust))
+	if (!theApp.init_window(&Ship_wnd_data, &Ship_editor_dialog, 0))
 		return;
 
 	Ship_editor_dialog.SetWindowPos(&wndTop, 0, 0, 0, 0,
@@ -2324,13 +2325,9 @@ void CFREDView::OnUpdateShowHorizon(CCmdUI* pCmdUI)
 
 void CFREDView::OnEditorsWing() 
 {
-	int adjust = 0;
-
 	Assert(Wing_editor_dialog.GetSafeHwnd());
-	if (!Show_sexp_help)
-		adjust = -SEXP_HELP_BOX_SIZE;
 
-	if (!theApp.init_window(&Wing_wnd_data, &Wing_editor_dialog, adjust))
+	if (!theApp.init_window(&Wing_wnd_data, &Wing_editor_dialog, 0))
 		return;
 
 	Wing_editor_dialog.SetWindowPos(&wndTop, 0, 0, 0, 0,
@@ -2440,7 +2437,6 @@ int CFREDView::global_error_check()
 	int bs, i, j, n, s, t, z, ai, count, ship, wing, obj, team, point, multi;
 	object *ptr;
 	brief_stage *sp;
-	int starting_orders;
 
 	g_err = multi = 0;
 	if ( The_mission.game_type & MISSION_TYPE_MULTI )
@@ -2987,9 +2983,10 @@ int CFREDView::global_error_check()
 
 	// for all wings, be sure that the orders accepted for all ships are the same for all ships
 	// in the wing
-	starting_orders = -1;
+	//std::set<size_t> starting_orders { std::numeric_limits<size_t>::max() };
 	for (i=0; i<MAX_WINGS; i++) {
-		int default_orders, starting_wing;
+		int starting_wing;
+		std::set<size_t> default_orders;
 
 		if ( !Wings[i].wave_count ){
 			continue;
@@ -3004,10 +3001,9 @@ int CFREDView::global_error_check()
 // Goober5000				return 1;
 			}
 		}
-
-		default_orders = 0;
+		
 		for ( j = 0; j < Wings[i].wave_count; j++ ) {
-			int orders;
+			std::set<size_t> orders;
 
 			orders = Ships[Wings[i].ship_index[j]].orders_accepted;
 			if ( j == 0 ) {
@@ -3040,6 +3036,15 @@ int CFREDView::global_error_check()
 	if (Num_jump_nodes < 0){
 		return internal_error("Jump node count is illegal");
 	}*/
+
+	// do error checking for asteroid targets
+	for (const auto& target_ship : Asteroid_target_ships) {
+		if (ship_name_lookup(target_ship.c_str(), 1) < 0) {
+			if (error("Asteroid target '%s' is not a valid ship", target_ship.c_str())) {
+				return 1;
+			}
+		}
+	}
 
 	fred_check_message_personas();
 
@@ -3374,7 +3379,7 @@ int CFREDView::fred_check_sexp(int sexp, int type, const char *msg, ...)
 
 	convert_sexp_to_string(sexp_buf, sexp, SEXP_ERROR_CHECK_MODE);
 	truncate_message_lines(sexp_buf, 30);
-	sprintf(error_buf, "Error in %s: %s\n\nIn sexpression: %s\n\n(Error appears to be: %s)", buf.c_str(), sexp_error_message(z), sexp_buf.c_str(), Sexp_nodes[faulty_node].text);
+	sprintf(error_buf, "Error in %s: %s\n\nIn sexpression: %s\n\n(Bad node appears to be: %s)", buf.c_str(), sexp_error_message(z), sexp_buf.c_str(), Sexp_nodes[faulty_node].text);
 
 	if (z < 0 && z > -100)
 		err = 1;
@@ -3390,11 +3395,7 @@ int CFREDView::fred_check_sexp(int sexp, int type, const char *msg, ...)
 
 void CFREDView::OnEditorsWaypoint() 
 {
-	int adjust = 0;
-
 	Assert(Waypoint_editor_dialog.GetSafeHwnd());
-	if (!Show_sexp_help)
-		adjust = -SEXP_HELP_BOX_SIZE;
 
 	if (!theApp.init_window(&Waypoint_wnd_data, &Waypoint_editor_dialog))
 		return;
@@ -3757,6 +3758,18 @@ void CFREDView::OnUpdateViewOutlines(CCmdUI* pCmdUI)
 	pCmdUI->SetCheck(Show_outlines);
 }
 
+void CFREDView::OnViewOutlinesOnSelected() 
+{
+	Draw_outlines_on_selected_ships = !Draw_outlines_on_selected_ships;
+	theApp.write_ini_file();
+	Update_window = 1;
+}
+
+void CFREDView::OnUpdateViewOutlinesOnSelected(CCmdUI* pCmdUI) 
+{
+	pCmdUI->SetCheck(Draw_outlines_on_selected_ships);
+}
+
 void CFREDView::OnUpdateNewShipType(CCmdUI* pCmdUI) 
 {
 	int z;
@@ -4048,16 +4061,6 @@ void CFREDView::OnShowSexpHelp()
 	Show_sexp_help = !Show_sexp_help;
 	Ship_editor_dialog.show_hide_sexp_help();
 	Wing_editor_dialog.show_hide_sexp_help();
-
-	if (Event_editor_dlg) {
-		Event_editor_dlg->GetWindowRect(rect);
-		if (Show_sexp_help)
-			rect.bottom += SEXP_HELP_BOX_SIZE;
-		else
-			rect.bottom -= SEXP_HELP_BOX_SIZE;
-
-		Event_editor_dlg->MoveWindow(rect);
-	}
 }
 
 void CFREDView::OnUpdateShowSexpHelp(CCmdUI* pCmdUI) 
@@ -4369,7 +4372,7 @@ void CFREDView::OnUpdateDisableUndo(CCmdUI* pCmdUI)
 
 void CFREDView::OnUpdateCmdBrief(CCmdUI* pCmdUI) 
 {
-	pCmdUI->Enable(!(The_mission.game_type & MISSION_TYPE_MULTI));
+	pCmdUI->Enable(true);
 }
 
 int get_visible_sub_system_count(ship *shipp)
@@ -4552,6 +4555,18 @@ void CFREDView::OnMoveShipsWhenUndocking()
 void CFREDView::OnUpdateMoveShipsWhenUndocking(CCmdUI* pCmdUI)
 {
 	pCmdUI->SetCheck(Move_ships_when_undocking);
+}
+
+void CFREDView::OnHighlightSubsys()
+{
+	Highlight_selectable_subsys = !Highlight_selectable_subsys;
+	theApp.write_ini_file();
+	Update_window = 1;
+}
+
+void CFREDView::OnUpdateHighlightSubsys(CCmdUI* pCmdUI)
+{
+	pCmdUI->SetCheck(Highlight_selectable_subsys);
 }
 
 void CFREDView::OnDumpStats()

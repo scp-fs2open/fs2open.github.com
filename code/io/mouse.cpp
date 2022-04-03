@@ -100,7 +100,7 @@ namespace
 				break;
 			default:
 				// SDL gave us an unknown button. Just log it
-				mprintf(("Unknown SDL button %i", e.button.button));
+				mprintf(("Unknown SDL button %i\n", e.button.button));
 		}
 
 		return true;
@@ -271,14 +271,13 @@ void mouse_mark_button( uint flags, int set)
 
 	Script_system.SetHookVar("MouseButton", 'i', flags);
 
-	//WMC - On Mouse Pressed and On Mouse Released hooks
-	if (set == 1)
-	{
-		Script_system.RunCondition(CHA_MOUSEPRESSED);
-	}
-	else if (set == 0)
-	{
-		Script_system.RunCondition(CHA_MOUSERELEASED);
+	if (Script_system.IsActiveAction(CHA_MOUSEPRESSED) || Script_system.IsActiveAction(CHA_MOUSERELEASED)) {
+		//WMC - On Mouse Pressed and On Mouse Released hooks
+		if (set == 1) {
+			Script_system.RunCondition(CHA_MOUSEPRESSED);
+		} else if (set == 0) {
+			Script_system.RunCondition(CHA_MOUSERELEASED);
+		}
 	}
 
 	Script_system.RemHookVar("MouseButton");
@@ -304,12 +303,29 @@ void mouse_flush()
 
 int mouse_down_count(const CC_bind &bind, int reset_count)
 {
-	if (bind.cid != CID_MOUSE) {
+	// Bail if the incoming bind is not the right CID according to mouse-fly mode
+	auto CID = bind.get_cid();
+	if (Use_mouse_to_fly) {
+		// Mouse is Joy0 in this mode
+		if (CID != CID_JOY0) {
+			return 0;
+		}
+	} else {
+		// Mouse is Mouse in this mode
+		if (CID != CID_MOUSE) {
+			return 0;
+		}
+	}
+
+	int btn = bind.get_btn();
+
+	if (btn > MOUSE_NUM_BUTTONS) {
 		return 0;
 	}
 
-	int n = 1 << bind.btn;
-	return mouse_down_count(n, reset_count);
+	btn = 1 << btn;
+
+	return mouse_down_count(btn, reset_count);
 }
 
 int mouse_down_count(int n, int reset_count) {
@@ -369,10 +385,10 @@ int mouse_down_count(int n, int reset_count) {
 //
 int mouse_up_count(const CC_bind &bind)
 {
-	if (bind.cid != CID_MOUSE) {
+	if (bind.get_cid() != CID_MOUSE) {
 		return 0;
 	}
-	int n = 1 << bind.btn;
+	int n = 1 << bind.get_btn();
 	return mouse_up_count(n);
 }
 
@@ -424,10 +440,27 @@ int mouse_up_count(int n) {
 
 int mouse_down(const CC_bind &bind)
 {
-	if (bind.cid != CID_MOUSE) {
+	// Bail if the incoming bind is not the right CID according to mouse-fly mode
+	auto CID = bind.get_cid();
+	if (Use_mouse_to_fly) {
+		// Mouse is Joy0 in this mode
+		if (CID != CID_JOY0) {
+			return 0;
+		}
+	} else {
+		// Mouse is Mouse in this mode
+		if (CID != CID_MOUSE) {
+			return 0;
+		}
+	}
+
+	int btn = bind.get_btn();
+
+	if (btn >= MOUSE_NUM_BUTTONS) {
 		return 0;
 	}
-	int btn = 1 << bind.btn;
+
+	btn = 1 << btn;
 
 	return mouse_down(btn);
 }
@@ -491,7 +524,7 @@ void mouse_event(int x, int y, int dx, int dy)
 	Mouse_dx += dx;
 	Mouse_dy += dy;
 
-	if(Mouse_dx != 0 || Mouse_dy != 0)
+	if (Script_system.IsActiveAction(CHA_MOUSEMOVED) && (Mouse_dx != 0 || Mouse_dy != 0))
 	{
 		Script_system.RunCondition(CHA_MOUSEMOVED);
 	}

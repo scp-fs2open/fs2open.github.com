@@ -33,9 +33,10 @@
 #include "render/3dinternal.h"
 #include "ship/ship.h"
 #include "ship/shipfx.h"
-#include "weapon/shockwave.h"
 #include "tracing/Monitor.h"
 #include "tracing/tracing.h"
+#include "utils/Random.h"
+#include "weapon/shockwave.h"
 
 #include <climits>
 
@@ -206,26 +207,40 @@ int model_interp_get_texture(texture_info *tinfo, fix base_frametime);
 
 void model_deallocate_interp_data()
 {
-	if (Interp_verts != NULL)
+	if (Interp_verts != nullptr) {
 		vm_free(Interp_verts);
+		Interp_verts = nullptr;
+	}
 
-	if (Interp_points != NULL)
+	if (Interp_points != nullptr) {
 		vm_free(Interp_points);
+		Interp_points = nullptr;
+	}
 
-	if (Interp_splode_points != NULL)
+	if (Interp_splode_points != nullptr) {
 		vm_free(Interp_splode_points);
+		Interp_splode_points = nullptr;
+	}
 
-	if (Interp_splode_verts != NULL)
+	if (Interp_splode_verts != nullptr) {
 		vm_free(Interp_splode_verts);
+		Interp_splode_verts = nullptr;
+	}
 
-	if (Interp_norms != NULL)
+	if (Interp_norms != nullptr) {
 		vm_free(Interp_norms);
+		Interp_norms = nullptr;
+	}
 
-	if (Interp_light_applied != NULL)
+	if (Interp_light_applied != nullptr) {
 		vm_free(Interp_light_applied);
+		Interp_light_applied = nullptr;
+	}
 
-	if (Interp_lighting_temp.lights != NULL)
+	if (Interp_lighting_temp.lights != nullptr) {
 		vm_free(Interp_lighting_temp.lights);
+		Interp_lighting_temp.lights = nullptr;
+	}
 
 	Num_interp_verts_allocated = 0;
 	Num_interp_norms_allocated = 0;
@@ -1233,21 +1248,8 @@ void submodel_get_two_random_points(int model_num, int submodel_num, vec3d *v1, 
 		return;
 	}
 
-#ifndef NDEBUG
-	if (RAND_MAX < nv)
-	{
-		static int submodel_get_two_random_points_warned = false;
-		if (!submodel_get_two_random_points_warned)
-		{
-			polymodel *pm = model_get(model_num);
-			Warning(LOCATION, "RAND_MAX is only %d, but submodel %d for model %s has %d vertices!  Explosions will not propagate through the entire model!\n", RAND_MAX, submodel_num, pm->filename, nv);
-			submodel_get_two_random_points_warned = true;
-		}
-	}
-#endif
-
-	int vn1 = myrand() % nv;
-	int vn2 = myrand() % nv;
+	int vn1 = Random::next(nv);
+	int vn2 = Random::next(nv);
 
 	*v1 = *Interp_verts[vn1];
 	*v2 = *Interp_verts[vn2];
@@ -1260,7 +1262,7 @@ void submodel_get_two_random_points(int model_num, int submodel_num, vec3d *v1, 
 	}
 }
 
-void submodel_get_two_random_points_better(int model_num, int submodel_num, vec3d *v1, vec3d *v2)
+void submodel_get_two_random_points_better(int model_num, int submodel_num, vec3d *v1, vec3d *v2, int seed)
 {
 	polymodel *pm = model_get(model_num);
 
@@ -1292,23 +1294,101 @@ void submodel_get_two_random_points_better(int model_num, int submodel_num, vec3
 			return;
 		}
 
-#ifndef NDEBUG
-		if (RAND_MAX < nv)
-		{
-			static int submodel_get_two_random_points_warned = false;
-			if (!submodel_get_two_random_points_warned)
-			{
-				Warning(LOCATION, "RAND_MAX is only %d, but submodel %d for model %s has %d vertices!  Explosions will not propagate through the entire model!\n", RAND_MAX, submodel_num, pm->filename, nv);
-				submodel_get_two_random_points_warned = true;
-			}
-		}
-#endif
-
-		int vn1 = myrand() % nv;
-		int vn2 = myrand() % nv;
+		int seed_num = seed == -1 ? Random::next() : seed;
+		int vn1 = static_rand(seed_num) % nv;
+		int vn2 = static_rand(seed_num) % nv;
 
 		*v1 = tree->point_list[vn1];
 		*v2 = tree->point_list[vn2];
+	}
+}
+
+void submodel_get_cross_sectional_avg_pos(int model_num, int submodel_num, float z_slice_pos, vec3d* pos)
+{
+	polymodel* pm = model_get(model_num);
+
+	if (pm != nullptr) {
+		if (submodel_num < 0) {
+			submodel_num = pm->detail[0];
+		}
+
+		// the Shivan Comm Node does not have a collision tree, for one
+		if (pm->submodel[submodel_num].collision_tree_index < 0) {
+			nprintf(("Model", "In submodel_get_cross_sectional_avg_pos(), model %s does not have a collision tree!\n", pm->filename));
+			return;
+		}
+
+		bsp_collision_tree* tree = model_get_bsp_collision_tree(pm->submodel[submodel_num].collision_tree_index);
+
+		int nv = tree->n_verts;
+
+		// this is not only because of the immediate div-0 error but also because of the less immediate expectation for at least one point (preferably two) to be found
+		if (nv <= 0) {
+			Error(LOCATION, "Model %d ('%s') must have at least one point from submodel_get_cross_sectional_avg_pos!", model_num, (pm == nullptr) ? "<null model?!?>" : pm->filename);
+
+			// in case people ignore the error...
+			vm_vec_zero(pos);
+			return;
+		}
+
+		vm_vec_zero(pos);
+		// we take a regular average, add them all up, divide by the total number, but weighted by how close they are to the z slice
+		float accum_scale_factor = 0.0f;
+		for (int i = 0; i < tree->n_verts; i++) {
+			// this goes from 1 directly at our z pos, and quickly goes to 0 the further it gets
+			float scale_factor = 1 / ((fabs(tree->point_list[i].xyz.z - z_slice_pos) / (pm->rad / 10)) + 1);
+			vm_vec_scale_add(pos, pos, &tree->point_list[i], scale_factor);
+			// keep track of the scale factor we use because we need to divide by its total at the end
+			accum_scale_factor += scale_factor;
+		}
+
+		*pos /= accum_scale_factor;
+	}
+}
+
+void submodel_get_cross_sectional_random_pos(int model_num, int submodel_num, float z_slice_pos, vec3d* pos)
+{
+	polymodel* pm = model_get(model_num);
+
+	if (pm != nullptr) {
+		if (submodel_num < 0) {
+			submodel_num = pm->detail[0];
+		}
+
+		// the Shivan Comm Node does not have a collision tree, for one
+		if (pm->submodel[submodel_num].collision_tree_index < 0) {
+			nprintf(("Model", "In submodel_get_cross_sectional_random_pos(), model %s does not have a collision tree!\n", pm->filename));
+			return;
+		}
+
+		bsp_collision_tree* tree = model_get_bsp_collision_tree(pm->submodel[submodel_num].collision_tree_index);
+
+		int nv = tree->n_verts;
+
+		// this is not only because of the immediate div-0 error but also because of the less immediate expectation for at least one point (preferably two) to be found
+		if (nv <= 0) {
+			Error(LOCATION, "Model %d ('%s') must have at least one point from submodel_get_cross_sectional_random_pos!", model_num, (pm == nullptr) ? "<null model?!?>" : pm->filename);
+
+			// in case people ignore the error...
+			vm_vec_zero(pos);
+			return;
+		}
+
+		vm_vec_zero(pos);
+		vec3d best1, best2;
+		// make random guesses a bunch of times, and average our two best guesses closest to the z pos, ez
+		// there are more accurate ways, but this is reasonably good and super cheap
+		vm_vec_make(&best1, 0, 0, 999999);
+		vm_vec_make(&best2, 0, 0, 999999);
+		for (int i = 0; i < 15; i++) {
+			vec3d rand_point = tree->point_list[Random::next(nv)];
+			if (fabs(rand_point.xyz.z - z_slice_pos) < fabs(best1.xyz.z - z_slice_pos))
+				best1 = rand_point;
+			else if (fabs(rand_point.xyz.z - z_slice_pos) < fabs(best2.xyz.z - z_slice_pos))
+				best2 = rand_point;
+		}
+
+		vm_vec_avg(pos, &best1, &best2);
 	}
 }
 
@@ -2253,7 +2333,7 @@ void interp_fill_detail_index_buffer(SCP_vector<int> &submodel_list, polymodel *
 	for ( i = 0; i < (int)submodel_list.size(); ++i ) {
 		model_num = submodel_list[i];
 
-		if ( pm->submodel[model_num].is_thruster ) {
+		if ( pm->submodel[model_num].flags[Model::Submodel_flags::Is_thruster] ) {
 			continue;
 		}
 
@@ -2289,7 +2369,7 @@ void interp_fill_detail_index_buffer(SCP_vector<int> &submodel_list, polymodel *
 	for ( i = 0; i < (int)submodel_list.size(); ++i ) {
 		model_num = submodel_list[i];
 
-		if (pm->submodel[model_num].is_thruster) {
+		if (pm->submodel[model_num].flags[Model::Submodel_flags::Is_thruster]) {
 			continue;
 		}
 

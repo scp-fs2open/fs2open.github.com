@@ -6,13 +6,14 @@
 
 #include "globalincs/pstypes.h"
 #include "network/psnet2.h"
+#include "network/multi.h"
 #include "network/multimsgs.h"
 #include "ship/ship.h"
 
 
 void sexp_packet_received(ubyte *received_packet, int num_ubytes);
 
-#if SCP_COMPILER_IS_GNU
+#if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic push
 // This suppresses a GCC bug where it thinks that some of the enum fields below shadow global declarations even though
 // the enum class names are not visible in the global namespace
@@ -36,22 +37,30 @@ enum class packet_data_type {
 	WING				= 12,
 };
 
-#if SCP_COMPILER_IS_GNU
+#if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic pop
 #endif
 
+// Minimum size that a valid sexp packet can be
+//  4 bytes - OP
+//  2 bytes - COUNT
+//  1 byte  - TERMINATOR
+#define MIN_SEXP_PACKET_SIZE	7
+
 class sexp_network_packet {
 private:
-    ubyte data[MAX_PACKET_SIZE];
+	#define SEXP_MAX_PACKET_SIZE	(MAX_PACKET_SIZE - HEADER_LENGTH - static_cast<int>(sizeof(ushort)))
+
+	ubyte data[SEXP_MAX_PACKET_SIZE];
     int packet_size = 0;
     int offset = 0;
 
     // the type array holds information on the type of date held at the same index of the data array
     // types are not sent to the client and the entire array could be replaced with a couple of variables indexing the end of 
     // the previous SEXP. However it is much more helpful when debugging to have the array
-    packet_data_type type[MAX_PACKET_SIZE];
+	packet_data_type type[SEXP_MAX_PACKET_SIZE];
     int argument_count_index = -1;			// index in the type and data arrays for the argument count
-    int current_argument_count = 0;			// number of bytes the data for this SEXP currently takes up
+	int current_argument_count = 0;			// number of bytes the data for this SEXP currently takes up
     bool packet_flagged_invalid = false;
     bool callback_started = false;
     int op_num = 0;
@@ -236,8 +245,12 @@ public:
     /**
     * Attempts to remove a string from the SEXP packet and assign it to the value parameter. Returns false if it is unable to do so.
     */
-    bool get_string(char *buffer);
+	bool get_string(char *buffer, const size_t buf_len);
     bool get_string(SCP_string &buffer);
+	template<size_t size>
+	inline bool get_string(char (&buffer)[size]) {
+		return get_string(buffer, size);
+	}
 
     /**
     * Attempts to remove a boolean from the SEXP packet and assign it to the value parameter. Returns false if it is unable to do so.

@@ -8,8 +8,10 @@
 #include "freespace.h"
 
 #include "gamesequence/gamesequence.h"
+#include "mission/missiontraining.h"
 #include "network/multi.h"
 #include "parse/parselo.h"
+#include "parse/sexp.h"
 #include "pilotfile/pilotfile.h"
 #include "playerman/player.h"
 #include "scripting/api/objs/bytearray.h"
@@ -21,9 +23,11 @@
 #include "scripting/api/objs/vecmath.h"
 #include "scripting/util/LuaValueDeserializer.h"
 #include "scripting/util/LuaValueSerializer.h"
+#include "utils/Random.h"
 
 namespace scripting {
 namespace api {
+using Random = ::util::Random;
 
 //**********LIBRARY: Base
 ADE_LIB(l_Base, "Base", "ba", "Base FreeSpace 2 functions");
@@ -52,7 +56,7 @@ ADE_FUNC(error, l_Base, "string Message", "Displays a FreeSpace error message wi
 ADE_FUNC(rand32,
 	l_Base,
 	"[number a, number b]",
-	"Calls FSO's rand32() function, which is higher-quality than Lua's ANSI C math.random().  If called with no arguments, returns a random integer from [0, 0x7fffffff).  If called with one argument, returns an integer from [0, a).  If called with two arguments, returns an integer from [a, b].",
+	"Calls FSO's Random::next() function, which is higher-quality than Lua's ANSI C math.random().  If called with no arguments, returns a random integer from [0, 0x7fffffff].  If called with one argument, returns an integer from [0, a).  If called with two arguments, returns an integer from [a, b].",
 	"number",
 	"A random integer")
 {
@@ -60,32 +64,48 @@ ADE_FUNC(rand32,
 	int numargs = ade_get_args(L, "|ii", &a, &b);
 
 	int result;
-	if (numargs == 2)
-		result = rand32(a, b);
-	else if (numargs == 1)
-		result = rand32() % a;
-	else
-		result = rand32();
+	if (numargs == 2) {
+		if (a <= b) {
+			result = Random::next(a, b);
+		} else {
+			LuaError(L, "rand32() script function was passed an invalid range (%d ... %d)!", a, b);
+			result = a; // match behavior of rand_sexp()
+		}
+	} else if (numargs == 1) {
+		if (a > 0) {
+			result = Random::next(a);
+		} else {
+			LuaError(L, "rand32() script function was passed an invalid modulus (%d)!", a);
+			result = 0;
+		}
+	} else {
+		result = Random::next();
+	}
 
-	return ade_set_error(L, "i", result);
+	return ade_set_args(L, "i", result);
 }
 
 ADE_FUNC(rand32f,
 	l_Base,
 	"[number max]",
-	"Calls FSO's rand32() function and transforms the result to a float.  If called with no arguments, returns a random float from [0.0, 1.0).  If called with one argument, returns a float from [0.0, max).",
+	"Calls FSO's Random::next() function and transforms the result to a float.  If called with no arguments, returns a random float from [0.0, 1.0).  If called with one argument, returns a float from [0.0, max).",
 	"number",
 	"A random float")
 {
 	float _max;
 	int numargs = ade_get_args(L, "|f", &_max);
 
-	float result = static_cast<float>(rand32()) / static_cast<float>(0x7fffffff);
+	// see also frand()
+	int num;
+	do {
+		num = Random::next();
+	} while (num == Random::MAX_VALUE);
+	float result = i2fl(num) * Random::INV_F_MAX_VALUE;
 
 	if (numargs > 0)
 		result *= _max;
 
-	return ade_set_error(L, "f", _max);
+	return ade_set_args(L, "f", result);
 }
 
 ADE_FUNC(createOrientation,
@@ -175,7 +195,7 @@ ADE_FUNC(findIntersection,
 	l_Base,
 	"vector line1_point1, vector line1_point2, vector line2_point1, vector line2_point2",
 	"Determines the point at which two lines intersect.  (The lines are assumed to extend infinitely in both directions; the intersection will not necessarily be between the points.)",
-	ade_type_info({ "vector", "number" }),
+	"vector, number",
 	"Returns two arguments.  The first is the point of intersection, if it exists and is unique (otherwise it will be NIL).  The second is the find_intersection return value: 0 for a unique intersection, -1 if the lines are colinear, and -2 if the lines do not intersect.")
 {
 	vec3d *p0 = nullptr, *p0_end = nullptr, *p1 = nullptr, *p1_end = nullptr;
@@ -463,6 +483,41 @@ ADE_FUNC(XSTR,
 	return ade_set_args(L, "s", translated.c_str());
 }
 
+ADE_FUNC(replaceTokens, 
+	l_Base, 
+	"string text", 
+	"Returns a string that replaces any default control binding to current binding (same as Directive Text). Default binding must be encapsulated by '$$' for replacement to work.",
+	"string",
+	"Updated string or nil if invalid")
+{
+	const char* untranslated_str;
+	if (!ade_get_args(L, "s", &untranslated_str)) {
+		return ADE_RETURN_NIL;
+	}
+
+	SCP_string translated_str = message_translate_tokens(untranslated_str);
+
+	return ade_set_args(L, "s", translated_str.c_str());
+}
+
+ADE_FUNC(replaceVariables,
+	l_Base,
+	"string text",
+	"Returns a string that replaces any variable name with the variable value (same as text in Briefings, Debriefings, or Messages). Variable name must be preceeded by '$' for replacement to work.",
+	"string",
+	"Updated string or nil if invalid")
+{
+	const char* untranslated_str;
+	if (!ade_get_args(L, "s", &untranslated_str)) {
+		return ADE_RETURN_NIL;
+	}
+
+	SCP_string translated_str = untranslated_str;
+	sexp_replace_variable_names_with_values(translated_str);
+
+	return ade_set_args(L, "s", translated_str.c_str());
+}
+
 ADE_FUNC(inMissionEditor, l_Base, nullptr, "Determine if the current script is running in the mission editor (e.g. FRED2). This should be used to control which code paths will be executed even if running in the editor.", "boolean", "true when we are in the mission editor, false otherwise") {
 	return ade_set_args(L, "b", Fred_running != 0);
 }
@@ -492,8 +547,16 @@ ADE_FUNC(getCurrentLanguage,
 		 nullptr,
 		 "Determines the language that is being used by the engine. This returns the full name of the language (e.g. \"English\").",
 		 "string",
-		 "The current game language") {
-	auto lang_name = (Lcl_current_lang == LCL_UNTRANSLATED) ? "UNTRANSLATED" : Lcl_languages[Lcl_current_lang].lang_name;
+		 "The current game language")
+{
+	const char *lang_name;
+	if (Lcl_current_lang == LCL_UNTRANSLATED)
+		lang_name = "UNTRANSLATED";
+	else if (Lcl_current_lang == LCL_RETAIL_HYBRID)
+		lang_name = "RETAIL HYBRID";
+	else
+		lang_name = Lcl_languages[lcl_get_current_lang_index()].lang_name;
+
 	return ade_set_args(L, "s", lang_name);
 }
 
@@ -504,8 +567,9 @@ ADE_FUNC(getCurrentLanguageExtension,
 			 "This returns a short code for the current language that can be used for creating language specific file names (e.g. \"gr\" when the current language is German). "
 			 "This will return an empty string for the default language.",
 		 "string",
-		 "The current game language") {
-	int lang = (Lcl_current_lang == LCL_UNTRANSLATED) ? LCL_DEFAULT : Lcl_current_lang;
+		 "The current game language")
+{
+	int lang = lcl_get_current_lang_index();
 	return ade_set_args(L, "s", Lcl_languages[lang].lang_ext);
 }
 

@@ -49,8 +49,6 @@ namespace fred {
 #define ROOT_DELETED    1
 #define ROOT_RENAMED    2
 
-#define SEXP_ITEM_F_DUP    (1<<0)
-
 // tree behavior modes (or tree subtype)
 FLAG_LIST(TreeFlags) {
 	LabeledRoot = 0,
@@ -90,6 +88,7 @@ enum class NodeImage {
 	DATA_85,
 	DATA_90,
 	DATA_95,
+	COMMENT,
 };
 
 /**
@@ -145,19 +144,16 @@ class sexp_list_item {
 	int type;
 	int op;
 	SCP_string text;
-	int flags;
 	sexp_list_item* next;
 
-	sexp_list_item() : flags(0), next(NULL) {
+	sexp_list_item() : next(nullptr) {
 	}
 
 	void set_op(int op_num);
 	void set_data(const char* str, int t = (SEXPT_STRING | SEXPT_VALID));
-	void set_data_dup(const char* str, int t = (SEXPT_STRING | SEXPT_VALID));
 
 	void add_op(int op_num);
 	void add_data(const char* str, int t = (SEXPT_STRING | SEXPT_VALID));
-	void add_data_dup(const char* str, int t = (SEXPT_STRING | SEXPT_VALID));
 	void add_list(sexp_list_item* list);
 
 	void destroy();
@@ -280,7 +276,6 @@ class sexp_tree: public QTreeWidget {
 	sexp_list_item* get_listing_opf_medal_name();
 	sexp_list_item* get_listing_opf_weapon_name();
 	sexp_list_item* get_listing_opf_ship_class_name();
-	sexp_list_item* get_listing_opf_hud_gauge_name();
 	sexp_list_item* get_listing_opf_huge_weapon();
 	sexp_list_item* get_listing_opf_ship_not_player();
 	sexp_list_item* get_listing_opf_jump_nodes();
@@ -319,7 +314,8 @@ class sexp_tree: public QTreeWidget {
 	sexp_list_item* get_listing_opf_explosion_option();
 	sexp_list_item* get_listing_opf_adjust_audio_volume();
 	sexp_list_item* get_listing_opf_weapon_banks();
-	sexp_list_item* get_listing_opf_hud_gauge();
+	sexp_list_item* get_listing_opf_builtin_hud_gauge();
+	sexp_list_item* get_listing_opf_custom_hud_gauge();
 	sexp_list_item* get_listing_opf_ship_effect();
 	sexp_list_item* get_listing_opf_animation_type();
 	sexp_list_item* get_listing_opf_mission_moods();
@@ -329,6 +325,9 @@ class sexp_tree: public QTreeWidget {
 	sexp_list_item* get_listing_opf_game_snds();
 	sexp_list_item* get_listing_opf_fireball();
 	sexp_list_item *get_listing_opf_species();
+	sexp_list_item *get_listing_opf_language();
+	sexp_list_item *get_listing_opf_functional_when_eval_type();
+	sexp_list_item *get_listing_opf_animation_name(int parent_node);
 
 
 	int getCurrentItemIndex() const;

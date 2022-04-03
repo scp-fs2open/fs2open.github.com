@@ -108,9 +108,6 @@ int Ingame_join_net_signature = -1;								// signature for the player obj for u
 int Multi_button_info_ok = 0;										// flag saying it is ok to apply critical button info on a client machine
 int Multi_button_info_id = 0;										// identifier of the stored button info to be applying
 
-// low level networking vars
-int HEADER_LENGTH;													// 1 byte (packet type)
-
 // misc data
 active_game* Active_game_head;									// linked list of active games displayed on Join screen
 int Active_game_count;												// for interface screens as well
@@ -572,6 +569,10 @@ void process_packet_normal(ubyte* data, header *header_info)
 			process_ship_kill_packet( data, header_info );
 			break;
 
+		case MISSILE_KILL:
+			process_weapon_kill_packet(data, header_info);
+			break;
+
 		case WING_CREATE:
 			process_wing_create_packet( data, header_info );
 			break;
@@ -604,7 +605,7 @@ void process_packet_normal(ubyte* data, header *header_info)
 
 			// if I'm the server of the game, find out who this came from			
 			if((Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)){
-				np_index = find_player_id(header_info->id);
+				np_index = find_player_index(header_info->id);
 				if(np_index >= 0){
 					sock = Net_players[np_index].reliable_socket;
 				}
@@ -859,6 +860,10 @@ void process_packet_normal(ubyte* data, header *header_info)
 
 		case LINEAR_WEAPON_FIRED:
 			process_non_homing_fired_packet(data, header_info);
+			break;
+
+		case ANIMATION_TRIGGERED:
+			process_animation_triggered_packet(data, header_info);
 			break;
 
 		case COUNTERMEASURE_NEW:
@@ -1318,11 +1323,6 @@ void multi_do_frame()
 		std_do_gui_frame();
 	}	
 
-	// dogfight nonstandalone players should recalc the escort list every frame
-	if(!(Game_mode & GM_STANDALONE_SERVER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT) && MULTI_IN_MISSION){
-		hud_setup_escort_list(0);
-	}
-
 	// if master then maybe do port forwarding setup/refresh/wait
 	if (Net_player->flags & NETINFO_FLAG_AM_MASTER) {
 		multi_port_forward_do();
@@ -1474,8 +1474,6 @@ void standalone_main_init()
 	}
 #endif // ifdef _WIN32
 
-	HEADER_LENGTH = 1;		
-	
 	// clear out the Netgame structure and start filling in the values
 	// NOTE : these values are not incredibly important since they will be overwritten by the host when he joins
 	memset( &Netgame, 0, sizeof(Netgame) );	
@@ -1494,9 +1492,6 @@ void standalone_main_init()
 	// clear the file xfer system
 	multi_xfer_reset();
 	multi_xfer_force_dir(CF_TYPE_MULTI_CACHE);
-
-	// reset timer
-	timestamp_reset();
 
 	// setup a blank pilot (this is a standalone usage only!)
 	Pilot.load_player(NULL);
@@ -1558,6 +1553,7 @@ void standalone_main_init()
 	}
 
 	// clear out various things
+	animation::ModelAnimationParseHelper::parseTables();
 	psnet_flush();
 	game_flush();
 	ship_init();
@@ -1803,6 +1799,7 @@ void multi_reset_timestamps()
 		Players[i].update_lock_time = timestamp(0);
 
 		Net_players[i].s_info.voice_token_timestamp = -1;
+		Net_players[i].s_info.player_collision_timestamp = timestamp(0);
 	}
 
 	// reset standalone gui timestamps (these are not game critical, so there is not much danger)

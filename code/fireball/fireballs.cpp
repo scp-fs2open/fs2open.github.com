@@ -14,6 +14,7 @@
 #include "graphics/tmapper.h"
 #include "localization/localize.h"
 #include "model/model.h"
+#include "nebula/neb.h"
 #include "object/object.h"
 #include "options/Option.h"
 #include "parse/parselo.h"
@@ -25,19 +26,21 @@
 #include <cstdlib>
 
 
-int Knossos_warp_ani_used;
+bool Knossos_warp_ani_used;
 
 #define WARPHOLE_GROW_TIME		(2.35f)	// time for warphole to reach max size (also time to shrink to nothing once it begins to shrink)
 
 #define MAX_WARP_LOD	0
 
-fireball Fireballs[MAX_FIREBALLS];
+constexpr int INTITIAL_FIREBALL_CONTAINTER_SIZE = 256;
+
+SCP_vector<fireball> Fireballs;
+SCP_vector<int> Unused_fireball_indices;
 
 fireball_info Fireball_info[MAX_FIREBALL_TYPES];
 
 int fireball_used[MAX_FIREBALL_TYPES];
 
-int Num_fireballs = 0;
 int Num_fireball_types = 0;
 
 bool fireballs_inited = false;
@@ -200,6 +203,10 @@ static void fireball_set_default_warp_attributes(int idx)
 			strcpy_s(Fireball_info[idx].warp_glow, "warpglow01");
 			strcpy_s(Fireball_info[idx].warp_ball, "warpball01");
 			strcpy_s(Fireball_info[idx].warp_model, "warp.pof");
+
+			if (Fireball_use_3d_warp)
+				Fireball_info[idx].use_3d_warp = true;
+
 			break;
 	}
 }
@@ -284,11 +291,13 @@ static void parse_fireball_tbl(const char *table_filename)
 				}
 			}
 
+			bool first_time;
 			// now select our entry accordingly...
 			// are we using a previous entry?
 			if (existing_idx >= 0)
 			{
 				fi = &Fireball_info[existing_idx];
+				first_time = false;
 			}
 			// we are creating a new entry, so set some defaults
 			else
@@ -312,6 +321,7 @@ static void parse_fireball_tbl(const char *table_filename)
 				fireball_set_default_warp_attributes(Num_fireball_types);
 
 				Num_fireball_types++;
+				first_time = true;
 			}
 
 			// copy over what we already parsed
@@ -319,6 +329,7 @@ static void parse_fireball_tbl(const char *table_filename)
 				strcpy_s(fi->unique_id, unique_id);
 			strcpy_s(fi->lod[0].filename, fireball_filename);
 
+			
 			// Do we have a LOD num?
 			if (optional_string("$LOD:"))
 			{
@@ -326,6 +337,9 @@ static void parse_fireball_tbl(const char *table_filename)
 
 				if (fi->lod_count > MAX_FIREBALL_LOD)
 					fi->lod_count = MAX_FIREBALL_LOD;
+			} else if (first_time) {
+				//assume a LOD of at least 1
+				fi->lod_count = 1;
 			}
 
 			// check for particular lighting color
@@ -356,7 +370,13 @@ static void parse_fireball_tbl(const char *table_filename)
 
 			// check for custom warp model
 			if (optional_string("$Warp model:"))
+			{
 				stuff_string(fi->warp_model, F_NAME, NAME_LENGTH);
+
+				// if we are explicitly specifying a model, then we'll want to use it,
+				// rather than just having the default model that might or might not be used
+				fi->use_3d_warp = true;
+			}
 		}
 
 		required_string("#End");
@@ -435,8 +455,6 @@ void fireball_load_data()
 // This will get called at the start of each level.
 void fireball_init()
 {
-	int i;
-
 	if ( !fireballs_inited ) {
 		// Do all the processing that happens only once
 		fireball_parse_tbl();
@@ -446,13 +464,13 @@ void fireball_init()
 	}
 	
 	// Reset everything between levels
-	Num_fireballs = 0;
-	for (i=0; i<MAX_FIREBALLS; i++ )	{
-		Fireballs[i].objnum	= -1;
-	}
+	Fireballs.clear();
+	Fireballs.reserve(INTITIAL_FIREBALL_CONTAINTER_SIZE);
+	Unused_fireball_indices.clear();
+	Unused_fireball_indices.reserve(INTITIAL_FIREBALL_CONTAINTER_SIZE);
 
 	// Goober5000 - reset Knossos warp flag
-	Knossos_warp_ani_used = 0;
+	Knossos_warp_ani_used = false;
 }
 
 MONITOR( NumFireballsRend )
@@ -467,13 +485,15 @@ void fireball_delete( object * obj )
 	fireball	*fb;
 
 	num = obj->instance;
+	// Make sure the new system works fine.
+	Assert(obj->instance > -1);
+	Assert(static_cast<int>(Fireballs.size()) > obj->instance);
 	fb = &Fireballs[num];
 
 	Assert( fb->objnum == OBJ_INDEX(obj));
 
 	Fireballs[num].objnum = -1;
-	Num_fireballs--;
-	Assert( Num_fireballs >= 0 );
+	Unused_fireball_indices.push_back(num);
 }
 
 /**
@@ -481,13 +501,9 @@ void fireball_delete( object * obj )
  */
 void fireball_delete_all()
 {
-	fireball	*fb;
-	int		i;
-
-	for ( i = 0; i < MAX_FIREBALLS; i++ ) {
-		fb = &Fireballs[i];
-		if ( fb->objnum != -1 ) {
-			obj_delete(fb->objnum);
+	for (auto& current_fireball : Fireballs) {
+		if ( current_fireball.objnum != -1 ) {
+			obj_delete(current_fireball.objnum);
 		}
 	}
 }
@@ -498,6 +514,8 @@ void fireball_set_framenum(int num)
 	fireball			*fb;
 	fireball_info	*fd;
 	fireball_lod	*fl;
+
+	Assert(static_cast<int>(Fireballs.size()) > num);
 
 	fb = &Fireballs[num];
 	fd = &Fireball_info[Fireballs[num].fireball_info_index];
@@ -537,6 +555,9 @@ int fireball_is_perishable(object * obj)
 
 	num = obj->instance;
 	objnum = OBJ_INDEX(obj);
+	// Make sure the new system works fine.
+	Assert(obj->instance > -1);
+	Assert((int)Fireballs.size() > obj->instance);
 	Assert( Fireballs[num].objnum == objnum );
 
 	fb = &Fireballs[num];
@@ -553,43 +574,6 @@ int fireball_is_perishable(object * obj)
 	return 0;
 }
 
-
-/**
- * There are too many fireballs, so delete the oldest small one
- * to free up a slot.  
- *
- * @return The fireball slot freed.
- */
-int fireball_free_one()
-{
-	fireball	*fb;
-	int		i;
-
-	int		oldest_objnum = -1, oldest_slotnum = -1;
-	float		lifeleft, oldest_lifeleft = 0.0f;
-
-	for ( i = 0; i < MAX_FIREBALLS; i++ ) {
-		fb = &Fireballs[i];
-
-		// only remove the ones that aren't warp effects
-		if ( (fb->objnum >= 0) && fireball_is_perishable(&Objects[fb->objnum]) )	{
-
-			lifeleft = fb->total_time - fb->time_elapsed;
-			if ( (oldest_objnum < 0) || (lifeleft < oldest_lifeleft) )	{
-				oldest_slotnum = i;
-				oldest_lifeleft = lifeleft;
-				oldest_objnum = fb->objnum;
-			}
-			break;
-		}
-	}
-
-	if ( oldest_objnum > -1 )	{
-		obj_delete(oldest_objnum);
-	}
-	return oldest_slotnum;
-}
-
 int fireball_is_warp(object * obj)
 {
 	int			num, objnum;
@@ -597,6 +581,9 @@ int fireball_is_warp(object * obj)
 
 	num = obj->instance;
 	objnum = OBJ_INDEX(obj);
+	// Make sure the new system works fine.
+	Assert(obj->instance > -1);
+	Assert(static_cast<int>(Fireballs.size()) > obj->instance);
 	Assert( Fireballs[num].objnum == objnum );
 
 	fb = &Fireballs[num];
@@ -641,6 +628,9 @@ void fireball_process_post(object * obj, float frame_time)
 
 	num = obj->instance;
 	objnum = OBJ_INDEX(obj);
+	// Make sure the new system works fine.
+	Assert(obj->instance > -1);
+	Assert(static_cast<int>(Fireballs.size()) > obj->instance);
 	Assert( Fireballs[num].objnum == objnum );
 
 	fb = &Fireballs[num];
@@ -665,6 +655,10 @@ float fireball_lifeleft( object *obj )
 
 	num = obj->instance;
 	objnum = OBJ_INDEX(obj);
+	// Make sure the new system works fine.
+	Assert(obj->instance > -1);
+	Assert(static_cast<int>(Fireballs.size()) > obj->instance);
+
 	Assert( Fireballs[num].objnum == objnum );
 
 	fb = &Fireballs[num];
@@ -679,6 +673,10 @@ float fireball_lifeleft_percent( object *obj )
 {
 	int			num, objnum;
 	fireball		*fb;
+
+	// Make sure the new system works fine.
+	Assert(obj->instance > -1);
+	Assert(static_cast<int>(Fireballs.size()) > obj->instance);
 
 	num = obj->instance;
 	objnum = OBJ_INDEX(obj);
@@ -781,10 +779,8 @@ int fireball_create(vec3d *pos, int fireball_type, int render_type, int parent_o
 {
 	int				n, objnum, fb_lod;
 	object			*obj;
-	fireball			*fb;
 	fireball_info	*fd;
 	fireball_lod	*fl;
-
 	Assert( fireball_type > -1 );
 	Assert( fireball_type < Num_fireball_types );
 
@@ -800,23 +796,21 @@ int fireball_create(vec3d *pos, int fireball_type, int render_type, int parent_o
 		}
 	}
 
-	if ( (Num_fireballs >= MAX_FIREBALLS) || (Num_objects >= MAX_OBJECTS) )	{
-
-		// out of slots, so free one up.
-		n = fireball_free_one();
-		if ( n < 0 ) {
-			return -1;
-		}
-	} else {
-		for ( n = 0; n < MAX_FIREBALLS; n++ )	{
-			if ( Fireballs[n].objnum < 0  )	{
-				break;
-			}
-		}
-		Assert( n != MAX_FIREBALLS );
+	if (Num_objects >= MAX_OBJECTS) {
+		return -1;
 	}
 
-	fb = &Fireballs[n];
+
+	if (!Unused_fireball_indices.empty()) {
+		n = Unused_fireball_indices.back();
+		Unused_fireball_indices.pop_back();
+	}
+	else {
+		n = static_cast<int>(Fireballs.size());
+		Fireballs.emplace_back();
+	}
+
+	fireball* new_fireball = &Fireballs[n];
 
 	// get an lod to use	
 	fb_lod = fireball_get_lod(pos, fd, size);
@@ -833,13 +827,13 @@ int fireball_create(vec3d *pos, int fireball_type, int render_type, int parent_o
 	}
 	fl = &fd->lod[fb_lod];
 
-	fb->lod = (char)fb_lod;
+	new_fireball->lod = (char)fb_lod;
 
-	fb->flags = extra_flags;
-	fb->warp_open_sound_index = warp_open_sound;
-	fb->warp_close_sound_index = warp_close_sound;
-	fb->warp_open_duration = (warp_open_duration < 0.0f) ? WARPHOLE_GROW_TIME : warp_open_duration;
-	fb->warp_close_duration = (warp_close_duration < 0.0f) ? WARPHOLE_GROW_TIME : warp_close_duration;
+	new_fireball->flags = extra_flags;
+	new_fireball->warp_open_sound_index = warp_open_sound;
+	new_fireball->warp_close_sound_index = warp_close_sound;
+	new_fireball->warp_open_duration = (warp_open_duration < 0.0f) ? WARPHOLE_GROW_TIME : warp_open_duration;
+	new_fireball->warp_close_duration = (warp_close_duration < 0.0f) ? WARPHOLE_GROW_TIME : warp_close_duration;
 
 	matrix orient;
 	if(orient_override != NULL){
@@ -854,60 +848,55 @@ int fireball_create(vec3d *pos, int fireball_type, int render_type, int parent_o
 	
     flagset<Object::Object_Flags> default_flags;
     default_flags.set(Object::Object_Flags::Renders);
-	objnum = obj_create(OBJ_FIREBALL, parent_obj, n, &orient, pos, size, default_flags);
-
-	if (objnum < 0) {
-		Int3();				// Get John, we ran out of objects for fireballs
-		return objnum;
-	}
+	objnum = obj_create(OBJ_FIREBALL, parent_obj, n, &orient, pos, size, default_flags, false);
 
 	obj = &Objects[objnum];
 
-	fb->fireball_info_index = fireball_type;
-	fb->fireball_render_type = render_type;
-	fb->time_elapsed = 0.0f;
-	fb->objnum = objnum;
-	fb->current_bitmap = -1;
+	new_fireball->fireball_info_index = fireball_type;
+	new_fireball->fireball_render_type = render_type;
+	new_fireball->time_elapsed = 0.0f;
+	new_fireball->objnum = objnum;
+	new_fireball->current_bitmap = -1;
 	
-	switch( fb->fireball_render_type )	{
+	switch( new_fireball->fireball_render_type )	{
 
 		case FIREBALL_MEDIUM_EXPLOSION:	
-			fb->orient = (myrand()>>8) & 7;							// 0 - 7
+			new_fireball->orient = Random::next() & 7;							// 0 - 7
 			break;
 
 		case FIREBALL_LARGE_EXPLOSION:
-			fb->orient = (myrand()>>8) % 360;						// 0 - 359
+			new_fireball->orient = Random::next(360);						// 0 - 359
 			break;
 
 		case FIREBALL_WARP_EFFECT:
 			// Play sound effect for warp hole opening up
-			fireball_play_warphole_open_sound(ship_class, fb);
+			fireball_play_warphole_open_sound(ship_class, new_fireball);
 
 			// warp in type
 			if (reverse)	{
-				fb->orient = 1;
+				new_fireball->orient = 1;
 				// if warp out, then reverse the orientation
 				vm_vec_scale( &obj->orient.vec.fvec, -1.0f );	// Reverse the forward vector
 				vm_vec_scale( &obj->orient.vec.rvec, -1.0f );	// Reverse the right vector
 			} else {
-				fb->orient = 0;
+				new_fireball->orient = 0;
 			}
 			break;
 
 		default:
-			Int3();
+			UNREACHABLE("Bad type set in fireball_create");
 			break;
 	}
 
-	if ( fb->fireball_render_type == FIREBALL_WARP_EFFECT )	{
+	if ( new_fireball->fireball_render_type == FIREBALL_WARP_EFFECT )	{
 		Assert( warp_lifetime >= 4.0f );		// Warp lifetime must be at least 4 seconds!
 		if ( warp_lifetime < 4.0f )
 			warp_lifetime = 4.0f;
-		fb->total_time = warp_lifetime;	// in seconds
+		new_fireball->total_time = warp_lifetime;	// in seconds
 	} else {
-		fb->total_time = i2fl(fl->num_frames) / fl->fps;	// in seconds
+		new_fireball->total_time = i2fl(fl->num_frames) / fl->fps;	// in seconds
 	}
-	
+
 	fireball_set_framenum(n);
 
 	if ( velocity )	{
@@ -923,7 +912,6 @@ int fireball_create(vec3d *pos, int fireball_type, int render_type, int parent_o
 		vm_vec_zero(&obj->phys_info.max_rotvel);
 	}
 	
-	Num_fireballs++;
 	return objnum;
 }
 
@@ -1008,9 +996,9 @@ int fireball_ship_explosion_type(ship_info *sip)
 	}
 
 	if(ship_fireballs > 0){
-		index = sip->explosion_bitmap_anims[rand()%ship_fireballs];
+		index = sip->explosion_bitmap_anims[Random::next(ship_fireballs)];
 	} else if(objecttype_fireballs > 0){
-		index = Ship_types[sip->class_type].explosion_bitmap_anims[rand()%objecttype_fireballs];
+		index = Ship_types[sip->class_type].explosion_bitmap_anims[Random::next(objecttype_fireballs)];
 	}
 
 	return index;
@@ -1027,7 +1015,7 @@ int fireball_asteroid_explosion_type(asteroid_info *aip)
 	int roid_fireballs = (int)aip->explosion_bitmap_anims.size();
 
 	if (roid_fireballs > 0) {
-		index = aip->explosion_bitmap_anims[rand()%roid_fireballs];
+		index = aip->explosion_bitmap_anims[Random::next(roid_fireballs)];
 	}
 
 	return index;
@@ -1058,24 +1046,34 @@ void fireball_render(object* obj, model_draw_list *scene)
 
 	MONITOR_INC( NumFireballsRend, 1 );	
 
+	// Make sure the new system works fine.
+	Assert(obj->instance > -1);
+	Assert(static_cast<int>(Fireballs.size()) > obj->instance);
+
 	num = obj->instance;
 	fb = &Fireballs[num];
 
-	if ( Fireballs[num].current_bitmap < 0 )
+	if ( fb->current_bitmap < 0 )
 		return;
+
+	float alpha = 1.0f;
+
+	if (The_mission.flags[Mission::Mission_Flags::Fullneb] && Neb_affects_fireballs)
+		alpha *= neb2_get_fog_visibility(&obj->pos, 
+			Neb2_fog_visibility_fireball_const + (obj->radius * Neb2_fog_visibility_fireball_scaled_factor));
 	
 	g3_transfer_vertex(&p, &obj->pos);
 
 	switch ( fb->fireball_render_type )	{
 
 		case FIREBALL_MEDIUM_EXPLOSION: {
-			batching_add_volume_bitmap(Fireballs[num].current_bitmap, &p, fb->orient, obj->radius);
+			batching_add_volume_bitmap(fb->current_bitmap, &p, fb->orient, obj->radius, alpha);
 		}
 		break;
 
 		case FIREBALL_LARGE_EXPLOSION: {
 			// Make the big explosions rotate with the viewer.
-			batching_add_volume_bitmap_rotated(Fireballs[num].current_bitmap, &p, (i2fl(fb->orient)*PI) / 180.0f, obj->radius);
+			batching_add_volume_bitmap_rotated(fb->current_bitmap, &p, (i2fl(fb->orient)*PI) / 180.0f, obj->radius, alpha);
 		}
 		break;
 
@@ -1084,7 +1082,7 @@ void fireball_render(object* obj, model_draw_list *scene)
 			float rad = obj->radius * fireball_wormhole_intensity(fb);
 
 			fireball_info *fi = &Fireball_info[fb->fireball_info_index];
-			warpin_queue_render(scene, obj, &obj->orient, &obj->pos, fb->current_bitmap, rad, percent_life, obj->radius, (fb->flags & FBF_WARP_3D) != 0, fi->warp_glow_bitmap, fi->warp_ball_bitmap, fi->warp_model_id);
+			warpin_queue_render(scene, obj, &obj->orient, &obj->pos, fb->current_bitmap, rad, percent_life, obj->radius, fi->use_3d_warp || (fb->flags & FBF_WARP_3D) != 0, fi->warp_glow_bitmap, fi->warp_ball_bitmap, fi->warp_model_id);
 		}
 		break;
 
@@ -1092,4 +1090,15 @@ void fireball_render(object* obj, model_draw_list *scene)
 		default:
 			Int3();
 	}
+}
+
+// Because fireballs are only added and removed in two places, and Unused_fireball_indices is always updated in those places to contain unused indices,
+// this very simple code will give you the correct count of currently existing fireballs in use. 
+int fireball_get_count()
+{
+	int count = static_cast<int>(Fireballs.size()) - static_cast<int>(Unused_fireball_indices.size());
+
+	Assert (count >= 0);
+	
+	return count;
 }

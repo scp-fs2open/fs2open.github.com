@@ -44,6 +44,7 @@ const short MOUSE_X_AXIS = JOY_X_AXIS;
 const short MOUSE_Y_AXIS = JOY_Y_AXIS;
 const short MOUSE_Z_AXIS = JOY_Z_AXIS;
 const short MOUSE_NUM_AXES = 3;
+const short MOUSE_NUM_BUTTONS = 9;	// Keep this up to date with mouse.h until z64555 stops being lazy and does it right
 
 /*!
  * Controller index enumeration
@@ -337,11 +338,6 @@ class CCB;
  */
 class CC_bind {
 public:
-	CID cid = CID_NONE; //!< Which controller this belongs to
-	char flags = 0;     //!< mask to determine various additional attributes of btn
-	short btn = -1;     //!< The button, key combo, or axis that's bound.
-
-public:
 	CC_bind() = default;
 	CC_bind(CID _cid, short _btn) : cid(_cid), btn(_btn) { validate(); };
 	CC_bind(CID _cid, short _btn, char _flags) : cid(_cid), flags(_flags), btn(_btn) { validate(); };
@@ -352,15 +348,9 @@ public:
 	/*!
 	 * Checks if this CC_bind is equal to the given CC_bind
 	 *
-	 * @details Not all flags may be necassary for equality, which may require careful bool logic
-	 *   For now, we just have to worry about CCF_AXIS
+	 * @note EQUAL means EQUAL, this will return FALSE if the flags differ by a single bit
 	 */
 	bool operator==(const CC_bind &B) const;
-
-	/*!
-	 * Checks if this CC_bind is equal to either in the pair
-	 */
-	bool operator==(const CCB &pair) const;
 
 	/*!
 	 * Checks if this CC_bind is not equal to the given CC_bind
@@ -368,9 +358,9 @@ public:
 	bool operator!=(const CC_bind &B) const;
 
 	/*!
-	 * Checks if this CC_bind is not equal to either in the pair
+	 * Checks if this CC_bind is equal to the given CC_bind, disregarding the inversion flag
 	 */
-	bool operator!=(const CCB &pair) const;
+	bool invert_agnostic_equals(const CC_bind &B) const;
 
 	/*!
 	 * Clears the binding and flags.  Some flags are retained.
@@ -393,6 +383,21 @@ public:
 	void validate();
 
 	/*!
+	 * Returns a copy of ::btn
+	 */
+	short get_btn() const;
+
+	/*!
+	 * Returns a copy of ::cid
+	 */
+	CID get_cid() const;
+
+	/*!
+	 * Returns a copy of ::flags
+	 */
+	char get_flags() const;
+
+	/*!
 	 * Returns a human-readable string of this binding
 	 */
 	SCP_string textify() const;
@@ -411,6 +416,18 @@ public:
 	 * Is true if inverted, false otherwise
 	 */
 	bool is_inverted() const;
+
+	/*!
+	 * Checks if this CC_bind conflicts with the given argument
+	 *
+	 * @note Similar to operator==, but ignores certain combinations of flags.
+	 */
+	bool conflicts_with(const CC_bind&) const;
+
+private:
+	CID cid = CID_NONE; //!< Which controller this belongs to
+	char flags = 0;     //!< mask to determine various additional attributes of btn
+	short btn = -1;     //!< The button, key combo, or axis that's bound.
 };
 
 /*!
@@ -470,14 +487,14 @@ public:
 	bool operator!=(const CCB&) const;
 
 	/*!
-	 * Returns True if this CCB's first isn't empty and the given CCB has a binding equal to it
+	 * Returns True if this CCB's first isn't empty and the given CCB has a binding that can conflict with it
 	 */
-	bool has_first(const CCB&) const;
+	bool has_first_conflict(const CCB&) const;
 
 	/*!
-	 * Returns True if this CCB's second isn't empty and the given CCB has a binding equal to it
+	 * Returns True if this CCB's second isn't empty and the given CCB has a binding that can conflict with it
 	 */
-	bool has_second(const CCB&) const;
+	bool has_second_conflict(const CCB&) const;
 
 	/*!
 	 * Returns a pointer to first, or second, whichever has a binding equal to the given CC_bind, or nullptr if neither
@@ -524,6 +541,10 @@ public:
 	CC_preset(const CC_preset& A) = default;
 
 	CC_preset& operator=(const CC_preset&);
+	/*!
+	 * Checks if the given preset is a duplicate of this one
+	 */
+	bool is_duplicate_of(CC_preset&);
 };
 
 /*!
@@ -625,11 +646,16 @@ extern int Control_config_overlay_id;
 
 extern SCP_vector<CCI> Control_config;		//!< Stores the keyboard configuration
 extern SCP_vector<CC_preset> Control_config_presets; // tabled control presets; pointers to config_item arrays
-extern const char **Scan_code_text;
-extern const char **Joy_button_text;
-extern char *Joy_axis_text[JOY_NUM_AXES];
 
 extern bool Generate_controlconfig_table;
+extern const char **Joy_button_text;			// String table of button labels.  XSTR'd on init.
+
+// string table constants for labels and stuff.
+#define NUM_AXIS_TEXT			JOY_NUM_AXES
+#define NUM_MOUSE_TEXT			MOUSE_NUM_BUTTONS
+
+extern char *Axis_text[NUM_AXIS_TEXT];			// String table of axis labels (joystick and mice).  XSTR'd on init.
+extern char *Mouse_button_text[NUM_MOUSE_TEXT];	// String table of mouse button labels.  XSTR'd on init.
 
 /*!
  * @brief Checks if either binding in the CCB has the given cid
@@ -680,57 +706,72 @@ void control_config_cancel_exit();
  */
 void control_config_use_preset(CC_preset &preset);
 
+/*!
+ * @brief Search for a given preset by name and use it, if it exists.
+ *
+ * @returns TRUE    if the preset was found and selected
+ * @returns FALSE   if the preset was not found, and the defaults were selected
+ *
+ * @details If the preset does not exist, then defaults are used instead.
+ * @see control_config_use_preset()
+ */
+bool control_config_use_preset_by_name(const SCP_string &name);
+
 /**
  * @brief Gets the currently used preset
  *
+ * @param[in] invert_agnostic  If true, check the bindings in Control_config against the preset, ignoring inversion flags
+ * 
  * @returns an iterator to the current preset, or
- * @returns Control_config_presets.end() if current bindings are not in a preset
- *
- * @note Similar to preset_find_duplicate, this function has additional logic in its search to ignore disabled controls
+ * @returns ::iterator Control_config_presets.end() if current bindings are not in a preset
  */
-SCP_vector<CC_preset>::iterator control_config_get_current_preset();
+SCP_vector<CC_preset>::iterator control_config_get_current_preset(bool invert_agnostic = false);
 
 /*!
- * Returns the IoActionId of a control bound to the given key
+ * Returns the IoActionId (index within Control_config[]) of a control bound to the given key
  *
- * @param[in] key           The key combo to look for
- * @param[in] find_override If true, return the IoActionId of a control that has this key as its default
+ * @param[in]   key           The key combo to look for
+ * @param[in]   find_override If true, return the IoActionId of a control that has this key as its default
+ *
+ * @return  -1 if the given key is NULL or not bound.
+ *
  * @details If find_override is set to true, then this returns the index of the action
  */
 int translate_key_to_index(const char *key, bool find_override=true);
 
 
 /*!
- * @brief Given the system default key 'key', return the current key that is bound to that function.
+ * @brief Given the system default key 'key', return the current control input(s) that is bound to that function.
  *
- * @param[in] key  The default key combo (as string) to a certain control
+ * @param[in]   key     The default key combo (as cstring) to a certain control
  *
- * @returns The key combo (as string) currently bound to the control
+ * @return  The key combo (as cstring) currently bound to the control, or
+ * @return  nullptr if the given key is not a system default key, or
+ * @return  "None" if there is nothing bound to the control
  *
  * @details Both the 'key' and the return value are descriptive strings that can be displayed
  * directly to the user.  If 'key' isn't a real key, is not normally bound to anything,
- * or there is no key currently bound to the function, NULL is returned.
+ * or there is no key currently bound to the function, nullptr is returned.
+ *
+ * @note Not thread safe.  Has an internal buffer for the return value which is overwritten on each call.
+ *
+ * @note Uses CC_bind::textify for translations
  */
-char *translate_key(char *key);
+const char *translate_key(char *key);
 
 /**
- * @brief Converts the specified key code to a human readable string
+ * @brief Converts the specified key code to a human readable string, according to the selected locale
  *
- * @note The returned value is localized to the current language
+ * @param[in]   code    The key code to convert
+ * @param[in]   use_default_locale  If true, return the default locale (English) translation of the key
  *
- * @param code The key code to convert
- * @return The text representation of the code. The returned value is stored in a temporary location, copy it to your
- * own buffer if you want to continue using it.
+ * @return  The text representation of the code.
+ *
+ * @note Not thread safe.  Has an internal buffer for the return value which is overwritten on each call.
+ *
+ * @note The return value is translated according to localization settings
  */
-const char *textify_scancode(int code);
-
-/**
- * @note Same as textify_scancode but always returns the same value regardless of current language
- * @param code The key code to convert
- * @return The name of the key
- * @see textify_scancode
- */
-const char *textify_scancode_universal(int code);
+const char *textify_scancode(int code, bool use_default_locale = false);
 
 /*!
  * @brief Checks how long a control has been active
@@ -869,7 +910,6 @@ SCP_string ValToCID(CID id);
  * @return "NONE" if not found, or invalid id
  */
 SCP_string ValToCID(int id);
-
 /**
  * Lookups the given stringified enum to find its value
  */
@@ -969,6 +1009,5 @@ CC_type CCTypeToVal(const char *str);
 
  */
 SCP_string ValToCCType(CC_type type);
-
 
 #endif

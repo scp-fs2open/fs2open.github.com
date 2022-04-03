@@ -8,11 +8,14 @@
 #include "scripting/api/objs/weaponclass.h"
 #include "scripting/api/objs/intelentry.h"
 #include "scripting/api/objs/fireballclass.h"
+#include "scripting/api/objs/decaldefinition.h"
 
 #include "ship/ship.h"
 #include "weapon/weapon.h"
 #include "menuui/techmenu.h"
 #include "fireball/fireballs.h"
+#include "mission/missionmessage.h"
+#include "decals/decals.h"
 
 
 extern bool Ships_inited;
@@ -218,6 +221,67 @@ ADE_FUNC(__len, l_Tables_FireballClasses, NULL, "Number of fireball classes", "n
 
 	return ade_set_args(L, "i", Num_fireball_types);
 }
-}
+
+//*****SUBLIBRARY: Tables/SimulatedSpeechOverrides
+ADE_LIB_DERIV(l_Tables_SimulatedSpeechOverrides, "SimulatedSpeechOverrides", NULL, NULL, l_Tables);
+
+ADE_INDEXER(l_Tables_SimulatedSpeechOverrides, "number Index", nullptr, "string", "Truncated filenames of simulated speech overrides or empty string if index is out of range.")
+{
+	int idx = -1;
+	if (!ade_get_args(L, "*i", &idx)) {
+		return ade_set_error(L, "s", "");
+	}
+	if (idx > 0 && (size_t) idx <= Generic_message_filenames.size()) {
+		idx--; //Convert from Lua to C, as lua indices start from 1, not 0
+		return ade_set_args(L, "s", Generic_message_filenames[idx]);
+	}
+
+	return ade_set_error(L, "s", "");
 }
 
+ADE_FUNC(__len, l_Tables_SimulatedSpeechOverrides, nullptr, "Number of simulated speech overrides", "number", "Number of simulated speech overrides")
+{
+	return ade_set_args(L, "i", Generic_message_filenames.size());
+}
+
+//*****SUBLIBRARY: Tables/DecalDefinitions
+ADE_LIB_DERIV(l_Tables_DecalDefinitions, "DecalDefinitions", nullptr, nullptr, l_Tables);
+
+ADE_INDEXER(l_Tables_DecalDefinitions, "number/string IndexOrDecalName", "Array of decal definitions", "decaldefinition", "Decal definition handle, or invalid handle if name is invalid")
+{
+	const char* name;
+	if (!ade_get_args(L, "*s", &name))
+		return 0;
+
+	int idx = decals::findDecalDefinition(name);
+
+	if (idx < 0)
+	{
+		idx = atoi(name);
+
+		// atoi is good enough here, 0 is invalid anyway
+		if (idx > 0)
+		{
+			idx--; // Lua --> C/C++
+		}
+		else
+		{
+			return ade_set_args(L, "o", l_DecalDefinitionclass.Set(-1));
+		}
+	}
+
+	return ade_set_args(L, "o", l_DecalDefinitionclass.Set(idx));
+}
+
+ADE_FUNC(__len, l_Tables_DecalDefinitions, nullptr, "Number of decal definitions", "number", "Number of decal definitions, or 0 if decal definitions haven't been loaded yet")
+{
+	return ade_set_args(L, "i", static_cast<int>(decals::DecalDefinitions.size()));
+}
+
+ADE_FUNC(isDecalSystemActive, l_Tables, nullptr, "Returns whether the decal system is able to work on the current machine", "boolean", "true if active, false if inactive")
+{
+	return ade_set_args(L, "b", decals::Decal_system_active);
+}
+
+}
+}

@@ -386,7 +386,8 @@ void CShipEditorDlg::initialize_data(int full_update)
 {
 	int type, ship_count, player_count, total_count, wing = -1, pvalid_count;
 	int a_cue, d_cue, cue_init = 0, cargo = 0, base_ship, base_player, pship = -1;
-	int no_arrival_warp = 0, no_departure_warp = 0, escort_count, ship_orders, current_orders;
+	int no_arrival_warp = 0, no_departure_warp = 0, escort_count;
+	std::set<size_t> ship_orders, current_orders;
 	int pship_count;  // a total count of the player ships not marked
 	object *objp;
 	CWnd *w = NULL;
@@ -473,7 +474,7 @@ void CShipEditorDlg::initialize_data(int full_update)
 	player_ship = single_ship = -1;
 	m_arrival_tree.select_sexp_node = m_departure_tree.select_sexp_node = select_sexp_node;
 	select_sexp_node = -1;
-	ship_orders = 0;				// assume they are all the same type
+	ship_orders.clear();				// assume they are all the same type
 	if (ship_count) {
 		box = (CComboBox *) GetDlgItem(IDC_SHIP_CARGO1);
 		box->ResetContent();
@@ -513,10 +514,10 @@ void CShipEditorDlg::initialize_data(int full_update)
 
 					// 'and' in the ship type of this ship to our running bitfield
 					current_orders = ship_get_default_orders_accepted( &Ship_info[Ships[i].ship_info_index] );
-					if (!ship_orders){
+					if (ship_orders.empty()){
 						ship_orders = current_orders;
 					} else if (ship_orders != current_orders){
-						ship_orders = -1;
+						ship_orders = {std::numeric_limits<size_t>::max()};
 					}
 
 					if (Ships[i].flags[Ship::Ship_Flags::Escort]){
@@ -812,7 +813,7 @@ void CShipEditorDlg::initialize_data(int full_update)
 		box = (CComboBox *) GetDlgItem(IDC_SHIP_TEAM);
 		box->EnableWindow(enable);
 		box->ResetContent();
-		for (auto i=0; i<Num_iffs; i++){
+		for (auto i=0; i< (int)Iff_info.size(); i++){
 			box->AddString(Iff_info[i].iff_name);
 		}
 	}	
@@ -975,7 +976,7 @@ void CShipEditorDlg::initialize_data(int full_update)
 		// ships are the same type.  the ship_type (local) variable holds the ship types
 		// for all ships.  Determine how may bits set and enable/diable window
 		// as appropriate
-		if ( /*(m_team == -1) ||*/ (ship_orders == -1) ){
+		if ( /*(m_team == -1) ||*/ (ship_orders.find(std::numeric_limits<size_t>::max()) != ship_orders.end()) ){
 			GetDlgItem(IDC_IGNORE_ORDERS)->EnableWindow(FALSE);
 		} else {
 			GetDlgItem(IDC_IGNORE_ORDERS)->EnableWindow(TRUE);
@@ -1086,22 +1087,7 @@ int CShipEditorDlg::update_data(int redraw)
 			}
 		}
 
-		for (i=0; i<Num_iffs; i++) {
-			if (!stricmp(m_ship_name, Iff_info[i].iff_name)) {
-				if (bypass_errors)
-					return 1;
-
-				bypass_errors = 1;
-				z = MessageBox("This ship name is already being used by a team.\n"
-					"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
-
-				if (z == IDCANCEL)
-					return -1;
-
-				m_ship_name = _T(Ships[single_ship].ship_name);
-				UpdateData(FALSE);
-			}
-		}
+		// We don't need to check teams.  "Unknown" is a valid name and also an IFF.
 
 		for ( i=0; i < (int)Ai_tp_list.size(); i++) {
 			if (!stricmp(m_ship_name, Ai_tp_list[i].name)) 
@@ -1207,6 +1193,11 @@ int CShipEditorDlg::update_data(int redraw)
 					Assert(strlen(str) < NAME_LENGTH);
 					strcpy_s(Reinforcements[i].name, str);
 				}
+
+			if (Ships[single_ship].has_display_name()) {
+				Ships[single_ship].flags.remove(Ship::Ship_Flags::Has_display_name);
+				Ships[single_ship].display_name = "";
+			}
 
 			Update_window = 1;
 		}
@@ -1719,9 +1710,13 @@ void CShipEditorDlg::OnDeleteShip()
 
 void CShipEditorDlg::OnShipTbl()
 {
-	text_view_dlg dlg;
+	TextViewDlg dlg;
 
-	dlg.set(m_ship_class);
+	if (m_ship_class < 0)
+		return;
+	auto sip = &Ship_info[m_ship_class];
+
+	dlg.LoadShipsTblText(sip);
 	dlg.DoModal();
 }
 
@@ -1837,48 +1832,44 @@ void CShipEditorDlg::OnSelchangedDepartureTree(NMHDR* pNMHDR, LRESULT* pResult)
 	*pResult = 0;
 }
 
+void CShipEditorDlg::calc_help_height()
+{
+	CRect minihelp, help;
+
+	GetDlgItem(IDC_MINI_HELP_BOX)->GetWindowRect(minihelp);
+	GetDlgItem(IDC_HELP_BOX)->GetWindowRect(help);
+	help_height = (help.bottom - minihelp.top) + 10;
+}
+
 void CShipEditorDlg::calc_cue_height()
 {
-	CRect cue, help;
+	CRect cue;
 
 	GetDlgItem(IDC_CUE_FRAME)->GetWindowRect(cue);
-	cue_height = (cue.bottom - cue.top)+20;
-	if (Show_sexp_help){
-		GetDlgItem(IDC_HELP_BOX)->GetWindowRect(help);
-		cue_height += (help.bottom - help.top);
-	}
-
-	if (Hide_ship_cues) {
-		((CButton *) GetDlgItem(IDC_HIDE_CUES)) -> SetCheck(1);
-		OnHideCues();
-	}
+	cue_height = (cue.bottom - cue.top) + 10;
 }
 
 void CShipEditorDlg::show_hide_sexp_help()
 {
-	CRect rect, help;
-	GetDlgItem(IDC_HELP_BOX)->GetWindowRect(help);
-	float box_size = (float)(help.bottom - help.top);
+	CRect rect;
 
-	if (Show_sexp_help){
-		cue_height += (int)box_size;
-	} else {
-		cue_height -= (int)box_size;
-	}
-
-	if (((CButton *) GetDlgItem(IDC_HIDE_CUES)) -> GetCheck()){
+	if (((CButton *) GetDlgItem(IDC_HIDE_CUES)) -> GetCheck())
 		return;
-	}
 
 	GetWindowRect(rect);
 
-	if (Show_sexp_help){
-		rect.bottom += (LONG)box_size;
-	} else {
-		rect.bottom -= (LONG)box_size;
-	}
+	if (Show_sexp_help)
+		rect.bottom += help_height;
+	else
+		rect.bottom -= help_height;
 
 	MoveWindow(rect);
+}
+
+void CShipEditorDlg::show_hide_cues()
+{
+	((CButton*)GetDlgItem(IDC_HIDE_CUES))->SetCheck(Hide_ship_cues ? TRUE : FALSE);
+	OnHideCues();
 }
 
 void CShipEditorDlg::OnHideCues() 
@@ -1886,12 +1877,18 @@ void CShipEditorDlg::OnHideCues()
 	CRect rect;
 
 	GetWindowRect(rect);
+
 	if (((CButton *) GetDlgItem(IDC_HIDE_CUES)) -> GetCheck()) {
 		rect.bottom -= cue_height;
-		Hide_ship_cues = 1;
+		if (Show_sexp_help)
+			rect.bottom -= help_height;
 
+		Hide_ship_cues = 1;
 	} else {
 		rect.bottom += cue_height;
+		if (Show_sexp_help)
+			rect.bottom += help_height;
+
 		Hide_ship_cues = 0;
 	}
 
@@ -2009,7 +2006,7 @@ void CShipEditorDlg::OnSelchangeHotkey()
 	set_num = m_hotkey-1;			// use -1 since values associated with hotkey sets are 1 index based
 
 	// the first three sets are generally reserved for player starting wings.
-	if ( set_num < MAX_STARTING_WINGS ) {
+	if ( set_num >= 0 && set_num < MAX_STARTING_WINGS ) {
 		sprintf( buf, "This hotkey set should probably be reserved\nfor wing %s", Starting_wing_names[set_num] );
 		MessageBox(buf, NULL, MB_OK);
 	}

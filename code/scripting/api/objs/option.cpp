@@ -158,7 +158,7 @@ ADE_VIRTVAR(Flags,
 	"<li><b>ForceMultiValueSelection:</b> If true, a selection option with two values should be displayed the "
 	"same as an option with more possible values</li>"
 	"</ul>",
-	ade_type_map("string", "boolean"),
+	"{ string => boolean ... }",
 	"The table of flags values.")
 {
 	option_h* opt;
@@ -216,10 +216,13 @@ ADE_FUNC(getInterpolantFromValue, l_Option, "ValueDescription value",
 	}
 	return ade_set_args(L, "f", opt->get()->getInterpolantFromValue(*value));
 }
-ADE_FUNC(getValidValues, l_Option, nullptr,
-         "Gets the valid values of this option. The order or the returned values must be maintained in the UI. This is "
-         "only valid for selection or boolean options.",
-         ade_type_array("ValueDescription"), "A table containing the possible values or nil on error.")
+ADE_FUNC(getValidValues,
+	l_Option,
+	nullptr,
+	"Gets the valid values of this option. The order or the returned values must be maintained in the UI. This is "
+	"only valid for selection or boolean options.",
+	"ValueDescription[]",
+	"A table containing the possible values or nil on error.")
 {
 	option_h* opt;
 	if (!ade_get_args(L, "o", l_Option.GetPtr(&opt))) {

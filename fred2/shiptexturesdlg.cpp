@@ -150,6 +150,7 @@ void CShipTexturesDlg::OnOK()
 				strcpy_s(tr.new_texture, new_texture_name[i]);
 				strcpy_s(tr.ship_name, Ships[self_ship].ship_name);
 				tr.new_texture_id = -1;
+				tr.from_table = false;
 
 				// assign to global FRED array
 				Fred_texture_replacements.push_back(tr);
@@ -238,7 +239,7 @@ BOOL CShipTexturesDlg::OnInitDialog()
 	// now look for new textures
 	for (SCP_vector<texture_replace>::iterator ii = Fred_texture_replacements.begin(); ii != Fred_texture_replacements.end(); ++ii)
 	{
-		if (!stricmp(Ships[self_ship].ship_name, ii->ship_name))
+		if (!stricmp(Ships[self_ship].ship_name, ii->ship_name) && !(ii->from_table))
 		{
 			// look for corresponding old texture
 			for (i=0; i<texture_count; i++)
@@ -390,6 +391,7 @@ texture_replace *CShipTexturesDlg::texture_set(texture_replace *dest, const text
 	strcpy_s(dest->ship_name, src->ship_name);
 	strcpy_s(dest->old_texture, src->old_texture);
 	strcpy_s(dest->new_texture, src->new_texture);
+	dest->from_table = src->from_table;
 
 	return dest;
 }

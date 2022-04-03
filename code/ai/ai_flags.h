@@ -5,7 +5,7 @@
 
 namespace AI {
 	FLAG_LIST(AI_Flags) {
-		Formation_wing,				//	Fly in formation as part of wing.
+		Formation_wing,				//	Fly in formation as part of wing. Also used when flying waypoints.
 		Awaiting_repair,			//	Awaiting a repair ship.
 		Being_repaired,				//	Currently docked with repair ship.
 		Repairing,					//	Repairing a ship (or going to repair a ship)
@@ -130,9 +130,20 @@ namespace AI {
         Use_only_single_fov_for_turrets,
         No_turning_directional_bias,
 		Use_axial_turnrate_differences,
-		nonshielded_ships_can_manage_ets,
+		all_nonshielded_ships_can_manage_ets,
+		fightercraft_nonshielded_ships_can_manage_ets,
 		Better_collision_avoidance,
 		Require_exact_los,
+		Improved_missile_avoidance,
+		Friendlies_use_countermeasure_firechance,
+		Improved_subsystem_attack_pathing,
+		Fixed_ship_weapon_collision,
+		No_shield_damage_from_ship_collisions,
+		Reset_last_hit_target_time_for_player_hits,
+		Fighterbay_arrivals_use_carrier_orient, 
+		Fighterbay_departures_use_carrier_orient,
+		Prevent_negative_turret_ammo,
+		Fix_keep_safe_distance,
 
 		NUM_VALUES
 	};

@@ -80,8 +80,7 @@ SCP_string getJoystickGUID(SDL_Joystick* stick)
 	joystickGUID.resize(GUID_STR_SIZE - 1);
 
 	// Make sure the GUID is upper case
-	std::transform(begin(joystickGUID), end(joystickGUID), begin(joystickGUID),
-	               [](char c) { return (char)::toupper(c); });
+	SCP_toupper(joystickGUID);
 
 	return joystickGUID;
 }
@@ -94,7 +93,7 @@ bool joystickMatchesGuid(Joystick* testStick, const SCP_string& guid, int id)
 	}
 
 	SCP_string guidStr(guid);
-	std::transform(begin(guidStr), end(guidStr), begin(guidStr), [](char c) { return (char)::toupper(c); });
+	SCP_toupper(guidStr);
 
 	if (testStick->getGUID() != guidStr) {
 		return false; // GUID doesn't match
@@ -129,25 +128,11 @@ bool joystickMatchesGuid(Joystick* testStick, const SCP_string& guid, int id)
  *
  * @details
  *   Should cid be CID_JOY0, it also checks for legacy .ini keys.
- *   Should the fs2_open.ini contain legacy keys "CurrentJoystickGUID" and/or "CurrentJoystick," it is assumed that
- * all cids other than CID_JOY0 won't have an associated joystick
+ *   Should Joy0ID key be null, legacy keys will be tried
  */
 bool isPlayerJoystick(Joystick* testStick, short cid) {
 	SCP_string GUID;
 	int Id;
-
-	GUID = os_config_read_string(nullptr, "CurrentJoystickGUID", "");
-	Id = static_cast<int>(os_config_read_uint(nullptr, "CurrentJoystick", 0));
-
-	if (!GUID.empty() || (Id != 0)) {
-		// Legacy options found
-		if (cid == CID_JOY0) {
-			return joystickMatchesGuid(testStick, GUID, Id);
-		} else {
-			// Anything other than Joy0 won't have a key, bail.
-			return false;
-		}
-	} // Else, using new options
 
 	SCP_string key_guid;
 	SCP_string key_id;
@@ -175,12 +160,18 @@ bool isPlayerJoystick(Joystick* testStick, short cid) {
 		case CID_MOUSE:
 			return false;
 		default:
-			mprintf(("Unknown CID %i", cid));
+			mprintf(("Unknown CID %i\n", cid));
 			return false;
 	}
 
 	GUID = os_config_read_string(nullptr, key_guid.c_str(), "");
 	Id = static_cast<int>(os_config_read_uint(nullptr, key_id.c_str(), 0));
+
+	if ((cid == CID_JOY0) && GUID.empty()) {
+		// Check legacy keys
+		GUID = os_config_read_string(nullptr, "CurrentJoystickGUID", "");
+		Id = static_cast<int>(os_config_read_uint(nullptr, "CurrentJoystick", 0));
+	}
 
 	return joystickMatchesGuid(testStick, GUID, Id);
 }
@@ -490,7 +481,7 @@ bool device_event_handler(const SDL_Event &evt)
 			{
 				if (value[i] == addedStick)
 				{
-					mprintf(("Joystick %i connected", i));
+					mprintf(("Joystick %i connected\n", i));
 					setPlayerJoystick(addedStick, i);
 					break;
 				}
@@ -503,7 +494,7 @@ bool device_event_handler(const SDL_Event &evt)
 			{
 				if (isPlayerJoystick(addedStick, i))
 				{
-					mprintf(("Joystick %i connected", i));
+					mprintf(("Joystick %i connected\n", i));
 					setPlayerJoystick(addedStick, i);
 					break;
 				}
@@ -526,7 +517,7 @@ bool device_event_handler(const SDL_Event &evt)
 			if (joyDeviceEvent.which == pJoystick[i]->getID())
 			{
 				// We just lost our joystick, reset the data
-				mprintf(("Joystick %i disconnected", i));
+				mprintf(("Joystick %i disconnected\n", i));
 				setPlayerJoystick(nullptr, i);
 				break;
 			}
@@ -733,6 +724,7 @@ namespace joystick
 		_name.assign(SDL_JoystickName(_joystick));
 		_guidStr = getJoystickGUID(_joystick);
 		_id = SDL_JoystickInstanceID(_joystick);
+		_isHaptic = SDL_JoystickIsHaptic(_joystick);
 
 		// Initialize values of the axes
 		auto numSticks = SDL_JoystickNumAxes(_joystick);
@@ -932,11 +924,16 @@ namespace joystick
 	json_t* Joystick::getJSON() {
 		json_t* object;
 
-		object = json_pack("{s:s, s:s, s:i, s:i}",
-			"name", getName().c_str(),
-			"guid", getGUID().c_str(),
-			"id", static_cast<int>( getID() ),
-			"device", _device_id
+		object = json_pack("{s:s, s:s, s:i, s:i, s:i, s:i, s:i, s:i, s:b}",
+			"name", getName().c_str(),          // s:s
+			"guid", getGUID().c_str(),          // s:s
+			"id", static_cast<int>( getID() ),  // s:i
+			"device", _device_id,               // s:i
+			"num_axes", numAxes(),              // s:i
+			"num_balls", numBalls(),            // s:i
+			"num_buttons", numButtons(),        // s:i
+			"num_hats", numHats(),              // s:i
+			"is_haptic", _isHaptic              // s:b
 		);
 
 		return object;
@@ -1086,40 +1083,27 @@ namespace joystick
 		SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
 	}
 
-	SCP_vector<JoystickInformation> getJoystickInformations() {
-		SCP_vector<JoystickInformation> joystickInfo;
+	json_t* getJsonArray() {
+		// Do a full init of the SDL_JOYSTICK systems
+		init();
 
-		if (SDL_InitSubSystem(SDL_INIT_JOYSTICK) < 0) {
-			return SCP_vector<JoystickInformation>();
-		}
+		json_t* array = json_array();
+		size_t len = 0;
 
-		auto num_joysticks = SDL_NumJoysticks();
-		for (auto i = 0; i < num_joysticks; ++i) {
-			auto joystick = SDL_JoystickOpen(i);
+		// Get the JSON info of each detected joystick and attach it to array
+		for (auto& joystick : joysticks) {
+			json_t* object = joystick->getJSON();
 
-			JoystickInformation info{};
-
-			auto name = SDL_JoystickName(joystick);
-			if (name != nullptr) {
-				info.name = name;
+			if (object != nullptr) {
+				json_array_append_new(array, object);
+				len++;
 			}
-			info.guid = getJoystickGUID(joystick);
-
-			info.num_axes = static_cast<uint32_t>(SDL_JoystickNumAxes(joystick));
-			info.num_balls = static_cast<uint32_t>(SDL_JoystickNumBalls(joystick));
-			info.num_buttons = static_cast<uint32_t>(SDL_JoystickNumButtons(joystick));
-			info.num_hats = static_cast<uint32_t>(SDL_JoystickNumHats(joystick));
-
-			info.is_haptic = SDL_JoystickIsHaptic(joystick) == SDL_TRUE;
-
-			joystickInfo.push_back(info);
-
-			SDL_JoystickClose(joystick);
 		}
 
-		SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
+		// Do a full de-init of the SDL_JOYSTICK systems
+		shutdown();
 
-		return joystickInfo;
+		return array;
 	}
 
 	void printJoyJSON() {
@@ -1185,10 +1169,10 @@ int joystick_read_raw_axis(short cid, int num_axes, int *axis)
 
 float joy_down_time(const CC_bind &bind)
 {
-	int btn = bind.btn;
+	int btn = bind.get_btn();
 	if (btn < 0) return 0.f;
 
-	auto current = io::joystick::getPlayerJoystick(bind.cid);
+	auto current = io::joystick::getPlayerJoystick(bind.get_cid());
 
 	if (current == nullptr)
 	{
@@ -1218,10 +1202,10 @@ float joy_down_time(const CC_bind &bind)
 
 int joy_down_count(const CC_bind &bind, int reset_count)
 {
-	int btn = bind.btn;
+	int btn = bind.get_btn();
 	if (btn < 0) return 0;
 
-	auto current = io::joystick::getPlayerJoystick(bind.cid);
+	auto current = io::joystick::getPlayerJoystick(bind.get_cid());
 
 	if (current == nullptr)
 	{

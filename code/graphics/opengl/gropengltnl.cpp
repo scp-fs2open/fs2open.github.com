@@ -679,7 +679,7 @@ bool Glowpoint_override_save;
 
 extern bool gr_htl_projection_matrix_set;
 
-void gr_opengl_shadow_map_start(matrix4 *shadow_view_matrix, const matrix *light_orient)
+void gr_opengl_shadow_map_start(matrix4 *shadow_view_matrix, const matrix *light_orient, vec3d* eye_pos)
 {
 	if (Shadow_quality == ShadowQuality::Disabled)
 		return;
@@ -694,14 +694,13 @@ void gr_opengl_shadow_map_start(matrix4 *shadow_view_matrix, const matrix *light
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	gr_set_lighting(false,false);
-
 	Rendering_to_shadow_map = true;
 	Glowpoint_override_save = Glowpoint_override;
 	Glowpoint_override = true;
 
 	gr_htl_projection_matrix_set = true;
-	gr_set_view_matrix(&Eye_position, light_orient);
+
+	gr_set_view_matrix(eye_pos, light_orient);
 
 	*shadow_view_matrix = gr_view_matrix;
 

@@ -44,7 +44,7 @@ public:
 	{}
 };
 
-SCP_unordered_map<uint, collider_pair> Collision_cached_pairs;
+static SCP_unordered_map<uint, collider_pair> Collision_cached_pairs;
 
 class checkobject;
 extern checkobject CheckObjects[MAX_OBJECTS];
@@ -52,6 +52,9 @@ extern checkobject CheckObjects[MAX_OBJECTS];
 // returns true if we should reject object pair if one is child of other.
 int reject_obj_pair_on_parent(object *A, object *B)
 {
+	if (A->flags[Object::Object_Flags::Collides_with_parent] || B->flags[Object::Object_Flags::Collides_with_parent])
+		return 0;
+
 	if (A->type == OBJ_SHIP) {
 		if (B->type == OBJ_DEBRIS) {
 			if (B->parent_sig == A->signature) {
@@ -264,34 +267,43 @@ int weapon_will_never_hit( object *obj_weapon, object *other, obj_pair * current
 		}
 
 		// check weapon that does not turn against sphere expanding at ship maxvel
-		// compare (weeapon) ray with expanding sphere (ship) to find earliest possible collision time
+		// compare (weapon) ray with expanding sphere (ship) to find earliest possible collision time
 		// look for two time solutions to Xw = Xs, where Xw = Xw0 + Vwt*t  Xs = Xs + Vs*(t+dt), where Vs*dt = radius of ship 
 		// Since direction of Vs is unknown, solve for (Vs*t) and find norm of both sides
-		if ( !(wip->wi_flags[Weapon::Info_Flags::Turns]) ) {
-			vec3d delta_x, laser_vel;
+		if ( !(wip->wi_flags[Weapon::Info_Flags::Turns]) && (obj_weapon->phys_info.flags & PF_CONST_VEL) ) {
+			vec3d delta_x, weapon_vel;
 			float a,b,c, delta_x_dot_vl, delta_t;
 			float root1, root2, root, earliest_time;
 
-			if (max_vel_weapon == max_vel_other) {
+			vm_vec_sub( &delta_x, &obj_weapon->pos, &other->pos );
+			weapon_vel = obj_weapon->phys_info.vel;
+			float weapon_speed = vm_vec_mag(&weapon_vel);
+
+			if (weapon_speed == max_vel_other) {
 				// this will give us NAN using the below formula, so check every frame
 				current_pair->next_check_time = timestamp(0);
 				return 0;
 			}
 
-			vm_vec_sub( &delta_x, &obj_weapon->pos, &other->pos );
-			laser_vel = obj_weapon->phys_info.vel;
 			// vm_vec_copy_scale( &laser_vel, &weapon->orient.vec.fvec, max_vel_weapon );
 			delta_t = (other->radius + 10.0f) / max_vel_other;		// time to get from center to radius of other obj
-			delta_x_dot_vl = vm_vec_dot( &delta_x, &laser_vel );
+			delta_x_dot_vl = vm_vec_dot( &delta_x, &weapon_vel);
 
-			a = max_vel_weapon*max_vel_weapon - max_vel_other*max_vel_other;
+			a = weapon_speed * weapon_speed - max_vel_other*max_vel_other;
 			b = 2.0f * (delta_x_dot_vl - max_vel_other*max_vel_other*delta_t);
 			c = vm_vec_mag_squared( &delta_x ) - max_vel_other*max_vel_other*delta_t*delta_t;
 
 			float discriminant = b*b - 4.0f*a*c;
 			if ( discriminant < 0) {
-				// never hit
-				return 1;
+				// neither entity passes the other
+				if (c < 0) { 
+					// ship outpaces weapon
+					current_pair->next_check_time = timestamp(0);	// check next time
+					return 0;
+				} else {
+					// weapon outpaces ship; will never hit
+					return 1;
+				}
 			} else {
 				root = fl_sqrt( discriminant );
 				root1 = (-b + root) / (2.0f * a) * 1000.0f;	// get time in ms
@@ -299,7 +311,7 @@ int weapon_will_never_hit( object *obj_weapon, object *other, obj_pair * current
 			}
 
 			// standard algorithm
-			if (max_vel_weapon > max_vel_other) {
+			if (weapon_speed > max_vel_other) {
 				// find earliest positive time
 				if ( root1 > root2 ) {
 					float temp = root1;
@@ -524,50 +536,19 @@ int collide_remove_weapons( )
 		}
 	}
 
-	if ( num_deleted )
-		return num_deleted;
-
-	// if we didn't remove any weapons, try to the N oldest weapons.  first checking for pairs, then
-	// checking for oldest weapons in general.  We will go through the loop a max of 2 times.  first time
-	// through, we check oldest weapons with pairs, next time through, for oldest weapons.
-	int loop_count = 0;
-	do {
-		for (int j = 0; j < CRW_MAX_TO_DELETE; j++ ) {
-			float oldest_time = 1000.0f;
-			int oldest_index = -1;
-			for (int i = 0; i < MAX_WEAPONS; i++ ) {
-				if ( Weapons[i].objnum == -1 )			// shouldn't happen, but this is the safe thing to do.
-					continue;
-				if ( ((loop_count || crw_status[i] == CRW_NO_PAIR)) && (Weapons[i].lifeleft < oldest_time) ) {
-					oldest_time = Weapons[i].lifeleft;
-					oldest_index = i;
-				}
-			}
-			if ( oldest_index != -1 ) {
-				obj_delete(Weapons[oldest_index].objnum);
-				num_deleted++;
-			}
-		}
-
-		// if we deleted some weapons, then we can break
-		if ( num_deleted )
-			break;
-
-		loop_count++;
-	} while ( loop_count < 2);
-
+	// stop here because any other weapon could currently be involved in a collision and can cause crashes
 	return num_deleted;
 
 }
 
-void set_hit_struct_info(collision_info_struct *hit, mc_info *mc, int submodel_rot_hit)
+void set_hit_struct_info(collision_info_struct *hit, mc_info *mc, bool submodel_move_hit)
 {
 	hit->edge_hit = mc->edge_hit;
 	hit->hit_pos = mc->hit_point_world;
 	hit->hit_time = mc->hit_dist;
 	hit->submodel_num = mc->hit_submodel;
 
-	hit->submodel_rot_hit = submodel_rot_hit;
+	hit->submodel_move_hit = submodel_move_hit;
 }
 
 //Previously, this was done with 
@@ -588,7 +569,6 @@ void obj_add_collider(int obj_index)
 	CheckObjects[obj_index].signature = objp->signature;
     CheckObjects[obj_index].flags = objp->flags - Object::Object_Flags::Not_in_coll;
 	CheckObjects[obj_index].parent_sig = objp->parent_sig;
-	CheckObjects[obj_index].parent_type = objp->parent_type;
 #endif
 
 	if(!(objp->flags[Object::Object_Flags::Not_in_coll])){
@@ -623,10 +603,10 @@ void obj_reset_colliders()
 	Collision_cached_pairs.clear();
 }
 
-void obj_collide_retime_cached_pairs(int checkdly)
+void obj_collide_retime_cached_pairs()
 {
 	for ( auto& pair : Collision_cached_pairs ) {
-		pair.second.next_check_time = timestamp(checkdly);
+		pair.second.next_check_time = timestamp(0);
 	}
 }
 

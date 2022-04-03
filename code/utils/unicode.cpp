@@ -8,13 +8,13 @@ namespace unicode {
 text_iterator::text_iterator(const char* in_current_byte, const char* in_range_start_byte, const char* in_range_end_byte) :
 	current_byte(in_current_byte), range_end_byte(in_range_end_byte), range_start_byte(in_range_start_byte) {
 	if (range_end_byte == nullptr) {
-#if SCP_COMPILER_IS_GNU
+#if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic push
 // This suppresses a GCC bug where it thinks that in_current_byte is null in release builds
 #pragma GCC diagnostic ignored "-Wnonnull"
 #endif
 		range_end_byte = in_current_byte + strlen(in_current_byte);
-#if SCP_COMPILER_IS_GNU
+#if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic pop
 #endif
 	}
@@ -179,7 +179,7 @@ const char* get_encoding_string(Encoding encoding) {
 	}
 }
 
-void convert_encoding(SCP_string& buffer, const char* src, Encoding encoding_src, Encoding encoding_dest) {
+bool convert_encoding(SCP_string& buffer, const char* src, Encoding encoding_src, Encoding encoding_dest) {
 
 	if (encoding_src == Encoding::Encoding_current)
 		encoding_src = Unicode_text_mode ? Encoding::Encoding_utf8 : Encoding::Encoding_iso8859_1;
@@ -190,7 +190,7 @@ void convert_encoding(SCP_string& buffer, const char* src, Encoding encoding_src
 	//We are already in the correct encoding, the string is correct
 	if (encoding_src == encoding_dest) {
 		buffer.assign(src);
-		return;
+		return true;
 	}
 
 	//If not, convert
@@ -201,7 +201,7 @@ void convert_encoding(SCP_string& buffer, const char* src, Encoding encoding_src
 	{
 		// turns out this is valid anyways
 		buffer.assign(src);
-		return;
+		return true;
 	}
 
 	size_t newlen = len;
@@ -223,7 +223,7 @@ void convert_encoding(SCP_string& buffer, const char* src, Encoding encoding_src
 		{
 			// successful re-encoding
 			buffer.assign(newstr.get(), newlen - out_size);
-			return;
+			return true;
 		}
 		else if (err == SDL_ICONV_E2BIG)
 		{
@@ -237,5 +237,7 @@ void convert_encoding(SCP_string& buffer, const char* src, Encoding encoding_src
 			break;
 		}
 	} while (true);
+
+	return false;
 }
 }

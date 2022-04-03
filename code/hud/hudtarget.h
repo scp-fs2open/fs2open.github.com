@@ -113,14 +113,27 @@ void hud_target_random_ship();
 
 void	hud_target_next_subobject();
 void	hud_target_prev_subobject();
-void	hud_cease_subsystem_targeting(bool print_message = true);
-void	hud_cease_targeting(bool deliberate = false);
+
+/**
+ * @brief Cease targeting subsystems
+ *
+ * @param[in] print_message  If true, provide feedback to the player
+ */
+void hud_cease_subsystem_targeting(bool print_message = true);
+
+/**
+ * @brief Cease targeting objects and their subsystems.
+ *
+ * @param[in] deliberate  If true, turn off auto-targeting and provide feedback to player
+ */
+void hud_cease_targeting(bool deliberate = false);
+
 void	hud_restore_subsystem_target(ship* shipp);
 vec3d* get_subsystem_world_pos(object* parent_obj, ship_subsys* subsys, vec3d* world_pos);
 void	hud_target_change_check();
 
 void hud_show_hostile_triangle();
-void hud_start_flash_weapon(int index);
+void hud_start_flash_weapon(int index, bool flash_energy);
 void hud_update_weapon_flash();
 void hud_process_homing_missiles(void);
 

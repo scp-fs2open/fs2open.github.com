@@ -1120,7 +1120,7 @@ static int bm_load_info(BM_TYPE type, const char *filename, CFILE *img_cfp, int 
 	return 0;
 }
 
-int bm_load(const char *real_filename) {
+int bm_load(const char *real_filename, int dir_type) {
 	int free_slot = -1;
 	int w, h, bpp = 8;
 	int rc = 0;
@@ -1152,6 +1152,7 @@ int bm_load(const char *real_filename) {
 	if (Is_standalone) {
 		char standalone_filename[MAX_FILENAME_LEN] = "right_bracket";
 		strcpy_s(filename, standalone_filename);
+		dir_type = CF_TYPE_INTERFACE;
 	}
 
 	// safety catch for strcat...
@@ -1164,11 +1165,11 @@ int bm_load(const char *real_filename) {
 	// Lets find out what type it is
 	{
 		// see if it's already loaded (checks for any type with filename)
-		if (bm_load_sub_fast(filename, &handle))
+		if (bm_load_sub_fast(filename, &handle, dir_type))
 			return handle;
 
 		// if we are still here then we need to fall back to a file-based search
-		int rval = bm_load_sub_slow(filename, BM_NUM_TYPES, bm_ext_list, &img_cfp);
+		int rval = bm_load_sub_slow(filename, BM_NUM_TYPES, bm_ext_list, &img_cfp, dir_type);
 
 		if (rval < 0)
 			return -1;
@@ -1224,7 +1225,7 @@ int bm_load(const char *real_filename) {
 	entry->bm.palette = nullptr;
 	entry->num_mipmaps = mm_lvl;
 	entry->mem_taken = (size_t)bm_size;
-	entry->dir_type = CF_TYPE_ANY;
+	entry->dir_type = dir_type;
 	entry->handle = handle;
 
 	entry->load_count++;
@@ -1235,8 +1236,8 @@ int bm_load(const char *real_filename) {
 	return handle;
 }
 
-int bm_load(const SCP_string& filename) {
-	return bm_load(filename.c_str());
+int bm_load(const SCP_string& filename, int dir_type) {
+	return bm_load(filename.c_str(), dir_type);
 }
 
 bool bm_load_and_parse_eff(const char *filename, int dir_type, int *nframes, int *nfps, int *key, BM_TYPE *type) {
@@ -1424,7 +1425,7 @@ static int bm_load_image_data(int handle, int bpp, ushort flags, bool nodebug)
 	return 0;
 }
 
-int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *keyframe, float *total_time, bool can_drop_frames, int dir_type) {
+int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *keyframe, float *total_time, bool can_drop_frames, int dir_type, bool rethrow_exceptions) {
 	int	i, n;
 	anim	the_anim;
 	CFILE	*img_cfp = nullptr;
@@ -1466,6 +1467,7 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 	if (Is_standalone) {
 		char standalone_filename[MAX_FILENAME_LEN] = "cursorweb";
 		strcpy_s(filename, standalone_filename);
+		dir_type = CF_TYPE_INTERFACE;
 	}
 
 	// safety catch for strcat...
@@ -1594,10 +1596,15 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 			img_size = the_apng.imgsize();
 		}
 		catch (const apng::ApngException& e) {
-			mprintf(("Failed to load apng: %s\n", e.what() ));
 			if (img_cfp != nullptr)
 				cfclose(img_cfp);
-			return -1;
+			if (rethrow_exceptions) {
+				throw e;
+			}
+			else {
+				mprintf(("Failed to load apng: %s\n", e.what()));
+				return -1;
+			}
 		}
 	}
 	else {
@@ -1789,7 +1796,7 @@ int bm_load_either(const char *filename, int *nframes, int *fps, int *keyframe, 
 		*fps = 0;
 	int tidx = bm_load_animation(filename, nframes, fps, keyframe, nullptr, can_drop_frames, dir_type);
 	if (tidx == -1) {
-		tidx = bm_load(filename);
+		tidx = bm_load(filename, dir_type);
 		if (tidx != -1 && nframes != NULL)
 			*nframes = 1;
 	}
@@ -2852,6 +2859,28 @@ int bm_release(int handle, int clear_render_targets) {
 	}
 
 	return 1;
+}
+
+bool bm_release_rendertarget(int handle) {
+	Assert(handle >= 0);
+
+	bitmap_entry* be = bm_get_entry(handle);
+
+	if (be->type == BM_TYPE_NONE) {
+		return false;	// Already been released?
+	}
+
+	Assertion(be->handle == handle, "Invalid bitmap handle number %d (expected %d) for %s passed to bm_release_rendertarget()\n", be->handle, handle, be->filename);
+	Assertion(!bm_is_anim(be), "Cannot release a render target of an animation (bitmap handle number %d for %s)!\n", be->handle, be->filename);
+
+	if (!((be->type == BM_TYPE_RENDER_TARGET_STATIC) || (be->type == BM_TYPE_RENDER_TARGET_DYNAMIC))) {
+		nprintf(("BmpMan", "Tried to release a render target of a non-rendered bitmap!\n"));
+		return false;
+	}
+
+	gr_bm_free_data(bm_get_slot(handle), false);
+
+	return true;
 }
 
 int bm_reload(int bitmap_handle, const char* filename) {

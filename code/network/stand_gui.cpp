@@ -92,10 +92,10 @@ static PROPSHEETHEADER Sheet;
 static int Active_standalone_page;
 
 // timestamp for updating currently selected player stats on the player info page
-int Standalone_stats_stamp;
+UI_TIMESTAMP Standalone_stats_stamp;
 
 // timestamp for updating the netgame information are text controls
-int Standalone_ng_stamp;
+UI_TIMESTAMP Standalone_ng_stamp;
 
 // banned player callsigns
 #define STANDALONE_MAX_BAN			50
@@ -1066,8 +1066,10 @@ void std_pinfo_display_player_info(net_player *p)
 	char txt[40];
 	txt[sizeof(txt)-1] = '\0';
 
-	// set his ship type
-	SetWindowText(Player_ship_type,Ship_info[p->p_info.ship_class].name);
+	// set his ship type -- Cyborg17, if it's valid!
+	if (p->p_info.ship_class >= 0 && p->p_info.ship_class < static_cast<int>(Ship_info.size())) {
+		SetWindowText(Player_ship_type, Ship_info[p->p_info.ship_class].name);
+	}
 
 	// display his ping time
 	std_pinfo_update_ping(p);
@@ -1728,10 +1730,10 @@ void std_reset_standalone_gui()
 	std_multi_set_standalone_missiontime((float)0);	
 
 	// reset the stats update timestamp
-	Standalone_stats_stamp = -1;
+	Standalone_stats_stamp = UI_TIMESTAMP::invalid();
 
 	// reset the netgame info timestamp
-	Standalone_ng_stamp = -1;	
+	Standalone_ng_stamp = UI_TIMESTAMP::invalid();
 }
 
 // do any gui related issues on the standalone (like periodically updating player stats, etc...)
@@ -1741,9 +1743,9 @@ void std_do_gui_frame()
 	int idx;
 	
 	// check to see if the timestamp for updating player selected stats has popped
-	if((Standalone_stats_stamp == -1) || timestamp_elapsed(Standalone_stats_stamp)){
+	if (!Standalone_stats_stamp.isValid() || ui_timestamp_elapsed(Standalone_stats_stamp)){
 		// reset the timestamp
-		Standalone_stats_stamp = timestamp(STD_STATS_UPDATE_TIME);
+		Standalone_stats_stamp = ui_timestamp(STD_STATS_UPDATE_TIME);
 
 		// update any player currently selected
 		// there's probably a nicer way to do this, but...
@@ -1757,9 +1759,9 @@ void std_do_gui_frame()
 	}
 
 	// check to see if the timestamp for updating the netgame information controls has popped
-	if((Standalone_ng_stamp == -1) || timestamp_elapsed(Standalone_ng_stamp)){
+	if (!Standalone_ng_stamp.isValid() || ui_timestamp_elapsed(Standalone_ng_stamp)){
 		// reset the timestamp
-		Standalone_ng_stamp = timestamp(STD_NG_UPDATE_TIME);
+		Standalone_ng_stamp = ui_timestamp(STD_NG_UPDATE_TIME);
 
 		// update the controls
 		std_multi_update_netgame_info_controls();
@@ -1792,10 +1794,10 @@ void std_tracker_login()
 void std_reset_timestamps()
 {
 	// reset the stats update stamp
-	Standalone_stats_stamp = timestamp(STD_STATS_UPDATE_TIME);
+	Standalone_stats_stamp = ui_timestamp(STD_STATS_UPDATE_TIME);
 
 	// reset the netgame controls update timestamp
-	Standalone_ng_stamp = timestamp(STD_NG_UPDATE_TIME);
+	Standalone_ng_stamp = ui_timestamp(STD_NG_UPDATE_TIME);
 }
 
 // add a line of text chat to the standalone

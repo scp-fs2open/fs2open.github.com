@@ -372,37 +372,45 @@ void multi_options_local_load(multi_local_options *options, net_player *pxo_pl)
 }
 
 // add data from a multi_server_options struct
-void add_server_options(ubyte *data, int *size, multi_server_options *mso)
+void add_server_options(ubyte *data, int *size, const multi_server_options *mso)
 {
 	int packet_size = *size;
-	multi_server_options mso_tmp;
 
-	memcpy(&mso_tmp, mso, sizeof(multi_server_options));
+	// misc settings and flags
+	ADD_DATA(mso->squad_set);
+	ADD_DATA(mso->endgame_set);
+	ADD_INT(mso->flags);
 
-	mso_tmp.flags = INTEL_INT(mso->flags);
-	mso_tmp.respawn = INTEL_INT(mso->respawn);
-	mso_tmp.voice_token_wait = INTEL_INT(mso->voice_token_wait);
-	mso_tmp.voice_record_time = INTEL_INT(mso->voice_record_time);
-//	mso_tmp.mission_time_limit = INTEL_INT(mso->mission_time_limit);
-	mso_tmp.kill_limit = INTEL_INT(mso->kill_limit);
+	// default respawn count
+	ADD_UINT(mso->respawn);
 
-	ADD_DATA(mso_tmp);
+	// default max # of observers
+	ADD_DATA(mso->max_observers);
+
+	// default skill level
+	ADD_DATA(mso->skill_level);
+
+	// voice settings
+	ADD_DATA(mso->voice_qos);
+	ADD_INT(mso->voice_token_wait);
+	ADD_INT(mso->voice_record_time);
+
+	// time limit
+	ADD_INT(mso->mission_time_limit);
+
+	// kill limit
+	ADD_INT(mso->kill_limit);
 
 	*size = packet_size;
 }
 
 // add data from a multi_local_options struct
-void add_local_options(ubyte *data, int *size, multi_local_options *mlo)
+void add_local_options(ubyte *data, int *size, const multi_local_options *mlo)
 {
 	int packet_size = *size;
-	multi_local_options mlo_tmp;
 
-	memcpy(&mlo_tmp, mlo, sizeof(multi_local_options));
-
-	mlo_tmp.flags = INTEL_INT(mlo->flags);
-	mlo_tmp.obj_update_level = INTEL_INT(mlo->obj_update_level);
-
-	ADD_DATA(mlo_tmp);
+	ADD_INT(mlo->flags);
+	ADD_INT(mlo->obj_update_level);
 
 	*size = packet_size;
 }
@@ -412,14 +420,30 @@ void get_server_options(ubyte *data, int *size, multi_server_options *mso)
 {
 	int offset = *size;
 
-	GET_DATA(*mso);
+	// misc settings and flags
+	GET_DATA(mso->squad_set);
+	GET_DATA(mso->endgame_set);
+	GET_INT(mso->flags);
 
-	mso->flags = INTEL_INT(mso->flags); //-V570
-	mso->respawn = INTEL_INT(mso->respawn); //-V570
-	mso->voice_token_wait = INTEL_INT(mso->voice_token_wait); //-V570
-	mso->voice_record_time = INTEL_INT(mso->voice_record_time); //-V570
-//	mso->mission_time_limit = INTEL_INT(mso->mission_time_limit);
-	mso->kill_limit = INTEL_INT(mso->kill_limit); //-V570
+	// default respawn count
+	GET_UINT(mso->respawn);
+
+	// default max # of observers
+	GET_DATA(mso->max_observers);
+
+	// default skill level
+	GET_DATA(mso->skill_level);
+
+	// voice settings
+	GET_DATA(mso->voice_qos);
+	GET_INT(mso->voice_token_wait);
+	GET_INT(mso->voice_record_time);
+
+	// time limit
+	GET_INT(mso->mission_time_limit);
+
+	// kill limit
+	GET_INT(mso->kill_limit);
 
 	*size = offset;
 }
@@ -429,10 +453,8 @@ void get_local_options(ubyte *data, int *size, multi_local_options *mlo)
 {
 	int offset = *size;
 
-	GET_DATA(*mlo);
-
-	mlo->flags = INTEL_INT(mlo->flags); //-V570
-	mlo->obj_update_level = INTEL_INT(mlo->obj_update_level); //-V570
+	GET_INT(mlo->flags);
+	GET_INT(mlo->obj_update_level);
 
 	*size = offset;
 }
@@ -566,7 +588,7 @@ void multi_options_process_packet(unsigned char *data, header *hinfo)
 	int offset = HEADER_LENGTH;
 
 	// find out who is sending this data	
-	player_index = find_player_id(hinfo->id);
+	player_index = find_player_index(hinfo->id);
 
 	if (player_index < 0) {
 		nprintf(("Network", "Received packet from unknown player!\n"));

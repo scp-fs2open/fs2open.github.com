@@ -167,5 +167,5 @@ enum class Encoding { Encoding_current, Encoding_utf8, Encoding_iso8859_1 };
 
 bool string_is_ascii_only(const char* str, size_t len);
 const char* get_encoding_string(Encoding encoding);
-void convert_encoding(SCP_string& buffer, const char* src, Encoding encoding_src, Encoding encoding_dest = Encoding::Encoding_current);
+bool convert_encoding(SCP_string& buffer, const char* src, Encoding encoding_src, Encoding encoding_dest = Encoding::Encoding_current);
 }

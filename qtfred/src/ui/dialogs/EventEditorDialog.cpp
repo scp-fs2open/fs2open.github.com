@@ -1171,7 +1171,7 @@ void EventEditorDialog::reset_event(int num, QTreeWidgetItem* after) {
 	// First clear the current selection since the add_operator calls added new items and select them by default
 	ui->eventTree->clearSelection();
 	// This will automatically call set_cur_event
-	ui->eventTree->setItemSelected(h, true);
+	h->setSelected(true);
 
 	if (num >= MAX_MISSION_EVENTS) {
 		ui->btnNewEvent->setEnabled(false);

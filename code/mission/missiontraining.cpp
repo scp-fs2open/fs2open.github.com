@@ -27,6 +27,7 @@
 #include "popup/popup.h"
 #include "ship/ship.h"
 #include "sound/audiostr.h"
+#include "sound/fsspeech.h"
 #include "sound/sound.h"
 #include "weapon/emp.h"
 
@@ -575,6 +576,14 @@ void training_check_objectives()
 	// now sort list of events
 	// sort on EVENT_CURRENT and born on date, for other events (EVENT_SATISFIED, EVENT_FAILED) sort on born on date
 	sort_training_objectives();
+
+	// Cyborg - Multiplayer clients will not run the other directive functions, so just run this quick check to see
+	// if the directive success sound should be played.
+	if (MULTIPLAYER_CLIENT) {
+		if ( !hud_disabled() && hud_gauge_active(HUD_DIRECTIVES_VIEW) ) {
+			mission_maybe_play_directive_success_sound();
+		}
+	}
 }
 
 /**
@@ -627,8 +636,8 @@ char *translate_message_token(char *str)
  */
 SCP_string message_translate_tokens(const char *text)
 {
-	char temp[40], *ptr;
-	const char *toke1, *toke2;
+	char temp[40];
+	const char *ptr, *toke1, *toke2;
 	int r;
 	SCP_string buf;
 
@@ -650,7 +659,7 @@ SCP_string message_translate_tokens(const char *text)
 				strncpy(temp, text, toke2 - text);  // isolate token into seperate buffer
 				temp[toke2 - text] = 0;  // null terminate string
 				ptr = translate_key(temp);  // try and translate key
-				if (ptr) {  // was key translated properly?
+				if (ptr != nullptr) {  // was key translated properly?
 					if (!stricmp(ptr, NOX("none")) && (Training_bind_warning != Missiontime)) {
 						if ( The_mission.game_type & MISSION_TYPE_TRAINING ) {
 							r = popup(PF_TITLE_BIG | PF_TITLE_RED, 2, XSTR( "&Bind Control", 424), XSTR( "&Abort mission", 425),
@@ -764,9 +773,9 @@ int message_play_training_voice(int index)
 			return Training_voice;
 
 		} else {
-			game_snd_entry tmp_gs;
-			strcpy_s(tmp_gs.filename, Message_waves[index].name);
-			Message_waves[index].num = snd_load(&tmp_gs, 0, 0);
+			game_snd_entry tmp_gse;
+			strcpy_s(tmp_gse.filename, Message_waves[index].name);
+			Message_waves[index].num = snd_load(&tmp_gse, nullptr, 0);
 			if (!Message_waves[index].num.isValid()) {
 				nprintf(("Warning", "Cannot load message wave: %s.  Will not play\n", Message_waves[index].name));
 				return -1;
@@ -913,6 +922,17 @@ void message_training_queue_check()
 
 	if (Training_failure)
 		return;
+
+	if (Dont_preempt_training_voice) {
+		// don't pre-empt any voice files that are playing
+		if (Training_voice >= 0) {
+			auto z = (Training_voice_type) ? audiostream_is_playing(Training_voice_soundstream) : snd_is_playing(Training_voice_snd_handle);
+			if (z)
+				return;
+		}
+		if (fsspeech_playing())
+			return;
+	}
 
 	for (i=0; i<Training_message_queue_count; i++) {
 		if (timestamp_elapsed(Training_message_queue[i].timestamp)) {

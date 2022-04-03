@@ -26,6 +26,7 @@ TARGET_LINK_LIBRARIES(code PUBLIC openal)
 TARGET_LINK_LIBRARIES(code PUBLIC ${LUA_LIBS})
 TARGET_LINK_LIBRARIES(code PUBLIC ${PNG_LIBS})
 TARGET_LINK_LIBRARIES(code PUBLIC ${JPEG_LIBS})
+TARGET_LINK_LIBRARIES(code PUBLIC lz4)
 
 TARGET_LINK_LIBRARIES(code PUBLIC sdl2)
 
@@ -62,6 +63,10 @@ IF (FSO_USE_SPEECH)
 ENDIF(FSO_USE_SPEECH)
 
 TARGET_LINK_LIBRARIES(code PUBLIC jansson)
+
+target_link_libraries(code PUBLIC variant)
+
+target_link_libraries(code PUBLIC any)
 
 # Headers for standalone "gui" on UNIX
 IF(UNIX)

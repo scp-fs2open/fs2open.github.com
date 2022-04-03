@@ -9,6 +9,7 @@
 
 #include <cstdio>
 #include <cstdarg>
+#include <exception>
 #include <string>
 
 #include "cfile/cfile.h"
@@ -16,14 +17,18 @@
 #include "controlconfig/presets.h"
 #include "debugconsole/console.h"
 #include "def_files/def_files.h"
+#include "globalincs/pstypes.h"
 #include "globalincs/systemvars.h"
 #include "io/joy.h"
 #include "io/key.h"
 #include "io/mouse.h"
 #include "localization/localize.h"
 #include "options/Option.h"
+#include "osapi/dialogs.h"
 #include "parse/parselo.h"
 #include "scripting/scripting.h"
+
+#include <map>
 
 #include <map>
 
@@ -91,6 +96,10 @@ void control_config_common_init_bindings() {
 	Builder.start()
 	// Note: when adding new controls, group them according to the tab they would show up on.
 	// action_id, key_default, secondary, tab, XStR index, Text, CC_Type
+
+	// Note: when adding new controls, if a control does nothing in retail data, it should be disabled by default.  The controls config menu
+	// is cluttered enough as is, don't need to mess it up any more. --z64
+
 	// Ship targeting
 	(TARGET_NEXT,                                         KEY_T, -1, TARGET_TAB, 1, "Target Next Ship",                      CC_TYPE_TRIGGER)
 	(TARGET_PREV,                           KEY_SHIFTED | KEY_T, -1, TARGET_TAB, 1, "Target Previous Ship",                  CC_TYPE_TRIGGER)
@@ -151,8 +160,15 @@ void control_config_common_init_bindings() {
 	// flight controls (flight modes)
 	(BANK_WHEN_PRESSED,                                      -1, -1, SHIP_TAB, 1, "Bank When Pressed",  CC_TYPE_CONTINUOUS)
 	(AFTERBURNER,                                       KEY_TAB,  5, SHIP_TAB, 1, "Afterburner",        CC_TYPE_CONTINUOUS)
-	(GLIDE_WHEN_PRESSED,                                     -1, -1, SHIP_TAB, 0, "Glide When Pressed", CC_TYPE_CONTINUOUS, true)
-	(TOGGLE_GLIDING,                          KEY_ALTED | KEY_G, -1, SHIP_TAB, 0, "Toggle Gliding",     CC_TYPE_TRIGGER, true)
+	(GLIDE_WHEN_PRESSED,                                     -1, -1, SHIP_TAB, 0, "Glide When Pressed", CC_TYPE_CONTINUOUS)
+	(TOGGLE_GLIDING,                          KEY_ALTED | KEY_G, -1, SHIP_TAB, 0, "Toggle Gliding",     CC_TYPE_TRIGGER)
+
+	// flight controls (axes)
+	(JOY_HEADING_AXIS,                     JOY_X_AXIS, MOUSE_X_AXIS, SHIP_TAB, 1016, "Turn (Yaw) Axis",        CC_TYPE_AXIS_REL)
+	(JOY_PITCH_AXIS,                       JOY_Y_AXIS, MOUSE_Y_AXIS, SHIP_TAB, 1017, "Pitch Axis",             CC_TYPE_AXIS_REL)
+	(JOY_BANK_AXIS,                       JOY_RX_AXIS,           -1, SHIP_TAB, 1018, "Bank Axis",              CC_TYPE_AXIS_REL)
+	(JOY_ABS_THROTTLE_AXIS,                        -1,           -1, SHIP_TAB, 1019, "Absolute Throttle Axis", CC_TYPE_AXIS_ABS)
+	(JOY_REL_THROTTLE_AXIS,                        -1,           -1, SHIP_TAB, 1020, "Relative Throttle Axis", CC_TYPE_AXIS_REL)
 
 	// flight controls (axes)
 	(JOY_HEADING_AXIS,                     JOY_X_AXIS, MOUSE_X_AXIS, SHIP_TAB, 1016, "Turn (Yaw) Axis",        CC_TYPE_AXIS_REL)
@@ -166,7 +182,7 @@ void control_config_common_init_bindings() {
 	(FIRE_SECONDARY,                               KEY_SPACEBAR,  1, WEAPON_TAB, 1, "Fire Secondary Weapon",                  CC_TYPE_CONTINUOUS)
 	(CYCLE_NEXT_PRIMARY,                             KEY_PERIOD, -1, WEAPON_TAB, 1, "Cycle Primary Weapon Forward",           CC_TYPE_TRIGGER)
 	(CYCLE_PREV_PRIMARY,                              KEY_COMMA, -1, WEAPON_TAB, 1, "Cycle Primary Weapon Backward",          CC_TYPE_TRIGGER)
-	(CYCLE_PRIMARY_WEAPON_SEQUENCE,                       KEY_O, -1, WEAPON_TAB, 0, "Cycle Primary Weapon Firing Rate",       CC_TYPE_TRIGGER, true)
+	(CYCLE_PRIMARY_WEAPON_SEQUENCE,                       KEY_O, -1, WEAPON_TAB, 0, "Cycle Primary Weapon Firing Rate",       CC_TYPE_TRIGGER)
 	(CYCLE_SECONDARY,                                KEY_DIVIDE, -1, WEAPON_TAB, 1, "Cycle Secondary Weapon Forward",         CC_TYPE_TRIGGER)
 	(CYCLE_NUM_MISSLES,                KEY_SHIFTED | KEY_DIVIDE, -1, WEAPON_TAB, 1, "Cycle Secondary Weapon Firing Rate",     CC_TYPE_TRIGGER)
 	(LAUNCH_COUNTERMEASURE,                               KEY_X,  3, WEAPON_TAB, 1, "Launch Countermeasure",                  CC_TYPE_TRIGGER)
@@ -202,8 +218,8 @@ void control_config_common_init_bindings() {
 	(PADLOCK_DOWN,                                           -1, 32, COMPUTER_TAB, 1, "View Rear",                          CC_TYPE_CONTINUOUS)
 	(PADLOCK_LEFT,                                           -1, 34, COMPUTER_TAB, 1, "View Left",                          CC_TYPE_CONTINUOUS)
 	(PADLOCK_RIGHT,                                          -1, 35, COMPUTER_TAB, 1, "View Right",                         CC_TYPE_CONTINUOUS)
-	(VIEW_TOPDOWN,                                           -1, -1, COMPUTER_TAB, 0, "Top-Down View",                      CC_TYPE_TRIGGER, true)
-	(VIEW_TRACK_TARGET,                                      -1, -1, COMPUTER_TAB, 0, "Target Padlock View",                CC_TYPE_TRIGGER, true)
+	(VIEW_TOPDOWN,                                           -1, -1, COMPUTER_TAB, 0, "Top-Down View",                      CC_TYPE_TRIGGER)
+	(VIEW_TRACK_TARGET,                                      -1, -1, COMPUTER_TAB, 0, "Target Padlock View",                CC_TYPE_TRIGGER)
 
 	(RADAR_RANGE_CYCLE,                            KEY_RAPOSTRO, -1, COMPUTER_TAB, 1, "Cycle Radar Range",                 CC_TYPE_TRIGGER)
 	(SQUADMSG_MENU,                                       KEY_C, -1, COMPUTER_TAB, 1, "Communications Menu",               CC_TYPE_TRIGGER)
@@ -227,9 +243,9 @@ void control_config_common_init_bindings() {
 	(XFER_LASER,                    KEY_SHIFTED | KEY_SCROLLOCK, -1, COMPUTER_TAB, 1, "Transfer Energy Shield->Laser",     CC_TYPE_TRIGGER)
 
 	// Navigation and Autopilot
-	(SHOW_NAVMAP,                                            -1, -1, NO_TAB,       1, "Show Nav Map",       CC_TYPE_TRIGGER, true)
-	(AUTO_PILOT_TOGGLE,                       KEY_ALTED | KEY_A, -1, COMPUTER_TAB, 0, "Toggle Auto Pilot",  CC_TYPE_TRIGGER, true)
-	(NAV_CYCLE,                               KEY_ALTED | KEY_N, -1, COMPUTER_TAB, 0, "Cycle Nav Points",   CC_TYPE_TRIGGER, true)
+	(SHOW_NAVMAP,                                            -1, -1, NO_TAB,       1, "Show Nav Map",       CC_TYPE_TRIGGER)
+	(AUTO_PILOT_TOGGLE,                       KEY_ALTED | KEY_A, -1, COMPUTER_TAB, 0, "Toggle Auto Pilot",  CC_TYPE_TRIGGER)
+	(NAV_CYCLE,                               KEY_ALTED | KEY_N, -1, COMPUTER_TAB, 0, "Cycle Nav Points",   CC_TYPE_TRIGGER)
 
 	// Escort
 	(ADD_REMOVE_ESCORT,                       KEY_ALTED | KEY_E, -1, COMPUTER_TAB, 1, "Add or Remove Escort",   CC_TYPE_TRIGGER)
@@ -425,7 +441,7 @@ SCP_unordered_map<SCP_string, IoActionId> old_text = {
 	{"Custom Control 5",                        CUSTOM_CONTROL_5},
 };
 
-const char *Joy_button_text_german[] = {
+const char* Joy_button_text_german_u[] = {
 	"Knopf 1",		"Knopf 2",		"Knopf 3",		"Knopf 4",		"Knopf 5",		"Knopf 6",
 	"Knopf 7",		"Knopf 8",		"Knopf 9",		"Knopf 10",		"Knopf 11",		"Knopf 12",
 	"Knopf 13",		"Knopf 14",		"Knopf 15",		"Knopf 16",		"Knopf 17",		"Knopf 18",
@@ -434,7 +450,43 @@ const char *Joy_button_text_german[] = {
 	"Knopf 31",		"Knopf 32",		"Hut Hinten",	"Hut Vorne",	"Hut Links",	"Hut Rechts"
 };
 
-const char *Joy_button_text_french[] = {
+const char* Joy_button_text_french_u[] = {
+	"Bouton 1",		"Bouton 2",		"Bouton 3",		"Bouton 4",		"Bouton 5",		"Bouton 6",
+	"Bouton 7",		"Bouton 8",		"Bouton 9",		"Bouton 10",		"Bouton 11",		"Bouton 12",
+	"Bouton 13",		"Bouton 14",		"Bouton 15",		"Bouton 16",		"Bouton 17",		"Bouton 18",
+	"Bouton 19",		"Bouton 20",		"Bouton 21",		"Bouton 22",		"Bouton 23",		"Bouton 24",
+	"Bouton 25",		"Bouton 26",		"Bouton 27",		"Bouton 28",		"Bouton 29",		"Bouton 30",
+	"Bouton 31",		"Bouton 32",		"Chapeau Arri\xc3\xa8""re",		"Chapeau Avant",		"Chapeau Gauche",		"Chapeau Droite"
+};
+
+const char* Joy_button_text_polish_u[] = {
+	"Przyc.1",		"Przyc.2",		"Przyc.3",		"Przyc.4",		"Przyc.5",		"Przyc.6",
+	"Przyc.7",		"Przyc.8",		"Przyc.9",		"Przyc.10",	"Przyc.11",	"Przyc.12",
+	"Przyc.13",	"Przyc.14",	"Przyc.15",	"Przyc.16",	"Przyc.17",	"Przyc.18",
+	"Przyc.19",	"Przyc.20",	"Przyc.21",	"Przyc.22",	"Przyc.23",	"Przyc.24",
+	"Przyc.25",	"Przyc.26",	"Przyc.27",	"Przyc.28",	"Przyc.29",	"Przyc.30",
+	"Przyc.31",	"Przyc.32",	"Hat Ty\xc5\x82",		"Hat Prz\xc3\xb3""d",	"Hat Lewo",		"Hat Prawo"
+};
+
+const char* Joy_button_text_english_u[] = {
+	"Button 1",		"Button 2",		"Button 3",		"Button 4",		"Button 5",		"Button 6",
+	"Button 7",		"Button 8",		"Button 9",		"Button 10",	"Button 11",	"Button 12",
+	"Button 13",	"Button 14",	"Button 15",	"Button 16",	"Button 17",	"Button 18",
+	"Button 19",	"Button 20",	"Button 21",	"Button 22",	"Button 23",	"Button 24",
+	"Button 25",	"Button 26",	"Button 27",	"Button 28",	"Button 29",	"Button 30",
+	"Button 31",	"Button 32",	"Hat Back",		"Hat Forward",	"Hat Left",		"Hat Right"
+};
+
+const char* Joy_button_text_german[] = {
+	"Knopf 1",		"Knopf 2",		"Knopf 3",		"Knopf 4",		"Knopf 5",		"Knopf 6",
+	"Knopf 7",		"Knopf 8",		"Knopf 9",		"Knopf 10",		"Knopf 11",		"Knopf 12",
+	"Knopf 13",		"Knopf 14",		"Knopf 15",		"Knopf 16",		"Knopf 17",		"Knopf 18",
+	"Knopf 19",		"Knopf 20",		"Knopf 21",		"Knopf 22",		"Knopf 23",		"Knopf 24",
+	"Knopf 25",		"Knopf 26",		"Knopf 27",		"Knopf 28",		"Knopf 29",		"Knopf 30",
+	"Knopf 31",		"Knopf 32",		"Hut Hinten",	"Hut Vorne",	"Hut Links",	"Hut Rechts"
+};
+
+const char* Joy_button_text_french[] = {
 	"Bouton 1",		"Bouton 2",		"Bouton 3",		"Bouton 4",		"Bouton 5",		"Bouton 6",
 	"Bouton 7",		"Bouton 8",		"Bouton 9",		"Bouton 10",		"Bouton 11",		"Bouton 12",
 	"Bouton 13",		"Bouton 14",		"Bouton 15",		"Bouton 16",		"Bouton 17",		"Bouton 18",
@@ -443,7 +495,7 @@ const char *Joy_button_text_french[] = {
 	"Bouton 31",		"Bouton 32",		"Chapeau Arri\x8Are",		"Chapeau Avant",		"Chapeau Gauche",		"Chapeau Droite"
 };
 
-const char *Joy_button_text_polish[] = {
+const char* Joy_button_text_polish[] = {
 	"Przyc.1",		"Przyc.2",		"Przyc.3",		"Przyc.4",		"Przyc.5",		"Przyc.6",
 	"Przyc.7",		"Przyc.8",		"Przyc.9",		"Przyc.10",	"Przyc.11",	"Przyc.12",
 	"Przyc.13",	"Przyc.14",	"Przyc.15",	"Przyc.16",	"Przyc.17",	"Przyc.18",
@@ -495,7 +547,7 @@ const char *Scan_code_text_english[] = {
 	"",				"",				"",				"",				"",				"",				"",				"",
 };
 
-const char *Joy_button_text_english[] = {
+const char* Joy_button_text_english[] = {
 	"Button 1",		"Button 2",		"Button 3",		"Button 4",		"Button 5",		"Button 6",
 	"Button 7",		"Button 8",		"Button 9",		"Button 10",	"Button 11",	"Button 12",
 	"Button 13",	"Button 14",	"Button 15",	"Button 16",	"Button 17",	"Button 18",
@@ -509,6 +561,8 @@ const char **Joy_button_text = Joy_button_text_english;
 bool Generate_controlconfig_table = false;
 
 int sections_read = 0;	// Number of sections read within the controlconfigdefaults.tbl
+
+const int BTN_MSG_LEN = 40;	//! Max length of textified keys and buttons.  Used in key/button translation functions
 
 int translate_key_to_index(const char *key, bool find_override)
 {
@@ -579,57 +633,42 @@ int translate_key_to_index(const char *key, bool find_override)
 	return -1;
 }
 
-char *translate_key(char *key)
+const char *translate_key(char *key)
 {
-	int index = -1, key_code = -1, joy_code = -1;
-	const char *key_text = NULL;
-	const char *joy_text = NULL;
-
-	static char text[40] = {"None"};
+	int index = -1;
+	static char text[BTN_MSG_LEN] = {""};
 
 	index = translate_key_to_index(key, false);
 	if (index < 0) {
-		return NULL;
+		return nullptr;
 	}
 
-	key_code = Control_config[index].get_btn(CID_KEYBOARD);
-	joy_code = Control_config[index].get_btn(CID_JOY0);
+	const CC_bind &first = Control_config[index].first;
+	const CC_bind &second = Control_config[index].second;
 
 	Failed_key_index = index;
 
-	if (key_code >= 0) {
-		key_text = textify_scancode(key_code);
-	}
+	if (!first.empty() && !second.empty()) {
+		strcpy_s(text, first.textify().c_str());
+		strcat_s(text, " or ");
+		strcat_s(text, second.textify().c_str());
 
-	if (joy_code >= 0) {
-		joy_text = Joy_button_text[joy_code];
-	}
+	} else if (!first.empty()) {
+		strcpy_s(text, first.textify().c_str());
 
-	// both key and joystick button are mapped to this control
-	if ((key_code >= 0 ) && (joy_code >= 0) ) {
-		strcpy_s(text, key_text);
-		strcat_s(text, " ");
-		strcat_s(text, XSTR("or", 1638));
-		strcat_s(text, " ");
-		strcat_s(text, joy_text);
-	}
-	// if we only have one
-	else if (key_code >= 0 ) {
-		strcpy_s(text, key_text);
-	}
-	else if (joy_code >= 0) {
-		strcpy_s(text, joy_text);
-	}
-	else {
-		strcpy_s(text, "None");
+	} else if (!second.empty()) {
+		strcpy_s(text, second.textify().c_str());
+
+	} else {
+			strcpy_s(text, "None");
 	}
 
 	return text;
 }
 
-const char *textify_scancode(int code)
+const char *textify_scancode(int code, bool use_default_locale)
 {
-	static char text[40];
+	static char text[BTN_MSG_LEN];
 
 	if (code < 0)
 		return "None";
@@ -670,7 +709,7 @@ const char *textify_scancode_universal(int code)
 
 	int keycode = code & KEY_MASK;
 
-	static char text[40];
+	static char text[BTN_MSG_LEN];
 	*text = 0;
 	if (code & KEY_ALTED && !(keycode == KEY_LALT || keycode == KEY_RALT)) {
 		strcat_s(text, "Alt-");
@@ -680,8 +719,8 @@ const char *textify_scancode_universal(int code)
 		strcat_s(text, "Shift-");
 	}
 
-	// Always use the english version here
 	strcat_s(text, Scan_code_text_english[keycode]);
+	
 	return text;
 }
 //XSTR:ON
@@ -707,7 +746,7 @@ void control_config_common_init()
 	for (int i = 0; i < Action::NUM_VALUES; i++) {
 		Control_config[i + JOY_AXIS_BEGIN].used = 32768;
 	}
-
+	
 	// TODO It's not memory efficient to keep the presets loaded into memory all the time, but we do need to know which
 	// preset we're currently using for .plr and .csg
 	// Load controlconfigdefaults.tbl overrides and mod presets
@@ -717,15 +756,52 @@ void control_config_common_init()
 	load_preset_files();
 
 	// Init control label localization
-	if(Lcl_gr){
-		Joy_button_text = Joy_button_text_german;
-	} else if(Lcl_fr){
-		Joy_button_text = Joy_button_text_french;
-	} else if(Lcl_pl){
-		Joy_button_text = Joy_button_text_polish;
-	} else {
-		Joy_button_text = Joy_button_text_english;
+	if (Unicode_text_mode) {
+		if (Lcl_gr) {
+			Joy_button_text = Joy_button_text_german_u;
+		}
+		else if (Lcl_fr) {
+			Joy_button_text = Joy_button_text_french_u;
+		}
+		else if (Lcl_pl) {
+			Joy_button_text = Joy_button_text_polish_u;
+		}
+		else {
+			Joy_button_text = Joy_button_text_english_u;
+		}
 	}
+	else {
+		if (Lcl_gr) {
+			Joy_button_text = Joy_button_text_german;
+		}
+		else if (Lcl_fr) {
+			Joy_button_text = Joy_button_text_french;
+		}
+		else if (Lcl_pl) {
+			Joy_button_text = Joy_button_text_polish;
+		}
+		else {
+			Joy_button_text = Joy_button_text_english;
+		}
+	}
+
+	// Old XSTR indices have been put beside their corresponding label in case we use them again
+	Axis_text[0] = vm_strdup(XSTR("X Axis", 1647));		// XSTR 1021 - "Joystick/Mouse X Axis"
+	Axis_text[1] = vm_strdup(XSTR("Y Axis", 1648));		// XSTR 1022 - "Joystick/Mouse Y Axis"
+	Axis_text[2] = vm_strdup(XSTR("Z Axis", 1649));		// XSTR 1023 - "Joystick Z Axis"
+	Axis_text[3] = vm_strdup(XSTR("rX Axis", 1650));	// XSTR 1024 - "Joystick rX Axis"
+	Axis_text[4] = vm_strdup(XSTR("rY Axis", 1651));	// XSTR 1025 - "Joystick rY Axis"
+	Axis_text[5] = vm_strdup(XSTR("rZ Axis", 1652));	// XSTR 1026 - "Joystick rZ Axis"
+
+	Mouse_button_text[0] = vm_strdup(XSTR("Left Button", 1027));
+	Mouse_button_text[1] = vm_strdup(XSTR("Right Button", 1028));
+	Mouse_button_text[2] = vm_strdup(XSTR("Mid Button", 1029));
+	Mouse_button_text[3] = vm_strdup(XSTR("X1 Button", 1653));
+	Mouse_button_text[4] = vm_strdup(XSTR("X2 Button", 1654));
+	Mouse_button_text[5] = vm_strdup(XSTR("Wheel Up", 1655));
+	Mouse_button_text[6] = vm_strdup(XSTR("Wheel Down", 1656));
+	Mouse_button_text[7] = vm_strdup(XSTR("Wheel Left", 1657));
+	Mouse_button_text[8] = vm_strdup(XSTR("Wheel Right", 1658));
 }
 
 /*
@@ -733,6 +809,20 @@ void control_config_common_init()
  */
 void control_config_common_close()
 {
+	// free strings
+	for (auto&& text : Axis_text) {
+		if (text != nullptr) {
+			vm_free(text);
+			text = nullptr;
+		}
+	}
+
+	for (auto&& text : Mouse_button_text) {
+		if (text != nullptr) {
+			vm_free(text);
+			text = nullptr;
+		}
+	}
 }
 
 SCP_map<SCP_string, short> mKeyNameToVal;
@@ -748,7 +838,7 @@ SCP_map<SCP_string, char> mCCFNameToVal;
 
 /*! Helper function to LoadEnumsIntoMaps(), Loads the Keyboard definitions/enumerations into mKeyNameToVal
 */
-void LoadEnumsIntoKeyMap(void) {
+void LoadEnumsIntoKeyMap() {
 	// Dirty macro hack :D
 #define ADD_ENUM_TO_KEY_MAP(Enum) mKeyNameToVal[#Enum] = (Enum);
 
@@ -884,7 +974,7 @@ void LoadEnumsIntoKeyMap(void) {
 
 /*! Helper function to LoadEnumsIntoMaps(), Loads the Control Types enumerations into mCCTypeNameToVal
  */
-void LoadEnumsIntoCCTypeMap(void) {
+void LoadEnumsIntoCCTypeMap() {
 	// Dirty macro hack :D
 #define ADD_ENUM_TO_CCTYPE_MAP(Enum) mCCTypeNameToVal[#Enum] = (Enum);
 
@@ -900,7 +990,7 @@ void LoadEnumsIntoCCTypeMap(void) {
 
 /*! Helper function to LoadEnumsIntoMaps(), Loads the Control Tabs enumerations into mCCTabNameToVal
  */
-void LoadEnumsIntoCCTabMap(void) {
+void LoadEnumsIntoCCTabMap() {
 	// Dirty macro hack :D
 #define ADD_ENUM_TO_CCTAB_MAP(Enum) mCCTabNameToVal[#Enum] = (Enum);
 
@@ -1076,7 +1166,7 @@ void LoadEnumsIntoActionMap() {
 
 #undef ADD_ENUM_TO_ACTION_MAP
 
-	Assert(mActionToVal.size() == CCFG_MAX);
+	Assertion(mActionToVal.size() == CCFG_MAX, "Missing or unknown IoActionId's detected.");
 }
 
 void LoadEnumsIntoCIDMap() {
@@ -1476,7 +1566,6 @@ size_t read_bind_0(CC_preset &new_preset) {
 	} else {
 		new_binding.take(CC_bind(CID_KEYBOARD, static_cast<short>(-1)), -1);
 	}
-	
 
 	// Joy btn assignment
 	if (optional_string("$Joy Default:")) {
@@ -1509,46 +1598,52 @@ size_t read_bind_1(CC_preset &preset) {
 	}
 	
 	if (optional_string("$Primary:")) {
+		CID cid = CID_NONE;
+		char flags = '\0';
+		short btn = 0;
 		if (required_string("$Controller:")) {
 			stuff_string(szTempBuffer, F_NAME);
-			item->first.cid = CIDToVal(szTempBuffer.c_str());
+			cid = CIDToVal(szTempBuffer.c_str());
 		}
 		
 		// These items are required if the controller is defined
-		if (item->first.cid != CID_NONE) {
+		if (cid != CID_NONE) {
 			if (required_string("$Flags:")) {
-				stuff_CCF(item->first.flags, item_id);
+				stuff_CCF(flags, item_id);
 			}
 
 			if (required_string("$Input:")) {
 				stuff_string(szTempBuffer, F_NAME);
-				item->first.btn = InputToVal(item->first.cid, szTempBuffer.c_str());
+				btn = InputToVal(cid, szTempBuffer.c_str());
 			}
 		}
 
-		item->first.validate();
+		item->first.take(cid, btn, flags);
 	}
 
 	// Second verse, same as the first
 	if (optional_string("$Secondary:")) {
+		CID cid = CID_NONE;
+		char flags = '\0';
+		short btn = 0;
 		if (required_string("$Controller:")) {
 			stuff_string(szTempBuffer, F_NAME);
-			item->second.cid = CIDToVal(szTempBuffer.c_str());
+			cid = CIDToVal(szTempBuffer.c_str());
 		}
 
 		// These items are required if the controller is defined
-		if (item->second.cid != CID_NONE) {
+		if (cid != CID_NONE) {
 			if (required_string("$Flags:")) {
-				stuff_CCF(item->second.flags, item_id);
+				stuff_CCF(flags, item_id);
 			}
 
 			if (required_string("$Input:")) {
 				stuff_string(szTempBuffer, F_NAME);
-				item->second.btn = InputToVal(item->second.cid, szTempBuffer.c_str());
+				btn = InputToVal(cid, szTempBuffer.c_str());
 			}
 		}
 
-		item->second.validate();
+		item->second.take(cid, btn, flags);
 	}
 
 	return static_cast<size_t>(item_id);
@@ -1558,11 +1653,13 @@ size_t read_bind_1(CC_preset &preset) {
  * @brief Reads a section in controlconfigdefaults.tbl.
  *
  * @param[in] s Value of a call to optional_string_either(); 0 = "ControlConfigOverride" 1 = "ControlConfigPreset"
- *
+ * @param[in] first_override Legacy support for unnamed #ControlConfigOverrides.  If this is the first unnamed
+ *   override, then overwrite the default preset, else, save it as an "unnamed prese
+ * 
  * @details ControlConfigPresets are read in the exact same manner as ControlConfigOverrides, however only the bindings are available for modification.
  *  There may be only one #Override section, since it is in charge of non-binding members of the Control_config items
  */
-void control_config_common_read_section(int s) {
+void control_config_common_read_section(int s, bool first_override) {
 	Assert((s == 0) || (s == 1));
 	CC_preset new_preset;
 
@@ -1597,7 +1694,12 @@ void control_config_common_read_section(int s) {
 		}
 
 	} else {
-		new_preset.name = "<unnamed preset>";
+		if (first_override) {
+			new_preset.name = "default";
+		}
+		else {
+			new_preset.name = "<unnamed preset>";
+		}
 	}
 
 	// Read the section
@@ -1733,7 +1835,7 @@ void control_config_common_read_tbl() {
 	while (s != -1) {
 		sections_read++;
 		// Found section header, parse it
-		control_config_common_read_section(s);
+		control_config_common_read_section(s, sections_read == 1);
 
 		s = optional_string_either("#ControlConfigOverride", "#ControlConfigPreset");
 	}
@@ -1772,17 +1874,17 @@ int control_config_common_write_tbl_segment(FILETYPE* cfile, int preset, int (* 
 		
 		// Primary binding
 		puts("  $Primary:\n", cfile);
-		puts(("    $Controller: " + ValToCID(first.cid) + "\n").c_str(), cfile);
-		if (first.cid != CID_NONE) {
-			puts(("    $Flags: " + ValToCCF(first.flags) + "\n").c_str(), cfile);
+		puts(("    $Controller: " + ValToCID(first.get_cid()) + "\n").c_str(), cfile);
+		if (first.get_cid() != CID_NONE) {
+			puts(("    $Flags: " + ValToCCF(first.get_flags()) + "\n").c_str(), cfile);
 			puts(("    $Input: " + ValToInput(first) + "\n").c_str(), cfile);
 		}
 
 		// Secondary binding
 		puts("  $Secondary:\n", cfile);
-		puts(("    $Controller: " + ValToCID(second.cid) + "\n").c_str(), cfile);
-		if (second.cid != CID_NONE) {
-			puts(("    $Flags: " + ValToCCF(second.flags) + "\n").c_str(), cfile);
+		puts(("    $Controller: " + ValToCID(second.get_cid()) + "\n").c_str(), cfile);
+		if (second.get_cid() != CID_NONE) {
+			puts(("    $Flags: " + ValToCCF(second.get_flags()) + "\n").c_str(), cfile);
 			puts(("    $Input: " + ValToInput(second) + "\n").c_str(), cfile);
 		}
 
@@ -2204,10 +2306,11 @@ SCP_string ValToCID(CID id) {
 
 	if (it == mCIDNameToVal.cend()) {
 		// Shouldn't happen
-		UNREACHABLE("Unknown CID value %i", id);
+		Error(LOCATION, "Unknown CID value %i", id);
 		return "NONE";
 
-	} else {
+	}
+	else {
 		return it->first.c_str();
 	}
 }
@@ -2223,7 +2326,7 @@ SCP_string ValToCID(int id) {
 SCP_string ValToInput(const CC_bind &bind) {
 	SCP_string str;
 
-	switch (bind.cid) {
+	switch (bind.get_cid()) {
 	case CID_MOUSE:
 		str = ValToMouse(bind);
 		break;
@@ -2252,20 +2355,20 @@ SCP_string ValToInput(const CC_bind &bind) {
 }
 
 SCP_string ValToMouse(const CC_bind &bind) {
-	Assert(bind.cid == CID_MOUSE);
+	Assert(bind.get_cid() == CID_MOUSE);
 
-	if (bind.flags & CCF_AXIS) {
+	if (bind.get_flags() & CCF_AXIS) {
 		// is an axis
-		if (bind.btn >= MOUSE_NUM_AXES) {
-			Error(LOCATION, "Invalid mouse axis '%i'", bind.btn);
+		if (bind.get_btn() >= MOUSE_NUM_AXES) {
+			Error(LOCATION, "Invalid mouse axis '%i'", bind.get_btn());
 			return "NONE";
 		}
 
 		auto it = std::find_if(mAxisNameToVal.begin(), mAxisNameToVal.end(),
-		[bind](const std::pair<SCP_string, short>& pair) { return pair.second == bind.btn; });
+		[bind](const std::pair<SCP_string, short>& pair) { return pair.second == bind.get_btn(); });
 
 		if (it == mAxisNameToVal.end()) {
-			Error(LOCATION, "Unknown input value for Mouse axis '%i'", bind.btn);
+			Error(LOCATION, "Unknown input value for Mouse axis '%i'", bind.get_btn());
 			return "NONE";
 		}
 
@@ -2273,10 +2376,10 @@ SCP_string ValToMouse(const CC_bind &bind) {
 	} // else, its a button
 
 	auto it = std::find_if(mMouseNameToVal.begin(), mMouseNameToVal.end(),
-		[bind](const std::pair<SCP_string, short>& pair) { return pair.second == (1 << bind.btn); });
+		[bind](const std::pair<SCP_string, short>& pair) { return pair.second == (1 << bind.get_btn()); });
 
 	if (it == mMouseNameToVal.end()) {
-		Error(LOCATION, "Unknown input value for Mouse button: '%i'", bind.btn);
+		Error(LOCATION, "Unknown input value for Mouse button: '%i'", bind.get_btn());
 		return "NONE";
 
 	} else {
@@ -2287,10 +2390,10 @@ SCP_string ValToMouse(const CC_bind &bind) {
 SCP_string ValToKeyboard(const CC_bind &bind) {
 	SCP_string str;
 
-	Assert(bind.cid == CID_KEYBOARD);
+	Assert(bind.get_cid() == CID_KEYBOARD);
 
 	// Can't use textify_scancode since we want the key enum strings
-	short btn = bind.btn;
+	short btn = bind.get_btn();
 
 	if (btn & KEY_ALTED) {
 		str += "ALT-";
@@ -2319,13 +2422,13 @@ SCP_string ValToKeyboard(const CC_bind &bind) {
 SCP_string ValToJoy(const CC_bind &bind) {
 	SCP_string str;
 
-	Assert((bind.cid == CID_JOY0) || (bind.cid == CID_JOY1) ||
-	       (bind.cid == CID_JOY2) || (bind.cid == CID_JOY3));
+	Assert((bind.get_cid() == CID_JOY0) || (bind.get_cid() == CID_JOY1) ||
+	       (bind.get_cid() == CID_JOY2) || (bind.get_cid() == CID_JOY3));
 
-	if (bind.flags & (CCF_AXIS | CCF_BALL)) {
+	if (bind.get_flags() & (CCF_AXIS | CCF_BALL)) {
 		// is an axis or ball
 		auto it = std::find_if(mAxisNameToVal.begin(), mAxisNameToVal.end(),
-			[bind](const std::pair<SCP_string, int>& pair) { return pair.second == bind.btn; });
+			[bind](const std::pair<SCP_string, int>& pair) { return pair.second == bind.get_btn(); });
 
 		if (it == mAxisNameToVal.end()) {
 			// should never happen
@@ -2350,9 +2453,9 @@ SCP_string ValToJoy(const CC_bind &bind) {
 		
 		sprintf(str, "HAT-%i %s", hat_id, it->first.c_str());
 */
-	} else if (bind.btn != -1) {
+	} else if (bind.get_btn() != -1) {
 		// Is a button
-		sprintf(str, "%i", bind.btn);
+		sprintf(str, "%i", bind.get_btn());
 
 	} else {
 		// Unbound
@@ -2364,12 +2467,7 @@ SCP_string ValToJoy(const CC_bind &bind) {
 
 bool CC_bind::operator==(const CC_bind &B) const
 {
-	return (btn == B.btn) && (cid == B.cid) && (~(flags ^ B.flags) & CCF_AXIS);
-}
-
-bool CC_bind::operator==(const CCB &pair) const
-{
-	return (*this == pair.first) || (*this == pair.second);
+	return (btn == B.btn) && (cid == B.cid) && (flags == B.flags);
 }
 
 bool CC_bind::operator!=(const CC_bind &B) const
@@ -2377,9 +2475,13 @@ bool CC_bind::operator!=(const CC_bind &B) const
 	return !(*this == B);
 }
 
-bool CC_bind::operator!=(const CCB &pair) const
+bool CC_bind::invert_agnostic_equals(const CC_bind &B) const
 {
-	return !(*this == pair);
+	// invert both
+	auto my_flags = flags | CCF_INVERTED;
+	auto other_flags = B.flags | CCF_INVERTED;
+
+	return (btn == B.btn) && (cid == B.cid) && (my_flags == other_flags);
 }
 
 void CC_bind::clear()
@@ -2394,6 +2496,21 @@ bool CC_bind::empty() const
 	return cid == CID_NONE;
 }
 
+short CC_bind::get_btn() const
+{
+	return btn;
+}
+
+CID CC_bind::get_cid() const
+{
+	return cid;
+}
+
+char CC_bind::get_flags() const
+{
+	return flags;
+}
+
 void CC_bind::invert(bool inv)
 {
 	if (inv) {
@@ -2405,6 +2522,39 @@ void CC_bind::invert(bool inv)
 
 void CC_bind::invert_toggle() {
 	flags ^= CCF_INVERTED;
+}
+
+bool CC_bind::conflicts_with(const CC_bind& B) const {
+	// Bail early if CID or btn are not the same
+	if ((cid != B.cid) || (btn != B.btn)) {
+		return false;
+	}
+
+	// Check if A is an Axis or Axis Button, and if B is an Axis or Axis Button
+	char mask = (CCF_AXIS_BTN | CCF_AXIS);
+	if ((flags & mask) && (B.flags & mask)) {
+		return true;
+	}
+
+	// Check if Hat
+	if (flags & B.flags & CCF_HAT) {
+		return true;
+	}
+
+	// Check if Ball
+	if (flags & B.flags & CCF_BALL) {
+		return true;
+	}
+
+	// These flags don't cause a conflict for anything other than buttons/keys:
+	// CCF_RELATIVE, CCF_INVERTED
+
+	mask = (CCF_AXIS_BTN | CCF_AXIS | CCF_HAT | CCF_BALL | CCF_RELATIVE | CCF_INVERTED);
+	// z64: I really don't like this form, even if its "simpler" and "faster" according to clang-tidy
+	// First off, check if A or B is NOT a button, as according to the mask.  Buttons do not have a flag, so we check
+	// if they are any of the other input types
+	// Next, we return the inverse of the result. Negative of a Negative = Positive. Not Not a button = Is a button
+	return !((flags | B.flags) & mask);
 }
 
 bool CC_bind::is_inverted() const {
@@ -2448,6 +2598,7 @@ SCP_string CC_bind::textify() const {
 	SCP_string prefix;
 	SCP_string retval;
 
+	// TODO: XSTR the Mouse/Joy prefix
 	switch (cid) {
 	case CID_MOUSE:
 		prefix = "Mouse ";
@@ -2476,54 +2627,22 @@ SCP_string CC_bind::textify() const {
 		if (cid == CID_NONE) {
 			retval = "None";
 		} else {
-			retval = Joy_axis_text[btn];
+			Assert((btn >= 0) && (btn < NUM_AXIS_TEXT));
+			retval = SCP_string(Axis_text[btn]);
 		}
 
 	} else {
-			// Is button or key
+		// Is button or key
 		switch (cid) {
 		case CID_KEYBOARD:
 			retval = textify_scancode(btn);
 			break;
 
 		case CID_MOUSE:
-			// Keep this up to date with mouse.h.  Better yet, move it into mouse.h and mouse.cpp
-			// TODO: XSTR this
-			switch (btn) {
-			case 0:
-				retval = "Left";
-				break;
-			case 1:
-				retval = "Right";
-				break;
-			case 2:
-				retval = "Middle";
-				break;
-			case 3:
-				retval = "X1";
-				break;
-			case 4:
-				retval = "X2";
-				break;
-			case 5:
-				retval = "Wheel Up";
-				break;
-			case 6:
-				retval = "Wheel Down";
-				break;
-			case 7:
-				retval = "Wheel Left";
-				break;
-			case 8:
-				retval = "Wheel Right";
-				break;
-			default:
-				retval = "Unknown Button";
+			Assert((btn >= 0) && (btn < NUM_MOUSE_TEXT));
+			retval = SCP_string(Mouse_button_text[btn]);
 			break;
-			}
-		break;
 
-		// TODO XSTR the "Joy #" prefix
 		case CID_JOY0:
 		case CID_JOY1:
 		case CID_JOY2:
@@ -2543,7 +2662,7 @@ SCP_string CC_bind::textify() const {
 }
 
 bool CCB::empty() const {
-	return ((first.cid == CID_NONE) && (second.cid == CID_NONE));
+	return (first.empty() && second.empty());
 }
 
 void CCB::take(CC_bind A, int order) {
@@ -2553,7 +2672,7 @@ void CCB::take(CC_bind A, int order) {
 	case 0:
 		first = A;
 
-		if (second.cid == A.cid) {
+		if (second.get_cid() == A.get_cid()) {
 			second.clear();
 		}
 		break;
@@ -2561,17 +2680,23 @@ void CCB::take(CC_bind A, int order) {
 	case 1:
 		second = A;
 	
-		if (first.cid == A.cid) {
+		if (first.get_cid() == A.get_cid()) {
 			first.clear();
 		}
 		break;
 
 	case -1:
 		// Overwrite existing, or put in empty
-		if (first.cid == A.cid) {
+		if (first.get_cid() == A.get_cid()) {
 			first = A;
 
-		} else if (second.cid == A.cid) {
+		} else if (second.get_cid() == A.get_cid()) {
+			second = A;
+
+		} else if (first.empty()) {
+			first = A;
+
+		} else if (second.empty()) {
 			second = A;
 
 		} else if (first.empty()) {
@@ -2593,11 +2718,11 @@ void CCB::clear() {
 }
 
 short CCB::get_btn(CID cid) const {
-	if (first.cid == cid) {
-		return first.btn;
+	if (first.get_cid() == cid) {
+		return first.get_btn();
 
-	} else if (second.cid == cid) {
-		return second.btn;
+	} else if (second.get_cid() == cid) {
+		return second.get_btn();
 
 	} else {
 		return -1;
@@ -2612,12 +2737,12 @@ bool CCB::operator!=(const CCB& A) const {
 	return !this->operator==(A);
 }
 
-bool CCB::has_first(const CCB& A) const {
-	return !first.empty() && ((first == A.first) || (first == A.second));
+bool CCB::has_first_conflict(const CCB& A) const {
+	return !first.empty() && (first.conflicts_with(A.first) || first.conflicts_with(A.second));
 }
 
-bool CCB::has_second(const CCB& A) const {
-	return !second.empty() && ((second == A.first) || (second == A.second));
+bool CCB::has_second_conflict(const CCB& A) const {
+	return !second.empty() && (second.conflicts_with(A.first) || second.conflicts_with(A.second));
 }
 
 CCI& CCI::operator=(const CCI& A) {
@@ -2654,10 +2779,10 @@ CC_bind* CCB::find(const CC_bind &A) {
 }
 
 CC_bind* CCB::find(CID A) {
-	if (first.cid == A) {
+	if (first.get_cid() == A) {
 		return &first;
 
-	} else if (second.cid == A) {
+	} else if (second.get_cid() == A) {
 		return &second;
 	}
 
@@ -2667,11 +2792,11 @@ CC_bind* CCB::find(CID A) {
 CC_bind* CCB::find_flags(const char mask) {
 	// ((A & B) ^ B) is true if A has any bit in B that's different
 	// !((A & B) ^ B) should therefore mean A has all bits in B
-	if (!((first.flags & mask) ^ mask)) {
+	if (!((first.get_flags() & mask) ^ mask)) {
 		return &first;
 	}
 
-	if (!((second.flags & mask) ^ mask)) {
+	if (!((second.get_flags() & mask) ^ mask)) {
 		return &second;
 	}
 
@@ -2685,7 +2810,7 @@ void CCB::invert(bool inv) {
 
 void CCB::invert_toggle() {
 	first.invert_toggle();
-	second.flags = first.flags & CCF_INVERTED;
+	second.invert_toggle();
 }
 
 bool CCB::is_inverted() const {
@@ -2717,40 +2842,16 @@ void CCI_builder::end() {};
 CCI_builder& CCI_builder::operator()(IoActionId action_id, short primary, short secondary, char tab, int indexXSTR, const char *text, CC_type type, bool disabled) {
 	Assert(action_id < CCFG_MAX);
 	CCI& item = ControlConfig[action_id];
-	char flags = 0;
 
 	// Initialize the current bindings to defaults. Defaults will be saved to a preset after Control_config is built
 	// Current bindings will be overwritten once the player's bindings is read in.
-	
-	switch (type) {
-	case CC_TYPE_AXIS_ABS:
-		flags = CCF_AXIS;
-		break;
-
-	case CC_TYPE_AXIS_REL:
-		flags = CCF_AXIS | CCF_RELATIVE;
-		break;
-
-	case CC_TYPE_AXIS_BTN_POS:
-		flags = CCF_AXIS | CCF_AXIS_BTN;
-		break;
-
-	case CC_TYPE_AXIS_BTN_NEG:
-		flags = CCF_AXIS | CCF_AXIS_BTN | CCF_INVERTED;
-		break;
-
-	case CC_TYPE_TRIGGER:
-	case CC_TYPE_CONTINUOUS:
-		break;
-
-	default:
-		UNREACHABLE("Unknown type passed to CCI_builder::operator()");
-	}
-
-	if (flags != CCF_BUTTON) {
+	if ((type == CC_TYPE_AXIS_ABS) ||
+		(type == CC_TYPE_AXIS_REL) ||
+		(type == CC_TYPE_AXIS_BTN_POS) ||
+		(type == CC_TYPE_AXIS_BTN_NEG)) {
 		// This is an analog control
-		item.take(CC_bind(CID_JOY0, primary, flags), 0);
-		item.take(CC_bind(CID_MOUSE, secondary, flags), 1);
+		item.take(CC_bind(CID_JOY0, primary, CCF_AXIS), 0);
+		item.take(CC_bind(CID_MOUSE, secondary, CCF_AXIS), 1);
 
 	} else {
 		// This is a digital control
@@ -2767,7 +2868,8 @@ CCI_builder& CCI_builder::operator()(IoActionId action_id, short primary, short 
 	item.type = type;
 
 	if (tab == NO_TAB) {
-		mprintf(("CCI_builder::operator(): Control item defined without a valid tab. Disabling: '%s'\n", item.text.c_str()));
+		mprintf(("Control item defined without a valid tab. Disabling: %s\n", item.text.c_str()));
+		item.disabled = true;
 	}
 
 	// Enable if it has a valid tab and if caller wants it enabled
@@ -2786,3 +2888,15 @@ CC_preset& CC_preset::operator=(const CC_preset& A) {
 
 	return *this;
 };
+
+bool CC_preset::is_duplicate_of(CC_preset& A) {
+	for (size_t i = 0; i < A.bindings.size(); ++i) {
+		if (bindings[i] != A.bindings[i]) {
+			// Found a binding that's different.  Thus, this preset is not a duplicate
+			return false;
+		}
+	}
+
+	// Else, did not find any differences in the bindings.  Thus, this preset is a duplicate
+	return true;
+}

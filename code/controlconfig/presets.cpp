@@ -68,7 +68,7 @@ void load_preset_files() {
 
 		// Version
 		int version = handler->readInt("version");
-		mprintf(("PST => Loading `%s` with version %i", file.c_str(), version));
+		mprintf(("PST => Loading `%s` with version %i\n", file.c_str(), version));
 
 
 		// Start reading in data
@@ -97,25 +97,28 @@ void load_preset_files() {
 
 			handler->beginSectionRead(Section::Primary);
 			str = handler->readString("cid");
-			item.first.cid = CIDToVal(str.c_str());
+			auto cid = CIDToVal(str.c_str());
 
 			str = handler->readString("flags");
-			item.first.flags = CCFToVal(str.c_str());
+			auto flags = CCFToVal(str.c_str());
 
 			str = handler->readString("input");
-			item.first.btn = InputToVal(item.first.cid, str.c_str());
+			auto btn = InputToVal(cid, str.c_str());
+			item.first.take(cid, btn, flags);
+
 			handler->endSectionRead(); // Primary
 
 
 			handler->beginSectionRead(Section::Secondary);
 			str = handler->readString("cid");
-			item.second.cid = CIDToVal(str.c_str());
+			cid = CIDToVal(str.c_str());
 
 			str = handler->readString("flags");
-			item.second.flags = CCFToVal(str.c_str());
+			flags = CCFToVal(str.c_str());
 
 			str = handler->readString("input");
-			item.second.btn = InputToVal(item.second.cid, str.c_str());
+			btn = InputToVal(cid, str.c_str());
+			item.second.take(cid, btn, flags);
 			handler->endSectionRead(); // Secondary
 
 			//handler->endSectionRead(); // Unnamed
@@ -136,6 +139,14 @@ void load_preset_files() {
 	}
 }
 
+bool preset_file_exists(SCP_string name) {
+	if (name.find(".json") == std::string::npos) {
+		name.append(".json");
+	}
+
+	return cf_exists(name.c_str(), CF_TYPE_PLAYER_BINDS) != 0;
+}
+
 bool save_preset_file(CC_preset preset, bool overwrite) {
 	// Must have a name
 	if (preset.name.empty()) {
@@ -150,7 +161,7 @@ bool save_preset_file(CC_preset preset, bool overwrite) {
 	CFILE* fp = cfopen(filename.c_str(), "r", CFILE_NORMAL, CF_TYPE_PLAYER_BINDS, false,
 	                  CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 	
-	if (!fp && !overwrite) {
+	if ((fp != nullptr) && !overwrite) {
 		mprintf(("PST => Unable to save '%s', file already exists!\n", filename.c_str()));
 		return false;
 	}
@@ -186,14 +197,14 @@ bool save_preset_file(CC_preset preset, bool overwrite) {
 		handler->writeString("bind", ValToAction(i));
 
 		handler->beginSectionWrite(Section::Primary);
-		handler->writeString("cid",   ValToCID(first.cid));
-		handler->writeString("flags", ValToCCF(first.flags));
+		handler->writeString("cid",   ValToCID(first.get_cid()));
+		handler->writeString("flags", ValToCCF(first.get_flags()));
 		handler->writeString("input", ValToInput(first));
 		handler->endSectionWrite(); // Primary
 
 		handler->beginSectionWrite(Section::Secondary);
-		handler->writeString("cid", ValToCID(second.cid));
-		handler->writeString("flags", ValToCCF(second.flags));
+		handler->writeString("cid", ValToCID(second.get_cid()));
+		handler->writeString("flags", ValToCCF(second.get_flags()));
 		handler->writeString("input", ValToInput(second));
 		handler->endSectionWrite(); // Secondary
 
@@ -205,7 +216,6 @@ bool save_preset_file(CC_preset preset, bool overwrite) {
 
 	return true;
 }
-
 
 SCP_vector<CC_preset>::iterator preset_find_duplicate(const CC_preset& new_preset) {
 	SCP_vector<CC_preset>::iterator it = Control_config_presets.begin();
@@ -367,9 +377,15 @@ void PresetFileHandler::ensureExists(const char* name) {
 }
 
 void PresetFileHandler::ensureNotExists(const char* name) {
-	Assertion(json_is_object(_currentEl), "Currently not in an element that supports keys!");
+	// Stuff debug checks into booleans, otherwise clang will trigger a false positive for static method with just the asserts
+	// Make sure we're in an element that can support keys
+	bool supports_keys = json_is_object(_currentEl);
+
 	// Make sure we don't overwrite previous values
-	Assertion(json_object_get(_currentEl, name) == nullptr, "Entry with name %s already exists!", name);
+	bool element_is_unique = json_object_get(_currentEl, name) == nullptr;
+
+	Assertion(supports_keys, "Currently not in an element that supports keys!");
+	Assertion(element_is_unique, "Entry with name %s already exists!", name);
 }
 
 bool PresetFileHandler::exists(const char* name) {

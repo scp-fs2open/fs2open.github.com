@@ -67,6 +67,7 @@
 #include "mod_table/mod_table.h"
 #include "libs/ffmpeg/FFmpeg.h"
 #include "scripting/scripting.h"
+#include "utils/Random.h"
 
 #include <direct.h>
 #include "cmdline/cmdline.h"
@@ -105,7 +106,7 @@ int wing_objects[MAX_WINGS][MAX_SHIPS_PER_WING];
 char *Docking_bay_list[MAX_DOCKS];
 
 // Goober5000
-bool Show_iff[MAX_IFFS];
+SCP_vector<bool> Show_iff;
 
 CCriticalSection CS_cur_object_index;
 
@@ -144,11 +145,6 @@ int create_waypoint(vec3d *pos, int waypoint_instance);
 int create_ship(matrix *orient, vec3d *pos, int ship_type);
 int query_ship_name_duplicate(int ship);
 char *reg_read_string( char *section, char *name, char *default_value );
-
-extern int Nmodel_num;
-extern int Nmodel_instance_num;
-extern matrix Nmodel_orient;
-extern int Nmodel_bitmap;
 
 void string_copy(char *dest, const CString &src, size_t max_len, int modify)
 {
@@ -296,7 +292,7 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 
 	SDL_SetMainReady();
 
-	srand( (unsigned) time(NULL) );
+	Random::seed(static_cast<unsigned int>(time(nullptr)));
 	init_pending_messages();
 
 	os_init(Osreg_class_name, Osreg_app_name);
@@ -340,8 +336,8 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	lcl_init(LCL_UNTRANSLATED);
 
 	// Goober5000 - force init XSTRs (so they work, but only work untranslated, based on above comment)
-	extern int Xstr_inited;
-	Xstr_inited = 1;
+	extern bool Xstr_inited;
+	Xstr_inited = true;
 
 #ifndef NDEBUG
 	load_filter_info();
@@ -380,14 +376,15 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	iff_init();			// Goober5000
 	species_init();		// Kazan
 
-	brief_parse_icon_tbl();
+	brief_icons_init();
 
 	// for fred specific replacement texture stuff
 	Fred_texture_replacements.clear();
 
 	// Goober5000
-	for (i = 0; i < MAX_IFFS; i++)
-		Show_iff[i] = true;
+	Show_iff.clear();
+	for (i = 0; i < (int)Iff_info.size(); i++)
+		Show_iff.push_back(true);
 
 	// Goober5000
 	strcpy_s(Voice_abbrev_briefing, "");
@@ -406,6 +403,8 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	
 	gamesnd_parse_soundstbl();		// needs to be loaded after species stuff but before interface/weapon/ship stuff - taylor
 	mission_brief_common_init();	
+
+	animation::ModelAnimationParseHelper::parseTables();
 	obj_init();
 	model_free_all();				// Free all existing models
 	ai_init();
@@ -417,6 +416,8 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	ship_init();
 	parse_init();
 	techroom_intel_init();
+	hud_positions_init();
+	asteroid_init();
 
 	// get fireball IDs for sexpression usage
 	// (we don't need to init the entire system via fireball_init, we just need the information)
@@ -521,18 +522,16 @@ void fix_ship_name(int ship)
 
 int create_ship(matrix *orient, vec3d *pos, int ship_type)
 {
-	// Save the Current Working dir to restore in a minute - fred is being stupid
-	char pwd[MAX_PATH_LEN];
-	getcwd(pwd, MAX_PATH_LEN); // get the present working dir - probably <fs2path>[/modpapth]/data/missions/
-	
-
 	int obj, z1, z2;
 	float temp_max_hull_strength;
 	ship_info *sip;
 
-	// "pop" and cfile_chdirs off the sta
-	chdir(Fred_base_dir);
+	// Save the Current Working dir to restore in a minute - fred is being stupid
+	char pwd[MAX_PATH_LEN];
+	getcwd(pwd, MAX_PATH_LEN); // get the present working dir - probably <fs2path>[/modpath]/data/missions/
 
+	// "pop" and cfile_chdirs off the stack
+	chdir(Fred_base_dir);
 
 	obj = ship_create(orient, pos, ship_type);
 	if (obj == -1)
@@ -583,12 +582,16 @@ int create_ship(matrix *orient, vec3d *pos, int ship_type)
 			if (!(sip->is_small_ship()))
 			{
 				shipp->orders_accepted = ship_get_default_orders_accepted( sip );
-				shipp->orders_accepted &= ~DEPART_ITEM;
+
+				for(size_t i = 0; i < Player_orders.size(); i++) {
+					if (Player_orders[i].id & DEPART_ITEM)
+						shipp->orders_accepted.erase(i);
+				}
 			}
 		}
 		else
 		{
-			shipp->orders_accepted = 0;
+			shipp->orders_accepted.clear();
 		}
 	}
 	
@@ -843,10 +846,10 @@ void clear_mission()
 
 	strcpy_s(Mission_parse_storm_name, "none");
 
+	animation::ModelAnimationParseHelper::parseTables();
 	obj_init();
 	model_free_all();				// Free all existing models
 	ai_init();
-	ai_profiles_init();
 	ship_init();
 	jumpnode_level_close();
 	waypoint_level_close();
@@ -858,8 +861,9 @@ void clear_mission()
 		Wings[i].wing_insignia_texture = -1;
 	}
 
-	for (i=0; i<MAX_IFFS; i++){
-		Shield_sys_teams[i] = 0;
+	Shield_sys_teams.clear();
+	for (i=0; i< (int)Iff_info.size(); i++){
+		Shield_sys_teams.push_back(0);
 	}
 
 	for (i=0; i<MAX_SHIP_CLASSES; i++){
@@ -955,6 +959,8 @@ void clear_mission()
 	event_music_reset_choices();
 	clear_texture_replacements();
 
+	Event_annotations.clear();
+
 	mission_parse_reset_alt();		// alternate ship type names
 	mission_parse_reset_callsign();
 
@@ -966,13 +972,13 @@ void clear_mission()
 	stars_pre_level_init();
 	Nebula_index = 0;
 	Mission_palette = 1;
-	Nebula_pitch = (int) ((float) (rand() & 0x0fff) * 360.0f / 4096.0f);
-	Nebula_bank = (int) ((float) (rand() & 0x0fff) * 360.0f / 4096.0f);
-	Nebula_heading = (int) ((float) (rand() & 0x0fff) * 360.0f / 4096.0f);
+	Nebula_pitch = (int) ((float) (Random::next() & 0x0fff) * 360.0f / 4096.0f);
+	Nebula_bank = (int) ((float) (Random::next() & 0x0fff) * 360.0f / 4096.0f);
+	Nebula_heading = (int) ((float) (Random::next() & 0x0fff) * 360.0f / 4096.0f);
 	Neb2_awacs = -1.0f;
 	Neb2_poof_flags = 0;
 	strcpy_s(Neb2_texture_name, "");
-	for(i=0; i<MAX_NEB2_POOFS; i++){
+	for(i=0; i<(int)MAX_NEB2_POOFS; i++){
 		Neb2_poof_flags |= (1<<i);
 	}
 
@@ -2466,7 +2472,7 @@ void management_add_ships_to_combo( CComboBox *box, int flags )
 	{
 		for (restrict_to_players = 0; restrict_to_players < 2; restrict_to_players++)
 		{
-			for (i = 0; i < Num_iffs; i++)
+			for (i = 0; i < (int)Iff_info.size(); i++)
 			{
 				char tmp[NAME_LENGTH + 15];
 				stuff_special_arrival_anchor_name(tmp, i, restrict_to_players, 0);

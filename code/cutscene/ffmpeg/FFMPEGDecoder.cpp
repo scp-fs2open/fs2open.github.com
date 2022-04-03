@@ -229,7 +229,7 @@ std::unique_ptr<DecoderStatus> initializeStatus(std::unique_ptr<InputStream>& st
 
 	auto ctx = stream->m_ctx->ctx();
 
-	auto videoStream = av_find_best_stream(ctx, AVMEDIA_TYPE_VIDEO, -1, -1, &status->videoCodec, 0);
+	auto videoStream = av_find_best_stream(ctx, AVMEDIA_TYPE_VIDEO, -1, -1, nullptr, 0);
 	if (videoStream < 0) {
 		if (videoStream == AVERROR_STREAM_NOT_FOUND) {
 			mprintf(("FFmpeg: No video stream found in file!\n"));
@@ -242,10 +242,26 @@ std::unique_ptr<DecoderStatus> initializeStatus(std::unique_ptr<InputStream>& st
 		return nullptr;
 	}
 
+	status->videoStreamIndex = videoStream;
+	status->videoStream = ctx->streams[videoStream];
+	status->videoCodecPars = getCodecParameters(status->videoStream);
+
+	status->videoCodec = avcodec_find_decoder(status->videoCodecPars.codec_id);
+
+	if ( !status->videoCodec ) {
+		mprintf(("FFmpeg: Cannot find decoder for video stream!\n"));
+		return nullptr;
+	}
+
+	if (properties.looping && status->videoCodecPars.codec_id == AV_CODEC_ID_INTERPLAY_VIDEO) {
+		mprintf(("FFmpeg: Looping is not supported for inteplay (MVE) movies!\n"));
+		return nullptr;
+	}
+
 	int audioStream = -1;
 
 	if (properties.with_audio) {
-		audioStream = av_find_best_stream(ctx, AVMEDIA_TYPE_AUDIO, -1, videoStream, &status->audioCodec, 0);
+		audioStream = av_find_best_stream(ctx, AVMEDIA_TYPE_AUDIO, -1, videoStream, nullptr, 0);
 		if (audioStream < 0) {
 			if (audioStream == AVERROR_STREAM_NOT_FOUND) {
 				mprintf(("FFmpeg: No audio stream found in file!\n"));
@@ -254,15 +270,19 @@ std::unique_ptr<DecoderStatus> initializeStatus(std::unique_ptr<InputStream>& st
 			} else {
 				mprintf(("FFmpeg: Unknown error while finding audio stream!\n"));
 			}
+		} else {
+			status->audioStreamIndex = audioStream;
+			status->audioStream = ctx->streams[audioStream];
+			status->audioCodecPars = getCodecParameters(status->audioStream);
+
+			status->audioCodec = avcodec_find_decoder(status->audioCodecPars.codec_id);
+
+			if ( !status->audioCodec ) {
+				mprintf(("FFmpeg: Cannot find decoder for audio stream!\n"));
+				status->audioStreamIndex = -1;
+				audioStream = -1;
+			}
 		}
-	}
-
-	status->videoStreamIndex = videoStream;
-	status->videoStream = ctx->streams[videoStream];
-
-	if (audioStream >= 0) {
-		status->audioStreamIndex = audioStream;
-		status->audioStream = ctx->streams[audioStream];
 	}
 
 	if (subt) {
@@ -278,15 +298,19 @@ std::unique_ptr<DecoderStatus> initializeStatus(std::unique_ptr<InputStream>& st
 				mprintf(("FFmpeg: Unknown error while finding subtitle stream!\n"));
 			}
 		} else {
+			status->subtitleStreamIndex = subtStream;
 			status->subtitleStream      = subtCtx->streams[subtStream];
 			status->externalSubtitles   = true;
-			status->subtitleStreamIndex = subtStream;
+			// Not really sure if this makes sense for subtitles but it shouldn't break anything...
+			status->subtitleCodecPars = getCodecParameters(status->subtitleStream);
+
+			status->subtitleCodec = avcodec_find_decoder(status->subtitleCodecPars.codec_id);
 		}
 	}
 
 	if (status->subtitleStream == nullptr) {
 		// We don't have an external subtitle stream or loading from that file has failed
-		auto& current_language = Lcl_languages[Lcl_current_lang == LCL_UNTRANSLATED ? LCL_DEFAULT : Lcl_current_lang];
+		auto& current_language = Lcl_languages[lcl_get_current_lang_index()];
 		for (uint32_t i = 0; i < ctx->nb_streams; ++i) {
 			auto test_stream = ctx->streams[i];
 
@@ -310,13 +334,6 @@ std::unique_ptr<DecoderStatus> initializeStatus(std::unique_ptr<InputStream>& st
 				break;
 			}
 		}
-	}
-
-    status->videoCodecPars = getCodecParameters(status->videoStream);
-
-	if (properties.looping && status->videoCodecPars.codec_id == AV_CODEC_ID_INTERPLAY_VIDEO) {
-		mprintf(("FFmpeg: Looping is not supported for inteplay (MVE) movies!\n"));
-		return nullptr;
 	}
 
 	int err;
@@ -348,8 +365,6 @@ std::unique_ptr<DecoderStatus> initializeStatus(std::unique_ptr<InputStream>& st
 
 	// Now initialize audio, if this fails it's not a fatal error
 	if (audioStream >= 0) {
-		status->audioCodecPars = getCodecParameters(status->audioStream);
-
 #if LIBAVCODEC_VERSION_INT > AV_VERSION_INT(57, 24, 255)
 		status->audioCodecCtx = avcodec_alloc_context3(status->audioCodec);
 
@@ -376,11 +391,6 @@ std::unique_ptr<DecoderStatus> initializeStatus(std::unique_ptr<InputStream>& st
 	}
 
 	if (status->subtitleStream != nullptr) {
-		// Not really sure if this makes sense for subtitles but it shouldn't break anything...
-		status->subtitleCodecPars = getCodecParameters(status->subtitleStream);
-
-		status->subtitleCodec = avcodec_find_decoder(status->subtitleCodecPars.codec_id);
-
 #if LIBAVCODEC_VERSION_INT > AV_VERSION_INT(57, 24, 255)
 		status->subtitleCodecCtx = avcodec_alloc_context3(status->subtitleCodec);
 
@@ -428,7 +438,7 @@ std::unique_ptr<InputStream> openInputStream(const SCP_string& name) {
 
 std::unique_ptr<InputStream> openSubtitleStream(const SCP_string& name)
 {
-	auto& current_language = Lcl_languages[Lcl_current_lang == LCL_UNTRANSLATED ? LCL_DEFAULT : Lcl_current_lang];
+	auto& current_language = Lcl_languages[lcl_get_current_lang_index()];
 
 	for (auto ext : CHECKED_SUBT_EXTENSIONS) {
 		SCP_string fileName;
@@ -453,7 +463,7 @@ bool FFMPEGDecoder::initialize(const SCP_string& fileName, const PlaybackPropert
 {
 	SCP_string movieName = fileName;
 	// First make the file name lower case
-	std::transform(movieName.begin(), movieName.end(), movieName.begin(), [](char c) { return (char)::tolower(c); });
+	SCP_tolower(movieName);
 
 	// Then remove the extension
 	size_t dotPos = movieName.find('.');

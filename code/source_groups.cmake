@@ -6,6 +6,66 @@ add_file_folder(""
 	prefix_header.h
 )
 
+add_file_folder("Actions"
+	actions/Action.cpp
+	actions/Action.h
+	actions/ActionDefinition.cpp
+	actions/ActionDefinition.h
+	actions/ActionDefinitionManager.cpp
+	actions/ActionDefinitionManager.h
+	actions/BuiltinActionDefinition.h
+	actions/common.cpp
+	actions/common.h
+	actions/Program.cpp
+	actions/Program.h
+)
+
+add_file_folder("Actions\\\\Expression"
+	actions/expression/ActionExpression.cpp
+	actions/expression/ActionExpression.h
+	actions/expression/ExpressionParser.cpp
+	actions/expression/ExpressionParser.h
+	actions/expression/FunctionManager.cpp
+	actions/expression/FunctionManager.h
+	actions/expression/ParseContext.h
+	actions/expression/ProgramVariables.cpp
+	actions/expression/ProgramVariables.h
+	actions/expression/TypeDefinition.cpp
+	actions/expression/TypeDefinition.h
+	actions/expression/Value.cpp
+	actions/expression/Value.h
+)
+
+add_file_folder("Actions\\\\Expression\\\\Nodes"
+	actions/expression/nodes/AbstractExpression.cpp
+	actions/expression/nodes/AbstractExpression.h
+	actions/expression/nodes/FunctionCallExpression.cpp
+	actions/expression/nodes/FunctionCallExpression.h
+	actions/expression/nodes/LiteralExpression.cpp
+	actions/expression/nodes/LiteralExpression.h
+	actions/expression/nodes/RandomRangeExpression.cpp
+	actions/expression/nodes/RandomRangeExpression.h
+	actions/expression/nodes/VariableReferenceExpression.cpp
+	actions/expression/nodes/VariableReferenceExpression.h
+	actions/expression/nodes/VectorConstructorExpression.cpp
+	actions/expression/nodes/VectorConstructorExpression.h
+)
+
+add_file_folder("Actions\\\\Types"
+	actions/types/MoveToSubmodel.cpp
+	actions/types/MoveToSubmodel.h
+	actions/types/ParticleEffectAction.cpp
+	actions/types/ParticleEffectAction.h
+	actions/types/PlaySoundAction.cpp
+	actions/types/PlaySoundAction.h
+	actions/types/SetDirectionAction.cpp
+	actions/types/SetDirectionAction.h
+	actions/types/SetPositionAction.cpp
+	actions/types/SetPositionAction.h
+	actions/types/WaitAction.cpp
+	actions/types/WaitAction.h
+)
+
 # AI files
 add_file_folder("AI"
 	ai/ai.cpp
@@ -64,6 +124,8 @@ add_file_folder("CFile"
 	cfile/cfilelist.cpp
 	cfile/cfilesystem.cpp
 	cfile/cfilesystem.h
+	cfile/cfilecompression.cpp
+	cfile/cfilecompression.h
 )
 
 # Cmdline files
@@ -301,7 +363,6 @@ add_file_folder("GameSnd"
 
 add_file_folder("Generated Files"
 	${GENERATED_SOURCE_DIR}/project.h
-	${GENERATED_SOURCE_DIR}/scp_compiler_detection.h
 	${PLATFORM_CHECK_HEADER}
 )
 
@@ -641,6 +702,11 @@ add_file_folder("Libs"
 	libs/jansson.h
 )
 
+add_file_folder("Libs\\\\AntLR"
+	libs/antlr/ErrorListener.cpp
+	libs/antlr/ErrorListener.h
+	)
+
 add_file_folder("Libs\\\\Discord"
 	libs/discord/discord.cpp
 	libs/discord/discord.h
@@ -666,6 +732,8 @@ add_file_folder("Libs\\\\RenderDoc"
 add_file_folder("Lighting"
 	lighting/lighting.cpp
 	lighting/lighting.h
+	lighting/lighting_profiles.cpp
+	lighting/lighting_profiles.h
 )
 
 # Localization files
@@ -685,6 +753,8 @@ add_file_folder("Math"
 	math/floating.h
 	math/fvi.cpp
 	math/fvi.h
+        math/ik_solver.cpp
+        math/ik_solver.h
 	math/spline.cpp
 	math/spline.h
 	math/staticrand.cpp
@@ -781,8 +851,12 @@ add_file_folder("mod_table"
 # Model files
 add_file_folder("Model"
 	model/model.h
-	model/modelanim.cpp
-	model/modelanim.h
+	model/modelanimation.cpp
+	model/modelanimation.h
+	model/modelanimation_moveables.cpp
+	model/modelanimation_moveables.h
+	model/modelanimation_segments.cpp
+	model/modelanimation_segments.h
 	model/modelcollide.cpp
 	model/modelinterp.cpp
 	model/modeloctant.cpp
@@ -956,6 +1030,8 @@ add_file_folder("Parse"
 	parse/parselo.h
 	parse/sexp.cpp
 	parse/sexp.h
+	parse/sexp_container.cpp
+	parse/sexp_container.h
 )
 
 add_file_folder("Parse\\\\SEXP"
@@ -996,6 +1072,8 @@ add_file_folder("Particle\\\\Effects"
 	particle/effects/SingleParticleEffect.cpp
 	particle/effects/SingleParticleEffect.h
 	particle/effects/SphereShape.h
+	particle/effects/VolumeEffect.cpp
+	particle/effects/VolumeEffect.h
 )
 
 add_file_folder("Particle\\\\Util"
@@ -1205,10 +1283,14 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/cockpit_display.h
 	scripting/api/objs/control_binding.cpp
 	scripting/api/objs/control_binding.h
+	scripting/api/objs/color.cpp
+	scripting/api/objs/color.h
 	scripting/api/objs/control_info.cpp
 	scripting/api/objs/control_info.h
 	scripting/api/objs/debris.cpp
 	scripting/api/objs/debris.h
+	scripting/api/objs/decaldefinition.cpp
+	scripting/api/objs/decaldefinition.h
 	scripting/api/objs/enums.cpp
 	scripting/api/objs/enums.h
 	scripting/api/objs/event.cpp
@@ -1243,6 +1325,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/message.h
 	scripting/api/objs/model.cpp
 	scripting/api/objs/model.h
+	scripting/api/objs/modelinstance.cpp
+	scripting/api/objs/modelinstance.h
 	scripting/api/objs/model_path.cpp
 	scripting/api/objs/model_path.h
 	scripting/api/objs/movie_player.cpp
@@ -1253,6 +1337,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/option.h
 	scripting/api/objs/order.cpp
 	scripting/api/objs/order.h
+	scripting/api/objs/oswpt.cpp
+	scripting/api/objs/oswpt.h
 	scripting/api/objs/parse_object.cpp
 	scripting/api/objs/parse_object.h
 	scripting/api/objs/particle.cpp
@@ -1462,6 +1548,9 @@ add_file_folder("Utils"
 	utils/HeapAllocator.cpp
 	utils/HeapAllocator.h
 	utils/id.h
+	utils/join_string.h
+	utils/Random.cpp
+	utils/Random.h
 	utils/RandomRange.h
 	utils/string_utils.cpp
 	utils/string_utils.h

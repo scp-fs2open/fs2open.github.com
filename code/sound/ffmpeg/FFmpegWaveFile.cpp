@@ -132,6 +132,54 @@ FFmpegWaveFile::~FFmpegWaveFile()
 	m_ctx.reset();
 }
 
+const AVCodec* sound::ffmpeg::FFmpegWaveFile::prepareOpened()
+{
+    using namespace libs::ffmpeg;
+    auto ctx = m_ctx->ctx();
+
+    const AVCodec* audio_codec = nullptr;
+
+    m_audioStreamIndex   = av_find_best_stream(ctx, AVMEDIA_TYPE_AUDIO, -1, -1, nullptr, 0);
+    if (m_audioStreamIndex < 0) {
+        throw FFmpegException("Failed to find audio stream in file.");
+    }
+    m_audioStream = ctx->streams[m_audioStreamIndex];
+
+	audio_codec = avcodec_find_decoder(m_audioStream->codecpar->codec_id);
+
+	if ( !audio_codec ) {
+		throw FFmpegException("Failed to find decoder for audio stream in file.");
+	}
+
+    int err;
+#if LIBAVCODEC_VERSION_INT > AV_VERSION_INT(57, 24, 255)
+    m_audioCodecCtx = avcodec_alloc_context3(audio_codec);
+
+    // Copy codec parameters from input stream to output codec context
+    err = avcodec_parameters_to_context(m_audioCodecCtx, m_audioStream->codecpar);
+    if (err < 0) {
+        char errorStr[512];
+        av_strerror(err, errorStr, sizeof(errorStr));
+        throw FFmpegException(errorStr);
+    }
+#else
+    m_audioCodecCtx = m_audioStream->codec;
+#endif
+
+    err = avcodec_open2(m_audioCodecCtx, audio_codec, nullptr);
+    if (err < 0) {
+        char errorStr[512];
+        av_strerror(err, errorStr, sizeof(errorStr));
+        throw FFmpegException(errorStr);
+    }
+
+    m_baseAudioProps = getAudioProps(m_audioStream);
+
+    setAdjustedAudioProperties(getAdjustedAudioProps(m_baseAudioProps));
+
+    return audio_codec;
+}
+
 // Open
 bool FFmpegWaveFile::Open(const char* pszFilename, bool keep_ext)
 {
@@ -186,40 +234,9 @@ bool FFmpegWaveFile::Open(const char* pszFilename, bool keep_ext)
 		}
 
 		m_ctx    = FFmpegContext::createContext(cfp);
-		auto ctx = m_ctx->ctx();
 
-		AVCodec* audio_codec = nullptr;
-		m_audioStreamIndex   = av_find_best_stream(ctx, AVMEDIA_TYPE_AUDIO, -1, -1, &audio_codec, 0);
-		if (m_audioStreamIndex < 0) {
-			throw FFmpegException("Failed to find audio stream in file.");
-		}
-		m_audioStream = ctx->streams[m_audioStreamIndex];
+        const AVCodec* audio_codec = prepareOpened();
 
-		int err;
-#if LIBAVCODEC_VERSION_INT > AV_VERSION_INT(57, 24, 255)
-		m_audioCodecCtx = avcodec_alloc_context3(audio_codec);
-
-		// Copy codec parameters from input stream to output codec context
-		err = avcodec_parameters_to_context(m_audioCodecCtx, m_audioStream->codecpar);
-		if (err < 0) {
-			char errorStr[512];
-			av_strerror(err, errorStr, sizeof(errorStr));
-			throw FFmpegException(errorStr);
-		}
-#else
-		m_audioCodecCtx = m_audioStream->codec;
-#endif
-
-		err = avcodec_open2(m_audioCodecCtx, audio_codec, nullptr);
-		if (err < 0) {
-			char errorStr[512];
-			av_strerror(err, errorStr, sizeof(errorStr));
-			throw FFmpegException(errorStr);
-		}
-
-		m_baseAudioProps = getAudioProps(m_audioStream);
-
-		setAdjustedAudioProperties(getAdjustedAudioProps(m_baseAudioProps));
 		nprintf(("SOUND", "SOUND => %s => Using codec %s (%s)\n", filename, audio_codec->long_name, audio_codec->name));
 	} catch (const FFmpegException& e) {
 		mprintf(("SOUND ==> Could not open wave file %s for streaming. Reason: %s\n", filename, e.what()));
@@ -231,6 +248,32 @@ bool FFmpegWaveFile::Open(const char* pszFilename, bool keep_ext)
 	m_frameReader.reset(new FFmpegAudioReader(m_ctx->ctx(), m_audioCodecCtx, m_audioStreamIndex));
 
 	nprintf(("SOUND", "SOUND => Successfully opened: %s\n", filename));
+
+	// If we are here it means that everything went fine
+	return true;
+}
+
+// OpenMem
+bool FFmpegWaveFile::OpenMem(const uint8_t* snddata, size_t snd_len)
+{
+    using namespace libs::ffmpeg;
+
+	try {
+		m_ctx    = FFmpegContext::createContextMem(snddata, snd_len);
+
+        const AVCodec* audio_codec = prepareOpened();
+
+		nprintf(("SOUND", "SOUND => %s => Using codec %s (%s)\n", "soundfile-in-memory", audio_codec->long_name, audio_codec->name));
+	} catch (const FFmpegException& e) {
+		mprintf(("SOUND ==> Could not open wave file %s for streaming. Reason: %s\n", "soundfile-in-memory", e.what()));
+		return false;
+	}
+
+	// Cue for streaming
+	Cue();
+	m_frameReader.reset(new FFmpegAudioReader(m_ctx->ctx(), m_audioCodecCtx, m_audioStreamIndex));
+
+	nprintf(("SOUND", "SOUND => Successfully opened: %s\n", "soundfile-in-memory"));
 
 	// If we are here it means that everything went fine
 	return true;
