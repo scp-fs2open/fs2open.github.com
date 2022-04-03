@@ -475,7 +475,7 @@ void HudGaugeBrackets::renderObjectBrackets(object *targetp, color *clr, int w_c
 			int target_objnum = -1;
 
 			if(flags & TARGET_DISPLAY_DIST) {
-				distance = hud_find_target_distance(targetp, Player_obj);
+				distance = Player_ai->current_target_distance;
 			}
 
 			if(flags & TARGET_DISPLAY_DOTS) {
