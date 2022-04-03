@@ -25,6 +25,8 @@ class ForumAPI:
         @param[in] title    Title of the post
         @param[in] content  Body of the post
         @param[in] board    Which board/forum to post to
+
+        @returns { "thread_url": <url_of_created_thread> }
         """
 
         if (self.config["hlp"]["api"] == "") or (self.config["hlp"]["key"] == ""):
@@ -40,6 +42,8 @@ class ForumAPI:
 
         if resp.text != "OK":
             print("Post failed! Response: %s" %resp.text)
+        
+        return resp.json()
 
     def post_nightly(self, date, revision, files, log, success):
         """!
@@ -75,6 +79,8 @@ class ForumAPI:
         @param[in] version      The build's version
         @param[in] groups       dict[Any, file_list.FileGroup]; FileGroups of SSE2, AVX, etc.
         @param[in] sources      URL's of builds on github or fs2net
+
+        @returns If Successful, the URL of the created post
         """
 
         print("Posting release thread...")
@@ -93,4 +99,5 @@ class ForumAPI:
 
         print("Creating post...")
 
-        self.create_post(title, rendered, self.config["release"]["hlp_board"])
+        json = self.create_post(title, rendered, self.config["release"]["hlp_board"])
+        return json["thread_url"]
