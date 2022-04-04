@@ -422,8 +422,8 @@ SCP_vector<sexp_oper> Operators = {
 	{ "ship-change-callsign",			OP_SHIP_CHANGE_CALLSIGN,				2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// FUBAR
 	{ "ship-tag",						OP_SHIP_TAG,							3,	8,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "ship-untag",						OP_SHIP_UNTAG,							1,	1,			SEXP_ACTION_OPERATOR,	},	// Goober5000
-	{ "set-arrival-info",				OP_SET_ARRIVAL_INFO,					2,	7,			SEXP_ACTION_OPERATOR,	},	// Goober5000
-	{ "set-departure-info",				OP_SET_DEPARTURE_INFO,					2,	6,			SEXP_ACTION_OPERATOR,	},	// Goober5000
+	{ "set-arrival-info",				OP_SET_ARRIVAL_INFO,					2,	8,			SEXP_ACTION_OPERATOR,	},	// Goober5000
+	{ "set-departure-info",				OP_SET_DEPARTURE_INFO,					2,	7,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 
 	//Shields, Engines and Weapons Sub-Category
 	{ "set-weapon-energy",				OP_SET_WEAPON_ENERGY,					2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Karajorma
@@ -20147,7 +20147,7 @@ void sexp_set_support_ship(int n)
 void sexp_set_arrival_info(int node)
 {
 	int i, arrival_location, arrival_anchor, arrival_mask, arrival_distance, arrival_delay, n = node;
-	bool show_warp, is_nan, is_nan_forever;
+	bool show_warp, adjust_warp_when_docked, is_nan, is_nan_forever;
 	object_ship_wing_point_team oswpt;
 
 	// get ship or wing
@@ -20201,7 +20201,18 @@ void sexp_set_arrival_info(int node)
 	// get warp effect
 	show_warp = true;
 	if (n >= 0)
+	{
 		show_warp = is_sexp_true(n);
+		n = CDR(n);
+	}
+
+	// another flag
+	adjust_warp_when_docked = true;
+	if (n >= 0)
+	{
+		adjust_warp_when_docked = is_sexp_true(n);
+		n = CDR(n);
+	}
 
 	// now set all that information depending on the first argument
 	if (oswpt.type == OSWPT_TYPE_SHIP)
@@ -20213,6 +20224,7 @@ void sexp_set_arrival_info(int node)
 		oswpt.ship_entry->shipp->arrival_delay = arrival_delay;
 
 		oswpt.ship_entry->shipp->flags.set(Ship::Ship_Flags::No_arrival_warp, !show_warp);
+		oswpt.ship_entry->shipp->flags.set(Ship::Ship_Flags::Same_arrival_warp_when_docked, !adjust_warp_when_docked);
 	}
 	else if (oswpt.type == OSWPT_TYPE_WING || oswpt.type == OSWPT_TYPE_WING_NOT_PRESENT)
 	{
@@ -20223,6 +20235,7 @@ void sexp_set_arrival_info(int node)
 		oswpt.wingp->arrival_delay = arrival_delay;
 
 		oswpt.wingp->flags.set(Ship::Wing_Flags::No_arrival_warp, !show_warp);
+		oswpt.wingp->flags.set(Ship::Wing_Flags::Same_arrival_warp_when_docked, !adjust_warp_when_docked);
 	}
 	else if (oswpt.type == OSWPT_TYPE_PARSE_OBJECT)
 	{
@@ -20233,6 +20246,7 @@ void sexp_set_arrival_info(int node)
 		oswpt.ship_entry->p_objp->arrival_delay = arrival_delay;
 
 		oswpt.ship_entry->p_objp->flags.set(Mission::Parse_Object_Flags::SF_No_arrival_warp, !show_warp);
+		oswpt.ship_entry->p_objp->flags.set(Mission::Parse_Object_Flags::SF_Same_arrival_warp_when_docked, !adjust_warp_when_docked);
 	}
 }
 
@@ -20240,7 +20254,7 @@ void sexp_set_arrival_info(int node)
 void sexp_set_departure_info(int node)
 {
 	int i, departure_location, departure_anchor, departure_mask, departure_delay, n = node;
-	bool show_warp, is_nan, is_nan_forever;
+	bool show_warp, adjust_warp_when_docked, is_nan, is_nan_forever;
 	object_ship_wing_point_team oswpt;
 
 	// get ship or wing
@@ -20294,7 +20308,18 @@ void sexp_set_departure_info(int node)
 	// get warp effect
 	show_warp = true;
 	if (n >= 0)
+	{
 		show_warp = is_sexp_true(n);
+		n = CDR(n);
+	}
+
+	// another flag
+	adjust_warp_when_docked = true;
+	if (n >= 0)
+	{
+		adjust_warp_when_docked = is_sexp_true(n);
+		n = CDR(n);
+	}
 
 	// now set all that information depending on the first argument
 	if (oswpt.type == OSWPT_TYPE_SHIP)
@@ -20305,6 +20330,7 @@ void sexp_set_departure_info(int node)
 		oswpt.ship_entry->shipp->departure_delay = departure_delay;
 
 		oswpt.ship_entry->shipp->flags.set(Ship::Ship_Flags::No_departure_warp, !show_warp);
+		oswpt.ship_entry->shipp->flags.set(Ship::Ship_Flags::Same_departure_warp_when_docked, !adjust_warp_when_docked);
 	}
 	else if (oswpt.type == OSWPT_TYPE_WING || oswpt.type == OSWPT_TYPE_WING_NOT_PRESENT)
 	{
@@ -20314,6 +20340,7 @@ void sexp_set_departure_info(int node)
 		oswpt.wingp->departure_delay = departure_delay;
 
 		oswpt.wingp->flags.set(Ship::Wing_Flags::No_departure_warp, !show_warp);
+		oswpt.wingp->flags.set(Ship::Wing_Flags::Same_departure_warp_when_docked, !adjust_warp_when_docked);
 	}
 	else if (oswpt.type == OSWPT_TYPE_PARSE_OBJECT)
 	{
@@ -20323,6 +20350,7 @@ void sexp_set_departure_info(int node)
 		oswpt.ship_entry->p_objp->departure_delay = departure_delay;
 
 		oswpt.ship_entry->p_objp->flags.set(Mission::Parse_Object_Flags::SF_No_departure_warp, !show_warp);
+		oswpt.ship_entry->p_objp->flags.set(Mission::Parse_Object_Flags::SF_Same_departure_warp_when_docked, !adjust_warp_when_docked);
 	}
 }
 
@@ -34917,7 +34945,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	// Goober5000
 	{ OP_SET_ARRIVAL_INFO, "set-arrival-info\r\n"
-		"\tSets arrival information for a ship or wing.  Takes 2 to 7 arguments...\r\n"
+		"\tSets arrival information for a ship or wing.  Takes 2 to 8 arguments...\r\n"
 		"\t1: Ship or wing name\r\n"
 		"\t2: Arrival location\r\n"
 		"\t3: Arrival anchor (optional; only required for certain locations)\r\n"
@@ -34925,17 +34953,19 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t5: Arrival distance (optional; defaults to 0)\r\n"
 		"\t6: Arrival delay (optional; defaults to 0)\r\n"
 		"\t7: Whether to show a jump effect if arriving from subspace (optional; defaults to true)\r\n"
+		"\t8: Whether to adjust the size of the jump effect if the ship is docked (optional; defaults to true)\r\n"
 	},
 
 	// Goober5000
 	{ OP_SET_DEPARTURE_INFO, "set-departure-info\r\n"
-		"\tSets departure information for a ship or wing.  Takes 2 to 6 arguments...\r\n"
+		"\tSets departure information for a ship or wing.  Takes 2 to 7 arguments...\r\n"
 		"\t1: Ship or wing name\r\n"
 		"\t2: Departure location\r\n"
 		"\t3: Departure anchor (optional; only required for certain locations)\r\n"
 		"\t4: Departure path mask (optional; this is a bitfield where the bits set to 1 correspond to the paths to use; defaults to 0 which is a special case that means all paths can be used)\r\n"
 		"\t5: Departure delay (optional; defaults to 0)\r\n"
 		"\t6: Whether to show a jump effect if departing to subspace (optional; defaults to true)\r\n"
+		"\t7: Whether to adjust the size of the jump effect if the ship is docked (optional; defaults to true)\r\n"
 	},
 
 	// Bobboau
