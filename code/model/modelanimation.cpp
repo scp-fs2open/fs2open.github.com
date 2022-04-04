@@ -17,6 +17,7 @@ namespace animation {
 		{ "reset at completion",		animation::Animation_Flags::Reset_at_completion,		        true, false },
 		{ "loop",						animation::Animation_Flags::Loop,						        true, false },
 		{ "random starting phase",		animation::Animation_Flags::Random_starting_phase,				true, false },
+		{ "pause on reverse",			animation::Animation_Flags::Pause_on_reverse,					true, false },
 	};
 
 	const size_t Num_animation_flags = sizeof(Animation_flags) / sizeof(flag_def_list_new<animation::Animation_Flags>);
@@ -173,7 +174,7 @@ namespace animation {
 				return;
 		}
 
-		if (pause) {
+		if (pause || (direction == ModelAnimationDirection::RWD && m_flags[Animation_Flags::Pause_on_reverse])) {
 			if(instanceData.state != ModelAnimationState::UNTRIGGERED && instanceData.state != ModelAnimationState::NEED_RECALC && instanceData.state != ModelAnimationState::COMPLETED)
 				instanceData.state = ModelAnimationState::PAUSED;
 			return;
