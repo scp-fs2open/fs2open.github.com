@@ -127,6 +127,9 @@ namespace animation {
 		ModelAnimationData(const ModelAnimationData<!is_optional>& other) :
 			position(other.position),
 			orientation(other.orientation) {};
+		ModelAnimationData(const vec3d& copy_position, const matrix& copy_orientation) :
+			position(copy_position),
+			orientation(copy_orientation) {};
 
 		maybe_optional<vec3d> position;
 		maybe_optional<matrix> orientation;
@@ -166,6 +169,7 @@ namespace animation {
 	private:
 		//Polymodel Instance ID -> ModelAnimationData
 		std::map<int, ModelAnimationData<>> m_initialData;
+		static ModelAnimationData<> identity;
 
 	public:
 		ModelAnimationSubmodel(SCP_string submodelName);
@@ -173,7 +177,7 @@ namespace animation {
 
 		void reset(polymodel_instance* pmi);
 
-		void saveCurrentAsBase(polymodel_instance* pmi, bool isInitialType = false);
+		bool saveCurrentAsBase(polymodel_instance* pmi, bool isInitialType = false);
 		const ModelAnimationData<>& getInitialData(polymodel_instance* pmi);
 
 		virtual std::pair<submodel_instance*, bsp_info*> findSubmodel(polymodel_instance* pmi);
