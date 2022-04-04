@@ -58,6 +58,7 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 
 	static int make_ship_list(int* arr);
 
+
   public:
 	ShipEditorDialogModel(QObject* parent, EditorViewport* viewport);
 
@@ -165,6 +166,8 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	int player_ship;
 	std::set<size_t> ship_orders;
 	static int tristate_set(int val, int cur_state);
+
+	bool texenable = true;
 
 	//int pship, current_orders;
 };
