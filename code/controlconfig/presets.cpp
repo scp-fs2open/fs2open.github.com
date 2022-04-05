@@ -218,7 +218,7 @@ bool save_preset_file(CC_preset preset, bool overwrite) {
 }
 
 SCP_vector<CC_preset>::iterator preset_find_duplicate(const CC_preset& new_preset) {
-	SCP_vector<CC_preset>::iterator it = Control_config_presets.begin();
+	SCP_vector<CC_preset>::iterator it = Control_config_presets.begin();	// NOLINT(modernize-use-auto)
 
 	for (; it != Control_config_presets.end(); ++it) {
 		size_t i;

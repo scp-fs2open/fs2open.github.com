@@ -2764,7 +2764,7 @@ void control_get_axes_readings(int *axis_v, float frame_time)
 	mouse_get_delta(&axe[MOUSE_ID][MOUSE_X_AXIS], &axe[MOUSE_ID][MOUSE_Y_AXIS], &axe[MOUSE_ID][MOUSE_Z_AXIS]);
 
 	for (int action = 0; action < Action::NUM_VALUES; ++action) {
-		const IoActionId action_id = static_cast<IoActionId>(action + JOY_AXIS_BEGIN);
+		const auto action_id = static_cast<IoActionId>(action + JOY_AXIS_BEGIN);
 		CCI & item = Control_config[action_id];
 
 		// Assume actions are all axis actions, no need to check
