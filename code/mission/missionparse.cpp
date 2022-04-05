@@ -1103,7 +1103,7 @@ void parse_briefing_info(mission * /*pm*/)
  */
 void parse_music(mission *pm, int flags)
 {
-	int i, index, num;
+	int index, num;
 	char *ch;
 	char temp[NAME_LENGTH];
 
@@ -1202,18 +1202,18 @@ void parse_music(mission *pm, int flags)
 		{
 			*(ch + 1) = '\0';
 				
-			for (i = 0; i < Num_soundtracks; i++)
+			for (auto &st: Soundtracks)
 			{
-				if (!strncmp(temp, Soundtracks[i].name, strlen(temp)))
+				if (!strncmp(temp, st.name, strlen(temp)))
 				{
-					strcpy_s(pm->event_music_name, Soundtracks[i].name);
+					strcpy_s(pm->event_music_name, st.name);
 					goto done_event_music;
 				}
 			}
 		}
 
 		// last resort: pick a random track out of the 7 FS2 soundtracks
-		num = (Num_soundtracks < 7) ? Num_soundtracks : 7;
+		num = std::max((int)Soundtracks.size(), 7);
 		strcpy_s(pm->event_music_name, Soundtracks[Random::next(num)].name);
 
 
@@ -1240,7 +1240,7 @@ done_event_music:
 			goto done_briefing_music;
 
 		// last resort: pick a random track out of the first 7 FS2 briefings (the regular ones)...
-		num = (Num_music_files < 7) ? Num_music_files : 7;
+		num = std::max((int)Spooled_music.size(), 7);
 		strcpy_s(pm->briefing_music_name, Spooled_music[Random::next(num)].name);
 
 

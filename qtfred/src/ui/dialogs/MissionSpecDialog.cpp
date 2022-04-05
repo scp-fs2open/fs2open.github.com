@@ -218,7 +218,7 @@ void MissionSpecDialog::updateMusic() {
 	idx = _model->getEventMusic();
 	ui->defaultMusicCombo->clear();
 	ui->defaultMusicCombo->addItem("None",QVariant(0));
-	for (i = 0; i < Num_soundtracks; i++) {
+	for (i = 0; i < (int)Soundtracks.size(); i++) {
 		ui->defaultMusicCombo->addItem(Soundtracks[i].name, QVariant(i+1));
 	}
 	ui->defaultMusicCombo->setCurrentIndex(ui->defaultMusicCombo->findData(idx));
@@ -226,7 +226,7 @@ void MissionSpecDialog::updateMusic() {
 	auto musicPack = _model->getSubEventMusic();
 	ui->musicPackCombo->clear();
 	ui->musicPackCombo->addItem("None");
-	for (i = 0; i < Num_soundtracks; i++) {
+	for (i = 0; i < (int)Soundtracks.size(); i++) {
 		ui->musicPackCombo->addItem(Soundtracks[i].name, QVariant(QString(Soundtracks[i].name)));
 	}
 	ui->musicPackCombo->setCurrentIndex(ui->musicPackCombo->findText(musicPack.c_str()));

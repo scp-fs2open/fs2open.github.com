@@ -68,8 +68,8 @@ typedef struct tagSNDPATTERN {
 SNDPATTERN	Patterns[MAX_PATTERNS];	// holds data on sections of a SoundTrack
 
 // Holds filenames for the different sections of a soundtrack
-SOUNDTRACK_INFO Soundtracks[MAX_SOUNDTRACKS];
-int Num_soundtracks;
+SCP_vector<SOUNDTRACK_INFO> Soundtracks;
+
 int Current_soundtrack_num;	// Active soundtrack for the current mission.. index into Soundtracks[]
 
 int Current_pattern = -1;		// currently playing part of track
@@ -86,12 +86,6 @@ static int Mission_over_timestamp;
 static int Victory2_music_played;
 static int Next_arrival_timestamp;
 static int Check_for_battle_music;
-
-// stores the number of measures for the different patterns (data from music.tbl)
-float	Pattern_num_measures[MAX_SOUNDTRACKS][MAX_PATTERNS];
-
-// stores the number of bytes per measure (data from music.tbl)
-int	Pattern_samples_per_measure[MAX_SOUNDTRACKS][MAX_PATTERNS];
 
 typedef struct pattern_info
 {
@@ -256,11 +250,10 @@ extern int hud_target_invalid_awacs(object *objp);
 
 // Holds file names of spooled music that is played at menus, briefings, credits etc.
 // Indexed into by a #define enumeration of the different kinds of spooled music
-menu_music Spooled_music[MAX_SPOOLED_MUSIC];
-int Num_music_files;				// Number of spooled music files
+SCP_vector<menu_music> Spooled_music;
 
 // Array that holds indicies into Spooled_music[], these specify which music is played in briefing/debriefing
-int Mission_music[NUM_SCORES];	
+int Mission_music[NUM_SCORES];
 
 
 // -------------------------------------------------------------------------------------------------
@@ -285,22 +278,10 @@ void event_music_init()
 			return;
 	}
 
-	int i, j;
-
 	//MUST be called before parsing stuffzors.
-	Num_music_files = 0;
-	Num_soundtracks = 0;		// Global
+	Soundtracks.clear();
+	Spooled_music.clear();
 	event_music_reset_choices();
-
-	// Goober5000
-	// set all the filenames to "none" so we're compatible with the extra NRMLs in FS1 music
-	memset(Soundtracks, 0, MAX_SOUNDTRACKS * sizeof(SOUNDTRACK_INFO));
-	for (i = 0; i < MAX_SOUNDTRACKS; i++)
-		for (j = 0; j < MAX_PATTERNS; j++)
-			strcpy_s(Soundtracks[i].pattern_fnames[j], NOX("none.wav"));
-
-	// Goober5000
-	memset(Spooled_music, 0, MAX_SPOOLED_MUSIC * sizeof(menu_music));
 
 	//Do teh parsing
 	event_music_parse_musictbl("music.tbl");
@@ -567,9 +548,9 @@ void event_music_level_start(int force_soundtrack)
 		return;
 	}
 
-	Assert(Current_soundtrack_num >= 0 && Current_soundtrack_num < Num_soundtracks);
+	Assert(Current_soundtrack_num >= 0 && Current_soundtrack_num < (int)Soundtracks.size());
 
-	if (Current_soundtrack_num < 0 || Current_soundtrack_num > Num_soundtracks)
+	if (Current_soundtrack_num < 0 || Current_soundtrack_num > (int)Soundtracks.size())
 		return;
 
 	strack = &Soundtracks[Current_soundtrack_num];
@@ -582,13 +563,13 @@ void event_music_level_start(int force_soundtrack)
 	// tracks because their patterns weren't -1
 	for (i = 0; i < MAX_PATTERNS; i++)
 	{
-		if (!strnicmp(strack->pattern_fnames[i], NOX("none.wav"), 4))
+		if (!strnicmp(strack->patterns[i].fname, NOX("none.wav"), 4))
 		{
 			Patterns[i].handle = -1;
 			continue;
 		}
 
-		Patterns[i].handle = audiostream_open( strack->pattern_fnames[i], ASF_EVENTMUSIC );
+		Patterns[i].handle = audiostream_open( strack->patterns[i].fname, ASF_EVENTMUSIC );
 
 		if (Patterns[i].handle >= 0)
 		{
@@ -609,8 +590,8 @@ void event_music_level_start(int force_soundtrack)
 		Patterns[i].loop_for = Patterns[i].default_loop_for;
 		Patterns[i].force_pattern = FALSE;
 		Patterns[i].can_force = pip->pattern_can_force;
-		Patterns[i].samples_per_measure = Pattern_samples_per_measure[Current_soundtrack_num][i];
-		Patterns[i].num_measures = Pattern_num_measures[Current_soundtrack_num][i];
+		Patterns[i].samples_per_measure = strack->patterns[i].samples_per_measure;
+		Patterns[i].num_measures = strack->patterns[i].num_measures;
 	}
 
 	Num_enemy_arrivals = 0;
@@ -694,11 +675,8 @@ void event_music_level_close()
 	if ( Event_music_level_inited == FALSE )
 		return;
 
-	if ( Current_soundtrack_num >= 0 && Current_soundtrack_num < MAX_SOUNDTRACKS ) {
-		SOUNDTRACK_INFO *strack;
-   
-		Assert( Current_soundtrack_num >= 0 && Current_soundtrack_num < MAX_SOUNDTRACKS );
-		strack = &Soundtracks[Current_soundtrack_num];
+	if ( Current_soundtrack_num >= 0 && Current_soundtrack_num < (int)Soundtracks.size() ) {
+		auto strack = &Soundtracks[Current_soundtrack_num];
 
 		// close the pattern files
 		for ( i = 0; i < strack->num_patterns; i++ ) {
@@ -1156,16 +1134,16 @@ bool parse_soundtrack_line(int strack_idx, int pattern_idx)
 		}
 
 
-		if ( count == 0 ) {
-			Pattern_num_measures[strack_idx][pattern_idx] = (float)atof(token);	//Num_measures
-		} else if(count == 1) {
-			Pattern_samples_per_measure[strack_idx][pattern_idx] = atoi(token);	//Samples per measure
+		if (count == 0) {
+			Soundtracks[strack_idx].patterns[pattern_idx].num_measures = (float)atof(token);	//Num_measures
+		} else if (count == 1) {
+			Soundtracks[strack_idx].patterns[pattern_idx].samples_per_measure = atoi(token);	//Samples per measure
 		}
 
 		count++;
 	}	// end while
 
-	strcpy_s(Soundtracks[strack_idx].pattern_fnames[pattern_idx], fname);
+	strcpy_s(Soundtracks[strack_idx].patterns[pattern_idx].fname, fname);
 	return true;
 }
 
@@ -1189,28 +1167,27 @@ void parse_soundtrack()
 	}
 
 	//Get a valid strack_idx
-	if(strack_idx < 0 && (nocreate || Num_soundtracks >= MAX_SOUNDTRACKS))
+	if (strack_idx < 0 && nocreate)
 	{
-		if(Num_soundtracks >= MAX_SOUNDTRACKS) {
-			Warning(LOCATION, "Maximum number of soundtracks reached after '%s'; max is '%d'", Soundtracks[MAX_SOUNDTRACKS-1].name, MAX_SOUNDTRACKS);
-		}
-
 		//Track doesn't exist and has nocreate, so don't create it
 		if ( !skip_to_start_of_string_either("#SoundTrack Start", "#Menu Music Start") && !skip_to_string("#SoundTrack End")) {
 			error_display(1, "Couldn't find #Soundtrack Start, #Menu Music Start or #Soundtrack End.");
 		}
-
 		return;
 	}
-	else if(strack_idx < 0)
+	else if (strack_idx < 0)
 	{
 		//If we don't have this soundtrack already, create it
-		strack_idx = Num_soundtracks;
+		strack_idx = (int)Soundtracks.size();
+		Soundtracks.emplace_back();
 
-		strcpy_s(Soundtracks[strack_idx].name, namebuf);
+		Soundtracks[strack_idx].flags = 0;
 		Soundtracks[strack_idx].num_patterns = 0;
+		strcpy_s(Soundtracks[strack_idx].name, namebuf);
 
-		Num_soundtracks++;
+		// set all the filenames to "none" so we're compatible with the extra NRMLs in FS1 music
+		for (auto &pattern : Soundtracks[strack_idx].patterns)
+			strcpy_s(pattern.fname, NOX("none.wav"));
 	}
 
 	// Goober5000
@@ -1301,11 +1278,11 @@ void parse_soundtrack()
 	for (i = 0; i < Soundtracks[strack_idx].num_patterns; i++)
 	{
 		// check for "none"
-		if (!strlen(Soundtracks[strack_idx].pattern_fnames[i]) || !strnicmp(Soundtracks[strack_idx].pattern_fnames[i], "none", 4))
+		if (!strlen(Soundtracks[strack_idx].patterns[i].fname) || !strnicmp(Soundtracks[strack_idx].patterns[i].fname, "none", 4))
 			continue;
 
 		// check for file
-		if (!cf_exists_full(Soundtracks[strack_idx].pattern_fnames[i], CF_TYPE_MUSIC))
+		if (!cf_exists_full(Soundtracks[strack_idx].patterns[i].fname, CF_TYPE_MUSIC))
 			return;
 	}
 
@@ -1328,22 +1305,19 @@ void parse_menumusic()
 
 	int idx = event_music_get_spooled_music_index(spoolname);
 	
-	if(idx < 0 && (nocreate || Num_music_files >= MAX_SPOOLED_MUSIC))
+	if (idx < 0 && nocreate)
 	{
-		if(Num_music_files >= MAX_SPOOLED_MUSIC) {
-			Warning(LOCATION, "Could not load spooled music file after '%s' as maximum number of spooled music was reached (Max is %d)", Spooled_music[Num_music_files - 1].name, MAX_SPOOLED_MUSIC);
-		}
-
 		if (!skip_to_start_of_string_either("$Name:", "#Menu Music End")) {
 			Error(LOCATION, "Couldn't find $Name or #Menu Music End. Music.tbl or -mus.tbm is invalid.\n");
 		}
-
 		return;
 	}
-	else if(idx < 0)
+	else if (idx < 0)
 	{
-		idx = Num_music_files;
+		idx = (int)Spooled_music.size();
+		Spooled_music.emplace_back();
 
+		Spooled_music[idx].flags = 0;
 		strcpy_s( Spooled_music[idx].name, spoolname );
 		strcpy_s( Spooled_music[idx].filename, "");
 	}
@@ -1366,9 +1340,6 @@ void parse_menumusic()
 	// chief1983 - use type list defined in ffmpeg.h
 	if ( cf_exists_full_ext(Spooled_music[idx].filename, CF_TYPE_MUSIC, NUM_AUDIO_EXT, audio_ext_list) )
 		Spooled_music[idx].flags |= SMF_VALID;
-
-	if (!nocreate)
-		Num_music_files++;	
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -1617,7 +1588,7 @@ int event_music_next_soundtrack(int delta)
 	}
 		
 	new_soundtrack = Current_soundtrack_num + delta;
-	if ( new_soundtrack >= Num_soundtracks )
+	if ( new_soundtrack >= (int)Soundtracks.size() )
 		new_soundtrack = 0;
 
 	event_music_level_close();
@@ -1633,7 +1604,7 @@ void event_sexp_change_soundtrack(const char *name)
 
 	int i, new_soundtrack = -1;
 
-	for (i = 0; i < Num_soundtracks; i++) {
+	for (i = 0; i < (int)Soundtracks.size(); i++) {
 		if ( !stricmp(name, Soundtracks[i].name) ) {
 			new_soundtrack = i;
 		}
@@ -1677,7 +1648,7 @@ void event_music_set_soundtrack(const char *name)
 int event_music_get_soundtrack_index(const char *name)
 {
 	// find the correct index for the event music
-	for ( int i = 0; i < Num_soundtracks; i++ ) {
+	for ( int i = 0; i < (int)Soundtracks.size(); i++ ) {
 		if ( !stricmp(name, Soundtracks[i].name) ) {
 			return i;
 		}
@@ -1689,7 +1660,7 @@ int event_music_get_soundtrack_index(const char *name)
 int event_music_get_spooled_music_index(const char *name)
 {
 	// find the correct index for the event music
-	for ( int i = 0; i < Num_music_files; i++ ) {
+	for ( int i = 0; i < (int)Spooled_music.size(); i++ ) {
 		if ( !stricmp(name, Spooled_music[i].name) ) {
 			return i;
 		}
