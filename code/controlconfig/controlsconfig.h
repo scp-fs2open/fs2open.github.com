@@ -763,10 +763,9 @@ int translate_key_to_index(const char *key, bool find_override=true);
 const char *translate_key(char *key);
 
 /**
- * @brief Converts the specified key code to a human readable string, according to the selected locale
+ * @brief Converts the specified key code to a human readable string, according to the selected locale and keyboard layout
  *
- * @param[in]   code    The key code to convert
- * @param[in]   use_default_locale  If true, return the default locale (English) translation of the key
+ * @param[in]   code    The key scancode to convert
  *
  * @return  The text representation of the code.
  *
@@ -774,7 +773,18 @@ const char *translate_key(char *key);
  *
  * @note The return value is translated according to localization settings
  */
-const char *textify_scancode(int code, bool use_default_locale = false);
+const char *textify_scancode(int code);
+
+/**
+ * @brief Converts the specified key code to a human readable string.  Uses the English locale and QWERTY layout.
+ * 
+ * @param[in]    code   The key scancode to convert
+ * 
+ * @return The text representation of the code
+ * 
+ * @note Not thread safe.  Has an internal buffer for the return value which is overwritten on each call.
+ */
+const char *textify_scancode_universal(int code);
 
 /*!
  * @brief Checks how long a control has been active

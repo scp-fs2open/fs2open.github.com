@@ -657,7 +657,7 @@ const char *translate_key(char *key)
 	return text;
 }
 
-const char *textify_scancode(int code, bool use_default_locale)
+const char *textify_scancode(int code)
 {
 	static char text[BTN_MSG_LEN];
 
@@ -666,7 +666,7 @@ const char *textify_scancode(int code, bool use_default_locale)
 
 	int keycode = code & KEY_MASK;
 
-	*text = 0;
+	text[0] = '\0';
 	if (code & KEY_ALTED && !(keycode == KEY_LALT || keycode == KEY_RALT)) {
 		if(Lcl_gr){
 			strcat_s(text, "Alt-");
@@ -695,13 +695,14 @@ const char *textify_scancode(int code, bool use_default_locale)
 
 const char *textify_scancode_universal(int code)
 {
+	static char text[BTN_MSG_LEN];
+
 	if (code < 0)
 		return "None";
 
 	int keycode = code & KEY_MASK;
 
-	static char text[BTN_MSG_LEN];
-	*text = 0;
+	text[0] = '\0';
 	if (code & KEY_ALTED && !(keycode == KEY_LALT || keycode == KEY_RALT)) {
 		strcat_s(text, "Alt-");
 	}
@@ -1157,7 +1158,7 @@ void LoadEnumsIntoActionMap() {
 
 #undef ADD_ENUM_TO_ACTION_MAP
 
-	Assertion(mActionToVal.size() == CCFG_MAX, "Missing or unknown IoActionId's detected. mActionToVal.size()=%i; CCFG_MAX=%i", mActionToVal.size(), CCFG_MAX);
+	Assertion(mActionToVal.size() == CCFG_MAX, "Missing or unknown IoActionId's detected. mActionToVal.size()=%i; CCFG_MAX=%i", static_cast<int>(mActionToVal.size()), CCFG_MAX);
 }
 
 void LoadEnumsIntoCIDMap() {
