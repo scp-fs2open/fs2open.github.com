@@ -1543,6 +1543,28 @@ ADE_FUNC(getShipList,
 	}));
 }
 
+ADE_FUNC(getMissileList,
+	l_Mission,
+	nullptr,
+	"Get an iterator to the list of missiles in this mission",
+	"iterator<weapon>",
+	"An iterator across all missiles in the mission. Can be used in a for .. in loop. Is not valid for more than one frame.")
+{
+	missile_obj* mo = &Missile_obj_list;
+
+	return ade_set_args(L, "u", luacpp::LuaFunction::createFromStdFunction(L, [mo](lua_State* LInner, const luacpp::LuaValueList& /*params*/) mutable -> luacpp::LuaValueList {
+		//Since the first element of a list is the next element from the head, and we start this function with the the captured "mo" object being the head, this GET_NEXT will return the first element on first call of this lambda.
+		//Similarly, an empty list is defined by the head's next element being itself, hence an empty list will immediately return nil just fine
+		mo = GET_NEXT(mo);
+
+		if (mo == END_OF_LIST(&Missile_obj_list) || mo == nullptr) {
+			return luacpp::LuaValueList{ luacpp::LuaValue::createNil(LInner) };
+		}
+
+		return luacpp::LuaValueList{ luacpp::LuaValue::createValue(LInner, l_Weapon.Set(object_h(&Objects[mo->objnum]))) };
+	}));
+}
+
 ADE_FUNC(waitAsync,
 	l_Mission,
 	"number seconds",

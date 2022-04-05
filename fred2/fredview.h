@@ -15,7 +15,6 @@
 
 #define WM_MENU_POPUP_SHIPS	(WM_USER+6)
 #define WM_MENU_POPUP_EDIT		(WM_USER+7)
-#define SEXP_HELP_BOX_SIZE 170
 
 typedef struct Marking_box {
 	int x1, y1, x2, y2;

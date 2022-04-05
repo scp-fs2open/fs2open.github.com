@@ -9,6 +9,7 @@
 #include "ShipFlagsDialog.h"
 #include "PlayerOrdersDialog.h"
 #include "ShipSpecialStatsDialog.h"
+#include "ShipTextureReplacementDialog.h"
 
 #include <QAbstractButton>
 #include <QtWidgets/QDialog>

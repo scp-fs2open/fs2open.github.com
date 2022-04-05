@@ -51,6 +51,7 @@ namespace fso {
 				int type, wing = -1;
 				int cargo = 0, base_ship, base_player, pship = -1;
 				int escort_count;
+				texenable = true;
 				std::set<size_t> current_orders;
 				pship_count = 0;  // a total count of the player ships not marked
 				player_count = 0;
@@ -149,7 +150,10 @@ namespace fso {
 									base_player = -1;
 								}
 								else {
-									if (Ships[i].ship_info_index != _m_ship_class) { _m_ship_class = -1; }
+									if (Ships[i].ship_info_index != _m_ship_class) { 
+										_m_ship_class = -1; 
+										texenable = false; 
+									}
 									if (Ships[i].team != _m_team) { _m_team = -1; }
 									pship = tristate_set(Objects[Ships[i].objnum].type == OBJ_START, pship);
 								}
@@ -523,11 +527,15 @@ namespace fso {
 						_editor->ai_update_goal_references(REF_TYPE_SHIP, old_name, str);
 						_editor->update_texture_replacements(old_name, str);
 						for (i = 0; i < Num_reinforcements; i++) {
-
 							if (!strcmp(old_name, Reinforcements[i].name)) {
 								Assert(strlen(str) < NAME_LENGTH);
 								strcpy_s(Reinforcements[i].name, str);
 							}
+						}
+
+						if (Ships[single_ship].has_display_name()) {
+							Ships[single_ship].flags.remove(Ship::Ship_Flags::Has_display_name);
+							Ships[single_ship].display_name = "";
 						}
 
 						_editor->missionChanged();

@@ -8,6 +8,52 @@
 
 namespace decals {
 
+class DecalDefinition {
+	SCP_string _name;
+
+	SCP_string _diffuseFilename;
+	bool _loopDiffuse = true;
+
+	SCP_string _glowFilename;
+	bool _loopGlow = true;
+
+	SCP_string _normalMapFilename;
+	bool _loopNormal = true;
+
+	int _diffuseBitmap = -1;
+	int _glowBitmap = -1;
+	int _normalBitmap = -1;
+
+ public:
+	explicit DecalDefinition(SCP_string name);
+	~DecalDefinition();
+
+	// Disallow copying
+	DecalDefinition(const DecalDefinition&) = delete;
+	DecalDefinition& operator=(const DecalDefinition&) = delete;
+
+	// Move constructor and operator
+	DecalDefinition(DecalDefinition&& other) noexcept;
+	DecalDefinition& operator=(DecalDefinition&& other) noexcept;
+
+	void parse();
+	void loadBitmaps();
+	void pageIn();
+	bool bitmapsLoaded();
+
+	const SCP_string& getName() const;
+	int getDiffuseBitmap() const;
+	int getGlowBitmap() const;
+	int getNormalBitmap() const;
+	bool isDiffuseLooping() const;
+	bool isGlowLooping() const;
+	bool isNormalLooping() const;
+};
+
+extern SCP_vector<DecalDefinition> DecalDefinitions;
+extern bool Decal_system_active;
+
+
 /**
  * @brief A reference to a decal definition
  */
@@ -19,6 +65,8 @@ typedef int DecalReference;
 struct creation_info {
 	DecalReference definition_handle = -1;
 	float radius = -1.0f;
+	float width = -1.0f;
+	float height = -1.0f;
 	util::UniformFloatRange lifetime = ::util::UniformFloatRange(-1.0f);
 };
 
@@ -27,6 +75,11 @@ struct creation_info {
  */
 void initialize();
 
+
+/**
+ * Returns the index of this decal, or -1 if not found
+ */
+int findDecalDefinition(const SCP_string& name);
 
 /**
  * @brief Parses the information for a decal reference

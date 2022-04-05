@@ -3644,13 +3644,12 @@ sexp_list_item* sexp_tree::get_listing_opf_ship_with_bay() {
 }
 
 sexp_list_item* sexp_tree::get_listing_opf_soundtrack_name() {
-	int i;
 	sexp_list_item head;
 
 	head.add_data("<No Music>");
 
-	for (i = 0; i < Num_soundtracks; i++) {
-		head.add_data(Soundtracks[i].name);
+	for (auto &st: Soundtracks) {
+		head.add_data(st.name);
 	}
 
 	return head.next;

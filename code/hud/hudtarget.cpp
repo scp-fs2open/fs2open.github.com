@@ -1305,7 +1305,9 @@ ship_obj *advance_ship(ship_obj *so, int next_flag)
 static object* select_next_target_by_distance(const bool targeting_from_closest_to_farthest, const int valid_team_mask, const int attacked_object_number = -1, flagset<Ship::Info_Flags>* target_filters = NULL) {
     object *minimum_object_ptr, *maximum_object_ptr, *nearest_object_ptr;
     minimum_object_ptr = maximum_object_ptr = nearest_object_ptr = NULL;
-    float current_distance = hud_find_target_distance(&Objects[Player_ai->target_objnum], Player_obj);
+    // we need to use the same distance method as evaluate_ship_as_closest_target
+    //float current_distance = hud_find_target_distance(&, Player_obj);
+    float current_distance = vm_vec_dist_quick(&Objects[Player_ai->target_objnum].pos, &Player_obj->pos);
     float minimum_distance = 1e20f;
     float maximum_distance = 0.0f;
     int player_object_index = OBJ_INDEX(Player_obj);
@@ -1360,7 +1362,9 @@ static object* select_next_target_by_distance(const bool targeting_from_closest_
                 continue;
             }
 
-            new_distance = hud_find_target_distance(prospective_victim_ptr, Player_obj);
+            // we need to use the same distance method as evaluate_ship_as_closest_target
+            //new_distance = hud_find_target_distance(prospective_victim_ptr, Player_obj);
+            new_distance = vm_vec_dist_quick(&prospective_victim_ptr->pos, &Player_obj->pos);
         }
         else {
             // Filter out any target that is not targeting the player  --Mastadon
@@ -2124,6 +2128,8 @@ bool evaluate_ship_as_closest_target(esct *esct_p)
 
 	// consider the ship alone if there are no attacking turrets
 	if ( !turret_is_attacking ) {
+		// Volition switched distance evaluation methods here... presumably this is to prioritize small fighters when dogfighting next to large ships...
+		// Since this is used specifically for finding an ordering of targets and does not involve any visual displays, distance-to-center is reasonable.
 		//new_distance = hud_find_target_distance(objp, Player_obj);
 		new_distance = vm_vec_dist_quick(&objp->pos, &Player_obj->pos);
 
@@ -4407,8 +4413,15 @@ void hud_target_change_check()
 	// check if the main target has changed
 	if (Player_ai->last_target != Player_ai->target_objnum) {
 
+		// acquired target
 		if ( Player_ai->target_objnum != -1){
 			snd_play( gamesnd_get_game_sound(ship_get_sound(Player_obj, GameSounds::TARGET_ACQUIRE)), 0.0f );
+		}
+		// cleared target
+		else {
+			if (Target_static_looping.isValid()) {
+				snd_stop(Target_static_looping);
+			}
 		}
 
 		// if we have a hotkey set active, see if new target is in set.  If not in
@@ -4888,7 +4901,9 @@ int hud_target_closest_repair_ship(int goal_objnum)
 			}
 		}
 
-		new_distance = hud_find_target_distance(A,Player_obj);
+		// c.f. evaluate_ship_as_closest_target
+		//new_distance = hud_find_target_distance(A,Player_obj);
+		new_distance = vm_vec_dist_quick(&A->pos, &Player_obj->pos);
 
 		if (new_distance <= min_distance) {
 			min_distance=new_distance;
@@ -4951,7 +4966,9 @@ void hud_target_closest_uninspected_object()
 			continue;
 		}
 
-		new_distance = hud_find_target_distance(A,Player_obj);
+		// c.f. evaluate_ship_as_closest_target
+		//new_distance = hud_find_target_distance(A,Player_obj);
+		new_distance = vm_vec_dist_quick(&A->pos, &Player_obj->pos);
 
 		if (new_distance <= min_distance) {
 			min_distance=new_distance;
@@ -4986,7 +5003,9 @@ void hud_target_uninspected_object(int next_flag)
 
 	Target_next_uninspected_object_timestamp = timestamp(TL_RESET);
 
-	cur_dist = hud_find_target_distance(&Objects[Player_ai->target_objnum], Player_obj);
+	// c.f. evaluate_ship_as_closest_target
+	//cur_dist = hud_find_target_distance(&Objects[Player_ai->target_objnum], Player_obj);
+	cur_dist = vm_vec_dist_quick(&Objects[Player_ai->target_objnum].pos, &Player_obj->pos);
 
 	min_obj = max_obj = nearest_obj = NULL;
 	min_dist = 1e20f;
@@ -5018,7 +5037,9 @@ void hud_target_uninspected_object(int next_flag)
 			continue;
 		}
 
-		new_dist = hud_find_target_distance(A, Player_obj);
+		// c.f. evaluate_ship_as_closest_target
+		//new_dist = hud_find_target_distance(A, Player_obj);
+		new_dist = vm_vec_dist_quick(&A->pos, &Player_obj->pos);
 
 		if (new_dist <= min_dist) {
 			min_dist = new_dist;
@@ -6311,7 +6332,11 @@ void HudGaugeOffscreen::render(float  /*frametime*/)
 			int dir;
 
 			if(target_display_list[i].objp) {
-				dist = hud_find_target_distance( target_display_list[i].objp, Player_obj );
+				if (OBJ_INDEX(target_display_list[i].objp) == Player_ai->target_objnum) {
+					dist = Player_ai->current_target_distance;
+				} else {
+					dist = hud_find_target_distance( target_display_list[i].objp, Player_obj );
+				}
 			} else {
 				// if we don't have a corresponding object, use given position to figure out distance
 				dist = vm_vec_dist_quick(&Player_obj->pos, &target_display_list[i].target_pos);

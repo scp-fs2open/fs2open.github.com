@@ -5,6 +5,7 @@
 
 #include "gamesequence/gamesequence.h"
 #include "menuui/mainhallmenu.h"
+#include "menuui/readyroom.h"
 #include "menuui/techmenu.h"
 #include "mission/missioncampaign.h"
 #include "pilotfile/pilotfile.h"
@@ -322,7 +323,10 @@ ADE_FUNC(loadCampaign, l_Player, "string campaign", "Loads the specified campaig
 			// reset tech database to what's in the tables
 			tech_reset_to_default();
 		}
+
+		OnCampaignBeginHook->run(scripting::hook_param_list(scripting::hook_param("Campaign", 's', Campaign.filename)));
 	}
+
 	// that's all we need to do for now; the campaign loading status will be checked again when we try to load the
 	// campaign in the ready room
 

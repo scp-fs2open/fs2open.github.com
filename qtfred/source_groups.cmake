@@ -74,6 +74,8 @@ add_file_folder("Source/Mission/Dialogs"
 	src/mission/dialogs/PlayerOrdersDialogModel.cpp
 	src/mission/dialogs/ShipSpecialStatsDialogModel.h
 	src/mission/dialogs/ShipSpecialStatsDialogModel.cpp
+	src/mission/dialogs/ShipTextureReplacementDialogModel.h
+	src/mission/dialogs/ShipTextureReplacementDialogModel.cpp
 )
 
 add_file_folder("Source/UI"
@@ -130,6 +132,8 @@ add_file_folder("Source/UI/Dialogs"
 	src/ui/dialogs/PlayerOrdersDialog.cpp
 	src/ui/dialogs/ShipSpecialStatsDialog.cpp
 	src/ui/dialogs/ShipSpecialStatsDialog.h
+	src/ui/dialogs/ShipTextureReplacementDialog.h
+	src/ui/dialogs/ShipTextureReplacementDialog.cpp
 )
 
 add_file_folder("Source/UI/Util"
@@ -175,6 +179,7 @@ add_file_folder("UI"
 	ui/ShipSpecialStatsDialog.ui
 	ui/ShipFlagsDialog.ui
 	ui/PlayerOrdersDialog.ui
+	ui/ShipTextureReplacementDialog.ui
 )
 
 add_file_folder("Resources"

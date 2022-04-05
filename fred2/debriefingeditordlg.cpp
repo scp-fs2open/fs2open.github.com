@@ -134,18 +134,18 @@ BOOL debriefing_editor_dlg::OnInitDialog()
 
 	box = (CComboBox *) GetDlgItem(IDC_SUCCESSFUL_MISSION_TRACK);
 	box->AddString("None");
-	for (i=0; i<Num_music_files; i++)
-		box->AddString(Spooled_music[i].name);
+	for (auto &sm: Spooled_music)
+		box->AddString(sm.name);
 
 	box = (CComboBox *) GetDlgItem(IDC_DEBRIEFING_TRACK);
 	box->AddString("None");
-	for (i=0; i<Num_music_files; i++)
-		box->AddString(Spooled_music[i].name);
+	for (auto &sm: Spooled_music)
+		box->AddString(sm.name);
 
 	box = (CComboBox *) GetDlgItem(IDC_FAILED_MISSION_TRACK);
 	box->AddString("None");
-	for (i=0; i<Num_music_files; i++)
-		box->AddString(Spooled_music[i].name);
+	for (auto &sm: Spooled_music)
+		box->AddString(sm.name);
 
 	m_debriefPass_music = Mission_music[SCORE_DEBRIEF_SUCCESS] + 1;
 	m_debriefAvg_music = Mission_music[SCORE_DEBRIEF_AVERAGE] + 1;

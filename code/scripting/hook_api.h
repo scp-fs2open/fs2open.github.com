@@ -7,6 +7,8 @@
 
 #include "utils/tuples.h"
 
+#include <utility>
+
 namespace scripting {
 
 namespace detail {
@@ -24,8 +26,8 @@ struct HookParameterInstance {
 	char type = '\0';
 	T value;
 
-	HookParameterInstance(SCP_string name_, char type_, T value_)
-		: name(std::move(name_)), type(type_), value(std::move(value_))
+	HookParameterInstance(SCP_string name_, char type_, T&& value_)
+		: name(std::move(name_)), type(type_), value(std::forward<T>(value_))
 	{
 	}
 };
@@ -50,7 +52,10 @@ template <typename... Args>
 struct HookParameterInstanceList {
 	std::tuple<HookParameterInstance<Args>...> params;
 
-	HookParameterInstanceList(HookParameterInstance<Args>... params_) : params(params_...) {}
+	HookParameterInstanceList(HookParameterInstance<Args>&&... params_)
+		: params(std::forward<HookParameterInstance<Args>>(params_)...)
+	{
+	}
 
 	void setHookVars(SCP_vector<SCP_string>& paramNames)
 	{
@@ -63,15 +68,15 @@ struct HookParameterInstanceList {
 } // namespace detail
 
 template <typename T>
-detail::HookParameterInstance<T> hook_param(SCP_string name_, char type_, T value_)
+detail::HookParameterInstance<T> hook_param(SCP_string name_, char type_, T&& value_)
 {
-	return detail::HookParameterInstance<T>(std::move(name_), type_, std::move(value_));
+	return detail::HookParameterInstance<T>(std::move(name_), type_, std::forward<T>(value_));
 }
 
 template <typename... Args>
-detail::HookParameterInstanceList<Args...> hook_param_list(detail::HookParameterInstance<Args>... params)
+detail::HookParameterInstanceList<Args...> hook_param_list(detail::HookParameterInstance<Args>&&... params)
 {
-	return detail::HookParameterInstanceList<Args...>(std::move(params)...);
+	return detail::HookParameterInstanceList<Args...>(std::forward<detail::HookParameterInstance<Args>>(params)...);
 }
 
 struct HookVariableDocumentation {

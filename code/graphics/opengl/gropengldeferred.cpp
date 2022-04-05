@@ -439,13 +439,15 @@ void gr_opengl_deferred_light_cylinder_init(int segments) // Generate a VBO of a
 		if ( opengl_check_for_errors() ) {
 			glDeleteBuffers(1, &deferred_light_cylinder_vbo);
 			deferred_light_cylinder_vbo = 0;
+
+			vm_free(Indices);
+			Indices = nullptr;
+			vm_free(Vertices);
+			Vertices = nullptr;
 			return;
 		}
 
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-		vm_free(Vertices);
-		Vertices = NULL;
 	}
 
 	glGenBuffers(1, &deferred_light_cylinder_ibo);
@@ -459,15 +461,21 @@ void gr_opengl_deferred_light_cylinder_init(int segments) // Generate a VBO of a
 		if ( opengl_check_for_errors() ) {
 			glDeleteBuffers(1, &deferred_light_cylinder_ibo);
 			deferred_light_cylinder_ibo = 0;
+
+			vm_free(Indices);
+			Indices = nullptr;
+			vm_free(Vertices);
+			Vertices = nullptr;
 			return;
 		}
 
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-		vm_free(Indices);
-		Indices = NULL;
 	}
 
+	vm_free(Indices);
+	Indices = nullptr;
+	vm_free(Vertices);
+	Vertices = nullptr;
 }
 
 static GLuint deferred_light_sphere_vbo = 0;
@@ -531,13 +539,15 @@ void gr_opengl_deferred_light_sphere_init(int rings, int segments) // Generate a
 		if ( opengl_check_for_errors() ) {
 			glDeleteBuffers(1, &deferred_light_sphere_vbo);
 			deferred_light_sphere_vbo = 0;
+			
+			vm_free(Vertices);
+			Vertices = nullptr;
+			vm_free(Indices);
+			Indices = nullptr;
 			return;
 		}
 
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-		vm_free(Vertices);
-		Vertices = NULL;
 	}
 
 	glGenBuffers(1, &deferred_light_sphere_ibo);
@@ -551,14 +561,21 @@ void gr_opengl_deferred_light_sphere_init(int rings, int segments) // Generate a
 		if ( opengl_check_for_errors() ) {
 			glDeleteBuffers(1, &deferred_light_sphere_ibo);
 			deferred_light_sphere_ibo = 0;
+			
+			vm_free(Vertices);
+			Vertices = nullptr;
+			vm_free(Indices);
+			Indices = nullptr;
 			return;
 		}
 
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-		vm_free(Indices);
-		Indices = NULL;
 	}
+	
+	vm_free(Vertices);
+	Vertices = nullptr;
+	vm_free(Indices);
+	Indices = nullptr;
 }
 
 void opengl_draw_sphere()

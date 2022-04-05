@@ -372,22 +372,31 @@ void CFREDApp::OnAppAbout() {
 }
 
 BOOL CFREDApp::OnIdle(LONG lCount) {
-	int adjust = 0;
 	CWnd *top, *wnd;
-
-	if (!Show_sexp_help)
-		adjust = -SEXP_HELP_BOX_SIZE;
 
 	if (!app_init) {
 		app_init = 1;
-		theApp.init_window(&Ship_wnd_data, &Ship_editor_dialog, adjust, 1);
-		theApp.init_window(&Wing_wnd_data, &Wing_editor_dialog, adjust, 1);
+		theApp.init_window(&Ship_wnd_data, &Ship_editor_dialog, 0, 1);
+		theApp.init_window(&Wing_wnd_data, &Wing_editor_dialog, 0, 1);
 		theApp.init_window(&Waypoint_wnd_data, &Waypoint_editor_dialog, 0, 1);
 		init_window(&Main_wnd_data, Fred_main_wnd);
 		Fred_main_wnd->SetWindowPos(&CWnd::wndTop, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 
 		Ship_editor_dialog.calc_cue_height();
+		Ship_editor_dialog.calc_help_height();
+		// on initial setup, these must be called in this order
+		if (!Show_sexp_help)
+			Ship_editor_dialog.show_hide_sexp_help();
+		if (Hide_ship_cues)
+			Ship_editor_dialog.show_hide_cues();
+
 		Wing_editor_dialog.calc_cue_height();
+		Wing_editor_dialog.calc_help_height();
+		// on initial setup, these must be called in this order
+		if (!Show_sexp_help)
+			Wing_editor_dialog.show_hide_sexp_help();
+		if (Hide_wing_cues)
+			Wing_editor_dialog.show_hide_cues();
 	}
 
 	CWinApp::OnIdle(lCount);

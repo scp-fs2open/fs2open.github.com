@@ -224,13 +224,13 @@ void briefing_editor_dlg::create()
 
 	box = (CComboBox *) GetDlgItem(IDC_BRIEFING_MUSIC);
 	box->AddString("None");
-	for (i=0; i<Num_music_files; i++)
-		box->AddString(Spooled_music[i].name);
+	for (auto &sm: Spooled_music)
+		box->AddString(sm.name);
 
 	box = (CComboBox *) GetDlgItem(IDC_SUBSTITUTE_BRIEFING_MUSIC);
 	box->AddString("None");
-	for (i=0; i<Num_music_files; i++)
-		box->AddString(Spooled_music[i].name);
+	for (auto &sm: Spooled_music)
+		box->AddString(sm.name);
 
 	m_play_bm.LoadBitmap(IDB_PLAY);
 	((CButton *) GetDlgItem(IDC_PLAY)) -> SetBitmap(m_play_bm);

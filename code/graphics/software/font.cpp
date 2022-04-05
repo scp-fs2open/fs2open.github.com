@@ -688,8 +688,7 @@ void gr_get_string_size(int *w1, int *h1, const char *text, int len)
 	float w = 0.0f;
 	float h = 0.0f;
 
-	if (len != 0)
-		FontManager::getCurrentFont()->getStringSize(text, static_cast<size_t>(len), -1, &w, &h);
+	FontManager::getCurrentFont()->getStringSize(text, static_cast<size_t>(len), -1, &w, &h);
 
 	if (w1)
 	{

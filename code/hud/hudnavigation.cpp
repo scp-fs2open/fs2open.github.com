@@ -40,10 +40,8 @@ void hud_draw_navigation()
 
 		unsigned int alpha = HUD_COLOR_ALPHA_MAX * 16;
 
-		if (Navs[CurrentNav].flags & NP_VISITED)
-			gr_init_alphacolor( &NavColor, 0xFF, 0xFF, 0x00, alpha);
-		else
-			gr_init_alphacolor( &NavColor, 0x80, 0x80, 0xff, alpha);
+		auto rgb = (Navs[CurrentNav].flags & NP_VISITED) ? Navs[CurrentNav].visited_color : Navs[CurrentNav].normal_color;
+		gr_init_alphacolor( &NavColor, rgb[0], rgb[1], rgb[2], alpha );
 
 		g3_rotate_vertex(&target_point, target_pos);
 		g3_project_vertex(&target_point);

@@ -62,8 +62,13 @@ BOOL CMissionGoalsDlg::OnInitDialog()
 	int i, adjust = 0;
 
 	CDialog::OnInitDialog();  // let the base class do the default work
+
 	if (!Show_sexp_help)
-		adjust = -SEXP_HELP_BOX_SIZE;
+	{
+		CRect rect;
+		GetDlgItem(IDC_HELP_BOX)->GetWindowRect(rect);
+		adjust = rect.top - rect.bottom - 20;
+	}
 
 	theApp.init_window(&Mission_goals_wnd_data, this, adjust);
 	m_goals_tree.setup((CEdit *) GetDlgItem(IDC_HELP_BOX));
