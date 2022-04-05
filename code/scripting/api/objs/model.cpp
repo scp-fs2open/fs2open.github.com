@@ -315,7 +315,7 @@ ADE_VIRTVAR(Name, l_Submodel, nullptr, "Gets the submodel's name", "string", "Th
 		return ade_set_error(L, "s", "");
 
 	if (ADE_SETTING_VAR)
-		LuaError(L, "Setting the submodel offset is not implemented");
+		LuaError(L, "Setting the submodel name is not implemented");
 
 	return ade_set_args(L, "s", smh->GetSubmodel()->name);
 }

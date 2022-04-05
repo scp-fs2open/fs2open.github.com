@@ -322,7 +322,7 @@ SCP_string common_music_get_filename(int score_index)
 	Assertion(score_index >= 0 && score_index < NUM_SCORES, "Invalid score index %d.", score_index);
 
 	if (Mission_music[score_index] < 0) {
-		if (Num_music_files > 0) {
+		if (!Spooled_music.empty()) {
 			Mission_music[score_index] = 0;
 			nprintf(("Sound",
 				"No briefing music is selected, so play first briefing track: %s\n",
@@ -367,7 +367,7 @@ void common_music_close()
 		return;
 	}
 
-	if ( Num_music_files <= 0 )
+	if ( Spooled_music.empty() )
 		return;
 
 	briefing_stop_music(true);

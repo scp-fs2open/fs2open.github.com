@@ -5914,7 +5914,6 @@ int Weapons_created = 0;
 int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_objnum, int group_id, int is_locked, int is_spawned, float fof_cooldown, ship_subsys * src_turret)
 {
 	int			n, objnum;
-	int num_deleted;
 	object		*objp, *parent_objp=NULL;
 	weapon		*wp;
 	weapon_info	*wip;
@@ -5979,15 +5978,9 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		}
 	}
 
-	num_deleted = 0;
-	if (Num_weapons >= MAX_WEAPONS-5) {
-
-		num_deleted = collide_remove_weapons();
-
-		mprintf(("Deleted %d weapons because of lack of slots.\n", num_deleted));
-		if (num_deleted == 0){
-			return -1;
-		}
+	if (Num_weapons == MAX_WEAPONS) {
+		mprintf(("Can't fire due to lack of weapon slots"));
+		return -1;
 	}
 
 	for (n=0; n<MAX_WEAPONS; n++ ){
@@ -5996,14 +5989,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		}
 	}
 
-	if (n == MAX_WEAPONS) {
-		// if we supposedly deleted weapons above, what happened here!!!!
-		if (num_deleted){
-			Int3();				// get allender -- something funny is going on!!!
-		}
-
-		return -1;
-	}
+	Assertion(n != MAX_WEAPONS, "Somehow tried to create weapons despite being at max weapons");
 
 	// make sure we are loaded and useable
 	if ( (wip->render_type == WRT_POF) && (wip->model_num < 0) ) {
@@ -6455,7 +6441,7 @@ void spawn_child_weapons(object *objp, int spawn_index_override)
 	parent_num = objp->parent;
 
 	if (parent_num >= 0) {
-		if ((Objects[parent_num].type != objp->parent_type) || (Objects[parent_num].signature != objp->parent_sig)) {
+		if (Objects[parent_num].signature != objp->parent_sig) {
 			mprintf(("Warning: Parent of spawn weapon does not exist.  Not spawning.\n"));
 			return;
 		}

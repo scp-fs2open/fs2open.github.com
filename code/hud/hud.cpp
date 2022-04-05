@@ -1377,7 +1377,6 @@ void hud_maybe_popup_weapons_gauge()
 void hud_update_frame(float  /*frametime*/)
 {
 	object	*targetp;
-	vec3d target_pos;
 	int		can_target;
 
 	update_throttle_sound();
@@ -1463,8 +1462,6 @@ void hud_update_frame(float  /*frametime*/)
 		hud_update_closest_turret();
 	}
 
-	hud_target_change_check();
-
 	// check to see if we are in messaging mode.  If so, send the key to the code
 	// to deal with the message.  hud_sqaudmsg_do_frame will return 0 if the key
 	// wasn't used in messaging mode, otherwise 1.  In the event the key was used,
@@ -1474,15 +1471,14 @@ void hud_update_frame(float  /*frametime*/)
 	}
 
 	if (Player_ai->target_objnum == -1) {
-		if (Target_static_looping.isValid()) {
-			snd_stop(Target_static_looping);
-		}
+		hud_target_change_check();
 		return;
 	}
 
 	targetp = &Objects[Player_ai->target_objnum];
 
 	if ( Player_ai->targeted_subsys != NULL ) {
+		vec3d target_pos;
 		get_subsystem_world_pos(targetp, Player_ai->targeted_subsys, &target_pos);
 
 		// get new distance of current target
@@ -1509,10 +1505,11 @@ void hud_update_frame(float  /*frametime*/)
 			}
 		}
 	} else {
-		target_pos = targetp->pos;
-
 		Player_ai->current_target_distance = hud_find_target_distance(targetp,Player_obj);
 	}
+
+	// moved past the if() block so that the target tracker has the current frame's target distance
+	hud_target_change_check();
 
 	bool stop_targeting_this_thing = false;
 

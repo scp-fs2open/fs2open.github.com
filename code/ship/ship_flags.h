@@ -128,6 +128,8 @@ namespace Ship {
 		Attempting_to_afterburn,    // set and unset by afterburner_start and stop, used by afterburner_min_fuel_to_consume
 		Hide_mission_log,			// Goober5000 - mission log events generated for this ship will not be viewable
 		No_passive_lightning,		// Asteroth - disables ship passive lightning
+		Same_arrival_warp_when_docked,		// Goober5000
+		Same_departure_warp_when_docked,	// Goober5000
 
 		NUM_VALUES
 
@@ -261,9 +263,10 @@ namespace Ship {
 
 
     // Not all wing flags are parseable or saveable in mission files. Right now, the only ones which can be set by mission designers are:
-    // ignore_count, reinforcement, no_arrival_music, no_arrival_message, no_arrival_warp, no_departure_warp, no_dynamic and nav_carry_status
+    // ignore_count, reinforcement, no_arrival_music, no_arrival_message, no_arrival_warp, no_departure_warp,
+	// same_arrival_warp_when_docked, same_departure_warp_when_docked, no_dynamic, and nav_carry_status
     // Should that change, bump this variable and make sure to make the necessary changes to parse_wing (in missionparse)
-#define PARSEABLE_WING_FLAGS 8
+#define PARSEABLE_WING_FLAGS 9
 	
     FLAG_LIST(Wing_Flags) {
 		Gone,					// all ships were either destroyed or departed
@@ -280,6 +283,8 @@ namespace Ship {
 		Departure_ordered,		// departure of this wing was ordered by player
 		Never_existed,			// this wing never existed because something prevented it from being created (like its mother ship being destroyed)
 		Nav_carry,				// Kazan - Wing has nav-carry-status
+		Same_arrival_warp_when_docked,		// Goober5000
+		Same_departure_warp_when_docked,	// Goober5000
 
 		NUM_VALUES
 	};

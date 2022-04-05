@@ -123,7 +123,6 @@ public:
 	char			type;				// what type of object this is... robot, weapon, hostage, powerup, fireball
 	int				parent;			// This object's parent.
 	int				parent_sig;		// This object's parent's signature
-	char			parent_type;	// This object's parent's type
 	int				instance;		// which instance.  ie.. if type is Robot, then this indexes into the Robots array
 	flagset<Object::Object_Flags> flags;			// misc flags.  Call obj_set_flags to change this.
 	vec3d			pos;				// absolute x,y,z coordinate of center of object
@@ -181,7 +180,6 @@ public:
 	int	signature;
 	flagset<Object::Object_Flags>	flags;
 	int	parent_sig;
-	int	parent_type;
 
     checkobject();
 };

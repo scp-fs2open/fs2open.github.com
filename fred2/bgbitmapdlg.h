@@ -57,8 +57,11 @@ public:
 	int		m_neb2_texture;
 	BOOL		m_subspace;
 	BOOL		m_fullneb;
-	int		m_poofs[MAX_NEB2_POOFS];
-	BOOL	m_toggle_trails;
+	BOOL		m_fog_color_override;
+	BOOL		m_toggle_trails;
+	int		m_fog_r;
+	int		m_fog_g;
+	int		m_fog_b;
 	CString	m_storm_name;
 	CString s_name;
 	int s_pitch;
@@ -115,6 +118,11 @@ protected:
 	afx_msg void OnSelchangeNebcolor();
 	afx_msg void OnSelchangeNebpattern();
 	afx_msg void OnFullNeb();
+	afx_msg void OnNeb2PaletteOverride();
+	afx_msg void OnSelchangeNeb2Texture();
+	afx_msg void OnKillfocusNeb2FogR();
+	afx_msg void OnKillfocusNeb2FogG();
+	afx_msg void OnKillfocusNeb2FogB();
 	afx_msg void OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
 	afx_msg void OnSunChange();
 	afx_msg void OnAddSun();
