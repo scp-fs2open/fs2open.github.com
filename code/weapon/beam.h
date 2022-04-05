@@ -41,6 +41,8 @@ typedef enum class BeamType {
 // apply damage
 #define BEAM_DAMAGE_TIME			170
 
+#define BEAM_SPEW_TIME			1000 //30 spews per second seems good enough for anyone right?
+
 // uses to define beam behavior ahead of time - needed for multiplayer
 typedef struct beam_info {
 	vec3d			dir_a, dir_b;						// direction vectors for beams	
@@ -171,6 +173,9 @@ typedef struct beam {
 
 	// looping sound info, HANDLE
 	sound_handle beam_sound_loop; // invalid if none
+
+	int next_spew_timestamp;
+	int good_spew_frame;
 
 	// team 
 	char		team;
