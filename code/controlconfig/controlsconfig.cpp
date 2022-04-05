@@ -1137,8 +1137,7 @@ void control_config_toggle_invert()
 		item.second.invert_toggle();
 		break;
 	default:
-		// unhandled
-		mprintf(("Unhandled selItem in control_config_toggle_invert(): %i", static_cast<int>(Selected_item)));
+		UNREACHABLE("Unhandled selItem in control_config_toggle_invert(): %i\n", static_cast<int>(Selected_item));
 	}
 }
 

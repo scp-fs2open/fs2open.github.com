@@ -22,7 +22,7 @@
 #define CCF_AXIS        0x08    //!< btn is an axis
 #define CCF_HAT         0x04    //!< btn is a hat
 #define CCF_BALL        0x02    //!< btn is a ball
-#define CCF_BUTTON      0x00    //!< btn is actually a button
+#define CCF_BUTTON      0x01    //!< btn is actually a button
 
 /*!
  * These are used to index a corresponding axis value from an array.
@@ -646,9 +646,9 @@ extern int Control_config_overlay_id;
 
 extern SCP_vector<CCI> Control_config;		//!< Stores the keyboard configuration
 extern SCP_vector<CC_preset> Control_config_presets; // tabled control presets; pointers to config_item arrays
+extern const char **Joy_button_text;			// String table of button labels.  XSTR'd on init.
 
 extern bool Generate_controlconfig_table;
-extern const char **Joy_button_text;			// String table of button labels.  XSTR'd on init.
 
 // string table constants for labels and stuff.
 #define NUM_AXIS_TEXT			JOY_NUM_AXES
@@ -724,7 +724,10 @@ bool control_config_use_preset_by_name(const SCP_string &name);
  * 
  * @returns an iterator to the current preset, or
  * @returns ::iterator Control_config_presets.end() if current bindings are not in a preset
+ * 
+ * @note Similar to preset_find_duplicate, this function has additional logic in its search to ignore disabled controls
  */
+
 SCP_vector<CC_preset>::iterator control_config_get_current_preset(bool invert_agnostic = false);
 
 /*!

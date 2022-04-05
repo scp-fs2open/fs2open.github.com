@@ -250,36 +250,6 @@ ADE_FUNC(AxisInverted, l_Mouse, "number cid, number axis, boolean inverted", "Ge
 		return ADE_RETURN_FALSE;
 }
 
-ADE_FUNC(AxisActionInverted, l_Mouse, "number IoActionId, boolean inverted", "Gets or sets whether the given axis action is inverted", "boolean", "True/false")
-{
-	// z64: If so desired, it may be possible to have two inversion states, one set by the player in the config menu,
-	//   and one set by scripting.  Essentially, the CCI will have its own inversion flag in addition to the inversion
-	//   flags to both bindings.  Thus, its possible for the player to invert one binding while keeping the other
-	//   binding normal instead of having the script try to set each bind's inversion state individually.
-	int AxisAction = CCFG_MAX;
-	bool inverted;
-
-	int n = ade_get_args(L, "i|b", &AxisAction, &inverted);
-
-	if (n==0)
-		return ade_set_error(L, "b", false);	// no arguments passed
-
-	if ((AxisAction < JOY_HEADING_AXIS) || (JOY_REL_THROTTLE_AXIS <= AxisAction))
-		return ade_set_error(L, "b", false);	// invalid IoActionId
-
-	auto& item = Control_config[AxisAction];
-
-	if (n > 1)
-	{
-		item.invert(inverted);
-	}
-
-	if (item.is_inverted())
-		return ADE_RETURN_TRUE;
-	else
-		return ADE_RETURN_FALSE;
-}
-
 ADE_FUNC(setCursorImage, l_Mouse, "string filename", "Sets mouse cursor image, and allows you to lock/unlock the image. (A locked cursor may only be changed with the unlock parameter)", "boolean", "true if successful, false otherwise")
 {
 	using namespace io::mouse;

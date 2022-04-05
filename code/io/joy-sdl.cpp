@@ -1107,24 +1107,14 @@ namespace joystick
 	}
 
 	void printJoyJSON() {
-		init();
-
+		// Create root
 		json_t* root = json_object();
-		json_t* array = json_array();
-		size_t len = 0;
+
+		// Get Joystick data as JSON array
+		json_t* array = getJsonArray();
 
 		// Attach array to root
 		json_object_set_new(root, "joysticks", array);
-		
-		// Get the JSON info of each detected joystick and attach it to array
-		for (auto& joystick : joysticks) {
-			json_t* object = joystick->getJSON();
-
-			if (object != nullptr) {
-				json_array_append_new(array, object);
-				len++;
-			}
-		}
 
 		// Dump to STDOUT
 		json_dumpf(root, stdout, JSON_INDENT(4));

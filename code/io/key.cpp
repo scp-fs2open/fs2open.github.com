@@ -55,7 +55,6 @@ SDL_mutex* key_lock;
 								// is stopped.
 
 SCP_map<SDL_Scancode, int> SDLtoFS2;
-SCP_map<int, SDL_Scancode> FS2toSDL; // Convenience map to speed up FS2->SDL lookups needed for displaying localized keycodes in config
 
 int ascii_table[SIZE_OF_ASCII_TABLE] =
 { 255, 255, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=',255,255,

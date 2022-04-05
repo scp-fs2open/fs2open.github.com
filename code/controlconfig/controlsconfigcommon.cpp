@@ -30,8 +30,6 @@
 
 #include <map>
 
-#include <map>
-
 // z64: These enumerations MUST equal to those in controlsconfig.cpp...
 // z64: Really need a better way than this.
 enum CC_tab {
@@ -160,15 +158,8 @@ void control_config_common_init_bindings() {
 	// flight controls (flight modes)
 	(BANK_WHEN_PRESSED,                                      -1, -1, SHIP_TAB, 1, "Bank When Pressed",  CC_TYPE_CONTINUOUS)
 	(AFTERBURNER,                                       KEY_TAB,  5, SHIP_TAB, 1, "Afterburner",        CC_TYPE_CONTINUOUS)
-	(GLIDE_WHEN_PRESSED,                                     -1, -1, SHIP_TAB, 0, "Glide When Pressed", CC_TYPE_CONTINUOUS)
-	(TOGGLE_GLIDING,                          KEY_ALTED | KEY_G, -1, SHIP_TAB, 0, "Toggle Gliding",     CC_TYPE_TRIGGER)
-
-	// flight controls (axes)
-	(JOY_HEADING_AXIS,                     JOY_X_AXIS, MOUSE_X_AXIS, SHIP_TAB, 1016, "Turn (Yaw) Axis",        CC_TYPE_AXIS_REL)
-	(JOY_PITCH_AXIS,                       JOY_Y_AXIS, MOUSE_Y_AXIS, SHIP_TAB, 1017, "Pitch Axis",             CC_TYPE_AXIS_REL)
-	(JOY_BANK_AXIS,                       JOY_RX_AXIS,           -1, SHIP_TAB, 1018, "Bank Axis",              CC_TYPE_AXIS_REL)
-	(JOY_ABS_THROTTLE_AXIS,                        -1,           -1, SHIP_TAB, 1019, "Absolute Throttle Axis", CC_TYPE_AXIS_ABS)
-	(JOY_REL_THROTTLE_AXIS,                        -1,           -1, SHIP_TAB, 1020, "Relative Throttle Axis", CC_TYPE_AXIS_REL)
+	(GLIDE_WHEN_PRESSED,                                     -1, -1, SHIP_TAB, 0, "Glide When Pressed", CC_TYPE_CONTINUOUS, true)
+	(TOGGLE_GLIDING,                          KEY_ALTED | KEY_G, -1, SHIP_TAB, 0, "Toggle Gliding",     CC_TYPE_TRIGGER, true)
 
 	// flight controls (axes)
 	(JOY_HEADING_AXIS,                     JOY_X_AXIS, MOUSE_X_AXIS, SHIP_TAB, 1016, "Turn (Yaw) Axis",        CC_TYPE_AXIS_REL)
@@ -182,7 +173,7 @@ void control_config_common_init_bindings() {
 	(FIRE_SECONDARY,                               KEY_SPACEBAR,  1, WEAPON_TAB, 1, "Fire Secondary Weapon",                  CC_TYPE_CONTINUOUS)
 	(CYCLE_NEXT_PRIMARY,                             KEY_PERIOD, -1, WEAPON_TAB, 1, "Cycle Primary Weapon Forward",           CC_TYPE_TRIGGER)
 	(CYCLE_PREV_PRIMARY,                              KEY_COMMA, -1, WEAPON_TAB, 1, "Cycle Primary Weapon Backward",          CC_TYPE_TRIGGER)
-	(CYCLE_PRIMARY_WEAPON_SEQUENCE,                       KEY_O, -1, WEAPON_TAB, 0, "Cycle Primary Weapon Firing Rate",       CC_TYPE_TRIGGER)
+	(CYCLE_PRIMARY_WEAPON_SEQUENCE,                       KEY_O, -1, WEAPON_TAB, 0, "Cycle Primary Weapon Firing Rate",       CC_TYPE_TRIGGER, true)
 	(CYCLE_SECONDARY,                                KEY_DIVIDE, -1, WEAPON_TAB, 1, "Cycle Secondary Weapon Forward",         CC_TYPE_TRIGGER)
 	(CYCLE_NUM_MISSLES,                KEY_SHIFTED | KEY_DIVIDE, -1, WEAPON_TAB, 1, "Cycle Secondary Weapon Firing Rate",     CC_TYPE_TRIGGER)
 	(LAUNCH_COUNTERMEASURE,                               KEY_X,  3, WEAPON_TAB, 1, "Launch Countermeasure",                  CC_TYPE_TRIGGER)
@@ -218,8 +209,8 @@ void control_config_common_init_bindings() {
 	(PADLOCK_DOWN,                                           -1, 32, COMPUTER_TAB, 1, "View Rear",                          CC_TYPE_CONTINUOUS)
 	(PADLOCK_LEFT,                                           -1, 34, COMPUTER_TAB, 1, "View Left",                          CC_TYPE_CONTINUOUS)
 	(PADLOCK_RIGHT,                                          -1, 35, COMPUTER_TAB, 1, "View Right",                         CC_TYPE_CONTINUOUS)
-	(VIEW_TOPDOWN,                                           -1, -1, COMPUTER_TAB, 0, "Top-Down View",                      CC_TYPE_TRIGGER)
-	(VIEW_TRACK_TARGET,                                      -1, -1, COMPUTER_TAB, 0, "Target Padlock View",                CC_TYPE_TRIGGER)
+	(VIEW_TOPDOWN,                                           -1, -1, COMPUTER_TAB, 0, "Top-Down View",                      CC_TYPE_TRIGGER, true)
+	(VIEW_TRACK_TARGET,                                      -1, -1, COMPUTER_TAB, 0, "Target Padlock View",                CC_TYPE_TRIGGER, true)
 
 	(RADAR_RANGE_CYCLE,                            KEY_RAPOSTRO, -1, COMPUTER_TAB, 1, "Cycle Radar Range",                 CC_TYPE_TRIGGER)
 	(SQUADMSG_MENU,                                       KEY_C, -1, COMPUTER_TAB, 1, "Communications Menu",               CC_TYPE_TRIGGER)
@@ -243,9 +234,9 @@ void control_config_common_init_bindings() {
 	(XFER_LASER,                    KEY_SHIFTED | KEY_SCROLLOCK, -1, COMPUTER_TAB, 1, "Transfer Energy Shield->Laser",     CC_TYPE_TRIGGER)
 
 	// Navigation and Autopilot
-	(SHOW_NAVMAP,                                            -1, -1, NO_TAB,       1, "Show Nav Map",       CC_TYPE_TRIGGER)
-	(AUTO_PILOT_TOGGLE,                       KEY_ALTED | KEY_A, -1, COMPUTER_TAB, 0, "Toggle Auto Pilot",  CC_TYPE_TRIGGER)
-	(NAV_CYCLE,                               KEY_ALTED | KEY_N, -1, COMPUTER_TAB, 0, "Cycle Nav Points",   CC_TYPE_TRIGGER)
+	(SHOW_NAVMAP,                                            -1, -1, NO_TAB,       1, "Show Nav Map",       CC_TYPE_TRIGGER, true)
+	(AUTO_PILOT_TOGGLE,                       KEY_ALTED | KEY_A, -1, COMPUTER_TAB, 0, "Toggle Auto Pilot",  CC_TYPE_TRIGGER, true)
+	(NAV_CYCLE,                               KEY_ALTED | KEY_N, -1, COMPUTER_TAB, 0, "Cycle Nav Points",   CC_TYPE_TRIGGER, true)
 
 	// Escort
 	(ADD_REMOVE_ESCORT,                       KEY_ALTED | KEY_E, -1, COMPUTER_TAB, 1, "Add or Remove Escort",   CC_TYPE_TRIGGER)
@@ -744,7 +735,7 @@ void control_config_common_init()
 	}
 
 	for (int i = 0; i < Action::NUM_VALUES; i++) {
-		Control_config[i + JOY_AXIS_BEGIN].used = 32768;
+		Control_config[i + JOY_AXIS_BEGIN].used = JOY_AXIS_CENTER;
 	}
 	
 	// TODO It's not memory efficient to keep the presets loaded into memory all the time, but we do need to know which
@@ -1166,7 +1157,7 @@ void LoadEnumsIntoActionMap() {
 
 #undef ADD_ENUM_TO_ACTION_MAP
 
-	Assertion(mActionToVal.size() == CCFG_MAX, "Missing or unknown IoActionId's detected.");
+	Assertion(mActionToVal.size() == CCFG_MAX, "Missing or unknown IoActionId's detected. mActionToVal.size()=%i; CCFG_MAX=%i", mActionToVal.size(), CCFG_MAX);
 }
 
 void LoadEnumsIntoCIDMap() {
@@ -1260,12 +1251,17 @@ size_t find_control_by_text(SCP_string &text) {
 	return item_id;
 }
 
-/*
-* Button hooks can happen more than once a frame, and that is intended.
-* Axis hooks happen exactly once a frame.
-* But due to implementation, continuous hooks could happen an unspecified number of times. So we need to cache if a hook occurred, and what it's override setting was
-* Bit at IoActionId * 2 sets if this action has been run before, Bit at IoActionId * 2 + 1 sets the cached value
-*/
+/**
+ * @brief LUA Controls Override cache
+ *
+ * @details:
+ *  Button hooks can happen more than once a frame, and that is intended;  Axis hooks happen exactly once a frame.
+ *  However, due to implementation, continuous hooks could happen an unspecified number of times.  So we need to cache
+ *  if a hook occurred, and what its override setting was.
+ 
+ *   `lua_was_called[IoActionId]`        sets if this action has been run before
+ *   `lua_override_cache[IoActionId]`    sets the cached value for the action
+ */
 class controls_lua_override_cache {
 	std::bitset<IoActionId::CCFG_MAX> lua_was_called; //!< The cache storing if an id had been cached before
 	std::bitset<IoActionId::CCFG_MAX> lua_override_cache; //!< The cache storing the actual cached value
@@ -1654,7 +1650,7 @@ size_t read_bind_1(CC_preset &preset) {
  *
  * @param[in] s Value of a call to optional_string_either(); 0 = "ControlConfigOverride" 1 = "ControlConfigPreset"
  * @param[in] first_override Legacy support for unnamed #ControlConfigOverrides.  If this is the first unnamed
- *   override, then overwrite the default preset, else, save it as an "unnamed prese
+ *   override, then overwrite the default preset, else, save it as an "<unnamed preset>"
  * 
  * @details ControlConfigPresets are read in the exact same manner as ControlConfigOverrides, however only the bindings are available for modification.
  *  There may be only one #Override section, since it is in charge of non-binding members of the Control_config items
@@ -1696,8 +1692,7 @@ void control_config_common_read_section(int s, bool first_override) {
 	} else {
 		if (first_override) {
 			new_preset.name = "default";
-		}
-		else {
+		} else {
 			new_preset.name = "<unnamed preset>";
 		}
 	}
@@ -1744,11 +1739,16 @@ void control_config_common_read_section(int s, bool first_override) {
 			// Config menu options
 			if (optional_string("$Category:")) {
 				stuff_string(szTempBuffer, F_NAME);
-				item->tab = mCCTabNameToVal[szTempBuffer];
+				try {
+					item->tab = mCCTabNameToVal.at(szTempBuffer);
+				} catch (std::out_of_range&) {
+					Warning(LOCATION,"Table tried to set '$Category' for a category that doesn't exist: %s",szTempBuffer.c_str());
+				}
 			}
 
 			if (optional_string("$Text:")) {
 				stuff_string(item->text, F_NAME);
+				item->indexXSTR = 0;
 			}
 
 			if (optional_string("$Has XStr:")) {
@@ -1758,29 +1758,35 @@ void control_config_common_read_section(int s, bool first_override) {
 
 			if (optional_string("$Type:")) {
 				stuff_string(szTempBuffer, F_NAME);
-				item->type = mCCTypeNameToVal[szTempBuffer];
+				try {
+					item->type = mCCTypeNameToVal.at(szTempBuffer);
+				} catch (std::out_of_range&) {
+					Warning(LOCATION,"Table tried to set '$Type' for a type that doesn't exist: %s",szTempBuffer.c_str());
+				}
 			}
 
 			// Gameplay options
-			if (optional_string("+Disable")) {
+			if (optional_string("$Disable:")) {
+				stuff_boolean(&item->disabled);
+
+			} else if (optional_string("+Disable")) {
 				item->disabled = true;
+
 			} else {
 				item->disabled = false;
 			}
 
-			if (optional_string("$Disable:")) {
-				stuff_boolean(&item->disabled);
-			}
+			if (optional_string("$Locked:")) {
+				stuff_boolean(&item->locked);
 
-			if (optional_string("+Locked")) {
+			} else if (optional_string("+Locked")) {
 				item->locked = true;
+
 			} else {
 				item->locked = false;
 			}
 
-			if (optional_string("Locked:")) {
-				stuff_boolean(&item->locked);
-			}
+			
 		}
 	}
 
@@ -2309,8 +2315,7 @@ SCP_string ValToCID(CID id) {
 		Error(LOCATION, "Unknown CID value %i", id);
 		return "NONE";
 
-	}
-	else {
+	} else {
 		return it->first.c_str();
 	}
 }
@@ -2421,18 +2426,22 @@ SCP_string ValToKeyboard(const CC_bind &bind) {
 
 SCP_string ValToJoy(const CC_bind &bind) {
 	SCP_string str;
+	const auto btn = bind.get_btn();
+	const auto cid = bind.get_cid();
+	const auto flags = bind.get_flags();
 
-	Assert((bind.get_cid() == CID_JOY0) || (bind.get_cid() == CID_JOY1) ||
-	       (bind.get_cid() == CID_JOY2) || (bind.get_cid() == CID_JOY3));
 
-	if (bind.get_flags() & (CCF_AXIS | CCF_BALL)) {
+	Assert((cid == CID_JOY0) || (cid == CID_JOY1) ||
+	       (cid == CID_JOY2) || (cid == CID_JOY3));
+
+	if (flags & (CCF_AXIS | CCF_BALL)) {
 		// is an axis or ball
 		auto it = std::find_if(mAxisNameToVal.begin(), mAxisNameToVal.end(),
-			[bind](const std::pair<SCP_string, int>& pair) { return pair.second == bind.get_btn(); });
+			[btn](const std::pair<SCP_string, short>& pair) { return pair.second == btn; });
 
 		if (it == mAxisNameToVal.end()) {
 			// should never happen
-			Error(LOCATION, "Unknown error occured during reverse lookup of joy input string.");
+			UNREACHABLE("Unknown error occured during reverse lookup of joy input string.");
 		} // else print out value
 
 		str = it->first;
@@ -2453,9 +2462,9 @@ SCP_string ValToJoy(const CC_bind &bind) {
 		
 		sprintf(str, "HAT-%i %s", hat_id, it->first.c_str());
 */
-	} else if (bind.get_btn() != -1) {
+	} else if (btn != -1) {
 		// Is a button
-		sprintf(str, "%i", bind.get_btn());
+		sprintf(str, "%i", btn);
 
 	} else {
 		// Unbound
@@ -2691,12 +2700,6 @@ void CCB::take(CC_bind A, int order) {
 			first = A;
 
 		} else if (second.get_cid() == A.get_cid()) {
-			second = A;
-
-		} else if (first.empty()) {
-			first = A;
-
-		} else if (second.empty()) {
 			second = A;
 
 		} else if (first.empty()) {
