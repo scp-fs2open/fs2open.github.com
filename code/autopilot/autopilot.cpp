@@ -1581,3 +1581,18 @@ bool IsVisited(int nav)
 		return 1;
 	return 0;
 }
+
+//+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+void Nav_SetColor(const char *nav, bool visited, ubyte r, ubyte g, ubyte b)
+{
+	int n = FindNav(nav);
+
+	if (n >= 0 && n < MAX_NAVPOINTS)
+	{
+		auto rgb = visited ? Navs[n].visited_color : Navs[n].normal_color;
+		rgb[0] = r;
+		rgb[1] = g;
+		rgb[2] = b;
+	}
+}

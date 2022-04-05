@@ -111,7 +111,7 @@ obj_flag_name Object_flag_names[] = {
 
 #ifdef OBJECT_CHECK
 checkobject::checkobject() 
-    : type(0), signature(0), parent_sig(0), parent_type(0) 
+    : type(0), signature(0), parent_sig(0) 
 {
     flags.reset();
 }
@@ -138,7 +138,7 @@ void object::clear()
 {
 	signature = num_pairs = collision_group_id = 0;
 	parent = parent_sig = instance = -1;
-	type = parent_type = OBJ_NONE;
+	type = OBJ_NONE;
     flags.reset();
 	pos = last_pos = vmd_zero_vector;
 	orient = last_orient = vmd_identity_matrix;
@@ -505,10 +505,8 @@ int obj_create(ubyte type,int parent_obj,int instance, matrix * orient,
 	obj->parent					= parent_obj;
 	if (obj->parent != -1)	{
 		obj->parent_sig		= Objects[parent_obj].signature;
-		obj->parent_type		= Objects[parent_obj].type;
 	} else {
 		obj->parent_sig = obj->signature;
-		obj->parent_type = obj->type;
 	}
 
 	obj->flags 					= flags;
@@ -1008,10 +1006,6 @@ void obj_check_object( object *obj )
 	}
 	if ( CheckObjects[objnum].parent_sig != obj->parent_sig ) {
 		mprintf(( "Object parent sig changed!\n" ));
-		Int3();
-	}
-	if ( CheckObjects[objnum].parent_type != obj->parent_type ) {
-		mprintf(( "Object's parent type changed!\n" ));
 		Int3();
 	}
 }

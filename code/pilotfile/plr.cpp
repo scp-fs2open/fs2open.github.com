@@ -17,10 +17,18 @@
 #include "pilotfile/JSONFileHandler.h"
 #include "playerman/managepilot.h"
 #include "playerman/player.h"
+#include "scripting/hook_api.h"
+#include "scripting/api/objs/player.h"
 #include "ship/ship.h"
 #include "sound/audiostr.h"
 #include "stats/medals.h"
 #include "weapon/weapon.h"
+
+const auto OnPlayerLoadedHook = scripting::Hook::Factory(
+	"On Player Loaded", "Called when a player has been successfully loaded",
+	{
+		{ "Player", "object", "The player object" },
+	});
 
 namespace {
 void read_multi_stats(pilot::FileHandler* handler, scoring_special_t* scoring) {
@@ -1116,6 +1124,7 @@ bool pilotfile::load_player(const char* callsign, player* _p, bool force_binary)
 	}
 
 	mprintf(("PLR => Loading complete!\n"));
+	OnPlayerLoadedHook->run(scripting::hook_param_list(scripting::hook_param("Player", 'o', scripting::api::l_Player.Set(scripting::api::player_h(p)))));
 
 	// cleanup and return
 	plr_close();

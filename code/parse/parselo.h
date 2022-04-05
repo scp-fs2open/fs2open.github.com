@@ -107,6 +107,7 @@ extern int skip_to_string(const char *pstr, const char *end = NULL);
 extern int skip_to_start_of_string(const char *pstr, const char *end = NULL);
 extern int skip_to_start_of_string_either(const char *pstr1, const char *pstr2, const char *end = NULL);
 extern void advance_to_eoln(const char *terminators);
+extern bool skip_eoln();
 extern void skip_token();
 
 // optional

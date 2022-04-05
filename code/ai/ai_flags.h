@@ -144,6 +144,7 @@ namespace AI {
 		Fighterbay_departures_use_carrier_orient,
 		Prevent_negative_turret_ammo,
 		Fix_keep_safe_distance,
+		Ignore_aspect_when_leading,
 
 		NUM_VALUES
 	};

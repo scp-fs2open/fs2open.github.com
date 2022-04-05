@@ -1150,13 +1150,9 @@ LRESULT CFREDView::OnGoodbye(WPARAM wParam, LPARAM lParam)
 
 void CFREDView::OnEditorsShips() 
 {
-	int adjust = 0;
-
 	Assert(Ship_editor_dialog.GetSafeHwnd());
-	if (!Show_sexp_help)
-		adjust = -SEXP_HELP_BOX_SIZE;
 
-	if (!theApp.init_window(&Ship_wnd_data, &Ship_editor_dialog, adjust))
+	if (!theApp.init_window(&Ship_wnd_data, &Ship_editor_dialog, 0))
 		return;
 
 	Ship_editor_dialog.SetWindowPos(&wndTop, 0, 0, 0, 0,
@@ -2329,13 +2325,9 @@ void CFREDView::OnUpdateShowHorizon(CCmdUI* pCmdUI)
 
 void CFREDView::OnEditorsWing() 
 {
-	int adjust = 0;
-
 	Assert(Wing_editor_dialog.GetSafeHwnd());
-	if (!Show_sexp_help)
-		adjust = -SEXP_HELP_BOX_SIZE;
 
-	if (!theApp.init_window(&Wing_wnd_data, &Wing_editor_dialog, adjust))
+	if (!theApp.init_window(&Wing_wnd_data, &Wing_editor_dialog, 0))
 		return;
 
 	Wing_editor_dialog.SetWindowPos(&wndTop, 0, 0, 0, 0,
@@ -3403,11 +3395,7 @@ int CFREDView::fred_check_sexp(int sexp, int type, const char *msg, ...)
 
 void CFREDView::OnEditorsWaypoint() 
 {
-	int adjust = 0;
-
 	Assert(Waypoint_editor_dialog.GetSafeHwnd());
-	if (!Show_sexp_help)
-		adjust = -SEXP_HELP_BOX_SIZE;
 
 	if (!theApp.init_window(&Waypoint_wnd_data, &Waypoint_editor_dialog))
 		return;
@@ -4073,16 +4061,6 @@ void CFREDView::OnShowSexpHelp()
 	Show_sexp_help = !Show_sexp_help;
 	Ship_editor_dialog.show_hide_sexp_help();
 	Wing_editor_dialog.show_hide_sexp_help();
-
-	if (Event_editor_dlg) {
-		Event_editor_dlg->GetWindowRect(rect);
-		if (Show_sexp_help)
-			rect.bottom += SEXP_HELP_BOX_SIZE;
-		else
-			rect.bottom -= SEXP_HELP_BOX_SIZE;
-
-		Event_editor_dlg->MoveWindow(rect);
-	}
 }
 
 void CFREDView::OnUpdateShowSexpHelp(CCmdUI* pCmdUI) 

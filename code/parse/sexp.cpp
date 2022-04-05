@@ -430,8 +430,8 @@ SCP_vector<sexp_oper> Operators = {
 	{ "ship-change-callsign",			OP_SHIP_CHANGE_CALLSIGN,				2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// FUBAR
 	{ "ship-tag",						OP_SHIP_TAG,							3,	8,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "ship-untag",						OP_SHIP_UNTAG,							1,	1,			SEXP_ACTION_OPERATOR,	},	// Goober5000
-	{ "set-arrival-info",				OP_SET_ARRIVAL_INFO,					2,	7,			SEXP_ACTION_OPERATOR,	},	// Goober5000
-	{ "set-departure-info",				OP_SET_DEPARTURE_INFO,					2,	6,			SEXP_ACTION_OPERATOR,	},	// Goober5000
+	{ "set-arrival-info",				OP_SET_ARRIVAL_INFO,					2,	8,			SEXP_ACTION_OPERATOR,	},	// Goober5000
+	{ "set-departure-info",				OP_SET_DEPARTURE_INFO,					2,	7,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 
 	//Shields, Engines and Weapons Sub-Category
 	{ "set-weapon-energy",				OP_SET_WEAPON_ENERGY,					2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Karajorma
@@ -659,6 +659,8 @@ SCP_vector<sexp_oper> Operators = {
 	{ "use-autopilot",					OP_NAV_USEAP,							1,	1,			SEXP_ACTION_OPERATOR,	},	//kazan
 	{ "select-nav",						OP_NAV_SELECT,							1,	1,			SEXP_ACTION_OPERATOR,	},	//Talon1024
 	{ "unselect-nav",					OP_NAV_UNSELECT,						0,	0,			SEXP_ACTION_OPERATOR,	},	//Talon1024
+	{ "set-nav-color",					OP_NAV_SET_COLOR,						4,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	//Goober5000
+	{ "set-nav-visited-color",			OP_NAV_SET_VISITED_COLOR,				4,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	//Goober5000
 
 	//Cutscene Sub-Category
 	{ "set-cutscene-bars",				OP_CUTSCENES_SET_CUTSCENE_BARS,			0,	1,			SEXP_ACTION_OPERATOR,	},
@@ -2599,18 +2601,10 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				if (Cmdline_freespace_no_music)
 					break;
 
-				for (i=0; i<Num_soundtracks; i++)
-				{
-					if (!stricmp(CTEXT(node), Soundtracks[i].name))
-					{
-						break;
-					}
-				}
+				if (event_music_get_soundtrack_index(CTEXT(node)) >= 0)
+					break;
 
-				if (i == Num_soundtracks)
-					return SEXP_CHECK_INVALID_SOUNDTRACK_NAME;
-
-				break;
+				return SEXP_CHECK_INVALID_SOUNDTRACK_NAME;
 
 			case OPF_SHIP_WITH_BAY:
 			{
@@ -7044,8 +7038,7 @@ int sexp_hits_left(int node, bool sim_hull)
  */
 int sexp_is_ship_visible(int node)
 {
-	ship *viewer_shipp = nullptr;
-	int n = node, ship_is_visible = 0;
+	int n = node;
 
 	// get the ship
 	auto ship_entry = eval_ship(n);
@@ -7059,52 +7052,12 @@ int sexp_is_ship_visible(int node)
 	if (n >= 0)
 	{
 		auto viewer_entry = eval_ship(n);
-		if (viewer_entry)
-			viewer_shipp = viewer_entry->shipp;
+		return ship_check_visibility(ship_entry->shipp, viewer_entry->shipp);
 	}
 	else
 	{
-		// if the second argument is not supplied, default to the player, per retail
-		if (Game_mode & GM_MULTIPLAYER)
-		{
-			mprintf(("In multiplayer, is-ship-visible must have two arguments!  Defaulting to the first player.\n"));
-
-			// to make allowances for buggy missions (such as retail), just pick the first player
-			// if we actually have no valid players, viewer_shipp will be NULL, but that's ok
-			for (int i = 0; i < MAX_PLAYERS; ++i)
-			{
-				int shipnum = multi_get_player_ship(i);
-				if (shipnum >= 0)
-				{
-					viewer_shipp = &Ships[shipnum];
-					break;
-				}
-			}
-		}
-		else
-			viewer_shipp = Player_ship;
+		return ship_check_visibility(ship_entry->shipp, nullptr);
 	}
-
-	// get ship's *radar* visiblity
-	if (viewer_shipp)
-	{
-		if (ship_is_visible_by_team(ship_entry->objp, viewer_shipp))
-		{
-			ship_is_visible = 2;
-		}
-	}
-
-	// only check awacs level if ship is not visible by team
-	if (viewer_shipp && !ship_is_visible) {
-		float awacs_level = awacs_get_level(ship_entry->objp, viewer_shipp);
-		if (awacs_level >= 1.0f) {
-			ship_is_visible = 2;
-		} else if (awacs_level > 0) {
-			ship_is_visible = 1;
-		}
-	}
-
-	return ship_is_visible;
 }
 
 /**
@@ -14258,7 +14211,8 @@ void sexp_remove_background_bitmap(int n, bool is_sun)
 
 void sexp_nebula_change_storm(int n)
 {
-	if (!(The_mission.flags[Mission::Mission_Flags::Fullneb])) return;
+	if (!(The_mission.flags[Mission::Mission_Flags::Fullneb]))
+		return;
 	
 	nebl_set_storm(CTEXT(n));
 }
@@ -14283,16 +14237,19 @@ void sexp_nebula_toggle_poof(int n)
 
 void sexp_nebula_change_pattern(int n)
 {
-	if (!(The_mission.flags[Mission::Mission_Flags::Fullneb])) return;
+	if (!(The_mission.flags[Mission::Mission_Flags::Fullneb]))
+		return;
 	
 	strcpy_s(Neb2_texture_name,(CTEXT(n)));
+	The_mission.flags.remove(Mission::Mission_Flags::Neb2_fog_color_override);
 
-	neb2_post_level_init();
+	neb2_post_level_init(The_mission.flags[Mission::Mission_Flags::Neb2_fog_color_override]);
 }
 
 void sexp_nebula_change_fog_color(int node)
 {
-	if (!(The_mission.flags[Mission::Mission_Flags::Fullneb])) return;
+	if (!(The_mission.flags[Mission::Mission_Flags::Fullneb]))
+		return;
 
 	int red, green, blue = 0;
 	bool is_nan, is_nan_forever;
@@ -14310,6 +14267,8 @@ void sexp_nebula_change_fog_color(int node)
 	Neb2_fog_color[0] = (ubyte)red;
 	Neb2_fog_color[1] = (ubyte)green;
 	Neb2_fog_color[2] = (ubyte)blue;
+
+	The_mission.flags |= Mission::Mission_Flags::Neb2_fog_color_override;
 }
 
 /**
@@ -20188,7 +20147,7 @@ void sexp_set_support_ship(int n)
 void sexp_set_arrival_info(int node)
 {
 	int i, arrival_location, arrival_anchor, arrival_mask, arrival_distance, arrival_delay, n = node;
-	bool show_warp, is_nan, is_nan_forever;
+	bool show_warp, adjust_warp_when_docked, is_nan, is_nan_forever;
 	object_ship_wing_point_team oswpt;
 
 	// get ship or wing
@@ -20242,7 +20201,18 @@ void sexp_set_arrival_info(int node)
 	// get warp effect
 	show_warp = true;
 	if (n >= 0)
+	{
 		show_warp = is_sexp_true(n);
+		n = CDR(n);
+	}
+
+	// another flag
+	adjust_warp_when_docked = true;
+	if (n >= 0)
+	{
+		adjust_warp_when_docked = is_sexp_true(n);
+		n = CDR(n);
+	}
 
 	// now set all that information depending on the first argument
 	if (oswpt.type == OSWPT_TYPE_SHIP)
@@ -20254,6 +20224,7 @@ void sexp_set_arrival_info(int node)
 		oswpt.ship_entry->shipp->arrival_delay = arrival_delay;
 
 		oswpt.ship_entry->shipp->flags.set(Ship::Ship_Flags::No_arrival_warp, !show_warp);
+		oswpt.ship_entry->shipp->flags.set(Ship::Ship_Flags::Same_arrival_warp_when_docked, !adjust_warp_when_docked);
 	}
 	else if (oswpt.type == OSWPT_TYPE_WING || oswpt.type == OSWPT_TYPE_WING_NOT_PRESENT)
 	{
@@ -20264,6 +20235,7 @@ void sexp_set_arrival_info(int node)
 		oswpt.wingp->arrival_delay = arrival_delay;
 
 		oswpt.wingp->flags.set(Ship::Wing_Flags::No_arrival_warp, !show_warp);
+		oswpt.wingp->flags.set(Ship::Wing_Flags::Same_arrival_warp_when_docked, !adjust_warp_when_docked);
 	}
 	else if (oswpt.type == OSWPT_TYPE_PARSE_OBJECT)
 	{
@@ -20274,6 +20246,7 @@ void sexp_set_arrival_info(int node)
 		oswpt.ship_entry->p_objp->arrival_delay = arrival_delay;
 
 		oswpt.ship_entry->p_objp->flags.set(Mission::Parse_Object_Flags::SF_No_arrival_warp, !show_warp);
+		oswpt.ship_entry->p_objp->flags.set(Mission::Parse_Object_Flags::SF_Same_arrival_warp_when_docked, !adjust_warp_when_docked);
 	}
 }
 
@@ -20281,7 +20254,7 @@ void sexp_set_arrival_info(int node)
 void sexp_set_departure_info(int node)
 {
 	int i, departure_location, departure_anchor, departure_mask, departure_delay, n = node;
-	bool show_warp, is_nan, is_nan_forever;
+	bool show_warp, adjust_warp_when_docked, is_nan, is_nan_forever;
 	object_ship_wing_point_team oswpt;
 
 	// get ship or wing
@@ -20335,7 +20308,18 @@ void sexp_set_departure_info(int node)
 	// get warp effect
 	show_warp = true;
 	if (n >= 0)
+	{
 		show_warp = is_sexp_true(n);
+		n = CDR(n);
+	}
+
+	// another flag
+	adjust_warp_when_docked = true;
+	if (n >= 0)
+	{
+		adjust_warp_when_docked = is_sexp_true(n);
+		n = CDR(n);
+	}
 
 	// now set all that information depending on the first argument
 	if (oswpt.type == OSWPT_TYPE_SHIP)
@@ -20346,6 +20330,7 @@ void sexp_set_departure_info(int node)
 		oswpt.ship_entry->shipp->departure_delay = departure_delay;
 
 		oswpt.ship_entry->shipp->flags.set(Ship::Ship_Flags::No_departure_warp, !show_warp);
+		oswpt.ship_entry->shipp->flags.set(Ship::Ship_Flags::Same_departure_warp_when_docked, !adjust_warp_when_docked);
 	}
 	else if (oswpt.type == OSWPT_TYPE_WING || oswpt.type == OSWPT_TYPE_WING_NOT_PRESENT)
 	{
@@ -20355,6 +20340,7 @@ void sexp_set_departure_info(int node)
 		oswpt.wingp->departure_delay = departure_delay;
 
 		oswpt.wingp->flags.set(Ship::Wing_Flags::No_departure_warp, !show_warp);
+		oswpt.wingp->flags.set(Ship::Wing_Flags::Same_departure_warp_when_docked, !adjust_warp_when_docked);
 	}
 	else if (oswpt.type == OSWPT_TYPE_PARSE_OBJECT)
 	{
@@ -20364,6 +20350,7 @@ void sexp_set_departure_info(int node)
 		oswpt.ship_entry->p_objp->departure_delay = departure_delay;
 
 		oswpt.ship_entry->p_objp->flags.set(Mission::Parse_Object_Flags::SF_No_departure_warp, !show_warp);
+		oswpt.ship_entry->p_objp->flags.set(Mission::Parse_Object_Flags::SF_Same_departure_warp_when_docked, !adjust_warp_when_docked);
 	}
 }
 
@@ -20768,6 +20755,24 @@ void select_unselect_nav(int node, bool select_it)
 	}
 	else
 		DeselectNav();
+}
+
+void set_nav_color(int node, bool visited)
+{
+	std::array<ubyte, 3> rgb;
+	bool is_nan, is_nan_forever;
+
+	eval_array<ubyte>(rgb, node, is_nan, is_nan_forever, [](int num)->ubyte {
+		CLAMP(num, 0, 255);
+		return static_cast<ubyte>(num);
+		});
+
+	while (node >= 0)
+	{
+		auto nav_name = CTEXT(node);
+		Nav_SetColor(nav_name, visited, rgb[0], rgb[1], rgb[2]);
+		node = CDR(node);
+	}
 }
 
 //*************************************************************************************************
@@ -26108,6 +26113,12 @@ int eval_sexp(int cur_node, int referenced_node)
 				select_unselect_nav(node, op_num == OP_NAV_SELECT);
 				break;
 
+			case OP_NAV_SET_COLOR:
+			case OP_NAV_SET_VISITED_COLOR:
+				set_nav_color(node, op_num == OP_NAV_SET_VISITED_COLOR);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_SCRAMBLE_MESSAGES:
 			case OP_UNSCRAMBLE_MESSAGES:
 				sexp_scramble_messages(node, op_num == OP_SCRAMBLE_MESSAGES );
@@ -27362,6 +27373,8 @@ int query_operator_return_type(int op)
 		case OP_NAV_USEAP:
 		case OP_NAV_SELECT:
 		case OP_NAV_UNSELECT:
+		case OP_NAV_SET_COLOR:
+		case OP_NAV_SET_VISITED_COLOR:
 		case OP_HUD_SET_TEXT:
 		case OP_HUD_SET_TEXT_NUM:
 		case OP_HUD_SET_MESSAGE:
@@ -29614,6 +29627,13 @@ int query_operator_argument_type(int op, int argnum)
 			else
 				return OPF_SHIP;
 
+		case OP_NAV_SET_COLOR:
+		case OP_NAV_SET_VISITED_COLOR:
+			if (argnum >= 0 && argnum <= 2)
+				return OPF_POSITIVE;
+			else
+				return OPF_STRING;
+
 		//<Cutscenes>
 		case OP_SCRAMBLE_MESSAGES:
 		case OP_UNSCRAMBLE_MESSAGES:
@@ -31644,6 +31664,8 @@ int get_subcategory(int sexp_id)
 		case OP_NAV_USEAP:
 		case OP_NAV_SELECT:
 		case OP_NAV_UNSELECT:
+		case OP_NAV_SET_COLOR:
+		case OP_NAV_SET_VISITED_COLOR:
 			return CHANGE_SUBCATEGORY_NAV;
 
 		case OP_CUTSCENES_SET_CUTSCENE_BARS:
@@ -31990,7 +32012,25 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_NAV_UNSELECT, "nav-deselect (Action operator)\r\n"
 		"\tDeselects any navpoint selected.\r\n\r\n"
 		"Takes no arguments..." },
-	
+
+	{ OP_NAV_SET_COLOR, "nav-set-color (Action operator)\r\n"
+		"\tSets the color used by this navpoint on the HUD.\r\n\r\n"
+		"Takes 4 or more arguments...\r\n"
+		"\t1:\tRed value\r\n"
+		"\t2:\tGreen value\r\n"
+		"\t3:\tBlue value\r\n"
+		"\tRest:\tNavpoints that should use this color\r\n"
+	},
+
+	{ OP_NAV_SET_VISITED_COLOR, "nav-set-visited-color (Action operator)\r\n"
+		"\tSets the color used by this navpoint on the HUD after it has been visited.\r\n\r\n"
+		"Takes 4 or more arguments...\r\n"
+		"\t1:\tRed value\r\n"
+		"\t2:\tGreen value\r\n"
+		"\t3:\tBlue value\r\n"
+		"\tRest:\tNavpoints that should use this color\r\n"
+	},
+
 	// -------------------------- -------------------------- -------------------------- 
 
 	// Goober5000
@@ -35020,7 +35060,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	// Goober5000
 	{ OP_SET_ARRIVAL_INFO, "set-arrival-info\r\n"
-		"\tSets arrival information for a ship or wing.  Takes 2 to 7 arguments...\r\n"
+		"\tSets arrival information for a ship or wing.  Takes 2 to 8 arguments...\r\n"
 		"\t1: Ship or wing name\r\n"
 		"\t2: Arrival location\r\n"
 		"\t3: Arrival anchor (optional; only required for certain locations)\r\n"
@@ -35028,17 +35068,19 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t5: Arrival distance (optional; defaults to 0)\r\n"
 		"\t6: Arrival delay (optional; defaults to 0)\r\n"
 		"\t7: Whether to show a jump effect if arriving from subspace (optional; defaults to true)\r\n"
+		"\t8: Whether to adjust the size of the jump effect if the ship is docked (optional; defaults to true)\r\n"
 	},
 
 	// Goober5000
 	{ OP_SET_DEPARTURE_INFO, "set-departure-info\r\n"
-		"\tSets departure information for a ship or wing.  Takes 2 to 6 arguments...\r\n"
+		"\tSets departure information for a ship or wing.  Takes 2 to 7 arguments...\r\n"
 		"\t1: Ship or wing name\r\n"
 		"\t2: Departure location\r\n"
 		"\t3: Departure anchor (optional; only required for certain locations)\r\n"
 		"\t4: Departure path mask (optional; this is a bitfield where the bits set to 1 correspond to the paths to use; defaults to 0 which is a special case that means all paths can be used)\r\n"
 		"\t5: Departure delay (optional; defaults to 0)\r\n"
 		"\t6: Whether to show a jump effect if departing to subspace (optional; defaults to true)\r\n"
+		"\t7: Whether to adjust the size of the jump effect if the ship is docked (optional; defaults to true)\r\n"
 	},
 
 	// Bobboau

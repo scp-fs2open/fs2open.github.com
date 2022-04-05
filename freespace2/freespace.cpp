@@ -1331,7 +1331,7 @@ void game_post_level_init()
 	// While trying to track down the nebula bug I encountered a cool effect -
 	// comment this out to fly a mission in a void. Maybe we should develop this
 	// into a full effect or something, because it is seriously cool.
-	neb2_post_level_init();
+	neb2_post_level_init(The_mission.flags[Mission::Mission_Flags::Neb2_fog_color_override]);
 
 	// Initialize decal system
 	decals::initializeMission();

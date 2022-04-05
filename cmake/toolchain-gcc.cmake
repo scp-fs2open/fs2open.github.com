@@ -27,6 +27,11 @@ endif()
 set(COMPILER_FLAGS "")
 set(LINKER_FLAGS "")
 
+# Don't ignore user-set LDFLAGS
+if(DEFINED ENV{LDFLAGS})
+	set(LINKER_FLAGS $ENV{LDFLAGS})
+endif()
+
 if (GCC_USE_GOLD)
 	OPTION(GCC_INCREMENTAL_LINKING "Use incremental linking" OFF)
 	set(LINKER_FLAGS "${LINKER_FLAGS} -fuse-ld=gold")

@@ -313,13 +313,15 @@ void LabRenderer::useBackground(const SCP_string& mission_name) {
 			if (optional_string("+Neb2:")) {
 				nebula = true;
 				stuff_string(Neb2_texture_name, F_NAME, MAX_FILENAME_LEN);
-			} else if (optional_string("+Neb2Color:")) {
+			}
+			if (optional_string("+Neb2Color:")) {
 				nebula = true;
 				int neb_colors[3];
 				stuff_int_list(neb_colors, 3, RAW_INTEGER_TYPE);
 				Neb2_fog_color[0] = (ubyte)neb_colors[0];
 				Neb2_fog_color[1] = (ubyte)neb_colors[1];
 				Neb2_fog_color[2] = (ubyte)neb_colors[2];
+				flags |= Mission::Mission_Flags::Neb2_fog_color_override;
 			}
 
 			if (nebula){
@@ -327,7 +329,7 @@ void LabRenderer::useBackground(const SCP_string& mission_name) {
 				stuff_int(&Neb2_poof_flags);
 
 				if (flags[Mission::Mission_Flags::Fullneb]) {
-					neb2_post_level_init();
+					neb2_post_level_init(flags[Mission::Mission_Flags::Neb2_fog_color_override]);
 				}
 			}
 

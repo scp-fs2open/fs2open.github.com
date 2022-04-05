@@ -266,6 +266,13 @@ void sim_room_load_mission_icons();
 void sim_room_unload_mission_icons();
 void sim_room_blit_icons(int line_index, int y_start, fs_builtin_mission *fb = NULL, int is_md = 0);
 
+const std::shared_ptr<scripting::Hook> OnCampaignBeginHook = scripting::Hook::Factory(
+	"On Campaign Begin", "Called when a campaign is started from the beginning or is reset",
+	{
+		{ "Campaign", "string", "The campaign filename (without the extension)" },
+	});
+
+
 // Finds a hash value for mission filename
 //
 // returns hash value
@@ -1553,6 +1560,8 @@ void campaign_reset(const SCP_string& campaign_file) {
 		// reset tech database to what's in the tables
 		tech_reset_to_default();
 	}
+
+	OnCampaignBeginHook->run(scripting::hook_param_list(scripting::hook_param("Campaign", 's', Campaign.filename)));
 }
 
 // returns: 0 = success, !0 = aborted or failed
@@ -1664,7 +1673,10 @@ void campaign_select_campaign(const SCP_string& campaign_file)
 				// reset tech database to what's in the tables
 				tech_reset_to_default();
 			}
+
+			OnCampaignBeginHook->run(scripting::hook_param_list(scripting::hook_param("Campaign", 's', Campaign.filename)));
 		}
+
 		// that's all we need to do for now; the campaign loading status will be checked again when we try to load the
 		// campaign in the ready room
 	}

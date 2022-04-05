@@ -1928,11 +1928,10 @@ void ship_hit_kill(object *ship_objp, object *other_obj, vec3d *hitpos, float pe
 		}
 
 		// maybe praise the player for this kill
-		if ( (killer_damage_percent > 10) && (other_obj != NULL) ) {
+		if ( (killer_damage_percent > 10) && (other_obj != nullptr) && (other_obj->parent >= 0) ) {
 			if (other_obj->parent_sig == Player_obj->signature) {
 				ship_maybe_praise_player(sp);
-			}
-			else if ((other_obj->parent_type == OBJ_SHIP) || (other_obj->parent_type == OBJ_START))  {
+			} else if (Objects[other_obj->parent].type == OBJ_SHIP) {
 				ship_maybe_praise_self(sp, &Ships[Objects[other_obj->parent].instance]);
 			}
 		}

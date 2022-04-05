@@ -43,7 +43,7 @@ void FictionViewerDialogModel::initializeData() {
 	}
 	
 	_musicOptions.emplace_back("None", 0);
-	for (int i = 0; i < Num_music_files; ++i) {
+	for (int i = 0; i < (int)Spooled_music.size(); ++i) {
 		_musicOptions.emplace_back(Spooled_music[i].name, i + 1); // + 1 because option 0 is None
 	}
 	
@@ -66,7 +66,7 @@ void FictionViewerDialogModel::initializeData() {
 
 void FictionViewerDialogModel::setFictionMusic(int fictionMusic) {
 	Assert(fictionMusic >= 0);
-	Assert(fictionMusic <= Num_music_files);
+	Assert(fictionMusic <= (int)Spooled_music.size());
 	modify<int>(_fictionMusic, fictionMusic);
 }
 

@@ -389,17 +389,17 @@ void shipfx_blow_up_model(object *obj, int submodel, int ndebris, vec3d *exp_cen
 static float shipfx_calculate_effect_radius( object *objp, WarpDirection warp_dir )
 {
 	float rad;
+	ship* shipp = &Ships[objp->instance];
 
 	// if docked, we need to calculate the overall cross-sectional radius around the z-axis (longitudinal axis)
-	if (object_is_docked(objp))
+	if (object_is_docked(objp) && !( (warp_dir == WarpDirection::WARP_IN && shipp->flags[Ship::Ship_Flags::Same_arrival_warp_when_docked])
+									|| (warp_dir == WarpDirection::WARP_OUT && shipp->flags[Ship::Ship_Flags::Same_departure_warp_when_docked]) ))
 	{
 		rad = dock_calc_max_cross_sectional_radius_perpendicular_to_axis(objp, Z_AXIS);
 	}
 	// if it's not docked, we can save a lot of work by just using width and height
 	else
 	{
-		ship *shipp = &Ships[objp->instance];
-
 		//WMC - see if a radius was specified
 		float warp_radius = Warp_params[warp_dir == WarpDirection::WARP_IN ? shipp->warpin_params_index : shipp->warpout_params_index].radius;
 		if (warp_radius > 0.0f)
