@@ -898,19 +898,17 @@ BEGIN
     CONTROL         "No Traitor",IDC_NO_TRAITOR,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,91,123,10
     CONTROL         "All Ships Beam-Freed By Default",IDC_BEAM_FREE_ALL_BY_DEFAULT,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,101,123,10
-    CONTROL         "Allow Daisy-Chained Docking",IDC_ALLOW_DOCK_TREES,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,111,123,10
-    CONTROL         "No Briefing",IDC_NO_BRIEFING,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,121,72,10
-    CONTROL         "Toggle Debriefing (On/Off)",IDC_NO_DEBRIEFING,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,131,102,10
+    CONTROL         "No Briefing",IDC_NO_BRIEFING,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,111,72,10
+    CONTROL         "Toggle Debriefing (On/Off)",IDC_NO_DEBRIEFING,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,121,102,10
     CONTROL         "Use Autopilot Cinematics",IDC_USE_AUTOPILOT_CINEMATICS,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,141,123,10
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,131,123,10
     CONTROL         "Deactivate Hardcoded Autopilot",IDC_DEACTIVATE_AUTOPILOT,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,151,123,10
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,141,123,10
     CONTROL         "Player Starts under AI Control (NO MULTI)",IDC_PLAYER_START_AI,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,161,146,10
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,151,146,10
     CONTROL         "Player Starts in Chase View",IDC_PLAYER_START_CHASE,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,171,146,10
-    CONTROL         "2D Mission",IDC_2D_MISSION,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,181,123,10
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,161,146,10
+    CONTROL         "2D Mission",IDC_2D_MISSION,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,171,123,10
     LTEXT           "AI Profile",IDC_STATIC,320,229,32,8
     COMBOBOX        IDC_AI_PROFILE,378,226,93,140,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     LTEXT           "Mission Description",IDC_STATIC,4,260,62,8
@@ -924,8 +922,8 @@ BEGIN
     CONTROL         "",IDC_MAX_RESPAWN_DELAY_SPIN,"msctls_updown32",UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,136,112,11,14
     PUSHBUTTON      "Sound Environment",IDC_SOUND_ENVIRONMENT_BUTTON,158,244,140,15
     CONTROL         "Always Show Mission Goals In Briefing",IDC_ALWAYS_SHOW_GOALS,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,191,142,10
-    CONTROL         "Mission End to Mainhall",IDC_END_TO_MAINHALL,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,201,142,10
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,181,142,10
+    CONTROL         "Mission End to Mainhall",IDC_END_TO_MAINHALL,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,191,142,10
     CONTROL         "Override #Command in event messages",IDC_OVERRIDE_HASHCOMMAND,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,166,172,142,10
 END

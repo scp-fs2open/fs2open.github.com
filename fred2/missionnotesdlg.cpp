@@ -55,7 +55,6 @@ CMissionNotesDlg::CMissionNotesDlg(CWnd* pParent /*=NULL*/) : CDialog(CMissionNo
 	m_full_war = FALSE;
 	m_red_alert = FALSE;
 	m_scramble = FALSE;
-	m_daisy_chained_docking = FALSE;
 	m_num_respawns = 0;
 	m_max_respawn_delay = -1;
 	m_disallow_support = 0;
@@ -107,7 +106,6 @@ void CMissionNotesDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_FULL_WAR, m_full_war);
 	DDX_Check(pDX, IDC_RED_ALERT, m_red_alert);
 	DDX_Check(pDX, IDC_SCRAMBLE, m_scramble);
-	DDX_Check(pDX, IDC_ALLOW_DOCK_TREES, m_daisy_chained_docking);
 	DDX_Text(pDX, IDC_RESPAWNS, m_num_respawns);
 	DDX_Text(pDX, IDC_MAX_RESPAWN_DELAY, m_max_respawn_delay);
 	DDV_MinMaxUInt(pDX, m_num_respawns, 0, 99);
@@ -240,9 +238,6 @@ void CMissionNotesDlg::OnOK()
 
 	// set flags for scramble
     The_mission.flags.set(Mission::Mission_Flags::Scramble, m_scramble != 0);
-
-	// set flags for dock trees
-    The_mission.flags.set(Mission::Mission_Flags::Allow_dock_trees, m_daisy_chained_docking != 0);
 
 	// set the flags for no promotion
     The_mission.flags.set(Mission::Mission_Flags::No_promotion, m_no_promotion != 0);
@@ -389,7 +384,6 @@ BOOL CMissionNotesDlg::OnInitDialog()
 	m_red_alert = (The_mission.flags[Mission::Mission_Flags::Red_alert]) ? 1 : 0;
 	m_scramble = (The_mission.flags[Mission::Mission_Flags::Scramble]) ? 1 : 0;
 	m_full_war = Mission_all_attack;
-	m_daisy_chained_docking = (The_mission.flags[Mission::Mission_Flags::Allow_dock_trees]) ? 1 : 0;
 	m_disallow_support = (The_mission.support_ships.max_support_ships == 0) ? 1 : 0;
 	m_no_promotion = (The_mission.flags[Mission::Mission_Flags::No_promotion]) ? 1 : 0;
 	m_no_builtin_msgs = (The_mission.flags[Mission::Mission_Flags::No_builtin_msgs]) ? 1 : 0;

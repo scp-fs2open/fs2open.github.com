@@ -73,7 +73,6 @@ MissionSpecDialog::MissionSpecDialog(FredView* parent, EditorViewport* viewport)
 	connect(ui->toggleBuiltinCmdMsg, &QCheckBox::toggled, this, [this](bool param) {flagToggled(param, Mission::Mission_Flags::No_builtin_command); });
 	connect(ui->toggleNoTraitor, &QCheckBox::toggled, this, [this](bool param) {flagToggled(param, Mission::Mission_Flags::No_traitor); });
 	connect(ui->toggleBeamFreeDefault, &QCheckBox::toggled, [this](bool param) {flagToggled(param, Mission::Mission_Flags::Beam_free_all_by_default); });
-	connect(ui->toggleDaisyChainedDocking, &QCheckBox::toggled, this, [this](bool param) {flagToggled(param, Mission::Mission_Flags::Allow_dock_trees); });
 	connect(ui->toggleNoBriefing, &QCheckBox::toggled, this, [this](bool param) {flagToggled(param, Mission::Mission_Flags::No_briefing); });
 	connect(ui->toggleDebriefing, &QCheckBox::toggled, this, [this](bool param) {flagToggled(param, Mission::Mission_Flags::Toggle_debriefing); });
 	connect(ui->toggleAutopilotCinematics, &QCheckBox::toggled, this, [this](bool param) {flagToggled(param, Mission::Mission_Flags::Use_ap_cinematics); });
@@ -243,7 +242,6 @@ void MissionSpecDialog::updateFlags() {
 	ui->toggleBeamFreeDefault->setChecked(flags[Mission::Mission_Flags::Beam_free_all_by_default]);
 	ui->toggleBuiltinCmdMsg->setChecked(flags[Mission::Mission_Flags::No_builtin_command]);
 	ui->toggleBuiltinMsg->setChecked(flags[Mission::Mission_Flags::No_builtin_msgs]);
-	ui->toggleDaisyChainedDocking->setChecked(flags[Mission::Mission_Flags::Allow_dock_trees]);
 	ui->toggleDebriefing->setChecked(flags[Mission::Mission_Flags::Toggle_debriefing]);
 	ui->toggleGoalsInBriefing->setChecked(flags[Mission::Mission_Flags::Always_show_goals]);
 	ui->toggleHardcodedAutopilot->setChecked(flags[Mission::Mission_Flags::Deactivate_ap]);

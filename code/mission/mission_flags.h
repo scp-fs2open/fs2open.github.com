@@ -19,9 +19,9 @@ namespace Mission {
 		No_briefing,				// no briefing, jump right into mission - Goober5000
 		Toggle_debriefing,			// Turn on debriefing for dogfight. Off for everything else - Goober5000
 		Unused_3,					// Necessary to not break parsing
-		Allow_dock_trees,			// toggle between hub and tree model for ship docking (see objectdock.cpp) - Gooober5000
-		Mission_2d,					// Mission is meant to be played top-down style; 2D physics and movement.
 		Unused_4,					// Necessary to not break parsing
+		Mission_2d,					// Mission is meant to be played top-down style; 2D physics and movement.
+		Unused_5,					// Necessary to not break parsing
 		Red_alert,					// a red-alert mission - Goober5000
 		Scramble,					// a scramble mission - Goober5000
 		No_builtin_command,			// turns off Command without turning off pilots - Karajorma

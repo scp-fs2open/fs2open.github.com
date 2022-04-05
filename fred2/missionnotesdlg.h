@@ -46,7 +46,6 @@ public:
 	BOOL		m_full_war;
 	BOOL		m_red_alert;
 	BOOL		m_scramble;
-	BOOL		m_daisy_chained_docking;
 	UINT		m_num_respawns;
 	int			m_max_respawn_delay;
 	int			m_disallow_support;
