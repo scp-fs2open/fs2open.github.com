@@ -84,13 +84,11 @@ ADE_VIRTVAR(Parent, l_Object, "object", "Parent of the object. Value may also be
 		{
 			objh->objp->parent = OBJ_INDEX(newparenth->objp);
 			objh->objp->parent_sig = newparenth->sig;
-			objh->objp->parent_type = newparenth->objp->type;
 		}
 		else
 		{
 			objh->objp->parent = -1;
 			objh->objp->parent_sig = 0;
-			objh->objp->parent_type = OBJ_NONE;
 		}
 	}
 

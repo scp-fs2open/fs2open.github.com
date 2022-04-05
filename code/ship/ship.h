@@ -2024,4 +2024,7 @@ bool ship_lock_present(ship *shipp);
 
 bool ship_secondary_has_ammo(ship_weapon* swp, int bank_index);
 
+// Used to check if one ship can see the other on radar
+int ship_check_visibility(const ship* viewed, ship* viewer);
+
 #endif

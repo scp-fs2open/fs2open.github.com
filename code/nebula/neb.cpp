@@ -38,8 +38,6 @@ bool Nebula_sexp_used = false;
 
 ubyte Neb2_fog_color[3] = { 0,0,0 };
 
-static ubyte *Neb2_htl_fog_data = NULL;
-
 // #define NEB2_THUMBNAIL
 
 /*
@@ -306,18 +304,54 @@ void neb2_poof_setup() {
 	Poof_density_multiplier *= (Detail.nebula_detail + 0.5f) / (MAX_DETAIL_LEVEL + 0.5f); // scale the poofs down based on detail level
 }
 
-// initialize nebula stuff - call from game_post_level_init(), so the mission has been loaded
-void neb2_post_level_init()
+void neb2_generate_fog_color(const char *fog_color_palette, ubyte fog_color[])
 {
-	int idx;
+	// Set a default colour just in case something goes wrong
+	fog_color[0] = 30;
+	fog_color[1] = 52;
+	fog_color[2] = 157;
 
+	if (!fog_color_palette || !strlen(fog_color_palette))
+		return;
+
+	auto fog_data = new ubyte[768];
+
+	if (pcx_read_header(fog_color_palette, nullptr, nullptr, nullptr, nullptr, fog_data) == PCX_ERROR_NONE) {
+		// based on the palette, get an average color value (this doesn't really account for actual pixel usage though)
+		ushort r = 0, g = 0, b = 0, pcount = 0;
+		for (int idx = 0; idx < 768; idx += 3) {
+			if (fog_data[idx] || fog_data[idx+1] || fog_data[idx+2]) {
+				r = r + fog_data[idx];
+				g = g + fog_data[idx+1];
+				b = b + fog_data[idx+2];
+				pcount++;
+			}
+		}
+
+		if (pcount > 0) {
+			fog_color[0] = (ubyte)(r / pcount);
+			fog_color[1] = (ubyte)(g / pcount);
+			fog_color[2] = (ubyte)(b / pcount);
+		} else {
+			// it's just black
+			fog_color[0] = fog_color[1] = fog_color[2] = 0;
+		}
+	}
+
+	// done, now free up the palette data
+	delete[] fog_data;
+}
+
+// initialize nebula stuff - call from game_post_level_init(), so the mission has been loaded
+void neb2_post_level_init(bool fog_color_override)
+{
 	// standalone servers can bail here
 	if (Game_mode & GM_STANDALONE_SERVER) {
 		return;
 	}
 
 	// Skip actual rendering if we're in FRED.
-	if(Fred_running)
+	if (Fred_running)
 	{
 		Neb2_render_mode = NEB2_RENDER_NONE;
 		return;
@@ -331,41 +365,8 @@ void neb2_post_level_init()
 	}
 
 	// OK, lets try something a bit more interesting
-	if (strlen(Neb2_texture_name)) {
-		// Set a default colour just in case something goes wrong
-		Neb2_fog_color[0] = 30;
-		Neb2_fog_color[1] = 52;
-		Neb2_fog_color[2] = 157;
-
-		Neb2_htl_fog_data = new ubyte[768];
-
-		if ((Neb2_htl_fog_data != NULL) && (pcx_read_header(Neb2_texture_name, NULL, NULL, NULL, NULL, Neb2_htl_fog_data) == PCX_ERROR_NONE)) {
-			// based on the palette, get an average color value (this doesn't really account for actual pixel usage though)
-			ushort r = 0, g = 0, b = 0, pcount = 0;
-			for (idx = 0; idx < 768; idx += 3) {
-				if (Neb2_htl_fog_data[idx] || Neb2_htl_fog_data[idx+1] || Neb2_htl_fog_data[idx+2]) {
-					r = r + Neb2_htl_fog_data[idx];
-					g = g + Neb2_htl_fog_data[idx+1];
-					b = b + Neb2_htl_fog_data[idx+2];
-					pcount++;
-				}
-			}
-
-			if (pcount > 0) {
-				Neb2_fog_color[0] = (ubyte)(r / pcount);
-				Neb2_fog_color[1] = (ubyte)(g / pcount);
-				Neb2_fog_color[2] = (ubyte)(b / pcount);
-			} else {
-				// it's just black
-				Neb2_fog_color[0] = Neb2_fog_color[1] = Neb2_fog_color[2] = 0;
-			}
-
-			// done, now free up the palette data
-			if ( Neb2_htl_fog_data != NULL ) {
-				delete[] Neb2_htl_fog_data;
-				Neb2_htl_fog_data = NULL;
-			}
-		}
+	if (!fog_color_override && strlen(Neb2_texture_name)) {
+		neb2_generate_fog_color(Neb2_texture_name, Neb2_fog_color);
 	}
 
 	Neb2_render_mode = NEB2_RENDER_HTL;
@@ -454,11 +455,6 @@ void neb2_level_close()
 
 	// unflag the mission as being fullneb so stuff doesn't fog in the techdata room :D
     The_mission.flags.remove(Mission::Mission_Flags::Fullneb);
-
-	if (Neb2_htl_fog_data) {
-		delete[] Neb2_htl_fog_data;
-		Neb2_htl_fog_data = NULL;
-	}
 }
 
 // call before beginning all rendering

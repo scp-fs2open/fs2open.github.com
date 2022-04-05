@@ -8596,6 +8596,8 @@ void ai_cruiser_chase()
 	}
 }
 
+constexpr int DEFAULT_WEAPON_RANGE = 700;
+
 /**
  * Make object Pl_objp chase object En_objp
  */
@@ -8730,7 +8732,7 @@ void ai_chase()
 	//	If just acquired target, or target is not in reasonable cone, don't refine believed enemy position.
 	if ((real_dot_to_enemy < 0.25f) || (aip->target_time < 1.0f)) {
 		predicted_enemy_pos = enemy_pos;
-	} else if (aip->ai_flags[AI::AI_Flags::Seek_lock]) {
+	} else if (aip->ai_flags[AI::AI_Flags::Seek_lock] && !(The_mission.ai_profile->flags[AI::Profile_Flags::Ignore_aspect_when_leading]) ) {
 		if (The_mission.ai_profile->flags[AI::Profile_Flags::Fix_ramming_stationary_targets_bug]) {
 			// fixed by Mantis 3147 - Bash orientation if aspect seekers are equipped.
 			set_predicted_enemy_pos(&predicted_enemy_pos, Pl_objp, &aip->last_aim_enemy_pos, &aip->last_aim_enemy_vel, aip);	// Set G_fire_pos
@@ -8840,9 +8842,19 @@ void ai_chase()
 		aip->submode == SM_GET_AWAY ||
 		aip->submode == AIS_CHASE_GLIDEATTACK)
 	{
+
+		float current_weapon_range;
+
+		// check that we have a valid index or not.
+		if (swp->num_primary_banks >= 1 && swp->current_primary_bank >= 0 && swp->primary_bank_weapons[swp->current_primary_bank] >= 0) {
+			current_weapon_range = Weapon_info[swp->primary_bank_weapons[swp->current_primary_bank]].weapon_range;
+		} else {
+			// if we didn't have a valid index (very rare) use this default weapon range which is close to average weapon range
+			current_weapon_range = DEFAULT_WEAPON_RANGE;
+		}
+
 		//Re-roll for random sidethrust every 2 seconds
 		//Also, only do this if we've recently been hit or are in current primary weapon range of target
-		float current_weapon_range = Weapon_info[swp->primary_bank_weapons[swp->current_primary_bank]].weapon_range;
 		if (static_randf((Missiontime + static_rand(aip->shipnum)) >> 17) < aip->ai_random_sidethrust_percent &&
 			((Missiontime - aip->last_hit_time < i2f(5) && aip->hitter_objnum >= 0) || dist_to_enemy < current_weapon_range)) 
 		{
@@ -15030,6 +15042,9 @@ void init_ai_object(int objnum)
 
 	aip->next_predict_pos_time = 0;
 	aip->next_aim_pos_time = 0;
+
+	aip->next_dynamic_path_check_time = timestamp(0);
+	vm_vec_zero(&aip->last_dynamic_path_goal);
 
 	aip->afterburner_stop_time = 0;
 	aip->last_objsig_hit = -1;				// object signature of the ship most recently hit by aip

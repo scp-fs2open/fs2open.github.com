@@ -76,6 +76,7 @@
 #include "render/batching.h"
 #include "scripting/api/objs/vecmath.h"
 #include "ship/afterburner.h"
+#include "ship/awacs.h"
 #include "ship/ship.h"
 #include "ship/shipcontrails.h"
 #include "ship/shipfx.h"
@@ -9961,15 +9962,17 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 	// Cyborg17 - The final check here was supposed to prevent duplicate names from being on the mission log and causing chaos,
 	// but it breaks multi, so there will just be a warning on debug instead.
 	if ((ship_name == nullptr) || (ship_name_lookup(ship_name) >= 0) /*|| (ship_find_exited_ship_by_name(ship_name) >= 0)*/) {
+		// regular name, regular suffix
 		char suffix[NAME_LENGTH];
+		strcpy_s(shipp->ship_name, Ship_info[ship_type].name);
 		sprintf(suffix, NOX(" %d"), n);
 
-		// ensure complete ship name doesn't overflow the buffer
-		auto name_len = std::min(NAME_LENGTH - strlen(suffix) - 1, strlen(Ship_info[ship_type].name));
-		Assert(name_len > 0);
+		// default names shouldn't have a hashed suffix
+		end_string_at_first_hash_symbol(shipp->ship_name);
 
-		strncpy(shipp->ship_name, Ship_info[ship_type].name, name_len);
-		strcpy(shipp->ship_name + name_len, suffix);
+		// build it
+		Assert(strlen(shipp->ship_name) + strlen(suffix) < NAME_LENGTH - 1);
+		strcat_s(shipp->ship_name, suffix);
 	} else {
 		if (ship_find_exited_ship_by_name(ship_name) >= 0 && !(Game_mode & GM_MULTIPLAYER)) {
 			Warning(LOCATION, "Newly-arrived ship %s has been given the same name as a ship previously destroyed in-mission. This can cause unpredictable SEXP behavior. Correct your mission file or scripts to prevent duplicates.", ship_name);
@@ -20136,4 +20139,57 @@ bool ship_stop_secondary_fire(object* objp)
 
 bool ship_secondary_has_ammo(ship_weapon* swp, int bank_index) {
 	return swp->secondary_bank_ammo[bank_index] > 0 || Weapon_info[swp->secondary_bank_weapons[bank_index]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo];
+}
+
+
+
+/**
+ * Determine if ship visible on radar
+ *
+ * @return 0 - not visible
+ * @return 1 - marginally targetable (jiggly on radar)
+ * @return 2 - fully targetable
+ */
+int ship_check_visibility(const ship* viewed, ship* viewer)
+{
+	if (!viewer) {
+		// if the second argument is not supplied, default to the player, per retail
+		if (Game_mode & GM_MULTIPLAYER) {
+			mprintf(("In multiplayer shared_check_ship_visibility must have two arguments!  Defaulting to the first "
+					 "player.\n"));
+
+			// to make allowances for buggy missions (such as retail), just pick the first player
+			// if we actually have no valid players, viewer_shipp will be NULL, but that's ok
+			for (int i = 0; i < MAX_PLAYERS; ++i) {
+				int shipnum = multi_get_player_ship(i);
+				if (shipnum >= 0) {
+					viewer = &Ships[shipnum];
+					break;
+				}
+			}
+		} else
+			viewer = Player_ship;
+	}
+
+	object* viewed_obj = &Objects[viewed->objnum];
+	int ship_is_visible = 0;
+	//There are cases where the player is not a ship, so the above logic could result in still not having any valid ship pointer.
+	if(!viewer)
+		return ship_is_visible;
+	// get ship's *radar* visiblity
+	if (ship_is_visible_by_team(viewed_obj, viewer)) {
+		ship_is_visible = 2;
+	}
+
+	// only check awacs level if ship is not visible by team
+	if (!ship_is_visible) {
+		float awacs_level = awacs_get_level(viewed_obj, viewer);
+		if (awacs_level >= 1.0f) {
+			ship_is_visible = 2;
+		} else if (awacs_level > 0) {
+			ship_is_visible = 1;
+		}
+	}
+
+	return ship_is_visible;
 }

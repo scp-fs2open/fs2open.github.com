@@ -4514,10 +4514,7 @@ void model_set_up_techroom_instance(ship_info *sip, int model_instance_num)
 
 	model_iterate_submodel_tree(pm, pm->detail[0], [&](int submodel, int /*level*/, bool /*isLeaf*/)
 		{
-			auto sm = &pm->submodel[submodel];
-
-			if (sm->flags[Model::Submodel_flags::Can_move])
-				model_replicate_submodel_instance(pm, pmi, submodel, empty);
+			model_replicate_submodel_instance(pm, pmi, submodel, empty);
 		});
 }
 

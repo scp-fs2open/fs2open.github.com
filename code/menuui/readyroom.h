@@ -12,6 +12,7 @@
 #define _READYROOM_H
 
 #include "globalincs/pstypes.h"
+#include "scripting/hook_api.h"
 
 extern int Sim_room_overlay_id;
 extern int Campaign_room_overlay_id;
@@ -30,5 +31,7 @@ void campaign_room_do_frame(float frametime);
 bool campaign_build_campaign_list();
 void campaign_select_campaign(const SCP_string& campaign_file);
 void campaign_reset(const SCP_string& campaign_file);
+
+extern const std::shared_ptr<scripting::Hook> OnCampaignBeginHook;
 
 #endif

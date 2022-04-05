@@ -4656,7 +4656,7 @@ void sexp_tree::update_help(HTREEITEM h)
 		return;
 
 	mini_help_box = (CEdit *) GetParent()->GetDlgItem(IDC_MINI_HELP_BOX);
-	if (!mini_help_box || !::IsWindow(mini_help_box->m_hWnd))
+	if (mini_help_box && !::IsWindow(mini_help_box->m_hWnd))
 		return;
 
 	for (i=0; i<(int)tree_nodes.size(); i++)
@@ -4665,13 +4665,15 @@ void sexp_tree::update_help(HTREEITEM h)
 
 	if ((i >= (int)tree_nodes.size()) || !tree_nodes[i].type) {
 		help_box->SetWindowText("");
-		mini_help_box->SetWindowText("");
+		if (mini_help_box)
+			mini_help_box->SetWindowText("");
 		return;
 	}
 
 	if (SEXPT_TYPE(tree_nodes[i].type) == SEXPT_OPERATOR)
 	{
-		mini_help_box->SetWindowText("");
+		if (mini_help_box)
+			mini_help_box->SetWindowText("");
 	}
 	else
 	{
@@ -4761,7 +4763,8 @@ void sexp_tree::update_help(HTREEITEM h)
 				sprintf(buffer, "%d:", sibling_place);
 			}
 
-			mini_help_box->SetWindowText(buffer);
+			if (mini_help_box)
+				mini_help_box->SetWindowText(buffer);
 		}
 
 		if (index >= 0) {
@@ -5980,15 +5983,12 @@ sexp_list_item *sexp_tree::get_listing_opf_ship_with_bay()
 
 sexp_list_item *sexp_tree::get_listing_opf_soundtrack_name()
 {
-	int i;
 	sexp_list_item head;
 
 	head.add_data("<No Music>");
 
-	for (i=0; i<Num_soundtracks; i++)
-	{
-		head.add_data(Soundtracks[i].name);
-	}
+	for (auto &st: Soundtracks)
+		head.add_data(st.name);
 
 	return head.next;
 }

@@ -50,13 +50,12 @@ END_MESSAGE_MAP()
 
 BOOL FictionViewerDlg::OnInitDialog()
 {
-	int i;
 	CComboBox *box;
 
 	box = (CComboBox *) GetDlgItem(IDC_FICTION_MUSIC);
 	box->AddString("None");
-	for (i=0; i<Num_music_files; i++){
-		box->AddString(Spooled_music[i].name);		
+	for (auto &sm: Spooled_music) {
+		box->AddString(sm.name);
 	}
 
 	if (Fiction_viewer_stages.size() > 1)
