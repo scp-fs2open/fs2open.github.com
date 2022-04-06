@@ -473,7 +473,7 @@ bool get_replace_text_for_modifier(const SCP_string &text,
 /**
 * Replace container references in a string with their values
 **/
-bool sexp_container_replace_refs_with_values(SCP_string& text)
+bool sexp_container_replace_refs_with_values(SCP_string &text)
 {
 	bool replaced_anything = false;
 	size_t lookHere = 0;
@@ -547,7 +547,7 @@ bool sexp_container_replace_refs_with_values(SCP_string& text)
 	return replaced_anything;
 }
 
-bool sexp_container_replace_refs_with_values(char* text, size_t max_len)
+bool sexp_container_replace_refs_with_values(char *text, size_t max_len)
 {
 	Assert(text != nullptr);
 
@@ -586,8 +586,7 @@ bool are_containers_modifiable()
 	}
 }
 
-// TODO: see if this code can be combined with similar code for text replacement
-bool sexp_container_CTEXT_helper(int& node, sexp_container& container, SCP_string& result)
+bool sexp_container_CTEXT_helper(int &node, sexp_container &container, SCP_string &result)
 {
 	if (container.is_map()) {
 		if (container.map_data.empty()) {
@@ -595,7 +594,7 @@ bool sexp_container_CTEXT_helper(int& node, sexp_container& container, SCP_strin
 			return false;
 		}
 
-		const char* key = CTEXT(node);
+		const char *key = CTEXT(node);
 		const auto value_it = container.map_data.find(SCP_string(key));
 
 		if (value_it != container.map_data.end()) {
@@ -621,7 +620,7 @@ bool sexp_container_CTEXT_helper(int& node, sexp_container& container, SCP_strin
 
 
 		if (modifier == ListModifier::INVALID) {
-			const SCP_string& container_name = container.container_name;
+			const SCP_string &container_name = container.container_name;
 			Warning(LOCATION,
 				"Illegal operation attempted on %s container. There is no modifier called %s.",
 				container_name.c_str(),
@@ -634,7 +633,7 @@ bool sexp_container_CTEXT_helper(int& node, sexp_container& container, SCP_strin
 		}
 
 		int data_index = -1;
-		auto& list_data = container.list_data;
+		auto &list_data = container.list_data;
 		auto list_it = list_data.begin();
 
 		switch (modifier) {

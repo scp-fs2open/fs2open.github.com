@@ -1708,6 +1708,7 @@ void message_queue_message( int message_num, int priority, int timing, const cha
 	}
 
 	// Goober5000 - replace variables if necessary
+	// karajorma/jg18 - replace container references if necessary
 	strcpy_s(temp_buf, Messages[message_num].message);
 	const bool replace_var = sexp_replace_variable_names_with_values(temp_buf, MESSAGE_LENGTH);
 	const bool replace_con = sexp_container_replace_refs_with_values(temp_buf, MESSAGE_LENGTH);
