@@ -22692,24 +22692,35 @@ void sexp_show_subtitle(int node)
 					center_y = is_sexp_true(n);
 					n = CDR(n);
 
-					eval_array<int>(rgb, n, is_nan, is_nan_forever, [](int num)->int {
-						CLAMP(num, 0, 255);
-						return num;
-					}, 255);
-					if (is_nan || is_nan_forever)
-						return;
-
 					if (n != -1)
 					{
-						post_shaded = is_sexp_true(n);
+						width = eval_num(n, is_nan, is_nan_forever);
+						if (is_nan || is_nan_forever)
+							return;
 						n = CDR(n);
 
 						if (n != -1)
 						{
-							int percent = eval_num(n, is_nan, is_nan_forever);
+							eval_array<int>(rgb, n, is_nan, is_nan_forever, [](int num)->int {
+								CLAMP(num, 0, 255);
+								return num;
+							}, 255);
 							if (is_nan || is_nan_forever)
 								return;
-							line_height_factor = percent / 100.0f;
+
+							if (n != -1)
+							{
+								post_shaded = is_sexp_true(n);
+								n = CDR(n);
+
+								if (n != -1)
+								{
+									int percent = eval_num(n, is_nan, is_nan_forever);
+									if (is_nan || is_nan_forever)
+										return;
+									line_height_factor = percent / 100.0f;
+								}
+							}
 						}
 					}
 				}
