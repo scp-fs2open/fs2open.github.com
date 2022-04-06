@@ -88,6 +88,7 @@ float Min_pizel_size_muzzleflash;
 float Min_pixel_size_trail;
 float Min_pixel_size_laser;
 bool Supernova_hits_at_zero;
+bool Show_subtitle_uses_pixels;
 
 void mod_table_set_version_flags();
 
@@ -294,6 +295,15 @@ void parse_mod_table(const char *filename)
 			}
 			else {
 				mprintf(("Game Settings Table: Using identity orientation for set-camera-facing\n"));
+			}
+		}
+
+		if (optional_string("$Show-subtitle uses pixels:")) {
+			stuff_boolean(&Show_subtitle_uses_pixels);
+			if (Show_subtitle_uses_pixels) {
+				mprintf(("Game Settings Table: Show-subtitle uses pixels\n"));
+			} else {
+				mprintf(("Game Settings Table: Show-subtitle uses percentages\n"));
 			}
 		}
 
@@ -866,6 +876,7 @@ void mod_table_reset()
 	Min_pixel_size_trail = 0.0f;
 	Min_pixel_size_laser = 0.0f;
 	Supernova_hits_at_zero = false;
+	Show_subtitle_uses_pixels = false;
 }
 
 void mod_table_set_version_flags()
