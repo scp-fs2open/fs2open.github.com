@@ -1718,7 +1718,9 @@ void message_queue_message( int message_num, int priority, int timing, const cha
 		// SPECIAL HACK -- if the who_from is terran command, and there is a wingman persona attached
 		// to this message, then set a bit to tell the wave/anim playing code to play the command version
 		// of the wave and head
-		if ( !stricmp(who_from, The_mission.command_sender) ) {
+		// ADDENDUM -- Since the special hack is specifically for mission-unique messages, don't
+		// convert built-in messages to Command
+		if ( builtin_type < 0 && !stricmp(who_from, The_mission.command_sender) ) {
 			MessageQ[i].flags |= MQF_CONVERT_TO_COMMAND;
 			MessageQ[i].source = HUD_SOURCE_TERRAN_CMD;
 		} else {
