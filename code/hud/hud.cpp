@@ -1620,7 +1620,7 @@ void hud_render_preprocess(float frametime)
 	Player->subsys_in_view = -1;
 	hud_target_clear_display_list();
 
-	if ( (Game_detail_flags & DETAIL_FLAG_HUD) && (supernova_active() >= 3) ) {
+	if ( (Game_detail_flags & DETAIL_FLAG_HUD) && (supernova_stage() >= SUPERNOVA_STAGE::HIT) ) {
 		return;
 	}
 
@@ -1731,16 +1731,15 @@ void HudGaugeMissionTime::render(float  /*frametime*/)
 }
 
 /**
- * @brief Show supernova warning it there's a supernova coming
+ * @brief Show supernova warning if there's a supernova coming
  */
 void hud_maybe_display_supernova()
 {
-	float time_left;
-
-	time_left = supernova_time_left();
-	if(time_left < 0.0f){
+	if (!supernova_active()) {
 		return;
 	}
+
+	auto time_left = supernova_hud_time_left();
 
 	gr_set_color_fast(&Color_bright_red);
 	if (Lcl_pl) {
@@ -1791,7 +1790,7 @@ void hud_render_gauges(int cockpit_display_num)
 			return;
 		}
 	} else {
-		if( supernova_active() >= 3 ) {
+		if( supernova_stage() >= SUPERNOVA_STAGE::HIT) {
 			return;
 		}
 	}
@@ -4023,13 +4022,11 @@ HudGauge(HUD_OBJECT_SUPERNOVA, HUD_DIRECTIVES_VIEW, false, false, 0, 255, 255, 2
 
 void HudGaugeSupernova::render(float  /*frametime*/)
 {
-	float time_left;
-
-	// if there's a supernova coming
-	time_left = supernova_time_left();
-	if(time_left < 0.0f){
+	if (!supernova_active()) {
 		return;
 	}
+
+	auto time_left = supernova_hud_time_left();
 
 	gr_set_color_fast(&Color_bright_red);
 	if (Lcl_pl) {

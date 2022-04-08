@@ -19,6 +19,7 @@
 #include "mod_table/mod_table.h"
 #include "parse/parselo.h"
 #include "sound/sound.h"
+#include "starfield/supernova.h"
 #include "playerman/player.h"
 
 int Directive_wait_time;
@@ -86,6 +87,7 @@ float Min_pixel_size_beam;
 float Min_pizel_size_muzzleflash;
 float Min_pixel_size_trail;
 float Min_pixel_size_laser;
+bool Supernova_hits_at_zero;
 
 void mod_table_set_version_flags();
 
@@ -252,6 +254,15 @@ void parse_mod_table(const char *filename)
 
 		if (optional_string("$Don't automatically select a turret when targeting a ship:")) {
 			stuff_boolean(&Dont_automatically_select_turret_when_targeting_ship);
+		}
+
+		if (optional_string("$Supernova hits at zero:")) {
+			stuff_boolean(&Supernova_hits_at_zero);
+			if (Supernova_hits_at_zero) {
+				mprintf(("Game Settings Table: HUD timer will reach 0 when the supernova shockwave hits the player\n"));
+			} else {
+				mprintf(("Game Settings Table: HUD timer will reach %.2f when the supernova shockwave hits the player\n", SUPERNOVA_HIT_TIME));
+			}
 		}
 
 		optional_string("#SEXP SETTINGS");
@@ -854,6 +865,7 @@ void mod_table_reset()
 	Min_pizel_size_muzzleflash = 0.0f;
 	Min_pixel_size_trail = 0.0f;
 	Min_pixel_size_laser = 0.0f;
+	Supernova_hits_at_zero = false;
 }
 
 void mod_table_set_version_flags()

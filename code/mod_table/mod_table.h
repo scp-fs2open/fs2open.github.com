@@ -76,6 +76,7 @@ extern float Min_pixel_size_beam;
 extern float Min_pizel_size_muzzleflash;
 extern float Min_pixel_size_trail;
 extern float Min_pixel_size_laser;
+extern bool Supernova_hits_at_zero;
 
 void mod_table_init();
 
