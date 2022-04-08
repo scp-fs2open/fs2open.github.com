@@ -1905,10 +1905,8 @@ void update_throttle_sound()
 	
 		if ( object_get_gliding(Player_obj) ) {	// Backslash
 			percent_throttle = Player_obj->phys_info.forward_thrust;
-		} else if ( Ships[Player_obj->instance].current_max_speed == 0 ) {
-			percent_throttle = Player_obj->phys_info.fspeed / Ship_info[Ships[Player_obj->instance].ship_info_index].max_speed;
 		} else {
-			percent_throttle = Player_obj->phys_info.fspeed / Ships[Player_obj->instance].current_max_speed;
+			percent_throttle = Player_obj->phys_info.fspeed / Ship_info[Ships[Player_obj->instance].ship_info_index].max_speed;
 		}
 
 		if (percent_throttle != last_percent_throttle || !Player_engine_snd_loop.isValid()) {
