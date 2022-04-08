@@ -24,6 +24,7 @@ constexpr float SUPERNOVA_CLOSE_TIME = 15.0f;							// must be at least 15 secon
 constexpr float SUPERNOVA_HIT_TIME = 5.0f;								// note this is also the minimum time for the supernova sexpression
 constexpr float SUPERNOVA_CAMERA_MOVE_DURATION = 2.0f;					// this is the amount of time the camera will cut from the sun to the player
 constexpr float SUPERNOVA_FADE_TO_WHITE_DURATION = 1.0f;				// fade to white over this amount of time
+constexpr float SUPERNOVA_SWITCH_TO_GLARE_DURATION = 1.0f;				// switch from lightshaft to glare over this amount of time
 
 // how much bigger the sun will be when the effect hits
 constexpr float SUPERNOVA_SUN_SCALE = 3.0f;
@@ -69,6 +70,9 @@ float supernova_pct_complete();
 
 // special sunspot percent calculation (0.0 to 1.0)
 float supernova_sunspot_pct();
+
+// for smoothly switching from one to the other
+float supernova_lightshaft_to_glare_pct();
 
 // if the camera should cut to the "you-are-toast" cam
 bool supernova_camera_cut();

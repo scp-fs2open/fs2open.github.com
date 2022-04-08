@@ -21,6 +21,7 @@
 #include "nebula/neb.h"
 #include "parse/parselo.h"
 #include "ship/ship.h"
+#include "starfield/supernova.h"
 #include "tracing/tracing.h"
 
 extern bool PostProcessing_override;
@@ -441,6 +442,10 @@ void opengl_post_lightshafts()
 	// should we even be here?
 	if ( !Game_subspace_effect && gr_lightshafts_enabled() ) {
 		int n_lights = light_get_global_count();
+		auto intensity_scale = Sun_spot;
+		if (supernova_active()) {
+			intensity_scale *= (1.0f - supernova_lightshaft_to_glare_pct());
+		}
 
 		for ( int idx = 0; idx<n_lights; idx++ ) {
 			vec3d light_dir;
@@ -468,8 +473,8 @@ void opengl_post_lightshafts()
 						data->density      = ls_params.density;
 						data->falloff      = ls_params.falloff;
 						data->weight       = ls_params.weight;
-						data->intensity    = Sun_spot * ls_params.intensity;
-						data->cp_intensity = Sun_spot * ls_params.cpintensity;
+						data->intensity    = intensity_scale * ls_params.intensity;
+						data->cp_intensity = intensity_scale * ls_params.cpintensity;
 					});
 
 				Current_shader->program->Uniforms.setTextureUniform("scene", 0);

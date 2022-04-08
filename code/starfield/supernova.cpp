@@ -256,6 +256,16 @@ float supernova_sunspot_pct()
 	return 1.0f - (Supernova_time / SUPERNOVA_HIT_TIME);
 }
 
+float supernova_lightshaft_to_glare_pct()
+{
+	if (Supernova_status < SUPERNOVA_STAGE::CLOSE)
+		return 0.0f;
+	else if (Supernova_time > (SUPERNOVA_CLOSE_TIME - SUPERNOVA_SWITCH_TO_GLARE_DURATION))
+		return (SUPERNOVA_CLOSE_TIME - Supernova_time) / SUPERNOVA_SWITCH_TO_GLARE_DURATION;
+	else
+		return 1.0f;
+}
+
 // if the camera should cut to the "you-are-toast" cam
 bool supernova_camera_cut()
 {

@@ -820,10 +820,11 @@ static void game_flash_diminish(float frametime)
 		g = fl2i( Game_flash_green*128.0f );   
 		b = fl2i( Game_flash_blue*128.0f );  
 
-		if ( Sun_spot > 0.0f && !gr_lightshafts_enabled()) {
-			r += fl2i(Sun_spot*128.0f);
-			g += fl2i(Sun_spot*128.0f);
-			b += fl2i(Sun_spot*128.0f);
+		if ( (Sun_spot > 0.0f) && (!gr_lightshafts_enabled() || supernova_active()) ) {
+			auto inc = fl2i(Sun_spot * 128.0f * supernova_lightshaft_to_glare_pct());
+			r += inc;
+			g += inc;
+			b += inc;
 		}
 
 		if ( Big_expl_flash.cur_flash_intensity  > 0.0f ) {
