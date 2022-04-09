@@ -432,7 +432,7 @@ DCF(detail, "Turns on/off parts of the game for speed testing" )
 // NOTE: Because this uses memcpy, it should only be used to sort POD elements!
 void insertion_sort(void *array_base, size_t array_size, size_t element_size, int (*fncompare)(const void *, const void *))
 {
-	int i, j;
+	size_t i, j;
 	void *current;
 	char *array_byte_base;
 	
@@ -441,14 +441,14 @@ void insertion_sort(void *array_base, size_t array_size, size_t element_size, in
 
 	// allocate space for the element being moved
 	current = malloc(element_size);
-	if (current == NULL)
+	if (current == nullptr)
 	{
-		Int3();
+		UNREACHABLE("Malloc failed!");
 		return;
 	}
 
 	// loop
-	for (i = 1; (unsigned) i < array_size; i++)
+	for (i = 1; i < array_size; i++)
 	{	
 		// grab the current element
 		memcpy(current, array_byte_base + (i * element_size), element_size);
