@@ -1746,7 +1746,7 @@ void mission_campaign_end_do()
 	// this is specific to the FreeSpace 2 single-player campaign
 	if (!stricmp(Campaign.filename, "freespace2")) {
 		// did the supernova blow?
-		if (Supernova_status == SUPERNOVA_HIT) {
+		if (supernova_stage() >= SUPERNOVA_STAGE::HIT) {
 			movie::play_two("endpart1.mve", "endprt2b.mve");			// bad ending
 		} else {
 			movie::play_two("endpart1.mve", "endprt2a.mve");			// good ending

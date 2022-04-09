@@ -649,14 +649,20 @@ void game_sunspot_process(float frametime)
 	float Sun_spot_goal = 0.0f;
 
 	// supernova
-	int sn_stage = supernova_active();
-	if(sn_stage){		
+	auto sn_stage = supernova_stage();
+	if (sn_stage != SUPERNOVA_STAGE::NONE) {
 		// sunspot differently based on supernova stage
-		switch(sn_stage){
+		switch (sn_stage) {
+		// this case is only here to make gcc happy - apparently it doesn't know we already checked for it
+		case SUPERNOVA_STAGE::NONE:
+			UNREACHABLE("The SUPERNOVA_STAGE::NONE case should have already been handled");
+			break;
+
 		// approaching. player still in control
-		case 1:			
+		case SUPERNOVA_STAGE::STARTED:
+		case SUPERNOVA_STAGE::CLOSE:
 			float pct;
-			pct = (1.0f - (supernova_time_left() / SUPERNOVA_CUT_TIME));
+			pct = supernova_sunspot_pct();
 
 			vec3d light_dir;				
 			light_get_global_dir(&light_dir, 0);
@@ -681,10 +687,10 @@ void game_sunspot_process(float frametime)
 			break;
 
 		// camera cut. player not in control. note : at this point camera starts out facing the sun. so we can go nice and bright
-		case 2: 					
-		case 3:
+		case SUPERNOVA_STAGE::HIT:
+		case SUPERNOVA_STAGE::TOOLTIME:
 			Sun_spot_goal = 0.9f;
-			Sun_spot_goal += (1.0f - (supernova_time_left() / SUPERNOVA_CUT_TIME)) * 0.1f;
+			Sun_spot_goal += supernova_sunspot_pct() * 0.1f;
 
 			if(Sun_spot_goal > 1.0f){
 				Sun_spot_goal = 1.0f;
@@ -695,8 +701,8 @@ void game_sunspot_process(float frametime)
 			break;		
 
 		// fade to white. display dead popup
-		case 4:
-		case 5:
+		case SUPERNOVA_STAGE::DEAD1:
+		case SUPERNOVA_STAGE::DEAD2:
 			Supernova_last_glare += (2.0f * flFrametime);
 			if(Supernova_last_glare > 2.0f){
 				Supernova_last_glare = 2.0f;
@@ -2440,7 +2446,7 @@ void game_reset_view_clip()
 
 void game_set_view_clip(float  /*frametime*/)
 {
-	if ((Game_mode & GM_DEAD) || (supernova_active() >= 2))
+	if ((Game_mode & GM_DEAD) || (supernova_stage() >= SUPERNOVA_STAGE::HIT))
 	{
 		// Set the clip region for the letterbox "dead view"
 		int yborder = gr_screen.max_h/4;
@@ -2968,7 +2974,7 @@ void apply_view_shake(matrix *eye_orient)
 	else {
 		// Make eye shake due to supernova
 		if (supernova_camera_cut()) {
-			float cut_pct = 1.0f - (supernova_time_left() / SUPERNOVA_CUT_TIME);
+			float cut_pct = supernova_sunspot_pct();
 			tangles.p += get_shake(0.07f * cut_pct * sn_shudder, -1, 0);
 			tangles.h += get_shake(0.07f * cut_pct * sn_shudder, -1, 0);
 		}
@@ -3537,7 +3543,7 @@ void game_simulation_frame()
 
 	// supernova
 	supernova_process();
-	if(supernova_active() >= 5){
+	if (supernova_stage() >= SUPERNOVA_STAGE::DEAD1) {
 		return;
 	}
 

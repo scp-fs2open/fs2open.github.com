@@ -34730,7 +34730,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t4: List of subsys names not to be randomized\r\n"},
 
 	{ OP_SUPERNOVA_START, "supernova-start\r\n"
-		"\t1: Time in seconds until the supernova shockwave hits the player\r\n"},
+		"\t1: Time in seconds that the supernova lasts.  Note that it will actually hit the player at " STR(SUPERNOVA_CUT_TIME) " seconds.  If you want the HUD gauge to adjust for this, use the '$Supernova hits at zero' game_settings.tbl option.\r\n"},
 
 	{ OP_SUPERNOVA_STOP, "supernova-stop\r\n"
 		"\t Stops a supernova in progress.\r\n"
