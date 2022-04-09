@@ -213,7 +213,39 @@ int current_detail_level();
 
 
 // Goober5000
-void insertion_sort(void *array, size_t array_size, size_t element_size, int (*fncompare)(const void *, const void *));
+// (Taylor says that for optimization purposes malloc/free should be used rather than vm_malloc/vm_free here)
+template <typename T>
+void insertion_sort(T* array_base, size_t array_size, int (*fncompare)(const T*, const T*))
+{
+	size_t i, j;
+	T* current;
 
+	// allocate space for the element being moved
+	current = (T*)malloc(sizeof(T));
+	if (current == nullptr)
+	{
+		UNREACHABLE("Malloc failed!");
+		return;
+	}
+
+	// loop
+	for (i = 1; i < array_size; i++)
+	{
+		// grab the current element
+		*current = array_base[i];
+
+		// bump other elements toward the end of the array
+		for (j = i - 1; (j >= 0) && (fncompare(&array_base[j], current) > 0); j--)
+		{
+			array_base[j + 1] = array_base[j];
+		}
+
+		// insert the current element at the correct place
+		array_base[j + 1] = *current;
+	}
+
+	// free the allocated space
+	free(current);
+}
 
 #endif

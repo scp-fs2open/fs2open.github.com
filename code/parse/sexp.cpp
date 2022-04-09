@@ -31275,13 +31275,9 @@ void sexp_variable_delete(int index)
 	Sexp_variables[index].type = SEXP_VARIABLE_NOT_USED;
 }
 
-int sexp_var_compare(const void *var1, const void *var2)
+int sexp_var_compare(const sexp_variable *sexp_var1, const sexp_variable *sexp_var2)
 {
 	int set1, set2;
-	sexp_variable *sexp_var1, *sexp_var2;
-
-	sexp_var1 = (sexp_variable*) var1;
-	sexp_var2 = (sexp_variable*) var2;
 
 	set1 = sexp_var1->type & SEXP_VARIABLE_SET;
 	set2 = sexp_var2->type & SEXP_VARIABLE_SET;
@@ -31302,7 +31298,7 @@ int sexp_var_compare(const void *var1, const void *var2)
  */
 void sexp_variable_sort()
 {
-	insertion_sort( (void *)Sexp_variables, (size_t)(MAX_SEXP_VARIABLES), sizeof(sexp_variable), sexp_var_compare );
+	insertion_sort(Sexp_variables, MAX_SEXP_VARIABLES, sexp_var_compare);
 }
 
 // Goober5000
