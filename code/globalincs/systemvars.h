@@ -234,7 +234,7 @@ void insertion_sort(T* array_base, int array_size, int (*fncompare)(const T*, co
 	for (i = 1; i < array_size; i++)
 	{
 		// grab the current element
-		// this does a lazy copy because if the array is mostly sorted,
+		// this does a lazy move/copy because if the array is mostly sorted,
 		// there's no sense copying sorted items to their own places
 		bool lazily_copied = false;
 		current = &array_base[i];
@@ -246,18 +246,18 @@ void insertion_sort(T* array_base, int array_size, int (*fncompare)(const T*, co
 			{
 				// this may look strange but it is just copying the data
 				// into the buffer, then pointing to the buffer
-				*current_buf = *current;
+				*current_buf = std::move(*current);
 				current = current_buf;
 				lazily_copied = true;
 			}
 
-			array_base[j + 1] = array_base[j];
+			array_base[j + 1] = std::move(array_base[j]);
 		}
 
 		if (lazily_copied)
 		{
 			// insert the current element at the correct place
-			array_base[j + 1] = *current;
+			array_base[j + 1] = std::move(*current);
 		}
 	}
 
