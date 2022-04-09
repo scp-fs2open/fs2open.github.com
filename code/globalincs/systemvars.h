@@ -218,11 +218,11 @@ template <typename T>
 void insertion_sort(T* array_base, size_t array_size, int (*fncompare)(const T*, const T*))
 {
 	size_t i, j;
-	T* current;
+	T *current, *current_buf;
 
 	// allocate space for the element being moved
-	current = (T*)malloc(sizeof(T));
-	if (current == nullptr)
+	current_buf = (T*)malloc(sizeof(T));
+	if (current_buf == nullptr)
 	{
 		UNREACHABLE("Malloc failed!");
 		return;
@@ -232,20 +232,35 @@ void insertion_sort(T* array_base, size_t array_size, int (*fncompare)(const T*,
 	for (i = 1; i < array_size; i++)
 	{
 		// grab the current element
-		*current = array_base[i];
+		// this does a lazy copy because if the array is mostly sorted,
+		// there's no sense copying sorted items to their own places
+		bool lazily_copied = false;
+		current = &array_base[i];
 
 		// bump other elements toward the end of the array
 		for (j = i - 1; (j >= 0) && (fncompare(&array_base[j], current) > 0); j--)
 		{
+			if (!lazily_copied)
+			{
+				// this may look strange but it is just copying the data
+				// into the buffer, then pointing to the buffer
+				*current_buf = *current;
+				current = current_buf;
+				lazily_copied = true;
+			}
+
 			array_base[j + 1] = array_base[j];
 		}
 
-		// insert the current element at the correct place
-		array_base[j + 1] = *current;
+		if (lazily_copied)
+		{
+			// insert the current element at the correct place
+			array_base[j + 1] = *current;
+		}
 	}
 
 	// free the allocated space
-	free(current);
+	free(current_buf);
 }
 
 #endif
