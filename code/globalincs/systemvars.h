@@ -214,10 +214,12 @@ int current_detail_level();
 
 // Goober5000
 // (Taylor says that for optimization purposes malloc/free should be used rather than vm_malloc/vm_free here)
+// NOTE: j *must* be a signed type because j reaches -1 and j+1 must be 0.  So we might as well make them ints
+// and make array_size an int as well.
 template <typename T>
-void insertion_sort(T* array_base, size_t array_size, int (*fncompare)(const T*, const T*))
+void insertion_sort(T* array_base, int array_size, int (*fncompare)(const T*, const T*))
 {
-	size_t i, j;
+	int i, j;
 	T *current, *current_buf;
 
 	// allocate space for the element being moved
