@@ -29,9 +29,10 @@
 
 // countdown for supernova
 static float Supernova_time_total = -1.0f;
-static float Supernova_time = -1.0f;
-static float Supernova_fade_to_white = 0.0f;
-static int Supernova_particle_stamp = -1;
+static float Supernova_time_left = -1.0f;	// this is no longer updated directly, but calculated in supernova_process()
+static TIMESTAMP Supernova_timestamp;
+static TIMESTAMP Supernova_fade_to_white_timestamp;
+static TIMESTAMP Supernova_particle_timestamp;
 
 auto Supernova_status = SUPERNOVA_STAGE::NONE;
 
@@ -44,9 +45,10 @@ auto Supernova_status = SUPERNOVA_STAGE::NONE;
 void supernova_level_init()
 {
 	Supernova_time_total = -1.0f;
-	Supernova_time = -1.0f;	
-	Supernova_fade_to_white = 0.0f;
-	Supernova_particle_stamp = -1;
+	Supernova_time_left = -1.0f;
+	Supernova_timestamp = TIMESTAMP::invalid();
+	Supernova_fade_to_white_timestamp = TIMESTAMP::invalid();
+	Supernova_particle_timestamp = TIMESTAMP::immediate();
 
 	Supernova_status = SUPERNOVA_STAGE::NONE;
 }
@@ -65,7 +67,8 @@ void supernova_start(int seconds)
 	}
 
 	Supernova_time_total = (float)seconds;
-	Supernova_time = (float)seconds;
+	Supernova_time_left = (float)seconds;
+	Supernova_timestamp = _timestamp(seconds * MILLISECONDS_PER_SECOND);
 
 	Supernova_status = SUPERNOVA_STAGE::STARTED;
 }
@@ -103,8 +106,8 @@ void supernova_do_particles()
 	}
 
 	// timestamp
-	if((Supernova_particle_stamp == -1) || timestamp_elapsed(Supernova_particle_stamp)) {
-		Supernova_particle_stamp = timestamp(sn_particles);
+	if (timestamp_elapsed(Supernova_particle_timestamp)) {
+		Supernova_particle_timestamp = _timestamp(sn_particles);
 
 		// get particle norm
 		stars_get_sun_pos(0, &sun_temp);
@@ -152,10 +155,7 @@ DCF_FLOAT2(sn_shud, sn_shudder, 0.0, FLT_MAX, "Sets camera shudder rate for bein
 void supernova_process()
 {
 	if (Supernova_status != SUPERNOVA_STAGE::NONE)
-		Supernova_time -= flFrametime;
-
-	if (Supernova_status >= SUPERNOVA_STAGE::DEAD1)
-		Supernova_fade_to_white += flFrametime;
+		Supernova_time_left = i2fl(timestamp_until(Supernova_timestamp)) / MILLISECONDS_PER_SECOND;
 
 	switch (Supernova_status)
 	{
@@ -163,7 +163,7 @@ void supernova_process()
 			break;
 
 		case SUPERNOVA_STAGE::STARTED:
-			if (Supernova_time <= SUPERNOVA_CLOSE_TIME)
+			if (Supernova_time_left <= SUPERNOVA_CLOSE_TIME)
 			{
 				snd_play(gamesnd_get_game_sound(GameSounds::SUPERNOVA_1), 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY);
 				Supernova_status = SUPERNOVA_STAGE::CLOSE;
@@ -171,7 +171,7 @@ void supernova_process()
 			break;
 
 		case SUPERNOVA_STAGE::CLOSE:
-			if (Supernova_time <= SUPERNOVA_HIT_TIME)
+			if (Supernova_time_left <= SUPERNOVA_HIT_TIME)
 			{
 				snd_play(gamesnd_get_game_sound(GameSounds::SUPERNOVA_2), 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY);
 				Supernova_status = SUPERNOVA_STAGE::HIT;
@@ -183,7 +183,7 @@ void supernova_process()
 
 		case SUPERNOVA_STAGE::HIT:
 			supernova_do_particles();
-			if (Supernova_time <= (SUPERNOVA_HIT_TIME - SUPERNOVA_CAMERA_MOVE_DURATION))
+			if (Supernova_time_left <= (SUPERNOVA_HIT_TIME - SUPERNOVA_CAMERA_MOVE_DURATION))
 			{
 				Supernova_status = SUPERNOVA_STAGE::TOOLTIME;
 			}
@@ -191,9 +191,10 @@ void supernova_process()
 
 		case SUPERNOVA_STAGE::TOOLTIME:
 			supernova_do_particles();
-			// if we've got negative, the supernova is done
-			if (Supernova_time < 0.0f)
+			// if the timestamp is done, so is the supernova
+			if (timestamp_elapsed(Supernova_timestamp))
 			{
+				Supernova_fade_to_white_timestamp = _timestamp(fl2i(SUPERNOVA_FADE_TO_WHITE_DURATION * MILLISECONDS_PER_SECOND));
 				Supernova_status = SUPERNOVA_STAGE::DEAD1;
 			}
 			break;
@@ -201,7 +202,7 @@ void supernova_process()
 		case SUPERNOVA_STAGE::DEAD1:
 			supernova_do_particles();
 			// start the dead popup
-			if (Supernova_fade_to_white >= SUPERNOVA_FADE_TO_WHITE_DURATION)
+			if (timestamp_elapsed(Supernova_fade_to_white_timestamp))
 			{
 				// main freespace 2 campaign? if so - end it now
 				//
@@ -235,7 +236,7 @@ SUPERNOVA_STAGE supernova_stage()
 
 float supernova_hud_time_left()
 {
-	auto time_left = Supernova_time;
+	auto time_left = Supernova_time_left;
 	if (Supernova_hits_at_zero)
 		time_left -= SUPERNOVA_HIT_TIME;
 	return MAX(time_left, 0.0f);
@@ -248,12 +249,12 @@ float supernova_pct_complete()
 		return -1.0f;
 	}
 
-	return (Supernova_time_total - Supernova_time) / Supernova_time_total;
+	return (Supernova_time_total - Supernova_time_left) / Supernova_time_total;
 }
 
 float supernova_sunspot_pct()
 {
-	return 1.0f - (Supernova_time / SUPERNOVA_HIT_TIME);
+	return 1.0f - (Supernova_time_left / SUPERNOVA_HIT_TIME);
 }
 
 // if the camera should cut to the "you-are-toast" cam
@@ -310,7 +311,7 @@ void supernova_get_eye(vec3d *eye_pos, matrix *eye_orient)
 		vm_vec_normalize(&move);
 
 		// linearly move towards the player pos
-		float pct = ((SUPERNOVA_HIT_TIME - Supernova_time) / SUPERNOVA_CAMERA_MOVE_DURATION);
+		float pct = ((SUPERNOVA_HIT_TIME - Supernova_time_left) / SUPERNOVA_CAMERA_MOVE_DURATION);
 		vm_vec_scale_add2(&at, &move, sn_distance * pct);
 
 		vm_vec_sub(&view, &at, &Supernova_camera_pos);
