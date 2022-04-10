@@ -22,6 +22,7 @@
 # LINUX_RESULT: bool, if the linux builds were sucessfully uploaded
 # WINDOWS_RESULT: bool, if the windows builds were successfully uploaded
 
+from curses import window
 import sys
 import os
 import re
@@ -83,7 +84,7 @@ def get_source_version(date_version: datetime, tag_name: str) -> semantic_versio
 		major = _match_version_number(filetext, MAJOR_VERSION_PATTERN)
 		minor = _match_version_number(filetext, MINOR_VERSION_PATTERN)
 		build = _match_version_number(filetext, BUILD_VERSION_PATTERN)
-	#	revision = _match_version_number(filetext, REVISION_VERSION_PATTERN)
+		# revision = _match_version_number(filetext, REVISION_VERSION_PATTERN)
 		revision_str = _match_version_number(filetext, REVISION_STR_VERSION_PATTERN)
 
 	print("Parsing version_override.cmake...")
@@ -155,13 +156,21 @@ def main():
 		print("ERROR: Invalid release mode %s passed. Expected release or nightly!" % sys.argv[1])
 		sys.exit(1)
 
-	# bail if any build subflows failed
-	success = ((os.environ["LINUX_RESULT"] == "success") and (os.environ["WINDOWS_RESULT"] == "success"))	##!< true if both linux and windows builds successful
-	if not success:
-		print("ERROR: One or more builds failed to publish!")
-		sys.exit(1)
+	linux_success = os.environ["LINUX_RESULT"] == "success"
+	windows_success = os.environ["WINDOWS_RESULT"] == "success"
+	if (sys.argv[1] == "release"):
+		if not (linux_success and windows_success):
+			# bail if this is a release and either build workflow failed
+			print("ERROR: One or more builds failed to publish! Cannot post release.")
+			sys.exit(1)
+	else:
+		if not (linux_success or windows_success):
+			# bail if this is a nightly build and both build workflows failed
+			print("ERROR: All builds failed to publish! Cannot post nightly.")
+			sys.exit(1)
 	
 	# bail if tag_name doesn't match with sys.argv[1]
+	tag_name = os.environ["RELEASE_TAG"]	##!< commit tag string
 	if (sys.argv[1] == "release") and (not tag_name.startswith("release_")):
 		print("ERROR: Invalid tag name detected. Expected release_ prefix for release builds but found %s (full ref = %s)" % tag_name, os.environ["GITHUB_REF"])
 		sys.exit(1)
@@ -170,19 +179,20 @@ def main():
 		print("ERROR: Invalid tag name detected. Expected nightly_ prefix for nightly builds but found %s (full ref = %s)" % tag_name, os.environ["GITHUB_REF"])
 		sys.exit(1)
 
+	# bail if tag_name does not exist in the repo
+	if not check_output(("git show-ref --tags refs/tags/%s" % tag_name), text=True):
+		print("ERROR: Couldn't find tag %s in repo (git show-ref)!" % tag_name)
+		sys.exit(1)
 
 	# Populate version and date
-	tag_name = os.environ["RELEASE_TAG"]	##!< commit tag string
 	date = datetime.now()	##!< current date
 	version = get_source_version(date.strftime(DATEFORMAT_VERSION), tag_name)	##!< form full version string
 	
-	# check that tag_name is in the
 	# find the previous tag release (used by nightly)
 	tags = check_output(("git", "for-each-ref", "--sort=-taggerdate", "--format='%(tag)'", "refs/tags"), text=True).splitlines()	# retrieve all tags in the repo by using git on the shell
 	# NOTE: check_output returns canonical string representation. use repr() on strings its being compared to
 	previous_tag = None
 	found = False
-
 	for tag in tags:
 		if found:
 			# Look for the "previous" tag with the same configuration ('release_' or 'nightly_')
@@ -196,7 +206,7 @@ def main():
 
 	if not found:
 		# couldn't find tag, bail
-		print("ERROR: Couldn't find tag %s in repo!" % tag_name)
+		print("ERROR: Couldn't find tag %s in repo! (git for-each-ref)" % tag_name)
 		sys.exit(1)
 
 	if (sys.argv[1] == "nightly") and (not previous_tag):
@@ -276,7 +286,7 @@ def main():
 		# Publish forum post, using the nighty.mako template
 		print("Publishing to Hard-light.net...")
 		fapi = forum.ForumAPI(config)
-		fapi.post_nightly(date.strftime(DATEFORMAT_FORUM), os.environ["GITHUB_SHA"], files, log, success)
+		fapi.post_nightly(date.strftime(DATEFORMAT_FORUM), os.environ["GITHUB_SHA"], files, log, (linux_success and windows_success))
 
 	print("Done!")
 

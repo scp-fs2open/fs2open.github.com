@@ -1,6 +1,5 @@
 # Retrives a log of commit messages and attempts to pretty them into a human-readbile format
 
-import datetime
 import os
 import re
 import requests
@@ -21,7 +20,7 @@ def get_last_page(response: requests.Response) -> int:
     @returns The page number of the last page, or MAX_PAGES
     """
 
-    # The link header is a heckn dictionary in string form, and for that matter the
+    # The link header is a dictionary in string form, and for that matter the
     # value is in front of the key.  It is of the form '<<url1>>; rel=<key1>, <url2>, <key2>'
     link = response.headers['link']
     link = link.split(',')
@@ -29,11 +28,13 @@ def get_last_page(response: requests.Response) -> int:
         y = x.split(';')        # <url>; rel=<key>
         if "last" not in y[1]:  # look for rel='last'
             continue
-        # search in the url for `page=`` and grab the int immediately after
-        # the int may be delimited by '&' or '>'
-        str = y[0][y[0].find('page=') : ]   # slice everything out before 'page='
-        str = str.split('&', 1)[0]          # slice out any possible queries after page=<int>
-        last_page = int( re.sub('\D', "", str) )    # strip out just the page number, as integer
+        # grab the page number from the URL
+        # group(0) is `page=123`, group(1) is `123`
+        last_page = int( re.search(r'page=(\d+)', y[0]).group(1) )
+        if not last_page:
+            print("Error: Could not find page number in url!  URL: %s", y[0])
+            sys.exit(1)
+
         if last_page > MAX_PAGES:
             return MAX_PAGES
         else:
@@ -65,19 +66,18 @@ def main():
     # also the merge date but not always.
 
     # Key attributes within the PR JSON objects:
-    #   "merged_at: <date>"
-    #   "merged: <bool>"
-    #   "html_url: <string>"
-    #   "number: <int>"     # The PR id number
-    #   "title: <string>"   # Title of the PR
-    #   "body: <string>"    # The body paragraph detailing the PR
+    #   "merged_at: <date>"     # Date the PR was merged in
+    #   "merged: <bool>"        # If the PR was merged yet
+    #   "html_url: <string>"    # URL of the PR's HEAD commit, used by some clients to pull in the PR branch
+    #   "number: <int>"         # The PR id number
+    #   "title: <string>"       # Title of the PR
+    #   "body: <string>"        # The body paragraph detailing the PR
     #   "labels: [label_object]"    # All labels attached to this PR
 
     changelog = {}
     url = "https://api.github.com/repos/scp-fs2open/fs2open.github.com/pulls"
-    page = 1
     last_page = MAX_PAGES
-    while (page <= last_page):
+    for page in range(1, last_page + 1):
         # GET <url>?base=master&sort=updated&direction=desc&state=closed&page=1
         response = requests.get(url, params={
             "base": "master",
@@ -116,7 +116,7 @@ def main():
                 continue
 
             merge_date = datetime.strptime(pull['merged_at'], "%Y-%m-%dT%H:%M:%SZ")
-            updated_date = datetime.strptime(pull['updated_at'], "%Y-%m-%dT%H:%M:%SZ")            
+            updated_date = datetime.strptime(pull['updated_at'], "%Y-%m-%dT%H:%M:%SZ")
             if (merge_date < start_date) and (updated_date >= start_date):
                 # This pull is too old, but was updated within our timeframe. skip
                 print("Found old pull #{} ({}), skipping...".format(pull['number'], pull['merged_at']))
@@ -139,8 +139,6 @@ def main():
                 }
                 print("Added pull #{} ({})".format(pull['number'], merge_date))
             # Else, silently ignore duplicate (for now...)
-
-        page += 1
 
 
     # Write the changelog to file
