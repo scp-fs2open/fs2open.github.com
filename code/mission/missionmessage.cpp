@@ -808,13 +808,8 @@ void message_mission_close()
 //	Compare function for sorting message queue entries based on priority.
 //	Return values set to sort array in _decreasing_ order.  If priorities equal, sort based
 // on time added into queue
-int message_queue_priority_compare(const void *a, const void *b)
+int message_queue_priority_compare(const message_q *ma, const message_q *mb)
 {
-	message_q *ma, *mb;
-
-	ma = (message_q *) a;
-	mb = (message_q *) b;
-
 	if (ma->priority > mb->priority) {
 		return -1;
 	} else if (ma->priority < mb->priority) {
@@ -987,7 +982,7 @@ void message_remove_from_queue(message_q *q)
 	q->event_num_to_cancel = -1;
 
 	if ( MessageQ_num > 0 ) {
-		insertion_sort(MessageQ, MAX_MESSAGE_Q, sizeof(message_q), message_queue_priority_compare);
+		insertion_sort(MessageQ, MAX_MESSAGE_Q, message_queue_priority_compare);
 	}
 }
 
@@ -1737,7 +1732,7 @@ void message_queue_message( int message_num, int priority, int timing, const cha
 		MessageQ[i].window_timestamp = timestamp(MESSAGE_ANYTIME_TIMESTAMP);		// make invalid
 
 	MessageQ_num++;
-	insertion_sort(MessageQ, MAX_MESSAGE_Q, sizeof(message_q), message_queue_priority_compare);
+	insertion_sort(MessageQ, MAX_MESSAGE_Q, message_queue_priority_compare);
 
 	// Try to start it!
 	// MWA -- called every frame from game loop
