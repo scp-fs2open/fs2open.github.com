@@ -1245,8 +1245,8 @@ void flash_ball::initialize(int number, float min_ray_width, float max_ray_width
 void flash_ball::defpoint(int off, ubyte *bsp_data)
 {
 	int n;
-	int nverts = w(off+bsp_data+8);	
-	int offset = w(off+bsp_data+16);
+	uint nverts = uw(off+bsp_data+8);	
+	uint offset = uw(off+bsp_data+16);
 	ubyte * normcount = off+bsp_data+20;
 	vec3d *src = vp(off+bsp_data+offset);
 
@@ -1278,6 +1278,7 @@ void flash_ball::defpoint(int off, ubyte *bsp_data)
 #define OP_TMAPPOLY		3
 #define OP_SORTNORM		4
 #define OP_BOUNDBOX		5
+#define OP_TMAP2POLY 6
 
 
 void flash_ball::parse_bsp(int offset, ubyte *bsp_data){
@@ -1300,6 +1301,8 @@ void flash_ball::parse_bsp(int offset, ubyte *bsp_data){
 		case OP_TMAPPOLY:
 			break;
 		case OP_BOUNDBOX:
+			break;
+		case OP_TMAP2POLY:
 			break;
 		default:
 			return;

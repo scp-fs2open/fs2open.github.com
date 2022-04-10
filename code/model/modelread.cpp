@@ -82,6 +82,8 @@ static uint Global_checksum = 0;
 // compatible.  
 #define PM_OBJFILE_MAJOR_VERSION 30
 
+// 23.00 adds support for increased subobject vertex limit via TMAP2POLY
+// 
 // 22.01 adds support for external weapon model angle offsets
 // 22.00 fixes the POF byte alignment and introduces the SLC2 chunk
 //
@@ -90,7 +92,7 @@ static uint Global_checksum = 0;
 // FreeSpace 2 shipped at POF version 21.17
 // Descent: FreeSpace shipped at POF version 20.14
 // See also https://wiki.hard-light.net/index.php/POF_data_structure
-#define PM_LATEST_ALIGNED_VERSION	2201
+#define PM_LATEST_ALIGNED_VERSION	2300
 #define PM_LATEST_LEGACY_VERSION	2118
 #define PM_FIRST_ALIGNED_VERSION	2200
 

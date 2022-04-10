@@ -90,10 +90,10 @@ void model_octant_find_shields( polymodel * pm, model_octant * oct )
     
 void moff_defpoints(ubyte * p, int just_count)
 {
-	int n;
-	int nverts = w(p+8);	
-	int offset = w(p+16);
-	int nnorms = 0;
+	uint n;
+	uint nverts = uw(p+8);	
+	uint offset = uw(p+16);
+	uint nnorms = 0;
 
 	// if we are just counting then we don't need to be here
 	if (just_count)
@@ -128,16 +128,19 @@ void moff_defpoints(ubyte * p, int just_count)
 // +32     float      radius
 // +36     int         nverts
 // +40     int         tmap_num
-// +44     nverts*(model_tmap_vert) vertlist (n,u,v)
+// +44     nverts*(model_tmap_vert-4) vertlist (n,u,v)
 void moff_tmappoly(ubyte * p, polymodel * pm, model_octant * oct, int just_count )
 {
-	int i, nv;
+	uint i, nv;
 	model_tmap_vert *verts;
 
-	nv = w(p+36);
+	nv = uw(p+36);
 	if ( nv < 0 ) return;
 
-	verts = (model_tmap_vert *)(p+44);
+	verts = new model_tmap_vert[nv];
+
+	// Copy the verts manually since they aren't aligned with the struct
+	unpack_tmap_verts(&p[44], verts, nv);
 
 	if ( (pm->version < 2003) && !just_count )	{
 		// Set the "normal_point" part of field to be the center of the polygon
@@ -178,6 +181,39 @@ void moff_tmappoly(ubyte * p, polymodel * pm, model_octant * oct, int just_count
 }
 
 
+// Textured Poly
+// +0      int         id
+// +4      int         size
+// +8      vec3d      normal
+// +20     vec3d      center
+// +32     float      radius
+// +36     int         nverts
+// +40     int         tmap_num
+// +44     nverts*(model_tmap_vert) vertlist (n,u,v)
+void moff_tmap2poly(ubyte* p, polymodel* pm, model_octant* oct, int just_count)
+{
+	Assert(pm->version >= 2300);
+
+	uint i, nv;
+	model_tmap_vert* verts;
+
+	nv = uw(p + 36);
+	if (nv < 0)
+		return;
+
+	verts = (model_tmap_vert*)(p + 44);
+
+	// Put each face into a particular octant
+	if (point_in_octant(pm, oct, vp(p + 20))) {
+		if (just_count)
+			oct->nverts++;
+		else
+			oct->verts[oct->nverts++] = vp(p + 20);
+		return;
+	}
+}
+
+
 // Flat Poly
 // +0      int         id
 // +4      int         size 
@@ -192,10 +228,10 @@ void moff_tmappoly(ubyte * p, polymodel * pm, model_octant * oct, int just_count
 // +44     nverts*int  vertlist
 void moff_flatpoly(ubyte * p, polymodel * pm, model_octant * oct, int just_count )
 {
-	int i, nv;
+	uint i, nv;
 	short *verts;
 
-	nv = w(p+36);
+	nv = uw(p+36);
 	if ( nv < 0 ) return;
 
 	verts = (short *)(p+44);
@@ -270,6 +306,7 @@ int model_octant_find_faces_sub(polymodel * pm, model_octant * oct, void *model_
 			}
 			break;
 		case OP_BOUNDBOX:		break;
+		case OP_TMAP2POLY:		moff_tmap2poly(p, pm, oct, just_count); break;
 		default:
 			mprintf(( "Bad chunk type %d, len=%d in model_octant_find_faces_sub\n", chunk_type, chunk_size ));
 			Int3();		// Bad chunk type!

@@ -23,6 +23,7 @@ class polymodel;
 #define OP_TMAPPOLY		3
 #define OP_SORTNORM		4
 #define OP_BOUNDBOX		5
+#define OP_TMAP2POLY	6
 
 // change header for freespace2
 //#define FREESPACE1_FORMAT
@@ -65,6 +66,7 @@ class polymodel;
 #define ID_SLDC 0x43444c53				// CDLS (SLDC): Shield Collision Tree
 #define ID_SLC2 0x32434c53				// 2CLS (SLC2): Shield Collision Tree with ints instead of char - ShivanSpS
 
+#define us(p)	(*((ushort *) (p)))
 #define uw(p)	(*((uint *) (p)))
 #define w(p)	(*((int *) (p)))
 #define wp(p)	((int *) (p))
