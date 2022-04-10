@@ -78,8 +78,11 @@ extern float Min_pixel_size_trail;
 extern float Min_pixel_size_laser;
 extern bool Supernova_hits_at_zero;
 extern bool Show_subtitle_uses_pixels;
+extern int Show_subtitle_screen_base_res[];
+extern int Show_subtitle_screen_adjusted_res[];
 
 void mod_table_init();
+void mod_table_post_process();
 
 /**
  * @brief Resets the mod values back to their default values

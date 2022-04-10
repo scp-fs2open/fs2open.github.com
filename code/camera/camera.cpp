@@ -597,11 +597,43 @@ void warp_camera::get_info(vec3d *position, matrix *orientation)
 
 #define MAX_SUBTITLE_LINES		64
 subtitle::subtitle(int in_x_pos, int in_y_pos, const char* in_text, const char* in_imageanim, float in_display_time,
-	float in_fade_time, const color *in_text_color, int in_text_fontnum, bool center_x, bool center_y, int in_width,
+	float in_fade_time, const color* in_text_color, int in_text_fontnum, bool center_x, bool center_y, int in_width,
 	int in_height, bool in_post_shaded, int in_line_height_modifier)
 	: display_time(-1.0f), fade_time(-1.0f), text_fontnum(-1), line_height_modifier(0),
-	image_id(-1), time_displayed(-1.0f), time_displayed_end(-1.0f), post_shaded(false)
+	image_id(-1), time_displayed(-1.0f), time_displayed_end(-1.0f), post_shaded(false), do_screen_scaling(false)
 {
+	if ((in_text == nullptr || *in_text == '\0') && (in_imageanim == nullptr || *in_imageanim == '\0'))
+		return;
+
+	auto screen_w = gr_screen.center_w;
+	auto screen_h = gr_screen.center_h;
+
+	// we might be doing screen scaling
+	if (Show_subtitle_screen_base_res[0] > 0 && Show_subtitle_screen_base_res[1] > 0)
+	{
+		// The way this works is we specify our subtitle coordinates relative to a base resolution, e.g. 1024x768.
+		// The base resolution is adjusted behind the scenes to match the aspect ratio of the current resolution
+		// (and the subtitle coordinates are adjusted as well).  Then the adjusted subtitles are resized by the
+		// graphics code when they are drawn to the screen.
+		do_screen_scaling = true;
+
+		// we might need to adjust the coordinates for aspect ratio
+		if (Show_subtitle_screen_base_res[0] != Show_subtitle_screen_adjusted_res[0])
+		{
+			in_x_pos = in_x_pos * Show_subtitle_screen_adjusted_res[0] / Show_subtitle_screen_base_res[0];
+			in_width = in_width * Show_subtitle_screen_adjusted_res[0] / Show_subtitle_screen_base_res[0];
+		}
+		if (Show_subtitle_screen_base_res[1] != Show_subtitle_screen_adjusted_res[1])
+		{
+			in_y_pos = in_y_pos * Show_subtitle_screen_adjusted_res[1] / Show_subtitle_screen_base_res[1];
+			in_height = in_height * Show_subtitle_screen_adjusted_res[1] / Show_subtitle_screen_base_res[1];
+		}
+
+		// use these because we will be scaling the subtitle when it is displayed
+		screen_w = Show_subtitle_screen_adjusted_res[0];
+		screen_h = Show_subtitle_screen_adjusted_res[1];
+	}
+
 	// Initialize color
 	gr_init_color(&text_color, 0, 0, 0);
 	
@@ -611,9 +643,6 @@ subtitle::subtitle(int in_x_pos, int in_y_pos, const char* in_text, const char* 
 	memset( imageanim, 0, sizeof(imageanim) );
 	memset( &text_pos, 0, 2*sizeof(int) );
 	memset( &image_pos, 0, 4*sizeof(int) );
-
-	if ( ((in_text != NULL) && (strlen(in_text) <= 0)) && ((in_imageanim != NULL) && (strlen(in_imageanim) <= 0)) )
-		return;
 
 	if (in_text != NULL && in_text[0] != '\0')
 	{
@@ -716,20 +745,20 @@ subtitle::subtitle(int in_x_pos, int in_y_pos, const char* in_text, const char* 
 
 		//Center it?
 		if(center_x)
-			image_pos.x = (gr_screen.center_w - tw)/2 + gr_screen.center_offset_x;
+			image_pos.x = (screen_w - tw)/2;
 		if(center_y)
-			image_pos.y = (gr_screen.center_h - th)/2 + gr_screen.center_offset_y;
+			image_pos.y = (screen_h - th)/2;
 	}
 
 	if(in_x_pos < 0 && !center_x)
-		image_pos.x += gr_screen.center_offset_x + gr_screen.center_w + in_x_pos;
+		image_pos.x += screen_w + in_x_pos;
 	else if(!center_x)
-		image_pos.x += gr_screen.center_offset_x + in_x_pos;
+		image_pos.x += in_x_pos;
 
 	if(in_y_pos < 0 && !center_y)
-		image_pos.y += gr_screen.center_offset_y + gr_screen.center_h + in_y_pos;
+		image_pos.y += screen_h + in_y_pos;
 	else if(!center_y)
-		image_pos.y += gr_screen.center_offset_y + in_y_pos;
+		image_pos.y += in_y_pos;
 
 	image_pos.w = in_width;
 	image_pos.h = in_height;
@@ -785,10 +814,15 @@ void subtitle::do_frame(float frametime)
 	int x = text_pos.x;
 	int y = text_pos.y;
 
+	auto sizing_mode = do_screen_scaling ? GR_RESIZE_FULL : GR_RESIZE_NONE;
+	if (do_screen_scaling)
+		gr_set_screen_scale(Show_subtitle_screen_adjusted_res[0], Show_subtitle_screen_adjusted_res[1]);
+
+	// do the actual drawing ---------------------
 
 	for(SCP_vector<SCP_string>::iterator line = text_lines.begin(); line != text_lines.end(); ++line)
 	{
-		gr_string(x, y, (char*)line->c_str(), GR_RESIZE_NONE);
+		gr_string(x, y, (char*)line->c_str(), sizing_mode);
 
 		if (line_height_modifier != 0.0f)
 		{
@@ -801,17 +835,11 @@ void subtitle::do_frame(float frametime)
 		y += font_height;
 	}
 
-	// restore old font
-	if (old_fontnum >= 0)
-	{
-		font::set_font(old_fontnum);
-	}
-
 	if(image_id >= 0)
 	{
 		gr_set_bitmap(image_id, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, text_color.alpha/255.0f);
 
-		// scaling?
+		// image scaling?
 		if (image_pos.w > 0 || image_pos.h > 0)
 		{
 			int orig_w, orig_h;
@@ -823,15 +851,24 @@ void subtitle::do_frame(float frametime)
 			scale.xyz.z = 1.0f;
 
 			gr_push_scale_matrix(&scale);
-			gr_bitmap(fl2i(image_pos.x / scale.xyz.x), fl2i(image_pos.y / scale.xyz.y), GR_RESIZE_NONE);
+			gr_bitmap(fl2i(image_pos.x / scale.xyz.x), fl2i(image_pos.y / scale.xyz.y), sizing_mode);
 			gr_pop_scale_matrix();
 		}
 		// no scaling
 		else
 		{
-			gr_bitmap(image_pos.x, image_pos.y, GR_RESIZE_NONE);
+			gr_bitmap(image_pos.x, image_pos.y, sizing_mode);
 		}
 	}
+
+	// finished the actual drawing ---------------
+
+	if (do_screen_scaling)
+		gr_reset_screen_scale();
+
+	// restore old font
+	if (old_fontnum >= 0)
+		font::set_font(old_fontnum);
 
 	time_displayed += frametime;
 }
@@ -872,6 +909,7 @@ void subtitle::clone(const subtitle &sub)
 	time_displayed_end = sub.time_displayed_end;
 
 	post_shaded = sub.post_shaded;
+	do_screen_scaling = sub.do_screen_scaling;
 }
 
 subtitle& subtitle::operator=(const subtitle &sub)

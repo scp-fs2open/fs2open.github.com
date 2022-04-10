@@ -22747,6 +22747,23 @@ void multi_sexp_clear_subtitles()
 	Subtitles.clear();
 }
 
+void get_subtitle_screen_size(int& w, int& h)
+{
+	// if we are doing screen scaling, then set the size to the base resolution
+	// (it will be adjusted when the subtitle is constructed)
+	if (Show_subtitle_screen_base_res[0] > 0 && Show_subtitle_screen_base_res[1] > 0)
+	{
+		w = Show_subtitle_screen_base_res[0];
+		h = Show_subtitle_screen_base_res[1];
+	}
+	// otherwise use the actual screen size
+	else
+	{
+		w = gr_screen.center_w;
+		h = gr_screen.center_h;
+	}
+}
+
 void sexp_show_subtitle_text(int node)
 {
 	bool is_nan, is_nan_forever;
@@ -22846,9 +22863,12 @@ void sexp_show_subtitle_text(int node)
 	}
 	else
 	{
-		x_pos = fl2i(gr_screen.center_w * (xy_input[0] / 100.0f));
-		y_pos = fl2i(gr_screen.center_h * (xy_input[1] / 100.0f));
-		width = fl2i(gr_screen.center_w * (width_input / 100.0f));
+		int screen_w, screen_h;
+		get_subtitle_screen_size(screen_w, screen_h);
+
+		x_pos = fl2i(screen_w * (xy_input[0] / 100.0f));
+		y_pos = fl2i(screen_h * (xy_input[1] / 100.0f));
+		width = fl2i(screen_w * (width_input / 100.0f));
 	}
 
 	// add the subtitle
@@ -22889,9 +22909,9 @@ void multi_sexp_show_subtitle_text()
 	bool post_shaded = false;
 	color new_color;
 
-	 Current_sexp_network_packet.get_int(xy_input[0]);
-	 Current_sexp_network_packet.get_int(xy_input[1]);
-	 Current_sexp_network_packet.get_int(message_index); 
+	Current_sexp_network_packet.get_int(xy_input[0]);
+	Current_sexp_network_packet.get_int(xy_input[1]);
+	Current_sexp_network_packet.get_int(message_index); 
 	if (message_index == -1) {
 		Current_sexp_network_packet.get_string(text);
 	}
@@ -22924,9 +22944,12 @@ void multi_sexp_show_subtitle_text()
 	}
 	else
 	{
-		x_pos = fl2i(gr_screen.center_w * (xy_input[0] / 100.0f));
-		y_pos = fl2i(gr_screen.center_h * (xy_input[1] / 100.0f));
-		width = fl2i(gr_screen.center_w * (width_input / 100.0f));
+		int screen_w, screen_h;
+		get_subtitle_screen_size(screen_w, screen_h);
+
+		x_pos = fl2i(screen_w * (xy_input[0] / 100.0f));
+		y_pos = fl2i(screen_h * (xy_input[1] / 100.0f));
+		width = fl2i(screen_w * (width_input / 100.0f));
 	}
 
 	// add the subtitle
@@ -22991,10 +23014,13 @@ void sexp_show_subtitle_image(int node)
 	}
 	else
 	{
-		x_pos = fl2i(gr_screen.center_w * (xy_input[0] / 100.0f));
-		y_pos = fl2i(gr_screen.center_h * (xy_input[1] / 100.0f));
-		width = fl2i(gr_screen.center_w * (width_input / 100.0f));
-		height = fl2i(gr_screen.center_h * (height_input / 100.0f));
+		int screen_w, screen_h;
+		get_subtitle_screen_size(screen_w, screen_h);
+
+		x_pos = fl2i(screen_w * (xy_input[0] / 100.0f));
+		y_pos = fl2i(screen_h * (xy_input[1] / 100.0f));
+		width = fl2i(screen_w * (width_input / 100.0f));
+		height = fl2i(screen_h * (height_input / 100.0f));
 	}
 
 	// add the subtitle
@@ -23046,10 +23072,13 @@ void multi_sexp_show_subtitle_image()
 	}
 	else
 	{
-		x_pos = fl2i(gr_screen.center_w * (xy_input[0] / 100.0f));
-		y_pos = fl2i(gr_screen.center_h * (xy_input[1] / 100.0f));
-		width = fl2i(gr_screen.center_w * (width_input / 100.0f));
-		height = fl2i(gr_screen.center_h * (height_input / 100.0f));
+		int screen_w, screen_h;
+		get_subtitle_screen_size(screen_w, screen_h);
+
+		x_pos = fl2i(screen_w * (xy_input[0] / 100.0f));
+		y_pos = fl2i(screen_h * (xy_input[1] / 100.0f));
+		width = fl2i(screen_w * (width_input / 100.0f));
+		height = fl2i(screen_h * (height_input / 100.0f));
 	}
 
 	// add the subtitle
@@ -35603,7 +35632,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_CUTSCENES_SHOW_SUBTITLE_TEXT, "show-subtitle-text\r\n"
 		"\tDisplays a subtitle in the form of text.  Note that because of the constraints of the subtitle system, textual subtitles are currently limited to 255 characters or fewer.\r\n\r\n"
-		"Certain arguments can be specified in a percentage of the screen or an absolute number of pixels.  This is controlled by the '$Show-subtitle uses pixels' game_settings.tbl option.\r\n\r\n"
+		"Certain arguments can be specified in a percentage of the screen or an absolute number of pixels.  This is controlled by the '$Show-subtitle uses pixels' game_settings.tbl option.  "
+		"Whether percentages or pixels, the subtitle can be configured to scale according to screen resolution via the '$Show-subtitle base resolution' option.\r\n\r\n"
 		"Takes 6 to 14 arguments...\r\n"
 		"\t1:\tText to display, or the name of a message containing text\r\n"
 		"\t2:\tX position (percentage/pixels) - positive measures from the left; negative measures from the right\r\n"
@@ -35623,7 +35653,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_CUTSCENES_SHOW_SUBTITLE_IMAGE, "show-subtitle-image\r\n"
 		"\tDisplays a subtitle in the form of an image.  Please note that, in images without an alpha channel, black pixels will be treated as transparent.  In images with an alpha channel, black pixels will be drawn as expected.\r\n\r\n"
-		"Certain arguments can be specified in a percentage of the screen or an absolute number of pixels.  This is controlled by the '$Show-subtitle uses pixels' game_settings.tbl option.\r\n\r\n"
+		"Certain arguments can be specified in a percentage of the screen or an absolute number of pixels.  This is controlled by the '$Show-subtitle uses pixels' game_settings.tbl option.  "
+		"Whether percentages or pixels, the subtitle can be configured to scale according to screen resolution via the '$Show-subtitle base resolution' option.\r\n\r\n"
 		"Takes 8 to 10 arguments...\r\n"
 		"\t1:\tImage to display\r\n"
 		"\t2:\tX position (percentage/pixels) - positive measures from the left; negative measures from the right\r\n"
