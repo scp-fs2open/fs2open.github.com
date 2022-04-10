@@ -213,16 +213,18 @@ int current_detail_level();
 
 
 // Goober5000
-// (Taylor says that for optimization purposes malloc/free should be used rather than vm_malloc/vm_free here)
-// NOTE: j *must* be a signed type because j reaches -1 and j+1 must be 0.  So we might as well make them ints
-// and make array_size an int as well.
+// A sort for use with small or almost-sorted lists.  Iteration time is O(n) for a fully-sorted list.
+// This uses a type-safe version of the function prototype for stdlib's qsort, although the size is an int rather than a size_t (for the reasons that j is an int).
+// The fncompare function should return <0, 0, or >0 as the left item is less than, equal to, or greater than the right item.
 template <typename T>
 void insertion_sort(T* array_base, int array_size, int (*fncompare)(const T*, const T*))
 {
+	// NOTE: j *must* be a signed type because j reaches -1 and j+1 must be 0.
 	int i, j;
 	T *current, *current_buf;
 
 	// allocate space for the element being moved
+	// (Taylor says that for optimization purposes malloc/free should be used rather than vm_malloc/vm_free here)
 	current_buf = (T*)malloc(sizeof(T));
 	if (current_buf == nullptr)
 	{
