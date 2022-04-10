@@ -31455,6 +31455,7 @@ int get_index_sexp_variable_name_special(SCP_string &text, size_t startpos)
 }
 
 // Goober5000
+// Note that the parameter here is max *length*, not max buffer size.  Leave room for the null-terminator!
 bool sexp_replace_variable_names_with_values(char *text, int max_len)
 {
 	Assert(text != nullptr);

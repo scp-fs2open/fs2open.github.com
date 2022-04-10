@@ -313,20 +313,20 @@ void CMissionNotesDlg::OnOK()
 	// puts "$End Notes:" on a different line to ensure it's not interpreted as part of a comment
 	pad_with_newline(m_mission_notes, NOTES_LENGTH - 1);
 
-	string_copy(The_mission.name, m_mission_title, NAME_LENGTH, 1);
-	string_copy(The_mission.author, m_designer_name, NAME_LENGTH, 1);
-	string_copy(The_mission.loading_screen[GR_640], m_loading_640, NAME_LENGTH,1);
-	string_copy(The_mission.loading_screen[GR_1024], m_loading_1024, NAME_LENGTH,1);
-	deconvert_multiline_string(The_mission.notes, m_mission_notes, NOTES_LENGTH);
-	deconvert_multiline_string(The_mission.mission_desc, m_mission_desc, MISSION_DESC_LENGTH);
+	string_copy(The_mission.name, m_mission_title, NAME_LENGTH - 1, 1);
+	string_copy(The_mission.author, m_designer_name, NAME_LENGTH - 1, 1);
+	string_copy(The_mission.loading_screen[GR_640], m_loading_640, NAME_LENGTH - 1, 1);
+	string_copy(The_mission.loading_screen[GR_1024], m_loading_1024, NAME_LENGTH - 1, 1);
+	deconvert_multiline_string(The_mission.notes, m_mission_notes, NOTES_LENGTH - 1);
+	deconvert_multiline_string(The_mission.mission_desc, m_mission_desc, MISSION_DESC_LENGTH - 1);
 
 	// copy squad stuff
 	if(m_squad_name == CString(NO_SQUAD)){
 		strcpy_s(The_mission.squad_name, "");
 		strcpy_s(The_mission.squad_filename, "");
 	} else {
-		string_copy(The_mission.squad_name, m_squad_name, NAME_LENGTH);
-		string_copy(The_mission.squad_filename, m_squad_filename, MAX_FILENAME_LEN);
+		string_copy(The_mission.squad_name, m_squad_name, NAME_LENGTH - 1);
+		string_copy(The_mission.squad_filename, m_squad_filename, MAX_FILENAME_LEN - 1);
 	}
 
 	The_mission.ai_profile = &Ai_profiles[m_ai_profile];

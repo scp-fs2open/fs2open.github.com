@@ -450,7 +450,7 @@ void CMissionGoalsDlg::OnChangeGoalDesc()
 	}
 
 	UpdateData(TRUE);
-	string_copy(m_goals[cur_goal].message, m_goal_desc, MAX_GOAL_TEXT);
+	string_copy(m_goals[cur_goal].message, m_goal_desc, MAX_GOAL_TEXT - 1);
 }
 
 void CMissionGoalsDlg::OnChangeGoalRating() 
@@ -511,7 +511,7 @@ void CMissionGoalsDlg::OnChangeGoalName()
 	}
 
 	m_goals_tree.SetItemText(h, m_name);
-	string_copy(m_goals[cur_goal].name, m_name, NAME_LENGTH);
+	string_copy(m_goals[cur_goal].name, m_name, NAME_LENGTH - 1);
 }
 
 void CMissionGoalsDlg::OnCancel()

@@ -133,7 +133,7 @@ void campaign_tree_wnd::OnCpgnFileOpen()
 		if (!strlen(name))
 			return;
 
-		string_copy(Campaign.filename, name, MAX_FILENAME_LEN);
+		string_copy(Campaign.filename, name, MAX_FILENAME_LEN - 1);
 		Campaign_tree_formp->load_campaign();
 	}
 }
@@ -222,8 +222,8 @@ void campaign_tree_wnd::OnCpgnFileSaveAs()
 			return;		
 		}
 
-		string_copy(Campaign.filename, name, MAX_FILENAME_LEN);
-		string_copy(campaign_path, dlg.GetPathName(), 256);
+		string_copy(Campaign.filename, name, MAX_FILENAME_LEN - 1);
+		string_copy(campaign_path, dlg.GetPathName(), 256 - 1);
 		if (save.save_campaign_file(campaign_path))
 		{
 			MessageBox("An error occured while saving!", "Error", MB_OK | MB_ICONEXCLAMATION);

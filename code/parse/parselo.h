@@ -292,7 +292,7 @@ extern SCP_string& replace_one(SCP_string& context, const SCP_string& from, cons
 extern SCP_string& replace_one(SCP_string& context, const char* from, const char* to);
 
 // Goober5000 - returns number of replacements or -1 for exceeded length (SCP_string variants return the result)
-extern ptrdiff_t replace_all(char *str, const char *oldstr, const char *newstr, size_t max_len, ptrdiff_t range = 0);
+extern int replace_all(char *str, const char *oldstr, const char *newstr, size_t max_len, ptrdiff_t range = 0);
 extern SCP_string& replace_all(SCP_string& context, const SCP_string& from, const SCP_string& to);
 extern SCP_string& replace_all(SCP_string& context, const char* from, const char* to);
 

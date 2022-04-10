@@ -286,7 +286,7 @@ int waypoint_path_dlg::update_data(int redraw)
 
 
 		strcpy_s(old_name, cur_waypoint_list->get_name());
-		string_copy(cur_waypoint_list->get_name(), m_name, NAME_LENGTH, 1);
+		string_copy(cur_waypoint_list->get_name(), m_name, NAME_LENGTH - 1, 1);
 
 		str = (char *) (LPCTSTR) m_name;
 		if (strcmp(old_name, str)) {

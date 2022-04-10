@@ -3934,6 +3934,7 @@ void consolidate_double_characters(char *src, char ch)
 }
 
 // Goober5000
+// Note that the parameter here is max *length*, not max buffer size.  Leave room for the null-terminator!
 ptrdiff_t replace_one(char *str, const char *oldstr, const char *newstr, size_t max_len, ptrdiff_t range)
 {
 	Assert(str && oldstr && newstr);
@@ -3957,7 +3958,7 @@ ptrdiff_t replace_one(char *str, const char *oldstr, const char *newstr, size_t 
 		}
 
 		// allocate temp string to hold extra stuff
-		char *temp = (char *) vm_malloc(sizeof(char) * max_len);
+		char *temp = (char *) vm_malloc(sizeof(char) * (max_len + 1));
 
 		// ensure allocation was successful
 		if (temp)
@@ -3986,9 +3987,11 @@ ptrdiff_t replace_one(char *str, const char *oldstr, const char *newstr, size_t 
 }
 
 // Goober5000
-ptrdiff_t replace_all(char *str, const char *oldstr, const char *newstr, size_t max_len, ptrdiff_t range)
+// Note that the parameter here is max *length*, not max buffer size.  Leave room for the null-terminator!
+int replace_all(char *str, const char *oldstr, const char *newstr, size_t max_len, ptrdiff_t range)
 {
-	ptrdiff_t val, tally = 0;
+	ptrdiff_t val;
+	int tally = 0;
 
 	while ((val = replace_one(str, oldstr, newstr, max_len, range)) > 0)
 	{
@@ -4000,7 +4003,7 @@ ptrdiff_t replace_all(char *str, const char *oldstr, const char *newstr, size_t 
 		}
 	}
 
-	return (val < 0) ? val : tally;
+	return (val < 0) ? -1 : tally;
 }
 
 SCP_string& replace_one(SCP_string& context, const SCP_string& from, const SCP_string& to)

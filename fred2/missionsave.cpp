@@ -139,7 +139,7 @@ void CFred_mission_save::convert_special_tags_to_retail()
 	}
 
 	for (i = Num_builtin_messages; i < Num_messages; i++) {
-		convert_special_tags_to_retail(Messages[i].message, MESSAGE_LENGTH);
+		convert_special_tags_to_retail(Messages[i].message, MESSAGE_LENGTH - 1);
 	}
 }
 
