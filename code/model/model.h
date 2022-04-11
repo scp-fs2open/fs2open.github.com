@@ -254,9 +254,7 @@ struct bsp_collision_node {
 };
 
 struct bsp_collision_leaf {
-	vec3d plane_pnt;
 	vec3d plane_norm;
-	float face_rad;
 	int vert_start;
 	ubyte num_verts;
 	ubyte tmap_num;

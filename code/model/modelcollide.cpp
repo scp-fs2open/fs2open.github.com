@@ -495,11 +495,9 @@ void model_collide_tmappoly(ubyte * p)
 // +0      int         id
 // +4      int         size
 // +8      vec3d      normal
-// +20     vec3d      normal_point
-// +32     int         tmp = 0
-// +36     int         nverts
-// +40     int         tmap_num
-// +44     nverts*(model_tmap2_vert) vertlist (n,u,v)
+// +20     int         nverts
+// +24     int         tmap_num
+// +28     nverts*(model_tmap2_vert) vertlist (n,u,v)
 void model_collide_tmap2poly(ubyte* p) {
 	uint i;
 	uint nv;
@@ -509,7 +507,7 @@ void model_collide_tmap2poly(ubyte* p) {
 
 	Assert(Mc_pm->version >= 2300);
 
-	nv = uw(p + 36);
+	nv = uw(p + 20);
 
 	if (nv <= 0)
 		return;
@@ -519,7 +517,7 @@ void model_collide_tmap2poly(ubyte* p) {
 		return;
 	}
 
-	int tmap_num = w(p + 40);
+	int tmap_num = w(p + 24);
 	Assert(tmap_num >= 0 && tmap_num < MAX_MODEL_TEXTURES); // Goober5000
 
 	if ((!(Mc->flags & MC_CHECK_INVISIBLE_FACES)) && (Mc_pm->maps[tmap_num].textures[TM_BASE_TYPE].GetTexture() < 0)) {
@@ -529,7 +527,7 @@ void model_collide_tmap2poly(ubyte* p) {
 			return;
 	}
 
-	verts = (model_tmap_vert*)(p + 44);
+	verts = (model_tmap_vert*)(p + 28);
 
 	for (i = 0; i < nv; i++) {
 		points[i] = Mc_point_list[verts[i].vertnum];
@@ -538,9 +536,9 @@ void model_collide_tmap2poly(ubyte* p) {
 	}
 
 	if (Mc->flags & MC_CHECK_SPHERELINE) {
-		mc_check_sphereline_face(nv, points, vp(p + 20), vp(p + 8), uvlist, tmap_num, p, NULL);
+		mc_check_sphereline_face(nv, points, points[0], vp(p + 8), uvlist, tmap_num, p, NULL);
 	} else {
-		mc_check_face(nv, points, vp(p + 20), vp(p + 8), uvlist, tmap_num, p, NULL);
+		mc_check_face(nv, points, points[0], vp(p + 8), uvlist, tmap_num, p, NULL);
 	}
 }
 
@@ -663,15 +661,15 @@ void model_collide_bsp_poly(bsp_collision_tree *tree, int leaf_index)
 
 		if ( flat_poly ) {
 			if ( Mc->flags & MC_CHECK_SPHERELINE ) {
-				mc_check_sphereline_face(nv, points, &leaf->plane_pnt, &leaf->plane_norm, NULL, -1, NULL, leaf);
+				mc_check_sphereline_face(nv, points, points[0], &leaf->plane_norm, NULL, -1, NULL, leaf);
 			} else {
-				mc_check_face(nv, points, &leaf->plane_pnt, &leaf->plane_norm, NULL, -1, NULL, leaf);
+				mc_check_face(nv, points, points[0], &leaf->plane_norm, NULL, -1, NULL, leaf);
 			}
 		} else {
 			if ( Mc->flags & MC_CHECK_SPHERELINE ) {
-				mc_check_sphereline_face(nv, points, &leaf->plane_pnt, &leaf->plane_norm, uvlist, leaf->tmap_num, NULL, leaf);
+				mc_check_sphereline_face(nv, points, points[0], &leaf->plane_norm, uvlist, leaf->tmap_num, NULL, leaf);
 			} else {
-				mc_check_face(nv, points, &leaf->plane_pnt, &leaf->plane_norm, uvlist, leaf->tmap_num, NULL, leaf);
+				mc_check_face(nv, points, points[0], &leaf->plane_norm, uvlist, leaf->tmap_num, NULL, leaf);
 			}
 		}
 
@@ -734,12 +732,8 @@ void model_collide_parse_bsp_tmappoly(bsp_collision_leaf *leaf, SCP_vector<model
 	leaf->num_verts = (ubyte)nv;
 	leaf->vert_start = (int)vert_buffer->size();
 
-	vec3d *plane_pnt = vp(p+20);
-	float face_rad = fl(p+32);
 	vec3d *plane_norm = vp(p+8);
 
-	leaf->plane_pnt = *plane_pnt;
-	leaf->face_rad = face_rad;
 	leaf->plane_norm = *plane_norm;
 
 	for ( i = 0; i < nv; ++i ) {
@@ -755,9 +749,9 @@ void model_collide_parse_bsp_tmap2poly(bsp_collision_leaf* leaf, SCP_vector<mode
 	uint nv;
 	model_tmap_vert* verts;
 
-	Assert(Mc_pm->version >= 2300);
+	//Assert(Mc_pm->version >= 2300);
 
-	nv = uw(p + 36);
+	nv = uw(p + 20);
 
 	if (nv < 0)
 		return;
@@ -767,22 +761,18 @@ void model_collide_parse_bsp_tmap2poly(bsp_collision_leaf* leaf, SCP_vector<mode
 		return;
 	}
 
-	int tmap_num = w(p + 40);
+	int tmap_num = w(p + 24);
 
 	Assert(tmap_num >= 0 && tmap_num < MAX_MODEL_TEXTURES);
 
-	verts = (model_tmap_vert*)(p + 44);
+	verts = (model_tmap_vert*)(p + 28);
 
 	leaf->tmap_num = (ubyte)tmap_num;
 	leaf->num_verts = (ubyte)nv;
 	leaf->vert_start = (int)vert_buffer->size();
 
-	vec3d* plane_pnt = vp(p + 20);
-	float face_rad = fl(p + 32);
 	vec3d* plane_norm = vp(p + 8);
 
-	leaf->plane_pnt = *plane_pnt;
-	leaf->face_rad = face_rad;
 	leaf->plane_norm = *plane_norm;
 
 	for (i = 0; i < nv; ++i) {
@@ -813,12 +803,8 @@ void model_collide_parse_bsp_flatpoly(bsp_collision_leaf *leaf, SCP_vector<model
 	leaf->num_verts = (ubyte)nv;
 	leaf->vert_start = (int)vert_buffer->size();
 
-	vec3d *plane_pnt = vp(p+20);
-	float face_rad = fl(p+32);
 	vec3d *plane_norm = vp(p+8);
 
-	leaf->plane_pnt = *plane_pnt;
-	leaf->face_rad = face_rad;
 	leaf->plane_norm = *plane_norm;
 
 	model_tmap_vert vert;

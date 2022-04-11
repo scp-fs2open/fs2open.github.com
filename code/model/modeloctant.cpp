@@ -95,8 +95,8 @@ void moff_defpoints(ubyte * p, int just_count)
 	uint offset = uw(p+16);
 	uint nnorms = 0;
 
-	// if we are just counting then we don't need to be here
-	if (just_count)
+	// only do fill Interp_verts once, in the first pass when we're just counting them up
+	if (!just_count)
 		return;
 
 	ubyte * normcount = p+20;
@@ -181,15 +181,13 @@ void moff_tmappoly(ubyte * p, polymodel * pm, model_octant * oct, int just_count
 }
 
 
-// Textured Poly
+// Textured Poly version 2
 // +0      int         id
 // +4      int         size
 // +8      vec3d      normal
-// +20     vec3d      center
-// +32     float      radius
-// +36     int         nverts
-// +40     int         tmap_num
-// +44     nverts*(model_tmap_vert) vertlist (n,u,v)
+// +20     int         nverts
+// +24     int         tmap_num
+// +28     nverts*(model_tmap2_vert) vertlist (n,u,v)
 void moff_tmap2poly(ubyte* p, polymodel* pm, model_octant* oct, int just_count)
 {
 	Assert(pm->version >= 2300);
@@ -197,18 +195,31 @@ void moff_tmap2poly(ubyte* p, polymodel* pm, model_octant* oct, int just_count)
 	uint i, nv;
 	model_tmap_vert* verts;
 
-	nv = uw(p + 36);
+	nv = uw(p + 20);
 	if (nv < 0)
 		return;
 
-	verts = (model_tmap_vert*)(p + 44);
+	verts = (model_tmap_vert*)(p + 28);
+
+	vec3d center_point;
+	vm_vec_zero(&center_point);
+
+	Assert(Interp_verts != NULL);
+
+	for (i = 0; i < nv; i++) {
+		vm_vec_add2(&center_point, Interp_verts[verts[i].vertnum]);
+	}
+
+	center_point.xyz.x /= nv;
+	center_point.xyz.y /= nv;
+	center_point.xyz.z /= nv;
 
 	// Put each face into a particular octant
-	if (point_in_octant(pm, oct, vp(p + 20))) {
+	if (point_in_octant(pm, oct, &center_point)) {
 		if (just_count)
 			oct->nverts++;
 		else
-			oct->verts[oct->nverts++] = vp(p + 20);
+			oct->verts[oct->nverts++] = &center_point;
 		return;
 	}
 }

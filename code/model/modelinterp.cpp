@@ -1783,13 +1783,13 @@ void parse_tmap(int offset, ubyte *bsp_data)
 
 void parse_tmap2(int offset, ubyte* bsp_data)
 {
-	int pof_tex = w(bsp_data + offset + 40);
-	uint n_vert = uw(bsp_data + offset + 36);
+	int pof_tex = w(bsp_data + offset + 24);
+	uint n_vert = uw(bsp_data + offset + 20);
 
 	ubyte* p = &bsp_data[offset + 8];
 	model_tmap_vert* tverts;
 
-	tverts = (model_tmap_vert*)&bsp_data[offset + 44];
+	tverts = (model_tmap_vert*)&bsp_data[offset + 28];
 
 	vertex* V;
 	vec3d* v;
@@ -1917,10 +1917,10 @@ void parse_sortnorm(int offset, ubyte *bsp_data)
 	if (postlist) parse_bsp(offset+postlist, bsp_data);
 }
 
-void find_tmap(int offset, ubyte *bsp_data)
+void find_tmap(int offset, ubyte *bsp_data, int id)
 {
-	int pof_tex = w(bsp_data+offset+40);
-	uint n_vert = uw(bsp_data+offset+36);
+	int pof_tex = w(bsp_data+offset+(id == OP_TMAP2POLY ? 24 : 40));
+	uint n_vert = uw(bsp_data+offset+ (id == OP_TMAP2POLY ? 20 : 36));
 
 	tri_count[pof_tex] += n_vert-2;	
 }
@@ -1973,7 +1973,7 @@ void find_tri_counts(int offset, ubyte *bsp_data)
 
 			case OP_TMAPPOLY:
 			case OP_TMAP2POLY:
-				find_tmap(offset, bsp_data);
+				find_tmap(offset, bsp_data, id);
 				break;
 
 			case OP_BOUNDBOX:
@@ -3115,8 +3115,8 @@ void bsp_polygon_data::process_tmap(int offset, ubyte* bsp_data)
 
 void bsp_polygon_data::process_tmap2(int offset, ubyte* bsp_data)
 {
-	int pof_tex = w(bsp_data + offset + 40);
-	uint n_vert = uw(bsp_data + offset + 36);
+	int pof_tex = w(bsp_data + offset + 24);
+	uint n_vert = uw(bsp_data + offset + 20);
 
 	if (n_vert < 3) {
 		// don't parse degenerate polygons
@@ -3126,7 +3126,7 @@ void bsp_polygon_data::process_tmap2(int offset, ubyte* bsp_data)
 	ubyte* p = &bsp_data[offset + 8];
 	model_tmap_vert* tverts;
 
-	tverts = (model_tmap_vert*)&bsp_data[offset + 44];
+	tverts = (model_tmap_vert*)&bsp_data[offset + 28];
 
 	int problem_count = 0;
 
