@@ -3993,7 +3993,7 @@ int replace_all(char *str, const char *oldstr, const char *newstr, size_t max_le
 	ptrdiff_t val;
 	int tally = 0;
 
-	while ((val = replace_one(str, oldstr, newstr, max_len, range)) > 0)
+	while ((val = replace_one(str, oldstr, newstr, max_len, range)) >= 0)
 	{
 		tally++;
 
