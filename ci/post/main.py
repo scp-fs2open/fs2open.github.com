@@ -22,7 +22,6 @@
 # LINUX_RESULT: bool, if the linux builds were sucessfully uploaded
 # WINDOWS_RESULT: bool, if the windows builds were successfully uploaded
 
-from curses import window
 import sys
 import os
 import re
