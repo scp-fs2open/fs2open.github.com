@@ -31480,7 +31480,10 @@ bool sexp_replace_variable_names_with_values(char *text, int max_len)
 				strncpy(what_to_replace, pos, strlen(Sexp_variables[var_index].variable_name) + 1);
 
 				// replace it
-				pos = text + replace_one(text, what_to_replace, Sexp_variables[var_index].text, max_len);
+				auto diff = replace_one(text, what_to_replace, Sexp_variables[var_index].text, max_len);
+				Assertion(diff >= 0, "Variable replacement should have succeeded!");
+
+				pos = text + diff;
 				replaced_anything = true;
 			}
 			// no match... so keep iterating along the string

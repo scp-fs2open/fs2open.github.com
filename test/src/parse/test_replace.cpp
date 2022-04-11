@@ -31,11 +31,11 @@ TEST_F(ReplaceTest, replace_one_cstr)
 	strcpy_s(buf, "aabbccddee");
 
 	// search string not found
-	ASSERT_EQ(0, replace_one(buf, "ff", "XX", len));
-	ASSERT_EQ(0, replace_one(buf, "dd", "XX", len, 5));
+	ASSERT_EQ(-1, replace_one(buf, "ff", "XX", len));
+	ASSERT_EQ(-1, replace_one(buf, "dd", "XX", len, 5));
 
 	// exceed max length
-	ASSERT_EQ(-1, replace_one(buf, "dd", "XXX", len));
+	ASSERT_EQ(-2, replace_one(buf, "dd", "XXX", len));
 
 	// successful replacement at end
 	ASSERT_EQ(8, replace_one(buf, "ee", "fe", len));
@@ -72,28 +72,37 @@ TEST_F(ReplaceTest, replace_one_scpstr)
 	SCP_string buf = "aabbccddee";
 
 	// search string not found
-	ASSERT_EQ(buf, replace_one(buf, "ff", "XX"));
+	ASSERT_EQ(-1, replace_one(buf, "ff", "XX"));
 	// SCP_string version of replace_one does not have a range argument
 
 	// successful replacement at end
-	ASSERT_EQ("aabbccddfe", replace_one(buf, "ee", "fe"));
-	ASSERT_EQ("aabbccddff", replace_one(buf, "e", "f"));
+	ASSERT_EQ(8, replace_one(buf, "ee", "fe"));
+	ASSERT_STREQ("aabbccddfe", buf.c_str());
+	ASSERT_EQ(9, replace_one(buf, "e", "f"));
+	ASSERT_STREQ("aabbccddff", buf.c_str());
 
 	// successful single replacement
-	ASSERT_EQ("aabbccddgf", replace_one(buf, "f", "g"));
-	ASSERT_EQ("aahbccddgf", replace_one(buf, "b", "h"));
+	ASSERT_EQ(8, replace_one(buf, "f", "g"));
+	ASSERT_STREQ("aabbccddgf", buf.c_str());
+	ASSERT_EQ(2, replace_one(buf, "b", "h"));
+	ASSERT_STREQ("aahbccddgf", buf.c_str());
 
 	// successful replacement at beginning
-	ASSERT_EQ("bahbccddgf", replace_one(buf, "a", "b"));
-	ASSERT_EQ("gakbccddgf", replace_one(buf, "bah", "gak"));
+	ASSERT_EQ(0, replace_one(buf, "a", "b"));
+	ASSERT_STREQ("bahbccddgf", buf.c_str());
+	ASSERT_EQ(0, replace_one(buf, "bah", "gak"));
+	ASSERT_STREQ("gakbccddgf", buf.c_str());
 
 	// successful replacement when growing string
 	buf = "abcd";
-	ASSERT_EQ("abxyz123", replace_one(buf, "cd", "xyz123"));
-	ASSERT_EQ("abxyz45678", replace_one(buf, "123", "45678"));
+	ASSERT_EQ(2, replace_one(buf, "cd", "xyz123"));
+	ASSERT_STREQ("abxyz123", buf.c_str());
+	ASSERT_EQ(5, replace_one(buf, "123", "45678"));
+	ASSERT_STREQ("abxyz45678", buf.c_str());
 
 	// successful replacement of entire string
-	ASSERT_EQ("0123456789", replace_one(buf, "abxyz45678", "0123456789"));
+	ASSERT_EQ(0, replace_one(buf, "abxyz45678", "0123456789"));
+	ASSERT_STREQ("0123456789", buf.c_str());
 }
 
 TEST_F(ReplaceTest, replace_all_cstr)
@@ -107,10 +116,10 @@ TEST_F(ReplaceTest, replace_all_cstr)
 	ASSERT_EQ(0, replace_all(buf, "cd", "XX", len, 3));
 
 	// exceed max length
-	ASSERT_EQ(-1, replace_all(buf, "ef", "XXX", len));
+	ASSERT_EQ(-2, replace_all(buf, "ef", "XXX", len));
 	strcpy_s(buf, "abababab");
-	ASSERT_EQ(-1, replace_all(buf, "ab", "mno", len));
-	ASSERT_STREQ("mnoababab", buf);
+	ASSERT_EQ(-2, replace_all(buf, "ab", "mno", len));
+	ASSERT_STREQ("mnomnoabab", buf);
 	strcpy_s(buf, "ababcdcdef");
 
 	// successful single replacement
@@ -135,18 +144,22 @@ TEST_F(ReplaceTest, replace_all_scpstr)
 	SCP_string buf = "ababcdcdef";
 
 	// search string not found
-	ASSERT_EQ(buf, replace_all(buf, "gg", "XX"));
+	ASSERT_EQ(0, replace_all(buf, "gg", "XX"));
 	// SCP_string version of replace_all does not have a range argument
 
 	// successful single replacement
-	ASSERT_EQ("ababcdcdjk", replace_all(buf, "ef", "jk"));
+	ASSERT_EQ(1, replace_all(buf, "ef", "jk"));
+	ASSERT_STREQ("ababcdcdjk", buf.c_str());
 
 	// successful double replacement
-	ASSERT_EQ("pqpqcdcdjk", replace_all(buf, "ab", "pq"));
+	ASSERT_EQ(2, replace_all(buf, "ab", "pq"));
+	ASSERT_STREQ("pqpqcdcdjk", buf.c_str());
 
 	// successful replacement when growing string
 	buf = "abcdcd";
-	ASSERT_EQ("abxyzxyz", replace_all(buf, "cd", "xyz"));
+	ASSERT_EQ(2, replace_all(buf, "cd", "xyz"));
+	ASSERT_STREQ("abxyzxyz", buf.c_str());
 	buf = "abbacdcd";
-	ASSERT_EQ("abbaxyzxyz", replace_all(buf, "cd", "xyz"));
+	ASSERT_EQ(2, replace_all(buf, "cd", "xyz"));
+	ASSERT_STREQ("abbaxyzxyz", buf.c_str());
 }

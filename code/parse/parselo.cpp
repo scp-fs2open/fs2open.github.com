@@ -3938,6 +3938,8 @@ void consolidate_double_characters(char *src, char ch)
 ptrdiff_t replace_one(char *str, const char *oldstr, const char *newstr, size_t max_len, ptrdiff_t range)
 {
 	Assert(str && oldstr && newstr);
+	if (!str || !oldstr || !newstr)
+		return -3;
 
 	// search
 	char *ch = stristr(str, oldstr);
@@ -3948,13 +3950,13 @@ ptrdiff_t replace_one(char *str, const char *oldstr, const char *newstr, size_t 
 		// not found within bounds?
 		if ((range > 0) && ((ch - str) > range))
 		{
-			return 0;
+			return -1;
 		}
 
 		// determine if replacement will exceed max len
 		if (strlen(str) + strlen(newstr) - strlen(oldstr) > max_len)
 		{
-			return -1;
+			return -2;
 		}
 
 		// allocate temp string to hold extra stuff
@@ -3979,7 +3981,7 @@ ptrdiff_t replace_one(char *str, const char *oldstr, const char *newstr, size_t 
 	// not found
 	else
 	{
-		return 0;
+		return -1;
 	}
 
 	// return pos of replacement
@@ -4003,59 +4005,74 @@ int replace_all(char *str, const char *oldstr, const char *newstr, size_t max_le
 		}
 	}
 
-	return (val < 0) ? -1 : tally;
+	// return the tally, even if it's 0, unless there was an exceptional situation like exceeding max len
+	return (val < -1) ? (int)val : tally;
 }
 
-SCP_string& replace_one(SCP_string& context, const SCP_string& from, const SCP_string& to)
+ptrdiff_t replace_one(SCP_string& context, const SCP_string& from, const SCP_string& to)
 {
 	size_t foundHere;
 	if ((foundHere = context.find(from, 0)) != SCP_string::npos)
 	{
 		context.replace(foundHere, from.length(), to);
+		return foundHere;
 	}
-	return context;
+	else
+		return -1;
 }
 
-SCP_string& replace_one(SCP_string& context, const char* from, const char* to)
+ptrdiff_t replace_one(SCP_string& context, const char* from, const char* to)
 {
 	size_t foundHere;
 	if ((foundHere = context.find(from, 0)) != SCP_string::npos)
 	{
 		context.replace(foundHere, strlen(from), to);
+		return foundHere;
 	}
-	return context;
+	else
+		return -1;
 }
 
 // http://www.cppreference.com/wiki/string/replace
-SCP_string& replace_all(SCP_string& context, const SCP_string& from, const SCP_string& to)
+int replace_all(SCP_string& context, const SCP_string& from, const SCP_string& to)
 {
 	size_t from_len = from.length();
 	size_t to_len = to.length();
 
 	size_t lookHere = 0;
 	size_t foundHere;
+	int tally = 0;
+
 	while ((foundHere = context.find(from, lookHere)) != SCP_string::npos)
 	{
+		tally++;
+
 		context.replace(foundHere, from_len, to);
 		lookHere = foundHere + to_len;
 	}
-	return context;
+
+	return tally;
 }
 
 // http://www.cppreference.com/wiki/string/replace
-SCP_string& replace_all(SCP_string& context, const char* from, const char* to)
+int replace_all(SCP_string& context, const char* from, const char* to)
 {
 	size_t from_len = strlen(from);
 	size_t to_len = strlen(to);
 
 	size_t lookHere = 0;
 	size_t foundHere;
+	int tally = 0;
+
 	while ((foundHere = context.find(from, lookHere)) != SCP_string::npos)
 	{
+		tally++;
+
 		context.replace(foundHere, from_len, to);
 		lookHere = foundHere + to_len;
 	}
-	return context;
+
+	return tally;
 }
 
 // WMC
