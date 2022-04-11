@@ -98,7 +98,7 @@ void GetLightInfo(vec3 position, out vec3 lightDir, out float attenuation)
 				}
 			}
 		}
-		attenuation*=attenuation;
+		attenuation *= attenuation;
 		lightDir = normalize(lightDir);
 	}
 }
