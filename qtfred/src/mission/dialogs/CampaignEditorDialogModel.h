@@ -48,6 +48,9 @@ public:
 	QList<QAction *> getContextMenuExtras(QObject *parent = nullptr) override;
 
 // Model state getters
+// Here and in the following, "Mn/mn" are short for a mission (in the context of the campaign),
+// "Br/br" for the branches of a mission (to another or itself)
+// "Cur" refers to the currently selected mission or branch, if any
 	inline bool isFileLoaded() const { return ! campaignFile.isEmpty(); }
 
 	inline const QString& getCampaignName() const { return campaignName; }
