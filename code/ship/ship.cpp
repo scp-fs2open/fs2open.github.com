@@ -10316,6 +10316,13 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	char **subsys_names = new char *[sip_orig->n_subsystems];
 	float *subsys_pcts = new float[sip_orig->n_subsystems];
 
+	// prevent crashes in the event of a subsystem mismatch
+	for (i = 0; i < sip_orig->n_subsystems; ++i)
+	{
+		subsys_names[i] = nullptr;
+		subsys_pcts[i] = 0.0f;
+	}
+
 	ss = GET_FIRST(&sp->subsys_list);
 	while ( ss != END_OF_LIST(&sp->subsys_list) )
 	{
