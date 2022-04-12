@@ -1177,7 +1177,7 @@ void g3_render_sphere(vec3d* position, float radius)
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //flash ball stuff
 
-void flash_ball::initialize(int number, float min_ray_width, float max_ray_width, const vec3d* dir, const vec3d* pcenter, float outer, float inner, ubyte max_r, ubyte max_g, ubyte max_b, ubyte min_r, ubyte min_g, ubyte min_b)
+void flash_ball::initialize(uint number, float min_ray_width, float max_ray_width, const vec3d* dir, const vec3d* pcenter, float outer, float inner, ubyte max_r, ubyte max_g, ubyte max_b, ubyte min_r, ubyte min_g, ubyte min_b)
 {
 	if(number < 1)
 		return;
@@ -1190,7 +1190,7 @@ void flash_ball::initialize(int number, float min_ray_width, float max_ray_width
 		n_rays = number;
 	}
 
-	int i;
+	uint i;
 	for(i = 0; i<n_rays; i++){
 	//colors
 		if(min_r != 255){
@@ -1323,7 +1323,7 @@ void flash_ball::initialize(ubyte *bsp_data, float min_ray_width, float max_ray_
 	parse_bsp(0,bsp_data);
 	center = vmd_zero_vector;
 
-	int i;
+	uint i;
 	for(i = 0; i<n_rays; i++){
 	//colors
 		if(min_r != 255){
@@ -1367,7 +1367,7 @@ void flash_ball::initialize(ubyte *bsp_data, float min_ray_width, float max_ray_
 //intinsity	how visable it should be
 //life		how far along from start to end should it be
 void flash_ball::render(int texture, float rad, float intinsity, float life){
-	for(int i = 0; i < n_rays; i++){
+	for(uint i = 0; i < n_rays; i++){
 		vec3d end;
 		vm_vec_interp_constant(&end, &ray[i].start.world, &ray[i].end.world, life);
 		vm_vec_scale(&end, rad);
