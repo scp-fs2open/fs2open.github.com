@@ -131,12 +131,12 @@ struct interp_vertex {
 // Local variables
 //
 
-static int Num_interp_verts_allocated = 0;
+static uint Num_interp_verts_allocated = 0;
 vec3d **Interp_verts = NULL;
 static vertex *Interp_points = NULL;
 static vertex *Interp_splode_points = NULL;
 vec3d *Interp_splode_verts = NULL;
-static int Interp_num_verts = 0;
+static uint Interp_num_verts = 0;
 
 static float Interp_box_scale = 1.0f; // this is used to scale both detail boxes and spheres
 
@@ -153,10 +153,10 @@ int Interp_saved_lighting_full = 0;
 // -------------------------------------------------------------------
 
 
-static int Num_interp_norms_allocated = 0;
+static uint Num_interp_norms_allocated = 0;
 static vec3d **Interp_norms = NULL;
 static ubyte *Interp_light_applied = NULL;
-static int Interp_num_norms = 0;
+static uint Interp_num_norms = 0;
 static ubyte *Interp_lights;
 
 // Stuff to control rendering parameters
@@ -260,7 +260,6 @@ void model_allocate_interp_data(uint n_verts, uint n_norms)
 		dealloc = 1;
 	}
 
-	Assert( (n_verts >= 0) && (n_norms >= 0) );
 	Assert( (n_verts || Num_interp_verts_allocated) && (n_norms || Num_interp_norms_allocated) );
 
 	if (n_verts > Num_interp_verts_allocated) {
@@ -1927,7 +1926,7 @@ void find_tmap(int offset, ubyte *bsp_data, int id)
 
 void find_defpoint(int off, ubyte *bsp_data)
 {
-	int n;
+	uint n;
 	uint nverts = uw(off+bsp_data+8);	
 
 	ubyte * normcount = off+bsp_data+20;

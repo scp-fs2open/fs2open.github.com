@@ -712,8 +712,6 @@ void model_collide_parse_bsp_tmappoly(bsp_collision_leaf *leaf, SCP_vector<model
 
 	nv = uw(p+36);
 
-	if ( nv < 0 ) return;
-
 	if ( nv > TMAP_MAX_VERTS ) {
 		Int3();
 		return;
@@ -749,12 +747,7 @@ void model_collide_parse_bsp_tmap2poly(bsp_collision_leaf* leaf, SCP_vector<mode
 	uint nv;
 	model_tmap_vert* verts;
 
-	//Assert(Mc_pm->version >= 2300);
-
 	nv = uw(p + 20);
-
-	if (nv < 0)
-		return;
 
 	if (nv > TMAP_MAX_VERTS) {
 		Int3();
@@ -789,8 +782,6 @@ void model_collide_parse_bsp_flatpoly(bsp_collision_leaf *leaf, SCP_vector<model
 	short *verts;
 
 	nv = uw(p+36);
-
-	if ( nv < 0 ) return;
 
 	if ( nv > TMAP_MAX_VERTS ) {
 		Int3();

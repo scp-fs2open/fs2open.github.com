@@ -1244,7 +1244,7 @@ void flash_ball::initialize(int number, float min_ray_width, float max_ray_width
 
 void flash_ball::defpoint(int off, ubyte *bsp_data)
 {
-	int n;
+	uint n;
 	uint nverts = uw(off+bsp_data+8);	
 	uint offset = uw(off+bsp_data+16);
 	ubyte * normcount = off+bsp_data+20;

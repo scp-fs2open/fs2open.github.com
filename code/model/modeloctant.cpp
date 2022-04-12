@@ -135,7 +135,6 @@ void moff_tmappoly(ubyte * p, polymodel * pm, model_octant * oct, int just_count
 	model_tmap_vert *verts;
 
 	nv = uw(p+36);
-	if ( nv < 0 ) return;
 
 	verts = new model_tmap_vert[nv];
 
@@ -196,8 +195,6 @@ void moff_tmap2poly(ubyte* p, polymodel* pm, model_octant* oct, int just_count)
 	model_tmap_vert* verts;
 
 	nv = uw(p + 20);
-	if (nv < 0)
-		return;
 
 	verts = (model_tmap_vert*)(p + 28);
 
@@ -243,7 +240,6 @@ void moff_flatpoly(ubyte * p, polymodel * pm, model_octant * oct, int just_count
 	short *verts;
 
 	nv = uw(p+36);
-	if ( nv < 0 ) return;
 
 	verts = (short *)(p+44);
 

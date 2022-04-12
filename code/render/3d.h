@@ -256,7 +256,7 @@ struct flash_beam{
 class flash_ball{
 	flash_beam *ray;
 	vec3d center;
-	int n_rays;
+	uint n_rays;
 	void parse_bsp(int offset, ubyte *bsp_data);
 	void defpoint(int off, ubyte *bsp_data);
 
