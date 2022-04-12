@@ -599,8 +599,8 @@ void warp_camera::get_info(vec3d *position, matrix *orientation)
 #define MAX_SUBTITLE_LINES		64
 subtitle::subtitle(int in_x_pos, int in_y_pos, const char* in_text, const char* in_imageanim, float in_display_time,
 	float in_fade_time, const color *in_text_color, int in_text_fontnum, bool center_x, bool center_y, int in_width,
-	int in_height, bool in_post_shaded, float in_line_height_factor)
-	: display_time(-1.0f), fade_time(-1.0f), text_fontnum(-1), line_height_factor(1.0f),
+	int in_height, bool in_post_shaded, int in_line_height_modifier)
+	: display_time(-1.0f), fade_time(-1.0f), text_fontnum(-1), line_height_modifier(0),
 	image_id(-1), time_displayed(-1.0f), time_displayed_end(-1.0f), post_shaded(false)
 {
 	// Initialize color
@@ -646,7 +646,7 @@ subtitle::subtitle(int in_x_pos, int in_y_pos, const char* in_text, const char* 
 	else
 		gr_init_alphacolor(&text_color, 255, 255, 255, 255);
 	text_fontnum = in_text_fontnum;
-	line_height_factor = in_line_height_factor;
+	line_height_modifier = in_line_height_modifier;
 
 	//Setup display and fade time
 	display_time = fl_abs(in_display_time);
@@ -685,7 +685,15 @@ subtitle::subtitle(int in_x_pos, int in_y_pos, const char* in_text, const char* 
 			if(w > tw)
 				tw = w;
 
-			th += fl2i(line_height_factor * h);
+			if (line_height_modifier != 0.0f)
+			{
+				if (Show_subtitle_uses_pixels)
+					h = line_height_modifier;
+				else
+					h = fl2i(h * line_height_modifier / 100.0f);
+			}
+
+			th += h;
 		}
 
 		// restore old font
@@ -783,7 +791,16 @@ void subtitle::do_frame(float frametime)
 	for(SCP_vector<SCP_string>::iterator line = text_lines.begin(); line != text_lines.end(); ++line)
 	{
 		gr_string(x, y, (char*)line->c_str(), GR_RESIZE_NONE);
-		y += fl2i(line_height_factor * font_height);
+
+		if (line_height_modifier != 0.0f)
+		{
+			if (Show_subtitle_uses_pixels)
+				font_height = line_height_modifier;
+			else
+				font_height = fl2i(font_height * line_height_modifier / 100.0f);
+		}
+
+		y += font_height;
 	}
 
 	// restore old font
@@ -834,7 +851,7 @@ void subtitle::clone(const subtitle &sub)
 {
 	text_lines = sub.text_lines;
 	text_fontnum = sub.text_fontnum;
-	line_height_factor = sub.line_height_factor;
+	line_height_modifier = sub.line_height_modifier;
 
 	// copy the structs
 	text_pos = sub.text_pos;

@@ -1620,7 +1620,7 @@ void hud_render_preprocess(float frametime)
 	Player->subsys_in_view = -1;
 	hud_target_clear_display_list();
 
-	if ( (Game_detail_flags & DETAIL_FLAG_HUD) && (supernova_active() >= 3) ) {
+	if ( (Game_detail_flags & DETAIL_FLAG_HUD) && (supernova_stage() >= SUPERNOVA_STAGE::HIT) ) {
 		return;
 	}
 
@@ -1731,16 +1731,15 @@ void HudGaugeMissionTime::render(float  /*frametime*/)
 }
 
 /**
- * @brief Show supernova warning it there's a supernova coming
+ * @brief Show supernova warning if there's a supernova coming
  */
 void hud_maybe_display_supernova()
 {
-	float time_left;
-
-	time_left = supernova_time_left();
-	if(time_left < 0.0f){
+	if (!supernova_active()) {
 		return;
 	}
+
+	auto time_left = supernova_hud_time_left();
 
 	gr_set_color_fast(&Color_bright_red);
 	if (Lcl_pl) {
@@ -1791,7 +1790,7 @@ void hud_render_gauges(int cockpit_display_num)
 			return;
 		}
 	} else {
-		if( supernova_active() >= 3 ) {
+		if( supernova_stage() >= SUPERNOVA_STAGE::HIT) {
 			return;
 		}
 	}
@@ -1905,10 +1904,8 @@ void update_throttle_sound()
 	
 		if ( object_get_gliding(Player_obj) ) {	// Backslash
 			percent_throttle = Player_obj->phys_info.forward_thrust;
-		} else if ( Ships[Player_obj->instance].current_max_speed == 0 ) {
-			percent_throttle = Player_obj->phys_info.fspeed / Ship_info[Ships[Player_obj->instance].ship_info_index].max_speed;
 		} else {
-			percent_throttle = Player_obj->phys_info.fspeed / Ships[Player_obj->instance].current_max_speed;
+			percent_throttle = Player_obj->phys_info.fspeed / Ship_info[Ships[Player_obj->instance].ship_info_index].max_speed;
 		}
 
 		if (percent_throttle != last_percent_throttle || !Player_engine_snd_loop.isValid()) {
@@ -4023,13 +4020,11 @@ HudGauge(HUD_OBJECT_SUPERNOVA, HUD_DIRECTIVES_VIEW, false, false, 0, 255, 255, 2
 
 void HudGaugeSupernova::render(float  /*frametime*/)
 {
-	float time_left;
-
-	// if there's a supernova coming
-	time_left = supernova_time_left();
-	if(time_left < 0.0f){
+	if (!supernova_active()) {
 		return;
 	}
+
+	auto time_left = supernova_hud_time_left();
 
 	gr_set_color_fast(&Color_bright_red);
 	if (Lcl_pl) {

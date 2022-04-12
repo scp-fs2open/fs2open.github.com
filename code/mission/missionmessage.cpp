@@ -809,13 +809,8 @@ void message_mission_close()
 //	Compare function for sorting message queue entries based on priority.
 //	Return values set to sort array in _decreasing_ order.  If priorities equal, sort based
 // on time added into queue
-int message_queue_priority_compare(const void *a, const void *b)
+int message_queue_priority_compare(const message_q *ma, const message_q *mb)
 {
-	message_q *ma, *mb;
-
-	ma = (message_q *) a;
-	mb = (message_q *) b;
-
 	if (ma->priority > mb->priority) {
 		return -1;
 	} else if (ma->priority < mb->priority) {
@@ -988,7 +983,7 @@ void message_remove_from_queue(message_q *q)
 	q->event_num_to_cancel = -1;
 
 	if ( MessageQ_num > 0 ) {
-		insertion_sort(MessageQ, MAX_MESSAGE_Q, sizeof(message_q), message_queue_priority_compare);
+		insertion_sort(MessageQ, MAX_MESSAGE_Q, message_queue_priority_compare);
 	}
 }
 
@@ -1722,7 +1717,9 @@ void message_queue_message( int message_num, int priority, int timing, const cha
 		// SPECIAL HACK -- if the who_from is terran command, and there is a wingman persona attached
 		// to this message, then set a bit to tell the wave/anim playing code to play the command version
 		// of the wave and head
-		if ( !stricmp(who_from, The_mission.command_sender) ) {
+		// ADDENDUM -- Since the special hack is specifically for mission-unique messages, don't
+		// convert built-in messages to Command
+		if ( builtin_type < 0 && !stricmp(who_from, The_mission.command_sender) ) {
 			MessageQ[i].flags |= MQF_CONVERT_TO_COMMAND;
 			MessageQ[i].source = HUD_SOURCE_TERRAN_CMD;
 		} else {
@@ -1739,7 +1736,7 @@ void message_queue_message( int message_num, int priority, int timing, const cha
 		MessageQ[i].window_timestamp = timestamp(MESSAGE_ANYTIME_TIMESTAMP);		// make invalid
 
 	MessageQ_num++;
-	insertion_sort(MessageQ, MAX_MESSAGE_Q, sizeof(message_q), message_queue_priority_compare);
+	insertion_sort(MessageQ, MAX_MESSAGE_Q, message_queue_priority_compare);
 
 	// Try to start it!
 	// MWA -- called every frame from game loop

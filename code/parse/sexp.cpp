@@ -22649,9 +22649,9 @@ void multi_sexp_reset_camera()
 void sexp_show_subtitle(int node)
 {
 	//These should be set to the default if not required to be explicitly defined
-	int x_pos, y_pos, width = 0;
+	int x_pos, y_pos, width = 0, line_height_modifier = 0;
 	const char *text, *imageanim = nullptr;
-	float display_time, fade_time = 0.0f, line_height_factor = 1.0f;
+	float display_time, fade_time = 0.0f;
 	int n = node;
 	std::array<int, 3> rgb = { 255, 255, 255 };
 	bool is_nan, is_nan_forever, center_x = false, center_y = false, post_shaded = false;
@@ -22695,24 +22695,34 @@ void sexp_show_subtitle(int node)
 					center_y = is_sexp_true(n);
 					n = CDR(n);
 
-					eval_array<int>(rgb, n, is_nan, is_nan_forever, [](int num)->int {
-						CLAMP(num, 0, 255);
-						return num;
-					}, 255);
-					if (is_nan || is_nan_forever)
-						return;
-
 					if (n != -1)
 					{
-						post_shaded = is_sexp_true(n);
+						width = eval_num(n, is_nan, is_nan_forever);
+						if (is_nan || is_nan_forever)
+							return;
 						n = CDR(n);
 
 						if (n != -1)
 						{
-							int percent = eval_num(n, is_nan, is_nan_forever);
+							eval_array<int>(rgb, n, is_nan, is_nan_forever, [](int num)->int {
+								CLAMP(num, 0, 255);
+								return num;
+							}, 255);
 							if (is_nan || is_nan_forever)
 								return;
-							line_height_factor = percent / 100.0f;
+
+							if (n != -1)
+							{
+								post_shaded = is_sexp_true(n);
+								n = CDR(n);
+
+								if (n != -1)
+								{
+									line_height_modifier = eval_num(n, is_nan, is_nan_forever);
+									if (is_nan || is_nan_forever)
+										return;
+								}
+							}
 						}
 					}
 				}
@@ -22724,7 +22734,7 @@ void sexp_show_subtitle(int node)
 	color new_color;
 	gr_init_alphacolor(&new_color, rgb[0], rgb[1], rgb[2], 255);
 
-	subtitle new_subtitle(x_pos, y_pos, text, imageanim, display_time, fade_time, &new_color, -1, center_x, center_y, width, 0, post_shaded, line_height_factor);
+	subtitle new_subtitle(x_pos, y_pos, text, imageanim, display_time, fade_time, &new_color, -1, center_x, center_y, width, 0, post_shaded, line_height_modifier);
 	Subtitles.push_back(new_subtitle);
 }
 
@@ -22765,9 +22775,10 @@ void sexp_show_subtitle_text(int node)
 	// (we don't need to do variable replacements because the subtitle code already does that)
 	text = message_translate_tokens(ctext);
 
-	std::array<int, 2> xy_pct;
-	eval_array<int>(xy_pct, n, is_nan, is_nan_forever, [](int num)->int {
-		CLAMP(num, -100, 100);
+	std::array<int, 2> xy_input;
+	eval_array<int>(xy_input, n, is_nan, is_nan_forever, [](int num)->int {
+		if (!Show_subtitle_uses_pixels)
+			CLAMP(num, -100, 100);
 		return num;
 	});
 	if (is_nan || is_nan_forever)
@@ -22780,15 +22791,18 @@ void sexp_show_subtitle_text(int node)
 	n = CDR(n);
 
 	float display_time, fade_time;
-	int width_pct;
-	eval_nums(n, is_nan, is_nan_forever, display_time, fade_time, width_pct);
+	int width_input;
+	eval_nums(n, is_nan, is_nan_forever, display_time, fade_time, width_input);
 	if (is_nan || is_nan_forever)
 		return;
 	display_time /= 1000.0f;
 	fade_time /= 1000.0f;
-	// note: width_pct is OPF_POSITIVE
-	if (width_pct > 100)
-		width_pct = 100;
+	if (!Show_subtitle_uses_pixels)
+	{
+		// note: width_input is OPF_POSITIVE so checking for < 0 is not necessary
+		if (width_input > 100)
+			width_input = 100;
+	}
 
 	std::array<int, 3> rgb;
 	eval_array<int>(rgb, n, is_nan, is_nan_forever, [](int num)->int {
@@ -22814,31 +22828,40 @@ void sexp_show_subtitle_text(int node)
 		n = CDR(n);
 	}
 
-	float line_height_factor = 1.0f;
+	int line_height_modifier = 0;
 	if (n >= 0)
 	{
-		int percent = eval_num(n, is_nan, is_nan_forever);
+		line_height_modifier = eval_num(n, is_nan, is_nan_forever);
 		if (is_nan || is_nan_forever)
 			return;
-		line_height_factor = percent / 100.0f;
 	}
 
 	color new_color;
 	gr_init_alphacolor(&new_color, rgb[0], rgb[1], rgb[2], 255);
 
 	// calculate pixel positions
-	int x_pos = fl2i(gr_screen.center_w * (xy_pct[0] / 100.0f));
-	int y_pos = fl2i(gr_screen.center_h * (xy_pct[1] / 100.0f));
-	int width = fl2i(gr_screen.center_w * (width_pct / 100.0f));
+	int x_pos, y_pos, width;
+	if (Show_subtitle_uses_pixels)
+	{
+		x_pos = xy_input[0];
+		y_pos = xy_input[1];
+		width = width_input;
+	}
+	else
+	{
+		x_pos = fl2i(gr_screen.center_w * (xy_input[0] / 100.0f));
+		y_pos = fl2i(gr_screen.center_h * (xy_input[1] / 100.0f));
+		width = fl2i(gr_screen.center_w * (width_input / 100.0f));
+	}
 
 	// add the subtitle
-	subtitle new_subtitle(x_pos, y_pos, text.c_str(), nullptr, display_time, fade_time, &new_color, fontnum, center_x, center_y, width, 0, post_shaded, line_height_factor);
+	subtitle new_subtitle(x_pos, y_pos, text.c_str(), nullptr, display_time, fade_time, &new_color, fontnum, center_x, center_y, width, 0, post_shaded, line_height_modifier);
 	Subtitles.push_back(new_subtitle);
 
 	Current_sexp_network_packet.start_callback();
-	Current_sexp_network_packet.send_int(xy_pct[0]);
-	Current_sexp_network_packet.send_int(xy_pct[1]);
-	Current_sexp_network_packet.send_int (message_index);
+	Current_sexp_network_packet.send_int(xy_input[0]);
+	Current_sexp_network_packet.send_int(xy_input[1]);
+	Current_sexp_network_packet.send_int(message_index);
 	// only send the text if it is not a message. If it is a message, we've already sent the index anyway. 
 	if (message_index == -1) {
 		Current_sexp_network_packet.send_string(text);
@@ -22851,25 +22874,26 @@ void sexp_show_subtitle_text(int node)
 	Current_sexp_network_packet.send_int(fontnum);
 	Current_sexp_network_packet.send_bool(center_x);
 	Current_sexp_network_packet.send_bool(center_y);
-	Current_sexp_network_packet.send_int(width_pct);
+	Current_sexp_network_packet.send_int(width_input);
 	Current_sexp_network_packet.send_bool(post_shaded);
  	// TODO: uncomment when Github ticket #3773 is implemented
-	//Current_sexp_network_packet.send_float(line_height_factor);
+	//Current_sexp_network_packet.send_int(line_height_modifier);
 	Current_sexp_network_packet.end_callback();
 }
 
 void multi_sexp_show_subtitle_text()
 {
-	int x_pct, y_pct, width_pct, fontnum, message_index = -1;
+	std::array<int, 2> xy_input;
+	int width_input, line_height_modifier = 0, fontnum, message_index = -1;
 	SCP_string text;
-	float display_time, fade_time=0.0f, line_height_factor=1.0f;
+	float display_time, fade_time=0.0f;
 	int red=255, green=255, blue=255;
 	bool center_x=false, center_y=false;
 	bool post_shaded = false;
 	color new_color;
 
-	 Current_sexp_network_packet.get_int(x_pct);
-	 Current_sexp_network_packet.get_int(y_pct);
+	 Current_sexp_network_packet.get_int(xy_input[0]);
+	 Current_sexp_network_packet.get_int(xy_input[1]);
 	 Current_sexp_network_packet.get_int(message_index); 
 	if (message_index == -1) {
 		Current_sexp_network_packet.get_string(text);
@@ -22886,20 +22910,30 @@ void multi_sexp_show_subtitle_text()
 	Current_sexp_network_packet.get_int(fontnum);
 	Current_sexp_network_packet.get_bool(center_x);
 	Current_sexp_network_packet.get_bool(center_y);
-	Current_sexp_network_packet.get_int(width_pct);
+	Current_sexp_network_packet.get_int(width_input);
 	Current_sexp_network_packet.get_bool(post_shaded);
 	// TODO: uncomment when Github ticket #3773 is implemented
-	//Current_sexp_network_packet.get_float(line_height_factor);
+	//Current_sexp_network_packet.get_int(line_height_modifier);
 
 	gr_init_alphacolor(&new_color, red, green, blue, 255);
 
 	// calculate pixel positions
-	int x_pos = (int)(gr_screen.center_w * (x_pct / 100.0f));
-	int y_pos = (int)(gr_screen.center_h * (y_pct / 100.0f));
-	int width = (int)(gr_screen.center_w * (width_pct / 100.0f));
+	int x_pos, y_pos, width;
+	if (Show_subtitle_uses_pixels)
+	{
+		x_pos = xy_input[0];
+		y_pos = xy_input[1];
+		width = width_input;
+	}
+	else
+	{
+		x_pos = fl2i(gr_screen.center_w * (xy_input[0] / 100.0f));
+		y_pos = fl2i(gr_screen.center_h * (xy_input[1] / 100.0f));
+		width = fl2i(gr_screen.center_w * (width_input / 100.0f));
+	}
 
 	// add the subtitle
-	subtitle new_subtitle(x_pos, y_pos, text.c_str(), nullptr, display_time, fade_time, &new_color, fontnum, center_x, center_y, width, 0, post_shaded, line_height_factor);
+	subtitle new_subtitle(x_pos, y_pos, text.c_str(), nullptr, display_time, fade_time, &new_color, fontnum, center_x, center_y, width, 0, post_shaded, line_height_modifier);
 	Subtitles.push_back(new_subtitle);	
 }
 
@@ -22911,9 +22945,10 @@ void sexp_show_subtitle_image(int node)
 	auto image = CTEXT(n);
 	n = CDR(n);
 
-	std::array<int, 2> xy_pct;
-	eval_array<int>(xy_pct, n, is_nan, is_nan_forever, [](int num)->int {
-		CLAMP(num, -100, 100);
+	std::array<int, 2> xy_input;
+	eval_array<int>(xy_input, n, is_nan, is_nan_forever, [](int num)->int {
+		if (!Show_subtitle_uses_pixels)
+			CLAMP(num, -100, 100);
 		return num;
 	});
 	if (is_nan || is_nan_forever)
@@ -22925,16 +22960,19 @@ void sexp_show_subtitle_image(int node)
 	bool center_y = is_sexp_true(n);
 	n = CDR(n);
 
-	int width_pct, height_pct;
+	int width_input, height_input;
 	float display_time, fade_time;
-	eval_nums(n, is_nan, is_nan_forever, width_pct, height_pct, display_time, fade_time);
+	eval_nums(n, is_nan, is_nan_forever, width_input, height_input, display_time, fade_time);
 	if (is_nan || is_nan_forever)
 		return;
-	// note: width_pct and height_pct are OPF_POSITIVE
-	if (width_pct > 100)
-		width_pct = 100;
-	if (height_pct > 100)
-		height_pct = 100;
+	if (!Show_subtitle_uses_pixels)
+	{
+		// note: width_input and height_input are OPF_POSITIVE so checking for < 0 is not necessary
+		if (width_input > 100)
+			width_input = 100;
+		if (height_input > 100)
+			height_input = 100;
+	}
 	display_time /= 1000.0f;
 	fade_time /= 1000.0f;
 
@@ -22946,10 +22984,21 @@ void sexp_show_subtitle_image(int node)
 	}
 
 	// calculate pixel positions
-	int x_pos = fl2i(gr_screen.center_w * (xy_pct[0] / 100.0f));
-	int y_pos = fl2i(gr_screen.center_h * (xy_pct[1] / 100.0f));
-	int width = fl2i(gr_screen.center_w * (width_pct / 100.0f));
-	int height = fl2i(gr_screen.center_h * (height_pct / 100.0f));
+	int x_pos, y_pos, width, height;
+	if (Show_subtitle_uses_pixels)
+	{
+		x_pos = xy_input[0];
+		y_pos = xy_input[1];
+		width = width_input;
+		height = height_input;
+	}
+	else
+	{
+		x_pos = fl2i(gr_screen.center_w * (xy_input[0] / 100.0f));
+		y_pos = fl2i(gr_screen.center_h * (xy_input[1] / 100.0f));
+		width = fl2i(gr_screen.center_w * (width_input / 100.0f));
+		height = fl2i(gr_screen.center_h * (height_input / 100.0f));
+	}
 
 	// add the subtitle
 	subtitle new_subtitle(x_pos, y_pos, nullptr, image, display_time, fade_time, nullptr, -1, center_x, center_y, width, height, post_shaded);
@@ -22971,27 +23020,44 @@ void sexp_show_subtitle_image(int node)
 
 void multi_sexp_show_subtitle_image()
 {
-	int x_pos, y_pos, width=0, height=0;
+	std::array<int, 2> xy_input;
+	int width_input = 0, height_input = 0;
 	char image[TOKEN_LENGTH];
 	float display_time, fade_time=0.0f;
 	bool center_x=false, center_y=false;
 	bool post_shaded = false;
 
-	Current_sexp_network_packet.get_int(x_pos);
-	Current_sexp_network_packet.get_int(y_pos);
+	Current_sexp_network_packet.get_int(xy_input[0]);
+	Current_sexp_network_packet.get_int(xy_input[1]);
 	Current_sexp_network_packet.get_string(image);
 	Current_sexp_network_packet.get_float(display_time);
 	Current_sexp_network_packet.get_float(fade_time);
 	Current_sexp_network_packet.get_bool(center_x);
 	Current_sexp_network_packet.get_bool(center_y);
-	Current_sexp_network_packet.get_int(width);
-	Current_sexp_network_packet.get_int(height);
+	Current_sexp_network_packet.get_int(width_input);
+	Current_sexp_network_packet.get_int(height_input);
 	Current_sexp_network_packet.get_bool(post_shaded);
+
+	// calculate pixel positions
+	int x_pos, y_pos, width, height;
+	if (Show_subtitle_uses_pixels)
+	{
+		x_pos = xy_input[0];
+		y_pos = xy_input[1];
+		width = width_input;
+		height = height_input;
+	}
+	else
+	{
+		x_pos = fl2i(gr_screen.center_w * (xy_input[0] / 100.0f));
+		y_pos = fl2i(gr_screen.center_h * (xy_input[1] / 100.0f));
+		width = fl2i(gr_screen.center_w * (width_input / 100.0f));
+		height = fl2i(gr_screen.center_h * (height_input / 100.0f));
+	}
 
 	// add the subtitle
 	subtitle new_subtitle(x_pos, y_pos, nullptr, image, display_time, fade_time, nullptr, -1, center_x, center_y, width, height, post_shaded);
 	Subtitles.push_back(new_subtitle);	
-
 }
 
 void sexp_set_time_compression(int n)
@@ -31267,13 +31333,9 @@ void sexp_variable_delete(int index)
 	Sexp_variables[index].type = SEXP_VARIABLE_NOT_USED;
 }
 
-int sexp_var_compare(const void *var1, const void *var2)
+int sexp_var_compare(const sexp_variable *sexp_var1, const sexp_variable *sexp_var2)
 {
 	int set1, set2;
-	sexp_variable *sexp_var1, *sexp_var2;
-
-	sexp_var1 = (sexp_variable*) var1;
-	sexp_var2 = (sexp_variable*) var2;
 
 	set1 = sexp_var1->type & SEXP_VARIABLE_SET;
 	set2 = sexp_var2->type & SEXP_VARIABLE_SET;
@@ -31294,7 +31356,7 @@ int sexp_var_compare(const void *var1, const void *var2)
  */
 void sexp_variable_sort()
 {
-	insertion_sort( (void *)Sexp_variables, (size_t)(MAX_SEXP_VARIABLES), sizeof(sexp_variable), sexp_var_compare );
+	insertion_sort(Sexp_variables, MAX_SEXP_VARIABLES, sexp_var_compare);
 }
 
 // Goober5000
@@ -34722,7 +34784,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t4: List of subsys names not to be randomized\r\n"},
 
 	{ OP_SUPERNOVA_START, "supernova-start\r\n"
-		"\t1: Time in seconds until the supernova shockwave hits the player\r\n"},
+		"\t1: Time in seconds that the supernova lasts.  Note that it will actually hit the player at " STR(SUPERNOVA_CUT_TIME) " seconds.  If you want the HUD gauge to adjust for this, use the '$Supernova hits at zero' game_settings.tbl option.\r\n"},
 
 	{ OP_SUPERNOVA_STOP, "supernova-stop\r\n"
 		"\t Stops a supernova in progress.\r\n"
@@ -35543,34 +35605,36 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	},
 
 	{ OP_CUTSCENES_SHOW_SUBTITLE_TEXT, "show-subtitle-text\r\n"
-		"\tDisplays a subtitle in the form of text.  Note that because of the constraints of the subtitle system, textual subtitles are currently limited to 255 characters or fewer.\r\n"
+		"\tDisplays a subtitle in the form of text.  Note that because of the constraints of the subtitle system, textual subtitles are currently limited to 255 characters or fewer.\r\n\r\n"
+		"Certain arguments can be specified in a percentage of the screen or an absolute number of pixels.  This is controlled by the '$Show-subtitle uses pixels' game_settings.tbl option.\r\n\r\n"
 		"Takes 6 to 14 arguments...\r\n"
 		"\t1:\tText to display, or the name of a message containing text\r\n"
-		"\t2:\tX position, from 0 to 100% (positive measures from the left; negative measures from the right)\r\n"
-		"\t3:\tY position, from 0 to 100% (positive measures from the top; negative measures from the bottom)\r\n"
+		"\t2:\tX position (percentage/pixels) - positive measures from the left; negative measures from the right\r\n"
+		"\t3:\tY position (percentage/pixels) - positive measures from the top; negative measures from the bottom\r\n"
 		"\t4:\tCenter horizontally? (if true, overrides argument #2)\r\n"
 		"\t5:\tCenter vertically? (if true, overrides argument #3)\r\n"
 		"\t6:\tTime (in milliseconds) to be displayed, not including fade-in/fade-out\r\n"
 		"\t7:\tFade time (in milliseconds) to be used for both fade-in and fade-out (optional)\r\n"
-		"\t8:\tParagraph width, from 1 to 100% (optional; 0 uses default 200 pixels)\r\n"
+		"\t8:\tParagraph width (percentage/pixels) (optional; 0 uses default 200 pixels)\r\n"
 		"\t9:\tText red component (0-255) (optional)\r\n"
 		"\t10:\tText green component (0-255) (optional)\r\n"
 		"\t11:\tText blue component (0-255) (optional)\r\n"
 		"\t12:\tText font (optional)\r\n"
 		"\t13:\tDrawn after shading? (optional; defaults to false)\r\n"
-		"\t14:\tLine vertical spacing, as a percentage, for displaying multi-line subtitles (optional; defaults to 100)\r\n"
+		"\t14:\tLine vertical spacing (percentage/pixels), for displaying multi-line subtitles (optional; defaults to 100%)\r\n"
 	},
 
 	{ OP_CUTSCENES_SHOW_SUBTITLE_IMAGE, "show-subtitle-image\r\n"
 		"\tDisplays a subtitle in the form of an image.  Please note that, in images without an alpha channel, black pixels will be treated as transparent.  In images with an alpha channel, black pixels will be drawn as expected.\r\n\r\n"
+		"Certain arguments can be specified in a percentage of the screen or an absolute number of pixels.  This is controlled by the '$Show-subtitle uses pixels' game_settings.tbl option.\r\n\r\n"
 		"Takes 8 to 10 arguments...\r\n"
 		"\t1:\tImage to display\r\n"
-		"\t2:\tX position, from 0 to 100% (positive measures from the left; negative measures from the right)\r\n"
-		"\t3:\tY position, from 0 to 100% (positive measures from the top; negative measures from the bottom)\r\n"
+		"\t2:\tX position (percentage/pixels) - positive measures from the left; negative measures from the right\r\n"
+		"\t3:\tY position (percentage/pixels) - positive measures from the top; negative measures from the bottom\r\n"
 		"\t4:\tCenter horizontally? (if true, overrides argument #2)\r\n"
 		"\t5:\tCenter vertically? (if true, overrides argument #3)\r\n"
-		"\t6:\tImage width, from 1 to 100% (0 uses original width)\r\n"
-		"\t7:\tImage height, from 1 to 100% (0 uses original height)\r\n"
+		"\t6:\tImage width (percentage/pixels) (0 uses original width)\r\n"
+		"\t7:\tImage height (percentage/pixels) (0 uses original height)\r\n"
 		"\t8:\tTime (in milliseconds) to be displayed, not including fade-in/fade-out\r\n"
 		"\t9:\tFade time (in milliseconds) to be used for both fade-in and fade-out (optional)\r\n"
 		"\t10:\tDrawn after shading? (optional; defaults to false)"

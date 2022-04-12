@@ -1818,7 +1818,7 @@ void stars_draw(int show_stars, int show_suns, int  /*show_nebulas*/, int show_s
 		stars_draw_background();
 	}
 
-	if ( !env && show_stars && (Nmodel_num < 0) && (Game_detail_flags & DETAIL_FLAG_STARS) && !(The_mission.flags[Mission::Mission_Flags::Fullneb]) && (supernova_active() < 3) ) {
+	if ( !env && show_stars && (Nmodel_num < 0) && (Game_detail_flags & DETAIL_FLAG_STARS) && !(The_mission.flags[Mission::Mission_Flags::Fullneb]) && (supernova_stage() < SUPERNOVA_STAGE::TOOLTIME) ) {
 		stars_draw_stars();
 	}
 
@@ -1829,7 +1829,7 @@ void stars_draw(int show_stars, int show_suns, int  /*show_nebulas*/, int show_s
 	mprintf(( "Stars: %d\n", xt2-xt1 ));
 #endif
 
-	if ( !Rendering_to_env && (Game_detail_flags & DETAIL_FLAG_MOTION) && (!Fred_running) && (supernova_active() < 3) && in_mission)	{
+	if ( !Rendering_to_env && (Game_detail_flags & DETAIL_FLAG_MOTION) && (!Fred_running) && (supernova_stage() < SUPERNOVA_STAGE::TOOLTIME) && in_mission)	{
 		stars_draw_motion_debris();
 	}
 
