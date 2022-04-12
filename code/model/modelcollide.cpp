@@ -406,12 +406,12 @@ int model_collide_parse_bsp_defpoints(ubyte * p)
 // +44     nverts*int  vertlist
 void model_collide_flatpoly(ubyte * p)
 {
-	int i;
-	int nv;
+	uint i;
+	uint nv;
 	vec3d *points[TMAP_MAX_VERTS];
 	short *verts;
 
-	nv = w(p+36);
+	nv = uw(p+36);
 
 	if ( nv <= 0 )
 		return;

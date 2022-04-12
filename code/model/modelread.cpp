@@ -4916,7 +4916,7 @@ void swap_bsp_defpoints(ubyte * p)
 
 void swap_bsp_tmappoly( polymodel * pm, ubyte * p )
 {
-	int i, nv;
+	uint i, nv;
 	model_tmap_vert *verts;
 	vec3d * normal = vp(p+8);	//tigital
 	vec3d * center = vp(p+20);
@@ -4931,21 +4931,17 @@ void swap_bsp_tmappoly( polymodel * pm, ubyte * p )
 	center->xyz.y = INTEL_FLOAT( &center->xyz.y );
 	center->xyz.z = INTEL_FLOAT( &center->xyz.z );
 
-	nv = INTEL_INT( w(p+36));		//tigital
-		w(p+36) = nv;
+	nv = INTEL_INT( uw(p+36));		//tigital
+		uw(p+36) = nv;
 
 	int tmap_num = INTEL_INT( w(p+40) );	//tigital
 		w(p+40) = tmap_num;
 
 	if ( nv < 0 ) return;
 
-	verts = (model_tmap_vert *)(p+44);
-	for (i=0;i<nv;i++){
-		verts[i].vertnum = INTEL_SHORT( verts[i].vertnum );
-		verts[i].normnum = INTEL_SHORT( verts[i].normnum );
-		verts[i].u = INTEL_FLOAT( &verts[i].u );
-		verts[i].v = INTEL_FLOAT( &verts[i].v );
-	}
+	verts = new model_tmap_vert[n];
+
+	unpack_tmap_verts((p+44), verts, nv);
 
 	if ( pm->version < 2003 )	{
 		// Set the "normal_point" part of field to be the center of the polygon
@@ -4974,9 +4970,70 @@ void swap_bsp_tmappoly( polymodel * pm, ubyte * p )
 	}
 }
 
+void swap_bsp_tmap2poly(polymodel* pm, ubyte* p)
+{
+	uint i, nv;
+	model_tmap_vert* verts;
+	vec3d* normal = vp(p + 8); // tigital
+	vec3d* center = vp(p + 20);
+	float radius = INTEL_FLOAT(&fl(p + 32));
+
+	fl(p + 32) = radius;
+
+	normal->xyz.x = INTEL_FLOAT(&normal->xyz.x);
+	normal->xyz.y = INTEL_FLOAT(&normal->xyz.y);
+	normal->xyz.z = INTEL_FLOAT(&normal->xyz.z);
+	center->xyz.x = INTEL_FLOAT(&center->xyz.x);
+	center->xyz.y = INTEL_FLOAT(&center->xyz.y);
+	center->xyz.z = INTEL_FLOAT(&center->xyz.z);
+
+	nv = INTEL_INT(uw(p + 36)); // tigital
+	uw(p + 36) = nv;
+
+	int tmap_num = INTEL_INT(w(p + 40)); // tigital
+	w(p + 40) = tmap_num;
+
+	if (nv < 0)
+		return;
+
+	verts = (model_tmap_vert*)(p + 44);
+	for (i = 0; i < nv; i++) {
+		verts[i].vertnum = INTEL_SHORT(verts[i].vertnum);
+		verts[i].normnum = INTEL_SHORT(verts[i].normnum);
+		verts[i].u = INTEL_FLOAT(&verts[i].u);
+		verts[i].v = INTEL_FLOAT(&verts[i].v);
+	}
+
+	if (pm->version < 2003) {
+		// Set the "normal_point" part of field to be the center of the polygon
+		vec3d center_point;
+		vm_vec_zero(&center_point);
+
+		for (i = 0; i < nv; i++) {
+			vm_vec_add2(&center_point, Interp_verts[verts[i].vertnum]);
+		}
+
+		center_point.xyz.x /= nv;
+		center_point.xyz.y /= nv;
+		center_point.xyz.z /= nv;
+
+		*vp(p + 20) = center_point;
+
+		float rad = 0.0f;
+
+		for (i = 0; i < nv; i++) {
+			float dist = vm_vec_dist(&center_point, Interp_verts[verts[i].vertnum]);
+			if (dist > rad) {
+				rad = dist;
+			}
+		}
+		fl(p + 32) = rad;
+	}
+}
+
 void swap_bsp_flatpoly( polymodel * pm, ubyte * p )
 {
-	int i, nv;
+	uint i, nv;
 	short *verts;
 	vec3d * normal = vp(p+8);	//tigital
 	vec3d * center = vp(p+20);
@@ -4992,8 +5049,8 @@ void swap_bsp_flatpoly( polymodel * pm, ubyte * p )
 	center->xyz.y = INTEL_FLOAT( &center->xyz.y );
 	center->xyz.z = INTEL_FLOAT( &center->xyz.z );
 
-	nv = INTEL_INT( w(p+36));		//tigital
-		w(p+36) = nv;
+	nv = INTEL_INT( uw(p+36));		//tigital
+		uw(p+36) = nv;
         
 	if ( nv < 0 ) return;
 
