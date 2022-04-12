@@ -171,7 +171,7 @@ sexp_container *get_sexp_container(const char *name);
 
 // text replacement
 bool sexp_container_replace_refs_with_values(SCP_string &text);
-bool sexp_container_replace_refs_with_values(char *text, size_t max_len);
+bool sexp_container_replace_refs_with_values(char *text, size_t max_size);
 
 const char *sexp_container_CTEXT(int node);
 
