@@ -439,7 +439,10 @@ void LabRenderer::useBackground(const SCP_string& mission_name) {
 			if (strlen(envmap_name)) {
 				// Load the mission map so we can use it later
 				ENVMAP = bm_load(The_mission.envmap_name);
-				return;
+				// Load may fail, if so, don't exit early. Proceed to make render target.
+				if (ENVMAP > 1) {
+					return;
+				}
 			}
 
 			gr_screen.envmap_render_target = bm_make_render_target(size, size, gen_flags);
