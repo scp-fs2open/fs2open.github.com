@@ -247,7 +247,7 @@ void LabRenderer::useBackground(const SCP_string& mission_name) {
 	int ambient_light_level;
 	extern const char* Neb2_filenames[];
 
-	char envmap_name[MAX_FILENAME_LEN];
+	char envmap_name[MAX_FILENAME_LEN] = {0};
 
 	currentMissionBackground = mission_name;
 
