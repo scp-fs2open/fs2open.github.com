@@ -14051,10 +14051,17 @@ void sexp_mission_set_subspace(int n)
 	if (is_nan || is_nan_forever)
 		return;
 
-	if (set_it > 0) {
+	if (set_it > 0)
+	{
+		if (Game_subspace_effect)
+			return;
 		Game_subspace_effect = 1;
 		game_start_subspace_ambient_sound();
-	} else {
+	}
+	else
+	{
+		if (!Game_subspace_effect)
+			return;
 		Game_subspace_effect = 0;
 		game_stop_subspace_ambient_sound();
 	}
