@@ -146,7 +146,7 @@ void moff_tmappoly(ubyte * p, polymodel * pm, model_octant * oct, int just_count
 		vec3d center_point;
 		vm_vec_zero( &center_point );
 
-		Assert( Interp_verts != NULL );
+		Assert( Interp_verts != nullptr );
 
 		for (i=0;i<nv;i++)	{
 			vm_vec_add2( &center_point, Interp_verts[verts[i].vertnum] );
@@ -201,7 +201,7 @@ void moff_tmap2poly(ubyte* p, polymodel* pm, model_octant* oct, int just_count)
 	vec3d center_point;
 	vm_vec_zero(&center_point);
 
-	Assert(Interp_verts != NULL);
+	Assert(Interp_verts != nullptr);
 
 	for (i = 0; i < nv; i++) {
 		vm_vec_add2(&center_point, Interp_verts[verts[i].vertnum]);
