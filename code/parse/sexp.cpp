@@ -672,8 +672,8 @@ SCP_vector<sexp_oper> Operators = {
 	{ "reset-fov",						OP_CUTSCENES_RESET_FOV,					0,	0,			SEXP_ACTION_OPERATOR,	},
 	{ "reset-camera",					OP_CUTSCENES_RESET_CAMERA,				0,	1,			SEXP_ACTION_OPERATOR,	},
 	{ "show-subtitle",					OP_CUTSCENES_SHOW_SUBTITLE,				4,	14,			SEXP_ACTION_OPERATOR,	},
-	{ "show-subtitle-text",				OP_CUTSCENES_SHOW_SUBTITLE_TEXT,		6,	14,			SEXP_ACTION_OPERATOR,	},
-	{ "show-subtitle-image",			OP_CUTSCENES_SHOW_SUBTITLE_IMAGE,		8,	10,			SEXP_ACTION_OPERATOR,	},
+	{ "show-subtitle-text",				OP_CUTSCENES_SHOW_SUBTITLE_TEXT,		6,	15,			SEXP_ACTION_OPERATOR,	},
+	{ "show-subtitle-image",			OP_CUTSCENES_SHOW_SUBTITLE_IMAGE,		8,	11,			SEXP_ACTION_OPERATOR,	},
 	{ "clear-subtitles",				OP_CLEAR_SUBTITLES,						0,	0,			SEXP_ACTION_OPERATOR,	},
 	{ "lock-perspective",				OP_CUTSCENES_FORCE_PERSPECTIVE,			1,	2,			SEXP_ACTION_OPERATOR,	},
 	{ "set-camera-shudder",				OP_SET_CAMERA_SHUDDER,					2,	2,			SEXP_ACTION_OPERATOR,	},
@@ -22860,6 +22860,14 @@ void sexp_show_subtitle_text(int node)
 		line_height_modifier = eval_num(n, is_nan, is_nan_forever);
 		if (is_nan || is_nan_forever)
 			return;
+		n = CDR(n);
+	}
+
+	bool adjust_wh = true;
+	if (n >= 0)
+	{
+		adjust_wh = is_sexp_true(n);
+		n = CDR(n);
 	}
 
 	color new_color;
@@ -22884,7 +22892,7 @@ void sexp_show_subtitle_text(int node)
 	}
 
 	// add the subtitle
-	subtitle new_subtitle(x_pos, y_pos, text.c_str(), nullptr, display_time, fade_time, &new_color, fontnum, center_x, center_y, width, 0, post_shaded, line_height_modifier);
+	subtitle new_subtitle(x_pos, y_pos, text.c_str(), nullptr, display_time, fade_time, &new_color, fontnum, center_x, center_y, width, 0, post_shaded, line_height_modifier, adjust_wh);
 	Subtitles.push_back(new_subtitle);
 
 	Current_sexp_network_packet.start_callback();
@@ -22907,6 +22915,7 @@ void sexp_show_subtitle_text(int node)
 	Current_sexp_network_packet.send_bool(post_shaded);
  	// TODO: uncomment when Github ticket #3773 is implemented
 	//Current_sexp_network_packet.send_int(line_height_modifier);
+	//Current_sexp_network_packet.send_bool(adjust_wh);
 	Current_sexp_network_packet.end_callback();
 }
 
@@ -22918,7 +22927,7 @@ void multi_sexp_show_subtitle_text()
 	float display_time, fade_time=0.0f;
 	int red=255, green=255, blue=255;
 	bool center_x=false, center_y=false;
-	bool post_shaded = false;
+	bool post_shaded = false, adjust_wh = true;
 	color new_color;
 
 	Current_sexp_network_packet.get_int(xy_input[0]);
@@ -22943,6 +22952,7 @@ void multi_sexp_show_subtitle_text()
 	Current_sexp_network_packet.get_bool(post_shaded);
 	// TODO: uncomment when Github ticket #3773 is implemented
 	//Current_sexp_network_packet.get_int(line_height_modifier);
+	//Current_sexp_network_packet.get_bool(adjust_wh);
 
 	gr_init_alphacolor(&new_color, red, green, blue, 255);
 
@@ -22965,7 +22975,7 @@ void multi_sexp_show_subtitle_text()
 	}
 
 	// add the subtitle
-	subtitle new_subtitle(x_pos, y_pos, text.c_str(), nullptr, display_time, fade_time, &new_color, fontnum, center_x, center_y, width, 0, post_shaded, line_height_modifier);
+	subtitle new_subtitle(x_pos, y_pos, text.c_str(), nullptr, display_time, fade_time, &new_color, fontnum, center_x, center_y, width, 0, post_shaded, line_height_modifier, adjust_wh);
 	Subtitles.push_back(new_subtitle);	
 }
 
@@ -23015,6 +23025,13 @@ void sexp_show_subtitle_image(int node)
 		n = CDR(n);
 	}
 
+	bool adjust_wh = true;
+	if (n >= 0)
+	{
+		adjust_wh = is_sexp_true(n);
+		n = CDR(n);
+	}
+
 	// calculate pixel positions
 	int x_pos, y_pos, width, height;
 	if (Show_subtitle_uses_pixels)
@@ -23036,7 +23053,7 @@ void sexp_show_subtitle_image(int node)
 	}
 
 	// add the subtitle
-	subtitle new_subtitle(x_pos, y_pos, nullptr, image, display_time, fade_time, nullptr, -1, center_x, center_y, width, height, post_shaded);
+	subtitle new_subtitle(x_pos, y_pos, nullptr, image, display_time, fade_time, nullptr, -1, center_x, center_y, width, height, post_shaded, 0, adjust_wh);
 	Subtitles.push_back(new_subtitle);
 
 	Current_sexp_network_packet.start_callback();
@@ -23050,6 +23067,8 @@ void sexp_show_subtitle_image(int node)
 	Current_sexp_network_packet.send_int(width);
 	Current_sexp_network_packet.send_int(height);
 	Current_sexp_network_packet.send_bool(post_shaded);
+	// TODO: uncomment when Github ticket #3773 is implemented
+	//Current_sexp_network_packet.send_bool(adjust_wh);
 	Current_sexp_network_packet.end_callback();
 }
 
@@ -23060,7 +23079,7 @@ void multi_sexp_show_subtitle_image()
 	char image[TOKEN_LENGTH];
 	float display_time, fade_time=0.0f;
 	bool center_x=false, center_y=false;
-	bool post_shaded = false;
+	bool post_shaded = false, adjust_wh = true;
 
 	Current_sexp_network_packet.get_int(xy_input[0]);
 	Current_sexp_network_packet.get_int(xy_input[1]);
@@ -23072,6 +23091,8 @@ void multi_sexp_show_subtitle_image()
 	Current_sexp_network_packet.get_int(width_input);
 	Current_sexp_network_packet.get_int(height_input);
 	Current_sexp_network_packet.get_bool(post_shaded);
+	// TODO: uncomment when Github ticket #3773 is implemented
+	//Current_sexp_network_packet.get_bool(adjust_wh);
 
 	// calculate pixel positions
 	int x_pos, y_pos, width, height;
@@ -23094,7 +23115,7 @@ void multi_sexp_show_subtitle_image()
 	}
 
 	// add the subtitle
-	subtitle new_subtitle(x_pos, y_pos, nullptr, image, display_time, fade_time, nullptr, -1, center_x, center_y, width, height, post_shaded);
+	subtitle new_subtitle(x_pos, y_pos, nullptr, image, display_time, fade_time, nullptr, -1, center_x, center_y, width, height, post_shaded, 0, adjust_wh);
 	Subtitles.push_back(new_subtitle);	
 }
 
@@ -29815,6 +29836,8 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_BOOL;
 			else if (argnum == 13)
 				return OPF_NUMBER;
+			else if (argnum == 14)
+				return OPF_BOOL;
 			else
 				return OPF_NONE;
 
@@ -29827,7 +29850,7 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_BOOL;
 			else if (argnum >= 5 && argnum <= 8)
 				return OPF_POSITIVE;
-			else if (argnum == 9)
+			else if (argnum == 9 || argnum == 10)
 				return OPF_BOOL;
 			else
 				return OPF_NONE;
@@ -35646,7 +35669,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tDisplays a subtitle in the form of text.  Note that because of the constraints of the subtitle system, textual subtitles are currently limited to 255 characters or fewer.\r\n\r\n"
 		"Certain arguments can be specified in a percentage of the screen or an absolute number of pixels.  This is controlled by the '$Show-subtitle uses pixels' game_settings.tbl option.  "
 		"Whether percentages or pixels, the subtitle can be configured to scale according to screen resolution via the '$Show-subtitle base resolution' option.\r\n\r\n"
-		"Takes 6 to 14 arguments...\r\n"
+		"Takes 6 to 15 arguments...\r\n"
 		"\t1:\tText to display, or the name of a message containing text\r\n"
 		"\t2:\tX position (percentage/pixels) - positive measures from the left; negative measures from the right\r\n"
 		"\t3:\tY position (percentage/pixels) - positive measures from the top; negative measures from the bottom\r\n"
@@ -35661,13 +35684,14 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t12:\tText font (optional)\r\n"
 		"\t13:\tDrawn after shading? (optional; defaults to false)\r\n"
 		"\t14:\tLine vertical spacing (percentage/pixels), for displaying multi-line subtitles (optional; defaults to 100%)\r\n"
+		"\t15:\tAdjust subtitle width if screen aspect ratio is different from base resolution? (optional; has no effect if subtitle base resolution is not specified; defaults to true)\r\n"
 	},
 
 	{ OP_CUTSCENES_SHOW_SUBTITLE_IMAGE, "show-subtitle-image\r\n"
 		"\tDisplays a subtitle in the form of an image.  Please note that, in images without an alpha channel, black pixels will be treated as transparent.  In images with an alpha channel, black pixels will be drawn as expected.\r\n\r\n"
 		"Certain arguments can be specified in a percentage of the screen or an absolute number of pixels.  This is controlled by the '$Show-subtitle uses pixels' game_settings.tbl option.  "
 		"Whether percentages or pixels, the subtitle can be configured to scale according to screen resolution via the '$Show-subtitle base resolution' option.\r\n\r\n"
-		"Takes 8 to 10 arguments...\r\n"
+		"Takes 8 to 11 arguments...\r\n"
 		"\t1:\tImage to display\r\n"
 		"\t2:\tX position (percentage/pixels) - positive measures from the left; negative measures from the right\r\n"
 		"\t3:\tY position (percentage/pixels) - positive measures from the top; negative measures from the bottom\r\n"
@@ -35677,7 +35701,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t7:\tImage height (percentage/pixels) (0 uses original height)\r\n"
 		"\t8:\tTime (in milliseconds) to be displayed, not including fade-in/fade-out\r\n"
 		"\t9:\tFade time (in milliseconds) to be used for both fade-in and fade-out (optional)\r\n"
-		"\t10:\tDrawn after shading? (optional; defaults to false)"
+		"\t10:\tDrawn after shading? (optional; defaults to false)\r\n"
+		"\t11:\tAdjust subtitle width/height if screen aspect ratio is different from base resolution? (optional; has no effect if subtitle base resolution is not specified; defaults to true)\r\n"
 	},
 
 	{ OP_CUTSCENES_SET_TIME_COMPRESSION, "set-time-compression\r\n"
