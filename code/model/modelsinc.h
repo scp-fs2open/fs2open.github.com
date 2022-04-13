@@ -10,6 +10,7 @@
 #ifndef _MODELSINC_H
 #define _MODELSINC_H
 
+#include "globalincs/pstypes.h"
 
 class polymodel;
 
