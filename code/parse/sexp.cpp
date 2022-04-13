@@ -3918,6 +3918,11 @@ int get_sexp()
 				Nebula_sexp_used = true;
 				break;
 
+			case OP_MISSION_SET_SUBSPACE:
+				// set flag for Goober5000
+				Subspace_sexp_used = true;
+				break;
+
 			case OP_WARP_EFFECT:
 				// type of warp is argument #11
 				n = CDDDDDR(start);
