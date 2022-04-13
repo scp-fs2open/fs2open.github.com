@@ -290,6 +290,40 @@ void gr_opengl_print_screen(const char *filename)
 	}
 }
 
+void gr_opengl_dump_envmap(const char* filename)
+{
+	char tmp[MAX_PATH_LEN];
+	GLubyte* pixels = NULL;
+
+	// save to a "envmaps" directory and tack on the filename
+	snprintf(tmp, MAX_PATH_LEN - 1, "envmaps/%s.png", filename);
+
+	_mkdir(os_get_config_path("envmaps").c_str());
+
+
+	auto width = 512;
+	auto height = 512;
+	GLenum x;
+	auto ts = bm_get_gr_info<tcache_slot_opengl>(gr_screen.envmap_render_target);
+	glBindTexture(ts->texture_target, ts->texture_id);
+	x = glGetError();
+	pixels = (GLubyte*)vm_malloc(width * height * 4, memory::quiet_alloc);
+	for (int i = 0; i < 6; ++i) {
+		glGetTexImage(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+		// save to a "envmaps" directory and tack on the filename
+		snprintf(tmp, MAX_PATH_LEN - 1, "envmaps/%s_%d.png", filename, i);
+		if (!png_write_bitmap(os_get_config_path(tmp).c_str(), 512, 512, true, pixels)) {
+			ReleaseWarning(LOCATION, "Failed to write screenshot to \"%s\".", os_get_config_path(tmp).c_str());
+		}
+	}
+
+
+
+	if (pixels != NULL) {
+		vm_free(pixels);
+	}
+}
+
 void gr_opengl_shutdown()
 {
 	opengl_tcache_shutdown();
@@ -807,6 +841,7 @@ void opengl_setup_function_pointers()
 //	gr_screen.gf_rect				= gr_opengl_rect;
 
 	gr_screen.gf_print_screen		= gr_opengl_print_screen;
+	gr_screen.gf_dump_envmap		= gr_opengl_dump_envmap;
 
 	gr_screen.gf_zbuffer_get		= gr_opengl_zbuffer_get;
 	gr_screen.gf_zbuffer_set		= gr_opengl_zbuffer_set;

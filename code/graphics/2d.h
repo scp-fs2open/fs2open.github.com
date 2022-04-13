@@ -713,6 +713,9 @@ typedef struct screen {
 	// dumps the current screen to a file
 	std::function<void(const char* filename)> gf_print_screen;
 
+	// dumps the current environment map to several files
+	std::function<void(const char* filename)> gf_dump_envmap;
+
 	// Retrieves the zbuffer mode.
 	std::function<int()> gf_zbuffer_get;
 
@@ -997,6 +1000,7 @@ extern void gr_activate(int active);
 // old Descent-style gr_xxx calls.
 
 #define gr_print_screen		GR_CALL(gr_screen.gf_print_screen)
+#define gr_dump_envmap		GR_CALL(gr_screen.gf_dump_envmap)
 
 //#define gr_flip				GR_CALL(gr_screen.gf_flip)
 void gr_flip(bool execute_scripting = true);
