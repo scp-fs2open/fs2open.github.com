@@ -73,7 +73,7 @@ class polymodel;
 #define vp(p)	((vec3d *) (p))
 #define fl(p)	(*((float *) (p)))
 
-extern int model_interp(matrix * orient, ubyte * data, polymodel * pm );
+//extern int model_interp(matrix * orient, ubyte * data, polymodel * pm );
 
 // Creates the octants for a given polygon model
 void model_octant_create( polymodel * pm );

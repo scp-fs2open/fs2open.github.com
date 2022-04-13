@@ -1711,7 +1711,7 @@ void parse_tmap(int offset, ubyte *bsp_data)
 	uint n_vert = uw(bsp_data+offset+36);
 	
 	ubyte *p = &bsp_data[offset+8];
-	model_tmap_vert* tverts = new model_tmap_vert[n_vert];
+	auto tverts = new model_tmap_vert[n_vert];
 
 	// Copy the verts manually since they aren't aligned with the struct
 	unpack_tmap_verts(&bsp_data[offset + 44], tverts, n_vert);
@@ -1916,7 +1916,7 @@ void parse_sortnorm(int offset, ubyte *bsp_data)
 	if (postlist) parse_bsp(offset+postlist, bsp_data);
 }
 
-void find_tmap(int offset, ubyte *bsp_data, int id)
+void find_tmap(int offset, const ubyte *bsp_data, int id)
 {
 	int pof_tex = w(bsp_data+offset+(id == OP_TMAP2POLY ? 24 : 40));
 	uint n_vert = uw(bsp_data+offset+ (id == OP_TMAP2POLY ? 20 : 36));
@@ -3067,7 +3067,7 @@ void bsp_polygon_data::process_tmap(int offset, ubyte* bsp_data)
 	}
 
 	ubyte *p = &bsp_data[offset + 8];
-	model_tmap_vert* tverts = new model_tmap_vert[n_vert];
+	auto tverts = new model_tmap_vert[n_vert];
 
 	// Copy the verts manually since they aren't aligned with the struct
 	unpack_tmap_verts(&bsp_data[offset + 44], tverts, n_vert);

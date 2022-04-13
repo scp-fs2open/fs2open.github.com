@@ -536,9 +536,9 @@ void model_collide_tmap2poly(ubyte* p) {
 	}
 
 	if (Mc->flags & MC_CHECK_SPHERELINE) {
-		mc_check_sphereline_face(nv, points, points[0], vp(p + 8), uvlist, tmap_num, p, NULL);
+		mc_check_sphereline_face(nv, points, points[0], vp(p + 8), uvlist, tmap_num, p, nullptr);
 	} else {
-		mc_check_face(nv, points, points[0], vp(p + 8), uvlist, tmap_num, p, NULL);
+		mc_check_face(nv, points, points[0], vp(p + 8), uvlist, tmap_num, p, nullptr);
 	}
 }
 
@@ -661,15 +661,15 @@ void model_collide_bsp_poly(bsp_collision_tree *tree, int leaf_index)
 
 		if ( flat_poly ) {
 			if ( Mc->flags & MC_CHECK_SPHERELINE ) {
-				mc_check_sphereline_face(nv, points, points[0], &leaf->plane_norm, NULL, -1, NULL, leaf);
+				mc_check_sphereline_face(nv, points, points[0], &leaf->plane_norm, nullptr, -1, nullptr, leaf);
 			} else {
-				mc_check_face(nv, points, points[0], &leaf->plane_norm, NULL, -1, NULL, leaf);
+				mc_check_face(nv, points, points[0], &leaf->plane_norm, nullptr, -1, nullptr, leaf);
 			}
 		} else {
 			if ( Mc->flags & MC_CHECK_SPHERELINE ) {
-				mc_check_sphereline_face(nv, points, points[0], &leaf->plane_norm, uvlist, leaf->tmap_num, NULL, leaf);
+				mc_check_sphereline_face(nv, points, points[0], &leaf->plane_norm, uvlist, leaf->tmap_num, nullptr, leaf);
 			} else {
-				mc_check_face(nv, points, points[0], &leaf->plane_norm, uvlist, leaf->tmap_num, NULL, leaf);
+				mc_check_face(nv, points, points[0], &leaf->plane_norm, uvlist, leaf->tmap_num, nullptr, leaf);
 			}
 		}
 
@@ -741,7 +741,7 @@ void model_collide_parse_bsp_tmappoly(bsp_collision_leaf *leaf, SCP_vector<model
 
 void model_collide_parse_bsp_tmap2poly(bsp_collision_leaf* leaf, SCP_vector<model_tmap_vert>* vert_buffer, void* model_ptr)
 {
-	ubyte* p = (ubyte*)model_ptr;
+	auto p = (ubyte*)model_ptr;
 
 	uint i;
 	uint nv;
