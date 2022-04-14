@@ -137,6 +137,8 @@ private:
 	float time_displayed_end;
 
 	bool post_shaded;
+	bool do_screen_scaling;
+
 public:
 	subtitle(int in_x_pos, int in_y_pos, const char* in_text = NULL, const char* in_imageanim = NULL,
 			 float in_display_time = 0, float in_fade_time = 0.0f, const color *in_text_color = NULL, int in_text_fontnum = -1,

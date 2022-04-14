@@ -1998,6 +1998,8 @@ void game_init()
 		libs::discord::init();
 	}
 
+	mod_table_post_process();
+
 	nprintf(("General", "Ships.tbl is : %s\n", Game_ships_tbl_valid ? "VALID" : "INVALID!!!!"));
 	nprintf(("General", "Weapons.tbl is : %s\n", Game_weapons_tbl_valid ? "VALID" : "INVALID!!!!"));
 
