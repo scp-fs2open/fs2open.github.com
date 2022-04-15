@@ -2733,10 +2733,10 @@ void resolve_parse_flags(object *objp, flagset<Mission::Parse_Object_Flags> &par
         shipp->flags.set(Ship::Ship_Flags::Same_arrival_warp_when_docked);
 
     if (parse_flags[Mission::Parse_Object_Flags::SF_Same_departure_warp_when_docked])
-        shipp->flags.set(Ship::Ship_Flags::Same_departure_warp_when_docked);
+		shipp->flags.set(Ship::Ship_Flags::Same_departure_warp_when_docked);
 
 	if (parse_flags[Mission::Parse_Object_Flags::OF_Attackable_if_no_collide])
-        objp->flags.set(Object::Object_Flags::Attackable_if_no_collide);
+		objp->flags.set(Object::Object_Flags::Attackable_if_no_collide);
 }
 
 void fix_old_special_explosions(p_object *p_objp, int variable_index) 
