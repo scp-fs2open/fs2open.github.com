@@ -513,12 +513,15 @@ void model_collide_tmap2poly(ubyte* p) {
 		return;
 
 	if (nv > TMAP_MAX_VERTS) {
-		Int3();
+		Error(LOCATION, "Model contains TMAP2 chunk with more than %d vertices!", TMAP_MAX_VERTS);
 		return;
 	}
 
 	int tmap_num = w(p + 24);
-	Assert(tmap_num >= 0 && tmap_num < MAX_MODEL_TEXTURES); // Goober5000
+	if (tmap_num < 0 || tmap_num >= MAX_MODEL_TEXTURES) { // Goober5000
+		Error(LOCATION, "Model contains TMAP2 chunk with invalid texture id (%d)!", tmap_num);
+		return;
+	}
 
 	if ((!(Mc->flags & MC_CHECK_INVISIBLE_FACES)) && (Mc_pm->maps[tmap_num].textures[TM_BASE_TYPE].GetTexture() < 0)) {
 		// Don't check invisible polygons.
@@ -750,13 +753,16 @@ void model_collide_parse_bsp_tmap2poly(bsp_collision_leaf* leaf, SCP_vector<mode
 	nv = uw(p + 20);
 
 	if (nv > TMAP_MAX_VERTS) {
-		Int3();
+		Error(LOCATION,"Model contains TMAP2 chunk with more than %d vertices!", TMAP_MAX_VERTS);
 		return;
 	}
 
 	int tmap_num = w(p + 24);
 
-	Assert(tmap_num >= 0 && tmap_num < MAX_MODEL_TEXTURES);
+	if (tmap_num < 0 || tmap_num >= MAX_MODEL_TEXTURES) {
+		Error(LOCATION, "Model contains TMAP2 chunk with invalid texture id (%d)!", tmap_num);
+		return;
+	}
 
 	verts = (model_tmap_vert*)(p + 28);
 

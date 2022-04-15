@@ -3118,7 +3118,7 @@ void bsp_polygon_data::process_tmap2(int offset, ubyte* bsp_data)
 	uint n_vert = uw(bsp_data + offset + 20);
 
 	if (n_vert < 3) {
-		// don't parse degenerate polygons
+		Error(LOCATION, "Model contains TMAP2 chunk with less than 3 vertices!");
 		return;
 	}
 
