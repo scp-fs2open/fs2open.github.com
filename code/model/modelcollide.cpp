@@ -501,11 +501,15 @@ void model_collide_tmappoly(ubyte * p)
 void model_collide_tmap2poly(ubyte* p) {
 	uint i;
 	uint nv;
+	int tmap_num; 
 	uv_pair uvlist[TMAP_MAX_VERTS];
 	vec3d* points[TMAP_MAX_VERTS];
 	model_tmap_vert* verts;
 
-	Assert(Mc_pm->version >= 2300);
+	if (Mc_pm->version < 2300) {
+		Error(LOCATION, "Model contains TMAP2 chunk but version is less than minimum supported!");
+		return;
+	}
 
 	nv = uw(p + 20);
 
@@ -517,7 +521,7 @@ void model_collide_tmap2poly(ubyte* p) {
 		return;
 	}
 
-	int tmap_num = w(p + 24);
+	tmap_num = w(p + 24);
 	if (tmap_num < 0 || tmap_num >= MAX_MODEL_TEXTURES) { // Goober5000
 		Error(LOCATION, "Model contains TMAP2 chunk with invalid texture id (%d)!", tmap_num);
 		return;
@@ -617,8 +621,7 @@ int model_collide_sub(void *model_ptr )
 			break;
 		case OP_TMAP2POLY:		model_collide_tmap2poly(p); break;
 		default:
-			mprintf(( "Bad chunk type %d, len=%d in model_collide_sub\n", chunk_type, chunk_size ));
-			Int3();		// Bad chunk type!
+			UNREACHABLE("Bad chunk type %d, len=%d in model_collide_sub\n", chunk_type, chunk_size);
 			return 0;
 		}
 		p += chunk_size;
@@ -748,6 +751,8 @@ void model_collide_parse_bsp_tmap2poly(bsp_collision_leaf* leaf, SCP_vector<mode
 
 	uint i;
 	uint nv;
+	int tmap_num;
+	vec3d* plane_norm;
 	model_tmap_vert* verts;
 
 	nv = uw(p + 20);
@@ -757,7 +762,7 @@ void model_collide_parse_bsp_tmap2poly(bsp_collision_leaf* leaf, SCP_vector<mode
 		return;
 	}
 
-	int tmap_num = w(p + 24);
+	tmap_num = w(p + 24);
 
 	if (tmap_num < 0 || tmap_num >= MAX_MODEL_TEXTURES) {
 		Error(LOCATION, "Model contains TMAP2 chunk with invalid texture id (%d)!", tmap_num);
@@ -770,7 +775,7 @@ void model_collide_parse_bsp_tmap2poly(bsp_collision_leaf* leaf, SCP_vector<mode
 	leaf->num_verts = (ubyte)nv;
 	leaf->vert_start = (int)vert_buffer->size();
 
-	vec3d* plane_norm = vp(p + 8);
+	plane_norm = vp(p + 8);
 
 	leaf->plane_norm = *plane_norm;
 
