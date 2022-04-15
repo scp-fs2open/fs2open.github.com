@@ -107,7 +107,7 @@ obj_flag_name Object_flag_names[] = {
 	{ Object::Object_Flags::Missile_protected,		"missile-protect-ship",		1,	},
 	{ Object::Object_Flags::Immobile,				"immobile",					1,	},
 	{ Object::Object_Flags::Collides,				"collides",					1,  },
-	{ Object::Object_Flags::Unprotect_from_no_collide, "unprotect_from_no_collide", 1,},
+	{ Object::Object_Flags::Attackable_if_no_collide, "ai_can_attack_if_no_collide", 1,},
 };
 
 #ifdef OBJECT_CHECK
