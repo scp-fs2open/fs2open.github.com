@@ -102,6 +102,7 @@ namespace Mission {
 		SF_Hide_mission_log,
 		SF_Same_arrival_warp_when_docked,
 		SF_Same_departure_warp_when_docked,
+		OF_Attackable_if_no_collide, // Cyborg - keeps turrets from ignoring ships that have no_collide set
 
 		NUM_VALUES
 	};

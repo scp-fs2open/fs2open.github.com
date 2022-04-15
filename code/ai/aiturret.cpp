@@ -434,7 +434,7 @@ int valid_turret_enemy(object *objp, object *turret_parent)
 		}
 
 		// don't shoot at ships without collision check
-		if (!(objp->flags[Object::Object_Flags::Collides])) {
+		if (!(objp->flags[Object::Object_Flags::Collides]) && !(objp->flags[Object::Object_Flags::Attackable_if_no_collide])) {
 			return 0;
 		}
 
