@@ -370,12 +370,13 @@ void HudGauge::getPosition(int *x, int *y)
 	*y = position[1];
 }
 
-void HudGauge::initBaseResolution(int w, int h)
+void HudGauge::initBaseResolution(int w, int h, float aq)
 {
 	Assert(w >= 640 && h >= 480);
 
 	base_w = w;
 	base_h = h;
+	aspect_quotient = aq;
 }
 
 void HudGauge::initSlew(bool slew)
@@ -388,6 +389,43 @@ void HudGauge::initFont(int input_font_num)
 	if (input_font_num >= 0 && input_font_num < font::FontManager::numberOfFonts()) {
 		font_num = input_font_num;
 	}
+}
+
+int HudGauge::getFont()
+{
+	return font_num;
+}
+
+void HudGauge::initOriginAndOffset(float originX, float originY, int offsetX, int offsetY)
+{
+	tabled_origin[0] = originX;
+	tabled_origin[1] = originY;
+
+	tabled_offset[0] = offsetX;
+	tabled_offset[1] = offsetY;
+}
+
+void HudGauge::getOriginAndOffset(float *originX, float *originY, int *offsetX, int *offsetY)
+{
+	*originX = tabled_origin[0];
+	*originY = tabled_origin[1];
+
+	*offsetX = tabled_offset[0];
+	*offsetY = tabled_offset[1];
+}
+
+void HudGauge::initCoords(bool use_coords, int coordsX, int coordsY)
+{
+	tabled_use_coords = use_coords;
+	tabled_coords[0] = coordsX;
+	tabled_coords[1] = coordsY;
+}
+
+void HudGauge::getCoords(bool *use_coords, int *coordsX, int *coordsY)
+{
+	*use_coords = tabled_use_coords;
+	*coordsX = tabled_coords[0];
+	*coordsY = tabled_coords[1];
 }
 
 const char* HudGauge::getCustomGaugeName()
@@ -523,6 +561,11 @@ int HudGauge::getBaseWidth()
 int HudGauge::getBaseHeight()
 {
 	return base_h;
+}
+
+float HudGauge::getAspectQuotient()
+{
+	return aspect_quotient;
 }
 
 int HudGauge::getConfigType()
