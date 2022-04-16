@@ -235,11 +235,28 @@ typedef struct model_special {
 
 #define MAX_LIVE_DEBRIS	7
 
+/**
+* @struct model_tmap_vert
+* @brief Struct to hold vertex information for a polygon
+* 
+*/
 typedef struct model_tmap_vert {
-	ushort vertnum;
-	ushort normnum;
-	float u,v;
+	uint vertnum;	//!< Vertex index into a subobject vertex buffer.
+	uint normnum;	//!< Normal index into a subobject normal buffer.
+	float u;        //!< Horizontal texture coordinate for the vertex.
+	float v;		//!< Vertical texture coordinate for the vertex.
 } model_tmap_vert;
+
+/*
+ * @brief Helper function to correctly convert the chunk data from TMAPPOLY to 
+ *		  model_tmap_vert.
+ * 
+ * @param[in] vs Vertex data for the parsed TMAP
+ * @param[out] verts Converted vertex data
+ * @param n_vert Number of vertices in the chunk
+ * 
+**/
+void unpack_tmap_verts(const ubyte* vs, model_tmap_vert* verts, uint n_vert);
 
 struct bsp_collision_node {
 	vec3d min;
@@ -252,9 +269,7 @@ struct bsp_collision_node {
 };
 
 struct bsp_collision_leaf {
-	vec3d plane_pnt;
 	vec3d plane_norm;
-	float face_rad;
 	int vert_start;
 	ubyte num_verts;
 	ubyte tmap_num;
@@ -1322,7 +1337,7 @@ void model_draw_bay_paths_htl(int model_num);
 bool model_interp_config_buffer(indexed_vertex_source *vert_src, vertex_buffer *vb, bool update_ibuffer_only);
 bool model_interp_pack_buffer(indexed_vertex_source *vert_src, vertex_buffer *vb);
 void model_interp_submit_buffers(indexed_vertex_source *vert_src, size_t vertex_stride);
-void model_allocate_interp_data(int n_verts = 0, int n_norms = 0);
+void model_allocate_interp_data(uint n_verts = 0, uint n_norms = 0);
 
 void glowpoint_init();
 SCP_vector<glow_point_bank_override>::iterator get_glowpoint_bank_override_by_name(const char* name);
