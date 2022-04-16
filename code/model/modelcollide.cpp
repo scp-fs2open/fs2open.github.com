@@ -513,11 +513,8 @@ void model_collide_tmap2poly(ubyte* p) {
 
 	nv = uw(p + 20);
 
-	if (nv <= 0)
-		return;
-
-	if (nv > TMAP_MAX_VERTS) {
-		Error(LOCATION, "Model contains TMAP2 chunk with more than %d vertices!", TMAP_MAX_VERTS);
+	if (nv == 0 || nv > TMAP_MAX_VERTS) {
+		Error(LOCATION, "Model contains TMAP2 chunk with invalid number of vertices (n_vert=%d)!", nv);
 		return;
 	}
 
@@ -534,7 +531,7 @@ void model_collide_tmap2poly(ubyte* p) {
 			return;
 	}
 
-	verts = (model_tmap_vert*)(p + 28);
+	verts = reinterpret_cast<model_tmap_vert*>(&p[28]);
 
 	for (i = 0; i < nv; i++) {
 		points[i] = Mc_point_list[verts[i].vertnum];
@@ -745,6 +742,13 @@ void model_collide_parse_bsp_tmappoly(bsp_collision_leaf *leaf, SCP_vector<model
 	}
 }
 
+/**
+* @brief Generates BSP leaf and vertex buffer to check against a bsp collision for a TMAP2 chunk.
+* 
+* @param[out] leaf Generated BSP leaf.
+* @param[out] vert_buffer Vertex buffer forming the polygon being checked against.
+* @param[in] model_ptr Buffer of BSP data from model buffer.
+*/
 void model_collide_parse_bsp_tmap2poly(bsp_collision_leaf* leaf, SCP_vector<model_tmap_vert>* vert_buffer, void* model_ptr)
 {
 	auto p = (ubyte*)model_ptr;

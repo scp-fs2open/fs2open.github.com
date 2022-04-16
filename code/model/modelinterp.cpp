@@ -1780,6 +1780,12 @@ void parse_tmap(int offset, ubyte *bsp_data)
 	Parse_normal_problem_count += problem_count;
 }
 
+/**
+* @brief Parses a TMAP2POLY chunk into a list of polygons.
+* 
+* @param offset The byte offset to the current TMAP2POLY chunk within bsp_data.
+* @param[in] bsp_data The byte buffer containing the BSP information for the current model.
+*/
 void parse_tmap2(int offset, ubyte* bsp_data)
 {
 	int pof_tex = w(bsp_data + offset + 24);
@@ -1788,25 +1794,25 @@ void parse_tmap2(int offset, ubyte* bsp_data)
 	ubyte* p = &bsp_data[offset + 8];
 	model_tmap_vert* tverts;
 
-	tverts = (model_tmap_vert*)&bsp_data[offset + 28];
-
 	vertex* V;
 	vec3d* v;
 	vec3d* N;
 
 	int problem_count = 0;
 
+	tverts = (model_tmap_vert*)&bsp_data[offset + 28];
+
 	for (uint i = 1; i < (n_vert - 1); i++) {
 		V = &polygon_list[pof_tex].vert[(polygon_list[pof_tex].n_verts)];
 		N = &polygon_list[pof_tex].norm[(polygon_list[pof_tex].n_verts)];
-		v = Interp_verts[(int)tverts[0].vertnum];
+		v = Interp_verts[tverts[0].vertnum];
 		V->world.xyz.x = v->xyz.x;
 		V->world.xyz.y = v->xyz.y;
 		V->world.xyz.z = v->xyz.z;
 		V->texture_position.u = tverts[0].u;
 		V->texture_position.v = tverts[0].v;
 
-		*N = *Interp_norms[(int)tverts[0].normnum];
+		*N = *Interp_norms[tverts[0].normnum];
 
 		if (IS_VEC_NULL(N))
 			*N = *vp(p);
@@ -1816,14 +1822,14 @@ void parse_tmap2(int offset, ubyte* bsp_data)
 
 		V = &polygon_list[pof_tex].vert[(polygon_list[pof_tex].n_verts) + 1];
 		N = &polygon_list[pof_tex].norm[(polygon_list[pof_tex].n_verts) + 1];
-		v = Interp_verts[(int)tverts[i].vertnum];
+		v = Interp_verts[tverts[i].vertnum];
 		V->world.xyz.x = v->xyz.x;
 		V->world.xyz.y = v->xyz.y;
 		V->world.xyz.z = v->xyz.z;
 		V->texture_position.u = tverts[i].u;
 		V->texture_position.v = tverts[i].v;
 
-		*N = *Interp_norms[(int)tverts[i].normnum];
+		*N = *Interp_norms[tverts[i].normnum];
 
 		if (IS_VEC_NULL(N))
 			*N = *vp(p);
@@ -1833,14 +1839,14 @@ void parse_tmap2(int offset, ubyte* bsp_data)
 
 		V = &polygon_list[pof_tex].vert[(polygon_list[pof_tex].n_verts) + 2];
 		N = &polygon_list[pof_tex].norm[(polygon_list[pof_tex].n_verts) + 2];
-		v = Interp_verts[(int)tverts[i + 1].vertnum];
+		v = Interp_verts[tverts[i + 1].vertnum];
 		V->world.xyz.x = v->xyz.x;
 		V->world.xyz.y = v->xyz.y;
 		V->world.xyz.z = v->xyz.z;
 		V->texture_position.u = tverts[i + 1].u;
 		V->texture_position.v = tverts[i + 1].v;
 
-		*N = *Interp_norms[(int)tverts[i + 1].normnum];
+		*N = *Interp_norms[tverts[i + 1].normnum];
 
 		if (IS_VEC_NULL(N))
 			*N = *vp(p);
@@ -3112,26 +3118,29 @@ void bsp_polygon_data::process_tmap(int offset, ubyte* bsp_data)
 	Parse_normal_problem_count += problem_count;
 }
 
+/**
+* @brief Converts a TMAP2POLY chunk into a list of BSP_polygon.
+* 
+* @param offset The byte offset into bsp_data.
+* @param[in] The buffer containing the chunk data.
+*/
 void bsp_polygon_data::process_tmap2(int offset, ubyte* bsp_data)
 {
 	int pof_tex = w(bsp_data + offset + 24);
 	uint n_vert = uw(bsp_data + offset + 20);
+	ubyte* p = &bsp_data[offset + 8];
+	model_tmap_vert* tverts;
+	int problem_count = 0;
+	bsp_polygon polygon;
 
 	if (n_vert < 3) {
 		Error(LOCATION, "Model contains TMAP2 chunk with less than 3 vertices!");
 		return;
 	}
 
-	ubyte* p = &bsp_data[offset + 8];
-	model_tmap_vert* tverts;
-
 	tverts = (model_tmap_vert*)&bsp_data[offset + 28];
 
-	int problem_count = 0;
-
 	// make a polygon
-	bsp_polygon polygon;
-
 	polygon.Start_index = (uint)Polygon_vertices.size();
 	polygon.Num_verts = n_vert;
 	polygon.texture = pof_tex;

@@ -95,6 +95,7 @@ static uint Global_checksum = 0;
 #define PM_LATEST_ALIGNED_VERSION	2300
 #define PM_LATEST_LEGACY_VERSION	2118
 #define PM_FIRST_ALIGNED_VERSION	2200
+#define PM_FIRST_VERTLIM_VERSION	2300
 
 static int Model_signature = 0;
 
@@ -4993,9 +4994,6 @@ void swap_bsp_tmap2poly(polymodel* pm, ubyte* p)
 	int tmap_num = INTEL_INT(w(p + 40)); // tigital
 	w(p + 40) = tmap_num;
 
-	if (nv < 0)
-		return;
-
 	verts = (model_tmap_vert*)(p + 44);
 	for (i = 0; i < nv; i++) {
 		verts[i].vertnum = INTEL_SHORT(verts[i].vertnum);
@@ -5169,6 +5167,9 @@ void swap_bsp_data( polymodel * pm, void * model_ptr )
 				max->xyz.x = INTEL_FLOAT( &max->xyz.x );
 				max->xyz.y = INTEL_FLOAT( &max->xyz.y );
 				max->xyz.z = INTEL_FLOAT( &max->xyz.z );
+				break;
+			case OP_TMAPPOLY:
+				swap_bsp_tmap2poly(pm, p);
 				break;
 			default:
 				mprintf(( "Bad chunk type %d, len=%d in modelread:swap_bsp_data\n", chunk_type, chunk_size ));
