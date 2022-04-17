@@ -28,7 +28,7 @@ typedef struct rtv_format
 	int frequency;
 } rtv_format;
 
-
+#define MAX_RTV_CHANNELS 15
 #define MAX_RTV_FORMATS	5
 static rtv_format Rtv_formats[MAX_RTV_FORMATS] = 
 {
@@ -455,7 +455,7 @@ sound_handle rtvoice_play(int index, unsigned char* data, int size)
 	}
 
 	// play the voice
-	EnhancedSoundData enhanced_sound_data(SND_ENHANCED_PRIORITY_MUST_PLAY, SND_ENHANCED_MAX_LIMIT);
+	EnhancedSoundData enhanced_sound_data(SND_ENHANCED_PRIORITY_MUST_PLAY, MAX_RTV_CHANNELS);
 	return ds_play(ds_handle, -100, DS_MUST_PLAY, &enhanced_sound_data, Master_voice_volume, 0, 0);
 }
 
