@@ -3864,11 +3864,6 @@ HudGauge* hud_get_custom_gauge(const char* name, bool check_all_gauges)
 				}
 			}
 		}
-		for (auto &gauge : default_hud_gauges) {
-			if (gauge->isCustom() && !stricmp(name, gauge->getCustomGaugeName())) {
-				return gauge.get();
-			}
-		}
 	}
 	// if the player is flying a ship with a custom set of gauges, check those
 	else if (player_sip && !player_sip->hud_gauges.empty()) {
@@ -3878,12 +3873,11 @@ HudGauge* hud_get_custom_gauge(const char* name, bool check_all_gauges)
 			}
 		}
 	}
-	// check just the default gauges
-	else {
-		for (auto &gauge : default_hud_gauges) {
-			if (gauge->isCustom() && !stricmp(name, gauge->getCustomGaugeName())) {
-				return gauge.get();
-			}
+
+	// fall back to checking the custom gauges in the default list
+	for (auto &gauge : default_hud_gauges) {
+		if (gauge->isCustom() && !stricmp(name, gauge->getCustomGaugeName())) {
+			return gauge.get();
 		}
 	}
 
