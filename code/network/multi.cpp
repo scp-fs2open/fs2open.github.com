@@ -53,6 +53,7 @@
 #include "debugconsole/console.h"
 #include "network/psnet2.h"
 #include "network/multi_mdns.h"
+#include "cmdline/cmdline.h"
 
 // Stupid windows workaround...
 #ifdef MessageBox
@@ -491,6 +492,14 @@ void multi_client_check_server()
 
 void process_packet_normal(ubyte* data, header *header_info)
 {
+	// this is for helping to diagnose misaligned packets.  The last sensible packet 
+	// is usually the culprit that needs to be analyzed.
+	if (Cmdline_dump_packet_type) {
+		mprintf(("Packet type of %d received.\n", data[0]));
+	}
+
+
+
 	switch ( data[0] ) {
 
 		case JOIN:
