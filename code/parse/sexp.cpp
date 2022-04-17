@@ -30350,9 +30350,7 @@ bool sexp_recoverable_error(int num)
 		// Having an invalid gauge in FSO won't hurt,
 		// as all places which call hud_get_custom_gauge() check its return value for NULL.
 		case SEXP_CHECK_INVALID_CUSTOM_HUD_GAUGE:
-
 			return true;
-
 
 		// most errors will halt mission loading
 		default:

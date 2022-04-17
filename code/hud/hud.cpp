@@ -57,6 +57,7 @@
 #include "weapon/emp.h"
 #include "weapon/weapon.h"
 
+// This contains not only the retail HUD gauges but also any custom HUD gauges that are not specific to a ship.
 SCP_vector<std::unique_ptr<HudGauge>> default_hud_gauges;
 
 // new values for HUD alpha
@@ -3863,11 +3864,6 @@ HudGauge* hud_get_custom_gauge(const char* name, bool check_all_gauges)
 				}
 			}
 		}
-		for (auto &gauge : default_hud_gauges) {
-			if (!stricmp(name, gauge->getCustomGaugeName())) {
-				return gauge.get();
-			}
-		}
 	}
 	// if the player is flying a ship with a custom set of gauges, check those
 	else if (player_sip && !player_sip->hud_gauges.empty()) {
@@ -3878,12 +3874,19 @@ HudGauge* hud_get_custom_gauge(const char* name, bool check_all_gauges)
 		}
 	}
 
+	// fall back to checking the custom gauges in the default list
+	for (auto &gauge : default_hud_gauges) {
+		if (gauge->isCustom() && !stricmp(name, gauge->getCustomGaugeName())) {
+			return gauge.get();
+		}
+	}
+
 	return nullptr;
 }
 
 int hud_get_default_gauge_index(const char *name)
 {
-	int config_type = -1;
+	int config_type = -1, object_type = -1;
 
 	// default gauges had two different lists
 	for (int i = 0; i < NUM_HUD_GAUGES; i++) {
@@ -3896,15 +3899,15 @@ int hud_get_default_gauge_index(const char *name)
 	if (config_type < 0) {
 		for (int i = 0; i < Num_hud_gauge_types; i++) {
 			if (!stricmp(name, Hud_gauge_types[i].name)) {
-				config_type = Hud_gauge_types[i].def;
+				object_type = Hud_gauge_types[i].def;
 				break;
 			}
 		}
 	}
 
-	if (config_type >= 0) {
+	if (config_type >= 0 || object_type >= 0) {
 		for (int i = 0; i < (int)default_hud_gauges.size(); i++) {
-			if (default_hud_gauges[i]->getConfigType() == config_type) {
+			if (default_hud_gauges[i]->getConfigType() == config_type || default_hud_gauges[i]->getObjectType() == object_type) {
 				return i;
 			}
 		}
