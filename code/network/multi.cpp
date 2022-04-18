@@ -930,7 +930,7 @@ void process_packet_normal(ubyte* data, header *header_info)
 			break; 
 
 		default:
-			nprintf(("Network", "Received packet with unknown type %d\n", data[0] ));
+			mprintf(("Received packet with unknown type %d\n", data[0] ));
 			header_info->bytes_processed = 10000;
 			break;
 
