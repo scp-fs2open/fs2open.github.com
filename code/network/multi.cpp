@@ -495,10 +495,8 @@ void process_packet_normal(ubyte* data, header *header_info)
 	// this is for helping to diagnose misaligned packets.  The last sensible packet 
 	// is usually the culprit that needs to be analyzed.
 	if (Cmdline_dump_packet_type) {
-		mprintf(("Packet type of %d received.\n", data[0]));
+		mprintf(("Game packet type of %d received.\n", data[0]));
 	}
-
-
 
 	switch ( data[0] ) {
 
@@ -937,6 +935,11 @@ void process_packet_normal(ubyte* data, header *header_info)
 			break;
 
 	} // end switch
+
+	// Let's also dump the amount of data that we've processed so far.
+	if (Cmdline_dump_packet_type) {
+		mprintf(("Game packet ended.  Total amount of data processed from packet is %d.\n", header_info->bytes_processed));
+	}
 }
 
 
@@ -973,6 +976,12 @@ void multi_process_bigdata(ubyte *data, int len, net_addr *from_addr, int reliab
 	}   
 
 	bytes_processed = 0;
+
+	// start off logging of packets by writing how many bytes of data we should get through.
+	if (Cmdline_dump_packet_type) {
+		mprintf(("Network packet with %d bytes of data received. ", len));
+	}
+
 	while( (bytes_processed >= 0) && (bytes_processed < len) )  {
 
       buf = &(data[bytes_processed]);
