@@ -25,6 +25,7 @@ class polymodel;
 #define OP_SORTNORM		4
 #define OP_BOUNDBOX		5
 #define OP_TMAP2POLY	6
+#define OP_SORTNORM2	7
 
 // change header for freespace2
 //#define FREESPACE1_FORMAT

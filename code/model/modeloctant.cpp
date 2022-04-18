@@ -312,6 +312,14 @@ int model_octant_find_faces_sub(polymodel * pm, model_octant * oct, void *model_
 				if (postlist) model_octant_find_faces_sub(pm,oct,p+postlist,just_count);
 			}
 			break;
+		case OP_SORTNORM2: {
+			int frontlist = w(p + 8);
+			int backlist = w(p + 12);
+
+			if (backlist) model_octant_find_faces_sub(pm, oct, p + backlist, just_count);
+			if (frontlist) model_octant_find_faces_sub(pm, oct, p + frontlist, just_count);
+			}	
+			break;
 		case OP_BOUNDBOX:		break;
 		case OP_TMAP2POLY:		moff_tmap2poly(p, pm, oct, just_count); break;
 		default:

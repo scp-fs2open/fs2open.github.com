@@ -560,6 +560,22 @@ void model_collide_tmap2poly(ubyte* p) {
 
 int model_collide_sub( void *model_ptr );
 
+void model_collide_sortnorm2(ubyte* p)
+{
+	int frontlist = w(p + 8);
+	int backlist = w(p + 12);
+	vec3d hitpos;
+
+	if (mc_ray_boundingbox(vp(p + 16), vp(p + 28), &Mc_p0, &Mc_direction, &hitpos)) {
+		if (!(Mc->flags & MC_CHECK_RAY) && (vm_vec_dist(&hitpos, &Mc_p0) > Mc_mag)) {
+			return;
+		}
+	}
+
+	if (backlist) model_collide_sub(p + backlist);
+	if (frontlist) model_collide_sub(p + frontlist);
+}
+
 void model_collide_sortnorm(ubyte * p)
 {
 	int frontlist = w(p+36);
@@ -606,6 +622,7 @@ int model_collide_sub(void *model_ptr )
 		case OP_FLATPOLY:		model_collide_flatpoly(p); break;
 		case OP_TMAPPOLY:		model_collide_tmappoly(p); break;
 		case OP_SORTNORM:		model_collide_sortnorm(p); break;
+		case OP_SORTNORM2:		model_collide_sortnorm2(p); break;
 		case OP_BOUNDBOX:	
 			if ( mc_ray_boundingbox( vp(p+8), vp(p+20), &Mc_p0, &Mc_direction, &hitpos ) )	{
 				if ( !(Mc->flags & MC_CHECK_RAY) && (vm_vec_dist(&hitpos, &Mc_p0) > Mc_mag) ) {
@@ -897,23 +914,25 @@ void model_collide_parse_bsp(bsp_collision_tree *tree, void *model_ptr, int vers
 			node_buffer[i].front = -1;
 			node_buffer[i].back = -1;
 
-			if ( w(p+36) ) {
-				next_chunk_type = w(p+w(p+36));
+			int front_offset = w(p + 36);
+			if (front_offset) {
+				next_chunk_type = w(p + front_offset);
 
 				if ( next_chunk_type != OP_EOF ) {
 					node_buffer.push_back(new_node);
 					node_buffer[i].front = (int)(node_buffer.size() - 1);
-					bsp_datap[node_buffer[i].front] = p+w(p+36);
+					bsp_datap[node_buffer[i].front] = p + front_offset;
 				}
 			}
 
-			if ( w(p+40) ) {
-				next_chunk_type = w(p+w(p+40));
+			int back_offset = w(p + 40);
+			if (back_offset) {
+				next_chunk_type = w(p + back_offset);
 				
 				if ( next_chunk_type != OP_EOF ) {
 					node_buffer.push_back(new_node);
 					node_buffer[i].back = (int)(node_buffer.size() - 1);
-					bsp_datap[node_buffer[i].back] = p+w(p+40);
+					bsp_datap[node_buffer[i].back] = p + back_offset;
 				}
 			}
 
@@ -921,6 +940,44 @@ void model_collide_parse_bsp(bsp_collision_tree *tree, void *model_ptr, int vers
 			next_chunk_type = w(next_p);
 
 			Assert( next_chunk_type == OP_EOF );
+
+			++i;
+			break;
+		case OP_SORTNORM2:
+			min = vp(p + 16);
+			max = vp(p + 28);
+
+			node_buffer[i].min = *min;
+			node_buffer[i].max = *max;
+
+			node_buffer[i].leaf = -1;
+			node_buffer[i].front = -1;
+			node_buffer[i].back = -1;
+
+			int front_offset = w(p + 8);
+			if (front_offset) {
+				next_chunk_type = w(p + front_offset);
+
+				if (next_chunk_type != OP_EOF) {
+					node_buffer.push_back(new_node);
+					node_buffer[i].front = (int)(node_buffer.size() - 1);
+					bsp_datap[node_buffer[i].front] = p + front_offset;
+				}
+			}
+
+			int back_offset = w(p + 12);
+			if (back_offset) {
+				next_chunk_type = w(p + back_offset);
+
+				if (next_chunk_type != OP_EOF) {
+					node_buffer.push_back(new_node);
+					node_buffer[i].back = (int)(node_buffer.size() - 1);
+					bsp_datap[node_buffer[i].back] = p + back_offset;
+				}
+			}
+
+			next_p = p + chunk_size;
+			next_chunk_type = w(next_p);
 
 			++i;
 			break;
@@ -940,7 +997,7 @@ void model_collide_parse_bsp(bsp_collision_tree *tree, void *model_ptr, int vers
 			next_chunk_size = w(next_p+4);
 
 			if (next_chunk_type != OP_EOF &&
-				(next_chunk_type == OP_TMAPPOLY || next_chunk_type == OP_FLATPOLY || next_chunk_type == OP_TMAP2POLY)) {
+				(next_chunk_type == OP_TMAPPOLY || next_chunk_type == OP_FLATPOLY)) {
 				new_leaf.next = -1;
 
 				node_buffer[i].leaf = (int)leaf_buffer.size();	// get index of where our poly list starts in the leaf buffer
@@ -959,13 +1016,6 @@ void model_collide_parse_bsp(bsp_collision_tree *tree, void *model_ptr, int vers
 						leaf_buffer.push_back(new_leaf);
 
 						leaf_buffer.back().next = (int)leaf_buffer.size();
-					} else if (next_chunk_type == OP_TMAP2POLY) {
-
-						model_collide_parse_bsp_tmap2poly(&new_leaf, &vert_buffer, next_p);
-
-						leaf_buffer.push_back(new_leaf);
-
-						leaf_buffer.back().next = (int)leaf_buffer.size();
 					} else {
 						Int3();
 					}
@@ -979,6 +1029,25 @@ void model_collide_parse_bsp(bsp_collision_tree *tree, void *model_ptr, int vers
 			}
 
 			Assert(next_chunk_type == OP_EOF);
+
+			++i;
+			break;
+		case OP_TMAP2POLY:
+			min = vp(p + 16);
+			max = vp(p + 28);
+
+			node_buffer[i].min = *min;
+			node_buffer[i].max = *max;
+
+			node_buffer[i].front = -1;
+			node_buffer[i].back = -1;
+			node_buffer[i].leaf = -1;
+
+			model_collide_parse_bsp_tmap2poly(&new_leaf, &vert_buffer, next_p);
+
+			leaf_buffer.push_back(new_leaf);
+
+			leaf_buffer.back().next = (int)leaf_buffer.size();
 
 			++i;
 			break;

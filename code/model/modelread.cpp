@@ -5084,7 +5084,29 @@ void swap_bsp_flatpoly( polymodel * pm, ubyte * p )
 	}
 }
 
-void swap_bsp_sortnorms( polymodel * pm, ubyte * p )
+void swap_bsp_sortnorm2(polymodel* pm, ubyte* p)
+{
+	int frontlist = INTEL_INT(w(p + 8));	//tigital
+	int backlist = INTEL_INT(w(p + 12));
+
+	w(p + 8) = frontlist;
+	w(p + 12) = backlist;
+
+	vec3d* bmin = vp(p + 8);	//tigital
+	vec3d* bmax = vp(p + 20);
+
+	bmin->xyz.x = INTEL_FLOAT(&bmin->xyz.x);
+	bmin->xyz.y = INTEL_FLOAT(&bmin->xyz.y);
+	bmin->xyz.z = INTEL_FLOAT(&bmin->xyz.z);
+	bmax->xyz.x = INTEL_FLOAT(&bmax->xyz.x);
+	bmax->xyz.y = INTEL_FLOAT(&bmax->xyz.y);
+	bmax->xyz.z = INTEL_FLOAT(&bmax->xyz.z);
+
+	if (backlist) swap_bsp_data(pm, p + backlist);
+	if (frontlist) swap_bsp_data(pm, p + frontlist);
+}
+
+void swap_bsp_sortnorm( polymodel * pm, ubyte * p )
 {
 	int frontlist = INTEL_INT( w(p+36) );	//tigital
 	int backlist = INTEL_INT( w(p+40) );
@@ -5156,7 +5178,10 @@ void swap_bsp_data( polymodel * pm, void * model_ptr )
 				swap_bsp_tmappoly(pm, p);
 				break;
 			case OP_SORTNORM:	
-				swap_bsp_sortnorms(pm, p);
+				swap_bsp_sortnorm(pm, p);
+				break;
+			case OP_SORTNORM2:
+				swap_bsp_sortnorm2(pm, p);
 				break;
 			case OP_BOUNDBOX:
 				min = vp(p+8);
@@ -5168,7 +5193,7 @@ void swap_bsp_data( polymodel * pm, void * model_ptr )
 				max->xyz.y = INTEL_FLOAT( &max->xyz.y );
 				max->xyz.z = INTEL_FLOAT( &max->xyz.z );
 				break;
-			case OP_TMAPPOLY:
+			case OP_TMAP2POLY:
 				swap_bsp_tmap2poly(pm, p);
 				break;
 			default:
