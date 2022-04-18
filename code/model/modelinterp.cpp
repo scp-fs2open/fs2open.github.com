@@ -1798,10 +1798,10 @@ void parse_tmap(int offset, ubyte *bsp_data)
 */
 void parse_tmap2(int offset, ubyte* bsp_data)
 {
-	int pof_tex = w(bsp_data + offset + 24);
-	uint n_vert = uw(bsp_data + offset + 20);
+	int pof_tex = w(bsp_data + offset + 44);
+	uint n_vert = uw(bsp_data + offset + 48);
 
-	ubyte* p = &bsp_data[offset + 8];
+	ubyte* p = &bsp_data[offset + 32];
 	model_tmap_vert* tverts;
 
 	vertex* V;
@@ -1810,7 +1810,7 @@ void parse_tmap2(int offset, ubyte* bsp_data)
 
 	int problem_count = 0;
 
-	tverts = (model_tmap_vert*)&bsp_data[offset + 28];
+	tverts = (model_tmap_vert*)&bsp_data[offset + 52];
 
 	for (uint i = 1; i < (n_vert - 1); i++) {
 		V = &polygon_list[pof_tex].vert[(polygon_list[pof_tex].n_verts)];
@@ -1947,8 +1947,8 @@ void parse_bsp(int offset, ubyte *bsp_data)
 
 void find_tmap(int offset, const ubyte *bsp_data, int id)
 {
-	int pof_tex = w(bsp_data+offset+(id == OP_TMAP2POLY ? 48 : 40));
-	uint n_vert = uw(bsp_data+offset+ (id == OP_TMAP2POLY ? 44 : 36));
+	int pof_tex = w(bsp_data+offset+(id == OP_TMAP2POLY ? 44 : 40));
+	uint n_vert = uw(bsp_data+offset+ (id == OP_TMAP2POLY ? 48 : 36));
 
 	tri_count[pof_tex] += n_vert-2;	
 }

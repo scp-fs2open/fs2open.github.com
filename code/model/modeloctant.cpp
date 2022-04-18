@@ -194,9 +194,9 @@ void moff_tmap2poly(ubyte* p, polymodel* pm, model_octant* oct, int just_count)
 	uint i, nv;
 	model_tmap_vert* verts;
 
-	nv = uw(p + 20);
+	nv = uw(p + 48);
 
-	verts = (model_tmap_vert*)(p + 28);
+	verts = (model_tmap_vert*)(p + 52);
 
 	vec3d center_point;
 	vm_vec_zero(&center_point);
