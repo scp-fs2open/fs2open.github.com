@@ -53,8 +53,6 @@ struct EnhancedSoundData
 	EnhancedSoundData(const int new_priority, const unsigned int new_limit);
 };
 
-extern const unsigned int SND_ENHANCED_MAX_LIMIT;
-
 //For the adjust-audio-volume sexp
 #define AAV_MUSIC		0
 #define AAV_VOICE		1
