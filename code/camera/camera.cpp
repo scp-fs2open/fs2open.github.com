@@ -598,7 +598,7 @@ void warp_camera::get_info(vec3d *position, matrix *orientation)
 #define MAX_SUBTITLE_LINES		64
 subtitle::subtitle(int in_x_pos, int in_y_pos, const char* in_text, const char* in_imageanim, float in_display_time,
 	float in_fade_time, const color* in_text_color, int in_text_fontnum, bool center_x, bool center_y, int in_width,
-	int in_height, bool in_post_shaded, int in_line_height_modifier)
+	int in_height, bool in_post_shaded, int in_line_height_modifier, bool in_adjust_wh)
 	: display_time(-1.0f), fade_time(-1.0f), text_fontnum(-1), line_height_modifier(0),
 	image_id(-1), time_displayed(-1.0f), time_displayed_end(-1.0f), post_shaded(false), do_screen_scaling(false)
 {
@@ -618,15 +618,18 @@ subtitle::subtitle(int in_x_pos, int in_y_pos, const char* in_text, const char* 
 		do_screen_scaling = true;
 
 		// we might need to adjust the coordinates for aspect ratio
-		if (Show_subtitle_screen_base_res[0] != Show_subtitle_screen_adjusted_res[0])
+		if (in_adjust_wh)
 		{
-			in_x_pos = in_x_pos * Show_subtitle_screen_adjusted_res[0] / Show_subtitle_screen_base_res[0];
-			in_width = in_width * Show_subtitle_screen_adjusted_res[0] / Show_subtitle_screen_base_res[0];
-		}
-		if (Show_subtitle_screen_base_res[1] != Show_subtitle_screen_adjusted_res[1])
-		{
-			in_y_pos = in_y_pos * Show_subtitle_screen_adjusted_res[1] / Show_subtitle_screen_base_res[1];
-			in_height = in_height * Show_subtitle_screen_adjusted_res[1] / Show_subtitle_screen_base_res[1];
+			if (Show_subtitle_screen_base_res[0] != Show_subtitle_screen_adjusted_res[0])
+			{
+				in_x_pos = in_x_pos * Show_subtitle_screen_adjusted_res[0] / Show_subtitle_screen_base_res[0];
+				in_width = in_width * Show_subtitle_screen_adjusted_res[0] / Show_subtitle_screen_base_res[0];
+			}
+			if (Show_subtitle_screen_base_res[1] != Show_subtitle_screen_adjusted_res[1])
+			{
+				in_y_pos = in_y_pos * Show_subtitle_screen_adjusted_res[1] / Show_subtitle_screen_base_res[1];
+				in_height = in_height * Show_subtitle_screen_adjusted_res[1] / Show_subtitle_screen_base_res[1];
+			}
 		}
 
 		// use these because we will be scaling the subtitle when it is displayed
