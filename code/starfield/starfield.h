@@ -16,6 +16,7 @@
 #include "globalincs/pstypes.h"
 #include "graphics/2d.h"
 #include "model/model.h"
+#include "starfield/starfield_flags.h"
 
 #define DEFAULT_NMODEL_FLAGS  (MR_NO_ZBUFFER | MR_NO_CULL | MR_ALL_XPARENT | MR_NO_LIGHTING)
 
@@ -36,6 +37,7 @@ typedef struct starfield_list_entry {
 
 // backgrounds
 typedef struct background_t {
+	flagset<Starfield::Background_Flags> flags;
 	SCP_vector<starfield_list_entry> bitmaps;
 	SCP_vector<starfield_list_entry> suns;
 } background_t;
@@ -151,6 +153,7 @@ void stars_modify_entry_FRED(int index, const char *name, starfield_list_entry *
 
 
 // Goober5000
+void stars_add_blank_background(bool creating_in_fred);
 void stars_load_first_valid_background();
 int stars_get_first_valid_background();
 void stars_load_background(int background_idx);

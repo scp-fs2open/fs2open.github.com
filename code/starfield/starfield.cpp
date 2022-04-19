@@ -850,7 +850,7 @@ void stars_post_level_init()
 	if (Fred_running)
 	{
 		if (Backgrounds.empty())
-			Backgrounds.emplace_back();
+			stars_add_blank_background(true);
 	}
 	// in FSO, see if we have any backgrounds to preload
 	// (since the backgrounds aren't parsed at the time we parse the sexps)
@@ -2669,6 +2669,16 @@ void stars_delete_entry_FRED(int index, bool is_a_sun)
 }
 
 // Goober5000
+void stars_add_blank_background(bool creating_in_fred)
+{
+	Backgrounds.emplace_back();
+
+	// any background that is created will have correct angles, so be sure to set the flag
+	if (creating_in_fred)
+		Backgrounds.back().flags.set(Starfield::Background_Flags::Fixed_angles_in_mission_file);
+}
+
+// Goober5000
 void stars_load_first_valid_background()
 {
 	int background_idx = stars_get_first_valid_background();
@@ -2791,11 +2801,8 @@ void stars_pack_backgrounds()
 		Backgrounds.end());
 
 	// in FRED, make sure we always have at least one background
-	if (Fred_running)
-	{
-		if (Backgrounds.empty())
-			Backgrounds.emplace_back();
-	}
+	if (Fred_running && Backgrounds.empty())
+		stars_add_blank_background(true);
 }
 
 static void render_environment(int i, vec3d *eye_pos, matrix *new_orient, float new_zoom)

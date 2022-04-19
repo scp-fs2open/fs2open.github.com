@@ -50,6 +50,7 @@
 #include "sound/sound.h"
 #include "starfield/nebula.h"
 #include "starfield/starfield.h"
+#include "starfield/starfield_flags.h"
 #include "weapon/weapon.h"
 
 #include <freespace.h>
@@ -871,6 +872,7 @@ int CFred_mission_save::save_bitmaps()
 		bool tag = (i < (int)Backgrounds.size() - 1);
 		background_t *background = &Backgrounds[i];
 
+		// each background should be preceded by this line so that the suns/bitmaps are partitioned correctly
 		fso_comment_push(";;FSO 3.6.9;;");
 		if (optional_string_fred("$Bitmap List:")) {
 			parse_comments(2);
@@ -880,6 +882,23 @@ int CFred_mission_save::save_bitmaps()
 
 		if (!tag) {
 			fso_comment_pop(true);
+		}
+
+		// save our flags
+		// no point in using version-specific comments here because the angles are fundamentally incompatible
+		if (Mission_save_format == FSO_FORMAT_RETAIL) {
+			MessageBox(nullptr, "Warning: You may want to edit the background in a version of FRED prior to 22.0.  The sun and bitmap angles will be loaded differently by previous versions.", "Incompatibility with retail mission format", MB_OK);
+		} else {
+			if (optional_string_fred("+Flags:")) {
+				parse_comments();
+			} else {
+				fout_version("\n+Flags:");
+			}
+			fout(" (");
+			if (background->flags[Starfield::Background_Flags::Fixed_angles_in_mission_file]) {
+				fout(" \"fixed angles\"");
+			}
+			fout(" )");
 		}
 
 		// save suns by filename

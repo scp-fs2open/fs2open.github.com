@@ -1420,7 +1420,7 @@ void bg_bitmap_dlg::OnAddBackground()
 	((CComboBox*)GetDlgItem(IDC_BACKGROUND_SWAP_NUM))->AddString(temp);
 
 	// add the background slot
-	Backgrounds.emplace_back();
+	stars_add_blank_background(true);
 
 	// select the new entry
 	((CComboBox*)GetDlgItem(IDC_BACKGROUND_NUM))->SetCurSel(new_index);

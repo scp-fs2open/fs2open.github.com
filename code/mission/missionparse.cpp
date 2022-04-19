@@ -5430,8 +5430,24 @@ void parse_reinforcements(mission *pm)
 void parse_one_background(background_t *background)
 {
 	// clear here too because this function can be called from more than one place
+	background->flags.reset();
 	background->suns.clear();
 	background->bitmaps.clear();
+
+	// we might have some flags
+	if (optional_string("+Flags:"))
+	{
+		// we'll assume the list will contain no more than 4 distinct tokens
+		char flag_strings[4][NAME_LENGTH];
+		int num_strings = (int)stuff_string_list(flag_strings, 4);
+
+		for (auto i = 0; i < num_strings; ++i)
+		{
+			// if this flag is found, this background was saved with correctly calculated angles, so it should be loaded as such
+			if (!stricmp(flag_strings[i], "fixed angles"))
+				background->flags.set(Starfield::Background_Flags::Fixed_angles_in_mission_file);
+		}
+	}
 
 	// parse suns
 	while (optional_string("$Sun:"))
@@ -5498,6 +5514,9 @@ void parse_one_background(background_t *background)
 		// add it
 		background->bitmaps.push_back(sle);
 	}
+
+	// always set the flag when we're done parsing, because the angles are now stored correctly and we want to save them correctly
+	background->flags.set(Starfield::Background_Flags::Fixed_angles_in_mission_file);
 }
 
 void parse_bitmaps(mission *pm)
@@ -5620,7 +5639,7 @@ void parse_bitmaps(mission *pm)
 	// Goober5000
 	while (optional_string("$Bitmap List:") || check_for_string("$Sun:") || check_for_string("$Starbitmap:"))
 	{
-		Backgrounds.emplace_back();
+		stars_add_blank_background(false);
 		parse_one_background(&Backgrounds.back());
 	}
 

@@ -886,6 +886,7 @@ int CFred_mission_save::save_bitmaps()
 		bool tag = (i < (int)Backgrounds.size() - 1);
 		background_t* background = &Backgrounds[i];
 
+		// each background should be preceded by this line so that the suns/bitmaps are partitioned correctly
 		fso_comment_push(";;FSO 3.6.9;;");
 		if (optional_string_fred("$Bitmap List:")) {
 			parse_comments(2);
@@ -895,6 +896,26 @@ int CFred_mission_save::save_bitmaps()
 
 		if (!tag) {
 			fso_comment_pop(true);
+		}
+
+		// save our flags
+		// no point in using version-specific comments here because the angles are fundamentally incompatible
+		if (save_format == MissionFormat::RETAIL) {
+			_viewport->dialogProvider->showButtonDialog(DialogType::Warning,
+				"Incompatibility with retail mission format",
+				"Warning: You may want to edit the background in a version of FRED prior to 22.0.  The sun and bitmap angles will be loaded differently by previous versions.",
+				{ DialogButton::Ok });
+		} else {
+			if (optional_string_fred("+Flags:")) {
+				parse_comments();
+			} else {
+				fout_version("\n+Flags:");
+			}
+			fout(" (");
+			if (background->flags[Starfield::Background_Flags::Fixed_angles_in_mission_file]) {
+				fout(" \"fixed angles\"");
+			}
+			fout(" )");
 		}
 
 		// save suns by filename
@@ -1555,7 +1576,7 @@ int CFred_mission_save::save_cutscenes()
 		} else {
 			_viewport->dialogProvider->showButtonDialog(DialogType::Warning,
 														"Incompatibility with retail mission format",
-														"Warning: This mission contains cutscene data, but you are saving in the retail mission format. This information will be lost",
+														"Warning: This mission contains cutscene data, but you are saving in the retail mission format. This information will be lost.",
 														{ DialogButton::Ok });
 		}
 	}

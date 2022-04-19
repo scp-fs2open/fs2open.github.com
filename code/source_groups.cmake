@@ -1481,6 +1481,7 @@ add_file_folder("Starfield"
 	starfield/starfield.h
 	starfield/supernova.cpp
 	starfield/supernova.h
+	starfield/starfield_flags.h
 )
 
 # Stats files
