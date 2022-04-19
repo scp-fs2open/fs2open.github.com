@@ -473,6 +473,33 @@ static bool check_subsystem_landing_allowed(ship_info *heavy_sip, collision_info
 	return false;
 }
 
+/**
+ * Helper function that calculates the next time this ship should be allowed to collide with a client player on multiplayer.
+ */
+int calculate_next_multiplayer_client_collision_time(float impulse_magnitude)
+{
+	// Uses a continuous cubic rational function that allows us to space out collisions based on collision strength.
+	static constexpr float IMPULSE_RANGE_FACTOR = 1.0f / powf(9900, 3.0f); // based on some quick tests from Asteroth about how strong an im
+	static constexpr float MIN_IMPULSE = 100;
+	static constexpr int LONGEST_COLLISION_INTERVAL = 200;
+
+	impulse_magnitude -= MIN_IMPULSE;
+
+	// if barely anything is happening, then do not limit collisions
+	if (impulse_magnitude < 0.0f) { 
+		return 0;
+	}
+
+	// caculate the impulse we have basically as a percentage. (CLAMP macro works best as a separate line)
+	float factor = powf(impulse_magnitude, 3.0f) * IMPULSE_RANGE_FACTOR;
+	CLAMP(factor, 0.0f, 1.0f);
+
+	// then multiply times the longest interval we could want.
+	factor *= LONGEST_COLLISION_INTERVAL;
+
+	return static_cast<int>(factor);
+}
+
 // ------------------------------------------------------------------------------------------------
 //		input:		ship_ship_hit		=>		structure containing ship_ship hit info
 //		(includes)	A, B					=>		objects colliding
@@ -711,15 +738,26 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 		impulse_mag = -impulse_mag;
 	}
 
+	// On multi clients should this collision occur? (limiting the frequency of applying the impulse prevents bugs)
+	bool should_collide = (!MULTIPLAYER_CLIENT 
+		|| (lighter == Player_obj && heavy->type == OBJ_SHIP && timestamp_elapsed(Ships[heavy->instance].multi_client_collision_timestamp))
+		|| (heavy == Player_obj && lighter->type == OBJ_SHIP && timestamp_elapsed(Ships[lighter->instance].multi_client_collision_timestamp)));
+
 	// update the physics info structs for heavy and light objects
 	// since we have already calculated delta rotvel for heavy and light in world coords
 	// physics should not have to recalculate this, just change into body coords (done in collide_whack)
-	vm_vec_scale(&impulse, impulse_mag);
-	vm_vec_scale(&delta_rotvel_light, impulse_mag);	
-	physics_collide_whack(&impulse, &delta_rotvel_light, &lighter->phys_info, &lighter->orient, ship_ship_hit_info->is_landing);
-	vm_vec_negate(&impulse);
-	vm_vec_scale(&delta_rotvel_heavy, -impulse_mag);
-	physics_collide_whack(&impulse, &delta_rotvel_heavy, &heavy->phys_info, &heavy->orient, true);
+	// Cyborg - to complicate this, multiplayer clients should never ever whack non-player ships.
+	if (should_collide){
+		vm_vec_scale(&impulse, impulse_mag);
+		vm_vec_scale(&delta_rotvel_light, impulse_mag);	
+		physics_collide_whack(&impulse, &delta_rotvel_light, &lighter->phys_info, &lighter->orient, ship_ship_hit_info->is_landing);
+	}
+
+	if (should_collide) {
+		vm_vec_negate(&impulse);
+		vm_vec_scale(&delta_rotvel_heavy, -impulse_mag);
+		physics_collide_whack(&impulse, &delta_rotvel_heavy, &heavy->phys_info, &heavy->orient, true);
+	}
 
 	// If within certain bounds, we want to add some more rotation towards the "resting orientation" of the ship
 	// These bounds are defined separately from normal "landing" bounds so that they can be more generous: 
@@ -751,7 +789,9 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 	// We will try not to worry about the left over time in the frame
 	// heavy's position unchanged by collision
 	// light's position is heavy's position plus relative position from heavy
-	vm_vec_add(&lighter->pos, &heavy->pos, &ship_ship_hit_info->light_collision_cm_pos);
+	if (should_collide){
+		vm_vec_add(&lighter->pos, &heavy->pos, &ship_ship_hit_info->light_collision_cm_pos);
+	}
 
 	// Try to move each body back to its position just before collision occured to prevent interpenetration
 	// Move away in direction of light and away in direction of normal
@@ -759,9 +799,13 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 	vm_vec_sub(&direction_light, &ship_ship_hit_info->light_rel_vel, &local_vel_from_submodel);
 	vm_vec_normalize_safe(&direction_light);
 
-	Assert( !vm_is_vec_nan(&direction_light) );
-	vm_vec_scale_add2(&heavy->pos, &direction_light,  0.2f * lighter->phys_info.mass / (heavy->phys_info.mass + lighter->phys_info.mass));
-	vm_vec_scale_add2(&heavy->pos, &ship_ship_hit_info->collision_normal, -0.1f * lighter->phys_info.mass / (heavy->phys_info.mass + lighter->phys_info.mass));
+	if (should_collide){
+
+		Assert( !vm_is_vec_nan(&direction_light) );
+		vm_vec_scale_add2(&heavy->pos, &direction_light,  0.2f * lighter->phys_info.mass / (heavy->phys_info.mass + lighter->phys_info.mass));
+		vm_vec_scale_add2(&heavy->pos, &ship_ship_hit_info->collision_normal, -0.1f * lighter->phys_info.mass / (heavy->phys_info.mass + lighter->phys_info.mass));
+	}
+	
 	//For landings, we want minimal movement on the light ship (just enough to keep the collision detection honest)
 	if (ship_ship_hit_info->is_landing) {
 		vm_vec_scale_add2(&lighter->pos, &ship_ship_hit_info->collision_normal, LANDING_POS_OFFSET);
@@ -777,6 +821,14 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 			lighter->phys_info.mass = copy_mass;
 		} else {
 			heavy->phys_info.mass = copy_mass;
+		}
+	}
+
+	if (MULTIPLAYER_CLIENT && should_collide){
+		if (lighter == Player_obj && heavy->type == OBJ_SHIP){
+			Ships[heavy->instance].multi_client_collision_timestamp = _timestamp( calculate_next_multiplayer_client_collision_time(impulse_mag) );
+		} else if (lighter->type == OBJ_SHIP) {
+			Ships[lighter->instance].multi_client_collision_timestamp = _timestamp( calculate_next_multiplayer_client_collision_time(impulse_mag) );
 		}
 	}
 }
@@ -1079,6 +1131,13 @@ int collide_ship_ship( obj_pair * pair )
 		player_involved = 1;
 	} else {
 		player_involved = 0;
+
+		// This is the most convenient place to do this check.  Clients should *not* be doing anything 
+		// collision related.  Yes, from time to time that will look strange, but there are too many
+		// side effects if we allow it.
+		if (MULTIPLAYER_CLIENT){
+			return 0;
+		}
 	}
 
 	// Don't check collisions for warping out player if past stage 1.
@@ -1329,7 +1388,7 @@ int collide_ship_ship( obj_pair * pair )
 											// temp set this as an uninterpolated ship, to make the collision look more natural until the next update comes in.
 											multi_oo_set_client_simulation_mode(Objects[current_player.m_player->objnum].net_signature);
 
-											// check to see if it has been long enough since the last collision, if not negate the damage
+											// check to see if it has been long enough since the last collision, if not, negate the damage
 											if (!timestamp_elapsed(current_player.s_info.player_collision_timestamp)) {
 												damage = 0.0f;
 											} else {
