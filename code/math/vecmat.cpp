@@ -158,6 +158,17 @@ void vm_set_identity(matrix *m)
 	m->vec.fvec.xyz.x = 0.0f;	m->vec.fvec.xyz.y = 0.0f;	m->vec.fvec.xyz.z = 1.0f;
 }
 
+angles vm_angles_new(float p, float b, float h)
+{
+	angles ang;
+
+	ang.p = p;
+	ang.b = b;
+	ang.h = h;
+
+	return ang;
+}
+
 vec3d vm_vec_new(float x, float y, float z)
 {
 	vec3d vec;

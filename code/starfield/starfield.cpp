@@ -313,27 +313,16 @@ static void starfield_create_bitmap_buffer(const int si_idx)
 	float d_theta = -(((p_theta * scale_y) / 360.0f) / (float)(div_y));
 
 	// bank matrix
-	bank_first.p = 0.0f;
-	bank_first.b = a->b;
-	bank_first.h = 0.0f;
-	vm_angles_2_matrix(&m_bank, &bank_first);
-
-	// convert angles to matrix
-	angles a_temp = *a;
-	a_temp.b = 0.0f;
-	vm_angles_2_matrix(&m, &a_temp);
+	vm_angles_2_matrix(&m, a);
 
 	// generate the bitmap points
 	for(idx=0; idx<=div_x; idx++) {
 		for(s_idx=0; s_idx<=div_y; s_idx++) {
 			// get world spherical coords
 			stars_project_2d_onto_sphere(&s_points[idx][s_idx], 1000.0f, s_phi + ((float)idx*d_phi), s_theta + ((float)s_idx*d_theta));
-			
-			// bank the bitmap first
-			vm_vec_rotate(&t_points[idx][s_idx], &s_points[idx][s_idx], &m_bank);
 
-			// rotate on the sphere
-			vm_vec_rotate(&s_points[idx][s_idx], &t_points[idx][s_idx], &m);
+			// (un)rotate on the sphere
+			vm_vec_unrotate(&s_points[idx][s_idx], &s_points[idx][s_idx], &m);
 		}
 	}
 

@@ -53,6 +53,7 @@ extern void vm_set_identity(matrix *m);
 
 #define vm_vec_make(v,_x,_y,_z) ((v)->xyz.x=(_x), (v)->xyz.y=(_y), (v)->xyz.z=(_z))
 
+extern angles vm_angles_new(float p, float b, float h);
 extern vec3d vm_vec_new(float x, float y, float z);
 
 //Global constants
