@@ -317,6 +317,7 @@ flag_def_list_new<Mission::Parse_Object_Flags> Parse_object_flags[] = {
     { "hide-in-mission-log",			Mission::Parse_Object_Flags::SF_Hide_mission_log,		true, false },
     { "same-arrival-warp-when-docked",		Mission::Parse_Object_Flags::SF_Same_arrival_warp_when_docked,		true, false },
     { "same-departure-warp-when-docked",	Mission::Parse_Object_Flags::SF_Same_departure_warp_when_docked,	true, false },
+    { "attackable_if_no_collide",			Mission::Parse_Object_Flags::OF_Attackable_if_no_collide, true, false },
 };
 
 const size_t num_parse_object_flags = sizeof(Parse_object_flags) / sizeof(flag_def_list_new<Mission::Parse_Object_Flags>);
@@ -2732,7 +2733,10 @@ void resolve_parse_flags(object *objp, flagset<Mission::Parse_Object_Flags> &par
         shipp->flags.set(Ship::Ship_Flags::Same_arrival_warp_when_docked);
 
     if (parse_flags[Mission::Parse_Object_Flags::SF_Same_departure_warp_when_docked])
-        shipp->flags.set(Ship::Ship_Flags::Same_departure_warp_when_docked);
+		shipp->flags.set(Ship::Ship_Flags::Same_departure_warp_when_docked);
+
+    if (parse_flags[Mission::Parse_Object_Flags::OF_Attackable_if_no_collide])
+		objp->flags.set(Object::Object_Flags::Attackable_if_no_collide);
 }
 
 void fix_old_special_explosions(p_object *p_objp, int variable_index) 
