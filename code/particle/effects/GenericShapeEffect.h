@@ -1,5 +1,7 @@
 #ifndef GENERIC_SHAPE_EFFECT_H
 #define GENERIC_SHAPE_EFFECT_H
+#include "osapi/dialogs.h"
+#include "parse/parselo.h"
 #pragma once
 
 #include "globalincs/pstypes.h"
@@ -32,7 +34,8 @@ class GenericShapeEffect : public ParticleEffect {
 	ConeDirection m_direction = ConeDirection::Incoming;
 	::util::UniformFloatRange m_velocity;
 	::util::UniformUIntRange m_particleNum;
-
+	float m_particleChance;
+	::util::UniformFloatRange m_particleRoll;
 	ParticleEffectHandle m_particleTrail = ParticleEffectHandle::invalid();
 
 	util::EffectTiming m_timing;
@@ -102,6 +105,12 @@ class GenericShapeEffect : public ParticleEffect {
 			matrix dirMatrix;
 			vm_vector_2_matrix(&dirMatrix, &dir, nullptr, nullptr);
 			for (uint i = 0; i < num; ++i) {
+				if (m_particleChance < 1.0f) {
+					auto roll = m_particleRoll.next();
+					if (roll <= 0.0f)
+						continue;
+				}
+
 				matrix velRotation = m_shape.getDisplacementMatrix();
 
 				matrix rotatedVel;
@@ -156,6 +165,26 @@ class GenericShapeEffect : public ParticleEffect {
 		if (internal::required_string_if_new("+Number:", nocreate)) {
 			m_particleNum = ::util::parseUniformRange<uint>();
 		}
+		if (!nocreate) {
+			m_particleChance = 1.0f;
+		}
+		if (optional_string("+Chance:")) {
+			float chance;
+			stuff_float(&chance);
+			CLAMP(chance, 0.0f, 1.0f);
+			if (chance <= 0.0f) {
+				Error(LOCATION,
+					"Particle %s tried to set +Chance: %f\nChances below 0 would result in no particles.",
+					m_name.c_str(), chance);
+			} else if (chance > 1.0f) {
+				Warning(LOCATION,
+					"Particle %s tried to set +Chance: %f\nChances above 1 are ignored, please use +Number: (min,max) "
+					"to spawn multiple particles.", m_name.c_str(), chance);
+				chance = 1.0f;
+			}
+			m_particleChance = chance;
+		}
+		m_particleRoll = ::util::UniformFloatRange(m_particleChance - 1.0f, m_particleChance);
 
 		if (optional_string("+Direction:")) {
 			SCP_string dirStr;

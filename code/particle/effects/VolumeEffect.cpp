@@ -30,6 +30,12 @@ namespace particle {
 				vec3d stretch_dir = source->getOrientation()->getDirectionVector(source->getOrigin());
 				matrix stretch_matrix = vm_stretch_matrix(&stretch_dir, m_stretch);
 				for (uint i = 0; i < num; ++i) {
+					if (m_particleChance < 1.0f) {
+						auto roll = m_particleRoll.next();
+						if (roll <= 0.0f)
+							continue;
+					}
+
 					vec3d pos;
 					// get an unbiased random point in the sphere
 					vm_vec_random_in_sphere(&pos, &vmd_zero_vector, 1.0f, false);
@@ -78,6 +84,31 @@ namespace particle {
 			if (internal::required_string_if_new("+Number:", nocreate)) {
 				m_particleNum = ::util::parseUniformRange<uint>();
 			}
+
+			if (!nocreate) {
+				m_particleChance = 1.0f;
+			}
+
+			if (optional_string("+Chance:")) {
+				float chance;
+				stuff_float(&chance);
+				CLAMP(chance, 0.0f, 1.0f);
+				if (chance <= 0.0f) {
+					Error(LOCATION,
+						"Particle %s tried to set +Chance: %f\nChances below 0 would result in no particles.",
+						m_name.c_str(),
+						chance);
+				} else if (chance >= 1.0f) {
+					Warning(LOCATION,
+						"Particle %s tried to set +Chance: %f\nChances above 1 are ignored, please use +Number: "
+						"(min,max) to spawn multiple particles.",
+						m_name.c_str(),
+						chance);
+					chance = 1.0f;
+				}
+				m_particleChance = chance;
+			}
+			m_particleRoll = ::util::UniformFloatRange(m_particleChance - 1.0f, m_particleChance);
 
 			if (internal::required_string_if_new("+Volume radius:", nocreate)) {
 				float radius;
