@@ -3114,6 +3114,12 @@ void bsp_polygon_data::process_defpoints(int off, ubyte* bsp_data)
 	}
 }
 
+/**
+* @brief Parses a SORTNORM2 by recursively parsing into the two pointers it contains.
+*
+* @param offset The byte offset to the current SORT2NORM chunk within bsp_data.
+* @param bsp_data The byte buffer containing the BSP information for the current model.
+*/
 void bsp_polygon_data::process_sortnorm2(int offset, ubyte* bsp_data)
 {
 	int frontlist, backlist;
