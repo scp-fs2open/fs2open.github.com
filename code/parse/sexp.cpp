@@ -34092,6 +34092,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"hide-in-mission-log - Prevents events involving this ship from being viewable in the mission log\r\n"
 		"no-dynamic - Will stop allowing the AI to pursue dynamic goals (e.g.: chasing ships it was not ordered to)\r\n"
 		"free-afterburner-use - Allows the ship to use afterburners to follow waypoints\r\n"
+		"ai-attackable-if-no-collide - AI will still attack this ship even if collisions are disabled\r\n"
 	},
 
 	{ OP_SHIP_VISIBLE, "ship-visible\r\n"
