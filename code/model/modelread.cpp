@@ -5126,7 +5126,8 @@ void swap_bsp_data( polymodel * pm, void * model_ptr )
 	w(p) = chunk_type;
 	w(p+4) = chunk_size;
 
-	while (chunk_type != OP_EOF) {
+	bool end = chunk_type == OP_EOF;
+	while (!end) {
 		switch (chunk_type) {
 			case OP_EOF:
 				return;
@@ -5144,6 +5145,7 @@ void swap_bsp_data( polymodel * pm, void * model_ptr )
 				break;
 			case OP_SORTNORM2:
 				swap_bsp_sortnorm2(pm, p);
+				end = true; // should not continue after this chunk
 				break;
 			case OP_BOUNDBOX:
 				min = vp(p+8);
@@ -5157,6 +5159,7 @@ void swap_bsp_data( polymodel * pm, void * model_ptr )
 				break;
 			case OP_TMAP2POLY:
 				swap_bsp_tmap2poly(pm, p);
+				end = true; // should not continue after this chunk
 				break;
 			default:
 				mprintf(( "Bad chunk type %d, len=%d in modelread:swap_bsp_data\n", chunk_type, chunk_size ));
@@ -5169,6 +5172,9 @@ void swap_bsp_data( polymodel * pm, void * model_ptr )
 		chunk_size = INTEL_INT( w(p+4) );
 		w(p) = chunk_type;
 		w(p+4) = chunk_size;
+
+		if (chunk_type == OP_EOF)
+			end = true;
 	}
 
 	return;
