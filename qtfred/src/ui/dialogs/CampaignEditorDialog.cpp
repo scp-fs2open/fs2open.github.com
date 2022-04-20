@@ -165,7 +165,7 @@ void CampaignEditorDialog::updateUIBranch(int selectedIdx) {
 					QItemSelectionModel::Select);
 	}
 
-	bool loop = model->getCurBrIsLoop();
+	bool loop = model->isCurBrLoop();
 
 	model->supplySubModelLoop(*ui->txaLoopDescr);
 	ui->txaLoopDescr->setEnabled(loop);

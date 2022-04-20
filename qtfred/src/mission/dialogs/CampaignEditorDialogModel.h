@@ -14,7 +14,7 @@ namespace fso {
 namespace fred {
 namespace dialogs {
 
-static const QString qstrEmpty{};
+const QString qstrEmpty{};
 
 class CampaignEditorDialog;
 
@@ -82,7 +82,7 @@ public:
 // Model state getters -- branch
 	inline int getCurBrIdx() const { return getCurBr() ? mnData_it->brData_idx : -1; }
 
-	inline bool getCurBrIsLoop() const { return getCurBr() && getCurBr()->loop; }
+	inline bool isCurBrLoop() const { return getCurBr() && getCurBr()->loop; }
 	inline const QString& getCurBrNext() const { return getCurBr() ? getCurBr()->next : qstrEmpty; }
 
 	void supplySubModelLoop(QPlainTextEdit &descr);

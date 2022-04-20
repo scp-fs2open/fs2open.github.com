@@ -156,11 +156,11 @@ QStringList CampaignEditorDialogModel::getMissionGoals(const QString& /*model kn
 	if (getCurBr())
 		reference_name = Sexp_nodes[CDR(getCurBr()->sexp)].text;
 	else
-		return QStringList{};
+		return {};
 	for (auto mn : missionData)
 		if (reference_name == mn.first.filename)
 			return mn.first.goals;
-	return QStringList{};
+	return {};
 }
 
 QStringList CampaignEditorDialogModel::getMissionEvents(const QString& /*model knows best*/) {
@@ -172,11 +172,11 @@ QStringList CampaignEditorDialogModel::getMissionEvents(const QString& /*model k
 	for (auto mn : missionData)
 		if (reference_name == mn.first.filename)
 			return mn.first.events;
-	return QStringList{};
+	return {};
 }
 
 QStringList CampaignEditorDialogModel::getMissionNames() {
-	QStringList ret{};
+	QStringList ret;
 	ret.reserve(static_cast<int>(missionData.getCheckedData().size()));
 	for (auto mn : missionData)
 		if (mn.second)
@@ -185,7 +185,7 @@ QStringList CampaignEditorDialogModel::getMissionNames() {
 }
 
 QList<QAction *> CampaignEditorDialogModel::getContextMenuExtras(QObject *menu_parent) {
-	QList<QAction *> ret{};
+	QList<QAction *> ret;
 
 	int curBrIdx = getCurBrIdx();
 	QAction *moveUpAct{new QAction{tr("Move Up"), menu_parent}};
@@ -201,7 +201,7 @@ QList<QAction *> CampaignEditorDialogModel::getContextMenuExtras(QObject *menu_p
 	QAction *toggleLoopAct{new QAction{tr("Toggle Loop"), menu_parent}};
 	toggleLoopAct->setEnabled(curBrIdx >= 0);
 	toggleLoopAct->setCheckable(true);
-	toggleLoopAct->setChecked(getCurBrIsLoop());
+	toggleLoopAct->setChecked(isCurBrLoop());
 	connect(toggleLoopAct, &QAction::toggled, this, &CampaignEditorDialogModel::setCurBrIsLoop);
 	ret << toggleLoopAct;
 
@@ -211,14 +211,14 @@ QList<QAction *> CampaignEditorDialogModel::getContextMenuExtras(QObject *menu_p
 int CampaignEditorDialogModel::getCampaignNumPlayers() const {
 	if (campaignType == campaignTypes[0])
 		return 0;
-	for (auto mn : missionData.getCheckedData())
+	for (const auto *mn : missionData.getCheckedData())
 		if (mn->filename == firstMission)
 			return mn->nPlayers;
 	return 0;
 }
 
 void CampaignEditorDialogModel::connectBranches(bool uiUpdate, const campaign *cpgn) {
-	for (auto& mn: missionData.getCheckedData()) {
+	for (auto *mn: missionData.getCheckedData()) {
 		if (cpgn) {
 			const cmission *const cm_it{
 				std::find_if(cpgn->missions, &cpgn->missions[cpgn->num_missions],
@@ -476,7 +476,7 @@ void CampaignEditorDialogModel::missionSelectionChanged(const QItemSelection & s
 void CampaignEditorDialogModel::setCurMnFirst(){
 	if ( !mnData_it) return;
 	QMessageBox::StandardButton resBtn = QMessageBox::Yes;
-	if (firstMission != qstrEmpty) {
+	if (! firstMission.isEmpty()) {
 		resBtn = QMessageBox::question( parent, tr("Change first mission?"),
 										tr("Do you want to replace\n")
 										+ firstMission
