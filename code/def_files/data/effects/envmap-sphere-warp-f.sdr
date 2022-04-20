@@ -1,0 +1,20 @@
+#define M_PI 3.1415926535897932384626433832795
+uniform samplerCube envmap;
+
+in vec4 fragTexCoord;
+
+out vec4 fragOut0;
+
+layout (location = 0) out vec4 outColor;
+
+void main() {
+	const float theta = fragTexCoord.x * (2.0 * M_PI);
+	const float phi = fragTexCoord.y * (M_PI) - (0.5 * M_PI);
+	const float st = sin(theta);
+	const float ct = cos(theta);
+	const float sp = sin(phi);
+	const float cp = cos(phi);
+	const vec3 sampVec = vec3(cp * ct, sp, cp * st);
+
+	fragOut0 = vec4(texture(envmap, sampVec).rgb, 1.0);
+}

@@ -7,7 +7,7 @@
 #endif
 
 #include "gropengl.h"
-
+#include "ShaderProgram.h"
 #include "gropenglbmpman.h"
 #include "gropengldeferred.h"
 #include "gropengldraw.h"
@@ -303,8 +303,8 @@ void gr_opengl_dump_envmap(const char* filename)
 	auto width = 512;
 	auto height = 512;
 	GLenum x;
-	auto ts = bm_get_gr_info<tcache_slot_opengl>(gr_screen.envmap_render_target);
-	glBindTexture(ts->texture_target, ts->texture_id);
+	auto env_tex = bm_get_gr_info<tcache_slot_opengl>(gr_screen.envmap_render_target);
+	glBindTexture(env_tex->texture_target, env_tex->texture_id);
 	x = glGetError();
 	pixels = (GLubyte*)vm_malloc(width * height * 4, memory::quiet_alloc);
 	for (int i = 0; i < 6; ++i) {
@@ -318,6 +318,33 @@ void gr_opengl_dump_envmap(const char* filename)
 
 
 
+
+	int sm_flags = (BMP_FLAG_RENDER_TARGET_STATIC);
+	int spheremap_render_target = bm_make_render_target(4 * width, 2 * height , sm_flags);
+
+	// Save the previous render target so we can reset it once we are done here
+	auto previous_target = gr_screen.rendering_to_texture;
+	bm_set_render_target(spheremap_render_target);
+
+	int env_shader = gr_opengl_maybe_create_shader(SDR_TYPE_ENVMAP_SPHERE_WARP, 0);
+	opengl_shader_set_current(env_shader);
+	GL_state.Texture.Enable(0, GL_TEXTURE_CUBE_MAP, env_tex->texture_id);
+	Current_shader->program->Uniforms.setTextureUniform("envmap", 0);
+	gr_clear();
+	opengl_draw_full_screen_textured(0.0f, 0.0f, Scene_texture_u_scale, Scene_texture_v_scale);
+	bm_set_render_target(previous_target);
+
+	auto sphere_tex = bm_get_gr_info<tcache_slot_opengl>(spheremap_render_target);
+	glBindTexture(sphere_tex->texture_target, sphere_tex->texture_id);
+	x = glGetError();
+	pixels = (GLubyte*)vm_malloc(4 * width * 2 * height * 4, memory::quiet_alloc);
+	glGetTexImage(sphere_tex->texture_target, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+	snprintf(tmp, MAX_PATH_LEN - 1, "envmaps/%s.png", filename);
+	if (!png_write_bitmap(os_get_config_path(tmp).c_str(), 4 * width, 2 * height, true, pixels)) {
+		ReleaseWarning(LOCATION, "Failed to write screenshot to \"%s\".", os_get_config_path(tmp).c_str());
+	}
+
+	
 	if (pixels != NULL) {
 		vm_free(pixels);
 	}
