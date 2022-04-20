@@ -295,8 +295,7 @@ void gr_opengl_dump_envmap(const char* filename)
 	char tmp[MAX_PATH_LEN];
 	GLubyte* pixels = NULL;
 
-	// save to a "envmaps" directory and tack on the filename
-	snprintf(tmp, MAX_PATH_LEN - 1, "envmaps/%s.png", filename);
+
 
 	_mkdir(os_get_config_path("envmaps").c_str());
 
