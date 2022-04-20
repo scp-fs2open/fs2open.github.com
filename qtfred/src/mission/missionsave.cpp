@@ -3242,6 +3242,9 @@ int CFred_mission_save::save_objects()
 			if (shipp->flags[Ship::Ship_Flags::Same_departure_warp_when_docked]) {
 				fout(" \"same-departure-warp-when-docked\"");
 			}
+			if (objp->flags[Object::Object_Flags::Attackable_if_no_collide]) {
+				fout(" \"ai-attackable-if-no-collide\"");
+			}
 			fout(" )");
 		}
 		// -----------------------------------------------------------
