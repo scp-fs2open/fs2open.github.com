@@ -1308,13 +1308,7 @@ ADE_FUNC(getMissionTitle, l_Mission, NULL, "Get the title of the current mission
 	return ade_set_args(L, "s", The_mission.name);
 }
 
-ADE_FUNC(addBackgroundBitmap,
-	l_Mission,
-	"string name, orientation orientation = identity, number scaleX = 1.0, number scale_y = 1.0, number div_x = 1.0, "
-	"number div_y = 1.0",
-	"Adds a background bitmap to the mission with the specified parameters.",
-	"background_element",
-	"A handle to the background element, or invalid handle if the function failed.")
+static int addBackgroundBitmap_sub(bool fixed, lua_State* L)
 {
 	const char* filename = nullptr;
 	float scale_x        = 1.0f;
@@ -1337,6 +1331,9 @@ ADE_FUNC(addBackgroundBitmap,
 	}
 
 	sle.ang     = *orient.GetAngles();
+	if (!fixed)
+		stars_fix_background_angles(&sle.ang);
+
 	sle.scale_x = scale_x;
 	sle.scale_y = scale_y;
 	sle.div_x   = div_x;
@@ -1364,12 +1361,31 @@ ADE_FUNC(addBackgroundBitmap,
 	return ade_set_args(L, "o", l_BackgroundElement.Set(background_el_h(BackgroundType::Bitmap, idx)));
 }
 
-ADE_FUNC(addSunBitmap,
+ADE_FUNC_DEPRECATED(addBackgroundBitmap,
 	l_Mission,
-	"string name, orientation orientation = identity, number scaleX = 1.0, number scale_y = 1.0",
-	"Adds a sun bitmap to the mission with the specified parameters.",
+	"string name, orientation orientation = identity, number scaleX = 1.0, number scale_y = 1.0, number div_x = 1.0, "
+	"number div_y = 1.0",
+	"Adds a background bitmap to the mission with the specified parameters, but using the old incorrectly-calculated angle math.",
+	"background_element",
+	"A handle to the background element, or invalid handle if the function failed.",
+	gameversion::version(22, 2),
+	"addBackgroundBitmap uses the old incorrectly-calculated angle math; use addBackgroundBitmap2 instead")
+{
+	return addBackgroundBitmap_sub(false, L);
+}
+
+ADE_FUNC(addBackgroundBitmap2,
+	l_Mission,
+	"string name, orientation orientation = identity, number scaleX = 1.0, number scale_y = 1.0, number div_x = 1.0, "
+	"number div_y = 1.0",
+	"Adds a background bitmap to the mission with the specified parameters, treating the angles as correctly calculated.",
 	"background_element",
 	"A handle to the background element, or invalid handle if the function failed.")
+{
+	return addBackgroundBitmap_sub(true, L);
+}
+
+static int addSunBitmap_sub(bool fixed, lua_State* L)
 {
 	const char* filename = nullptr;
 	float scale_x        = 1.0f;
@@ -1390,6 +1406,9 @@ ADE_FUNC(addSunBitmap,
 	}
 
 	sle.ang     = *orient.GetAngles();
+	if (!fixed)
+		stars_fix_background_angles(&sle.ang);
+
 	sle.scale_x = scale_x;
 	sle.scale_y = scale_y;
 	sle.div_x   = 1;
@@ -1407,6 +1426,28 @@ ADE_FUNC(addSunBitmap,
 
 	auto idx = stars_add_sun_entry(&sle);
 	return ade_set_args(L, "o", l_BackgroundElement.Set(background_el_h(BackgroundType::Sun, idx)));
+}
+
+ADE_FUNC_DEPRECATED(addSunBitmap,
+	l_Mission,
+	"string name, orientation orientation = identity, number scaleX = 1.0, number scale_y = 1.0",
+	"Adds a sun bitmap to the mission with the specified parameters, but using the old incorrectly-calculated angle math.",
+	"background_element",
+	"A handle to the background element, or invalid handle if the function failed.",
+	gameversion::version(22, 2),
+	"addSunBitmap uses the old incorrectly-calculated angle math; use addSunBitmap2 instead")
+{
+	return addSunBitmap_sub(false, L);
+}
+
+ADE_FUNC(addSunBitmap2,
+	l_Mission,
+	"string name, orientation orientation = identity, number scaleX = 1.0, number scale_y = 1.0",
+	"Adds a sun bitmap to the mission with the specified parameters, treating the angles as correctly calculated.",
+	"background_element",
+	"A handle to the background element, or invalid handle if the function failed.")
+{
+	return addSunBitmap_sub(true, L);
 }
 
 ADE_FUNC(removeBackgroundElement, l_Mission, "background_element el",

@@ -686,8 +686,10 @@ SCP_vector<sexp_oper> Operators = {
 	{ "mission-set-subspace",			OP_MISSION_SET_SUBSPACE,				1,	1,			SEXP_ACTION_OPERATOR,	},
 	{ "change-background",				OP_CHANGE_BACKGROUND,					1,	1,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "add-background-bitmap",			OP_ADD_BACKGROUND_BITMAP,				8,	9,			SEXP_ACTION_OPERATOR,	},	// phreak
+	{ "add-background-bitmap2",			OP_ADD_BACKGROUND_BITMAP2,				8,	9,			SEXP_ACTION_OPERATOR,	},	// phreak
 	{ "remove-background-bitmap",		OP_REMOVE_BACKGROUND_BITMAP,			1,	1,			SEXP_ACTION_OPERATOR,	},	// phreak
 	{ "add-sun-bitmap",					OP_ADD_SUN_BITMAP,						5,	6,			SEXP_ACTION_OPERATOR,	},	// phreak
+	{ "add-sun-bitmap2",				OP_ADD_SUN_BITMAP2,						5,	6,			SEXP_ACTION_OPERATOR,	},	// phreak
 	{ "remove-sun-bitmap",				OP_REMOVE_SUN_BITMAP,					1,	1,			SEXP_ACTION_OPERATOR,	},	// phreak
 	{ "nebula-change-storm",			OP_NEBULA_CHANGE_STORM,					1,	1,			SEXP_ACTION_OPERATOR,	},	// phreak
 	{ "nebula-toggle-poof",				OP_NEBULA_TOGGLE_POOF,					2,	2,			SEXP_ACTION_OPERATOR,	},	// phreak
@@ -3354,7 +3356,9 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				{
 					// some SEXPs demand a number variable
 					case OP_ADD_BACKGROUND_BITMAP:
+					case OP_ADD_BACKGROUND_BITMAP2:
 					case OP_ADD_SUN_BITMAP:
+					case OP_ADD_SUN_BITMAP2:
 					case OP_PLAY_SOUND_FROM_FILE:
 					case OP_PAUSE_SOUND_FROM_FILE:
 					case OP_CLOSE_SOUND_FROM_FILE:
@@ -3954,11 +3958,13 @@ int get_sexp()
 				break;
 
 			case OP_ADD_SUN_BITMAP:
+			case OP_ADD_SUN_BITMAP2:
 				n = CDR(start);
 				do_preload_for_arguments(stars_preload_sun_bitmap, n, arg_handler);
 				break;
 
 			case OP_ADD_BACKGROUND_BITMAP:
+			case OP_ADD_BACKGROUND_BITMAP2:
 				n = CDR(start);
 				do_preload_for_arguments(stars_preload_background_bitmap, n, arg_handler);
 				break;
@@ -14087,7 +14093,7 @@ void sexp_change_background(int node)
 	stars_load_background(background_idx);
 }
 
-void sexp_add_background_bitmap(int n, bool is_sun)
+void sexp_add_background_bitmap(int n, bool is_sun, bool is_fixed)
 {
 	int sexp_var, new_number, sanity;
 	bool is_nan, is_nan_forever;
@@ -14110,6 +14116,8 @@ void sexp_add_background_bitmap(int n, bool is_sun)
 	eval_angles(&sle.ang, n, is_nan, is_nan_forever);
 	if (is_nan || is_nan_forever)
 		return;
+	if (!is_fixed)
+		stars_fix_background_angles(&sle.ang);
 
 	if (is_sun)
 	{
@@ -25306,8 +25314,10 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_ADD_SUN_BITMAP:
+			case OP_ADD_SUN_BITMAP2:
 			case OP_ADD_BACKGROUND_BITMAP:
-				sexp_add_background_bitmap(node, op_num == OP_ADD_SUN_BITMAP);
+			case OP_ADD_BACKGROUND_BITMAP2:
+				sexp_add_background_bitmap(node, op_num == OP_ADD_SUN_BITMAP, op_num == OP_ADD_SUN_BITMAP2 || op_num == OP_ADD_BACKGROUND_BITMAP2);
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -27506,8 +27516,10 @@ int query_operator_return_type(int op)
 		case OP_MISSION_SET_NEBULA:
 		case OP_CHANGE_BACKGROUND:
 		case OP_ADD_BACKGROUND_BITMAP:
+		case OP_ADD_BACKGROUND_BITMAP2:
 		case OP_REMOVE_BACKGROUND_BITMAP:
 		case OP_ADD_SUN_BITMAP:
+		case OP_ADD_SUN_BITMAP2:
 		case OP_REMOVE_SUN_BITMAP:
 		case OP_NEBULA_CHANGE_STORM:
 		case OP_NEBULA_TOGGLE_POOF:
@@ -29864,6 +29876,7 @@ int query_operator_argument_type(int op, int argnum)
 			return OPF_POSITIVE;
 
 		case OP_ADD_BACKGROUND_BITMAP:
+		case OP_ADD_BACKGROUND_BITMAP2:
 			if (argnum == 0)
 				return OPF_BACKGROUND_BITMAP;
 			else if (argnum == 8)
@@ -29875,6 +29888,7 @@ int query_operator_argument_type(int op, int argnum)
 			return OPF_POSITIVE;
 
 		case OP_ADD_SUN_BITMAP:
+		case OP_ADD_SUN_BITMAP2:
 			if (argnum == 0)
 				return OPF_SUN_BITMAP;
 			else if (argnum == 5)
@@ -31733,8 +31747,10 @@ int get_subcategory(int sexp_id)
 		case OP_MISSION_SET_SUBSPACE:
 		case OP_CHANGE_BACKGROUND:
 		case OP_ADD_BACKGROUND_BITMAP:
+		case OP_ADD_BACKGROUND_BITMAP2:
 		case OP_REMOVE_BACKGROUND_BITMAP:
 		case OP_ADD_SUN_BITMAP:
+		case OP_ADD_SUN_BITMAP2:
 		case OP_REMOVE_SUN_BITMAP:
 		case OP_NEBULA_CHANGE_STORM:
 		case OP_NEBULA_TOGGLE_POOF:
@@ -35765,8 +35781,24 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tBackground number (starting from 1)\r\n"
 	},
 
-	{ OP_ADD_BACKGROUND_BITMAP, "add-background-bitmap\r\n"
-		"\tAdds a background bitmap to the sky.  Returns an integer that is stored in a variable so it can be deleted using remove-background-bitmap\r\n\r\n"
+	{ OP_ADD_BACKGROUND_BITMAP, "add-background-bitmap (deprecated)\r\n"
+		"\tAdds a background bitmap to the sky.  Returns an integer that is stored in a variable so it can be deleted using remove-background-bitmap.  "
+		"NOTE: This version of the SEXP uses the old incorrectly-calculated angle math.  Use add-background-bitmap2 instead.\r\n\r\n"
+		"Takes 8 to 9 arguments...\r\n"
+		"\t1:\tBackground bitmap name\r\n"
+		"\t2:\tPitch\r\n"
+		"\t3:\tBank\r\n"
+		"\t4:\tHeading\r\n"
+		"\t5:\tX scale (expressed as a percentage of the original size of the bitmap)\r\n"
+		"\t6:\tY scale (expressed as a percentage of the original size of the bitmap)\r\n"
+		"\t7:\tX divisions.\r\n"
+		"\t8:\tY divisions.\r\n"
+		"\t9:\tNumeric variable in which to store the result (optional)\r\n"
+	},
+
+	{ OP_ADD_BACKGROUND_BITMAP2, "add-background-bitmap2\r\n"
+		"\tAdds a background bitmap to the sky.  Returns an integer that is stored in a variable so it can be deleted using remove-background-bitmap.  "
+		"NOTE: This version of the SEXP treats the angles as correctly calculated.\r\n\r\n"
 		"Takes 8 to 9 arguments...\r\n"
 		"\t1:\tBackground bitmap name\r\n"
 		"\t2:\tPitch\r\n"
@@ -35786,8 +35818,21 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t\t\tYou can also use the result of a previous call to add-background-bitmap to remove that added bitmap\r\n"
 	},
 
-	{ OP_ADD_SUN_BITMAP, "add-sun-bitmap\r\n"
-		"\tAdds a sun bitmap to the sky.  Returns an integer that is stored in a variable so it can be deleted using remove-sun-bitmap\r\n\r\n"
+	{ OP_ADD_SUN_BITMAP, "add-sun-bitmap (deprecated)\r\n"
+		"\tAdds a sun bitmap to the sky.  Returns an integer that is stored in a variable so it can be deleted using remove-sun-bitmap.  "
+		"NOTE: This version of the SEXP uses the old incorrectly-calculated angle math.  Use add-sun-bitmap2 instead.\r\n\r\n"
+		"Takes 5 to 6 arguments...\r\n"
+		"\t1:\tSun bitmap name\r\n"
+		"\t2:\tPitch\r\n"
+		"\t3:\tBank\r\n"
+		"\t4:\tHeading\r\n"
+		"\t5:\tScale (expressed as a percentage of the original size of the bitmap)\r\n"
+		"\t6:\tNumeric variable in which to store the result (optional)\r\n"
+	},
+
+	{ OP_ADD_SUN_BITMAP2, "add-sun-bitmap2\r\n"
+		"\tAdds a sun bitmap to the sky.  Returns an integer that is stored in a variable so it can be deleted using remove-sun-bitmap.  "
+		"NOTE: This version of the SEXP treats the angles as correctly calculated.\r\n\r\n"
 		"Takes 5 to 6 arguments...\r\n"
 		"\t1:\tSun bitmap name\r\n"
 		"\t2:\tPitch\r\n"

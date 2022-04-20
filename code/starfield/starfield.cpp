@@ -264,13 +264,11 @@ extern void stars_project_2d_onto_sphere( vec3d *pnt, float rho, float phi, floa
 static void starfield_create_bitmap_buffer(const int si_idx)
 {
 	vec3d s_points[MAX_PERSPECTIVE_DIVISIONS+1][MAX_PERSPECTIVE_DIVISIONS+1];
-	vec3d t_points[MAX_PERSPECTIVE_DIVISIONS+1][MAX_PERSPECTIVE_DIVISIONS+1];
 
 	vertex v[4];
-	matrix m, m_bank;
+	matrix m;
 	int idx, s_idx;
 	float ui, vi;
-	angles bank_first;
 
 	starfield_bitmap_instance *sbi = &Starfield_bitmap_instances[si_idx];
 
@@ -2425,6 +2423,18 @@ int stars_add_bitmap_entry(starfield_list_entry *sle)
 	starfield_create_bitmap_buffer((int)(Starfield_bitmap_instances.size() - 1));
 
 	return (int)(Starfield_bitmap_instances.size() - 1);
+}
+
+void stars_fix_background_angles(angles *angs_to_fix)
+{
+	matrix mat1, mat2;
+	angles ang1 = vm_angles_new(0.0, angs_to_fix->b, 0.0);
+	angles ang2 = vm_angles_new(angs_to_fix->p, 0.0, angs_to_fix->h);
+	vm_angles_2_matrix(&mat1, &ang1);
+	vm_angles_2_matrix(&mat2, &ang2);
+	matrix mat3 = mat2 * mat1;
+	vm_transpose(&mat3);
+	vm_extract_angles_matrix(angs_to_fix, &mat3);
 }
 
 // get the number of entries that each vector contains

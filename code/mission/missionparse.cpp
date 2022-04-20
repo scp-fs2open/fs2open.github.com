@@ -5464,16 +5464,8 @@ void parse_one_background(background_t *background)
 		stuff_float(&sle.ang.h);
 
 		// fix legacy bitmap angles which used incorrect math in older versions
-		if (!background->flags[Starfield::Background_Flags::Fixed_angles_in_mission_file]) {
-			matrix mat1, mat2;
-			angles ang1 = vm_angles_new(0.0, sle.ang.b, 0.0);
-			angles ang2 = vm_angles_new(sle.ang.p, 0.0, sle.ang.h);
-			vm_angles_2_matrix(&mat1, &ang1);
-			vm_angles_2_matrix(&mat2, &ang2);
-			matrix mat3 = mat2 * mat1;
-			vm_transpose(&mat3);
-			vm_extract_angles_matrix(&sle.ang, &mat3);
-		}
+		if (!background->flags[Starfield::Background_Flags::Fixed_angles_in_mission_file])
+			stars_fix_background_angles(&sle.ang);
 
 		// scale
 		required_string("+Scale:");
@@ -5501,16 +5493,8 @@ void parse_one_background(background_t *background)
 		stuff_float(&sle.ang.h);
 
 		// fix legacy bitmap angles which used incorrect math in older versions
-		if (!background->flags[Starfield::Background_Flags::Fixed_angles_in_mission_file]) {
-			matrix mat1, mat2;
-			angles ang1 = vm_angles_new(0.0, sle.ang.b, 0.0);
-			angles ang2 = vm_angles_new(sle.ang.p, 0.0, sle.ang.h);
-			vm_angles_2_matrix(&mat1, &ang1);
-			vm_angles_2_matrix(&mat2, &ang2);
-			matrix mat3 = mat2 * mat1;
-			vm_transpose(&mat3);
-			vm_extract_angles_matrix(&sle.ang, &mat3);
-		}
+		if (!background->flags[Starfield::Background_Flags::Fixed_angles_in_mission_file])
+			stars_fix_background_angles(&sle.ang);
 
 		// scale
 		if (optional_string("+Scale:"))
