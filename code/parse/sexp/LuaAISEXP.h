@@ -1,5 +1,7 @@
 #pragma once
 
+#include "ai/ailua.h"
+
 #include "parse/sexp/DynamicSEXP.h"
 
 #include "scripting/lua/LuaFunction.h"
@@ -13,9 +15,13 @@ class LuaAISEXP : public DynamicSEXP {
 	
 	int _arg_type = -1;
 	bool needsTarget = false;
+	const char* hudText = nullptr;
 
 	luacpp::LuaFunction _actionEnter;
 	luacpp::LuaFunction _actionFrame;
+
+	std::unique_ptr<player_order_lua> playerOrder = nullptr;
+
  public:
 	explicit LuaAISEXP(const SCP_string& name);
 
@@ -27,7 +33,6 @@ class LuaAISEXP : public DynamicSEXP {
 	int getReturnType() override;
 	int getSubcategory() override;
 	int getCategory() override;
-	bool hasTarget() const;
 
 	void parseTable();
 
@@ -36,6 +41,9 @@ class LuaAISEXP : public DynamicSEXP {
 
 	void setActionFrame(const luacpp::LuaFunction& action);
 	luacpp::LuaFunction getActionFrame() const;
+
+	void registerAIMode(int sexp_id) const;
+	void maybeRegisterPlayerOrder(int sexp_id) const;
 };
 
 }

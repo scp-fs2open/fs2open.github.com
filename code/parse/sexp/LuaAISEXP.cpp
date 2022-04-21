@@ -44,6 +44,12 @@ void LuaAISEXP::parseTable() {
 
 	help_text << "\t" << description << "\r\n";
 
+	if (optional_string("+HUD String:")) {
+		SCP_string hudTextParse;
+		stuff_string(hudTextParse, F_NAME);
+		hudText = vm_strdup(hudTextParse.c_str());
+	}
+
 	int paramNum = 1;
 	if (optional_string("$Target Parameter:")) {
 		needsTarget = true;
@@ -70,6 +76,46 @@ void LuaAISEXP::parseTable() {
 		paramNum++;
 	}
 
+	if (optional_string("$Player Order:")) {
+		playerOrder = std::unique_ptr<player_order_lua>(new player_order_lua());
+		auto &order = *playerOrder;
+		if (_arg_type != OPF_SHIP && _arg_type != -1) {
+			error_display(1, "Player orders must have either no target or a ship-type target parameter!");
+		}
+
+		required_string("+Display String:");
+		stuff_string(order.displayText, F_NAME);
+
+		order.parseText = order.displayText;
+		if (optional_string("+Parse String:")) {
+			stuff_string(order.parseText, F_NAME);
+		}
+
+		if (optional_string("+Target Restrictions:")) {
+			int result = optional_string_one_of(8, "All", "Own Team", "Allies", "Hostiles", "Player Wing", "Capitals", "Allied Capitals", "Enemy Capitals");
+			if (result == -1) {
+				error_display(0, "Unknown target restriction for player order %s. Assuming \"All\".", order.displayText.c_str());
+				order.targetRestrictions = player_order_lua::target_restrictions::TARGET_ALL;
+			}
+			else {
+				order.targetRestrictions = static_cast<player_order_lua::target_restrictions>(result);
+			}
+		}
+
+		//TODO implement proper parsing for message types
+		/*if (optional_string("+Acknowledge Message:")) {
+			int result = optional_string_one_of(1, "");
+			if (result == -1) {
+				error_display(0, "Unknown ackn message for player order %s. Assuming \"Yessir\".", order.displayText.c_str());
+				order.ai_message = MESSAGE_YESSIR;
+			}
+			else {
+				order.ai_message = result;
+			}
+		}*/
+
+	}
+
 	help_text << "\t" << paramNum;
 	help_text << ": Goal priority (number between 0 and 200. Player orders have a priority of 90-100).\r\n";
 
@@ -90,8 +136,15 @@ void LuaAISEXP::setActionFrame(const luacpp::LuaFunction& action) {
 luacpp::LuaFunction LuaAISEXP::getActionFrame() const {
 	return _actionFrame;
 }
-bool LuaAISEXP::hasTarget() const {
-	return needsTarget;
+
+void LuaAISEXP::registerAIMode(int sexp_id) const {
+	ai_lua_add_mode(sexp_id, { needsTarget, hudText });
+}
+
+void LuaAISEXP::maybeRegisterPlayerOrder(int sexp_id) const {
+	if (playerOrder == nullptr)
+		return;
+	ai_lua_add_order(sexp_id, *playerOrder);
 }
 
 }

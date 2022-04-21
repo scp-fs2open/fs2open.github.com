@@ -101,7 +101,7 @@ int Num_ai_goals = sizeof(Ai_goal_names) / sizeof(ai_goal_list);
 // HUD what a ship's current orders are.  If the AI goal doesn't correspond to something that
 // ought to be printable, then NULL is used.
 // JAS: Converted to a function in order to externalize the strings
-const char *Ai_goal_text(int goal)
+const char *Ai_goal_text(int goal, int submode)
 {
 	switch(goal)	{
 	case AI_GOAL_CHASE:
@@ -132,10 +132,15 @@ const char *Ai_goal_text(int goal)
 		return XSTR( "rearm ", 484);
 	case AI_GOAL_FLY_TO_SHIP:
 		return XSTR( "rendezvous with ", 1597);
+	case AI_GOAL_LUA:
+		auto mode = ai_lua_find_mode(submode);
+		if (mode == nullptr)
+			return nullptr;
+		return mode->hudText;
 	}
 
 	// Avoid compiler warning
-	return NULL;
+	return nullptr;
 }
 
 void ai_maybe_add_form_goal(wing* wingp)
@@ -660,7 +665,7 @@ void ai_goal_fixup_dockpoints(ai_info *aip, ai_goal *aigp)
 // from the mission goals (i.e. those goals which come from events) in that we don't
 // use sexpressions for goals from the player...so we enumerate all the parameters
 
-void ai_add_goal_sub_player(int type, int mode, int submode, char *target_name, ai_goal *aigp )
+void ai_add_goal_sub_player(int type, int mode, int submode, char *target_name, ai_goal *aigp, object_ship_wing_point_team lua_target )
 {
 	Assert ( (type == AIG_TYPE_PLAYER_WING) || (type == AIG_TYPE_PLAYER_SHIP) );
 
@@ -668,6 +673,7 @@ void ai_add_goal_sub_player(int type, int mode, int submode, char *target_name, 
 	aigp->type = type;										// from player for sure -- could be to ship or to wing
 	aigp->ai_mode = mode;									// major mode for this goal
 	aigp->ai_submode = submode;								// could mean different things depending on mode
+	aigp->lua_ai_target = std::move(lua_target);
 
 	if ( mode == AI_GOAL_WARP ) {
 		if (submode >= 0) {
@@ -813,7 +819,7 @@ void ai_add_ship_goal_scripting(int mode, int submode, int priority, char *shipn
 // is issued to ship or wing (from player),  mode is AI_GOAL_*. submode is the submode the
 // ship should go into.  shipname is the object of the action.  aip is the ai_info pointer
 // of the ship receiving the order
-void ai_add_ship_goal_player( int type, int mode, int submode, char *shipname, ai_info *aip )
+void ai_add_ship_goal_player( int type, int mode, int submode, char *shipname, ai_info *aip, object_ship_wing_point_team lua_target)
 {
 	int empty_index;
 	ai_goal *aigp;
@@ -822,7 +828,7 @@ void ai_add_ship_goal_player( int type, int mode, int submode, char *shipname, a
 
 	// get a pointer to the goal structure
 	aigp = &aip->goals[empty_index];
-	ai_add_goal_sub_player( type, mode, submode, shipname, aigp );
+	ai_add_goal_sub_player( type, mode, submode, shipname, aigp, lua_target );
 
 	// if the goal is to dock, then we must determine which dock points on the two ships to use.
 	// If the target of the dock is a cargo type container, then we should use DOCK_TYPE_CARGO
@@ -839,7 +845,7 @@ void ai_add_ship_goal_player( int type, int mode, int submode, char *shipname, a
 
 // adds a goal from the player to the given wing (which in turn will add it to the proper
 // ships in the wing
-void ai_add_wing_goal_player( int type, int mode, int submode, char *shipname, int wingnum )
+void ai_add_wing_goal_player( int type, int mode, int submode, char *shipname, int wingnum, object_ship_wing_point_team lua_target)
 {
 	int i, empty_index;
 	wing *wingp = &Wings[wingnum];
@@ -850,7 +856,7 @@ void ai_add_wing_goal_player( int type, int mode, int submode, char *shipname, i
 			int num = wingp->ship_index[i];
 			if ( num == -1 )			// ship must have been destroyed or departed
 				continue;
-			ai_add_ship_goal_player( type, mode, submode, shipname, &Ai_info[Ships[num].ai_index] );
+			ai_add_ship_goal_player( type, mode, submode, shipname, &Ai_info[Ships[num].ai_index], lua_target );
 		}
 	}
 
@@ -858,7 +864,7 @@ void ai_add_wing_goal_player( int type, int mode, int submode, char *shipname, i
 	// there are more waves to come.  We use the same method here as when adding a goal to
 	// a ship -- find the first empty entry.  If none exists, take the oldest entry and replace it.
 	empty_index = ai_goal_find_empty_slot( wingp->ai_goals, -1 );
-	ai_add_goal_sub_player( type, mode, submode, shipname, &wingp->ai_goals[empty_index] );
+	ai_add_goal_sub_player( type, mode, submode, shipname, &wingp->ai_goals[empty_index], lua_target );
 }
 
 

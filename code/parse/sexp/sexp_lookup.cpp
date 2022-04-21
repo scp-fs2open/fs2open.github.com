@@ -125,7 +125,8 @@ void parse_sexp_table(const char* filename) {
 				luaSexp->parseTable();
 
 				int op = add_dynamic_sexp(std::move(instance), SEXP_GOAL_OPERATOR);
-				ai_lua_add_mode(op, { luaSexp->hasTarget() });
+				luaSexp->registerAIMode(op);
+				luaSexp->maybeRegisterPlayerOrder(op);
 			}
 			required_string("#End");
 		}

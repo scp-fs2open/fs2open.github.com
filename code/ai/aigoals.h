@@ -14,6 +14,7 @@
 
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
+#include "parse/sexp.h"
 
 struct wing;
 struct ai_info;
@@ -91,7 +92,7 @@ extern int Num_ai_goals;
 extern int Num_ai_dock_names;
 extern char Ai_dock_names[MAX_AI_DOCK_NAMES][NAME_LENGTH];
 
-extern const char *Ai_goal_text(int goal);
+extern const char *Ai_goal_text(int goal, int submode);
 
 // extern function definitions
 extern void ai_post_process_mission();
@@ -104,14 +105,14 @@ extern int ai_goal_num(ai_goal *goals);
 extern void ai_add_ship_goal_scripting(int mode, int submode, int priority, char *shipname, ai_info *aip);
 extern void ai_add_ship_goal_sexp( int sexp, int type, ai_info *aip );
 extern void ai_add_wing_goal_sexp( int sexp, int type, wing *wingp );
-extern void ai_add_goal_sub_sexp( int sexp, int type, ai_goal *aigp, char *actor_name );
+extern void ai_add_goal_sub_sexp( int sexp, int type, ai_goal *aigp, char *actor_name);
 
 extern int ai_remove_goal_sexp_sub( int sexp, ai_goal* aigp );
 extern void ai_remove_wing_goal_sexp( int sexp, wing *wingp );
 
 // adds goals to ships/sings through player orders
-extern void ai_add_ship_goal_player( int type, int mode, int submode, char *shipname, ai_info *aip );
-extern void ai_add_wing_goal_player( int type, int mode, int submode, char *shipname, int wingnum );
+extern void ai_add_ship_goal_player( int type, int mode, int submode, char *shipname, ai_info *aip, object_ship_wing_point_team lua_target = object_ship_wing_point_team());
+extern void ai_add_wing_goal_player( int type, int mode, int submode, char *shipname, int wingnum, object_ship_wing_point_team lua_target = object_ship_wing_point_team());
 
 extern void ai_remove_ship_goal( ai_info *aip, int index );
 extern void ai_clear_ship_goals( ai_info *aip );
