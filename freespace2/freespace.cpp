@@ -1920,6 +1920,9 @@ void game_init()
 
 	animation::ModelAnimationParseHelper::parseTables();
 
+	// Initialize dynamic SEXPs. Must happen before ship init for LuaAI
+	sexp::dynamic_sexp_init();
+
 	obj_init();	
 	mflash_game_init();	
 	armor_init();
@@ -1969,8 +1972,6 @@ void game_init()
 	}
 
 	script_init();			//WMC
-	// Initialize dynamic SEXPs
-	sexp::dynamic_sexp_init();
 
 	// This needs to be done after the dynamic SEXP init so that our documentation contains the dynamic sexps
 	if (Cmdline_output_sexp_info) {

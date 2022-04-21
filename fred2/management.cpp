@@ -404,6 +404,8 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	gamesnd_parse_soundstbl();		// needs to be loaded after species stuff but before interface/weapon/ship stuff - taylor
 	mission_brief_common_init();	
 
+	sexp::dynamic_sexp_init(); // Must happen before ship init for LuaAI
+
 	animation::ModelAnimationParseHelper::parseTables();
 	obj_init();
 	model_free_all();				// Free all existing models
@@ -446,7 +448,6 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 
 	libs::ffmpeg::initialize();
 
-	sexp::dynamic_sexp_init();
 
 	// wookieejedi
 	// load in the controls and defaults including the controlconfigdefault.tbl
