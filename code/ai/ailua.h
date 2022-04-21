@@ -14,7 +14,7 @@ struct player_order_lua {
 	int ai_message = MESSAGE_YESSIR;
 	SCP_string parseText = "";
 	SCP_string displayText = "";
-	enum class target_restrictions : int { TARGET_ALL, TARGET_OWN, TARGET_ALLIES, TARGET_ENEMIES, TARGET_PLAYER_WING, TARGET_ALL_CAPS, TARGET_ALLIED_CAPS, TARGET_ENEMY_CAPS } targetRestrictions = target_restrictions::TARGET_ALL;
+	enum class target_restrictions : int { TARGET_ALLIES, TARGET_ALL, TARGET_OWN, TARGET_ENEMIES, TARGET_SAME_WING, TARGET_PLAYER_WING, TARGET_ALL_CAPS, TARGET_ALLIED_CAPS, TARGET_ENEMY_CAPS } targetRestrictions = target_restrictions::TARGET_ALL;
 };
 
 void ai_lua_add_mode(int sexp_op, ai_mode_lua mode);
@@ -24,4 +24,4 @@ const ai_mode_lua* ai_lua_find_mode(int sexp_op);
 const player_order_lua* ai_lua_find_player_order(int sexp_op);
 void ai_lua(ship* shipp);
 void ai_lua_start(ai_goal* aip, object* objp);
-bool ai_lua_is_valid_target(int sexp_op, int target_objnum);
+bool ai_lua_is_valid_target(int sexp_op, int target_objnum, ship* self);

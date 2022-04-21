@@ -767,10 +767,11 @@ bool hud_squadmsg_is_target_order_valid(int order, int find_order, ai_info *aip 
 	}
 
 	target_objnum = aip->target_objnum;
+	ordering_shipp = &Ships[aip->shipnum];
 
 	//If it's a lua order, defer to luaai
 	if (Player_orders[order].lua_id != -1) {
-		return ai_lua_is_valid_target(Player_orders[order].lua_id, target_objnum);
+		return ai_lua_is_valid_target(Player_orders[order].lua_id, target_objnum, ordering_shipp);
 	}
 
 	// orders which don't operate on targets are always valid
@@ -785,7 +786,6 @@ bool hud_squadmsg_is_target_order_valid(int order, int find_order, ai_info *aip 
 
 	objp = &Objects[target_objnum];
 
-	ordering_shipp = &Ships[aip->shipnum];
 
 	// target isn't a ship, then return false
 	if ( (objp->type != OBJ_SHIP) && (objp->type != OBJ_WEAPON) )

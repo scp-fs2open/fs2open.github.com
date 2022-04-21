@@ -2,6 +2,7 @@
 
 #include "ai/aigoals.h"
 #include "hud/hudsquadmsg.h"
+#include "iff_defs/iff_defs.h"
 #include "parse/sexp/sexp_lookup.h"
 #include "parse/sexp/LuaAISEXP.h"
 #include "scripting/api/objs/oswpt.h"
@@ -112,7 +113,7 @@ void ai_lua_start(ai_goal* aip, object* objp){
 	
 }
 
-bool ai_lua_is_valid_target(int sexp_op, int target_objnum) {
+bool ai_lua_is_valid_target(int sexp_op, int target_objnum, ship* self) {
 	const ai_mode_lua& mode = *ai_lua_find_mode(sexp_op);
 
 	//All targetless AI modes are fine
@@ -127,9 +128,29 @@ bool ai_lua_is_valid_target(int sexp_op, int target_objnum) {
 	if (Objects[target_objnum].type != OBJ_SHIP)
 		return false;
 
+	ship* target = &Ships[Objects[target_objnum].instance];
+
 	const player_order_lua& order = *ai_lua_find_player_order(sexp_op);
+	switch (order.targetRestrictions) {
+	case player_order_lua::target_restrictions::TARGET_ALL:
+		return true;
+	case player_order_lua::target_restrictions::TARGET_OWN:
+		return target->team == self->team;
+	case player_order_lua::target_restrictions::TARGET_ALLIES:
+		return !iff_x_attacks_y(self->team, target->team);
+	case player_order_lua::target_restrictions::TARGET_ENEMIES:
+		return iff_x_attacks_y(self->team, target->team);
+	case player_order_lua::target_restrictions::TARGET_SAME_WING:
+		return target->wingnum != -1 && self->wingnum == target->wingnum;
+	case player_order_lua::target_restrictions::TARGET_PLAYER_WING:
+		return target->wingnum != -1 && Ships[Player_obj->instance].wingnum == target->wingnum;
+	case player_order_lua::target_restrictions::TARGET_ALL_CAPS:
+		return Ship_info[target->ship_info_index].is_big_ship();
+	case player_order_lua::target_restrictions::TARGET_ALLIED_CAPS:
+		return !iff_x_attacks_y(self->team, target->team) && Ship_info[target->ship_info_index].is_big_ship();
+	case player_order_lua::target_restrictions::TARGET_ENEMY_CAPS:
+		return iff_x_attacks_y(self->team, target->team) && Ship_info[target->ship_info_index].is_big_ship();
+	}
 
-
-
-	return true;
+	return false;
 }

@@ -92,7 +92,7 @@ void LuaAISEXP::parseTable() {
 		}
 
 		if (optional_string("+Target Restrictions:")) {
-			int result = optional_string_one_of(8, "All", "Own Team", "Allies", "Hostiles", "Player Wing", "Capitals", "Allied Capitals", "Enemy Capitals");
+			int result = optional_string_one_of(8, "Allies", "All", "Own Team", "Hostiles", "Same Wing", "Player Wing", "Capitals", "Allied Capitals", "Enemy Capitals");
 			if (result == -1) {
 				error_display(0, "Unknown target restriction for player order %s. Assuming \"All\".", order.displayText.c_str());
 				order.targetRestrictions = player_order_lua::target_restrictions::TARGET_ALL;
