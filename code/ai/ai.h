@@ -547,6 +547,8 @@ extern int Ai_firing_enabled;
 extern const char *Skill_level_names(int skill_level, int translate = 1);
 extern int Ai_goal_signature;
 
+extern control_info AI_ci;
+
 // need access to following data in AiBig.cpp
 extern object	*Pl_objp;
 extern object	*En_objp;

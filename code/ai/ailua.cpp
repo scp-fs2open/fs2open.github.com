@@ -5,6 +5,7 @@
 #include "iff_defs/iff_defs.h"
 #include "parse/sexp/sexp_lookup.h"
 #include "parse/sexp/LuaAISEXP.h"
+#include "scripting/api/objs/ai_helper.h"
 #include "scripting/api/objs/oswpt.h"
 #include "scripting/scripting.h"
 
@@ -58,6 +59,7 @@ void run_ai_lua_action(const luacpp::LuaFunction& action, const ai_mode_lua& lua
 	}
 
 	luacpp::LuaValueList luaParameters;
+	luaParameters.push_back(luacpp::LuaValue::createValue(action.getLuaState(), scripting::api::l_AI_Helper.Set(object_h(&Objects[Ships[aip->shipnum].objnum]))));
 	if (lua_ai.needsTarget) {
 		luaParameters.push_back(luacpp::LuaValue::createValue(action.getLuaState(), scripting::api::l_OSWPT.Set(aip->lua_ai_target)));
 	}

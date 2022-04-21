@@ -1269,6 +1269,8 @@ add_file_folder("Scripting\\\\Api\\\\Libs"
 )
 
 add_file_folder("Scripting\\\\Api\\\\Objs"
+	scripting/api/objs/ai_helper.cpp
+	scripting/api/objs/ai_helper.h
 	scripting/api/objs/asteroid.cpp
 	scripting/api/objs/asteroid.h
 	scripting/api/objs/audio_stream.cpp

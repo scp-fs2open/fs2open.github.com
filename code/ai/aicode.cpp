@@ -15704,6 +15704,8 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hit_normal)
 	case AIM_WARP_OUT:
 		return;
 		break;
+	case AIM_LUA:
+		return;
 	default:
 		Int3();	//	Bogus mode!
 	}
