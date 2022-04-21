@@ -109,7 +109,7 @@ typedef struct obj_flag_name {
 	int flag_list;
 } obj_flag_name;
 
-#define MAX_OBJECT_FLAG_NAMES			10
+#define MAX_OBJECT_FLAG_NAMES			11
 extern obj_flag_name Object_flag_names[];
 
 struct dock_instance;
