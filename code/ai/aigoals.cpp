@@ -2398,7 +2398,7 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 		break;
 	}
 
-	if (old_form_objnum != -1)
+	if (old_form_objnum >= 0)
 		ai_formation_object_recalculate_slotnums(old_form_objnum);
 }
 
