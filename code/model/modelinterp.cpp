@@ -103,6 +103,7 @@ class bsp_polygon_data
 	void process_bsp(int offset, ubyte* bsp_data);
 	void process_defpoints(int off, ubyte* bsp_data);
 	void process_sortnorm(int offset, ubyte* bsp_data);
+	void process_sortnorm2(int offset, ubyte* bsp_data);
 	void process_tmap(int offset, ubyte* bsp_data);
 	void process_tmap2(int offset, ubyte* bsp_data);
 	void process_flat(int offset, ubyte* bsp_data);
@@ -1211,6 +1212,7 @@ static int submodel_get_points_internal(int model_num, int submodel_num)
 		case OP_FLATPOLY:		break;
 		case OP_TMAPPOLY:		break;
 		case OP_SORTNORM:		break;
+		case OP_SORTNORM2:		break;
 		case OP_BOUNDBOX:		break;
 		case OP_TMAP2POLY:		break;
 		default:
@@ -1417,7 +1419,8 @@ int submodel_get_num_polys_sub( ubyte *p )
 	int chunk_size = w(p+4);
 	int n = 0;
 	
-	while (chunk_type != OP_EOF)	{
+	bool end = chunk_type == OP_EOF;
+	while (!end)	{
 		switch (chunk_type) {
 		case OP_DEFPOINTS:	break;
 		case OP_FLATPOLY:		n++; break;
@@ -1435,8 +1438,20 @@ int submodel_get_num_polys_sub( ubyte *p )
 			n += submodel_get_num_polys_sub(p+onlist );
 			}
 			break;
+
+		case OP_SORTNORM2: {
+			int frontlist = w(p + 8);
+			int backlist = w(p + 12);
+			n += submodel_get_num_polys_sub(p + frontlist);
+			n += submodel_get_num_polys_sub(p + backlist);
+			}
+			end = true; // should not continue after this chunk
+			break;
 		case OP_BOUNDBOX:	break;
-		case OP_TMAP2POLY:		n++; break;
+		case OP_TMAP2POLY:		
+			n++; 
+			end = true; // should not continue after this chunk
+			break;
 		default:
 			mprintf(( "Bad chunk type %d, len=%d in submodel_get_num_polys\n", chunk_type, chunk_size ));
 			Int3();		// Bad chunk type!
@@ -1445,6 +1460,9 @@ int submodel_get_num_polys_sub( ubyte *p )
 		p += chunk_size;
 		chunk_type = w(p);
 		chunk_size = w(p+4);
+
+		if (chunk_type == OP_EOF)
+			end = true;
 	}
 	return n;		
 }
@@ -1788,10 +1806,10 @@ void parse_tmap(int offset, ubyte *bsp_data)
 */
 void parse_tmap2(int offset, ubyte* bsp_data)
 {
-	int pof_tex = w(bsp_data + offset + 24);
-	uint n_vert = uw(bsp_data + offset + 20);
+	int pof_tex = w(bsp_data + offset + 44);
+	uint n_vert = uw(bsp_data + offset + 48);
 
-	ubyte* p = &bsp_data[offset + 8];
+	ubyte* p = &bsp_data[offset + 32];
 	model_tmap_vert* tverts;
 
 	vertex* V;
@@ -1800,7 +1818,7 @@ void parse_tmap2(int offset, ubyte* bsp_data)
 
 	int problem_count = 0;
 
-	tverts = (model_tmap_vert*)&bsp_data[offset + 28];
+	tverts = (model_tmap_vert*)&bsp_data[offset + 52];
 
 	for (uint i = 1; i < (n_vert - 1); i++) {
 		V = &polygon_list[pof_tex].vert[(polygon_list[pof_tex].n_verts)];
@@ -1860,14 +1878,49 @@ void parse_tmap2(int offset, ubyte* bsp_data)
 	Parse_normal_problem_count += problem_count;
 }
 
-void parse_sortnorm(int offset, ubyte *bsp_data);
+void parse_bsp(int offset, ubyte* bsp_data);
+
+void parse_sortnorm(int offset, ubyte* bsp_data)
+{
+	int frontlist, backlist, prelist, postlist, onlist;
+
+	frontlist = w(bsp_data + offset + 36);
+	backlist = w(bsp_data + offset + 40);
+	prelist = w(bsp_data + offset + 44);
+	postlist = w(bsp_data + offset + 48);
+	onlist = w(bsp_data + offset + 52);
+
+	if (prelist) parse_bsp(offset + prelist, bsp_data);
+	if (backlist) parse_bsp(offset + backlist, bsp_data);
+	if (onlist) parse_bsp(offset + onlist, bsp_data);
+	if (frontlist) parse_bsp(offset + frontlist, bsp_data);
+	if (postlist) parse_bsp(offset + postlist, bsp_data);
+}
+
+/**
+* @brief Parses a SORTNORM2 by recursively parsing into the two pointers it contains.
+*
+* @param offset The byte offset to the current SORT2NORM chunk within bsp_data.
+* @param bsp_data The byte buffer containing the BSP information for the current model.
+*/
+void parse_sortnorm2(int offset, ubyte* bsp_data)
+{
+	int frontlist, backlist;
+
+	frontlist = w(bsp_data + offset + 8);
+	backlist = w(bsp_data + offset + 12);
+
+	if (backlist) parse_bsp(offset + backlist, bsp_data);
+	if (frontlist) parse_bsp(offset + frontlist, bsp_data);
+}
 
 void parse_bsp(int offset, ubyte *bsp_data)
 {
 	int id = w(bsp_data+offset);
 	int size = w(bsp_data+offset+4);
 
-	while (id != 0) {
+	bool end = id == OP_EOF;
+	while (!end) {
 		switch (id)
 		{
 			case OP_DEFPOINTS:
@@ -1876,6 +1929,11 @@ void parse_bsp(int offset, ubyte *bsp_data)
 
 			case OP_SORTNORM:
 				parse_sortnorm(offset, bsp_data);
+				break;
+
+			case OP_SORTNORM2:
+				parse_sortnorm2(offset, bsp_data);
+				end = true; // should not continue after this chunk
 				break;
 
 			case OP_FLATPOLY:
@@ -1890,6 +1948,7 @@ void parse_bsp(int offset, ubyte *bsp_data)
 
 			case OP_TMAP2POLY:
 				parse_tmap2(offset, bsp_data);
+				end = true; // should not continue after this chunk
 				break;
 
 			default:
@@ -1900,32 +1959,15 @@ void parse_bsp(int offset, ubyte *bsp_data)
 		id = w(bsp_data+offset);
 		size = w(bsp_data+offset+4);
 
-		if (size < 1)
-			id = OP_EOF;
+		if (size < 1 || id == OP_EOF)
+			end = true;
 	}
-}
-
-void parse_sortnorm(int offset, ubyte *bsp_data)
-{
-	int frontlist, backlist, prelist, postlist, onlist;
-
-	frontlist = w(bsp_data+offset+36);
-	backlist = w(bsp_data+offset+40);
-	prelist = w(bsp_data+offset+44);
-	postlist = w(bsp_data+offset+48);
-	onlist = w(bsp_data+offset+52);
-
-	if (prelist) parse_bsp(offset+prelist,bsp_data);
-	if (backlist) parse_bsp(offset+backlist, bsp_data);
-	if (onlist) parse_bsp(offset+onlist, bsp_data);
-	if (frontlist) parse_bsp(offset+frontlist, bsp_data);
-	if (postlist) parse_bsp(offset+postlist, bsp_data);
 }
 
 void find_tmap(int offset, const ubyte *bsp_data, int id)
 {
-	int pof_tex = w(bsp_data+offset+(id == OP_TMAP2POLY ? 24 : 40));
-	uint n_vert = uw(bsp_data+offset+ (id == OP_TMAP2POLY ? 20 : 36));
+	int pof_tex = w(bsp_data+offset+(id == OP_TMAP2POLY ? 44 : 40));
+	uint n_vert = uw(bsp_data+offset+ (id == OP_TMAP2POLY ? 48 : 36));
 
 	tri_count[pof_tex] += n_vert-2;	
 }
@@ -1954,7 +1996,35 @@ void find_defpoint(int off, ubyte *bsp_data)
 	Interp_num_norms = norm_num;
 }
 
-void find_sortnorm(int offset, ubyte *bsp_data);
+void find_tri_counts(int offset, ubyte* bsp_data);
+
+void find_sortnorm(int offset, ubyte* bsp_data)
+{
+	int frontlist, backlist, prelist, postlist, onlist;
+
+	frontlist = w(bsp_data + offset + 36);
+	backlist = w(bsp_data + offset + 40);
+	prelist = w(bsp_data + offset + 44);
+	postlist = w(bsp_data + offset + 48);
+	onlist = w(bsp_data + offset + 52);
+
+	if (prelist) find_tri_counts(offset + prelist, bsp_data);
+	if (backlist) find_tri_counts(offset + backlist, bsp_data);
+	if (onlist) find_tri_counts(offset + onlist, bsp_data);
+	if (frontlist) find_tri_counts(offset + frontlist, bsp_data);
+	if (postlist) find_tri_counts(offset + postlist, bsp_data);
+}
+
+void find_sortnorm2(int offset, ubyte* bsp_data)
+{
+	int frontlist, backlist;
+
+	frontlist = w(bsp_data + offset + 8);
+	backlist = w(bsp_data + offset + 12);
+
+	if (backlist) find_tri_counts(offset + backlist, bsp_data);
+	if (frontlist) find_tri_counts(offset + frontlist, bsp_data);
+}
 
 // tri_count
 void find_tri_counts(int offset, ubyte *bsp_data)
@@ -1962,7 +2032,8 @@ void find_tri_counts(int offset, ubyte *bsp_data)
 	int id = w(bsp_data+offset);
 	int size = w(bsp_data+offset+4);
 
-	while (id != 0) {
+	bool end = id == OP_EOF;
+	while (!end) {
 		switch (id)
 		{
 			case OP_DEFPOINTS:
@@ -1973,12 +2044,20 @@ void find_tri_counts(int offset, ubyte *bsp_data)
 				find_sortnorm(offset, bsp_data);
 				break;
 
+			case OP_SORTNORM2:
+				find_sortnorm2(offset, bsp_data);
+				end = true; // should not continue after this chunk
+				break;
+
 			case OP_FLATPOLY:
 				break;
 
 			case OP_TMAPPOLY:
+				find_tmap(offset, bsp_data, id);
+				break;
 			case OP_TMAP2POLY:
 				find_tmap(offset, bsp_data, id);
+				end = true; // should not continue after this chunk
 				break;
 
 			case OP_BOUNDBOX:
@@ -1992,26 +2071,9 @@ void find_tri_counts(int offset, ubyte *bsp_data)
 		id = w(bsp_data+offset);
 		size = w(bsp_data+offset+4);
 
-		if (size < 1)
-			id = OP_EOF;
+		if (size < 1 || id == OP_EOF)
+			end = true;
 	}
-}
-
-void find_sortnorm(int offset, ubyte *bsp_data)
-{
-	int frontlist, backlist, prelist, postlist, onlist;
-
-	frontlist = w(bsp_data+offset+36);
-	backlist = w(bsp_data+offset+40);
-	prelist = w(bsp_data+offset+44);
-	postlist = w(bsp_data+offset+48);
-	onlist = w(bsp_data+offset+52);
-
-	if (prelist) find_tri_counts(offset+prelist,bsp_data);
-	if (backlist) find_tri_counts(offset+backlist, bsp_data);
-	if (onlist) find_tri_counts(offset+onlist, bsp_data);
-	if (frontlist) find_tri_counts(offset+frontlist, bsp_data);
-	if (postlist) find_tri_counts(offset+postlist, bsp_data);
 }
 
 void model_interp_submit_buffers(indexed_vertex_source *vert_src, size_t vertex_stride)
@@ -2976,7 +3038,8 @@ void bsp_polygon_data::process_bsp(int offset, ubyte* bsp_data)
 	int id = w(bsp_data + offset);
 	int size = w(bsp_data + offset + 4);
 
-	while (id != 0) {
+	bool end = id == OP_EOF;
+	while (!end) {
 		switch (id)
 		{
 		case OP_DEFPOINTS:
@@ -2985,6 +3048,11 @@ void bsp_polygon_data::process_bsp(int offset, ubyte* bsp_data)
 
 		case OP_SORTNORM:
 			process_sortnorm(offset, bsp_data);
+			break;
+
+		case OP_SORTNORM2:
+			process_sortnorm2(offset, bsp_data);
+			end = true; // should not continue after this chunk
 			break;
 
 		case OP_FLATPOLY:
@@ -3000,6 +3068,7 @@ void bsp_polygon_data::process_bsp(int offset, ubyte* bsp_data)
 
 		case OP_TMAP2POLY:
 			process_tmap2(offset, bsp_data);
+			end = true; // should not continue after this chunk
 			break;
 
 		default:
@@ -3010,8 +3079,8 @@ void bsp_polygon_data::process_bsp(int offset, ubyte* bsp_data)
 		id = w(bsp_data + offset);
 		size = w(bsp_data + offset + 4);
 
-		if (size < 1)
-			id = OP_EOF;
+		if (size < 1 || id == OP_EOF)
+			end = true;
 	}
 }
 
@@ -3043,6 +3112,23 @@ void bsp_polygon_data::process_defpoints(int off, ubyte* bsp_data)
 			src++;
 		}
 	}
+}
+
+/**
+* @brief Parses a SORTNORM2 by recursively parsing into the two pointers it contains.
+*
+* @param offset The byte offset to the current SORT2NORM chunk within bsp_data.
+* @param bsp_data The byte buffer containing the BSP information for the current model.
+*/
+void bsp_polygon_data::process_sortnorm2(int offset, ubyte* bsp_data)
+{
+	int frontlist, backlist;
+
+	frontlist = w(bsp_data + offset + 8);
+	backlist = w(bsp_data + offset + 12);
+
+	if (backlist) process_bsp(offset + backlist, bsp_data);
+	if (frontlist) process_bsp(offset + frontlist, bsp_data);
 }
 
 void bsp_polygon_data::process_sortnorm(int offset, ubyte* bsp_data)
@@ -3126,9 +3212,8 @@ void bsp_polygon_data::process_tmap(int offset, ubyte* bsp_data)
 */
 void bsp_polygon_data::process_tmap2(int offset, ubyte* bsp_data)
 {
-	int pof_tex = w(bsp_data + offset + 24);
-	uint n_vert = uw(bsp_data + offset + 20);
-	ubyte* p = &bsp_data[offset + 8];
+	int pof_tex = w(bsp_data + offset + 44);
+	uint n_vert = uw(bsp_data + offset + 48);
 	model_tmap_vert* tverts;
 	int problem_count = 0;
 	bsp_polygon polygon;
@@ -3138,7 +3223,7 @@ void bsp_polygon_data::process_tmap2(int offset, ubyte* bsp_data)
 		return;
 	}
 
-	tverts = (model_tmap_vert*)&bsp_data[offset + 28];
+	tverts = (model_tmap_vert*)&bsp_data[offset + 52];
 
 	// make a polygon
 	polygon.Start_index = (uint)Polygon_vertices.size();
@@ -3163,7 +3248,7 @@ void bsp_polygon_data::process_tmap2(int offset, ubyte* bsp_data)
 
 		// see if this normal is okay
 		if (IS_VEC_NULL(&vert.normal))
-			vert.normal = *vp(p);
+			vert.normal = *vp(&bsp_data[offset + 32]);
 
 		problem_count += check_values(&vert.normal);
 		vm_vec_normalize_safe(&vert.normal);

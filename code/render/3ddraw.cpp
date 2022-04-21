@@ -1278,7 +1278,8 @@ void flash_ball::defpoint(int off, ubyte *bsp_data)
 #define OP_TMAPPOLY		3
 #define OP_SORTNORM		4
 #define OP_BOUNDBOX		5
-#define OP_TMAP2POLY 6
+#define OP_TMAP2POLY    6
+#define OP_SORTNORM2	7
 
 
 void flash_ball::parse_bsp(int offset, ubyte *bsp_data){
@@ -1295,6 +1296,8 @@ void flash_ball::parse_bsp(int offset, ubyte *bsp_data){
 		case OP_DEFPOINTS:	defpoint(offset, bsp_data);
 			break;
 		case OP_SORTNORM:
+			break;
+		case OP_SORTNORM2:
 			break;
 		case OP_FLATPOLY:
 			break;

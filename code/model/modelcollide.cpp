@@ -343,33 +343,6 @@ static void mc_check_sphereline_face( int nv, vec3d ** verts, vec3d * plane_pnt,
 	}
 }
 
-
-// Point list
-// +0      int         id
-// +4      int         size
-// +8      int         n_verts
-// +12     int         n_norms
-// +16     int         offset from start of chunk to vertex data
-// +20     n_verts*char    norm_counts
-// +offset             vertex data. Each vertex n is a point followed by norm_counts[n] normals.     
-void model_collide_defpoints(ubyte * p)
-{
-	uint n;
-	uint nverts = uw(p+8);	
-	uint offset = uw(p+16);	
-
-	ubyte * normcount = p+20;
-	vec3d *src = vp(p+offset);
-	
-	Assert( Mc_point_list != NULL );
-
-	for (n=0; n<nverts; n++ ) {
-		Mc_point_list[n] = src;
-
-		src += normcount[n]+1;
-	} 
-}
-
 int model_collide_parse_bsp_defpoints(ubyte * p)
 {
 	uint n;
@@ -390,242 +363,6 @@ int model_collide_parse_bsp_defpoints(ubyte * p)
 	} 
 
 	return nverts;
-}
-
-// Flat Poly
-// +0      int         id
-// +4      int         size 
-// +8      vec3d      normal
-// +20     vec3d      center
-// +32     float       radius
-// +36     int         nverts
-// +40     byte        red
-// +41     byte        green
-// +42     byte        blue
-// +43     byte        pad
-// +44     nverts*int  vertlist
-void model_collide_flatpoly(ubyte * p)
-{
-	uint i;
-	uint nv;
-	vec3d *points[TMAP_MAX_VERTS];
-	short *verts;
-
-	nv = uw(p+36);
-
-	if ( nv <= 0 )
-		return;
-
-	if ( nv > TMAP_MAX_VERTS ) {
-		Int3();
-		return;
-	}
-
-	verts = (short *)(p+44);
-
-	for (i=0;i<nv;i++)	{
-		points[i] = Mc_point_list[verts[i*2]];
-	}
-
-	if ( Mc->flags & MC_CHECK_SPHERELINE )	{
-		mc_check_sphereline_face(nv, points, vp(p+20), vp(p+8), NULL, -1, p, NULL);
-	} else {
-		mc_check_face(nv, points, vp(p+20), vp(p+8), NULL, -1, p, NULL);
-	}
-}
-
-
-// Textured Poly
-// +0      int         id
-// +4      int         size 
-// +8      vec3d      normal
-// +20     vec3d      normal_point
-// +32     int         tmp = 0
-// +36     int         nverts
-// +40     int         tmap_num
-// +44     nverts*(model_tmap_vert-4) vertlist (n,u,v)
-void model_collide_tmappoly(ubyte * p)
-{
-	uint i;
-	uint nv;
-	uv_pair uvlist[TMAP_MAX_VERTS];
-	vec3d *points[TMAP_MAX_VERTS];
-	model_tmap_vert *verts;
-
-	nv = uw(p+36);
-
-	if ( nv <= 0 )
-		return;
-
-	if ( nv > TMAP_MAX_VERTS ) {
-		Int3();
-		return;
-	}
-
-	int tmap_num = w(p+40);
-	Assert(tmap_num >= 0 && tmap_num < MAX_MODEL_TEXTURES);	// Goober5000
-
-	if ( (!(Mc->flags & MC_CHECK_INVISIBLE_FACES)) && (Mc_pm->maps[tmap_num].textures[TM_BASE_TYPE].GetTexture() < 0) )	{
-		// Don't check invisible polygons.
-		//SUSHI: Unless $collide_invisible is set.
-		if (!(Mc_pm->submodel[Mc_submodel].flags[Model::Submodel_flags::Collide_invisible]))
-			return;
-	}
-
-	verts = new model_tmap_vert[nv];
-
-	// Copy the verts manually since they aren't aligned with the struct
-	unpack_tmap_verts(&p[44], verts, nv);
-
-	for (i=0;i<nv;i++)	{
-		points[i] = Mc_point_list[verts[i].vertnum];
-		uvlist[i].u = verts[i].u;
-		uvlist[i].v = verts[i].v;
-	}
-
-	if ( Mc->flags & MC_CHECK_SPHERELINE )	{
-		mc_check_sphereline_face(nv, points, vp(p+20), vp(p+8), uvlist, tmap_num, p, NULL);
-	} else {
-		mc_check_face(nv, points, vp(p+20), vp(p+8), uvlist, tmap_num, p, NULL);
-	}
-}
-
-
-// Textured Poly (2)
-// +0      int         id
-// +4      int         size
-// +8      vec3d      normal
-// +20     int         nverts
-// +24     int         tmap_num
-// +28     nverts*(model_tmap2_vert) vertlist (n,u,v)
-void model_collide_tmap2poly(ubyte* p) {
-	uint i;
-	uint nv;
-	int tmap_num; 
-	uv_pair uvlist[TMAP_MAX_VERTS];
-	vec3d* points[TMAP_MAX_VERTS];
-	model_tmap_vert* verts;
-
-	if (Mc_pm->version < 2300) {
-		Error(LOCATION, "Model contains TMAP2 chunk but version is less than minimum supported!");
-		return;
-	}
-
-	nv = uw(p + 20);
-
-	if (nv == 0 || nv > TMAP_MAX_VERTS) {
-		Error(LOCATION, "Model contains TMAP2 chunk with invalid number of vertices (n_vert=%d)!", nv);
-		return;
-	}
-
-	tmap_num = w(p + 24);
-	if (tmap_num < 0 || tmap_num >= MAX_MODEL_TEXTURES) { // Goober5000
-		Error(LOCATION, "Model contains TMAP2 chunk with invalid texture id (%d)!", tmap_num);
-		return;
-	}
-
-	if ((!(Mc->flags & MC_CHECK_INVISIBLE_FACES)) && (Mc_pm->maps[tmap_num].textures[TM_BASE_TYPE].GetTexture() < 0)) {
-		// Don't check invisible polygons.
-		// SUSHI: Unless $collide_invisible is set.
-		if (!(Mc_pm->submodel[Mc_submodel].flags[Model::Submodel_flags::Collide_invisible]))
-			return;
-	}
-
-	verts = reinterpret_cast<model_tmap_vert*>(&p[28]);
-
-	for (i = 0; i < nv; i++) {
-		points[i] = Mc_point_list[verts[i].vertnum];
-		uvlist[i].u = verts[i].u;
-		uvlist[i].v = verts[i].v;
-	}
-
-	if (Mc->flags & MC_CHECK_SPHERELINE) {
-		mc_check_sphereline_face(nv, points, points[0], vp(p + 8), uvlist, tmap_num, p, nullptr);
-	} else {
-		mc_check_face(nv, points, points[0], vp(p + 8), uvlist, tmap_num, p, nullptr);
-	}
-}
-
-// Sortnorms
-// +0      int         id
-// +4      int         size 
-// +8      vec3d      normal
-// +20     vec3d      center
-// +32     float       radius
-// 36     int     front offset
-// 40     int     back offset
-// 44     int     prelist offset
-// 48     int     postlist offset
-// 52     int     online offset
-
-int model_collide_sub( void *model_ptr );
-
-void model_collide_sortnorm(ubyte * p)
-{
-	int frontlist = w(p+36);
-	int backlist = w(p+40);
-	int prelist = w(p+44);
-	int postlist = w(p+48);
-	int onlist = w(p+52);
-	vec3d hitpos;
-
-	if ( Mc_pm->version >= 2000 )	{
-		if ( mc_ray_boundingbox( vp(p+56), vp(p+68), &Mc_p0, &Mc_direction, &hitpos) )	{
-			if ( !(Mc->flags & MC_CHECK_RAY) && (vm_vec_dist(&hitpos, &Mc_p0) > Mc_mag) ) {
-				return;
-			}
-		} else {
-			return;
-		}
-	}
-
-	if (prelist) model_collide_sub(p+prelist);
-	if (backlist) model_collide_sub(p+backlist);
-	if (onlist) model_collide_sub(p+onlist);
-	if (frontlist) model_collide_sub(p+frontlist);
-	if (postlist) model_collide_sub(p+postlist);
-}
-
-//calls the object interpreter to render an object.  The object renderer
-//is really a seperate pipeline. returns true if drew
-int model_collide_sub(void *model_ptr )
-{
-	ubyte *p = (ubyte *)model_ptr;
-	int chunk_type, chunk_size;
-	vec3d hitpos;
-
-	chunk_type = w(p);
-	chunk_size = w(p+4);
-
-	while (chunk_type != OP_EOF)	{
-
-//		mprintf(( "Processing chunk type %d, len=%d\n", chunk_type, chunk_size ));
-
-		switch (chunk_type) {
-		case OP_DEFPOINTS:	model_collide_defpoints(p); break;
-		case OP_FLATPOLY:		model_collide_flatpoly(p); break;
-		case OP_TMAPPOLY:		model_collide_tmappoly(p); break;
-		case OP_SORTNORM:		model_collide_sortnorm(p); break;
-		case OP_BOUNDBOX:	
-			if ( mc_ray_boundingbox( vp(p+8), vp(p+20), &Mc_p0, &Mc_direction, &hitpos ) )	{
-				if ( !(Mc->flags & MC_CHECK_RAY) && (vm_vec_dist(&hitpos, &Mc_p0) > Mc_mag) ) {
-					// The ray isn't long enough to intersect the bounding box
-					return 1;
-				}
-			} else {
-				return 1;
-			}
-			break;
-		case OP_TMAP2POLY:		model_collide_tmap2poly(p); break;
-		default:
-			UNREACHABLE("Bad chunk type %d, len=%d in model_collide_sub\n", chunk_type, chunk_size);
-			return 0;
-		}
-		p += chunk_size;
-		chunk_type = w(p);
-		chunk_size = w(p+4);
-	}
-	return 1;
 }
 
 void model_collide_bsp_poly(bsp_collision_tree *tree, int leaf_index)
@@ -759,27 +496,27 @@ void model_collide_parse_bsp_tmap2poly(bsp_collision_leaf* leaf, SCP_vector<mode
 	vec3d* plane_norm;
 	model_tmap_vert* verts;
 
-	nv = uw(p + 20);
+	nv = uw(p + 48);
 
 	if (nv > TMAP_MAX_VERTS) {
 		Error(LOCATION,"Model contains TMAP2 chunk with more than %d vertices!", TMAP_MAX_VERTS);
 		return;
 	}
 
-	tmap_num = w(p + 24);
+	tmap_num = w(p + 44);
 
 	if (tmap_num < 0 || tmap_num >= MAX_MODEL_TEXTURES) {
 		Error(LOCATION, "Model contains TMAP2 chunk with invalid texture id (%d)!", tmap_num);
 		return;
 	}
 
-	verts = (model_tmap_vert*)(p + 28);
+	verts = (model_tmap_vert*)(p + 52);
 
 	leaf->tmap_num = (ubyte)tmap_num;
 	leaf->num_verts = (ubyte)nv;
 	leaf->vert_start = (int)vert_buffer->size();
 
-	plane_norm = vp(p + 8);
+	plane_norm = vp(p + 32);
 
 	leaf->plane_norm = *plane_norm;
 
@@ -882,7 +619,7 @@ void model_collide_parse_bsp(bsp_collision_tree *tree, void *model_ptr, int vers
 
 		chunk_type = w(p);
 		chunk_size = w(p+4);
-
+		int front_offset, back_offset;
 		switch ( chunk_type ) {
 		case OP_SORTNORM:
 			if ( version >= 2000 ) {
@@ -897,23 +634,25 @@ void model_collide_parse_bsp(bsp_collision_tree *tree, void *model_ptr, int vers
 			node_buffer[i].front = -1;
 			node_buffer[i].back = -1;
 
-			if ( w(p+36) ) {
-				next_chunk_type = w(p+w(p+36));
+			front_offset = w(p + 36);
+			if (front_offset) {
+				next_chunk_type = w(p + front_offset);
 
 				if ( next_chunk_type != OP_EOF ) {
 					node_buffer.push_back(new_node);
 					node_buffer[i].front = (int)(node_buffer.size() - 1);
-					bsp_datap[node_buffer[i].front] = p+w(p+36);
+					bsp_datap[node_buffer[i].front] = p + front_offset;
 				}
 			}
 
-			if ( w(p+40) ) {
-				next_chunk_type = w(p+w(p+40));
+			back_offset = w(p + 40);
+			if (back_offset) {
+				next_chunk_type = w(p + back_offset);
 				
 				if ( next_chunk_type != OP_EOF ) {
 					node_buffer.push_back(new_node);
 					node_buffer[i].back = (int)(node_buffer.size() - 1);
-					bsp_datap[node_buffer[i].back] = p+w(p+40);
+					bsp_datap[node_buffer[i].back] = p + back_offset;
 				}
 			}
 
@@ -921,6 +660,44 @@ void model_collide_parse_bsp(bsp_collision_tree *tree, void *model_ptr, int vers
 			next_chunk_type = w(next_p);
 
 			Assert( next_chunk_type == OP_EOF );
+
+			++i;
+			break;
+		case OP_SORTNORM2:
+			min = vp(p + 16);
+			max = vp(p + 28);
+
+			node_buffer[i].min = *min;
+			node_buffer[i].max = *max;
+
+			node_buffer[i].leaf = -1;
+			node_buffer[i].front = -1;
+			node_buffer[i].back = -1;
+
+			front_offset = w(p + 8);
+			if (front_offset) {
+				next_chunk_type = w(p + front_offset);
+
+				if (next_chunk_type != OP_EOF) {
+					node_buffer.push_back(new_node);
+					node_buffer[i].front = (int)(node_buffer.size() - 1);
+					bsp_datap[node_buffer[i].front] = p + front_offset;
+				}
+			}
+
+			back_offset = w(p + 12);
+			if (back_offset) {
+				next_chunk_type = w(p + back_offset);
+
+				if (next_chunk_type != OP_EOF) {
+					node_buffer.push_back(new_node);
+					node_buffer[i].back = (int)(node_buffer.size() - 1);
+					bsp_datap[node_buffer[i].back] = p + back_offset;
+				}
+			}
+
+			next_p = p + chunk_size;
+			next_chunk_type = w(next_p);
 
 			++i;
 			break;
@@ -940,7 +717,7 @@ void model_collide_parse_bsp(bsp_collision_tree *tree, void *model_ptr, int vers
 			next_chunk_size = w(next_p+4);
 
 			if (next_chunk_type != OP_EOF &&
-				(next_chunk_type == OP_TMAPPOLY || next_chunk_type == OP_FLATPOLY || next_chunk_type == OP_TMAP2POLY)) {
+				(next_chunk_type == OP_TMAPPOLY || next_chunk_type == OP_FLATPOLY)) {
 				new_leaf.next = -1;
 
 				node_buffer[i].leaf = (int)leaf_buffer.size();	// get index of where our poly list starts in the leaf buffer
@@ -959,13 +736,6 @@ void model_collide_parse_bsp(bsp_collision_tree *tree, void *model_ptr, int vers
 						leaf_buffer.push_back(new_leaf);
 
 						leaf_buffer.back().next = (int)leaf_buffer.size();
-					} else if (next_chunk_type == OP_TMAP2POLY) {
-
-						model_collide_parse_bsp_tmap2poly(&new_leaf, &vert_buffer, next_p);
-
-						leaf_buffer.push_back(new_leaf);
-
-						leaf_buffer.back().next = (int)leaf_buffer.size();
 					} else {
 						Int3();
 					}
@@ -979,6 +749,25 @@ void model_collide_parse_bsp(bsp_collision_tree *tree, void *model_ptr, int vers
 			}
 
 			Assert(next_chunk_type == OP_EOF);
+
+			++i;
+			break;
+		case OP_TMAP2POLY:
+			min = vp(p + 8);
+			max = vp(p + 20);
+
+			node_buffer[i].min = *min;
+			node_buffer[i].max = *max;
+
+			node_buffer[i].front = -1;
+			node_buffer[i].back = -1; 
+			node_buffer[i].leaf = (int)leaf_buffer.size();
+
+			model_collide_parse_bsp_tmap2poly(&new_leaf, &vert_buffer, p);
+
+			leaf_buffer.push_back(new_leaf);
+
+			leaf_buffer.back().next = -1;
 
 			++i;
 			break;
