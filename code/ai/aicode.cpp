@@ -15916,7 +15916,7 @@ void ai_ship_destroy(int shipnum)
 			aip->hitter_objnum = -1;
 	}
 
-	if (dead_aip->ai_flags[AI::AI_Flags::Formation_object])
+	if (dead_aip->ai_flags[AI::AI_Flags::Formation_object] && dead_aip->goal_objnum >= 0)
 		ai_formation_object_recalculate_slotnums(dead_aip->goal_objnum, objnum);
 
 }
