@@ -23,6 +23,7 @@ ADE_VIRTVAR(Ship, l_AI_Helper, nullptr, "The ship this AI runs for", "ship", "Th
 }
 
 inline int aici_getset_helper(lua_State* L, float control_info::* value) {
+	//Use with care! This works only if, as expected, the l_AI_Helper object is the one supplied to the luaai scripts this very frame
 	object_h ship;
 	float f = 0.0f;
 	if (!ade_get_args(L, "o|f", l_AI_Helper.Get(&ship), &f))

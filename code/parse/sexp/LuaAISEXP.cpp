@@ -29,7 +29,7 @@ int LuaAISEXP::execute(int node) {
 
 int LuaAISEXP::getReturnType() {	return OPR_AI_GOAL;};
 
-int LuaAISEXP::getSubcategory() {	return getCategory();};
+int LuaAISEXP::getSubcategory() {	return -1;};
 
 int LuaAISEXP::getCategory() {	return OP_CATEGORY_AI;};
 
