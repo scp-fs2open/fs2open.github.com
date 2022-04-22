@@ -220,7 +220,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Cache Qt
-        id: cache-qt-lin
+        id: cache-qt-mac
         uses: actions/cache@v1
         with:
           path: ${{ github.workspace }}/../Qt
@@ -230,7 +230,7 @@ jobs:
         with:
           version: ${{ env.QT_VERSION }}
           dir: ${{ github.workspace }}/..
-          cached: ${{ steps.cache-qt-lin.outputs.cache-hit }}
+          cached: ${{ steps.cache-qt-mac.outputs.cache-hit }}
           setup-python: 'false'
           aqtversion: ==1.1.3
 
