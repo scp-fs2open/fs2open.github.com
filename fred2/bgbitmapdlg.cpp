@@ -185,7 +185,6 @@ BEGIN_MESSAGE_MAP(bg_bitmap_dlg, CDialog)
 	ON_BN_CLICKED(IDC_REMOVE_BACKGROUND, OnRemoveBackground)
 	ON_BN_CLICKED(IDC_IMPORT_BACKGROUND, OnImportBackground)
 	ON_BN_CLICKED(IDC_SWAP_BACKGROUND, OnSwapBackground)
-	ON_CBN_SELENDOK(IDC_BACKGROUND_NUM, OnBackgroundDropdownPreChange)
 	ON_CBN_SELCHANGE(IDC_BACKGROUND_NUM, OnBackgroundDropdownChange)
 	ON_BN_CLICKED(IDC_SKYBOX_MODEL, OnSkyboxBrowse)
 	ON_NOTIFY(UDN_DELTAPOS, IDC_SKYBOX_P_SPIN, OnDeltaposSkyboxPSpin)
@@ -1423,8 +1422,15 @@ void bg_bitmap_dlg::background_flags_close()
 {
 	UpdateData(TRUE);
 
-	auto bg = &Backgrounds[get_active_background()];
+	auto bg = &Backgrounds[get_previous_active_background()];
 	bg->flags.set(Starfield::Background_Flags::Fixed_angles_in_mission_file, m_fixed_angles_in_mission_file == TRUE);
+}
+
+static int Previous_active_background = 0;
+
+int bg_bitmap_dlg::get_previous_active_background()
+{
+	return Previous_active_background;
 }
 
 int bg_bitmap_dlg::get_active_background()
@@ -1433,6 +1439,8 @@ int bg_bitmap_dlg::get_active_background()
 	int idx = ((CComboBox *) GetDlgItem(IDC_BACKGROUND_NUM))->GetCurSel();
 	if (idx < 0 || idx >= (int)Backgrounds.size())
 		idx = 0;
+
+	Previous_active_background = idx;
 
 	return idx;
 }
@@ -1447,13 +1455,10 @@ int bg_bitmap_dlg::get_swap_background()
 	return idx;
 }
 
-void bg_bitmap_dlg::OnBackgroundDropdownPreChange()
-{
-	background_flags_close();
-}
-
 void bg_bitmap_dlg::OnBackgroundDropdownChange()
 {
+	background_flags_close();
+
 	reinitialize_lists();
 }
 

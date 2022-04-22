@@ -106,6 +106,7 @@ protected:
 	// clear and build the nebula filename list appropriately
 	void build_nebfile_list();
 
+	int get_previous_active_background();
 	int get_active_background();
 	int get_swap_background();
 	void reinitialize_lists();
@@ -160,7 +161,6 @@ protected:
 	afx_msg void OnRemoveBackground();
 	afx_msg void OnImportBackground();
 	afx_msg void OnSwapBackground();
-	afx_msg void OnBackgroundDropdownPreChange();
 	afx_msg void OnBackgroundDropdownChange();
 	afx_msg void OnSkyboxBrowse();
 	afx_msg void OnDeltaposSkyboxPSpin(NMHDR* pNMHDR, LRESULT* pResult);

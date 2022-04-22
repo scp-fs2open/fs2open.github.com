@@ -2777,6 +2777,7 @@ void stars_load_background(int background_idx)
 // Goober5000
 void stars_copy_background(background_t *dest, background_t *src)
 {
+	dest->flags = src->flags;
 	dest->suns.assign(src->suns.begin(), src->suns.end());
 	dest->bitmaps.assign(src->bitmaps.begin(), src->bitmaps.end());
 }
