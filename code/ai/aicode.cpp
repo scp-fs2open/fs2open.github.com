@@ -12900,11 +12900,12 @@ void ai_maybe_evade_locked_missile(object *objp, ai_info *aip)
 				case AIM_PLAY_DEAD:
 				case AIM_BAY_DEPART:
 				case AIM_SENTRYGUN:
+				case AIM_LUA:
 					break;
 				case AIM_WARP_OUT:
 					break;
 				default:
-					Int3();			//	Hey, what mode is it?
+					UNREACHABLE("Unknown AI Mode! Get a coder!");
 					break;
 				}
 			}
@@ -12965,7 +12966,7 @@ void maybe_evade_dumbfire_weapon(ai_info *aip)
 	case AIM_LUA:
 		return;
 	default:
-		Int3();	//	Bogus mode!
+		UNREACHABLE("Unknown AI Mode! Get a coder!");
 		return;
 	}
 
@@ -13034,7 +13035,7 @@ void maybe_evade_dumbfire_weapon(ai_info *aip)
 		case AIM_LUA:
 			break;
 		default:
-			Int3();	//	Bogus mode!
+			UNREACHABLE("Unknown AI Mode! Get a coder!");
 		}
 	}
 }
@@ -13621,7 +13622,7 @@ void ai_execute_behavior(ai_info *aip)
 		ai_lua(&Ships[Pl_objp->instance]);
 		break;
 	default:
-		Int3();		//	This should never happen -- MK, 5/12/97	
+		UNREACHABLE("Unknown AI Mode! Get a coder!");
 		break;
 	}
 
@@ -15707,7 +15708,7 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hit_normal)
 	case AIM_LUA:
 		return;
 	default:
-		Int3();	//	Bogus mode!
+		UNREACHABLE("Unknown AI Mode! Get a coder!");
 	}
 
 	if (timestamp_elapsed(aip->ok_to_target_timestamp)) {
