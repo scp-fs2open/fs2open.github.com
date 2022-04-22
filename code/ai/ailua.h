@@ -7,7 +7,7 @@
 
 struct ai_mode_lua {
 	bool needsTarget;
-	const char* hudText = nullptr;
+	const char* hudText;
 };
 
 struct player_order_lua {

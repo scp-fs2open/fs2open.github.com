@@ -69,7 +69,7 @@ void parse_sexp_table(const char* filename) {
 		reset_parse();
 
 		// These characters may not appear in a SEXP name
-		constexpr char* INVALID_CHARS = "()\"'\t ";
+		constexpr const char* INVALID_CHARS = "()\"'\t ";
 		if (optional_string("#Lua SEXPs")) {
 
 			while (optional_string("$Operator:")) {

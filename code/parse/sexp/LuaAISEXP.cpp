@@ -22,7 +22,7 @@ int LuaAISEXP::getMaximumArguments() {	return getMinimumArguments();};
 
 int LuaAISEXP::getArgumentType(int argnum) const {	return argnum == 0 && _arg_type != -1 ? _arg_type : OPF_POSITIVE;};
 
-int LuaAISEXP::execute(int node) {
+int LuaAISEXP::execute(int /*node*/) {
 	UNREACHABLE("Tried to execute AI Lua SEXP %s! AI-Goal SEXPs should never be run.", _name.c_str());
 	return SEXP_CANT_EVAL;
 }
@@ -138,7 +138,7 @@ luacpp::LuaFunction LuaAISEXP::getActionFrame() const {
 }
 
 void LuaAISEXP::registerAIMode(int sexp_id) const {
-	ai_lua_add_mode(sexp_id, { needsTarget, hudText });
+	ai_lua_add_mode(sexp_id, ai_mode_lua{ needsTarget, hudText });
 }
 
 void LuaAISEXP::maybeRegisterPlayerOrder(int sexp_id) const {
