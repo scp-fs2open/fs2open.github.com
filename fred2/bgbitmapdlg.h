@@ -59,6 +59,7 @@ public:
 	BOOL		m_fullneb;
 	BOOL		m_fog_color_override;
 	BOOL		m_toggle_trails;
+	BOOL		m_fixed_angles_in_mission_file;
 	int		m_fog_r;
 	int		m_fog_g;
 	int		m_fog_b;
@@ -108,8 +109,14 @@ protected:
 	int get_active_background();
 	int get_swap_background();
 	void reinitialize_lists();
+	void background_flags_init();
+	void background_flags_close();
 
 	void OnOrientationChange();
+
+	CToolTipCtrl* m_FixedAnglesToolTip;
+
+	virtual BOOL OnInitDialog();
 
 	// Generated message map functions
 	//{{AFX_MSG(bg_bitmap_dlg)
@@ -153,6 +160,7 @@ protected:
 	afx_msg void OnRemoveBackground();
 	afx_msg void OnImportBackground();
 	afx_msg void OnSwapBackground();
+	afx_msg void OnBackgroundDropdownPreChange();
 	afx_msg void OnBackgroundDropdownChange();
 	afx_msg void OnSkyboxBrowse();
 	afx_msg void OnDeltaposSkyboxPSpin(NMHDR* pNMHDR, LRESULT* pResult);
