@@ -12,8 +12,8 @@
 static std::unordered_map<int, ai_mode_lua> Lua_ai_modes;
 static std::unordered_map<int, player_order_lua> Lua_player_orders;
 
-void ai_lua_add_mode(int sexp_op, ai_mode_lua mode) {
-	Lua_ai_modes.emplace(sexp_op, std::move(mode));
+void ai_lua_add_mode(int sexp_op, const ai_mode_lua& mode) {
+	Lua_ai_modes.emplace(sexp_op, mode);
 }
 
 bool ai_lua_add_order(int sexp_op, player_order_lua order) {
@@ -66,7 +66,7 @@ void run_ai_lua_action(const luacpp::LuaFunction& action, const ai_mode_lua& lua
 
 	auto retVals = action.call(Script_system.GetLuaSession(), luaParameters);
 
-	if (retVals.size() > 0 && retVals[0].getValueType() == luacpp::ValueType::BOOLEAN) {
+	if (!retVals.empty() && retVals[0].getValueType() == luacpp::ValueType::BOOLEAN) {
 		if (retVals[0].getValue<bool>())
 			ai_mission_goal_complete(aip);
 	}

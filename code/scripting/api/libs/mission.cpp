@@ -1560,7 +1560,7 @@ ADE_INDEXER(l_Mission_LuaSEXPs, "string Name", "Gets a handle of a Lua SEXP", "L
 	return ade_set_args(L, "o", l_LuaSEXP.Set(lua_sexp_h(static_cast<sexp::LuaSEXP*>(dynamicSEXP))));
 }
 
-ADE_LIB_DERIV(l_Mission_LuaAISEXPs, "LuaAISEXPs", NULL, "Lua AI SEXPs", l_Mission);
+ADE_LIB_DERIV(l_Mission_LuaAISEXPs, "LuaAISEXPs", nullptr, "Lua AI SEXPs", l_Mission);
 
 ADE_INDEXER(l_Mission_LuaAISEXPs, "string Name", "Gets a handle of a Lua SEXP", "LuaAISEXP", "Lua AI SEXP handle or invalid handle on error")
 {
