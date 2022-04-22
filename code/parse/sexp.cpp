@@ -1923,32 +1923,35 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 			if (type == OPF_BOOL)  // allow numbers to be used where boolean is required.
 				type2 = OPR_BOOL;
 
-			while (*ptr) {
-				if (!isdigit(*ptr))
-					return SEXP_CHECK_INVALID_NUM;  // not a valid number
+			// Only check that this is a number if it's not <argument>.
+			if (!(Sexp_nodes[node].flags & SNF_SPECIAL_ARG_IN_NODE)) {
+				while (*ptr) {
+					if (!isdigit(*ptr))
+						return SEXP_CHECK_INVALID_NUM;  // not a valid number
 
-				ptr++;
-			}
-
-			i = atoi(CTEXT(node));
-			z = get_operator_const(op_node);
-			if ( (z == OP_HAS_DOCKED_DELAY) || (z == OP_HAS_UNDOCKED_DELAY) )
-				if ( (argnum == 2) && (i < 1) )
-					return SEXP_CHECK_NUM_RANGE_INVALID;
-
-			// valid color range 0 to 255 - FUBAR
-			if ((z == OP_CHANGE_IFF_COLOR)  && ((argnum >= 2) && (argnum <= 4)))
-			{
-				if ( i < 0 || i > 255) 
-				{
-					return SEXP_CHECK_NUM_RANGE_INVALID;
+					ptr++;
 				}
-			}
 
-			z = get_operator_index(op_node);
-			if ( (query_operator_return_type(z) == OPR_AI_GOAL) && (argnum == Operators[op].min - 1) )
-				if ( (i < 0) || (i > 200) )
-					return SEXP_CHECK_NUM_RANGE_INVALID;
+				i = atoi(CTEXT(node));
+				z = get_operator_const(op_node);
+				if ( (z == OP_HAS_DOCKED_DELAY) || (z == OP_HAS_UNDOCKED_DELAY) )
+					if ( (argnum == 2) && (i < 1) )
+						return SEXP_CHECK_NUM_RANGE_INVALID;
+
+				// valid color range 0 to 255 - FUBAR
+				if ((z == OP_CHANGE_IFF_COLOR)  && ((argnum >= 2) && (argnum <= 4)))
+				{
+					if ( i < 0 || i > 255) 
+					{
+						return SEXP_CHECK_NUM_RANGE_INVALID;
+					}
+				}
+
+				z = get_operator_index(op_node);
+				if ( (query_operator_return_type(z) == OPR_AI_GOAL) && (argnum == Operators[op].min - 1) )
+					if ( (i < 0) || (i > 200) )
+						return SEXP_CHECK_NUM_RANGE_INVALID;
+			}
 
 		} else if (Sexp_nodes[node].subtype == SEXP_ATOM_STRING) {
 			type2 = SEXP_ATOM_STRING;
@@ -2027,7 +2030,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 		}
 
 		// if this is the special argument, make sure it is being properly used
-		if (type2 == SEXP_ATOM_STRING && Sexp_nodes[node].flags & SNF_SPECIAL_ARG_IN_NODE) {
+		if (Sexp_nodes[node].flags & SNF_SPECIAL_ARG_IN_NODE) {
 			bool found = false;
 			z = node;
 			while (true) {
