@@ -2437,6 +2437,11 @@ void stars_fix_background_angles(angles *angs_to_fix)
 	vm_extract_angles_matrix(angs_to_fix, &mat3);
 }
 
+void stars_unfix_background_angles(angles* angs_to_unfix)
+{
+	// TODO
+}
+
 // get the number of entries that each vector contains
 // "is_a_sun" will get sun instance counts, otherwise it gets normal starfield bitmap instance counts
 // "bitmap_count" will get number of starfield_bitmap entries rather than starfield_bitmap_instance entries

@@ -885,10 +885,9 @@ int CFred_mission_save::save_bitmaps()
 		}
 
 		// save our flags
-		// no point in using version-specific comments here because the angles are fundamentally incompatible
 		if (Mission_save_format == FSO_FORMAT_RETAIL) {
-			MessageBox(nullptr, "Warning: You may want to edit the background in a version of FRED prior to 22.0.  The sun and bitmap angles will be loaded differently by previous versions.", "Incompatibility with retail mission format", MB_OK);
-		} else {
+			MessageBox(nullptr, "Warning: Background flags (including the fixed-angles-in-mission-file flag) are not supported in retail.  The sun and bitmap angles will be loaded differently by previous versions.", "Incompatibility with retail mission format", MB_OK);
+		} else if (background->flags.any_set()) {
 			if (optional_string_fred("+Flags:")) {
 				parse_comments();
 			} else {
@@ -905,6 +904,7 @@ int CFred_mission_save::save_bitmaps()
 		for (j = 0; j < background->suns.size(); j++) {
 			starfield_list_entry *sle = &background->suns[j];
 
+
 			// filename
 			required_string_fred("$Sun:");
 			parse_comments();
@@ -913,7 +913,10 @@ int CFred_mission_save::save_bitmaps()
 			// angles
 			required_string_fred("+Angles:");
 			parse_comments();
-			fout(" %f %f %f", sle->ang.p, sle->ang.b, sle->ang.h);
+			angles ang = sle->ang;
+			if (!background->flags[Starfield::Background_Flags::Fixed_angles_in_mission_file])
+				stars_unfix_background_angles(&ang);
+			fout(" %f %f %f", ang.p, ang.b, ang.h);
 
 			// scale
 			required_string_fred("+Scale:");
@@ -933,7 +936,10 @@ int CFred_mission_save::save_bitmaps()
 			// angles
 			required_string_fred("+Angles:");
 			parse_comments();
-			fout(" %f %f %f", sle->ang.p, sle->ang.b, sle->ang.h);
+			angles ang = sle->ang;
+			if (!background->flags[Starfield::Background_Flags::Fixed_angles_in_mission_file])
+				stars_unfix_background_angles(&ang);
+			fout(" %f %f %f", ang.p, ang.b, ang.h);
 
 			// scale
 			required_string_fred("+ScaleX:");
