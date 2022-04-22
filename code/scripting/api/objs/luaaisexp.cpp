@@ -18,9 +18,9 @@ ADE_OBJ(l_LuaAISEXP, lua_ai_sexp_h, "LuaAISEXP", "Lua AI SEXP handle");
 
 ADE_VIRTVAR(ActionEnter,
 	l_LuaAISEXP,
-	"function(ai_helper helper, oswpt | nil arg) => bool action",
+	"function(ai_helper helper, oswpt | nil arg) => boolean action",
 	"The action of this AI SEXP to be executed once when the AI recieves this order. Return true if the AI goal is complete.",
-	"function(ai_helper helper, oswpt | nil arg) => bool action",
+	"function(ai_helper helper, oswpt | nil arg) => boolean action",
 	"The action function or nil on error")
 {
 	lua_ai_sexp_h lua_sexp;
@@ -45,9 +45,9 @@ ADE_VIRTVAR(ActionEnter,
 
 ADE_VIRTVAR(ActionFrame,
 	l_LuaAISEXP,
-	"function(ai_helper helper, oswpt | nil arg) => bool action",
+	"function(ai_helper helper, oswpt | nil arg) => boolean action",
 	"The action of this AI SEXP to be executed each frame while active. Return true if the AI goal is complete.",
-	"function(ai_helper helper, oswpt | nil arg) => bool action",
+	"function(ai_helper helper, oswpt | nil arg) => boolean action",
 	"The action function or nil on error")
 {
 	lua_ai_sexp_h lua_sexp;
