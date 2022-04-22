@@ -1253,7 +1253,7 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 			break;
 		
 		default: {
-			int i;
+			size_t i;
 			for (i = 0; i < Player_orders.size(); i++) {
 				if (Player_orders[i].id == command)
 					break;
@@ -1485,7 +1485,7 @@ int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, 
 			return 0;
 
 		default: {
-			int i;
+			size_t i;
 			for (i = 0; i < Player_orders.size(); i++) {
 				if (Player_orders[i].id == command)
 					break;
