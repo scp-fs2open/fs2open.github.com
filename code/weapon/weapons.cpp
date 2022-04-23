@@ -210,8 +210,10 @@ static int *used_weapons = NULL;
 int	Num_spawn_types = 0;
 char **Spawn_names = NULL;
 
-int Num_player_weapon_precedence;				// Number of weapon types in Player_weapon_precedence
-int Player_weapon_precedence[MAX_WEAPON_TYPES];	// Array of weapon types, precedence list for player weapon selection
+SCP_vector<int> Player_weapon_precedence;	// Vector of weapon types, precedence list for player weapon selection
+SCP_vector<SCP_string> Player_weapon_precedence_names;	// Vector of weapon names, gets turned into the above after parsing all modular tables and sorting the Weapon_info vector.
+SCP_string Player_weapon_precedence_file;	// If an invalid name is given, tell the user what file it was specified in.
+int Player_weapon_precedence_line;	// And this is the line the precedence list was given on.
 
 // Used to avoid playing too many impact sounds in too short a time interval.
 // This will elimate the odd "stereo" effect that occurs when two weapons impact at 
@@ -3588,7 +3590,9 @@ void parse_weaponstbl(const char *filename)
 		// during weapon selection.
 		if ((!Parsing_modular_table && required_string("$Player Weapon Precedence:")) || optional_string("$Player Weapon Precedence:"))
 		{
-			Num_player_weapon_precedence = (int)stuff_int_list(Player_weapon_precedence, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
+			Player_weapon_precedence_file = filename;
+			Player_weapon_precedence_line = get_line_num();
+			stuff_string_list(Player_weapon_precedence_names);
 		}
 	}
 	catch (const parse::ParseException& e)
@@ -4144,6 +4148,22 @@ void weapon_generate_indexes_for_substitution() {
 	}
 }
 
+void weapon_generate_indexes_for_precedence()
+{
+	Player_weapon_precedence.clear();	// Make sure we're starting fresh.
+	for (const auto &name : Player_weapon_precedence_names) {
+		const char *cur_name = name.c_str();
+		const int cur_index = weapon_info_lookup(cur_name);
+		if (cur_index == -1) {
+			Warning(LOCATION, "Unknown weapon [%s] in player weapon precedence list (file %s, line %d).", cur_name, Player_weapon_precedence_file.c_str(), Player_weapon_precedence_line);
+		} else {
+			Player_weapon_precedence.push_back(cur_index);
+		}
+	}
+	Player_weapon_precedence_names = SCP_vector<SCP_string>();	// This is basically equivalent to .clear() and .shrink_to_fit() (it essentially swaps with the temporary vector, which then immediately deconstructs).
+	Player_weapon_precedence_file = "";	// Similar to the above, this would swap with an empty string, thereby being equivalent to .clear() and .shrink_to_fit().
+}
+
 void weapon_do_post_parse()
 {
 	weapon_info *wip;
@@ -4152,6 +4172,7 @@ void weapon_do_post_parse()
 	weapon_sort_by_type();	// NOTE: This has to be first thing!
 	weapon_clean_entries();
 	weapon_generate_indexes_for_substitution();
+	weapon_generate_indexes_for_precedence();
 
 	Default_cmeasure_index = -1;
 
