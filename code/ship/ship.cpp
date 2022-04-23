@@ -10844,7 +10844,12 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 
 	if (sip->uses_team_colors)
 	{
-		sp->team_name = sip->default_team_name;
+		// wookieejedi - mantain team color setting if possible
+		if (!p_objp->team_color_setting.empty()) {
+			sp->team_name = p_objp->team_color_setting;
+		} else {
+			sp->team_name = sip->default_team_name;
+		}
 	}
 }
 
