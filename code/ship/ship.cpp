@@ -12459,15 +12459,15 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 	// Here is where we check if weapons subsystem is capable of firing the weapon.
 	// do only in single player or if I am the server of a multiplayer game
 	if ( !(Game_mode & GM_MULTIPLAYER) || MULTIPLAYER_MASTER ) {
+		if (shipp->flags[Ship_Flags::Secondaries_locked] && (obj == Player_obj && shipp->flags[Ship_Flags::Fail_sound_locked_secondary])) {
+			ship_maybe_do_secondary_fail_sound_hud(wip, false);
+			goto done_secondary;
+		}
 		if ( ship_weapon_maybe_fail(shipp) ) {
 			if ( obj == Player_obj ) 
 				if ( ship_maybe_do_secondary_fail_sound_hud(wip, false) ) {
 					HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Cannot fire %s due to weapons system damage", 489), Weapon_info[weapon_idx].get_display_name());
 				}
-			goto done_secondary;
-		}
-		if (shipp->flags[Ship_Flags::Secondaries_locked] && (obj == Player_obj && shipp->flags[Ship_Flags::Fail_sound_locked_secondary])) {
-			ship_maybe_do_secondary_fail_sound_hud(wip, false);
 			goto done_secondary;
 		}
 	}
