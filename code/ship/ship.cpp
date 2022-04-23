@@ -11529,6 +11529,15 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 			swp->last_primary_fire_stamp[bank_to_fire] = timestamp();
 		}
 
+
+		// The player is trying to fire primaries which are locked. We've set the Fail_sound_locked_primaries flag, so it should make the fail sound.
+		if  (obj == Player_obj && shipp->flags[Ship_Flags::Primaries_locked] && shipp->flags[Ship_Flags::Fail_sound_locked_primary])
+		{					
+			ship_maybe_do_primary_fail_sound_hud(false);
+			ship_stop_fire_primary_bank(obj, bank_to_fire);
+			continue;
+		}
+
 		// Here is where we check if weapons subsystem is capable of firing the weapon.
 		// Note that we can have partial bank firing, if the weapons subsystem is partially
 		// functional, which should be cool.  		
@@ -11677,14 +11686,6 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 				} else {
 					numtimes = winfo_p->shots;
 					points = num_slots;
-				}
-
-				// The player is trying to fire primaries which are locked. We've set the Fail_sound_locked_primaries flag, so it should make the fail sound.
-				if  (obj == Player_obj && shipp->flags[Ship_Flags::Primaries_locked] && shipp->flags[Ship_Flags::Fail_sound_locked_primary])
-				{					
-					ship_maybe_do_primary_fail_sound_hud(false);
-					ship_stop_fire_primary_bank(obj, bank_to_fire);
-					continue;
 				}
 
 				// The energy-consumption code executes even for ballistic primaries, because
