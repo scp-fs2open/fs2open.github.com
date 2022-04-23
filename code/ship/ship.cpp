@@ -10123,7 +10123,7 @@ static void ship_model_change(int n, int ship_type)
 	Objects[sp->objnum].radius = model_get_radius(pm->id);
 
 	// Goober5000 - deal with texture replacement by re-applying the same code we used during parsing
-	// wookieejedi - these replacement textures have not been loaded in, since ship texture replacement load only occurs
+	// wookieejedi - replacement textures are loaded in mission parse, so need to load any new textures
 	if (sip->replacement_textures.size() > 0) {
 
 		// clear and reset replace textures because the new positions may be different
