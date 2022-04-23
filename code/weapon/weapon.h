@@ -662,8 +662,7 @@ extern int Num_weapons;
 extern int First_secondary_index;
 extern int Default_cmeasure_index;
 
-extern int Num_player_weapon_precedence;				// Number of weapon types in Player_weapon_precedence
-extern int Player_weapon_precedence[MAX_WEAPON_TYPES];	// Array of weapon types, precedence list for player weapon selection
+extern SCP_vector<int> Player_weapon_precedence;	// Vector of weapon types, precedence list for player weapon selection
 
 #define WEAPON_INDEX(wp)			(int)(wp-Weapons)
 
