@@ -10094,18 +10094,18 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
  */
 static void ship_model_change(int n, int ship_type)
 {
-	int i;
-	ship_info* sip;
-	ship* sp;
-	polymodel* pm;
-	object* objp;
+	int			i;
+	ship_info	*sip;
+	ship			*sp;
+	polymodel * pm;
+	object *objp;
 
-	Assert(n >= 0 && n < MAX_SHIPS);
+	Assert( n >= 0 && n < MAX_SHIPS );
 	sp = &Ships[n];
 	sip = &(Ship_info[ship_type]);
 	objp = &Objects[sp->objnum];
 
-	// Stop Animation on the old model
+	//Stop Animation on the old model
 	animation::ModelAnimationSet::stopAnimations(model_get_instance(sp->model_instance_num));
 
 	// get new model
@@ -10113,8 +10113,8 @@ static void ship_model_change(int n, int ship_type)
 		sip->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
 	}
 
-	if (sip->cockpit_model_num == -1) {
-		if (strlen(sip->cockpit_pof_file)) {
+	if ( sip->cockpit_model_num == -1 ) {
+		if ( strlen(sip->cockpit_pof_file) ) {
 			sip->cockpit_model_num = model_load(sip->cockpit_pof_file, 0, NULL);
 		}
 	}
