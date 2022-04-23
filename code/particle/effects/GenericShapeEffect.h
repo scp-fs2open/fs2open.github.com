@@ -171,9 +171,8 @@ class GenericShapeEffect : public ParticleEffect {
 		if (optional_string("+Chance:")) {
 			float chance;
 			stuff_float(&chance);
-			CLAMP(chance, 0.0f, 1.0f);
 			if (chance <= 0.0f) {
-				Error(LOCATION,
+				Warning(LOCATION,
 					"Particle %s tried to set +Chance: %f\nChances below 0 would result in no particles.",
 					m_name.c_str(), chance);
 			} else if (chance > 1.0f) {
