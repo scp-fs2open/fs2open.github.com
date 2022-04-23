@@ -525,7 +525,8 @@ ship_flag_name Ship_flag_names[] = {
 	{ Ship_Flags::No_disabled_self_destruct,	"no-disabled-self-destruct" },
 	{ Ship_Flags::Hide_mission_log,				"hide-in-mission-log" },
 	{ Ship_Flags::No_passive_lightning,			"no-ship-passive-lightning" },
-	{ Ship_Flags::Fail_sound_locked_primary, 	"fail-sound-locked-primary"}
+	{ Ship_Flags::Fail_sound_locked_primary, 	"fail-sound-locked-primary"},
+	{ Ship_Flags::Fail_sound_locked_secondary, 	"fail-sound-locked-secondary"}
 };
 
 static int Laser_energy_out_snd_timer;	// timer so we play out of laser sound effect periodically
@@ -12267,7 +12268,7 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 	}
 
 	// If the secondaries have been locked, bail
-	if (shipp->flags[Ship_Flags::Secondaries_locked])
+	if (shipp->flags[Ship_Flags::Secondaries_locked] && !(obj == Player_obj && shipp->flags[Ship_Flags::Fail_sound_locked_secondary]))
 	{
 		return 0;
 	}
@@ -12453,7 +12454,7 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 	}
 	swp->next_secondary_fire_stamp[bank] = timestamp((int)(t * 1000.0f));
 	swp->last_secondary_fire_stamp[bank] = timestamp();
-
+	
 	// Here is where we check if weapons subsystem is capable of firing the weapon.
 	// do only in single player or if I am the server of a multiplayer game
 	if ( !(Game_mode & GM_MULTIPLAYER) || MULTIPLAYER_MASTER ) {
@@ -12462,6 +12463,10 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 				if ( ship_maybe_do_secondary_fail_sound_hud(wip, false) ) {
 					HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Cannot fire %s due to weapons system damage", 489), Weapon_info[weapon_idx].get_display_name());
 				}
+			goto done_secondary;
+		}
+		if (shipp->flags[Ship_Flags::Secondaries_locked] && (obj == Player_obj && shipp->flags[Ship_Flags::Fail_sound_locked_secondary])) {
+			ship_maybe_do_secondary_fail_sound_hud(wip, false);
 			goto done_secondary;
 		}
 	}
