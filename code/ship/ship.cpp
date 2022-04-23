@@ -10123,10 +10123,10 @@ static void ship_model_change(int n, int ship_type)
 	Objects[sp->objnum].radius = model_get_radius(pm->id);
 
 	// Goober5000 - deal with texture replacement by re-applying the same code we used during parsing
-	// wookieejedi - replacement textures are loaded in mission parse, so need to load any new textures
+	// wookieejedi - replacement textures are loaded in mission parse, so need to load any new textures here
 	if (sip->replacement_textures.size() > 0) {
 
-		// clear and reset replace textures because the new positions may be different
+		// clear and reset replacement textures because the new positions may be different
 		if (sp->ship_replacement_textures == nullptr)
 			sp->ship_replacement_textures = (int*)vm_malloc(MAX_REPLACEMENT_TEXTURES * sizeof(int));
 		for (auto k = 0; k < MAX_REPLACEMENT_TEXTURES; k++)
@@ -10844,7 +10844,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 
 	if (sip->uses_team_colors)
 	{
-		// wookieejedi - mantain team color setting if possible
+		// wookieejedi - maintain team color setting if possible
 		if (!p_objp->team_color_setting.empty()) {
 			sp->team_name = p_objp->team_color_setting;
 		} else {
