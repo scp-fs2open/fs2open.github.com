@@ -10124,7 +10124,7 @@ static void ship_model_change(int n, int ship_type)
 
 	// Goober5000 - deal with texture replacement by re-applying the same code we used during parsing
 	// wookieejedi - replacement textures are loaded in mission parse, so need to load any new textures here
-	if (sip->replacement_textures.size() > 0) {
+	if ( !sip->replacement_textures.empty() ) {
 
 		// clear and reset replacement textures because the new positions may be different
 		if (sp->ship_replacement_textures == nullptr)
