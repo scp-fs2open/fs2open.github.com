@@ -180,6 +180,34 @@ vec3d vm_vec_new(float x, float y, float z)
 	return vec;
 }
 
+matrix vm_matrix_new(float a0, float a1, float a2, float a3, float a4, float a5, float a6, float a7, float a8)
+{
+	matrix m;
+
+	m.a1d[0] = a0;
+	m.a1d[1] = a1;
+	m.a1d[2] = a2;
+	m.a1d[3] = a3;
+	m.a1d[4] = a4;
+	m.a1d[5] = a5;
+	m.a1d[6] = a6;
+	m.a1d[7] = a7;
+	m.a1d[8] = a8;
+
+	return m;
+}
+
+matrix vm_matrix_new(vec3d rvec, vec3d uvec, vec3d fvec)
+{
+	matrix m;
+
+	m.vec.rvec = rvec;
+	m.vec.uvec = uvec;
+	m.vec.fvec = fvec;
+
+	return m;
+}
+
 //adds two vectors, fills in dest, returns ptr to dest
 //ok for dest to equal either source, but should use vm_vec_add2() if so
 //dest = src0 + src1
