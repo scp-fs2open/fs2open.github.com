@@ -1821,6 +1821,11 @@ DCF(blight, "Sets the beam light scale factor (Default is 25.5f)")
 	dc_stuff_float(&blight);
 }
 
+float beam_current_light_radius(beam* bm, beam_weapon_info* bwi, float noise)
+{
+	return bm->beam_light_width * bm->current_width_factor * blight * noise;
+}
+
 // call to add a light source to a small object
 void beam_add_light_small(beam *bm, object *objp, vec3d *pt)
 {
@@ -1853,7 +1858,7 @@ void beam_add_light_small(beam *bm, object *objp, vec3d *pt)
 		noise = 1.0f;
 
 	// get the width of the beam
-	float light_rad = bm->beam_light_width * bm->current_width_factor * blight * noise;
+	float light_rad = beam_current_light_radius(bm,bwi,noise);
 
 	// average rgb of the beam	
 	float fr = (float)wip->laser_color_1.red / 255.0f;
@@ -1906,7 +1911,7 @@ void beam_add_light_large(beam *bm, object *objp, vec3d *pt0, vec3d *pt1)
 	noise = frand_range(1.0f - bwi->sections[0].flicker, 1.0f + bwi->sections[0].flicker);
 
 	// width of the beam
-	float light_rad = bm->beam_light_width * bm->current_width_factor * blight * noise;
+	float light_rad = beam_current_light_radius(bm,bwi,noise);
 
 	// average rgb of the beam	
 	float fr = (float)wip->laser_color_1.red / 255.0f;
