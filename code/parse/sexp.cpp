@@ -34096,6 +34096,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"no-dynamic - Will stop allowing the AI to pursue dynamic goals (e.g.: chasing ships it was not ordered to)\r\n"
 		"free-afterburner-use - Allows the ship to use afterburners to follow waypoints\r\n"
 		"ai-attackable-if-no-collide - AI will still attack this ship even if collisions are disabled\r\n"
+		"fail-sound-locked-primary - This ship will play a weapon failure sound if trying to shoot primaries when they're locked\r\n"
+		"fail-sound-locked-secondary - This ship will play a weapon failure sound if trying to shoot secondaries when they're locked\r\n"
 	},
 
 	{ OP_SHIP_VISIBLE, "ship-visible\r\n"

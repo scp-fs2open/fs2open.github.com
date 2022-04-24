@@ -318,6 +318,8 @@ flag_def_list_new<Mission::Parse_Object_Flags> Parse_object_flags[] = {
     { "same-arrival-warp-when-docked",		Mission::Parse_Object_Flags::SF_Same_arrival_warp_when_docked,		true, false },
     { "same-departure-warp-when-docked",	Mission::Parse_Object_Flags::SF_Same_departure_warp_when_docked,	true, false },
     { "ai-attackable-if-no-collide",		Mission::Parse_Object_Flags::OF_Attackable_if_no_collide, true, false },
+    { "fail-sound-locked-primary",			Mission::Parse_Object_Flags::SF_Fail_sound_locked_primary, true, false },
+    { "fail-sound-locked-secondary",		Mission::Parse_Object_Flags::SF_Fail_sound_locked_secondary, true, false }
 };
 
 const size_t num_parse_object_flags = sizeof(Parse_object_flags) / sizeof(flag_def_list_new<Mission::Parse_Object_Flags>);

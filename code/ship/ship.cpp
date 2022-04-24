@@ -525,6 +525,8 @@ ship_flag_name Ship_flag_names[] = {
 	{ Ship_Flags::No_disabled_self_destruct,	"no-disabled-self-destruct" },
 	{ Ship_Flags::Hide_mission_log,				"hide-in-mission-log" },
 	{ Ship_Flags::No_passive_lightning,			"no-ship-passive-lightning" },
+	{ Ship_Flags::Fail_sound_locked_primary, 	"fail-sound-locked-primary"},
+	{ Ship_Flags::Fail_sound_locked_secondary, 	"fail-sound-locked-secondary"}
 };
 
 static int Laser_energy_out_snd_timer;	// timer so we play out of laser sound effect periodically
@@ -11294,8 +11296,9 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 		return 0;
 	}	
 
-	// If the primaries have been locked, bail
-	if (shipp->flags[Ship_Flags::Primaries_locked])
+	// If the primaries have been locked, bail. 
+	// Unless we're dealing with the player and their ship has the flag set to allow fail sounds when firing locked primaries.
+	if (shipp->flags[Ship_Flags::Primaries_locked] && ! (obj == Player_obj && shipp->flags[Ship_Flags::Fail_sound_locked_primary]))
 	{
 		return 0;
 	}
@@ -11520,6 +11523,15 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 		}else{
 			swp->next_primary_fire_stamp[bank_to_fire] = timestamp((int)(next_fire_delay));
 			swp->last_primary_fire_stamp[bank_to_fire] = timestamp();
+		}
+
+
+		// The player is trying to fire primaries which are locked. We've set the Fail_sound_locked_primaries flag, so it should make the fail sound.
+		if  (obj == Player_obj && shipp->flags[Ship_Flags::Primaries_locked] && shipp->flags[Ship_Flags::Fail_sound_locked_primary])
+		{					
+			ship_maybe_do_primary_fail_sound_hud(false);
+			ship_stop_fire_primary_bank(obj, bank_to_fire);
+			continue;
 		}
 
 		// Here is where we check if weapons subsystem is capable of firing the weapon.
@@ -12253,7 +12265,7 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 	}
 
 	// If the secondaries have been locked, bail
-	if (shipp->flags[Ship_Flags::Secondaries_locked])
+	if (shipp->flags[Ship_Flags::Secondaries_locked] && !(obj == Player_obj && shipp->flags[Ship_Flags::Fail_sound_locked_secondary]))
 	{
 		return 0;
 	}
@@ -12443,6 +12455,10 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 	// Here is where we check if weapons subsystem is capable of firing the weapon.
 	// do only in single player or if I am the server of a multiplayer game
 	if ( !(Game_mode & GM_MULTIPLAYER) || MULTIPLAYER_MASTER ) {
+		if (shipp->flags[Ship_Flags::Secondaries_locked] && (obj == Player_obj && shipp->flags[Ship_Flags::Fail_sound_locked_secondary])) {
+			ship_maybe_do_secondary_fail_sound_hud(wip, false);
+			goto done_secondary;
+		}
 		if ( ship_weapon_maybe_fail(shipp) ) {
 			if ( obj == Player_obj ) 
 				if ( ship_maybe_do_secondary_fail_sound_hud(wip, false) ) {
