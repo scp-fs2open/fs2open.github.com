@@ -2443,11 +2443,11 @@ void stars_unfix_background_angles(angles* angs_to_unfix)
 {
 	matrix mat;
 	vm_angles_2_matrix(&mat, angs_to_unfix);
-	matrix mat_permuted { // transpose and {2,3,1} permute rows and cols
+	matrix mat_permuted{ { // transpose and {2,3,1} permute rows and cols
 		mat.vec.uvec.xyz.y, mat.vec.fvec.xyz.y, mat.vec.rvec.xyz.y,
 		mat.vec.uvec.xyz.z, mat.vec.fvec.xyz.z, mat.vec.rvec.xyz.z,
 		mat.vec.uvec.xyz.x, mat.vec.fvec.xyz.x, mat.vec.rvec.xyz.x,
-	};
+	} };
 	angles angs_permuted;
 	vm_extract_angles_matrix(&angs_permuted, &mat_permuted);
 	// {2,3,1} unpermute p,b,h
