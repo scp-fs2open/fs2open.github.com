@@ -1822,7 +1822,7 @@ DCF(blight, "Sets the beam light scale factor (Default is 25.5f)")
 }
 
 // call to add a light source to a small object
-void beam_add_light_small(beam *bm, object *objp, vec3d *pt_override = NULL)
+void beam_add_light_small(beam *bm, object *objp, vec3d *pt)
 {
 	weapon_info *wip;
 	beam_weapon_info *bwi;
@@ -1845,7 +1845,7 @@ void beam_add_light_small(beam *bm, object *objp, vec3d *pt_override = NULL)
 	Assert(bm->weapon_info_index >= 0);
 	wip = &Weapon_info[bm->weapon_info_index];
 	bwi = &wip->b_info;
-
+	Assert(pt!= nullptr);
 	// some noise
 	if ( (bm->warmup_stamp < 0) && (bm->warmdown_stamp < 0) ) // disable noise when warming up or down
 		noise = frand_range(1.0f - bwi->sections[0].flicker, 1.0f + bwi->sections[0].flicker);
@@ -1853,19 +1853,7 @@ void beam_add_light_small(beam *bm, object *objp, vec3d *pt_override = NULL)
 		noise = 1.0f;
 
 	// get the width of the beam
-	float light_rad = bm->beam_light_width * bm->current_width_factor * blight * noise;	
-
-	// nearest point on the beam, and its distance to the ship
-	vec3d near_pt;
-	if(pt_override == NULL){
-		float dist;
-		vm_vec_dist_to_line(&objp->pos, &bm->last_start, &bm->last_shot, &near_pt, &dist);
-		if(dist > light_rad){
-			return;
-		}
-	} else {
-		near_pt = *pt_override;
-	}
+	float light_rad = bm->beam_light_width * bm->current_width_factor * blight * noise;
 
 	// average rgb of the beam	
 	float fr = (float)wip->laser_color_1.red / 255.0f;
@@ -1886,7 +1874,7 @@ void beam_add_light_small(beam *bm, object *objp, vec3d *pt_override = NULL)
 		pct = 1.0f;
 	}
 	// add a light
-	light_add_point(&near_pt, light_rad * 0.0001f, light_rad, pct, fr, fg, fb);
+	light_add_point(pt, light_rad * 0.0001f, light_rad, pct, fr, fg, fb);
 }
 
 // call to add a light source to a large object
