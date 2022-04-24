@@ -1826,31 +1826,43 @@ float beam_current_light_radius(beam* bm, beam_weapon_info* bwi, float noise)
 	return bm->beam_light_width * bm->current_width_factor * blight * noise;
 }
 
-// call to add a light source to a small object
-void beam_add_light_small(beam *bm, object *objp, vec3d *pt)
+/**
+ * @brief Validates a safe state for beam light creation functions
+ *
+ * @return true if state is safe, false otherwise
+ */
+bool beam_light_sanity_and_setup(beam const* bm, object const* objp, weapon_info** wip, beam_weapon_info** bwi)
 {
-	weapon_info *wip;
-	beam_weapon_info *bwi;
-	float noise;
-
-	// no lighting 
-	if(Detail.lighting < 2){
-		return;
+	// no lighting
+	if (Detail.lighting < 2) {
+		return false;
 	}
 
 	// sanity
 	Assert(bm != nullptr);
-	if(bm == nullptr){
-		return;
-	}
 	Assert(objp != nullptr);
-	if(objp == nullptr){
-		return;
+	if (objp == nullptr || bm == nullptr) {
+		return false;
 	}
 	Assert(bm->weapon_info_index >= 0);
-	wip = &Weapon_info[bm->weapon_info_index];
-	bwi = &wip->b_info;
-	Assert(pt!= nullptr);
+	*wip = &Weapon_info[bm->weapon_info_index];
+	*bwi = &(*wip)->b_info;
+
+	return true;
+}
+
+// call to add a light source to a small object
+void beam_add_light_small(beam *bm, object *objp, vec3d *pt)
+{
+	weapon_info *wip = nullptr;
+	beam_weapon_info *bwi = nullptr;
+
+	if (!beam_light_sanity_and_setup(bm, objp, &wip, &bwi))
+		return;
+
+	Assert(pt != nullptr);
+
+	float noise;
 	// some noise
 	if ( (bm->warmup_stamp < 0) && (bm->warmdown_stamp < 0) ) // disable noise when warming up or down
 		noise = frand_range(1.0f - bwi->sections[0].flicker, 1.0f + bwi->sections[0].flicker);
@@ -1887,26 +1899,11 @@ void beam_add_light_large(beam *bm, object *objp, vec3d *pt0, vec3d *pt1)
 {
 	weapon_info *wip;
 	beam_weapon_info *bwi;
+
+	if (!beam_light_sanity_and_setup(bm, objp, &wip, &bwi))
+		return;
+
 	float noise;
-
-	// no lighting 
-	if(Detail.lighting < 2){
-		return;
-	}
-
-	// sanity
-	Assert(bm != NULL);
-	if(bm == NULL){
-		return;
-	}
-	Assert(objp != NULL);
-	if(objp == NULL){
-		return;
-	}
-	Assert(bm->weapon_info_index >= 0);
-	wip = &Weapon_info[bm->weapon_info_index];
-	bwi = &wip->b_info;
-
 	// some noise
 	noise = frand_range(1.0f - bwi->sections[0].flicker, 1.0f + bwi->sections[0].flicker);
 
