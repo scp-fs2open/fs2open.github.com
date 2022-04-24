@@ -2425,8 +2425,7 @@ int stars_add_bitmap_entry(starfield_list_entry *sle)
 	return (int)(Starfield_bitmap_instances.size() - 1);
 }
 
-void stars_fix_background_angles(angles *angs_to_fix)
-{
+void stars_fix_background_angles(angles *angs_to_fix){
 	matrix mat1, mat2;
 	angles ang1 = vm_angles_new(0.0, angs_to_fix->b, 0.0);
 	angles ang2 = vm_angles_new(angs_to_fix->p, 0.0, angs_to_fix->h);
@@ -2435,11 +2434,26 @@ void stars_fix_background_angles(angles *angs_to_fix)
 	matrix mat3 = mat2 * mat1;
 	vm_transpose(&mat3);
 	vm_extract_angles_matrix(angs_to_fix, &mat3);
+	angs_to_fix->p = fmod(angs_to_fix->p + PI2, PI2);
+	angs_to_fix->b = fmod(angs_to_fix->b + PI2, PI2);
+	angs_to_fix->h = fmod(angs_to_fix->h + PI2, PI2);
 }
 
 void stars_unfix_background_angles(angles* angs_to_unfix)
 {
-	// TODO
+	matrix mat;
+	vm_angles_2_matrix(&mat, angs_to_unfix);
+	matrix mat_permuted { // transpose and {2,3,1} permute rows and cols
+		mat.vec.uvec.xyz.y, mat.vec.fvec.xyz.y, mat.vec.rvec.xyz.y,
+		mat.vec.uvec.xyz.z, mat.vec.fvec.xyz.z, mat.vec.rvec.xyz.z,
+		mat.vec.uvec.xyz.x, mat.vec.fvec.xyz.x, mat.vec.rvec.xyz.x,
+	};
+	angles angs_permuted;
+	vm_extract_angles_matrix(&angs_permuted, &mat_permuted);
+	// {2,3,1} unpermute p,b,h
+	angs_to_unfix->p = angs_permuted.b;
+	angs_to_unfix->h = angs_permuted.p;
+	angs_to_unfix->b = angs_permuted.h;
 }
 
 // get the number of entries that each vector contains

@@ -613,6 +613,24 @@ float vm_vec_delta_ang_norm(const vec3d *v0, const vec3d *v1, const vec3d *uvec)
 // helper function that fills in matrix m based on provided sine and cosine values. 
 static matrix *sincos_2_matrix(matrix *m, float sinp, float cosp, float sinb, float cosb, float sinh, float cosh)
 {
+	// This is the transpose of the Y1*X2*Z3 convention on wikipedia:
+	// 
+	// [(rotate h on Y) * (rotate p on X) * (rotate b on Z)]^T
+	// 
+	//   [( ch  0  sh )   ( 1  0   0  )   ( cb -sb  0 )]^T
+	// = [( 0   1  0  ) * ( 0  cp -sp ) * ( sb  cb  0 )]  
+	//   [(-sh  0  ch )   ( 0  sp  cp )   ( 0   0   1 )]  
+	//
+	//   (cb*ch+sp*sb*sh  sp*cb*sh-sb*ch  sh*cp)^T   (cb*ch+sp*sb*sh  sb*cp  sp*sb*ch-cb*sh)  <- rvec
+	// = (    sb*cp           cb*cp        -sp )   = (sp*cb*sh-sb*ch  cb*cp  sb*sh+sp*cb*ch)  <- uvec
+	//   (sp*sb*ch-cb*sh  sb*sh+sp*cb*ch  ch*cp)     (    sh*cp        -sp       ch*cp     )  <- fvec
+	// 
+	// Alternatively we can write it as
+	// [(rotate h on Y) * (rotate p on X) * (rotate b on Z)]^T
+	// = (rotate b on Z)^T * (rotate p on X)^T * (rotate h on Y)^T
+	// = (rotate -b on Z) * (rotate -p on X) * (rotate -h on Y)
+	// which is the "most common" Z1*X2*Y3 convention on wikipedia (but with negative angles).
+
 	float sbsh,cbch,cbsh,sbch;
 
 
