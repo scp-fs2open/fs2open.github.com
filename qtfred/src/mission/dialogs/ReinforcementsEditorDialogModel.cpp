@@ -25,14 +25,21 @@ void ReinforcementsDialogModel::initializeData()
 			continue;
 		}
 
+		bool player_test = false;
 		// no players allowed in reinforcements!
 		for (auto& playerTest : currentWing.ship_index) {
 			if (playerTest > -1 && (Objects[Ships[playerTest].objnum].type == OBJ_START)){
-				continue;
+				player_test = true;
+				break;
 			}
 		}
 
+		if (player_test){
+			continue;
+		}
+
 		bool found = false;
+
 		for (auto& reinforcement : _reinforcementList) {
 			if (std::get<0>(reinforcement) == currentWing.name) {
 				found = true;
@@ -199,7 +206,6 @@ int ReinforcementsDialogModel::getUseCount()
 
 		if (previous == -1 || current == previous) {
 			previous = current;
-			continue;
 		} else {
 			// no consistent Use Count in multiple items, return -1 so UI knows to display nothing.
 			return -1;
