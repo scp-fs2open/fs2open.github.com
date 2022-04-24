@@ -1225,10 +1225,9 @@ void obj_move_all_post(object *objp, float frametime)
 						g = i2fl(c.green)/255.0f;
 						b = i2fl(c.blue)/255.0f;
 
-						//light_add_point( &objp->pos, 10.0f, 20.0f, 1.0f, r, g, b, objp->parent );
-						light_add_point( &objp->pos, 10.0f, 100.0f, 1.0f, r, g, b, objp->parent );
+						light_add_point( &objp->pos, 10.0f, 100.0f, 1.0f, r, g, b);
 					} else {
-						light_add_point( &objp->pos, 10.0f, 20.0f, 1.0f, 1.0f, 1.0f, 1.0f, objp->parent );
+						light_add_point( &objp->pos, 10.0f, 20.0f, 1.0f, 1.0f, 1.0f, 1.0f);
 					} 
 				}
 			}
@@ -1261,8 +1260,8 @@ void obj_move_all_post(object *objp, float frametime)
 							vm_vec_unrotate(&tmp2,&shipp->arc_pts[i][1],&objp->orient);
 							vm_vec_add2(&tmp2,&objp->pos);
 
-							light_add_point( &tmp1, 10.0f, 20.0f, frand(), 1.0f, 1.0f, 1.0f, -1 );
-							light_add_point( &tmp2, 10.0f, 20.0f, frand(), 1.0f, 1.0f, 1.0f, -1 );
+							light_add_point( &tmp1, 10.0f, 20.0f, frand(), 1.0f, 1.0f, 1.0f);
+							light_add_point( &tmp2, 10.0f, 20.0f, frand(), 1.0f, 1.0f, 1.0f);
 						}
 					}
 				}
@@ -1322,7 +1321,7 @@ void obj_move_all_post(object *objp, float frametime)
 					// P goes from 0 to 1 to 0 over the life of the explosion
 					// Only do this if rad is > 0.0000001f
 					if (rad > 0.0001f)
-						light_add_point( &objp->pos, rad * 2.0f, rad * 5.0f, intensity, r, g, b, -1 );
+						light_add_point( &objp->pos, rad * 2.0f, rad * 5.0f, intensity, r, g, b);
 				}
 			}
 
@@ -1358,8 +1357,8 @@ void obj_move_all_post(object *objp, float frametime)
 								vm_vec_unrotate(&tmp2,&db->arc_pts[i][1],&objp->orient);
 								vm_vec_add2(&tmp2,&objp->pos);
 
-								light_add_point( &tmp1, 10.0f, 20.0f, frand(), 1.0f, 1.0f, 1.0f, -1 );
-								light_add_point( &tmp2, 10.0f, 20.0f, frand(), 1.0f, 1.0f, 1.0f, -1 );
+								light_add_point( &tmp1, 10.0f, 20.0f, frand(), 1.0f, 1.0f, 1.0f );
+								light_add_point( &tmp2, 10.0f, 20.0f, frand(), 1.0f, 1.0f, 1.0f );
 							}
 						}
 					}

@@ -1877,18 +1877,16 @@ void beam_add_light_small(beam *bm, object *objp, vec3d *pt_override = NULL)
 	if (bm->warmup_stamp != -1) {	// calculate muzzle light intensity
 		// get warmup pct
 		pct = BEAM_WARMUP_PCT(bm)*0.5f;
-	} else
-	// if the beam is warming down
-	if (bm->warmdown_stamp != -1) {
-		// get warmup pct
+	} else if (bm->warmdown_stamp != -1) {
+	// if the beam is warming down get warmdown pct
 		pct = MAX(1.0f - BEAM_WARMDOWN_PCT(bm)*1.3f,0.0f)*0.5f;
-	} 
+	}
 	// otherwise the beam is really firing
 	else {
 		pct = 1.0f;
 	}
-	// add a unique light
-	light_add_point_unique(&near_pt, light_rad * 0.0001f, light_rad, pct, fr, fg, fb, OBJ_INDEX(objp));
+	// add a light
+	light_add_point(&near_pt, light_rad * 0.0001f, light_rad, pct, fr, fg, fb);
 }
 
 // call to add a light source to a large object
@@ -1927,7 +1925,7 @@ void beam_add_light_large(beam *bm, object *objp, vec3d *pt0, vec3d *pt1)
 	float fg = (float)wip->laser_color_1.green / 255.0f;
 	float fb = (float)wip->laser_color_1.blue / 255.0f;
 
-	light_add_tube(pt0, pt1, 1.0f, light_rad, 1.0f * noise, fr, fg, fb, OBJ_INDEX(objp));
+	light_add_tube(pt0, pt1, 1.0f, light_rad, 1.0f * noise, fr, fg, fb);
 }
 
 // mark an object as being lit
