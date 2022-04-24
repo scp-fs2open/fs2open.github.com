@@ -476,12 +476,14 @@ static bool check_subsystem_landing_allowed(ship_info *heavy_sip, collision_info
 /**
  * Helper function that calculates the next time this ship should be allowed to collide with a client player on multiplayer.
  */
-int calculate_next_multiplayer_client_collision_time(float impulse_magnitude)
+static int calculate_next_multiplayer_client_collision_time(float impulse_magnitude)
 {
 	// Uses a continuous cubic rational function that allows us to space out collisions based on collision strength.
-	static constexpr float IMPULSE_RANGE_FACTOR = 1.0f / powf(9900, 3.0f); // based on some quick tests from Asteroth about how strong an im
-	static constexpr float MIN_IMPULSE = 100;
-	static constexpr int LONGEST_COLLISION_INTERVAL = 200;
+	// based on some quick tests from Asteroth about how strong impuse is on average.
+	constexpr float IMPULSE_RANGE_FACTOR = 0.000000000001031f; 	// The inverse of the range of regular impulse values, 9900, to the third power
+	constexpr int MIN_IMPULSE = 100;							// The lowest values of collisions that we see.  Ignore if lower than this.
+	constexpr int LONGEST_COLLISION_INTERVAL = 175;				// 1/5th of a second is usually enough time to get an update from the server.
+	constexpr int MINIMUM_INTERVAL = 25;						// if there is sufficient impulse, don't go below this value.
 
 	impulse_magnitude -= MIN_IMPULSE;
 
@@ -490,12 +492,13 @@ int calculate_next_multiplayer_client_collision_time(float impulse_magnitude)
 		return 0;
 	}
 
-	// caculate the impulse we have basically as a percentage. (CLAMP macro works best as a separate line)
+	// caculate the percentage of the max we are going to use. (CLAMP macro works best as a separate line)
 	float factor = powf(impulse_magnitude, 3.0f) * IMPULSE_RANGE_FACTOR;
 	CLAMP(factor, 0.0f, 1.0f);
 
 	// then multiply times the longest interval we could want.
 	factor *= LONGEST_COLLISION_INTERVAL;
+	factor += MINIMUM_INTERVAL;
 
 	return static_cast<int>(factor);
 }
