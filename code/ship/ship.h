@@ -799,7 +799,6 @@ public:
 
 	TIMESTAMP	multi_client_collision_timestamp;
 
-
 	enum warpstage {
 		STAGE1 = 0,
 		STAGE2,
