@@ -1851,6 +1851,14 @@ bool beam_light_sanity_and_setup(beam const* bm, object const* objp, weapon_info
 	return true;
 }
 
+float beam_light_noise(beam const* bm, beam_weapon_info const* bwi)
+{
+	if ((bm->warmup_stamp < 0) && (bm->warmdown_stamp < 0)) // disable noise when warming up or down
+		return frand_range(1.0f - bwi->sections[0].flicker, 1.0f + bwi->sections[0].flicker);
+	else
+		return 1.0f;
+}
+
 // call to add a light source to a small object
 void beam_add_light_small(beam *bm, object *objp, vec3d *pt)
 {
@@ -1862,12 +1870,7 @@ void beam_add_light_small(beam *bm, object *objp, vec3d *pt)
 
 	Assert(pt != nullptr);
 
-	float noise;
-	// some noise
-	if ( (bm->warmup_stamp < 0) && (bm->warmdown_stamp < 0) ) // disable noise when warming up or down
-		noise = frand_range(1.0f - bwi->sections[0].flicker, 1.0f + bwi->sections[0].flicker);
-	else
-		noise = 1.0f;
+	float noise = beam_light_noise(bm,bwi);
 
 	// get the width of the beam
 	float light_rad = beam_current_light_radius(bm,bwi,noise);
@@ -1903,9 +1906,7 @@ void beam_add_light_large(beam *bm, object *objp, vec3d *pt0, vec3d *pt1)
 	if (!beam_light_sanity_and_setup(bm, objp, &wip, &bwi))
 		return;
 
-	float noise;
-	// some noise
-	noise = frand_range(1.0f - bwi->sections[0].flicker, 1.0f + bwi->sections[0].flicker);
+	float noise = beam_light_noise(bm, bwi);
 
 	// width of the beam
 	float light_rad = beam_current_light_radius(bm,bwi,noise);
