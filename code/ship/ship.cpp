@@ -6352,7 +6352,10 @@ void ship::clear()
 
 	primitive_sensor_range = DEFAULT_SHIP_PRIMITIVE_SENSOR_RANGE;
 
-	ship_replacement_textures = NULL;
+	if (ship_replacement_textures != nullptr) {
+		vm_free(ship_replacement_textures);
+	}
+	ship_replacement_textures = nullptr;
 
 	current_viewpoint = -1;
 
@@ -10148,6 +10151,12 @@ static void ship_model_change(int n, int ship_type)
 					}
 				}
 			}
+		}
+	} else {
+		// ensure that any texture replacements are cleared from old ship 
+		if (sp->ship_replacement_textures != nullptr) {
+			vm_free(sp->ship_replacement_textures);
+			sp->ship_replacement_textures = nullptr;
 		}
 	}
 
