@@ -18045,7 +18045,10 @@ void sexp_change_ship_class(int n)
 			{
 				change_ship_type(ship_entry->objp->instance, class_num, 1);
 				if (ship_entry->shipp == Player_ship) {
+					// update hud and RTT cockpit HUD gauges if applicable
 					set_current_hud();
+					ship_clear_cockpit_displays();
+					ship_init_cockpit_displays(Player_ship);
 				}
 
 				if (MULTIPLAYER_MASTER) {
@@ -18075,7 +18078,10 @@ void multi_sexp_change_ship_class()
 			if ((class_num >= 0) && (ship_num >= 0)) {
 				change_ship_type(ship_num, class_num, 1);
 				if (&Ships[ship_num] == Player_ship) {
+					// update hud and RTT cockpit HUD gauges if applicable
 					set_current_hud();
+					ship_clear_cockpit_displays();
+					ship_init_cockpit_displays(Player_ship);
 				}
 			}
 		}
