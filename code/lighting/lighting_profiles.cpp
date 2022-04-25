@@ -7,16 +7,6 @@
 #include "parse/parsehi.h"
 #include "parse/parselo.h"
 
-//TODO: maybe a parsehi.cpp would be in order here?
-bool optional_parse_into_float(const SCP_string &fieldname, float* valuetarget)
-{
-	if(optional_string(fieldname.c_str())){
-		stuff_float(valuetarget);
-		return true;
-	}
-	return false;
-}
-
 void lighting_profile::reset()
 {
 	name = "";
