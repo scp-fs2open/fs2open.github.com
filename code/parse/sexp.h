@@ -1260,7 +1260,7 @@ extern int alloc_sexp(const char *text, int type, int subtype, int first, int re
 extern int find_free_sexp();
 extern int free_one_sexp(int num);
 extern int free_sexp(int num, int calling_node = -1);
-extern int free_sexp2(int num);
+extern int free_sexp2(int num, int calling_node = -1);
 extern int dup_sexp_chain(int node);
 extern int cmp_sexp_chains(int node1, int node2);
 extern int find_sexp_list(int num);

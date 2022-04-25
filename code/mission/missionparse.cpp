@@ -2170,7 +2170,10 @@ int parse_create_object_sub(p_object *p_objp)
 
 		// free the sexpression nodes only for non-wing ships.  wing code will handle its own case
 		if (p_objp->wingnum < 0)
+		{
 			free_sexp2(p_objp->ai_goals);	// free up sexp nodes for reuse, since they aren't needed anymore.
+			p_objp->ai_goals = -1;
+		}
 	}
 
 	Assert(sip->model_num != -1);
@@ -4335,7 +4338,10 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 					
 					// free up sexp nodes for reuse
 					if (p_objp->ai_goals != -1)
+					{
 						free_sexp2(p_objp->ai_goals);
+						p_objp->ai_goals = -1;
+					}
 				}
 			}
 		}
