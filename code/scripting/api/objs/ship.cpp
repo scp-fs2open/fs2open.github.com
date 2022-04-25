@@ -332,7 +332,7 @@ ADE_VIRTVAR(Class, l_Ship, "shipclass", "Ship class", "shipclass", "Ship class, 
 	if(ADE_SETTING_VAR && idx > -1) {
 		change_ship_type(objh->objp->instance, idx, 1);
 		if (shipp == Player_ship) {
-			// update hud and RTT cockpit HUD gauges if applicable
+			// update HUD and RTT cockpit gauges if applicable
 			set_current_hud();
 			ship_clear_cockpit_displays();
 			ship_init_cockpit_displays(Player_ship);
