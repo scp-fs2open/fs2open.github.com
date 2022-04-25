@@ -86,8 +86,8 @@ public:
 
 extern void light_reset();
 
-// Intensity - how strong the light is.  1.0 will cast light around 5meters or so.
-// r,g,b - only used for colored lighting. Ignored currently.
+//Intensity in lighting inputs multiplies the base colors.
+
 extern void light_add_directional(const vec3d *dir, const hdr_color *new_color);
 extern void light_add_directional(const vec3d *dir, float intensity, float r, float g, float b, float spec_r = 0.0f, float spec_g = 0.0f, float spec_b = 0.0f, bool specular = false);
 extern void light_add_point(const vec3d * pos, float r1, float r2, const hdr_color *new_color);
