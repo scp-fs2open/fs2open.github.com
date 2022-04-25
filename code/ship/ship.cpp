@@ -6354,7 +6354,10 @@ void ship::clear()
 
 	primitive_sensor_range = DEFAULT_SHIP_PRIMITIVE_SENSOR_RANGE;
 
-	ship_replacement_textures = NULL;
+	if (ship_replacement_textures != nullptr) {
+		vm_free(ship_replacement_textures);
+	}
+	ship_replacement_textures = nullptr;
 
 	current_viewpoint = -1;
 
@@ -10120,6 +10123,41 @@ static void ship_model_change(int n, int ship_type)
 	pm = model_get(sip->model_num);
 	Objects[sp->objnum].radius = model_get_radius(pm->id);
 
+	// Goober5000 - deal with texture replacement by re-applying the same code we used during parsing
+	// wookieejedi - replacement textures are loaded in mission parse, so need to load any new textures here
+	if ( !sip->replacement_textures.empty() ) {
+
+		// clear and reset replacement textures because the new positions may be different
+		if (sp->ship_replacement_textures == nullptr)
+			sp->ship_replacement_textures = (int*)vm_malloc(MAX_REPLACEMENT_TEXTURES * sizeof(int));
+		for (auto k = 0; k < MAX_REPLACEMENT_TEXTURES; k++)
+			sp->ship_replacement_textures[k] = -1;
+
+		// now fill them in according to texture name
+		for (const auto& tr : sip->replacement_textures) {
+			// look for textures
+			for (auto j = 0; j < pm->n_textures; j++) {
+
+				texture_map* tmap = &pm->maps[j];
+				int tnum = tmap->FindTexture(tr.old_texture);
+
+				if (tnum > -1) {
+					// load new texture
+					int new_tex = bm_load_either(tr.new_texture);
+					if (new_tex > -1) {
+						sp->ship_replacement_textures[j * TM_NUM_TYPES + tnum] = new_tex;
+					}
+				}
+			}
+		}
+	} else {
+		// ensure that any texture replacements are cleared from old ship 
+		if (sp->ship_replacement_textures != nullptr) {
+			vm_free(sp->ship_replacement_textures);
+			sp->ship_replacement_textures = nullptr;
+		}
+	}
+
 	// page in nondims in game
 	if ( !Fred_running )
 		model_page_in_textures(sip->model_num, ship_type);
@@ -10811,37 +10849,14 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 			sp->orders_accepted = new_defaults;
 	}
 
-	// Goober5000 - deal with texture replacement by re-applying the same code we used during parsing
-	if (sp->ship_replacement_textures != nullptr)
-	{
-		// clear them out because the new positions may be different
-		for (i = 0; i < MAX_REPLACEMENT_TEXTURES; i++)
-			sp->ship_replacement_textures[i] = -1;
-
-		if (p_objp != nullptr) 
-		{
-			// now fill them in according to texture name
-			for (const auto &tr : p_objp->replacement_textures)
-			{
-				int j;
-				polymodel* pm = model_get(sip->model_num);
-
-				// look for textures
-				for (j = 0; j < pm->n_textures; j++)
-				{
-					texture_map* tmap = &pm->maps[j];
-
-					int tnum = tmap->FindTexture(tr.old_texture);
-					if (tnum > -1)
-						sp->ship_replacement_textures[j * TM_NUM_TYPES + tnum] = tr.new_texture_id;
-				}
-			}
-		}
-	}
-
 	if (sip->uses_team_colors)
 	{
-		sp->team_name = sip->default_team_name;
+		// wookieejedi - maintain team color setting if possible
+		if (!p_objp->team_color_setting.empty()) {
+			sp->team_name = p_objp->team_color_setting;
+		} else {
+			sp->team_name = sip->default_team_name;
+		}
 	}
 }
 
