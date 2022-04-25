@@ -9634,9 +9634,9 @@ static void ship_set_default_weapons(ship *shipp, ship_info *sip)
 				swp->primary_bank_ammo[i] = (int)std::lround(capacity / size);
 				swp->primary_bank_start_ammo[i] = swp->primary_bank_ammo[i];
 			}
-
-			swp->primary_bank_capacity[i] = sip->primary_bank_ammo_capacity[i];
 		}
+
+		swp->primary_bank_capacity[i] = sip->primary_bank_ammo_capacity[i];
 	}
 
 	swp->num_secondary_banks = sip->num_secondary_banks;
