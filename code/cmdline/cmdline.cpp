@@ -311,6 +311,7 @@ int Cmdline_use_last_pilot = 0;
 
 // Graphics related
 cmdline_parm fov_arg("-fov", "Vertical field-of-view factor", AT_FLOAT);					// Cmdline_fov  -- comand line FOV -Bobboau
+cmdline_parm fov_cockpit_arg("-fov_cockpit", "Vertical field-of-view factor for Cockpits", AT_FLOAT);
 cmdline_parm clip_dist_arg("-clipdist", "Changes the distance from the viewpoint for the near-clipping plane", AT_FLOAT);		// Cmdline_clip_dist
 cmdline_parm spec_static_arg("-spec_static", "Adjusts suns contribution to specular highlights", AT_FLOAT);
 cmdline_parm spec_point_arg("-spec_point", "Adjusts laser weapons contribution to specular highlights", AT_FLOAT);
@@ -1813,6 +1814,16 @@ bool SetCmdlineParams()
 			VIEWER_ZOOM_DEFAULT = val;
 		} else {
 			VIEWER_ZOOM_DEFAULT = 0.75f;
+		}
+	}
+
+	if ( fov_cockpit_arg.found() ) {
+		auto val = fov_cockpit_arg.get_float();
+		if (val > 0.1) {
+			COCKPIT_ZOOM_DEFAULT = val;
+		}
+		else {
+			COCKPIT_ZOOM_DEFAULT = VIEWER_ZOOM_DEFAULT;
 		}
 	}
 
