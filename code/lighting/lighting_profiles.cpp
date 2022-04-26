@@ -4,6 +4,7 @@
 #include "def_files/def_files.h"
 #include "lighting/lighting.h"
 #include "lighting/lighting_profiles.h"
+#include "osapi/dialogs.h"
 #include "parse/parsehi.h"
 #include "parse/parselo.h"
 
@@ -82,7 +83,7 @@ void lighting_profile::parse_default_section()
 	bool keep_going = true;
 	SCP_string buffer;
 	TonemapperAlgorithm tn;
-	while(!optional_string("#END DEFAULT PROFILE") && keep_going){
+	while(!optional_string("#END DEFAULT PROFILE")){
 		keep_going = false;
 		if(optional_string("$Tonemapper:")){
 			stuff_string(buffer,F_NAME);
@@ -96,8 +97,11 @@ void lighting_profile::parse_default_section()
 		keep_going |= parse_optional_float_into("$PPC Shoulder Strength:",&default_profile.ppc_values.shoulder_strength);
 		keep_going |= parse_optional_float_into("$PPC Shoulder Angle:",&default_profile.ppc_values.shoulder_angle);
 		keep_going |= parse_optional_float_into("$Exposure:",&default_profile.exposure);
-		//TODO: Handle case when there's no line matched but we haven't hit an #end
-		Assert(keep_going);
+		if(!keep_going){
+			stuff_string(buffer,F_RAW);
+			Warning(LOCATION,"Unhandled line in lighting profile\n\t%s",buffer.c_str());
+
+		}
 	}
 }
 
