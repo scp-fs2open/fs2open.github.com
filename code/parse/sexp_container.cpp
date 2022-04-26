@@ -93,14 +93,16 @@ bool sexp_container::type_matches(const sexp_container &container) const
 	return get_non_persistent_type() == container.get_non_persistent_type();
 }
 
-// list_modifier functions
+// ListModifier-related functions
 
-list_modifier::Modifier list_modifier::get_modifier(const char *modifier_name)
+ListModifier get_list_modifier(const char *text, bool accept_prefix)
 {
-	Assert(modifier_name != nullptr);
+	Assertion(text != nullptr, "Attempt to get list modifier from null name. Please report!");
 
 	for (const auto &modifier_obj : List_modifiers) {
-		if (modifier_obj.match_name(modifier_name)) {
+		if (accept_prefix && !strnicmp(modifier_obj.name, text, strlen(modifier_obj.name))) {
+			return modifier_obj.modifier;
+		} else if (!accept_prefix && !stricmp(modifier_obj.name, text)) {
 			return modifier_obj.modifier;
 		}
 	}
@@ -109,14 +111,18 @@ list_modifier::Modifier list_modifier::get_modifier(const char *modifier_name)
 	return ListModifier::INVALID;;
 }
 
-bool list_modifier::match_name(const char *other_name) const
+const char *get_list_modifier_name(const ListModifier modifier)
 {
-	if (modifier == ListModifier::AT_INDEX) {
-		// check if modifier is a prefix
-		return !strnicmp(name, other_name, strlen(name));
-	} else {
-		return !stricmp(name, other_name);
+	Assertion(modifier != ListModifier::INVALID, "Attempt to get name of invalid list modifier. Please report!");
+
+	for (const auto &modifier_obj : List_modifiers) {
+		if (modifier_obj.modifier == modifier) {
+			return modifier_obj.name;
+		}
 	}
+
+	UNREACHABLE("get_list_modifier_name() given unknown modifier %d", (int)modifier);
+	return Empty_str;
 }
 
 // sexp_container.h functions
@@ -314,19 +320,255 @@ sexp_container *get_sexp_container(const char* name) {
 * Tests whether this position in a character array is the start of a container name
 * Returns a pointer to the container or nullptr if not found
 **/
-sexp_container *get_sexp_container_special(const SCP_string& text, size_t start_pos)
+sexp_container *get_sexp_container_special(const SCP_string &text, size_t start_pos)
 {
 	Assert(!text.empty());
 	Assert(start_pos < text.length());
 
 	for (auto &container : Sexp_containers) {
-		if (!strnicmp(container.container_name.c_str(), text.c_str(), container.container_name.length())) {
+		// in case one container's name is a prefix of another's, include terminating DELIM
+		const SCP_string name_to_find = container.container_name + sexp_container::DELIM_STR;
+		if (!strnicmp(text.c_str() + start_pos, name_to_find.c_str(), name_to_find.length())) {
 			return &container;
 		}
 	}
 
 	// not found
 	return nullptr;
+}
+
+/**
+* Helper function for sexp_container_replace_refs_with_values(). Given a SEXP Container it works out what modifer was used and what the replacement string should be.
+**/
+bool get_replace_text_for_modifier(const SCP_string &text,
+	sexp_container &container,
+	const size_t lookHere,
+	SCP_string &replacement_text,
+	size_t &num_chars_to_replace)
+{
+	// for map containers, check if this matches a map key
+	if (container.is_map()) {
+		if (container.map_data.empty()) {
+			Warning(LOCATION, "Attempt to replace text using empty map container %s", container.container_name.c_str());
+			return false;
+		}
+
+		const size_t key_ends_here = text.find(sexp_container::DELIM, lookHere);
+		if (key_ends_here == SCP_string::npos) {
+			Warning(LOCATION,
+				"Attempt to replace text from map container %s but the key is "
+				"missing a final '&'",
+				container.container_name.c_str());
+			return false;
+		}
+
+		const SCP_string key = text.substr(lookHere, key_ends_here - lookHere);
+		const auto iter = container.map_data.find(key);
+
+		if (iter == container.map_data.end()) {
+			Warning(LOCATION,
+				"Attempt to replace text from map container %s with nonexistent key %s",
+				container.container_name.c_str(),
+				key.c_str());
+			return false;
+		}
+
+		replacement_text = iter->second;
+
+		num_chars_to_replace += key.length();
+	} else {
+		// for list containers, check if this matches a list modifier
+		Assertion(container.is_list(),
+			"Attempt to replace text using container %s with unknwon type %d. Please report!",
+			container.container_name.c_str(),
+			(int)container.type);
+
+		if (container.list_data.empty()) {
+			Warning(LOCATION, "Attempt to replace text using empty list container %s", container.container_name.c_str());
+			return false;
+		}
+
+		const auto modifier = get_list_modifier(text.c_str() + lookHere, true);
+
+		if (modifier == ListModifier::INVALID) {
+			Warning(LOCATION,
+				"Attempt to reaplce text from list container %s using unrecognized list modifer",
+				container.container_name.c_str());
+			return false;
+		}
+
+		const size_t modifier_length = strlen(get_list_modifier_name(modifier));
+		int data_index = 0;
+		size_t number_length = 0;
+		SCP_string number_string;
+		auto &list_data = container.list_data;
+		auto list_it = list_data.begin();
+
+		switch (modifier) {
+		case ListModifier::GET_FIRST:
+			replacement_text = list_data.front();
+			break;
+
+		case ListModifier::GET_LAST:
+			replacement_text = list_data.back();
+			break;
+
+		case ListModifier::REMOVE_FIRST:
+			replacement_text = list_data.front();
+			list_data.pop_front();
+			break;
+
+		case ListModifier::REMOVE_LAST:
+			replacement_text = list_data.back();
+			list_data.pop_back();
+			break;
+
+		case ListModifier::GET_RANDOM:
+			data_index = util::Random::next((int)list_data.size());
+			replacement_text = *std::next(list_it, data_index);
+			break;
+
+		case ListModifier::REMOVE_RANDOM:
+			data_index = util::Random::next((int)list_data.size());
+			std::advance(list_it, data_index);
+			replacement_text = *list_it;
+			list_data.erase(list_it);
+			break;
+
+		case ListModifier::AT_INDEX:
+			number_string = text.substr(lookHere + modifier_length);
+			if (number_string.empty()) {
+				Warning(LOCATION,
+					"Container text replacement found empty index into list container %s",
+					container.container_name.c_str());
+				return false;
+			}
+			data_index = atoi(number_string.c_str());
+			if (data_index < 0 || data_index >= (int)list_data.size()) {
+				Warning(LOCATION,
+					"Container text replacement found invalid index '%s' into list container %s",
+					number_string.c_str(),
+					container.container_name.c_str());
+				return false;
+			}
+			replacement_text = *std::next(list_it, data_index);
+
+			// include spaces, in case the FREDder put one between "At" and the index
+			number_length = strspn(number_string.c_str(), " 0123456789");
+			break;
+
+		default:
+			UNREACHABLE("Unhandled list modifier %d. Please report!", (int)modifier);
+			return false;
+		}
+
+		num_chars_to_replace += modifier_length;
+
+		// for the "At" modifier, we need to include the chars used by the index
+		if (modifier == ListModifier::AT_INDEX) {
+			num_chars_to_replace += number_length;
+		}
+	}
+
+	// account for the final '&'
+	++num_chars_to_replace;
+
+	return true;
+}
+
+// inspired by sexp_replace_variable_names_with_values()
+/**
+* Replace container references in a string with their values
+**/
+bool sexp_container_replace_refs_with_values(SCP_string &text)
+{
+	bool replaced_anything = false;
+	size_t lookHere = 0;
+	int num_replacements = 0;
+
+	while (lookHere < text.length()) {
+		// look for the meta-character
+		size_t foundHere = text.find(sexp_container::DELIM, lookHere);
+
+		// found?
+		if (foundHere != SCP_string::npos && foundHere != text.length() - 1) {
+			// see if a container starts at the next char
+			auto *p_container = get_sexp_container_special(text, foundHere + 1);
+			if (p_container != nullptr) {
+				// we want to replace either &list_container&list_modifier& or &map_container&map_key&
+
+				// + 2 for the enclosing '&' chars around the container name
+				size_t num_chars_to_replace = p_container->container_name.length() + 2;
+
+				// make sure the enclosing '&' appears after the container name
+				size_t expected_amp_pos = foundHere + num_chars_to_replace - 1;
+				if (expected_amp_pos >= text.length() || text[expected_amp_pos] != sexp_container::DELIM) {
+					// no modifier/key specified - ignore this matching container name, as the replacement is malformed
+					lookHere = foundHere + 1;
+					Warning(LOCATION,
+						"Attempt to replace text from container %s with no modifier. "
+						"This format is expected for lists &Container_Name&Modifier&. This "
+						"format is expected for maps &Container_Name&Key&",
+						p_container->container_name.c_str());
+					continue;
+				}
+
+				size_t modifierLookHere = foundHere + num_chars_to_replace;
+
+				SCP_string replacement_text;
+
+				if (!get_replace_text_for_modifier(text, *p_container, modifierLookHere, replacement_text, num_chars_to_replace)) {
+					// list modifier/map key was invalid
+					// skip past the text we were unable to replace
+					lookHere = foundHere + num_chars_to_replace;
+					continue;
+				}
+
+				// perform the replacement
+				text.replace(foundHere, num_chars_to_replace, replacement_text);
+				replaced_anything = true;
+
+				++num_replacements;
+				// avoid potential infinite loops
+				if (num_replacements >= 50) {
+					Warning(LOCATION,
+						"Container text replacement found potential infinite loop in multidimensionality "
+						"in '%s' at position %d.",
+						text.c_str(),
+						(int)lookHere);
+					break;
+				}
+
+				// don't go past the replacement point, because if container multidimensionality
+				// is being used, then the resulting text will contain another container ref
+				lookHere = foundHere;
+			} else { // no container name found 
+				lookHere = foundHere + 1;
+			}
+		} else {
+			// no potential metacharacter found, so we're done replacing
+			break;
+		}
+	}
+
+	return replaced_anything;
+}
+
+bool sexp_container_replace_refs_with_values(char *text, size_t max_size)
+{
+	Assertion(text != nullptr, "Attempt to perform container text replacement with null text. Please report!");
+
+	SCP_string text_str = text;
+
+	bool replaced_anything = sexp_container_replace_refs_with_values(text_str);
+
+	if (replaced_anything) {
+		Assertion(max_size > 0, "Attempt to perform container text replacement with zero-sized buffer. Please report!");
+		strncpy(text, text_str.c_str(), max_size - 1);
+		text[max_size - 1] = 0;
+	}
+
+	return replaced_anything;
 }
 
 // Containers should not be modified if the game is simply checking the syntax. 
@@ -351,7 +593,6 @@ bool are_containers_modifiable()
 	}
 }
 
-// TODO: see if this code can be combined with similar code for text replacement
 bool sexp_container_CTEXT_helper(int &node, sexp_container &container, SCP_string &result)
 {
 	if (container.is_map()) {
@@ -382,7 +623,7 @@ bool sexp_container_CTEXT_helper(int &node, sexp_container &container, SCP_strin
 		}
 
 		const char *modifier_name = CTEXT(node);
-		const auto modifier = list_modifier::get_modifier(modifier_name);
+		const auto modifier = get_list_modifier(modifier_name);
 
 
 		if (modifier == ListModifier::INVALID) {
@@ -452,7 +693,6 @@ bool sexp_container_CTEXT_helper(int &node, sexp_container &container, SCP_strin
 			break;
 		}
 	}
-
 	return false;
 }
 

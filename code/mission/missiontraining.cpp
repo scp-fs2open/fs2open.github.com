@@ -23,6 +23,7 @@
 #include "network/multi.h"
 #include "parse/parselo.h"
 #include "parse/sexp.h"
+#include "parse/sexp_container.h"
 #include "playerman/player.h"
 #include "popup/popup.h"
 #include "ship/ship.h"
@@ -868,8 +869,11 @@ void message_training_queue(const char *text, int timestamp, int length)
 		}
 
 		// Goober5000 - replace variables if necessary
+		// karajorma/jg18 - replace container references if necessary
 		temp_buf = Messages[m].message;
-		if (sexp_replace_variable_names_with_values(temp_buf))
+		const bool replace_var = sexp_replace_variable_names_with_values(temp_buf);
+		const bool replace_con = sexp_container_replace_refs_with_values(temp_buf);
+		if (replace_var || replace_con)
 			Training_message_queue[Training_message_queue_count].special_message = vm_strdup(temp_buf.c_str());
 
 		Training_message_queue_count++;

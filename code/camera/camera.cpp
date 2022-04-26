@@ -9,6 +9,7 @@
 #include "model/model.h" //polymodel, model_get
 #include "options/Option.h"
 #include "parse/parselo.h"
+#include "parse/sexp_container.h"
 #include "playerman/player.h" //player_get_padlock_orient
 #include "ship/ship.h"        //compute_slew_matrix
 
@@ -651,6 +652,7 @@ subtitle::subtitle(int in_x_pos, int in_y_pos, const char* in_text, const char* 
 	{
 		text_buf = in_text;
 		sexp_replace_variable_names_with_values(text_buf);
+		sexp_container_replace_refs_with_values(text_buf);
 		in_text = text_buf.c_str();
 	}
 
