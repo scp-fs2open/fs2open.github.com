@@ -63,14 +63,14 @@ typedef struct delayed_ssm_data {
 	int linenum;
 	SCP_string ssm_entry;
 } delayed_ssm_data;
-SCP_map<SCP_string, delayed_ssm_data> Delayed_SSM_data;
+SCP_unordered_map<SCP_string, delayed_ssm_data> Delayed_SSM_data;
 SCP_vector<SCP_string> Delayed_SSM_names;
 
 typedef struct delayed_ssm_index_data {
 	SCP_string filename;
 	int linenum;
 } delayed_ssm_index_data;
-SCP_map<SCP_string, delayed_ssm_index_data> Delayed_SSM_indices_data;
+SCP_unordered_map<SCP_string, delayed_ssm_index_data> Delayed_SSM_indices_data;
 SCP_vector<SCP_string> Delayed_SSM_indices;
 
 
@@ -8605,8 +8605,8 @@ void validate_SSM_entries()
 	}
 
 	// This information is no longer relevant, so might as well clear it out.
-	Delayed_SSM_data.clear();
-	Delayed_SSM_names.clear();
+	Delayed_SSM_data = SCP_unordered_map<SCP_string, delayed_ssm_data>();
+	Delayed_SSM_names = SCP_vector<SCP_string>();
 
 	for (it = Delayed_SSM_indices.begin(); it != Delayed_SSM_indices.end(); ++it) {
 		delayed_ssm_index_data *dat = &Delayed_SSM_indices_data[*it];
@@ -8624,6 +8624,10 @@ void validate_SSM_entries()
 		}
 		nprintf(("parse", "Validation complete, SSM-index is %d.\n", wip->SSM_index));
 	}
+
+	// We don't need this anymore, either.
+	Delayed_SSM_indices = SCP_vector<SCP_string>();
+	Delayed_SSM_indices_data = SCP_unordered_map<SCP_string, delayed_ssm_index_data>();
 }
 
 int weapon_get_random_player_usable_weapon()
