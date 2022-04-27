@@ -512,13 +512,13 @@ void model_collide_parse_bsp_tmap2poly(bsp_collision_leaf* leaf, SCP_vector<mode
 		return;
 	}
 
-	verts = reinterpret_cast<model_tmap_vert*>(p + 52);
+	verts = reinterpret_cast<model_tmap_vert*>(p + TMAP2_VERTS);
 
 	leaf->tmap_num = (ubyte)tmap_num;
 	leaf->num_verts = (ubyte)nv;
 	leaf->vert_start = (int)vert_buffer->size();
 
-	plane_norm = vp(p + 32);
+	plane_norm = vp(p + TMAP2_NORMAL);
 
 	leaf->plane_norm = *plane_norm;
 
