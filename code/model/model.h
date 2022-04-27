@@ -235,9 +235,38 @@ typedef struct model_special {
 
 #define MAX_LIVE_DEBRIS	7
 
+// Byte offsets for TMAPPOLY/TMAP2POLY
+// An offset of +0 corresponds to the ID of the chunk
+#define TMAP_SIZE			4
+#define TMAP_NORMAL			8
+#define TMAP_CENTER			20
+#define TMAP_RADIUS			32
+#define TMAP_NVERTS			36
+#define TMAP_TEXNUM			40
+#define TMAP_VERTS			44
+
+#define TMAP2_BBOX_MIN		8
+#define TMAP2_BBOX_MAX		20
+#define TMAP2_NORMAL		32
+#define TMAP2_TEXNUM		44
+#define TMAP2_NVERTS		48
+#define TMAP2_VERTS			52
+
+/**
+ * @struct model_tmap_vert_old
+ * @brief Struct to hold vertex information for a polygon (TMAPPOLY)
+ *
+ */
+typedef struct model_tmap_vert_old {
+	uint vertnum; //!< Vertex index into a subobject vertex buffer.
+	uint normnum; //!< Normal index into a subobject normal buffer.
+	float u;      //!< Horizontal texture coordinate for the vertex.
+	float v;      //!< Vertical texture coordinate for the vertex.
+} model_tmap_vert_old;
+
 /**
 * @struct model_tmap_vert
-* @brief Struct to hold vertex information for a polygon
+* @brief Struct to hold vertex information for a polygon (TMAP2POLY)
 * 
 */
 typedef struct model_tmap_vert {
@@ -245,6 +274,21 @@ typedef struct model_tmap_vert {
 	uint normnum;	//!< Normal index into a subobject normal buffer.
 	float u;        //!< Horizontal texture coordinate for the vertex.
 	float v;		//!< Vertical texture coordinate for the vertex.
+
+	/**
+	 * @brief Default constructor for model_tmap_vert
+	 *
+	 */
+	model_tmap_vert() : vertnum(0), normnum(0), u(0.0f), v(0.0f) {}
+
+	/**
+	 * @brief Initializes a model_tmap_vert from a model_tmap_vert_old.
+	 *
+	 * @param tmap_vert A TMAPPOLY vertex object.
+	 */
+	model_tmap_vert(const model_tmap_vert_old& tmap_vert)
+		: vertnum(tmap_vert.vertnum), normnum(tmap_vert.normnum), u(tmap_vert.u), v(tmap_vert.v)
+	{}
 } model_tmap_vert;
 
 /*
