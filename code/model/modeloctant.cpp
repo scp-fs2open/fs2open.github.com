@@ -139,7 +139,7 @@ void moff_tmappoly(ubyte * p, polymodel * pm, model_octant * oct, int just_count
 	verts = new model_tmap_vert[nv];
 	auto vs = reinterpret_cast<model_tmap_vert_old*>(&p[44]);
 
-	for (uint i = 0; i < nv; i++) {
+	for (i = 0; i < nv; i++) {
 		verts[i] = model_tmap_vert(vs[i]);
 	}
 
@@ -200,7 +200,7 @@ void moff_tmap2poly(ubyte* p, polymodel* pm, model_octant* oct, int just_count)
 
 	nv = uw(p + TMAP2_NVERTS);
 
-	verts = (model_tmap_vert*)(p + TMAP2_VERTS);
+	verts = reinterpret_cast<model_tmap_vert*>(p + TMAP2_VERTS);
 
 	vec3d center_point;
 	vm_vec_zero(&center_point);

@@ -258,8 +258,8 @@ typedef struct model_special {
  *
  */
 typedef struct model_tmap_vert_old {
-	uint vertnum; //!< Vertex index into a subobject vertex buffer.
-	uint normnum; //!< Normal index into a subobject normal buffer.
+	ushort vertnum; //!< Vertex index into a subobject vertex buffer.
+	ushort normnum; //!< Normal index into a subobject normal buffer.
 	float u;      //!< Horizontal texture coordinate for the vertex.
 	float v;      //!< Vertical texture coordinate for the vertex.
 } model_tmap_vert_old;
@@ -290,17 +290,6 @@ typedef struct model_tmap_vert {
 		: vertnum(tmap_vert.vertnum), normnum(tmap_vert.normnum), u(tmap_vert.u), v(tmap_vert.v)
 	{}
 } model_tmap_vert;
-
-/*
- * @brief Helper function to correctly convert the chunk data from TMAPPOLY to 
- *		  model_tmap_vert.
- * 
- * @param[in] vs Vertex data for the parsed TMAP
- * @param[out] verts Converted vertex data
- * @param n_vert Number of vertices in the chunk
- * 
-**/
-void unpack_tmap_verts(const ubyte* vs, model_tmap_vert* verts, uint n_vert);
 
 struct bsp_collision_node {
 	vec3d min;

@@ -1709,18 +1709,6 @@ int check_values(vec3d *N)
 	return 0;
 }
 
-// Unpacks verts from TMAPPOLY since it's no longer direct memory mapped with model_tmap_vert
-void unpack_tmap_verts(const ubyte* vs, model_tmap_vert* verts, uint n_vert) {
-	// Copy the verts manually since they aren't aligned with the struct
-	for (uint i = 0; i < n_vert; i++) {
-		verts[i].vertnum = us(vs);
-		verts[i].normnum = us(vs + 2);
-		verts[i].u = fl(vs + 4);
-		verts[i].v = fl(vs + 8);
-		vs += 12;
-	}
-}
-
 int Parse_normal_problem_count = 0;
 
 void parse_tmap(int offset, ubyte *bsp_data)
@@ -1819,7 +1807,7 @@ void parse_tmap2(int offset, ubyte* bsp_data)
 
 	int problem_count = 0;
 
-	tverts = (model_tmap_vert*)&bsp_data[offset + TMAP2_VERTS];
+	tverts = reinterpret_cast<model_tmap_vert*>(&bsp_data[offset + TMAP2_VERTS]);
 
 	for (uint i = 1; i < (n_vert - 1); i++) {
 		V = &polygon_list[pof_tex].vert[(polygon_list[pof_tex].n_verts)];
@@ -1967,8 +1955,8 @@ void parse_bsp(int offset, ubyte *bsp_data)
 
 void find_tmap(int offset, const ubyte *bsp_data, int id)
 {
-	int pof_tex = w(bsp_data+offset+(id == OP_TMAP2POLY ? TMAP2_TEXNUM : TMAP_TEXNUM));
-	uint n_vert = uw(bsp_data+offset+ (id == OP_TMAP2POLY ? TMAP2_NVERTS : TMAP_NVERTS));
+	int pof_tex = cw(bsp_data+offset+(id == OP_TMAP2POLY ? TMAP2_TEXNUM : TMAP_TEXNUM));
+	uint n_vert = cuw(bsp_data+offset+ (id == OP_TMAP2POLY ? TMAP2_NVERTS : TMAP_NVERTS));
 
 	tri_count[pof_tex] += n_vert-2;	
 }
@@ -3231,7 +3219,7 @@ void bsp_polygon_data::process_tmap2(int offset, ubyte* bsp_data)
 		return;
 	}
 
-	tverts = (model_tmap_vert*)&bsp_data[offset + TMAP2_VERTS];
+	tverts = reinterpret_cast<model_tmap_vert*>(&bsp_data[offset + TMAP2_VERTS]);
 
 	// make a polygon
 	polygon.Start_index = (uint)Polygon_vertices.size();

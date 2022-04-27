@@ -464,7 +464,7 @@ void model_collide_parse_bsp_tmappoly(bsp_collision_leaf *leaf, SCP_vector<model
 	verts = new model_tmap_vert[nv];
 	auto vs = reinterpret_cast<model_tmap_vert_old*>(&p[44]);
 
-	for (uint i = 0; i < nv; i++) {
+	for (i = 0; i < nv; i++) {
 		verts[i] = model_tmap_vert(vs[i]);
 	}
 
@@ -512,7 +512,7 @@ void model_collide_parse_bsp_tmap2poly(bsp_collision_leaf* leaf, SCP_vector<mode
 		return;
 	}
 
-	verts = (model_tmap_vert*)(p + 52);
+	verts = reinterpret_cast<model_tmap_vert*>(p + 52);
 
 	leaf->tmap_num = (ubyte)tmap_num;
 	leaf->num_verts = (ubyte)nv;
