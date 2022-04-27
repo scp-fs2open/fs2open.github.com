@@ -115,11 +115,6 @@
 #undef MessageBox
 #endif
 
-// these are useful for embedding numbers in SEXP help strings
-// see https://stackoverflow.com/questions/5459868/concatenate-int-to-string-using-c-preprocessor
-#define STR_HELPER(x) #x
-#define STR(x) STR_HELPER(x)
-
 
 SCP_vector<sexp_oper> Operators = {
 //   Operator, Identity, Min / Max arguments
@@ -34022,7 +34017,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	// Goober5000
 	{ OP_AI_IGNORE_NEW, "Ai-ignore-new (Ship goal)\r\n"
 		"\tTells the specified ship to ignore the given target and not consider it when picking something "
-		"to attack.  Up to " STR(MAX_IGNORE_NEW_OBJECTS) " targets can be ignored at a time.  Targets ignored by "
+		"to attack.  Up to " SCP_TOKEN_TO_STR(MAX_IGNORE_NEW_OBJECTS) " targets can be ignored at a time.  Targets ignored by "
 		"any given ship do not affect targets ignored by any other ship.\r\n\r\n"
 		"Takes 2 arguments...\r\n"
 		"\t1:\tName of target to ignore.\r\n"
@@ -34858,7 +34853,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t4: List of subsys names not to be randomized\r\n"},
 
 	{ OP_SUPERNOVA_START, "supernova-start\r\n"
-		"\t1: Time in seconds that the supernova lasts.  Note that it will actually hit the player at " STR(SUPERNOVA_CUT_TIME) " seconds.  If you want the HUD gauge to adjust for this, use the '$Supernova hits at zero' game_settings.tbl option.\r\n"},
+		"\t1: Time in seconds that the supernova lasts.  Note that it will actually hit the player at " SCP_TOKEN_TO_STR(SUPERNOVA_HIT_TIME) " seconds.  If you want the HUD gauge to adjust for this, use the '$Supernova hits at zero' game_settings.tbl option.\r\n"},
 
 	{ OP_SUPERNOVA_STOP, "supernova-stop\r\n"
 		"\t Stops a supernova in progress.\r\n"
