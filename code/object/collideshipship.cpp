@@ -481,9 +481,9 @@ static int calculate_next_multiplayer_client_collision_time(float impulse_magnit
 	// Uses a continuous cubic rational function that allows us to space out collisions based on collision strength.
 	// based on some quick tests from Asteroth about how strong impuse is on average.
 	constexpr float IMPULSE_RANGE_FACTOR = 0.000000000001031f; 	// The inverse of the range of regular impulse values, 9900, to the third power
-	constexpr int MIN_IMPULSE = 100;							// The lowest values of collisions that we see.  Ignore if lower than this.
-	constexpr int LONGEST_COLLISION_INTERVAL = 175;				// 1/5th of a second is usually enough time to get an update from the server.
-	constexpr int MINIMUM_INTERVAL = 25;						// if there is sufficient impulse, don't go below this value.
+	constexpr float MIN_IMPULSE = 100.0f;							// The lowest values of collisions that we see.  Ignore if lower than this.
+	constexpr float LONGEST_COLLISION_INTERVAL = 175.0f;				// 1/5th of a second is usually enough time to get an update from the server.
+	constexpr float MINIMUM_INTERVAL = 25.0f;						// if there is sufficient impulse, don't go below this value.
 
 	impulse_magnitude -= MIN_IMPULSE;
 
