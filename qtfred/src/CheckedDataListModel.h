@@ -178,8 +178,8 @@ public:
 		pointer operator->() { return pointer(&_it->internalData(), _it->_checked); }
 		Iterator& operator++() { _it++; return *this; }
 		Iterator operator++(int) { Iterator tmp = *this; ++(*this); return tmp; }
-		friend bool operator== (const Iterator &a, const Iterator &b) { return a._it == b._it;}
-		friend bool operator!= (const Iterator &a, const Iterator &b) { return a._it != b._it;}
+		bool operator== (const Iterator &other) { return _it == other._it;}
+		bool operator!= (const Iterator &other) { return _it != other._it;}
 
 	private:
 		iterator_delegate _it;
@@ -204,8 +204,8 @@ public:
 		pointer operator->() { return pointer(&_it->internalData(), _it->_checked); }
 		ConstIterator& operator++() { _it++; return *this; }
 		ConstIterator operator++(int) { ConstIterator tmp = *this; ++(*this); return tmp; }
-		friend bool operator== (const ConstIterator &a, const ConstIterator &b) { return a._it == b._it;}
-		friend bool operator!= (const ConstIterator &a, const ConstIterator &b) { return a._it != b._it;}
+		bool operator== (const ConstIterator &other) { return _it == other._it;}
+		bool operator!= (const ConstIterator &other) { return _it != other._it;}
 
 	private:
 		iterator_delegate _it;

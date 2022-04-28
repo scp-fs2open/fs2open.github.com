@@ -20,7 +20,8 @@ namespace fso {
 namespace fred {
 namespace dialogs {
 
-static QString loadFile(QString file, const QString& campaignType) {
+namespace  {
+QString loadOrCreateFile(QString file, const QString& campaignType) {
 	if (file.isEmpty()) {
 		mission_campaign_clear();
 		Campaign.type = campaignType.isEmpty() ? CAMPAIGN_TYPE_SINGLE :
@@ -28,7 +29,7 @@ static QString loadFile(QString file, const QString& campaignType) {
 		return {};
 	}
 	//FRED is to enforce that only on new campaigns a campaign type may be given
-	Assert(campaignType.isEmpty());
+	Assertion(campaignType.isEmpty(), "The editor should only allow setting a campaign type when a new campaign is created. Please report.");
 	parse_init(false);
 	if (mission_campaign_load(qPrintable(file.replace('/',DIR_SEPARATOR_CHAR)), nullptr, 0))
 		return {};
@@ -36,17 +37,19 @@ static QString loadFile(QString file, const QString& campaignType) {
 	return Campaign.filename;
 }
 
-static void initShips(const SCP_vector<ship_info>::const_iterator &s_it, CheckedDataListModel<std::ptrdiff_t> &model){
+void initShips(const SCP_vector<ship_info>::const_iterator &s_it, CheckedDataListModel<std::ptrdiff_t> &model){
+	Assertion(s_it < Ship_info.cend(), "Attempting to access a value outside of Ship_info. Please report.");
 	std::ptrdiff_t shpIdx{ std::distance(Ship_info.cbegin(), s_it) };
 	if (s_it->flags[Ship::Info_Flags::Player_ship]) {
 		model.initRow(
 				s_it->name,
 				shpIdx,
 				static_cast<bool>(Campaign.ships_allowed[static_cast<size_t>(shpIdx)]));
-}
+	}
 }
 
-static void initWeps(const SCP_vector<weapon_info>::const_iterator &w_it, CheckedDataListModel<std::ptrdiff_t> &model){
+void initWeps(const SCP_vector<weapon_info>::const_iterator &w_it, CheckedDataListModel<std::ptrdiff_t> &model){
+	Assertion(w_it < Weapon_info.cend(), "Attempting to access a value outside of Weapon_info. Please report.");
 	std::ptrdiff_t wepIdx{ std::distance(Weapon_info.cbegin(), w_it) };
 	for (const ship_info& shp: Ship_info) {
 		if (shp.flags[Ship::Info_Flags::Player_ship]
@@ -56,11 +59,11 @@ static void initWeps(const SCP_vector<weapon_info>::const_iterator &w_it, Checke
 					w_it->name,
 					wepIdx,
 					static_cast<bool>(Campaign.weapons_allowed[static_cast<size_t>(wepIdx)]));
-}
-}
+		}
+	}
 }
 
-static SCP_vector<SCP_string> getMissions(){
+SCP_vector<SCP_string> getMissions(){
 	Skip_packfile_search = 1;
 	SCP_vector<SCP_string> missions;
 	cf_get_file_list(missions, CF_TYPE_MISSIONS, "*fs2", CF_SORT_NAME);
@@ -68,7 +71,7 @@ static SCP_vector<SCP_string> getMissions(){
 	return missions;
 }
 
-static bool parseMnPart(mission *mn, const char *filename){
+bool parseMnPart(mission *mn, const char *filename){
 	try {
 		read_file_text(filename, CF_TYPE_MISSIONS);
 
@@ -91,11 +94,12 @@ static bool parseMnPart(mission *mn, const char *filename){
 	}
 	return true;
 }
+} //namespace
 
 CampaignEditorDialogModel::CampaignEditorDialogModel(CampaignEditorDialog* _parent, EditorViewport* viewport, const QString &file, const QString& newCampaignType) :
 	AbstractDialogModel(_parent, viewport),
 	parent(_parent),
-	campaignFile(loadFile(file, newCampaignType)),
+	campaignFile(loadOrCreateFile(file, newCampaignType)),
 	campaignType(campaignTypes[Campaign.type]),
 	initialShips(Ship_info, &initShips, this),
 	initialWeapons(Weapon_info, &initWeps, this),
@@ -109,15 +113,15 @@ CampaignEditorDialogModel::CampaignEditorDialogModel(CampaignEditorDialog* _pare
 			mission temp{};
 			bool loaded{parseMnPart(&temp, qPrintable(Campaign.missions[i].name))};
 
-			CampaignMissionData* ptr{
+			CampaignMissionData* mnDataPtr{ // temporary handle, until the missionData submodel takes ownership
 				new CampaignMissionData{
 					Campaign.missions[i].name, loaded, &temp, &Campaign.missions[i]
 				}
 			};
 
-			ptr->fredable = false;
+			mnDataPtr->fredable = false;
 
-			missionData.initRow(Campaign.missions[i].name, ptr, true,
+			missionData.initRow(Campaign.missions[i].name, mnDataPtr, true,
 							   loaded ? Qt::darkYellow : Qt::red);
 		}
 	}

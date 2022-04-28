@@ -1199,7 +1199,7 @@ void sim_room_close()
 //
 void sim_room_do_frame(float  /*frametime*/)
 {
-	char buf[CF_MAX_PATHNAME_LENGTH + 4];
+	char buf[CF_MAX_PATHNAME_LENGTH + 4]; // must hold at most the Campaign.name and a file extension (4 chars)
 	int i, k, y, line;
 	int font_height = gr_get_font_height();
 	int select_tease_line = -1;  // line mouse is down on, but won't be selected until button released	
