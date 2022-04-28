@@ -3660,7 +3660,7 @@ void localize_sexp(int text_node, int id_node)
  */
 int get_sexp()
 {
-	int start, node, last, op, count;
+	int start, node, last, op;
 	char token[TOKEN_LENGTH];
 	char variable_text[TOKEN_LENGTH];
 
@@ -3668,12 +3668,10 @@ int get_sexp()
 
 	// start - the node allocated in first instance of function
 	// node - the node allocated in current instance of function
-	// count - number of nodes allocated this instance of function [do we set last.rest or .first]
 	// variable - whether string or number is a variable referencing Sexp_variables
 
 	// initialization
 	start = last = -1;
-	count = 0;
 
 	ignore_white_space();
 	while (*Mp != ')') {
@@ -3838,11 +3836,25 @@ int get_sexp()
 		}
 
 		// update links
-		if (count++) {
-			Assert(last != -1);
-			Sexp_nodes[last].rest = node;
-		} else {
+		if (start == -1) {
 			start = node;
+		} else {
+			Assert(last != -1);
+			// Locked_sexp_true and Locked_sexp_false are only meant to represent operator
+			// nodes with no arguments, i.e. (true) and (false). If they appear as "bare"
+			// arguments to another operator, or have arguments of their own, the global
+			// SEXP node structure can become corrupted; we hack around this by always
+			// wrapping them in their own list in these cases and warning the user.
+			if (last == start && (start == Locked_sexp_false || start == Locked_sexp_true)) {
+				Warning(LOCATION, "Found true or false operator at the start of a list, likely in a handwritten SEXP.");
+				start = alloc_sexp("", SEXP_LIST, SEXP_ATOM_LIST, start, -1);
+				last = start;
+			}
+			if (node == Locked_sexp_false || node == Locked_sexp_true) {
+				Warning(LOCATION, "Found true or false operator in non-operator position, likely in a handwritten SEXP.");
+				node = alloc_sexp("", SEXP_LIST, SEXP_ATOM_LIST, node, -1);
+			}
+			Sexp_nodes[last].rest = node;
 		}
 
 		Assert(node != -1);  // ran out of nodes.  Time to raise the MAX!
