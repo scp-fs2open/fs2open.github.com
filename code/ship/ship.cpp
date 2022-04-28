@@ -7332,6 +7332,9 @@ void ship_render_cockpit(object *objp)
 	vm_vec_unrotate(&pos, &sip->cockpit_offset, &eye_ori);
 
 	bool shadow_override_backup = Shadow_override;
+	float fov_backup = Proj_fov;
+
+	g3_set_fov(Sexp_fov <= 0.0f ? COCKPIT_ZOOM_DEFAULT : Sexp_fov);
 
 	//Deal with the model
 	model_clear_instance(sip->cockpit_model_num);
@@ -7366,6 +7369,8 @@ void ship_render_cockpit(object *objp)
 	render_info.set_replacement_textures(Player_cockpit_textures);
 
 	model_render_immediate(&render_info, sip->cockpit_model_num, &eye_ori, &pos);
+
+	Proj_fov = fov_backup;
 
 	gr_end_view_matrix();
 	gr_end_proj_matrix();

@@ -156,6 +156,7 @@ public:
 //Some global stuff
 extern SCP_vector<subtitle> Subtitles;
 extern float VIEWER_ZOOM_DEFAULT;
+extern float COCKPIT_ZOOM_DEFAULT;
 extern float Sexp_fov;
 
 //Helpful functions

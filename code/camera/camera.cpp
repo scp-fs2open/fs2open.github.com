@@ -15,6 +15,7 @@
 
 //*************************IMPORTANT GLOBALS*************************
 float VIEWER_ZOOM_DEFAULT = 0.75f;			//	Default viewer zoom, 0.625 as per multi-lateral agreement on 3/24/97
+float COCKPIT_ZOOM_DEFAULT = 0.75f;
 float Sexp_fov = 0.0f;
 warp_camera Warp_camera;
 

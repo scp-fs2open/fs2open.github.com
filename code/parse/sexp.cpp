@@ -35643,7 +35643,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	},
 
 	{ OP_CUTSCENES_SET_FOV, "set-fov\r\n"
-		"\tSets the field of view - overrides all camera settings.  "
+		"\tSets the field of view - overrides all camera settings. Will also override cockpit FOV settings.  "
 		"Takes 1 argument...\r\n"
 		"\t1:\tNew FOV (degrees)\r\n"
 	},

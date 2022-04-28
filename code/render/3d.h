@@ -54,6 +54,12 @@ extern void g3_end_frame_func(const char *filename, int lineno);
  */
 extern int g3_in_frame();
 
+
+/**
+ * Sets the Proj_fov from the specified zoom value
+ */
+void g3_set_fov(float zoom);
+
 /**
  * Set view from camera
  */
