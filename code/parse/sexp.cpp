@@ -4062,7 +4062,8 @@ int stuff_sexp_variable_list()
 			type = SEXP_VARIABLE_BLOCK;
 		} else {
 			type = SEXP_VARIABLE_UNKNOWN;
-			Error(LOCATION, "SEXP variable '%s' is an unknown type!", var_name);
+			error_display(1, "SEXP variable '%s' is an unknown type!", var_name);
+			throw parse::ParseException("Unknown variable type");
 		}
 
 		// possibly get network-variable
@@ -4107,20 +4108,22 @@ int stuff_sexp_variable_list()
 			ignore_white_space();
 
 			// notify of error
-			Error(LOCATION, "Error parsing sexp variables - unknown persistence type encountered.  You can continue from here without trouble.");
+			error_display(0, "Error parsing sexp variables - unknown persistence type encountered.  You can continue from here without trouble.");
 		}
 
-		// check if variable name already exists
-		if ( (type & SEXP_VARIABLE_NUMBER) || (type & SEXP_VARIABLE_STRING) ) {
-			Assert(get_index_sexp_variable_name(var_name) == -1);
-		}
-
+		// finished getting info; now add the variable
 		if ( type & SEXP_VARIABLE_BLOCK ) {
 			add_block_variable(default_value, var_name, type, index);
 		}
-		else {			
-			count++;
-			sexp_add_variable(default_value, var_name, type, index);
+		else {
+			// check if variable name already exists
+			// (block variables can be duplicated, but regular ones can't)
+			if (get_index_sexp_variable_name(var_name) >= 0) {
+				error_display(0, "Variable '%s' already exists!  Skipping duplicate.", var_name);
+			} else {
+				count++;
+				sexp_add_variable(default_value, var_name, type, index);
+			}
 		}
 	}
 
