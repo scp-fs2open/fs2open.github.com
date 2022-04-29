@@ -4274,17 +4274,19 @@ void sexp_tree::OnKeyDown(NMHDR *pNMHDR, LRESULT *pResult)
 			else if (key == 'V')
 			{
 				update_item(GetSelectedItem());
+				auto orig_handle = item_handle;
 				NodeAddPaste();
+				// when using the keyboard shortcut, stay on the original node after pasting
+				SelectItem(orig_handle);
+				update_item(orig_handle);
 			}
 			else if (key == 'P')
 			{
 				update_item(GetSelectedItem());
-				auto orig_handle = item_handle;
+
 				NodeReplacePaste();
 
-				// when using the keyboard shortcut, stay on the original node after pasting
-				SelectItem(orig_handle);
-				update_item(orig_handle);
+
 			}
 		}
 	}
