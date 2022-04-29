@@ -805,6 +805,15 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 		Assert( !vm_is_vec_nan(&direction_light) );
 		vm_vec_scale_add2(&heavy->pos, &direction_light,  0.2f * lighter->phys_info.mass / (heavy->phys_info.mass + lighter->phys_info.mass));
 		vm_vec_scale_add2(&heavy->pos, &ship_ship_hit_info->collision_normal, -0.1f * lighter->phys_info.mass / (heavy->phys_info.mass + lighter->phys_info.mass));
+
+		// while we are in a block that has already checked if we should collide, set the MP client timestamps
+		if (MULTIPLAYER_CLIENT){
+			if (lighter == Player_obj && heavy->type == OBJ_SHIP){
+				Ships[heavy->instance].multi_client_collision_timestamp = _timestamp( calculate_next_multiplayer_client_collision_time(impulse_mag) );
+			} else if (lighter->type == OBJ_SHIP) {
+				Ships[lighter->instance].multi_client_collision_timestamp = _timestamp( calculate_next_multiplayer_client_collision_time(impulse_mag) );
+			}
+		}
 	}
 	
 	//For landings, we want minimal movement on the light ship (just enough to keep the collision detection honest)
@@ -822,14 +831,6 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 			lighter->phys_info.mass = copy_mass;
 		} else {
 			heavy->phys_info.mass = copy_mass;
-		}
-	}
-
-	if (MULTIPLAYER_CLIENT && should_collide){
-		if (lighter == Player_obj && heavy->type == OBJ_SHIP){
-			Ships[heavy->instance].multi_client_collision_timestamp = _timestamp( calculate_next_multiplayer_client_collision_time(impulse_mag) );
-		} else if (lighter->type == OBJ_SHIP) {
-			Ships[lighter->instance].multi_client_collision_timestamp = _timestamp( calculate_next_multiplayer_client_collision_time(impulse_mag) );
 		}
 	}
 }
