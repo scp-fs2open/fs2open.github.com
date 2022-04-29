@@ -41,6 +41,8 @@ import forum
 MAJOR_VERSION_PATTERN = re.compile("set_if_not_defined\(FSO_VERSION_MAJOR (\d+)\)")
 MINOR_VERSION_PATTERN = re.compile("set_if_not_defined\(FSO_VERSION_MINOR (\d+)\)")
 BUILD_VERSION_PATTERN = re.compile("set_if_not_defined\(FSO_VERSION_BUILD (\d+)\)")
+REVISION_VERSION_PATTERN = re.compile("set_if_not_defined\(FSO_VERSION_REVISION (\d+)\)")
+REVISION_STR_VERSION_PATTERN = re.compile("set_if_not_defined\(FSO_VERSION_REVISION_STR (\d+)\)")
 
 LOG_FORMAT = """
 ------------------------------------------------------------------------%n
@@ -63,42 +65,50 @@ def _match_version_number(text, regex):
 	
 
 def get_source_version(date_version: datetime, tag_name: str) -> semantic_version.Version:
-	"""! Retrieves the build's version from `version.cmake`, forms it as a string, and appends the date
+	"""! Retrieves the version string from version_override.cmake (and version.cmake)
 
 	@param[in] `date_version` Date this build is published for release
 	@param[in] `tag_name`     Tag of this release, used to determine if release, rc, or nightly
 
-	@return If release: `MAJOR_VERSION.MINOR_VERSION.BUILD_VERSION` from version.cmake, or
-	@return If rc:      `MAJOR_VERSION.MINOR_VERSION.BUILD_VERSION` from tag_name, or
-	@return If nightly: `MAJOR_VERSION.MINOR_VERSION.BUILD_VERSION-date` from version.cmake
+	@return If release: `FSO_VERSION_MAJOR.FSO_VERSION_MINOR.FSO_VERSION_BUILD`
+	@return If rc:      `FSO_VERSION_MAJOR.FSO_VERSION_MINOR.FSO_VERSION_BUILD-FSO_VERSION_REVISION_STR`
+	@return If nightly: `FSO_VERSION_MAJOR.FSO_VERSION_MINOR.FSO_VERSION_BUILD-FSO_VERSION_REVISION_STR` (uses both version_override.cmake and version.cmake)
+
+	@note This is the version used to identify in Nebula and the forums.  version_override.cmake is used for the builds
+	  made by CI tools and version.cmake is used for builds made by devs.
 	"""
-	major = minor = build = version = 0
-	with open(os.path.join("..", "..", "cmake", "version.cmake"), "r") as f:
+
+	with open(os.path.join("..", "..", "version_override.cmake"), "r") as f:
 		filetext = f.read()
 		major = _match_version_number(filetext, MAJOR_VERSION_PATTERN)
 		minor = _match_version_number(filetext, MINOR_VERSION_PATTERN)
 		build = _match_version_number(filetext, BUILD_VERSION_PATTERN)
+		# revision = _match_version_number(filetext, REVISION_VERSION_PATTERN)
+		revision_str = _match_version_number(filetext, REVISION_STR_VERSION_PATTERN)
 
+	print("Parsing version_override.cmake...")
 	if "rc" in tag_name.lower():
-		# Release candidates idenfity with their unstable version (ex: 21.5.0-03052022) within the game and the logs, but
-		# the builds are named with the target release version (ex: 22.0.0).  Since this script works on the builds we
-		# need to grab the target release version from tag_name
-		x = tag_name.upper().split("_")
-		# "release" = x[0], year = x[1], major = x[2], minor = x[3], build = x[4], 
-		version = semantic_version.Version("{}.{}.{}-{}".format(x[1], x[2], x[3], x[4]))
+		version = semantic_version.Version("{}.{}.{}-{}".format(major, minor, build, revision_str))
 
 	elif "release" in tag_name.lower():
 		version = semantic_version.Version("{}.{}.{}".format(major, minor, build))
 
 	elif "nightly" in tag_name.lower():
-		version = semantic_version.Version("{}.{}.{}-{}".format(major, minor, build, date_version))
+		# Nightly's version_override.cmake only has FSO_VERSION_REVISION and FSO_VERSION_REVISION_STR set
+		# So, we have to pull the rest of the version string from version.cmake
+		print("Parsing version.cmake...")
+		with open(os.path.join("..", "..", "cmake", "version.cmake"), "r") as f:
+			major = _match_version_number(filetext, MAJOR_VERSION_PATTERN)
+			minor = _match_version_number(filetext, MINOR_VERSION_PATTERN)
+			build = _match_version_number(filetext, BUILD_VERSION_PATTERN)
+		version = semantic_version.Version("{}.{}.{}-{}".format(major, minor, build, revision_str))
 	
 	else:	
-		print("ERROR: malformed tag_name %s" % tag_name)
+		print("  ERROR: malformed tag_name %s" % tag_name)
 		sys.exit(1)
 
-	print("version: {}".format(version))
-	print("version.prerelease: {}".format(version.prerelease))
+	print("  version: {}".format(version))
+	print("  version.prerelease: {}".format(version.prerelease))
 	return version
 
 
@@ -145,17 +155,43 @@ def main():
 		print("ERROR: Invalid release mode %s passed. Expected release or nightly!" % sys.argv[1])
 		sys.exit(1)
 
+	linux_success = os.environ["LINUX_RESULT"] == "success"
+	windows_success = os.environ["WINDOWS_RESULT"] == "success"
+	if (sys.argv[1] == "release"):
+		if not (linux_success and windows_success):
+			# bail if this is a release and either build workflow failed
+			print("ERROR: One or more builds failed to publish! Cannot post release.")
+			sys.exit(1)
+	else:
+		if not (linux_success or windows_success):
+			# bail if this is a nightly build and both build workflows failed
+			print("ERROR: All builds failed to publish! Cannot post nightly.")
+			sys.exit(1)
+	
+	# bail if tag_name doesn't match with sys.argv[1]
 	tag_name = os.environ["RELEASE_TAG"]	##!< commit tag string
+	if (sys.argv[1] == "release") and (not tag_name.startswith("release_")):
+		print("ERROR: Invalid tag name detected. Expected release_ prefix for release builds but found %s (full ref = %s)" % tag_name, os.environ["GITHUB_REF"])
+		sys.exit(1)
+
+	if (sys.argv[1] == "nightly") and (not tag_name.startswith("nightly_")):
+		print("ERROR: Invalid tag name detected. Expected nightly_ prefix for nightly builds but found %s (full ref = %s)" % tag_name, os.environ["GITHUB_REF"])
+		sys.exit(1)
+
+	# bail if tag_name does not exist in the repo
+	if not check_output(("git show-ref --tags refs/tags/%s" % tag_name), text=True):
+		print("ERROR: Couldn't find tag %s in repo (git show-ref)!" % tag_name)
+		sys.exit(1)
+
+	# Populate version and date
 	date = datetime.now()	##!< current date
 	version = get_source_version(date.strftime(DATEFORMAT_VERSION), tag_name)	##!< form full version string
-	success = os.environ["LINUX_RESULT"] == "success" and os.environ["WINDOWS_RESULT"] == "success"	##!< true if both linux and windows builds successful
-
-	# check that tag_name is actually in the git repo and find the previous tag release
+	
+	# find the previous tag release (used by nightly)
 	tags = check_output(("git", "for-each-ref", "--sort=-taggerdate", "--format='%(tag)'", "refs/tags"), text=True).splitlines()	# retrieve all tags in the repo by using git on the shell
 	# NOTE: check_output returns canonical string representation. use repr() on strings its being compared to
 	previous_tag = None
 	found = False
-
 	for tag in tags:
 		if found:
 			# Look for the "previous" tag with the same configuration ('release_' or 'nightly_')
@@ -169,24 +205,20 @@ def main():
 
 	if not found:
 		# couldn't find tag, bail
-		print("ERROR: Couldn't find tag %s in repo!" % tag_name)
+		print("ERROR: Couldn't find tag %s in repo! (git for-each-ref)" % tag_name)
 		sys.exit(1)
 
-	if not previous_tag:
+	if (sys.argv[1] == "nightly") and (not previous_tag):
 		# couldn't find previous tag, bail
 		print("ERROR: Could not find a previous tag for %s!" % tag_name)
 		sys.exit(1)
 
 	if sys.argv[1] == "release":
 		# Release specific action
-		if not tag_name.startswith("release_"):
-			# Safety check tag is from a release
-			print("ERROR: Invalid tag name detected. Expected release_ prefix for release builds but found %s (full ref = %s)" % tag_name, os.environ["GITHUB_REF"])
-			sys.exit(1)
-
+		print("Retrieving file list...")
 		files, sources = file_list.get_release_files(tag_name, config)
 
-		print("Hashing files")
+		print("Hashing files...")
 		for file in files:
 			installer.get_hashed_file_list(file)
 
@@ -222,30 +254,27 @@ def main():
 		# print(installer.render_installer_config(version, groups, config))
 
 		# Publish release builds to Nebula
+		print("Publishing to Nebula...")
 		nebula.submit_release(
 			nebula.render_nebula_release(version, "rc" if version.prerelease else "stable", files, config),
 			config)
 
 		# Publish forum post, using the release.mako template
+		print("Publishing to Hard-light.net...")
 		fapi = forum.ForumAPI(config)
 		fapi.post_release(date.strftime(DATEFORMAT_FORUM), version, groups, sources)
 
 	else:
 		# Dead for now, nightly publish is done elsewhere
 		# Nightly specific action
-		if not tag_name.startswith("nightly_"):
-			# safety check tag is from a nightly
-			print("ERROR: Invalid tag name detected. Expected nightly_ prefix for nightly builds but found %s (full ref = %s)" % tag_name, os.environ["GITHUB_REF"])
-			sys.exit(1)
-
-		print("Retrieving file list")
+		print("Retrieving file list...")
 		files = file_list.get_ftp_files("nightly", tag_name, config)
 
-		print("Hashing files")
+		print("Hashing files...")
 		for file in files:
 			installer.get_hashed_file_list(file)
 
-		# Publish nightly builds to Nebula
+		print("Publishing to Nebula...")
 		nebula.submit_release(
 			nebula.render_nebula_release(version, "nightly", files, config),
 			config)
@@ -254,7 +283,12 @@ def main():
 		log = check_output(("git", "log", "%s^..%s^" % (previous_tag, tag_name), "--no-merges", "--stat", "--pretty=format:\"%s\"" % LOG_FORMAT.strip()))
 
 		# Publish forum post, using the nighty.mako template
+		print("Publishing to Hard-light.net...")
 		fapi = forum.ForumAPI(config)
-		fapi.post_nightly(date.strftime(DATEFORMAT_FORUM), os.environ["GITHUB_SHA"], files, log, success)
+		fapi.post_nightly(date.strftime(DATEFORMAT_FORUM), os.environ["GITHUB_SHA"], files, log, (linux_success and windows_success))
 
-main()
+	print("Done!")
+
+
+if __name__ == "__main__":
+	main()

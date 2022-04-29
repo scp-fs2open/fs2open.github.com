@@ -104,8 +104,13 @@ const int32_t LE_GR_RESIZE_FULL_CENTER       = 100;
 const int32_t LE_GR_RESIZE_MENU              = 101;
 const int32_t LE_GR_RESIZE_MENU_ZOOMED       = 102;
 const int32_t LE_GR_RESIZE_MENU_NO_OFFSET    = 103;
+const int32_t LE_TBOX_FLASH_NAME             = 104;
+const int32_t LE_TBOX_FLASH_CARGO            = 105;
+const int32_t LE_TBOX_FLASH_HULL             = 106;
+const int32_t LE_TBOX_FLASH_STATUS           = 107;
+const int32_t LE_TBOX_FLASH_SUBSYS           = 108;
 
-const int ENUM_NEXT_INDEX = 104; // <<<<<<<<<<<<<<<<<<<<<<
+const int ENUM_NEXT_INDEX = 109; // <<<<<<<<<<<<<<<<<<<<<<
 extern flag_def_list Enumerations[];
 extern size_t Num_enumerations;
 

@@ -213,7 +213,58 @@ int current_detail_level();
 
 
 // Goober5000
-void insertion_sort(void *array, size_t array_size, size_t element_size, int (*fncompare)(const void *, const void *));
+// A sort for use with small or almost-sorted lists.  Iteration time is O(n) for a fully-sorted list.
+// This uses a type-safe version of the function prototype for stdlib's qsort, although the size is an int rather than a size_t (for the reasons that j is an int).
+// The fncompare function should return <0, 0, or >0 as the left item is less than, equal to, or greater than the right item.
+template <typename T>
+void insertion_sort(T* array_base, int array_size, int (*fncompare)(const T*, const T*))
+{
+	// NOTE: j *must* be a signed type because j reaches -1 and j+1 must be 0.
+	int i, j;
+	T *current, *current_buf;
 
+	// allocate space for the element being moved
+	// (Taylor says that for optimization purposes malloc/free should be used rather than vm_malloc/vm_free here)
+	current_buf = (T*)malloc(sizeof(T));
+	if (current_buf == nullptr)
+	{
+		UNREACHABLE("Malloc failed!");
+		return;
+	}
+
+	// loop
+	for (i = 1; i < array_size; i++)
+	{
+		// grab the current element
+		// this does a lazy move/copy because if the array is mostly sorted,
+		// there's no sense copying sorted items to their own places
+		bool lazily_copied = false;
+		current = &array_base[i];
+
+		// bump other elements toward the end of the array
+		for (j = i - 1; (j >= 0) && (fncompare(&array_base[j], current) > 0); j--)
+		{
+			if (!lazily_copied)
+			{
+				// this may look strange but it is just copying the data
+				// into the buffer, then pointing to the buffer
+				*current_buf = std::move(*current);
+				current = current_buf;
+				lazily_copied = true;
+			}
+
+			array_base[j + 1] = std::move(array_base[j]);
+		}
+
+		if (lazily_copied)
+		{
+			// insert the current element at the correct place
+			array_base[j + 1] = std::move(*current);
+		}
+	}
+
+	// free the allocated space
+	free(current_buf);
+}
 
 #endif

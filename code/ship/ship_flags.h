@@ -130,6 +130,8 @@ namespace Ship {
 		No_passive_lightning,		// Asteroth - disables ship passive lightning
 		Same_arrival_warp_when_docked,		// Goober5000
 		Same_departure_warp_when_docked,	// Goober5000
+		Fail_sound_locked_primary,		// Kiloku -- Play the firing fail sound when the weapon is locked.
+		Fail_sound_locked_secondary,		// Kiloku -- Play the firing fail sound when the weapon is locked.
 
 		NUM_VALUES
 

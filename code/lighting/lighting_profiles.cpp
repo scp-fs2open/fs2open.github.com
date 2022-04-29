@@ -4,17 +4,8 @@
 #include "def_files/def_files.h"
 #include "lighting/lighting.h"
 #include "lighting/lighting_profiles.h"
+#include "parse/parsehi.h"
 #include "parse/parselo.h"
-
-//TODO: maybe a parsehi.cpp would be in order here?
-bool optional_parse_into_float(const SCP_string &fieldname, float* valuetarget)
-{
-	if(optional_string(fieldname.c_str())){
-		stuff_float(valuetarget);
-		return true;
-	}
-	return false;
-}
 
 void lighting_profile::reset()
 {
@@ -99,12 +90,12 @@ void lighting_profile::parse_default_section()
 			default_profile.tonemapper = tn;
 			keep_going = true;
 		}
-		keep_going |= optional_parse_into_float("$PPC Toe Strength:",&default_profile.ppc_values.toe_strength);
-		keep_going |= optional_parse_into_float("$PPC Toe Length:",&default_profile.ppc_values.toe_length);
-		keep_going |= optional_parse_into_float("$PPC Shoulder Length:",&default_profile.ppc_values.shoulder_length);
-		keep_going |= optional_parse_into_float("$PPC Shoulder Strength:",&default_profile.ppc_values.shoulder_strength);
-		keep_going |= optional_parse_into_float("$PPC Shoulder Angle:",&default_profile.ppc_values.shoulder_angle);
-		keep_going |= optional_parse_into_float("$Exposure:",&default_profile.exposure);
+		keep_going |= parse_optional_float_into("$PPC Toe Strength:",&default_profile.ppc_values.toe_strength);
+		keep_going |= parse_optional_float_into("$PPC Toe Length:",&default_profile.ppc_values.toe_length);
+		keep_going |= parse_optional_float_into("$PPC Shoulder Length:",&default_profile.ppc_values.shoulder_length);
+		keep_going |= parse_optional_float_into("$PPC Shoulder Strength:",&default_profile.ppc_values.shoulder_strength);
+		keep_going |= parse_optional_float_into("$PPC Shoulder Angle:",&default_profile.ppc_values.shoulder_angle);
+		keep_going |= parse_optional_float_into("$Exposure:",&default_profile.exposure);
 		//TODO: Handle case when there's no line matched but we haven't hit an #end
 		Assert(keep_going);
 	}

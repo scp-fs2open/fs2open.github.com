@@ -39,6 +39,7 @@
 #include "network/multiutil.h"
 #include "osapi/osapi.h"
 #include "parse/parselo.h"
+#include "parse/sexp_container.h"
 #include "pilotfile/pilotfile.h"
 #include "playerman/player.h"
 #include "popup/popup.h"
@@ -2560,8 +2561,11 @@ void debrief_disable_accept()
 }
 
 // Goober5000 - replace any variables with their values
+// karajorma/jg18 - replace container references as well
 void debrief_replace_stage_text(debrief_stage &stage)
 {
 	sexp_replace_variable_names_with_values(stage.text);
 	sexp_replace_variable_names_with_values(stage.recommendation_text);
+	sexp_container_replace_refs_with_values(stage.text);
+	sexp_container_replace_refs_with_values(stage.recommendation_text);
 }

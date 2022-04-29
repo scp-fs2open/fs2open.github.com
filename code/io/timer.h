@@ -37,6 +37,21 @@ public:
 	inline bool isImmediate() const { return m_val == 1; }
 };
 
+struct timestamp_tag {};
+class TIMESTAMP : public util::ID<timestamp_tag, int, -1>
+{
+public:
+	static TIMESTAMP invalid() { return {}; }
+	static TIMESTAMP never() { return TIMESTAMP(0); }
+	static TIMESTAMP immediate() { return TIMESTAMP(1); }
+
+	TIMESTAMP() = default;
+	explicit TIMESTAMP(int val) : ID(val) { }
+
+	inline bool isNever() const { return m_val == 0; }
+	inline bool isImmediate() const { return m_val == 1; }
+};
+
 
 //==========================================================================
 // This installs the timer services and interrupts at the rate specified by
@@ -79,12 +94,19 @@ extern int timer_get_seconds();				// seconds since program started... not accur
 // You shouldn't use the output of timestamp() directly, 
 // but if you have to, use the TIMESTAMP_FREQUENCY to 
 // scale it correctly.
+// TODO: remove when nobody uses the output directly
 #define TIMESTAMP_FREQUENCY 1000
+
+// conversion factors
+constexpr int MILLISECONDS_PER_SECOND = 1000;
+constexpr uint64_t MICROSECONDS_PER_SECOND = 1000000;
+constexpr uint64_t NANOSECONDS_PER_SECOND = 1000000000;
 
 // use this call to get the current counter value (which represents the time at the time
 // this function is called).  I.e. it doesn't return a count that would be in the future,
 // but the count that is right now.
 int timestamp();
+TIMESTAMP _timestamp();					// use a leading underscore for now until all timestamps are converted over
 
 // same, but for use in the UI, so not subject to time compression or pauses
 UI_TIMESTAMP ui_timestamp();
@@ -105,6 +127,7 @@ inline bool timestamp_valid(int stamp) {
 // pass 0 for a timestamp that is instantly timed out
 // pass n > 0 for timestamp n milliseconds in the future.
 int timestamp(int delta_ms);
+TIMESTAMP _timestamp(int delta_ms);		// use a leading underscore for now until all timestamps are converted over
 UI_TIMESTAMP ui_timestamp(int delta_ms);
 
 // gets a timestamp randomly between a and b milliseconds in
@@ -115,6 +138,7 @@ inline int timestamp_rand(int a, int b) {
 
 //	Returns milliseconds until timestamp will elapse.
 int timestamp_until(int stamp);
+int timestamp_until(TIMESTAMP stamp);
 int ui_timestamp_until(UI_TIMESTAMP stamp);
 
 // checks if a specified time (in milliseconds) has elapsed past the given timestamp (which
@@ -130,6 +154,7 @@ int timestamp_has_time_elapsed(int stamp, int time);
 //   fire_laser();
 
 bool timestamp_elapsed( int stamp );
+bool timestamp_elapsed( TIMESTAMP stamp );
 bool ui_timestamp_elapsed( UI_TIMESTAMP stamp );
 
 // safer version of timestamp

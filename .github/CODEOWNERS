@@ -1,6 +1,8 @@
 
 cmake/ @asarium
 
+ci/ @asarium @z64555
+
 code/executor/ @asarium
 
 code/scpui/ @asarium

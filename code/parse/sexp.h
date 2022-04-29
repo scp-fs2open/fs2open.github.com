@@ -125,7 +125,7 @@ struct ship_obj;
 #define OPF_LIST_CONTAINER_NAME	94		// Karajorma/jg18 - The name of a SEXP list container
 #define OPF_MAP_CONTAINER_NAME	95		// Karajorma/jg18 - The name of a SEXP map container
 #define OPF_ANIMATION_NAME 		96		// Lafiel
-#define OPF_CONTAINER_VALUE		98		// jg18 - Container data and map container keys
+#define OPF_CONTAINER_VALUE		97		// jg18 - Container data and map container keys
 
 // Operand return types
 #define	OPR_NUMBER				1	// returns number

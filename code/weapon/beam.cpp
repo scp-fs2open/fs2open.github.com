@@ -1821,51 +1821,59 @@ DCF(blight, "Sets the beam light scale factor (Default is 25.5f)")
 	dc_stuff_float(&blight);
 }
 
-// call to add a light source to a small object
-void beam_add_light_small(beam *bm, object *objp, vec3d *pt_override = NULL)
+float beam_current_light_radius(beam* bm, float noise)
 {
-	weapon_info *wip;
-	beam_weapon_info *bwi;
-	float noise;
+	return bm->beam_light_width * bm->current_width_factor * blight * noise;
+}
 
-	// no lighting 
-	if(Detail.lighting < 2){
-		return;
+/**
+ * @brief Validates a safe state for beam light creation functions
+ *
+ * @return true if state is safe, false otherwise
+ */
+bool beam_light_sanity_and_setup(beam const* bm, object const* objp, weapon_info** wip, beam_weapon_info** bwi)
+{
+	// no lighting
+	if (Detail.lighting < 2) {
+		return false;
 	}
 
 	// sanity
 	Assert(bm != nullptr);
-	if(bm == nullptr){
-		return;
-	}
 	Assert(objp != nullptr);
-	if(objp == nullptr){
-		return;
+	if (objp == nullptr || bm == nullptr) {
+		return false;
 	}
 	Assert(bm->weapon_info_index >= 0);
-	wip = &Weapon_info[bm->weapon_info_index];
-	bwi = &wip->b_info;
+	*wip = &Weapon_info[bm->weapon_info_index];
+	*bwi = &(*wip)->b_info;
 
-	// some noise
-	if ( (bm->warmup_stamp < 0) && (bm->warmdown_stamp < 0) ) // disable noise when warming up or down
-		noise = frand_range(1.0f - bwi->sections[0].flicker, 1.0f + bwi->sections[0].flicker);
+	return true;
+}
+
+float beam_light_noise(beam const* bm, beam_weapon_info const* bwi)
+{
+	if ((bm->warmup_stamp < 0) && (bm->warmdown_stamp < 0)) // disable noise when warming up or down
+		return frand_range(1.0f - bwi->sections[0].flicker, 1.0f + bwi->sections[0].flicker);
 	else
-		noise = 1.0f;
+		return 1.0f;
+}
+
+// call to add a light source to a small object
+void beam_add_light_small(beam *bm, object *objp, vec3d *pt)
+{
+	weapon_info *wip = nullptr;
+	beam_weapon_info *bwi = nullptr;
+
+	if (!beam_light_sanity_and_setup(bm, objp, &wip, &bwi))
+		return;
+
+	Assert(pt != nullptr);
+
+	float noise = beam_light_noise(bm,bwi);
 
 	// get the width of the beam
-	float light_rad = bm->beam_light_width * bm->current_width_factor * blight * noise;	
-
-	// nearest point on the beam, and its distance to the ship
-	vec3d near_pt;
-	if(pt_override == NULL){
-		float dist;
-		vm_vec_dist_to_line(&objp->pos, &bm->last_start, &bm->last_shot, &near_pt, &dist);
-		if(dist > light_rad){
-			return;
-		}
-	} else {
-		near_pt = *pt_override;
-	}
+	float light_rad = beam_current_light_radius(bm,noise);
 
 	// average rgb of the beam	
 	float fr = (float)wip->laser_color_1.red / 255.0f;
@@ -1877,18 +1885,16 @@ void beam_add_light_small(beam *bm, object *objp, vec3d *pt_override = NULL)
 	if (bm->warmup_stamp != -1) {	// calculate muzzle light intensity
 		// get warmup pct
 		pct = BEAM_WARMUP_PCT(bm)*0.5f;
-	} else
-	// if the beam is warming down
-	if (bm->warmdown_stamp != -1) {
-		// get warmup pct
+	} else if (bm->warmdown_stamp != -1) {
+	// if the beam is warming down get warmdown pct
 		pct = MAX(1.0f - BEAM_WARMDOWN_PCT(bm)*1.3f,0.0f)*0.5f;
-	} 
+	}
 	// otherwise the beam is really firing
 	else {
 		pct = 1.0f;
 	}
-	// add a unique light
-	light_add_point_unique(&near_pt, light_rad * 0.0001f, light_rad, pct, fr, fg, fb, OBJ_INDEX(objp));
+	// add a light
+	light_add_point(pt, light_rad * 0.0001f, light_rad, pct, fr, fg, fb);
 }
 
 // call to add a light source to a large object
@@ -1896,38 +1902,21 @@ void beam_add_light_large(beam *bm, object *objp, vec3d *pt0, vec3d *pt1)
 {
 	weapon_info *wip;
 	beam_weapon_info *bwi;
-	float noise;
 
-	// no lighting 
-	if(Detail.lighting < 2){
+	if (!beam_light_sanity_and_setup(bm, objp, &wip, &bwi))
 		return;
-	}
 
-	// sanity
-	Assert(bm != NULL);
-	if(bm == NULL){
-		return;
-	}
-	Assert(objp != NULL);
-	if(objp == NULL){
-		return;
-	}
-	Assert(bm->weapon_info_index >= 0);
-	wip = &Weapon_info[bm->weapon_info_index];
-	bwi = &wip->b_info;
-
-	// some noise
-	noise = frand_range(1.0f - bwi->sections[0].flicker, 1.0f + bwi->sections[0].flicker);
+	float noise = beam_light_noise(bm, bwi);
 
 	// width of the beam
-	float light_rad = bm->beam_light_width * bm->current_width_factor * blight * noise;
+	float light_rad = beam_current_light_radius(bm,noise);
 
 	// average rgb of the beam	
 	float fr = (float)wip->laser_color_1.red / 255.0f;
 	float fg = (float)wip->laser_color_1.green / 255.0f;
 	float fb = (float)wip->laser_color_1.blue / 255.0f;
 
-	light_add_tube(pt0, pt1, 1.0f, light_rad, 1.0f * noise, fr, fg, fb, OBJ_INDEX(objp));
+	light_add_tube(pt0, pt1, 1.0f, light_rad, 1.0f * noise, fr, fg, fb);
 }
 
 // mark an object as being lit

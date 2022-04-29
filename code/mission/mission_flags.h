@@ -102,6 +102,9 @@ namespace Mission {
 		SF_Hide_mission_log,
 		SF_Same_arrival_warp_when_docked,
 		SF_Same_departure_warp_when_docked,
+		OF_Attackable_if_no_collide, // Cyborg - keeps turrets from ignoring ships that have no_collide set
+		SF_Fail_sound_locked_primary, 	// Kiloku - Plays fail sound when firing with locked weapons
+		SF_Fail_sound_locked_secondary,	// Kiloku - Plays fail sound when firing with locked weapons
 
 		NUM_VALUES
 	};

@@ -30,6 +30,7 @@ typedef struct gauge_settings {
 	int font_num;
 	bool scale_gauge;
 	int force_scaling_above_res[2];
+	float aspect_quotient;
 	SCP_vector<int>* ship_idx;
 	color *use_clr;
 	float origin[2];
@@ -45,6 +46,7 @@ typedef struct gauge_settings {
 		base_res[0] = -1;
 		base_res[1] = -1;
 		memcpy(force_scaling_above_res, Force_scaling_above_res_global, sizeof(force_scaling_above_res));
+		aspect_quotient = 1.0f;
 		origin[0] = 0.0f;
 		origin[1] = 0.0f;
 		offset[0] = 0;

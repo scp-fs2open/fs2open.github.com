@@ -1761,7 +1761,7 @@ void wl_remove_weps_from_pool(int *wep, int *wep_count, int ship_class)
 	
 					if ( (Wl_pool[wi_index] <= 0) || (wep_count[i] == 0) ) {
 						// fresh out of this weapon, pick an alternate pool weapon if we can
-						int wep_pool_index, wep_precedence_index, new_wi_index = -1;
+						int wep_pool_index, new_wi_index = -1;
 						for ( wep_pool_index = 0; wep_pool_index < weapon_info_size(); wep_pool_index++ ) {
 
 							if ( Wl_pool[wep_pool_index] <= 0 ) {
@@ -1777,8 +1777,8 @@ void wl_remove_weps_from_pool(int *wep, int *wep_count, int ship_class)
 								continue;
 							}
 
-							for ( wep_precedence_index = 0; wep_precedence_index < Num_player_weapon_precedence; wep_precedence_index++ ) {
-								if ( wep_pool_index == Player_weapon_precedence[wep_precedence_index] ) {
+							for ( const auto &precedence_index : Player_weapon_precedence ) {
+								if ( wep_pool_index == precedence_index ) {
 									new_wi_index = wep_pool_index;
 									break;
 								}
