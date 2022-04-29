@@ -463,7 +463,7 @@ BEGIN
             MENUITEM SEPARATOR
         END
         MENUITEM SEPARATOR
-        MENUITEM "Paste (Overwrite)\tCtrl+P",   ID_EDIT_PASTE_SPECIAL, GRAYED
+        MENUITEM "Paste (Overwrite)\tCtrl+Shift+V",   ID_EDIT_PASTE_SPECIAL, GRAYED
         MENUITEM SEPARATOR
         POPUP "Insert Operator"
         BEGIN
