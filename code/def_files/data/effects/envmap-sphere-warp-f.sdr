@@ -8,7 +8,7 @@ out vec4 fragOut0;
 layout (location = 0) out vec4 outColor;
 
 void main() {
-	const float theta = fragTexCoord.x * (2.0 * M_PI);
+	const float theta = -fragTexCoord.x * (2.0 * M_PI);
 	const float phi = fragTexCoord.y * (M_PI) - (0.5 * M_PI);
 	const float st = sin(theta);
 	const float ct = cos(theta);
