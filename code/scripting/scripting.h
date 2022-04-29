@@ -156,7 +156,7 @@ public:
 	bool AddCondition(script_condition *sc);
 	bool AddAction(script_action *sa);
 
-	bool ConditionsValid(int action, class object *objp=NULL, int more_data = 0);
+	bool ConditionsValid(int action, class object *objp1 = nullptr, class object *objp2 = nullptr, int more_data = -1);
 	bool IsOverride(class script_state *sys, int action);
 	bool Run(class script_state* sys, int action);
 };
@@ -253,8 +253,8 @@ public:
 	int RunBytecode(script_function& hd, char format = '\0', T* data = nullptr);
 	int RunBytecode(script_function& hd);
 	bool IsOverride(script_hook &hd);
-	int RunCondition(int condition, object* objp = nullptr, int more_data = 0);
-	bool IsConditionOverride(int action, object *objp=NULL);
+	int RunCondition(int condition, object *objp1 = nullptr, object *objp2 = nullptr, int more_data = -1);
+	bool IsConditionOverride(int action, object *objp1 = nullptr, object *objp2 = nullptr, int more_data = -1);
 
 	void RunInitFunctions();
 
