@@ -450,7 +450,8 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "Cut\tCtrl+X",                 ID_EDIT_CUT, GRAYED
         MENUITEM "Copy\tCtrl+C",                ID_EDIT_COPY
-        MENUITEM "Paste\tCtrl+V",               ID_EDIT_PASTE, GRAYED
+        MENUITEM "Paste (Below)\tCtrl+V",       ID_EDIT_PASTE, GRAYED
+        MENUITEM "Paste (Overwrite)\tCtrl+P",   ID_EDIT_PASTE_SPECIAL, GRAYED
         MENUITEM SEPARATOR
         POPUP "Add Operator"
         BEGIN
@@ -463,7 +464,6 @@ BEGIN
             MENUITEM SEPARATOR
         END
         MENUITEM SEPARATOR
-        MENUITEM "Add Paste\tCtrl+P",           ID_EDIT_PASTE_SPECIAL, GRAYED
         MENUITEM SEPARATOR
         POPUP "Insert Operator"
         BEGIN
