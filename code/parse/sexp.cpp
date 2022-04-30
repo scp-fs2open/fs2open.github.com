@@ -1818,14 +1818,19 @@ int check_container_value_data_type(int op, int argnum, ContainerType con_type, 
 
 		case OP_MAP_HAS_KEY:
 		case OP_CONTAINER_REMOVE_FROM_MAP:
-			Assert(any(con_type & ContainerType::MAP));
+			Assertion(any(con_type & ContainerType::MAP),
+				"Attempt to check map SEXP with non-map container type %d. Please report!",
+				con_type);
 			if (!check_map_container_key_sexp_arg_type(con_type, is_string, is_number)) {
 				return SEXP_CHECK_WRONG_MAP_KEY_TYPE;
 			}
 			break;
 
 		case OP_CONTAINER_ADD_TO_MAP:
-			Assert(any(con_type & ContainerType::MAP));
+			Assertion(any(con_type & ContainerType::MAP),
+				"Attempt to check map SEXP with non-map container type %d. Please report!",
+				con_type);
+			// since the first arg is a map container name, the first key is at argnum 1
 			if (argnum % 2 != 0) {
 				// map key
 				if (!check_map_container_key_sexp_arg_type(con_type, is_string, is_number)) {
@@ -1872,7 +1877,10 @@ bool check_container_data_type(int type, ContainerType con_type, int op, int arg
 	const bool is_string = any(con_type & ContainerType::STRING_DATA);
 	const bool is_number = any(con_type & ContainerType::NUMBER_DATA);
 	if (type == OPF_CONTAINER_VALUE) {
-		Assert(p_value_container);
+		Assertion(p_value_container,
+			"Attempt to check data type of null container for SEXP operator %d at arg %d. Please report!",
+			op,
+			argnum);
 		return (check_container_value_data_type(op, argnum, p_value_container->type, is_string, is_number) == 0);
 	} else {
 		return check_data_type(type, is_string, is_number);
@@ -1883,7 +1891,11 @@ bool check_variable_data_type(int type, int var_type, int op, int argnum, const 
 	const bool is_string = (var_type & SEXP_VARIABLE_STRING);
 	const bool is_number = (var_type & SEXP_VARIABLE_NUMBER);
 	if (type == OPF_CONTAINER_VALUE) {
-		Assert(p_value_container);
+		Assertion(p_value_container,
+			"Attempt to check data type of null container for SEXP operator %d for variable at arg %d. Please "
+			"report!",
+			op,
+			argnum);
 		return (check_container_value_data_type(op, argnum, p_value_container->type, is_string, is_number) == 0);
 	} else {
 		return check_data_type(type, is_string, is_number);
@@ -2074,7 +2086,13 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 			}
 
 			const auto *p_data_container = get_sexp_container(Sexp_nodes[node].text);
-			Assert(p_data_container); // name was already checked in get_sexp()
+			// name should have already been checked in get_sexp()
+			Assertion(p_data_container,
+				"Attempt to check type of container data for SEXP operator %d at arg %d for non-existent container %s. "
+				"Please report!",
+				op,
+				argnum,
+				Sexp_nodes[node].text);
 			const auto &data_container = *p_data_container;
 
 			if (!check_container_data_type(type,
@@ -3643,7 +3661,10 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 			}
 
 			case OPF_CONTAINER_VALUE:
-				Assert(p_container);
+				Assertion(p_container,
+					"Attempt to check value arg for null container for SEXP operator %d at arg %d. Please report!",
+					op,
+					argnum);
 				z = check_container_value_data_type(get_operator_const(op_node),
 					argnum,
 					p_container->type,

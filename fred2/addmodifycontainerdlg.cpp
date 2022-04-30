@@ -786,7 +786,9 @@ void CAddModifyContainerDlg::OnBnClickedRenameContainer()
 		const SCP_string new_name_str = new_name;
 		const SCP_string curr_name = get_current_container().container_name;
 		const auto prev_name_it = m_new_to_old_names.find(curr_name);
-		Assert(prev_name_it != m_new_to_old_names.end());
+		Assertion(prev_name_it != m_new_to_old_names.end(),
+			"Attempt to rename untracked container %s. Please report!",
+			curr_name.c_str());
 		const SCP_string prev_name = prev_name_it->second;
 		m_new_to_old_names.erase(curr_name);
 		m_old_to_new_names[prev_name] = new_name_str;
@@ -809,12 +811,17 @@ void CAddModifyContainerDlg::OnBnClickedDeleteContainer()
 	// get both current and original names, even if identical
 	const SCP_string curr_name = get_current_container().container_name;
 	const auto orig_name_it = m_new_to_old_names.find(curr_name);
-	Assert(orig_name_it != m_new_to_old_names.end());
+	Assertion(orig_name_it != m_new_to_old_names.end(),
+		"Attempt to delete untracked container %s. Please report!",
+		curr_name.c_str());
 	const SCP_string orig_name = orig_name_it->second;
 
 	const int times_used =
 		is_null_container_name(orig_name) ? 0 : m_sexp_tree.get_container_usage_count(orig_name);
-	Assert(times_used >= 0);
+	Assertion(times_used >= 0,
+		"Checking usage count of container name %s returned count of %d. Please report!",
+		orig_name.c_str(),
+		times_used);
 
 	if (times_used > 0) {
 		SCP_string container_name_str = "'" + curr_name + "'";

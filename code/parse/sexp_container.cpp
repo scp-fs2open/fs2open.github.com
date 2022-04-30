@@ -308,7 +308,7 @@ void stuff_sexp_map_containers()
 }
 
 sexp_container *get_sexp_container(const char *name) {
-	Assert(name != nullptr);
+	Assertion(name != nullptr, "Attempt to look up container from null name. Please report!");
 	// unlike get_sexp_container_special(), empty name is ok
 	// even if the result will always be nullptr
 	// it can happen if CTEXT() returns empty str
