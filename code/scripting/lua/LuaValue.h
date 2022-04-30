@@ -160,6 +160,21 @@ class LuaValue {
 	}
 
 	/**
+	 * @brief Gets the value of a userdata type using the passed getter function or throws an exception
+	 *
+	 * @exception LuaException Thrown when the conversion failed.
+	 */
+	template<typename Type>
+	void getValue(scripting::ade_odata_getter<Type>&& od) const {
+		_reference->pushValue(_luaState);
+
+		if (!convert::popValue<Type>(_luaState, std::forward<scripting::ade_odata_getter<Type>>(od))) {
+			lua_pop(_luaState, 1);
+			throw LuaException("Failed to pop value");
+		}
+	}
+
+	/**
      * @brief Specifies if the lua value is valid.
      *
      * @return bool @c true if it can be used and have an underlying reference, @c false otherwise.
