@@ -7981,7 +7981,7 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 			Script_system.SetHookObject("Ship", objp);
 			Script_system.SetHookVar("Method", 's', departmethod);
 			Script_system.SetHookVar("JumpNode", 's', jumpnode_name);
-			Script_system.RunCondition(CHA_ONSHIPDEPART);
+			Script_system.RunCondition(CHA_ONSHIPDEPART, objp);
 			Script_system.RemHookVars({"Ship", "Method", "JumpNode"});
 		}
 	}
@@ -12085,8 +12085,8 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 
 		if (Script_system.IsActiveAction(CHA_ONWPFIRED) || Script_system.IsActiveAction(CHA_PRIMARYFIRE)) {
 			Script_system.SetHookObjects(2, "User", objp, "Target", target);
-			Script_system.RunCondition(CHA_ONWPFIRED, objp, 1);
-			Script_system.RunCondition(CHA_PRIMARYFIRE, objp);
+			Script_system.RunCondition(CHA_ONWPFIRED, objp, nullptr, 1);
+			Script_system.RunCondition(CHA_PRIMARYFIRE, objp, nullptr);
 			Script_system.RemHookVars({"User", "Target"});
 		}
 	}
@@ -12787,8 +12787,8 @@ done_secondary:
 
 		if (Script_system.IsActiveAction(CHA_ONWPFIRED) || Script_system.IsActiveAction(CHA_SECONDARYFIRE)) {
 			Script_system.SetHookObjects(2, "User", objp, "Target", target);
-			Script_system.RunCondition(CHA_ONWPFIRED, objp);
-			Script_system.RunCondition(CHA_SECONDARYFIRE, objp);
+			Script_system.RunCondition(CHA_ONWPFIRED, objp, nullptr, 2);
+			Script_system.RunCondition(CHA_SECONDARYFIRE, objp, nullptr);
 			Script_system.RemHookVars({"User", "Target"});
 		}
 	}
@@ -13049,8 +13049,8 @@ int ship_select_next_primary(object *objp, int direction)
 
 		if (Script_system.IsActiveAction(CHA_ONWPSELECTED) || Script_system.IsActiveAction(CHA_ONWPDESELECTED)) {
 			Script_system.SetHookObjects(2, "User", objp, "Target", target);
-			Script_system.RunCondition(CHA_ONWPSELECTED, objp);
-			Script_system.RunCondition(CHA_ONWPDESELECTED, objp);
+			Script_system.RunCondition(CHA_ONWPSELECTED, objp, nullptr, 1);
+			Script_system.RunCondition(CHA_ONWPDESELECTED, objp, nullptr, 1);
 			Script_system.RemHookVars({"User", "Target"});
 		}
 
@@ -13153,8 +13153,8 @@ int ship_select_next_secondary(object *objp)
 
 			if (Script_system.IsActiveAction(CHA_ONWPSELECTED) || Script_system.IsActiveAction(CHA_ONWPDESELECTED)) {
 				Script_system.SetHookObjects(2, "User", objp, "Target", target);
-				Script_system.RunCondition(CHA_ONWPSELECTED, objp);
-				Script_system.RunCondition(CHA_ONWPDESELECTED, objp);
+				Script_system.RunCondition(CHA_ONWPSELECTED, objp, nullptr, 2);
+				Script_system.RunCondition(CHA_ONWPDESELECTED, objp, nullptr, 2);
 				Script_system.RemHookVars({"User", "Target"});
 			}
 

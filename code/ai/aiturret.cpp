@@ -1842,7 +1842,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 
 				if (Script_system.IsActiveAction(CHA_ONTURRETFIRED)) {
 					Script_system.SetHookObjects(4, "Ship", &Objects[parent_objnum], "Weapon", nullptr, "Beam", objp, "Target", &Objects[turret->turret_enemy_objnum]);
-					Script_system.RunCondition(CHA_ONTURRETFIRED, &Objects[parent_objnum]);
+					Script_system.RunCondition(CHA_ONTURRETFIRED, &Objects[parent_objnum], objp);
 					Script_system.RemHookVars({"Ship", "Weapon", "Beam", "Target"});
 				}
 			}
@@ -1985,7 +1985,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 
 					if (Script_system.IsActiveAction(CHA_ONTURRETFIRED)) {
 						Script_system.SetHookObjects(4, "Ship", &Objects[parent_objnum], "Weapon", objp, "Beam", nullptr, "Target", &Objects[turret->turret_enemy_objnum]);
-						Script_system.RunCondition(CHA_ONTURRETFIRED, &Objects[parent_objnum]);
+						Script_system.RunCondition(CHA_ONTURRETFIRED, &Objects[parent_objnum], objp);
 						Script_system.RemHookVars({"Ship", "Weapon", "Beam", "Target"});
 					}
 
@@ -2103,7 +2103,7 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 
 		if (Script_system.IsActiveAction(CHA_ONTURRETFIRED)) {
 			Script_system.SetHookObjects(4, "Ship", &Objects[tsi->parent_objnum], "Weapon", &Objects[weapon_objnum], "Beam", nullptr, "Target", &Objects[tsi->turret->turret_enemy_objnum]);
-			Script_system.RunCondition(CHA_ONTURRETFIRED, &Objects[tsi->parent_objnum]);
+			Script_system.RunCondition(CHA_ONTURRETFIRED, &Objects[tsi->parent_objnum], &Objects[weapon_objnum]);
 			Script_system.RemHookVars({"Ship", "Weapon", "Beam", "Target"});
 		}
 

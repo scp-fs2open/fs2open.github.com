@@ -4378,7 +4378,7 @@ void weapon_delete(object *obj)
 
 	if (Script_system.IsActiveAction(CHA_ONWEAPONDELETE)) {
 		Script_system.SetHookObjects(2, "Weapon", obj, "Self", obj);
-		Script_system.RunCondition(CHA_ONWEAPONDELETE);
+		Script_system.RunCondition(CHA_ONWEAPONDELETE, obj);
 		Script_system.RemHookVars({"Weapon", "Self"});
 	}
 
@@ -6420,7 +6420,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 
 	if (Script_system.IsActiveAction(CHA_ONWEAPONCREATED)) {
 		Script_system.SetHookObject("Weapon", &Objects[objnum]);
-		Script_system.RunCondition(CHA_ONWEAPONCREATED);
+		Script_system.RunCondition(CHA_ONWEAPONCREATED, &Objects[objnum]);
 		Script_system.RemHookVar("Weapon");
 	}
 
