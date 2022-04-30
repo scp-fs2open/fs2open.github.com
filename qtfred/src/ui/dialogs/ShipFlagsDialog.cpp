@@ -18,6 +18,8 @@ ShipFlagsDialog::ShipFlagsDialog(QWidget* parent, EditorViewport* viewport)
 
 	connect(this, &QDialog::accepted, _model.get(), &ShipFlagsDialogModel::apply);
 	connect(this, &QDialog::rejected, _model.get(), &ShipFlagsDialogModel::reject);
+	connect(this, &ShipFlagsDialog::show, _model.get(), &ShipFlagsDialogModel::initializeData);
+
 
 	connect(_model.get(), &AbstractDialogModel::modelChanged, this, &ShipFlagsDialog::updateUI);
 

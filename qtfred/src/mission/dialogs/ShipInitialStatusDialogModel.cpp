@@ -292,6 +292,7 @@ void ShipInitialStatusDialogModel::initializeData()
 	if (vflag) {
 		m_velocity = BLANKFIELD;
 	}
+	modelChanged();
 }
 
 void ShipInitialStatusDialogModel::update_docking_info()

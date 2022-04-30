@@ -100,6 +100,13 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	void departureWarpChanged(bool);
 	void DepartureCueChanged(bool);
 
+	ShipGoalsDialog* GoalsDialog = nullptr;
+	ShipInitialStatusDialog* initialStatusDialog = nullptr;
+	ShipFlagsDialog* flagsDialog = nullptr;
+	ShipTextureReplacementDialog* ShipTextureReplacementDialog = nullptr;
+	PlayerOrdersDialog* playerOrdersDialog = nullptr;
+	ShipSpecialStatsDialog* specialStatsDialog = nullptr;
+
 };
 } // namespace dialogs
 } // namespace fred

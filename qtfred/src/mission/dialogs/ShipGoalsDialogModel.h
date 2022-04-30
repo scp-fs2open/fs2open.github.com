@@ -22,7 +22,6 @@ constexpr auto MAX_VALID = 99;
 class ShipGoalsDialogModel : public AbstractDialogModel {
   private:
 	int Ai_goal_list_size = Editor::getAigoal_list_size();
-	void initializeData();
 	void initialize(ai_goal* goals, int ship);
 	void initialize_multi();
 
@@ -51,6 +50,7 @@ class ShipGoalsDialogModel : public AbstractDialogModel {
 
   public:
 	ShipGoalsDialogModel(QObject* parent, EditorViewport* viewport, bool multi, int self_ship, int self_wing);
+	void initializeData();
 	bool apply() override;
 	void reject() override;
 	 bool query_modified();

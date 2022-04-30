@@ -8,7 +8,6 @@ namespace dialogs {
 
 class ShipFlagsDialogModel : public AbstractDialogModel {
   private:
-	void initializeData();
 
 	template <typename T>
 	void modify(T& a, const T& b);
@@ -67,6 +66,7 @@ class ShipFlagsDialogModel : public AbstractDialogModel {
 
   public:
 	ShipFlagsDialogModel(QObject* parent, EditorViewport* viewport);
+	void initializeData();
 
 	bool apply() override;
 	void reject() override;

@@ -1271,6 +1271,7 @@ void ShipFlagsDialogModel::initializeData()
 
 		objp = GET_NEXT(objp);
 	}
+	modelChanged();
 }
 } // namespace dialogs
 } // namespace fred

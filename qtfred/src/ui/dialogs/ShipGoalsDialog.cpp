@@ -72,6 +72,7 @@ ShipGoalsDialog::ShipGoalsDialog(QWidget* parent, EditorViewport* viewport, bool
 	priority[9] = ui->prioritySpinBox10;
 	connect(this, &QDialog::accepted, _model.get(), &ShipGoalsDialogModel::apply);
 	connect(this, &QDialog::rejected, _model.get(), &ShipGoalsDialogModel::reject);
+	connect(this, &ShipGoalsDialog::show, _model.get(), &ShipGoalsDialogModel::initializeData);
 	connect(_model.get(), &AbstractDialogModel::modelChanged, this, &ShipGoalsDialog::updateUI);
 	for (int i = 0; i < ED_MAX_GOALS; i++) {
 		connect(behaviors[i], QOverload<int>::of(&QComboBox::currentIndexChanged), [=](int index) {

@@ -371,6 +371,7 @@ namespace fso {
 				else {
 					initialize_multi();
 				}
+				modelChanged();
 			}
 			void ShipGoalsDialogModel::initialize(ai_goal* goals, int ship)
 			{

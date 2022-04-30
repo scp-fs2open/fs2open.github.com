@@ -24,6 +24,7 @@ namespace fso {
 
 				connect(this, &QDialog::accepted, _model.get(), &ShipInitialStatusDialogModel::apply);
 				connect(this, &QDialog::rejected, _model.get(), &ShipInitialStatusDialogModel::reject);
+				connect(this, &ShipInitialStatusDialog::show, _model.get(), &ShipInitialStatusDialogModel::initializeData);
 				connect(_model.get(), &AbstractDialogModel::modelChanged, this, &ShipInitialStatusDialog::updateUI);
 
 				// Velocity

@@ -42,6 +42,10 @@ namespace fso {
 				ui->setupUi(this);
 				connect(this, &QDialog::accepted, _model.get(), &ShipTextureReplacementDialogModel::apply);
 				connect(this, &QDialog::rejected, _model.get(), &ShipTextureReplacementDialogModel::reject);
+				connect(this,
+					&ShipTextureReplacementDialog::show,
+					_model.get(),
+					&ShipTextureReplacementDialogModel::initialiseData);
 				listmodel = new MapModel(_model.get(), this);
 				ui->TexturesList->setModel(listmodel);
 				QItemSelectionModel* selectionModel = ui->TexturesList->selectionModel();

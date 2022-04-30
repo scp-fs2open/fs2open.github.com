@@ -164,19 +164,25 @@ void ShipEditorDialog::closeEvent(QCloseEvent* event)
 
 void ShipEditorDialog::on_miscButton_clicked()
 {
-	auto flagsDialog = new dialogs::ShipFlagsDialog(this, _viewport);
+	if (!flagsDialog) {
+		flagsDialog = new dialogs::ShipFlagsDialog(this, _viewport);
+	}
 	flagsDialog->show();
 }
 
 void ShipEditorDialog::on_initialStatusButton_clicked()
 {
-	auto initialStatusDialog = new dialogs::ShipInitialStatusDialog(this, _viewport, _model->multi_edit);
+	if (!initialStatusDialog) {
+		initialStatusDialog = new dialogs::ShipInitialStatusDialog(this, _viewport, _model->multi_edit);
+	}
 	initialStatusDialog->show();
 }
 
 void ShipEditorDialog::on_initialOrdersButton_clicked()
 {
-	auto GoalsDialog = new dialogs::ShipGoalsDialog(this, _viewport, _model->multi_edit, Ships[_model->single_ship].objnum, -1);
+	if (!GoalsDialog) {
+		GoalsDialog = new dialogs::ShipGoalsDialog(this, _viewport, _model->multi_edit, Ships[_model->single_ship].objnum, -1);
+	}
 	GoalsDialog->show();
 
 }
@@ -685,7 +691,9 @@ void ShipEditorDialog::DepartureCueChanged(bool value) { _model->setDepartureCue
 
 void ShipEditorDialog::on_textureReplacementButton_clicked()
 {
-	auto ShipTextureReplacementDialog = new dialogs::ShipTextureReplacementDialog(this, _viewport, _model->multi_edit);
+	if (!ShipTextureReplacementDialog) {
+		ShipTextureReplacementDialog = new dialogs::ShipTextureReplacementDialog(this, _viewport, _model->multi_edit);
+	}
 	ShipTextureReplacementDialog->show();
 }
 
@@ -704,12 +712,16 @@ void ShipEditorDialog::on_weaponsButton_clicked()
 }
 void ShipEditorDialog::on_playerOrdersButton_clicked()
 {
-	auto playerOrdersDialog = new dialogs::PlayerOrdersDialog(this, _viewport, _model->multi_edit);
+	if (!playerOrdersDialog) {
+		playerOrdersDialog = new dialogs::PlayerOrdersDialog(this, _viewport, _model->multi_edit);
+	}
 	playerOrdersDialog->show();
 }
 void ShipEditorDialog::on_specialStatsButton_clicked()
 {
-	auto specialStatsDialog = new dialogs::ShipSpecialStatsDialog(this, _viewport);
+	if (!specialStatsDialog) {
+		specialStatsDialog = new dialogs::ShipSpecialStatsDialog(this, _viewport);
+	}
 	specialStatsDialog->show();
 }
 void ShipEditorDialog::on_hideCuesButton_clicked()

@@ -8,7 +8,6 @@ namespace fso {
 
 			class PlayerOrdersDialogModel : public AbstractDialogModel {
 			private:
-				void initialiseData();
 
 				template<typename T>
 				void modify(T& a, const T& b);
@@ -27,6 +26,7 @@ namespace fso {
 				SCP_vector<int> currentOrders;
 			public:
 				PlayerOrdersDialogModel(QObject* parent, EditorViewport* viewport, bool multi);
+			  void initialiseData();
 
 				bool apply() override;
 				void reject() override;

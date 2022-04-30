@@ -8,7 +8,6 @@ namespace fso {
 			constexpr auto NUM__SUBTEXTURE_TYPES = 7;
 			class ShipTextureReplacementDialogModel : public AbstractDialogModel {
 			private:
-				void initialiseData();
 				void initSubTypes(polymodel* model, int);
 
 				template<typename T>
@@ -34,6 +33,7 @@ namespace fso {
 				static texture_replace* texture_set(texture_replace* dest, const texture_replace* src);
 			public:
 				ShipTextureReplacementDialogModel(QObject* parent, EditorViewport* viewport, bool multi);
+			  void initialiseData();
 
 				bool apply() override;
 				void reject() override;

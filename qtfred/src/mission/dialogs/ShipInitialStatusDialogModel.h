@@ -19,7 +19,6 @@ bool set_cue_to_false(int* cue);
 class ShipInitialStatusDialogModel : public AbstractDialogModel {
 
   private:
-	void initializeData();
 
 	template <typename T>
 	void modify(T& a, const T& b);
@@ -72,6 +71,7 @@ class ShipInitialStatusDialogModel : public AbstractDialogModel {
 
   public:
 	ShipInitialStatusDialogModel(QObject* parent, EditorViewport* viewport, bool multi);
+	void initializeData();
 
 	bool apply() override;
 	void reject() override;
