@@ -5281,8 +5281,8 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 
 	popup_menu->addSection("Containers");
 
-	auto add_modoify_container_act = popup_menu->addAction(tr("Add/Modify Container"), this, []() {});
-	add_modoify_container_act->setEnabled(false);
+	auto add_modify_container_act = popup_menu->addAction(tr("Add/Modify Container"), this, []() {});
+	add_modify_container_act->setEnabled(false);
 	auto replace_container_name_menu = popup_menu->addMenu(tr("Replace Container Name"));
 	auto replace_container_data_menu = popup_menu->addMenu(tr("Replace Container Data"));
 
