@@ -103,7 +103,7 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	ShipGoalsDialog* GoalsDialog = nullptr;
 	ShipInitialStatusDialog* initialStatusDialog = nullptr;
 	ShipFlagsDialog* flagsDialog = nullptr;
-	ShipTextureReplacementDialog* ShipTextureReplacementDialog = nullptr;
+	ShipTextureReplacementDialog* TextureReplacementDialog = nullptr;
 	PlayerOrdersDialog* playerOrdersDialog = nullptr;
 	ShipSpecialStatsDialog* specialStatsDialog = nullptr;
 
