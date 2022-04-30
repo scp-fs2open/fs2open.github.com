@@ -1820,7 +1820,7 @@ int check_container_value_data_type(int op, int argnum, ContainerType con_type, 
 		case OP_CONTAINER_REMOVE_FROM_MAP:
 			Assertion(any(con_type & ContainerType::MAP),
 				"Attempt to check map SEXP with non-map container type %d. Please report!",
-				con_type);
+				(int)con_type);
 			if (!check_map_container_key_sexp_arg_type(con_type, is_string, is_number)) {
 				return SEXP_CHECK_WRONG_MAP_KEY_TYPE;
 			}
@@ -1829,7 +1829,7 @@ int check_container_value_data_type(int op, int argnum, ContainerType con_type, 
 		case OP_CONTAINER_ADD_TO_MAP:
 			Assertion(any(con_type & ContainerType::MAP),
 				"Attempt to check map SEXP with non-map container type %d. Please report!",
-				con_type);
+				(int)con_type);
 			// since the first arg is a map container name, the first key is at argnum 1
 			if (argnum % 2 != 0) {
 				// map key
