@@ -183,7 +183,8 @@ void ShipEditorDialog::on_initialOrdersButton_clicked()
 
 void ShipEditorDialog::on_tblInfoButton_clicked()
 {
-	// TODO:: TBL Dialog
+	auto TBLViewer = new dialogs::ShipTBLViewer(this, _viewport, _model->getShipClass());
+	TBLViewer->show();
 }
 
 void ShipEditorDialog::updateUI()
@@ -604,7 +605,10 @@ void ShipEditorDialog::enableDisable()
 	}
 }
 
-void ShipEditorDialog::shipNameChanged() { _model->setShipName(ui->shipNameEdit->text().toStdString()); }
+void ShipEditorDialog::shipNameChanged()
+{
+	_model->setShipName(ui->shipNameEdit->text().toUtf8().toStdString());
+}
 void ShipEditorDialog::shipClassChanged(int index)
 {
 	auto shipClassIdx = ui->shipClassCombo->itemData(index).value<int>();
