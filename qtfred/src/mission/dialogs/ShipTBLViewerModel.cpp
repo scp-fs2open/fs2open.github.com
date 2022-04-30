@@ -143,6 +143,7 @@ void ShipTBLViewerModel::initializeData()
 
 		cfclose(fp);
 	}
+	modelChanged();
 }
 SCP_string ShipTBLViewerModel::getText() const
 {
