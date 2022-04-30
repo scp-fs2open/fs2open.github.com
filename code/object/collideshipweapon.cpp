@@ -455,14 +455,14 @@ static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, f
 		if (Script_system.IsActiveAction(CHA_COLLIDEWEAPON)) {
 			Script_system.SetHookObjects(4, "Self", ship_objp, "Object", weapon_objp, "Ship", ship_objp, "Weapon", weapon_objp);
 			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(mc.hit_point_world));
-			ship_override = Script_system.IsConditionOverride(CHA_COLLIDEWEAPON, ship_objp);
+			ship_override = Script_system.IsConditionOverride(CHA_COLLIDEWEAPON, ship_objp, weapon_objp);
 			Script_system.RemHookVars({ "Self", "Object", "Ship", "Weapon", "Hitpos" });
 		}
 
 		if (Script_system.IsActiveAction(CHA_COLLIDESHIP)) {
 			Script_system.SetHookObjects(4, "Self", weapon_objp, "Object", ship_objp, "Ship", ship_objp, "Weapon", weapon_objp);
 			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(mc.hit_point_world));
-			weapon_override = Script_system.IsConditionOverride(CHA_COLLIDESHIP, weapon_objp);
+			weapon_override = Script_system.IsConditionOverride(CHA_COLLIDESHIP, weapon_objp, ship_objp);
 			Script_system.RemHookVars({ "Self", "Object", "Ship", "Weapon", "Hitpos" });
 		}
 
@@ -479,7 +479,7 @@ static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, f
 		{
 			Script_system.SetHookObjects(4, "Self", ship_objp, "Object", weapon_objp, "Ship", ship_objp, "Weapon", weapon_objp);
 			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(mc.hit_point_world));
-			Script_system.RunCondition(CHA_COLLIDEWEAPON, ship_objp, wp->weapon_info_index);
+			Script_system.RunCondition(CHA_COLLIDEWEAPON, ship_objp, weapon_objp);
 			Script_system.RemHookVars({ "Self", "Object", "Ship", "Weapon", "Hitpos" });
 		}
 
@@ -487,7 +487,7 @@ static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, f
 		{
 			Script_system.SetHookObjects(4, "Self", weapon_objp, "Object", ship_objp, "Ship", ship_objp, "Weapon", weapon_objp);
 			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(mc.hit_point_world));
-			Script_system.RunCondition(CHA_COLLIDESHIP, weapon_objp);
+			Script_system.RunCondition(CHA_COLLIDESHIP, weapon_objp, ship_objp);
 			Script_system.RemHookVars({ "Self", "Object", "Ship", "Weapon", "Hitpos" });
 		}
 	}
