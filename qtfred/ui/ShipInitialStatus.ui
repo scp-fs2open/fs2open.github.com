@@ -40,6 +40,9 @@
          <height>0</height>
         </size>
        </property>
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;% of hits remaning&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
        <property name="maximum">
         <number>100</number>
        </property>
@@ -72,6 +75,9 @@
          <width>70</width>
          <height>0</height>
         </size>
+       </property>
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The Ships starting % of the ships speed&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
        </property>
        <property name="maximum">
         <number>100</number>
@@ -117,6 +123,9 @@
     <layout class="QHBoxLayout" name="shieldFlagsLayout">
      <item>
       <widget class="fso::fred::ShipFlagCheckbox" name="hasShieldCheckBox">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Sets whether the ship has a shield&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
        <property name="text">
         <string>Has Shield System</string>
        </property>
@@ -124,6 +133,9 @@
      </item>
      <item>
       <widget class="fso::fred::ShipFlagCheckbox" name="forceShieldsCheckBox">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;???&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
        <property name="text">
         <string>Force Shields On</string>
        </property>
@@ -147,6 +159,9 @@
          <width>70</width>
          <height>0</height>
         </size>
+       </property>
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;% of shield strength remaining&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
        </property>
        <property name="maximum">
         <number>100</number>
@@ -179,6 +194,9 @@
      </item>
      <item row="0" column="1">
       <widget class="fso::fred::ShipFlagCheckbox" name="weaponLockCheckBox">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Weapons can't be changed on loadout screen&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
        <property name="text">
         <string>Weapon Locked</string>
        </property>
@@ -186,6 +204,9 @@
      </item>
      <item row="0" column="0">
       <widget class="fso::fred::ShipFlagCheckbox" name="shipLockCheckBox">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Ship can't be changed on loadout screen&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
        <property name="text">
         <string>Ship Locked</string>
        </property>
@@ -346,7 +367,11 @@
          </widget>
         </item>
         <item>
-         <widget class="QLineEdit" name="cargoEdit"/>
+         <widget class="QLineEdit" name="cargoEdit">
+          <property name="toolTip">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set the subsytems cargo&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
+         </widget>
         </item>
        </layout>
       </item>
