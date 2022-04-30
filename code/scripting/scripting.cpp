@@ -425,10 +425,20 @@ bool ConditionedHook::ConditionsValid(int action, object *objp1, object *objp2, 
 			{
 				for (auto objp : objp_array)
 				{
-					if (objp != nullptr && (objp->type == OBJ_WEAPON || objp->type == OBJ_BEAM))
+					if (objp == nullptr)
+						continue;
+
+					if (objp->type == OBJ_WEAPON)
 					{
 						// scp.condition_cached_value holds the weapon_info_index of the requested weapon class
 						if (Weapons[objp->instance].weapon_info_index != scp.condition_cached_value)
+							return false;
+						break;
+					}
+					else if (objp->type == OBJ_BEAM)
+					{
+						// scp.condition_cached_value holds the weapon_info_index of the requested weapon class
+						if (Beams[objp->instance].weapon_info_index != scp.condition_cached_value)
 							return false;
 						break;
 					}
