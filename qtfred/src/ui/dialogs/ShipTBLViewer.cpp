@@ -15,6 +15,7 @@ ShipTBLViewer::ShipTBLViewer(QWidget* parent, EditorViewport* viewport, int sc)
 	ui->setupUi(this);
 
 	connect(_model.get(), &AbstractDialogModel::modelChanged, this, &ShipTBLViewer::updateUI);
+	connect(this, ShipTBLViewer::show, _model.get(), &ShipTBLViewerModel::initializeData);
 
 	updateUI();
 

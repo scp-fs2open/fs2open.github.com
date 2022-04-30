@@ -7,7 +7,6 @@ namespace fred {
 namespace dialogs {
 class ShipTBLViewerModel : public AbstractDialogModel {
   private:
-	void initializeData();
 	SCP_string text;
 	SCP_vector<SCP_string> tbl_file_names;
 	int ship_class;
@@ -16,6 +15,7 @@ class ShipTBLViewerModel : public AbstractDialogModel {
 	ShipTBLViewerModel(QObject* parent, EditorViewport* viewport, int sc);
 	bool apply() override;
 	void reject() override;
+	void initializeData();
 
 	SCP_string getText() const;
 };

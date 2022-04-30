@@ -101,6 +101,7 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	void departureWarpChanged(bool);
 	void DepartureCueChanged(bool);
 
+	ShipTBLViewer* TBLViewer = nullptr;
 };
 } // namespace dialogs
 } // namespace fred

@@ -183,7 +183,9 @@ void ShipEditorDialog::on_initialOrdersButton_clicked()
 
 void ShipEditorDialog::on_tblInfoButton_clicked()
 {
-	auto TBLViewer = new dialogs::ShipTBLViewer(this, _viewport, _model->getShipClass());
+	if (!TBLViewer) {
+		TBLViewer = new dialogs::ShipTBLViewer(this, _viewport, _model->getShipClass());
+	}
 	TBLViewer->show();
 }
 
