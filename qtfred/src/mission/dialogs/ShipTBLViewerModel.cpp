@@ -13,7 +13,6 @@ bool ShipTBLViewerModel::apply()
 }
 void ShipTBLViewerModel::reject()
 {
-	return;
 }
 void ShipTBLViewerModel::initializeData()
 {
