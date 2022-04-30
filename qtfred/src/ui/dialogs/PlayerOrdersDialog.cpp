@@ -16,17 +16,19 @@ namespace fso {
 				connect(this, &QDialog::rejected, _model.get(), &PlayerOrdersDialogModel::reject);
 				connect(this, &PlayerOrdersDialog::show, _model.get(), &PlayerOrdersDialogModel::initialiseData);
 				for (int i = 0; i < (int)_model->getAcceptedOrders().size(); i++) {
-					if (_model->getAcceptedOrders()[i]) {
+					if (_model->getAcceptedOrders()[i] || i == 0) {
 						check_boxes.push_back(new ShipFlagCheckbox(nullptr));
-						check_boxes[i]->setText(_model->getOrderNames()[i].c_str());
-						connect(check_boxes[i], QOverload<int>::of(&ShipFlagCheckbox::stateChanged), [=](int value) {
+						check_boxes.back()->setText(_model->getOrderNames()[i].c_str());
+						connect(check_boxes.back(),
+							QOverload<int>::of(&ShipFlagCheckbox::stateChanged),
+							[=](int value) {
 							int state = value;
 							if (state == Qt::Checked) {
 								state = 1;
 							}
 							_model->setCurrentOrder(state, i);
 							});
-						ui->verticalLayout_2->addWidget(check_boxes[i]);
+						ui->verticalLayout_2->addWidget(check_boxes.back());
 					}
 				}
 
