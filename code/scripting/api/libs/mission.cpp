@@ -1488,7 +1488,7 @@ int testLineOfSight_internal(lua_State* L, bool returnDist) {
 					object.second.getValue(l_Object.Get(&obj));
 					excludedObjectIDs.emplace(obj.objp);
 				}
-				catch (luacpp::LuaException e) {
+				catch (luacpp::LuaException* /*e*/) {
 					// We were likely fed a userdata that was not an object. 
 					// Since we can't actually tell whether that's the case before we try to get the value, and the attempt to get the value is printing a LuaError itself, just eat the exception here and return
 					return ADE_RETURN_FALSE;
