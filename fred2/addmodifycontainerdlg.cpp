@@ -890,7 +890,10 @@ void CAddModifyContainerDlg::update_text_edit_boxes(const SCP_string &key, const
 
 sexp_container &CAddModifyContainerDlg::get_current_container()
 {
-	Assert(m_current_container >= -1 && m_current_container < num_containers());
+	Assertion(m_current_container >= -1 && m_current_container < num_containers(),
+		"Attempt to access invalid container index %d with %d containers. Please report!",
+		m_current_container,
+		num_containers());
 	return m_current_container < 0 ? m_dummy_container : m_containers[m_current_container];
 }
 
