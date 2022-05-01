@@ -5264,9 +5264,11 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 	auto replace_op_menu = popup_menu->addMenu(tr("Replace Operator"));
 
 	auto replace_data_menu = popup_menu->addMenu(tr("Replace Data"));
-	auto replace_number_act = replace_data_menu->addAction(tr("Number"), this, [this]() { replaceNumberDataHandler(); });
+	auto replace_number_act =
+		replace_data_menu->addAction(tr("Number"), this, [this]() { replaceNumberDataHandler(); });
 	replace_number_act->setEnabled(false);
-	auto replace_string_act = replace_data_menu->addAction(tr("String"), this, [this]() { replaceStringDataHandler(); });
+	auto replace_string_act =
+		replace_data_menu->addAction(tr("String"), this, [this]() { replaceStringDataHandler(); });
 	replace_string_act->setEnabled(false);
 	replace_data_menu->addSeparator();
 

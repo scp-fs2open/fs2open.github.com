@@ -340,7 +340,7 @@ protected:
 	virtual void NodeCut();
 	virtual void NodeDelete();
 	virtual void NodeCopy();
-	virtual void NodePaste();
+	virtual void NodeReplacePaste();
 	virtual void NodeAddPaste();
 
 	void update_item(HTREEITEM handle);

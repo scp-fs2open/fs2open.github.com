@@ -2307,11 +2307,11 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 			NodeCopy();
 			return 1;
 
-		case ID_EDIT_PASTE:
-			NodePaste();
+		case ID_EDIT_PASTE_SPECIAL:
+			NodeReplacePaste();
 			return 1;
 
-		case ID_EDIT_PASTE_SPECIAL:  // add paste, instead of replace.
+		case ID_EDIT_PASTE:  // add paste, instead of replace.
 			NodeAddPaste();
 			return 1;
 
@@ -2474,7 +2474,7 @@ void sexp_tree::NodeCopy()
 	sexp_mark_persistent(Sexp_clipboard);
 }
 
-void sexp_tree::NodePaste()
+void sexp_tree::NodeReplacePaste()
 {
 	if (item_index < 0)
 		return;
@@ -4889,18 +4889,20 @@ void sexp_tree::OnKeyDown(NMHDR *pNMHDR, LRESULT *pResult)
 			}
 			else if (key == 'V')
 			{
-				update_item(GetSelectedItem());
-				NodePaste();
-			}
-			else if (key == 'P')
-			{
-				update_item(GetSelectedItem());
-				auto orig_handle = item_handle;
-				NodeAddPaste();
-
-				// when using the keyboard shortcut, stay on the original node after pasting
-				SelectItem(orig_handle);
-				update_item(orig_handle);
+				if (GetKeyState(VK_SHIFT) & 0x8000) 
+				{
+					update_item(GetSelectedItem());
+					NodeReplacePaste();
+				}
+				else 
+				{
+					update_item(GetSelectedItem());
+					auto orig_handle = item_handle;
+					NodeAddPaste();
+					// when using the keyboard shortcut, stay on the original node after pasting
+					SelectItem(orig_handle);
+					update_item(orig_handle);
+				}
 			}
 		}
 	}
