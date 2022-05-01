@@ -22,10 +22,10 @@ class ShipGoalsDialog : public QDialog {
 	explicit ShipGoalsDialog(QWidget* parent, EditorViewport* viewport);
 	~ShipGoalsDialog() override;
 
-	void showEvent(QShowEvent* e);
 
   protected:
 	void closeEvent(QCloseEvent*) override;
+	void showEvent(QShowEvent* e) override;
 
   private:
 	std::unique_ptr<Ui::ShipGoalsDialog> ui;
