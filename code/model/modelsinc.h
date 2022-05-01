@@ -68,12 +68,16 @@ class polymodel;
 #define ID_SLDC 0x43444c53				// CDLS (SLDC): Shield Collision Tree
 #define ID_SLC2 0x32434c53				// 2CLS (SLC2): Shield Collision Tree with ints instead of char - ShivanSpS
 
-#define us(p)	(*((ushort *) (p)))
-#define uw(p)	(*((uint *) (p)))
-#define w(p)	(*((int *) (p)))
-#define wp(p)	((int *) (p))
-#define vp(p)	((vec3d *) (p))
-#define fl(p)	(*((float *) (p)))
+#define us(p)	(*reinterpret_cast<ushort*>(p))
+#define cus(p)  (*reinterpret_cast<const ushort*>(p))
+#define uw(p)	(*reinterpret_cast<uint*>(p))
+#define cuw(p)  (*reinterpret_cast<const uint*>(p))
+#define w(p)	(*reinterpret_cast<int*>(p))
+#define cw(p)   (*reinterpret_cast<const int*>(p))
+#define wp(p)	(reinterpret_cast<int*>(p)
+#define vp(p)	(reinterpret_cast<vec3d*>(p))
+#define fl(p)	(*reinterpret_cast<float*>(p))
+#define cfl(p)  (*reinterpret_cast<const float*>(p))
 
 // Creates the octants for a given polygon model
 void model_octant_create( polymodel * pm );

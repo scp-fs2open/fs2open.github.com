@@ -4976,13 +4976,13 @@ void swap_bsp_tmap2poly(polymodel* pm, ubyte* p)
 	uint i, nv;
 	model_tmap_vert* verts;
 
-	nv = INTEL_INT(uw(p + 48)); // tigital
-	uw(p + 48) = nv;
+	nv = INTEL_INT(uw(p + TMAP2_NVERTS)); // tigital
+	uw(p + TMAP2_NVERTS) = nv;
 
-	int tmap_num = INTEL_INT(w(p + 44)); // tigital
-	w(p + 44) = tmap_num;
+	int tmap_num = INTEL_INT(w(p + TMAP2_TEXNUM)); // tigital
+	w(p + TMAP2_TEXNUM) = tmap_num;
 
-	verts = (model_tmap_vert*)(p + 52);
+	verts = (model_tmap_vert*)(p + TMAP2_VERTS);
 	for (i = 0; i < nv; i++) {
 		verts[i].vertnum = INTEL_SHORT(verts[i].vertnum);
 		verts[i].normnum = INTEL_SHORT(verts[i].normnum);
