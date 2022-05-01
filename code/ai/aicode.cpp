@@ -6410,7 +6410,7 @@ bool check_los(int objnum, int target_objnum, float threshold, int primary_bank,
 	vec3d end = Objects[target_objnum].pos;
 
 	//Don't collision check against ourselves or our target
-	return test_line_of_sight(&start, &end, {&Objects[objnum], &Objects[target_objnum]});
+	return test_line_of_sight(&start, &end, {&Objects[objnum], &Objects[target_objnum]}, threshold);
 }
 
 //	--------------------------------------------------------------------------
@@ -16151,4 +16151,108 @@ void maybe_cheat_fire_synaptic(object *objp)
 			}
 		}
 	}
+}
+
+bool test_line_of_sight(vec3d* from, vec3d* to, std::unordered_set<const object*>&& excluded_objects, float threshold, bool test_for_shields, bool test_for_hull, float* first_intersect_dist) {
+	bool collides = false;
+
+	for (object* objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
+		//Don't collision check against excluded objects
+		if (excluded_objects.count(objp) > 0)
+			continue;
+
+		int model_num = 0;
+		int model_instance_num = 0;
+
+		//Only collision check against other pieces of Debris, Asteroids or Ships
+		char type = objp->type;
+		if (type == OBJ_DEBRIS) {
+			model_num = Debris[objp->instance].model_num;
+			model_instance_num = -1;
+		}
+		else if (type == OBJ_ASTEROID) {
+			model_num = Asteroid_info[Asteroids[objp->instance].asteroid_type].model_num[Asteroids[objp->instance].asteroid_subtype];
+			model_instance_num = Asteroids[objp->instance].model_instance_num;
+		}
+		else if (type == OBJ_SHIP) {
+			model_num = Ship_info[Ships[objp->instance].ship_info_index].model_num;
+			model_instance_num = Ships[objp->instance].model_instance_num;
+		}
+		else
+			continue;
+
+		//Early Out Model too small
+
+		float radius = objp->radius;
+		if (radius < threshold)
+			continue;
+
+		//Asteroth's implementation
+		// if objp is inside start or end then we have to check the model
+		if (vm_vec_dist(from, &objp->pos) > objp->radius && vm_vec_dist(to, &objp->pos) > objp->radius) {
+			// now check that objp is in between start and end
+			vec3d start2end = *to - *from;
+			vec3d end2start = *from - *to;
+			vec3d start2objp = objp->pos - *from;
+			vec3d end2objp = objp->pos - *to;
+
+			// if objp and end are in opposite directions from start, then early out
+			if (vm_vec_dot(&start2end, &start2objp) < 0.0f)
+				continue;
+
+			// if objp and start are in opposite directions from end, then early out
+			if (vm_vec_dot(&end2start, &end2objp) < 0.0f)
+				continue;
+
+			// finally check if objp is too close to the path
+			if (vm_vec_mag(&start2objp) > (vm_vec_mag(&start2end) + objp->radius))
+				continue; // adding objp->radius is somewhat of an overestimate but thats ok
+		}
+
+		mc_info hull_check;
+		mc_info_init(&hull_check);
+
+		hull_check.model_instance_num = model_instance_num;
+		hull_check.model_num = model_num;
+		hull_check.orient = &objp->orient;
+		hull_check.pos = &objp->pos;
+		hull_check.p0 = from;
+		hull_check.p1 = to;
+
+		if (test_for_hull) {
+			hull_check.flags = MC_CHECK_MODEL;
+
+			if (model_collide(&hull_check)) {
+				float dist = vm_vec_dist(&hull_check.hit_point_world, from);
+				if (first_intersect_dist == nullptr) {
+					return false;
+				}
+				else {
+					//If we need to find the first intersect distance, we need to keep searching if there might be an intersect earlier. Also, always record the first dist found
+					if (!collides || *first_intersect_dist > dist)
+						*first_intersect_dist = dist;
+					collides = true;
+				}
+			}
+		}
+
+		if (test_for_shields) {
+			hull_check.flags = MC_CHECK_SHIELD;
+
+			if (model_collide(&hull_check)) {
+				float dist = vm_vec_dist(&hull_check.hit_point_world, from);
+				if (first_intersect_dist == nullptr) {
+					return false;
+				}
+				else {
+					//If we need to find the first intersect distance, we need to keep searching if there might be an intersect earlier
+					if (!collides || *first_intersect_dist > dist)
+						*first_intersect_dist = dist;
+					collides = true;
+				}
+			}
+		}
+	}
+
+	return !collides;
 }

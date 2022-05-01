@@ -135,6 +135,4 @@ int reject_due_collision_groups(object *A, object *B);
 
 void init_collision_info_struct(collision_info_struct *cis);
 
-bool test_line_of_sight(vec3d* from, vec3d* to, std::unordered_set<const object*>&& excluded_objects = {}, bool test_for_shields = false, bool test_for_hull = true, float* first_intersect_dist = nullptr, float threshold = 10.0f);
-
 #endif

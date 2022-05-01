@@ -165,10 +165,10 @@ class LuaValue {
 	 * @exception LuaException Thrown when the conversion failed.
 	 */
 	template<typename Type>
-	void getValue(scripting::ade_odata_getter<Type>&& od) const {
+	void getValue(Type&& od) const {
 		_reference->pushValue(_luaState);
 
-		if (!convert::popValue<Type>(_luaState, std::forward<scripting::ade_odata_getter<Type>>(od))) {
+		if (!convert::popValue<Type>(_luaState, std::forward<Type>(od))) {
 			lua_pop(_luaState, 1);
 			throw LuaException("Failed to pop value");
 		}
