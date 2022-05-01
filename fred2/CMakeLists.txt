@@ -23,6 +23,8 @@ set(FRED2_SOURCES
 	bgbitmapdlg.h
 	briefingeditordlg.cpp
 	briefingeditordlg.h
+	calcrelativecoordsdlg.cpp
+	calcrelativecoordsdlg.h
 	campaigneditordlg.cpp
 	campaigneditordlg.h
 	campaignfilelistbox.cpp

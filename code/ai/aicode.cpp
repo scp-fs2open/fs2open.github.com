@@ -4721,7 +4721,7 @@ void ai_waypoints()
 					Script_system.SetHookObject("Ship", &Objects[Ships[Pl_objp->instance].objnum]);
 					Script_system.SetHookVar("Wing", 'o', scripting::api::l_Wing.Set(Ships[Pl_objp->instance].wingnum));
 					Script_system.SetHookVar("Waypointlist", 'o', scripting::api::l_WaypointList.Set(scripting::api::waypointlist_h(aip->wp_list)));
-					Script_system.RunCondition(CHA_ONWAYPOINTSDONE);
+					Script_system.RunCondition(CHA_ONWAYPOINTSDONE, Pl_objp);
 					Script_system.RemHookVars({"Ship", "Wing", "Waypointlist"});
 				}
 			}
@@ -15916,7 +15916,7 @@ void ai_ship_destroy(int shipnum)
 			aip->hitter_objnum = -1;
 	}
 
-	if (dead_aip->ai_flags[AI::AI_Flags::Formation_object])
+	if (dead_aip->ai_flags[AI::AI_Flags::Formation_object] && dead_aip->goal_objnum >= 0)
 		ai_formation_object_recalculate_slotnums(dead_aip->goal_objnum, objnum);
 
 }

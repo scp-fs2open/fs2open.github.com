@@ -6,10 +6,10 @@ on:
     inputs:
       linux_result:   # job.result; either success, failure, canceled or skipped
         required: true
-        type: boolean
+        type: string
       windows_result: # job.result
         required: true
-        type: boolean
+        type: string
       releaseTag:
         required: true
         type: string
@@ -41,6 +41,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: '0'
+          ref: RELEASE_TAG
 
       - name: Install Python dependencies
         run: pip install -r ci/post/requirements.txt

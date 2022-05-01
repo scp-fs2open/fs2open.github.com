@@ -21,7 +21,7 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
-const float input_threshold = 0.1f;		// smallest increment of input box
+const float input_threshold = 0.01f;		// smallest increment of input box
 
 /////////////////////////////////////////////////////////////////////////////
 // orient_editor dialog
@@ -45,15 +45,15 @@ orient_editor::orient_editor(CWnd* pParent /*=NULL*/)
 
 	Assert(query_valid_object());
 	auto pos = &Objects[cur_object_index].pos;
-	m_position_x.Format("%.1f", pos->xyz.x);
-	m_position_y.Format("%.1f", pos->xyz.y);
-	m_position_z.Format("%.1f", pos->xyz.z);
+	m_position_x.Format("%.01f", pos->xyz.x);
+	m_position_y.Format("%.01f", pos->xyz.y);
+	m_position_z.Format("%.01f", pos->xyz.z);
 
 	angles ang;
 	vm_extract_angles_matrix(&ang, &Objects[cur_object_index].orient);
-	m_orientation_p.Format("%.1f", to_degrees(ang.p));
-	m_orientation_b.Format("%.1f", to_degrees(ang.b));
-	m_orientation_h.Format("%.1f", to_degrees(ang.h));
+	m_orientation_p.Format("%.01f", to_degrees(ang.p));
+	m_orientation_b.Format("%.01f", to_degrees(ang.b));
+	m_orientation_h.Format("%.01f", to_degrees(ang.h));
 }
 
 void orient_editor::DoDataExchange(CDataExchange* pDX)
@@ -102,7 +102,8 @@ BOOL orient_editor::OnInitDialog()
 
 	CDialog::OnInitDialog();
 	theApp.init_window(&Object_wnd_data, this);
-	((CButton *) GetDlgItem(IDC_POINT_TO_OBJECT))->SetCheck(1);
+	((CButton *) GetDlgItem(IDC_POINT_TO_OBJECT))->SetCheck(TRUE);
+	((CButton *) GetDlgItem(IDC_TRANSFORM_INDEPENDENT))->SetCheck(TRUE);
 	box = (CComboBox *) GetDlgItem(IDC_OBJECT_LIST);
 	box->ResetContent();
 
@@ -138,20 +139,25 @@ BOOL orient_editor::OnInitDialog()
 
 	type = Objects[cur_object_index].type;
 	if (Marked == 1 && (type == OBJ_WAYPOINT || type == OBJ_JUMP_NODE)) {
-		GetDlgItem(IDC_POINT_TO_CHECKBOX)->EnableWindow(0);
-		GetDlgItem(IDC_POINT_TO_OBJECT)->EnableWindow(0);
-		GetDlgItem(IDC_POINT_TO_LOCATION)->EnableWindow(0);
-		GetDlgItem(IDC_OBJECT_LIST)->EnableWindow(0);
-		GetDlgItem(IDC_LOCATION_X)->EnableWindow(0);
-		GetDlgItem(IDC_LOCATION_Y)->EnableWindow(0);
-		GetDlgItem(IDC_LOCATION_Z)->EnableWindow(0);
-		GetDlgItem(IDC_ORIENTATION_P)->EnableWindow(0);
-		GetDlgItem(IDC_ORIENTATION_B)->EnableWindow(0);
-		GetDlgItem(IDC_ORIENTATION_H)->EnableWindow(0);
+		GetDlgItem(IDC_POINT_TO_CHECKBOX)->EnableWindow(FALSE);
+		GetDlgItem(IDC_POINT_TO_OBJECT)->EnableWindow(FALSE);
+		GetDlgItem(IDC_POINT_TO_LOCATION)->EnableWindow(FALSE);
+		GetDlgItem(IDC_OBJECT_LIST)->EnableWindow(FALSE);
+		GetDlgItem(IDC_LOCATION_X)->EnableWindow(FALSE);
+		GetDlgItem(IDC_LOCATION_Y)->EnableWindow(FALSE);
+		GetDlgItem(IDC_LOCATION_Z)->EnableWindow(FALSE);
+		GetDlgItem(IDC_ORIENTATION_P)->EnableWindow(FALSE);
+		GetDlgItem(IDC_ORIENTATION_B)->EnableWindow(FALSE);
+		GetDlgItem(IDC_ORIENTATION_H)->EnableWindow(FALSE);
 		m_object_index = -1;
 
 	} else {
 		m_object_index = 0;
+	}
+
+	if (Marked == 1 || (type == OBJ_WAYPOINT || type == OBJ_JUMP_NODE)) {
+		GetDlgItem(IDC_TRANSFORM_INDEPENDENT)->EnableWindow(FALSE);
+		GetDlgItem(IDC_TRANSFORM_RELATIVE)->EnableWindow(FALSE);
 	}
 
 	m_spin1.SetRange((short)-9999, (short)9999);
@@ -201,7 +207,7 @@ bool orient_editor::query_modified()
 	if (!close(to_degrees(ang.h), m_orientation_h))
 		return true;
 
-	if (((CButton *) GetDlgItem(IDC_POINT_TO_CHECKBOX))->GetCheck() == 1)
+	if (((CButton *) GetDlgItem(IDC_POINT_TO_CHECKBOX))->GetCheck() == TRUE)
 		return true;
 
 	return false;
@@ -213,7 +219,6 @@ void orient_editor::OnOK()
 	matrix m = vmd_identity_matrix;
 	angles ang;
 	bool change_pos = false, change_orient = false;
-	object *ptr;
 
 	UpdateData(TRUE);
 
@@ -246,23 +251,61 @@ void orient_editor::OnOK()
 	if (m_point_to)
 		set_modified();
 
+	object *origin_objp = nullptr;
+	vec3d origin_prev_pos = vmd_zero_vector;
+	matrix origin_rotation = vmd_identity_matrix;
+
+	if (Marked > 1 && ((CButton*)GetDlgItem(IDC_TRANSFORM_RELATIVE))->GetCheck() == TRUE) {
+		origin_objp = &Objects[cur_object_index];
+		origin_prev_pos = origin_objp->pos;
+		auto saved_orient = origin_objp->orient;
+
+		// move the origin first
+		if (change_pos) {
+			vm_vec_add2(&origin_objp->pos, &delta);
+		}
+		if (m_point_to) {
+			actually_point_object(origin_objp);
+		}
+		else if (change_orient) {
+			origin_objp->orient = m;
+		}
+
+		// calculate the change in orient
+		if (origin_objp->type != OBJ_WAYPOINT) {
+			vm_transpose(&saved_orient);
+			origin_rotation = saved_orient * origin_objp->orient;
+		}
+	}
+
 	// move and/or point all the objects
-	for (ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
-		if (ptr->flags[Object::Object_Flags::Marked]) {
-			if (change_pos) {
-				vm_vec_add2(&ptr->pos, &delta);
-			}
-			if (m_point_to) {
-				actually_point_object(ptr);
-			} else if (change_orient) {
-				ptr->orient = m;
+	for (auto ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
+		if (ptr != origin_objp && ptr->flags[Object::Object_Flags::Marked]) {
+			// relative to the new position of the origin
+			if (origin_objp) {
+				vec3d relative_pos, transformed_pos;
+				vm_vec_sub(&relative_pos, &ptr->pos, &origin_prev_pos);
+				vm_vec_unrotate(&transformed_pos, &relative_pos, &origin_rotation);
+				vm_vec_add(&ptr->pos, &transformed_pos, &origin_objp->pos);
+				ptr->orient = ptr->orient * origin_rotation;
+			} 
+			// all objects moving independently
+			else {
+				if (change_pos) {
+					vm_vec_add2(&ptr->pos, &delta);
+				}
+				if (m_point_to) {
+					actually_point_object(ptr);
+				} else if (change_orient) {
+					ptr->orient = m;
+				}
 			}
 		}
 	}
 
 	// do post-move cleanup
 	if (change_pos) {
-		for (ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
+		for (auto ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
 			if (ptr->flags[Object::Object_Flags::Marked]) {
 				object_moved(ptr);
 			}
@@ -284,12 +327,12 @@ void orient_editor::actually_point_object(object *ptr)
 		loc.xyz.y = convert(m_location_y);
 		loc.xyz.z = convert(m_location_z);
 
-		if (((CButton *) GetDlgItem(IDC_POINT_TO_OBJECT))->GetCheck() == 1) {
+		if (((CButton *) GetDlgItem(IDC_POINT_TO_OBJECT))->GetCheck() == TRUE) {
 			if (m_object_index >= 0) {
 				v = Objects[index[m_object_index]].pos;
 				vm_vec_sub2(&v, &ptr->pos);
 			}
-		} else if (((CButton *) GetDlgItem(IDC_POINT_TO_LOCATION))->GetCheck() == 1) {
+		} else if (((CButton *) GetDlgItem(IDC_POINT_TO_LOCATION))->GetCheck() == TRUE) {
 			vm_vec_sub(&v, &loc, &ptr->pos);
 
 		} else {
@@ -301,7 +344,9 @@ void orient_editor::actually_point_object(object *ptr)
 			return;  // can't point to itself.
 		}
 
-		vm_vector_2_matrix(&m, &v, NULL, NULL);
+		auto uvec = Point_using_uvec ? &ptr->orient.vec.uvec : nullptr;
+
+		vm_vector_2_matrix(&m, &v, uvec, nullptr);
 		ptr->orient = m;
 	}
 }

@@ -19,6 +19,7 @@
 #include "mod_table/mod_table.h"
 #include "parse/parselo.h"
 #include "sound/sound.h"
+#include "starfield/supernova.h"
 #include "playerman/player.h"
 
 int Directive_wait_time;
@@ -86,6 +87,10 @@ float Min_pixel_size_beam;
 float Min_pizel_size_muzzleflash;
 float Min_pixel_size_trail;
 float Min_pixel_size_laser;
+bool Supernova_hits_at_zero;
+bool Show_subtitle_uses_pixels;
+int Show_subtitle_screen_base_res[2];
+int Show_subtitle_screen_adjusted_res[2];
 
 void mod_table_set_version_flags();
 
@@ -254,6 +259,15 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Dont_automatically_select_turret_when_targeting_ship);
 		}
 
+		if (optional_string("$Supernova hits at zero:")) {
+			stuff_boolean(&Supernova_hits_at_zero);
+			if (Supernova_hits_at_zero) {
+				mprintf(("Game Settings Table: HUD timer will reach 0 when the supernova shockwave hits the player\n"));
+			} else {
+				mprintf(("Game Settings Table: HUD timer will reach %.2f when the supernova shockwave hits the player\n", SUPERNOVA_HIT_TIME));
+			}
+		}
+
 		optional_string("#SEXP SETTINGS");
 
 		if (optional_string("$Loop SEXPs Then Arguments:")) {
@@ -283,6 +297,30 @@ void parse_mod_table(const char *filename)
 			}
 			else {
 				mprintf(("Game Settings Table: Using identity orientation for set-camera-facing\n"));
+			}
+		}
+
+		if (optional_string("$Show-subtitle uses pixels:")) {
+			stuff_boolean(&Show_subtitle_uses_pixels);
+			if (Show_subtitle_uses_pixels) {
+				mprintf(("Game Settings Table: Show-subtitle uses pixels\n"));
+			} else {
+				mprintf(("Game Settings Table: Show-subtitle uses percentages\n"));
+			}
+		}
+
+		if (optional_string("$Show-subtitle base resolution:")) {
+			int base_res[2];
+			if (stuff_int_list(base_res, 2) == 2) {
+				if (base_res[0] >= 640 && base_res[1] >= 480) {
+					Show_subtitle_screen_base_res[0] = base_res[0];
+					Show_subtitle_screen_base_res[1] = base_res[1];
+					mprintf(("Game Settings Table: Show-subtitle base resolution is (%d, %d)\n", base_res[0], base_res[1]));
+				} else {
+					Warning(LOCATION, "$Show-subtitle base resolution: arguments must be at least 640x480!");
+				}
+			} else {
+				Warning(LOCATION, "$Show-subtitle base resolution: must specify two arguments");
 			}
 		}
 
@@ -782,6 +820,23 @@ void mod_table_init()
 	parse_modular_table("*-mod.tbm", parse_mod_table);
 }
 
+// game_settings.tbl is parsed before graphics are actually initialized, so we can't calculate the resolution at that time
+void mod_table_post_process()
+{
+	// use the same widescreen code as in adjust_base_res()
+	// This calculates an adjusted resolution if the aspect ratio of the base resolution doesn't exactly match that of the current resolution.
+	// The base resolution specified in game_settings.tbl does not need to be 1024x768 or even 4:3.
+	float aspect_quotient = ((float)gr_screen.center_w / (float)gr_screen.center_h) / ((float)Show_subtitle_screen_base_res[0] / (float)Show_subtitle_screen_base_res[1]);
+	if (aspect_quotient >= 1.0) {
+		Show_subtitle_screen_adjusted_res[0] = (int)(Show_subtitle_screen_base_res[0] * aspect_quotient);
+		Show_subtitle_screen_adjusted_res[1] = Show_subtitle_screen_base_res[1];
+	} else {
+		Show_subtitle_screen_adjusted_res[0] = Show_subtitle_screen_base_res[0];
+		Show_subtitle_screen_adjusted_res[1] = (int)(Show_subtitle_screen_base_res[1] / aspect_quotient);
+	}
+	mprintf(("Game Settings Table: Show-subtitle adjusted resolution is (%d, %d)\n", Show_subtitle_screen_adjusted_res[0], Show_subtitle_screen_adjusted_res[1]));
+}
+
 bool mod_supports_version(int major, int minor, int build)
 {
 	return Targeted_version >= gameversion::version(major, minor, build, 0);
@@ -854,6 +909,12 @@ void mod_table_reset()
 	Min_pizel_size_muzzleflash = 0.0f;
 	Min_pixel_size_trail = 0.0f;
 	Min_pixel_size_laser = 0.0f;
+	Supernova_hits_at_zero = false;
+	Show_subtitle_uses_pixels = false;
+	Show_subtitle_screen_base_res[0] = -1;
+	Show_subtitle_screen_base_res[1] = -1;
+	Show_subtitle_screen_adjusted_res[0] = -1;
+	Show_subtitle_screen_adjusted_res[1] = -1;
 }
 
 void mod_table_set_version_flags()

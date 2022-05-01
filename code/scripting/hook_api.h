@@ -132,8 +132,9 @@ class Hook : public HookBase {
 
 	template <typename... Args>
 	int run(detail::HookParameterInstanceList<Args...> argsList = hook_param_list<Args...>(),
-			object* objp                                        = nullptr,
-			int more_data                                       = 0) const
+			object* objp1                                       = nullptr,
+			object* objp2                                       = nullptr,
+			int more_data                                       = -1) const
 	{
 		SCP_vector<SCP_string> paramNames;
 		argsList.setHookVars(paramNames);
@@ -147,7 +148,7 @@ class Hook : public HookBase {
 		});
 #endif
 
-		const auto num_run = Script_system.RunCondition(_hookId, objp, more_data);
+		const auto num_run = Script_system.RunCondition(_hookId, objp1, objp2, more_data);
 
 		for (const auto& param : paramNames) {
 			Script_system.RemHookVar(param.c_str());

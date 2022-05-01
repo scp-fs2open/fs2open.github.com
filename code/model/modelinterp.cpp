@@ -103,7 +103,9 @@ class bsp_polygon_data
 	void process_bsp(int offset, ubyte* bsp_data);
 	void process_defpoints(int off, ubyte* bsp_data);
 	void process_sortnorm(int offset, ubyte* bsp_data);
+	void process_sortnorm2(int offset, ubyte* bsp_data);
 	void process_tmap(int offset, ubyte* bsp_data);
+	void process_tmap2(int offset, ubyte* bsp_data);
 	void process_flat(int offset, ubyte* bsp_data);
 public:
 	bsp_polygon_data(ubyte* bsp_data);
@@ -130,12 +132,12 @@ struct interp_vertex {
 // Local variables
 //
 
-static int Num_interp_verts_allocated = 0;
+static uint Num_interp_verts_allocated = 0;
 vec3d **Interp_verts = NULL;
 static vertex *Interp_points = NULL;
 static vertex *Interp_splode_points = NULL;
 vec3d *Interp_splode_verts = NULL;
-static int Interp_num_verts = 0;
+static uint Interp_num_verts = 0;
 
 static float Interp_box_scale = 1.0f; // this is used to scale both detail boxes and spheres
 
@@ -152,10 +154,10 @@ int Interp_saved_lighting_full = 0;
 // -------------------------------------------------------------------
 
 
-static int Num_interp_norms_allocated = 0;
+static uint Num_interp_norms_allocated = 0;
 static vec3d **Interp_norms = NULL;
 static ubyte *Interp_light_applied = NULL;
-static int Interp_num_norms = 0;
+static uint Interp_num_norms = 0;
 static ubyte *Interp_lights;
 
 // Stuff to control rendering parameters
@@ -249,7 +251,7 @@ void model_deallocate_interp_data()
 extern void model_collide_allocate_point_list(int n_points);
 extern void model_collide_free_point_list();
 
-void model_allocate_interp_data(int n_verts, int n_norms)
+void model_allocate_interp_data(uint n_verts, uint n_norms)
 {
 	static ubyte dealloc = 0;
 
@@ -259,7 +261,6 @@ void model_allocate_interp_data(int n_verts, int n_norms)
 		dealloc = 1;
 	}
 
-	Assert( (n_verts >= 0) && (n_norms >= 0) );
 	Assert( (n_verts || Num_interp_verts_allocated) && (n_norms || Num_interp_norms_allocated) );
 
 	if (n_verts > Num_interp_verts_allocated) {
@@ -459,11 +460,11 @@ void model_interp_defpoints(ubyte * p, polymodel *pm, bsp_info *sm)
 {
 	if(splodeing)model_interp_splode_defpoints(p, pm, sm, splode_level*model_radius);
 
-	int i, n;
-	int nverts = w(p+8);	
-	int offset = w(p+16);
-	int next_norm = 0;
-	int nnorms = 0;
+	uint i, n;
+	uint nverts = uw(p+8);	
+	uint offset = uw(p+16);
+	uint next_norm = 0;
+	uint nnorms = 0;
 
 	ubyte * normcount = p+20;
 	vertex *dest = NULL;
@@ -1181,10 +1182,10 @@ static int submodel_get_points_internal(int model_num, int submodel_num)
 	while (chunk_type != OP_EOF)	{
 		switch (chunk_type) {
 		case OP_DEFPOINTS:	{
-				int n;
-				int nverts = w(p+8);				
-				int offset = w(p+16);
-				int nnorms = 0;			
+				uint n;
+				uint nverts = uw(p+8);				
+				uint offset = uw(p+16);
+				uint nnorms = 0;			
 
 				ubyte * normcount = p+20;
 				vec3d *src = vp(p+offset);
@@ -1211,7 +1212,9 @@ static int submodel_get_points_internal(int model_num, int submodel_num)
 		case OP_FLATPOLY:		break;
 		case OP_TMAPPOLY:		break;
 		case OP_SORTNORM:		break;
+		case OP_SORTNORM2:		break;
 		case OP_BOUNDBOX:		break;
+		case OP_TMAP2POLY:		break;
 		default:
 			mprintf(( "Bad chunk type %d, len=%d in submodel_get_points\n", chunk_type, chunk_size ));
 			Int3();		// Bad chunk type!
@@ -1416,7 +1419,8 @@ int submodel_get_num_polys_sub( ubyte *p )
 	int chunk_size = w(p+4);
 	int n = 0;
 	
-	while (chunk_type != OP_EOF)	{
+	bool end = chunk_type == OP_EOF;
+	while (!end)	{
 		switch (chunk_type) {
 		case OP_DEFPOINTS:	break;
 		case OP_FLATPOLY:		n++; break;
@@ -1434,7 +1438,20 @@ int submodel_get_num_polys_sub( ubyte *p )
 			n += submodel_get_num_polys_sub(p+onlist );
 			}
 			break;
+
+		case OP_SORTNORM2: {
+			int frontlist = w(p + 8);
+			int backlist = w(p + 12);
+			n += submodel_get_num_polys_sub(p + frontlist);
+			n += submodel_get_num_polys_sub(p + backlist);
+			}
+			end = true; // should not continue after this chunk
+			break;
 		case OP_BOUNDBOX:	break;
+		case OP_TMAP2POLY:		
+			n++; 
+			end = true; // should not continue after this chunk
+			break;
 		default:
 			mprintf(( "Bad chunk type %d, len=%d in submodel_get_num_polys\n", chunk_type, chunk_size ));
 			Int3();		// Bad chunk type!
@@ -1443,6 +1460,9 @@ int submodel_get_num_polys_sub( ubyte *p )
 		p += chunk_size;
 		chunk_type = w(p);
 		chunk_size = w(p+4);
+
+		if (chunk_type == OP_EOF)
+			end = true;
 	}
 	return n;		
 }
@@ -1647,10 +1667,10 @@ poly_list polygon_list[MAX_MODEL_TEXTURES];
 
 void parse_defpoint(int off, ubyte *bsp_data)
 {
-	int i, n;
-	int nverts = w(off+bsp_data+8);	
-	int offset = w(off+bsp_data+16);
-	int next_norm = 0;
+	uint i, n;
+	uint nverts = uw(off+bsp_data+8);	
+	uint offset = uw(off+bsp_data+16);
+	uint next_norm = 0;
 
 	ubyte *normcount = off+bsp_data+20;
 	vec3d *src = vp(off+bsp_data+offset);
@@ -1693,13 +1713,15 @@ int Parse_normal_problem_count = 0;
 
 void parse_tmap(int offset, ubyte *bsp_data)
 {
-	int pof_tex = w(bsp_data+offset+40);
-	int n_vert = w(bsp_data+offset+36);
-	
-	ubyte *p = &bsp_data[offset+8];
-	model_tmap_vert *tverts;
+	int pof_tex = w(bsp_data+offset+TMAP_TEXNUM);
+	uint n_vert = uw(bsp_data+offset+TMAP_NVERTS);
+	ubyte *p = &bsp_data[offset+TMAP_NORMAL];
+	auto vs = reinterpret_cast<model_tmap_vert_old*>(&bsp_data[offset + TMAP_VERTS]);
+	auto tverts = new model_tmap_vert[n_vert];
 
-	tverts = (model_tmap_vert *)&bsp_data[offset+44];
+	for (uint i = 0; i < n_vert; i++) {
+		tverts[i] = model_tmap_vert(vs[i]);
+	}
 
 	vertex *V;
 	vec3d *v;
@@ -1707,10 +1729,10 @@ void parse_tmap(int offset, ubyte *bsp_data)
 
 	int problem_count = 0;
 
-	for (int i = 1; i < (n_vert-1); i++) {
+	for (uint i = 1; i < (n_vert-1); i++) {
 		V = &polygon_list[pof_tex].vert[(polygon_list[pof_tex].n_verts)];
 		N = &polygon_list[pof_tex].norm[(polygon_list[pof_tex].n_verts)];
-		v = Interp_verts[(int)tverts[0].vertnum];
+		v = Interp_verts[tverts[0].vertnum];
 		V->world.xyz.x = v->xyz.x;
 		V->world.xyz.y = v->xyz.y;
 		V->world.xyz.z = v->xyz.z;
@@ -1727,7 +1749,7 @@ void parse_tmap(int offset, ubyte *bsp_data)
 
 		V = &polygon_list[pof_tex].vert[(polygon_list[pof_tex].n_verts)+1];
 		N = &polygon_list[pof_tex].norm[(polygon_list[pof_tex].n_verts)+1];
-		v = Interp_verts[(int)tverts[i].vertnum];
+		v = Interp_verts[tverts[i].vertnum];
 		V->world.xyz.x = v->xyz.x;
 		V->world.xyz.y = v->xyz.y;
 		V->world.xyz.z = v->xyz.z;
@@ -1744,14 +1766,14 @@ void parse_tmap(int offset, ubyte *bsp_data)
 
 		V = &polygon_list[pof_tex].vert[(polygon_list[pof_tex].n_verts)+2];
 		N = &polygon_list[pof_tex].norm[(polygon_list[pof_tex].n_verts)+2];
-		v = Interp_verts[(int)tverts[i+1].vertnum];
+		v = Interp_verts[tverts[i+1].vertnum];
 		V->world.xyz.x = v->xyz.x;
 		V->world.xyz.y = v->xyz.y;
 		V->world.xyz.z = v->xyz.z;
 		V->texture_position.u = tverts[i+1].u;
 		V->texture_position.v = tverts[i+1].v;
 
-		*N = *Interp_norms[(int)tverts[i+1].normnum];
+		*N = *Interp_norms[tverts[i+1].normnum];
 
 		if ( IS_VEC_NULL(N) )
 			*N = *vp(p);
@@ -1765,14 +1787,129 @@ void parse_tmap(int offset, ubyte *bsp_data)
 	Parse_normal_problem_count += problem_count;
 }
 
-void parse_sortnorm(int offset, ubyte *bsp_data);
+/**
+* @brief Parses a TMAP2POLY chunk into a list of polygons.
+* 
+* @param offset The byte offset to the current TMAP2POLY chunk within bsp_data.
+* @param[in] bsp_data The byte buffer containing the BSP information for the current model.
+*/
+void parse_tmap2(int offset, ubyte* bsp_data)
+{
+	int pof_tex = w(bsp_data + offset + TMAP2_TEXNUM);
+	uint n_vert = uw(bsp_data + offset + TMAP2_NVERTS);
+
+	ubyte* p = &bsp_data[offset + TMAP2_NORMAL];
+	model_tmap_vert* tverts;
+
+	vertex* V;
+	vec3d* v;
+	vec3d* N;
+
+	int problem_count = 0;
+
+	tverts = reinterpret_cast<model_tmap_vert*>(&bsp_data[offset + TMAP2_VERTS]);
+
+	for (uint i = 1; i < (n_vert - 1); i++) {
+		V = &polygon_list[pof_tex].vert[(polygon_list[pof_tex].n_verts)];
+		N = &polygon_list[pof_tex].norm[(polygon_list[pof_tex].n_verts)];
+		v = Interp_verts[tverts[0].vertnum];
+		V->world.xyz.x = v->xyz.x;
+		V->world.xyz.y = v->xyz.y;
+		V->world.xyz.z = v->xyz.z;
+		V->texture_position.u = tverts[0].u;
+		V->texture_position.v = tverts[0].v;
+
+		*N = *Interp_norms[tverts[0].normnum];
+
+		if (IS_VEC_NULL(N))
+			*N = *vp(p);
+
+		problem_count += check_values(N);
+		vm_vec_normalize_safe(N);
+
+		V = &polygon_list[pof_tex].vert[(polygon_list[pof_tex].n_verts) + 1];
+		N = &polygon_list[pof_tex].norm[(polygon_list[pof_tex].n_verts) + 1];
+		v = Interp_verts[tverts[i].vertnum];
+		V->world.xyz.x = v->xyz.x;
+		V->world.xyz.y = v->xyz.y;
+		V->world.xyz.z = v->xyz.z;
+		V->texture_position.u = tverts[i].u;
+		V->texture_position.v = tverts[i].v;
+
+		*N = *Interp_norms[tverts[i].normnum];
+
+		if (IS_VEC_NULL(N))
+			*N = *vp(p);
+
+		problem_count += check_values(N);
+		vm_vec_normalize_safe(N);
+
+		V = &polygon_list[pof_tex].vert[(polygon_list[pof_tex].n_verts) + 2];
+		N = &polygon_list[pof_tex].norm[(polygon_list[pof_tex].n_verts) + 2];
+		v = Interp_verts[tverts[i + 1].vertnum];
+		V->world.xyz.x = v->xyz.x;
+		V->world.xyz.y = v->xyz.y;
+		V->world.xyz.z = v->xyz.z;
+		V->texture_position.u = tverts[i + 1].u;
+		V->texture_position.v = tverts[i + 1].v;
+
+		*N = *Interp_norms[tverts[i + 1].normnum];
+
+		if (IS_VEC_NULL(N))
+			*N = *vp(p);
+
+		problem_count += check_values(N);
+		vm_vec_normalize_safe(N);
+
+		polygon_list[pof_tex].n_verts += 3;
+	}
+
+	Parse_normal_problem_count += problem_count;
+}
+
+void parse_bsp(int offset, ubyte* bsp_data);
+
+void parse_sortnorm(int offset, ubyte* bsp_data)
+{
+	int frontlist, backlist, prelist, postlist, onlist;
+
+	frontlist = w(bsp_data + offset + 36);
+	backlist = w(bsp_data + offset + 40);
+	prelist = w(bsp_data + offset + 44);
+	postlist = w(bsp_data + offset + 48);
+	onlist = w(bsp_data + offset + 52);
+
+	if (prelist) parse_bsp(offset + prelist, bsp_data);
+	if (backlist) parse_bsp(offset + backlist, bsp_data);
+	if (onlist) parse_bsp(offset + onlist, bsp_data);
+	if (frontlist) parse_bsp(offset + frontlist, bsp_data);
+	if (postlist) parse_bsp(offset + postlist, bsp_data);
+}
+
+/**
+* @brief Parses a SORTNORM2 by recursively parsing into the two pointers it contains.
+*
+* @param offset The byte offset to the current SORT2NORM chunk within bsp_data.
+* @param bsp_data The byte buffer containing the BSP information for the current model.
+*/
+void parse_sortnorm2(int offset, ubyte* bsp_data)
+{
+	int frontlist, backlist;
+
+	frontlist = w(bsp_data + offset + 8);
+	backlist = w(bsp_data + offset + 12);
+
+	if (backlist) parse_bsp(offset + backlist, bsp_data);
+	if (frontlist) parse_bsp(offset + frontlist, bsp_data);
+}
 
 void parse_bsp(int offset, ubyte *bsp_data)
 {
 	int id = w(bsp_data+offset);
 	int size = w(bsp_data+offset+4);
 
-	while (id != 0) {
+	bool end = id == OP_EOF;
+	while (!end) {
 		switch (id)
 		{
 			case OP_DEFPOINTS:
@@ -1781,6 +1918,11 @@ void parse_bsp(int offset, ubyte *bsp_data)
 
 			case OP_SORTNORM:
 				parse_sortnorm(offset, bsp_data);
+				break;
+
+			case OP_SORTNORM2:
+				parse_sortnorm2(offset, bsp_data);
+				end = true; // should not continue after this chunk
 				break;
 
 			case OP_FLATPOLY:
@@ -1793,6 +1935,11 @@ void parse_bsp(int offset, ubyte *bsp_data)
 			case OP_BOUNDBOX:
 				break;
 
+			case OP_TMAP2POLY:
+				parse_tmap2(offset, bsp_data);
+				end = true; // should not continue after this chunk
+				break;
+
 			default:
 				return;
 		}
@@ -1801,40 +1948,23 @@ void parse_bsp(int offset, ubyte *bsp_data)
 		id = w(bsp_data+offset);
 		size = w(bsp_data+offset+4);
 
-		if (size < 1)
-			id = OP_EOF;
+		if (size < 1 || id == OP_EOF)
+			end = true;
 	}
 }
 
-void parse_sortnorm(int offset, ubyte *bsp_data)
+void find_tmap(int offset, const ubyte *bsp_data, int id)
 {
-	int frontlist, backlist, prelist, postlist, onlist;
-
-	frontlist = w(bsp_data+offset+36);
-	backlist = w(bsp_data+offset+40);
-	prelist = w(bsp_data+offset+44);
-	postlist = w(bsp_data+offset+48);
-	onlist = w(bsp_data+offset+52);
-
-	if (prelist) parse_bsp(offset+prelist,bsp_data);
-	if (backlist) parse_bsp(offset+backlist, bsp_data);
-	if (onlist) parse_bsp(offset+onlist, bsp_data);
-	if (frontlist) parse_bsp(offset+frontlist, bsp_data);
-	if (postlist) parse_bsp(offset+postlist, bsp_data);
-}
-
-void find_tmap(int offset, ubyte *bsp_data)
-{
-	int pof_tex = w(bsp_data+offset+40);
-	int n_vert = w(bsp_data+offset+36);
+	int pof_tex = cw(bsp_data+offset+(id == OP_TMAP2POLY ? TMAP2_TEXNUM : TMAP_TEXNUM));
+	uint n_vert = cuw(bsp_data+offset+ (id == OP_TMAP2POLY ? TMAP2_NVERTS : TMAP_NVERTS));
 
 	tri_count[pof_tex] += n_vert-2;	
 }
 
 void find_defpoint(int off, ubyte *bsp_data)
 {
-	int n;
-	int nverts = w(off+bsp_data+8);	
+	uint n;
+	uint nverts = uw(off+bsp_data+8);	
 
 	ubyte * normcount = off+bsp_data+20;
 
@@ -1855,7 +1985,35 @@ void find_defpoint(int off, ubyte *bsp_data)
 	Interp_num_norms = norm_num;
 }
 
-void find_sortnorm(int offset, ubyte *bsp_data);
+void find_tri_counts(int offset, ubyte* bsp_data);
+
+void find_sortnorm(int offset, ubyte* bsp_data)
+{
+	int frontlist, backlist, prelist, postlist, onlist;
+
+	frontlist = w(bsp_data + offset + 36);
+	backlist = w(bsp_data + offset + 40);
+	prelist = w(bsp_data + offset + 44);
+	postlist = w(bsp_data + offset + 48);
+	onlist = w(bsp_data + offset + 52);
+
+	if (prelist) find_tri_counts(offset + prelist, bsp_data);
+	if (backlist) find_tri_counts(offset + backlist, bsp_data);
+	if (onlist) find_tri_counts(offset + onlist, bsp_data);
+	if (frontlist) find_tri_counts(offset + frontlist, bsp_data);
+	if (postlist) find_tri_counts(offset + postlist, bsp_data);
+}
+
+void find_sortnorm2(int offset, ubyte* bsp_data)
+{
+	int frontlist, backlist;
+
+	frontlist = w(bsp_data + offset + 8);
+	backlist = w(bsp_data + offset + 12);
+
+	if (backlist) find_tri_counts(offset + backlist, bsp_data);
+	if (frontlist) find_tri_counts(offset + frontlist, bsp_data);
+}
 
 // tri_count
 void find_tri_counts(int offset, ubyte *bsp_data)
@@ -1863,7 +2021,8 @@ void find_tri_counts(int offset, ubyte *bsp_data)
 	int id = w(bsp_data+offset);
 	int size = w(bsp_data+offset+4);
 
-	while (id != 0) {
+	bool end = id == OP_EOF;
+	while (!end) {
 		switch (id)
 		{
 			case OP_DEFPOINTS:
@@ -1874,11 +2033,20 @@ void find_tri_counts(int offset, ubyte *bsp_data)
 				find_sortnorm(offset, bsp_data);
 				break;
 
+			case OP_SORTNORM2:
+				find_sortnorm2(offset, bsp_data);
+				end = true; // should not continue after this chunk
+				break;
+
 			case OP_FLATPOLY:
 				break;
 
 			case OP_TMAPPOLY:
-				find_tmap(offset, bsp_data);
+				find_tmap(offset, bsp_data, id);
+				break;
+			case OP_TMAP2POLY:
+				find_tmap(offset, bsp_data, id);
+				end = true; // should not continue after this chunk
 				break;
 
 			case OP_BOUNDBOX:
@@ -1892,26 +2060,9 @@ void find_tri_counts(int offset, ubyte *bsp_data)
 		id = w(bsp_data+offset);
 		size = w(bsp_data+offset+4);
 
-		if (size < 1)
-			id = OP_EOF;
+		if (size < 1 || id == OP_EOF)
+			end = true;
 	}
-}
-
-void find_sortnorm(int offset, ubyte *bsp_data)
-{
-	int frontlist, backlist, prelist, postlist, onlist;
-
-	frontlist = w(bsp_data+offset+36);
-	backlist = w(bsp_data+offset+40);
-	prelist = w(bsp_data+offset+44);
-	postlist = w(bsp_data+offset+48);
-	onlist = w(bsp_data+offset+52);
-
-	if (prelist) find_tri_counts(offset+prelist,bsp_data);
-	if (backlist) find_tri_counts(offset+backlist, bsp_data);
-	if (onlist) find_tri_counts(offset+onlist, bsp_data);
-	if (frontlist) find_tri_counts(offset+frontlist, bsp_data);
-	if (postlist) find_tri_counts(offset+postlist, bsp_data);
 }
 
 void model_interp_submit_buffers(indexed_vertex_source *vert_src, size_t vertex_stride)
@@ -2876,7 +3027,8 @@ void bsp_polygon_data::process_bsp(int offset, ubyte* bsp_data)
 	int id = w(bsp_data + offset);
 	int size = w(bsp_data + offset + 4);
 
-	while (id != 0) {
+	bool end = id == OP_EOF;
+	while (!end) {
 		switch (id)
 		{
 		case OP_DEFPOINTS:
@@ -2885,6 +3037,11 @@ void bsp_polygon_data::process_bsp(int offset, ubyte* bsp_data)
 
 		case OP_SORTNORM:
 			process_sortnorm(offset, bsp_data);
+			break;
+
+		case OP_SORTNORM2:
+			process_sortnorm2(offset, bsp_data);
+			end = true; // should not continue after this chunk
 			break;
 
 		case OP_FLATPOLY:
@@ -2898,6 +3055,11 @@ void bsp_polygon_data::process_bsp(int offset, ubyte* bsp_data)
 		case OP_BOUNDBOX:
 			break;
 
+		case OP_TMAP2POLY:
+			process_tmap2(offset, bsp_data);
+			end = true; // should not continue after this chunk
+			break;
+
 		default:
 			return;
 		}
@@ -2906,16 +3068,16 @@ void bsp_polygon_data::process_bsp(int offset, ubyte* bsp_data)
 		id = w(bsp_data + offset);
 		size = w(bsp_data + offset + 4);
 
-		if (size < 1)
-			id = OP_EOF;
+		if (size < 1 || id == OP_EOF)
+			end = true;
 	}
 }
 
 void bsp_polygon_data::process_defpoints(int off, ubyte* bsp_data)
 {
-	int i, n;
-	int nverts = w(off + bsp_data + 8);
-	int offset = w(off + bsp_data + 16);
+	uint i, n;
+	uint nverts = uw(off + bsp_data + 8);
+	uint offset = uw(off + bsp_data + 16);
 
 	ubyte *normcount = off + bsp_data + 20;
 	vec3d *src = vp(off + bsp_data + offset);
@@ -2941,6 +3103,23 @@ void bsp_polygon_data::process_defpoints(int off, ubyte* bsp_data)
 	}
 }
 
+/**
+* @brief Parses a SORTNORM2 by recursively parsing into the two pointers it contains.
+*
+* @param offset The byte offset to the current SORT2NORM chunk within bsp_data.
+* @param bsp_data The byte buffer containing the BSP information for the current model.
+*/
+void bsp_polygon_data::process_sortnorm2(int offset, ubyte* bsp_data)
+{
+	int frontlist, backlist;
+
+	frontlist = w(bsp_data + offset + 8);
+	backlist = w(bsp_data + offset + 12);
+
+	if (backlist) process_bsp(offset + backlist, bsp_data);
+	if (frontlist) process_bsp(offset + frontlist, bsp_data);
+}
+
 void bsp_polygon_data::process_sortnorm(int offset, ubyte* bsp_data)
 {
 	int frontlist, backlist, prelist, postlist, onlist;
@@ -2960,18 +3139,26 @@ void bsp_polygon_data::process_sortnorm(int offset, ubyte* bsp_data)
 
 void bsp_polygon_data::process_tmap(int offset, ubyte* bsp_data)
 {
-	int pof_tex = w(bsp_data + offset + 40);
-	int n_vert = w(bsp_data + offset + 36);
+	int pof_tex = w(bsp_data + offset + TMAP_TEXNUM);
+	uint n_vert = uw(bsp_data + offset + TMAP_NVERTS);
+	ubyte* p;
+	model_tmap_vert* tverts;
 
 	if ( n_vert < 3 ) {
 		// don't parse degenerate polygons
 		return;
 	}
 
-	ubyte *p = &bsp_data[offset + 8];
-	model_tmap_vert *tverts;
+	p = &bsp_data[offset + TMAP_NORMAL];
 
-	tverts = (model_tmap_vert *)&bsp_data[offset + 44];
+	auto vs = reinterpret_cast<model_tmap_vert_old*>(&bsp_data[offset + TMAP_VERTS]);
+	tverts = new model_tmap_vert[n_vert];
+	for (uint i = 0; i < n_vert; i++) {
+		tverts[i] = model_tmap_vert(vs[i]);
+	}
+
+	// Copy the verts manually since they aren't aligned with the struct
+	//unpack_tmap_verts(&bsp_data[offset + 44], tverts, n_vert);
 
 	int problem_count = 0;
 
@@ -2988,19 +3175,76 @@ void bsp_polygon_data::process_tmap(int offset, ubyte* bsp_data)
 	Num_verts[pof_tex] += n_vert;
 
 	// stuff data making up the vertices of this polygon
-	for ( int i = 0; i < n_vert; ++i ) {
+	for ( uint i = 0; i < n_vert; ++i ) {
 		bsp_vertex vert;
 
-		vert.position = Vertex_list[(int)tverts[i].vertnum];
+		vert.position = Vertex_list[tverts[i].vertnum];
 		
 		vert.tex_coord.u = tverts[i].u;
 		vert.tex_coord.v = tverts[i].v;
 
-		vert.normal = Normal_list[(int)tverts[i].normnum];
+		vert.normal = Normal_list[tverts[i].normnum];
 
 		// see if this normal is okay
 		if (IS_VEC_NULL(&vert.normal))
 			vert.normal = *vp(p);
+
+		problem_count += check_values(&vert.normal);
+		vm_vec_normalize_safe(&vert.normal);
+
+		Polygon_vertices.push_back(vert);
+	}
+
+	Polygons.push_back(polygon);
+
+	Parse_normal_problem_count += problem_count;
+}
+
+/**
+* @brief Converts a TMAP2POLY chunk into a list of BSP_polygon.
+* 
+* @param offset The byte offset into bsp_data.
+* @param[in] The buffer containing the chunk data.
+*/
+void bsp_polygon_data::process_tmap2(int offset, ubyte* bsp_data)
+{
+	int pof_tex = w(bsp_data + offset + TMAP2_TEXNUM);
+	uint n_vert = uw(bsp_data + offset + TMAP2_NVERTS);
+	model_tmap_vert* tverts;
+	int problem_count = 0;
+	bsp_polygon polygon;
+
+	if (n_vert < 3) {
+		Error(LOCATION, "Model contains TMAP2 chunk with less than 3 vertices!");
+		return;
+	}
+
+	tverts = reinterpret_cast<model_tmap_vert*>(&bsp_data[offset + TMAP2_VERTS]);
+
+	// make a polygon
+	polygon.Start_index = (uint)Polygon_vertices.size();
+	polygon.Num_verts = n_vert;
+	polygon.texture = pof_tex;
+
+	// this polygon will be broken up into a triangle fan. first three verts make up the first triangle
+	// additional verts are made into new tris
+	Num_polies[pof_tex]++;
+	Num_verts[pof_tex] += n_vert;
+
+	// stuff data making up the vertices of this polygon
+	for (uint i = 0; i < n_vert; ++i) {
+		bsp_vertex vert;
+
+		vert.position = Vertex_list[tverts[i].vertnum];
+
+		vert.tex_coord.u = tverts[i].u;
+		vert.tex_coord.v = tverts[i].v;
+
+		vert.normal = Normal_list[tverts[i].normnum];
+
+		// see if this normal is okay
+		if (IS_VEC_NULL(&vert.normal))
+			vert.normal = *vp(&bsp_data[offset + 32]);
 
 		problem_count += check_values(&vert.normal);
 		vm_vec_normalize_safe(&vert.normal);

@@ -115,11 +115,6 @@
 #undef MessageBox
 #endif
 
-// these are useful for embedding numbers in SEXP help strings
-// see https://stackoverflow.com/questions/5459868/concatenate-int-to-string-using-c-preprocessor
-#define STR_HELPER(x) #x
-#define STR(x) STR_HELPER(x)
-
 
 SCP_vector<sexp_oper> Operators = {
 //   Operator, Identity, Min / Max arguments
@@ -680,8 +675,8 @@ SCP_vector<sexp_oper> Operators = {
 	{ "reset-fov",						OP_CUTSCENES_RESET_FOV,					0,	0,			SEXP_ACTION_OPERATOR,	},
 	{ "reset-camera",					OP_CUTSCENES_RESET_CAMERA,				0,	1,			SEXP_ACTION_OPERATOR,	},
 	{ "show-subtitle",					OP_CUTSCENES_SHOW_SUBTITLE,				4,	14,			SEXP_ACTION_OPERATOR,	},
-	{ "show-subtitle-text",				OP_CUTSCENES_SHOW_SUBTITLE_TEXT,		6,	14,			SEXP_ACTION_OPERATOR,	},
-	{ "show-subtitle-image",			OP_CUTSCENES_SHOW_SUBTITLE_IMAGE,		8,	10,			SEXP_ACTION_OPERATOR,	},
+	{ "show-subtitle-text",				OP_CUTSCENES_SHOW_SUBTITLE_TEXT,		6,	15,			SEXP_ACTION_OPERATOR,	},
+	{ "show-subtitle-image",			OP_CUTSCENES_SHOW_SUBTITLE_IMAGE,		8,	11,			SEXP_ACTION_OPERATOR,	},
 	{ "clear-subtitles",				OP_CLEAR_SUBTITLES,						0,	0,			SEXP_ACTION_OPERATOR,	},
 	{ "lock-perspective",				OP_CUTSCENES_FORCE_PERSPECTIVE,			1,	2,			SEXP_ACTION_OPERATOR,	},
 	{ "set-camera-shudder",				OP_SET_CAMERA_SHUDDER,					2,	2,			SEXP_ACTION_OPERATOR,	},
@@ -1931,32 +1926,35 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 			if (type == OPF_BOOL)  // allow numbers to be used where boolean is required.
 				type2 = OPR_BOOL;
 
-			while (*ptr) {
-				if (!isdigit(*ptr))
-					return SEXP_CHECK_INVALID_NUM;  // not a valid number
+			// Only check that this is a number if it's not <argument>.
+			if (!(Sexp_nodes[node].flags & SNF_SPECIAL_ARG_IN_NODE)) {
+				while (*ptr) {
+					if (!isdigit(*ptr))
+						return SEXP_CHECK_INVALID_NUM;  // not a valid number
 
-				ptr++;
-			}
-
-			i = atoi(CTEXT(node));
-			z = get_operator_const(op_node);
-			if ( (z == OP_HAS_DOCKED_DELAY) || (z == OP_HAS_UNDOCKED_DELAY) )
-				if ( (argnum == 2) && (i < 1) )
-					return SEXP_CHECK_NUM_RANGE_INVALID;
-
-			// valid color range 0 to 255 - FUBAR
-			if ((z == OP_CHANGE_IFF_COLOR)  && ((argnum >= 2) && (argnum <= 4)))
-			{
-				if ( i < 0 || i > 255) 
-				{
-					return SEXP_CHECK_NUM_RANGE_INVALID;
+					ptr++;
 				}
-			}
 
-			z = get_operator_index(op_node);
-			if ( (query_operator_return_type(z) == OPR_AI_GOAL) && (argnum == Operators[op].min - 1) )
-				if ( (i < 0) || (i > 200) )
-					return SEXP_CHECK_NUM_RANGE_INVALID;
+				i = atoi(CTEXT(node));
+				z = get_operator_const(op_node);
+				if ( (z == OP_HAS_DOCKED_DELAY) || (z == OP_HAS_UNDOCKED_DELAY) )
+					if ( (argnum == 2) && (i < 1) )
+						return SEXP_CHECK_NUM_RANGE_INVALID;
+
+				// valid color range 0 to 255 - FUBAR
+				if ((z == OP_CHANGE_IFF_COLOR)  && ((argnum >= 2) && (argnum <= 4)))
+				{
+					if ( i < 0 || i > 255) 
+					{
+						return SEXP_CHECK_NUM_RANGE_INVALID;
+					}
+				}
+
+				z = get_operator_index(op_node);
+				if ( (query_operator_return_type(z) == OPR_AI_GOAL) && (argnum == Operators[op].min - 1) )
+					if ( (i < 0) || (i > 200) )
+						return SEXP_CHECK_NUM_RANGE_INVALID;
+			}
 
 		} else if (Sexp_nodes[node].subtype == SEXP_ATOM_STRING) {
 			type2 = SEXP_ATOM_STRING;
@@ -1977,7 +1975,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					(Sexp_nodes[modifier_node].subtype != SEXP_ATOM_CONTAINER)) {
 				if (container.is_list()) {
 					if ((Sexp_nodes[modifier_node].subtype != SEXP_ATOM_STRING) ||
-							(list_modifier::get_modifier(Sexp_nodes[modifier_node].text) == ListModifier::INVALID)) {
+							(get_list_modifier(Sexp_nodes[modifier_node].text) == ListModifier::INVALID)) {
 						if (bad_node)
 							*bad_node = modifier_node;
 						return SEXP_CHECK_INVALID_LIST_MODIFIER;
@@ -2035,7 +2033,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 		}
 
 		// if this is the special argument, make sure it is being properly used
-		if (type2 == SEXP_ATOM_STRING && Sexp_nodes[node].flags & SNF_SPECIAL_ARG_IN_NODE) {
+		if (Sexp_nodes[node].flags & SNF_SPECIAL_ARG_IN_NODE) {
 			bool found = false;
 			z = node;
 			while (true) {
@@ -3670,7 +3668,7 @@ void localize_sexp(int text_node, int id_node)
  */
 int get_sexp()
 {
-	int start, node, last, op, count;
+	int start, node, last, op;
 	char token[TOKEN_LENGTH];
 	char variable_text[TOKEN_LENGTH];
 
@@ -3678,12 +3676,10 @@ int get_sexp()
 
 	// start - the node allocated in first instance of function
 	// node - the node allocated in current instance of function
-	// count - number of nodes allocated this instance of function [do we set last.rest or .first]
 	// variable - whether string or number is a variable referencing Sexp_variables
 
 	// initialization
 	start = last = -1;
-	count = 0;
 
 	ignore_white_space();
 	while (*Mp != ')') {
@@ -3848,11 +3844,25 @@ int get_sexp()
 		}
 
 		// update links
-		if (count++) {
-			Assert(last != -1);
-			Sexp_nodes[last].rest = node;
-		} else {
+		if (start == -1) {
 			start = node;
+		} else {
+			Assert(last != -1);
+			// Locked_sexp_true and Locked_sexp_false are only meant to represent operator
+			// nodes with no arguments, i.e. (true) and (false). If they appear as "bare"
+			// arguments to another operator, or have arguments of their own, the global
+			// SEXP node structure can become corrupted; we hack around this by always
+			// wrapping them in their own list in these cases and warning the user.
+			if (last == start && (start == Locked_sexp_false || start == Locked_sexp_true)) {
+				Warning(LOCATION, "Found true or false operator at the start of a list, likely in a handwritten SEXP.");
+				start = alloc_sexp("", SEXP_LIST, SEXP_ATOM_LIST, start, -1);
+				last = start;
+			}
+			if (node == Locked_sexp_false || node == Locked_sexp_true) {
+				Warning(LOCATION, "Found true or false operator in non-operator position, likely in a handwritten SEXP.");
+				node = alloc_sexp("", SEXP_LIST, SEXP_ATOM_LIST, node, -1);
+			}
+			Sexp_nodes[last].rest = node;
 		}
 
 		Assert(node != -1);  // ran out of nodes.  Time to raise the MAX!
@@ -3924,6 +3934,11 @@ int get_sexp()
 			case OP_MISSION_SET_NEBULA:
 				// set flag for WMC
 				Nebula_sexp_used = true;
+				break;
+
+			case OP_MISSION_SET_SUBSPACE:
+				// set flag for Goober5000
+				Subspace_sexp_used = true;
 				break;
 
 			case OP_WARP_EFFECT:
@@ -4055,7 +4070,8 @@ int stuff_sexp_variable_list()
 			type = SEXP_VARIABLE_BLOCK;
 		} else {
 			type = SEXP_VARIABLE_UNKNOWN;
-			Error(LOCATION, "SEXP variable '%s' is an unknown type!", var_name);
+			error_display(1, "SEXP variable '%s' is an unknown type!", var_name);
+			throw parse::ParseException("Unknown variable type");
 		}
 
 		// possibly get network-variable
@@ -4100,20 +4116,22 @@ int stuff_sexp_variable_list()
 			ignore_white_space();
 
 			// notify of error
-			Error(LOCATION, "Error parsing sexp variables - unknown persistence type encountered.  You can continue from here without trouble.");
+			error_display(0, "Error parsing sexp variables - unknown persistence type encountered.  You can continue from here without trouble.");
 		}
 
-		// check if variable name already exists
-		if ( (type & SEXP_VARIABLE_NUMBER) || (type & SEXP_VARIABLE_STRING) ) {
-			Assert(get_index_sexp_variable_name(var_name) == -1);
-		}
-
+		// finished getting info; now add the variable
 		if ( type & SEXP_VARIABLE_BLOCK ) {
 			add_block_variable(default_value, var_name, type, index);
 		}
-		else {			
-			count++;
-			sexp_add_variable(default_value, var_name, type, index);
+		else {
+			// check if variable name already exists
+			// (block variables can be duplicated, but regular ones can't)
+			if (get_index_sexp_variable_name(var_name) >= 0) {
+				error_display(0, "Variable '%s' already exists!  Skipping duplicate.", var_name);
+			} else {
+				count++;
+				sexp_add_variable(default_value, var_name, type, index);
+			}
 		}
 	}
 
@@ -11411,6 +11429,7 @@ void sexp_hud_set_message(int n)
 			message = Messages[i].message;
 
 			sexp_replace_variable_names_with_values(message);
+			sexp_container_replace_refs_with_values(message);
 
 			HudGauge* cg = hud_get_custom_gauge(gaugename);
 			if (cg) {
@@ -14054,10 +14073,17 @@ void sexp_mission_set_subspace(int n)
 	if (is_nan || is_nan_forever)
 		return;
 
-	if (set_it > 0) {
+	if (set_it > 0)
+	{
+		if (Game_subspace_effect)
+			return;
 		Game_subspace_effect = 1;
 		game_start_subspace_ambient_sound();
-	} else {
+	}
+	else
+	{
+		if (!Game_subspace_effect)
+			return;
 		Game_subspace_effect = 0;
 		game_stop_subspace_ambient_sound();
 	}
@@ -16787,6 +16813,7 @@ void sexp_set_death_message(int n)
 	lcl_replace_stuff(Player->death_message);
 
 	sexp_replace_variable_names_with_values(Player->death_message);
+	sexp_container_replace_refs_with_values(Player->death_message);
 }
 
 int sexp_key_pressed(int node)
@@ -18038,7 +18065,10 @@ void sexp_change_ship_class(int n)
 			{
 				change_ship_type(ship_entry->objp->instance, class_num, 1);
 				if (ship_entry->shipp == Player_ship) {
+					// update HUD and RTT cockpit gauges if applicable
 					set_current_hud();
+					ship_clear_cockpit_displays();
+					ship_init_cockpit_displays(Player_ship);
 				}
 
 				if (MULTIPLAYER_MASTER) {
@@ -18068,7 +18098,10 @@ void multi_sexp_change_ship_class()
 			if ((class_num >= 0) && (ship_num >= 0)) {
 				change_ship_type(ship_num, class_num, 1);
 				if (&Ships[ship_num] == Player_ship) {
+					// update HUD and RTT cockpit gauges if applicable
 					set_current_hud();
+					ship_clear_cockpit_displays();
+					ship_init_cockpit_displays(Player_ship);
 				}
 			}
 		}
@@ -21831,8 +21864,9 @@ void sexp_debug(int node)
 		}
 	}
 
-	// replace variables if necessary
+	// replace variables and container references if necessary
 	sexp_replace_variable_names_with_values(warning_message);
+	sexp_container_replace_refs_with_values(warning_message);
 
 	//send the message
 	#ifndef NDEBUG
@@ -22654,9 +22688,9 @@ void multi_sexp_reset_camera()
 void sexp_show_subtitle(int node)
 {
 	//These should be set to the default if not required to be explicitly defined
-	int x_pos, y_pos, width = 0;
+	int x_pos, y_pos, width = 0, line_height_modifier = 0;
 	const char *text, *imageanim = nullptr;
-	float display_time, fade_time = 0.0f, line_height_factor = 1.0f;
+	float display_time, fade_time = 0.0f;
 	int n = node;
 	std::array<int, 3> rgb = { 255, 255, 255 };
 	bool is_nan, is_nan_forever, center_x = false, center_y = false, post_shaded = false;
@@ -22700,24 +22734,34 @@ void sexp_show_subtitle(int node)
 					center_y = is_sexp_true(n);
 					n = CDR(n);
 
-					eval_array<int>(rgb, n, is_nan, is_nan_forever, [](int num)->int {
-						CLAMP(num, 0, 255);
-						return num;
-					}, 255);
-					if (is_nan || is_nan_forever)
-						return;
-
 					if (n != -1)
 					{
-						post_shaded = is_sexp_true(n);
+						width = eval_num(n, is_nan, is_nan_forever);
+						if (is_nan || is_nan_forever)
+							return;
 						n = CDR(n);
 
 						if (n != -1)
 						{
-							int percent = eval_num(n, is_nan, is_nan_forever);
+							eval_array<int>(rgb, n, is_nan, is_nan_forever, [](int num)->int {
+								CLAMP(num, 0, 255);
+								return num;
+							}, 255);
 							if (is_nan || is_nan_forever)
 								return;
-							line_height_factor = percent / 100.0f;
+
+							if (n != -1)
+							{
+								post_shaded = is_sexp_true(n);
+								n = CDR(n);
+
+								if (n != -1)
+								{
+									line_height_modifier = eval_num(n, is_nan, is_nan_forever);
+									if (is_nan || is_nan_forever)
+										return;
+								}
+							}
 						}
 					}
 				}
@@ -22729,7 +22773,7 @@ void sexp_show_subtitle(int node)
 	color new_color;
 	gr_init_alphacolor(&new_color, rgb[0], rgb[1], rgb[2], 255);
 
-	subtitle new_subtitle(x_pos, y_pos, text, imageanim, display_time, fade_time, &new_color, -1, center_x, center_y, width, 0, post_shaded, line_height_factor);
+	subtitle new_subtitle(x_pos, y_pos, text, imageanim, display_time, fade_time, &new_color, -1, center_x, center_y, width, 0, post_shaded, line_height_modifier);
 	Subtitles.push_back(new_subtitle);
 }
 
@@ -22743,6 +22787,23 @@ void sexp_clear_subtitles()
 void multi_sexp_clear_subtitles() 
 {
 	Subtitles.clear();
+}
+
+void get_subtitle_screen_size(int& w, int& h)
+{
+	// if we are doing screen scaling, then set the size to the base resolution
+	// (it will be adjusted when the subtitle is constructed)
+	if (Show_subtitle_screen_base_res[0] > 0 && Show_subtitle_screen_base_res[1] > 0)
+	{
+		w = Show_subtitle_screen_base_res[0];
+		h = Show_subtitle_screen_base_res[1];
+	}
+	// otherwise use the actual screen size
+	else
+	{
+		w = gr_screen.center_w;
+		h = gr_screen.center_h;
+	}
 }
 
 void sexp_show_subtitle_text(int node)
@@ -22770,9 +22831,10 @@ void sexp_show_subtitle_text(int node)
 	// (we don't need to do variable replacements because the subtitle code already does that)
 	text = message_translate_tokens(ctext);
 
-	std::array<int, 2> xy_pct;
-	eval_array<int>(xy_pct, n, is_nan, is_nan_forever, [](int num)->int {
-		CLAMP(num, -100, 100);
+	std::array<int, 2> xy_input;
+	eval_array<int>(xy_input, n, is_nan, is_nan_forever, [](int num)->int {
+		if (!Show_subtitle_uses_pixels)
+			CLAMP(num, -100, 100);
 		return num;
 	});
 	if (is_nan || is_nan_forever)
@@ -22785,15 +22847,18 @@ void sexp_show_subtitle_text(int node)
 	n = CDR(n);
 
 	float display_time, fade_time;
-	int width_pct;
-	eval_nums(n, is_nan, is_nan_forever, display_time, fade_time, width_pct);
+	int width_input;
+	eval_nums(n, is_nan, is_nan_forever, display_time, fade_time, width_input);
 	if (is_nan || is_nan_forever)
 		return;
 	display_time /= 1000.0f;
 	fade_time /= 1000.0f;
-	// note: width_pct is OPF_POSITIVE
-	if (width_pct > 100)
-		width_pct = 100;
+	if (!Show_subtitle_uses_pixels)
+	{
+		// note: width_input is OPF_POSITIVE so checking for < 0 is not necessary
+		if (width_input > 100)
+			width_input = 100;
+	}
 
 	std::array<int, 3> rgb;
 	eval_array<int>(rgb, n, is_nan, is_nan_forever, [](int num)->int {
@@ -22819,31 +22884,51 @@ void sexp_show_subtitle_text(int node)
 		n = CDR(n);
 	}
 
-	float line_height_factor = 1.0f;
+	int line_height_modifier = 0;
 	if (n >= 0)
 	{
-		int percent = eval_num(n, is_nan, is_nan_forever);
+		line_height_modifier = eval_num(n, is_nan, is_nan_forever);
 		if (is_nan || is_nan_forever)
 			return;
-		line_height_factor = percent / 100.0f;
+		n = CDR(n);
+	}
+
+	bool adjust_wh = true;
+	if (n >= 0)
+	{
+		adjust_wh = is_sexp_true(n);
+		n = CDR(n);
 	}
 
 	color new_color;
 	gr_init_alphacolor(&new_color, rgb[0], rgb[1], rgb[2], 255);
 
 	// calculate pixel positions
-	int x_pos = fl2i(gr_screen.center_w * (xy_pct[0] / 100.0f));
-	int y_pos = fl2i(gr_screen.center_h * (xy_pct[1] / 100.0f));
-	int width = fl2i(gr_screen.center_w * (width_pct / 100.0f));
+	int x_pos, y_pos, width;
+	if (Show_subtitle_uses_pixels)
+	{
+		x_pos = xy_input[0];
+		y_pos = xy_input[1];
+		width = width_input;
+	}
+	else
+	{
+		int screen_w, screen_h;
+		get_subtitle_screen_size(screen_w, screen_h);
+
+		x_pos = fl2i(screen_w * (xy_input[0] / 100.0f));
+		y_pos = fl2i(screen_h * (xy_input[1] / 100.0f));
+		width = fl2i(screen_w * (width_input / 100.0f));
+	}
 
 	// add the subtitle
-	subtitle new_subtitle(x_pos, y_pos, text.c_str(), nullptr, display_time, fade_time, &new_color, fontnum, center_x, center_y, width, 0, post_shaded, line_height_factor);
+	subtitle new_subtitle(x_pos, y_pos, text.c_str(), nullptr, display_time, fade_time, &new_color, fontnum, center_x, center_y, width, 0, post_shaded, line_height_modifier, adjust_wh);
 	Subtitles.push_back(new_subtitle);
 
 	Current_sexp_network_packet.start_callback();
-	Current_sexp_network_packet.send_int(xy_pct[0]);
-	Current_sexp_network_packet.send_int(xy_pct[1]);
-	Current_sexp_network_packet.send_int (message_index);
+	Current_sexp_network_packet.send_int(xy_input[0]);
+	Current_sexp_network_packet.send_int(xy_input[1]);
+	Current_sexp_network_packet.send_int(message_index);
 	// only send the text if it is not a message. If it is a message, we've already sent the index anyway. 
 	if (message_index == -1) {
 		Current_sexp_network_packet.send_string(text);
@@ -22856,26 +22941,28 @@ void sexp_show_subtitle_text(int node)
 	Current_sexp_network_packet.send_int(fontnum);
 	Current_sexp_network_packet.send_bool(center_x);
 	Current_sexp_network_packet.send_bool(center_y);
-	Current_sexp_network_packet.send_int(width_pct);
+	Current_sexp_network_packet.send_int(width_input);
 	Current_sexp_network_packet.send_bool(post_shaded);
  	// TODO: uncomment when Github ticket #3773 is implemented
-	//Current_sexp_network_packet.send_float(line_height_factor);
+	//Current_sexp_network_packet.send_int(line_height_modifier);
+	//Current_sexp_network_packet.send_bool(adjust_wh);
 	Current_sexp_network_packet.end_callback();
 }
 
 void multi_sexp_show_subtitle_text()
 {
-	int x_pct, y_pct, width_pct, fontnum, message_index = -1;
+	std::array<int, 2> xy_input;
+	int width_input, line_height_modifier = 0, fontnum, message_index = -1;
 	SCP_string text;
-	float display_time, fade_time=0.0f, line_height_factor=1.0f;
+	float display_time, fade_time=0.0f;
 	int red=255, green=255, blue=255;
 	bool center_x=false, center_y=false;
-	bool post_shaded = false;
+	bool post_shaded = false, adjust_wh = true;
 	color new_color;
 
-	 Current_sexp_network_packet.get_int(x_pct);
-	 Current_sexp_network_packet.get_int(y_pct);
-	 Current_sexp_network_packet.get_int(message_index); 
+	Current_sexp_network_packet.get_int(xy_input[0]);
+	Current_sexp_network_packet.get_int(xy_input[1]);
+	Current_sexp_network_packet.get_int(message_index); 
 	if (message_index == -1) {
 		Current_sexp_network_packet.get_string(text);
 	}
@@ -22891,20 +22978,34 @@ void multi_sexp_show_subtitle_text()
 	Current_sexp_network_packet.get_int(fontnum);
 	Current_sexp_network_packet.get_bool(center_x);
 	Current_sexp_network_packet.get_bool(center_y);
-	Current_sexp_network_packet.get_int(width_pct);
+	Current_sexp_network_packet.get_int(width_input);
 	Current_sexp_network_packet.get_bool(post_shaded);
 	// TODO: uncomment when Github ticket #3773 is implemented
-	//Current_sexp_network_packet.get_float(line_height_factor);
+	//Current_sexp_network_packet.get_int(line_height_modifier);
+	//Current_sexp_network_packet.get_bool(adjust_wh);
 
 	gr_init_alphacolor(&new_color, red, green, blue, 255);
 
 	// calculate pixel positions
-	int x_pos = (int)(gr_screen.center_w * (x_pct / 100.0f));
-	int y_pos = (int)(gr_screen.center_h * (y_pct / 100.0f));
-	int width = (int)(gr_screen.center_w * (width_pct / 100.0f));
+	int x_pos, y_pos, width;
+	if (Show_subtitle_uses_pixels)
+	{
+		x_pos = xy_input[0];
+		y_pos = xy_input[1];
+		width = width_input;
+	}
+	else
+	{
+		int screen_w, screen_h;
+		get_subtitle_screen_size(screen_w, screen_h);
+
+		x_pos = fl2i(screen_w * (xy_input[0] / 100.0f));
+		y_pos = fl2i(screen_h * (xy_input[1] / 100.0f));
+		width = fl2i(screen_w * (width_input / 100.0f));
+	}
 
 	// add the subtitle
-	subtitle new_subtitle(x_pos, y_pos, text.c_str(), nullptr, display_time, fade_time, &new_color, fontnum, center_x, center_y, width, 0, post_shaded, line_height_factor);
+	subtitle new_subtitle(x_pos, y_pos, text.c_str(), nullptr, display_time, fade_time, &new_color, fontnum, center_x, center_y, width, 0, post_shaded, line_height_modifier, adjust_wh);
 	Subtitles.push_back(new_subtitle);	
 }
 
@@ -22916,9 +23017,10 @@ void sexp_show_subtitle_image(int node)
 	auto image = CTEXT(n);
 	n = CDR(n);
 
-	std::array<int, 2> xy_pct;
-	eval_array<int>(xy_pct, n, is_nan, is_nan_forever, [](int num)->int {
-		CLAMP(num, -100, 100);
+	std::array<int, 2> xy_input;
+	eval_array<int>(xy_input, n, is_nan, is_nan_forever, [](int num)->int {
+		if (!Show_subtitle_uses_pixels)
+			CLAMP(num, -100, 100);
 		return num;
 	});
 	if (is_nan || is_nan_forever)
@@ -22930,16 +23032,19 @@ void sexp_show_subtitle_image(int node)
 	bool center_y = is_sexp_true(n);
 	n = CDR(n);
 
-	int width_pct, height_pct;
+	int width_input, height_input;
 	float display_time, fade_time;
-	eval_nums(n, is_nan, is_nan_forever, width_pct, height_pct, display_time, fade_time);
+	eval_nums(n, is_nan, is_nan_forever, width_input, height_input, display_time, fade_time);
 	if (is_nan || is_nan_forever)
 		return;
-	// note: width_pct and height_pct are OPF_POSITIVE
-	if (width_pct > 100)
-		width_pct = 100;
-	if (height_pct > 100)
-		height_pct = 100;
+	if (!Show_subtitle_uses_pixels)
+	{
+		// note: width_input and height_input are OPF_POSITIVE so checking for < 0 is not necessary
+		if (width_input > 100)
+			width_input = 100;
+		if (height_input > 100)
+			height_input = 100;
+	}
 	display_time /= 1000.0f;
 	fade_time /= 1000.0f;
 
@@ -22950,14 +23055,35 @@ void sexp_show_subtitle_image(int node)
 		n = CDR(n);
 	}
 
+	bool adjust_wh = true;
+	if (n >= 0)
+	{
+		adjust_wh = is_sexp_true(n);
+		n = CDR(n);
+	}
+
 	// calculate pixel positions
-	int x_pos = fl2i(gr_screen.center_w * (xy_pct[0] / 100.0f));
-	int y_pos = fl2i(gr_screen.center_h * (xy_pct[1] / 100.0f));
-	int width = fl2i(gr_screen.center_w * (width_pct / 100.0f));
-	int height = fl2i(gr_screen.center_h * (height_pct / 100.0f));
+	int x_pos, y_pos, width, height;
+	if (Show_subtitle_uses_pixels)
+	{
+		x_pos = xy_input[0];
+		y_pos = xy_input[1];
+		width = width_input;
+		height = height_input;
+	}
+	else
+	{
+		int screen_w, screen_h;
+		get_subtitle_screen_size(screen_w, screen_h);
+
+		x_pos = fl2i(screen_w * (xy_input[0] / 100.0f));
+		y_pos = fl2i(screen_h * (xy_input[1] / 100.0f));
+		width = fl2i(screen_w * (width_input / 100.0f));
+		height = fl2i(screen_h * (height_input / 100.0f));
+	}
 
 	// add the subtitle
-	subtitle new_subtitle(x_pos, y_pos, nullptr, image, display_time, fade_time, nullptr, -1, center_x, center_y, width, height, post_shaded);
+	subtitle new_subtitle(x_pos, y_pos, nullptr, image, display_time, fade_time, nullptr, -1, center_x, center_y, width, height, post_shaded, 0, adjust_wh);
 	Subtitles.push_back(new_subtitle);
 
 	Current_sexp_network_packet.start_callback();
@@ -22971,32 +23097,56 @@ void sexp_show_subtitle_image(int node)
 	Current_sexp_network_packet.send_int(width);
 	Current_sexp_network_packet.send_int(height);
 	Current_sexp_network_packet.send_bool(post_shaded);
+	// TODO: uncomment when Github ticket #3773 is implemented
+	//Current_sexp_network_packet.send_bool(adjust_wh);
 	Current_sexp_network_packet.end_callback();
 }
 
 void multi_sexp_show_subtitle_image()
 {
-	int x_pos, y_pos, width=0, height=0;
+	std::array<int, 2> xy_input;
+	int width_input = 0, height_input = 0;
 	char image[TOKEN_LENGTH];
 	float display_time, fade_time=0.0f;
 	bool center_x=false, center_y=false;
-	bool post_shaded = false;
+	bool post_shaded = false, adjust_wh = true;
 
-	Current_sexp_network_packet.get_int(x_pos);
-	Current_sexp_network_packet.get_int(y_pos);
+	Current_sexp_network_packet.get_int(xy_input[0]);
+	Current_sexp_network_packet.get_int(xy_input[1]);
 	Current_sexp_network_packet.get_string(image);
 	Current_sexp_network_packet.get_float(display_time);
 	Current_sexp_network_packet.get_float(fade_time);
 	Current_sexp_network_packet.get_bool(center_x);
 	Current_sexp_network_packet.get_bool(center_y);
-	Current_sexp_network_packet.get_int(width);
-	Current_sexp_network_packet.get_int(height);
+	Current_sexp_network_packet.get_int(width_input);
+	Current_sexp_network_packet.get_int(height_input);
 	Current_sexp_network_packet.get_bool(post_shaded);
+	// TODO: uncomment when Github ticket #3773 is implemented
+	//Current_sexp_network_packet.get_bool(adjust_wh);
+
+	// calculate pixel positions
+	int x_pos, y_pos, width, height;
+	if (Show_subtitle_uses_pixels)
+	{
+		x_pos = xy_input[0];
+		y_pos = xy_input[1];
+		width = width_input;
+		height = height_input;
+	}
+	else
+	{
+		int screen_w, screen_h;
+		get_subtitle_screen_size(screen_w, screen_h);
+
+		x_pos = fl2i(screen_w * (xy_input[0] / 100.0f));
+		y_pos = fl2i(screen_h * (xy_input[1] / 100.0f));
+		width = fl2i(screen_w * (width_input / 100.0f));
+		height = fl2i(screen_h * (height_input / 100.0f));
+	}
 
 	// add the subtitle
-	subtitle new_subtitle(x_pos, y_pos, nullptr, image, display_time, fade_time, nullptr, -1, center_x, center_y, width, height, post_shaded);
+	subtitle new_subtitle(x_pos, y_pos, nullptr, image, display_time, fade_time, nullptr, -1, center_x, center_y, width, height, post_shaded, 0, adjust_wh);
 	Subtitles.push_back(new_subtitle);	
-
 }
 
 void sexp_set_time_compression(int n)
@@ -29732,6 +29882,8 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_BOOL;
 			else if (argnum == 13)
 				return OPF_NUMBER;
+			else if (argnum == 14)
+				return OPF_BOOL;
 			else
 				return OPF_NONE;
 
@@ -29744,7 +29896,7 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_BOOL;
 			else if (argnum >= 5 && argnum <= 8)
 				return OPF_POSITIVE;
-			else if (argnum == 9)
+			else if (argnum == 9 || argnum == 10)
 				return OPF_BOOL;
 			else
 				return OPF_NONE;
@@ -30312,9 +30464,7 @@ bool sexp_recoverable_error(int num)
 		// Having an invalid gauge in FSO won't hurt,
 		// as all places which call hud_get_custom_gauge() check its return value for NULL.
 		case SEXP_CHECK_INVALID_CUSTOM_HUD_GAUGE:
-
 			return true;
-
 
 		// most errors will halt mission loading
 		default:
@@ -31333,13 +31483,9 @@ void sexp_variable_delete(int index)
 	Sexp_variables[index].type = SEXP_VARIABLE_NOT_USED;
 }
 
-int sexp_var_compare(const void *var1, const void *var2)
+int sexp_var_compare(const sexp_variable *sexp_var1, const sexp_variable *sexp_var2)
 {
 	int set1, set2;
-	sexp_variable *sexp_var1, *sexp_var2;
-
-	sexp_var1 = (sexp_variable*) var1;
-	sexp_var2 = (sexp_variable*) var2;
 
 	set1 = sexp_var1->type & SEXP_VARIABLE_SET;
 	set2 = sexp_var2->type & SEXP_VARIABLE_SET;
@@ -31360,7 +31506,7 @@ int sexp_var_compare(const void *var1, const void *var2)
  */
 void sexp_variable_sort()
 {
-	insertion_sort( (void *)Sexp_variables, (size_t)(MAX_SEXP_VARIABLES), sizeof(sexp_variable), sexp_var_compare );
+	insertion_sort(Sexp_variables, MAX_SEXP_VARIABLES, sexp_var_compare);
 }
 
 // Goober5000
@@ -34009,7 +34155,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	// Goober5000
 	{ OP_AI_IGNORE_NEW, "Ai-ignore-new (Ship goal)\r\n"
 		"\tTells the specified ship to ignore the given target and not consider it when picking something "
-		"to attack.  Up to " STR(MAX_IGNORE_NEW_OBJECTS) " targets can be ignored at a time.  Targets ignored by "
+		"to attack.  Up to " SCP_TOKEN_TO_STR(MAX_IGNORE_NEW_OBJECTS) " targets can be ignored at a time.  Targets ignored by "
 		"any given ship do not affect targets ignored by any other ship.\r\n\r\n"
 		"Takes 2 arguments...\r\n"
 		"\t1:\tName of target to ignore.\r\n"
@@ -34091,6 +34237,9 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"hide-in-mission-log - Prevents events involving this ship from being viewable in the mission log\r\n"
 		"no-dynamic - Will stop allowing the AI to pursue dynamic goals (e.g.: chasing ships it was not ordered to)\r\n"
 		"free-afterburner-use - Allows the ship to use afterburners to follow waypoints\r\n"
+		"ai-attackable-if-no-collide - AI will still attack this ship even if collisions are disabled\r\n"
+		"fail-sound-locked-primary - This ship will play a weapon failure sound if trying to shoot primaries when they're locked\r\n"
+		"fail-sound-locked-secondary - This ship will play a weapon failure sound if trying to shoot secondaries when they're locked\r\n"
 	},
 
 	{ OP_SHIP_VISIBLE, "ship-visible\r\n"
@@ -34842,7 +34991,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t4: List of subsys names not to be randomized\r\n"},
 
 	{ OP_SUPERNOVA_START, "supernova-start\r\n"
-		"\t1: Time in seconds until the supernova shockwave hits the player\r\n"},
+		"\t1: Time in seconds that the supernova lasts.  Note that it will actually hit the player at " SCP_TOKEN_TO_STR(SUPERNOVA_HIT_TIME) " seconds.  If you want the HUD gauge to adjust for this, use the '$Supernova hits at zero' game_settings.tbl option.\r\n"},
 
 	{ OP_SUPERNOVA_STOP, "supernova-stop\r\n"
 		"\t Stops a supernova in progress.\r\n"
@@ -35620,7 +35769,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	},
 
 	{ OP_CUTSCENES_SET_FOV, "set-fov\r\n"
-		"\tSets the field of view - overrides all camera settings.  "
+		"\tSets the field of view - overrides all camera settings. Will also override cockpit FOV settings.  "
 		"Takes 1 argument...\r\n"
 		"\t1:\tNew FOV (degrees)\r\n"
 	},
@@ -35663,37 +35812,43 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	},
 
 	{ OP_CUTSCENES_SHOW_SUBTITLE_TEXT, "show-subtitle-text\r\n"
-		"\tDisplays a subtitle in the form of text.  Note that because of the constraints of the subtitle system, textual subtitles are currently limited to 255 characters or fewer.\r\n"
-		"Takes 6 to 14 arguments...\r\n"
+		"\tDisplays a subtitle in the form of text.  Note that because of the constraints of the subtitle system, textual subtitles are currently limited to 255 characters or fewer.\r\n\r\n"
+		"Certain arguments can be specified in a percentage of the screen or an absolute number of pixels.  This is controlled by the '$Show-subtitle uses pixels' game_settings.tbl option.  "
+		"Whether percentages or pixels, the subtitle can be configured to scale according to screen resolution via the '$Show-subtitle base resolution' option.\r\n\r\n"
+		"Takes 6 to 15 arguments...\r\n"
 		"\t1:\tText to display, or the name of a message containing text\r\n"
-		"\t2:\tX position, from 0 to 100% (positive measures from the left; negative measures from the right)\r\n"
-		"\t3:\tY position, from 0 to 100% (positive measures from the top; negative measures from the bottom)\r\n"
+		"\t2:\tX position (percentage/pixels) - positive measures from the left; negative measures from the right\r\n"
+		"\t3:\tY position (percentage/pixels) - positive measures from the top; negative measures from the bottom\r\n"
 		"\t4:\tCenter horizontally? (if true, overrides argument #2)\r\n"
 		"\t5:\tCenter vertically? (if true, overrides argument #3)\r\n"
 		"\t6:\tTime (in milliseconds) to be displayed, not including fade-in/fade-out\r\n"
 		"\t7:\tFade time (in milliseconds) to be used for both fade-in and fade-out (optional)\r\n"
-		"\t8:\tParagraph width, from 1 to 100% (optional; 0 uses default 200 pixels)\r\n"
+		"\t8:\tParagraph width (percentage/pixels) (optional; 0 uses default 200 pixels)\r\n"
 		"\t9:\tText red component (0-255) (optional)\r\n"
 		"\t10:\tText green component (0-255) (optional)\r\n"
 		"\t11:\tText blue component (0-255) (optional)\r\n"
 		"\t12:\tText font (optional)\r\n"
 		"\t13:\tDrawn after shading? (optional; defaults to false)\r\n"
-		"\t14:\tLine vertical spacing, as a percentage, for displaying multi-line subtitles (optional; defaults to 100)\r\n"
+		"\t14:\tLine vertical spacing (percentage/pixels), for displaying multi-line subtitles (optional; defaults to 100%)\r\n"
+		"\t15:\tAdjust subtitle width if screen aspect ratio is different from base resolution? (optional; has no effect if subtitle base resolution is not specified; defaults to true)\r\n"
 	},
 
 	{ OP_CUTSCENES_SHOW_SUBTITLE_IMAGE, "show-subtitle-image\r\n"
 		"\tDisplays a subtitle in the form of an image.  Please note that, in images without an alpha channel, black pixels will be treated as transparent.  In images with an alpha channel, black pixels will be drawn as expected.\r\n\r\n"
-		"Takes 8 to 10 arguments...\r\n"
+		"Certain arguments can be specified in a percentage of the screen or an absolute number of pixels.  This is controlled by the '$Show-subtitle uses pixels' game_settings.tbl option.  "
+		"Whether percentages or pixels, the subtitle can be configured to scale according to screen resolution via the '$Show-subtitle base resolution' option.\r\n\r\n"
+		"Takes 8 to 11 arguments...\r\n"
 		"\t1:\tImage to display\r\n"
-		"\t2:\tX position, from 0 to 100% (positive measures from the left; negative measures from the right)\r\n"
-		"\t3:\tY position, from 0 to 100% (positive measures from the top; negative measures from the bottom)\r\n"
+		"\t2:\tX position (percentage/pixels) - positive measures from the left; negative measures from the right\r\n"
+		"\t3:\tY position (percentage/pixels) - positive measures from the top; negative measures from the bottom\r\n"
 		"\t4:\tCenter horizontally? (if true, overrides argument #2)\r\n"
 		"\t5:\tCenter vertically? (if true, overrides argument #3)\r\n"
-		"\t6:\tImage width, from 1 to 100% (0 uses original width)\r\n"
-		"\t7:\tImage height, from 1 to 100% (0 uses original height)\r\n"
+		"\t6:\tImage width (percentage/pixels) (0 uses original width)\r\n"
+		"\t7:\tImage height (percentage/pixels) (0 uses original height)\r\n"
 		"\t8:\tTime (in milliseconds) to be displayed, not including fade-in/fade-out\r\n"
 		"\t9:\tFade time (in milliseconds) to be used for both fade-in and fade-out (optional)\r\n"
-		"\t10:\tDrawn after shading? (optional; defaults to false)"
+		"\t10:\tDrawn after shading? (optional; defaults to false)\r\n"
+		"\t11:\tAdjust subtitle width/height if screen aspect ratio is different from base resolution? (optional; has no effect if subtitle base resolution is not specified; defaults to true)\r\n"
 	},
 
 	{ OP_CUTSCENES_SET_TIME_COMPRESSION, "set-time-compression\r\n"

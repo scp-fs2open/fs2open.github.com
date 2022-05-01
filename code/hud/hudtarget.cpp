@@ -1720,11 +1720,8 @@ typedef struct eval_next_turret {
 	float dist;
 } eval_next_turret;
 
-int turret_compare_func(const void *e1, const void *e2)
+int turret_compare_func(const eval_next_turret *p1, const eval_next_turret *p2)
 {
-	eval_next_turret *p1 = (eval_next_turret*)e1;
-	eval_next_turret *p2 = (eval_next_turret*)e2;
-
 	Assert(p1->type != TYPE_NONE);
 	Assert(p2->type != TYPE_NONE);
 
@@ -1854,7 +1851,7 @@ void hud_target_live_turret(int next_flag, int auto_advance, int only_player_tar
 
 	// sort the list if we're not using turret straight ahead of us
 	if (!use_straight_ahead_turret) {
-		insertion_sort(ent, num_live_turrets, sizeof(eval_next_turret), turret_compare_func);
+		insertion_sort(ent, num_live_turrets, turret_compare_func);
 	}
 
 	if (use_straight_ahead_turret) {

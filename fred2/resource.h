@@ -77,6 +77,7 @@
 #define IDR_ASTEROID_FIELD_MENU         232
 #define IDR_CPGN_VIEW_OFF               233
 #define IDR_CPGN_VIEW_ON                234
+#define IDD_CALC_RELATIVE_COORDS        235
 #define IDD_INITIAL_SHIPS               238
 #define IDB_CHAINED                     239
 #define IDD_CMD_BRIEF                   242
@@ -552,6 +553,8 @@
 #define ID_NUMBERS                      1229
 #define ID_SHIPS                        1230
 #define ID_WINGS                        1231
+#define IDC_TRANSFORM_INDEPENDENT       1233
+#define IDC_TRANSFORM_RELATIVE          1234
 #define IDC_POSITION_X                  1235
 #define IDC_POSITION_Y                  1236
 #define IDC_POSITION_Z                  1237
@@ -1154,6 +1157,9 @@
 #define IDC_CONTAINER_CAMPAIGN_PERSIST  1668
 #define IDC_CONTAINER_ETERNAL_PERSIST   1669
 #define IDC_RENAME_CONTAINER            1670
+#define IDC_ORIGIN_LIST                 1671
+#define IDC_SATELLITE_LIST              1672
+#define IDC_DISTANCE                    1673
 #define ID_FILE_MISSIONNOTES            32771
 #define ID_DUPLICATE                    32774
 #define ID_VIEW_ROTATE                  32775
@@ -1375,6 +1381,7 @@
 #define ID_SET_GROUP7                   33027
 #define ID_SET_GROUP8                   33028
 #define ID_SET_GROUP9                   33029
+#define ID_CALC_RELATIVE_COORDS         33030
 #define ID_END_EDIT                     33031
 #define ID_EDITORS_ADJUST_GRID          33032
 #define ID_EDITORS_SHIELD_SYS           33033
@@ -1435,6 +1442,7 @@
 #define ID_MISC_MOVESHIPSWHENUNDOCKING  33098
 #define ID_EDIT_CLONEMARKEDOBJECTS      33099
 #define ID_EDIT_SEXP_TREE_EDIT_CONTAINERS 33100
+#define ID_MISC_POINTUSINGUVEC          33101
 #define ID_INDICATOR_MODE               59142
 #define ID_INDICATOR_LEFT               59143
 #define ID_INDICATOR_RIGHT              59144

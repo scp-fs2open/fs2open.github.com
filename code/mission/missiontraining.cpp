@@ -23,6 +23,7 @@
 #include "network/multi.h"
 #include "parse/parselo.h"
 #include "parse/sexp.h"
+#include "parse/sexp_container.h"
 #include "playerman/player.h"
 #include "popup/popup.h"
 #include "ship/ship.h"
@@ -361,12 +362,8 @@ void training_mission_init()
 	}
 }
 
-int comp_training_lines_by_born_on_date(const void *m1, const void *m2)
+int comp_training_lines_by_born_on_date(const int *e1, const int *e2)
 {
-	int *e1, *e2;
-	e1 = (int*) m1;
-	e2 = (int*) m2;
-
 	return (Mission_events[*e1 & 0xffff].born_on_date - Mission_events[*e2 & 0xffff].born_on_date);
 }
 
@@ -383,7 +380,7 @@ void sort_training_objectives()
 	int i, event_status, offset;
 
 	// start by sorting on born on date
-	insertion_sort(Training_obj_lines, Training_obj_num_lines, sizeof(int), comp_training_lines_by_born_on_date);
+	insertion_sort(Training_obj_lines, Training_obj_num_lines, comp_training_lines_by_born_on_date);
 
 	// get the index of the first directive that will be displayed
 	// if less than 0, display all lines
@@ -872,8 +869,11 @@ void message_training_queue(const char *text, int timestamp, int length)
 		}
 
 		// Goober5000 - replace variables if necessary
+		// karajorma/jg18 - replace container references if necessary
 		temp_buf = Messages[m].message;
-		if (sexp_replace_variable_names_with_values(temp_buf))
+		const bool replace_var = sexp_replace_variable_names_with_values(temp_buf);
+		const bool replace_con = sexp_container_replace_refs_with_values(temp_buf);
+		if (replace_var || replace_con)
 			Training_message_queue[Training_message_queue_count].special_message = vm_strdup(temp_buf.c_str());
 
 		Training_message_queue_count++;
