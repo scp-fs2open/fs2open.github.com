@@ -11,8 +11,8 @@
 namespace fso {
 namespace fred {
 namespace dialogs {
-ShipGoalsDialog::ShipGoalsDialog(QWidget* parent, EditorViewport* viewport, bool multi, int self_ship, int self_wing)
-	: QDialog(parent), ui(new Ui::ShipGoalsDialog()), _model(new ShipGoalsDialogModel(this, viewport, multi, self_ship, self_wing)),
+ShipGoalsDialog::ShipGoalsDialog(QWidget* parent, EditorViewport* viewport)
+	: QDialog(parent), ui(new Ui::ShipGoalsDialog()),
 	  _viewport(viewport)
 {
 	ui->setupUi(this);
@@ -72,7 +72,15 @@ ShipGoalsDialog::ShipGoalsDialog(QWidget* parent, EditorViewport* viewport, bool
 	priority[9] = ui->prioritySpinBox10;
 	connect(this, &QDialog::accepted, _model.get(), &ShipGoalsDialogModel::apply);
 	connect(this, &QDialog::rejected, _model.get(), &ShipGoalsDialogModel::reject);
-	connect(this, &ShipGoalsDialog::show, _model.get(), &ShipGoalsDialogModel::initializeData);
+	parentDialog = dynamic_cast<ShipEditorDialog*>(parent);
+	if (parentDialog == nullptr) {
+		//TODO: Add wing editor Here
+		WingMode = true;
+	} else {
+		_model = std::unique_ptr<ShipGoalsDialogModel>(
+			new ShipGoalsDialogModel(this, viewport, parentDialog->getMulti(), Ships[parentDialog->getSingleShip()].objnum, -1));
+	}
+
 	connect(_model.get(), &AbstractDialogModel::modelChanged, this, &ShipGoalsDialog::updateUI);
 	for (int i = 0; i < ED_MAX_GOALS; i++) {
 		connect(behaviors[i], QOverload<int>::of(&QComboBox::currentIndexChanged), [=](int index) {
@@ -104,6 +112,15 @@ ShipGoalsDialog::ShipGoalsDialog(QWidget* parent, EditorViewport* viewport, bool
 }
 
 ShipGoalsDialog::~ShipGoalsDialog() = default;
+
+void ShipGoalsDialog::showEvent(QShowEvent* e)
+{
+	if (!WingMode) {
+		_model->initializeData(parentDialog->getMulti(), Ships[parentDialog->getSingleShip()].objnum, -1);
+	}
+
+	QDialog::showEvent(e);
+}
 
 void ShipGoalsDialog::closeEvent(QCloseEvent* event)
 {
@@ -154,7 +171,9 @@ void ShipGoalsDialog::updateUI()
 			docks[i]->setEnabled(false);
 			priority[i]->setEnabled(false);
 			SCP_string blank;
-			_model->setSubsys(i, blank);
+			if (_model->getSubsys(i) != "") {
+				_model->setSubsys(i, blank);
+			}
 			_model->setDock(i, -1);
 		} else if ((mode == AI_GOAL_CHASE_ANY) || (mode == AI_GOAL_UNDOCK) || (mode == AI_GOAL_KEEP_SAFE_DISTANCE) ||
 				   (mode == AI_GOAL_PLAY_DEAD) || (mode == AI_GOAL_PLAY_DEAD_PERSISTENT) || (mode == AI_GOAL_WARP)) {

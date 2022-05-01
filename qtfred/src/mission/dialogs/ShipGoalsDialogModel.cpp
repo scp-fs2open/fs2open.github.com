@@ -7,20 +7,7 @@ namespace fso {
 			ShipGoalsDialogModel::ShipGoalsDialogModel(QObject* parent, EditorViewport* viewport, bool multi, int shipp, int wingp)
 				: AbstractDialogModel(parent, viewport)
 			{
-				int i;
-				for (i = 0; i < ED_MAX_GOALS; i++) {
-					m_behavior[i] = -1;
-					m_object[i] = -1;
-					m_priority[i] = 0;
-					m_subsys[i] = -1;
-					m_dock2[i] = -1;
-					//m_data[i] = 0;
-				}
-				goalp = nullptr;
-				m_multi_edit = multi;
-				self_ship = shipp;
-				self_wing = wingp;
-				initializeData();
+				initializeData(multi, shipp, wingp);
 			}
 			bool ShipGoalsDialogModel::apply()
 			{
@@ -283,10 +270,22 @@ namespace fso {
 
 			void ShipGoalsDialogModel::reject() {}
 
-			void ShipGoalsDialogModel::initializeData()
+			void ShipGoalsDialogModel::initializeData(bool multi, int shipp, int wingp)
 			{
 				int i, j, z;
 				object* ptr;
+				for (i = 0; i < ED_MAX_GOALS; i++) {
+					m_behavior[i] = -1;
+					m_object[i] = -1;
+					m_priority[i] = 0;
+					m_subsys[i] = "";
+					m_dock2[i] = -1;
+					// m_data[i] = 0;
+				}
+				goalp = nullptr;
+				m_multi_edit = multi;
+				self_ship = shipp;
+				self_wing = wingp;
 				Assert(Ai_goal_list_size <= MAX_VALID);
 
 

@@ -25,6 +25,7 @@ class ShipEditorDialog;
 }
 
 class ShipTBLViewer;
+class ShipGoalsDialog;
 
 class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 
@@ -35,6 +36,7 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	~ShipEditorDialog() override;
 
 	int getShipClass();
+	int getSingleShip();
 	bool getMulti();
 
   protected:

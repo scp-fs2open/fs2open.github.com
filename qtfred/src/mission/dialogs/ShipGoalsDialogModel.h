@@ -50,7 +50,7 @@ class ShipGoalsDialogModel : public AbstractDialogModel {
 
   public:
 	ShipGoalsDialogModel(QObject* parent, EditorViewport* viewport, bool multi, int self_ship, int self_wing);
-	void initializeData();
+	void initializeData(bool multi, int self_ship, int self_wing);
 	bool apply() override;
 	void reject() override;
 	 bool query_modified();

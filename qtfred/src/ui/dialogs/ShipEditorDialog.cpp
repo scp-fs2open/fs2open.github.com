@@ -161,6 +161,11 @@ int ShipEditorDialog::getShipClass()
 	return _model->getShipClass();
 }
 
+int ShipEditorDialog::getSingleShip()
+{
+	return _model->single_ship;
+}
+
 bool ShipEditorDialog::getMulti()
 {
 	return _model->multi_edit;
@@ -191,7 +196,7 @@ void ShipEditorDialog::on_initialStatusButton_clicked()
 void ShipEditorDialog::on_initialOrdersButton_clicked()
 {
 	if (!GoalsDialog) {
-		GoalsDialog = new dialogs::ShipGoalsDialog(this, _viewport, _model->multi_edit, Ships[_model->single_ship].objnum, -1);
+		GoalsDialog = new dialogs::ShipGoalsDialog(this, _viewport);
 	}
 	GoalsDialog->show();
 
