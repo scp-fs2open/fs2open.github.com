@@ -5306,7 +5306,9 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 		int parent = tree_nodes[item_index].parent;
 		if (parent >= 0) {
 			op = get_operator_index(tree_nodes[parent].text);
-			Assert(op >= 0 || tree_nodes[parent].type & SEXPT_CONTAINER_DATA);
+			Assertion(op >= 0 || tree_nodes[parent].type & SEXPT_CONTAINER_DATA,
+				"Encountered unknown SEXP operator %s. Please report!",
+				tree_nodes[parent].text);
 			int first_arg = tree_nodes[parent].child;
 
 			// get arg count of item to replace
@@ -5328,9 +5330,13 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 				op_type =
 					query_operator_argument_type(op, Replace_count); // check argument type at this position
 			} else {
-				Assert(tree_nodes[parent].type & SEXPT_CONTAINER_DATA);
+				Assertion(tree_nodes[parent].type & SEXPT_CONTAINER_DATA,
+					"Unknown SEXP operator %s. Please report!",
+					tree_nodes[parent].text);
 				const auto *p_container = get_sexp_container(tree_nodes[parent].text);
-				Assert(p_container != nullptr);
+				Assertion(p_container != nullptr,
+					"Found modifier for unknown container %s. Please report!",
+					tree_nodes[parent].text);
 				op_type = p_container->opf_type;
 			}
 			Assert(op_type > 0);
@@ -5849,7 +5855,9 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 	if (parent >= 0) {
 		replace_type = OPR_STRING;
 		op = get_operator_index(tree_nodes[parent].text);
-		Assert(op >= 0 || tree_nodes[parent].type & SEXPT_CONTAINER_DATA);
+		Assertion(op >= 0 || tree_nodes[parent].type & SEXPT_CONTAINER_DATA,
+			"Encountered unknown SEXP operator %s. Please report!",
+			tree_nodes[parent].text);
 		int first_arg = tree_nodes[parent].child;
 		count = count_args(tree_nodes[parent].child);
 

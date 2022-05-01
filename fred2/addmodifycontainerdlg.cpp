@@ -910,7 +910,8 @@ int CAddModifyContainerDlg::m_null_container_counter = 1;
 
 bool CAddModifyContainerDlg::is_null_container_name(const SCP_string &container_name)
 {
-	Assert(!container_name.empty());
+	Assertion(!container_name.empty(),
+		"Encountered empty container name when checking for null container name. Please report!");
 	return container_name[0] == sexp_container::DELIM;
 }
 

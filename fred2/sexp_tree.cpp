@@ -203,7 +203,8 @@ int sexp_tree::load_branch(int index, int parent)
 				get_combined_variable_name(combined_var_name, Sexp_nodes[index].text);
 				set_node(cur, (SEXPT_VARIABLE | SEXPT_STRING | additional_flags), combined_var_name);
 			} else if (is_container_argument(cur)) {
-				Assert(!(additional_flags & SEXPT_MODIFIER));
+				Assertion(!(additional_flags & SEXPT_MODIFIER),
+					"Found an argument to a container SEXP that is a container modifier. Please report!");
 				// if the if-condition is false, then then the SEXP argument is invalid
 				// but check_sexp_syntax() will catch that
 				if (get_sexp_container(Sexp_nodes[index].text) != nullptr) {
@@ -740,7 +741,9 @@ void sexp_tree::right_clicked(int mode)
 				int parent = tree_nodes[item_index].parent;
 				if (parent >= 0) {
 					op = get_operator_index(tree_nodes[parent].text);
-					Assert(op >= 0 || tree_nodes[parent].type & SEXPT_CONTAINER_DATA);
+					Assertion(op >= 0 || tree_nodes[parent].type & SEXPT_CONTAINER_DATA,
+						"Encountered unknown SEXP operator %s. Please report!",
+						tree_nodes[parent].text);
 					int first_arg = tree_nodes[parent].child;
 
 					// get arg count of item to replace
@@ -762,7 +765,9 @@ void sexp_tree::right_clicked(int mode)
 						op_type =
 							query_operator_argument_type(op, Replace_count); // check argument type at this position
 					} else {
-						Assert(tree_nodes[parent].type & SEXPT_CONTAINER_DATA);
+						Assertion(tree_nodes[parent].type & SEXPT_CONTAINER_DATA,
+							"Unknown SEXP operator %s. Please report!",
+							tree_nodes[parent].text);
 						const auto* p_container = get_sexp_container(tree_nodes[parent].text);
 						Assert(p_container != nullptr);
 						op_type = p_container->opf_type;
@@ -1234,7 +1239,9 @@ void sexp_tree::right_clicked(int mode)
 		if (parent >= 0) {
 			replace_type = OPR_STRING;
 			op = get_operator_index(tree_nodes[parent].text);
-			Assert(op >= 0 || tree_nodes[parent].type & SEXPT_CONTAINER_DATA);
+			Assertion(op >= 0 || tree_nodes[parent].type & SEXPT_CONTAINER_DATA,
+				"Encountered unknown SEXP operator %s. Please report!",
+				tree_nodes[parent].text);
 			int first_arg = tree_nodes[parent].child;
 			count = count_args(tree_nodes[parent].child);
 
@@ -1273,9 +1280,13 @@ void sexp_tree::right_clicked(int mode)
 
 				type = query_operator_argument_type(op, Replace_count); // check argument type at this position
 			} else {
-				Assert(tree_nodes[parent].type & SEXPT_CONTAINER_DATA);
+				Assertion(tree_nodes[parent].type & SEXPT_CONTAINER_DATA,
+					"Unknown SEXP operator %s. Please report!",
+					tree_nodes[parent].text);
 				const auto *p_container = get_sexp_container(tree_nodes[parent].text);
-				Assert(p_container != nullptr);
+				Assertion(p_container != nullptr,
+					"Found modifier for unknown container %s. Please report!",
+					tree_nodes[parent].text);
 				type = p_container->opf_type;
 			}
 
@@ -1287,7 +1298,9 @@ void sexp_tree::right_clicked(int mode)
 			// Container modifiers use their own list of possible arguments
 			if (tree_nodes[item_index].type & SEXPT_MODIFIER) {
 				const auto *p_container = get_sexp_container(tree_nodes[parent].text);
-				Assert(p_container != nullptr);
+				Assertion(p_container != nullptr,
+					"Found modifier for unknown container %s. Please report!",
+					tree_nodes[parent].text);
 				const int first_modifier = tree_nodes[parent].child;
 				if (Replace_count == 1 && p_container->is_list() &&
 					get_list_modifier(tree_nodes[first_modifier].text) == ListModifier::AT_INDEX) {
@@ -1401,11 +1414,17 @@ void sexp_tree::right_clicked(int mode)
 			}
 
 			if (tree_nodes[item_index].type & SEXPT_MODIFIER) {
-				Assert(tree_nodes[parent].type & SEXPT_CONTAINER_DATA);
+				Assertion(tree_nodes[parent].type & SEXPT_CONTAINER_DATA,
+					"Container modifier found whose parent %s is not a container. Please report!",
+					tree_nodes[parent].text);
 				const int first_modifier_node = tree_nodes[parent].child;
-				Assert(first_modifier_node != -1);
+				Assertion(first_modifier_node != -1,
+					"Container data node named %s has no modifier. Please report!",
+					tree_nodes[parent].text);
 				const auto *p_container = get_sexp_container(tree_nodes[parent].text);
-				Assert(p_container);
+				Assertion(p_container,
+					"Found modifier for unknown container %s. Please report!",
+					tree_nodes[parent].text);
 				const auto &container = *p_container;
 
 				if (Replace_count == 0) {
@@ -1482,9 +1501,13 @@ void sexp_tree::right_clicked(int mode)
 			if (op >= 0) {
 				type = query_operator_argument_type(op, count);
 			} else {
-				Assert(tree_nodes[parent].type & SEXPT_CONTAINER_DATA);
+				Assertion(tree_nodes[parent].type & SEXPT_CONTAINER_DATA,
+					"Unknown SEXP operator %s. Please report!",
+					tree_nodes[parent].text);
 				const auto *p_container = get_sexp_container(tree_nodes[z].text);
-				Assert(p_container != nullptr);
+				Assertion(p_container != nullptr,
+					"Found modifier for unknown container %s. Please report!",
+					tree_nodes[z].text);
 				type = p_container->opf_type;
 			}
 		} else {
