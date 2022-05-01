@@ -1496,7 +1496,7 @@ int testLineOfSight_internal(lua_State* L, bool returnDist) {
 			}
 			else {
 				//This happens on a non-userdata value, i.e. a number
-				LuaError(L, "Table with objects to be excluded contained non-object values! Aborting...");
+				LuaError(L, "Table with objects to be excluded contained non-userdata values! Aborting...");
 				return ADE_RETURN_FALSE;
 			}
 		}

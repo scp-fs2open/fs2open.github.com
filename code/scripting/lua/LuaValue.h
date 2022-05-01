@@ -160,7 +160,7 @@ class LuaValue {
 	}
 
 	/**
-	 * @brief Gets the value of a userdata type using the passed getter function or throws an exception
+	 * @brief Same as above but allows passing a reference to a value where to store the lua value
 	 *
 	 * @exception LuaException Thrown when the conversion failed.
 	 */
