@@ -306,7 +306,7 @@ void ai_clear_ship_goals( ai_info *aip )
 	// add scripting hook for 'On Goals Cleared' --wookieejedi
 	if (Script_system.IsActiveAction(CHA_ONGOALSCLEARED)) {
 		Script_system.SetHookObject("Ship", &Objects[Ships[aip->shipnum].objnum]);
-		Script_system.RunCondition(CHA_ONGOALSCLEARED);
+		Script_system.RunCondition(CHA_ONGOALSCLEARED, &Objects[Ships[aip->shipnum].objnum]);
 		Script_system.RemHookVars({"Ship"});
 	}
 }
@@ -1931,13 +1931,8 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 
 //	Compare function for sorting ai_goals based on priority.
 //	Return values set to sort array in _decreasing_ order.
-int ai_goal_priority_compare(const void *a, const void *b)
+int ai_goal_priority_compare(const ai_goal *ga, const ai_goal *gb)
 {
-	ai_goal	*ga, *gb;
-
-	ga = (ai_goal *) a;
-	gb = (ai_goal *) b;
-
 	// first, sort based on whether or not the ON_HOLD flag is set for the goal.
 	// If the flag is set, don't push the goal higher in the list even if priority
 	// is higher since goal cannot currently be achieved.
@@ -1985,7 +1980,7 @@ int ai_goal_priority_compare(const void *a, const void *b)
 void prioritize_goals(ai_info *aip)
 {
 	//	First sort based on priority field.
-	insertion_sort(aip->goals, MAX_AI_GOALS, sizeof(ai_goal), ai_goal_priority_compare);
+	insertion_sort(aip->goals, MAX_AI_GOALS, ai_goal_priority_compare);
 }
 
 //	Scan the list of goals at aip->goals.
@@ -2403,7 +2398,7 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 		break;
 	}
 
-	if (old_form_objnum != -1)
+	if (old_form_objnum >= 0)
 		ai_formation_object_recalculate_slotnums(old_form_objnum);
 }
 

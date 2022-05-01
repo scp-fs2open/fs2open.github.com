@@ -141,14 +141,14 @@ struct list_modifier {
 		AT_INDEX
 	};
 
-	static Modifier get_modifier(const char *modifier_name);
-	bool match_name(const char *other_name) const;
-
 	const char *name;
 	const Modifier modifier;
 };
 
 using ListModifier = list_modifier::Modifier;
+
+ListModifier get_list_modifier(const char *text, bool accept_prefix = false);
+const char *get_list_modifier_name(ListModifier modifier);
 
 // management functions
 void init_sexp_containers();
@@ -169,8 +169,13 @@ const SCP_vector<list_modifier> &get_all_list_modifiers();
  */
 sexp_container *get_sexp_container(const char *name);
 
+// text replacement
+bool sexp_container_replace_refs_with_values(SCP_string &text);
+bool sexp_container_replace_refs_with_values(char *text, size_t max_size);
+
 const char *sexp_container_CTEXT(int node);
 
+// persistence
 bool sexp_container_has_persistent_non_eternal_containers();
 
 // Change SEXPS

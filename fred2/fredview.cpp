@@ -57,6 +57,7 @@
 #include "species_defs/species_defs.h"
 #include "sound/audiostr.h"
 #include "mission/missiongrid.h"
+#include "calcrelativecoordsdlg.h"
 
 #include "osapi/osapi.h"
 
@@ -103,6 +104,7 @@ int Id_select_type_waypoint = 0;
 int Hide_ship_cues = 0, Hide_wing_cues = 0;
 int Move_ships_when_undocking = 1;			// true by default
 int Highlight_selectable_subsys = 0;
+int Point_using_uvec = 0;
 
 vec3d original_pos, saved_cam_pos;
 matrix bitmap_matrix_backup, saved_cam_orient = { 0.0f };
@@ -301,6 +303,7 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_COMMAND(ID_LOOKAT_OBJ, OnLookatObj)
 	ON_UPDATE_COMMAND_UI(ID_LOOKAT_OBJ, OnUpdateLookatObj)
 	ON_COMMAND(ID_EDITORS_ADJUST_GRID, OnEditorsAdjustGrid)
+	ON_COMMAND(ID_CALC_RELATIVE_COORDS, OnCalcRelativeCoords)
 	ON_COMMAND(ID_EDITORS_SHIELD_SYS, OnEditorsShieldSys)
 	ON_COMMAND(ID_LEVEL_OBJ, OnLevelObj)
 	ON_COMMAND(ID_ALIGN_OBJ, OnAlignObj)
@@ -336,6 +339,8 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_UPDATE_COMMAND_UI(ID_FORMAT_FS1_RETAIL, OnUpdateFormatFs1Retail)
 	ON_COMMAND(ID_MISC_MOVESHIPSWHENUNDOCKING, OnMoveShipsWhenUndocking)
 	ON_UPDATE_COMMAND_UI(ID_MISC_MOVESHIPSWHENUNDOCKING, OnUpdateMoveShipsWhenUndocking)
+	ON_COMMAND(ID_MISC_POINTUSINGUVEC, OnPointUsingUvec)
+	ON_UPDATE_COMMAND_UI(ID_MISC_POINTUSINGUVEC, OnUpdatePointUsingUvec)
 	ON_COMMAND(ID_HIGHLIGHT_SUBSYS, OnHighlightSubsys)
 	ON_UPDATE_COMMAND_UI(ID_HIGHLIGHT_SUBSYS, OnUpdateHighlightSubsys)
 	ON_COMMAND(ID_EDITORS_SET_GLOBAL_SHIP_FLAGS, OnEditorsSetGlobalShipFlags)
@@ -4145,6 +4150,13 @@ void CFREDView::OnEditorsAdjustGrid()
 	Update_window = 1;
 }
 
+void CFREDView::OnCalcRelativeCoords()
+{
+	calc_relative_coords_dlg dlg;
+
+	dlg.DoModal();
+}
+
 void CFREDView::OnEditorsShieldSys() 
 {
 	shield_sys_dlg dlg;
@@ -4555,6 +4567,17 @@ void CFREDView::OnMoveShipsWhenUndocking()
 void CFREDView::OnUpdateMoveShipsWhenUndocking(CCmdUI* pCmdUI)
 {
 	pCmdUI->SetCheck(Move_ships_when_undocking);
+}
+
+void CFREDView::OnPointUsingUvec()
+{
+	Point_using_uvec = !Point_using_uvec;
+	theApp.write_ini_file();
+}
+
+void CFREDView::OnUpdatePointUsingUvec(CCmdUI* pCmdUI)
+{
+	pCmdUI->SetCheck(Point_using_uvec);
 }
 
 void CFREDView::OnHighlightSubsys()

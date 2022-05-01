@@ -295,7 +295,7 @@ public:
 	void add_outline(vertex* vert_array, int n_verts, color *clr);
 	void render_outlines();
 
-	void set_light_filter(int objnum, vec3d *pos, float rad);
+	void set_light_filter(vec3d *pos, float rad);
 
 	void init_render(bool sort = true);
 	void render_all(gr_zbuffer_type depth_mode = ZBUFFER_TYPE_DEFAULT);

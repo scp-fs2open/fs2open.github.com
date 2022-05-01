@@ -220,6 +220,13 @@ protected:
 
 	int font_num;
 
+	// useful information to keep around for scripts
+	float tabled_origin[2];
+	int tabled_offset[2];
+	bool tabled_use_coords;
+	int tabled_coords[2];
+	float aspect_quotient;
+
 	bool lock_color;
 	bool sexp_lock_color;
 	bool reticle_follow;
@@ -262,21 +269,29 @@ public:
 	virtual ~HudGauge();
 
 	void initPosition(int x, int y);
-	void initBaseResolution(int w, int h);
-	void initSlew(bool slew);
+	void initBaseResolution(int w, int h, float aq);
 	void initFont(int input_font_num);
+	void initOriginAndOffset(float originX, float originY, int offsetX, int offsetY);
+	void initCoords(bool use_coords, int coordsX, int coordsY);
+
+	void initSlew(bool slew);
 	void initCockpitTarget(const char* display_name, int _target_x, int _target_y, int _target_w, int _target_h, int _canvas_w, int _canvas_h);
 	void initRenderStatus(bool render);
 
 	bool isCustom();
 	int getBaseWidth();
 	int getBaseHeight();
+	float getAspectQuotient();
 
 	int getConfigType();
 	int getObjectType();
 	void getPosition(int *x, int *y);
 	bool isOffbyDefault();
 	bool isActive();
+
+	int getFont();
+	void getOriginAndOffset(float *originX, float *originY, int *offsetX, int *offsetY);
+	void getCoords(bool* use_coords, int* coordsX, int* coordsY);
 	
 	void updateColor(int r, int g, int b, int a = 255);
 	const color& getColor();

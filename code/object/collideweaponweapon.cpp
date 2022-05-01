@@ -88,13 +88,13 @@ int collide_weapon_weapon( obj_pair * pair )
 		if (Script_system.IsActiveAction(CHA_COLLIDEWEAPON)) {
 			Script_system.SetHookObjects(4, "Self", A, "Object", B, "Weapon", A, "WeaponB", B);
 			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(B->pos));
-			a_override = Script_system.IsConditionOverride(CHA_COLLIDEWEAPON, A);
+			a_override = Script_system.IsConditionOverride(CHA_COLLIDEWEAPON, A, B);
 			Script_system.RemHookVars({"Self", "Object", "Weapon", "WeaponB", "Hitpos" });
 
 			// Yes, this should be reversed.
 			Script_system.SetHookObjects(4, "Self", B, "Object", A, "Weapon", B, "WeaponB", A);
 			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(A->pos));
-			b_override = Script_system.IsConditionOverride(CHA_COLLIDEWEAPON, B);
+			b_override = Script_system.IsConditionOverride(CHA_COLLIDEWEAPON, B, A);
 			Script_system.RemHookVars({ "Self", "Object", "Weapon", "WeaponB", "Hitpos" });
 		}
 
@@ -194,7 +194,7 @@ int collide_weapon_weapon( obj_pair * pair )
 		{
 			Script_system.SetHookObjects(4, "Self", A, "Object", B, "Weapon", A, "WeaponB", B);
 			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(B->pos));
-			Script_system.RunCondition(CHA_COLLIDEWEAPON, A, wpA->weapon_info_index);
+			Script_system.RunCondition(CHA_COLLIDEWEAPON, A, B);
 			Script_system.RemHookVars({ "Self", "Object", "Weapon", "WeaponB", "Hitpos" });
 		}
 		else
@@ -202,7 +202,7 @@ int collide_weapon_weapon( obj_pair * pair )
 			// Yes, this should be reversed.
 			Script_system.SetHookObjects(4, "Self", B, "Object", A, "Weapon", B, "WeaponB", A);
 			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(A->pos));
-			Script_system.RunCondition(CHA_COLLIDEWEAPON, B, wpB->weapon_info_index);
+			Script_system.RunCondition(CHA_COLLIDEWEAPON, B, A);
 			Script_system.RemHookVars({ "Self", "Object", "Weapon", "WeaponB", "Hitpos" });
 		}
 

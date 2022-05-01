@@ -177,16 +177,14 @@ void light_add_directional(const vec3d *dir, float intensity, float r, float g, 
 	l.radb = 0.0f;
 	l.rada_squared = l.rada*l.rada;
 	l.radb_squared = l.radb*l.radb;
-	l.light_ignore_objnum = -1;
-	l.affected_objnum = -1;
 	l.instance = Num_lights-1;
-		
+
 	Lights.push_back(l);
 	Static_light.push_back(l);
 }
 
 
-void light_add_point(const vec3d *pos, float r1, float r2, float intensity, float r, float g, float b, int light_ignore_objnum, float spec_r, float spec_g, float spec_b, bool specular)
+void light_add_point(const vec3d *pos, float r1, float r2, float intensity, float r, float g, float b, float spec_r, float spec_g, float spec_b, bool specular)
 {
 	Assertion( r1 > 0.0f, "Invalid radius r1 specified for light: %f. Radius must be > 0.0f. Examine stack trace to determine culprit.\n", r1 );
 	Assertion( r2 > 0.0f, "Invalid radius r2 specified for light: %f. Radius must be > 0.0f. Examine stack trace to determine culprit.\n", r2 );
@@ -218,53 +216,13 @@ void light_add_point(const vec3d *pos, float r1, float r2, float intensity, floa
 	l.radb = r2;
 	l.rada_squared = l.rada*l.rada;
 	l.radb_squared = l.radb*l.radb;
-	l.light_ignore_objnum = light_ignore_objnum;
-	l.affected_objnum = -1;
-	l.instance = Num_lights-1;
-
-	Lights.push_back(l);
-}
-
-void light_add_point_unique(const vec3d *pos, float r1, float r2, float intensity, float r, float g, float b, int affected_objnum, float spec_r, float spec_g, float spec_b, bool specular)
-{
-	Assertion(r1 > 0.0f, "Invalid radius r1 specified for light: %f. Radius must be > 0.0f. Examine stack trace to determine culprit.\n", r1);
-	Assertion(r2 > 0.0f, "Invalid radius r2 specified for light: %f. Radius must be > 0.0f. Examine stack trace to determine culprit.\n", r2);
-
-	if (Lighting_off) return;
-
-	if (!Lighting_flag) return;
-
-	if(!specular){
-		spec_r = r;
-		spec_g = g;
-		spec_b = b;
-	}
-	light l;
-
-	Num_lights++;
-
-	l.type = Light_Type::Point;
-	l.vec = *pos;
-	l.r = r;
-	l.g = g;
-	l.b = b;
-	l.spec_r = spec_r;
-	l.spec_g = spec_g;
-	l.spec_b = spec_b;
-	l.intensity = intensity;
-	l.rada = r1;
-	l.radb = r2;
-	l.rada_squared = l.rada*l.rada;
-	l.radb_squared = l.radb*l.radb;
-	l.light_ignore_objnum = -1;
-	l.affected_objnum = affected_objnum;
 	l.instance = Num_lights-1;
 
 	Lights.push_back(l);
 }
 
 // beams affect every ship except the firing ship
-void light_add_tube(const vec3d *p0, const vec3d *p1, float r1, float r2, float intensity, float r, float g, float b, int affected_objnum, float spec_r, float spec_g, float spec_b, bool specular)
+void light_add_tube(const vec3d *p0, const vec3d *p1, float r1, float r2, float intensity, float r, float g, float b, float spec_r, float spec_g, float spec_b, bool specular)
 {
 	Assertion(r1 > 0.0f, "Invalid radius r1 specified for light: %f. Radius must be > 0.0f. Examine stack trace to determine culprit.\n", r1);
 	Assertion(r2 > 0.0f, "Invalid radius r2 specified for light: %f. Radius must be > 0.0f. Examine stack trace to determine culprit.\n", r2);
@@ -297,8 +255,6 @@ void light_add_tube(const vec3d *p0, const vec3d *p1, float r1, float r2, float 
 	l.radb = r2;
 	l.rada_squared = l.rada*l.rada;
 	l.radb_squared = l.radb*l.radb;
-	l.light_ignore_objnum = affected_objnum;
-	l.affected_objnum = -1;
 	l.instance = Num_lights-1;
 
 	Lights.push_back(l);
@@ -471,7 +427,7 @@ void light_apply_rgb( ubyte *param_r, ubyte *param_g, ubyte *param_b, const vec3
 	*param_b = ubyte(fl2i(bval*255.0f));
 }
 
-void light_add_cone(const vec3d *pos, const vec3d *dir, float angle, float inner_angle, bool dual_cone, float r1, float r2, float intensity, float r, float g, float b, int light_ignore_objnum, float spec_r, float spec_g, float spec_b, bool specular)
+void light_add_cone(const vec3d *pos, const vec3d *dir, float angle, float inner_angle, bool dual_cone, float r1, float r2, float intensity, float r, float g, float b, float spec_r, float spec_g, float spec_b, bool specular)
 {
 	Assertion( r1 > 0.0f, "Invalid radius r1 specified for light: %f. Radius must be > 0.0f. Examine stack trace to determine culprit.\n", r1 );
 	Assertion( r2 > 0.0f, "Invalid radius r2 specified for light: %f. Radius must be > 0.0f. Examine stack trace to determine culprit.\n", r2 );
@@ -507,8 +463,6 @@ void light_add_cone(const vec3d *pos, const vec3d *dir, float angle, float inner
 	l.radb = r2;
 	l.rada_squared = l.rada*l.rada;
 	l.radb_squared = l.radb*l.radb;
-	l.light_ignore_objnum = light_ignore_objnum;
-	l.affected_objnum = -1;
 	l.instance = Num_lights-1;
 
 	Lights.push_back(l);
@@ -530,7 +484,7 @@ void scene_lights::addLight(const light *light_ptr)
 	}
 }
 
-void scene_lights::setLightFilter(int objnum, const vec3d *pos, float rad)
+void scene_lights::setLightFilter(const vec3d *pos, float rad)
 {
 	size_t i = 0;
 	// clear out current filtered lights
@@ -542,48 +496,29 @@ void scene_lights::setLightFilter(int objnum, const vec3d *pos, float rad)
 				++i;
 				continue;
 			case Light_Type::Point: {
-				// if this is a "unique" light source, it only affects one guy
-				if ( l.affected_objnum >= 0 ) {
-					if ( objnum == l.affected_objnum ) {
-						vec3d to_light;
-						float dist_squared, max_dist_squared;
-						vm_vec_sub( &to_light, &l.vec, pos );
-						dist_squared = vm_vec_mag_squared(&to_light);
+				vec3d to_light;
+				float dist_squared, max_dist_squared;
+				vm_vec_sub( &to_light, &l.vec, pos );
+				dist_squared = vm_vec_mag_squared(&to_light);
 
-						max_dist_squared = l.radb+rad;
-						max_dist_squared *= max_dist_squared;
+				max_dist_squared = l.radb+rad;
+				max_dist_squared *= max_dist_squared;
 
-						if ( dist_squared < max_dist_squared )	{
-							FilteredLights.push_back(i);
-						}
-					}
-				} else { // otherwise check all relevant objects
-					vec3d to_light;
-					float dist_squared, max_dist_squared;
-					vm_vec_sub( &to_light, &l.vec, pos );
-					dist_squared = vm_vec_mag_squared(&to_light);
-
-					max_dist_squared = l.radb+rad;
-					max_dist_squared *= max_dist_squared;
-
-					if ( dist_squared < max_dist_squared )	{
-						FilteredLights.push_back(i);
-					}
+				if ( dist_squared < max_dist_squared )	{
+					FilteredLights.push_back(i);
 				}
 			}
 			break;
 			case Light_Type::Tube: {
-				if ( l.light_ignore_objnum != objnum ) {
-					vec3d nearest;
-					float dist_squared, max_dist_squared;
-					vm_vec_dist_squared_to_line(pos,&l.vec,&l.vec2,&nearest,&dist_squared);
+				vec3d nearest;
+				float dist_squared, max_dist_squared;
+				vm_vec_dist_squared_to_line(pos,&l.vec,&l.vec2,&nearest,&dist_squared);
 
-					max_dist_squared = l.radb+rad;
-					max_dist_squared *= max_dist_squared;
+				max_dist_squared = l.radb+rad;
+				max_dist_squared *= max_dist_squared;
 
-					if ( dist_squared < max_dist_squared ) {
-						FilteredLights.push_back(i);
-					}
+				if ( dist_squared < max_dist_squared ) {
+					FilteredLights.push_back(i);
 				}
 			}
 			break;

@@ -53,6 +53,7 @@
 #include "debugconsole/console.h"
 #include "network/psnet2.h"
 #include "network/multi_mdns.h"
+#include "cmdline/cmdline.h"
 
 // Stupid windows workaround...
 #ifdef MessageBox
@@ -491,6 +492,12 @@ void multi_client_check_server()
 
 void process_packet_normal(ubyte* data, header *header_info)
 {
+	// this is for helping to diagnose misaligned packets.  The last sensible packet 
+	// is usually the culprit that needs to be analyzed.
+	if (Cmdline_dump_packet_type) {
+		mprintf(("Game packet type of %d received.\n", data[0]));
+	}
+
 	switch ( data[0] ) {
 
 		case JOIN:
@@ -923,11 +930,16 @@ void process_packet_normal(ubyte* data, header *header_info)
 			break; 
 
 		default:
-			nprintf(("Network", "Received packet with unknown type %d\n", data[0] ));
+			mprintf(("Received packet with unknown type %d\n", data[0] ));
 			header_info->bytes_processed = 10000;
 			break;
 
 	} // end switch
+
+	// Let's also dump the amount of data that we've processed so far.
+	if (Cmdline_dump_packet_type) {
+		mprintf(("Game packet ended.  Total amount of data processed from packet is %d.\n", header_info->bytes_processed));
+	}
 }
 
 
@@ -939,7 +951,7 @@ void process_packet_normal(ubyte* data, header *header_info)
 // process_tracker_packet() as defined in MultiTracker.[h,cpp]
 void multi_process_bigdata(ubyte *data, int len, net_addr *from_addr, int reliable)
 {
-	int type, bytes_processed;
+	int bytes_processed;
 	int player_num;
 	header header_info;
 	ubyte *buf;	
@@ -964,20 +976,23 @@ void multi_process_bigdata(ubyte *data, int len, net_addr *from_addr, int reliab
 	}   
 
 	bytes_processed = 0;
+
+	// start off logging of packets by writing how many bytes of data we should get through.
+	if (Cmdline_dump_packet_type) {
+		mprintf(("Network packet with %d bytes of data received. ", len));
+	}
+
 	while( (bytes_processed >= 0) && (bytes_processed < len) )  {
 
       buf = &(data[bytes_processed]);
 
-      type = buf[0];
+      const ubyte type = buf[0];
 
 		// if its coming from an unknown source, there are only certain packets we will actually process
 		if((player_num == -1) && !multi_is_valid_unknown_packet((ubyte)type)){
+			// So let's log it, because we should probably at least be vaguely aware of the buggy behavior.
+			mprintf(("Receiving unknown source packet of type %d that should have a source, aborting packet processing!\n", type));
 			return ;
-		}		
-
-		if ( (type<0) || (type > MAX_TYPE_ID )) {
-			nprintf( ("Network", "multi_process_bigdata: Invalid packet type %d!\n", type ));
-			return;
 		}		
 
 		// perform any special processing checks here		

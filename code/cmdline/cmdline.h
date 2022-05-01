@@ -125,6 +125,7 @@ extern bool Cmdline_nograb;
 extern bool Cmdline_noshadercache;
 extern bool Cmdline_prefer_ipv4;
 extern bool Cmdline_prefer_ipv6;
+extern bool Cmdline_dump_packet_type;
 #ifdef WIN32
 extern bool Cmdline_alternate_registry_path;
 #endif

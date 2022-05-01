@@ -1,10 +1,10 @@
 #pragma once
 
+#include "actions/expression/nodes/AbstractExpression.h"
+
 #include "globalincs/pstypes.h"
 
 #include "ParseContext.h"
-
-#include "actions/expression/nodes/AbstractExpression.h"
 
 namespace actions {
 namespace expression {

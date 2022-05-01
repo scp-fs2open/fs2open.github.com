@@ -16,7 +16,10 @@
 #include "graphics/line_draw_list.h"
 
 void hud_init_brackets();
+
+// requires that x2 > x1 and y2 > y1
 void draw_brackets_square(graphics::line_draw_list* draw_list, int x1, int y1, int x2, int y2, int resize_mode = GR_RESIZE_FULL);
+
 void draw_brackets_square_quick(graphics::line_draw_list* draw_list, int x1, int y1, int x2, int y2, int thick=0);
 void draw_brackets_diamond_quick(graphics::line_draw_list* draw_list, int x1, int y1, int x2, int y2);
 

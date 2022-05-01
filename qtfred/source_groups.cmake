@@ -56,6 +56,8 @@ add_file_folder("Source/Mission/Dialogs"
 	src/mission/dialogs/MissionSpecDialogModel.h
 	src/mission/dialogs/ObjectOrientEditorDialogModel.cpp
 	src/mission/dialogs/ObjectOrientEditorDialogModel.h
+	src/mission/dialogs/ReinforcementsEditorDialogModel.cpp	
+	src/mission/dialogs/ReinforcementsEditorDialogModel.h	
 	src/mission/dialogs/SelectionDialogModel.cpp
 	src/mission/dialogs/SelectionDialogModel.h
 	src/mission/dialogs/ShieldSystemDialogModel.cpp
@@ -110,6 +112,8 @@ add_file_folder("Source/UI/Dialogs"
 	src/ui/dialogs/MissionSpecDialog.h
 	src/ui/dialogs/ObjectOrientEditorDialog.cpp
 	src/ui/dialogs/ObjectOrientEditorDialog.h
+	src/ui/dialogs/ReinforcementsEditorDialog.cpp
+	src/ui/dialogs/ReinforcementsEditorDialog.h
 	src/ui/dialogs/SelectionDialog.cpp
 	src/ui/dialogs/SelectionDialog.h
 	src/ui/dialogs/ShieldSystemDialog.h
@@ -168,6 +172,7 @@ add_file_folder("UI"
 	ui/MissionGoalsDialog.ui
 	ui/MissionSpecDialog.ui
 	ui/ObjectOrientationDialog.ui
+	ui/ReinforcementsDialog.ui
 	ui/SelectionDialog.ui
 	ui/ShieldSystemDialog.ui
 	ui/TeamLoadoutDialog.ui

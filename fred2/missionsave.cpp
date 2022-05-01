@@ -3459,6 +3459,12 @@ int CFred_mission_save::save_objects()
 				fout(" \"same-arrival-warp-when-docked\"");
 			if (shipp->flags[Ship::Ship_Flags::Same_departure_warp_when_docked])
 				fout(" \"same-departure-warp-when-docked\"");
+			if (objp->flags[Object::Object_Flags::Attackable_if_no_collide])
+				fout(" \"ai-attackable-if-no-collide\"");
+			if (shipp->flags[Ship::Ship_Flags::Fail_sound_locked_primary])
+				fout(" \"fail-sound-locked-primary\"");
+			if (shipp->flags[Ship::Ship_Flags::Fail_sound_locked_secondary])
+				fout(" \"fail-sound-locked-secondary\"");
 			fout(" )");
 		}
 		// -----------------------------------------------------------
