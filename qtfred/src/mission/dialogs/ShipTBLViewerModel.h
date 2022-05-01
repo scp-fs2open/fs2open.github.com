@@ -8,14 +8,12 @@ namespace dialogs {
 class ShipTBLViewerModel : public AbstractDialogModel {
   private:
 	SCP_string text;
-	SCP_vector<SCP_string> tbl_file_names;
-	int ship_class;
 
   public:
 	ShipTBLViewerModel(QObject* parent, EditorViewport* viewport, int sc);
 	bool apply() override;
 	void reject() override;
-	void initializeData();
+	void initializeData(const int ship_class);
 
 	SCP_string getText() const;
 };

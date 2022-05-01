@@ -3,9 +3,9 @@ namespace fso {
 namespace fred {
 namespace dialogs {
 ShipTBLViewerModel::ShipTBLViewerModel(QObject* parent, EditorViewport* viewport, int sc)
-	: AbstractDialogModel(parent, viewport), ship_class(sc)
+	: AbstractDialogModel(parent, viewport)
 {
-	initializeData();
+	initializeData(sc);
 }
 bool ShipTBLViewerModel::apply()
 {
@@ -14,12 +14,14 @@ bool ShipTBLViewerModel::apply()
 void ShipTBLViewerModel::reject()
 {
 }
-void ShipTBLViewerModel::initializeData()
+void ShipTBLViewerModel::initializeData(const int ship_class)
 {
 	char line[256], line2[256]{}, file_text[82]{};
 	const ship_info* sip = &Ship_info[ship_class];
 	int i, j, n, found = 0, comment = 0, num_files = 0;
 	CFILE* fp = nullptr;
+	SCP_vector<SCP_string> tbl_file_names;
+	text.clear();
 
 	if (!sip) {
 		return;

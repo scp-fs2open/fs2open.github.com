@@ -24,6 +24,8 @@ namespace Ui {
 class ShipEditorDialog;
 }
 
+class ShipTBLViewer;
+
 class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 
 	Q_OBJECT
@@ -31,6 +33,9 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
   public:
 	explicit ShipEditorDialog(FredView* parent, EditorViewport* viewport);
 	~ShipEditorDialog() override;
+
+	int getShipClass();
+	bool getMulti();
 
   protected:
 	void closeEvent(QCloseEvent*) override;

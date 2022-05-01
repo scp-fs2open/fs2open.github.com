@@ -156,6 +156,16 @@ ShipEditorDialog::ShipEditorDialog(FredView* parent, EditorViewport* viewport)
 
 ShipEditorDialog::~ShipEditorDialog() = default;
 
+int ShipEditorDialog::getShipClass()
+{
+	return _model->getShipClass();
+}
+
+bool ShipEditorDialog::getMulti()
+{
+	return _model->multi_edit;
+}
+
 void ShipEditorDialog::closeEvent(QCloseEvent* event)
 {
 	_model->apply();
@@ -184,7 +194,7 @@ void ShipEditorDialog::on_initialOrdersButton_clicked()
 void ShipEditorDialog::on_tblInfoButton_clicked()
 {
 	if (!TBLViewer) {
-		TBLViewer = new dialogs::ShipTBLViewer(this, _viewport, _model->getShipClass());
+		TBLViewer = new dialogs::ShipTBLViewer(this, _viewport);
 	}
 	TBLViewer->show();
 }
