@@ -9,8 +9,6 @@
 
 
 #include "globalincs/linklist.h"
-#include "asteroid/asteroid.h"
-#include "debris/debris.h"
 #include "io/timer.h"
 #include "object/objcollide.h"
 #include "object/object.h"
