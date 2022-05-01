@@ -168,7 +168,7 @@ class LuaValue {
 	void getValue(Type&& od) const {
 		_reference->pushValue(_luaState);
 
-		if (!convert::popValue<Type>(_luaState, std::forward<Type>(od))) {
+		if (!convert::popValue(_luaState, std::forward<Type>(od))) {
 			lua_pop(_luaState, 1);
 			throw LuaException("Failed to pop value");
 		}
