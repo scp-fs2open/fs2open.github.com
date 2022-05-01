@@ -1379,7 +1379,8 @@ int free_sexp(int num, int calling_node)
 	Assert(Sexp_nodes[num].type != SEXP_NOT_USED);  // make sure it is actually used
 	Assert(!(Sexp_nodes[num].type & SEXP_FLAG_PERSISTENT));
 
-	if ((num == Locked_sexp_true) || (num == Locked_sexp_false))
+	// never free these nodes
+	if ((num == -1) || (num == Locked_sexp_true) || (num == Locked_sexp_false))
 		return 0;
 
 	Sexp_nodes[num].type = SEXP_NOT_USED;
@@ -1393,8 +1394,9 @@ int free_sexp(int num, int calling_node)
 	i = Sexp_nodes[num].first;
 	while (i != -1) 
 	{
+		rest = Sexp_nodes[i].rest;
 		count += free_sexp(i, num);
-		i = Sexp_nodes[i].rest;
+		i = rest;
 	}
 
 	rest = Sexp_nodes[num].rest;
@@ -1416,21 +1418,27 @@ int free_sexp(int num, int calling_node)
  * Because the root node is an operator, instead of a list, we can't simply call free_sexp().  
  * This function should only be called on the root node of an sexp, otherwise the linking will get screwed up.
  */
-int free_sexp2(int num)
+int free_sexp2(int num, int calling_node)
 {	
-	int i, count = 0;
+	int i, rest, count = 0;
 
+	Assert((num >= 0) && (num < Num_sexp_nodes));
+	Assert(Sexp_nodes[num].type != SEXP_NOT_USED);  // make sure it is actually used
+	Assert(!(Sexp_nodes[num].type & SEXP_FLAG_PERSISTENT));
+
+	// never free these nodes
 	if ((num == -1) || (num == Locked_sexp_true) || (num == Locked_sexp_false)){
 		return 0;
 	}
 
 	i = Sexp_nodes[num].rest;
 	while (i != -1) {
-		count += free_sexp(i);
-		i = Sexp_nodes[i].rest;
+		rest = Sexp_nodes[i].rest;
+		count += free_sexp(i, num);
+		i = rest;
 	}
 
-	count += free_sexp(num);
+	count += free_sexp(num, calling_node);
 	return count;
 }
 
@@ -3873,7 +3881,7 @@ int get_sexp()
 		if (n >= 0)
 		{
 			// free the entire rest of the argument list
-			free_sexp2(n);	
+			free_sexp2(n, CDR(start));
 		}
 	}
 
