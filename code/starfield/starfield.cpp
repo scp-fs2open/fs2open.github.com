@@ -2425,25 +2425,25 @@ int stars_add_bitmap_entry(starfield_list_entry *sle)
 	return (int)(Starfield_bitmap_instances.size() - 1);
 }
 
-void stars_fix_background_angles(angles *angs_to_fix)
+void stars_correct_background_angles(angles *angs_to_correct)
 {
 	matrix mat1, mat2;
-	angles ang1 = vm_angles_new(0.0, angs_to_fix->b, 0.0);
-	angles ang2 = vm_angles_new(angs_to_fix->p, 0.0, angs_to_fix->h);
+	angles ang1 = vm_angles_new(0.0, angs_to_correct->b, 0.0);
+	angles ang2 = vm_angles_new(angs_to_correct->p, 0.0, angs_to_correct->h);
 	vm_angles_2_matrix(&mat1, &ang1);
 	vm_angles_2_matrix(&mat2, &ang2);
 	matrix mat3 = mat2 * mat1;
 	vm_transpose(&mat3);
-	vm_extract_angles_matrix(angs_to_fix, &mat3);
-	angs_to_fix->p = fmod(angs_to_fix->p + PI2, PI2);
-	angs_to_fix->b = fmod(angs_to_fix->b + PI2, PI2);
-	angs_to_fix->h = fmod(angs_to_fix->h + PI2, PI2);
+	vm_extract_angles_matrix(angs_to_correct, &mat3);
+	angs_to_correct->p = fmod(angs_to_correct->p + PI2, PI2);
+	angs_to_correct->b = fmod(angs_to_correct->b + PI2, PI2);
+	angs_to_correct->h = fmod(angs_to_correct->h + PI2, PI2);
 }
 
-void stars_unfix_background_angles(angles* angs_to_unfix)
+void stars_uncorrect_background_angles(angles *angs_to_uncorrect)
 {
 	matrix mat;
-	vm_angles_2_matrix(&mat, angs_to_unfix);
+	vm_angles_2_matrix(&mat, angs_to_uncorrect);
 	// transpose and {2,3,1} permute rows and cols
 	matrix mat_permuted = vm_matrix_new(
 		mat.vec.uvec.xyz.y, mat.vec.fvec.xyz.y, mat.vec.rvec.xyz.y,
@@ -2453,9 +2453,9 @@ void stars_unfix_background_angles(angles* angs_to_unfix)
 	angles angs_permuted;
 	vm_extract_angles_matrix(&angs_permuted, &mat_permuted);
 	// {2,3,1} unpermute p,b,h
-	angs_to_unfix->p = angs_permuted.b;
-	angs_to_unfix->h = angs_permuted.p;
-	angs_to_unfix->b = angs_permuted.h;
+	angs_to_uncorrect->p = angs_permuted.b;
+	angs_to_uncorrect->h = angs_permuted.p;
+	angs_to_uncorrect->b = angs_permuted.h;
 }
 
 // get the number of entries that each vector contains
@@ -2695,7 +2695,7 @@ void stars_add_blank_background(bool creating_in_fred)
 
 	// any background that is created will have correct angles, so be sure to set the flag
 	if (creating_in_fred)
-		Backgrounds.back().flags.set(Starfield::Background_Flags::Fixed_angles_in_mission_file);
+		Backgrounds.back().flags.set(Starfield::Background_Flags::Corrected_angles_in_mission_file);
 }
 
 // Goober5000

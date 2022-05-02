@@ -1475,7 +1475,7 @@ BEGIN
     LTEXT           "G",IDC_STATIC,139,281,8,8
     EDITTEXT        IDC_NEB2_FOG_B,186,278,23,14,ES_AUTOHSCROLL | ES_NUMBER
     LTEXT           "B",IDC_STATIC,176,281,8,8
-    CONTROL         "Save sun/bitmap angles to mission file in correct format",IDC_FIXED_ANGLES_IN_MISSION_FILE,
+    CONTROL         "Save sun/bitmap angles to mission file in correct format",IDC_CORRECTED_ANGLES_IN_MISSION_FILE,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,380,195,10
 END
 

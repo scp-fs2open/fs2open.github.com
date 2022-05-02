@@ -1308,7 +1308,7 @@ ADE_FUNC(getMissionTitle, l_Mission, NULL, "Get the title of the current mission
 	return ade_set_args(L, "s", The_mission.name);
 }
 
-static int addBackgroundBitmap_sub(bool fixed, lua_State* L)
+static int addBackgroundBitmap_sub(bool uses_correct_angles, lua_State* L)
 {
 	const char* filename = nullptr;
 	float scale_x        = 1.0f;
@@ -1331,8 +1331,8 @@ static int addBackgroundBitmap_sub(bool fixed, lua_State* L)
 	}
 
 	sle.ang     = *orient.GetAngles();
-	if (!fixed)
-		stars_fix_background_angles(&sle.ang);
+	if (!uses_correct_angles)
+		stars_correct_background_angles(&sle.ang);
 
 	sle.scale_x = scale_x;
 	sle.scale_y = scale_y;
@@ -1385,7 +1385,7 @@ ADE_FUNC(addBackgroundBitmap2,
 	return addBackgroundBitmap_sub(true, L);
 }
 
-static int addSunBitmap_sub(bool fixed, lua_State* L)
+static int addSunBitmap_sub(bool uses_correct_angles, lua_State* L)
 {
 	const char* filename = nullptr;
 	float scale_x        = 1.0f;
@@ -1406,8 +1406,8 @@ static int addSunBitmap_sub(bool fixed, lua_State* L)
 	}
 
 	sle.ang     = *orient.GetAngles();
-	if (!fixed)
-		stars_fix_background_angles(&sle.ang);
+	if (!uses_correct_angles)
+		stars_correct_background_angles(&sle.ang);
 
 	sle.scale_x = scale_x;
 	sle.scale_y = scale_y;

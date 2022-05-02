@@ -995,7 +995,7 @@
 #define IDC_NEB2_PALETTE_OVERRIDE       1546
 #define IDC_CUSTOM_TECH_DB              1547
 #define IDC_USE_AUTOPILOT_CINEMATICS    1547
-#define IDC_FIXED_ANGLES_IN_MISSION_FILE 1547
+#define IDC_CORRECTED_ANGLES_IN_MISSION_FILE 1547
 #define IDC_2D_MISSION                  1548
 #define IDC_LABEL1                      1549
 #define IDC_2D_MISSION2                 1549

@@ -51,7 +51,7 @@ bg_bitmap_dlg::bg_bitmap_dlg(CWnd* pParent) : CDialog(bg_bitmap_dlg::IDD, pParen
 	m_fog_g = 0;
 	m_fog_b = 0;
 	m_toggle_trails = FALSE;
-	m_fixed_angles_in_mission_file = FALSE;
+	m_corrected_angles_in_mission_file = FALSE;
 
 	s_pitch = 0;
 	s_bank = 0;
@@ -96,7 +96,7 @@ void bg_bitmap_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_SUBSPACE, m_subspace);
 	DDX_Check(pDX, IDC_FULLNEB, m_fullneb);
 	DDX_Check(pDX, IDC_NEB2_PALETTE_OVERRIDE, m_fog_color_override);
-	DDX_Check(pDX, IDC_FIXED_ANGLES_IN_MISSION_FILE, m_fixed_angles_in_mission_file);
+	DDX_Check(pDX, IDC_CORRECTED_ANGLES_IN_MISSION_FILE, m_corrected_angles_in_mission_file);
 
 	DDX_Check(pDX, IDC_NEB2_TOGGLE_TRAILS, m_toggle_trails);
 	DDX_Text(pDX, IDC_SUN1, s_name);
@@ -210,12 +210,12 @@ BOOL bg_bitmap_dlg::OnInitDialog()
 	CDialog::OnInitDialog();
 
 	//create tool tip controls
-	m_FixedAnglesToolTip = new CToolTipCtrl();
-	m_FixedAnglesToolTip->Create(this);
+	m_CorrectedAnglesToolTip = new CToolTipCtrl();
+	m_CorrectedAnglesToolTip->Create(this);
 
-	CWnd* pWnd = GetDlgItem(IDC_FIXED_ANGLES_IN_MISSION_FILE);
-	m_FixedAnglesToolTip->AddTool(pWnd, "Mission files saved in 22.0 and earlier versions of FRED use incorrect math for calculating the background angles");
-	m_FixedAnglesToolTip->Activate(TRUE);
+	CWnd* pWnd = GetDlgItem(IDC_CORRECTED_ANGLES_IN_MISSION_FILE);
+	m_CorrectedAnglesToolTip->AddTool(pWnd, "Mission files saved in 22.0 and earlier versions of FRED use incorrect math for calculating the background angles");
+	m_CorrectedAnglesToolTip->Activate(TRUE);
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 				  // EXCEPTION: OCX Property Pages should return FALSE
@@ -1413,7 +1413,7 @@ void bg_bitmap_dlg::reinitialize_lists()
 void bg_bitmap_dlg::background_flags_init()
 {
 	auto bg = &Backgrounds[get_active_background()];
-	m_fixed_angles_in_mission_file = bg->flags[Starfield::Background_Flags::Fixed_angles_in_mission_file] ? TRUE : FALSE;
+	m_corrected_angles_in_mission_file = bg->flags[Starfield::Background_Flags::Corrected_angles_in_mission_file] ? TRUE : FALSE;
 
 	UpdateData(FALSE);
 }
@@ -1423,7 +1423,7 @@ void bg_bitmap_dlg::background_flags_close()
 	UpdateData(TRUE);
 
 	auto bg = &Backgrounds[get_previous_active_background()];
-	bg->flags.set(Starfield::Background_Flags::Fixed_angles_in_mission_file, m_fixed_angles_in_mission_file == TRUE);
+	bg->flags.set(Starfield::Background_Flags::Corrected_angles_in_mission_file, m_corrected_angles_in_mission_file == TRUE);
 }
 
 static int Previous_active_background = 0;

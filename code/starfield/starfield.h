@@ -67,10 +67,10 @@ int stars_add_sun_entry(starfield_list_entry *sun_ptr);
 int stars_add_bitmap_entry(starfield_list_entry *bitmap);
 
 // transform legacy angles, which used incorrect math in older versions, to correct angles
-void stars_fix_background_angles(angles* angs_to_fix);
+void stars_correct_background_angles(angles *angs_to_correct);
 
 // transform correct angles to legacy angles
-void stars_unfix_background_angles(angles* angs_to_unfix);
+void stars_uncorrect_background_angles(angles *angs_to_uncorrect);
 
 // get the number of entries that each vector contains
 // "is_a_sun" will get sun instance counts, otherwise it gets normal starfield bitmap instance counts

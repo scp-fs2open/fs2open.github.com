@@ -5444,8 +5444,8 @@ void parse_one_background(background_t *background)
 		for (auto i = 0; i < num_strings; ++i)
 		{
 			// if this flag is found, this background was saved with correctly calculated angles, so it should be loaded as such
-			if (!stricmp(flag_strings[i], "fixed angles"))
-				background->flags.set(Starfield::Background_Flags::Fixed_angles_in_mission_file);
+			if (!stricmp(flag_strings[i], "corrected angles"))
+				background->flags.set(Starfield::Background_Flags::Corrected_angles_in_mission_file);
 		}
 	}
 
@@ -5463,9 +5463,9 @@ void parse_one_background(background_t *background)
 		stuff_float(&sle.ang.b);
 		stuff_float(&sle.ang.h);
 
-		// fix legacy bitmap angles which used incorrect math in older versions
-		if (!background->flags[Starfield::Background_Flags::Fixed_angles_in_mission_file])
-			stars_fix_background_angles(&sle.ang);
+		// correct legacy bitmap angles which used incorrect math in older versions
+		if (!background->flags[Starfield::Background_Flags::Corrected_angles_in_mission_file])
+			stars_correct_background_angles(&sle.ang);
 
 		// scale
 		required_string("+Scale:");
@@ -5492,9 +5492,9 @@ void parse_one_background(background_t *background)
 		stuff_float(&sle.ang.b);
 		stuff_float(&sle.ang.h);
 
-		// fix legacy bitmap angles which used incorrect math in older versions
-		if (!background->flags[Starfield::Background_Flags::Fixed_angles_in_mission_file])
-			stars_fix_background_angles(&sle.ang);
+		// correct legacy bitmap angles which used incorrect math in older versions
+		if (!background->flags[Starfield::Background_Flags::Corrected_angles_in_mission_file])
+			stars_correct_background_angles(&sle.ang);
 
 		// scale
 		if (optional_string("+Scale:"))
@@ -5524,7 +5524,7 @@ void parse_one_background(background_t *background)
 	}
 
 	// always set the flag when we're done parsing, because the angles are now stored correctly and we want to save them correctly
-	background->flags.set(Starfield::Background_Flags::Fixed_angles_in_mission_file);
+	background->flags.set(Starfield::Background_Flags::Corrected_angles_in_mission_file);
 }
 
 void parse_bitmaps(mission *pm)

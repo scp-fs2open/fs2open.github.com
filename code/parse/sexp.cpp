@@ -14093,7 +14093,7 @@ void sexp_change_background(int node)
 	stars_load_background(background_idx);
 }
 
-void sexp_add_background_bitmap(int n, bool is_sun, bool is_fixed)
+void sexp_add_background_bitmap(int n, bool is_sun, bool uses_correct_angles)
 {
 	int sexp_var, new_number, sanity;
 	bool is_nan, is_nan_forever;
@@ -14116,8 +14116,8 @@ void sexp_add_background_bitmap(int n, bool is_sun, bool is_fixed)
 	eval_angles(&sle.ang, n, is_nan, is_nan_forever);
 	if (is_nan || is_nan_forever)
 		return;
-	if (!is_fixed)
-		stars_fix_background_angles(&sle.ang);
+	if (!uses_correct_angles)
+		stars_correct_background_angles(&sle.ang);
 
 	if (is_sun)
 	{
