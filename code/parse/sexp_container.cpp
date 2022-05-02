@@ -795,7 +795,7 @@ int sexp_is_container_empty(int node)
 	const auto *p_container = get_sexp_container(container_name);
 
 	if (!p_container) {
-		Warning(LOCATION, "Container %s does not exist.", container_name);
+		Warning(LOCATION, "Is-container-empty called on nonexistent container %s.", container_name);
 		return SEXP_FALSE;
 	}
 
@@ -825,7 +825,7 @@ int sexp_get_container_size(int node)
 	const auto *p_container = get_sexp_container(container_name);
 
 	if (!p_container) {
-		Warning(LOCATION, "Container %s does not exist.", container_name);
+		Warning(LOCATION, "Get-container-size called on nonexistent container %s.", container_name);
 		return 0;
 	}
 
@@ -847,7 +847,7 @@ int sexp_list_has_data(int node)
 	const auto *p_container = get_sexp_container(container_name);
 
 	if (!p_container) {
-		Warning(LOCATION, "Container %s does not exist.", container_name);
+		Warning(LOCATION, "List-has-data called on nonexistent container %s.", container_name);
 		return SEXP_FALSE;
 	}
 
@@ -862,7 +862,7 @@ int sexp_list_has_data(int node)
 
 	node = CDR(node);
 	// there should be at least one string to search for
-	Assert(node != -1);
+	Assertion(node != -1, "List-has-data wasn't given data to look for. Please report!");
 
 	SCP_string possible_data;
 	while (node != -1) {
@@ -885,7 +885,7 @@ int sexp_list_data_index(int node)
 	const auto *p_container = get_sexp_container(container_name);
 
 	if (!p_container) {
-		Warning(LOCATION, "Container %s does not exist.", container_name);
+		Warning(LOCATION, "List-data-index called on nonexistent container %s.", container_name);
 		return -1;
 	}
 
@@ -897,7 +897,7 @@ int sexp_list_data_index(int node)
 	}
 
 	node = CDR(node);
-	Assert(node != -1);
+	Assertion(node != -1, "List-data-index wasn't given data to look for. Please report!");
 
 	const SCP_string possible_data = CTEXT(node);
 
@@ -918,7 +918,7 @@ int sexp_map_has_key(int node)
 	const auto *p_container = get_sexp_container(container_name);
 
 	if (!p_container) {
-		Warning(LOCATION, "Container %s does not exist.", container_name);
+		Warning(LOCATION, "Map-has-key called on nonexistent container %s.", container_name);
 		return SEXP_FALSE;
 	}
 
@@ -933,7 +933,7 @@ int sexp_map_has_key(int node)
 
 	node = CDR(node);
 	// there should be at least one key to search for
-	Assert(node != -1);
+	Assertion(node != -1, "Map-has-key wasn't given keys to look for. Please report!");
 
 	SCP_string possible_key;
 	while (node != -1) {
@@ -959,19 +959,19 @@ int sexp_map_has_data_item(int node)
 	const auto *p_container = get_sexp_container(container_name);
 
 	if (!p_container) {
-		Warning(LOCATION, "Container %s does not exist.", container_name);
+		Warning(LOCATION, "Map-has-data-item called on nonexistent container %s.", container_name);
 		return SEXP_FALSE;
 	}
 
 	const auto &container = *p_container;
 
 	if (!container.is_map()) {
-		Warning(LOCATION, "map-has-data-item called on non-map container %s.", container_name);
+		Warning(LOCATION, "Map-has-data-item called on non-map container %s.", container_name);
 		return SEXP_FALSE;
 	}
 
 	node = CDR(node);
-	Assert(node != -1);
+	Assertion(node != -1, "Map-has-data-item wasn't given data to look for. Please report!");
 
 	const SCP_string possible_data = CTEXT(node);
 
@@ -996,13 +996,13 @@ int sexp_map_has_data_item(int node)
 						sexp_modify_variable(kv_pair.first.c_str(), var_index);
 					} else {
 						Warning(LOCATION,
-							"map-has-data-item given optional variable %s whose type doesn't match keys of map "
+							"Map-has-data-item given optional variable %s whose type doesn't match keys of map "
 							"container %s",
 							Sexp_variables[var_index].variable_name,
 							container.container_name.c_str());
 					}
 				} else {
-					Warning(LOCATION, "map-has-data-item given invalid optional variable %s", Sexp_nodes[node].text);
+					Warning(LOCATION, "Map-has-data-item given invalid optional variable %s", Sexp_nodes[node].text);
 				}
 			}
 
