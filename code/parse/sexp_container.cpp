@@ -18,8 +18,6 @@
 #include "utils/Random.h"
 
 static SCP_vector<sexp_container> Sexp_containers;
-static SCP_unordered_map<SCP_string, sexp_container*, SCP_string_lcase_hash, SCP_string_lcase_equal_to>
-	Containers_by_name_map;
 
 
 const SCP_vector<sexp_container> &get_all_sexp_containers()
@@ -46,6 +44,21 @@ const SCP_vector<list_modifier>& get_all_list_modifiers()
 namespace {
 	const char *Empty_str = "";
 } // namespace
+
+// map_container_hash impl
+
+uint32_t map_container_hash::operator()(const SCP_string &str) const
+{
+	// hash function recipe from Effective Java, Item 9
+	// occasional overflow is expected and not a problem
+	// map key matching is case-sensitive
+	uint32_t result = 42u; // arbitrary non-zero number
+	for (char c : str) {
+		result = result * 31 + c;
+	}
+
+	return result;
+}
 
 // sexp_container data and functions
 const SCP_string sexp_container::DELIM_STR(1, sexp_container::DELIM);
@@ -133,7 +146,6 @@ const char *get_list_modifier_name(const ListModifier modifier)
 void init_sexp_containers()
 {
 	Sexp_containers.clear();
-	Containers_by_name_map.clear();
 }
 
 void update_sexp_containers(SCP_vector<sexp_container> &containers,
@@ -141,11 +153,6 @@ void update_sexp_containers(SCP_vector<sexp_container> &containers,
 		&renamed_containers)
 {
 	Sexp_containers = std::move(containers);
-
-	Containers_by_name_map.clear();
-	for (auto &container : Sexp_containers) {
-		Containers_by_name_map.emplace(container.container_name, &container);
-	}
 
 	if (!renamed_containers.empty()) {
 		for (int i = 0; i < Num_sexp_nodes; i++) {
@@ -197,7 +204,7 @@ bool stuff_one_generic_sexp_container(SCP_string &name, ContainerType &type, int
 		opf_type = OPF_NUMBER;
 	} else if (!stricmp(temp_type_string.c_str(), "String")) {
 		type |= ContainerType::STRING_DATA;
-		opf_type = OPF_ANYTHING;
+		opf_type = OPF_STRING;
 	} else {
 		Warning(LOCATION, "Unknown SEXP Container type %s found", temp_type_string.c_str());
 		log_printf(LOGFILE_EVENT_LOG, "Unknown SEXP Container type %s found", temp_type_string.c_str());
@@ -264,15 +271,12 @@ void stuff_sexp_list_containers()
 	SCP_vector<SCP_string>	parsed_data;
 
 	while (required_string_either("$End Lists", "$Name:")) {
-		Sexp_containers.emplace_back();
-		auto &new_list = Sexp_containers.back();
+		sexp_container new_list;
 
 		new_list.type = ContainerType::LIST;
 		if (stuff_one_generic_sexp_container(new_list.container_name, new_list.type, new_list.opf_type, parsed_data)) {
 			std::copy(parsed_data.begin(), parsed_data.end(), back_inserter(new_list.list_data));
-			Containers_by_name_map.emplace(new_list.container_name, &new_list);
-		} else {
-			Sexp_containers.pop_back();
+			Sexp_containers.emplace_back(std::move(new_list));
 		}
 	}
 }
@@ -282,8 +286,7 @@ void stuff_sexp_map_containers()
 	SCP_vector<SCP_string>	parsed_data;
 
 	while (required_string_either("$End Maps", "$Name:")) {
-		Sexp_containers.emplace_back();
-		auto& new_map = Sexp_containers.back();
+		sexp_container new_map;
 
 		new_map.type = ContainerType::MAP;
 		if (stuff_one_generic_sexp_container(new_map.container_name, new_map.type, new_map.opf_type, parsed_data)) {
@@ -294,26 +297,29 @@ void stuff_sexp_map_containers()
 				log_printf(LOGFILE_EVENT_LOG,
 					"Data in the SEXP Map container is corrupt. Must be an even number of entries. Instead have %d",
 					(int)parsed_data.size());
-				Sexp_containers.pop_back();
 			} else {
 				for (int i = 0; i < (int)parsed_data.size(); i += 2) {
 					new_map.map_data.emplace(parsed_data[i], parsed_data[i + 1]);
 				}
-				Containers_by_name_map.emplace(new_map.container_name, &new_map);
+				Sexp_containers.emplace_back(std::move(new_map));
 			}
-		} else {
-			Sexp_containers.pop_back();
 		}
 	}
 }
 
-sexp_container *get_sexp_container(const char* name) {
-	auto container_it = Containers_by_name_map.find(name);
-	if (container_it != Containers_by_name_map.end()) {
-		return container_it->second;
-	} else {
-		return nullptr;
+sexp_container *get_sexp_container(const char *name) {
+	Assertion(name != nullptr, "Attempt to look up container from null name. Please report!");
+	// unlike get_sexp_container_special(), empty name is ok
+	// even if the result will always be nullptr
+	// it can happen if CTEXT() returns empty str
+
+	for (auto &container : Sexp_containers) {
+		if (!stricmp(name, container.container_name.c_str())) {
+			return &container;
+		}
 	}
+
+	return nullptr;
 }
 
 /**

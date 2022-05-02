@@ -273,7 +273,7 @@ void stuff_link_with_formula(int *link_idx, int formula, int mission_num)
 				} else
 					Int3();			// bogus operator in campaign file
 
-				free_sexp(CDR(node2));
+				free_sexp(Sexp_nodes[node2].rest, node2);
 				free_one_sexp(node);
 				node = CDR(node);
 			}
