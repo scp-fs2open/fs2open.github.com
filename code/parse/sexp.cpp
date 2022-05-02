@@ -1387,7 +1387,8 @@ int free_sexp(int num, int calling_node)
 	Assert(Sexp_nodes[num].type != SEXP_NOT_USED);  // make sure it is actually used
 	Assert(!(Sexp_nodes[num].type & SEXP_FLAG_PERSISTENT));
 
-	if ((num == Locked_sexp_true) || (num == Locked_sexp_false))
+	// never free these nodes
+	if ((num == -1) || (num == Locked_sexp_true) || (num == Locked_sexp_false))
 		return 0;
 
 	Sexp_nodes[num].type = SEXP_NOT_USED;
@@ -1401,8 +1402,9 @@ int free_sexp(int num, int calling_node)
 	i = Sexp_nodes[num].first;
 	while (i != -1) 
 	{
+		rest = Sexp_nodes[i].rest;
 		count += free_sexp(i, num);
-		i = Sexp_nodes[i].rest;
+		i = rest;
 	}
 
 	rest = Sexp_nodes[num].rest;
@@ -1424,21 +1426,27 @@ int free_sexp(int num, int calling_node)
  * Because the root node is an operator, instead of a list, we can't simply call free_sexp().  
  * This function should only be called on the root node of an sexp, otherwise the linking will get screwed up.
  */
-int free_sexp2(int num)
+int free_sexp2(int num, int calling_node)
 {	
-	int i, count = 0;
+	int i, rest, count = 0;
 
+	Assert((num >= 0) && (num < Num_sexp_nodes));
+	Assert(Sexp_nodes[num].type != SEXP_NOT_USED);  // make sure it is actually used
+	Assert(!(Sexp_nodes[num].type & SEXP_FLAG_PERSISTENT));
+
+	// never free these nodes
 	if ((num == -1) || (num == Locked_sexp_true) || (num == Locked_sexp_false)){
 		return 0;
 	}
 
 	i = Sexp_nodes[num].rest;
 	while (i != -1) {
-		count += free_sexp(i);
-		i = Sexp_nodes[i].rest;
+		rest = Sexp_nodes[i].rest;
+		count += free_sexp(i, num);
+		i = rest;
 	}
 
-	count += free_sexp(num);
+	count += free_sexp(num, calling_node);
 	return count;
 }
 
@@ -1784,6 +1792,132 @@ int count_items_with_name(const char *name, const T* item_array, int num_items)
 	return count;
 }
 
+// helper functions for check_container_value_data_type()
+bool check_container_data_sexp_arg_type(ContainerType con_type, bool is_string, bool is_number)
+{
+	if (any(con_type & ContainerType::STRING_DATA)) {
+		return is_string;
+	} else if (any(con_type & ContainerType::NUMBER_DATA)) {
+		return is_number;
+	} else {
+		UNREACHABLE("Unknown container data type %d", (int)con_type);
+		return false;
+	}
+}
+
+bool check_map_container_key_sexp_arg_type(ContainerType con_type, bool is_string, bool is_number)
+{
+	if (any(con_type & ContainerType::STRING_KEYS)) {
+		return is_string;
+	} else if (any(con_type & ContainerType::NUMBER_KEYS)) {
+		return is_number;
+	} else {
+		UNREACHABLE("Unknown map container key type %d", (int)con_type);
+		return false;
+	}
+}
+
+// Checks "container value" SEXP arg type
+// follows return value conventions of check_sexp_syntax()
+int check_container_value_data_type(int op, int argnum, ContainerType con_type, bool is_string, bool is_number)
+{
+	switch (op) {
+		case OP_LIST_HAS_DATA:
+		case OP_LIST_DATA_INDEX:
+		case OP_MAP_HAS_DATA_ITEM:
+		case OP_CONTAINER_ADD_TO_LIST:
+		case OP_CONTAINER_REMOVE_FROM_LIST:
+			if (!check_container_data_sexp_arg_type(con_type, is_string, is_number)) {
+				return SEXP_CHECK_WRONG_CONTAINER_DATA_TYPE;
+			}
+			break;
+
+		case OP_MAP_HAS_KEY:
+		case OP_CONTAINER_REMOVE_FROM_MAP:
+			Assertion(any(con_type & ContainerType::MAP),
+				"Attempt to check map SEXP with non-map container type %d. Please report!",
+				(int)con_type);
+			if (!check_map_container_key_sexp_arg_type(con_type, is_string, is_number)) {
+				return SEXP_CHECK_WRONG_MAP_KEY_TYPE;
+			}
+			break;
+
+		case OP_CONTAINER_ADD_TO_MAP:
+			Assertion(any(con_type & ContainerType::MAP),
+				"Attempt to check map SEXP with non-map container type %d. Please report!",
+				(int)con_type);
+			// since the first arg is a map container name, the first key is at argnum 1
+			if (argnum % 2 != 0) {
+				// map key
+				if (!check_map_container_key_sexp_arg_type(con_type, is_string, is_number)) {
+					return SEXP_CHECK_WRONG_MAP_KEY_TYPE;
+				}
+			} else {
+				// map data
+				if (!check_container_data_sexp_arg_type(con_type, is_string, is_number)) {
+					return SEXP_CHECK_WRONG_CONTAINER_DATA_TYPE;
+				}
+			}
+			break;
+
+		default:
+			UNREACHABLE("Unhandled container value-based operator %d", op);
+			break;
+	}
+
+	return 0;
+}
+
+// SEXP type checking for variables and container data
+bool check_data_type(int type, bool is_string, bool is_number)
+{
+	switch (type) {
+		case OPF_NUMBER:
+		case OPF_POSITIVE:
+			return is_number;
+
+		case OPF_AMBIGUOUS:
+		case OPF_GAME_SND:
+		case OPF_FIREBALL:
+		case OPF_WEAPON_BANK_NUMBER:
+			// either type is ok
+			return true;
+
+		default:
+			return is_string;
+	}
+}
+
+bool check_container_data_type(int type, ContainerType con_type, int op, int argnum, const sexp_container *p_value_container)
+{
+	const bool is_string = any(con_type & ContainerType::STRING_DATA);
+	const bool is_number = any(con_type & ContainerType::NUMBER_DATA);
+	if (type == OPF_CONTAINER_VALUE) {
+		Assertion(p_value_container,
+			"Attempt to check data type of null container for SEXP operator %d at arg %d. Please report!",
+			op,
+			argnum);
+		return (check_container_value_data_type(op, argnum, p_value_container->type, is_string, is_number) == 0);
+	} else {
+		return check_data_type(type, is_string, is_number);
+	}
+}
+
+bool check_variable_data_type(int type, int var_type, int op, int argnum, const sexp_container *p_value_container) {
+	const bool is_string = (var_type & SEXP_VARIABLE_STRING);
+	const bool is_number = (var_type & SEXP_VARIABLE_NUMBER);
+	if (type == OPF_CONTAINER_VALUE) {
+		Assertion(p_value_container,
+			"Attempt to check data type of null container for SEXP operator %d for variable at arg %d. Please "
+			"report!",
+			op,
+			argnum);
+		return (check_container_value_data_type(op, argnum, p_value_container->type, is_string, is_number) == 0);
+	} else {
+		return check_data_type(type, is_string, is_number);
+	}
+}
+
 /**
  * Check SEXP syntax
  * @return 0 if ok, negative if there's an error in expression..
@@ -1795,6 +1929,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 	int op_node;
 	int var_index = -1;
 	size_t st;
+	const sexp_container *p_container = nullptr; // for SEXPs that take container name as arg
 
 	Assert(node >= 0 && node < Num_sexp_nodes);
 	Assert(Sexp_nodes[node].type != SEXP_NOT_USED);
@@ -1960,37 +2095,67 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 			type2 = SEXP_ATOM_STRING;
 
 		} else if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER) {
-			// this is an instance of "Replace Container"
+			// this is an instance of "Replace Container Data"
 			const int modifier_node = Sexp_nodes[node].first;
 			if (modifier_node == -1) {
 				return SEXP_CHECK_MISSING_CONTAINER_MODIFIER;
 			}
 
-			const auto *p_container = get_sexp_container(Sexp_nodes[node].text);
-			Assert(p_container); // name was already checked in get_sexp()
-			const auto &container = *p_container;
+			const auto *p_data_container = get_sexp_container(Sexp_nodes[node].text);
+			// name should have already been checked in get_sexp()
+			Assertion(p_data_container,
+				"Attempt to check type of container data for SEXP operator %d at arg %d for non-existent container %s. "
+				"Please report!",
+				op,
+				argnum,
+				Sexp_nodes[node].text);
+			const auto &data_container = *p_data_container;
+
+			if (!check_container_data_type(type,
+					data_container.type,
+					get_operator_const(op_node),
+					argnum,
+					p_container)) {
+				return SEXP_CHECK_WRONG_CONTAINER_DATA_TYPE;
+			}
 
 			// ignore nested "Replace" uses
 			if (!(Sexp_nodes[modifier_node].type & SEXP_FLAG_VARIABLE) &&
 					(Sexp_nodes[modifier_node].subtype != SEXP_ATOM_CONTAINER)) {
-				if (container.is_list()) {
+				if (data_container.is_list()) {
+					const auto modifier = get_list_modifier(Sexp_nodes[modifier_node].text);
 					if ((Sexp_nodes[modifier_node].subtype != SEXP_ATOM_STRING) ||
-							(get_list_modifier(Sexp_nodes[modifier_node].text) == ListModifier::INVALID)) {
+							(modifier == ListModifier::INVALID)) {
 						if (bad_node)
 							*bad_node = modifier_node;
 						return SEXP_CHECK_INVALID_LIST_MODIFIER;
 					}
-				} else if (container.is_map()) {
-					if ((any(container.type & ContainerType::NUMBER_KEYS) &&
+					if (modifier == ListModifier::AT_INDEX) {
+						const int list_index_node = CDR(modifier_node);
+						if (list_index_node == -1) {
+							if (bad_node)
+								*bad_node = modifier_node;
+							return SEXP_CHECK_INVALID_LIST_MODIFIER;
+						}
+						// we can't check that index < length because we don't know what the length will be then
+						if (Sexp_nodes[list_index_node].subtype != SEXP_ATOM_NUMBER ||
+								atoi(Sexp_nodes[list_index_node].text) < 0) {
+							if (bad_node)
+								*bad_node = list_index_node;
+							return SEXP_CHECK_INVALID_LIST_MODIFIER;
+						}
+					}
+				} else if (data_container.is_map()) {
+					if ((any(data_container.type & ContainerType::NUMBER_KEYS) &&
 							Sexp_nodes[modifier_node].subtype != SEXP_ATOM_NUMBER) ||
-						(any(container.type & ContainerType::STRING_KEYS) &&
+						(any(data_container.type & ContainerType::STRING_KEYS) &&
 							Sexp_nodes[modifier_node].subtype != SEXP_ATOM_STRING)) {
 						if (bad_node)
 							*bad_node = modifier_node;
 						return SEXP_CHECK_WRONG_MAP_KEY_TYPE;
 					}
 				} else {
-					UNREACHABLE("Unknown container type %d", (int)container.type);
+					UNREACHABLE("Unknown container type %d", (int)data_container.type);
 				}
 			}
 
@@ -2010,23 +2175,13 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 			var_index = sexp_get_variable_index(node);
 			Assert(var_index != -1);
 	
-			switch (type) {
-				case OPF_NUMBER:
-				case OPF_POSITIVE:
-					if (!(Sexp_variables[var_index].type & SEXP_VARIABLE_NUMBER)) 
-						return SEXP_CHECK_INVALID_VARIABLE_TYPE; 
-				break;
-
-				case OPF_AMBIGUOUS:
-				case OPF_GAME_SND:
-				case OPF_FIREBALL:
-				case OPF_WEAPON_BANK_NUMBER:
-					break;
-
-				default: 
-					if (!(Sexp_variables[var_index].type & SEXP_VARIABLE_STRING)) 
-						return SEXP_CHECK_INVALID_VARIABLE_TYPE; 
-			}			
+			if (!check_variable_data_type(type,
+					Sexp_variables[var_index].type,
+					get_operator_const(op_node),
+					argnum,
+					p_container)) {
+				return SEXP_CHECK_INVALID_VARIABLE_TYPE;
+			}
 			node = Sexp_nodes[node].rest;
 			argnum++;
 			continue; 
@@ -3508,7 +3663,10 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 			case OPF_LIST_CONTAINER_NAME:
 			case OPF_MAP_CONTAINER_NAME:
 			{
-				const auto *p_container = get_sexp_container(Sexp_nodes[node].text);
+				if (type2 != SEXP_ATOM_STRING) {
+					return SEXP_CHECK_TYPE_MISMATCH;
+				}
+				p_container = get_sexp_container(Sexp_nodes[node].text);
 				if (!p_container) {
 					return SEXP_CHECK_TYPE_MISMATCH;
 				} else if ((type == OPF_LIST_CONTAINER_NAME && !p_container->is_list()) ||
@@ -3517,6 +3675,21 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				}
 				break;
 			}
+
+			case OPF_CONTAINER_VALUE:
+				Assertion(p_container,
+					"Attempt to check value arg for null container for SEXP operator %d at arg %d. Please report!",
+					op,
+					argnum);
+				z = check_container_value_data_type(get_operator_const(op_node),
+					argnum,
+					p_container->type,
+					(type2 == SEXP_ATOM_STRING),
+					(type2 == OPR_NUMBER) || (type2 == OPR_POSITIVE));
+				if (z) {
+					return z;
+				}
+				break;
 
 			default:
 				Error(LOCATION, "Unhandled argument format");
@@ -3881,7 +4054,7 @@ int get_sexp()
 		if (n >= 0)
 		{
 			// free the entire rest of the argument list
-			free_sexp2(n);	
+			free_sexp2(n, CDR(start));
 		}
 	}
 
@@ -4740,8 +4913,10 @@ int sexp_atoi(int node)
 
 	int num = atoi(CTEXT(node));
 
-	// cache the value, unless this node is a variable or argument because the value may change
-	if (!(Sexp_nodes[node].type & SEXP_FLAG_VARIABLE) && !(Sexp_nodes[node].flags & SNF_SPECIAL_ARG_IN_NODE))
+	// cache the value, unless this node is a variable, argument, or container data, because the value may change
+	if (!(Sexp_nodes[node].type & SEXP_FLAG_VARIABLE) &&
+		!(Sexp_nodes[node].flags & SNF_SPECIAL_ARG_IN_NODE) &&
+		(Sexp_nodes[node].subtype != SEXP_ATOM_CONTAINER))
 		Sexp_nodes[node].cache = new sexp_cached_data(OPF_NUMBER, num, -1);
 
 	return num;
@@ -24308,7 +24483,8 @@ int eval_sexp(int cur_node, int referenced_node)
 		}
 	}
 
-	if (Sexp_nodes[cur_node].first != -1) {
+	// ignore for container data, because their "first" is a container modifier
+	if ((Sexp_nodes[cur_node].first != -1) && (Sexp_nodes[cur_node].subtype != SEXP_ATOM_CONTAINER)) {
 		node = CAR(cur_node);
 		sexp_val = eval_sexp(node);
 		Sexp_nodes[cur_node].value = Sexp_nodes[node].value;	// higher level node gets node value
@@ -30440,6 +30616,7 @@ int sexp_query_type_match(int opf, int opr)
 
 		// Goober5000
 		case OPF_ANYTHING:
+		case OPF_CONTAINER_VALUE: // jg18
 			// don't match any operators, only data
 			return 0;
 
@@ -30703,6 +30880,9 @@ const char *sexp_error_message(int num)
 			
 		case SEXP_CHECK_INVALID_ANIMATION:
 			return "Invalid animation specifier";
+
+		case SEXP_CHECK_WRONG_CONTAINER_DATA_TYPE:
+			return "Wrong container data type";
 
 		default:
 			Warning(LOCATION, "Unhandled sexp error code %d!", num);

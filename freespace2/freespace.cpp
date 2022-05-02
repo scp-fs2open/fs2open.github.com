@@ -852,8 +852,9 @@ void game_level_close()
 	//to accidentally use an override here without realizing it.
 	if(!OnMissionEndHook->isOverride())
 	{
-		// save player-persistent variables
+		// save player-persistent variables and containers
 		mission_campaign_save_on_close_variables();	// Goober5000
+		mission_campaign_save_on_close_containers(); // jg18
 
 		// De-Initialize the game subsystems
 		obj_delete_all();

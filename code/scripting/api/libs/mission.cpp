@@ -23,6 +23,7 @@
 #include "mission/missiontraining.h"
 #include "missionui/redalert.h"
 #include "nebula/neb.h"
+#include "object/objcollide.h"
 #include "parse/parselo.h"
 #include "parse/sexp.h"
 #include "parse/sexp/DynamicSEXP.h"
@@ -60,6 +61,8 @@
 #include "starfield/starfield.h"
 #include "weapon/beam.h"
 #include "weapon/weapon.h"
+
+#include <utility>
 
 extern bool Ships_inited;
 
@@ -1454,6 +1457,67 @@ ADE_FUNC(isRedAlertMission,
 	"true if red alert mission, false otherwise.")
 {
 	return ade_set_args(L, "b", red_alert_mission() != 0);
+}
+
+int testLineOfSight_internal(lua_State* L, bool returnDist) {
+	vec3d from, to;
+	luacpp::LuaTable excludedObjects;
+	bool testForShields = false, testForHull = true;
+	float threshold = 10.0f;
+
+	float distStore = 0.0f;
+	float* dist = returnDist ? &distStore : nullptr;
+
+	if (!ade_get_args(L, "oo|tbbf", l_Vector.Get(&from), l_Vector.Get(&to), &excludedObjects, &testForShields, &testForHull, &threshold)) {
+		return ADE_RETURN_FALSE;
+	}
+	if (!(testForHull || testForShields)) {
+		LuaError(L, "Cannot test line of sight if neither hull nor shields are set to be tested for.");
+		//Though it's technically a "line of sight", so return true
+		return ADE_RETURN_TRUE;
+	}
+
+	std::unordered_set<const object*> excludedObjectIDs;
+
+	if (excludedObjects.isValid()) {
+		for (const auto& object : excludedObjects) {
+			if (object.second.is(luacpp::ValueType::USERDATA)) {
+				// This'll lua-error internally if it's not fed only objects. Additionally, catch the lua exception and then carry on
+				try {
+					object_h obj;
+					object.second.getValue(l_Object.Get(&obj));
+					excludedObjectIDs.emplace(obj.objp);
+				}
+				catch (const luacpp::LuaException& /*e*/) {
+					// We were likely fed a userdata that was not an object. 
+					// Since we can't actually tell whether that's the case before we try to get the value, and the attempt to get the value is printing a LuaError itself, just eat the exception here and return
+					return ADE_RETURN_FALSE;
+				}
+			}
+			else {
+				//This happens on a non-userdata value, i.e. a number
+				LuaError(L, "Table with objects to be excluded contained non-userdata values! Aborting...");
+				return ADE_RETURN_FALSE;
+			}
+		}
+	}
+
+	bool hasLoS = test_line_of_sight(&from, &to, std::move(excludedObjectIDs), threshold, testForShields, testForHull, dist);
+
+	if(returnDist)
+		return ade_set_args(L, "bf", hasLoS, *dist);
+	else
+		return ade_set_args(L, "b", hasLoS);
+}
+
+ADE_FUNC(hasLineOfSight, l_Mission, "vector from, vector to, [table excludedObjects /* expects list of objects, empty by default */, boolean testForShields = false, boolean testForHull = true, number threshold = 10.0]", "Checks whether the to-position is in line of sight from the from-position, disregarding specific excluded objects and objects with a radius of less then threshold.", "boolean", "true if there is line of sight, false otherwise.")
+{
+	return testLineOfSight_internal(L, false);
+}
+
+ADE_FUNC(getLineOfSightFirstIntersect, l_Mission, "vector from, vector to, [table excludedObjects /* expects list of objects, empty by default */, boolean testForShields = false, boolean testForHull = true, number threshold = 10.0]", "Checks whether the to-position is in line of sight from the from-position and returns the distance to the first interruption of the line of sight, disregarding specific excluded objects and objects with a radius of less then threshold.", "boolean, number", "true and zero if there is line of sight, false and the distance otherwise.")
+{
+	return testLineOfSight_internal(L, true);
 }
 
 ADE_LIB_DERIV(l_Mission_LuaSEXPs, "LuaSEXPs", NULL, "Lua SEXPs", l_Mission);

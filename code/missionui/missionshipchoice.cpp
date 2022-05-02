@@ -1147,7 +1147,7 @@ void ship_select_blit_ship_info()
 		int x;
 		for(x = 0; x < sip->n_subsystems; x++)
 		{
-			if(sip->subsystems[x].type == SUBSYSTEM_TURRET)
+			if ( (sip->subsystems[x].type == SUBSYSTEM_TURRET) && !(sip->subsystems[x].flags[Model::Subsystem_Flags::Hide_turret_from_loadout_stats]) )
 				num_turrets++;
 			/*
 			for(y = 0; y < MAX_SHIP_PRIMARY_BANKS || y < MAX_SHIP_SECONDARY_BANKS; y++)

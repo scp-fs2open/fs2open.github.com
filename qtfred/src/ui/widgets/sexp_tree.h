@@ -10,6 +10,7 @@
 #pragma once
 
 #include "parse/sexp.h"
+#include "parse/sexp_container.h"
 #include "parse/parselo.h"
 
 #include "mission/Editor.h"
@@ -31,13 +32,16 @@ namespace fred {
 #define SEXPT_UNKNOWN    0x0002
 
 #define SEXPT_VALID        0x1000
-#define SEXPT_TYPE_MASK    0x00ff
+#define SEXPT_TYPE_MASK    0x07ff
 #define SEXPT_TYPE(X)    (SEXPT_TYPE_MASK & X)
 
 #define SEXPT_OPERATOR    0x0010
 #define SEXPT_NUMBER    0x0020
 #define SEXPT_STRING    0x0040
 #define SEXPT_VARIABLE    0x0080
+#define SEXPT_CONTAINER_NAME	0x0100
+#define SEXPT_CONTAINER_DATA	0x0200
+#define SEXPT_MODIFIER	0x0400
 
 // tree_node flag
 #define NOT_EDITABLE    0x00
@@ -89,6 +93,8 @@ enum class NodeImage {
 	DATA_90,
 	DATA_95,
 	COMMENT,
+	CONTAINER_NAME,
+	CONTAINER_DATA
 };
 
 /**
@@ -198,6 +204,13 @@ class sexp_tree: public QTreeWidget {
 	void replace_operator(const char* op);
 	void replace_data(const char* new_data, int type);
 	void replace_variable_data(int var_idx, int type);
+	void replace_container_name(const sexp_container &container);
+	void replace_container_data(const sexp_container &container,
+		int type,
+		bool test_child_nodes,
+		bool delete_child_nodes,
+		bool set_default_modifier);
+	void add_default_modifier(const sexp_container &container);
 	void ensure_visible(int node);
 	int node_error(int node, const char* msg, int* bypass);
 	void expand_branch(QTreeWidgetItem* h);
@@ -219,6 +232,8 @@ class sexp_tree: public QTreeWidget {
 	int add_operator(const char* op, QTreeWidgetItem* h = nullptr);
 	int add_data(const char* new_data, int type);
 	int add_variable_data(const char* new_data, int type);
+	int add_container_name(const char* container_name);
+	void add_container_data(const char* container_name);
 	void add_sub_tree(int node, QTreeWidgetItem* root);
 	int load_sub_tree(int index, bool valid, const char* text);
 	void hilite_item(int node);
@@ -231,10 +246,14 @@ class sexp_tree: public QTreeWidget {
 	int get_variable_count(const char* var_name);
 	int get_loadout_variable_count(int var_index);
 
+	// Karajorma/jg18
+	bool is_container_argument(int node) const;
+	static bool is_container_opf_type(int op_type);
+
 	// Goober5000
-	int find_argument_number(int parent_node, int child_node);
-	int find_ancestral_argument_number(int parent_op, int child_node);
-	int query_node_argument_type(int node);
+	int find_argument_number(int parent_node, int child_node) const;
+	int find_ancestral_argument_number(int parent_op, int child_node) const;
+	int query_node_argument_type(int node) const;
 
 	//WMC
 	int get_sibling_place(int node);
@@ -328,7 +347,15 @@ class sexp_tree: public QTreeWidget {
 	sexp_list_item *get_listing_opf_language();
 	sexp_list_item *get_listing_opf_functional_when_eval_type();
 	sexp_list_item *get_listing_opf_animation_name(int parent_node);
+	static sexp_list_item *get_listing_opf_sexp_containers(ContainerType con_type);
 
+	// container modifier options for container data nodes
+	sexp_list_item *get_container_modifiers(int con_data_node) const;
+	static sexp_list_item *get_list_container_modifiers();
+	sexp_list_item *get_map_container_modifiers(int con_data_node) const;
+	sexp_list_item *get_container_multidim_modifiers(int con_data_node) const;
+
+	bool is_node_eligible_for_special_argument(int parent_node) const;
 
 	int getCurrentItemIndex() const;
 	void setCurrentItemIndex(int index);
@@ -409,6 +436,8 @@ class sexp_tree: public QTreeWidget {
 	void replaceStringDataHandler();
 	void addReplaceTypedDataHandler(int data_idx, bool replace);
 	void handleReplaceVariableAction(int idx);
+	void handleReplaceContainerNameAction(int idx);
+	void handleReplaceContainerDataAction(int idx);
 
 	void insertOperatorAction(int op);
 };
