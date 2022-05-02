@@ -642,6 +642,7 @@ float vm_vec_delta_ang_norm(const vec3d *v0, const vec3d *v1, const vec3d *uvec)
 static matrix *sincos_2_matrix(matrix *m, float sinp, float cosp, float sinb, float cosb, float sinh, float cosh)
 {
 	// This is the transpose of the Y1*X2*Z3 convention on wikipedia:
+	// https://en.wikipedia.org/wiki/Euler_angles#Rotation_matrix
 	// 
 	// [(rotate h on Y) * (rotate p on X) * (rotate b on Z)]^T
 	// 
