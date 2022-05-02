@@ -79,6 +79,14 @@ inline constexpr bool none(ContainerType ct)
 	return ct == ContainerType::NONE;
 }
 
+// custom hash function to standardize map container behavior
+// to match FREDders' expectations of platform independence
+struct map_container_hash
+{
+	// sizeof(uint32_t) will always be <= sizeof(size_t)
+	uint32_t operator()(const SCP_string &str) const;
+};
+
 struct sexp_container
 {
 	// meta-character for containers in text replacement, etc.
@@ -91,10 +99,10 @@ struct sexp_container
 
 	SCP_string container_name;
 	ContainerType type = ContainerType::LIST | ContainerType::STRING_DATA;
-	int opf_type = OPF_ANYTHING;
+	int opf_type = OPF_STRING;
 
 	SCP_list<SCP_string> list_data;
-	SCP_unordered_map<SCP_string, SCP_string> map_data;
+	SCP_unordered_map<SCP_string, SCP_string, map_container_hash> map_data;
 
 	bool operator==(const sexp_container &sc) const;
 
