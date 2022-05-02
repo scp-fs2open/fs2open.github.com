@@ -25321,7 +25321,7 @@ int eval_sexp(int cur_node, int referenced_node)
 			case OP_ADD_SUN_BITMAP_NEW:
 			case OP_ADD_BACKGROUND_BITMAP:
 			case OP_ADD_BACKGROUND_BITMAP_NEW:
-				sexp_add_background_bitmap(node, op_num == OP_ADD_SUN_BITMAP, op_num == OP_ADD_SUN_BITMAP_NEW || op_num == OP_ADD_BACKGROUND_BITMAP_NEW);
+				sexp_add_background_bitmap(node, op_num == OP_ADD_SUN_BITMAP || op_num == OP_ADD_SUN_BITMAP_NEW, op_num == OP_ADD_SUN_BITMAP_NEW || op_num == OP_ADD_BACKGROUND_BITMAP_NEW);
 				sexp_val = SEXP_TRUE;
 				break;
 
