@@ -795,23 +795,22 @@ void sexp_add_to_list(int node)
 	auto *p_container = get_sexp_container(container_name);
 
 	if (!p_container) {
-		Warning(LOCATION, "Container %s does not exist.", container_name);
+		Warning(LOCATION, "Add-to-list called on nonexistent container %s.", container_name);
 		return;
 	}
 
 	auto &container = *p_container;
 
 	node = CDR(node);
-	Assert(node != -1);
+	Assertion(node != -1, "Add-to-list wasn't given data to add. Please report!");
 
 	const bool add_to_back = is_sexp_true(node);
 
 	node = CDR(node);
-	Assert(node != -1);
+	Assertion(node != -1, "Add-to-list wasn't given data to add. Please report!");
 
 	if (!container.is_list()) {
-		Warning(LOCATION, "Container %s is not a list container. Cannot use the add-to-list SEXP with it", container_name);
-		log_string(LOGFILE_EVENT_LOG, "This container is not a list container. Cannot use the add-to-list SEXP with it");
+		Warning(LOCATION, "Add-to-list called on non-list container %s.", container_name);
 		return;
 	}
 
@@ -832,21 +831,20 @@ void sexp_remove_from_list(int node)
 	auto *p_container = get_sexp_container(container_name);
 
 	if (!p_container) {
-		Warning(LOCATION, "Container %s does not exist.", container_name);
+		Warning(LOCATION, "Remove-from-list called on nonexistent container %s.", container_name);
 		return;
 	}
 
 	auto &container = *p_container;
 
 	if (!container.is_list()) {
-		Warning(LOCATION, "Container %s is not a list container. Can not use the remove-from-list SEXP with it", container_name);
-		log_string(LOGFILE_EVENT_LOG, "This container is not a list container. Can not use the remove-from-list SEXP with it");
+		Warning(LOCATION, "Remove-from-list called on non-list container %s.", container_name);
 		return;
 	}
 
 	node = CDR(node);
 	// there should be at least one string to remove
-	Assert(node != -1);
+	Assertion(node != -1, "Remove-from-list wasn't given data to remove. Please report!");
 
 	auto &list_data = container.list_data;
 
@@ -857,8 +855,10 @@ void sexp_remove_from_list(int node)
 		if (list_it != list_data.end()) {
 			list_data.erase(list_it);
 		} else {
-			Warning(LOCATION, "Container %s does not contain an entry called %s. Can not use the remove-from-list SEXP to remove it", container_name, data_to_remove.c_str());
-			log_string(LOGFILE_EVENT_LOG, "Attempt to use remove-from-list SEXP with an entry which is not in the list");
+			Warning(LOCATION,
+				"Remove-from-list couldn't find data %s inside container %s.",
+				data_to_remove.c_str(),
+				container_name);
 		}
 
 		node = CDR(node);
@@ -871,22 +871,21 @@ void sexp_add_to_map(int node)
 	auto *p_container = get_sexp_container(container_name);
 
 	if (!p_container) {
-		Warning(LOCATION, "Container %s does not exist.", container_name);
+		Warning(LOCATION, "Add-to-map called on nonexistent container %s.", container_name);
 		return;
 	}
 
 	auto &container = *p_container;
 
 	if (!container.is_map()) {
-		Warning(LOCATION, "Container %s is not a map container. Cannot use the add-to-map SEXP with it", container_name);
-		log_string(LOGFILE_EVENT_LOG, "This container is not a map container. Cannot use the add-to-map SEXP with it");
+		Warning(LOCATION, "Add-to-map called on non-map container %s.", container_name);
 		return;
 	}
 
 	auto &map_data = container.map_data;
 
 	node = CDR(node);
-	Assert(node != -1);
+	Assertion(node != -1, "Add-to-map wasn't given values to add. Please report!");
 
 	while (node != -1) {
 		// key but no value
@@ -894,11 +893,10 @@ void sexp_add_to_map(int node)
 			char tempbuffer[256];
 			snprintf(tempbuffer,
 				sizeof(tempbuffer),
-				"add-to-map SEXP with map container %s was provided a key %s with no associated data",
+				"Add-to-map with container %s was provided a key %s with no associated data",
 				container_name,
 				CTEXT(node));
 			Warning(LOCATION, "%s", tempbuffer);
-			log_string(LOGFILE_EVENT_LOG, tempbuffer);
 			return;
 		}
 
@@ -922,30 +920,28 @@ void sexp_remove_from_map(int node)
 	auto *p_container = get_sexp_container(container_name);
 
 	if (!p_container) {
-		Warning(LOCATION, "Container %s does not exist.", container_name);
+		Warning(LOCATION, "Remove-from-map called on nonexistent container %s.", container_name);
 		return;
 	}
 
 	auto &container = *p_container;
 
 	if (!container.is_map()) {
-		Warning(LOCATION, "Container %s is not a map container. Can not use the remove-from-map SEXP with it", container_name);
-		log_string(LOGFILE_EVENT_LOG, "This container is not a map container. Can not use the remove-from-map SEXP with it");
+		Warning(LOCATION, "Remove-from-map called on non-map container %s.", container_name);
 		return;
 	}
 
 	node = CDR(node);
-	Assert(node != -1);
+	Assertion(node != -1, "Remove-from-map wasn't given keys to remove. Please report!");
 
-	SCP_string entry_to_remove;
+	SCP_string key_to_remove;
 	while (node != -1) {
-		entry_to_remove = CTEXT(node);
-		if (container.map_data.erase(entry_to_remove) == 0) {
+		key_to_remove = CTEXT(node);
+		if (container.map_data.erase(key_to_remove) == 0) {
 			Warning(LOCATION,
-				"Container %s does not contain a key called %s. Can not use the remove-from-map SEXP to remove it",
-				container_name,
-				entry_to_remove.c_str());
-			log_string(LOGFILE_EVENT_LOG, "Attempt to use remove-from-list SEXP with a key which is not in the map");
+				"Remove-from-map couldn't find key %s inside map container %s.",
+				key_to_remove.c_str(),
+				container_name);
 		}
 
 		node = CDR(node);
@@ -960,19 +956,19 @@ void sexp_get_map_keys(int node)
 	const auto *p_map_container = get_sexp_container(map_container_name);
 
 	if (!p_map_container) {
-		Warning(LOCATION, "Container %s does not exist.", map_container_name);
+		Warning(LOCATION, "Get-map-keys called on nonexistent map container %s.", map_container_name);
 		return;
 	}
 
 	node = CDR(node);
-	Assert(node != -1);
+	Assertion(node != -1, "Get-map-keys wasn't given a list container. Please report!");
 
 	const char *list_container_name = CTEXT(node);
 
 	auto *p_list_container = get_sexp_container(list_container_name);
 
 	if (!p_list_container) {
-		Warning(LOCATION, "Container %s does not exist.", list_container_name);
+		Warning(LOCATION, "Get-map-keys called on nonexistent list container %s.", list_container_name);
 		return;
 	}
 
@@ -980,8 +976,22 @@ void sexp_get_map_keys(int node)
 	auto &list_container = *p_list_container;
 
 	// both containers must be of the correct type. 
-	if (!map_container.is_map() || !list_container.is_list()) {
-		Warning(LOCATION, "Containers must be of the correct types to be used in get-map-keys SEXP.");
+	if (!map_container.is_map()) {
+		Warning(LOCATION, "Get-map-keys called on non-map container %s.", map_container_name);
+		return;
+	}
+	if (!list_container.is_list()) {
+		Warning(LOCATION, "Get-map-keys called on non-list container %s.", list_container_name);
+		return;
+	}
+	if ((any(map_container.type & ContainerType::STRING_KEYS) &&
+			none(list_container.type & ContainerType::STRING_DATA)) ||
+		(any(map_container.type & ContainerType::NUMBER_KEYS) &&
+			none(list_container.type & ContainerType::NUMBER_DATA))) {
+		Warning(LOCATION,
+			"Get-map-keys called on map container %s whose key type doesn't match data type of list container %s.",
+			map_container_name,
+			list_container_name);
 		return;
 	}
 
@@ -1005,7 +1015,7 @@ void sexp_clear_container(int node)
 	auto *p_container = get_sexp_container(container_name);
 
 	if (!p_container) {
-		Warning(LOCATION, "Container %s does not exist.", container_name);
+		Warning(LOCATION, "Clear-container called on nonexistent container %s.", container_name);
 		return;
 	}
 
