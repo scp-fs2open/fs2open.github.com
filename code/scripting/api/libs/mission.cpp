@@ -1369,12 +1369,12 @@ ADE_FUNC_DEPRECATED(addBackgroundBitmap,
 	"background_element",
 	"A handle to the background element, or invalid handle if the function failed.",
 	gameversion::version(22, 2),
-	"addBackgroundBitmap uses the old incorrectly-calculated angle math; use addBackgroundBitmap2 instead")
+	"addBackgroundBitmap uses the old incorrectly-calculated angle math; use addBackgroundBitmapNew instead")
 {
 	return addBackgroundBitmap_sub(false, L);
 }
 
-ADE_FUNC(addBackgroundBitmap2,
+ADE_FUNC(addBackgroundBitmapNew,
 	l_Mission,
 	"string name, orientation orientation = identity, number scaleX = 1.0, number scale_y = 1.0, number div_x = 1.0, "
 	"number div_y = 1.0",
@@ -1435,12 +1435,12 @@ ADE_FUNC_DEPRECATED(addSunBitmap,
 	"background_element",
 	"A handle to the background element, or invalid handle if the function failed.",
 	gameversion::version(22, 2),
-	"addSunBitmap uses the old incorrectly-calculated angle math; use addSunBitmap2 instead")
+	"addSunBitmap uses the old incorrectly-calculated angle math; use addSunBitmapNew instead")
 {
 	return addSunBitmap_sub(false, L);
 }
 
-ADE_FUNC(addSunBitmap2,
+ADE_FUNC(addSunBitmapNew,
 	l_Mission,
 	"string name, orientation orientation = identity, number scaleX = 1.0, number scale_y = 1.0",
 	"Adds a sun bitmap to the mission with the specified parameters, treating the angles as correctly calculated.",
