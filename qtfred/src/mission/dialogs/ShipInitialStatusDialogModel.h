@@ -71,7 +71,7 @@ class ShipInitialStatusDialogModel : public AbstractDialogModel {
 
   public:
 	ShipInitialStatusDialogModel(QObject* parent, EditorViewport* viewport, bool multi);
-	void initializeData();
+	void initializeData(bool);
 
 	bool apply() override;
 	void reject() override;

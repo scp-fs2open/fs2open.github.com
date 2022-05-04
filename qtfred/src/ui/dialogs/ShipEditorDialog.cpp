@@ -188,7 +188,7 @@ void ShipEditorDialog::on_miscButton_clicked()
 void ShipEditorDialog::on_initialStatusButton_clicked()
 {
 	if (!initialStatusDialog) {
-		initialStatusDialog = new dialogs::ShipInitialStatusDialog(this, _viewport, _model->multi_edit);
+		initialStatusDialog = new dialogs::ShipInitialStatusDialog(this, _viewport);
 	}
 	initialStatusDialog->show();
 }

@@ -26,6 +26,7 @@ class ShipEditorDialog;
 
 class ShipTBLViewer;
 class ShipGoalsDialog;
+class ShipInitialStatusDialog;
 
 class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 

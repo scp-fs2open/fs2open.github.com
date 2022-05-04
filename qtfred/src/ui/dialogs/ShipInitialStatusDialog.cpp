@@ -16,15 +16,18 @@ namespace fso {
 	namespace fred {
 		namespace dialogs {
 
-			ShipInitialStatusDialog::ShipInitialStatusDialog(QWidget* parent, EditorViewport* viewport, bool multi)
-				: QDialog(parent), ui(new Ui::ShipInitialStatusDialog()),
-				_model(new ShipInitialStatusDialogModel(this, viewport, multi)), _viewport(viewport)
+			ShipInitialStatusDialog::ShipInitialStatusDialog(QWidget* parent, EditorViewport* viewport)
+				: QDialog(parent), ui(new Ui::ShipInitialStatusDialog()), _viewport(viewport)
 			{
 				ui->setupUi(this);
+				parentDialog = dynamic_cast<ShipEditorDialog*>(parent);
+				Assert(parentDialog);
+				_model = std::unique_ptr<ShipInitialStatusDialogModel>(new ShipInitialStatusDialogModel(this,
+					viewport,
+					parentDialog->getMulti()));
 
 				connect(this, &QDialog::accepted, _model.get(), &ShipInitialStatusDialogModel::apply);
 				connect(this, &QDialog::rejected, _model.get(), &ShipInitialStatusDialogModel::reject);
-				connect(this, &ShipInitialStatusDialog::show, _model.get(), &ShipInitialStatusDialogModel::initializeData);
 				connect(_model.get(), &AbstractDialogModel::modelChanged, this, &ShipInitialStatusDialog::updateUI);
 
 				// Velocity
@@ -102,6 +105,10 @@ namespace fso {
 				}
 
 				QDialog::closeEvent(event);
+			}
+			void ShipInitialStatusDialog::showEvent(QShowEvent* event) {
+				_model->initializeData(parentDialog->getMulti());
+				QDialog::showEvent(event);
 			}
 			void ShipInitialStatusDialog::updateUI()
 			{

@@ -2,7 +2,7 @@
 #define SHIPINITIALSTATUSDIALOG_H
 
 #include <mission/dialogs/ShipInitialStatusDialogModel.h>
-
+#include "ShipEditorDialog.h"
 #include <QtWidgets/QDialog>
 #include <QtWidgets/QListWidget>
 
@@ -13,21 +13,24 @@ namespace dialogs {
 namespace Ui {
 class ShipInitialStatusDialog;
 }
-
+class ShipEditorDialog;
 class ShipInitialStatusDialog : public QDialog {
 	Q_OBJECT
 
   public:
-	explicit ShipInitialStatusDialog(QWidget* parent, EditorViewport* viewport, bool multi);
+	explicit ShipInitialStatusDialog(QWidget* parent, EditorViewport* viewport);
 	~ShipInitialStatusDialog() override;
 
   protected:
 	void closeEvent(QCloseEvent*) override;
+	void showEvent(QShowEvent*) override;
 
   private:
 	std::unique_ptr<Ui::ShipInitialStatusDialog> ui;
 	std::unique_ptr<ShipInitialStatusDialogModel> _model;
 	EditorViewport* _viewport;
+
+	ShipEditorDialog* parentDialog;
 
 	void updateUI();
 	void updateFlags();

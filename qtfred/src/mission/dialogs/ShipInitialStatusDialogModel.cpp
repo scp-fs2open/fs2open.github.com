@@ -104,12 +104,12 @@ void initial_status_mark_dock_leader_helper(object* objp, dock_function_info* in
 ShipInitialStatusDialogModel::ShipInitialStatusDialogModel(QObject* parent, EditorViewport* viewport, bool multi)
 	: AbstractDialogModel(parent, viewport)
 {
-	m_multi_edit = multi;
-	initializeData();
+	initializeData(multi);
 }
 
-void ShipInitialStatusDialogModel::initializeData()
+void ShipInitialStatusDialogModel::initializeData(bool multi)
 {
+	m_multi_edit = multi;
 	int vflag, sflag, hflag;
 	object* objp = nullptr;
 	m_ship = _editor->cur_ship;
