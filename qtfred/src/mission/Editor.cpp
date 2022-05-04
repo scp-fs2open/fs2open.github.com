@@ -555,6 +555,8 @@ void Editor::clearMission() {
 	ENVMAP = -1;
 
 	missionLoaded("");
+	*Parse_text = *Parse_text_raw = '\0';
+	Parse_text[1] = Parse_text_raw[1] = 0;
 }
 
 void Editor::initialSetup() {
