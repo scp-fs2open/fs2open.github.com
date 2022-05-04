@@ -29,6 +29,7 @@ class ShipGoalsDialog;
 class ShipInitialStatusDialog;
 class ShipFlagsDialog;
 class ShipTextureReplacementDialog;
+class PlayerOrdersDialog;
 class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 
 	Q_OBJECT

@@ -7,14 +7,19 @@
 namespace fso {
 	namespace fred {
 		namespace dialogs {
-			PlayerOrdersDialog::PlayerOrdersDialog(QDialog* parent, EditorViewport* viewport, bool multi)
-				: QDialog(parent), ui(new Ui::PlayerOrdersDialog()), _model(new PlayerOrdersDialogModel(this, viewport, multi)),
+			PlayerOrdersDialog::PlayerOrdersDialog(QDialog* parent, EditorViewport* viewport)
+				: QDialog(parent), ui(new Ui::PlayerOrdersDialog()),
 				_viewport(viewport)
 			{
+				parentDialog = dynamic_cast<ShipEditorDialog*>(parent);
+				Assert(parentDialog);
+				_model = std::unique_ptr<PlayerOrdersDialogModel>(new PlayerOrdersDialogModel(this,
+					viewport,
+					parentDialog->getMulti()));
+
 				ui->setupUi(this);
 				connect(this, &QDialog::accepted, _model.get(), &PlayerOrdersDialogModel::apply);
 				connect(this, &QDialog::rejected, _model.get(), &PlayerOrdersDialogModel::reject);
-				connect(this, &PlayerOrdersDialog::show, _model.get(), &PlayerOrdersDialogModel::initialiseData);
 				for (int i = 0; i < (int)_model->getAcceptedOrders().size(); i++) {
 					if (_model->getAcceptedOrders()[i] || i == 0) {
 						check_boxes.push_back(new ShipFlagCheckbox(nullptr));
@@ -55,6 +60,12 @@ namespace fso {
 				}
 
 				QDialog::closeEvent(event);
+			}
+			void PlayerOrdersDialog::showEvent(QShowEvent* e)
+			{
+					_model->initialiseData(parentDialog->getMulti());
+
+				QDialog::showEvent(e);
 			}
 			void PlayerOrdersDialog::updateUI()
 			{

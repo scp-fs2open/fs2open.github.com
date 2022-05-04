@@ -734,7 +734,7 @@ void ShipEditorDialog::on_weaponsButton_clicked()
 void ShipEditorDialog::on_playerOrdersButton_clicked()
 {
 	if (!playerOrdersDialog) {
-		playerOrdersDialog = new dialogs::PlayerOrdersDialog(this, _viewport, _model->multi_edit);
+		playerOrdersDialog = new dialogs::PlayerOrdersDialog(this, _viewport);
 	}
 	playerOrdersDialog->show();
 }

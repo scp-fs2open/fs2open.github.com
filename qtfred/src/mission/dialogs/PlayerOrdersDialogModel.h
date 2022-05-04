@@ -26,7 +26,7 @@ namespace fso {
 				SCP_vector<int> currentOrders;
 			public:
 				PlayerOrdersDialogModel(QObject* parent, EditorViewport* viewport, bool multi);
-			  void initialiseData();
+			  void initialiseData(bool);
 
 				bool apply() override;
 				void reject() override;
