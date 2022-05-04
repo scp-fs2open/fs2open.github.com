@@ -171,7 +171,7 @@ void ShipGoalsDialog::updateUI()
 			docks[i]->setEnabled(false);
 			priority[i]->setEnabled(false);
 			SCP_string blank;
-			if (_model->getSubsys(i) != "") {
+			if (!_model->getSubsys(i).empty()) {
 				_model->setSubsys(i, blank);
 			}
 			_model->setDock(i, -1);
