@@ -5,8 +5,8 @@
 
 namespace Starfield {
 
-	FLAG_LIST(Background_Flags){
-		Corrected_angles_in_mission_file = 0,	// angles are saved to the mission file correctly; if this flag is not present they are saved using incorrect math
+	FLAG_LIST(Background_Flags) {
+		Corrected_angles_in_mission_file = 0,	// If this flag is present, this background will save its angles to the mission file correctly.  If this flag is not present, they are saved with the incorrect math that was used in older missions.
 
 		NUM_VALUES
 	};

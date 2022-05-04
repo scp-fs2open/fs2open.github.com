@@ -5523,8 +5523,11 @@ void parse_one_background(background_t *background)
 		background->bitmaps.push_back(sle);
 	}
 
-	// always set the flag when we're done parsing, because the angles are now stored correctly and we want to save them correctly
-	background->flags.set(Starfield::Background_Flags::Corrected_angles_in_mission_file);
+	if (Fred_running)
+	{
+		// the angles are now stored correctly, so by default we also want to save them correctly
+		background->flags.set(Starfield::Background_Flags::Corrected_angles_in_mission_file);
+	}
 }
 
 void parse_bitmaps(mission *pm)
