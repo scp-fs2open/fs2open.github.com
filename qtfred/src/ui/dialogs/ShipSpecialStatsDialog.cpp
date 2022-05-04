@@ -18,7 +18,6 @@ namespace fso {
 
 				connect(this, &QDialog::accepted, _model.get(), &ShipSpecialStatsDialogModel::apply);
 				connect(this, &QDialog::rejected, _model.get(), &ShipSpecialStatsDialogModel::reject);
-				connect(this, &ShipSpecialStatsDialog::show, _model.get(), &ShipSpecialStatsDialogModel::initializeData);
 				connect(_model.get(), &AbstractDialogModel::modelChanged, this, &ShipSpecialStatsDialog::updateUI);
 
 				connect(ui->explodeCheckBox, &QCheckBox::toggled, _model.get(), &ShipSpecialStatsDialogModel::setSpecialExp);
@@ -64,6 +63,12 @@ namespace fso {
 				}
 
 				QDialog::closeEvent(event);
+			}
+
+			void ShipSpecialStatsDialog::showEvent(QShowEvent* event) {
+				_model->initializeData();
+
+				QDialog::showEvent(event);
 			}
 
 			void ShipSpecialStatsDialog::updateUI()

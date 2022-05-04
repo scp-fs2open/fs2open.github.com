@@ -21,6 +21,7 @@ namespace fso {
 
 			protected:
 				void closeEvent(QCloseEvent*) override;
+				void showEvent(QShowEvent*) override;
 
 			private:
 				std::unique_ptr<Ui::ShipSpecialStatsDialog> ui;
