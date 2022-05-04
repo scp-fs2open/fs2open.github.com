@@ -33,7 +33,7 @@ namespace fso {
 				static texture_replace* texture_set(texture_replace* dest, const texture_replace* src);
 			public:
 				ShipTextureReplacementDialogModel(QObject* parent, EditorViewport* viewport, bool multi);
-			  void initialiseData();
+			  void initialiseData(bool);
 
 				bool apply() override;
 				void reject() override;

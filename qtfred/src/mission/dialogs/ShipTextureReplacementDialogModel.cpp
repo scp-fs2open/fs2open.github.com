@@ -8,12 +8,12 @@ namespace fso {
 			ShipTextureReplacementDialogModel::ShipTextureReplacementDialogModel(QObject* parent, EditorViewport* viewport, bool multi) :
 				AbstractDialogModel(parent, viewport)
 			{
-				m_multi = multi;
-				initialiseData();
+				initialiseData(multi);
 			}
 
-			void ShipTextureReplacementDialogModel::initialiseData()
+			void ShipTextureReplacementDialogModel::initialiseData(bool multi)
 			{
+				m_multi = multi;
 				char texture_file[MAX_FILENAME_LEN];
 				char* p = nullptr;
 				int duplicate;

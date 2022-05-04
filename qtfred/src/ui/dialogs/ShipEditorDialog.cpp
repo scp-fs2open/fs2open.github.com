@@ -713,7 +713,7 @@ void ShipEditorDialog::DepartureCueChanged(bool value) { _model->setDepartureCue
 void ShipEditorDialog::on_textureReplacementButton_clicked()
 {
 	if (!TextureReplacementDialog) {
-		TextureReplacementDialog = new dialogs::ShipTextureReplacementDialog(this, _viewport, _model->multi_edit);
+		TextureReplacementDialog = new dialogs::ShipTextureReplacementDialog(this, _viewport);
 	}
 	TextureReplacementDialog->show();
 }
