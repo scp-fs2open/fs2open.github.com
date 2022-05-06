@@ -988,6 +988,8 @@ void sexp_tree::right_clicked(int mode)
 							case OP_DISTANCE:
 							case OP_SCRIPT_EVAL:
 							case OP_TRIGGER_SUBMODEL_ANIMATION:
+							case OP_ADD_BACKGROUND_BITMAP:
+							case OP_ADD_SUN_BITMAP:
 								j = (int)op_menu.size();	// don't allow these operators to be visible
 								break;
 						}
@@ -1040,6 +1042,8 @@ void sexp_tree::right_clicked(int mode)
 							case OP_DISTANCE:
 							case OP_SCRIPT_EVAL:
 							case OP_TRIGGER_SUBMODEL_ANIMATION:
+							case OP_ADD_BACKGROUND_BITMAP:
+							case OP_ADD_SUN_BITMAP:
 								j = (int)op_submenu.size();	// don't allow these operators to be visible
 								break;
 						}
@@ -2942,7 +2946,7 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 			{
 				item->set_data("1", (SEXPT_NUMBER | SEXPT_VALID));
 			}
-			else if (Operators[op].value == OP_ADD_BACKGROUND_BITMAP)
+			else if (Operators[op].value == OP_ADD_BACKGROUND_BITMAP || Operators[op].value == OP_ADD_BACKGROUND_BITMAP_NEW)
 			{
 				int temp = 0;
 				char sexp_str_token[TOKEN_LENGTH];
@@ -2963,7 +2967,7 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 				sprintf(sexp_str_token, "%d", temp);
 				item->set_data(sexp_str_token, (SEXPT_NUMBER | SEXPT_VALID));
 			}
-			else if (Operators[op].value == OP_ADD_SUN_BITMAP)
+			else if (Operators[op].value == OP_ADD_SUN_BITMAP || Operators[op].value == OP_ADD_SUN_BITMAP_NEW)
 			{
 				int temp = 0;
 				char sexp_str_token[TOKEN_LENGTH];
