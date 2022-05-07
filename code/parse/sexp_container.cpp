@@ -811,8 +811,9 @@ int sexp_is_container_empty(int node)
 		}
 	} else {
 		UNREACHABLE("Container %s has invalid type (%d). Please report!", container_name, (int)container.type);
-		return SEXP_FALSE;
 	}
+
+	return SEXP_FALSE;
 }
 
 int sexp_get_container_size(int node)
