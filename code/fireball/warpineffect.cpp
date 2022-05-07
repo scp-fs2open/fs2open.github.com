@@ -60,10 +60,10 @@ void warpin_queue_render(model_draw_list *scene, object *obj, matrix *orient, ve
 		// Add in noise 
 		int noise_frame = fl2i(Missiontime/15.0f) % NOISE_NUM_FRAMES;
 
-		r *= (0.80f + Noise[noise_frame] * 0.30f);
+		r *= (0.40f + Noise[noise_frame] * 0.30f);
 
 		// Bobboau's warp thingie, toggled by cmdline
-		if (true) {
+		if (Cmdline_warp_flash) {
 			r += powf((2.0f * life_percent) - 1.0f, 24.0f) * max_radius * 1.5f;
 		}
 
