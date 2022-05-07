@@ -810,13 +810,9 @@ int sexp_is_container_empty(int node)
 			return SEXP_TRUE;
 		}
 	} else {
-		Error(LOCATION,
-			"Unknown container type. Container %s is of type %d and this is not a valid type",
-			container_name,
-			(int)container.type);
+		UNREACHABLE("Container %s has invalid type (%d). Please report!", container_name, (int)container.type);
+		return SEXP_FALSE;
 	}
-
-	return SEXP_FALSE;
 }
 
 int sexp_get_container_size(int node)
@@ -835,10 +831,10 @@ int sexp_get_container_size(int node)
 		return (int)container.map_data.size();
 	} else if (container.is_list()) {
 		return (int)container.list_data.size();
+	} else {
+		UNREACHABLE("Container %s has invalid type (%d). Please report!", container_name, (int)container.type);
+		return 0;
 	}
-
-	Error(LOCATION, "Invalid container type: %d", (int)container.type);
-	return 0;
 }
 
 int sexp_list_has_data(int node)
@@ -1041,7 +1037,7 @@ int sexp_container_eval_status_sexp(int op_num, int node)
 			break;
 
 		default:
-			UNREACHABLE("Unknown container status SEXP operator %d", op_num);
+			UNREACHABLE("Unknown container status SEXP operator %d. Please report!", op_num);
 			return SEXP_FALSE;
 	}
 }
