@@ -941,9 +941,6 @@ void clear_mission()
 		Team_data[i].num_weapon_choices = count; 
 	}
 
-	*Parse_text = *Parse_text_raw = '\0';
-	Parse_text[1] = Parse_text_raw[1] = 0;
-
 	waypoint_parse_init();
 	Num_mission_events = 0;
 	Num_goals = 0;
@@ -955,7 +952,6 @@ void clear_mission()
 	messages_init();
 	brief_reset();
 	debrief_reset();
-	ship_init();
 	event_music_reset_choices();
 	clear_texture_replacements();
 
@@ -1014,6 +1010,11 @@ void clear_mission()
 	The_mission.sound_environment.id = -1;
 
 	ENVMAP = -1;
+
+	// free memory from all parsing so far -- see also the stop_parse() in player_select_close() which frees all tbls found during game_init()
+	stop_parse();
+	// however, FRED expects to parse comments from the raw buffer, so we need a nominal string for that
+	allocate_parse_text(1);
 
 	set_modified(FALSE);
 	Update_window = 1;
