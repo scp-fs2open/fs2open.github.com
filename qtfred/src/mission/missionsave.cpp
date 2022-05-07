@@ -886,6 +886,7 @@ int CFred_mission_save::save_bitmaps()
 		bool tag = (i < (int)Backgrounds.size() - 1);
 		background_t* background = &Backgrounds[i];
 
+		// each background should be preceded by this line so that the suns/bitmaps are partitioned correctly
 		fso_comment_push(";;FSO 3.6.9;;");
 		if (optional_string_fred("$Bitmap List:")) {
 			parse_comments(2);
@@ -895,6 +896,25 @@ int CFred_mission_save::save_bitmaps()
 
 		if (!tag) {
 			fso_comment_pop(true);
+		}
+
+		// save our flags
+		if (save_format == MissionFormat::RETAIL) {
+			_viewport->dialogProvider->showButtonDialog(DialogType::Warning,
+				"Incompatibility with retail mission format",
+				"Warning: Background flags (including the fixed-angles-in-mission-file flag) are not supported in retail.  The sun and bitmap angles will be loaded differently by previous versions.",
+				{ DialogButton::Ok });
+		} else if (background->flags.any_set()) {
+			if (optional_string_fred("+Flags:")) {
+				parse_comments();
+			} else {
+				fout_version("\n+Flags:");
+			}
+			fout(" (");
+			if (background->flags[Starfield::Background_Flags::Corrected_angles_in_mission_file]) {
+				fout(" \"corrected angles\"");
+			}
+			fout(" )");
 		}
 
 		// save suns by filename
@@ -909,7 +929,10 @@ int CFred_mission_save::save_bitmaps()
 			// angles
 			required_string_fred("+Angles:");
 			parse_comments();
-			fout(" %f %f %f", sle->ang.p, sle->ang.b, sle->ang.h);
+			angles ang = sle->ang;
+			if (!background->flags[Starfield::Background_Flags::Corrected_angles_in_mission_file])
+				stars_uncorrect_background_angles(&ang);
+			fout(" %f %f %f", ang.p, ang.b, ang.h);
 
 			// scale
 			required_string_fred("+Scale:");
@@ -929,7 +952,10 @@ int CFred_mission_save::save_bitmaps()
 			// angles
 			required_string_fred("+Angles:");
 			parse_comments();
-			fout(" %f %f %f", sle->ang.p, sle->ang.b, sle->ang.h);
+			angles ang = sle->ang;
+			if (!background->flags[Starfield::Background_Flags::Corrected_angles_in_mission_file])
+				stars_uncorrect_background_angles(&ang);
+			fout(" %f %f %f", ang.p, ang.b, ang.h);
 
 			// scale
 			required_string_fred("+ScaleX:");
@@ -1555,7 +1581,7 @@ int CFred_mission_save::save_cutscenes()
 		} else {
 			_viewport->dialogProvider->showButtonDialog(DialogType::Warning,
 														"Incompatibility with retail mission format",
-														"Warning: This mission contains cutscene data, but you are saving in the retail mission format. This information will be lost",
+														"Warning: This mission contains cutscene data, but you are saving in the retail mission format. This information will be lost.",
 														{ DialogButton::Ok });
 		}
 	}
