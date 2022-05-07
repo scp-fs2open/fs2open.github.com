@@ -899,7 +899,7 @@ void stars_post_level_init()
 			starfield_bitmap_instance def_sun;
 
 			// stuff some values
-			def_sun.ang.h = fl_radians(60.0f);
+			def_sun.ang.h = fl_radians(-60.0f);
 
 			Suns.push_back(def_sun);
 		}
@@ -1133,7 +1133,7 @@ void stars_get_sun_pos(int sun_n, vec3d *pos)
 	
 	// rotation matrix
 	vm_angles_2_matrix(&rot, &Suns[sun_n].ang);
-	vm_vec_rotate(pos, &temp, &rot);
+	vm_vec_unrotate(pos, &temp, &rot);
 }
 
 // draw sun
