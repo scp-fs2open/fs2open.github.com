@@ -24,7 +24,16 @@ public:
 protected:
 	void DoDataExchange(CDataExchange *pDX) override; // DDX/DDV support
 
-	void OnOK() override;
+	// intercept Enter and Escape
+	virtual BOOL PreTranslateMessage(MSG* pMsg);
+
+	afx_msg void OnOK() override;		// default MFC OK behavior
+	afx_msg void OnCancel() override;	// default MFC Cancel behavior
+
+	afx_msg void OnButtonOk();		// button handler
+	afx_msg void OnButtonCancel();	// button handler
+	afx_msg void OnClose();
+
 	BOOL OnInitDialog() override;
 
 	afx_msg void OnTypeMap();
@@ -44,7 +53,7 @@ protected:
 	afx_msg void OnContainerInsert();
 	afx_msg void OnContainerRemove();
 	afx_msg void OnContainerUpdate();
-	
+
 	afx_msg void ListerSelectionGetIter(SCP_vector<SCP_string>::iterator &iter);
 	afx_msg void OnListerSelectionChange();
 

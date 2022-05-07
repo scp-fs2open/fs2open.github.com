@@ -39,12 +39,30 @@ void CAddModifyContainerDlg::DoDataExchange(CDataExchange *pDX)
 	DDX_Control(pDX, IDC_CONTAINER_DATA_LISTER, m_container_data_lister);
 }
 
+// see https://stackoverflow.com/questions/17828258/how-to-prevent-mfc-dialog-closing-on-enter-and-escape-keys
+// This is needed because despite the override of the normal OK and Cancel routes, Enter will still be recognized
+BOOL CAddModifyContainerDlg::PreTranslateMessage(MSG* pMsg)
+{
+	if (pMsg->hwnd == this->m_hWnd && pMsg->message == WM_KEYDOWN)
+	{
+		if (pMsg->wParam == VK_RETURN || pMsg->wParam == VK_ESCAPE)
+		{
+			return TRUE;                // Do not process further
+		}
+	}
+	return CWnd::PreTranslateMessage(pMsg);
+}
+
 BEGIN_MESSAGE_MAP(CAddModifyContainerDlg, CDialog)
 	ON_BN_CLICKED(IDC_CONTAINER_ADD, OnContainerAdd)
 	ON_BN_CLICKED(IDC_CONTAINER_INSERT, OnContainerInsert)
 	ON_BN_CLICKED(IDC_CONTAINER_REMOVE, OnContainerRemove)
 	ON_BN_CLICKED(IDC_CONTAINER_UPDATE, OnContainerUpdate)
-	
+
+	ON_BN_CLICKED(ID_OK, OnButtonOk)
+	ON_BN_CLICKED(ID_CANCEL, OnButtonCancel)
+	ON_WM_CLOSE()
+
 	ON_BN_CLICKED(IDC_CONTAINER_LIST, OnTypeList)
 	ON_BN_CLICKED(IDC_CONTAINER_MAP, OnTypeMap)
 	ON_BN_CLICKED(IDC_CONTAINER_NUMBER_DATA, OnTypeNumber)
@@ -134,13 +152,47 @@ void CAddModifyContainerDlg::set_selected_container()
 	update_data_lister();
 }
 
-void CAddModifyContainerDlg::OnOK() 
-
+void CAddModifyContainerDlg::OnButtonOk() 
 {
 	populate_renamed_containers();
 	update_sexp_containers(m_containers, m_renamed_containers);
 
 	CDialog::OnOK();
+}
+
+void CAddModifyContainerDlg::OnButtonCancel()
+{
+	if (true /*query_modified()*/) {
+		int z = MessageBox("Do you want to keep your changes?", "Close", MB_ICONQUESTION | MB_YESNOCANCEL);
+		if (z == IDCANCEL) {
+			return;
+		}
+
+		if (z == IDYES) {
+			OnButtonOk();
+			return;
+		}
+	}
+
+	CDialog::OnCancel();
+}
+
+// this is called when you hit the enter key
+void CAddModifyContainerDlg::OnOK()
+{
+	// override MFC default behavior and do nothing
+}
+
+// this is called when you hit the escape key
+void CAddModifyContainerDlg::OnCancel()
+{
+	// override MFC default behavior and do nothing
+}
+
+// this is called when you hit the Close button
+void CAddModifyContainerDlg::OnClose()
+{
+	OnButtonCancel();
 }
 
 void CAddModifyContainerDlg::OnBnClickedStringKeys()
