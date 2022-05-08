@@ -313,6 +313,14 @@ SCP_vector<sexp_oper> Operators = {
 	{ "string-to-int",					OP_STRING_TO_INT,						1,	1,			SEXP_INTEGER_OPERATOR,	}, // Karajorma
 	{ "string-get-length",				OP_STRING_GET_LENGTH,					1,	1,			SEXP_INTEGER_OPERATOR,	}, // Goober5000
 
+	//Containers Sub-Category
+	{ "is-container-empty",				OP_IS_CONTAINER_EMPTY,					1,	1,			SEXP_INTEGER_OPERATOR, }, // Karajorma
+	{ "get-container-size",				OP_GET_CONTAINER_SIZE,					1,	1,			SEXP_INTEGER_OPERATOR, }, // Karajorma
+	{ "list-has-data",					OP_LIST_HAS_DATA,						2,	INT_MAX,	SEXP_INTEGER_OPERATOR, }, // Karajorma
+	{ "list-data-index",				OP_LIST_DATA_INDEX,						2,	2,			SEXP_INTEGER_OPERATOR, }, // Karajorma
+	{ "map-has-key",					OP_MAP_HAS_KEY,							2,	INT_MAX,	SEXP_INTEGER_OPERATOR, }, // Karajorma
+	{ "map-has-data-item",				OP_MAP_HAS_DATA_ITEM,					2,	3,			SEXP_INTEGER_OPERATOR, }, // Karajorma
+
 	//Other Sub-Category
 	{ "script-eval-bool",				OP_SCRIPT_EVAL_BOOL,					1,	1,			SEXP_BOOLEAN_OPERATOR, },
 	{ "script-eval-num",				OP_SCRIPT_EVAL_NUM,						1,	1,			SEXP_INTEGER_OPERATOR,	},
@@ -25911,6 +25919,16 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_string_get_length(node);
 				break;
 
+			// Karajorma/jg18
+			case OP_IS_CONTAINER_EMPTY:
+			case OP_GET_CONTAINER_SIZE:
+			case OP_LIST_HAS_DATA:
+			case OP_LIST_DATA_INDEX:
+			case OP_MAP_HAS_KEY:
+			case OP_MAP_HAS_DATA_ITEM:
+				sexp_val = sexp_container_eval_status_sexp(op_num, node);
+				break;
+
 			// Karajorma
 			case OP_DEBUG:
 				sexp_debug(node);
@@ -27371,6 +27389,10 @@ int query_operator_return_type(int op)
 		case OP_IS_LANGUAGE:
 		case OP_FUNCTIONAL_WHEN:
 		case OP_SCRIPT_EVAL_BOOL:
+		case OP_IS_CONTAINER_EMPTY:
+		case OP_LIST_HAS_DATA:
+		case OP_MAP_HAS_KEY:
+		case OP_MAP_HAS_DATA_ITEM:
 			return OPR_BOOL;
 
 		case OP_PLUS:
@@ -27403,6 +27425,8 @@ int query_operator_return_type(int op)
 		case OP_FUNCTIONAL_IF_THEN_ELSE:
 		case OP_FUNCTIONAL_SWITCH:
 		case OP_GET_HOTKEY:
+		case OP_GET_CONTAINER_SIZE:
+		case OP_LIST_DATA_INDEX:
 			return OPR_NUMBER;
 
 		case OP_ABS:
@@ -30284,12 +30308,57 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_BOOL;
 
 		case OP_UPDATE_MOVEABLE:
-			if(argnum == 0)
+			if (argnum == 0)
 				return OPF_SHIP;
 			else if(argnum == 1)
 				return OPF_ANIMATION_NAME;
 			else
 				return OPF_NUMBER;
+
+		case OP_IS_CONTAINER_EMPTY:
+		case OP_GET_CONTAINER_SIZE:
+			if (argnum == 0) {
+				return OPF_CONTAINER_NAME;
+			} else {
+				// This shouldn't happen
+				return OPF_NONE;
+			}
+
+		case OP_LIST_HAS_DATA:
+			if (argnum == 0) {
+				return OPF_LIST_CONTAINER_NAME;
+			} else {
+				return OPF_CONTAINER_VALUE;
+			}
+
+		case OP_LIST_DATA_INDEX:
+			if (argnum == 0) {
+				return OPF_LIST_CONTAINER_NAME;
+			} else if (argnum == 1) {
+				return OPF_CONTAINER_VALUE;
+			} else {
+				// This shouldn't happen
+				return OPF_NONE;
+			}
+
+		case OP_MAP_HAS_KEY:
+			if (argnum == 0) {
+				return OPF_MAP_CONTAINER_NAME;
+			} else {
+				return OPF_CONTAINER_VALUE;
+			}
+
+		case OP_MAP_HAS_DATA_ITEM:
+			if (argnum == 0) {
+				return OPF_MAP_CONTAINER_NAME;
+			} else if (argnum == 1) {
+				return OPF_CONTAINER_VALUE;
+			} else if (argnum == 2) {
+				return OPF_VARIABLE_NAME;
+			} else {
+				// This shouldn't happen
+				return OPF_NONE;
+			}
 
 		default: {
 			auto dynamicSEXP = sexp::get_dynamic_sexp(op);
@@ -32137,6 +32206,14 @@ int get_subcategory(int sexp_id)
 		case OP_STRING_TO_INT:
 		case OP_STRING_GET_LENGTH:
 			return STATUS_SUBCATEGORY_VARIABLES;
+
+		case OP_IS_CONTAINER_EMPTY:
+		case OP_GET_CONTAINER_SIZE:
+		case OP_LIST_HAS_DATA:
+		case OP_LIST_DATA_INDEX:
+		case OP_MAP_HAS_KEY:
+		case OP_MAP_HAS_DATA_ITEM:
+			return STATUS_SUBCATEGORY_CONTAINERS;
 
 		case OP_SCRIPT_EVAL_BOOL:
 		case OP_SCRIPT_EVAL_NUM:
@@ -34027,6 +34104,52 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t3: Length of the substring\r\n"
 		"\t4: New substring (which can be a different length than the old substring)\r\n"
 		"\t5: String variable to hold the result\r\n" },
+
+	// Karajorma/jg18
+	{ OP_IS_CONTAINER_EMPTY, "is-container-empty (Boolean operator)\r\n"
+		"\tReturns true if the specified container has no elements in it.\r\n\r\n"
+		"Takes 1 argument...\r\n"
+		"\t1:\tName of the container." },
+
+	// Karajorma/jg18
+	{ OP_GET_CONTAINER_SIZE, "get-container-size (Status operator)\r\n"
+		"\tReturns the number of elements in the specified container, or 0 if empty.\r\n\r\n"
+		"Takes 1 argument...\r\n"
+		"\t1:\tName of the container." },
+
+	// Karajorma/jg18
+	{ OP_LIST_HAS_DATA, "list-has-data (Boolean operator)\r\n"
+		"\tReturns true if the specified list container has elements which match the supplied values.\r\n\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tName of the list container.\r\n"
+		"\tRest:\tValue that might be in the list container" },
+
+	// Karajorma/jg18
+	{ OP_LIST_DATA_INDEX, "list-data-index\r\n"
+		"\tReturns the index (starting at 0) for the supplied value in the list container.\r\n"
+		"\tIf the supplied value is not in the container, returns -1.\r\n\r\n"
+		"Takes 2 arguments...\r\n"
+		"\t1:\tName of the list container.\r\n"
+		"\t2:\tValue that might be in the list container" },
+
+	// Karajorma/jg18
+	{ OP_MAP_HAS_KEY, "map-has-key (Boolean operator)\r\n"
+		"\tReturns true if the specified map container has keys that match the supplied values.\r\n\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tName of the map container.\r\n"
+		"\tRest:\tValue that might be a key in the map container" },
+
+	// Karajorma/jg18
+	{ OP_MAP_HAS_DATA_ITEM, "map-has-data-item (Boolean operator)\r\n"
+		"\tReturns true if the specified map container has a key whose data matches the supplied value.\r\n"
+		"\tIf a variable is also supplied, three cases are possible:\r\n"
+		"\t\t(1) If a single key has the supplied value as its data, the key is stored in the variable.\r\n"
+		"\t\t(2) If multiple keys have the supplied value as their data, one of those keys is stored in the variable. The key may not be the same every time.\r\n"
+		"\t\t(3) If there is no key that has the supplied value as its data, the variable is left unchanged.\r\n\r\n"
+		"Takes either 2 or 3 arguments...\r\n"
+		"\t1:\tName of the map container.\r\n"
+		"\t2:\tValue that might be data associated with a key in the map container.\r\n"
+		"\t3:\tVariable to hold a map key associated with the data, if one exists (optional). The variable type must match the key type." },
 
 	// Karajorma
 	{ OP_DEBUG, "debug\r\n"
@@ -36416,6 +36539,7 @@ SCP_vector<op_menu_struct> op_submenu =
 	{	"Damage",						STATUS_SUBCATEGORY_DAMAGE							},
 	{	"Distance and Coordinates",		STATUS_SUBCATEGORY_DISTANCE_AND_COORDINATES			},
 	{	"Variables",					STATUS_SUBCATEGORY_VARIABLES						},
+	{	"Containers",					STATUS_SUBCATEGORY_CONTAINERS						},
 	{	"Other",						STATUS_SUBCATEGORY_OTHER							}
 };
 
