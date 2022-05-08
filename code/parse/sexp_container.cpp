@@ -880,7 +880,6 @@ int sexp_list_has_data(int node)
 	const auto &list_data = container.list_data;
 
 	node = CDR(node);
-	// there should be at least one string to search for
 	Assertion(node != -1, "List-has-data wasn't given data to look for. Please report!");
 
 	SCP_string possible_data;
@@ -951,7 +950,6 @@ int sexp_map_has_key(int node)
 	const auto &map_data = container.map_data;
 
 	node = CDR(node);
-	// there should be at least one key to search for
 	Assertion(node != -1, "Map-has-key wasn't given keys to look for. Please report!");
 
 	SCP_string possible_key;
@@ -1082,7 +1080,7 @@ void sexp_add_to_list(int node)
 	auto &container = *p_container;
 
 	node = CDR(node);
-	Assertion(node != -1, "Add-to-list wasn't given data to add. Please report!");
+	Assertion(node != -1, "Add-to-list wasn't told which end of the list to add to. Please report!");
 
 	const bool add_to_back = is_sexp_true(node);
 
@@ -1123,7 +1121,6 @@ void sexp_remove_from_list(int node)
 	}
 
 	node = CDR(node);
-	// there should be at least one string to remove
 	Assertion(node != -1, "Remove-from-list wasn't given data to remove. Please report!");
 
 	auto &list_data = container.list_data;
@@ -1178,7 +1175,7 @@ void sexp_add_to_map(int node)
 		}
 
 		const char *key = CTEXT(node);
-#ifndef NDEBUG
+#if !defined(NDEBUG) || defined(SCP_RELEASE_LOGGING)
 		if (map_data.find(key) != map_data.end()) {
 			// replacing an existing key's data isn't an error but should be logged
 			const SCP_string msg = SCP_string("Add-to-map: Key '") + key + "' already exists in map container " +
