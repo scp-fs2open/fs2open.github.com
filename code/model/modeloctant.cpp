@@ -132,16 +132,10 @@ void moff_defpoints(ubyte * p, int just_count)
 void moff_tmappoly(ubyte * p, polymodel * pm, model_octant * oct, int just_count )
 {
 	uint i, nv;
-	model_tmap_vert *verts;
 
-	nv = uw(p+36);
+	nv = uw(p + TMAP_NVERTS);
 
-	verts = new model_tmap_vert[nv];
-	auto vs = reinterpret_cast<model_tmap_vert_old*>(&p[44]);
-
-	for (i = 0; i < nv; i++) {
-		verts[i] = model_tmap_vert(vs[i]);
-	}
+	auto verts = reinterpret_cast<model_tmap_vert_old*>(&p[TMAP_VERTS]);
 
 	if ( (pm->version < 2003) && !just_count )	{
 		// Set the "normal_point" part of field to be the center of the polygon
