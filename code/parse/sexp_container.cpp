@@ -47,8 +47,8 @@ namespace {
 	report_problematic_container(const SCP_string &sexp_name, const SCP_string &problem, const char *container_name)
 	{
 		const SCP_string msg = sexp_name + " called on " + problem + " container " + container_name;
-		Warning(LOCATION, msg.c_str());
-		log_printf(LOGFILE_EVENT_LOG, msg.c_str());
+		Warning(LOCATION, "%s", msg.c_str());
+		log_printf(LOGFILE_EVENT_LOG, "%s", msg.c_str());
 	}
 
 	void report_nonexistent_container(const SCP_string &sexp_name, const char *container_name)
@@ -1017,14 +1017,14 @@ int sexp_map_has_data_item(int node)
 						const SCP_string msg = SCP_string("Map-has-data-item given optional variable ") +
 											   Sexp_variables[var_index].variable_name +
 											   " whose type doesn't match key type of map container " + container_name;
-						Warning(LOCATION, msg.c_str());
-						log_printf(LOGFILE_EVENT_LOG, msg.c_str());
+						Warning(LOCATION, "%s", msg.c_str());
+						log_printf(LOGFILE_EVENT_LOG, "%s", msg.c_str());
 					}
 				} else {
 					const SCP_string msg =
 						SCP_string("Map-has-data-item given invalid optional variable ") + Sexp_nodes[node].text;
-					Warning(LOCATION, msg.c_str());
-					log_printf(LOGFILE_EVENT_LOG, msg.c_str());
+					Warning(LOCATION, "%s", msg.c_str());
+					log_printf(LOGFILE_EVENT_LOG, "%s", msg.c_str());
 				}
 			}
 
