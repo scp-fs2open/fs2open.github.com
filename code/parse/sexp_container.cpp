@@ -40,9 +40,31 @@ const SCP_vector<list_modifier>& get_all_list_modifiers()
 	return List_modifiers;
 }
 
-// CTEXT()-related data
 namespace {
 	const char *Empty_str = "";
+
+	void
+	report_problematic_container(const SCP_string &sexp_name, const SCP_string &problem, const char *container_name)
+	{
+		const SCP_string msg = sexp_name + " called on " + problem + " container " + container_name;
+		Warning(LOCATION, msg.c_str());
+		log_printf(LOGFILE_EVENT_LOG, msg.c_str());
+	}
+
+	void report_nonexistent_container(const SCP_string &sexp_name, const char *container_name)
+	{
+		report_problematic_container(sexp_name, "nonexistent", container_name);
+	}
+
+	void report_non_list_container(const SCP_string &sexp_name, const char *container_name)
+	{
+		report_problematic_container(sexp_name, "non-list", container_name);
+	}
+
+	void report_non_map_container(const SCP_string &sexp_name, const char *container_name)
+	{
+		report_problematic_container(sexp_name, "non-map", container_name);
+	}
 } // namespace
 
 // map_container_hash impl
@@ -795,7 +817,7 @@ int sexp_is_container_empty(int node)
 	const auto *p_container = get_sexp_container(container_name);
 
 	if (!p_container) {
-		Warning(LOCATION, "Is-container-empty called on nonexistent container %s.", container_name);
+		report_nonexistent_container("Is-container-empty", container_name);
 		return SEXP_FALSE;
 	}
 
@@ -822,7 +844,7 @@ int sexp_get_container_size(int node)
 	const auto *p_container = get_sexp_container(container_name);
 
 	if (!p_container) {
-		Warning(LOCATION, "Get-container-size called on nonexistent container %s.", container_name);
+		report_nonexistent_container("Get-container-size", container_name);
 		return 0;
 	}
 
@@ -844,14 +866,14 @@ int sexp_list_has_data(int node)
 	const auto *p_container = get_sexp_container(container_name);
 
 	if (!p_container) {
-		Warning(LOCATION, "List-has-data called on nonexistent container %s.", container_name);
+		report_nonexistent_container("List-has-data", container_name);
 		return SEXP_FALSE;
 	}
 
 	const auto &container = *p_container;
 
 	if (!container.is_list()) {
-		Warning(LOCATION, "List-has-data called on non-list container %s.", container_name);
+		report_non_list_container("List-has-data", container_name);
 		return SEXP_FALSE;
 	}
 
@@ -882,14 +904,14 @@ int sexp_list_data_index(int node)
 	const auto *p_container = get_sexp_container(container_name);
 
 	if (!p_container) {
-		Warning(LOCATION, "List-data-index called on nonexistent container %s.", container_name);
+		report_nonexistent_container("List-data-index", container_name);
 		return -1;
 	}
 
 	const auto &container = *p_container;
 
 	if (!container.is_list()) {
-		Warning(LOCATION, "List-data-index called on non-list container %s.", container_name);
+		report_non_list_container("List-data-index", container_name);
 		return -1;
 	}
 
@@ -915,14 +937,14 @@ int sexp_map_has_key(int node)
 	const auto *p_container = get_sexp_container(container_name);
 
 	if (!p_container) {
-		Warning(LOCATION, "Map-has-key called on nonexistent container %s.", container_name);
+		report_nonexistent_container("Map-has-key", container_name);
 		return SEXP_FALSE;
 	}
 
 	const auto &container = *p_container;
 
 	if (!container.is_map()) {
-		Warning(LOCATION, "Map-has-key called on non-map container %s.", container_name);
+		report_non_map_container("Map-has-key", container_name);
 		return SEXP_FALSE;
 	}
 
@@ -956,14 +978,14 @@ int sexp_map_has_data_item(int node)
 	const auto *p_container = get_sexp_container(container_name);
 
 	if (!p_container) {
-		Warning(LOCATION, "Map-has-data-item called on nonexistent container %s.", container_name);
+		report_nonexistent_container("Map-has-data-item", container_name);
 		return SEXP_FALSE;
 	}
 
 	const auto &container = *p_container;
 
 	if (!container.is_map()) {
-		Warning(LOCATION, "Map-has-data-item called on non-map container %s.", container_name);
+		report_non_map_container("Map-has-data-item", container_name);
 		return SEXP_FALSE;
 	}
 
@@ -992,14 +1014,17 @@ int sexp_map_has_data_item(int node)
 						// assign key to variable
 						sexp_modify_variable(kv_pair.first.c_str(), var_index);
 					} else {
-						Warning(LOCATION,
-							"Map-has-data-item given optional variable %s whose type doesn't match keys of map "
-							"container %s",
-							Sexp_variables[var_index].variable_name,
-							container.container_name.c_str());
+						const SCP_string msg = SCP_string("Map-has-data-item given optional variable ") +
+											   Sexp_variables[var_index].variable_name +
+											   " whose type doesn't match key type of map container " + container_name;
+						Warning(LOCATION, msg.c_str());
+						log_printf(LOGFILE_EVENT_LOG, msg.c_str());
 					}
 				} else {
-					Warning(LOCATION, "Map-has-data-item given invalid optional variable %s", Sexp_nodes[node].text);
+					const SCP_string msg =
+						SCP_string("Map-has-data-item given invalid optional variable ") + Sexp_nodes[node].text;
+					Warning(LOCATION, msg.c_str());
+					log_printf(LOGFILE_EVENT_LOG, msg.c_str());
 				}
 			}
 
