@@ -51,6 +51,7 @@ bg_bitmap_dlg::bg_bitmap_dlg(CWnd* pParent) : CDialog(bg_bitmap_dlg::IDD, pParen
 	m_fog_g = 0;
 	m_fog_b = 0;
 	m_toggle_trails = FALSE;
+	m_corrected_angles_in_mission_file = FALSE;
 
 	s_pitch = 0;
 	s_bank = 0;
@@ -95,6 +96,7 @@ void bg_bitmap_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_SUBSPACE, m_subspace);
 	DDX_Check(pDX, IDC_FULLNEB, m_fullneb);
 	DDX_Check(pDX, IDC_NEB2_PALETTE_OVERRIDE, m_fog_color_override);
+	DDX_Check(pDX, IDC_CORRECTED_ANGLES_IN_MISSION_FILE, m_corrected_angles_in_mission_file);
 
 	DDX_Check(pDX, IDC_NEB2_TOGGLE_TRAILS, m_toggle_trails);
 	DDX_Text(pDX, IDC_SUN1, s_name);
@@ -202,6 +204,22 @@ const static float delta = .00001f;
 
 /////////////////////////////////////////////////////////////////////////////
 // bg_bitmap_dlg message handlers
+
+BOOL bg_bitmap_dlg::OnInitDialog()
+{
+	CDialog::OnInitDialog();
+
+	//create tool tip controls
+	m_CorrectedAnglesToolTip = new CToolTipCtrl();
+	m_CorrectedAnglesToolTip->Create(this);
+
+	CWnd* pWnd = GetDlgItem(IDC_CORRECTED_ANGLES_IN_MISSION_FILE);
+	m_CorrectedAnglesToolTip->AddTool(pWnd, "Mission files saved in 22.0 and earlier versions of FRED use incorrect math for calculating the background angles");
+	m_CorrectedAnglesToolTip->Activate(TRUE);
+
+	return TRUE;  // return TRUE unless you set the focus to a control
+				  // EXCEPTION: OCX Property Pages should return FALSE
+}
 
 void bg_bitmap_dlg::create()
 {
@@ -338,7 +356,7 @@ void bg_bitmap_dlg::create()
 
 	// setup bitmap info
 	bitmap_data_init();
-	
+
 	// determine if subspace is active
 	m_subspace = (The_mission.flags[Mission::Mission_Flags::Subspace]) ? 1 : 0;
 
@@ -359,6 +377,8 @@ void bg_bitmap_dlg::create()
 
 	m_neb_near_multi = Neb2_fog_near_mult;
 	m_neb_far_multi = Neb2_fog_far_mult;
+
+	background_flags_init();
 
 	UpdateData(FALSE);
 	OnFullNeb();
@@ -476,6 +496,9 @@ void bg_bitmap_dlg::OnClose()
 
 	// close bitmap data
 	bitmap_data_close();
+
+	// store current flags
+	background_flags_close();
 
 	// reset the background
 	stars_pack_backgrounds();
@@ -1380,8 +1403,34 @@ void bg_bitmap_dlg::reinitialize_lists()
 	sun_data_init();
 	bitmap_data_init();
 
+	// set the flags for the active background
+	background_flags_init();
+
 	// refresh the background
 	stars_load_background(get_active_background());
+}
+
+void bg_bitmap_dlg::background_flags_init()
+{
+	auto bg = &Backgrounds[get_active_background()];
+	m_corrected_angles_in_mission_file = bg->flags[Starfield::Background_Flags::Corrected_angles_in_mission_file] ? TRUE : FALSE;
+
+	UpdateData(FALSE);
+}
+
+void bg_bitmap_dlg::background_flags_close()
+{
+	UpdateData(TRUE);
+
+	auto bg = &Backgrounds[get_previous_active_background()];
+	bg->flags.set(Starfield::Background_Flags::Corrected_angles_in_mission_file, m_corrected_angles_in_mission_file == TRUE);
+}
+
+static int Previous_active_background = 0;
+
+int bg_bitmap_dlg::get_previous_active_background()
+{
+	return Previous_active_background;
 }
 
 int bg_bitmap_dlg::get_active_background()
@@ -1390,6 +1439,8 @@ int bg_bitmap_dlg::get_active_background()
 	int idx = ((CComboBox *) GetDlgItem(IDC_BACKGROUND_NUM))->GetCurSel();
 	if (idx < 0 || idx >= (int)Backgrounds.size())
 		idx = 0;
+
+	Previous_active_background = idx;
 
 	return idx;
 }
@@ -1406,11 +1457,16 @@ int bg_bitmap_dlg::get_swap_background()
 
 void bg_bitmap_dlg::OnBackgroundDropdownChange()
 {
+	background_flags_close();
+
 	reinitialize_lists();
 }
 
 void bg_bitmap_dlg::OnAddBackground()
 {
+	// store current flags
+	background_flags_close();
+
 	int new_index = (int)Backgrounds.size();
 
 	// add new combo box entry
@@ -1420,7 +1476,7 @@ void bg_bitmap_dlg::OnAddBackground()
 	((CComboBox*)GetDlgItem(IDC_BACKGROUND_SWAP_NUM))->AddString(temp);
 
 	// add the background slot
-	Backgrounds.emplace_back();
+	stars_add_blank_background(true);
 
 	// select the new entry
 	((CComboBox*)GetDlgItem(IDC_BACKGROUND_NUM))->SetCurSel(new_index);
@@ -1470,6 +1526,9 @@ void bg_bitmap_dlg::OnRemoveBackground()
 
 void bg_bitmap_dlg::OnSwapBackground() 
 {
+	// store current flags
+	background_flags_close();
+
 	int idx1 = get_active_background();
 	int idx2 = get_swap_background();
 

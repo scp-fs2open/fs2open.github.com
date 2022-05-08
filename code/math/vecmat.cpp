@@ -158,6 +158,17 @@ void vm_set_identity(matrix *m)
 	m->vec.fvec.xyz.x = 0.0f;	m->vec.fvec.xyz.y = 0.0f;	m->vec.fvec.xyz.z = 1.0f;
 }
 
+angles vm_angles_new(float p, float b, float h)
+{
+	angles ang;
+
+	ang.p = p;
+	ang.b = b;
+	ang.h = h;
+
+	return ang;
+}
+
 vec3d vm_vec_new(float x, float y, float z)
 {
 	vec3d vec;
@@ -167,6 +178,34 @@ vec3d vm_vec_new(float x, float y, float z)
 	vec.xyz.z = z;
 
 	return vec;
+}
+
+matrix vm_matrix_new(float a0, float a1, float a2, float a3, float a4, float a5, float a6, float a7, float a8)
+{
+	matrix m;
+
+	m.a1d[0] = a0;
+	m.a1d[1] = a1;
+	m.a1d[2] = a2;
+	m.a1d[3] = a3;
+	m.a1d[4] = a4;
+	m.a1d[5] = a5;
+	m.a1d[6] = a6;
+	m.a1d[7] = a7;
+	m.a1d[8] = a8;
+
+	return m;
+}
+
+matrix vm_matrix_new(vec3d rvec, vec3d uvec, vec3d fvec)
+{
+	matrix m;
+
+	m.vec.rvec = rvec;
+	m.vec.uvec = uvec;
+	m.vec.fvec = fvec;
+
+	return m;
 }
 
 //adds two vectors, fills in dest, returns ptr to dest
@@ -602,6 +641,25 @@ float vm_vec_delta_ang_norm(const vec3d *v0, const vec3d *v1, const vec3d *uvec)
 // helper function that fills in matrix m based on provided sine and cosine values. 
 static matrix *sincos_2_matrix(matrix *m, float sinp, float cosp, float sinb, float cosb, float sinh, float cosh)
 {
+	// This is the transpose of the Y1*X2*Z3 convention on wikipedia:
+	// https://en.wikipedia.org/wiki/Euler_angles#Rotation_matrix
+	// 
+	// [(rotate h on Y) * (rotate p on X) * (rotate b on Z)]^T
+	// 
+	//   [( ch  0  sh )   ( 1  0   0  )   ( cb -sb  0 )]^T
+	// = [( 0   1  0  ) * ( 0  cp -sp ) * ( sb  cb  0 )]  
+	//   [(-sh  0  ch )   ( 0  sp  cp )   ( 0   0   1 )]  
+	//
+	//   (cb*ch+sp*sb*sh  sp*cb*sh-sb*ch  sh*cp)^T   (cb*ch+sp*sb*sh  sb*cp  sp*sb*ch-cb*sh)  <- rvec
+	// = (    sb*cp           cb*cp        -sp )   = (sp*cb*sh-sb*ch  cb*cp  sb*sh+sp*cb*ch)  <- uvec
+	//   (sp*sb*ch-cb*sh  sb*sh+sp*cb*ch  ch*cp)     (    sh*cp        -sp       ch*cp     )  <- fvec
+	// 
+	// Alternatively we can write it as
+	// [(rotate h on Y) * (rotate p on X) * (rotate b on Z)]^T
+	// = (rotate b on Z)^T * (rotate p on X)^T * (rotate h on Y)^T
+	// = (rotate -b on Z) * (rotate -p on X) * (rotate -h on Y)
+	// which is the "most common" Z1*X2*Y3 convention on wikipedia (but with negative angles).
+
 	float sbsh,cbch,cbsh,sbch;
 
 

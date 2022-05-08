@@ -264,13 +264,11 @@ extern void stars_project_2d_onto_sphere( vec3d *pnt, float rho, float phi, floa
 static void starfield_create_bitmap_buffer(const int si_idx)
 {
 	vec3d s_points[MAX_PERSPECTIVE_DIVISIONS+1][MAX_PERSPECTIVE_DIVISIONS+1];
-	vec3d t_points[MAX_PERSPECTIVE_DIVISIONS+1][MAX_PERSPECTIVE_DIVISIONS+1];
 
 	vertex v[4];
-	matrix m, m_bank;
+	matrix m;
 	int idx, s_idx;
 	float ui, vi;
-	angles bank_first;
 
 	starfield_bitmap_instance *sbi = &Starfield_bitmap_instances[si_idx];
 
@@ -313,27 +311,16 @@ static void starfield_create_bitmap_buffer(const int si_idx)
 	float d_theta = -(((p_theta * scale_y) / 360.0f) / (float)(div_y));
 
 	// bank matrix
-	bank_first.p = 0.0f;
-	bank_first.b = a->b;
-	bank_first.h = 0.0f;
-	vm_angles_2_matrix(&m_bank, &bank_first);
-
-	// convert angles to matrix
-	angles a_temp = *a;
-	a_temp.b = 0.0f;
-	vm_angles_2_matrix(&m, &a_temp);
+	vm_angles_2_matrix(&m, a);
 
 	// generate the bitmap points
 	for(idx=0; idx<=div_x; idx++) {
 		for(s_idx=0; s_idx<=div_y; s_idx++) {
 			// get world spherical coords
 			stars_project_2d_onto_sphere(&s_points[idx][s_idx], 1000.0f, s_phi + ((float)idx*d_phi), s_theta + ((float)s_idx*d_theta));
-			
-			// bank the bitmap first
-			vm_vec_rotate(&t_points[idx][s_idx], &s_points[idx][s_idx], &m_bank);
 
-			// rotate on the sphere
-			vm_vec_rotate(&s_points[idx][s_idx], &t_points[idx][s_idx], &m);
+			// (un)rotate on the sphere
+			vm_vec_unrotate(&s_points[idx][s_idx], &s_points[idx][s_idx], &m);
 		}
 	}
 
@@ -850,7 +837,7 @@ void stars_post_level_init()
 	if (Fred_running)
 	{
 		if (Backgrounds.empty())
-			Backgrounds.emplace_back();
+			stars_add_blank_background(true);
 	}
 	// in FSO, see if we have any backgrounds to preload
 	// (since the backgrounds aren't parsed at the time we parse the sexps)
@@ -912,7 +899,7 @@ void stars_post_level_init()
 			starfield_bitmap_instance def_sun;
 
 			// stuff some values
-			def_sun.ang.h = fl_radians(60.0f);
+			def_sun.ang.h = fl_radians(-60.0f);
 
 			Suns.push_back(def_sun);
 		}
@@ -1146,7 +1133,7 @@ void stars_get_sun_pos(int sun_n, vec3d *pos)
 	
 	// rotation matrix
 	vm_angles_2_matrix(&rot, &Suns[sun_n].ang);
-	vm_vec_rotate(pos, &temp, &rot);
+	vm_vec_unrotate(pos, &temp, &rot);
 }
 
 // draw sun
@@ -2438,6 +2425,39 @@ int stars_add_bitmap_entry(starfield_list_entry *sle)
 	return (int)(Starfield_bitmap_instances.size() - 1);
 }
 
+void stars_correct_background_angles(angles *angs_to_correct)
+{
+	matrix mat1, mat2;
+	angles ang1 = vm_angles_new(0.0, angs_to_correct->b, 0.0);
+	angles ang2 = vm_angles_new(angs_to_correct->p, 0.0, angs_to_correct->h);
+	vm_angles_2_matrix(&mat1, &ang1);
+	vm_angles_2_matrix(&mat2, &ang2);
+	matrix mat3 = mat2 * mat1;
+	vm_transpose(&mat3);
+	vm_extract_angles_matrix(angs_to_correct, &mat3);
+	angs_to_correct->p = fmod(angs_to_correct->p + PI2, PI2);
+	angs_to_correct->b = fmod(angs_to_correct->b + PI2, PI2);
+	angs_to_correct->h = fmod(angs_to_correct->h + PI2, PI2);
+}
+
+void stars_uncorrect_background_angles(angles *angs_to_uncorrect)
+{
+	matrix mat;
+	vm_angles_2_matrix(&mat, angs_to_uncorrect);
+	// transpose and {2,3,1} permute rows and cols
+	matrix mat_permuted = vm_matrix_new(
+		mat.vec.uvec.xyz.y, mat.vec.fvec.xyz.y, mat.vec.rvec.xyz.y,
+		mat.vec.uvec.xyz.z, mat.vec.fvec.xyz.z, mat.vec.rvec.xyz.z,
+		mat.vec.uvec.xyz.x, mat.vec.fvec.xyz.x, mat.vec.rvec.xyz.x
+	);
+	angles angs_permuted;
+	vm_extract_angles_matrix(&angs_permuted, &mat_permuted);
+	// {2,3,1} unpermute p,b,h
+	angs_to_uncorrect->p = angs_permuted.b;
+	angs_to_uncorrect->h = angs_permuted.p;
+	angs_to_uncorrect->b = angs_permuted.h;
+}
+
 // get the number of entries that each vector contains
 // "is_a_sun" will get sun instance counts, otherwise it gets normal starfield bitmap instance counts
 // "bitmap_count" will get number of starfield_bitmap entries rather than starfield_bitmap_instance entries
@@ -2669,6 +2689,16 @@ void stars_delete_entry_FRED(int index, bool is_a_sun)
 }
 
 // Goober5000
+void stars_add_blank_background(bool creating_in_fred)
+{
+	Backgrounds.emplace_back();
+
+	// any background that is created will have correct angles, so be sure to set the flag
+	if (creating_in_fred)
+		Backgrounds.back().flags.set(Starfield::Background_Flags::Corrected_angles_in_mission_file);
+}
+
+// Goober5000
 void stars_load_first_valid_background()
 {
 	int background_idx = stars_get_first_valid_background();
@@ -2763,6 +2793,7 @@ void stars_load_background(int background_idx)
 // Goober5000
 void stars_copy_background(background_t *dest, background_t *src)
 {
+	dest->flags = src->flags;
 	dest->suns.assign(src->suns.begin(), src->suns.end());
 	dest->bitmaps.assign(src->bitmaps.begin(), src->bitmaps.end());
 }
@@ -2791,11 +2822,8 @@ void stars_pack_backgrounds()
 		Backgrounds.end());
 
 	// in FRED, make sure we always have at least one background
-	if (Fred_running)
-	{
-		if (Backgrounds.empty())
-			Backgrounds.emplace_back();
-	}
+	if (Fred_running && Backgrounds.empty())
+		stars_add_blank_background(true);
 }
 
 static void render_environment(int i, vec3d *eye_pos, matrix *new_orient, float new_zoom)

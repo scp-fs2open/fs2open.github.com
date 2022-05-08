@@ -1377,24 +1377,16 @@ int intel_info_lookup(const char *name)
 void tech_reset_to_default()
 {
 	// ships
-    for (auto &si : Ship_info)
-    {
-        if (si.flags[Ship::Info_Flags::Default_in_tech_database])
-            si.flags.set(Ship::Info_Flags::In_tech_database);
-        else
-            si.flags.remove(Ship::Info_Flags::Default_in_tech_database);
-
-        if (si.flags[Ship::Info_Flags::Default_in_tech_database_m])
-            si.flags.set(Ship::Info_Flags::In_tech_database_m);
-        else
-            si.flags.remove(Ship::Info_Flags::Default_in_tech_database_m);
-    }
-
+	for (auto& si : Ship_info)
+	{
+		si.flags.set(Ship::Info_Flags::In_tech_database, si.flags[Ship::Info_Flags::Default_in_tech_database]);
+		si.flags.set(Ship::Info_Flags::In_tech_database_m, si.flags[Ship::Info_Flags::Default_in_tech_database_m]);
+	}
 
 	// weapons
-	for (auto &wi : Weapon_info)
+	for (auto& wi : Weapon_info)
 	{
-        wi.wi_flags.set(Weapon::Info_Flags::In_tech_database, wi.wi_flags[Weapon::Info_Flags::Default_in_tech_database]);
+		wi.wi_flags.set(Weapon::Info_Flags::In_tech_database, wi.wi_flags[Weapon::Info_Flags::Default_in_tech_database]);
 	}
 
 	// intelligence
