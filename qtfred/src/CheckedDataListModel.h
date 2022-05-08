@@ -149,22 +149,28 @@ public:
 
 private:
 	template<typename V>
-	inline void getCheckedDataInternal(SCP_unordered_set<V*> &set) {
+	inline void collectCheckedDataImpl(SCP_unordered_set<V*> &set) {
 		for (auto& item : items)
 			if (item._checked)
 				set.insert(&item.managedData());
 	}
 
 public:
-	inline SCP_unordered_set<T*> getCheckedData() {
-		SCP_unordered_set<T*> ret{items.size() / 2};
-		getCheckedDataInternal(ret);
+	inline SCP_unordered_set<T*> collectCheckedData(size_t expected_checked = 0) {
+		if (expected_checked == 0)
+			// optimize for half of items checked
+			expected_checked = items.size() / 2;
+		SCP_unordered_set<T*> ret{expected_checked};
+		collectCheckedDataImpl(ret);
 		return ret;
 	}
 
-	inline SCP_unordered_set<const T*> getCheckedData() const {
-		SCP_unordered_set<const T*> ret{items.size() / 2};
-		const_cast<CheckedDataListModel<T>*>(this)->getCheckedDataInternal(ret);
+	inline SCP_unordered_set<const T*> collectCheckedData(size_t expected_checked = 0) const {
+		if (expected_checked == 0)
+			// optimize for half of items checked
+			expected_checked = items.size() / 2;
+		SCP_unordered_set<const T*> ret{expected_checked};
+		const_cast<CheckedDataListModel<T>*>(this)->collectCheckedDataImpl(ret);
 		return ret;
 	}
 

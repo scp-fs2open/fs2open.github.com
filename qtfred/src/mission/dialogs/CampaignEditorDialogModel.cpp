@@ -181,7 +181,7 @@ QStringList CampaignEditorDialogModel::getMissionEvents(const QString& /*model k
 
 QStringList CampaignEditorDialogModel::getMissionNames() {
 	QStringList ret;
-	ret.reserve(static_cast<int>(missionData.getCheckedData().size()));
+	ret.reserve(static_cast<int>(missionData.collectCheckedData().size()));
 	for (auto mn : missionData)
 		if (mn.second)
 			ret << mn.first.filename;
@@ -215,14 +215,14 @@ QList<QAction *> CampaignEditorDialogModel::getContextMenuExtras(QObject *menu_p
 int CampaignEditorDialogModel::getCampaignNumPlayers() const {
 	if (campaignType == campaignTypes[0])
 		return 0;
-	for (const auto *mn : missionData.getCheckedData())
+	for (const auto *mn : missionData.collectCheckedData())
 		if (mn->filename == firstMission)
 			return mn->nPlayers;
 	return 0;
 }
 
 void CampaignEditorDialogModel::connectBranches(bool uiUpdate, const campaign *cpgn) {
-	for (auto *mn: missionData.getCheckedData()) {
+	for (auto *mn: missionData.collectCheckedData()) {
 		if (cpgn) {
 			const cmission *const cm_it{
 				std::find_if(cpgn->missions, &cpgn->missions[cpgn->num_missions],
@@ -234,7 +234,7 @@ void CampaignEditorDialogModel::connectBranches(bool uiUpdate, const campaign *c
 		}
 		for (auto& br: mn->branches)
 			if (br.type == CampaignBranchData::NEXT || br.type == CampaignBranchData::NEXT_NOT_FOUND)
-				br.connect(const_cast<const CheckedDataListModel<CampaignMissionData>&>(missionData).getCheckedData());
+				br.connect(const_cast<const CheckedDataListModel<CampaignMissionData>&>(missionData).collectCheckedData());
 	}
 	if (uiUpdate)
 		parent->updateUIMission();
@@ -283,14 +283,14 @@ void CampaignEditorDialogModel::trackMissionUncheck(const QModelIndex &idx, cons
 		bool checked = missionData.data(idx, Qt::CheckStateRole).toBool();
 
 		//must always have first mission, or no missions
-		if (! missionData.getCheckedData().empty()) {
+		if (! missionData.collectCheckedData().empty()) {
 			if (! checked) {
 				if (mn->filename == firstMission) {
 					QMessageBox::information(parent, tr("First Mission"), tr("You cannot remove the first mission of a campaign,\nunless it is the only one. Choose another to be first."));
 					missionData.setData(idx, Qt::Checked, Qt::CheckStateRole);
 					return;
 				}
-			} else	if (firstMission == "" && missionData.getCheckedData().size() == 1)
+			} else	if (firstMission == "" && missionData.collectCheckedData().size() == 1)
 				firstMission = mn->filename;
 		} else {
 			firstMission = "";
@@ -329,13 +329,13 @@ bool CampaignEditorDialogModel::_saveTo(QString file) const {
 	if (campaignTechReset)
 		Campaign.flags |= CF_CUSTOM_TECH_DATABASE;
 
-	for (auto shp_idx_ptr : initialShips.getCheckedData()) {
+	for (auto shp_idx_ptr : initialShips.collectCheckedData()) {
 		Assertion(shp_idx_ptr, "NULL ship class index in initial ships");
 		Assertion(*shp_idx_ptr < MAX_SHIP_CLASSES, "Illegal ship class index in initial ships: %ld", *shp_idx_ptr);
 		Campaign.ships_allowed[*shp_idx_ptr] = true;
 	}
 
-	for (auto wep_idx_ptr : initialWeapons.getCheckedData()) {
+	for (auto wep_idx_ptr : initialWeapons.collectCheckedData()) {
 		Assertion(wep_idx_ptr, "NULL weapon class index in initial weapons");
 		Assertion(*wep_idx_ptr < MAX_WEAPON_TYPES, "Illegal weapon class index in initial weapons: %ld", *wep_idx_ptr);
 		Campaign.weapons_allowed[*wep_idx_ptr] = true;
@@ -343,7 +343,7 @@ bool CampaignEditorDialogModel::_saveTo(QString file) const {
 
 	if (firstMission.length() > 0) {
 		static const QString PAST_BRANCHES{};
-		SCP_unordered_set<const CampaignMissionData*> unsaved{missionData.getCheckedData()};
+		SCP_unordered_set<const CampaignMissionData*> unsaved{missionData.collectCheckedData()};
 		SCP_queue<const QString*> saveNext{};
 		int i=0, lvl=0, pos=0;
 

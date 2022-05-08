@@ -74,7 +74,7 @@ void CampaignEditorDialog::setModel(CampaignEditorDialogModel *new_model) {
 	ui->cmbLoopAnim->setModel(new QStringListModel{CampaignEditorDialogModel::loopAnims(), model.get()});
 	ui->cmbLoopVoice->setModel(new QStringListModel{CampaignEditorDialogModel::loopVoices(), model.get()});
 
-	model->supplySubModels(*ui->lstShips, *ui->lstWeapons, *ui->lstMissions, *ui->txaDescr);
+	model->supplySubModels(*(ui->lstShips), *(ui->lstWeapons), *(ui->lstMissions), *(ui->txaDescr));
 
 	connect(ui->lstMissions->selectionModel(), &QItemSelectionModel::selectionChanged, model.get(), &CampaignEditorDialogModel::missionSelectionChanged);
 
