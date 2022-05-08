@@ -162,7 +162,7 @@ void CAddModifyContainerDlg::OnButtonOk()
 
 void CAddModifyContainerDlg::OnButtonCancel()
 {
-	if (true /*query_modified()*/) {
+	if (query_modified()) {
 		int z = MessageBox("Do you want to keep your changes?", "Close", MB_ICONQUESTION | MB_YESNOCANCEL);
 		if (z == IDCANCEL) {
 			return;
@@ -958,6 +958,11 @@ void CAddModifyContainerDlg::populate_renamed_containers()
 			m_renamed_containers.emplace(old_name, new_name);
 		}
 	}
+}
+
+bool CAddModifyContainerDlg::query_modified() const
+{
+	return get_all_sexp_containers() != m_containers;
 }
 
 // static data/functions

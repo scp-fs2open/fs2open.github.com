@@ -98,6 +98,7 @@ private:
 	int num_containers() const { return (int)m_containers.size(); }
 	sexp_container &get_current_container();
 	void populate_renamed_containers();
+	bool query_modified() const;
 	static SCP_string create_null_container_name();
 	static bool is_null_container_name(const SCP_string& container_name);
 
