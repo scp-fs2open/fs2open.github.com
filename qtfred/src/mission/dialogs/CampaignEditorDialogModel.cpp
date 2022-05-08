@@ -276,10 +276,10 @@ bool CampaignEditorDialogModel::saveTo(const QString &file) {
 
 void CampaignEditorDialogModel::trackMissionUncheck(const QModelIndex &idx, const QModelIndex &bottomRight, const QVector<int> &roles) {
 	Assert(idx == bottomRight);
-	Assert(missionData.internalData(idx));
+	Assert(missionData.managedData(idx));
 
 	if (roles.contains(Qt::CheckStateRole)) {
-		auto mn = missionData.internalData(idx);
+		auto mn = missionData.managedData(idx);
 		bool checked = missionData.data(idx, Qt::CheckStateRole).toBool();
 
 		//must always have first mission, or no missions
@@ -471,7 +471,7 @@ void CampaignEditorDialogModel::missionSelectionChanged(const QItemSelection & s
 		mnData_idx = QPersistentModelIndex();
 	} else {
 		const QPersistentModelIndex &changed = selected.first().topLeft();
-		mnData_it = missionData.internalData(changed);
+		mnData_it = missionData.managedData(changed);
 		mnData_idx = changed;
 	}
 	parent->updateUIMission();
@@ -502,7 +502,7 @@ int CampaignEditorDialogModel::addCurMnBranchTo(const QModelIndex *other, bool f
 		flagModified();
 		return static_cast<int>(mnData_it->branches.size() -1);
 	}
-	CampaignMissionData *otherMn = missionData.internalData(*other);
+	CampaignMissionData *otherMn = missionData.managedData(*other);
 	if (! otherMn)
 		return -1;
 	CampaignMissionData &from = flip ? *otherMn : *mnData_it;

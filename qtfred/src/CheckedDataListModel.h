@@ -4,6 +4,7 @@
 #include <QAbstractListModel>
 #include "globalincs/vmallocator.h"
 #include <QBrush>
+#include "osapi/dialogs.h"
 
 namespace fso {
 namespace fred {
@@ -25,34 +26,34 @@ class CheckedDataListModel : public QAbstractListModel
 	};
 	template<class U = T, class Enabler = void>
 	class RowData : public BaseRowData{
-		U _internalData;
+		U _managedData;
 	public:
-		RowData(const QString &text, const U &internalData, bool checked, Qt::GlobalColor bgColor = Qt::color0) :
+		RowData(const QString &text, const U &managedData, bool checked, Qt::GlobalColor bgColor = Qt::color0) :
 			BaseRowData(text, checked, bgColor),
-			_internalData(internalData)
+			_managedData(managedData)
 		{}
 
 		explicit RowData(RowData&& move) noexcept = default;
 		RowData& operator=(RowData&& move) = delete;
 
-		inline U& internalData() {return _internalData;}
-		inline const U& internalData() const {return _internalData;}
+		inline U& managedData() {return _managedData;}
+		inline const U& managedData() const {return _managedData;}
 	};
 
 	template<class U>
 	class RowData<U, typename std::enable_if<std::is_class<U>::value>::type> : public BaseRowData{
-		std::unique_ptr<U> _internalData;
+		std::unique_ptr<U> _managedData;
 	public:
-		RowData(const QString &text, U* internalData, bool checked, Qt::GlobalColor bgColor = Qt::color0) :
+		RowData(const QString &text, U* managedData, bool checked, Qt::GlobalColor bgColor = Qt::color0) :
 			BaseRowData(text, checked, bgColor),
-			_internalData(std::move(internalData))
+			_managedData(std::move(managedData))
 		{}
 
 		explicit RowData(RowData&& move) noexcept = default;
 		RowData& operator=(RowData&& move) = delete;
 
-		inline U& internalData() {return *_internalData;}
-		inline const U& internalData() const {return *_internalData;}
+		inline U& managedData() {return *_managedData;}
+		inline const U& managedData() const {return *_managedData;}
 	};
 
 public:
@@ -104,17 +105,22 @@ public:
 			return {};
 	}
 
-	inline const T* internalData(const QModelIndex &index) const {
-		if (! index.isValid()) return nullptr;
-		size_t row{static_cast<size_t>(index.row())};
-		if (row >= items.size()) return nullptr;
-		return &items[row].internalData();
+	inline const T* managedData(const QModelIndex &index) const {
+		if (! index.isValid()) {
+			Warning(LOCATION,"Tried to retrieve invalid/empty index from CheckedDataListModel %s \nValidate item selection before calling managedData() if possible.", qPrintable(this->objectName()));
+			return nullptr;
+		}
+		auto row = static_cast<size_t>(index.row());
+		if (row >= items.size())
+			return nullptr;
+		return &items[row].managedData();
 	}
 
-	inline T* internalData(const QModelIndex &index) {
+	inline T* managedData(const QModelIndex &index) {
+		//re-use the const implementation for non-const this
 		return const_cast<T*>(
 					const_cast<const CheckedDataListModel<T>*>(this)
-					->internalData(index));
+					->managedData(index));
 	}
 
 	bool setData(const QModelIndex &index, const QVariant &value,
@@ -146,7 +152,7 @@ private:
 	inline void getCheckedDataInternal(SCP_unordered_set<V*> &set) {
 		for (auto& item : items)
 			if (item._checked)
-				set.insert(&item.internalData());
+				set.insert(&item.managedData());
 	}
 
 public:
@@ -174,8 +180,8 @@ public:
 
 		Iterator(iterator_delegate it) : _it(it) {}
 
-		reference operator*() const { return reference(_it->internalData(), _it->_checked); }
-		pointer operator->() { return pointer(&_it->internalData(), _it->_checked); }
+		reference operator*() const { return reference(_it->managedData(), _it->_checked); }
+		pointer operator->() { return pointer(&_it->managedData(), _it->_checked); }
 		Iterator& operator++() { _it++; return *this; }
 		Iterator operator++(int) { Iterator tmp = *this; ++(*this); return tmp; }
 		bool operator== (const Iterator &other) { return _it == other._it;}
@@ -200,8 +206,8 @@ public:
 
 		ConstIterator(iterator_delegate it) : _it(it) {}
 
-		reference operator*() const { return reference(_it->internalData(), _it->_checked); }
-		pointer operator->() { return pointer(&_it->internalData(), _it->_checked); }
+		reference operator*() const { return reference(_it->managedData(), _it->_checked); }
+		pointer operator->() { return pointer(&_it->managedData(), _it->_checked); }
 		ConstIterator& operator++() { _it++; return *this; }
 		ConstIterator operator++(int) { ConstIterator tmp = *this; ++(*this); return tmp; }
 		bool operator== (const ConstIterator &other) { return _it == other._it;}
