@@ -243,7 +243,16 @@ void camera::set_rotation_facing(vec3d *in_target, float in_rotation_time, float
 	{
 		vec3d position;
 		matrix orient_buf;
-		auto orient = Use_host_orientation_for_set_camera_facing ? &orient_buf : nullptr;
+		matrix *orient = nullptr;
+
+		if (Use_host_orientation_for_set_camera_facing)
+		{
+			// we want to retrieve the camera's orientation, so provide a buffer for it
+			orient = &orient_buf;
+
+			// reset the camera's orientation state because if we have no host object, that is what the camera will default to
+			c_ori = vmd_identity_matrix;
+		}
 
 		this->get_info(&position, orient, false);
 
