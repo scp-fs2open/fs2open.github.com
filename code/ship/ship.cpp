@@ -6689,6 +6689,10 @@ static void ship_set(int ship_index, int objnum, int ship_type)
 	shipp->warpin_params_index = sip->warpin_params_index;
 	shipp->warpout_params_index = sip->warpout_params_index;
 
+	// default cues, which will be changed later unless this is created in the lab or by ship-create
+	shipp->arrival_cue = Locked_sexp_true;
+	shipp->departure_cue = Locked_sexp_false;
+
 	if(pm != NULL && pm->n_view_positions > 0)
 		ship_set_eye(objp, 0);
 	else
