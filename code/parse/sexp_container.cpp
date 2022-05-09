@@ -880,7 +880,6 @@ int sexp_list_has_data(int node)
 	const auto &list_data = container.list_data;
 
 	node = CDR(node);
-	// there should be at least one string to search for
 	Assertion(node != -1, "List-has-data wasn't given data to look for. Please report!");
 
 	SCP_string possible_data;
@@ -951,7 +950,6 @@ int sexp_map_has_key(int node)
 	const auto &map_data = container.map_data;
 
 	node = CDR(node);
-	// there should be at least one key to search for
 	Assertion(node != -1, "Map-has-key wasn't given keys to look for. Please report!");
 
 	SCP_string possible_key;
@@ -1065,5 +1063,279 @@ int sexp_container_eval_status_sexp(int op_num, int node)
 		default:
 			UNREACHABLE("Unknown container status SEXP operator %d. Please report!", op_num);
 			return SEXP_FALSE;
+	}
+}
+
+// Change SEXPs
+void sexp_add_to_list(int node)
+{
+	const char *container_name = CTEXT(node);
+	auto *p_container = get_sexp_container(container_name);
+
+	if (!p_container) {
+		report_nonexistent_container("Add-to-list", container_name);
+		return;
+	}
+
+	auto &container = *p_container;
+
+	node = CDR(node);
+	Assertion(node != -1, "Add-to-list wasn't told which end of the list to add to. Please report!");
+
+	const bool add_to_back = is_sexp_true(node);
+
+	node = CDR(node);
+	Assertion(node != -1, "Add-to-list wasn't given data to add. Please report!");
+
+	if (!container.is_list()) {
+		report_non_list_container("Add-to-list", container_name);
+		return;
+	}
+
+	while (node != -1) {
+		if (add_to_back) {
+			container.list_data.emplace_back(CTEXT(node));
+		} else {
+			container.list_data.emplace_front(CTEXT(node));
+		}
+
+		node = CDR(node);
+	}
+}
+
+void sexp_remove_from_list(int node)
+{
+	const char *container_name = CTEXT(node);
+	auto *p_container = get_sexp_container(container_name);
+
+	if (!p_container) {
+		report_nonexistent_container("Remove-from-list", container_name);
+		return;
+	}
+
+	auto &container = *p_container;
+
+	if (!container.is_list()) {
+		report_non_list_container("Remove-from-list", container_name);
+		return;
+	}
+
+	node = CDR(node);
+	Assertion(node != -1, "Remove-from-list wasn't given data to remove. Please report!");
+
+	auto &list_data = container.list_data;
+
+	SCP_string data_to_remove;
+	while (node != -1) {
+		data_to_remove = CTEXT(node);
+		auto list_it = std::find(list_data.begin(), list_data.end(), data_to_remove);
+		if (list_it != list_data.end()) {
+			list_data.erase(list_it);
+		} else {
+			const SCP_string msg =
+				"Remove-from-list couldn't find data " + data_to_remove + " inside list container " + container_name;
+			Warning(LOCATION, "%s", msg.c_str());
+			log_printf(LOGFILE_EVENT_LOG, "%s", msg.c_str());
+		}
+
+		node = CDR(node);
+	}
+}
+
+void sexp_add_to_map(int node)
+{
+	const char *container_name = CTEXT(node);
+	auto *p_container = get_sexp_container(container_name);
+
+	if (!p_container) {
+		report_nonexistent_container("Add-to-map", container_name);
+		return;
+	}
+
+	auto &container = *p_container;
+
+	if (!container.is_map()) {
+		report_non_map_container("Add-to-map", container_name);
+		return;
+	}
+
+	auto &map_data = container.map_data;
+
+	node = CDR(node);
+	Assertion(node != -1, "Add-to-map wasn't given values to add. Please report!");
+
+	while (node != -1) {
+		// key but no value
+		if (CDR(node) == -1) {
+			const SCP_string msg = SCP_string("Add-to-map with container ") + container_name + " was provided a key " +
+								   CTEXT(node) + " with no associated data";
+			Warning(LOCATION, "%s", msg.c_str());
+			log_printf(LOGFILE_EVENT_LOG, "%s", msg.c_str());
+			return;
+		}
+
+		const char *key = CTEXT(node);
+#if !defined(NDEBUG) || defined(SCP_RELEASE_LOGGING)
+		if (map_data.find(key) != map_data.end()) {
+			// replacing an existing key's data isn't an error but should be logged
+			const SCP_string msg = SCP_string("Add-to-map: Key '") + key + "' already exists in map container " +
+								   container_name + ". Replacing its data.";
+			mprintf(("%s\n", msg.c_str()));
+			log_printf(LOGFILE_EVENT_LOG, "%s", msg.c_str());
+		}
+#endif
+		map_data.emplace(key, CTEXT(CDR(node)));
+
+		// skip the value and move onto the next key
+		node = CDDR(node);
+	}
+}
+
+void sexp_remove_from_map(int node)
+{
+	const char *container_name = CTEXT(node);
+	auto *p_container = get_sexp_container(container_name);
+
+	if (!p_container) {
+		report_nonexistent_container("Remove-from-map", container_name);
+		return;
+	}
+
+	auto &container = *p_container;
+
+	if (!container.is_map()) {
+		report_non_map_container("Remove-from-map", container_name);
+		return;
+	}
+
+	node = CDR(node);
+	Assertion(node != -1, "Remove-from-map wasn't given keys to remove. Please report!");
+
+	SCP_string key_to_remove;
+	while (node != -1) {
+		key_to_remove = CTEXT(node);
+		if (container.map_data.erase(key_to_remove) == 0) {
+			const SCP_string msg =
+				"Remove-from-map couldn't find key " + key_to_remove + " inside map container " + container_name;
+			Warning(LOCATION, "%s", msg.c_str());
+			log_printf(LOGFILE_EVENT_LOG, "%s", msg.c_str());
+		}
+
+		node = CDR(node);
+	}
+}
+
+void sexp_get_map_keys(int node)
+{
+	bool replace_contents = true;
+
+	const char *map_container_name = CTEXT(node);
+	const auto *p_map_container = get_sexp_container(map_container_name);
+
+	if (!p_map_container) {
+		report_nonexistent_container("Get-map-keys", map_container_name);
+		return;
+	}
+
+	node = CDR(node);
+	Assertion(node != -1, "Get-map-keys wasn't given a list container. Please report!");
+
+	const char *list_container_name = CTEXT(node);
+
+	auto *p_list_container = get_sexp_container(list_container_name);
+
+	if (!p_list_container) {
+		report_nonexistent_container("Get-map-keys", list_container_name);
+		return;
+	}
+
+	const auto &map_container = *p_map_container;
+	auto &list_container = *p_list_container;
+
+	// both containers must be of the correct type. 
+	if (!map_container.is_map()) {
+		report_non_map_container("Get-map-keys", map_container_name);
+		return;
+	}
+	if (!list_container.is_list()) {
+		report_non_list_container("Get-map-keys", list_container_name);
+		return;
+	}
+	if ((any(map_container.type & ContainerType::STRING_KEYS) &&
+		none(list_container.type & ContainerType::STRING_DATA)) ||
+		(any(map_container.type & ContainerType::NUMBER_KEYS) &&
+			none(list_container.type & ContainerType::NUMBER_DATA))) {
+		const SCP_string msg = SCP_string("Get-map-keys called on map container ") + map_container_name +
+							   " whose key type doesn't match data type of list container " + list_container_name;
+		Warning(LOCATION, "%s", msg.c_str());
+		log_printf(LOGFILE_EVENT_LOG, "%s", msg.c_str());
+		return;
+	}
+
+	node = CDR(node);
+	if (node != -1) {
+		replace_contents = is_sexp_true(node);
+	}
+
+	if (replace_contents) {
+		list_container.list_data.clear();
+	}
+
+	for (const auto &kv_pair : map_container.map_data) {
+		list_container.list_data.emplace_back(kv_pair.first);
+	}
+}
+
+void sexp_clear_container(int node)
+{
+	const char *container_name = CTEXT(node);
+	auto *p_container = get_sexp_container(container_name);
+
+	if (!p_container) {
+		report_nonexistent_container("Clear-container", container_name);
+		return;
+	}
+
+	auto &container = *p_container;
+
+	if (container.is_map()) {
+		container.map_data.clear();
+	} else if (container.is_list()) {
+		container.list_data.clear();
+	} else {
+		UNREACHABLE("Container %s has invalid type (%d). Please report!", container_name, (int)container.type);
+	}
+}
+
+int sexp_container_eval_change_sexp(int op_num, int node)
+{
+	switch (op_num) {
+	case OP_CONTAINER_ADD_TO_LIST:
+		sexp_add_to_list(node);
+		return SEXP_TRUE;
+
+	case OP_CONTAINER_REMOVE_FROM_LIST:
+		sexp_remove_from_list(node);
+		return SEXP_TRUE;
+
+	case OP_CONTAINER_ADD_TO_MAP:
+		sexp_add_to_map(node);
+		return SEXP_TRUE;
+
+	case OP_CONTAINER_REMOVE_FROM_MAP:
+		sexp_remove_from_map(node);
+		return SEXP_TRUE;
+
+	case OP_CONTAINER_GET_MAP_KEYS:
+		sexp_get_map_keys(node);
+		return SEXP_TRUE;
+
+	case OP_CLEAR_CONTAINER:
+		sexp_clear_container(node);
+		return SEXP_TRUE;
+
+	default:
+		UNREACHABLE("Unknown container change SEXP operator %d", op_num);
+		return SEXP_FALSE;
 	}
 }
