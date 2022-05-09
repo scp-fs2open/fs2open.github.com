@@ -1385,13 +1385,13 @@ int free_sexp(int num, int calling_node)
 {
 	int i, rest, count = 0;
 
-	Assert((num >= 0) && (num < Num_sexp_nodes));
-	Assert(Sexp_nodes[num].type != SEXP_NOT_USED);  // make sure it is actually used
-	Assert(!(Sexp_nodes[num].type & SEXP_FLAG_PERSISTENT));
-
 	// never free these nodes
 	if ((num == -1) || (num == Locked_sexp_true) || (num == Locked_sexp_false))
 		return 0;
+
+	Assert((num >= 0) && (num < Num_sexp_nodes));
+	Assert(Sexp_nodes[num].type != SEXP_NOT_USED);  // make sure it is actually used
+	Assert(!(Sexp_nodes[num].type & SEXP_FLAG_PERSISTENT));
 
 	Sexp_nodes[num].type = SEXP_NOT_USED;
 	if (Sexp_nodes[num].cache)
@@ -1432,14 +1432,14 @@ int free_sexp2(int num, int calling_node)
 {	
 	int i, rest, count = 0;
 
-	Assert((num >= 0) && (num < Num_sexp_nodes));
-	Assert(Sexp_nodes[num].type != SEXP_NOT_USED);  // make sure it is actually used
-	Assert(!(Sexp_nodes[num].type & SEXP_FLAG_PERSISTENT));
-
 	// never free these nodes
 	if ((num == -1) || (num == Locked_sexp_true) || (num == Locked_sexp_false)){
 		return 0;
 	}
+
+	Assert((num >= 0) && (num < Num_sexp_nodes));
+	Assert(Sexp_nodes[num].type != SEXP_NOT_USED);  // make sure it is actually used
+	Assert(!(Sexp_nodes[num].type & SEXP_FLAG_PERSISTENT));
 
 	i = Sexp_nodes[num].rest;
 	while (i != -1) {
