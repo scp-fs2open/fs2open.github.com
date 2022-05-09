@@ -156,7 +156,7 @@ int timestamp() {
 }
 
 TIMESTAMP _timestamp() {
-	return TIMESTAMP(timer_get_milliseconds());
+	return TIMESTAMP(timestamp_ms());
 }
 
 UI_TIMESTAMP ui_timestamp() {
@@ -189,10 +189,10 @@ TIMESTAMP _timestamp(int delta_ms) {
 	int t2;
 	if (delta_ms < 0 ) return TIMESTAMP::never();
 	if (delta_ms == 0 ) return TIMESTAMP::immediate();
-	t2 = timer_get_milliseconds() + delta_ms;
+	t2 = timestamp_ms() + delta_ms;
 	if ( t2 > (int)MAX_TIME )	{
 		// wrap!!!
-		t2 = delta_ms - (MAX_TIME-timer_get_milliseconds());
+		t2 = delta_ms - (MAX_TIME-timestamp_ms());
 	}
 	if (t2 < 2 ) t2 = 2;	// hack??
 	return TIMESTAMP(t2);
@@ -243,7 +243,7 @@ int timestamp_until(TIMESTAMP stamp)
 	if (stamp.isImmediate())
 		return 0;
 
-	return stamp.value() - timer_get_milliseconds();
+	return stamp.value() - timestamp_ms();
 }
 
 int ui_timestamp_until(UI_TIMESTAMP stamp)
@@ -285,7 +285,7 @@ bool timestamp_elapsed(TIMESTAMP stamp) {
 		return true;
 	}
 
-	return timer_get_milliseconds() >= stamp.value();
+	return timestamp_ms() >= stamp.value();
 }
 
 bool ui_timestamp_elapsed(UI_TIMESTAMP ui_stamp) {
