@@ -16820,14 +16820,35 @@ void sexp_parse_ship_alt_name_or_callsign(p_object *parse_obj, int alt_index, bo
 // Goober5000
 void sexp_ship_change_alt_name_or_callsign(int node, bool alt_name)
 {
+	char new_string[TOKEN_LENGTH];
 	int n = node, new_index;
+	bool string_was_empty;
 
 	// get the string
-	auto new_string = CTEXT(n);
+	strcpy_s(new_string, CTEXT(n));
 	n = CDR(n);
 
-	// and its index
-	if (!*new_string || !stricmp(new_string, SEXP_ANY_STRING))
+	// packets for multi
+	if (MULTIPLAYER_MASTER)
+	{
+		Current_sexp_network_packet.start_callback();
+		Current_sexp_network_packet.send_string(new_string);
+	}
+
+	// if the hash is at the beginning, the string might be truncated to empty, so check this first
+	string_was_empty = (*new_string == '\0');
+
+	if (alt_name)
+	{
+		// truncate at a single hash
+		end_string_at_first_hash_symbol(new_string, true);
+
+		// ## -> #
+		consolidate_double_characters(new_string, '#');
+	}
+
+	// get the string's index
+	if (string_was_empty || !stricmp(new_string, SEXP_ANY_STRING))
 	{
 		new_index = -1;
 	}
@@ -16845,13 +16866,6 @@ void sexp_ship_change_alt_name_or_callsign(int node, bool alt_name)
 			if (new_index < 0)
 				new_index = mission_parse_add_callsign(new_string);
 		}
-	}
-
-	// packets for multi
-	if (MULTIPLAYER_MASTER)
-	{
-		Current_sexp_network_packet.start_callback();
-		Current_sexp_network_packet.send_string(new_string);
 	}
 
 	for ( ; n != -1; n = CDR(n) )
@@ -16912,10 +16926,23 @@ void multi_sexp_ship_change_alt_name_or_callsign(bool alt_name)
 {
 	char new_string[TOKEN_LENGTH];
 	int type, new_index;
+	bool string_was_empty;
 
 	Current_sexp_network_packet.get_string(new_string);
 
-	if (!*new_string || !stricmp(new_string, SEXP_ANY_STRING))
+	// if the hash is at the beginning, the string might be truncated to empty, so check this first
+	string_was_empty = (*new_string == '\0');
+
+	if (alt_name)
+	{
+		// truncate at a single hash
+		end_string_at_first_hash_symbol(new_string, true);
+
+		// ## -> #
+		consolidate_double_characters(new_string, '#');
+	}
+
+	if (string_was_empty || !stricmp(new_string, SEXP_ANY_STRING))
 	{
 		new_index = -1;
 	}
