@@ -23169,9 +23169,8 @@ void sexp_show_subtitle_text(int node)
 	Current_sexp_network_packet.send_bool(center_y);
 	Current_sexp_network_packet.send_int(width_input);
 	Current_sexp_network_packet.send_bool(post_shaded);
- 	// TODO: uncomment when Github ticket #3773 is implemented
-	//Current_sexp_network_packet.send_int(line_height_modifier);
-	//Current_sexp_network_packet.send_bool(adjust_wh);
+	Current_sexp_network_packet.send_int(line_height_modifier);
+	Current_sexp_network_packet.send_bool(adjust_wh);
 	Current_sexp_network_packet.end_callback();
 }
 
@@ -23206,9 +23205,8 @@ void multi_sexp_show_subtitle_text()
 	Current_sexp_network_packet.get_bool(center_y);
 	Current_sexp_network_packet.get_int(width_input);
 	Current_sexp_network_packet.get_bool(post_shaded);
-	// TODO: uncomment when Github ticket #3773 is implemented
-	//Current_sexp_network_packet.get_int(line_height_modifier);
-	//Current_sexp_network_packet.get_bool(adjust_wh);
+	Current_sexp_network_packet.get_int(line_height_modifier);
+	Current_sexp_network_packet.get_bool(adjust_wh);
 
 	gr_init_alphacolor(&new_color, red, green, blue, 255);
 
@@ -23323,8 +23321,7 @@ void sexp_show_subtitle_image(int node)
 	Current_sexp_network_packet.send_int(width);
 	Current_sexp_network_packet.send_int(height);
 	Current_sexp_network_packet.send_bool(post_shaded);
-	// TODO: uncomment when Github ticket #3773 is implemented
-	//Current_sexp_network_packet.send_bool(adjust_wh);
+	Current_sexp_network_packet.send_bool(adjust_wh);
 	Current_sexp_network_packet.end_callback();
 }
 
@@ -23347,8 +23344,7 @@ void multi_sexp_show_subtitle_image()
 	Current_sexp_network_packet.get_int(width_input);
 	Current_sexp_network_packet.get_int(height_input);
 	Current_sexp_network_packet.get_bool(post_shaded);
-	// TODO: uncomment when Github ticket #3773 is implemented
-	//Current_sexp_network_packet.get_bool(adjust_wh);
+	Current_sexp_network_packet.get_bool(adjust_wh);
 
 	// calculate pixel positions
 	int x_pos, y_pos, width, height;
