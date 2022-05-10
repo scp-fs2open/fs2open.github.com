@@ -426,7 +426,7 @@ cmdline_parm mpnoreturn_arg("-mpnoreturn", NULL, AT_NONE);	// Cmdline_mpnoreturn
 cmdline_parm objupd_arg("-cap_object_update", "Multiplayer object update cap (0-3)", AT_INT);
 cmdline_parm gateway_ip_arg("-gateway_ip", "Set gateway IP address", AT_STRING);
 
-char *Cmdline_almission = NULL;	//DTP for autoload multi mission.
+char *Cmdline_almission = nullptr;	//DTP for autoload multi mission.
 int Cmdline_ingamejoin = 1;
 int Cmdline_mpnoreturn = 0;
 int Cmdline_objupd = 3;		// client object updates on LAN by default

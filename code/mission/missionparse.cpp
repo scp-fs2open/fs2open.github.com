@@ -6202,7 +6202,7 @@ bool post_process_mission()
 	mission_parse_set_arrival_locations();
 
 	// clear out information about arriving support ships
-	Arriving_support_ship = NULL;
+	Arriving_support_ship = nullptr;
 	Num_arriving_repair_targets = 0;
 
 	// convert all ship name indices to ship indices now that mission has been loaded

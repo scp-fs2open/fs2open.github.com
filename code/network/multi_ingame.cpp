@@ -1149,7 +1149,7 @@ void send_ingame_ships_packet(net_player *player)
 		auto check = shipp->flags.to_ubyte_vector(ship_flags_out);
 		Assertion(check <= 255, "Somehow FSO thinks there are too many ship flags, %d * 8 to be exact. Please report!", static_cast<int>(check));
 
-		ubyte temp_size = static_cast<ubyte>(check);
+		auto temp_size = static_cast<ubyte>(check);
 		ADD_DATA(temp_size);
 
 		for (auto& item : ship_flags_out){
@@ -1842,19 +1842,20 @@ void send_ingame_ship_update_packet(net_player *p,ship *sp)
 
 	BUILD_HEADER(INGAME_SHIP_UPDATE);
 	
-	// just send net signature, shield and hull percentages
+	// just send net signature, flags and shield and hull percentages
 	objp = &Objects[sp->objnum];
 
+	ADD_USHORT(objp->net_signature);
+
+	// flags
 	SCP_vector<ubyte> obj_flags_out;
 	objp->flags.to_ubyte_vector(obj_flags_out);
 
 	Assertion(obj_flags_out.size() <= 255, "FSO thinks there are too many object flags to send over multiplayer, specifically %d * 8. Please report!", static_cast<int>(obj_flags_out.size()));
 
-	ubyte temp_size = static_cast<ubyte>(obj_flags_out.size());
+	auto temp_size = static_cast<ubyte>(obj_flags_out.size());
 
-	ADD_USHORT(objp->net_signature);
-
-	// flag entries
+	// Add flag entries
 	ADD_DATA(temp_size);
 	for (auto& entry : obj_flags_out){
 		ADD_DATA(entry);
