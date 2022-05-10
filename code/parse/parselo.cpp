@@ -3938,8 +3938,9 @@ void consolidate_double_characters(char *src, char ch)
 // Note that the parameter here is max *length*, not max buffer size.  Leave room for the null-terminator!
 ptrdiff_t replace_one(char *str, const char *oldstr, const char *newstr, size_t max_len, ptrdiff_t range)
 {
-	Assert(str && oldstr && newstr);
-	if (!str || !oldstr || !newstr)
+	Assertion(str && oldstr && newstr, "Arguments must not be null!");
+	Assertion(max_len < SIZE_MAX, "Size must be less than SIZE_MAX because an extra char is added for the null terminator.");
+	if (!str || !oldstr || !newstr || max_len == SIZE_MAX)
 		return -3;
 
 	// search
@@ -3967,7 +3968,7 @@ ptrdiff_t replace_one(char *str, const char *oldstr, const char *newstr, size_t 
 		if (temp)
 		{
 			// save remainder of string
-			strcpy_s(temp, sizeof(char)*max_len, ch + strlen(oldstr));
+			strcpy(temp, ch + strlen(oldstr));
 
 			// replace
 			strcpy(ch, newstr);

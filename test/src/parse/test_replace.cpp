@@ -62,6 +62,9 @@ TEST_F(ReplaceTest, replace_one_cstr)
 	EXPECT_STREQ("gakbccddgf", buf);
 
 	// successful replacement when growing string
+	strcpy_s(buf, "abcdef");
+	EXPECT_EQ(2, replace_one(buf, "cd", "xyz123", MAX_LEN));
+	EXPECT_STREQ("abxyz123ef", buf);
 	strcpy_s(buf, "abcd");
 	EXPECT_EQ(2, replace_one(buf, "cd", "xyz123", MAX_LEN));
 	EXPECT_STREQ("abxyz123", buf);
