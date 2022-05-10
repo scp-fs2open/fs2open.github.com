@@ -3934,6 +3934,7 @@ void consolidate_double_characters(char *src, char ch)
 }
 
 // Goober5000
+// Returns position of replacement, or a negative value if replacement failed: -1 if search string was not found, -2 if replacement would exceed max length, or -3 if any string argument is null
 // Note that the parameter here is max *length*, not max buffer size.  Leave room for the null-terminator!
 ptrdiff_t replace_one(char *str, const char *oldstr, const char *newstr, size_t max_len, ptrdiff_t range)
 {
@@ -3989,6 +3990,7 @@ ptrdiff_t replace_one(char *str, const char *oldstr, const char *newstr, size_t 
 }
 
 // Goober5000
+// Returns number of replacements or a negative result from replace_one if a replacement failed for some reason other than not found
 // Note that the parameter here is max *length*, not max buffer size.  Leave room for the null-terminator!
 int replace_all(char *str, const char *oldstr, const char *newstr, size_t max_len, ptrdiff_t range)
 {
@@ -4009,6 +4011,8 @@ int replace_all(char *str, const char *oldstr, const char *newstr, size_t max_le
 	return (val < -1) ? (int)val : tally;
 }
 
+// Goober5000
+// Returns position of replacement, or -1 if search string was not found
 ptrdiff_t replace_one(SCP_string& context, const SCP_string& from, const SCP_string& to)
 {
 	size_t foundHere;
@@ -4021,6 +4025,8 @@ ptrdiff_t replace_one(SCP_string& context, const SCP_string& from, const SCP_str
 		return -1;
 }
 
+// Goober5000
+// Returns position of replacement, or -1 if search string was not found
 ptrdiff_t replace_one(SCP_string& context, const char* from, const char* to)
 {
 	size_t foundHere;
@@ -4033,6 +4039,8 @@ ptrdiff_t replace_one(SCP_string& context, const char* from, const char* to)
 		return -1;
 }
 
+// Goober5000
+// Returns number of replacements
 // http://www.cppreference.com/wiki/string/replace
 int replace_all(SCP_string& context, const SCP_string& from, const SCP_string& to)
 {
@@ -4054,6 +4062,8 @@ int replace_all(SCP_string& context, const SCP_string& from, const SCP_string& t
 	return tally;
 }
 
+// Goober5000
+// Returns number of replacements
 // http://www.cppreference.com/wiki/string/replace
 int replace_all(SCP_string& context, const char* from, const char* to)
 {
