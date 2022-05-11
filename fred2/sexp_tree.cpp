@@ -1233,7 +1233,7 @@ void sexp_tree::right_clicked(int mode)
 			}
 
 			// add_type unchanged from above
-			if (add_type == OPR_STRING) {
+			if (add_type == OPR_STRING && !is_container_opf_type(type)) {
 				menu.EnableMenuItem(ID_ADD_STRING, MF_ENABLED);
 			}
 
@@ -1384,19 +1384,14 @@ void sexp_tree::right_clicked(int mode)
 				replace_type = OPR_POSITIVE;
 				menu.EnableMenuItem(ID_REPLACE_NUMBER, MF_ENABLED);
 
-			} else if (is_container_opf_type(type)) {
-				// avoid the default OPR_STRING
-				// that way, Replace Data with String won't be enabled
-				replace_type = type;
-
 			} else if (type == OPF_CONTAINER_VALUE) {
 				// allow strings and numbers
 				// type is checked in check_sexp_syntax()
 				menu.EnableMenuItem(ID_REPLACE_NUMBER, MF_ENABLED);
 			}
 
-			// default to string
-			if (replace_type == OPR_STRING) {
+			// default to string, except for container names
+			if (replace_type == OPR_STRING && !is_container_opf_type(type)) {
 				menu.EnableMenuItem(ID_REPLACE_STRING, MF_ENABLED);
 			}
 
@@ -1620,9 +1615,9 @@ void sexp_tree::right_clicked(int mode)
 						if (add_type == OPR_NUMBER)
 							menu.EnableMenuItem(ID_EDIT_PASTE_SPECIAL, MF_ENABLED);
 					} else if (any(container.type & ContainerType::STRING_DATA)) {
-						if (replace_type == OPR_STRING)
+						if (replace_type == OPR_STRING && !is_container_opf_type(type))
 							menu.EnableMenuItem(ID_EDIT_PASTE, MF_ENABLED);
-						if (add_type == OPR_STRING)
+						if (add_type == OPR_STRING && !is_container_opf_type(type))
 							menu.EnableMenuItem(ID_EDIT_PASTE_SPECIAL, MF_ENABLED);
 					} else {
 						UNREACHABLE("Unknown container data type %d", (int)container.type);
@@ -1643,10 +1638,10 @@ void sexp_tree::right_clicked(int mode)
 					menu.EnableMenuItem(ID_EDIT_PASTE_SPECIAL, MF_ENABLED);
 
 			} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_STRING) {
-				if (replace_type == OPR_STRING)
+				if (replace_type == OPR_STRING && !is_container_opf_type(type))
 					menu.EnableMenuItem(ID_EDIT_PASTE, MF_ENABLED);
 
-				if (add_type == OPR_STRING)
+				if (add_type == OPR_STRING && !is_container_opf_type(type))
 					menu.EnableMenuItem(ID_EDIT_PASTE_SPECIAL, MF_ENABLED);
 
 			} else
