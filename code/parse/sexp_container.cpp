@@ -1288,22 +1288,26 @@ void sexp_get_map_keys(int node)
 
 void sexp_clear_container(int node)
 {
-	const char *container_name = CTEXT(node);
-	auto *p_container = get_sexp_container(container_name);
+	Assertion(node != -1, "Clear-container wasn't given any containers. Please report!");
 
-	if (!p_container) {
-		report_nonexistent_container("Clear-container", container_name);
-		return;
-	}
+	for (; node != -1; node = CDR(node)) {
+		const char *container_name = CTEXT(node);
+		auto *p_container = get_sexp_container(container_name);
 
-	auto &container = *p_container;
+		if (!p_container) {
+			report_nonexistent_container("Clear-container", container_name);
+			continue;
+		}
 
-	if (container.is_map()) {
-		container.map_data.clear();
-	} else if (container.is_list()) {
-		container.list_data.clear();
-	} else {
-		UNREACHABLE("Container %s has invalid type (%d). Please report!", container_name, (int)container.type);
+		auto &container = *p_container;
+
+		if (container.is_map()) {
+			container.map_data.clear();
+		} else if (container.is_list()) {
+			container.list_data.clear();
+		} else {
+			UNREACHABLE("Container %s has invalid type (%d). Please report!", container_name, (int)container.type);
+		}
 	}
 }
 

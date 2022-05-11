@@ -746,7 +746,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "add-to-map",						OP_CONTAINER_ADD_TO_MAP,				3,	INT_MAX,	SEXP_ACTION_OPERATOR, },	// Karajorma
 	{ "remove-from-map",				OP_CONTAINER_REMOVE_FROM_MAP,			2,	INT_MAX,	SEXP_ACTION_OPERATOR, },	// Karajorma
 	{ "get-map-keys",					OP_CONTAINER_GET_MAP_KEYS,				2,	3,			SEXP_ACTION_OPERATOR, },	// Karajorma
-	{ "clear-container",				OP_CLEAR_CONTAINER,						1,	1,			SEXP_ACTION_OPERATOR, },	// Karajorma
+	{ "clear-container",				OP_CLEAR_CONTAINER,						1,	INT_MAX,	SEXP_ACTION_OPERATOR, },	// Karajorma
 
 	//Other Sub-Category
 	{ "damaged-escort-priority",		OP_DAMAGED_ESCORT_LIST,					3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	//phreak
@@ -28498,12 +28498,7 @@ int query_operator_argument_type(int op, int argnum)
 			}
 
 		case OP_CLEAR_CONTAINER:
-			if (argnum == 0) {
-				return OPF_CONTAINER_NAME;
-			} else {
-				// This shouldn't happen
-				return OPF_NONE;
-			}
+			return OPF_CONTAINER_NAME;
 
 		case OP_HAS_DOCKED:
 		case OP_HAS_UNDOCKED:
@@ -33485,10 +33480,10 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t3:\t(Optional) When true, the list container's current contents are deleted. When false, the keys are appended to the end of the list." },
 
 	// Karajorma/jg18
-	{ OP_CLEAR_CONTAINER, "add-to-map\r\n"
-		"\tDeletes the current contents of a container.\r\n\r\n"
-		"Takes 1 argument...\r\n"
-		"\t1:\tName of the container.\r\n" },
+	{ OP_CLEAR_CONTAINER, "clear-container\r\n"
+		"\tDeletes the current contents of one or more containers.\r\n\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\tAll:\tName of the container(s) to clear.\r\n" },
 
 	{ OP_PROTECT_SHIP, "Protect ship (Action operator)\r\n"
 		"\tProtects a ship from being attacked by any enemy ship.  Any ship "
