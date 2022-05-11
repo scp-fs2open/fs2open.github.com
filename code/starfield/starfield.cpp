@@ -2431,6 +2431,9 @@ void stars_correct_background_sun_angles(angles* angs_to_correct)
 	vm_angles_2_matrix(&mat, angs_to_correct);
 	vm_transpose(&mat);
 	vm_extract_angles_matrix(angs_to_correct, &mat);
+	angs_to_correct->p = fmod(angs_to_correct->p + PI2, PI2);
+	angs_to_correct->b = fmod(angs_to_correct->b + PI2, PI2);
+	angs_to_correct->h = fmod(angs_to_correct->h + PI2, PI2);
 }
 
 void stars_uncorrect_background_sun_angles(angles* angs_to_uncorrect)
