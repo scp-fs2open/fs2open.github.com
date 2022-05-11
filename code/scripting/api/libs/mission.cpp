@@ -1335,7 +1335,7 @@ static int addBackgroundBitmap_sub(bool uses_correct_angles, lua_State* L)
 
 	sle.ang     = *orient.GetAngles();
 	if (!uses_correct_angles)
-		stars_correct_background_angles(&sle.ang);
+		stars_correct_background_bitmap_angles(&sle.ang);
 
 	sle.scale_x = scale_x;
 	sle.scale_y = scale_y;
@@ -1410,7 +1410,7 @@ static int addSunBitmap_sub(bool uses_correct_angles, lua_State* L)
 
 	sle.ang     = *orient.GetAngles();
 	if (!uses_correct_angles)
-		stars_correct_background_angles(&sle.ang);
+		stars_correct_background_sun_angles(&sle.ang);
 
 	sle.scale_x = scale_x;
 	sle.scale_y = scale_y;

@@ -2425,7 +2425,21 @@ int stars_add_bitmap_entry(starfield_list_entry *sle)
 	return (int)(Starfield_bitmap_instances.size() - 1);
 }
 
-void stars_correct_background_angles(angles *angs_to_correct)
+void stars_correct_background_sun_angles(angles* angs_to_correct)
+{
+	matrix mat;
+	vm_angles_2_matrix(&mat, angs_to_correct);
+	vm_transpose(&mat);
+	vm_extract_angles_matrix(angs_to_correct, &mat);
+}
+
+void stars_uncorrect_background_sun_angles(angles* angs_to_uncorrect)
+{
+	// the actual operation is an inversion so 'correcting' and 'uncorrecting' are the same
+	stars_correct_background_sun_angles(angs_to_uncorrect);
+}
+
+void stars_correct_background_bitmap_angles(angles *angs_to_correct)
 {
 	matrix mat1, mat2;
 	angles ang1 = vm_angles_new(0.0, angs_to_correct->b, 0.0);
@@ -2440,7 +2454,7 @@ void stars_correct_background_angles(angles *angs_to_correct)
 	angs_to_correct->h = fmod(angs_to_correct->h + PI2, PI2);
 }
 
-void stars_uncorrect_background_angles(angles *angs_to_uncorrect)
+void stars_uncorrect_background_bitmap_angles(angles *angs_to_uncorrect)
 {
 	matrix mat;
 	vm_angles_2_matrix(&mat, angs_to_uncorrect);

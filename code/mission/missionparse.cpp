@@ -5477,7 +5477,7 @@ void parse_one_background(background_t *background)
 
 		// correct legacy bitmap angles which used incorrect math in older versions
 		if (!background->flags[Starfield::Background_Flags::Corrected_angles_in_mission_file])
-			stars_correct_background_angles(&sle.ang);
+			stars_correct_background_sun_angles(&sle.ang);
 
 		// scale
 		required_string("+Scale:");
@@ -5506,7 +5506,7 @@ void parse_one_background(background_t *background)
 
 		// correct legacy bitmap angles which used incorrect math in older versions
 		if (!background->flags[Starfield::Background_Flags::Corrected_angles_in_mission_file])
-			stars_correct_background_angles(&sle.ang);
+			stars_correct_background_bitmap_angles(&sle.ang);
 
 		// scale
 		if (optional_string("+Scale:"))
