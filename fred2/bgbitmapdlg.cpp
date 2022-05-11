@@ -229,6 +229,10 @@ void bg_bitmap_dlg::create()
 
 	CDialog::Create(bg_bitmap_dlg::IDD);
 	theApp.init_window(&Bg_wnd_data, this);
+
+	// disable the sun bank controls because, per Asteroth, setting the bank is no longer meaningful
+	GetDlgItem(IDC_SUN1_B)->EnableWindow(FALSE);
+	GetDlgItem(IDC_SUN1_B_SPIN)->EnableWindow(FALSE);
 	
 	box = (CComboBox *) GetDlgItem(IDC_NEBCOLOR);
 	for (i=0; i<NUM_NEBULA_COLORS; i++){
