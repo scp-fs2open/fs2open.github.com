@@ -5847,8 +5847,8 @@ void mouse_force_pos(int x, int y);
 					) || (
 						(Game_mode & GM_MULTIPLAYER) && (
 							(old_state == GS_STATE_MULTI_PAUSED) ||
-							(old_state == GS_STATE_MULTI_MISSION_SYNC) ||
-							(old_state == GS_STATE_INGAME_PRE_JOIN)
++							(old_state == GS_STATE_MULTI_MISSION_SYNC) ||
++							(old_state == GS_STATE_INGAME_PRE_JOIN)
 						)
 					)
 				) {
