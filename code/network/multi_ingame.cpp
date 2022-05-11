@@ -1001,12 +1001,14 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 	while ( p_type == INGAME_SHIP_NEXT ) {
 		p_object *p_objp;
 		int ship_num, objnum;
-		ubyte flag_size, temp;
-		SCP_vector<ubyte> ship_flags, object_flags;
+		ubyte flag_size;
 
 		GET_STRING( ship_name );
 		GET_USHORT( net_signature );
 		GET_DATA( flag_size );
+
+		ubyte temp;
+		SCP_vector<ubyte> ship_flags, object_flags;
 
 		for (ubyte i = 0; i < flag_size; i++) {
 			GET_DATA(temp);
