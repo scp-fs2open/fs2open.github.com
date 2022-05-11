@@ -628,12 +628,10 @@ void multi_options_process_packet(unsigned char *data, header *hinfo)
 		break;
 
 	// get mission choice options
-	case MULTI_OPTION_MISSION:
+	case MULTI_OPTION_MISSION: {
 		netgame_info ng;
 		char title[NAME_LENGTH+1];
 		int campaign_type,max_players;
-		
-		memset(&ng,0,sizeof(netgame_info));
 
 		Assert(Game_mode & GM_STANDALONE_SERVER);
 
@@ -706,6 +704,7 @@ void multi_options_process_packet(unsigned char *data, header *hinfo)
 
 		send_netgame_update_packet();	   
 		break;
+	}
 
 	// get the netgame options
 	case MULTI_OPTION_SERVER:		

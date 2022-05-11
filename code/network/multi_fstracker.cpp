@@ -969,7 +969,7 @@ void multi_fs_tracker_process_game_item(game_list *gl)
 		}
 
 		// package up the game information
-		memset(&ag,0,sizeof(active_game));
+		ag.init();
 		SDL_strlcpy(ag.name, gl->game_name[idx], SDL_arraysize(ag.name));
 
 		memcpy(&ag.server_addr.addr, &gl->game_server[idx], sizeof(ag.server_addr.addr));
