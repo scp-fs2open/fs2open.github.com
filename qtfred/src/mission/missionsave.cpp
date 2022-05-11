@@ -931,7 +931,7 @@ int CFred_mission_save::save_bitmaps()
 			parse_comments();
 			angles ang = sle->ang;
 			if (!background->flags[Starfield::Background_Flags::Corrected_angles_in_mission_file])
-				stars_uncorrect_background_angles(&ang);
+				stars_uncorrect_background_sun_angles(&ang);
 			fout(" %f %f %f", ang.p, ang.b, ang.h);
 
 			// scale
@@ -954,7 +954,7 @@ int CFred_mission_save::save_bitmaps()
 			parse_comments();
 			angles ang = sle->ang;
 			if (!background->flags[Starfield::Background_Flags::Corrected_angles_in_mission_file])
-				stars_uncorrect_background_angles(&ang);
+				stars_uncorrect_background_bitmap_angles(&ang);
 			fout(" %f %f %f", ang.p, ang.b, ang.h);
 
 			// scale
