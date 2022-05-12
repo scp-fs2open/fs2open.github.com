@@ -43,14 +43,14 @@ void CAddModifyContainerDlg::DoDataExchange(CDataExchange *pDX)
 // This is needed because despite the override of the normal OK and Cancel routes, Enter will still be recognized
 BOOL CAddModifyContainerDlg::PreTranslateMessage(MSG* pMsg)
 {
-	if (pMsg->hwnd == this->m_hWnd && pMsg->message == WM_KEYDOWN)
+	if (pMsg->message == WM_KEYDOWN)
 	{
 		if (pMsg->wParam == VK_RETURN || pMsg->wParam == VK_ESCAPE)
 		{
 			return TRUE;                // Do not process further
 		}
 	}
-	return CWnd::PreTranslateMessage(pMsg);
+	return CDialog::PreTranslateMessage(pMsg);
 }
 
 BEGIN_MESSAGE_MAP(CAddModifyContainerDlg, CDialog)
