@@ -289,7 +289,7 @@ void CMissionNotesDlg::OnOK()
     The_mission.flags.set(Mission::Mission_Flags::Deactivate_ap, m_no_autpilot != 0);
 	
 	// always show mission goals
-    The_mission.flags.set(Mission::Mission_Flags::Always_show_goals, m_always_show_goals != 0);
+    The_mission.flags.set(Mission::Mission_Flags::Toggle_showing_goals, m_always_show_goals != 0);
 
     // End to mainhall
     The_mission.flags.set(Mission::Mission_Flags::End_to_mainhall, m_end_to_mainhall != 0);
@@ -399,7 +399,7 @@ BOOL CMissionNotesDlg::OnInitDialog()
 	m_autpilot_cinematics = (The_mission.flags[Mission::Mission_Flags::Use_ap_cinematics]) ? 1 : 0;
 	m_2d_mission = (The_mission.flags[Mission::Mission_Flags::Mission_2d]) ? 1 : 0;
 	m_no_autpilot = (The_mission.flags[Mission::Mission_Flags::Deactivate_ap]) ? 1 : 0;
-	m_always_show_goals = (The_mission.flags[Mission::Mission_Flags::Always_show_goals]) ? 1 : 0;
+	m_always_show_goals = (The_mission.flags[Mission::Mission_Flags::Toggle_showing_goals]) ? 1 : 0;
 	m_end_to_mainhall = (The_mission.flags[Mission::Mission_Flags::End_to_mainhall]) ? 1 : 0;
 	m_override_hashcommand = (The_mission.flags[Mission::Mission_Flags::Override_hashcommand]) ? 1 : 0;
 
