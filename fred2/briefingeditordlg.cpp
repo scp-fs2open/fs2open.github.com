@@ -375,7 +375,7 @@ void briefing_editor_dlg::update_data(int update)
 
 		ptr->text = buf3;
 		MODIFY(ptr->camera_time, atoi(m_time));
-		string_copy(ptr->voice, m_voice, MAX_FILENAME_LEN, 1);
+		string_copy(ptr->voice, m_voice, MAX_FILENAME_LEN - 1, 1);
 		i = ptr->flags;
 		if (m_cut_prev)
 			i |= BS_BACKWARD_CUT;
@@ -475,7 +475,7 @@ void briefing_editor_dlg::update_data(int update)
 
 			ptr->icons[m_last_icon].id = m_id;
 
-			string_copy(buf, m_icon_label, MAX_LABEL_LEN);
+			string_copy(buf, m_icon_label, MAX_LABEL_LEN - 1);
 			if (stricmp(ptr->icons[m_last_icon].label, buf) && !m_change_local) {
 				set_modified();
 				reset_icon_loop(m_last_stage);
@@ -484,7 +484,7 @@ void briefing_editor_dlg::update_data(int update)
 			}
 			strcpy_s(ptr->icons[m_last_icon].label, buf);
 
-			string_copy(buf, m_icon_closeup_label, MAX_LABEL_LEN);
+			string_copy(buf, m_icon_closeup_label, MAX_LABEL_LEN - 1);
 			if (stricmp(ptr->icons[m_last_icon].closeup_label, buf) && !m_change_local) {
 				set_modified();
 				reset_icon_loop(m_last_stage);

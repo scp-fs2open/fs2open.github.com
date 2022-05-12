@@ -927,7 +927,7 @@ void wing_editor::update_data_safe()
 	// copy squad stuff
 	if(stricmp(m_wing_squad_filename, Wings[cur_wing].wing_squad_filename))
 	{
-		string_copy(Wings[cur_wing].wing_squad_filename, m_wing_squad_filename, MAX_FILENAME_LEN);
+		string_copy(Wings[cur_wing].wing_squad_filename, m_wing_squad_filename, MAX_FILENAME_LEN - 1);
 		set_modified();
 	}
 

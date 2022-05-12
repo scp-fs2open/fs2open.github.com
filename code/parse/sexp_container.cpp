@@ -582,7 +582,7 @@ bool sexp_container_replace_refs_with_values(SCP_string &text)
 	return replaced_anything;
 }
 
-bool sexp_container_replace_refs_with_values(char *text, size_t max_size)
+bool sexp_container_replace_refs_with_values(char *text, size_t max_len)
 {
 	Assertion(text != nullptr, "Attempt to perform container text replacement with null text. Please report!");
 
@@ -591,9 +591,9 @@ bool sexp_container_replace_refs_with_values(char *text, size_t max_size)
 	bool replaced_anything = sexp_container_replace_refs_with_values(text_str);
 
 	if (replaced_anything) {
-		Assertion(max_size > 0, "Attempt to perform container text replacement with zero-sized buffer. Please report!");
-		strncpy(text, text_str.c_str(), max_size - 1);
-		text[max_size - 1] = 0;
+		Assertion(max_len > 0, "Attempt to perform container text replacement with zero-length allowed string. Please report!");
+		strncpy(text, text_str.c_str(), max_len);
+		text[max_len] = 0;
 	}
 
 	return replaced_anything;

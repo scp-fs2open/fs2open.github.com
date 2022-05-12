@@ -157,8 +157,8 @@ ADE_FUNC(getMessage, l_Message, "[boolean replaceVars = true]", "Gets the text o
 		char temp_buf[MESSAGE_LENGTH];
 		strcpy_s(temp_buf, Messages[idx].message);
 
-		sexp_replace_variable_names_with_values(temp_buf, MESSAGE_LENGTH);
-		sexp_container_replace_refs_with_values(temp_buf, MESSAGE_LENGTH);
+		sexp_replace_variable_names_with_values(temp_buf, MESSAGE_LENGTH - 1);
+		sexp_container_replace_refs_with_values(temp_buf, MESSAGE_LENGTH - 1);
 
 		return ade_set_args(L, "s", temp_buf);
 	}

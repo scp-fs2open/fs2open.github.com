@@ -146,6 +146,7 @@ int create_ship(matrix *orient, vec3d *pos, int ship_type);
 int query_ship_name_duplicate(int ship);
 char *reg_read_string( char *section, char *name, char *default_value );
 
+// Note that the parameter here is max *length*, not max buffer size.  Leave room for the null-terminator!
 void string_copy(char *dest, const CString &src, size_t max_len, int modify)
 {
 	if (modify)
@@ -153,8 +154,8 @@ void string_copy(char *dest, const CString &src, size_t max_len, int modify)
 			set_modified();
 
 	auto len = strlen(src);
-	if (len >= max_len)
-		len = max_len - 1;
+	if (len > max_len)
+		len = max_len;
 
 	strncpy(dest, src, len);
 	dest[len] = 0;
@@ -186,11 +187,11 @@ void convert_multiline_string(CString &dest, const char *src)
 }
 
 // Converts a windows format multiline CString back into a normal multiline string.
-void deconvert_multiline_string(char *dest, const CString &str, int max_len)
+void deconvert_multiline_string(char *dest, const CString &str, size_t max_len)
 {
 	// leave room for the null terminator
-	memset(dest, 0, max_len);
-	strncpy(dest, (LPCTSTR) str, max_len - 1);
+	memset(dest, 0, max_len + 1);
+	strncpy(dest, (LPCTSTR) str, max_len);
 
 	replace_all(dest, "\r\n", "\n", max_len);
 }

@@ -458,8 +458,8 @@ void bg_bitmap_dlg::OnClose()
 
     The_mission.flags.set(Mission::Mission_Flags::Subspace, m_subspace != 0);
 
-	string_copy(The_mission.skybox_model, m_skybox_model, NAME_LENGTH, 1);
-	string_copy(The_mission.envmap_name, m_envmap, NAME_LENGTH, 1);
+	string_copy(The_mission.skybox_model, m_skybox_model, NAME_LENGTH - 1, 1);
+	string_copy(The_mission.envmap_name, m_envmap, NAME_LENGTH - 1, 1);
 
 	angles skybox_angles;
 	skybox_angles.p = fl_radians(m_skybox_pitch);

@@ -3934,9 +3934,14 @@ void consolidate_double_characters(char *src, char ch)
 }
 
 // Goober5000
+// Returns position of replacement, or a negative value if replacement failed: -1 if search string was not found, -2 if replacement would exceed max length, or -3 if any string argument is null
+// Note that the parameter here is max *length*, not max buffer size.  Leave room for the null-terminator!
 ptrdiff_t replace_one(char *str, const char *oldstr, const char *newstr, size_t max_len, ptrdiff_t range)
 {
-	Assert(str && oldstr && newstr);
+	Assertion(str && oldstr && newstr, "Arguments must not be null!");
+	Assertion(max_len < SIZE_MAX, "Size must be less than SIZE_MAX because an extra char is added for the null terminator.");
+	if (!str || !oldstr || !newstr || max_len == SIZE_MAX)
+		return -3;
 
 	// search
 	char *ch = stristr(str, oldstr);
@@ -3947,23 +3952,23 @@ ptrdiff_t replace_one(char *str, const char *oldstr, const char *newstr, size_t 
 		// not found within bounds?
 		if ((range > 0) && ((ch - str) > range))
 		{
-			return 0;
+			return -1;
 		}
 
 		// determine if replacement will exceed max len
 		if (strlen(str) + strlen(newstr) - strlen(oldstr) > max_len)
 		{
-			return -1;
+			return -2;
 		}
 
 		// allocate temp string to hold extra stuff
-		char *temp = (char *) vm_malloc(sizeof(char) * max_len);
+		char *temp = (char *) vm_malloc(sizeof(char) * (max_len + 1));
 
 		// ensure allocation was successful
 		if (temp)
 		{
 			// save remainder of string
-			strcpy_s(temp, sizeof(char)*max_len, ch + strlen(oldstr));
+			strcpy(temp, ch + strlen(oldstr));
 
 			// replace
 			strcpy(ch, newstr);
@@ -3978,7 +3983,7 @@ ptrdiff_t replace_one(char *str, const char *oldstr, const char *newstr, size_t 
 	// not found
 	else
 	{
-		return 0;
+		return -1;
 	}
 
 	// return pos of replacement
@@ -3986,11 +3991,14 @@ ptrdiff_t replace_one(char *str, const char *oldstr, const char *newstr, size_t 
 }
 
 // Goober5000
-ptrdiff_t replace_all(char *str, const char *oldstr, const char *newstr, size_t max_len, ptrdiff_t range)
+// Returns number of replacements or a negative result from replace_one if a replacement failed for some reason other than not found
+// Note that the parameter here is max *length*, not max buffer size.  Leave room for the null-terminator!
+int replace_all(char *str, const char *oldstr, const char *newstr, size_t max_len, ptrdiff_t range)
 {
-	ptrdiff_t val, tally = 0;
+	ptrdiff_t val;
+	int tally = 0;
 
-	while ((val = replace_one(str, oldstr, newstr, max_len, range)) > 0)
+	while ((val = replace_one(str, oldstr, newstr, max_len, range)) >= 0)
 	{
 		tally++;
 
@@ -4000,59 +4008,82 @@ ptrdiff_t replace_all(char *str, const char *oldstr, const char *newstr, size_t 
 		}
 	}
 
-	return (val < 0) ? val : tally;
+	// return the tally, even if it's 0, unless there was an exceptional situation like exceeding max len
+	return (val < -1) ? (int)val : tally;
 }
 
-SCP_string& replace_one(SCP_string& context, const SCP_string& from, const SCP_string& to)
+// Goober5000
+// Returns position of replacement, or -1 if search string was not found
+ptrdiff_t replace_one(SCP_string& context, const SCP_string& from, const SCP_string& to)
 {
 	size_t foundHere;
 	if ((foundHere = context.find(from, 0)) != SCP_string::npos)
 	{
 		context.replace(foundHere, from.length(), to);
+		return foundHere;
 	}
-	return context;
+	else
+		return -1;
 }
 
-SCP_string& replace_one(SCP_string& context, const char* from, const char* to)
+// Goober5000
+// Returns position of replacement, or -1 if search string was not found
+ptrdiff_t replace_one(SCP_string& context, const char* from, const char* to)
 {
 	size_t foundHere;
 	if ((foundHere = context.find(from, 0)) != SCP_string::npos)
 	{
 		context.replace(foundHere, strlen(from), to);
+		return foundHere;
 	}
-	return context;
+	else
+		return -1;
 }
 
+// Goober5000
+// Returns number of replacements
 // http://www.cppreference.com/wiki/string/replace
-SCP_string& replace_all(SCP_string& context, const SCP_string& from, const SCP_string& to)
+int replace_all(SCP_string& context, const SCP_string& from, const SCP_string& to)
 {
 	size_t from_len = from.length();
 	size_t to_len = to.length();
 
 	size_t lookHere = 0;
 	size_t foundHere;
+	int tally = 0;
+
 	while ((foundHere = context.find(from, lookHere)) != SCP_string::npos)
 	{
+		tally++;
+
 		context.replace(foundHere, from_len, to);
 		lookHere = foundHere + to_len;
 	}
-	return context;
+
+	return tally;
 }
 
+// Goober5000
+// Returns number of replacements
 // http://www.cppreference.com/wiki/string/replace
-SCP_string& replace_all(SCP_string& context, const char* from, const char* to)
+int replace_all(SCP_string& context, const char* from, const char* to)
 {
 	size_t from_len = strlen(from);
 	size_t to_len = strlen(to);
 
 	size_t lookHere = 0;
 	size_t foundHere;
+	int tally = 0;
+
 	while ((foundHere = context.find(from, lookHere)) != SCP_string::npos)
 	{
+		tally++;
+
 		context.replace(foundHere, from_len, to);
 		lookHere = foundHere + to_len;
 	}
-	return context;
+
+	return tally;
 }
 
 // WMC

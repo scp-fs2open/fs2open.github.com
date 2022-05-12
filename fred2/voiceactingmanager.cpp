@@ -406,7 +406,7 @@ void VoiceActingManager::OnGenerateScript()
 		return;
 
 	CString dlgPathName = dlg.GetPathName( );
-	string_copy(pathname, dlgPathName, 256);
+	string_copy(pathname, dlgPathName, 256 - 1);
 	fp = cfopen(pathname, "wt", CFILE_NORMAL);
 	if (!fp)
 	{

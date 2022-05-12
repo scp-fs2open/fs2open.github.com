@@ -8487,7 +8487,7 @@ void conv_fix_punctuation_section(char *str, const char *section_start, const ch
 		t2 = strstr(t1, text_end);
 		if (!t2 || t2 > s2) return;
 
-		replace_all(t1, "\"", "$quote", PARSE_TEXT_SIZE - (str - Parse_text), (t2 - t1));
+		replace_all(t1, "\"", "$quote", PARSE_TEXT_SIZE - (str - Parse_text) - 1, (t2 - t1));
 	}	
 }
 	
