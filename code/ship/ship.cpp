@@ -6418,6 +6418,9 @@ void ship::clear()
 	team_change_time = 0;
 
 	autoaim_fov = 0.0f;
+
+	multi_client_collision_timestamp = TIMESTAMP::immediate();
+
 	passive_arc_next_times.clear();
 }
 bool ship::has_display_name() const {
@@ -6705,6 +6708,9 @@ static void ship_set(int ship_index, int objnum, int ship_type)
 	shipp->secondary_team_name = "none";
 
 	shipp->autoaim_fov = sip->autoaim_fov;
+
+	shipp->multi_client_collision_timestamp = TIMESTAMP::immediate();
+
 	shipp->max_shield_regen_per_second = sip->max_shield_regen_per_second;
 	shipp->max_weapon_regen_per_second = sip->max_weapon_regen_per_second;
 	
