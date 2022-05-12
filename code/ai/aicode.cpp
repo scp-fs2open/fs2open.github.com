@@ -6347,11 +6347,6 @@ int check_ok_to_fire(int objnum, int target_objnum, weapon_info *wip, int second
 			}
 		}
 	}
-	else
-	{
-		// We have no valid target object, we should not fire at it...
-		return 0;
-	}
 
 	return 1;
 }

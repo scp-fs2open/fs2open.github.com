@@ -702,7 +702,7 @@ int obj_snd_assign(int objnum, gamesnd_id sndnum, const vec3d *pos, int flags, c
 {
 	Assertion(pos != nullptr, "Sound position must not be null!");
 
-	if(objnum < 0 || objnum > MAX_OBJECTS)
+	if(objnum < 0 || objnum >= MAX_OBJECTS)
 		return -1;
 
 	if(!sndnum.isValid())
