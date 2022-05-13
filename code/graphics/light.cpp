@@ -154,7 +154,7 @@ static void set_light(int light_num, gr_light* ltp) {
 
 	gr_light_uniforms[light_num].diffuse_color = vm_vec4_to_vec3(ltp->Diffuse);
 
-	gr_light_uniforms[light_num].spec_color = vm_vec4_to_vec3(ltp->Specular);
+	gr_light_uniforms[light_num].spec_color = vm_vec4_to_vec3(ltp->Diffuse);
 
 	gr_light_uniforms[light_num].light_type = ltp->type;
 

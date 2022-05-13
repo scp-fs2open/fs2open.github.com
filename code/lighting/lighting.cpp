@@ -181,8 +181,9 @@ void light_add_directional(const vec3d *dir, float intensity, float r, float g, 
 	l.spec_g = spec_g;
 	l.spec_b = spec_b;
 
-	//Direcional lights not yet switched to use lighting profiles multipliers as that's part of a seperate project.
-	l.intensity = intensity;
+	//Direcional lights not yet switched to use lighting profiles multipliers as that's part of a seperate project
+	auto lp = lighting_profile::current();
+	l.intensity = lp->directional_light_brightness.handle(intensity);
 	l.rada = 0.0f;
 	l.radb = 0.0f;
 	l.rada_squared = l.rada*l.rada;

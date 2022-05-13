@@ -177,6 +177,10 @@ void lighting_profile::reset()
 
 	directional_light_brightness.reset();
 	ambient_light_brightness.reset();
+	ambient_light_brightness.set_minimum(0.0f);
+
+	overall_brightness.reset();
+	overall_brightness.set_minimum(0.0f);
 }
 
 TonemapperAlgorithm lighting_profile::name_to_tonemapper(SCP_string &name)
@@ -290,7 +294,8 @@ void lighting_profile::parse_default_section(const char *filename)
 		parsed |= lighting_profile_value::parse(filename,"$Ambient light brightness:",profile_name,
 										&default_profile.ambient_light_brightness);
 
-
+		parsed |= lighting_profile_value::parse(filename,"$Overall brightness:","Default profile",
+										&default_profile.overall_brightness);
 		parsed |= parse_optional_float_into("$Exposure:",&default_profile.exposure);
 		if(!parsed){
 			stuff_string(buffer,F_RAW);

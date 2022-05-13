@@ -13,6 +13,7 @@
 #include "graphics/util/UniformBuffer.h"
 #include "graphics/util/uniform_structs.h"
 #include "lighting/lighting.h"
+#include "lighting/lighting_profiles.h"
 #include "mission/mission_flags.h"
 #include "mission/missionparse.h"
 #include "nebula/neb.h"
@@ -163,19 +164,16 @@ void gr_opengl_deferred_lighting_finish()
 			auto light_data = uniformAligner.addTypedElement<deferred_light_data>();
 
 			light_data->lightType = static_cast<int>(l.type);
+			auto ltp = lighting_profile::current();
+			auto i = ltp->overall_brightness.handle(l.intensity);
 
 			vec3d diffuse;
-			diffuse.xyz.x = l.r * l.intensity;
-			diffuse.xyz.y = l.g * l.intensity;
-			diffuse.xyz.z = l.b * l.intensity;
-
-			vec3d spec;
-			spec.xyz.x = l.spec_r * l.intensity;
-			spec.xyz.y = l.spec_g * l.intensity;
-			spec.xyz.z = l.spec_b * l.intensity;
+			diffuse.xyz.x = l.r * i;
+			diffuse.xyz.y = l.g * i;
+			diffuse.xyz.z = l.b * i;
 
 			light_data->diffuseLightColor = diffuse;
-			light_data->specLightColor = spec;
+			light_data->specLightColor = diffuse;
 
 			// Set a default value for all lights. Only the first directional light will change this.
 			light_data->enable_shadows = false;
@@ -198,8 +196,6 @@ void gr_opengl_deferred_lighting_finish()
 				light_data->lightDir.xyz.y = view_dir.xyzw.y;
 				light_data->lightDir.xyz.z = view_dir.xyzw.z;
 
-				vm_vec_scale(&light_data->specLightColor, static_light_factor);
-
 				first_directional = false;
 				break;
 			case Light_Type::Cone:
@@ -209,8 +205,6 @@ void gr_opengl_deferred_lighting_finish()
 				light_data->coneDir = l.vec2;
 				FALLTHROUGH;
 			case Light_Type::Point:
-				vm_vec_scale(&light_data->specLightColor, static_point_factor);
-
 				light_data->lightRadius = MAX(l.rada, l.radb);
 				//A small padding factor is added to guard against potentially clipping the edges of the light with facets of the volume mesh.
 				light_data->scale.xyz.x = MAX(l.rada, l.radb) * 1.05f;
@@ -234,7 +228,6 @@ void gr_opengl_deferred_lighting_finish()
 				light_data->scale.xyz.y = l.radb * 1.05f;
 				light_data->scale.xyz.z = length;
 
-				vm_vec_scale(&light_data->specLightColor, static_tube_factor);
 				break;
 			}
 			}

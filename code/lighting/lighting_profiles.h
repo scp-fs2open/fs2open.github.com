@@ -104,7 +104,8 @@ public:
 	lighting_profile_value cone_light_radius;
 	lighting_profile_value directional_light_brightness;
 	lighting_profile_value ambient_light_brightness;
-
+	//Strictly speaking this should be handled by postproc but we need something for the non-postproc people.
+	lighting_profile_value overall_brightness;
 
     void reset();
 
