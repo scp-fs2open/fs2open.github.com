@@ -288,7 +288,7 @@ void CMissionNotesDlg::OnOK()
 	// set autopilot disabled
     The_mission.flags.set(Mission::Mission_Flags::Deactivate_ap, m_no_autpilot != 0);
 	
-	// always show mission goals
+	// toggle showing the mission goals in the briefing
     The_mission.flags.set(Mission::Mission_Flags::Toggle_showing_goals, m_always_show_goals != 0);
 
     // End to mainhall
