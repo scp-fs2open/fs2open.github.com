@@ -14325,8 +14325,12 @@ void sexp_add_background_bitmap(int n, bool is_sun, bool uses_correct_angles)
 	eval_angles(&sle.ang, n, is_nan, is_nan_forever);
 	if (is_nan || is_nan_forever)
 		return;
-	if (!uses_correct_angles)
-		stars_correct_background_angles(&sle.ang);
+	if (!uses_correct_angles) {
+		if (is_sun)
+			stars_correct_background_sun_angles(&sle.ang);
+		else
+			stars_correct_background_bitmap_angles(&sle.ang);
+	}
 
 	if (is_sun)
 	{
