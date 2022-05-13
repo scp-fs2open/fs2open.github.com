@@ -1002,7 +1002,6 @@
 #define IDC_2D_MISSION2                 1549
 #define IDC_TOGGLE_SHOWING_GOALS        1549
 #define IDC_LABEL2                      1550
-#define IDC_TOGGLE_SHOWING_GOALS2       1550
 #define IDC_END_TO_MAINHALL             1550
 #define IDC_NEW_TEXTURE                 1551
 #define IDC_OVERRIDE_HASHCOMMAND        1551
