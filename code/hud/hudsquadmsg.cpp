@@ -175,7 +175,7 @@ std::vector<player_order> Player_orders = {
 	player_order("keep safe dist", "Keep safe distance", -1, KEEP_SAFE_DIST_ITEM)
 };
 
-int current_highest_player_order_type = MAX_ENGINE_PLAYER_ORDER;
+int current_new_player_order_type = (1 << 31);
 
 void hud_init_comm_orders()
 {

@@ -73,8 +73,7 @@ typedef struct player_order {
 } player_order;
 
 extern std::vector<player_order> Player_orders;
-constexpr int max_highest_player_order_type = (1 << 31);
-extern int current_highest_player_order_type;
+extern int current_new_player_order_type;
 
 // following defines are the set of possible commands that can be given to a ship.  A mission designer
 // might not allow some messages

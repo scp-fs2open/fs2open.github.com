@@ -13619,7 +13619,7 @@ void ai_execute_behavior(ai_info *aip)
 		// properly until after 3.6.7 just to avoid delaying release or breaking something - taylor
 		break;
 	case AIM_LUA:
-		ai_lua(&Ships[Pl_objp->instance]);
+		ai_lua(aip);
 		break;
 	default:
 		UNREACHABLE("Unknown AI Mode! Get a coder!");

@@ -17,11 +17,11 @@ void ai_lua_add_mode(int sexp_op, const ai_mode_lua& mode) {
 }
 
 bool ai_lua_add_order(int sexp_op, player_order_lua order) {
-	if (current_highest_player_order_type == max_highest_player_order_type)
+	if (current_new_player_order_type == MAX_ENGINE_PLAYER_ORDER)
 		return false;
 
-	current_highest_player_order_type = current_highest_player_order_type << 1;
-	Player_orders.emplace_back(vm_strdup(order.parseText.c_str()), vm_strdup(order.displayText.c_str()), -1, current_highest_player_order_type, sexp_op);
+	current_new_player_order_type = current_new_player_order_type >> 1;
+	Player_orders.emplace_back(vm_strdup(order.parseText.c_str()), vm_strdup(order.displayText.c_str()), -1, current_new_player_order_type, sexp_op);
 	Player_orders.back().localize();
 
 	Lua_player_orders.emplace(sexp_op, std::move(order));
@@ -72,10 +72,7 @@ void run_ai_lua_action(const luacpp::LuaFunction& action, const ai_mode_lua& lua
 	}
 }
 
-void ai_lua(ship* shipp){
-	
-	ai_info	*aip = &Ai_info[shipp->ai_index];
-
+void ai_lua(ai_info* aip){
 	Assertion(aip->mode == AIM_LUA, "Tried to invoke LuaAI on a ship not in LuaAI-Mode");
 
 	const auto& lua_ai = Lua_ai_modes.at(aip->submode);
