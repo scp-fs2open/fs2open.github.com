@@ -118,7 +118,7 @@ bool lighting_profile_value::parse(const char* filename,
 				profile_name.c_str());
 		} else if (parses > 5) {
 			Warning(LOCATION,
-				"Lighting profile value '%s' in file '%s' profile '%s' parsed too man no properties, possible "
+				"Lighting profile value '%s' in file '%s' profile '%s' parsed too many properties, possible "
 				"malformed table.",
 				valuename,
 				filename,
@@ -244,6 +244,7 @@ void lighting_profile::parse_default_section(const char *filename)
 	bool parsed;
 	SCP_string buffer;
 	TonemapperAlgorithm tn;
+	const char* profile_name = "Default Profile";
 	while(!optional_string("#END DEFAULT PROFILE")){
 		parsed = false;
 		if(optional_string("$Tonemapper:")){
@@ -259,33 +260,33 @@ void lighting_profile::parse_default_section(const char *filename)
 		parsed |= parse_optional_float_into("$PPC Shoulder Angle:",&default_profile.ppc_values.shoulder_angle);
 		parsed |= parse_optional_float_into("$Exposure:",&default_profile.exposure);
 
-		parsed |= lighting_profile_value::parse(filename,"$Missile light brightness:","Default profile",
+		parsed |= lighting_profile_value::parse(filename,"$Missile light brightness:",profile_name,
 										&default_profile.missile_light_brightness);
-		parsed |= lighting_profile_value::parse(filename,"$Missile light radius:","Default profile",
+		parsed |= lighting_profile_value::parse(filename,"$Missile light radius:",profile_name,
 										&default_profile.missile_light_radius);
 
-		parsed |= lighting_profile_value::parse(filename,"$Laser light brightness:","Default profile",
+		parsed |= lighting_profile_value::parse(filename,"$Laser light brightness:",profile_name,
 										&default_profile.laser_light_brightness);
-		parsed |= lighting_profile_value::parse(filename,"$Laser light radius:","Default profile",
+		parsed |= lighting_profile_value::parse(filename,"$Laser light radius:",profile_name,
 										&default_profile.laser_light_radius);
 
-		parsed |= lighting_profile_value::parse(filename,"$Beam light brightness:","Default profile",
+		parsed |= lighting_profile_value::parse(filename,"$Beam light brightness:",profile_name,
 										&default_profile.beam_light_brightness);
-		parsed |= lighting_profile_value::parse(filename,"$Beam light radius:","Default profile",
+		parsed |= lighting_profile_value::parse(filename,"$Beam light radius:",profile_name,
 										&default_profile.beam_light_radius);
 
-		parsed |= lighting_profile_value::parse(filename,"$Tube light brightness:","Default profile",
+		parsed |= lighting_profile_value::parse(filename,"$Tube light brightness:",profile_name,
 										&default_profile.tube_light_brightness);
-		parsed |= lighting_profile_value::parse(filename,"$Tube light radius:","Default profile",
+		parsed |= lighting_profile_value::parse(filename,"$Tube light radius:",profile_name,
 										&default_profile.tube_light_radius);
 
-		parsed |= lighting_profile_value::parse(filename,"$Point light brightness:","Default profile",
+		parsed |= lighting_profile_value::parse(filename,"$Point light brightness:",profile_name,
 										&default_profile.point_light_brightness);
-		parsed |= lighting_profile_value::parse(filename,"$Point light radius:","Default profile",
+		parsed |= lighting_profile_value::parse(filename,"$Point light radius:",profile_name,
 										&default_profile.point_light_radius);
-		parsed |= lighting_profile_value::parse(filename,"$Directional light brightness:","Default profile",
+		parsed |= lighting_profile_value::parse(filename,"$Directional light brightness:",profile_name,
 										&default_profile.directional_light_brightness);
-		parsed |= lighting_profile_value::parse(filename,"$Ambient light brightness:","Default profile",
+		parsed |= lighting_profile_value::parse(filename,"$Ambient light brightness:",profile_name,
 										&default_profile.ambient_light_brightness);
 
 
