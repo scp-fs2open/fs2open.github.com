@@ -34617,7 +34617,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	},
 
 	{ OP_CANCEL_FUTURE_WAVES, "cancel-future-waves\r\n"
-		"\tCancel all waves of a wing which have not yet arrived. Wings that have arrived already are not affected.\r\n\r\n"
+		"\tCancel all waves of a wing which have not yet arrived. Waves that have arrived already are not affected.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tThe name of a wing to cancel." },
 
