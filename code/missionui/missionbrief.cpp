@@ -885,10 +885,12 @@ void brief_init()
 		return;
 	}
 
-	if (The_mission.flags[Mission::Mission_Flags::Always_show_goals] || !(The_mission.game_type & MISSION_TYPE_TRAINING))
+	// Show the goals slide iff we're in a training mission with the "toggle goals" flag, or a normal mission without it.
+	if (The_mission.flags[Mission::Mission_Flags::Toggle_showing_goals] == !!(The_mission.game_type & MISSION_TYPE_TRAINING)) {
 		Num_brief_stages = Briefing->num_stages + 1;
-	else
+	} else {
 		Num_brief_stages = Briefing->num_stages;
+	}
 
 	Current_brief_stage = 0;
 	Last_brief_stage = 0;
