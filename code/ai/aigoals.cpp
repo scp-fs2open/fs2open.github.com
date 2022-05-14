@@ -1238,13 +1238,13 @@ int ai_remove_goal_sexp_sub( int sexp, ai_goal* aigp )
 	return goalindex;
 }
 
-// code to add ai goals to wings.
+// code to remove ai goals from wings.
 void ai_remove_wing_goal_sexp(int sexp, wing *wingp)
 {
 	int i;
 	int goalindex = -1;
 
-	// add the ai goal for any ship that is currently arrived in the game (only if fred isn't running)
+	// remove the ai goal for any ship that is currently arrived in the game (only if fred isn't running)
 	if ( !Fred_running ) {
 		for (i = 0; i < wingp->current_count; i++) {
 			int num = wingp->ship_index[i];
@@ -1256,6 +1256,8 @@ void ai_remove_wing_goal_sexp(int sexp, wing *wingp)
 		}
 	}
 
+	// remove the sexpression index from the wing's list of goal sexpressions if
+	// there are more waves to come
 	if ((wingp->num_waves - wingp->current_wave > 0) || Fred_running) 
 	{
 		ai_remove_goal_sexp_sub( sexp, wingp->ai_goals );
