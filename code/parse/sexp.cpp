@@ -13224,9 +13224,9 @@ void sexp_self_destruct(int node)
 void sexp_cancel_future_waves(int node)
 {
 	for (int n = node; n != -1; n = CDR(n))	{
-		auto wing = eval_wing(n);
-		if (wing) {
-			wing->num_waves = wing->current_wave;
+		auto wingp = eval_wing(n);
+		if (wingp) {
+			wingp->num_waves = wingp->current_wave;
 		}
 	}
 }
