@@ -4,17 +4,17 @@
 #include "globalincs/vmallocator.h"
 #include "math/floating.h"
 
-void hdr_color::set_vecf(const SCP_vector<float>* input)
+void hdr_color::set_vecf(const SCP_vector<float>& input)
 {
-	size_t l = input->size();
+	size_t l = input.size();
 	Assertion(l >= 3, "attempted to set color values invalid component count");
-	this->red = input->at(0);
-	this->green = input->at(1);
-	this->blue = input->at(2);
+	this->red = input.at(0);
+	this->green = input.at(1);
+	this->blue = input.at(2);
 	if (l > 3)
-		this->alpha = input->at(3);
+		this->alpha = input.at(3);
 	if (l > 4)
-		this->intensity = input->at(4);
+		this->intensity = input.at(4);
 }
 
 /*
@@ -23,16 +23,14 @@ void hdr_color::set_vecf(const SCP_vector<float>* input)
  *
  * @param to_fill: The fector that will be filled with the color compoents
  */
-void hdr_color::get_v5f(SCP_vector<float>* to_fill) const
+void hdr_color::get_v5f(SCP_vector<float>& to_fill) const
 {
-	if (to_fill == nullptr)
-		to_fill = new SCP_vector<float>;
-	to_fill->clear();
-	to_fill->push_back(this->red);
-	to_fill->push_back(this->green);
-	to_fill->push_back(this->blue);
-	to_fill->push_back(this->alpha);
-	to_fill->push_back(this->intensity);
+	to_fill.clear();
+	to_fill.push_back(this->red);
+	to_fill.push_back(this->green);
+	to_fill.push_back(this->blue);
+	to_fill.push_back(this->alpha);
+	to_fill.push_back(this->intensity);
 }
 
 hdr_color::hdr_color()

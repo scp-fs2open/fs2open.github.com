@@ -51,7 +51,8 @@ bool parse_optional_color3i_into(const SCP_string& field_name, hdr_color* out_co
 		int components[3] = {255, 255, 255};
 		stuff_int_list(components, 3, RAW_INTEGER_TYPE);
 		if (out_color == nullptr) {
-			out_color = new hdr_color();
+			Assertion(out_color,"out_color pointer is null for field %s",field_name.c_str());
+			return false;
 		}
 		out_color->set_rgb(components);
 		return true;

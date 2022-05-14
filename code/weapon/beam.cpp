@@ -1881,8 +1881,8 @@ void beam_light_color(weapon_info *wip,hdr_color *to_fill )
 		wip->light_color_set=true;
 	}
 	SCP_vector<float> colors;
-	wip->light_color.get_v5f(&colors);
-	to_fill->set_vecf(&colors);
+	wip->light_color.get_v5f(colors);
+	to_fill->set_vecf(colors);
 }
 
 // call to add a light source to a small object

@@ -14,8 +14,8 @@ public:
 
 	void reset();
 
-	void get_v5f(SCP_vector<float>* outvec) const;
-	void set_vecf(const SCP_vector<float>* input);
+	void get_v5f(SCP_vector<float>& outvec) const;
+	void set_vecf(const SCP_vector<float>& input);
 
 	void set_rgb(const int new_r,const int new_g,const int new_b);
 	void set_rgb(const color* const new_rgb);
