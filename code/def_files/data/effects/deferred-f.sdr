@@ -109,7 +109,7 @@ void main()
 	if(abs(dot(position, position)) < 0.1)
 		discard;
 
-	vec3 color = texture(ColorBuffer, screenPos).rgb;
+	vec3 diffColor = texture(ColorBuffer, screenPos).rgb;
 	vec4 normalData = texture(NormalBuffer, screenPos);
 	vec4 specColor = texture(SpecBuffer, screenPos);
 	// The vector in the normal buffer could be longer than the unit vector since decal rendering only adds to the normal buffer
@@ -137,7 +137,7 @@ void main()
 
 	vec3 halfVec = normalize(lightDir + eyeDir);
 	float NdotL = clamp(dot(normal, lightDir), 0.0, 1.0);
-	vec4 fragmentColor = vec4(color * (diffuseLightColor * NdotL * attenuation), 1.0);
-	fragmentColor.rgb += computeLighting(specColor.rgb, lightDir, normal.xyz, halfVec, eyeDir, gloss, fresnel, NdotL).rgb * diffuseLightColor * attenuation;
+	vec4 fragmentColor = vec4(1.0);
+	fragmentColor.rgb = computeLighting(specColor.rgb, diffColor, lightDir, normal.xyz, halfVec, eyeDir, gloss, fresnel, NdotL).rgb * diffuseLightColor * attenuation;
 	fragOut0 = max(fragmentColor, vec4(0.0));
 }

@@ -204,9 +204,9 @@ vec3 CalculateLighting(vec3 normal, vec3 diffuseMaterial, vec3 specularMaterial,
 		float NdotL = clamp(dot(normal, lightDir), 0.0f, 1.0f);
 		// Ambient, Diffuse, and Specular
 		lightDiffuse += (lights[i].diffuse_color.rgb * diffuseFactor * NdotL * attenuation) * shadow;
-		lightSpecular += lights[i].diffuse_color * computeLighting(specularMaterial, lightDir, normal, halfVec, eyeDir, gloss, fresnel, NdotL) * attenuation * shadow;
+		lightSpecular += lights[i].diffuse_color.rgb * computeLighting(specularMaterial, diffuseMaterial, lightDir, normal, halfVec, eyeDir, gloss, fresnel, NdotL) * attenuation * shadow;
 	}
-	return diffuseMaterial * (lightAmbient + lightDiffuse) + lightSpecular;
+	return diffuseMaterial * lightAmbient + lightSpecular;
 }
 
 void main()
