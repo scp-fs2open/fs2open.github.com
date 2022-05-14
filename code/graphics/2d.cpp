@@ -2590,9 +2590,33 @@ void gr_print_timestamp(int x, int y, fix timestamp, int resize_mode)
 
 	gr_string(x, y, time.c_str(), resize_mode);
 }
-static void uniform_buffer_managers_init() { UniformBufferManager.reset(new graphics::util::UniformBufferManager()); }
-static void uniform_buffer_managers_deinit() { UniformBufferManager.reset(); }
-static void uniform_buffer_managers_retire_buffers() { UniformBufferManager->onFrameEnd(); }
+
+static void uniform_buffer_managers_init()
+{
+	if (Is_standalone) {
+		return;
+	}
+
+	UniformBufferManager.reset(new graphics::util::UniformBufferManager());
+}
+
+static void uniform_buffer_managers_deinit()
+{
+	if (Is_standalone) {
+		return;
+	}
+
+	UniformBufferManager.reset();
+}
+
+static void uniform_buffer_managers_retire_buffers()
+{
+	if (Is_standalone) {
+		return;
+	}
+
+	UniformBufferManager->onFrameEnd();
+}
 
 graphics::util::UniformBuffer gr_get_uniform_buffer(uniform_block_type type, size_t num_elements, size_t element_size_override)
 {
