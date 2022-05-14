@@ -19,7 +19,7 @@ ADE_OBJ(l_LuaAISEXP, lua_ai_sexp_h, "LuaAISEXP", "Lua AI SEXP handle");
 ADE_VIRTVAR(ActionEnter,
 	l_LuaAISEXP,
 	"function(ai_helper helper, oswpt | nil arg) => boolean action",
-	"The action of this AI SEXP to be executed once when the AI recieves this order. Return true if the AI goal is complete.",
+	"The action of this AI SEXP to be executed once when the AI receives this order. Return true if the AI goal is complete.",
 	"function(ai_helper helper, oswpt | nil arg) => boolean action",
 	"The action function or nil on error")
 {

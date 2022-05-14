@@ -22,6 +22,6 @@ bool ai_lua_add_order(int sexp_op, player_order_lua order);
 bool ai_lua_has_mode(int sexp_op);
 const ai_mode_lua* ai_lua_find_mode(int sexp_op);
 const player_order_lua* ai_lua_find_player_order(int sexp_op);
-void ai_lua(ai_info* shipp);
+void ai_lua(ai_info* aip);
 void ai_lua_start(ai_goal* aip, object* objp);
 bool ai_lua_is_valid_target(int sexp_op, int target_objnum, ship* self);
