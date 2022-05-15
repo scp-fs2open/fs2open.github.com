@@ -87,27 +87,27 @@ void ai_lua(ai_info* aip){
 	}
 }
 
-void ai_lua_start(ai_goal* aip, object* objp){
+void ai_lua_start(ai_goal* aigp, object* objp){
 
 	Assert(objp->type == OBJ_SHIP);
 	Assert((objp->instance >= 0) && (objp->instance < MAX_SHIPS));
 
-	ai_info *aiip = &Ai_info[Ships[objp->instance].ai_index];
+	ai_info *aip = &Ai_info[Ships[objp->instance].ai_index];
 
-	aiip->mode = AIM_LUA;
-	aiip->submode = aip->ai_submode;
-	aiip->lua_ai_target = aip->lua_ai_target;
-	aiip->submode_start_time = Missiontime;
+	aip->mode = AIM_LUA;
+	aip->submode = aigp->ai_submode;
+	aip->lua_ai_target = aigp->lua_ai_target;
+	aip->submode_start_time = Missiontime;
 	
-	const auto& lua_ai = Lua_ai_modes.at(aip->ai_submode);
+	const auto& lua_ai = Lua_ai_modes.at(aigp->ai_submode);
 
-	auto dynamicSEXP = sexp::get_dynamic_sexp(aip->ai_submode);
+	auto dynamicSEXP = sexp::get_dynamic_sexp(aigp->ai_submode);
 
 	if (dynamicSEXP != nullptr && typeid(*dynamicSEXP) == typeid(sexp::LuaAISEXP)) {
 		auto lua_ai_sexp = static_cast<sexp::LuaAISEXP*>(dynamicSEXP);
 		const auto& action = lua_ai_sexp->getActionEnter();
 
-		run_ai_lua_action(action, lua_ai, aiip);
+		run_ai_lua_action(action, lua_ai, aip);
 	}
 	
 }

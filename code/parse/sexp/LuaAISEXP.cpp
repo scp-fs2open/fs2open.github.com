@@ -14,24 +14,68 @@ static const SCP_unordered_set<int> allowed_oswpt_parameters{ OPF_SHIP, OPF_WING
 LuaAISEXP::LuaAISEXP(const SCP_string& name) : DynamicSEXP(name) {
 }
 
-void LuaAISEXP::initialize() {};
+void LuaAISEXP::initialize() {
+};
 
-int LuaAISEXP::getMinimumArguments() {	return _arg_type == -1 ? 1 : 2;};
+int LuaAISEXP::getMinimumArguments() {
+	return _arg_type == -1 ? 1 : 2;
+};
 
-int LuaAISEXP::getMaximumArguments() {	return getMinimumArguments();};
+int LuaAISEXP::getMaximumArguments() {
+	return getMinimumArguments();
+};
 
-int LuaAISEXP::getArgumentType(int argnum) const {	return argnum == 0 && _arg_type != -1 ? _arg_type : OPF_POSITIVE;};
+int LuaAISEXP::getArgumentType(int argnum) const {
+	return argnum == 0 && _arg_type != -1 ? _arg_type : OPF_POSITIVE;
+};
 
 int LuaAISEXP::execute(int /*node*/) {
 	UNREACHABLE("Tried to execute AI Lua SEXP %s! AI-Goal SEXPs should never be run.", _name.c_str());
 	return SEXP_CANT_EVAL;
 }
 
-int LuaAISEXP::getReturnType() {	return OPR_AI_GOAL;};
+int LuaAISEXP::getReturnType() {
+	return OPR_AI_GOAL;
+};
 
-int LuaAISEXP::getSubcategory() {	return -1;};
+int LuaAISEXP::getSubcategory() {
+	return -1;
+};
 
-int LuaAISEXP::getCategory() {	return OP_CATEGORY_AI;};
+int LuaAISEXP::getCategory() {
+	return OP_CATEGORY_AI;
+};
+
+bool LuaAISEXP::parseCheckEndOfDescription() {
+	// Since we're stuffing strings, this is the best way to "unstuff" a string
+	// if we determine we're finished with the description - and we also want
+	// to preserve whitespace (which the parser eats) while building the description
+	pause_parse();
+
+	// look for any token that can follow $Description
+	auto possible_tokens =
+	{
+		"$Operator:",
+		"#End",
+		"+HUD String:",
+		"$Target Parameter:",
+		"$Player Order:",
+
+	};
+
+	bool found = false;
+	for (auto token : possible_tokens)
+	{
+		if (optional_string(token))
+		{
+			found = true;
+			break;
+		}
+	}
+
+	unpause_parse();
+	return found;
+}
 
 void LuaAISEXP::parseTable() {
 	SCP_stringstream help_text;
@@ -39,10 +83,16 @@ void LuaAISEXP::parseTable() {
 
 	required_string("$Description:");
 
-	SCP_string description;
+	SCP_string description, extra;
 	stuff_string(description, F_NAME);
-
-	help_text << "\t" << description << "\r\n";
+	while (!parseCheckEndOfDescription()) {
+		while (skip_eoln()) {
+			description += "\r\n";
+		}
+		stuff_string(extra, F_NAME);
+		description += extra;
+	}
+	help_text << "\t" << description << "\r\n\r\n";
 
 	if (optional_string("+HUD String:")) {
 		SCP_string hudTextParse;
@@ -67,7 +117,7 @@ void LuaAISEXP::parseTable() {
 
 		auto type = LuaSEXP::get_parameter_type(type_str);
 		if (type.second < 0 || allowed_oswpt_parameters.count(type.second) <= 0) {
-			error_display(0, "Parameter type '%s' is not an valid target type!", type_str.c_str());
+			error_display(0, "Parameter type '%s' is not a valid target type!", type_str.c_str());
 			type = LuaSEXP::get_parameter_type("ship");
 		}
 

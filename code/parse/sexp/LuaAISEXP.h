@@ -22,6 +22,9 @@ class LuaAISEXP : public DynamicSEXP {
 
 	std::unique_ptr<player_order_lua> playerOrder = nullptr;
 
+	// just a helper for parseTable
+	static bool parseCheckEndOfDescription();
+
  public:
 	explicit LuaAISEXP(const SCP_string& name);
 
