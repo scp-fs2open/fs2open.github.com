@@ -77,8 +77,11 @@ ShipGoalsDialog::ShipGoalsDialog(QWidget* parent, EditorViewport* viewport)
 		//TODO: Add wing editor Here
 		WingMode = true;
 	} else {
-		_model = std::unique_ptr<ShipGoalsDialogModel>(
-			new ShipGoalsDialogModel(this, viewport, parentDialog->getMulti(), Ships[parentDialog->getSingleShip()].objnum, -1));
+		_model = std::unique_ptr<ShipGoalsDialogModel>(new ShipGoalsDialogModel(this,
+			viewport,
+			parentDialog->getIfMultipleShips(),
+			Ships[parentDialog->getSingleShip()].objnum,
+			-1));
 	}
 
 	connect(_model.get(), &AbstractDialogModel::modelChanged, this, &ShipGoalsDialog::updateUI);
@@ -116,7 +119,7 @@ ShipGoalsDialog::~ShipGoalsDialog() = default;
 void ShipGoalsDialog::showEvent(QShowEvent* e)
 {
 	if (!WingMode) {
-		_model->initializeData(parentDialog->getMulti(), Ships[parentDialog->getSingleShip()].objnum, -1);
+		_model->initializeData(parentDialog->getIfMultipleShips(), Ships[parentDialog->getSingleShip()].objnum, -1);
 	}
 
 	QDialog::showEvent(e);

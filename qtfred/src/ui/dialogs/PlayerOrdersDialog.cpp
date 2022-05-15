@@ -15,7 +15,7 @@ namespace fso {
 				Assert(parentDialog);
 				_model = std::unique_ptr<PlayerOrdersDialogModel>(new PlayerOrdersDialogModel(this,
 					viewport,
-					parentDialog->getMulti()));
+					parentDialog->getIfMultipleShips()));
 
 				ui->setupUi(this);
 				connect(this, &QDialog::accepted, _model.get(), &PlayerOrdersDialogModel::apply);
@@ -63,7 +63,7 @@ namespace fso {
 			}
 			void PlayerOrdersDialog::showEvent(QShowEvent* e)
 			{
-					_model->initialiseData(parentDialog->getMulti());
+				_model->initialiseData(parentDialog->getIfMultipleShips());
 
 				QDialog::showEvent(e);
 			}

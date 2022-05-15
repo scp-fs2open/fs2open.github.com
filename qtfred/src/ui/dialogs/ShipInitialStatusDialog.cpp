@@ -23,8 +23,7 @@ namespace fso {
 				parentDialog = dynamic_cast<ShipEditorDialog*>(parent);
 				Assert(parentDialog);
 				_model = std::unique_ptr<ShipInitialStatusDialogModel>(new ShipInitialStatusDialogModel(this,
-					viewport,
-					parentDialog->getMulti()));
+					viewport, parentDialog->getIfMultipleShips()));
 
 				connect(this, &QDialog::accepted, _model.get(), &ShipInitialStatusDialogModel::apply);
 				connect(this, &QDialog::rejected, _model.get(), &ShipInitialStatusDialogModel::reject);
@@ -107,7 +106,7 @@ namespace fso {
 				QDialog::closeEvent(event);
 			}
 			void ShipInitialStatusDialog::showEvent(QShowEvent* event) {
-				_model->initializeData(parentDialog->getMulti());
+				_model->initializeData(parentDialog->getIfMultipleShips());
 				QDialog::showEvent(event);
 			}
 			void ShipInitialStatusDialog::updateUI()
