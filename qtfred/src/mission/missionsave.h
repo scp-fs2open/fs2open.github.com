@@ -151,12 +151,11 @@ class CFred_mission_save {
 	 *
 	 * @param[in] pathname The full pathname to save to
 	 *
-	 * @details Returns the value of CFred_mission_save::err, which is:
+	 * @details Returns the success of saving, as far as can be ascertained:
 	 *
 	 * @returns 0 for no error, or
-	 * @returns A negative value if an error occurred
+	 * @returns -1 if the file cannot be opened
 	 *
-	 * @see save_mission_internal()
 	 */
 	int save_campaign_file(const char *pathname);
 

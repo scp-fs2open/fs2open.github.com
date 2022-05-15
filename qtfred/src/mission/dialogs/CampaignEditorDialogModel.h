@@ -20,8 +20,8 @@ class CampaignEditorDialog;
 
 class CampaignEditorDialogModel : public AbstractDialogModel, public SexpTreeEditorInterface
 {
-	struct CampaignMissionData;
-	struct CampaignBranchData;
+	class CampaignMissionData;
+	class CampaignBranchData;
 	Q_OBJECT
 
 public:
@@ -162,7 +162,8 @@ public slots:
 
 //Model inner types
 private:
-	struct CampaignMissionData {
+	class CampaignMissionData {
+	public:
 		CampaignMissionData() = delete;
 		CampaignMissionData(QString file,
 							bool loaded = false,
@@ -195,7 +196,8 @@ private:
 		int brData_idx{-1};
 	};
 
-	struct CampaignBranchData {
+	class CampaignBranchData {
+	public:
 		explicit CampaignBranchData() = default;
 		CampaignBranchData(CampaignEditorDialogModel *model, int sexp_branch, const QString &from, const cmission *loop = nullptr);
 		CampaignBranchData(CampaignEditorDialogModel *model, const QString &from, QString to = "");

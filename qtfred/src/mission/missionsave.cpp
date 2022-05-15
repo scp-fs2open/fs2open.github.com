@@ -2167,16 +2167,18 @@ int CFred_mission_save::save_campaign_file(const char *pathname)
 	optional_string_fred("+Starting Ships: (");
 	parse_comments(2);
 	for (int i = 0; i < ship_info_size(); i++) {
-		if (Campaign.ships_allowed[i])
+		if (Campaign.ships_allowed[i]) {
 			fout(" \"%s\" ", Ship_info[i].name);
+		}
 	}
 	fout(")\n");
 
 	optional_string_fred("+Starting Weapons: (");
 	parse_comments();
 	for (int i = 0; i < weapon_info_size(); i++) {
-		if (Campaign.weapons_allowed[i])
+		if (Campaign.weapons_allowed[i]) {
 			fout(" \"%s\" ", Weapon_info[i].name);
+		}
 	}
 	fout(")\n");
 
@@ -2190,10 +2192,11 @@ int CFred_mission_save::save_campaign_file(const char *pathname)
 		fout(" %s", cm.name);
 
 		if (strlen(cm.briefing_cutscene)) {
-			if (optional_string_fred("+Briefing Cutscene:", "$Mission"))
+			if (optional_string_fred("+Briefing Cutscene:", "$Mission")) {
 				parse_comments();
-			else
+			} else {
 				fout("\n+Briefing Cutscene:");
+			}
 
 			fout(" %s", cm.briefing_cutscene);
 		}
@@ -2207,10 +2210,11 @@ int CFred_mission_save::save_campaign_file(const char *pathname)
 			fout(" %d", cm.flags & ~CMISSION_FLAG_BASTION);
 
 			// new main hall stuff
-			if (optional_string_fred("+Main Hall:", "$Mission:"))
+			if (optional_string_fred("+Main Hall:", "$Mission:")) {
 				parse_comments();
-			else
+			} else {
 				fout("\n+Main Hall:");
+			}
 
 			fout(" %s", cm.main_hall.c_str());
 		} else {
@@ -2232,10 +2236,11 @@ int CFred_mission_save::save_campaign_file(const char *pathname)
 		}
 
 		//new save cmission sexps
-		if (optional_string_fred("+Formula:", "$Mission:"))
+		if (optional_string_fred("+Formula:", "$Mission:")) {
 			parse_comments();
-		else
+		} else {
 			fout("\n+Formula:");
+		}
 
 		{
 			SCP_string sexp_out{};
@@ -2307,12 +2312,11 @@ int CFred_mission_save::save_campaign_file(const char *pathname)
 	fout("\n");
 
 	cfclose(fp);
-	if (err)
-		mprintf(("Campaign saving error code #%d\n", err));
 
 	fso_comment_pop(true);
 
-	return err;
+	Assertion(! err, "Nothing in here should have a side effect to raise the mission error saving flag.");
+	return 0;
 }
 
 int CFred_mission_save::save_mission_file(const char* pathname_in)

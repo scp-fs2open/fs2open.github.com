@@ -160,8 +160,7 @@ void CampaignEditorDialog::updateUIBranch(int selectedIdx) {
 
 	if (sel) {
 		ui->sxtBranches->selectionModel()->select(
-					ui->sxtBranches->model()->index(
-								selectedIdx, 0),
+					ui->sxtBranches->model()->index(selectedIdx, 0),
 					QItemSelectionModel::Select);
 	}
 
@@ -180,19 +179,29 @@ void CampaignEditorDialog::updateUIBranch(int selectedIdx) {
 bool CampaignEditorDialog::questionSaveChanges() {
 	QMessageBox::StandardButton resBtn = QMessageBox::Discard;
 	if (model->query_modified()) {
+		QString msg =
+				tr("This campaign has been modified.\n")
+				+ (model->missionDropped() ?
+					   tr("Additionally, packaged/missing\nmission(s) have been removed,\nwhich cannot be added again.\n") : "")
+				+ tr("\nSave changes?");
 		resBtn = QMessageBox::question( this, tr("Unsaved changes"),
-										tr("This campaign has been modified.\n")
-										+ (model->missionDropped() ?
-											   tr("Additionally, packaged/missing\nmission(s) have been removed,\nwhich cannot be added again.\n") : "")
-										+ tr("\nSave changes?"),
+										msg,
 										QMessageBox::Cancel | QMessageBox::Discard | QMessageBox::Save,
 										QMessageBox::Save);
 	}
-	if (resBtn == QMessageBox::Discard)
-		model->reject();
-	if (resBtn == QMessageBox::Save && ! fileSave())
-		return false;
-	return resBtn != QMessageBox::Cancel;
+
+	switch (resBtn) {
+		case QMessageBox::Discard :
+			model->reject();
+			return true;
+		case QMessageBox::Save :
+			return fileSave();
+		case QMessageBox::Cancel :
+			return false;
+		default:
+			UNREACHABLE("An unhandled button was pressed. A coder must handle the buttons they provide.");
+			return false;
+	}
 }
 
 void CampaignEditorDialog::fileNew() {
@@ -215,9 +224,9 @@ void CampaignEditorDialog::fileOpen() {
 		return;
 
 	auto newModel = new CampaignEditorDialogModel(this, viewport, pathName);
-	if (newModel->isFileLoaded())
+	if (newModel->isFileLoaded()) {
 		setModel(newModel);
-	else {
+	} else {
 		delete newModel;
 		QMessageBox::information(this, tr("Error opening file"), pathName);
 		setModel(new CampaignEditorDialogModel(this, viewport, ""));
@@ -269,12 +278,16 @@ void CampaignEditorDialog::mnLinkMenu(const QPoint &pos){
 	QModelIndex here = ui->lstMissions->indexAt(pos);
 	if (here.data(Qt::CheckStateRole) != Qt::Checked)
 		return;
+
 	const QString *mnName = model->missionName(here);
-	if (! mnName) return;
+	if (! mnName)
+		return;
 	const QStringList *goals{ model->missionGoals(here) };
-	if (! goals) return;
+	if (! goals)
+		return;
 	const QStringList *evts{ model->missionEvents(here) };
-	if (! evts) return;
+	if (! evts)
+		return;
 
 	QMenu menu{ ui->lstMissions };
 
@@ -343,6 +356,6 @@ void CampaignEditorDialog::btnErrorCheckerClicked() {
 }
 
 
-}
-}
-}
+} // namespace dialogs
+} // namespace fred
+} // namespace fso

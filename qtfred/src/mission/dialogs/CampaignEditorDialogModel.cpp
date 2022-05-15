@@ -8,8 +8,10 @@
 
 #include <QPlainTextDocumentLayout>
 
+//from cfilesystem.cpp, to find loose (non-vp) mission files, as oldfred did (campaignfilelistbox.cpp:58)
 extern int Skip_packfile_search;
 
+//from missionparse.cpp, to parse relevant parts of available mission files only (parseMnPart)
 extern void parse_init(bool basic);
 extern void parse_mission_info(mission *mn, bool basic);
 extern void parse_events(mission *mn);
@@ -89,7 +91,7 @@ bool parseMnPart(mission *mn, const char *filename){
 		parse_events(mn);
 		Num_goals = 0;
 		parse_goals(mn);
-	}  catch (const parse::ParseException& ) {
+	} catch ( const parse::ParseException& ) {
 		return false;
 	}
 	return true;
@@ -241,7 +243,8 @@ void CampaignEditorDialogModel::connectBranches(bool uiUpdate, const campaign *c
 }
 
 bool CampaignEditorDialogModel::fillTree(sexp_tree& sxt) const {
-	if (!mnData_it) return false;
+	if (!mnData_it)
+		return false;
 	int i = 0;
 	for (const CampaignBranchData& br : mnData_it->branches) {
 		NodeImage img;
@@ -290,8 +293,9 @@ void CampaignEditorDialogModel::trackMissionUncheck(const QModelIndex &idx, cons
 					missionData.setData(idx, Qt::Checked, Qt::CheckStateRole);
 					return;
 				}
-			} else	if (firstMission == "" && missionData.collectCheckedData().size() == 1)
+			} else if (firstMission == "" && missionData.collectCheckedData().size() == 1){
 				firstMission = mn->filename;
+			}
 		} else {
 			firstMission = "";
 		}
@@ -407,10 +411,14 @@ bool CampaignEditorDialogModel::_saveTo(QString file) const {
 							QMessageBox::warning(nullptr, "Potential Campaign Bug", "Branch is unreachable due to previous \"true\" condition: " + br.next);
 						if (br.sexp == Locked_sexp_true)
 							flag_last_branch = true;
-						int nextsexp = (br.type != BranchType::END) ?
-									alloc_sexp("next-mission", SEXP_ATOM, SEXP_ATOM_OPERATOR, -1,
-											   alloc_sexp(qPrintable(br.next), SEXP_ATOM, SEXP_ATOM_STRING, -1, -1))
-								  : alloc_sexp("end-of-campaign", SEXP_ATOM, SEXP_ATOM_OPERATOR, -1, -1);
+
+						int nextsexp;
+						if (br.type != BranchType::END) {
+							nextsexp = alloc_sexp("next-mission", SEXP_ATOM, SEXP_ATOM_OPERATOR, -1,
+												  alloc_sexp(qPrintable(br.next), SEXP_ATOM, SEXP_ATOM_STRING, -1, -1));
+						} else {
+							nextsexp =  alloc_sexp("end-of-campaign", SEXP_ATOM, SEXP_ATOM_OPERATOR, -1, -1);
+						}
 
 						*cond_arms_ptr =
 								alloc_sexp("", SEXP_LIST, -1,
@@ -447,8 +455,6 @@ bool CampaignEditorDialogModel::_saveTo(QString file) const {
 												   alloc_sexp("", SEXP_LIST, -1, nextsexp, -1)), -1);
 						cm.mission_loop_formula =
 								alloc_sexp("cond", SEXP_ATOM, SEXP_ATOM_OPERATOR, -1, cond_arms);
-
-
 					}
 				}
 
@@ -478,7 +484,8 @@ void CampaignEditorDialogModel::missionSelectionChanged(const QItemSelection & s
 }
 
 void CampaignEditorDialogModel::setCurMnFirst(){
-	if ( !mnData_it) return;
+	if ( !mnData_it)
+		return;
 	QMessageBox::StandardButton resBtn = QMessageBox::Yes;
 	if (! firstMission.isEmpty()) {
 		resBtn = QMessageBox::question( parent, tr("Change first mission?"),
@@ -514,7 +521,8 @@ int CampaignEditorDialogModel::addCurMnBranchTo(const QModelIndex *other, bool f
 }
 
 void CampaignEditorDialogModel::delCurMnBranch(int node) {
-	if (! mnData_it) return;
+	if (! mnData_it)
+		return;
 
 	mnData_it->branches.erase(mnData_it->branches.cbegin() + node);
 	flagModified();
@@ -523,11 +531,13 @@ void CampaignEditorDialogModel::delCurMnBranch(int node) {
 }
 
 void CampaignEditorDialogModel::selectCurBr(const QTreeWidgetItem *selected) {
-	if (! mnData_it) return;
+	if (! mnData_it)
+		return;
 	mnData_it->brData_it = nullptr;
 	mnData_it->brData_idx = -1;
 
-	if (!selected) return;
+	if (!selected)
+		return;
 
 	const QTreeWidgetItem *parent_node;
 	while ((parent_node = selected->parent()))
@@ -541,7 +551,8 @@ void CampaignEditorDialogModel::selectCurBr(const QTreeWidgetItem *selected) {
 }
 
 int CampaignEditorDialogModel::setCurBrCond(const QString &sexp, const QString &mn, const QString &arg) {
-	if (! getCurBr()) return -1;
+	if (! getCurBr())
+		return -1;
 
 	mnData_it->brData_it->sexp =
 			alloc_sexp(qPrintable(sexp), SEXP_ATOM, SEXP_ATOM_OPERATOR, -1,
@@ -552,7 +563,8 @@ int CampaignEditorDialogModel::setCurBrCond(const QString &sexp, const QString &
 }
 
 bool CampaignEditorDialogModel::setCurBrSexp(int sexp) {
-	if (! getCurBr()) return false;
+	if (! getCurBr())
+		return false;
 
 	mnData_it->brData_it->sexp = sexp;
 	flagModified();
@@ -560,7 +572,8 @@ bool CampaignEditorDialogModel::setCurBrSexp(int sexp) {
 }
 
 void CampaignEditorDialogModel::setCurBrIsLoop(bool isLoop) {
-	if (! getCurBr()) return;
+	if (! getCurBr())
+		return;
 	if (isLoop) {
 		for (auto& br : mnData_it->branches) {
 			if (br.loop) {
@@ -578,14 +591,17 @@ void CampaignEditorDialogModel::setCurBrIsLoop(bool isLoop) {
 }
 
 void CampaignEditorDialogModel::moveCurBr(bool up) {
-	if (! getCurBr()) return;
+	if (! getCurBr())
+		return;
 
 	auto idx = static_cast<size_t>(mnData_it->brData_idx);
-	if (idx == 0 && up) return;
+	if (idx == 0 && up)
+		return;
 
 	size_t other_idx = up ? idx - 1 : idx + 1;
 	auto& brs = mnData_it->branches;
-	if (brs.size() == other_idx) return;
+	if (brs.size() == other_idx)
+		return;
 
 	std::swap(brs[idx], brs[other_idx]);
 	flagModified();
@@ -595,13 +611,15 @@ void CampaignEditorDialogModel::moveCurBr(bool up) {
 }
 
 void CampaignEditorDialogModel::setCurLoopAnim(const QString &anim) {
-	if (! (mnData_it && mnData_it->brData_it)) return;
+	if (! (mnData_it && mnData_it->brData_it))
+		return;
 	modify<QString>(mnData_it->brData_it->loopAnim, anim);
 	parent->updateUIBranch();
 }
 
 void CampaignEditorDialogModel::setCurLoopVoice(const QString &voice) {
-	if (! (mnData_it && mnData_it->brData_it)) return;
+	if (! (mnData_it && mnData_it->brData_it))
+		return;
 	modify<QString>(mnData_it->brData_it->loopVoice, voice);
 	parent->updateUIBranch();
 }
@@ -800,6 +818,6 @@ static inline QStringList initCampaignTypes() {
 
 const QStringList CampaignEditorDialogModel::campaignTypes { initCampaignTypes() };
 
-}
-}
-}
+} // namespace dialogs
+} // namespace fred
+} // namespace fso

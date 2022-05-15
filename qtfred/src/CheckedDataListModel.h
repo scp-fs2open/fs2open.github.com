@@ -24,6 +24,7 @@ class CheckedDataListModel : public QAbstractListModel
 			_color(bgColor)
 		{}
 	};
+
 	template<class U = T, class Enabler = void>
 	class RowData : public BaseRowData{
 		U _managedData;
@@ -55,6 +56,8 @@ class CheckedDataListModel : public QAbstractListModel
 		inline U& managedData() {return *_managedData;}
 		inline const U& managedData() const {return *_managedData;}
 	};
+
+	SCP_vector<RowData<T>> items;
 
 public:
 	CheckedDataListModel(QObject *parent) = delete;
@@ -147,7 +150,7 @@ public:
 			return defaultFlags;
 	}
 
-private:
+private: // private shared implementation for the following two methods
 	template<typename V>
 	inline void collectCheckedDataImpl(SCP_unordered_set<V*> &set) {
 		for (auto& item : items)
@@ -245,9 +248,6 @@ public:
 							[&](const RowData<> &row){return row._text == text;})
 				!= items.cend();
 	}
-
-private:
-	SCP_vector<RowData<T>> items;
 };
 } // namespace fred
 } // namespace fso

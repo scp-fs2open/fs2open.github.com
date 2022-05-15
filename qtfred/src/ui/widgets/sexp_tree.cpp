@@ -2466,8 +2466,9 @@ int sexp_tree::get_node(QTreeWidgetItem* h) {
 }
 
 int sexp_tree::get_root(int node) {
-	while (tree_nodes[node].parent >= 0)
+	while (tree_nodes[node].parent >= 0) {
 		node = tree_nodes[node].parent;
+	}
 	return node;
 }
 
