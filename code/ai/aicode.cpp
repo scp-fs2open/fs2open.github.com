@@ -12905,7 +12905,7 @@ void ai_maybe_evade_locked_missile(object *objp, ai_info *aip)
 				case AIM_WARP_OUT:
 					break;
 				default:
-					UNREACHABLE("Unknown AI Mode! Get a coder!");
+					UNREACHABLE("Unknown AI Mode %d! Get a coder!", aip->mode);
 					break;
 				}
 			}
@@ -12966,7 +12966,7 @@ void maybe_evade_dumbfire_weapon(ai_info *aip)
 	case AIM_LUA:
 		return;
 	default:
-		UNREACHABLE("Unknown AI Mode! Get a coder!");
+		UNREACHABLE("Unknown AI Mode %d! Get a coder!", aip->mode);
 		return;
 	}
 
@@ -13035,7 +13035,7 @@ void maybe_evade_dumbfire_weapon(ai_info *aip)
 		case AIM_LUA:
 			break;
 		default:
-			UNREACHABLE("Unknown AI Mode! Get a coder!");
+			UNREACHABLE("Unknown AI Mode %d! Get a coder!", aip->mode);
 		}
 	}
 }
