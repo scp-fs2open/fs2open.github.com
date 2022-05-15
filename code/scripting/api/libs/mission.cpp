@@ -1522,7 +1522,7 @@ ADE_FUNC(getLineOfSightFirstIntersect, l_Mission, "vector from, vector to, [tabl
 	return testLineOfSight_internal(L, true);
 }
 
-ADE_LIB_DERIV(l_Mission_LuaSEXPs, "LuaSEXPs", NULL, "Lua SEXPs", l_Mission);
+ADE_LIB_DERIV(l_Mission_LuaSEXPs, "LuaSEXPs", nullptr, "Lua SEXPs", l_Mission);
 
 ADE_INDEXER(l_Mission_LuaSEXPs, "string Name", "Gets a handle of a Lua SEXP", "LuaSEXP", "Lua SEXP handle or invalid handle on error")
 {
