@@ -166,7 +166,7 @@ int ShipEditorDialog::getSingleShip()
 	return _model->single_ship;
 }
 
-bool ShipEditorDialog::getMulti()
+bool ShipEditorDialog::getIfMultipleShips()
 {
 	return _model->multi_edit;
 }

@@ -40,7 +40,7 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 
 	int getShipClass();
 	int getSingleShip();
-	bool getMulti();
+	bool getIfMultipleShips();
 
   protected:
 	void closeEvent(QCloseEvent*) override;
