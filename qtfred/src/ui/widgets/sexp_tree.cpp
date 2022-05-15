@@ -5868,7 +5868,7 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 		}
 
 		// add_type unchanged from above
-		if (add_type == OPR_STRING) {
+		if (add_type == OPR_STRING && !is_container_opf_type(type)) {
 			add_string_act->setEnabled(true);
 		}
 
@@ -6021,10 +6021,6 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 			// even though these default to strings, we allow replacing them with index values
 			replace_type = OPR_POSITIVE;
 			replace_number_act->setEnabled(true);
-		} else if (is_container_opf_type(type)) {
-			// avoid the default OPR_STRING
-			// that way, Replace Data with String won't be enabled
-			replace_type = type;
 
 		} else if (type == OPF_CONTAINER_VALUE) {
 			// allow strings and numbers
@@ -6032,8 +6028,8 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 			add_number_act->setEnabled(true);
 		}
 
-		// default to string
-		if (replace_type == OPR_STRING) {
+		// default to string, except for container names
+		if (replace_type == OPR_STRING && !is_container_opf_type(type)) {
 			replace_string_act->setEnabled(true);
 		}
 
@@ -6283,9 +6279,9 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 					if (add_type == OPR_NUMBER)
 						add_paste_act->setEnabled(true);
 				} else if (any(container.type & ContainerType::STRING_DATA)) {
-					if (replace_type == OPR_STRING)
+					if (replace_type == OPR_STRING && !is_container_opf_type(type))
 						paste_act->setEnabled(true);
-					if (add_type == OPR_STRING)
+					if (add_type == OPR_STRING && !is_container_opf_type(type))
 						add_paste_act->setEnabled(true);
 				} else {
 					UNREACHABLE("Unknown container data type %d", (int)container.type);
@@ -6306,11 +6302,11 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 			}
 
 		} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_STRING) {
-			if (replace_type == OPR_STRING) {
+			if (replace_type == OPR_STRING && !is_container_opf_type(type)) {
 				edit_data_act->setEnabled(true);
 			}
 
-			if (add_type == OPR_STRING) {
+			if (add_type == OPR_STRING && !is_container_opf_type(type)) {
 				add_paste_act->setEnabled(true);
 			}
 
