@@ -489,6 +489,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "ship-subsys-ignore_if_dead",		OP_SHIP_SUBSYS_IGNORE_IF_DEAD,			3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// FUBAR
 	{ "awacs-set-radius",				OP_AWACS_SET_RADIUS,					3,	3,			SEXP_ACTION_OPERATOR,	},
 	{ "alter-ship-flag",				OP_ALTER_SHIP_FLAG,						3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Karajorma 
+	{ "cancel-future-waves",			OP_CANCEL_FUTURE_WAVES,						1,	INT_MAX,	SEXP_ACTION_OPERATOR,	}, // naomimyselfandi
 
 	//Cargo Sub-Category
 	{ "transfer-cargo",					OP_TRANSFER_CARGO,						2,	2,			SEXP_ACTION_OPERATOR,	},
@@ -13220,6 +13221,16 @@ void sexp_self_destruct(int node)
 	}
 }
 
+void sexp_cancel_future_waves(int node)
+{
+	for (int n = node; n != -1; n = CDR(n))	{
+		auto wingp = eval_wing(n);
+		if (wingp) {
+			wingp->num_waves = wingp->current_wave;
+		}
+	}
+}
+
 void sexp_next_mission(int n)
 {
 	auto mission_name = CTEXT(n);
@@ -25213,6 +25224,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_CANCEL_FUTURE_WAVES:
+				sexp_cancel_future_waves(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_SHIP_VULNERABLE:
 			case OP_SHIP_INVULNERABLE:
 				sexp_ships_invulnerable(node, (op_num == OP_SHIP_INVULNERABLE));
@@ -27875,6 +27891,7 @@ int query_operator_return_type(int op)
 		case OP_HUD_SET_CUSTOM_GAUGE_ACTIVE:
 		case OP_HUD_SET_BUILTIN_GAUGE_ACTIVE:
 		case OP_ALTER_SHIP_FLAG:
+		case OP_CANCEL_FUTURE_WAVES:
 		case OP_CHANGE_TEAM_COLOR:
 		case OP_NEBULA_CHANGE_PATTERN:
 		case OP_COPY_VARIABLE_FROM_INDEX:
@@ -28200,6 +28217,8 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_BOOL;
 			else
 				return OPF_SHIP_WING_WHOLETEAM;
+		case OP_CANCEL_FUTURE_WAVES:
+			return OPF_WING;
 		
 		case OP_SET_PLAYER_THROTTLE_SPEED:
 			if(argnum == 0)
@@ -31884,6 +31903,7 @@ int get_subcategory(int sexp_id)
 		case OP_SHIP_UNTAG:
 		case OP_SET_ARRIVAL_INFO:
 		case OP_SET_DEPARTURE_INFO:
+		case OP_CANCEL_FUTURE_WAVES:
 			return CHANGE_SUBCATEGORY_SHIP_STATUS;
 
 		case OP_SET_WEAPON_ENERGY:
@@ -34595,6 +34615,12 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"fail-sound-locked-primary - This ship will play a weapon failure sound if trying to shoot primaries when they're locked\r\n"
 		"fail-sound-locked-secondary - This ship will play a weapon failure sound if trying to shoot secondaries when they're locked\r\n"
 	},
+
+	{ OP_CANCEL_FUTURE_WAVES, "cancel-future-waves\r\n"
+		"\tCancel all waves of a wing which have not yet arrived. Waves that have arrived already are not affected. is-destroyed-delay, ship-type-destroyed, and similar operators behave as though the cancelled waves do not exist.\r\n\r\nIf this operator is called on a wing which has not arrived, the wing will never arrive, exactly as if its arrival cue were set to false. That wing is not marked as destroyed.\r\n\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\tAll:\tThe name of a wing to cancel." },
+
 
 	{ OP_SHIP_VISIBLE, "ship-visible\r\n"
 		"\tCauses the ships listed in this sexpression to be visible with player sensors.\r\n\r\n"
