@@ -56,6 +56,8 @@ class object;
 // out of order, but it was this way in the original source
 #define DISABLE_SUBSYSTEM_ITEM		(1<<15)
 
+#define MAX_ENGINE_PLAYER_ORDER		DISABLE_SUBSYSTEM_ITEM
+
 // used for Message box gauge
 #define NUM_MBOX_FRAMES		3
 
@@ -65,10 +67,13 @@ typedef struct player_order {
 	int hud_xstr;
 	int id;
 	SCP_string localized_name;
-	player_order(SCP_string parsename, SCP_string hudname, int hudxstr, int orderid = 0) : parse_name(std::move(parsename)), hud_name(std::move(hudname)), hud_xstr(hudxstr), id(orderid), localized_name("") { }
+	int lua_id;
+	player_order(SCP_string parsename, SCP_string hudname, int hudxstr, int orderid = 0, int luaid = -1) : parse_name(std::move(parsename)), hud_name(std::move(hudname)), hud_xstr(hudxstr), id(orderid), localized_name(""), lua_id(luaid) { }
+	inline void localize() { localized_name = XSTR(hud_name.c_str(), hud_xstr); }
 } player_order;
 
 extern std::vector<player_order> Player_orders;
+extern int current_new_player_order_type;
 
 // following defines are the set of possible commands that can be given to a ship.  A mission designer
 // might not allow some messages

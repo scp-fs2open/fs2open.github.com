@@ -12,6 +12,7 @@
 
 
 #include "ai/aigoals.h"
+#include "ai/ailua.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/linklist.h"
 #include "hud/hudmessage.h"
@@ -32,7 +33,6 @@
 #include "ship/subsysdamage.h"
 #include "weapon/emp.h"
 #include "weapon/weapon.h"
-
 
 // defines for different modes in the squad messaging system
 
@@ -175,6 +175,8 @@ std::vector<player_order> Player_orders = {
 	player_order("keep safe dist", "Keep safe distance", -1, KEEP_SAFE_DIST_ITEM)
 };
 
+int current_new_player_order_type = (1 << 31);
+
 void hud_init_comm_orders()
 {
 	int i;
@@ -194,9 +196,8 @@ void hud_init_comm_orders()
 		Comm_order_types[i] = temp_comm_order_types[i];
 	}
 
-	for(auto& order : Player_orders) {
-		order.localized_name = XSTR(order.hud_name.c_str(), order.hud_xstr);
-	}
+	for (auto& order : Player_orders)
+		order.localize();
 }
 
 // Text to display on the messaging menu when using the shortcut keys
@@ -765,11 +766,18 @@ bool hud_squadmsg_is_target_order_valid(int order, int find_order, ai_info *aip 
 		order = (int)i;
 	}
 
+	target_objnum = aip->target_objnum;
+	ordering_shipp = &Ships[aip->shipnum];
+
+	//If it's a lua order, defer to luaai
+	if (Player_orders[order].lua_id != -1) {
+		return ai_lua_is_valid_target(Player_orders[order].lua_id, target_objnum, ordering_shipp);
+	}
+
 	// orders which don't operate on targets are always valid
 	if ( !(Player_orders[order].id & TARGET_MESSAGES) )
 		return true;
 
-	target_objnum = aip->target_objnum;
 
 	// order isn't valid if there is no player target
 	if ( target_objnum == -1 ) {
@@ -778,7 +786,6 @@ bool hud_squadmsg_is_target_order_valid(int order, int find_order, ai_info *aip 
 
 	objp = &Objects[target_objnum];
 
-	ordering_shipp = &Ships[aip->shipnum];
 
 	// target isn't a ship, then return false
 	if ( (objp->type != OBJ_SHIP) && (objp->type != OBJ_WEAPON) )
@@ -1009,6 +1016,7 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 	ai_info *ainfo;
 	int ai_mode, ai_submode;					// ai mode and submode needed for ship commands
 	char *target_shipname;						// ship number of possible targets
+	object_ship_wing_point_team lua_target;
 	int message;
 	int target_team, ship_team;				// team id's for the ship getting message and any target the player has
 	ship *ordering_shipp;
@@ -1244,16 +1252,29 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 			message = MESSAGE_YESSIR;
 			break;
 		
-		default:
-			Int3();										// get Allender -- illegal message
+		default: {
+			size_t i;
+			for (i = 0; i < Player_orders.size(); i++) {
+				if (Player_orders[i].id == command)
+					break;
+			}
+			Assert(i < Player_orders.size()); // get Allender -- illegal message
+			
+			ai_mode = AI_GOAL_LUA;
+			ai_submode = Player_orders[i].lua_id;
+			auto lua_porder = ai_lua_find_player_order(Player_orders[i].lua_id);
+			message = lua_porder->ai_message;
+			if (ainfo->target_objnum != -1)
+				lua_target = object_ship_wing_point_team(&Ships[Objects[ainfo->target_objnum].instance]);
 			break;
+		}
 
 		}
 
 		// handle case of messaging one ship.  Deal with messaging all fighters next.
 		if ( ai_mode != AI_GOAL_NONE ) {
 			Assert(ai_submode != -1234567);
-			ai_add_ship_goal_player( AIG_TYPE_PLAYER_SHIP, ai_mode, ai_submode, target_shipname, &Ai_info[Ships[shipnum].ai_index] );
+			ai_add_ship_goal_player( AIG_TYPE_PLAYER_SHIP, ai_mode, ai_submode, target_shipname, &Ai_info[Ships[shipnum].ai_index], lua_target );
 			if( update_history == SQUADMSG_HISTORY_ADD_ENTRY ) {
 				hud_add_issued_order(Ships[shipnum].ship_name, command);
 				hud_update_last_order(target_shipname, player_num, special_index); 
@@ -1293,6 +1314,7 @@ int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, 
 	ai_info *ainfo;
 	int ai_mode, ai_submode;					// ai mode and submode needed for ship commands
 	char *target_shipname;						// ship number of possible targets
+	object_ship_wing_point_team lua_target;
 	int message_sent, message;
 	int target_team, wing_team;				// team for the wing and the player's target
 	ship *ordering_shipp;
@@ -1462,15 +1484,28 @@ int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, 
 		case KEEP_SAFE_DIST_ITEM:
 			return 0;
 
-		default:
-			Int3();										// get Allender -- illegal message
+		default: {
+			size_t i;
+			for (i = 0; i < Player_orders.size(); i++) {
+				if (Player_orders[i].id == command)
+					break;
+			}
+			Assert(i < Player_orders.size()); // get Allender -- illegal message
+
+			ai_mode = AI_GOAL_LUA;
+			ai_submode = Player_orders[i].lua_id;
+			auto lua_porder = ai_lua_find_player_order(Player_orders[i].lua_id);
+			message = lua_porder->ai_message;
+			if(ainfo->target_objnum != -1)
+				lua_target = object_ship_wing_point_team(&Ships[Objects[ainfo->target_objnum].instance]);
 			break;
 
+		}
 		}
 
 		if ( ai_mode != AI_GOAL_NONE ) {
 			Assert(ai_submode != -1234567);
-			ai_add_wing_goal_player( AIG_TYPE_PLAYER_WING, ai_mode, ai_submode, target_shipname, wingnum );
+			ai_add_wing_goal_player( AIG_TYPE_PLAYER_WING, ai_mode, ai_submode, target_shipname, wingnum, lua_target );
 
 			if( update_history == SQUADMSG_HISTORY_ADD_ENTRY ) {				
 				hud_add_issued_order(Wings[wingnum].name, command);

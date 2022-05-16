@@ -15801,7 +15801,7 @@ SCP_string ship_return_orders(ship* sp)
 	if (aigp->ai_mode < 0)
 		return SCP_string();
 
-	auto order_text = Ai_goal_text(aigp->ai_mode);
+	auto order_text = Ai_goal_text(aigp->ai_mode, aigp->ai_submode);
 	if (order_text == nullptr)
 		return SCP_string();
 
@@ -15865,6 +15865,7 @@ SCP_string ship_return_orders(ship* sp)
 
 	case AI_GOAL_WAYPOINTS:
 	case AI_GOAL_WAYPOINTS_ONCE:
+	case AI_GOAL_LUA:
 		// don't do anything, all info is in order_text
 		break;
 

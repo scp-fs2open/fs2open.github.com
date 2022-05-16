@@ -79,6 +79,8 @@ add_file_folder("AI"
 	ai/aigoals.cpp
 	ai/aigoals.h
 	ai/aiinternal.h
+	ai/ailua.cpp
+	ai/ailua.h
 	ai/aiturret.cpp
 )
 
@@ -1043,6 +1045,8 @@ add_file_folder("Parse\\\\SEXP"
 	parse/sexp/EngineSEXP.h
 	parse/sexp/LuaSEXP.cpp
 	parse/sexp/LuaSEXP.h
+	parse/sexp/LuaAISEXP.cpp
+	parse/sexp/LuaAISEXP.h
 	parse/sexp/sexp_lookup.cpp
 	parse/sexp/sexp_lookup.h
 	parse/sexp/SEXPParameterExtractor.cpp
@@ -1265,6 +1269,8 @@ add_file_folder("Scripting\\\\Api\\\\Libs"
 )
 
 add_file_folder("Scripting\\\\Api\\\\Objs"
+	scripting/api/objs/ai_helper.cpp
+	scripting/api/objs/ai_helper.h
 	scripting/api/objs/asteroid.cpp
 	scripting/api/objs/asteroid.h
 	scripting/api/objs/audio_stream.cpp
@@ -1319,6 +1325,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/intelentry.h
 	scripting/api/objs/LuaSEXP.cpp
 	scripting/api/objs/LuaSEXP.h
+	scripting/api/objs/luaaisexp.cpp
+	scripting/api/objs/luaaisexp.h
 	scripting/api/objs/mc_info.cpp
 	scripting/api/objs/mc_info.h
 	scripting/api/objs/message.cpp
