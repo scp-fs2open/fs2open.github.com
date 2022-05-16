@@ -15,6 +15,10 @@
 #include "parse/generic_log.h"
 #include "cfile/cfile.h"
 #include "parse/parselo.h"
+#include "globalincs/version.h"
+#include "network/multi_options.h"
+#include "network/multi_fstracker.h"
+#include "network/multi.h"
 
 
 
@@ -77,11 +81,36 @@ void multi_log_write_update()
 	ml_printf("Server has been active for %d hours, %d minutes, and %d seconds", hours, mins, seconds);
 }
 
+// write out some info helpful for debugging
+static void multi_log_write_info()
+{
+	extern bool Multi_cfg_missing;
+
+	if (Multi_cfg_missing) {
+		ml_string("**  multi.cfg is missing!  **");
+	}
+
+	ml_printf("FreeSpace 2 Open version: %s", FS_VERSION_FULL);
+	ml_printf("Multi version: %d", MULTI_FS_SERVER_VERSION);
+
+	extern void cmdline_print_cmdline_multi();
+	cmdline_print_cmdline_multi();
+
+	if (Is_standalone) {
+		ml_printf("PXO: %s", Multi_options_g.pxo ? "Enabled" : "Disabled");
+
+		if (Multi_options_g.pxo) {
+			ml_printf("PXO Channel: %s", Multi_fs_tracker_channel);
+		}
+	}
+}
+
 // initialize the multi logfile
 void multi_log_init()
 {
 	if (logfile_init(LOGFILE_MULTI_LOG)) {
 		multi_log_write_header();
+		multi_log_write_info();
 
 		// initialize our timer info
 		Multi_log_open_systime = (int) time(NULL);

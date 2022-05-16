@@ -48,6 +48,7 @@ multi_global_options Multi_options_g;
 
 char Multi_options_proxy[512] = "";
 ushort Multi_options_proxy_port = 0;
+bool Multi_cfg_missing = true;
 
 // ----------------------------------------------------------------------------------
 // MULTI OPTIONS FUNCTIONS
@@ -76,6 +77,8 @@ void multi_options_read_config()
 	if (in == NULL) {
 		nprintf(("Network","Failed to open network config file, using default settings\n"));		
 	} else {
+		Multi_cfg_missing = false;
+
 		while ( !cfeof(in) ) {
 			// read in the game info
 			memset(str, 0, 512);
