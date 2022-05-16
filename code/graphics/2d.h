@@ -715,7 +715,7 @@ typedef struct screen {
 	// dumps the current screen to a file
 	std::function<void(const char* filename)> gf_print_screen;
 
-	// dumps the current environment map to several files
+	// transforms and dumps the current environment map to a file
 	std::function<void(const char* filename)> gf_dump_envmap;
 
 	// Retrieves the zbuffer mode.
