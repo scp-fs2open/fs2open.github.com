@@ -229,7 +229,8 @@ void LabRenderer::renderHud(float) {
 	gr_printf_no_resize(gr_screen.center_offset_x + 2,
 		gr_screen.center_offset_y + gr_screen.center_h - (gr_get_font_height() * 4) - 3,
 		"%s Use number keys to switch between AA presets. R to cycle model rotation "
-		"modes, S to cycle model rotation speeds, V to reset view.", labCamera->getUsageInfo().c_str());
+		"modes, S to cycle model rotation speeds, V to reset view, "
+		"M to export environment map.", labCamera->getUsageInfo().c_str());
 
 	// Rotation mode
 	SCP_string text = get_rot_mode_string(getLabManager()->RotationMode);
