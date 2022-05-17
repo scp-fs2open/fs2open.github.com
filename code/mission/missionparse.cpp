@@ -3347,6 +3347,7 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 
 	// check for the optional "orders accepted" string which contains the orders from the default
     // set that this ship will actually listen to
+	// Obsolete and only for backwards compatibility
     if (optional_string("+Orders Accepted:"))
     {
 		p_objp->orders_accepted.clear();
@@ -3363,6 +3364,24 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 			}
 		}
     }
+
+	if (optional_string("+Orders Accepted List:"))
+	{
+		p_objp->orders_accepted.clear();
+
+		SCP_vector<SCP_string> accepted_flags;
+		stuff_string_list(accepted_flags);
+
+		for (const SCP_string& accepted : accepted_flags) {
+			for (size_t j = 0; j < Player_orders.size(); j++) {
+				if (Player_orders[j].parse_name == accepted)
+					p_objp->orders_accepted.insert(j);
+			}
+		}
+
+		if (!p_objp->orders_accepted.empty())
+			p_objp->flags.set(Mission::Parse_Object_Flags::SF_Use_unique_orders);
+	}
 
 	p_objp->group = 0;
 	if (optional_string("+Group:"))
