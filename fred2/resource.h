@@ -120,7 +120,8 @@
 #define IDB_DATA_85                     313
 #define IDB_DATA_90                     314
 #define IDB_DATA_95                     315
-#define IDB_CONTAINER                   316
+#define IDB_CONTAINER_NAME              316
+#define IDB_CONTAINER_DATA              317
 #define IDD_FICTION_VIEWER              318
 #define IDD_SOUND_ENVIRONMENT           319
 #define IDD_WARP_PARAMS                 320
@@ -995,12 +996,12 @@
 #define IDC_NEB2_PALETTE_OVERRIDE       1546
 #define IDC_CUSTOM_TECH_DB              1547
 #define IDC_USE_AUTOPILOT_CINEMATICS    1547
+#define IDC_CORRECTED_ANGLES_IN_MISSION_FILE 1547
 #define IDC_2D_MISSION                  1548
 #define IDC_LABEL1                      1549
 #define IDC_2D_MISSION2                 1549
-#define IDC_ALWAYS_SHOW_GOALS           1549
+#define IDC_TOGGLE_SHOWING_GOALS        1549
 #define IDC_LABEL2                      1550
-#define IDC_ALWAYS_SHOW_GOALS2          1550
 #define IDC_END_TO_MAINHALL             1550
 #define IDC_NEW_TEXTURE                 1551
 #define IDC_OVERRIDE_HASHCOMMAND        1551
@@ -1453,7 +1454,7 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        328
+#define _APS_NEXT_RESOURCE_VALUE        329
 #define _APS_NEXT_COMMAND_VALUE         33102
 #define _APS_NEXT_CONTROL_VALUE         1665
 #define _APS_NEXT_SYMED_VALUE           105

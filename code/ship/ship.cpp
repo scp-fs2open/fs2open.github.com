@@ -265,7 +265,8 @@ flag_def_list_new<Model::Subsystem_Flags> Subsystem_flags[] = {
 	{ "don't autorepair if disabled", Model::Subsystem_Flags::No_autorepair_if_disabled,        true, false },
 	{ "share fire direction",       Model::Subsystem_Flags::Share_fire_direction,               true, false },
 	{ "no damage spew",             Model::Subsystem_Flags::No_sparks,                          true, false },
-	{ "no impact debris",           Model::Subsystem_Flags::No_impact_debris,                    true, false },
+	{ "no impact debris",           Model::Subsystem_Flags::No_impact_debris,                   true, false },
+	{ "hide turret from loadout stats", Model::Subsystem_Flags::Hide_turret_from_loadout_stats, true, false },
 };
 
 const size_t Num_subsystem_flags = sizeof(Subsystem_flags)/sizeof(flag_def_list_new<Model::Subsystem_Flags>);
@@ -3727,9 +3728,8 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 
 	if (optional_string("$Flags:"))
 	{
-		// we'll assume the list will contain no more than 20 distinct tokens
-		char ship_strings[20][NAME_LENGTH];
-		int num_strings = (int)stuff_string_list(ship_strings, 20);
+		SCP_vector<SCP_string> ship_strings;
+		stuff_string_list(ship_strings);
 
 		int ship_type_index = -1;
 
@@ -3745,14 +3745,14 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			sip->flags.set(Ship::Info_Flags::Has_display_name, has_display_name);
 		}
 
-		for (auto i = 0; i < num_strings; i++)
+		for (const auto &flag : ship_strings)
 		{
 			// get ship type from ship flags
-			const char *ship_type = ship_strings[i];
+			const char *cur_flag = flag.c_str();
 			bool flag_found = false;
 
 			// look it up in the object types table
-			ship_type_index = ship_type_name_lookup(ship_type);
+			ship_type_index = ship_type_name_lookup(cur_flag);
 
 			// set ship class type
 			if ((ship_type_index >= 0) && (sip->class_type < 0))
@@ -3760,7 +3760,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 
 			// check various ship flags
 			for (size_t idx = 0; idx < Num_ship_flags; idx++) {
-				if ( !stricmp(Ship_flags[idx].name, ship_strings[i]) ) {
+				if ( !stricmp(Ship_flags[idx].name, cur_flag) ) {
 					flag_found = true;
 
 					if (!Ship_flags[idx].in_use)
@@ -3773,25 +3773,25 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			}
 
 			// catch typos or deprecations
-			if (!stricmp(ship_strings[i], "no-collide") || !stricmp(ship_strings[i], "no_collide")) {
+			if (!stricmp(cur_flag, "no-collide") || !stricmp(cur_flag, "no_collide")) {
 				flag_found = true;
 				sip->flags.set(Ship::Info_Flags::No_collide);
 			}
-			if (!stricmp(ship_strings[i], "dont collide invisible")) {
+			if (!stricmp(cur_flag, "dont collide invisible")) {
 				flag_found = true;
 				sip->flags.set(Ship::Info_Flags::Ship_class_dont_collide_invis);
 			}
-			if (!stricmp(ship_strings[i], "dont bank when turning")) {
+			if (!stricmp(cur_flag, "dont bank when turning")) {
 				flag_found = true;
 				sip->flags.set(Ship::Info_Flags::Dont_bank_when_turning);
 			}
-			if (!stricmp(ship_strings[i], "dont clamp max velocity")) {
+			if (!stricmp(cur_flag, "dont clamp max velocity")) {
 				flag_found = true;
 				sip->flags.set(Ship::Info_Flags::Dont_clamp_max_velocity);
 			}
 
 			if ( !flag_found && (ship_type_index < 0) )
-				Warning(LOCATION, "Bogus string in ship flags: %s\n", ship_strings[i]);
+				Warning(LOCATION, "Bogus string in ship flags: %s\n", cur_flag);
 		}
 
 		// set original status of tech database flags - Goober5000
@@ -6418,6 +6418,9 @@ void ship::clear()
 	team_change_time = 0;
 
 	autoaim_fov = 0.0f;
+
+	multi_client_collision_timestamp = TIMESTAMP::immediate();
+
 	passive_arc_next_times.clear();
 }
 bool ship::has_display_name() const {
@@ -6689,6 +6692,10 @@ static void ship_set(int ship_index, int objnum, int ship_type)
 	shipp->warpin_params_index = sip->warpin_params_index;
 	shipp->warpout_params_index = sip->warpout_params_index;
 
+	// default cues, which will be changed later unless this is created in the lab or by ship-create
+	shipp->arrival_cue = Locked_sexp_true;
+	shipp->departure_cue = Locked_sexp_false;
+
 	if(pm != NULL && pm->n_view_positions > 0)
 		ship_set_eye(objp, 0);
 	else
@@ -6701,6 +6708,9 @@ static void ship_set(int ship_index, int objnum, int ship_type)
 	shipp->secondary_team_name = "none";
 
 	shipp->autoaim_fov = sip->autoaim_fov;
+
+	shipp->multi_client_collision_timestamp = TIMESTAMP::immediate();
+
 	shipp->max_shield_regen_per_second = sip->max_shield_regen_per_second;
 	shipp->max_weapon_regen_per_second = sip->max_weapon_regen_per_second;
 	
@@ -7981,7 +7991,7 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 			Script_system.SetHookObject("Ship", objp);
 			Script_system.SetHookVar("Method", 's', departmethod);
 			Script_system.SetHookVar("JumpNode", 's', jumpnode_name);
-			Script_system.RunCondition(CHA_ONSHIPDEPART);
+			Script_system.RunCondition(CHA_ONSHIPDEPART, objp);
 			Script_system.RemHookVars({"Ship", "Method", "JumpNode"});
 		}
 	}
@@ -12085,8 +12095,8 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 
 		if (Script_system.IsActiveAction(CHA_ONWPFIRED) || Script_system.IsActiveAction(CHA_PRIMARYFIRE)) {
 			Script_system.SetHookObjects(2, "User", objp, "Target", target);
-			Script_system.RunCondition(CHA_ONWPFIRED, objp, 1);
-			Script_system.RunCondition(CHA_PRIMARYFIRE, objp);
+			Script_system.RunCondition(CHA_ONWPFIRED, objp, nullptr, 1);
+			Script_system.RunCondition(CHA_PRIMARYFIRE, objp, nullptr);
 			Script_system.RemHookVars({"User", "Target"});
 		}
 	}
@@ -12787,8 +12797,8 @@ done_secondary:
 
 		if (Script_system.IsActiveAction(CHA_ONWPFIRED) || Script_system.IsActiveAction(CHA_SECONDARYFIRE)) {
 			Script_system.SetHookObjects(2, "User", objp, "Target", target);
-			Script_system.RunCondition(CHA_ONWPFIRED, objp);
-			Script_system.RunCondition(CHA_SECONDARYFIRE, objp);
+			Script_system.RunCondition(CHA_ONWPFIRED, objp, nullptr, 2);
+			Script_system.RunCondition(CHA_SECONDARYFIRE, objp, nullptr);
 			Script_system.RemHookVars({"User", "Target"});
 		}
 	}
@@ -13049,8 +13059,8 @@ int ship_select_next_primary(object *objp, int direction)
 
 		if (Script_system.IsActiveAction(CHA_ONWPSELECTED) || Script_system.IsActiveAction(CHA_ONWPDESELECTED)) {
 			Script_system.SetHookObjects(2, "User", objp, "Target", target);
-			Script_system.RunCondition(CHA_ONWPSELECTED, objp);
-			Script_system.RunCondition(CHA_ONWPDESELECTED, objp);
+			Script_system.RunCondition(CHA_ONWPSELECTED, objp, nullptr, 1);
+			Script_system.RunCondition(CHA_ONWPDESELECTED, objp, nullptr, 1);
 			Script_system.RemHookVars({"User", "Target"});
 		}
 
@@ -13153,8 +13163,8 @@ int ship_select_next_secondary(object *objp)
 
 			if (Script_system.IsActiveAction(CHA_ONWPSELECTED) || Script_system.IsActiveAction(CHA_ONWPDESELECTED)) {
 				Script_system.SetHookObjects(2, "User", objp, "Target", target);
-				Script_system.RunCondition(CHA_ONWPSELECTED, objp);
-				Script_system.RunCondition(CHA_ONWPDESELECTED, objp);
+				Script_system.RunCondition(CHA_ONWPSELECTED, objp, nullptr, 2);
+				Script_system.RunCondition(CHA_ONWPDESELECTED, objp, nullptr, 2);
 				Script_system.RemHookVars({"User", "Target"});
 			}
 
@@ -15791,7 +15801,7 @@ SCP_string ship_return_orders(ship* sp)
 	if (aigp->ai_mode < 0)
 		return SCP_string();
 
-	auto order_text = Ai_goal_text(aigp->ai_mode);
+	auto order_text = Ai_goal_text(aigp->ai_mode, aigp->ai_submode);
 	if (order_text == nullptr)
 		return SCP_string();
 
@@ -15855,6 +15865,7 @@ SCP_string ship_return_orders(ship* sp)
 
 	case AI_GOAL_WAYPOINTS:
 	case AI_GOAL_WAYPOINTS_ONCE:
+	case AI_GOAL_LUA:
 		// don't do anything, all info is in order_text
 		break;
 

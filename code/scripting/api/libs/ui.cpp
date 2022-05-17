@@ -117,7 +117,7 @@ ADE_FUNC(maybePlayCutscene, l_UserInterface, "enumeration MovieType, boolean Res
 	bool restart_music = false;
 	int score_index = 0;
 
-	if (!ade_get_args(L, "*obi", l_Enum.Get(&movie_type), &restart_music, &score_index))
+	if (!ade_get_args(L, "obi", l_Enum.Get(&movie_type), &restart_music, &score_index))
 		return ADE_RETURN_NIL;
 
 	// if an out-of-range enum is passed to this function, it will just be ignored

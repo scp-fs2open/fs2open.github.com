@@ -797,6 +797,8 @@ public:
 
 	float autoaim_fov;
 
+	TIMESTAMP	multi_client_collision_timestamp;
+
 	enum warpstage {
 		STAGE1 = 0,
 		STAGE2,
@@ -1479,7 +1481,9 @@ typedef struct wing {
 	int	reinforcement_index;					// index in reinforcement struct or -1
 	int	hotkey;
 
-	int	num_waves, current_wave;			// members for dealing with waves
+	// members for dealing with waves
+	int	num_waves;
+	int current_wave;							// NOTE: this is 1-based!  As each wave arrives, this will reflect the counting number: Wave 1, Wave 2, etc.
 	int	threshold;								// when number of ships in the wing reaches this number -- new wave
 
 	fix	time_gone;								// time into the mission when this wing is officially gone.

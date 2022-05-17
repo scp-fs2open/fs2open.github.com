@@ -1199,7 +1199,7 @@ int CShipEditorDlg::update_data(int redraw)
 			return z;
 
 		strcpy_s(old_name, Ships[single_ship].ship_name);
-		string_copy(Ships[single_ship].ship_name, m_ship_name, NAME_LENGTH, 1);
+		string_copy(Ships[single_ship].ship_name, m_ship_name, NAME_LENGTH - 1, 1);
 		str = Ships[single_ship].ship_name;
 		if (strcmp(old_name, str)) {
 			update_sexp_references(old_name, str);

@@ -168,6 +168,10 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 	listener(SubSystem::MissionBrief);
 	mission_brief_common_init();
 
+	// Initialize dynamic SEXPs. Must happen before ship init for LuaAI
+	listener(SubSystem::DynamicSEXPs);
+	sexp::dynamic_sexp_init();
+
 	listener(SubSystem::Objects);
 	obj_init();
 
@@ -244,9 +248,6 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 
 	listener(SubSystem::FFmpeg);
 	libs::ffmpeg::initialize();
-
-	listener(SubSystem::DynamicSEXPs);
-	sexp::dynamic_sexp_init();
 
 	// wookieejedi
 	// load in the controls and defaults including the controlconfigdefault.tbl

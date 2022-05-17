@@ -15,7 +15,7 @@
 class CAddModifyContainerDlg : public CDialog
 {
 public:
-	CAddModifyContainerDlg(sexp_tree *p_sexp_tree, CWnd *pParent = nullptr);
+	CAddModifyContainerDlg(const sexp_tree &s_tree, CWnd *pParent = nullptr);
 
 	enum { IDD = IDD_EDIT_CONTAINER };
 
@@ -24,7 +24,16 @@ public:
 protected:
 	void DoDataExchange(CDataExchange *pDX) override; // DDX/DDV support
 
-	void OnOK() override;
+	// intercept Enter and Escape
+	virtual BOOL PreTranslateMessage(MSG* pMsg);
+
+	afx_msg void OnOK() override;		// default MFC OK behavior
+	afx_msg void OnCancel() override;	// default MFC Cancel behavior
+
+	afx_msg void OnButtonOk();		// button handler
+	afx_msg void OnButtonCancel();	// button handler
+	afx_msg void OnClose();
+
 	BOOL OnInitDialog() override;
 
 	afx_msg void OnTypeMap();
@@ -44,7 +53,7 @@ protected:
 	afx_msg void OnContainerInsert();
 	afx_msg void OnContainerRemove();
 	afx_msg void OnContainerUpdate();
-	
+
 	afx_msg void ListerSelectionGetIter(SCP_vector<SCP_string>::iterator &iter);
 	afx_msg void OnListerSelectionChange();
 
@@ -79,16 +88,29 @@ public:
 	afx_msg void OnBnClickedNumberKeys();
 	afx_msg void OnBnClickedDeleteContainer();
 
+	const SCP_unordered_map<SCP_string, SCP_string, SCP_string_lcase_hash, SCP_string_lcase_equal_to>
+		&get_renamed_containers() const {
+		return m_renamed_containers;
+	}
+
 private:
 	bool has_containers() const { return !m_containers.empty(); }
 	int num_containers() const { return (int)m_containers.size(); }
 	sexp_container &get_current_container();
+	void populate_renamed_containers();
+	bool query_modified() const;
+	static SCP_string create_null_container_name();
+	static bool is_null_container_name(const SCP_string& container_name);
 
-	const sexp_tree * const m_p_sexp_tree;
+	const sexp_tree &m_sexp_tree;
 	SCP_vector<sexp_container> m_containers;
 	// two-way map to handle container renaming
 	SCP_unordered_map<SCP_string, SCP_string, SCP_string_lcase_hash, SCP_string_lcase_equal_to> m_old_to_new_names;
 	SCP_unordered_map<SCP_string, SCP_string, SCP_string_lcase_hash, SCP_string_lcase_equal_to> m_new_to_old_names;
+	// finalized map of renamed containers
+	SCP_unordered_map<SCP_string, SCP_string, SCP_string_lcase_hash, SCP_string_lcase_equal_to> m_renamed_containers;// 
+	// counter to uniquely identify new/deleted containers in the renaming maps
+	static int m_null_container_counter;
 	// dialog model when m_containers is empty
 	sexp_container m_dummy_container;
 	// read-only view of list data/map keys

@@ -65,6 +65,7 @@ namespace Model {
         Share_fire_direction,		// (DahBlount) Whenever the turret fires, make all firing points fire in the same direction.
         No_sparks,          // Subsystem does not generate sparks if hit - m!m
 		No_impact_debris,    // Don't spawn the small debris on impact - m!m
+		Hide_turret_from_loadout_stats, // Turret is not accounted for in auto-generated "Turrets" line in the ship loadout window --wookieejedi
 
         NUM_VALUES
 	};

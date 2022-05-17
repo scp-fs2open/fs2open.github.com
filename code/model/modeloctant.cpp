@@ -128,18 +128,14 @@ void moff_defpoints(ubyte * p, int just_count)
 // +32     float      radius
 // +36     int         nverts
 // +40     int         tmap_num
-// +44     nverts*(model_tmap_vert-4) vertlist (n,u,v)
+// +44     nverts*(model_tmap_vert_old) vertlist (n,u,v)
 void moff_tmappoly(ubyte * p, polymodel * pm, model_octant * oct, int just_count )
 {
 	uint i, nv;
-	model_tmap_vert *verts;
 
-	nv = uw(p+36);
+	nv = uw(p + TMAP_NVERTS);
 
-	verts = new model_tmap_vert[nv];
-
-	// Copy the verts manually since they aren't aligned with the struct
-	unpack_tmap_verts(&p[44], verts, nv);
+	auto verts = reinterpret_cast<model_tmap_vert_old*>(&p[TMAP_VERTS]);
 
 	if ( (pm->version < 2003) && !just_count )	{
 		// Set the "normal_point" part of field to be the center of the polygon
@@ -196,9 +192,9 @@ void moff_tmap2poly(ubyte* p, polymodel* pm, model_octant* oct, int just_count)
 	uint i, nv;
 	model_tmap_vert* verts;
 
-	nv = uw(p + 48);
+	nv = uw(p + TMAP2_NVERTS);
 
-	verts = (model_tmap_vert*)(p + 52);
+	verts = reinterpret_cast<model_tmap_vert*>(p + TMAP2_VERTS);
 
 	vec3d center_point;
 	vm_vec_zero(&center_point);

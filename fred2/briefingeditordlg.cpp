@@ -329,6 +329,27 @@ void briefing_editor_dlg::restore_editor_state()
 	m_cur_icon = icon_saved;
 }
 
+int briefing_editor_dlg::get_first_ship_with_no_custom_icon()
+{
+	if (first_ship_with_no_custom_icon < 0)
+	{
+		for (int i = 0; i < ship_info_size(); ++i)
+		{
+			if (Ship_info[i].bii_index_ship < 0)
+			{
+				first_ship_with_no_custom_icon = i;
+				break;
+			}
+		}
+
+		// sanity check
+		if (first_ship_with_no_custom_icon < 0)
+			first_ship_with_no_custom_icon = 0;
+	}
+
+	return first_ship_with_no_custom_icon;
+}
+
 void briefing_editor_dlg::update_data(int update)
 {
 	char buf[MAX_LABEL_LEN];
@@ -354,7 +375,7 @@ void briefing_editor_dlg::update_data(int update)
 
 		ptr->text = buf3;
 		MODIFY(ptr->camera_time, atoi(m_time));
-		string_copy(ptr->voice, m_voice, MAX_FILENAME_LEN, 1);
+		string_copy(ptr->voice, m_voice, MAX_FILENAME_LEN - 1, 1);
 		i = ptr->flags;
 		if (m_cut_prev)
 			i |= BS_BACKWARD_CUT;
@@ -454,7 +475,7 @@ void briefing_editor_dlg::update_data(int update)
 
 			ptr->icons[m_last_icon].id = m_id;
 
-			string_copy(buf, m_icon_label, MAX_LABEL_LEN);
+			string_copy(buf, m_icon_label, MAX_LABEL_LEN - 1);
 			if (stricmp(ptr->icons[m_last_icon].label, buf) && !m_change_local) {
 				set_modified();
 				reset_icon_loop(m_last_stage);
@@ -463,7 +484,7 @@ void briefing_editor_dlg::update_data(int update)
 			}
 			strcpy_s(ptr->icons[m_last_icon].label, buf);
 
-			string_copy(buf, m_icon_closeup_label, MAX_LABEL_LEN);
+			string_copy(buf, m_icon_closeup_label, MAX_LABEL_LEN - 1);
 			if (stricmp(ptr->icons[m_last_icon].closeup_label, buf) && !m_change_local) {
 				set_modified();
 				reset_icon_loop(m_last_stage);
@@ -499,6 +520,11 @@ void briefing_editor_dlg::update_data(int update)
 					iconp->type = m_icon_image;
 			}
 			ptr->icons[m_last_icon].type = m_icon_image;
+
+			// if this icon has a special closeup image (like a jump node)
+			// then make sure the ship class doesn't have a special icon
+			if (brief_special_closeup(m_icon_image))
+				m_ship_type = get_first_ship_with_no_custom_icon();
 
 			if ((ptr->icons[m_last_icon].team != m_icon_team) && !m_change_local) {
 				set_modified();
@@ -619,7 +645,7 @@ void briefing_editor_dlg::update_data(int update)
 	GetDlgItem(IDC_ICON_CLOSEUP_LABEL) -> EnableWindow(enable);
 	GetDlgItem(IDC_ICON_LABEL) -> EnableWindow(enable);
 	GetDlgItem(IDC_ICON_IMAGE) -> EnableWindow(enable && (sip_bii_ship < 0));
-	GetDlgItem(IDC_SHIP_TYPE) -> EnableWindow(enable);
+	GetDlgItem(IDC_SHIP_TYPE) -> EnableWindow(enable && !brief_special_closeup(m_icon_image));
 	GetDlgItem(IDC_HILIGHT) -> EnableWindow(enable);
 	GetDlgItem(IDC_FLIP_ICON) -> EnableWindow(enable);
 	GetDlgItem(IDC_USE_WING_ICON) -> EnableWindow(enable);

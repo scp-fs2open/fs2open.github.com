@@ -16,6 +16,7 @@
 #include "globalincs/pstypes.h"
 #include "graphics/2d.h"
 #include "model/model.h"
+#include "starfield/starfield_flags.h"
 
 #define DEFAULT_NMODEL_FLAGS  (MR_NO_ZBUFFER | MR_NO_CULL | MR_ALL_XPARENT | MR_NO_LIGHTING)
 
@@ -36,6 +37,7 @@ typedef struct starfield_list_entry {
 
 // backgrounds
 typedef struct background_t {
+	flagset<Starfield::Background_Flags> flags;
 	SCP_vector<starfield_list_entry> bitmaps;
 	SCP_vector<starfield_list_entry> suns;
 } background_t;
@@ -63,6 +65,14 @@ bool stars_background_empty(const background_t &bg);
 // add a new sun or bitmap instance
 int stars_add_sun_entry(starfield_list_entry *sun_ptr);
 int stars_add_bitmap_entry(starfield_list_entry *bitmap);
+
+// transform legacy angles, which used incorrect math in older versions, to correct angles
+void stars_correct_background_bitmap_angles(angles *angs_to_correct);
+void stars_correct_background_sun_angles(angles* angs_to_correct);
+
+// transform correct angles to legacy angles
+void stars_uncorrect_background_bitmap_angles(angles *angs_to_uncorrect);
+void stars_uncorrect_background_sun_angles(angles* angs_to_uncorrect);
 
 // get the number of entries that each vector contains
 // "is_a_sun" will get sun instance counts, otherwise it gets normal starfield bitmap instance counts
@@ -151,6 +161,7 @@ void stars_modify_entry_FRED(int index, const char *name, starfield_list_entry *
 
 
 // Goober5000
+void stars_add_blank_background(bool creating_in_fred);
 void stars_load_first_valid_background();
 int stars_get_first_valid_background();
 void stars_load_background(int background_idx);

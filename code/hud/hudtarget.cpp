@@ -1305,9 +1305,7 @@ ship_obj *advance_ship(ship_obj *so, int next_flag)
 static object* select_next_target_by_distance(const bool targeting_from_closest_to_farthest, const int valid_team_mask, const int attacked_object_number = -1, flagset<Ship::Info_Flags>* target_filters = NULL) {
     object *minimum_object_ptr, *maximum_object_ptr, *nearest_object_ptr;
     minimum_object_ptr = maximum_object_ptr = nearest_object_ptr = NULL;
-    // we need to use the same distance method as evaluate_ship_as_closest_target
-    //float current_distance = hud_find_target_distance(&, Player_obj);
-    float current_distance = vm_vec_dist_quick(&Objects[Player_ai->target_objnum].pos, &Player_obj->pos);
+    float current_distance = hud_find_target_distance(&Objects[Player_ai->target_objnum], Player_obj);
     float minimum_distance = 1e20f;
     float maximum_distance = 0.0f;
     int player_object_index = OBJ_INDEX(Player_obj);
@@ -1362,9 +1360,7 @@ static object* select_next_target_by_distance(const bool targeting_from_closest_
                 continue;
             }
 
-            // we need to use the same distance method as evaluate_ship_as_closest_target
-            //new_distance = hud_find_target_distance(prospective_victim_ptr, Player_obj);
-            new_distance = vm_vec_dist_quick(&prospective_victim_ptr->pos, &Player_obj->pos);
+            new_distance = hud_find_target_distance(prospective_victim_ptr, Player_obj);
         }
         else {
             // Filter out any target that is not targeting the player  --Mastadon
@@ -4898,9 +4894,7 @@ int hud_target_closest_repair_ship(int goal_objnum)
 			}
 		}
 
-		// c.f. evaluate_ship_as_closest_target
-		//new_distance = hud_find_target_distance(A,Player_obj);
-		new_distance = vm_vec_dist_quick(&A->pos, &Player_obj->pos);
+		new_distance = hud_find_target_distance(A,Player_obj);
 
 		if (new_distance <= min_distance) {
 			min_distance=new_distance;
@@ -4963,9 +4957,7 @@ void hud_target_closest_uninspected_object()
 			continue;
 		}
 
-		// c.f. evaluate_ship_as_closest_target
-		//new_distance = hud_find_target_distance(A,Player_obj);
-		new_distance = vm_vec_dist_quick(&A->pos, &Player_obj->pos);
+		new_distance = hud_find_target_distance(A,Player_obj);
 
 		if (new_distance <= min_distance) {
 			min_distance=new_distance;
@@ -5000,9 +4992,7 @@ void hud_target_uninspected_object(int next_flag)
 
 	Target_next_uninspected_object_timestamp = timestamp(TL_RESET);
 
-	// c.f. evaluate_ship_as_closest_target
-	//cur_dist = hud_find_target_distance(&Objects[Player_ai->target_objnum], Player_obj);
-	cur_dist = vm_vec_dist_quick(&Objects[Player_ai->target_objnum].pos, &Player_obj->pos);
+	cur_dist = hud_find_target_distance(&Objects[Player_ai->target_objnum], Player_obj);
 
 	min_obj = max_obj = nearest_obj = NULL;
 	min_dist = 1e20f;
@@ -5034,9 +5024,7 @@ void hud_target_uninspected_object(int next_flag)
 			continue;
 		}
 
-		// c.f. evaluate_ship_as_closest_target
-		//new_dist = hud_find_target_distance(A, Player_obj);
-		new_dist = vm_vec_dist_quick(&A->pos, &Player_obj->pos);
+		new_dist = hud_find_target_distance(A, Player_obj);
 
 		if (new_dist <= min_dist) {
 			min_dist = new_dist;

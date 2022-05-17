@@ -206,7 +206,7 @@ void debriefing_editor_dlg::update_data(int update)
 		lcl_fred_replace_stuff(ptr->text);
 		deconvert_multiline_string(ptr->recommendation_text, m_rec_text);
 		lcl_fred_replace_stuff(ptr->recommendation_text);
-		string_copy(ptr->voice, m_voice, MAX_FILENAME_LEN);
+		string_copy(ptr->voice, m_voice, MAX_FILENAME_LEN - 1);
 	}
 
 	// now get new stage data

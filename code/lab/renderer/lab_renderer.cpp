@@ -411,7 +411,7 @@ void LabRenderer::useBackground(const SCP_string& mission_name) {
 
 			extern void parse_one_background(background_t * background);
 			while (optional_string("$Bitmap List:") || check_for_string("$Sun:") || check_for_string("$Starbitmap:")) {
-				Backgrounds.emplace_back();
+				stars_add_blank_background(false);
 				parse_one_background(&Backgrounds.back());
 			}
 

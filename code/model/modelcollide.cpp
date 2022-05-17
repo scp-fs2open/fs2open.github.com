@@ -448,34 +448,30 @@ void model_collide_parse_bsp_tmappoly(bsp_collision_leaf *leaf, SCP_vector<model
 
 	uint i;
 	uint nv;
-	model_tmap_vert *verts;
 
-	nv = uw(p+36);
+	nv = uw(p + TMAP_NVERTS);
 
 	if ( nv > TMAP_MAX_VERTS ) {
 		Int3();
 		return;
 	}
 
-	int tmap_num = w(p+40);
+	int tmap_num = w(p + TMAP_TEXNUM);
 
 	Assert(tmap_num >= 0 && tmap_num < MAX_MODEL_TEXTURES);
 
-	verts = new model_tmap_vert[nv];
-
-	// Copy the verts manually since they aren't aligned with the struct
-	unpack_tmap_verts(&p[44], verts, nv);
+	auto verts = reinterpret_cast<model_tmap_vert_old*>(&p[TMAP_VERTS]);
 
 	leaf->tmap_num = (ubyte)tmap_num;
 	leaf->num_verts = (ubyte)nv;
 	leaf->vert_start = (int)vert_buffer->size();
 
-	vec3d *plane_norm = vp(p+8);
+	vec3d *plane_norm = vp(p + TMAP_NORMAL);
 
 	leaf->plane_norm = *plane_norm;
 
 	for ( i = 0; i < nv; ++i ) {
-		vert_buffer->push_back(verts[i]);
+		vert_buffer->push_back(model_tmap_vert(verts[i]));
 	}
 }
 
@@ -496,27 +492,27 @@ void model_collide_parse_bsp_tmap2poly(bsp_collision_leaf* leaf, SCP_vector<mode
 	vec3d* plane_norm;
 	model_tmap_vert* verts;
 
-	nv = uw(p + 48);
+	nv = uw(p + TMAP2_NVERTS);
 
 	if (nv > TMAP_MAX_VERTS) {
 		Error(LOCATION,"Model contains TMAP2 chunk with more than %d vertices!", TMAP_MAX_VERTS);
 		return;
 	}
 
-	tmap_num = w(p + 44);
+	tmap_num = w(p + TMAP2_TEXNUM);
 
 	if (tmap_num < 0 || tmap_num >= MAX_MODEL_TEXTURES) {
 		Error(LOCATION, "Model contains TMAP2 chunk with invalid texture id (%d)!", tmap_num);
 		return;
 	}
 
-	verts = (model_tmap_vert*)(p + 52);
+	verts = reinterpret_cast<model_tmap_vert*>(p + TMAP2_VERTS);
 
 	leaf->tmap_num = (ubyte)tmap_num;
 	leaf->num_verts = (ubyte)nv;
 	leaf->vert_start = (int)vert_buffer->size();
 
-	plane_norm = vp(p + 32);
+	plane_norm = vp(p + TMAP2_NORMAL);
 
 	leaf->plane_norm = *plane_norm;
 

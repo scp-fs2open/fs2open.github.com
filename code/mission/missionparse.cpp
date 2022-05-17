@@ -2170,7 +2170,10 @@ int parse_create_object_sub(p_object *p_objp)
 
 		// free the sexpression nodes only for non-wing ships.  wing code will handle its own case
 		if (p_objp->wingnum < 0)
+		{
 			free_sexp2(p_objp->ai_goals);	// free up sexp nodes for reuse, since they aren't needed anymore.
+			p_objp->ai_goals = -1;
+		}
 	}
 
 	Assert(sip->model_num != -1);
@@ -4335,7 +4338,10 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 					
 					// free up sexp nodes for reuse
 					if (p_objp->ai_goals != -1)
+					{
 						free_sexp2(p_objp->ai_goals);
+						p_objp->ai_goals = -1;
+					}
 				}
 			}
 		}
@@ -5436,8 +5442,24 @@ void parse_reinforcements(mission *pm)
 void parse_one_background(background_t *background)
 {
 	// clear here too because this function can be called from more than one place
+	background->flags.reset();
 	background->suns.clear();
 	background->bitmaps.clear();
+
+	// we might have some flags
+	if (optional_string("+Flags:"))
+	{
+		// we'll assume the list will contain no more than 4 distinct tokens
+		char flag_strings[4][NAME_LENGTH];
+		int num_strings = (int)stuff_string_list(flag_strings, 4);
+
+		for (auto i = 0; i < num_strings; ++i)
+		{
+			// if this flag is found, this background was saved with correctly calculated angles, so it should be loaded as such
+			if (!stricmp(flag_strings[i], "corrected angles"))
+				background->flags.set(Starfield::Background_Flags::Corrected_angles_in_mission_file);
+		}
+	}
 
 	// parse suns
 	while (optional_string("$Sun:"))
@@ -5452,6 +5474,10 @@ void parse_one_background(background_t *background)
 		stuff_float(&sle.ang.p);
 		stuff_float(&sle.ang.b);
 		stuff_float(&sle.ang.h);
+
+		// correct legacy bitmap angles which used incorrect math in older versions
+		if (!background->flags[Starfield::Background_Flags::Corrected_angles_in_mission_file])
+			stars_correct_background_sun_angles(&sle.ang);
 
 		// scale
 		required_string("+Scale:");
@@ -5478,6 +5504,10 @@ void parse_one_background(background_t *background)
 		stuff_float(&sle.ang.b);
 		stuff_float(&sle.ang.h);
 
+		// correct legacy bitmap angles which used incorrect math in older versions
+		if (!background->flags[Starfield::Background_Flags::Corrected_angles_in_mission_file])
+			stars_correct_background_bitmap_angles(&sle.ang);
+
 		// scale
 		if (optional_string("+Scale:"))
 		{
@@ -5503,6 +5533,12 @@ void parse_one_background(background_t *background)
 
 		// add it
 		background->bitmaps.push_back(sle);
+	}
+
+	if (Fred_running)
+	{
+		// the angles are now stored correctly, so by default we also want to save them correctly
+		background->flags.set(Starfield::Background_Flags::Corrected_angles_in_mission_file);
 	}
 }
 
@@ -5626,7 +5662,7 @@ void parse_bitmaps(mission *pm)
 	// Goober5000
 	while (optional_string("$Bitmap List:") || check_for_string("$Sun:") || check_for_string("$Starbitmap:"))
 	{
-		Backgrounds.emplace_back();
+		stars_add_blank_background(false);
 		parse_one_background(&Backgrounds.back());
 	}
 
@@ -8451,7 +8487,7 @@ void conv_fix_punctuation_section(char *str, const char *section_start, const ch
 		t2 = strstr(t1, text_end);
 		if (!t2 || t2 > s2) return;
 
-		replace_all(t1, "\"", "$quote", PARSE_TEXT_SIZE - (str - Parse_text), (t2 - t1));
+		replace_all(t1, "\"", "$quote", PARSE_TEXT_SIZE - (str - Parse_text) - 1, (t2 - t1));
 	}	
 }
 	

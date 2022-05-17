@@ -264,11 +264,11 @@ void campaign_editor::update()
 	UpdateData(TRUE);
 
 	// update campaign name
-	string_copy(Campaign.name, m_name, NAME_LENGTH);
+	string_copy(Campaign.name, m_name, NAME_LENGTH - 1);
 	Campaign.type = m_type;
 
 	// update campaign desc
-	deconvert_multiline_string(buf, m_desc, MISSION_DESC_LENGTH);
+	deconvert_multiline_string(buf, m_desc, MISSION_DESC_LENGTH - 1);
 	if (Campaign.desc) {
 		free(Campaign.desc);
 	}
@@ -647,7 +647,7 @@ void campaign_editor::save_loop_desc_window()
 
 	// update only if active link and there is a mission has mission loop or fork
 	if ( (Cur_campaign_link >= 0) && (Links[Cur_campaign_link].is_mission_loop || Links[Cur_campaign_link].is_mission_fork) ) {
-		deconvert_multiline_string(buffer, m_branch_desc, MISSION_DESC_LENGTH);
+		deconvert_multiline_string(buffer, m_branch_desc, MISSION_DESC_LENGTH - 1);
 		if (Links[Cur_campaign_link].mission_branch_txt) {
 			free(Links[Cur_campaign_link].mission_branch_txt);
 		}
@@ -664,14 +664,14 @@ void campaign_editor::save_loop_desc_window()
 			Links[Cur_campaign_link].mission_branch_txt = NULL;
 		}
 
-		deconvert_multiline_string(buffer, m_branch_brief_anim, MAX_FILENAME_LEN);
+		deconvert_multiline_string(buffer, m_branch_brief_anim, MAX_FILENAME_LEN - 1);
 		if(strlen(buffer)){
 			Links[Cur_campaign_link].mission_branch_brief_anim = strdup(buffer);
 		} else {
 			Links[Cur_campaign_link].mission_branch_brief_anim = NULL;
 		}
 
-		deconvert_multiline_string(buffer, m_branch_brief_sound, MAX_FILENAME_LEN);
+		deconvert_multiline_string(buffer, m_branch_brief_sound, MAX_FILENAME_LEN - 1);
 		if(strlen(buffer)){
 			Links[Cur_campaign_link].mission_branch_brief_sound = strdup(buffer);
 		} else {
@@ -746,21 +746,21 @@ void campaign_editor::OnToggleLoop()
 
 		char buffer[MISSION_DESC_LENGTH];
 		
-		deconvert_multiline_string(buffer, m_branch_desc, MISSION_DESC_LENGTH);
+		deconvert_multiline_string(buffer, m_branch_desc, MISSION_DESC_LENGTH - 1);
 		if (m_branch_desc && strlen(buffer)) {
 			Links[Cur_campaign_link].mission_branch_txt = strdup(buffer);
 		} else {
 			Links[Cur_campaign_link].mission_branch_txt = NULL;
 		}
 
-		deconvert_multiline_string(buffer, m_branch_brief_anim, MISSION_DESC_LENGTH);
+		deconvert_multiline_string(buffer, m_branch_brief_anim, MISSION_DESC_LENGTH - 1);
 		if (m_branch_brief_anim && strlen(buffer)) {
 			Links[Cur_campaign_link].mission_branch_brief_anim = strdup(buffer);
 		} else {
 			Links[Cur_campaign_link].mission_branch_brief_anim = NULL;
 		}
 
-		deconvert_multiline_string(buffer, m_branch_brief_sound, MISSION_DESC_LENGTH);
+		deconvert_multiline_string(buffer, m_branch_brief_sound, MISSION_DESC_LENGTH - 1);
 		if (m_branch_brief_sound && strlen(buffer)) {
 			Links[Cur_campaign_link].mission_branch_brief_sound = strdup(buffer);
 		} else {

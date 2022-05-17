@@ -63,7 +63,7 @@ void string_copy(char* dest, const CString& src, size_t max_len, int modify = 0)
 void string_copy(SCP_string& dest, const CString& src, int modify = 0);
 void convert_multiline_string(CString& dest, const SCP_string& src);
 void convert_multiline_string(CString& dest, const char* src);
-void deconvert_multiline_string(char* dest, const CString& str, int max_len);
+void deconvert_multiline_string(char* dest, const CString& str, size_t max_len);
 void deconvert_multiline_string(SCP_string& dest, const CString& str);
 void strip_quotation_marks(CString& str);
 void pad_with_newline(CString& str, int max_size);

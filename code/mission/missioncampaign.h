@@ -226,7 +226,7 @@ void mission_campaign_store_variables(int persistence_type, bool store_red_alert
 // stores containers which will be saved only on mission progression
 void mission_campaign_store_containers(ContainerType persistence_type, bool store_red_alert = true);
 
-// does both of the above
+// does all three of the above
 void mission_campaign_store_goals_and_events_and_variables();
 
 // evaluates next mission and possible loop mission

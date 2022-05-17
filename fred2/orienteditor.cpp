@@ -369,7 +369,7 @@ float orient_editor::convert(const CString &str)
 	char buf[256];
 	size_t i, j, len;
 
-	string_copy(buf, str, 255);
+	string_copy(buf, str, 256 - 1);
 	len = strlen(buf);
 	for (i=j=0; i<len; i++)
 		if (buf[i] != ',')

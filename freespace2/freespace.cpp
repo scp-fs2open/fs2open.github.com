@@ -852,8 +852,9 @@ void game_level_close()
 	//to accidentally use an override here without realizing it.
 	if(!OnMissionEndHook->isOverride())
 	{
-		// save player-persistent variables
+		// save player-persistent variables and containers
 		mission_campaign_save_on_close_variables();	// Goober5000
+		mission_campaign_save_on_close_containers(); // jg18
 
 		// De-Initialize the game subsystems
 		obj_delete_all();
@@ -1920,6 +1921,9 @@ void game_init()
 
 	animation::ModelAnimationParseHelper::parseTables();
 
+	// Initialize dynamic SEXPs. Must happen before ship init for LuaAI
+	sexp::dynamic_sexp_init();
+
 	obj_init();	
 	mflash_game_init();	
 	armor_init();
@@ -1969,8 +1973,6 @@ void game_init()
 	}
 
 	script_init();			//WMC
-	// Initialize dynamic SEXPs
-	sexp::dynamic_sexp_init();
 
 	// This needs to be done after the dynamic SEXP init so that our documentation contains the dynamic sexps
 	if (Cmdline_output_sexp_info) {
@@ -5524,8 +5526,8 @@ void game_enter_state( int old_state, int new_state )
 	Script_system.SetHookVar("OldState", 'o', l_GameState.Set(gamestate_h(old_state)));
 	Script_system.SetHookVar("NewState", 'o', l_GameState.Set(gamestate_h(new_state)));
 
-	if(Script_system.IsConditionOverride(CHA_ONSTATESTART)) {
-		Script_system.RunCondition(CHA_ONSTATESTART);
+	if(Script_system.IsConditionOverride(CHA_ONSTATESTART, nullptr, nullptr, old_state)) {
+		Script_system.RunCondition(CHA_ONSTATESTART, nullptr, nullptr, old_state);
 		Script_system.RemHookVars({"OldState", "NewState"});
 		return;
 	}
@@ -6048,7 +6050,7 @@ void mouse_force_pos(int x, int y);
 	} // end switch
 
 	//WMC - now do user scripting stuff
-	Script_system.RunCondition(CHA_ONSTATESTART);
+	Script_system.RunCondition(CHA_ONSTATESTART, nullptr, nullptr, old_state);
 	Script_system.RemHookVars({"OldState", "NewState"});
 }
 

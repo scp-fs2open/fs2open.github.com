@@ -28,8 +28,8 @@ namespace {
 const SCP_string NEW_CONTAINER_NAME = "<New Container Name>";
 } // namespace
 
-CAddModifyContainerDlg::CAddModifyContainerDlg(sexp_tree *p_sexp_tree, CWnd *pParent /*=nullptr*/)
-	: CDialog(CAddModifyContainerDlg::IDD, pParent), m_p_sexp_tree(p_sexp_tree)
+CAddModifyContainerDlg::CAddModifyContainerDlg(const sexp_tree &s_tree, CWnd *pParent /*=nullptr*/)
+	: CDialog(CAddModifyContainerDlg::IDD, pParent), m_sexp_tree(s_tree)
 {
 }
 
@@ -39,12 +39,30 @@ void CAddModifyContainerDlg::DoDataExchange(CDataExchange *pDX)
 	DDX_Control(pDX, IDC_CONTAINER_DATA_LISTER, m_container_data_lister);
 }
 
+// see https://stackoverflow.com/questions/17828258/how-to-prevent-mfc-dialog-closing-on-enter-and-escape-keys
+// This is needed because despite the override of the normal OK and Cancel routes, Enter will still be recognized
+BOOL CAddModifyContainerDlg::PreTranslateMessage(MSG* pMsg)
+{
+	if (pMsg->message == WM_KEYDOWN)
+	{
+		if (pMsg->wParam == VK_RETURN || pMsg->wParam == VK_ESCAPE)
+		{
+			return TRUE;                // Do not process further
+		}
+	}
+	return CDialog::PreTranslateMessage(pMsg);
+}
+
 BEGIN_MESSAGE_MAP(CAddModifyContainerDlg, CDialog)
 	ON_BN_CLICKED(IDC_CONTAINER_ADD, OnContainerAdd)
 	ON_BN_CLICKED(IDC_CONTAINER_INSERT, OnContainerInsert)
 	ON_BN_CLICKED(IDC_CONTAINER_REMOVE, OnContainerRemove)
 	ON_BN_CLICKED(IDC_CONTAINER_UPDATE, OnContainerUpdate)
-	
+
+	ON_BN_CLICKED(ID_OK, OnButtonOk)
+	ON_BN_CLICKED(ID_CANCEL, OnButtonCancel)
+	ON_WM_CLOSE()
+
 	ON_BN_CLICKED(IDC_CONTAINER_LIST, OnTypeList)
 	ON_BN_CLICKED(IDC_CONTAINER_MAP, OnTypeMap)
 	ON_BN_CLICKED(IDC_CONTAINER_NUMBER_DATA, OnTypeNumber)
@@ -76,6 +94,13 @@ BOOL CAddModifyContainerDlg::OnInitDialog()
 
 	//grab the existing list of containers and duplicate it. We only update it if the user clicks OK. 
 	m_containers = get_all_sexp_containers();
+
+	// init renaming maps
+	for (const auto &container : m_containers) {
+		const auto &container_name = container.container_name;
+		m_old_to_new_names[container_name] = container_name;
+		m_new_to_old_names[container_name] = container_name;
+	}
 
 	CComboBox *cbox = (CComboBox *) GetDlgItem(IDC_CURRENT_CONTAINER_NAME);
 	cbox->ResetContent();
@@ -127,16 +152,47 @@ void CAddModifyContainerDlg::set_selected_container()
 	update_data_lister();
 }
 
-void CAddModifyContainerDlg::OnOK() 
+void CAddModifyContainerDlg::OnButtonOk() 
 {
-	update_sexp_containers(m_containers, m_old_to_new_names);
-
-	// TODO: add this once SEXP tree nodes support containers
-	//if (!m_old_to_new_names.empty()) {
-	//	// TODO: rename nodes in sexp_tree::tree_nodes
-	//}
+	populate_renamed_containers();
+	update_sexp_containers(m_containers, m_renamed_containers);
 
 	CDialog::OnOK();
+}
+
+void CAddModifyContainerDlg::OnButtonCancel()
+{
+	if (query_modified()) {
+		int z = MessageBox("Do you want to keep your changes?", "Close", MB_ICONQUESTION | MB_YESNOCANCEL);
+		if (z == IDCANCEL) {
+			return;
+		}
+
+		if (z == IDYES) {
+			OnButtonOk();
+			return;
+		}
+	}
+
+	CDialog::OnCancel();
+}
+
+// this is called when you hit the enter key
+void CAddModifyContainerDlg::OnOK()
+{
+	// override MFC default behavior and do nothing
+}
+
+// this is called when you hit the escape key
+void CAddModifyContainerDlg::OnCancel()
+{
+	// override MFC default behavior and do nothing
+}
+
+// this is called when you hit the Close button
+void CAddModifyContainerDlg::OnClose()
+{
+	OnButtonCancel();
 }
 
 void CAddModifyContainerDlg::OnBnClickedStringKeys()
@@ -219,7 +275,7 @@ void CAddModifyContainerDlg::OnTypeString()
 	Assert(container.empty());
 	container.type &= ~ContainerType::NUMBER_DATA;
 	container.type |= ContainerType::STRING_DATA;
-	container.opf_type = OPF_ANYTHING;
+	container.opf_type = OPF_STRING;
 }
 
 void CAddModifyContainerDlg::set_data_type()
@@ -741,6 +797,12 @@ void CAddModifyContainerDlg::OnBnClickedAddNewContainer()
 	cbox->AddString(temp_name); 
 	m_current_container = num_containers() - 1;
 
+	// update renaming maps
+	const SCP_string &new_container_name = new_container.container_name;
+	const SCP_string new_container_marker = create_null_container_name();
+	m_old_to_new_names[new_container_marker] = new_container_name;
+	m_new_to_old_names[new_container_name] = new_container_marker;
+
 	// in case this is the first container
 	if (num_containers() == 1) {
 		cbox->EnableWindow(true);
@@ -776,15 +838,13 @@ void CAddModifyContainerDlg::OnBnClickedRenameContainer()
 		const SCP_string new_name_str = new_name;
 		const SCP_string curr_name = get_current_container().container_name;
 		const auto prev_name_it = m_new_to_old_names.find(curr_name);
-		if (prev_name_it != m_new_to_old_names.end()) {
-			SCP_string orig_name = prev_name_it->second;
-			m_new_to_old_names.erase(curr_name);
-			m_old_to_new_names[orig_name] = new_name_str;
-			m_new_to_old_names[new_name_str] = orig_name;
-		} else {
-			m_old_to_new_names[curr_name] = new_name_str;
-			m_new_to_old_names[new_name_str] = curr_name;
-		}
+		Assertion(prev_name_it != m_new_to_old_names.end(),
+			"Attempt to rename untracked container %s. Please report!",
+			curr_name.c_str());
+		const SCP_string prev_name = prev_name_it->second;
+		m_new_to_old_names.erase(curr_name);
+		m_old_to_new_names[prev_name] = new_name_str;
+		m_new_to_old_names[new_name_str] = prev_name;
 
 		container.container_name = new_name;
 		cbox->DeleteString((UINT)m_current_container);
@@ -800,24 +860,24 @@ void CAddModifyContainerDlg::OnBnClickedDeleteContainer()
 
 	char buffer[256];
 
-	// if the container has been renamed, search using the original name
+	// get both current and original names, even if identical
 	const SCP_string curr_name = get_current_container().container_name;
-	SCP_string orig_name;
-	SCP_string name_to_check;
-	const auto prev_name_it = m_new_to_old_names.find(curr_name);
-	if (prev_name_it != m_new_to_old_names.end()) {
-		orig_name = prev_name_it->second;
-		name_to_check = orig_name;
-	} else {
-		name_to_check = curr_name;
-	}
+	const auto orig_name_it = m_new_to_old_names.find(curr_name);
+	Assertion(orig_name_it != m_new_to_old_names.end(),
+		"Attempt to delete untracked container %s. Please report!",
+		curr_name.c_str());
+	const SCP_string orig_name = orig_name_it->second;
 
-	const int times_used = m_p_sexp_tree->get_container_usage_count(name_to_check.c_str());
-	Assert(times_used >= 0);
+	const int times_used =
+		is_null_container_name(orig_name) ? 0 : m_sexp_tree.get_container_usage_count(orig_name);
+	Assertion(times_used >= 0,
+		"Checking usage count of container name %s returned count of %d. Please report!",
+		orig_name.c_str(),
+		times_used);
 
 	if (times_used > 0) {
 		SCP_string container_name_str = "'" + curr_name + "'";
-		if (!orig_name.empty()) {
+		if (curr_name != orig_name) {
 			container_name_str += " (previously '" + orig_name + "')";
 		}
 		sprintf(buffer,
@@ -835,11 +895,15 @@ void CAddModifyContainerDlg::OnBnClickedDeleteContainer()
 		return;
 	}
 
-	// update renaming maps if needed
-	if (!orig_name.empty()) {
-		m_old_to_new_names.erase(orig_name);
-		m_new_to_old_names.erase(curr_name);
-	}
+	// update renaming maps
+	m_new_to_old_names.erase(curr_name);
+	m_old_to_new_names.erase(orig_name);
+	// FIXME TODO: is inserting a tombstone needed?
+	// 	   if so, filter them out in populate_renamed_containers()
+	//if (!is_null_container_name(orig_name)) {
+	//	const SCP_string container_tombstone = create_null_container_name();
+	//	m_old_to_new_names[orig_name] = container_tombstone;
+	//}
 
 	// prevent sudden change in type selection buttons
 	if (num_containers() == 1) {
@@ -878,6 +942,41 @@ void CAddModifyContainerDlg::update_text_edit_boxes(const SCP_string &key, const
 
 sexp_container &CAddModifyContainerDlg::get_current_container()
 {
-	Assert(m_current_container >= -1 && m_current_container < num_containers());
+	Assertion(m_current_container >= -1 && m_current_container < num_containers(),
+		"Attempt to access invalid container index %d with %d containers. Please report!",
+		m_current_container,
+		num_containers());
 	return m_current_container < 0 ? m_dummy_container : m_containers[m_current_container];
 }
+
+void CAddModifyContainerDlg::populate_renamed_containers()
+{
+	for (const auto &old_name_to_new : m_old_to_new_names) {
+		const auto &old_name = old_name_to_new.first;
+		const auto &new_name = old_name_to_new.second;
+		if (!is_null_container_name(old_name) && stricmp(old_name.c_str(), new_name.c_str())) {
+			m_renamed_containers.emplace(old_name, new_name);
+		}
+	}
+}
+
+bool CAddModifyContainerDlg::query_modified() const
+{
+	return get_all_sexp_containers() != m_containers;
+}
+
+// static data/functions
+int CAddModifyContainerDlg::m_null_container_counter = 1;
+
+bool CAddModifyContainerDlg::is_null_container_name(const SCP_string &container_name)
+{
+	Assertion(!container_name.empty(),
+		"Encountered empty container name when checking for null container name. Please report!");
+	return container_name[0] == sexp_container::DELIM;
+}
+
+SCP_string CAddModifyContainerDlg::create_null_container_name()
+{
+	return sexp_container::DELIM_STR + std::to_string(m_null_container_counter++);
+}
+

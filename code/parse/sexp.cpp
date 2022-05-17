@@ -23,6 +23,7 @@
 #include <cstdint>
 
 #include "ai/aigoals.h"
+#include "ai/ailua.h"
 #include "asteroid/asteroid.h"
 #include "autopilot/autopilot.h"
 #include "camera/camera.h"
@@ -313,6 +314,14 @@ SCP_vector<sexp_oper> Operators = {
 	{ "string-to-int",					OP_STRING_TO_INT,						1,	1,			SEXP_INTEGER_OPERATOR,	}, // Karajorma
 	{ "string-get-length",				OP_STRING_GET_LENGTH,					1,	1,			SEXP_INTEGER_OPERATOR,	}, // Goober5000
 
+	//Containers Sub-Category
+	{ "is-container-empty",				OP_IS_CONTAINER_EMPTY,					1,	1,			SEXP_INTEGER_OPERATOR, }, // Karajorma
+	{ "get-container-size",				OP_GET_CONTAINER_SIZE,					1,	1,			SEXP_INTEGER_OPERATOR, }, // Karajorma
+	{ "list-has-data",					OP_LIST_HAS_DATA,						2,	INT_MAX,	SEXP_INTEGER_OPERATOR, }, // Karajorma
+	{ "list-data-index",				OP_LIST_DATA_INDEX,						2,	2,			SEXP_INTEGER_OPERATOR, }, // Karajorma
+	{ "map-has-key",					OP_MAP_HAS_KEY,							2,	INT_MAX,	SEXP_INTEGER_OPERATOR, }, // Karajorma
+	{ "map-has-data-item",				OP_MAP_HAS_DATA_ITEM,					2,	3,			SEXP_INTEGER_OPERATOR, }, // Karajorma
+
 	//Other Sub-Category
 	{ "script-eval-bool",				OP_SCRIPT_EVAL_BOOL,					1,	1,			SEXP_BOOLEAN_OPERATOR, },
 	{ "script-eval-num",				OP_SCRIPT_EVAL_NUM,						1,	1,			SEXP_INTEGER_OPERATOR,	},
@@ -481,6 +490,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "ship-subsys-ignore_if_dead",		OP_SHIP_SUBSYS_IGNORE_IF_DEAD,			3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// FUBAR
 	{ "awacs-set-radius",				OP_AWACS_SET_RADIUS,					3,	3,			SEXP_ACTION_OPERATOR,	},
 	{ "alter-ship-flag",				OP_ALTER_SHIP_FLAG,						3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Karajorma 
+	{ "cancel-future-waves",			OP_CANCEL_FUTURE_WAVES,						1,	INT_MAX,	SEXP_ACTION_OPERATOR,	}, // naomimyselfandi
 
 	//Cargo Sub-Category
 	{ "transfer-cargo",					OP_TRANSFER_CARGO,						2,	2,			SEXP_ACTION_OPERATOR,	},
@@ -548,8 +558,8 @@ SCP_vector<sexp_oper> Operators = {
 	{ "collide-invisible",				OP_COLLIDE_INVISIBLE,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "add-to-collision-group",			OP_ADD_TO_COLGROUP,						2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// The E
 	{ "remove-from-collision-group",	OP_REMOVE_FROM_COLGROUP,				2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// The E
-	{ "add-to-collision-group2",		OP_ADD_TO_COLGROUP2,					2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
-	{ "remove-from-collision-group2",	OP_REMOVE_FROM_COLGROUP2,				2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
+	{ "add-to-collision-group-new",		OP_ADD_TO_COLGROUP_NEW,					2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
+	{ "remove-from-collision-group-new",	OP_REMOVE_FROM_COLGROUP_NEW,		2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "get-collision-group",			OP_GET_COLGROUP_ID,						1,	1,			SEXP_ACTION_OPERATOR,	},
 	{ "change-team-color",				OP_CHANGE_TEAM_COLOR,					3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// The E
 	{ "replace-texture",				OP_REPLACE_TEXTURE,						3,  INT_MAX,	SEXP_ACTION_OPERATOR,   },  // Lafiel
@@ -681,8 +691,10 @@ SCP_vector<sexp_oper> Operators = {
 	{ "mission-set-subspace",			OP_MISSION_SET_SUBSPACE,				1,	1,			SEXP_ACTION_OPERATOR,	},
 	{ "change-background",				OP_CHANGE_BACKGROUND,					1,	1,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "add-background-bitmap",			OP_ADD_BACKGROUND_BITMAP,				8,	9,			SEXP_ACTION_OPERATOR,	},	// phreak
+	{ "add-background-bitmap-new",		OP_ADD_BACKGROUND_BITMAP_NEW,			8,	9,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "remove-background-bitmap",		OP_REMOVE_BACKGROUND_BITMAP,			1,	1,			SEXP_ACTION_OPERATOR,	},	// phreak
 	{ "add-sun-bitmap",					OP_ADD_SUN_BITMAP,						5,	6,			SEXP_ACTION_OPERATOR,	},	// phreak
+	{ "add-sun-bitmap-new",				OP_ADD_SUN_BITMAP_NEW,					5,	6,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "remove-sun-bitmap",				OP_REMOVE_SUN_BITMAP,					1,	1,			SEXP_ACTION_OPERATOR,	},	// phreak
 	{ "nebula-change-storm",			OP_NEBULA_CHANGE_STORM,					1,	1,			SEXP_ACTION_OPERATOR,	},	// phreak
 	{ "nebula-toggle-poof",				OP_NEBULA_TOGGLE_POOF,					2,	2,			SEXP_ACTION_OPERATOR,	},	// phreak
@@ -729,6 +741,14 @@ SCP_vector<sexp_oper> Operators = {
 	{ "string-get-substring",			OP_STRING_GET_SUBSTRING,				4,	4,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "string-set-substring",			OP_STRING_SET_SUBSTRING,				5,	5,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "modify-variable-xstr",			OP_MODIFY_VARIABLE_XSTR,				3,	3,			SEXP_ACTION_OPERATOR,	},	// m!m
+
+	//Containers Category
+	{ "add-to-list",					OP_CONTAINER_ADD_TO_LIST,				3,	INT_MAX,	SEXP_ACTION_OPERATOR, },	// Karajorma
+	{ "remove-from-list",				OP_CONTAINER_REMOVE_FROM_LIST,			2,	INT_MAX,	SEXP_ACTION_OPERATOR, },	// Karajorma
+	{ "add-to-map",						OP_CONTAINER_ADD_TO_MAP,				3,	INT_MAX,	SEXP_ACTION_OPERATOR, },	// Karajorma
+	{ "remove-from-map",				OP_CONTAINER_REMOVE_FROM_MAP,			2,	INT_MAX,	SEXP_ACTION_OPERATOR, },	// Karajorma
+	{ "get-map-keys",					OP_CONTAINER_GET_MAP_KEYS,				2,	3,			SEXP_ACTION_OPERATOR, },	// Karajorma
+	{ "clear-container",				OP_CLEAR_CONTAINER,						1,	INT_MAX,	SEXP_ACTION_OPERATOR, },	// Karajorma
 
 	//Other Sub-Category
 	{ "damaged-escort-priority",		OP_DAMAGED_ESCORT_LIST,					3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	//phreak
@@ -1379,7 +1399,8 @@ int free_sexp(int num, int calling_node)
 	Assert(Sexp_nodes[num].type != SEXP_NOT_USED);  // make sure it is actually used
 	Assert(!(Sexp_nodes[num].type & SEXP_FLAG_PERSISTENT));
 
-	if ((num == Locked_sexp_true) || (num == Locked_sexp_false))
+	// never free these nodes
+	if ((num == -1) || (num == Locked_sexp_true) || (num == Locked_sexp_false))
 		return 0;
 
 	Sexp_nodes[num].type = SEXP_NOT_USED;
@@ -1393,8 +1414,9 @@ int free_sexp(int num, int calling_node)
 	i = Sexp_nodes[num].first;
 	while (i != -1) 
 	{
+		rest = Sexp_nodes[i].rest;
 		count += free_sexp(i, num);
-		i = Sexp_nodes[i].rest;
+		i = rest;
 	}
 
 	rest = Sexp_nodes[num].rest;
@@ -1416,21 +1438,27 @@ int free_sexp(int num, int calling_node)
  * Because the root node is an operator, instead of a list, we can't simply call free_sexp().  
  * This function should only be called on the root node of an sexp, otherwise the linking will get screwed up.
  */
-int free_sexp2(int num)
+int free_sexp2(int num, int calling_node)
 {	
-	int i, count = 0;
+	int i, rest, count = 0;
 
+	Assert((num >= 0) && (num < Num_sexp_nodes));
+	Assert(Sexp_nodes[num].type != SEXP_NOT_USED);  // make sure it is actually used
+	Assert(!(Sexp_nodes[num].type & SEXP_FLAG_PERSISTENT));
+
+	// never free these nodes
 	if ((num == -1) || (num == Locked_sexp_true) || (num == Locked_sexp_false)){
 		return 0;
 	}
 
 	i = Sexp_nodes[num].rest;
 	while (i != -1) {
-		count += free_sexp(i);
-		i = Sexp_nodes[i].rest;
+		rest = Sexp_nodes[i].rest;
+		count += free_sexp(i, num);
+		i = rest;
 	}
 
-	count += free_sexp(num);
+	count += free_sexp(num, calling_node);
 	return count;
 }
 
@@ -1776,6 +1804,132 @@ int count_items_with_name(const char *name, const T* item_array, int num_items)
 	return count;
 }
 
+// helper functions for check_container_value_data_type()
+bool check_container_data_sexp_arg_type(ContainerType con_type, bool is_string, bool is_number)
+{
+	if (any(con_type & ContainerType::STRING_DATA)) {
+		return is_string;
+	} else if (any(con_type & ContainerType::NUMBER_DATA)) {
+		return is_number;
+	} else {
+		UNREACHABLE("Unknown container data type %d", (int)con_type);
+		return false;
+	}
+}
+
+bool check_map_container_key_sexp_arg_type(ContainerType con_type, bool is_string, bool is_number)
+{
+	if (any(con_type & ContainerType::STRING_KEYS)) {
+		return is_string;
+	} else if (any(con_type & ContainerType::NUMBER_KEYS)) {
+		return is_number;
+	} else {
+		UNREACHABLE("Unknown map container key type %d", (int)con_type);
+		return false;
+	}
+}
+
+// Checks "container value" SEXP arg type
+// follows return value conventions of check_sexp_syntax()
+int check_container_value_data_type(int op, int argnum, ContainerType con_type, bool is_string, bool is_number)
+{
+	switch (op) {
+		case OP_LIST_HAS_DATA:
+		case OP_LIST_DATA_INDEX:
+		case OP_MAP_HAS_DATA_ITEM:
+		case OP_CONTAINER_ADD_TO_LIST:
+		case OP_CONTAINER_REMOVE_FROM_LIST:
+			if (!check_container_data_sexp_arg_type(con_type, is_string, is_number)) {
+				return SEXP_CHECK_WRONG_CONTAINER_DATA_TYPE;
+			}
+			break;
+
+		case OP_MAP_HAS_KEY:
+		case OP_CONTAINER_REMOVE_FROM_MAP:
+			Assertion(any(con_type & ContainerType::MAP),
+				"Attempt to check map SEXP with non-map container type %d. Please report!",
+				(int)con_type);
+			if (!check_map_container_key_sexp_arg_type(con_type, is_string, is_number)) {
+				return SEXP_CHECK_WRONG_MAP_KEY_TYPE;
+			}
+			break;
+
+		case OP_CONTAINER_ADD_TO_MAP:
+			Assertion(any(con_type & ContainerType::MAP),
+				"Attempt to check map SEXP with non-map container type %d. Please report!",
+				(int)con_type);
+			// since the first arg is a map container name, the first key is at argnum 1
+			if (argnum % 2 != 0) {
+				// map key
+				if (!check_map_container_key_sexp_arg_type(con_type, is_string, is_number)) {
+					return SEXP_CHECK_WRONG_MAP_KEY_TYPE;
+				}
+			} else {
+				// map data
+				if (!check_container_data_sexp_arg_type(con_type, is_string, is_number)) {
+					return SEXP_CHECK_WRONG_CONTAINER_DATA_TYPE;
+				}
+			}
+			break;
+
+		default:
+			UNREACHABLE("Unhandled container value-based operator %d", op);
+			break;
+	}
+
+	return 0;
+}
+
+// SEXP type checking for variables and container data
+bool check_data_type(int type, bool is_string, bool is_number)
+{
+	switch (type) {
+		case OPF_NUMBER:
+		case OPF_POSITIVE:
+			return is_number;
+
+		case OPF_AMBIGUOUS:
+		case OPF_GAME_SND:
+		case OPF_FIREBALL:
+		case OPF_WEAPON_BANK_NUMBER:
+			// either type is ok
+			return true;
+
+		default:
+			return is_string;
+	}
+}
+
+bool check_container_data_type(int type, ContainerType con_type, int op, int argnum, const sexp_container *p_value_container)
+{
+	const bool is_string = any(con_type & ContainerType::STRING_DATA);
+	const bool is_number = any(con_type & ContainerType::NUMBER_DATA);
+	if (type == OPF_CONTAINER_VALUE) {
+		Assertion(p_value_container,
+			"Attempt to check data type of null container for SEXP operator %d at arg %d. Please report!",
+			op,
+			argnum);
+		return (check_container_value_data_type(op, argnum, p_value_container->type, is_string, is_number) == 0);
+	} else {
+		return check_data_type(type, is_string, is_number);
+	}
+}
+
+bool check_variable_data_type(int type, int var_type, int op, int argnum, const sexp_container *p_value_container) {
+	const bool is_string = (var_type & SEXP_VARIABLE_STRING);
+	const bool is_number = (var_type & SEXP_VARIABLE_NUMBER);
+	if (type == OPF_CONTAINER_VALUE) {
+		Assertion(p_value_container,
+			"Attempt to check data type of null container for SEXP operator %d for variable at arg %d. Please "
+			"report!",
+			op,
+			argnum);
+		return (check_container_value_data_type(op, argnum, p_value_container->type, is_string, is_number) == 0);
+	} else {
+		return check_data_type(type, is_string, is_number);
+	}
+}
+
 /**
  * Check SEXP syntax
  * @return 0 if ok, negative if there's an error in expression..
@@ -1787,6 +1941,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 	int op_node;
 	int var_index = -1;
 	size_t st;
+	const sexp_container *p_container = nullptr; // for SEXPs that take container name as arg
 
 	Assert(node >= 0 && node < Num_sexp_nodes);
 	Assert(Sexp_nodes[node].type != SEXP_NOT_USED);
@@ -1952,37 +2107,67 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 			type2 = SEXP_ATOM_STRING;
 
 		} else if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER) {
-			// this is an instance of "Replace Container"
+			// this is an instance of "Replace Container Data"
 			const int modifier_node = Sexp_nodes[node].first;
 			if (modifier_node == -1) {
 				return SEXP_CHECK_MISSING_CONTAINER_MODIFIER;
 			}
 
-			const auto *p_container = get_sexp_container(Sexp_nodes[node].text);
-			Assert(p_container); // name was already checked in get_sexp()
-			const auto &container = *p_container;
+			const auto *p_data_container = get_sexp_container(Sexp_nodes[node].text);
+			// name should have already been checked in get_sexp()
+			Assertion(p_data_container,
+				"Attempt to check type of container data for SEXP operator %d at arg %d for non-existent container %s. "
+				"Please report!",
+				op,
+				argnum,
+				Sexp_nodes[node].text);
+			const auto &data_container = *p_data_container;
+
+			if (!check_container_data_type(type,
+					data_container.type,
+					get_operator_const(op_node),
+					argnum,
+					p_container)) {
+				return SEXP_CHECK_WRONG_CONTAINER_DATA_TYPE;
+			}
 
 			// ignore nested "Replace" uses
 			if (!(Sexp_nodes[modifier_node].type & SEXP_FLAG_VARIABLE) &&
 					(Sexp_nodes[modifier_node].subtype != SEXP_ATOM_CONTAINER)) {
-				if (container.is_list()) {
+				if (data_container.is_list()) {
+					const auto modifier = get_list_modifier(Sexp_nodes[modifier_node].text);
 					if ((Sexp_nodes[modifier_node].subtype != SEXP_ATOM_STRING) ||
-							(get_list_modifier(Sexp_nodes[modifier_node].text) == ListModifier::INVALID)) {
+							(modifier == ListModifier::INVALID)) {
 						if (bad_node)
 							*bad_node = modifier_node;
 						return SEXP_CHECK_INVALID_LIST_MODIFIER;
 					}
-				} else if (container.is_map()) {
-					if ((any(container.type & ContainerType::NUMBER_KEYS) &&
+					if (modifier == ListModifier::AT_INDEX) {
+						const int list_index_node = CDR(modifier_node);
+						if (list_index_node == -1) {
+							if (bad_node)
+								*bad_node = modifier_node;
+							return SEXP_CHECK_INVALID_LIST_MODIFIER;
+						}
+						// we can't check that index < length because we don't know what the length will be then
+						if (Sexp_nodes[list_index_node].subtype != SEXP_ATOM_NUMBER ||
+								atoi(Sexp_nodes[list_index_node].text) < 0) {
+							if (bad_node)
+								*bad_node = list_index_node;
+							return SEXP_CHECK_INVALID_LIST_MODIFIER;
+						}
+					}
+				} else if (data_container.is_map()) {
+					if ((any(data_container.type & ContainerType::NUMBER_KEYS) &&
 							Sexp_nodes[modifier_node].subtype != SEXP_ATOM_NUMBER) ||
-						(any(container.type & ContainerType::STRING_KEYS) &&
+						(any(data_container.type & ContainerType::STRING_KEYS) &&
 							Sexp_nodes[modifier_node].subtype != SEXP_ATOM_STRING)) {
 						if (bad_node)
 							*bad_node = modifier_node;
 						return SEXP_CHECK_WRONG_MAP_KEY_TYPE;
 					}
 				} else {
-					UNREACHABLE("Unknown container type %d", (int)container.type);
+					UNREACHABLE("Unknown container type %d", (int)data_container.type);
 				}
 			}
 
@@ -2002,23 +2187,13 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 			var_index = sexp_get_variable_index(node);
 			Assert(var_index != -1);
 	
-			switch (type) {
-				case OPF_NUMBER:
-				case OPF_POSITIVE:
-					if (!(Sexp_variables[var_index].type & SEXP_VARIABLE_NUMBER)) 
-						return SEXP_CHECK_INVALID_VARIABLE_TYPE; 
-				break;
-
-				case OPF_AMBIGUOUS:
-				case OPF_GAME_SND:
-				case OPF_FIREBALL:
-				case OPF_WEAPON_BANK_NUMBER:
-					break;
-
-				default: 
-					if (!(Sexp_variables[var_index].type & SEXP_VARIABLE_STRING)) 
-						return SEXP_CHECK_INVALID_VARIABLE_TYPE; 
-			}			
+			if (!check_variable_data_type(type,
+					Sexp_variables[var_index].type,
+					get_operator_const(op_node),
+					argnum,
+					p_container)) {
+				return SEXP_CHECK_INVALID_VARIABLE_TYPE;
+			}
 			node = Sexp_nodes[node].rest;
 			argnum++;
 			continue; 
@@ -3352,7 +3527,9 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				{
 					// some SEXPs demand a number variable
 					case OP_ADD_BACKGROUND_BITMAP:
+					case OP_ADD_BACKGROUND_BITMAP_NEW:
 					case OP_ADD_SUN_BITMAP:
+					case OP_ADD_SUN_BITMAP_NEW:
 					case OP_PLAY_SOUND_FROM_FILE:
 					case OP_PAUSE_SOUND_FROM_FILE:
 					case OP_CLOSE_SOUND_FROM_FILE:
@@ -3500,7 +3677,10 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 			case OPF_LIST_CONTAINER_NAME:
 			case OPF_MAP_CONTAINER_NAME:
 			{
-				const auto *p_container = get_sexp_container(Sexp_nodes[node].text);
+				if (type2 != SEXP_ATOM_STRING) {
+					return SEXP_CHECK_TYPE_MISMATCH;
+				}
+				p_container = get_sexp_container(Sexp_nodes[node].text);
 				if (!p_container) {
 					return SEXP_CHECK_TYPE_MISMATCH;
 				} else if ((type == OPF_LIST_CONTAINER_NAME && !p_container->is_list()) ||
@@ -3509,6 +3689,21 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				}
 				break;
 			}
+
+			case OPF_CONTAINER_VALUE:
+				Assertion(p_container,
+					"Attempt to check value arg for null container for SEXP operator %d at arg %d. Please report!",
+					op,
+					argnum);
+				z = check_container_value_data_type(get_operator_const(op_node),
+					argnum,
+					p_container->type,
+					(type2 == SEXP_ATOM_STRING),
+					(type2 == OPR_NUMBER) || (type2 == OPR_POSITIVE));
+				if (z) {
+					return z;
+				}
+				break;
 
 			default:
 				Error(LOCATION, "Unhandled argument format");
@@ -3819,6 +4014,10 @@ int get_sexp()
 				strcpy_s(token, "hud-set-builtin-gauge-active");
 			else if (!stricmp(token, "perform-actions"))
 				strcpy_s(token, "perform-actions-bool-first");
+			else if (!stricmp(token, "add-to-collision-group2"))
+				strcpy_s(token, "add-to-collision-group-new");
+			else if (!stricmp(token, "remove-from-collision-group2"))
+				strcpy_s(token, "remove-from-collision-group-new");
 
 			op = get_operator_index(token);
 			if (op >= 0) {
@@ -3873,7 +4072,7 @@ int get_sexp()
 		if (n >= 0)
 		{
 			// free the entire rest of the argument list
-			free_sexp2(n);	
+			free_sexp2(n, CDR(start));
 		}
 	}
 
@@ -3964,11 +4163,13 @@ int get_sexp()
 				break;
 
 			case OP_ADD_SUN_BITMAP:
+			case OP_ADD_SUN_BITMAP_NEW:
 				n = CDR(start);
 				do_preload_for_arguments(stars_preload_sun_bitmap, n, arg_handler);
 				break;
 
 			case OP_ADD_BACKGROUND_BITMAP:
+			case OP_ADD_BACKGROUND_BITMAP_NEW:
 				n = CDR(start);
 				do_preload_for_arguments(stars_preload_background_bitmap, n, arg_handler);
 				break;
@@ -4732,8 +4933,10 @@ int sexp_atoi(int node)
 
 	int num = atoi(CTEXT(node));
 
-	// cache the value, unless this node is a variable or argument because the value may change
-	if (!(Sexp_nodes[node].type & SEXP_FLAG_VARIABLE) && !(Sexp_nodes[node].flags & SNF_SPECIAL_ARG_IN_NODE))
+	// cache the value, unless this node is a variable, argument, or container data, because the value may change
+	if (!(Sexp_nodes[node].type & SEXP_FLAG_VARIABLE) &&
+		!(Sexp_nodes[node].flags & SNF_SPECIAL_ARG_IN_NODE) &&
+		(Sexp_nodes[node].subtype != SEXP_ATOM_CONTAINER))
 		Sexp_nodes[node].cache = new sexp_cached_data(OPF_NUMBER, num, -1);
 
 	return num;
@@ -13019,6 +13222,16 @@ void sexp_self_destruct(int node)
 	}
 }
 
+void sexp_cancel_future_waves(int node)
+{
+	for (int n = node; n != -1; n = CDR(n))	{
+		auto wingp = eval_wing(n);
+		if (wingp) {
+			wingp->num_waves = wingp->current_wave;
+		}
+	}
+}
+
 void sexp_next_mission(int n)
 {
 	auto mission_name = CTEXT(n);
@@ -14101,7 +14314,7 @@ void sexp_change_background(int node)
 	stars_load_background(background_idx);
 }
 
-void sexp_add_background_bitmap(int n, bool is_sun)
+void sexp_add_background_bitmap(int n, bool is_sun, bool uses_correct_angles)
 {
 	int sexp_var, new_number, sanity;
 	bool is_nan, is_nan_forever;
@@ -14124,6 +14337,12 @@ void sexp_add_background_bitmap(int n, bool is_sun)
 	eval_angles(&sle.ang, n, is_nan, is_nan_forever);
 	if (is_nan || is_nan_forever)
 		return;
+	if (!uses_correct_angles) {
+		if (is_sun)
+			stars_correct_background_sun_angles(&sle.ang);
+		else
+			stars_correct_background_bitmap_angles(&sle.ang);
+	}
 
 	if (is_sun)
 	{
@@ -16625,14 +16844,35 @@ void sexp_parse_ship_alt_name_or_callsign(p_object *parse_obj, int alt_index, bo
 // Goober5000
 void sexp_ship_change_alt_name_or_callsign(int node, bool alt_name)
 {
+	char new_string[TOKEN_LENGTH];
 	int n = node, new_index;
+	bool string_was_empty;
 
 	// get the string
-	auto new_string = CTEXT(n);
+	strcpy_s(new_string, CTEXT(n));
 	n = CDR(n);
 
-	// and its index
-	if (!*new_string || !stricmp(new_string, SEXP_ANY_STRING))
+	// packets for multi
+	if (MULTIPLAYER_MASTER)
+	{
+		Current_sexp_network_packet.start_callback();
+		Current_sexp_network_packet.send_string(new_string);
+	}
+
+	// if the hash is at the beginning, the string might be truncated to empty, so check this first
+	string_was_empty = (*new_string == '\0');
+
+	if (alt_name)
+	{
+		// truncate at a single hash
+		end_string_at_first_hash_symbol(new_string, true);
+
+		// ## -> #
+		consolidate_double_characters(new_string, '#');
+	}
+
+	// get the string's index
+	if (string_was_empty || !stricmp(new_string, SEXP_ANY_STRING))
 	{
 		new_index = -1;
 	}
@@ -16650,13 +16890,6 @@ void sexp_ship_change_alt_name_or_callsign(int node, bool alt_name)
 			if (new_index < 0)
 				new_index = mission_parse_add_callsign(new_string);
 		}
-	}
-
-	// packets for multi
-	if (MULTIPLAYER_MASTER)
-	{
-		Current_sexp_network_packet.start_callback();
-		Current_sexp_network_packet.send_string(new_string);
 	}
 
 	for ( ; n != -1; n = CDR(n) )
@@ -16717,10 +16950,23 @@ void multi_sexp_ship_change_alt_name_or_callsign(bool alt_name)
 {
 	char new_string[TOKEN_LENGTH];
 	int type, new_index;
+	bool string_was_empty;
 
 	Current_sexp_network_packet.get_string(new_string);
 
-	if (!*new_string || !stricmp(new_string, SEXP_ANY_STRING))
+	// if the hash is at the beginning, the string might be truncated to empty, so check this first
+	string_was_empty = (*new_string == '\0');
+
+	if (alt_name)
+	{
+		// truncate at a single hash
+		end_string_at_first_hash_symbol(new_string, true);
+
+		// ## -> #
+		consolidate_double_characters(new_string, '#');
+	}
+
+	if (string_was_empty || !stricmp(new_string, SEXP_ANY_STRING))
 	{
 		new_index = -1;
 	}
@@ -23773,7 +24019,7 @@ void sexp_manipulate_colgroup(int node, bool add_to_group)
 	ship_entry->objp->collision_group_id = colgroup_id;
 }
 
-void sexp_manipulate_colgroup2(int node, bool add_to_group)
+void sexp_manipulate_colgroup_new(int node, bool add_to_group)
 {
 	bool is_nan, is_nan_forever;
 	int group = eval_num(node, is_nan, is_nan_forever);
@@ -24300,7 +24546,8 @@ int eval_sexp(int cur_node, int referenced_node)
 		}
 	}
 
-	if (Sexp_nodes[cur_node].first != -1) {
+	// ignore for container data, because their "first" is a container modifier
+	if ((Sexp_nodes[cur_node].first != -1) && (Sexp_nodes[cur_node].subtype != SEXP_ATOM_CONTAINER)) {
 		node = CAR(cur_node);
 		sexp_val = eval_sexp(node);
 		Sexp_nodes[cur_node].value = Sexp_nodes[node].value;	// higher level node gets node value
@@ -24609,6 +24856,15 @@ int eval_sexp(int cur_node, int referenced_node)
 			case OP_COPY_VARIABLE_BETWEEN_INDEXES:
 				sexp_copy_variable_between_indexes(node);
 				sexp_val = SEXP_TRUE;
+				break;
+
+			case OP_CONTAINER_ADD_TO_LIST:
+			case OP_CONTAINER_REMOVE_FROM_LIST:
+			case OP_CONTAINER_ADD_TO_MAP:
+			case OP_CONTAINER_REMOVE_FROM_MAP:
+			case OP_CONTAINER_GET_MAP_KEYS:
+			case OP_CLEAR_CONTAINER:
+				sexp_val = sexp_container_eval_change_sexp(op_num, node);
 				break;
 
 			case OP_TIME_SHIP_DESTROYED:
@@ -24966,6 +25222,11 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			case OP_ALTER_SHIP_FLAG:
 				sexp_alter_ship_flag(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			case OP_CANCEL_FUTURE_WAVES:
+				sexp_cancel_future_waves(node);
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -25349,8 +25610,10 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_ADD_SUN_BITMAP:
+			case OP_ADD_SUN_BITMAP_NEW:
 			case OP_ADD_BACKGROUND_BITMAP:
-				sexp_add_background_bitmap(node, op_num == OP_ADD_SUN_BITMAP);
+			case OP_ADD_BACKGROUND_BITMAP_NEW:
+				sexp_add_background_bitmap(node, op_num == OP_ADD_SUN_BITMAP || op_num == OP_ADD_SUN_BITMAP_NEW, op_num == OP_ADD_SUN_BITMAP_NEW || op_num == OP_ADD_BACKGROUND_BITMAP_NEW);
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -25719,6 +25982,16 @@ int eval_sexp(int cur_node, int referenced_node)
 			// Goober5000
 			case OP_STRING_GET_LENGTH:
 				sexp_val = sexp_string_get_length(node);
+				break;
+
+			// Karajorma/jg18
+			case OP_IS_CONTAINER_EMPTY:
+			case OP_GET_CONTAINER_SIZE:
+			case OP_LIST_HAS_DATA:
+			case OP_LIST_DATA_INDEX:
+			case OP_MAP_HAS_KEY:
+			case OP_MAP_HAS_DATA_ITEM:
+				sexp_val = sexp_container_eval_status_sexp(op_num, node);
 				break;
 
 			// Karajorma
@@ -26442,9 +26715,9 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
-			case OP_ADD_TO_COLGROUP2:
-			case OP_REMOVE_FROM_COLGROUP2:
-				sexp_manipulate_colgroup2(node, op_num == OP_ADD_TO_COLGROUP2);
+			case OP_ADD_TO_COLGROUP_NEW:
+			case OP_REMOVE_FROM_COLGROUP_NEW:
+				sexp_manipulate_colgroup_new(node, op_num == OP_ADD_TO_COLGROUP_NEW);
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -27181,6 +27454,10 @@ int query_operator_return_type(int op)
 		case OP_IS_LANGUAGE:
 		case OP_FUNCTIONAL_WHEN:
 		case OP_SCRIPT_EVAL_BOOL:
+		case OP_IS_CONTAINER_EMPTY:
+		case OP_LIST_HAS_DATA:
+		case OP_MAP_HAS_KEY:
+		case OP_MAP_HAS_DATA_ITEM:
 			return OPR_BOOL;
 
 		case OP_PLUS:
@@ -27213,6 +27490,8 @@ int query_operator_return_type(int op)
 		case OP_FUNCTIONAL_IF_THEN_ELSE:
 		case OP_FUNCTIONAL_SWITCH:
 		case OP_GET_HOTKEY:
+		case OP_GET_CONTAINER_SIZE:
+		case OP_LIST_DATA_INDEX:
 			return OPR_NUMBER;
 
 		case OP_ABS:
@@ -27549,8 +27828,10 @@ int query_operator_return_type(int op)
 		case OP_MISSION_SET_NEBULA:
 		case OP_CHANGE_BACKGROUND:
 		case OP_ADD_BACKGROUND_BITMAP:
+		case OP_ADD_BACKGROUND_BITMAP_NEW:
 		case OP_REMOVE_BACKGROUND_BITMAP:
 		case OP_ADD_SUN_BITMAP:
+		case OP_ADD_SUN_BITMAP_NEW:
 		case OP_REMOVE_SUN_BITMAP:
 		case OP_NEBULA_CHANGE_STORM:
 		case OP_NEBULA_TOGGLE_POOF:
@@ -27601,8 +27882,8 @@ int query_operator_return_type(int op)
 		case OP_STRING_SET_SUBSTRING:
 		case OP_ADD_TO_COLGROUP:
 		case OP_REMOVE_FROM_COLGROUP:
-		case OP_ADD_TO_COLGROUP2:
-		case OP_REMOVE_FROM_COLGROUP2:
+		case OP_ADD_TO_COLGROUP_NEW:
+		case OP_REMOVE_FROM_COLGROUP_NEW:
 		case OP_SHIP_EFFECT:
 		case OP_CLEAR_SUBTITLES:
 		case OP_SET_THRUSTERS:
@@ -27611,6 +27892,7 @@ int query_operator_return_type(int op)
 		case OP_HUD_SET_CUSTOM_GAUGE_ACTIVE:
 		case OP_HUD_SET_BUILTIN_GAUGE_ACTIVE:
 		case OP_ALTER_SHIP_FLAG:
+		case OP_CANCEL_FUTURE_WAVES:
 		case OP_CHANGE_TEAM_COLOR:
 		case OP_NEBULA_CHANGE_PATTERN:
 		case OP_COPY_VARIABLE_FROM_INDEX:
@@ -27629,6 +27911,12 @@ int query_operator_return_type(int op)
 		case OP_SET_ALPHA_MULT:
 		case OP_TRIGGER_ANIMATION_NEW:
 		case OP_UPDATE_MOVEABLE:
+		case OP_CONTAINER_ADD_TO_LIST:
+		case OP_CONTAINER_REMOVE_FROM_LIST:
+		case OP_CONTAINER_ADD_TO_MAP:
+		case OP_CONTAINER_REMOVE_FROM_MAP:
+		case OP_CONTAINER_GET_MAP_KEYS:
+		case OP_CLEAR_CONTAINER:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -27930,6 +28218,8 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_BOOL;
 			else
 				return OPF_SHIP_WING_WHOLETEAM;
+		case OP_CANCEL_FUTURE_WAVES:
+			return OPF_WING;
 		
 		case OP_SET_PLAYER_THROTTLE_SPEED:
 			if(argnum == 0)
@@ -28221,6 +28511,45 @@ int query_operator_argument_type(int op, int argnum)
 			} else {
 				return OPF_AMBIGUOUS;
 			}
+
+		case OP_CONTAINER_ADD_TO_LIST:
+			if (argnum == 0) {
+				return OPF_LIST_CONTAINER_NAME;
+			} else if (argnum == 1) {
+				return OPF_BOOL;
+			} else {
+				return OPF_CONTAINER_VALUE;
+			}
+
+		case OP_CONTAINER_REMOVE_FROM_LIST:
+			if (argnum == 0) {
+				return OPF_LIST_CONTAINER_NAME;
+			} else {
+				return OPF_CONTAINER_VALUE;
+			}
+
+		case OP_CONTAINER_ADD_TO_MAP:
+		case OP_CONTAINER_REMOVE_FROM_MAP:
+			if (argnum == 0) {
+				return OPF_MAP_CONTAINER_NAME;
+			} else {
+				return OPF_CONTAINER_VALUE;
+			}
+
+		case OP_CONTAINER_GET_MAP_KEYS:
+			if (argnum == 0) {
+				return OPF_MAP_CONTAINER_NAME;
+			} else if (argnum == 1) {
+				return OPF_LIST_CONTAINER_NAME;
+			} else if (argnum == 2) {
+				return OPF_BOOL;
+			} else {
+				// This shouldn't happen
+				return OPF_NONE;
+			}
+
+		case OP_CLEAR_CONTAINER:
+			return OPF_CONTAINER_NAME;
 
 		case OP_HAS_DOCKED:
 		case OP_HAS_UNDOCKED:
@@ -29909,6 +30238,7 @@ int query_operator_argument_type(int op, int argnum)
 			return OPF_POSITIVE;
 
 		case OP_ADD_BACKGROUND_BITMAP:
+		case OP_ADD_BACKGROUND_BITMAP_NEW:
 			if (argnum == 0)
 				return OPF_BACKGROUND_BITMAP;
 			else if (argnum == 8)
@@ -29920,6 +30250,7 @@ int query_operator_argument_type(int op, int argnum)
 			return OPF_POSITIVE;
 
 		case OP_ADD_SUN_BITMAP:
+		case OP_ADD_SUN_BITMAP_NEW:
 			if (argnum == 0)
 				return OPF_SUN_BITMAP;
 			else if (argnum == 5)
@@ -30037,8 +30368,8 @@ int query_operator_argument_type(int op, int argnum)
 			else
 				return OPF_POSITIVE;
 
-		case OP_ADD_TO_COLGROUP2:
-		case OP_REMOVE_FROM_COLGROUP2:
+		case OP_ADD_TO_COLGROUP_NEW:
+		case OP_REMOVE_FROM_COLGROUP_NEW:
 			if (argnum == 0)
 				return OPF_POSITIVE;
 			else
@@ -30090,12 +30421,57 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_BOOL;
 
 		case OP_UPDATE_MOVEABLE:
-			if(argnum == 0)
+			if (argnum == 0)
 				return OPF_SHIP;
 			else if(argnum == 1)
 				return OPF_ANIMATION_NAME;
 			else
 				return OPF_NUMBER;
+
+		case OP_IS_CONTAINER_EMPTY:
+		case OP_GET_CONTAINER_SIZE:
+			if (argnum == 0) {
+				return OPF_CONTAINER_NAME;
+			} else {
+				// This shouldn't happen
+				return OPF_NONE;
+			}
+
+		case OP_LIST_HAS_DATA:
+			if (argnum == 0) {
+				return OPF_LIST_CONTAINER_NAME;
+			} else {
+				return OPF_CONTAINER_VALUE;
+			}
+
+		case OP_LIST_DATA_INDEX:
+			if (argnum == 0) {
+				return OPF_LIST_CONTAINER_NAME;
+			} else if (argnum == 1) {
+				return OPF_CONTAINER_VALUE;
+			} else {
+				// This shouldn't happen
+				return OPF_NONE;
+			}
+
+		case OP_MAP_HAS_KEY:
+			if (argnum == 0) {
+				return OPF_MAP_CONTAINER_NAME;
+			} else {
+				return OPF_CONTAINER_VALUE;
+			}
+
+		case OP_MAP_HAS_DATA_ITEM:
+			if (argnum == 0) {
+				return OPF_MAP_CONTAINER_NAME;
+			} else if (argnum == 1) {
+				return OPF_CONTAINER_VALUE;
+			} else if (argnum == 2) {
+				return OPF_VARIABLE_NAME;
+			} else {
+				// This shouldn't happen
+				return OPF_NONE;
+			}
 
 		default: {
 			auto dynamicSEXP = sexp::get_dynamic_sexp(op);
@@ -30373,6 +30749,7 @@ int sexp_query_type_match(int opf, int opr)
 
 		// Goober5000
 		case OPF_ANYTHING:
+		case OPF_CONTAINER_VALUE: // jg18
 			// don't match any operators, only data
 			return 0;
 
@@ -30637,6 +31014,9 @@ const char *sexp_error_message(int num)
 		case SEXP_CHECK_INVALID_ANIMATION:
 			return "Invalid animation specifier";
 
+		case SEXP_CHECK_WRONG_CONTAINER_DATA_TYPE:
+			return "Wrong container data type";
+
 		default:
 			Warning(LOCATION, "Unhandled sexp error code %d!", num);
 			return "Unhandled sexp error code!";
@@ -30656,7 +31036,14 @@ int query_sexp_ai_goal_valid(int sexp_ai_goal, int ship_num)
 		if (Sexp_ai_goal_links[i].op_code == sexp_ai_goal)
 			break;
 
-	Assert(i < Num_sexp_ai_goal_links);
+	if (i >= Num_sexp_ai_goal_links) {
+		//is a luaAI?
+		Assert(ai_lua_has_mode(sexp_ai_goal));
+
+		return true;
+	}
+
+
 	return ai_query_goal_valid(ship_num, Sexp_ai_goal_links[i].ai_goal);
 }
 
@@ -31257,6 +31644,7 @@ int get_index_sexp_variable_name_special(SCP_string &text, size_t startpos)
 }
 
 // Goober5000
+// Note that the parameter here is max *length*, not max buffer size.  Leave room for the null-terminator!
 bool sexp_replace_variable_names_with_values(char *text, int max_len)
 {
 	Assert(text != nullptr);
@@ -31281,7 +31669,10 @@ bool sexp_replace_variable_names_with_values(char *text, int max_len)
 				strncpy(what_to_replace, pos, strlen(Sexp_variables[var_index].variable_name) + 1);
 
 				// replace it
-				pos = text + replace_one(text, what_to_replace, Sexp_variables[var_index].text, max_len);
+				auto diff = replace_one(text, what_to_replace, Sexp_variables[var_index].text, max_len);
+				Assertion(diff >= 0, "Variable replacement should have succeeded!");
+
+				pos = text + diff;
 				replaced_anything = true;
 			}
 			// no match... so keep iterating along the string
@@ -31520,6 +31911,7 @@ int get_subcategory(int sexp_id)
 		case OP_SHIP_UNTAG:
 		case OP_SET_ARRIVAL_INFO:
 		case OP_SET_DEPARTURE_INFO:
+		case OP_CANCEL_FUTURE_WAVES:
 			return CHANGE_SUBCATEGORY_SHIP_STATUS;
 
 		case OP_SET_WEAPON_ENERGY:
@@ -31646,8 +32038,8 @@ int get_subcategory(int sexp_id)
 		case OP_COLLIDE_INVISIBLE:
 		case OP_ADD_TO_COLGROUP:
 		case OP_REMOVE_FROM_COLGROUP:
-		case OP_ADD_TO_COLGROUP2:
-		case OP_REMOVE_FROM_COLGROUP2:
+		case OP_ADD_TO_COLGROUP_NEW:
+		case OP_REMOVE_FROM_COLGROUP_NEW:
 		case OP_GET_COLGROUP_ID:
 		case OP_CHANGE_TEAM_COLOR:
 		case OP_REPLACE_TEXTURE:
@@ -31778,8 +32170,10 @@ int get_subcategory(int sexp_id)
 		case OP_MISSION_SET_SUBSPACE:
 		case OP_CHANGE_BACKGROUND:
 		case OP_ADD_BACKGROUND_BITMAP:
+		case OP_ADD_BACKGROUND_BITMAP_NEW:
 		case OP_REMOVE_BACKGROUND_BITMAP:
 		case OP_ADD_SUN_BITMAP:
+		case OP_ADD_SUN_BITMAP_NEW:
 		case OP_REMOVE_SUN_BITMAP:
 		case OP_NEBULA_CHANGE_STORM:
 		case OP_NEBULA_TOGGLE_POOF:
@@ -31825,6 +32219,14 @@ int get_subcategory(int sexp_id)
 		case OP_STRING_SET_SUBSTRING:
 		case OP_MODIFY_VARIABLE_XSTR:
 			return CHANGE_SUBCATEGORY_VARIABLES;
+
+		case OP_CONTAINER_ADD_TO_LIST:
+		case OP_CONTAINER_REMOVE_FROM_LIST:
+		case OP_CONTAINER_ADD_TO_MAP:
+		case OP_CONTAINER_REMOVE_FROM_MAP:
+		case OP_CONTAINER_GET_MAP_KEYS:
+		case OP_CLEAR_CONTAINER:
+			return CHANGE_SUBCATEGORY_CONTAINERS;
 
 		case OP_DAMAGED_ESCORT_LIST:
 		case OP_DAMAGED_ESCORT_LIST_ALL:
@@ -31937,6 +32339,14 @@ int get_subcategory(int sexp_id)
 		case OP_STRING_TO_INT:
 		case OP_STRING_GET_LENGTH:
 			return STATUS_SUBCATEGORY_VARIABLES;
+
+		case OP_IS_CONTAINER_EMPTY:
+		case OP_GET_CONTAINER_SIZE:
+		case OP_LIST_HAS_DATA:
+		case OP_LIST_DATA_INDEX:
+		case OP_MAP_HAS_KEY:
+		case OP_MAP_HAS_DATA_ITEM:
+			return STATUS_SUBCATEGORY_CONTAINERS;
 
 		case OP_SCRIPT_EVAL_BOOL:
 		case OP_SCRIPT_EVAL_NUM:
@@ -33089,6 +33499,55 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tIndex of source variable, from 0 to MAX_SEXP_VARIABLES - 1.\r\n"
 		"\t2:\tIndex of destination variable, from 0 to MAX_SEXP_VARIABLES - 1.  The types of both variables must match." },
 
+	// Karajorma/jg18
+	{ OP_CONTAINER_ADD_TO_LIST, "add-to-list\r\n"
+		"\tAdds new entries to a list container.\r\n\r\n"
+		"Takes 3 or more arguments...\r\n"
+		"\t1:\tName of the list container.\r\n"
+		"\t2:\tIndicates whether to add the data to the start or the end of the list. True means at the end, false means at the start.\r\n"
+		"\tRest:\tThe data to be added." },
+
+	// Karajorma/jg18
+	{ OP_CONTAINER_REMOVE_FROM_LIST, "remove-from-list\r\n"
+		"\tRemoves entries from a list container.\r\n\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tName of the list container.\r\n"
+		"\tRest:\tThe data to be removed." },
+
+	// Karajorma/jg18
+	{ OP_CONTAINER_ADD_TO_MAP, "add-to-map\r\n"
+		"\tAdds new entries to a map container.\r\n"
+		"\tIf the map container already has data associated with the provided key, the data is replaced.\r\n\r\n"
+		"Takes 3 or more arguments...\r\n"
+		"\t1:\tName of the map container.\r\n"
+		"\t2:\tKey that will be used to retrieve the data stored in the map.\r\n"
+		"\t3:\tData that will be associated with the provided key.\r\n"
+		"\tRest:\tAdditional pairs of arguments of a key and its associated data." },
+
+	// Karajorma/jg18
+	{ OP_CONTAINER_REMOVE_FROM_MAP, "remove-from-map\r\n"
+		"\tRemoves entries by their keys from a map container.\r\n"
+		"\tIgnores keys that are not associated with data in the map container.\r\n\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tName of the map container.\r\n"
+		"\tRest:\tKey whose data will be removed." },
+
+	// Karajorma/jg18
+	{ OP_CONTAINER_GET_MAP_KEYS, "get-map-keys\r\n"
+		"\tCopies a map container's keys in no particular order into a list container.\r\n"
+		"\tThe list container's data type must match the map container's key type.\r\n"
+		"\tBy default, the list container is cleared before the keys are copied.\r\n\r\n"
+		"Takes 2 or 3 arguments...\r\n"
+		"\t1:\tName of the map container.\r\n"
+		"\t2:\tName of the list container.\r\n"
+		"\t3:\t(Optional) When true, the list container's current contents are deleted. When false, the keys are appended to the end of the list." },
+
+	// Karajorma/jg18
+	{ OP_CLEAR_CONTAINER, "clear-container\r\n"
+		"\tDeletes the current contents of one or more containers.\r\n\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\tAll:\tName of the container(s) to clear.\r\n" },
+
 	{ OP_PROTECT_SHIP, "Protect ship (Action operator)\r\n"
 		"\tProtects a ship from being attacked by any enemy ship.  Any ship "
 		"that is protected will not come under enemy fire.\r\n\r\n"
@@ -33828,6 +34287,52 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t4: New substring (which can be a different length than the old substring)\r\n"
 		"\t5: String variable to hold the result\r\n" },
 
+	// Karajorma/jg18
+	{ OP_IS_CONTAINER_EMPTY, "is-container-empty (Boolean operator)\r\n"
+		"\tReturns true if the specified container has no elements in it.\r\n\r\n"
+		"Takes 1 argument...\r\n"
+		"\t1:\tName of the container." },
+
+	// Karajorma/jg18
+	{ OP_GET_CONTAINER_SIZE, "get-container-size (Status operator)\r\n"
+		"\tReturns the number of elements in the specified container, or 0 if empty.\r\n\r\n"
+		"Takes 1 argument...\r\n"
+		"\t1:\tName of the container." },
+
+	// Karajorma/jg18
+	{ OP_LIST_HAS_DATA, "list-has-data (Boolean operator)\r\n"
+		"\tReturns true if the specified list container has elements which match the supplied values.\r\n\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tName of the list container.\r\n"
+		"\tRest:\tValue that might be in the list container" },
+
+	// Karajorma/jg18
+	{ OP_LIST_DATA_INDEX, "list-data-index\r\n"
+		"\tReturns the index (starting at 0) for the supplied value in the list container.\r\n"
+		"\tIf the supplied value is not in the container, returns -1.\r\n\r\n"
+		"Takes 2 arguments...\r\n"
+		"\t1:\tName of the list container.\r\n"
+		"\t2:\tValue that might be in the list container" },
+
+	// Karajorma/jg18
+	{ OP_MAP_HAS_KEY, "map-has-key (Boolean operator)\r\n"
+		"\tReturns true if the specified map container has keys that match the supplied values.\r\n\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tName of the map container.\r\n"
+		"\tRest:\tValue that might be a key in the map container" },
+
+	// Karajorma/jg18
+	{ OP_MAP_HAS_DATA_ITEM, "map-has-data-item (Boolean operator)\r\n"
+		"\tReturns true if the specified map container has a key whose data matches the supplied value.\r\n"
+		"\tIf a variable is also supplied, three cases are possible:\r\n"
+		"\t\t(1) If a single key has the supplied value as its data, the key is stored in the variable.\r\n"
+		"\t\t(2) If multiple keys have the supplied value as their data, one of those keys is stored in the variable. The key may not be the same every time.\r\n"
+		"\t\t(3) If there is no key that has the supplied value as its data, the variable is left unchanged.\r\n\r\n"
+		"Takes either 2 or 3 arguments...\r\n"
+		"\t1:\tName of the map container.\r\n"
+		"\t2:\tValue that might be data associated with a key in the map container.\r\n"
+		"\t3:\tVariable to hold a map key associated with the data, if one exists (optional). The variable type must match the key type." },
+
 	// Karajorma
 	{ OP_DEBUG, "debug\r\n"
 		"\tPops up a warning on debug builds (and optionally on release builds)\r\n"
@@ -34118,6 +34623,12 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"fail-sound-locked-primary - This ship will play a weapon failure sound if trying to shoot primaries when they're locked\r\n"
 		"fail-sound-locked-secondary - This ship will play a weapon failure sound if trying to shoot secondaries when they're locked\r\n"
 	},
+
+	{ OP_CANCEL_FUTURE_WAVES, "cancel-future-waves\r\n"
+		"\tCancel all waves of a wing which have not yet arrived. Waves that have arrived already are not affected. is-destroyed-delay, ship-type-destroyed, and similar operators behave as though the cancelled waves do not exist.\r\n\r\nIf this operator is called on a wing which has not arrived, the wing will never arrive, exactly as if its arrival cue were set to false. That wing is not marked as destroyed.\r\n\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\tAll:\tThe name of a wing to cancel." },
+
 
 	{ OP_SHIP_VISIBLE, "ship-visible\r\n"
 		"\tCauses the ships listed in this sexpression to be visible with player sensors.\r\n\r\n"
@@ -35815,8 +36326,24 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tBackground number (starting from 1)\r\n"
 	},
 
-	{ OP_ADD_BACKGROUND_BITMAP, "add-background-bitmap\r\n"
-		"\tAdds a background bitmap to the sky.  Returns an integer that is stored in a variable so it can be deleted using remove-background-bitmap\r\n\r\n"
+	{ OP_ADD_BACKGROUND_BITMAP, "add-background-bitmap (deprecated)\r\n"
+		"\tAdds a background bitmap to the sky.  Returns an integer that is stored in a variable so it can be deleted using remove-background-bitmap.  "
+		"NOTE: This version of the SEXP uses the old incorrectly-calculated angle math.  Use add-background-bitmap-new instead.\r\n\r\n"
+		"Takes 8 to 9 arguments...\r\n"
+		"\t1:\tBackground bitmap name\r\n"
+		"\t2:\tPitch\r\n"
+		"\t3:\tBank\r\n"
+		"\t4:\tHeading\r\n"
+		"\t5:\tX scale (expressed as a percentage of the original size of the bitmap)\r\n"
+		"\t6:\tY scale (expressed as a percentage of the original size of the bitmap)\r\n"
+		"\t7:\tX divisions.\r\n"
+		"\t8:\tY divisions.\r\n"
+		"\t9:\tNumeric variable in which to store the result (optional)\r\n"
+	},
+
+	{ OP_ADD_BACKGROUND_BITMAP_NEW, "add-background-bitmap-new\r\n"
+		"\tAdds a background bitmap to the sky.  Returns an integer that is stored in a variable so it can be deleted using remove-background-bitmap.  "
+		"NOTE: This version of the SEXP treats the angles as correctly calculated.\r\n\r\n"
 		"Takes 8 to 9 arguments...\r\n"
 		"\t1:\tBackground bitmap name\r\n"
 		"\t2:\tPitch\r\n"
@@ -35836,8 +36363,21 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t\t\tYou can also use the result of a previous call to add-background-bitmap to remove that added bitmap\r\n"
 	},
 
-	{ OP_ADD_SUN_BITMAP, "add-sun-bitmap\r\n"
-		"\tAdds a sun bitmap to the sky.  Returns an integer that is stored in a variable so it can be deleted using remove-sun-bitmap\r\n\r\n"
+	{ OP_ADD_SUN_BITMAP, "add-sun-bitmap (deprecated)\r\n"
+		"\tAdds a sun bitmap to the sky.  Returns an integer that is stored in a variable so it can be deleted using remove-sun-bitmap.  "
+		"NOTE: This version of the SEXP uses the old incorrectly-calculated angle math.  Use add-sun-bitmap-new instead.\r\n\r\n"
+		"Takes 5 to 6 arguments...\r\n"
+		"\t1:\tSun bitmap name\r\n"
+		"\t2:\tPitch\r\n"
+		"\t3:\tBank\r\n"
+		"\t4:\tHeading\r\n"
+		"\t5:\tScale (expressed as a percentage of the original size of the bitmap)\r\n"
+		"\t6:\tNumeric variable in which to store the result (optional)\r\n"
+	},
+
+	{ OP_ADD_SUN_BITMAP_NEW, "add-sun-bitmap-new\r\n"
+		"\tAdds a sun bitmap to the sky.  Returns an integer that is stored in a variable so it can be deleted using remove-sun-bitmap.  "
+		"NOTE: This version of the SEXP treats the angles as correctly calculated.\r\n\r\n"
 		"Takes 5 to 6 arguments...\r\n"
 		"\t1:\tSun bitmap name\r\n"
 		"\t2:\tPitch\r\n"
@@ -35995,7 +36535,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t2+:\tGroup IDs. Valid IDs are 0 through 31 inclusive.\r\n"
 	},
 
-	{OP_ADD_TO_COLGROUP2, "add-to-collision-group2\r\n"
+	{OP_ADD_TO_COLGROUP_NEW, "add-to-collision-group-new\r\n"
 		"\tAdds one or more ships to the specified collision group. There are 32 collision groups, "
 		"and an object may be in several collision groups at the same time. This sexp functions identically to "
 		"add-to-collision-group, except that the arguments are one group and many ships, rather than one ship and many groups.\r\n"
@@ -36004,7 +36544,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t2+:\tShip to add.\r\n"
 	},
 
-	{OP_REMOVE_FROM_COLGROUP2, "remove-from-collision-group2\r\n"
+	{OP_REMOVE_FROM_COLGROUP_NEW, "remove-from-collision-group-new\r\n"
 		"\tRemoves one or more ships from the specified collision group. There are 32 collision groups, "
 		"and an object may be in several collision groups at the same time. This sexp functions identically to "
 		"remove-from-collision-group, except that the arguments are one group and many ships, rather than one ship and many groups.\r\n"
@@ -36177,6 +36717,7 @@ SCP_vector<op_menu_struct> op_submenu =
 	{	"Jump Nodes",					CHANGE_SUBCATEGORY_JUMP_NODES						},
 	{	"Special Effects",				CHANGE_SUBCATEGORY_SPECIAL_EFFECTS					},
 	{	"Variables",					CHANGE_SUBCATEGORY_VARIABLES						},
+	{	"Containers",					CHANGE_SUBCATEGORY_CONTAINERS						},
 	{	"Other",						CHANGE_SUBCATEGORY_OTHER							},
 	{	"Mission",						STATUS_SUBCATEGORY_MISSION							},
 	{	"Player",						STATUS_SUBCATEGORY_PLAYER							},
@@ -36187,6 +36728,7 @@ SCP_vector<op_menu_struct> op_submenu =
 	{	"Damage",						STATUS_SUBCATEGORY_DAMAGE							},
 	{	"Distance and Coordinates",		STATUS_SUBCATEGORY_DISTANCE_AND_COORDINATES			},
 	{	"Variables",					STATUS_SUBCATEGORY_VARIABLES						},
+	{	"Containers",					STATUS_SUBCATEGORY_CONTAINERS						},
 	{	"Other",						STATUS_SUBCATEGORY_OTHER							}
 };
 

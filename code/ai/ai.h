@@ -17,6 +17,7 @@
 #include "globalincs/pstypes.h"
 #include "globalincs/systemvars.h"
 #include "object/waypoint.h"
+#include "parse/sexp.h"
 #include "physics/physics.h"
 #include "ship/ship_flags.h"
 
@@ -103,6 +104,8 @@ typedef struct ai_goal {
 		int	index;
 	} dockee;
 
+	object_ship_wing_point_team lua_ai_target;
+
 } ai_goal;
 
 #define	AIM_CHASE				0
@@ -127,8 +130,9 @@ typedef struct ai_goal {
 #define	AIM_SENTRYGUN			19		//  AI mode for sentry guns only (floating turrets)
 #define	AIM_WARP_OUT			20		//	Commence warp out sequence.  Point in legal direction.  Then call John's code.
 #define AIM_FLY_TO_SHIP			21		//  [Kazan] Fly to a ship, doesn't matter if it's hostile or friendly -- for Autopilot usage
+#define AIM_LUA					22		//  Generic Lua-based AI mode
 
-#define	MAX_AI_BEHAVIORS		22		//	Number of AIM_xxxx types
+#define	MAX_AI_BEHAVIORS		23		//	Number of AIM_xxxx types
 
 #define	MAX_WAYPOINTS_PER_LIST	20
 #define	MAX_ENEMY_DISTANCE	2500.0f		//	Maximum distance from which a ship will pursue an enemy.
@@ -498,6 +502,8 @@ typedef struct ai_info {
 
 	int multilock_check_timestamp;		// when to check for multilock next
 	SCP_vector<std::pair<int, ship_subsys*>> ai_missile_locks_firing;  // a list of missile locks (locked objnum, locked subsys) the ai is currently firing
+	
+	object_ship_wing_point_team lua_ai_target;
 } ai_info;
 
 // Goober5000
@@ -540,6 +546,8 @@ extern int Ai_firing_enabled;
 
 extern const char *Skill_level_names(int skill_level, int translate = 1);
 extern int Ai_goal_signature;
+
+extern control_info AI_ci;
 
 // need access to following data in AiBig.cpp
 extern object	*Pl_objp;
@@ -675,5 +683,8 @@ void ai_update_aim(ai_info *aip);
 void do_random_sidethrust(ai_info *aip, ship_info *sip);
 
 void ai_formation_object_recalculate_slotnums(int form_objnum, int exiting_objnum = -1);
+
+
+bool test_line_of_sight(vec3d* from, vec3d* to, std::unordered_set<const object*>&& excluded_objects = {}, float threshold = 10.0f, bool test_for_shields = false, bool test_for_hull = true, float* first_intersect_dist = nullptr);
 
 #endif

@@ -11,6 +11,7 @@
 
 
 #include "ai/aigoals.h"
+#include "ai/ailua.h"
 #include "globalincs/linklist.h"
 #include "mission/missionlog.h"
 #include "mission/missionparse.h"
@@ -100,7 +101,7 @@ int Num_ai_goals = sizeof(Ai_goal_names) / sizeof(ai_goal_list);
 // HUD what a ship's current orders are.  If the AI goal doesn't correspond to something that
 // ought to be printable, then NULL is used.
 // JAS: Converted to a function in order to externalize the strings
-const char *Ai_goal_text(int goal)
+const char *Ai_goal_text(int goal, int submode)
 {
 	switch(goal)	{
 	case AI_GOAL_CHASE:
@@ -131,10 +132,15 @@ const char *Ai_goal_text(int goal)
 		return XSTR( "rearm ", 484);
 	case AI_GOAL_FLY_TO_SHIP:
 		return XSTR( "rendezvous with ", 1597);
+	case AI_GOAL_LUA:
+		auto mode = ai_lua_find_mode(submode);
+		if (mode == nullptr)
+			return nullptr;
+		return mode->hudText;
 	}
 
 	// Avoid compiler warning
-	return NULL;
+	return nullptr;
 }
 
 void ai_maybe_add_form_goal(wing* wingp)
@@ -240,8 +246,8 @@ int ai_query_goal_valid( int ship, int ai_goal_type )
 {
 	int accepted;
 
-	if (ai_goal_type == AI_GOAL_NONE)
-		return 1;  // anything can have no orders.
+	if (ai_goal_type == AI_GOAL_NONE || ai_goal_type == AI_GOAL_LUA)
+		return 1;  // anything can have no orders or Lua'd orders.
 
 	accepted = 0;
 
@@ -306,7 +312,7 @@ void ai_clear_ship_goals( ai_info *aip )
 	// add scripting hook for 'On Goals Cleared' --wookieejedi
 	if (Script_system.IsActiveAction(CHA_ONGOALSCLEARED)) {
 		Script_system.SetHookObject("Ship", &Objects[Ships[aip->shipnum].objnum]);
-		Script_system.RunCondition(CHA_ONGOALSCLEARED);
+		Script_system.RunCondition(CHA_ONGOALSCLEARED, &Objects[Ships[aip->shipnum].objnum]);
 		Script_system.RemHookVars({"Ship"});
 	}
 }
@@ -659,7 +665,7 @@ void ai_goal_fixup_dockpoints(ai_info *aip, ai_goal *aigp)
 // from the mission goals (i.e. those goals which come from events) in that we don't
 // use sexpressions for goals from the player...so we enumerate all the parameters
 
-void ai_add_goal_sub_player(int type, int mode, int submode, char *target_name, ai_goal *aigp )
+void ai_add_goal_sub_player(int type, int mode, int submode, char *target_name, ai_goal *aigp, const object_ship_wing_point_team& lua_target )
 {
 	Assert ( (type == AIG_TYPE_PLAYER_WING) || (type == AIG_TYPE_PLAYER_SHIP) );
 
@@ -667,6 +673,7 @@ void ai_add_goal_sub_player(int type, int mode, int submode, char *target_name, 
 	aigp->type = type;										// from player for sure -- could be to ship or to wing
 	aigp->ai_mode = mode;									// major mode for this goal
 	aigp->ai_submode = submode;								// could mean different things depending on mode
+	aigp->lua_ai_target = lua_target;
 
 	if ( mode == AI_GOAL_WARP ) {
 		if (submode >= 0) {
@@ -812,7 +819,7 @@ void ai_add_ship_goal_scripting(int mode, int submode, int priority, char *shipn
 // is issued to ship or wing (from player),  mode is AI_GOAL_*. submode is the submode the
 // ship should go into.  shipname is the object of the action.  aip is the ai_info pointer
 // of the ship receiving the order
-void ai_add_ship_goal_player( int type, int mode, int submode, char *shipname, ai_info *aip )
+void ai_add_ship_goal_player( int type, int mode, int submode, char *shipname, ai_info *aip, const object_ship_wing_point_team& lua_target)
 {
 	int empty_index;
 	ai_goal *aigp;
@@ -821,7 +828,7 @@ void ai_add_ship_goal_player( int type, int mode, int submode, char *shipname, a
 
 	// get a pointer to the goal structure
 	aigp = &aip->goals[empty_index];
-	ai_add_goal_sub_player( type, mode, submode, shipname, aigp );
+	ai_add_goal_sub_player( type, mode, submode, shipname, aigp, lua_target );
 
 	// if the goal is to dock, then we must determine which dock points on the two ships to use.
 	// If the target of the dock is a cargo type container, then we should use DOCK_TYPE_CARGO
@@ -838,7 +845,7 @@ void ai_add_ship_goal_player( int type, int mode, int submode, char *shipname, a
 
 // adds a goal from the player to the given wing (which in turn will add it to the proper
 // ships in the wing
-void ai_add_wing_goal_player( int type, int mode, int submode, char *shipname, int wingnum )
+void ai_add_wing_goal_player( int type, int mode, int submode, char *shipname, int wingnum, const object_ship_wing_point_team& lua_target)
 {
 	int i, empty_index;
 	wing *wingp = &Wings[wingnum];
@@ -849,7 +856,7 @@ void ai_add_wing_goal_player( int type, int mode, int submode, char *shipname, i
 			int num = wingp->ship_index[i];
 			if ( num == -1 )			// ship must have been destroyed or departed
 				continue;
-			ai_add_ship_goal_player( type, mode, submode, shipname, &Ai_info[Ships[num].ai_index] );
+			ai_add_ship_goal_player( type, mode, submode, shipname, &Ai_info[Ships[num].ai_index], lua_target );
 		}
 	}
 
@@ -857,7 +864,7 @@ void ai_add_wing_goal_player( int type, int mode, int submode, char *shipname, i
 	// there are more waves to come.  We use the same method here as when adding a goal to
 	// a ship -- find the first empty entry.  If none exists, take the oldest entry and replace it.
 	empty_index = ai_goal_find_empty_slot( wingp->ai_goals, -1 );
-	ai_add_goal_sub_player( type, mode, submode, shipname, &wingp->ai_goals[empty_index] );
+	ai_add_goal_sub_player( type, mode, submode, shipname, &wingp->ai_goals[empty_index], lua_target );
 }
 
 
@@ -1041,7 +1048,24 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_goal *aigp, char *actor_name )
 		break;
 
 	default:
-		Int3();			// get ALLENDER -- invalid ai-goal specified for ai object!!!!
+		const ai_mode_lua* luaAIMode = ai_lua_find_mode(op);
+		if(luaAIMode != nullptr){
+			//Found a LuaAI mode sexp for this
+			int localnode = CDR(node);
+			
+			aigp->ai_mode = AI_GOAL_LUA;
+			aigp->ai_submode = op;
+			
+			if(luaAIMode->needsTarget) {
+				eval_object_ship_wing_point_team(&aigp->lua_ai_target, localnode);
+				localnode = CDR(localnode);
+			}
+
+			aigp->priority = atoi( CTEXT(localnode) );
+		}
+		else {
+			UNREACHABLE("Invalid SEXP-OP number %d for an AI goal!", op);
+		}
 	}
 
 	if ( aigp->priority > MAX_GOAL_PRIORITY ) {
@@ -1218,7 +1242,23 @@ int ai_remove_goal_sexp_sub( int sexp, ai_goal* aigp )
 		goalmode = AI_GOAL_IGNORE_NEW;
 		break;
 	default:
-		Int3( );
+		const ai_mode_lua* luaAIMode = ai_lua_find_mode(op);
+		if(luaAIMode != nullptr){
+			//Found a LuaAI mode sexp for this
+			int localnode = CDR(node);
+
+			goalmode = AI_GOAL_LUA;
+			goalsubmode = op;
+
+			if(luaAIMode->needsTarget) {
+				localnode = CDR(localnode);
+			}
+
+			priority = localnode >= 0 ? atoi( CTEXT(localnode) ) : -1;
+		}
+		else {
+			UNREACHABLE("Invalid SEXP-OP number %d for an AI goal!", op);
+		}
 		break;
 	};
 	
@@ -1238,13 +1278,13 @@ int ai_remove_goal_sexp_sub( int sexp, ai_goal* aigp )
 	return goalindex;
 }
 
-// code to add ai goals to wings.
+// code to remove ai goals from wings.
 void ai_remove_wing_goal_sexp(int sexp, wing *wingp)
 {
 	int i;
 	int goalindex = -1;
 
-	// add the ai goal for any ship that is currently arrived in the game (only if fred isn't running)
+	// remove the ai goal for any ship that is currently arrived in the game (only if fred isn't running)
 	if ( !Fred_running ) {
 		for (i = 0; i < wingp->current_count; i++) {
 			int num = wingp->ship_index[i];
@@ -1256,6 +1296,8 @@ void ai_remove_wing_goal_sexp(int sexp, wing *wingp)
 		}
 	}
 
+	// remove the sexpression index from the wing's list of goal sexpressions if
+	// there are more waves to come
 	if ((wingp->num_waves - wingp->current_wave > 0) || Fred_running) 
 	{
 		ai_remove_goal_sexp_sub( sexp, wingp->ai_goals );
@@ -1425,7 +1467,8 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 	//  these orders are always achievable.
 	if ( (aigp->ai_mode == AI_GOAL_KEEP_SAFE_DISTANCE)
 		|| (aigp->ai_mode == AI_GOAL_CHASE_ANY) || (aigp->ai_mode == AI_GOAL_STAY_STILL)
-		|| (aigp->ai_mode == AI_GOAL_PLAY_DEAD) || (aigp->ai_mode == AI_GOAL_PLAY_DEAD_PERSISTENT) )
+		|| (aigp->ai_mode == AI_GOAL_PLAY_DEAD) || (aigp->ai_mode == AI_GOAL_PLAY_DEAD_PERSISTENT) 
+		|| (aigp->ai_mode == AI_GOAL_LUA))
 		return AI_GOAL_ACHIEVABLE;
 
 	// warp (depart) only achievable if there's somewhere to depart to
@@ -2391,6 +2434,10 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 		Assert( shipnum >= 0 );
 		other_obj = &Objects[Ships[shipnum].objnum];
 		ai_rearm_repair( objp, current_goal->docker.index, other_obj, current_goal->dockee.index );
+		break;
+		
+	case AI_GOAL_LUA:
+		ai_lua_start(current_goal, objp);
 		break;
 
 	default:

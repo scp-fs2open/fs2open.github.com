@@ -63,7 +63,7 @@ public:
 	BOOL		m_autpilot_cinematics;
 	BOOL		m_no_autpilot;
 	BOOL		m_2d_mission;
-	BOOL		m_always_show_goals;
+	BOOL		m_toggle_showing_goals;
 	BOOL		m_end_to_mainhall;
 	BOOL		m_override_hashcommand;
 	float		m_max_hull_repair_val;

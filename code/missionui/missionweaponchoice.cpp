@@ -1758,40 +1758,28 @@ void wl_remove_weps_from_pool(int *wep, int *wep_count, int ship_class)
 				if ( Wss_num_wings <= 0 ) {
 					wl_add_index_to_list(wi_index);
 				} else {
-	
+
 					if ( (Wl_pool[wi_index] <= 0) || (wep_count[i] == 0) ) {
 						// fresh out of this weapon, pick an alternate pool weapon if we can
-						int wep_pool_index, new_wi_index = -1;
-						for ( wep_pool_index = 0; wep_pool_index < weapon_info_size(); wep_pool_index++ ) {
+						for (const auto &new_index : Player_weapon_precedence) {
+							Assertion(new_index >= 0, "Somehow, a negative index (%d) got into Player_weapon_precedence; this should not happen. Get a coder!", new_index);
 
-							if ( Wl_pool[wep_pool_index] <= 0 ) {
+							if ( Wl_pool[new_index] <= 0 ) {
 								continue;
 							}
 
 							// AL 3-31-98: Only pick another primary if primary, etc
-							if ( Weapon_info[wi_index].subtype != Weapon_info[wep_pool_index].subtype ) {
+							if ( Weapon_info[wi_index].subtype != Weapon_info[new_index].subtype ) {
 								continue;
 							}
 
-							if ( !eval_weapon_flag_for_game_type(Ship_info[ship_class].allowed_weapons[wep_pool_index]) ) {
+							if ( !eval_weapon_flag_for_game_type(Ship_info[ship_class].allowed_weapons[new_index]) ) {
 								continue;
 							}
 
-							for ( const auto &precedence_index : Player_weapon_precedence ) {
-								if ( wep_pool_index == precedence_index ) {
-									new_wi_index = wep_pool_index;
-									break;
-								}
-							}
-
-							if ( new_wi_index >= 0 ) {
-								break;
-							}
-						}
-
-						if ( new_wi_index >= 0 ) {
-							wep[i] = new_wi_index;
-							wi_index = new_wi_index;
+							wep[i] = new_index;
+							wi_index = new_index;
+							break;
 						}
 					}
 

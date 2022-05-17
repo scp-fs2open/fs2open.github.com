@@ -80,7 +80,7 @@ MissionSpecDialog::MissionSpecDialog(FredView* parent, EditorViewport* viewport)
 	connect(ui->toggleAIControlStart, &QCheckBox::toggled, this, [this](bool param) {flagToggled(param, Mission::Mission_Flags::Player_start_ai); });
 	connect(ui->toggleChaseViewStart, &QCheckBox::toggled, this, [this](bool param) {flagToggled(param, Mission::Mission_Flags::Player_start_chase_view); });
 	connect(ui->toggle2DMission, &QCheckBox::toggled, this, [this](bool param) {flagToggled(param, Mission::Mission_Flags::Mission_2d); });
-	connect(ui->toggleGoalsInBriefing, &QCheckBox::toggled, this, [this](bool param) {flagToggled(param, Mission::Mission_Flags::Always_show_goals); });
+	connect(ui->toggleGoalsInBriefing, &QCheckBox::toggled, this, [this](bool param) {flagToggled(param, Mission::Mission_Flags::Toggle_showing_goals); });
 	connect(ui->toggleMissionEndToMainhall, &QCheckBox::toggled, this, [this](bool param) {flagToggled(param, Mission::Mission_Flags::End_to_mainhall); });
 
 	// AI Profiles
@@ -243,7 +243,7 @@ void MissionSpecDialog::updateFlags() {
 	ui->toggleBuiltinCmdMsg->setChecked(flags[Mission::Mission_Flags::No_builtin_command]);
 	ui->toggleBuiltinMsg->setChecked(flags[Mission::Mission_Flags::No_builtin_msgs]);
 	ui->toggleDebriefing->setChecked(flags[Mission::Mission_Flags::Toggle_debriefing]);
-	ui->toggleGoalsInBriefing->setChecked(flags[Mission::Mission_Flags::Always_show_goals]);
+	ui->toggleGoalsInBriefing->setChecked(flags[Mission::Mission_Flags::Toggle_showing_goals]);
 	ui->toggleHardcodedAutopilot->setChecked(flags[Mission::Mission_Flags::Deactivate_ap]);
 	ui->toggleMissionEndToMainhall->setChecked(flags[Mission::Mission_Flags::End_to_mainhall]);
 	ui->toggleNoBriefing->setChecked(flags[Mission::Mission_Flags::No_briefing]);

@@ -398,7 +398,6 @@ void OutputElement(FILE* fp,
 			if (!propEl->description.empty())
 				fprintf(fp, "<dd>%s</dd>\n", propEl->description.c_str());
 
-			//***Also settable with: Arguments
 			if (!propEl->returnDocumentation.empty())
 				fprintf(fp, "<dd><b>Value:</b> %s</b></dd>\n", propEl->returnDocumentation.c_str());
 			break;
