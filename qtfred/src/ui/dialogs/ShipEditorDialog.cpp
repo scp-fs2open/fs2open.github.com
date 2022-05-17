@@ -156,17 +156,17 @@ ShipEditorDialog::ShipEditorDialog(FredView* parent, EditorViewport* viewport)
 
 ShipEditorDialog::~ShipEditorDialog() = default;
 
-int ShipEditorDialog::getShipClass()
+int ShipEditorDialog::getShipClass() const
 {
 	return _model->getShipClass();
 }
 
-int ShipEditorDialog::getSingleShip()
+int ShipEditorDialog::getSingleShip() const
 {
 	return _model->single_ship;
 }
 
-bool ShipEditorDialog::getIfMultipleShips()
+bool ShipEditorDialog::getIfMultipleShips() const
 {
 	return _model->multi_edit;
 }

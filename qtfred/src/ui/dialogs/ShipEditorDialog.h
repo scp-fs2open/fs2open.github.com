@@ -39,9 +39,12 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	explicit ShipEditorDialog(FredView* parent, EditorViewport* viewport);
 	~ShipEditorDialog() override;
 
-	int getShipClass();
-	int getSingleShip();
-	bool getIfMultipleShips();
+	/**
+	 * @brief Allows subdialogs to get the ships class
+	 * @return Returns the ship_info_index of the current ship or -1 if multiple ships selected
+	int getShipClass() const;
+	int getSingleShip() const;
+	bool getIfMultipleShips() const;
 
   protected:
 	void closeEvent(QCloseEvent*) override;
