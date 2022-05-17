@@ -301,7 +301,6 @@ void gr_opengl_dump_envmap(const char* filename)
 	auto height = 512; // in future envmap resolution should be dynamic, or at least extracted from envmap_render_target
 	auto sphere_width = 4 * width;
 	auto sphere_height = 2 * height;
-	GLenum x;
 	auto env_tex = bm_get_gr_info<tcache_slot_opengl>(gr_screen.envmap_render_target);
 	glBindTexture(env_tex->texture_target, env_tex->texture_id);
 
@@ -326,7 +325,6 @@ void gr_opengl_dump_envmap(const char* filename)
 	// load texture info and write to file
 	auto sphere_tex = bm_get_gr_info<tcache_slot_opengl>(spheremap_render_target);
 	glBindTexture(sphere_tex->texture_target, sphere_tex->texture_id);
-	x = glGetError();
 	pixels = (GLubyte*)vm_malloc(sphere_width * sphere_height * 4, memory::quiet_alloc);
 	glGetTexImage(sphere_tex->texture_target, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
 	snprintf(tmp, MAX_PATH_LEN - 1, "envmaps/%s.png", filename);
