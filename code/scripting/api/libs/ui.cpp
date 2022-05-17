@@ -476,7 +476,8 @@ ADE_FUNC(runBriefingStageHook, l_UserInterface_CmdBrief, "number oldStage, numbe
 	int oldStage = -1, newStage = -1;
 	if (ade_get_args(L, "ii", &oldStage, &newStage) == 2)
 	{
-		common_fire_stage_script_hook(oldStage, newStage);
+		// Subtract 1 to convert from Lua conventions to C conventions
+		common_fire_stage_script_hook(oldStage -1, newStage -1);
 	}
 	else
 	{
