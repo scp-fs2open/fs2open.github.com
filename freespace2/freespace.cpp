@@ -4572,8 +4572,6 @@ int game_poll()
 				static int counter = os_config_read_uint(nullptr, "ScreenshotNum", 0);
 				char tmp_name[MAX_FILENAME_LEN];
 
-				game_stop_time();
-
 				// we could probably go with .3 here for 1,000 shots but people really need to clean out
 				// their directories better than that so it's 100 for now.
 				sprintf( tmp_name, NOX("screen%.4i"), counter );
@@ -4591,7 +4589,6 @@ int game_poll()
 				mprintf(( "Dumping screen to '%s'\n", tmp_name ));
 				gr_print_screen(tmp_name);
 
-				game_start_time();
 				os_config_write_uint(nullptr, "ScreenshotNum", counter);
 			}
 
