@@ -156,6 +156,16 @@ ShipEditorDialog::ShipEditorDialog(FredView* parent, EditorViewport* viewport)
 
 ShipEditorDialog::~ShipEditorDialog() = default;
 
+int ShipEditorDialog::getShipClass()
+{
+	return _model->getShipClass();
+}
+
+bool ShipEditorDialog::getIfMultipleShips()
+{
+	return _model->multi_edit;
+}
+
 void ShipEditorDialog::closeEvent(QCloseEvent* event)
 {
 	_model->apply();
@@ -183,7 +193,10 @@ void ShipEditorDialog::on_initialOrdersButton_clicked()
 
 void ShipEditorDialog::on_tblInfoButton_clicked()
 {
-	// TODO:: TBL Dialog
+	if (!TBLViewer) {
+		TBLViewer = new dialogs::ShipTBLViewer(this, _viewport);
+	}
+	TBLViewer->show();
 }
 
 void ShipEditorDialog::updateUI()
@@ -604,7 +617,10 @@ void ShipEditorDialog::enableDisable()
 	}
 }
 
-void ShipEditorDialog::shipNameChanged() { _model->setShipName(ui->shipNameEdit->text().toStdString()); }
+void ShipEditorDialog::shipNameChanged()
+{
+	_model->setShipName(ui->shipNameEdit->text().toUtf8().toStdString());
+}
 void ShipEditorDialog::shipClassChanged(int index)
 {
 	auto shipClassIdx = ui->shipClassCombo->itemData(index).value<int>();
