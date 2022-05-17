@@ -3695,17 +3695,30 @@ int CFred_mission_save::save_objects()
 		// possibly write out the orders that this ship will accept.  We'll only do it if the orders
 		// are not the default set of orders
 		if (shipp->orders_accepted != ship_get_default_orders_accepted(&Ship_info[shipp->ship_info_index])) {
-			if (optional_string_fred("+Orders Accepted List:", "$Name:"))
-				parse_comments();
-			else
-				fout("\n+Orders Accepted List:");
+			if (Mission_save_format == FSO_FORMAT_RETAIL) {
+				if (optional_string_fred("+Orders Accepted:", "$Name:"))
+					parse_comments();
+				else 
+					fout("\n+Orders Accepted:");
 
-			fout(" (");
-			for (size_t order_id : shipp->orders_accepted) {
-				const auto& order = Player_orders[order_id];
-				fout(" \"%s\"", order.parse_name.c_str());
+				int bitfield = 0;
+				for (size_t order : shipp->orders_accepted)
+					bitfield |= Player_orders[order].id;
+				fout(" %d\t\t;! note that this is a bitfield!!!", bitfield);
 			}
-			fout(" )");
+			else {
+				if (optional_string_fred("+Orders Accepted List:", "$Name:"))
+					parse_comments();
+				else
+					fout("\n+Orders Accepted List:");
+
+				fout(" (");
+				for (size_t order_id : shipp->orders_accepted) {
+					const auto& order = Player_orders[order_id];
+					fout(" \"%s\"", order.parse_name.c_str());
+				}
+				fout(" )");
+			}
 		}
 
 		if (shipp->group >= 0) {
