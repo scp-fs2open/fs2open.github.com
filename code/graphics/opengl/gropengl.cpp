@@ -293,7 +293,7 @@ void gr_opengl_print_screen(const char *filename)
 void gr_opengl_dump_envmap(const char* filename)
 {
 	char tmp[MAX_PATH_LEN];
-	GLubyte* pixels = NULL;
+	GLubyte* pixels = nullptr;
 
 	_mkdir(os_get_config_path("envmaps").c_str());
 
@@ -337,7 +337,7 @@ void gr_opengl_dump_envmap(const char* filename)
 		Warning(LOCATION, "Unable to release environment map render target.");
 	}
 	
-	if (pixels != NULL) {
+	if (pixels != nullptr) {
 		vm_free(pixels);
 	}
 }
