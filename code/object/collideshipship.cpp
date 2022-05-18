@@ -1397,7 +1397,7 @@ int collide_ship_ship( obj_pair * pair )
 												// make the usual adjustments
 												damage *= (float)(Game_skill_level * Game_skill_level + 1) / (NUM_SKILL_LEVELS + 1);
 												// if everything is good to go, set the timestamp for the next collision
-												current_player.s_info.player_collision_timestamp = timestamp(PLAYER_COLLISION_TIMESTAMP);
+												current_player.s_info.player_collision_timestamp = _timestamp(PLAYER_COLLISION_TIMESTAMP);
 											}
 										}
 

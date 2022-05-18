@@ -78,9 +78,24 @@ typedef struct xfer_entry {
 	int file_ptr;													// total bytes we're received so far
 	ushort file_chksum;											// used for checking successfully xferred files
 	PSNET_SOCKET_RELIABLE file_socket;						// socket used to xfer the file	
-	int xfer_stamp;												// timestamp for the current operation		
+	UI_TIMESTAMP xfer_stamp;										// timestamp for the current operation
 	int force_dir;													// force the file to go to this directory on receive (will override Multi_xfer_force_dir)	
 	ushort sig;														// identifying sig - sender specifies this
+
+	void init() {
+		flags = 0;
+		filename[0] = '\0';
+		ex_filename[0] = '\0';
+		file = nullptr;
+		file_size = 0;
+		file_ptr = 0;
+		file_chksum = 0;
+		file_socket = PSNET_INVALID_SOCKET;
+		force_dir = 0;
+		sig = 0;
+	}
+
+	xfer_entry() { init(); }
 } xfer_entry;
 xfer_entry Multi_xfer_entry[MAX_XFER_ENTRIES];			// the file xfer entries themselves
 
@@ -154,7 +169,9 @@ ushort multi_xfer_get_sig();
 void multi_xfer_init(void (*multi_xfer_recv_callback)(int handle))
 {
 	// blast all the entries
-	memset(Multi_xfer_entry,0,sizeof(xfer_entry) * MAX_XFER_ENTRIES);
+	for (auto &entry : Multi_xfer_entry) {
+		entry.init();
+	}
 
 	// assign the receive callback function pointer
 	Multi_xfer_recv_notify = multi_xfer_recv_callback;
@@ -194,7 +211,9 @@ void multi_xfer_reset()
 	}
 
 	// blast all the memory clean
-	memset(Multi_xfer_entry,0,sizeof(xfer_entry) * MAX_XFER_ENTRIES);
+	for (auto &entry : Multi_xfer_entry) {
+		entry.init();
+	}
 }
 
 // send a file to the specified player, return a handle
@@ -213,9 +232,6 @@ int multi_xfer_send_file(PSNET_SOCKET_RELIABLE who, char *filename, int cfile_fl
 	if(handle == -1){
 		return -1;
 	}
-
-	// clear the temp entry
-	memset(&temp_entry,0,sizeof(xfer_entry));
 
 	// set the filename
 	strcpy_s(temp_entry.filename,filename);	
@@ -266,7 +282,6 @@ int multi_xfer_send_file(PSNET_SOCKET_RELIABLE who, char *filename, int cfile_fl
 	temp_entry.sig = multi_xfer_get_sig();
 
 	// copy to the global array
-	memset(&Multi_xfer_entry[handle],0,sizeof(xfer_entry));
 	memcpy(&Multi_xfer_entry[handle],&temp_entry,sizeof(xfer_entry));
 	
 	return handle;
@@ -332,7 +347,7 @@ void multi_xfer_abort(int handle)
 	xe->file_socket = PSNET_INVALID_SOCKET;
 
 	// blast the entry
-	memset(xe,0,sizeof(xfer_entry));
+	xe->init();
 }
 
 // release an xfer handle
@@ -363,7 +378,7 @@ void multi_xfer_release_handle(int handle)
 	xe->file_socket = PSNET_INVALID_SOCKET;
 
 	// blast the entry
-	memset(xe,0,sizeof(xfer_entry));
+	xe->init();
 }
 
 // get the filename of the xfer for the given handle
@@ -552,7 +567,7 @@ void multi_xfer_eval_entry(xfer_entry *xe)
 		multi_xfer_send_header(xe);
 
 		// set the timestamp
-		xe->xfer_stamp = timestamp(MULTI_XFER_TIMEOUT);	
+		xe->xfer_stamp = ui_timestamp(MULTI_XFER_TIMEOUT);
 
 		// unset the pending flag
 		xe->flags &= ~(MULTI_XFER_FLAG_PENDING);
@@ -562,7 +577,7 @@ void multi_xfer_eval_entry(xfer_entry *xe)
 	}
 	
 	// see if the entry has timed-out for one reason or another
-	if((xe->xfer_stamp != -1) && timestamp_elapsed(xe->xfer_stamp)){
+	if(xe->xfer_stamp.isValid() && ui_timestamp_elapsed(xe->xfer_stamp)){
 		xe->flags |= MULTI_XFER_FLAG_TIMEOUT;			
 
 		// if we should be auto-destroying this entry, do so
@@ -616,7 +631,7 @@ void multi_xfer_fail_entry(xfer_entry *xe)
 	}
 		
 	// null the timestamp
-	xe->xfer_stamp = -1;
+	xe->xfer_stamp = UI_TIMESTAMP::invalid();
 
 	// if we should be auto-destroying this entry, do so
 	if(xe->flags & MULTI_XFER_FLAG_AUTODESTROY){
@@ -624,7 +639,7 @@ void multi_xfer_fail_entry(xfer_entry *xe)
 	}
 
 	// blast the memory clean
-	memset(xe,0,sizeof(xfer_entry));
+	xe->init();
 }
 
 // get a valid xfer entry handle
@@ -885,7 +900,7 @@ void multi_xfer_process_data(xfer_entry *xe, ubyte *data, int data_size)
 	multi_xfer_send_ack(xe->file_socket, xe->sig);
 
 	// set the timestmp
-	xe->xfer_stamp = timestamp(MULTI_XFER_TIMEOUT);	
+	xe->xfer_stamp = ui_timestamp(MULTI_XFER_TIMEOUT);
 }
 	
 // process a header, return bytes processed
@@ -907,7 +922,7 @@ void multi_xfer_process_header(ubyte * /*data*/, PSNET_SOCKET_RELIABLE who, usho
 		return;
 	} else {
 		xe = &Multi_xfer_entry[handle];
-		memset(xe,0,sizeof(xfer_entry));
+		xe->init();
 	}		
 
 	// set the recv and used flags
@@ -923,7 +938,7 @@ void multi_xfer_process_header(ubyte * /*data*/, PSNET_SOCKET_RELIABLE who, usho
 	xe->file_socket = who;	
 
 	// set the timeout timestamp
-	xe->xfer_stamp = timestamp(MULTI_XFER_TIMEOUT);
+	xe->xfer_stamp = ui_timestamp(MULTI_XFER_TIMEOUT);
 
 	// set the sig
 	xe->sig = sig;
@@ -947,7 +962,7 @@ void multi_xfer_process_header(ubyte * /*data*/, PSNET_SOCKET_RELIABLE who, usho
 		multi_xfer_send_nak(who, sig);
 		
 		// clear the data
-		memset(xe, 0, sizeof(xfer_entry));
+		xe->init();
 		return;
 	}			
 
@@ -962,7 +977,7 @@ void multi_xfer_process_header(ubyte * /*data*/, PSNET_SOCKET_RELIABLE who, usho
 		multi_xfer_send_nak(who, sig);		
 
 		// clear the data
-		memset(xe, 0, sizeof(xfer_entry));
+		xe->init();
 		return;
 	}
 	
@@ -993,7 +1008,7 @@ void multi_xfer_send_next(xfer_entry *xe)
 		xe->flags |= MULTI_XFER_FLAG_UNKNOWN;
 
 		// set the timestmp
-		xe->xfer_stamp = timestamp(MULTI_XFER_TIMEOUT);
+		xe->xfer_stamp = ui_timestamp(MULTI_XFER_TIMEOUT);
 
 		// send the packet
 		multi_xfer_send_final(xe);		
@@ -1040,7 +1055,7 @@ void multi_xfer_send_next(xfer_entry *xe)
 	packet_size += (int)data_size;
 
 	// set the timestmp
-	xe->xfer_stamp = timestamp(MULTI_XFER_TIMEOUT);
+	xe->xfer_stamp = ui_timestamp(MULTI_XFER_TIMEOUT);
 
 	// otherwise send the data	
 	psnet_rel_send(xe->file_socket, data, packet_size);

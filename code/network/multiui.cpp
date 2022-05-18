@@ -544,10 +544,10 @@ int Mj_slider_coords[GR_NUM_RESOLUTIONS][4] = {
 #define MJ_ACCEPT					10
 
 // uses MULTI_JOIN_REFRESH_TIME as its timestamp
-int Multi_join_glr_stamp;
+UI_TIMESTAMP Multi_join_glr_stamp;
 
 #define MULTI_JOIN_PING_TIME     15000        // how often we ping all the known servers
-int Multi_join_ping_stamp;
+UI_TIMESTAMP Multi_join_ping_stamp;
 UI_WINDOW Multi_join_window;											// the window object for the join screen
 UI_BUTTON Multi_join_select_button;									// for selecting list items
 UI_SLIDER2 Multi_join_slider;											// handy dandy slider
@@ -624,7 +624,7 @@ UI_XSTR Multi_join_text[GR_NUM_RESOLUTIONS][MULTI_JOIN_NUM_TEXT] = {
 #define MJ_H_COORD 3
 
 #define MULTI_JOIN_SENT_WAIT		10000					// wait this long since a join was sent to allow another
-int Multi_join_sent_stamp;
+UI_TIMESTAMP Multi_join_sent_stamp;
 
 // game information text areas
 int Mj_max_game_items[GR_NUM_RESOLUTIONS] = {
@@ -759,8 +759,8 @@ bool Multi_already_tried_stats_submit;
 
 int Multi_did_autojoin;
 net_addr Multi_autojoin_addr;
-int Multi_autojoin_join_stamp;
-int Multi_autojoin_query_stamp;
+UI_TIMESTAMP Multi_autojoin_join_stamp;
+UI_TIMESTAMP Multi_autojoin_query_stamp;
 
 // our join request
 join_request Multi_join_request;
@@ -805,7 +805,7 @@ DCF(mj_make, "Makes a multijoin game? (Multiplayer)")
 
 	for(idx = 0; idx < idx_max; idx++){
 		// stuff some fake info
-		memset(&ag, 0, sizeof(active_game));
+		ag.init();
 		sprintf(ag.name, "Game %d", idx);
 		ag.version = MULTI_FS_SERVER_VERSION;
 		ag.comp_version = MULTI_FS_SERVER_VERSION;
@@ -839,9 +839,9 @@ int multi_join_autojoin_do()
 	}
 
 	// send out a server_query again
-	if ( timestamp_elapsed(Multi_autojoin_query_stamp) ) {
+	if ( ui_timestamp_elapsed(Multi_autojoin_query_stamp) ) {
 		send_server_query(&Multi_autojoin_addr);
-		Multi_autojoin_query_stamp = timestamp(MULTI_AUTOJOIN_QUERY_STAMP);
+		Multi_autojoin_query_stamp = ui_timestamp(MULTI_AUTOJOIN_QUERY_STAMP);
 	}
 
 	return -1;
@@ -856,7 +856,7 @@ void multi_join_game_init()
 	Assert( Game_mode & GM_MULTIPLAYER );
 	Assert( Net_player != NULL );
 
-	memset( &Netgame, 0, sizeof(Netgame) );
+	Netgame.init();
 
 	multi_level_init();		
 	Net_player->flags |= NETINFO_FLAG_DO_NETWORKING;	
@@ -909,9 +909,9 @@ void multi_join_game_init()
 	}	
 
 	// initialize any and all timestamps	
-	Multi_join_glr_stamp = -1;
-	Multi_join_ping_stamp = -1;
-	Multi_join_sent_stamp = -1;
+	Multi_join_glr_stamp = UI_TIMESTAMP::invalid();
+	Multi_join_ping_stamp = UI_TIMESTAMP::invalid();
+	Multi_join_sent_stamp = UI_TIMESTAMP::invalid();
 
 	// reset frame count
 	Multi_join_frame_count = 0;
@@ -965,7 +965,7 @@ void multi_join_game_init()
 		psnet_string_to_addr(Cmdline_connect_addr, &Multi_autojoin_addr);
 
 		send_server_query(&Multi_autojoin_addr);
-		Multi_autojoin_query_stamp = timestamp(MULTI_AUTOJOIN_QUERY_STAMP);
+		Multi_autojoin_query_stamp = ui_timestamp(MULTI_AUTOJOIN_QUERY_STAMP);
 		Multi_did_autojoin = 0;
 	}
 }
@@ -1015,13 +1015,13 @@ void multi_join_game_do_frame()
 
 			// when we get here, we have the data -- join the game.
 			multi_join_send_join_request(0);
-			Multi_autojoin_join_stamp = timestamp(MULTI_AUTOJOIN_JOIN_STAMP);
+			Multi_autojoin_join_stamp = ui_timestamp(MULTI_AUTOJOIN_JOIN_STAMP);
 			Multi_did_autojoin = 1;
 		}
 
-		if ( timestamp_elapsed(Multi_autojoin_join_stamp) ) {
+		if ( ui_timestamp_elapsed(Multi_autojoin_join_stamp) ) {
 			multi_join_send_join_request(0);
-			Multi_autojoin_join_stamp = timestamp(MULTI_AUTOJOIN_JOIN_STAMP);
+			Multi_autojoin_join_stamp = ui_timestamp(MULTI_AUTOJOIN_JOIN_STAMP);
 		}
 		return;
 
@@ -1066,7 +1066,7 @@ void multi_join_game_do_frame()
 	// send out a ping-all
 	case KEY_P :		
 		multi_join_ping_all();		
-		Multi_join_ping_stamp = timestamp(MULTI_JOIN_PING_TIME);
+		Multi_join_ping_stamp = ui_timestamp(MULTI_JOIN_PING_TIME);
 		break;	
 
 	// shortcut to start a game	
@@ -1191,7 +1191,7 @@ void multi_join_button_pressed(int n)
 		} else if(Multi_join_list_selected == -1){
 			multi_common_add_notify(XSTR("No game selected!",758));
 			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
-		} else if((Multi_join_sent_stamp != -1) && !timestamp_elapsed(Multi_join_sent_stamp)){
+		} else if (Multi_join_sent_stamp.isValid() && !ui_timestamp_elapsed(Multi_join_sent_stamp)) {
 			multi_common_add_notify(XSTR("Still waiting on previous join request!",759));
 			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		} else {			
@@ -1269,7 +1269,7 @@ void multi_join_button_pressed(int n)
 		} else if(Multi_join_list_selected == -1){
 			multi_common_add_notify(XSTR("No game selected!",758));
 			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
-		} else if((Multi_join_sent_stamp != -1) && !timestamp_elapsed(Multi_join_sent_stamp)){
+		} else if (Multi_join_sent_stamp.isValid() && !ui_timestamp_elapsed(Multi_join_sent_stamp)) {
 			multi_common_add_notify(XSTR("Still waiting on previous join request!",759));
 			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		} else {			
@@ -1521,23 +1521,23 @@ void multi_join_load_tcp_addrs()
 void multi_join_do_netstuff()
 {
 	// handle game query stuff
-	if (Multi_join_glr_stamp == -1) {
+	if ( !Multi_join_glr_stamp.isValid() ) {
 		broadcast_game_query();
 
 		if ( !MULTI_IS_TRACKER_GAME && (Net_player->p_info.options.flags & MLO_FLAG_LOCAL_BROADCAST) ) {
-			Multi_join_glr_stamp = timestamp(MULTI_JOIN_REFRESH_TIME_LOCAL);
+			Multi_join_glr_stamp = ui_timestamp(MULTI_JOIN_REFRESH_TIME_LOCAL);
 		} else {
-			Multi_join_glr_stamp = timestamp(MULTI_JOIN_REFRESH_TIME);
+			Multi_join_glr_stamp = ui_timestamp(MULTI_JOIN_REFRESH_TIME);
 		}
 	} 
 	// otherwise send out game query and restamp
-	else if ( timestamp_elapsed(Multi_join_glr_stamp) ) {			
+	else if ( ui_timestamp_elapsed(Multi_join_glr_stamp) ) {
 		broadcast_game_query();
 
 		if ( !MULTI_IS_TRACKER_GAME && (Net_player->p_info.options.flags & MLO_FLAG_LOCAL_BROADCAST) ) {
-			Multi_join_glr_stamp = timestamp(MULTI_JOIN_REFRESH_TIME_LOCAL);
+			Multi_join_glr_stamp = ui_timestamp(MULTI_JOIN_REFRESH_TIME_LOCAL);
 		} else {
-			Multi_join_glr_stamp = timestamp(MULTI_JOIN_REFRESH_TIME);
+			Multi_join_glr_stamp = ui_timestamp(MULTI_JOIN_REFRESH_TIME);
 		}		
 	}
 
@@ -1552,15 +1552,15 @@ void multi_join_do_netstuff()
 	}
 
 	// check to see if any join packets we have sent have timed out
-	if((Multi_join_sent_stamp != -1) && (timestamp_elapsed(Multi_join_sent_stamp))){
-		Multi_join_sent_stamp = -1;
+	if (Multi_join_sent_stamp.isValid() && ui_timestamp_elapsed(Multi_join_sent_stamp)) {
+		Multi_join_sent_stamp = UI_TIMESTAMP::invalid();
 		multi_common_add_notify(XSTR("Join request timed out!",771));
 	}
 
 	// check to see if we should be pinging everyone
-	if((Multi_join_ping_stamp == -1) || (timestamp_elapsed(Multi_join_ping_stamp))){
+	if ( !Multi_join_ping_stamp.isValid() || ui_timestamp_elapsed(Multi_join_ping_stamp) ) {
 		multi_join_ping_all();
-		Multi_join_ping_stamp = timestamp(MULTI_JOIN_PING_TIME);
+		Multi_join_ping_stamp = ui_timestamp(MULTI_JOIN_PING_TIME);
 	} 
 
 	// cull timeouts
@@ -1778,7 +1778,7 @@ void multi_join_cull_timeouts()
 	count = 0;
 	if(moveup != NULL){
 		do {
-			if((moveup->heard_from_timer != -1) && (timestamp_elapsed(moveup->heard_from_timer))){
+			if(moveup->heard_from_timer.isValid() && (ui_timestamp_elapsed(moveup->heard_from_timer))){
 				Active_game_count--;
 
 				// if this is the head of the list
@@ -1973,7 +1973,7 @@ void multi_join_send_join_request(int as_observer)
 	send_join_packet(&Multi_join_selected_item->server_addr,&Multi_join_request);
 
    // now we wait
-	Multi_join_sent_stamp = timestamp(MULTI_JOIN_SENT_WAIT);
+	Multi_join_sent_stamp = ui_timestamp(MULTI_JOIN_SENT_WAIT);
 
 	psnet_flush();
 	multi_common_add_notify(XSTR("Sending join request...",773));
@@ -2013,7 +2013,7 @@ void multi_join_create_game()
 void multi_join_reset_join_stamp()
 {
 	// unset the timestamp here so the user can immediately send another join request
-	Multi_join_sent_stamp = -1;
+	Multi_join_sent_stamp = UI_TIMESTAMP::invalid();
 	multi_common_add_notify("");
 }
 
@@ -2706,8 +2706,8 @@ void multi_sg_init_gamenet()
 	Game_mode &= ~(GM_CAMPAIGN_MODE);
 
 	// clear out the Netgame structure and start filling in the values
-	memset( &Netgame, 0, sizeof(Netgame) );	
-	memset( &Multi_sg_netgame_temp, 0, sizeof(netgame_info) );
+	Netgame.init();
+	Multi_sg_netgame_temp.init();
 	
 	// if we're on the standalone, we're not the server, so we don't care about setting the netgame state
 	if(Net_player->state != NETPLAYER_STATE_STD_HOST_SETUP){		
@@ -2792,8 +2792,8 @@ void multi_sg_init_gamenet()
 
 	// assign my player struct and other data	
 	Net_player->flags |= (NETINFO_FLAG_CONNECTED | NETINFO_FLAG_DO_NETWORKING);
-	Net_player->s_info.voice_token_timestamp = -1;	
-	Net_player->s_info.player_collision_timestamp = timestamp(0);
+	Net_player->s_info.voice_token_timestamp = UI_TIMESTAMP::invalid();
+	Net_player->s_info.player_collision_timestamp = TIMESTAMP::immediate();
 
 	// if we're supposed to flush our cache directory, do so now
 	if(Net_player->p_info.options.flags & MLO_FLAG_FLUSH_CACHE){
@@ -4762,7 +4762,6 @@ void multi_create_list_select_item(int n)
 	}
 	// on the standalone
 	else {
-		memset(&ng_temp,0,sizeof(netgame_info));
 		ng = &ng_temp;
 	}
 
@@ -7440,7 +7439,7 @@ int Mission_sync_flags = 0;
 #define MS_FLAG_CAMP_DONE				(1<<10)	// send campaign pool/goal/event stuff
 
 // POSTBRIEFING STUFF
-int Multi_state_timestamp;
+UI_TIMESTAMP Multi_state_timestamp;
 int Multi_sync_launch_pressed;
 
 // LOCAL function definitions
@@ -8194,7 +8193,7 @@ void multi_sync_post_init()
 {   	
 	multi_reset_timestamps();
 
-	Multi_state_timestamp = timestamp(0);
+	Multi_state_timestamp = UI_TIMESTAMP::immediate();
 
 	// NETLOG
 	ml_string(NOX("Performing post-briefing data sync"));
@@ -8558,7 +8557,7 @@ void multi_sync_launch()
 
 	// tell everyone to jump into the mission
 	send_jump_into_mission_packet();
-	Multi_state_timestamp = timestamp(MULTI_POST_TIMESTAMP);
+	Multi_state_timestamp = ui_timestamp(MULTI_POST_TIMESTAMP);
 
 	// set the # of players at the start of the mission
 	Multi_num_players_at_start = multi_num_players();
