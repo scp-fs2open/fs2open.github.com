@@ -471,5 +471,20 @@ ADE_FUNC(getBriefingMusicName, l_UserInterface_CmdBrief, nullptr, "Gets the file
 	return ade_set_args(L, "s", common_music_get_filename(SCORE_BRIEFING).c_str());
 }
 
+ADE_FUNC(runBriefingStageHook, l_UserInterface_CmdBrief, "number oldStage, number newStage", "Run $On Briefing Stage: hooks.", nullptr, nullptr)
+{
+	int oldStage = -1, newStage = -1;
+	if (ade_get_args(L, "ii", &oldStage, &newStage) == 2)
+	{
+		// Subtract 1 to convert from Lua conventions to C conventions
+		common_fire_stage_script_hook(oldStage -1, newStage -1);
+	}
+	else
+	{
+		LuaError(L, "Bad arguments given to ui.runBriefingStageHook!");
+	}
+	return ADE_RETURN_NIL;
+}
+
 } // namespace api
 } // namespace scripting
