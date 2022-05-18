@@ -587,11 +587,11 @@ int hud_squadmsg_get_key()
 				return i;
 
 			// play general fail sound if inactive item hit.
-			else if ( (i < Num_menu_items) && !(MsgItems[i].active) )
+			else if ( (i + First_menu_item < Num_menu_items) && !(MsgItems[i + First_menu_item].active) )
 				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 
-			else if ( (i < Num_menu_items) && (MsgItems[i].active) )	// only return keys that are associated with menu items
-				return i;
+			else if ( (i + First_menu_item < Num_menu_items) && (MsgItems[i + First_menu_item].active) )	// only return keys that are associated with menu items
+				return i + First_menu_item;
 
 			else {
 				Msg_key_used = 0;					// if no #-key pressed for visible item, break and allow timer to 
@@ -1607,8 +1607,6 @@ void hud_squadmsg_type_select( )
 {
 	int k, i;
 
-	First_menu_item = 0;	
-
 	// Add the items
 	for (i = 0; i < NUM_COMM_ORDER_TYPES; i++)
 	{
@@ -1732,13 +1730,13 @@ void hud_squadmsg_ship_select()
 	k = hud_squadmsg_get_key();
 	if ( k != -1 ) {						// if true, we have selected a ship.
 		if ( Msg_shortcut_command == -1 ) {
-			Msg_instance = MsgItems[First_menu_item + k].instance;		// store the instance id in a global
+			Msg_instance = MsgItems[k].instance;		// store the instance id in a global
 			hud_squadmsg_do_mode( SM_MODE_SHIP_COMMAND );				// and move to a new mode
 		} else {
 			// we must convert the Msg_shortcut_command value to a value that the message
 			// system normally uses to select a command.  Since the menu 
 			//Assert( Msg_shortcut_command != IGNORE_TARGET_ITEM );
-			hud_squadmsg_send_ship_command( MsgItems[First_menu_item+k].instance, Msg_shortcut_command, 1, SQUADMSG_HISTORY_ADD_ENTRY);
+			hud_squadmsg_send_ship_command( MsgItems[k].instance, Msg_shortcut_command, 1, SQUADMSG_HISTORY_ADD_ENTRY);
 			hud_squadmsg_toggle();
 		}
 	}
@@ -1759,11 +1757,11 @@ void hud_squadmsg_wing_select()
 	k = hud_squadmsg_get_key();
 	if ( k != -1 ) {						// if true, we have selected a ship.
 		if ( Msg_shortcut_command == -1 ) {									// do normal menu stuff when no hoykey active
-			Msg_instance = MsgItems[First_menu_item + k].instance;	// store the instance id in a global
+			Msg_instance = MsgItems[k].instance;	// store the instance id in a global
 			hud_squadmsg_do_mode( SM_MODE_WING_COMMAND );				// and move to a new mode
 		} else {
 			//Assert( Msg_shortcut_command != IGNORE_TARGET_ITEM );
-			hud_squadmsg_send_wing_command( MsgItems[First_menu_item+k].instance, Msg_shortcut_command, 1, SQUADMSG_HISTORY_ADD_ENTRY );
+			hud_squadmsg_send_wing_command( MsgItems[k].instance, Msg_shortcut_command, 1, SQUADMSG_HISTORY_ADD_ENTRY );
 			hud_squadmsg_toggle();
 		}
 	}
@@ -1928,11 +1926,11 @@ void hud_squadmsg_reinforcement_select()
 
 		hud_squadmsg_toggle();						// take us out of message mode
 
-		rnum = MsgItems[First_menu_item + k].instance;
+		rnum = MsgItems[k].instance;
 
 		// check to see if trying to call a reinforcement not yet available.  If so, maybe play message, but
 		// definately bail
-		if ( MsgItems[First_menu_item + k].active == 0 ) {						
+		if ( MsgItems[k].active == 0 ) {						
 			return;
 		}
 
@@ -1970,13 +1968,13 @@ void hud_squadmsg_ship_command()
 		orders = default_orders;
 	}
 
-	First_menu_item = 0;
 	Num_menu_items = 0;
 	for(size_t order_id : default_orders) {
 		Assert (Num_menu_items < MAX_MENU_ITEMS);
 		MsgItems[Num_menu_items].text = Player_orders[order_id].localized_name;
 		MsgItems[Num_menu_items].instance = Player_orders[order_id].id;
 		MsgItems[Num_menu_items].active = 0;
+
 		// check the bit to see if the command is active
 		if (orders.find(order_id) != orders.end())
 			MsgItems[Num_menu_items].active = 1;
