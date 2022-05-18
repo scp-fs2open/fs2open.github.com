@@ -180,7 +180,7 @@ void ShipEditorDialog::closeEvent(QCloseEvent* event)
 void ShipEditorDialog::on_miscButton_clicked()
 {
 	if (!flagsDialog) {
-		flagsDialog = new dialogs::ShipFlagsDialog(this, _viewport);
+		flagsDialog = std::unique_ptr<ShipFlagsDialog>(new dialogs::ShipFlagsDialog(this, _viewport));
 	}
 	flagsDialog->show();
 }
@@ -188,7 +188,8 @@ void ShipEditorDialog::on_miscButton_clicked()
 void ShipEditorDialog::on_initialStatusButton_clicked()
 {
 	if (!initialStatusDialog) {
-		initialStatusDialog = new dialogs::ShipInitialStatusDialog(this, _viewport);
+		initialStatusDialog =
+			std::unique_ptr<ShipInitialStatusDialog>(new dialogs::ShipInitialStatusDialog(this, _viewport));
 	}
 	initialStatusDialog->show();
 }
@@ -196,7 +197,7 @@ void ShipEditorDialog::on_initialStatusButton_clicked()
 void ShipEditorDialog::on_initialOrdersButton_clicked()
 {
 	if (!GoalsDialog) {
-		GoalsDialog = new dialogs::ShipGoalsDialog(this, _viewport);
+		GoalsDialog = std::unique_ptr<ShipGoalsDialog>(new dialogs::ShipGoalsDialog(this, _viewport));
 	}
 	GoalsDialog->show();
 
@@ -205,7 +206,7 @@ void ShipEditorDialog::on_initialOrdersButton_clicked()
 void ShipEditorDialog::on_tblInfoButton_clicked()
 {
 	if (!TBLViewer) {
-		TBLViewer = new dialogs::ShipTBLViewer(this, _viewport);
+		TBLViewer = std::unique_ptr<ShipTBLViewer>(new dialogs::ShipTBLViewer(this, _viewport));
 	}
 	TBLViewer->show();
 }
@@ -713,7 +714,8 @@ void ShipEditorDialog::DepartureCueChanged(bool value) { _model->setDepartureCue
 void ShipEditorDialog::on_textureReplacementButton_clicked()
 {
 	if (!TextureReplacementDialog) {
-		TextureReplacementDialog = new dialogs::ShipTextureReplacementDialog(this, _viewport);
+		TextureReplacementDialog =
+			std::unique_ptr<ShipTextureReplacementDialog>(new dialogs::ShipTextureReplacementDialog(this, _viewport));
 	}
 	TextureReplacementDialog->show();
 }
@@ -734,14 +736,15 @@ void ShipEditorDialog::on_weaponsButton_clicked()
 void ShipEditorDialog::on_playerOrdersButton_clicked()
 {
 	if (!playerOrdersDialog) {
-		playerOrdersDialog = new dialogs::PlayerOrdersDialog(this, _viewport);
+		playerOrdersDialog = std::unique_ptr<PlayerOrdersDialog>(new dialogs::PlayerOrdersDialog(this, _viewport));
 	}
 	playerOrdersDialog->show();
 }
 void ShipEditorDialog::on_specialStatsButton_clicked()
 {
 	if (!specialStatsDialog) {
-		specialStatsDialog = new dialogs::ShipSpecialStatsDialog(this, _viewport);
+		specialStatsDialog =
+			std::unique_ptr<ShipSpecialStatsDialog>(new dialogs::ShipSpecialStatsDialog(this, _viewport));
 	}
 	specialStatsDialog->show();
 }

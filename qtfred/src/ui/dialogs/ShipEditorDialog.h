@@ -134,13 +134,13 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	void departureWarpChanged(bool);
 	void DepartureCueChanged(bool);
 
-	ShipGoalsDialog* GoalsDialog = nullptr;
-	ShipInitialStatusDialog* initialStatusDialog = nullptr;
-	ShipFlagsDialog* flagsDialog = nullptr;
-	ShipTextureReplacementDialog* TextureReplacementDialog = nullptr;
-	PlayerOrdersDialog* playerOrdersDialog = nullptr;
-	ShipSpecialStatsDialog* specialStatsDialog = nullptr;
-	ShipTBLViewer* TBLViewer = nullptr;
+	std::unique_ptr<ShipGoalsDialog> GoalsDialog = nullptr;
+	std::unique_ptr<ShipInitialStatusDialog> initialStatusDialog = nullptr;
+	std::unique_ptr<ShipFlagsDialog> flagsDialog = nullptr;
+	std::unique_ptr<ShipTextureReplacementDialog> TextureReplacementDialog = nullptr;
+	std::unique_ptr<PlayerOrdersDialog> playerOrdersDialog = nullptr;
+	std::unique_ptr<ShipSpecialStatsDialog> specialStatsDialog = nullptr;
+	std::unique_ptr<ShipTBLViewer> TBLViewer = nullptr;
 };
 } // namespace dialogs
 } // namespace fred
