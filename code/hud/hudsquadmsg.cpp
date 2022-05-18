@@ -587,11 +587,13 @@ int hud_squadmsg_get_key()
 				return i;
 
 			// play general fail sound if inactive item hit.
-			else if ( (i + First_menu_item < Num_menu_items) && !(MsgItems[i + First_menu_item].active) )
+			else if ((i + First_menu_item < Num_menu_items) && !(MsgItems[i + First_menu_item].active)) {
 				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
+			}
 
-			else if ( (i + First_menu_item < Num_menu_items) && (MsgItems[i + First_menu_item].active) )	// only return keys that are associated with menu items
+			else if ((i + First_menu_item < Num_menu_items) && (MsgItems[i + First_menu_item].active)) {	// only return keys that are associated with menu items
 				return i + First_menu_item;
+			}
 
 			else {
 				Msg_key_used = 0;					// if no #-key pressed for visible item, break and allow timer to 
