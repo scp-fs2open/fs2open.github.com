@@ -163,12 +163,12 @@ int ShipEditorDialog::getShipClass() const
 
 int ShipEditorDialog::getSingleShip() const
 {
-	return _model->single_ship;
+	return _model->getSingleShip();
 }
 
 bool ShipEditorDialog::getIfMultipleShips() const
 {
-	return _model->multi_edit;
+	return _model->getIfMultipleShips();
 }
 
 void ShipEditorDialog::closeEvent(QCloseEvent* event)
@@ -238,7 +238,7 @@ void ShipEditorDialog::updateColumnOne()
 	}
 	ui->AIClassCombo->setCurrentIndex(ui->AIClassCombo->findData(ai));
 
-	if (_model->player_count) {
+	if (_model->getNumSelectedPlayers()) {
 		if (_model->getTeam() != -1) {
 			ui->teamCombo->setEnabled(true);
 		} else {
@@ -251,7 +251,7 @@ void ShipEditorDialog::updateColumnOne()
 		}
 	} else {
 		idx = _model->getTeam();
-		ui->teamCombo->setEnabled(_model->enable);
+		ui->teamCombo->setEnabled(_model->getUIEnable());
 		ui->teamCombo->clear();
 		for (i = 0; i < (int)Iff_info.size(); i++) {
 			ui->teamCombo->addItem(Iff_info[i].iff_name, QVariant(i));
@@ -271,7 +271,7 @@ void ShipEditorDialog::updateColumnOne()
 		ui->cargoCombo->setCurrentIndex(ui->cargoCombo->findText(QString(cargo.c_str())));
 	}
 	ui->altNameCombo->clear();
-	if (_model->multi_edit) {
+	if (_model->getIfMultipleShips()) {
 		ui->altNameCombo->setEnabled(false);
 	} else {
 		auto altname = _model->getAltName();
@@ -288,7 +288,7 @@ void ShipEditorDialog::updateColumnOne()
 		}
 	}
 	ui->callsignCombo->clear();
-	if (_model->multi_edit) {
+	if (_model->getIfMultipleShips()) {
 		ui->callsignCombo->setEnabled(false);
 	} else {
 		auto callsign = _model->getCallsign();
@@ -389,17 +389,17 @@ void ShipEditorDialog::updateArrival()
 	ui->updateArrivalCueCheckBox->setChecked(_model->getArrivalCue());
 
 	ui->arrivalTree->initializeEditor(_viewport->editor, this);
-	if (_model->ship_count) {
+	if (_model->getNumSelectedShips()) {
 
-		if (_model->multi_edit) {
+		if (_model->getIfMultipleShips()) {
 			ui->arrivalTree->clear_tree("");
 		}
-		if (_model->cue_init) {
+		if (_model->getUseCue()) {
 			ui->arrivalTree->load_tree(_model->getArrivalFormula());
 		} else {
 			ui->arrivalTree->clear_tree("");
 		}
-		if (!_model->multi_edit) {
+		if (!_model->getIfMultipleShips()) {
 			i = ui->arrivalTree->select_sexp_node;
 			if (i != -1) {
 				ui->arrivalTree->hilite_item(i);
@@ -441,17 +441,17 @@ void ShipEditorDialog::updateDeparture()
 	ui->departureDelaySpinBox->setValue(_model->getDepartureDelay());
 
 	ui->departureTree->initializeEditor(_viewport->editor, this);
-	if (_model->ship_count) {
+	if (_model->getNumSelectedShips()) {
 
-		if (_model->multi_edit) {
+		if (_model->getIfMultipleShips()) {
 			ui->departureTree->clear_tree("");
 		}
-		if (_model->cue_init) {
+		if (_model->getUseCue()) {
 			ui->departureTree->load_tree(_model->getDepartureFormula(), "false");
 		} else {
 			ui->departureTree->clear_tree("");
 		}
-		if (!_model->multi_edit) {
+		if (!_model->getIfMultipleShips()) {
 			i = ui->arrivalTree->select_sexp_node;
 			if (i != -1) {
 				i = ui->departureTree->select_sexp_node;
@@ -469,7 +469,7 @@ void ShipEditorDialog::updateDeparture()
 // Enables disbales controls based on what is selected
 void ShipEditorDialog::enableDisable()
 {
-	if (!_model->cue_init) {
+	if (!_model->getUseCue()) {
 		ui->arrivalLocationCombo->setEnabled(false);
 		ui->arrivalDelaySpinBox->setEnabled(false);
 		ui->arrivalDistanceEdit->setEnabled(false);
@@ -487,46 +487,46 @@ void ShipEditorDialog::enableDisable()
 		ui->restrictArrivalPathsButton->setEnabled(false);
 		ui->restrictDeparturePathsButton->setEnabled(false);
 	} else {
-		ui->arrivalLocationCombo->setEnabled(_model->enable);
+		ui->arrivalLocationCombo->setEnabled(_model->getUIEnable());
 		if (_model->getArrivalLocation()) {
-			ui->arrivalDistanceEdit->setEnabled(_model->enable);
-			ui->arrivalTargetCombo->setEnabled(_model->enable);
+			ui->arrivalDistanceEdit->setEnabled(_model->getUIEnable());
+			ui->arrivalTargetCombo->setEnabled(_model->getUIEnable());
 		} else {
 			ui->arrivalDistanceEdit->setEnabled(false);
 			ui->arrivalTargetCombo->setEnabled(false);
 		}
 		if (_model->getArrivalLocation() == ARRIVE_FROM_DOCK_BAY) {
-			ui->restrictArrivalPathsButton->setEnabled(_model->enable);
+			ui->restrictArrivalPathsButton->setEnabled(_model->getUIEnable());
 			ui->customWarpinButton->setEnabled(false);
 		} else {
 			ui->restrictArrivalPathsButton->setEnabled(false);
-			ui->customWarpinButton->setEnabled(_model->enable);
+			ui->customWarpinButton->setEnabled(_model->getUIEnable());
 		}
 
-		ui->departureLocationCombo->setEnabled(_model->enable);
+		ui->departureLocationCombo->setEnabled(_model->getUIEnable());
 		if (_model->getDepartureLocation()) {
-			ui->departureTargetCombo->setEnabled(_model->enable);
+			ui->departureTargetCombo->setEnabled(_model->getUIEnable());
 		} else {
 			ui->departureTargetCombo->setEnabled(false);
 		}
 		if (_model->getDepartureLocation() == DEPART_AT_DOCK_BAY) {
-			ui->restrictDeparturePathsButton->setEnabled(_model->enable);
+			ui->restrictDeparturePathsButton->setEnabled(_model->getUIEnable());
 			ui->customWarpoutButton->setEnabled(false);
 		} else {
 			ui->restrictDeparturePathsButton->setEnabled(false);
-			ui->customWarpoutButton->setEnabled(_model->enable);
+			ui->customWarpoutButton->setEnabled(_model->getUIEnable());
 		}
 
-		ui->arrivalDelaySpinBox->setEnabled(_model->enable);
-		ui->arrivalTree->setEnabled(_model->enable);
-		ui->departureDelaySpinBox->setEnabled(_model->enable);
-		ui->departureTree->setEnabled(_model->enable);
-		ui->noArrivalWarpCheckBox->setEnabled(_model->enable);
-		ui->noDepartureWarpCheckBox->setEnabled(_model->enable);
+		ui->arrivalDelaySpinBox->setEnabled(_model->getUIEnable());
+		ui->arrivalTree->setEnabled(_model->getUIEnable());
+		ui->departureDelaySpinBox->setEnabled(_model->getUIEnable());
+		ui->departureTree->setEnabled(_model->getUIEnable());
+		ui->noArrivalWarpCheckBox->setEnabled(_model->getUIEnable());
+		ui->noDepartureWarpCheckBox->setEnabled(_model->getUIEnable());
 	}
 
-	if (_model->total_count) {
-		ui->shipNameEdit->setEnabled(!_model->multi_edit);
+	if (_model->getNumSelectedObjects()) {
+		ui->shipNameEdit->setEnabled(!_model->getIfMultipleShips());
 		ui->shipClassCombo->setEnabled(true);
 		ui->altNameCombo->setEnabled(true);
 		ui->initialStatusButton->setEnabled(true);
@@ -550,21 +550,21 @@ void ShipEditorDialog::enableDisable()
 	// disable textures for multiple ships
 		ui->textureReplacementButton->setEnabled(_model->texenable);
 
-	ui->AIClassCombo->setEnabled(_model->enable);
-	ui->cargoCombo->setEnabled(_model->enable);
-	ui->hotkeyCombo->setEnabled(_model->enable);
+	ui->AIClassCombo->setEnabled(_model->getUIEnable());
+	ui->cargoCombo->setEnabled(_model->getUIEnable());
+	ui->hotkeyCombo->setEnabled(_model->getUIEnable());
 	if ((_model->getShipClass() >= 0) && !(Ship_info[_model->getShipClass()].flags[Ship::Info_Flags::Cargo]) &&
 		!(Ship_info[_model->getShipClass()].flags[Ship::Info_Flags::No_ship_type]))
-		ui->initialOrdersButton->setEnabled(_model->enable);
-	else if (_model->multi_edit)
-		ui->initialOrdersButton->setEnabled(_model->enable);
+		ui->initialOrdersButton->setEnabled(_model->getUIEnable());
+	else if (_model->getIfMultipleShips())
+		ui->initialOrdersButton->setEnabled(_model->getUIEnable());
 	else
 		ui->initialOrdersButton->setEnabled(false);
 
 	// !pship_count used because if allowed to clear, we would have no player starts
 	// mission_type 0 = multi, 1 = single
-	if (!(The_mission.game_type & MISSION_TYPE_MULTI) || !_model->pship_count ||
-		(_model->pship_count + _model->total_count > MAX_PLAYERS) || (_model->pvalid_count < _model->total_count))
+	if (!(The_mission.game_type & MISSION_TYPE_MULTI) || !_model->getNumPlayers() ||
+		(_model->getNumPlayers() + _model->getNumSelectedObjects() > MAX_PLAYERS) || (_model->getNumValidPlayers() < _model->getNumSelectedObjects()))
 		ui->playerShipCheckBox->setEnabled(false);
 	else
 		ui->playerShipCheckBox->setEnabled(true);
@@ -577,23 +577,22 @@ void ShipEditorDialog::enableDisable()
 
 	// enable the "set player" button only if single player, single edit, and ship is in player wing
 	{
-		int marked_ship = (_model->player_ship >= 0) ? _model->player_ship : _model->single_ship;
-
-		if (!(The_mission.game_type & MISSION_TYPE_MULTI) && _model->total_count && !_model->multi_edit &&
-			_model->wing_is_player_wing(Ships[marked_ship].wingnum))
+		int marked_ship = (_model->getIfPlayerShip() >= 0) ? _model->getIfPlayerShip() : _model->getSingleShip();
+		const bool isPlayerWing = _model->wing_is_player_wing(Ships[marked_ship].wingnum);
+		if (!(The_mission.game_type & MISSION_TYPE_MULTI) && _model->getNumSelectedObjects() && !_model->getIfMultipleShips() && isPlayerWing)
 			ui->playerShipButton->setEnabled(true);
 		else
 			ui->playerShipButton->setEnabled(false);
 	}
 
-	ui->deleteButton->setEnabled(_model->enable);
-	ui->resetButton->setEnabled(_model->enable);
-	ui->killScoreEdit->setEnabled(_model->enable);
-	ui->assistEdit->setEnabled(_model->enable);
+	ui->deleteButton->setEnabled(_model->getUIEnable());
+	ui->resetButton->setEnabled(_model->getUIEnable());
+	ui->killScoreEdit->setEnabled(_model->getUIEnable());
+	ui->assistEdit->setEnabled(_model->getUIEnable());
 
 	ui->tblInfoButton->setEnabled(_model->getShipClass() >= 0);
 
-	if (_model->cue_init > 1) {
+	if (_model->getUseCue() > 1) {
 		ui->updateArrivalCueCheckBox->setVisible(true);
 		ui->updateDepartureCueCheckBox->setVisible(true);
 	} else {
@@ -601,7 +600,7 @@ void ShipEditorDialog::enableDisable()
 		ui->updateDepartureCueCheckBox->setVisible(false);
 	}
 
-	if (_model->multi_edit || (_model->total_count > 1)) {
+	if (_model->getIfMultipleShips() || (_model->getNumSelectedObjects() > 1)) {
 		// we will allow the ignore orders dialog to be multi edit if all selected
 		// ships are the same type.  the ship_type variable holds the ship types
 		// for all ships.  Determine how may bits set and enable/diable window
@@ -614,15 +613,15 @@ void ShipEditorDialog::enableDisable()
 	}
 	else {
 		// always enabled when one ship is selected
-		ui->playerOrdersButton->setEnabled(_model->enable);
+		ui->playerOrdersButton->setEnabled(_model->getUIEnable());
 	}
 
 	// always enabled if >= 1 ship selected
-	ui->personaCombo->setEnabled(_model->enable);
+	ui->personaCombo->setEnabled(_model->getUIEnable());
 
-	if (_model->multi_edit) {
+	if (_model->getIfMultipleShips()) {
 		this->setWindowTitle("Edit Marked Ships");
-	} else if (_model->player_count) {
+	} else if (_model->getNumSelectedPlayers()) {
 		this->setWindowTitle("Edit Player Ship");
 	} else {
 		this->setWindowTitle("Edit Ship");
@@ -631,19 +630,20 @@ void ShipEditorDialog::enableDisable()
 
 void ShipEditorDialog::shipNameChanged()
 {
-	_model->setShipName(ui->shipNameEdit->text().toUtf8().toStdString());
+	const SCP_string text = ui->shipNameEdit->text().toUtf8().toStdString();
+	_model->setShipName(text);
 }
-void ShipEditorDialog::shipClassChanged(int index)
+void ShipEditorDialog::shipClassChanged(const int index)
 {
 	auto shipClassIdx = ui->shipClassCombo->itemData(index).value<int>();
 	_model->setShipClass(shipClassIdx);
 }
-void ShipEditorDialog::aiClassChanged(int index)
+void ShipEditorDialog::aiClassChanged(const int index)
 {
 	auto aiClassIdx = ui->AIClassCombo->itemData(index).value<int>();
 	_model->setAIClass(aiClassIdx);
 }
-void ShipEditorDialog::teamChanged(int index)
+void ShipEditorDialog::teamChanged(const int index)
 {
 	auto teamIdx = ui->teamCombo->itemData(index).value<int>();
 	_model->setTeam(teamIdx);
@@ -659,57 +659,57 @@ void ShipEditorDialog::callsignChanged()
 	_model->setCallsign(ui->callsignCombo->lineEdit()->text().toStdString());
 }
 void ShipEditorDialog::callsignChanged(const QString& value) { _model->setCallsign(value.toStdString()); }
-void ShipEditorDialog::hotkeyChanged(int index)
+void ShipEditorDialog::hotkeyChanged(const int index)
 {
 	auto hotkeyIdx = ui->hotkeyCombo->itemData(index).value<int>();
 	_model->setHotkey(hotkeyIdx);
 }
-void ShipEditorDialog::personaChanged(int index)
+void ShipEditorDialog::personaChanged(const int index)
 {
 	auto personaIdx = ui->personaCombo->itemData(index).value<int>();
 	_model->setPersona(personaIdx);
 }
-void ShipEditorDialog::scoreChanged(int value) { _model->setScore(value); }
-void ShipEditorDialog::assistChanged(int value) { _model->setAssist(value); }
-void ShipEditorDialog::playerChanged(bool enabled) { _model->setPlayer(enabled); }
+void ShipEditorDialog::scoreChanged(const int value) { _model->setScore(value); }
+void ShipEditorDialog::assistChanged(const int value) { _model->setAssist(value); }
+void ShipEditorDialog::playerChanged(const bool enabled) { _model->setPlayer(enabled); }
 
-void ShipEditorDialog::arrivalLocationChanged(int index)
+void ShipEditorDialog::arrivalLocationChanged(const int index)
 {
 	auto arrivalLocationIdx = ui->arrivalLocationCombo->itemData(index).value<int>();
 	_model->setArrivalLocation(arrivalLocationIdx);
 }
 
-void ShipEditorDialog::arrivalTargetChanged(int index)
+void ShipEditorDialog::arrivalTargetChanged(const int index)
 {
 	auto arrivalLocationIdx = ui->arrivalTargetCombo->itemData(index).value<int>();
 	_model->setArrivalTarget(arrivalLocationIdx);
 }
 
-void ShipEditorDialog::arrivalDistanceChanged(int value) { _model->setArrivalDistance(value); }
+void ShipEditorDialog::arrivalDistanceChanged(const int value) { _model->setArrivalDistance(value); }
 
-void ShipEditorDialog::arrivalDelayChanged(int value) { _model->setArrivalDelay(value); }
+void ShipEditorDialog::arrivalDelayChanged(const int value) { _model->setArrivalDelay(value); }
 
-void ShipEditorDialog::arrivalWarpChanged(bool enable) { _model->setNoArrivalWarp(enable); }
+void ShipEditorDialog::arrivalWarpChanged(const bool enable) { _model->setNoArrivalWarp(enable); }
 
-void ShipEditorDialog::ArrivalCueChanged(bool value) { _model->setArrivalCue(value); }
+void ShipEditorDialog::ArrivalCueChanged(const bool value) { _model->setArrivalCue(value); }
 
-void ShipEditorDialog::departureLocationChanged(int index)
+void ShipEditorDialog::departureLocationChanged(const int index)
 {
 	auto depLocationIdx = ui->departureLocationCombo->itemData(index).value<int>();
 	_model->setDepartureLocation(depLocationIdx);
 }
 
-void ShipEditorDialog::departureTargetChanged(int index)
+void ShipEditorDialog::departureTargetChanged(const int index)
 {
 	auto depLocationIdx = ui->departureTargetCombo->itemData(index).value<int>();
 	_model->setDepartureTarget(depLocationIdx);
 }
 
-void ShipEditorDialog::departureDelayChanged(int value) { _model->setDepartureDelay(value); }
+void ShipEditorDialog::departureDelayChanged(const int value) { _model->setDepartureDelay(value); }
 
-void ShipEditorDialog::departureWarpChanged(bool value) { _model->setNoDepartureWarp(value); }
+void ShipEditorDialog::departureWarpChanged(const bool value) { _model->setNoDepartureWarp(value); }
 
-void ShipEditorDialog::DepartureCueChanged(bool value) { _model->setDepartureCue(value); }
+void ShipEditorDialog::DepartureCueChanged(const bool value) { _model->setDepartureCue(value); }
 
 void ShipEditorDialog::on_textureReplacementButton_clicked()
 {

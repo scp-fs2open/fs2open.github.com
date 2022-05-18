@@ -103,9 +103,9 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 
 	//column one
 	void shipNameChanged();
-	void shipClassChanged(int);
-	void aiClassChanged(int);
-	void teamChanged(int);
+	void shipClassChanged(const int);
+	void aiClassChanged(const int);
+	void teamChanged(const int);
 	void cargoChanged();
 	void altNameChanged();
 	void altNameChanged(const QString&);
@@ -113,26 +113,26 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	void callsignChanged(const QString&);
 
 	//column two
-	void hotkeyChanged(int);
-	void personaChanged(int);
-	void scoreChanged(int);
-	void assistChanged(int);
-	void playerChanged(bool);
+	void hotkeyChanged(const int);
+	void personaChanged(const int);
+	void scoreChanged(const int);
+	void assistChanged(const int);
+	void playerChanged(const bool);
 
 	//arrival
-	void arrivalLocationChanged(int);
-	void arrivalTargetChanged(int);
-	void arrivalDistanceChanged(int);
-	void arrivalDelayChanged(int);
-	void arrivalWarpChanged(bool);
-	void ArrivalCueChanged(bool);
+	void arrivalLocationChanged(const int);
+	void arrivalTargetChanged(const int);
+	void arrivalDistanceChanged(const int);
+	void arrivalDelayChanged(const int);
+	void arrivalWarpChanged(const bool);
+	void ArrivalCueChanged(const bool);
 
 	//departure
-	void departureLocationChanged(int);
-	void departureTargetChanged(int);
-	void departureDelayChanged(int);
-	void departureWarpChanged(bool);
-	void DepartureCueChanged(bool);
+	void departureLocationChanged(const int);
+	void departureTargetChanged(const int);
+	void departureDelayChanged(const int);
+	void departureWarpChanged(const bool);
+	void DepartureCueChanged(const bool);
 
 	std::unique_ptr<ShipGoalsDialog> GoalsDialog = nullptr;
 	std::unique_ptr<ShipInitialStatusDialog> initialStatusDialog = nullptr;

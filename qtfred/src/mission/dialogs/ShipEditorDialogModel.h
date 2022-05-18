@@ -2,9 +2,9 @@
 
 #include "AbstractDialogModel.h"
 
+#include "mission/util.h"
 #include "ship/ship.h"
 #include "ui/widgets/sexp_tree.h"
-#include "mission/util.h"
 
 namespace fso {
 namespace fred {
@@ -58,6 +58,16 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 
 	static int make_ship_list(int* arr);
 
+	bool enable = true;
+	int player_count;
+	int ship_count;
+	bool multi_edit;
+	int cue_init;
+	int total_count;
+	int pvalid_count;
+	int pship_count; // a total count of the player ships not marked
+	int single_ship;
+	int player_ship;
 
   public:
 	ShipEditorDialogModel(QObject* parent, EditorViewport* viewport);
@@ -65,111 +75,104 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	bool apply() override;
 	void reject() override;
 
-	void setShipName(const SCP_string& m_ship_name);
-	SCP_string getShipName();
+	void setShipName(const SCP_string m_ship_name);
+	SCP_string getShipName() const;
 
-	void setShipClass(int);
-	int getShipClass();
+	void setShipClass(const int);
+	int getShipClass() const;
 
-	void setAIClass(int);
-	int getAIClass();
+	void setAIClass(const int);
+	int getAIClass() const;
 
-	void setTeam(int);
-	int getTeam();
+	void setTeam(const int);
+	int getTeam() const;
 
-	void setCargo(const SCP_string&);
-	SCP_string getCargo();
+	void setCargo(const SCP_string);
+	SCP_string getCargo() const;
 
-	void setAltName(const SCP_string&);
-	SCP_string getAltName();
+	void setAltName(const SCP_string);
+	SCP_string getAltName() const;
 
-	void setCallsign(const SCP_string&);
-	SCP_string getCallsign();
+	void setCallsign(const SCP_string);
+	SCP_string getCallsign() const;
 
-	SCP_string getWing();
+	SCP_string getWing() const;
 
-	void setHotkey(int);
-	int getHotkey();
+	void setHotkey(const int);
+	int getHotkey() const;
 
-	void setPersona(int);
-	int getPersona();
+	void setPersona(const int);
+	int getPersona() const;
 
-	void setScore(int);
-	int getScore();
+	void setScore(const int);
+	int getScore() const;
 
-	void setAssist(int);
-	int getAssist();
+	void setAssist(const int);
+	int getAssist() const;
 
-	void setPlayer(bool);
-	bool getPlayer();
+	void setPlayer(const bool);
+	bool getPlayer() const;
 
-	void setArrivalLocation(int);
-	int getArrivalLocation();
+	void setArrivalLocation(const int);
+	int getArrivalLocation() const;
 
-	void setArrivalTarget(int);
-	int getArrivalTarget();
+	void setArrivalTarget(const int);
+	int getArrivalTarget() const;
 
-	void setArrivalDistance(int);
-	int getArrivalDistance();
+	void setArrivalDistance(const int);
+	int getArrivalDistance() const;
 
-	void setArrivalDelay(int);
-	int getArrivalDelay();
+	void setArrivalDelay(const int);
+	int getArrivalDelay() const;
 
-	void setArrivalCue(bool);
-	bool getArrivalCue();
+	void setArrivalCue(const bool);
+	bool getArrivalCue() const;
 
-	void setArrivalFormula(int, int);
-	int getArrivalFormula();
+	void setArrivalFormula(const int, const int);
+	int getArrivalFormula() const;
 
-	void setNoArrivalWarp(int);
-	int getNoArrivalWarp();
+	void setNoArrivalWarp(const int);
+	int getNoArrivalWarp() const;
 
-	void setDepartureLocation(int);
-	int getDepartureLocation();
+	void setDepartureLocation(const int);
+	int getDepartureLocation() const;
 
-	void setDepartureTarget(int);
-	int getDepartureTarget();
+	void setDepartureTarget(const int);
+	int getDepartureTarget() const;
 
-	void setDepartureDelay(int);
-	int getDepartureDelay();
+	void setDepartureDelay(const int);
+	int getDepartureDelay() const;
 
-	void setDepartureCue(bool);
-	bool getDepartureCue();
+	void setDepartureCue(const bool);
+	bool getDepartureCue() const;
 
-	void setDepartureFormula(int, int);
-	int getDepartureFormula();
-	void setNoDepartureWarp(int);
-	int getNoDepartureWarp();
+	void setDepartureFormula(const int, const int);
+	int getDepartureFormula() const;
+	void setNoDepartureWarp(const int);
+	int getNoDepartureWarp() const;
 
 	void OnPrevious();
 	void OnNext();
 	void OnDeleteShip();
 	void OnShipReset();
 
-	static bool wing_is_player_wing(int);
+	static bool wing_is_player_wing(const int);
 
-	bool enable = true;
-	//bool p_enable;
-	//int type;
-	//int base_player;
-	//int select_sexp_node;
-	int player_count;
-	int ship_count;
-	//int escort_count;
-	bool multi_edit;
-	//int base_ship;
-	int cue_init;
-	int total_count;
-	int pvalid_count;
-	int pship_count; // a total count of the player ships not marked
-	int single_ship;
-	int player_ship;
 	std::set<size_t> ship_orders;
-	static int tristate_set(int val, int cur_state);
+	static int tristate_set(const int val, const int cur_state);
 
 	bool texenable = true;
 
-	//int pship, current_orders;
+	int getSingleShip() const;
+	bool getIfMultipleShips() const;
+	int getNumSelectedPlayers() const;
+	int getNumPlayers() const;
+	bool getUIEnable() const;
+	int getNumSelectedShips() const;
+	int getUseCue() const;
+	int getNumSelectedObjects() const;
+	int getNumValidPlayers() const;
+	int getIfPlayerShip() const;
 };
 
 template <typename T>
