@@ -215,12 +215,16 @@ void LabManager::onFrame(float frametime) {
 					RotationMode = LabRotationMode::Both;
 					break;
 				}
-
 				break;
+
 			case KEY_S:
 				RotationSpeedDivisor *= 10.f;
 				if (RotationSpeedDivisor > 10000.f)
 					RotationSpeedDivisor = 100.f;
+				break;
+
+			case KEY_M:
+				gr_dump_envmap(Renderer->currentMissionBackground.c_str());
 				break;
 
 				// bail...

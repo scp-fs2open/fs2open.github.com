@@ -956,7 +956,7 @@ void process_join_packet(ubyte* data, header* hinfo)
 			}
 
 			// set the query timestamp
-			Multi_restr_query_timestamp = timestamp(MULTI_QUERY_RESTR_STAMP);
+			Multi_restr_query_timestamp = ui_timestamp(MULTI_QUERY_RESTR_STAMP);
 			Netgame.flags |= NG_FLAG_INGAME_JOINING;
 
 			// determine what mode we're in
@@ -7051,7 +7051,7 @@ void process_host_restr_packet(ubyte *data, header *hinfo)
 			Multi_join_restr_mode = mode;
 
 			// set the timestamp
-			Multi_restr_query_timestamp = timestamp(MULTI_QUERY_RESTR_STAMP);
+			Multi_restr_query_timestamp = ui_timestamp(MULTI_QUERY_RESTR_STAMP);
 
 			// notify the host of the event
 			gamesnd_play_iface(InterfaceSounds::BRIEF_STAGE_CHG_FAIL);
@@ -7063,7 +7063,7 @@ void process_host_restr_packet(ubyte *data, header *hinfo)
 			Assert(Game_mode & GM_STANDALONE_SERVER);		
 
 			// let the player join if the timestamp has not already elapsed on the server
-			if(Multi_restr_query_timestamp != -1){
+			if(Multi_restr_query_timestamp.isValid()){
 				multi_process_valid_join_request(&Multi_restr_join_request,&Multi_restr_addr,(int)mode);
 			}
 			break;	
@@ -7072,7 +7072,7 @@ void process_host_restr_packet(ubyte *data, header *hinfo)
 		case 2 :
 			Assert(Game_mode & GM_STANDALONE_SERVER);
 			Netgame.flags &= ~(NG_FLAG_INGAME_JOINING);
-			Multi_restr_query_timestamp = -1;
+			Multi_restr_query_timestamp = UI_TIMESTAMP::invalid();
 			break;
 	}
 }

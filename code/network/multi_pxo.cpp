@@ -561,7 +561,7 @@ int Multi_pxo_chat_count = 0;
 
 // extra delay time when switching channels
 #define MULTI_PXO_SWITCH_DELAY_TIME			2000
-int Multi_pxo_switch_delay = -1;
+static UI_TIMESTAMP Multi_pxo_switch_delay;
 
 // initialize and create the chat text linked list
 void multi_pxo_chat_init();
@@ -623,7 +623,7 @@ void multi_pxo_chat_adjust_start();
 char Pxo_motd[1024] = "";
 int Pxo_motd_end = 0;
 int Pxo_motd_read = 0;
-int Pxo_motd_blink_stamp = -1;
+static UI_TIMESTAMP Pxo_motd_blink_stamp;
 int Pxo_motd_blink_on = 0;
 int Pxo_motd_blinked_already = 0;
 
@@ -1017,7 +1017,7 @@ void multi_pxo_help_button_pressed(int n);
 InetGetFile *Multi_pxo_ban_get = NULL;
 
 #define PXO_BANNER_SWAP_TIME			120000
-static int Multi_pxo_ban_swap_stamp = 0;
+static UI_TIMESTAMP Multi_pxo_ban_swap_stamp;
 
 // banners file
 #define PXO_BANNERS_CONFIG_FILE			"pxobanners.cfg"
@@ -1177,7 +1177,7 @@ void multi_pxo_init(int use_last_channel)
 	Multi_pxo_ranking_last = -1.0f;
 
 	// channel switching extra time delay stamp
-	Multi_pxo_switch_delay = -1;
+	Multi_pxo_switch_delay = UI_TIMESTAMP::invalid();
 
 	// our nick for this session		
 	multi_pxo_underscore_nick(Player->callsign,Multi_pxo_nick);		
@@ -1658,9 +1658,9 @@ void multi_pxo_url(const char *url)
 		return;
 	}
 
-	static int click_timeout = 0;
+	static UI_TIMESTAMP click_timeout;
 
-	if ( click_timeout && !timestamp_elapsed(click_timeout) ) {
+	if ( click_timeout.isValid() && !ui_timestamp_elapsed(click_timeout) ) {
 		return;
 	}
 
@@ -1668,7 +1668,7 @@ void multi_pxo_url(const char *url)
 		popup(PF_USE_AFFIRMATIVE_ICON | PF_TITLE_RED | PF_TITLE_BIG,1,POPUP_OK,XSTR("Warning\nCould not locate/launch default Internet Browser",943));
 	} else {
 		// short delay before allowing another click
-		click_timeout = timestamp(750);
+		click_timeout = ui_timestamp(750);
 	}
 }
 
@@ -2502,8 +2502,8 @@ void multi_pxo_process_channels()
 	}
 
 	// if the "switch" delay timestamp is set, see if it has expired
-	if((Multi_pxo_switch_delay != -1) && timestamp_elapsed(Multi_pxo_switch_delay)){
-		Multi_pxo_switch_delay = -1;
+	if(Multi_pxo_switch_delay.isValid() && ui_timestamp_elapsed(Multi_pxo_switch_delay)){
+		Multi_pxo_switch_delay = UI_TIMESTAMP::invalid();
 	}
 
 	// see if we have a mouse click on the channel region
@@ -2815,7 +2815,7 @@ void multi_pxo_handle_channel_change()
 		}
 
 		// set the "switch" delay timestamp
-		Multi_pxo_switch_delay = timestamp(MULTI_PXO_SWITCH_DELAY_TIME);
+		Multi_pxo_switch_delay = ui_timestamp(MULTI_PXO_SWITCH_DELAY_TIME);
 
 		// refresh current channel server count
 		multi_pxo_channel_refresh_current();		
@@ -3271,7 +3271,7 @@ void multi_pxo_chat_process_incoming(const char *txt,int mode)
 	const char *priv_ptr;	
 
 	// filter out "has left" channel messages, when switching channels
-	if((SWITCHING_CHANNELS() || ((Multi_pxo_switch_delay != -1) && !timestamp_elapsed(Multi_pxo_switch_delay))) && 
+	if((SWITCHING_CHANNELS() || (Multi_pxo_switch_delay.isValid() && !ui_timestamp_elapsed(Multi_pxo_switch_delay))) && 
 		multi_pxo_chat_is_left_message(txt)){
 		return;
 	}
@@ -3817,11 +3817,11 @@ void multi_pxo_set_end_of_motd()
 	}
 	
 	// set the blink stamp
-	Pxo_motd_blink_stamp = -1;
+	Pxo_motd_blink_stamp = UI_TIMESTAMP::invalid();
 	if(blink){		
 		Pxo_motd_blink_on = 0;
 		if(!Pxo_motd_blinked_already){
-			Pxo_motd_blink_stamp = timestamp(PXO_MOTD_BLINK_TIME);
+			Pxo_motd_blink_stamp = ui_timestamp(PXO_MOTD_BLINK_TIME);
 			Pxo_motd_blink_on = 1;
 		}
 	}
@@ -3847,11 +3847,11 @@ void multi_pxo_motd_dialog()
 void multi_pxo_motd_maybe_blit()
 {
 	// if we got the end of the motd, and he hasn't read it yet
-	if(Pxo_motd_end && !Pxo_motd_read && (Pxo_motd_blink_stamp != -1)){
+	if(Pxo_motd_end && !Pxo_motd_read && Pxo_motd_blink_stamp.isValid()){
 		// if the timestamp elapsed, flip the blink flag
-		if(timestamp_elapsed(Pxo_motd_blink_stamp)){
+		if(ui_timestamp_elapsed(Pxo_motd_blink_stamp)){
 			Pxo_motd_blink_on = !Pxo_motd_blink_on;
-			Pxo_motd_blink_stamp = timestamp(PXO_MOTD_BLINK_TIME);
+			Pxo_motd_blink_stamp = ui_timestamp(PXO_MOTD_BLINK_TIME);
 		}
 
 		// draw properly
@@ -5150,7 +5150,7 @@ void multi_pxo_ban_init()
 	// zero the active banner bitmap
 	Multi_pxo_banner.ban_bitmap = -1;	
 
-	Multi_pxo_ban_swap_stamp = 0;
+	Multi_pxo_ban_swap_stamp = UI_TIMESTAMP::invalid();
 
 	// are we doing banners at all?
 	if ( os_config_read_uint(nullptr, "PXOBanners", 1) && strlen(Multi_options_g.pxo_banner_url) ) {
@@ -5185,9 +5185,9 @@ void multi_pxo_ban_process()
 	SCP_string local_file;
 
 	// if they've been here long enough, maybe swap out the banner
-	if ((Multi_pxo_ban_mode == PXO_BAN_MODE_IDLE) && timestamp_elapsed(Multi_pxo_ban_swap_stamp)) {
+	if ((Multi_pxo_ban_mode == PXO_BAN_MODE_IDLE) && ui_timestamp_elapsed(Multi_pxo_ban_swap_stamp)) {
 		Multi_pxo_ban_mode = PXO_BAN_MODE_IMAGES_STARTUP;
-		Multi_pxo_ban_swap_stamp = 0;
+		Multi_pxo_ban_swap_stamp = UI_TIMESTAMP::invalid();
 	}
 
 	// process stuff
@@ -5325,8 +5325,8 @@ void multi_pxo_ban_process()
 		}
 
 		// set time to choose a new banner to show
-		if ( !Multi_pxo_ban_swap_stamp ) {
-			Multi_pxo_ban_swap_stamp = timestamp(PXO_BANNER_SWAP_TIME);
+		if ( !Multi_pxo_ban_swap_stamp.isValid() ) {
+			Multi_pxo_ban_swap_stamp = ui_timestamp(PXO_BANNER_SWAP_TIME);
 		}
 		break;
 

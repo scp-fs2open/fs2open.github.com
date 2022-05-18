@@ -19,6 +19,7 @@
 #include "hud/hudconfig.h"
 #include "io/joy.h"
 #include "network/multi.h"
+#include "network/multi_log.h"
 #include "options/OptionsManager.h"
 #include "osapi/osapi.h"
 #include "parse/sexp.h"
@@ -42,6 +43,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <cstdio>
+#include <sstream>
 
 #include <jansson.h>
 
@@ -648,6 +650,32 @@ void cmdline_debug_print_cmdline()
 	}
 }
 #endif
+
+// prints simple cmdline to multi.log (NOTE: may truncate long lines)
+void cmdline_print_cmdline_multi()
+{
+	cmdline_parm *parmp;
+	int found = 0;
+	std::ostringstream cmdline;
+
+	for (parmp = GET_FIRST(&Parm_list); parmp !=END_OF_LIST(&Parm_list); parmp = GET_NEXT(parmp) ) {
+		if ( parmp->name_found ) {
+			cmdline << " " << parmp->name;
+
+			if (parmp->args) {
+				cmdline << " " << parmp->args;
+			}
+
+			found++;
+		}
+	}
+
+	if ( !found ) {
+		cmdline << " <none>";
+	}
+
+	ml_printf("Command line:%s", cmdline.str().c_str());
+}
 
 //	Return true if this character is an extra char (white space and quotes)
 int is_extra_space(char ch)
@@ -1561,6 +1589,9 @@ bool SetCmdlineParams()
 		// is this a standalone server??
 		if (standalone_arg.found()) {
 			Is_standalone = 1;
+
+			// also enable non-interactive by default here
+			Cmdline_noninteractive = true;
 		}
 	}
 

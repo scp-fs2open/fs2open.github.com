@@ -72,7 +72,7 @@ void multi_kick_process()
 
 	// disconnect any kicked players who have timed out on leaving
 	for(idx=0;idx<MAX_PLAYERS;idx++){
-		if(MULTI_CONNECTED(Net_players[idx]) && (Net_players[idx].s_info.kick_timestamp != -1) && timestamp_elapsed(Net_players[idx].s_info.kick_timestamp) ){
+		if(MULTI_CONNECTED(Net_players[idx]) && Net_players[idx].s_info.kick_timestamp.isValid() && ui_timestamp_elapsed(Net_players[idx].s_info.kick_timestamp) ){
 			delete_player(idx, Net_players[idx].s_info.kick_reason);
 		}
 	}
@@ -96,7 +96,7 @@ void multi_kick_player(int player_index, int ban, int reason)
 			Net_players[player_index].flags |= NETINFO_FLAG_KICKED;
 
 			// set his kick timestamp and send him a leave game packet
-			Net_players[player_index].s_info.kick_timestamp = timestamp(MULTI_KICK_RESPONSE_TIME);
+			Net_players[player_index].s_info.kick_timestamp = ui_timestamp(MULTI_KICK_RESPONSE_TIME);
 			Net_players[player_index].s_info.kick_reason = reason;
 			send_leave_game_packet(Net_players[player_index].player_id, reason, &Net_players[player_index]);							
 

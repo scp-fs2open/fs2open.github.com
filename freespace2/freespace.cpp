@@ -4572,8 +4572,6 @@ int game_poll()
 				static int counter = os_config_read_uint(nullptr, "ScreenshotNum", 0);
 				char tmp_name[MAX_FILENAME_LEN];
 
-				game_stop_time();
-
 				// we could probably go with .3 here for 1,000 shots but people really need to clean out
 				// their directories better than that so it's 100 for now.
 				sprintf( tmp_name, NOX("screen%.4i"), counter );
@@ -4591,7 +4589,6 @@ int game_poll()
 				mprintf(( "Dumping screen to '%s'\n", tmp_name ));
 				gr_print_screen(tmp_name);
 
-				game_start_time();
 				os_config_write_uint(nullptr, "ScreenshotNum", counter);
 			}
 
@@ -5215,7 +5212,11 @@ void game_leave_state( int old_state, int new_state )
 				if (Game_mode & GM_IN_MISSION) {
 					weapon_unpause_sounds();
 					audiostream_unpause_all();
-					game_start_time();
+
+					// multi doesn't pause here so time keeps going
+					if ( !(Game_mode & GM_MULTIPLAYER) ) {
+						game_start_time();
+					}
 				}
 			}
 			break;
@@ -5713,7 +5714,11 @@ void game_enter_state( int old_state, int new_state )
 				if (Game_mode & GM_IN_MISSION) {
 					weapon_pause_sounds();
 					audiostream_pause_all();
-					game_stop_time();
+
+					// multi doesn't pause here so time needs to keep going
+					if ( !(Game_mode & GM_MULTIPLAYER) ) {
+						game_stop_time();
+					}
 				}
 			}
 			break;
@@ -5813,7 +5818,8 @@ void mouse_force_pos(int x, int y);
 					) || (
 						(Game_mode & GM_MULTIPLAYER) && (
 							(old_state == GS_STATE_MULTI_PAUSED) ||
-							(old_state == GS_STATE_MULTI_MISSION_SYNC)
+							(old_state == GS_STATE_MULTI_MISSION_SYNC) ||
+							(old_state == GS_STATE_INGAME_PRE_JOIN)
 						)
 					)
 				) {
