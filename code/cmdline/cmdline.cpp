@@ -651,7 +651,7 @@ void cmdline_debug_print_cmdline()
 }
 #endif
 
-// prints simple cmdline to multi.log (NOTE: may truncate long lines)
+// prints simple cmdline to multi.log
 void cmdline_print_cmdline_multi()
 {
 	cmdline_parm *parmp;
