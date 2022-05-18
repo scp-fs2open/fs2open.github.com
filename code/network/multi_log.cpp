@@ -26,9 +26,6 @@
 // MULTI LOGFILE DEFINES/VARS
 //
 
-// max length for a line of the logfile
-#define MAX_LOGFILE_LINE_LEN					256
-
 // how often we'll write an update to the logfile (in seconds)
 #define MULTI_LOGFILE_UPDATE_TIME			2520			// every 42 minutes
 
@@ -159,7 +156,7 @@ void ml_printf(const char *format, ...)
 // string print function
 void ml_string(const char *string, int add_time)
 {
-	char tmp[MAX_LOGFILE_LINE_LEN*4];
+	SCP_string tmp;
 	char time_str[128];
 	time_t timer;	
 
@@ -173,25 +170,25 @@ void ml_string(const char *string, int add_time)
 		timer = time(NULL);
 
 		strftime(time_str, 128, "%m/%d %H:%M:%S~   ", localtime(&timer));
-		strcpy_s(tmp, time_str);
-		strcat_s(tmp, string);
+		tmp = time_str;
+		tmp += string;
 	} else{
-		strcpy_s(tmp, string);
+		tmp = string;
 	}
 	// don't need to add terminating \n since log_string() will do it
 
 	// now print it to the logfile if necessary	
-	log_string(LOGFILE_MULTI_LOG, tmp, 0);
+	log_string(LOGFILE_MULTI_LOG, tmp.c_str(), 0);
 
 	// add to standalone UI too
 	extern int Is_standalone;
 	extern void std_debug_multilog_add_line(const char *str);
 	if (Is_standalone) {
-		std_debug_multilog_add_line(tmp);
+		std_debug_multilog_add_line(tmp.c_str());
 	}
 
 #if defined(MULTI_LOGFILE_ECHO_TO_DEBUG)
 	// nprintf(("Network","%s\n",tmp));
-	mprintf(("ML %s", tmp));
+	mprintf(("ML %s", tmp.c_str()));
 #endif
 }

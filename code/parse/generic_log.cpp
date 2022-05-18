@@ -22,9 +22,6 @@
 // MULTI LOGFILE DEFINES/VARS
 //
 
-// max length for a line of the logfile
-#define MAX_LOGFILE_LINE_LEN					256
-
 // how often we'll write an update to the logfile (in seconds)
 #define MULTI_LOGFILE_UPDATE_TIME			2520			// every 42 minutes
 /*
@@ -106,7 +103,7 @@ void log_printf(int logfile_type, const char *format, ...)
 // string print function
 void log_string(int logfile_type, const char *string, int add_time)
 {
-	char tmp[MAX_LOGFILE_LINE_LEN*4];
+	SCP_string tmp;
 	char time_str[128];
 	time_t timer;	
 
@@ -125,18 +122,19 @@ void log_string(int logfile_type, const char *string, int add_time)
 		timer = time(NULL);
 
 		strftime(time_str, 128, "%m/%d %H:%M:%S~   ", localtime(&timer));
-		strcpy_s(tmp, time_str);
-		strcat_s(tmp, string);
+		tmp = time_str;
+		tmp += string;
 	} else{
-		strcpy_s(tmp, string);
+		tmp = string;
 	}
-	strcat_s(tmp, "\n");
+
+	tmp += "\n";
 
 	// now print it to the logfile if necessary	
-	cfputs(tmp, logfiles[logfile_type].log_file);
+	cfputs(tmp.c_str(), logfiles[logfile_type].log_file);
 	cflush(logfiles[logfile_type].log_file);
 
 #if defined(LOGFILE_ECHO_TO_DEBUG)
-	mprintf(("Log file type %d %s\n",logfile_type, tmp));
+	mprintf(("Log file type %d %s\n",logfile_type, tmp.c_str()));
 #endif
 }
