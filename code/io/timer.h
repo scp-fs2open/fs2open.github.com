@@ -141,6 +141,11 @@ int timestamp_until(int stamp);
 int timestamp_until(TIMESTAMP stamp);
 int ui_timestamp_until(UI_TIMESTAMP stamp);
 
+//	Likewise, but after timestamp has elapsed.
+int timestamp_since(int stamp);
+int timestamp_since(TIMESTAMP stamp);
+int ui_timestamp_since(UI_TIMESTAMP stamp);
+
 // checks if a specified time (in milliseconds) has elapsed past the given timestamp (which
 // should be obtained from timestamp() or timestamp(x) with a positive x)
 int timestamp_has_time_elapsed(int stamp, int time);

@@ -2742,7 +2742,7 @@ void ai_turret_execute_behavior(ship *shipp, ship_subsys *ss)
 		{
 			//something did fire, get the lowest valid timestamp
 			// don't do this if we already set a turret timestamp previously in the function
-			if (timestamp_until(ss->turret_next_fire_stamp) <= 0)
+			if (timestamp_since(ss->turret_next_fire_stamp) > 0)
 			{
 				int minimum_stamp = -1;
 
@@ -2751,7 +2751,7 @@ void ai_turret_execute_behavior(ship *shipp, ship_subsys *ss)
 					int stamp = (i < MAX_SHIP_PRIMARY_BANKS) ? swp->next_primary_fire_stamp[i] : swp->next_secondary_fire_stamp[i - MAX_SHIP_PRIMARY_BANKS];
 
 					// valid timestamps start at 2; stamp must be in the future
-					if (stamp < 2 || timestamp_until(stamp) <= 0)
+					if (stamp < 2 || timestamp_since(stamp) > 0)
 						continue;
 
 					// find minimum
