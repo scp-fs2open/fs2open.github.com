@@ -4212,8 +4212,16 @@ void weapon_finalize_shockwave_damage_types()
 			if (Shockwaves_inherit_parent_damage_type && wi.damage_type_idx_sav != -1) {
 				// We want to inherit, and the parent weapon actually
 				// has a damage type, so we're copying it.
-				wi.shockwave.damage_type_idx_sav = wi.damage_type_idx_sav;
-				wi.shockwave.damage_type_idx = wi.damage_type_idx;
+				if (!Inherited_shockwave_damage_type_suffix.empty()) {
+					// OR ARE WE?
+					SCP_string temp_name = Damage_types[wi.damage_type_idx_sav].name;
+					temp_name += Inherited_shockwave_damage_type_suffix;
+					wi.shockwave.damage_type_idx_sav = damage_type_add(temp_name.c_str());
+					wi.shockwave.damage_type_idx = wi.shockwave.damage_type_idx_sav;
+				} else {
+					wi.shockwave.damage_type_idx_sav = wi.damage_type_idx_sav;
+					wi.shockwave.damage_type_idx = wi.damage_type_idx;
+				}
 			} else if (default_damage_type_idx != -1) {
 				// We have a default value, so we're using it.
 				wi.shockwave.damage_type_idx_sav = default_damage_type_idx;
@@ -4223,8 +4231,15 @@ void weapon_finalize_shockwave_damage_types()
 		// Now the same for the dinky shockwave.
 		if (wi.dinky_shockwave.damage_type_idx_sav == -1) {
 			if (Shockwaves_inherit_parent_damage_type && wi.damage_type_idx_sav != -1) {
-				wi.dinky_shockwave.damage_type_idx_sav = wi.damage_type_idx_sav;
-				wi.dinky_shockwave.damage_type_idx = wi.damage_type_idx;
+				if (!Inherited_dinky_shockwave_damage_type_suffix.empty()) {
+					SCP_string temp_name = Damage_types[wi.damage_type_idx_sav].name;
+					temp_name += Inherited_dinky_shockwave_damage_type_suffix;
+					wi.dinky_shockwave.damage_type_idx_sav = damage_type_add(temp_name.c_str());
+					wi.dinky_shockwave.damage_type_idx = wi.dinky_shockwave.damage_type_idx_sav;
+				} else {
+					wi.dinky_shockwave.damage_type_idx_sav = wi.damage_type_idx_sav;
+					wi.dinky_shockwave.damage_type_idx = wi.damage_type_idx;
+				}
 			} else if (default_dinky_damage_type_idx != -1) {
 				wi.dinky_shockwave.damage_type_idx_sav = default_dinky_damage_type_idx;
 				wi.dinky_shockwave.damage_type_idx = default_dinky_damage_type_idx;

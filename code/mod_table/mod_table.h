@@ -51,6 +51,8 @@ extern float Dinky_shockwave_default_multiplier;
 extern bool Shockwaves_always_damage_bombs;
 extern bool Shockwaves_damage_all_obj_types_once;
 extern bool Shockwaves_inherit_parent_damage_type;
+extern SCP_string Inherited_shockwave_damage_type_suffix;
+extern SCP_string Inherited_dinky_shockwave_damage_type_suffix;
 extern SCP_string Default_shockwave_damage_type;
 extern SCP_string Default_dinky_shockwave_damage_type;
 extern std::tuple<ubyte, ubyte, ubyte> Arc_color_damage_p1;
