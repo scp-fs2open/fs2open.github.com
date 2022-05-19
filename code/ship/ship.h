@@ -185,7 +185,7 @@ public:
 //**************************************************************
 //WMC - Damage type handling code
 
-int damage_type_add(char *name);
+int damage_type_add(const char *name);
 
 //**************************************************************
 //WMC - Armor stuff
