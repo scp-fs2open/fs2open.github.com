@@ -61,6 +61,9 @@ bool Using_in_game_options;
 float Dinky_shockwave_default_multiplier;
 bool Shockwaves_always_damage_bombs;
 bool Shockwaves_damage_all_obj_types_once;
+bool Shockwaves_inherit_parent_damage_type;
+SCP_string Default_shockwave_damage_type;
+SCP_string Default_dinky_shockwave_damage_type;
 std::tuple<ubyte, ubyte, ubyte> Arc_color_damage_p1;
 std::tuple<ubyte, ubyte, ubyte> Arc_color_damage_p2;
 std::tuple<ubyte, ubyte, ubyte> Arc_color_damage_s1;
@@ -763,6 +766,20 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Shockwaves_damage_all_obj_types_once);
 		}
 
+		if (optional_string("$Shockwaves Inherit Parent Weapon Damage Type:")) {
+			stuff_boolean(&Shockwaves_inherit_parent_damage_type);
+		}
+
+		if (optional_string("$Default Shockwave Damage Type:")) {
+			stuff_string(Default_shockwave_damage_type, F_NAME);
+			// Should this automatically be copied to dinky shockwaves?
+			Default_dinky_shockwave_damage_type = Default_shockwave_damage_type;
+		}
+
+		if (optional_string("$Default Dinky Shockwave Damage Type:")) {
+			stuff_string(Default_dinky_shockwave_damage_type, F_NAME);
+		}
+
 		if (optional_string("$Use Engine Wash Intensity:")) {
 			stuff_boolean(&Use_engine_wash_intensity);
 		}
@@ -888,6 +905,9 @@ void mod_table_reset()
 	Dinky_shockwave_default_multiplier = 1.0f;
 	Shockwaves_always_damage_bombs = false;
 	Shockwaves_damage_all_obj_types_once = false;
+	Shockwaves_inherit_parent_damage_type = false;
+	Default_shockwave_damage_type = "";
+	Default_dinky_shockwave_damage_type = "";
 	Arc_color_damage_p1 = std::make_tuple(static_cast<ubyte>(64), static_cast<ubyte>(64), static_cast<ubyte>(225));
 	Arc_color_damage_p2 = std::make_tuple(static_cast<ubyte>(128), static_cast<ubyte>(128), static_cast<ubyte>(255));
 	Arc_color_damage_s1 = std::make_tuple(static_cast<ubyte>(200), static_cast<ubyte>(200), static_cast<ubyte>(255));

@@ -4186,6 +4186,53 @@ void weapon_generate_indexes_for_precedence()
 	Player_weapon_precedence_file = "";	// Similar to the above, this would swap with an empty string, thereby being equivalent to .clear() and .shrink_to_fit().
 }
 
+void weapon_finalize_shockwave_damage_types()
+{
+	// First, check if we've got any finalizing to do at all.
+	if (!Shockwaves_inherit_parent_damage_type && Default_shockwave_damage_type.empty() && Default_dinky_shockwave_damage_type.empty()) {
+		return;
+	}
+
+	int default_damage_type_idx = -1, default_dinky_damage_type_idx = -1;
+
+	if (!Default_shockwave_damage_type.empty()) {
+		default_damage_type_idx = damage_type_add(Default_shockwave_damage_type.c_str());
+	}
+
+	if (!Default_dinky_shockwave_damage_type.empty()) {
+		default_dinky_damage_type_idx = damage_type_add(Default_dinky_shockwave_damage_type.c_str());
+	}
+
+	// Next, go through each weapon and check to see if the shockwaves have specifically-set damage types.
+	for (auto &wi : Weapon_info) {
+		// First, the primary shockwave.
+		if (wi.shockwave.damage_type_idx_sav == -1) {
+			// If we have both options set, inheritance takes priority, but
+			// only if a damage type actually exists for the parent weapon.
+			if (Shockwaves_inherit_parent_damage_type && wi.damage_type_idx_sav != -1) {
+				// We want to inherit, and the parent weapon actually
+				// has a damage type, so we're copying it.
+				wi.shockwave.damage_type_idx_sav = wi.damage_type_idx_sav;
+				wi.shockwave.damage_type_idx = wi.damage_type_idx;
+			} else if (default_damage_type_idx != -1) {
+				// We have a default value, so we're using it.
+				wi.shockwave.damage_type_idx_sav = default_damage_type_idx;
+				wi.shockwave.damage_type_idx = default_damage_type_idx;
+			}
+		}
+		// Now the same for the dinky shockwave.
+		if (wi.dinky_shockwave.damage_type_idx_sav == -1) {
+			if (Shockwaves_inherit_parent_damage_type && wi.damage_type_idx_sav != -1) {
+				wi.dinky_shockwave.damage_type_idx_sav = wi.damage_type_idx_sav;
+				wi.dinky_shockwave.damage_type_idx = wi.damage_type_idx;
+			} else if (default_dinky_damage_type_idx != -1) {
+				wi.dinky_shockwave.damage_type_idx_sav = default_dinky_damage_type_idx;
+				wi.dinky_shockwave.damage_type_idx = default_dinky_damage_type_idx;
+			}
+		}
+	}
+}
+
 void weapon_do_post_parse()
 {
 	weapon_info *wip;
@@ -4195,6 +4242,7 @@ void weapon_do_post_parse()
 	weapon_clean_entries();
 	weapon_generate_indexes_for_substitution();
 	weapon_generate_indexes_for_precedence();
+	weapon_finalize_shockwave_damage_types();
 
 	Default_cmeasure_index = -1;
 
