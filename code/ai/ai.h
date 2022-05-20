@@ -110,7 +110,7 @@ typedef struct ai_goal {
 
 #define	AIM_CHASE				0
 #define	AIM_EVADE				1
-#define	AIM_GET_BEHIND			2
+#define	AIM_GET_BEHIND			2		//	This mode is not actually implemented.
 #define	AIM_STAY_NEAR			3		//	Stay near another ship.
 #define	AIM_STILL				4		//	Sit still.  Don't move.  Hold your breath.  Don't blink.
 #define	AIM_GUARD				5		//	Guard an object

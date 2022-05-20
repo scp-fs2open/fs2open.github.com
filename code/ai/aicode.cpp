@@ -13515,7 +13515,6 @@ void ai_sentrygun()
 
 /**
  * Execute behavior given by aip->mode.
- * @todo Complete the AIM_GET_BEHIND option
  */
 void ai_execute_behavior(ai_info *aip)
 {
@@ -13598,6 +13597,15 @@ void ai_execute_behavior(ai_info *aip)
 			aip->mode = AIM_NONE;
 		}
 		break;
+	case AIM_GET_BEHIND:
+		if (En_objp) {
+			Assert(En_objp->type == OBJ_SHIP);
+			// This mode is not currently implemented, but if it were, it would be called here.
+			nprintf(("AI", "AIM_GET_BEHIND called; this mode is not yet implemented\n"));
+		} else {
+			aip->mode = AIM_NONE;
+		}
+		break;
 	case AIM_BAY_EMERGE:
 		ai_bay_emerge();
 		break;
@@ -13609,10 +13617,6 @@ void ai_execute_behavior(ai_info *aip)
 		break;
 	case AIM_WARP_OUT:
 		break;		//	Note, handled directly from ai_frame().
-	case AIM_GET_BEHIND:
-		// FIXME: got this from TBP and added it here to skip the Int3() but don't really want to handle it
-		// properly until after 3.6.7 just to avoid delaying release or breaking something - taylor
-		break;
 	case AIM_LUA:
 		ai_lua(aip);
 		break;
