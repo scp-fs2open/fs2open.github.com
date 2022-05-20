@@ -4,10 +4,13 @@
 #include "hud.h"
 #include "scripting/api/objs/enums.h"
 #include "scripting/api/objs/hudgauge.h"
+#include "scripting/api/objs/object.h"
+#include "scripting/api/objs/vecmath.h"
 
 #include "hud/hud.h"
 #include "hud/hudconfig.h"
 #include "hud/hudtargetbox.h"
+#include "hud/hudtarget.h"
 
 namespace scripting {
 namespace api {
@@ -235,6 +238,32 @@ ADE_FUNC(flashTargetBox, l_HUD, "enumeration section, [number duration_in_millis
 	hud_targetbox_start_flash(section_index, duration);
 
 	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(getTargetDistance, l_HUD, "object targetee, [vector targeter_position]", "Returns the distance as displayed on the HUD, that is, the distance from a position to the bounding box of a target.  If targeter_position is nil, the function will use the player's position.", "number", "The distance, or nil if invalid")
+{
+	object_h *targetee_h;
+	vec3d *targeter_pos = nullptr;
+
+	if (!ade_get_args(L, "o|o", l_Object.GetPtr(&targetee_h), l_Vector.GetPtr(&targeter_pos)))
+		return ADE_RETURN_NIL;
+
+	if (targetee_h == nullptr || !targetee_h->IsValid())
+		return ADE_RETURN_NIL;
+
+	if (targeter_pos == nullptr)
+	{
+		if (Player_obj)
+			targeter_pos = &Player_obj->pos;
+		else
+		{
+			Warning(LOCATION, "Player_obj is NULL; cannot assign position!");
+			targeter_pos = &vmd_zero_vector;
+		}
+	}
+
+	auto dist = hud_find_target_distance(targetee_h->objp, targeter_pos);
+	return ade_set_args(L, "f", dist);
 }
 
 
