@@ -102,7 +102,7 @@ BOOL ignore_orders_dlg::OnInitDialog()
 	// set the check marks in the box based on orders_accepted valud in the ship structure(s)
 	if ( m_ship >= 0 ) {
 		orders_accepted = Ships[m_ship].orders_accepted;
-		for ( i = 0; i < m_orderList.size(); i++) {
+		for ( i = 0; i < (int) m_orderList.size(); i++) {
 			if ( orders_accepted.find(m_orderList[i]) != orders_accepted.end())
 				list->SetCheck(i, BST_CHECKED);
 		}
@@ -116,13 +116,13 @@ BOOL ignore_orders_dlg::OnInitDialog()
 				// get the orders for this ship.  If a state is not set 
 				orders_accepted = Ships[objp->instance].orders_accepted;
 				if ( first_time ) {
-					for (i = 0; i < m_orderList.size(); i++) {
+					for (i = 0; i < (int) m_orderList.size(); i++) {
 						if (orders_accepted.find(m_orderList[i]) != orders_accepted.end())
 							list->SetCheck(i, BST_CHECKED);
 					}
 					first_time = 0;
 				} else {
-					for (i = 0; i < m_orderList.size(); i++) {
+					for (i = 0; i < (int) m_orderList.size(); i++) {
 						// see if the order matches the check box order
 						if ( orders_accepted.find(m_orderList[i]) != orders_accepted.end() ) {
 							// if it matches, if it is not already set, then it is indeterminate.
@@ -160,7 +160,7 @@ void ignore_orders_dlg::OnOK()
 
 	// clear out the orders, then set the bits according to which check boxes are set
 	if ( m_ship >= 0 ) {
-		for ( i = 0; i < m_orderList.size(); i++) {
+		for ( i = 0; i < (int) m_orderList.size(); i++) {
 			if (list->GetCheck(i) == BST_CHECKED)
 				orders_accepted.insert(m_orderList[i]);
 		}
@@ -168,7 +168,7 @@ void ignore_orders_dlg::OnOK()
 	} else {
 		for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
 			if (((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) && (objp->flags[Object::Object_Flags::Marked])) {
-				for (i = 0; i < m_orderList.size(); i++) {
+				for (i = 0; i < (int) m_orderList.size(); i++) {
 					int box_value;
 
 					box_value = list->GetCheck(i);
