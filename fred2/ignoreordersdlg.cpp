@@ -44,16 +44,7 @@ void ignore_orders_dlg::DoDataExchange(CDataExchange* pDX)
 
 BEGIN_MESSAGE_MAP(ignore_orders_dlg, CDialog)
 	//{{AFX_MSG_MAP(ignore_orders_dlg)
-	ON_BN_CLICKED(IDC_CHECK1, OnCheck1)
-	ON_BN_CLICKED(IDC_CHECK2, OnCheck2)
-	ON_BN_CLICKED(IDC_CHECK3, OnCheck3)
-	ON_BN_CLICKED(IDC_CHECK4, OnCheck4)
-	ON_BN_CLICKED(IDC_CHECK5, OnCheck5)
-	ON_BN_CLICKED(IDC_CHECK6, OnCheck6)
-	ON_BN_CLICKED(IDC_CHECK7, OnCheck7)
-	ON_BN_CLICKED(IDC_CHECK8, OnCheck8)
-	ON_BN_CLICKED(IDC_CHECK9, OnCheck9)
-	ON_BN_CLICKED(IDC_CHECK10, OnCheck10)
+	ON_CLBN_CHKCHANGE(IDC_IGNORE_ORDERS_LIST, OnCheckChange)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -62,24 +53,19 @@ END_MESSAGE_MAP()
 
 BOOL ignore_orders_dlg::OnInitDialog() 
 {
-	int i, last_bottom;
+	int i;
 	std::set<size_t> default_orders, orders_accepted;
-	RECT	window_size;
 	char buf[128];
 	object *objp;
 
+	m_orderList.clear();
+
 	CDialog::OnInitDialog();
-	
-	check_boxes[0].button = (CButton *)GetDlgItem( IDC_CHECK1 );
-	check_boxes[1].button = (CButton *)GetDlgItem( IDC_CHECK2 );
-	check_boxes[2].button = (CButton *)GetDlgItem( IDC_CHECK3 );
-	check_boxes[3].button = (CButton *)GetDlgItem( IDC_CHECK4 );
-	check_boxes[4].button = (CButton *)GetDlgItem( IDC_CHECK5 );
-	check_boxes[5].button = (CButton *)GetDlgItem( IDC_CHECK6 );
-	check_boxes[6].button = (CButton *)GetDlgItem( IDC_CHECK7 );
-	check_boxes[7].button = (CButton *)GetDlgItem( IDC_CHECK8 );
-	check_boxes[8].button = (CButton *)GetDlgItem( IDC_CHECK9 );
-	check_boxes[9].button = (CButton *)GetDlgItem( IDC_CHECK10 );
+
+	//Because Windows, this needs to be manually created in addition to having the resource thingy.
+	m_checklistbox = std::unique_ptr<CCheckListBox>(new CCheckListBox());
+	m_checklistbox->SubclassDlgItem(IDC_IGNORE_ORDERS_LIST, this);
+	m_checklistbox->SetCheckStyle(BS_AUTO3STATE);
 
 	// change the labels on the check boxes to reflect the set of default
 	// orders for this ship
@@ -101,53 +87,24 @@ BOOL ignore_orders_dlg::OnInitDialog()
 
 	}
 
-	// set the checkboxes for the orders accepted
-	m_num_checks_active = 0;
-	for (size_t order_id : default_orders){
-		// Not enough space to display checkboxes for all comm orders!
-		// Need to add more checkboxes.
-		if (m_num_checks_active >= MAX_CHECKBOXES)
-		{
-			Warning(LOCATION, "Tried to add more orders than FRED2 has checkboxes for them (can be max %d)!", MAX_CHECKBOXES);
-			break;
-		}
-
-		check_boxes[m_num_checks_active].button->SetWindowText(Player_orders[order_id].localized_name.c_str());
-		check_boxes[m_num_checks_active].id = (int)order_id;
-		m_num_checks_active++;
+	CCheckListBox* list = ((CCheckListBox*)GetDlgItem(IDC_IGNORE_ORDERS_LIST));
 	
+
+	for (size_t order_id : default_orders){
+		int checkboxNr = (int) m_orderList.size();
+
+		list->AddString(Player_orders[order_id].localized_name.c_str());
+		list->SetCheck(checkboxNr, BST_UNCHECKED);
+
+		m_orderList.push_back(order_id);
 	}
-
-	// resize the dialog by shrinking the height by the number of checkboxes that
-	// we removed
-	GetWindowRect( &window_size );
-
-	// hide the rest of the dialog items
-	last_bottom = 0;
-	for ( i = MAX_CHECKBOXES - 1; i >= m_num_checks_active; i-- ) {
-		RECT check_size;
-
-		// get the size of the checkbox, then hide it.
-		check_boxes[i].button->GetWindowRect( &check_size );
-		check_boxes[i].button->ShowWindow(SW_HIDE);
-
-		// shrink the size of the parent window by the size of the checkbox
-		if ( last_bottom != 0 )
-			window_size.bottom -= (last_bottom - check_size.bottom );
-
-		last_bottom = check_size.bottom;
-
-	}
-
-	// call MoveWindow to resize the window
-	MoveWindow( &window_size, TRUE );
 
 	// set the check marks in the box based on orders_accepted valud in the ship structure(s)
 	if ( m_ship >= 0 ) {
 		orders_accepted = Ships[m_ship].orders_accepted;
-		for ( i = 0; i < m_num_checks_active; i++ ) {
-			if ( orders_accepted.find(check_boxes[i].id) != orders_accepted.end() )
-				check_boxes[i].button->SetCheck(1);
+		for ( i = 0; i < m_orderList.size(); i++) {
+			if ( orders_accepted.find(m_orderList[i]) != orders_accepted.end())
+				list->SetCheck(i, BST_CHECKED);
 		}
 	} else {
 		int first_time;
@@ -159,22 +116,22 @@ BOOL ignore_orders_dlg::OnInitDialog()
 				// get the orders for this ship.  If a state is not set 
 				orders_accepted = Ships[objp->instance].orders_accepted;
 				if ( first_time ) {
-					for ( i = 0; i < m_num_checks_active; i++ ) {
-						if ( orders_accepted.find(check_boxes[i].id) != orders_accepted.end() )
-							check_boxes[i].button->SetCheck(1);
+					for (i = 0; i < m_orderList.size(); i++) {
+						if (orders_accepted.find(m_orderList[i]) != orders_accepted.end())
+							list->SetCheck(i, BST_CHECKED);
 					}
 					first_time = 0;
 				} else {
-					for ( i = 0; i < m_num_checks_active; i++ ) {
+					for (i = 0; i < m_orderList.size(); i++) {
 						// see if the order matches the check box order
-						if ( orders_accepted.find(check_boxes[i].id) != orders_accepted.end() ) {
+						if ( orders_accepted.find(m_orderList[i]) != orders_accepted.end() ) {
 							// if it matches, if it is not already set, then it is indeterminate.
-							if ( !check_boxes[i].button->GetCheck() )
-								check_boxes[i].button->SetCheck(2);
+							if ( list->GetCheck(i) == BST_UNCHECKED )
+								list->SetCheck(i, BST_INDETERMINATE);
 						} else {
 							// if the order isn't active, and already set, mark as indeterminite.
-							if ( check_boxes[i].button->GetCheck() )
-								check_boxes[i].button->SetCheck(2);
+							if ( list->GetCheck(i) != BST_UNCHECKED )
+								list->SetCheck(i, BST_INDETERMINATE);
 						}
 					}
 				}
@@ -199,31 +156,32 @@ void ignore_orders_dlg::OnOK()
 	int i;
 	object *objp;
 
+	CCheckListBox* list = ((CCheckListBox*)GetDlgItem(IDC_IGNORE_ORDERS_LIST));
+
 	// clear out the orders, then set the bits according to which check boxes are set
 	if ( m_ship >= 0 ) {
-		for ( i = 0; i < m_num_checks_active; i++ ) {
-			if ( check_boxes[i].button->GetCheck() )
-				orders_accepted.insert(check_boxes[i].id);
+		for ( i = 0; i < m_orderList.size(); i++) {
+			if (list->GetCheck(i) == BST_CHECKED)
+				orders_accepted.insert(m_orderList[i]);
 		}
 		Ships[m_ship].orders_accepted = orders_accepted;
 	} else {
 		for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
 			if (((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) && (objp->flags[Object::Object_Flags::Marked])) {
-				Ships[objp->instance].orders_accepted.clear();
-				for ( i = 0; i < m_num_checks_active; i++ ) {
+				for (i = 0; i < m_orderList.size(); i++) {
 					int box_value;
 
-					box_value = check_boxes[i].button->GetCheck();
+					box_value = list->GetCheck(i);
 					// get the status of the checkbox -- if in the indeterminite state, then
 					// skip it
-					if ( box_value == 2 )
+					if ( box_value == BST_INDETERMINATE )
 						continue;
 
 					// if the button is set, then set the bit, otherwise, clear the bit
-					if ( box_value == 1 )
-						Ships[objp->instance].orders_accepted.insert(check_boxes[i].id);
+					if ( box_value == BST_CHECKED )
+						Ships[objp->instance].orders_accepted.insert(m_orderList[i]);
 					else
-						Ships[objp->instance].orders_accepted.erase(check_boxes[i].id);
+						Ships[objp->instance].orders_accepted.erase(m_orderList[i]);
 				}
 			}
 		}
@@ -232,113 +190,12 @@ void ignore_orders_dlg::OnOK()
 	CDialog::OnOK();
 }
 
-// stupid routines to deal with the tri-state values of the checkboxes
-void ignore_orders_dlg::OnCheck1() 
+void ignore_orders_dlg::OnCheckChange()
 {
-	CButton *button;
+	CCheckListBox* list = ((CCheckListBox*)GetDlgItem(IDC_IGNORE_ORDERS_LIST));
 
-	button = (CButton *)GetDlgItem(IDC_CHECK1);
-	if (button->GetCheck() == 1)
-		button->SetCheck(0);
-	else
-		button->SetCheck(1);
-}
-
-void ignore_orders_dlg::OnCheck2() 
-{
-	CButton *button;
-
-	button = (CButton *)GetDlgItem(IDC_CHECK2);
-	if (button->GetCheck() == 1)
-		button->SetCheck(0);
-	else
-		button->SetCheck(1);
-}
-
-void ignore_orders_dlg::OnCheck3() 
-{
-	CButton *button;
-
-	button = (CButton *)GetDlgItem(IDC_CHECK3);
-	if (button->GetCheck() == 1)
-		button->SetCheck(0);
-	else
-		button->SetCheck(1);
-}
-
-void ignore_orders_dlg::OnCheck4() 
-{
-	CButton *button;
-
-	button = (CButton *)GetDlgItem(IDC_CHECK4);
-	if (button->GetCheck() == 1)
-		button->SetCheck(0);
-	else
-		button->SetCheck(1);
-}
-
-void ignore_orders_dlg::OnCheck5() 
-{
-	CButton *button;
-
-	button = (CButton *)GetDlgItem(IDC_CHECK5);
-	if (button->GetCheck() == 1)
-		button->SetCheck(0);
-	else
-		button->SetCheck(1);
-}
-
-void ignore_orders_dlg::OnCheck6() 
-{
-	CButton *button;
-
-	button = (CButton *)GetDlgItem(IDC_CHECK6);
-	if (button->GetCheck() == 1)
-		button->SetCheck(0);
-	else
-		button->SetCheck(1);
-}
-
-void ignore_orders_dlg::OnCheck7() 
-{
-	CButton *button;
-
-	button = (CButton *)GetDlgItem(IDC_CHECK7);
-	if (button->GetCheck() == 1)
-		button->SetCheck(0);
-	else
-		button->SetCheck(1);
-}
-
-void ignore_orders_dlg::OnCheck8() 
-{
-	CButton *button;
-
-	button = (CButton *)GetDlgItem(IDC_CHECK8);
-	if (button->GetCheck() == 1)
-		button->SetCheck(0);
-	else
-		button->SetCheck(1);
-}
-
-void ignore_orders_dlg::OnCheck9() 
-{
-	CButton *button;
-
-	button = (CButton *)GetDlgItem(IDC_CHECK9);
-	if (button->GetCheck() == 1)
-		button->SetCheck(0);
-	else
-		button->SetCheck(1);
-}
-
-void ignore_orders_dlg::OnCheck10() 
-{
-	CButton *button;
-
-	button = (CButton *)GetDlgItem(IDC_CHECK10);
-	if (button->GetCheck() == 1)
-		button->SetCheck(0);
-	else
-		button->SetCheck(1);
+	int i = list->GetCurSel();
+	if (list->GetCheck(i) == BST_INDETERMINATE)
+		list->SetCheck(i, BST_UNCHECKED);
+	
 }
