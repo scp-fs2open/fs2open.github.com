@@ -19,10 +19,11 @@ float lighting_profile_value::handle(float input)
 {
 	if (only_positive && input < 0.0f)
 		input = base;
-	if (has_adjust)
-		input += adjust;
 	if (has_multiplier)
 		input *= multipier;
+	//handling adjust after multiplier makes it possible to multiply by 0 and still adjust.
+	if (has_adjust)
+		input += adjust;
 	if (has_minimum)
 		input = MAX(input, minimum);
 	if (has_maximum)
