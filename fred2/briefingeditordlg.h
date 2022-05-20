@@ -115,7 +115,6 @@ protected:
 	BOOL PreTranslateMessage(MSG * pMsg);
 
 	int first_ship_with_no_custom_icon = -1;
-	int get_first_ship_with_no_custom_icon();
 
 	// Generated message map functions
 	//{{AFX_MSG(briefing_editor_dlg)
