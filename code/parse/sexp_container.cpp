@@ -65,6 +65,25 @@ namespace {
 	{
 		report_problematic_container(sexp_name, "non-map", container_name);
 	}
+
+	void add_to_map_internal(sexp_container &container, SCP_string key, SCP_string data) {
+		Assertion(container.is_map(),
+			"Attempt to add map data to non-map container %s. Please report!",
+			container.container_name.c_str());
+
+		auto &map_data = container.map_data;
+
+#if !defined(NDEBUG) || defined(SCP_RELEASE_LOGGING)
+		if (map_data.find(key) != map_data.end()) {
+			// replacing an existing key's data isn't an error but should be logged
+			const SCP_string msg = SCP_string("Key '") + key + "' already exists in map container " +
+								   container.container_name + ". Replacing its data.";
+			mprintf(("%s\n", msg.c_str()));
+			log_printf(LOGFILE_EVENT_LOG, "%s", msg.c_str());
+		}
+#endif
+		map_data.emplace(key, data);
+	}
 } // namespace
 
 // map_container_hash impl
@@ -1159,8 +1178,6 @@ void sexp_add_to_map(int node)
 		return;
 	}
 
-	auto &map_data = container.map_data;
-
 	node = CDR(node);
 	Assertion(node != -1, "Add-to-map wasn't given values to add. Please report!");
 
@@ -1175,16 +1192,8 @@ void sexp_add_to_map(int node)
 		}
 
 		const char *key = CTEXT(node);
-#if !defined(NDEBUG) || defined(SCP_RELEASE_LOGGING)
-		if (map_data.find(key) != map_data.end()) {
-			// replacing an existing key's data isn't an error but should be logged
-			const SCP_string msg = SCP_string("Add-to-map: Key '") + key + "' already exists in map container " +
-								   container_name + ". Replacing its data.";
-			mprintf(("%s\n", msg.c_str()));
-			log_printf(LOGFILE_EVENT_LOG, "%s", msg.c_str());
-		}
-#endif
-		map_data.emplace(key, CTEXT(CDR(node)));
+		const char *data = CTEXT(CDR(node));
+		add_to_map_internal(container, key, data);
 
 		// skip the value and move onto the next key
 		node = CDDR(node);
@@ -1311,6 +1320,68 @@ void sexp_clear_container(int node)
 	}
 }
 
+void sexp_copy_container(int node)
+{
+	Assertion(node != -1, "Copy-container wasn't given a container to copy from. Please report!");
+
+	const char *src_container_name = CTEXT(node);
+	const auto *p_src_container = get_sexp_container(src_container_name);
+
+	if (!p_src_container) {
+		report_nonexistent_container("Copy-container", src_container_name);
+		return;
+	}
+	const auto &src_container = *p_src_container;
+
+	node = CDR(node);
+	Assertion(node != -1, "Copy-container wasn't given a container to copy to. Please report!");
+
+	const char *dest_container_name = CTEXT(node);
+	auto *p_dest_container = get_sexp_container(src_container_name);
+
+	if (!p_dest_container) {
+		report_nonexistent_container("Copy-container", dest_container_name);
+		return;
+	}
+	auto &dest_container = *p_dest_container;
+
+	if (src_container.get_non_persistent_type() != dest_container.get_non_persistent_type()) {
+		const SCP_string msg = SCP_string("Copy-container called on container ") + src_container_name +
+							   " and container " + dest_container_name + " whose types don't match";
+		Warning(LOCATION, "%s", msg.c_str());
+		log_printf(LOGFILE_EVENT_LOG, "%s", msg.c_str());
+		return;
+	}
+
+	bool replace_contents = true;
+
+	node = CDR(node);
+	if (node != -1) {
+		replace_contents = is_sexp_true(node);
+	}
+
+	if (src_container.is_list()) {
+		const auto &src_list = src_container.list_data;
+		auto &dest_list = dest_container.list_data;
+
+		if (replace_contents) {
+			dest_list.clear();
+		}
+
+		std::copy(src_list.begin(), src_list.end(), back_inserter(dest_list));
+	} else if (src_container.is_map()) {
+		if (replace_contents) {
+			dest_container.map_data.clear();
+		}
+
+		for (const auto &kv_pair : src_container.map_data) {
+			add_to_map_internal(dest_container, kv_pair.first, kv_pair.second);
+		}
+	} else {
+		UNREACHABLE("Container %s has invalid type (%d). Please report!", src_container_name, (int)src_container.type);
+	}
+}
+
 int sexp_container_eval_change_sexp(int op_num, int node)
 {
 	switch (op_num) {
@@ -1336,6 +1407,10 @@ int sexp_container_eval_change_sexp(int op_num, int node)
 
 	case OP_CLEAR_CONTAINER:
 		sexp_clear_container(node);
+		return SEXP_TRUE;
+
+	case OP_COPY_CONTAINER:
+		sexp_copy_container(node);
 		return SEXP_TRUE;
 
 	default:
