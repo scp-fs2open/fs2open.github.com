@@ -190,7 +190,7 @@ bool sexp_container_has_persistent_non_eternal_containers();
 int sexp_container_eval_status_sexp(int op_num, int node);
 int sexp_container_eval_change_sexp(int op_num, int node);
 
-// for-* SEXP arguments
+// collect argument values for the "for-container" SEXPs
 // if just_count is true, then argument_vector is left unmodified
 // returns the number of arguments
 int sexp_container_collect_data_arguments(int node,

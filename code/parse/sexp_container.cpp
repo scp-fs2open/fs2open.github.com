@@ -1352,7 +1352,7 @@ int collect_container_values(int node,
 {
 	Assertion(node != -1, "%s wasn't given any ontainers. Please report!", sexp_name);
 
-	// filter out duplicates
+	// filter out duplicates, but keys/data are case-sensitive
 	SCP_unordered_set<SCP_string> arguments;
 
 	for (; node != -1; node = CDR(node)) {
@@ -1373,7 +1373,10 @@ int collect_container_values(int node,
 			}
 
 			if (none(container.type & ContainerType::STRING_KEYS)) {
-				// TODO
+				const SCP_string msg = SCP_string(sexp_name) + " called on map container " + container_name +
+									   " but its keys aren't strings";
+				Warning(LOCATION, "%s", msg.c_str());
+				log_printf(LOGFILE_EVENT_LOG, "%s", msg.c_str());
 				continue;
 			}
 
@@ -1382,7 +1385,10 @@ int collect_container_values(int node,
 			}
 		} else {
 			if (none(container.type & ContainerType::STRING_DATA)) {
-				// TODO
+				const SCP_string msg =
+					SCP_string(sexp_name) + " called on container " + container_name + " but its data aren't strings";
+				Warning(LOCATION, "%s", msg.c_str());
+				log_printf(LOGFILE_EVENT_LOG, "%s", msg.c_str());
 				continue;
 			}
 
