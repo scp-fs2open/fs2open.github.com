@@ -10596,8 +10596,11 @@ int eval_for_container(int arg_handler_node, int condition_node, int op_const, b
 			break;
 	}
 
-	if (just_count)
+	if (just_count) {
+		// cleaning up argument_vector isn't needed
+		// because the "collect arguments" functions didn't touch it
 		return num_arguments;
+	}
 
 	// test the whole argument vector
 	int num_true, num_false, num_known_true, num_known_false;

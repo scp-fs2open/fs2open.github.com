@@ -1401,8 +1401,6 @@ int collect_container_values(int node,
 	}
 
 	if (!just_count) {
-		argument_vector.clear();
-
 		for (const auto &argument : arguments) {
 			argument_vector.emplace_back(vm_strdup(argument.c_str()), -1);
 		}
