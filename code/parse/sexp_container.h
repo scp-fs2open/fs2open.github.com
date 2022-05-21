@@ -189,3 +189,13 @@ bool sexp_container_has_persistent_non_eternal_containers();
 // SEXPs
 int sexp_container_eval_status_sexp(int op_num, int node);
 int sexp_container_eval_change_sexp(int op_num, int node);
+
+// for-* SEXP arguments
+// if just_count is true, then argument_vector is left unmodified
+// returns the number of arguments
+int sexp_container_collect_data_arguments(int node,
+	SCP_vector<std::pair<char*, int>> &argument_vector,
+	bool just_count = false);
+int sexp_container_collect_map_key_arguments(int node,
+	SCP_vector<std::pair<char*, int>> &argument_vector,
+	bool just_count = false);

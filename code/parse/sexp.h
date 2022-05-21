@@ -451,6 +451,8 @@ struct ship_obj;
 #define OP_SWITCH							(0x0019 | OP_CATEGORY_CONDITIONAL)	// Goober5000
 #define OP_FUNCTIONAL_SWITCH				(0x001a | OP_CATEGORY_CONDITIONAL)	// Goober5000
 #define OP_FUNCTIONAL_WHEN					(0x001b | OP_CATEGORY_CONDITIONAL)	// Goober5000
+#define OP_FOR_CONTAINER_DATA				(0x001c | OP_CATEGORY_CONDITIONAL)	// jg18
+#define OP_FOR_MAP_CONTAINER_KEYS			(0x001d | OP_CATEGORY_CONDITIONAL)	// jg18
 
 
 // sexpressions with side-effects

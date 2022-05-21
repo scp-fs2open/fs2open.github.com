@@ -1343,3 +1343,84 @@ int sexp_container_eval_change_sexp(int op_num, int node)
 		return SEXP_FALSE;
 	}
 }
+
+int collect_container_values(int node,
+	SCP_vector<std::pair<char*, int>> &argument_vector,
+	bool just_count,
+	const char *sexp_name,
+	bool map_keys_only)
+{
+	Assertion(node != -1, "%s wasn't given any ontainers. Please report!", sexp_name);
+
+	// filter out duplicates
+	SCP_unordered_set<SCP_string> arguments;
+
+	for (; node != -1; node = CDR(node)) {
+		const char *container_name = CTEXT(node);
+		const auto *p_container = get_sexp_container(container_name);
+
+		if (!p_container) {
+			report_nonexistent_container(sexp_name, container_name);
+			continue;
+		}
+
+		const auto &container = *p_container;
+
+		if (map_keys_only) {
+			if (!container.is_map()) {
+				report_non_map_container(sexp_name, container_name);
+				continue;
+			}
+
+			if (none(container.type & ContainerType::STRING_KEYS)) {
+				// TODO
+				continue;
+			}
+
+			for (const auto &kv_pair : container.map_data) {
+				arguments.emplace(kv_pair.first);
+			}
+		} else {
+			if (none(container.type & ContainerType::STRING_DATA)) {
+				// TODO
+				continue;
+			}
+
+			if (container.is_map()) {
+				for (const auto &kv_pair : container.map_data) {
+					arguments.emplace(kv_pair.second);
+				}
+			} else if (container.is_list()) {
+				for (const auto &value : container.list_data) {
+					arguments.emplace(value);
+				}
+			} else {
+				UNREACHABLE("Container %s has invalid type (%d). Please report!", container_name, (int)container.type);
+			}
+		}
+	}
+
+	if (!just_count) {
+		argument_vector.clear();
+
+		for (const auto &argument : arguments) {
+			argument_vector.emplace_back(vm_strdup(argument.c_str()), -1);
+		}
+	}
+
+	return arguments.size();
+}
+
+int sexp_container_collect_data_arguments(int node,
+	SCP_vector<std::pair<char*, int>> &argument_vector,
+	bool just_count)
+{
+	return collect_container_values(node, argument_vector, just_count, "For-container-data", false);
+}
+
+int sexp_container_collect_map_key_arguments(int node,
+	SCP_vector<std::pair<char*, int>> &argument_vector,
+	bool just_count)
+{
+	return collect_container_values(node, argument_vector, just_count, "For-map-container-keys", true);
+}
