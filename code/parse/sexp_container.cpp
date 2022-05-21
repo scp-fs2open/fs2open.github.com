@@ -66,7 +66,7 @@ namespace {
 		report_problematic_container(sexp_name, "non-map", container_name);
 	}
 
-	void add_to_map_internal(sexp_container &container, SCP_string key, SCP_string data) {
+	void add_to_map_internal(sexp_container &container, const SCP_string &key, const SCP_string &data) {
 		Assertion(container.is_map(),
 			"Attempt to add map data to non-map container %s. Please report!",
 			container.container_name.c_str());
@@ -1191,8 +1191,8 @@ void sexp_add_to_map(int node)
 			return;
 		}
 
-		const char *key = CTEXT(node);
-		const char *data = CTEXT(CDR(node));
+		const SCP_string key = CTEXT(node);
+		const SCP_string data = CTEXT(CDR(node));
 		add_to_map_internal(container, key, data);
 
 		// skip the value and move onto the next key
