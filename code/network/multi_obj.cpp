@@ -50,6 +50,8 @@ struct oo_ship_position_records {
 	matrix orientations[MAX_FRAMES_RECORDED];						// The recorded ship orientations, cur_frame_index is the index. 
 	vec3d velocities[MAX_FRAMES_RECORDED];							// The recorded ship velocities (required for additive velocity shots and auto aim), cur_frame_index is the index.
 	vec3d rotational_velocities[MAX_FRAMES_RECORDED];				// The recorded ship rotational velocities (required for auto aim if certain ), cur_frame_index is the index.
+
+	vec3d first_pos; 												// The "last_pos" of the oldest recorded frame.
 };
 
 // keeps track of what has been sent to each player, helps cut down on bandwidth, allowing only new information to be sent instead of old.
@@ -133,6 +135,7 @@ struct oo_packet_and_interp_tracking {
 struct oo_rollback_restore_record {
 	int roll_objnum;		// object pointer to the ship we need to restore. 
 	vec3d position;			// position to restore to
+	vec3d old_position;		// old_pos to restore to
 	matrix orientation;		// orientation to restore to
 	vec3d velocity;			// velocity to restore to
 	vec3d rotational_velocity; // rotational velocity to restore to
@@ -404,6 +407,7 @@ void multi_ship_record_add_ship(int obj_num)
 
 		// only add positional info if they are in the mission.
 		Oo_info.frame_info[net_sig_idx].positions[Oo_info.cur_frame_index] = objp->pos;
+		Oo_info.frame_info[net_sig_idx].first_pos = objp->last_pos;
 		Oo_info.frame_info[net_sig_idx].orientations[Oo_info.cur_frame_index] = objp->orient;
 		Oo_info.frame_info[net_sig_idx].velocities[Oo_info.cur_frame_index] = objp->phys_info.vel;
 		Oo_info.frame_info[net_sig_idx].rotational_velocities[Oo_info.cur_frame_index] = objp->phys_info.rotvel;
@@ -446,6 +450,14 @@ void multi_ship_record_update_all()
 		Oo_info.frame_info[net_sig_idx].orientations[Oo_info.cur_frame_index] = objp->orient;
 		Oo_info.frame_info[net_sig_idx].velocities[Oo_info.cur_frame_index] = objp->phys_info.vel;
 		Oo_info.frame_info[net_sig_idx].rotational_velocities[Oo_info.cur_frame_index] = objp->phys_info.rotvel;
+
+		// if we have enough frames, set last position to the prev frame
+		if (Oo_info.number_of_frames > MAX_FRAMES_RECORDED){
+			Oo_info.frame_info[net_sig_idx].first_pos = Oo_info.frame_info[net_sig_idx].positions[(Oo_info.cur_frame_index == MAX_FRAMES_RECORDED - 1) ? 0 : Oo_info.cur_frame_index + 1];
+		} else {
+			Oo_info.frame_info[net_sig_idx].first_pos = Oo_info.frame_info[net_sig_idx].positions[0];
+		}
+
 	}
 }
 
@@ -664,6 +676,7 @@ void multi_ship_record_do_rollback()
 
 		restore_point.roll_objnum = cur_ship.objnum;
 		restore_point.position = objp->pos;
+		restore_point.old_position = objp->last_pos;
 		restore_point.orientation = objp->orient;
 		restore_point.velocity = objp->phys_info.vel;
 		restore_point.rotational_velocity = objp->phys_info.rotvel;
@@ -771,6 +784,19 @@ void multi_oo_restore_frame(int frame_idx)
 		objp->orient = Oo_info.frame_info[objp->net_signature].orientations[frame_idx];
 		objp->phys_info.vel = Oo_info.frame_info[objp->net_signature].velocities[frame_idx];
 		objp->phys_info.rotvel = Oo_info.frame_info[objp->net_signature].rotational_velocities[frame_idx];
+
+		// get the prev frame
+		int temp_prev_frame = (frame_idx == 0) ? MAX_FRAMES_RECORDED - 1 : frame_idx - 1;
+
+		// because of the way collision code, we must set last_pos as well. But it gets complicated.
+		// first figure out if the current frame is actually the oldest frame on record
+		if (Oo_info.cur_frame_index == temp_prev_frame) {
+			// if so, use the special first_pos value
+			objp->last_pos = Oo_info.frame_info[objp->net_signature].first_pos;
+		// if not (most likely), use the previous frame's position.
+		} else {
+			objp->last_pos = Oo_info.frame_info[objp->net_signature].positions[temp_prev_frame];
+		}
 	}
 }
 
@@ -801,8 +827,10 @@ void multi_record_restore_positions()
 		object* objp = &Objects[restore_point.roll_objnum];
 		// reset the position, orientation, and velocity for each object
 		objp->pos = restore_point.position;
+		objp->last_pos = restore_point.old_position;
 		objp->orient = restore_point.orientation;
 		objp->phys_info.vel = restore_point.velocity;
+		objp->phys_info.rotvel = restore_point.rotational_velocity;
 	}
 
 	Oo_info.restore_points.clear();
@@ -2607,6 +2635,8 @@ void multi_init_oo_and_ship_tracker()
 		temp_position_records.velocities[i] = vmd_zero_vector;
 		temp_position_records.rotational_velocities[i] = vmd_zero_vector;
 	}
+
+	temp_position_records.first_pos = vmd_zero_vector;
 
 	int cur = 0;
 	oo_info_sent_to_players temp_sent_to_player;
