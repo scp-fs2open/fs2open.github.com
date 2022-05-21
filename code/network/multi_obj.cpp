@@ -489,7 +489,7 @@ int multi_find_prev_frame_idx()
 int multi_ship_record_find_frame(int client_frame, int time_elapsed)
 {	
 	// frame coming in from the client is too old to be used. (The -1 prevents an edge case bug at very high pings)
-	if (Oo_info.cur_frame_index - client_frame >= MAX_FRAMES_RECORDED - 1) {
+	if (Oo_info.number_of_frames - client_frame >= MAX_FRAMES_RECORDED - 1) {
 		return -1;
 	}
 
@@ -511,9 +511,8 @@ int multi_ship_record_find_frame(int client_frame, int time_elapsed)
 		if ((Oo_info.timestamps[i] <= target_timestamp) && (Oo_info.timestamps[i + 1] >= target_timestamp)) {		
 			return i;
 		}
-		else if (i < frame) {
-			return -1;
-		}
+
+		// there is no need to check for an invalid frame here because, logically, the search cannot reach frame until the next section
 	}
 
 	// Check for an end of the wrap condition.
@@ -840,7 +839,6 @@ bool multi_oo_simulate_rollback_shots(int frame_idx)
 		return true;
 	}
 
-	// initially set this to whether or not this is empty.  If it is, w
 	bool result = false;
 
 	// push the weapons forward.
