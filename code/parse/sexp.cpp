@@ -2882,7 +2882,23 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 			// Goober5000
 			case OPF_ANYTHING:
+			{
+				if (type2 == SEXP_ATOM_CONTAINER_NAME) {
+					// only list containers are allowed
+					const auto *p_any_container = get_sexp_container(Sexp_nodes[node].text);
+					Assertion(p_any_container,
+						"Attempt to use unknown container %s. Please report!",
+						Sexp_nodes[node].text);
+
+					const auto &any_container = *p_any_container;
+					if (!any_container.is_list()) {
+						return SEXP_CHECK_TYPE_MISMATCH;
+					} else if (none(any_container.type & ContainerType::STRING_DATA)) {
+						return SEXP_CHECK_WRONG_CONTAINER_DATA_TYPE;
+					}
+				}
 				break;
+			}
 
 			case OPF_AI_GOAL:
 			{

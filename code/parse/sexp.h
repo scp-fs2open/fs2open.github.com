@@ -83,7 +83,7 @@ struct ship_obj;
 #define OPF_NAV_POINT			52		// Kazan	  - a Nav Point name
 #define OPF_SSM_CLASS			53		// Goober5000 - an SSM class
 #define OPF_FLEXIBLE_ARGUMENT	54		// Goober5000 - special to match for when-argument
-#define OPF_ANYTHING			55		// Goober5000 - anything goes
+#define OPF_ANYTHING			55		// Goober5000 - anything goes (jg18 - allow lists of strings)
 #define OPF_SKYBOX_MODEL_NAME	56		// taylor - changing skybox model
 #define OPF_SHIP_OR_NONE		57		// Goober5000 - an "optional" ship argument
 #define OPF_BACKGROUND_BITMAP	58		// phreak - name of a background bitmap
