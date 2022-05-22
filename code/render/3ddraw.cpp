@@ -1177,7 +1177,7 @@ void g3_render_sphere(vec3d* position, float radius)
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //flash ball stuff
 
-void flash_ball::initialize(int number, float min_ray_width, float max_ray_width, const vec3d* dir, const vec3d* pcenter, float outer, float inner, ubyte max_r, ubyte max_g, ubyte max_b, ubyte min_r, ubyte min_g, ubyte min_b)
+void flash_ball::initialize(uint number, float min_ray_width, float max_ray_width, const vec3d* dir, const vec3d* pcenter, float outer, float inner, ubyte max_r, ubyte max_g, ubyte max_b, ubyte min_r, ubyte min_g, ubyte min_b)
 {
 	if(number < 1)
 		return;
@@ -1190,7 +1190,7 @@ void flash_ball::initialize(int number, float min_ray_width, float max_ray_width
 		n_rays = number;
 	}
 
-	int i;
+	uint i;
 	for(i = 0; i<n_rays; i++){
 	//colors
 		if(min_r != 255){
@@ -1244,9 +1244,9 @@ void flash_ball::initialize(int number, float min_ray_width, float max_ray_width
 
 void flash_ball::defpoint(int off, ubyte *bsp_data)
 {
-	int n;
-	int nverts = w(off+bsp_data+8);	
-	int offset = w(off+bsp_data+16);
+	uint n;
+	uint nverts = uw(off+bsp_data+8);	
+	uint offset = uw(off+bsp_data+16);
 	ubyte * normcount = off+bsp_data+20;
 	vec3d *src = vp(off+bsp_data+offset);
 
@@ -1278,6 +1278,8 @@ void flash_ball::defpoint(int off, ubyte *bsp_data)
 #define OP_TMAPPOLY		3
 #define OP_SORTNORM		4
 #define OP_BOUNDBOX		5
+#define OP_TMAP2POLY    6
+#define OP_SORTNORM2	7
 
 
 void flash_ball::parse_bsp(int offset, ubyte *bsp_data){
@@ -1295,11 +1297,15 @@ void flash_ball::parse_bsp(int offset, ubyte *bsp_data){
 			break;
 		case OP_SORTNORM:
 			break;
+		case OP_SORTNORM2:
+			break;
 		case OP_FLATPOLY:
 			break;
 		case OP_TMAPPOLY:
 			break;
 		case OP_BOUNDBOX:
+			break;
+		case OP_TMAP2POLY:
 			break;
 		default:
 			return;
@@ -1320,7 +1326,7 @@ void flash_ball::initialize(ubyte *bsp_data, float min_ray_width, float max_ray_
 	parse_bsp(0,bsp_data);
 	center = vmd_zero_vector;
 
-	int i;
+	uint i;
 	for(i = 0; i<n_rays; i++){
 	//colors
 		if(min_r != 255){
@@ -1364,7 +1370,7 @@ void flash_ball::initialize(ubyte *bsp_data, float min_ray_width, float max_ray_
 //intinsity	how visable it should be
 //life		how far along from start to end should it be
 void flash_ball::render(int texture, float rad, float intinsity, float life){
-	for(int i = 0; i < n_rays; i++){
+	for(uint i = 0; i < n_rays; i++){
 		vec3d end;
 		vm_vec_interp_constant(&end, &ray[i].start.world, &ray[i].end.world, life);
 		vm_vec_scale(&end, rad);

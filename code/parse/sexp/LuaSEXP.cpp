@@ -25,9 +25,9 @@
 
 using namespace luacpp;
 
-namespace {
+namespace sexp {
 
-SCP_unordered_map<SCP_string, int> parameter_type_mapping{{ "boolean",      OPF_BOOL },
+static SCP_unordered_map<SCP_string, int> parameter_type_mapping{{ "boolean",      OPF_BOOL },
 														  { "number",       OPF_NUMBER },
 														  { "ship",         OPF_SHIP },
 														  { "shipname",     OPF_SHIP },
@@ -47,7 +47,7 @@ SCP_unordered_map<SCP_string, int> parameter_type_mapping{{ "boolean",      OPF_
 														  { "ship+wing+waypoint",   OPF_SHIP_WING_POINT },
 														  { "ship+wing+waypoint+none",   OPF_SHIP_WING_POINT_OR_NONE }, };
 
-std::pair<SCP_string, int> get_parameter_type(const SCP_string& name)
+std::pair<SCP_string, int> LuaSEXP::get_parameter_type(const SCP_string& name)
 {
 	SCP_string copy = name;
 	SCP_tolower(copy);
@@ -60,10 +60,10 @@ std::pair<SCP_string, int> get_parameter_type(const SCP_string& name)
 	}
 }
 
-SCP_unordered_map<SCP_string, int> return_type_mapping{{ "number",  OPR_NUMBER },
+static SCP_unordered_map<SCP_string, int> return_type_mapping{{ "number",  OPR_NUMBER },
 													   { "boolean", OPR_BOOL },
 													   { "nothing", OPR_NULL }, };
-int get_return_type(const SCP_string& name)
+int LuaSEXP::get_return_type(const SCP_string& name)
 {
 	SCP_string copy = name;
 	SCP_tolower(copy);
@@ -76,7 +76,7 @@ int get_return_type(const SCP_string& name)
 	}
 }
 
-int get_category(const SCP_string& name) {
+int LuaSEXP::get_category(const SCP_string& name) {
 	for (auto& subcat : op_menu) {
 		if (subcat.name == name) {
 			return subcat.id;
@@ -86,7 +86,7 @@ int get_category(const SCP_string& name) {
 	return -1;
 }
 
-int get_subcategory(const SCP_string& name, int category) {
+int LuaSEXP::get_subcategory(const SCP_string& name, int category) {
 	for (auto& subcat : op_submenu) {
 		if (subcat.name == name && (subcat.id & OP_CATEGORY_MASK) == category) {
 			return subcat.id;
@@ -95,10 +95,6 @@ int get_subcategory(const SCP_string& name, int category) {
 
 	return -1;
 }
-
-}
-
-namespace sexp {
 
 LuaSEXP::LuaSEXP(const SCP_string& name) : DynamicSEXP(name) {
 }
@@ -364,6 +360,34 @@ int LuaSEXP::getCategory() {
 	}
 	return _category;
 }
+bool LuaSEXP::parseCheckEndOfDescription() {
+	// Since we're stuffing strings, this is the best way to "unstuff" a string
+	// if we determine we're finished with the description - and we also want
+	// to preserve whitespace (which the parser eats) while building the description
+	pause_parse();
+
+	// look for any token that can follow $Description
+	auto possible_tokens =
+	{
+		"$Operator:",
+		"#End",
+		"$Repeat",
+		"$Parameter:"
+	};
+
+	bool found = false;
+	for (auto token : possible_tokens)
+	{
+		if (optional_string(token))
+		{
+			found = true;
+			break;
+		}
+	}
+
+	unpause_parse();
+	return found;
+}
 void LuaSEXP::parseTable() {
 	required_string("$Category:");
 	SCP_string category;
@@ -439,10 +463,36 @@ void LuaSEXP::parseTable() {
 
 	required_string("$Description:");
 
-	SCP_string description;
+	SCP_string description, extra;
 	stuff_string(description, F_NAME);
+	while (!parseCheckEndOfDescription()) {
+		while (skip_eoln()) {
+			description += "\r\n";
+		}
+		stuff_string(extra, F_NAME);
+		description += extra;
+	}
 
-	help_text << "\t" << description << "\r\n";
+	help_text << "\t" << description << "\r\n\r\n";
+
+	// argument string
+	help_text << "Takes ";
+	if (_max_args == INT_MAX) {
+		help_text << _min_args << " or more arguments:";
+	} else {
+		if (_max_args == 0) {
+			help_text << "no arguments.";
+		} else if (_min_args == _max_args) {
+			help_text << _min_args << " argument";
+			if (_min_args > 1) {
+				help_text << "s";
+			}
+			help_text << ":";
+		} else {
+			help_text << _min_args << " to " << _max_args << " arguments:";
+		}
+	}
+	help_text << "\r\n";
 
 	bool variable_arg_part = false;
 	if (optional_string("$Repeat")) {

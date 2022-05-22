@@ -19,9 +19,9 @@ namespace Mission {
 		No_briefing,				// no briefing, jump right into mission - Goober5000
 		Toggle_debriefing,			// Turn on debriefing for dogfight. Off for everything else - Goober5000
 		Unused_3,					// Necessary to not break parsing
-		Allow_dock_trees,			// toggle between hub and tree model for ship docking (see objectdock.cpp) - Gooober5000
-		Mission_2d,					// Mission is meant to be played top-down style; 2D physics and movement.
 		Unused_4,					// Necessary to not break parsing
+		Mission_2d,					// Mission is meant to be played top-down style; 2D physics and movement.
+		Unused_5,					// Necessary to not break parsing
 		Red_alert,					// a red-alert mission - Goober5000
 		Scramble,					// a scramble mission - Goober5000
 		No_builtin_command,			// turns off Command without turning off pilots - Karajorma
@@ -29,10 +29,11 @@ namespace Mission {
 		All_attack,					// all teams at war - Goober5000
 		Use_ap_cinematics,			// use autopilot cinematics - Kazan
 		Deactivate_ap,				// deactivate autopilot - KeldorKatarn (patch approved by Kazan)
-		Always_show_goals,			// Show the mission goals, even for training missions - Karajorma
+		Toggle_showing_goals,			// Show mission goals for training missions, hide otherwise - Karajorma/naomimyselfandi
 		End_to_mainhall,			// Return to the mainhall after debrief - niffiwan
 		Override_hashcommand,		// Override #Command with the Command info in Mission Specs - Goober5000
 		Player_start_chase_view,	// Player starts mission in chase view - Goober5000
+		Neb2_fog_color_override,	// Whether to use explicit fog colors instead of checking the palette - Goober5000
 		
 		NUM_VALUES
 	};
@@ -99,6 +100,11 @@ namespace Mission {
         SF_No_disabled_self_destruct,
 		SF_Has_display_name,
 		SF_Hide_mission_log,
+		SF_Same_arrival_warp_when_docked,
+		SF_Same_departure_warp_when_docked,
+		OF_Attackable_if_no_collide, // Cyborg - keeps turrets from ignoring ships that have no_collide set
+		SF_Fail_sound_locked_primary, 	// Kiloku - Plays fail sound when firing with locked weapons
+		SF_Fail_sound_locked_secondary,	// Kiloku - Plays fail sound when firing with locked weapons
 
 		NUM_VALUES
 	};

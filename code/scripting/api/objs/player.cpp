@@ -5,6 +5,7 @@
 
 #include "gamesequence/gamesequence.h"
 #include "menuui/mainhallmenu.h"
+#include "menuui/readyroom.h"
 #include "menuui/techmenu.h"
 #include "mission/missioncampaign.h"
 #include "pilotfile/pilotfile.h"
@@ -313,7 +314,7 @@ ADE_FUNC(loadCampaign, l_Player, "string campaign", "Loads the specified campaig
 	strcpy_s(pl->current_campaign, filename); // track new campaign for player
 
 	// attempt to load the campaign
-	int load_status = mission_campaign_load(filename, pl);
+	const int load_status = mission_campaign_load(filename, pl);
 
 	// see if we successfully loaded this campaign and it's at the beginning
 	if (load_status == 0 && Campaign.prev_mission < 0) {
@@ -321,8 +322,14 @@ ADE_FUNC(loadCampaign, l_Player, "string campaign", "Loads the specified campaig
 		if ((Campaign.flags & CF_CUSTOM_TECH_DATABASE) || !stricmp(Campaign.filename, "freespace2")) {
 			// reset tech database to what's in the tables
 			tech_reset_to_default();
+
+			// write the savefile so that we don't later load a stale techroom
+			Pilot.save_savefile();
 		}
+
+		OnCampaignBeginHook->run(scripting::hook_param_list(scripting::hook_param("Campaign", 's', Campaign.filename)));
 	}
+
 	// that's all we need to do for now; the campaign loading status will be checked again when we try to load the
 	// campaign in the ready room
 

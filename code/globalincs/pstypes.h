@@ -114,7 +114,8 @@ typedef struct vec2d {
 } vec2d;
 
 // Euler angles for a rotation: h=heading, b=bank and p=pitch; angles are around the y, z and x axes
-// respectively and are performed in that order.
+// respectively and are performed in that order.  (Strictly speaking these are Tait-Bryan angles,
+// not classic Euler angles.)
 typedef struct angles {
 	float	p, b, h;
 } angles_t;

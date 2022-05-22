@@ -17,6 +17,7 @@ namespace animation {
 		{ "reset at completion",		animation::Animation_Flags::Reset_at_completion,		        true, false },
 		{ "loop",						animation::Animation_Flags::Loop,						        true, false },
 		{ "random starting phase",		animation::Animation_Flags::Random_starting_phase,				true, false },
+		{ "pause on reverse",			animation::Animation_Flags::Pause_on_reverse,					true, false },
 	};
 
 	const size_t Num_animation_flags = sizeof(Animation_flags) / sizeof(flag_def_list_new<animation::Animation_Flags>);
@@ -173,7 +174,7 @@ namespace animation {
 				return;
 		}
 
-		if (pause) {
+		if (pause || (direction == ModelAnimationDirection::RWD && m_flags[Animation_Flags::Pause_on_reverse])) {
 			if(instanceData.state != ModelAnimationState::UNTRIGGERED && instanceData.state != ModelAnimationState::NEED_RECALC && instanceData.state != ModelAnimationState::COMPLETED)
 				instanceData.state = ModelAnimationState::PAUSED;
 			return;
@@ -274,6 +275,8 @@ namespace animation {
 		ModelAnimationSet::cleanRunning();
 	}
 
+	ModelAnimationData<> ModelAnimationSubmodel::identity(ZERO_VECTOR, IDENTITY_MATRIX);
+
 	ModelAnimationSubmodel::ModelAnimationSubmodel(SCP_string submodelName) {
 		SCP_tolower(submodelName);
 		m_name = std::move(submodelName);
@@ -286,7 +289,9 @@ namespace animation {
 	const ModelAnimationData<>& ModelAnimationSubmodel::getInitialData(polymodel_instance* pmi) {
 		auto dataIt = m_initialData.find({ pmi->id });
 		if (dataIt == m_initialData.end()) {
-			saveCurrentAsBase(pmi);
+			if (!saveCurrentAsBase(pmi)) {
+				return identity;
+			}
 		}
 
 		return m_initialData.at(pmi->id);
@@ -333,12 +338,13 @@ namespace animation {
 		submodel->current_turn_rate = 0.0f;
 	}
 
-	void ModelAnimationSubmodel::saveCurrentAsBase(polymodel_instance* pmi, bool isInitialType) {
+	bool ModelAnimationSubmodel::saveCurrentAsBase(polymodel_instance* pmi, bool isInitialType) {
 		auto submodel = findSubmodel(pmi);
-		ModelAnimationData<>& data = m_initialData[{ pmi->id }];
 
 		if (!submodel.first || !submodel.second) 
-			return;
+			return false;
+
+		ModelAnimationData<>& data = m_initialData[{ pmi->id }];
 
 		if(!submodel.second->flags[Model::Submodel_flags::Can_move]){
 			mprintf(("Submodel %s of model %s is animated and has movement enabled.\n", submodel.second->name, model_get(pmi->model_num)->filename));
@@ -356,6 +362,8 @@ namespace animation {
 		//In this case, we just initial-type initialized the submodel. Properly set its last frame data as well
 		if(isInitialType)
 			submodel.first->canonical_prev_orient = submodel.first->canonical_orient;
+
+		return true;
 	}
 
 	std::pair<submodel_instance*, bsp_info*> ModelAnimationSubmodel::findSubmodel(polymodel_instance* pmi) {
@@ -416,10 +424,19 @@ namespace animation {
 			submodelNumber = m_submodel;
 		//Do we know if we were told to find the barrel submodel or not? This implies we have a subsystem name, not a submodel name
 		else {
+			ship_info* sip = nullptr;
+			if (pmi->objnum >= 0) {
+				sip = &Ship_info[Ships[Objects[pmi->objnum].instance].ship_info_index];
+			}
+			else {
+				//No objnum present. Check by SIP name we have saved (slow, so don't do if not absolutely necessary)
+				int sip_index = ship_info_lookup(m_SIPname.c_str());
 
-			if (pmi->objnum < 0)
-				return { nullptr, nullptr };
-			ship_info* sip = &Ship_info[Ships[Objects[pmi->objnum].instance].ship_info_index];
+				if(sip_index < 0) //Give up
+					return { nullptr, nullptr };
+
+				sip = &Ship_info[sip_index];
+			} 
 
 			for (int i = 0; i < sip->n_subsystems; i++) {
 				if (!subsystem_stricmp(sip->subsystems[i].subobj_name, m_name.c_str())) {
@@ -599,6 +616,13 @@ namespace animation {
 	void ModelAnimationSet::clearShipData(polymodel_instance* pmi) {
 		for (const auto& submodel : m_submodels) {
 			submodel->m_initialData.erase(pmi->id);
+		}
+		for (const auto& animations : m_animationSet) {
+			for (const auto& namedAnimations : animations.second) {
+				for (const auto& namedAnimation : namedAnimations.second) {
+					namedAnimation->m_instances.erase(pmi->id);
+				}
+			}
 		}
 	}
 

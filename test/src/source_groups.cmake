@@ -45,6 +45,7 @@ add_file_folder("model"
 
 add_file_folder("Parse"
     parse/test_parselo.cpp
+    parse/test_replace.cpp
 )
 
 add_file_folder("Pilotfile"

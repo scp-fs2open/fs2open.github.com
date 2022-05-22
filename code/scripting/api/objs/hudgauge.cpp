@@ -3,6 +3,7 @@
 
 #include "hudgauge.h"
 #include "hud/hudscripting.h"
+#include "font.h"
 #include "texture.h"
 
 namespace scripting {
@@ -60,6 +61,69 @@ ADE_FUNC(getBaseResolution, l_HudGauge, nullptr, "Returns the base width and bas
 		return ADE_RETURN_NIL;
 
 	return ade_set_args(L, "ii", gauge->getBaseWidth(), gauge->getBaseHeight());
+}
+
+ADE_FUNC(getAspectQuotient, l_HudGauge, nullptr, "Returns the aspect quotient (ratio between the current aspect ratio and the HUD's native aspect ratio) used by the specified HUD gauge.",
+	"number", "Aspect quotient")
+{
+	HudGauge* gauge;
+	if (!ade_get_args(L, "o", l_HudGauge.Get(&gauge)))
+		return ADE_RETURN_NIL;
+
+	return ade_set_args(L, "f", gauge->getAspectQuotient());
+}
+
+ADE_FUNC(getPosition, l_HudGauge, nullptr, "Returns the position of the specified HUD gauge.",
+	"number, number", "X and Y coordinates")
+{
+	HudGauge* gauge;
+	if (!ade_get_args(L, "o", l_HudGauge.Get(&gauge)))
+		return ADE_RETURN_NIL;
+
+	int x, y;
+	gauge->getPosition(&x, &y);
+	return ade_set_args(L, "ii", x, y);
+}
+
+ADE_FUNC(getFont, l_HudGauge, nullptr, "Returns the font used by the specified HUD gauge.",
+	"font", "The font handle")
+{
+	HudGauge* gauge;
+	if (!ade_get_args(L, "o", l_HudGauge.Get(&gauge)))
+		return ADE_RETURN_NIL;
+
+	int font_num = gauge->getFont();
+
+	if (font_num < 0 || font_num >= font::FontManager::numberOfFonts())
+		return ade_set_error(L, "o", l_Font.Set(font_h()));
+
+	return ade_set_args(L, "o", l_Font.Set(font_h(font::FontManager::getFont(font_num))));
+}
+
+ADE_FUNC(getOriginAndOffset, l_HudGauge, nullptr, "Returns the origin and offset of the specified HUD gauge as specified in the table.",
+	"number, number, number, number", "Origin X, Origin Y, Offset X, Offset Y")
+{
+	HudGauge* gauge;
+	if (!ade_get_args(L, "o", l_HudGauge.Get(&gauge)))
+		return ADE_RETURN_NIL;
+
+	float originX, originY;
+	int offsetX, offsetY;
+	gauge->getOriginAndOffset(&originX, &originY, &offsetX, &offsetY);
+	return ade_set_args(L, "ffii", originX, originY, offsetX, offsetY);
+}
+
+ADE_FUNC(getCoords, l_HudGauge, nullptr, "Returns the coordinates of the specified HUD gauge as specified in the table.",
+	"boolean, number, number", "Coordinates flag (whether coordinates are used), X, Y")
+{
+	HudGauge* gauge;
+	if (!ade_get_args(L, "o", l_HudGauge.Get(&gauge)))
+		return ADE_RETURN_NIL;
+
+	bool useCoords;
+	int x, y;
+	gauge->getCoords(&useCoords, &x, &y);
+	return ade_set_args(L, "bii", useCoords, x, y);
 }
 
 ADE_VIRTVAR(RenderFunction,

@@ -57,9 +57,9 @@ void draw_brackets_square(graphics::line_draw_list* draw_list, int x1, int y1, i
 	}
 	
 	width = x2 - x1;
-	Assert( width > 0);
 	height = y2 - y1;
-	Assert( height > 0);
+	if (width < 1 || height < 1)
+		return;
 
 	// make the brackets extend 25% of the way along the width or height
 	int bracket_width = width/4;
@@ -475,7 +475,7 @@ void HudGaugeBrackets::renderObjectBrackets(object *targetp, color *clr, int w_c
 			int target_objnum = -1;
 
 			if(flags & TARGET_DISPLAY_DIST) {
-				distance = hud_find_target_distance(targetp, Player_obj);
+				distance = Player_ai->current_target_distance;
 			}
 
 			if(flags & TARGET_DISPLAY_DOTS) {

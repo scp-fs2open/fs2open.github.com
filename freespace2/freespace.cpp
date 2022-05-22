@@ -649,14 +649,20 @@ void game_sunspot_process(float frametime)
 	float Sun_spot_goal = 0.0f;
 
 	// supernova
-	int sn_stage = supernova_active();
-	if(sn_stage){		
+	auto sn_stage = supernova_stage();
+	if (sn_stage != SUPERNOVA_STAGE::NONE) {
 		// sunspot differently based on supernova stage
-		switch(sn_stage){
+		switch (sn_stage) {
+		// this case is only here to make gcc happy - apparently it doesn't know we already checked for it
+		case SUPERNOVA_STAGE::NONE:
+			UNREACHABLE("The SUPERNOVA_STAGE::NONE case should have already been handled");
+			break;
+
 		// approaching. player still in control
-		case 1:			
+		case SUPERNOVA_STAGE::STARTED:
+		case SUPERNOVA_STAGE::CLOSE:
 			float pct;
-			pct = (1.0f - (supernova_time_left() / SUPERNOVA_CUT_TIME));
+			pct = supernova_sunspot_pct();
 
 			vec3d light_dir;				
 			light_get_global_dir(&light_dir, 0);
@@ -681,10 +687,10 @@ void game_sunspot_process(float frametime)
 			break;
 
 		// camera cut. player not in control. note : at this point camera starts out facing the sun. so we can go nice and bright
-		case 2: 					
-		case 3:
+		case SUPERNOVA_STAGE::HIT:
+		case SUPERNOVA_STAGE::TOOLTIME:
 			Sun_spot_goal = 0.9f;
-			Sun_spot_goal += (1.0f - (supernova_time_left() / SUPERNOVA_CUT_TIME)) * 0.1f;
+			Sun_spot_goal += supernova_sunspot_pct() * 0.1f;
 
 			if(Sun_spot_goal > 1.0f){
 				Sun_spot_goal = 1.0f;
@@ -695,8 +701,8 @@ void game_sunspot_process(float frametime)
 			break;		
 
 		// fade to white. display dead popup
-		case 4:
-		case 5:
+		case SUPERNOVA_STAGE::DEAD1:
+		case SUPERNOVA_STAGE::DEAD2:
 			Supernova_last_glare += (2.0f * flFrametime);
 			if(Supernova_last_glare > 2.0f){
 				Supernova_last_glare = 2.0f;
@@ -846,8 +852,9 @@ void game_level_close()
 	//to accidentally use an override here without realizing it.
 	if(!OnMissionEndHook->isOverride())
 	{
-		// save player-persistent variables
+		// save player-persistent variables and containers
 		mission_campaign_save_on_close_variables();	// Goober5000
+		mission_campaign_save_on_close_containers(); // jg18
 
 		// De-Initialize the game subsystems
 		obj_delete_all();
@@ -1331,7 +1338,7 @@ void game_post_level_init()
 	// While trying to track down the nebula bug I encountered a cool effect -
 	// comment this out to fly a mission in a void. Maybe we should develop this
 	// into a full effect or something, because it is seriously cool.
-	neb2_post_level_init();
+	neb2_post_level_init(The_mission.flags[Mission::Mission_Flags::Neb2_fog_color_override]);
 
 	// Initialize decal system
 	decals::initializeMission();
@@ -1914,6 +1921,9 @@ void game_init()
 
 	animation::ModelAnimationParseHelper::parseTables();
 
+	// Initialize dynamic SEXPs. Must happen before ship init for LuaAI
+	sexp::dynamic_sexp_init();
+
 	obj_init();	
 	mflash_game_init();	
 	armor_init();
@@ -1963,8 +1973,6 @@ void game_init()
 	}
 
 	script_init();			//WMC
-	// Initialize dynamic SEXPs
-	sexp::dynamic_sexp_init();
 
 	// This needs to be done after the dynamic SEXP init so that our documentation contains the dynamic sexps
 	if (Cmdline_output_sexp_info) {
@@ -1991,6 +1999,8 @@ void game_init()
 
 		libs::discord::init();
 	}
+
+	mod_table_post_process();
 
 	nprintf(("General", "Ships.tbl is : %s\n", Game_ships_tbl_valid ? "VALID" : "INVALID!!!!"));
 	nprintf(("General", "Weapons.tbl is : %s\n", Game_weapons_tbl_valid ? "VALID" : "INVALID!!!!"));
@@ -2440,7 +2450,7 @@ void game_reset_view_clip()
 
 void game_set_view_clip(float  /*frametime*/)
 {
-	if ((Game_mode & GM_DEAD) || (supernova_active() >= 2))
+	if ((Game_mode & GM_DEAD) || (supernova_stage() >= SUPERNOVA_STAGE::HIT))
 	{
 		// Set the clip region for the letterbox "dead view"
 		int yborder = gr_screen.max_h/4;
@@ -2968,7 +2978,7 @@ void apply_view_shake(matrix *eye_orient)
 	else {
 		// Make eye shake due to supernova
 		if (supernova_camera_cut()) {
-			float cut_pct = 1.0f - (supernova_time_left() / SUPERNOVA_CUT_TIME);
+			float cut_pct = supernova_sunspot_pct();
 			tangles.p += get_shake(0.07f * cut_pct * sn_shudder, -1, 0);
 			tangles.h += get_shake(0.07f * cut_pct * sn_shudder, -1, 0);
 		}
@@ -3537,7 +3547,7 @@ void game_simulation_frame()
 
 	// supernova
 	supernova_process();
-	if(supernova_active() >= 5){
+	if (supernova_stage() >= SUPERNOVA_STAGE::DEAD1) {
 		return;
 	}
 
@@ -4562,8 +4572,6 @@ int game_poll()
 				static int counter = os_config_read_uint(nullptr, "ScreenshotNum", 0);
 				char tmp_name[MAX_FILENAME_LEN];
 
-				game_stop_time();
-
 				// we could probably go with .3 here for 1,000 shots but people really need to clean out
 				// their directories better than that so it's 100 for now.
 				sprintf( tmp_name, NOX("screen%.4i"), counter );
@@ -4581,7 +4589,6 @@ int game_poll()
 				mprintf(( "Dumping screen to '%s'\n", tmp_name ));
 				gr_print_screen(tmp_name);
 
-				game_start_time();
 				os_config_write_uint(nullptr, "ScreenshotNum", counter);
 			}
 
@@ -5205,7 +5212,11 @@ void game_leave_state( int old_state, int new_state )
 				if (Game_mode & GM_IN_MISSION) {
 					weapon_unpause_sounds();
 					audiostream_unpause_all();
-					game_start_time();
+
+					// multi doesn't pause here so time keeps going
+					if ( !(Game_mode & GM_MULTIPLAYER) ) {
+						game_start_time();
+					}
 				}
 			}
 			break;
@@ -5516,8 +5527,8 @@ void game_enter_state( int old_state, int new_state )
 	Script_system.SetHookVar("OldState", 'o', l_GameState.Set(gamestate_h(old_state)));
 	Script_system.SetHookVar("NewState", 'o', l_GameState.Set(gamestate_h(new_state)));
 
-	if(Script_system.IsConditionOverride(CHA_ONSTATESTART)) {
-		Script_system.RunCondition(CHA_ONSTATESTART);
+	if(Script_system.IsConditionOverride(CHA_ONSTATESTART, nullptr, nullptr, old_state)) {
+		Script_system.RunCondition(CHA_ONSTATESTART, nullptr, nullptr, old_state);
 		Script_system.RemHookVars({"OldState", "NewState"});
 		return;
 	}
@@ -5703,7 +5714,11 @@ void game_enter_state( int old_state, int new_state )
 				if (Game_mode & GM_IN_MISSION) {
 					weapon_pause_sounds();
 					audiostream_pause_all();
-					game_stop_time();
+
+					// multi doesn't pause here so time needs to keep going
+					if ( !(Game_mode & GM_MULTIPLAYER) ) {
+						game_stop_time();
+					}
 				}
 			}
 			break;
@@ -5803,7 +5818,8 @@ void mouse_force_pos(int x, int y);
 					) || (
 						(Game_mode & GM_MULTIPLAYER) && (
 							(old_state == GS_STATE_MULTI_PAUSED) ||
-							(old_state == GS_STATE_MULTI_MISSION_SYNC)
+							(old_state == GS_STATE_MULTI_MISSION_SYNC) ||
+							(old_state == GS_STATE_INGAME_PRE_JOIN)
 						)
 					)
 				) {
@@ -6040,7 +6056,7 @@ void mouse_force_pos(int x, int y);
 	} // end switch
 
 	//WMC - now do user scripting stuff
-	Script_system.RunCondition(CHA_ONSTATESTART);
+	Script_system.RunCondition(CHA_ONSTATESTART, nullptr, nullptr, old_state);
 	Script_system.RemHookVars({"OldState", "NewState"});
 }
 

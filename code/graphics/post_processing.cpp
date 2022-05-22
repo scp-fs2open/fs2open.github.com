@@ -5,6 +5,7 @@
 #include "options/Option.h"
 #include "parse/parselo.h"
 #include "ship/ship.h"
+#include "starfield/supernova.h"
 
 namespace graphics {
 namespace {
@@ -208,6 +209,10 @@ void PostProcessingManager::setBloomShadersOk(bool ok)
 
 bool gr_lightshafts_enabled()
 {
+	// supernova glare should disable lightshafts
+	if (supernova_stage() >= SUPERNOVA_STAGE::CLOSE) {
+		return false;
+	}
 
 	if (!graphics::Post_processing_manager->getLightshaftParams().on) {
 		return false;

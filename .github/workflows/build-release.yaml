@@ -34,23 +34,6 @@ jobs:
           release_name: Release ${{ github.ref }}
           draft: false
           prerelease: false
-      - name: Store upload URL
-        run: |
-          echo -n "${{ steps.create_release.outputs.upload_url }}" > upload_url
-      - name: Persist upload URL
-        uses: actions/upload-artifact@v2
-        # Upload the url file for use with other runners
-        # upload-artifact.inputs:
-        #   if-no-files-found=warn  What to do if path fails to find any files.
-        #       warn      Display a warning but do not fail the action
-        #       error     Display an error and fail the action
-        #       ignore    No display, No fail
-        #   retention-days=0    Days to keep the artifact.
-        #       0     Use default retention policy of the repo
-        #       1~90  Min 1, Max 90 days to keep the artifact unless changed by repo settings page
-        with:
-          name: upload_url  # name of artifact
-          path: ${{ github.workspace }}/upload_url  # source location of artifact to upload
 
   build_linux:
     strategy:
@@ -134,6 +117,15 @@ jobs:
         run: $GITHUB_WORKSPACE/ci/linux/generate_appimage.sh $GITHUB_WORKSPACE/build/install
       - name: Upload build result
         uses: actions/upload-artifact@v2
+        # Upload the url file for use with other runners
+        # upload-artifact.inputs:
+        #   if-no-files-found=warn  What to do if path fails to find any files.
+        #       warn      Display a warning but do not fail the action
+        #       error     Display an error and fail the action
+        #       ignore    No display, No fail
+        #   retention-days=0    Days to keep the artifact.
+        #       0     Use default retention policy of the repo
+        #       1~90  Min 1, Max 90 days to keep the artifact unless changed by repo settings page
         with:
           name: linux-${{ matrix.configuration }}
           path: ${{ github.workspace }}/build/install/*.AppImage
@@ -148,21 +140,6 @@ jobs:
         with:
           submodules: true
           fetch-depth: '0'  # value 0 to fetch all history and tags for all branches
-      - name: Download upload URL
-        uses: actions/download-artifact@v1
-        # Downloads and extracts uploaded artifact by name
-        # github_token  default ${{secrets.GITHUB_TOKEN}}
-        # name      name of artifact to download
-        # latest    Download latest artifact (default true)
-        # path      Where to save the artifact, (default extract_here)
-        # repo      Source repo of artifact (default ${{github.repository}})
-        with:
-          name: upload_url
-          path: .
-      - name: Extract upload URL
-        # Extract the URL from file and stuff it into a shell variable
-        id: extractUploadUrl
-        run: echo "::set-output name=upload_url::$(cat upload_url)"
       - name: Download Release builds
         # Grab the release builds
         uses: actions/download-artifact@v2
@@ -290,16 +267,6 @@ jobs:
         with:
           submodules: true
           fetch-depth: '0'
-
-      - name: Download upload URL
-        uses: actions/download-artifact@v1
-        with:
-          name: upload_url
-          path: .
-
-      - name: Extract upload URL
-        id: extractUploadUrl
-        run: echo "::set-output name=upload_url::$(cat upload_url)"
 
       - name: Download Release builds
         uses: actions/download-artifact@v2

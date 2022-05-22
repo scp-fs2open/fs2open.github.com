@@ -1716,11 +1716,8 @@ typedef struct eval_next_turret {
 	float dist;
 } eval_next_turret;
 
-int turret_compare_func(const void *e1, const void *e2)
+int turret_compare_func(const eval_next_turret *p1, const eval_next_turret *p2)
 {
-	eval_next_turret *p1 = (eval_next_turret*)e1;
-	eval_next_turret *p2 = (eval_next_turret*)e2;
-
 	Assert(p1->type != TYPE_NONE);
 	Assert(p2->type != TYPE_NONE);
 
@@ -1850,7 +1847,7 @@ void hud_target_live_turret(int next_flag, int auto_advance, int only_player_tar
 
 	// sort the list if we're not using turret straight ahead of us
 	if (!use_straight_ahead_turret) {
-		insertion_sort(ent, num_live_turrets, sizeof(eval_next_turret), turret_compare_func);
+		insertion_sort(ent, num_live_turrets, turret_compare_func);
 	}
 
 	if (use_straight_ahead_turret) {
@@ -2124,6 +2121,8 @@ bool evaluate_ship_as_closest_target(esct *esct_p)
 
 	// consider the ship alone if there are no attacking turrets
 	if ( !turret_is_attacking ) {
+		// Volition switched distance evaluation methods here... presumably this is to prioritize small fighters when dogfighting next to large ships...
+		// Since this is used specifically for finding an ordering of targets and does not involve any visual displays, distance-to-center is reasonable.
 		//new_distance = hud_find_target_distance(objp, Player_obj);
 		new_distance = vm_vec_dist_quick(&objp->pos, &Player_obj->pos);
 
@@ -4407,8 +4406,15 @@ void hud_target_change_check()
 	// check if the main target has changed
 	if (Player_ai->last_target != Player_ai->target_objnum) {
 
+		// acquired target
 		if ( Player_ai->target_objnum != -1){
 			snd_play( gamesnd_get_game_sound(ship_get_sound(Player_obj, GameSounds::TARGET_ACQUIRE)), 0.0f );
+		}
+		// cleared target
+		else {
+			if (Target_static_looping.isValid()) {
+				snd_stop(Target_static_looping);
+			}
 		}
 
 		// if we have a hotkey set active, see if new target is in set.  If not in
@@ -6311,7 +6317,11 @@ void HudGaugeOffscreen::render(float  /*frametime*/)
 			int dir;
 
 			if(target_display_list[i].objp) {
-				dist = hud_find_target_distance( target_display_list[i].objp, Player_obj );
+				if (OBJ_INDEX(target_display_list[i].objp) == Player_ai->target_objnum) {
+					dist = Player_ai->current_target_distance;
+				} else {
+					dist = hud_find_target_distance( target_display_list[i].objp, Player_obj );
+				}
 			} else {
 				// if we don't have a corresponding object, use given position to figure out distance
 				dist = vm_vec_dist_quick(&Player_obj->pos, &target_display_list[i].target_pos);

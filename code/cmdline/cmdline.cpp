@@ -19,6 +19,7 @@
 #include "hud/hudconfig.h"
 #include "io/joy.h"
 #include "network/multi.h"
+#include "network/multi_log.h"
 #include "options/OptionsManager.h"
 #include "osapi/osapi.h"
 #include "parse/sexp.h"
@@ -42,6 +43,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <cstdio>
+#include <sstream>
 
 #include <jansson.h>
 
@@ -222,6 +224,7 @@ Flag exe_params[] =
 	{ "-noshadercache",		"Disables the shader cache",				true,	0,									EASY_DEFAULT,					"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-noshadercache", },
 	{ "-prefer_ipv4",		"Prefer IPv4 DNS lookups",					true,	0,									EASY_DEFAULT,					"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-prefer_ipv4", },
 	{ "-prefer_ipv6",		"Prefer IPv6 DNS lookups",					true,	0,									EASY_DEFAULT,					"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-prefer_ipv6", },
+	{ "-log_multi_packet",	"Log multi packet types ",					true,	0,									EASY_DEFAULT,					"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-log_multi_packet",},
 #ifdef WIN32
 	{ "-fix_registry",	"Use a different registry path",				true,	0,									EASY_DEFAULT,					"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-fix_registry", },
 #endif
@@ -310,6 +313,7 @@ int Cmdline_use_last_pilot = 0;
 
 // Graphics related
 cmdline_parm fov_arg("-fov", "Vertical field-of-view factor", AT_FLOAT);					// Cmdline_fov  -- comand line FOV -Bobboau
+cmdline_parm fov_cockpit_arg("-fov_cockpit", "Vertical field-of-view factor for Cockpits", AT_FLOAT);
 cmdline_parm clip_dist_arg("-clipdist", "Changes the distance from the viewpoint for the near-clipping plane", AT_FLOAT);		// Cmdline_clip_dist
 cmdline_parm spec_static_arg("-spec_static", "Adjusts suns contribution to specular highlights", AT_FLOAT);
 cmdline_parm spec_point_arg("-spec_point", "Adjusts laser weapons contribution to specular highlights", AT_FLOAT);
@@ -444,6 +448,7 @@ cmdline_parm nograb_arg("-nograb", NULL, AT_NONE);
 cmdline_parm noshadercache_arg("-noshadercache", NULL, AT_NONE);
 cmdline_parm prefer_ipv4_arg("-prefer_ipv4", nullptr, AT_NONE);
 cmdline_parm prefer_ipv6_arg("-prefer_ipv6", nullptr, AT_NONE);
+cmdline_parm log_multi_packet_arg("-log_multi_packet", nullptr, AT_NONE);
 #ifdef WIN32
 cmdline_parm fix_registry("-fix_registry", NULL, AT_NONE);
 #endif
@@ -464,6 +469,7 @@ bool Cmdline_nograb = false;
 bool Cmdline_noshadercache = false;
 bool Cmdline_prefer_ipv4 = false;
 bool Cmdline_prefer_ipv6 = false;
+bool Cmdline_dump_packet_type = false;
 #ifdef WIN32
 bool Cmdline_alternate_registry_path = false;
 #endif
@@ -644,6 +650,32 @@ void cmdline_debug_print_cmdline()
 	}
 }
 #endif
+
+// prints simple cmdline to multi.log
+void cmdline_print_cmdline_multi()
+{
+	cmdline_parm *parmp;
+	int found = 0;
+	std::ostringstream cmdline;
+
+	for (parmp = GET_FIRST(&Parm_list); parmp !=END_OF_LIST(&Parm_list); parmp = GET_NEXT(parmp) ) {
+		if ( parmp->name_found ) {
+			cmdline << " " << parmp->name;
+
+			if (parmp->args) {
+				cmdline << " " << parmp->args;
+			}
+
+			found++;
+		}
+	}
+
+	if ( !found ) {
+		cmdline << " <none>";
+	}
+
+	ml_printf("Command line:%s", cmdline.str().c_str());
+}
 
 //	Return true if this character is an extra char (white space and quotes)
 int is_extra_space(char ch)
@@ -1557,6 +1589,9 @@ bool SetCmdlineParams()
 		// is this a standalone server??
 		if (standalone_arg.found()) {
 			Is_standalone = 1;
+
+			// also enable non-interactive by default here
+			Cmdline_noninteractive = true;
 		}
 	}
 
@@ -1810,6 +1845,16 @@ bool SetCmdlineParams()
 			VIEWER_ZOOM_DEFAULT = val;
 		} else {
 			VIEWER_ZOOM_DEFAULT = 0.75f;
+		}
+	}
+
+	if ( fov_cockpit_arg.found() ) {
+		auto val = fov_cockpit_arg.get_float();
+		if (val > 0.1) {
+			COCKPIT_ZOOM_DEFAULT = val;
+		}
+		else {
+			COCKPIT_ZOOM_DEFAULT = VIEWER_ZOOM_DEFAULT;
 		}
 	}
 
@@ -2280,6 +2325,10 @@ bool SetCmdlineParams()
 		}
 	}
  
+	if (log_multi_packet_arg.found()) {
+		Cmdline_dump_packet_type = true;
+	}
+
 	return true; 
 }
 

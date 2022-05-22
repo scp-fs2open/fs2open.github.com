@@ -39,6 +39,7 @@
 #include "network/multiutil.h"
 #include "osapi/osapi.h"
 #include "parse/parselo.h"
+#include "parse/sexp_container.h"
 #include "pilotfile/pilotfile.h"
 #include "playerman/player.h"
 #include "popup/popup.h"
@@ -1314,6 +1315,7 @@ void debrief_accept(int ok_to_post_start_game_event)
 		if ( Game_mode & GM_CAMPAIGN_MODE ) {
 
 			mission_campaign_store_variables(SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS);
+			mission_campaign_store_containers(ContainerType::SAVE_ON_MISSION_PROGRESS);
 
 			// check for possible mission loop
 			// check for (1) mission loop available, (2) don't have to repeat last mission
@@ -2559,8 +2561,11 @@ void debrief_disable_accept()
 }
 
 // Goober5000 - replace any variables with their values
+// karajorma/jg18 - replace container references as well
 void debrief_replace_stage_text(debrief_stage &stage)
 {
 	sexp_replace_variable_names_with_values(stage.text);
 	sexp_replace_variable_names_with_values(stage.recommendation_text);
+	sexp_container_replace_refs_with_values(stage.text);
+	sexp_container_replace_refs_with_values(stage.recommendation_text);
 }

@@ -148,13 +148,15 @@ void CShipEditorDlg::DoDataExchange(CDataExchange* pDX)
 
 	CDialog::DoDataExchange(pDX);
 	//{{AFX_DATA_MAP(CShipEditorDlg)
-	DDX_Control(pDX, IDC_NO_DEPARTURE_WARP, m_no_departure_warp);
 	DDX_Control(pDX, IDC_NO_ARRIVAL_WARP, m_no_arrival_warp);
-	DDX_Control(pDX, IDC_PLAYER_SHIP, m_player_ship);
-	DDX_Control(pDX, IDC_DEPARTURE_DELAY_SPIN, m_departure_delay_spin);
+	DDX_Control(pDX, IDC_NO_DEPARTURE_WARP, m_no_departure_warp);
+	DDX_Control(pDX, IDC_SAME_ARRIVAL_WARP_WHEN_DOCKED, m_same_arrival_warp_when_docked);
+	DDX_Control(pDX, IDC_SAME_DEPARTURE_WARP_WHEN_DOCKED, m_same_departure_warp_when_docked);
 	DDX_Control(pDX, IDC_ARRIVAL_DELAY_SPIN, m_arrival_delay_spin);
-	DDX_Control(pDX, IDC_DEPARTURE_TREE, m_departure_tree);
+	DDX_Control(pDX, IDC_DEPARTURE_DELAY_SPIN, m_departure_delay_spin);
 	DDX_Control(pDX, IDC_ARRIVAL_TREE, m_arrival_tree);
+	DDX_Control(pDX, IDC_DEPARTURE_TREE, m_departure_tree);
+	DDX_Control(pDX, IDC_PLAYER_SHIP, m_player_ship);
 	DDX_Text(pDX, IDC_SHIP_NAME, m_ship_name);
 	DDX_CBString(pDX, IDC_SHIP_CARGO1, m_cargo1);
 	DDX_CBIndex(pDX, IDC_SHIP_CLASS, m_ship_class);
@@ -223,6 +225,8 @@ BEGIN_MESSAGE_MAP(CShipEditorDlg, CDialog)
 	ON_BN_CLICKED(IDC_PLAYER_SHIP, OnPlayerShip)
 	ON_BN_CLICKED(IDC_NO_ARRIVAL_WARP, OnNoArrivalWarp)
 	ON_BN_CLICKED(IDC_NO_DEPARTURE_WARP, OnNoDepartureWarp)
+	ON_BN_CLICKED(IDC_SAME_ARRIVAL_WARP_WHEN_DOCKED, OnSameArrivalWarpWhenDocked)
+	ON_BN_CLICKED(IDC_SAME_DEPARTURE_WARP_WHEN_DOCKED, OnSameDepartureWarpWhenDocked)
 	ON_CBN_SELCHANGE(IDC_DEPARTURE_LOCATION, OnSelchangeDepartureLocation)
 	ON_CBN_SELCHANGE(IDC_HOTKEY, OnSelchangeHotkey)
 	ON_BN_CLICKED(IDC_FLAGS, OnFlags)
@@ -387,6 +391,7 @@ void CShipEditorDlg::initialize_data(int full_update)
 	int type, ship_count, player_count, total_count, wing = -1, pvalid_count;
 	int a_cue, d_cue, cue_init = 0, cargo = 0, base_ship, base_player, pship = -1;
 	int no_arrival_warp = 0, no_departure_warp = 0, escort_count;
+	int same_arrival_warp_when_docked = 0, same_departure_warp_when_docked = 0;
 	std::set<size_t> ship_orders, current_orders;
 	int pship_count;  // a total count of the player ships not marked
 	object *objp;
@@ -601,9 +606,11 @@ void CShipEditorDlg::initialize_data(int full_update)
 									m_update_arrival = m_update_departure = 0;
 							}
 
-							// set routine local varaiables for ship/object flags
+							// set routine local variables for ship/object flags
 							no_arrival_warp = (Ships[i].flags[Ship::Ship_Flags::No_arrival_warp]) ? 1 : 0;
 							no_departure_warp = (Ships[i].flags[Ship::Ship_Flags::No_departure_warp]) ? 1 : 0;
+							same_arrival_warp_when_docked = (Ships[i].flags[Ship::Ship_Flags::Same_arrival_warp_when_docked]) ? 1 : 0;
+							same_departure_warp_when_docked = (Ships[i].flags[Ship::Ship_Flags::Same_departure_warp_when_docked]) ? 1 : 0;
 
 							base_ship = -1;
 							if (!multi_edit)
@@ -635,6 +642,8 @@ void CShipEditorDlg::initialize_data(int full_update)
 
 							no_arrival_warp = tristate_set(Ships[i].flags[Ship::Ship_Flags::No_arrival_warp], no_arrival_warp);
 							no_departure_warp = tristate_set(Ships[i].flags[Ship::Ship_Flags::No_departure_warp], no_departure_warp);
+							same_arrival_warp_when_docked = tristate_set(Ships[i].flags[Ship::Ship_Flags::Same_arrival_warp_when_docked], same_arrival_warp_when_docked);
+							same_departure_warp_when_docked = tristate_set(Ships[i].flags[Ship::Ship_Flags::Same_departure_warp_when_docked], same_departure_warp_when_docked);
 						}
 					}
 				}
@@ -662,6 +671,8 @@ void CShipEditorDlg::initialize_data(int full_update)
 		m_player_ship.SetCheck(pship);
 		m_no_arrival_warp.SetCheck(no_arrival_warp);
 		m_no_departure_warp.SetCheck(no_departure_warp);
+		m_same_arrival_warp_when_docked.SetCheck(same_arrival_warp_when_docked);
+		m_same_departure_warp_when_docked.SetCheck(same_departure_warp_when_docked);
 
 		if (!multi_edit) {
 			auto i = m_arrival_tree.select_sexp_node;
@@ -748,6 +759,8 @@ void CShipEditorDlg::initialize_data(int full_update)
 		m_departure_tree.DeleteAllItems();
 		m_no_arrival_warp.SetCheck(0);
 		m_no_departure_warp.SetCheck(0);
+		m_same_arrival_warp_when_docked.SetCheck(0);
+		m_same_departure_warp_when_docked.SetCheck(0);
 		enable = p_enable = 0;
 		GetDlgItem(IDC_WING)->SetWindowText(_T("None"));
 	}
@@ -841,6 +854,8 @@ void CShipEditorDlg::initialize_data(int full_update)
 		GetDlgItem(IDC_DEPARTURE_TREE)->EnableWindow(FALSE);
 		GetDlgItem(IDC_NO_ARRIVAL_WARP)->EnableWindow(FALSE);
 		GetDlgItem(IDC_NO_DEPARTURE_WARP)->EnableWindow(FALSE);
+		GetDlgItem(IDC_SAME_ARRIVAL_WARP_WHEN_DOCKED)->EnableWindow(FALSE);
+		GetDlgItem(IDC_SAME_DEPARTURE_WARP_WHEN_DOCKED)->EnableWindow(FALSE);
 
 		GetDlgItem(IDC_RESTRICT_ARRIVAL)->EnableWindow(FALSE);
 		GetDlgItem(IDC_RESTRICT_DEPARTURE)->EnableWindow(FALSE);
@@ -885,6 +900,8 @@ void CShipEditorDlg::initialize_data(int full_update)
 		GetDlgItem(IDC_DEPARTURE_TREE)->EnableWindow(enable);
 		GetDlgItem(IDC_NO_ARRIVAL_WARP)->EnableWindow(enable);
 		GetDlgItem(IDC_NO_DEPARTURE_WARP)->EnableWindow(enable);
+		GetDlgItem(IDC_SAME_ARRIVAL_WARP_WHEN_DOCKED)->EnableWindow(enable);
+		GetDlgItem(IDC_SAME_DEPARTURE_WARP_WHEN_DOCKED)->EnableWindow(enable);
 	}
 
 	if (total_count) {
@@ -1182,7 +1199,7 @@ int CShipEditorDlg::update_data(int redraw)
 			return z;
 
 		strcpy_s(old_name, Ships[single_ship].ship_name);
-		string_copy(Ships[single_ship].ship_name, m_ship_name, NAME_LENGTH, 1);
+		string_copy(Ships[single_ship].ship_name, m_ship_name, NAME_LENGTH - 1, 1);
 		str = Ships[single_ship].ship_name;
 		if (strcmp(old_name, str)) {
 			update_sexp_references(old_name, str);
@@ -1389,6 +1406,38 @@ int CShipEditorDlg::update_ship(int ship)
 				set_modified();
 
             Ships[ship].flags.set(Ship::Ship_Flags::No_departure_warp);
+			break;
+	}
+
+	switch( m_same_arrival_warp_when_docked.GetCheck() ) {
+		case 0:
+			if (Ships[ship].flags[Ship::Ship_Flags::Same_arrival_warp_when_docked])
+				set_modified();
+
+            Ships[ship].flags.remove(Ship::Ship_Flags::Same_arrival_warp_when_docked);
+			break;
+
+		case 1:
+			if (!(Ships[ship].flags[Ship::Ship_Flags::Same_arrival_warp_when_docked]))
+				set_modified();
+
+            Ships[ship].flags.set(Ship::Ship_Flags::Same_arrival_warp_when_docked);
+			break;
+	}
+
+	switch( m_same_departure_warp_when_docked.GetCheck() ) {
+		case 0:
+			if (Ships[ship].flags[Ship::Ship_Flags::Same_departure_warp_when_docked])
+				set_modified();
+
+            Ships[ship].flags.remove(Ship::Ship_Flags::Same_departure_warp_when_docked);
+			break;
+
+		case 1:
+			if (!(Ships[ship].flags[Ship::Ship_Flags::Same_departure_warp_when_docked]))
+				set_modified();
+
+            Ships[ship].flags.set(Ship::Ship_Flags::Same_departure_warp_when_docked);
 			break;
 	}
 
@@ -1832,48 +1881,44 @@ void CShipEditorDlg::OnSelchangedDepartureTree(NMHDR* pNMHDR, LRESULT* pResult)
 	*pResult = 0;
 }
 
+void CShipEditorDlg::calc_help_height()
+{
+	CRect minihelp, help;
+
+	GetDlgItem(IDC_MINI_HELP_BOX)->GetWindowRect(minihelp);
+	GetDlgItem(IDC_HELP_BOX)->GetWindowRect(help);
+	help_height = (help.bottom - minihelp.top) + 10;
+}
+
 void CShipEditorDlg::calc_cue_height()
 {
-	CRect cue, help;
+	CRect cue;
 
 	GetDlgItem(IDC_CUE_FRAME)->GetWindowRect(cue);
-	cue_height = (cue.bottom - cue.top)+20;
-	if (Show_sexp_help){
-		GetDlgItem(IDC_HELP_BOX)->GetWindowRect(help);
-		cue_height += (help.bottom - help.top);
-	}
-
-	if (Hide_ship_cues) {
-		((CButton *) GetDlgItem(IDC_HIDE_CUES)) -> SetCheck(1);
-		OnHideCues();
-	}
+	cue_height = (cue.bottom - cue.top) + 10;
 }
 
 void CShipEditorDlg::show_hide_sexp_help()
 {
-	CRect rect, help;
-	GetDlgItem(IDC_HELP_BOX)->GetWindowRect(help);
-	float box_size = (float)(help.bottom - help.top);
+	CRect rect;
 
-	if (Show_sexp_help){
-		cue_height += (int)box_size;
-	} else {
-		cue_height -= (int)box_size;
-	}
-
-	if (((CButton *) GetDlgItem(IDC_HIDE_CUES)) -> GetCheck()){
+	if (((CButton *) GetDlgItem(IDC_HIDE_CUES)) -> GetCheck())
 		return;
-	}
 
 	GetWindowRect(rect);
 
-	if (Show_sexp_help){
-		rect.bottom += (LONG)box_size;
-	} else {
-		rect.bottom -= (LONG)box_size;
-	}
+	if (Show_sexp_help)
+		rect.bottom += help_height;
+	else
+		rect.bottom -= help_height;
 
 	MoveWindow(rect);
+}
+
+void CShipEditorDlg::show_hide_cues()
+{
+	((CButton*)GetDlgItem(IDC_HIDE_CUES))->SetCheck(Hide_ship_cues ? TRUE : FALSE);
+	OnHideCues();
 }
 
 void CShipEditorDlg::OnHideCues() 
@@ -1881,12 +1926,18 @@ void CShipEditorDlg::OnHideCues()
 	CRect rect;
 
 	GetWindowRect(rect);
+
 	if (((CButton *) GetDlgItem(IDC_HIDE_CUES)) -> GetCheck()) {
 		rect.bottom -= cue_height;
-		Hide_ship_cues = 1;
+		if (Show_sexp_help)
+			rect.bottom -= help_height;
 
+		Hide_ship_cues = 1;
 	} else {
 		rect.bottom += cue_height;
+		if (Show_sexp_help)
+			rect.bottom += help_height;
+
 		Hide_ship_cues = 0;
 	}
 
@@ -1990,6 +2041,22 @@ void CShipEditorDlg::OnNoDepartureWarp()
 		m_no_departure_warp.SetCheck(0);
 	else
 		m_no_departure_warp.SetCheck(1);
+}
+
+void CShipEditorDlg::OnSameArrivalWarpWhenDocked() 
+{
+	if (m_same_arrival_warp_when_docked.GetCheck() == 1)
+		m_same_arrival_warp_when_docked.SetCheck(0);
+	else
+		m_same_arrival_warp_when_docked.SetCheck(1);
+}
+
+void CShipEditorDlg::OnSameDepartureWarpWhenDocked() 
+{
+	if (m_same_departure_warp_when_docked.GetCheck() == 1)
+		m_same_departure_warp_when_docked.SetCheck(0);
+	else
+		m_same_departure_warp_when_docked.SetCheck(1);
 }
 
 

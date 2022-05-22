@@ -156,6 +156,16 @@ ShipEditorDialog::ShipEditorDialog(FredView* parent, EditorViewport* viewport)
 
 ShipEditorDialog::~ShipEditorDialog() = default;
 
+int ShipEditorDialog::getShipClass()
+{
+	return _model->getShipClass();
+}
+
+bool ShipEditorDialog::getIfMultipleShips()
+{
+	return _model->multi_edit;
+}
+
 void ShipEditorDialog::closeEvent(QCloseEvent* event)
 {
 	_model->apply();
@@ -183,7 +193,10 @@ void ShipEditorDialog::on_initialOrdersButton_clicked()
 
 void ShipEditorDialog::on_tblInfoButton_clicked()
 {
-	// TODO:: TBL Dialog
+	if (!TBLViewer) {
+		TBLViewer = new dialogs::ShipTBLViewer(this, _viewport);
+	}
+	TBLViewer->show();
 }
 
 void ShipEditorDialog::updateUI()
@@ -523,9 +536,7 @@ void ShipEditorDialog::enableDisable()
 	}
 
 	// disable textures for multiple ships
-	if (_model->multi_edit) {
-		ui->textureReplacementButton->setEnabled(false);
-	}
+		ui->textureReplacementButton->setEnabled(_model->texenable);
 
 	ui->AIClassCombo->setEnabled(_model->enable);
 	ui->cargoCombo->setEnabled(_model->enable);
@@ -606,7 +617,10 @@ void ShipEditorDialog::enableDisable()
 	}
 }
 
-void ShipEditorDialog::shipNameChanged() { _model->setShipName(ui->shipNameEdit->text().toStdString()); }
+void ShipEditorDialog::shipNameChanged()
+{
+	_model->setShipName(ui->shipNameEdit->text().toUtf8().toStdString());
+}
 void ShipEditorDialog::shipClassChanged(int index)
 {
 	auto shipClassIdx = ui->shipClassCombo->itemData(index).value<int>();
@@ -687,7 +701,8 @@ void ShipEditorDialog::DepartureCueChanged(bool value) { _model->setDepartureCue
 
 void ShipEditorDialog::on_textureReplacementButton_clicked()
 {
-	// TODO:: Texture Replacement Dialog
+	auto ShipTextureReplacementDialog = new dialogs::ShipTextureReplacementDialog(this, _viewport, _model->multi_edit);
+	ShipTextureReplacementDialog->show();
 }
 
 void ShipEditorDialog::on_playerShipButton_clicked() { _model->setPlayer(true); }

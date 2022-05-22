@@ -2,10 +2,15 @@
 //
 
 #include "hud.h"
+#include "scripting/api/objs/enums.h"
 #include "scripting/api/objs/hudgauge.h"
+#include "scripting/api/objs/object.h"
+#include "scripting/api/objs/vecmath.h"
 
 #include "hud/hud.h"
 #include "hud/hudconfig.h"
+#include "hud/hudtargetbox.h"
+#include "hud/hudtarget.h"
 
 namespace scripting {
 namespace api {
@@ -190,7 +195,77 @@ ADE_FUNC(getHUDGaugeHandle, l_HUD, "string Name", "Returns a handle to a specifi
 		return ade_set_args(L, "o", l_HudGauge.Set(gauge));
 }
 
+ADE_FUNC(flashTargetBox, l_HUD, "enumeration section, [number duration_in_milliseconds]", "Flashes a section of the target box with a default duration of " SCP_TOKEN_TO_STR(TBOX_FLASH_DURATION) " milliseconds", nullptr, nullptr)
+{
+	enum_h section;
+	int num_args, duration;
+	
+	num_args = ade_get_args(L, "o|i", l_Enum.Get(&section), &duration);
+	if (num_args == 1)
+		duration = TBOX_FLASH_DURATION;
+	else if (num_args != 2)
+		return ADE_RETURN_NIL;
+
+	if (duration <= 1)
+		return ADE_RETURN_NIL;
+
+	int section_index = 0;
+	if (section.IsValid())
+	{
+		switch (section.index)
+		{
+			case LE_TBOX_FLASH_NAME:
+				section_index = TBOX_FLASH_NAME;
+				break;
+			case LE_TBOX_FLASH_CARGO:
+				section_index = TBOX_FLASH_CARGO;
+				break;
+			case LE_TBOX_FLASH_HULL:
+				section_index = TBOX_FLASH_HULL;
+				break;
+			case LE_TBOX_FLASH_STATUS:
+				section_index = TBOX_FLASH_STATUS;
+				break;
+			case LE_TBOX_FLASH_SUBSYS:
+				section_index = TBOX_FLASH_SUBSYS;
+				break;
+			default:
+				Warning(LOCATION, "Invalid targetbox section enumeration!");
+				return ADE_RETURN_NIL;
+		}
+	}
+
+	hud_targetbox_start_flash(section_index, duration);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(getTargetDistance, l_HUD, "object targetee, [vector targeter_position]", "Returns the distance as displayed on the HUD, that is, the distance from a position to the bounding box of a target.  If targeter_position is nil, the function will use the player's position.", "number", "The distance, or nil if invalid")
+{
+	object_h *targetee_h;
+	vec3d *targeter_pos = nullptr;
+
+	if (!ade_get_args(L, "o|o", l_Object.GetPtr(&targetee_h), l_Vector.GetPtr(&targeter_pos)))
+		return ADE_RETURN_NIL;
+
+	if (targetee_h == nullptr || !targetee_h->IsValid())
+		return ADE_RETURN_NIL;
+
+	if (targeter_pos == nullptr)
+	{
+		if (Player_obj)
+			targeter_pos = &Player_obj->pos;
+		else
+		{
+			Warning(LOCATION, "Player_obj is NULL; cannot assign position!");
+			targeter_pos = &vmd_zero_vector;
+		}
+	}
+
+	auto dist = hud_find_target_distance(targetee_h->objp, targeter_pos);
+	return ade_set_args(L, "f", dist);
+}
+
 
 }
 }
-

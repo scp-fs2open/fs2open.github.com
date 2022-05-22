@@ -23,13 +23,16 @@
 #include "mission/missiontraining.h"
 #include "missionui/redalert.h"
 #include "nebula/neb.h"
+#include "object/objcollide.h"
 #include "parse/parselo.h"
 #include "parse/sexp.h"
 #include "parse/sexp/DynamicSEXP.h"
 #include "parse/sexp/LuaSEXP.h"
+#include "parse/sexp/LuaAISEXP.h"
 #include "parse/sexp/sexp_lookup.h"
 #include "scripting/api/LuaPromise.h"
 #include "scripting/api/objs/LuaSEXP.h"
+#include "scripting/api/objs/luaaisexp.h"
 #include "scripting/api/objs/asteroid.h"
 #include "scripting/api/objs/background_element.h"
 #include "scripting/api/objs/beam.h"
@@ -60,6 +63,8 @@
 #include "starfield/starfield.h"
 #include "weapon/beam.h"
 #include "weapon/weapon.h"
+
+#include <utility>
 
 extern bool Ships_inited;
 
@@ -1308,13 +1313,7 @@ ADE_FUNC(getMissionTitle, l_Mission, NULL, "Get the title of the current mission
 	return ade_set_args(L, "s", The_mission.name);
 }
 
-ADE_FUNC(addBackgroundBitmap,
-	l_Mission,
-	"string name, orientation orientation = identity, number scaleX = 1.0, number scale_y = 1.0, number div_x = 1.0, "
-	"number div_y = 1.0",
-	"Adds a background bitmap to the mission with the specified parameters.",
-	"background_element",
-	"A handle to the background element, or invalid handle if the function failed.")
+static int addBackgroundBitmap_sub(bool uses_correct_angles, lua_State* L)
 {
 	const char* filename = nullptr;
 	float scale_x        = 1.0f;
@@ -1337,6 +1336,9 @@ ADE_FUNC(addBackgroundBitmap,
 	}
 
 	sle.ang     = *orient.GetAngles();
+	if (!uses_correct_angles)
+		stars_correct_background_bitmap_angles(&sle.ang);
+
 	sle.scale_x = scale_x;
 	sle.scale_y = scale_y;
 	sle.div_x   = div_x;
@@ -1364,12 +1366,31 @@ ADE_FUNC(addBackgroundBitmap,
 	return ade_set_args(L, "o", l_BackgroundElement.Set(background_el_h(BackgroundType::Bitmap, idx)));
 }
 
-ADE_FUNC(addSunBitmap,
+ADE_FUNC_DEPRECATED(addBackgroundBitmap,
 	l_Mission,
-	"string name, orientation orientation = identity, number scaleX = 1.0, number scale_y = 1.0",
-	"Adds a sun bitmap to the mission with the specified parameters.",
+	"string name, orientation orientation = identity, number scaleX = 1.0, number scale_y = 1.0, number div_x = 1.0, "
+	"number div_y = 1.0",
+	"Adds a background bitmap to the mission with the specified parameters, but using the old incorrectly-calculated angle math.",
+	"background_element",
+	"A handle to the background element, or invalid handle if the function failed.",
+	gameversion::version(22, 2),
+	"addBackgroundBitmap uses the old incorrectly-calculated angle math; use addBackgroundBitmapNew instead")
+{
+	return addBackgroundBitmap_sub(false, L);
+}
+
+ADE_FUNC(addBackgroundBitmapNew,
+	l_Mission,
+	"string name, orientation orientation = identity, number scaleX = 1.0, number scale_y = 1.0, number div_x = 1.0, "
+	"number div_y = 1.0",
+	"Adds a background bitmap to the mission with the specified parameters, treating the angles as correctly calculated.",
 	"background_element",
 	"A handle to the background element, or invalid handle if the function failed.")
+{
+	return addBackgroundBitmap_sub(true, L);
+}
+
+static int addSunBitmap_sub(bool uses_correct_angles, lua_State* L)
 {
 	const char* filename = nullptr;
 	float scale_x        = 1.0f;
@@ -1390,6 +1411,9 @@ ADE_FUNC(addSunBitmap,
 	}
 
 	sle.ang     = *orient.GetAngles();
+	if (!uses_correct_angles)
+		stars_correct_background_sun_angles(&sle.ang);
+
 	sle.scale_x = scale_x;
 	sle.scale_y = scale_y;
 	sle.div_x   = 1;
@@ -1407,6 +1431,28 @@ ADE_FUNC(addSunBitmap,
 
 	auto idx = stars_add_sun_entry(&sle);
 	return ade_set_args(L, "o", l_BackgroundElement.Set(background_el_h(BackgroundType::Sun, idx)));
+}
+
+ADE_FUNC_DEPRECATED(addSunBitmap,
+	l_Mission,
+	"string name, orientation orientation = identity, number scaleX = 1.0, number scale_y = 1.0",
+	"Adds a sun bitmap to the mission with the specified parameters, but using the old incorrectly-calculated angle math.",
+	"background_element",
+	"A handle to the background element, or invalid handle if the function failed.",
+	gameversion::version(22, 2),
+	"addSunBitmap uses the old incorrectly-calculated angle math; use addSunBitmapNew instead")
+{
+	return addSunBitmap_sub(false, L);
+}
+
+ADE_FUNC(addSunBitmapNew,
+	l_Mission,
+	"string name, orientation orientation = identity, number scaleX = 1.0, number scale_y = 1.0",
+	"Adds a sun bitmap to the mission with the specified parameters, treating the angles as correctly calculated.",
+	"background_element",
+	"A handle to the background element, or invalid handle if the function failed.")
+{
+	return addSunBitmap_sub(true, L);
 }
 
 ADE_FUNC(removeBackgroundElement, l_Mission, "background_element el",
@@ -1456,7 +1502,68 @@ ADE_FUNC(isRedAlertMission,
 	return ade_set_args(L, "b", red_alert_mission() != 0);
 }
 
-ADE_LIB_DERIV(l_Mission_LuaSEXPs, "LuaSEXPs", NULL, "Lua SEXPs", l_Mission);
+int testLineOfSight_internal(lua_State* L, bool returnDist) {
+	vec3d from, to;
+	luacpp::LuaTable excludedObjects;
+	bool testForShields = false, testForHull = true;
+	float threshold = 10.0f;
+
+	float distStore = 0.0f;
+	float* dist = returnDist ? &distStore : nullptr;
+
+	if (!ade_get_args(L, "oo|tbbf", l_Vector.Get(&from), l_Vector.Get(&to), &excludedObjects, &testForShields, &testForHull, &threshold)) {
+		return ADE_RETURN_FALSE;
+	}
+	if (!(testForHull || testForShields)) {
+		LuaError(L, "Cannot test line of sight if neither hull nor shields are set to be tested for.");
+		//Though it's technically a "line of sight", so return true
+		return ADE_RETURN_TRUE;
+	}
+
+	std::unordered_set<const object*> excludedObjectIDs;
+
+	if (excludedObjects.isValid()) {
+		for (const auto& object : excludedObjects) {
+			if (object.second.is(luacpp::ValueType::USERDATA)) {
+				// This'll lua-error internally if it's not fed only objects. Additionally, catch the lua exception and then carry on
+				try {
+					object_h obj;
+					object.second.getValue(l_Object.Get(&obj));
+					excludedObjectIDs.emplace(obj.objp);
+				}
+				catch (const luacpp::LuaException& /*e*/) {
+					// We were likely fed a userdata that was not an object. 
+					// Since we can't actually tell whether that's the case before we try to get the value, and the attempt to get the value is printing a LuaError itself, just eat the exception here and return
+					return ADE_RETURN_FALSE;
+				}
+			}
+			else {
+				//This happens on a non-userdata value, i.e. a number
+				LuaError(L, "Table with objects to be excluded contained non-userdata values! Aborting...");
+				return ADE_RETURN_FALSE;
+			}
+		}
+	}
+
+	bool hasLoS = test_line_of_sight(&from, &to, std::move(excludedObjectIDs), threshold, testForShields, testForHull, dist);
+
+	if(returnDist)
+		return ade_set_args(L, "bf", hasLoS, *dist);
+	else
+		return ade_set_args(L, "b", hasLoS);
+}
+
+ADE_FUNC(hasLineOfSight, l_Mission, "vector from, vector to, [table excludedObjects /* expects list of objects, empty by default */, boolean testForShields = false, boolean testForHull = true, number threshold = 10.0]", "Checks whether the to-position is in line of sight from the from-position, disregarding specific excluded objects and objects with a radius of less then threshold.", "boolean", "true if there is line of sight, false otherwise.")
+{
+	return testLineOfSight_internal(L, false);
+}
+
+ADE_FUNC(getLineOfSightFirstIntersect, l_Mission, "vector from, vector to, [table excludedObjects /* expects list of objects, empty by default */, boolean testForShields = false, boolean testForHull = true, number threshold = 10.0]", "Checks whether the to-position is in line of sight from the from-position and returns the distance to the first interruption of the line of sight, disregarding specific excluded objects and objects with a radius of less then threshold.", "boolean, number", "true and zero if there is line of sight, false and the distance otherwise.")
+{
+	return testLineOfSight_internal(L, true);
+}
+
+ADE_LIB_DERIV(l_Mission_LuaSEXPs, "LuaSEXPs", nullptr, "Lua SEXPs", l_Mission);
 
 ADE_INDEXER(l_Mission_LuaSEXPs, "string Name", "Gets a handle of a Lua SEXP", "LuaSEXP", "Lua SEXP handle or invalid handle on error")
 {
@@ -1492,6 +1599,44 @@ ADE_INDEXER(l_Mission_LuaSEXPs, "string Name", "Gets a handle of a Lua SEXP", "L
 	}
 
 	return ade_set_args(L, "o", l_LuaSEXP.Set(lua_sexp_h(static_cast<sexp::LuaSEXP*>(dynamicSEXP))));
+}
+
+ADE_LIB_DERIV(l_Mission_LuaAISEXPs, "LuaAISEXPs", nullptr, "Lua AI SEXPs", l_Mission);
+
+ADE_INDEXER(l_Mission_LuaAISEXPs, "string Name", "Gets a handle of a Lua SEXP", "LuaAISEXP", "Lua AI SEXP handle or invalid handle on error")
+{
+	const char* name = nullptr;
+	if (!ade_get_args(L, "*s", &name)) {
+		return ade_set_error(L, "o", l_LuaAISEXP.Set(lua_ai_sexp_h()));
+	}
+
+	if (name == nullptr) {
+		return ade_set_error(L, "o", l_LuaAISEXP.Set(lua_ai_sexp_h()));
+	}
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "Setting of Lua AI SEXPs is not supported!");
+	}
+
+	auto op = get_operator_const(name);
+
+	if (op == 0) {
+		LuaError(L, "SEXP '%s' is not known to the SEXP system!", name);
+		return ade_set_args(L, "o", l_LuaAISEXP.Set(lua_ai_sexp_h()));
+	}
+
+	auto dynamicSEXP = sexp::get_dynamic_sexp(op);
+
+	if (dynamicSEXP == nullptr) {
+		return ade_set_args(L, "o", l_LuaAISEXP.Set(lua_ai_sexp_h()));
+	}
+
+	if (typeid(*dynamicSEXP) != typeid(sexp::LuaAISEXP)) {
+		LuaError(L, "Specified dynamic SEXP name does not refer to a Lua SEXP!");
+		return ade_set_error(L, "o", l_LuaAISEXP.Set(lua_ai_sexp_h()));
+	}
+
+	return ade_set_args(L, "o", l_LuaAISEXP.Set(lua_ai_sexp_h(static_cast<sexp::LuaAISEXP*>(dynamicSEXP))));
 }
 
 static int arrivalListIter(lua_State* L)
@@ -1540,6 +1685,28 @@ ADE_FUNC(getShipList,
 		}
 
 		return luacpp::LuaValueList{ luacpp::LuaValue::createValue(LInner, l_Ship.Set(object_h(&Objects[so->objnum]))) };
+	}));
+}
+
+ADE_FUNC(getMissileList,
+	l_Mission,
+	nullptr,
+	"Get an iterator to the list of missiles in this mission",
+	"iterator<weapon>",
+	"An iterator across all missiles in the mission. Can be used in a for .. in loop. Is not valid for more than one frame.")
+{
+	missile_obj* mo = &Missile_obj_list;
+
+	return ade_set_args(L, "u", luacpp::LuaFunction::createFromStdFunction(L, [mo](lua_State* LInner, const luacpp::LuaValueList& /*params*/) mutable -> luacpp::LuaValueList {
+		//Since the first element of a list is the next element from the head, and we start this function with the the captured "mo" object being the head, this GET_NEXT will return the first element on first call of this lambda.
+		//Similarly, an empty list is defined by the head's next element being itself, hence an empty list will immediately return nil just fine
+		mo = GET_NEXT(mo);
+
+		if (mo == END_OF_LIST(&Missile_obj_list) || mo == nullptr) {
+			return luacpp::LuaValueList{ luacpp::LuaValue::createNil(LInner) };
+		}
+
+		return luacpp::LuaValueList{ luacpp::LuaValue::createValue(LInner, l_Weapon.Set(object_h(&Objects[mo->objnum]))) };
 	}));
 }
 

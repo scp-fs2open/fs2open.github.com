@@ -146,6 +146,7 @@ int create_ship(matrix *orient, vec3d *pos, int ship_type);
 int query_ship_name_duplicate(int ship);
 char *reg_read_string( char *section, char *name, char *default_value );
 
+// Note that the parameter here is max *length*, not max buffer size.  Leave room for the null-terminator!
 void string_copy(char *dest, const CString &src, size_t max_len, int modify)
 {
 	if (modify)
@@ -153,8 +154,8 @@ void string_copy(char *dest, const CString &src, size_t max_len, int modify)
 			set_modified();
 
 	auto len = strlen(src);
-	if (len >= max_len)
-		len = max_len - 1;
+	if (len > max_len)
+		len = max_len;
 
 	strncpy(dest, src, len);
 	dest[len] = 0;
@@ -186,11 +187,11 @@ void convert_multiline_string(CString &dest, const char *src)
 }
 
 // Converts a windows format multiline CString back into a normal multiline string.
-void deconvert_multiline_string(char *dest, const CString &str, int max_len)
+void deconvert_multiline_string(char *dest, const CString &str, size_t max_len)
 {
 	// leave room for the null terminator
-	memset(dest, 0, max_len);
-	strncpy(dest, (LPCTSTR) str, max_len - 1);
+	memset(dest, 0, max_len + 1);
+	strncpy(dest, (LPCTSTR) str, max_len);
 
 	replace_all(dest, "\r\n", "\n", max_len);
 }
@@ -404,6 +405,8 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	gamesnd_parse_soundstbl();		// needs to be loaded after species stuff but before interface/weapon/ship stuff - taylor
 	mission_brief_common_init();	
 
+	sexp::dynamic_sexp_init(); // Must happen before ship init for LuaAI
+
 	animation::ModelAnimationParseHelper::parseTables();
 	obj_init();
 	model_free_all();				// Free all existing models
@@ -446,7 +449,6 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 
 	libs::ffmpeg::initialize();
 
-	sexp::dynamic_sexp_init();
 
 	// wookieejedi
 	// load in the controls and defaults including the controlconfigdefault.tbl
@@ -941,9 +943,6 @@ void clear_mission()
 		Team_data[i].num_weapon_choices = count; 
 	}
 
-	*Parse_text = *Parse_text_raw = '\0';
-	Parse_text[1] = Parse_text_raw[1] = 0;
-
 	waypoint_parse_init();
 	Num_mission_events = 0;
 	Num_goals = 0;
@@ -955,7 +954,6 @@ void clear_mission()
 	messages_init();
 	brief_reset();
 	debrief_reset();
-	ship_init();
 	event_music_reset_choices();
 	clear_texture_replacements();
 
@@ -1014,6 +1012,11 @@ void clear_mission()
 	The_mission.sound_environment.id = -1;
 
 	ENVMAP = -1;
+
+	// free memory from all parsing so far -- see also the stop_parse() in player_select_close() which frees all tbls found during game_init()
+	stop_parse();
+	// however, FRED expects to parse comments from the raw buffer, so we need a nominal string for that
+	allocate_parse_text(1);
 
 	set_modified(FALSE);
 	Update_window = 1;

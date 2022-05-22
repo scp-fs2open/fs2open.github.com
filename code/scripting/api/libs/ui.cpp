@@ -117,7 +117,7 @@ ADE_FUNC(maybePlayCutscene, l_UserInterface, "enumeration MovieType, boolean Res
 	bool restart_music = false;
 	int score_index = 0;
 
-	if (!ade_get_args(L, "*obi", l_Enum.Get(&movie_type), &restart_music, &score_index))
+	if (!ade_get_args(L, "obi", l_Enum.Get(&movie_type), &restart_music, &score_index))
 		return ADE_RETURN_NIL;
 
 	// if an out-of-range enum is passed to this function, it will just be ignored
@@ -469,6 +469,21 @@ ADE_FUNC(getBriefing,
 ADE_FUNC(getBriefingMusicName, l_UserInterface_CmdBrief, nullptr, "Gets the file name of the music file to play for the briefing.", "string", "The file name or empty if no music")
 {
 	return ade_set_args(L, "s", common_music_get_filename(SCORE_BRIEFING).c_str());
+}
+
+ADE_FUNC(runBriefingStageHook, l_UserInterface_CmdBrief, "number oldStage, number newStage", "Run $On Briefing Stage: hooks.", nullptr, nullptr)
+{
+	int oldStage = -1, newStage = -1;
+	if (ade_get_args(L, "ii", &oldStage, &newStage) == 2)
+	{
+		// Subtract 1 to convert from Lua conventions to C conventions
+		common_fire_stage_script_hook(oldStage -1, newStage -1);
+	}
+	else
+	{
+		LuaError(L, "Bad arguments given to ui.runBriefingStageHook!");
+	}
+	return ADE_RETURN_NIL;
 }
 
 } // namespace api

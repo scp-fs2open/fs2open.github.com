@@ -15,7 +15,6 @@
 
 #define WM_MENU_POPUP_SHIPS	(WM_USER+6)
 #define WM_MENU_POPUP_EDIT		(WM_USER+7)
-#define SEXP_HELP_BOX_SIZE 170
 
 typedef struct Marking_box {
 	int x1, y1, x2, y2;
@@ -265,6 +264,7 @@ protected:
 	afx_msg void OnLookatObj();
 	afx_msg void OnUpdateLookatObj(CCmdUI* pCmdUI);
 	afx_msg void OnEditorsAdjustGrid();
+	afx_msg void OnCalcRelativeCoords();
 	afx_msg void OnEditorsShieldSys();
 	afx_msg void OnLevelObj();
 	afx_msg void OnAlignObj();
@@ -300,6 +300,8 @@ protected:
 	afx_msg void OnUpdateFormatFs1Retail(CCmdUI* pCmdUI);
 	afx_msg void OnMoveShipsWhenUndocking();
 	afx_msg void OnUpdateMoveShipsWhenUndocking(CCmdUI* pCmdUI);
+	afx_msg void OnPointUsingUvec();
+	afx_msg void OnUpdatePointUsingUvec(CCmdUI* pCmdUI);
 	afx_msg void OnHighlightSubsys();
 	afx_msg void OnUpdateHighlightSubsys(CCmdUI* pCmdUI);
 	afx_msg void OnEditorsSetGlobalShipFlags();
@@ -364,6 +366,7 @@ extern int Id_select_type_waypoint;
 extern int Hide_ship_cues, Hide_wing_cues;
 extern int Move_ships_when_undocking;
 extern int Highlight_selectable_subsys;
+extern int Point_using_uvec;
 
 extern Marking_box marking_box;
 extern object_orient_pos	rotation_backup[MAX_OBJECTS];

@@ -266,6 +266,13 @@ void sim_room_load_mission_icons();
 void sim_room_unload_mission_icons();
 void sim_room_blit_icons(int line_index, int y_start, fs_builtin_mission *fb = NULL, int is_md = 0);
 
+const std::shared_ptr<scripting::Hook> OnCampaignBeginHook = scripting::Hook::Factory(
+	"On Campaign Begin", "Called when a campaign is started from the beginning or is reset",
+	{
+		{ "Campaign", "string", "The campaign filename (without the extension)" },
+	});
+
+
 // Finds a hash value for mission filename
 //
 // returns hash value
@@ -1541,18 +1548,29 @@ void campaign_room_scroll_info_down()
 		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 }
 
-void campaign_reset(const SCP_string& campaign_file) {
+void campaign_reset(const SCP_string& campaign_file)
+{
 	auto filename = campaign_file + FS_CAMPAIGN_FILE_EXT;
 
 	mission_campaign_savefile_delete(filename.c_str());
-	mission_campaign_load(filename.c_str(), nullptr, 1 , false); // retail doesn't reset stats when resetting the campaign
-	mission_campaign_next_mission();
 
-	// Goober5000 - reinitialize tech database if needed
-	if ((Campaign.flags & CF_CUSTOM_TECH_DATABASE) || !stricmp(Campaign.filename, "freespace2")) {
-		// reset tech database to what's in the tables
-		tech_reset_to_default();
+	const int load_status = mission_campaign_load(filename.c_str(), nullptr, 1 , false);	// retail doesn't reset stats when resetting the campaign
+
+	// see if we successfully loaded this campaign
+	if (load_status == 0) {
+		// Goober5000 - reinitialize tech database if needed
+		if ((Campaign.flags & CF_CUSTOM_TECH_DATABASE) || !stricmp(Campaign.filename, "freespace2")) {
+			// reset tech database to what's in the tables
+			tech_reset_to_default();
+
+			// write the savefile so that we don't later load a stale techroom
+			Pilot.save_savefile();
+		}
+
+		OnCampaignBeginHook->run(scripting::hook_param_list(scripting::hook_param("Campaign", 's', Campaign.filename)));
 	}
+
+	mission_campaign_next_mission();
 }
 
 // returns: 0 = success, !0 = aborted or failed
@@ -1655,7 +1673,7 @@ void campaign_select_campaign(const SCP_string& campaign_file)
 		strcpy_s(Player->current_campaign, campaign_file.c_str()); // track new campaign for player
 
 		// attempt to load the campaign
-		int load_status = mission_campaign_load(campaign_file.c_str());
+		const int load_status = mission_campaign_load(campaign_file.c_str());
 
 		// see if we successfully loaded this campaign and it's at the beginning
 		if (load_status == 0 && Campaign.prev_mission < 0) {
@@ -1663,8 +1681,14 @@ void campaign_select_campaign(const SCP_string& campaign_file)
 			if ((Campaign.flags & CF_CUSTOM_TECH_DATABASE) || !stricmp(Campaign.filename, "freespace2")) {
 				// reset tech database to what's in the tables
 				tech_reset_to_default();
+
+				// write the savefile so that we don't later load a stale techroom
+				Pilot.save_savefile();
 			}
+
+			OnCampaignBeginHook->run(scripting::hook_param_list(scripting::hook_param("Campaign", 's', Campaign.filename)));
 		}
+
 		// that's all we need to do for now; the campaign loading status will be checked again when we try to load the
 		// campaign in the ready room
 	}

@@ -63,14 +63,14 @@ typedef struct delayed_ssm_data {
 	int linenum;
 	SCP_string ssm_entry;
 } delayed_ssm_data;
-SCP_map<SCP_string, delayed_ssm_data> Delayed_SSM_data;
+SCP_unordered_map<SCP_string, delayed_ssm_data> Delayed_SSM_data;
 SCP_vector<SCP_string> Delayed_SSM_names;
 
 typedef struct delayed_ssm_index_data {
 	SCP_string filename;
 	int linenum;
 } delayed_ssm_index_data;
-SCP_map<SCP_string, delayed_ssm_index_data> Delayed_SSM_indices_data;
+SCP_unordered_map<SCP_string, delayed_ssm_index_data> Delayed_SSM_indices_data;
 SCP_vector<SCP_string> Delayed_SSM_indices;
 
 
@@ -210,8 +210,10 @@ static int *used_weapons = NULL;
 int	Num_spawn_types = 0;
 char **Spawn_names = NULL;
 
-int Num_player_weapon_precedence;				// Number of weapon types in Player_weapon_precedence
-int Player_weapon_precedence[MAX_WEAPON_TYPES];	// Array of weapon types, precedence list for player weapon selection
+SCP_vector<int> Player_weapon_precedence;	// Vector of weapon types, precedence list for player weapon selection
+SCP_vector<SCP_string> Player_weapon_precedence_names;	// Vector of weapon names, gets turned into the above after parsing all modular tables and sorting the Weapon_info vector.
+SCP_string Player_weapon_precedence_file;	// If an invalid name is given, tell the user what file it was specified in.
+int Player_weapon_precedence_line;	// And this is the line the precedence list was given on.
 
 // Used to avoid playing too many impact sounds in too short a time interval.
 // This will elimate the odd "stereo" effect that occurs when two weapons impact at 
@@ -3588,7 +3590,9 @@ void parse_weaponstbl(const char *filename)
 		// during weapon selection.
 		if ((!Parsing_modular_table && required_string("$Player Weapon Precedence:")) || optional_string("$Player Weapon Precedence:"))
 		{
-			Num_player_weapon_precedence = (int)stuff_int_list(Player_weapon_precedence, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
+			Player_weapon_precedence_file = filename;
+			Player_weapon_precedence_line = get_line_num();
+			stuff_string_list(Player_weapon_precedence_names);
 		}
 	}
 	catch (const parse::ParseException& e)
@@ -4144,6 +4148,22 @@ void weapon_generate_indexes_for_substitution() {
 	}
 }
 
+void weapon_generate_indexes_for_precedence()
+{
+	Player_weapon_precedence.clear();	// Make sure we're starting fresh.
+	for (const auto &name : Player_weapon_precedence_names) {
+		const char *cur_name = name.c_str();
+		const int cur_index = weapon_info_lookup(cur_name);
+		if (cur_index == -1) {
+			Warning(LOCATION, "Unknown weapon [%s] in player weapon precedence list (file %s, line %d).", cur_name, Player_weapon_precedence_file.c_str(), Player_weapon_precedence_line);
+		} else {
+			Player_weapon_precedence.push_back(cur_index);
+		}
+	}
+	Player_weapon_precedence_names = SCP_vector<SCP_string>();	// This is basically equivalent to .clear() and .shrink_to_fit() (it essentially swaps with the temporary vector, which then immediately deconstructs).
+	Player_weapon_precedence_file = "";	// Similar to the above, this would swap with an empty string, thereby being equivalent to .clear() and .shrink_to_fit().
+}
+
 void weapon_do_post_parse()
 {
 	weapon_info *wip;
@@ -4152,6 +4172,7 @@ void weapon_do_post_parse()
 	weapon_sort_by_type();	// NOTE: This has to be first thing!
 	weapon_clean_entries();
 	weapon_generate_indexes_for_substitution();
+	weapon_generate_indexes_for_precedence();
 
 	Default_cmeasure_index = -1;
 
@@ -4357,7 +4378,7 @@ void weapon_delete(object *obj)
 
 	if (Script_system.IsActiveAction(CHA_ONWEAPONDELETE)) {
 		Script_system.SetHookObjects(2, "Weapon", obj, "Self", obj);
-		Script_system.RunCondition(CHA_ONWEAPONDELETE);
+		Script_system.RunCondition(CHA_ONWEAPONDELETE, obj);
 		Script_system.RemHookVars({"Weapon", "Self"});
 	}
 
@@ -5914,7 +5935,6 @@ int Weapons_created = 0;
 int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_objnum, int group_id, int is_locked, int is_spawned, float fof_cooldown, ship_subsys * src_turret)
 {
 	int			n, objnum;
-	int num_deleted;
 	object		*objp, *parent_objp=NULL;
 	weapon		*wp;
 	weapon_info	*wip;
@@ -5979,15 +5999,9 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		}
 	}
 
-	num_deleted = 0;
-	if (Num_weapons >= MAX_WEAPONS-5) {
-
-		num_deleted = collide_remove_weapons();
-
-		mprintf(("Deleted %d weapons because of lack of slots.\n", num_deleted));
-		if (num_deleted == 0){
-			return -1;
-		}
+	if (Num_weapons == MAX_WEAPONS) {
+		mprintf(("Can't fire due to lack of weapon slots"));
+		return -1;
 	}
 
 	for (n=0; n<MAX_WEAPONS; n++ ){
@@ -5996,14 +6010,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		}
 	}
 
-	if (n == MAX_WEAPONS) {
-		// if we supposedly deleted weapons above, what happened here!!!!
-		if (num_deleted){
-			Int3();				// get allender -- something funny is going on!!!
-		}
-
-		return -1;
-	}
+	Assertion(n != MAX_WEAPONS, "Somehow tried to create weapons despite being at max weapons");
 
 	// make sure we are loaded and useable
 	if ( (wip->render_type == WRT_POF) && (wip->model_num < 0) ) {
@@ -6413,7 +6420,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 
 	if (Script_system.IsActiveAction(CHA_ONWEAPONCREATED)) {
 		Script_system.SetHookObject("Weapon", &Objects[objnum]);
-		Script_system.RunCondition(CHA_ONWEAPONCREATED);
+		Script_system.RunCondition(CHA_ONWEAPONCREATED, &Objects[objnum]);
 		Script_system.RemHookVar("Weapon");
 	}
 
@@ -6455,7 +6462,7 @@ void spawn_child_weapons(object *objp, int spawn_index_override)
 	parent_num = objp->parent;
 
 	if (parent_num >= 0) {
-		if ((Objects[parent_num].type != objp->parent_type) || (Objects[parent_num].signature != objp->parent_sig)) {
+		if (Objects[parent_num].signature != objp->parent_sig) {
 			mprintf(("Warning: Parent of spawn weapon does not exist.  Not spawning.\n"));
 			return;
 		}
@@ -8598,8 +8605,8 @@ void validate_SSM_entries()
 	}
 
 	// This information is no longer relevant, so might as well clear it out.
-	Delayed_SSM_data.clear();
-	Delayed_SSM_names.clear();
+	Delayed_SSM_data = SCP_unordered_map<SCP_string, delayed_ssm_data>();
+	Delayed_SSM_names = SCP_vector<SCP_string>();
 
 	for (it = Delayed_SSM_indices.begin(); it != Delayed_SSM_indices.end(); ++it) {
 		delayed_ssm_index_data *dat = &Delayed_SSM_indices_data[*it];
@@ -8617,6 +8624,10 @@ void validate_SSM_entries()
 		}
 		nprintf(("parse", "Validation complete, SSM-index is %d.\n", wip->SSM_index));
 	}
+
+	// We don't need this anymore, either.
+	Delayed_SSM_indices = SCP_vector<SCP_string>();
+	Delayed_SSM_indices_data = SCP_unordered_map<SCP_string, delayed_ssm_index_data>();
 }
 
 int weapon_get_random_player_usable_weapon()

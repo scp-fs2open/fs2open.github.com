@@ -313,8 +313,13 @@ flag_def_list_new<Mission::Parse_Object_Flags> Parse_object_flags[] = {
     { "weapons-locked",					Mission::Parse_Object_Flags::SF_Weapons_locked,			true, false },
     { "scramble-messages",				Mission::Parse_Object_Flags::SF_Scramble_messages,		true, false },
     { "no_collide",						Mission::Parse_Object_Flags::OF_No_collide,				true, false },
-	{ "no-disabled-self-destruct",		Mission::Parse_Object_Flags::SF_No_disabled_self_destruct, true, false },
-	{ "hide-in-mission-log",			Mission::Parse_Object_Flags::SF_Hide_mission_log,		true, false },
+    { "no-disabled-self-destruct",		Mission::Parse_Object_Flags::SF_No_disabled_self_destruct, true, false },
+    { "hide-in-mission-log",			Mission::Parse_Object_Flags::SF_Hide_mission_log,		true, false },
+    { "same-arrival-warp-when-docked",		Mission::Parse_Object_Flags::SF_Same_arrival_warp_when_docked,		true, false },
+    { "same-departure-warp-when-docked",	Mission::Parse_Object_Flags::SF_Same_departure_warp_when_docked,	true, false },
+    { "ai-attackable-if-no-collide",		Mission::Parse_Object_Flags::OF_Attackable_if_no_collide, true, false },
+    { "fail-sound-locked-primary",			Mission::Parse_Object_Flags::SF_Fail_sound_locked_primary, true, false },
+    { "fail-sound-locked-secondary",		Mission::Parse_Object_Flags::SF_Fail_sound_locked_secondary, true, false }
 };
 
 const size_t num_parse_object_flags = sizeof(Parse_object_flags) / sizeof(flag_def_list_new<Mission::Parse_Object_Flags>);
@@ -1101,7 +1106,7 @@ void parse_briefing_info(mission * /*pm*/)
  */
 void parse_music(mission *pm, int flags)
 {
-	int i, index, num;
+	int index, num;
 	char *ch;
 	char temp[NAME_LENGTH];
 
@@ -1200,18 +1205,18 @@ void parse_music(mission *pm, int flags)
 		{
 			*(ch + 1) = '\0';
 				
-			for (i = 0; i < Num_soundtracks; i++)
+			for (auto &st: Soundtracks)
 			{
-				if (!strncmp(temp, Soundtracks[i].name, strlen(temp)))
+				if (!strncmp(temp, st.name, strlen(temp)))
 				{
-					strcpy_s(pm->event_music_name, Soundtracks[i].name);
+					strcpy_s(pm->event_music_name, st.name);
 					goto done_event_music;
 				}
 			}
 		}
 
 		// last resort: pick a random track out of the 7 FS2 soundtracks
-		num = (Num_soundtracks < 7) ? Num_soundtracks : 7;
+		num = std::max((int)Soundtracks.size(), 7);
 		strcpy_s(pm->event_music_name, Soundtracks[Random::next(num)].name);
 
 
@@ -1238,7 +1243,7 @@ done_event_music:
 			goto done_briefing_music;
 
 		// last resort: pick a random track out of the first 7 FS2 briefings (the regular ones)...
-		num = (Num_music_files < 7) ? Num_music_files : 7;
+		num = std::max((int)Spooled_music.size(), 7);
 		strcpy_s(pm->briefing_music_name, Spooled_music[Random::next(num)].name);
 
 
@@ -2127,17 +2132,25 @@ int parse_create_object_sub(p_object *p_objp)
 ////////////////////////
 
 
-	// if ship is in a wing, and the wing's no_warp_effect flag is set, then set the equivalent
-	// flag for the ship
-    if ((shipp->wingnum != -1) && (Wings[shipp->wingnum].flags[Ship::Wing_Flags::No_arrival_warp]))
-        shipp->flags.set(Ship::Ship_Flags::No_arrival_warp);
+	// if ship is in a wing, set some equivalent flags on the ship
+	if (shipp->wingnum >= 0)
+	{
+		auto wingp = &Wings[shipp->wingnum];
 
-    if ((shipp->wingnum != -1) && (Wings[shipp->wingnum].flags[Ship::Wing_Flags::No_departure_warp]))
-        shipp->flags.set(Ship::Ship_Flags::No_departure_warp);
+		if (wingp->flags[Ship::Wing_Flags::No_arrival_warp])
+			shipp->flags.set(Ship::Ship_Flags::No_arrival_warp);
 
-    // ditto for Kazan
-    if ((shipp->wingnum != -1) && (Wings[shipp->wingnum].flags[Ship::Wing_Flags::Nav_carry])) {
-		shipp->flags.set(Ship::Ship_Flags::Navpoint_carry);
+		if (wingp->flags[Ship::Wing_Flags::No_departure_warp])
+			shipp->flags.set(Ship::Ship_Flags::No_departure_warp);
+
+		if (wingp->flags[Ship::Wing_Flags::Same_arrival_warp_when_docked])
+			shipp->flags.set(Ship::Ship_Flags::Same_arrival_warp_when_docked);
+
+		if (wingp->flags[Ship::Wing_Flags::Same_departure_warp_when_docked])
+			shipp->flags.set(Ship::Ship_Flags::Same_departure_warp_when_docked);
+
+		if (wingp->flags[Ship::Wing_Flags::Nav_carry])
+			shipp->flags.set(Ship::Ship_Flags::Navpoint_carry);
 	}
 
 	// if the wing index and wing pos are set for this parse object, set them for the ship.  This
@@ -2157,7 +2170,10 @@ int parse_create_object_sub(p_object *p_objp)
 
 		// free the sexpression nodes only for non-wing ships.  wing code will handle its own case
 		if (p_objp->wingnum < 0)
+		{
 			free_sexp2(p_objp->ai_goals);	// free up sexp nodes for reuse, since they aren't needed anymore.
+			p_objp->ai_goals = -1;
+		}
 	}
 
 	Assert(sip->model_num != -1);
@@ -2717,6 +2733,15 @@ void resolve_parse_flags(object *objp, flagset<Mission::Parse_Object_Flags> &par
 
     if (parse_flags[Mission::Parse_Object_Flags::SF_Hide_mission_log])
         shipp->flags.set(Ship::Ship_Flags::Hide_mission_log);
+
+    if (parse_flags[Mission::Parse_Object_Flags::SF_Same_arrival_warp_when_docked])
+        shipp->flags.set(Ship::Ship_Flags::Same_arrival_warp_when_docked);
+
+    if (parse_flags[Mission::Parse_Object_Flags::SF_Same_departure_warp_when_docked])
+		shipp->flags.set(Ship::Ship_Flags::Same_departure_warp_when_docked);
+
+    if (parse_flags[Mission::Parse_Object_Flags::OF_Attackable_if_no_collide])
+		objp->flags.set(Object::Object_Flags::Attackable_if_no_collide);
 }
 
 void fix_old_special_explosions(p_object *p_objp, int variable_index) 
@@ -3322,6 +3347,7 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 
 	// check for the optional "orders accepted" string which contains the orders from the default
     // set that this ship will actually listen to
+	// Obsolete and only for backwards compatibility
     if (optional_string("+Orders Accepted:"))
     {
 		p_objp->orders_accepted.clear();
@@ -3338,6 +3364,24 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 			}
 		}
     }
+
+	if (optional_string("+Orders Accepted List:"))
+	{
+		p_objp->orders_accepted.clear();
+
+		SCP_vector<SCP_string> accepted_flags;
+		stuff_string_list(accepted_flags);
+
+		for (const SCP_string& accepted : accepted_flags) {
+			for (size_t j = 0; j < Player_orders.size(); j++) {
+				if (Player_orders[j].parse_name == accepted)
+					p_objp->orders_accepted.insert(j);
+			}
+		}
+
+		if (!p_objp->orders_accepted.empty())
+			p_objp->flags.set(Mission::Parse_Object_Flags::SF_Use_unique_orders);
+	}
 
 	p_objp->group = 0;
 	if (optional_string("+Group:"))
@@ -4313,7 +4357,10 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 					
 					// free up sexp nodes for reuse
 					if (p_objp->ai_goals != -1)
+					{
 						free_sexp2(p_objp->ai_goals);
+						p_objp->ai_goals = -1;
+					}
 				}
 			}
 		}
@@ -4630,25 +4677,29 @@ void parse_wing(mission *pm)
 	if (optional_string("+Flags:")) {
 		auto count = (int)stuff_string_list( wing_flag_strings, PARSEABLE_WING_FLAGS);
 
-        for (i = 0; i < count; i++) {
-            if (!stricmp(wing_flag_strings[i], NOX("ignore-count")))
-                wingp->flags.set(Ship::Wing_Flags::Ignore_count);
-            else if (!stricmp(wing_flag_strings[i], NOX("reinforcement")))
-                wingp->flags.set(Ship::Wing_Flags::Reinforcement);
-            else if (!stricmp(wing_flag_strings[i], NOX("no-arrival-music")))
-                wingp->flags.set(Ship::Wing_Flags::No_arrival_music);
-            else if (!stricmp(wing_flag_strings[i], NOX("no-arrival-message")))
-                wingp->flags.set(Ship::Wing_Flags::No_arrival_message);
-            else if (!stricmp(wing_flag_strings[i], NOX("no-arrival-warp")))
-                wingp->flags.set(Ship::Wing_Flags::No_arrival_warp);
-            else if (!stricmp(wing_flag_strings[i], NOX("no-departure-warp")))
-                wingp->flags.set(Ship::Wing_Flags::No_departure_warp);
-            else if (!stricmp(wing_flag_strings[i], NOX("no-dynamic")))
-                wingp->flags.set(Ship::Wing_Flags::No_dynamic);
-            else if (!stricmp(wing_flag_strings[i], NOX("nav-carry-status")))
-                wingp->flags.set(Ship::Wing_Flags::Nav_carry);
-            else
-                Warning(LOCATION, "unknown wing flag\n%s\n\nSkipping.", wing_flag_strings[i]);
+		for (i = 0; i < count; i++) {
+			if (!stricmp(wing_flag_strings[i], NOX("ignore-count")))
+				wingp->flags.set(Ship::Wing_Flags::Ignore_count);
+			else if (!stricmp(wing_flag_strings[i], NOX("reinforcement")))
+				wingp->flags.set(Ship::Wing_Flags::Reinforcement);
+			else if (!stricmp(wing_flag_strings[i], NOX("no-arrival-music")))
+				wingp->flags.set(Ship::Wing_Flags::No_arrival_music);
+			else if (!stricmp(wing_flag_strings[i], NOX("no-arrival-message")))
+				wingp->flags.set(Ship::Wing_Flags::No_arrival_message);
+			else if (!stricmp(wing_flag_strings[i], NOX("no-arrival-warp")))
+				wingp->flags.set(Ship::Wing_Flags::No_arrival_warp);
+			else if (!stricmp(wing_flag_strings[i], NOX("no-departure-warp")))
+				wingp->flags.set(Ship::Wing_Flags::No_departure_warp);
+			else if (!stricmp(wing_flag_strings[i], NOX("no-dynamic")))
+				wingp->flags.set(Ship::Wing_Flags::No_dynamic);
+			else if (!stricmp(wing_flag_strings[i], NOX("nav-carry-status")))
+				wingp->flags.set(Ship::Wing_Flags::Nav_carry);
+			else if (!stricmp(wing_flag_strings[i], NOX("same-arrival-warp-when-docked")))
+				wingp->flags.set(Ship::Wing_Flags::Same_arrival_warp_when_docked);
+			else if (!stricmp(wing_flag_strings[i], NOX("same-departure-warp-when-docked")))
+				wingp->flags.set(Ship::Wing_Flags::Same_departure_warp_when_docked);
+			else
+				Warning(LOCATION, "unknown wing flag\n%s\n\nSkipping.", wing_flag_strings[i]);
 		}
 	}
 
@@ -5410,8 +5461,24 @@ void parse_reinforcements(mission *pm)
 void parse_one_background(background_t *background)
 {
 	// clear here too because this function can be called from more than one place
+	background->flags.reset();
 	background->suns.clear();
 	background->bitmaps.clear();
+
+	// we might have some flags
+	if (optional_string("+Flags:"))
+	{
+		// we'll assume the list will contain no more than 4 distinct tokens
+		char flag_strings[4][NAME_LENGTH];
+		int num_strings = (int)stuff_string_list(flag_strings, 4);
+
+		for (auto i = 0; i < num_strings; ++i)
+		{
+			// if this flag is found, this background was saved with correctly calculated angles, so it should be loaded as such
+			if (!stricmp(flag_strings[i], "corrected angles"))
+				background->flags.set(Starfield::Background_Flags::Corrected_angles_in_mission_file);
+		}
+	}
 
 	// parse suns
 	while (optional_string("$Sun:"))
@@ -5426,6 +5493,10 @@ void parse_one_background(background_t *background)
 		stuff_float(&sle.ang.p);
 		stuff_float(&sle.ang.b);
 		stuff_float(&sle.ang.h);
+
+		// correct legacy bitmap angles which used incorrect math in older versions
+		if (!background->flags[Starfield::Background_Flags::Corrected_angles_in_mission_file])
+			stars_correct_background_sun_angles(&sle.ang);
 
 		// scale
 		required_string("+Scale:");
@@ -5452,6 +5523,10 @@ void parse_one_background(background_t *background)
 		stuff_float(&sle.ang.b);
 		stuff_float(&sle.ang.h);
 
+		// correct legacy bitmap angles which used incorrect math in older versions
+		if (!background->flags[Starfield::Background_Flags::Corrected_angles_in_mission_file])
+			stars_correct_background_bitmap_angles(&sle.ang);
+
 		// scale
 		if (optional_string("+Scale:"))
 		{
@@ -5477,6 +5552,12 @@ void parse_one_background(background_t *background)
 
 		// add it
 		background->bitmaps.push_back(sle);
+	}
+
+	if (Fred_running)
+	{
+		// the angles are now stored correctly, so by default we also want to save them correctly
+		background->flags.set(Starfield::Background_Flags::Corrected_angles_in_mission_file);
 	}
 }
 
@@ -5513,13 +5594,15 @@ void parse_bitmaps(mission *pm)
 	if (optional_string("+Neb2:")) {
 		nebula = true;
 		stuff_string(Neb2_texture_name, F_NAME, MAX_FILENAME_LEN);
-	} else if (optional_string("+Neb2Color:")) {
+	}
+	if (optional_string("+Neb2Color:")) {
 		nebula = true;
 		int neb_colors[3];
 		stuff_int_list(neb_colors, 3, RAW_INTEGER_TYPE);
 		Neb2_fog_color[0] = (ubyte)neb_colors[0];
 		Neb2_fog_color[1] = (ubyte)neb_colors[1];
 		Neb2_fog_color[2] = (ubyte)neb_colors[2];
+		pm->flags |= Mission::Mission_Flags::Neb2_fog_color_override;
 	}
 	if (nebula) {
 		required_string("+Neb2Flags:");			
@@ -5527,7 +5610,7 @@ void parse_bitmaps(mission *pm)
 
 		// initialize neb effect. its gross to do this here, but Fred is dumb so I have no choice ... :(
 		if(Fred_running && (pm->flags[Mission::Mission_Flags::Fullneb])){
-			neb2_post_level_init();
+			neb2_post_level_init(pm->flags[Mission::Mission_Flags::Neb2_fog_color_override]);
 		}
 	}
 
@@ -5598,7 +5681,7 @@ void parse_bitmaps(mission *pm)
 	// Goober5000
 	while (optional_string("$Bitmap List:") || check_for_string("$Sun:") || check_for_string("$Starbitmap:"))
 	{
-		Backgrounds.emplace_back();
+		stars_add_blank_background(false);
 		parse_one_background(&Backgrounds.back());
 	}
 
@@ -8423,7 +8506,7 @@ void conv_fix_punctuation_section(char *str, const char *section_start, const ch
 		t2 = strstr(t1, text_end);
 		if (!t2 || t2 > s2) return;
 
-		replace_all(t1, "\"", "$quote", PARSE_TEXT_SIZE - (str - Parse_text), (t2 - t1));
+		replace_all(t1, "\"", "$quote", PARSE_TEXT_SIZE - (str - Parse_text) - 1, (t2 - t1));
 	}	
 }
 	

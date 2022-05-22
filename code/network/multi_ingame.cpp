@@ -229,12 +229,12 @@ void multi_handle_ingame_joiners()
 		}
 
 		// check to see if his timestamp for ship update (hull, shields, etc) has popped. If so, send some info and reset
-		if(timestamp_elapsed(Net_players[idx].s_info.last_full_update_time)){
+		if(ui_timestamp_elapsed(Net_players[idx].s_info.last_full_update_time)){
 			// send the ships
 			multi_ingame_send_ship_update(&Net_players[idx]);
 
 			// reset the timestamp
-			Net_players[idx].s_info.last_full_update_time = timestamp(INGAME_SHIP_UPDATE_TIME);
+			Net_players[idx].s_info.last_full_update_time = ui_timestamp(INGAME_SHIP_UPDATE_TIME);
 		}
 
 		// once he has received the weapon state packet, send him the player settings for all the players in the game and mark this down
@@ -475,7 +475,7 @@ static int Multi_ingame_timer_coords[GR_NUM_RESOLUTIONS][2] = {
 //#define MULTI_INGAME_TIME_LEFT_Y			411
 
 #define MULTI_INGAME_TIME_SECONDS		(1000 * 15)
-LOCAL int Ingame_time_left;
+static UI_TIMESTAMP Ingame_time_left;
 
 // uses MULTI_JOIN_REFRESH_TIME as its timestamp
 UI_WINDOW Multi_ingame_window;											// the window object for the join screen
@@ -641,7 +641,7 @@ void multi_ingame_select_init()
 	Multi_ingame_ship_selected = -1;
 
 	// initialize the time he has left to select a ship
-	Ingame_time_left = timestamp(MULTI_INGAME_TIME_SECONDS);
+	Ingame_time_left = ui_timestamp(MULTI_INGAME_TIME_SECONDS);
 
 	// initialize GUI data	
 
@@ -828,7 +828,7 @@ void multi_ingame_select_close()
 
 	// unload all the ship class icons
 	multi_ingame_unload_icons();
-	
+
 	// destroy the UI_WINDOW
 	Multi_ingame_window.destroy();	
 
@@ -944,13 +944,13 @@ void multi_ingame_handle_timeout()
 	*/
 
 	// if we've timed out, leave the game
-	if( timestamp_elapsed(Ingame_time_left) ) {
+	if( ui_timestamp_elapsed(Ingame_time_left) ) {
 		multi_quit_game(PROMPT_NONE, MULTI_END_NOTIFY_INGAME_TIMEOUT, MULTI_END_ERROR_NONE);
 		return;
 	}
 
 	// otherwise, blit how much time we have left
-	int time_left = timestamp_until(Ingame_time_left) / 1000;
+	int time_left = ui_timestamp_until(Ingame_time_left) / MILLISECONDS_PER_SECOND;
 	char tl_string[100];
 	gr_set_color_fast(&Color_bright);
 	memset(tl_string,0,100);

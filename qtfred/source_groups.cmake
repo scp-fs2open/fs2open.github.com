@@ -58,6 +58,8 @@ add_file_folder("Source/Mission/Dialogs"
 	src/mission/dialogs/MissionSpecDialogModel.h
 	src/mission/dialogs/ObjectOrientEditorDialogModel.cpp
 	src/mission/dialogs/ObjectOrientEditorDialogModel.h
+	src/mission/dialogs/ReinforcementsEditorDialogModel.cpp	
+	src/mission/dialogs/ReinforcementsEditorDialogModel.h	
 	src/mission/dialogs/SelectionDialogModel.cpp
 	src/mission/dialogs/SelectionDialogModel.h
 	src/mission/dialogs/ShieldSystemDialogModel.cpp
@@ -76,6 +78,10 @@ add_file_folder("Source/Mission/Dialogs"
 	src/mission/dialogs/PlayerOrdersDialogModel.cpp
 	src/mission/dialogs/ShipSpecialStatsDialogModel.h
 	src/mission/dialogs/ShipSpecialStatsDialogModel.cpp
+	src/mission/dialogs/ShipTextureReplacementDialogModel.h
+	src/mission/dialogs/ShipTextureReplacementDialogModel.cpp
+	src/mission/dialogs/ShipTBLViewerModel.cpp
+	src/mission/dialogs/ShipTBLViewerModel.h
 )
 
 add_file_folder("Source/UI"
@@ -112,6 +118,8 @@ add_file_folder("Source/UI/Dialogs"
 	src/ui/dialogs/MissionSpecDialog.h
 	src/ui/dialogs/ObjectOrientEditorDialog.cpp
 	src/ui/dialogs/ObjectOrientEditorDialog.h
+	src/ui/dialogs/ReinforcementsEditorDialog.cpp
+	src/ui/dialogs/ReinforcementsEditorDialog.h
 	src/ui/dialogs/SelectionDialog.cpp
 	src/ui/dialogs/SelectionDialog.h
 	src/ui/dialogs/ShieldSystemDialog.h
@@ -134,6 +142,10 @@ add_file_folder("Source/UI/Dialogs"
 	src/ui/dialogs/PlayerOrdersDialog.cpp
 	src/ui/dialogs/ShipSpecialStatsDialog.cpp
 	src/ui/dialogs/ShipSpecialStatsDialog.h
+	src/ui/dialogs/ShipTextureReplacementDialog.h
+	src/ui/dialogs/ShipTextureReplacementDialog.cpp
+	src/ui/dialogs/ShipTBLViewer.h
+	src/ui/dialogs/ShipTBLViewer.cpp
 )
 
 add_file_folder("Source/UI/Util"
@@ -169,6 +181,7 @@ add_file_folder("UI"
 	ui/MissionGoalsDialog.ui
 	ui/MissionSpecDialog.ui
 	ui/ObjectOrientationDialog.ui
+	ui/ReinforcementsDialog.ui
 	ui/SelectionDialog.ui
 	ui/ShieldSystemDialog.ui
 	ui/TeamLoadoutDialog.ui
@@ -180,6 +193,8 @@ add_file_folder("UI"
 	ui/ShipSpecialStatsDialog.ui
 	ui/ShipFlagsDialog.ui
 	ui/PlayerOrdersDialog.ui
+	ui/ShipTextureReplacementDialog.ui
+	ui/ShipTBLViewer.ui
 )
 
 add_file_folder("Resources"

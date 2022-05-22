@@ -7,6 +7,8 @@
 
 #include "utils/tuples.h"
 
+#include <utility>
+
 namespace scripting {
 
 namespace detail {
@@ -24,8 +26,8 @@ struct HookParameterInstance {
 	char type = '\0';
 	T value;
 
-	HookParameterInstance(SCP_string name_, char type_, T value_)
-		: name(std::move(name_)), type(type_), value(std::move(value_))
+	HookParameterInstance(SCP_string name_, char type_, T&& value_)
+		: name(std::move(name_)), type(type_), value(std::forward<T>(value_))
 	{
 	}
 };
@@ -50,7 +52,10 @@ template <typename... Args>
 struct HookParameterInstanceList {
 	std::tuple<HookParameterInstance<Args>...> params;
 
-	HookParameterInstanceList(HookParameterInstance<Args>... params_) : params(params_...) {}
+	HookParameterInstanceList(HookParameterInstance<Args>&&... params_)
+		: params(std::forward<HookParameterInstance<Args>>(params_)...)
+	{
+	}
 
 	void setHookVars(SCP_vector<SCP_string>& paramNames)
 	{
@@ -63,15 +68,15 @@ struct HookParameterInstanceList {
 } // namespace detail
 
 template <typename T>
-detail::HookParameterInstance<T> hook_param(SCP_string name_, char type_, T value_)
+detail::HookParameterInstance<T> hook_param(SCP_string name_, char type_, T&& value_)
 {
-	return detail::HookParameterInstance<T>(std::move(name_), type_, std::move(value_));
+	return detail::HookParameterInstance<T>(std::move(name_), type_, std::forward<T>(value_));
 }
 
 template <typename... Args>
-detail::HookParameterInstanceList<Args...> hook_param_list(detail::HookParameterInstance<Args>... params)
+detail::HookParameterInstanceList<Args...> hook_param_list(detail::HookParameterInstance<Args>&&... params)
 {
-	return detail::HookParameterInstanceList<Args...>(std::move(params)...);
+	return detail::HookParameterInstanceList<Args...>(std::forward<detail::HookParameterInstance<Args>>(params)...);
 }
 
 struct HookVariableDocumentation {
@@ -127,8 +132,9 @@ class Hook : public HookBase {
 
 	template <typename... Args>
 	int run(detail::HookParameterInstanceList<Args...> argsList = hook_param_list<Args...>(),
-			object* objp                                        = nullptr,
-			int more_data                                       = 0) const
+			object* objp1                                       = nullptr,
+			object* objp2                                       = nullptr,
+			int more_data                                       = -1) const
 	{
 		SCP_vector<SCP_string> paramNames;
 		argsList.setHookVars(paramNames);
@@ -142,7 +148,7 @@ class Hook : public HookBase {
 		});
 #endif
 
-		const auto num_run = Script_system.RunCondition(_hookId, objp, more_data);
+		const auto num_run = Script_system.RunCondition(_hookId, objp1, objp2, more_data);
 
 		for (const auto& param : paramNames) {
 			Script_system.RemHookVar(param.c_str());

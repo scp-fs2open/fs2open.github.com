@@ -31,6 +31,8 @@ class NavPoint
 public:
 	char m_NavName[32];
 	int flags;
+	ubyte normal_color[3];
+	ubyte visited_color[3];
 
 	const void *target_obj;
 	int waypoint_num; //only used when flags & NP_WAYPOINT
@@ -41,6 +43,14 @@ public:
 	{
 		m_NavName[0] = 0;
 		flags = 0;
+
+		normal_color[0] = 0x80;
+		normal_color[1] = 0x80;
+		normal_color[2] = 0xFF;
+
+		visited_color[0] = 0xFF;
+		visited_color[1] = 0xFF;
+		visited_color[2] = 0x00;
 
 		target_obj = nullptr;
 		waypoint_num = -1;
@@ -154,6 +164,8 @@ unsigned int DistanceTo(int nav);
 
 bool IsVisited(const char *nav);
 bool IsVisited(int nav);
+
+void Nav_SetColor(const char *nav, bool visited, ubyte r, ubyte g, ubyte b);
 
 void send_autopilot_msg(const char *msg, const char *snd=nullptr);
 void send_autopilot_msgID(int msgid);

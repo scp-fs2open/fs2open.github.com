@@ -489,9 +489,9 @@ void model_draw_list::add_arc(vec3d *v1, vec3d *v2, color *primary, color *secon
 	Arcs.push_back(new_arc);
 }
 
-void model_draw_list::set_light_filter(int objnum, vec3d *pos, float rad)
+void model_draw_list::set_light_filter(vec3d *pos, float rad)
 {
-	Scene_light_handler.setLightFilter(objnum, pos, rad);
+	Scene_light_handler.setLightFilter(pos, rad);
 
 	Current_lights_set = Scene_light_handler.bufferLights();
 }
@@ -1582,7 +1582,7 @@ void submodel_render_queue(model_render_params *render_info, model_draw_list *sc
 	rendering_material.set_light_factor(1.0f);
 	
 	if ( !( flags & MR_NO_LIGHTING ) ) {
-		scene->set_light_filter(-1, pos, pm->submodel[submodel_num].rad);
+		scene->set_light_filter(pos, pm->submodel[submodel_num].rad);
 		rendering_material.set_lighting(true);
 	} else {
 		rendering_material.set_lighting(false);
@@ -2712,7 +2712,7 @@ void model_render_queue(model_render_params* interp, model_draw_list* scene, int
 	model_render_set_glow_points(pm, objnum);
 
 	if ( !(model_flags & MR_NO_LIGHTING) ) {
-		scene->set_light_filter(objnum, pos, pm->rad);
+		scene->set_light_filter(pos, pm->rad);
 	}
 
 	ship *shipp = NULL;

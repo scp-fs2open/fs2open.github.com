@@ -36,6 +36,18 @@ ADE_FUNC(__tostring, l_Font, NULL, "Name of font", "string", "Font filename, or 
 	return ade_set_args(L, "s", fh->Get()->getName().c_str());
 }
 
+ADE_FUNC(__eq, l_Font, "font, font", "Checks if the two fonts are equal", "boolean", "true if equal, false otherwise")
+{
+	font_h *fh1, *fh2;
+	if (!ade_get_args(L, "oo", l_Font.GetPtr(&fh1), l_Font.GetPtr(&fh2)))
+		return ade_set_error(L, "b", false);
+
+	if (!fh1->isValid() || !fh2->isValid())
+		return ade_set_error(L, "b", false);
+
+	return ade_set_args(L, "b", fh1->Get()->getName() == fh2->Get()->getName());
+}
+
 ADE_VIRTVAR(Filename, l_Font, "string", "Name of font (including extension)<br><b>Important:</b>This variable is deprecated. Use <i>Name</i> instead.", "string", NULL)
 {
 	font_h *fh = NULL;

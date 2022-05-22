@@ -22,6 +22,7 @@
 #include "ai/aibig.h"
 #include "ai/aigoals.h"
 #include "ai/aiinternal.h"
+#include "ai/ailua.h"
 #include "asteroid/asteroid.h"
 #include "autopilot/autopilot.h"
 #include "cmeasure/cmeasure.h"
@@ -133,6 +134,8 @@ const char *Mode_text[MAX_AI_BEHAVIORS] = {
 	"BAY_DEPART",
 	"SENTRYGUN",
 	"WARP_OUT",
+	"FLY_TO_SHIP",
+	"LUA_AI"
 };
 
 //	Submode text is only valid for CHASE mode.
@@ -4721,7 +4724,7 @@ void ai_waypoints()
 					Script_system.SetHookObject("Ship", &Objects[Ships[Pl_objp->instance].objnum]);
 					Script_system.SetHookVar("Wing", 'o', scripting::api::l_Wing.Set(Ships[Pl_objp->instance].wingnum));
 					Script_system.SetHookVar("Waypointlist", 'o', scripting::api::l_WaypointList.Set(scripting::api::waypointlist_h(aip->wp_list)));
-					Script_system.RunCondition(CHA_ONWAYPOINTSDONE);
+					Script_system.RunCondition(CHA_ONWAYPOINTSDONE, Pl_objp);
 					Script_system.RemHookVars({"Ship", "Wing", "Waypointlist"});
 				}
 			}
@@ -6347,11 +6350,6 @@ int check_ok_to_fire(int objnum, int target_objnum, weapon_info *wip, int second
 			}
 		}
 	}
-	else
-	{
-		// We have no valid target object, we should not fire at it...
-		return 0;
-	}
 
 	return 1;
 }
@@ -6407,98 +6405,10 @@ bool check_los(int objnum, int target_objnum, float threshold, int primary_bank,
 		vm_vec_add(&start, &firing_point, &firing_ship->pos);
 	}
 
-	vec3d& end = Objects[target_objnum].pos;
+	vec3d end = Objects[target_objnum].pos;
 
-	object* objp;
-
-	for (objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
-		//Don't collision check against ourselves or our target
-		if (OBJ_INDEX(objp) == objnum || OBJ_INDEX(objp) == target_objnum)
-			continue;
-
-		int model_num = 0;
-		int model_instance_num = 0;
-
-		//Only collision check against other pieces of Debris, Asteroids or Ships
-		char type = objp->type;
-		if (type == OBJ_DEBRIS) {
-			model_num = Debris[objp->instance].model_num;
-			model_instance_num = -1;
-		}
-		else if (type == OBJ_ASTEROID) {
-			model_num = Asteroid_info[Asteroids[objp->instance].asteroid_type].model_num[Asteroids[objp->instance].asteroid_subtype];
-			model_instance_num = Asteroids[objp->instance].model_instance_num;
-		}
-		else if (type == OBJ_SHIP) {
-			model_num = Ship_info[Ships[objp->instance].ship_info_index].model_num;
-			model_instance_num = Ships[objp->instance].model_instance_num;
-		}
-		else
-			continue;
-
-		//Early Out Model too small
-
-		float radius = objp->radius;
-		if (radius < threshold)
-			continue;
-
-		//Alternate "is in cylinder relevant for LoS" check
-		/*vec3d a, b, c;
-		vm_vec_sub(&a, &start, &objp->pos);
-		vm_vec_sub(&b, &end, &start);
-		vm_vec_cross(&c, &b, &a);
-
-		float distToTargetRecip = 1.0f / vm_vec_dist_squared(&start, &end);
-		float distLoSSquared = vm_vec_mag_squared(&c) * distToTargetRecip;
-		float t = -vm_vec_dot(&a, &b) * distToTargetRecip;
-
-		radius *= radius;
-		float maxTdelta = sqrtf(radius * distToTargetRecip);
-		
-		//Early out Model too far from LoS
-		if (distLoSSquared > radius || -maxTdelta > t || maxTdelta + 1 < t)
-			continue;
-		*/
-
-		//Asteroth's implementation
-		// if objp is inside start or end then we have to check the model
-		if (vm_vec_dist(&start, &objp->pos) > objp->radius && vm_vec_dist(&end, &objp->pos) > objp->radius) {
-			// now check that objp is in between start and end
-			vec3d start2end = end - start;
-			vec3d end2start = start - end;
-			vec3d start2objp = objp->pos - start;
-			vec3d end2objp = objp->pos - end;
-
-			// if objp and end are in opposite directions from start, then early out
-			if (vm_vec_dot(&start2end, &start2objp) < 0.0f)
-				continue;
-
-			// if objp and start are in opposite directions from end, then early out
-			if (vm_vec_dot(&end2start, &end2objp) < 0.0f)
-				continue;
-
-			// finally check if objp is too close to the path
-			if (vm_vec_mag(&start2objp) > (vm_vec_mag(&start2end) + objp->radius))
-				continue; // adding objp->radius is somewhat of an overestimate but thats ok
-		}
-
-		mc_info hull_check;
-		mc_info_init(&hull_check);
-
-		hull_check.model_instance_num = model_instance_num;
-		hull_check.model_num = model_num;
-		hull_check.orient = &objp->orient;
-		hull_check.pos = &objp->pos;
-		hull_check.p0 = &start;
-		hull_check.p1 = &end;
-		hull_check.flags = MC_CHECK_MODEL;
-
-		if (model_collide(&hull_check)) {
-			return false;
-		}
-	}
-
-	return true;
+	//Don't collision check against ourselves or our target
+	return test_line_of_sight(&start, &end, {&Objects[objnum], &Objects[target_objnum]}, threshold);
 }
 
 //	--------------------------------------------------------------------------
@@ -8596,6 +8506,8 @@ void ai_cruiser_chase()
 	}
 }
 
+constexpr int DEFAULT_WEAPON_RANGE = 700;
+
 /**
  * Make object Pl_objp chase object En_objp
  */
@@ -8730,7 +8642,7 @@ void ai_chase()
 	//	If just acquired target, or target is not in reasonable cone, don't refine believed enemy position.
 	if ((real_dot_to_enemy < 0.25f) || (aip->target_time < 1.0f)) {
 		predicted_enemy_pos = enemy_pos;
-	} else if (aip->ai_flags[AI::AI_Flags::Seek_lock]) {
+	} else if (aip->ai_flags[AI::AI_Flags::Seek_lock] && !(The_mission.ai_profile->flags[AI::Profile_Flags::Ignore_aspect_when_leading]) ) {
 		if (The_mission.ai_profile->flags[AI::Profile_Flags::Fix_ramming_stationary_targets_bug]) {
 			// fixed by Mantis 3147 - Bash orientation if aspect seekers are equipped.
 			set_predicted_enemy_pos(&predicted_enemy_pos, Pl_objp, &aip->last_aim_enemy_pos, &aip->last_aim_enemy_vel, aip);	// Set G_fire_pos
@@ -8840,9 +8752,19 @@ void ai_chase()
 		aip->submode == SM_GET_AWAY ||
 		aip->submode == AIS_CHASE_GLIDEATTACK)
 	{
+
+		float current_weapon_range;
+
+		// check that we have a valid index or not.
+		if (swp->num_primary_banks >= 1 && swp->current_primary_bank >= 0 && swp->primary_bank_weapons[swp->current_primary_bank] >= 0) {
+			current_weapon_range = Weapon_info[swp->primary_bank_weapons[swp->current_primary_bank]].weapon_range;
+		} else {
+			// if we didn't have a valid index (very rare) use this default weapon range which is close to average weapon range
+			current_weapon_range = DEFAULT_WEAPON_RANGE;
+		}
+
 		//Re-roll for random sidethrust every 2 seconds
 		//Also, only do this if we've recently been hit or are in current primary weapon range of target
-		float current_weapon_range = Weapon_info[swp->primary_bank_weapons[swp->current_primary_bank]].weapon_range;
 		if (static_randf((Missiontime + static_rand(aip->shipnum)) >> 17) < aip->ai_random_sidethrust_percent &&
 			((Missiontime - aip->last_hit_time < i2f(5) && aip->hitter_objnum >= 0) || dist_to_enemy < current_weapon_range)) 
 		{
@@ -12973,11 +12895,12 @@ void ai_maybe_evade_locked_missile(object *objp, ai_info *aip)
 				case AIM_PLAY_DEAD:
 				case AIM_BAY_DEPART:
 				case AIM_SENTRYGUN:
+				case AIM_LUA:
 					break;
 				case AIM_WARP_OUT:
 					break;
 				default:
-					Int3();			//	Hey, what mode is it?
+					UNREACHABLE("Unknown AI Mode %d! Get a coder!", aip->mode);
 					break;
 				}
 			}
@@ -13035,9 +12958,10 @@ void maybe_evade_dumbfire_weapon(ai_info *aip)
 	case AIM_SENTRYGUN:
 	case AIM_WARP_OUT:
 	case AIM_FLY_TO_SHIP:
+	case AIM_LUA:
 		return;
 	default:
-		Int3();	//	Bogus mode!
+		UNREACHABLE("Unknown AI Mode %d! Get a coder!", aip->mode);
 		return;
 	}
 
@@ -13103,9 +13027,10 @@ void maybe_evade_dumbfire_weapon(ai_info *aip)
 		case AIM_BAY_EMERGE:
 		case AIM_BAY_DEPART:
 		case AIM_SENTRYGUN:
+		case AIM_LUA:
 			break;
 		default:
-			Int3();	//	Bogus mode!
+			UNREACHABLE("Unknown AI Mode %d! Get a coder!", aip->mode);
 		}
 	}
 }
@@ -13590,7 +13515,6 @@ void ai_sentrygun()
 
 /**
  * Execute behavior given by aip->mode.
- * @todo Complete the AIM_GET_BEHIND option
  */
 void ai_execute_behavior(ai_info *aip)
 {
@@ -13673,6 +13597,15 @@ void ai_execute_behavior(ai_info *aip)
 			aip->mode = AIM_NONE;
 		}
 		break;
+	case AIM_GET_BEHIND:
+		if (En_objp) {
+			Assert(En_objp->type == OBJ_SHIP);
+			// This mode is not currently implemented, but if it were, it would be called here.
+			nprintf(("AI", "AIM_GET_BEHIND called; this mode is not yet implemented\n"));
+		} else {
+			aip->mode = AIM_NONE;
+		}
+		break;
 	case AIM_BAY_EMERGE:
 		ai_bay_emerge();
 		break;
@@ -13684,12 +13617,11 @@ void ai_execute_behavior(ai_info *aip)
 		break;
 	case AIM_WARP_OUT:
 		break;		//	Note, handled directly from ai_frame().
-	case AIM_GET_BEHIND:
-		// FIXME: got this from TBP and added it here to skip the Int3() but don't really want to handle it
-		// properly until after 3.6.7 just to avoid delaying release or breaking something - taylor
+	case AIM_LUA:
+		ai_lua(aip);
 		break;
 	default:
-		Int3();		//	This should never happen -- MK, 5/12/97	
+		UNREACHABLE("Unknown AI Mode! Get a coder!");
 		break;
 	}
 
@@ -15031,6 +14963,9 @@ void init_ai_object(int objnum)
 	aip->next_predict_pos_time = 0;
 	aip->next_aim_pos_time = 0;
 
+	aip->next_dynamic_path_check_time = timestamp(0);
+	vm_vec_zero(&aip->last_dynamic_path_goal);
+
 	aip->afterburner_stop_time = 0;
 	aip->last_objsig_hit = -1;				// object signature of the ship most recently hit by aip
 
@@ -15769,8 +15704,10 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hit_normal)
 	case AIM_WARP_OUT:
 		return;
 		break;
+	case AIM_LUA:
+		return;
 	default:
-		Int3();	//	Bogus mode!
+		UNREACHABLE("Unknown AI Mode! Get a coder!");
 	}
 
 	if (timestamp_elapsed(aip->ok_to_target_timestamp)) {
@@ -15901,7 +15838,7 @@ void ai_ship_destroy(int shipnum)
 			aip->hitter_objnum = -1;
 	}
 
-	if (dead_aip->ai_flags[AI::AI_Flags::Formation_object])
+	if (dead_aip->ai_flags[AI::AI_Flags::Formation_object] && dead_aip->goal_objnum >= 0)
 		ai_formation_object_recalculate_slotnums(dead_aip->goal_objnum, objnum);
 
 }
@@ -16224,4 +16161,108 @@ void maybe_cheat_fire_synaptic(object *objp)
 			}
 		}
 	}
+}
+
+bool test_line_of_sight(vec3d* from, vec3d* to, std::unordered_set<const object*>&& excluded_objects, float threshold, bool test_for_shields, bool test_for_hull, float* first_intersect_dist) {
+	bool collides = false;
+
+	for (object* objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
+		//Don't collision check against excluded objects
+		if (excluded_objects.count(objp) > 0)
+			continue;
+
+		int model_num = 0;
+		int model_instance_num = 0;
+
+		//Only collision check against other pieces of Debris, Asteroids or Ships
+		char type = objp->type;
+		if (type == OBJ_DEBRIS) {
+			model_num = Debris[objp->instance].model_num;
+			model_instance_num = -1;
+		}
+		else if (type == OBJ_ASTEROID) {
+			model_num = Asteroid_info[Asteroids[objp->instance].asteroid_type].model_num[Asteroids[objp->instance].asteroid_subtype];
+			model_instance_num = Asteroids[objp->instance].model_instance_num;
+		}
+		else if (type == OBJ_SHIP) {
+			model_num = Ship_info[Ships[objp->instance].ship_info_index].model_num;
+			model_instance_num = Ships[objp->instance].model_instance_num;
+		}
+		else
+			continue;
+
+		//Early Out Model too small
+
+		float radius = objp->radius;
+		if (radius < threshold)
+			continue;
+
+		//Asteroth's implementation
+		// if objp is inside start or end then we have to check the model
+		if (vm_vec_dist(from, &objp->pos) > objp->radius && vm_vec_dist(to, &objp->pos) > objp->radius) {
+			// now check that objp is in between start and end
+			vec3d start2end = *to - *from;
+			vec3d end2start = *from - *to;
+			vec3d start2objp = objp->pos - *from;
+			vec3d end2objp = objp->pos - *to;
+
+			// if objp and end are in opposite directions from start, then early out
+			if (vm_vec_dot(&start2end, &start2objp) < 0.0f)
+				continue;
+
+			// if objp and start are in opposite directions from end, then early out
+			if (vm_vec_dot(&end2start, &end2objp) < 0.0f)
+				continue;
+
+			// finally check if objp is too close to the path
+			if (vm_vec_mag(&start2objp) > (vm_vec_mag(&start2end) + objp->radius))
+				continue; // adding objp->radius is somewhat of an overestimate but thats ok
+		}
+
+		mc_info hull_check;
+		mc_info_init(&hull_check);
+
+		hull_check.model_instance_num = model_instance_num;
+		hull_check.model_num = model_num;
+		hull_check.orient = &objp->orient;
+		hull_check.pos = &objp->pos;
+		hull_check.p0 = from;
+		hull_check.p1 = to;
+
+		if (test_for_hull) {
+			hull_check.flags = MC_CHECK_MODEL;
+
+			if (model_collide(&hull_check)) {
+				float dist = vm_vec_dist(&hull_check.hit_point_world, from);
+				if (first_intersect_dist == nullptr) {
+					return false;
+				}
+				else {
+					//If we need to find the first intersect distance, we need to keep searching if there might be an intersect earlier. Also, always record the first dist found
+					if (!collides || *first_intersect_dist > dist)
+						*first_intersect_dist = dist;
+					collides = true;
+				}
+			}
+		}
+
+		if (test_for_shields) {
+			hull_check.flags = MC_CHECK_SHIELD;
+
+			if (model_collide(&hull_check)) {
+				float dist = vm_vec_dist(&hull_check.hit_point_world, from);
+				if (first_intersect_dist == nullptr) {
+					return false;
+				}
+				else {
+					//If we need to find the first intersect distance, we need to keep searching if there might be an intersect earlier
+					if (!collides || *first_intersect_dist > dist)
+						*first_intersect_dist = dist;
+					collides = true;
+				}
+			}
+		}
+	}
+
+	return !collides;
 }

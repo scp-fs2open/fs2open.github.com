@@ -39,6 +39,8 @@ struct EnhancedSoundData;
 
 #define DS_3D		(1<<0)
 
+#define DS_RESERVED_CHANNELS 32
+
 typedef struct sound_info {
 	uint size;
 	int sample_rate;

@@ -510,7 +510,7 @@ void multi_respawn_make_observer(net_player *pl)
 	multi_ping_reset(&pl->s_info.ping);
 	
 	// timestamp his last_full_update_time
-	pl->s_info.last_full_update_time = timestamp(0);
+	pl->s_info.last_full_update_time = UI_TIMESTAMP::immediate();
 
 	// create an observer object for him
 	multi_obs_create_observer(pl);		

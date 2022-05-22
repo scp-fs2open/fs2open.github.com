@@ -107,11 +107,12 @@ obj_flag_name Object_flag_names[] = {
 	{ Object::Object_Flags::Missile_protected,		"missile-protect-ship",		1,	},
 	{ Object::Object_Flags::Immobile,				"immobile",					1,	},
 	{ Object::Object_Flags::Collides,				"collides",					1,  },
+	{ Object::Object_Flags::Attackable_if_no_collide, "ai-attackable-if-no-collide", 1,},
 };
 
 #ifdef OBJECT_CHECK
 checkobject::checkobject() 
-    : type(0), signature(0), parent_sig(0), parent_type(0) 
+    : type(0), signature(0), parent_sig(0) 
 {
     flags.reset();
 }
@@ -138,7 +139,7 @@ void object::clear()
 {
 	signature = num_pairs = collision_group_id = 0;
 	parent = parent_sig = instance = -1;
-	type = parent_type = OBJ_NONE;
+	type = OBJ_NONE;
     flags.reset();
 	pos = last_pos = vmd_zero_vector;
 	orient = last_orient = vmd_identity_matrix;
@@ -505,10 +506,8 @@ int obj_create(ubyte type,int parent_obj,int instance, matrix * orient,
 	obj->parent					= parent_obj;
 	if (obj->parent != -1)	{
 		obj->parent_sig		= Objects[parent_obj].signature;
-		obj->parent_type		= Objects[parent_obj].type;
 	} else {
 		obj->parent_sig = obj->signature;
-		obj->parent_type = obj->type;
 	}
 
 	obj->flags 					= flags;
@@ -1010,10 +1009,6 @@ void obj_check_object( object *obj )
 		mprintf(( "Object parent sig changed!\n" ));
 		Int3();
 	}
-	if ( CheckObjects[objnum].parent_type != obj->parent_type ) {
-		mprintf(( "Object's parent type changed!\n" ));
-		Int3();
-	}
 }
 #endif
 
@@ -1230,10 +1225,9 @@ void obj_move_all_post(object *objp, float frametime)
 						g = i2fl(c.green)/255.0f;
 						b = i2fl(c.blue)/255.0f;
 
-						//light_add_point( &objp->pos, 10.0f, 20.0f, 1.0f, r, g, b, objp->parent );
-						light_add_point( &objp->pos, 10.0f, 100.0f, 1.0f, r, g, b, objp->parent );
+						light_add_point( &objp->pos, 10.0f, 100.0f, 1.0f, r, g, b);
 					} else {
-						light_add_point( &objp->pos, 10.0f, 20.0f, 1.0f, 1.0f, 1.0f, 1.0f, objp->parent );
+						light_add_point( &objp->pos, 10.0f, 20.0f, 1.0f, 1.0f, 1.0f, 1.0f);
 					} 
 				}
 			}
@@ -1266,8 +1260,8 @@ void obj_move_all_post(object *objp, float frametime)
 							vm_vec_unrotate(&tmp2,&shipp->arc_pts[i][1],&objp->orient);
 							vm_vec_add2(&tmp2,&objp->pos);
 
-							light_add_point( &tmp1, 10.0f, 20.0f, frand(), 1.0f, 1.0f, 1.0f, -1 );
-							light_add_point( &tmp2, 10.0f, 20.0f, frand(), 1.0f, 1.0f, 1.0f, -1 );
+							light_add_point( &tmp1, 10.0f, 20.0f, frand(), 1.0f, 1.0f, 1.0f);
+							light_add_point( &tmp2, 10.0f, 20.0f, frand(), 1.0f, 1.0f, 1.0f);
 						}
 					}
 				}
@@ -1327,7 +1321,7 @@ void obj_move_all_post(object *objp, float frametime)
 					// P goes from 0 to 1 to 0 over the life of the explosion
 					// Only do this if rad is > 0.0000001f
 					if (rad > 0.0001f)
-						light_add_point( &objp->pos, rad * 2.0f, rad * 5.0f, intensity, r, g, b, -1 );
+						light_add_point( &objp->pos, rad * 2.0f, rad * 5.0f, intensity, r, g, b);
 				}
 			}
 
@@ -1363,8 +1357,8 @@ void obj_move_all_post(object *objp, float frametime)
 								vm_vec_unrotate(&tmp2,&db->arc_pts[i][1],&objp->orient);
 								vm_vec_add2(&tmp2,&objp->pos);
 
-								light_add_point( &tmp1, 10.0f, 20.0f, frand(), 1.0f, 1.0f, 1.0f, -1 );
-								light_add_point( &tmp2, 10.0f, 20.0f, frand(), 1.0f, 1.0f, 1.0f, -1 );
+								light_add_point( &tmp1, 10.0f, 20.0f, frand(), 1.0f, 1.0f, 1.0f );
+								light_add_point( &tmp2, 10.0f, 20.0f, frand(), 1.0f, 1.0f, 1.0f );
 							}
 						}
 					}

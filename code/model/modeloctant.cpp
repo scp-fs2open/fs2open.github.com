@@ -90,13 +90,13 @@ void model_octant_find_shields( polymodel * pm, model_octant * oct )
     
 void moff_defpoints(ubyte * p, int just_count)
 {
-	int n;
-	int nverts = w(p+8);	
-	int offset = w(p+16);
-	int nnorms = 0;
+	uint n;
+	uint nverts = uw(p+8);	
+	uint offset = uw(p+16);
+	uint nnorms = 0;
 
-	// if we are just counting then we don't need to be here
-	if (just_count)
+	// only do fill Interp_verts once, in the first pass when we're just counting them up
+	if (!just_count)
 		return;
 
 	ubyte * normcount = p+20;
@@ -128,23 +128,21 @@ void moff_defpoints(ubyte * p, int just_count)
 // +32     float      radius
 // +36     int         nverts
 // +40     int         tmap_num
-// +44     nverts*(model_tmap_vert) vertlist (n,u,v)
+// +44     nverts*(model_tmap_vert_old) vertlist (n,u,v)
 void moff_tmappoly(ubyte * p, polymodel * pm, model_octant * oct, int just_count )
 {
-	int i, nv;
-	model_tmap_vert *verts;
+	uint i, nv;
 
-	nv = w(p+36);
-	if ( nv < 0 ) return;
+	nv = uw(p + TMAP_NVERTS);
 
-	verts = (model_tmap_vert *)(p+44);
+	auto verts = reinterpret_cast<model_tmap_vert_old*>(&p[TMAP_VERTS]);
 
 	if ( (pm->version < 2003) && !just_count )	{
 		// Set the "normal_point" part of field to be the center of the polygon
 		vec3d center_point;
 		vm_vec_zero( &center_point );
 
-		Assert( Interp_verts != NULL );
+		Assert( Interp_verts != nullptr );
 
 		for (i=0;i<nv;i++)	{
 			vm_vec_add2( &center_point, Interp_verts[verts[i].vertnum] );
@@ -178,6 +176,50 @@ void moff_tmappoly(ubyte * p, polymodel * pm, model_octant * oct, int just_count
 }
 
 
+// Textured Poly version 2
+// +0 int id = 6
+// + 4 int size
+// + 8 vector min_bounding_box_point
+// + 20 vector max_bounding_box_point
+// + 32 vector normal
+// + 44 int tmap_num
+// + 48 int nverts
+// + 52 nverts*(model_tmap2_vert) vertlist (n,u,v)
+void moff_tmap2poly(ubyte* p, polymodel* pm, model_octant* oct, int just_count)
+{
+	Assert(pm->version >= 2300);
+
+	uint i, nv;
+	model_tmap_vert* verts;
+
+	nv = uw(p + TMAP2_NVERTS);
+
+	verts = reinterpret_cast<model_tmap_vert*>(p + TMAP2_VERTS);
+
+	vec3d center_point;
+	vm_vec_zero(&center_point);
+
+	Assert(Interp_verts != nullptr);
+
+	for (i = 0; i < nv; i++) {
+		vm_vec_add2(&center_point, Interp_verts[verts[i].vertnum]);
+	}
+
+	center_point.xyz.x /= nv;
+	center_point.xyz.y /= nv;
+	center_point.xyz.z /= nv;
+
+	// Put each face into a particular octant
+	if (point_in_octant(pm, oct, &center_point)) {
+		if (just_count)
+			oct->nverts++;
+		else
+			oct->verts[oct->nverts++] = &center_point;
+		return;
+	}
+}
+
+
 // Flat Poly
 // +0      int         id
 // +4      int         size 
@@ -192,11 +234,10 @@ void moff_tmappoly(ubyte * p, polymodel * pm, model_octant * oct, int just_count
 // +44     nverts*int  vertlist
 void moff_flatpoly(ubyte * p, polymodel * pm, model_octant * oct, int just_count )
 {
-	int i, nv;
+	uint i, nv;
 	short *verts;
 
-	nv = w(p+36);
-	if ( nv < 0 ) return;
+	nv = uw(p+36);
 
 	verts = (short *)(p+44);
 
@@ -246,8 +287,9 @@ int model_octant_find_faces_sub(polymodel * pm, model_octant * oct, void *model_
 
 	chunk_type = w(p);
 	chunk_size = w(p+4);
-	
-	while (chunk_type != OP_EOF)	{
+
+	bool end = chunk_type == OP_EOF;
+	while (!end)	{
 
 		switch (chunk_type) {
 		case OP_DEFPOINTS:	
@@ -269,7 +311,20 @@ int model_octant_find_faces_sub(polymodel * pm, model_octant * oct, void *model_
 				if (postlist) model_octant_find_faces_sub(pm,oct,p+postlist,just_count);
 			}
 			break;
+		case OP_SORTNORM2: {
+				int frontlist = w(p + 8);
+				int backlist = w(p + 12);
+
+				if (backlist) model_octant_find_faces_sub(pm, oct, p + backlist, just_count);
+				if (frontlist) model_octant_find_faces_sub(pm, oct, p + frontlist, just_count);
+				end = true; // should not continue after this chunk
+			}
+			break;
 		case OP_BOUNDBOX:		break;
+		case OP_TMAP2POLY:		
+			moff_tmap2poly(p, pm, oct, just_count);
+			end = true; // should not continue after this chunk
+			break;
 		default:
 			mprintf(( "Bad chunk type %d, len=%d in model_octant_find_faces_sub\n", chunk_type, chunk_size ));
 			Int3();		// Bad chunk type!
@@ -278,6 +333,9 @@ int model_octant_find_faces_sub(polymodel * pm, model_octant * oct, void *model_
 		p += chunk_size;
 		chunk_type = w(p);
 		chunk_size = w(p+4);
+
+		if (chunk_type == OP_EOF)
+			end = true;
 	}
 	return 1;
 }

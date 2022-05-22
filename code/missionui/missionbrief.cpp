@@ -43,6 +43,7 @@
 #include "network/multiui.h"
 #include "parse/parselo.h"
 #include "parse/sexp.h"
+#include "parse/sexp_container.h"
 #include "playerman/player.h"
 #include "popup/popup.h"
 #include "render/3d.h"
@@ -799,6 +800,8 @@ void brief_compact_stages()
 		if ( eval_sexp(Briefing->stages[num].formula) ) {
 			// Goober5000 - replace any variables (probably persistent variables) with their values
 			sexp_replace_variable_names_with_values(Briefing->stages[num].text);
+			// karajorma/jg18 - replace container references as well
+			sexp_container_replace_refs_with_values(Briefing->stages[num].text);
 		} else {
 			// clean up unused briefing stage
 			Briefing->stages[num].text = "";
@@ -882,10 +885,12 @@ void brief_init()
 		return;
 	}
 
-	if (The_mission.flags[Mission::Mission_Flags::Always_show_goals] || !(The_mission.game_type & MISSION_TYPE_TRAINING))
+	// Show the goals slide iff we're in a training mission with the "toggle goals" flag, or a normal mission without it.
+	if (The_mission.flags[Mission::Mission_Flags::Toggle_showing_goals] == !!(The_mission.game_type & MISSION_TYPE_TRAINING)) {
 		Num_brief_stages = Briefing->num_stages + 1;
-	else
+	} else {
 		Num_brief_stages = Briefing->num_stages;
+	}
 
 	Current_brief_stage = 0;
 	Last_brief_stage = 0;

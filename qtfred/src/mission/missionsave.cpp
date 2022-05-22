@@ -128,7 +128,7 @@ void CFred_mission_save::convert_special_tags_to_retail()
 	}
 
 	for (i = Num_builtin_messages; i < Num_messages; i++) {
-		convert_special_tags_to_retail(Messages[i].message, MESSAGE_LENGTH);
+		convert_special_tags_to_retail(Messages[i].message, MESSAGE_LENGTH - 1);
 	}
 }
 
@@ -830,13 +830,27 @@ int CFred_mission_save::save_bitmaps()
 
 	// neb2 stuff
 	if (The_mission.flags[Mission::Mission_Flags::Fullneb]) {
+		fout("\n");
 		required_string_fred("+Neb2:");
 		parse_comments();
-		fout(" %s\n", Neb2_texture_name);
+		fout(" %s", Neb2_texture_name);
+
+		if (save_format != MissionFormat::RETAIL && The_mission.flags[Mission::Mission_Flags::Neb2_fog_color_override]) {
+			if (optional_string_fred("+Neb2Color:")) {
+				parse_comments();
+			} else {
+				fout("\n+Neb2Color:");
+			}
+			fout(" (");
+			for (auto c : Neb2_fog_color) {
+				fout(" %d", c);
+			}
+			fout(" )");
+		}
 
 		required_string_fred("+Neb2Flags:");
 		parse_comments();
-		fout(" %d\n", Neb2_poof_flags);
+		fout(" %d", Neb2_poof_flags);
 	}
 		// neb 1 stuff
 	else {
@@ -873,6 +887,7 @@ int CFred_mission_save::save_bitmaps()
 		bool tag = (i < (int)Backgrounds.size() - 1);
 		background_t* background = &Backgrounds[i];
 
+		// each background should be preceded by this line so that the suns/bitmaps are partitioned correctly
 		fso_comment_push(";;FSO 3.6.9;;");
 		if (optional_string_fred("$Bitmap List:")) {
 			parse_comments(2);
@@ -882,6 +897,25 @@ int CFred_mission_save::save_bitmaps()
 
 		if (!tag) {
 			fso_comment_pop(true);
+		}
+
+		// save our flags
+		if (save_format == MissionFormat::RETAIL) {
+			_viewport->dialogProvider->showButtonDialog(DialogType::Warning,
+				"Incompatibility with retail mission format",
+				"Warning: Background flags (including the fixed-angles-in-mission-file flag) are not supported in retail.  The sun and bitmap angles will be loaded differently by previous versions.",
+				{ DialogButton::Ok });
+		} else if (background->flags.any_set()) {
+			if (optional_string_fred("+Flags:")) {
+				parse_comments();
+			} else {
+				fout_version("\n+Flags:");
+			}
+			fout(" (");
+			if (background->flags[Starfield::Background_Flags::Corrected_angles_in_mission_file]) {
+				fout(" \"corrected angles\"");
+			}
+			fout(" )");
 		}
 
 		// save suns by filename
@@ -896,7 +930,10 @@ int CFred_mission_save::save_bitmaps()
 			// angles
 			required_string_fred("+Angles:");
 			parse_comments();
-			fout(" %f %f %f", sle->ang.p, sle->ang.b, sle->ang.h);
+			angles ang = sle->ang;
+			if (!background->flags[Starfield::Background_Flags::Corrected_angles_in_mission_file])
+				stars_uncorrect_background_sun_angles(&ang);
+			fout(" %f %f %f", ang.p, ang.b, ang.h);
 
 			// scale
 			required_string_fred("+Scale:");
@@ -916,7 +953,10 @@ int CFred_mission_save::save_bitmaps()
 			// angles
 			required_string_fred("+Angles:");
 			parse_comments();
-			fout(" %f %f %f", sle->ang.p, sle->ang.b, sle->ang.h);
+			angles ang = sle->ang;
+			if (!background->flags[Starfield::Background_Flags::Corrected_angles_in_mission_file])
+				stars_uncorrect_background_bitmap_angles(&ang);
+			fout(" %f %f %f", ang.p, ang.b, ang.h);
 
 			// scale
 			required_string_fred("+ScaleX:");
@@ -1542,7 +1582,7 @@ int CFred_mission_save::save_cutscenes()
 		} else {
 			_viewport->dialogProvider->showButtonDialog(DialogType::Warning,
 														"Incompatibility with retail mission format",
-														"Warning: This mission contains cutscene data, but you are saving in the retail mission format. This information will be lost",
+														"Warning: This mission contains cutscene data, but you are saving in the retail mission format. This information will be lost.",
 														{ DialogButton::Ok });
 		}
 	}
@@ -3421,6 +3461,21 @@ int CFred_mission_save::save_objects()
 			if (shipp->flags[Ship::Ship_Flags::No_disabled_self_destruct]) {
 				fout(" \"no-disabled-self-destruct\"");
 			}
+			if (shipp->flags[Ship::Ship_Flags::Same_arrival_warp_when_docked]) {
+				fout(" \"same-arrival-warp-when-docked\"");
+			}
+			if (shipp->flags[Ship::Ship_Flags::Same_departure_warp_when_docked]) {
+				fout(" \"same-departure-warp-when-docked\"");
+			}
+			if (objp->flags[Object::Object_Flags::Attackable_if_no_collide]) {
+				fout(" \"ai-attackable-if-no-collide\"");
+			}
+			if (shipp->flags[Ship::Ship_Flags::Fail_sound_locked_primary]) {
+				fout(" \"fail-sound-locked-primary\"");
+			}
+			if (shipp->flags[Ship::Ship_Flags::Fail_sound_locked_secondary]) {
+				fout(" \"fail-sound-locked-secondary\"");
+			}
 			fout(" )");
 		}
 		// -----------------------------------------------------------
@@ -3633,16 +3688,31 @@ int CFred_mission_save::save_objects()
 		// possibly write out the orders that this ship will accept.  We'll only do it if the orders
 		// are not the default set of orders
 		if (shipp->orders_accepted != ship_get_default_orders_accepted(&Ship_info[shipp->ship_info_index])) {
-			if (optional_string_fred("+Orders Accepted:", "$Name:")) {
-				parse_comments();
-			} else {
-				fout("\n+Orders Accepted:");
-			}
+			if (save_format == MissionFormat::RETAIL) {
+				if (optional_string_fred("+Orders Accepted:", "$Name:")) {
+					parse_comments();
+				} else {
+					fout("\n+Orders Accepted:");
+				}
 
-			int bitfield = 0;
-			for(size_t order : shipp->orders_accepted)
-				bitfield |= Player_orders[order].id;
-			fout(" %d\t\t;! note that this is a bitfield!!!", bitfield);
+				int bitfield = 0;
+				for (size_t order : shipp->orders_accepted)
+					bitfield |= Player_orders[order].id;
+				fout(" %d\t\t;! note that this is a bitfield!!!", bitfield);
+			} else {
+				if (optional_string_fred("+Orders Accepted List:", "$Name:")) {
+					parse_comments();
+				} else {
+					fout("\n+Orders Accepted List:");
+				}
+
+				fout(" (");
+				for (size_t order_id : shipp->orders_accepted) {
+					const auto& order = Player_orders[order_id];
+					fout(" \"%s\"", order.parse_name.c_str());
+				}
+				fout(" )");
+			}
 		}
 
 		if (shipp->group >= 0) {
@@ -4737,6 +4807,17 @@ int CFred_mission_save::save_wings()
 		}
 		if (Wings[i].flags[Ship::Wing_Flags::No_dynamic]) {
 			fout(" \"no-dynamic\"");
+		}
+		if (save_format != MissionFormat::RETAIL) {
+			if (Wings[i].flags[Ship::Wing_Flags::Nav_carry]) {
+				fout(" \"nav-carry-status\"");
+			}
+			if (Wings[i].flags[Ship::Wing_Flags::Same_arrival_warp_when_docked]) {
+				fout(" \"same-arrival-warp-when-docked\"");
+			}
+			if (Wings[i].flags[Ship::Wing_Flags::Same_departure_warp_when_docked]) {
+				fout(" \"same-departure-warp-when-docked\"");
+			}
 		}
 
 		fout(" )");

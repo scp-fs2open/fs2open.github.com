@@ -643,14 +643,9 @@ void brief_init_colors()
 {
 }
 
-briefing_icon_info *brief_get_icon_info(brief_icon *bi)
+bool brief_special_closeup(int briefing_icon_type)
 {
-	if (bi->ship_class < 0)
-		return NULL;
-	ship_info *sip = &Ship_info[bi->ship_class];
-
-	bool allow_override = true;
-	switch (bi->type)
+	switch (briefing_icon_type)
 	{
 		case ICON_PLANET:
 		case ICON_ASTEROID_FIELD:
@@ -658,12 +653,19 @@ briefing_icon_info *brief_get_icon_info(brief_icon *bi)
 		case ICON_UNKNOWN:
 		case ICON_UNKNOWN_WING:
 		case ICON_JUMP_NODE:
-			allow_override = false;
-			break;
+			return true;
 	}
+	return false;
+}
+
+briefing_icon_info *brief_get_icon_info(brief_icon *bi)
+{
+	if (bi->ship_class < 0)
+		return nullptr;
+	ship_info *sip = &Ship_info[bi->ship_class];
 
 	// ship info might override the usual briefing icon
-	if ((allow_override || Custom_briefing_icons_always_override_standard_icons) && sip->bii_index_ship >= 0)
+	if ((!brief_special_closeup(bi->type) || Custom_briefing_icons_always_override_standard_icons) && sip->bii_index_ship >= 0)
 	{
 		if (bi->flags & BI_USE_WING_ICON)
 		{

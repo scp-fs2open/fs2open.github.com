@@ -24,9 +24,6 @@ static Uint64 Timer_base_value;
 
 static bool Timer_inited = false;
 
-#define MICROSECONDS_PER_SECOND 1000000
-#define NANOSECONDS_PER_SECOND 1000000000
-
 static long double Timer_to_microseconds;
 static long double Timer_to_nanoseconds;
 
@@ -158,6 +155,10 @@ int timestamp() {
 	return timestamp_ms();
 }
 
+TIMESTAMP _timestamp() {
+	return TIMESTAMP(timestamp_ms());
+}
+
 UI_TIMESTAMP ui_timestamp() {
 	return UI_TIMESTAMP(timer_get_milliseconds());
 }
@@ -182,6 +183,19 @@ int timestamp(int delta_ms) {
 	}
 	if (t2 < 2 ) t2 = 2;	// hack??
 	return t2;
+}
+
+TIMESTAMP _timestamp(int delta_ms) {
+	int t2;
+	if (delta_ms < 0 ) return TIMESTAMP::never();
+	if (delta_ms == 0 ) return TIMESTAMP::immediate();
+	t2 = timestamp_ms() + delta_ms;
+	if ( t2 > (int)MAX_TIME )	{
+		// wrap!!!
+		t2 = delta_ms - (MAX_TIME-timestamp_ms());
+	}
+	if (t2 < 2 ) t2 = 2;	// hack??
+	return TIMESTAMP(t2);
 }
 
 UI_TIMESTAMP ui_timestamp(int delta_ms) {
@@ -222,6 +236,16 @@ int timestamp_until(int stamp)
 */
 }
 
+int timestamp_until(TIMESTAMP stamp)
+{
+	if (!stamp.isValid() || stamp.isNever())
+		return INT_MAX;
+	if (stamp.isImmediate())
+		return 0;
+
+	return stamp.value() - timestamp_ms();
+}
+
 int ui_timestamp_until(UI_TIMESTAMP stamp)
 {
 	if (!stamp.isValid() || stamp.isNever())
@@ -253,6 +277,17 @@ bool timestamp_elapsed(int stamp) {
 	return timestamp_ms() >= stamp;
 }
 
+bool timestamp_elapsed(TIMESTAMP stamp) {
+	if (!stamp.isValid() || stamp.isNever()) {
+		return false;
+	}
+	if (stamp.isImmediate()) {
+		return true;
+	}
+
+	return timestamp_ms() >= stamp.value();
+}
+
 bool ui_timestamp_elapsed(UI_TIMESTAMP ui_stamp) {
 	if (!ui_stamp.isValid() || ui_stamp.isNever()) {
 		return false;
@@ -270,6 +305,17 @@ bool timestamp_elapsed_safe(int a, int b) {
 	}
 
 	return timestamp_ms() >= a || timestamp_ms() < (a - b + 100);
+}
+
+bool ui_timestamp_elapsed_safe(UI_TIMESTAMP a, int b) {
+	if (!a.isValid() || a.isNever()) {
+		return false;
+	}
+	if (a.isImmediate()) {
+		return true;
+	}
+
+	return timer_get_milliseconds() >= a.value() || timer_get_milliseconds() < (a.value() - b + 100);
 }
 
 // ======================================== pausing/unpausing/adjusting ========================================

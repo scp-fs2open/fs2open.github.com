@@ -9,6 +9,8 @@
 #include "ShipFlagsDialog.h"
 #include "PlayerOrdersDialog.h"
 #include "ShipSpecialStatsDialog.h"
+#include "ShipTextureReplacementDialog.h"
+#include "ShipTBLViewer.h"
 
 #include <QAbstractButton>
 #include <QtWidgets/QDialog>
@@ -22,6 +24,8 @@ namespace Ui {
 class ShipEditorDialog;
 }
 
+class ShipTBLViewer;
+
 class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 
 	Q_OBJECT
@@ -29,6 +33,9 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
   public:
 	explicit ShipEditorDialog(FredView* parent, EditorViewport* viewport);
 	~ShipEditorDialog() override;
+
+	int getShipClass();
+	bool getIfMultipleShips();
 
   protected:
 	void closeEvent(QCloseEvent*) override;
@@ -99,6 +106,7 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	void departureWarpChanged(bool);
 	void DepartureCueChanged(bool);
 
+	ShipTBLViewer* TBLViewer = nullptr;
 };
 } // namespace dialogs
 } // namespace fred

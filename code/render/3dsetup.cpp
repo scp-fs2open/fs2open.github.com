@@ -124,6 +124,10 @@ void g3_end_frame_func(const char * /*filename*/, int  /*lineno*/)
 
 void scale_matrix(void);
 
+void g3_set_fov(float zoom) {
+	Proj_fov = 1.39626348f * zoom;
+}
+
 void g3_set_view(camera *cam)
 {
 	vec3d pos;
@@ -148,7 +152,7 @@ void g3_set_view_matrix(const vec3d *view_pos, const matrix *view_matrix, float 
 
 	View_matrix = *view_matrix;
 
-	Proj_fov = 1.39626348f * View_zoom;
+	g3_set_fov(View_zoom);
 
 	Eye_matrix = View_matrix;
 	Eye_position = *view_pos;
