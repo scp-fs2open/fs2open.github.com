@@ -1325,7 +1325,7 @@ void sexp_copy_container(int node)
 	Assertion(node != -1, "Copy-container wasn't given a container to copy from. Please report!");
 
 	const char *src_container_name = CTEXT(node);
-	const auto *p_src_container = get_sexp_container(src_container_name);
+	const auto * const p_src_container = get_sexp_container(src_container_name);
 
 	if (!p_src_container) {
 		report_nonexistent_container("Copy-container", src_container_name);
@@ -1337,10 +1337,17 @@ void sexp_copy_container(int node)
 	Assertion(node != -1, "Copy-container wasn't given a container to copy to. Please report!");
 
 	const char *dest_container_name = CTEXT(node);
-	auto *p_dest_container = get_sexp_container(src_container_name);
+	auto *p_dest_container = get_sexp_container(dest_container_name);
 
 	if (!p_dest_container) {
 		report_nonexistent_container("Copy-container", dest_container_name);
+		return;
+	}
+	if (p_src_container == p_dest_container) {
+		const SCP_string msg =
+			SCP_string("Copy-container called to copy container ") + src_container_name + " to itself";
+		Warning(LOCATION, "%s", msg.c_str());
+		log_printf(LOGFILE_EVENT_LOG, "%s", msg.c_str());
 		return;
 	}
 	auto &dest_container = *p_dest_container;
