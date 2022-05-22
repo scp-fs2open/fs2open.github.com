@@ -3944,8 +3944,11 @@ int get_sexp()
 				// container name
 				Mp++;
 
-				stuff_string(container_name, F_NAME, sizeof(container_name));
-				Mp++;
+				// ')' could occur if this is the SEXP's last argument
+				stuff_string(container_name, F_NAME, sizeof(container_name), ")");
+				if (*Mp != ')') {
+					Mp++;
+				}
 
 				if (get_sexp_container(container_name) == nullptr) {
 					Error(LOCATION, "Attempt to use unknown container '%s'", container_name);
