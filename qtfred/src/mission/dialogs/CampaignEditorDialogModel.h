@@ -71,13 +71,6 @@ public:
 	inline const QString& getCurMnDebriefingPersona() const { return mnData_it ? mnData_it->debriefingPersona : qstrEmpty; }
 	inline int getCurMnBrCnt() const {return mnData_it ? static_cast<int>(mnData_it->branches.size()) : -1; }
 
-//branch helpers
-private:
-	inline const CampaignBranchData* getCurBr() const {
-		return mnData_it ? mnData_it->brData_it : nullptr; }
-	void connectBranches(bool uiUpdate = true, const campaign *cpgn = nullptr);
-
-public:
 	bool fillTree(sexp_tree& sxt) const;
 // Model state getters -- branch
 	inline int getCurBrIdx() const { return getCurBr() ? mnData_it->brData_idx : -1; }
@@ -108,24 +101,6 @@ public:
 
 	inline bool query_modified() const { return modified; }
 	inline bool missionDropped() const { return ! droppedMissions.isEmpty(); }
-
-private slots:
-	void trackMissionUncheck(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles);
-	inline void flagModified() { modified = true; }
-
-public: //clang
-private:
-	bool _saveTo(QString file) const;
-
-	template<typename T>
-	inline void modify(T &a, const T &b) {
-		if (a != b) {
-			a = b;
-			flagModified();
-		}
-	}
-	QStringList droppedMissions{};
-	bool modified{false};
 
 // Model state setters
 public slots:
@@ -159,6 +134,26 @@ public slots:
 
 	void setCurLoopAnim(const QString &anim);
 	void setCurLoopVoice(const QString &voice);
+
+//branch helpers
+private:
+	inline const CampaignBranchData* getCurBr() const {
+		return mnData_it ? mnData_it->brData_it : nullptr; }
+	void connectBranches(bool uiUpdate = true, const campaign *cpgn = nullptr);
+
+	bool _saveTo(QString file) const;
+
+	template<typename T>
+	inline void modify(T &a, const T &b) {
+		if (a != b) {
+			a = b;
+			flagModified();
+		}
+	}
+
+private slots:
+	void trackMissionUncheck(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles);
+	inline void flagModified() { modified = true; }
 
 //Model inner types
 private:
@@ -221,12 +216,6 @@ private:
 		QString loopVoice;
 	};
 
-// Model state -- current mission
-	CampaignMissionData* mnData_it{nullptr};
-	QPersistentModelIndex mnData_idx{};
-
-	CampaignEditorDialog *const parent;
-
 public:
 // parsed table / cfile data
 	static const QStringList& cutscenes();
@@ -241,6 +230,14 @@ public:
 	const QString campaignType;
 
 private:
+	QStringList droppedMissions{};
+	bool modified{false};
+
+// Model state -- current mission
+	CampaignMissionData* mnData_it{nullptr};
+	QPersistentModelIndex mnData_idx{};
+
+	CampaignEditorDialog *const parent;
 // submodels
 	CheckedDataListModel<std::ptrdiff_t> initialShips;
 	CheckedDataListModel<std::ptrdiff_t> initialWeapons;

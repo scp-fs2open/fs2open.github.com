@@ -100,9 +100,9 @@ bool parseMnPart(mission *mn, const char *filename){
 
 CampaignEditorDialogModel::CampaignEditorDialogModel(CampaignEditorDialog* _parent, EditorViewport* viewport, const QString &file, const QString& newCampaignType) :
 	AbstractDialogModel(_parent, viewport),
-	parent(_parent),
 	campaignFile(loadOrCreateFile(file, newCampaignType)),
 	campaignType(campaignTypes[Campaign.type]),
+	parent(_parent),
 	initialShips(Ship_info, &initShips, this),
 	initialWeapons(Weapon_info, &initWeps, this),
 	missionData(getMissions(), &CampaignMissionData::initMissions, this),
@@ -223,25 +223,6 @@ int CampaignEditorDialogModel::getCampaignNumPlayers() const {
 	return 0;
 }
 
-void CampaignEditorDialogModel::connectBranches(bool uiUpdate, const campaign *cpgn) {
-	for (auto *mn: missionData.collectCheckedData()) {
-		if (cpgn) {
-			const cmission *const cm_it{
-				std::find_if(cpgn->missions, &cpgn->missions[cpgn->num_missions],
-						[&](const cmission &cm){ return mn->filename == cm.name; })};
-			if (cm_it != &cpgn->missions[cpgn->num_missions]) {
-				mn->branchesFromFormula(this, cm_it->formula);
-				mn->branchesFromFormula(this, cm_it->mission_loop_formula, cm_it);
-			}
-		}
-		for (auto& br: mn->branches)
-			if (br.type == CampaignBranchData::NEXT || br.type == CampaignBranchData::NEXT_NOT_FOUND)
-				br.connect(const_cast<const CheckedDataListModel<CampaignMissionData>&>(missionData).collectCheckedData());
-	}
-	if (uiUpdate)
-		parent->updateUIMission();
-}
-
 bool CampaignEditorDialogModel::fillTree(sexp_tree& sxt) const {
 	if (!mnData_it)
 		return false;
@@ -277,40 +258,178 @@ bool CampaignEditorDialogModel::saveTo(const QString &file) {
 	return success;
 }
 
-void CampaignEditorDialogModel::trackMissionUncheck(const QModelIndex &idx, const QModelIndex &bottomRight, const QVector<int> &roles) {
-	Assert(idx == bottomRight);
-	Assert(missionData.managedData(idx));
+void CampaignEditorDialogModel::missionSelectionChanged(const QItemSelection & selected) {
+	if (mnData_it)
+		mnData_it->brData_it = nullptr;
+	if (selected.empty()) {
+		mnData_it = nullptr;
+		mnData_idx = QPersistentModelIndex();
+	} else {
+		const QPersistentModelIndex &changed = selected.first().topLeft();
+		mnData_it = missionData.managedData(changed);
+		mnData_idx = changed;
+	}
+	parent->updateUIMission();
+}
 
-	if (roles.contains(Qt::CheckStateRole)) {
-		auto mn = missionData.managedData(idx);
-		bool checked = missionData.data(idx, Qt::CheckStateRole).toBool();
+void CampaignEditorDialogModel::setCurMnFirst(){
+	if ( !mnData_it)
+		return;
+	QMessageBox::StandardButton resBtn = QMessageBox::Yes;
+	if (! firstMission.isEmpty()) {
+		resBtn = QMessageBox::question( parent, tr("Change first mission?"),
+										tr("Do you want to replace\n")
+										+ firstMission
+										+ tr("\nas first mission?"),
+										QMessageBox::Yes | QMessageBox::No,
+										QMessageBox::Yes );
+	}
 
-		//must always have first mission, or no missions
-		if (! missionData.collectCheckedData().empty()) {
-			if (! checked) {
-				if (mn->filename == firstMission) {
-					QMessageBox::information(parent, tr("First Mission"), tr("You cannot remove the first mission of a campaign,\nunless it is the only one. Choose another to be first."));
-					missionData.setData(idx, Qt::Checked, Qt::CheckStateRole);
+	if (resBtn == QMessageBox::Yes)
+		modify<QString>(firstMission, mnData_it->filename);
+}
+
+int CampaignEditorDialogModel::addCurMnBranchTo(const QModelIndex *other, bool flip) {
+	if (! mnData_it)
+		return -1;
+	if (! other) {
+		mnData_it->branches.emplace_back(this, mnData_it->filename);
+
+		flagModified();
+		return static_cast<int>(mnData_it->branches.size() -1);
+	}
+	CampaignMissionData *otherMn = missionData.managedData(*other);
+	if (! otherMn)
+		return -1;
+	CampaignMissionData &from = flip ? *otherMn : *mnData_it;
+	const CampaignMissionData &to = flip ? *mnData_it : *otherMn;
+	from.branches.emplace_back(this, from.filename, to.filename);
+
+	flagModified();
+	return static_cast<int>(mnData_it->branches.size() -1);
+}
+
+void CampaignEditorDialogModel::delCurMnBranch(int node) {
+	if (! mnData_it)
+		return;
+
+	mnData_it->branches.erase(mnData_it->branches.cbegin() + node);
+	flagModified();
+
+	parent->updateUIMission();
+}
+
+void CampaignEditorDialogModel::selectCurBr(const QTreeWidgetItem *selected) {
+	if (! mnData_it)
+		return;
+	mnData_it->brData_it = nullptr;
+	mnData_it->brData_idx = -1;
+
+	if (!selected)
+		return;
+
+	const QTreeWidgetItem *parent_node;
+	while ((parent_node = selected->parent()))
+		selected = parent_node;
+	mnData_it->brData_idx = selected->data(0, Qt::UserRole).toInt();
+	auto idx = static_cast<size_t>(mnData_it->brData_idx);
+	Assert(idx < mnData_it->branches.size());
+	mnData_it->brData_it = &mnData_it->branches[idx];
+
+	parent->updateUIBranch();
+}
+
+int CampaignEditorDialogModel::setCurBrCond(const QString &sexp, const QString &mn, const QString &arg) {
+	if (! getCurBr())
+		return -1;
+
+	mnData_it->brData_it->sexp =
+			alloc_sexp(qPrintable(sexp), SEXP_ATOM, SEXP_ATOM_OPERATOR, -1,
+					   alloc_sexp(qPrintable(mn), SEXP_ATOM, SEXP_ATOM_STRING, -1,
+								  alloc_sexp(qPrintable(arg), SEXP_ATOM, SEXP_ATOM_STRING, -1, -1)));
+	flagModified();
+	return getCurBrIdx();
+}
+
+bool CampaignEditorDialogModel::setCurBrSexp(int sexp) {
+	if (! getCurBr())
+		return false;
+
+	mnData_it->brData_it->sexp = sexp;
+	flagModified();
+	return true;
+}
+
+void CampaignEditorDialogModel::setCurBrIsLoop(bool isLoop) {
+	if (! getCurBr())
+		return;
+	if (isLoop) {
+		for (auto& br : mnData_it->branches) {
+			if (br.loop) {
+				if (QMessageBox::question(parent, "Change loop", "This will make branch to "+br.next+" no longer a loop. Continue?") == QMessageBox::StandardButton::No)
 					return;
-				}
-			} else if (firstMission == "" && missionData.collectCheckedData().size() == 1){
-				firstMission = mn->filename;
-			}
-		} else {
-			firstMission = "";
-		}
-
-		//as unfredable (=packaged/missing) missions are only loaded when specified
-		//in the campaign file, unchecking them will make them unreachable after save/reload.
-		//Warn on save if that happens.
-		if(! mn->fredable) {
-			if (checked) {
-				droppedMissions.removeAll(mn->filename);
-			} else {
-				droppedMissions.append(mn->filename);
+				modify<bool>(br.loop, false);
 			}
 		}
 	}
+
+	modify<bool>(mnData_it->brData_it->loop, isLoop);
+	int idx = getCurBrIdx();
+	parent->updateUIMission(false);
+	parent->updateUIBranch(idx);
+}
+
+void CampaignEditorDialogModel::moveCurBr(bool up) {
+	if (! getCurBr())
+		return;
+
+	auto idx = static_cast<size_t>(mnData_it->brData_idx);
+	if (idx == 0 && up)
+		return;
+
+	size_t other_idx = up ? idx - 1 : idx + 1;
+	auto& brs = mnData_it->branches;
+	if (brs.size() == other_idx)
+		return;
+
+	std::swap(brs[idx], brs[other_idx]);
+	flagModified();
+
+	parent->updateUIMission(false);
+	parent->updateUIBranch(static_cast<int>(other_idx));
+}
+
+void CampaignEditorDialogModel::setCurLoopAnim(const QString &anim) {
+	if (! (mnData_it && mnData_it->brData_it))
+		return;
+	modify<QString>(mnData_it->brData_it->loopAnim, anim);
+	parent->updateUIBranch();
+}
+
+void CampaignEditorDialogModel::setCurLoopVoice(const QString &voice) {
+	if (! (mnData_it && mnData_it->brData_it))
+		return;
+	modify<QString>(mnData_it->brData_it->loopVoice, voice);
+	parent->updateUIBranch();
+}
+
+void CampaignEditorDialogModel::connectBranches(bool uiUpdate, const campaign *cpgn) {
+	for (auto *mn: missionData.collectCheckedData()) {
+		if (cpgn) {
+			const cmission *const cm_it{
+				std::find_if(cpgn->missions, &cpgn->missions[cpgn->num_missions],
+						[&](const cmission &cm){ return mn->filename == cm.name; })};
+			if (cm_it != &cpgn->missions[cpgn->num_missions]) {
+				mn->branchesFromFormula(this, cm_it->formula);
+				mn->branchesFromFormula(this, cm_it->mission_loop_formula, cm_it);
+			}
+		}
+		for (auto& br: mn->branches)
+			if (br.type == CampaignBranchData::NEXT || br.type == CampaignBranchData::NEXT_NOT_FOUND)
+				br.connect(const_cast<const CheckedDataListModel<CampaignMissionData>&>(missionData).collectCheckedData());
+	}
+	if (uiUpdate)
+		parent->updateUIMission();
 }
 
 bool CampaignEditorDialogModel::_saveTo(QString file) const {
@@ -469,180 +588,63 @@ bool CampaignEditorDialogModel::_saveTo(QString file) const {
 	return !save.save_campaign_file(qPrintable(file.replace('/',DIR_SEPARATOR_CHAR)));
 }
 
-void CampaignEditorDialogModel::missionSelectionChanged(const QItemSelection & selected) {
-	if (mnData_it)
-		mnData_it->brData_it = nullptr;
-	if (selected.empty()) {
-		mnData_it = nullptr;
-		mnData_idx = QPersistentModelIndex();
-	} else {
-		const QPersistentModelIndex &changed = selected.first().topLeft();
-		mnData_it = missionData.managedData(changed);
-		mnData_idx = changed;
-	}
-	parent->updateUIMission();
-}
+void CampaignEditorDialogModel::trackMissionUncheck(const QModelIndex &idx, const QModelIndex &bottomRight, const QVector<int> &roles) {
+	Assert(idx == bottomRight);
+	Assert(missionData.managedData(idx));
 
-void CampaignEditorDialogModel::setCurMnFirst(){
-	if ( !mnData_it)
-		return;
-	QMessageBox::StandardButton resBtn = QMessageBox::Yes;
-	if (! firstMission.isEmpty()) {
-		resBtn = QMessageBox::question( parent, tr("Change first mission?"),
-										tr("Do you want to replace\n")
-										+ firstMission
-										+ tr("\nas first mission?"),
-										QMessageBox::Yes | QMessageBox::No,
-										QMessageBox::Yes );
-	}
+	if (roles.contains(Qt::CheckStateRole)) {
+		auto mn = missionData.managedData(idx);
+		bool checked = missionData.data(idx, Qt::CheckStateRole).toBool();
 
-	if (resBtn == QMessageBox::Yes)
-		modify<QString>(firstMission, mnData_it->filename);
-}
-
-int CampaignEditorDialogModel::addCurMnBranchTo(const QModelIndex *other, bool flip) {
-	if (! mnData_it)
-		return -1;
-	if (! other) {
-		mnData_it->branches.emplace_back(this, mnData_it->filename);
-
-		flagModified();
-		return static_cast<int>(mnData_it->branches.size() -1);
-	}
-	CampaignMissionData *otherMn = missionData.managedData(*other);
-	if (! otherMn)
-		return -1;
-	CampaignMissionData &from = flip ? *otherMn : *mnData_it;
-	const CampaignMissionData &to = flip ? *mnData_it : *otherMn;
-	from.branches.emplace_back(this, from.filename, to.filename);
-
-	flagModified();
-	return static_cast<int>(mnData_it->branches.size() -1);
-}
-
-void CampaignEditorDialogModel::delCurMnBranch(int node) {
-	if (! mnData_it)
-		return;
-
-	mnData_it->branches.erase(mnData_it->branches.cbegin() + node);
-	flagModified();
-
-	parent->updateUIMission();
-}
-
-void CampaignEditorDialogModel::selectCurBr(const QTreeWidgetItem *selected) {
-	if (! mnData_it)
-		return;
-	mnData_it->brData_it = nullptr;
-	mnData_it->brData_idx = -1;
-
-	if (!selected)
-		return;
-
-	const QTreeWidgetItem *parent_node;
-	while ((parent_node = selected->parent()))
-		selected = parent_node;
-	mnData_it->brData_idx = selected->data(0, Qt::UserRole).toInt();
-	auto idx = static_cast<size_t>(mnData_it->brData_idx);
-	Assert(idx < mnData_it->branches.size());
-	mnData_it->brData_it = &mnData_it->branches[idx];
-
-	parent->updateUIBranch();
-}
-
-int CampaignEditorDialogModel::setCurBrCond(const QString &sexp, const QString &mn, const QString &arg) {
-	if (! getCurBr())
-		return -1;
-
-	mnData_it->brData_it->sexp =
-			alloc_sexp(qPrintable(sexp), SEXP_ATOM, SEXP_ATOM_OPERATOR, -1,
-					   alloc_sexp(qPrintable(mn), SEXP_ATOM, SEXP_ATOM_STRING, -1,
-								  alloc_sexp(qPrintable(arg), SEXP_ATOM, SEXP_ATOM_STRING, -1, -1)));
-	flagModified();
-	return getCurBrIdx();
-}
-
-bool CampaignEditorDialogModel::setCurBrSexp(int sexp) {
-	if (! getCurBr())
-		return false;
-
-	mnData_it->brData_it->sexp = sexp;
-	flagModified();
-	return true;
-}
-
-void CampaignEditorDialogModel::setCurBrIsLoop(bool isLoop) {
-	if (! getCurBr())
-		return;
-	if (isLoop) {
-		for (auto& br : mnData_it->branches) {
-			if (br.loop) {
-				if (QMessageBox::question(parent, "Change loop", "This will make branch to "+br.next+" no longer a loop. Continue?") == QMessageBox::StandardButton::No)
+		//must always have first mission, or no missions
+		if (! missionData.collectCheckedData().empty()) {
+			if (! checked) {
+				if (mn->filename == firstMission) {
+					QMessageBox::information(parent, tr("First Mission"), tr("You cannot remove the first mission of a campaign,\nunless it is the only one. Choose another to be first."));
+					missionData.setData(idx, Qt::Checked, Qt::CheckStateRole);
 					return;
-				modify<bool>(br.loop, false);
+				}
+			} else if (firstMission == "" && missionData.collectCheckedData().size() == 1){
+				firstMission = mn->filename;
+			}
+		} else {
+			firstMission = "";
+		}
+
+		//as unfredable (=packaged/missing) missions are only loaded when specified
+		//in the campaign file, unchecking them will make them unreachable after save/reload.
+		//Warn on save if that happens.
+		if(! mn->fredable) {
+			if (checked) {
+				droppedMissions.removeAll(mn->filename);
+			} else {
+				droppedMissions.append(mn->filename);
 			}
 		}
 	}
-
-	modify<bool>(mnData_it->brData_it->loop, isLoop);
-	int idx = getCurBrIdx();
-	parent->updateUIMission(false);
-	parent->updateUIBranch(idx);
 }
 
-void CampaignEditorDialogModel::moveCurBr(bool up) {
-	if (! getCurBr())
-		return;
+namespace { //helpers for CampaignMissionData construction
+	inline QStringList getParsedEvts() {
+		QStringList ret;
+		for (int i = 0; i < Num_mission_events; i++)
+			ret << Mission_events[i].name;
+		return ret;
+	}
 
-	auto idx = static_cast<size_t>(mnData_it->brData_idx);
-	if (idx == 0 && up)
-		return;
+	inline QStringList getParsedGoals() {
+		QStringList ret;
+		for (int i = 0; i < Num_goals; i++)
+			ret << Mission_goals[i].name;
+		return ret;
+	}
 
-	size_t other_idx = up ? idx - 1 : idx + 1;
-	auto& brs = mnData_it->branches;
-	if (brs.size() == other_idx)
-		return;
-
-	std::swap(brs[idx], brs[other_idx]);
-	flagModified();
-
-	parent->updateUIMission(false);
-	parent->updateUIBranch(static_cast<int>(other_idx));
-}
-
-void CampaignEditorDialogModel::setCurLoopAnim(const QString &anim) {
-	if (! (mnData_it && mnData_it->brData_it))
-		return;
-	modify<QString>(mnData_it->brData_it->loopAnim, anim);
-	parent->updateUIBranch();
-}
-
-void CampaignEditorDialogModel::setCurLoopVoice(const QString &voice) {
-	if (! (mnData_it && mnData_it->brData_it))
-		return;
-	modify<QString>(mnData_it->brData_it->loopVoice, voice);
-	parent->updateUIBranch();
-}
-
-static inline QStringList getParsedEvts() {
-	QStringList ret;
-	for (int i = 0; i < Num_mission_events; i++)
-		ret << Mission_events[i].name;
-	return ret;
-}
-
-static inline QStringList getParsedGoals() {
-	QStringList ret;
-	for (int i = 0; i < Num_goals; i++)
-		ret << Mission_goals[i].name;
-	return ret;
-}
-
-static inline bool isCampaignCompatible(const mission &fsoMission) {
-	return (Campaign.type == CAMPAIGN_TYPE_SINGLE && fsoMission.game_type & (MISSION_TYPE_SINGLE|MISSION_TYPE_TRAINING))
-			|| (Campaign.type == CAMPAIGN_TYPE_MULTI_COOP && fsoMission.game_type & MISSION_TYPE_MULTI_COOP)
-			|| (Campaign.type == CAMPAIGN_TYPE_MULTI_TEAMS && fsoMission.game_type & MISSION_TYPE_MULTI_TEAMS);
-}
+	inline bool isCampaignCompatible(const mission &fsoMission) {
+		return (Campaign.type == CAMPAIGN_TYPE_SINGLE && fsoMission.game_type & (MISSION_TYPE_SINGLE|MISSION_TYPE_TRAINING))
+				|| (Campaign.type == CAMPAIGN_TYPE_MULTI_COOP && fsoMission.game_type & MISSION_TYPE_MULTI_COOP)
+				|| (Campaign.type == CAMPAIGN_TYPE_MULTI_TEAMS && fsoMission.game_type & MISSION_TYPE_MULTI_TEAMS);
+	}
+} //namespace
 
 CampaignEditorDialogModel::CampaignMissionData::CampaignMissionData(QString file, bool loaded, const mission *fsoMn, const cmission *cm) :
 	filename(std::move(file)),
