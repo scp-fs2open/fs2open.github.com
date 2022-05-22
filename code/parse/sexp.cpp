@@ -3944,8 +3944,9 @@ int get_sexp()
 				// container name
 				Mp++;
 
-				// ')' could occur if this is the SEXP's last argument
-				stuff_string(container_name, F_NAME, sizeof(container_name), ")");
+				// ' ' occurs if there are arguments after the container name
+				// ')' occurs if this is the SEXP's last argument
+				stuff_string(container_name, F_NAME, sizeof(container_name), " )");
 				if (*Mp != ')') {
 					Mp++;
 				}
