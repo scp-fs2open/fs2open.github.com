@@ -1412,7 +1412,7 @@ int collect_container_values(int node,
 		}
 	}
 
-	return arguments.size();
+	return (int)arguments.size();
 }
 
 int sexp_container_collect_data_arguments(int node,
