@@ -204,6 +204,16 @@ bool stuff_one_generic_sexp_container(SCP_string &name, ContainerType &type, int
 		Warning(LOCATION, "SEXP Container with empty name found");
 		log_printf(LOGFILE_EVENT_LOG, "SEXP Container with empty name found");
 		valid = false;
+	} else if (name.find(' ') != SCP_string::npos || name.find(sexp_container::DELIM) != SCP_string::npos) {
+		Warning(LOCATION,
+			"SEXP Container name %s contains spaces and/or %c characters",
+			name.c_str(),
+			sexp_container::DELIM);
+		log_printf(LOGFILE_EVENT_LOG,
+			"SEXP Container name %s contains spaces and/or %c characters",
+			name.c_str(),
+			sexp_container::DELIM);
+		valid = false;
 	} else if (name.length() > sexp_container::NAME_MAX_LENGTH) {
 		Warning(LOCATION,
 			"SEXP Container name %s is longer than limit %d",
