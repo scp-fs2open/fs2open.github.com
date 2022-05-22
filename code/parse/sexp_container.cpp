@@ -84,7 +84,7 @@ uint32_t map_container_hash::operator()(const SCP_string &str) const
 
 // sexp_container data and functions
 const SCP_string sexp_container::DELIM_STR(1, sexp_container::DELIM);
-
+const SCP_string sexp_container::NAME_NODE_PREFIX(2, sexp_container::DELIM);
 
 bool sexp_container::operator==(const sexp_container &sc) const
 {
@@ -179,7 +179,8 @@ void update_sexp_containers(SCP_vector<sexp_container> &containers,
 	if (!renamed_containers.empty()) {
 		for (int i = 0; i < Num_sexp_nodes; i++) {
 			auto &node = Sexp_nodes[i];
-			if (node.type == SEXP_ATOM && node.subtype == SEXP_ATOM_CONTAINER) {
+			if (node.type == SEXP_ATOM &&
+				(node.subtype == SEXP_ATOM_CONTAINER_NAME || node.subtype == SEXP_ATOM_CONTAINER_DATA)) {
 				const auto new_name_it = renamed_containers.find(node.text);
 				if (new_name_it != renamed_containers.cend()) {
 					strcpy_s(node.text, new_name_it->second.c_str());

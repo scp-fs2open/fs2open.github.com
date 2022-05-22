@@ -2106,7 +2106,10 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 		} else if (Sexp_nodes[node].subtype == SEXP_ATOM_STRING) {
 			type2 = SEXP_ATOM_STRING;
 
-		} else if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER) {
+		} else if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER_NAME) {
+			type2 = SEXP_ATOM_CONTAINER_NAME;
+
+		} else if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER_DATA) {
 			// this is an instance of "Replace Container Data"
 			const int modifier_node = Sexp_nodes[node].first;
 			if (modifier_node == -1) {
@@ -2133,7 +2136,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 			// ignore nested "Replace" uses
 			if (!(Sexp_nodes[modifier_node].type & SEXP_FLAG_VARIABLE) &&
-					(Sexp_nodes[modifier_node].subtype != SEXP_ATOM_CONTAINER)) {
+					(Sexp_nodes[modifier_node].subtype != SEXP_ATOM_CONTAINER_DATA)) {
 				if (data_container.is_list()) {
 					const auto modifier = get_list_modifier(Sexp_nodes[modifier_node].text);
 					if ((Sexp_nodes[modifier_node].subtype != SEXP_ATOM_STRING) ||
@@ -2177,8 +2180,9 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 			continue;
 
 		} else {
-			UNREACHABLE("SEXP subtype is %d when it should be SEXP_ATOM_LIST, SEXP_ATOM_NUMBER, SEXP_ATOM_STRING, or "
-						"SEXP_ATOM_CONTAINER!",
+			UNREACHABLE("SEXP subtype is %d when it should be SEXP_ATOM_LIST, SEXP_ATOM_NUMBER, SEXP_ATOM_STRING, "
+						"SEXP_ATOM_CONTAINER_NAME, or "
+						"SEXP_ATOM_CONTAINER_DATA!",
 				Sexp_nodes[node].subtype);
 		}
 
@@ -3677,14 +3681,15 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 			case OPF_LIST_CONTAINER_NAME:
 			case OPF_MAP_CONTAINER_NAME:
 			{
-				if (type2 != SEXP_ATOM_STRING) {
+				if (type2 != SEXP_ATOM_CONTAINER_NAME) {
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
+
 				p_container = get_sexp_container(Sexp_nodes[node].text);
-				if (!p_container) {
-					return SEXP_CHECK_TYPE_MISMATCH;
-				} else if ((type == OPF_LIST_CONTAINER_NAME && !p_container->is_list()) ||
-						   (type == OPF_MAP_CONTAINER_NAME && !p_container->is_map())) {
+				Assertion(p_container, "Attempt to use unknown container %s. Please report!", Sexp_nodes[node].text);
+		
+				if ((type == OPF_LIST_CONTAINER_NAME && !p_container->is_list()) ||
+						(type == OPF_MAP_CONTAINER_NAME && !p_container->is_map())) {
 					return SEXP_CHECK_WRONG_CONTAINER_TYPE;
 				}
 				break;
@@ -3929,28 +3934,45 @@ int get_sexp()
 		else if (*Mp == sexp_container::DELIM) {
 			Mp++;
 
-			char container_name[TOKEN_LENGTH];
-			stuff_string(container_name, F_NAME, TOKEN_LENGTH, sexp_container::DELIM_STR.c_str());
+			char container_name[sexp_container::NAME_MAX_LENGTH + 1];
 
-			// bump past closing '&'
-			Mp += 2;
+			if (*Mp == sexp_container::DELIM) {
+				// container name
+				Mp++;
 
-			if (get_sexp_container(container_name) == nullptr) {
-				Error(LOCATION, "Attempt to use unknown container '%s'", container_name);
-				return -1;
-			}
+				stuff_string(container_name, F_NAME, sizeof(container_name));
+				Mp++;
 
-			// advance to the control options, since we'll read them when calling get_sexp() below
-			while (*Mp != '(') {
-				// watch out for malformed input
-				if ('\n' == *Mp || '\0' == *Mp) {
-					break;
+				if (get_sexp_container(container_name) == nullptr) {
+					Error(LOCATION, "Attempt to use unknown container '%s'", container_name);
+					return -1;
+				}
+
+				node = alloc_sexp(container_name, SEXP_ATOM, SEXP_ATOM_CONTAINER_NAME, -1, -1);
+			} else {
+				// container data
+				stuff_string(container_name, F_NAME, sizeof(container_name), sexp_container::DELIM_STR.c_str());
+
+				// bump past closing '&'
+				Mp += 2;
+
+				if (get_sexp_container(container_name) == nullptr) {
+					Error(LOCATION, "Attempt to use data from unknown container '%s'", container_name);
+					return -1;
+				}
+
+				// advance to the container modifier, since we'll read them when calling get_sexp() below
+				while (*Mp != '(') {
+					// watch out for malformed input
+					if ('\n' == *Mp || '\0' == *Mp) {
+						break;
+					}
+					Mp++;
 				}
 				Mp++;
-			}
-			Mp++;
 
-			node = alloc_sexp(container_name, SEXP_ATOM, SEXP_ATOM_CONTAINER, get_sexp(), -1);
+				node = alloc_sexp(container_name, SEXP_ATOM, SEXP_ATOM_CONTAINER_DATA, get_sexp(), -1);
+			}
 
 			ignore_white_space();
 		}
@@ -4418,7 +4440,14 @@ void stuff_sexp_text_string(SCP_string &dest, int node, int mode)
 {
 	Assert((node >= 0) && (node < Num_sexp_nodes));
 
-	if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER) {
+	if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER_NAME) {
+		Assertion(get_sexp_container(Sexp_nodes[node].text) != nullptr,
+			"Couldn't find container: %s\n",
+			Sexp_nodes[node].text);
+
+		sprintf(dest, "%s%s", sexp_container::NAME_NODE_PREFIX.c_str(), Sexp_nodes[node].text);
+	}
+	else if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER_DATA) {
 		Assertion(get_sexp_container(Sexp_nodes[node].text) != nullptr,
 			"Couldn't find container: %s\n",
 			Sexp_nodes[node].text);
@@ -4513,7 +4542,7 @@ int build_sexp_string(SCP_string &accumulator, int cur_node, int level, int mode
 			stuff_sexp_text_string(buf, node, mode);
 			accumulator += buf;
 
-		} else if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER) {
+		} else if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER_DATA) {
 			// build text to string
 			stuff_sexp_text_string(buf, node, mode);
 			accumulator += buf;
@@ -4556,7 +4585,7 @@ void build_extended_sexp_string(SCP_string &accumulator, int cur_node, int level
 			stuff_sexp_text_string(buf, node, mode);
 			accumulator += buf;
 
-		} else if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER) {
+		} else if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER_DATA) {
 			// build text to string
 			stuff_sexp_text_string(buf, node, mode);
 			accumulator += buf;
@@ -4936,7 +4965,7 @@ int sexp_atoi(int node)
 	// cache the value, unless this node is a variable, argument, or container data, because the value may change
 	if (!(Sexp_nodes[node].type & SEXP_FLAG_VARIABLE) &&
 		!(Sexp_nodes[node].flags & SNF_SPECIAL_ARG_IN_NODE) &&
-		(Sexp_nodes[node].subtype != SEXP_ATOM_CONTAINER))
+		(Sexp_nodes[node].subtype != SEXP_ATOM_CONTAINER_DATA))
 		Sexp_nodes[node].cache = new sexp_cached_data(OPF_NUMBER, num, -1);
 
 	return num;
@@ -24547,7 +24576,7 @@ int eval_sexp(int cur_node, int referenced_node)
 	}
 
 	// ignore for container data, because their "first" is a container modifier
-	if ((Sexp_nodes[cur_node].first != -1) && (Sexp_nodes[cur_node].subtype != SEXP_ATOM_CONTAINER)) {
+	if ((Sexp_nodes[cur_node].first != -1) && (Sexp_nodes[cur_node].subtype != SEXP_ATOM_CONTAINER_DATA)) {
 		node = CAR(cur_node);
 		sexp_val = eval_sexp(node);
 		Sexp_nodes[cur_node].value = Sexp_nodes[node].value;	// higher level node gets node value
@@ -30558,7 +30587,8 @@ void update_sexp_references(const char *old_name, const char *new_name, int form
 		{
 			Assert((SEXP_NODE_TYPE(n) == SEXP_ATOM) &&
 				   ((Sexp_nodes[n].subtype == SEXP_ATOM_NUMBER) || (Sexp_nodes[n].subtype == SEXP_ATOM_STRING) ||
-					   (Sexp_nodes[n].subtype == SEXP_ATOM_CONTAINER)));
+					   (Sexp_nodes[n].subtype == SEXP_ATOM_CONTAINER_NAME) ||
+					   (Sexp_nodes[n].subtype == SEXP_ATOM_CONTAINER_DATA)));
 
 			if (query_operator_argument_type(op, i) == format)
 			{
@@ -31146,7 +31176,7 @@ const char *CTEXT(int n)
 
 		return Sexp_variables[sexp_variable_index].text;
 	}
-	else if (Sexp_nodes[n].subtype == SEXP_ATOM_CONTAINER)
+	else if (Sexp_nodes[n].subtype == SEXP_ATOM_CONTAINER_DATA)
 	{
 		return sexp_container_CTEXT(n);
 	}

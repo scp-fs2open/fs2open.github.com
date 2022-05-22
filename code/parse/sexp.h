@@ -1008,11 +1008,12 @@ const char *CTEXT(int n);
 #define SEXP_NODE_TYPE(n)	(Sexp_nodes[n].type & 0x00ff)
 
 // defines for subtypes of atoms
-#define SEXP_ATOM_LIST			0
-#define SEXP_ATOM_OPERATOR		1
-#define SEXP_ATOM_NUMBER		2
-#define SEXP_ATOM_STRING		3
-#define SEXP_ATOM_CONTAINER		4
+#define SEXP_ATOM_LIST				0
+#define SEXP_ATOM_OPERATOR			1
+#define SEXP_ATOM_NUMBER			2
+#define SEXP_ATOM_STRING			3
+#define SEXP_ATOM_CONTAINER_NAME	4
+#define SEXP_ATOM_CONTAINER_DATA	5
 
 // defines to short circuit evaluation when possible. Also used when goals can't
 // be satisfied yet because ship (or wing) hasn't been created yet.

@@ -202,24 +202,24 @@ int sexp_tree::load_branch(int index, int parent)
 			if (Sexp_nodes[index].type & SEXP_FLAG_VARIABLE) {
 				get_combined_variable_name(combined_var_name, Sexp_nodes[index].text);
 				set_node(cur, (SEXPT_VARIABLE | SEXPT_STRING | additional_flags), combined_var_name);
-			} else if (is_container_argument(cur)) {
-				Assertion(!(additional_flags & SEXPT_MODIFIER),
-					"Found a container name node %s that is also a container modifier. Please report!",
-					Sexp_nodes[index].text);
-				// if the if-condition is false, then then the SEXP argument is invalid
-				// but check_sexp_syntax() will catch that
-				if (get_sexp_container(Sexp_nodes[index].text) != nullptr) {
-					additional_flags |= SEXPT_CONTAINER_NAME;
-				}
-				set_node(cur, (SEXPT_STRING | additional_flags), Sexp_nodes[index].text);
 			} else {
 				set_node(cur, (SEXPT_STRING | additional_flags), Sexp_nodes[index].text);
 			}
 
-		} else if (Sexp_nodes[index].subtype == SEXP_ATOM_CONTAINER) {
+		} else if (Sexp_nodes[index].subtype == SEXP_ATOM_CONTAINER_NAME) {
+			Assertion(!(additional_flags & SEXPT_MODIFIER),
+				"Found a container name node %s that is also a container modifier. Please report!",
+				Sexp_nodes[index].text);
+			Assertion(get_sexp_container(Sexp_nodes[index].text) != nullptr,
+				"Attempt to load unknown container data %s into SEXP tree. Please report!",
+				Sexp_nodes[index].text);
+			cur = allocate_node(parent);
+			set_node(cur, (SEXPT_CONTAINER_NAME | SEXPT_STRING | additional_flags), Sexp_nodes[index].text);
+
+		} else if (Sexp_nodes[index].subtype == SEXP_ATOM_CONTAINER_DATA) {
 			cur = allocate_node(parent);
 			Assertion(get_sexp_container(Sexp_nodes[index].text) != nullptr,
-				"Attempt to load unknown container %s into SEXP tree. Please report!",
+				"Attempt to load unknown container data %s into SEXP tree. Please report!",
 				Sexp_nodes[index].text);
 			set_node(cur, (SEXPT_CONTAINER_DATA | SEXPT_STRING | additional_flags), Sexp_nodes[index].text);
 			load_branch(Sexp_nodes[index].first, cur);  // container is new parent now
@@ -293,11 +293,16 @@ int sexp_tree::save_branch(int cur, int at_root)
 			if ((tree_nodes[cur].parent >= 0) && !at_root) {
 				node = alloc_sexp("", SEXP_LIST, SEXP_ATOM_LIST, node, -1);
 			}
+		} else if (tree_nodes[cur].type & SEXPT_CONTAINER_NAME) {
+			Assertion(get_sexp_container(tree_nodes[cur].text) != nullptr,
+				"Attempt to save unknown container %s from SEXP tree. Please report!",
+				tree_nodes[cur].text);
+			node = alloc_sexp(tree_nodes[cur].text, SEXP_ATOM, SEXP_ATOM_CONTAINER_NAME, -1, -1);
 		} else if (tree_nodes[cur].type & SEXPT_CONTAINER_DATA) {
 			Assertion(get_sexp_container(tree_nodes[cur].text) != nullptr,
 				"Attempt to save unknown container %s from SEXP tree. Please report!",
 				tree_nodes[cur].text);
-			node = alloc_sexp(tree_nodes[cur].text, SEXP_ATOM, SEXP_ATOM_CONTAINER, save_branch(tree_nodes[cur].child), -1);
+			node = alloc_sexp(tree_nodes[cur].text, SEXP_ATOM, SEXP_ATOM_CONTAINER_DATA, save_branch(tree_nodes[cur].child), -1);
 		} else if (tree_nodes[cur].type & SEXPT_NUMBER) {
 			// allocate number, maybe variable
 			if (tree_nodes[cur].type & SEXPT_VARIABLE) {
@@ -1601,7 +1606,11 @@ void sexp_tree::right_clicked(int mode)
 				if (add_type == z)
 					menu.EnableMenuItem(ID_EDIT_PASTE_SPECIAL, MF_ENABLED);
 
-			} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_CONTAINER) {
+			} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_CONTAINER_NAME) {
+				// container names don't support pasting or add-pasting
+				// FIXME TODO: there should instead by an Assertion() that it's not a container name node
+
+			} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_CONTAINER_DATA) {
 				// TODO: check for strictly typed container keys/data
 				const auto *p_container = get_sexp_container(Sexp_nodes[Sexp_clipboard].text);
 				// if-check in case the container was renamed/deleted after the container data was cut/copied
@@ -2519,7 +2528,8 @@ void sexp_tree::NodeReplacePaste()
 			}
 		}
 
-	} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_CONTAINER) {
+	// FIXME TODO: Handle SEXP_ATOM_CONTAINER_NAME
+	} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_CONTAINER_DATA) {
 		expand_operator(item_index);
 		const auto *p_container = get_sexp_container(Sexp_nodes[Sexp_clipboard].text);
 		Assertion(p_container,
@@ -2594,7 +2604,8 @@ void sexp_tree::NodeAddPaste()
 			}
 		}
 
-	} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_CONTAINER) {
+	// FIXME TODO: handle SEXP_ATOM_CONTAINER_NAME
+	} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_CONTAINER_DATA) {
 		expand_operator(item_index);
 		add_container_data(Sexp_nodes[Sexp_clipboard].text);
 		const int modifier_node = Sexp_nodes[Sexp_clipboard].first;
