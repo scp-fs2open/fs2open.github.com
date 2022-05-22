@@ -1,6 +1,7 @@
 #include "globalincs/pstypes.h"
 #include "globalincs/safe_strings.h"
 #include "globalincs/vmallocator.h"
+#include "cmdline/cmdline.h"
 #include "def_files/def_files.h"
 #include "lighting/lighting.h"
 #include "lighting/lighting_profiles.h"
@@ -53,6 +54,19 @@ void lighting_profile_value::set_multiplier(float in)
 	multipier = in;
 }
 
+void lighting_profile_value::stack_multiplier(float in)
+{
+	if(has_multiplier)
+	{
+		multipier*= in;
+	}
+	else 
+	{
+		multipier = in;
+		has_multiplier = true;
+	}
+}
+
 void lighting_profile_value::set_maximum(float in)
 {
 	has_maximum = true;
@@ -63,6 +77,19 @@ void lighting_profile_value::set_minimum(float in)
 {
 	has_minimum = true;
 	minimum = in;
+}
+
+void lighting_profile_value::stack_minimum(float in)
+{
+	if(has_minimum)
+	{
+		minimum = MAX(minimum,in);
+	}
+	else
+	{
+		minimum = in;
+		has_minimum = true;
+	}
 }
 /**
  * @brief for use during the parsing of a light profile to attempt to read in an LPV
@@ -177,9 +204,11 @@ void lighting_profile::reset()
 
 	directional_light_brightness.reset();
 	ambient_light_brightness.reset();
-	ambient_light_brightness.set_minimum(0.0f);
+	ambient_light_brightness.set_multiplier(Cmdline_ambient_power);
+	ambient_light_brightness.set_minimum(MAX(0.0f,Cmdline_emissive_power));
 
 	overall_brightness.reset();
+	overall_brightness.set_multiplier(Cmdline_light_power); 
 	overall_brightness.set_minimum(0.0f);
 }
 
@@ -291,11 +320,19 @@ void lighting_profile::parse_default_section(const char *filename)
 										&default_profile.point_light_radius);
 		parsed |= lighting_profile_value::parse(filename,"$Directional light brightness:",profile_name,
 										&default_profile.directional_light_brightness);
-		parsed |= lighting_profile_value::parse(filename,"$Ambient light brightness:",profile_name,
-										&default_profile.ambient_light_brightness);
+		if(lighting_profile_value::parse(filename,"$Ambient light brightness:",profile_name, &default_profile.ambient_light_brightness))
+		{
+			parsed = true;
+			default_profile.overall_brightness.stack_multiplier(Cmdline_ambient_power);
+			default_profile.overall_brightness.stack_minimum(Cmdline_emissive_power);
+		}
 
-		parsed |= lighting_profile_value::parse(filename,"$Overall brightness:","Default profile",
-										&default_profile.overall_brightness);
+		if(lighting_profile_value::parse(filename,"$Overall brightness:",profile_name, &default_profile.overall_brightness))
+		{
+			parsed = true;
+			default_profile.overall_brightness.stack_multiplier(Cmdline_light_power);
+		}
+
 		parsed |= parse_optional_float_into("$Exposure:",&default_profile.exposure);
 		if(!parsed){
 			stuff_string(buffer,F_RAW);

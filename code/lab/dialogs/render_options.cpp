@@ -295,7 +295,7 @@ void RenderOptions::open(Button* /*caller*/) {
 	y += ambient_sldr->GetHeight() + 2;
 
 	auto direct_sldr = new Slider("Direct. Lights", 0.0f, 2.0f, 0, y + 2, set_static_light_factor, dialogWindow->GetWidth());
-	direct_sldr->SetSliderValue(static_light_factor);
+	//direct_sldr->SetSliderValue(static_light_factor);
 	dialogWindow->AddChild(direct_sldr);
 	y += direct_sldr->GetHeight() + 2;
 

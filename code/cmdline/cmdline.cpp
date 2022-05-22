@@ -315,16 +315,20 @@ int Cmdline_use_last_pilot = 0;
 cmdline_parm fov_arg("-fov", "Vertical field-of-view factor", AT_FLOAT);					// Cmdline_fov  -- comand line FOV -Bobboau
 cmdline_parm fov_cockpit_arg("-fov_cockpit", "Vertical field-of-view factor for Cockpits", AT_FLOAT);
 cmdline_parm clip_dist_arg("-clipdist", "Changes the distance from the viewpoint for the near-clipping plane", AT_FLOAT);		// Cmdline_clip_dist
-cmdline_parm spec_static_arg("-spec_static", "Adjusts suns contribution to specular highlights", AT_FLOAT);
-cmdline_parm spec_point_arg("-spec_point", "Adjusts laser weapons contribution to specular highlights", AT_FLOAT);
-cmdline_parm spec_tube_arg("-spec_tube", "Adjusts beam weapons contribution to specular highlights", AT_FLOAT);
-cmdline_parm ambient_factor_arg("-ambient_factor", "Adjusts ambient light applied to all parts of a ship", AT_INT);		// Cmdline_ambient_factor
+cmdline_parm ambient_power_arg("-ambient", "Multiplies the brightness of all ambient light", AT_FLOAT);
+cmdline_parm light_power_arg("-light", "Multiplies the brightness of all light", AT_FLOAT);
+cmdline_parm emissive_power_arg("-emissive", "Multiplies the brightness of all ambient light", AT_FLOAT);
+
+cmdline_parm spec_static_arg("-spec_static", "Adjusts suns contribution to specular highlights", AT_FLOAT); //TODO: move to deprecated
+cmdline_parm spec_point_arg("-spec_point", "Adjusts laser weapons contribution to specular highlights", AT_FLOAT); //TODO: move to deprecated
+cmdline_parm spec_tube_arg("-spec_tube", "Adjusts beam weapons contribution to specular highlights", AT_FLOAT); //TODO: move to deprecated
+cmdline_parm ambient_factor_arg("-ambient_factor", "Adjusts ambient light applied to all parts of a ship", AT_INT);		// Cmdline_ambient_factor TODO: move to deprecated
 cmdline_parm env("-noenv", NULL, AT_NONE);								// Cmdline_env
 cmdline_parm glow_arg("-noglow", NULL, AT_NONE); 						// Cmdline_glow  -- use Bobs glow code
 cmdline_parm nomotiondebris_arg("-nomotiondebris", NULL, AT_NONE);		// Cmdline_nomotiondebris  -- Removes those ugly floating rocks -C
 cmdline_parm noscalevid_arg("-noscalevid", NULL, AT_NONE);				// Cmdline_noscalevid  -- disable video scaling that fits to window
 cmdline_parm spec_arg("-nospec", NULL, AT_NONE);			// Cmdline_spec  --
-cmdline_parm emissive_arg("-emissive_light", "Enable emissive light from ships", AT_NONE);		// Cmdline_no_emissive  -- don't use emissive light in OGL
+cmdline_parm emissive_arg("-emissive_light", "Enable emissive light from ships", AT_NONE);		// Cmdline_no_emissive  -- don't use emissive light in OGL //TODO: move to deprecated
 cmdline_parm normal_arg("-nonormal", NULL, AT_NONE);						// Cmdline_normal  -- disable normal mapping
 cmdline_parm height_arg("-noheight", NULL, AT_NONE);						// Cmdline_height  -- enable support for parallax mapping
 cmdline_parm enable_3d_shockwave_arg("-3dshockwave", NULL, AT_NONE);
@@ -347,6 +351,9 @@ cmdline_parm anisotropy_level_arg("-anisotropic_filter", NULL, AT_INT);
 
 float Cmdline_clip_dist = Default_min_draw_distance;
 int Cmdline_ambient_factor = 128;
+float Cmdline_ambient_power = 1.0f;
+float Cmdline_emissive_power = 0.0f;
+float Cmdline_light_power = 1.0f;
 int Cmdline_env = 1;
 int Cmdline_mipmap = 0;
 int Cmdline_glow = 1;
@@ -1832,18 +1839,27 @@ bool SetCmdlineParams()
 	if ( stretch_menu.found() )	{
 		Cmdline_stretch_menu = 1;
 	}
+	// new lighting lines
+	if ( ambient_power_arg.found() )
+		Cmdline_ambient_power = ambient_power_arg.get_float();
 
-	// specular comand lines
+	if ( emissive_power_arg.found() )
+		Cmdline_emissive_power = emissive_power_arg.get_float();
+
+	if ( light_power_arg.found() )
+		Cmdline_light_power = light_power_arg.get_float();
+
+	// specular comand lines TODO: dumpster
 	if ( spec_point_arg.found() ) {
-		static_point_factor = spec_point_arg.get_float();
+		//static_point_factor = spec_point_arg.get_float();
 	}
 
 	if ( spec_static_arg.found() ) {
-		static_light_factor = spec_static_arg.get_float();
+		//static_light_factor = spec_static_arg.get_float();
 	}
 
 	if ( spec_tube_arg.found() ) {
-		static_tube_factor = spec_tube_arg.get_float();
+		//static_tube_factor = spec_tube_arg.get_float();
 	}
 
 	if ( spec_arg.found() )

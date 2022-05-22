@@ -15,6 +15,8 @@
 
 #include "cmdline/cmdline.h"
 #include "graphics/2d.h"
+#include "lighting/lighting.h"
+#include "lighting/lighting_profiles.h"
 #include "math/bitarray.h"
 #include "render/3d.h"
 #include "util/uniform_structs.h"
@@ -49,7 +51,7 @@ const float gr_light_color[4] = { 0.8f, 0.8f, 0.8f, 1.0f };
 const float gr_light_zero[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 const float gr_light_emission[4] = { 0.09f, 0.09f, 0.09f, 1.0f };
 float gr_light_ambient[4] = { 0.47f, 0.47f, 0.47f, 1.0f };
-float gr_user_ambient = 0.0f;
+
 
 void FSLight2GLLight(light* FSLight, gr_light* GLLight) {
 	GLLight->Ambient.xyzw.x = 0.0f;
@@ -62,10 +64,7 @@ void FSLight2GLLight(light* FSLight, gr_light* GLLight) {
 	GLLight->Diffuse.xyzw.z = FSLight->b * FSLight->intensity;
 	GLLight->Diffuse.xyzw.w = 1.0f;
 
-	GLLight->Specular.xyzw.x = FSLight->spec_r * FSLight->intensity;
-	GLLight->Specular.xyzw.y = FSLight->spec_g * FSLight->intensity;
-	GLLight->Specular.xyzw.z = FSLight->spec_b * FSLight->intensity;
-	GLLight->Specular.xyzw.w = 1.0f;
+	GLLight->Specular =GLLight->Diffuse;
 
 	GLLight->type = static_cast<int>(FSLight->type);
 
@@ -93,9 +92,6 @@ void FSLight2GLLight(light* FSLight, gr_light* GLLight) {
 		GLLight->ConstantAtten = 1.0f;
 		GLLight->LinearAtten = (1.0f / MAX(FSLight->rada, FSLight->radb)) * 1.25f;
 
-		GLLight->Specular.xyzw.x *= static_point_factor;
-		GLLight->Specular.xyzw.y *= static_point_factor;
-		GLLight->Specular.xyzw.z *= static_point_factor;
 
 		break;
 	}
@@ -104,10 +100,6 @@ void FSLight2GLLight(light* FSLight, gr_light* GLLight) {
 		GLLight->ConstantAtten = 1.0f;
 		GLLight->LinearAtten = (1.0f / MAX(FSLight->rada, FSLight->radb)) * 1.25f;
 		GLLight->QuadraticAtten = (1.0f / MAX(FSLight->rada_squared, FSLight->radb_squared)) * 1.25f;
-
-		GLLight->Specular.xyzw.x *= static_tube_factor;
-		GLLight->Specular.xyzw.y *= static_tube_factor;
-		GLLight->Specular.xyzw.z *= static_tube_factor;
 
 		GLLight->Position.xyzw.x = FSLight->vec2.xyz.x; // Valathil: Use endpoint of tube as light position
 		GLLight->Position.xyzw.y = FSLight->vec2.xyz.y;
@@ -129,10 +121,6 @@ void FSLight2GLLight(light* FSLight, gr_light* GLLight) {
 		GLLight->Position.xyzw.y = -FSLight->vec.xyz.y;
 		GLLight->Position.xyzw.z = -FSLight->vec.xyz.z;
 		GLLight->Position.xyzw.w = 0.0f; // This is a direction so the w part must be 0
-
-		GLLight->Specular.xyzw.x *= static_light_factor;
-		GLLight->Specular.xyzw.y *= static_light_factor;
-		GLLight->Specular.xyzw.z *= static_light_factor;
 
 		break;
 	}
@@ -279,8 +267,8 @@ void gr_reset_lighting() {
 	Num_active_gr_lights = 0;
 }
 
-void gr_calculate_ambient_factor(int ambient_factor) {
-	gr_user_ambient = (float) ((ambient_factor * 2) - 255) / 255.0f;
+void gr_calculate_ambient(const vec3d& color_xyz){
+	auto lp = lighting_profile::current();
 }
 
 void gr_light_shutdown() {
@@ -288,7 +276,6 @@ void gr_light_shutdown() {
 }
 
 void gr_light_init() {
-	gr_calculate_ambient_factor();
 
 	// allocate memory for enabled lights
 	gr_lights.reserve(1024);
@@ -297,7 +284,6 @@ void gr_light_init() {
 void gr_set_lighting() {
 
 	//Valathil: Sort lights by priority
-	extern bool Deferred_lighting;
 	if (!Deferred_lighting) {
 		pre_render_init_lights();
 	}
@@ -326,12 +312,16 @@ void gr_set_lighting() {
 }
 
 void gr_set_ambient_light(int red, int green, int blue) {
-	gr_light_ambient[0] = i2fl(red) / 255.0f;
-	gr_light_ambient[1] = i2fl(green) / 255.0f;
-	gr_light_ambient[2] = i2fl(blue) / 255.0f;
+	gr_light_ambient[0] = i2fl(red)/255.0f;
+	gr_light_ambient[1] = i2fl(green)/255.0f;
+	gr_light_ambient[2] = i2fl(blue)/255.0f;
 	gr_light_ambient[3] = 1.0f;
-
-	gr_calculate_ambient_factor();
+}
+void gr_get_ambient_light(vec3d* light_vector) {
+	auto abv = lighting_profile::current()->ambient_light_brightness;
+	light_vector->xyz.x = abv.handle(gr_light_ambient[0]);
+	light_vector->xyz.y = abv.handle(gr_light_ambient[1]);
+	light_vector->xyz.z = abv.handle(gr_light_ambient[2]);
 }
 
 void gr_lighting_fill_uniforms(void* data_out, size_t buffer_size) {

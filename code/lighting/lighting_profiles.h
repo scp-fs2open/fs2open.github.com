@@ -51,10 +51,12 @@ struct lighting_profile_value{
 
 	float handle(float input);
 	void reset();
-	void set_adjust(float in);
-	void set_multiplier(float in);
-	void set_maximum(float in);
-	void set_minimum(float in);
+	void set_adjust(const float in);
+	void set_multiplier(const float in);
+	void stack_multiplier(const float in);
+	void set_maximum(const float in);
+	void set_minimum(const float in);
+	void stack_minimum(const float in);
 
 	static bool parse(const char *filename, const char * valuename, const SCP_string &profile_name, lighting_profile_value* value_target, bool required=false);
 

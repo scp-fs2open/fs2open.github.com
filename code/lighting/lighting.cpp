@@ -325,10 +325,6 @@ int light_get_global_dir(vec3d *pos, int n)
 	return 1;
 }
 
-float static_light_factor = 1.0f;
-float static_tube_factor = 1.0f;
-float static_point_factor = 1.0f;
-
 void light_apply_rgb( ubyte *param_r, ubyte *param_g, ubyte *param_b, const vec3d *pos, const vec3d *norm, float static_light_level )
 {
 	int idx;

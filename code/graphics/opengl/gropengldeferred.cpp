@@ -92,9 +92,6 @@ void gr_opengl_deferred_lighting_end()
 
 extern SCP_vector<light> Lights;
 extern int Num_lights;
-extern float static_point_factor;
-extern float static_light_factor;
-extern float static_tube_factor;
 
 void gr_opengl_deferred_lighting_finish()
 {

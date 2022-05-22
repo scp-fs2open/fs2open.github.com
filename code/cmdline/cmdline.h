@@ -53,9 +53,12 @@ extern char *Cmdline_center_res;
 
 // Graphics related
 extern float Cmdline_clip_dist;
-extern float static_light_factor;
-extern float static_point_factor;
-extern float static_tube_factor;
+extern float Cmdline_ambient_power;
+extern float Cmdline_emissive_power;
+extern float Cmdline_light_power;
+//extern float static_light_factor;
+//extern float static_point_factor;
+//extern float static_tube_factor;
 extern int Cmdline_ambient_factor;
 extern int Cmdline_env;
 extern int Cmdline_glow;
