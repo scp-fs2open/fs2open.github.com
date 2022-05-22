@@ -2137,6 +2137,10 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 			// ignore nested "Replace" uses
 			if (!(Sexp_nodes[modifier_node].type & SEXP_FLAG_VARIABLE) &&
 					(Sexp_nodes[modifier_node].subtype != SEXP_ATOM_CONTAINER_DATA)) {
+				Assertion(Sexp_nodes[modifier_node].subtype != SEXP_ATOM_CONTAINER_NAME,
+					"Attempt to use container name %s as modifier for container %s. Please report!",
+					Sexp_nodes[modifier_node].text,
+					Sexp_nodes[node].text);
 				if (data_container.is_list()) {
 					const auto modifier = get_list_modifier(Sexp_nodes[modifier_node].text);
 					if ((Sexp_nodes[modifier_node].subtype != SEXP_ATOM_STRING) ||
@@ -3687,7 +3691,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 				p_container = get_sexp_container(Sexp_nodes[node].text);
 				Assertion(p_container, "Attempt to use unknown container %s. Please report!", Sexp_nodes[node].text);
-		
+
 				if ((type == OPF_LIST_CONTAINER_NAME && !p_container->is_list()) ||
 						(type == OPF_MAP_CONTAINER_NAME && !p_container->is_map())) {
 					return SEXP_CHECK_WRONG_CONTAINER_TYPE;

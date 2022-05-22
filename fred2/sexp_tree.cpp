@@ -1583,6 +1583,9 @@ void sexp_tree::right_clicked(int mode)
 
 		if ((Sexp_clipboard > -1) && (Sexp_nodes[Sexp_clipboard].type != SEXP_NOT_USED)) {
 			Assert(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_LIST);
+			Assertion(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_CONTAINER_NAME,
+				"Attempt to use container name %s from SEXP clipboard. Please report!",
+				Sexp_nodes[Sexp_clipboard].text);
 
 			if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_OPERATOR) {
 				j = get_operator_const(CTEXT(Sexp_clipboard));
@@ -1605,10 +1608,6 @@ void sexp_tree::right_clicked(int mode)
 
 				if (add_type == z)
 					menu.EnableMenuItem(ID_EDIT_PASTE_SPECIAL, MF_ENABLED);
-
-			} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_CONTAINER_NAME) {
-				// container names don't support pasting or add-pasting
-				// FIXME TODO: there should instead by an Assertion() that it's not a container name node
 
 			} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_CONTAINER_DATA) {
 				// TODO: check for strictly typed container keys/data
@@ -2515,6 +2514,9 @@ void sexp_tree::NodeReplacePaste()
 	// the following assumptions are made..
 	Assert((Sexp_clipboard > -1) && (Sexp_nodes[Sexp_clipboard].type != SEXP_NOT_USED));
 	Assert(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_LIST);
+	Assertion(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_CONTAINER_NAME,
+		"Attempt to use container name %s from SEXP clipboard. Please report!",
+		Sexp_nodes[Sexp_clipboard].text);
 
 	if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_OPERATOR) {
 		expand_operator(item_index);
@@ -2528,7 +2530,6 @@ void sexp_tree::NodeReplacePaste()
 			}
 		}
 
-	// FIXME TODO: Handle SEXP_ATOM_CONTAINER_NAME
 	} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_CONTAINER_DATA) {
 		expand_operator(item_index);
 		const auto *p_container = get_sexp_container(Sexp_nodes[Sexp_clipboard].text);
@@ -2591,6 +2592,9 @@ void sexp_tree::NodeAddPaste()
 	// the following assumptions are made..
 	Assert((Sexp_clipboard > -1) && (Sexp_nodes[Sexp_clipboard].type != SEXP_NOT_USED));
 	Assert(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_LIST);
+	Assertion(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_CONTAINER_NAME,
+		"Attempt to use container name %s from SEXP clipboard. Please report!",
+		Sexp_nodes[Sexp_clipboard].text);
 
 	if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_OPERATOR) {
 		expand_operator(item_index);
@@ -2604,7 +2608,6 @@ void sexp_tree::NodeAddPaste()
 			}
 		}
 
-	// FIXME TODO: handle SEXP_ATOM_CONTAINER_NAME
 	} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_CONTAINER_DATA) {
 		expand_operator(item_index);
 		add_container_data(Sexp_nodes[Sexp_clipboard].text);
