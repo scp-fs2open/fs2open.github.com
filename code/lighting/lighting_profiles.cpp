@@ -55,14 +55,14 @@ void lighting_profile_value::set_multiplier(float in)
 
 void lighting_profile_value::set_maximum(float in)
 {
-	has_adjust = true;
-	adjust = in;
+	has_maximum = true;
+	maximum = in;
 }
 
 void lighting_profile_value::set_minimum(float in)
 {
-	has_adjust = true;
-	adjust = in;
+	has_minimum = true;
+	minimum = in;
 }
 /**
  * @brief for use during the parsing of a light profile to attempt to read in an LPV
