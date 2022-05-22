@@ -33504,14 +33504,14 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tSupplies values for the " SEXP_ARGUMENT_STRING " special data item.  This sexp will list all data in a certain container (or multiple containers) in the mission, and each value will be provided as an argument to the action operators.  "
 		"Note that the values are all treated as valid arguments, and it is impossible to invalidate a value argument.  If you want to invalidate a value, use Any-of and list the values explicitly.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
-		"\tAll:\Container whose data should be listed\r\n" },
+		"\tAll:\tContainer whose data should be listed\r\n" },
 
 	// jg18
 	{ OP_FOR_MAP_CONTAINER_KEYS, "For-Map-Container-Keys (Conditional operator)\r\n"
 		"\tSupplies values for the " SEXP_ARGUMENT_STRING " special data item.  This sexp will list all keys in a certain map container (or multiple map containers) in the mission, and each map key will be provided as an argument to the action operators.  "
 		"Note that the map keys are all treated as valid arguments, and it is impossible to invalidate a key argument.  If you want to invalidate a key, use Any-of and list the keys explicitly.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
-		"\tAll:\Map container whose keys should be listed\r\n" },
+		"\tAll:\tMap container whose keys should be listed\r\n" },
 
 	// MageKing17
 	{ OP_FIRST_OF, "First-of (Conditional operator)\r\n"
