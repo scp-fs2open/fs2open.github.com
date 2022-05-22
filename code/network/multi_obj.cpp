@@ -206,7 +206,7 @@ void multi_oo_fire_rollback_shots(int frame_idx);
 void multi_oo_restore_frame(int frame_idx);
 
 // pushes the rollback weapons forward for a single rollback frame.
-void multi_oo_simulate_rollback_shots(int frame_idx);
+bool multi_oo_simulate_rollback_shots(int frame_idx);
 
 // restores ships to the positions they were in bedfore rollback.
 void multi_record_restore_positions();
@@ -617,6 +617,16 @@ void multi_ship_record_add_rollback_wep(int wep_objnum)
 	Oo_info.rollback_weapon_numbers_created_this_frame.push_back(wep_objnum);
 }
 
+// simply remove the ability to collide for weapons that have already collided.
+void multi_oo_remove_colliders()
+{
+	for (auto& weap_objnum : Oo_info.rollback_weapon_object_number) {
+		if (Objects[weap_objnum].flags[Object::Object_Flags::Should_be_dead]) {
+			Objects[weap_objnum].flags.remove(Object::Object_Flags::Collides);
+		}
+	}
+}
+
 // This stores the information we got from the client to create later.
 void multi_ship_record_add_rollback_shot(object* pobjp, vec3d* pos, matrix* orient, int frame, bool secondary) 
 {
@@ -716,18 +726,27 @@ void multi_ship_record_do_rollback()
 
 	nprintf(("Network","At least one multiplayer rollback shot is being simulated this frame.\n"));
 
+	bool continue_rollback = true;
+
 	do {
 		// move all ships to their recorded positions
 		multi_oo_restore_frame(frame_idx);
 
 		// push weapons forward for the frame (weapons do not get pushed forward for the first frame of their existence)
-		multi_oo_simulate_rollback_shots(frame_idx);
+		continue_rollback = (multi_oo_simulate_rollback_shots(frame_idx));
 
 		// then fire all shots for the frame, primary and secondary, if there are any
 		multi_oo_fire_rollback_shots(frame_idx);
 
 		// perform collision detection for that frame.
 		obj_sort_and_collide(&Oo_info.rollback_collide_list);
+
+		multi_oo_remove_colliders();
+
+		//
+		if (!continue_rollback){
+			break;
+		}
 
 		//increment the frame
 		frame_idx++;
@@ -801,7 +820,7 @@ void multi_oo_restore_frame(int frame_idx)
 }
 
 // pushes the rollback weapons forward for a single rollback frame.
-void multi_oo_simulate_rollback_shots(int frame_idx) 
+bool multi_oo_simulate_rollback_shots(int frame_idx) 
 {
 	int prev_frame = frame_idx - 1;
 	if (prev_frame < 0) {
@@ -811,12 +830,28 @@ void multi_oo_simulate_rollback_shots(int frame_idx)
 	// calculate the float version of the frametime.
 	float frametime = (float)multi_ship_record_get_time_elapsed(prev_frame, frame_idx) / (float)TIMESTAMP_FREQUENCY;
 
+	if (Oo_info.rollback_weapon_object_number.empty()) {
+		return true;
+	}
+
+	// initially set this to whether or not this is empty.  If it is, w
+	bool result = false;
+
 	// push the weapons forward.
 	for (auto& weap_objnum : Oo_info.rollback_weapon_object_number) {
 		object* objp = &Objects[weap_objnum];
-		vm_vec_scale_add2(&objp->pos, &objp->phys_info.vel, frametime);
-		Weapons[objp->instance].lifeleft -= frametime;
+
+		// if this object is "dead", then that means it has collided with something.
+		// so remove its ability to collide.  This is the easiest way to deal with it.
+		if (!objp->flags[Object::Object_Flags::Should_be_dead]) {
+			// this means at least one weapon is still waiting to collide.
+			result = true;
+			vm_vec_scale_add2(&objp->pos, &objp->phys_info.vel, frametime);
+			Weapons[objp->instance].lifeleft -= frametime;
+		}
 	}
+
+	return result;
 }
 
 // restores ships to the positions they were in bedfore rollback.
