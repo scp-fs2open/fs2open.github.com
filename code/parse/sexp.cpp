@@ -4452,7 +4452,7 @@ void stuff_sexp_text_string(SCP_string &dest, int node, int mode)
 			"Couldn't find container: %s\n",
 			Sexp_nodes[node].text);
 
-		sprintf(dest, "%s%s", sexp_container::NAME_NODE_PREFIX.c_str(), Sexp_nodes[node].text);
+		sprintf(dest, "%s%s ", sexp_container::NAME_NODE_PREFIX.c_str(), Sexp_nodes[node].text);
 	}
 	else if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER_DATA) {
 		Assertion(get_sexp_container(Sexp_nodes[node].text) != nullptr,
