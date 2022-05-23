@@ -984,6 +984,7 @@ void multi_sexp_modify_variable();
 
 // jg18
 int populate_sexp_applicable_arguments(int node);
+bool does_op_support_list_container_arguments(int op_const);
 
 #define NO_OPERATOR_INDEX_DEFINED		-2
 #define NOT_A_SEXP_OPERATOR				-1
@@ -31407,6 +31408,24 @@ int populate_sexp_applicable_arguments(int node)
 	} else {
 		Sexp_replacement_arguments.emplace_back(Sexp_nodes[node].text, node);
 		return 1;
+	}
+}
+
+// tests if an operator supports list containers with when-argument
+bool does_op_support_list_container_arguments(const int op_const)
+{
+	switch (op_const)
+	{
+		case OP_ANY_OF:
+		case OP_EVERY_OF:
+		case OP_NUMBER_OF:
+		case OP_INVALIDATE_ARGUMENT:
+		case OP_VALIDATE_ARGUMENT:
+		case OP_FIRST_OF:
+			return true;
+
+		default:
+			return false;
 	}
 }
 
