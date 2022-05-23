@@ -70,7 +70,7 @@ ADE_VIRTVAR(Achievability,
 ADE_VIRTVAR(TargetRestrict,
 	l_LuaAISEXP,
 	"function(ship ship, oswpt | nil arg) => boolean validTarget",
-	"An optional function that specifies whether a target is a valid target for a player order. Result must be true and the player order +Target Restrict: must be fulfilled for the target to be valid. Ássumes true if not specified.",
+	"An optional function that specifies whether a target is a valid target for a player order. Result must be true and the player order +Target Restrict: must be fulfilled for the target to be valid. Assumes true if not specified.",
 	"function(ship ship, oswpt | nil arg) => boolean validTarget",
 	"The target restrict function or nil on error")
 {
