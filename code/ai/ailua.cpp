@@ -114,21 +114,7 @@ void ai_lua_start(ai_goal* aigp, object* objp){
 	
 }
 
-bool ai_lua_is_valid_target(int sexp_op, int target_objnum, ship* self) {
-	const ai_mode_lua& mode = *ai_lua_find_mode(sexp_op);
-
-	//All targetless AI modes are fine
-	if (!mode.needsTarget)
-		return true;
-
-	//No target is then not valid
-	if (target_objnum == -1)
-		return false;
-
-	//As of now, only accept ships
-	if (Objects[target_objnum].type != OBJ_SHIP)
-		return false;
-
+bool ai_lua_is_valid_target_intrinsic(int sexp_op, int target_objnum, ship* self) {
 	ship* target = &Ships[Objects[target_objnum].instance];
 
 	const player_order_lua& order = *ai_lua_find_player_order(sexp_op);
@@ -154,6 +140,50 @@ bool ai_lua_is_valid_target(int sexp_op, int target_objnum, ship* self) {
 	}
 
 	return false;
+}
+
+bool ai_lua_is_valid_target_lua(const ai_mode_lua& mode, int sexp_op, int target_objnum, ship* self) {
+	auto dynamicSEXP = sexp::get_dynamic_sexp(sexp_op);
+
+	if (dynamicSEXP != nullptr && typeid(*dynamicSEXP) == typeid(sexp::LuaAISEXP)) {
+		auto lua_ai_sexp = static_cast<sexp::LuaAISEXP*>(dynamicSEXP);
+		const auto& action = lua_ai_sexp->getAchievable();
+
+		if (!action.isValid())
+			return true;
+
+		luacpp::LuaValueList luaParameters;
+		luaParameters.push_back(luacpp::LuaValue::createValue(action.getLuaState(), scripting::api::l_Ship.Set(object_h(&Objects[self->objnum]))));
+		if (mode.needsTarget) {
+			luaParameters.push_back(luacpp::LuaValue::createValue(action.getLuaState(), scripting::api::l_OSWPT.Set(object_ship_wing_point_team(&Ships[Objects[target_objnum].instance]))));
+		}
+
+		auto retVals = action.call(Script_system.GetLuaSession(), luaParameters);
+
+		if (!retVals.empty() && retVals[0].getValueType() == luacpp::ValueType::BOOLEAN) {
+			return retVals[0].getValue<bool>();
+		}
+	}
+
+	return true;
+}
+
+bool ai_lua_is_valid_target(int sexp_op, int target_objnum, ship* self) {
+	const ai_mode_lua& mode = *ai_lua_find_mode(sexp_op);
+
+	//All targetless AI modes are fine
+	if (!mode.needsTarget)
+		return true;
+
+	//No target is then not valid
+	if (target_objnum == -1)
+		return false;
+
+	//As of now, only accept ships
+	if (Objects[target_objnum].type != OBJ_SHIP)
+		return false;
+
+	return ai_lua_is_valid_target_intrinsic(sexp_op, target_objnum, self) && ai_lua_is_valid_target_lua(mode, sexp_op, target_objnum, self);
 }
 
 int ai_lua_is_achievable(const ai_goal* aigp, int objnum){
