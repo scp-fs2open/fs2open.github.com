@@ -166,7 +166,7 @@ void LuaAISEXP::parseTable() {
 			}
 
 			if (result == -1) {
-				error_display(0, "Unknown ackn message for player order %s. Assuming \"yes\".", order.displayText.c_str());
+				error_display(0, "Unknown acknowledge message for player order %s. Assuming \"yes\".", order.displayText.c_str());
 				order.ai_message = MESSAGE_YESSIR;
 			}
 			else {
