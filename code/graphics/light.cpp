@@ -267,10 +267,6 @@ void gr_reset_lighting() {
 	Num_active_gr_lights = 0;
 }
 
-void gr_calculate_ambient(const vec3d& color_xyz){
-	auto lp = lighting_profile::current();
-}
-
 void gr_light_shutdown() {
 	gr_lights.clear();
 }
