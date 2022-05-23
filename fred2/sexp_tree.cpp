@@ -2329,11 +2329,11 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 			NodeCopy();
 			return 1;
 
-		case ID_EDIT_PASTE_SPECIAL:
+		case ID_EDIT_PASTE:
 			NodeReplacePaste();
 			return 1;
 
-		case ID_EDIT_PASTE:  // add paste, instead of replace.
+		case ID_EDIT_PASTE_SPECIAL:  // add paste, instead of replace.
 			NodeAddPaste();
 			return 1;
 
