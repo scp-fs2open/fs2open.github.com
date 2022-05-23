@@ -152,17 +152,27 @@ void LuaAISEXP::parseTable() {
 			}
 		}
 
-		//TODO implement proper parsing for message types
-		/*if (optional_string("+Acknowledge Message:")) {
-			int result = optional_string_one_of(1, "");
+		if (optional_string("+Acknowledge Message:")) {
+			int result = -1;
+
+			SCP_string message;
+			stuff_string(message, F_NAME);
+
+			for (int i = 0; i < MAX_BUILTIN_MESSAGE_TYPES; i++) {
+				if (Builtin_messages[i].name == message) {
+					result = i;
+					break;
+				}
+			}
+
 			if (result == -1) {
-				error_display(0, "Unknown ackn message for player order %s. Assuming \"Yessir\".", order.displayText.c_str());
+				error_display(0, "Unknown ackn message for player order %s. Assuming \"yes\".", order.displayText.c_str());
 				order.ai_message = MESSAGE_YESSIR;
 			}
 			else {
 				order.ai_message = result;
 			}
-		}*/
+		}
 
 	}
 
