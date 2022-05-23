@@ -9,10 +9,20 @@
 namespace fso {
 namespace fred {
 
+/**
+ * @brief A model for use with a QListView with checkboxes
+ * @details It can associate (and, for complex types, manage) user data,
+ *   iterate over the data and its check state, collect checked data
+ *   and dynamically append rows
+ * @param T type of the associated/managed data
+ */
 template<typename T>
 class CheckedDataListModel : public QAbstractListModel
 {
 // no Q_OBJECT
+	/**
+	 * @brief What gets displayed in a row, sans associated/managed data
+	 */
 	struct BaseRowData {
 		const QString _text;
 		bool _checked;
@@ -25,6 +35,9 @@ class CheckedDataListModel : public QAbstractListModel
 		{}
 	};
 
+	/**
+	 * @brief Stores data of a simple type, to associate with each row
+	 */
 	template<class U = T, class Enabler = void>
 	class RowData : public BaseRowData{
 		U _managedData;
@@ -41,6 +54,9 @@ class CheckedDataListModel : public QAbstractListModel
 		inline const U& managedData() const {return _managedData;}
 	};
 
+	/**
+	 * @brief Takes ownership of a pointer to complex data, to associate with each row
+	 */
 	template<class U>
 	class RowData<U, typename std::enable_if<std::is_class<U>::value>::type> : public BaseRowData{
 		std::unique_ptr<U> _managedData;
@@ -62,17 +78,18 @@ class CheckedDataListModel : public QAbstractListModel
 public:
 	CheckedDataListModel(QObject *parent) = delete;
 
-	template<typename Container>
-	CheckedDataListModel(const Container &c,
-						 void (*emplacerFn)(const typename Container::const_iterator &it, CheckedDataListModel<T> &model),
-						 QObject *parent = nullptr, size_t reserve = 0) :
-		CheckedDataListModel(c.cbegin(), c.cend(), emplacerFn, parent, reserve ? reserve : c.size())
-	{}
-
+	/**
+	 * @brief Create a model from a range
+	 * @param first Begin of user data
+	 * @param last End of user data
+	 * @param emplacerFn Callback to perform any necessary conversions or discarding. Should use initRow()
+	 * @param parent Parent for Qt-style memory management
+	 * @param reserve Expected count of items, for optimisation
+	 */
 	template<typename InputIterator>
 	CheckedDataListModel(InputIterator first, InputIterator last,
 						 void (*emplacerFn)(const InputIterator &it, CheckedDataListModel<T> &model),
-						 QObject *parent = nullptr, size_t reserve = 30) :
+						 QObject *parent = nullptr, size_t reserve = 30 /*optimizing assumption*/) :
 		QAbstractListModel(parent)
 	{
 		items.reserve(reserve);
@@ -80,6 +97,16 @@ public:
 			emplacerFn(it, *this);
 		items.shrink_to_fit();
 	}
+
+	/**
+	 * @brief Create a model from an iterable Container. See above.
+	 */
+	template<typename Container>
+	CheckedDataListModel(const Container &c,
+						 void (*emplacerFn)(const typename Container::const_iterator &it, CheckedDataListModel<T> &model),
+						 QObject *parent = nullptr, size_t reserve = 0) :
+		CheckedDataListModel(c.cbegin(), c.cend(), emplacerFn, parent, reserve ? reserve : c.size())
+	{}
 
 	int rowCount(const QModelIndex &parent = QModelIndex()) const override {
 		// For list models only the root node (an invalid parent) should return the list's size. For all
@@ -90,6 +117,13 @@ public:
 		return static_cast<int>(items.size());
 	}
 
+	/**
+	 * @brief Read-only of base data.
+	 * @note Mostly for QListView use. See managedData() for user data.
+	 * @param index The row
+	 * @param role The property
+	 * @return The requested property wrapped in a QVariant, or QVariant()
+	 */
 	QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override {
 		if (!index.isValid())
 			return {};
@@ -108,6 +142,11 @@ public:
 			return {};
 	}
 
+	/**
+	 * @brief managedData
+	 * @param The row
+	 * @return Pointer to requested user data, or nullptr if it doesn't exist
+	 */
 	inline const T* managedData(const QModelIndex &index) const {
 		if (! index.isValid()) {
 			Warning(LOCATION,"Tried to retrieve invalid/empty index from CheckedDataListModel %s \nValidate item selection before calling managedData() if possible.", qPrintable(this->objectName()));
@@ -119,6 +158,9 @@ public:
 		return &items[row].managedData();
 	}
 
+	/**
+	 * @brief See const version above
+	 */
 	inline T* managedData(const QModelIndex &index) {
 		//re-use the const implementation for non-const this
 		return const_cast<T*>(
@@ -126,6 +168,7 @@ public:
 					->managedData(index));
 	}
 
+	// make checkboxes editable in QListView
 	bool setData(const QModelIndex &index, const QVariant &value,
 				 int role = Qt::EditRole) override {
 		if(!index.isValid() || role != Qt::CheckStateRole)
@@ -142,6 +185,7 @@ public:
 			return false;
 	}
 
+	// enable showing checkboxes in QListView
 	Qt::ItemFlags flags(const QModelIndex& index) const override {
 		Qt::ItemFlags defaultFlags = QAbstractListModel::flags(index);
 		if (index.isValid())
@@ -159,6 +203,12 @@ private: // private shared implementation for the following two methods
 	}
 
 public:
+	/**
+	 * @brief Collect all user data associated with a checked row.
+	 * @param expected_checked Expected count of items, for optimisation
+	 * @return A set of pointers to all checked user data
+	 * @warning Pointers will be invalidated when new rows are added, or the model is destroyed.
+	 */
 	inline SCP_unordered_set<T*> collectCheckedData(size_t expected_checked = 0) {
 		if (expected_checked == 0)
 			// optimize for half of items checked
@@ -168,6 +218,9 @@ public:
 		return ret;
 	}
 
+	/**
+	 * @brief See non-const version above
+	 */
 	inline SCP_unordered_set<const T*> collectCheckedData(size_t expected_checked = 0) const {
 		if (expected_checked == 0)
 			// optimize for half of items checked
@@ -177,6 +230,49 @@ public:
 		return ret;
 	}
 
+	/**
+	 * @brief Adds a row during initialisation
+	 * @note Call this from emplacerFn with arguments from the RowData constructor
+	 * @param text Text to be displayed
+	 * @param managedData Simple user data, or pointer / smart pointer to user data
+	 * @param checked Initial checked status
+	 * @param bgColor Color of the text
+	 */
+	template<class... Args>
+	inline void initRow(Args&&... args) {
+		items.emplace_back(std::forward<Args>(args)...);
+	}
+
+	/**
+	 * @brief Adds a row during when the model is connected to a view
+	 * @note Call this while the model is displayed with arguments from the RowData constructor
+	 * @param text Text to be displayed
+	 * @param managedData Simple user data, or pointer / smart pointer to user data
+	 * @param checked Initial checked status
+	 * @param bgColor Color of the text
+	 */
+	template<class... Args>
+	inline void addRow(Args&&... args) {
+		beginInsertRows(QModelIndex(), static_cast<int>(items.size()), static_cast<int>(items.size() + 1));
+		initRow(std::forward<Args>(args)...);
+		endInsertRows();
+	}
+
+	/**
+	 * @brief contains
+	 * @param text of the row to check
+	 * @return If a row with the given text exists
+	 * @note Use this before adding a row if you need a distinct model
+	 */
+	inline bool contains(const QString &text) const {
+		return std::find_if(items.cbegin(), items.cend(),
+							[&](const RowData<> &row){return row._text == text;})
+				!= items.cend();
+	}
+
+
+	// Rest is iterators and functions suitable for range-based for loop,
+	// as of https://stackoverflow.com/questions/8054273
 	struct Iterator
 	{
 		using iterator_delegate = typename SCP_vector<RowData<T>>::iterator;
@@ -230,24 +326,6 @@ public:
 	inline ConstIterator end() const { return ConstIterator(items.cend()); }
 	inline ConstIterator cbegin() const { return begin(); }
 	inline ConstIterator cend() const { return end(); }
-
-	template<class... Args>
-	inline void initRow(Args&&... args) {
-		items.emplace_back(std::forward<Args>(args)...);
-	}
-
-	template<class... Args>
-	inline void addRow(Args&&... args) {
-		beginInsertRows(QModelIndex(), static_cast<int>(items.size()), static_cast<int>(items.size() + 1));
-		initRow(std::forward<Args>(args)...);
-		endInsertRows();
-	}
-
-	inline bool contains(const QString &text) const {
-		return std::find_if(items.cbegin(), items.cend(),
-							[&](const RowData<> &row){return row._text == text;})
-				!= items.cend();
-	}
 };
 } // namespace fred
 } // namespace fso

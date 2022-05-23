@@ -14,6 +14,7 @@ namespace fso {
 namespace fred {
 namespace dialogs {
 
+//an empty string to return references to
 const QString qstrEmpty{};
 
 class CampaignEditorDialog;
@@ -25,15 +26,26 @@ class CampaignEditorDialogModel : public AbstractDialogModel, public SexpTreeEdi
 	Q_OBJECT
 
 public:
+	/**
+	 * @brief Create a model from a campaign file or empty of a type
+	 * @param parent The dialog
+	 * @param viewport Unused, required by AbstractDialogModel
+	 * @param file An existing campaign file to open
+	 * @param newCampaignType The type fore a new campaing
+	 * @note Either give an existing file OR a new type.
+	 */
 	CampaignEditorDialogModel(CampaignEditorDialog *parent, EditorViewport *viewport, const QString &file = "", const QString& newCampaignType = "");
 	~CampaignEditorDialogModel() override = default;
+	/**
+	 * @brief Called by CampaignDialog with references to widgets with complex data
+	 */
 	void supplySubModels(QListView &ships, QListView &weps, QListView &missions, QPlainTextEdit &descr);
 
 // AbstractDialogModel
 	bool apply() override {	return saveTo(campaignFile); }
 	void reject() override {} // nothing to do if the dialog is created each time it's opened
 
-// SexpTreeEditorInterface
+// SexpTreeEditorInterface impl. Responsible for contents of right-click menu on mission branch sexp_tree
 	QStringList getMissionGoals(const QString& reference_name) override;
 	bool hasDefaultGoal(int) override {return true;}
 
