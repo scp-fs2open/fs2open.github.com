@@ -59,9 +59,9 @@ ADE_VIRTVAR(ActionFrame,
 
 ADE_VIRTVAR(Achievability,
 	l_LuaAISEXP,
-	"function(ship ship, oswpt | nil arg) => enum achievable",
+	"function(ship ship, oswpt | nil arg) => enumeration achievable",
 	"An optional function that specifies whether the AI mode is achieveable. Return LUAAI_ACHIEVABLE if it can be achieved, LUAAI_NOT_YET_ACHIEVABLE if it can be achieved later and execution should be delayed, and LUAAI_UNACHIEVABLE if the AI mode will never be achievable and should be cancelled. Assumes LUAAI_ACHIEVABLE if not specified.",
-	"function(ship ship, oswpt | nil arg) => enum achievable",
+	"function(ship ship, oswpt | nil arg) => enumeration achievable",
 	"The achievability function or nil on error")
 {
 	return sexp_function_getset_helper(L, &sexp::LuaAISEXP::setAchievable, &sexp::LuaAISEXP::getAchievable);
@@ -72,7 +72,7 @@ ADE_VIRTVAR(TargetRestrict,
 	"function(ship ship, oswpt | nil arg) => boolean validTarget",
 	"An optional function that specifies whether a target is a valid target for a player order. Result must be true and the player order +Target Restrict: must be fulfilled for the target to be valid. Ássumes true if not specified.",
 	"function(ship ship, oswpt | nil arg) => boolean validTarget",
-	"The achievability function or nil on error")
+	"The target restrict function or nil on error")
 {
 	return sexp_function_getset_helper(L, &sexp::LuaAISEXP::setTargetRestrict, &sexp::LuaAISEXP::getTargetRestrict);
 }
