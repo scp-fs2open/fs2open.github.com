@@ -749,6 +749,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "remove-from-map",				OP_CONTAINER_REMOVE_FROM_MAP,			2,	INT_MAX,	SEXP_ACTION_OPERATOR, },	// Karajorma
 	{ "get-map-keys",					OP_CONTAINER_GET_MAP_KEYS,				2,	3,			SEXP_ACTION_OPERATOR, },	// Karajorma
 	{ "clear-container",				OP_CLEAR_CONTAINER,						1,	INT_MAX,	SEXP_ACTION_OPERATOR, },	// Karajorma
+	{ "copy-container",					OP_COPY_CONTAINER,						2,	3,			SEXP_ACTION_OPERATOR, },	// jg18
 
 	//Other Sub-Category
 	{ "damaged-escort-priority",		OP_DAMAGED_ESCORT_LIST,					3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	//phreak
@@ -24864,6 +24865,7 @@ int eval_sexp(int cur_node, int referenced_node)
 			case OP_CONTAINER_REMOVE_FROM_MAP:
 			case OP_CONTAINER_GET_MAP_KEYS:
 			case OP_CLEAR_CONTAINER:
+			case OP_COPY_CONTAINER:
 				sexp_val = sexp_container_eval_change_sexp(op_num, node);
 				break;
 
@@ -27917,6 +27919,7 @@ int query_operator_return_type(int op)
 		case OP_CONTAINER_REMOVE_FROM_MAP:
 		case OP_CONTAINER_GET_MAP_KEYS:
 		case OP_CLEAR_CONTAINER:
+		case OP_COPY_CONTAINER:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -28550,6 +28553,16 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_CLEAR_CONTAINER:
 			return OPF_CONTAINER_NAME;
+
+		case OP_COPY_CONTAINER:
+			if (argnum == 0 || argnum == 1) {
+				return OPF_CONTAINER_NAME;
+			} else if (argnum == 2) {
+				return OPF_BOOL;
+			} else {
+				// This shouldn't happen
+				return OPF_NONE;
+			}
 
 		case OP_HAS_DOCKED:
 		case OP_HAS_UNDOCKED:
@@ -32226,6 +32239,7 @@ int get_subcategory(int sexp_id)
 		case OP_CONTAINER_REMOVE_FROM_MAP:
 		case OP_CONTAINER_GET_MAP_KEYS:
 		case OP_CLEAR_CONTAINER:
+		case OP_COPY_CONTAINER:
 			return CHANGE_SUBCATEGORY_CONTAINERS;
 
 		case OP_DAMAGED_ESCORT_LIST:
@@ -33547,6 +33561,16 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tDeletes the current contents of one or more containers.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tName of the container(s) to clear.\r\n" },
+
+	// jg18
+	{ OP_COPY_CONTAINER, "copy-container\r\n"
+		"\tCopies a container's contents to another container.\r\n"
+		"\tThe two containers' types must match, except their persistence rules can be different.\r\n"
+		"\tBy default, the second container is cleared before copying takes place.\r\n\r\n"
+		"Takes 2 or 3 arguments...\r\n"
+		"\t1:\tName of the container to copy from.\r\n"
+		"\t2:\tName of the container to copy to.\r\n"
+		"\t3:\t(Optional) When true, the second container's contents are deleted before copying." },
 
 	{ OP_PROTECT_SHIP, "Protect ship (Action operator)\r\n"
 		"\tProtects a ship from being attacked by any enemy ship.  Any ship "
