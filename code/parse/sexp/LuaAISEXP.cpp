@@ -187,6 +187,13 @@ luacpp::LuaFunction LuaAISEXP::getActionFrame() const {
 	return _actionFrame;
 }
 
+void LuaAISEXP::setAchievable(const luacpp::LuaFunction& action) {
+	_achievable = action;
+}
+luacpp::LuaFunction LuaAISEXP::getAchievable() const {
+	return _achievable;
+}
+
 void LuaAISEXP::registerAIMode(int sexp_id) const {
 	ai_lua_add_mode(sexp_id, ai_mode_lua{ needsTarget, hudText });
 }

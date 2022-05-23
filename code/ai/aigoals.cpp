@@ -54,12 +54,6 @@ struct ship_registry_entry;
 // goals given from the player to other ships in the game are also handled in this
 // code
 
-
-#define AI_GOAL_ACHIEVABLE			1
-#define AI_GOAL_NOT_ACHIEVABLE		2
-#define AI_GOAL_NOT_KNOWN			3
-#define AI_GOAL_SATISFIED			4
-
 int	Ai_goal_signature;
 int	Num_ai_dock_names = 0;
 char	Ai_dock_names[MAX_AI_DOCK_NAMES][NAME_LENGTH];
@@ -1467,9 +1461,11 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 	//  these orders are always achievable.
 	if ( (aigp->ai_mode == AI_GOAL_KEEP_SAFE_DISTANCE)
 		|| (aigp->ai_mode == AI_GOAL_CHASE_ANY) || (aigp->ai_mode == AI_GOAL_STAY_STILL)
-		|| (aigp->ai_mode == AI_GOAL_PLAY_DEAD) || (aigp->ai_mode == AI_GOAL_PLAY_DEAD_PERSISTENT) 
-		|| (aigp->ai_mode == AI_GOAL_LUA))
+		|| (aigp->ai_mode == AI_GOAL_PLAY_DEAD) || (aigp->ai_mode == AI_GOAL_PLAY_DEAD_PERSISTENT))
 		return AI_GOAL_ACHIEVABLE;
+
+	if (aigp->ai_mode == AI_GOAL_LUA)
+		return ai_lua_is_achievable(aigp, objnum);
 
 	// warp (depart) only achievable if there's somewhere to depart to
 	if (aigp->ai_mode == AI_GOAL_WARP)

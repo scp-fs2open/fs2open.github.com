@@ -19,6 +19,7 @@ class LuaAISEXP : public DynamicSEXP {
 
 	luacpp::LuaFunction _actionEnter;
 	luacpp::LuaFunction _actionFrame;
+	luacpp::LuaFunction _achievable;
 
 	std::unique_ptr<player_order_lua> playerOrder = nullptr;
 
@@ -44,6 +45,9 @@ class LuaAISEXP : public DynamicSEXP {
 
 	void setActionFrame(const luacpp::LuaFunction& action);
 	luacpp::LuaFunction getActionFrame() const;
+
+	void setAchievable(const luacpp::LuaFunction& action);
+	luacpp::LuaFunction getAchievable() const;
 
 	void registerAIMode(int sexp_id) const;
 	void maybeRegisterPlayerOrder(int sexp_id) const;

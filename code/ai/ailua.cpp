@@ -6,7 +6,9 @@
 #include "parse/sexp/sexp_lookup.h"
 #include "parse/sexp/LuaAISEXP.h"
 #include "scripting/api/objs/ai_helper.h"
+#include "scripting/api/objs/enums.h"
 #include "scripting/api/objs/oswpt.h"
+#include "scripting/api/objs/ship.h"
 #include "scripting/scripting.h"
 
 static std::unordered_map<int, ai_mode_lua> Lua_ai_modes;
@@ -152,4 +154,49 @@ bool ai_lua_is_valid_target(int sexp_op, int target_objnum, ship* self) {
 	}
 
 	return false;
+}
+
+int ai_lua_is_achievable(const ai_goal* aigp, int objnum){
+	const auto& lua_ai = Lua_ai_modes.at(aigp->ai_submode);
+
+	auto dynamicSEXP = sexp::get_dynamic_sexp(aigp->ai_submode);
+
+	if (dynamicSEXP != nullptr && typeid(*dynamicSEXP) == typeid(sexp::LuaAISEXP)) {
+		auto lua_ai_sexp = static_cast<sexp::LuaAISEXP*>(dynamicSEXP);
+		const auto& action = lua_ai_sexp->getAchievable();
+
+		if (!action.isValid())
+			return AI_GOAL_ACHIEVABLE;
+
+		luacpp::LuaValueList luaParameters;
+		luaParameters.push_back(luacpp::LuaValue::createValue(action.getLuaState(), scripting::api::l_Ship.Set(object_h(&Objects[objnum]))));
+		if (lua_ai.needsTarget) {
+			luaParameters.push_back(luacpp::LuaValue::createValue(action.getLuaState(), scripting::api::l_OSWPT.Set(aigp->lua_ai_target)));
+		}
+
+		auto retVals = action.call(Script_system.GetLuaSession(), luaParameters);
+
+		if (!retVals.empty() && retVals[0].getValueType() == luacpp::ValueType::USERDATA) {
+			scripting::api::enum_h enumData;
+			retVals[0].getValue(scripting::api::l_Enum.Get(&enumData));
+			if (!enumData.IsValid()) {
+				Error(LOCATION, "Lua AI SEXP Availability hook returned an invalid avilability enum.");
+				return AI_GOAL_ACHIEVABLE;
+			}
+
+			switch (enumData.index) {
+			case scripting::api::LE_LUAAI_ACHIEVABLE:
+				return AI_GOAL_ACHIEVABLE;
+			case scripting::api::LE_LUAAI_NOT_YET_ACHIEVABLE:
+				return AI_GOAL_NOT_KNOWN;
+			case scripting::api::LE_LUAAI_UNACHIEVABLE:
+				return AI_GOAL_NOT_ACHIEVABLE;
+			default:
+				Error(LOCATION, "Lua AI SEXP Availability hook returned an invalid avilability enum.");
+				return AI_GOAL_ACHIEVABLE;
+			}
+		}
+	}
+
+	return AI_GOAL_ACHIEVABLE;
 }
