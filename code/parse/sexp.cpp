@@ -982,6 +982,9 @@ int get_generic_subsys(const char *subsy_name);
 bool ship_class_unchanged(const ship_registry_entry *ship_entry);
 void multi_sexp_modify_variable();
 
+// jg18
+int populate_sexp_applicable_arguments(int node);
+
 #define NO_OPERATOR_INDEX_DEFINED		-2
 #define NOT_A_SEXP_OPERATOR				-1
 
@@ -2883,7 +2886,13 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 			// Goober5000
 			case OPF_ANYTHING:
 			{
+				// jg18
 				if (type2 == SEXP_ATOM_CONTAINER_NAME) {
+					// the in-sequence SEXP doesn't support using containers at all
+					if (op == OP_IN_SEQUENCE) {
+						return SEXP_CHECK_TYPE_MISMATCH;
+					}
+
 					// only list containers are allowed
 					const auto *p_any_container = get_sexp_container(Sexp_nodes[node].text);
 					Assertion(p_any_container,
@@ -10075,7 +10084,7 @@ int eval_cond(int n)
 // NOTE: if you change this function, check to see if the following function should also be changed!
 int test_argument_nodes_for_condition(int n, int condition_node, int *num_true, int *num_false, int *num_known_true, int *num_known_false, int threshold = -1)
 {
-	int val, num_valid_arguments;
+	int num_valid_arguments;
 	SCP_vector<std::pair<char*, int>> Applicable_arguments_temp;
 	Assert(n != -1 && condition_node != -1);
 	Assert((num_true != nullptr) && (num_false != nullptr) && (num_known_true != nullptr) && (num_known_false != nullptr));
@@ -10097,43 +10106,54 @@ int test_argument_nodes_for_condition(int n, int condition_node, int *num_true, 
 		// only eval this argument if it's valid
 		if (Sexp_nodes[n].flags & SNF_ARGUMENT_VALID)
 		{
-			// evaluate conditional for current argument
-			Sexp_replacement_arguments.emplace_back(Sexp_nodes[n].text, n);
-			val = eval_sexp(condition_node);
-			if ( Sexp_nodes[condition_node].value == SEXP_KNOWN_TRUE ||
+			// evaluate conditional for current argument(s)
+			// test_argument_vector_for_condition() doesn't use populate_sexp_applicable_arguments(),
+			// since the SEXPs that use that function don't support handling list containers of strings
+			const int num_args = populate_sexp_applicable_arguments(n);
+
+			for (int i = 0; i < num_args; ++i) {
+				int val = eval_sexp(condition_node);
+				if (Sexp_nodes[condition_node].value == SEXP_KNOWN_TRUE ||
 					Sexp_nodes[condition_node].value == SEXP_KNOWN_FALSE) {
-				val = Sexp_nodes[condition_node].value;
-			} else if ( Sexp_nodes[condition_node].value == SEXP_NAN_FOREVER ) {
-				// In accordance with SEXP_NAN/SEXP_NAN_FOREVER becoming SEXP_FALSE in eval_sexp()
-				val = SEXP_KNOWN_FALSE;
+					val = Sexp_nodes[condition_node].value;
+				} else if (Sexp_nodes[condition_node].value == SEXP_NAN_FOREVER) {
+					// In accordance with SEXP_NAN/SEXP_NAN_FOREVER becoming SEXP_FALSE in eval_sexp()
+					val = SEXP_KNOWN_FALSE;
+				}
+
+				const auto &argument = Sexp_replacement_arguments.back();
+
+				switch (val)
+				{
+					case SEXP_TRUE:
+						(*num_true)++;
+						Applicable_arguments_temp.emplace_back(argument.first, argument.second);
+						break;
+
+					case SEXP_FALSE:
+						(*num_false)++;
+						break;
+
+					case SEXP_KNOWN_TRUE:
+						(*num_known_true)++;
+						Applicable_arguments_temp.emplace_back(argument.first, argument.second);
+						break;
+
+					case SEXP_KNOWN_FALSE:
+						(*num_known_false)++;
+						break;
+
+					default:
+						UNREACHABLE("Unhandled condition value %d", val);
+						break;
+				}
+
+				// clear argument, but not list, as we'll need it later
+				Sexp_replacement_arguments.pop_back();
+
+				// increment
+				num_valid_arguments++;
 			}
-
-			switch (val)
-			{
-				case SEXP_TRUE:
-					(*num_true)++;
-					Applicable_arguments_temp.emplace_back(Sexp_nodes[n].text, n);
-					break;
-
-				case SEXP_FALSE:
-					(*num_false)++;
-					break;
-
-				case SEXP_KNOWN_TRUE:
-					(*num_known_true)++;
-					Applicable_arguments_temp.emplace_back(Sexp_nodes[n].text, n);
-					break;
-
-				case SEXP_KNOWN_FALSE:
-					(*num_known_false)++;
-					break;
-			}
-
-			// clear argument, but not list, as we'll need it later
-			Sexp_replacement_arguments.pop_back();
-
-			// increment
-			num_valid_arguments++;
 		}
 
 		// continue along argument list
@@ -10394,6 +10414,7 @@ int eval_random_of(int arg_handler_node, int condition_node, bool multiple)
 		Sexp_applicable_argument_list.clear_nesting_level();
 
 		// evaluate conditional for current argument
+		// FIXME TODO: update for Issue 4298
 		Sexp_replacement_arguments.emplace_back(Sexp_nodes[n].text, n);
 		val = eval_sexp(condition_node);
 
@@ -31350,6 +31371,43 @@ void multi_sexp_modify_variable()
 
 		strcpy_s(Sexp_variables[variable_index].text, value);
 	}	
+}
+
+// populate Sexp_applicable_arguments for the *-of conditional SEXPs
+int populate_sexp_applicable_arguments(int node)
+{
+	if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER_NAME) {
+		const auto *p_container = get_sexp_container(Sexp_nodes[node].text);
+
+		// should have been checked in get_sexp()
+		Assertion(p_container,
+			"Special argument SEXP given nonexistent container %s. Please report!",
+			Sexp_nodes[node].text);
+		const auto &container = *p_container;
+
+		// should have been checked in check_sexp_syntax()
+		Assertion(container.is_list() && any(container.type & ContainerType::STRING_DATA),
+			"Special argument SEXP given container %s that is not a list container of strings. Please report!",
+			Sexp_nodes[node].text);
+
+		if (container.list_data.empty()) {
+			Warning(LOCATION, "Special argument SEXP given empty list container %s.", Sexp_nodes[node].text);
+			return 0;
+		}
+
+		// populate in reverse order, so that the LFIO processing that callers use will process them in the correct order
+		// which is important for in-sequence SEXP
+		for (auto it = container.list_data.crbegin(), end = container.list_data.crend(); it != end; ++it) {
+			// use -1 because these strings are not associated with an individual node
+			// FIXME TODO: remove the cast after PR 4293 is merged
+			Sexp_replacement_arguments.emplace_back((char*)it->c_str(), -1);
+		}
+
+		return (int)container.size();
+	} else {
+		Sexp_replacement_arguments.emplace_back(Sexp_nodes[node].text, node);
+		return 1;
+	}
 }
 
 void sexp_modify_variable(int n)
