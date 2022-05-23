@@ -139,13 +139,18 @@ void set_emissive_flag(Checkbox* caller) {
 void set_ambient_factor(Slider* caller) {
 	auto value = caller->GetSliderValue();
 
-	getLabManager()->Renderer->setAmbientFactor(fl2i(value));
+	getLabManager()->Renderer->setAmbientFactor(value);
 }
 
-void set_static_light_factor(Slider* caller) {
+void set_light_factor(Slider* caller) {
 	auto value = caller->GetSliderValue();
 
-	getLabManager()->Renderer->setDirectionalFactor(value);
+	getLabManager()->Renderer->setLightFactor(value);
+}
+void set_emissive(Slider* caller) {
+	auto value = caller->GetSliderValue();
+
+	getLabManager()->Renderer->setEmissiveFactor(value);
 }
 
 void set_bloom(Slider* caller) {
@@ -289,15 +294,20 @@ void RenderOptions::open(Button* /*caller*/) {
 	cbp = (Checkbox*)dialogWindow->AddChild(new Checkbox("Render with emissive lighting", 2, y, set_emissive_flag));
 	y += cbp->GetHeight() + 2;
 
-	auto ambient_sldr = new Slider("Ambient Factor", 0, 128, 0, y + 2, set_ambient_factor, dialogWindow->GetWidth());
-	ambient_sldr->SetSliderValue((float)Cmdline_ambient_factor);
+	auto light_sldr = new Slider("Light Brightness", 0.0f, 10.0f, 0, y + 2, set_light_factor, dialogWindow->GetWidth());
+	light_sldr->SetSliderValue(lighting_profile::lab_get_light());
+	dialogWindow->AddChild(light_sldr);
+	y += light_sldr->GetHeight() + 2;
+
+	auto ambient_sldr = new Slider("Ambient Factor", 0.0f, 10.0f, 0, y + 2, set_ambient_factor, dialogWindow->GetWidth());
+	ambient_sldr->SetSliderValue(lighting_profile::lab_get_ambient());
 	dialogWindow->AddChild(ambient_sldr);
 	y += ambient_sldr->GetHeight() + 2;
 
-	auto direct_sldr = new Slider("Direct. Lights", 0.0f, 2.0f, 0, y + 2, set_static_light_factor, dialogWindow->GetWidth());
-	//direct_sldr->SetSliderValue(static_light_factor);
-	dialogWindow->AddChild(direct_sldr);
-	y += direct_sldr->GetHeight() + 2;
+	auto emissive_sldr = new Slider("Emissive Amount", 0, 10.0f, 0, y + 2, set_emissive, dialogWindow->GetWidth());
+	emissive_sldr->SetSliderValue(lighting_profile::lab_get_emissive());
+	dialogWindow->AddChild(emissive_sldr);
+	y += emissive_sldr->GetHeight() + 2;
 
 	auto bloom_sldr = new Slider("Bloom", 0, 200, 0, y + 2, set_bloom, dialogWindow->GetWidth());
 	bloom_sldr->SetSliderValue((float)gr_bloom_intensity());

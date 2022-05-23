@@ -71,8 +71,6 @@ class LabRenderer {
 public:
 	LabRenderer() {
 		bloomLevel = gr_bloom_intensity();
-		ambientFactor = 1;// Cmdline_ambient_factor;
-		directionalFactor = 1;// static_light_factor;
 		textureQuality = TextureQuality::Maximum;
 		cameraDistance = 100.0f;
 		currentTeamColor = "<none>";
@@ -139,16 +137,18 @@ public:
 
 	void setRenderFlag(LabRenderFlag flag, bool value) { renderFlags.set(flag, value); }
 
-	int setAmbientFactor(int factor) { 
-		ambientFactor = factor; 
-		//TODO: make this work with the lighting profile
-
+	float setAmbientFactor(float factor) { 
+		lighting_profile::lab_set_ambient(factor);
 		return factor; 
 	}
 
-	float setDirectionalFactor(float factor) { 
-		directionalFactor = factor; 
-		//TODO: make this work with the lighting profile
+	float setLightFactor(float factor) {
+		lighting_profile::lab_set_light(factor);
+		return factor; 
+	}
+
+	float setEmissiveFactor(float factor) { 
+		lighting_profile::lab_set_emissive(factor);
 		return factor; 
 	}
 
@@ -179,8 +179,6 @@ public:
 
 private:
 	flagset<LabRenderFlag> renderFlags;
-	int ambientFactor;
-	float directionalFactor;
 	int bloomLevel;
 	float exposureLevel;
 	TextureQuality textureQuality;

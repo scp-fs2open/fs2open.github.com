@@ -436,3 +436,22 @@ void lighting_profile::lab_set_ppc(piecewise_power_curve_values ppcin ){
 piecewise_power_curve_values lighting_profile::lab_get_ppc(){
 	return default_profile.ppc_values;
 }
+
+float lighting_profile::lab_get_light(){
+	return default_profile.overall_brightness.handle(1.0f);
+}
+float lighting_profile::lab_get_ambient(){
+	return default_profile.ambient_light_brightness.handle(1.0f);
+}
+float lighting_profile::lab_get_emissive(){
+	return default_profile.ambient_light_brightness.handle(0.0f);
+}
+void lighting_profile::lab_set_light(float in){
+	default_profile.overall_brightness.set_multiplier(in);
+}
+void lighting_profile::lab_set_ambient(float in){
+	default_profile.ambient_light_brightness.set_multiplier(in);
+}
+void lighting_profile::lab_set_emissive(float in){
+	default_profile.ambient_light_brightness.set_minimum(MAX(0.0f,in));
+}
