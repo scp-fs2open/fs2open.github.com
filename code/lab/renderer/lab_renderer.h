@@ -137,17 +137,17 @@ public:
 
 	void setRenderFlag(LabRenderFlag flag, bool value) { renderFlags.set(flag, value); }
 
-	float setAmbientFactor(float factor) { 
+	static float setAmbientFactor(float factor) { 
 		lighting_profile::lab_set_ambient(factor);
 		return factor; 
 	}
 
-	float setLightFactor(float factor) {
+	static float setLightFactor(float factor) {
 		lighting_profile::lab_set_light(factor);
 		return factor; 
 	}
 
-	float setEmissiveFactor(float factor) { 
+	static float setEmissiveFactor(float factor) { 
 		lighting_profile::lab_set_emissive(factor);
 		return factor; 
 	}
