@@ -1236,7 +1236,7 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 			break;
 		
 		default: {
-			Assert(command < Player_orders.size()); // get Allender -- illegal message
+			Assert(command < (int) Player_orders.size()); // get Allender -- illegal message
 			
 			ai_mode = AI_GOAL_LUA;
 			ai_submode = Player_orders[command].lua_id;
@@ -1463,7 +1463,7 @@ int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, 
 			return 0;
 
 		default: {
-			Assert(command < Player_orders.size()); // get Allender -- illegal message
+			Assert(command < (int) Player_orders.size()); // get Allender -- illegal message
 
 			ai_mode = AI_GOAL_LUA;
 			ai_submode = Player_orders[command].lua_id;
