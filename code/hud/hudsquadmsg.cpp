@@ -157,22 +157,22 @@ int keys_used[] = {	KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_
 SCP_string  Comm_order_types[NUM_COMM_ORDER_TYPES];
 
 std::vector<player_order> Player_orders = {
-	player_order("attack ship",   "Destroy my target",  299),
-	player_order("disable ship",  "Disable my target",	300 ),
-	player_order("disarm ship",	  "Disarm my target",	301 ),
-	player_order("disable subsys","Destroy subsystem",	302 ),
-	player_order("guard ship",	  "Protect my target",	303 ),
-	player_order("ignore ship",   "Ignore my target",	304 ),
-	player_order("form on wing","Form on my wing",	305 ),
-	player_order("cover me",	"Cover me",			306 ),
-	player_order("attack any",	"Engage enemy",		307 ),
-	player_order("dock", "Capture my target",	308),
-	player_order("rearm me", "Rearm me",			309),
-	player_order("abort rearm", "Abort rearm",		310),
-	player_order("depart", "Depart",				311),
-	player_order("stay near me", "Stay near me",		-1),
-	player_order("stay near ship", "Stay near my target",-1),
-	player_order("keep safe dist", "Keep safe distance", -1)
+	player_order("attack ship",   "Destroy my target",  299, -1, ATTACK_TARGET_ITEM),
+	player_order("disable ship",  "Disable my target",	300, -1, DISABLE_TARGET_ITEM),
+	player_order("disarm ship",	  "Disarm my target",	301, -1, DISARM_TARGET_ITEM),
+	player_order("disable subsys","Destroy subsystem",	302, -1, DISABLE_SUBSYSTEM_ITEM),
+	player_order("guard ship",	  "Protect my target",	303, -1, PROTECT_TARGET_ITEM),
+	player_order("ignore ship",   "Ignore my target",	304, -1, IGNORE_TARGET_ITEM),
+	player_order("form on wing","Form on my wing",	305, -1, FORMATION_ITEM),
+	player_order("cover me",	"Cover me",			306, -1, COVER_ME_ITEM),
+	player_order("attack any",	"Engage enemy",		307, -1, ENGAGE_ENEMY_ITEM),
+	player_order("dock", "Capture my target",	308, -1, CAPTURE_TARGET_ITEM),
+	player_order("rearm me", "Rearm me",			309, -1, REARM_REPAIR_ME_ITEM),
+	player_order("abort rearm", "Abort rearm",		310, -1, ABORT_REARM_REPAIR_ITEM),
+	player_order("depart", "Depart",				311, -1, DEPART_ITEM),
+	player_order("stay near me", "Stay near me",		-1, -1, STAY_NEAR_ME_ITEM),
+	player_order("stay near ship", "Stay near my target",-1, -1, STAY_NEAR_TARGET_ITEM),
+	player_order("keep safe dist", "Keep safe distance", -1, -1, KEEP_SAFE_DIST_ITEM)
 };
 
 const std::set<size_t> default_messages{ ATTACK_TARGET_ITEM , DISABLE_TARGET_ITEM , DISARM_TARGET_ITEM , PROTECT_TARGET_ITEM , IGNORE_TARGET_ITEM , FORMATION_ITEM , COVER_ME_ITEM , ENGAGE_ENEMY_ITEM , DEPART_ITEM , DISABLE_SUBSYSTEM_ITEM };
@@ -206,6 +206,11 @@ void hud_init_comm_orders()
 
 	for (auto& order : Player_orders)
 		order.localize();
+
+	std::sort(Player_orders.begin(), Player_orders.end(), [](const player_order& o1, const player_order& o2) {
+		return o1.legacy_id < o2.legacy_id;
+	});
+
 }
 
 // Text to display on the messaging menu when using the shortcut keys
