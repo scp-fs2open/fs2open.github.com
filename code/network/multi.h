@@ -70,6 +70,7 @@ class player;
 // version 54 - 3/20/2021 - Fixes for FSO 21_2 especially better net_sig calc, better missile intercept
 // version 55 - 8/28/2021 Adding multi-compatible animations
 // version 56 - 8/28/2021 Fix animations for 22_0 release
+// version 57 - 5/25/2022 Replace squadmessage bitfield with player order index
 // STANDALONE_ONLY
 
 #define MULTI_FS_SERVER_VERSION							56
