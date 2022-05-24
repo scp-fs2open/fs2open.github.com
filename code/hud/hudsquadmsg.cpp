@@ -1954,7 +1954,7 @@ void hud_squadmsg_ship_command()
 
 		// do some other checks to possibly gray out other items.
 		// if no target, remove any items which are associated with the players target
-		if (!hud_squadmsg_is_target_order_valid(order_id, 0))
+		if (!hud_squadmsg_is_target_order_valid(order_id, nullptr))
 			MsgItems[Num_menu_items].active = 0;
 
 		// if messaging all fighters, see if we should gray out the order if no one will accept it,
