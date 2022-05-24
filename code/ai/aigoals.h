@@ -84,10 +84,7 @@ struct ai_goal;
 
 #define MAX_AI_DOCK_NAMES				25
 
-#define AI_GOAL_ACHIEVABLE			1
-#define AI_GOAL_NOT_ACHIEVABLE		2
-#define AI_GOAL_NOT_KNOWN			3
-#define AI_GOAL_SATISFIED			4
+enum class ai_achievability { ACHIEVABLE, NOT_ACHIEVABLE, NOT_KNOWN, SATISFIED };
 
 typedef flag_def_list ai_goal_list;
 

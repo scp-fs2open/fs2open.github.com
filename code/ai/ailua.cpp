@@ -195,7 +195,7 @@ bool ai_lua_is_valid_target(int sexp_op, int target_objnum, ship* self) {
 	return ai_lua_is_valid_target_lua(mode, sexp_op, target_objnum, self);
 }
 
-int ai_lua_is_achievable(const ai_goal* aigp, int objnum){
+ai_achievability ai_lua_is_achievable(const ai_goal* aigp, int objnum){
 	const auto& lua_ai = Lua_ai_modes.at(aigp->ai_submode);
 
 	auto dynamicSEXP = sexp::get_dynamic_sexp(aigp->ai_submode);
@@ -205,7 +205,7 @@ int ai_lua_is_achievable(const ai_goal* aigp, int objnum){
 		const auto& action = lua_ai_sexp->getAchievable();
 
 		if (!action.isValid())
-			return AI_GOAL_ACHIEVABLE;
+			return ai_achievability::ACHIEVABLE;
 
 		luacpp::LuaValueList luaParameters;
 		luaParameters.push_back(luacpp::LuaValue::createValue(action.getLuaState(), scripting::api::l_Ship.Set(object_h(&Objects[objnum]))));
@@ -219,26 +219,26 @@ int ai_lua_is_achievable(const ai_goal* aigp, int objnum){
 			scripting::api::enum_h enumData;
 			retVals[0].getValue(scripting::api::l_Enum.Get(&enumData));
 			if (!enumData.IsValid()) {
-				Error(LOCATION, "LuaAI SEXP Availability hook returned an invalid avilability enum.");
-				return AI_GOAL_ACHIEVABLE;
+				Error(LOCATION, "LuaAI SEXP achievability hook returned an invalid avilability enum.");
+				return ai_achievability::ACHIEVABLE;
 			}
 
 			switch (enumData.index) {
 			case scripting::api::LE_LUAAI_ACHIEVABLE:
-				return AI_GOAL_ACHIEVABLE;
+				return ai_achievability::ACHIEVABLE;
 			case scripting::api::LE_LUAAI_NOT_YET_ACHIEVABLE:
-				return AI_GOAL_NOT_KNOWN;
+				return ai_achievability::NOT_KNOWN;
 			case scripting::api::LE_LUAAI_UNACHIEVABLE:
-				return AI_GOAL_NOT_ACHIEVABLE;
+				return ai_achievability::NOT_ACHIEVABLE;
 			default:
-				Error(LOCATION, "LuaAI SEXP Availability hook returned an invalid avilability enum.");
-				return AI_GOAL_ACHIEVABLE;
+				Error(LOCATION, "LuaAI SEXP achievability hook returned an invalid avilability enum.");
+				return ai_achievability::ACHIEVABLE;
 			}
 		}
 		else {
-			Error(LOCATION, "LuaAI SEXP Availability hook did not return any avilability enum!");
+			Error(LOCATION, "LuaAI SEXP achievability hook did not return any avilability enum!");
 		}
 	}
 
-	return AI_GOAL_ACHIEVABLE;
+	return ai_achievability::ACHIEVABLE;
 }
