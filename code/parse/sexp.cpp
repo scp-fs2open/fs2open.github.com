@@ -10145,9 +10145,11 @@ int test_argument_nodes_for_condition(int n, int condition_node, int *num_true, 
 	return num_valid_arguments;
 }
 
+enum class STRDUP_STATUS { ALREADY_DUPPED, DUP_NEEDED, DUP_NOT_NEEDED };
+
 // Goober5000
 // NOTE: if you change this function, check to see if the previous function should also be changed!
-int test_argument_vector_for_condition(const SCP_vector<std::pair<const char*, int>> &argument_vector, bool already_dupped, int condition_node, int *num_true, int *num_false, int *num_known_true, int *num_known_false)
+int test_argument_vector_for_condition(const SCP_vector<std::pair<const char*, int>> &argument_vector, STRDUP_STATUS strdup_status, int condition_node, int *num_true, int *num_false, int *num_known_true, int *num_known_false)
 {
 	int val, num_valid_arguments;
 	SCP_vector<std::pair<const char*, int>> Applicable_arguments_temp;
@@ -10204,7 +10206,7 @@ int test_argument_vector_for_condition(const SCP_vector<std::pair<const char*, i
 
 			// if the argument was already dup'd, but not added as an applicable argument,
 			// we need to free it here before we cause a memory leak
-			if ((val == SEXP_FALSE || val == SEXP_KNOWN_FALSE) && already_dupped)
+			if ((val == SEXP_FALSE || val == SEXP_KNOWN_FALSE) && (strdup_status == STRDUP_STATUS::ALREADY_DUPPED))
 				vm_free(const_cast<char*>(argument.first));
 
 			// clear argument, but not list, as we'll need it later
@@ -10219,12 +10221,14 @@ int test_argument_vector_for_condition(const SCP_vector<std::pair<const char*, i
 	// Sexp_applicable_argument_list is a stack and we want the first argument in the list to be the first one out
 	while (!Applicable_arguments_temp.empty())
 	{
-		// we need to dup the strings regardless, since we're not using Sexp_nodes[n].text as a string buffer,
-		// but we need to know whether the calling function dup'd them, or whether we should dup them here
-		if (already_dupped)
+		// if we're using a temporary buffer for the string (as opposed to a permanent buffer like shipp->ship_name or Sexp_nodes[n].text)
+		// then we need to dup the strings, but we need to know whether the calling function dup'd them, or whether we should dup them here
+		if (strdup_status == STRDUP_STATUS::ALREADY_DUPPED)
 			Sexp_applicable_argument_list.add_data_set_dup(Applicable_arguments_temp.back());
-		else
+		else if (strdup_status == STRDUP_STATUS::DUP_NEEDED)
 			Sexp_applicable_argument_list.add_data_dup(Applicable_arguments_temp.back());
+		else
+			Sexp_applicable_argument_list.add_data(Applicable_arguments_temp.back());
 
 		Applicable_arguments_temp.pop_back(); 
 	}
@@ -10519,7 +10523,7 @@ int eval_for_counter(int arg_handler_node, int condition_node, bool just_count =
 		return num_valid_arguments;
 
 	// test the whole argument vector
-	num_valid_arguments = test_argument_vector_for_condition(argument_vector, true, condition_node, &num_true, &num_false, &num_known_true, &num_known_false);
+	num_valid_arguments = test_argument_vector_for_condition(argument_vector, STRDUP_STATUS::ALREADY_DUPPED, condition_node, &num_true, &num_false, &num_known_true, &num_known_false);
 
 	// use the sexp_or algorithm
 	if (num_known_true || num_true)
@@ -10593,7 +10597,7 @@ int eval_for_ship_collection(int arg_handler_node, int condition_node, int op_co
 					if (just_count)
 						num_valid_arguments++;
 					else
-						argument_vector.emplace_back(vm_strdup(shipp->ship_name), -1);
+						argument_vector.emplace_back(shipp->ship_name, -1);
 				}
 			}
 		}
@@ -10603,7 +10607,7 @@ int eval_for_ship_collection(int arg_handler_node, int condition_node, int op_co
 		return num_valid_arguments;
 
 	// test the whole argument vector
-	num_valid_arguments = test_argument_vector_for_condition(argument_vector, true, condition_node, &num_true, &num_false, &num_known_true, &num_known_false);
+	num_valid_arguments = test_argument_vector_for_condition(argument_vector, STRDUP_STATUS::DUP_NOT_NEEDED, condition_node, &num_true, &num_false, &num_known_true, &num_known_false);
 	SCP_UNUSED(num_valid_arguments);
 
 	// use the sexp_or algorithm
@@ -10655,7 +10659,7 @@ int eval_for_container(int arg_handler_node, int condition_node, int op_const, b
 	// test the whole argument vector
 	int num_true, num_false, num_known_true, num_known_false;
 	const int num_valid_arguments = test_argument_vector_for_condition(argument_vector,
-		true,
+		STRDUP_STATUS::ALREADY_DUPPED,
 		condition_node,
 		&num_true,
 		&num_false,
@@ -10705,7 +10709,7 @@ int eval_for_players(int arg_handler_node, int condition_node, bool just_count =
 			if (just_count)
 				num_valid_arguments++;
 			else
-				argument_vector.emplace_back(vm_strdup(Player_ship->ship_name), -1);
+				argument_vector.emplace_back(Player_ship->ship_name, -1);
 		}
 	}
 
@@ -10713,7 +10717,7 @@ int eval_for_players(int arg_handler_node, int condition_node, bool just_count =
 		return num_valid_arguments;
 
 	// test the whole argument vector
-	num_valid_arguments = test_argument_vector_for_condition(argument_vector, true, condition_node, &num_true, &num_false, &num_known_true, &num_known_false);
+	num_valid_arguments = test_argument_vector_for_condition(argument_vector, STRDUP_STATUS::DUP_NOT_NEEDED, condition_node, &num_true, &num_false, &num_known_true, &num_known_false);
 
 	// use the sexp_or algorithm
 	if (num_known_true || num_true)
