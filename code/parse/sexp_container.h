@@ -190,3 +190,6 @@ bool sexp_container_has_persistent_non_eternal_containers();
 // SEXPs
 int sexp_container_eval_status_sexp(int op_num, int node);
 int sexp_container_eval_change_sexp(int op_num, int node);
+
+// tests if an operator supports list containers with when-argument
+bool sexp_container_does_blank_op_support_containers(int op_const);

@@ -877,7 +877,7 @@ void sexp_tree::right_clicked(int mode)
 							}
 
 							// Replace Container Name submenu
-							if (is_container_opf_type(op_type)) {
+							if (is_container_opf_type(op_type) || op_type == OPF_ANYTHING) {
 								int container_name_index = 0;
 								for (const auto &container : get_all_sexp_containers()) {
 									UINT flags = MF_STRING | MF_GRAYED;
@@ -888,6 +888,11 @@ void sexp_tree::right_clicked(int mode)
 									} else if ((op_type == OPF_LIST_CONTAINER_NAME) && container.is_list()) {
 										flags &= ~MF_GRAYED;
 									} else if ((op_type == OPF_MAP_CONTAINER_NAME) && container.is_map()) {
+										flags &= ~MF_GRAYED;
+									} else if ((op_type == OPF_ANYTHING) && op >= 0 &&
+											   sexp_container_does_blank_op_support_containers(Operators[op].value) &&
+											   container.is_list() &&
+											   any(container.type & ContainerType::STRING_DATA)) {
 										flags &= ~MF_GRAYED;
 									}
 
@@ -7418,12 +7423,15 @@ bool sexp_tree::is_container_argument(int node) const
 		"Attempt to check if out-of-range node %d is a container name argument. Please report!",
 		node);
 
-	if (tree_nodes[node].parent == -1) {
+	const int parent_node = tree_nodes[node].parent;
+	if (parent_node == -1) {
 		return false;
 	}
 
+	const int op_const = get_operator_const(tree_nodes[parent_node].text);
 	const int arg_opf_type = query_node_argument_type(node);
-	return is_container_opf_type(arg_opf_type);
+	return is_container_opf_type(arg_opf_type) ||
+		   (arg_opf_type == OPF_ANYTHING && sexp_container_does_blank_op_support_containers(op_const));
 }
 
 bool sexp_tree::is_container_opf_type(const int op_type)

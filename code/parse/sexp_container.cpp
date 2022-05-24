@@ -1354,3 +1354,21 @@ int sexp_container_eval_change_sexp(int op_num, int node)
 		return SEXP_FALSE;
 	}
 }
+
+bool sexp_container_does_blank_op_support_containers(const int op_const)
+{
+	switch (op_const)
+	{
+		case OP_ANY_OF:
+		case OP_EVERY_OF:
+		case OP_NUMBER_OF:
+		case OP_INVALIDATE_ARGUMENT:
+		case OP_VALIDATE_ARGUMENT:
+		case OP_FIRST_OF:
+			return true;
+
+		default:
+			return false;
+	}
+}
+
