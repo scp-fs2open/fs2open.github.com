@@ -3702,8 +3702,10 @@ int CFred_mission_save::save_objects()
 					fout("\n+Orders Accepted:");
 
 				int bitfield = 0;
-				for (size_t order : shipp->orders_accepted)
-					bitfield |= Player_orders[order].id;
+				for (size_t order : shipp->orders_accepted) {
+					if(order < 32)
+						bitfield |= (1 << order);				
+				}
 				fout(" %d\t\t;! note that this is a bitfield!!!", bitfield);
 			}
 			else {

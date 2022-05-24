@@ -3359,7 +3359,7 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 			p_objp->flags.set(Mission::Parse_Object_Flags::SF_Use_unique_orders);
 
 			for(size_t j = 0; j < Player_orders.size(); j++){
-				if(Player_orders[j].id & tmp_orders)
+				if((1 << j) & tmp_orders)
 					p_objp->orders_accepted.insert(j);
 			}
 		}
