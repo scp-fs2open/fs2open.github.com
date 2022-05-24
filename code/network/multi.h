@@ -73,7 +73,7 @@ class player;
 // version 57 - 5/25/2022 Replace squadmessage bitfield with player order index
 // STANDALONE_ONLY
 
-#define MULTI_FS_SERVER_VERSION							56
+#define MULTI_FS_SERVER_VERSION							57
 
 #define MULTI_FS_SERVER_COMPATIBLE_VERSION			MULTI_FS_SERVER_VERSION
 

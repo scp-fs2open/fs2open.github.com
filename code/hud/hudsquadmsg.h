@@ -59,7 +59,6 @@ class object;
 #define NUM_MBOX_FRAMES		3
 
 typedef struct player_order {
-public:
 	SCP_string parse_name;
 	SCP_string hud_name;
 	int hud_xstr;
