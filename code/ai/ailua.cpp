@@ -1,6 +1,5 @@
 #include "ai/ailua.h"
 
-#include "ai/aigoals.h"
 #include "hud/hudsquadmsg.h"
 #include "iff_defs/iff_defs.h"
 #include "parse/sexp/sexp_lookup.h"

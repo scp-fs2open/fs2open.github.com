@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ai/ai.h"
+#include "ai/aigoals.h"
 #include "mission/missionmessage.h"
 #include "ship/ship.h"
 #include "globalincs/globals.h"
