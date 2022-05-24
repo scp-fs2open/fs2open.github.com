@@ -2889,8 +2889,8 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 			{
 				// jg18
 				if (type2 == SEXP_ATOM_CONTAINER_NAME) {
-					// the in-sequence SEXP doesn't support using containers at all
-					if (op == OP_IN_SEQUENCE) {
+					// exclude SEXPs that don't support using containers at all
+					if (!does_op_support_list_container_arguments(op)) {
 						return SEXP_CHECK_TYPE_MISMATCH;
 					}
 
@@ -10415,7 +10415,6 @@ int eval_random_of(int arg_handler_node, int condition_node, bool multiple)
 		Sexp_applicable_argument_list.clear_nesting_level();
 
 		// evaluate conditional for current argument
-		// FIXME TODO: update for Issue 4298
 		Sexp_replacement_arguments.emplace_back(Sexp_nodes[n].text, n);
 		val = eval_sexp(condition_node);
 
