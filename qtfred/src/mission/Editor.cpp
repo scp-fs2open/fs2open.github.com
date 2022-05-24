@@ -736,11 +736,7 @@ int Editor::create_ship(matrix* orient, vec3d* pos, int ship_type) {
 			// the depart item
 			if (!(sip->is_small_ship())) {
 				shipp->orders_accepted = ship_get_default_orders_accepted(sip);
-
-				for(size_t i = 0; i < Player_orders.size(); i++) {
-					if (Player_orders[i].id & DEPART_ITEM)
-						shipp->orders_accepted.erase(i);
-				}
+				shipp->orders_accepted.erase(DEPART_ITEM);
 			}
 		} else {
 			shipp->orders_accepted.clear();
