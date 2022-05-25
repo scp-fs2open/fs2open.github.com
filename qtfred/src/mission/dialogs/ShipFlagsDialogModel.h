@@ -61,8 +61,8 @@ class ShipFlagsDialogModel : public AbstractDialogModel {
 	int m_respawn_priority;
 
 	void set_modified();
-	static int tristate_set(int val, int cur_state);
-	void update_ship(int);
+	static int tristate_set(const int val, const int cur_state);
+	void update_ship(const int);
 
   public:
 	ShipFlagsDialogModel(QObject* parent, EditorViewport* viewport);
@@ -71,135 +71,135 @@ class ShipFlagsDialogModel : public AbstractDialogModel {
 	bool apply() override;
 	void reject() override;
 
-	void setDestroyed(int);
-	int getDestroyed();
+	void setDestroyed(const int);
+	int getDestroyed() const;
 
-	void setDestroyedSeconds(int);
-	int getDestroyedSeconds();
+	void setDestroyedSeconds(const int);
+	int getDestroyedSeconds() const;
 
-	void setScannable(int);
-	int getScannable();
+	void setScannable(const int);
+	int getScannable() const;
 
-	void setCargoKnown(int);
-	int getCargoKnown();
+	void setCargoKnown(const int);
+	int getCargoKnown() const;
 
-	void setSubsystemScanning(int);
-	int getSubsystemScanning();
+	void setSubsystemScanning(const int);
+	int getSubsystemScanning() const;
 
-	void setReinforcment(int);
-	int getReinforcment();
+	void setReinforcment(const int);
+	int getReinforcment() const;
 
-	void setProtectShip(int);
-	int getProtectShip();
+	void setProtectShip(const int);
+	int getProtectShip() const;
 
-	void setBeamProtect(int);
-	int getBeamProtect();
+	void setBeamProtect(const int);
+	int getBeamProtect() const;
 
-	void setFlakProtect(int);
-	int getFlakProtect();
+	void setFlakProtect(const int);
+	int getFlakProtect() const;
 
-	void setLaserProtect(int);
-	int getLaserProtect();
+	void setLaserProtect(const int);
+	int getLaserProtect() const;
 
-	void setMissileProtect(int);
-	int getMissileProtect();
+	void setMissileProtect(const int);
+	int getMissileProtect() const;
 
-	void setIgnoreForGoals(int);
-	int getIgnoreForGoals();
+	void setIgnoreForGoals(const int);
+	int getIgnoreForGoals() const;
 
-	void setEscort(int);
-	int getEscort();
-	void setEscortValue(int);
-	int getEscortValue();
+	void setEscort(const int);
+	int getEscort() const;
+	void setEscortValue(const int);
+	int getEscortValue() const;
 
-	void setNoArrivalMusic(int);
-	int getNoArrivalMusic();
+	void setNoArrivalMusic(const int);
+	int getNoArrivalMusic() const;
 
-	void setInvulnerable(int);
-	int getInvulnerable();
+	void setInvulnerable(const int);
+	int getInvulnerable() const;
 
-	void setGuardianed(int);
-	int getGuardianed();
+	void setGuardianed(const int);
+	int getGuardianed() const;
 
-	void setPrimitiveSensors(int);
-	int getPrimitiveSensors();
+	void setPrimitiveSensors(const int);
+	int getPrimitiveSensors() const;
 
-	void setNoSubspaceDrive(int);
-	int getNoSubspaceDrive();
+	void setNoSubspaceDrive(const int);
+	int getNoSubspaceDrive() const;
 
-	void setHidden(int);
-	int getHidden();
+	void setHidden(const int);
+	int getHidden() const;
 
-	void setStealth(int);
-	int getStealth();
+	void setStealth(const int);
+	int getStealth() const;
 
-	void setFriendlyStealth(int);
-	int getFriendlyStealth();
+	void setFriendlyStealth(const int);
+	int getFriendlyStealth() const;
 
-	void setKamikaze(int);
-	int getKamikaze();
-	void setKamikazeDamage(int);
-	int getKamikazeDamage();
+	void setKamikaze(const int);
+	int getKamikaze() const;
+	void setKamikazeDamage(const int);
+	int getKamikazeDamage() const;
 
-	void setImmobile(int);
-	int getImmobile();
+	void setImmobile(const int);
+	int getImmobile() const;
 
-	void setNoDynamicGoals(int);
-	int getNoDynamicGoals();
+	void setNoDynamicGoals(const int);
+	int getNoDynamicGoals() const;
 
-	void setRedAlert(int);
-	int getRedAlert();
+	void setRedAlert(const int);
+	int getRedAlert() const;
 
-	void setGravity(int);
-	int getGravity();
+	void setGravity(const int);
+	int getGravity() const;
 
-	void setWarpin(int);
-	int getWarpin();
+	void setWarpin(const int);
+	int getWarpin() const;
 
-	void setTargetableAsBomb(int);
-	int getTargetableAsBomb();
+	void setTargetableAsBomb(const int);
+	int getTargetableAsBomb() const;
 
-	void setDisableBuiltInMessages(int);
-	int getDisableBuiltInMessages();
+	void setDisableBuiltInMessages(const int);
+	int getDisableBuiltInMessages() const;
 
-	void setNeverScream(int);
-	int getNeverScream();
+	void setNeverScream(const int);
+	int getNeverScream() const;
 
-	void setAlwaysScream(int);
-	int getAlwaysScream();
+	void setAlwaysScream(const int);
+	int getAlwaysScream() const;
 
-	void setVaporize(int);
-	int getVaporize();
+	void setVaporize(const int);
+	int getVaporize() const;
 
-	void setRespawnPriority(int);
-	int getRespawnPriority();
+	void setRespawnPriority(const int);
+	int getRespawnPriority() const;
 
-	void setAutoCarry(int);
-	int getAutoCarry();
+	void setAutoCarry(const int);
+	int getAutoCarry() const;
 
-	void setAutoLink(int);
-	int getAutoLink();
+	void setAutoLink(const int);
+	int getAutoLink() const;
 
-	void setHideShipName(int);
-	int getHideShipName();
+	void setHideShipName(const int);
+	int getHideShipName() const;
 
-	void setClassDynamic(int);
-	int getClassDynamic();
+	void setClassDynamic(const int);
+	int getClassDynamic() const;
 
-	void setDisableETS(int);
-	int getDisableETS();
+	void setDisableETS(const int);
+	int getDisableETS() const;
 
-	void setCloak(int);
-	int getCloak();
+	void setCloak(const int);
+	int getCloak() const;
 
-	void setScrambleMessages(int);
-	int getScrambleMessages();
+	void setScrambleMessages(const int);
+	int getScrambleMessages() const;
 
-	void setNoCollide(int);
-	int getNoCollide();
+	void setNoCollide(const int);
+	int getNoCollide() const;
 
-	void setNoSelfDestruct(int);
-	int getNoSelfDestruct();
+	void setNoSelfDestruct(const int);
+	int getNoSelfDestruct() const;
 
 	bool query_modified();
 };

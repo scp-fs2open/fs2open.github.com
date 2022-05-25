@@ -44,9 +44,9 @@ class ShipGoalsDialogModel : public AbstractDialogModel {
 	bool m_multi_edit;
 
 	ai_goal* goalp;
-	int verify_orders(int ship = -1);
+	int verify_orders(const int ship = -1);
 
-	void update_item(int item);
+	void update_item(const int item);
 
   public:
 	ShipGoalsDialogModel(QObject* parent, EditorViewport* viewport, bool multi, int self_ship, int self_wing);
@@ -55,33 +55,33 @@ class ShipGoalsDialogModel : public AbstractDialogModel {
 	void reject() override;
 	 bool query_modified();
 
-	void setShip(int);
-	int getShip();
+	void setShip(const int);
+	 int getShip() const;
 
-	void setWing(int);
-	int getWing();
+	void setWing(const int);
+	 int getWing() const;
 	
 
-	 ai_goal* getGoal();
+	 ai_goal* getGoal() const;
 
-	 int getValid(int);
+	 int getValid(const int) const;
 	 static const ai_goal_list* getGoalTypes();
-	 int getGoalsSize();
+	 int getGoalsSize() const;
 
-	void setBehavior(int, int);
-	 int getBehavior(int);
+	void setBehavior(const int, const int);
+	 int getBehavior(const int) const;
 
-	void setObject(int, int);
-	int getObject(int);
+	void setObject(const int, const int);
+	 int getObject(const int) const;
 
-	void setSubsys(int, SCP_string&);
-	SCP_string getSubsys(int);
+	void setSubsys(const int, const SCP_string&);
+	 SCP_string getSubsys(const int) const;
 
-	void setDock(int, long long);
-	int getDock(int);
+	void setDock(const int, const long long);
+	 int getDock(const int) const;
 
-	void setPriority(int, int);
-	 int getPriority(int);
+	void setPriority(const int, const int);
+	 int getPriority(const int) const;
 };
 template <typename T>
 inline void ShipGoalsDialogModel::modify(T& a, const T& b)

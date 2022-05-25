@@ -146,7 +146,7 @@ namespace fso {
 				updateDockee();
 				updateSubsystems();
 				ui->colourComboBox->clear();
-				if (_model->m_use_teams) {
+				if (_model->getUseTeamcolours()) {
 					int i = 0;
 					ui->colourComboBox->setEnabled(true);
 					ui->colourComboBox->addItem("none", i);
@@ -180,7 +180,7 @@ namespace fso {
 			{
 				auto index = ui->dockpointList->currentIndex();
 				ui->dockpointList->clear();
-				if (!_model->m_multi_edit) {
+				if (!_model->getIfMultpleShips()) {
 					for (int dockpoint = 0; dockpoint < _model->getnum_dock_points(); dockpoint++) {
 						auto newItem = new QListWidgetItem;
 						newItem->setText(
@@ -332,7 +332,7 @@ namespace fso {
 				ship_subsys* ptr;
 				auto index = ui->subsystemList->currentIndex();
 				ui->subsystemList->clear();
-				if (!_model->m_multi_edit) {
+				if (!_model->getIfMultpleShips()) {
 					ui->subsystemList->setEnabled(true);
 					ui->subIntegritySpinBox->setEnabled(true);
 					if (_model->getShip_has_scannable_subsystems()) {

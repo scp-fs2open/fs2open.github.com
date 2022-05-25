@@ -36,7 +36,7 @@ int ShipFlagsDialogModel::tristate_set(int val, int cur_state)
 		return Qt::Unchecked;
 	}
 }
-void ShipFlagsDialogModel::update_ship(int shipnum)
+void ShipFlagsDialogModel::update_ship(const int shipnum)
 {
 	ship* shipp = &Ships[shipnum];
 	object* objp = &Objects[shipp->objnum];
@@ -667,436 +667,437 @@ void ShipFlagsDialogModel::setDestroyed(int state)
 	modify(m_destroy, state);
 }
 
-int ShipFlagsDialogModel::getDestroyed()
+int ShipFlagsDialogModel::getDestroyed() const
 {
 	return m_destroy;
 }
 
-void ShipFlagsDialogModel::setDestroyedSeconds(int value)
+void ShipFlagsDialogModel::setDestroyedSeconds(const int value)
 {
 	modify(m_destroy_value, value);
 }
 
-int ShipFlagsDialogModel::getDestroyedSeconds()
+int ShipFlagsDialogModel::getDestroyedSeconds() const
 {
 	return m_destroy_value;
 }
 
-void ShipFlagsDialogModel::setScannable(int state)
+void ShipFlagsDialogModel::setScannable(const int state)
 {
 	modify(m_scannable, state);
 }
 
-int ShipFlagsDialogModel::getScannable()
+int ShipFlagsDialogModel::getScannable() const
 {
 	return m_scannable;
 }
 
-void ShipFlagsDialogModel::setCargoKnown(int state)
+void ShipFlagsDialogModel::setCargoKnown(const int state)
 {
 	modify(m_cargo_known, state);
 }
 
-int ShipFlagsDialogModel::getCargoKnown()
+int ShipFlagsDialogModel::getCargoKnown() const
 {
 	return m_cargo_known;
 }
 
-void ShipFlagsDialogModel::setSubsystemScanning(int state)
+void ShipFlagsDialogModel::setSubsystemScanning(const int state)
 {
 	modify(m_toggle_subsystem_scanning, state);
 }
 
-int ShipFlagsDialogModel::getSubsystemScanning()
+int ShipFlagsDialogModel::getSubsystemScanning() const
 {
 	return m_toggle_subsystem_scanning;
 }
 
-void ShipFlagsDialogModel::setReinforcment(int state)
+void ShipFlagsDialogModel::setReinforcment(const int state)
 {
 	modify(m_reinforcement, state);
 }
 
-int ShipFlagsDialogModel::getReinforcment()
+int ShipFlagsDialogModel::getReinforcment() const
 {
 	return m_reinforcement;
 }
 
-void ShipFlagsDialogModel::setProtectShip(int state)
+void ShipFlagsDialogModel::setProtectShip(const int state)
 {
 	modify(m_protect_ship, state);
 }
 
-int ShipFlagsDialogModel::getProtectShip()
+int ShipFlagsDialogModel::getProtectShip() const
 {
 	return m_protect_ship;
 }
 
-void ShipFlagsDialogModel::setBeamProtect(int state)
+void ShipFlagsDialogModel::setBeamProtect(const int state)
 {
 	modify(m_beam_protect_ship, state);
 }
 
-int ShipFlagsDialogModel::getBeamProtect()
+int ShipFlagsDialogModel::getBeamProtect() const
 {
 	return m_beam_protect_ship;
 }
 
-void ShipFlagsDialogModel::setFlakProtect(int state)
+void ShipFlagsDialogModel::setFlakProtect(const int state)
 {
 	modify(m_flak_protect_ship, state);
 }
 
-int ShipFlagsDialogModel::getFlakProtect()
+int ShipFlagsDialogModel::getFlakProtect() const
 {
 	return m_flak_protect_ship;
 }
 
-void ShipFlagsDialogModel::setLaserProtect(int state)
+void ShipFlagsDialogModel::setLaserProtect(const int state)
 {
 	modify(m_laser_protect_ship, state);
 }
 
-int ShipFlagsDialogModel::getLaserProtect()
+int ShipFlagsDialogModel::getLaserProtect() const
 {
 	return m_laser_protect_ship;
 }
 
-void ShipFlagsDialogModel::setMissileProtect(int state)
+void ShipFlagsDialogModel::setMissileProtect(const int state)
 {
 	modify(m_missile_protect_ship, state);
 }
 
-int ShipFlagsDialogModel::getMissileProtect()
+int ShipFlagsDialogModel::getMissileProtect() const
 {
 	return m_missile_protect_ship;
 }
 
-void ShipFlagsDialogModel::setIgnoreForGoals(int state)
+void ShipFlagsDialogModel::setIgnoreForGoals(const int state)
 {
 	modify(m_ignore_count, state);
 }
 
-int ShipFlagsDialogModel::getIgnoreForGoals()
+int ShipFlagsDialogModel::getIgnoreForGoals() const
 {
 	return m_ignore_count;
 }
 
-void ShipFlagsDialogModel::setEscort(int state)
+void ShipFlagsDialogModel::setEscort(const int state)
 {
 	modify(m_escort, state);
 }
 
-int ShipFlagsDialogModel::getEscort()
+int ShipFlagsDialogModel::getEscort() const
 {
 	return m_escort;
 }
 
-void ShipFlagsDialogModel::setEscortValue(int value)
+void ShipFlagsDialogModel::setEscortValue(const int value)
 {
 	modify(m_escort_value, value);
 }
 
-int ShipFlagsDialogModel::getEscortValue()
+int ShipFlagsDialogModel::getEscortValue() const
 {
 	return m_escort_value;
 }
 
-void ShipFlagsDialogModel::setNoArrivalMusic(int state)
+void ShipFlagsDialogModel::setNoArrivalMusic(const int state)
 {
 	modify(m_no_arrival_music, state);
 }
 
-int ShipFlagsDialogModel::getNoArrivalMusic()
+int ShipFlagsDialogModel::getNoArrivalMusic() const
 {
 	return m_no_arrival_music;
 }
 
-void ShipFlagsDialogModel::setInvulnerable(int state)
+void ShipFlagsDialogModel::setInvulnerable(const int state)
 {
 	modify(m_invulnerable, state);
 }
 
-int ShipFlagsDialogModel::getInvulnerable()
+int ShipFlagsDialogModel::getInvulnerable() const
 {
 	return m_invulnerable;
 }
 
-void ShipFlagsDialogModel::setGuardianed(int state)
+void ShipFlagsDialogModel::setGuardianed(const int state)
 {
 	modify(m_guardian, state);
 }
 
-int ShipFlagsDialogModel::getGuardianed()
+int ShipFlagsDialogModel::getGuardianed() const
 {
 	return m_guardian;
 }
 
-void ShipFlagsDialogModel::setPrimitiveSensors(int state)
+void ShipFlagsDialogModel::setPrimitiveSensors(const int state)
 {
 	modify(m_primitive_sensors, state);
 }
 
-int ShipFlagsDialogModel::getPrimitiveSensors()
+int ShipFlagsDialogModel::getPrimitiveSensors() const
 {
 	return m_primitive_sensors;
 }
 
-void ShipFlagsDialogModel::setNoSubspaceDrive(int state)
+void ShipFlagsDialogModel::setNoSubspaceDrive(const int state)
 {
 	modify(m_no_subspace_drive, state);
 }
 
-int ShipFlagsDialogModel::getNoSubspaceDrive()
+int ShipFlagsDialogModel::getNoSubspaceDrive() const
 {
 	return m_no_subspace_drive;
 }
 
-void ShipFlagsDialogModel::setHidden(int state)
+void ShipFlagsDialogModel::setHidden(const int state)
 {
 	modify(m_hidden, state);
 }
 
-int ShipFlagsDialogModel::getHidden()
+int ShipFlagsDialogModel::getHidden() const
 {
 	return m_hidden;
 }
 
-void ShipFlagsDialogModel::setStealth(int state)
+void ShipFlagsDialogModel::setStealth(const int state)
 {
 	modify(m_stealth, state);
 }
 
-int ShipFlagsDialogModel::getStealth()
+int ShipFlagsDialogModel::getStealth() const
 {
 	return m_stealth;
 }
 
-void ShipFlagsDialogModel::setFriendlyStealth(int state)
+void ShipFlagsDialogModel::setFriendlyStealth(const int state)
 {
 	modify(m_friendly_stealth_invisible, state);
 }
 
-int ShipFlagsDialogModel::getFriendlyStealth()
+int ShipFlagsDialogModel::getFriendlyStealth() const
 {
 	return m_friendly_stealth_invisible;
 }
 
-void ShipFlagsDialogModel::setKamikaze(int state)
+void ShipFlagsDialogModel::setKamikaze(const int state)
 {
 	modify(m_kamikaze, state);
 }
 
-int ShipFlagsDialogModel::getKamikaze()
+int ShipFlagsDialogModel::getKamikaze() const
 {
 	return m_kamikaze;
 }
 
-void ShipFlagsDialogModel::setKamikazeDamage(int value)
+void ShipFlagsDialogModel::setKamikazeDamage(const int value)
 {
 	modify(m_kdamage, value);
 }
 
-int ShipFlagsDialogModel::getKamikazeDamage()
+int ShipFlagsDialogModel::getKamikazeDamage() const
 {
 	return m_kdamage;
 }
 
-void ShipFlagsDialogModel::setImmobile(int state)
+void ShipFlagsDialogModel::setImmobile(const int state)
 {
 	modify(m_immobile, state);
 }
 
-int ShipFlagsDialogModel::getImmobile()
+int ShipFlagsDialogModel::getImmobile() const
 {
 	return m_immobile;
 }
 
-void ShipFlagsDialogModel::setNoDynamicGoals(int state)
+void ShipFlagsDialogModel::setNoDynamicGoals(const int state)
 {
 	modify(m_no_dynamic, state);
 }
 
-int ShipFlagsDialogModel::getNoDynamicGoals()
+int ShipFlagsDialogModel::getNoDynamicGoals() const
 {
 	return m_no_dynamic;
 }
 
-void ShipFlagsDialogModel::setRedAlert(int state)
+void ShipFlagsDialogModel::setRedAlert(const int state)
 {
 	modify(m_red_alert_carry, state);
 }
 
-int ShipFlagsDialogModel::getRedAlert()
+int ShipFlagsDialogModel::getRedAlert() const
 {
 	return m_red_alert_carry;
 }
 
-void ShipFlagsDialogModel::setGravity(int state)
+void ShipFlagsDialogModel::setGravity(const int state)
 {
 	modify(m_affected_by_gravity, state);
 }
 
-int ShipFlagsDialogModel::getGravity()
+int ShipFlagsDialogModel::getGravity() const
 {
 	return m_affected_by_gravity;
 }
 
-void ShipFlagsDialogModel::setWarpin(int state)
+void ShipFlagsDialogModel::setWarpin(const int state)
 {
 	modify(m_special_warpin, state);
 }
 
-int ShipFlagsDialogModel::getWarpin()
+int ShipFlagsDialogModel::getWarpin() const
 {
 	return m_special_warpin;
 }
 
-void ShipFlagsDialogModel::setTargetableAsBomb(int state)
+void ShipFlagsDialogModel::setTargetableAsBomb(const int state)
 {
 	modify(m_targetable_as_bomb, state);
 }
 
-int ShipFlagsDialogModel::getTargetableAsBomb()
+int ShipFlagsDialogModel::getTargetableAsBomb() const
 {
 	return m_targetable_as_bomb;
 }
 
-void ShipFlagsDialogModel::setDisableBuiltInMessages(int state)
+void ShipFlagsDialogModel::setDisableBuiltInMessages(const int state)
 {
 	modify(m_disable_messages, state);
 }
 
-int ShipFlagsDialogModel::getDisableBuiltInMessages()
+int ShipFlagsDialogModel::getDisableBuiltInMessages() const
 {
 	return m_disable_messages;
 }
 
-void ShipFlagsDialogModel::setNeverScream(int state)
+void ShipFlagsDialogModel::setNeverScream(const int state)
 {
 	modify(m_no_death_scream, state);
 }
 
-int ShipFlagsDialogModel::getNeverScream()
+int ShipFlagsDialogModel::getNeverScream() const
 {
 	return m_no_death_scream;
 }
 
-void ShipFlagsDialogModel::setAlwaysScream(int state) {
+void ShipFlagsDialogModel::setAlwaysScream(const int state)
+{
 	modify(m_always_death_scream, state);
 }
 
-int ShipFlagsDialogModel::getAlwaysScream()
+int ShipFlagsDialogModel::getAlwaysScream() const
 {
 	return m_always_death_scream;
 }
 
-void ShipFlagsDialogModel::setVaporize(int state)
+void ShipFlagsDialogModel::setVaporize(const int state)
 {
 	modify(m_vaporize, state);
 }
 
-int ShipFlagsDialogModel::getVaporize()
+int ShipFlagsDialogModel::getVaporize() const
 {
 	return m_vaporize;
 }
 
-void ShipFlagsDialogModel::setRespawnPriority(int value)
+void ShipFlagsDialogModel::setRespawnPriority(const int value)
 {
 	modify(m_respawn_priority, value);
 }
 
-int ShipFlagsDialogModel::getRespawnPriority()
+int ShipFlagsDialogModel::getRespawnPriority() const
 {
 	return m_respawn_priority;
 }
 
-void ShipFlagsDialogModel::setAutoCarry(int state)
+void ShipFlagsDialogModel::setAutoCarry(const int state)
 {
 	modify(m_nav_carry, state);
 }
 
-int ShipFlagsDialogModel::getAutoCarry()
+int ShipFlagsDialogModel::getAutoCarry() const
 {
 	return m_nav_carry;
 }
 
-void ShipFlagsDialogModel::setAutoLink(int state)
+void ShipFlagsDialogModel::setAutoLink(const int state)
 {
 	modify(m_nav_needslink, state);
 }
 
-int ShipFlagsDialogModel::getAutoLink()
+int ShipFlagsDialogModel::getAutoLink() const
 {
 	return m_nav_needslink;
 }
 
-void ShipFlagsDialogModel::setHideShipName(int state)
+void ShipFlagsDialogModel::setHideShipName(const int state)
 {
 	modify(m_hide_ship_name, state);
 }
 
-int ShipFlagsDialogModel::getHideShipName()
+int ShipFlagsDialogModel::getHideShipName() const
 {
 	return m_hide_ship_name;
 }
 
-void ShipFlagsDialogModel::setClassDynamic(int state)
+void ShipFlagsDialogModel::setClassDynamic(const int state)
 {
 	modify(m_set_class_dynamically, state);
 }
 
-int ShipFlagsDialogModel::getClassDynamic()
+int ShipFlagsDialogModel::getClassDynamic() const
 {
 	return m_set_class_dynamically;
 }
 
-void ShipFlagsDialogModel::setDisableETS(int state)
+void ShipFlagsDialogModel::setDisableETS(const int state)
 {
 	modify(m_disable_ets, state);
 }
 
-int ShipFlagsDialogModel::getDisableETS()
+int ShipFlagsDialogModel::getDisableETS() const
 {
 	return m_disable_ets;
 }
 
-void ShipFlagsDialogModel::setCloak(int state)
+void ShipFlagsDialogModel::setCloak(const int state)
 {
 	modify(m_cloaked, state);
 }
 
-int ShipFlagsDialogModel::getCloak()
+int ShipFlagsDialogModel::getCloak() const
 {
 	return m_cloaked;
 }
 
-void ShipFlagsDialogModel::setScrambleMessages(int state)
+void ShipFlagsDialogModel::setScrambleMessages(const int state)
 {
 	modify(m_scramble_messages, state);
 }
 
-int ShipFlagsDialogModel::getScrambleMessages()
+int ShipFlagsDialogModel::getScrambleMessages() const
 {
 	return m_scramble_messages;
 }
 
-void ShipFlagsDialogModel::setNoCollide(int state)
+void ShipFlagsDialogModel::setNoCollide(const int state)
 {
 	modify(m_no_collide, state);
 }
 
-int ShipFlagsDialogModel::getNoCollide()
+int ShipFlagsDialogModel::getNoCollide() const
 {
 	return m_no_collide;
 }
 
-void ShipFlagsDialogModel::setNoSelfDestruct(int state)
+void ShipFlagsDialogModel::setNoSelfDestruct(const int state)
 {
 	modify(m_no_disabled_self_destruct, state);
 }
 
-int ShipFlagsDialogModel::getNoSelfDestruct()
+int ShipFlagsDialogModel::getNoSelfDestruct() const
 {
 	return m_no_disabled_self_destruct;
 }
