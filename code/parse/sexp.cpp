@@ -10624,6 +10624,7 @@ int eval_for_container(int arg_handler_node, int condition_node, int op_const, b
 		&num_false,
 		&num_known_true,
 		&num_known_false);
+	SCP_UNUSED(num_valid_arguments);
 
 	// use the sexp_or algorithm
 	if (num_known_true || num_true)
