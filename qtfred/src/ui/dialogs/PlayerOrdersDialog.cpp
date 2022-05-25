@@ -21,6 +21,7 @@ namespace fso {
 				connect(this, &QDialog::accepted, _model.get(), &PlayerOrdersDialogModel::apply);
 				connect(this, &QDialog::rejected, _model.get(), &PlayerOrdersDialogModel::reject);
 				for (int i = 0; i < (int)_model->getAcceptedOrders().size(); i++) {
+					//i == 0 check added to avoid culling first entry where getAcceptedOrders returns 0
 					if (_model->getAcceptedOrders()[i] || i == 0) {
 						check_boxes.push_back(new ShipFlagCheckbox(nullptr));
 						check_boxes.back()->setText(_model->getOrderNames()[i].c_str());

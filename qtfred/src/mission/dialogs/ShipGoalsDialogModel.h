@@ -64,6 +64,8 @@ class ShipGoalsDialogModel : public AbstractDialogModel {
 
 	 ai_goal* getGoal() const;
 
+	 //All getters take the index of the field thay are changeing
+
 	 int getValid(const int) const;
 	 static const ai_goal_list* getGoalTypes();
 	 int getGoalsSize() const;
