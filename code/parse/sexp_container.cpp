@@ -1427,7 +1427,7 @@ int sexp_container_eval_change_sexp(int op_num, int node)
 }
 
 int collect_container_values(int node,
-	SCP_vector<std::pair<char*, int>> &argument_vector,
+	SCP_vector<std::pair<const char*, int>> &argument_vector,
 	bool just_count,
 	const char *sexp_name,
 	bool map_keys_only)
@@ -1499,14 +1499,14 @@ int collect_container_values(int node,
 }
 
 int sexp_container_collect_data_arguments(int node,
-	SCP_vector<std::pair<char*, int>> &argument_vector,
+	SCP_vector<std::pair<const char*, int>> &argument_vector,
 	bool just_count)
 {
 	return collect_container_values(node, argument_vector, just_count, "For-container-data", false);
 }
 
 int sexp_container_collect_map_key_arguments(int node,
-	SCP_vector<std::pair<char*, int>> &argument_vector,
+	SCP_vector<std::pair<const char*, int>> &argument_vector,
 	bool just_count)
 {
 	return collect_container_values(node, argument_vector, just_count, "For-map-container-keys", true);

@@ -194,8 +194,8 @@ int sexp_container_eval_change_sexp(int op_num, int node);
 // if just_count is true, then argument_vector is left unmodified
 // returns the number of arguments
 int sexp_container_collect_data_arguments(int node,
-	SCP_vector<std::pair<char*, int>> &argument_vector,
+	SCP_vector<std::pair<const char*, int>> &argument_vector,
 	bool just_count = false);
 int sexp_container_collect_map_key_arguments(int node,
-	SCP_vector<std::pair<char*, int>> &argument_vector,
+	SCP_vector<std::pair<const char*, int>> &argument_vector,
 	bool just_count = false);

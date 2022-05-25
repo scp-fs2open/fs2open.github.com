@@ -10590,7 +10590,7 @@ int eval_for_container(int arg_handler_node, int condition_node, int op_const, b
 		op_const);
 
 	int num_arguments = 0;
-	SCP_vector<std::pair<char*, int>> argument_vector;
+	SCP_vector<std::pair<const char*, int>> argument_vector;
 
 	const int arg_node = CDR(arg_handler_node);
 
