@@ -864,7 +864,7 @@ namespace fso {
 					"Couldn't add new Callsign. Already using too many!",
 					{ DialogButton::Ok });
 			}
-			void ShipEditorDialogModel::setShipName(const SCP_string m_ship_name)
+			void ShipEditorDialogModel::setShipName(const SCP_string& m_ship_name)
 			{
 				modify(_m_ship_name, m_ship_name);
 			}
@@ -917,7 +917,7 @@ namespace fso {
 				return _m_team;
 			}
 
-			void ShipEditorDialogModel::setCargo(const SCP_string m_cargo)
+			void ShipEditorDialogModel::setCargo(const SCP_string& m_cargo)
 			{
 				modify(_m_cargo1, m_cargo);
 			}
@@ -927,7 +927,7 @@ namespace fso {
 				return _m_cargo1;
 			}
 
-			void ShipEditorDialogModel::setAltName(const SCP_string m_altName)
+			void ShipEditorDialogModel::setAltName(const SCP_string& m_altName)
 			{
 				modify(_m_alt_name, m_altName);
 			}
@@ -937,7 +937,7 @@ namespace fso {
 				return _m_alt_name;
 			}
 
-			void ShipEditorDialogModel::setCallsign(const SCP_string m_callsign)
+			void ShipEditorDialogModel::setCallsign(const SCP_string& m_callsign)
 			{
 				modify(_m_callsign, m_callsign);
 			}
