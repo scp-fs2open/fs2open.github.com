@@ -171,10 +171,11 @@ bool ShipEditorDialog::getIfMultipleShips() const
 	return _model->getIfMultipleShips();
 }
 
-void ShipEditorDialog::closeEvent(QCloseEvent* event)
+void ShipEditorDialog::closeEvent(QCloseEvent* e)
 {
+	util::SignalBlockers blockers(this);
 	_model->apply();
-	QDialog::closeEvent(event);
+	QDialog::closeEvent(e);
 }
 
 void ShipEditorDialog::on_miscButton_clicked()
@@ -648,7 +649,14 @@ void ShipEditorDialog::teamChanged(const int index)
 	auto teamIdx = ui->teamCombo->itemData(index).value<int>();
 	_model->setTeam(teamIdx);
 }
-void ShipEditorDialog::cargoChanged() { _model->setCargo(ui->cargoCombo->currentText().toStdString()); }
+void ShipEditorDialog::cargoChanged()
+{
+	QString test = ui->cargoCombo->lineEdit()->text();
+	if (test != "") {
+		const SCP_string text = test.toUtf8().toStdString();
+		_model->setCargo(text);
+	}
+}
 void ShipEditorDialog::altNameChanged()
 {
 	_model->setAltName(ui->altNameCombo->lineEdit()->text().toStdString());
