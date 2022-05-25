@@ -59,7 +59,7 @@ namespace fso {
 			{
 				return player_count;
 			}
-			int ShipEditorDialogModel::getNumPlayers() const
+			int ShipEditorDialogModel::getNumUnmarkedPlayers() const
 			{
 				return pship_count;
 			}

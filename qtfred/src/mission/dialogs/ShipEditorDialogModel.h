@@ -9,7 +9,9 @@
 namespace fso {
 namespace fred {
 namespace dialogs {
-
+/**
+ * @brief QTFred's Ship Editor's Model
+ */
 class ShipEditorDialogModel : public AbstractDialogModel {
   private:
 	void initializeData();
@@ -100,6 +102,10 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	void setCallsign(const SCP_string&);
 	SCP_string getCallsign() const;
 
+	/**
+	 * @brief Gets the ships wing
+	 * @return Name of the ships wing
+	 */
 	SCP_string getWing() const;
 
 	void setHotkey(const int);
@@ -154,29 +160,73 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	int getDepartureFormula() const;
 	void setNoDepartureWarp(const int);
 	int getNoDepartureWarp() const;
-
+	/**
+	 * @brief Selects previous ship on the list
+	 */
 	void OnPrevious();
 	void OnNext();
+	/**
+	 * @brief Selects next ship on the list
+	 */
 	void OnDeleteShip();
+	/**
+	 * @brief Resets Ship/s to class default
+	 * @note Does not cover data from all subdialogs could use expanding
+	 */
 	void OnShipReset();
-
+	/**
+	 * @brief Returns ture if the wing is a player wing
+	 * @param wing Takes an integer id of the wing
+	 */
 	static bool wing_is_player_wing(const int);
 	std::set<size_t> getShipOrders() const;
 
 	bool getTexEditEnable() const;
+	/**
+	 * @brief Used for handling conflicts betwwen ships having differing states of the same flag
+	 * @param val Takes the new value
+	 * @param cur_state Takes the current sate of the flag
+	 * @return integer state the flag shoul be set to
+	 * @warning Contains QT code will need change if moved to non QT enviroment.
+	 */
 	static int tristate_set(const int val, const int cur_state);
 
 	/**
-
+	 * @brief Returns the ID of the primary marked ship
+	 */
 	int getSingleShip() const;
+	/**
+	 * @brief Returns true if multiple ships/players selected
+	 */
 	bool getIfMultipleShips() const;
+	/**
+	 * @brief Returns number of selected players
+	 */
 	int getNumSelectedPlayers() const;
-	int getNumPlayers() const;
+	/**
+	 * @brief Get number of player ships not selected
+	 */
+	int getNumUnmarkedPlayers() const;
+	/**
+	 * @brief Wether or not to eanble the UI
+	 */
 	bool getUIEnable() const;
+	/**
+	 * @brief Get number of non player ships
+	 */
 	int getNumSelectedShips() const;
 	int getUseCue() const;
+	/**
+	 * @brief Get number of Ships selected
+	 */
 	int getNumSelectedObjects() const;
+	/**
+	 * @brief Get number of player ships in mission
+	 */
 	int getNumValidPlayers() const;
+	/**
+	 * @brief Returns true if only a single ship is selected and it is a player ship
+	 */
 	int getIfPlayerShip() const;
 };
 
