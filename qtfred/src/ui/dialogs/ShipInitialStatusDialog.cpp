@@ -16,7 +16,7 @@ namespace fso {
 	namespace fred {
 		namespace dialogs {
 
-			ShipInitialStatusDialog::ShipInitialStatusDialog(QWidget* parent, EditorViewport* viewport)
+			ShipInitialStatusDialog::ShipInitialStatusDialog(QDialog* parent, EditorViewport* viewport)
 				: QDialog(parent), ui(new Ui::ShipInitialStatusDialog()), _viewport(viewport)
 			{
 				ui->setupUi(this);

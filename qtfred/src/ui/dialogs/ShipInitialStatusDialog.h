@@ -18,7 +18,7 @@ class ShipInitialStatusDialog : public QDialog {
 	Q_OBJECT
 
   public:
-	explicit ShipInitialStatusDialog(QWidget* parent, EditorViewport* viewport);
+	explicit ShipInitialStatusDialog(QDialog* parent, EditorViewport* viewport);
 	~ShipInitialStatusDialog() override;
 
   protected:
