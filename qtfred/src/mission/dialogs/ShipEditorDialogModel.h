@@ -69,6 +69,10 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	int single_ship;
 	int player_ship;
 
+	std::set<size_t> ship_orders;
+
+		bool texenable = true;
+
   public:
 	ShipEditorDialogModel(QObject* parent, EditorViewport* viewport);
 
@@ -157,11 +161,12 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	void OnShipReset();
 
 	static bool wing_is_player_wing(const int);
+	std::set<size_t> getShipOrders() const;
 
-	std::set<size_t> ship_orders;
+	bool getTexEditEnable() const;
 	static int tristate_set(const int val, const int cur_state);
 
-	bool texenable = true;
+	/**
 
 	int getSingleShip() const;
 	bool getIfMultipleShips() const;

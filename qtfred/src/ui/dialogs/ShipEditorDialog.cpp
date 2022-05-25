@@ -549,7 +549,7 @@ void ShipEditorDialog::enableDisable()
 	}
 
 	// disable textures for multiple ships
-		ui->textureReplacementButton->setEnabled(_model->texenable);
+		ui->textureReplacementButton->setEnabled(_model->getTexEditEnable());
 
 	ui->AIClassCombo->setEnabled(_model->getUIEnable());
 	ui->cargoCombo->setEnabled(_model->getUIEnable());
@@ -564,8 +564,8 @@ void ShipEditorDialog::enableDisable()
 
 	// !pship_count used because if allowed to clear, we would have no player starts
 	// mission_type 0 = multi, 1 = single
-	if (!(The_mission.game_type & MISSION_TYPE_MULTI) || !_model->getNumPlayers() ||
-		(_model->getNumPlayers() + _model->getNumSelectedObjects() > MAX_PLAYERS) || (_model->getNumValidPlayers() < _model->getNumSelectedObjects()))
+	if (!(The_mission.game_type & MISSION_TYPE_MULTI) || !_model->getNumUnmarkedPlayers() ||
+		(_model->getNumUnmarkedPlayers() + _model->getNumSelectedObjects() > MAX_PLAYERS) || (_model->getNumValidPlayers() < _model->getNumSelectedObjects()))
 		ui->playerShipCheckBox->setEnabled(false);
 	else
 		ui->playerShipCheckBox->setEnabled(true);
@@ -606,7 +606,7 @@ void ShipEditorDialog::enableDisable()
 		// ships are the same type.  the ship_type variable holds the ship types
 		// for all ships.  Determine how may bits set and enable/diable window
 		// as appropriate
-		if (_model->ship_orders.find(std::numeric_limits<size_t>::max()) != _model->ship_orders.end()) {
+		if (_model->getShipOrders().find(std::numeric_limits<size_t>::max()) != _model->getShipOrders().end()) {
 			ui->playerOrdersButton->setEnabled(false);
 		} else {
 			ui->playerOrdersButton->setEnabled(true);

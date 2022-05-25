@@ -1300,6 +1300,16 @@ namespace fso {
 				return Editor::wing_is_player_wing(wing);
 			}
 
+			std::set<size_t> ShipEditorDialogModel::getShipOrders() const
+			{
+				return ship_orders;
+			}
+
+			bool ShipEditorDialogModel::getTexEditEnable() const
+			{
+				return texenable;
+			}
+
 			int ShipEditorDialogModel::make_ship_list(int* arr)
 			{
 				int n = 0;
