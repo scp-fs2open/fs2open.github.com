@@ -1353,6 +1353,7 @@ int collect_container_values(int node,
 	Assertion(node != -1, "%s wasn't given any ontainers. Please report!", sexp_name);
 
 	// filter out duplicates, but keys/data are case-sensitive
+	// unordered is also ok, because the for-* SEXPs are "any-of"
 	SCP_unordered_set<SCP_string> arguments;
 
 	for (; node != -1; node = CDR(node)) {
