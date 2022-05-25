@@ -751,6 +751,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "remove-from-map",				OP_CONTAINER_REMOVE_FROM_MAP,			2,	INT_MAX,	SEXP_ACTION_OPERATOR, },	// Karajorma
 	{ "get-map-keys",					OP_CONTAINER_GET_MAP_KEYS,				2,	3,			SEXP_ACTION_OPERATOR, },	// Karajorma
 	{ "clear-container",				OP_CLEAR_CONTAINER,						1,	INT_MAX,	SEXP_ACTION_OPERATOR, },	// Karajorma
+	{ "copy-container",					OP_COPY_CONTAINER,						2,	3,			SEXP_ACTION_OPERATOR, },	// jg18
 
 	//Other Sub-Category
 	{ "damaged-escort-priority",		OP_DAMAGED_ESCORT_LIST,					3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	//phreak
@@ -948,7 +949,7 @@ int verify_vector(const char *text);
 // Goober5000 - adapted from sexp_list_item in Sexp_tree.h
 struct arg_item
 {
-	char *text = nullptr;
+	const char *text = nullptr;
 	int node = -1;
 
 	arg_item *next = nullptr;
@@ -957,12 +958,12 @@ struct arg_item
 
 	arg_item() = default;
 
-	void add_data(char *str, int n);
-	void add_data(const std::pair<char*, int> &data);
-	void add_data_dup(char *str, int n);
-	void add_data_dup(const std::pair<char*, int> &data);
-	void add_data_set_dup(char *str, int n);
-	void add_data_set_dup(const std::pair<char*, int> &data);
+	void add_data(const char *str, int n);
+	void add_data(const std::pair<const char*, int> &data);
+	void add_data_dup(const char *str, int n);
+	void add_data_dup(const std::pair<const char*, int> &data);
+	void add_data_set_dup(const char *str, int n);
+	void add_data_set_dup(const std::pair<const char*, int> &data);
 	void expunge();
 	int is_empty();
 	arg_item *get_next();
@@ -970,7 +971,7 @@ struct arg_item
 };
 
 arg_item Sexp_applicable_argument_list;
-SCP_vector<std::pair<char*, int>> Sexp_replacement_arguments;
+SCP_vector<std::pair<const char*, int>> Sexp_replacement_arguments;
 int Sexp_current_argument_nesting_level;
 
 
@@ -1000,7 +1001,7 @@ SCP_vector<SCP_string> *Current_event_log_container_buffer;
 SCP_vector<SCP_string> *Current_event_log_argument_buffer;
 
 // Goober5000 - arg_item class stuff, borrowed from sexp_list_item class stuff -------------
-void arg_item::add_data(char *str, int n)
+void arg_item::add_data(const char *str, int n)
 {
 	arg_item *item, *ptr;
 
@@ -1016,12 +1017,12 @@ void arg_item::add_data(char *str, int n)
 	item->next = ptr;
 }
 
-void arg_item::add_data(const std::pair<char*, int> &data)
+void arg_item::add_data(const std::pair<const char*, int> &data)
 {
 	add_data(data.first, data.second);
 }
 
-void arg_item::add_data_dup(char *str, int n)
+void arg_item::add_data_dup(const char *str, int n)
 {
 	arg_item *item, *ptr;
 
@@ -1038,12 +1039,12 @@ void arg_item::add_data_dup(char *str, int n)
 	item->next = ptr;
 }
 
-void arg_item::add_data_dup(const std::pair<char*, int> &data)
+void arg_item::add_data_dup(const std::pair<const char*, int> &data)
 {
 	add_data_dup(data.first, data.second);
 }
 
-void arg_item::add_data_set_dup(char *str, int n)
+void arg_item::add_data_set_dup(const char *str, int n)
 {
 	arg_item *item, *ptr;
 
@@ -1060,7 +1061,7 @@ void arg_item::add_data_set_dup(char *str, int n)
 	item->next = ptr;
 }
 
-void arg_item::add_data_set_dup(const std::pair<char*, int> &data)
+void arg_item::add_data_set_dup(const std::pair<const char*, int> &data)
 {
 	add_data_set_dup(data.first, data.second);
 }
@@ -1086,7 +1087,7 @@ void arg_item::expunge()
 		ptr = this->next->next;
 
 		if (this->next->flags & ARG_ITEM_F_DUP)
-			vm_free(this->next->text);
+			vm_free(const_cast<char*>(this->next->text));
 		delete this->next;
 
 		this->next = ptr;
@@ -1103,7 +1104,7 @@ void arg_item::clear_nesting_level()
 		ptr = this->next->next;
 
 		if (this->next->flags & ARG_ITEM_F_DUP)
-			vm_free(this->next->text);
+			vm_free(const_cast<char*>(this->next->text));
 		delete this->next;
 
 		this->next = ptr;
@@ -10028,7 +10029,7 @@ int eval_cond(int n)
 int test_argument_nodes_for_condition(int n, int condition_node, int *num_true, int *num_false, int *num_known_true, int *num_known_false, int threshold = -1)
 {
 	int val, num_valid_arguments;
-	SCP_vector<std::pair<char*, int>> Applicable_arguments_temp;
+	SCP_vector<std::pair<const char*, int>> Applicable_arguments_temp;
 	Assert(n != -1 && condition_node != -1);
 	Assert((num_true != nullptr) && (num_false != nullptr) && (num_known_true != nullptr) && (num_known_false != nullptr));
 
@@ -10109,10 +10110,10 @@ int test_argument_nodes_for_condition(int n, int condition_node, int *num_true, 
 
 // Goober5000
 // NOTE: if you change this function, check to see if the previous function should also be changed!
-int test_argument_vector_for_condition(const SCP_vector<std::pair<char*, int>> &argument_vector, bool already_dupped, int condition_node, int *num_true, int *num_false, int *num_known_true, int *num_known_false)
+int test_argument_vector_for_condition(const SCP_vector<std::pair<const char*, int>> &argument_vector, bool already_dupped, int condition_node, int *num_true, int *num_false, int *num_known_true, int *num_known_false)
 {
 	int val, num_valid_arguments;
-	SCP_vector<std::pair<char*, int>> Applicable_arguments_temp;
+	SCP_vector<std::pair<const char*, int>> Applicable_arguments_temp;
 	Assert(condition_node != -1);
 	Assert((num_true != nullptr) && (num_false != nullptr) && (num_known_true != nullptr) && (num_known_false != nullptr));
 
@@ -10167,7 +10168,7 @@ int test_argument_vector_for_condition(const SCP_vector<std::pair<char*, int>> &
 			// if the argument was already dup'd, but not added as an applicable argument,
 			// we need to free it here before we cause a memory leak
 			if ((val == SEXP_FALSE || val == SEXP_KNOWN_FALSE) && already_dupped)
-				vm_free(argument.first);
+				vm_free(const_cast<char*>(argument.first));
 
 			// clear argument, but not list, as we'll need it later
 			Sexp_replacement_arguments.pop_back();
@@ -10423,9 +10424,9 @@ int eval_in_sequence(int arg_handler_node, int condition_node)
 int eval_for_counter(int arg_handler_node, int condition_node, bool just_count = false)
 {
 	bool is_nan, is_nan_forever;
-	int n, num_valid_arguments, num_true, num_false, num_known_true, num_known_false;
+	int n, num_valid_arguments = 0, num_true, num_false, num_known_true, num_known_false;
 	int i, count, counter_start, counter_stop, counter_step;
-	SCP_vector<std::pair<char*, int>> argument_vector;
+	SCP_vector<std::pair<const char*, int>> argument_vector;
 	char buf[NAME_LENGTH];
 	Assert(arg_handler_node != -1 && condition_node != -1);
 
@@ -10460,18 +10461,25 @@ int eval_for_counter(int arg_handler_node, int condition_node, bool just_count =
 	// build a vector of counter values
 	for (i = counter_start; ((counter_step > 0) ? i <= counter_stop : i >= counter_stop); i += counter_step)
 	{
-		sprintf(buf, "%d", i);
-		argument_vector.emplace_back(vm_strdup(buf), -1);
-		// Note: we do not call vm_free() on the contents of argument_vector, and we don't for the very good
-		// reason that those pointers are then passed along by test_argument_vector_for_condition(), below.
-		// The strings will then be freed by arg_item::expunge() or arg_item::clear_nesting_level(), or even
-		// inside test_argument_vector_for_condition() (if the argument doesn't satisfy the condition). So
-		// under no circumstances try to free these strings inside this function! It will cause a double-free
-		// situation, resulting in a crash at best. -MageKing17
+		// if we're just counting we should just avoid the memory management problem mentioned below,
+		// since we return before calling test_argument_vector_for_condition
+		if (just_count)
+			num_valid_arguments++;
+		else
+		{
+			sprintf(buf, "%d", i);
+			argument_vector.emplace_back(vm_strdup(buf), -1);
+			// Note: we do not call vm_free() on the contents of argument_vector, and we don't for the very good
+			// reason that those pointers are then passed along by test_argument_vector_for_condition(), below.
+			// The strings will then be freed by arg_item::expunge() or arg_item::clear_nesting_level(), or even
+			// inside test_argument_vector_for_condition() (if the argument doesn't satisfy the condition). So
+			// under no circumstances try to free these strings inside this function! It will cause a double-free
+			// situation, resulting in a crash at best. -MageKing17
+		}
 	}
 
 	if (just_count)
-		return static_cast<int>(argument_vector.size());
+		return num_valid_arguments;
 
 	// test the whole argument vector
 	num_valid_arguments = test_argument_vector_for_condition(argument_vector, true, condition_node, &num_true, &num_false, &num_known_true, &num_known_false);
@@ -10488,8 +10496,8 @@ int eval_for_counter(int arg_handler_node, int condition_node, bool just_count =
 // Goober5000
 int eval_for_ship_collection(int arg_handler_node, int condition_node, int op_const, bool just_count = false)
 {
-	int n, num_valid_arguments, num_true, num_false, num_known_true, num_known_false;
-	SCP_vector<std::pair<char*, int>> argument_vector;
+	int n, num_valid_arguments = 0, num_true, num_false, num_known_true, num_known_false;
+	SCP_vector<std::pair<const char*, int>> argument_vector;
 	Assert(arg_handler_node != -1 && condition_node != -1);
 
 	n = CDR(arg_handler_node);
@@ -10544,13 +10552,18 @@ int eval_for_ship_collection(int arg_handler_node, int condition_node, int op_co
 				}
 
 				if (constraint_index == ship_index)
-					argument_vector.emplace_back(vm_strdup(shipp->ship_name), -1);
+				{
+					if (just_count)
+						num_valid_arguments++;
+					else
+						argument_vector.emplace_back(vm_strdup(shipp->ship_name), -1);
+				}
 			}
 		}
 	}
 
 	if (just_count)
-		return static_cast<int>(argument_vector.size());
+		return num_valid_arguments;
 
 	// test the whole argument vector
 	num_valid_arguments = test_argument_vector_for_condition(argument_vector, true, condition_node, &num_true, &num_false, &num_known_true, &num_known_false);
@@ -10626,8 +10639,8 @@ int eval_for_container(int arg_handler_node, int condition_node, int op_const, b
 // Goober5000
 int eval_for_players(int arg_handler_node, int condition_node, bool just_count = false)
 {
-	int num_valid_arguments, num_true, num_false, num_known_true, num_known_false;
-	SCP_vector<std::pair<char*, int>> argument_vector;
+	int num_valid_arguments = 0, num_true, num_false, num_known_true, num_known_false;
+	SCP_vector<std::pair<const char*, int>> argument_vector;
 	Assert(arg_handler_node != -1 && condition_node != -1);
 
 	if (Game_mode & GM_MULTIPLAYER)
@@ -10637,18 +10650,28 @@ int eval_for_players(int arg_handler_node, int condition_node, bool just_count =
 		{
 			int shipnum = multi_get_player_ship(i);
 			if (shipnum >= 0)
-				argument_vector.emplace_back(vm_strdup(Ships[shipnum].ship_name), -1);
+			{
+				if (just_count)
+					num_valid_arguments++;
+				else
+					argument_vector.emplace_back(vm_strdup(Ships[shipnum].ship_name), -1);
+			}
 		}
 	}
 	else
 	{
 		// in single-player it's just one ship
 		if (Player_ship)
-			argument_vector.emplace_back(vm_strdup(Player_ship->ship_name), -1);
+		{
+			if (just_count)
+				num_valid_arguments++;
+			else
+				argument_vector.emplace_back(vm_strdup(Player_ship->ship_name), -1);
+		}
 	}
 
 	if (just_count)
-		return static_cast<int>(argument_vector.size());
+		return num_valid_arguments;
 
 	// test the whole argument vector
 	num_valid_arguments = test_argument_vector_for_condition(argument_vector, true, condition_node, &num_true, &num_false, &num_known_true, &num_known_false);
@@ -24926,6 +24949,7 @@ int eval_sexp(int cur_node, int referenced_node)
 			case OP_CONTAINER_REMOVE_FROM_MAP:
 			case OP_CONTAINER_GET_MAP_KEYS:
 			case OP_CLEAR_CONTAINER:
+			case OP_COPY_CONTAINER:
 				sexp_val = sexp_container_eval_change_sexp(op_num, node);
 				break;
 
@@ -27985,6 +28009,7 @@ int query_operator_return_type(int op)
 		case OP_CONTAINER_REMOVE_FROM_MAP:
 		case OP_CONTAINER_GET_MAP_KEYS:
 		case OP_CLEAR_CONTAINER:
+		case OP_COPY_CONTAINER:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -28620,6 +28645,16 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_CLEAR_CONTAINER:
 			return OPF_CONTAINER_NAME;
+
+		case OP_COPY_CONTAINER:
+			if (argnum == 0 || argnum == 1) {
+				return OPF_CONTAINER_NAME;
+			} else if (argnum == 2) {
+				return OPF_BOOL;
+			} else {
+				// This shouldn't happen
+				return OPF_NONE;
+			}
 
 		case OP_HAS_DOCKED:
 		case OP_HAS_UNDOCKED:
@@ -32322,6 +32357,7 @@ int get_subcategory(int sexp_id)
 		case OP_CONTAINER_REMOVE_FROM_MAP:
 		case OP_CONTAINER_GET_MAP_KEYS:
 		case OP_CLEAR_CONTAINER:
+		case OP_COPY_CONTAINER:
 			return CHANGE_SUBCATEGORY_CONTAINERS;
 
 		case OP_DAMAGED_ESCORT_LIST:
@@ -33657,6 +33693,16 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tDeletes the current contents of one or more containers.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tName of the container(s) to clear.\r\n" },
+
+	// jg18
+	{ OP_COPY_CONTAINER, "copy-container\r\n"
+		"\tCopies a container's contents to another container.\r\n"
+		"\tThe two containers' types must match, except their persistence rules can be different.\r\n"
+		"\tBy default, the second container is cleared before copying takes place.\r\n\r\n"
+		"Takes 2 or 3 arguments...\r\n"
+		"\t1:\tName of the container to copy from.\r\n"
+		"\t2:\tName of the container to copy to.\r\n"
+		"\t3:\t(Optional) When true, the second container's contents are deleted before copying." },
 
 	{ OP_PROTECT_SHIP, "Protect ship (Action operator)\r\n"
 		"\tProtects a ship from being attacked by any enemy ship.  Any ship "

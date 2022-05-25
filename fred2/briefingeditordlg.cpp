@@ -329,27 +329,6 @@ void briefing_editor_dlg::restore_editor_state()
 	m_cur_icon = icon_saved;
 }
 
-int briefing_editor_dlg::get_first_ship_with_no_custom_icon()
-{
-	if (first_ship_with_no_custom_icon < 0)
-	{
-		for (int i = 0; i < ship_info_size(); ++i)
-		{
-			if (Ship_info[i].bii_index_ship < 0)
-			{
-				first_ship_with_no_custom_icon = i;
-				break;
-			}
-		}
-
-		// sanity check
-		if (first_ship_with_no_custom_icon < 0)
-			first_ship_with_no_custom_icon = 0;
-	}
-
-	return first_ship_with_no_custom_icon;
-}
-
 void briefing_editor_dlg::update_data(int update)
 {
 	char buf[MAX_LABEL_LEN];
@@ -521,11 +500,6 @@ void briefing_editor_dlg::update_data(int update)
 			}
 			ptr->icons[m_last_icon].type = m_icon_image;
 
-			// if this icon has a special closeup image (like a jump node)
-			// then make sure the ship class doesn't have a special icon
-			if (brief_special_closeup(m_icon_image))
-				m_ship_type = get_first_ship_with_no_custom_icon();
-
 			if ((ptr->icons[m_last_icon].team != m_icon_team) && !m_change_local) {
 				set_modified();
 				reset_icon_loop(m_last_stage);
@@ -634,7 +608,6 @@ void briefing_editor_dlg::update_data(int update)
 	}
 
 	// see if icon is overridden by ships.tbl
-	// if so, disable the icon type box
 	int sip_bii_ship = (m_ship_type >= 0) ? Ship_info[m_ship_type].bii_index_ship : -1;
 	int sip_bii_wing = (sip_bii_ship >= 0) ? Ship_info[m_ship_type].bii_index_wing : -1;
 	int sip_bii_cargo = (sip_bii_ship >= 0) ? Ship_info[m_ship_type].bii_index_ship_with_cargo : -1;
@@ -644,8 +617,8 @@ void briefing_editor_dlg::update_data(int update)
 
 	GetDlgItem(IDC_ICON_CLOSEUP_LABEL) -> EnableWindow(enable);
 	GetDlgItem(IDC_ICON_LABEL) -> EnableWindow(enable);
-	GetDlgItem(IDC_ICON_IMAGE) -> EnableWindow(enable && (sip_bii_ship < 0));
-	GetDlgItem(IDC_SHIP_TYPE) -> EnableWindow(enable && !brief_special_closeup(m_icon_image));
+	GetDlgItem(IDC_ICON_IMAGE) -> EnableWindow(enable);
+	GetDlgItem(IDC_SHIP_TYPE) -> EnableWindow(enable);
 	GetDlgItem(IDC_HILIGHT) -> EnableWindow(enable);
 	GetDlgItem(IDC_FLIP_ICON) -> EnableWindow(enable);
 	GetDlgItem(IDC_USE_WING_ICON) -> EnableWindow(enable);
