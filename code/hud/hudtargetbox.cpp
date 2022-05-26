@@ -1566,16 +1566,30 @@ void get_turret_subsys_name(ship_weapon *swp, char *outstr)
 
 	//WMC - find the first weapon, if there is one
 	if (swp->num_primary_banks || swp->num_secondary_banks) {
-		int weaponid;
+		bool done = false;
 		if (swp->num_primary_banks) {
-			weaponid = swp->primary_bank_weapons[0];
+			for (auto weapon : swp->primary_bank_weapons) {
+				if (weapon >= 0) {
+					if (strlen(Weapon_info[weapon].altSubsysName) != 0) {
+						sprintf(outstr, "%s", Weapon_info[weapon].altSubsysName);
+						done = true;
+						break;
+					}
+				}
+			}
+		} 
+		if ((swp->num_secondary_banks) && !done) {
+			for (auto weapon : swp->secondary_bank_weapons) {
+				if (weapon >= 0) {
+					if (strlen(Weapon_info[weapon].altSubsysName) != 0) {
+						sprintf(outstr, "%s", Weapon_info[weapon].altSubsysName);
+						done = true;
+						break;
+					}
+				}
+			}
 		}
-		else {
-			weaponid = swp->secondary_bank_weapons[0];
-		}
-		if (strlen(Weapon_info[weaponid].altSubsysName) != 0) {
-			sprintf(outstr, "%s", Weapon_info[weaponid].altSubsysName);
-		} else {
+		if (!done) {
 
 			auto flags = turret_weapon_aggregate_flags(swp);
 
