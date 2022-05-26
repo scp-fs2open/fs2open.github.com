@@ -103,7 +103,7 @@ uint32_t map_container_hash::operator()(const SCP_string &str) const
 
 // sexp_container data and functions
 const SCP_string sexp_container::DELIM_STR(1, sexp_container::DELIM);
-
+const SCP_string sexp_container::NAME_NODE_PREFIX(2, sexp_container::DELIM);
 
 bool sexp_container::operator==(const sexp_container &sc) const
 {
@@ -198,7 +198,8 @@ void update_sexp_containers(SCP_vector<sexp_container> &containers,
 	if (!renamed_containers.empty()) {
 		for (int i = 0; i < Num_sexp_nodes; i++) {
 			auto &node = Sexp_nodes[i];
-			if (node.type == SEXP_ATOM && node.subtype == SEXP_ATOM_CONTAINER) {
+			if (node.type == SEXP_ATOM &&
+				(node.subtype == SEXP_ATOM_CONTAINER_NAME || node.subtype == SEXP_ATOM_CONTAINER_DATA)) {
 				const auto new_name_it = renamed_containers.find(node.text);
 				if (new_name_it != renamed_containers.cend()) {
 					strcpy_s(node.text, new_name_it->second.c_str());
@@ -221,6 +222,16 @@ bool stuff_one_generic_sexp_container(SCP_string &name, ContainerType &type, int
 	if (name.empty()) {
 		Warning(LOCATION, "SEXP Container with empty name found");
 		log_printf(LOGFILE_EVENT_LOG, "SEXP Container with empty name found");
+		valid = false;
+	} else if (name.find(' ') != SCP_string::npos || name.find(sexp_container::DELIM) != SCP_string::npos) {
+		Warning(LOCATION,
+			"SEXP Container name %s contains spaces and/or %c characters",
+			name.c_str(),
+			sexp_container::DELIM);
+		log_printf(LOGFILE_EVENT_LOG,
+			"SEXP Container name %s contains spaces and/or %c characters",
+			name.c_str(),
+			sexp_container::DELIM);
 		valid = false;
 	} else if (name.length() > sexp_container::NAME_MAX_LENGTH) {
 		Warning(LOCATION,
