@@ -2894,17 +2894,17 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 						return SEXP_CHECK_TYPE_MISMATCH;
 					}
 
-					// only list containers are allowed
+					// only list containers of strings or map containers with string keys are allowed
 					const auto *p_any_container = get_sexp_container(Sexp_nodes[node].text);
 					Assertion(p_any_container,
 						"Attempt to use unknown container %s. Please report!",
 						Sexp_nodes[node].text);
 
 					const auto &any_container = *p_any_container;
-					if (!any_container.is_list()) {
-						return SEXP_CHECK_TYPE_MISMATCH;
-					} else if (none(any_container.type & ContainerType::STRING_DATA)) {
+					if (any_container.is_list() && none(any_container.type & ContainerType::STRING_DATA)) {
 						return SEXP_CHECK_WRONG_CONTAINER_DATA_TYPE;
+					} else if (any_container.is_map() && none(any_container.type & ContainerType::STRING_KEYS)) {
+						return SEXP_CHECK_WRONG_MAP_KEY_TYPE;
 					}
 				}
 				break;
@@ -31411,33 +31411,39 @@ void multi_sexp_modify_variable()
 int populate_sexp_applicable_arguments(int node)
 {
 	if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER_NAME) {
-		const auto *p_container = get_sexp_container(Sexp_nodes[node].text);
+		const char *container_name = Sexp_nodes[node].text;
+		const auto *p_container = get_sexp_container(container_name);
 
 		// should have been checked in get_sexp()
-		Assertion(p_container,
-			"Special argument SEXP given nonexistent container %s. Please report!",
-			Sexp_nodes[node].text);
+		Assertion(p_container, "Special argument SEXP given nonexistent container %s. Please report!", container_name);
 		const auto &container = *p_container;
+		int num_args = 0;
 
 		// should have been checked in check_sexp_syntax()
-		Assertion(container.is_list() && any(container.type & ContainerType::STRING_DATA),
-			"Special argument SEXP given container %s that is not a list container of strings. Please report!",
-			Sexp_nodes[node].text);
-
-		if (container.list_data.empty()) {
-			Warning(LOCATION, "Special argument SEXP given empty list container %s.", Sexp_nodes[node].text);
-			return 0;
+		if (container.is_list()) {
+			Assertion(any(container.type & ContainerType::STRING_DATA),
+				"Special argument SEXP given list container %s whose data aren't strings. Please report!",
+				container_name);
+			num_args = (int)container.list_data.size();
+			// populate in reverse order, so that the LIFO processing that callers use will process them in the correct order
+			for (auto it = container.list_data.crbegin(), end = container.list_data.crend(); it != end; ++it) {
+				// use -1 because these strings are not associated with an individual node
+				Sexp_replacement_arguments.emplace_back(it->c_str(), -1);
+			}
+		} else if (container.is_map()) {
+			Assertion(any(container.type & ContainerType::STRING_KEYS),
+				"Special argument SEXP given map container %s whose keys aren't strings. Please report!",
+				container_name);
+			num_args = (int)container.map_data.size();
+			for (const auto &kv_pair : container.map_data) {
+				// use -1 because these strings are not associated with an individual node
+				Sexp_replacement_arguments.emplace_back(kv_pair.first.c_str(), -1);
+			}
+		} else {
+			UNREACHABLE("Container %s has invalid type (%d). Please report!", container_name, (int)container.type);
 		}
 
-		// populate in reverse order, so that the LFIO processing that callers use will process them in the correct order
-		// which is important for in-sequence SEXP
-		for (auto it = container.list_data.crbegin(), end = container.list_data.crend(); it != end; ++it) {
-			// use -1 because these strings are not associated with an individual node
-			// FIXME TODO: remove the cast after PR 4293 is merged
-			Sexp_replacement_arguments.emplace_back((char*)it->c_str(), -1);
-		}
-
-		return (int)container.size();
+		return num_args;
 	} else {
 		Sexp_replacement_arguments.emplace_back(Sexp_nodes[node].text, node);
 		return 1;
