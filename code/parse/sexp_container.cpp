@@ -1434,9 +1434,7 @@ int collect_container_values(int node,
 {
 	Assertion(node != -1, "%s wasn't given any ontainers. Please report!", sexp_name);
 
-	// filter out duplicates, but keys/data are case-sensitive
-	// unordered is also ok, because the for-* SEXPs are "any-of"
-	SCP_unordered_set<SCP_string> arguments;
+	int num_args = 0;
 
 	for (; node != -1; node = CDR(node)) {
 		const char *container_name = CTEXT(node);
@@ -1463,8 +1461,12 @@ int collect_container_values(int node,
 				continue;
 			}
 
-			for (const auto &kv_pair : container.map_data) {
-				arguments.emplace(kv_pair.first);
+			num_args += (int)container.map_data.size();
+
+			if (!just_count) {
+				for (const auto &kv_pair : container.map_data) {
+					argument_vector.emplace_back(vm_strdup(kv_pair.first.c_str()), -1);
+				}
 			}
 		} else {
 			if (none(container.type & ContainerType::STRING_DATA)) {
@@ -1476,12 +1478,20 @@ int collect_container_values(int node,
 			}
 
 			if (container.is_map()) {
-				for (const auto &kv_pair : container.map_data) {
-					arguments.emplace(kv_pair.second);
+				num_args += (int)container.map_data.size();
+
+				if (!just_count) {
+					for (const auto &kv_pair : container.map_data) {
+						argument_vector.emplace_back(vm_strdup(kv_pair.second.c_str()), -1);
+					}
 				}
 			} else if (container.is_list()) {
-				for (const auto &value : container.list_data) {
-					arguments.emplace(value);
+				num_args += (int)container.list_data.size();
+
+				if (!just_count) {
+					for (const auto &value : container.list_data) {
+						argument_vector.emplace_back(vm_strdup(value.c_str()), -1);
+					}
 				}
 			} else {
 				UNREACHABLE("Container %s has invalid type (%d). Please report!", container_name, (int)container.type);
@@ -1489,13 +1499,7 @@ int collect_container_values(int node,
 		}
 	}
 
-	if (!just_count) {
-		for (const auto &argument : arguments) {
-			argument_vector.emplace_back(vm_strdup(argument.c_str()), -1);
-		}
-	}
-
-	return (int)arguments.size();
+	return num_args;
 }
 
 int sexp_container_collect_data_arguments(int node,

@@ -10627,14 +10627,15 @@ int eval_for_container(int arg_handler_node, int condition_node, int op_const, b
 	SCP_UNUSED(num_valid_arguments);
 
 	// use the sexp_or algorithm
-	if (num_known_true || num_true)
+	if (num_known_true || num_true) {
 		return SEXP_TRUE;
 	// Don't short-circuit because container data/keys can change later on,
 	// and this sexp's container is intrinsically unknowable.
-	//else if (num_valid_arguments > 0 && num_known_false == num_valid_arguments)
+	//} else if (num_valid_arguments > 0 && num_known_false == num_valid_arguments) {
 	//	return SEXP_KNOWN_FALSE;
-	else
+	} else {
 		return SEXP_FALSE;
+	}
 }
 
 // Goober5000
