@@ -1568,10 +1568,10 @@ void get_turret_subsys_name(ship_weapon *swp, char *outstr)
 	if (swp->num_primary_banks || swp->num_secondary_banks) {
 		bool done = false;
 		if (swp->num_primary_banks) {
-			for (auto weapon : swp->primary_bank_weapons) {
-				if (weapon >= 0) {
-					if (strlen(Weapon_info[weapon].altSubsysName) != 0) {
-						sprintf(outstr, "%s", Weapon_info[weapon].altSubsysName);
+			for (auto weaponid : swp->primary_bank_weapons) {
+				if (weaponid >= 0) {
+					if (strlen(Weapon_info[weaponid].altSubsysName) != 0) {
+						sprintf(outstr, "%s", Weapon_info[weaponid].altSubsysName);
 						done = true;
 						break;
 					}
@@ -1579,10 +1579,10 @@ void get_turret_subsys_name(ship_weapon *swp, char *outstr)
 			}
 		} 
 		if ((swp->num_secondary_banks) && !done) {
-			for (auto weapon : swp->secondary_bank_weapons) {
-				if (weapon >= 0) {
-					if (strlen(Weapon_info[weapon].altSubsysName) != 0) {
-						sprintf(outstr, "%s", Weapon_info[weapon].altSubsysName);
+			for (auto weaponid : swp->secondary_bank_weapons) {
+				if (weaponid >= 0) {
+					if (strlen(Weapon_info[weaponid].altSubsysName) != 0) {
+						sprintf(outstr, "%s", Weapon_info[weaponid].altSubsysName);
 						done = true;
 						break;
 					}
