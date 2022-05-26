@@ -1452,3 +1452,8 @@ bool sexp_container_does_blank_op_support_containers(const int op_const)
 	}
 }
 
+bool sexp_container_does_container_support_blank_ops(const sexp_container &container)
+{
+	return (container.is_list() && any(container.type & ContainerType::STRING_DATA)) ||
+		   (container.is_map() && any(container.type & ContainerType::STRING_KEYS));
+}

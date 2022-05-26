@@ -877,7 +877,10 @@ void sexp_tree::right_clicked(int mode)
 							}
 
 							// Replace Container Name submenu
-							if (is_container_opf_type(op_type) || op_type == OPF_ANYTHING) {
+							const int op_const = op >= 0 ? Operators[op].value : -1;
+							if (is_container_opf_type(op_type) ||
+								(op_type == OPF_ANYTHING &&
+									sexp_container_does_blank_op_support_containers(op_const))) {
 								int container_name_index = 0;
 								for (const auto &container : get_all_sexp_containers()) {
 									UINT flags = MF_STRING | MF_GRAYED;
@@ -889,10 +892,8 @@ void sexp_tree::right_clicked(int mode)
 										flags &= ~MF_GRAYED;
 									} else if ((op_type == OPF_MAP_CONTAINER_NAME) && container.is_map()) {
 										flags &= ~MF_GRAYED;
-									} else if ((op_type == OPF_ANYTHING) && op >= 0 &&
-											   sexp_container_does_blank_op_support_containers(Operators[op].value) &&
-											   container.is_list() &&
-											   any(container.type & ContainerType::STRING_DATA)) {
+									} else if ((op_type == OPF_ANYTHING) &&
+											   sexp_container_does_container_support_blank_ops(container)) {
 										flags &= ~MF_GRAYED;
 									}
 

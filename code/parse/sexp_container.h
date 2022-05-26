@@ -193,3 +193,4 @@ int sexp_container_eval_change_sexp(int op_num, int node);
 
 // tests if an operator supports list containers with when-argument
 bool sexp_container_does_blank_op_support_containers(int op_const);
+bool sexp_container_does_container_support_blank_ops(const sexp_container &container);

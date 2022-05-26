@@ -5468,7 +5468,9 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 				}
 
 				// Replace Container Name submenu
-				if (is_container_opf_type(op_type) || op_type == OPF_ANYTHING) {
+				const int op_const = op >= 0 ? Operators[op].value : -1;
+				if (is_container_opf_type(op_type) ||
+					(op_type == OPF_ANYTHING && sexp_container_does_blank_op_support_containers(op_const))) {
 					const auto &containers = get_all_sexp_containers();
 					for (int idx = 0; idx < (int)containers.size(); ++idx) {
 						const auto &container = containers[idx];
@@ -5483,10 +5485,8 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 							disabled = false;
 						} else if ((op_type == OPF_MAP_CONTAINER_NAME) && container.is_map()) {
 							disabled = false;
-						} else if ((op_type == OPF_ANYTHING) && op >= 0 &&
-								sexp_container_does_blank_op_support_containers(Operators[op].value) &&
-								container.is_list() &&
-								any(container.type & ContainerType::STRING_DATA)) {
+						} else if ((op_type == OPF_ANYTHING) &&
+								   sexp_container_does_container_support_blank_ops(container)) {
 							disabled = false;
 						}
 
