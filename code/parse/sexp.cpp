@@ -33472,6 +33472,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tSupplies arguments for the " SEXP_ARGUMENT_STRING " special data item.  Any of the supplied arguments can satisfy the expression(s) "
 		"in which " SEXP_ARGUMENT_STRING " is used.\r\n\r\n"
 		"In practice, this will behave like a standard \"for-each\" statement, evaluating the action operators for each argument that satisfies the condition.\r\n\r\n"
+		"\tThis SEXP also accepts list containers with string data or map containers with string keys as arguments.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tAnything that could be used in place of " SEXP_ARGUMENT_STRING "." },
 
@@ -33479,6 +33480,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_EVERY_OF, "Every-of (Conditional operator)\r\n"
 		"\tSupplies arguments for the " SEXP_ARGUMENT_STRING " special data item.  Every one of the supplied arguments will be evaluated to satisfy the expression(s) "
 		"in which " SEXP_ARGUMENT_STRING " is used.\r\n\r\n"
+		"\tThis SEXP also accepts list containers with string data or map containers with string keys as arguments.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tAnything that could be used in place of " SEXP_ARGUMENT_STRING "." },
 
@@ -33500,6 +33502,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_NUMBER_OF, "Number-of (Conditional operator)\r\n"
 		"\tSupplies arguments for the " SEXP_ARGUMENT_STRING " special data item.  Any [number] of the supplied arguments can satisfy the expression(s) "
 		"in which " SEXP_ARGUMENT_STRING " is used.\r\n\r\n"
+		"\tThis SEXP also accepts list containers with string data or map containers with string keys as arguments.\r\n\r\n"
 		"Takes 2 or more arguments...\r\n"
 		"\t1:\tNumber of arguments, as above\r\n"
 		"\tRest:\tAnything that could be used in place of " SEXP_ARGUMENT_STRING "." },
@@ -33561,6 +33564,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_FIRST_OF, "First-of (Conditional operator)\r\n"
 		"\tSupplies arguments for the " SEXP_ARGUMENT_STRING " special data item.  Up to [number] of the supplied arguments can satisfy the expression(s) "
 		"in which " SEXP_ARGUMENT_STRING " is used. Essentially the same as any-of, but with a cap on the number of arguments that can be evaluated in a single call.\r\n\r\n"
+		"\tThis SEXP also accepts list containers with string data or map containers with string keys as arguments.\r\n\r\n"
 		"Takes 2 or more arguments...\r\n"
 		"\t1:\tMaximum number of arguments that can be evaluated in a call.\r\n"
 		"\tRest:\tAnything that could be used in place of " SEXP_ARGUMENT_STRING "." },
@@ -33568,6 +33572,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	// Goober5000
 	{ OP_INVALIDATE_ARGUMENT, "Invalidate-argument (Conditional operator)\r\n"
 		"\tRemoves an argument from future consideration as a " SEXP_ARGUMENT_STRING " special data item.\r\n"
+		"\tFor argument-related SEXPs that accept containers as arguments, the retrieved arguments can't be individually invalidated.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tThe argument to remove from the preceding argument list." },
 
@@ -33575,6 +33580,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_VALIDATE_ARGUMENT, "Validate-argument (Conditional operator)\r\n"
 		"\tRestores an argument for future consideration as a " SEXP_ARGUMENT_STRING " special data item.\r\n"
 		"\tIf the argument hasn't been previously invalidated, it will do nothing.\r\n"
+		"\tFor argument-related SEXPs that accept containers as arguments, the retrieved arguments can't be individually validated.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tThe argument to restore to the preceding argument list." },
 
