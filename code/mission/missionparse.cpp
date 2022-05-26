@@ -3378,6 +3378,8 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 					p_objp->orders_accepted.insert(j);
 			}
 		}
+
+		p_objp->flags.set(Mission::Parse_Object_Flags::SF_Use_unique_orders);
 	}
 
 	p_objp->group = 0;
