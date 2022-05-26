@@ -120,8 +120,13 @@ ADE_FUNC(maybePlayCutscene, l_UserInterface, "enumeration MovieType, boolean Res
 	if (!ade_get_args(L, "obi", l_Enum.Get(&movie_type), &restart_music, &score_index))
 		return ADE_RETURN_NIL;
 
-	// if an out-of-range enum is passed to this function, it will just be ignored
-	common_maybe_play_cutscene(movie_type.index, restart_music, score_index);
+	if (!movie_type.IsValid() || movie_type.index < LE_MOVIE_PRE_FICTION || movie_type.index > LE_MOVIE_END_CAMPAIGN)
+	{
+		Warning(LOCATION, "Invalid movie type index %d", movie_type.index);
+		return ADE_RETURN_NIL;
+	}
+
+	common_maybe_play_cutscene(movie_type.index - LE_MOVIE_PRE_FICTION, restart_music, score_index);
 	return ADE_RETURN_NIL;
 }
 
