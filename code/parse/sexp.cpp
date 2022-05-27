@@ -10146,10 +10146,6 @@ int test_argument_nodes_for_condition(int n, int condition_node, int *num_true, 
 					case SEXP_KNOWN_FALSE:
 						(*num_known_false)++;
 						break;
-
-					default:
-						UNREACHABLE("Unhandled condition value %d", val);
-						break;
 				}
 
 				// clear argument, but not list, as we'll need it later
