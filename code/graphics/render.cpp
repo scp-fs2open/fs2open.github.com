@@ -708,11 +708,11 @@ static void gr_string_old(float sx,
 namespace {
 bool buffering_nanovg = false; //!< flag for when NanoVG buffering is enabled
 
-static void setupDrawingState(graphics::paths::PathRenderer* path) {
+void setupDrawingState(graphics::paths::PathRenderer* path) {
 	path->resetState();
 }
 
-static void setupTransforms(graphics::paths::PathRenderer* path, int resize_mode) {
+void setupTransforms(graphics::paths::PathRenderer* path, int resize_mode) {
 	float x = 0.0f;
 	float y = 0.0f;
 	float w = 1.0f;
@@ -739,7 +739,7 @@ static void setupTransforms(graphics::paths::PathRenderer* path, int resize_mode
 	path->scissor(0.0f, 0.0f, i2fl(clip_width), i2fl(clip_height));
 }
 
-static graphics::paths::PathRenderer* beginDrawing(int resize_mode) {
+graphics::paths::PathRenderer* beginDrawing(int resize_mode) {
 	auto path = graphics::paths::PathRenderer::instance();
 
 	path->saveState();
@@ -758,7 +758,7 @@ static graphics::paths::PathRenderer* beginDrawing(int resize_mode) {
 	return path;
 }
 
-static void endDrawing(graphics::paths::PathRenderer* path) {
+void endDrawing(graphics::paths::PathRenderer* path) {
 	if (!buffering_nanovg) {
 		// If buffering is enabled then this will be called later
 		path->endFrame();
