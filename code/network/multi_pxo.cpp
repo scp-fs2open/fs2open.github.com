@@ -3347,7 +3347,7 @@ void multi_pxo_chat_blit()
 {
 	int y_start, line_height;
 	int disp_count,token_width;
-	char piece[100];
+	char piece[MAX_CHAT_LINE_LEN+1];
 	char title[MAX_PXO_TEXT_LEN];
 	char *tok;
 	chat_line *moveup;
