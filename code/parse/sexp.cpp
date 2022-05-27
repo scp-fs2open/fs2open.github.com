@@ -364,6 +364,8 @@ SCP_vector<sexp_oper> Operators = {
 	{ "for-ship-team",					OP_FOR_SHIP_TEAM,						1,	INT_MAX,	SEXP_ARGUMENT_OPERATOR, },	// Goober5000
 	{ "for-ship-species",				OP_FOR_SHIP_SPECIES,					1,	INT_MAX,	SEXP_ARGUMENT_OPERATOR, },	// Goober5000
 	{ "for-players",					OP_FOR_PLAYERS,							0,	0,			SEXP_ARGUMENT_OPERATOR, },	// Goober5000
+	{ "for-container-data",				OP_FOR_CONTAINER_DATA,					1,	INT_MAX,	SEXP_ARGUMENT_OPERATOR, },	// jg18
+	{ "for-map-container-keys",			OP_FOR_MAP_CONTAINER_KEYS,				1,	INT_MAX,	SEXP_ARGUMENT_OPERATOR, },	// jg18
 	{ "invalidate-argument",			OP_INVALIDATE_ARGUMENT,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,		},	// Goober5000
 	{ "invalidate-all-arguments",		OP_INVALIDATE_ALL_ARGUMENTS,			0,	0,			SEXP_ACTION_OPERATOR,	},	// Karajorma
 	{ "validate-argument",				OP_VALIDATE_ARGUMENT,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Karajorma
@@ -982,6 +984,9 @@ int get_handler_for_x_of_operator(int node);
 int get_generic_subsys(const char *subsy_name);
 bool ship_class_unchanged(const ship_registry_entry *ship_entry);
 void multi_sexp_modify_variable();
+
+// jg18
+bool is_for_op(int op_const);
 
 #define NO_OPERATOR_INDEX_DEFINED		-2
 #define NOT_A_SEXP_OPERATOR				-1
@@ -10611,6 +10616,65 @@ int eval_for_ship_collection(int arg_handler_node, int condition_node, int op_co
 		return SEXP_FALSE;
 }
 
+// jg18
+int eval_for_container(int arg_handler_node, int condition_node, int op_const, bool just_count = false)
+{
+	Assertion(arg_handler_node != -1,
+		"Attempt to use invalid argument handler with a for-container SEXP (%d). Please report!",
+		op_const);
+	Assertion(condition_node != -1,
+		"Attempt to use invalid condition with a for-container SEXP (%d). Please report!",
+		op_const);
+
+	int num_arguments = 0;
+	SCP_vector<std::pair<const char*, int>> argument_vector;
+
+	const int arg_node = CDR(arg_handler_node);
+
+	switch (op_const)
+	{
+		case OP_FOR_CONTAINER_DATA:
+			num_arguments = sexp_container_collect_data_arguments(arg_node, argument_vector, just_count);
+			break;
+
+		case OP_FOR_MAP_CONTAINER_KEYS:
+			num_arguments = sexp_container_collect_map_key_arguments(arg_node, argument_vector, just_count);
+			break;
+
+		default:
+			UNREACHABLE("Unhandled for-container SEXP (%d). Please report!", op_const);
+			break;
+	}
+
+	if (just_count) {
+		// cleaning up argument_vector isn't needed
+		// because the "collect arguments" functions didn't touch it
+		return num_arguments;
+	}
+
+	// test the whole argument vector
+	int num_true, num_false, num_known_true, num_known_false;
+	const int num_valid_arguments = test_argument_vector_for_condition(argument_vector,
+		true,
+		condition_node,
+		&num_true,
+		&num_false,
+		&num_known_true,
+		&num_known_false);
+	SCP_UNUSED(num_valid_arguments);
+
+	// use the sexp_or algorithm
+	if (num_known_true || num_true) {
+		return SEXP_TRUE;
+	// Don't short-circuit because container data/keys can change later on,
+	// and this sexp's container is intrinsically unknowable.
+	//} else if (num_valid_arguments > 0 && num_known_false == num_valid_arguments) {
+	//	return SEXP_KNOWN_FALSE;
+	} else {
+		return SEXP_FALSE;
+	}
+}
+
 // Goober5000
 int eval_for_players(int arg_handler_node, int condition_node, bool just_count = false)
 {
@@ -10704,8 +10768,7 @@ void sexp_change_all_argument_validity(int n, bool invalidate)
 
 	// can't change validity of for-* sexps
 	auto op_const = get_operator_const(arg_handler);
-	if (op_const == OP_FOR_COUNTER || op_const == OP_FOR_PLAYERS
-		|| op_const == OP_FOR_SHIP_CLASS || op_const == OP_FOR_SHIP_TYPE || op_const == OP_FOR_SHIP_TEAM || op_const == OP_FOR_SHIP_SPECIES)
+	if (is_for_op(op_const))
 		return;
 		
 	while (n != -1)
@@ -10753,6 +10816,10 @@ int sexp_num_valid_arguments( int n )
 		case OP_FOR_SHIP_TEAM:
 		case OP_FOR_SHIP_SPECIES:
 			return eval_for_ship_collection(arg_handler, Locked_sexp_true, op_const, true);
+
+		case OP_FOR_CONTAINER_DATA:
+		case OP_FOR_MAP_CONTAINER_KEYS:
+			return eval_for_container(arg_handler, Locked_sexp_true, op_const, true);
 	}
 
 	// loop through arguments
@@ -10784,8 +10851,7 @@ void sexp_change_argument_validity(int n, bool invalidate)
 
 	// can't change validity of for-* sexps
 	auto op_const = get_operator_const(arg_handler);
-	if (op_const == OP_FOR_COUNTER || op_const == OP_FOR_PLAYERS
-		|| op_const == OP_FOR_SHIP_CLASS || op_const == OP_FOR_SHIP_TYPE || op_const == OP_FOR_SHIP_TEAM || op_const == OP_FOR_SHIP_SPECIES)
+	if (is_for_op(op_const))
 		return;
 		
 	// loop through arguments
@@ -10892,6 +10958,10 @@ bool is_blank_argument_op(int op_const)
 // Goober5000
 bool is_blank_of_op(int op_const)
 {
+	if (is_for_op(op_const)) {
+		return true;
+	}
+
 	switch (op_const)
 	{
 		case OP_ANY_OF:
@@ -10900,12 +10970,6 @@ bool is_blank_of_op(int op_const)
 		case OP_RANDOM_OF:
 		case OP_RANDOM_MULTIPLE_OF:
 		case OP_IN_SEQUENCE:
-		case OP_FOR_COUNTER:
-		case OP_FOR_SHIP_CLASS:
-		case OP_FOR_SHIP_TYPE:
-		case OP_FOR_SHIP_TEAM:
-		case OP_FOR_SHIP_SPECIES:
-		case OP_FOR_PLAYERS:
 		case OP_FIRST_OF:
 			return true;
 
@@ -25164,6 +25228,12 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = eval_for_players( cur_node, referenced_node );
 				break;
 
+			// jg18
+			case OP_FOR_CONTAINER_DATA:
+			case OP_FOR_MAP_CONTAINER_KEYS:
+				sexp_val = eval_for_container( cur_node, referenced_node, op_num );
+				break;
+
 			// MageKing17
 			case OP_FIRST_OF:
 				sexp_val = eval_first_of( cur_node, referenced_node );
@@ -28019,6 +28089,8 @@ int query_operator_return_type(int op)
 		case OP_FOR_SHIP_TEAM:
 		case OP_FOR_SHIP_SPECIES:
 		case OP_FOR_PLAYERS:
+		case OP_FOR_CONTAINER_DATA:
+		case OP_FOR_MAP_CONTAINER_KEYS:
 		case OP_FIRST_OF:
 			return OPR_FLEXIBLE_ARGUMENT;
 
@@ -28826,6 +28898,12 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_FOR_SHIP_SPECIES:
 			return OPF_SPECIES;
+
+		case OP_FOR_CONTAINER_DATA:
+			return OPF_CONTAINER_NAME;
+
+		case OP_FOR_MAP_CONTAINER_KEYS:
+			return OPF_MAP_CONTAINER_NAME;
 
 		case OP_INVALIDATE_ARGUMENT:
 		case OP_VALIDATE_ARGUMENT:
@@ -31371,6 +31449,26 @@ void multi_sexp_modify_variable()
 	}	
 }
 
+// check if an operator is one of the for-* SEXPs
+bool is_for_op(const int op_const)
+{
+	switch (op_const)
+	{
+		case OP_FOR_COUNTER:
+		case OP_FOR_SHIP_CLASS:
+		case OP_FOR_SHIP_TYPE:
+		case OP_FOR_SHIP_TEAM:
+		case OP_FOR_SHIP_SPECIES:
+		case OP_FOR_PLAYERS:
+		case OP_FOR_CONTAINER_DATA:
+		case OP_FOR_MAP_CONTAINER_KEYS:
+			return true;
+
+		default:
+			return false;
+	}
+}
+
 void sexp_modify_variable(int n)
 {
 	int sexp_variable_index;
@@ -33477,6 +33575,20 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tSupplies values for the " SEXP_ARGUMENT_STRING " special data item.  This sexp will list all the ships corresponding to valid players, and each ship will be provided as an argument to the action operators.  "
 		"Note that the ships are all treated as valid arguments, and it is impossible to invalidate a ship argument.  If you want to invalidate a ship, use Any-of and list the ships explicitly.\r\n\r\n"
 		"Takes no arguments.  Works in both single-player and multiplayer.\r\n" },
+
+	// jg18
+	{ OP_FOR_CONTAINER_DATA, "For-Container-Data (Conditional operator)\r\n"
+		"\tSupplies values for the " SEXP_ARGUMENT_STRING " special data item.  This sexp will list all data in a certain container (or multiple containers) in the mission, and each value will be provided as an argument to the action operators.  "
+		"Note that the values are all treated as valid arguments, and it is impossible to invalidate a value argument.  If you want to invalidate a value, use Any-of and list the values explicitly.\r\n\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\tAll:\tContainer whose data should be listed\r\n" },
+
+	// jg18
+	{ OP_FOR_MAP_CONTAINER_KEYS, "For-Map-Container-Keys (Conditional operator)\r\n"
+		"\tSupplies values for the " SEXP_ARGUMENT_STRING " special data item.  This sexp will list all keys in a certain map container (or multiple map containers) in the mission, and each map key will be provided as an argument to the action operators.  "
+		"Note that the map keys are all treated as valid arguments, and it is impossible to invalidate a key argument.  If you want to invalidate a key, use Any-of and list the keys explicitly.\r\n\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\tAll:\tMap container whose keys should be listed\r\n" },
 
 	// MageKing17
 	{ OP_FIRST_OF, "First-of (Conditional operator)\r\n"

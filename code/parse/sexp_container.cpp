@@ -1436,3 +1436,93 @@ int sexp_container_eval_change_sexp(int op_num, int node)
 		return SEXP_FALSE;
 	}
 }
+
+int collect_container_values(int node,
+	SCP_vector<std::pair<const char*, int>> &argument_vector,
+	bool just_count,
+	const char *sexp_name,
+	bool map_keys_only)
+{
+	Assertion(node != -1, "%s wasn't given any ontainers. Please report!", sexp_name);
+
+	int num_args = 0;
+
+	for (; node != -1; node = CDR(node)) {
+		const char *container_name = CTEXT(node);
+		const auto *p_container = get_sexp_container(container_name);
+
+		if (!p_container) {
+			report_nonexistent_container(sexp_name, container_name);
+			continue;
+		}
+
+		const auto &container = *p_container;
+
+		if (map_keys_only) {
+			if (!container.is_map()) {
+				report_non_map_container(sexp_name, container_name);
+				continue;
+			}
+
+			if (none(container.type & ContainerType::STRING_KEYS)) {
+				const SCP_string msg = SCP_string(sexp_name) + " called on map container " + container_name +
+									   " but its keys aren't strings";
+				Warning(LOCATION, "%s", msg.c_str());
+				log_printf(LOGFILE_EVENT_LOG, "%s", msg.c_str());
+				continue;
+			}
+
+			num_args += (int)container.map_data.size();
+
+			if (!just_count) {
+				for (const auto &kv_pair : container.map_data) {
+					argument_vector.emplace_back(vm_strdup(kv_pair.first.c_str()), -1);
+				}
+			}
+		} else {
+			if (none(container.type & ContainerType::STRING_DATA)) {
+				const SCP_string msg =
+					SCP_string(sexp_name) + " called on container " + container_name + " but its data aren't strings";
+				Warning(LOCATION, "%s", msg.c_str());
+				log_printf(LOGFILE_EVENT_LOG, "%s", msg.c_str());
+				continue;
+			}
+
+			if (container.is_map()) {
+				num_args += (int)container.map_data.size();
+
+				if (!just_count) {
+					for (const auto &kv_pair : container.map_data) {
+						argument_vector.emplace_back(vm_strdup(kv_pair.second.c_str()), -1);
+					}
+				}
+			} else if (container.is_list()) {
+				num_args += (int)container.list_data.size();
+
+				if (!just_count) {
+					for (const auto &value : container.list_data) {
+						argument_vector.emplace_back(vm_strdup(value.c_str()), -1);
+					}
+				}
+			} else {
+				UNREACHABLE("Container %s has invalid type (%d). Please report!", container_name, (int)container.type);
+			}
+		}
+	}
+
+	return num_args;
+}
+
+int sexp_container_collect_data_arguments(int node,
+	SCP_vector<std::pair<const char*, int>> &argument_vector,
+	bool just_count)
+{
+	return collect_container_values(node, argument_vector, just_count, "For-container-data", false);
+}
+
+int sexp_container_collect_map_key_arguments(int node,
+	SCP_vector<std::pair<const char*, int>> &argument_vector,
+	bool just_count)
+{
+	return collect_container_values(node, argument_vector, just_count, "For-map-container-keys", true);
+}
