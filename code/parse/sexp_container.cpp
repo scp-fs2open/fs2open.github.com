@@ -1531,15 +1531,16 @@ bool sexp_container_does_blank_op_support_containers(const int op_const)
 {
 	switch (op_const)
 	{
-	case OP_ANY_OF:
-	case OP_EVERY_OF:
-	case OP_NUMBER_OF:
-	case OP_FIRST_OF:
-		return true;
+		case OP_ANY_OF:
+		case OP_EVERY_OF:
+		case OP_NUMBER_OF:
+		case OP_FIRST_OF:
+		case OP_RANDOM_MULTIPLE_OF:
+			return true;
 
-	default:
-		return false;
-	}
+		default:
+			return false;
+		}
 }
 
 bool sexp_container_does_container_support_blank_ops(const sexp_container &container)

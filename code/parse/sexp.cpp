@@ -10341,14 +10341,14 @@ int eval_number_of(int arg_handler_node, int condition_node)
 // this works a little differently... we randomly pick one argument to use
 // for our condition, but this argument must be saved among sexp calls...
 // so we select an argument and set its flag
-// addendum: hook karajorma's random-multiple-of into the same sexp
-int eval_random_of(int arg_handler_node, int condition_node, bool multiple)
+int eval_random_of(int arg_handler_node, int condition_node)
 {
-	int n = -1, i, val, num_valid_args, random_argument, num_known_false = 0;
+	// FIXME TODO: switch to Assertion
 	Assert(arg_handler_node != -1 && condition_node != -1);
+	int num_known_false = 0;
 
 	// get the number of valid arguments
-	num_valid_args = query_sexp_args_count(arg_handler_node, true);
+	const int num_valid_args = query_sexp_args_count(arg_handler_node, true);
 	Assert(num_valid_args >= 0);
 
 	if (num_valid_args == 0)
@@ -10356,28 +10356,25 @@ int eval_random_of(int arg_handler_node, int condition_node, bool multiple)
 		return SEXP_KNOWN_FALSE;	// Not much point in trying to evaluate it again.
 	}
 
-	// find which argument we picked, if we picked one
-	if (!multiple)
-	{
-		n = CDR(arg_handler_node);
+	// first find if we previously picked an argument
+	int n = CDR(arg_handler_node);
 
-		// iterate to the argument we previously selected
-		for ( ; n != -1; n = CDR(n))
-		{
-			if (Sexp_nodes[n].flags & SNF_ARGUMENT_SELECT)
-				break;
-		}
+	// iterate to the argument we previously selected
+	for ( ; n != -1; n = CDR(n))
+	{
+		if (Sexp_nodes[n].flags & SNF_ARGUMENT_SELECT)
+			break;
 	}
 
-	// if argument not found (or never specified in the first place), we have to pick one
+	// if we didn't previously pick an argument
 	if (n == -1)
 	{
 		n = CDR(arg_handler_node);
 		int temp_node = n;
 
 		// pick an argument and iterate to it
-		random_argument = rand_internal(1, num_valid_args);
-		i = 0;
+		const int random_argument = rand_internal(1, num_valid_args);
+		int i = 0;
 		for (int j = 0; j < num_valid_args; temp_node = CDR(temp_node))
 		{
 			Assert(n >= 0);
@@ -10399,15 +10396,12 @@ int eval_random_of(int arg_handler_node, int condition_node, bool multiple)
 			return SEXP_KNOWN_FALSE;	// We're going nowhere fast.
 		}
 
-		// save it, if we're saving
-		if (!multiple)
-		{
-			Sexp_nodes[n].flags |= SNF_ARGUMENT_SELECT;
-		}
+		// save it
+		Sexp_nodes[n].flags |= SNF_ARGUMENT_SELECT;
 	}
 
 	// only eval this argument if it's valid
-	val = SEXP_FALSE;
+	int val = SEXP_FALSE;
 	if (Sexp_nodes[n].flags & SNF_ARGUMENT_VALID)
 	{
 		// ensure special argument list is empty
@@ -10418,15 +10412,95 @@ int eval_random_of(int arg_handler_node, int condition_node, bool multiple)
 		val = eval_sexp(condition_node);
 
 		// true?
+		// FIXME TODO: what about SEXP_KNOWN_TRUE?
 		if (val == SEXP_TRUE)
 		{
 			Sexp_applicable_argument_list.add_data(Sexp_nodes[n].text, n);
 		}
-		else if ((!multiple || num_valid_args == 1) && (Sexp_nodes[condition_node].value == SEXP_KNOWN_FALSE || Sexp_nodes[condition_node].value == SEXP_NAN_FOREVER))
+		else if (Sexp_nodes[condition_node].value == SEXP_KNOWN_FALSE || Sexp_nodes[condition_node].value == SEXP_NAN_FOREVER)
 		{
-			val = SEXP_KNOWN_FALSE;	// If we can't randomly pick another one and this one is guaranteed never to be true, then give up now.
+			// Since we can't pick another one, if this one is guaranteed never to be true, then give up now.
+			val = SEXP_KNOWN_FALSE;
 		}
-		
+
+		// clear argument, but not list, as we'll need it later
+		Sexp_replacement_arguments.pop_back();
+	}
+
+	// true if our selected argument is true
+	return val;
+}
+
+// originally part of eval_random_of() but pulled apart as the code paths diverged
+int eval_random_multiple_of(int arg_handler_node, int condition_node)
+{
+	// FIXME TODO: Switch to two Assertion()s
+	Assert(arg_handler_node != -1 && condition_node != -1);
+	int num_known_false = 0;
+	bool container_args_found = false;
+
+	// get the number of valid arguments
+	// FIXME TODO: adjust for container arguments
+	// FIXME TODO: update container_args_found
+	int num_valid_args = query_sexp_args_count(arg_handler_node, true);
+	Assert(num_valid_args >= 0);
+
+	if (num_valid_args == 0 && !container_args_found)
+	{
+		return SEXP_KNOWN_FALSE;	// Not much point in trying to evaluate it again.
+	}
+
+	int n = CDR(arg_handler_node);
+	// FIXME TODO: rename var and change to Assertion()
+	Assert(n >= 0);
+	int temp_node = n;
+
+	// pick an argument and iterate to it
+	int random_argument = rand_internal(1, num_valid_args);
+	int i = 0; // FIXME TODO: what is `i` for? Is it needed?
+	for (int j = 0; j < num_valid_args; temp_node = CDR(temp_node))
+	{
+		// count only valid arguments
+		if (Sexp_nodes[temp_node].flags & SNF_ARGUMENT_VALID) {
+			j++;
+			if (i < random_argument && (++i == random_argument)) {
+				// Found the node we want, store it for use
+				n = temp_node;
+			}
+
+			if ((Sexp_nodes[temp_node].value == SEXP_KNOWN_FALSE) || (Sexp_nodes[temp_node].value == SEXP_NAN_FOREVER))
+				num_known_false++;
+		}
+	}
+
+	if (!container_args_found && num_known_false == num_valid_args) {
+		return SEXP_KNOWN_FALSE;	// We're going nowhere fast.
+	}
+
+	// only eval this argument if it's valid
+	int val = SEXP_FALSE;
+	if (Sexp_nodes[n].flags & SNF_ARGUMENT_VALID)
+	{
+		// ensure special argument list is empty
+		Sexp_applicable_argument_list.clear_nesting_level();
+
+		// evaluate conditional for current argument
+		Sexp_replacement_arguments.emplace_back(Sexp_nodes[n].text, n);
+		val = eval_sexp(condition_node);
+
+		// true?
+		// FIXME TODO: what about SEXP_KNOWN_TRUE?
+		if (val == SEXP_TRUE)
+		{
+			Sexp_applicable_argument_list.add_data(Sexp_nodes[n].text, n);
+		}
+		// FIXME TODO: is this correct? Couldn't arguments be validated later?
+		// FIXME TODO: if anything, we might need to downgrade SEXP_KNOWN_FALSE to SEXP_FALSE
+		else if (!container_args_found && (num_valid_args == 1) && (Sexp_nodes[condition_node].value == SEXP_KNOWN_FALSE || Sexp_nodes[condition_node].value == SEXP_NAN_FOREVER))
+		{
+			val = SEXP_KNOWN_FALSE;	// If the one valid arg is guaranteed never to be true, then give up now.
+		}
+
 		// clear argument, but not list, as we'll need it later
 		Sexp_replacement_arguments.pop_back();
 	}
@@ -25224,10 +25298,14 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = eval_every_of( cur_node, referenced_node );
 				break;
 
-			// Goober5000 and Karajorma
+			// Goober5000
 			case OP_RANDOM_OF:
+				sexp_val = eval_random_of( cur_node, referenced_node );
+				break;
+
+			// Goober5000 and Karajorma
 			case OP_RANDOM_MULTIPLE_OF:
-				sexp_val = eval_random_of( cur_node, referenced_node, (op_num == OP_RANDOM_MULTIPLE_OF) );
+				sexp_val = eval_random_multiple_of( cur_node, referenced_node );
 				break;
 
 			// Goober5000
@@ -33586,7 +33664,9 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	// Karajorma
 	{ OP_RANDOM_MULTIPLE_OF, "Random-multiple-of (Conditional operator)\r\n"
 		"\tSupplies arguments for the " SEXP_ARGUMENT_STRING " special data item.  A random supplied argument will be selected to satisfy the expression(s) "
-		"in which " SEXP_ARGUMENT_STRING " is used.\r\n\r\n"
+		"in which " SEXP_ARGUMENT_STRING " is used.\r\n"
+		"\tUnlike random-of, the random selection is performed each time this SEXP is evaluated.\r\n"
+		"\tThis SEXP also accepts list containers with string data or map containers with string keys as arguments.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tAnything that could be used in place of " SEXP_ARGUMENT_STRING "." },
 
