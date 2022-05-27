@@ -10088,7 +10088,7 @@ int eval_cond(int n)
 // NOTE: if you change this function, check to see if the following function should also be changed!
 int test_argument_nodes_for_condition(int n, int condition_node, int *num_true, int *num_false, int *num_known_true, int *num_known_false, int threshold = -1)
 {
-	int num_valid_arguments;
+	int val, num_valid_arguments;
 	SCP_vector<std::pair<const char*, int>> Applicable_arguments_temp;
 	Assert(n != -1 && condition_node != -1);
 	Assert((num_true != nullptr) && (num_false != nullptr) && (num_known_true != nullptr) && (num_known_false != nullptr));
@@ -10116,7 +10116,7 @@ int test_argument_nodes_for_condition(int n, int condition_node, int *num_true, 
 			const int num_args = populate_sexp_applicable_arguments(n);
 
 			for (int i = 0; i < num_args; ++i) {
-				int val = eval_sexp(condition_node);
+				val = eval_sexp(condition_node);
 				if (Sexp_nodes[condition_node].value == SEXP_KNOWN_TRUE ||
 					Sexp_nodes[condition_node].value == SEXP_KNOWN_FALSE) {
 					val = Sexp_nodes[condition_node].value;
