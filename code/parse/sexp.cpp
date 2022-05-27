@@ -13954,7 +13954,7 @@ void sexp_destroy_subsys_instantly(int n)
 
 					if (MULTIPLAYER_MASTER)
 					{
-						subsys_index = ship_get_subsys_index(shipp, ss);
+						subsys_index = ship_get_subsys_index(ss);
 						Assert(subsys_index >= 0);
 						Current_sexp_network_packet.send_int(subsys_index);
 					}
@@ -13977,7 +13977,7 @@ void sexp_destroy_subsys_instantly(int n)
 
 			if (MULTIPLAYER_MASTER)
 			{
-				subsys_index = ship_get_subsys_index(shipp, ss);
+				subsys_index = ship_get_subsys_index(ss);
 				Assert(subsys_index >= 0);
 				Current_sexp_network_packet.send_int(subsys_index);
 			}

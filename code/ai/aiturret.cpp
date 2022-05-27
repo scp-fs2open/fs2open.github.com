@@ -2017,7 +2017,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 					if ( MULTIPLAYER_MASTER && (weapon_objnum != -1) ) {
 						int subsys_index;
 
-						subsys_index = ship_get_index_from_subsys(turret, parent_objnum );
+						subsys_index = ship_get_subsys_index(turret);
 						Assert( subsys_index != -1 );
 						if(wip->wi_flags[Weapon::Info_Flags::Flak]){			
 							send_flak_fired_packet( parent_objnum, subsys_index, weapon_objnum, flak_range );
@@ -2126,7 +2126,7 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 		if ( MULTIPLAYER_MASTER && (weapon_objnum != -1) ) {
 			int subsys_index;
 
-			subsys_index = ship_get_index_from_subsys(tsi->turret, tsi->parent_objnum );
+			subsys_index = ship_get_subsys_index(tsi->turret);
 			Assert( subsys_index != -1 );
 			send_turret_fired_packet( tsi->parent_objnum, subsys_index, weapon_objnum );
 		}

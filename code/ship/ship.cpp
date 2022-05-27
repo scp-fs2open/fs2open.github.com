@@ -6877,6 +6877,7 @@ void ship_subsys::clear()
 	system_info = NULL;
 
 	parent_objnum = -1;
+	parent_subsys_index = -1;
 
 	sub_name[0] = 0;
 	current_hits = max_hits = 0.0f;
@@ -7246,6 +7247,7 @@ static int subsys_set(int objnum, int ignore_subsys_info)
 		if (ss != END_OF_LIST(&shipp->subsys_list))
 		{
 			shipp->subsys_list_indexer.get()[index] = ss;
+			ss->parent_subsys_index = index;
 			ss = GET_NEXT(ss);
 		}
 		// in the event we run out of subsystems (i.e. if not all subsystems were linked)
@@ -13923,37 +13925,7 @@ ship_subsys *ship_get_indexed_subsys(ship *sp, int index)
 }
 
 /**
- * Given a pointer to a subsystem and an associated object, return the index.
- */
-int ship_get_index_from_subsys(ship_subsys *ssp, int objnum)
-{
-	if (ssp == NULL)
-		return -1;
-	else {
-		int	count;
-		ship	*shipp;
-		ship_subsys	*ss;
-
-		Assert(objnum >= 0);
-		Assert(Objects[objnum].instance >= 0);
-
-		shipp = &Ships[Objects[objnum].instance];
-
-		count = 0;
-		ss = GET_FIRST(&shipp->subsys_list);
-		while ( ss != END_OF_LIST( &shipp->subsys_list ) ) {
-			if ( ss == ssp)
-				return count;
-			count++;
-			ss = GET_NEXT( ss );
-		}
-
-		return -1;
-	}
-}
-
-/**
- * Returns the index number of the ship_subsys parameter
+ * Returns the index number of the ship subsystem with the given name
  */
 int ship_get_subsys_index(ship *sp, const char* ss_name)
 {
@@ -13975,21 +13947,12 @@ int ship_get_subsys_index(ship *sp, const char* ss_name)
 /**
 * Returns the index number of the ship_subsys parameter
 */
-int ship_get_subsys_index(ship *shipp, ship_subsys *subsys)
+int ship_get_subsys_index(ship_subsys *subsys)
 {
-	int count;
-	ship_subsys *ss;
+	if (subsys == nullptr)
+		return -1;
 
-	count = 0;
-	ss = GET_FIRST(&shipp->subsys_list);
-	while (ss != END_OF_LIST(&shipp->subsys_list)) {
-		if (ss == subsys)
-			return count;
-		count++;
-		ss = GET_NEXT(ss);
-	}
-
-	return -1;
+	return subsys->parent_subsys_index;
 }
 
 // routine to return the strength of a subsystem.  We keep a total hit tally for all subsystems
@@ -16801,7 +16764,7 @@ void ship_do_cap_subsys_cargo_revealed( ship *shipp, ship_subsys *subsys, int fr
 
 	// send the packet if needed
 	if ( (Game_mode & GM_MULTIPLAYER) && !from_network ){
-		int subsystem_index = ship_get_index_from_subsys(subsys, shipp->objnum);
+		int subsystem_index = ship_get_subsys_index(subsys);
 		send_subsystem_cargo_revealed_packet( shipp, subsystem_index );		
 	}
 
@@ -16851,7 +16814,7 @@ void ship_do_cap_subsys_cargo_hidden( ship *shipp, ship_subsys *subsys, int from
 
 	// send the packet if needed
 	if ( (Game_mode & GM_MULTIPLAYER) && !from_network ){
-		int subsystem_index = ship_get_index_from_subsys(subsys, shipp->objnum);
+		int subsystem_index = ship_get_subsys_index(subsys);
 		send_subsystem_cargo_hidden_packet( shipp, subsystem_index );		
 	}
 
