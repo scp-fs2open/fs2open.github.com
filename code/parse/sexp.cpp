@@ -31512,7 +31512,7 @@ int populate_sexp_applicable_arguments(int node)
 
 		// should have been checked in get_sexp()
 		Assertion(p_container, "Special argument SEXP given nonexistent container %s. Please report!", container_name);
-		const auto& container = *p_container;
+		const auto &container = *p_container;
 		int num_args = 0;
 
 		// should have been checked in check_sexp_syntax()
