@@ -56,10 +56,6 @@ extern float Cmdline_clip_dist;
 extern float Cmdline_ambient_power;
 extern float Cmdline_emissive_power;
 extern float Cmdline_light_power;
-//extern float static_light_factor;
-//extern float static_point_factor;
-//extern float static_tube_factor;
-extern int Cmdline_ambient_factor;
 extern int Cmdline_env;
 extern int Cmdline_glow;
 extern int Cmdline_noscalevid;	// disables fit-to-window for movies - taylor

@@ -91,6 +91,11 @@ void lighting_profile_value::stack_minimum(float in)
 		has_minimum = true;
 	}
 }
+bool lighting_profile_value::read_adjust(float *out) const
+{
+	*out = adjust;
+	return has_adjust;
+}
 /**
  * @brief for use during the parsing of a light profile to attempt to read in an LPV
  *
@@ -205,7 +210,7 @@ void lighting_profile::reset()
 	directional_light_brightness.reset();
 	ambient_light_brightness.reset();
 	ambient_light_brightness.set_multiplier(Cmdline_ambient_power);
-	ambient_light_brightness.set_minimum(MAX(0.0f,Cmdline_emissive_power));
+	ambient_light_brightness.set_adjust(MAX(0.0f,Cmdline_emissive_power));
 
 	overall_brightness.reset();
 	overall_brightness.set_multiplier(Cmdline_light_power); 
@@ -444,7 +449,10 @@ float lighting_profile::lab_get_ambient(){
 	return default_profile.ambient_light_brightness.handle(1.0f);
 }
 float lighting_profile::lab_get_emissive(){
-	return default_profile.ambient_light_brightness.handle(0.0f);
+	float r;
+	default_profile.ambient_light_brightness.read_adjust(&r);
+
+	return r;
 }
 void lighting_profile::lab_set_light(float in){
 	default_profile.overall_brightness.set_multiplier(in);
@@ -453,5 +461,5 @@ void lighting_profile::lab_set_ambient(float in){
 	default_profile.ambient_light_brightness.set_multiplier(in);
 }
 void lighting_profile::lab_set_emissive(float in){
-	default_profile.ambient_light_brightness.set_minimum(MAX(0.0f,in));
+	default_profile.ambient_light_brightness.set_adjust(MAX(0.0f,in));
 }
