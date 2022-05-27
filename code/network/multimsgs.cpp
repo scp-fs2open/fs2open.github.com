@@ -3351,7 +3351,7 @@ void send_turret_fired_packet( int ship_objnum, int subsys_index, int weapon_obj
 
 	pnet_signature = Objects[ship_objnum].net_signature;
 
-	ssp = ship_get_indexed_subsys( &Ships[Objects[ship_objnum].instance], subsys_index, NULL );
+	ssp = ship_get_indexed_subsys( &Ships[Objects[ship_objnum].instance], subsys_index );
 	if(ssp == NULL){
 		return;
 	}
@@ -3443,7 +3443,7 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 	// find this turret, and set the position of the turret that just fired to be where it fired.  Quite a
 	// hack, but should be suitable.
 	shipp = &Ships[objp->instance];
-	ssp = ship_get_indexed_subsys( shipp, turret_index, NULL );
+	ssp = ship_get_indexed_subsys( shipp, turret_index );
 	if(ssp == NULL){
 		return;
 	}
@@ -8640,7 +8640,7 @@ void send_flak_fired_packet(int ship_objnum, int subsys_index, int weapon_objnum
 	Assert ( objp->type == OBJ_WEAPON );	
 	pnet_signature = Objects[ship_objnum].net_signature;
 
-	ssp = ship_get_indexed_subsys( &Ships[Objects[ship_objnum].instance], subsys_index, NULL );
+	ssp = ship_get_indexed_subsys( &Ships[Objects[ship_objnum].instance], subsys_index );
 	if(ssp == NULL){
 		return;
 	}
@@ -8724,7 +8724,7 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 	// find this turret, and set the position of the turret that just fired to be where it fired.  Quite a
 	// hack, but should be suitable.
 	shipp = &Ships[objp->instance];
-	ssp = ship_get_indexed_subsys( shipp, turret_index, NULL );
+	ssp = ship_get_indexed_subsys( shipp, turret_index );
 	if(ssp == NULL){
 		return;
 	}

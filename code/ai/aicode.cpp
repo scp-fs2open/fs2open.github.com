@@ -7774,7 +7774,11 @@ int ai_set_attack_subsystem(object *objp, int subnum)
 	attacked_objp = &Objects[aip->target_objnum];
 	shipp = &Ships[attacked_objp->instance];		//  need to get our target's ship pointer!!!
 
-	ssp = ship_get_indexed_subsys(shipp, subnum, &objp->pos);
+	// When subnum is >= 0, it indicates a specific subsystem.  Otherwise it is a subsystem type.  See ai_submode
+	if (subnum >= 0)
+		ssp = ship_get_indexed_subsys(shipp, subnum);
+	else
+		ssp = ship_get_first_subsys(shipp, -subnum, &objp->pos);
 	if (ssp == NULL)
 		return 0;
 

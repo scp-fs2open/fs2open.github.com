@@ -609,6 +609,7 @@ public:
 	// types of subsystems.  (i.e. the list might contain 3 engines.  There will be one subsys_info entry
 	// describing the state of all engines combined) -- MWA 4/1/97
 	ship_subsys	subsys_list;									//	linked list of subsystems for this ship.
+	std::unique_ptr<ship_subsys*> subsys_list_indexer;			//	provides random-access lookup to the linked list
 	ship_subsys	*last_targeted_subobject[MAX_PLAYERS];	// Last subobject that has been targeted.  NULL if none;(player specific)
 	ship_subsys_info	subsys_info[SUBSYSTEM_MAX];		// info on particular generic types of subsystems	
 
@@ -1706,7 +1707,8 @@ extern int ship_find_num_turrets(object *objp);
 extern void compute_slew_matrix(matrix *orient, angles *a);
 extern void ship_get_eye( vec3d *eye_pos, matrix *eye_orient, object *obj, bool do_slew = true, bool from_origin = false);		// returns in eye the correct viewing position for the given object
 //extern camid ship_get_followtarget_eye(object *obj);
-extern ship_subsys *ship_get_indexed_subsys( ship *sp, int index, vec3d *attacker_pos = NULL );	// returns index'th subsystem of this ship
+extern ship_subsys *ship_get_first_subsys(ship *sp, int subsys_type, vec3d *attacker_pos = nullptr);
+extern ship_subsys *ship_get_indexed_subsys(ship *sp, int index);	// returns index'th subsystem of this ship
 extern int ship_get_index_from_subsys(ship_subsys *ssp, int objnum);
 extern int ship_get_subsys_index(ship *sp, const char* ss_name);		// returns numerical index in linked list of subsystems
 extern int ship_get_subsys_index(ship *shipp, ship_subsys *subsys);

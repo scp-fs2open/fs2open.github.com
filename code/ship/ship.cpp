@@ -6229,6 +6229,7 @@ void ship::clear()
 	wingnum = -1;
 	orders_accepted.clear();
 
+	subsys_list_indexer.reset();
 	subsys_list.clear();
 	// since these aren't cleared by clear()
 	subsys_list.next = NULL;
@@ -6966,6 +6967,7 @@ static int subsys_set(int objnum, int ignore_subsys_info)
 	// set up the subsystems for this ship.  walk through list of subsystems in the ship-info array.
 	// for each subsystem, get a new ship_subsys instance and set up the pointers and other values
 	list_init ( &shipp->subsys_list );								// initialize the ship's list of subsystems
+	shipp->subsys_list_indexer.reset();
 
 	// make sure to have allocated the number of subsystems we require
 	if (!ship_allocate_subsystems( sinfo->n_subsystems )) {
@@ -7233,6 +7235,24 @@ static int subsys_set(int objnum, int ignore_subsys_info)
 		// turn_rate, turn_accel
 		if (ship_system->submodel_instance_1 != nullptr)
 			model_set_submodel_instance_motion_info(&pm->submodel[model_system->subobj_num], ship_system->submodel_instance_1);
+	}
+
+	// now that we have built the linked list, set up the indexes for it
+	shipp->subsys_list_indexer.reset(new ship_subsys*[sinfo->n_subsystems]);
+	auto ss = GET_FIRST(&shipp->subsys_list);
+	for (int index = 0; index < sinfo->n_subsystems; ++index)
+	{
+		// normal indexing to valid subsystems
+		if (ss != END_OF_LIST(&shipp->subsys_list))
+		{
+			shipp->subsys_list_indexer.get()[index] = ss;
+			ss = GET_NEXT(ss);
+		}
+		// in the event we run out of subsystems (i.e. if not all subsystems were linked)
+		else
+		{
+			shipp->subsys_list_indexer.get()[index] = nullptr;
+		}
 	}
 
 	if ( !ignore_subsys_info ) {
@@ -7661,6 +7681,8 @@ static void ship_subsystems_delete(ship *shipp)
 			Num_ship_subsystems--;								// subtract from our in-use total
 			systemp = temp;												// use the temp variable to move right along
 		}
+
+		shipp->subsys_list_indexer.reset();
 	}
 }
 
@@ -13861,56 +13883,43 @@ ship_subsys *ship_get_best_subsys_to_attack(ship *sp, int subsys_type, vec3d *at
 	return ss_return;
 }
 
-// function to return a pointer to the 'nth' ship_subsys structure in a ship's linked list
-// of ship_subsys'.
+// split from ship_get_indexed_subsys since they are conceptually different
 // attacker_pos	=>	world pos of attacker (default value NULL).  If value is non-NULL, try
 //							to select the best subsystem to attack of that type (using line-of-sight)
 //							and based on the number of ships already attacking the subsystem
-ship_subsys *ship_get_indexed_subsys( ship *sp, int index, vec3d *attacker_pos )
+ship_subsys *ship_get_first_subsys(ship *sp, int subsys_type, vec3d *attacker_pos)
 {
-	int count;
-	ship_subsys *ss;
+	Assertion(subsys_type > SUBSYSTEM_NONE && subsys_type < SUBSYSTEM_MAX, "Subsys_type must refer to a valid subsystem type!");
 
-	// first, special code to see if the index < 0.  If so, we are looking for one of several possible
-	// engines or one of several possible turrets.  If we enter this if statement, we will always return
-	// something.
-	if ( index < 0 ) {
-		int subsys_type;
-		
-		subsys_type = -index;
-		if ( sp->subsys_info[subsys_type].aggregate_current_hits <= 0.0f )		// if there are no hits, no subsystem to attack.
-			return NULL;
+	// We are looking for one instance of a certain subsystem type, e.g. one of several possible
+	// engines or one of several possible turrets.
+	if ( sp->subsys_info[subsys_type].aggregate_current_hits <= 0.0f )		// if there are no hits, no subsystem to attack.
+		return nullptr;
 
-		if ( attacker_pos != NULL ) {
-			ss = ship_get_best_subsys_to_attack(sp, subsys_type, attacker_pos);
-			return ss;
-		} else {
-			// next, scan the list of subsystems and search for the first subsystem of the particular
-			// type which has > 0 hits remaining.
-			for (ss = GET_FIRST(&sp->subsys_list); ss != END_OF_LIST(&sp->subsys_list); ss = GET_NEXT(ss) ) {
-				if ( (ss->system_info->type == subsys_type) && (ss->current_hits > 0) )
-					return ss;
-			}
+	if ( attacker_pos != nullptr ) {
+		return ship_get_best_subsys_to_attack(sp, subsys_type, attacker_pos);
+	} else {
+		// next, scan the list of subsystems and search for the first subsystem of the particular
+		// type which has > 0 hits remaining.
+		for (auto ss : list_range(&sp->subsys_list)) {
+			if ( (ss->system_info->type == subsys_type) && (ss->current_hits > 0) )
+				return ss;
 		}
+	}
 		
-		// maybe we shouldn't get here, but with possible floating point rounding, I suppose we could
-		Warning(LOCATION, "Unable to get a nonspecific subsystem of index %d on ship %s!", index, sp->ship_name);
-		return NULL;
-	}
+	// maybe we shouldn't get here, but with possible floating point rounding, I suppose we could
+	Warning(LOCATION, "Unable to get a nonspecific subsystem of type %d (%s) on ship %s!", subsys_type, Subsystem_types[subsys_type], sp->ship_name);
+	return nullptr;
+}
 
+// function to return a pointer to the 'nth' ship_subsys structure in a ship's linked list
+// of ship_subsys'.
+ship_subsys *ship_get_indexed_subsys(ship *sp, int index)
+{
+	Assertion(index >= 0, "Index must be positive!  The functionality for negative indexes has been moved to ship_get_first_subsys.");
+	Assertion(index < Ship_info[sp->ship_info_index].n_subsystems, "Subsystem index out of range!");
 
-	count = 0;
-	ss = GET_FIRST(&sp->subsys_list);
-	while ( ss != END_OF_LIST( &sp->subsys_list ) ) {
-		if ( count == index )
-			return ss;
-		count++;
-		ss = GET_NEXT( ss );
-	}
-
-	// get allender -- turret ref didn't fixup correctly!!!!
-	Warning(LOCATION, "In ship_get_indexed_subsys, unable to get a subsystem of index %d on ship %s, due to a broken subsystem reference!  This is most likely due to a table/model mismatch.", index, sp->ship_name);	
-	return NULL;
+	return sp->subsys_list_indexer.get()[index];
 }
 
 /**
