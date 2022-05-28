@@ -238,8 +238,10 @@ int timestamp_until(int stamp)
 
 int timestamp_until(TIMESTAMP stamp)
 {
+	Assertion(stamp.isValid() && !stamp.isNever(), "timestamp_until was called with an Invalid or Never timestamp!");
 	if (!stamp.isValid() || stamp.isNever())
 		return INT_MAX;
+
 	if (stamp.isImmediate())
 		return 0;
 
@@ -248,8 +250,10 @@ int timestamp_until(TIMESTAMP stamp)
 
 int ui_timestamp_until(UI_TIMESTAMP stamp)
 {
+	Assertion(stamp.isValid() && !stamp.isNever(), "timestamp_until was called with an Invalid or Never timestamp!");
 	if (!stamp.isValid() || stamp.isNever())
 		return INT_MAX;
+
 	if (stamp.isImmediate())
 		return 0;
 
@@ -263,8 +267,10 @@ int timestamp_since(int stamp)
 
 int timestamp_since(TIMESTAMP stamp)
 {
+	Assertion(stamp.isValid() && !stamp.isNever(), "timestamp_since was called with an Invalid or Never timestamp!");
 	if (!stamp.isValid() || stamp.isNever())
 		return INT_MIN;
+
 	if (stamp.isImmediate())
 		return 0;
 
@@ -273,8 +279,10 @@ int timestamp_since(TIMESTAMP stamp)
 
 int ui_timestamp_since(UI_TIMESTAMP stamp)
 {
+	Assertion(stamp.isValid() && !stamp.isNever(), "timestamp_since was called with an Invalid or Never timestamp!");
 	if (!stamp.isValid() || stamp.isNever())
 		return INT_MIN;
+
 	if (stamp.isImmediate())
 		return 0;
 
