@@ -10435,26 +10435,25 @@ int eval_random_multiple_of(int arg_handler_node, int condition_node)
 	// FIXME TODO: where are we checking condition_node? How about in eval_random_of()?
 	Assertion(condition_node != -1, "No condition provided to random-multiple-of. Please report!");
 
-	// FIXME TODO: review original code and make sure you preserve existing behavior for both this and eval_random_of()
-	int num_known_false = 0;
-
 	// get the number of valid arguments
 	SCP_vector<int> cumulative_arg_counts;
 	// FIXME TODO: I think whether contain args are present is irrelevant
 	// FIXME TODO: the new arg count function should return number of valid args, like the func it's based on
-	// container name arg nodes should *never* be "known false" nor "Nan forever", or if so, that's a bug
-	const bool container_args_found =
+
+	// number of valid arg nodes
+	const int num_valid_args =
 		sexp_container_query_sexp_args_count(arg_handler_node, cumulative_arg_counts, true);
-	const int size = (int)cumulative_arg_counts.size();
-	Assertion(size > (size_t)1,
-		"Attempt to find valid arguments for random-multiple-of had no response. Please report!");
-	// here, "valid" means neither "known false" nor "NaN forever"
-	const int num_valid_args = cumulative_arg_counts.back();
+	Assertion(!cumulative_arg_counts.empty(),
+		"Attempt to count arguments for random-multiple-of SEXP failed. Please report!");
 	Assertion(num_valid_args >= 0,
 		"random-multiple-of found invalid number of valid arguments (%d). please report!",
 		num_valid_args);
+	const int num_arg_values = cumulative_arg_counts.back();
+	Assertion(num_arg_values >= 0,
+		"random-multiple-of found invalid number of valid argument values (%d). please report!",
+		num_arg_values);
 
-	if (num_valid_args == 0)
+	if (num_valid_args == 0 || num_arg_values == 0)
 	{
 		// no point in continuing
 		return SEXP_FALSE;
@@ -10466,10 +10465,11 @@ int eval_random_multiple_of(int arg_handler_node, int condition_node)
 
 	// pick an argument and iterate to it
 	// FIXME TODO: move to new function
-	const int random_arg_value = rand_internal(1, num_valid_args);
+	
+	const int random_arg_value = rand_internal(1, num_arg_values);
 	int random_argument = -1;
 	// skip the first entry, which is the dummy value
-	for (int k = 1; k < size; ++k) {
+	for (int k = 1, size = (int)cumulative_arg_counts.size(); k < size; ++k) {
 		if (random_arg_value <= cumulative_arg_counts[k]) {
 			random_argument = k;
 			break;
@@ -10478,15 +10478,12 @@ int eval_random_multiple_of(int arg_handler_node, int condition_node)
 	Assertion(random_argument > 0,
 		"Attempt to find randomly selected argument in random-multiple-of failed. Please report!");
 
-	for (int i = 1; i <= random_argument; ++i) {
-		n = CDR(n);
-		Assertion(n >= 0, "No arguments provided to random-multiple-of. Please report!");
-	}
 	// FIXME TODO: Assert the Sexp_nodes[n] is "valid" per definition above
 	// FIXME TODO: do something with simpler logic but that also checks all args for SEXP_KNOWN_FALSE
 	// OTOH maybe simpler is bad; follow existing code that is known to work
 
 	int i = 0;
+	int num_known_false = 0;
 	for (int j = 0; j < num_valid_args; temp_node = CDR(temp_node))
 	{
 		// count only valid arguments
@@ -10502,7 +10499,6 @@ int eval_random_multiple_of(int arg_handler_node, int condition_node)
 		}
 	}
 
-	// TODO: fix this
 	if (num_known_false == num_valid_args) {
 		return SEXP_KNOWN_FALSE;	// We're going nowhere fast.
 	}
@@ -10521,15 +10517,22 @@ int eval_random_multiple_of(int arg_handler_node, int condition_node)
 		// true?
 		if (val == SEXP_TRUE)
 		{
-			// FIXME TODO: retrieve the right text
-			Sexp_applicable_argument_list.add_data(Sexp_nodes[n].text, n);
+			// FIXME TODO: retrieve arg value from node
+			if (Sexp_nodes[n].subtype == SEXP_ATOM_CONTAINER_NAME) {
+				const int arg_value_index =
+					cumulative_arg_counts[random_argument] - cumulative_arg_counts[random_argument - 1];
+				Assertion(arg_value_index >= 0, "TODO Please report!");
+				// FIXME TODO: get the container and assert it's a legit container and that arg value index is less than itsa size
+				// // TODO assert that the container is non-empty
+				// TODO
+			} else {
+				Sexp_applicable_argument_list.add_data(Sexp_nodes[n].text, n);
+			}
 		}
-		// FIXME TODO: is this correct? Couldn't arguments be validated later?
-		// FIXME TODO: if anything, we might need to downgrade SEXP_KNOWN_FALSE to SEXP_FALSE
-		else if (val == SEXP_KNOWN_FALSE)
+		// FIXME TODO: Add a condition that the sole valid arg is not a container name
+		else if ((num_valid_args == 1) && (Sexp_nodes[condition_node].value == SEXP_KNOWN_FALSE || Sexp_nodes[condition_node].value == SEXP_NAN_FOREVER))
 		{
-			// given the dynamic nature of this SEXP, one never knows
-			val = SEXP_FALSE;
+			val = SEXP_KNOWN_FALSE; // If we can't randomly pick another one and this one is guaranteed never to be true, then give up now.
 		}
 
 		// clear argument, but not list, as we'll need it later
