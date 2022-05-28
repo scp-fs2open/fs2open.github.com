@@ -1,7 +1,6 @@
 
 add_executable(cfilearchiver EXCLUDE_FROM_ALL cfilearchiver.cpp)
 
-ADD_DEFINITIONS(-DNO_SAFE_STRINGS)
 include_directories(${CODE_HEADERS})
 
 set_target_properties(cfilearchiver

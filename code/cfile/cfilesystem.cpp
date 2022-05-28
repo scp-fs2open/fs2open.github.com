@@ -1940,7 +1940,7 @@ int cf_get_file_list_preallocated(int max, char arr[][MAX_FILENAME_LEN], char** 
 
 				//mprintf(( "Found '%s' in root %d path %d\n", f->name_ext, f->root_index, f->pathtype_index ));
 
-				strncpy(arr[num_files], f->name_ext.c_str(), MAX_FILENAME_LEN - 1 );
+				strncpy_s(arr[num_files], f->name_ext.c_str(), MAX_FILENAME_LEN - 1);
 				char *ptr = strrchr(arr[num_files], '.');
 				if ( ptr ) {
 					*ptr = 0;

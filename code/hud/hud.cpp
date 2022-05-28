@@ -2469,7 +2469,7 @@ void hud_start_text_flash(const char *txt, int t, int interval)
 		if( !stricmp(Hud_text_flash, NOX("Emp")) || !stricmp(txt, NOX("Launch")) )
 			return;
 
-	strncpy(Hud_text_flash, txt, 500);
+	strncpy_s(Hud_text_flash, txt, 511);
 	Hud_text_flash_timer = timestamp(t);
 	Hud_text_flash_interval = interval;
 }

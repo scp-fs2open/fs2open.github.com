@@ -191,8 +191,7 @@ void convert_multiline_string(CString &dest, const char *src)
 void deconvert_multiline_string(char *dest, const CString &str, size_t max_len)
 {
 	// leave room for the null terminator
-	memset(dest, 0, max_len + 1);
-	strncpy(dest, (LPCTSTR) str, max_len);
+	strncpy_s(dest, max_len+1, (LPCTSTR) str, max_len);
 
 	replace_all(dest, "\r\n", "\n", max_len);
 }
@@ -888,8 +887,7 @@ void clear_mission()
 
 	t = CTime::GetCurrentTime();
 	strcpy_s(The_mission.name, "Untitled");
-	strncpy(The_mission.author, str, NAME_LENGTH - 1);
-	The_mission.author[NAME_LENGTH - 1] = 0;
+	strncpy_s(The_mission.author, str, NAME_LENGTH - 1);
 	strcpy_s(The_mission.created, t.Format("%x at %X"));
 	strcpy_s(The_mission.modified, The_mission.created);
 	strcpy_s(The_mission.notes, "This is a FRED2_OPEN created mission.\n");

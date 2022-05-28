@@ -386,7 +386,7 @@ void player_set_squad_bitmap(player *p, const char *fname, bool ismulti)
 
 	// try and set the new one
 	if (fname != squad_pic_p) {
-		strncpy(squad_pic_p, fname, MAX_FILENAME_LEN);
+		strncpy_s(squad_pic_p, MAX_FILENAME_LEN+1, fname, MAX_FILENAME_LEN);
 	}
 
 	if (squad_pic_p[0] != '\0') {

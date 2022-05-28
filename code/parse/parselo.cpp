@@ -1170,18 +1170,17 @@ void get_string(SCP_string &str)
 //	Stuff a string into a string buffer.
 //	Supports various FreeSpace primitive types.  If 'len' is supplied, it will override
 // the default string length if using the F_NAME case.
-void stuff_string(char *outstr, int type, int len, const char *terminators)
+void stuff_string(char *outstr, int type, int stuff_size, const char *terminators)
 {
 	char read_str[PARSE_BUF_SIZE] = "";
-	int read_len = PARSE_BUF_SIZE;
-	int final_len = len - 1;
+	int final_len = stuff_size - 1;
 	int tag_id;
 
 	// make sure we have enough room
 	Assert( final_len > 0 );
 
 	// make sure it's zero'd out
-	memset( outstr, 0, len );
+	memset( outstr, 0, stuff_size );
 
 	switch (type) {
 		case F_RAW:
@@ -1192,14 +1191,14 @@ void stuff_string(char *outstr, int type, int len, const char *terminators)
 		case F_PATHNAME:
 		case F_MESSAGE:
 			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp, read_len);
+			copy_to_eoln(read_str, terminators, Mp, PARSE_BUF_SIZE);
 			drop_trailing_white_space(read_str);
 			advance_to_eoln(terminators);
 			break;
 
 		case F_NOTES:
 			ignore_white_space();
-			copy_text_until(read_str, Mp, "$End Notes:", read_len);
+			copy_text_until(read_str, Mp, "$End Notes:", PARSE_BUF_SIZE);
 			Mp += strlen(read_str);
 			required_string("$End Notes:");
 			break;
@@ -1209,14 +1208,14 @@ void stuff_string(char *outstr, int type, int len, const char *terminators)
 
 		case F_MULTITEXTOLD:
 			ignore_white_space();
-			copy_text_until(read_str, Mp, "$End Briefing Text:", read_len);
+			copy_text_until(read_str, Mp, "$End Briefing Text:", PARSE_BUF_SIZE);
 			Mp += strlen(read_str);
 			required_string("$End Briefing Text:");
 			break;
 
 		case F_MULTITEXT:
 			ignore_white_space();
-			copy_text_until(read_str, Mp, "$end_multi_text", read_len);
+			copy_text_until(read_str, Mp, "$end_multi_text", PARSE_BUF_SIZE);
 			Mp += strlen(read_str);
 			drop_trailing_white_space(read_str);
 			required_string("$end_multi_text");
@@ -1250,6 +1249,7 @@ void stuff_string(char *outstr, int type, int len, const char *terminators)
 			error_display(0, "Token too long: [%s].  Length = " SIZE_T_ARG ".  Max is %i.\n", read_str, strlen(read_str), final_len);
 
 		strncpy(outstr, read_str, final_len);
+		outstr[final_len] = 0;
 	}
 
 	diag_printf("Stuffed string = [%.30s]\n", outstr);
@@ -2259,14 +2259,14 @@ void read_raw_file_text(const char *filename, int mode, char *raw_text)
 				}
 
 				if (success) {
-					strncpy(Parse_text_raw, buffer.c_str(), buffer.length());
+					strncpy_s(Parse_text_raw, file_len+1, buffer.c_str(), buffer.length());
 				}
 				else {
 					Warning(LOCATION, "File reencoding failed!\n"
 						"You will probably encounter encoding issues.");
 
-					// Copy the original data back to the mission text pointer so that we don't loose any data here
-					strcpy(Parse_text_raw, input_str.c_str());
+					// Copy the original data back to the mission text pointer so that we don't lose any data here
+					strcpy_s(Parse_text_raw, file_len+1, input_str.c_str());
 				}
 			} else {
 				Warning(LOCATION, "Found invalid UTF-8 encoding in file %s at position " PTRDIFF_T_ARG "!\n"

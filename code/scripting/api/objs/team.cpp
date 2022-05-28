@@ -31,9 +31,8 @@ ADE_VIRTVAR(Name, l_Team, "string", "Team name", "string", "Team name, or empty 
 		return ade_set_error(L, "s", "");
 
 	if(ADE_SETTING_VAR && s != nullptr) {
-		auto len = sizeof(Iff_info[tdx].iff_name);
-		strncpy(Iff_info[tdx].iff_name, s, len);
-		Iff_info[tdx].iff_name[len - 1] = 0;
+		auto size = sizeof(Iff_info[tdx].iff_name);
+		strncpy_s(Iff_info[tdx].iff_name, s, size-1);
 	}
 
 	return ade_set_args(L, "s", Iff_info[tdx].iff_name);

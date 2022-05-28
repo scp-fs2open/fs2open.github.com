@@ -549,14 +549,12 @@ void VoiceActingManager::get_valid_sender(char *sender, size_t sender_size, cons
 	Assert( sender != NULL );
 	Assert( message != NULL );
 
-	memset(sender, 0, sender_size);
-	strncpy(sender, get_message_sender(message), sender_size - 1);
+	strncpy_s(sender, sender_size, get_message_sender(message->name), sender_size - 1);
 
 	// check if we're overriding #Command
 	if (The_mission.flags[Mission::Mission_Flags::Override_hashcommand] && !strcmp("#Command", sender))
 	{
-		memset(sender, 0, sender_size);
-		strncpy(sender, The_mission.command_sender, sender_size - 1);
+		strncpy_s(sender, sender_size, The_mission.command_sender, sender_size - 1);
 	}
 
 	// strip hash if present
@@ -591,8 +589,7 @@ void VoiceActingManager::get_valid_sender(char *sender, size_t sender_size, cons
 		// use the regular sender display name
 		else
 		{
-			memset(sender, 0, sender_size);
-			strncpy(sender, shipp->get_display_name(), sender_size - 1);
+			strncpy_s(sender, sender_size, shipp->get_display_name(), sender_size - 1);
 		}
 	}
 }

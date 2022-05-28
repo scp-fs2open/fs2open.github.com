@@ -379,8 +379,6 @@ add_file_folder("GlobalIncs"
 	globalincs/globals.h
 	globalincs/linklist.h
 	globalincs/pstypes.h
-	globalincs/safe_strings.cpp
-	globalincs/safe_strings.h
 	globalincs/systemvars.cpp
 	globalincs/systemvars.h
 	globalincs/toolchain.h

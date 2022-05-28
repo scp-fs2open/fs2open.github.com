@@ -15626,7 +15626,10 @@ bool ship_subsys_has_instance_name(ship_subsys *ss)
 		return false;
 }
 
-void ship_subsys_set_name(ship_subsys* ss, const char* n_name) { strncpy(ss->sub_name, n_name, NAME_LENGTH - 1); }
+void ship_subsys_set_name(ship_subsys* ss, const char* n_name)
+{
+	strncpy_s(ss->sub_name, n_name, NAME_LENGTH - 1);
+}
 
 /**
  * Return the shield strength of the specified quadrant on hit_objp
@@ -18511,7 +18514,7 @@ int damage_type_add(char *name)
 
 	DamageTypeStruct dts;
 
-	strncpy(dts.name, name, NAME_LENGTH-1);
+	strncpy_s(dts.name, name, NAME_LENGTH-1);
 
 	if(strlen(name) > NAME_LENGTH - 1)
 	{
@@ -18946,7 +18949,7 @@ ArmorType::ArmorType(const char* in_name)
 		Warning(LOCATION, "Armor name %s is " SIZE_T_ARG " characters too long, and will be truncated", in_name, len - NAME_LENGTH);
 	}
 	
-	strncpy(Name, in_name, NAME_LENGTH-1);
+	strncpy_s(Name, in_name, NAME_LENGTH-1);
 }
 
 void ArmorType::ParseData()

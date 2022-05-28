@@ -1031,7 +1031,7 @@ namespace animation {
 
 	SCP_string anim_name_from_subsys(model_subsystem* ss) {
 		char namelower[MAX_NAME_LEN];
-		strncpy(namelower, ss->subobj_name, MAX_NAME_LEN);
+		strncpy_s(namelower, ss->subobj_name, MAX_NAME_LEN-1);
 		strlwr(namelower);
 		return namelower;
 	}
@@ -1370,8 +1370,9 @@ namespace animation {
 			auto anim = std::shared_ptr<ModelAnimation>(new ModelAnimation(true));
 
 			char namelower[MAX_NAME_LEN];
-			strncpy(namelower, sp->subobj_name, MAX_NAME_LEN);
+			strncpy_s(namelower, sp->subobj_name, MAX_NAME_LEN-1);
 			strlwr(namelower);
+
 			//since sp->type is not set without reading the pof, we need to infer it by subsystem name (which works, since the same name is used to match the submodels name, which is used to match the type in pof parsing)
 			//sadly, we also need to check for engine and radar, since these take precedent (as in, an engineturret is an engine before a turret type)
 			if (!strstr(namelower, "engine") && !strstr(namelower, "radar") && strstr(namelower, "turret")) {

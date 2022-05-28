@@ -101,7 +101,7 @@ void camera::reset()
 void camera::set_name(const char *in_name)
 {
 	if(in_name != NULL)
-		strncpy(name, in_name, NAME_LENGTH-1);
+		strncpy_s(name, in_name, NAME_LENGTH-1);
 }
 
 void camera::set_fov(float in_fov, float in_fov_time, float in_fov_acceleration_time, float in_fov_deceleration_time)
@@ -700,7 +700,7 @@ subtitle::subtitle(int in_x_pos, int in_y_pos, const char* in_text, const char* 
 		image_id = bm_load(in_imageanim);
 
 		if (image_id >= 0)
-			strncpy(imageanim, in_imageanim, sizeof(imageanim) - 1);
+			strncpy_s(imageanim, in_imageanim, MAX_FILENAME_LEN - 1);
 	}
 
 	//Setup pos
@@ -1026,11 +1026,11 @@ camid cam_create(const char *n_name, vec3d *n_pos, matrix *n_ori, object *n_obje
 	int sig = cam_get_next_sig();
 
 	//Get name
-	char buf[NAME_LENGTH] = {'\0'};
+	char buf[NAME_LENGTH];
 	if(n_name == NULL)
 		sprintf(buf, "Camera %d", cid.getSignature());
 	else
-		strncpy(buf, n_name, NAME_LENGTH-1);
+		strncpy_s(buf, n_name, NAME_LENGTH-1);
 
 	//Find a free slot
 	cam = new camera(buf, sig);

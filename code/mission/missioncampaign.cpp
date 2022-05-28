@@ -106,7 +106,7 @@ int mission_campaign_get_info(const char *filename, char *name, int *type, int *
 	Assert( name != NULL );
 	Assert( type != NULL );
 
-	strncpy(fname, filename, MAX_FILENAME_LEN - 1);
+	strncpy_s(fname, filename, MAX_FILENAME_LEN - 1);
 	auto fname_len = strlen(fname);
 	if ((fname_len < 4) || stricmp(fname + fname_len - 4, FS_CAMPAIGN_FILE_EXT) != 0){
 		strcat_s(fname, FS_CAMPAIGN_FILE_EXT);

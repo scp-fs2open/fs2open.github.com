@@ -22345,7 +22345,7 @@ void sexp_string_get_substring(int node)
 
 		auto byte_diff = end_ptr - start_ptr;
 
-		strncpy(new_text, start_ptr, byte_diff);
+		strncpy_s(new_text, start_ptr, byte_diff);
 	}
 
 	// assign to variable
@@ -27614,7 +27614,7 @@ int get_sexp_main()
 	if (*Mp != '(')
 	{
 		char buf[512];
-		strncpy(buf, Mp, 512);
+		strncpy(buf, Mp, 511);
 		if (buf[511] != '\0')
 			strcpy(&buf[506], "[...]");
 
@@ -31702,8 +31702,7 @@ void sexp_modify_variable(const char *text, int index, bool sexp_callback)
 			Warning(LOCATION, "String too long.  Only " SIZE_T_ARG " characters will be assigned to %s.\n\nOriginal string:\n%s", maxCopyLen, Sexp_variables[index].variable_name, text);
 
 		// no variables, so no substitution
-		strncpy(Sexp_variables[index].text, text, maxCopyLen);
-		Sexp_variables[index].text[maxCopyLen] = 0;
+		strncpy_s(Sexp_variables[index].text, text, maxCopyLen);
 	}
 	Sexp_variables[index].type |= SEXP_VARIABLE_MODIFIED;
 
@@ -32202,8 +32201,7 @@ bool sexp_replace_variable_names_with_values(char *text, int max_len)
 			{
 				// get the replacement string ($variable)
 				char what_to_replace[TOKEN_LENGTH+1];
-				memset(what_to_replace, 0, TOKEN_LENGTH+1);
-				strncpy(what_to_replace, pos, strlen(Sexp_variables[var_index].variable_name) + 1);
+				strncpy_s(what_to_replace, pos, strlen(Sexp_variables[var_index].variable_name) + 1);
 
 				// replace it
 				auto diff = replace_one(text, what_to_replace, Sexp_variables[var_index].text, max_len);

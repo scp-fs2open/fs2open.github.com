@@ -2884,7 +2884,7 @@ public:
 	//Returns handle, or < 0 on failure/wrong type
 	gamesnd_id getSound();
 	//Returns 1 if buffer was successfully written to
-	int getString(char *output, size_t output_max);
+	int getString(char *output, size_t output_len);
 
 	//Returns true if TYPE_NONE
 	bool isEmpty();
@@ -3023,25 +3023,25 @@ gamesnd_id CombinedVariable::getSound()
 	else
 		return {};
 }
-int CombinedVariable::getString(char *output, size_t output_max)
+int CombinedVariable::getString(char *output, size_t output_len)
 {
-	if(output == NULL || output_max == 0)
+	if(output == NULL || output_len == 0)
 		return 0;
 
 	if(Type == TYPE_FLOAT)
 	{
-		snprintf(output, output_max, "%f", su_Float);
+		snprintf(output, output_len, "%f", su_Float);
 		return 1;
 	}
 	if(Type == TYPE_IMAGE)
 	{
 		if(bm_is_valid(su_Image))
-			snprintf(output, output_max, "%s", bm_get_filename(su_Image));
+			snprintf(output, output_len, "%s", bm_get_filename(su_Image));
 		return 1;
 	}
 	if(Type == TYPE_INT)
 	{
-		snprintf(output, output_max, "%i", su_Int);
+		snprintf(output, output_len, "%i", su_Int);
 		return 1;
 	}
 	if(Type == TYPE_SOUND)
@@ -3053,7 +3053,7 @@ int CombinedVariable::getString(char *output, size_t output_max)
 	}
 	if(Type == TYPE_STRING)
 	{
-		strncpy(output, su_String, output_max);
+		strncpy(output, su_String, output_len);
 		return 1;
 	}
 	return 0;

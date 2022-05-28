@@ -104,7 +104,7 @@ bool mission_load(const char* filename_ext)
 	char filename[MAX_PATH_LEN], *ext;
 
 	if ( (filename_ext != NULL) && (Game_current_mission_filename != filename_ext) )
-		strncpy(Game_current_mission_filename, filename_ext, MAX_FILENAME_LEN-1);
+		strncpy_s(Game_current_mission_filename, filename_ext, MAX_FILENAME_LEN-1);
 
 	mprintf(("MISSION LOAD: '%s'\n", filename_ext));
 	events::GameMissionLoad(filename_ext);
@@ -340,12 +340,12 @@ void mission_load_menu_do()
 		}
 	}
 
-	char mission_name_final[512] = "";
+	char mission_name_final[MAX_FILENAME_LEN];
 
 	if ( selected > -1  )	{
 		Campaign.current_mission = -1;
 		if ( use_recent_flag ) {
-			strncpy( mission_name_final, recent_missions[selected], MAX_FILENAME_LEN );
+			strncpy_s( mission_name_final, recent_missions[selected], MAX_FILENAME_LEN-1 );
 		} else {
 			char mission_name[NAME_LENGTH];
 			if ( Campaign_filter_index == 0 )	{
@@ -355,7 +355,7 @@ void mission_load_menu_do()
 			} else {
 				strcpy_s(mission_name, Campaign_missions[selected]);
 			}
-			strncpy( mission_name_final, mission_name, MAX_FILENAME_LEN );
+			strncpy_s( mission_name_final, mission_name, MAX_FILENAME_LEN-1 );
 		}
 
 		// go

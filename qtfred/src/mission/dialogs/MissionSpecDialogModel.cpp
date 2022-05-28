@@ -114,20 +114,20 @@ bool MissionSpecDialogModel::apply() {
 	// puts "$End Notes:" on a different line to ensure it's not interpreted as part of a comment
 	Editor::pad_with_newline(_m_mission_notes, NOTES_LENGTH - 1);
 
-	strncpy(The_mission.name, _m_mission_title.c_str(), NAME_LENGTH-1);
-	strncpy(The_mission.author, _m_designer_name.c_str(), NAME_LENGTH-1);
-	strncpy(The_mission.loading_screen[GR_640], _m_loading_640.c_str(), NAME_LENGTH-1);
-	strncpy(The_mission.loading_screen[GR_1024], _m_loading_1024.c_str(), NAME_LENGTH-1);
-	strncpy(The_mission.notes, _m_mission_notes.c_str(), NOTES_LENGTH);
-	strncpy(The_mission.mission_desc, _m_mission_desc.c_str(), MISSION_DESC_LENGTH);
+	strncpy_s(The_mission.name, _m_mission_title.c_str(), NAME_LENGTH-1);
+	strncpy_s(The_mission.author, _m_designer_name.c_str(), NAME_LENGTH-1);
+	strncpy_s(The_mission.loading_screen[GR_640], _m_loading_640.c_str(), NAME_LENGTH-1);
+	strncpy_s(The_mission.loading_screen[GR_1024], _m_loading_1024.c_str(), NAME_LENGTH-1);
+	strncpy_s(The_mission.notes, _m_mission_notes.c_str(), NOTES_LENGTH-1);
+	strncpy_s(The_mission.mission_desc, _m_mission_desc.c_str(), MISSION_DESC_LENGTH-1);
 
 	// copy squad stuff
 	if (_m_squad_name == NO_SQUAD) {
 		strcpy_s(The_mission.squad_name, "");
 		strcpy_s(The_mission.squad_filename, "");
 	} else {
-		strncpy(The_mission.squad_name, _m_squad_name.c_str(), NAME_LENGTH);
-		strncpy(The_mission.squad_filename, _m_squad_filename.c_str(), MAX_FILENAME_LEN);
+		strncpy_s(The_mission.squad_name, _m_squad_name.c_str(), NAME_LENGTH-1);
+		strncpy_s(The_mission.squad_filename, _m_squad_filename.c_str(), MAX_FILENAME_LEN-1);
 	}
 
 	The_mission.ai_profile = &Ai_profiles[_m_ai_profile];

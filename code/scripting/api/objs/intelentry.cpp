@@ -50,9 +50,8 @@ ADE_VIRTVAR(Name, l_Intelentry, "string", "Intel entry name", "string", "Intel e
 		return ade_set_error(L, "s", "");
 
 	if(ADE_SETTING_VAR && s != nullptr) {
-		auto len = sizeof(Intel_info[idx].name);
-		strncpy(Intel_info[idx].name, s, len);
-		Intel_info[idx].name[len - 1] = 0;
+		auto size = sizeof(Intel_info[idx].name);
+		strncpy_s(Intel_info[idx].name, s, size-1);
 	}
 
 	return ade_set_args(L, "s", Intel_info[idx].name);
@@ -91,9 +90,8 @@ ADE_VIRTVAR(AnimFilename, l_Intelentry, "string", "Intel entry animation filenam
 
 	if(ADE_SETTING_VAR) {
 		if(s != nullptr) {
-			auto len = sizeof(Intel_info[idx].anim_filename);
-			strncpy(Intel_info[idx].anim_filename, s, len);
-			Intel_info[idx].anim_filename[len - 1] = 0;
+			auto size = sizeof(Intel_info[idx].anim_filename);
+			strncpy_s(Intel_info[idx].anim_filename, s, size-1);
 		} else {
 			strcpy_s(Intel_info[idx].anim_filename, "");
 		}

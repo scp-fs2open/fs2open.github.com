@@ -2334,8 +2334,8 @@ void control_config_do_frame(float frametime)
 		}
 
 		// setup the conflict string
-		char conflict_str[512] = "";
-		strncpy(conflict_str, XSTR("Conflict!", 205), 511);
+		char conflict_str[64] = "";
+		strncpy_s(conflict_str, XSTR("Conflict!", 205), 63);
 		int sw, sh;
 		gr_get_string_size(&sw, &sh, conflict_str);
 

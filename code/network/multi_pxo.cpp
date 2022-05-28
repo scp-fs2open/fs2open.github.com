@@ -2279,8 +2279,7 @@ void multi_pxo_channel_count_update(char *name, int count)
 void multi_pxo_set_status_text(const char *txt)
 {
 	// copy in the text
-	memset(Multi_pxo_status_text, 0, MAX_PXO_TEXT_LEN);
-	strncpy(Multi_pxo_status_text, txt, MAX_PXO_TEXT_LEN-1);
+	strncpy_s(Multi_pxo_status_text, txt, MAX_PXO_TEXT_LEN-1);
 
 	// make sure it fits properly
 	font::force_fit_string(Multi_pxo_status_text, MAX_PXO_TEXT_LEN-1, Multi_pxo_status_coords[gr_screen.res][2]);
@@ -2436,10 +2435,11 @@ pxo_channel *multi_pxo_add_channel(char *name,pxo_channel **list)
 	if ( new_channel == NULL ) {
 		nprintf(("Network", "Cannot allocate space for new pxo_channel structure\n"));
 		return NULL;
-	}	
+	}
 	memset(new_channel,0,sizeof(pxo_channel));
+
 	// try and allocate a string for the channel name
-	strncpy(new_channel->name,name,MAX_CHANNEL_NAME_LEN);	
+	strncpy_s(new_channel->name,name,MAX_CHANNEL_NAME_LEN);	
 
 	// insert it on the list
 	if ( *list != NULL ) {
@@ -2867,9 +2867,11 @@ player_list *multi_pxo_add_player(char *name)
 	if ( new_player == NULL ) {
 		nprintf(("Network", "Cannot allocate space for new player_list structure\n"));
 		return NULL;
-	}	
+	}
+	memset(new_player, 0, sizeof(player_list));
+
 	// try and allocate a string for the channel name
-	strncpy(new_player->name, name, MAX_PLAYER_NAME_LEN);	
+	strncpy_s(new_player->name, name, MAX_PLAYER_NAME_LEN);	
 
 	// insert it on the list
 	if ( Multi_pxo_players != NULL ) {
@@ -3220,7 +3222,7 @@ void multi_pxo_chat_add_line(const char *txt, int mode)
 	
 	// copy in the text
 	Assert(Multi_pxo_chat_add != NULL);
-	strncpy(Multi_pxo_chat_add->text, txt, MAX_CHAT_LINE_LEN);
+	strncpy_s(Multi_pxo_chat_add->text, txt, MAX_CHAT_LINE_LEN);
 	Multi_pxo_chat_add->mode = mode;
 
 	// if we're at the end of the list, move the front item down
