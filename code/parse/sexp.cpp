@@ -978,15 +978,13 @@ int Sexp_current_argument_nesting_level;
 // Goober5000
 bool is_blank_argument_op(int op_const);
 bool is_blank_of_op(int op_const);
+bool is_for_blank_op(int op_const); // jg18
 int get_handler_for_x_of_operator(int node);
 
 //Karajorma
 int get_generic_subsys(const char *subsy_name);
 bool ship_class_unchanged(const ship_registry_entry *ship_entry);
 void multi_sexp_modify_variable();
-
-// jg18
-bool is_for_op(int op_const);
 
 #define NO_OPERATOR_INDEX_DEFINED		-2
 #define NOT_A_SEXP_OPERATOR				-1
@@ -10768,7 +10766,7 @@ void sexp_change_all_argument_validity(int n, bool invalidate)
 
 	// can't change validity of for-* sexps
 	auto op_const = get_operator_const(arg_handler);
-	if (is_for_op(op_const))
+	if (is_for_blank_op(op_const))
 		return;
 		
 	while (n != -1)
@@ -10851,7 +10849,7 @@ void sexp_change_argument_validity(int n, bool invalidate)
 
 	// can't change validity of for-* sexps
 	auto op_const = get_operator_const(arg_handler);
-	if (is_for_op(op_const))
+	if (is_for_blank_op(op_const))
 		return;
 		
 	// loop through arguments
@@ -10958,7 +10956,7 @@ bool is_blank_argument_op(int op_const)
 // Goober5000
 bool is_blank_of_op(int op_const)
 {
-	if (is_for_op(op_const)) {
+	if (is_for_blank_op(op_const)) {
 		return true;
 	}
 
@@ -10971,6 +10969,27 @@ bool is_blank_of_op(int op_const)
 		case OP_RANDOM_MULTIPLE_OF:
 		case OP_IN_SEQUENCE:
 		case OP_FIRST_OF:
+			return true;
+
+		default:
+			return false;
+	}
+}
+
+// jg18
+// check if an operator is one of the for-* SEXPs
+bool is_for_blank_op(const int op_const)
+{
+	switch (op_const)
+	{
+		case OP_FOR_COUNTER:
+		case OP_FOR_SHIP_CLASS:
+		case OP_FOR_SHIP_TYPE:
+		case OP_FOR_SHIP_TEAM:
+		case OP_FOR_SHIP_SPECIES:
+		case OP_FOR_PLAYERS:
+		case OP_FOR_CONTAINER_DATA:
+		case OP_FOR_MAP_CONTAINER_KEYS:
 			return true;
 
 		default:
@@ -31447,26 +31466,6 @@ void multi_sexp_modify_variable()
 
 		strcpy_s(Sexp_variables[variable_index].text, value);
 	}	
-}
-
-// check if an operator is one of the for-* SEXPs
-bool is_for_op(const int op_const)
-{
-	switch (op_const)
-	{
-		case OP_FOR_COUNTER:
-		case OP_FOR_SHIP_CLASS:
-		case OP_FOR_SHIP_TYPE:
-		case OP_FOR_SHIP_TEAM:
-		case OP_FOR_SHIP_SPECIES:
-		case OP_FOR_PLAYERS:
-		case OP_FOR_CONTAINER_DATA:
-		case OP_FOR_MAP_CONTAINER_KEYS:
-			return true;
-
-		default:
-			return false;
-	}
 }
 
 void sexp_modify_variable(int n)
