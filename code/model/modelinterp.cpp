@@ -56,7 +56,6 @@ extern fix game_get_overall_frametime();	// for texture animation
 
 typedef struct model_light {
 	ubyte r, g, b;
-	ubyte spec_r, spec_g, spec_b;
 } model_light;
 
 // a lighting object

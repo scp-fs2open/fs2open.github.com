@@ -170,7 +170,6 @@ void gr_opengl_deferred_lighting_finish()
 			diffuse.xyz.z = l.b * i;
 
 			light_data->diffuseLightColor = diffuse;
-			light_data->specLightColor = diffuse;
 
 			// Set a default value for all lights. Only the first directional light will change this.
 			light_data->enable_shadows = false;
