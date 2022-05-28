@@ -142,7 +142,7 @@ void LuaAISEXP::parseTable() {
 		}
 
 		if (optional_string("+Target Restrictions:")) {
-			int result = optional_string_one_of(8, "Allies", "All", "Own Team", "Hostiles", "Same Wing", "Player Wing", "Capitals", "Allied Capitals", "Enemy Capitals");
+			int result = optional_string_one_of(9, "Allies", "All", "Own Team", "Hostiles", "Same Wing", "Player Wing", "Capitals", "Allied Capitals", "Enemy Capitals", "Not Self");
 			if (result == -1) {
 				error_display(0, "Unknown target restriction for player order %s. Assuming \"All\".", order.displayText.c_str());
 				order.targetRestrictions = player_order_lua::target_restrictions::TARGET_ALL;
@@ -195,6 +195,20 @@ void LuaAISEXP::setActionFrame(const luacpp::LuaFunction& action) {
 }
 luacpp::LuaFunction LuaAISEXP::getActionFrame() const {
 	return _actionFrame;
+}
+
+void LuaAISEXP::setAchievable(const luacpp::LuaFunction& action) {
+	_achievable = action;
+}
+luacpp::LuaFunction LuaAISEXP::getAchievable() const {
+	return _achievable;
+}
+
+void LuaAISEXP::setTargetRestrict(const luacpp::LuaFunction& action) {
+	_targetRestrict = action;
+}
+luacpp::LuaFunction LuaAISEXP::getTargetRestrict() const {
+	return _targetRestrict;
 }
 
 void LuaAISEXP::registerAIMode(int sexp_id) const {
