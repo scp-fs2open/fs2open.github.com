@@ -10484,11 +10484,16 @@ int eval_random_multiple_of(int arg_handler_node, int condition_node)
 
 	int i = 0;
 	int num_known_false = 0;
+	bool valid_container_arg_found = false;
 	for (int j = 0; j < num_valid_args; temp_node = CDR(temp_node))
 	{
 		// count only valid arguments
 		if (Sexp_nodes[temp_node].flags & SNF_ARGUMENT_VALID) {
 			j++;
+
+			if (Sexp_nodes[temp_node].subtype == SEXP_ATOM_CONTAINER_NAME) {
+				valid_container_arg_found = true;
+			}
 			if (i < random_argument && (++i == random_argument)) {
 				// Found the node we want, store it for use
 				n = temp_node;
@@ -10511,26 +10516,29 @@ int eval_random_multiple_of(int arg_handler_node, int condition_node)
 		Sexp_applicable_argument_list.clear_nesting_level();
 
 		// evaluate conditional for current argument
-		Sexp_replacement_arguments.emplace_back(Sexp_nodes[n].text, n);
+		// FIXME TODO: retrieve arg value from node
+		if (Sexp_nodes[n].subtype == SEXP_ATOM_CONTAINER_NAME) {
+			const int arg_value_index =
+				cumulative_arg_counts[random_argument] - cumulative_arg_counts[random_argument - 1];
+			Assertion(arg_value_index >= 0, "TODO Please report!");
+			// FIXME TODO: get the container and assert it's a legit container and that arg value index is less than itsa size
+			// // TODO assert that the container is non-empty
+			// TODO
+		} else {
+			Sexp_replacement_arguments.emplace_back(Sexp_nodes[n].text, n);
+		}
+
 		val = eval_sexp(condition_node);
 
 		// true?
 		if (val == SEXP_TRUE)
 		{
-			// FIXME TODO: retrieve arg value from node
-			if (Sexp_nodes[n].subtype == SEXP_ATOM_CONTAINER_NAME) {
-				const int arg_value_index =
-					cumulative_arg_counts[random_argument] - cumulative_arg_counts[random_argument - 1];
-				Assertion(arg_value_index >= 0, "TODO Please report!");
-				// FIXME TODO: get the container and assert it's a legit container and that arg value index is less than itsa size
-				// // TODO assert that the container is non-empty
-				// TODO
-			} else {
-				Sexp_applicable_argument_list.add_data(Sexp_nodes[n].text, n);
-			}
+			// FIXME TODO: use the right text
+			Sexp_applicable_argument_list.add_data(Sexp_nodes[n].text, n);
 		}
-		// FIXME TODO: Add a condition that the sole valid arg is not a container name
-		else if ((num_valid_args == 1) && (Sexp_nodes[condition_node].value == SEXP_KNOWN_FALSE || Sexp_nodes[condition_node].value == SEXP_NAN_FOREVER))
+		else if ((num_valid_args == 1) && !valid_container_arg_found &&
+				 (Sexp_nodes[condition_node].value == SEXP_KNOWN_FALSE ||
+					 Sexp_nodes[condition_node].value == SEXP_NAN_FOREVER))
 		{
 			val = SEXP_KNOWN_FALSE; // If we can't randomly pick another one and this one is guaranteed never to be true, then give up now.
 		}
