@@ -9987,7 +9987,7 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 		end_string_at_first_hash_symbol(shipp->ship_name);
 
 		// build it
-		Assert(strlen(shipp->ship_name) + strlen(suffix) < NAME_LENGTH - 1);
+		Assert(strlen(shipp->ship_name) + strlen(suffix) <= NAME_LENGTH - 1);
 		strcat_s(shipp->ship_name, suffix);
 	} else {
 		if (ship_find_exited_ship_by_name(ship_name) >= 0 && !(Game_mode & GM_MULTIPLAYER)) {
