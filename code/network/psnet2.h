@@ -144,7 +144,7 @@ void psnet_close();
 int psnet_get_network_status();
 
 // convert a net_addr to a string
-const char *psnet_addr_to_string(const net_addr *address, char *text, size_t max_len);
+const char *psnet_addr_to_string(const net_addr *address, char *text, size_t max_size);
 
 // convert a string to a net addr
 bool psnet_string_to_addr(const char *text, net_addr *address);

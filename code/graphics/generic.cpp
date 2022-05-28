@@ -126,7 +126,7 @@ void generic_bitmap_init(generic_bitmap *gb, const char *filename)
 	if (filename == NULL) {
 		gb->filename[0] = '\0';
 	} else {
-		strncpy(gb->filename, filename, MAX_FILENAME_LEN - 1);
+		strncpy_s(gb->filename, filename, MAX_FILENAME_LEN - 1);
 	}
 
 	gb->bitmap_id = -1;

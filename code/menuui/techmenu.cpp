@@ -822,7 +822,7 @@ void techroom_change_tab(int num)
 						temp_entry.desc = wi.tech_desc;
 						temp_entry.name = wi.tech_title[0] ? wi.tech_title : wi.get_display_name();
 						// copy the weapon animation filename
-						strncpy(temp_entry.tech_anim_filename, wi.tech_anim_filename, MAX_FILENAME_LEN - 1);
+						strncpy_s(temp_entry.tech_anim_filename, wi.tech_anim_filename, MAX_FILENAME_LEN - 1);
 						
 						Weapon_list.push_back(temp_entry);
 					}
@@ -865,7 +865,7 @@ void techroom_change_tab(int num)
 						} else {
 							// try and load as an animation
 							temp_entry.bitmap = -1;
-							strncpy(temp_entry.tech_anim_filename, ii.anim_filename, NAME_LENGTH - 1);
+							strncpy_s(temp_entry.tech_anim_filename, ii.anim_filename, NAME_LENGTH - 1);
 						}
 
 						temp_entry.desc = ii.desc.c_str();

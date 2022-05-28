@@ -112,7 +112,7 @@ void fireball_play_warphole_close_sound(fireball *fb)
 	snd_play_3d(gamesnd_get_game_sound(sound_index), &fireball_objp->pos, &Eye_position, fireball_objp->radius); // play warp sound effect
 }
 
-static void fireball_generate_unique_id(char *unique_id, int buffer_len, int fireball_index)
+static void fireball_generate_unique_id(char *unique_id, int buffer_size, int fireball_index)
 {
 	Assert((fireball_index >= 0) && (fireball_index < MAX_FIREBALL_TYPES));
 
@@ -120,37 +120,34 @@ static void fireball_generate_unique_id(char *unique_id, int buffer_len, int fir
 	{
 		// use sensible names for the fireball.tbl default entries
 		case FIREBALL_EXPLOSION_MEDIUM:
-			strncpy(unique_id, "Medium Explosion", buffer_len);
+			strncpy_s(unique_id, buffer_size, "Medium Explosion", buffer_size - 1);
 			break;
 
 		case FIREBALL_WARP:
-			strncpy(unique_id, "Warp Effect", buffer_len);
+			strncpy_s(unique_id, buffer_size, "Warp Effect", buffer_size - 1);
 			break;
 
 		case FIREBALL_KNOSSOS:
-			strncpy(unique_id, "Knossos Effect", buffer_len);
+			strncpy_s(unique_id, buffer_size, "Knossos Effect", buffer_size - 1);
 			break;
 
 		case FIREBALL_ASTEROID:
-			strncpy(unique_id, "Asteroid Explosion", buffer_len);
+			strncpy_s(unique_id, buffer_size, "Asteroid Explosion", buffer_size - 1);
 			break;
 
 		case FIREBALL_EXPLOSION_LARGE1:
-			strncpy(unique_id, "Large Explosion 1", buffer_len);
+			strncpy_s(unique_id, buffer_size, "Large Explosion 1", buffer_size - 1);
 			break;
 
 		case FIREBALL_EXPLOSION_LARGE2:
-			strncpy(unique_id, "Large Explosion 2", buffer_len);
+			strncpy_s(unique_id, buffer_size, "Large Explosion 2", buffer_size - 1);
 			break;
 
 		// base the id on the index
 		default:
-			snprintf(unique_id, buffer_len, "Custom Fireball %d", fireball_index - NUM_DEFAULT_FIREBALLS + 1);
+			snprintf(unique_id, buffer_size, "Custom Fireball %d", fireball_index - NUM_DEFAULT_FIREBALLS + 1);
 			break;
 	}
-
-	// null-terminate
-	unique_id[buffer_len - 1] = '\0';
 }
 
 /**

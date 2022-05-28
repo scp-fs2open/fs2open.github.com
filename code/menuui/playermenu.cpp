@@ -1253,14 +1253,14 @@ int player_select_pilot_file_filter(const char *filename)
 void player_select_set_bottom_text(const char *txt)
 {
 	if (txt) {
-		strncpy(Player_select_bottom_text, txt, 149);
+		strncpy_s(Player_select_bottom_text, txt, 149);
 	}
 }
 
 void player_select_set_middle_text(const char *txt)
 {
 	if (txt) {
-		strncpy(Player_select_middle_text, txt, 149);
+		strncpy_s(Player_select_middle_text, txt, 149);
 	}
 }
 

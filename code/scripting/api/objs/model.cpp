@@ -212,9 +212,8 @@ ADE_VIRTVAR(Filename, l_Model, "string", "Model filename", "string", "Model file
 		return ade_set_error(L, "s", "");
 
 	if(ADE_SETTING_VAR) {
-		auto len = sizeof(pm->filename);
-		strncpy(pm->filename, s, len);
-		pm->filename[len - 1] = 0;
+		auto size = sizeof(pm->filename);
+		strncpy_s(pm->filename, s, size-1);
 	}
 
 	return ade_set_args(L, "s", pm->filename);
