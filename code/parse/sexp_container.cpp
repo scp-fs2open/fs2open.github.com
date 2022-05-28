@@ -1553,24 +1553,27 @@ bool sexp_container_query_sexp_args_count(int node, SCP_vector<int>& cumulative_
 {
 	Assertion(cumulative_arg_countss.empty(),
 		"Attempt to count number of SEXP arguments when counts already exit. Please repot!");
+	bool container_args_found = false;
 
 	// dummy value for no arguments
 	cumulative_arg_countss.emplace_back(0);
 
-	int node = CDR(node);
+	node = CDR(node);
 
 	for (; node != -1; node = CDR(node))
 	{
 		const int prev_index = cumulative_arg_countss.back();
 
-		if (only_valid_args && !(Sexp_nodes[n].flags & SNF_ARGUMENT_VALID)) {
+		if (only_valid_args && !(Sexp_nodes[node].flags & SNF_ARGUMENT_VALID)) {
 			// ensure this invalid arg gets skipped
 			cumulative_arg_countss.emplace_back(prev_index);
 			continue;
 		}
 			
 
-		if (Sexp_nodes[n].subtype == SEXP_ATOM_CONTAINER_NAME) {
+		if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER_NAME) {
+			container_args_found = true;
+
 			const char *container_name = Sexp_nodes[node].text;
 			const auto *p_container = get_sexp_container(container_name);
 
@@ -1587,4 +1590,6 @@ bool sexp_container_query_sexp_args_count(int node, SCP_vector<int>& cumulative_
 			cumulative_arg_countss.emplace_back(prev_index + 1);
 		}
 	}
+
+	return container_args_found;
 }

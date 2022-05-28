@@ -10457,6 +10457,7 @@ int eval_random_multiple_of(int arg_handler_node, int condition_node)
 
 	int n = CDR(arg_handler_node);
 	Assertion(n >= 0, "No arguments provided to random-multiple-of. Please report!");
+	int temp_node = n;
 
 	// pick an argument and iterate to it
 	// FIXME TODO: move to new function
