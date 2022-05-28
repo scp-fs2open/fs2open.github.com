@@ -10343,11 +10343,11 @@ int eval_number_of(int arg_handler_node, int condition_node)
 // so we select an argument and set its flag
 int eval_random_of(int arg_handler_node, int condition_node)
 {
+	int n = -1, i, val, num_valid_args, random_argument, num_known_false = 0;
 	Assert(arg_handler_node != -1 && condition_node != -1);
-	int num_known_false = 0;
 
 	// get the number of valid arguments
-	const int num_valid_args = query_sexp_args_count(arg_handler_node, true);
+	num_valid_args = query_sexp_args_count(arg_handler_node, true);
 	Assert(num_valid_args >= 0);
 
 	if (num_valid_args == 0)
@@ -10355,8 +10355,8 @@ int eval_random_of(int arg_handler_node, int condition_node)
 		return SEXP_KNOWN_FALSE;	// Not much point in trying to evaluate it again.
 	}
 
-	// first find if we previously picked an argument
-	int n = CDR(arg_handler_node);
+	// find which argument we picked, if we picked one
+	n = CDR(arg_handler_node);
 
 	// iterate to the argument we previously selected
 	for ( ; n != -1; n = CDR(n))
@@ -10365,15 +10365,15 @@ int eval_random_of(int arg_handler_node, int condition_node)
 			break;
 	}
 
-	// if we didn't previously pick an argument
+	// if argument not found (or never specified in the first place), we have to pick one
 	if (n == -1)
 	{
 		n = CDR(arg_handler_node);
 		int temp_node = n;
 
 		// pick an argument and iterate to it
-		const int random_argument = rand_internal(1, num_valid_args);
-		int i = 0;
+		random_argument = rand_internal(1, num_valid_args);
+		i = 0;
 		for (int j = 0; j < num_valid_args; temp_node = CDR(temp_node))
 		{
 			Assert(n >= 0);
@@ -10400,7 +10400,7 @@ int eval_random_of(int arg_handler_node, int condition_node)
 	}
 
 	// only eval this argument if it's valid
-	int val = SEXP_FALSE;
+	val = SEXP_FALSE;
 	if (Sexp_nodes[n].flags & SNF_ARGUMENT_VALID)
 	{
 		// ensure special argument list is empty
@@ -10411,15 +10411,13 @@ int eval_random_of(int arg_handler_node, int condition_node)
 		val = eval_sexp(condition_node);
 
 		// true?
-		// FIXME TODO: what about SEXP_KNOWN_TRUE?
 		if (val == SEXP_TRUE)
 		{
 			Sexp_applicable_argument_list.add_data(Sexp_nodes[n].text, n);
 		}
 		else if (Sexp_nodes[condition_node].value == SEXP_KNOWN_FALSE || Sexp_nodes[condition_node].value == SEXP_NAN_FOREVER)
 		{
-			// Since we won't pick another one, if this one is guaranteed never to be true, then give up now.
-			val = SEXP_KNOWN_FALSE;
+			val = SEXP_KNOWN_FALSE; // If we can't randomly pick another one and this one is guaranteed never to be true, then give up now.
 		}
 
 		// clear argument, but not list, as we'll need it later
@@ -10510,7 +10508,7 @@ int eval_random_multiple_of(int arg_handler_node, int condition_node)
 		val = eval_sexp(condition_node);
 
 		// true?
-		if (val == SEXP_TRUE || val == SEXP_KNOWN_TRUE)
+		if (val == SEXP_TRUE)
 		{
 			// FIXME TODO: retrieve the right text
 			Sexp_applicable_argument_list.add_data(Sexp_nodes[n].text, n);
