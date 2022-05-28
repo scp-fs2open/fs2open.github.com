@@ -10432,6 +10432,7 @@ int eval_random_of(int arg_handler_node, int condition_node)
 int eval_random_multiple_of(int arg_handler_node, int condition_node)
 {
 	Assertion(arg_handler_node != -1, "No argument handler provided to random-multiple-of. Please report!");
+	// FIXME TODO: where are we checking condition_node? How about in eval_random_of()?
 	Assertion(condition_node != -1, "No condition provided to random-multiple-of. Please report!");
 
 	// FIXME TODO: review original code and make sure you preserve existing behavior for both this and eval_random_of()
@@ -10439,11 +10440,15 @@ int eval_random_multiple_of(int arg_handler_node, int condition_node)
 
 	// get the number of valid arguments
 	SCP_vector<int> cumulative_arg_counts;
+	// FIXME TODO: I think whether contain args are present is irrelevant
+	// FIXME TODO: the new arg count function should return number of valid args, like the func it's based on
+	// container name arg nodes should *never* be "known false" nor "Nan forever", or if so, that's a bug
 	const bool container_args_found =
 		sexp_container_query_sexp_args_count(arg_handler_node, cumulative_arg_counts, true);
 	const int size = (int)cumulative_arg_counts.size();
 	Assertion(size > (size_t)1,
 		"Attempt to find valid arguments for random-multiple-of had no response. Please report!");
+	// here, "valid" means neither "known false" nor "NaN forever"
 	const int num_valid_args = cumulative_arg_counts.back();
 	Assertion(num_valid_args >= 0,
 		"random-multiple-of found invalid number of valid arguments (%d). please report!",
@@ -10474,8 +10479,13 @@ int eval_random_multiple_of(int arg_handler_node, int condition_node)
 		"Attempt to find randomly selected argument in random-multiple-of failed. Please report!");
 
 	for (int i = 1; i <= random_argument; ++i) {
+		n = CDR(n);
 		Assertion(n >= 0, "No arguments provided to random-multiple-of. Please report!");
 	}
+	// FIXME TODO: Assert the Sexp_nodes[n] is "valid" per definition above
+	// FIXME TODO: do something with simpler logic but that also checks all args for SEXP_KNOWN_FALSE
+	// OTOH maybe simpler is bad; follow existing code that is known to work
+
 	int i = 0;
 	for (int j = 0; j < num_valid_args; temp_node = CDR(temp_node))
 	{
@@ -10493,7 +10503,7 @@ int eval_random_multiple_of(int arg_handler_node, int condition_node)
 	}
 
 	// TODO: fix this
-	if (!container_args_found && num_known_false == num_valid_args) {
+	if (num_known_false == num_valid_args) {
 		return SEXP_KNOWN_FALSE;	// We're going nowhere fast.
 	}
 
