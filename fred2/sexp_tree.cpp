@@ -892,8 +892,7 @@ void sexp_tree::right_clicked(int mode)
 										flags &= ~MF_GRAYED;
 									} else if ((op_type == OPF_MAP_CONTAINER_NAME) && container.is_map()) {
 										flags &= ~MF_GRAYED;
-									} else if ((op_type == OPF_ANYTHING) &&
-											   sexp_container_does_container_support_blank_ops(container)) {
+									} else if ((op_type == OPF_ANYTHING) && container.is_valid_arg_to_blank_ops()) {
 										flags &= ~MF_GRAYED;
 									}
 

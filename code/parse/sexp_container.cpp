@@ -147,6 +147,12 @@ bool sexp_container::type_matches(const sexp_container &container) const
 	return get_non_persistent_type() == container.get_non_persistent_type();
 }
 
+bool sexp_container::is_valid_arg_to_blank_ops() const
+{
+	return (is_list() && any(type & ContainerType::STRING_DATA)) ||
+		   (is_map() && any(type & ContainerType::STRING_KEYS));
+}
+
 // ListModifier-related functions
 
 ListModifier get_list_modifier(const char *text, bool accept_prefix)
@@ -1543,8 +1549,42 @@ bool sexp_container_does_blank_op_support_containers(const int op_const)
 		}
 }
 
-bool sexp_container_does_container_support_blank_ops(const sexp_container &container)
+bool sexp_container_query_sexp_args_count(int node, SCP_vector<int>& cumulative_arg_countss, bool only_valid_args)
 {
-	return (container.is_list() && any(container.type & ContainerType::STRING_DATA)) ||
-		(container.is_map() && any(container.type & ContainerType::STRING_KEYS));
+	Assertion(cumulative_arg_countss.empty(),
+		"Attempt to count number of SEXP arguments when counts already exit. Please repot!");
+
+	// dummy value for no arguments
+	cumulative_arg_countss.emplace_back(0);
+
+	int node = CDR(node);
+
+	for (; node != -1; node = CDR(node))
+	{
+		const int prev_index = cumulative_arg_countss.back();
+
+		if (only_valid_args && !(Sexp_nodes[n].flags & SNF_ARGUMENT_VALID)) {
+			// ensure this invalid arg gets skipped
+			cumulative_arg_countss.emplace_back(prev_index);
+			continue;
+		}
+			
+
+		if (Sexp_nodes[n].subtype == SEXP_ATOM_CONTAINER_NAME) {
+			const char *container_name = Sexp_nodes[node].text;
+			const auto *p_container = get_sexp_container(container_name);
+
+			// should have been checked in get_sexp()
+			Assertion(p_container, "Special argument SEXP given nonexistent container %s. Please report!", container_name);
+			const auto &container = *p_container;
+
+			Assertion(container.is_valid_arg_to_blank_ops(),
+				"randommultiple-of given container %s that can't be used as an argument. Please report!",
+				container_name);
+			// if the container is empty, the index will be a duplicate, but that's ok
+			cumulative_arg_countss.emplace_back(prev_index + container.size());
+		} else {
+			cumulative_arg_countss.emplace_back(prev_index + 1);
+		}
+	}
 }

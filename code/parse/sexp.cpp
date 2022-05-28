@@ -10343,7 +10343,6 @@ int eval_number_of(int arg_handler_node, int condition_node)
 // so we select an argument and set its flag
 int eval_random_of(int arg_handler_node, int condition_node)
 {
-	// FIXME TODO: switch to Assertion
 	Assert(arg_handler_node != -1 && condition_node != -1);
 	int num_known_false = 0;
 
@@ -10419,7 +10418,7 @@ int eval_random_of(int arg_handler_node, int condition_node)
 		}
 		else if (Sexp_nodes[condition_node].value == SEXP_KNOWN_FALSE || Sexp_nodes[condition_node].value == SEXP_NAN_FOREVER)
 		{
-			// Since we can't pick another one, if this one is guaranteed never to be true, then give up now.
+			// Since we won't pick another one, if this one is guaranteed never to be true, then give up now.
 			val = SEXP_KNOWN_FALSE;
 		}
 
@@ -10431,33 +10430,54 @@ int eval_random_of(int arg_handler_node, int condition_node)
 	return val;
 }
 
-// originally part of eval_random_of() but pulled apart as the code paths diverged
+// originally part of eval_random_of() but pulled out as the code paths diverged
 int eval_random_multiple_of(int arg_handler_node, int condition_node)
 {
-	// FIXME TODO: Switch to two Assertion()s
-	Assert(arg_handler_node != -1 && condition_node != -1);
+	Assertion(arg_handler_node != -1, "No argument handler provided to random-multiple-of. Please report!");
+	Assertion(condition_node != -1, "No condition provided to random-multiple-of. Please report!");
+
+	// FIXME TODO: review original code and make sure you preserve existing behavior for both this and eval_random_of()
 	int num_known_false = 0;
-	bool container_args_found = false;
 
 	// get the number of valid arguments
-	// FIXME TODO: adjust for container arguments
-	// FIXME TODO: update container_args_found
-	int num_valid_args = query_sexp_args_count(arg_handler_node, true);
-	Assert(num_valid_args >= 0);
+	SCP_vector<int> cumulative_arg_counts;
+	const bool container_args_found =
+		sexp_container_query_sexp_args_count(arg_handler_node, cumulative_arg_counts, true);
+	const int size = (int)cumulative_arg_counts.size();
+	Assertion(size > (size_t)1,
+		"Attempt to find valid arguments for random-multiple-of had no response. Please report!");
+	const int num_valid_args = cumulative_arg_counts.back();
+	Assertion(num_valid_args >= 0,
+		"random-multiple-of found invalid number of valid arguments (%d). please report!",
+		num_valid_args);
 
-	if (num_valid_args == 0 && !container_args_found)
+	if (num_valid_args == 0)
 	{
-		return SEXP_KNOWN_FALSE;	// Not much point in trying to evaluate it again.
+		// no point in continuing
+		return SEXP_FALSE;
 	}
 
 	int n = CDR(arg_handler_node);
-	// FIXME TODO: rename var and change to Assertion()
-	Assert(n >= 0);
-	int temp_node = n;
+	Assertion(n >= 0, "No arguments provided to random-multiple-of. Please report!");
 
 	// pick an argument and iterate to it
-	int random_argument = rand_internal(1, num_valid_args);
-	int i = 0; // FIXME TODO: what is `i` for? Is it needed?
+	// FIXME TODO: move to new function
+	const int random_arg_value = rand_internal(1, num_valid_args);
+	int random_argument = -1;
+	// skip the first entry, which is the dummy value
+	for (int k = 1; k < size; ++k) {
+		if (random_arg_value <= cumulative_arg_counts[k]) {
+			random_argument = k;
+			break;
+		}
+	}
+	Assertion(random_argument > 0,
+		"Attempt to find randomly selected argument in random-multiple-of failed. Please report!");
+
+	for (int i = 1; i <= random_argument; ++i) {
+		Assertion(n >= 0, "No arguments provided to random-multiple-of. Please report!");
+	}
+	int i = 0;
 	for (int j = 0; j < num_valid_args; temp_node = CDR(temp_node))
 	{
 		// count only valid arguments
@@ -10473,6 +10493,7 @@ int eval_random_multiple_of(int arg_handler_node, int condition_node)
 		}
 	}
 
+	// TODO: fix this
 	if (!container_args_found && num_known_false == num_valid_args) {
 		return SEXP_KNOWN_FALSE;	// We're going nowhere fast.
 	}
@@ -10489,19 +10510,21 @@ int eval_random_multiple_of(int arg_handler_node, int condition_node)
 		val = eval_sexp(condition_node);
 
 		// true?
-		// FIXME TODO: what about SEXP_KNOWN_TRUE?
-		if (val == SEXP_TRUE)
+		if (val == SEXP_TRUE || val == SEXP_KNOWN_TRUE)
 		{
+			// FIXME TODO: retrieve the right text
 			Sexp_applicable_argument_list.add_data(Sexp_nodes[n].text, n);
 		}
 		// FIXME TODO: is this correct? Couldn't arguments be validated later?
 		// FIXME TODO: if anything, we might need to downgrade SEXP_KNOWN_FALSE to SEXP_FALSE
-		else if (!container_args_found && (num_valid_args == 1) && (Sexp_nodes[condition_node].value == SEXP_KNOWN_FALSE || Sexp_nodes[condition_node].value == SEXP_NAN_FOREVER))
+		else if (val == SEXP_KNOWN_FALSE)
 		{
-			val = SEXP_KNOWN_FALSE;	// If the one valid arg is guaranteed never to be true, then give up now.
+			// given the dynamic nature of this SEXP, one never knows
+			val = SEXP_FALSE;
 		}
 
 		// clear argument, but not list, as we'll need it later
+		// FIXME TODO: figure out what should be done here
 		Sexp_replacement_arguments.pop_back();
 	}
 

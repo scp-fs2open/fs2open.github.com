@@ -135,6 +135,8 @@ struct sexp_container
 	ContainerType get_non_persistent_type() const;
 	// matching is performed only on non-persistence flags
 	bool type_matches(const sexp_container &container) const;
+
+	bool is_valid_arg_to_blank_ops() const;
 };
 
 struct list_modifier {
@@ -203,4 +205,10 @@ int sexp_container_collect_map_key_arguments(int node,
 
 // tests if an operator supports list containers with when-argument
 bool sexp_container_does_blank_op_support_containers(int op_const);
-bool sexp_container_does_container_support_blank_ops(const sexp_container &container);
+
+// version of query_sexp_args_count() when we need to select an element within a range
+// and containers are valid arguments
+// returns whether containers were among the args
+bool sexp_container_query_sexp_args_count(int node,
+	SCP_vector<int> &cumulative_arg_countss,
+	bool only_valid_args = false);
