@@ -5219,7 +5219,7 @@ bool sexp_tree::is_container_argument(int node) const
 	const int op_const = get_operator_const(tree_nodes[parent_node].text);
 	const int arg_opf_type = query_node_argument_type(node);
 	return is_container_opf_type(arg_opf_type) ||
-		(arg_opf_type == OPF_ANYTHING && sexp_container_does_blank_op_support_containers(op_const));
+		   (arg_opf_type == OPF_ANYTHING && sexp_container::does_blank_of_op_support_container_args(op_const));
 }
 
 bool sexp_tree::is_container_opf_type(const int op_type)
@@ -5470,7 +5470,7 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 				// Replace Container Name submenu
 				const int op_const = op >= 0 ? Operators[op].value : -1;
 				if (is_container_opf_type(op_type) ||
-					(op_type == OPF_ANYTHING && sexp_container_does_blank_op_support_containers(op_const))) {
+					(op_type == OPF_ANYTHING && sexp_container::does_blank_of_op_support_container_args(op_const))) {
 					const auto &containers = get_all_sexp_containers();
 					for (int idx = 0; idx < (int)containers.size(); ++idx) {
 						const auto &container = containers[idx];

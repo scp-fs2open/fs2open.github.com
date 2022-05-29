@@ -2894,7 +2894,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				// jg18
 				if (type2 == SEXP_ATOM_CONTAINER_NAME) {
 					// exclude SEXPs that don't support using containers at all
-					if (op < 0 || !sexp_container_does_blank_op_support_containers(Operators[op].value)) {
+					if (op < 0 || !sexp_container::does_blank_of_op_support_container_args(Operators[op].value)) {
 						return SEXP_CHECK_TYPE_MISMATCH;
 					}
 
@@ -31615,7 +31615,7 @@ int copy_node_to_replacement_args(int node, int container_value_index)
 
 	if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER_NAME) {
 		Assertion(find_parent_operator(node) >= 0 &&
-					  sexp_container_does_blank_op_support_containers(Operators[find_parent_operator(node)].value),
+			sexp_container::does_blank_of_op_support_container_args(Operators[find_parent_operator(node)].value),
 			"Attempt to fill replacement arguments from a container with an operator that doesn't support containers. "
 			"Please report!");
 
@@ -31629,6 +31629,7 @@ int copy_node_to_replacement_args(int node, int container_value_index)
 			container_name);
 
 		if (container_value_index != -1) {
+			const SCP_string &container_value = container.get_value_at_index(container_value_index);
 			const SCP_string &container_value = container.get_value_at_index(container_value_index);
 			Sexp_replacement_arguments.emplace_back(container_value.c_str(), node);
 			num_args = 1;
@@ -31660,6 +31661,7 @@ int copy_node_to_replacement_args(int node, int container_value_index)
 
 	return num_args;
 }
+
 
 void sexp_modify_variable(int n)
 {

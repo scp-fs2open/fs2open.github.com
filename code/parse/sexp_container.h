@@ -136,6 +136,7 @@ struct sexp_container
 	// matching is performed only on non-persistence flags
 	bool type_matches(const sexp_container &container) const;
 
+	static bool does_blank_of_op_support_container_args(int op_const);
 	bool is_valid_arg_to_blank_of_ops() const;
 	// returns data for list container or key for map container
 	const SCP_string &get_value_at_index(int index) const;
@@ -205,12 +206,8 @@ int sexp_container_collect_map_key_arguments(int node,
 	SCP_vector<std::pair<const char*, int>> &argument_vector,
 	bool just_count = false);
 
-// tests if an operator supports list containers with when-argument
-bool sexp_container_does_blank_op_support_containers(int op_const);
-
 // version of query_sexp_args_count() when we need to select an element within a range
 // and containers are valid arguments
-// FIXME TODO: return num_valid_args in the sense that the original function meant
 int sexp_container_query_sexp_args_count(int node,
 	SCP_vector<int> &cumulative_arg_countss,
 	bool only_valid_args = false);
