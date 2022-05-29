@@ -147,6 +147,48 @@ bool sexp_container::type_matches(const sexp_container &container) const
 	return get_non_persistent_type() == container.get_non_persistent_type();
 }
 
+bool sexp_container::does_blank_of_op_support_container_args(const int op_const)
+{
+	switch (op_const)
+	{
+		case OP_ANY_OF:
+		case OP_EVERY_OF:
+		case OP_NUMBER_OF:
+		case OP_FIRST_OF:
+		case OP_RANDOM_MULTIPLE_OF:
+			return true;
+
+		default:
+			return false;
+		}
+}
+
+bool sexp_container::is_valid_arg_to_blank_of_ops() const
+{
+	return (is_list() && any(type & ContainerType::STRING_DATA)) ||
+		   (is_map() && any(type & ContainerType::STRING_KEYS));
+}
+
+const SCP_string &sexp_container::get_value_at_index(int index) const
+{
+	Assertion(index >= 0 && index < size(),
+		"Attempt to get out-of-range index %d from container %s (size %d). Please report!",
+		index,
+		container_name.c_str(),
+		size());
+
+	if (is_list()) {
+		return *std::next(list_data.cbegin(), index);
+	} else if (is_map()) {
+		// should produce the same value on all platforms
+		// since map_data uses a custom hash function
+		return std::next(map_data.cbegin(), index)->first;
+	} else {
+		UNREACHABLE("Container %s has invalid type (%d). Please report!", container_name.c_str(), (int)type);
+		return *list_data.cbegin(); // gibberish
+	}
+}
+
 // ListModifier-related functions
 
 ListModifier get_list_modifier(const char *text, bool accept_prefix)

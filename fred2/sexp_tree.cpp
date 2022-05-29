@@ -880,7 +880,7 @@ void sexp_tree::right_clicked(int mode)
 							const int op_const = op >= 0 ? Operators[op].value : -1;
 							if (is_container_opf_type(op_type) ||
 								(op_type == OPF_ANYTHING &&
-									sexp_container_does_blank_op_support_containers(op_const))) {
+									sexp_container::does_blank_of_op_support_container_args(op_const))) {
 								int container_name_index = 0;
 								for (const auto &container : get_all_sexp_containers()) {
 									UINT flags = MF_STRING | MF_GRAYED;
@@ -892,8 +892,7 @@ void sexp_tree::right_clicked(int mode)
 										flags &= ~MF_GRAYED;
 									} else if ((op_type == OPF_MAP_CONTAINER_NAME) && container.is_map()) {
 										flags &= ~MF_GRAYED;
-									} else if ((op_type == OPF_ANYTHING) &&
-											   sexp_container_does_container_support_blank_ops(container)) {
+									} else if ((op_type == OPF_ANYTHING) && container.is_valid_arg_to_blank_of_ops()) {
 										flags &= ~MF_GRAYED;
 									}
 
@@ -7432,7 +7431,7 @@ bool sexp_tree::is_container_argument(int node) const
 	const int op_const = get_operator_const(tree_nodes[parent_node].text);
 	const int arg_opf_type = query_node_argument_type(node);
 	return is_container_opf_type(arg_opf_type) ||
-		   (arg_opf_type == OPF_ANYTHING && sexp_container_does_blank_op_support_containers(op_const));
+		   (arg_opf_type == OPF_ANYTHING && sexp_container::does_blank_of_op_support_container_args(op_const));
 }
 
 bool sexp_tree::is_container_opf_type(const int op_type)
