@@ -137,6 +137,8 @@ struct sexp_container
 	bool type_matches(const sexp_container &container) const;
 
 	bool is_valid_arg_to_blank_of_ops() const;
+	// returns data for list container or key for map container
+	const SCP_string &get_value_at_index(int index) const;
 };
 
 struct list_modifier {

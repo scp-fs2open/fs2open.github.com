@@ -153,6 +153,26 @@ bool sexp_container::is_valid_arg_to_blank_of_ops() const
 		   (is_map() && any(type & ContainerType::STRING_KEYS));
 }
 
+const SCP_string &sexp_container::get_value_at_index(int index) const
+{
+	Assertion(index >= 0 && index < size(),
+		"Attempt to get out-of-range index %d from container %s (size %d). Please report!",
+		index,
+		container_name.c_str(),
+		size());
+
+	if (is_list()) {
+		return std::next(list_data.cbegin(), index)->c_str();
+	} else if (is_map()) {
+		// should produce the same value on all platforms
+		// since map_data uses a custom hash function
+		return std::next(map_data.cbegin(), index)->first.c_str();
+	} else {
+		UNREACHABLE("Container %s has invalid type (%d). Please report!", container_name.c_str(), (int)type);
+		return nullptr;
+	}
+}
+
 // ListModifier-related functions
 
 ListModifier get_list_modifier(const char *text, bool accept_prefix)
