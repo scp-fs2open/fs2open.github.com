@@ -216,7 +216,7 @@ void hud_init_comm_orders()
 // Text to display on the messaging menu when using the shortcut keys
 const char *comm_order_get_text(int item)
 {
-	Assertion(item <= (int)Player_orders.size(), "Did not find order with index %d!", item);
+	Assertion(item < (int)Player_orders.size(), "Did not find order with index %d!", item);
 	
 	return Player_orders[item].localized_name.c_str();
 }

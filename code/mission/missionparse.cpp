@@ -3358,7 +3358,8 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
         if (tmp_orders != -1) {
 			p_objp->flags.set(Mission::Parse_Object_Flags::SF_Use_unique_orders);
 
-			for(size_t j = 0; j < Player_orders.size(); j++){
+			//Iterate over all player orders for the bitfield, but restrict to those that the integer could actually provide
+			for(size_t j = 0; j < Player_orders.size() && j < std::numeric_limits<decltype(tmp_orders)>::digits; j++) {
 				if((1 << j) & tmp_orders)
 					p_objp->orders_accepted.insert(j);
 			}
