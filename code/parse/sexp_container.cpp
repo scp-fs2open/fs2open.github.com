@@ -162,11 +162,11 @@ const SCP_string &sexp_container::get_value_at_index(int index) const
 		size());
 
 	if (is_list()) {
-		return std::next(list_data.cbegin(), index)->c_str();
+		return *std::next(list_data.cbegin(), index);
 	} else if (is_map()) {
 		// should produce the same value on all platforms
 		// since map_data uses a custom hash function
-		return std::next(map_data.cbegin(), index)->first.c_str();
+		return std::next(map_data.cbegin(), index)->first;
 	} else {
 		UNREACHABLE("Container %s has invalid type (%d). Please report!", container_name.c_str(), (int)type);
 		return nullptr;
