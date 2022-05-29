@@ -10519,7 +10519,8 @@ int eval_random_multiple_of(int arg_handler_node, int condition_node)
 				container_name);
 			const auto &container = *p_container;
 
-			const int arg_value_index = random_arg_value - cumulative_arg_counts[random_argument - 1];
+			// subtract 1 because containers index their data from 0, not 1
+			const int arg_value_index = random_arg_value - cumulative_arg_counts[random_argument - 1] - 1;
 			arg_text = container.get_value_at_index(arg_value_index).c_str();
 		} else {
 			arg_text = Sexp_nodes[n].text;
