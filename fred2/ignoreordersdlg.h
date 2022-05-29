@@ -31,7 +31,7 @@ public:
 
 	ship *m_shipp;
 	SCP_vector<size_t> m_orderList;
-	std::unique_ptr<CCheckListBox> m_checklistbox;
+	CCheckListBox m_ignore_orders_checklistbox;
 
 // Dialog Data
 	//{{AFX_DATA(ignore_orders_dlg)

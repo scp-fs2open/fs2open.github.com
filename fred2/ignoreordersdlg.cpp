@@ -63,9 +63,8 @@ BOOL ignore_orders_dlg::OnInitDialog()
 	CDialog::OnInitDialog();
 
 	//Because Windows, this needs to be manually created in addition to having the resource thingy.
-	m_checklistbox = std::unique_ptr<CCheckListBox>(new CCheckListBox());
-	m_checklistbox->SubclassDlgItem(IDC_IGNORE_ORDERS_LIST, this);
-	m_checklistbox->SetCheckStyle(BS_AUTO3STATE);
+	m_ignore_orders_checklistbox.SubclassDlgItem(IDC_IGNORE_ORDERS_LIST, this);
+	m_ignore_orders_checklistbox.SetCheckStyle(BS_AUTO3STATE);
 
 	// change the labels on the check boxes to reflect the set of default
 	// orders for this ship
@@ -87,14 +86,13 @@ BOOL ignore_orders_dlg::OnInitDialog()
 
 	}
 
-	CCheckListBox* list = ((CCheckListBox*)GetDlgItem(IDC_IGNORE_ORDERS_LIST));
-	
+	CCheckListBox* ignore_orders_list = ((CCheckListBox*)GetDlgItem(IDC_IGNORE_ORDERS_LIST));
 
 	for (size_t order_id : default_orders){
-		int checkboxNr = (int) m_orderList.size();
+		int checkboxNo = (int) m_orderList.size();
 
-		list->AddString(Player_orders[order_id].localized_name.c_str());
-		list->SetCheck(checkboxNr, BST_UNCHECKED);
+		ignore_orders_list->AddString(Player_orders[order_id].localized_name.c_str());
+		ignore_orders_list->SetCheck(checkboxNo, BST_UNCHECKED);
 
 		m_orderList.push_back(order_id);
 	}
@@ -104,7 +102,7 @@ BOOL ignore_orders_dlg::OnInitDialog()
 		orders_accepted = Ships[m_ship].orders_accepted;
 		for ( i = 0; i < (int) m_orderList.size(); i++) {
 			if ( orders_accepted.find(m_orderList[i]) != orders_accepted.end())
-				list->SetCheck(i, BST_CHECKED);
+				ignore_orders_list->SetCheck(i, BST_CHECKED);
 		}
 	} else {
 		int first_time;
@@ -118,7 +116,7 @@ BOOL ignore_orders_dlg::OnInitDialog()
 				if ( first_time ) {
 					for (i = 0; i < (int) m_orderList.size(); i++) {
 						if (orders_accepted.find(m_orderList[i]) != orders_accepted.end())
-							list->SetCheck(i, BST_CHECKED);
+							ignore_orders_list->SetCheck(i, BST_CHECKED);
 					}
 					first_time = 0;
 				} else {
@@ -126,12 +124,12 @@ BOOL ignore_orders_dlg::OnInitDialog()
 						// see if the order matches the check box order
 						if ( orders_accepted.find(m_orderList[i]) != orders_accepted.end() ) {
 							// if it matches, if it is not already set, then it is indeterminate.
-							if ( list->GetCheck(i) == BST_UNCHECKED )
-								list->SetCheck(i, BST_INDETERMINATE);
+							if (ignore_orders_list->GetCheck(i) == BST_UNCHECKED )
+								ignore_orders_list->SetCheck(i, BST_INDETERMINATE);
 						} else {
 							// if the order isn't active, and already set, mark as indeterminite.
-							if ( list->GetCheck(i) != BST_UNCHECKED )
-								list->SetCheck(i, BST_INDETERMINATE);
+							if (ignore_orders_list->GetCheck(i) != BST_UNCHECKED )
+								ignore_orders_list->SetCheck(i, BST_INDETERMINATE);
 						}
 					}
 				}
@@ -156,12 +154,12 @@ void ignore_orders_dlg::OnOK()
 	int i;
 	object *objp;
 
-	CCheckListBox* list = ((CCheckListBox*)GetDlgItem(IDC_IGNORE_ORDERS_LIST));
+	CCheckListBox* ignore_orders_list = ((CCheckListBox*)GetDlgItem(IDC_IGNORE_ORDERS_LIST));
 
 	// clear out the orders, then set the bits according to which check boxes are set
 	if ( m_ship >= 0 ) {
 		for ( i = 0; i < (int) m_orderList.size(); i++) {
-			if (list->GetCheck(i) == BST_CHECKED)
+			if (ignore_orders_list->GetCheck(i) == BST_CHECKED)
 				orders_accepted.insert(m_orderList[i]);
 		}
 		Ships[m_ship].orders_accepted = orders_accepted;
@@ -171,7 +169,7 @@ void ignore_orders_dlg::OnOK()
 				for (i = 0; i < (int) m_orderList.size(); i++) {
 					int box_value;
 
-					box_value = list->GetCheck(i);
+					box_value = ignore_orders_list->GetCheck(i);
 					// get the status of the checkbox -- if in the indeterminite state, then
 					// skip it
 					if ( box_value == BST_INDETERMINATE )
@@ -192,10 +190,10 @@ void ignore_orders_dlg::OnOK()
 
 void ignore_orders_dlg::OnCheckChange()
 {
-	CCheckListBox* list = ((CCheckListBox*)GetDlgItem(IDC_IGNORE_ORDERS_LIST));
+	CCheckListBox* ignore_orders_list = ((CCheckListBox*)GetDlgItem(IDC_IGNORE_ORDERS_LIST));
 
-	int i = list->GetCurSel();
-	if (list->GetCheck(i) == BST_INDETERMINATE)
-		list->SetCheck(i, BST_UNCHECKED);
+	int i = ignore_orders_list->GetCurSel();
+	if (ignore_orders_list->GetCheck(i) == BST_INDETERMINATE)
+		ignore_orders_list->SetCheck(i, BST_UNCHECKED);
 	
 }
