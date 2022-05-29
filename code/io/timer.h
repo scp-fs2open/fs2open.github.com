@@ -136,10 +136,19 @@ inline int timestamp_rand(int a, int b) {
 	return timestamp(Random::next(a, b));
 }
 
-//	Returns milliseconds until timestamp will elapse.
+//	Returns milliseconds until timestamp will elapse.  Invalid timestamps are assumed to occur at approximately T=0.
 int timestamp_until(int stamp);
+//	Returns milliseconds until timestamp will elapse.  This will Assert against Invalid or Never timestamps but fail gracefully by returning INT_MAX.
 int timestamp_until(TIMESTAMP stamp);
+//	Returns milliseconds until timestamp will elapse.  This will Assert against Invalid or Never timestamps but fail gracefully by returning INT_MAX.
 int ui_timestamp_until(UI_TIMESTAMP stamp);
+
+//	Returns milliseconds after timestamp has elapsed.  Invalid timestamps are assumed to occur at approximately T=0.
+int timestamp_since(int stamp);
+//	Returns milliseconds after timestamp has elapsed.  This will Assert against Invalid or Never timestamps but fail gracefully by returning INT_MIN.
+int timestamp_since(TIMESTAMP stamp);
+//	Returns milliseconds after timestamp has elapsed.  This will Assert against Invalid or Never timestamps but fail gracefully by returning INT_MIN.
+int ui_timestamp_since(UI_TIMESTAMP stamp);
 
 // checks if a specified time (in milliseconds) has elapsed past the given timestamp (which
 // should be obtained from timestamp() or timestamp(x) with a positive x)

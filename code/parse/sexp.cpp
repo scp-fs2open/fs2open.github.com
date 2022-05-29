@@ -978,6 +978,7 @@ int Sexp_current_argument_nesting_level;
 // Goober5000
 bool is_blank_argument_op(int op_const);
 bool is_blank_of_op(int op_const);
+bool is_for_blank_op(int op_const); // jg18
 int get_handler_for_x_of_operator(int node);
 
 //Karajorma
@@ -986,8 +987,7 @@ bool ship_class_unchanged(const ship_registry_entry *ship_entry);
 void multi_sexp_modify_variable();
 
 // jg18
-bool is_for_op(int op_const);
-int populate_sexp_applicable_arguments(int node);
+int copy_node_to_replacement_args(int node);
 
 #define NO_OPERATOR_INDEX_DEFINED		-2
 #define NOT_A_SEXP_OPERATOR				-1
@@ -10111,9 +10111,7 @@ int test_argument_nodes_for_condition(int n, int condition_node, int *num_true, 
 		if (Sexp_nodes[n].flags & SNF_ARGUMENT_VALID)
 		{
 			// evaluate conditional for current argument(s)
-			// test_argument_vector_for_condition() doesn't use populate_sexp_applicable_arguments(),
-			// since the SEXPs that use that function don't support handling list containers of strings
-			const int num_args = populate_sexp_applicable_arguments(n);
+			const int num_args = copy_node_to_replacement_args(n);
 
 			for (int i = 0; i < num_args; ++i) {
 				val = eval_sexp(condition_node);
@@ -10414,7 +10412,8 @@ int eval_random_of(int arg_handler_node, int condition_node, bool multiple)
 		Sexp_applicable_argument_list.clear_nesting_level();
 
 		// evaluate conditional for current argument
-		Sexp_replacement_arguments.emplace_back(Sexp_nodes[n].text, n);
+		const int num_args = copy_node_to_replacement_args(n);
+		SCP_UNUSED(num_args);
 		val = eval_sexp(condition_node);
 
 		// true?
@@ -10466,7 +10465,8 @@ int eval_in_sequence(int arg_handler_node, int condition_node)
 		Sexp_applicable_argument_list.clear_nesting_level();
 
 		// evaluate conditional for current argument
-		Sexp_replacement_arguments.emplace_back(Sexp_nodes[n].text, n);
+		const int num_args = copy_node_to_replacement_args(n);
+		SCP_UNUSED(num_args);
 		val = eval_sexp(condition_node);
 
 		// true?
@@ -10798,7 +10798,7 @@ void sexp_change_all_argument_validity(int n, bool invalidate)
 
 	// can't change validity of for-* sexps
 	auto op_const = get_operator_const(arg_handler);
-	if (is_for_op(op_const))
+	if (is_for_blank_op(op_const))
 		return;
 		
 	while (n != -1)
@@ -10881,7 +10881,7 @@ void sexp_change_argument_validity(int n, bool invalidate)
 
 	// can't change validity of for-* sexps
 	auto op_const = get_operator_const(arg_handler);
-	if (is_for_op(op_const))
+	if (is_for_blank_op(op_const))
 		return;
 		
 	// loop through arguments
@@ -10988,7 +10988,7 @@ bool is_blank_argument_op(int op_const)
 // Goober5000
 bool is_blank_of_op(int op_const)
 {
-	if (is_for_op(op_const)) {
+	if (is_for_blank_op(op_const)) {
 		return true;
 	}
 
@@ -11001,6 +11001,27 @@ bool is_blank_of_op(int op_const)
 		case OP_RANDOM_MULTIPLE_OF:
 		case OP_IN_SEQUENCE:
 		case OP_FIRST_OF:
+			return true;
+
+		default:
+			return false;
+	}
+}
+
+// jg18
+// check if an operator is one of the for-* SEXPs
+bool is_for_blank_op(const int op_const)
+{
+	switch (op_const)
+	{
+		case OP_FOR_COUNTER:
+		case OP_FOR_SHIP_CLASS:
+		case OP_FOR_SHIP_TYPE:
+		case OP_FOR_SHIP_TEAM:
+		case OP_FOR_SHIP_SPECIES:
+		case OP_FOR_PLAYERS:
+		case OP_FOR_CONTAINER_DATA:
+		case OP_FOR_MAP_CONTAINER_KEYS:
 			return true;
 
 		default:
@@ -31479,30 +31500,15 @@ void multi_sexp_modify_variable()
 	}	
 }
 
-// check if an operator is one of the for-* SEXPs
-bool is_for_op(const int op_const)
-{
-	switch (op_const)
-	{
-		case OP_FOR_COUNTER:
-		case OP_FOR_SHIP_CLASS:
-		case OP_FOR_SHIP_TYPE:
-		case OP_FOR_SHIP_TEAM:
-		case OP_FOR_SHIP_SPECIES:
-		case OP_FOR_PLAYERS:
-		case OP_FOR_CONTAINER_DATA:
-		case OP_FOR_MAP_CONTAINER_KEYS:
-			return true;
-
-		default:
-			return false;
-	}
-}
-
 // populate Sexp_applicable_arguments for the *-of conditional SEXPs
-int populate_sexp_applicable_arguments(int node)
+int copy_node_to_replacement_args(int node)
 {
 	if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER_NAME) {
+		Assertion(find_parent_operator(node) >= 0 &&
+					  sexp_container_does_blank_op_support_containers(Operators[find_parent_operator(node)].value),
+			"Attempt to fill replacement arguments from a container with an operator that doesn't support containers. "
+			"Please report!");
+
 		const char *container_name = Sexp_nodes[node].text;
 		const auto *p_container = get_sexp_container(container_name);
 

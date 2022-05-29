@@ -318,6 +318,7 @@ struct weapon_info
 	char	display_name[NAME_LENGTH];		// display name of this weapon
 	char	title[WEAPON_TITLE_LEN];		// official title of weapon (used by tooltips)
 	char	*desc;								// weapon's description (used by tooltips)
+	char	altSubsysName[NAME_LENGTH];        // rename turret to this if this is the turrets first weapon
 
 	char	pofbitmap_name[MAX_FILENAME_LEN];	// Name of the pof representing this if POF, or bitmap filename if bitmap
 	int		model_num;							// modelnum of weapon -- -1 if no model

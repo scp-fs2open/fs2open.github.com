@@ -999,6 +999,10 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		stuff_malloc_string(&wip->tech_desc, F_MULTITEXT);
 	}
 
+	if (optional_string("$Turret Name:")) {
+		stuff_string(wip->altSubsysName, F_NAME, NAME_LENGTH);
+	}
+
 	if (optional_string("$Tech Model:")) {
 		stuff_string(wip->tech_model, F_NAME, MAX_FILENAME_LEN);
 
@@ -8666,6 +8670,7 @@ void weapon_info::reset()
 	memset(this->display_name, 0, sizeof(this->display_name));
 	memset(this->title, 0, sizeof(this->title));
 	this->desc = nullptr;
+	memset(this->altSubsysName, 0, sizeof(this->altSubsysName));
 
 	memset(this->pofbitmap_name, 0, sizeof(this->pofbitmap_name));
 	this->model_num = -1;
