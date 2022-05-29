@@ -169,7 +169,7 @@ const SCP_string &sexp_container::get_value_at_index(int index) const
 		return std::next(map_data.cbegin(), index)->first;
 	} else {
 		UNREACHABLE("Container %s has invalid type (%d). Please report!", container_name.c_str(), (int)type);
-		return nullptr;
+		return *list_data.cbegin(); // gibberish
 	}
 }
 
