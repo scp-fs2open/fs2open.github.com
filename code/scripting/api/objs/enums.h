@@ -109,8 +109,11 @@ const int32_t LE_TBOX_FLASH_CARGO            = 105;
 const int32_t LE_TBOX_FLASH_HULL             = 106;
 const int32_t LE_TBOX_FLASH_STATUS           = 107;
 const int32_t LE_TBOX_FLASH_SUBSYS           = 108;
+const int32_t LE_LUAAI_ACHIEVABLE			 = 109;
+const int32_t LE_LUAAI_NOT_YET_ACHIEVABLE	 = 110;
+const int32_t LE_LUAAI_UNACHIEVABLE			 = 111;
 
-const int ENUM_NEXT_INDEX = 109; // <<<<<<<<<<<<<<<<<<<<<<
+const int ENUM_NEXT_INDEX = 112; // <<<<<<<<<<<<<<<<<<<<<<
 extern flag_def_list Enumerations[];
 extern size_t Num_enumerations;
 

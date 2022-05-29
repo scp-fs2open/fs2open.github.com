@@ -1,12 +1,13 @@
 #include "ai/ailua.h"
 
-#include "ai/aigoals.h"
 #include "hud/hudsquadmsg.h"
 #include "iff_defs/iff_defs.h"
 #include "parse/sexp/sexp_lookup.h"
 #include "parse/sexp/LuaAISEXP.h"
 #include "scripting/api/objs/ai_helper.h"
+#include "scripting/api/objs/enums.h"
 #include "scripting/api/objs/oswpt.h"
+#include "scripting/api/objs/ship.h"
 #include "scripting/scripting.h"
 
 static std::unordered_map<int, ai_mode_lua> Lua_ai_modes;
@@ -112,21 +113,7 @@ void ai_lua_start(ai_goal* aigp, object* objp){
 	
 }
 
-bool ai_lua_is_valid_target(int sexp_op, int target_objnum, ship* self) {
-	const ai_mode_lua& mode = *ai_lua_find_mode(sexp_op);
-
-	//All targetless AI modes are fine
-	if (!mode.needsTarget)
-		return true;
-
-	//No target is then not valid
-	if (target_objnum == -1)
-		return false;
-
-	//As of now, only accept ships
-	if (Objects[target_objnum].type != OBJ_SHIP)
-		return false;
-
+bool ai_lua_is_valid_target_intrinsic(int sexp_op, int target_objnum, ship* self) {
 	ship* target = &Ships[Objects[target_objnum].instance];
 
 	const player_order_lua& order = *ai_lua_find_player_order(sexp_op);
@@ -149,7 +136,108 @@ bool ai_lua_is_valid_target(int sexp_op, int target_objnum, ship* self) {
 		return !iff_x_attacks_y(self->team, target->team) && Ship_info[target->ship_info_index].is_big_ship();
 	case player_order_lua::target_restrictions::TARGET_ENEMY_CAPS:
 		return iff_x_attacks_y(self->team, target->team) && Ship_info[target->ship_info_index].is_big_ship();
+	case player_order_lua::target_restrictions::TARGET_NOT_SELF:
+		return self->objnum != target_objnum;
 	}
 
 	return false;
+}
+
+bool ai_lua_is_valid_target_lua(const ai_mode_lua& mode, int sexp_op, int target_objnum, ship* self) {
+	auto dynamicSEXP = sexp::get_dynamic_sexp(sexp_op);
+
+	if (dynamicSEXP != nullptr && typeid(*dynamicSEXP) == typeid(sexp::LuaAISEXP)) {
+		auto lua_ai_sexp = static_cast<sexp::LuaAISEXP*>(dynamicSEXP);
+		const auto& action = lua_ai_sexp->getTargetRestrict();
+
+		if (!action.isValid())
+			return true;
+
+		luacpp::LuaValueList luaParameters;
+		luaParameters.push_back(luacpp::LuaValue::createValue(action.getLuaState(), scripting::api::l_Ship.Set(object_h(&Objects[self->objnum]))));
+		if (mode.needsTarget) {
+			luaParameters.push_back(luacpp::LuaValue::createValue(action.getLuaState(), scripting::api::l_OSWPT.Set(object_ship_wing_point_team(&Ships[Objects[target_objnum].instance]))));
+		}
+
+		auto retVals = action.call(Script_system.GetLuaSession(), luaParameters);
+
+		if (!retVals.empty() && retVals[0].getValueType() == luacpp::ValueType::BOOLEAN) {
+			return retVals[0].getValue<bool>();
+		}
+		else {
+			Error(LOCATION, "LuaAI target restriction function did not return a valid boolean!");
+		}
+	}
+
+	return true;
+}
+
+bool ai_lua_is_valid_target(int sexp_op, int target_objnum, ship* self) {
+	const ai_mode_lua& mode = *ai_lua_find_mode(sexp_op);
+
+	//All targetless AI modes are fine
+	if (mode.needsTarget) {
+
+		//No target is then not valid
+		if (target_objnum == -1)
+			return false;
+
+		//As of now, only accept ships
+		if (Objects[target_objnum].type != OBJ_SHIP)
+			return false;
+
+		if (!ai_lua_is_valid_target_intrinsic(sexp_op, target_objnum, self))
+			return false;
+	}
+
+	//If we haven't bailed yet, query the custom callback
+	return ai_lua_is_valid_target_lua(mode, sexp_op, target_objnum, self);
+}
+
+ai_achievability ai_lua_is_achievable(const ai_goal* aigp, int objnum){
+	const auto& lua_ai = Lua_ai_modes.at(aigp->ai_submode);
+
+	auto dynamicSEXP = sexp::get_dynamic_sexp(aigp->ai_submode);
+
+	if (dynamicSEXP != nullptr && typeid(*dynamicSEXP) == typeid(sexp::LuaAISEXP)) {
+		auto lua_ai_sexp = static_cast<sexp::LuaAISEXP*>(dynamicSEXP);
+		const auto& action = lua_ai_sexp->getAchievable();
+
+		if (!action.isValid())
+			return ai_achievability::ACHIEVABLE;
+
+		luacpp::LuaValueList luaParameters;
+		luaParameters.push_back(luacpp::LuaValue::createValue(action.getLuaState(), scripting::api::l_Ship.Set(object_h(&Objects[objnum]))));
+		if (lua_ai.needsTarget) {
+			luaParameters.push_back(luacpp::LuaValue::createValue(action.getLuaState(), scripting::api::l_OSWPT.Set(aigp->lua_ai_target)));
+		}
+
+		auto retVals = action.call(Script_system.GetLuaSession(), luaParameters);
+
+		if (!retVals.empty() && retVals[0].getValueType() == luacpp::ValueType::USERDATA) {
+			scripting::api::enum_h enumData;
+			retVals[0].getValue(scripting::api::l_Enum.Get(&enumData));
+			if (!enumData.IsValid()) {
+				Error(LOCATION, "LuaAI SEXP achievability hook returned an invalid avilability enum.");
+				return ai_achievability::ACHIEVABLE;
+			}
+
+			switch (enumData.index) {
+			case scripting::api::LE_LUAAI_ACHIEVABLE:
+				return ai_achievability::ACHIEVABLE;
+			case scripting::api::LE_LUAAI_NOT_YET_ACHIEVABLE:
+				return ai_achievability::NOT_KNOWN;
+			case scripting::api::LE_LUAAI_UNACHIEVABLE:
+				return ai_achievability::NOT_ACHIEVABLE;
+			default:
+				Error(LOCATION, "LuaAI SEXP achievability hook returned an invalid avilability enum.");
+				return ai_achievability::ACHIEVABLE;
+			}
+		}
+		else {
+			Error(LOCATION, "LuaAI SEXP achievability hook did not return any avilability enum!");
+		}
+	}
+
+	return ai_achievability::ACHIEVABLE;
 }
