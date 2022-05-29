@@ -7842,7 +7842,7 @@ void send_non_homing_fired_packet(ship* shipp, int banks_or_number_of_missiles_f
 
 	// We need the time elpased, so send the last frame we got from the server and how much time has happened since then.
 	int last_received_frame = multi_client_lookup_frame_idx();
-	auto time_elapsed = (ushort)(timestamp() - multi_client_lookup_frame_timestamp());
+	auto time_elapsed = static_cast<ushort>(timestamp_since(multi_client_lookup_frame_timestamp()));
 
 	ADD_INT(last_received_frame);
 	ADD_USHORT(time_elapsed);
@@ -7950,11 +7950,11 @@ void process_non_homing_fired_packet(ubyte* data, header* hinfo)
 	}
 
 	// figure out correct start frame
-	int frame = multi_ship_record_find_frame(client_frame, (int)time_elapsed);
+	int frame = multi_ship_record_find_frame(client_frame, static_cast<int>(time_elapsed));
 
 	if (frame > -1) {
 		// adjust time so that we can interpolate the position and orientation that was seen on the client.
-		int time_after_frame = multi_ship_record_find_time_after_frame(client_frame, frame, (int)time_elapsed);
+		int time_after_frame = multi_ship_record_find_time_after_frame(client_frame, frame, static_cast<int>(time_elapsed));
 		Assertion(time_after_frame >= 0, "Primary fire packet processor found an invalid time_after_frame of %d", time_after_frame);
 
 		vec3d new_tar_pos = multi_ship_record_lookup_position(objp_ref, frame);
