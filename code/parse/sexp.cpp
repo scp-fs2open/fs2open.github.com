@@ -10522,6 +10522,7 @@ int eval_random_multiple_of(int arg_handler_node, int condition_node)
 		// true?
 		if (val == SEXP_TRUE)
 		{
+			const char *arg_text = Sexp_replacement_arguments.back().first;
 			Sexp_applicable_argument_list.add_data(arg_text, n);
 		} else if ((num_valid_arg_nodes == 1) && !valid_container_arg_found &&
 				   (Sexp_nodes[condition_node].value == SEXP_KNOWN_FALSE ||
