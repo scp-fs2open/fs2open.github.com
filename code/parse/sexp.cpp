@@ -31522,7 +31522,7 @@ int copy_node_to_replacement_args(int node, int container_value_index)
 			container_name);
 
 		if (container_value_index != -1) {
-			const SCP_string& container_value = container.get_value_at_index(container_value_index);
+			const SCP_string &container_value = container.get_value_at_index(container_value_index);
 			Sexp_replacement_arguments.emplace_back(container_value.c_str(), node);
 			num_args = 1;
 		} else {

@@ -160,7 +160,7 @@ bool sexp_container::does_blank_of_op_support_container_args(const int op_const)
 
 		default:
 			return false;
-		}
+	}
 }
 
 bool sexp_container::is_valid_arg_to_blank_of_ops() const
@@ -1567,25 +1567,4 @@ int sexp_container_collect_map_key_arguments(int node,
 	bool just_count)
 {
 	return collect_container_values(node, argument_vector, just_count, "For-map-container-keys", true);
-}
-
-bool sexp_container_does_blank_op_support_containers(const int op_const)
-{
-	switch (op_const)
-	{
-	case OP_ANY_OF:
-	case OP_EVERY_OF:
-	case OP_NUMBER_OF:
-	case OP_FIRST_OF:
-		return true;
-
-	default:
-		return false;
-	}
-}
-
-bool sexp_container_does_container_support_blank_ops(const sexp_container &container)
-{
-	return (container.is_list() && any(container.type & ContainerType::STRING_DATA)) ||
-		(container.is_map() && any(container.type & ContainerType::STRING_KEYS));
 }
