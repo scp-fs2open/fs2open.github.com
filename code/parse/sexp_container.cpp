@@ -1583,14 +1583,14 @@ int sexp_container_query_sexp_args_count(const int node, SCP_vector<int> &cumula
 
 	for (; n != -1; n = CDR(n))
 	{
-		if (only_valid_args && !(Sexp_nodes[node].flags & SNF_ARGUMENT_VALID)) {
+		if (only_valid_args && !(Sexp_nodes[n].flags & SNF_ARGUMENT_VALID)) {
 			continue;
 		}
 
 		const int prev_index = cumulative_arg_countss.back();
 
-		if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER_NAME) {
-			const char *container_name = Sexp_nodes[node].text;
+		if (Sexp_nodes[n].subtype == SEXP_ATOM_CONTAINER_NAME) {
+			const char *container_name = Sexp_nodes[n].text;
 			const auto *p_container = get_sexp_container(container_name);
 
 			// should have been checked in get_sexp()
