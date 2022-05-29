@@ -987,7 +987,8 @@ bool ship_class_unchanged(const ship_registry_entry *ship_entry);
 void multi_sexp_modify_variable();
 
 // jg18
-int copy_node_to_replacement_args(int node);
+// container_value_index is for using one specific value from acontainer
+int copy_node_to_replacement_args(int node, int container_value_index = -1);
 
 #define NO_OPERATOR_INDEX_DEFINED		-2
 #define NOT_A_SEXP_OPERATOR				-1
@@ -10509,25 +10510,11 @@ int eval_random_multiple_of(int arg_handler_node, int condition_node)
 		// ensure special argument list is empty
 		Sexp_applicable_argument_list.clear_nesting_level();
 
-		const char *arg_text = nullptr;
-		if (Sexp_nodes[n].subtype == SEXP_ATOM_CONTAINER_NAME) {
-			const char *container_name = Sexp_nodes[n].text;
-			const auto *p_container = get_sexp_container(container_name);
-			Assertion(p_container,
-				"Special argument SEXP given nonexistent container %s. Please report!",
-				container_name);
-			const auto &container = *p_container;
-
-			// subtract 1 because containers index their data from 0, not 1
-			const int arg_value_index = random_arg_value - cumulative_arg_counts[random_argument - 1] - 1;
-			arg_text = container.get_value_at_index(arg_value_index).c_str();
-		} else {
-			arg_text = Sexp_nodes[n].text;
-		}
-		Assertion(arg_text != nullptr,
-			"Attempt to retrieve selected argument in random-multiple-of SEXP failed. Please report!");
-
-		Sexp_replacement_arguments.emplace_back(arg_text, n);
+		const int arg_value_index = (Sexp_nodes[n].subtype == SEXP_ATOM_CONTAINER_NAME)
+										? random_arg_value - cumulative_arg_counts[random_argument - 1] - 1
+										: -1;
+		const int num_args = copy_node_to_replacement_args(n, arg_value_index);
+		SCP_UNUSED(num_args);
 
 		// evaluate conditional for current argument
 		val = eval_sexp(condition_node);
@@ -31621,9 +31608,11 @@ void multi_sexp_modify_variable()
 	}	
 }
 
-// populate Sexp_applicable_arguments for the *-of conditional SEXPs
-int copy_node_to_replacement_args(int node)
+// copy an argument node's value(s) to Sexp_replacement_arguments for the *-of/in-sequence SEXPs
+int copy_node_to_replacement_args(int node, int container_value_index)
 {
+	int num_args = 0;
+
 	if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER_NAME) {
 		Assertion(find_parent_operator(node) >= 0 &&
 					  sexp_container_does_blank_op_support_containers(Operators[find_parent_operator(node)].value),
@@ -31633,40 +31622,43 @@ int copy_node_to_replacement_args(int node)
 		const char *container_name = Sexp_nodes[node].text;
 		const auto *p_container = get_sexp_container(container_name);
 
-		// should have been checked in get_sexp()
 		Assertion(p_container, "Special argument SEXP given nonexistent container %s. Please report!", container_name);
 		const auto &container = *p_container;
-		int num_args = 0;
+		Assertion(container.is_valid_arg_to_blank_of_ops(),
+			"Attempt to use for-* SEXP with ineligible container argument %s. Please report!",
+			container_name);
 
-		// should have been checked in check_sexp_syntax()
-		if (container.is_list()) {
-			Assertion(any(container.type & ContainerType::STRING_DATA),
-				"Special argument SEXP given list container %s whose data aren't strings. Please report!",
-				container_name);
-			num_args = (int)container.list_data.size();
-			// populate in reverse order, so that the LIFO processing that callers use will process them in the correct order
-			for (auto rev_it = container.list_data.crbegin(), end = container.list_data.crend(); rev_it != end; ++rev_it) {
-				// use -1 because these strings are not associated with an individual node
-				Sexp_replacement_arguments.emplace_back(rev_it->c_str(), -1);
-			}
-		} else if (container.is_map()) {
-			Assertion(any(container.type & ContainerType::STRING_KEYS),
-				"Special argument SEXP given map container %s whose keys aren't strings. Please report!",
-				container_name);
-			num_args = (int)container.map_data.size();
-			for (const auto &kv_pair : container.map_data) {
-				// use -1 because these strings are not associated with an individual node
-				Sexp_replacement_arguments.emplace_back(kv_pair.first.c_str(), -1);
-			}
+		if (container_value_index != -1) {
+			const SCP_string &container_value = container.get_value_at_index(container_value_index);
+			Sexp_replacement_arguments.emplace_back(container_value.c_str(), node);
+			num_args = 1;
 		} else {
-			UNREACHABLE("Container %s has invalid type (%d). Please report!", container_name, (int)container.type);
-		}
+			if (container.is_list()) {
+				// populate in reverse order, so that the LIFO processing that callers use will process them in the correct order
+				for (auto rev_it = container.list_data.crbegin(), end = container.list_data.crend(); rev_it != end; ++rev_it) {
+					// use -1 because these strings are not associated with an individual node
+					Sexp_replacement_arguments.emplace_back(rev_it->c_str(), -1);
+				}
+			} else if (container.is_map()) {
+				for (const auto& kv_pair : container.map_data) {
+					// use -1 because these strings are not associated with an individual node
+					Sexp_replacement_arguments.emplace_back(kv_pair.first.c_str(), -1);
+				}
+			} else {
+				UNREACHABLE("Container %s has invalid type (%d). Please report!", container_name, (int)container.type);
+			}
 
-		return num_args;
+			num_args = container.size();
+		}
 	} else {
+		Assertion(container_value_index == -1,
+			"Attempt to copy replacement argument string with unexpected index %d. Please report!",
+			container_value_index);
 		Sexp_replacement_arguments.emplace_back(Sexp_nodes[node].text, node);
-		return 1;
+		num_args = 1;
 	}
+
+	return num_args;
 }
 
 void sexp_modify_variable(int n)
