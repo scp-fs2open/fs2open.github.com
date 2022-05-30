@@ -13,12 +13,12 @@ debug_sphere::debug_sphere(const vec3d& pos_in, float rad_in)
 }
 void debug_sphere::add(const vec3d& pos, float rad)
 {
-	debug_sphere::Spheres.emplace_back(debug_sphere(pos, rad));
+	Spheres.emplace_back(pos, rad);
 }
 
 void debug_sphere::clear()
 {
-	debug_sphere::Spheres.clear();
+	Spheres.clear();
 }
 
 void debug_sphere::render()
