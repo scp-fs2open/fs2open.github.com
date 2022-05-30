@@ -101,6 +101,7 @@ struct sexp_container
 	SCP_string container_name;
 	ContainerType type = ContainerType::LIST | ContainerType::STRING_DATA;
 	int opf_type = OPF_STRING;
+	bool in_special_arg = false;
 
 	SCP_list<SCP_string> list_data;
 	SCP_unordered_map<SCP_string, SCP_string, map_container_hash> map_data;
@@ -130,6 +131,11 @@ struct sexp_container
 	bool name_matches(const sexp_container &container) const;
 	bool empty() const;
 	int size() const;
+	// for detecting attempted concurrent modification
+	bool is_being_used_in_special_arg() const
+	{
+		return in_special_arg;
+	}
 
 	// get type without persistence flags
 	ContainerType get_non_persistent_type() const;

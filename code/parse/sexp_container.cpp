@@ -66,6 +66,15 @@ namespace {
 		report_problematic_container(sexp_name, "non-map", container_name);
 	}
 
+	// FIXME TODO: use this in all change SEXPs where relevant
+	void report_container_in_special_arg(const SCP_string &sexp_name, const char *container_name)
+	{
+		const SCP_string msg =
+			sexp_name + " called on container " + container_name + " while it is being used in a special argument SEXP";
+		Warning(LOCATION, "%s", msg.c_str());
+		log_printf(LOGFILE_EVENT_LOG, "%s", msg.c_str());
+	}
+
 	void add_to_map_internal(sexp_container &container, const SCP_string &key, const SCP_string &data) {
 		Assertion(container.is_map(),
 			"Attempt to add map data to non-map container %s. Please report!",
@@ -1396,6 +1405,10 @@ void sexp_copy_container(int node)
 		log_printf(LOGFILE_EVENT_LOG, "%s", msg.c_str());
 		return;
 	}
+	if (dest_container.is_being_used_in_special_arg()) {
+		report_container_in_special_arg("Copy-container", dest_container_name);
+		return;
+	}
 
 	bool replace_contents = true;
 
@@ -1475,14 +1488,14 @@ int collect_container_values(int node,
 
 	for (; node != -1; node = CDR(node)) {
 		const char *container_name = CTEXT(node);
-		const auto *p_container = get_sexp_container(container_name);
+		auto *p_container = get_sexp_container(container_name);
 
 		if (!p_container) {
 			report_nonexistent_container(sexp_name, container_name);
 			continue;
 		}
 
-		const auto &container = *p_container;
+		auto &container = *p_container;
 
 		if (map_keys_only) {
 			if (!container.is_map()) {
@@ -1533,6 +1546,10 @@ int collect_container_values(int node,
 			} else {
 				UNREACHABLE("Container %s has invalid type (%d). Please report!", container_name, (int)container.type);
 			}
+		}
+
+		if (!just_count) {
+			container.in_special_arg = true;
 		}
 	}
 
