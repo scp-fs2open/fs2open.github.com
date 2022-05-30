@@ -254,7 +254,7 @@ int timestamp_until(int stamp)
 
 int timestamp_until(TIMESTAMP stamp)
 {
-	Assertion(stamp.isValid() && !stamp.isNever(), "timestamp_until was called with an Invalid or Never timestamp!");
+	Assertion(stamp.isValid() && !stamp.isNever(), "timestamp_until was called with a%s timestamp!", !stamp.isValid() ? "n invalid" : " Never");
 	if (!stamp.isValid() || stamp.isNever())
 		return INT_MAX;
 
@@ -266,7 +266,7 @@ int timestamp_until(TIMESTAMP stamp)
 
 int ui_timestamp_until(UI_TIMESTAMP stamp)
 {
-	Assertion(stamp.isValid() && !stamp.isNever(), "timestamp_until was called with an Invalid or Never timestamp!");
+	Assertion(stamp.isValid() && !stamp.isNever(), "timestamp_until was called with a%s timestamp!", !stamp.isValid() ? "n invalid" : " Never");
 	if (!stamp.isValid() || stamp.isNever())
 		return INT_MAX;
 
@@ -283,7 +283,7 @@ int timestamp_since(int stamp)
 
 int timestamp_since(TIMESTAMP stamp)
 {
-	Assertion(stamp.isValid() && !stamp.isNever(), "timestamp_since was called with an Invalid or Never timestamp!");
+	Assertion(stamp.isValid() && !stamp.isNever(), "timestamp_since was called with a%s timestamp!", !stamp.isValid() ? "n invalid" : " Never");
 	if (!stamp.isValid() || stamp.isNever())
 		return INT_MIN;
 
@@ -295,7 +295,7 @@ int timestamp_since(TIMESTAMP stamp)
 
 int ui_timestamp_since(UI_TIMESTAMP stamp)
 {
-	Assertion(stamp.isValid() && !stamp.isNever(), "timestamp_since was called with an Invalid or Never timestamp!");
+	Assertion(stamp.isValid() && !stamp.isNever(), "timestamp_since was called with a%s timestamp!", !stamp.isValid() ? "n invalid" : " Never");
 	if (!stamp.isValid() || stamp.isNever())
 		return INT_MIN;
 
@@ -377,9 +377,9 @@ int ui_timestamp_compare(UI_TIMESTAMP t1, UI_TIMESTAMP t2)
 
 bool timestamp_in_between(TIMESTAMP stamp, TIMESTAMP before, TIMESTAMP after)
 {
-	Assertion(stamp.isValid() && !stamp.isNever(), "timestamp_in_between was called with an Invalid or Never 'stamp' timestamp!");
-	Assertion(before.isValid() && !before.isNever(), "timestamp_in_between was called with an Invalid or Never 'before' timestamp!");
-	Assertion(after.isValid() && !after.isNever(), "timestamp_in_between was called with an Invalid or Never 'after' timestamp!");
+	Assertion(stamp.isValid() && !stamp.isNever(), "timestamp_in_between was called with a%s 'stamp' timestamp!", !stamp.isValid() ? "n invalid" : " Never");
+	Assertion(before.isValid() && !before.isNever(), "timestamp_in_between was called with a%s 'before' timestamp!", !before.isValid() ? "n invalid" : " Never");
+	Assertion(after.isValid() && !after.isNever(), "timestamp_in_between was called with a%s 'after' timestamp!", !after.isValid() ? "n invalid" : " Never");
 
 	if (!stamp.isValid() || !before.isValid() || !after.isValid())
 		return false;
@@ -389,9 +389,9 @@ bool timestamp_in_between(TIMESTAMP stamp, TIMESTAMP before, TIMESTAMP after)
 
 bool ui_timestamp_in_between(UI_TIMESTAMP stamp, UI_TIMESTAMP before, UI_TIMESTAMP after)
 {
-	Assertion(stamp.isValid() && !stamp.isNever(), "ui_timestamp_in_between was called with an Invalid or Never 'stamp' timestamp!");
-	Assertion(before.isValid() && !before.isNever(), "ui_timestamp_in_between was called with an Invalid or Never 'before' timestamp!");
-	Assertion(after.isValid() && !after.isNever(), "ui_timestamp_in_between was called with an Invalid or Never 'after' timestamp!");
+	Assertion(stamp.isValid() && !stamp.isNever(), "ui_timestamp_in_between was called with a%s 'stamp' timestamp!", !stamp.isValid() ? "n invalid" : " Never");
+	Assertion(before.isValid() && !before.isNever(), "ui_timestamp_in_between was called with a%s 'before' timestamp!", !before.isValid() ? "n invalid" : " Never");
+	Assertion(after.isValid() && !after.isNever(), "ui_timestamp_in_between was called with a%s 'after' timestamp!", !after.isValid() ? "n invalid" : " Never");
 
 	if (!stamp.isValid() || !before.isValid() || !after.isValid())
 		return false;
