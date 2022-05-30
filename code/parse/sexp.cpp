@@ -2890,29 +2890,10 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 			// Goober5000
 			case OPF_ANYTHING:
-			{
-				// jg18
 				if (type2 == SEXP_ATOM_CONTAINER_NAME) {
-					// exclude SEXPs that don't support using containers at all
-					if (op < 0 || !sexp_container::does_op_allow_container_special_args(Operators[op].value)) {
-						return SEXP_CHECK_TYPE_MISMATCH;
-					}
-
-					// only list containers of strings or map containers with string keys are allowed
-					const auto *p_any_container = get_sexp_container(Sexp_nodes[node].text);
-					Assertion(p_any_container,
-						"Attempt to use unknown container %s. Please report!",
-						Sexp_nodes[node].text);
-
-					const auto &any_container = *p_any_container;
-					if (any_container.is_list() && none(any_container.type & ContainerType::STRING_DATA)) {
-						return SEXP_CHECK_WRONG_CONTAINER_DATA_TYPE;
-					} else if (any_container.is_map() && none(any_container.type & ContainerType::STRING_KEYS)) {
-						return SEXP_CHECK_WRONG_MAP_KEY_TYPE;
-					}
+					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 				break;
-			}
 
 			case OPF_AI_GOAL:
 			{
@@ -3743,6 +3724,25 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					return z;
 				}
 				break;
+
+			case OPF_DATA_OR_STR_CONTAINER:
+			{
+				if (type2 == SEXP_ATOM_CONTAINER_NAME) {
+					// only list containers of strings or map containers with string keys are allowed
+					const auto *p_str_container = get_sexp_container(Sexp_nodes[node].text);
+					Assertion(p_str_container,
+						"Attempt to use unknown container %s. Please report!",
+						Sexp_nodes[node].text);
+
+					const auto &str_container = *p_str_container;
+					if (str_container.is_list() && none(str_container.type & ContainerType::STRING_DATA)) {
+						return SEXP_CHECK_WRONG_CONTAINER_DATA_TYPE;
+					} else if (str_container.is_map() && none(str_container.type & ContainerType::STRING_KEYS)) {
+						return SEXP_CHECK_WRONG_MAP_KEY_TYPE;
+					}
+				}
+				break;
+			}
 
 			default:
 				Error(LOCATION, "Unhandled argument format");
@@ -28922,19 +28922,21 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_DO_FOR_VALID_ARGUMENTS:
 			return OPF_NULL;
 
-		case OP_ANY_OF:
-		case OP_EVERY_OF:
 		case OP_RANDOM_OF:
 		case OP_RANDOM_MULTIPLE_OF:
 		case OP_IN_SEQUENCE:
 			return OPF_ANYTHING;
+
+		case OP_ANY_OF:
+		case OP_EVERY_OF:
+			return OPF_DATA_OR_STR_CONTAINER;
 
 		case OP_NUMBER_OF:
 		case OP_FIRST_OF:
 			if (argnum == 0)
 				return OPF_POSITIVE;
 			else
-				return OPF_ANYTHING;
+				return OPF_DATA_OR_STR_CONTAINER;
 
 		case OP_FOR_COUNTER:
 			return OPF_NUMBER;
@@ -30953,6 +30955,7 @@ int sexp_query_type_match(int opf, int opr)
 		// Goober5000
 		case OPF_ANYTHING:
 		case OPF_CONTAINER_VALUE: // jg18
+		case OPF_DATA_OR_STR_CONTAINER: // jg18
 			// don't match any operators, only data
 			return 0;
 
@@ -31508,22 +31511,12 @@ int copy_node_to_replacement_args(int node, int container_value_index)
 	int num_args = 0;
 
 	if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER_NAME) {
-#ifndef NDEBUG
-		const int op_node = find_parent_operator(node);
-		Assertion(op_node >= 0, "Operator node not found while trying to retrieve special argument. Please report!");
-		const int op_const = get_operator_const(find_parent_operator(node));
-		Assertion(sexp_container::does_op_allow_container_special_args(op_const),
-			"Attempt to copy arguments from container %s with op %d that doesn't support them. Please report!",
-			Sexp_nodes[node].text,
-			op_const);
-#endif
-
 		const char *container_name = Sexp_nodes[node].text;
 		const auto *p_container = get_sexp_container(container_name);
 
 		Assertion(p_container, "Special argument SEXP given nonexistent container %s. Please report!", container_name);
 		const auto &container = *p_container;
-		Assertion(container.is_valid_arg_to_blank_of_ops(),
+		Assertion(container.is_of_string_type(),
 			"Attempt to use for-* SEXP with ineligible container argument %s. Please report!",
 			container_name);
 
