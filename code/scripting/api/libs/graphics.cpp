@@ -1250,16 +1250,28 @@ static int drawString_sub(lua_State *L, bool use_resize_arg)
 		SCP_vector<int> linelengths;
 		SCP_vector<const char*> linestarts;
 
+		// This would pass a <=0 value to split_str
 		if (x2 <= x)
 		{
-			// This would pass a <=0 value to split_str
-			Warning(LOCATION, "Illegal values passed to gr.drawString: x2 (%d) must be greater than x (%d).", x2, x);
+			static bool Warned_drawString_x_x2 = false;
+			if (!Warned_drawString_x_x2)
+			{
+				Warning(LOCATION, "Illegal values passed to gr.drawString: x2 (%d) must be greater than x (%d).", x2, x);
+				Warned_drawString_x_x2 = true;
+			}
+
 			std::swap(x, x2);
 		}
+		// Invalid y2 value
 		if (y2 >= 0 && y2 <= y)
 		{
-			// Invalid y2 value
-			Warning(LOCATION, "Illegal y2 value passed to gr.drawString: y2 (%d) must be greater than y (%d).", y2, y);
+			static bool Warned_drawString_y_y2 = false;
+			if (!Warned_drawString_y_y2)
+			{
+				Warning(LOCATION, "Illegal y2 value passed to gr.drawString: y2 (%d) must be greater than y (%d).", y2, y);
+				Warned_drawString_y_y2 = true;
+			}
+
 			std::swap(y, y2);
 		}
 
