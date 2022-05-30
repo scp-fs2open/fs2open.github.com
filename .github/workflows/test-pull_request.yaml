@@ -161,7 +161,9 @@ jobs:
     strategy:
       matrix:
         configuration: [Debug, Release]
+        compiler: [clang]
         arch: [x86_64]
+        cmake_options: ["-DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache"]
     name: Mac
     runs-on: macos-latest
     steps:
@@ -196,28 +198,16 @@ jobs:
           COMPILER: ${{ matrix.compiler }}
           ARCHITECTURE: ${{ matrix.arch }}
           JOB_CMAKE_OPTIONS: ${{ matrix.cmake_options }}
-        run: |
-          mkdir build
-          cd build
-          
-          export CXXFLAGS="-mtune=generic -pipe -Wno-unknown-pragmas"
-          export CFLAGS="-mtune=generic -pipe -Wno-unknown-pragmas"
-          export CMAKE_OSX_ARCHITECTURES="$ARCHITECTURE"
-
-          brew install ninja
-          cmake -G Ninja -DFSO_FATAL_WARNINGS=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=ON $CMAKE_OPTIONS \
-          -DCMAKE_INSTALL_PREFIX="$(pwd)/install" -DCMAKE_BUILD_TYPE=$CONFIGURATION \
-          -DFFMPEG_USE_PRECOMPILED=ON -DFSO_BUILD_TESTS=ON -DFSO_BUILD_INCLUDED_LIBS=ON -DFSO_BUILD_QTFRED=ON \
-          -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-          -DSHADERS_ENABLE_COMPILATION=ON ..
+        run: $GITHUB_WORKSPACE/ci/linux/configure_cmake.sh
       - name: Compile
         working-directory: ./build
         run: LD_LIBRARY_PATH=$Qt5_DIR/lib:$LD_LIBRARY_PATH ninja all
       - name: Run Tests
         working-directory: ./build
-        run: |
-          export LD_LIBRARY_PATH=$(pwd)/bin/lib:$LD_LIBRARY_PATH
-          ./bin/$CONFIGURATION/unittests --gtest_shuffle
+        env:
+          CONFIGURATION: ${{ matrix.configuration }}
+          XDG_RUNTIME_DIR: /root
+        run: $GITHUB_WORKSPACE/ci/linux/run_tests.sh
       - name: Run Clang Tidy
         # Clang-tidy reuses the precompiled headers so this only makes sense for the clang compilers
         if: startsWith(matrix.compiler, 'clang-')
