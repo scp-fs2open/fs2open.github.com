@@ -46,6 +46,7 @@
 #include "weapon/beam.h"
 #include "weapon/weapon.h"
 #include "globalincs/globals.h"
+#include "globalincs/systemvars.h"
 #include "tracing/tracing.h"
 
 // ------------------------------------------------------------------------------------------------
@@ -452,6 +453,8 @@ int beam_fire(beam_fire_info *fire_info)
 	new_item->last_start = fire_info->starting_pos;
 	new_item->type5_rot_speed = wip->b_info.t5info.continuous_rot;
 	new_item->rotates = wip->b_info.beam_type == BeamType::OMNI && wip->b_info.t5info.continuous_rot_axis != Type5BeamRotAxis::UNSPECIFIED;
+	new_item->good_spew_frame = -1;
+	new_item->next_spew_timestamp = -1;
 
 	if (fire_info->bfi_flags & BFIF_FORCE_FIRING)
 		new_item->flags |= BF_FORCE_FIRING;
@@ -3658,9 +3661,17 @@ void beam_handle_collisions(beam *b)
 		}
 
 		// KOMET_EXT -->
+		bool good_to_spew = false;
+		if(Framecount == b->good_spew_frame)
+			good_to_spew = true;
+		else if(timestamp_elapsed(b->next_spew_timestamp)){
+			b->good_spew_frame = Framecount; 
+			b->next_spew_timestamp = timestamp(BEAM_SPEW_TIME);
+			good_to_spew = true;
+		}
 
 		// draw flash, explosion
-		if (draw_effects &&
+		if (draw_effects && good_to_spew &&
 		    ((wi->piercing_impact_effect.isValid()) || (wi->flash_impact_weapon_expl_effect.isValid()))) {
 			float rnd = frand();
 			int do_expl = 0;
@@ -3684,6 +3695,7 @@ void beam_handle_collisions(beam *b)
 				// Just assume that we don't need to handle model subobjects here
 				vm_vec_unrotate(&worldNormal, &b->f_collisions[idx].cinfo.hit_normal, &Objects[target].orient);
 			}
+
 
 			if (wi->flash_impact_weapon_expl_effect.isValid()) {
 				auto particleSource = particle::ParticleManager::get()->createSource(wi->flash_impact_weapon_expl_effect);
@@ -3780,7 +3792,7 @@ void beam_handle_collisions(beam *b)
 			}
 			// <-- KOMET_EXT
 		} else {
-			if(draw_effects && apply_beam_physics && !physics_paused){
+			if(draw_effects && apply_beam_physics && !physics_paused && good_to_spew){
 				// maybe draw an explosion, if we aren't hitting shields
 				if ((wi->impact_weapon_expl_effect.isValid()) && (b->f_collisions[idx].quadrant < 0)) {
 					vec3d worldNormal;
