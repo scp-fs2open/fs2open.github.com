@@ -155,6 +155,7 @@ bool sexp_container::does_op_allow_container_special_args(const int op_const)
 		case OP_EVERY_OF:
 		case OP_NUMBER_OF:
 		case OP_FIRST_OF:
+		case OP_RANDOM_MULTIPLE_OF:
 			return true;
 
 		default:
