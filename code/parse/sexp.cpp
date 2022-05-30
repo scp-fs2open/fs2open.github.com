@@ -10413,8 +10413,7 @@ int eval_random_of(int arg_handler_node, int condition_node, bool multiple)
 		Sexp_applicable_argument_list.clear_nesting_level();
 
 		// evaluate conditional for current argument
-		const int num_args = copy_node_to_replacement_args(n);
-		SCP_UNUSED(num_args);
+		Sexp_replacement_arguments.emplace_back(Sexp_nodes[n].text, n);
 		val = eval_sexp(condition_node);
 
 		// true?
@@ -10466,8 +10465,7 @@ int eval_in_sequence(int arg_handler_node, int condition_node)
 		Sexp_applicable_argument_list.clear_nesting_level();
 
 		// evaluate conditional for current argument
-		const int num_args = copy_node_to_replacement_args(n);
-		SCP_UNUSED(num_args);
+		Sexp_replacement_arguments.emplace_back(Sexp_nodes[n].text, n);
 		val = eval_sexp(condition_node);
 
 		// true?

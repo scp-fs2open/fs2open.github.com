@@ -1429,7 +1429,6 @@ int sexp_tree::get_default_value(sexp_list_item* item, char* text_buf, int op, i
 		str = "<container value>";
 		break;
 
-			
 	default:
 		str = "<new default required!>";
 		break;
