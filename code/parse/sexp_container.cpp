@@ -147,7 +147,7 @@ bool sexp_container::type_matches(const sexp_container &container) const
 	return get_non_persistent_type() == container.get_non_persistent_type();
 }
 
-bool sexp_container::does_blank_of_op_support_container_args(const int op_const)
+bool sexp_container::does_op_allow_container_special_args(const int op_const)
 {
 	switch (op_const)
 	{
@@ -155,7 +155,6 @@ bool sexp_container::does_blank_of_op_support_container_args(const int op_const)
 		case OP_EVERY_OF:
 		case OP_NUMBER_OF:
 		case OP_FIRST_OF:
-		case OP_RANDOM_MULTIPLE_OF:
 			return true;
 
 		default:

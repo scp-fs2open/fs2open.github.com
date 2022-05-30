@@ -2894,7 +2894,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				// jg18
 				if (type2 == SEXP_ATOM_CONTAINER_NAME) {
 					// exclude SEXPs that don't support using containers at all
-					if (op < 0 || !sexp_container::does_blank_of_op_support_container_args(Operators[op].value)) {
+					if (op < 0 || !sexp_container::does_op_allow_container_special_args(Operators[op].value)) {
 						return SEXP_CHECK_TYPE_MISMATCH;
 					}
 
@@ -10114,16 +10114,16 @@ int test_argument_nodes_for_condition(int n, int condition_node, int *num_true, 
 			// evaluate conditional for current argument(s)
 			const int num_args = copy_node_to_replacement_args(n);
 
-			for (int i = 0; i < num_args; ++i) {
-				val = eval_sexp(condition_node);
-				if (Sexp_nodes[condition_node].value == SEXP_KNOWN_TRUE ||
-					Sexp_nodes[condition_node].value == SEXP_KNOWN_FALSE) {
-					val = Sexp_nodes[condition_node].value;
-				} else if (Sexp_nodes[condition_node].value == SEXP_NAN_FOREVER) {
-					// In accordance with SEXP_NAN/SEXP_NAN_FOREVER becoming SEXP_FALSE in eval_sexp()
-					val = SEXP_KNOWN_FALSE;
-				}
+			val = eval_sexp(condition_node);
+			if (Sexp_nodes[condition_node].value == SEXP_KNOWN_TRUE ||
+				Sexp_nodes[condition_node].value == SEXP_KNOWN_FALSE) {
+				val = Sexp_nodes[condition_node].value;
+			} else if (Sexp_nodes[condition_node].value == SEXP_NAN_FOREVER) {
+				// In accordance with SEXP_NAN/SEXP_NAN_FOREVER becoming SEXP_FALSE in eval_sexp()
+				val = SEXP_KNOWN_FALSE;
+			}
 
+			for (int i = 0; i < num_args; ++i) {
 				const auto &argument = Sexp_replacement_arguments.back();
 
 				switch (val)
@@ -31616,7 +31616,7 @@ int copy_node_to_replacement_args(int node, int container_value_index)
 
 	if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER_NAME) {
 		Assertion(find_parent_operator(node) >= 0 &&
-			sexp_container::does_blank_of_op_support_container_args(Operators[find_parent_operator(node)].value),
+					  sexp_container::does_op_allow_container_special_args(Operators[find_parent_operator(node)].value),
 			"Attempt to fill replacement arguments from a container with an operator that doesn't support containers. "
 			"Please report!");
 
