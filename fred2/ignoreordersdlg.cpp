@@ -62,7 +62,7 @@ BOOL ignore_orders_dlg::OnInitDialog()
 
 	CDialog::OnInitDialog();
 
-	//Because Windows, this needs to be manually created in addition to having the resource thingy.
+	//Because Windows, this needs to be manually subclassed in addition to having the resource thingy.
 	m_ignore_orders_checklistbox.SubclassDlgItem(IDC_IGNORE_ORDERS_LIST, this);
 	m_ignore_orders_checklistbox.SetCheckStyle(BS_AUTO3STATE);
 
@@ -89,12 +89,10 @@ BOOL ignore_orders_dlg::OnInitDialog()
 	CCheckListBox* ignore_orders_list = ((CCheckListBox*)GetDlgItem(IDC_IGNORE_ORDERS_LIST));
 
 	for (size_t order_id : default_orders){
-		int checkboxNo = (int) m_orderList.size();
-
 		ignore_orders_list->AddString(Player_orders[order_id].localized_name.c_str());
-		ignore_orders_list->SetCheck(checkboxNo, BST_UNCHECKED);
+		ignore_orders_list->SetCheck((int)m_orderList.size() - 1, BST_UNCHECKED);
 
-		m_orderList.push_back(order_id);
+		m_orderList.emplace_back(order_id);
 	}
 
 	// set the check marks in the box based on orders_accepted valud in the ship structure(s)
@@ -193,6 +191,9 @@ void ignore_orders_dlg::OnCheckChange()
 	CCheckListBox* ignore_orders_list = ((CCheckListBox*)GetDlgItem(IDC_IGNORE_ORDERS_LIST));
 
 	int i = ignore_orders_list->GetCurSel();
+
+	Assertion(i != LB_ERR, "MFC tried to update a nonexisting checkbox. Remember what you clicked to get here, and get a coder.");
+
 	if (ignore_orders_list->GetCheck(i) == BST_INDETERMINATE)
 		ignore_orders_list->SetCheck(i, BST_UNCHECKED);
 	
