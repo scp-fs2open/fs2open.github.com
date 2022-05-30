@@ -31502,15 +31502,21 @@ void multi_sexp_modify_variable()
 }
 
 // copy an argument node's value(s) to Sexp_replacement_arguments for the *-of/in-sequence SEXPs
+// returns the number of argument strings copied
 int copy_node_to_replacement_args(int node, int container_value_index)
 {
 	int num_args = 0;
 
 	if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER_NAME) {
-		Assertion(find_parent_operator(node) >= 0 &&
-					  sexp_container::does_op_allow_container_special_args(Operators[find_parent_operator(node)].value),
-			"Attempt to fill replacement arguments from a container with an operator that doesn't support containers. "
-			"Please report!");
+#ifndef NDEBUG
+		const int op_node = find_parent_operator(node);
+		Assertion(op_node >= 0, "Operator node not found while trying to retrieve special argument. Please report!");
+		const int op_const = get_operator_const(find_parent_operator(node));
+		Assertion(sexp_container::does_op_allow_container_special_args(op_const),
+			"Attempt to copy arguments from container %s with op %d that doesn't support them. Please report!",
+			Sexp_nodes[node].text,
+			op_const);
+#endif
 
 		const char *container_name = Sexp_nodes[node].text;
 		const auto *p_container = get_sexp_container(container_name);
