@@ -5465,7 +5465,6 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 				}
 
 				// Replace Container Name submenu
-				const int op_const = op >= 0 ? Operators[op].value : -1;
 				if (is_container_name_opf_type(op_type) || (op_type == OPF_DATA_OR_STR_CONTAINER)) {
 					const auto &containers = get_all_sexp_containers();
 					for (int idx = 0; idx < (int)containers.size(); ++idx) {
