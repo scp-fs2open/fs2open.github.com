@@ -1441,6 +1441,13 @@ void sexp_apply_container_filter(int node)
 		report_non_list_container("Apply-container-filter", filter_container_name);
 		return;
 	}
+	if (filter_container.list_data.empty()) {
+		const SCP_string msg = SCP_string("Apply-container-filter called to filter container ") + container_name +
+							   " using empty filter container " + filter_container_name;
+		Warning(LOCATION, "%s", msg.c_str());
+		log_printf(LOGFILE_EVENT_LOG, "%s", msg.c_str());
+		return;
+	}
 
 	if (container.is_list()) {
 		if (container.get_data_type() != filter_container.get_data_type()) {
