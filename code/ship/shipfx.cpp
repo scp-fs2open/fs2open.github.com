@@ -475,6 +475,7 @@ void shipfx_actually_warpin(ship *shipp, object *objp)
 {
 	shipp->flags.remove(Ship::Ship_Flags::Arriving_stage_1);
 	shipp->flags.remove(Ship::Ship_Flags::Arriving_stage_2);
+
 	// dock leader needs to handle dockees
 	if (object_is_docked(objp)) {
 		Assertion(shipp->flags[Ship::Ship_Flags::Dock_leader], "The docked ship warping in (%s) should only be the dock leader at this point!\n", shipp->ship_name);
@@ -542,10 +543,11 @@ void shipfx_warpin_start( object *objp )
 		return;
 	}
 
-	// if there is no arrival warp, then skip the whole thing
+	// if there is no arrival warp, set the flag but don't create the effect
 	if (shipp->flags[Ship::Ship_Flags::No_arrival_warp])
 	{
-		shipfx_actually_warpin(shipp,objp);
+		shipp->flags.set(Ship::Ship_Flags::Arriving_stage_1);
+		// we don't actually need to set the flag on docked ships, since the flag will be immediately removed
 		return;
 	}
 
@@ -563,16 +565,25 @@ void shipfx_warpin_frame( object *objp, float frametime )
 
 	if ( shipp->flags[Ship::Ship_Flags::Dying] ) return;
 
-	shipp->warpin_effect->warpFrame(frametime);
+	// for ships with no warp effect, skip to the end
+	if (shipp->flags[Ship::Ship_Flags::No_arrival_warp])
+		shipfx_actually_warpin(shipp, objp);
+	else
+		shipp->warpin_effect->warpFrame(frametime);
 }
- 
+
 // This is called to actually warp this object out
 // after all the flashy fx are done, or if the flashy fx
 // don't work for some reason.  OR to skip the flashy fx.
-static void shipfx_actually_warpout(int shipnum)
+static void shipfx_actually_warpout(ship *shipp, object *objp)
 {
+	shipp->flags.remove(Ship::Ship_Flags::Depart_warp);
+
+	// let physics in on it too.
+	objp->phys_info.flags &= (~PF_WARP_OUT);
+
 	// Once we get through effect, make the ship go away
-	ship_actually_depart(shipnum);
+	ship_actually_depart(objp->instance);
 }
 
 void WE_Default::compute_warpout_stuff(float *warp_time, vec3d *warp_pos)
@@ -691,9 +702,9 @@ void shipfx_warpout_start( object *objp )
 	if (shipp->flags[Ship::Ship_Flags::No_departure_warp]) {
 		// DKA 5/25/99 If he's going to warpout, set it.
 		// Next line fixes assert in wing cleanup code when no warp effect.
+		// NOTE: It also causes shipfx_warpout_frame to be run in ship_process_post
+		//   which will make the ship actually depart
 		shipp->flags.set(Ship::Ship_Flags::Depart_warp);
-
-		shipfx_actually_warpout(objp->instance);
 		return;
 	}
 
@@ -719,7 +730,11 @@ void shipfx_warpout_frame( object *objp, float frametime )
 		return;
 	}
 
-	shipp->warpout_effect->warpFrame(frametime);
+	// for ships with no warp effect, skip to the end
+	if (shipp->flags[Ship::Ship_Flags::No_departure_warp])
+		shipfx_actually_warpout(shipp, objp);
+	else
+		shipp->warpout_effect->warpFrame(frametime);
 }
 
 
@@ -3322,22 +3337,10 @@ int WarpEffect::warpEnd()
 	if(!this->isValid())
 		return 0;
 
-	shipp->flags.remove(Ship::Ship_Flags::Arriving_stage_1);
-	shipp->flags.remove(Ship::Ship_Flags::Arriving_stage_2);
-	shipp->flags.remove(Ship::Ship_Flags::Depart_warp);
-	// dock leader needs to handle dockees
-	if (object_is_docked(objp)) {
-		dock_function_info dfi;
-		dock_evaluate_all_docked_objects(objp, &dfi, object_remove_arriving_stage1_ndl_flag_helper);
-		dock_evaluate_all_docked_objects(objp, &dfi, object_remove_arriving_stage2_ndl_flag_helper);
-	}
-
-	// let physics in on it too.
-	objp->phys_info.flags &= (~PF_WARP_IN);
-	objp->phys_info.flags &= (~PF_WARP_OUT);
-
-	if(direction == WarpDirection::WARP_OUT)
-		ship_actually_depart(objp->instance);
+	if (direction == WarpDirection::WARP_IN)
+		shipfx_actually_warpin(&Ships[objp->instance], objp);
+	else if (direction == WarpDirection::WARP_OUT)
+		shipfx_actually_warpout(&Ships[objp->instance], objp);
 
 	return 1;
 }
@@ -3607,11 +3610,11 @@ int WE_Default::warpFrame(float frametime)
 		} else {
 			// Code for all non-player ships warpout frame
 
-			int timed_out = timestamp_elapsed(total_time_end);
+			bool timed_out = timestamp_elapsed(total_time_end);
 			if ( timed_out )	{
-				int	delta_ms = timestamp_until(total_time_end);
+				int	delta_ms = timestamp_since(total_time_end);
 				if (delta_ms > 1000.0f * frametime ) {
-					nprintf(("AI", "Frame %i: Ship %s missed departue cue by %7.3f seconds.\n", Framecount, shipp->ship_name, - (float) delta_ms/1000.0f));
+					nprintf(("AI", "Frame %i: Ship %s missed departure cue by %7.3f seconds.\n", Framecount, shipp->ship_name, (float) delta_ms/1000.0f));
 				}
 			}
 
