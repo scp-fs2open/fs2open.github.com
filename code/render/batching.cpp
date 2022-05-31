@@ -578,7 +578,7 @@ void batching_add_line_internal(primitive_batch *batch, int texture, vec3d *star
 	verts[5].tex_coord.xyz.x = 0.0f; verts[5].tex_coord.xyz.y = 1.0f;
 
 	auto array_index = texture - batch->get_render_info().texture;
-	for(auto vert : verts){
+	for(batch_vertex &vert : verts){
 		vert.r = clr->red;
 		vert.g = clr->green;
 		vert.b = clr->blue;
