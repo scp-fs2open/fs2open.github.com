@@ -163,7 +163,7 @@ jobs:
         configuration: [Debug, Release]
         compiler: [clang]
         arch: [x86_64]
-        cmake_options: ["-DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache"]
+        cmake_options: [""]
     name: Mac
     runs-on: macos-latest
     steps:
