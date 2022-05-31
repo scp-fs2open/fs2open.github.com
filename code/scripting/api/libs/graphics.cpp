@@ -30,6 +30,7 @@
 #include <parse/parselo.h>
 #include <render/3d.h>
 #include <render/3dinternal.h>
+#include <render/batching.h>
 #include <scripting/scripting.h>
 #include <ship/ship.h>
 #include <weapon/weapon.h>
@@ -793,6 +794,40 @@ ADE_FUNC(drawSphere, l_Graphics, "[number Radius = 1.0, vector Position]", "Draw
 		g3_end_frame();
 	}
 	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(draw3dLine, l_Graphics, "vector origin, vector destination, [number thickness, boolean translucent]", "Draws a line from origin to destination", nullptr, nullptr)
+{
+	vec3d *v1 = &vmd_zero_vector;
+	vec3d *v2 = &vmd_zero_vector;
+	bool translucent = true;
+	float thickness = 1.0f;
+
+	if (!ade_get_args(L, "oo|fb", l_Vector.GetPtr(&v1), l_Vector.GetPtr(&v2), &thickness, &translucent))
+		return ADE_RETURN_NIL;
+	
+	if (pseudo_beam_line_texture < 0)
+	{
+		//We only need a single pixel sized texture to render as many lines as we want. 
+		//If it doesn't exist yet, then we make one!
+		pseudo_beam_line_texture = bm_make_render_target(1, 1, BMP_FLAG_RENDER_TARGET_STATIC);
+
+		//The texture needs to be colored white, otherwise the line will render
+		//as black (or invisible if in translucent mode) no matter which color the user picks
+		
+		bm_set_render_target(pseudo_beam_line_texture, 0);
+		color temp = gr_screen.current_color; 	//Store our working color
+		color c;
+		gr_init_color(&c, 255, 255, 255);
+		gr_set_color_fast(&c); 					//set white as the working color
+		gr_pixel(0, 0, GR_RESIZE_NONE);			//paint the pixel to the texture
+		gr_set_color_fast(&temp);				//Reset our working color
+		bm_set_render_target(-1, 0);			//Reset our render target
+	}
+	
+	batching_add_beam(pseudo_beam_line_texture, v1, v2, thickness, gr_screen.current_color, translucent);
+
+	return ADE_RETURN_NIL;
 }
 
 // Aardwolf's test code to render a model, supposed to emulate WMC's gr.drawModel function
