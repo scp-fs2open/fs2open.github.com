@@ -40,6 +40,7 @@ namespace {
 
 static const int NextDrawStringPosInitial[] = {0, 0};
 static int NextDrawStringPos[] = {NextDrawStringPosInitial[0], NextDrawStringPosInitial[1]};
+static int BatchedLineTexture = -1;
 
 }
 
@@ -806,16 +807,16 @@ ADE_FUNC(draw3dLine, l_Graphics, "vector origin, vector destination, [number thi
 	if (!ade_get_args(L, "oo|fb", l_Vector.GetPtr(&v1), l_Vector.GetPtr(&v2), &thickness, &translucent))
 		return ADE_RETURN_NIL;
 	
-	if (pseudo_beam_line_texture < 0)
+	if (BatchedLineTexture < 0)
 	{
 		//We only need a single pixel sized texture to render as many lines as we want. 
 		//If it doesn't exist yet, then we make one!
-		pseudo_beam_line_texture = bm_make_render_target(1, 1, BMP_FLAG_RENDER_TARGET_STATIC);
+		BatchedLineTexture = bm_make_render_target(1, 1, BMP_FLAG_RENDER_TARGET_STATIC);
 
 		//The texture needs to be colored white, otherwise the line will render
 		//as black (or invisible if in translucent mode) no matter which color the user picks
 		
-		bm_set_render_target(pseudo_beam_line_texture, 0);
+		bm_set_render_target(BatchedLineTexture, 0);
 		color temp = gr_screen.current_color; 	//Store our working color
 		color c;
 		gr_init_color(&c, 255, 255, 255);
@@ -825,7 +826,7 @@ ADE_FUNC(draw3dLine, l_Graphics, "vector origin, vector destination, [number thi
 		bm_set_render_target(-1, 0);			//Reset our render target
 	}
 	
-	batching_add_beam(pseudo_beam_line_texture, v1, v2, thickness, gr_screen.current_color, translucent);
+	batching_add_beam(BatchedLineTexture, v1, v2, thickness, gr_screen.current_color, translucent);
 
 	return ADE_RETURN_NIL;
 }
