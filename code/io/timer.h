@@ -138,6 +138,9 @@ UI_TIMESTAMP ui_timestamp(int delta_ms);
 TIMESTAMP timestamp_delta(TIMESTAMP stamp, int delta_ms);
 UI_TIMESTAMP ui_timestamp_delta(UI_TIMESTAMP stamp, int delta_ms);
 
+int timestamp_get_delta(TIMESTAMP before, TIMESTAMP after);
+int ui_timestamp_get_delta(TIMESTAMP before, TIMESTAMP after);
+
 // gets a timestamp randomly between a and b milliseconds in
 // the future.
 inline int timestamp_rand(int a, int b) {
