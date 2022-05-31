@@ -709,7 +709,27 @@ void batching_add_beam(int texture, vec3d *start, vec3d *end, float width, float
 	color clr;
 	batching_determine_blend_color(&clr, texture, intensity);
 
+
 	batching_add_beam_internal(batch, texture, start, end, width, &clr, 0.0f);
+}
+
+void batching_add_beam(int texture, vec3d *start, vec3d *end, float width, color custom_color, bool translucent)
+{
+	if (texture < 0) {
+		Int3();
+		return;
+	}
+	color clr = custom_color;
+	primitive_batch *batch;
+
+	if (translucent){
+		batch = batching_find_batch(texture, batch_info::FLAT_EMISSIVE);
+	}
+	else {
+		batch = batching_find_batch(texture, batch_info::FLAT_OPAQUE);
+	}
+
+	batching_add_beam_internal(batch, texture, start, end, width, &clr, 0.f);
 }
 
 void batching_add_laser(int texture, vec3d *p0, float width1, vec3d *p1, float width2, int r, int g, int b)
@@ -780,6 +800,11 @@ void batching_render_batch_item(primitive_batch_item* item,
 
 		material_set_distortion(&material_def, item->batch_item_info.texture, item->batch_item_info.thruster);
 		gr_render_primitives_distortion(&material_def, PRIM_TYPE_TRIS, layout, (int)item->offset, (int)item->n_verts, buffer_num);
+	} else if ( item->batch_item_info.mat_type == batch_info::FLAT_OPAQUE) {
+		batched_bitmap_material material_def;
+
+		material_set_batched_opaque_bitmap(&material_def, item->batch_item_info.texture, 2.0f);
+		gr_render_primitives_batched(&material_def, PRIM_TYPE_TRIS, layout, (int)item->offset, (int)item->n_verts, buffer_num);
 	} else {
 		batched_bitmap_material material_def;
 
