@@ -147,23 +147,7 @@ bool sexp_container::type_matches(const sexp_container &container) const
 	return get_non_persistent_type() == container.get_non_persistent_type();
 }
 
-bool sexp_container::does_op_allow_container_special_args(const int op_const)
-{
-	switch (op_const)
-	{
-		case OP_ANY_OF:
-		case OP_EVERY_OF:
-		case OP_NUMBER_OF:
-		case OP_FIRST_OF:
-		case OP_RANDOM_MULTIPLE_OF:
-			return true;
-
-		default:
-			return false;
-	}
-}
-
-bool sexp_container::is_valid_arg_to_blank_of_ops() const
+bool sexp_container::is_of_string_type() const
 {
 	return (is_list() && any(type & ContainerType::STRING_DATA)) ||
 		   (is_map() && any(type & ContainerType::STRING_KEYS));
@@ -1597,8 +1581,8 @@ int sexp_container_query_sexp_args_count(const int node, SCP_vector<int> &cumula
 			Assertion(p_container, "Special argument SEXP given nonexistent container %s. Please report!", container_name);
 			const auto &container = *p_container;
 
-			Assertion(container.is_valid_arg_to_blank_of_ops(),
-				"randommultiple-of given container %s that can't be used as an argument. Please report!",
+			Assertion(container.is_of_string_type(),
+				"Attempt to use non-string-valued container %s as special argument options. Please report!",
 				container_name);
 			// if the container is empty, the index will be a duplicate, but that's ok
 			cumulative_arg_countss.emplace_back(prev_index + container.size());
