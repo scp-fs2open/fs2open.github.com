@@ -32,28 +32,30 @@ class object;
 
 // defines for messages that can be sent from the player.  Indexes into Player_orders
 
-#define ATTACK_TARGET_ITEM			0
-#define DISABLE_TARGET_ITEM			1
-#define DISARM_TARGET_ITEM			2
-#define PROTECT_TARGET_ITEM			3
-#define IGNORE_TARGET_ITEM			4
-#define FORMATION_ITEM				5
-#define COVER_ME_ITEM				6
-#define ENGAGE_ENEMY_ITEM			7
-#define CAPTURE_TARGET_ITEM			8
+#define NO_ORDER_ITEM				0
+
+#define ATTACK_TARGET_ITEM			1
+#define DISABLE_TARGET_ITEM			2
+#define DISARM_TARGET_ITEM			3
+#define PROTECT_TARGET_ITEM			4
+#define IGNORE_TARGET_ITEM			5
+#define FORMATION_ITEM				6
+#define COVER_ME_ITEM				7
+#define ENGAGE_ENEMY_ITEM			8
+#define CAPTURE_TARGET_ITEM			9
 
 // the next are for the support ship only
-#define REARM_REPAIR_ME_ITEM		9
-#define ABORT_REARM_REPAIR_ITEM		10
-#define STAY_NEAR_ME_ITEM			11
-#define STAY_NEAR_TARGET_ITEM		12
-#define KEEP_SAFE_DIST_ITEM			13
+#define REARM_REPAIR_ME_ITEM		10
+#define ABORT_REARM_REPAIR_ITEM		11
+#define STAY_NEAR_ME_ITEM			12
+#define STAY_NEAR_TARGET_ITEM		13
+#define KEEP_SAFE_DIST_ITEM			14
 
 // next item for all ships again -- to try to preserve relative order within the message menu
-#define DEPART_ITEM					14
+#define DEPART_ITEM					15
 
 // out of order, but it was this way in the original source
-#define DISABLE_SUBSYSTEM_ITEM		15
+#define DISABLE_SUBSYSTEM_ITEM		16
 
 // used for Message box gauge
 #define NUM_MBOX_FRAMES		3

@@ -3499,7 +3499,7 @@ int CFred_mission_save::save_objects()
 				int bitfield = 0;
 				for (size_t order : shipp->orders_accepted) {
 					if (order < 32)
-						bitfield |= (1 << order);
+						bitfield |= (1 << (order - 1)); //The first "true" order starts at idx 1, since 0 can be "no order"
 				}
 				fout(" %d\t\t;! note that this is a bitfield!!!", bitfield);
 			} else {

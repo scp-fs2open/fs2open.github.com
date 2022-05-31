@@ -3361,7 +3361,7 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 			//Iterate over all player orders for the bitfield, but restrict to those that the integer could actually provide
 			for(size_t j = 0; j < Player_orders.size() && j < std::numeric_limits<decltype(tmp_orders)>::digits; j++) {
 				if((1 << j) & tmp_orders)
-					p_objp->orders_accepted.insert(j);
+					p_objp->orders_accepted.insert(j + 1); //The first "true" order starts at idx 1, since 0 can be "no order"
 			}
 		}
     }

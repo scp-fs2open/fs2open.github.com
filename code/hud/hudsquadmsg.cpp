@@ -157,6 +157,7 @@ int keys_used[] = {	KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_
 SCP_string  Comm_order_types[NUM_COMM_ORDER_TYPES];
 
 std::vector<player_order> Player_orders = {
+	player_order("no order",   "No Order",  -1, -1, NO_ORDER_ITEM), //Required to keep defines in sync with array indices
 	player_order("attack ship",   "Destroy my target",  299, -1, ATTACK_TARGET_ITEM),
 	player_order("disable ship",  "Disable my target",	300, -1, DISABLE_TARGET_ITEM),
 	player_order("disarm ship",	  "Disarm my target",	301, -1, DISARM_TARGET_ITEM),
