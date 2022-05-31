@@ -40,7 +40,6 @@ namespace {
 
 static const int NextDrawStringPosInitial[] = {0, 0};
 static int NextDrawStringPos[] = {NextDrawStringPosInitial[0], NextDrawStringPosInitial[1]};
-static int BatchedLineTexture = -1;
 
 }
 
@@ -797,36 +796,24 @@ ADE_FUNC(drawSphere, l_Graphics, "[number Radius = 1.0, vector Position]", "Draw
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(draw3dLine, l_Graphics, "vector origin, vector destination, [number thickness, boolean translucent]", "Draws a line from origin to destination", nullptr, nullptr)
+ADE_FUNC(draw3dLine, l_Graphics, "vector origin, vector destination, [boolean translucent=true, number thickness=1.0, number thicknessEnd=thickness]", "Draws a line from origin to destination. "
+"The line may be translucent or solid. Translucent lines will NOT use the alpha value, instead being more transparent the darker the color is. "
+"The thickness at the start can be different from the thickness at the end, to draw a line that tapers or expands.", nullptr, nullptr)
 {
 	vec3d *v1 = &vmd_zero_vector;
 	vec3d *v2 = &vmd_zero_vector;
 	bool translucent = true;
 	float thickness = 1.0f;
+	float thicknessEnd = -1.0f;
 
-	if (!ade_get_args(L, "oo|fb", l_Vector.GetPtr(&v1), l_Vector.GetPtr(&v2), &thickness, &translucent))
+	if (!ade_get_args(L, "oo|bff", l_Vector.GetPtr(&v1), l_Vector.GetPtr(&v2), &translucent, &thickness, &thicknessEnd))
 		return ADE_RETURN_NIL;
-	
-	if (BatchedLineTexture < 0)
-	{
-		//We only need a single pixel sized texture to render as many lines as we want. 
-		//If it doesn't exist yet, then we make one!
-		BatchedLineTexture = bm_make_render_target(1, 1, BMP_FLAG_RENDER_TARGET_STATIC);
 
-		//The texture needs to be colored white, otherwise the line will render
-		//as black (or invisible if in translucent mode) no matter which color the user picks
-		
-		bm_set_render_target(BatchedLineTexture, 0);
-		color temp = gr_screen.current_color; 	//Store our working color
-		color c;
-		gr_init_color(&c, 255, 255, 255);
-		gr_set_color_fast(&c); 					//set white as the working color
-		gr_pixel(0, 0, GR_RESIZE_NONE);			//paint the pixel to the texture
-		gr_set_color_fast(&temp);				//Reset our working color
-		bm_set_render_target(-1, 0);			//Reset our render target
-	}
+	if (thicknessEnd < 0) thicknessEnd = thickness;
 	
-	batching_add_beam(BatchedLineTexture, v1, v2, thickness, gr_screen.current_color, translucent);
+	color &clr = gr_screen.current_color;
+
+	batching_add_line(v1, v2, thickness, thicknessEnd, clr, translucent);
 
 	return ADE_RETURN_NIL;
 }

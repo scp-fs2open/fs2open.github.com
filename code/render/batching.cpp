@@ -17,6 +17,7 @@
 
 static SCP_map<batch_info, primitive_batch> Batching_primitives;
 static SCP_map<batch_buffer_key, primitive_batch_buffer> Batching_buffers;
+static int lineTexture = -1;
 
 void primitive_batch::add_triangle(batch_vertex* v0, batch_vertex* v1, batch_vertex *v2)
 {
@@ -525,6 +526,73 @@ void batching_add_beam_internal(primitive_batch *batch, int texture, vec3d *star
 	batch->add_triangle(&verts[3], &verts[4], &verts[5]);
 }
 
+void batching_add_line_internal(primitive_batch *batch, int texture, vec3d *start, vec3d *end, float width1, float width2, color *clr)
+{
+	Assert(batch->get_render_info().prim_type == PRIM_TYPE_TRIS);
+
+	vec3d p[4];
+	batch_vertex verts[6];
+
+	vec3d fvec, uvecs, uvece, evec;
+
+	vm_vec_sub(&fvec, start, end);
+	vm_vec_normalize_safe(&fvec);
+
+	vm_vec_sub(&evec, &View_position, start);
+	vm_vec_normalize_safe(&evec);
+
+	vm_vec_cross(&uvecs, &fvec, &evec);
+	vm_vec_normalize_safe(&uvecs);
+
+	vm_vec_sub(&evec, &View_position, end);
+	vm_vec_normalize_safe(&evec);
+
+	vm_vec_cross(&uvece, &fvec, &evec);
+	vm_vec_normalize_safe(&uvece);
+
+	vm_vec_scale_add(&p[0], start, &uvecs, width1);
+	vm_vec_scale_add(&p[1], end, &uvece, width2);
+	vm_vec_scale_add(&p[2], end, &uvece, -width2);
+	vm_vec_scale_add(&p[3], start, &uvecs, -width1);
+
+	//move all the data from the vecs into the verts
+	//tri 1
+	verts[0].position = p[3];
+	verts[1].position = p[2];
+	verts[2].position = p[1];
+
+	//tri 2
+	verts[3].position = p[3];
+	verts[4].position = p[1];
+	verts[5].position = p[0];
+
+	//set up the UV coords
+	//tri 1
+	verts[0].tex_coord.xyz.x = 0.0f; verts[0].tex_coord.xyz.y = 0.0f;
+	verts[1].tex_coord.xyz.x = 1.0f; verts[1].tex_coord.xyz.y = 0.0f;
+	verts[2].tex_coord.xyz.x = 1.0f; verts[2].tex_coord.xyz.y = 1.0f;
+
+	//tri 2
+	verts[3].tex_coord.xyz.x = 0.0f; verts[3].tex_coord.xyz.y = 0.0f;
+	verts[4].tex_coord.xyz.x = 1.0f; verts[4].tex_coord.xyz.y = 1.0f;
+	verts[5].tex_coord.xyz.x = 0.0f; verts[5].tex_coord.xyz.y = 1.0f;
+
+	auto array_index = texture - batch->get_render_info().texture;
+	for(int i = 0; i < 6; i++){
+		verts[i].r = clr->red;
+		verts[i].g = clr->green;
+		verts[i].b = clr->blue;
+		verts[i].a = clr->alpha;
+
+		verts[i].radius = width1;
+		
+		verts[i].tex_coord.xyz.z = (float)array_index;
+	}
+
+	batch->add_triangle(&verts[0], &verts[1], &verts[2]);
+	batch->add_triangle(&verts[3], &verts[4], &verts[5]);
+}
+
 void batching_add_laser_internal(primitive_batch *batch, int texture, vec3d *p0, float width1, vec3d *p1, float width2, int r, int g, int b)
 {
 	Assert(batch->get_render_info().prim_type == PRIM_TYPE_TRIS);
@@ -713,23 +781,38 @@ void batching_add_beam(int texture, vec3d *start, vec3d *end, float width, float
 	batching_add_beam_internal(batch, texture, start, end, width, &clr, 0.0f);
 }
 
-void batching_add_beam(int texture, vec3d *start, vec3d *end, float width, color custom_color, bool translucent)
+void batching_add_line(vec3d *start, vec3d *end, float widthStart, float widthEnd, color custom_color, bool translucent)
 {
-	if (texture < 0) {
-		Int3();
-		return;
-	}
 	color clr = custom_color;
 	primitive_batch *batch;
 
-	if (translucent){
-		batch = batching_find_batch(texture, batch_info::FLAT_EMISSIVE);
-	}
-	else {
-		batch = batching_find_batch(texture, batch_info::FLAT_OPAQUE);
+	if (lineTexture < 0)
+	{
+		//We only need a single pixel sized texture to render as many lines as we want. 
+		//If it doesn't exist yet, then we make one!
+		auto previous_target = gr_screen.rendering_to_texture;
+
+		//The texture needs to be colored white, otherwise the line will render
+		//as black (or invisible if in translucent mode) no matter which color the user picks		
+		lineTexture = bm_make_render_target(1, 1, BMP_FLAG_RENDER_TARGET_STATIC);
+		bm_set_render_target(lineTexture);			
+		color temp = gr_screen.current_color; 			//Store our working color
+		color c;
+		gr_init_color(&c, 255, 255, 255);
+		gr_set_color_fast(&c); 							//set white as the working color
+		gr_pixel(0, 0, GR_RESIZE_NONE);					//paint the pixel to the texture
+		gr_set_color_fast(&temp);						//Reset our working color
+		bm_set_render_target(previous_target);			//Reset our render target
 	}
 
-	batching_add_beam_internal(batch, texture, start, end, width, &clr, 0.f);
+	if (translucent){
+		batch = batching_find_batch(lineTexture, batch_info::FLAT_EMISSIVE);
+	}
+	else {
+		batch = batching_find_batch(lineTexture, batch_info::FLAT_OPAQUE);
+	}
+	
+	batching_add_line_internal(batch, lineTexture, start, end, widthStart, widthEnd, &clr);
 }
 
 void batching_add_laser(int texture, vec3d *p0, float width1, vec3d *p1, float width2, int r, int g, int b)

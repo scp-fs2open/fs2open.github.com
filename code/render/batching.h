@@ -120,7 +120,7 @@ void batching_add_volume_bitmap_rotated(int texture, vertex *pnt, float angle, f
 void batching_add_distortion_bitmap_rotated(int texture, vertex *pnt, float angle, float rad, float alpha = 1.0f, float depth = 0.0f);
 void batching_add_distortion_beam(int texture, vec3d *start, vec3d *end, float width, float intensity, float offset);
 void batching_add_beam(int texture, vec3d *start, vec3d *end, float width, float intensity);
-void batching_add_beam(int texture, vec3d *start, vec3d *end, float width, color custom_color, bool translucent = true);
+void batching_add_line(vec3d *start, vec3d *end, float widthStart, float widthEnd, color custom_color, bool translucent = true);
 void batching_add_polygon(int texture, vec3d *pos, matrix *orient, float width, float height, float alpha = 1.0f);
 void batching_add_laser(int texture, vec3d *p0, float width1, vec3d *p1, float width2, int r = 255, int g = 255, int b = 255);
 void batching_add_quad(int texture, vertex *verts);
