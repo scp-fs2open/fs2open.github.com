@@ -578,15 +578,15 @@ void batching_add_line_internal(primitive_batch *batch, int texture, vec3d *star
 	verts[5].tex_coord.xyz.x = 0.0f; verts[5].tex_coord.xyz.y = 1.0f;
 
 	auto array_index = texture - batch->get_render_info().texture;
-	for(int i = 0; i < 6; i++){
-		verts[i].r = clr->red;
-		verts[i].g = clr->green;
-		verts[i].b = clr->blue;
-		verts[i].a = clr->alpha;
+	for(auto vert : verts){
+		vert.r = clr->red;
+		vert.g = clr->green;
+		vert.b = clr->blue;
+		vert.a = clr->alpha;
 
-		verts[i].radius = width1;
+		vert.radius = width1;
 		
-		verts[i].tex_coord.xyz.z = (float)array_index;
+		vert.tex_coord.xyz.z = (float)array_index;
 	}
 
 	batch->add_triangle(&verts[0], &verts[1], &verts[2]);
