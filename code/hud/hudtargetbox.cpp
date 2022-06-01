@@ -1566,65 +1566,56 @@ void get_turret_subsys_name(ship_weapon *swp, char *outstr)
 
 	//WMC - find the first weapon, if there is one
 	if (swp->num_primary_banks || swp->num_secondary_banks) {
-		bool done = false;
-		if (swp->num_primary_banks) {
-			for (auto weaponid : swp->primary_bank_weapons) {
-				if (weaponid >= 0) {
-					if (strlen(Weapon_info[weaponid].altSubsysName) != 0) {
-						sprintf(outstr, "%s", Weapon_info[weaponid].altSubsysName);
-						done = true;
-						break;
-					}
-				}
+		// allow the first weapon on the turret to specify the name
+		for (int i = 0; i < swp->num_primary_banks; ++i) {
+			auto wip = &Weapon_info[swp->primary_bank_weapons[i]];
+			if (*(wip->altSubsysName) != '\0') {
+				sprintf(outstr, "%s", wip->altSubsysName);
+				return;
 			}
 		} 
-		if ((swp->num_secondary_banks) && !done) {
-			for (auto weaponid : swp->secondary_bank_weapons) {
-				if (weaponid >= 0) {
-					if (strlen(Weapon_info[weaponid].altSubsysName) != 0) {
-						sprintf(outstr, "%s", Weapon_info[weaponid].altSubsysName);
-						done = true;
-						break;
-					}
-				}
+		for (int i = 0; i < swp->num_secondary_banks; ++i) {
+			auto wip = &Weapon_info[swp->secondary_bank_weapons[i]];
+			if (*(wip->altSubsysName) != '\0') {
+				sprintf(outstr, "%s", wip->altSubsysName);
+				return;
 			}
 		}
-		if (!done) {
 
-			auto flags = turret_weapon_aggregate_flags(swp);
+		// otherwise use a general name based on the type of weapon(s) on the turret
+		auto flags = turret_weapon_aggregate_flags(swp);
 
-			// check if beam or flak using weapon flags
-			if (flags[Weapon::Info_Flags::Beam]) {
-				sprintf(outstr, "%s", XSTR("Beam turret", 1567));
-			} else if (flags[Weapon::Info_Flags::Flak]) {
-				sprintf(outstr, "%s", XSTR("Flak turret", 1566));
-			} else {
-				if (turret_weapon_has_subtype(swp, WP_MISSILE)) {
+		// check if beam or flak using weapon flags
+		if (flags[Weapon::Info_Flags::Beam]) {
+			sprintf(outstr, "%s", XSTR("Beam turret", 1567));
+		} else if (flags[Weapon::Info_Flags::Flak]) {
+			sprintf(outstr, "%s", XSTR("Flak turret", 1566));
+		} else {
+			if (turret_weapon_has_subtype(swp, WP_MISSILE)) {
+				sprintf(outstr, "%s", XSTR("Missile lnchr", 1569));
+			} else if (turret_weapon_has_subtype(swp, WP_LASER)) {
+				// ballistic too! - Goober5000
+				if (flags[Weapon::Info_Flags::Ballistic]) {
+					sprintf(outstr, "%s", XSTR("Turret", 1487));
+				}
+				// the TVWP has some primaries flagged as bombs
+				else if (flags[Weapon::Info_Flags::Bomb]) {
 					sprintf(outstr, "%s", XSTR("Missile lnchr", 1569));
-				} else if (turret_weapon_has_subtype(swp, WP_LASER)) {
-					// ballistic too! - Goober5000
-					if (flags[Weapon::Info_Flags::Ballistic]) {
-						sprintf(outstr, "%s", XSTR("Turret", 1487));
-					}
-					// the TVWP has some primaries flagged as bombs
-					else if (flags[Weapon::Info_Flags::Bomb]) {
-						sprintf(outstr, "%s", XSTR("Missile lnchr", 1569));
-					} else {
-						sprintf(outstr, "%s", XSTR("Laser turret", 1568));
-					}
 				} else {
-					// Mantis #2226: find out if there are any weapons here at all
-					if (flags.none_set()) {
-						sprintf(outstr, "%s", NOX("Unused"));
-					} else {
-						// Illegal subtype
-						static bool Turret_illegal_subtype_warned = false;
-						if (!Turret_illegal_subtype_warned) {
-							Turret_illegal_subtype_warned = true;
-							Warning(LOCATION, "This turret has an illegal subtype!  Trace out and fix!");
-						}
-						sprintf(outstr, "%s", XSTR("Turret", 1487));
+					sprintf(outstr, "%s", XSTR("Laser turret", 1568));
+				}
+			} else {
+				// Mantis #2226: find out if there are any weapons here at all
+				if (flags.none_set()) {
+					sprintf(outstr, "%s", NOX("Unused"));
+				} else {
+					// Illegal subtype
+					static bool Turret_illegal_subtype_warned = false;
+					if (!Turret_illegal_subtype_warned) {
+						Turret_illegal_subtype_warned = true;
+						Warning(LOCATION, "This turret has an illegal subtype!  Trace out and fix!");
 					}
+					sprintf(outstr, "%s", XSTR("Turret", 1487));
 				}
 			}
 		}
