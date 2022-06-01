@@ -10127,19 +10127,19 @@ int test_argument_nodes_for_condition(int n, int condition_node, int *num_true, 
 		// only eval this argument if it's valid
 		if (Sexp_nodes[n].flags & SNF_ARGUMENT_VALID)
 		{
-			// evaluate conditional for current argument(s)
 			const int num_args = copy_node_to_replacement_args(n);
 
-			val = eval_sexp(condition_node);
-			if (Sexp_nodes[condition_node].value == SEXP_KNOWN_TRUE ||
-				Sexp_nodes[condition_node].value == SEXP_KNOWN_FALSE) {
-				val = Sexp_nodes[condition_node].value;
-			} else if (Sexp_nodes[condition_node].value == SEXP_NAN_FOREVER) {
-				// In accordance with SEXP_NAN/SEXP_NAN_FOREVER becoming SEXP_FALSE in eval_sexp()
-				val = SEXP_KNOWN_FALSE;
-			}
-
 			for (int i = 0; i < num_args; ++i) {
+				// evaluate conditional for current argument
+				val = eval_sexp(condition_node);
+				if (Sexp_nodes[condition_node].value == SEXP_KNOWN_TRUE ||
+					Sexp_nodes[condition_node].value == SEXP_KNOWN_FALSE) {
+					val = Sexp_nodes[condition_node].value;
+				} else if (Sexp_nodes[condition_node].value == SEXP_NAN_FOREVER) {
+					// In accordance with SEXP_NAN/SEXP_NAN_FOREVER becoming SEXP_FALSE in eval_sexp()
+					val = SEXP_KNOWN_FALSE;
+				}
+
 				const auto &argument = Sexp_replacement_arguments.back();
 
 				switch (val)

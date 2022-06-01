@@ -2871,7 +2871,7 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 			return 0;
 
 		case OPF_DATA_OR_STR_CONTAINER:
-			item->set_data("<data or string container>");
+			item->set_data("<any data or string container>");
 			return 0;
 
 		case OPF_NUMBER:
@@ -3227,7 +3227,7 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 			break;
 
 		case OPF_DATA_OR_STR_CONTAINER:
-			str = "<data or string container>";
+			str = "<any data or string container>";
 			break;
 
 		case OPF_PERSONA:
