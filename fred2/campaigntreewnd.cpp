@@ -320,10 +320,23 @@ int campaign_tree_wnd::error_checker()
 			return -1;
 
 		z = Links[i].from;
+
+		if (Links[i].is_mission_loop || Links[i].is_mission_fork) {
+			if (Links[i].sexp == Locked_sexp_true) {
+				if (error("Mission \"%s\" has a loop branch that is always true", Campaign.missions[z].name))
+					return 1;
+			}
+			// no further checking for loop links - in particular, a loop link isn't a regular link
+			continue;
+		}
+
+		// total number of regular links
 		mcount[z]++;
-		if (Links[i].sexp == Locked_sexp_false)
+
+		if (Links[i].sexp == Locked_sexp_false) {
 			if (error("Mission \"%s\" branch %d is always false", Campaign.missions[z].name, mcount[z]))
 				return 1;
+		}
 
 		if (Links[i].sexp == Locked_sexp_true) {
 			if (true_at[z] >= 0)
