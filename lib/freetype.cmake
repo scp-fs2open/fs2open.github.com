@@ -1,7 +1,7 @@
 
 add_library(freetype INTERFACE)
 
-if(PLATFORM_WINDOWS OR PLATFORM_MAC)
+if(PLATFORM_WINDOWS)
 	# We use prebuilt binaries for windows and mac
 	get_prebuilt_path(PREBUILT_PATH)
 	set(FREETYPE_ROOT_DIR "${PREBUILT_PATH}/freetype")

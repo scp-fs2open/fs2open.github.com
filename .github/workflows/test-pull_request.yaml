@@ -162,7 +162,7 @@ jobs:
       matrix:
         configuration: [Debug, Release]
         compiler: [clang]
-        arch: [x86_64]
+        arch: [x86_64, arm64]
         cmake_options: [""]
     name: Mac
     runs-on: macos-latest

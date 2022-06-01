@@ -41,6 +41,8 @@ IF (FSO_BUILD_INCLUDED_LIBS OR NOT PNG_FOUND)
 	target_include_directories(png SYSTEM PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 	target_compile_definitions(png PRIVATE "_CRT_SECURE_NO_WARNINGS;$<$<CONFIG:Debug>:PNG_DEBUG=1>")
+	target_compile_definitions(png PRIVATE PNG_ARM_NEON_IMPLEMENTATION=0) # Disable NEON to fix Mac ARM builds
+	target_compile_definitions(png PRIVATE PNG_ARM_NEON_OPT=0)
 
 	IF(BUILD_SHARED_LIBS)
 		target_compile_definitions(png INTERFACE PNG_BUILD_DLL)

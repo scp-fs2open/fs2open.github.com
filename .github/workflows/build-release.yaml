@@ -315,7 +315,7 @@ jobs:
       matrix:
         configuration: [FastDebug, Release]
         compiler: [clang]
-        arch: [x86_64]
+        arch: [x86_64, arm64]
     name: Mac
     needs: create_release
     runs-on: macos-latest

@@ -230,7 +230,7 @@ jobs:
       matrix:
         configuration: [FastDebug, Release]
         compiler: [clang]
-        arch: [x86_64]
+        arch: [x86_64, arm64]
     name: Mac
     runs-on: macos-latest
     steps:
