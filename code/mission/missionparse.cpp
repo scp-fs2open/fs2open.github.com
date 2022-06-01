@@ -3163,7 +3163,6 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 	p_objp->escort_priority = 0;
     if (optional_string("+Escort Priority:"))
     {
-        Assert(p_objp->flags[Mission::Parse_Object_Flags::SF_Escort]);
         stuff_int(&p_objp->escort_priority);
     }
 

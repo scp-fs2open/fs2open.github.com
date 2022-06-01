@@ -21,7 +21,12 @@
 
 using Random = util::Random;
 
-// "strong typedef", based on similar usage in gamesnd
+// "strong typedef", based on similar usage in gamesnd, based in turn on this article:
+// https://www.ilikebigbits.com/2014_05_06_type_safe_handles.html
+// 
+// Do not add additional fields or member functions to this class
+// (such as the functionality in timestamp_delta).  This class must
+// remain lightweight so that it can be optimized away.
 struct ui_timestamp_tag {};
 class UI_TIMESTAMP : public util::ID<ui_timestamp_tag, int, -1>
 {
@@ -130,6 +135,9 @@ int timestamp(int delta_ms);
 TIMESTAMP _timestamp(int delta_ms);		// use a leading underscore for now until all timestamps are converted over
 UI_TIMESTAMP ui_timestamp(int delta_ms);
 
+TIMESTAMP timestamp_delta(TIMESTAMP stamp, int delta_ms);
+UI_TIMESTAMP ui_timestamp_delta(UI_TIMESTAMP stamp, int delta_ms);
+
 // gets a timestamp randomly between a and b milliseconds in
 // the future.
 inline int timestamp_rand(int a, int b) {
@@ -150,9 +158,17 @@ int timestamp_since(TIMESTAMP stamp);
 //	Returns milliseconds after timestamp has elapsed.  This will Assert against Invalid or Never timestamps but fail gracefully by returning INT_MIN.
 int ui_timestamp_since(UI_TIMESTAMP stamp);
 
+int timestamp_compare(TIMESTAMP t1, TIMESTAMP t2);
+int ui_timestamp_compare(UI_TIMESTAMP t1, UI_TIMESTAMP t2);
+
+// Checks that a timestamp occurs between the "before" and "after" timestamps.
+bool timestamp_in_between(TIMESTAMP stamp, TIMESTAMP before, TIMESTAMP after);
+// Checks that a timestamp occurs between the "before" and "after" timestamps.
+bool ui_timestamp_in_between(UI_TIMESTAMP stamp, UI_TIMESTAMP before, UI_TIMESTAMP after);
+
 // checks if a specified time (in milliseconds) has elapsed past the given timestamp (which
 // should be obtained from timestamp() or timestamp(x) with a positive x)
-int timestamp_has_time_elapsed(int stamp, int time);
+bool timestamp_has_time_elapsed(int stamp, int time);
 
 // Example that makes a ship fire in 1/2 second
 
