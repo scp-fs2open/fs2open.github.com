@@ -199,8 +199,8 @@ public:
 	int get_container_usage_count(const SCP_string &container_name) const;
 	bool rename_container_nodes(const SCP_string &old_name, const SCP_string &new_name);
 	bool is_matching_container_node(int node, const SCP_string &container_name) const;
-	bool is_container_argument(int node) const;
-	static bool is_container_opf_type(int op_type);
+	bool is_container_name_argument(int node) const;
+	static bool is_container_name_opf_type(int op_type);
 
 	// Goober5000
 	int find_argument_number(int parent_node, int child_node) const;

@@ -135,6 +135,13 @@ struct sexp_container
 	ContainerType get_non_persistent_type() const;
 	// matching is performed only on non-persistence flags
 	bool type_matches(const sexp_container &container) const;
+
+	// checks whether accessed via strings
+	// meaning string data if a list or string keys if a map
+	// but map data doesn't have to be strings
+	bool is_of_string_type() const;
+	// returns data for list container or key for map container
+	const SCP_string &get_value_at_index(int index) const;
 };
 
 struct list_modifier {

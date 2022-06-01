@@ -83,7 +83,7 @@ struct ship_obj;
 #define OPF_NAV_POINT			52		// Kazan	  - a Nav Point name
 #define OPF_SSM_CLASS			53		// Goober5000 - an SSM class
 #define OPF_FLEXIBLE_ARGUMENT	54		// Goober5000 - special to match for when-argument
-#define OPF_ANYTHING			55		// Goober5000 - anything goes
+#define OPF_ANYTHING			55		// Goober5000 - anything goes, except containers
 #define OPF_SKYBOX_MODEL_NAME	56		// taylor - changing skybox model
 #define OPF_SHIP_OR_NONE		57		// Goober5000 - an "optional" ship argument
 #define OPF_BACKGROUND_BITMAP	58		// phreak - name of a background bitmap
@@ -126,6 +126,7 @@ struct ship_obj;
 #define OPF_MAP_CONTAINER_NAME	95		// Karajorma/jg18 - The name of a SEXP map container
 #define OPF_ANIMATION_NAME 		96		// Lafiel
 #define OPF_CONTAINER_VALUE		97		// jg18 - Container data and map container keys
+#define OPF_DATA_OR_STR_CONTAINER	98	// jg18 - any data, or a container that is accessed via strings
 
 // Operand return types
 #define	OPR_NUMBER				1	// returns number
