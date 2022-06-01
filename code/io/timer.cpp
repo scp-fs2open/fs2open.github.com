@@ -187,11 +187,21 @@ int timestamp_get_delta(TIMESTAMP before, TIMESTAMP after)
 	Assertion(after.isValid(), "timestamp_get_delta called with an invalid after timestamp. This is a coder mistake, please report!");
 
 
-	if (!before.isValid() || before.isImmediate() || before.isNever())
+	if (!before.isValid() || after.isValid()) {
 		return 0;
+	}
 
-	if (!after.isValid() || after.isImmediate() || after.isNever())
-		return 0;	
+	// infinite difference in the future.
+	if (before.isImmediate() && after.isNever()) {
+		return INT_MAX;
+	// infinite difference in the past
+	} else if (after.isImmediate() && before.isNever()) {
+		return INT_MIN;	
+	// no difference
+	} else if (before.isImmediate() && after.isImmediate()
+			|| before.isNever() && after.isNever()) {
+		return 0;
+	}
 
 	return (after.value() - before.value());
 }
