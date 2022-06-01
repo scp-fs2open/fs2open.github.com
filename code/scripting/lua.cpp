@@ -5,6 +5,10 @@
 
 #include "scripting/lua/LuaUtil.h"
 
+extern "C" {
+#include "scripting/lua/lua_ext.h"
+}
+
 /**
  * IMPORTANT!
  *
@@ -117,6 +121,10 @@ int script_state::CreateLuaState()
 	//*****INITIALIZE AUXILIARY LIBRARIES
 	mprintf(("LUA: Initializing base Lua libraries...\n"));
 	luaL_openlibs(L);
+
+	//*****INITIALIZE EXTENSION LIBRARIES
+	mprintf(("LUA: Initializing extended Lua libraries...\n"));
+	luaL_openlibs_ext(L);
 
 	//*****INITIALIZE OUR SUPPORT LIBRARY
 	luacpp::util::initializeLuaSupportLib(L);

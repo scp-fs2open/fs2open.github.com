@@ -30,8 +30,8 @@ public:
 	ignore_orders_dlg(CWnd* pParent = NULL);   // standard constructor
 
 	ship *m_shipp;
-	check_box_info check_boxes[MAX_CHECKBOXES];
-	int m_num_checks_active;
+	SCP_vector<size_t> m_orderList;
+	CCheckListBox m_ignore_orders_checklistbox;
 
 // Dialog Data
 	//{{AFX_DATA(ignore_orders_dlg)
@@ -54,16 +54,7 @@ protected:
 	//{{AFX_MSG(ignore_orders_dlg)
 	virtual BOOL OnInitDialog();
 	virtual void OnOK();
-	afx_msg void OnCheck1();
-	afx_msg void OnCheck2();
-	afx_msg void OnCheck3();
-	afx_msg void OnCheck4();
-	afx_msg void OnCheck5();
-	afx_msg void OnCheck6();
-	afx_msg void OnCheck7();
-	afx_msg void OnCheck8();
-	afx_msg void OnCheck9();
-	afx_msg void OnCheck10();
+	afx_msg void OnCheckChange();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 };
