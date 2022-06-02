@@ -179,6 +179,59 @@ UI_TIMESTAMP ui_timestamp_delta(UI_TIMESTAMP stamp, int delta_ms)
 	return UI_TIMESTAMP(stamp.value() + delta_ms);
 }
 
+// Returns the difference between two timestamps as an int, does not check that the result will be positive.
+// Also only error check if a timestamp is invalid, but when either is immediate or never, it returns 0.
+int timestamp_get_delta(TIMESTAMP before, TIMESTAMP after)
+{
+	Assertion(before.isValid(), "timestamp_get_delta called with an invalid before timestamp%s. This is a coder mistake, please report!", (after.isValid()) ? "" : " and an invalid after timestamp.");
+	Assertion(after.isValid(), "timestamp_get_delta called with an invalid after timestamp. This is a coder mistake, please report!");
+
+
+	if (!before.isValid() || !after.isValid()) {
+		return 0;
+	}
+
+	// infinite difference in the future.
+	if (before.isImmediate() && after.isNever()) {
+		return INT_MAX;
+	// infinite difference in the past
+	} else if (after.isImmediate() && before.isNever()) {
+		return INT_MIN;	
+	// no difference
+	} else if ((before.isImmediate() && after.isImmediate())
+			|| (before.isNever() && after.isNever())) {
+		return 0;
+	}
+
+	return (after.value() - before.value());
+}
+
+// Returns the difference between two timestamps, does not check that the result will be positive.
+// Also only error check if a timestamp is invalid, but when either is immediate or never, it returns 0.
+int ui_timestamp_get_delta(UI_TIMESTAMP before, UI_TIMESTAMP after)
+{
+	Assertion(before.isValid(), "ui_timestamp_get_delta called with an invalid before timestamp%s. This is a coder mistake, please report!", (after.isValid()) ? "" : " and an invalid after timestamp.");
+	Assertion(after.isValid(), "ui_timestamp_get_delta called with an invalid after timestamp. This is a coder mistake, please report!");
+
+	if (!before.isValid() || !after.isValid()) {
+		return 0;
+	}
+
+	// infinite difference in the future.
+	if (before.isImmediate() && after.isNever()) {
+		return INT_MAX;
+	// infinite difference in the past
+	} else if (after.isImmediate() && before.isNever()) {
+		return INT_MIN;	
+	// no difference
+	} else if ((before.isImmediate() && after.isImmediate())
+			|| (before.isNever() && after.isNever())) {
+		return 0;
+	}
+	
+	return (after.value() - before.value());
+}
+
 // ======================================== checking timestamps ========================================
 
 // Restrict all time values between 0 and MAX_TIME
