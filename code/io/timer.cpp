@@ -187,7 +187,7 @@ int timestamp_get_delta(TIMESTAMP before, TIMESTAMP after)
 	Assertion(after.isValid(), "timestamp_get_delta called with an invalid after timestamp. This is a coder mistake, please report!");
 
 
-	if (!before.isValid() || after.isValid()) {
+	if (!before.isValid() || !after.isValid()) {
 		return 0;
 	}
 
@@ -213,7 +213,7 @@ int ui_timestamp_get_delta(UI_TIMESTAMP before, UI_TIMESTAMP after)
 	Assertion(before.isValid(), "ui_timestamp_get_delta called with an invalid before timestamp%s. This is a coder mistake, please report!", (after.isValid()) ? "" : " and an invalid after timestamp.");
 	Assertion(after.isValid(), "ui_timestamp_get_delta called with an invalid after timestamp. This is a coder mistake, please report!");
 
-	if (!before.isValid() || after.isValid()) {
+	if (!before.isValid() || !after.isValid()) {
 		return 0;
 	}
 
