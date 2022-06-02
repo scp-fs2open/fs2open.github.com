@@ -752,6 +752,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "get-map-keys",					OP_CONTAINER_GET_MAP_KEYS,				2,	3,			SEXP_ACTION_OPERATOR, },	// Karajorma
 	{ "clear-container",				OP_CLEAR_CONTAINER,						1,	INT_MAX,	SEXP_ACTION_OPERATOR, },	// Karajorma
 	{ "copy-container",					OP_COPY_CONTAINER,						2,	3,			SEXP_ACTION_OPERATOR, },	// jg18
+	{ "apply-container-filter",			OP_APPLY_CONTAINER_FILTER,				2,	2,			SEXP_ACTION_OPERATOR, },	// jg18
 
 	//Other Sub-Category
 	{ "damaged-escort-priority",		OP_DAMAGED_ESCORT_LIST,					3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	//phreak
@@ -25039,6 +25040,7 @@ int eval_sexp(int cur_node, int referenced_node)
 			case OP_CONTAINER_GET_MAP_KEYS:
 			case OP_CLEAR_CONTAINER:
 			case OP_COPY_CONTAINER:
+			case OP_APPLY_CONTAINER_FILTER:
 				sexp_val = sexp_container_eval_change_sexp(op_num, node);
 				break;
 
@@ -28099,6 +28101,7 @@ int query_operator_return_type(int op)
 		case OP_CONTAINER_GET_MAP_KEYS:
 		case OP_CLEAR_CONTAINER:
 		case OP_COPY_CONTAINER:
+		case OP_APPLY_CONTAINER_FILTER:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -28740,6 +28743,16 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_CONTAINER_NAME;
 			} else if (argnum == 2) {
 				return OPF_BOOL;
+			} else {
+				// This shouldn't happen
+				return OPF_NONE;
+			}
+
+		case OP_APPLY_CONTAINER_FILTER:
+			if (argnum == 0) {
+				return OPF_CONTAINER_NAME;
+			} else if (argnum == 1) {
+				return OPF_LIST_CONTAINER_NAME;
 			} else {
 				// This shouldn't happen
 				return OPF_NONE;
@@ -32481,6 +32494,7 @@ int get_subcategory(int sexp_id)
 		case OP_CONTAINER_GET_MAP_KEYS:
 		case OP_CLEAR_CONTAINER:
 		case OP_COPY_CONTAINER:
+		case OP_APPLY_CONTAINER_FILTER:
 			return CHANGE_SUBCATEGORY_CONTAINERS;
 
 		case OP_DAMAGED_ESCORT_LIST:
@@ -33832,6 +33846,16 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tName of the container to copy from.\r\n"
 		"\t2:\tName of the container to copy to.\r\n"
 		"\t3:\t(Optional) When true, the second container's contents are deleted before copying." },
+
+	// jg18
+	{ OP_APPLY_CONTAINER_FILTER, "apply-container-filter\r\n"
+		"\tRemoves values from a container using a list container as a filter.\r\n"
+		"\tAll values in the 'filter' container will be removed from the first container. The 'filter' container is left unchanged.\r\n"
+		"\tIf the first container is a map container, then the filter is applied to its keys and not its data.\r\n"
+		"\tThe filter's data type must match the type of the values to be removed from the first container.\r\n\r\n"
+		"Takes 2 arguments...\r\n"
+		"\t1:\tName of the container to apply the filter to.\r\n"
+		"\t2:\tName of the list container to be used as the filter." },
 
 	{ OP_PROTECT_SHIP, "Protect ship (Action operator)\r\n"
 		"\tProtects a ship from being attacked by any enemy ship.  Any ship "

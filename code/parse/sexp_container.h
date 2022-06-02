@@ -127,6 +127,8 @@ struct sexp_container
 		return any(type & (ContainerType::SAVE_ON_MISSION_PROGRESS | ContainerType::SAVE_ON_MISSION_CLOSE));
 	}
 
+	ContainerType get_data_type() const;
+
 	bool name_matches(const sexp_container &container) const;
 	bool empty() const;
 	int size() const;
