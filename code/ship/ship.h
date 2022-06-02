@@ -1707,11 +1707,12 @@ extern int ship_find_num_turrets(object *objp);
 
 extern void compute_slew_matrix(matrix *orient, angles *a);
 extern void ship_get_eye( vec3d *eye_pos, matrix *eye_orient, object *obj, bool do_slew = true, bool from_origin = false);		// returns in eye the correct viewing position for the given object
-//extern camid ship_get_followtarget_eye(object *obj);
+
 extern ship_subsys *ship_get_first_subsys(ship *sp, int subsys_type, vec3d *attacker_pos = nullptr);
 extern ship_subsys *ship_get_indexed_subsys(ship *sp, int index);	// returns index'th subsystem of this ship
 extern int ship_get_subsys_index(ship *sp, const char *ss_name);		// returns numerical index in linked list of subsystems
 extern int ship_get_subsys_index(ship_subsys *subsys);
+
 extern float ship_get_subsystem_strength( ship *shipp, int type, bool skip_dying_check = false );
 extern ship_subsys *ship_get_subsys(const ship *shipp, const char *subsys_name);
 extern int ship_get_num_subsys(ship *shipp);

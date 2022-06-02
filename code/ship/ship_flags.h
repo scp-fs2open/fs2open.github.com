@@ -132,6 +132,7 @@ namespace Ship {
 		Same_departure_warp_when_docked,	// Goober5000
 		Fail_sound_locked_primary,		// Kiloku -- Play the firing fail sound when the weapon is locked.
 		Fail_sound_locked_secondary,		// Kiloku -- Play the firing fail sound when the weapon is locked.
+		Subsystem_cache_valid,		// Goober5000 - whether the subsystem list index caches can be used
 
 		NUM_VALUES
 
