@@ -503,6 +503,17 @@ bool timestamp_elapsed_safe(int a, int b) {
 	return timestamp_ms() >= a || timestamp_ms() < (a - b + 100);
 }
 
+bool timestamp_elapsed_safe(TIMESTAMP a, int b) {
+	if (!a.isValid() || a.isNever()) {
+		return false;
+	}
+	if (a.isImmediate()) {
+		return true;
+	}
+
+	return timer_get_milliseconds() >= a.value() || timer_get_milliseconds() < (a.value() - b + 100);
+}
+
 bool ui_timestamp_elapsed_safe(UI_TIMESTAMP a, int b) {
 	if (!a.isValid() || a.isNever()) {
 		return false;
