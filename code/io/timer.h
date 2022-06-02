@@ -187,6 +187,7 @@ bool ui_timestamp_elapsed( UI_TIMESTAMP stamp );
 
 // safer version of timestamp
 bool timestamp_elapsed_safe(int a, int b);
+bool timestamp_elapsed_safe(TIMESTAMP a, int b);
 bool ui_timestamp_elapsed_safe(UI_TIMESTAMP a, int b);
 
 //=================================================================
