@@ -1442,6 +1442,7 @@ void sexp_apply_container_filter(int node)
 		report_nonexistent_container("Apply-container-filter", container_name);
 		return;
 	}
+
 	auto &container = *p_container;
 
 	node = CDR(node);
@@ -1454,6 +1455,7 @@ void sexp_apply_container_filter(int node)
 		report_nonexistent_container("Apply-container-filter", filter_container_name);
 		return;
 	}
+
 	if (p_container == p_filter_container) {
 		const SCP_string msg = SCP_string("Apply-container-filter called to filter container ") + container_name +
 							   " using itself as the filter.";
@@ -1461,17 +1463,22 @@ void sexp_apply_container_filter(int node)
 		log_printf(LOGFILE_EVENT_LOG, "%s", msg.c_str());
 		return;
 	}
+
 	const auto &filter_container = *p_filter_container;
 
 	if (!filter_container.is_list()) {
 		report_non_list_container("Apply-container-filter", filter_container_name);
 		return;
 	}
+
 	if (filter_container.list_data.empty()) {
+#if !defined(NDEBUG) || defined(SCP_RELEASE_LOGGING)
+		// while an empty filter isn't technically an error, it should be logged
 		const SCP_string msg = SCP_string("Apply-container-filter called to filter container ") + container_name +
 							   " using empty filter container " + filter_container_name;
-		Warning(LOCATION, "%s", msg.c_str());
+		mprintf(("%s\n", msg.c_str()));
 		log_printf(LOGFILE_EVENT_LOG, "%s", msg.c_str());
+#endif
 		return;
 	}
 
