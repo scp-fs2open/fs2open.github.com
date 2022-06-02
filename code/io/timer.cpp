@@ -511,7 +511,7 @@ bool timestamp_elapsed_safe(TIMESTAMP a, int b) {
 		return true;
 	}
 
-	return timer_get_milliseconds() >= a.value() || timer_get_milliseconds() < (a.value() - b + 100);
+	return timestamp_ms() >= a.value() || timestamp_ms() < (a.value() - b + 100);
 }
 
 bool ui_timestamp_elapsed_safe(UI_TIMESTAMP a, int b) {
