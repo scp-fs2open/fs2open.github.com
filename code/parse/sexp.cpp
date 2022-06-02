@@ -987,6 +987,10 @@ int get_generic_subsys(const char *subsy_name);
 bool ship_class_unchanged(const ship_registry_entry *ship_entry);
 void multi_sexp_modify_variable();
 
+// jg18
+// container_value_index is for using one specific value from acontainer
+int copy_node_to_replacement_args(int node, int container_value_index = -1);
+
 #define NO_OPERATOR_INDEX_DEFINED		-2
 #define NOT_A_SEXP_OPERATOR				-1
 
@@ -2887,6 +2891,9 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 			// Goober5000
 			case OPF_ANYTHING:
+				if (type2 == SEXP_ATOM_CONTAINER_NAME) {
+					return SEXP_CHECK_TYPE_MISMATCH;
+				}
 				break;
 
 			case OPF_AI_GOAL:
@@ -3718,6 +3725,25 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					return z;
 				}
 				break;
+
+			case OPF_DATA_OR_STR_CONTAINER:
+			{
+				if (type2 == SEXP_ATOM_CONTAINER_NAME) {
+					// only list containers of strings or map containers with string keys are allowed
+					const auto *p_str_container = get_sexp_container(Sexp_nodes[node].text);
+					Assertion(p_str_container,
+						"Attempt to use unknown container %s. Please report!",
+						Sexp_nodes[node].text);
+
+					const auto &str_container = *p_str_container;
+					if (str_container.is_list() && none(str_container.type & ContainerType::STRING_DATA)) {
+						return SEXP_CHECK_WRONG_CONTAINER_DATA_TYPE;
+					} else if (str_container.is_map() && none(str_container.type & ContainerType::STRING_KEYS)) {
+						return SEXP_CHECK_WRONG_MAP_KEY_TYPE;
+					}
+				}
+				break;
+			}
 
 			default:
 				Error(LOCATION, "Unhandled argument format");
@@ -10086,43 +10112,48 @@ int test_argument_nodes_for_condition(int n, int condition_node, int *num_true, 
 		// only eval this argument if it's valid
 		if (Sexp_nodes[n].flags & SNF_ARGUMENT_VALID)
 		{
-			// evaluate conditional for current argument
-			Sexp_replacement_arguments.emplace_back(Sexp_nodes[n].text, n);
-			val = eval_sexp(condition_node);
-			if ( Sexp_nodes[condition_node].value == SEXP_KNOWN_TRUE ||
+			const int num_args = copy_node_to_replacement_args(n);
+
+			for (int i = 0; i < num_args; ++i) {
+				// evaluate conditional for current argument
+				val = eval_sexp(condition_node);
+				if (Sexp_nodes[condition_node].value == SEXP_KNOWN_TRUE ||
 					Sexp_nodes[condition_node].value == SEXP_KNOWN_FALSE) {
-				val = Sexp_nodes[condition_node].value;
-			} else if ( Sexp_nodes[condition_node].value == SEXP_NAN_FOREVER ) {
-				// In accordance with SEXP_NAN/SEXP_NAN_FOREVER becoming SEXP_FALSE in eval_sexp()
-				val = SEXP_KNOWN_FALSE;
+					val = Sexp_nodes[condition_node].value;
+				} else if (Sexp_nodes[condition_node].value == SEXP_NAN_FOREVER) {
+					// In accordance with SEXP_NAN/SEXP_NAN_FOREVER becoming SEXP_FALSE in eval_sexp()
+					val = SEXP_KNOWN_FALSE;
+				}
+
+				const auto &argument = Sexp_replacement_arguments.back();
+
+				switch (val)
+				{
+					case SEXP_TRUE:
+						(*num_true)++;
+						Applicable_arguments_temp.emplace_back(argument.first, argument.second);
+						break;
+
+					case SEXP_FALSE:
+						(*num_false)++;
+						break;
+
+					case SEXP_KNOWN_TRUE:
+						(*num_known_true)++;
+						Applicable_arguments_temp.emplace_back(argument.first, argument.second);
+						break;
+
+					case SEXP_KNOWN_FALSE:
+						(*num_known_false)++;
+						break;
+				}
+
+				// clear argument, but not list, as we'll need it later
+				Sexp_replacement_arguments.pop_back();
+
+				// increment
+				num_valid_arguments++;
 			}
-
-			switch (val)
-			{
-				case SEXP_TRUE:
-					(*num_true)++;
-					Applicable_arguments_temp.emplace_back(Sexp_nodes[n].text, n);
-					break;
-
-				case SEXP_FALSE:
-					(*num_false)++;
-					break;
-
-				case SEXP_KNOWN_TRUE:
-					(*num_known_true)++;
-					Applicable_arguments_temp.emplace_back(Sexp_nodes[n].text, n);
-					break;
-
-				case SEXP_KNOWN_FALSE:
-					(*num_known_false)++;
-					break;
-			}
-
-			// clear argument, but not list, as we'll need it later
-			Sexp_replacement_arguments.pop_back();
-
-			// increment
-			num_valid_arguments++;
 		}
 
 		// continue along argument list
@@ -28902,19 +28933,21 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_DO_FOR_VALID_ARGUMENTS:
 			return OPF_NULL;
 
-		case OP_ANY_OF:
-		case OP_EVERY_OF:
 		case OP_RANDOM_OF:
 		case OP_RANDOM_MULTIPLE_OF:
 		case OP_IN_SEQUENCE:
 			return OPF_ANYTHING;
+
+		case OP_ANY_OF:
+		case OP_EVERY_OF:
+			return OPF_DATA_OR_STR_CONTAINER;
 
 		case OP_NUMBER_OF:
 		case OP_FIRST_OF:
 			if (argnum == 0)
 				return OPF_POSITIVE;
 			else
-				return OPF_ANYTHING;
+				return OPF_DATA_OR_STR_CONTAINER;
 
 		case OP_FOR_COUNTER:
 			return OPF_NUMBER;
@@ -30933,6 +30966,7 @@ int sexp_query_type_match(int opf, int opr)
 		// Goober5000
 		case OPF_ANYTHING:
 		case OPF_CONTAINER_VALUE: // jg18
+		case OPF_DATA_OR_STR_CONTAINER: // jg18
 			// don't match any operators, only data
 			return 0;
 
@@ -31480,6 +31514,56 @@ void multi_sexp_modify_variable()
 		strcpy_s(Sexp_variables[variable_index].text, value);
 	}	
 }
+
+// copy an argument node's value(s) to Sexp_replacement_arguments for the *-of/in-sequence SEXPs
+// returns the number of argument strings copied
+int copy_node_to_replacement_args(int node, int container_value_index)
+{
+	int num_args = 0;
+
+	if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER_NAME) {
+		const char *container_name = Sexp_nodes[node].text;
+		const auto *p_container = get_sexp_container(container_name);
+
+		Assertion(p_container, "Special argument SEXP given nonexistent container %s. Please report!", container_name);
+		const auto &container = *p_container;
+		Assertion(container.is_of_string_type(),
+			"Attempt to use for-* SEXP with ineligible container argument %s. Please report!",
+			container_name);
+
+		if (container_value_index != -1) {
+			const SCP_string &container_value = container.get_value_at_index(container_value_index);
+			Sexp_replacement_arguments.emplace_back(container_value.c_str(), node);
+			num_args = 1;
+		} else {
+			if (container.is_list()) {
+				// populate in reverse order, so that the LIFO processing that callers use will process them in the correct order
+				for (auto rev_it = container.list_data.crbegin(), end = container.list_data.crend(); rev_it != end; ++rev_it) {
+					// use -1 because these strings are not associated with an individual node
+					Sexp_replacement_arguments.emplace_back(rev_it->c_str(), -1);
+				}
+			} else if (container.is_map()) {
+				for (const auto& kv_pair : container.map_data) {
+					// use -1 because these strings are not associated with an individual node
+					Sexp_replacement_arguments.emplace_back(kv_pair.first.c_str(), -1);
+				}
+			} else {
+				UNREACHABLE("Container %s has invalid type (%d). Please report!", container_name, (int)container.type);
+			}
+
+			num_args = container.size();
+		}
+	} else {
+		Assertion(container_value_index == -1,
+			"Attempt to copy replacement argument string with unexpected index %d. Please report!",
+			container_value_index);
+		Sexp_replacement_arguments.emplace_back(Sexp_nodes[node].text, node);
+		num_args = 1;
+	}
+
+	return num_args;
+}
+
 
 void sexp_modify_variable(int n)
 {
@@ -33504,6 +33588,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tSupplies arguments for the " SEXP_ARGUMENT_STRING " special data item.  Any of the supplied arguments can satisfy the expression(s) "
 		"in which " SEXP_ARGUMENT_STRING " is used.\r\n\r\n"
 		"In practice, this will behave like a standard \"for-each\" statement, evaluating the action operators for each argument that satisfies the condition.\r\n\r\n"
+		"\tThis SEXP also accepts list containers with string data or map containers with string keys as arguments.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tAnything that could be used in place of " SEXP_ARGUMENT_STRING "." },
 
@@ -33511,6 +33596,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_EVERY_OF, "Every-of (Conditional operator)\r\n"
 		"\tSupplies arguments for the " SEXP_ARGUMENT_STRING " special data item.  Every one of the supplied arguments will be evaluated to satisfy the expression(s) "
 		"in which " SEXP_ARGUMENT_STRING " is used.\r\n\r\n"
+		"\tThis SEXP also accepts list containers with string data or map containers with string keys as arguments.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tAnything that could be used in place of " SEXP_ARGUMENT_STRING "." },
 
@@ -33532,6 +33618,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_NUMBER_OF, "Number-of (Conditional operator)\r\n"
 		"\tSupplies arguments for the " SEXP_ARGUMENT_STRING " special data item.  Any [number] of the supplied arguments can satisfy the expression(s) "
 		"in which " SEXP_ARGUMENT_STRING " is used.\r\n\r\n"
+		"\tThis SEXP also accepts list containers with string data or map containers with string keys as arguments.\r\n\r\n"
 		"Takes 2 or more arguments...\r\n"
 		"\t1:\tNumber of arguments, as above\r\n"
 		"\tRest:\tAnything that could be used in place of " SEXP_ARGUMENT_STRING "." },
@@ -33607,6 +33694,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_FIRST_OF, "First-of (Conditional operator)\r\n"
 		"\tSupplies arguments for the " SEXP_ARGUMENT_STRING " special data item.  Up to [number] of the supplied arguments can satisfy the expression(s) "
 		"in which " SEXP_ARGUMENT_STRING " is used. Essentially the same as any-of, but with a cap on the number of arguments that can be evaluated in a single call.\r\n\r\n"
+		"\tThis SEXP also accepts list containers with string data or map containers with string keys as arguments.\r\n\r\n"
 		"Takes 2 or more arguments...\r\n"
 		"\t1:\tMaximum number of arguments that can be evaluated in a call.\r\n"
 		"\tRest:\tAnything that could be used in place of " SEXP_ARGUMENT_STRING "." },
@@ -33614,6 +33702,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	// Goober5000
 	{ OP_INVALIDATE_ARGUMENT, "Invalidate-argument (Conditional operator)\r\n"
 		"\tRemoves an argument from future consideration as a " SEXP_ARGUMENT_STRING " special data item.\r\n"
+		"\tFor argument-related SEXPs that accept containers as arguments, the retrieved arguments can't be individually invalidated.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tThe argument to remove from the preceding argument list." },
 
@@ -33621,6 +33710,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_VALIDATE_ARGUMENT, "Validate-argument (Conditional operator)\r\n"
 		"\tRestores an argument for future consideration as a " SEXP_ARGUMENT_STRING " special data item.\r\n"
 		"\tIf the argument hasn't been previously invalidated, it will do nothing.\r\n"
+		"\tFor argument-related SEXPs that accept containers as arguments, the retrieved arguments can't be individually validated.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tThe argument to restore to the preceding argument list." },
 
