@@ -40,6 +40,7 @@ namespace {
 
 static const int NextDrawStringPosInitial[] = {0, 0};
 static int NextDrawStringPos[] = {NextDrawStringPosInitial[0], NextDrawStringPosInitial[1]};
+static bool WarnedBadThicknessLine = false;
 
 }
 
@@ -836,6 +837,12 @@ ADE_FUNC(draw3dLine, l_Graphics, "vector origin, vector destination, [boolean tr
 	
 	if (thickness <= 0 && thicknessEnd <= 0)
 	{
+		if (!WarnedBadThicknessLine)
+		{
+			LuaError(L, "At least one end of a 3D line must be greater than zero! The line won't be drawn!\nThis warning won't be shown again this play session.");
+			WarnedBadThicknessLine = true;
+		}
+
 		//While the batching_add_line function would also do this check, I feel that its good to return early here.
 		return ADE_RETURN_NIL;
 	}
