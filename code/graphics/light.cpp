@@ -26,7 +26,6 @@ struct gr_light
 {
 	vec4 Ambient;
 	vec4 Diffuse;
-	vec4 Specular;
 
 	// light position
 	vec4 Position;
@@ -63,8 +62,6 @@ void FSLight2GLLight(light* FSLight, gr_light* GLLight) {
 	GLLight->Diffuse.xyzw.y = FSLight->g * FSLight->intensity;
 	GLLight->Diffuse.xyzw.z = FSLight->b * FSLight->intensity;
 	GLLight->Diffuse.xyzw.w = 1.0f;
-
-	GLLight->Specular =GLLight->Diffuse;
 
 	GLLight->type = static_cast<int>(FSLight->type);
 
@@ -226,11 +223,6 @@ void gr_set_center_alpha(int type) {
 		glight.Ambient.xyzw.z = 0.0f;
 	}
 	glight.type = type;
-
-	glight.Specular.xyzw.x = 0.0f;
-	glight.Specular.xyzw.y = 0.0f;
-	glight.Specular.xyzw.z = 0.0f;
-	glight.Specular.xyzw.w = 0.0f;
 
 	glight.Ambient.xyzw.w = 1.0f;
 	glight.Diffuse.xyzw.w = 1.0f;
