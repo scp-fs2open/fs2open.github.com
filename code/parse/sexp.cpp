@@ -10512,8 +10512,7 @@ int eval_random_multiple_of(int arg_handler_node, int condition_node)
 		const int arg_value_index = (Sexp_nodes[n].subtype == SEXP_ATOM_CONTAINER_NAME)
 										? random_arg_value - cumulative_arg_counts[random_argument - 1] - 1
 										: -1;
-		const int num_args = copy_node_to_replacement_args(n, arg_value_index);
-		SCP_UNUSED(num_args);
+		copy_node_to_replacement_args(n, arg_value_index);
 
 		// evaluate conditional for current argument
 		val = eval_sexp(condition_node);
