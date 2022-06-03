@@ -831,8 +831,15 @@ ADE_FUNC(draw3dLine, l_Graphics, "vector origin, vector destination, [boolean tr
 	if (!ade_get_args(L, "oo|bff", l_Vector.GetPtr(&v1), l_Vector.GetPtr(&v2), &translucent, &thickness, &thicknessEnd))
 		return ADE_RETURN_NIL;
 
+	if (thickness < 0) thickness = 0;
 	if (thicknessEnd < 0) thicknessEnd = thickness;
 	
+	if (thickness <= 0 && thicknessEnd <= 0)
+	{
+		//While the batching_add_line function would also do this check, I feel that its good to return early here.
+		return ADE_RETURN_NIL;
+	}
+
 	color &clr = gr_screen.current_color;
 
 	batching_add_line(v1, v2, thickness, thicknessEnd, clr, translucent);

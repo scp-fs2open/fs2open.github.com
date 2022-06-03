@@ -786,6 +786,25 @@ void batching_add_line(vec3d *start, vec3d *end, float widthStart, float widthEn
 	color clr = custom_color;
 	primitive_batch *batch;
 
+	//The widths can't be negative. 
+	if (widthStart < 0)
+	{
+		mprintf(("Warning: Neither end of a 3D line can have negative width. Attempted to draw a line with %f widthStart. Changing value to zero.\n", widthStart));
+		widthStart = 0;
+	}
+	if (widthEnd < 0)
+	{
+		mprintf(("Warning: Neither end of a 3D line can have negative width. Attempted to draw a line with %f widthEnd. Changing value to zero.\n", widthEnd));
+		widthEnd = 0;
+	}
+
+	//A line can't have zero width on both ends of it. (But it can have zero width on only one of the ends at a time)
+	if (widthStart <= 0 && widthEnd <= 0)
+	{
+		mprintf(("Warning: The width of a 3D line should be > 0 on at least one tip. Attempted to draw a line with %f to %f. Line will not be drawn.\n", widthStart, widthEnd));
+		return;
+	}
+
 	if (lineTexture < 0)
 	{
 		//We only need a single pixel sized texture to render as many lines as we want. 
