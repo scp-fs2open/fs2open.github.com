@@ -111,6 +111,11 @@ bool sexp_container::operator==(const sexp_container &sc) const
 		list_data == sc.list_data && map_data == sc.map_data;
 }
 
+ContainerType sexp_container::get_data_type() const
+{
+	return type & (ContainerType::STRING_DATA | ContainerType::NUMBER_DATA);
+}
+
 bool sexp_container::name_matches(const sexp_container &container) const
 {
 	return !stricmp(container.container_name.c_str(), container_name.c_str());
@@ -145,6 +150,32 @@ ContainerType sexp_container::get_non_persistent_type() const
 bool sexp_container::type_matches(const sexp_container &container) const
 {
 	return get_non_persistent_type() == container.get_non_persistent_type();
+}
+
+bool sexp_container::is_of_string_type() const
+{
+	return (is_list() && any(type & ContainerType::STRING_DATA)) ||
+		   (is_map() && any(type & ContainerType::STRING_KEYS));
+}
+
+const SCP_string &sexp_container::get_value_at_index(int index) const
+{
+	Assertion(index >= 0 && index < size(),
+		"Attempt to get out-of-range index %d from container %s (size %d). Please report!",
+		index,
+		container_name.c_str(),
+		size());
+
+	if (is_list()) {
+		return *std::next(list_data.cbegin(), index);
+	} else if (is_map()) {
+		// should produce the same value on all platforms
+		// since map_data uses a custom hash function
+		return std::next(map_data.cbegin(), index)->first;
+	} else {
+		UNREACHABLE("Container %s has invalid type (%d). Please report!", container_name.c_str(), (int)type);
+		return *list_data.cbegin(); // gibberish
+	}
 }
 
 // ListModifier-related functions
@@ -1400,6 +1431,94 @@ void sexp_copy_container(int node)
 	}
 }
 
+void sexp_apply_container_filter(int node)
+{
+	Assertion(node != -1, "Apply-container-filter wasn't given a container to apply a filter to. Please report!");
+
+	const char *container_name = CTEXT(node);
+	auto *const p_container = get_sexp_container(container_name);
+
+	if (!p_container) {
+		report_nonexistent_container("Apply-container-filter", container_name);
+		return;
+	}
+
+	auto &container = *p_container;
+
+	node = CDR(node);
+	Assertion(node != -1, "Apply-container-filter wasn't given a container to use as a filter. Please report!");
+
+	const char *filter_container_name = CTEXT(node);
+	const auto *p_filter_container = get_sexp_container(filter_container_name);
+
+	if (!p_filter_container) {
+		report_nonexistent_container("Apply-container-filter", filter_container_name);
+		return;
+	}
+
+	if (p_container == p_filter_container) {
+		const SCP_string msg = SCP_string("Apply-container-filter called to filter container ") + container_name +
+							   " using itself as the filter.";
+		Warning(LOCATION, "%s", msg.c_str());
+		log_printf(LOGFILE_EVENT_LOG, "%s", msg.c_str());
+		return;
+	}
+
+	const auto &filter_container = *p_filter_container;
+
+	if (!filter_container.is_list()) {
+		report_non_list_container("Apply-container-filter", filter_container_name);
+		return;
+	}
+
+	if (filter_container.list_data.empty()) {
+#if !defined(NDEBUG) || defined(SCP_RELEASE_LOGGING)
+		// while an empty filter isn't technically an error, it should be logged
+		const SCP_string msg = SCP_string("Apply-container-filter called to filter container ") + container_name +
+							   " using empty filter container " + filter_container_name;
+		mprintf(("%s\n", msg.c_str()));
+		log_printf(LOGFILE_EVENT_LOG, "%s", msg.c_str());
+#endif
+		return;
+	}
+
+	if (container.is_list()) {
+		if (container.get_data_type() != filter_container.get_data_type()) {
+			const SCP_string msg = SCP_string("Apply-container-filter called on list container ") + container_name +
+								   " whose data type doesn't match data type of filter container " +
+								   filter_container_name;
+			Warning(LOCATION, "%s", msg.c_str());
+			log_printf(LOGFILE_EVENT_LOG, "%s", msg.c_str());
+			return;
+		}
+
+		for (const SCP_string &filter_data : filter_container.list_data) {
+			auto list_it = std::find(container.list_data.begin(), container.list_data.end(), filter_data);
+			if (list_it != container.list_data.end()) {
+				container.list_data.erase(list_it);
+			}
+		}
+	} else if (container.is_map()) {
+		if ((any(container.type & ContainerType::STRING_KEYS) &&
+				none(filter_container.type & ContainerType::STRING_DATA)) ||
+			(any(container.type & ContainerType::NUMBER_KEYS) &&
+				none(filter_container.type & ContainerType::NUMBER_DATA))) {
+			const SCP_string msg = SCP_string("Apply-container-filter called on map container ") + container_name +
+								   " whose key type doesn't match data type of filter container " +
+								   filter_container_name;
+			Warning(LOCATION, "%s", msg.c_str());
+			log_printf(LOGFILE_EVENT_LOG, "%s", msg.c_str());
+			return;
+		}
+
+		for (const SCP_string &filter_data : filter_container.list_data) {
+			container.map_data.erase(filter_data);
+		}
+	} else {
+		UNREACHABLE("Container %s has invalid type (%d). Please report!", container_name, (int)container.type);
+	}
+}
+
 int sexp_container_eval_change_sexp(int op_num, int node)
 {
 	switch (op_num) {
@@ -1429,6 +1548,10 @@ int sexp_container_eval_change_sexp(int op_num, int node)
 
 	case OP_COPY_CONTAINER:
 		sexp_copy_container(node);
+		return SEXP_TRUE;
+
+	case OP_APPLY_CONTAINER_FILTER:
+		sexp_apply_container_filter(node);
 		return SEXP_TRUE;
 
 	default:

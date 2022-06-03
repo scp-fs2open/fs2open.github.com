@@ -1566,6 +1566,23 @@ void get_turret_subsys_name(ship_weapon *swp, char *outstr)
 
 	//WMC - find the first weapon, if there is one
 	if (swp->num_primary_banks || swp->num_secondary_banks) {
+		// allow the first weapon on the turret to specify the name
+		for (int i = 0; i < swp->num_primary_banks; ++i) {
+			auto wip = &Weapon_info[swp->primary_bank_weapons[i]];
+			if (*(wip->altSubsysName) != '\0') {
+				sprintf(outstr, "%s", wip->altSubsysName);
+				return;
+			}
+		} 
+		for (int i = 0; i < swp->num_secondary_banks; ++i) {
+			auto wip = &Weapon_info[swp->secondary_bank_weapons[i]];
+			if (*(wip->altSubsysName) != '\0') {
+				sprintf(outstr, "%s", wip->altSubsysName);
+				return;
+			}
+		}
+
+		// otherwise use a general name based on the type of weapon(s) on the turret
 		auto flags = turret_weapon_aggregate_flags(swp);
 
 		// check if beam or flak using weapon flags
@@ -1578,17 +1595,13 @@ void get_turret_subsys_name(ship_weapon *swp, char *outstr)
 				sprintf(outstr, "%s", XSTR("Missile lnchr", 1569));
 			} else if (turret_weapon_has_subtype(swp, WP_LASER)) {
 				// ballistic too! - Goober5000
-				if (flags[Weapon::Info_Flags::Ballistic])
-				{
+				if (flags[Weapon::Info_Flags::Ballistic]) {
 					sprintf(outstr, "%s", XSTR("Turret", 1487));
 				}
 				// the TVWP has some primaries flagged as bombs
-				else if (flags[Weapon::Info_Flags::Bomb])
-				{
+				else if (flags[Weapon::Info_Flags::Bomb]) {
 					sprintf(outstr, "%s", XSTR("Missile lnchr", 1569));
-				}
-				else
-				{
+				} else {
 					sprintf(outstr, "%s", XSTR("Laser turret", 1568));
 				}
 			} else {

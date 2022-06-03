@@ -43,7 +43,8 @@ PROJECT(FS2_Open)
 
 find_program(CCACHE_PROGRAM ccache)
 # Currently only GCC support ccache properly without generating additional warnings
-if(CCACHE_PROGRAM AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+# Enable ccache on Mac even for clang
+if(CCACHE_PROGRAM AND ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR APPLE))
 	if(NOT CMAKE_C_COMPILER_LAUNCHER)
 		message(STATUS "Using ccache for C compilation: ${CCACHE_PROGRAM}")
 		SET(CMAKE_C_COMPILER_LAUNCHER ${CCACHE_PROGRAM})

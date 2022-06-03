@@ -424,6 +424,8 @@ add_file_folder("Graphics"
 	graphics/decal_draw_list.h
 	graphics/debug_sphere.cpp
 	graphics/debug_sphere.h
+	graphics/color.cpp
+	graphics/color.h
 	graphics/grbatch.cpp
 	graphics/grbatch.h
 	graphics/grinternal.cpp
@@ -1403,6 +1405,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 )
 
 add_file_folder("Scripting\\\\Lua"
+	scripting/lua/lua_ext.c
+	scripting/lua/lua_ext.h
 	scripting/lua/LuaArgs.cpp
 	scripting/lua/LuaArgs.h
 	scripting/lua/LuaConvert.cpp
@@ -1422,6 +1426,10 @@ add_file_folder("Scripting\\\\Lua"
 	scripting/lua/LuaUtil.h
 	scripting/lua/LuaValue.cpp
 	scripting/lua/LuaValue.h
+)
+
+add_file_folder("Scripting\\\\Lua\\\\BitOp"
+	scripting/lua/bitop/bit.c
 )
 
 # Ship files

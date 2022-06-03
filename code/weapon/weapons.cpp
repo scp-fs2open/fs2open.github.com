@@ -10,6 +10,7 @@
 
 
 #include <algorithm>
+#include <cstddef>
 
 #include "ai/aibig.h"
 #include "asteroid/asteroid.h"
@@ -20,6 +21,7 @@
 #include "freespace.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/linklist.h"
+#include "graphics/color.h"
 #include "hud/hud.h"
 #include "hud/hudartillery.h"
 #include "iff_defs/iff_defs.h"
@@ -35,6 +37,8 @@
 #include "object/objcollide.h"
 #include "object/objectdock.h"
 #include "object/objectsnd.h"
+#include "parse/parsehi.h"
+#include "parse/parselo.h"
 #include "scripting/scripting.h"
 #include "particle/particle.h"
 #include "playerman/player.h"
@@ -999,6 +1003,10 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		stuff_malloc_string(&wip->tech_desc, F_MULTITEXT);
 	}
 
+	if (optional_string("$Turret Name:")) {
+		stuff_string(wip->altSubsysName, F_NAME, NAME_LENGTH);
+	}
+
 	if (optional_string("$Tech Model:")) {
 		stuff_string(wip->tech_model, F_NAME, MAX_FILENAME_LEN);
 
@@ -1155,6 +1163,16 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	if(optional_string("@Laser Tail Radius:")) {
 		stuff_float(&wip->laser_tail_radius );
 	}
+
+	if (parse_optional_color3i_into("$Light color:", &wip->light_color)) {
+		wip->light_color_set = true;
+	}
+
+	parse_optional_float_into("$Light radius:", &wip->light_radius);
+
+	float fbuffer;
+	if (parse_optional_float_into("$Light intensity:", &fbuffer))
+		wip->light_color.i(fbuffer);
 
 	if (optional_string("$Collision Radius Override:")) {
 		stuff_float(&wip->collision_radius_override);
@@ -2657,6 +2675,10 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 		if ( optional_string("+BeamWidth:") )
 			stuff_float(&wip->b_info.beam_width);
+
+		parse_optional_bool_into("+Beam Light Flickers:", &wip->b_info.beam_light_flicker);
+
+		parse_optional_bool_into("+Beam Width Multiplies Light Radius:", &wip->b_info.beam_light_as_multiplier);
 
 		if (optional_string("+Beam Flash Particle Effect:")) {
 			wip->flash_impact_weapon_expl_effect = particle::util::parseEffect(wip->name);
@@ -8666,6 +8688,7 @@ void weapon_info::reset()
 	memset(this->display_name, 0, sizeof(this->display_name));
 	memset(this->title, 0, sizeof(this->title));
 	this->desc = nullptr;
+	memset(this->altSubsysName, 0, sizeof(this->altSubsysName));
 
 	memset(this->pofbitmap_name, 0, sizeof(this->pofbitmap_name));
 	this->model_num = -1;
@@ -8703,6 +8726,10 @@ void weapon_info::reset()
 	gr_init_color(&this->laser_color_2, 255, 255, 255);
 	this->laser_head_radius = 1.0f;
 	this->laser_tail_radius = 1.0f;
+
+	this->light_color_set = false;
+	this->light_color.reset();
+	this->light_radius = -1.0f; //Defaults handled at runtime via lighting profile if left negative
 
 	this->collision_radius_override = -1.0f;
 	this->max_speed = 10.0f;
@@ -8907,6 +8934,8 @@ void weapon_info::reset()
 	this->b_info.range = BEAM_FAR_LENGTH;
 	this->b_info.damage_threshold = 1.0f;
 	this->b_info.beam_width = -1.0f;
+	this->b_info.beam_light_flicker = true;
+	this->b_info.beam_light_as_multiplier = true;
 	this->b_info.flags.reset();
 
 	// type 5 beam stuff

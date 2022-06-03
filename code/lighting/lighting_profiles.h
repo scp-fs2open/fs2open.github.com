@@ -42,8 +42,36 @@ struct piecewise_power_curve_intermediates{
 	float sh_offsetY;
 };
 
+/**
+ * @brief To hold configuration of, and handle application of, modifiers to lighting values.
+ */
+struct lighting_profile_value{
+	float base;
+	bool only_positive = true;
+
+	float handle(float input);
+	void reset();
+	void set_adjust(float in);
+	void set_multiplier(float in);
+	void set_maximum(float in);
+	void set_minimum(float in);
+
+	static bool parse(const char *filename, const char * valuename, const SCP_string &profile_name, lighting_profile_value* value_target, bool required=false);
+
+private:
+	bool has_adjust = false;
+	float adjust;
+	bool has_multiplier=false;
+	float multipier;
+	bool has_minimum = false;
+	float minimum;
+	bool has_maximum = false;
+	float maximum;
+};
+
 class lighting_profile{
 public:
+	static lighting_profile * current();
 	static enum TonemapperAlgorithm name_to_tonemapper(SCP_string &name);
 	static void load_profiles();
 	static TonemapperAlgorithm current_tonemapper();
@@ -61,12 +89,29 @@ public:
     TonemapperAlgorithm tonemapper;
 	piecewise_power_curve_values ppc_values;
 	float exposure;
+	lighting_profile_value missile_light_brightness;
+	lighting_profile_value missile_light_radius;
+	lighting_profile_value laser_light_brightness;
+	lighting_profile_value laser_light_radius;
+	lighting_profile_value beam_light_brightness;
+	lighting_profile_value beam_light_radius;
+
+	lighting_profile_value tube_light_brightness;
+	lighting_profile_value tube_light_radius;
+	lighting_profile_value point_light_brightness;
+	lighting_profile_value point_light_radius;
+	lighting_profile_value cone_light_brightness;
+	lighting_profile_value cone_light_radius;
+	lighting_profile_value directional_light_brightness;
+	lighting_profile_value ambient_light_brightness;
+
 
     void reset();
 
 private:
+
 	static lighting_profile default_profile;
 	static void parse_all();
 	static void parse_file(const char *filename);
-	static void parse_default_section();
+	static void parse_default_section(const char *filename);
 };
