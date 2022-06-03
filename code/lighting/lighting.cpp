@@ -150,10 +150,10 @@ static void light_rotate(light * l)
 	}
 }
 
-void light_add_directional(const vec3d* p0, float r1, float r2, const hdr_color* new_color)
+void light_add_directional(const vec3d* dir, const hdr_color* new_color)
 {
 	Assert(new_color!= nullptr);
-	light_add_directional(p0, r1, r2, new_color->i(), new_color->r(), new_color->g(), new_color->b());
+	light_add_directional(dir, new_color->i(), new_color->r(), new_color->g(), new_color->b());
 }
 
 void light_add_directional(const vec3d *dir, float intensity, float r, float g, float b, float spec_r, float spec_g, float spec_b, bool specular)
@@ -194,10 +194,10 @@ void light_add_directional(const vec3d *dir, float intensity, float r, float g, 
 }
 
 
-void light_add_point(const vec3d* p0, float r1, float r2, const hdr_color*  new_color)
+void light_add_point(const vec3d* pos, float r1, float r2, const hdr_color* new_color)
 {
 	Assert(new_color!= nullptr);
-	light_add_point(p0, r1, r2, new_color->i(), new_color->r(), new_color->g(), new_color->b());
+	light_add_point(pos, r1, r2, new_color->i(), new_color->r(), new_color->g(), new_color->b());
 }
 
 void light_add_point(const vec3d *pos, float r1, float r2, float intensity, float r, float g, float b, float spec_r, float spec_g, float spec_b, bool specular)
@@ -239,7 +239,7 @@ void light_add_point(const vec3d *pos, float r1, float r2, float intensity, floa
 	Lights.push_back(l);
 }
 
-void light_add_tube(const vec3d* p0, const vec3d* p1, float r1, float r2, const hdr_color*  new_color)
+void light_add_tube(const vec3d* p0, const vec3d* p1, float r1, float r2, const hdr_color* new_color)
 {
 	Assert(new_color!= nullptr);
 	light_add_tube(p0, p1, r1, r2, new_color->i(), new_color->r(), new_color->g(), new_color->b());
@@ -457,7 +457,7 @@ void light_apply_rgb( ubyte *param_r, ubyte *param_g, ubyte *param_b, const vec3
 void light_add_cone(const vec3d *pos, const vec3d *dir, float angle, float inner_angle, bool dual_cone, float r1, float r2, const hdr_color* new_color)
 {
 	Assert(new_color!= nullptr);
-	light_add_cone(pos, dir, angle, inner_angle, dual_cone, r1, r2,new_color->i(), new_color->r(), new_color->g(), new_color->b());
+	light_add_cone(pos, dir, angle, inner_angle, dual_cone, r1, r2, new_color->i(), new_color->r(), new_color->g(), new_color->b());
 }
 
 void light_add_cone(const vec3d *pos, const vec3d *dir, float angle, float inner_angle, bool dual_cone, float r1, float r2, float intensity, float r, float g, float b, float spec_r, float spec_g, float spec_b, bool specular)
