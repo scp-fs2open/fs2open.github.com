@@ -1136,7 +1136,7 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 			}
 
 			ai_mode = AI_GOAL_DESTROY_SUBSYSTEM;
-			ai_submode = ship_get_subsys_index( &Ships[Objects[ainfo->target_objnum].instance], ainfo->targeted_subsys->system_info->subobj_name );
+			ai_submode = ship_find_subsys( &Ships[Objects[ainfo->target_objnum].instance], ainfo->targeted_subsys->system_info->subobj_name );
 			special_index = ai_submode; 
 			message = MESSAGE_ATTACK_TARGET;
 			break;
@@ -1423,7 +1423,7 @@ int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, 
 			Assert( ainfo->targeted_subsys->current_hits > 0.0f);
 
 			ai_mode = AI_GOAL_DESTROY_SUBSYSTEM;
-			ai_submode = ship_get_subsys_index( &Ships[Objects[ainfo->target_objnum].instance], ainfo->targeted_subsys->system_info->subobj_name );
+			ai_submode = ship_find_subsys( &Ships[Objects[ainfo->target_objnum].instance], ainfo->targeted_subsys->system_info->subobj_name );
 			special_index = ai_submode; 
 			message = MESSAGE_ATTACK_TARGET;
 			break;
@@ -2485,7 +2485,7 @@ int hud_query_order_issued(const char *to, const char *order_name, const char *t
 								continue;
 							}
                             
-							int subsys_index = ship_get_subsys_index(&Ships[target_ship], special_argument); 
+							int subsys_index = ship_find_subsys(&Ships[target_ship], special_argument); 
 							// if the order is for s different subsystem
 							if (Squadmsg_history[i].special_index != subsys_index) {
 								continue;

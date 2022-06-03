@@ -1858,7 +1858,7 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 			sindex = ship_name_lookup( aigp->target_name );
 
 			if ( sindex != -1 ) {
-				aigp->ai_submode = ship_get_subsys_index( &Ships[sindex], aigp->docker.name );
+				aigp->ai_submode = ship_find_subsys( &Ships[sindex], aigp->docker.name );
 				aigp->flags.remove(AI::Goal_Flags::Subsys_needs_fixup);
 			} else {
 				Int3();

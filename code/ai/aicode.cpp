@@ -7778,7 +7778,7 @@ int ai_set_attack_subsystem(object *objp, int subnum)
 	if (subnum >= 0)
 		ssp = ship_get_indexed_subsys(shipp, subnum);
 	else
-		ssp = ship_get_first_subsys(shipp, -subnum, &objp->pos);
+		ssp = ship_find_first_subsys(shipp, -subnum, &objp->pos);
 	if (ssp == NULL)
 		return 0;
 

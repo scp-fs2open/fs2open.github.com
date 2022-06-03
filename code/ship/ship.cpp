@@ -13877,7 +13877,7 @@ ship_subsys *ship_get_best_subsys_to_attack(ship *sp, int subsys_type, vec3d *at
  *                 to select the best subsystem to attack of that type (using line-of-sight)
  *                 and based on the number of ships already attacking the subsystem
  */
-ship_subsys *ship_get_first_subsys(ship *sp, int subsys_type, vec3d *attacker_pos)
+ship_subsys *ship_find_first_subsys(ship *sp, int subsys_type, vec3d *attacker_pos)
 {
 	Assertion(subsys_type > SUBSYSTEM_NONE && subsys_type < SUBSYSTEM_MAX, "Subsys_type %d must refer to a valid subsystem type!", subsys_type);
 
@@ -13919,14 +13919,14 @@ void ship_index_subsystems(ship *shipp)
 		// normal indexing to valid subsystems
 		if (ss != END_OF_LIST(&shipp->subsys_list))
 		{
-			shipp->subsys_list_indexer.get()[index] = ss;
+			shipp->subsys_list_indexer[index] = ss;
 			ss->parent_subsys_index = index;
 			ss = GET_NEXT(ss);
 		}
 		// in the event we run out of subsystems (i.e. if not all subsystems were linked)
 		else
 		{
-			shipp->subsys_list_indexer.get()[index] = nullptr;
+			shipp->subsys_list_indexer[index] = nullptr;
 		}
 	}
 
@@ -13945,7 +13945,7 @@ ship_subsys *ship_get_indexed_subsys(ship *sp, int index)
 	if (!sp->flags[Ship::Ship_Flags::Subsystem_cache_valid])
 		ship_index_subsystems(sp);
 
-	return sp->subsys_list_indexer.get()[index];
+	return sp->subsys_list_indexer[index];
 }
 
 /**
@@ -13967,7 +13967,7 @@ int ship_get_subsys_index(ship_subsys *subsys)
 /**
  * Searches for the subsystem with the given name in the ship's linked list of subsystems, and returns its index or -1 if not found.
  */
-int ship_get_subsys_index(ship *sp, const char *ss_name)
+int ship_find_subsys(ship *sp, const char *ss_name)
 {
 	int count;
 	ship_subsys *ss;
