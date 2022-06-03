@@ -418,6 +418,10 @@ void shadows_end_render()
 
 void shadows_render_all(float fov, matrix *eye_orient, vec3d *eye_pos)
 {
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	GR_DEBUG_SCOPE("Render shadows");
 	TRACE_SCOPE(tracing::BuildShadowMap);
 

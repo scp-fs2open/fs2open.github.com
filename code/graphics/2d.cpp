@@ -1435,7 +1435,7 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 		auto res = ResolutionOption->getValue();
 		width = res.width;
 		height = res.height;
-	} else {
+	} else if ( !Is_standalone ) {
 		// We cannot continue without this, quit, but try to help the user out first
 		ptr = os_config_read_string(nullptr, NOX("VideocardFs2open"), nullptr);
 
@@ -1540,6 +1540,15 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 		depth = d_depth;
 	}
 
+	// if we are in standalone mode then just use special defaults
+	if (Is_standalone) {
+		mode = GR_STUB;
+		width = 640;
+		height = 480;
+		depth = 16;
+		center_aspect_ratio = -1.0f;
+	}
+
 	if (gr_get_resolution_class(width, height) != GR_640) {
 		// check for hi-res interface files so that we can verify our width/height is correct
 		// if we don't have it then fall back to 640x480 mode instead
@@ -1554,15 +1563,6 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 				center_aspect_ratio = -1.0f;
 			}
 		}
-	}
-
-	// if we are in standalone mode then just use special defaults
-	if (Is_standalone) {
-		mode = GR_STUB;
-		width = 640;
-		height = 480;
-		depth = 16;
-		center_aspect_ratio = -1.0f;
 	}
 
 // These compiler macros will force windowed mode at the specified resolution if
@@ -1616,14 +1616,12 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 	mprintf(("Initializing path renderer...\n"));
 	graphics::paths::PathRenderer::init();
 
-	if ( !Is_standalone ) {
-		gr_light_init();
+	gr_light_init();
 
-		// Initialize uniform buffer managers
-		uniform_buffer_managers_init();
+	// Initialize uniform buffer managers
+	uniform_buffer_managers_init();
 
-		gpu_heap_init();
-	}
+	gpu_heap_init();
 
 	mprintf(("Checking graphics capabilities:\n"));
 	mprintf(("  Persistent buffer mapping: %s\n",
@@ -2534,6 +2532,10 @@ void gr_set_bitmap(int bitmap_num, int alphablend_mode, int bitblt_mode, float a
 
 static void output_uniform_debug_data()
 {
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	int line_height = gr_get_font_height() + 1;
 
 	gr_set_color_fast(&Color_bright_white);
@@ -2593,7 +2595,7 @@ void gr_print_timestamp(int x, int y, fix timestamp, int resize_mode)
 
 static void uniform_buffer_managers_init()
 {
-	if (Is_standalone) {
+	if (gr_screen.mode == GR_STUB) {
 		return;
 	}
 
@@ -2602,7 +2604,7 @@ static void uniform_buffer_managers_init()
 
 static void uniform_buffer_managers_deinit()
 {
-	if (Is_standalone) {
+	if (gr_screen.mode == GR_STUB) {
 		return;
 	}
 
@@ -2611,7 +2613,7 @@ static void uniform_buffer_managers_deinit()
 
 static void uniform_buffer_managers_retire_buffers()
 {
-	if (Is_standalone) {
+	if (gr_screen.mode == GR_STUB) {
 		return;
 	}
 
@@ -2751,6 +2753,10 @@ size_t vertex_layout::hash() const {
 static std::unique_ptr<graphics::util::GPUMemoryHeap> gpu_heaps [static_cast<size_t>(GpuHeap::NUM_VALUES)];
 
 static void gpu_heap_init() {
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	for (size_t i = 0; i < static_cast<size_t>(GpuHeap::NUM_VALUES); ++i) {
 		auto enumVal = static_cast<GpuHeap>(i);
 
@@ -2846,6 +2852,10 @@ static void make_gamma_ramp(float gamma, ushort* ramp)
 
 void gr_set_gamma(float gamma)
 {
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	Gr_gamma = gamma;
 
 	// new way - but not while running FRED
