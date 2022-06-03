@@ -163,6 +163,75 @@ UI_TIMESTAMP ui_timestamp() {
 	return UI_TIMESTAMP(timer_get_milliseconds());
 }
 
+TIMESTAMP timestamp_delta(TIMESTAMP stamp, int delta_ms)
+{
+	if (!stamp.isValid() || stamp.isImmediate() || stamp.isNever())
+		return stamp;
+
+	return TIMESTAMP(stamp.value() + delta_ms);
+}
+
+UI_TIMESTAMP ui_timestamp_delta(UI_TIMESTAMP stamp, int delta_ms)
+{
+	if (!stamp.isValid() || stamp.isImmediate() || stamp.isNever())
+		return stamp;
+
+	return UI_TIMESTAMP(stamp.value() + delta_ms);
+}
+
+// Returns the difference between two timestamps as an int, does not check that the result will be positive.
+// Also only error check if a timestamp is invalid, but when either is immediate or never, it returns 0.
+int timestamp_get_delta(TIMESTAMP before, TIMESTAMP after)
+{
+	Assertion(before.isValid(), "timestamp_get_delta called with an invalid before timestamp%s. This is a coder mistake, please report!", (after.isValid()) ? "" : " and an invalid after timestamp.");
+	Assertion(after.isValid(), "timestamp_get_delta called with an invalid after timestamp. This is a coder mistake, please report!");
+
+
+	if (!before.isValid() || !after.isValid()) {
+		return 0;
+	}
+
+	// infinite difference in the future.
+	if (before.isImmediate() && after.isNever()) {
+		return INT_MAX;
+	// infinite difference in the past
+	} else if (after.isImmediate() && before.isNever()) {
+		return INT_MIN;	
+	// no difference
+	} else if ((before.isImmediate() && after.isImmediate())
+			|| (before.isNever() && after.isNever())) {
+		return 0;
+	}
+
+	return (after.value() - before.value());
+}
+
+// Returns the difference between two timestamps, does not check that the result will be positive.
+// Also only error check if a timestamp is invalid, but when either is immediate or never, it returns 0.
+int ui_timestamp_get_delta(UI_TIMESTAMP before, UI_TIMESTAMP after)
+{
+	Assertion(before.isValid(), "ui_timestamp_get_delta called with an invalid before timestamp%s. This is a coder mistake, please report!", (after.isValid()) ? "" : " and an invalid after timestamp.");
+	Assertion(after.isValid(), "ui_timestamp_get_delta called with an invalid after timestamp. This is a coder mistake, please report!");
+
+	if (!before.isValid() || !after.isValid()) {
+		return 0;
+	}
+
+	// infinite difference in the future.
+	if (before.isImmediate() && after.isNever()) {
+		return INT_MAX;
+	// infinite difference in the past
+	} else if (after.isImmediate() && before.isNever()) {
+		return INT_MIN;	
+	// no difference
+	} else if ((before.isImmediate() && after.isImmediate())
+			|| (before.isNever() && after.isNever())) {
+		return 0;
+	}
+	
+	return (after.value() - before.value());
+}
+
 // ======================================== checking timestamps ========================================
 
 // Restrict all time values between 0 and MAX_TIME
@@ -238,7 +307,7 @@ int timestamp_until(int stamp)
 
 int timestamp_until(TIMESTAMP stamp)
 {
-	Assertion(stamp.isValid() && !stamp.isNever(), "timestamp_until was called with an Invalid or Never timestamp!");
+	Assertion(stamp.isValid() && !stamp.isNever(), "timestamp_until was called with a%s timestamp!", !stamp.isValid() ? "n invalid" : " Never");
 	if (!stamp.isValid() || stamp.isNever())
 		return INT_MAX;
 
@@ -250,7 +319,7 @@ int timestamp_until(TIMESTAMP stamp)
 
 int ui_timestamp_until(UI_TIMESTAMP stamp)
 {
-	Assertion(stamp.isValid() && !stamp.isNever(), "timestamp_until was called with an Invalid or Never timestamp!");
+	Assertion(stamp.isValid() && !stamp.isNever(), "timestamp_until was called with a%s timestamp!", !stamp.isValid() ? "n invalid" : " Never");
 	if (!stamp.isValid() || stamp.isNever())
 		return INT_MAX;
 
@@ -267,7 +336,7 @@ int timestamp_since(int stamp)
 
 int timestamp_since(TIMESTAMP stamp)
 {
-	Assertion(stamp.isValid() && !stamp.isNever(), "timestamp_since was called with an Invalid or Never timestamp!");
+	Assertion(stamp.isValid() && !stamp.isNever(), "timestamp_since was called with a%s timestamp!", !stamp.isValid() ? "n invalid" : " Never");
 	if (!stamp.isValid() || stamp.isNever())
 		return INT_MIN;
 
@@ -279,7 +348,7 @@ int timestamp_since(TIMESTAMP stamp)
 
 int ui_timestamp_since(UI_TIMESTAMP stamp)
 {
-	Assertion(stamp.isValid() && !stamp.isNever(), "timestamp_since was called with an Invalid or Never timestamp!");
+	Assertion(stamp.isValid() && !stamp.isNever(), "timestamp_since was called with a%s timestamp!", !stamp.isValid() ? "n invalid" : " Never");
 	if (!stamp.isValid() || stamp.isNever())
 		return INT_MIN;
 
@@ -289,17 +358,111 @@ int ui_timestamp_since(UI_TIMESTAMP stamp)
 	return timer_get_milliseconds() - stamp.value();
 }
 
-int timestamp_has_time_elapsed(int stamp, int time) {
+int timestamp_compare(TIMESTAMP t1, TIMESTAMP t2)
+{
+	Assertion(t1.isValid(), "timestamp_compare called with an invalid 't1' timestamp!");
+	Assertion(t2.isValid(), "timestamp_compare called with an invalid 't2' timestamp!");
+	if (!t1.isValid() || !t2.isValid())
+		return 0;
+
+	if (t1.isImmediate())
+	{
+		if (t2.isImmediate())
+			return 0;
+		else
+			return -1;
+	}
+	else if (t2.isImmediate())
+		return 1;
+
+	if (t1.isNever())
+	{
+		if (t2.isNever())
+			return 0;
+		else
+			return 1;
+	}
+	else if (t2.isNever())
+		return -1;
+
+	if (t1.value() == t2.value())
+		return 0;
+	else if (t1.value() > t2.value())
+		return 1;
+	else
+		return -1;
+}
+
+int ui_timestamp_compare(UI_TIMESTAMP t1, UI_TIMESTAMP t2)
+{
+	Assertion(t1.isValid(), "ui_timestamp_compare called with an invalid 't1' timestamp!");
+	Assertion(t2.isValid(), "ui_timestamp_compare called with an invalid 't2' timestamp!");
+	if (!t1.isValid() || !t2.isValid())
+		return 0;
+
+	if (t1.isImmediate())
+	{
+		if (t2.isImmediate())
+			return 0;
+		else
+			return -1;
+	}
+	else if (t2.isImmediate())
+		return 1;
+
+	if (t1.isNever())
+	{
+		if (t2.isNever())
+			return 0;
+		else
+			return 1;
+	}
+	else if (t2.isNever())
+		return -1;
+
+	if (t1.value() == t2.value())
+		return 0;
+	else if (t1.value() > t2.value())
+		return 1;
+	else
+		return -1;
+}
+
+bool timestamp_in_between(TIMESTAMP stamp, TIMESTAMP before, TIMESTAMP after)
+{
+	Assertion(stamp.isValid() && !stamp.isNever(), "timestamp_in_between was called with a%s 'stamp' timestamp!", !stamp.isValid() ? "n invalid" : " Never");
+	Assertion(before.isValid() && !before.isNever(), "timestamp_in_between was called with a%s 'before' timestamp!", !before.isValid() ? "n invalid" : " Never");
+	Assertion(after.isValid() && !after.isNever(), "timestamp_in_between was called with a%s 'after' timestamp!", !after.isValid() ? "n invalid" : " Never");
+
+	if (!stamp.isValid() || !before.isValid() || !after.isValid())
+		return false;
+
+	return timestamp_compare(before, stamp) >= 0 && timestamp_compare(stamp, after) >= 0;
+}
+
+bool ui_timestamp_in_between(UI_TIMESTAMP stamp, UI_TIMESTAMP before, UI_TIMESTAMP after)
+{
+	Assertion(stamp.isValid() && !stamp.isNever(), "ui_timestamp_in_between was called with a%s 'stamp' timestamp!", !stamp.isValid() ? "n invalid" : " Never");
+	Assertion(before.isValid() && !before.isNever(), "ui_timestamp_in_between was called with a%s 'before' timestamp!", !before.isValid() ? "n invalid" : " Never");
+	Assertion(after.isValid() && !after.isNever(), "ui_timestamp_in_between was called with a%s 'after' timestamp!", !after.isValid() ? "n invalid" : " Never");
+
+	if (!stamp.isValid() || !before.isValid() || !after.isValid())
+		return false;
+
+	return ui_timestamp_compare(before, stamp) >= 0 && ui_timestamp_compare(stamp, after) >= 0;
+}
+
+bool timestamp_has_time_elapsed(int stamp, int time) {
 	int t;
 
 	if (time <= 0)
-		return 1;
+		return true;
 
 	t = stamp + time;
 	if (t <= timestamp_ms())
 		return 1;  // if we are unlucky enough to have it wrap on us, this will assume time has elapsed.
 
-	return 0;
+	return false;
 }
 
 bool timestamp_elapsed(int stamp) {
@@ -338,6 +501,17 @@ bool timestamp_elapsed_safe(int a, int b) {
 	}
 
 	return timestamp_ms() >= a || timestamp_ms() < (a - b + 100);
+}
+
+bool timestamp_elapsed_safe(TIMESTAMP a, int b) {
+	if (!a.isValid() || a.isNever()) {
+		return false;
+	}
+	if (a.isImmediate()) {
+		return true;
+	}
+
+	return timestamp_ms() >= a.value() || timestamp_ms() < (a.value() - b + 100);
 }
 
 bool ui_timestamp_elapsed_safe(UI_TIMESTAMP a, int b) {

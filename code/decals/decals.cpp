@@ -293,6 +293,11 @@ float smoothstep(float edge0, float edge1, float x) {
 namespace decals {
 
 void initialize() {
+	if (gr_screen.mode == GR_STUB) {
+		Decal_system_active = false;
+		return;
+	}
+
 	DecalDefinitions.clear();
 	graphics::decal_draw_list::globalInit();
 

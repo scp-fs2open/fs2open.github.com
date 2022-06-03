@@ -592,12 +592,9 @@ void bm_convert_format(bitmap *bmp, ushort flags) {
 		return;
 
 	if (Is_standalone) {
-		Assert(bmp->bpp == 8);
 		return;
 	} else {
-		if (flags & BMP_AABITMAP)
-			Assert(bmp->bpp == 8);
-		else
+		if(!(flags & BMP_AABITMAP))
 			Assert((bmp->bpp == 16) || (bmp->bpp == 32));
 	}
 
@@ -1875,9 +1872,7 @@ bitmap * bm_lock(int handle, int bpp, ushort flags, bool nodebug) {
 	}
 	// otherwise do it as normal
 	else {
-		if (flags & BMP_AABITMAP) {
-			Assert(bpp == 8);
-		} else if ((flags & BMP_TEX_NONCOMP) && (!(flags & BMP_TEX_COMP))) {
+		if ((flags & BMP_TEX_NONCOMP) && (!(flags & BMP_TEX_COMP))) {
 			Assert(bpp >= 16);  // cheating but bpp passed isn't what we normally end up with
 		} else if ((flags & BMP_TEX_DXT1) || (flags & BMP_TEX_DXT3) || (flags & BMP_TEX_DXT5) || (flags & BMP_TEX_BC7)) {
 			Assert(bpp >= 16); // cheating but bpp passed isn't what we normally end up with
@@ -1887,8 +1882,6 @@ bitmap * bm_lock(int handle, int bpp, ushort flags, bool nodebug) {
 				(be->type == BM_TYPE_CUBEMAP_DXT3) ||
 				(be->type == BM_TYPE_CUBEMAP_DXT5));
 			Assert(bpp >= 16);
-		} else {
-			Assert(0);		//?
 		}
 	}
 

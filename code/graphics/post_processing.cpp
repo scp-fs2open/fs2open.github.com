@@ -209,6 +209,10 @@ void PostProcessingManager::setBloomShadersOk(bool ok)
 
 bool gr_lightshafts_enabled()
 {
+	if (gr_screen.mode == GR_STUB) {
+		return false;
+	}
+
 	// supernova glare should disable lightshafts
 	if (supernova_stage() >= SUPERNOVA_STAGE::CLOSE) {
 		return false;
@@ -227,6 +231,10 @@ bool gr_lightshafts_enabled()
 
 int gr_bloom_intensity()
 {
+	if (gr_screen.mode == GR_STUB) {
+		return 0;
+	}
+
 	if (graphics::Post_processing_manager == nullptr || !graphics::Post_processing_manager->bloomShadersOk()) {
 		return 0;
 	}
@@ -240,6 +248,10 @@ int gr_bloom_intensity()
 
 void gr_set_bloom_intensity(int intensity)
 {
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	if (Using_in_game_options) {
 		graphics::Post_processing_bloom_intensity = intensity;
 	} else {

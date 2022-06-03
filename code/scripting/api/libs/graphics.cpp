@@ -56,6 +56,7 @@ void graphics_on_frame() {
 
 static float lua_Opacity = 1.0f;
 static int lua_Opacity_type = GR_ALPHABLEND_FILTER;
+static int lua_ResizeMode = GR_RESIZE_NONE;
 
 //****SUBLIBRARY: Graphics/Cameras
 ADE_LIB_DERIV(l_Graphics_Cameras, "Cameras", NULL, "Cameras", l_Graphics);
@@ -249,6 +250,27 @@ ADE_VIRTVAR(CurrentRenderTarget, l_Graphics, "texture", "Current rendering targe
 
 		return ade_set_args(L, "o", l_Texture.Set(texture_h(gr_screen.rendering_to_texture)));
 	}
+}
+
+ADE_VIRTVAR(CurrentResizeMode, l_Graphics, "enumeration ResizeMode", "Current resize mode; uses GR_RESIZE_* enumerations.  This resize mode will be used by the gr.* drawing methods.", "enumeration", nullptr)
+{
+	enum_h resize_arg;
+
+	if (!ade_get_args(L, "*|o", l_Enum.Get(&resize_arg)))
+		return ADE_RETURN_NIL;
+
+	if (ADE_SETTING_VAR)
+	{
+		if (!resize_arg.IsValid() || resize_arg.index < LE_GR_RESIZE_NONE || resize_arg.index > LE_GR_RESIZE_MENU_NO_OFFSET)
+		{
+			Warning(LOCATION, "Invalid resize mode index %d", resize_arg.index);
+			return ADE_RETURN_NIL;
+		}
+
+		lua_ResizeMode = resize_arg.index - LE_GR_RESIZE_NONE;
+	}
+
+	return ade_set_args(L, "o", l_Enum.Set(enum_h(LE_GR_RESIZE_NONE + lua_ResizeMode)));
 }
 
 ADE_FUNC(clear, l_Graphics, nullptr, "Calls gr_clear(), which fills the entire screen with the currently active color.  Useful if you want to have a fresh start for drawing things.  (Call this between setClip and resetClip if you only want to clear part of the screen.)", nullptr, nullptr)
@@ -536,9 +558,9 @@ ADE_FUNC(drawCircle, l_Graphics, "number Radius, number X, number Y, [boolean Fi
 
 	if (fill) {
 		//WMC - Circle takes...diameter.
-		gr_circle(x,y, ra*2, GR_RESIZE_NONE);
+		gr_circle(x,y, ra*2, lua_ResizeMode);
 	} else {
-		gr_unfilled_circle(x,y, ra*2, GR_RESIZE_NONE);
+		gr_unfilled_circle(x,y, ra*2, lua_ResizeMode);
 	}
 
 	return ADE_RETURN_NIL;
@@ -557,7 +579,7 @@ ADE_FUNC(drawArc, l_Graphics, "number Radius, number X, number Y, number StartAn
 		return ADE_RETURN_NIL;
 	}
 
-	gr_arc(x,y, ra, angle_start, angle_end, fill, GR_RESIZE_NONE);
+	gr_arc(x,y, ra, angle_start, angle_end, fill, lua_ResizeMode);
 
 	return ADE_RETURN_NIL;
 }
@@ -574,7 +596,7 @@ ADE_FUNC(drawCurve, l_Graphics, "number X, number Y, number Radius", "Draws a cu
 
 	//WMC - direction should be settable at a certain point via enumerations.
 	//Not gonna deal with it now.
-	gr_curve(x, y, ra, dir, GR_RESIZE_NONE);
+	gr_curve(x, y, ra, dir, lua_ResizeMode);
 
 	return ADE_RETURN_NIL;
 }
@@ -589,7 +611,7 @@ ADE_FUNC(drawGradientLine, l_Graphics, "number X1, number Y1, number X2, number 
 	if(!ade_get_args(L, "iiii", &x1, &y1, &x2, &y2))
 		return ADE_RETURN_NIL;
 
-	gr_gradient(x1,y1,x2,y2,GR_RESIZE_NONE);
+	gr_gradient(x1,y1,x2,y2,lua_ResizeMode);
 
 	return ADE_RETURN_NIL;
 }
@@ -604,7 +626,7 @@ ADE_FUNC(drawLine, l_Graphics, "number X1, number Y1, number X2, number Y2", "Dr
 	if(!ade_get_args(L, "iiii", &x1, &y1, &x2, &y2))
 		return ADE_RETURN_NIL;
 
-	gr_line(x1,y1,x2,y2,GR_RESIZE_NONE);
+	gr_line(x1,y1,x2,y2,lua_ResizeMode);
 
 	return ADE_RETURN_NIL;
 }
@@ -619,7 +641,7 @@ ADE_FUNC(drawPixel, l_Graphics, "number X, number Y", "Sets pixel to CurrentColo
 	if(!ade_get_args(L, "ii", &x, &y))
 		return ADE_RETURN_NIL;
 
-	gr_pixel(x,y,GR_RESIZE_NONE);
+	gr_pixel(x,y,lua_ResizeMode);
 
 	return ADE_RETURN_NIL;
 }
@@ -670,7 +692,7 @@ void drawRectInternal(int x1, int x2, int y1, int y2, bool f = true, float a = 0
 	if(f)
 	{
 		gr_set_bitmap(0);  // gr_rect will use the last bitmaps info, so set to zero to flush any previous alpha state
-		gr_rect(x1, y1, x2-x1, y2-y1, GR_RESIZE_NONE, a);
+		gr_rect(x1, y1, x2-x1, y2-y1, lua_ResizeMode, a);
 	}
 	else
 	{
@@ -693,17 +715,17 @@ void drawRectInternal(int x1, int x2, int y1, int y2, bool f = true, float a = 0
 			float DY = sinf(a) * (x1 - centerX) + cosf(a) * (y2 - centerY) + centerY;
 
 
-			gr_line(fl2i(AX), fl2i(AY), fl2i(BX), fl2i(BY), GR_RESIZE_NONE);
-			gr_line(fl2i(BX), fl2i(BY), fl2i(CX), fl2i(CY), GR_RESIZE_NONE);
-			gr_line(fl2i(CX), fl2i(CY), fl2i(DX), fl2i(DY), GR_RESIZE_NONE);
-			gr_line(fl2i(DX), fl2i(DY), fl2i(AX), fl2i(AY), GR_RESIZE_NONE);
+			gr_line(fl2i(AX), fl2i(AY), fl2i(BX), fl2i(BY), lua_ResizeMode);
+			gr_line(fl2i(BX), fl2i(BY), fl2i(CX), fl2i(CY), lua_ResizeMode);
+			gr_line(fl2i(CX), fl2i(CY), fl2i(DX), fl2i(DY), lua_ResizeMode);
+			gr_line(fl2i(DX), fl2i(DY), fl2i(AX), fl2i(AY), lua_ResizeMode);
 		}
 		else {
 
-			gr_line(x1, y1, x2, y1, GR_RESIZE_NONE);	//Top
-			gr_line(x1, y2, x2, y2, GR_RESIZE_NONE);	//Bottom
-			gr_line(x1, y1, x1, y2, GR_RESIZE_NONE);	//Left
-			gr_line(x2, y1, x2, y2, GR_RESIZE_NONE);	//Right
+			gr_line(x1, y1, x2, y1, lua_ResizeMode);	//Top
+			gr_line(x1, y2, x2, y2, lua_ResizeMode);	//Bottom
+			gr_line(x1, y1, x1, y2, lua_ResizeMode);	//Left
+			gr_line(x2, y1, x2, y2, lua_ResizeMode);	//Right
 		}
 	}
 
@@ -821,7 +843,7 @@ ADE_FUNC(draw3dLine, l_Graphics, "vector origin, vector destination, [boolean tr
 // Aardwolf's test code to render a model, supposed to emulate WMC's gr.drawModel function
 ADE_FUNC(drawModel, l_Graphics, "model model, vector position, orientation orientation",
          "Draws the given model with the specified position and orientation - Use with extreme care, may not work "
-         "properly in all scripting hooks.",
+         "properly in all scripting hooks.  Note: this method does NOT use CurrentResizeMode.",
          "number", "Zero if successful, otherwise an integer error code")
 {
 	model_h *mdl = NULL;
@@ -841,7 +863,7 @@ ADE_FUNC(drawModel, l_Graphics, "model model, vector position, orientation orien
 	matrix *orient = mh->GetMatrix();
 
 	//Clip
-	gr_set_clip(0, 0, gr_screen.max_w, gr_screen.max_h, GR_RESIZE_NONE);
+	gr_set_clip(0, 0, gr_screen.max_w, gr_screen.max_h, GR_RESIZE_NONE);	// don't use lua_ResizeMode here since this function handles its own resizing
 
 	//Handle 3D init stuff
 	g3_start_frame(1);
@@ -931,7 +953,8 @@ ADE_FUNC(drawModelOOR, l_Graphics, "model Model, vector Position, orientation Or
 ADE_FUNC(drawTargetingBrackets, l_Graphics, "object Object, [boolean draw=true, number padding=5]",
          "Gets the edge positions of targeting brackets for the specified object. The brackets will only be drawn if "
          "draw is true or the default value of draw is used. Brackets are drawn with the current color. The brackets "
-         "will have a padding (distance from the actual bounding box); the default value (used elsewhere in FS2) is 5.",
+         "will have a padding (distance from the actual bounding box); the default value (used elsewhere in FS2) is 5.  "
+         "Note: this method does NOT use CurrentResizeMode.",
          "number, number, number, number",
          "Left, top, right, and bottom positions of the brackets, or nil if invalid")
 {
@@ -1027,7 +1050,7 @@ ADE_FUNC(drawTargetingBrackets, l_Graphics, "object Object, [boolean draw=true, 
 	y2 += padding;
 	if ( draw_box ) {
 		graphics::line_draw_list line_draw_list;
-		draw_brackets_square(&line_draw_list, x1, y1, x2, y2, GR_RESIZE_NONE);
+		draw_brackets_square(&line_draw_list, x1, y1, x2, y2, GR_RESIZE_NONE);	// don't use lua_ResizeMode here since this function handles its own resizing
 		line_draw_list.flush();
 	}
 
@@ -1190,8 +1213,7 @@ static int drawString_sub(lua_State *L, bool use_resize_arg)
 	if(!Gr_inited)
 		return ade_set_error(L, "i", 0);
 
-	enum_h resize_arg;
-	int resize_mode = use_resize_arg ? GR_RESIZE_FULL : GR_RESIZE_NONE;
+	int resize_mode = lua_ResizeMode;
 
 	int x = NextDrawStringPos[0];
 	int y = NextDrawStringPos[1];
@@ -1202,39 +1224,20 @@ static int drawString_sub(lua_State *L, bool use_resize_arg)
 
 	if (use_resize_arg)
 	{
+		enum_h resize_arg;
 		if (!ade_get_args(L, "o", l_Enum.Get(&resize_arg)))
 			return ade_set_error(L, "i", 0);
 
+		if (!resize_arg.IsValid() || resize_arg.index < LE_GR_RESIZE_NONE || resize_arg.index > LE_GR_RESIZE_MENU_NO_OFFSET)
+		{
+			Warning(LOCATION, "Invalid resize mode index %d", resize_arg.index);
+			return ade_set_error(L, "i", 0);
+		}
+
+		resize_mode = resize_arg.index - LE_GR_RESIZE_NONE;
+
 		// so that ade_get_args below will read the correct positions
 		internal::Ade_get_args_skip++;
-
-		if (resize_arg.IsValid())
-		{
-			switch (resize_arg.index)
-			{
-				case LE_GR_RESIZE_NONE:
-					resize_mode = GR_RESIZE_NONE;
-					break;
-				case LE_GR_RESIZE_FULL:
-					resize_mode = GR_RESIZE_FULL;
-					break;
-				case LE_GR_RESIZE_FULL_CENTER:
-					resize_mode = GR_RESIZE_FULL_CENTER;
-					break;
-				case LE_GR_RESIZE_MENU:
-					resize_mode = GR_RESIZE_MENU;
-					break;
-				case LE_GR_RESIZE_MENU_ZOOMED:
-					resize_mode = GR_RESIZE_MENU_ZOOMED;
-					break;
-				case LE_GR_RESIZE_MENU_NO_OFFSET:
-					resize_mode = GR_RESIZE_MENU_NO_OFFSET;
-					break;
-				default:
-					Warning(LOCATION, "Invalid resize index %d in gr.drawStringResized", resize_arg.index);
-					break;
-			}
-		}
 	}
 
 	if (lua_isboolean(L, 1 + internal::Ade_get_args_skip))
@@ -1321,7 +1324,7 @@ static int drawString_sub(lua_State *L, bool use_resize_arg)
 }
 
 ADE_FUNC(drawString, l_Graphics, "string|boolean Message, [number X1, number Y1, number X2, number Y2]",
-	"Draws a string at its native size (not scaled for screen resolution). Use x1/y1 to control position, x2/y2 to limit textbox size."
+	"Draws a string. Use x1/y1 to control position, x2/y2 to limit textbox size."
 	"Text will automatically move onto new lines, if x2/y2 is specified."
 	"Additionally, calling drawString with only a string argument will automatically"
 	"draw that string below the previously drawn string (or 0,0 if no strings"
@@ -1570,9 +1573,9 @@ ADE_FUNC(drawImage,
 	bitmap_rect_list brl = bitmap_rect_list(x1, y1, w, h, uv_x1, uv_y1, uv_x2, uv_y2);
 
 	if (aabitmap) {
-		gr_aabitmap_list(&brl, 1, GR_RESIZE_NONE, angle);
+		gr_aabitmap_list(&brl, 1, lua_ResizeMode, angle);
 	} else {
-		gr_bitmap_list(&brl, 1, GR_RESIZE_NONE, angle);
+		gr_bitmap_list(&brl, 1, lua_ResizeMode, angle);
 	}
 
 	return ADE_RETURN_TRUE;
@@ -1660,9 +1663,9 @@ ADE_FUNC(drawImageCentered,
 	bitmap_rect_list brl = bitmap_rect_list(x-(w/2), y-(h/2), w, h, uv_x1, uv_y1, uv_x2, uv_y2);
 
 	if (aabitmap) {
-		gr_aabitmap_list(&brl, 1, GR_RESIZE_NONE, angle);
+		gr_aabitmap_list(&brl, 1, lua_ResizeMode, angle);
 	} else {
-		gr_bitmap_list(&brl, 1, GR_RESIZE_NONE, angle);
+		gr_bitmap_list(&brl, 1, lua_ResizeMode, angle);
 	}
 
 	return ADE_RETURN_TRUE;
@@ -1736,7 +1739,7 @@ ADE_FUNC_DEPRECATED(drawMonochromeImage,
 		h = y2-y;
 
 	gr_set_bitmap(idx, lua_Opacity_type, GR_BITBLT_MODE_NORMAL,alpha);
-	gr_aabitmap_ex(x, y, w, h, sx, sy, GR_RESIZE_NONE, m);
+	gr_aabitmap_ex(x, y, w, h, sx, sy, lua_ResizeMode, m);
 
 	return ADE_RETURN_TRUE;
 }
@@ -1912,7 +1915,7 @@ ADE_FUNC(setClip, l_Graphics, "number x, number y, number width, number height",
 	if (!ade_get_args(L, "iiii", &x, &y, &width, &height))
 		return ADE_RETURN_FALSE;
 
-	gr_set_clip(x, y, width, height, GR_RESIZE_NONE);
+	gr_set_clip(x, y, width, height, lua_ResizeMode);
 
 	return ADE_RETURN_TRUE;
 }

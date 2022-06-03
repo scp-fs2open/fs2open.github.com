@@ -17,10 +17,13 @@
 #include "fireball/fireballs.h"
 #include "freespace.h"
 #include "globalincs/linklist.h"
+#include "globalincs/pstypes.h"
+#include "globalincs/vmallocator.h"
 #include "iff_defs/iff_defs.h"
 #include "io/timer.h"
 #include "jumpnode/jumpnode.h"
 #include "lighting/lighting.h"
+#include "lighting/lighting_profiles.h"
 #include "mission/missionparse.h" //For 2D Mode
 #include "network/multi.h"
 #include "network/multiutil.h"
@@ -46,6 +49,7 @@
 #include "weapon/weapon.h"
 #include "tracing/Monitor.h"
 #include "graphics/light.h"
+#include "graphics/color.h"
 
 
 
@@ -1210,25 +1214,33 @@ void obj_move_all_post(object *objp, float frametime)
 						cast_light = 0;
 					}
 				}
-
-				if ( cast_light )	{
-					weapon_info * wi = &Weapon_info[Weapons[objp->instance].weapon_info_index];
-
-					if ( wi->render_type == WRT_LASER )	{
+				if (cast_light) {
+					weapon_info* wi = &Weapon_info[Weapons[objp->instance].weapon_info_index];
+					auto lp = lighting_profile::current();
+					hdr_color light_color;
+					// If there is no specific color set in the table, laser render weapons have a dynamic color.
+					if (!wi->light_color_set && wi->render_type == WRT_LASER) {
+						// intensity is stored in the light color even if no user setting is done.
+						light_color = hdr_color(&wi->light_color);
+						// Classic dynamic laser color is handled with an old color object
 						color c;
-						float r,g,b;
-
-						// get the laser color
 						weapon_get_laser_color(&c, objp);
-
-						r = i2fl(c.red)/255.0f;
-						g = i2fl(c.green)/255.0f;
-						b = i2fl(c.blue)/255.0f;
-
-						light_add_point( &objp->pos, 10.0f, 100.0f, 1.0f, r, g, b);
+						light_color.set_rgb(&c);
 					} else {
-						light_add_point( &objp->pos, 10.0f, 20.0f, 1.0f, 1.0f, 1.0f, 1.0f);
-					} 
+						// If not a laser then all default information needed is stored in the weapon light color
+						light_color = hdr_color(&wi->light_color);
+					}
+					//handles both defaults and adjustments.
+					float r = wi->light_radius;
+					if (wi->render_type == WRT_LASER) {
+						r = lp->laser_light_radius.handle(r);
+						light_color.i(lp->laser_light_brightness.handle(light_color.i()));
+					} else {
+						r = lp->missile_light_radius.handle(r);
+						light_color.i(lp->missile_light_brightness.handle(light_color.i()));
+					}
+					if(r > 0.0f && light_color.i() > 0.0f)
+						light_add_point(&objp->pos, r, r, &light_color);
 				}
 			}
 
