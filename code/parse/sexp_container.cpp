@@ -66,8 +66,7 @@ namespace {
 		report_problematic_container(sexp_name, "non-map", container_name);
 	}
 
-	// FIXME TODO: use this in all change SEXPs where relevant
-	void report_container_in_special_arg(const SCP_string &sexp_name, const char *container_name)
+	void report_container_used_in_special_arg(const SCP_string &sexp_name, const char *container_name)
 	{
 		const SCP_string msg =
 			sexp_name + " called on container " + container_name + " while it is being used in a special argument SEXP";
@@ -1162,6 +1161,11 @@ void sexp_add_to_list(int node)
 		return;
 	}
 
+	if (container.is_being_used_in_special_arg()) {
+		report_container_used_in_special_arg("Add-to-list", container_name);
+		return;
+	}
+
 	while (node != -1) {
 		if (add_to_back) {
 			container.list_data.emplace_back(CTEXT(node));
@@ -1187,6 +1191,11 @@ void sexp_remove_from_list(int node)
 
 	if (!container.is_list()) {
 		report_non_list_container("Remove-from-list", container_name);
+		return;
+	}
+
+	if (container.is_being_used_in_special_arg()) {
+		report_container_used_in_special_arg("Remove-from-list", container_name);
 		return;
 	}
 
@@ -1229,6 +1238,11 @@ void sexp_add_to_map(int node)
 		return;
 	}
 
+	if (container.is_being_used_in_special_arg()) {
+		report_container_used_in_special_arg("Add-to-map", container_name);
+		return;
+	}
+
 	node = CDR(node);
 	Assertion(node != -1, "Add-to-map wasn't given values to add. Please report!");
 
@@ -1265,6 +1279,11 @@ void sexp_remove_from_map(int node)
 
 	if (!container.is_map()) {
 		report_non_map_container("Remove-from-map", container_name);
+		return;
+	}
+
+	if (container.is_being_used_in_special_arg()) {
+		report_container_used_in_special_arg("Remove-from-map", container_name);
 		return;
 	}
 
@@ -1332,6 +1351,12 @@ void sexp_get_map_keys(int node)
 		return;
 	}
 
+	// SEXP doesn't modify map container, so using it in special arg here is OK
+	if (list_container.is_being_used_in_special_arg()) {
+		report_container_used_in_special_arg("Get-map-keys", list_container_name);
+		return;
+	}
+
 	node = CDR(node);
 	if (node != -1) {
 		replace_contents = is_sexp_true(node);
@@ -1360,6 +1385,11 @@ void sexp_clear_container(int node)
 		}
 
 		auto &container = *p_container;
+
+		if (container.is_being_used_in_special_arg()) {
+			report_container_used_in_special_arg("Clear-container", container_name);
+			continue;
+		}
 
 		if (container.is_map()) {
 			container.map_data.clear();
@@ -1410,8 +1440,10 @@ void sexp_copy_container(int node)
 		log_printf(LOGFILE_EVENT_LOG, "%s", msg.c_str());
 		return;
 	}
+
+	// SEXP doesn't modify source container, so using it in special arg here is OK
 	if (dest_container.is_being_used_in_special_arg()) {
-		report_container_in_special_arg("Copy-container", dest_container_name);
+		report_container_used_in_special_arg("Copy-container", dest_container_name);
 		return;
 	}
 
@@ -1481,6 +1513,12 @@ void sexp_apply_container_filter(int node)
 
 	if (!filter_container.is_list()) {
 		report_non_list_container("Apply-container-filter", filter_container_name);
+		return;
+	}
+
+	// SEXP doesn't modify filter container, so using it here is ok
+	if (container.is_being_used_in_special_arg()) {
+		report_container_used_in_special_arg("Apply-container-filter", container_name);
 		return;
 	}
 
@@ -1585,14 +1623,14 @@ int collect_container_values(int node,
 
 	for (; node != -1; node = CDR(node)) {
 		const char *container_name = CTEXT(node);
-		auto *p_container = get_sexp_container(container_name);
+		const auto *p_container = get_sexp_container(container_name);
 
 		if (!p_container) {
 			report_nonexistent_container(sexp_name, container_name);
 			continue;
 		}
 
-		auto &container = *p_container;
+		const auto &container = *p_container;
 
 		if (map_keys_only) {
 			if (!container.is_map()) {
@@ -1643,10 +1681,6 @@ int collect_container_values(int node,
 			} else {
 				UNREACHABLE("Container %s has invalid type (%d). Please report!", container_name, (int)container.type);
 			}
-		}
-
-		if (!just_count) {
-			container.in_special_arg = true;
 		}
 	}
 
@@ -1708,4 +1742,27 @@ int sexp_container_query_sexp_args_count(const int node, SCP_vector<int> &cumula
 	}
 
 	return count;
+}
+
+void sexp_container_set_special_arg_status(int arg_handler_node, bool status)
+{
+	Assertion(arg_handler_node != -1,
+		"Attempt to set special argument status on invalid argument handler. Please report!");
+
+	for (int arg_node = CDR(arg_handler_node); arg_node != -1; arg_node = CDR(arg_node)) {
+		if (Sexp_nodes[arg_node].subtype == SEXP_ATOM_CONTAINER_NAME) {
+			const char *container_name = Sexp_nodes[arg_node].text;
+			auto *p_container = get_sexp_container(container_name);
+
+			// should have been checked in get_sexp()
+			Assertion(p_container,
+				"Special argument SEXP given nonexistent container %s. Please report!",
+				container_name);
+			auto &container = *p_container;
+
+			// status could match, if the FREDder added the same container multiple times
+			// as an argument to the same SEXP, which is odd but not an error
+			container.used_in_special_arg = status;
+		}
+	}
 }

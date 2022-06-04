@@ -9944,12 +9944,12 @@ int eval_when(int n, int when_op_num)
 	// get the parts of the sexp and evaluate the conditional
 	if (is_blank_argument_op(when_op_num))
 	{
-		// FIXME TODO: maybe marking container args with in_special_arg should happen here
 		arg_handler = CAR(n);
 		cond = CADR(n);
 		actions = CDDR(n);
 
 		Sexp_current_argument_nesting_level++;
+		sexp_container_set_special_arg_status(arg_handler, true);
 		// evaluate for custom arguments
 		val = eval_sexp(arg_handler, cond);
 	}
@@ -10033,21 +10033,7 @@ int eval_when(int n, int when_op_num)
 		// clean up any special sexp stuff
 		Sexp_applicable_argument_list.clear_nesting_level();
 		Sexp_current_argument_nesting_level--;
-
-		// FIXME TODO: move this code to a new function
-		// FIXME TODO: assert arg_handler != -1
-		int node = CDR(arg_handler);
-		// FIXME TODO: assert node != -1
-		while (node != -1) {
-			if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER_NAME) {
-				auto *p_container = get_sexp_container(Sexp_nodes[node].text);
-				// FIXME TODO: assert p_container is non-null
-				auto &container = *p_container;
-				// FIXME TODO: Assert container.is_being_used_in_special_arg()
-				container.in_special_arg = false;
-			}
-			node = CDR(node);
-		}
+		sexp_container_set_special_arg_status(arg_handler, false);
 	}
 
 	// thanks to MageKing17 for noticing that we need to short-circuit on the correct node!
@@ -31646,15 +31632,13 @@ int copy_node_to_replacement_args(int node, int container_value_index)
 
 	if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER_NAME) {
 		const char *container_name = Sexp_nodes[node].text;
-		auto *p_container = get_sexp_container(container_name);
+		const auto *p_container = get_sexp_container(container_name);
 
 		Assertion(p_container, "Special argument SEXP given nonexistent container %s. Please report!", container_name);
-		auto &container = *p_container;
+		const auto &container = *p_container;
 		Assertion(container.is_of_string_type(),
 			"Attempt to use for-* SEXP with ineligible container argument %s. Please report!",
 			container_name);
-
-		container.in_special_arg = true;
 
 		if (container_value_index != -1) {
 			const SCP_string &container_value = container.get_value_at_index(container_value_index);
