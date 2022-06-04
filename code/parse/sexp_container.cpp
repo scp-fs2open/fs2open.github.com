@@ -1649,3 +1649,46 @@ int sexp_container_collect_map_key_arguments(int node,
 {
 	return collect_container_values(node, argument_vector, just_count, "For-map-container-keys", true);
 }
+
+int sexp_container_query_sexp_args_count(const int node, SCP_vector<int> &cumulative_arg_countss, bool only_valid_args)
+{
+	Assertion(cumulative_arg_countss.empty(),
+		"Attempt to count number of SEXP arguments when counts already exit. Please repot!");
+
+	int count = 0;
+
+	// intiial value, for no arguments
+	cumulative_arg_countss.emplace_back(0);
+
+	int n = CDR(node);
+
+	for (; n != -1; n = CDR(n))
+	{
+		if (only_valid_args && !(Sexp_nodes[n].flags & SNF_ARGUMENT_VALID)) {
+			continue;
+		}
+
+		const int prev_index = cumulative_arg_countss.back();
+
+		if (Sexp_nodes[n].subtype == SEXP_ATOM_CONTAINER_NAME) {
+			const char *container_name = Sexp_nodes[n].text;
+			const auto *p_container = get_sexp_container(container_name);
+
+			// should have been checked in get_sexp()
+			Assertion(p_container, "Special argument SEXP given nonexistent container %s. Please report!", container_name);
+			const auto &container = *p_container;
+
+			Assertion(container.is_of_string_type(),
+				"Attempt to use non-string-valued container %s as special argument options. Please report!",
+				container_name);
+			// if the container is empty, the index will be a duplicate, but that's ok
+			cumulative_arg_countss.emplace_back(prev_index + container.size());
+		} else {
+			cumulative_arg_countss.emplace_back(prev_index + 1);
+		}
+
+		count++;
+	}
+
+	return count;
+}
