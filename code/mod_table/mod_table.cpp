@@ -91,6 +91,7 @@ bool Supernova_hits_at_zero;
 bool Show_subtitle_uses_pixels;
 int Show_subtitle_screen_base_res[2];
 int Show_subtitle_screen_adjusted_res[2];
+bool Always_warn_player_about_unbound_keys;
 
 void mod_table_set_version_flags();
 
@@ -266,6 +267,10 @@ void parse_mod_table(const char *filename)
 			} else {
 				mprintf(("Game Settings Table: HUD timer will reach %.2f when the supernova shockwave hits the player\n", SUPERNOVA_HIT_TIME));
 			}
+		}
+
+		if (optional_string("$Always warn player about unbound keys used in Directives Gauge:")) {
+			stuff_boolean(&Always_warn_player_about_unbound_keys);
 		}
 
 		optional_string("#SEXP SETTINGS");
@@ -915,6 +920,7 @@ void mod_table_reset()
 	Show_subtitle_screen_base_res[1] = -1;
 	Show_subtitle_screen_adjusted_res[0] = -1;
 	Show_subtitle_screen_adjusted_res[1] = -1;
+	Always_warn_player_about_unbound_keys = false;
 }
 
 void mod_table_set_version_flags()
