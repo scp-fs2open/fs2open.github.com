@@ -1051,15 +1051,10 @@ void brief_render_closeup(int ship_class, float frametime)
 
 	g3_start_frame(1);
 	g3_set_view_matrix(&Closeup_cam_pos, &view_orient, Closeup_zoom);
-	
-	// the following is copied from menuui/techmenu.cpp ... it works heehee :D  - delt.
-	// lighting for techroom
-	light_reset();
-	vec3d light_dir = vmd_zero_vector;
-	light_dir.xyz.y = 1.0f;
-	light_add_directional(&light_dir, 0.85f, 1.0f, 1.0f, 1.0f);
-	light_rotate_all();
-	// lighting for techroom
+
+	//setup lights
+	common_setup_room_lights();
+
 	Glowpoint_use_depth_buffer = false;
 
 	model_clear_instance( Closeup_icon->modelnum );

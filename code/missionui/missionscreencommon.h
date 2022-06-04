@@ -88,6 +88,7 @@ void	common_reset_buttons();
 void	common_redraw_pressed_buttons();
 void  common_maybe_clear_focus();
 void ship_select_common_init();
+void common_setup_room_lights();
 
 int mission_ui_background_load(const char *custom_background, const char *single_background, const char *multi_background = NULL);
 
