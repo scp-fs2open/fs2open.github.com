@@ -30,6 +30,7 @@
 #include <parse/parselo.h>
 #include <render/3d.h>
 #include <render/3dinternal.h>
+#include <render/batching.h>
 #include <scripting/scripting.h>
 #include <ship/ship.h>
 #include <weapon/weapon.h>
@@ -39,6 +40,7 @@ namespace {
 
 static const int NextDrawStringPosInitial[] = {0, 0};
 static int NextDrawStringPos[] = {NextDrawStringPosInitial[0], NextDrawStringPosInitial[1]};
+static bool WarnedBadThicknessLine = false;
 
 }
 
@@ -815,6 +817,41 @@ ADE_FUNC(drawSphere, l_Graphics, "[number Radius = 1.0, vector Position]", "Draw
 		g3_end_frame();
 	}
 	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(draw3dLine, l_Graphics, "vector origin, vector destination, [boolean translucent=true, number thickness=1.0, number thicknessEnd=thickness]", "Draws a line from origin to destination. "
+"The line may be translucent or solid. Translucent lines will NOT use the alpha value, instead being more transparent the darker the color is. "
+"The thickness at the start can be different from the thickness at the end, to draw a line that tapers or expands.", nullptr, nullptr)
+{
+	vec3d *v1 = &vmd_zero_vector;
+	vec3d *v2 = &vmd_zero_vector;
+	bool translucent = true;
+	float thickness = 1.0f;
+	float thicknessEnd = -1.0f;
+
+	if (!ade_get_args(L, "oo|bff", l_Vector.GetPtr(&v1), l_Vector.GetPtr(&v2), &translucent, &thickness, &thicknessEnd))
+		return ADE_RETURN_NIL;
+
+	if (thickness < 0) thickness = 0;
+	if (thicknessEnd < 0) thicknessEnd = thickness;
+	
+	if (thickness <= 0 && thicknessEnd <= 0)
+	{
+		if (!WarnedBadThicknessLine)
+		{
+			LuaError(L, "At least one end of a 3D line must be greater than zero! The line won't be drawn!\nThis warning won't be shown again this play session.");
+			WarnedBadThicknessLine = true;
+		}
+
+		//While the batching_add_line function would also do this check, I feel that its good to return early here.
+		return ADE_RETURN_NIL;
+	}
+
+	color &clr = gr_screen.current_color;
+
+	batching_add_line(v1, v2, thickness, thicknessEnd, clr, translucent);
+
+	return ADE_RETURN_NIL;
 }
 
 // Aardwolf's test code to render a model, supposed to emulate WMC's gr.drawModel function
