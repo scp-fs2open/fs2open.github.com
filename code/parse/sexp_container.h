@@ -128,6 +128,8 @@ struct sexp_container
 		return any(type & (ContainerType::SAVE_ON_MISSION_PROGRESS | ContainerType::SAVE_ON_MISSION_CLOSE));
 	}
 
+	ContainerType get_data_type() const;
+
 	bool name_matches(const sexp_container &container) const;
 	bool empty() const;
 	int size() const;
@@ -213,3 +215,9 @@ int sexp_container_collect_data_arguments(int node,
 int sexp_container_collect_map_key_arguments(int node,
 	SCP_vector<std::pair<const char*, int>> &argument_vector,
 	bool just_count = false);
+
+// version of query_sexp_args_count() when we need to select an element within a range
+// and containers are valid arguments
+int sexp_container_query_sexp_args_count(int node,
+	SCP_vector<int> &cumulative_arg_countss,
+	bool only_valid_args = false);

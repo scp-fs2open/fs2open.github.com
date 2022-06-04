@@ -833,6 +833,10 @@ void stars_post_level_init()
 	float dist, dist_max;
 	ubyte red,green,blue,alpha;
 
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	// in FRED, make sure we always have at least one background
 	if (Fred_running)
 	{
@@ -1149,6 +1153,10 @@ void stars_draw_sun(int show_sun)
 	starfield_bitmap *bm;
 	float local_scale;
 
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	// should we even be here?
 	if (!show_sun)
 		return;
@@ -1233,6 +1241,10 @@ void stars_draw_lens_flare(vertex *sun_vex, int sun_n)
 	float dx,dy;
 	vertex flare_vex = *sun_vex; //copy over to flare_vex to get all sorts of properties
 
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	Assert( sun_n < (int)Suns.size() );
 
 	if ( (sun_n >= (int)Suns.size()) || (sun_n < 0) ) {
@@ -1284,6 +1296,10 @@ void stars_draw_sun_glow(int sun_n)
 	vec3d sun_pos, sun_dir;
 	vertex sun_vex;	
 	float local_scale;
+
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
 
 	// sanity
 	//WMC - Dunno why this is getting hit...
@@ -1357,6 +1373,10 @@ void stars_draw_bitmaps(int show_bitmaps)
 
 	int idx;
 	int star_index;
+
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
 
 	// should we even be here?
 	if ( !show_bitmaps )
@@ -1483,6 +1503,10 @@ DCF(subspace_set,"Set parameters for subspace effect")
 void subspace_render()
 {
 	int framenum = 0;
+
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
 
 	if ( Subspace_model_inner < 0 )	{
 		Subspace_model_inner = model_load( "subspace_small.pof", 0, nullptr );
@@ -1622,6 +1646,10 @@ void stars_draw_stars()
 	vertex p1, p2;
 	int can_draw = 1;
 
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	if ( !last_stars_filled ) {
 		for (i = 0; i < Num_stars; i++) {
 			g3_rotate_faraway_vertex(&p2, &Stars[i].pos);
@@ -1721,6 +1749,10 @@ void stars_draw_motion_debris()
 	GR_DEBUG_SCOPE("Draw motion debris");
 	TRACE_SCOPE(tracing::DrawMotionDebris);
 
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	if (Motion_debris_override)
 		return;
 
@@ -1779,6 +1811,10 @@ void stars_draw(int show_stars, int show_suns, int  /*show_nebulas*/, int show_s
 {
 	GR_DEBUG_SCOPE("Draw Stars");
 	TRACE_SCOPE(tracing::DrawStars);
+
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
 
 	int gr_zbuffering_save = gr_zbuffer_get();
 	gr_zbuffer_set(GR_ZBUFF_NONE);
@@ -1902,6 +1938,10 @@ void stars_page_in()
 	int idx, i;
 	starfield_bitmap_instance *sbi;
 	starfield_bitmap *sb;
+
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
 
 	// Initialize the subspace stuff
 
@@ -2151,6 +2191,10 @@ void stars_draw_background()
 	GR_DEBUG_SCOPE("Draw Background");
 	TRACE_SCOPE(tracing::DrawBackground);
 
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	if (Nmodel_num < 0)
 		return;
 
@@ -2172,6 +2216,10 @@ void stars_set_background_model(const char *model_name, const char *texture_name
 {
 	int new_model = -1;
 	int new_bitmap = -1;
+
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
 
 	if (model_name != nullptr && *model_name != '\0') {
 		new_model = model_load(model_name, 0, nullptr, -1);
@@ -2870,6 +2918,10 @@ void stars_setup_environment_mapping(camid cid) {
 	extern float View_zoom;
 	float old_zoom = View_zoom, new_zoom = 1.0f;//0.925f;
 	int i = 0;
+
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
 
 	if(!cid.isValid())
 		return;

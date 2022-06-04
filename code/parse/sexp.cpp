@@ -752,6 +752,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "get-map-keys",					OP_CONTAINER_GET_MAP_KEYS,				2,	3,			SEXP_ACTION_OPERATOR, },	// Karajorma
 	{ "clear-container",				OP_CLEAR_CONTAINER,						1,	INT_MAX,	SEXP_ACTION_OPERATOR, },	// Karajorma
 	{ "copy-container",					OP_COPY_CONTAINER,						2,	3,			SEXP_ACTION_OPERATOR, },	// jg18
+	{ "apply-container-filter",			OP_APPLY_CONTAINER_FILTER,				2,	2,			SEXP_ACTION_OPERATOR, },	// jg18
 
 	//Other Sub-Category
 	{ "damaged-escort-priority",		OP_DAMAGED_ESCORT_LIST,					3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	//phreak
@@ -10356,8 +10357,7 @@ int eval_number_of(int arg_handler_node, int condition_node)
 // this works a little differently... we randomly pick one argument to use
 // for our condition, but this argument must be saved among sexp calls...
 // so we select an argument and set its flag
-// addendum: hook karajorma's random-multiple-of into the same sexp
-int eval_random_of(int arg_handler_node, int condition_node, bool multiple)
+int eval_random_of(int arg_handler_node, int condition_node)
 {
 	int n = -1, i, val, num_valid_args, random_argument, num_known_false = 0;
 	Assert(arg_handler_node != -1 && condition_node != -1);
@@ -10372,16 +10372,13 @@ int eval_random_of(int arg_handler_node, int condition_node, bool multiple)
 	}
 
 	// find which argument we picked, if we picked one
-	if (!multiple)
-	{
-		n = CDR(arg_handler_node);
+	n = CDR(arg_handler_node);
 
-		// iterate to the argument we previously selected
-		for ( ; n != -1; n = CDR(n))
-		{
-			if (Sexp_nodes[n].flags & SNF_ARGUMENT_SELECT)
-				break;
-		}
+	// iterate to the argument we previously selected
+	for ( ; n != -1; n = CDR(n))
+	{
+		if (Sexp_nodes[n].flags & SNF_ARGUMENT_SELECT)
+			break;
 	}
 
 	// if argument not found (or never specified in the first place), we have to pick one
@@ -10414,11 +10411,8 @@ int eval_random_of(int arg_handler_node, int condition_node, bool multiple)
 			return SEXP_KNOWN_FALSE;	// We're going nowhere fast.
 		}
 
-		// save it, if we're saving
-		if (!multiple)
-		{
-			Sexp_nodes[n].flags |= SNF_ARGUMENT_SELECT;
-		}
+		// save it
+		Sexp_nodes[n].flags |= SNF_ARGUMENT_SELECT;
 	}
 
 	// only eval this argument if it's valid
@@ -10437,11 +10431,121 @@ int eval_random_of(int arg_handler_node, int condition_node, bool multiple)
 		{
 			Sexp_applicable_argument_list.add_data(Sexp_nodes[n].text, n);
 		}
-		else if ((!multiple || num_valid_args == 1) && (Sexp_nodes[condition_node].value == SEXP_KNOWN_FALSE || Sexp_nodes[condition_node].value == SEXP_NAN_FOREVER))
+		else if (Sexp_nodes[condition_node].value == SEXP_KNOWN_FALSE || Sexp_nodes[condition_node].value == SEXP_NAN_FOREVER)
 		{
-			val = SEXP_KNOWN_FALSE;	// If we can't randomly pick another one and this one is guaranteed never to be true, then give up now.
+			val = SEXP_KNOWN_FALSE; // If we can't randomly pick another one and this one is guaranteed never to be true, then give up now.
 		}
-		
+
+		// clear argument, but not list, as we'll need it later
+		Sexp_replacement_arguments.pop_back();
+	}
+
+	// true if our selected argument is true
+	return val;
+}
+
+// originally part of eval_random_of() but pulled out as the code paths diverged
+int eval_random_multiple_of(int arg_handler_node, int condition_node)
+{
+	Assertion(arg_handler_node != -1, "No argument handler provided to random-multiple-of. Please report!");
+	Assertion(condition_node != -1, "No condition provided to random-multiple-of. Please report!");
+
+	// get the number of valid arguments
+	SCP_vector<int> cumulative_arg_counts;
+
+	const int num_valid_arg_nodes =
+		sexp_container_query_sexp_args_count(arg_handler_node, cumulative_arg_counts, true);
+	Assertion(num_valid_arg_nodes >= 0,
+		"random-multiple-of found invalid number of valid arguments (%d). please report!",
+		num_valid_arg_nodes);
+
+	if (num_valid_arg_nodes == 0)
+	{
+		return SEXP_KNOWN_FALSE;	// Not much point in trying to evaluate it again.
+	}
+
+	Assertion(!cumulative_arg_counts.empty(),
+		"Attempt to count arguments for random-multiple-of SEXP failed. Please report!");
+	const int num_arg_values = cumulative_arg_counts.back();
+	Assertion(num_arg_values >= 0,
+		"random-multiple-of found invalid number of valid argument values (%d). please report!",
+		num_arg_values);
+	if (num_arg_values == 0)
+	{
+		// valid args are one or more empty containers, whose data could change later
+		return SEXP_FALSE;
+	}
+
+	int n = CDR(arg_handler_node);
+	Assertion(n >= 0, "No arguments provided to random-multiple-of. Please report!");
+	int temp_node = n;
+
+	// pick an argument and iterate to it
+	const int random_arg_value = rand_internal(1, num_arg_values);
+	int random_argument = 0;
+	// skip the first entry, which is the initial zero value
+	for (int k = 1, size = (int)cumulative_arg_counts.size(); k < size; ++k) {
+		if (random_arg_value <= cumulative_arg_counts[k]) {
+			random_argument = k;
+			break;
+		}
+	}
+	Assertion(random_argument > 0,
+		"Attempt to find randomly selected argument in random-multiple-of failed. Please report!");
+
+	int i = 0;
+	int num_known_false = 0;
+	bool valid_container_arg_found = false;
+	for (int j = 0; j < num_valid_arg_nodes; temp_node = CDR(temp_node))
+	{
+		// count only valid arguments
+		if (Sexp_nodes[temp_node].flags & SNF_ARGUMENT_VALID) {
+			j++;
+
+			if (Sexp_nodes[temp_node].subtype == SEXP_ATOM_CONTAINER_NAME) {
+				valid_container_arg_found = true;
+			}
+			if (i < random_argument && (++i == random_argument)) {
+				// Found the node we want, store it for use
+				n = temp_node;
+			}
+
+			if ((Sexp_nodes[temp_node].value == SEXP_KNOWN_FALSE) || (Sexp_nodes[temp_node].value == SEXP_NAN_FOREVER))
+				num_known_false++;
+		}
+	}
+
+	if (num_known_false == num_valid_arg_nodes) {
+		return SEXP_KNOWN_FALSE;	// We're going nowhere fast.
+	}
+
+	// only eval this argument if it's valid
+	int val = SEXP_FALSE;
+	if (Sexp_nodes[n].flags & SNF_ARGUMENT_VALID)
+	{
+		// ensure special argument list is empty
+		Sexp_applicable_argument_list.clear_nesting_level();
+
+		const int arg_value_index = (Sexp_nodes[n].subtype == SEXP_ATOM_CONTAINER_NAME)
+										? random_arg_value - cumulative_arg_counts[random_argument - 1] - 1
+										: -1;
+		copy_node_to_replacement_args(n, arg_value_index);
+
+		// evaluate conditional for current argument
+		val = eval_sexp(condition_node);
+
+		// true?
+		if (val == SEXP_TRUE)
+		{
+			const char *arg_text = Sexp_replacement_arguments.back().first;
+			Sexp_applicable_argument_list.add_data(arg_text, n);
+		} else if ((num_valid_arg_nodes == 1) && !valid_container_arg_found &&
+				   (Sexp_nodes[condition_node].value == SEXP_KNOWN_FALSE ||
+					   Sexp_nodes[condition_node].value == SEXP_NAN_FOREVER))
+		{
+			val = SEXP_KNOWN_FALSE; // If the only valid arg is guaranteed never to be true, then give up now.
+		}
+
 		// clear argument, but not list, as we'll need it later
 		Sexp_replacement_arguments.pop_back();
 	}
@@ -25055,6 +25159,7 @@ int eval_sexp(int cur_node, int referenced_node)
 			case OP_CONTAINER_GET_MAP_KEYS:
 			case OP_CLEAR_CONTAINER:
 			case OP_COPY_CONTAINER:
+			case OP_APPLY_CONTAINER_FILTER:
 				sexp_val = sexp_container_eval_change_sexp(op_num, node);
 				break;
 
@@ -25260,10 +25365,14 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = eval_every_of( cur_node, referenced_node );
 				break;
 
-			// Goober5000 and Karajorma
+			// Goober5000
 			case OP_RANDOM_OF:
+				sexp_val = eval_random_of( cur_node, referenced_node );
+				break;
+
+			// Goober5000 and Karajorma
 			case OP_RANDOM_MULTIPLE_OF:
-				sexp_val = eval_random_of( cur_node, referenced_node, (op_num == OP_RANDOM_MULTIPLE_OF) );
+				sexp_val = eval_random_multiple_of( cur_node, referenced_node );
 				break;
 
 			// Goober5000
@@ -28115,6 +28224,7 @@ int query_operator_return_type(int op)
 		case OP_CONTAINER_GET_MAP_KEYS:
 		case OP_CLEAR_CONTAINER:
 		case OP_COPY_CONTAINER:
+		case OP_APPLY_CONTAINER_FILTER:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -28761,6 +28871,16 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_NONE;
 			}
 
+		case OP_APPLY_CONTAINER_FILTER:
+			if (argnum == 0) {
+				return OPF_CONTAINER_NAME;
+			} else if (argnum == 1) {
+				return OPF_LIST_CONTAINER_NAME;
+			} else {
+				// This shouldn't happen
+				return OPF_NONE;
+			}
+
 		case OP_HAS_DOCKED:
 		case OP_HAS_UNDOCKED:
 		case OP_HAS_DOCKED_DELAY:
@@ -28937,12 +29057,12 @@ int query_operator_argument_type(int op, int argnum)
 			return OPF_NULL;
 
 		case OP_RANDOM_OF:
-		case OP_RANDOM_MULTIPLE_OF:
 		case OP_IN_SEQUENCE:
 			return OPF_ANYTHING;
 
 		case OP_ANY_OF:
 		case OP_EVERY_OF:
+		case OP_RANDOM_MULTIPLE_OF:
 			return OPF_DATA_OR_STR_CONTAINER;
 
 		case OP_NUMBER_OF:
@@ -32499,6 +32619,7 @@ int get_subcategory(int sexp_id)
 		case OP_CONTAINER_GET_MAP_KEYS:
 		case OP_CLEAR_CONTAINER:
 		case OP_COPY_CONTAINER:
+		case OP_APPLY_CONTAINER_FILTER:
 			return CHANGE_SUBCATEGORY_CONTAINERS;
 
 		case OP_DAMAGED_ESCORT_LIST:
@@ -33614,7 +33735,9 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	// Karajorma
 	{ OP_RANDOM_MULTIPLE_OF, "Random-multiple-of (Conditional operator)\r\n"
 		"\tSupplies arguments for the " SEXP_ARGUMENT_STRING " special data item.  A random supplied argument will be selected to satisfy the expression(s) "
-		"in which " SEXP_ARGUMENT_STRING " is used.\r\n\r\n"
+		"in which " SEXP_ARGUMENT_STRING " is used.\r\n"
+		"\tUnlike random-of, the random selection is performed each time this SEXP is evaluated.\r\n"
+		"\tThis SEXP also accepts list containers with string data or map containers with string keys as arguments.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tAnything that could be used in place of " SEXP_ARGUMENT_STRING "." },
 
@@ -33850,6 +33973,16 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tName of the container to copy from.\r\n"
 		"\t2:\tName of the container to copy to.\r\n"
 		"\t3:\t(Optional) When true, the second container's contents are deleted before copying." },
+
+	// jg18
+	{ OP_APPLY_CONTAINER_FILTER, "apply-container-filter\r\n"
+		"\tRemoves values from a container using a list container as a filter.\r\n"
+		"\tAll values in the 'filter' container will be removed from the first container. The 'filter' container is left unchanged.\r\n"
+		"\tIf the first container is a map container, then the filter is applied to its keys and not its data.\r\n"
+		"\tThe filter's data type must match the type of the values to be removed from the first container.\r\n\r\n"
+		"Takes 2 arguments...\r\n"
+		"\t1:\tName of the container to apply the filter to.\r\n"
+		"\t2:\tName of the list container to be used as the filter." },
 
 	{ OP_PROTECT_SHIP, "Protect ship (Action operator)\r\n"
 		"\tProtects a ship from being attacked by any enemy ship.  Any ship "

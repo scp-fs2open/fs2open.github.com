@@ -19,12 +19,14 @@
 #include "freespace.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/linklist.h"
+#include "graphics/color.h"
 #include "hud/hudets.h"
 #include "hud/hudmessage.h"
 #include "hud/hudshield.h"
 #include "iff_defs/iff_defs.h"
 #include "io/timer.h"
 #include "lighting/lighting.h"
+#include "lighting/lighting_profiles.h"
 #include "math/fvi.h"
 #include "math/staticrand.h"
 #include "nebula/neb.h"
@@ -46,6 +48,7 @@
 #include "weapon/beam.h"
 #include "weapon/weapon.h"
 #include "globalincs/globals.h"
+#include "globalincs/vmallocator.h"
 #include "tracing/tracing.h"
 
 // ------------------------------------------------------------------------------------------------
@@ -1821,9 +1824,18 @@ DCF(blight, "Sets the beam light scale factor (Default is 25.5f)")
 	dc_stuff_float(&blight);
 }
 
-float beam_current_light_radius(beam* bm, float noise)
+float beam_current_light_radius(beam *bm, weapon_info *wip, beam_weapon_info *bwi, float noise)
 {
-	return bm->beam_light_width * bm->current_width_factor * blight * noise;
+	auto lp = lighting_profile::current();
+	float width = lp->beam_light_radius.handle(wip->light_radius);
+
+	if(bwi->beam_light_as_multiplier)
+		width *= bm->beam_light_width;
+
+	if(bwi->beam_light_flicker)
+		width *= noise;
+
+	return width;
 }
 
 /**
@@ -1859,6 +1871,20 @@ float beam_light_noise(beam const* bm, beam_weapon_info const* bwi)
 		return 1.0f;
 }
 
+void beam_light_color(weapon_info *wip,hdr_color *to_fill )
+{
+	//If a custom light wasn't set we only base off of laser_color_1,
+	//  and so we might as well calculate once and store it.
+
+	if(!wip->light_color_set){
+		wip->light_color.set_rgb(wip->laser_color_1.red, wip->laser_color_1.green,wip->laser_color_1.blue);
+		wip->light_color_set=true;
+	}
+	SCP_vector<float> colors;
+	wip->light_color.get_v5f(colors);
+	to_fill->set_vecf(colors);
+}
+
 // call to add a light source to a small object
 void beam_add_light_small(beam *bm, object *objp, vec3d *pt)
 {
@@ -1870,31 +1896,37 @@ void beam_add_light_small(beam *bm, object *objp, vec3d *pt)
 
 	Assert(pt != nullptr);
 
-	float noise = beam_light_noise(bm,bwi);
+	float noise = beam_light_noise(bm, bwi);
 
 	// get the width of the beam
-	float light_rad = beam_current_light_radius(bm,noise);
-
-	// average rgb of the beam	
-	float fr = (float)wip->laser_color_1.red / 255.0f;
-	float fg = (float)wip->laser_color_1.green / 255.0f;
-	float fb = (float)wip->laser_color_1.blue / 255.0f;
+	float light_rad = beam_current_light_radius(bm, wip, bwi, noise);
 
 	float pct = 0.0f;
 
 	if (bm->warmup_stamp != -1) {	// calculate muzzle light intensity
 		// get warmup pct
 		pct = BEAM_WARMUP_PCT(bm)*0.5f;
-	} else if (bm->warmdown_stamp != -1) {
-	// if the beam is warming down get warmdown pct
+	} else if (bm->warmdown_stamp != -1) {	// if the beam is warming down
+		// get warmup pct
 		pct = MAX(1.0f - BEAM_WARMDOWN_PCT(bm)*1.3f,0.0f)*0.5f;
 	}
 	// otherwise the beam is really firing
 	else {
 		pct = 1.0f;
 	}
-	// add a light
-	light_add_point(pt, light_rad * 0.0001f, light_rad, pct, fr, fg, fb);
+
+	// Color is a copy so that we can modify it the brigthness without side-effect
+	hdr_color light_color;
+
+	beam_light_color(wip, &light_color);
+	light_color.i(light_color.i() * pct);
+
+	auto lp = lighting_profile::current();
+	light_color.i(lp->beam_light_brightness.handle(light_color.i()));
+
+	if (light_color.i() <= 0.0f || light_rad <= 0.0f)
+		return;
+	light_add_point(pt, light_rad * 0.0001f, light_rad, &light_color);
 }
 
 // call to add a light source to a large object
@@ -1909,14 +1941,20 @@ void beam_add_light_large(beam *bm, object *objp, vec3d *pt0, vec3d *pt1)
 	float noise = beam_light_noise(bm, bwi);
 
 	// width of the beam
-	float light_rad = beam_current_light_radius(bm,noise);
+	float light_rad = beam_current_light_radius(bm, wip, bwi, noise);
 
-	// average rgb of the beam	
-	float fr = (float)wip->laser_color_1.red / 255.0f;
-	float fg = (float)wip->laser_color_1.green / 255.0f;
-	float fb = (float)wip->laser_color_1.blue / 255.0f;
+	// Color is a copy so that we can modify it the brigthness without side-effect
+	hdr_color light_color;
+	beam_light_color(wip, &light_color);
 
-	light_add_tube(pt0, pt1, 1.0f, light_rad, 1.0f * noise, fr, fg, fb);
+	if (bwi->beam_light_flicker)
+		light_color.i(light_color.i() * noise);
+	auto lp = lighting_profile::current();
+	light_color.i(lp->beam_light_brightness.handle(light_color.i()));
+	light_rad = lp->beam_light_radius.handle(light_rad);
+	if (light_color.i() <= 0.0f || light_rad <= 0.0f)
+		return;
+	light_add_tube(pt0, pt1, 1.0f, light_rad, &light_color);
 }
 
 // mark an object as being lit
