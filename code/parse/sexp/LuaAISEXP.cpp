@@ -142,7 +142,7 @@ void LuaAISEXP::parseTable() {
 		}
 
 		if (optional_string("+Target Restrictions:")) {
-			int result = optional_string_one_of(8, "Allies", "All", "Own Team", "Hostiles", "Same Wing", "Player Wing", "Capitals", "Allied Capitals", "Enemy Capitals");
+			int result = optional_string_one_of(9, "Allies", "All", "Own Team", "Hostiles", "Same Wing", "Player Wing", "Capitals", "Allied Capitals", "Enemy Capitals", "Not Self");
 			if (result == -1) {
 				error_display(0, "Unknown target restriction for player order %s. Assuming \"All\".", order.displayText.c_str());
 				order.targetRestrictions = player_order_lua::target_restrictions::TARGET_ALL;
@@ -152,17 +152,27 @@ void LuaAISEXP::parseTable() {
 			}
 		}
 
-		//TODO implement proper parsing for message types
-		/*if (optional_string("+Acknowledge Message:")) {
-			int result = optional_string_one_of(1, "");
+		if (optional_string("+Acknowledge Message:")) {
+			int result = -1;
+
+			SCP_string message;
+			stuff_string(message, F_NAME);
+
+			for (int i = 0; i < MAX_BUILTIN_MESSAGE_TYPES; i++) {
+				if (Builtin_messages[i].name == message) {
+					result = i;
+					break;
+				}
+			}
+
 			if (result == -1) {
-				error_display(0, "Unknown ackn message for player order %s. Assuming \"Yessir\".", order.displayText.c_str());
+				error_display(0, "Unknown acknowledge message for player order %s. Assuming \"yes\".", order.displayText.c_str());
 				order.ai_message = MESSAGE_YESSIR;
 			}
 			else {
 				order.ai_message = result;
 			}
-		}*/
+		}
 
 	}
 
@@ -185,6 +195,20 @@ void LuaAISEXP::setActionFrame(const luacpp::LuaFunction& action) {
 }
 luacpp::LuaFunction LuaAISEXP::getActionFrame() const {
 	return _actionFrame;
+}
+
+void LuaAISEXP::setAchievable(const luacpp::LuaFunction& action) {
+	_achievable = action;
+}
+luacpp::LuaFunction LuaAISEXP::getAchievable() const {
+	return _achievable;
+}
+
+void LuaAISEXP::setTargetRestrict(const luacpp::LuaFunction& action) {
+	_targetRestrict = action;
+}
+luacpp::LuaFunction LuaAISEXP::getTargetRestrict() const {
+	return _targetRestrict;
 }
 
 void LuaAISEXP::registerAIMode(int sexp_id) const {

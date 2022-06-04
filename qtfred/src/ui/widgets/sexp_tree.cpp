@@ -332,21 +332,21 @@ int sexp_tree::load_branch(int index, int parent) {
 			if (Sexp_nodes[index].type & SEXP_FLAG_VARIABLE) {
 				get_combined_variable_name(combined_var_name, Sexp_nodes[index].text);
 				set_node(cur, (SEXPT_VARIABLE | SEXPT_STRING | additional_flags), combined_var_name);
-			}  else if (is_container_argument(cur)) {
-				Assertion(!(additional_flags & SEXPT_MODIFIER),
-					"Found a container name node %s that is also a container modifier. Please report!",
-					Sexp_nodes[index].text);
-				// if the if-condition is false, then then the SEXP argument is invalid
-				// but check_sexp_syntax() will catch that
-				if (get_sexp_container(Sexp_nodes[index].text) != nullptr) {
-					additional_flags |= SEXPT_CONTAINER_NAME;
-				}
-				set_node(cur, (SEXPT_STRING | additional_flags), Sexp_nodes[index].text);
-			} else {
+			}  else {
 				set_node(cur, (SEXPT_STRING | additional_flags), Sexp_nodes[index].text);
 			}
 
-		} else if (Sexp_nodes[index].subtype == SEXP_ATOM_CONTAINER) {
+		} else if (Sexp_nodes[index].subtype == SEXP_ATOM_CONTAINER_NAME) {
+			Assertion(!(additional_flags & SEXPT_MODIFIER),
+				"Found a container name node %s that is also a container modifier. Please report!",
+				Sexp_nodes[index].text);
+			Assertion(get_sexp_container(Sexp_nodes[index].text) != nullptr,
+				"Attempt to load unknown container data %s into SEXP tree. Please report!",
+				Sexp_nodes[index].text);
+			cur = allocate_node(parent);
+			set_node(cur, (SEXPT_CONTAINER_NAME | SEXPT_STRING | additional_flags), Sexp_nodes[index].text);
+
+		} else if (Sexp_nodes[index].subtype == SEXP_ATOM_CONTAINER_DATA) {
 			cur = allocate_node(parent);
 			Assertion(get_sexp_container(Sexp_nodes[index].text) != nullptr,
 				"Attempt to load unknown container %s into SEXP tree. Please report!",
@@ -423,11 +423,16 @@ int sexp_tree::save_branch(int cur, int at_root) {
 			if ((tree_nodes[cur].parent >= 0) && !at_root) {
 				node = alloc_sexp("", SEXP_LIST, SEXP_ATOM_LIST, node, -1);
 			}
+		} else if (tree_nodes[cur].type & SEXPT_CONTAINER_NAME) {
+			Assertion(get_sexp_container(tree_nodes[cur].text) != nullptr,
+				"Attempt to save unknown container %s from SEXP tree. Please report!",
+				tree_nodes[cur].text);
+			node = alloc_sexp(tree_nodes[cur].text, SEXP_ATOM, SEXP_ATOM_CONTAINER_NAME, -1, -1);
 		} else if (tree_nodes[cur].type & SEXPT_CONTAINER_DATA) {
 			Assertion(get_sexp_container(tree_nodes[cur].text) != nullptr,
 				"Attempt to save unknown container %s from SEXP tree. Please report!",
 				tree_nodes[cur].text);
-			node = alloc_sexp(tree_nodes[cur].text, SEXP_ATOM, SEXP_ATOM_CONTAINER, save_branch(tree_nodes[cur].child), -1);
+			node = alloc_sexp(tree_nodes[cur].text, SEXP_ATOM, SEXP_ATOM_CONTAINER_DATA, save_branch(tree_nodes[cur].child), -1);
 		} else if (tree_nodes[cur].type & SEXPT_NUMBER) {
 			// allocate number, maybe variable
 			if (tree_nodes[cur].type & SEXPT_VARIABLE) {
@@ -1014,7 +1019,7 @@ int sexp_tree::add_default_operator(int op_index, int argnum) {
 			add_variable_data(node_text, type);
 		}
 		else if (item.type & SEXPT_CONTAINER_NAME) {
-			Assertion(is_container_opf_type(op_type),
+			Assertion(is_container_name_opf_type(op_type) || op_type == OPF_DATA_OR_STR_CONTAINER,
 				"Attempt to add default container name for a node of non-container type (%d). Please report!",
 				op_type);
 			add_container_name(item.text.c_str());
@@ -1072,6 +1077,10 @@ int sexp_tree::get_default_value(sexp_list_item* item, char* text_buf, int op, i
 			item->set_data(SEXP_ARGUMENT_STRING);	// this is almost always what you want for these sexps
 		else
 			item->set_data("<any data>");
+		return 0;
+
+	case OPF_DATA_OR_STR_CONTAINER:
+		item->set_data("<any data or string container>");
 		return 0;
 
 	case OPF_NUMBER:
@@ -1394,6 +1403,10 @@ int sexp_tree::get_default_value(sexp_list_item* item, char* text_buf, int op, i
 		str = "<any data>";
 		break;
 
+	case OPF_DATA_OR_STR_CONTAINER:
+		str = "<any data or string container>";
+		break;
+
 	case OPF_PERSONA:
 		str = "<persona name>";
 		break;
@@ -1421,7 +1434,7 @@ int sexp_tree::get_default_value(sexp_list_item* item, char* text_buf, int op, i
 	case OPF_CONTAINER_VALUE:
 		str = "<container value>";
 		break;
-			
+
 	default:
 		str = "<new default required!>";
 		break;
@@ -1487,6 +1500,7 @@ int sexp_tree::query_default_argument_available(int op, int i) {
 	case OPF_STRING:
 	case OPF_FLEXIBLE_ARGUMENT:
 	case OPF_ANYTHING:
+	case OPF_DATA_OR_STR_CONTAINER:
 	case OPF_SKYBOX_MODEL_NAME:
 	case OPF_SKYBOX_FLAGS:
 	case OPF_SHIP_OR_NONE:
@@ -2891,6 +2905,7 @@ int sexp_tree::query_restricted_opf_range(int opf) {
 	case OPF_STRING:
 	case OPF_ANYTHING:
 	case OPF_CONTAINER_VALUE: // jg18
+	case OPF_DATA_OR_STR_CONTAINER: // jg18
 		return 0;
 	}
 
@@ -3288,7 +3303,11 @@ sexp_list_item* sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 	case OPF_CONTAINER_VALUE:
 		list = nullptr;
 		break;
-		
+
+	case OPF_DATA_OR_STR_CONTAINER:
+		list = nullptr;
+		break;
+
 	default:
 		Int3();  // unknown OPF code
 		list = NULL;
@@ -5212,21 +5231,7 @@ int sexp_tree::get_loadout_variable_count(int var_index) {
 	return count;
 }
 
-bool sexp_tree::is_container_argument(int node) const
-{
-	Assertion(node >= 0 && node < (int)tree_nodes.size(),
-		"Attempt to check if out-of-range node %d is a container name argument. Please report!",
-		node);
-
-	if (tree_nodes[node].parent == -1) {
-		return false;
-	}
-
-	const int arg_opf_type = query_node_argument_type(node);
-	return is_container_opf_type(arg_opf_type);
-}
-
-bool sexp_tree::is_container_opf_type(const int op_type)
+bool sexp_tree::is_container_name_opf_type(const int op_type)
 {
 	return (op_type == OPF_CONTAINER_NAME) ||
 		(op_type == OPF_LIST_CONTAINER_NAME) ||
@@ -5482,7 +5487,7 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 				}
 
 				// Replace Container Name submenu
-				if (is_container_opf_type(op_type)) {
+				if (is_container_name_opf_type(op_type) || (op_type == OPF_DATA_OR_STR_CONTAINER)) {
 					const auto &containers = get_all_sexp_containers();
 					for (int idx = 0; idx < (int)containers.size(); ++idx) {
 						const auto &container = containers[idx];
@@ -5496,6 +5501,8 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 						} else if ((op_type == OPF_LIST_CONTAINER_NAME) && container.is_list()) {
 							disabled = false;
 						} else if ((op_type == OPF_MAP_CONTAINER_NAME) && container.is_map()) {
+							disabled = false;
+						} else if (op_type == OPF_DATA_OR_STR_CONTAINER && container.is_of_string_type()) {
 							disabled = false;
 						}
 
@@ -5890,7 +5897,7 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 		}
 
 		// add_type unchanged from above
-		if (add_type == OPR_STRING && !is_container_opf_type(type)) {
+		if (add_type == OPR_STRING && !is_container_name_opf_type(type)) {
 			add_string_act->setEnabled(true);
 		}
 
@@ -5994,7 +6001,7 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 		}
 
 		// special case don't allow replace data for variable or container names
-		if ((type != OPF_VARIABLE_NAME) && !is_container_opf_type(type) && list) {
+		if ((type != OPF_VARIABLE_NAME) && !is_container_name_opf_type(type) && list) {
 			sexp_list_item* ptr;
 
 			int data_idx = 0;
@@ -6051,7 +6058,7 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 		}
 
 		// default to string, except for container names
-		if (replace_type == OPR_STRING && !is_container_opf_type(type)) {
+		if (replace_type == OPR_STRING && !is_container_name_opf_type(type)) {
 			replace_string_act->setEnabled(true);
 		}
 
@@ -6259,6 +6266,9 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 
 	if ((Sexp_clipboard > -1) && (Sexp_nodes[Sexp_clipboard].type != SEXP_NOT_USED)) {
 		Assert(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_LIST);
+		Assertion(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_CONTAINER_NAME,
+			"Attempt to use container name %s from SEXP clipboard. Please report!",
+			Sexp_nodes[Sexp_clipboard].text);
 
 		if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_OPERATOR) {
 			j = get_operator_const(CTEXT(Sexp_clipboard));
@@ -6287,7 +6297,7 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 				add_paste_act->setEnabled(true);
 			}
 
-		} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_CONTAINER) {
+		} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_CONTAINER_DATA) {
 			// TODO: check for strictly typed container keys/data
 			const auto *p_container = get_sexp_container(Sexp_nodes[Sexp_clipboard].text);
 			// if-check in case the container was renamed/deleted after the container data was cut/copied
@@ -6301,9 +6311,9 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 					if (add_type == OPR_NUMBER)
 						add_paste_act->setEnabled(true);
 				} else if (any(container.type & ContainerType::STRING_DATA)) {
-					if (replace_type == OPR_STRING && !is_container_opf_type(type))
+					if (replace_type == OPR_STRING && !is_container_name_opf_type(type))
 						paste_act->setEnabled(true);
-					if (add_type == OPR_STRING && !is_container_opf_type(type))
+					if (add_type == OPR_STRING && !is_container_name_opf_type(type))
 						add_paste_act->setEnabled(true);
 				} else {
 					UNREACHABLE("Unknown container data type %d", (int)container.type);
@@ -6324,11 +6334,11 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 			}
 
 		} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_STRING) {
-			if (replace_type == OPR_STRING && !is_container_opf_type(type)) {
+			if (replace_type == OPR_STRING && !is_container_name_opf_type(type)) {
 				edit_data_act->setEnabled(true);
 			}
 
-			if (add_type == OPR_STRING && !is_container_opf_type(type)) {
+			if (add_type == OPR_STRING && !is_container_name_opf_type(type)) {
 				add_paste_act->setEnabled(true);
 			}
 
@@ -6492,6 +6502,9 @@ void sexp_tree::pasteActionHandler() {
 	// the following assumptions are made..
 	Assert((Sexp_clipboard > -1) && (Sexp_nodes[Sexp_clipboard].type != SEXP_NOT_USED));
 	Assert(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_LIST);
+	Assertion(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_CONTAINER_NAME,
+		"Attempt to use container name %s from SEXP clipboard. Please report!",
+		Sexp_nodes[Sexp_clipboard].text);
 
 	if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_OPERATOR) {
 		expand_operator(item_index);
@@ -6505,7 +6518,7 @@ void sexp_tree::pasteActionHandler() {
 			}
 		}
 
-	} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_CONTAINER) {
+	} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_CONTAINER_DATA) {
 		expand_operator(item_index);
 		const auto *p_container = get_sexp_container(Sexp_nodes[Sexp_clipboard].text);
 		Assertion(p_container,
@@ -6673,6 +6686,9 @@ void sexp_tree::addPasteActionHandler() {
 	// the following assumptions are made..
 	Assert((Sexp_clipboard > -1) && (Sexp_nodes[Sexp_clipboard].type != SEXP_NOT_USED));
 	Assert(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_LIST);
+	Assertion(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_CONTAINER_NAME,
+		"Attempt to use container name %s from SEXP clipboard. Please report!",
+		Sexp_nodes[Sexp_clipboard].text);
 
 	if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_OPERATOR) {
 		expand_operator(item_index);
@@ -6686,7 +6702,7 @@ void sexp_tree::addPasteActionHandler() {
 			}
 		}
 
-	} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_CONTAINER) {
+	} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_CONTAINER_DATA) {
 		expand_operator(item_index);
 		add_container_data(Sexp_nodes[Sexp_clipboard].text);
 		const int modifier_node = Sexp_nodes[Sexp_clipboard].first;
@@ -6765,8 +6781,6 @@ void sexp_tree::handleReplaceVariableAction(int id) {
 }
 void sexp_tree::handleReplaceContainerNameAction(int idx) {
 	Assertion(item_index >= 0, "Attempt to Replace Container Name with no node selected. Please report!");
-	Assertion(is_container_argument(item_index),
-		"Attempt to use Replace Container Name on a node that is not a container name argument. Please report!");
 
 	const auto &containers = get_all_sexp_containers();
 	Assertion((idx >= 0) && (idx < (int)containers.size()), "Unknown Container Index %d. Please report!", idx);

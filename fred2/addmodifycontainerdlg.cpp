@@ -348,13 +348,14 @@ bool CAddModifyContainerDlg::is_container_name_valid(CString &new_name, bool is_
 		return false;
 	}
 
-	// handle & chars
-	if (strchr(new_name, sexp_container::DELIM) != nullptr) {
+	// handle spaces and & chars
+	if (strchr(new_name, sexp_container::DELIM) != nullptr || strchr(new_name, ' ') != nullptr) {
 		if (is_rename) {
-			MessageBox("Container names cannot contain &.");
+			MessageBox("Container names cannot contain spaces or &.");
 			return false;
 		} else {
-			MessageBox("Container names cannot contain &. Replacing with hyphens.");
+			MessageBox("Container names cannot contain spaces or &. Replacing with hyphens.");
+			new_name.Replace((TCHAR)' ', (TCHAR)'-');
 			new_name.Replace((TCHAR)sexp_container::DELIM, (TCHAR)'-');
 		}
 	}

@@ -83,7 +83,7 @@ struct ship_obj;
 #define OPF_NAV_POINT			52		// Kazan	  - a Nav Point name
 #define OPF_SSM_CLASS			53		// Goober5000 - an SSM class
 #define OPF_FLEXIBLE_ARGUMENT	54		// Goober5000 - special to match for when-argument
-#define OPF_ANYTHING			55		// Goober5000 - anything goes
+#define OPF_ANYTHING			55		// Goober5000 - anything goes, except containers
 #define OPF_SKYBOX_MODEL_NAME	56		// taylor - changing skybox model
 #define OPF_SHIP_OR_NONE		57		// Goober5000 - an "optional" ship argument
 #define OPF_BACKGROUND_BITMAP	58		// phreak - name of a background bitmap
@@ -126,6 +126,7 @@ struct ship_obj;
 #define OPF_MAP_CONTAINER_NAME	95		// Karajorma/jg18 - The name of a SEXP map container
 #define OPF_ANIMATION_NAME 		96		// Lafiel
 #define OPF_CONTAINER_VALUE		97		// jg18 - Container data and map container keys
+#define OPF_DATA_OR_STR_CONTAINER	98	// jg18 - any data, or a container that is accessed via strings
 
 // Operand return types
 #define	OPR_NUMBER				1	// returns number
@@ -451,6 +452,8 @@ struct ship_obj;
 #define OP_SWITCH							(0x0019 | OP_CATEGORY_CONDITIONAL)	// Goober5000
 #define OP_FUNCTIONAL_SWITCH				(0x001a | OP_CATEGORY_CONDITIONAL)	// Goober5000
 #define OP_FUNCTIONAL_WHEN					(0x001b | OP_CATEGORY_CONDITIONAL)	// Goober5000
+#define OP_FOR_CONTAINER_DATA				(0x001c | OP_CATEGORY_CONDITIONAL)	// jg18
+#define OP_FOR_MAP_CONTAINER_KEYS			(0x001d | OP_CATEGORY_CONDITIONAL)	// jg18
 
 
 // sexpressions with side-effects
@@ -813,6 +816,8 @@ struct ship_obj;
 #define OP_ADD_BACKGROUND_BITMAP_NEW		(0x004e | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_ADD_SUN_BITMAP_NEW				(0x004f | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_CANCEL_FUTURE_WAVES				(0x0050 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// naomimyselfandi
+#define OP_COPY_CONTAINER					(0x0051 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// jg18
+#define OP_APPLY_CONTAINER_FILTER			(0x0052 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// jg18
 
 // defined for AI goals
 #define OP_AI_CHASE							(0x0000 | OP_CATEGORY_AI | OP_NONCAMPAIGN_FLAG)
@@ -1008,11 +1013,12 @@ const char *CTEXT(int n);
 #define SEXP_NODE_TYPE(n)	(Sexp_nodes[n].type & 0x00ff)
 
 // defines for subtypes of atoms
-#define SEXP_ATOM_LIST			0
-#define SEXP_ATOM_OPERATOR		1
-#define SEXP_ATOM_NUMBER		2
-#define SEXP_ATOM_STRING		3
-#define SEXP_ATOM_CONTAINER		4
+#define SEXP_ATOM_LIST				0
+#define SEXP_ATOM_OPERATOR			1
+#define SEXP_ATOM_NUMBER			2
+#define SEXP_ATOM_STRING			3
+#define SEXP_ATOM_CONTAINER_NAME	4
+#define SEXP_ATOM_CONTAINER_DATA	5
 
 // defines to short circuit evaluation when possible. Also used when goals can't
 // be satisfied yet because ship (or wing) hasn't been created yet.

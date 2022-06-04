@@ -9036,7 +9036,7 @@ static void ship_check_player_distance_sub(player *p, int multi_target=-1)
 		if (p->distance_warning_count == 0) {
 			give_warning_to_player = 1;
 		} else {
-			if (timestamp_until(p->distance_warning_time) < 0) {
+			if (timestamp_elapsed(p->distance_warning_time)) {
 				give_warning_to_player = 1;
 			}
 		}
@@ -9068,7 +9068,7 @@ static void ship_check_player_distance_sub(player *p, int multi_target=-1)
 		}
 
 		// get hull strength and blow up
-		if ( (p->flags & PLAYER_FLAGS_DIST_TO_BE_KILLED) && (timestamp_until(p->distance_warning_time) < 0) ) {
+		if ( (p->flags & PLAYER_FLAGS_DIST_TO_BE_KILLED) && (timestamp_elapsed(p->distance_warning_time)) ) {
 			p->flags |= PLAYER_FLAGS_FORCE_MISSION_OVER;
 			float damage = 10.0f * Objects[p->objnum].hull_strength;
 			ship_apply_global_damage(&Objects[p->objnum], &Objects[p->objnum], NULL, damage, -1);
@@ -9987,7 +9987,7 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 		end_string_at_first_hash_symbol(shipp->ship_name);
 
 		// build it
-		Assert(strlen(shipp->ship_name) + strlen(suffix) < NAME_LENGTH - 1);
+		Assert(strlen(shipp->ship_name) + strlen(suffix) <= NAME_LENGTH - 1);
 		strcat_s(shipp->ship_name, suffix);
 	} else {
 		if (ship_find_exited_ship_by_name(ship_name) >= 0 && !(Game_mode & GM_MULTIPLAYER)) {
@@ -11521,11 +11521,11 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 		//	know how much time to subtract off.  It could be this fire is "late" because the user didn't want to fire.
 		if ((next_fire_delay > 0.0f)) {
 			if (obj->flags[Object::Object_Flags::Player_ship]) {
-				int	t = timestamp_until(swp->next_primary_fire_stamp[bank_to_fire]);
-				if (t < 0) {
+				int	t = timestamp_since(swp->next_primary_fire_stamp[bank_to_fire]);
+				if (t > 0) {
 					float	tx;
 
-					tx = (float) t/-1000.0f;
+					tx = (float) t/1000.0f;
 					if (tx > flFrametime/2.0f){
 						tx = 1000.0f * flFrametime * 0.7f;
 					}

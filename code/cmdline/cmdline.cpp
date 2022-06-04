@@ -559,18 +559,6 @@ cmdline_parm deprecated_cache_bitmaps_arg("-cache_bitmaps", "Deprecated", AT_NON
 cmdline_parm deprecated_no_emissive_arg("-no_emissive_light", "Deprecated", AT_NONE);
 cmdline_parm deprecated_postprocess_arg("-post_process", "Deprecated", AT_NONE);
 
-int Cmdline_deprecated_spec = 0;
-int Cmdline_deprecated_glow = 0;
-int Cmdline_deprecated_normal = 0;
-int Cmdline_deprecated_env = 0;
-int Cmdline_deprecated_tbp = 0;
-int Cmdline_deprecated_jpgtga = 0;
-int Cmdline_deprecated_nohtl = 0;
-bool Cmdline_deprecated_brief_lighting = 0;
-bool Cmdline_deprecated_missile_lighting = false;
-bool Cmdline_deprecated_cache_bitmaps = false;
-bool Cmdline_deprecated_postprocess = false;
-
 #ifndef NDEBUG
 // NOTE: this assumes that os_init() has already been called but isn't a fatal error if it hasn't
 void cmdline_debug_print_cmdline()
@@ -596,57 +584,11 @@ void cmdline_debug_print_cmdline()
 	mprintf(("\n"));
 
 	//Print log messages about any deprecated flags we found - CommanderDJ
-	if(Cmdline_deprecated_spec == 1)
-	{
-		mprintf(("Deprecated flag '-spec' found. Please remove from your cmdline.\n"));
-	}
-
-	if(Cmdline_deprecated_glow == 1)
-	{
-		mprintf(("Deprecated flag '-glow' found. Please remove from your cmdline.\n"));
-	}
-
-	if(Cmdline_deprecated_normal == 1)
-	{
-		mprintf(("Deprecated flag '-normal' found. Please remove from your cmdline.\n"));
-	}
-
-	if(Cmdline_deprecated_env == 1)
-	{
-		mprintf(("Deprecated flag '-env' found. Please remove from your cmdline.\n"));
-	}
-
-	if(Cmdline_deprecated_tbp == 1)
-	{
-		mprintf(("Deprecated flag '-tbp' found. Please remove from your cmdline.\n"));
-	}
-
-	if(Cmdline_deprecated_jpgtga == 1)
-	{
-		mprintf(("Deprecated flag '-jpgtga' found. Please remove from your cmdline.\n"));
-	}
-
-	if(Cmdline_deprecated_nohtl == 1)
-	{
-		mprintf(("Deprecated flag '-nohtl' found. Please remove from your cmdline.\n"));
-	}
-
-	if(Cmdline_deprecated_brief_lighting == 1)
-	{
-		mprintf(("Deprecated flag '-brief_lighting' found. Please remove from your cmdline.\n"));
-	}
-
-	if (Cmdline_deprecated_missile_lighting) 
-	{
-		mprintf(("Deprecated flag '-missile_lighting' found. Please remove from your cmdline.\n"));
-	}
-
-	if (Cmdline_deprecated_cache_bitmaps) {
-		mprintf(("Deprecated flag '-cache_bitmaps' found. Please remove from your cmdline.\n"));
-	}
-
-	if (Cmdline_deprecated_postprocess) {
-		mprintf(("Deprecated flag '-post_process' found. Please remove from your cmdline.\n"));
+	//Do it programmatically, rather than enumerating them by hand - MageKing17
+	for (parmp = GET_FIRST(&Parm_list); parmp != END_OF_LIST(&Parm_list); parmp = GET_NEXT(parmp)) {
+		if (parmp->name_found && !stricmp("deprecated", parmp->help)) {
+			mprintf(("Deprecated flag '%s' found. Please remove from your cmdline.\n", parmp->name));
+		}
 	}
 }
 #endif
@@ -2213,61 +2155,8 @@ bool SetCmdlineParams()
 	}
 
 	//Deprecated flags - CommanderDJ
-	if( deprecated_spec_arg.found() )
-	{
-		Cmdline_deprecated_spec = 1;
-	}
-
-	if( deprecated_glow_arg.found() )
-	{
-		Cmdline_deprecated_glow = 1;
-	}
-
-	if( deprecated_normal_arg.found() )
-	{
-		Cmdline_deprecated_normal = 1;
-	}
-
-	if( deprecated_env_arg.found() )
-	{
-		Cmdline_deprecated_env = 1;
-	}
-
-	if( deprecated_tbp_arg.found() )
-	{
-		Cmdline_deprecated_tbp = 1;
-	}
-
-	if( deprecated_jpgtga_arg.found() )
-	{
-		Cmdline_deprecated_jpgtga = 1;
-	}
-
-	if ( deprecated_htl_arg.found() ) 
-	{
-		Cmdline_deprecated_nohtl = 1;
-	}
-
-	if ( deprecated_brieflighting_arg.found() )
-	{
-		Cmdline_deprecated_brief_lighting = 1;
-	}
-
-	if (deprecated_missile_lighting_arg.found())
-	{
-		Cmdline_deprecated_missile_lighting = true;
-	}
-
-	if (deprecated_cache_bitmaps_arg.found()) {
-		Cmdline_deprecated_cache_bitmaps = true;
-	}
-
 	if (deprecated_no_emissive_arg.found()) {
 		Cmdline_emissive = 0;
-	}
-
-	if (deprecated_postprocess_arg.found()) {
-		Cmdline_deprecated_postprocess = true;
 	}
 
 	if (deprecated_fxaa_arg.found() ) {

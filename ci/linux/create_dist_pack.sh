@@ -25,6 +25,12 @@ elif [ "$OS" = "Windows" ]; then
     echo "::set-output name=debug_path::$(pwd)/$(get_package_name)-debug-$ARCH-$SIMD.7z"
     echo "::set-output name=debug_name::$(get_package_name)-debug-$ARCH-$SIMD.7z"
     echo "::set-output name=debug_mime::$(file -b --mime-type "$(pwd)/$(get_package_name)-debug-$ARCH-$SIMD.7z")"
+elif [ "$OS" = "Mac" ]; then
+    tar -cvzf "$(get_package_name)-builds-Mac.tar.gz" *
+
+    echo "::set-output name=package_path::$(pwd)/$(get_package_name)-builds-Mac.tar.gz"
+    echo "::set-output name=package_name::$(get_package_name)-builds-Mac.tar.gz"
+    echo "::set-output name=package_mime::$(file -b --mime-type "$(pwd)/$(get_package_name)-builds-Mac.tar.gz")"
 else
     echo "Invalid OS: $OS"
 fi

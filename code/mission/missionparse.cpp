@@ -3163,7 +3163,6 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 	p_objp->escort_priority = 0;
     if (optional_string("+Escort Priority:"))
     {
-        Assert(p_objp->flags[Mission::Parse_Object_Flags::SF_Escort]);
         stuff_int(&p_objp->escort_priority);
     }
 
@@ -3379,8 +3378,7 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 			}
 		}
 
-		if (!p_objp->orders_accepted.empty())
-			p_objp->flags.set(Mission::Parse_Object_Flags::SF_Use_unique_orders);
+		p_objp->flags.set(Mission::Parse_Object_Flags::SF_Use_unique_orders);
 	}
 
 	p_objp->group = 0;

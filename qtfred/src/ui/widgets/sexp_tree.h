@@ -250,8 +250,7 @@ class sexp_tree: public QTreeWidget {
 	int get_loadout_variable_count(int var_index);
 
 	// Karajorma/jg18
-	bool is_container_argument(int node) const;
-	static bool is_container_opf_type(int op_type);
+	static bool is_container_name_opf_type(int op_type);
 
 	// Goober5000
 	int find_argument_number(int parent_node, int child_node) const;

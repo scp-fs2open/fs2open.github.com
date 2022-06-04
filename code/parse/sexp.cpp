@@ -364,6 +364,8 @@ SCP_vector<sexp_oper> Operators = {
 	{ "for-ship-team",					OP_FOR_SHIP_TEAM,						1,	INT_MAX,	SEXP_ARGUMENT_OPERATOR, },	// Goober5000
 	{ "for-ship-species",				OP_FOR_SHIP_SPECIES,					1,	INT_MAX,	SEXP_ARGUMENT_OPERATOR, },	// Goober5000
 	{ "for-players",					OP_FOR_PLAYERS,							0,	0,			SEXP_ARGUMENT_OPERATOR, },	// Goober5000
+	{ "for-container-data",				OP_FOR_CONTAINER_DATA,					1,	INT_MAX,	SEXP_ARGUMENT_OPERATOR, },	// jg18
+	{ "for-map-container-keys",			OP_FOR_MAP_CONTAINER_KEYS,				1,	INT_MAX,	SEXP_ARGUMENT_OPERATOR, },	// jg18
 	{ "invalidate-argument",			OP_INVALIDATE_ARGUMENT,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,		},	// Goober5000
 	{ "invalidate-all-arguments",		OP_INVALIDATE_ALL_ARGUMENTS,			0,	0,			SEXP_ACTION_OPERATOR,	},	// Karajorma
 	{ "validate-argument",				OP_VALIDATE_ARGUMENT,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Karajorma
@@ -749,6 +751,8 @@ SCP_vector<sexp_oper> Operators = {
 	{ "remove-from-map",				OP_CONTAINER_REMOVE_FROM_MAP,			2,	INT_MAX,	SEXP_ACTION_OPERATOR, },	// Karajorma
 	{ "get-map-keys",					OP_CONTAINER_GET_MAP_KEYS,				2,	3,			SEXP_ACTION_OPERATOR, },	// Karajorma
 	{ "clear-container",				OP_CLEAR_CONTAINER,						1,	INT_MAX,	SEXP_ACTION_OPERATOR, },	// Karajorma
+	{ "copy-container",					OP_COPY_CONTAINER,						2,	3,			SEXP_ACTION_OPERATOR, },	// jg18
+	{ "apply-container-filter",			OP_APPLY_CONTAINER_FILTER,				2,	2,			SEXP_ACTION_OPERATOR, },	// jg18
 
 	//Other Sub-Category
 	{ "damaged-escort-priority",		OP_DAMAGED_ESCORT_LIST,					3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	//phreak
@@ -946,7 +950,7 @@ int verify_vector(const char *text);
 // Goober5000 - adapted from sexp_list_item in Sexp_tree.h
 struct arg_item
 {
-	char *text = nullptr;
+	const char *text = nullptr;
 	int node = -1;
 
 	arg_item *next = nullptr;
@@ -955,12 +959,12 @@ struct arg_item
 
 	arg_item() = default;
 
-	void add_data(char *str, int n);
-	void add_data(const std::pair<char*, int> &data);
-	void add_data_dup(char *str, int n);
-	void add_data_dup(const std::pair<char*, int> &data);
-	void add_data_set_dup(char *str, int n);
-	void add_data_set_dup(const std::pair<char*, int> &data);
+	void add_data(const char *str, int n);
+	void add_data(const std::pair<const char*, int> &data);
+	void add_data_dup(const char *str, int n);
+	void add_data_dup(const std::pair<const char*, int> &data);
+	void add_data_set_dup(const char *str, int n);
+	void add_data_set_dup(const std::pair<const char*, int> &data);
 	void expunge();
 	int is_empty();
 	arg_item *get_next();
@@ -968,19 +972,24 @@ struct arg_item
 };
 
 arg_item Sexp_applicable_argument_list;
-SCP_vector<std::pair<char*, int>> Sexp_replacement_arguments;
+SCP_vector<std::pair<const char*, int>> Sexp_replacement_arguments;
 int Sexp_current_argument_nesting_level;
 
 
 // Goober5000
 bool is_blank_argument_op(int op_const);
 bool is_blank_of_op(int op_const);
+bool is_for_blank_op(int op_const); // jg18
 int get_handler_for_x_of_operator(int node);
 
 //Karajorma
 int get_generic_subsys(const char *subsy_name);
 bool ship_class_unchanged(const ship_registry_entry *ship_entry);
 void multi_sexp_modify_variable();
+
+// jg18
+// container_value_index is for using one specific value from acontainer
+int copy_node_to_replacement_args(int node, int container_value_index = -1);
 
 #define NO_OPERATOR_INDEX_DEFINED		-2
 #define NOT_A_SEXP_OPERATOR				-1
@@ -995,7 +1004,7 @@ SCP_vector<SCP_string> *Current_event_log_container_buffer;
 SCP_vector<SCP_string> *Current_event_log_argument_buffer;
 
 // Goober5000 - arg_item class stuff, borrowed from sexp_list_item class stuff -------------
-void arg_item::add_data(char *str, int n)
+void arg_item::add_data(const char *str, int n)
 {
 	arg_item *item, *ptr;
 
@@ -1011,12 +1020,12 @@ void arg_item::add_data(char *str, int n)
 	item->next = ptr;
 }
 
-void arg_item::add_data(const std::pair<char*, int> &data)
+void arg_item::add_data(const std::pair<const char*, int> &data)
 {
 	add_data(data.first, data.second);
 }
 
-void arg_item::add_data_dup(char *str, int n)
+void arg_item::add_data_dup(const char *str, int n)
 {
 	arg_item *item, *ptr;
 
@@ -1033,12 +1042,12 @@ void arg_item::add_data_dup(char *str, int n)
 	item->next = ptr;
 }
 
-void arg_item::add_data_dup(const std::pair<char*, int> &data)
+void arg_item::add_data_dup(const std::pair<const char*, int> &data)
 {
 	add_data_dup(data.first, data.second);
 }
 
-void arg_item::add_data_set_dup(char *str, int n)
+void arg_item::add_data_set_dup(const char *str, int n)
 {
 	arg_item *item, *ptr;
 
@@ -1055,7 +1064,7 @@ void arg_item::add_data_set_dup(char *str, int n)
 	item->next = ptr;
 }
 
-void arg_item::add_data_set_dup(const std::pair<char*, int> &data)
+void arg_item::add_data_set_dup(const std::pair<const char*, int> &data)
 {
 	add_data_set_dup(data.first, data.second);
 }
@@ -1081,7 +1090,7 @@ void arg_item::expunge()
 		ptr = this->next->next;
 
 		if (this->next->flags & ARG_ITEM_F_DUP)
-			vm_free(this->next->text);
+			vm_free(const_cast<char*>(this->next->text));
 		delete this->next;
 
 		this->next = ptr;
@@ -1098,7 +1107,7 @@ void arg_item::clear_nesting_level()
 		ptr = this->next->next;
 
 		if (this->next->flags & ARG_ITEM_F_DUP)
-			vm_free(this->next->text);
+			vm_free(const_cast<char*>(this->next->text));
 		delete this->next;
 
 		this->next = ptr;
@@ -2106,7 +2115,10 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 		} else if (Sexp_nodes[node].subtype == SEXP_ATOM_STRING) {
 			type2 = SEXP_ATOM_STRING;
 
-		} else if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER) {
+		} else if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER_NAME) {
+			type2 = SEXP_ATOM_CONTAINER_NAME;
+
+		} else if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER_DATA) {
 			// this is an instance of "Replace Container Data"
 			const int modifier_node = Sexp_nodes[node].first;
 			if (modifier_node == -1) {
@@ -2133,7 +2145,11 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 			// ignore nested "Replace" uses
 			if (!(Sexp_nodes[modifier_node].type & SEXP_FLAG_VARIABLE) &&
-					(Sexp_nodes[modifier_node].subtype != SEXP_ATOM_CONTAINER)) {
+					(Sexp_nodes[modifier_node].subtype != SEXP_ATOM_CONTAINER_DATA)) {
+				Assertion(Sexp_nodes[modifier_node].subtype != SEXP_ATOM_CONTAINER_NAME,
+					"Attempt to use container name %s as modifier for container %s. Please report!",
+					Sexp_nodes[modifier_node].text,
+					Sexp_nodes[node].text);
 				if (data_container.is_list()) {
 					const auto modifier = get_list_modifier(Sexp_nodes[modifier_node].text);
 					if ((Sexp_nodes[modifier_node].subtype != SEXP_ATOM_STRING) ||
@@ -2177,8 +2193,9 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 			continue;
 
 		} else {
-			UNREACHABLE("SEXP subtype is %d when it should be SEXP_ATOM_LIST, SEXP_ATOM_NUMBER, SEXP_ATOM_STRING, or "
-						"SEXP_ATOM_CONTAINER!",
+			UNREACHABLE("SEXP subtype is %d when it should be SEXP_ATOM_LIST, SEXP_ATOM_NUMBER, SEXP_ATOM_STRING, "
+						"SEXP_ATOM_CONTAINER_NAME, or "
+						"SEXP_ATOM_CONTAINER_DATA!",
 				Sexp_nodes[node].subtype);
 		}
 
@@ -2874,6 +2891,9 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 			// Goober5000
 			case OPF_ANYTHING:
+				if (type2 == SEXP_ATOM_CONTAINER_NAME) {
+					return SEXP_CHECK_TYPE_MISMATCH;
+				}
 				break;
 
 			case OPF_AI_GOAL:
@@ -3677,14 +3697,15 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 			case OPF_LIST_CONTAINER_NAME:
 			case OPF_MAP_CONTAINER_NAME:
 			{
-				if (type2 != SEXP_ATOM_STRING) {
+				if (type2 != SEXP_ATOM_CONTAINER_NAME) {
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
+
 				p_container = get_sexp_container(Sexp_nodes[node].text);
-				if (!p_container) {
-					return SEXP_CHECK_TYPE_MISMATCH;
-				} else if ((type == OPF_LIST_CONTAINER_NAME && !p_container->is_list()) ||
-						   (type == OPF_MAP_CONTAINER_NAME && !p_container->is_map())) {
+				Assertion(p_container, "Attempt to use unknown container %s. Please report!", Sexp_nodes[node].text);
+
+				if ((type == OPF_LIST_CONTAINER_NAME && !p_container->is_list()) ||
+						(type == OPF_MAP_CONTAINER_NAME && !p_container->is_map())) {
 					return SEXP_CHECK_WRONG_CONTAINER_TYPE;
 				}
 				break;
@@ -3704,6 +3725,25 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					return z;
 				}
 				break;
+
+			case OPF_DATA_OR_STR_CONTAINER:
+			{
+				if (type2 == SEXP_ATOM_CONTAINER_NAME) {
+					// only list containers of strings or map containers with string keys are allowed
+					const auto *p_str_container = get_sexp_container(Sexp_nodes[node].text);
+					Assertion(p_str_container,
+						"Attempt to use unknown container %s. Please report!",
+						Sexp_nodes[node].text);
+
+					const auto &str_container = *p_str_container;
+					if (str_container.is_list() && none(str_container.type & ContainerType::STRING_DATA)) {
+						return SEXP_CHECK_WRONG_CONTAINER_DATA_TYPE;
+					} else if (str_container.is_map() && none(str_container.type & ContainerType::STRING_KEYS)) {
+						return SEXP_CHECK_WRONG_MAP_KEY_TYPE;
+					}
+				}
+				break;
+			}
 
 			default:
 				Error(LOCATION, "Unhandled argument format");
@@ -3929,28 +3969,49 @@ int get_sexp()
 		else if (*Mp == sexp_container::DELIM) {
 			Mp++;
 
-			char container_name[TOKEN_LENGTH];
-			stuff_string(container_name, F_NAME, TOKEN_LENGTH, sexp_container::DELIM_STR.c_str());
+			char container_name[sexp_container::NAME_MAX_LENGTH + 1];
 
-			// bump past closing '&'
-			Mp += 2;
+			if (*Mp == sexp_container::DELIM) {
+				// container name
+				Mp++;
 
-			if (get_sexp_container(container_name) == nullptr) {
-				Error(LOCATION, "Attempt to use unknown container '%s'", container_name);
-				return -1;
-			}
+				// ' ' occurs if there are arguments after the container name
+				// ')' occurs if this is the SEXP's last argument
+				stuff_string(container_name, F_NAME, sizeof(container_name), " )");
+				if (*Mp != ')') {
+					Mp++;
+				}
 
-			// advance to the control options, since we'll read them when calling get_sexp() below
-			while (*Mp != '(') {
-				// watch out for malformed input
-				if ('\n' == *Mp || '\0' == *Mp) {
-					break;
+				if (get_sexp_container(container_name) == nullptr) {
+					Error(LOCATION, "Attempt to use unknown container '%s'", container_name);
+					return -1;
+				}
+
+				node = alloc_sexp(container_name, SEXP_ATOM, SEXP_ATOM_CONTAINER_NAME, -1, -1);
+			} else {
+				// container data
+				stuff_string(container_name, F_NAME, sizeof(container_name), sexp_container::DELIM_STR.c_str());
+
+				// bump past closing '&'
+				Mp += 2;
+
+				if (get_sexp_container(container_name) == nullptr) {
+					Error(LOCATION, "Attempt to use data from unknown container '%s'", container_name);
+					return -1;
+				}
+
+				// advance to the container modifier, since we'll read them when calling get_sexp() below
+				while (*Mp != '(') {
+					// watch out for malformed input
+					if ('\n' == *Mp || '\0' == *Mp) {
+						break;
+					}
+					Mp++;
 				}
 				Mp++;
-			}
-			Mp++;
 
-			node = alloc_sexp(container_name, SEXP_ATOM, SEXP_ATOM_CONTAINER, get_sexp(), -1);
+				node = alloc_sexp(container_name, SEXP_ATOM, SEXP_ATOM_CONTAINER_DATA, get_sexp(), -1);
+			}
 
 			ignore_white_space();
 		}
@@ -4418,7 +4479,14 @@ void stuff_sexp_text_string(SCP_string &dest, int node, int mode)
 {
 	Assert((node >= 0) && (node < Num_sexp_nodes));
 
-	if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER) {
+	if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER_NAME) {
+		Assertion(get_sexp_container(Sexp_nodes[node].text) != nullptr,
+			"Couldn't find container: %s\n",
+			Sexp_nodes[node].text);
+
+		sprintf(dest, "%s%s ", sexp_container::NAME_NODE_PREFIX.c_str(), Sexp_nodes[node].text);
+	}
+	else if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER_DATA) {
 		Assertion(get_sexp_container(Sexp_nodes[node].text) != nullptr,
 			"Couldn't find container: %s\n",
 			Sexp_nodes[node].text);
@@ -4513,7 +4581,7 @@ int build_sexp_string(SCP_string &accumulator, int cur_node, int level, int mode
 			stuff_sexp_text_string(buf, node, mode);
 			accumulator += buf;
 
-		} else if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER) {
+		} else if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER_DATA) {
 			// build text to string
 			stuff_sexp_text_string(buf, node, mode);
 			accumulator += buf;
@@ -4556,7 +4624,7 @@ void build_extended_sexp_string(SCP_string &accumulator, int cur_node, int level
 			stuff_sexp_text_string(buf, node, mode);
 			accumulator += buf;
 
-		} else if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER) {
+		} else if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER_DATA) {
 			// build text to string
 			stuff_sexp_text_string(buf, node, mode);
 			accumulator += buf;
@@ -4936,7 +5004,7 @@ int sexp_atoi(int node)
 	// cache the value, unless this node is a variable, argument, or container data, because the value may change
 	if (!(Sexp_nodes[node].type & SEXP_FLAG_VARIABLE) &&
 		!(Sexp_nodes[node].flags & SNF_SPECIAL_ARG_IN_NODE) &&
-		(Sexp_nodes[node].subtype != SEXP_ATOM_CONTAINER))
+		(Sexp_nodes[node].subtype != SEXP_ATOM_CONTAINER_DATA))
 		Sexp_nodes[node].cache = new sexp_cached_data(OPF_NUMBER, num, -1);
 
 	return num;
@@ -10023,7 +10091,7 @@ int eval_cond(int n)
 int test_argument_nodes_for_condition(int n, int condition_node, int *num_true, int *num_false, int *num_known_true, int *num_known_false, int threshold = -1)
 {
 	int val, num_valid_arguments;
-	SCP_vector<std::pair<char*, int>> Applicable_arguments_temp;
+	SCP_vector<std::pair<const char*, int>> Applicable_arguments_temp;
 	Assert(n != -1 && condition_node != -1);
 	Assert((num_true != nullptr) && (num_false != nullptr) && (num_known_true != nullptr) && (num_known_false != nullptr));
 
@@ -10044,43 +10112,48 @@ int test_argument_nodes_for_condition(int n, int condition_node, int *num_true, 
 		// only eval this argument if it's valid
 		if (Sexp_nodes[n].flags & SNF_ARGUMENT_VALID)
 		{
-			// evaluate conditional for current argument
-			Sexp_replacement_arguments.emplace_back(Sexp_nodes[n].text, n);
-			val = eval_sexp(condition_node);
-			if ( Sexp_nodes[condition_node].value == SEXP_KNOWN_TRUE ||
+			const int num_args = copy_node_to_replacement_args(n);
+
+			for (int i = 0; i < num_args; ++i) {
+				// evaluate conditional for current argument
+				val = eval_sexp(condition_node);
+				if (Sexp_nodes[condition_node].value == SEXP_KNOWN_TRUE ||
 					Sexp_nodes[condition_node].value == SEXP_KNOWN_FALSE) {
-				val = Sexp_nodes[condition_node].value;
-			} else if ( Sexp_nodes[condition_node].value == SEXP_NAN_FOREVER ) {
-				// In accordance with SEXP_NAN/SEXP_NAN_FOREVER becoming SEXP_FALSE in eval_sexp()
-				val = SEXP_KNOWN_FALSE;
+					val = Sexp_nodes[condition_node].value;
+				} else if (Sexp_nodes[condition_node].value == SEXP_NAN_FOREVER) {
+					// In accordance with SEXP_NAN/SEXP_NAN_FOREVER becoming SEXP_FALSE in eval_sexp()
+					val = SEXP_KNOWN_FALSE;
+				}
+
+				const auto &argument = Sexp_replacement_arguments.back();
+
+				switch (val)
+				{
+					case SEXP_TRUE:
+						(*num_true)++;
+						Applicable_arguments_temp.emplace_back(argument.first, argument.second);
+						break;
+
+					case SEXP_FALSE:
+						(*num_false)++;
+						break;
+
+					case SEXP_KNOWN_TRUE:
+						(*num_known_true)++;
+						Applicable_arguments_temp.emplace_back(argument.first, argument.second);
+						break;
+
+					case SEXP_KNOWN_FALSE:
+						(*num_known_false)++;
+						break;
+				}
+
+				// clear argument, but not list, as we'll need it later
+				Sexp_replacement_arguments.pop_back();
+
+				// increment
+				num_valid_arguments++;
 			}
-
-			switch (val)
-			{
-				case SEXP_TRUE:
-					(*num_true)++;
-					Applicable_arguments_temp.emplace_back(Sexp_nodes[n].text, n);
-					break;
-
-				case SEXP_FALSE:
-					(*num_false)++;
-					break;
-
-				case SEXP_KNOWN_TRUE:
-					(*num_known_true)++;
-					Applicable_arguments_temp.emplace_back(Sexp_nodes[n].text, n);
-					break;
-
-				case SEXP_KNOWN_FALSE:
-					(*num_known_false)++;
-					break;
-			}
-
-			// clear argument, but not list, as we'll need it later
-			Sexp_replacement_arguments.pop_back();
-
-			// increment
-			num_valid_arguments++;
 		}
 
 		// continue along argument list
@@ -10104,10 +10177,10 @@ int test_argument_nodes_for_condition(int n, int condition_node, int *num_true, 
 
 // Goober5000
 // NOTE: if you change this function, check to see if the previous function should also be changed!
-int test_argument_vector_for_condition(const SCP_vector<std::pair<char*, int>> &argument_vector, bool already_dupped, int condition_node, int *num_true, int *num_false, int *num_known_true, int *num_known_false)
+int test_argument_vector_for_condition(const SCP_vector<std::pair<const char*, int>> &argument_vector, bool already_dupped, int condition_node, int *num_true, int *num_false, int *num_known_true, int *num_known_false)
 {
 	int val, num_valid_arguments;
-	SCP_vector<std::pair<char*, int>> Applicable_arguments_temp;
+	SCP_vector<std::pair<const char*, int>> Applicable_arguments_temp;
 	Assert(condition_node != -1);
 	Assert((num_true != nullptr) && (num_false != nullptr) && (num_known_true != nullptr) && (num_known_false != nullptr));
 
@@ -10162,7 +10235,7 @@ int test_argument_vector_for_condition(const SCP_vector<std::pair<char*, int>> &
 			// if the argument was already dup'd, but not added as an applicable argument,
 			// we need to free it here before we cause a memory leak
 			if ((val == SEXP_FALSE || val == SEXP_KNOWN_FALSE) && already_dupped)
-				vm_free(argument.first);
+				vm_free(const_cast<char*>(argument.first));
 
 			// clear argument, but not list, as we'll need it later
 			Sexp_replacement_arguments.pop_back();
@@ -10268,8 +10341,7 @@ int eval_number_of(int arg_handler_node, int condition_node)
 // this works a little differently... we randomly pick one argument to use
 // for our condition, but this argument must be saved among sexp calls...
 // so we select an argument and set its flag
-// addendum: hook karajorma's random-multiple-of into the same sexp
-int eval_random_of(int arg_handler_node, int condition_node, bool multiple)
+int eval_random_of(int arg_handler_node, int condition_node)
 {
 	int n = -1, i, val, num_valid_args, random_argument, num_known_false = 0;
 	Assert(arg_handler_node != -1 && condition_node != -1);
@@ -10284,16 +10356,13 @@ int eval_random_of(int arg_handler_node, int condition_node, bool multiple)
 	}
 
 	// find which argument we picked, if we picked one
-	if (!multiple)
-	{
-		n = CDR(arg_handler_node);
+	n = CDR(arg_handler_node);
 
-		// iterate to the argument we previously selected
-		for ( ; n != -1; n = CDR(n))
-		{
-			if (Sexp_nodes[n].flags & SNF_ARGUMENT_SELECT)
-				break;
-		}
+	// iterate to the argument we previously selected
+	for ( ; n != -1; n = CDR(n))
+	{
+		if (Sexp_nodes[n].flags & SNF_ARGUMENT_SELECT)
+			break;
 	}
 
 	// if argument not found (or never specified in the first place), we have to pick one
@@ -10326,11 +10395,8 @@ int eval_random_of(int arg_handler_node, int condition_node, bool multiple)
 			return SEXP_KNOWN_FALSE;	// We're going nowhere fast.
 		}
 
-		// save it, if we're saving
-		if (!multiple)
-		{
-			Sexp_nodes[n].flags |= SNF_ARGUMENT_SELECT;
-		}
+		// save it
+		Sexp_nodes[n].flags |= SNF_ARGUMENT_SELECT;
 	}
 
 	// only eval this argument if it's valid
@@ -10349,11 +10415,121 @@ int eval_random_of(int arg_handler_node, int condition_node, bool multiple)
 		{
 			Sexp_applicable_argument_list.add_data(Sexp_nodes[n].text, n);
 		}
-		else if ((!multiple || num_valid_args == 1) && (Sexp_nodes[condition_node].value == SEXP_KNOWN_FALSE || Sexp_nodes[condition_node].value == SEXP_NAN_FOREVER))
+		else if (Sexp_nodes[condition_node].value == SEXP_KNOWN_FALSE || Sexp_nodes[condition_node].value == SEXP_NAN_FOREVER)
 		{
-			val = SEXP_KNOWN_FALSE;	// If we can't randomly pick another one and this one is guaranteed never to be true, then give up now.
+			val = SEXP_KNOWN_FALSE; // If we can't randomly pick another one and this one is guaranteed never to be true, then give up now.
 		}
-		
+
+		// clear argument, but not list, as we'll need it later
+		Sexp_replacement_arguments.pop_back();
+	}
+
+	// true if our selected argument is true
+	return val;
+}
+
+// originally part of eval_random_of() but pulled out as the code paths diverged
+int eval_random_multiple_of(int arg_handler_node, int condition_node)
+{
+	Assertion(arg_handler_node != -1, "No argument handler provided to random-multiple-of. Please report!");
+	Assertion(condition_node != -1, "No condition provided to random-multiple-of. Please report!");
+
+	// get the number of valid arguments
+	SCP_vector<int> cumulative_arg_counts;
+
+	const int num_valid_arg_nodes =
+		sexp_container_query_sexp_args_count(arg_handler_node, cumulative_arg_counts, true);
+	Assertion(num_valid_arg_nodes >= 0,
+		"random-multiple-of found invalid number of valid arguments (%d). please report!",
+		num_valid_arg_nodes);
+
+	if (num_valid_arg_nodes == 0)
+	{
+		return SEXP_KNOWN_FALSE;	// Not much point in trying to evaluate it again.
+	}
+
+	Assertion(!cumulative_arg_counts.empty(),
+		"Attempt to count arguments for random-multiple-of SEXP failed. Please report!");
+	const int num_arg_values = cumulative_arg_counts.back();
+	Assertion(num_arg_values >= 0,
+		"random-multiple-of found invalid number of valid argument values (%d). please report!",
+		num_arg_values);
+	if (num_arg_values == 0)
+	{
+		// valid args are one or more empty containers, whose data could change later
+		return SEXP_FALSE;
+	}
+
+	int n = CDR(arg_handler_node);
+	Assertion(n >= 0, "No arguments provided to random-multiple-of. Please report!");
+	int temp_node = n;
+
+	// pick an argument and iterate to it
+	const int random_arg_value = rand_internal(1, num_arg_values);
+	int random_argument = 0;
+	// skip the first entry, which is the initial zero value
+	for (int k = 1, size = (int)cumulative_arg_counts.size(); k < size; ++k) {
+		if (random_arg_value <= cumulative_arg_counts[k]) {
+			random_argument = k;
+			break;
+		}
+	}
+	Assertion(random_argument > 0,
+		"Attempt to find randomly selected argument in random-multiple-of failed. Please report!");
+
+	int i = 0;
+	int num_known_false = 0;
+	bool valid_container_arg_found = false;
+	for (int j = 0; j < num_valid_arg_nodes; temp_node = CDR(temp_node))
+	{
+		// count only valid arguments
+		if (Sexp_nodes[temp_node].flags & SNF_ARGUMENT_VALID) {
+			j++;
+
+			if (Sexp_nodes[temp_node].subtype == SEXP_ATOM_CONTAINER_NAME) {
+				valid_container_arg_found = true;
+			}
+			if (i < random_argument && (++i == random_argument)) {
+				// Found the node we want, store it for use
+				n = temp_node;
+			}
+
+			if ((Sexp_nodes[temp_node].value == SEXP_KNOWN_FALSE) || (Sexp_nodes[temp_node].value == SEXP_NAN_FOREVER))
+				num_known_false++;
+		}
+	}
+
+	if (num_known_false == num_valid_arg_nodes) {
+		return SEXP_KNOWN_FALSE;	// We're going nowhere fast.
+	}
+
+	// only eval this argument if it's valid
+	int val = SEXP_FALSE;
+	if (Sexp_nodes[n].flags & SNF_ARGUMENT_VALID)
+	{
+		// ensure special argument list is empty
+		Sexp_applicable_argument_list.clear_nesting_level();
+
+		const int arg_value_index = (Sexp_nodes[n].subtype == SEXP_ATOM_CONTAINER_NAME)
+										? random_arg_value - cumulative_arg_counts[random_argument - 1] - 1
+										: -1;
+		copy_node_to_replacement_args(n, arg_value_index);
+
+		// evaluate conditional for current argument
+		val = eval_sexp(condition_node);
+
+		// true?
+		if (val == SEXP_TRUE)
+		{
+			const char *arg_text = Sexp_replacement_arguments.back().first;
+			Sexp_applicable_argument_list.add_data(arg_text, n);
+		} else if ((num_valid_arg_nodes == 1) && !valid_container_arg_found &&
+				   (Sexp_nodes[condition_node].value == SEXP_KNOWN_FALSE ||
+					   Sexp_nodes[condition_node].value == SEXP_NAN_FOREVER))
+		{
+			val = SEXP_KNOWN_FALSE; // If the only valid arg is guaranteed never to be true, then give up now.
+		}
+
 		// clear argument, but not list, as we'll need it later
 		Sexp_replacement_arguments.pop_back();
 	}
@@ -10418,9 +10594,9 @@ int eval_in_sequence(int arg_handler_node, int condition_node)
 int eval_for_counter(int arg_handler_node, int condition_node, bool just_count = false)
 {
 	bool is_nan, is_nan_forever;
-	int n, num_valid_arguments, num_true, num_false, num_known_true, num_known_false;
+	int n, num_valid_arguments = 0, num_true, num_false, num_known_true, num_known_false;
 	int i, count, counter_start, counter_stop, counter_step;
-	SCP_vector<std::pair<char*, int>> argument_vector;
+	SCP_vector<std::pair<const char*, int>> argument_vector;
 	char buf[NAME_LENGTH];
 	Assert(arg_handler_node != -1 && condition_node != -1);
 
@@ -10455,18 +10631,25 @@ int eval_for_counter(int arg_handler_node, int condition_node, bool just_count =
 	// build a vector of counter values
 	for (i = counter_start; ((counter_step > 0) ? i <= counter_stop : i >= counter_stop); i += counter_step)
 	{
-		sprintf(buf, "%d", i);
-		argument_vector.emplace_back(vm_strdup(buf), -1);
-		// Note: we do not call vm_free() on the contents of argument_vector, and we don't for the very good
-		// reason that those pointers are then passed along by test_argument_vector_for_condition(), below.
-		// The strings will then be freed by arg_item::expunge() or arg_item::clear_nesting_level(), or even
-		// inside test_argument_vector_for_condition() (if the argument doesn't satisfy the condition). So
-		// under no circumstances try to free these strings inside this function! It will cause a double-free
-		// situation, resulting in a crash at best. -MageKing17
+		// if we're just counting we should just avoid the memory management problem mentioned below,
+		// since we return before calling test_argument_vector_for_condition
+		if (just_count)
+			num_valid_arguments++;
+		else
+		{
+			sprintf(buf, "%d", i);
+			argument_vector.emplace_back(vm_strdup(buf), -1);
+			// Note: we do not call vm_free() on the contents of argument_vector, and we don't for the very good
+			// reason that those pointers are then passed along by test_argument_vector_for_condition(), below.
+			// The strings will then be freed by arg_item::expunge() or arg_item::clear_nesting_level(), or even
+			// inside test_argument_vector_for_condition() (if the argument doesn't satisfy the condition). So
+			// under no circumstances try to free these strings inside this function! It will cause a double-free
+			// situation, resulting in a crash at best. -MageKing17
+		}
 	}
 
 	if (just_count)
-		return static_cast<int>(argument_vector.size());
+		return num_valid_arguments;
 
 	// test the whole argument vector
 	num_valid_arguments = test_argument_vector_for_condition(argument_vector, true, condition_node, &num_true, &num_false, &num_known_true, &num_known_false);
@@ -10483,8 +10666,8 @@ int eval_for_counter(int arg_handler_node, int condition_node, bool just_count =
 // Goober5000
 int eval_for_ship_collection(int arg_handler_node, int condition_node, int op_const, bool just_count = false)
 {
-	int n, num_valid_arguments, num_true, num_false, num_known_true, num_known_false;
-	SCP_vector<std::pair<char*, int>> argument_vector;
+	int n, num_valid_arguments = 0, num_true, num_false, num_known_true, num_known_false;
+	SCP_vector<std::pair<const char*, int>> argument_vector;
 	Assert(arg_handler_node != -1 && condition_node != -1);
 
 	n = CDR(arg_handler_node);
@@ -10539,13 +10722,18 @@ int eval_for_ship_collection(int arg_handler_node, int condition_node, int op_co
 				}
 
 				if (constraint_index == ship_index)
-					argument_vector.emplace_back(vm_strdup(shipp->ship_name), -1);
+				{
+					if (just_count)
+						num_valid_arguments++;
+					else
+						argument_vector.emplace_back(vm_strdup(shipp->ship_name), -1);
+				}
 			}
 		}
 	}
 
 	if (just_count)
-		return static_cast<int>(argument_vector.size());
+		return num_valid_arguments;
 
 	// test the whole argument vector
 	num_valid_arguments = test_argument_vector_for_condition(argument_vector, true, condition_node, &num_true, &num_false, &num_known_true, &num_known_false);
@@ -10561,11 +10749,70 @@ int eval_for_ship_collection(int arg_handler_node, int condition_node, int op_co
 		return SEXP_FALSE;
 }
 
+// jg18
+int eval_for_container(int arg_handler_node, int condition_node, int op_const, bool just_count = false)
+{
+	Assertion(arg_handler_node != -1,
+		"Attempt to use invalid argument handler with a for-container SEXP (%d). Please report!",
+		op_const);
+	Assertion(condition_node != -1,
+		"Attempt to use invalid condition with a for-container SEXP (%d). Please report!",
+		op_const);
+
+	int num_arguments = 0;
+	SCP_vector<std::pair<const char*, int>> argument_vector;
+
+	const int arg_node = CDR(arg_handler_node);
+
+	switch (op_const)
+	{
+		case OP_FOR_CONTAINER_DATA:
+			num_arguments = sexp_container_collect_data_arguments(arg_node, argument_vector, just_count);
+			break;
+
+		case OP_FOR_MAP_CONTAINER_KEYS:
+			num_arguments = sexp_container_collect_map_key_arguments(arg_node, argument_vector, just_count);
+			break;
+
+		default:
+			UNREACHABLE("Unhandled for-container SEXP (%d). Please report!", op_const);
+			break;
+	}
+
+	if (just_count) {
+		// cleaning up argument_vector isn't needed
+		// because the "collect arguments" functions didn't touch it
+		return num_arguments;
+	}
+
+	// test the whole argument vector
+	int num_true, num_false, num_known_true, num_known_false;
+	const int num_valid_arguments = test_argument_vector_for_condition(argument_vector,
+		true,
+		condition_node,
+		&num_true,
+		&num_false,
+		&num_known_true,
+		&num_known_false);
+	SCP_UNUSED(num_valid_arguments);
+
+	// use the sexp_or algorithm
+	if (num_known_true || num_true) {
+		return SEXP_TRUE;
+	// Don't short-circuit because container data/keys can change later on,
+	// and this sexp's container is intrinsically unknowable.
+	//} else if (num_valid_arguments > 0 && num_known_false == num_valid_arguments) {
+	//	return SEXP_KNOWN_FALSE;
+	} else {
+		return SEXP_FALSE;
+	}
+}
+
 // Goober5000
 int eval_for_players(int arg_handler_node, int condition_node, bool just_count = false)
 {
-	int num_valid_arguments, num_true, num_false, num_known_true, num_known_false;
-	SCP_vector<std::pair<char*, int>> argument_vector;
+	int num_valid_arguments = 0, num_true, num_false, num_known_true, num_known_false;
+	SCP_vector<std::pair<const char*, int>> argument_vector;
 	Assert(arg_handler_node != -1 && condition_node != -1);
 
 	if (Game_mode & GM_MULTIPLAYER)
@@ -10575,18 +10822,28 @@ int eval_for_players(int arg_handler_node, int condition_node, bool just_count =
 		{
 			int shipnum = multi_get_player_ship(i);
 			if (shipnum >= 0)
-				argument_vector.emplace_back(vm_strdup(Ships[shipnum].ship_name), -1);
+			{
+				if (just_count)
+					num_valid_arguments++;
+				else
+					argument_vector.emplace_back(vm_strdup(Ships[shipnum].ship_name), -1);
+			}
 		}
 	}
 	else
 	{
 		// in single-player it's just one ship
 		if (Player_ship)
-			argument_vector.emplace_back(vm_strdup(Player_ship->ship_name), -1);
+		{
+			if (just_count)
+				num_valid_arguments++;
+			else
+				argument_vector.emplace_back(vm_strdup(Player_ship->ship_name), -1);
+		}
 	}
 
 	if (just_count)
-		return static_cast<int>(argument_vector.size());
+		return num_valid_arguments;
 
 	// test the whole argument vector
 	num_valid_arguments = test_argument_vector_for_condition(argument_vector, true, condition_node, &num_true, &num_false, &num_known_true, &num_known_false);
@@ -10644,8 +10901,7 @@ void sexp_change_all_argument_validity(int n, bool invalidate)
 
 	// can't change validity of for-* sexps
 	auto op_const = get_operator_const(arg_handler);
-	if (op_const == OP_FOR_COUNTER || op_const == OP_FOR_PLAYERS
-		|| op_const == OP_FOR_SHIP_CLASS || op_const == OP_FOR_SHIP_TYPE || op_const == OP_FOR_SHIP_TEAM || op_const == OP_FOR_SHIP_SPECIES)
+	if (is_for_blank_op(op_const))
 		return;
 		
 	while (n != -1)
@@ -10693,6 +10949,10 @@ int sexp_num_valid_arguments( int n )
 		case OP_FOR_SHIP_TEAM:
 		case OP_FOR_SHIP_SPECIES:
 			return eval_for_ship_collection(arg_handler, Locked_sexp_true, op_const, true);
+
+		case OP_FOR_CONTAINER_DATA:
+		case OP_FOR_MAP_CONTAINER_KEYS:
+			return eval_for_container(arg_handler, Locked_sexp_true, op_const, true);
 	}
 
 	// loop through arguments
@@ -10724,8 +10984,7 @@ void sexp_change_argument_validity(int n, bool invalidate)
 
 	// can't change validity of for-* sexps
 	auto op_const = get_operator_const(arg_handler);
-	if (op_const == OP_FOR_COUNTER || op_const == OP_FOR_PLAYERS
-		|| op_const == OP_FOR_SHIP_CLASS || op_const == OP_FOR_SHIP_TYPE || op_const == OP_FOR_SHIP_TEAM || op_const == OP_FOR_SHIP_SPECIES)
+	if (is_for_blank_op(op_const))
 		return;
 		
 	// loop through arguments
@@ -10832,6 +11091,10 @@ bool is_blank_argument_op(int op_const)
 // Goober5000
 bool is_blank_of_op(int op_const)
 {
+	if (is_for_blank_op(op_const)) {
+		return true;
+	}
+
 	switch (op_const)
 	{
 		case OP_ANY_OF:
@@ -10840,13 +11103,28 @@ bool is_blank_of_op(int op_const)
 		case OP_RANDOM_OF:
 		case OP_RANDOM_MULTIPLE_OF:
 		case OP_IN_SEQUENCE:
+		case OP_FIRST_OF:
+			return true;
+
+		default:
+			return false;
+	}
+}
+
+// jg18
+// check if an operator is one of the for-* SEXPs
+bool is_for_blank_op(const int op_const)
+{
+	switch (op_const)
+	{
 		case OP_FOR_COUNTER:
 		case OP_FOR_SHIP_CLASS:
 		case OP_FOR_SHIP_TYPE:
 		case OP_FOR_SHIP_TEAM:
 		case OP_FOR_SHIP_SPECIES:
 		case OP_FOR_PLAYERS:
-		case OP_FIRST_OF:
+		case OP_FOR_CONTAINER_DATA:
+		case OP_FOR_MAP_CONTAINER_KEYS:
 			return true;
 
 		default:
@@ -24547,7 +24825,7 @@ int eval_sexp(int cur_node, int referenced_node)
 	}
 
 	// ignore for container data, because their "first" is a container modifier
-	if ((Sexp_nodes[cur_node].first != -1) && (Sexp_nodes[cur_node].subtype != SEXP_ATOM_CONTAINER)) {
+	if ((Sexp_nodes[cur_node].first != -1) && (Sexp_nodes[cur_node].subtype != SEXP_ATOM_CONTAINER_DATA)) {
 		node = CAR(cur_node);
 		sexp_val = eval_sexp(node);
 		Sexp_nodes[cur_node].value = Sexp_nodes[node].value;	// higher level node gets node value
@@ -24864,6 +25142,8 @@ int eval_sexp(int cur_node, int referenced_node)
 			case OP_CONTAINER_REMOVE_FROM_MAP:
 			case OP_CONTAINER_GET_MAP_KEYS:
 			case OP_CLEAR_CONTAINER:
+			case OP_COPY_CONTAINER:
+			case OP_APPLY_CONTAINER_FILTER:
 				sexp_val = sexp_container_eval_change_sexp(op_num, node);
 				break;
 
@@ -25069,10 +25349,14 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = eval_every_of( cur_node, referenced_node );
 				break;
 
-			// Goober5000 and Karajorma
+			// Goober5000
 			case OP_RANDOM_OF:
+				sexp_val = eval_random_of( cur_node, referenced_node );
+				break;
+
+			// Goober5000 and Karajorma
 			case OP_RANDOM_MULTIPLE_OF:
-				sexp_val = eval_random_of( cur_node, referenced_node, (op_num == OP_RANDOM_MULTIPLE_OF) );
+				sexp_val = eval_random_multiple_of( cur_node, referenced_node );
 				break;
 
 			// Goober5000
@@ -25101,6 +25385,12 @@ int eval_sexp(int cur_node, int referenced_node)
 			// Goober5000
 			case OP_FOR_PLAYERS:
 				sexp_val = eval_for_players( cur_node, referenced_node );
+				break;
+
+			// jg18
+			case OP_FOR_CONTAINER_DATA:
+			case OP_FOR_MAP_CONTAINER_KEYS:
+				sexp_val = eval_for_container( cur_node, referenced_node, op_num );
 				break;
 
 			// MageKing17
@@ -27917,6 +28207,8 @@ int query_operator_return_type(int op)
 		case OP_CONTAINER_REMOVE_FROM_MAP:
 		case OP_CONTAINER_GET_MAP_KEYS:
 		case OP_CLEAR_CONTAINER:
+		case OP_COPY_CONTAINER:
+		case OP_APPLY_CONTAINER_FILTER:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -27957,6 +28249,8 @@ int query_operator_return_type(int op)
 		case OP_FOR_SHIP_TEAM:
 		case OP_FOR_SHIP_SPECIES:
 		case OP_FOR_PLAYERS:
+		case OP_FOR_CONTAINER_DATA:
+		case OP_FOR_MAP_CONTAINER_KEYS:
 		case OP_FIRST_OF:
 			return OPR_FLEXIBLE_ARGUMENT;
 
@@ -28551,6 +28845,26 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_CLEAR_CONTAINER:
 			return OPF_CONTAINER_NAME;
 
+		case OP_COPY_CONTAINER:
+			if (argnum == 0 || argnum == 1) {
+				return OPF_CONTAINER_NAME;
+			} else if (argnum == 2) {
+				return OPF_BOOL;
+			} else {
+				// This shouldn't happen
+				return OPF_NONE;
+			}
+
+		case OP_APPLY_CONTAINER_FILTER:
+			if (argnum == 0) {
+				return OPF_CONTAINER_NAME;
+			} else if (argnum == 1) {
+				return OPF_LIST_CONTAINER_NAME;
+			} else {
+				// This shouldn't happen
+				return OPF_NONE;
+			}
+
 		case OP_HAS_DOCKED:
 		case OP_HAS_UNDOCKED:
 		case OP_HAS_DOCKED_DELAY:
@@ -28726,19 +29040,21 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_DO_FOR_VALID_ARGUMENTS:
 			return OPF_NULL;
 
-		case OP_ANY_OF:
-		case OP_EVERY_OF:
 		case OP_RANDOM_OF:
-		case OP_RANDOM_MULTIPLE_OF:
 		case OP_IN_SEQUENCE:
 			return OPF_ANYTHING;
+
+		case OP_ANY_OF:
+		case OP_EVERY_OF:
+		case OP_RANDOM_MULTIPLE_OF:
+			return OPF_DATA_OR_STR_CONTAINER;
 
 		case OP_NUMBER_OF:
 		case OP_FIRST_OF:
 			if (argnum == 0)
 				return OPF_POSITIVE;
 			else
-				return OPF_ANYTHING;
+				return OPF_DATA_OR_STR_CONTAINER;
 
 		case OP_FOR_COUNTER:
 			return OPF_NUMBER;
@@ -28754,6 +29070,12 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_FOR_SHIP_SPECIES:
 			return OPF_SPECIES;
+
+		case OP_FOR_CONTAINER_DATA:
+			return OPF_CONTAINER_NAME;
+
+		case OP_FOR_MAP_CONTAINER_KEYS:
+			return OPF_MAP_CONTAINER_NAME;
 
 		case OP_INVALIDATE_ARGUMENT:
 		case OP_VALIDATE_ARGUMENT:
@@ -30558,7 +30880,8 @@ void update_sexp_references(const char *old_name, const char *new_name, int form
 		{
 			Assert((SEXP_NODE_TYPE(n) == SEXP_ATOM) &&
 				   ((Sexp_nodes[n].subtype == SEXP_ATOM_NUMBER) || (Sexp_nodes[n].subtype == SEXP_ATOM_STRING) ||
-					   (Sexp_nodes[n].subtype == SEXP_ATOM_CONTAINER)));
+					   (Sexp_nodes[n].subtype == SEXP_ATOM_CONTAINER_NAME) ||
+					   (Sexp_nodes[n].subtype == SEXP_ATOM_CONTAINER_DATA)));
 
 			if (query_operator_argument_type(op, i) == format)
 			{
@@ -30750,6 +31073,7 @@ int sexp_query_type_match(int opf, int opr)
 		// Goober5000
 		case OPF_ANYTHING:
 		case OPF_CONTAINER_VALUE: // jg18
+		case OPF_DATA_OR_STR_CONTAINER: // jg18
 			// don't match any operators, only data
 			return 0;
 
@@ -31146,7 +31470,7 @@ const char *CTEXT(int n)
 
 		return Sexp_variables[sexp_variable_index].text;
 	}
-	else if (Sexp_nodes[n].subtype == SEXP_ATOM_CONTAINER)
+	else if (Sexp_nodes[n].subtype == SEXP_ATOM_CONTAINER_DATA)
 	{
 		return sexp_container_CTEXT(n);
 	}
@@ -31297,6 +31621,56 @@ void multi_sexp_modify_variable()
 		strcpy_s(Sexp_variables[variable_index].text, value);
 	}	
 }
+
+// copy an argument node's value(s) to Sexp_replacement_arguments for the *-of/in-sequence SEXPs
+// returns the number of argument strings copied
+int copy_node_to_replacement_args(int node, int container_value_index)
+{
+	int num_args = 0;
+
+	if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER_NAME) {
+		const char *container_name = Sexp_nodes[node].text;
+		const auto *p_container = get_sexp_container(container_name);
+
+		Assertion(p_container, "Special argument SEXP given nonexistent container %s. Please report!", container_name);
+		const auto &container = *p_container;
+		Assertion(container.is_of_string_type(),
+			"Attempt to use for-* SEXP with ineligible container argument %s. Please report!",
+			container_name);
+
+		if (container_value_index != -1) {
+			const SCP_string &container_value = container.get_value_at_index(container_value_index);
+			Sexp_replacement_arguments.emplace_back(container_value.c_str(), node);
+			num_args = 1;
+		} else {
+			if (container.is_list()) {
+				// populate in reverse order, so that the LIFO processing that callers use will process them in the correct order
+				for (auto rev_it = container.list_data.crbegin(), end = container.list_data.crend(); rev_it != end; ++rev_it) {
+					// use -1 because these strings are not associated with an individual node
+					Sexp_replacement_arguments.emplace_back(rev_it->c_str(), -1);
+				}
+			} else if (container.is_map()) {
+				for (const auto& kv_pair : container.map_data) {
+					// use -1 because these strings are not associated with an individual node
+					Sexp_replacement_arguments.emplace_back(kv_pair.first.c_str(), -1);
+				}
+			} else {
+				UNREACHABLE("Container %s has invalid type (%d). Please report!", container_name, (int)container.type);
+			}
+
+			num_args = container.size();
+		}
+	} else {
+		Assertion(container_value_index == -1,
+			"Attempt to copy replacement argument string with unexpected index %d. Please report!",
+			container_value_index);
+		Sexp_replacement_arguments.emplace_back(Sexp_nodes[node].text, node);
+		num_args = 1;
+	}
+
+	return num_args;
+}
+
 
 void sexp_modify_variable(int n)
 {
@@ -32226,6 +32600,8 @@ int get_subcategory(int sexp_id)
 		case OP_CONTAINER_REMOVE_FROM_MAP:
 		case OP_CONTAINER_GET_MAP_KEYS:
 		case OP_CLEAR_CONTAINER:
+		case OP_COPY_CONTAINER:
+		case OP_APPLY_CONTAINER_FILTER:
 			return CHANGE_SUBCATEGORY_CONTAINERS;
 
 		case OP_DAMAGED_ESCORT_LIST:
@@ -33319,6 +33695,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tSupplies arguments for the " SEXP_ARGUMENT_STRING " special data item.  Any of the supplied arguments can satisfy the expression(s) "
 		"in which " SEXP_ARGUMENT_STRING " is used.\r\n\r\n"
 		"In practice, this will behave like a standard \"for-each\" statement, evaluating the action operators for each argument that satisfies the condition.\r\n\r\n"
+		"\tThis SEXP also accepts list containers with string data or map containers with string keys as arguments.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tAnything that could be used in place of " SEXP_ARGUMENT_STRING "." },
 
@@ -33326,6 +33703,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_EVERY_OF, "Every-of (Conditional operator)\r\n"
 		"\tSupplies arguments for the " SEXP_ARGUMENT_STRING " special data item.  Every one of the supplied arguments will be evaluated to satisfy the expression(s) "
 		"in which " SEXP_ARGUMENT_STRING " is used.\r\n\r\n"
+		"\tThis SEXP also accepts list containers with string data or map containers with string keys as arguments.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tAnything that could be used in place of " SEXP_ARGUMENT_STRING "." },
 
@@ -33339,7 +33717,9 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	// Karajorma
 	{ OP_RANDOM_MULTIPLE_OF, "Random-multiple-of (Conditional operator)\r\n"
 		"\tSupplies arguments for the " SEXP_ARGUMENT_STRING " special data item.  A random supplied argument will be selected to satisfy the expression(s) "
-		"in which " SEXP_ARGUMENT_STRING " is used.\r\n\r\n"
+		"in which " SEXP_ARGUMENT_STRING " is used.\r\n"
+		"\tUnlike random-of, the random selection is performed each time this SEXP is evaluated.\r\n"
+		"\tThis SEXP also accepts list containers with string data or map containers with string keys as arguments.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tAnything that could be used in place of " SEXP_ARGUMENT_STRING "." },
 
@@ -33347,6 +33727,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_NUMBER_OF, "Number-of (Conditional operator)\r\n"
 		"\tSupplies arguments for the " SEXP_ARGUMENT_STRING " special data item.  Any [number] of the supplied arguments can satisfy the expression(s) "
 		"in which " SEXP_ARGUMENT_STRING " is used.\r\n\r\n"
+		"\tThis SEXP also accepts list containers with string data or map containers with string keys as arguments.\r\n\r\n"
 		"Takes 2 or more arguments...\r\n"
 		"\t1:\tNumber of arguments, as above\r\n"
 		"\tRest:\tAnything that could be used in place of " SEXP_ARGUMENT_STRING "." },
@@ -33404,10 +33785,25 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"Note that the ships are all treated as valid arguments, and it is impossible to invalidate a ship argument.  If you want to invalidate a ship, use Any-of and list the ships explicitly.\r\n\r\n"
 		"Takes no arguments.  Works in both single-player and multiplayer.\r\n" },
 
+	// jg18
+	{ OP_FOR_CONTAINER_DATA, "For-Container-Data (Conditional operator)\r\n"
+		"\tSupplies values for the " SEXP_ARGUMENT_STRING " special data item.  This sexp will list all data in a certain container (or multiple containers) in the mission, and each value will be provided as an argument to the action operators.  "
+		"Note that the values are all treated as valid arguments, and it is impossible to invalidate a value argument.  If you want to invalidate a value, use Any-of and list the values explicitly.\r\n\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\tAll:\tContainer whose data should be listed\r\n" },
+
+	// jg18
+	{ OP_FOR_MAP_CONTAINER_KEYS, "For-Map-Container-Keys (Conditional operator)\r\n"
+		"\tSupplies values for the " SEXP_ARGUMENT_STRING " special data item.  This sexp will list all keys in a certain map container (or multiple map containers) in the mission, and each map key will be provided as an argument to the action operators.  "
+		"Note that the map keys are all treated as valid arguments, and it is impossible to invalidate a key argument.  If you want to invalidate a key, use Any-of and list the keys explicitly.\r\n\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\tAll:\tMap container whose keys should be listed\r\n" },
+
 	// MageKing17
 	{ OP_FIRST_OF, "First-of (Conditional operator)\r\n"
 		"\tSupplies arguments for the " SEXP_ARGUMENT_STRING " special data item.  Up to [number] of the supplied arguments can satisfy the expression(s) "
 		"in which " SEXP_ARGUMENT_STRING " is used. Essentially the same as any-of, but with a cap on the number of arguments that can be evaluated in a single call.\r\n\r\n"
+		"\tThis SEXP also accepts list containers with string data or map containers with string keys as arguments.\r\n\r\n"
 		"Takes 2 or more arguments...\r\n"
 		"\t1:\tMaximum number of arguments that can be evaluated in a call.\r\n"
 		"\tRest:\tAnything that could be used in place of " SEXP_ARGUMENT_STRING "." },
@@ -33415,6 +33811,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	// Goober5000
 	{ OP_INVALIDATE_ARGUMENT, "Invalidate-argument (Conditional operator)\r\n"
 		"\tRemoves an argument from future consideration as a " SEXP_ARGUMENT_STRING " special data item.\r\n"
+		"\tFor argument-related SEXPs that accept containers as arguments, the retrieved arguments can't be individually invalidated.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tThe argument to remove from the preceding argument list." },
 
@@ -33422,6 +33819,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_VALIDATE_ARGUMENT, "Validate-argument (Conditional operator)\r\n"
 		"\tRestores an argument for future consideration as a " SEXP_ARGUMENT_STRING " special data item.\r\n"
 		"\tIf the argument hasn't been previously invalidated, it will do nothing.\r\n"
+		"\tFor argument-related SEXPs that accept containers as arguments, the retrieved arguments can't be individually validated.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tThe argument to restore to the preceding argument list." },
 
@@ -33547,6 +33945,26 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tDeletes the current contents of one or more containers.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tName of the container(s) to clear.\r\n" },
+
+	// jg18
+	{ OP_COPY_CONTAINER, "copy-container\r\n"
+		"\tCopies a container's contents to another container.\r\n"
+		"\tThe two containers' types must match, except their persistence rules can be different.\r\n"
+		"\tBy default, the second container is cleared before copying takes place.\r\n\r\n"
+		"Takes 2 or 3 arguments...\r\n"
+		"\t1:\tName of the container to copy from.\r\n"
+		"\t2:\tName of the container to copy to.\r\n"
+		"\t3:\t(Optional) When true, the second container's contents are deleted before copying." },
+
+	// jg18
+	{ OP_APPLY_CONTAINER_FILTER, "apply-container-filter\r\n"
+		"\tRemoves values from a container using a list container as a filter.\r\n"
+		"\tAll values in the 'filter' container will be removed from the first container. The 'filter' container is left unchanged.\r\n"
+		"\tIf the first container is a map container, then the filter is applied to its keys and not its data.\r\n"
+		"\tThe filter's data type must match the type of the values to be removed from the first container.\r\n\r\n"
+		"Takes 2 arguments...\r\n"
+		"\t1:\tName of the container to apply the filter to.\r\n"
+		"\t2:\tName of the list container to be used as the filter." },
 
 	{ OP_PROTECT_SHIP, "Protect ship (Action operator)\r\n"
 		"\tProtects a ship from being attacked by any enemy ship.  Any ship "

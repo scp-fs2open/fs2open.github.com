@@ -205,6 +205,10 @@ static void pre_render_init_lights() {
 }
 
 void gr_set_light(light* fs_light) {
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	// init the light
 	gr_light grl;
 	FSLight2GLLight(fs_light, &grl);
@@ -213,6 +217,10 @@ void gr_set_light(light* fs_light) {
 }
 
 void gr_set_center_alpha(int type) {
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	if (!type) {
 		return;
 	}
@@ -275,11 +283,19 @@ void gr_set_center_alpha(int type) {
 }
 
 void gr_reset_lighting() {
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	gr_lights.clear();
 	Num_active_gr_lights = 0;
 }
 
 void gr_calculate_ambient_factor(int ambient_factor) {
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	gr_user_ambient = (float) ((ambient_factor * 2) - 255) / 255.0f;
 }
 
@@ -288,6 +304,10 @@ void gr_light_shutdown() {
 }
 
 void gr_light_init() {
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	gr_calculate_ambient_factor();
 
 	// allocate memory for enabled lights
@@ -295,6 +315,9 @@ void gr_light_init() {
 }
 
 void gr_set_lighting() {
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
 
 	//Valathil: Sort lights by priority
 	extern bool Deferred_lighting;
@@ -326,6 +349,10 @@ void gr_set_lighting() {
 }
 
 void gr_set_ambient_light(int red, int green, int blue) {
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	gr_light_ambient[0] = i2fl(red) / 255.0f;
 	gr_light_ambient[1] = i2fl(green) / 255.0f;
 	gr_light_ambient[2] = i2fl(blue) / 255.0f;
@@ -335,6 +362,10 @@ void gr_set_ambient_light(int red, int green, int blue) {
 }
 
 void gr_lighting_fill_uniforms(void* data_out, size_t buffer_size) {
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	Assertion(sizeof(gr_light_uniforms) <= buffer_size, "Insufficient buffer supplied.");
 
 	memcpy(reinterpret_cast<graphics::model_light*>(data_out), gr_light_uniforms, sizeof(gr_light_uniforms));

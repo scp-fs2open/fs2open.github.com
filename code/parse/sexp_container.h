@@ -92,6 +92,7 @@ struct sexp_container
 	// meta-character for containers in text replacement, etc.
 	static constexpr char DELIM = '&';
 	static const SCP_string DELIM_STR;
+	static const SCP_string NAME_NODE_PREFIX;
 	// applies to list data, map keys, and map data
 	static constexpr int VALUE_MAX_LENGTH = NAME_LENGTH - 1; // leave space for null char
 	// leave space for leading/trailing '&' for container multidimensionality
@@ -126,6 +127,8 @@ struct sexp_container
 		return any(type & (ContainerType::SAVE_ON_MISSION_PROGRESS | ContainerType::SAVE_ON_MISSION_CLOSE));
 	}
 
+	ContainerType get_data_type() const;
+
 	bool name_matches(const sexp_container &container) const;
 	bool empty() const;
 	int size() const;
@@ -134,6 +137,13 @@ struct sexp_container
 	ContainerType get_non_persistent_type() const;
 	// matching is performed only on non-persistence flags
 	bool type_matches(const sexp_container &container) const;
+
+	// checks whether accessed via strings
+	// meaning string data if a list or string keys if a map
+	// but map data doesn't have to be strings
+	bool is_of_string_type() const;
+	// returns data for list container or key for map container
+	const SCP_string &get_value_at_index(int index) const;
 };
 
 struct list_modifier {
@@ -189,3 +199,19 @@ bool sexp_container_has_persistent_non_eternal_containers();
 // SEXPs
 int sexp_container_eval_status_sexp(int op_num, int node);
 int sexp_container_eval_change_sexp(int op_num, int node);
+
+// collect argument values for the "for-container" SEXPs
+// if just_count is true, then argument_vector is left unmodified
+// returns the number of arguments
+int sexp_container_collect_data_arguments(int node,
+	SCP_vector<std::pair<const char*, int>> &argument_vector,
+	bool just_count = false);
+int sexp_container_collect_map_key_arguments(int node,
+	SCP_vector<std::pair<const char*, int>> &argument_vector,
+	bool just_count = false);
+
+// version of query_sexp_args_count() when we need to select an element within a range
+// and containers are valid arguments
+int sexp_container_query_sexp_args_count(int node,
+	SCP_vector<int> &cumulative_arg_countss,
+	bool only_valid_args = false);

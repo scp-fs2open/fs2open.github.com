@@ -50,11 +50,13 @@ struct oo_ship_position_records {
 	matrix orientations[MAX_FRAMES_RECORDED];						// The recorded ship orientations, cur_frame_index is the index. 
 	vec3d velocities[MAX_FRAMES_RECORDED];							// The recorded ship velocities (required for additive velocity shots and auto aim), cur_frame_index is the index.
 	vec3d rotational_velocities[MAX_FRAMES_RECORDED];				// The recorded ship rotational velocities (required for auto aim if certain ), cur_frame_index is the index.
+
+	vec3d first_pos; 												// The "last_pos" of the oldest recorded frame.
 };
 
 // keeps track of what has been sent to each player, helps cut down on bandwidth, allowing only new information to be sent instead of old.
 struct oo_info_sent_to_players {	
-	int timestamp;					// The overall timestamp which is used to decide if a new packet should be sent to this player for this ship.
+	TIMESTAMP timestamp;					// The overall timestamp which is used to decide if a new packet should be sent to this player for this ship.
 
 	vec3d position;					// If they are stationary, there's no need to update their position.
 	float hull;						// no need to send hull if hull hasn't changed.
@@ -133,6 +135,7 @@ struct oo_packet_and_interp_tracking {
 struct oo_rollback_restore_record {
 	int roll_objnum;		// object pointer to the ship we need to restore. 
 	vec3d position;			// position to restore to
+	vec3d old_position;		// old_pos to restore to
 	matrix orientation;		// orientation to restore to
 	vec3d velocity;			// velocity to restore to
 	vec3d rotational_velocity; // rotational velocity to restore to
@@ -150,7 +153,7 @@ struct oo_unsimulated_shots {
 struct oo_general_info {
 	// info that helps us figure out what is the best reference object available when sending a rollback shot.
 	// We go by what is the most recent object update packet received, and then by distance.
-	int ref_timestamp;							// what time did we receive the reference object
+	int rollback_reference_timestamp;							// what time did we receive the reference object
 	ushort most_recent_updated_net_signature;	// what is the net signature of the reference object.
 	int most_recent_frame;					// what is the frame from the update of most recently updated object.
 
@@ -165,7 +168,7 @@ struct oo_general_info {
 	int number_of_frames;									// how many frames have we gone through, total.
 	ubyte cur_frame_index;									// the current frame index (to access the recorded info)
 
-	int timestamps[MAX_FRAMES_RECORDED];					// The timestamp for the recorded frame
+	TIMESTAMP timestamps[MAX_FRAMES_RECORDED];					// The timestamp for the recorded frame
 	SCP_vector<oo_ship_position_records> frame_info;		// Actually keeps track of ship physics info.  Uses net_signature as its index.
 	SCP_vector<oo_netplayer_records> player_frame_info;		// keeps track of player targets and what has been sent to each player. Uses player as the index
 
@@ -194,7 +197,7 @@ bool Afterburn_hack = false;			// HACK!!!
 int multi_find_prev_frame_idx();
 
 // quickly lookup how much time has passed since the given frame.
-uint multi_ship_record_get_time_elapsed(int original_frame, int new_frame);
+int multi_ship_record_get_time_elapsed(int original_frame, int new_frame);
 
 // fire the rollback weapons that are in the rollback struct
 void multi_oo_fire_rollback_shots(int frame_idx);
@@ -203,7 +206,7 @@ void multi_oo_fire_rollback_shots(int frame_idx);
 void multi_oo_restore_frame(int frame_idx);
 
 // pushes the rollback weapons forward for a single rollback frame.
-void multi_oo_simulate_rollback_shots(int frame_idx);
+bool multi_oo_simulate_rollback_shots(int frame_idx);
 
 // restores ships to the positions they were in bedfore rollback.
 void multi_record_restore_positions();
@@ -404,6 +407,7 @@ void multi_ship_record_add_ship(int obj_num)
 
 		// only add positional info if they are in the mission.
 		Oo_info.frame_info[net_sig_idx].positions[Oo_info.cur_frame_index] = objp->pos;
+		Oo_info.frame_info[net_sig_idx].first_pos = objp->last_pos;
 		Oo_info.frame_info[net_sig_idx].orientations[Oo_info.cur_frame_index] = objp->orient;
 		Oo_info.frame_info[net_sig_idx].velocities[Oo_info.cur_frame_index] = objp->phys_info.vel;
 		Oo_info.frame_info[net_sig_idx].rotational_velocities[Oo_info.cur_frame_index] = objp->phys_info.rotvel;
@@ -446,6 +450,14 @@ void multi_ship_record_update_all()
 		Oo_info.frame_info[net_sig_idx].orientations[Oo_info.cur_frame_index] = objp->orient;
 		Oo_info.frame_info[net_sig_idx].velocities[Oo_info.cur_frame_index] = objp->phys_info.vel;
 		Oo_info.frame_info[net_sig_idx].rotational_velocities[Oo_info.cur_frame_index] = objp->phys_info.rotvel;
+
+		// if we have enough frames, set last position to the prev frame
+		if (Oo_info.number_of_frames > MAX_FRAMES_RECORDED){
+			Oo_info.frame_info[net_sig_idx].first_pos = Oo_info.frame_info[net_sig_idx].positions[(Oo_info.cur_frame_index == MAX_FRAMES_RECORDED - 1) ? 0 : Oo_info.cur_frame_index + 1];
+		} else {
+			Oo_info.frame_info[net_sig_idx].first_pos = Oo_info.frame_info[net_sig_idx].positions[0];
+		}
+
 	}
 }
 
@@ -460,7 +472,7 @@ void multi_ship_record_increment_frame()
 		Oo_info.cur_frame_index = 0;
 	}
 
-	Oo_info.timestamps[Oo_info.cur_frame_index] = timestamp();
+	Oo_info.timestamps[Oo_info.cur_frame_index] = _timestamp();
 }
 
 // returns the last frame's index.
@@ -477,7 +489,7 @@ int multi_find_prev_frame_idx()
 int multi_ship_record_find_frame(int client_frame, int time_elapsed)
 {	
 	// frame coming in from the client is too old to be used. (The -1 prevents an edge case bug at very high pings)
-	if (Oo_info.cur_frame_index - client_frame >= MAX_FRAMES_RECORDED - 1) {
+	if (Oo_info.number_of_frames - client_frame >= MAX_FRAMES_RECORDED - 1) {
 		return -1;
 	}
 
@@ -491,30 +503,64 @@ int multi_ship_record_find_frame(int client_frame, int time_elapsed)
 
 	// Now we look for the frame that the client is saying to look for. 
 	// get the timestamp we are looking for.
-	int target_timestamp = Oo_info.timestamps[frame] + time_elapsed;
+	TIMESTAMP target_timestamp = timestamp_delta(Oo_info.timestamps[frame], time_elapsed);
+
+	// need to try to make rollback shot make some kind of sense if we have invalid timestamps,
+	// and print to debugif it is.
+	if (!target_timestamp.isValid() || target_timestamp.isNever()) {
+		mprintf(("Nonsense timestamp in multi_ship_record_find_frame of %s. Get ~~Allender~~ Cyborg!\n", (target_timestamp.isValid()) ? "isNever" : "NOT isValid"));
+		return frame;
+	};
 
 	for (int i = Oo_info.cur_frame_index - 2; i > -1; i--) {
 
+		// need to try to make rollback shot make some kind of sense if we have invalid timestamps,
+		// and print to debug if it is.	  No need to trigger the Assert in timestamp_in_between, as it is minor here. (i + 1 should be check on previous iteration, most of the time)
+		if (!Oo_info.timestamps[i].isValid() || Oo_info.timestamps[i].isNever()) {
+			mprintf(("timestamps[i] is %s, get ~~Allender~~ Cyborg!\n", (Oo_info.timestamps[i].isValid()) ? "isNever" : "invalid"));
+			return frame;
+		}
+
 		// Check to see if the client's timestamp matches the recorded frames.
-		if ((Oo_info.timestamps[i] <= target_timestamp) && (Oo_info.timestamps[i + 1] > target_timestamp)) {
+		if (timestamp_in_between(target_timestamp, Oo_info.timestamps[i], Oo_info.timestamps[i + 1])) {		
 			return i;
 		}
-		else if (i == frame) {
-			return -1;
-		}
+
+		// there is no need to check for an invalid frame here because, logically, the search cannot reach frame until the next section
 	}
 
+
+	// need to try to make rollback shot make some kind of sense if we have invalid timestamps,
+	// and print to debug if it is. No need to trigger the Assert in timestamp_in_between, as it is minor here.
+	if (!Oo_info.timestamps[MAX_FRAMES_RECORDED - 1].isValid() || Oo_info.timestamps[MAX_FRAMES_RECORDED - 1].isNever()) {
+			mprintf(("timestamps[MAX_FRAMES_FRAMES_RECORDED - 1] is %s, get ~~Allender~~ Cyborg!\n", (Oo_info.timestamps[MAX_FRAMES_RECORDED - 1].isValid()) ? "isNever" : "invalid"));
+			return frame;
+	}
+
+
 	// Check for an end of the wrap condition.
-	if ((Oo_info.timestamps[MAX_FRAMES_RECORDED - 1] <= target_timestamp) && (Oo_info.timestamps[0] > target_timestamp)) {
+	if (timestamp_in_between(target_timestamp, Oo_info.timestamps[MAX_FRAMES_RECORDED - 1], Oo_info.timestamps[0])) {
 		return MAX_FRAMES_RECORDED - 1;
 	}
 
+	// Check for the received frame being passed
+	if (frame == 0){
+		return -1;
+	}
+
+
 	// Check the oldest frames.
 	for (int i = MAX_FRAMES_RECORDED - 2; i > Oo_info.cur_frame_index; i--) {
-		if ((Oo_info.timestamps[i] <= target_timestamp) && (Oo_info.timestamps[i + 1] > target_timestamp)) {
-			return i;
+		// need to try to make rollback shot make some kind of sense if we have invalid timestamps,
+		// and print to debug if it is. No need to trigger the Assert in timestamp_in_between, as it is minor here.
+		if (!Oo_info.timestamps[i].isValid() || Oo_info.timestamps[i].isNever()) {
+			mprintf(("timestamps[i] is %s, get ~~Allender~~ Cyborg!\n", (Oo_info.timestamps[i].isValid()) ? "isNever" : "invalid"));
+			return frame;
 		}
-		else if (i == frame) {
+
+		if (timestamp_in_between(target_timestamp, Oo_info.timestamps[i], Oo_info.timestamps[i + 1])) {
+			return i;
+		} else if (i < frame) {
 			return -1;
 		}
 	}
@@ -565,7 +611,7 @@ void multi_ship_record_add_timestamp(int pl_id, ubyte timestamp, int seq_num) {
 
 
 // quickly lookup how much time has passed between two frames.
-uint multi_ship_record_get_time_elapsed(int original_frame, int new_frame) 
+int multi_ship_record_get_time_elapsed(int original_frame, int new_frame) 
 {
 	// Bogus values
 	Assertion(original_frame <= MAX_FRAMES_RECORDED, "Function multi_ship_record_get_time_elapsed() got passed an invalid original frame, this is a code error, please report. ");
@@ -574,7 +620,7 @@ uint multi_ship_record_get_time_elapsed(int original_frame, int new_frame)
 		return 0;
 	}
 
-	return Oo_info.timestamps[new_frame] - Oo_info.timestamps[original_frame];
+	return timestamp_get_delta(Oo_info.timestamps[original_frame], Oo_info.timestamps[new_frame]);
 }
 
 // figures out how much time has passed bwetween the two frames.
@@ -582,7 +628,7 @@ int multi_ship_record_find_time_after_frame(int starting_frame, int ending_frame
 {
 	starting_frame = starting_frame % MAX_FRAMES_RECORDED;
 
-	int return_value = time_elapsed - (Oo_info.timestamps[ending_frame] - Oo_info.timestamps[starting_frame]);
+	int return_value = time_elapsed - (timestamp_get_delta(Oo_info.timestamps[ending_frame], Oo_info.timestamps[starting_frame]));
 	return return_value;
 }
 
@@ -603,6 +649,16 @@ void multi_ship_record_add_rollback_wep(int wep_objnum)
 	
 	// add it to the list of weapons we'll need to add to the simulation.
 	Oo_info.rollback_weapon_numbers_created_this_frame.push_back(wep_objnum);
+}
+
+// simply remove the ability to collide for weapons that have already collided.
+void multi_oo_remove_colliders()
+{
+	for (auto& weap_objnum : Oo_info.rollback_weapon_object_number) {
+		if (Objects[weap_objnum].flags[Object::Object_Flags::Should_be_dead]) {
+			Objects[weap_objnum].flags.remove(Object::Object_Flags::Collides);
+		}
+	}
 }
 
 // This stores the information we got from the client to create later.
@@ -664,6 +720,7 @@ void multi_ship_record_do_rollback()
 
 		restore_point.roll_objnum = cur_ship.objnum;
 		restore_point.position = objp->pos;
+		restore_point.old_position = objp->last_pos;
 		restore_point.orientation = objp->orient;
 		restore_point.velocity = objp->phys_info.vel;
 		restore_point.rotational_velocity = objp->phys_info.rotvel;
@@ -703,18 +760,27 @@ void multi_ship_record_do_rollback()
 
 	nprintf(("Network","At least one multiplayer rollback shot is being simulated this frame.\n"));
 
+	bool continue_rollback = true;
+
 	do {
 		// move all ships to their recorded positions
 		multi_oo_restore_frame(frame_idx);
 
 		// push weapons forward for the frame (weapons do not get pushed forward for the first frame of their existence)
-		multi_oo_simulate_rollback_shots(frame_idx);
+		continue_rollback = multi_oo_simulate_rollback_shots(frame_idx);
 
 		// then fire all shots for the frame, primary and secondary, if there are any
 		multi_oo_fire_rollback_shots(frame_idx);
 
 		// perform collision detection for that frame.
 		obj_sort_and_collide(&Oo_info.rollback_collide_list);
+
+		multi_oo_remove_colliders();
+
+		//
+		if (!continue_rollback){
+			break;
+		}
 
 		//increment the frame
 		frame_idx++;
@@ -771,11 +837,24 @@ void multi_oo_restore_frame(int frame_idx)
 		objp->orient = Oo_info.frame_info[objp->net_signature].orientations[frame_idx];
 		objp->phys_info.vel = Oo_info.frame_info[objp->net_signature].velocities[frame_idx];
 		objp->phys_info.rotvel = Oo_info.frame_info[objp->net_signature].rotational_velocities[frame_idx];
+
+		// get the prev frame
+		int temp_prev_frame = (frame_idx == 0) ? MAX_FRAMES_RECORDED - 1 : frame_idx - 1;
+
+		// because of the way collision code, we must set last_pos as well. But it gets complicated.
+		// first figure out if the current frame is actually the oldest frame on record
+		if (Oo_info.cur_frame_index == temp_prev_frame) {
+			// if so, use the special first_pos value
+			objp->last_pos = Oo_info.frame_info[objp->net_signature].first_pos;
+		// if not (most likely), use the previous frame's position.
+		} else {
+			objp->last_pos = Oo_info.frame_info[objp->net_signature].positions[temp_prev_frame];
+		}
 	}
 }
 
 // pushes the rollback weapons forward for a single rollback frame.
-void multi_oo_simulate_rollback_shots(int frame_idx) 
+bool multi_oo_simulate_rollback_shots(int frame_idx) 
 {
 	int prev_frame = frame_idx - 1;
 	if (prev_frame < 0) {
@@ -783,14 +862,29 @@ void multi_oo_simulate_rollback_shots(int frame_idx)
 	}
 
 	// calculate the float version of the frametime.
-	float frametime = (float)multi_ship_record_get_time_elapsed(prev_frame, frame_idx) / (float)TIMESTAMP_FREQUENCY;
+	float frametime = static_cast<float>(multi_ship_record_get_time_elapsed(prev_frame, frame_idx)) / static_cast<float>(TIMESTAMP_FREQUENCY);
+
+	if (Oo_info.rollback_weapon_object_number.empty()) {
+		return true;
+	}
+
+	bool result = false;
 
 	// push the weapons forward.
 	for (auto& weap_objnum : Oo_info.rollback_weapon_object_number) {
 		object* objp = &Objects[weap_objnum];
-		vm_vec_scale_add2(&objp->pos, &objp->phys_info.vel, frametime);
-		Weapons[objp->instance].lifeleft -= frametime;
+
+		// if this object is "dead", then that means it has collided with something.
+		// so remove its ability to collide.  This is the easiest way to deal with it.
+		if (!objp->flags[Object::Object_Flags::Should_be_dead]) {
+			// this means at least one weapon is still waiting to collide.
+			result = true;
+			vm_vec_scale_add2(&objp->pos, &objp->phys_info.vel, frametime);
+			Weapons[objp->instance].lifeleft -= frametime;
+		}
 	}
+
+	return result;
 }
 
 // restores ships to the positions they were in bedfore rollback.
@@ -801,8 +895,10 @@ void multi_record_restore_positions()
 		object* objp = &Objects[restore_point.roll_objnum];
 		// reset the position, orientation, and velocity for each object
 		objp->pos = restore_point.position;
+		objp->last_pos = restore_point.old_position;
 		objp->orient = restore_point.orientation;
 		objp->phys_info.vel = restore_point.velocity;
+		objp->phys_info.rotvel = restore_point.rotational_velocity;
 	}
 
 	Oo_info.restore_points.clear();
@@ -819,7 +915,7 @@ void multi_ship_record_rank_seq_num(object* objp, int seq_num)
 	if (seq_num > Oo_info.most_recent_frame || Oo_info.most_recent_updated_net_signature == 0) {
 		Oo_info.most_recent_updated_net_signature = objp->net_signature;
 		Oo_info.most_recent_frame = seq_num;
-		Oo_info.ref_timestamp = timestamp();
+		Oo_info.rollback_reference_timestamp = timestamp(); // these calls to _timestamp() will get fixed in interp overhaul 2
 
 	} // if this packet is from the same frame, the closer ship makes for a slightly more accurate reference point
 	else if (seq_num == Oo_info.most_recent_frame) {
@@ -828,7 +924,7 @@ void multi_ship_record_rank_seq_num(object* objp, int seq_num)
 		if ( (temp_reference_object == nullptr) || vm_vec_dist_squared(&temp_reference_object->pos, &Objects[Player->objnum].pos) > vm_vec_dist_squared(&objp->pos, &Objects[Player->objnum].pos) ) {
 			Oo_info.most_recent_updated_net_signature = objp->net_signature;
 			Oo_info.most_recent_frame = seq_num;
-			Oo_info.ref_timestamp = timestamp();
+			Oo_info.rollback_reference_timestamp = timestamp(); // these calls to _timestamp() will get fixed in interp overhaul 2
 		}
 	}
 }
@@ -848,7 +944,7 @@ int multi_client_lookup_frame_idx()
 // Quick lookup for the most recently received timestamp.
 int multi_client_lookup_frame_timestamp()
 {
-	return Oo_info.ref_timestamp;
+	return Oo_info.rollback_reference_timestamp;
 }
 
 // Resets what info we have sent and interpolation info for a respawn
@@ -862,7 +958,7 @@ void multi_oo_respawn_reset_info(ushort net_sig)
 
 	// When a player respawns, they keep their net signature, so clean up all the info that could mess things up in the future.
 	for (auto & player_record : Oo_info.player_frame_info) {
-		player_record.last_sent[net_sig].timestamp = -1;
+		player_record.last_sent[net_sig].timestamp = TIMESTAMP::immediate();
 		player_record.last_sent[net_sig].position = vmd_zero_vector;
 		player_record.last_sent[net_sig].hull = -1.0f;
 		player_record.last_sent[net_sig].ai_mode = -1;
@@ -2204,7 +2300,7 @@ void multi_oo_reset_timestamp(net_player *pl, object *objp, int range, int in_co
 
 	// reset the timestamp for this object
 	if(objp->type == OBJ_SHIP){
-		Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].timestamp = timestamp(stamp);
+		Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].timestamp = _timestamp(stamp);
 	} 
 }
 
@@ -2212,7 +2308,7 @@ void multi_oo_reset_timestamp(net_player *pl, object *objp, int range, int in_co
 int multi_oo_maybe_update(net_player *pl, object *obj, ubyte *data)
 {
 	ushort oo_flags = 0;
-	int stamp;
+	TIMESTAMP stamp;
 	int player_index;
 	vec3d player_eye;
 	vec3d obj_dot;
@@ -2222,7 +2318,6 @@ int multi_oo_maybe_update(net_player *pl, object *obj, ubyte *data)
 	ship *shipp;
 	ship_info *sip;
 
-	// if the timestamp has elapsed for this guy, send stuff
 	player_index = NET_PLAYER_INDEX(pl);
 	if(!(player_index >= 0) || !(player_index < MAX_PLAYERS)){
 		return 0;
@@ -2237,8 +2332,8 @@ int multi_oo_maybe_update(net_player *pl, object *obj, ubyte *data)
 		return 0;
 	}
 
-	// stamp hasn't popped yet
-	if((stamp != -1) && !timestamp_elapsed_safe(stamp, OO_MAX_TIMESTAMP)){
+	// if the timestamp hasn't elapsed for this guy return - This timestamp_elapsed
+	if(!(stamp.isNever()) && !(timestamp_elapsed_safe(stamp, OO_MAX_TIMESTAMP))){
 		return 0;
 	}
 	
@@ -2394,7 +2489,7 @@ void multi_oo_process_all(net_player *pl)
 	ADD_INT(Oo_info.number_of_frames);
 
 	// also the timestamp.
-	int temp_timestamp = (Oo_info.timestamps[Oo_info.cur_frame_index] - Oo_info.timestamps[multi_find_prev_frame_idx()]);
+	int temp_timestamp = timestamp_get_delta(Oo_info.timestamps[Oo_info.cur_frame_index], Oo_info.timestamps[multi_find_prev_frame_idx()]);
 
 	// only the very longest frames are going to have greater than 255 ms, so cap it at that.
 	if (temp_timestamp > 255) {
@@ -2564,7 +2659,7 @@ void multi_init_oo_and_ship_tracker()
 	// setup initial object update info	
 	// Part 1: Get the non-repeating parts of the struct set.
 
-	Oo_info.ref_timestamp = -1;
+	Oo_info.rollback_reference_timestamp = 0;
 	Oo_info.most_recent_updated_net_signature = 0;
 	Oo_info.most_recent_frame = 0;
 	for (int i = 0; i < MAX_PLAYERS; i++) { // NOLINT
@@ -2576,7 +2671,7 @@ void multi_init_oo_and_ship_tracker()
 	Oo_info.cur_frame_index = 0;
 
 	for (int i = 0; i < MAX_FRAMES_RECORDED; i++) { // NOLINT
-		Oo_info.timestamps[i] = MAX_TIME; // This needs to be Max time (or at least some absurdly high number) for rollback to work correctly
+		Oo_info.timestamps[i] = _timestamp(); // as of Interpolate overhaul 2, this can be something besides infinite
 	}
 
 	Oo_info.rollback_mode = false;
@@ -2608,10 +2703,12 @@ void multi_init_oo_and_ship_tracker()
 		temp_position_records.rotational_velocities[i] = vmd_zero_vector;
 	}
 
+	temp_position_records.first_pos = vmd_zero_vector;
+
 	int cur = 0;
 	oo_info_sent_to_players temp_sent_to_player;
 
-	temp_sent_to_player.timestamp = timestamp(cur);
+	temp_sent_to_player.timestamp = _timestamp(cur);
 	temp_sent_to_player.position = vmd_zero_vector;
 	temp_sent_to_player.hull = 0.0f;
 	temp_sent_to_player.ai_mode = 0;
@@ -2707,7 +2804,7 @@ void multi_close_oo_and_ship_tracker()
 	}
 
 	// Part 1: Get the non-repeating parts of the struct set.
-	Oo_info.ref_timestamp = -1;
+	Oo_info.rollback_reference_timestamp = 0;
 	Oo_info.most_recent_updated_net_signature = 0;
 	Oo_info.most_recent_frame = 0;
 
@@ -2720,7 +2817,7 @@ void multi_close_oo_and_ship_tracker()
 	Oo_info.cur_frame_index = 0;
 
 	for (int i = 0; i < MAX_FRAMES_RECORDED; i++) { // NOLINT
-		Oo_info.timestamps[i] = MAX_TIME; // This needs to be Max time (or at least some absurdly high number) for rollback to work correctly
+		Oo_info.timestamps[i] = _timestamp(); // // as of Interpolate overhaul 2, this can be something besides infinite
 	}
 
 	Oo_info.rollback_mode = false;
@@ -2767,7 +2864,7 @@ void multi_oo_send_control_info()
 	ADD_INT(Oo_info.number_of_frames);
 
 	// also the timestamp.
-	int temp_timestamp = (Oo_info.timestamps[Oo_info.cur_frame_index] - Oo_info.timestamps[multi_find_prev_frame_idx()]);
+	int temp_timestamp = timestamp_get_delta(Oo_info.timestamps[Oo_info.cur_frame_index], Oo_info.timestamps[multi_find_prev_frame_idx()]);
 
 	// only the very longest frames are going to have greater than 255 ms, so cap it at that.
 	if (temp_timestamp > 255) {
@@ -2840,7 +2937,7 @@ void multi_oo_send_changed_object(object *changedobj)
 	ADD_INT(Oo_info.number_of_frames);
 
 	// also the timestamp.
-	int temp_timestamp = (Oo_info.timestamps[Oo_info.cur_frame_index] - Oo_info.timestamps[multi_find_prev_frame_idx()]);
+	int temp_timestamp = timestamp_get_delta(Oo_info.timestamps[Oo_info.cur_frame_index], Oo_info.timestamps[multi_find_prev_frame_idx()]);
 
 	// only the very longest frames are going to have greater than 255 ms, so cap it at that.
 	if (temp_timestamp > 255) {
