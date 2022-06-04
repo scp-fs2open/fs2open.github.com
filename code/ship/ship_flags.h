@@ -132,7 +132,7 @@ namespace Ship {
 		Same_departure_warp_when_docked,	// Goober5000
 		Fail_sound_locked_primary,		// Kiloku -- Play the firing fail sound when the weapon is locked.
 		Fail_sound_locked_secondary,		// Kiloku -- Play the firing fail sound when the weapon is locked.
-
+		Aspect_immune,						//Kiloku -- Ship cannot be targeted by Aspect Seekers. 
 		NUM_VALUES
 
 	};

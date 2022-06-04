@@ -624,7 +624,7 @@ void hud_do_lock_indicator(float frametime)
 	if ( !(wip->is_locked_homing()) ) {
 		hud_lock_reset();
 		return;		
-	}
+	} 
 
 	// Allow locking on ships and bombs (only targeted weapon allowed is a bomb, so don't bother checking flags)
 	if ( (Objects[Player_ai->target_objnum].type != OBJ_SHIP) && (Objects[Player_ai->target_objnum].type != OBJ_WEAPON) ) {	
@@ -1021,7 +1021,7 @@ void hud_lock_determine_lock_target(lock_info *lock_slot, weapon_info *wip)
 			ship_clear_lock(lock_slot);
 			return;
 		}
-
+		
 		if ( !weapon_target_satisfies_lock_restrictions(wip, lock_slot->obj) ) {
 			ship_clear_lock(lock_slot);
 			return;
@@ -1089,7 +1089,7 @@ void hud_lock_determine_lock_target(lock_info *lock_slot, weapon_info *wip)
 			ship_clear_lock(lock_slot);
 			return;
 		}
-
+		
 		if ( !weapon_target_satisfies_lock_restrictions(wip, lock_slot->obj) ) {
 			ship_clear_lock(lock_slot);
 			return;
@@ -1550,6 +1550,13 @@ void hud_do_lock_indicators(float frametime)
 			ship_clear_lock(lock_slot);
 			continue;
 		}
+
+		//Target ship is protected from Aspect Locks. Since this flag can be given mid mission, we need to cut short a lock attempt.
+		if ( wip->is_locked_homing() && lock_slot->obj->type == OBJ_SHIP && Ships[lock_slot->obj->instance].flags[Ship::Ship_Flags::Aspect_immune] ) {
+			ship_clear_lock(lock_slot);
+			continue;
+		}
+		
 
 		// unless they've flagged the weapon otherwise, discard locks on dead subsystems that aren't the primary target
 		if ( !wip->wi_flags[Weapon::Info_Flags::Multilock_target_dead_subsys] && lock_slot->subsys != nullptr && Player_ai->targeted_subsys != lock_slot->subsys 

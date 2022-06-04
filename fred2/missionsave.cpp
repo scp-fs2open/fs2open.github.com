@@ -3490,6 +3490,8 @@ int CFred_mission_save::save_objects()
 				fout(" \"fail-sound-locked-primary\"");
 			if (shipp->flags[Ship::Ship_Flags::Fail_sound_locked_secondary])
 				fout(" \"fail-sound-locked-secondary\"");
+			if (shipp->flags[Ship::Ship_Flags::Aspect_immune])
+				fout(" \"aspect-immune\"");
 			fout(" )");
 		}
 		// -----------------------------------------------------------
