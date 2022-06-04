@@ -13953,6 +13953,7 @@ ship_subsys *ship_get_indexed_subsys(ship *sp, int index)
 */
 int ship_get_subsys_index(ship_subsys *subsys)
 {
+	Assertion(subsys != nullptr, "ship_get_subsys_index was called with a null ship_subsys parameter!");
 	if (subsys == nullptr)
 		return -1;
 
@@ -13961,6 +13962,7 @@ int ship_get_subsys_index(ship_subsys *subsys)
 	if (!sp->flags[Ship::Ship_Flags::Subsystem_cache_valid])
 		ship_index_subsystems(sp);
 
+	Assertion(subsys->parent_subsys_index >= 0, "Somehow a subsystem could not be found in its parent ship %s's subsystem list!", sp->ship_name);
 	return subsys->parent_subsys_index;
 }
 
