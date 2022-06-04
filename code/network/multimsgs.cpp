@@ -7821,8 +7821,8 @@ void send_non_homing_fired_packet(ship* shipp, int banks_or_number_of_missiles_f
 	}
 
 	object* ref_objp = multi_get_network_object(multi_client_lookup_ref_obj_net_sig());
-	if (ref_objp == nullptr) {
-		mprintf(("Unable to get accurate reference object for non-homing packet.\n"));
+	if (ref_objp == nullptr || ref_objp->type != OBJ_SHIP) {
+		mprintf(("Unable to get accurate reference object for non-homing packet, because %s\n", (ref_objp == nullptr) ? "it was null." : "it was not a ship!"));
 		if (!secondary) {
 			send_NEW_primary_fired_packet(shipp, banks_or_number_of_missiles_fired);
 		}
@@ -7936,8 +7936,13 @@ void process_non_homing_fired_packet(ubyte* data, header* hinfo)
 
 	object* objp_ref = multi_get_network_object(target_ref);
 
-	if (objp_ref == nullptr) {
+	if (objp_ref == nullptr || objp_ref->type != OBJ_SHIP) {
 		// new way failed, use the old new way.
+
+		if (objp_ref != nullptr){
+			mprintf(("Rollback's reference object was not a ship! It was a %d. Get Cyborg!!!\n", objp_ref->type));
+		}
+
 		if (secondary) {
 			// if this is a rollback shot from a dumbfire secondary, we have to mark this as a 
 			// rollback shot so the client doesn't get an extra shot.
