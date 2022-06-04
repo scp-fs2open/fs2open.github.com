@@ -105,6 +105,7 @@ namespace Mission {
 		OF_Attackable_if_no_collide, // Cyborg - keeps turrets from ignoring ships that have no_collide set
 		SF_Fail_sound_locked_primary, 	// Kiloku - Plays fail sound when firing with locked weapons
 		SF_Fail_sound_locked_secondary,	// Kiloku - Plays fail sound when firing with locked weapons
+		SF_Aspect_immune,				//Kiloku - Ship cannot be locked onto by aspect seeking weapons
 
 		NUM_VALUES
 	};
