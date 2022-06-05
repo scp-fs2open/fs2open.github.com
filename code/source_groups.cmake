@@ -898,6 +898,8 @@ add_file_folder("Network"
 	network/multi_endgame.h
 	network/multi_fstracker.cpp
 	network/multi_fstracker.h
+	network/multi_interpolate.cpp
+	network/multi_interpolate.h
 	network/multi_ingame.cpp
 	network/multi_ingame.h
 	network/multi_kick.cpp
@@ -934,6 +936,8 @@ add_file_folder("Network"
 	network/multi_sw.h
 	network/multi_team.cpp
 	network/multi_team.h
+	network/multi_time_manager.cpp
+	network/multi_time_manager.h
 	network/multi_update.cpp
 	network/multi_update.h
 	network/multi_voice.cpp

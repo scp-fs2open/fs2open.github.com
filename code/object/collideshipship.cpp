@@ -1388,7 +1388,7 @@ int collide_ship_ship( obj_pair * pair )
 										// finally if the host is also a player, ignore making these adjustments for him because he is in a pure simulation.
 										if (&Ships[Objects[current_player.m_player->objnum].instance] != Player_ship) {
 											// temp set this as an uninterpolated ship, to make the collision look more natural until the next update comes in.
-											multi_oo_set_client_simulation_mode(Objects[current_player.m_player->objnum].net_signature);
+											Objects[current_player.m_player->objnum].interp_info.force_interpolation_mode();
 
 											// check to see if it has been long enough since the last collision, if not, negate the damage
 											if (!timestamp_elapsed(current_player.s_info.player_collision_timestamp)) {

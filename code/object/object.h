@@ -18,6 +18,7 @@
 #include "object/object_flags.h"
 #include "physics/physics.h"
 #include "utils/event.h"
+#include "network/multi_interpolate.h"
 
 #include <functional>
 
@@ -146,6 +147,8 @@ public:
 
 	util::event<void, object*> pre_move_event;
 	util::event<void, object*> post_move_event;
+
+	interpolation_manager interp_info;
 
 	object();
 	~object();

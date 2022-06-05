@@ -3465,9 +3465,6 @@ void game_render_frame( camid cid )
 	extern int OO_update_index;	
 	multi_rate_display(OO_update_index, gr_screen.center_offset_x + 375, gr_screen.center_offset_y);
 
-	// test
-	extern void oo_display();
-	oo_display();			
 #endif
 	
 	g3_end_frame();
