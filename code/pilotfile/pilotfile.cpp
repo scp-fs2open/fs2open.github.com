@@ -344,7 +344,7 @@ void pilotfile::set_multi_stats(const scoring_struct *stats)
 		}
 
 		ilist.name = Ship_info[idx].name;
-		ilist.index = idx;
+		ilist.index = static_cast<int>(idx);
 		ilist.val = stats->kills[idx];
 
 		multi_stats.ship_kills.push_back(ilist);
@@ -362,7 +362,7 @@ void pilotfile::set_multi_stats(const scoring_struct *stats)
 		}
 
 		ilist.name = Medals[idx].name;
-		ilist.index = idx;
+		ilist.index = static_cast<int>(idx);
 		ilist.val = stats->medal_counts[idx];
 
 		multi_stats.medals_earned.push_back(ilist);
