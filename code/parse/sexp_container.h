@@ -101,6 +101,7 @@ struct sexp_container
 	SCP_string container_name;
 	ContainerType type = ContainerType::LIST | ContainerType::STRING_DATA;
 	int opf_type = OPF_STRING;
+	bool used_in_special_arg = false;
 
 	SCP_list<SCP_string> list_data;
 	SCP_unordered_map<SCP_string, SCP_string, map_container_hash> map_data;
@@ -132,6 +133,11 @@ struct sexp_container
 	bool name_matches(const sexp_container &container) const;
 	bool empty() const;
 	int size() const;
+	// for detecting attempted concurrent modification
+	bool is_being_used_in_special_arg() const
+	{
+		return used_in_special_arg;
+	}
 
 	// get type without persistence flags
 	ContainerType get_non_persistent_type() const;
@@ -215,3 +221,6 @@ int sexp_container_collect_map_key_arguments(int node,
 int sexp_container_query_sexp_args_count(int node,
 	SCP_vector<int> &cumulative_arg_countss,
 	bool only_valid_args = false);
+
+// mark containers when they're being used as SEXP special arguments
+void sexp_container_set_special_arg_status(int arg_handler_node, bool status);
