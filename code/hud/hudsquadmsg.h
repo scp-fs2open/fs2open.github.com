@@ -30,56 +30,57 @@
 
 class object;
 
-// defines for messages that can be sent from the player.  Defined at bitfields so that we can enable
-// and disable messages on a message by message basis
+// defines for messages that can be sent from the player.  Indexes into Player_orders
 
-#define ATTACK_TARGET_ITEM			(1<<0)
-#define DISABLE_TARGET_ITEM			(1<<1)
-#define DISARM_TARGET_ITEM			(1<<2)
-#define PROTECT_TARGET_ITEM			(1<<3)
-#define IGNORE_TARGET_ITEM			(1<<4)
-#define FORMATION_ITEM				(1<<5)
-#define COVER_ME_ITEM				(1<<6)
-#define ENGAGE_ENEMY_ITEM			(1<<7)
-#define CAPTURE_TARGET_ITEM			(1<<8)
+#define NO_ORDER_ITEM				0
+
+#define ATTACK_TARGET_ITEM			1
+#define DISABLE_TARGET_ITEM			2
+#define DISARM_TARGET_ITEM			3
+#define PROTECT_TARGET_ITEM			4
+#define IGNORE_TARGET_ITEM			5
+#define FORMATION_ITEM				6
+#define COVER_ME_ITEM				7
+#define ENGAGE_ENEMY_ITEM			8
+#define CAPTURE_TARGET_ITEM			9
 
 // the next are for the support ship only
-#define REARM_REPAIR_ME_ITEM		(1<<9)
-#define ABORT_REARM_REPAIR_ITEM		(1<<10)
-#define STAY_NEAR_ME_ITEM			(1<<11)
-#define STAY_NEAR_TARGET_ITEM		(1<<12)
-#define KEEP_SAFE_DIST_ITEM			(1<<13)
+#define REARM_REPAIR_ME_ITEM		10
+#define ABORT_REARM_REPAIR_ITEM		11
+#define STAY_NEAR_ME_ITEM			12
+#define STAY_NEAR_TARGET_ITEM		13
+#define KEEP_SAFE_DIST_ITEM			14
 
 // next item for all ships again -- to try to preserve relative order within the message menu
-#define DEPART_ITEM					(1<<14)
+#define DEPART_ITEM					15
 
 // out of order, but it was this way in the original source
-#define DISABLE_SUBSYSTEM_ITEM		(1<<15)
-
-#define MAX_ENGINE_PLAYER_ORDER		DISABLE_SUBSYSTEM_ITEM
+#define DISABLE_SUBSYSTEM_ITEM		16
 
 // used for Message box gauge
 #define NUM_MBOX_FRAMES		3
 
 typedef struct player_order {
+private:
+	//Used to ensure that built-in order indexing is always correct
+	int legacy_id;
+	friend void hud_init_comm_orders();
+public:
 	SCP_string parse_name;
 	SCP_string hud_name;
 	int hud_xstr;
-	int id;
 	SCP_string localized_name;
 	int lua_id;
-	player_order(SCP_string parsename, SCP_string hudname, int hudxstr, int orderid = 0, int luaid = -1) : parse_name(std::move(parsename)), hud_name(std::move(hudname)), hud_xstr(hudxstr), id(orderid), localized_name(""), lua_id(luaid) { }
+	player_order(SCP_string parsename, SCP_string hudname, int hudxstr, int luaid = -1, int legacyid = 999999) : legacy_id(legacyid), parse_name(std::move(parsename)), hud_name(std::move(hudname)), hud_xstr(hudxstr), localized_name(""), lua_id(luaid) { }
 	inline void localize() { localized_name = XSTR(hud_name.c_str(), hud_xstr); }
 } player_order;
 
 extern std::vector<player_order> Player_orders;
-extern int current_new_player_order_type;
 
 // following defines are the set of possible commands that can be given to a ship.  A mission designer
 // might not allow some messages
 
 //WMC - Formerly FIGHTER_MESSAGES
-#define DEFAULT_MESSAGES	(ATTACK_TARGET_ITEM | DISABLE_TARGET_ITEM | DISARM_TARGET_ITEM | PROTECT_TARGET_ITEM | IGNORE_TARGET_ITEM | FORMATION_ITEM | COVER_ME_ITEM | ENGAGE_ENEMY_ITEM | DEPART_ITEM | DISABLE_SUBSYSTEM_ITEM)
 /*
 #define BOMBER_MESSAGES		FIGHTER_MESSAGES			// bombers can do the same things as fighters
 
@@ -97,10 +98,6 @@ extern int current_new_player_order_type;
 // these messages require an active target.  They are also the set of messages
 // which cannot be given to a ship when the target is on the same team, or the target
 // is not a ship.
-#define ENEMY_TARGET_MESSAGES		(ATTACK_TARGET_ITEM | DISABLE_TARGET_ITEM | DISARM_TARGET_ITEM | IGNORE_TARGET_ITEM | STAY_NEAR_TARGET_ITEM | CAPTURE_TARGET_ITEM | DISABLE_SUBSYSTEM_ITEM )
-#define FRIENDLY_TARGET_MESSAGES	(PROTECT_TARGET_ITEM)
-
-#define TARGET_MESSAGES	(ENEMY_TARGET_MESSAGES | FRIENDLY_TARGET_MESSAGES)
 
 
 
