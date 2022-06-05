@@ -1369,7 +1369,7 @@ bool control_run_lua(IoActionId id, int value) {
 void control_register_hook(IoActionId id, const luacpp::LuaFunction& hook, bool is_override, bool enabledByDefault) {
 	Control_config[id].scriptEnabledByDefault = enabledByDefault;
 
-	LuaHook* hook_entry = &Lua_hooks[static_cast<IoActionId>(id)];
+	LuaHook* hook_entry = &Lua_hooks[id];
 	
 	hook_entry->enabled = enabledByDefault;
 
@@ -1657,7 +1657,7 @@ size_t read_bind_1(CC_preset &preset) {
  *  There may be only one #Override section, since it is in charge of non-binding members of the Control_config items
  */
 void control_config_common_read_section(int s, bool first_override) {
-	Assert((s == 0) || (s == 1));
+	Assertion((s == 0) || (s == 1), "Expected value of s to be either 0 or 1, found %i instead.", s);
 	CC_preset new_preset;
 
 	// Set references to the default preset and bindings
@@ -1797,7 +1797,7 @@ void control_config_common_read_section(int s, bool first_override) {
 	// Error case of preset sections named "default" is handled in the beginning of this function
 	if ((s == 0) && (new_preset.name == "default")) {
 		Control_config_presets[0] = new_preset;
-		mprintf(("[controlconfigdefaults.tbl] Overrode default preset."));
+		mprintf(("[controlconfigdefaults.tbl] Overrode default preset.\n"));
 	}
 
 	auto duplicate = preset_find_duplicate(new_preset);
@@ -1805,23 +1805,23 @@ void control_config_common_read_section(int s, bool first_override) {
 	if (duplicate == Control_config_presets.end()) {
 		// No duplicate, add new preset
 		Control_config_presets.push_back(new_preset);
-		mprintf(("[controlconfigdefaults.tbl] Added Preset '%s'", new_preset.name.c_str()));
+		mprintf(("[controlconfigdefaults.tbl] Added Preset '%s'\n", new_preset.name.c_str()));
 
 	} else if (duplicate->name != new_preset.name) {
 		if (s == 0) {
 			// Rename the duplicate with the new_preset name
 			// The .tbl takes precedence over any player presets
 			duplicate->name = new_preset.name;
-			mprintf(("[controlconfigdefaults.tbl] Renamed duplicate '%s' preset to '%s'", duplicate->name.c_str(), new_preset.name.c_str()));
+			mprintf(("[controlconfigdefaults.tbl] Renamed duplicate '%s' preset to '%s'\n", duplicate->name.c_str(), new_preset.name.c_str()));
 		
 		} else {
 			// Presets are not allowed to rename
 			Warning(LOCATION, "Ignoring Preset '%s'. (Duplicate of '%s' and is not an Override)", new_preset.name.c_str(), duplicate->name.c_str());
-			mprintf(("[controlconfigdefaults.tbl] Ignoring Preset '%s'. (Duplicate of '%s' and is not an Override)", new_preset.name.c_str(), duplicate->name.c_str()));
+			mprintf(("[controlconfigdefaults.tbl] Ignoring Preset '%s'. (Duplicate of '%s' and is not an Override)\n", new_preset.name.c_str(), duplicate->name.c_str()));
 		}
 	} // Else, silently ignore the duplicate since it has the same name
 
-	mprintf(("[controlconfigdefaults.tbl] Ignoring duplicate Preset '%s'", new_preset.name.c_str()));
+	mprintf(("[controlconfigdefaults.tbl] Ignoring duplicate Preset '%s'\n", new_preset.name.c_str()));
 };
 
 /**
