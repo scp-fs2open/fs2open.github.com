@@ -93,6 +93,7 @@ class pilotfile {
 		// updating stats, multi and/or all-time
 		void update_stats(scoring_struct *stats, bool training = false);
 		void update_stats_backout(scoring_struct *stats, bool training = false);
+		void set_multi_stats(const scoring_struct *stats);
 		void reset_stats();
 
 		/**
