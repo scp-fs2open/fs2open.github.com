@@ -2,7 +2,7 @@
 
 #include "globalincs/pstypes.h"
 
-#include <utility>
+#include "scripting/api/objs/vecmath.h"
 
 namespace scripting {
 
@@ -55,6 +55,10 @@ ade_odata_setter<object_h> convert_arg_type(object* objp)
 {
 	return ade_object_to_odata(objp != nullptr ? OBJ_INDEX(objp) : -1);
 }
+ade_odata_setter<vec3d> convert_arg_type(vec3d vec)
+{
+	return scripting::api::l_Vector.Set(vec);
+}
 } // namespace detail
 
 HookVariableDocumentation::HookVariableDocumentation(const char* name_, ade_type_info type_, const char* description_)
@@ -102,6 +106,11 @@ Hook::Hook(SCP_string hookName,
 {
 }
 Hook::~Hook() = default;
+
+bool Hook::isActive() const
+{
+	return Script_system.IsActiveAction(_hookId);
+}
 
 bool Hook::isOverridable() const { return false; }
 

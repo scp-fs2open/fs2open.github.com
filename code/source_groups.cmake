@@ -1214,6 +1214,8 @@ add_file_folder("Scripting"
 	scripting/doc_json.h
 	scripting/doc_parser.cpp
 	scripting/doc_parser.h
+	scripting/global_hooks.cpp
+	scripting/global_hooks.h
 	scripting/hook_api.cpp
 	scripting/hook_api.h
 	scripting/lua.cpp

@@ -163,6 +163,7 @@
 #include "render/batching.h"
 #include "scpui/rocket_ui.h"
 #include "scripting/api/objs/gamestate.h"
+#include "scripting/global_hooks.h"
 #include "scripting/hook_api.h"
 #include "scripting/scripting.h"
 #include "ship/afterburner.h"
@@ -1986,7 +1987,7 @@ void game_init()
 	scpui::initialize();
 
 	Script_system.RunInitFunctions();
-	Script_system.RunCondition(CHA_GAMEINIT);
+	scripting::hooks::OnGameInit->run();
 
 	game_title_screen_close();
 

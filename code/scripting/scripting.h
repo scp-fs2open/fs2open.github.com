@@ -18,6 +18,7 @@
 
 namespace scripting {
 struct ScriptingDocumentation;
+class Hook;
 }
 
 struct image_desc
@@ -67,9 +68,7 @@ enum ConditionalType {
 //Actions
 enum ConditionalActions : int32_t {
 	CHA_NONE    = -1,
-	CHA_DEATH,
 	CHA_ONFRAME,
-	CHA_COLLIDESHIP,
 	CHA_COLLIDEWEAPON,
 	CHA_COLLIDEDEBRIS,
 	CHA_COLLIDEASTEROID,
@@ -245,6 +244,7 @@ public:
 	void AddConditionedHook(ConditionedHook hook);
 	void AssayActions();
 	bool IsActiveAction(ConditionalActions action_id);
+	bool IsActiveAction(int hookId);
 
 	void AddGameInitFunction(script_function func);
 

@@ -37,6 +37,7 @@
 #include "object/object.h"
 #include "object/objectshield.h"
 #include "parse/parselo.h"
+#include "scripting/global_hooks.h"
 #include "scripting/scripting.h"
 #include "scripting/api/objs/vecmath.h"
 #include "particle/particle.h"
@@ -3112,11 +3113,14 @@ int beam_collide_ship(obj_pair *pair)
 				Script_system.RemHookVars({ "Self", "Object", "Ship", "Beam", "Hitpos" });
 			}
 
-			if (Script_system.IsActiveAction(CHA_COLLIDESHIP)) {
-				Script_system.SetHookObjects(4, "Self", weapon_objp, "Object", ship_objp, "Ship", ship_objp, "Beam", weapon_objp);
-				Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(mc_array[i]->hit_point_world));
-				weapon_override = Script_system.IsConditionOverride(CHA_COLLIDESHIP, weapon_objp, ship_objp);
-				Script_system.RemHookVars({ "Self", "Object", "Ship", "Beam", "Hitpos" });
+			if (scripting::hooks::OnShipCollision->isActive()) {
+				weapon_override = scripting::hooks::OnShipCollision->isOverride(
+					scripting::hook_param_list(scripting::hook_param("Self", 'o', weapon_objp),
+						scripting::hook_param("Object", 'o', ship_objp),
+						scripting::hook_param("Ship", 'o', ship_objp),
+						scripting::hook_param("Beam", 'o', weapon_objp),
+						scripting::hook_param("Hitpos", 'o', mc_array[i]->hit_point_world)),
+					weapon_objp, ship_objp);
 			}
 
 			if (!ship_override && !weapon_override)
@@ -3134,12 +3138,15 @@ int beam_collide_ship(obj_pair *pair)
 				Script_system.RemHookVars({ "Self", "Object", "Ship", "Beam", "Hitpos" });
 			}
 
-			if (Script_system.IsActiveAction(CHA_COLLIDESHIP) && ((weapon_override && !ship_override) || (!weapon_override && !ship_override)))
+			if (scripting::hooks::OnShipCollision->isActive() && ((weapon_override && !ship_override) || (!weapon_override && !ship_override)))
 			{
-				Script_system.SetHookObjects(4, "Self", weapon_objp, "Object", ship_objp, "Ship", ship_objp, "Beam", weapon_objp);
-				Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(mc_array[i]->hit_point_world));
-				Script_system.RunCondition(CHA_COLLIDESHIP, weapon_objp, ship_objp);
-				Script_system.RemHookVars({ "Self", "Object", "Ship", "Beam", "Hitpos" });
+				scripting::hooks::OnShipCollision->run(
+					scripting::hook_param_list(scripting::hook_param("Self", 'o', weapon_objp),
+						scripting::hook_param("Object", 'o', ship_objp),
+						scripting::hook_param("Ship", 'o', ship_objp),
+						scripting::hook_param("Beam", 'o', weapon_objp),
+						scripting::hook_param("Hitpos", 'o', mc_array[i]->hit_point_world)),
+					weapon_objp, ship_objp);
 			}
 		}
 	}

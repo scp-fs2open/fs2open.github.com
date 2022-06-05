@@ -39,7 +39,7 @@
 #include "object/objectsnd.h"
 #include "parse/parselo.h"
 #include "scripting/hook_api.h"
-#include "scripting/scripting.h"
+#include "scripting/global_hooks.h"
 #include "scripting/api/objs/subsystem.h"
 #include "scripting/api/objs/vecmath.h"
 #include "playerman/player.h"
@@ -1802,17 +1802,21 @@ void ship_hit_kill(object *ship_objp, object *other_obj, vec3d *hitpos, float pe
 	else
 		OnShipDeathStartedHook->run(scripting::hook_param_list(scripting::hook_param("Ship", 'o', ship_objp), scripting::hook_param("Killer", 'o', other_obj)));
 
-	if(Script_system.IsActiveAction(CHA_DEATH) && Script_system.IsConditionOverride(CHA_DEATH, ship_objp))
+	if(scripting::hooks::OnDeath->isActive())
 	{
-		//WMC - Do scripting stuff
-		Script_system.SetHookObjects(3, "Self", ship_objp, "Ship", ship_objp, "Killer", other_obj);
-		if (hitpos)
-			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(*hitpos));
-		Script_system.RunCondition(CHA_DEATH, ship_objp);
-		Script_system.RemHookVars({"Self", "Ship", "Killer"});
-		if (hitpos)
-			Script_system.RemHookVar("Hitpos");
-		return;
+		auto onDeathParamList = scripting::hook_param_list(scripting::hook_param("Self", 'o', ship_objp),
+			scripting::hook_param("Ship", 'o', ship_objp),
+			scripting::hook_param("Killer", 'o', other_obj),
+			scripting::hook_param("Hitpos",
+				'o',
+				scripting::api::l_Vector.Set(hitpos ? *hitpos : vmd_zero_vector),
+				hitpos != nullptr));
+
+		if (scripting::hooks::OnDeath->isOverride(onDeathParamList, ship_objp)) {
+			//WMC - Do scripting stuff
+			scripting::hooks::OnDeath->run(onDeathParamList, ship_objp);
+			return;
+		}
 	}
 
 	ship *sp;
@@ -1964,14 +1968,16 @@ void ship_hit_kill(object *ship_objp, object *other_obj, vec3d *hitpos, float pe
 		ship_maybe_lament();
 	}
 
-	if (Script_system.IsActiveAction(CHA_DEATH)) {
-		Script_system.SetHookObjects(3, "Self", ship_objp, "Ship", ship_objp, "Killer", other_obj);
-		if (hitpos)
-			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(*hitpos));
-		Script_system.RunCondition(CHA_DEATH, ship_objp);
-		Script_system.RemHookVars({"Self", "Ship", "Killer"});
-		if (hitpos)
-			Script_system.RemHookVar("Hitpos");
+	if (scripting::hooks::OnDeath->isActive()) {
+		auto onDeathParamList = scripting::hook_param_list(scripting::hook_param("Self", 'o', ship_objp),
+			scripting::hook_param("Ship", 'o', ship_objp),
+			scripting::hook_param("Killer", 'o', other_obj),
+			scripting::hook_param("Hitpos",
+				'o',
+				scripting::api::l_Vector.Set(hitpos ? *hitpos : vmd_zero_vector),
+				hitpos != nullptr));
+
+		scripting::hooks::OnDeath->run(onDeathParamList, ship_objp);
 	}
 }
 

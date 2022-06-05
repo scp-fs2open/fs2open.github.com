@@ -32,7 +32,7 @@
 #include "object/objcollide.h"
 #include "object/object.h"
 #include "parse/parselo.h"
-#include "scripting/scripting.h"
+#include "scripting/global_hooks.h"
 #include "particle/particle.h"
 #include "render/3d.h"
 #include "ship/ship.h"
@@ -1511,11 +1511,12 @@ static void asteroid_maybe_break_up(object *pasteroid_obj)
 	if ( timestamp_elapsed(asp->final_death_time) ) {
 		vec3d	relvec, vfh, tvec;
 		bool skip = false;
-		bool hooked = Script_system.IsActiveAction(CHA_DEATH);
+		bool hooked = scripting::hooks::OnDeath->isActive();
 
 		if (hooked) {
-			Script_system.SetHookObject("Self", pasteroid_obj);
-			skip = Script_system.IsConditionOverride(CHA_DEATH, pasteroid_obj);
+			skip = scripting::hooks::OnDeath->isOverride(
+				scripting::hook_param_list(scripting::hook_param("Self", 'o', pasteroid_obj)),
+				pasteroid_obj);
 		}
 		if (!skip)
 		{
@@ -1623,8 +1624,9 @@ static void asteroid_maybe_break_up(object *pasteroid_obj)
 			asp->final_death_time = timestamp(-1);
 		}
 		if (hooked) {
-			Script_system.RunCondition(CHA_DEATH, pasteroid_obj);
-			Script_system.RemHookVar("Self");
+			scripting::hooks::OnDeath->run(
+				scripting::hook_param_list(scripting::hook_param("Self", 'o', pasteroid_obj)),
+				pasteroid_obj);
 		}
 	}
 }
