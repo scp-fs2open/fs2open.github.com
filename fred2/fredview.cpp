@@ -3579,7 +3579,7 @@ char *error_check_initial_orders(ai_goal *goals, int ship, int wing)
 		switch (goals[i].ai_mode) {
 			case AI_GOAL_DESTROY_SUBSYSTEM:
 				Assert(flag == 2 && inst >= 0);
-				if (ship_get_subsys_index(&Ships[inst], goals[i].docker.name) < 0)
+				if (ship_find_subsys(&Ships[inst], goals[i].docker.name) < 0)
 					return "Unknown subsystem type";
 
 				break;

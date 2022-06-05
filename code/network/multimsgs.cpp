@@ -3112,7 +3112,7 @@ void send_secondary_fired_packet( ship *shipp, ushort starting_sig, int  /*start
 	if ( aip->target_objnum != -1) {
 		target_net_signature = Objects[aip->target_objnum].net_signature;
 		if ( (Objects[aip->target_objnum].type == OBJ_SHIP) && (aip->targeted_subsys != NULL) ) {
-			s_index = ship_get_index_from_subsys( aip->targeted_subsys, aip->target_objnum );
+			s_index = ship_get_subsys_index( aip->targeted_subsys );
 		}
 
 		if ( Objects[aip->target_objnum].type == OBJ_WEAPON ) {
@@ -3352,7 +3352,7 @@ void send_turret_fired_packet( int ship_objnum, int subsys_index, int weapon_obj
 
 	pnet_signature = Objects[ship_objnum].net_signature;
 
-	ssp = ship_get_indexed_subsys( &Ships[Objects[ship_objnum].instance], subsys_index, NULL );
+	ssp = ship_get_indexed_subsys( &Ships[Objects[ship_objnum].instance], subsys_index );
 	if(ssp == NULL){
 		return;
 	}
@@ -3444,7 +3444,7 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 	// find this turret, and set the position of the turret that just fired to be where it fired.  Quite a
 	// hack, but should be suitable.
 	shipp = &Ships[objp->instance];
-	ssp = ship_get_indexed_subsys( shipp, turret_index, NULL );
+	ssp = ship_get_indexed_subsys( shipp, turret_index );
 	if(ssp == NULL){
 		return;
 	}
@@ -4438,7 +4438,7 @@ void send_player_order_packet(int type, int index, int cmd)
 	ADD_USHORT( target_net_signature );
 
 	if ( (Player_ai->target_objnum != -1) && (Player_ai->targeted_subsys != NULL) ) {
-		s_index = ship_get_index_from_subsys( Player_ai->targeted_subsys, Player_ai->target_objnum );
+		s_index = ship_get_subsys_index( Player_ai->targeted_subsys );
 	}
 
 	ADD_SHORT(static_cast<short>(s_index));
@@ -7523,7 +7523,7 @@ void send_homing_weapon_info( int weapon_num )
 
 		// get the subsystem index.
 		if ( (homing_object->type == OBJ_SHIP) && (wp->homing_subsys != NULL) ) {
-			s_index = ship_get_index_from_subsys( wp->homing_subsys, OBJ_INDEX(homing_object) );
+			s_index = ship_get_subsys_index( wp->homing_subsys );
 		}
 	}
 
@@ -8202,7 +8202,7 @@ void send_beam_fired_packet(const beam_fire_info *fire_info, const beam_info *ov
 			return;
 		}
 	} else if (fire_info->shooter && fire_info->turret) {
-		shooter_subsys_index = ship_get_index_from_subsys(fire_info->turret, OBJ_INDEX(fire_info->shooter));
+		shooter_subsys_index = ship_get_subsys_index(fire_info->turret);
 
 		Assertion(shooter_subsys_index >= 0, "BEAM fired from unknown subsystem!");
 		Assertion(shooter_subsys_index < SHRT_MAX, "BEAM fired from a subsystem beyond max limits!");
@@ -8216,7 +8216,7 @@ void send_beam_fired_packet(const beam_fire_info *fire_info, const beam_info *ov
 	target_sig = (fire_info->target) ? fire_info->target->net_signature : 0;
 
 	if (fire_info->target && fire_info->target_subsys) {
-		target_subsys_index = ship_get_index_from_subsys(fire_info->target_subsys, OBJ_INDEX(fire_info->target));
+		target_subsys_index = ship_get_subsys_index(fire_info->target_subsys);
 	}
 
 	u_beam_info = static_cast<short>(fire_info->beam_info_index);
@@ -8646,7 +8646,7 @@ void send_flak_fired_packet(int ship_objnum, int subsys_index, int weapon_objnum
 	Assert ( objp->type == OBJ_WEAPON );	
 	pnet_signature = Objects[ship_objnum].net_signature;
 
-	ssp = ship_get_indexed_subsys( &Ships[Objects[ship_objnum].instance], subsys_index, NULL );
+	ssp = ship_get_indexed_subsys( &Ships[Objects[ship_objnum].instance], subsys_index );
 	if(ssp == NULL){
 		return;
 	}
@@ -8730,7 +8730,7 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 	// find this turret, and set the position of the turret that just fired to be where it fired.  Quite a
 	// hack, but should be suitable.
 	shipp = &Ships[objp->instance];
-	ssp = ship_get_indexed_subsys( shipp, turret_index, NULL );
+	ssp = ship_get_indexed_subsys( shipp, turret_index );
 	if(ssp == NULL){
 		return;
 	}

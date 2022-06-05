@@ -215,7 +215,7 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 	if ( MULTIPLAYER_MASTER ) {
 		int index;
 
-		index = ship_get_index_from_subsys(subsys, ship_p->objnum);
+		index = ship_get_subsys_index(subsys);
 		
 		vec3d hit;
 		if (hitpos) {
