@@ -733,7 +733,7 @@ void pilotfile::plr_read_controls()
 void pilotfile::plr_write_controls()
 {
 	handler->startSectionWrite(Section::Controls);
-
+	
 	// Save the default bindings to prevent crash. See github issue 3902
 	auto& Control_config_default = Control_config_presets[0].bindings;
 	handler->startArrayWrite("controls", JOY_AXIS_BEGIN, true);
@@ -745,9 +745,9 @@ void pilotfile::plr_write_controls()
 		handler->writeShort("joystick", item.get_btn(CID_JOY0));
 		handler->writeShort("mouse", -1);
 
-		handler->endSectionWrite();
+		handler->endSectionWrite();	// Section::Unnamed
 	}
-	handler->endArrayWrite();
+	handler->endArrayWrite(); // Array::controls
 
 	handler->startArrayWrite("axes", NUM_JOY_AXIS_ACTIONS);
 	for (size_t idx = JOY_AXIS_BEGIN; idx < JOY_AXIS_END; idx++) {
@@ -770,7 +770,7 @@ void pilotfile::plr_write_controls()
 		
 		handler->writeInt("invert_axis", (item.first.is_inverted() || item.second.is_inverted()) ? 1 : 0);
 
-		handler->endSectionWrite();
+		handler->endSectionWrite(); // Section::Unnamed
 	}
 	handler->endArrayWrite();
 	// End issue 3902

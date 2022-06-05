@@ -2,7 +2,8 @@
 //
 
 #include "controls.h"
-#include "enums.h"
+#include "scripting/api/objs/enums.h"
+#include "scripting/api/objs/control_binding.h"
 
 #include "io/mouse.h"
 #include "io/cursor.h"
@@ -20,26 +21,53 @@ namespace api {
 //**********LIBRARY: Controls library
 ADE_LIB(l_Mouse, "Controls", "io", "Controls library");
 
-ADE_FUNC(getMouseX, l_Mouse, NULL, "Gets Mouse X pos", "number", "Mouse x position, or 0 if mouse is not initialized yet")
+//****SUBLIBRARY: Controls/Keybindings
+ADE_LIB_DERIV(l_Control_Keybindings, "Keybinding", nullptr, nullptr, l_Mouse);
+
+ADE_INDEXER(l_Control_Keybindings, "string Name", "Gets handle to a keybinding", "keybinding", "Key binding handle, or invalid key binding handle if name is invalid")
+{
+	int idx = -1;
+
+	const char* name = nullptr;
+
+	if (!ade_get_args(L, "*s", &name))
+		return ade_set_args(L, "o", l_ControlBinding.Set(cci_h()));
+	
+	if (name == nullptr)
+		return ade_set_args(L, "o", l_ControlBinding.Set(cci_h()));
+
+	idx = ActionToVal(name);
+	
+	if (idx < 0 || idx >= IoActionId::CCFG_MAX)
+		return ade_set_args(L, "o", l_ControlBinding.Set(cci_h()));
+	else
+		return ade_set_args(L, "o", l_ControlBinding.Set(idx));
+}
+ADE_FUNC(__len, l_Control_Keybindings, nullptr, "Number of keybindings.", "number", "Number of keybindings in mission")
+{
+	return ade_set_args(L, "i", (int) IoActionId::CCFG_MAX);
+}
+
+ADE_FUNC(getMouseX, l_Mouse, nullptr, "Gets Mouse X pos", "number", "Mouse x position, or 0 if mouse is not initialized yet")
 {
 	if(!mouse_inited)
 		return ade_set_error(L, "i", 0);
 
 	int x;
 
-	mouse_get_pos(&x, NULL);
+	mouse_get_pos(&x, nullptr);
 
 	return ade_set_args(L, "i", x);
 }
 
-ADE_FUNC(getMouseY, l_Mouse, NULL, "Gets Mouse Y pos", "number", "Mouse y position, or 0 if mouse is not initialized yet")
+ADE_FUNC(getMouseY, l_Mouse, nullptr, "Gets Mouse Y pos", "number", "Mouse y position, or 0 if mouse is not initialized yet")
 {
 	if(!mouse_inited)
 		return ade_set_error(L, "i", 0);
 
 	int y;
 
-	mouse_get_pos(NULL, &y);
+	mouse_get_pos(nullptr, &y);
 
 	return ade_set_args(L, "i", y);
 }
@@ -55,7 +83,7 @@ ADE_FUNC(isMouseButtonDown,
 	if(!mouse_inited)
 		return ade_set_error(L, "b", false);
 
-	enum_h *e[3] = {NULL, NULL, NULL};
+	enum_h *e[3] = {nullptr, nullptr, nullptr};
 	ade_get_args(L, "o|oo", l_Enum.GetPtr(&e[0]), l_Enum.GetPtr(&e[1]), l_Enum.GetPtr(&e[2]));	//Like a snake!
 
 	bool rtn = false;
@@ -63,7 +91,7 @@ ADE_FUNC(isMouseButtonDown,
 
 	for(int i = 0; i < 3; i++)
 	{
-		if(e[i] == NULL)
+		if(e[i] == nullptr)
 			break;
 
 		if(e[i]->index == LE_MOUSE_LEFT_BUTTON)
@@ -233,14 +261,14 @@ ADE_FUNC(setCursorImage, l_Mouse, "string filename", "Sets mouse cursor image, a
 		return ade_set_error(L, "b", false);
 
 	const char* s = nullptr;
-	enum_h *u = NULL; // This isn't used anymore
+	enum_h *u = nullptr; // This isn't used anymore
 
 	if(!ade_get_args(L, "s|o", &s, l_Enum.GetPtr(&u)))
 		return ade_set_error(L, "b", false);
 
 	Cursor* cursor = CursorManager::get()->loadCursor(s);
 
-	if (cursor == NULL)
+	if (cursor == nullptr)
 	{
 		return ade_set_error(L, "b", false);
 	}
@@ -250,7 +278,7 @@ ADE_FUNC(setCursorImage, l_Mouse, "string filename", "Sets mouse cursor image, a
 }
 
 ADE_FUNC(setCursorHidden, l_Mouse, "boolean hide, [boolean grab]", "Hides the cursor when <i>hide</i> is true, otherwise shows it. <i>grab</i> determines if "
-	"the mouse will be restricted to the window. Set this to true when hiding the cursor while in game. By default grab will be true when we are in the game play state, false otherwise.", NULL, NULL)
+	"the mouse will be restricted to the window. Set this to true when hiding the cursor while in game. By default grab will be true when we are in the game play state, false otherwise.", nullptr, nullptr)
 {
 	if(!mouse_inited)
 		return ADE_RETURN_NIL;
@@ -314,23 +342,23 @@ ADE_VIRTVAR(MouseControlStatus, l_Mouse, "boolean", "Gets and sets the retail mo
 		return ADE_RETURN_FALSE;
 }
 
-ADE_FUNC(getMouseSensitivity, l_Mouse, NULL, "Gets mouse sensitivity setting", "number", "Mouse sensitivity in range of 0-9")
+ADE_FUNC(getMouseSensitivity, l_Mouse, nullptr, "Gets mouse sensitivity setting", "number", "Mouse sensitivity in range of 0-9")
 {
 	return ade_set_args(L, "i", Mouse_sensitivity);
 }
 
-ADE_FUNC(getJoySensitivity, l_Mouse, NULL, "Gets joystick sensitivity setting", "number", "Joystick sensitivity in range of 0-9")
+ADE_FUNC(getJoySensitivity, l_Mouse, nullptr, "Gets joystick sensitivity setting", "number", "Joystick sensitivity in range of 0-9")
 {
 	return ade_set_args(L, "i", Joy_sensitivity);
 }
 
-ADE_FUNC(getJoyDeadzone, l_Mouse, NULL, "Gets joystick deadzone setting", "number", "Joystick deadzone in range of 0-9")
+ADE_FUNC(getJoyDeadzone, l_Mouse, nullptr, "Gets joystick deadzone setting", "number", "Joystick deadzone in range of 0-9")
 {
 	return ade_set_args(L, "i", Joy_dead_zone_size / 5);
 }
 
 //trackir funcs
-ADE_FUNC(updateTrackIR, l_Mouse, NULL, "Updates Tracking Data. Call before using get functions", "boolean", "Checks if trackir is available and updates variables, returns true if successful, otherwise false")
+ADE_FUNC(updateTrackIR, l_Mouse, nullptr, "Updates Tracking Data. Call before using get functions", "boolean", "Checks if trackir is available and updates variables, returns true if successful, otherwise false")
 {
 	if( !headtracking::isEnabled() )
 		return ADE_RETURN_FALSE;
@@ -341,7 +369,7 @@ ADE_FUNC(updateTrackIR, l_Mouse, NULL, "Updates Tracking Data. Call before using
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(getTrackIRPitch, l_Mouse, NULL, "Gets pitch axis from last update", "number", "Pitch value -1 to 1, or 0 on failure")
+ADE_FUNC(getTrackIRPitch, l_Mouse, nullptr, "Gets pitch axis from last update", "number", "Pitch value -1 to 1, or 0 on failure")
 {
 	if (!headtracking::isEnabled())
 		return ade_set_error(L, "f", 0.0f);
@@ -349,7 +377,7 @@ ADE_FUNC(getTrackIRPitch, l_Mouse, NULL, "Gets pitch axis from last update", "nu
 	return ade_set_args( L, "f", headtracking::getStatus()->pitch);
 }
 
-ADE_FUNC(getTrackIRYaw, l_Mouse, NULL, "Gets yaw axis from last update", "number", "Yaw value -1 to 1, or 0 on failure")
+ADE_FUNC(getTrackIRYaw, l_Mouse, nullptr, "Gets yaw axis from last update", "number", "Yaw value -1 to 1, or 0 on failure")
 {
 	if (!headtracking::isEnabled())
 		return ade_set_error(L, "f", 0.0f);
@@ -357,7 +385,7 @@ ADE_FUNC(getTrackIRYaw, l_Mouse, NULL, "Gets yaw axis from last update", "number
 	return ade_set_args(L, "f", headtracking::getStatus()->yaw);
 }
 
-ADE_FUNC(getTrackIRRoll, l_Mouse, NULL, "Gets roll axis from last update", "number", "Roll value -1 to 1, or 0 on failure")
+ADE_FUNC(getTrackIRRoll, l_Mouse, nullptr, "Gets roll axis from last update", "number", "Roll value -1 to 1, or 0 on failure")
 {
 	if (!headtracking::isEnabled())
 		return ade_set_error(L, "f", 0.0f);
@@ -365,7 +393,7 @@ ADE_FUNC(getTrackIRRoll, l_Mouse, NULL, "Gets roll axis from last update", "numb
 	return ade_set_args(L, "f", headtracking::getStatus()->roll);
 }
 
-ADE_FUNC(getTrackIRX, l_Mouse, NULL, "Gets x position from last update", "number", "X value -1 to 1, or 0 on failure")
+ADE_FUNC(getTrackIRX, l_Mouse, nullptr, "Gets x position from last update", "number", "X value -1 to 1, or 0 on failure")
 {
 	if (!headtracking::isEnabled())
 		return ade_set_error(L, "f", 0.0f);
@@ -373,7 +401,7 @@ ADE_FUNC(getTrackIRX, l_Mouse, NULL, "Gets x position from last update", "number
 	return ade_set_args(L, "f", headtracking::getStatus()->x);
 }
 
-ADE_FUNC(getTrackIRY, l_Mouse, NULL, "Gets y position from last update", "number", "Y value -1 to 1, or 0 on failure")
+ADE_FUNC(getTrackIRY, l_Mouse, nullptr, "Gets y position from last update", "number", "Y value -1 to 1, or 0 on failure")
 {
 	if (!headtracking::isEnabled())
 		return ade_set_error(L, "f", 0.0f);
@@ -381,7 +409,7 @@ ADE_FUNC(getTrackIRY, l_Mouse, NULL, "Gets y position from last update", "number
 	return ade_set_args(L, "f", headtracking::getStatus()->y);
 }
 
-ADE_FUNC(getTrackIRZ, l_Mouse, NULL, "Gets z position from last update", "number", "Z value -1 to 1, or 0 on failure")
+ADE_FUNC(getTrackIRZ, l_Mouse, nullptr, "Gets z position from last update", "number", "Z value -1 to 1, or 0 on failure")
 {
 	if (!headtracking::isEnabled() )
 		return ade_set_error(L, "f", 0.0f);

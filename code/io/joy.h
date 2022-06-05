@@ -335,6 +335,12 @@ namespace io
 		 * @brief Called from cmdline -get_info, gets Joy info JSON and shuts down SDL_JOYSTICK subsystem.
 		 */
 		json_t* getJsonArray();
+		
+		/**
+		 * @brief Called from cmdline -joy_info, uses Prints Joy info JSON to STDOUT
+		 * @note Uses ::getJsonArray(); SDL_JOYSTICK subsystem is init and shutdown is handled by ::getJsonArray()
+		 */
+		void printJoyJSON();
 	}
 }
 

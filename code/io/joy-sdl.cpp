@@ -1105,6 +1105,22 @@ namespace joystick
 
 		return array;
 	}
+
+	void printJoyJSON() {
+		// Create root
+		json_t* root = json_object();
+
+		// Get Joystick data as JSON array
+		json_t* array = getJsonArray();
+
+		// Attach array to root
+		json_object_set_new(root, "joysticks", array);
+
+		// Dump to STDOUT
+		json_dumpf(root, stdout, JSON_INDENT(4));
+
+		shutdown();
+	}
 }
 }
 
