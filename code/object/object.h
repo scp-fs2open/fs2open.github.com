@@ -206,8 +206,6 @@ extern object obj_free_list;
 extern object obj_used_list;
 extern object obj_create_list;
 
-extern ushort Test_subject;
-
 extern int render_total;
 extern int render_order[MAX_OBJECTS];
 

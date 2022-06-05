@@ -91,6 +91,10 @@ public:
 
 	void reset() 
 	{
+		if (!(Game_mode & GM_MULTIPLAYER)){
+			return;
+		}
+
 		_packets.clear();
 		_packets.reserve(PACKET_INFO_LIMIT * 2);
 		_upcoming_packet_index = -1;
@@ -102,7 +106,7 @@ public:
 		_shields_comparison_frame = -1;
 		_source_player_index = -1;
 
-		// if we are resetting, that means that the ship is going to respawn, so don't clear it out, just set the values to invalid.
+		// if we are resetting, that means that the ship may be respawning, so don't clear it out, just set the values to invalid.
 		for (auto& frame : _subsystems_comparison_frame) {
 			frame = -1;
 		}
@@ -110,9 +114,16 @@ public:
 		_ai_comparison_frame = -1;
 	}
 
+	void clean_up() 
+	{
+		_packets.clear();
+		_packets.shrink_to_fit();
+		_subsystems_comparison_frame.clear();
+		_subsystems_comparison_frame.shrink_to_fit();
+	}
+
 	interpolation_manager()
 	{
-		_packets.reserve(PACKET_INFO_LIMIT * 2);
 		_upcoming_packet_index = -1;
 		_prev_packet_index = -1;
 		_simulation_mode = false;
@@ -120,7 +131,6 @@ public:
 		_local_skip_forward = 0;
 		_hull_comparison_frame = -1;
 		_shields_comparison_frame = -1;
-		_subsystems_comparison_frame.reserve(64);
 		_ai_comparison_frame = -1;
 		_source_player_index = -1;
 	}

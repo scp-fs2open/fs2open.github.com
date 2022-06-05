@@ -531,7 +531,10 @@ int obj_create(ubyte type,int parent_obj,int instance, matrix * orient,
 	obj->n_quadrants = DEFAULT_SHIELD_SECTIONS; // Might be changed by the ship creation code
 	obj->shield_quadrant.resize(obj->n_quadrants);
 
-	obj->interp_info.reset(); // Multiplayer Interpolation info
+	// only ships are interpolated
+	if (obj->type == OBJ_SHIP){
+		obj->interp_info.reset(); // Multiplayer Interpolation info
+	}
 
 	return objnum;
 }
@@ -591,6 +594,7 @@ void obj_delete(int objnum)
 
 			physics_init(&objp->phys_info);
 			obj_snd_delete_type(OBJ_INDEX(objp));
+
 			return;
 		} else
 			ship_delete( objp );
@@ -638,6 +642,9 @@ void obj_delete(int objnum)
 	default:
 		Error( LOCATION, "Unhandled object type %d in obj_delete_all_that_should_be_dead", objp->type );
 	}
+
+	// clean up interpolation info
+	objp->interp_info.clean_up();
 
 	// delete any dock information we still have
 	dock_free_dock_list(objp);
