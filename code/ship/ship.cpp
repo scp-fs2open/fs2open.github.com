@@ -6973,6 +6973,7 @@ static int subsys_set(int objnum, int ignore_subsys_info)
 	// for each subsystem, get a new ship_subsys instance and set up the pointers and other values
 	list_init ( &shipp->subsys_list );								// initialize the ship's list of subsystems
 	shipp->subsys_list_indexer.reset();
+	shipp->flags.remove(Ship::Ship_Flags::Subsystem_cache_valid);
 
 	// make sure to have allocated the number of subsystems we require
 	if (!ship_allocate_subsystems( sinfo->n_subsystems )) {
@@ -7670,6 +7671,7 @@ static void ship_subsystems_delete(ship *shipp)
 		}
 
 		shipp->subsys_list_indexer.reset();
+		shipp->flags.remove(Ship::Ship_Flags::Subsystem_cache_valid);
 	}
 }
 
