@@ -10145,6 +10145,9 @@ int test_argument_nodes_for_condition(int n, int condition_node, int *num_true, 
 	return num_valid_arguments;
 }
 
+/**
+ * Internal parameter type, only used with test_argument_vector_for_condition
+ */
 enum class STRDUP_STATUS { ALREADY_DUPPED, DUP_NEEDED, DUP_NOT_NEEDED };
 
 // Goober5000
