@@ -2616,11 +2616,20 @@ int check_control(int id, int key)
 		Ignored_keys[id]--;
 	}
 
-	bool control_triggered = is_control_used && !is_ignored;
+	int control_triggered = 0;	// boolean as int (0 = false, 1 = true); Weirdness for compatibility with control_run_lua();
+	if (is_control_used && !is_ignored) {
+		control_triggered = 1;
+	}
 
-	//Only call lua in here when it's a continuous button
-	if (Control_config[id].type == CC_TYPE_CONTINUOUS)
-		control_triggered &= !control_run_lua(static_cast<IoActionId>(id), control_triggered ? 1 : 0);
+	if (Control_config[id].type == CC_TYPE_CONTINUOUS) {
+		// Only call lua in here when it's a continuous button
+
+		if (control_run_lua(static_cast<IoActionId>(id), control_triggered)) {
+			// lua has taken care of the control already.  Mark as not triggered to prevent hardcode from executing.
+			control_triggered = 0;
+
+		}	// Else, let hardcode process the control
+	}
 
 	if (!is_control_used && Control_config[id].continuous_ongoing) {
 		// If we reach this point, then it means this is a continuous control
@@ -2635,7 +2644,7 @@ int check_control(int id, int key)
 		Control_config[id].continuous_ongoing = false;
 	}
 
-	return control_triggered ? 1 : 0;
+	return control_triggered;
 }
 
 /**

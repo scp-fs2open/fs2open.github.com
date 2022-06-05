@@ -218,7 +218,7 @@ void load_preset_files();
 
 /**
  * @brief Checks if the given preset is a duplicate within Control_config_presets vector
- * @returns tterator to the duplicate if found, or
+ * @returns iterator to the duplicate if found, or
  * @returns iterator to Control_config_presets.end() otherwise
  */
 SCP_vector<CC_preset>::iterator preset_find_duplicate(const CC_preset& new_preset);
