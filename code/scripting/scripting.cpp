@@ -1197,25 +1197,21 @@ void script_state::AddGameInitFunction(script_function func) { GameInitFunctions
 // This allows us to avoid significant overhead from checking everything at the potential hook sites, but you must call
 // AssayActions() after modifying ConditionalHooks before returning to normal operation of the scripting system!
 void script_state::AssayActions() {
-	for (bool &i : ActiveActions) {
-		i = false;
-	}
+	ActiveActions.clear();
 
 	for (const auto &hook : ConditionalHooks) {
 		for (const auto &action : hook.Actions) {
-			if (action.action_type >= -1 && action.action_type <= CHA_LAST) {
-				ActiveActions[action.action_type] = true;
-			}
+			ActiveActions[action.action_type] = true;
 		}
 	}
 }
 
-bool script_state::IsActiveAction(ConditionalActions action_id) {
-	return ActiveActions[action_id];
-}
-
-bool script_state::IsActiveAction(int hookId) {
-	// TODO
+bool script_state::IsActiveAction(int action_id) {
+	auto entry = ActiveActions.find(action_id);
+	if (entry != ActiveActions.end())
+		return entry->second;
+	else
+		return false;
 }
 
 //*************************CLASS: script_state*************************
