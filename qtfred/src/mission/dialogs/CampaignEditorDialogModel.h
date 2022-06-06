@@ -34,7 +34,7 @@ public:
 	 * @param newCampaignType The type fore a new campaing
 	 * @note Either give an existing file OR a new type.
 	 */
-	CampaignEditorDialogModel(CampaignEditorDialog *parent, EditorViewport *viewport, const QString &file = "", const QString& newCampaignType = "");
+	CampaignEditorDialogModel(CampaignEditorDialog *parent, EditorViewport *viewport, const QString &file = "", const QString& newCampaignType = "", int numPlayers = 0);
 	~CampaignEditorDialogModel() override = default;
 	/**
 	 * @brief Called by CampaignDialog with references to widgets with complex data
@@ -67,13 +67,12 @@ public:
 
 	inline const QString& getCampaignName() const { return campaignName; }
 	inline bool getCampaignTechReset() const { return campaignTechReset; }
-	int getCampaignNumPlayers() const;
 
 	inline bool isCurMnSelected() const { return mnData_it; }
 	inline const QString& getCurMnFilename() const { return mnData_it ? mnData_it->filename : qstrEmpty; }
 	inline bool getCurMnIncluded() const {
 		return mnData_idx.isValid() && mnData_idx.data(Qt::CheckStateRole) == Qt::Checked; }
-	inline bool getCurMnFirst() const {
+	inline bool isCurMnFirst() const {
 		return mnData_it && mnData_it->filename == firstMission;
 	}
 	inline bool getCurMnFredable() const { return mnData_it && mnData_it->fredable; }
@@ -163,6 +162,8 @@ private:
 		}
 	}
 
+	bool deleteLinksTo(const CampaignMissionData &target);
+
 private slots:
 	void trackMissionUncheck(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles);
 	inline void flagModified() { modified = true; }
@@ -240,6 +241,7 @@ public:
 	const QString campaignFile;
 	static const QStringList campaignTypes;
 	const QString campaignType;
+	const int numPlayers{0};
 
 private:
 	QStringList droppedMissions{};

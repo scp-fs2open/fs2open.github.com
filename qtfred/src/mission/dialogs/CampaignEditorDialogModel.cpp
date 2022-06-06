@@ -68,6 +68,7 @@ void initWeps(const SCP_vector<weapon_info>::const_iterator &w_it, CheckedDataLi
 SCP_vector<SCP_string> getMissions(){
 	Skip_packfile_search = 1;
 	SCP_vector<SCP_string> missions;
+	// #8a check: duplicate mission: get loose mission files once
 	cf_get_file_list(missions, CF_TYPE_MISSIONS, "*fs2", CF_SORT_NAME);
 	Skip_packfile_search = 0;
 	return missions;
@@ -98,10 +99,11 @@ bool parseMnPart(mission *mn, const char *filename){
 }
 } //namespace
 
-CampaignEditorDialogModel::CampaignEditorDialogModel(CampaignEditorDialog* _parent, EditorViewport* viewport, const QString &file, const QString& newCampaignType) :
+CampaignEditorDialogModel::CampaignEditorDialogModel(CampaignEditorDialog* _parent, EditorViewport* viewport, const QString &file, const QString& newCampaignType, int _numPlayers) :
 	AbstractDialogModel(_parent, viewport),
 	campaignFile(loadOrCreateFile(file, newCampaignType)),
 	campaignType(campaignTypes[Campaign.type]),
+	numPlayers(campaignFile.isEmpty() ? (Campaign.num_players = _numPlayers) : Campaign.num_players),
 	parent(_parent),
 	initialShips(Ship_info, &initShips, this),
 	initialWeapons(Weapon_info, &initWeps, this),
@@ -110,7 +112,10 @@ CampaignEditorDialogModel::CampaignEditorDialogModel(CampaignEditorDialog* _pare
 	campaignDescr(Campaign.desc),
 	campaignTechReset(Campaign.flags & CF_CUSTOM_TECH_DATABASE)
 {
+	Assertion(_numPlayers == 0 || campaignFile.isEmpty(), "The editor should only allow setting a player number when a new campaign is created. Please report.");
+
 	for (int i=0; i<Campaign.num_missions; i++) {
+		// #8 check: duplicate mission: don't add mission if name already present
 		if (! missionData.contains(Campaign.missions[i].name)) {
 			mission temp{};
 			bool loaded{parseMnPart(&temp, qPrintable(Campaign.missions[i].name))};
@@ -123,10 +128,21 @@ CampaignEditorDialogModel::CampaignEditorDialogModel(CampaignEditorDialog* _pare
 
 			mnDataPtr->fredable = false;
 
+			// #11 check: multi player number: skip and warn on load
+			if (campaignTypes.indexOf(campaignType) != CAMPAIGN_TYPE_SINGLE && numPlayers != temp.num_players) {
+				QMessageBox::warning(parent, "Potential Campaign Bug", "Mission " + QString(temp.name) + " of campaign has wrong player number: " + QString::number(temp.num_players) + " and was removed.");
+				delete mnDataPtr;
+				continue;
+			}
+
 			missionData.initRow(Campaign.missions[i].name, mnDataPtr, true,
 							   loaded ? Qt::darkYellow : Qt::red);
 		}
 	}
+
+	// #9 check: no first mission: enforced here
+	if (Campaign.num_missions > 0)
+		firstMission = Campaign.missions[0].name;
 
 	//reparse campaign after parsing missions
 	parse_init(false);
@@ -136,9 +152,6 @@ CampaignEditorDialogModel::CampaignEditorDialogModel(CampaignEditorDialog* _pare
 		Assertion(reloaded, "Campaign file should still be loadable");
 		connectBranches(false, &Campaign);
 	}
-
-	if (Campaign.num_missions > 0)
-		firstMission = Campaign.missions[0].name;
 
 	connect(&campaignDescr, &QTextDocument::contentsChanged, this, &CampaignEditorDialogModel::flagModified);
 	connect(&initialShips, &QAbstractListModel::dataChanged, this, &CampaignEditorDialogModel::flagModified);
@@ -212,15 +225,6 @@ QList<QAction *> CampaignEditorDialogModel::getContextMenuExtras(QObject *menu_p
 	ret << toggleLoopAct;
 
 	return ret;
-}
-
-int CampaignEditorDialogModel::getCampaignNumPlayers() const {
-	if (campaignType == campaignTypes[0])
-		return 0;
-	for (const auto *mn : missionData.collectCheckedData())
-		if (mn->filename == firstMission)
-			return mn->nPlayers;
-	return 0;
 }
 
 bool CampaignEditorDialogModel::fillTree(sexp_tree& sxt) const {
@@ -355,6 +359,10 @@ bool CampaignEditorDialogModel::setCurBrSexp(int sexp) {
 	if (! getCurBr())
 		return false;
 
+	// #5 check: always false branch: reject bad manual edit
+	if (sexp == Locked_sexp_false)
+		return false;
+
 	mnData_it->brData_it->sexp = sexp;
 	flagModified();
 	return true;
@@ -445,8 +453,7 @@ bool CampaignEditorDialogModel::_saveTo(QString file) const {
 	if (! campaignDescr.isEmpty())
 		Campaign.desc = vm_strdup(qPrintable(campaignDescr.toPlainText()));
 
-	//Defined as number of players of first mission
-	Campaign.num_players = getCampaignNumPlayers();
+	Campaign.num_players = numPlayers;
 
 	Campaign.flags = CF_DEFAULT_VALUE;
 	if (campaignTechReset)
@@ -519,15 +526,14 @@ bool CampaignEditorDialogModel::_saveTo(QString file) const {
 				int *cond_arms_ptr = &Sexp_nodes[cm.formula].rest;
 				bool flag_last_branch = false;
 				for (const auto &br : mn->branches) {
-					if (br.type == BranchType::INVALID) {
-						QMessageBox::warning(nullptr, "Can't save", "Invalid branch: From " + mn->filename + " to " + br.next);
-						return false;
-					}
+					Assertion(br.type != BranchType::INVALID, "UI should not let any branch remain invalid");
+					// #2 check: Illegal target mission
 					if (br.type == BranchType::NEXT_NOT_FOUND)
-						QMessageBox::warning(nullptr, "Potential Campaign Bug", "Saving branch to unknown mission: " + br.next);
+						QMessageBox::warning(parent, "Potential Campaign Bug", "Saving branch to unknown mission:\n" + mn->filename + "  to  " + br.next);
 					if (! br.loop) { //build formula from nonloop branches
+						// #6 check: True middle branch
 						if (flag_last_branch)
-							QMessageBox::warning(nullptr, "Potential Campaign Bug", "Branch is unreachable due to previous \"true\" condition: " + br.next);
+							QMessageBox::warning(parent, "Potential Campaign Bug", "Branch is unreachable due to previous \"true\" condition:\n" + mn->filename + "  to  " + br.next);
 						if (br.sexp == Locked_sexp_true)
 							flag_last_branch = true;
 
@@ -547,6 +553,9 @@ bool CampaignEditorDialogModel::_saveTo(QString file) const {
 						cond_arms_ptr = &Sexp_nodes[*cond_arms_ptr].rest;
 					} else { //flag & save for loop
 						Assertion(cm.flags ^ CMISSION_FLAG_HAS_LOOP, "UI should have stopped attempt at multiple loops");
+						// #4 check: always true loop
+						if (br.sexp == Locked_sexp_true)
+							QMessageBox::warning(parent, "Potential Campaign Bug", "Loop is always true from mission: " + mn->filename + " to " + br.next);
 						cm.flags |= CMISSION_FLAG_HAS_LOOP;
 
 						QString descr = br.loopDescr->toPlainText();
@@ -576,6 +585,9 @@ bool CampaignEditorDialogModel::_saveTo(QString file) const {
 								alloc_sexp("cond", SEXP_ATOM, SEXP_ATOM_OPERATOR, -1, cond_arms);
 					}
 				}
+				// #7 check: not always true last branch
+				if (!flag_last_branch)
+					QMessageBox::warning(parent, "Potential Campaign Bug", "Last branch is not always true from mission: " + mn->filename);
 
 				cm.level = lvl;
 				cm.pos = pos++;
@@ -588,19 +600,56 @@ bool CampaignEditorDialogModel::_saveTo(QString file) const {
 	return !save.save_campaign_file(qPrintable(file.replace('/',DIR_SEPARATOR_CHAR)));
 }
 
+bool CampaignEditorDialogModel::deleteLinksTo(const CampaignMissionData &target) {
+	SCP_vector<std::pair<CampaignMissionData *, int>> del;
+	QString msg = tr("The following missions have links to the removed mission (") + target.filename + "):\n";
+	for (auto mn_it: missionData) {
+		auto &mn = mn_it.first;
+		if (&mn == &target)
+			continue;
+		for (auto br_it = mn.branches.cbegin(); br_it != mn.branches.cend(); ++br_it) {
+			if (br_it->next == target.filename) {
+				del.emplace_back(&mn, br_it - mn.branches.cbegin());
+				msg.append(mn.filename).append('\n');
+			}
+		}
+	}
+
+	if (del.empty())
+		return true;
+	if (QMessageBox::StandardButton::No ==
+			QMessageBox::question(parent, tr("Remove links to mission?"), msg + tr("Do you want to remove them?")))
+		return false;
+
+	CampaignMissionData *bup_mnData_it = mnData_it;
+	for (auto del_it = del.rbegin(); del_it != del.rend(); ++del_it) {
+		mnData_it = del_it->first;
+		delCurMnBranch(del_it->second);
+	}
+	mnData_it = bup_mnData_it;
+	return true;
+}
+
 void CampaignEditorDialogModel::trackMissionUncheck(const QModelIndex &idx, const QModelIndex &bottomRight, const QVector<int> &roles) {
 	Assert(idx == bottomRight);
 	Assert(missionData.managedData(idx));
 
 	if (roles.contains(Qt::CheckStateRole)) {
-		auto mn = missionData.managedData(idx);
+		const auto mn = missionData.managedData(idx);
 		bool checked = missionData.data(idx, Qt::CheckStateRole).toBool();
 
-		//must always have first mission, or no missions
 		if (! missionData.collectCheckedData().empty()) {
+			//must always have first mission, or no missions
+			// #9 check: no first mission: enforced here
 			if (! checked) {
 				if (mn->filename == firstMission) {
 					QMessageBox::information(parent, tr("First Mission"), tr("You cannot remove the first mission of a campaign,\nunless it is the only one. Choose another to be first."));
+					missionData.setData(idx, Qt::Checked, Qt::CheckStateRole);
+					return;
+				}
+				// #3 check: illegal target mission: remove illegal links
+				if (! deleteLinksTo(*mn)){
+					QMessageBox::information(parent, tr("Target Mission"), tr("A mission cannot be removed unless all links to it are deleted."));
 					missionData.setData(idx, Qt::Checked, Qt::CheckStateRole);
 					return;
 				}
@@ -639,10 +688,11 @@ namespace { //helpers for CampaignMissionData construction
 		return ret;
 	}
 
+	// #11 check: multi player number: exclude wrong number
 	inline bool isCampaignCompatible(const mission &fsoMission) {
 		return (Campaign.type == CAMPAIGN_TYPE_SINGLE && fsoMission.game_type & (MISSION_TYPE_SINGLE|MISSION_TYPE_TRAINING))
-				|| (Campaign.type == CAMPAIGN_TYPE_MULTI_COOP && fsoMission.game_type & MISSION_TYPE_MULTI_COOP)
-				|| (Campaign.type == CAMPAIGN_TYPE_MULTI_TEAMS && fsoMission.game_type & MISSION_TYPE_MULTI_TEAMS);
+				|| (Campaign.type == CAMPAIGN_TYPE_MULTI_COOP && fsoMission.game_type & MISSION_TYPE_MULTI_COOP && Campaign.num_players == fsoMission.num_players)
+				|| (Campaign.type == CAMPAIGN_TYPE_MULTI_TEAMS && fsoMission.game_type & MISSION_TYPE_MULTI_TEAMS && Campaign.num_players == fsoMission.num_players);
 	}
 } //namespace
 
@@ -680,7 +730,7 @@ void CampaignEditorDialogModel::CampaignMissionData::initMissions(
 	if (! isCampaignCompatible(temp))
 		return;
 
-	CampaignMissionData* data{
+	CampaignMissionData* data{  // temporary handle, until the missionData submodel takes ownership
 		new CampaignMissionData{ filename, loaded, &temp, cm_it}
 	};
 
@@ -705,12 +755,18 @@ CampaignEditorDialogModel::CampaignBranchData::CampaignBranchData(CampaignEditor
 	loop(_loop),
 	loopDescr(new AssociatedPlainTextDocument(_loop ? _loop->mission_branch_desc : "", model))
 {
-	int node_next = CADR(sexp_branch);
+		int node_next = CADR(sexp_branch);
 	if (!stricmp(CTEXT(node_next), "end-of-campaign")) {
 		type = END;
 	} else if (!stricmp(CTEXT(node_next), "next-mission")) {
 		next = CTEXT(CDR(node_next));
 		type = (from == next) ? REPEAT : NEXT_NOT_FOUND;
+	}
+
+	// #5a check: always false branch: Warn & prevent on load
+	if (sexp == Locked_sexp_false) {
+		sexp = Locked_sexp_true;
+		QMessageBox::warning(nullptr, "Potential Campaign Bug", "Branch from " + from + " to " + next + "was always false. Set to always true, please fix.");
 	}
 
 	QObject::connect(loopDescr, &QTextDocument::contentsChanged, model, &CampaignEditorDialogModel::flagModified);
@@ -819,6 +875,13 @@ static inline QStringList initCampaignTypes() {
 }
 
 const QStringList CampaignEditorDialogModel::campaignTypes { initCampaignTypes() };
+
+/*
+ * Other campaign checks:
+ * #1 check: illegal source mission: does not apply, the mission owns the branch
+ * #10 check: duplicate first mission: does not apply, only one possible value
+ *
+*/
 
 } // namespace dialogs
 } // namespace fred

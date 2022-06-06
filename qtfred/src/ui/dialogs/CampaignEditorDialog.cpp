@@ -2,6 +2,7 @@
 #include "ui_CampaignEditorDialog.h"
 
 #include "ui/util/SignalBlockers.h"
+#include <QInputDialog>
 #include <QFileDialog>
 #include <QStringListModel>
 #include <ui/FredView.h>
@@ -91,9 +92,14 @@ void CampaignEditorDialog::setModel(CampaignEditorDialogModel *new_model) {
 	connect(ui->sxtBranches, &sexp_tree::rootNodeDeleted, model.get(), &CampaignEditorDialogModel::delCurMnBranch, Qt::QueuedConnection);
 	connect(ui->sxtBranches, &QTreeWidget::currentItemChanged, model.get(), &CampaignEditorDialogModel::selectCurBr);
 	connect(ui->sxtBranches, &sexp_tree::nodeChanged, model.get(), [&](int node) {
-		model->setCurBrSexp(
+		bool success = model->setCurBrSexp(
 					ui->sxtBranches->save_tree(
 							ui->sxtBranches->get_root(node)));
+		if (!success) {
+			QMessageBox::warning(this, "Potential Campaign Bug", "Attempt to set campaign branch condition to false rejected");
+			int old = model->getCurBrIdx();
+			restoreBranchOpen(old);
+		}
 	}, Qt::QueuedConnection);
 
 	connect(ui->cmbLoopAnim, &QComboBox::currentTextChanged, model.get(), &CampaignEditorDialogModel::setCurLoopAnim);
@@ -114,8 +120,8 @@ void CampaignEditorDialog::updateUISpec() {
 	setWindowTitle(model->campaignFile.isEmpty() ? "Untitled" : model->campaignFile + ".fc2");
 
 	ui->txtName->setText(model->getCampaignName());
-	if (model->getCampaignNumPlayers())
-		ui->txtType->setText(model->campaignType + ": " + QString::number(model->getCampaignNumPlayers()));
+	if (CampaignEditorDialogModel::campaignTypes.indexOf(model->campaignType))
+		ui->txtType->setText(model->campaignType + ": " + QString::number(model->numPlayers));
 	else
 		ui->txtType->setText(model->campaignType);
 	ui->chkTechReset->setChecked(model->getCampaignTechReset());
@@ -124,8 +130,8 @@ void CampaignEditorDialog::updateUISpec() {
 void CampaignEditorDialog::updateUIMission(bool updateBranch) {
 	util::SignalBlockers blockers(this);
 
-	ui->btnFirstMission->setEnabled(model->getCurMnIncluded() && ! model->getCurMnFirst());
-	ui->btnFirstMission->setChecked(model->getCurMnFirst());
+	ui->btnFirstMission->setEnabled(model->getCurMnIncluded() && ! model->isCurMnFirst());
+	ui->btnFirstMission->setChecked(model->isCurMnFirst());
 	ui->btnFredMission->setEnabled(model->getCurMnFredable());
 	ui->txbMissionDescr->setText(model->getCurMnDescr());
 
@@ -159,6 +165,7 @@ void CampaignEditorDialog::updateUIBranch(int selectedIdx) {
 	bool sel = selectedIdx >= 0;
 
 	if (sel) {
+		ui->sxtBranches->selectionModel()->clear();
 		ui->sxtBranches->selectionModel()->select(
 					ui->sxtBranches->model()->index(selectedIdx, 0),
 					QItemSelectionModel::Select);
@@ -174,6 +181,13 @@ void CampaignEditorDialog::updateUIBranch(int selectedIdx) {
 
 	ui->cmbLoopVoice->setCurrentText(model->getCurLoopVoice());
 	ui->cmbLoopVoice->setEnabled(loop);
+}
+
+void fso::fred::dialogs::CampaignEditorDialog::restoreBranchOpen(int branch)
+{
+	updateUIMission(false);
+	updateUIBranch(branch);
+	ui->sxtBranches->expand_branch(ui->sxtBranches->topLevelItem(branch));
 }
 
 bool CampaignEditorDialog::questionSaveChanges() {
@@ -209,8 +223,16 @@ void CampaignEditorDialog::fileNew() {
 		return;
 
 	auto *act = qobject_cast<QAction*>(sender());
+	if (! act)
+		return;
 
-	setModel(new CampaignEditorDialogModel(this, viewport, "", act ? act->text() : ""));
+	setModel(new CampaignEditorDialogModel(this,
+										   viewport,
+										   "",
+										   act->text(),
+										   act->text().contains("multi") ?
+											   QInputDialog::getInt(this, "Campaign Player Number", "Enter campaign player number", 2, 2) :
+											   0));
 	updateUIAll();
 }
 
@@ -343,12 +365,8 @@ void CampaignEditorDialog::mnLinkMenu(const QPoint &pos){
 		res_branch = model->setCurBrCond(par->title(), *mnName, choice->text());
 	} //else menu was dismissed
 
-	if (res_branch != -1) {
-		updateUIMission(false);
-		auto h = ui->sxtBranches->topLevelItem(res_branch);
-		model->selectCurBr(h);
-		ui->sxtBranches->expand_branch(h);
-	}
+	if (res_branch != -1)
+		restoreBranchOpen(res_branch);
 }
 
 void CampaignEditorDialog::btnErrorCheckerClicked() {

@@ -43,13 +43,19 @@ private:
 	EditorViewport *const viewport;
 
 	/**
+	 * @brief reopen branch in mission view after changes
+	 * @param branch the branch
+	 */
+	inline void restoreBranchOpen(int branch);
+
+	/**
 	 * @brief shows a save changes dialog (if any) and handles its results
 	 * @return whether it is safe to dismiss or replace the current model
 	 * @returns true if changes were successfully saved, discarded or no changes were made
 	 * @returns false if saving failed or was cancelled
 	 */
 	bool questionSaveChanges();
-
+        
 public slots:
 	/**
 	 * @brief onClose for dialogs. Checks for changes and prompts to save them.
