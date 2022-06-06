@@ -635,7 +635,7 @@ void cf_create_directory(int dir_type, uint32_t location_flags)
 //
 // parameters:  *filepath ==> name of file to open (may be path+name)
 //              *mode     ==> specifies how file should be opened (eg "rb" for read binary)
-//                            passing NULL to mode deletes the file if it exists and returns NULL
+//                            passing NULL to mode triggers an assert and returns NULL
 //               type     ==> one of:    CFILE_NORMAL
 //                                       CFILE_MEMORY_MAPPED
 //					  dir_type	=>	override extension check, value is one of CF_TYPE* #defines
@@ -782,7 +782,7 @@ CFILE* _cfopen(const char* source, int line, const char* file_path, const char* 
 //
 // parameters:	*filepath	==> name of file to open (may be path+name)
 //				*mode		==> specifies how file should be opened (eg "rb" for read binary)
-//								passing NULL to mode deletes the file if it exists and returns NULL
+//								passing NULL to mode triggers an assert and returns NULL
 
 //				dir_type	=>	override extension check, value is one of CF_TYPE* #defines
 //
