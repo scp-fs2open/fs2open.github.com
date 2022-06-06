@@ -660,6 +660,18 @@ void event_music_first_pattern()
 // this yields a relative start time of 1 second.  Mission start will now use relative rather than absolute delay.
 void event_music_set_start_delay()
 {
+	if (Event_music_inited == FALSE) {
+		return;
+	}
+
+	if (Event_music_enabled == FALSE) {
+		return;
+	}
+
+	if (Event_music_level_inited == FALSE) {
+		return;
+	}
+
 	Pattern_timer_id = timestamp(1000);
 }
 
