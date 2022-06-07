@@ -100,7 +100,7 @@ struct list_modifier {
 		AT_INDEX
 	};
 
-	const char* name;
+	const char *name;
 	const Modifier modifier;
 };
 
@@ -181,7 +181,7 @@ private:
 	SCP_string list_get_last(bool remove);
 	SCP_string list_get_random(bool remove);
 	SCP_string list_get_at(int index);
-	SCP_string list_apply_iterator(SCP_list<SCP_string>::iterator list_it, const char *pos_str, bool remove);
+	SCP_string list_apply_iterator(SCP_list<SCP_string>::iterator list_it, const char *location, bool remove);
 };
 
 // management functions

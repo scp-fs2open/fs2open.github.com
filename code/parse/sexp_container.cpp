@@ -272,13 +272,18 @@ SCP_string sexp_container::list_get_at(int index)
 	return list_apply_iterator(list_it, "At", false);
 }
 
-SCP_string sexp_container::list_apply_iterator(SCP_list<SCP_string>::iterator list_it, const char *pos_str, bool remove)
+SCP_string sexp_container::list_apply_iterator(SCP_list<SCP_string>::iterator list_it, const char *location, bool remove)
 {
+	Assertion(list_it != list_data.end(),
+		"Attempt to access invalid position in list container %s at location %s. Please report!",
+		container_name.c_str(),
+		location);
+
 	SCP_string result = *list_it;
 
 	if (remove && are_containers_modifiable()) {
 		if (is_being_used_in_special_arg()) {
-			report_container_used_in_special_arg(Remove_op_prefix + pos_str, container_name.c_str());
+			report_container_used_in_special_arg(Remove_op_prefix + location, container_name.c_str());
 		} else {
 			list_data.erase(list_it);
 		}
