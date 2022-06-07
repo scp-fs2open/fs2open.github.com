@@ -30,6 +30,7 @@ env:
   NEBULA_PASSWORD: ${{ secrets.NEBULA_PASSWORD }}
   HLP_API: ${{ secrets.HLP_API }}
   HLP_KEY: ${{ secrets.HLP_KEY }}
+  RELEASE_TAG: ${{ github.event.inputs.releaseTag }}
 
 jobs:
   post_builds:
@@ -40,7 +41,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: '0'
-          ref: ${{ github.event.inputs.releaseTag }}
+          ref: ${{ env.RELEASE_TAG }}
 
       - name: Install Python dependencies
         run: pip install -r ci/post/requirements.txt
@@ -59,6 +60,6 @@ jobs:
           LINUX_RESULT: success
           WINDOWS_RESULT: success
         run: |
-          echo "releaseTag= ${{ github.event.inputs.releaseTag }}"
+          echo "releaseTag= ${{ env.RELEASE_TAG }}"
           echo "repository= ${{ github.repository }}"
           python ci/post/main.py release
