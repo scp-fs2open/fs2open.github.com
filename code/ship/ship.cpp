@@ -67,7 +67,7 @@
 #include "object/waypoint.h"
 #include "parse/parselo.h"
 #include "scripting/hook_api.h"
-#include "scripting/scripting.h"
+#include "scripting/global_hooks.h"
 #include "particle/particle.h"
 #include "playerman/player.h"
 #include "radar/radar.h"
@@ -7879,10 +7879,10 @@ void ship_destroy_instantly(object *ship_objp, bool with_debris)
 	mission_log_add_entry(LOG_SELF_DESTRUCTED, Ships[ship_objp->instance].ship_name, NULL );
 	
 	// scripting stuff
-	if (Script_system.IsActiveAction(CHA_DEATH)) {
-		Script_system.SetHookObjects(2, "Self", ship_objp, "Ship", ship_objp);
-		Script_system.RunCondition(CHA_DEATH, ship_objp);
-		Script_system.RemHookVars({"Self", "Ship"});
+	if (scripting::hooks::OnDeath->isActive()) {
+		scripting::hooks::OnDeath->run(scripting::hook_param_list(scripting::hook_param("Self", 'o', ship_objp),
+			scripting::hook_param("Ship", 'o', ship_objp)),
+			ship_objp);
 	}
 
 	ship_objp->flags.set(Object::Object_Flags::Should_be_dead);

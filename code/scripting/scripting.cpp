@@ -56,13 +56,17 @@ class BuiltinHook : public scripting::HookBase {
 	}
 	~BuiltinHook() override = default;
 
+	bool isActive() const override
+	{
+		return Script_system.IsActiveAction(_hookId);
+	}
+
 	bool isOverridable() const override { return true; }
 };
 
 // clang-format off
 static USED_VARIABLE SCP_vector<std::shared_ptr<BuiltinHook>> Script_actions
 {
-	std::make_shared<BuiltinHook>("On Game Init",			CHA_GAMEINIT ),
 	std::make_shared<BuiltinHook>("On Splash Screen",		CHA_SPLASHSCREEN ),
 	std::make_shared<BuiltinHook>("On State Start",			CHA_ONSTATESTART ),
 	std::make_shared<BuiltinHook>("On Action",				CHA_ONACTION ),
@@ -74,12 +78,10 @@ static USED_VARIABLE SCP_vector<std::shared_ptr<BuiltinHook>> Script_actions
 	std::make_shared<BuiltinHook>("On Mouse Released",		CHA_MOUSERELEASED ),
 	std::make_shared<BuiltinHook>("On Mission Start",		CHA_MISSIONSTART ),
 	std::make_shared<BuiltinHook>("On HUD Draw",			CHA_HUDDRAW ),
-	std::make_shared<BuiltinHook>("On Ship Collision",		CHA_COLLIDESHIP ),
 	std::make_shared<BuiltinHook>("On Weapon Collision",	CHA_COLLIDEWEAPON ),
 	std::make_shared<BuiltinHook>("On Debris Collision",	CHA_COLLIDEDEBRIS ),
 	std::make_shared<BuiltinHook>("On Asteroid Collision",	CHA_COLLIDEASTEROID ),
 	std::make_shared<BuiltinHook>("On Object Render",		CHA_OBJECTRENDER ),
-	std::make_shared<BuiltinHook>("On Death",				CHA_DEATH ),
 	std::make_shared<BuiltinHook>("On Weapon Delete",		CHA_ONWEAPONDELETE ),
 	std::make_shared<BuiltinHook>("On Weapon Equipped",		CHA_ONWPEQUIPPED ),
 	std::make_shared<BuiltinHook>("On Weapon Fired",		CHA_ONWPFIRED ),
@@ -1195,21 +1197,21 @@ void script_state::AddGameInitFunction(script_function func) { GameInitFunctions
 // This allows us to avoid significant overhead from checking everything at the potential hook sites, but you must call
 // AssayActions() after modifying ConditionalHooks before returning to normal operation of the scripting system!
 void script_state::AssayActions() {
-	for (bool &i : ActiveActions) {
-		i = false;
-	}
+	ActiveActions.clear();
 
 	for (const auto &hook : ConditionalHooks) {
 		for (const auto &action : hook.Actions) {
-			if (action.action_type >= -1 && action.action_type <= CHA_LAST) {
-				ActiveActions[action.action_type] = true;
-			}
+			ActiveActions[action.action_type] = true;
 		}
 	}
 }
 
-bool script_state::IsActiveAction(ConditionalActions action_id) {
-	return ActiveActions[action_id];
+bool script_state::IsActiveAction(int action_id) {
+	auto entry = ActiveActions.find(action_id);
+	if (entry != ActiveActions.end())
+		return entry->second;
+	else
+		return false;
 }
 
 //*************************CLASS: script_state*************************
