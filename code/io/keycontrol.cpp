@@ -200,16 +200,113 @@ struct Cheat {
 	const char* data;
 };
 
+class CustomCheat {
+	public:
+		const char* data;
+		const char* cheatMsg;
+		virtual void runCheat(){
+			HUD_printf("base... %s", cheatMsg);
+		}
+};
+
+class SpawnShipCheat : public CustomCheat {
+	protected: 
+	const char* shipClassName;
+	const char* shipName;
+	public: 
+	SpawnShipCheat(const char* cheat_data, const char* class_name, const char* ship_name){
+		data = cheat_data;
+		shipClassName = class_name;
+		shipName = ship_name;
+		cheatMsg = "bloup";
+	}
+	void runCheat() override
+	{
+		if ((Game_mode & GM_IN_MISSION) && Player_obj != nullptr)
+		{
+			extern void prevent_spawning_collision(object *new_obj);
+			ship_subsys *ptr;
+			char name[NAME_LENGTH];
+			int ship_idx, ship_class; 
+
+			ship_class = ship_info_lookup(shipClassName);
+			if (ship_class < 0)
+				return;
+			
+			HUD_printf("%s", cheatMsg);
+
+			vec3d pos = Player_obj->pos;
+			matrix orient = Player_obj->orient;
+			pos.xyz.x += frand_range(-700.0f, 700.0f);
+			pos.xyz.y += frand_range(-700.0f, 700.0f);
+			pos.xyz.z += frand_range(-700.0f, 700.0f);
+
+			int objnum = ship_create(&orient, &pos, ship_class);
+			if (objnum < 0)
+				return;
+			
+			ship *shipp = &Ships[Objects[objnum].instance];
+			shipp->ship_name[0] = '\0';
+			shipp->display_name.clear();
+			for (size_t j = 0; j < Player_orders.size(); j++)
+				shipp->orders_accepted.insert(j);
+			
+			ship_idx = 1;
+			do {
+				sprintf(name, "%s %d", shipName, ship_idx);
+				if ( (ship_name_lookup(name) == -1) && (ship_find_exited_ship_by_name(name) == -1) )
+				{
+					strcpy_s(shipp->ship_name, name);
+					break;
+				}
+
+				ship_idx++;
+			} while(1);
+
+			shipp->flags.set(Ship::Ship_Flags::Escort);
+			shipp->escort_priority = 1000 - ship_idx;
+
+			prevent_spawning_collision(&Objects[objnum]);
+
+			for (ptr = GET_FIRST(&shipp->subsys_list); ptr != END_OF_LIST(&shipp->subsys_list); ptr = GET_NEXT(ptr))
+			{
+				if (ptr->system_info->type == SUBSYSTEM_TURRET)
+				{
+					ptr->weapons.flags.set(Ship::Weapon_Flags::Beam_Free);
+					ptr->turret_next_fire_stamp = timestamp((int)frand_range(50.0f, 4000.0f));
+				}
+			}
+
+			ship_set_warp_effects(&Objects[objnum]);
+
+			shipfx_warpin_start(&Objects[objnum]);
+		}
+	}
+};
+
 static struct Cheat cheatsTable[] = {
   { CHEAT_CODE_FREESPACE, "www.freespace2.com" },
   { CHEAT_CODE_FISH,      "vasudanswuvfishes" },
   { CHEAT_CODE_HEADZ,     "humanheadsinside." },
   { CHEAT_CODE_TOOLED,    "tooledworkedowned" },
-  { CHEAT_CODE_PIRATE,    "arrrrwalktheplank" },
   { CHEAT_CODE_SKIP,      "skipmemymissionyo" }
 };
 
-#define CHEATS_TABLE_LEN	6
+#define CHEATS_TABLE_LEN	5
+
+static bool customCheatsInited = false;
+
+SCP_vector<std::unique_ptr<CustomCheat>> builtinCheats;
+
+static void initCustomCheats()
+{
+	if (customCheatsInited) return;
+
+	std::unique_ptr<CustomCheat> bravos(new SpawnShipCheat("arrrrwalktheplank", "Volition Bravos", "Volition Bravos"));
+	builtinCheats.push_back(std::move(bravos));
+
+	customCheatsInited = true;
+}
 
 int Tool_enabled = 0;
 bool Perspective_locked=false;
@@ -1573,6 +1670,11 @@ void game_process_cheats(int k)
 		Cheats_enabled = 0;
 		return;
 	}
+	
+	if (!customCheatsInited)
+	{
+		initCustomCheats();
+	}
 
 	for (i = 0; i < CHEAT_BUFFER_LEN; i++){
 		CheatBuffer[i]=CheatBuffer[i+1];
@@ -1622,6 +1724,16 @@ void game_process_cheats(int k)
 		Tool_enabled = 1;
 		HUD_printf("Prepare to be taken to school");
 	}
+
+	for (auto &ccheat : builtinCheats)
+	{
+		if(!strncmp(ccheat->data, CheatBuffer, CHEAT_BUFFER_LEN)){
+			ccheat->runCheat();
+			break;
+		}
+	}
+
+	/*
 	if(detectedCheatCode == CHEAT_CODE_PIRATE && (Game_mode & GM_IN_MISSION) && (Player_obj != NULL)){
 		extern void prevent_spawning_collision(object *new_obj);
 		ship_subsys *ptr;
@@ -1687,6 +1799,7 @@ void game_process_cheats(int k)
 		// warpin
 		shipfx_warpin_start(&Objects[objnum]);
 	}
+	*/
 }
 
 void game_process_keys()
