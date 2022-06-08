@@ -225,7 +225,7 @@ SCP_string sexp_container::apply_list_modifier(ListModifier modifier, int data_i
 	switch (modifier) {
 		case ListModifier::GET_FIRST:
 		case ListModifier::REMOVE_FIRST:
-			return list_get_last(modifier == ListModifier::REMOVE_FIRST);
+			return list_get_first(modifier == ListModifier::REMOVE_FIRST);
 
 		case ListModifier::GET_LAST:
 		case ListModifier::REMOVE_LAST:
