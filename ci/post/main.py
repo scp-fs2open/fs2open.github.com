@@ -179,7 +179,7 @@ def main():
 		sys.exit(1)
 
 	# bail if tag_name does not exist in the repo
-	if not check_output(("git show-ref --tags refs/tags/%s" % tag_name), text=True):
+	if not check_output(("git", "show-ref", "--tags", "refs/tags/%s" % tag_name), text=True):
 		print("ERROR: Couldn't find tag %s in repo (git show-ref)!" % tag_name)
 		sys.exit(1)
 
