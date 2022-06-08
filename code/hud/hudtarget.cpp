@@ -1530,6 +1530,8 @@ void hud_target_missile(object *source_obj, int next_flag)
 				continue;
 			}
 
+			Assertion(Objects[so->objnum].type == OBJ_SHIP, "hud_target_missile was about to call obj_team with a non-ship obejct with type %d. Please report!", Objects[so->objnum].type); 
+
 			// only allow targeting of hostile bombs
 			if (!iff_x_attacks_y(Player_ship->team, obj_team(A))) {
 				continue;

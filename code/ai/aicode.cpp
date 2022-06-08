@@ -2387,6 +2387,7 @@ void ai_attack_object(object* attacker, object* attacked, int ship_info_index)
 
 	Assert(attacker != nullptr);
 	Assert(attacker->instance >= 0);
+	Assert(attacker->type == OBJ_SHIP);
 	Assert(Ships[attacker->instance].ai_index != -1);
 	//	Bogus!  Who tried to get me to attack myself!
 	if (attacker == attacked) {
@@ -10006,7 +10007,7 @@ void guard_object_was_hit(object *guard_objp, object *hitter_objp)
 			aip->submode = SM_ATTACK;
 			aip->submode_start_time = Missiontime;
 			aip->active_goal = AI_ACTIVE_GOAL_DYNAMIC;
-		} else {
+		} else if (Objects[aip->target_objnum].type == OBJ_SHIP) {
 			int	num_attacking_cur, num_attacking_new;
 
 			num_attacking_cur = num_ships_attacking(aip->target_objnum);
@@ -14482,6 +14483,9 @@ void validate_mode_submode(ai_info *aip)
  */
 void ai_frame(int objnum)
 {
+	// Cyborg - can you believe this was added in *2022*??
+	Assertion (Objects[objnum].type == OBJ_SHIP, "Ai_frame was called for a non-ship of type %d. Please report!", Objects[objnum].type);
+
 	ship		*shipp = &Ships[Objects[objnum].instance];
 	ai_info	*aip = &Ai_info[shipp->ai_index];
 	int		target_objnum;
@@ -14564,7 +14568,7 @@ void ai_frame(int objnum)
 		} else if (aip->resume_goal_time == -1) {
 			// AL 12-9-97: Don't allow cargo and navbuoys to set their aip->target_objnum
 			if ( Ship_info[shipp->ship_info_index].class_type > -1 && (Ship_types[Ship_info[shipp->ship_info_index].class_type].flags[Ship::Type_Info_Flags::AI_auto_attacks]) ) {
-				target_objnum = find_enemy(objnum, MAX_ENEMY_DISTANCE, The_mission.ai_profile->max_attackers[Game_skill_level]);		//	Attack up to 25K units away.
+				target_objnum = find_enemy(objnum, MAX_ENEMY_DISTANCE, The_mission.ai_profile->max_attackers[Game_skill_level]);		//	Attack up to 2.5K units away.
 				if (target_objnum != -1) {
 					if (aip->target_objnum != target_objnum)
 						aip->aspect_locked_time = 0.0f;
@@ -15101,8 +15105,9 @@ void init_aip_from_class_and_profile(ai_info *aip, ai_class *aicp, ai_profile_t 
 
 void ai_do_default_behavior(object *obj)
 {
-    Assert(obj != NULL);
+    Assert(obj != nullptr);
     Assert(obj->instance != -1);
+    Assert(obj->type == OBJ_SHIP);
     Assert(Ships[obj->instance].ai_index != -1);
 
     ai_info	*aip = &Ai_info[Ships[obj->instance].ai_index];
@@ -15201,118 +15206,125 @@ void maybe_process_friendly_hit(object *objp_hitter, object *objp_hit, object *o
 		return;
 	}
 
-	if ((obj_team(objp_hitter) == obj_team(objp_hit)) && (objp_hitter == Player_obj)) {
+	// Cyborg -- I had to switch around the logic here because it was potentially
+	// sending non-ships to obj_team, which would trigger an assert
+	if (objp_hitter == Player_obj){
 
-		// AL 12-4-97: It is possible the Player is a OBJ_GHOST at this point.  If so, bail out.
+		// Cyborg - So check if this is a ship first. Probably true, but you never know, with FSO
+		// (especially in multi)
 		if ( objp_hitter->type != OBJ_SHIP ) {
 			return;
 		}
 
-		Assert(objp_hitter->type == OBJ_SHIP);
+		// And assert that obj_hit is a ship as well.
 		Assert(objp_hit->type == OBJ_SHIP);
-		Assert((objp_weapon->type == OBJ_WEAPON) || (objp_weapon->type == OBJ_BEAM));  //beam added for traitor detection - FUBAR
 
-		ship	*shipp_hitter = &Ships[objp_hitter->instance];
-		ship	*shipp_hit = &Ships[objp_hit->instance];
+		if (obj_team(objp_hitter) == obj_team(objp_hit)) {
 
-		if (shipp_hitter->team != shipp_hit->team) {
-			return;
-		}
+			Assert((objp_weapon->type == OBJ_WEAPON) || (objp_weapon->type == OBJ_BEAM));  //beam added for traitor detection - FUBAR
 
-		// get the player
-		player *pp = &Players[Player_num];
+			ship	*shipp_hitter = &Ships[objp_hitter->instance];
+			ship	*shipp_hit = &Ships[objp_hit->instance];
 
-		// wacky stuff here
-		if (pp->friendly_hits != 0) {
-			float	time_since_last_hit = f2fl(Missiontime - pp->friendly_last_hit_time);
-			if ((time_since_last_hit >= 0.0f) && (time_since_last_hit < 10000.0f)) {
-				if (time_since_last_hit > 60.0f) {
-					pp->friendly_hits = 0;
-					pp->friendly_damage = 0.0f;
-				} else if (time_since_last_hit > 2.0f) {
-					pp->friendly_hits -= (int) time_since_last_hit/2;
-					pp->friendly_damage -= time_since_last_hit;
-				}
-
-				if (pp->friendly_damage < 0.0f) {
-					pp->friendly_damage = 0.0f;
-				}
-
-				if (pp->friendly_hits < 0) {
-					pp->friendly_hits = 0;
-				}
-			}
-		}
-
-		float	damage;		//	Damage done by weapon.  Gets scaled down based on size of ship.
-
-		if (objp_weapon->type == OBJ_BEAM)  // added beam for traitor detection -FUBAR
-			damage = beam_get_ship_damage(&Beams[objp_weapon->instance], objp_hit);
-		else  
-			damage = Weapon_info[Weapons[objp_weapon->instance].weapon_info_index].damage;
-		
-		// wacky stuff here
-		ship_info *sip = &Ship_info[Ships[objp_hit->instance].ship_info_index];
-		if (shipp_hit->ship_max_hull_strength > 1000.0f) {
-			float factor = shipp_hit->ship_max_hull_strength / 1000.0f;
-			factor = MIN(100.0f, factor);
-			damage /= factor;
-		}
-
-		//	Don't penalize much at all for hitting cargo
-		if (sip->class_type > -1) {
-			damage *= Ship_types[sip->class_type].ff_multiplier;
-		}
-
-		//	Hit ship, but not targeting it, so it's not so heinous, maybe an accident.
-		if (Ai_info[shipp_hitter->ai_index].target_objnum != OBJ_INDEX(objp_hit)) {
-			damage /= 5.0f;
-		}
-
-		pp->friendly_last_hit_time = Missiontime;
-		pp->friendly_hits++;
-
-		// cap damage and number of hits done this frame
-		float accredited_damage = MIN(MAX_BURST_DAMAGE, pp->damage_this_burst + damage) - pp->damage_this_burst;
-		pp->friendly_damage += accredited_damage;
-		pp->damage_this_burst += accredited_damage;
-
-		// Done with adjustments to damage.  Evaluate based on current friendly_damage
-		nprintf(("AI", "Friendly damage: %.1f, threshold: %.1f, inc damage: %.1f, max burst: %d\n", pp->friendly_damage, FRIENDLY_DAMAGE_THRESHOLD * (1.0f + (float) (NUM_SKILL_LEVELS + 1 - Game_skill_level)/3.0f), pp->damage_this_burst, MAX_BURST_DAMAGE ));
-		
-		if (is_instructor(objp_hit)) {
-			// it's not nice to hit your instructor
-			if (pp->friendly_damage > FRIENDLY_DAMAGE_THRESHOLD) {
-				message_send_builtin_to_player( MESSAGE_INSTRUCTOR_ATTACK, NULL, MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_IMMEDIATE, 0, 0, -1, -1);
-				pp->last_warning_message_time = Missiontime;
-				ship_set_subsystem_strength( Player_ship, SUBSYSTEM_WEAPONS, 0.0f);
-
-				training_fail();
-
-				//	Instructor leaves.
-				mission_do_departure(objp_hit);
-				gameseq_post_event( GS_EVENT_PLAYER_WARPOUT_START_FORCED );	//	Force player to warp out.
-			} else if (Missiontime - pp->last_warning_message_time > F1_0*4) {
-				// warning every 4 sec
-				// use NULL as the message sender here since it is the Terran Command persona
-				message_send_builtin_to_player( MESSAGE_INSTRUCTOR_HIT, NULL, MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_IMMEDIATE, 0, 0, -1, -1);
-				pp->last_warning_message_time = Missiontime;
+			if (shipp_hitter->team != shipp_hit->team) {
+				return;
 			}
 
-		// not nice to hit your friends
-		} else if (pp->friendly_damage > FRIENDLY_DAMAGE_THRESHOLD * (1.0f + (float) (NUM_SKILL_LEVELS + 1 - Game_skill_level)/3.0f)) {
-			process_friendly_hit_message( MESSAGE_HAMMER_SWINE, objp_hit );
-			mission_goal_fail_all();
-			ai_abort_rearm_request( Player_obj );
+			// get the player
+			player *pp = &Players[Player_num];
 
-			Player_ship->team = Iff_traitor;
+			// wacky stuff here
+			if (pp->friendly_hits != 0) {
+				float	time_since_last_hit = f2fl(Missiontime - pp->friendly_last_hit_time);
+				if ((time_since_last_hit >= 0.0f) && (time_since_last_hit < 10000.0f)) {
+					if (time_since_last_hit > 60.0f) {
+						pp->friendly_hits = 0;
+						pp->friendly_damage = 0.0f;
+					} else if (time_since_last_hit > 2.0f) {
+						pp->friendly_hits -= (int) time_since_last_hit/2;
+						pp->friendly_damage -= time_since_last_hit;
+					}
 
-		} else if ((damage > frand()) && (Missiontime - pp->last_warning_message_time > F1_0*4) && (pp->friendly_damage > FRIENDLY_DAMAGE_THRESHOLD)) {
-			// no closer than 4 sec intervals
-			//	Note: (damage > frand()) added on 12/9/97 by MK.  Since damage is now scaled down for big ships, we could get too
-			//	many warnings.  Kind of tedious.  frand() returns a value in 0..1, so this won't affect legit hits.
-			process_friendly_hit_message( MESSAGE_OOPS, objp_hit );
-			pp->last_warning_message_time = Missiontime;
+					if (pp->friendly_damage < 0.0f) {
+						pp->friendly_damage = 0.0f;
+					}
+
+					if (pp->friendly_hits < 0) {
+						pp->friendly_hits = 0;
+					}
+				}
+			}
+
+			float	damage;		//	Damage done by weapon.  Gets scaled down based on size of ship.
+
+			if (objp_weapon->type == OBJ_BEAM)  // added beam for traitor detection -FUBAR
+				damage = beam_get_ship_damage(&Beams[objp_weapon->instance], objp_hit);
+			else  
+				damage = Weapon_info[Weapons[objp_weapon->instance].weapon_info_index].damage;
+			
+			// wacky stuff here
+			ship_info *sip = &Ship_info[Ships[objp_hit->instance].ship_info_index];
+			if (shipp_hit->ship_max_hull_strength > 1000.0f) {
+				float factor = shipp_hit->ship_max_hull_strength / 1000.0f;
+				factor = MIN(100.0f, factor);
+				damage /= factor;
+			}
+
+			//	Don't penalize much at all for hitting cargo
+			if (sip->class_type > -1) {
+				damage *= Ship_types[sip->class_type].ff_multiplier;
+			}
+
+			//	Hit ship, but not targeting it, so it's not so heinous, maybe an accident.
+			if (Ai_info[shipp_hitter->ai_index].target_objnum != OBJ_INDEX(objp_hit)) {
+				damage /= 5.0f;
+			}
+
+			pp->friendly_last_hit_time = Missiontime;
+			pp->friendly_hits++;
+
+			// cap damage and number of hits done this frame
+			float accredited_damage = MIN(MAX_BURST_DAMAGE, pp->damage_this_burst + damage) - pp->damage_this_burst;
+			pp->friendly_damage += accredited_damage;
+			pp->damage_this_burst += accredited_damage;
+
+			// Done with adjustments to damage.  Evaluate based on current friendly_damage
+			nprintf(("AI", "Friendly damage: %.1f, threshold: %.1f, inc damage: %.1f, max burst: %d\n", pp->friendly_damage, FRIENDLY_DAMAGE_THRESHOLD * (1.0f + (float) (NUM_SKILL_LEVELS + 1 - Game_skill_level)/3.0f), pp->damage_this_burst, MAX_BURST_DAMAGE ));
+			
+			if (is_instructor(objp_hit)) {
+				// it's not nice to hit your instructor
+				if (pp->friendly_damage > FRIENDLY_DAMAGE_THRESHOLD) {
+					message_send_builtin_to_player( MESSAGE_INSTRUCTOR_ATTACK, NULL, MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_IMMEDIATE, 0, 0, -1, -1);
+					pp->last_warning_message_time = Missiontime;
+					ship_set_subsystem_strength( Player_ship, SUBSYSTEM_WEAPONS, 0.0f);
+
+					training_fail();
+
+					//	Instructor leaves.
+					mission_do_departure(objp_hit);
+					gameseq_post_event( GS_EVENT_PLAYER_WARPOUT_START_FORCED );	//	Force player to warp out.
+				} else if (Missiontime - pp->last_warning_message_time > F1_0*4) {
+					// warning every 4 sec
+					// use NULL as the message sender here since it is the Terran Command persona
+					message_send_builtin_to_player( MESSAGE_INSTRUCTOR_HIT, NULL, MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_IMMEDIATE, 0, 0, -1, -1);
+					pp->last_warning_message_time = Missiontime;
+				}
+
+			// not nice to hit your friends
+			} else if (pp->friendly_damage > FRIENDLY_DAMAGE_THRESHOLD * (1.0f + (float) (NUM_SKILL_LEVELS + 1 - Game_skill_level)/3.0f)) {
+				process_friendly_hit_message( MESSAGE_HAMMER_SWINE, objp_hit );
+				mission_goal_fail_all();
+				ai_abort_rearm_request( Player_obj );
+
+				Player_ship->team = Iff_traitor;
+
+			} else if ((damage > frand()) && (Missiontime - pp->last_warning_message_time > F1_0*4) && (pp->friendly_damage > FRIENDLY_DAMAGE_THRESHOLD)) {
+				// no closer than 4 sec intervals
+				//	Note: (damage > frand()) added on 12/9/97 by MK.  Since damage is now scaled down for big ships, we could get too
+				//	many warnings.  Kind of tedious.  frand() returns a value in 0..1, so this won't affect legit hits.
+				process_friendly_hit_message( MESSAGE_OOPS, objp_hit );
+				pp->last_warning_message_time = Missiontime;
+			}
 		}
 	}
 }
@@ -15541,7 +15553,7 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hit_normal)
 		objp_hitter = &Objects[hitter_objnum];
 
 		// lets not check hits by ghosts any further either
-		if(objp_hitter->type == OBJ_GHOST)
+		if(objp_hitter->type != OBJ_SHIP && objp_hitter->type != OBJ_WEAPON && objp_hitter->type != OBJ_ASTEROID && objp_hitter->type != OBJ_BEAM)
 			return;
 		
 		//	Hit by a protected ship, don't attack it.
@@ -16138,6 +16150,8 @@ void maybe_cheat_fire_synaptic(object *objp)
 	{
 		ship	*shipp;
 		int	wing_index, time;
+
+		Assertion(objp->type == OBJ_SHIP, "maybe_cheat_fire_synaptic was called with a non-ship object type of %d. Please report!", objp->type);
 
 		shipp = &Ships[objp->instance];
 
