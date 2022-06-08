@@ -42,7 +42,7 @@ MAJOR_VERSION_PATTERN = re.compile("(?:set_if_not_defined|set)\(FSO_VERSION_MAJO
 MINOR_VERSION_PATTERN = re.compile("(?:set_if_not_defined|set)\(FSO_VERSION_MINOR (\d+)\)")
 BUILD_VERSION_PATTERN = re.compile("(?:set_if_not_defined|set)\(FSO_VERSION_BUILD (\d+)\)")
 REVISION_VERSION_PATTERN = re.compile("(?:set_if_not_defined|set)\(FSO_VERSION_REVISION (\d+)\)")
-REVISION_STR_VERSION_PATTERN = re.compile("(?:set_if_not_defined|set)\(FSO_VERSION_REVISION_STR (\d+)\)")
+REVISION_STR_VERSION_PATTERN = re.compile("(?:set_if_not_defined|set)\(FSO_VERSION_REVISION_STR (\w+)\)")
 
 LOG_FORMAT = """
 ------------------------------------------------------------------------%n
