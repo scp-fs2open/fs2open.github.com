@@ -204,8 +204,12 @@ class CustomCheat {
 	public:
 		const char* data;
 		const char* cheatMsg;
+		bool requireCheatsEnabled;
 		virtual void runCheat(){
-			HUD_printf("base... %s", cheatMsg);
+			
+		}
+		bool canUseCheat(){
+			return !requireCheatsEnabled || Cheats_enabled ;
 		}
 };
 
@@ -214,21 +218,24 @@ class SpawnShipCheat : public CustomCheat {
 	const char* shipClassName;
 	const char* shipName;
 	public: 
-	SpawnShipCheat(const char* cheat_data, const char* class_name, const char* ship_name){
+
+	SpawnShipCheat(const char* cheat_data, const char* class_name, const char* ship_name, const char* cheat_msg, bool require_cheats_enabled){
 		data = cheat_data;
 		shipClassName = class_name;
 		shipName = ship_name;
-		cheatMsg = "bloup";
+		cheatMsg = cheat_msg;
+		requireCheatsEnabled = require_cheats_enabled;
 	}
-	void runCheat() override
-	{
-		if ((Game_mode & GM_IN_MISSION) && Player_obj != nullptr)
+
+	void runCheat() override {
+		if (canUseCheat() && (Game_mode & GM_IN_MISSION) && Player_obj != nullptr)
 		{
 			extern void prevent_spawning_collision(object *new_obj);
 			ship_subsys *ptr;
 			char name[NAME_LENGTH];
 			int ship_idx, ship_class; 
 
+			// if not found, then don't create it :(
 			ship_class = ship_info_lookup(shipClassName);
 			if (ship_class < 0)
 				return;
@@ -250,7 +257,9 @@ class SpawnShipCheat : public CustomCheat {
 			shipp->display_name.clear();
 			for (size_t j = 0; j < Player_orders.size(); j++)
 				shipp->orders_accepted.insert(j);
-			
+
+			// Goober5000 - stolen from support ship creation
+			// create a name for the ship.  use "Volition Bravos #".  look for collisions until one isn't found anymore			
 			ship_idx = 1;
 			do {
 				sprintf(name, "%s %d", shipName, ship_idx);
@@ -266,10 +275,13 @@ class SpawnShipCheat : public CustomCheat {
 			shipp->flags.set(Ship::Ship_Flags::Escort);
 			shipp->escort_priority = 1000 - ship_idx;
 
+			// now make sure we're not colliding with anyone
 			prevent_spawning_collision(&Objects[objnum]);
 
+			// Goober5000 - beam free
 			for (ptr = GET_FIRST(&shipp->subsys_list); ptr != END_OF_LIST(&shipp->subsys_list); ptr = GET_NEXT(ptr))
 			{
+				// mark all turrets as beam free
 				if (ptr->system_info->type == SUBSYSTEM_TURRET)
 				{
 					ptr->weapons.flags.set(Ship::Weapon_Flags::Beam_Free);
@@ -277,8 +289,9 @@ class SpawnShipCheat : public CustomCheat {
 				}
 			}
 
+			// Cyborg17 to prevent a nullptr...
 			ship_set_warp_effects(&Objects[objnum]);
-
+			// warpin
 			shipfx_warpin_start(&Objects[objnum]);
 		}
 	}
@@ -296,14 +309,14 @@ static struct Cheat cheatsTable[] = {
 
 static bool customCheatsInited = false;
 
-SCP_vector<std::unique_ptr<CustomCheat>> builtinCheats;
+SCP_vector<std::unique_ptr<CustomCheat>> customCheats;
 
 static void initCustomCheats()
-{
+{	//We just add the cheat to summon the bravos here since it's using the new cheat framework.
 	if (customCheatsInited) return;
 
-	std::unique_ptr<CustomCheat> bravos(new SpawnShipCheat("arrrrwalktheplank", "Volition Bravos", "Volition Bravos"));
-	builtinCheats.push_back(std::move(bravos));
+	std::unique_ptr<CustomCheat> bravos(new SpawnShipCheat("arrrrwalktheplank", "Volition Bravos", "Volition Bravos", "Walk the plank", false));
+	customCheats.push_back(std::move(bravos));
 
 	customCheatsInited = true;
 }
@@ -1725,81 +1738,13 @@ void game_process_cheats(int k)
 		HUD_printf("Prepare to be taken to school");
 	}
 
-	for (auto &ccheat : builtinCheats)
+	for (auto &ccheat : customCheats)
 	{
 		if(!strncmp(ccheat->data, CheatBuffer, CHEAT_BUFFER_LEN)){
 			ccheat->runCheat();
 			break;
 		}
 	}
-
-	/*
-	if(detectedCheatCode == CHEAT_CODE_PIRATE && (Game_mode & GM_IN_MISSION) && (Player_obj != NULL)){
-		extern void prevent_spawning_collision(object *new_obj);
-		ship_subsys *ptr;
-		char name[NAME_LENGTH];
-		int ship_idx, ship_class; 
-
-		// if not found, then don't create it :(
-		ship_class = ship_info_lookup("Volition Bravos");
-		if (ship_class < 0)
-			return;
-
-		HUD_printf(NOX("Walk the plank"));
-
-		vec3d pos = Player_obj->pos;
-		matrix orient = Player_obj->orient;
-		pos.xyz.x += frand_range(-700.0f, 700.0f);
-		pos.xyz.y += frand_range(-700.0f, 700.0f);
-		pos.xyz.z += frand_range(-700.0f, 700.0f);
-
-		int objnum = ship_create(&orient, &pos, ship_class);
-		if (objnum < 0)
-			return;
-
-		ship *shipp = &Ships[Objects[objnum].instance];
-		shipp->ship_name[0] = '\0';
-		shipp->display_name.clear();
-		for(size_t j = 0; j < Player_orders.size(); j++)
-			shipp->orders_accepted.insert(j);
-
-		// Goober5000 - stolen from support ship creation
-		// create a name for the ship.  use "Volition Bravos #".  look for collisions until one isn't found anymore
-		ship_idx = 1;
-		do {
-			sprintf(name, NOX("Volition Bravos %d"), ship_idx);
-			if ( (ship_name_lookup(name) == -1) && (ship_find_exited_ship_by_name(name) == -1) )
-			{
-				strcpy_s(shipp->ship_name, name);
-				break;
-			}
-
-			ship_idx++;
-		} while(1);
-
-		shipp->flags.set(Ship::Ship_Flags::Escort);
-		shipp->escort_priority = 1000 - ship_idx;
-
-		// now make sure we're not colliding with anyone
-		prevent_spawning_collision(&Objects[objnum]);
-			
-		// Goober5000 - beam free
-		for (ptr = GET_FIRST(&shipp->subsys_list); ptr != END_OF_LIST(&shipp->subsys_list); ptr = GET_NEXT(ptr))
-		{
-			// mark all turrets as beam free
-			if (ptr->system_info->type == SUBSYSTEM_TURRET)
-			{
-				ptr->weapons.flags.set(Ship::Weapon_Flags::Beam_Free);
-				ptr->turret_next_fire_stamp = timestamp((int) frand_range(50.0f, 4000.0f));
-			}
-		}
-
-		// Cyborg17 to prevent a nullptr...
-		ship_set_warp_effects(&Objects[objnum]);
-		// warpin
-		shipfx_warpin_start(&Objects[objnum]);
-	}
-	*/
 }
 
 void game_process_keys()
