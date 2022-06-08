@@ -206,7 +206,10 @@ class CustomCheat {
 		const char* cheatMsg;
 		bool requireCheatsEnabled;
 		virtual void runCheat(){
-			
+			if (canUseCheat()){
+				HUD_printf("%s", cheatMsg);
+				
+			}
 		}
 		bool canUseCheat(){
 			return !requireCheatsEnabled || Cheats_enabled ;
@@ -228,6 +231,7 @@ class SpawnShipCheat : public CustomCheat {
 	}
 
 	void runCheat() override {
+		CustomCheat::runCheat();
 		if (canUseCheat() && (Game_mode & GM_IN_MISSION) && Player_obj != nullptr)
 		{
 			extern void prevent_spawning_collision(object *new_obj);
@@ -239,8 +243,6 @@ class SpawnShipCheat : public CustomCheat {
 			ship_class = ship_info_lookup(shipClassName);
 			if (ship_class < 0)
 				return;
-			
-			HUD_printf("%s", cheatMsg);
 
 			vec3d pos = Player_obj->pos;
 			matrix orient = Player_obj->orient;
