@@ -38,11 +38,11 @@ import nebula
 import forum
 
 # Compile regexes for extracting version components
-MAJOR_VERSION_PATTERN = re.compile("set_if_not_defined\(FSO_VERSION_MAJOR (\d+)\)")
-MINOR_VERSION_PATTERN = re.compile("set_if_not_defined\(FSO_VERSION_MINOR (\d+)\)")
-BUILD_VERSION_PATTERN = re.compile("set_if_not_defined\(FSO_VERSION_BUILD (\d+)\)")
-REVISION_VERSION_PATTERN = re.compile("set_if_not_defined\(FSO_VERSION_REVISION (\d+)\)")
-REVISION_STR_VERSION_PATTERN = re.compile("set_if_not_defined\(FSO_VERSION_REVISION_STR (\d+)\)")
+MAJOR_VERSION_PATTERN = re.compile("(?:set_if_not_defined|set)\(FSO_VERSION_MAJOR (\d+)\)")
+MINOR_VERSION_PATTERN = re.compile("(?:set_if_not_defined|set)\(FSO_VERSION_MINOR (\d+)\)")
+BUILD_VERSION_PATTERN = re.compile("(?:set_if_not_defined|set)\(FSO_VERSION_BUILD (\d+)\)")
+REVISION_VERSION_PATTERN = re.compile("(?:set_if_not_defined|set)\(FSO_VERSION_REVISION (\d+)\)")
+REVISION_STR_VERSION_PATTERN = re.compile("(?:set_if_not_defined|set)\(FSO_VERSION_REVISION_STR (\d+)\)")
 
 LOG_FORMAT = """
 ------------------------------------------------------------------------%n
