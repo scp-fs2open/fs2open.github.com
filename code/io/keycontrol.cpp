@@ -61,6 +61,7 @@
 #include "cmdline/cmdline.h"
 #include "object/objectshield.h"
 #include "sound/audiostr.h"
+#include "scripting/hook_api.h"
 
 /**
 * Natural number factor lookup class.
@@ -200,6 +201,12 @@ struct Cheat {
 	const char* data;
 };
 
+const std::shared_ptr<scripting::Hook> OnCheat = scripting::Hook::Factory(
+	"On Cheat", "Called when a cheat is used", 
+	{
+		{ "Cheat", "string", "The cheat code the user typed" },
+	});
+
 class CustomCheat {
 	public:
 		const char* data;
@@ -208,7 +215,8 @@ class CustomCheat {
 		virtual void runCheat(){
 			if (canUseCheat()){
 				HUD_printf("%s", cheatMsg);
-				
+				OnCheat->run(scripting::hook_param_list(scripting::hook_param("Cheat", 's', data)));
+				CheatUsed = data;
 			}
 		}
 		bool canUseCheat(){
@@ -1704,6 +1712,8 @@ void game_process_cheats(int k)
 
 		if(!strncmp(cheat.data, CheatBuffer, CHEAT_BUFFER_LEN)){
 			detectedCheatCode = cheat.code;
+			OnCheat->run(scripting::hook_param_list(scripting::hook_param("Cheat", 's', cheat.data)));
+			CheatUsed = cheat.data;
 			break;
 		}
 	}

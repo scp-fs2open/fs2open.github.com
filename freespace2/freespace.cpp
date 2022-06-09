@@ -977,6 +977,7 @@ void game_level_init()
 
 	Key_normal_game = (Game_mode & GM_NORMAL);
 	Cheats_enabled = 0;
+	CheatUsed = "";
 
 	Game_shudder_time = TIMESTAMP::invalid();
 
@@ -1387,6 +1388,7 @@ void game_post_level_init()
 	Game_mode |= GM_IN_MISSION;
 	Script_system.RunCondition(CHA_MISSIONSTART);
 	Game_mode &= ~GM_IN_MISSION;
+
 
 	if (Player_obj)
 		Script_system.RemHookVar("Player");

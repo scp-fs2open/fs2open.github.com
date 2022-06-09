@@ -232,6 +232,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "time-elapsed-last-order",		OP_LAST_ORDER_TIME,						2,	2,			SEXP_INTEGER_OPERATOR,	},
 	{ "player-is-cheating",				OP_PLAYER_IS_CHEATING_BASTARD,			0,  0,			SEXP_BOOLEAN_OPERATOR,  },
 	{ "is-language",					OP_IS_LANGUAGE,							1,	1,			SEXP_BOOLEAN_OPERATOR, }, // Goober5000
+	{ "used-cheat",						OP_USED_CHEAT,							1,	1,			SEXP_BOOLEAN_OPERATOR, }, // Kiloku
 
 	//Multiplayer Sub-Category
 	{ "num-players",					OP_NUM_PLAYERS,							0,	0,			SEXP_INTEGER_OPERATOR,	},
@@ -24750,6 +24751,18 @@ int sexp_is_language(int node)
 		return SEXP_KNOWN_FALSE;
 }
 
+extern SCP_string CheatUsed;
+int sexp_cheat_used(int node)
+{
+	auto len = CheatUsed.length();
+	if (len <= 0) 
+		return SEXP_KNOWN_FALSE;
+	auto text = CTEXT(node);
+	if (strcmp(text, CheatUsed.c_str()) == 0)
+		return SEXP_KNOWN_TRUE;
+	return SEXP_UNKNOWN;
+}
+
 void sexp_set_motion_debris(int node)
 {
 	Motion_debris_override = is_sexp_true(node);
@@ -27302,6 +27315,10 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_is_language(node);
 				break;
 
+			case OP_USED_CHEAT:
+				sexp_val = sexp_cheat_used(node);
+				break;
+
 			case OP_IS_IN_TURRET_FOV:
 				sexp_val = sexp_is_in_turret_fov(node);
 				break;
@@ -28001,6 +28018,7 @@ int query_operator_return_type(int op)
 		case OP_ARE_SHIP_FLAGS_SET:
 		case OP_IS_IN_TURRET_FOV:
 		case OP_IS_LANGUAGE:
+		case OP_USED_CHEAT:
 		case OP_FUNCTIONAL_WHEN:
 		case OP_SCRIPT_EVAL_BOOL:
 		case OP_IS_CONTAINER_EMPTY:
@@ -31035,6 +31053,9 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_IS_LANGUAGE:
 			return OPF_LANGUAGE;
 
+		case OP_USED_CHEAT:
+			return OPF_STRING;
+
 		case OP_TRIGGER_ANIMATION_NEW:
 		case OP_STOP_LOOPING_ANIMATION:
 			if (argnum == 0)
@@ -33011,6 +33032,7 @@ int get_subcategory(int sexp_id)
 		case OP_LAST_ORDER_TIME:
 		case OP_PLAYER_IS_CHEATING_BASTARD:
 		case OP_IS_LANGUAGE:
+		case OP_USED_CHEAT:
 			return STATUS_SUBCATEGORY_PLAYER;
 
 		case OP_NUM_PLAYERS:
@@ -37486,6 +37508,12 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tReturns whether the game is running in the specified language.  Takes 1 argument...\r\n"
 		"\t1:\tA language.  This can be any string; the SEXP will return true if and only if the string matches the current language.  "
 		"Builtin languages are English, German, French, and Polish, and others can be defined in strings.tbl.\r\n"
+	},
+
+	{ OP_USED_CHEAT, "used-cheat\r\n"
+		"\tReturns true if the give cheat has been used during this mission.  Takes 1 argument.\r\n"
+		"\t1:\tA cheat string. This can be any string; the SEXP will return true if and only if the string matches the cheat used.  "
+		"All original FS2 cheats are supported, and more can be defined in the cheats.tbl file.\r\n"
 	},
 
 	{ OP_SET_MOTION_DEBRIS, "set-motion-debris-override\r\n"
