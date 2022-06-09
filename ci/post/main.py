@@ -72,7 +72,7 @@ def _match_version_str(text, regex):
 	@return The version component as integer
 	"""
 	match = regex.search(text)
-	return match.group(1))
+	return match.group(1)
 	
 
 def get_source_version(date_version: datetime, tag_name: str) -> semantic_version.Version:
