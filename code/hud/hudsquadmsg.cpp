@@ -156,6 +156,8 @@ int keys_used[] = {	KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_
 
 SCP_string  Comm_order_types[NUM_COMM_ORDER_TYPES];
 
+int player_order::orderingCounter = 0;
+
 std::vector<player_order> Player_orders = {
 	player_order("no order",   "No Order",  -1, -1, NO_ORDER_ITEM), //Required to keep defines in sync with array indices
 	player_order("attack ship",   "Destroy my target",  299, -1, ATTACK_TARGET_ITEM),
@@ -1924,12 +1926,17 @@ void hud_squadmsg_reinforcement_select()
 	}
 }
 
+bool hud_order_comparator(size_t a, size_t b) {
+	return Player_orders[a].ordering < Player_orders[b].ordering;
+}
+
 // function to display list of commands for a ship
 
 void hud_squadmsg_ship_command()
 {
 	int k;
-	std::set<size_t> orders, default_orders;
+	std::set<size_t> orders;
+	std::set<size_t, decltype(&hud_order_comparator)> default_orders(&hud_order_comparator);
 
 	// when adding ship commands, we must look at the type of ship, and what messages that
 	// ship allows.  First, place all messages that are possible onto the menu, then 
@@ -1938,9 +1945,11 @@ void hud_squadmsg_ship_command()
 	// show on comm menu.
 	if ( Msg_instance != MESSAGE_ALL_FIGHTERS ) {
 		orders = Ships[Msg_instance].orders_accepted;
-		default_orders = ship_get_default_orders_accepted( &Ship_info[Ships[Msg_instance].ship_info_index] );
+		const auto& default_orders_accepted = ship_get_default_orders_accepted(&Ship_info[Ships[Msg_instance].ship_info_index]);
+		default_orders.insert(default_orders_accepted.cbegin(), default_orders_accepted.cend());
 	} else {
-		orders = default_orders = default_messages;
+		orders = default_messages;
+		default_orders.insert(default_messages.cbegin(), default_messages.cend());
 	}
 
 	Num_menu_items = 0;
@@ -2027,7 +2036,8 @@ void hud_squadmsg_wing_command()
 	wing *wingp;
 	int shipnum;
 
-	std::set<size_t> default_orders, orders;
+	std::set<size_t> orders;
+	std::set<size_t, decltype(&hud_order_comparator)> default_orders(&hud_order_comparator);
 	
 	// when adding commands for wings, we will look at all of the ships in the wing, and create
 	// the order list from that set of ships.  In the future, we may want to do something else....

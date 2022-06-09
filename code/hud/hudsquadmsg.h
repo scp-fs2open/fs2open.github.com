@@ -62,6 +62,8 @@ class object;
 
 typedef struct player_order {
 private:
+	//Needed, because legacy order-id's were not assigned in order
+	static int orderingCounter;
 	//Used to ensure that built-in order indexing is always correct
 	int legacy_id;
 	friend void hud_init_comm_orders();
@@ -71,7 +73,8 @@ public:
 	int hud_xstr;
 	SCP_string localized_name;
 	int lua_id;
-	player_order(SCP_string parsename, SCP_string hudname, int hudxstr, int luaid = -1, int legacyid = 999999) : legacy_id(legacyid), parse_name(std::move(parsename)), hud_name(std::move(hudname)), hud_xstr(hudxstr), localized_name(""), lua_id(luaid) { }
+	int ordering;
+	player_order(SCP_string parsename, SCP_string hudname, int hudxstr, int luaid = -1, int legacyid = 999999) : legacy_id(legacyid), parse_name(std::move(parsename)), hud_name(std::move(hudname)), hud_xstr(hudxstr), localized_name(""), lua_id(luaid), ordering(orderingCounter++) { }
 	inline void localize() { localized_name = XSTR(hud_name.c_str(), hud_xstr); }
 } player_order;
 
