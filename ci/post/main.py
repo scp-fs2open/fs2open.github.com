@@ -62,6 +62,17 @@ def _match_version_number(text, regex):
 	"""
 	match = regex.search(text)
 	return int(match.group(1))
+
+def _match_version_str(text, regex):
+	"""! Extracts the version component represented by `regex` from `text`
+	
+	@param [in] `text`  Filename with version string 'MAJOR.MINOR.BUILD'
+	@param [in] `regex` Regex pattern of component to look for
+
+	@return The version component as integer
+	"""
+	match = regex.search(text)
+	return match.group(1)
 	
 
 def get_source_version(date_version: datetime, tag_name: str) -> semantic_version.Version:
@@ -84,7 +95,7 @@ def get_source_version(date_version: datetime, tag_name: str) -> semantic_versio
 		minor = _match_version_number(filetext, MINOR_VERSION_PATTERN)
 		build = _match_version_number(filetext, BUILD_VERSION_PATTERN)
 		# revision = _match_version_number(filetext, REVISION_VERSION_PATTERN)
-		revision_str = _match_version_number(filetext, REVISION_STR_VERSION_PATTERN)
+		revision_str = _match_version_str(filetext, REVISION_STR_VERSION_PATTERN)
 
 	print("Parsing version_override.cmake...")
 	if "rc" in tag_name.lower():
