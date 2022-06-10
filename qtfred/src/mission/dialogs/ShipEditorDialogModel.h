@@ -164,10 +164,10 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	 * @brief Selects previous ship on the list
 	 */
 	void OnPrevious();
-	void OnNext();
 	/**
 	 * @brief Selects next ship on the list
 	 */
+	void OnNext();
 	void OnDeleteShip();
 	/**
 	 * @brief Resets Ship/s to class default
@@ -175,7 +175,7 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	 */
 	void OnShipReset();
 	/**
-	 * @brief Returns ture if the wing is a player wing
+	 * @brief Returns true if the wing is a player wing
 	 * @param wing Takes an integer id of the wing
 	 */
 	static bool wing_is_player_wing(const int);
@@ -183,11 +183,11 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 
 	bool getTexEditEnable() const;
 	/**
-	 * @brief Used for handling conflicts betwwen ships having differing states of the same flag
+	 * @brief Used for handling conflicts between ships having differing states of the same flag
 	 * @param val Takes the new value
-	 * @param cur_state Takes the current sate of the flag
-	 * @return integer state the flag shoul be set to
-	 * @warning Contains QT code will need change if moved to non QT enviroment.
+	 * @param cur_state Takes the current state of the flag
+	 * @return integer state the flag should be set to
+	 * @warning Contains QT code. Will need refactoring if migrated to non QT environment.
 	 */
 	static int tristate_set(const int val, const int cur_state);
 
@@ -208,7 +208,7 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	 */
 	int getNumUnmarkedPlayers() const;
 	/**
-	 * @brief Wether or not to eanble the UI
+	 * @brief Whether or not to enable the UI
 	 */
 	bool getUIEnable() const;
 	/**

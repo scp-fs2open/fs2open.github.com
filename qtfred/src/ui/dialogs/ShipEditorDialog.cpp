@@ -580,7 +580,8 @@ void ShipEditorDialog::enableDisable()
 	{
 		int marked_ship = (_model->getIfPlayerShip() >= 0) ? _model->getIfPlayerShip() : _model->getSingleShip();
 		const bool isPlayerWing = _model->wing_is_player_wing(Ships[marked_ship].wingnum);
-		if (!(The_mission.game_type & MISSION_TYPE_MULTI) && _model->getNumSelectedObjects() && !_model->getIfMultipleShips() && isPlayerWing)
+		if (!(The_mission.game_type & MISSION_TYPE_MULTI) && ( _model->getNumSelectedObjects() > 0) &&
+			( _model->getIfMultipleShips() != true) && (isPlayerWing == true))
 			ui->playerShipButton->setEnabled(true);
 		else
 			ui->playerShipButton->setEnabled(false);
