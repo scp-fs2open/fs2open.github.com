@@ -135,7 +135,7 @@ class ShipInitialStatusDialogModel : public AbstractDialogModel {
  * This is necessary in case multiple ships with inconsistent object flags have been selected in which case
  * that flag may not be edited since it would corrupt the value of that flag. This function simplifies handling
  * that case.
- * @warning Constains QT code neeeds updating if moved to non QT enviromnet
+ * @warning Contains QT code. Will need refactor if migrated to non QT environment
  */
 template <typename T>
 static void handle_inconsistent_flag(flagset<T>& flags, T flag, int value)
