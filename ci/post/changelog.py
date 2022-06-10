@@ -86,7 +86,7 @@ def main():
     url = "https://api.github.com/repos/scp-fs2open/fs2open.github.com/pulls"
     page = 1
     last_page = MAX_PAGES
-    while page < last_page + 1:
+    while page <= last_page:
         # GET <url>?base=master&sort=updated&direction=desc&state=closed&page=1
         response = requests.get(url,
         auth=(args.user[0], args.user[1]),
