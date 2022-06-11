@@ -2176,19 +2176,12 @@ void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_sele
 			icon = NULL;
 		}
 
-		mask = ~WING_SLOT_LOCKED; 
-		mask &= ~WING_SLOT_IS_PLAYER;
-		if (ship_selection) {
-			mask &= ~WING_SLOT_WEAPONS_DISABLED;
-		} 
-		else {
-			mask &= ~WING_SLOT_SHIPS_DISABLED;
-		} 
+		// filter out irrelevant flags
+		mask = ~(WING_SLOT_LOCKED | WING_SLOT_IS_PLAYER | WING_SLOT_WEAPONS_DISABLED | WING_SLOT_SHIPS_DISABLED);
 
-		switch(ws->status & mask ) {
+		int masked_status = ws->status & mask;
+		switch(masked_status) {
 			case WING_SLOT_FILLED:
-			case WING_SLOT_FILLED|WING_SLOT_IS_PLAYER:
-
 				Assert(icon);
 
 				if ( class_select >= 0 ) {	// only ship select
@@ -2258,11 +2251,10 @@ void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_sele
 				break;
 
 			case WING_SLOT_EMPTY:
-			case WING_SLOT_EMPTY|WING_SLOT_IS_PLAYER:
 				bitmap_to_draw = Wing_slot_empty_bitmap;
 				break;
 
-			default:
+			case WING_SLOT_LOCKED:
 				if ( icon ) {
 					if(icon->model_index == -1)
 						bitmap_to_draw = icon->icon_bmaps[ICON_FRAME_DISABLED];
@@ -2271,6 +2263,10 @@ void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_sele
 				} else {
 					bitmap_to_draw = Wing_slot_disabled_bitmap;
 				}
+				break;
+
+			default:
+				UNREACHABLE("Unhandled wing slot status %d", masked_status);
 				break;
 		}	// end switch
 
