@@ -77,22 +77,22 @@ void parse_cheat_table(const char* filename) {
 
 bool checkForCheats(char buffer[], int buffer_length)
 {
-	char foo[buffer_length];
-	memset (foo, 0, buffer_length * sizeof(char));
+	char* check_buffer = new char[buffer_length];
+	memset (check_buffer, 0, buffer_length * sizeof(char));
 
 	int fooidx = 0;
 	for (int i = 0; i < buffer_length; i++)
 	{
 		if (buffer[i] != '\0')
 		{
-			foo[fooidx] = buffer[i];
+			check_buffer[fooidx] = buffer[i];
 			fooidx++;
 		}
 	}
 	//I'm sorry for the crimes against all stringkind.
 	for (auto &ccheat : customCheats)
 	{
-		auto found = std::strstr(foo, ccheat.first.c_str());
+		auto found = std::strstr(check_buffer, ccheat.first.c_str());
 		if (found) {
 			ccheat.second->runCheat();
 			return true;
