@@ -117,6 +117,11 @@ add_file_folder("Camera"
 	camera/camera.h
 )
 
+add_file_folder("Cheats Table"
+	cheats_table/cheats_table.cpp
+	cheats_table/cheats_table.h
+)
+
 # CFile files
 add_file_folder("CFile"
 	cfile/cfile.cpp

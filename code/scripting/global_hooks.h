@@ -20,5 +20,7 @@ extern const std::shared_ptr<Hook>            OnDebrisDeath;
 // deprecated
 extern const std::shared_ptr<OverridableHook> OnDeath;
 
+extern std::shared_ptr<scripting::Hook> OnCheat;
+
 }
 } // namespace scripting

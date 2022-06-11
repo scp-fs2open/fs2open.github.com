@@ -42,6 +42,7 @@
 #include "autopilot/autopilot.h"
 #include "bmpman/bmpman.h"
 #include "cfile/cfile.h"
+#include "cheats_table/cheats_table.h"
 #include "cmdline/cmdline.h"
 #include "cmeasure/cmeasure.h"
 #include "cutscene/cutscenes.h"
@@ -1970,6 +1971,8 @@ void game_init()
 	ssm_init();	
 	player_tips_init();				// helpful tips
 	beam_init();
+
+	cheat_table_init();
 
 	lighting_profile::load_profiles();
 
