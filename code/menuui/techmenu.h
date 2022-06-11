@@ -25,7 +25,7 @@ typedef struct {
 // flags by Goober5000
 #define IIF_DEFAULT_VALUE				0
 #define IIF_IN_TECH_DATABASE			(1 << 0)	// in tech database? - Goober5000
-#define IIF_DEFAULT_IN_TECH_DATABASE	(1 << 1)	// in tech database by default? - Goober5000
+#define IIF_DEFAULT_IN_TECH_DATABASE	(1 << 1)	// this entry's default tech database status, as specified in species.tbl; used when the tech db is "reset to default" - Goober5000
 
 extern int Techroom_overlay_id;
 

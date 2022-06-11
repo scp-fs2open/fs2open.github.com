@@ -760,7 +760,6 @@ void techroom_change_tab(int num)
 	switch (Tab) {
 		case SHIPS_DATA_TAB:
             si_mask.set(multi ? Ship::Info_Flags::In_tech_database_m : Ship::Info_Flags::In_tech_database);
-            si_mask.set(multi ? Ship::Info_Flags::Default_in_tech_database_m : Ship::Info_Flags::Default_in_tech_database);
 			
 			// load ship info if necessary
 			if ( !Ships_loaded ) {
@@ -809,7 +808,6 @@ void techroom_change_tab(int num)
 				Weapon_list.reserve(Weapon_info.size());
 
 				wi_mask.set(multi ? Weapon::Info_Flags::Player_allowed : Weapon::Info_Flags::In_tech_database);
-                wi_mask.set(Weapon::Info_Flags::Default_in_tech_database);
 
 				int i = 0;
 				tech_list_entry temp_entry;
