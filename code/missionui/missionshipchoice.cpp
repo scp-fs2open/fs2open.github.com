@@ -1,4 +1,4 @@
-wing_slot_f/*
+/*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
  * All source code herein is the property of Volition, Inc. You may not sell 
@@ -2134,7 +2134,7 @@ void pick_from_wing(int wb_num, int ws_num)
 //				hot_slot	=>		index of slot that mouse is over
 //				selected_slot	=>	index of slot that is selected
 //				class_select	=>	all ships of this class are drawn selected (send -1 to not use)
-void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_select, bool ship_selection )
+void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_select)
 {
 	GR_DEBUG_SCOPE("Wing block");
 

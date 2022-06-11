@@ -2699,7 +2699,7 @@ void weapon_select_do(float frametime)
 		wl_render_overhead_view(frametime);
 		wl_draw_ship_weapons(Selected_wl_slot);
 		for ( int i = 0; i < MAX_WING_BLOCKS; i++ ) {
-			draw_wing_block(i, Hot_wl_slot, Selected_wl_slot, -1, false);
+			draw_wing_block(i, Hot_wl_slot, Selected_wl_slot, -1);
 		}
 		common_render_selected_screen_button();
 	}
