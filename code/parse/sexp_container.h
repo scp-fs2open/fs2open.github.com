@@ -87,6 +87,28 @@ struct map_container_hash
 	uint32_t operator()(const SCP_string &str) const;
 };
 
+struct list_modifier {
+	enum class Modifier
+	{
+		INVALID = 0,
+		GET_FIRST,
+		GET_LAST,
+		REMOVE_FIRST,
+		REMOVE_LAST,
+		GET_RANDOM,
+		REMOVE_RANDOM,
+		AT_INDEX
+	};
+
+	const char *name;
+	const Modifier modifier;
+};
+
+using ListModifier = list_modifier::Modifier;
+
+ListModifier get_list_modifier(const char *text, bool accept_prefix = false);
+const char *get_list_modifier_name(ListModifier modifier);
+
 struct sexp_container
 {
 	// meta-character for containers in text replacement, etc.
@@ -150,29 +172,17 @@ struct sexp_container
 	bool is_of_string_type() const;
 	// returns data for list container or key for map container
 	const SCP_string &get_value_at_index(int index) const;
+
+	// list modifier operations
+	SCP_string apply_list_modifier(ListModifier modifier, int data_index = -1);
+
+private:
+	SCP_string list_get_first(bool remove);
+	SCP_string list_get_last(bool remove);
+	SCP_string list_get_random(bool remove);
+	SCP_string list_get_at(int index);
+	SCP_string list_apply_iterator(SCP_list<SCP_string>::iterator list_it, const char *location, bool remove);
 };
-
-struct list_modifier {
-	enum class Modifier
-	{
-		INVALID = 0,
-		GET_FIRST,
-		GET_LAST,
-		REMOVE_FIRST,
-		REMOVE_LAST,
-		GET_RANDOM,
-		REMOVE_RANDOM,
-		AT_INDEX
-	};
-
-	const char *name;
-	const Modifier modifier;
-};
-
-using ListModifier = list_modifier::Modifier;
-
-ListModifier get_list_modifier(const char *text, bool accept_prefix = false);
-const char *get_list_modifier_name(ListModifier modifier);
 
 // management functions
 void init_sexp_containers();
