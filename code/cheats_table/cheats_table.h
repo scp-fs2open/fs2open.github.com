@@ -21,6 +21,8 @@ class CustomCheat {
 			requireCheatsEnabled = require_cheats_enabled;
 		}
 
+		virtual ~CustomCheat() = default;
+
 		virtual void runCheat(){
 			if (canUseCheat()){
 				HUD_printf("%s", cheatMsg.c_str());
