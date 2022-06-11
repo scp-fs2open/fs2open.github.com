@@ -871,7 +871,10 @@ int Training_context_goal_waypoint;
 int Training_context_at_waypoint;
 float	Training_context_distance;
 
+// If you edit this, make sure this is greater than zero,
+// so that we don't have to write pointless asserts. :)
 #define SEXP_NODE_INCREMENT	250
+
 int Num_sexp_nodes = 0;
 sexp_node *Sexp_nodes = nullptr;
 
@@ -1246,8 +1249,6 @@ int alloc_sexp(const char *text, int type, int subtype, int first, int rest)
 	if (node == Num_sexp_nodes || node == -1)
 	{
 		int old_size = Num_sexp_nodes;
-
-		Assert(SEXP_NODE_INCREMENT > 0);
 
 		// allocate in blocks of SEXP_NODE_INCREMENT
 		Num_sexp_nodes += SEXP_NODE_INCREMENT;
