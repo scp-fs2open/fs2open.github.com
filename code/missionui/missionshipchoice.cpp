@@ -2100,28 +2100,40 @@ void pick_from_wing(int wb_num, int ws_num)
 		return;
 	}
 
-	// FIXME TODO: figure out what info would be useful to include in failure msgs
 	Assertion(!(ws->status & WING_SLOT_LOCKED), "Attempt to pick from locked slot. Please reprot!");
 	Assertion(!(ws->status & (WING_SLOT_EMPTY | WING_SLOT_FILLED)),
 		"Wing slot status (%d) is somehow both empty and filled. Please erport!",
 		ws->status);
 
-	if (ws->status & WING_SLOT_EMPTY) {
-		// TODO: add fail sound
-		return;
-	} else if (ws->status & WING_SLOT_FILLED) {
-		int mouse_x, mouse_y;
-		Assert(Wss_slots[slot_index].ship_class >= 0);
-		ss_set_carried_icon(slot_index, Wss_slots[slot_index].ship_class);
+	// filter out irreelvant flags
+	const int mask = ~(WING_SLOT_IS_PLAYER | WING_SLOT_SHIPS_DISABLED | WING_SLOT_WEAPONS_DISABLED);
+	const int masked_status = ws->status & mask;
 
-		mouse_get_pos_unscaled(&mouse_x, &mouse_y);
-		Ss_delta_x = Wing_icon_coords[gr_screen.res][slot_index][0] - mouse_x;
-		Ss_delta_y = Wing_icon_coords[gr_screen.res][slot_index][1] - mouse_y;
-		Carried_ss_icon.from_x = mouse_x;
-		Carried_ss_icon.from_y = mouse_y;
-	} else {
-		UNREACHABLE("Wing slot has value (%d) is neither empty nor filled. Please report!", ws->status);
-	}
+	switch ( masked_status ) {
+		case WING_SLOT_EMPTY:
+			// TODO: add fail sound
+			return;
+			break;
+
+		case WING_SLOT_FILLED:
+			{
+			int mouse_x, mouse_y;
+			Assert(Wss_slots[slot_index].ship_class >= 0);
+			ss_set_carried_icon(slot_index, Wss_slots[slot_index].ship_class);
+
+			mouse_get_pos_unscaled( &mouse_x, &mouse_y );
+			Ss_delta_x = Wing_icon_coords[gr_screen.res][slot_index][0] - mouse_x;
+			Ss_delta_y = Wing_icon_coords[gr_screen.res][slot_index][1] - mouse_y;
+			Carried_ss_icon.from_x = mouse_x;
+			Carried_ss_icon.from_y = mouse_y;
+			}
+			break;
+
+		default:
+			UNREACHABLE("Wing slot has value (%d) is neither empty nor filled. Please report!", masked_status);
+			break;
+
+	} // end switch
 
 	common_flash_button_init();
 }
@@ -2134,7 +2146,7 @@ void pick_from_wing(int wb_num, int ws_num)
 //				hot_slot	=>		index of slot that mouse is over
 //				selected_slot	=>	index of slot that is selected
 //				class_select	=>	all ships of this class are drawn selected (send -1 to not use)
-void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_select)
+void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_select, bool ship_selection )
 {
 	GR_DEBUG_SCOPE("Wing block");
 
@@ -2177,11 +2189,18 @@ void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_sele
 		}
 
 		// filter out irrelevant flags
-		mask = ~(WING_SLOT_LOCKED | WING_SLOT_IS_PLAYER | WING_SLOT_WEAPONS_DISABLED | WING_SLOT_SHIPS_DISABLED);
+		mask = ~WING_SLOT_LOCKED;
+		mask &= ~WING_SLOT_IS_PLAYER;
+		if (ship_selection) {
+			mask &= ~WING_SLOT_WEAPONS_DISABLED;
+		}
+		else {
+			mask &= ~WING_SLOT_SHIPS_DISABLED;
+		}
 
-		int masked_status = ws->status & mask;
-		switch(masked_status) {
+		switch(ws->status & mask ) {
 			case WING_SLOT_FILLED:
+
 				Assert(icon);
 
 				if ( class_select >= 0 ) {	// only ship select
@@ -2254,7 +2273,7 @@ void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_sele
 				bitmap_to_draw = Wing_slot_empty_bitmap;
 				break;
 
-			case WING_SLOT_LOCKED:
+			default:
 				if ( icon ) {
 					if(icon->model_index == -1)
 						bitmap_to_draw = icon->icon_bmaps[ICON_FRAME_DISABLED];
@@ -2263,10 +2282,6 @@ void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_sele
 				} else {
 					bitmap_to_draw = Wing_slot_disabled_bitmap;
 				}
-				break;
-
-			default:
-				UNREACHABLE("Unhandled wing slot status %d", masked_status);
 				break;
 		}	// end switch
 
@@ -2490,23 +2505,32 @@ int create_wings()
 
 		for ( j = 0; j < MAX_WING_SLOTS; j++ ) {
 			ws = &wb->ss_slots[j];
-			if ((ws->status & WING_SLOT_EMPTY) && !(ws->status & WING_SLOT_IS_PLAYER)) {
-				// delete ship that is not going to be used by the wing
-				if (wb->is_late) {
-					list_remove(&Ship_arrival_list, &Parse_objects[ws->sa_index]);
-					wp->wave_count--;
-					Assert(wp->wave_count >= 0);
-				}
-				else {
-					shipnum = wp->ship_index[j];
-					Assert(shipnum >= 0 && shipnum < MAX_SHIPS);
-					cleanup_ship_index[j] = shipnum;
-					ship_add_exited_ship(&Ships[shipnum], Ship::Exit_Flags::Player_deleted);
-					obj_delete(Ships[shipnum].objnum);
-					hud_set_wingman_status_none(Ships[shipnum].wing_status_wing_index, Ships[shipnum].wing_status_wing_pos);
+			// filter out irrelevant flags, retaining player status
+			const int mask = ~(WING_SLOT_SHIPS_DISABLED | WING_SLOT_WEAPONS_DISABLED);
+			const int masked_status = ws->status & mask;
+			switch ( masked_status ) {
+				case WING_SLOT_EMPTY:
+					// delete ship that is not going to be used by the wing
+					if ( wb->is_late ) {
+						list_remove( &Ship_arrival_list, &Parse_objects[ws->sa_index]);
+						wp->wave_count--;
+						Assert(wp->wave_count >= 0);
+					}
+					else {
+						shipnum = wp->ship_index[j];
+						Assert( shipnum >= 0 && shipnum < MAX_SHIPS );
+						cleanup_ship_index[j] = shipnum;
+						ship_add_exited_ship( &Ships[shipnum], Ship::Exit_Flags::Player_deleted );
+						obj_delete(Ships[shipnum].objnum);
+						hud_set_wingman_status_none( Ships[shipnum].wing_status_wing_index, Ships[shipnum].wing_status_wing_pos);
+					}
+					break;
 
-				}
-			}
+				default:
+					break;
+
+			} // end switch
+
 		}	// end for (wing slot)	
 
 		for ( k = 0; k < MAX_WING_SLOTS; k++ ) {
