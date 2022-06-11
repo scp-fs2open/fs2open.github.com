@@ -1586,9 +1586,6 @@ void game_process_cheats(int k)
 
 	extern bool checkForCheats(char converted_buffer[], int buffer_length);
 
-	//When we find a custom cheat we need to clear the buffer, as they don't use the fixed cheat code length like the originals.
-	if (checkForCheats(CheatBuffer, CHEAT_BUFFER_LEN+1))
-		memset(CheatBuffer, 0, CHEAT_BUFFER_LEN+1);
 
 	for(i=0; i < CHEATS_TABLE_LEN; i++) {
 		Cheat cheat = cheatsTable[i];
@@ -1599,6 +1596,14 @@ void game_process_cheats(int k)
 			CheatUsed = cheat.data;
 			break;
 		}
+	}
+
+	//When we find a custom cheat we need to clear the buffer, as they don't use the fixed cheat code length like the originals.
+	if (checkForCheats(CheatBuffer, CHEAT_BUFFER_LEN+1))
+	{
+		memset(CheatBuffer, 0, (CHEAT_BUFFER_LEN+1)*sizeof(char));
+		if (detectedCheatCode == CHEAT_CODE_NONE) return;
+		//If detectedCheatCode is anything else, then the modder overwrote an original cheat, and we still want that behavior.
 	}
 
 	if(detectedCheatCode == CHEAT_CODE_FREESPACE){

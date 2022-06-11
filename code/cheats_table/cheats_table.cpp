@@ -77,7 +77,8 @@ void parse_cheat_table(const char* filename) {
 
 bool checkForCheats(char buffer[], int buffer_length)
 {
-	char foo[buffer_length] = {'\0'};
+	char foo[buffer_length];
+	memset (foo, 0, buffer_length * sizeof(char));
 
 	int fooidx = 0;
 	for (int i = 0; i < buffer_length; i++)
