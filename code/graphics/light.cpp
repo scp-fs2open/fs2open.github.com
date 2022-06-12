@@ -327,9 +327,10 @@ void gr_set_ambient_light(int red, int green, int blue) {
 }
 void gr_get_ambient_light(vec3d* light_vector) {
 	auto abv = lighting_profile::current()->ambient_light_brightness;
-	light_vector->xyz.x = abv.handle(gr_light_ambient[0]);
-	light_vector->xyz.y = abv.handle(gr_light_ambient[1]);
-	light_vector->xyz.z = abv.handle(gr_light_ambient[2]);
+	auto over = lighting_profile::current()->overall_brightness;
+	light_vector->xyz.x = over.handle(abv.handle(gr_light_ambient[0]));
+	light_vector->xyz.y = over.handle(abv.handle(gr_light_ambient[1]));
+	light_vector->xyz.z = over.handle(abv.handle(gr_light_ambient[2]));
 }
 
 void gr_lighting_fill_uniforms(void* data_out, size_t buffer_size) {

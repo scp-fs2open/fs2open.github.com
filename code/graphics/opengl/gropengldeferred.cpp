@@ -161,13 +161,11 @@ void gr_opengl_deferred_lighting_finish()
 			auto light_data = uniformAligner.addTypedElement<deferred_light_data>();
 
 			light_data->lightType = static_cast<int>(l.type);
-			auto ltp = lighting_profile::current();
-			auto i = ltp->overall_brightness.handle(l.intensity);
 
 			vec3d diffuse;
-			diffuse.xyz.x = l.r * i;
-			diffuse.xyz.y = l.g * i;
-			diffuse.xyz.z = l.b * i;
+			diffuse.xyz.x = l.r * l.intensity;
+			diffuse.xyz.y = l.g * l.intensity;
+			diffuse.xyz.z = l.b * l.intensity;
 
 			light_data->diffuseLightColor = diffuse;
 

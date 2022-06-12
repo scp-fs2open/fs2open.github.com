@@ -328,8 +328,9 @@ void lighting_profile::parse_default_section(const char *filename)
 		if(lighting_profile_value::parse(filename,"$Ambient light brightness:",profile_name, &default_profile.ambient_light_brightness))
 		{
 			parsed = true;
-			default_profile.overall_brightness.stack_multiplier(Cmdline_ambient_power);
-			default_profile.overall_brightness.stack_minimum(Cmdline_emissive_power);
+			default_profile.ambient_light_brightness.stack_multiplier(Cmdline_ambient_power);
+			default_profile.ambient_light_brightness.stack_multiplier(Cmdline_light_power);
+			default_profile.ambient_light_brightness.stack_minimum(Cmdline_emissive_power);
 		}
 
 		if(lighting_profile_value::parse(filename,"$Overall brightness:",profile_name, &default_profile.overall_brightness))
