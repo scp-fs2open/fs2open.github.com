@@ -43,7 +43,7 @@ def get_last_page(response: requests.Response) -> int:
     
 
 def main():
-    parser = argparse.ArgumentParser(description="Retrives a log of commit messages and attempts to pretty them into a human-readbile format")
+    parser = argparse.ArgumentParser(description="Retrieves a log of commit messages and attempts to pretty them into a human-readable format")
     parser.add_argument("start_date",
                         help="Day of the earliest commit to add to the log.")
     parser.add_argument("-u", "--user", nargs=2, metavar=("NAME", "TOKEN"), default=["", ""],
