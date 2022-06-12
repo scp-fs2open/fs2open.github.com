@@ -2157,7 +2157,7 @@ void pick_from_wing(int wb_num, int ws_num)
 //				hot_slot	=>		index of slot that mouse is over
 //				selected_slot	=>	index of slot that is selected
 //				class_select	=>	all ships of this class are drawn selected (send -1 to not use)
-void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_select)
+void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_select, bool ship_selection )
 {
 	GR_DEBUG_SCOPE("Wing block");
 
@@ -2274,7 +2274,7 @@ void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_sele
 				bitmap_to_draw = Wing_slot_empty_bitmap;
 				break;
 
-			case WING_SLOT_LOCKED:
+			default:
 				if ( icon ) {
 					if(icon->model_index == -1)
 						bitmap_to_draw = icon->icon_bmaps[ICON_FRAME_DISABLED];
@@ -2283,10 +2283,6 @@ void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_sele
 				} else {
 					bitmap_to_draw = Wing_slot_disabled_bitmap;
 				}
-				break;
-
-			default:
-				UNREACHABLE("Attempt to draw wing slot with unknown occupancy (status %d). Please report!", ws->status);
 				break;
 		}	// end switch
 
