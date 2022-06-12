@@ -40,7 +40,7 @@ namespace Weapon {
 		Lockarm,							// if the missile was fired without a lock, it does significanlty less damage on impact
 		Ballistic,							// ballistic primaries - Goober5000
 		Pierce_shields,						// shield pierceing -Bobboau
-		Default_in_tech_database,			// default in tech database - Goober5000
+		Default_in_tech_database,			// this entry's default tech database status, as specified in weapons.tbl; used when the tech db is "reset to default" - Goober5000
 		Local_ssm,							// localized ssm. ship that fires ssm is in mission.  ssms also warp back in during mission
 		Tagged_only,						// can only fire if target is tagged
 		Cycle,								// will only fire from (shots (defalts to 1)) points at a time
