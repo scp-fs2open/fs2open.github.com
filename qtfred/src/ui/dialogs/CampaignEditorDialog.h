@@ -3,7 +3,6 @@
 #include <QDialog>
 #include <QtWidgets/QMenuBar>
 #include <QListWidgetItem>
-#include <QMessageBox>
 #include <QTextDocument>
 
 #include <memory>
@@ -21,13 +20,40 @@ namespace Ui {
 
 class CampaignEditorDialogModel;
 
+namespace CampaignEditorUtil {
+	struct WarningMsg
+	{
+		QString title{};
+		QString msg{};
+		QString type{};
+
+		WarningMsg(QString &&title, QString &&msg, QString &&type);
+	};
+	class WarningVec : public QObject, public QVector<WarningMsg>
+	{
+		Q_OBJECT
+	signals:
+		void gotMsg();
+	public:
+		inline void addMsg(WarningMsg &&msg){
+			append(msg);
+			gotMsg();
+		}
+	};
+} // namespace CampaignEditorUtil
+
 class CampaignEditorDialog : public QDialog
 {
 	Q_OBJECT
+	static CampaignEditorUtil::WarningVec warnings;
 
 public:
 	explicit CampaignEditorDialog(QWidget *parent, EditorViewport *viewport);
 	~CampaignEditorDialog() override;
+
+	static inline void uiWarn(QString title, QString msg, QString type = ""){
+		warnings.addMsg(CampaignEditorUtil::WarningMsg{std::move(title), std::move(msg), std::move(type)});
+	}
 
 private:
 	std::unique_ptr<Ui::CampaignEditorDialog> ui;
@@ -99,9 +125,6 @@ private slots:
 	 * @param pos the clicked position
 	 */
 	void mnLinkMenu(const QPoint &pos);
-
-	//not implemented. Save as copy and verify or open.
-	void btnErrorCheckerClicked();
 };
 
 } // namespace dialogs

@@ -6,6 +6,7 @@
 #include "mission/missiongoals.h"
 #include "mission/missionsave.h"
 
+#include <QMessageBox>
 #include <QPlainTextDocumentLayout>
 
 //from cfilesystem.cpp, to find loose (non-vp) mission files, as oldfred did (campaignfilelistbox.cpp:58)
@@ -130,7 +131,7 @@ CampaignEditorDialogModel::CampaignEditorDialogModel(CampaignEditorDialog* _pare
 
 			// #11 check: multi player number: skip and warn on load
 			if (campaignTypes.indexOf(campaignType) != CAMPAIGN_TYPE_SINGLE && numPlayers != temp.num_players) {
-				QMessageBox::warning(parent, "Potential Campaign Bug", "Mission " + QString(temp.name) + " of campaign has wrong player number: " + QString::number(temp.num_players) + " and was removed.");
+				CampaignEditorDialog::uiWarn(tr("Potential Campaign Bug"), tr("Mission %1 of campaign has wrong player number: %2 and was removed.").arg(temp.name, temp.num_players));
 				delete mnDataPtr;
 				continue;
 			}
@@ -257,7 +258,7 @@ void CampaignEditorDialogModel::supplySubModelLoop(QPlainTextEdit &descr) {
 
 bool CampaignEditorDialogModel::saveTo(const QString &file) {
 	bool success = _saveTo(file);
-	QMessageBox::information(parent, file, success ? tr("Successfully saved") : tr("Error saving"));
+	CampaignEditorDialog::uiWarn(file, success ? tr("Successfully saved") : tr("Error saving"));
 	modified = ! success;
 	return success;
 }
@@ -277,14 +278,12 @@ void CampaignEditorDialogModel::missionSelectionChanged(const QItemSelection & s
 }
 
 void CampaignEditorDialogModel::setCurMnFirst(){
-	if ( !mnData_it)
+	if (! mnData_it)
 		return;
 	QMessageBox::StandardButton resBtn = QMessageBox::Yes;
 	if (! firstMission.isEmpty()) {
 		resBtn = QMessageBox::question( parent, tr("Change first mission?"),
-										tr("Do you want to replace\n")
-										+ firstMission
-										+ tr("\nas first mission?"),
+										tr("Do you want to replace\n%1\nas first mission?").arg(firstMission),
 										QMessageBox::Yes | QMessageBox::No,
 										QMessageBox::Yes );
 	}
@@ -360,8 +359,10 @@ bool CampaignEditorDialogModel::setCurBrSexp(int sexp) {
 		return false;
 
 	// #5 check: always false branch: reject bad manual edit
-	if (sexp == Locked_sexp_false)
+	if (sexp == Locked_sexp_false) {
+		CampaignEditorDialog::uiWarn(tr("Potential Campaign Bug"), tr("Attempt to set campaign branch condition to false rejected"));
 		return false;
+	}
 
 	mnData_it->brData_it->sexp = sexp;
 	flagModified();
@@ -374,7 +375,7 @@ void CampaignEditorDialogModel::setCurBrIsLoop(bool isLoop) {
 	if (isLoop) {
 		for (auto& br : mnData_it->branches) {
 			if (br.loop) {
-				if (QMessageBox::question(parent, "Change loop", "This will make branch to "+br.next+" no longer a loop. Continue?") == QMessageBox::StandardButton::No)
+				if (QMessageBox::question(parent, tr("Change loop"), tr("This will make branch to %1 no longer a loop. Continue?").arg(br.next)) == QMessageBox::StandardButton::No)
 					return;
 				modify<bool>(br.loop, false);
 			}
@@ -529,11 +530,11 @@ bool CampaignEditorDialogModel::_saveTo(QString file) const {
 					Assertion(br.type != BranchType::INVALID, "UI should not let any branch remain invalid");
 					// #2 check: Illegal target mission
 					if (br.type == BranchType::NEXT_NOT_FOUND)
-						QMessageBox::warning(parent, "Potential Campaign Bug", "Saving branch to unknown mission:\n" + mn->filename + "  to  " + br.next);
+						CampaignEditorDialog::uiWarn(tr("Potential Campaign Bug"), tr("Saving branch to unknown mission:\n%1 to %2").arg(mn->filename, br.next));
 					if (! br.loop) { //build formula from nonloop branches
 						// #6 check: True middle branch
 						if (flag_last_branch)
-							QMessageBox::warning(parent, "Potential Campaign Bug", "Branch is unreachable due to previous \"true\" condition:\n" + mn->filename + "  to  " + br.next);
+							CampaignEditorDialog::uiWarn(tr("Potential Campaign Bug"), tr("Branch is unreachable due to previous \"true\" condition:\n%1 to %2").arg(mn->filename, br.next));
 						if (br.sexp == Locked_sexp_true)
 							flag_last_branch = true;
 
@@ -555,7 +556,7 @@ bool CampaignEditorDialogModel::_saveTo(QString file) const {
 						Assertion(cm.flags ^ CMISSION_FLAG_HAS_LOOP, "UI should have stopped attempt at multiple loops");
 						// #4 check: always true loop
 						if (br.sexp == Locked_sexp_true)
-							QMessageBox::warning(parent, "Potential Campaign Bug", "Loop is always true from mission: " + mn->filename + " to " + br.next);
+							CampaignEditorDialog::uiWarn(tr("Potential Campaign Bug"), tr("Loop is always true from mission: %1 to %2").arg(mn->filename, br.next));
 						cm.flags |= CMISSION_FLAG_HAS_LOOP;
 
 						QString descr = br.loopDescr->toPlainText();
@@ -587,7 +588,7 @@ bool CampaignEditorDialogModel::_saveTo(QString file) const {
 				}
 				// #7 check: not always true last branch
 				if (!flag_last_branch)
-					QMessageBox::warning(parent, "Potential Campaign Bug", "Last branch is not always true from mission: " + mn->filename);
+					CampaignEditorDialog::uiWarn(tr("Potential Campaign Bug"), tr("Last branch is not always true from mission: %1").arg(mn->filename));
 
 				cm.level = lvl;
 				cm.pos = pos++;
@@ -602,7 +603,7 @@ bool CampaignEditorDialogModel::_saveTo(QString file) const {
 
 bool CampaignEditorDialogModel::deleteLinksTo(const CampaignMissionData &target) {
 	SCP_vector<std::pair<CampaignMissionData *, int>> del;
-	QString msg = tr("The following missions have links to the removed mission (") + target.filename + "):\n";
+	QString msg = tr("The following missions have links to the removed mission (%1):\n").arg(target.filename);
 	for (auto mn_it: missionData) {
 		auto &mn = mn_it.first;
 		if (&mn == &target)
@@ -643,13 +644,13 @@ void CampaignEditorDialogModel::trackMissionUncheck(const QModelIndex &idx, cons
 			// #9 check: no first mission: enforced here
 			if (! checked) {
 				if (mn->filename == firstMission) {
-					QMessageBox::information(parent, tr("First Mission"), tr("You cannot remove the first mission of a campaign,\nunless it is the only one. Choose another to be first."));
+					CampaignEditorDialog::uiWarn(tr("First Mission"), tr("You cannot remove the first mission of a campaign,\nunless it is the only one. Choose another to be first."));
 					missionData.setData(idx, Qt::Checked, Qt::CheckStateRole);
 					return;
 				}
 				// #3 check: illegal target mission: remove illegal links
 				if (! deleteLinksTo(*mn)){
-					QMessageBox::information(parent, tr("Target Mission"), tr("A mission cannot be removed unless all links to it are deleted."));
+					CampaignEditorDialog::uiWarn(tr("Target Mission"), tr("A mission cannot be removed unless all links to it are deleted."));
 					missionData.setData(idx, Qt::Checked, Qt::CheckStateRole);
 					return;
 				}
@@ -708,9 +709,9 @@ CampaignEditorDialogModel::CampaignMissionData::CampaignMissionData(QString file
 	debriefingPersona(cm ? QString::number(cm->debrief_persona_index) : "")
 {
 	if (cm && (cm->flags & CMISSION_FLAG_HAS_FORK))
-		QMessageBox::warning(nullptr, "Unsupported campaign feature", "This campaign uses scpFork, which is nonfunctional in FSO and unsupported in FRED. Use axemFork instead.\nAffected mission: " + filename);
+		CampaignEditorDialog::uiWarn(tr("Unsupported campaign feature"), tr("This campaign uses scpFork, which is nonfunctional in FSO and unsupported in FRED. Use axemFork instead.\nAffected mission: %1").arg(filename));
 	if (cm && (cm->flags & CMISSION_FLAG_BASTION))
-		QMessageBox::warning(nullptr, "Unsupported campaign feature", "This campaign uses Bastion mainhall flag, which is outdated. Use explicit mainhall settings.\nAffected mission: " + filename);
+		CampaignEditorDialog::uiWarn(tr("Unsupported campaign feature"), tr("This campaign uses Bastion mainhall flag, which is outdated. Use explicit mainhall settings.\nAffected mission: %1").arg(filename));
 }
 
 void CampaignEditorDialogModel::CampaignMissionData::initMissions(
@@ -735,7 +736,7 @@ void CampaignEditorDialogModel::CampaignMissionData::initMissions(
 	};
 
 	if (! loaded)
-		QMessageBox::warning(nullptr, "Error loading mission", "Could not get info from mission: " + filename +"\nFile corrupted?");
+		CampaignEditorDialog::uiWarn(tr("Error loading mission"), tr("Could not get info from mission: %1\nFile corrupted?").arg(filename));
 
 	model.initRow(filename,	data, cm_it, loaded ? Qt::color0 : Qt::red);
 }
@@ -766,7 +767,7 @@ CampaignEditorDialogModel::CampaignBranchData::CampaignBranchData(CampaignEditor
 	// #5a check: always false branch: Warn & prevent on load
 	if (sexp == Locked_sexp_false) {
 		sexp = Locked_sexp_true;
-		QMessageBox::warning(nullptr, "Potential Campaign Bug", "Branch from " + from + " to " + next + "was always false. Set to always true, please fix.");
+		CampaignEditorDialog::uiWarn(tr("Potential Campaign Bug"), tr("Branch from %1 to %2 was always false. Set to always true, please fix.").arg(from, next));
 	}
 
 	QObject::connect(loopDescr, &QTextDocument::contentsChanged, model, &CampaignEditorDialogModel::flagModified);

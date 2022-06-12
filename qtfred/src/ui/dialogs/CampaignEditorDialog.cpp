@@ -4,12 +4,21 @@
 #include "ui/util/SignalBlockers.h"
 #include <QInputDialog>
 #include <QFileDialog>
+#include <QMessageBox>
 #include <QStringListModel>
 #include <ui/FredView.h>
 
 namespace fso {
 namespace fred {
 namespace dialogs {
+
+CampaignEditorUtil::WarningVec CampaignEditorDialog::warnings{};
+
+CampaignEditorUtil::WarningMsg::WarningMsg(QString &&_title, QString &&_msg, QString &&_type) :
+	title(_title),
+	msg(_msg),
+	type(_type)
+{}
 
 CampaignEditorDialog::CampaignEditorDialog(QWidget *_parent, EditorViewport *_viewport) :
 	QDialog(_parent),
@@ -19,6 +28,17 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget *_parent, EditorViewport *_vi
 	viewport(_viewport)
 {
 	ui->setupUi(this);
+
+	connect(&warnings, &CampaignEditorUtil::WarningVec::gotMsg, this, [&]() {
+		for (auto warn_it = warnings.begin();
+			 warn_it != warnings.end();
+			 warn_it = warnings.erase(warn_it)) {
+			if (warn_it->type.isEmpty()) {
+				QMessageBox::warning(this, warn_it->title, warn_it->msg);
+			}
+		}
+	});
+	warnings.gotMsg();
 
 	QPalette p = ui->lblMissionDescr1->palette();
 	p.setColor(QPalette::WindowText, Qt::darkYellow);
@@ -33,7 +53,9 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget *_parent, EditorViewport *_vi
 
 	connect(ui->lstMissions, &QListView::customContextMenuRequested, this, &CampaignEditorDialog::mnLinkMenu);
 
-	connect(ui->btnErrorChecker, &QPushButton::clicked, this, &CampaignEditorDialog::btnErrorCheckerClicked);
+	connect(ui->btnErrorChecker, &QPushButton::clicked, [](){
+		uiWarn(tr("Error Checker"), tr("Error checker not implemented. Try saving a copy."));
+	});
 	connect(ui->btnFredMission, &QPushButton::clicked, this, [&](){
 		reject();
 		if(result() == Rejected)
@@ -62,7 +84,6 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget *_parent, EditorViewport *_vi
 
 	updateUIAll();
 }
-
 CampaignEditorDialog::~CampaignEditorDialog() = default;
 
 void CampaignEditorDialog::setModel(CampaignEditorDialogModel *new_model) {
@@ -96,7 +117,6 @@ void CampaignEditorDialog::setModel(CampaignEditorDialogModel *new_model) {
 					ui->sxtBranches->save_tree(
 							ui->sxtBranches->get_root(node)));
 		if (!success) {
-			QMessageBox::warning(this, "Potential Campaign Bug", "Attempt to set campaign branch condition to false rejected");
 			int old = model->getCurBrIdx();
 			restoreBranchOpen(old);
 		}
@@ -250,7 +270,7 @@ void CampaignEditorDialog::fileOpen() {
 		setModel(newModel);
 	} else {
 		delete newModel;
-		QMessageBox::information(this, tr("Error opening file"), pathName);
+		uiWarn(tr("Error opening file"), pathName);
 		setModel(new CampaignEditorDialogModel(this, viewport, ""));
 	}
 
@@ -368,11 +388,6 @@ void CampaignEditorDialog::mnLinkMenu(const QPoint &pos){
 	if (res_branch != -1)
 		restoreBranchOpen(res_branch);
 }
-
-void CampaignEditorDialog::btnErrorCheckerClicked() {
-	QMessageBox::information(this, tr("Error Checker"), "Error checker not implemented. Try saving a copy.");
-}
-
 
 } // namespace dialogs
 } // namespace fred
