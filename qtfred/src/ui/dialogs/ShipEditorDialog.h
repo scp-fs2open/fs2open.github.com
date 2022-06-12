@@ -108,9 +108,7 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	void teamChanged(const int);
 	void cargoChanged();
 	void altNameChanged();
-	void altNameChanged(const QString&);
 	void callsignChanged();
-	void callsignChanged(const QString&);
 
 	//column two
 	void hotkeyChanged(const int);

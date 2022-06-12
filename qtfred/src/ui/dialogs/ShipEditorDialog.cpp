@@ -47,22 +47,10 @@ ShipEditorDialog::ShipEditorDialog(FredView* parent, EditorViewport* viewport)
 		&ShipEditorDialog::teamChanged);
 
 	connect(ui->cargoCombo->lineEdit(), (&QLineEdit::editingFinished), this, &ShipEditorDialog::cargoChanged);
+	connect(ui->altNameCombo->lineEdit(), (&QLineEdit::editingFinished), this, &ShipEditorDialog::altNameChanged);
+	connect(ui->callsignCombo->lineEdit(), (&QLineEdit::editingFinished), this, &ShipEditorDialog::callsignChanged);
 
 	// ui->cargoCombo->installEventFilter(this);
-	connect(ui->altNameCombo->lineEdit(), SIGNAL(editingFinished()),
-		this,
-		SLOT(altNameChanged()));
-	connect(ui->altNameCombo,
-		SIGNAL(currentIndexChanged(const QString&)),
-		this,
-		SLOT(altNameChanged(const QString&)));
-	connect(ui->callsignCombo,
-		SIGNAL(currentIndexChanged(const QString&)),
-		this,
-		SLOT(callsignChanged(const QString&)));
-	connect(ui->callsignCombo->lineEdit(), SIGNAL(editingFinished()),
-		this,
-		SLOT(callsignChanged()));
 
 	// Column Two
 	connect(ui->hotkeyCombo,
@@ -223,6 +211,7 @@ void ShipEditorDialog::updateUI()
 }
 void ShipEditorDialog::updateColumnOne()
 {
+	util::SignalBlockers blockers(this);
 	ui->shipNameEdit->setText(_model->getShipName().c_str());
 	int i;
 	auto idx = _model->getShipClass();
@@ -272,43 +261,46 @@ void ShipEditorDialog::updateColumnOne()
 		ui->cargoCombo->setCurrentIndex(ui->cargoCombo->findText(QString(cargo.c_str())));
 	}
 	ui->altNameCombo->clear();
-	if (_model->getIfMultipleShips()) {
-		ui->altNameCombo->setEnabled(false);
-	} else {
-		auto altname = _model->getAltName();
-		ui->altNameCombo->setEnabled(true);
-		ui->altNameCombo->addItem("<none>");
-		for (i = 0; i < Mission_alt_type_count; i++) {
-			ui->altNameCombo->addItem(Mission_alt_types[i], QVariant(Mission_alt_types[i]));
-		}
-		if (ui->altNameCombo->findText(QString(altname.c_str()))) {
-			ui->altNameCombo->setCurrentIndex(ui->altNameCombo->findText(QString(altname.c_str())));
+	if (_model->getNumSelectedObjects()) {
+		if (_model->getIfMultipleShips()) {
+			ui->altNameCombo->setEnabled(false);
 		} else {
-			ui->altNameCombo->addItem(altname.c_str(), QVariant(altname.c_str()));
-			ui->altNameCombo->setCurrentIndex(ui->altNameCombo->findText(QString(altname.c_str())));
+			auto altname = _model->getAltName();
+			ui->altNameCombo->setEnabled(true);
+			ui->altNameCombo->addItem("<none>");
+			for (i = 0; i < Mission_alt_type_count; i++) {
+				ui->altNameCombo->addItem(Mission_alt_types[i]);
+			}
+			if (ui->altNameCombo->findText(QString(altname.c_str()))) {
+				ui->altNameCombo->setCurrentIndex(ui->altNameCombo->findText(QString(altname.c_str())));
+			} else {
+				ui->altNameCombo->setCurrentIndex(ui->altNameCombo->findText("<none>"));
+			}
 		}
 	}
 	ui->callsignCombo->clear();
-	if (_model->getIfMultipleShips()) {
-		ui->callsignCombo->setEnabled(false);
-	} else {
-		auto callsign = _model->getCallsign();
-		ui->callsignCombo->addItem("<none>");
-		ui->callsignCombo->setEnabled(true);
-		for (i = 0; i < Mission_callsign_count; i++) {
-			ui->callsignCombo->addItem(Mission_callsigns[i], QVariant(Mission_callsigns[i]));
-		}
-
-		if (ui->callsignCombo->findText(QString(callsign.c_str()))) {
-			ui->callsignCombo->setCurrentIndex(ui->callsignCombo->findText(QString(callsign.c_str())));
+	if (_model->getNumSelectedObjects()) {
+		if (_model->getIfMultipleShips()) {
+			ui->callsignCombo->setEnabled(false);
 		} else {
-			ui->callsignCombo->addItem(callsign.c_str(), QVariant(callsign.c_str()));
-			ui->callsignCombo->setCurrentIndex(ui->callsignCombo->findText(QString(callsign.c_str())));
+			auto callsign = _model->getCallsign();
+			ui->callsignCombo->addItem("<none>");
+			ui->callsignCombo->setEnabled(true);
+			for (i = 0; i < Mission_callsign_count; i++) {
+				ui->callsignCombo->addItem(Mission_callsigns[i], QVariant(Mission_callsigns[i]));
+			}
+
+			if (ui->callsignCombo->findText(QString(callsign.c_str()))) {
+				ui->callsignCombo->setCurrentIndex(ui->callsignCombo->findText(QString(callsign.c_str())));
+			} else {
+				ui->altNameCombo->setCurrentIndex(ui->callsignCombo->findText("<none>"));
+			}
 		}
 	}
 }
 void ShipEditorDialog::updateColumnTwo()
 {
+	util::SignalBlockers blockers(this);
 	int i;
 	ui->wing->setText(_model->getWing().c_str());
 
@@ -336,6 +328,7 @@ void ShipEditorDialog::updateColumnTwo()
 }
 void ShipEditorDialog::updateArrival()
 {
+	util::SignalBlockers blockers(this);
 	auto idx = _model->getArrivalLocation();
 	int i;
 	ui->arrivalLocationCombo->clear();
@@ -414,6 +407,7 @@ void ShipEditorDialog::updateArrival()
 }
 void ShipEditorDialog::updateDeparture()
 {
+	util::SignalBlockers blockers(this);
 	auto idx = _model->getDepartureLocation();
 	int i;
 	ui->departureLocationCombo->clear();
@@ -630,10 +624,18 @@ void ShipEditorDialog::enableDisable()
 	}
 }
 
+/*---------------------------------------------------------
+					WARNING
+Do not try to optimise string entries this convoluted method is necessary to avoid fata errors caused by QT
+-----------------------------------------------------------*/
 void ShipEditorDialog::shipNameChanged()
 {
-	const SCP_string text = ui->shipNameEdit->text().toUtf8().toStdString();
-	_model->setShipName(text);
+	const QString entry = ui->shipNameEdit->text();
+	if (!entry.isEmpty() && entry != _model->getShipName().c_str()) {
+		const auto textBytes = entry.toUtf8();
+		const std::string NewShipName = textBytes.toStdString();
+		_model->setShipName(NewShipName);
+	}
 }
 void ShipEditorDialog::shipClassChanged(const int index)
 {
@@ -652,22 +654,31 @@ void ShipEditorDialog::teamChanged(const int index)
 }
 void ShipEditorDialog::cargoChanged()
 {
-	QString test = ui->cargoCombo->lineEdit()->text();
-	if (test != "") {
-		const SCP_string text = test.toUtf8().toStdString();
-		_model->setCargo(text);
+	const QString entry = ui->cargoCombo->lineEdit()->text();
+	if (!entry.isEmpty() && entry != _model->getCargo().c_str()) {
+		const auto textBytes = entry.toUtf8();
+		const SCP_string NewCargo = textBytes.toStdString();
+		_model->setCargo(NewCargo);
 	}
 }
 void ShipEditorDialog::altNameChanged()
 {
-	_model->setAltName(ui->altNameCombo->lineEdit()->text().toStdString());
+	const QString entry = ui->altNameCombo->lineEdit()->text();
+	if (!entry.isEmpty() && entry != _model->getAltName().c_str()) {
+		const auto textBytes = entry.toUtf8();
+		const SCP_string NewAltname = textBytes.toStdString();
+		_model->setAltName(NewAltname);
+	}
 }
-void ShipEditorDialog::altNameChanged(const QString& value) { _model->setAltName(value.toStdString()); }
 void ShipEditorDialog::callsignChanged()
 {
-	_model->setCallsign(ui->callsignCombo->lineEdit()->text().toStdString());
+	const QString entry = ui->callsignCombo->lineEdit()->text();
+	if (!entry.isEmpty() && entry != _model->getCallsign().c_str()) {
+		const auto textBytes = entry.toUtf8();
+		const SCP_string newCallsign = textBytes.toStdString();
+		_model->setCallsign(newCallsign);
+	}
 }
-void ShipEditorDialog::callsignChanged(const QString& value) { _model->setCallsign(value.toStdString()); }
 void ShipEditorDialog::hotkeyChanged(const int index)
 {
 	auto hotkeyIdx = ui->hotkeyCombo->itemData(index).value<int>();
