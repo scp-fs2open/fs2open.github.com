@@ -330,6 +330,7 @@ void ship_select_common_init();
 void ss_reset_selected_ship();
 void ss_restore_loadout();
 void maybe_change_selected_wing_ship(int wb_num, int ws_num);
+int ss_get_slot_occupancy(const ss_slot_info &ss, bool retain_player_status);
 
 // init functions
 void ss_init_pool(team_data *pteam);
@@ -833,6 +834,17 @@ void maybe_change_selected_wing_ship(int wb_num, int ws_num)
 		Selected_ss_class = Wss_slots[wb_num*MAX_WING_SLOTS+ws_num].ship_class;
 		start_ship_animation(Selected_ss_class, 1);
 	}
+}
+
+int ss_get_slot_occupancy(const ss_slot_info &ss, bool retain_player_status)
+{
+	int mask = ~(WING_SLOT_SHIPS_DISABLED | WING_SLOT_WEAPONS_DISABLED);
+
+	if (!retain_player_status) {
+		mask &= ~WING_SLOT_IS_PLAYER;
+	}
+
+	return ss.status & mask;
 }
 
 // ---------------------------------------------------------------------
@@ -2100,16 +2112,14 @@ void pick_from_wing(int wb_num, int ws_num)
 		return;
 	}
 
-	Assertion(!(ws->status & WING_SLOT_LOCKED), "Attempt to pick from locked slot. Please reprot!");
+	Assertion(!(ws->status & WING_SLOT_LOCKED),
+		"Attempt to pick from locked wing slot (status %d). Please reprot!",
+		ws->status);
 	Assertion(!(ws->status & (WING_SLOT_EMPTY | WING_SLOT_FILLED)),
 		"Wing slot status (%d) is somehow both empty and filled. Please erport!",
 		ws->status);
 
-	// filter out irreelvant flags
-	const int mask = ~(WING_SLOT_IS_PLAYER | WING_SLOT_SHIPS_DISABLED | WING_SLOT_WEAPONS_DISABLED);
-	const int masked_status = ws->status & mask;
-
-	switch ( masked_status ) {
+	switch (ss_get_slot_occupancy(*ws, false)) {
 		case WING_SLOT_EMPTY:
 			// TODO: add fail sound
 			return;
@@ -2130,7 +2140,8 @@ void pick_from_wing(int wb_num, int ws_num)
 			break;
 
 		default:
-			UNREACHABLE("Wing slot has value (%d) is neither empty nor filled. Please report!", masked_status);
+			UNREACHABLE("Attempt to pick from wing slot with unknown occupancy (status %d). Please report!",
+				ws->status);
 			break;
 
 	} // end switch
@@ -2146,7 +2157,7 @@ void pick_from_wing(int wb_num, int ws_num)
 //				hot_slot	=>		index of slot that mouse is over
 //				selected_slot	=>	index of slot that is selected
 //				class_select	=>	all ships of this class are drawn selected (send -1 to not use)
-void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_select, bool ship_selection )
+void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_select)
 {
 	GR_DEBUG_SCOPE("Wing block");
 
@@ -2154,7 +2165,7 @@ void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_sele
 	ss_slot_info	*ws;
 	ss_icon_info	*icon;
 	wing				*wp;
-	int				i, w, h, sx, sy, slot_index, mask;
+	int				i, w, h, sx, sy, slot_index;
 	int				bitmap_to_draw = -1;
 	color			*color_to_draw = NULL;
 	//shader			*shader_to_use = NULL;
@@ -2188,17 +2199,7 @@ void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_sele
 			icon = NULL;
 		}
 
-		// filter out irrelevant flags
-		mask = ~WING_SLOT_LOCKED;
-		mask &= ~WING_SLOT_IS_PLAYER;
-		if (ship_selection) {
-			mask &= ~WING_SLOT_WEAPONS_DISABLED;
-		}
-		else {
-			mask &= ~WING_SLOT_SHIPS_DISABLED;
-		}
-
-		switch(ws->status & mask ) {
+		switch (ss_get_slot_occupancy(*ws, false)) {
 			case WING_SLOT_FILLED:
 
 				Assert(icon);
@@ -2273,7 +2274,7 @@ void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_sele
 				bitmap_to_draw = Wing_slot_empty_bitmap;
 				break;
 
-			default:
+			case WING_SLOT_LOCKED:
 				if ( icon ) {
 					if(icon->model_index == -1)
 						bitmap_to_draw = icon->icon_bmaps[ICON_FRAME_DISABLED];
@@ -2282,6 +2283,10 @@ void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_sele
 				} else {
 					bitmap_to_draw = Wing_slot_disabled_bitmap;
 				}
+				break;
+
+			default:
+				UNREACHABLE("Attempt to draw wing slot with unknown occupancy (status %d). Please report!", ws->status);
 				break;
 		}	// end switch
 
@@ -2505,10 +2510,8 @@ int create_wings()
 
 		for ( j = 0; j < MAX_WING_SLOTS; j++ ) {
 			ws = &wb->ss_slots[j];
-			// filter out irrelevant flags, retaining player status
-			const int mask = ~(WING_SLOT_SHIPS_DISABLED | WING_SLOT_WEAPONS_DISABLED);
-			const int masked_status = ws->status & mask;
-			switch ( masked_status ) {
+
+			switch (ss_get_slot_occupancy(*ws, true)) {
 				case WING_SLOT_EMPTY:
 					// delete ship that is not going to be used by the wing
 					if ( wb->is_late ) {
