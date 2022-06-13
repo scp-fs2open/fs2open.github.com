@@ -2997,7 +2997,9 @@ void ss_clear_slots()
 		}
 	}
 
-	reset_player_slot();
+	if (Ss_player_slot != nullptr) {
+		reset_player_slot();
+	}
 }
 
 // initialize all wing struct stuff
@@ -3133,7 +3135,7 @@ void ss_init_units()
 				objnum = Ships[wp->ship_index[j]].objnum;
 				if ( Objects[objnum].flags[Object::Object_Flags::Player_ship] ) {
 					// retail had a hack to mark the player's slot as filled, even if it was locked
-					ss_slot->status == SlotStatus::Filled;
+					ss_slot->status = SlotStatus::Filled;
 					if ( objnum == OBJ_INDEX(Player_obj) ) {
 						set_player_slot(ss_slot);
 					}
