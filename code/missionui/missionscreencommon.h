@@ -127,17 +127,6 @@ int common_scroll_up_pressed(int *start, int size, int max_show);
 #define MAX_WING_BLOCKS	3
 #define	MAX_WSS_SLOTS	(MAX_WING_BLOCKS*MAX_WING_SLOTS)
 
-#define WING_SLOT_FILLED				(1<<0)
-#define WING_SLOT_EMPTY					(1<<1)
-#define WING_SLOT_IS_PLAYER			(1<<3)
-#define WING_SLOT_LOCKED				(1<<4)
-#define WING_SLOT_SHIPS_DISABLED		(1<<5)
-#define WING_SLOT_WEAPONS_DISABLED		(1<<6)
-
-#define WING_SLOT_DISABLED			(WING_SLOT_SHIPS_DISABLED|WING_SLOT_WEAPONS_DISABLED)
-#define WING_SLOT_IGNORE_SHIPS		(WING_SLOT_SHIPS_DISABLED|WING_SLOT_LOCKED)
-#define WING_SLOT_IGNORE_WEAPONS	(WING_SLOT_WEAPONS_DISABLED|WING_SLOT_LOCKED)
-
 // different operations used in xx_apply()
 #define WSS_DUMP_TO_LIST		0
 #define WSS_GRAB_FROM_LIST		1
