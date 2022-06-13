@@ -1794,13 +1794,16 @@ void ship_hit_kill(object *ship_objp, object *other_obj, vec3d *hitpos, float pe
 {
 	Assert(ship_objp);	// Goober5000 - but not other_obj, not only for sexp but also for self-destruct
 
-	// add scripting hook for 'On Ship Death Started' -- Goober5000
-	// hook is placed at the beginning of this function to allow the scripter to
-	// actually have access to the ship before any death routines (such as mission logging) are executed
-	if (hitpos)
-		OnShipDeathStartedHook->run(scripting::hook_param_list(scripting::hook_param("Ship", 'o', ship_objp), scripting::hook_param("Killer", 'o', other_obj), scripting::hook_param("Hitpos", 'o', scripting::api::l_Vector.Set(*hitpos))));
-	else
-		OnShipDeathStartedHook->run(scripting::hook_param_list(scripting::hook_param("Ship", 'o', ship_objp), scripting::hook_param("Killer", 'o', other_obj)));
+	if (OnShipDeathStartedHook->isActive())
+	{
+		// add scripting hook for 'On Ship Death Started' -- Goober5000
+		// hook is placed at the beginning of this function to allow the scripter to
+		// actually have access to the ship before any death routines (such as mission logging) are executed
+		if (hitpos)
+			OnShipDeathStartedHook->run(scripting::hook_param_list(scripting::hook_param("Ship", 'o', ship_objp), scripting::hook_param("Killer", 'o', other_obj), scripting::hook_param("Hitpos", 'o', scripting::api::l_Vector.Set(*hitpos))));
+		else
+			OnShipDeathStartedHook->run(scripting::hook_param_list(scripting::hook_param("Ship", 'o', ship_objp), scripting::hook_param("Killer", 'o', other_obj)));
+	}
 
 	if(scripting::hooks::OnDeath->isActive())
 	{
@@ -2976,8 +2979,12 @@ void ship_hit_pain(float damage, int quadrant)
 			game_flash(damage * Generic_pain_flash_factor / 15.0f, -damage * Generic_pain_flash_factor / 30.0f, -damage * Generic_pain_flash_factor / 30.0f);
 			pain_type = 1;
 		}
-		// add scripting hook for 'On Pain Flash' --wookieejedi
-		OnPainFlashHook->run(scripting::hook_param_list(scripting::hook_param("Pain_Type", 'i', pain_type)));
+
+		if (OnPainFlashHook->isActive())
+		{
+			// add scripting hook for 'On Pain Flash' --wookieejedi
+			OnPainFlashHook->run(scripting::hook_param_list(scripting::hook_param("Pain_Type", 'i', pain_type)));
+		}
     }
 
 	// kill any active popups when you get hit.

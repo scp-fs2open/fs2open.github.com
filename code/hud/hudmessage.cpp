@@ -603,8 +603,10 @@ void hud_sourced_print(int source, const char *msg)
 	HUD_msg_buffer.push_back(new_msg);
 
 	// Invoke the scripting hook
-	OnHudMessageReceivedHook->run(scripting::hook_param_list(scripting::hook_param("Text", 's', msg),
-															 scripting::hook_param("SourceType", 'i', source)));
+	if (OnHudMessageReceivedHook->isActive()) {
+		OnHudMessageReceivedHook->run(scripting::hook_param_list(scripting::hook_param("Text", 's', msg),
+			scripting::hook_param("SourceType", 'i', source)));
+	}
 }
 
 int hud_query_scrollback_size()

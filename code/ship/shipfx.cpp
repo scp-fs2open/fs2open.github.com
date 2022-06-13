@@ -537,10 +537,13 @@ void shipfx_warpin_start( object *objp )
 	}
 
 	//WMC - Check if scripting handles this.
-	if(OnWarpInHook->isOverride(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp)), objp))
+	if (OnWarpInHook->isActive())
 	{
-		OnWarpInHook->run(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp)), objp);
-		return;
+		if (OnWarpInHook->isOverride(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp)), objp))
+		{
+			OnWarpInHook->run(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp)), objp);
+			return;
+		}
 	}
 
 	// if there is no arrival warp, set the flag but don't create the effect
@@ -554,7 +557,10 @@ void shipfx_warpin_start( object *objp )
 	Assertion(shipp->warpin_effect != nullptr, "shipfx_warpin_start() was fed a ship with an uninitialized warpin_effect.");
 	shipp->warpin_effect->warpStart();
 
-	OnWarpInHook->run(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp)), objp);
+	if (OnWarpInHook->isActive())
+	{
+		OnWarpInHook->run(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp)), objp);
+	}
 }
 
 void shipfx_warpin_frame( object *objp, float frametime )
@@ -673,9 +679,11 @@ void shipfx_warpout_start( object *objp )
 		return;
 	}
 
-	if (OnWarpOutHook->isOverride(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp)), objp)) {
-		OnWarpOutHook->run(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp)), objp);
-		return;
+	if (OnWarpOutHook->isActive()) {
+		if (OnWarpOutHook->isOverride(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp)), objp)) {
+			OnWarpOutHook->run(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp)), objp);
+			return;
+		}
 	}
 
 	// if we're dying return
@@ -712,7 +720,9 @@ void shipfx_warpout_start( object *objp )
 			  "shipfx_warpout_start() was fed a ship with an uninitialized warpout_effect.");
 	shipp->warpout_effect->warpStart();
 
-	OnWarpOutHook->run(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp)), objp);
+	if (OnWarpOutHook->isActive()) {
+		OnWarpOutHook->run(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp)), objp);
+	}
 }
 
 void shipfx_warpout_frame( object *objp, float frametime )

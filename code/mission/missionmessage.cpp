@@ -1633,13 +1633,15 @@ void message_queue_process()
 	if (Message_shipnum >= 0) {
 		sender = &Objects[Ships[Message_shipnum].objnum];
 	}
-	OnMessageReceivedHook->run(scripting::hook_param_list(
-		scripting::hook_param("Name", 's', m->name),
-		scripting::hook_param("MessageHandle", 'o', scripting::api::l_Message.Set(q->message_num)),
-		scripting::hook_param("Message", 's', buf),
-		scripting::hook_param("SenderString", 's', who_from),
-		scripting::hook_param("Builtin", 'b', builtinMessage),
-		scripting::hook_param("Sender", 'o', sender)));
+	if (OnMessageReceivedHook->isActive()) {
+		OnMessageReceivedHook->run(scripting::hook_param_list(
+			scripting::hook_param("Name", 's', m->name),
+			scripting::hook_param("MessageHandle", 'o', scripting::api::l_Message.Set(q->message_num)),
+			scripting::hook_param("Message", 's', buf),
+			scripting::hook_param("SenderString", 's', who_from),
+			scripting::hook_param("Builtin", 'b', builtinMessage),
+			scripting::hook_param("Sender", 'o', sender)));
+	}
 
 	Num_messages_playing++;		// this has to be done at the end because some sound functions use it to index into the array
 all_done:
