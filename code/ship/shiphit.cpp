@@ -80,14 +80,6 @@ const std::shared_ptr<scripting::Hook> OnPainFlashHook = scripting::Hook::Factor
 		{"Pain_Type", "number", "The type of pain flash displayed: shield = 0 and hull = 1."},
 	});
 
-const std::shared_ptr<scripting::Hook> OnShipDeathStartedHook = scripting::Hook::Factory(
-	"On Ship Death Started", "Called when a ship starts the death process.",
-	{
-		{"Ship", "ship", "The ship that has begun the death process."},
-		{"Killer", "object", "The object responsible for killing the ship.  Could be null."},
-		{"Hitpos", "vector", "The world coordinates of the killing blow.  Could be null."},
-	});
-
 
 //WMC - Camera rough draft stuff
 /*
@@ -1794,18 +1786,21 @@ void ship_hit_kill(object *ship_objp, object *other_obj, vec3d *hitpos, float pe
 {
 	Assert(ship_objp);	// Goober5000 - but not other_obj, not only for sexp but also for self-destruct
 
-	if (OnShipDeathStartedHook->isActive())
+	if (scripting::hooks::OnShipDeathStarted->isActive())
 	{
 		// add scripting hook for 'On Ship Death Started' -- Goober5000
 		// hook is placed at the beginning of this function to allow the scripter to
 		// actually have access to the ship before any death routines (such as mission logging) are executed
-		if (hitpos)
-			OnShipDeathStartedHook->run(scripting::hook_param_list(scripting::hook_param("Ship", 'o', ship_objp), scripting::hook_param("Killer", 'o', other_obj), scripting::hook_param("Hitpos", 'o', scripting::api::l_Vector.Set(*hitpos))));
-		else
-			OnShipDeathStartedHook->run(scripting::hook_param_list(scripting::hook_param("Ship", 'o', ship_objp), scripting::hook_param("Killer", 'o', other_obj)));
+		scripting::hooks::OnShipDeathStarted->run(scripting::hook_param_list(
+			scripting::hook_param("Ship", 'o', ship_objp),
+			scripting::hook_param("Killer", 'o', other_obj),
+			scripting::hook_param("Hitpos",
+				'o',
+				scripting::api::l_Vector.Set(hitpos ? *hitpos : vmd_zero_vector),
+				hitpos != nullptr)));
 	}
 
-	if(scripting::hooks::OnDeath->isActive())
+	if (scripting::hooks::OnDeath->isActive())
 	{
 		auto onDeathParamList = scripting::hook_param_list(scripting::hook_param("Self", 'o', ship_objp),
 			scripting::hook_param("Ship", 'o', ship_objp),
@@ -1816,7 +1811,6 @@ void ship_hit_kill(object *ship_objp, object *other_obj, vec3d *hitpos, float pe
 				hitpos != nullptr));
 
 		if (scripting::hooks::OnDeath->isOverride(onDeathParamList, ship_objp)) {
-			//WMC - Do scripting stuff
 			scripting::hooks::OnDeath->run(onDeathParamList, ship_objp);
 			return;
 		}
@@ -1981,6 +1975,17 @@ void ship_hit_kill(object *ship_objp, object *other_obj, vec3d *hitpos, float pe
 				hitpos != nullptr));
 
 		scripting::hooks::OnDeath->run(onDeathParamList, ship_objp);
+	}
+	if (scripting::hooks::OnShipDeath->isActive()) {
+		auto onDeathParamList = scripting::hook_param_list(
+			scripting::hook_param("Ship", 'o', ship_objp),
+			scripting::hook_param("Killer", 'o', other_obj),
+			scripting::hook_param("Hitpos",
+				'o',
+				scripting::api::l_Vector.Set(hitpos ? *hitpos : vmd_zero_vector),
+				hitpos != nullptr));
+
+		scripting::hooks::OnShipDeath->run(onDeathParamList, ship_objp);
 	}
 }
 

@@ -1621,8 +1621,6 @@ extern void ship_cleanup(int shipnum, int cleanup_mode);
 extern void ship_destroy_instantly(object *ship_obj, bool with_debris = false);
 extern void ship_actually_depart(int shipnum, int method = SHIP_DEPARTED_WARP);
 
-extern const std::shared_ptr<scripting::Hook> OnShipDeathStartedHook;
-
 extern bool in_autoaim_fov(ship *shipp, int bank_to_fire, object *obj);
 extern int ship_stop_fire_primary(object * obj);
 extern int ship_fire_primary(object * objp, int force = 0, bool rollback_shot = false);
