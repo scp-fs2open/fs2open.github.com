@@ -27,6 +27,7 @@ namespace CampaignEditorUtil {
 		QString msg{};
 		QString type{};
 
+		WarningMsg() = default;
 		WarningMsg(QString &&title, QString &&msg, QString &&type);
 	};
 	class WarningVec : public QObject, public QVector<WarningMsg>
