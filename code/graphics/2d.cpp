@@ -2560,8 +2560,6 @@ void gr_flip(bool execute_scripting)
 		if (OnFrameHook->isActive()) {
 			OnFrameHook->run();
 		}
-		// WMC - Do scripting reset stuff
-		Script_system.EndFrame();
 	}
 
 	gr_reset_immediate_buffer();

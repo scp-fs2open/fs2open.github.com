@@ -185,11 +185,6 @@ int script_state::CreateLuaState()
 	return 1;
 }
 
-void script_state::EndLuaFrame()
-{
-	scripting::api::graphics_on_frame();
-}
-
 static bool sort_table_entries(const ade_table_entry* left, const ade_table_entry* right) {
 	const char* leftCmp = left->Name != nullptr ? left->Name : left->ShortName;
 	const char* rightCmp = right->Name != nullptr ? right->Name : left->ShortName;
