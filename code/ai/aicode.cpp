@@ -1261,43 +1261,7 @@ void ai_turn_towards_vector(vec3d* dest, object* objp, vec3d* slide_vec, vec3d* 
 		}
 	}
 
-	//	Set rate at which ship can accelerate to its rotational velocity.
-	//	For now, weapons just go much faster.
-	acc_limit = vel_limit;
-	if (objp->type == OBJ_WEAPON)
-		acc_limit *= 8.0f;
-
-	// do _proper_ handling of acc_limit and vel_limit if this flag is set
-	if (Framerate_independent_turning) {
-		// handle modifications to rotdamp (that could affect acc_limit and vel_limit)
-		// handled in its entirety in physics_sim_rot 
-		float rotdamp = pip->rotdamp;
-		float shock_fraction_time_left = 0.f;
-		if (pip->flags & PF_IN_SHOCKWAVE) {
-			shock_fraction_time_left = timestamp_until(pip->shockwave_decay) / (float)SW_BLAST_DURATION;
-			if (shock_fraction_time_left > 0)
-				rotdamp = pip->rotdamp + pip->rotdamp * (SW_ROT_FACTOR - 1) * shock_fraction_time_left;
-		}
-
-		if (Ai_respect_tabled_turntime_rotdamp) {
-			// We're assuming the turn rate here is accurate so leave it as is
-			// but we'll use the ship's rotdamp to modify acc_limit
-			// (this is the polynomial approximation of the exponential effect rotdamp has on players)
-			if (rotdamp == 0.f)
-				acc_limit *= 1000.f;
-			else
-				acc_limit = vel_limit * (0.5f / rotdamp);
-		}
-		else { 
-			// else, calculate the retail-friendly vel and acc values
-			ai_compensate_for_retail_turning(&vel_limit, &acc_limit, rotdamp, objp->type == OBJ_WEAPON);
-
-			// handle missile turning accel (which is bundled into rotdamp)
-			if (objp->type == OBJ_WEAPON && rotdamp != 0.f) {
-				acc_limit = vel_limit * (0.5f / rotdamp);
-			}
-		}
-	}
+	acc_limit = ai_get_acc_limit(&vel_limit, objp);
 
 	// for formation flying
 	if ((flags & AITTV_SLOW_BANK_ACCEL)) {
@@ -1363,6 +1327,52 @@ void ai_turn_towards_vector(vec3d* dest, object* objp, vec3d* slide_vec, vec3d* 
 	}
 
 }
+
+//vel_limit can be modified if the object is a weapon and retail behaviour is enabled
+vec3d ai_get_acc_limit(vec3d* vel_limit, const object* objp) {
+	//	Set rate at which ship can accelerate to its rotational velocity.
+	//	For now, weapons just go much faster.
+	vec3d acc_limit = *vel_limit;
+	if (objp->type == OBJ_WEAPON)
+		acc_limit *= 8.0f;
+
+	const physics_info* pip = &objp->phys_info;
+
+	// do _proper_ handling of acc_limit and vel_limit if this flag is set
+	if (Framerate_independent_turning) {
+		// handle modifications to rotdamp (that could affect acc_limit and vel_limit)
+		// handled in its entirety in physics_sim_rot 
+		float rotdamp = pip->rotdamp;
+		float shock_fraction_time_left = 0.f;
+		if (pip->flags & PF_IN_SHOCKWAVE) {
+			shock_fraction_time_left = timestamp_until(pip->shockwave_decay) / (float)SW_BLAST_DURATION;
+			if (shock_fraction_time_left > 0)
+				rotdamp = pip->rotdamp + pip->rotdamp * (SW_ROT_FACTOR - 1) * shock_fraction_time_left;
+		}
+
+		if (Ai_respect_tabled_turntime_rotdamp) {
+			// We're assuming the turn rate here is accurate so leave it as is
+			// but we'll use the ship's rotdamp to modify acc_limit
+			// (this is the polynomial approximation of the exponential effect rotdamp has on players)
+			if (rotdamp == 0.f)
+				acc_limit *= 1000.f;
+			else
+				acc_limit = *vel_limit * (0.5f / rotdamp);
+		}
+		else {
+			// else, calculate the retail-friendly vel and acc values
+			ai_compensate_for_retail_turning(vel_limit, &acc_limit, rotdamp, objp->type == OBJ_WEAPON);
+
+			// handle missile turning accel (which is bundled into rotdamp)
+			if (objp->type == OBJ_WEAPON && rotdamp != 0.f) {
+				acc_limit = *vel_limit * (0.5f / rotdamp);
+			}
+		}
+	}
+
+	return acc_limit;
+}
+
 
 //	Set aip->target_objnum to objnum
 //	Update aip->previous_target_objnum.
