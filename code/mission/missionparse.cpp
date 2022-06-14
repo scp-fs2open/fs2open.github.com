@@ -1841,7 +1841,7 @@ int parse_create_object(p_object *pobjp, bool standalone_ship)
 		// if the leader will be destroyed before the mission starts, then *only* create the leader;
 		// don't create the rest of the group (this is what retail did)
 		if (pobjp->destroy_before_mission_time >= 0)
-			return parse_create_object_sub(pobjp, standalone_ship);
+			return parse_create_object_sub(pobjp);
 
 		// store the leader as a parameter
 		dfi.parameter_variables.objp_value = pobjp;
