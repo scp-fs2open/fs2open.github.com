@@ -1584,7 +1584,7 @@ extern void ship_init();				// called once	at game start
 extern void ship_level_init();		// called before the start of each level
 
 //returns -1 if failed
-extern int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name = nullptr);
+extern int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name = nullptr, bool standalone_ship = false);
 extern void change_ship_type(int n, int ship_type, int by_sexp = 0);
 extern void ship_process_pre( object * objp, float frametime );
 extern void ship_process_post( object * objp, float frametime );

@@ -1564,7 +1564,7 @@ void multi_create_standalone_object()
 	Net_player->m_player->objnum = objnum;
 
 	// create the default player ship object and use that as my default virtual "ship", and make it "invisible"
-	pobj_num = parse_create_object(Player_start_pobject);
+	pobj_num = parse_create_object(Player_start_pobject, true);
 	Assert(pobj_num != -1);
     flagset<Object::Object_Flags> tmp_flags;
 	obj_set_flags(&Objects[pobj_num], tmp_flags + Object::Object_Flags::Player_ship);

@@ -196,7 +196,7 @@ int	Player_ship_class;	// needs to be player specific, move to player structure
 #define		SHIP_OBJ_USED	(1<<0)				// flag used in ship_obj struct
 #define		MAX_SHIP_OBJS	MAX_SHIPS			// max number of ships tracked in ship list
 ship_obj		Ship_objs[MAX_SHIP_OBJS];		// array used to store ship object indexes
-ship_obj		Ship_obj_list;							// head of linked list of ship_obj structs
+ship_obj		Ship_obj_list;							// head of linked list of ship_obj structs, Standalone ship cannot be in this list or it will cause bugs.
 
 SCP_vector<ship_info>	Ship_info;
 reinforcements	Reinforcements[MAX_REINFORCEMENTS];
@@ -9882,7 +9882,7 @@ static void ship_init_afterburners(ship *shipp)
  * Returns object index of ship.
  * @return -1 means failed.
  */
-int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name)
+int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name, bool standalone_ship)
 {
 	int			i, n, objnum, j, k, t;
 	ship_info	*sip;
@@ -10074,8 +10074,10 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 
 	animation::anim_set_initial_states(shipp);
 
-	// Add this ship to Ship_obj_list
-	shipp->ship_list_index = ship_obj_list_add(objnum);
+	// Add this ship to Ship_obj_list, if it is *not* the standalone ship.  That can cause big time bugs.
+	if (!standalone_ship){
+		shipp->ship_list_index = ship_obj_list_add(objnum);
+	}
 
 	// Goober5000 - update the ship registry
 	// (since scripts and sexps can create ships, the entry may not yet exist)
