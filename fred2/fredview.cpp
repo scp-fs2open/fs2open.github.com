@@ -2992,6 +2992,7 @@ int CFREDView::global_error_check()
 	for (i=0; i<MAX_WINGS; i++) {
 		int starting_wing;
 		std::set<size_t> default_orders;
+		int default_orders_idx = -1;
 
 		if ( !Wings[i].wave_count ){
 			continue;
@@ -3003,18 +3004,26 @@ int CFREDView::global_error_check()
 		// first, be sure this isn't a reinforcement wing.
 		if ( starting_wing && (Wings[i].flags[Ship::Wing_Flags::Reinforcement]) ) {
 			if ( error("Starting Wing %s marked as reinforcement.  This wing\nshould either be renamed, or unmarked as reinforcement.", Wings[i].name) ){
-// Goober5000				return 1;
+				return 1;
 			}
 		}
 		
 		for ( j = 0; j < Wings[i].wave_count; j++ ) {
 			std::set<size_t> orders;
 
+			// exclude players from the check
+			if (Objects[Ships[Wings[i].ship_index[j]].objnum].type == OBJ_START) {
+				continue;
+			}
+
 			orders = Ships[Wings[i].ship_index[j]].orders_accepted;
-			if ( j == 0 ) {
+
+			if ( default_orders_idx < 0 ) {
+				default_orders_idx = j;
 				default_orders = orders;
+
 			} else if ( default_orders != orders ) {
-				if (error("%s and %s will accept different orders. All ships in a wing must accept the same Player Orders.", Ships[Wings[i].ship_index[j]].ship_name, Ships[Wings[i].ship_index[0]].ship_name ) ){
+				if (error("%s and %s will accept different orders. All ships in a wing must accept the same Player Orders.", Ships[Wings[i].ship_index[j]].ship_name, Ships[Wings[i].ship_index[default_orders_idx]].ship_name)) {
 					return 1;
 				}
 			}
@@ -3028,7 +3037,7 @@ int CFREDView::global_error_check()
 			} else {
 				if ( starting_orders != default_orders ) {
 					if ( error("Player starting wing %s has orders which don't match other starting wings\n", Wings[i].name) ){
-// Goober5000						return 1;
+						return 1;
 					}
 				}
 			}
