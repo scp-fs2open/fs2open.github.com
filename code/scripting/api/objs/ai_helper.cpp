@@ -68,11 +68,11 @@ inline int pi_rotation_getset_helper(lua_State* L, int axis) {
 	}
 	vec3d acc_limit = ai_get_acc_limit(&vel_limit, ship.objp);
 
-	float currentThrustVel = ((ship.objp->phys_info.desired_rotvel.a1d[axis] - ship.objp->phys_info.rotvel.a1d[axis]) / AI_frametime) / acc_limit.a1d[axis];
+	float currentThrustRate = ((ship.objp->phys_info.desired_rotvel.a1d[axis] - ship.objp->phys_info.rotvel.a1d[axis]) / AI_frametime) / acc_limit.a1d[axis];
 
 	if (ADE_SETTING_VAR) {
-		currentThrustVel = f;
-		float targetVel = currentThrustVel * acc_limit.a1d[axis] * AI_frametime + ship.objp->phys_info.rotvel.a1d[axis];
+		currentThrustRate = f;
+		float targetVel = currentThrustRate * acc_limit.a1d[axis] * AI_frametime + ship.objp->phys_info.rotvel.a1d[axis];
 		CLAMP(targetVel, -vel_limit.a1d[axis], vel_limit.a1d[axis]);
 		ship.objp->phys_info.desired_rotvel.a1d[axis] = targetVel;
 
@@ -84,7 +84,7 @@ inline int pi_rotation_getset_helper(lua_State* L, int axis) {
 		vm_matrix_x_matrix(&ship.objp->phys_info.ai_desired_orient, &ship.objp->orient, &rotmat);
 	}
 
-	return ade_set_args(L, "f", currentThrustVel);
+	return ade_set_args(L, "f", currentThrustRate);
 }
 
 ADE_VIRTVAR(Pitch, l_AI_Helper, "number", "The pitch thrust rate for the ship this frame, -1 to 1", "number", "The pitch rate, or 0 if the handle is invalid")
