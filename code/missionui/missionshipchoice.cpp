@@ -2100,7 +2100,7 @@ void pick_from_wing(int wb_num, int ws_num)
 		return;
 	}
 
-	switch ( ws->status ) {
+	switch ( ws->status & ~WING_SLOT_WEAPONS_DISABLED ) {
 		case WING_SLOT_EMPTY:
 		case WING_SLOT_EMPTY|WING_SLOT_IS_PLAYER:
 			// TODO: add fail sound
@@ -2499,7 +2499,7 @@ int create_wings()
 
 		for ( j = 0; j < MAX_WING_SLOTS; j++ ) {
 			ws = &wb->ss_slots[j];
-			switch( ws->status ) {
+			switch( ws->status & ~WING_SLOT_WEAPONS_DISABLED ) {
 				case WING_SLOT_EMPTY:	
 					// delete ship that is not going to be used by the wing
 					if ( wb->is_late ) {
