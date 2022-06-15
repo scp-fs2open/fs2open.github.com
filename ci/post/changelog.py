@@ -1,5 +1,6 @@
 # Retrives a log of commit messages and attempts to pretty them into a human-readbile format
 
+import argparse
 import os
 import re
 import requests
@@ -42,9 +43,16 @@ def get_last_page(response: requests.Response) -> int:
     
 
 def main():
+    parser = argparse.ArgumentParser(description="Retrieves a log of commit messages and attempts to pretty them into a human-readable format")
+    parser.add_argument("start_date",
+                        help="Day of the earliest commit to add to the log.")
+    parser.add_argument("-u", "--user", nargs=2, metavar=("NAME", "TOKEN"), default=["", ""],
+                        help="Github username and token/password")
+
+    args = parser.parse_args()
+
     os.chdir(os.path.dirname(__file__))	# Change working directory to this file's directory
-    
-    start_date = datetime.strptime(sys.argv[1], "%Y-%m-%d")
+    start_date = datetime.strptime(args.start_date, "%Y-%m-%d")
 
     print("start_date: {}".format(start_date))
 
@@ -76,10 +84,13 @@ def main():
 
     changelog = {}
     url = "https://api.github.com/repos/scp-fs2open/fs2open.github.com/pulls"
+    page = 1
     last_page = MAX_PAGES
-    for page in range(1, last_page + 1):
+    while page <= last_page:
         # GET <url>?base=master&sort=updated&direction=desc&state=closed&page=1
-        response = requests.get(url, params={
+        response = requests.get(url,
+        auth=(args.user[0], args.user[1]),
+        params={
             "base": "master",
             "direction": "desc",
             "page": page,
@@ -139,6 +150,8 @@ def main():
                 }
                 print("Added pull #{} ({})".format(pull['number'], merge_date))
             # Else, silently ignore duplicate (for now...)
+
+        page += 1 # iterate to next page
 
 
     # Write the changelog to file
