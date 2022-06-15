@@ -3906,8 +3906,9 @@ void HudGaugeLeadIndicator::renderLeadCurrentTarget()
 	ship_weapon	*swp;
 	weapon_info	*wip;
 	weapon_info	*tmp=NULL;
-	float			dist_to_target, prange, srange;
-	int			bank_to_fire, frame_offset;
+	float		dist_to_target, prange, srange;
+	int			bank_to_fire;
+	int			frame_offset = -1;
 
 	if (Player_ai->target_objnum == -1)
 		return;
@@ -3960,6 +3961,22 @@ void HudGaugeLeadIndicator::renderLeadCurrentTarget()
 		}
 	}
 
+	// Determine "accurate" distance to target.
+	// This is the distance from the player ship to:
+	//   (if targeting a subsystem) the distance to the subsystem centre
+	//     (playing it safe, will usually be in range at slightly further away due to subsys radius)
+	//   (otherwise) the closest point on the bounding box of the target
+	if ( Player_ai->targeted_subsys != NULL ) {
+		dist_to_target = vm_vec_dist(&target_pos, &Player_obj->pos);
+	} else {
+		dist_to_target = hud_find_target_distance(targetp, Player_obj);
+	}
+
+	//Moved here to avoid potentially leaving wip undefined. These values will be
+	//overwritten if using non-default leadIndicatorBehaviors, this is desired.
+	bank_to_fire = hud_get_best_primary_bank(&prange);
+	wip = &Weapon_info[swp->primary_bank_weapons[bank_to_fire]];
+
 	if (Lead_indicator_behavior != leadIndicatorBehavior::DEFAULT && Player_ship->flags[Ship::Ship_Flags::Primary_linked]) {
 		vec3d averaged_lead_pos;
 		vm_vec_zero(&averaged_lead_pos);
@@ -3995,12 +4012,6 @@ void HudGaugeLeadIndicator::renderLeadCurrentTarget()
 				vm_vec_add2(&source_pos, &gun_point);
 			}
 
-			if ( Player_ai->targeted_subsys != NULL ) {
-				dist_to_target = vm_vec_dist(&target_pos, &Player_obj->pos);
-			} else {
-				dist_to_target = hud_find_target_distance(targetp, Player_obj);
-			}
-
 			auto weapon_range = MIN((wip->max_speed * wip->lifetime), wip->weapon_range);
 			if (weapon_range < dist_to_target)
 				continue;
@@ -4024,13 +4035,6 @@ void HudGaugeLeadIndicator::renderLeadCurrentTarget()
 		}
 	}
 	else {
-		bank_to_fire = hud_get_best_primary_bank(&prange);
-
-		if ( bank_to_fire < 0 )
-			return;
-
-		wip = &Weapon_info[swp->primary_bank_weapons[bank_to_fire]];
-
 		if (pm->n_guns && bank_to_fire != -1 ) {
 			rel_pos = &pm->gun_banks[bank_to_fire].pnt[0];
 		} else {
@@ -4047,17 +4051,6 @@ void HudGaugeLeadIndicator::renderLeadCurrentTarget()
 			vm_vec_add2(&source_pos, &gun_point);
 		}
 
-		// Determine "accurate" distance to target.
-		// This is the distance from the player ship to:
-		//   (if targeting a subsystem) the distance to the subsystem centre
-		//     (playing it safe, will usually be in range at slightly further away due to subsys radius)
-		//   (otherwise) the closest point on the bounding box of the target
-		if ( Player_ai->targeted_subsys != NULL ) {
-			dist_to_target = vm_vec_dist(&target_pos, &Player_obj->pos);
-		} else {
-			dist_to_target = hud_find_target_distance(targetp, Player_obj);
-		}
-
 		frame_offset = pickFrame(prange, srange, dist_to_target);
 		if ( frame_offset < 0 && srange != -1.0f ) {
 			return;
@@ -4068,6 +4061,9 @@ void HudGaugeLeadIndicator::renderLeadCurrentTarget()
 			renderIndicator(frame_offset, targetp, &lead_target_pos);
 		}
 	}
+
+	if ( bank_to_fire < 0 )
+		return;
 
 	//do dumbfire lead indicator - color is orange (255,128,0) - bright, (192,96,0) - dim
 	//phreak changed 9/01/02
@@ -4083,10 +4079,10 @@ void HudGaugeLeadIndicator::renderLeadCurrentTarget()
 
 		if (dist_to_target > max_dist)
 			return;
-	}
 
-	hud_calculate_lead_pos(&lead_target_pos, &target_pos, targetp, wip, dist_to_target);
-	renderIndicator(0, targetp, &lead_target_pos);
+		hud_calculate_lead_pos(&lead_target_pos, &target_pos, targetp, wip, dist_to_target);
+		renderIndicator(0, targetp, &lead_target_pos);
+	}
 }
 
 //Backslash
