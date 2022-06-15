@@ -4019,7 +4019,7 @@ void HudGaugeLeadIndicator::renderLeadCurrentTarget()
 			}
 		}
 		if (Lead_indicator_behavior == leadIndicatorBehavior::AVERAGE) {
-			averaged_lead_pos = averaged_lead_pos/average_instances;
+			averaged_lead_pos = averaged_lead_pos/i2fl(average_instances);
 			renderIndicator(frame_offset, targetp, &averaged_lead_pos);
 		}
 	}
