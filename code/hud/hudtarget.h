@@ -69,6 +69,12 @@ extern const char *Strafe_submode_text[];
 
 extern void hud_init_targeting_colors();
 
+enum leadIndicatorBehavior {
+    DEFAULT = 0,
+    MULTIPLE,
+    AVERAGE
+};
+
 /// \brief An abbreviation for "Evaluate Ship as Closest Target", defines a 
 ///        data structure used to hold the required arguments for evaluating 
 ///        a prospective closest target to an attacked object.
