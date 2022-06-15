@@ -1373,7 +1373,7 @@ void player_level_init()
 	Player->cargo_scan_loop    = sound_handle::invalid();
 	Player->cargo_inspect_time = 0;			// time that current target's cargo has been inspected for
 
-	Player->target_is_dying = -1;				// The player target is dying, set to -1 if no target
+	Player->target_is_dying = -1;				// Whether the player target is dying, -1 if no target
 	Player->current_target_sx = -1;			// Screen x-pos of current target (or subsystem if applicable)
 	Player->current_target_sy = -1;			// Screen y-pos of current target (or subsystem if applicable)
 	Player->target_in_lock_cone = -1;		// Is the current target in secondary weapon lock cone?

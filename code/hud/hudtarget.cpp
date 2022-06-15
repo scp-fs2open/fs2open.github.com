@@ -4523,6 +4523,7 @@ void HudGaugeTargetTriangle::render(float  /*frametime*/)
 	object *targetp = &Objects[Player_ai->target_objnum];
 
 	// draw the targeting triangle that orbits the outside of the outer circle of the reticle
+	// checking !target_is_dying is correct here, since you do not want -1 (no target) or 1(is actually dying)
 	if (!Player->target_is_dying && maybeFlashSexp() != 1) {
 
 		hud_set_iff_color(targetp, 1);
