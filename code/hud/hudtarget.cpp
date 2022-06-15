@@ -3953,8 +3953,9 @@ void HudGaugeLeadIndicator::renderLeadCurrentTarget()
 	{
 		int bank = swp->current_secondary_bank;
 		tmp = &Weapon_info[swp->secondary_bank_weapons[bank]];
-		if ( !(tmp->is_homing()) && !(tmp->is_locked_homing() && Player->target_in_lock_cone) ) {
-			//The secondary lead indicator is handled farther below if it is a non-locking type
+		if ( tmp->wi_flags[Weapon::Info_Flags::Dont_merge_indicators] 
+		|| (!(tmp->is_homing()) && !(tmp->is_locked_homing() && Player->target_in_lock_cone) )) {
+			//The secondary lead indicator is handled farther below if it is a non-locking type, or if the Dont_merge_indicators flag is set for it.
 			srange = -1.0f;
 		}
 	}
@@ -4073,9 +4074,10 @@ void HudGaugeLeadIndicator::renderLeadCurrentTarget()
 	if((swp->current_secondary_bank>=0) && (swp->secondary_bank_weapons[swp->current_secondary_bank] >= 0)) {
 		int bank=swp->current_secondary_bank;
 		wip=&Weapon_info[swp->secondary_bank_weapons[bank]];
+		bool dontmerge = wip->wi_flags[Weapon::Info_Flags::Dont_merge_indicators];
 
 		//get out of here if the secondary weapon is a homer or if its out of range
-		if ( wip->is_homing() )
+		if ( wip->is_homing() && !wip->wi_flags[Weapon::Info_Flags::Dont_merge_indicators] )
 			return;
 
 		double max_dist = MIN((wip->lifetime * wip->max_speed), wip->weapon_range);
