@@ -4074,7 +4074,6 @@ void HudGaugeLeadIndicator::renderLeadCurrentTarget()
 	if((swp->current_secondary_bank>=0) && (swp->secondary_bank_weapons[swp->current_secondary_bank] >= 0)) {
 		int bank=swp->current_secondary_bank;
 		wip=&Weapon_info[swp->secondary_bank_weapons[bank]];
-		bool dontmerge = wip->wi_flags[Weapon::Info_Flags::Dont_merge_indicators];
 
 		//get out of here if the secondary weapon is a homer or if its out of range
 		if ( wip->is_homing() && !wip->wi_flags[Weapon::Info_Flags::Dont_merge_indicators] )
