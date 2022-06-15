@@ -1798,7 +1798,7 @@ void parse_dock_one_docked_object(p_object *pobjp, p_object *parent_pobjp)
 	ai_dock_with_object(objp, dockpoint, parent_objp, parent_dockpoint, AIDO_DOCK_NOW);
 }
 
-int parse_create_object_sub(p_object *objp);
+int parse_create_object_sub(p_object *objp, bool standalone_ship = false);
 
 // Goober5000
 void parse_create_docked_object_helper(p_object *pobjp, p_dock_function_info *infop)
@@ -1825,7 +1825,7 @@ void parse_create_docked_object_helper(p_object *pobjp, p_dock_function_info *in
  * This is a bit tricky because of the way initial docking is now handled.
  * Docking groups require special treatment.
  */
-int parse_create_object(p_object *pobjp)
+int parse_create_object(p_object *pobjp, bool standalone_ship)
 {
 	object *objp;
 
@@ -1861,7 +1861,7 @@ int parse_create_object(p_object *pobjp)
 	// create normally
 	else
 	{
-		parse_create_object_sub(pobjp);
+		parse_create_object_sub(pobjp, standalone_ship);
 	}
 
 	// get the main object
@@ -1894,7 +1894,7 @@ void parse_bring_in_docked_wing(p_object *p_objp, int wingnum, int shipnum);
  * Given a stuffed p_object struct, create an object and fill in the necessary fields.
  * @return object number.
  */
-int parse_create_object_sub(p_object *p_objp)
+int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 {
 	int	i, j, k, objnum, shipnum;
 	int anchor_objnum = -1;
@@ -1912,7 +1912,7 @@ int parse_create_object_sub(p_object *p_objp)
 	MONITOR_INC(NumShipArrivals, 1);
 
 	// base level creation - need ship name in case of duplicate textures
-	objnum = ship_create(&p_objp->orient, &p_objp->pos, p_objp->ship_class, p_objp->name);
+	objnum = ship_create(&p_objp->orient, &p_objp->pos, p_objp->ship_class, p_objp->name, standalone_ship);
 	Assert(objnum != -1);
 	shipnum = Objects[objnum].instance;
 
