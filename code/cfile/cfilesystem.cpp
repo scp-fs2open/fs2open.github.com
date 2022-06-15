@@ -1551,7 +1551,7 @@ int cf_get_file_list(SCP_vector<SCP_string>& list, int pathtype, const char* fil
 	}
 
 	bool skip_packfiles = false;
-	if ( (pathtype == CF_TYPE_PLAYERS) || (pathtype == CF_TYPE_SINGLE_PLAYERS) || (pathtype == CF_TYPE_MULTI_PLAYERS) ) {
+	if ( (pathtype == CF_TYPE_SINGLE_PLAYERS) || (pathtype == CF_TYPE_MULTI_PLAYERS) ) {
 		skip_packfiles = true;
 	} else if (Get_file_list_child != NULL) {
 		skip_packfiles = true;
@@ -1708,7 +1708,7 @@ int cf_get_file_list(int max, char** list, int pathtype, const char* filter, int
 	}
 
 	bool skip_packfiles = false;
-	if ((pathtype == CF_TYPE_PLAYERS) || (pathtype == CF_TYPE_SINGLE_PLAYERS) || (pathtype == CF_TYPE_MULTI_PLAYERS)) {
+	if ((pathtype == CF_TYPE_SINGLE_PLAYERS) || (pathtype == CF_TYPE_MULTI_PLAYERS)) {
 		skip_packfiles = true;
 	}
 	else if (Get_file_list_child != NULL) {
@@ -1887,7 +1887,7 @@ int cf_get_file_list_preallocated(int max, char arr[][MAX_FILENAME_LEN], char** 
 	}
 
 	bool skip_packfiles = false;
-	if ((pathtype == CF_TYPE_PLAYERS) || (pathtype == CF_TYPE_SINGLE_PLAYERS) || (pathtype == CF_TYPE_MULTI_PLAYERS)) {
+	if ((pathtype == CF_TYPE_SINGLE_PLAYERS) || (pathtype == CF_TYPE_MULTI_PLAYERS)) {
 		skip_packfiles = true;
 	}
 	else if (Get_file_list_child != NULL) {
