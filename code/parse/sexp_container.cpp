@@ -1769,6 +1769,9 @@ void sexp_container_set_special_arg_status(int arg_handler_node, bool status)
 		"Attempt to set special argument status on invalid argument handler. Please report!");
 
 	for (int arg_node = CDR(arg_handler_node); arg_node != -1; arg_node = CDR(arg_node)) {
+		Assertion(Sexp_nodes[arg_node].subtype != SEXP_ATOM_CONTAINER_DATA,
+			"Attempt to use Replace Container Data as special argument option, which isn't supported. Please report!");
+
 		if (Sexp_nodes[arg_node].subtype == SEXP_ATOM_CONTAINER_NAME) {
 			const char *container_name = Sexp_nodes[arg_node].text;
 			auto *p_container = get_sexp_container(container_name);
