@@ -2465,20 +2465,29 @@ int Editor::global_error_check_impl() {
 			if (error(
 				"Starting Wing %s marked as reinforcement.  This wing\nshould either be renamed, or unmarked as reinforcement.",
 				Wings[i].name)) {
-// Goober5000				return 1;
+				return 1;
 			}
 		}
 
 		std::set<size_t> default_orders;
+		int default_orders_idx = -1;
 		for (j = 0; j < Wings[i].wave_count; j++) {
+			// exclude players from the check
+			if (Objects[Ships[Wings[i].ship_index[j]].objnum].type == OBJ_START) {
+				continue;
+			}
+
 			const std::set<size_t>& orders = Ships[Wings[i].ship_index[j]].orders_accepted;
-			if (j == 0) {
+
+			if (default_orders_idx < 0) {
+				default_orders_idx = j;
 				default_orders = orders;
+
 			} else if (default_orders != orders) {
 				if (error(
 					"%s and %s will accept different orders. All ships in a wing must accept the same Player Orders.",
 					Ships[Wings[i].ship_index[j]].ship_name,
-					Ships[Wings[i].ship_index[0]].ship_name)) {
+					Ships[Wings[i].ship_index[default_orders_idx]].ship_name)) {
 					return 1;
 				}
 			}
@@ -2492,7 +2501,7 @@ int Editor::global_error_check_impl() {
 			} else {
 				if ( starting_orders != default_orders ) {
 					if ( error("Player starting wing %s has orders which don't match other starting wings\n", Wings[i].name) ){
-// Goober5000						return 1;
+						return 1;
 					}
 				}
 			}
