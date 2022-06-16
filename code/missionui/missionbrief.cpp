@@ -351,7 +351,7 @@ void brief_skip_training_pressed()
 	mission_campaign_eval_next_mission();
 	mission_campaign_mission_over();	
 
-	if ( The_mission.flags[Mission::Mission_Flags::End_to_mainhall] ) {
+	if ( Campaign.next_mission == -1 || (The_mission.flags[Mission::Mission_Flags::End_to_mainhall]) ) {
 		gameseq_post_event( GS_EVENT_MAIN_MENU );
 	} else {
 		gameseq_post_event( GS_EVENT_START_GAME );

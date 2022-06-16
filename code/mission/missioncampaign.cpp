@@ -1822,7 +1822,12 @@ void mission_campaign_exit_loop()
 
 	// set things up for next mission
 	mission_campaign_next_mission();
-	gameseq_post_event(GS_EVENT_START_GAME);
+
+	if ( Campaign.next_mission == -1 || (The_mission.flags[Mission::Mission_Flags::End_to_mainhall]) ) {
+		gameseq_post_event( GS_EVENT_MAIN_MENU );
+	} else {
+		gameseq_post_event( GS_EVENT_START_GAME );
+	}
 }
 
 
