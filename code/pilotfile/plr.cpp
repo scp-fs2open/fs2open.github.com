@@ -1124,7 +1124,9 @@ bool pilotfile::load_player(const char* callsign, player* _p, bool force_binary)
 	}
 
 	mprintf(("PLR => Loading complete!\n"));
-	OnPlayerLoadedHook->run(scripting::hook_param_list(scripting::hook_param("Player", 'o', scripting::api::l_Player.Set(scripting::api::player_h(p)))));
+	if (OnPlayerLoadedHook->isActive()) {
+		OnPlayerLoadedHook->run(scripting::hook_param_list(scripting::hook_param("Player", 'o', scripting::api::l_Player.Set(scripting::api::player_h(p)))));
+	}
 
 	// cleanup and return
 	plr_close();

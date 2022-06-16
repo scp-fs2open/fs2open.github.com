@@ -848,11 +848,14 @@ static void game_flash_diminish(float frametime)
 
 void game_level_close()
 {
-	OnMissionAboutToEndHook->run();
+	if (OnMissionAboutToEndHook->isActive())
+	{
+		OnMissionAboutToEndHook->run();
+	}
 
 	//WMC - this is actually pretty damn dangerous, but I don't want a modder
 	//to accidentally use an override here without realizing it.
-	if(!OnMissionEndHook->isOverride())
+	if (!OnMissionEndHook->isActive() || !OnMissionEndHook->isOverride())
 	{
 		// save player-persistent variables and containers
 		mission_campaign_save_on_close_variables();	// Goober5000
@@ -931,7 +934,10 @@ void game_level_close()
 		Error(LOCATION, "Scripting Mission End override is not fully supported yet.");
 	}
 
-	OnMissionEndHook->run();
+	if (OnMissionEndHook->isActive())
+	{
+		OnMissionEndHook->run();
+	}
 }
 
 uint load_gl_init;
@@ -1987,7 +1993,9 @@ void game_init()
 	scpui::initialize();
 
 	Script_system.RunInitFunctions();
-	scripting::hooks::OnGameInit->run();
+	if (scripting::hooks::OnGameInit->isActive()) {
+		scripting::hooks::OnGameInit->run();
+	}
 
 	game_title_screen_close();
 
@@ -5074,16 +5082,20 @@ void game_leave_state( int old_state, int new_state )
 			break;
 	}
 
-	auto script_param_list = scripting::hook_param_list(
-		scripting::hook_param("OldState", 'o', scripting::api::l_GameState.Set(scripting::api::gamestate_h(old_state))),
-		scripting::hook_param("NewState", 'o', scripting::api::l_GameState.Set(scripting::api::gamestate_h(new_state))));
-
-	OnStateAboutToEndHook->run(script_param_list);
-
-	if (OnStateEndHook->isOverride(script_param_list))
+	if (OnStateAboutToEndHook->isActive() || OnStateEndHook->isActive())
 	{
-		OnStateEndHook->run(script_param_list);
-		return;
+		auto script_param_list = scripting::hook_param_list(
+			scripting::hook_param("OldState", 'o', scripting::api::l_GameState.Set(scripting::api::gamestate_h(old_state))),
+			scripting::hook_param("NewState", 'o', scripting::api::l_GameState.Set(scripting::api::gamestate_h(new_state))));
+
+		if (OnStateAboutToEndHook->isActive())
+			OnStateAboutToEndHook->run(script_param_list);
+
+		if (OnStateEndHook->isActive() && OnStateEndHook->isOverride(script_param_list))
+		{
+			OnStateEndHook->run(script_param_list);
+			return;
+		}
 	}
 
 	//WMC - Clear scripting bitmaps
@@ -5505,7 +5517,14 @@ void game_leave_state( int old_state, int new_state )
 	}
 
 	//WMC - Now run scripting stuff
-	OnStateEndHook->run(script_param_list);
+	if (OnStateEndHook->isActive())
+	{
+		auto script_param_list = scripting::hook_param_list(
+			scripting::hook_param("OldState", 'o', scripting::api::l_GameState.Set(scripting::api::gamestate_h(old_state))),
+			scripting::hook_param("NewState", 'o', scripting::api::l_GameState.Set(scripting::api::gamestate_h(new_state))));
+
+		OnStateEndHook->run(script_param_list);
+	}
 }
 
 // variable used for automatic netgame starting/joining
@@ -6110,7 +6129,7 @@ void game_do_state(int state)
 		return;
 	}
 
-	if (OnFrameHook->isOverride()) {
+	if (OnFrameHook->isActive() && OnFrameHook->isOverride()) {
 		game_set_frametime(state);
 
 		game_check_key();

@@ -7545,10 +7545,13 @@ int mission_do_departure(object *objp, bool goal_is_to_warp)
 
 	mprintf(("Entered mission_do_departure() for %s\n", shipp->ship_name));
 
-	// add scripting hook for 'On Departure Started' --wookieejedi
-	// hook is placed at the beginning of this function to allow the scripter to
-	// actually have access to the ship's departure decisions before they are all executed
-	OnDepartureStartedHook->run(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp), scripting::hook_param("Ship", 'o', objp)));
+	if (OnDepartureStartedHook->isActive())
+	{
+		// add scripting hook for 'On Departure Started' --wookieejedi
+		// hook is placed at the beginning of this function to allow the scripter to
+		// actually have access to the ship's departure decisions before they are all executed
+		OnDepartureStartedHook->run(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp), scripting::hook_param("Ship", 'o', objp)));
+	}
 
 	// abort rearm, because if we entered this function we're either going to depart via hyperspace, depart via bay,
 	// or revert to our default behavior

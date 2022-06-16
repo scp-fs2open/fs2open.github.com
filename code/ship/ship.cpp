@@ -7864,10 +7864,12 @@ void ship_destroy_instantly(object *ship_objp, bool with_debris)
 	Assert(ship_objp->type == OBJ_SHIP);
 	Assert(!(ship_objp == Player_obj));
 
-	// add scripting hook for 'On Ship Death Started' -- Goober5000
-	// hook is placed at the beginning of this function to allow the scripter to
-	// actually have access to the ship before any death routines (such as mission logging) are executed
-	OnShipDeathStartedHook->run(scripting::hook_param_list(scripting::hook_param("Ship", 'o', ship_objp)));
+	if (OnShipDeathStartedHook->isActive()) {
+		// add scripting hook for 'On Ship Death Started' -- Goober5000
+		// hook is placed at the beginning of this function to allow the scripter to
+		// actually have access to the ship before any death routines (such as mission logging) are executed
+		OnShipDeathStartedHook->run(scripting::hook_param_list(scripting::hook_param("Ship", 'o', ship_objp)));
+	}
 
 	// undocking and death preparation
 	ship_stop_fire_primary(ship_objp);
@@ -10990,10 +10992,12 @@ int ship_launch_countermeasure(object *objp, int rand_val)
 			send_NEW_countermeasure_fired_packet(objp, cmeasure_count, Objects[cobjnum].net_signature);
 		}
 
-		// add scripting hook for 'On Countermeasure Fire' --wookieejedi
-		OnCountermeasureFireHook->run(scripting::hook_param_list(scripting::hook_param("Ship", 'o', objp), 
-			scripting::hook_param("CountermeasuresLeft", 'i', shipp->cmeasure_count),
-			scripting::hook_param("Countermeasure", 'o', &Objects[cobjnum])));
+		if (OnCountermeasureFireHook->isActive()) {
+			// add scripting hook for 'On Countermeasure Fire' --wookieejedi
+			OnCountermeasureFireHook->run(scripting::hook_param_list(scripting::hook_param("Ship", 'o', objp),
+				scripting::hook_param("CountermeasuresLeft", 'i', shipp->cmeasure_count),
+				scripting::hook_param("Countermeasure", 'o', &Objects[cobjnum])));
+		}
 	}
 
 	return (cobjnum >= 0);		// return 0 if not fired, 1 otherwise

@@ -258,7 +258,9 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 
 	listener(SubSystem::ScriptingInitHook);
 	Script_system.RunInitFunctions();
-	scripting::hooks::OnGameInit->run();
+	if (scripting::hooks::OnGameInit->isActive()) {
+		scripting::hooks::OnGameInit->run();
+	}
 
 	return true;
 }

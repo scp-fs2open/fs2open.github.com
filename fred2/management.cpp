@@ -470,7 +470,9 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	Fred_main_wnd -> init_tools();
 
 	Script_system.RunInitFunctions();
-	scripting::hooks::OnGameInit->run();
+	if (scripting::hooks::OnGameInit->isActive()) {
+		scripting::hooks::OnGameInit->run();
+	}
 
 	return true;
 }
