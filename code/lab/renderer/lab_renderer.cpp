@@ -63,7 +63,8 @@ void LabRenderer::renderModel(float frametime) {
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Subsystem_movement_locked, !renderFlags[LabRenderFlag::RotateSubsystems]);
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Draw_as_wireframe, renderFlags[LabRenderFlag::ShowWireframe]);
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_full_detail, renderFlags[LabRenderFlag::ShowFullDetail]);
-		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_light, renderFlags[LabRenderFlag::NoLighting] || currentMissionBackground == "None");
+		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_light,
+			renderFlags[LabRenderFlag::NoLighting] || currentMissionBackground == LAB_MISSION_NONE_STRING);
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_diffuse, renderFlags[LabRenderFlag::NoDiffuseMap]);
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_glowmap, renderFlags[LabRenderFlag::NoGlowMap]);
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_normalmap, renderFlags[LabRenderFlag::NoNormalMap]);
@@ -218,7 +219,7 @@ void LabRenderer::renderHud(float) {
 	}
 
 	//Print current Team Color setting, if any
-	if (currentTeamColor != "<none>") {
+	if (currentTeamColor != LAB_TEAM_COLOR_NONE) {
 		gr_printf_no_resize(gr_screen.center_offset_x + 2,
 			gr_screen.center_offset_y + gr_screen.center_h - (gr_get_font_height() * 3) - 3,
 			"Use T and Y to cycle through available Team Color settings. Current: %s",
