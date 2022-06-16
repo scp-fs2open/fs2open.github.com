@@ -69,7 +69,8 @@ static int model_initted = 0;
 CFILE *ss_fp = NULL;			// file pointer used to dump subsystem information
 char  model_filename[_MAX_PATH];		// temp used to store filename
 char	debug_name[_MAX_PATH];
-int ss_warning_shown = 0;		// have we shown the warning dialog concerning the subsystems?
+static bool ss_warning_shown_null = false;		// have we shown the warning dialog concerning the subsystems?
+static bool ss_warning_shown_mismatch = false;	// ditto but for a different warning
 #endif
 
 static uint Global_checksum = 0;
@@ -882,9 +883,9 @@ void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num,
 
 	if ( slist==NULL ) {
 #ifndef NDEBUG
-		if (!ss_warning_shown) {
+		if (!ss_warning_shown_null) {
 			mprintf(("No subsystems found for model \"%s\".\n", model_get(model_num)->filename));
-			ss_warning_shown = 1;
+			ss_warning_shown_null = true;
 		}
 #endif
 		return;			// For TestCode, POFView, etc don't bother
@@ -924,12 +925,12 @@ void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num,
 #ifndef NDEBUG
 	char bname[_MAX_FNAME];
 
-	if ( !ss_warning_shown) {
+	if ( !ss_warning_shown_mismatch) {
 		_splitpath(model_filename, NULL, NULL, bname, NULL);
 		// Lets still give a comment about it and not just erase it
 		Warning(LOCATION,"Not all subsystems in model \"%s\" have a record in ships.tbl.\nThis can cause game to crash.\n\nList of subsystems not found from table is in log file.\n", model_get(model_num)->filename );
 		mprintf(("Subsystem %s in model %s was not found in ships.tbl!\n", subobj_name, model_get(model_num)->filename));
-		ss_warning_shown = 1;
+		ss_warning_shown_mismatch = true;
 	} else
 #endif
 		mprintf(("Subsystem %s in model %s was not found in ships.tbl!\n", subobj_name, model_get(model_num)->filename));
@@ -1432,7 +1433,8 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 			mprintf(( "Can't open debug file for writing subsystems for %s\n", filename));
 		} else {
 			strcpy_s(model_filename, filename);
-			ss_warning_shown = 0;
+			ss_warning_shown_null = false;
+			ss_warning_shown_mismatch = false;
 		}
 	}
 #endif
