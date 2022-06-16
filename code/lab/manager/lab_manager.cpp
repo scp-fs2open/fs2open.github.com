@@ -224,7 +224,9 @@ void LabManager::onFrame(float frametime) {
 				break;
 
 			case KEY_M:
-				gr_dump_envmap(Renderer->currentMissionBackground.c_str());
+				// Dumping the environment map only makes sense if we actually have a background set
+				if (Renderer->currentMissionBackground != LAB_MISSION_NONE_STRING)
+					gr_dump_envmap(Renderer->currentMissionBackground.c_str());
 				break;
 
 				// bail...
