@@ -72,6 +72,7 @@ extern ai_flag_name Ai_flag_names[];
 #define AITTV_VIA_SEXP				(1<<1)	//	Goober5000 - via sexp
 #define AITTV_IGNORE_BANK			(1<<2)	//	Goober5000 - ignore bank when turning
 #define AITTV_SLOW_BANK_ACCEL		(1<<3)  //  Asteroth - used by formation flying
+#define AITTV_FORCE_DELTA_BANK		(1<<4)  //  Lafiel - Always use the provided delta bank and override calculated values
 
 #define	KAMIKAZE_HULL_ON_DEATH	-1000.0f	//	Hull strength ship gets set to if it crash-dies.
 
