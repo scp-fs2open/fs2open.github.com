@@ -657,7 +657,7 @@ void ai_goal_fixup_dockpoints(ai_info *aip, ai_goal *aigp)
 		}
 	}
 
-	// look for docking points of the appriopriate type.  Use cargo docks for cargo ships.
+	// look for docking points of the appropriate type.  Use cargo docks for cargo ships.
 	/*
 	if (Ship_info[Ships[shipnum].ship_info_index].flags[Ship::Info_Flags::Cargo]) {
 		docker_index = ai_goal_find_dockpoint(aip->shipnum, DOCK_TYPE_CARGO);
@@ -857,7 +857,7 @@ void ai_add_wing_goal_player( int type, int mode, int submode, char *shipname, i
 
 
 // common routine to add a sexpression mission goal to the appropriate goal structure.
-void ai_add_goal_sub_sexp( int sexp, int type, ai_goal *aigp, char *actor_name )
+void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, char *actor_name )
 {
 	int node, dummy, op;
 
@@ -937,6 +937,25 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_goal *aigp, char *actor_name )
 		aigp->ai_submode = AIS_UNDOCK_0;
 		break;
 
+	case OP_AI_REARM_REPAIR:
+	{
+		aigp->ai_mode = AI_GOAL_REARM_REPAIR;
+		aigp->target_name = ai_get_goal_target_name(CTEXT(CDR(node)), &aigp->target_name_index);
+		aigp->priority = atoi( CTEXT(CDR(CDR(node))) );
+
+		// this goal needs some extra setup
+		// if this doesn't work, the goal will be immediately removed
+		auto ship_entry = ship_registry_get(aigp->target_name);
+		if (ship_entry->status == ShipStatus::PRESENT)
+		{
+			auto target_aip = &Ai_info[ship_entry->shipp->ai_index];
+			target_aip->ai_flags.set(AI::AI_Flags::Awaiting_repair);
+			Assertion(aip != nullptr, "Must provide aip if assigning a rearm goal!");
+			ai_goal_fixup_dockpoints( aip, aigp );
+		}
+		break;
+	}
+
 	case OP_AI_STAY_STILL:
 		aigp->ai_mode = AI_GOAL_STAY_STILL;
 		aigp->target_name = ai_get_goal_target_name(CTEXT(CDR(node)), &aigp->target_name_index);  // waypoint path name;
@@ -997,6 +1016,7 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_goal *aigp, char *actor_name )
 	case OP_AI_EVADE_SHIP:
 	case OP_AI_IGNORE:
 	case OP_AI_IGNORE_NEW:
+	case OP_AI_FLY_TO_SHIP:
 		aigp->target_name = ai_get_goal_target_name( CTEXT(CDR(node)), &aigp->target_name_index );
 		aigp->priority = atoi( CTEXT(CDR(CDR(node))) );
 
@@ -1029,8 +1049,10 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_goal *aigp, char *actor_name )
 			aigp->ai_mode = AI_GOAL_IGNORE;
 		} else if ( op == OP_AI_IGNORE_NEW ) {
 			aigp->ai_mode = AI_GOAL_IGNORE_NEW;
+		} else if ( op == OP_AI_FLY_TO_SHIP ) {
+			aigp->ai_mode = AI_GOAL_FLY_TO_SHIP;
 		} else
-			Int3();		// this is impossible
+			UNREACHABLE("Coding error: unhandled AI goal in ai_add_goal_sub_sexp!");
 
 		break;
 
@@ -1227,6 +1249,14 @@ int ai_remove_goal_sexp_sub( int sexp, ai_goal* aigp )
 		priority = 99;
 		goalmode = AI_GOAL_FORM_ON_WING;
 		break;
+	case OP_AI_FLY_TO_SHIP:
+		priority = ( CDR( CDR(node) ) >= 0 ) ? atoi( CTEXT( CDR( CDR( node ) ) ) ) : -1;
+		goalmode = AI_GOAL_FLY_TO_SHIP;
+		break;
+	case OP_AI_REARM_REPAIR:
+		priority = ( CDR( CDR(node) ) >= 0 ) ? atoi( CTEXT( CDR( CDR( node ) ) ) ) : -1;
+		goalmode = AI_GOAL_REARM_REPAIR;
+		break;
 	default:
 		const ai_mode_lua* luaAIMode = ai_lua_find_mode(op);
 		if(luaAIMode != nullptr){
@@ -1294,7 +1324,7 @@ void ai_add_ship_goal_sexp( int sexp, int type, ai_info *aip )
 	int gindex;
 
 	gindex = ai_goal_find_empty_slot( aip->goals, aip->active_goal );
-	ai_add_goal_sub_sexp( sexp, type, &aip->goals[gindex], Ships[aip->shipnum].ship_name );
+	ai_add_goal_sub_sexp( sexp, type, aip, &aip->goals[gindex], Ships[aip->shipnum].ship_name );
 }
 
 // code to add ai goals to wings.
@@ -1318,7 +1348,7 @@ void ai_add_wing_goal_sexp(int sexp, int type, wing *wingp)
 		int gindex;
 
 		gindex = ai_goal_find_empty_slot( wingp->ai_goals, -1 );
-		ai_add_goal_sub_sexp( sexp, type, &wingp->ai_goals[gindex], wingp->name );
+		ai_add_goal_sub_sexp( sexp, type, nullptr, &wingp->ai_goals[gindex], wingp->name );
 	}
 }
 

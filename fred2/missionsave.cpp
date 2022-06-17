@@ -665,8 +665,16 @@ void CFred_mission_save::save_ai_goals(ai_goal *goalp, int ship)
 					str = "ai-stay-still";
 					break;
 
+				case AI_GOAL_REARM_REPAIR:
+					str = "ai-rearm-repair";
+					break;
+
+				case AI_GOAL_FLY_TO_SHIP:
+					str = "ai-fly-to-ship";
+					break;
+
 				default:
-					Assert(0);
+					UNREACHABLE("Goal %d not handled!", goalp[i].ai_mode);
 				}
 
 				if (valid)

@@ -163,7 +163,7 @@ extern int ai_goal_num(ai_goal *goals);
 extern void ai_add_ship_goal_scripting(int mode, int submode, int priority, char *shipname, ai_info *aip);
 extern void ai_add_ship_goal_sexp( int sexp, int type, ai_info *aip );
 extern void ai_add_wing_goal_sexp( int sexp, int type, wing *wingp );
-extern void ai_add_goal_sub_sexp( int sexp, int type, ai_goal *aigp, char *actor_name);
+extern void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, char *actor_name);
 
 extern int ai_remove_goal_sexp_sub( int sexp, ai_goal* aigp );
 extern void ai_remove_wing_goal_sexp( int sexp, wing *wingp );
