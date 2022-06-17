@@ -73,7 +73,7 @@ ADE_VIRTVAR(SidewaysThrust, l_AI_Helper, "number", "The sideways thrust rate for
 
 ADE_FUNC(turnTowardsPoint,
 	l_AI_Helper,
-	"vector target, [boolean respectDifficulty = true, vector turnrateModifier /* 100% of tabled values in all rotation axes by default */, float bank /* native bank-on-heading by default */ ]",
+	"vector target, [boolean respectDifficulty = true, vector turnrateModifier /* 100% of tabled values in all rotation axes by default */, number bank /* native bank-on-heading by default */ ]",
 	"turns the ship towards the specified point during this frame",
 	nullptr,
 	nullptr)
