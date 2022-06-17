@@ -1195,7 +1195,7 @@ void ai_turn_towards_vector(vec3d* dest, object* objp, vec3d* slide_vec, vec3d* 
 	vec3d	vel_in, vel_out, desired_fvec, src;
 	float		delta_time;
 	physics_info	*pip;
-	float		delta_bank;
+	float		bank;
 
 	Assertion(objp->type == OBJ_SHIP || objp->type == OBJ_WEAPON, "ai_turn_towards_vector called on a non-ship non-weapon object!");
 
@@ -1289,17 +1289,18 @@ void ai_turn_towards_vector(vec3d* dest, object* objp, vec3d* slide_vec, vec3d* 
 	//	Should be more general case here.  Currently, anything that is not a weapon will bank when it turns.
 	// Goober5000 - don't bank if sexp or ship says not to
 	if ( (objp->type == OBJ_WEAPON) || (flags & AITTV_IGNORE_BANK ) )
-		delta_bank = 0.0f;
+		bank = 0.0f;
 	else if (objp->type == OBJ_SHIP && Ship_info[Ships[objp->instance].ship_info_index].flags[Ship::Info_Flags::Dont_bank_when_turning])
-		delta_bank = 0.0f;
+		bank = 0.0f;
 	else if ((bank_override) && (iff_x_attacks_y(Ships[objp->instance].team, Player_ship->team))) {	//	Theoretically, this will only happen for Shivans.
-		delta_bank = bank_override;
+		bank = bank_override;
 	} else {
-		delta_bank = vm_vec_dot(&curr_orient.vec.rvec, &objp->last_orient.vec.rvec);
-		delta_bank = 200.0f * (1.0f - delta_bank) * pip->delta_bank_const;
+		bank = vm_vec_dot(&curr_orient.vec.rvec, &objp->last_orient.vec.rvec);
+		bank = 200.0f * (1.0f - bank) * pip->delta_bank_const;
 		if (vm_vec_dot(&objp->last_orient.vec.fvec, &objp->orient.vec.rvec) < 0.0f)
-			delta_bank = -delta_bank;
+			bank = -bank;
 	}
+	bank *= vel_limit.xyz.z;
 
 
 	matrix out_orient;
@@ -1311,7 +1312,7 @@ void ai_turn_towards_vector(vec3d* dest, object* objp, vec3d* slide_vec, vec3d* 
 		vm_angular_move_matrix(&goal_orient, &curr_orient, &vel_in, delta_time,
 			&out_orient, &vel_out, &vel_limit, &acc_limit, The_mission.ai_profile->flags[AI::Profile_Flags::No_turning_directional_bias]);
 	} else {
-		vm_angular_move_forward_vec(&desired_fvec, &curr_orient, &vel_in, delta_time, delta_bank,
+		vm_angular_move_forward_vec(&desired_fvec, &curr_orient, &vel_in, delta_time, bank,
 			&out_orient, &vel_out, &vel_limit, &acc_limit, The_mission.ai_profile->flags[AI::Profile_Flags::No_turning_directional_bias]);
 	}
 	
@@ -4871,12 +4872,12 @@ void avoid_ship()
 	//	If in front of enemy, turn away from it.
 	//	If behind enemy, try to get fully behind it.
 	if (away_dot < 0.0f) {
-		turn_away_from_point(Pl_objp, &enemy_pos, Pl_objp->phys_info.speed);
+		turn_away_from_point(Pl_objp, &enemy_pos, 1.0f);
 	} else {
 		vec3d	goal_pos;
 
 		vm_vec_scale_add(&goal_pos, &En_objp->pos, &En_objp->orient.vec.fvec, -100.0f);
-		turn_towards_point(Pl_objp, &goal_pos, NULL, Pl_objp->phys_info.speed);
+		turn_towards_point(Pl_objp, &goal_pos, NULL, 1.0f);
 	}
 
 	//	Set speed.
@@ -5313,9 +5314,9 @@ void evade_ship()
 			//	caused flying in an odd spiral.
 			vm_vec_scale_add(&goal_point, &enemy_pos, &Pl_objp->orient.vec.rvec, 1000.0f);
 			if (dist < 100.0f)
-				bank_override = Pl_objp->phys_info.speed; 
+				bank_override = 1.0f; 
 		} else {
-			bank_override = Pl_objp->phys_info.speed;			//	In enemy's sights, not pointing at him, twirl away.
+			bank_override = 1.0f;			//	In enemy's sights, not pointing at him, twirl away.
 			goto evade_ship_l1;
 		}
 	} else {
@@ -7662,7 +7663,7 @@ void ai_chase_attack(ai_info *aip, ship_info *sip, vec3d *predicted_enemy_pos, f
 
 	//SUSHI: Don't change bank while circle strafing or glide attacking
 	if (dist_to_enemy < 250.0f && dot_from_enemy > 0.7f && aip->submode != AIS_CHASE_CIRCLESTRAFE && aip->submode != AIS_CHASE_GLIDEATTACK) {
-		bank_override = Pl_objp->phys_info.speed;
+		bank_override = 1.0f;
 	}
 
 	//	If enemy more than 500 meters away, all ships flying there will tend to match bank.
@@ -7709,9 +7710,7 @@ void ai_chase_es(ai_info *aip)
 		tvec.xyz.y += frand();
 	}
 
-	float bank_override = Pl_objp->phys_info.speed;
-
-	ai_turn_towards_vector(&tvec, Pl_objp, nullptr, nullptr, bank_override, 0);
+	ai_turn_towards_vector(&tvec, Pl_objp, nullptr, nullptr, 1.0f, 0);
 	accelerate_ship(aip, 1.0f);
 }
 
@@ -7722,7 +7721,6 @@ void ai_chase_ga(ai_info *aip, ship_info *sip)
 {
 	//	If not near end of this submode, evade squiggly.  If near end, just fly straight for a bit
 	vec3d	tvec;
-	float		bank_override;
 	vec3d	vec_from_enemy;
 
 	if (En_objp != NULL) {
@@ -7735,9 +7733,7 @@ void ai_chase_ga(ai_info *aip, ship_info *sip)
 	vm_vec_scale_add2(&tvec, &vec_from_enemy, 300.0f);
 	vm_vec_add2(&tvec, &Pl_objp->pos);
 
-	bank_override = Pl_objp->phys_info.speed;
-
-	ai_turn_towards_vector(&tvec, Pl_objp, nullptr, nullptr, bank_override, 0);
+	ai_turn_towards_vector(&tvec, Pl_objp, nullptr, nullptr, 1.0f, 0);
 
 	accelerate_ship(aip, 2.0f);
 
