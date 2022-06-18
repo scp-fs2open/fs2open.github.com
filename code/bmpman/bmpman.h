@@ -116,6 +116,7 @@ extern const char *bm_ani_ext_list[];    //!< List of extensions for those types
 extern const int BM_ANI_NUM_TYPES;       //!< Calculated number of bitmap animation types
 
 extern int ENVMAP;      //!< References a map that is for environment mapping -Bobboau
+extern int IRRMAP;		//!< References a filtered envmap for diffuse environment lighting - qazwsxal
 
 /**
  * @brief Initilizes the bitmap manager
@@ -546,7 +547,6 @@ void bm_set_components_argb_32_tex(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, u
  */
 void bm_get_components(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a);
 
-extern int ENVMAP;	//this holds a reference to a map that is for environment mapping -Bobboau
 
 /**
  * @brief Returns the compression type of the bitmap indexed by handle

@@ -53,6 +53,7 @@ MONITOR(SizeBitmapPage)
 // --------------------------------------------------------------------------------------------------------------------
 // Definition of public variables (declared as extern in bmpman.h).
 int ENVMAP = -1;
+int IRRMAP = -1;
 
 size_t bm_texture_ram = 0;
 int Bm_paging = 0;

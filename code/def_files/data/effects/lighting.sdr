@@ -1,4 +1,4 @@
-
+//? #version 150
 const int LT_DIRECTIONAL	= 0;		// A light like a sun
 const int LT_POINT			= 1;		// A point light, like an explosion
 const int LT_TUBE			= 2;		// A tube light, like a fluorescent light
@@ -8,7 +8,7 @@ const float SPEC_FACTOR_NO_SPEC_MAP		= 0.1;
 const float GLOW_MAP_INTENSITY			= 1.5;
 const float GLOW_MAP_SRGB_MULTIPLIER	= 3.0;
 const float PI = 3.14159f;
-const float SQRT_3 = 1.73205f;
+
 
 vec3 FresnelSchlick(vec3 halfVec, vec3 view, vec3 specColor)
 {
@@ -38,15 +38,19 @@ vec3 ComputeGGX(vec3 specColor, vec3 diffColor, vec3 light, vec3 normal, vec3 ha
 
 	// Distribution Term - Trowbridge-Reitz GGX
 	float alphaSqr = alpha * alpha;
-	float denom = dotNH * dotNH * (alphaSqr - 1.0f) + 1.0f;
+	float denom = dotNH * dotNH * (alphaSqr - 1.0f) + 1.001f; // Extra .001 to prevent div 0
 	float distribution = alphaSqr / (PI * denom * denom);
 
 	// Fresnel Term - Fresnel-Schlick
 	vec3 fresnel = mix(specColor, FresnelSchlick(halfVec, view, specColor), fresnelFactor);
 
-	// Geometry Term - Schlick-GGX
+	// Geometry Term - Schlick-GGX approximation
 	float alphaPrime = roughness + 1.0f;
 	float k = alphaPrime * alphaPrime / 8.0f;
+	// Smith's method: 
+	// Microsurfaces block light rays coming in from the light 
+	// AND block light rays reflecting to the camera.
+	// Hence, model both seperately and multiply.
 	float g1vNL = GeometrySchlickGGX(dotNL, k);
 	float g1vNV = GeometrySchlickGGX(dotNV, k);
 	float geometry = g1vNL * g1vNV;
@@ -70,4 +74,14 @@ vec3 computeLighting(vec3 specColor, vec3 diffColor, vec3 light, vec3 normal, ve
 	#else
 	return ComputeGGX(specColor, diffColor, light, normal, halfVec, view, gloss, fresnelFactor, dotNL);
 	#endif
+}
+
+mat3 localCoordinates(vec3 normal, vec3 tangent_in)
+{
+// Create basis so we can transform `view` direction into local coord system
+// We're not particularly attached to any basis as we have an isotropic roughness, and don't need to align axes with x,y terms.
+vec3 tangent = normalize (tangent_in - dot (tangent_in, normal) * normal);
+vec3 bitangent = cross(tangent, normal);
+mat3 basis = mat3(tangent, bitangent, normal);
+return basis;
 }

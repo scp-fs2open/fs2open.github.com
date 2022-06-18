@@ -743,10 +743,9 @@ uint model_material::get_shader_flags() const
 
 	if ( (get_texture_map(TM_SPECULAR_TYPE) > 0 || get_texture_map(TM_SPEC_GLOSS_TYPE) > 0) && !Specmap_override ) {
 		Shader_flags |= SDR_FLAG_MODEL_SPEC_MAP;
-
-		if ( (ENVMAP > 0) && !Envmap_override ) {
-			Shader_flags |= SDR_FLAG_MODEL_ENV_MAP;
-		}
+	}
+	if ( (ENVMAP > 0) && !Envmap_override ) {
+		Shader_flags |= SDR_FLAG_MODEL_ENV_MAP;
 	}
 
 	if ( (get_texture_map(TM_NORMAL_TYPE) > 0) && !Normalmap_override ) {

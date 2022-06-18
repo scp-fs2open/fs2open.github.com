@@ -1,7 +1,8 @@
+//? #version 150
+#include "shadows.sdr" //! #include "shadows.sdr"
+#include "lighting.sdr" //! #include "lighting.sdr"
+#include "gamma.sdr" //! #include "gamma.sdr"
 
-#include "shadows.sdr"
-#include "lighting.sdr"
-#include "gamma.sdr"
 
 #define MAX_LIGHTS 8
 #define LT_DIRECTIONAL		0
@@ -101,9 +102,9 @@ in VertexOutput {
 #ifdef FLAG_ENV_MAP
 	vec3 envReflect;
 #endif
-#ifdef FLAG_NORMAL_MAP
-	mat3 tangentMatrix;
-#endif
+
+mat3 tangentMatrix;
+
 #ifdef FLAG_FOG
 	float fogDist;
 #endif
@@ -127,6 +128,7 @@ uniform sampler2DArray sSpecmap;
 #endif
 #ifdef FLAG_ENV_MAP
 uniform samplerCube sEnvmap;
+uniform samplerCube sIrrmap;
 #endif
 #ifdef FLAG_NORMAL_MAP
 uniform sampler2DArray sNormalmap;
@@ -350,18 +352,50 @@ void main()
  #endif
 #endif
 #ifdef FLAG_ENV_MAP
-	vec3 envReflectNM = vertIn.envReflect;
- #ifdef FLAG_NORMAL_MAP
-	envReflectNM += vec3(normalSample, 0.0);
-	envReflectNM = normalize(envReflectNM);
- #endif
-	float mip = (envGloss) ? (1.0 - glossData) * 7.0 : 0.0;
-	vec4 envColour = textureLod(sEnvmap, envReflectNM, mip);
- #ifdef FLAG_HDR
-	envColour.rgb = srgb_to_linear(envColour.rgb);
- #endif
-	envColour.rgb *= (envGloss) ? 1.0 : specColor.a;
-	emissiveColor.rgb += envColour.rgb * FresnelLazarovEnv(specColor.rgb, eyeDir, normal, glossData);
+	// Bit of a hack here, pretend we're doing blinn-phong shading and use a (modified version of) the derivation from
+	// Plausible Blinn-Phong Reflection of Standard Cube MIP-Maps - McGuire et al.
+	// to determine the mip bias.
+	// We use the specular term listed at http://graphicrants.blogspot.com/2013/08/specular-brdf-reference.html
+	// 1/(pi*alpha^2) * NdotM^((2/alpha^2)-2)
+	// so let s = (2/alpha^2 - 2)
+	// 1/2 log(s + 1) = 1/2 log(2/alpha^2 -1)
+	const float ENV_REZ = 512;
+	const float REZ_BIAS = log2(ENV_REZ * sqrt(3));
+
+	float roughness = clamp(1.0f - glossData, 0.0f, 1.0f);
+	float alpha = roughness * roughness;
+	float alphaSqr = alpha * alpha;
+	float rough_bias = 0.5 * log2(2/alphaSqr - 1);
+	float mip_bias = REZ_BIAS - rough_bias;
+
+	// Sample light, using mip bias to blur it.
+	vec3 light_dir = reflect(-eyeDir, normal);
+	vec3 env_light_dir = vec3(envMatrix * vec4(light_dir, 0.0));
+	vec4 specEnvColour = srgb_to_linear(textureLod(sEnvmap, env_light_dir, mip_bias));
+
+	vec3 halfVec = normalize(light_dir + eyeDir);
+
+	// Lots of hacks here to get things to look right. We aren't loading a BRDF split-sum integral texture 
+	// or properly calculating IBL levels.
+	// Fresnel calculation as with standard lights.
+
+	vec3 fresnel = mix(specColor.rgb, FresnelSchlick(halfVec, eyeDir, specColor.rgb), specColor.a);
+
+	// Pseudo-IBL, so use k_IBL 
+	float k = alpha * alpha/ 2.0f;
+
+	float NdotL = max(dot(light_dir, normal),0);
+
+	float g1vNL = GeometrySchlickGGX(NdotL, k);
+	vec3 specEnvLighting = specEnvColour.rgb * fresnel * g1vNL * aoFactors.y;
+
+	vec3 kD = vec3(1.0)-fresnel;
+	kD *= (vec3(1.0) - specColor.rgb);
+	vec3 diffEnvColor = srgb_to_linear(texture(sIrrmap, vec3(envMatrix * vec4(normal, 0.0))).rgb);
+	vec3 diffEnvLighting = kD * baseColor.rgb * diffEnvColor * aoFactors.x;
+	emissiveColor.rgb += specEnvLighting + diffEnvLighting;
+
+
 #endif
 #ifdef FLAG_GLOW_MAP
 	vec3 glowColor = texture(sGlowmap, vec3(texCoord, float(sGlowmapIndex))).rgb;

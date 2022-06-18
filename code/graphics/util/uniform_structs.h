@@ -357,6 +357,10 @@ struct post_data {
 	float dither;
 };
 
+struct irrmap_data {
+	int face;
+};
+
 } // namespace generic_data
 
 } // namespace graphics

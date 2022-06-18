@@ -1,3 +1,4 @@
+//? #version 150
 #extension GL_ARB_gpu_shader5: enable
 
 #include "shadows.sdr"
@@ -108,9 +109,7 @@ out VertexOutput {
 #ifdef FLAG_ENV_MAP
 	vec3 envReflect;
 #endif
-#ifdef FLAG_NORMAL_MAP
-	mat3 tangentMatrix;
-#endif
+mat3 tangentMatrix;
 #ifdef FLAG_FOG
 	float fogDist;
 #endif
@@ -187,12 +186,12 @@ void main()
 	vertOut.shadowUV[2] = transformToShadowMap(shadow_proj_matrix[2], 2, shadowPos);
 	vertOut.shadowUV[3] = transformToShadowMap(shadow_proj_matrix[3], 3, shadowPos);
  #endif
- #ifdef FLAG_NORMAL_MAP
- // Setup stuff for normal maps
-	vec3 t = normalize(mat3(modelViewMatrix) * mat3(orient) * vertTangent.xyz);
-	vec3 b = cross(normal, t) * vertTangent.w;
-	vertOut.tangentMatrix = mat3(t, b, normal);
- #endif
+
+ // Setup stuff for normal maps and envmaps
+vec3 t = normalize(mat3(modelViewMatrix) * mat3(orient) * vertTangent.xyz);
+vec3 b = cross(normal, t) * vertTangent.w;
+vertOut.tangentMatrix = mat3(t, b, normal);
+
  #ifdef FLAG_ENV_MAP
  // Environment mapping reflection vector.
 	vec3 envReflect = reflect(normalize(position.xyz), normal);
