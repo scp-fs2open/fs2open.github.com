@@ -74,7 +74,7 @@ cf_pathtype Pathtypes[CF_MAX_PATH_TYPES]  = {
 	{ CF_TYPE_FONT,					"data" DIR_SEPARATOR_STR "fonts",											".vf .ttf .otf",						CF_TYPE_DATA	},
 	{ CF_TYPE_EFFECTS,				"data" DIR_SEPARATOR_STR "effects",											".ani .eff .pcx .neb .tga .jpg .png .dds .sdr",	CF_TYPE_DATA	},
 	{ CF_TYPE_HUD,					"data" DIR_SEPARATOR_STR "hud",												".pcx .ani .eff .tga .jpg .png .dds",	CF_TYPE_DATA	},
-	{ CF_TYPE_PLAYERS,				"data" DIR_SEPARATOR_STR "players",											".hcf",								CF_TYPE_DATA	},
+	{ CF_TYPE_PLAYERS,				"data" DIR_SEPARATOR_STR "players",											".hcf", /* DON'T add pilot files here!! */	CF_TYPE_DATA	},
 	{ CF_TYPE_PLAYER_IMAGES,		"data" DIR_SEPARATOR_STR "players" DIR_SEPARATOR_STR "images",				".pcx .png .dds",						CF_TYPE_PLAYERS	},
 	{ CF_TYPE_SQUAD_IMAGES,			"data" DIR_SEPARATOR_STR "players" DIR_SEPARATOR_STR "squads",				".pcx .png .dds",						CF_TYPE_PLAYERS	},
 	{ CF_TYPE_SINGLE_PLAYERS,		"data" DIR_SEPARATOR_STR "players" DIR_SEPARATOR_STR "single",				".pl2 .cs2 .plr .csg .css .json",	CF_TYPE_PLAYERS	},

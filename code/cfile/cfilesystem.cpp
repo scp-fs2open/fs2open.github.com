@@ -1551,7 +1551,7 @@ int cf_get_file_list(SCP_vector<SCP_string>& list, int pathtype, const char* fil
 	}
 
 	bool skip_packfiles = false;
-	if ( (pathtype == CF_TYPE_PLAYERS) || (pathtype == CF_TYPE_SINGLE_PLAYERS) || (pathtype == CF_TYPE_MULTI_PLAYERS) ) {
+	if ( (pathtype == CF_TYPE_SINGLE_PLAYERS) || (pathtype == CF_TYPE_MULTI_PLAYERS) ) {
 		skip_packfiles = true;
 	} else if (Get_file_list_child != NULL) {
 		skip_packfiles = true;
@@ -1708,7 +1708,7 @@ int cf_get_file_list(int max, char** list, int pathtype, const char* filter, int
 	}
 
 	bool skip_packfiles = false;
-	if ((pathtype == CF_TYPE_PLAYERS) || (pathtype == CF_TYPE_SINGLE_PLAYERS) || (pathtype == CF_TYPE_MULTI_PLAYERS)) {
+	if ((pathtype == CF_TYPE_SINGLE_PLAYERS) || (pathtype == CF_TYPE_MULTI_PLAYERS)) {
 		skip_packfiles = true;
 	}
 	else if (Get_file_list_child != NULL) {
@@ -1887,7 +1887,7 @@ int cf_get_file_list_preallocated(int max, char arr[][MAX_FILENAME_LEN], char** 
 	}
 
 	bool skip_packfiles = false;
-	if ((pathtype == CF_TYPE_PLAYERS) || (pathtype == CF_TYPE_SINGLE_PLAYERS) || (pathtype == CF_TYPE_MULTI_PLAYERS)) {
+	if ((pathtype == CF_TYPE_SINGLE_PLAYERS) || (pathtype == CF_TYPE_MULTI_PLAYERS)) {
 		skip_packfiles = true;
 	}
 	else if (Get_file_list_child != NULL) {
@@ -1981,14 +1981,26 @@ int cf_get_file_list_preallocated(int max, char arr[][MAX_FILENAME_LEN], char** 
 // Output:  path      - Fully qualified pathname.
 //Returns 0 if the result would be too long (invalid result)
 int cf_create_default_path_string(char* path, uint path_max, int pathtype, const char* filename, bool localize,
-                                  uint32_t location_flags)
+                                  uint32_t _location_flags)
 {
+	uint32_t location_flags = _location_flags;
+
 	if ( filename && strchr(filename, DIR_SEPARATOR_CHAR) ) {
 		// Already has full path
 		strncpy( path, filename, path_max );
 
 	} else {
 		cf_root* root = nullptr;
+
+		// override location flags for path types which should always come from the root (NOT mod directories)
+		// NOTE: cache directories should NOT be added here to avoid possible mod breakage
+		switch(pathtype) {
+			case CF_TYPE_PLAYERS:
+			case CF_TYPE_MULTI_PLAYERS:
+			case CF_TYPE_SINGLE_PLAYERS:
+				location_flags = CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT;
+				break;
+		}
 
 		for (auto i = 0; i < Num_roots; ++i) {
 			auto current_root = cf_get_root(i);
