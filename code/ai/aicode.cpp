@@ -1288,7 +1288,9 @@ void ai_turn_towards_vector(vec3d* dest, object* objp, vec3d* slide_vec, vec3d* 
 
 	//	Should be more general case here.  Currently, anything that is not a weapon will bank when it turns.
 	// Goober5000 - don't bank if sexp or ship says not to
-	if ( (objp->type == OBJ_WEAPON) || (flags & AITTV_IGNORE_BANK ) )
+	if (flags & AITTV_FORCE_DELTA_BANK)
+		bank = bank_override;
+	else if ( (objp->type == OBJ_WEAPON) || (flags & AITTV_IGNORE_BANK ) )
 		bank = 0.0f;
 	else if (objp->type == OBJ_SHIP && Ship_info[Ships[objp->instance].ship_info_index].flags[Ship::Info_Flags::Dont_bank_when_turning])
 		bank = 0.0f;
@@ -14816,11 +14818,11 @@ void ai_process( object * obj, int ai_index, float frametime )
 
 	memset( &AI_ci, 0, sizeof(AI_ci) );
 
-	ai_frame(OBJ_INDEX(obj));
-
 	AI_ci.pitch = 0.0f;
 	AI_ci.bank = 0.0f;
 	AI_ci.heading = 0.0f;
+
+	ai_frame(OBJ_INDEX(obj));
 
 	// the ships maximum velocity now depends on the energy flowing to engines
 	obj->phys_info.max_vel.xyz.z = shipp->current_max_speed;
