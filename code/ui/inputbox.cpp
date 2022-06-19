@@ -424,7 +424,7 @@ bool UI_INPUTBOX::handle_textInputEvent(const SDL_Event& event) {
 	if (event.text.text[0] != '\0' && event.text.text[0] != '\1') {
 		int key_used = 0;
 		for (char c : event.text.text) {
-			if (c <= 32)
+			if (c < 32)
 				break;
 
 			add_input(c, &key_used);
