@@ -782,7 +782,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "ai-waypoints-once",				OP_AI_WAYPOINTS_ONCE,					2,	2,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-ignore",						OP_AI_IGNORE,							2,	2,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-ignore-new",					OP_AI_IGNORE_NEW,						2,	2,			SEXP_GOAL_OPERATOR,	},
-	{ "ai-stay-near-ship",				OP_AI_STAY_NEAR_SHIP,					2,	2,			SEXP_GOAL_OPERATOR,	},
+	{ "ai-stay-near-ship",				OP_AI_STAY_NEAR_SHIP,					2,	3,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-evade-ship",					OP_AI_EVADE_SHIP,						2,	2,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-keep-safe-distance",			OP_AI_KEEP_SAFE_DISTANCE,				1,	1,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-stay-still",					OP_AI_STAY_STILL,						2,	2,			SEXP_GOAL_OPERATOR,	},
@@ -34938,11 +34938,12 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t2:\tGoal priority (number between 0 and 89)." },
 
 	{ OP_AI_STAY_NEAR_SHIP, "Ai-stay near ship (Ship goal)\r\n"
-		"\tCauses the specified ship to keep itself near the given ship and not stray too far "
+		"\tCauses the specified ship to park itself near the given ship and move closer if the other ship moves too far "
 		"away from it.\r\n\r\n"
-		"Takes 2 arguments...\r\n"
+		"Takes 2 to 3 arguments...\r\n"
 		"\t1:\tName of ship to stay near.\r\n"
-		"\t2:\tGoal priority (number between 0 and 89)." },
+		"\t2:\tGoal priority (number between 0 and 89).\r\n"
+		"\t3:\tDistance to stay within (optional; defaults to 300)." },
 
 	{ OP_AI_KEEP_SAFE_DISTANCE, "Ai-keep safe distance (Ship goal)\r\n"
 		"\tTells the specified ship to stay a safe distance away from any ship that isn't on the "

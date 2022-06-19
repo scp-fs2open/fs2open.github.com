@@ -162,6 +162,9 @@ void ai_goal_reset(ai_goal *aigp, bool adding_goal, int ai_mode, int ai_submode,
 	aigp->target_instance = -1;
 	aigp->target_signature = -1;
 
+	aigp->int_data = 0;
+	aigp->float_data = 0.0f;
+
 	aigp->docker.name = nullptr;
 	aigp->dockee.name = nullptr;
 
@@ -970,6 +973,16 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_goal *aigp, char *actor_name )
 		aigp->ai_mode = AI_GOAL_KEEP_SAFE_DISTANCE;
 		break;
 
+	case OP_AI_STAY_NEAR_SHIP:
+		aigp->target_name = ai_get_goal_target_name( CTEXT(CDR(node)), &aigp->target_name_index );
+		aigp->priority = atoi( CTEXT(CDDR(node)) );
+		if ( CDDDR(node) < 0 )
+			aigp->float_data = 300.0f;
+		else
+			aigp->float_data = i2fl(atoi( CTEXT(CDDDR(node)) ));
+		aigp->ai_mode = AI_GOAL_STAY_NEAR_SHIP;
+		break;
+
 	case OP_AI_FORM_ON_WING:
 		aigp->priority = 99;
 		aigp->target_name = ai_get_goal_target_name(CTEXT(CDR(node)), &aigp->target_name_index);
@@ -982,7 +995,6 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_goal *aigp, char *actor_name )
 	case OP_AI_GUARD:
 	case OP_AI_GUARD_WING:
 	case OP_AI_EVADE_SHIP:
-	case OP_AI_STAY_NEAR_SHIP:
 	case OP_AI_IGNORE:
 	case OP_AI_IGNORE_NEW:
 		aigp->target_name = ai_get_goal_target_name( CTEXT(CDR(node)), &aigp->target_name_index );
@@ -2382,8 +2394,7 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 		shipnum = ship_name_lookup( current_goal->target_name );
 		Assert( shipnum >= 0 );
 		other_obj = &Objects[Ships[shipnum].objnum];
-		// todo MK:  hook to keep support ship near other_obj -- other_obj could be the player object!!!
-		float	dist = 300.0f;		//	How far away to stay from ship.  Should be set in SEXP?
+		float dist = current_goal->float_data;	//	How far away to stay from ship.  Should be set in SEXP?
 		ai_do_stay_near(objp, other_obj, dist);
 		break;
 										  }

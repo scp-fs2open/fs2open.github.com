@@ -115,6 +115,10 @@ typedef struct ai_goal {
 	int target_instance;		// instance of thing this ship might be chasing (currently only used for weapons; note, not the same as objnum!)
 	int	target_signature;		// signature of object this ship might be chasing (currently only used for weapons; paired with above value to confirm target)
 
+	// extra goal-specific data
+	int int_data;
+	float float_data;
+
 	// unions for docking stuff.
 	// (AIGF_DOCKER_INDEX_VALID and AIGF_DOCKEE_INDEX_VALID tell us to use indexes; otherwise we use names)
 	// these are the dockpoints used on the docker and dockee ships, not the ships themselves
