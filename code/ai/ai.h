@@ -12,6 +12,7 @@
 #ifndef _AI_H
 #define _AI_H
 
+#include "ai/aigoals.h"
 #include "ai/ai_profiles.h"
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
@@ -55,18 +56,6 @@ extern ai_flag_name Ai_flag_names[];
 #define	AISS_3	43				//  Gotten near spot, fly about there.
 #define	AISS_1a	44				//	Pick a new nearby spot because we are endangered, then go to AISS_2
 
-#define MAX_AI_GOALS	5
-
-// types of ai goals -- tyese types will help us to determination on which goals should
-// have priority over others (i.e. when a player issues a goal to a wing, then a seperate
-// goal to a ship in that wing).  We would probably use this type in conjunction with
-// goal priority to establish which goal to follow
-#define AIG_TYPE_EVENT_SHIP			1		// from mission event direct to ship
-#define AIG_TYPE_EVENT_WING			2		// from mission event direct to wing
-#define AIG_TYPE_PLAYER_SHIP		3		// from player direct to ship
-#define AIG_TYPE_PLAYER_WING		4		// from player direct to wing
-#define AIG_TYPE_DYNAMIC			5		// created on the fly
-
 //	Flags to ai_turn_towards_vector().
 #define	AITTV_FAST					(1<<0)	//	Turn fast, not slowed down based on skill level.
 #define AITTV_VIA_SEXP				(1<<1)	//	Goober5000 - via sexp
@@ -76,39 +65,7 @@ extern ai_flag_name Ai_flag_names[];
 
 #define	KAMIKAZE_HULL_ON_DEATH	-1000.0f	//	Hull strength ship gets set to if it crash-dies.
 
-// structure for AI goals
-typedef struct ai_goal {
-	int	signature;			//	Unique identifier.  All goals ever created (per mission) have a unique signature.
-	int	ai_mode;				// one of the AIM_* modes for this goal
-	int	ai_submode;			// maybe need a submode
-	int	type;					// one of the AIG_TYPE_* values above
-	flagset<AI::Goal_Flags>	flags;				// one of the AIGF_* values above
-	fix	time;					// time at which this goal was issued.
-	int	priority;			// how important is this goal -- number 0 - 100
-
-	const char *target_name;	// name of the thing that this goal acts upon
-	int		target_name_index;	// index of goal_target_name in Goal_target_names[][]
-	waypoint_list *wp_list;		// waypoints that this ship might fly.
-	int target_instance;		// instance of thing this ship might be chasing (currently only used for weapons; note, not the same as objnum!)
-	int	target_signature;		// signature of object this ship might be chasing (currently only used for weapons; paired with above value to confirm target)
-
-	// unions for docking stuff.
-	// (AIGF_DOCKER_INDEX_VALID and AIGF_DOCKEE_INDEX_VALID tell us to use indexes; otherwise we use names)
-	// these are the dockpoints used on the docker and dockee ships, not the ships themselves
-	union {
-		const char *name;
-		int	index;
-	} docker;
-	
-	union {
-		const char *name;
-		int	index;
-	} dockee;
-
-	object_ship_wing_point_team lua_ai_target;
-
-} ai_goal;
-
+// individual AI modes aka AI behaviors
 #define	AIM_CHASE				0
 #define	AIM_EVADE				1
 #define	AIM_GET_BEHIND			2		//	This mode is not actually implemented.
@@ -138,8 +95,7 @@ typedef struct ai_goal {
 #define	MAX_WAYPOINTS_PER_LIST	20
 #define	MAX_ENEMY_DISTANCE	2500.0f		//	Maximum distance from which a ship will pursue an enemy.
 
-#define AI_GOAL_NONE				-1
-
+#define MAX_AI_GOALS	5
 #define	AI_ACTIVE_GOAL_DYNAMIC	999
 
 typedef struct ai_class {
@@ -531,11 +487,6 @@ typedef struct {
 
 extern int Mission_all_attack;	//	!0 means all teams attack all teams.
 
-extern void update_ai_info_for_hit(int hitter_obj, int hit_obj);
-extern void ai_frame_all(void);
-
-extern int find_guard_obj(void);
-
 extern ai_info Ai_info[];
 extern ai_info *Player_ai;
 
@@ -546,7 +497,6 @@ extern int Num_ai_classes;
 extern int Ai_firing_enabled;
 
 extern const char *Skill_level_names(int skill_level, int translate = 1);
-extern int Ai_goal_signature;
 
 extern control_info AI_ci;
 
