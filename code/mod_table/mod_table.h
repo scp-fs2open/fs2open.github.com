@@ -81,6 +81,7 @@ extern bool Show_subtitle_uses_pixels;
 extern int Show_subtitle_screen_base_res[];
 extern int Show_subtitle_screen_adjusted_res[];
 extern bool Always_warn_player_about_unbound_keys;
+extern float Thruster_easing;
 
 void mod_table_init();
 void mod_table_post_process();

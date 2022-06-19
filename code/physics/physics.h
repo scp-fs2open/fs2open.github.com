@@ -74,9 +74,11 @@ typedef struct physics_info {
 	vec3d	desired_vel;				// in world coord, (possibly) damped by side_slip_time_const to get final vel
 	vec3d	desired_rotvel;				// in local coords, damped by rotdamp to get final rotvel
 										// With framerate_independent_turning, the AI are not damped, see physics_sim_rot
-	float		forward_thrust;			// How much the forward thruster is applied.  0-1.
-	float		side_thrust;			// How much the forward thruster is +x.  0-1.
-	float		vert_thrust;			// How much the forward thruster is +y.  0-1.
+
+	vec3d  linear_thrust;				// -1 through 1, how much thrust is being applied in the lateral directions
+										// COSMETIC ONLY, this should not be used for physical behavior
+	vec3d  rotational_thrust;			// -1 through 1, how much thrust is being applied in the rotationally
+										// COSMETIC ONLY, this should not be used for physical behavior
 		
 	// Data that changes each frame.  Physics fills these in each frame.
 	vec3d	vel;						// The current velocity vector of this object
@@ -84,7 +86,6 @@ typedef struct physics_info {
 	float		speed;					// Yes, this can be derived from velocity, but that's expensive!
 	float		fspeed;					//	Speed in the forward direction.
 	float		heading;
-	vec3d	prev_fvec;				//	Used in AI for momentum.
 	matrix	last_rotmat;			//	Used for moving two objects together and for editor.
 
 	int		afterburner_decay;	// timestamp used to control how long ship shakes after afterburner released

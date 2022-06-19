@@ -3535,7 +3535,7 @@ int WE_Default::warpStart()
 			objp->phys_info.prev_ramp_vel.xyz.x = 0.0f;
 			objp->phys_info.prev_ramp_vel.xyz.y = 0.0f;
 			objp->phys_info.prev_ramp_vel.xyz.z = warping_speed;
-			objp->phys_info.forward_thrust = 1.0f;		// How much the forward thruster is applied.  0-1.
+			objp->phys_info.linear_thrust.xyz.z = 1.0f;		// How much the forward thruster is applied.  0-1.
 		}
 	}
 
@@ -3570,7 +3570,7 @@ int WE_Default::warpFrame(float frametime)
 			objp->phys_info.prev_ramp_vel.xyz.x = 0.0f;
 			objp->phys_info.prev_ramp_vel.xyz.y = 0.0f;
 			objp->phys_info.prev_ramp_vel.xyz.z = warping_speed;
-			objp->phys_info.forward_thrust = 0.0f;		// How much the forward thruster is applied.  0-1.
+			objp->phys_info.linear_thrust.xyz.z = 0.0f;		// How much the forward thruster is applied.  0-1.
 
 			stage_time_end = timestamp(fl2i(warping_time*1000.0f));
 		}

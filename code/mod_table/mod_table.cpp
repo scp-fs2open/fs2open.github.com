@@ -92,6 +92,7 @@ bool Show_subtitle_uses_pixels;
 int Show_subtitle_screen_base_res[2];
 int Show_subtitle_screen_adjusted_res[2];
 bool Always_warn_player_about_unbound_keys;
+float Thruster_easing;
 
 void mod_table_set_version_flags();
 
@@ -568,6 +569,14 @@ void parse_mod_table(const char *filename)
 			stuff_float(&Min_pixel_size_laser);
 		}
 
+		if (optional_string("$Thruster easing value:")) {
+			stuff_float(&Thruster_easing);
+			if (Thruster_easing <= 0.0f) {
+				Warning(LOCATION, "A \'Thruster easing value\' less than or equal to 0 will not be used.\n");
+			}
+
+		}
+
 		optional_string("#NETWORK SETTINGS");
 
 		if (optional_string("$FS2NetD port:")) {
@@ -921,6 +930,7 @@ void mod_table_reset()
 	Show_subtitle_screen_adjusted_res[0] = -1;
 	Show_subtitle_screen_adjusted_res[1] = -1;
 	Always_warn_player_about_unbound_keys = false;
+	Thruster_easing = 0;
 }
 
 void mod_table_set_version_flags()

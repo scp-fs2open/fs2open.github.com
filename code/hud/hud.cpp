@@ -1947,7 +1947,7 @@ void update_throttle_sound()
 		throttle_sound_check_id = timestamp(THROTTLE_SOUND_CHECK_INTERVAL);
 	
 		if ( object_get_gliding(Player_obj) ) {	// Backslash
-			percent_throttle = Player_obj->phys_info.forward_thrust;
+			percent_throttle = Player_obj->phys_info.linear_thrust.xyz.z;
 		} else {
 			percent_throttle = Player_obj->phys_info.fspeed / Ship_info[Ships[Player_obj->instance].ship_info_index].max_speed;
 		}

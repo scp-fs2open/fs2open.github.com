@@ -114,7 +114,7 @@ ADE_VIRTVAR(ForwardDecelerationTime, l_Physics, "number", "Forward deceleration 
 	return ade_set_args(L, "f", pih->pi->forward_decel_time_const);
 }
 
-ADE_VIRTVAR(ForwardThrust, l_Physics, "number", "Forward thrust amount (0-1), used primarily for thruster graphics", "number", "Forward thrust, or 0 if handle is invalid")
+ADE_VIRTVAR(ForwardThrust, l_Physics, "number", "Forward thrust amount (-1 - 1), used primarily for thruster graphics and does not affect any physical behavior", "number", "Forward thrust, or 0 if handle is invalid")
 {
 	physics_info_h *pih;
 	float f = 0.0f;
@@ -125,10 +125,10 @@ ADE_VIRTVAR(ForwardThrust, l_Physics, "number", "Forward thrust amount (0-1), us
 		return ade_set_error(L, "f", 0.0f);
 
 	if(ADE_SETTING_VAR) {
-		pih->pi->forward_thrust = f;
+		pih->pi->linear_thrust.xyz.z = f;
 	}
 
-	return ade_set_args(L, "f", pih->pi->forward_thrust);
+	return ade_set_args(L, "f", pih->pi->linear_thrust.xyz.z);
 }
 
 ADE_VIRTVAR(Mass, l_Physics, "number", "Object mass", "number", "Object mass, or 0 if handle is invalid")
@@ -233,7 +233,7 @@ ADE_VIRTVAR(ShockwaveShakeAmplitude, l_Physics, "number", "How much shaking from
 	return ade_set_args(L, "f", pih->pi->shockwave_shake_amp);
 }
 
-ADE_VIRTVAR(SideThrust, l_Physics, "number", "Side thrust amount (0-1), used primarily for thruster graphics", "number", "Side thrust amount, or 0 if handle is invalid")
+ADE_VIRTVAR(SideThrust, l_Physics, "number", "Side thrust amount (-1 - 1), used primarily for thruster graphics and does not affect any physical behavior", "number", "Side thrust amount, or 0 if handle is invalid")
 {
 	physics_info_h *pih;
 	float f = 0.0f;
@@ -244,10 +244,10 @@ ADE_VIRTVAR(SideThrust, l_Physics, "number", "Side thrust amount (0-1), used pri
 		return ade_set_error(L, "f", 0.0f);
 
 	if(ADE_SETTING_VAR) {
-		pih->pi->side_thrust = f;
+		pih->pi->linear_thrust.xyz.x = f;
 	}
 
-	return ade_set_args(L, "f", pih->pi->side_thrust);
+	return ade_set_args(L, "f", pih->pi->linear_thrust.xyz.x);
 }
 
 ADE_VIRTVAR(SlideAccelerationTime, l_Physics, "number", "Time to accelerate to maximum slide velocity", "number", "Sliding acceleration time, or 0 if handle is invalid")
@@ -352,7 +352,7 @@ ADE_VIRTVAR(VelocityMax, l_Physics, "vector", "Object max local velocity (Local 
 	return ade_set_args(L, "o", l_Vector.Set(pih->pi->max_vel));
 }
 
-ADE_VIRTVAR(VerticalThrust, l_Physics, "number", "Vertical thrust amount (0-1), used primarily for thruster graphics", "number", "Vertical thrust amount, or 0 if handle is invalid")
+ADE_VIRTVAR(VerticalThrust, l_Physics, "number", "Vertical thrust amount (-1 - 1), used primarily for thruster graphics and does not affect any physical behavior", "number", "Vertical thrust amount, or 0 if handle is invalid")
 {
 	physics_info_h *pih;
 	float f = 0.0f;
@@ -363,10 +363,10 @@ ADE_VIRTVAR(VerticalThrust, l_Physics, "number", "Vertical thrust amount (0-1), 
 		return ade_set_error(L, "f", 0.0f);
 
 	if(ADE_SETTING_VAR) {
-		pih->pi->vert_thrust = f;
+		pih->pi->linear_thrust.xyz.y = f;
 	}
 
-	return ade_set_args(L, "f", pih->pi->vert_thrust);
+	return ade_set_args(L, "f", pih->pi->linear_thrust.xyz.y);
 }
 
 ADE_VIRTVAR(AfterburnerActive, l_Physics, "boolean", "Specifies if the afterburner is active or not", "boolean", "true if afterburner is active false otherwise")
