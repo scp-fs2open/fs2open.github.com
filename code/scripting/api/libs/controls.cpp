@@ -334,6 +334,8 @@ ADE_VIRTVAR(MouseControlStatus, l_Mouse, "boolean", "Gets and sets the retail mo
 		{
 			Use_mouse_to_fly = false;
 		}
+
+		mouse_flush();
 	}
 
 	if (Use_mouse_to_fly)
