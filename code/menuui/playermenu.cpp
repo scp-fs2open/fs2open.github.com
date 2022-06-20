@@ -183,7 +183,7 @@ char Player_select_middle_text[150] = "";
 
 
 // FORWARD DECLARATIONS
-void player_select_init_player_stuff(int mode);		// switch between single and multiplayer modes
+void player_select_init_player_stuff(int mode, SCP_string const current_callsign = SCP_string(""));		// switch between single and multiplayer modes
 void player_select_set_input_mode(int n);
 void player_select_button_pressed(int n);
 void player_select_scroll_list_up();
@@ -434,12 +434,12 @@ void player_select_do()
 				player_select_set_bottom_text(XSTR( "Single-Player Mode", 376));
 
 				// reinitialize as single player mode
-				player_select_init_player_stuff(PLAYER_SELECT_MODE_SINGLE);
+				player_select_init_player_stuff(PLAYER_SELECT_MODE_SINGLE, SCP_string(Pilots[Player_select_pilot]));
 			} else if (Player_select_mode == PLAYER_SELECT_MODE_SINGLE) {
 				player_select_set_bottom_text(XSTR( "Multiplayer Mode", 377));
 
 				// reinitialize as multiplayer mode
-				player_select_init_player_stuff(PLAYER_SELECT_MODE_MULTI);
+				player_select_init_player_stuff(PLAYER_SELECT_MODE_MULTI, SCP_string(Pilots[Player_select_pilot]));
 			}
 
 			break;
@@ -732,7 +732,7 @@ void player_select_button_pressed(int n)
 			player_select_set_bottom_text(XSTR( "Single-Player Mode", 376));
 
 			// reinitialize as single player mode
-			player_select_init_player_stuff(PLAYER_SELECT_MODE_SINGLE);
+			player_select_init_player_stuff(PLAYER_SELECT_MODE_SINGLE, SCP_string(Pilots[Player_select_pilot]));
 		} else {
 			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
@@ -752,7 +752,7 @@ void player_select_button_pressed(int n)
 			player_select_set_bottom_text(XSTR( "Multiplayer Mode", 377));
 
 			// reinitialize as multiplayer mode
-			player_select_init_player_stuff(PLAYER_SELECT_MODE_MULTI);
+			player_select_init_player_stuff(PLAYER_SELECT_MODE_MULTI, SCP_string(Pilots[Player_select_pilot]));
 		} else {
 			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
@@ -946,7 +946,7 @@ int player_select_get_last_pilot()
 	return 0;
 }
 
-void player_select_init_player_stuff(int mode)
+void player_select_init_player_stuff(int mode, SCP_string const current_callsign)
 {
 	Player_select_list_start = 0;
 
@@ -979,7 +979,7 @@ void player_select_init_player_stuff(int mode)
 		}
 	}
 
-	Player = NULL;
+	Player = nullptr;
 
 	// if this value is -1, it means we should set it to the num pilots count
 	if (Player_select_initial_count == -1) {
@@ -992,6 +992,18 @@ void player_select_init_player_stuff(int mode)
 		player_select_set_middle_text(XSTR( "Type Callsign and Press Enter", 381));
 		player_select_set_controls(1);		// gray out the controls
 		player_select_create_new_pilot();
+	
+	// look for a match to other version of the player that was already selected, a QOL feature.
+	// (Users shouldn't have to select their pilot again after switching modes)
+	// needs to be searched for on the off chance something was bashed earlier.
+	} else if (!current_callsign.empty()) {
+		Player_select_pilot = 0;
+		for (int i = 0; i < Player_select_num_pilots; i++){
+			if (!stricmp(current_callsign.c_str(), Pilots[i])) {
+				Player_select_pilot = i;
+				break;
+			}
+		}
 	} else {
 		Player_select_pilot = 0;
 	}
