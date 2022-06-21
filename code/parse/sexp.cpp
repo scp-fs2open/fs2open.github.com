@@ -3508,7 +3508,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				if ( type2 != SEXP_ATOM_STRING )
 					return SEXP_CHECK_TYPE_MISMATCH;
 
-				if ( stricmp(CTEXT(node), NOX("default")) != 0 && !strstr(CTEXT(node), NOX(".pof")) )
+				if ( stricmp(CTEXT(node), NOX("default")) != 0 && stricmp(CTEXT(node), NOX("none")) != 0 && !strstr(CTEXT(node), NOX(".pof")) )
 					return SEXP_CHECK_INVALID_SKYBOX_NAME;
 
 				break;
@@ -19141,13 +19141,12 @@ void sexp_set_skybox_model_preload(const char *name)
 {
 	int i;
 
-	if ( !stricmp("default", name) ) {
-		// if there isn't a mission skybox model then don't load one
-		if ( strlen(The_mission.skybox_model) ) {
-			i = model_load( The_mission.skybox_model, 0, nullptr );
-			model_page_in_textures( i );
-		}
-	} else {
+	if (!stricmp("default", name)) {
+		name = The_mission.skybox_model;
+	}
+
+	// if there isn't a skybox model then don't load one
+	if ( strlen(name) && stricmp(name, "none") != 0 ) {
 		i = model_load( name, 0, nullptr );
 		model_page_in_textures( i );
 	}
@@ -36735,7 +36734,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t3-8:\tSet or unset the following skyboxes flags (optional)\r\n"
 		"\t\t\tadd-lighting, no-transparency, add-zbuffer\r\n"
 		"\t\t\tadd-culling, no-glowmaps, force-clamp\r\n\r\n"
-		"Note: If the model filename is set to \"default\" with no extension then it will switch to the mission supplied default skybox."
+		"Note: If the model filename is set to \"default\" with no extension then it will switch to the mission supplied default skybox.  If it is an empty string or \"none\" then it will remove any current skybox."
 	},
 
 	// Goober5000
