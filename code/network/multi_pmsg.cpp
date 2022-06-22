@@ -207,6 +207,7 @@ void multi_msg_eval_text_msg()
 int multi_msg_text_process(int k)
 {
 	char str[2];
+	int ascii;
 
 	// keep eating keys for a short period of time
 	if ( Multi_msg_eat_stamp.isValid() && !ui_timestamp_elapsed(Multi_msg_eat_stamp) ) {
@@ -248,9 +249,16 @@ int multi_msg_text_process(int k)
 
 	// stick other printable characters onto the text
 	default :					
+		ascii = key_to_ascii(k);
+
+		// make sure it's actually a printable character
+		if (ascii == 255) {
+			break;
+		}
+
 		// if we're not already at the maximum length
 		if(strlen(Multi_msg_text) < MULTI_MSG_MAX_LEN){
-			str[0] = (char)key_to_ascii(k);
+			str[0] = static_cast<char>(ascii);
 			str[1] = '\0';
 			strcat_s(Multi_msg_text,str);		
 		}
