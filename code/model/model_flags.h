@@ -13,6 +13,7 @@ namespace Model {
 		Do_not_scale_detail_distances,	// if set should not scale boxes or spheres based on 'model detail' settings
 		Gun_rotation,					// for animated weapon models
 		Instant_rotate_accel,			// rotating submodels instantly reach their desired velocity
+		Instant_translate_accel,		// ditto for translating submodels
 		No_collisions,					// for $no_collisions property - kazan
 		Nocollide_this_only,			//SUSHI: Like no_collisions, but not recursive. For the "replacement" collision model scheme.
 		Collide_invisible,				//SUSHI: If set, this submodel should allow collisions for invisible textures. For the "replacement" collision model scheme.
@@ -27,6 +28,7 @@ namespace Model {
 		Rotates,			// This means the object rotates automatically
 		Translates,			// This means the object translates automatically
 		Stepped_rotate,		// This means that the rotation occurs in steps
+		Stepped_translate,	// Ditto for translation
 		Ai_rotate,			// This means that the rotation is controlled by ai
 		Crewpoint,			// If set, this is a crew point.
 		Awacs,				// If set, this subsystem has AWACS capability

@@ -114,8 +114,7 @@ static void shipfx_subsystem_maybe_create_live_debris(object *ship_objp, ship *s
 		model_get_rotating_submodel_axis(&model_axis, &world_axis, pm, pmi, submodel_num, &ship_objp->orient);
 		vm_vec_copy_scale(&rotvel, &world_axis, smi->current_turn_rate);
 
-		//TODO replace zero_vector with translation offset of submodel
-		model_instance_local_to_global_point(&world_axis_pt, &vmd_zero_vector, pm, pmi, submodel_num, &ship_objp->orient, &ship_objp->pos);
+		model_instance_local_to_global_point(&world_axis_pt, &smi->canonical_offset, pm, pmi, submodel_num, &ship_objp->orient, &ship_objp->pos);
 
 		vm_quaternion_rotate(&m_rot, smi->cur_angle, &model_axis);
 	} else {

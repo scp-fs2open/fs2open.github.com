@@ -96,7 +96,7 @@ struct submodel_instance
 	float	current_shift_rate = 0.0f;
 	float	desired_shift_rate = 0.0f;
 	float	shift_accel = 0.0f;
-	int		shift_step_zero_timestamp = timestamp();	// timestamp determines when next step is to begin (for stepped translation)
+	TIMESTAMP stepped_translation_started;
 
 	bool	blown_off = false;						// If set, this subobject is blown off
 	bool	collision_checked = false;
@@ -150,6 +150,17 @@ typedef struct stepped_rotation {
 	bool backwards;				// if rate is negative
 } stepped_rotation_t;
 
+typedef struct stepped_translation {
+	bool reverse_after_step;	// for back-and-forth motion
+	float step_distance;	// linear displacement of one step
+	float fraction;			// fraction of time in step spent in accel
+	float t_transit;			// time spent moving from one step to next
+	float t_pause;				// time at rest between steps
+	float max_shift_rate;		// max shift rate going between steps
+	float max_shift_accel;	// max accel going between steps
+	bool backwards;				// if rate is negative
+} stepped_translation_t;
+
 struct queued_animation;
 
 // definition for model subsystems.
@@ -196,6 +207,7 @@ public:
 	// movement specific info
 	int			weapon_rotation_pbank;				// weapon-controlled rotation - Goober5000
 	std::shared_ptr<stepped_rotation_t>		stepped_rotation;		// turn rotation struct
+	std::shared_ptr<stepped_translation_t>	stepped_translation;	// shift translation struct
 
 	// AWACS specific information
 	float		awacs_intensity;						// awacs intensity of this subsystem
@@ -1019,13 +1031,20 @@ extern int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi
 
 // Rotates the angle of a submodel.  Use this so the right unlocked axis
 // gets stuffed.
-extern void submodel_canonicalize(bsp_info *sm, submodel_instance *smi, bool clamp);
+extern void submodel_canonicalize_rotation(bsp_info *sm, submodel_instance *smi, bool clamp);
 extern void submodel_rotate(model_subsystem *psub, submodel_instance *smi);
 extern void submodel_rotate(bsp_info *sm, submodel_instance *smi);
 
 // Rotates the angle of a submodel.  Use this so the right unlocked axis
 // gets stuffed.  Does this for stepped rotations
 void submodel_stepped_rotate(model_subsystem *psub, submodel_instance *smi);
+
+// Similar to above
+extern void submodel_canonicalize_translation(bsp_info *sm, submodel_instance *smi);
+extern void submodel_translate(model_subsystem *psub, submodel_instance *smi);
+extern void submodel_translate(bsp_info *sm, submodel_instance *smi);
+
+void submodel_stepped_translate(model_subsystem *psub, submodel_instance *smi);
 
 // ------- submodel transformations -------
 
