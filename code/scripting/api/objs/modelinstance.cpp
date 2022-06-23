@@ -119,32 +119,33 @@ ADE_FUNC(isValid, l_ModelInstance, nullptr, "True if valid, false or nil if not"
 	return ade_set_args(L, "b", mih->IsValid());
 }
 
-ADE_VIRTVAR(Orientation, l_SubmodelInstance, "orientation", "Gets or sets the submodel instance orientation (world orientation)", "orientation", "Orientation, or identity orientation if handle is not valid")
+ADE_VIRTVAR(Orientation, l_SubmodelInstance, "orientation", "Gets or sets the submodel instance orientation", "orientation", "Orientation, or identity orientation if handle is not valid")
 {
 	submodelinstance_h *smih;
 	matrix_h *mh = nullptr;
 	if (!ade_get_args(L, "o|o", l_SubmodelInstance.GetPtr(&smih), l_Matrix.GetPtr(&mh)))
-		return ade_set_error(L, "o", l_Matrix.Set(matrix_h(&vmd_identity_matrix)));
+		return ade_set_error(L, "o", l_Matrix.Set(matrix_h()));
 
 	if (!smih->IsValid())
-		return ade_set_error(L, "o", l_Matrix.Set(matrix_h(&vmd_identity_matrix)));
+		return ade_set_error(L, "o", l_Matrix.Set(matrix_h()));
+
+	auto smi = smih->Get();
+	if (smi == nullptr)
+		return ade_set_error(L, "o", l_Matrix.Set(matrix_h()));
 
 	if (ADE_SETTING_VAR && mh != nullptr)
 	{
-		auto sm = smih->GetSubmodel();
-		auto smi = smih->Get();
-
 		smi->canonical_prev_orient = smi->canonical_orient;
 		smi->canonical_orient = *mh->GetMatrix();
 
 		float angle = 0.0f;
-		vm_closest_angle_to_matrix(&smi->canonical_orient, &sm->rotation_axis, &angle);
+		vm_closest_angle_to_matrix(&smi->canonical_orient, &smih->GetSubmodel()->rotation_axis, &angle);
 
 		smi->cur_angle = angle;
 		smi->turret_idle_angle = angle;
 	}
 
-	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&smih->Get()->canonical_orient)));
+	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&smi->canonical_orient)));
 }
 
 ADE_FUNC(findWorldPoint, l_SubmodelInstance, "vector", "Calculates the world coordinates of a point in a submodel's frame of reference", "vector", "Point, or empty vector if handle is not valid")

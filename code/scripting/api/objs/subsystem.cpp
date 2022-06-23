@@ -101,11 +101,11 @@ ADE_VIRTVAR(AWACSRadius, l_Subsystem, "number", "Subsystem AWACS radius", "numbe
 	return ade_set_args(L, "f", sso->ss->awacs_radius);
 }
 
-ADE_VIRTVAR(Orientation, l_Subsystem, "orientation", "Orientation of subobject or turret base", "orientation", "Subsystem orientation, or null orientation if handle is invalid")
+ADE_VIRTVAR(Orientation, l_Subsystem, "orientation", "Orientation of subobject or turret base", "orientation", "Subsystem orientation, or identity orientation if handle is invalid")
 {
 	ship_subsys_h *sso;
 	matrix_h *mh = nullptr;
-	if(!ade_get_args(L, "o|o", l_Subsystem.GetPtr(&sso), l_Matrix.GetPtr(&mh)))
+	if (!ade_get_args(L, "o|o", l_Subsystem.GetPtr(&sso), l_Matrix.GetPtr(&mh)))
 		return ade_set_error(L, "o", l_Matrix.Set(matrix_h()));
 
 	if (!sso->isSubsystemValid())
@@ -115,10 +115,19 @@ ADE_VIRTVAR(Orientation, l_Subsystem, "orientation", "Orientation of subobject o
 	if (smi == nullptr)
 		return ade_set_error(L, "o", l_Matrix.Set(matrix_h()));
 
-	if(ADE_SETTING_VAR && mh)
+	if (ADE_SETTING_VAR && mh != nullptr)
 	{
+		auto pm = model_get(sso->ss->system_info->model_num);
+		auto sm = &pm->submodel[sso->ss->system_info->subobj_num];
+
 		smi->canonical_prev_orient = smi->canonical_orient;
 		smi->canonical_orient = *mh->GetMatrix();
+
+		float angle = 0.0f;
+		vm_closest_angle_to_matrix(&smi->canonical_orient, &sm->rotation_axis, &angle);
+
+		smi->cur_angle = angle;
+		smi->turret_idle_angle = angle;
 	}
 
 	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&smi->canonical_orient)));
