@@ -185,7 +185,6 @@ void CampaignEditorDialog::updateUIBranch(int selectedIdx) {
 	bool sel = selectedIdx >= 0;
 
 	if (sel) {
-		ui->sxtBranches->selectionModel()->clear();
 		ui->sxtBranches->selectionModel()->select(
 					ui->sxtBranches->model()->index(selectedIdx, 0),
 					QItemSelectionModel::Select);

@@ -880,6 +880,7 @@ const QStringList CampaignEditorDialogModel::campaignTypes { initCampaignTypes()
 /*
  * Other campaign checks:
  * #1 check: illegal source mission: does not apply, the mission owns the branch
+ * #3 check: branch sexp is assigned results of alloc_sexp (with safe params), sexp_tree::save_tree or loading a file exclusively
  * #10 check: duplicate first mission: does not apply, only one possible value
  *
 */
