@@ -13353,7 +13353,8 @@ void sexp_send_one_message( const char *name, const char *who_from, const char *
 	} else if ( !stricmp(who_from, "<none>") ) {
 		source = MESSAGE_SOURCE_NONE;
 	} else {
-		Assertion(false, "Curious... all message sources should have been covered");
+		Warning(LOCATION, "Invalid message source '%s'.  Unable to send message.", who_from);
+		return;
 	}
 
 	if ( ship_index == -1 ){
