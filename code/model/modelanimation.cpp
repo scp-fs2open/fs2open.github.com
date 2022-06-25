@@ -322,6 +322,8 @@ namespace animation {
 		if (!submodel)
 			return;
 
+		// rotation -----
+
 		submodel->canonical_prev_orient = submodel->canonical_orient;
 		submodel->canonical_orient = data.orientation;
 
@@ -333,8 +335,19 @@ namespace animation {
 		vm_matrix_to_rot_axis_and_angle(&delta, &deltaAngle, &submodel->rotation_axis);
 		submodel->current_turn_rate = deltaAngle / flFrametime;
 
-		//TODO: Once translation is a thing
-		//m_subsys->submodel_instance_1->offset = data.position;
+		// translation -----
+
+		submodel->canonical_prev_offset = submodel->canonical_offset;
+		submodel->canonical_offset = data.position;
+		
+		vec3d delta_vec;
+		vm_vec_sub(&delta_vec, &submodel->canonical_offset, &submodel->canonical_prev_offset);
+
+		// figure out the sign of the displacement based on whether it is along or against the axis
+		int sign = (vm_vec_dot(&delta_vec, &submodel->translation_axis) < 0.0f) ? -1 : 1;
+
+		float deltaMag = sign * vm_vec_mag(&delta_vec);
+		submodel->current_shift_rate = deltaMag / flFrametime;
 	}
 
 	void ModelAnimationSubmodel::resetPhysicsData(polymodel_instance* pmi) {
@@ -361,15 +374,19 @@ namespace animation {
 			if (submodel.second->rotation_type == MOVEMENT_TYPE_NONE) {
 				submodel.second->rotation_type = MOVEMENT_TYPE_TRIGGERED;
 			}
+			if (submodel.second->translation_type == MOVEMENT_TYPE_NONE) {
+				submodel.second->translation_type = MOVEMENT_TYPE_TRIGGERED;
+			}
 		}
 		
 		data.orientation = submodel.first->canonical_orient;
-		//TODO: Once translation is a thing
-		//data.position = m_subsys->submodel_instance_1->offset;
+		data.position = submodel.first->canonical_offset;
 
 		//In this case, we just initial-type initialized the submodel. Properly set its last frame data as well
-		if(isInitialType)
+		if (isInitialType) {
 			submodel.first->canonical_prev_orient = submodel.first->canonical_orient;
+			submodel.first->canonical_prev_offset = submodel.first->canonical_offset;
+		}
 
 		return true;
 	}
@@ -481,15 +498,30 @@ namespace animation {
 		if (!submodel)
 			return;
 
+		// rotation -----
+
 		submodel->canonical_prev_orient = submodel->canonical_orient;
 		submodel->canonical_orient = data.orientation;
 
+		submodel->rotation_axis = sm->rotation_axis;
+
 		float angle = 0.0f;
 		vm_closest_angle_to_matrix(&submodel->canonical_orient, &sm->rotation_axis, &angle);
-		submodel->rotation_axis = sm->rotation_axis;
 
 		submodel->cur_angle = angle;
 		submodel->turret_idle_angle = angle;
+
+		// translation -----
+
+		submodel->canonical_prev_offset = submodel->canonical_offset;
+		submodel->canonical_offset = data.position;
+
+		submodel->translation_axis = sm->translation_axis;
+
+		// figure out the sign of the displacement based on whether it is along or against the axis
+		int sign = (vm_vec_dot(&submodel->canonical_offset, &submodel->translation_axis) < 0.0f) ? -1 : 1;
+
+		submodel->cur_offset = sign * vm_vec_mag(&submodel->canonical_offset);
 	}
 
 
@@ -1504,7 +1536,7 @@ namespace animation {
 		{"$Set Angle:", 			ModelAnimationSegmentSetAngle::parser},
 		{"$Rotation:",		 	ModelAnimationSegmentRotation::parser},
 		{"$Axis Rotation:", 	ModelAnimationSegmentAxisRotation::parser},
-	//	{"$Translation:", 		ModelAnimationSegmentTranslation::parser},
+		{"$Translation:", 		ModelAnimationSegmentTranslation::parser},
 		{"$Sound During:", 		ModelAnimationSegmentSoundDuring::parser},
 		{"$Inverse Kinematics:", 	ModelAnimationSegmentIK::parser}
 	};

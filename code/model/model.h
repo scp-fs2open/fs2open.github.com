@@ -119,6 +119,7 @@ struct submodel_instance
 
 	//SMI-Specific movement axis. Only valid in MOVEMENT_TYPE_TRIGGERED.
 	vec3d	rotation_axis;
+	vec3d	translation_axis;
 
 	submodel_instance()
 	{
