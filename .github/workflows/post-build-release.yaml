@@ -51,7 +51,7 @@ jobs:
         run: pip install -r ci/post/requirements.txt
 
       - name: Post Builds (Auto trigger)
-        if: ${{ github.event_name == 'workflow_call' }} || ${{ github.event_name == 'push' }}
+        if: ${{ (github.event_name == 'workflow_call') || (github.event_name == 'push') }}
         env:
           LINUX_RESULT: ${{ inputs.linux_result }}
           WINDOWS_RESULT: ${{ inputs.windows_result }}
