@@ -2537,13 +2537,13 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					// if we're checking for an AWACS subsystem and this is not an awacs subsystem
 					if((type == OPF_AWACS_SUBSYSTEM) && !(Ship_info[ship_class].subsystems[i].flags[Model::Subsystem_Flags::Awacs]))
 					{
-						return SEXP_CHECK_INVALID_SUBSYS;
+						return SEXP_CHECK_INVALID_AWACS_SUBSYS;
 					}
 
 					// rotating subsystem, like above - Goober5000
 					if ((type == OPF_ROTATING_SUBSYSTEM) && !(Ship_info[ship_class].subsystems[i].flags[Model::Subsystem_Flags::Rotates]))
 					{
-						return SEXP_CHECK_INVALID_SUBSYS;
+						return SEXP_CHECK_INVALID_ROTATING_SUBSYS;
 					}
 				}
 
@@ -20274,28 +20274,40 @@ void sexp_set_subsys_rotation_lock_free(int node, bool locked)
 	// loop for all specified subsystems
 	for ( ; node >= 0; node = CDR(node) )
 	{
-		// get the rotating subsystem
-		auto rotate = ship_get_subsys(ship_entry->shipp, CTEXT(node));
-		if (rotate == nullptr)
+		// get the moving subsystem
+		auto subsys = ship_get_subsys(ship_entry->shipp, CTEXT(node));
+		if (subsys == nullptr)
 			continue;
 
-		// set rotate or not, depending on flag
-		rotate->flags.set(Ship::Subsystem_Flags::Rotates, !locked);
+		// set the flag
+		subsys->flags.set(Ship::Subsystem_Flags::Rotates, !locked);
+
+		// set moving or not, depending on flag
 		if (locked)
 		{   
-			if (rotate->subsys_snd_flags[Ship::Subsys_Sound_Flags::Rotate])
+			if (subsys->subsys_snd_flags[Ship::Subsys_Sound_Flags::Rotate])
 			{
-				obj_snd_delete_type(ship_entry->shipp->objnum, rotate->system_info->rotation_snd, rotate);
-				rotate->subsys_snd_flags.remove(Ship::Subsys_Sound_Flags::Rotate);
+				obj_snd_delete_type(ship_entry->shipp->objnum, subsys->system_info->rotation_snd, subsys);
+				subsys->subsys_snd_flags.remove(Ship::Subsys_Sound_Flags::Rotate);
 			}
+
+			// bit of a hack... set the timestamp to just the delta so that we can restore it properly later
+			auto &stamp = subsys->submodel_instance_1->stepped_rotation_started;
+			if (stamp.isValid())
+				stamp = TIMESTAMP(timestamp_since(stamp));
 		}
 		else
 		{
-			if (rotate->system_info->rotation_snd.isValid())
+			if (subsys->system_info->rotation_snd.isValid())
 			{
-				obj_snd_assign(ship_entry->shipp->objnum, rotate->system_info->rotation_snd, &rotate->system_info->pnt, OS_SUBSYS_ROTATION, rotate);
-				rotate->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Rotate);
+				obj_snd_assign(ship_entry->shipp->objnum, subsys->system_info->rotation_snd, &subsys->system_info->pnt, OS_SUBSYS_ROTATION, subsys);
+				subsys->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Rotate);
 			}
+
+			// and restore the timestamp from the delta
+			auto &stamp = subsys->submodel_instance_1->stepped_rotation_started;
+			if (stamp.isValid())
+				stamp = timestamp_delta(_timestamp(), -stamp.value());
 		}
 	}
 }
@@ -20312,14 +20324,14 @@ void sexp_reverse_rotating_subsystem(int node)
 	// loop for all specified subsystems
 	for ( ; node >= 0; node = CDR(node) )
 	{
-		// get the rotating subsystem
-		auto rotate = ship_get_subsys(ship_entry->shipp, CTEXT(node));
-		if (rotate == nullptr || rotate->submodel_instance_1 == nullptr)
+		// get the moving subsystem
+		auto subsys = ship_get_subsys(ship_entry->shipp, CTEXT(node));
+		if (subsys == nullptr || subsys->submodel_instance_1 == nullptr)
 			continue;
 
 		// switch direction of rotation
-		rotate->submodel_instance_1->current_turn_rate *= -1.0f;
-		rotate->submodel_instance_1->desired_turn_rate *= -1.0f;
+		subsys->submodel_instance_1->current_turn_rate *= -1.0f;
+		subsys->submodel_instance_1->desired_turn_rate *= -1.0f;
 	}
 }
 
@@ -20336,9 +20348,9 @@ void sexp_rotating_subsys_set_turn_time(int node)
 		return;
 	n = CDR(n);
 
-	// get the rotating subsystem
-	auto rotate = ship_get_subsys(ship_entry->shipp, CTEXT(n));
-	if (rotate == nullptr || rotate->submodel_instance_1 == nullptr)
+	// get the moving subsystem
+	auto subsys = ship_get_subsys(ship_entry->shipp, CTEXT(n));
+	if (subsys == nullptr || subsys->submodel_instance_1 == nullptr)
 		return;
 	n = CDR(n);
 
@@ -20346,7 +20358,7 @@ void sexp_rotating_subsys_set_turn_time(int node)
 	turn_time = eval_num(n, is_nan, is_nan_forever) / 1000.0f;
 	if (is_nan || is_nan_forever)
 		return;
-	rotate->submodel_instance_1->desired_turn_rate = PI2 / turn_time;
+	subsys->submodel_instance_1->desired_turn_rate = PI2 / turn_time;
 	n = CDR(n);
 
 	// maybe get and set the turn accel
@@ -20355,10 +20367,10 @@ void sexp_rotating_subsys_set_turn_time(int node)
 		turn_accel = eval_num(n, is_nan, is_nan_forever) / 1000.0f;
 		if (is_nan || is_nan_forever)
 			return;
-		rotate->submodel_instance_1->turn_accel = PI2 / turn_accel;
+		subsys->submodel_instance_1->turn_accel = PI2 / turn_accel;
 	}
 	else
-		rotate->submodel_instance_1->current_turn_rate = PI2 / turn_time;
+		subsys->submodel_instance_1->current_turn_rate = PI2 / turn_time;
 }
 
 void sexp_trigger_submodel_animation(int node)
@@ -31169,6 +31181,12 @@ const char *sexp_error_message(int num)
 		case SEXP_CHECK_INVALID_SUBSYS:
 			return "Invalid subsystem name";
 
+		case SEXP_CHECK_INVALID_AWACS_SUBSYS:
+			return "This must be an AWACS subsystem";
+
+		case SEXP_CHECK_INVALID_ROTATING_SUBSYS:
+			return "This must be a rotating subsystem";
+
 		case SEXP_CHECK_INVALID_SUBSYS_TYPE:
 			return "Invalid subsystem type";
 
@@ -36207,7 +36225,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"Takes 3 or 4 arguments...\r\n"
 		"\t1:\tName of the ship housing the subsystem\r\n"
 		"\t2:\tName of the rotating subsystem to configure\r\n"
-		"\t3:\tThe time for one complete rotation, in milliseconds (positive is counterclockwise, negative is clockwise)\r\n"
+		"\t3:\tThe time for one complete rotation, in milliseconds - positive is counterclockwise, negative is clockwise\r\n"
 		"\t4:\tThe acceleration (x1000, just as #3 is seconds x1000) to change from the current turn rate to the desired turn rate.  "
 		"This is actually the time to complete one rotation that changes in one second, or the reciprocal of what you might expect, "
 		"meaning that larger numbers cause slower acceleration.  (FS2 defaults to 2pi/0.5, or about 12.566, which would be 12566 in this sexp.)  "

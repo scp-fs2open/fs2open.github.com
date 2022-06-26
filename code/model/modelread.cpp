@@ -687,9 +687,10 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 	strcpy_s(lcdname, dname);
 	strlwr(lcdname);
 
+	auto modelp = model_get(model_num);
 	bsp_info* submodelp = nullptr;
 	if (subsystemp->subobj_num >= 0) {
-		submodelp = &model_get(model_num)->submodel[subsystemp->subobj_num];
+		submodelp = &modelp->submodel[subsystemp->subobj_num];
 	}
 
 	// check the name for its specific type
@@ -730,7 +731,7 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 		subsystemp->type = SUBSYSTEM_ACTIVATION;
 	}  else { // If unrecognized type, set to unknown so artist can continue working...
 		subsystemp->type = SUBSYSTEM_UNKNOWN;
-		mprintf(("Subsystem '%s' on ship %s is not recognized as a common subsystem type\n", dname, model_get(model_num)->filename));
+		mprintf(("Subsystem '%s' on ship %s is not recognized as a common subsystem type\n", dname, modelp->filename));
 	}
 
 	if (in(props, "$triggered")) {
@@ -742,14 +743,14 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 	if (prop_string(props, nullptr, "$dumb_rotate") >= 0) {
 		// no special subsystem handling needed here, but make sure we didn't specify both methods
 		if (prop_string(props, nullptr, "$rotate") >= 0) {
-			Warning(LOCATION, "Subsystem '%s' on ship %s cannot have both rotation and dumb-rotation!", dname, model_get(model_num)->filename);
+			Warning(LOCATION, "Subsystem '%s' on ship %s cannot have both rotation and dumb-rotation!", dname, modelp->filename);
 		}
 	}
 	// Look-At subsystem
 	else if (in(p, props, "$look_at")) {
 		// no special subsystem handling needed here, but make sure we didn't specify both methods
 		if (prop_string(props, nullptr, "$rotate") >= 0) {
-			Warning(LOCATION, "Subsystem '%s' on ship %s cannot have both rotation and look-at!", dname, model_get(model_num)->filename);
+			Warning(LOCATION, "Subsystem '%s' on ship %s cannot have both rotation and look-at!", dname, modelp->filename);
 		}
 	}
 	// Rotating subsystem
@@ -764,7 +765,7 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 		if (idx == 0 || idx == 2) {
 			float turn_time = static_cast<float>(atof(buf));
 			if (turn_time == 0.0f) {
-				Warning(LOCATION, "Rotation has a turn time of 0 for subsystem '%s' on ship %s!", dname, model_get(model_num)->filename);
+				Warning(LOCATION, "Rotation has a turn time of 0 for subsystem '%s' on ship %s!", dname, modelp->filename);
 				turn_rate = 1.0f;
 			} else {
 				turn_rate = PI2 / turn_time;
@@ -788,48 +789,72 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 		// CASE OF STEPPED ROTATION
 		if (in(props, "$stepped")) {
 
-			subsystemp->stepped_rotation = new stepped_rotation;
+			subsystemp->stepped_rotation.reset(new stepped_rotation);
             subsystemp->flags.set(Model::Subsystem_Flags::Stepped_rotate);
 
 			// get number of steps
 			if (in(p, props, "$steps")) {
 				get_user_prop_value(p+6, buf);
-			   subsystemp->stepped_rotation->num_steps = atoi(buf);
-			 } else {
-			    subsystemp->stepped_rotation->num_steps = 8;
-			 }
+				int num_steps = atoi(buf);
+				if (num_steps <= 0) {
+					Warning(LOCATION, "In model %s, subsystem %s, $steps must be greater than 0!", modelp->filename, submodelp->name);
+					num_steps = 8;
+				}
+				subsystemp->stepped_rotation->num_steps = num_steps;
+			} else {
+				subsystemp->stepped_rotation->num_steps = 8;
+			}
 
 			// get pause time
 			if (in(p, props, "$t_paused")) {
 				get_user_prop_value(p+9, buf);
-			   subsystemp->stepped_rotation->t_pause = (float)atof(buf);
-			 } else {
-			    subsystemp->stepped_rotation->t_pause = 2.0f;
-			 }
+				float t_pause = (float)atof(buf);
+				if (t_pause < 0.0f) {
+					Warning(LOCATION, "In model %s, subsystem %s, $t_paused must not be negative!", modelp->filename, submodelp->name);
+					t_pause = 2.0f;
+				}
+				subsystemp->stepped_rotation->t_pause = t_pause;
+			} else {
+				subsystemp->stepped_rotation->t_pause = 2.0f;
+			}
 
-			// get transition time - time to go between steps
+			// get transition time - time to make a complete movement
 			if (in(p, props, "$t_transit")) {
 				get_user_prop_value(p+10, buf);
-			    subsystemp->stepped_rotation->t_transit = (float)atof(buf);
+				float t_transit = (float)atof(buf);
+				if (t_transit < 0.0f) {
+					Warning(LOCATION, "In model %s, subsystem %s, $t_transit must not be negative!", modelp->filename, submodelp->name);
+					t_transit = 2.0f;
+				}
+				subsystemp->stepped_rotation->t_transit = t_transit;
 			} else {
-			    subsystemp->stepped_rotation->t_transit = 2.0f;
+				subsystemp->stepped_rotation->t_transit = 2.0f;
 			}
 
 			// get fraction of time spent in accel
 			if (in(p, props, "$fraction_accel")) {
 				get_user_prop_value(p+15, buf);
-			    subsystemp->stepped_rotation->fraction = (float)atof(buf);
-			   Assert(subsystemp->stepped_rotation->fraction > 0 && subsystemp->stepped_rotation->fraction < 0.5);
+				float fraction = (float)atof(buf);
+				if (fraction < 0.0f || fraction > 0.5f) {
+					Warning(LOCATION, "In model %s, subsystem %s, $fraction_accel must not be negative and must be less than or equal to 0.5!", modelp->filename, submodelp->name);
+					fraction = 0.3f;
+				}
+				subsystemp->stepped_rotation->fraction = fraction;
 			} else {
-			    subsystemp->stepped_rotation->fraction = 0.3f;
+				subsystemp->stepped_rotation->fraction = 0.3f;
 			}
 
-			int num_steps = subsystemp->stepped_rotation->num_steps;
+			float step_distance = PI2 / subsystemp->stepped_rotation->num_steps;
 			float t_trans = subsystemp->stepped_rotation->t_transit;
 			float fraction = subsystemp->stepped_rotation->fraction;
 
-			subsystemp->stepped_rotation->max_turn_accel = PI2 / (fraction*(1.0f - fraction) * num_steps * t_trans*t_trans);
-			subsystemp->stepped_rotation->max_turn_rate =  PI2 / ((1.0f - fraction) * num_steps *t_trans);
+			// reverse the direction if we start out with reverse velocity
+			if (turn_rate < 0.0f) {
+				subsystemp->stepped_rotation->backwards = true;
+			}
+
+			subsystemp->stepped_rotation->max_turn_accel = (fraction == 0.0f) ? 0.0f : step_distance / (fraction * (1.0f - fraction) * t_trans * t_trans);
+			subsystemp->stepped_rotation->max_turn_rate = step_distance / ((1.0f - fraction) * t_trans);
 		}
 
 		// CASE OF NORMAL CONTINUOUS ROTATION
@@ -851,7 +876,7 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 			} else {
 				turn_accel = static_cast<float>(atof(buf));
 				if (turn_accel < 0.0f) {
-					Warning(LOCATION, "Model %s, submodel %s, turn acceleration %f cannot be negative!", model_get(model_num)->filename, dname, turn_accel);
+					Warning(LOCATION, "Model %s, submodel %s, $rotate_accel %f cannot be negative!", modelp->filename, dname, turn_accel);
 					turn_accel *= -1;
 				}
 			}
@@ -917,6 +942,7 @@ void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num,
 			subsystemp->model_num = model_num;
 			subsystemp->pnt = *pnt;				// use the offset to get the center point of the subsystem
 			subsystemp->radius = rad;
+
 			set_subsystem_info(model_num, subsystemp, props, subobj_name);
 			strcpy_s(subsystemp->subobj_name, subobj_name);						// copy the object name
 			return;
@@ -2062,6 +2088,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 								bank->norm[j] = temp_vec;
 
 								// angle offsets are a new POF feature
+								// (note that any version >= 2201 supports them, including all vertlim versions)
 								if ((pm->version >= 2118 && pm->version < PM_FIRST_ALIGNED_VERSION) || (pm->version >= 2201))
 									bank->external_model_angle_offset[j] = fl_radians(cfread_float(fp));
 								else
@@ -3772,18 +3799,10 @@ void submodel_stepped_rotate(model_subsystem *psub, submodel_instance *smi)
 
 	if ( sm->rotation_type != MOVEMENT_TYPE_REGULAR ) return;
 
-	// get active rotation time this frame
-	int end_stamp = timestamp();
-	// just to make sure this issue wont pop up again... might cause odd jerking in some extremely odd situations
-	// but given that those issues would require the timer to be reseted in any case it probably wont hurt
-	float rotation_time;
-	if ((end_stamp - smi->turn_step_zero_timestamp) < 0) {
-		smi->turn_step_zero_timestamp = end_stamp;
-		rotation_time = 0.0f;
-	} else {
-		rotation_time = 0.001f * (end_stamp - smi->turn_step_zero_timestamp);
-	}
-	//Assert(rotation_time >= 0);
+	if (!smi->stepped_rotation_started.isValid())
+		smi->stepped_rotation_started = _timestamp();
+
+	float elapsed_time = timestamp_since(smi->stepped_rotation_started) / static_cast<float>(MILLISECONDS_PER_SECOND);
 
 	// save last angles
 	smi->prev_angle = smi->cur_angle;
@@ -3794,24 +3813,14 @@ void submodel_stepped_rotate(model_subsystem *psub, submodel_instance *smi)
 	// get time to complete one step, including pause
 	float step_time = psub->stepped_rotation->t_transit + psub->stepped_rotation->t_pause;
 
-	// cur_step is step number relative to zero (0 - num_steps)
 	// step_offset_time is TIME into current step
-	float step_offset_time = (float)fmod(rotation_time, step_time);
-	// subtract off fractional step part, round up  (ie, 1.999999 -> 2)
-	int cur_step = (int)std::lround((rotation_time - step_offset_time) / step_time);
-	// mprintf(("cur step %d\n", cur_step));
-	// Assert(step_offset_time >= 0);
+	float step_offset_time = static_cast<float>(fmod(elapsed_time, step_time));
 
-	if (cur_step >= psub->stepped_rotation->num_steps) {
-		// I don;t know why, but removing this line makes it all good.
-		// sii->turn_step_zero_timestamp += int(1000.0f * (psub->stepped_rotation->num_steps * step_time) + 0.5f);
-
-		// reset cur_step (use mod to handle physics/ai pause)
-		cur_step = cur_step % psub->stepped_rotation->num_steps;
-	}
+	// get step we are on
+	int cur_step = static_cast<int>(floor(elapsed_time / step_time));
 
 	// get base angle
-	smi->cur_angle = cur_step * step_size;
+	smi->cur_angle = (cur_step % psub->stepped_rotation->num_steps) * step_size;
 
 	// determine which phase of rotation we're in
 	float coast_start_time = psub->stepped_rotation->fraction * psub->stepped_rotation->t_transit;
@@ -3839,6 +3848,11 @@ void submodel_stepped_rotate(model_subsystem *psub, submodel_instance *smi)
 		// do pause
 		smi->cur_angle += step_size;
 		smi->current_turn_rate = 0.0f;
+	}
+
+	// if we're going backwards, flip the whole thing
+	if (psub->stepped_rotation->backwards) {
+		smi->cur_angle *= -1.0f;
 	}
 
 	submodel_canonicalize(sm, smi, true);
@@ -4333,27 +4347,6 @@ void model_instance_global_to_local_dir(vec3d* out_dir, const vec3d* in_dir, con
 		delete[] submodelStack;
 }
 
-// Verify rotating submodel has corresponding ship subsystem -- info in which to store rotation angle
-int rotating_submodel_has_ship_subsys(int submodel, ship *shipp)
-{
-	model_subsystem	*psub;
-	ship_subsys			*pss;
-
-	int found = 0;
-
-	// Go through all subsystems and look for submodel
-	// the subsystems that need it.
-	for ( pss = GET_FIRST(&shipp->subsys_list); pss != END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) ) {
-		psub = pss->system_info;
-		if (psub->subobj_num == submodel) {
-			found = 1;
-			break;
-		}
-	}
-	
-	return found;
-}
-
 /*
  * Get all submodel indexes that satisfy the following:
  * 1) Have the rotating or intrinsic-rotating movement type
@@ -4413,10 +4406,9 @@ void model_get_moving_submodel_list(SCP_vector<int> &submodel_vector, const obje
 			isMoving = true;
 		}
 
-
 		if (isMoving && !child_submodel.flags[Model::Submodel_flags::Nocollide_this_only])
 			submodel_vector.push_back(submodel);
-		}, 0, false, false);
+	}, 0, false, false);
 }
 
 void model_get_submodel_tree_list(SCP_vector<int> &submodel_vector, const polymodel *pm, int mn)
@@ -5520,8 +5512,9 @@ void model_subsystem::reset()
     rotation_snd = gamesnd_id();
 
     engine_wash_pointer = NULL;
+
     weapon_rotation_pbank = 0;
-    stepped_rotation = NULL;
+    stepped_rotation.reset();
 
     awacs_intensity = 0.0f;
     awacs_radius = 0.0f;
