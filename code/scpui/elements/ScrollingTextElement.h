@@ -4,9 +4,14 @@
 #pragma push_macro("Assert")
 #undef Assert
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wshadow"
+
 #include <Rocket/Core/Element.h>
 #include <Rocket/Core/Geometry.h>
 #include <Rocket/Core/Texture.h>
+
+#pragma GCC diagnostic pop
 
 #pragma pop_macro("Assert")
 

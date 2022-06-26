@@ -4,7 +4,12 @@
 #pragma push_macro("Assert")
 #undef Assert
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wshadow"
+
 #include <Rocket/Core/XMLNodeHandler.h>
+
+#pragma GCC diagnostic pop
 
 #pragma pop_macro("Assert")
 
