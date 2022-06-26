@@ -24,10 +24,8 @@ float GeometrySchlickGGX(float dotAB, float k)
 {
     return dotAB / (dotAB * (1.0f - k) + k);
 }
-vec3 ComputeGGX(vec3 specColor, vec3 diffColor, vec3 light, vec3 normal, vec3 halfVec, vec3 view, float gloss, float fresnelFactor, float dotNL)
+vec3 ComputeGGX(vec3 specColor, vec3 diffColor, vec3 light, vec3 normal, vec3 halfVec, vec3 view, float alpha, float area_normalisation, float fresnelFactor, float dotNL)
 {
-	float roughness = clamp(1.0f - gloss, 0.0f, 1.0f);
-	float alpha = roughness * roughness;
 
 	float dotNH = clamp(dot(normal, halfVec), 0.0f, 1.0f);
 	float dotNV = clamp(dot(normal, view), 0.0f, 1.0f);
@@ -45,7 +43,7 @@ vec3 ComputeGGX(vec3 specColor, vec3 diffColor, vec3 light, vec3 normal, vec3 ha
 	vec3 fresnel = mix(specColor, FresnelSchlick(halfVec, view, specColor), fresnelFactor);
 
 	// Geometry Term - Schlick-GGX approximation
-	float alphaPrime = roughness + 1.0f;
+	float alphaPrime = 2.0 - sqrt(alpha);
 	float k = alphaPrime * alphaPrime / 8.0f;
 	// Smith's method: 
 	// Microsurfaces block light rays coming in from the light 
@@ -59,7 +57,7 @@ vec3 ComputeGGX(vec3 specColor, vec3 diffColor, vec3 light, vec3 normal, vec3 ha
 
 	vec3 specular = distribution * fresnel * geometry / (4*dotNV*dotNL + 0.0001);
 	
-	// Diffuse term - Lambertian 
+	// Diffuse term - Lambertian, kD represents energy lost to specular reflection.
 	vec3 kD = vec3(1.0)-fresnel;
 	kD *= (vec3(1.0) - specColor);
 	vec3 diffuse = kD * diffColor/PI;
@@ -67,12 +65,12 @@ vec3 ComputeGGX(vec3 specColor, vec3 diffColor, vec3 light, vec3 normal, vec3 ha
 	return (specular + diffuse) * dotNL;
 }
 
-vec3 computeLighting(vec3 specColor, vec3 diffColor, vec3 light, vec3 normal, vec3 halfVec, vec3 view, float gloss, float fresnelFactor, float dotNL) 
+vec3 computeLighting(vec3 specColor, vec3 diffColor, vec3 light, vec3 normal, vec3 halfVec, vec3 view, float alpha, float area_normalisation, float fresnelFactor, float dotNL) 
 {
 	#ifdef FLAG_LIGHT_MODEL_BLINN_PHONG
 	return SpecularBlinnPhong(specColor, light, normal, halfVec, 32, fresnelFactor, dotNL);
 	#else
-	return ComputeGGX(specColor, diffColor, light, normal, halfVec, view, gloss, fresnelFactor, dotNL);
+	return ComputeGGX(specColor, diffColor, light, normal, halfVec, view, alpha, area_normalisation, fresnelFactor, dotNL);
 	#endif
 }
 
