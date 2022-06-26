@@ -1924,12 +1924,12 @@ int button_function_critical(int n, net_player *p = NULL)
 			if(at_self)
 				control_used(CYCLE_NUM_MISSLES);
 
-			if ( objp == Player_obj ) {
-				if ( Player_ship->weapons.num_secondary_banks <= 0 ) {
+			if ( Ships[objp->instance].weapons.num_secondary_banks <= 0 ) {
+				if ( objp == Player_obj ) {
 					HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "This ship has no secondary weapons", 33));
 					gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
-					break;
 				}
+				break;
 			}
 
 			polymodel *pm = model_get(Ship_info[Ships[objp->instance].ship_info_index].model_num);
