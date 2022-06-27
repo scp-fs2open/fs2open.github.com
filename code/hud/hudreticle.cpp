@@ -309,12 +309,19 @@ ship_info *sip = &Ship_info[Player_ship->ship_info_index];
 }
 
 void HudGaugeReticle::getFirepointStatus() {
+
+	// allow the firepoint status to be empty when a multiplayer observer
+	// this is not a bug, the observer will simply *not* have any firepoints.
+	if (Objects[Player->objnum].type == OBJ_OBSERVER) {
+		return; 
+	}
+
 	//First, get the player ship
 	ship_info* sip;
 	ship* shipp;
 	polymodel* pm;
 
-	Assert(Objects[Player->objnum].type == OBJ_SHIP);
+	Assertion(Objects[Player->objnum].type == OBJ_SHIP, "HudGaugeReticle::getFirepointStatus was passed an invalid object type of %d.", Objects[Player->objnum].type);
 
 	if (Objects[Player->objnum].type == OBJ_SHIP) {
 		shipp = &Ships[Objects[Player->objnum].instance];
