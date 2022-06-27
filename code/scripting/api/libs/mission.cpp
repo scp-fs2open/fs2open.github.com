@@ -1729,7 +1729,11 @@ ADE_FUNC(waitAsync,
 
 	class time_resolve_context : public resolve_context, public std::enable_shared_from_this<time_resolve_context> {
 	  public:
-		time_resolve_context(int timestamp) : m_timestamp(timestamp) {}
+		time_resolve_context(int timestamp) : m_timestamp(timestamp) {
+			static int unique_id_counter = 0;
+			m_unique_id = unique_id_counter++;
+			mprintf(("waitAsync: Creating asynchronous context %d.\n", m_unique_id));
+		}
 		void setResolver(Resolver resolver) override
 		{
 			// Keep checking the time until the timestamp is elapsed
@@ -1737,11 +1741,13 @@ ADE_FUNC(waitAsync,
 			auto cb = [this, self, resolver](
 						  executor::IExecutionContext::State contextState) {
 				if (contextState == executor::IExecutionContext::State::Invalid) {
+					mprintf(("waitAsync: Context is invalid, possibly due to a game state change (current state is %s).  Aborting asynchronous context %d.\n", GS_state_text[gameseq_get_state()], m_unique_id));
 					resolver(true, luacpp::LuaValueList());
 					return executor::Executor::CallbackResult::Done;
 				}
 
 				if (timestamp_elapsed(m_timestamp)) {
+					mprintf(("waitAsync: Timestamp has elapsed for asynchronous context %d.\n", m_unique_id));
 					resolver(false, luacpp::LuaValueList());
 					return executor::Executor::CallbackResult::Done;
 				}
@@ -1756,6 +1762,7 @@ ADE_FUNC(waitAsync,
 
 	  private:
 		int m_timestamp = -1;
+		int m_unique_id = -1;
 	};
 	return ade_set_args(L,
 		"o",
