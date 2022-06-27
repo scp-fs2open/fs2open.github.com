@@ -25,6 +25,7 @@
 #include "menuui/optionsmenu.h"
 #include "menuui/optionsmenumulti.h"
 #include "mission/missionbriefcommon.h"
+#include "missionui/missiondebrief.h"
 #include "missionui/missionscreencommon.h"
 #include "nebula/neb.h"
 #include "network/multi.h"
@@ -707,8 +708,13 @@ void options_button_pressed(int n)
 		case ABORT_GAME_BUTTON:
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			choice = popup( PF_NO_NETWORKING | PF_BODY_BIG, 2, POPUP_NO, POPUP_YES, XSTR( "Exit Game?", 374));
-			if ( choice == 1 )
+			if ( choice == 1 ) {
+				if (gameseq_get_state() == GS_STATE_DEBRIEF && (Game_mode & GM_CAMPAIGN_MODE)) {
+					// auto-accept mission outcome before quitting
+					debrief_maybe_auto_accept();
+				}
 				gameseq_post_event(GS_EVENT_QUIT_GAME);
+			}
 			break;
 
 		case CONTROL_CONFIG_BUTTON:
