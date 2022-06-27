@@ -15843,7 +15843,7 @@ SCP_string ship_return_orders(ship* sp)
 			outbuf += target_name;
 			outbuf += XSTR(" wing", 494);
 		} else {
-			sprintf(outbuf, "%s", XSTR("no orders", 495));
+			outbuf = XSTR("no orders", 495);
 		}
 		break;
 
@@ -15852,7 +15852,7 @@ SCP_string ship_return_orders(ship* sp)
 			outbuf += XSTR("any ", -1);
 			outbuf += target_name;
 		} else {
-			sprintf(outbuf, "%s", XSTR("no orders", 495));
+			outbuf = XSTR("no orders", 495);
 		}
 		break;
 
@@ -15868,7 +15868,7 @@ SCP_string ship_return_orders(ship* sp)
 		if (aigp->target_name) {
 			outbuf += target_name;
 		} else {
-			sprintf(outbuf, "%s", XSTR("no orders", 495));
+			outbuf = XSTR("no orders", 495);
 		}
 		break;
 
@@ -15879,7 +15879,7 @@ SCP_string ship_return_orders(ship* sp)
 			hud_targetbox_truncate_subsys_name(subsys_name);
 			sprintf(outbuf, XSTR("atk %s %s", 496), target_name, subsys_name);
 		} else {
-			sprintf(outbuf, "%s", XSTR("no orders", 495));
+			outbuf = XSTR("no orders", 495);
 		}
 		break;
 	}
