@@ -592,6 +592,29 @@ ADE_FUNC(isTargetInFOV, l_Subsystem, "object Target", "Determines if the object 
 		return ADE_RETURN_FALSE;
 }
 
+ADE_FUNC(isPositionInFOV, l_Subsystem, "vector Target", "Determines if a position is in the turrets FOV", "boolean", "true if in FOV, false if not, nil on error or if subsystem is not a turret ")
+{
+	ship_subsys_h* sso;
+	vec3d target = vmd_zero_vector;
+	if (!ade_get_args(L, "o|o", l_Subsystem.GetPtr(&sso), l_Vector.Get(&target)))
+		return ADE_RETURN_NIL;
+
+	if (!sso->isSubsystemValid() || !(sso->ss->system_info->type == SUBSYSTEM_TURRET))
+		return ADE_RETURN_NIL;
+
+	vec3d tpos, tvec;
+	ship_get_global_turret_info(sso->objp, sso->ss->system_info, &tpos, &tvec);
+
+	vec3d v2e;
+	vm_vec_normalized_dir(&v2e, &target, &tpos);
+	bool in_fov = turret_fov_test(sso->ss, &tvec, &v2e);
+
+	if (in_fov)
+		return ADE_RETURN_TRUE;
+	else
+		return ADE_RETURN_FALSE;
+}
+
 ADE_FUNC(fireWeapon, l_Subsystem, "[number TurretWeaponIndex = 1, number FlakRange = 100]", "Fires weapon on turret", nullptr, nullptr)
 {
 	ship_subsys_h *sso;
