@@ -25,11 +25,19 @@
 #include "cfile/cfilesystem.h"
 #include "parse/parselo.h"
 
+static const char *FILTERS_ENABLED_BY_DEFAULT[] =
+{
+	"error",
+	"warning",
+	"general"
+};
+
 struct outwnd_filter_struct {
 	char name[NAME_LENGTH];
 	bool enabled;
 };
 
+// This technique is necessary to avoid a crash in FRED.  See commit e624f6c1.
 static SCP_vector<outwnd_filter_struct>& filter_vector()
 {
 	static SCP_vector<outwnd_filter_struct> vec;
@@ -58,7 +66,16 @@ void load_filter_info()
 	FILE* fp;
 	char pathname[MAX_PATH_LEN];
 	char inbuf[NAME_LENGTH + 4];
-	outwnd_filter_struct new_filter;
+	outwnd_filter_struct* filter_ptr;
+
+	// add default-enabled filters
+	for (const char *name : FILTERS_ENABLED_BY_DEFAULT) {
+		filter_vector().emplace_back();
+		filter_ptr = &filter_vector().back();
+
+		strcpy_s(filter_ptr->name, name);
+		filter_ptr->enabled = true;
+	}
 
 	outwnd_filter_loaded = 1;
 
@@ -69,30 +86,18 @@ void load_filter_info()
 
 	if (!fp) {
 		Outwnd_no_filter_file = 1;
-
-		strcpy_s( new_filter.name, "error" );
-		new_filter.enabled = true;
-		filter_vector().push_back( new_filter );
-
-		strcpy_s( new_filter.name, "general" );
-		new_filter.enabled = true;
-		filter_vector().push_back( new_filter );
-
-		strcpy_s( new_filter.name, "warning" );
-		new_filter.enabled = true;
-		filter_vector().push_back( new_filter );
-
 		return;
 	}
 
 	Outwnd_no_filter_file = 0;
 
 	while ( fgets(inbuf, NAME_LENGTH+3, fp) ) {
+		bool enabled;
 
 		if (*inbuf == '+')
-			new_filter.enabled = true;
+			enabled = true;
 		else if (*inbuf == '-')
-			new_filter.enabled = false;
+			enabled = false;
 		else
 			continue;	// skip everything else
 
@@ -101,17 +106,24 @@ void load_filter_info()
 			inbuf[z] = 0;
 
 		Assert( strlen(inbuf+1) < NAME_LENGTH );
-		strcpy_s(new_filter.name, inbuf + 1);
+		const char *name = &inbuf[1];
 
-		if ( !stricmp(new_filter.name, "error") ) {
-			new_filter.enabled = true;
-		} else if ( !stricmp(new_filter.name, "general") ) {
-			new_filter.enabled = true;
-		} else if ( !stricmp(new_filter.name, "warning") ) {
-			new_filter.enabled = true;
+		// find it, or create it
+		filter_ptr = nullptr;
+		for (auto &filter : filter_vector()) {
+			if (!stricmp(filter.name, name)) {
+				filter_ptr = &filter;
+				break;
+			}
+		}
+		if (filter_ptr == nullptr) {
+			filter_vector().emplace_back();
+			filter_ptr = &filter_vector().back();
+			strcpy_s(filter_ptr->name, name);
 		}
 
-		filter_vector().push_back( new_filter );
+		// set it as enabled or not, depending on config
+		filter_ptr->enabled = enabled;
 	}
 
 	if ( ferror(fp) && !feof(fp) )
