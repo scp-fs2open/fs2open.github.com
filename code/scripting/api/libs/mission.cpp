@@ -1732,7 +1732,7 @@ ADE_FUNC(waitAsync,
 		time_resolve_context(int timestamp) : m_timestamp(timestamp) {
 			static int unique_id_counter = 0;
 			m_unique_id = unique_id_counter++;
-			mprintf(("waitAsync: Creating asynchronous context %d.\n", m_unique_id));
+			nprintf(("scripting", "waitAsync: Creating asynchronous context %d.\n", m_unique_id));
 		}
 		void setResolver(Resolver resolver) override
 		{
@@ -1747,7 +1747,7 @@ ADE_FUNC(waitAsync,
 				}
 
 				if (timestamp_elapsed(m_timestamp)) {
-					mprintf(("waitAsync: Timestamp has elapsed for asynchronous context %d.\n", m_unique_id));
+					nprintf(("scripting", "waitAsync: Timestamp has elapsed for asynchronous context %d.\n", m_unique_id));
 					resolver(false, luacpp::LuaValueList());
 					return executor::Executor::CallbackResult::Done;
 				}
