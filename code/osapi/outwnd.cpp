@@ -29,7 +29,8 @@ static const char *FILTERS_ENABLED_BY_DEFAULT[] =
 {
 	"error",
 	"warning",
-	"general"
+	"general",
+	"scripting"
 };
 
 struct outwnd_filter_struct {
