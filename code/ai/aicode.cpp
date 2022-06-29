@@ -15549,11 +15549,14 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hit_normal)
 			return;
 		
 		hitter_objnum = hit_objp->parent;
-		Assert((hitter_objnum >= 0) && (hitter_objnum < MAX_OBJECTS));
+		Assertion((hitter_objnum >= 0) && (hitter_objnum < MAX_OBJECTS), "hitter_objnum in this function is an invalid index of %d.  This can cause random behavior, and is a coder mistake.  Please report!", hitter_objnum);
 		objp_hitter = &Objects[hitter_objnum];
 
+		Assertion((objp_hitter->type == OBJ_SHIP) || (objp_hitter->type == OBJ_WEAPON) || (objp_hitter->type == OBJ_ASTEROID) || (objp_hitter->type == OBJ_BEAM) || (objp_hitter->type == OBJ_DEBRIS),
+		"The ai code is passing an invalid object type of %d to a function when trying to decide how to respond to something hitting it.  This is a bug in the code, please report!", objp_hitter->type);
+
 		// lets not check hits by ghosts any further either
-		if(objp_hitter->type != OBJ_SHIP && objp_hitter->type != OBJ_WEAPON && objp_hitter->type != OBJ_ASTEROID && objp_hitter->type != OBJ_BEAM)
+		if(objp_hitter->type != OBJ_SHIP && objp_hitter->type != OBJ_WEAPON && objp_hitter->type != OBJ_ASTEROID && objp_hitter->type != OBJ_BEAM && objp_hitter->type != OBJ_DEBRIS)
 			return;
 		
 		//	Hit by a protected ship, don't attack it.
