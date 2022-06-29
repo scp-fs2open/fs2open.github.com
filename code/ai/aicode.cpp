@@ -15107,10 +15107,9 @@ void init_aip_from_class_and_profile(ai_info *aip, ai_class *aicp, ai_profile_t 
 
 void ai_do_default_behavior(object *obj)
 {
-    Assert(obj != nullptr);
-    Assert(obj->instance != -1);
-    Assert(obj->type == OBJ_SHIP);
-    Assert(Ships[obj->instance].ai_index != -1);
+    Assertion(obj != nullptr, "Ai_do_default_behavior() was given a bad information.  Specifically obj is a nullptr. This is a coder error, please report!");
+    Assertion((obj->type == OBJ_SHIP) && (obj->instance > -1) && (obj->instance < MAX_SHIPS), "This function that requires an object to be a ship was passed an invalid ship. Please report\n\nObject type: %d\nInstance #: %d", obj->type, obj->instance);
+    Assertion(Ships[obj->instance].ai_index > 0, "A ship has been found to have an invalid ai_index of %d. This should have been assigned and is coder mistake, please report!", Ships[obj->instance].ai_index);
 
     ai_info	*aip = &Ai_info[Ships[obj->instance].ai_index];
     ship_info* sip = &Ship_info[Ships[obj->instance].ship_info_index];
