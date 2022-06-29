@@ -313,6 +313,8 @@ void HudGaugeReticle::getFirepointStatus() {
 	// allow the firepoint status to be empty when a multiplayer observer
 	// this is not a bug, the observer will simply *not* have any firepoints.
 	if (Objects[Player->objnum].type == OBJ_OBSERVER) {
+		// only clients should be getting here!
+		Assertion((Game_mode & GM_MULTIPLAYER), "Somehow FSO thinks its player object is an observer even though it's not in Multiplayer. Please report!");
 		return; 
 	}
 
@@ -321,7 +323,7 @@ void HudGaugeReticle::getFirepointStatus() {
 	ship* shipp;
 	polymodel* pm;
 
-	Assertion(Objects[Player->objnum].type == OBJ_SHIP, "HudGaugeReticle::getFirepointStatus was passed an invalid object type of %d.", Objects[Player->objnum].type);
+	Assertion(Objects[Player->objnum].type == OBJ_SHIP, "HudGaugeReticle::getFirepointStatus was passed an invalid object type of %d. Please report!", Objects[Player->objnum].type);
 
 	if (Objects[Player->objnum].type == OBJ_SHIP) {
 		shipp = &Ships[Objects[Player->objnum].instance];
