@@ -313,7 +313,7 @@ void HudGaugeReticle::getFirepointStatus() {
 	// allow the firepoint status to be empty when a multiplayer observer
 	// this is not a bug, the observer will simply *not* have any firepoints.
 	if (Objects[Player->objnum].type == OBJ_OBSERVER) {
-		// only clients should be getting here!
+		// only multiplayer instances should be getting here!
 		Assertion((Game_mode & GM_MULTIPLAYER), "Somehow FSO thinks its player object is an observer even though it's not in Multiplayer. Please report!");
 		return; 
 	}
