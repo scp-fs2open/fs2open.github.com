@@ -48,6 +48,9 @@ layout (std140) uniform lightData {
 
 uniform float sourceRadius = 5.0; // This should be passed in part of lightData
 
+// Nearest point sphere and tube light calculations taken from 
+// "Real Shading in Unreal Engine 4" by Brian Karis, Epic Games
+// Part of SIGGRAPH 2013 Course: Physically Based Shading in Theory and Practice
 void GetLightInfo(vec3 position, in float alpha, in vec3 reflectDir, out vec3 lightDir, out float attenuation, out float area_normalisation)
 {
 	if (lightType == LT_DIRECTIONAL) {
@@ -61,17 +64,22 @@ void GetLightInfo(vec3 position, in float alpha, in vec3 reflectDir, out vec3 li
 			float dist = length(lightDir);
 
 			// this chunk is unneccessary if sourceRadius= 0.0, but let's avoid a branch.
+			// given a sphere of radius sourceRadius centered at lightDir,
+			// move lightDir towards the ray defined by reflectDir
 			vec3 centerToRay = dot(lightDir, reflectDir) * reflectDir - lightDir;
 			lightDir = lightDir + centerToRay * clamp(sourceRadius/length(centerToRay), 0.0, 1.0);
 			dist = length(lightDir);
+			// Energy conservation term
 			float alpha_adjust = clamp(alpha + (sourceRadius/(2*dist)), 0.0, 1.0);
 			area_normalisation = alpha/alpha_adjust;
 			area_normalisation *= area_normalisation;
+			//end chunk
 
-			attenuation = 1.0 - clamp(sqrt(dist / lightRadius), 0.0, 1.0);
+
 			if(dist > lightRadius) {
 				discard;
 			}
+			attenuation = 1.0 - clamp(sqrt(dist / lightRadius), 0.0, 1.0);
 		} 
 		else if (lightType == LT_TUBE) {  // Tube light
 			float beamLength = length(beamVec);
@@ -84,30 +92,34 @@ void GetLightInfo(vec3 position, in float alpha, in vec3 reflectDir, out vec3 li
 			vec3 adjustedbeamVec = beamVec - 2.0 * lightRadius * beamDir;
 			//adjustments having been made, sourceDir needs recalculating
 			vec3 sourceDir = adjustedLightPos - position.xyz;
-			// Get nearest point on line
+			// Get nearest 
 			vec3 a_t = reflectDir;
 			vec3 b_t = beamDir;
 			vec3 b_0 = sourceDir;
 			vec3 c = cross(a_t, b_t);
 			vec3 d = b_0;
 			vec3 r = d - a_t * dot(d, a_t) - c * dot(d,c);
-			float neardist = -length(r)/dot(b_t, normalize(r));
-			// Somebody with a symbolic expression simplifier or a bigger brain than me should figure out how to optimise these calcs - qaz
-			// Move along the beam by the distance we calculated
+			float neardist = -dot(r, r)/dot(b_t, r);
 			lightDir = sourceDir + beamDir * neardist;
+			// Somebody with a symbolic expression simplifier or a bigger brain than me
+			// should figure out how to optimise these calcs - qaz
+			// Move along the beam by the distance we calculated
 			float dist = length(lightDir);
 
-			// this chunk is unneccessary if sourceRadius= 0.0, but let's avoid a branch.
+			// this chunk is unneccessary if sourceRadius = 0.0, but let's avoid a branch.
+			// Same principle as in LT_POINT, treat chosen location as a spherelight.
 			vec3 centerToRay = dot(lightDir, reflectDir) * reflectDir - lightDir;
 			lightDir = lightDir + centerToRay * clamp(sourceRadius/length(centerToRay), 0.0, 1.0);
 			dist = length(lightDir);
+			// Energy conservation term
 			float alpha_adjust = clamp(alpha + (sourceRadius/(2*dist)), 0.0, 1.0);
 			area_normalisation = alpha/alpha_adjust;
 			// don't need to square as it's a line rather than a sphere.
+			//end chunk
 
-			//if(dist > lightRadius) {
-			//	discard;
-			//}
+			if(dist > lightRadius) {
+				discard;
+			}
 			attenuation = 1.0 - clamp(sqrt(dist / lightRadius), 0.0, 1.0);
 		} 
 		else if (lightType == LT_CONE) {
