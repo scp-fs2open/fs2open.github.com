@@ -10029,6 +10029,8 @@ void guard_object_was_hit(object *guard_objp, object *hitter_objp)
 					aip->active_goal = AI_ACTIVE_GOAL_DYNAMIC;
 				}
 			}
+		} else {
+			UNREACHABLE("The AI previously had a guard goal to guard something besides a ship, specifically an object of type %d. As we understand it, this should not happen. Please report!", Objects[aip->target_objnum].type);
 		}
 	}
 }
