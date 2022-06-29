@@ -16155,7 +16155,7 @@ void maybe_cheat_fire_synaptic(object *objp)
 		ship	*shipp;
 		int	wing_index, time;
 
-		Assertion(objp->type == OBJ_SHIP, "maybe_cheat_fire_synaptic was called with a non-ship object type of %d. Please report!", objp->type);
+		Assertion(objp->type == OBJ_SHIP, "This ai function requires a ship, but was called with a non-ship object type of %d. Please report!", objp->type);
 
 		shipp = &Ships[objp->instance];
 
