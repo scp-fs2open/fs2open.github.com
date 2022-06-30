@@ -709,7 +709,7 @@ void options_button_pressed(int n)
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			choice = popup( PF_NO_NETWORKING | PF_BODY_BIG, 2, POPUP_NO, POPUP_YES, XSTR( "Exit Game?", 374));
 			if ( choice == 1 ) {
-				if (gameseq_get_state() == GS_STATE_DEBRIEF && (Game_mode & GM_CAMPAIGN_MODE)) {
+				if (gameseq_get_state(1) == GS_STATE_DEBRIEF && (Game_mode & GM_CAMPAIGN_MODE)) {
 					// auto-accept mission outcome before quitting
 					debrief_maybe_auto_accept();
 				}
