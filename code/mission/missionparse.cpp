@@ -6261,9 +6261,7 @@ bool post_process_mission()
 				truncate_message_lines(sexp_str, 30);
 
 				stuff_sexp_text_string(bad_node_str, bad_node, SEXP_ERROR_CHECK_MODE);
-
-				// the previous function adds a space at the end
-				if (!bad_node_str.empty()) {
+				if (!bad_node_str.empty()) {	// the previous function adds a space at the end
 					bad_node_str.pop_back();
 				}
 				
