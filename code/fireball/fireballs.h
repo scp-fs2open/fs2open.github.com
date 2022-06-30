@@ -37,6 +37,7 @@ class asteroid_info;
 #define NUM_DEFAULT_FIREBALLS		6
 
 #define MAX_FIREBALL_LOD						4
+#define MAX_FIREBALL_BASENAME_LEN				MAX_FILENAME_LEN - 3	// ensure base file name + _*lod* fits in filename field
 
 #define FIREBALL_NUM_LARGE_EXPLOSIONS 2
 
