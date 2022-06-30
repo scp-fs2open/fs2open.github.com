@@ -816,7 +816,7 @@ void red_alert_delete_ship(p_object *pobjp, int ship_state)
 {
 	if (ship_state == RED_ALERT_DESTROYED_SHIP_CLASS || ship_state == RED_ALERT_PLAYER_DEL_SHIP_CLASS)
 	{
-		pobjp->flags[Mission::Parse_Object_Flags::Red_alert_deleted];
+		pobjp->flags.set(Mission::Parse_Object_Flags::Red_alert_deleted);
 
         if (pobjp->wingnum < 0)
             pobjp->flags.set(Mission::Parse_Object_Flags::SF_Cannot_arrive);
@@ -1034,7 +1034,9 @@ void red_alert_bash_wingman_status()
 			wingp->current_wave++;
 			wingp->red_alert_skipped_ships += wingp->wave_count;
 
-            if (wingp->num_waves == 0)
+			bool waves_spent = wingp->current_wave >= wingp->num_waves;
+
+            if (waves_spent)
                 wingp->flags.set(Ship::Wing_Flags::Gone);
 
 			// look through all ships yet to arrive...
@@ -1044,7 +1046,7 @@ void red_alert_bash_wingman_status()
 				if (pobjp->wingnum == ii->first)
 				{
 					// no waves left to arrive, so mark ships accordingly
-                    if (wingp->num_waves == 0)
+                    if (waves_spent)
                         pobjp->flags.set(Mission::Parse_Object_Flags::SF_Cannot_arrive);
                     // we skipped one complete wave, so clear the flag so the next wave creates all ships
                     else
