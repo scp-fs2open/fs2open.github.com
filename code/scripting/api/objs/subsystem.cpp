@@ -665,7 +665,7 @@ ADE_FUNC(rotateTurret, l_Subsystem, "vector Pos, boolean reset=false", "Rotates 
 		return ADE_RETURN_FALSE;
 }
 
-ADE_FUNC(getTurretHeading, l_Subsystem, NULL, "Returns the turrets forward vector", "vector", "Returns a normalized version of the forward vector or null vector on error")
+ADE_FUNC(getTurretHeading, l_Subsystem, NULL, "Returns the turrets forward vector", "vector", "Returns a normalized version of the forward vector in the ship's reference frame or null vector on error")
 {
 	ship_subsys_h *sso;
 	if(!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
