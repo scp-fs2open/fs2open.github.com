@@ -6247,6 +6247,7 @@ bool post_process_mission()
 				SCP_string location_str;
 				SCP_string sexp_str;
 				SCP_string error_msg;
+				SCP_string bad_node_str;
 
 				// it's helpful to point out the goal/event, so do that if we can
 				int index;
@@ -6258,8 +6259,15 @@ bool post_process_mission()
 
 				convert_sexp_to_string(sexp_str, i, SEXP_ERROR_CHECK_MODE);
 				truncate_message_lines(sexp_str, 30);
+
+				stuff_sexp_text_string(bad_node_str, bad_node, SEXP_ERROR_CHECK_MODE);
+
+				// the previous function adds a space at the end
+				if (!bad_node_str.empty()) {
+					bad_node_str.pop_back();
+				}
 				
-				sprintf(error_msg, "%s%s.\n\nIn sexpression: %s\n\n(Bad node appears to be: %s)\n", location_str.c_str(), sexp_error_message(result), sexp_str.c_str(), Sexp_nodes[bad_node].text);
+				sprintf(error_msg, "%s%s.\n\nIn sexpression: %s\n\n(Bad node appears to be: %s)\n", location_str.c_str(), sexp_error_message(result), sexp_str.c_str(), bad_node_str.c_str());
 				Warning(LOCATION, "%s", error_msg.c_str());
 
 				// syntax errors are recoverable in Fred but not FS
