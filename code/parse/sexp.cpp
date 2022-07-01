@@ -993,6 +993,7 @@ void multi_sexp_modify_variable();
 // jg18
 // container_value_index is for using one specific value from acontainer
 int copy_node_to_replacement_args(int node, int container_value_index = -1);
+bool can_node_value_change(int node);
 
 #define NO_OPERATOR_INDEX_DEFINED		-2
 #define NOT_A_SEXP_OPERATOR				-1
@@ -2464,8 +2465,8 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				}
 				Assert(ship_node >= 0);
 
-				// we can't check special-arg ships
-				if (Sexp_nodes[ship_node].flags & SNF_SPECIAL_ARG_IN_NODE)
+				// we can't check nodes whose value can change
+				if (can_node_value_change(node))
 					break;
 
 				auto shipname = CTEXT(ship_node);
@@ -2551,8 +2552,8 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 				ship_node = CDR(op_node);
 
-				// we can't check special-arg ships
-				if (Sexp_nodes[ship_node].flags & SNF_SPECIAL_ARG_IN_NODE)
+				// we can't check nodes whose value can change
+				if (can_node_value_change(ship_node))
 					break;
 
 				auto shipname = CTEXT(ship_node);
@@ -2920,8 +2921,8 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					auto ship_node = Sexp_nodes[op_node].rest;
 					Assert(ship_node >= 0);
 
-					// we can't check special-arg ships
-					if (Sexp_nodes[ship_node].flags & SNF_SPECIAL_ARG_IN_NODE)
+					// we can't check nodes whose value can change
+					if (can_node_value_change(ship_node))
 						break;
 
 					ship_num = ship_name_lookup(CTEXT(ship_node), 1);	// Goober5000 - include players
@@ -3060,8 +3061,8 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					z = Sexp_nodes[z].rest;  // first argument of operator should be mission name
 					Assert(z >= 0);
 
-					// can't check special-arg
-					if (Sexp_nodes[z].flags & SNF_SPECIAL_ARG_IN_NODE)
+					// can't check nodes whose value can change
+					if (can_node_value_change(z))
 						break;
 
 					// look for mission
@@ -3145,8 +3146,8 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					}
 					Assert(ship_node >= 0);
 
-					// can't check special-arg
-					if (Sexp_nodes[ship_node].flags & SNF_SPECIAL_ARG_IN_NODE)
+					// can't check nodes whose value can change
+					if (can_node_value_change(ship_node))
 						break;
 
 					// look for the ship that has this dockpoint
@@ -4917,8 +4918,8 @@ const ship_registry_entry *eval_ship(int node)
 	auto ship_it = Ship_registry_map.find(CTEXT(node));
 	if (ship_it != Ship_registry_map.end())
 	{
-		// cache the value, unless this node is a variable or argument because the value may change
-		if (!(Sexp_nodes[node].type & SEXP_FLAG_VARIABLE) && !(Sexp_nodes[node].flags & SNF_SPECIAL_ARG_IN_NODE))
+		// cache the value if possible
+		if (!can_node_value_change(node))
 			Sexp_nodes[node].cache = new sexp_cached_data(OPF_SHIP, -1, ship_it->second);
 
 		return &Ship_registry[ship_it->second];
@@ -4960,8 +4961,8 @@ wing *eval_wing(int node)
 	{
 		auto wingp = &Wings[wing_num];
 
-		// cache the value, unless this node is a variable or argument because the value may change
-		if (!(Sexp_nodes[node].type & SEXP_FLAG_VARIABLE) && !(Sexp_nodes[node].flags & SNF_SPECIAL_ARG_IN_NODE))
+		// cache the value if possible
+		if (!can_node_value_change(node))
 			Sexp_nodes[node].cache = new sexp_cached_data(OPF_WING, wingp);
 
 		return wingp;
@@ -5002,10 +5003,8 @@ int sexp_atoi(int node)
 
 	int num = atoi(CTEXT(node));
 
-	// cache the value, unless this node is a variable, argument, or container data, because the value may change
-	if (!(Sexp_nodes[node].type & SEXP_FLAG_VARIABLE) &&
-		!(Sexp_nodes[node].flags & SNF_SPECIAL_ARG_IN_NODE) &&
-		(Sexp_nodes[node].subtype != SEXP_ATOM_CONTAINER_DATA))
+	// cache the value if possible
+	if (!can_node_value_change(node))
 		Sexp_nodes[node].cache = new sexp_cached_data(OPF_NUMBER, num, -1);
 
 	return num;
@@ -22069,8 +22068,8 @@ int sexp_string_to_int(int n)
 
 	int num = atoi(buf);
 
-	// cache the value, unless this node is a variable or argument because the value may change
-	if (!(Sexp_nodes[n].type & SEXP_FLAG_VARIABLE) && !(Sexp_nodes[n].flags & SNF_SPECIAL_ARG_IN_NODE))
+	// cache the value if possible
+	if (!can_node_value_change(n))
 		Sexp_nodes[n].cache = new sexp_cached_data(OPF_NUMBER, num, -1);
 
 	return num;
@@ -31679,6 +31678,11 @@ int copy_node_to_replacement_args(int node, int container_value_index)
 	return num_args;
 }
 
+bool can_node_value_change(int node)
+{
+	return (Sexp_nodes[node].type & SEXP_FLAG_VARIABLE) || (Sexp_nodes[node].flags & SNF_SPECIAL_ARG_IN_NODE) ||
+		   (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER_DATA);
+}
 
 void sexp_modify_variable(int n)
 {
