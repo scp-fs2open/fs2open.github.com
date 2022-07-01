@@ -716,8 +716,7 @@ namespace os
 void os_ignore_events() {
 	SDL_Event event;
 	while (SDL_PollEvent(&event)) {
-		// Add event to buffer
-		buffered_events.push_back(event);
+		// ignore event
 	}
 }
 
