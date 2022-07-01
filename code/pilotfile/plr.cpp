@@ -795,11 +795,20 @@ void pilotfile::plr_write_controls()
 
 void pilotfile::plr_read_settings()
 {
+	clamped_range_warnings.clear();
 	// sound/voice/music
 	if (!Using_in_game_options) {
-		snd_set_effects_volume(handler->readFloat("master_sound_volume"));
-		event_music_set_volume(handler->readFloat("master_event_music_volume"));
-		snd_set_voice_volume(handler->readFloat("aster_voice_volume"));
+		float temp_volume = handler->readFloat("master_sound_volume");
+		clamp_value_with_warn(&temp_volume, 0.f, 1.f, "master_sound_volume");
+		snd_set_effects_volume(temp_volume);
+
+		temp_volume = handler->readFloat("master_event_music_volume");
+		clamp_value_with_warn(&temp_volume, 0.f, 1.f, "master_event_music_volume");
+		event_music_set_volume(temp_volume);
+
+		temp_volume = handler->readFloat("aster_voice_volume");
+		clamp_value_with_warn(&temp_volume, 0.f, 1.f, "aster_voice_volume");
+		snd_set_voice_volume(temp_volume);
 
 		Briefing_voice_enabled = handler->readInt("briefing_voice_enabled") != 0;
 	} else {
@@ -814,27 +823,43 @@ void pilotfile::plr_read_settings()
 
 	// skill level
 	Game_skill_level = handler->readInt("game_skill_level");
+	clamp_value_with_warn(&Game_skill_level, 0, 4, "game_skill_level");
 
 	// input options
 	if (!Using_in_game_options) {
 		Use_mouse_to_fly   = handler->readInt("use_mouse_to_fly") != 0;
 		Mouse_sensitivity  = handler->readInt("mouse_sensitivity");
+		clamp_value_with_warn(&Mouse_sensitivity, 0, 9, "mouse_sensitivity");
 		Joy_sensitivity    = handler->readInt("joy_sensitivity");
+		clamp_value_with_warn(&Joy_sensitivity, 0, 9, "joy_sensitivity");
 		Joy_dead_zone_size = handler->readInt("joy_dead_zone_size");
+		clamp_value_with_warn(&Joy_dead_zone_size, 0, 45, "joy_dead_zone_size");
 
 		// detail
 		Detail.setting           = handler->readInt("setting");
+		clamp_value_with_warn(&Detail.setting, -1, NUM_DEFAULT_DETAIL_LEVELS - 1, "setting");
 		Detail.nebula_detail     = handler->readInt("nebula_detail");
+		clamp_value_with_warn(&Detail.nebula_detail, 0, MAX_DETAIL_LEVEL, "nebula_detail");
 		Detail.detail_distance   = handler->readInt("detail_distance");
+		clamp_value_with_warn(&Detail.detail_distance, 0, MAX_DETAIL_LEVEL, "detail_distance");
 		Detail.hardware_textures = handler->readInt("hardware_textures");
+		clamp_value_with_warn(&Detail.hardware_textures, 0, MAX_DETAIL_LEVEL, "hardware_textures");
 		Detail.num_small_debris  = handler->readInt("num_small_debris");
+		clamp_value_with_warn(&Detail.num_small_debris, 0, MAX_DETAIL_LEVEL, "num_small_debris");
 		Detail.num_particles     = handler->readInt("num_particles");
+		clamp_value_with_warn(&Detail.num_particles, 0, MAX_DETAIL_LEVEL, "num_particles");
 		Detail.num_stars         = handler->readInt("num_stars");
+		clamp_value_with_warn(&Detail.num_stars, 0, MAX_DETAIL_LEVEL, "num_stars");
 		Detail.shield_effects    = handler->readInt("shield_effects");
+		clamp_value_with_warn(&Detail.shield_effects, 0, MAX_DETAIL_LEVEL, "shield_effects");
 		Detail.lighting          = handler->readInt("lighting");
+		clamp_value_with_warn(&Detail.lighting, 0, MAX_DETAIL_LEVEL, "lighting");
 		Detail.targetview_model  = handler->readInt("targetview_model");
+		clamp_value_with_warn(&Detail.targetview_model, 0, MAX_DETAIL_LEVEL, "targetview_model");
 		Detail.planets_suns      = handler->readInt("planets_suns");
+		clamp_value_with_warn(&Detail.planets_suns, 0, MAX_DETAIL_LEVEL, "planets_suns");
 		Detail.weapon_extras     = handler->readInt("weapon_extras");
+		clamp_value_with_warn(&Detail.weapon_extras, 0, MAX_DETAIL_LEVEL, "weapon_extras");
 	} else {
 		// The values are set by the in-game menu but we still need to read the int from the file to maintain the correct offset
 		handler->readInt("use_mouse_to_fly");
@@ -855,6 +880,10 @@ void pilotfile::plr_read_settings()
 		handler->readInt("targetview_model");
 		handler->readInt("planets_suns");
 		handler->readInt("weapon_extras");
+	}
+	if (!clamped_range_warnings.empty()) {
+		ReleaseWarning(LOCATION, "The following values in the pilot file were out of bounds and were automatically reset:\n%s\nPlease check your settings!\n", clamped_range_warnings.c_str());
+		clamped_range_warnings.clear();
 	}
 }
 
