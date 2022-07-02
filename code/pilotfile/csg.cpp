@@ -1209,23 +1209,35 @@ void pilotfile::csg_read_settings()
 void pilotfile::csg_write_settings()
 {
 	startSection(Section::Settings);
+	clamped_range_warnings.clear();
 
 	// sound/voice/music
+	clamp_value_with_warn(&Master_sound_volume, 0.f, 1.f, "Effects Volume");
 	cfwrite_float(Master_sound_volume, cfp);
+	clamp_value_with_warn(&Master_event_music_volume, 0.f, 1.f, "Music Volume");
 	cfwrite_float(Master_event_music_volume, cfp);
+	clamp_value_with_warn(&Master_voice_volume, 0.f, 1.f, "Voice Volume");
 	cfwrite_float(Master_voice_volume, cfp);
 
 	cfwrite_int(Briefing_voice_enabled ? 1 : 0, cfp);
 
 	// skill level
+	clamp_value_with_warn(&Game_skill_level, 0, 4, "Game Skill Level");
 	cfwrite_int(Game_skill_level, cfp);
 
 	// input options
 	cfwrite_int(Use_mouse_to_fly, cfp);
+	clamp_value_with_warn(&Mouse_sensitivity, 0, 9, "Mouse Sensitivity");
 	cfwrite_int(Mouse_sensitivity, cfp);
+	clamp_value_with_warn(&Joy_sensitivity, 0, 9, "Joystick Sensitivity");
 	cfwrite_int(Joy_sensitivity, cfp);
+	clamp_value_with_warn(&Joy_dead_zone_size, 0, 45, "Joystick Deadzone");
 	cfwrite_int(Joy_dead_zone_size, cfp);
 
+	if (!clamped_range_warnings.empty()) {
+		ReleaseWarning(LOCATION, "The following values were out of bounds when saving the campaign file and were automatically reset.\n%s\nThis shouldn't be possible, please contact the FreeSpace 2 Open Source Code Project!\n", clamped_range_warnings.c_str());
+		clamped_range_warnings.clear();
+	}
 	endSection();
 }
 
