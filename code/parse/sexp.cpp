@@ -4506,36 +4506,23 @@ void stuff_sexp_text_string(SCP_string &dest, int node, int mode)
 		Assertion(sexp_variables_index != -1, "Couldn't find variable: %s\n", Sexp_nodes[node].text);
 		Assert((Sexp_variables[sexp_variables_index].type & SEXP_VARIABLE_NUMBER) || (Sexp_variables[sexp_variables_index].type & SEXP_VARIABLE_STRING));
 
-		// Error check - can be Fred or FreeSpace
-		if (mode == SEXP_ERROR_CHECK_MODE)
+		auto var_name = (Fred_running) ? Sexp_nodes[node].text : Sexp_variables[sexp_variables_index].variable_name;
+		auto var_contents = Sexp_variables[sexp_variables_index].text;
+
+		// number
+		if (Sexp_nodes[node].subtype == SEXP_ATOM_NUMBER)
 		{
-			if (Fred_running)
-				sprintf(dest, "@%s[%s] ", Sexp_nodes[node].text, Sexp_variables[sexp_variables_index].text);
-			else
-				sprintf(dest, "@%s[%s] ", Sexp_variables[sexp_variables_index].variable_name, Sexp_variables[sexp_variables_index].text);
+			Assert(Sexp_variables[sexp_variables_index].type & SEXP_VARIABLE_NUMBER);
+			sprintf(dest, "@%s[%s] ", var_name, var_contents);
+		}
+		// string
+		else if (Sexp_nodes[node].subtype == SEXP_ATOM_STRING)
+		{
+			Assert(Sexp_variables[sexp_variables_index].type & SEXP_VARIABLE_STRING);
+			sprintf(dest, "\"@%s[%s]\" ", var_name, var_contents);
 		}
 		else
-		{
-			// number
-			if (Sexp_nodes[node].subtype == SEXP_ATOM_NUMBER)
-			{
-				Assert(Sexp_variables[sexp_variables_index].type & SEXP_VARIABLE_NUMBER);
-
-				// Save as string - only Fred
-				Assert(mode == SEXP_SAVE_MODE);
-				sprintf(dest, "@%s[%s] ", Sexp_nodes[node].text, Sexp_variables[sexp_variables_index].text);
-			}
-			// string
-			else
-			{
-				Assert(Sexp_nodes[node].subtype == SEXP_ATOM_STRING);
-				Assert(Sexp_variables[sexp_variables_index].type & SEXP_VARIABLE_STRING);
-
-				// Save as string - only Fred
-				Assert(mode == SEXP_SAVE_MODE);
-				sprintf(dest, "\"@%s[%s]\" ", Sexp_nodes[node].text, Sexp_variables[sexp_variables_index].text);
-			}
-		}
+			UNREACHABLE("SEXP variable nodes must be SEXP_ATOM_NUMBER or SEXP_ATOM_STRING!");
 	}
 	// not a variable
 	else
