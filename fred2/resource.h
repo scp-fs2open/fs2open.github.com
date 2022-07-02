@@ -1279,7 +1279,9 @@
 #define ID_SPEED50                      32917
 #define ID_SPEED100                     32918
 #define ID_SELECT_LIST                  32919
+#define ID_SPEED500                     32920
 #define ID_CONSTRAIN_Y                  32921
+#define ID_SPEED1000                    32922
 #define ID_ZOOM                         32924
 #define ID_SELECTION_LOCK               32925
 #define ID_DISSOLVE_WING                32927
