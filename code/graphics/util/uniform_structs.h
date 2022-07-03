@@ -58,11 +58,15 @@ struct deferred_light_data {
 
 struct model_light {
 	vec4 position;
+
 	vec3d diffuse_color;
 	int light_type;
+
 	vec3d direction;
 	float attenuation;
+
 	float ml_sourceRadius;
+	float pad0[3]; 
 };
 
 const size_t MAX_UNIFORM_LIGHTS = 8;

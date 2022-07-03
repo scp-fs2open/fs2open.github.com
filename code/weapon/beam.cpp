@@ -1927,7 +1927,7 @@ void beam_add_light_small(beam *bm, object *objp, vec3d *pt)
 
 	if (light_color.i() <= 0.0f || light_rad <= 0.0f)
 		return;
-	light_add_point(pt, light_rad * 0.0001f, light_rad, &light_color);
+	light_add_point(pt, light_rad * 0.0001f, light_rad, &light_color,bm->beam_light_width*pct*noise);
 }
 
 // call to add a light source to a large object
@@ -1955,7 +1955,7 @@ void beam_add_light_large(beam *bm, object *objp, vec3d *pt0, vec3d *pt1)
 	light_rad = lp->beam_light_radius.handle(light_rad);
 	if (light_color.i() <= 0.0f || light_rad <= 0.0f)
 		return;
-	light_add_tube(pt0, pt1, 1.0f, light_rad, &light_color);
+	light_add_tube(pt0, pt1, 1.0f, light_rad, &light_color,bm->beam_light_width*noise);
 }
 
 // mark an object as being lit
