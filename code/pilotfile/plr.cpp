@@ -855,11 +855,8 @@ void pilotfile::plr_read_settings()
 		Detail.lighting          = handler->readInt("lighting");
 		clamp_value_with_warn(&Detail.lighting, 0, MAX_DETAIL_LEVEL, "Lighting");
 		Detail.targetview_model  = handler->readInt("targetview_model");
-		clamp_value_with_warn(&Detail.targetview_model, 0, MAX_DETAIL_LEVEL, "Target View Rendering");
 		Detail.planets_suns      = handler->readInt("planets_suns");
-		clamp_value_with_warn(&Detail.planets_suns, 0, MAX_DETAIL_LEVEL, "Planets/Backgrounds");
 		Detail.weapon_extras     = handler->readInt("weapon_extras");
-		clamp_value_with_warn(&Detail.weapon_extras, 0, MAX_DETAIL_LEVEL, "Weapon Extras");
 	} else {
 		// The values are set by the in-game menu but we still need to read the int from the file to maintain the correct offset
 		handler->readInt("use_mouse_to_fly");
@@ -933,11 +930,8 @@ void pilotfile::plr_write_settings()
 	handler->writeInt("shield_effects", Detail.shield_effects);
 	clamp_value_with_warn(&Detail.lighting, 0, MAX_DETAIL_LEVEL, "Lighting");
 	handler->writeInt("lighting", Detail.lighting);
-	clamp_value_with_warn(&Detail.targetview_model, 0, MAX_DETAIL_LEVEL, "Target View Rendering");
 	handler->writeInt("targetview_model", Detail.targetview_model);
-	clamp_value_with_warn(&Detail.planets_suns, 0, MAX_DETAIL_LEVEL, "Planets/Backgrounds");
 	handler->writeInt("planets_suns", Detail.planets_suns);
-	clamp_value_with_warn(&Detail.weapon_extras, 0, MAX_DETAIL_LEVEL, "Weapon Extras");
 	handler->writeInt("weapon_extras", Detail.weapon_extras);
 
 	if (!clamped_range_warnings.empty()) {
