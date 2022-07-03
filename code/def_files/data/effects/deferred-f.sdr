@@ -43,10 +43,9 @@ layout (std140) uniform lightData {
 
 	int lightType;
 	bool enable_shadows;
+
+	float sourceRadius;
 };
-
-
-uniform float sourceRadius = 5.0; // This should be passed in part of lightData
 
 // Nearest point sphere and tube light calculations taken from 
 // "Real Shading in Unreal Engine 4" by Brian Karis, Epic Games

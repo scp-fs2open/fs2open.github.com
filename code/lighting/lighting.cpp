@@ -150,13 +150,13 @@ static void light_rotate(light * l)
 	}
 }
 
-void light_add_directional(const vec3d* dir, const hdr_color* new_color)
+void light_add_directional(const vec3d* dir, const hdr_color* new_color, const float source_radius)
 {
 	Assert(new_color!= nullptr);
-	light_add_directional(dir, new_color->i(), new_color->r(), new_color->g(), new_color->b());
+	light_add_directional(dir, new_color->i(), new_color->r(), new_color->g(), new_color->b(), source_radius);
 }
 
-void light_add_directional(const vec3d *dir, float intensity, float r, float g, float b)
+void light_add_directional(const vec3d *dir, float intensity, float r, float g, float b, const float source_radius)
 {
 	if (Lighting_off) return;
 
@@ -181,18 +181,23 @@ void light_add_directional(const vec3d *dir, float intensity, float r, float g, 
 	l.radb_squared = l.radb*l.radb;
 	l.instance = Num_lights-1;
 
+	if(source_radius>=0)
+		l.source_radius = source_radius;
+	else
+		l.source_radius = 1.0f;
+
 	Lights.push_back(l);
 	Static_light.push_back(l);
 }
 
 
-void light_add_point(const vec3d* pos, float r1, float r2, const hdr_color* new_color)
+void light_add_point(const vec3d* pos, float r1, float r2, const hdr_color* new_color, float source_radius)
 {
 	Assert(new_color!= nullptr);
-	light_add_point(pos, r1, r2, new_color->i(), new_color->r(), new_color->g(), new_color->b());
+	light_add_point(pos, r1, r2, new_color->i(), new_color->r(), new_color->g(), new_color->b(), source_radius);
 }
 
-void light_add_point(const vec3d *pos, float r1, float r2, float intensity, float r, float g, float b)
+void light_add_point(const vec3d *pos, float r1, float r2, float intensity, float r, float g, float b, const float source_radius)
 {
 	Assertion( r1 > 0.0f, "Invalid radius r1 specified for light: %f. Radius must be > 0.0f. Examine stack trace to determine culprit.\n", r1 );
 	Assertion( r2 > 0.0f, "Invalid radius r2 specified for light: %f. Radius must be > 0.0f. Examine stack trace to determine culprit.\n", r2 );
@@ -219,16 +224,21 @@ void light_add_point(const vec3d *pos, float r1, float r2, float intensity, floa
 	l.radb_squared = l.radb*l.radb;
 	l.instance = Num_lights-1;
 
+	if(source_radius>=0)
+		l.source_radius = source_radius;
+	else
+		l.source_radius = MAX(l.rada,l.radb) * 0.01f;
+
 	Lights.push_back(l);
 }
 
-void light_add_tube(const vec3d* p0, const vec3d* p1, float r1, float r2, const hdr_color* new_color)
+void light_add_tube(const vec3d* p0, const vec3d* p1, float r1, float r2, const hdr_color* new_color, const float source_radius)
 {
 	Assert(new_color!= nullptr);
-	light_add_tube(p0, p1, r1, r2, new_color->i(), new_color->r(), new_color->g(), new_color->b());
+	light_add_tube(p0, p1, r1, r2, new_color->i(), new_color->r(), new_color->g(), new_color->b(), source_radius);
 }
 
-void light_add_tube(const vec3d *p0, const vec3d *p1, float r1, float r2, float intensity, float r, float g, float b)
+void light_add_tube(const vec3d *p0, const vec3d *p1, float r1, float r2, float intensity, float r, float g, float b, const float source_radius)
 {
 	Assertion(r1 > 0.0f, "Invalid radius r1 specified for light: %f. Radius must be > 0.0f. Examine stack trace to determine culprit.\n", r1);
 	Assertion(r2 > 0.0f, "Invalid radius r2 specified for light: %f. Radius must be > 0.0f. Examine stack trace to determine culprit.\n", r2);
@@ -256,6 +266,10 @@ void light_add_tube(const vec3d *p0, const vec3d *p1, float r1, float r2, float 
 	l.rada_squared = l.rada*l.rada;
 	l.radb_squared = l.radb*l.radb;
 	l.instance = Num_lights-1;
+	if(source_radius>=0)
+		l.source_radius = source_radius;
+	else
+		l.source_radius = MAX(l.rada,l.radb) * 0.01f;
 
 	Lights.push_back(l);
 }
@@ -424,13 +438,13 @@ void light_apply_rgb( ubyte *param_r, ubyte *param_g, ubyte *param_b, const vec3
 }
 
 
-void light_add_cone(const vec3d *pos, const vec3d *dir, float angle, float inner_angle, bool dual_cone, float r1, float r2, const hdr_color* new_color)
+void light_add_cone(const vec3d *pos, const vec3d *dir, float angle, float inner_angle, bool dual_cone, float r1, float r2, const hdr_color* new_color, const float source_radius)
 {
 	Assert(new_color!= nullptr);
-	light_add_cone(pos, dir, angle, inner_angle, dual_cone, r1, r2, new_color->i(), new_color->r(), new_color->g(), new_color->b());
+	light_add_cone(pos, dir, angle, inner_angle, dual_cone, r1, r2, new_color->i(), new_color->r(), new_color->g(), new_color->b(), source_radius);
 }
 
-void light_add_cone(const vec3d *pos, const vec3d *dir, float angle, float inner_angle, bool dual_cone, float r1, float r2, float intensity, float r, float g, float b)
+void light_add_cone(const vec3d *pos, const vec3d *dir, float angle, float inner_angle, bool dual_cone, float r1, float r2, float intensity, float r, float g, float b, const float source_radius )
 {
 	Assertion( r1 > 0.0f, "Invalid radius r1 specified for light: %f. Radius must be > 0.0f. Examine stack trace to determine culprit.\n", r1 );
 	Assertion( r2 > 0.0f, "Invalid radius r2 specified for light: %f. Radius must be > 0.0f. Examine stack trace to determine culprit.\n", r2 );
@@ -460,6 +474,11 @@ void light_add_cone(const vec3d *pos, const vec3d *dir, float angle, float inner
 	l.rada_squared = l.rada*l.rada;
 	l.radb_squared = l.radb*l.radb;
 	l.instance = Num_lights-1;
+
+	if(source_radius>=0)
+		l.source_radius = source_radius;
+	else
+		l.source_radius = MAX(l.rada,l.radb) * 0.01f;
 
 	Lights.push_back(l);
 }

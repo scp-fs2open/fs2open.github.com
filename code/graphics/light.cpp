@@ -35,6 +35,7 @@ struct gr_light
 
 	float SpotCutOff;
 	float ConstantAtten, LinearAtten, QuadraticAtten;
+	float SourceRadius;
 
 	int type;
 };
@@ -81,6 +82,7 @@ void FSLight2GLLight(light* FSLight, gr_light* GLLight) {
 	GLLight->Position.xyzw.y = FSLight->vec.xyz.y;
 	GLLight->Position.xyzw.z = FSLight->vec.xyz.z; // flipped axis for FS2
 	GLLight->Position.xyzw.w = 1.0f;
+	GLLight->SourceRadius = FSLight->source_radius;
 
 
 	switch (FSLight->type) {

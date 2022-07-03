@@ -51,8 +51,9 @@ struct deferred_light_data {
 
 	int lightType;
 	int enable_shadows;
+	float sourceRadius;
 
-	float pad0[2]; // Struct size must be 16-bytes aligned because we use vec3s
+	float pad0[1]; // Struct size must be 16-bytes aligned because we use vec3s
 };
 
 struct model_light {
@@ -61,6 +62,7 @@ struct model_light {
 	int light_type;
 	vec3d direction;
 	float attenuation;
+	float ml_sourceRadius;
 };
 
 const size_t MAX_UNIFORM_LIGHTS = 8;
