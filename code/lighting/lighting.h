@@ -88,14 +88,14 @@ extern void light_reset();
 
 //Intensity in lighting inputs multiplies the base colors.
 
-extern void light_add_directional(const vec3d *dir, const hdr_color *new_color, const float source_radius = 0.0f );
-extern void light_add_directional(const vec3d *dir, float intensity, float r, float g, float b, const float source_radius = 0.0f);
-extern void light_add_point(const vec3d * pos, float r1, float r2, const hdr_color *new_color, const float source_radius = 0.0f);
-extern void light_add_point(const vec3d * pos, float r1, float r2, float intensity, float r, float g, float b, const float source_radius = 0.0f);
-extern void light_add_tube(const vec3d *p0, const vec3d *p1, float r1, float r2, const hdr_color *new_color, const float source_radius = 0.0f);
-extern void light_add_tube(const vec3d *p0, const vec3d *p1, float r1, float r2, float intensity, float r, float g, float b, const float source_radius = 0.0f);
-extern void light_add_cone(const vec3d * pos, const vec3d * dir, float angle, float inner_angle, bool dual_cone, float r1, float r2, const hdr_color *new_color, const float source_radius = 0.0f);
-extern void light_add_cone(const vec3d * pos, const vec3d * dir, float angle, float inner_angle, bool dual_cone, float r1, float r2, float intensity, float r, float g, float b, const float source_radius = 0.0f);
+extern void light_add_directional(const vec3d *dir, const hdr_color *new_color, const float source_radius = -1.0f );
+extern void light_add_directional(const vec3d *dir, float intensity, float r, float g, float b, const float source_radius = -1.0f);
+extern void light_add_point(const vec3d * pos, float r1, float r2, const hdr_color *new_color, const float source_radius = -1.0f);
+extern void light_add_point(const vec3d * pos, float r1, float r2, float intensity, float r, float g, float b, const float source_radius = -1.0f);
+extern void light_add_tube(const vec3d *p0, const vec3d *p1, float r1, float r2, const hdr_color *new_color, const float source_radius = -1.0f);
+extern void light_add_tube(const vec3d *p0, const vec3d *p1, float r1, float r2, float intensity, float r, float g, float b, const float source_radius = -1.0f);
+extern void light_add_cone(const vec3d * pos, const vec3d * dir, float angle, float inner_angle, bool dual_cone, float r1, float r2, const hdr_color *new_color, const float source_radius = -1.0f);
+extern void light_add_cone(const vec3d * pos, const vec3d * dir, float angle, float inner_angle, bool dual_cone, float r1, float r2, float intensity, float r, float g, float b, const float source_radius = -1.0f);
 
 
 extern void light_rotate_all();

@@ -181,7 +181,10 @@ void light_add_directional(const vec3d *dir, float intensity, float r, float g, 
 	l.radb_squared = l.radb*l.radb;
 	l.instance = Num_lights-1;
 
-	l.source_radius = MAX(0.0f,source_radius);
+	if(source_radius>=0)
+		l.source_radius = source_radius;
+	else
+		l.source_radius = 1.0f;
 
 	Lights.push_back(l);
 	Static_light.push_back(l);
@@ -221,7 +224,10 @@ void light_add_point(const vec3d *pos, float r1, float r2, float intensity, floa
 	l.radb_squared = l.radb*l.radb;
 	l.instance = Num_lights-1;
 
-	l.source_radius = MAX(0.0f,source_radius);
+	if(source_radius>=0)
+		l.source_radius = source_radius;
+	else
+		l.source_radius = MAX(l.rada,l.radb) * 0.01f;
 
 	Lights.push_back(l);
 }
@@ -260,6 +266,10 @@ void light_add_tube(const vec3d *p0, const vec3d *p1, float r1, float r2, float 
 	l.rada_squared = l.rada*l.rada;
 	l.radb_squared = l.radb*l.radb;
 	l.instance = Num_lights-1;
+	if(source_radius>=0)
+		l.source_radius = source_radius;
+	else
+		l.source_radius = MAX(l.rada,l.radb) * 0.01f;
 
 	l.source_radius = MAX(0.0f,source_radius);
 
@@ -467,7 +477,10 @@ void light_add_cone(const vec3d *pos, const vec3d *dir, float angle, float inner
 	l.radb_squared = l.radb*l.radb;
 	l.instance = Num_lights-1;
 
-	l.source_radius = MAX(0.0f,source_radius);
+	if(source_radius>=0)
+		l.source_radius = source_radius;
+	else
+		l.source_radius = MAX(l.rada,l.radb) * 0.01f;
 
 	Lights.push_back(l);
 }
