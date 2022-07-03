@@ -795,11 +795,20 @@ void pilotfile::plr_write_controls()
 
 void pilotfile::plr_read_settings()
 {
+	clamped_range_warnings.clear();
 	// sound/voice/music
 	if (!Using_in_game_options) {
-		snd_set_effects_volume(handler->readFloat("master_sound_volume"));
-		event_music_set_volume(handler->readFloat("master_event_music_volume"));
-		snd_set_voice_volume(handler->readFloat("aster_voice_volume"));
+		float temp_volume = handler->readFloat("master_sound_volume");
+		clamp_value_with_warn(&temp_volume, 0.f, 1.f, "Effects Volume");
+		snd_set_effects_volume(temp_volume);
+
+		temp_volume = handler->readFloat("master_event_music_volume");
+		clamp_value_with_warn(&temp_volume, 0.f, 1.f, "Music Volume");
+		event_music_set_volume(temp_volume);
+
+		temp_volume = handler->readFloat("aster_voice_volume");
+		clamp_value_with_warn(&temp_volume, 0.f, 1.f, "Voice Volume");
+		snd_set_voice_volume(temp_volume);
 
 		Briefing_voice_enabled = handler->readInt("briefing_voice_enabled") != 0;
 	} else {
@@ -814,24 +823,37 @@ void pilotfile::plr_read_settings()
 
 	// skill level
 	Game_skill_level = handler->readInt("game_skill_level");
+	clamp_value_with_warn(&Game_skill_level, 0, 4, "Skill Level");
 
 	// input options
 	if (!Using_in_game_options) {
 		Use_mouse_to_fly   = handler->readInt("use_mouse_to_fly") != 0;
 		Mouse_sensitivity  = handler->readInt("mouse_sensitivity");
+		clamp_value_with_warn(&Mouse_sensitivity, 0, 9, "Mouse Sensitivity");
 		Joy_sensitivity    = handler->readInt("joy_sensitivity");
+		clamp_value_with_warn(&Joy_sensitivity, 0, 9, "Joystick Sensitivity");
 		Joy_dead_zone_size = handler->readInt("joy_dead_zone_size");
+		clamp_value_with_warn(&Joy_dead_zone_size, 0, 45, "Joystick Deadzone");
 
 		// detail
 		Detail.setting           = handler->readInt("setting");
+		clamp_value_with_warn(&Detail.setting, -1, NUM_DEFAULT_DETAIL_LEVELS - 1, "Detail Level Preset");
 		Detail.nebula_detail     = handler->readInt("nebula_detail");
+		clamp_value_with_warn(&Detail.nebula_detail, 0, MAX_DETAIL_LEVEL, "Nebula Detail");
 		Detail.detail_distance   = handler->readInt("detail_distance");
+		clamp_value_with_warn(&Detail.detail_distance, 0, MAX_DETAIL_LEVEL, "Model Detail");
 		Detail.hardware_textures = handler->readInt("hardware_textures");
+		clamp_value_with_warn(&Detail.hardware_textures, 0, MAX_DETAIL_LEVEL, "3D Hardware Textures");
 		Detail.num_small_debris  = handler->readInt("num_small_debris");
+		clamp_value_with_warn(&Detail.num_small_debris, 0, MAX_DETAIL_LEVEL, "Impact Effects");
 		Detail.num_particles     = handler->readInt("num_particles");
+		clamp_value_with_warn(&Detail.num_particles, 0, MAX_DETAIL_LEVEL, "Particles");
 		Detail.num_stars         = handler->readInt("num_stars");
+		clamp_value_with_warn(&Detail.num_stars, 0, MAX_DETAIL_LEVEL, "Stars");
 		Detail.shield_effects    = handler->readInt("shield_effects");
+		clamp_value_with_warn(&Detail.shield_effects, 0, MAX_DETAIL_LEVEL, "Shield Hit Effects");
 		Detail.lighting          = handler->readInt("lighting");
+		clamp_value_with_warn(&Detail.lighting, 0, MAX_DETAIL_LEVEL, "Lighting");
 		Detail.targetview_model  = handler->readInt("targetview_model");
 		Detail.planets_suns      = handler->readInt("planets_suns");
 		Detail.weapon_extras     = handler->readInt("weapon_extras");
@@ -856,6 +878,10 @@ void pilotfile::plr_read_settings()
 		handler->readInt("planets_suns");
 		handler->readInt("weapon_extras");
 	}
+	if (!clamped_range_warnings.empty()) {
+		ReleaseWarning(LOCATION, "The following values in the pilot file were out of bounds and were automatically reset:\n%s\nPlease check your settings!\n", clamped_range_warnings.c_str());
+		clamped_range_warnings.clear();
+	}
 }
 
 void pilotfile::plr_write_settings()
@@ -863,35 +889,55 @@ void pilotfile::plr_write_settings()
 	handler->startSectionWrite(Section::Settings);
 
 	// sound/voice/music
+	clamp_value_with_warn(&Master_sound_volume, 0.f, 1.f, "Effects Volume");
 	handler->writeFloat("master_sound_volume", Master_sound_volume);
+	clamp_value_with_warn(&Master_event_music_volume, 0.f, 1.f, "Music Volume");
 	handler->writeFloat("master_event_music_volume", Master_event_music_volume);
+	clamp_value_with_warn(&Master_voice_volume, 0.f, 1.f, "Voice Volume");
 	handler->writeFloat("aster_voice_volume", Master_voice_volume);
 
 	handler->writeInt("briefing_voice_enabled", Briefing_voice_enabled ? 1 : 0);
 
 	// skill level
+	clamp_value_with_warn(&Game_skill_level, 0, 4, "Skill Level");
 	handler->writeInt("game_skill_level", Game_skill_level);
 
 	// input options
 	handler->writeInt("use_mouse_to_fly", Use_mouse_to_fly);
+	clamp_value_with_warn(&Mouse_sensitivity, 0, 9, "Mouse Sensitivity");
 	handler->writeInt("mouse_sensitivity", Mouse_sensitivity);
+	clamp_value_with_warn(&Joy_sensitivity, 0, 9, "Joystick Sensitivity");
 	handler->writeInt("joy_sensitivity", Joy_sensitivity);
+	clamp_value_with_warn(&Joy_dead_zone_size, 0, 45, "Joystick Deadzone");
 	handler->writeInt("joy_dead_zone_size", Joy_dead_zone_size);
 
 	// detail
+	clamp_value_with_warn(&Detail.setting, -1, NUM_DEFAULT_DETAIL_LEVELS - 1, "Detail Level Preset");
 	handler->writeInt("setting", Detail.setting);
+	clamp_value_with_warn(&Detail.nebula_detail, 0, MAX_DETAIL_LEVEL, "Nebula Detail");
 	handler->writeInt("nebula_detail", Detail.nebula_detail);
+	clamp_value_with_warn(&Detail.detail_distance, 0, MAX_DETAIL_LEVEL, "Model Detail");
 	handler->writeInt("detail_distance", Detail.detail_distance);
+	clamp_value_with_warn(&Detail.hardware_textures, 0, MAX_DETAIL_LEVEL, "3D Hardware Textures");
 	handler->writeInt("hardware_textures", Detail.hardware_textures);
+	clamp_value_with_warn(&Detail.num_small_debris, 0, MAX_DETAIL_LEVEL, "Impact Effects");
 	handler->writeInt("num_small_debris", Detail.num_small_debris);
+	clamp_value_with_warn(&Detail.num_particles, 0, MAX_DETAIL_LEVEL, "Particles");
 	handler->writeInt("num_particles", Detail.num_particles);
+	clamp_value_with_warn(&Detail.num_stars, 0, MAX_DETAIL_LEVEL, "Stars");
 	handler->writeInt("num_stars", Detail.num_stars);
+	clamp_value_with_warn(&Detail.shield_effects, 0, MAX_DETAIL_LEVEL, "Shield Hit Effects");
 	handler->writeInt("shield_effects", Detail.shield_effects);
+	clamp_value_with_warn(&Detail.lighting, 0, MAX_DETAIL_LEVEL, "Lighting");
 	handler->writeInt("lighting", Detail.lighting);
 	handler->writeInt("targetview_model", Detail.targetview_model);
 	handler->writeInt("planets_suns", Detail.planets_suns);
 	handler->writeInt("weapon_extras", Detail.weapon_extras);
 
+	if (!clamped_range_warnings.empty()) {
+		ReleaseWarning(LOCATION, "The following values were out of bounds when saving the Pilot file and were automatically reset.\n%s\nThis shouldn't be possible, please contact the FreeSpace 2 Open Source Code Project!\n", clamped_range_warnings.c_str());
+		clamped_range_warnings.clear();
+	}
 	handler->endSectionWrite();
 }
 
