@@ -991,7 +991,7 @@ bool ship_class_unchanged(const ship_registry_entry *ship_entry);
 void multi_sexp_modify_variable();
 
 // jg18
-// container_value_index is for using one specific value from acontainer
+// container_value_index is for using one specific value from a container
 int copy_node_to_replacement_args(int node, int container_value_index = -1);
 // checks whether the node's value can change over the course of the mission
 bool is_node_value_dynamic(int node);
