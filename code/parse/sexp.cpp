@@ -993,7 +993,10 @@ void multi_sexp_modify_variable();
 // jg18
 // container_value_index is for using one specific value from acontainer
 int copy_node_to_replacement_args(int node, int container_value_index = -1);
-bool can_node_value_change(int node);
+// checks whether the node's value can change over the course of the mission
+bool is_node_value_dynamic(int node);
+// returns 0 on success or a SEXP_CHECK_* value on failure
+bool check_dynamic_value_node_type(int node, bool is_string, bool is_number);
 
 #define NO_OPERATOR_INDEX_DEFINED		-2
 #define NOT_A_SEXP_OPERATOR				-1
@@ -2465,9 +2468,16 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				}
 				Assert(ship_node >= 0);
 
-				// we can't check nodes whose value can change
-				if (can_node_value_change(node))
-					break;
+				if (is_node_value_dynamic(ship_node)) {
+					const int dyn_val_check = check_dynamic_value_node_type(ship_node, true, false);
+					if (dyn_val_check) {
+						return dyn_val_check;
+					} else {
+						// since the value changes at runtime
+						// we can check only the type
+						break;
+					}
+				}
 
 				auto shipname = CTEXT(ship_node);
 				shipnum = ship_name_lookup(shipname, 1);
@@ -2552,9 +2562,16 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 				ship_node = CDR(op_node);
 
-				// we can't check nodes whose value can change
-				if (can_node_value_change(ship_node))
-					break;
+				if (is_node_value_dynamic(ship_node)) {
+					const int dyn_val_check = check_dynamic_value_node_type(ship_node, true, false);
+					if (dyn_val_check) {
+						return dyn_val_check;
+					} else {
+						// since the value changes at runtime
+						// we can check only the type
+						break;
+					}
+				}
 
 				auto shipname = CTEXT(ship_node);
 				shipnum = ship_name_lookup(shipname, 1);
@@ -2921,9 +2938,16 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					auto ship_node = Sexp_nodes[op_node].rest;
 					Assert(ship_node >= 0);
 
-					// we can't check nodes whose value can change
-					if (can_node_value_change(ship_node))
-						break;
+					if (is_node_value_dynamic(ship_node)) {
+						const int dyn_val_check = check_dynamic_value_node_type(ship_node, true, false);
+						if (dyn_val_check) {
+							return dyn_val_check;
+						} else {
+							// since the value changes at runtime
+							// we can check only the type
+							break;
+						}
+					}
 
 					ship_num = ship_name_lookup(CTEXT(ship_node), 1);	// Goober5000 - include players
 					if (ship_num < 0) {
@@ -3061,9 +3085,16 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					z = Sexp_nodes[z].rest;  // first argument of operator should be mission name
 					Assert(z >= 0);
 
-					// can't check nodes whose value can change
-					if (can_node_value_change(z))
-						break;
+					if (is_node_value_dynamic(z)) {
+						const int dyn_val_check = check_dynamic_value_node_type(z, true, false);
+						if (dyn_val_check) {
+							return dyn_val_check;
+						} else {
+							// since the value changes at runtime
+							// we can check only the type
+							break;
+						}
+					}
 
 					// look for mission
 					count = count_items_with_name(CTEXT(z), Campaign.missions, Campaign.num_missions);
@@ -3146,9 +3177,16 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					}
 					Assert(ship_node >= 0);
 
-					// can't check nodes whose value can change
-					if (can_node_value_change(ship_node))
-						break;
+					if (is_node_value_dynamic(ship_node)) {
+						const int dyn_val_check = check_dynamic_value_node_type(ship_node, true, false);
+						if (dyn_val_check) {
+							return dyn_val_check;
+						} else {
+							// since the value changes at runtime
+							// we can check only the type
+							break;
+						}
+					}
 
 					// look for the ship that has this dockpoint
 					ship_num = ship_name_lookup(CTEXT(ship_node), 1);
@@ -4918,8 +4956,8 @@ const ship_registry_entry *eval_ship(int node)
 	auto ship_it = Ship_registry_map.find(CTEXT(node));
 	if (ship_it != Ship_registry_map.end())
 	{
-		// cache the value if possible
-		if (!can_node_value_change(node))
+		// cache the value if it can't change later
+		if (!is_node_value_dynamic(node))
 			Sexp_nodes[node].cache = new sexp_cached_data(OPF_SHIP, -1, ship_it->second);
 
 		return &Ship_registry[ship_it->second];
@@ -4961,8 +4999,8 @@ wing *eval_wing(int node)
 	{
 		auto wingp = &Wings[wing_num];
 
-		// cache the value if possible
-		if (!can_node_value_change(node))
+		// cache the value if it can't change later
+		if (!is_node_value_dynamic(node))
 			Sexp_nodes[node].cache = new sexp_cached_data(OPF_WING, wingp);
 
 		return wingp;
@@ -5003,8 +5041,8 @@ int sexp_atoi(int node)
 
 	int num = atoi(CTEXT(node));
 
-	// cache the value if possible
-	if (!can_node_value_change(node))
+	// cache the value if it can't change later
+	if (!is_node_value_dynamic(node))
 		Sexp_nodes[node].cache = new sexp_cached_data(OPF_NUMBER, num, -1);
 
 	return num;
@@ -22068,8 +22106,8 @@ int sexp_string_to_int(int n)
 
 	int num = atoi(buf);
 
-	// cache the value if possible
-	if (!can_node_value_change(n))
+	// cache the value if it can't change later
+	if (!is_node_value_dynamic(n))
 		Sexp_nodes[n].cache = new sexp_cached_data(OPF_NUMBER, num, -1);
 
 	return num;
@@ -31348,6 +31386,9 @@ const char *sexp_error_message(int num)
 		case SEXP_CHECK_WRONG_CONTAINER_DATA_TYPE:
 			return "Wrong container data type";
 
+		case SEXP_CHECK_INVALID_SPECIAL_ARG_TYPE:
+			return "Invalid special argument type";
+
 		default:
 			Warning(LOCATION, "Unhandled sexp error code %d!", num);
 			return "Unhandled sexp error code!";
@@ -31678,10 +31719,46 @@ int copy_node_to_replacement_args(int node, int container_value_index)
 	return num_args;
 }
 
-bool can_node_value_change(int node)
+bool is_node_value_dynamic(int node)
 {
+	Assertion(node >= 0, "Attempt to check whether a non-existent node has a dynamic value. Please report!");
+
 	return (Sexp_nodes[node].type & SEXP_FLAG_VARIABLE) || (Sexp_nodes[node].flags & SNF_SPECIAL_ARG_IN_NODE) ||
 		   (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER_DATA);
+}
+
+bool check_dynamic_value_node_type(int node, bool is_string, bool is_number)
+{
+	Assertion(is_node_value_dynamic(node),
+		"Attempt to check dynamic value type of a node that isn't a dynamic value. Please report!");
+
+	if (Sexp_nodes[node].type & SEXP_FLAG_VARIABLE) {
+		const int var_index = sexp_get_variable_index(node);
+		Assertion(var_index != -1,
+			"Attempt to get index of invalid variable %s. Please report!",
+			Sexp_nodes[node].text);
+		const int var_type = Sexp_variables[var_index].type;
+		if (((var_type & SEXP_VARIABLE_STRING) && !is_string) || ((var_type & SEXP_VARIABLE_NUMBER) && !is_number)) {
+			return SEXP_CHECK_INVALID_VARIABLE_TYPE;
+		}
+	} else if (Sexp_nodes[node].flags & SNF_SPECIAL_ARG_IN_NODE) {
+		if (((Sexp_nodes[node].subtype == SEXP_ATOM_STRING) && !is_string) ||
+			((Sexp_nodes[node].subtype == SEXP_ATOM_NUMBER) && !is_number)) {
+			return SEXP_CHECK_INVALID_SPECIAL_ARG_TYPE;
+		}
+	} else if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER_DATA) {
+		const auto *p_container = get_sexp_container(Sexp_nodes[node].text);
+		Assertion(p_container,
+			"Attempt to check dynamic value node type of data of nonexistent container %s. Please report!",
+			Sexp_nodes[node].text);
+		if (!check_container_data_sexp_arg_type(p_container->type, is_string, is_number)) {
+			return SEXP_CHECK_WRONG_CONTAINER_DATA_TYPE;
+		}
+	} else {
+		UNREACHABLE("Unhandled dynamic value node %s. Please report!", Sexp_nodes[node].text);
+	}
+
+	return 0;
 }
 
 void sexp_modify_variable(int n)
