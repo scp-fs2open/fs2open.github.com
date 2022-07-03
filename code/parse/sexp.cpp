@@ -996,7 +996,7 @@ int copy_node_to_replacement_args(int node, int container_value_index = -1);
 // checks whether the node's value can change over the course of the mission
 bool is_node_value_dynamic(int node);
 // returns 0 on success or a SEXP_CHECK_* value on failure
-bool check_dynamic_value_node_type(int node, bool is_string, bool is_number);
+int check_dynamic_value_node_type(int node, bool is_string, bool is_number);
 
 #define NO_OPERATOR_INDEX_DEFINED		-2
 #define NOT_A_SEXP_OPERATOR				-1
@@ -31727,7 +31727,7 @@ bool is_node_value_dynamic(int node)
 		   (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER_DATA);
 }
 
-bool check_dynamic_value_node_type(int node, bool is_string, bool is_number)
+int check_dynamic_value_node_type(int node, bool is_string, bool is_number)
 {
 	Assertion(is_node_value_dynamic(node),
 		"Attempt to check dynamic value type of a node that isn't a dynamic value. Please report!");
