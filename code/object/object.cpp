@@ -1347,8 +1347,9 @@ void obj_move_all_post(object *objp, float frametime)
 					}
 					// P goes from 0 to 1 to 0 over the life of the explosion
 					// Only do this if rad is > 0.0000001f
+					// TODO: Make fireball source radius configurable, currently sized based on modern subspace portal textures as that will be a very prominent case of it
 					if (rad > 0.0001f)
-						light_add_point( &objp->pos, rad * 2.0f, rad * 5.0f, intensity, r, g, b,rad * 0.9f);
+						light_add_point( &objp->pos, rad * 2.0f, rad * 5.0f, intensity, r, g, b,rad * 0.3f);
 				}
 			}
 
