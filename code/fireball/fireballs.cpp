@@ -412,7 +412,11 @@ void fireball_parse_tbl()
 			auto lod0 = fi.lod[0].filename;
 
 			if (strlen(lod0) > MAX_FIREBALL_BASENAME_LEN)
-				Error(__FILE__, __LINE__, "A fireball base file name may not be longer than %d characters due to the LOD naming scheme. (is %s)", MAX_FIREBALL_BASENAME_LEN, lod0);
+			{
+				Warning(LOCATION, "A fireball base file name may not be longer than %d characters due to the LOD naming scheme.\nLODs other than LOD0 will be skipped for fireball %s", MAX_FIREBALL_BASENAME_LEN, lod0);
+				fi.lod_count = 1;
+				continue;
+			}
 
 			for (int j = 1; j < fi.lod_count; ++j)
 				sprintf(fi.lod[j].filename, "%.*s_%d", MAX_FIREBALL_BASENAME_LEN, lod0, j % MAX_FIREBALL_LOD);
