@@ -419,7 +419,7 @@ void fireball_parse_tbl()
 			}
 
 			for (int j = 1; j < fi.lod_count; ++j)
-				sprintf(fi.lod[j].filename, "%.*s_%d", MAX_FILENAME_LEN - 3, lod0, j % MAX_FIREBALL_LOD);
+				sprintf(fi.lod[j].filename, "%.*s_%d", MAX_FILENAME_LEN - 3, lod0, j % MAX_FIREBALL_LOD /*to show gcc12 format string is safe*/);
 		}
 	}
 
