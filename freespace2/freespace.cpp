@@ -902,6 +902,7 @@ void game_level_close()
 		lock_time_compression(false);
 
 		audiostream_unpause_all();
+		snd_aav_init();
 
 		gr_set_ambient_light(120, 120, 120);
 
@@ -5272,7 +5273,6 @@ void game_leave_state( int old_state, int new_state )
 				if ( (Game_mode & GM_MULTIPLAYER) && (new_state == GS_STATE_MAIN_MENU) ){
 					multi_quit_game(PROMPT_NONE);
 				}
-				snd_aav_init();
 
 				freespace_stop_mission();
 
