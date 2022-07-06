@@ -55,9 +55,9 @@ protected:
 	void build_example();
 	void build_example(CString section);
 	CString generate_filename(CString section, int number, int digits, const MMessage *message=nullptr);
-	const char *get_message_sender(const char *message);
+	const char *get_message_sender(const MMessage *message);
 	void export_one_message(const MMessage *message);
-	void get_valid_sender(char *sender, size_t sender_size, const MMessage *message);
+	void get_valid_sender(char *sender, size_t sender_size, const MMessage *message, int *sender_shipnum = nullptr);
 	void group_message_indexes(SCP_vector<int> &message_indexes);
 	void group_message_indexes_in_tree(int node, SCP_vector<int> &source_list, SCP_vector<int> &destination_list);
 
@@ -91,6 +91,7 @@ protected:
 	afx_msg void OnExportDebriefings();
 	afx_msg void OnExportMessages();
 	afx_msg void OnBnClickedIncludeSender();
+	afx_msg void OnCopyPersonas(bool messages_to_ships);
 	afx_msg void OnCopyMessagePersonasToShips();
 	afx_msg void OnCopyShipPersonasToMessages();
 	afx_msg void OnSetHeadANIsUsingMessagesTbl();

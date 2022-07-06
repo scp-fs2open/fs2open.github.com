@@ -291,7 +291,7 @@ CString VoiceActingManager::generate_filename(CString section, int number, int d
 				sender[j] = '_';
 		}
 
-		// flatten muliple underscores
+		// flatten multiple underscores
 		j = 1;
 		while( sender[j] != '\0' ) {
 			if ( sender[j-1] == '_' && sender[j] == '_' ) {
@@ -544,12 +544,12 @@ void VoiceActingManager::export_one_message(const MMessage *message)
 
 /** Passed sender string will have either have the senders name
 or '\<none\>'*/
-void VoiceActingManager::get_valid_sender(char *sender, size_t sender_size, const MMessage *message)
+void VoiceActingManager::get_valid_sender(char *sender, size_t sender_size, const MMessage *message, int *sender_shipnum)
 {
 	Assert( sender != NULL );
 	Assert( message != NULL );
 
-	strncpy(sender, get_message_sender(message->name), sender_size);
+	strncpy(sender, get_message_sender(message), sender_size);
 
 	// check if we're overriding #Command
 	if (The_mission.flags[Mission::Mission_Flags::Override_hashcommand] && !strcmp("#Command", sender))
@@ -559,7 +559,8 @@ void VoiceActingManager::get_valid_sender(char *sender, size_t sender_size, cons
 	}
 
 	// strip hash if present
-	if ( sender[0] == '#' ) {
+	if ( sender[0] == '#' )
+	{
 		size_t i = 1;
 		for(; sender[i] != '\0'; i++ ) {
 			sender[i-1] = sender[i];
@@ -568,6 +569,9 @@ void VoiceActingManager::get_valid_sender(char *sender, size_t sender_size, cons
 	}
 
 	int shipnum = ship_name_lookup(sender, 1); // The player's ship is valid for this search.
+
+	if (sender_shipnum != nullptr)
+		*sender_shipnum = shipnum;
 
 	if (shipnum >= 0)
 	{
@@ -738,7 +742,7 @@ int VoiceActingManager::fout(const char *format, ...)
 
 // Loops through all the sexps and finds the sender of the specified message.  This assumes there is only one possible
 // sender of the message, which is probably nearly always true (especially for voice-acted missions).
-const char *VoiceActingManager::get_message_sender(const char *message)
+const char *VoiceActingManager::get_message_sender(const MMessage *message)
 {
 	int i;
 
@@ -755,7 +759,7 @@ const char *VoiceActingManager::get_message_sender(const char *message)
 		if (op == OP_SEND_MESSAGE)
 		{
 			// the first argument is the sender; the third is the message
-			if (!strcmp(message, Sexp_nodes[CDDR(n)].text))
+			if (!strcmp(message->name, Sexp_nodes[CDDR(n)].text))
 				return Sexp_nodes[n].text;
 		}
 		else if (op == OP_SEND_MESSAGE_LIST || op == OP_SEND_MESSAGE_CHAIN)
@@ -768,7 +772,7 @@ const char *VoiceActingManager::get_message_sender(const char *message)
 			while (n != -1)
 			{
 				// as before
-				if (!strcmp(message, Sexp_nodes[CDDR(n)].text))
+				if (!strcmp(message->name, Sexp_nodes[CDDR(n)].text))
 					return Sexp_nodes[n].text;
 
 				// iterate along the list
@@ -784,7 +788,7 @@ const char *VoiceActingManager::get_message_sender(const char *message)
 			n = CDDR(n);
 			while (n != -1)
 			{
-				if (!strcmp(message, Sexp_nodes[n].text))
+				if (!strcmp(message->name, Sexp_nodes[n].text))
 					return sender;
 
 				// iterate along the list
@@ -794,7 +798,7 @@ const char *VoiceActingManager::get_message_sender(const char *message)
 		else if (op == OP_TRAINING_MSG)
 		{
 			// just check the message
-			if (!strcmp(message, Sexp_nodes[n].text))
+			if (!strcmp(message->name, Sexp_nodes[n].text))
 				return "Training Message";
 		}
 	}
@@ -947,22 +951,113 @@ void VoiceActingManager::OnBnClickedIncludeSender()
 	UpdateData(FALSE);
 }
 
-void VoiceActingManager::OnCopyMessagePersonasToShips()
+void VoiceActingManager::OnCopyPersonas(bool messages_to_ships)
 {
-	MessageBox("TODO", "FRED2_Open");
-}
+	char sender_buf[NAME_LENGTH];
+	int sender_shipnum;
 
-void VoiceActingManager::OnCopyShipPersonasToMessages()
-{
-	MessageBox("TODO", "FRED2_Open");
-}
+	// go through all messages in the mission
+	for (int i = 0; i < Num_messages - Num_builtin_messages; i++)
+	{
+		auto message = &Messages[i + Num_builtin_messages];
 
-void VoiceActingManager::OnSetHeadANIsUsingMessagesTbl()
-{
-	MessageBox("TODO", "FRED2_Open");
+		// find whoever sent this message
+		get_valid_sender(sender_buf, NAME_LENGTH, message, &sender_shipnum);
+
+		// if it's a ship, copy the persona
+		if (sender_shipnum >= 0)
+		{
+			if (messages_to_ships)
+				Ships[sender_shipnum].persona_index = message->persona_index;
+			else
+				message->persona_index = Ships[sender_shipnum].persona_index;
+		}
+	}
 }
 
 void VoiceActingManager::OnClearPersonasFromNonSenders()
 {
-	MessageBox("TODO", "FRED2_Open");
+	SCP_unordered_set<int> all_senders;
+
+	char sender_buf[NAME_LENGTH];
+	int sender_shipnum;
+
+	// go through all messages in the mission
+	for (int i = 0; i < Num_messages - Num_builtin_messages; i++)
+	{
+		auto message = &Messages[i + Num_builtin_messages];
+
+		// find whoever sent this message
+		get_valid_sender(sender_buf, NAME_LENGTH, message, &sender_shipnum);
+
+		// if it's a ship, save the shipnum
+		if (sender_shipnum >= 0)
+			all_senders.insert(sender_shipnum);
+	}
+
+	// go through all ships in the mission
+	for (auto objp : list_range(&obj_used_list))
+	{
+		if ((objp->type == OBJ_START) || (objp->type == OBJ_SHIP))
+		{
+			// if any ships aren't message senders, clear the persona
+			if (all_senders.find(objp->instance) == all_senders.end())
+				Ships[objp->instance].persona_index = -1;
+		}
+	}
+
+	MessageBox("Personas have been cleared from all ships that do not send messages.", "Voice Acting Manager");
+}
+
+void VoiceActingManager::OnCopyMessagePersonasToShips()
+{
+	OnCopyPersonas(true);
+	MessageBox("Personas have been copied from messages to ships.", "Voice Acting Manager");
+}
+
+void VoiceActingManager::OnCopyShipPersonasToMessages()
+{
+	OnCopyPersonas(false);
+	MessageBox("Personas have been copied from ships to messages.", "Voice Acting Manager");
+}
+
+void VoiceActingManager::OnSetHeadANIsUsingMessagesTbl()
+{
+	// go through all messages in the mission
+	for (int i = 0; i < Num_messages - Num_builtin_messages; i++)
+	{
+		auto message = &Messages[i + Num_builtin_messages];
+
+		// find the corresponding head for this persona
+		bool found = false;
+		for (int j = 0; j < Num_builtin_messages; j++)
+		{
+			auto builtin_message = &Messages[j];
+
+			if (message->persona_index == builtin_message->persona_index)
+			{
+				// either assign the correct head from scratch, or change the head to the correct one
+				if (message->avi_info.name == nullptr)
+				{
+					message->avi_info.name = strdup(builtin_message->avi_info.name);
+				}
+				else if (stricmp(message->avi_info.name, builtin_message->avi_info.name) != 0)
+				{
+					free(message->avi_info.name);
+					message->avi_info.name = strdup(builtin_message->avi_info.name);
+				}
+
+				// done searching
+				found = true;
+				break;
+			}
+		}
+
+		if (!found)
+		{
+			Warning(LOCATION, "Persona index %d was not found in list of messages.tbl personas!", message->persona_index);
+		}
+	}
+
+	MessageBox("Message head ANIs have been assigned from builtin messages.", "Voice Acting Manager");
 }
