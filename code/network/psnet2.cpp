@@ -332,8 +332,14 @@ int SENDTO(SOCKET s, char * buf, int len, int flags, SOCKADDR *to, int tolen, in
 	outbuf[0] = static_cast<char>(psnet_type);
 	memcpy(&outbuf[1], buf, static_cast<size_t>(len));
 
+	SOCKLEN_T addrlen = tolen;
+
+	if (addrlen == sizeof(SOCKADDR_STORAGE)) {
+		addrlen = psnet_get_sockaddr_len(reinterpret_cast<SOCKADDR_STORAGE*>(to));
+	}
+
 	// send it
-	return static_cast<int>( sendto(s, outbuf, len + 1, flags, reinterpret_cast<LPSOCKADDR>(to), tolen) );
+	return static_cast<int>( sendto(s, outbuf, len + 1, flags, reinterpret_cast<LPSOCKADDR>(to), addrlen) );
 }
 
 /**
@@ -547,7 +553,7 @@ bool psnet_init_my_addr()
 				continue;
 			}
 
-			rval = connect(tsock, reinterpret_cast<LPSOCKADDR>(&remote_addr), sizeof(remote_addr));
+			rval = connect(tsock, reinterpret_cast<LPSOCKADDR>(&remote_addr), psnet_get_sockaddr_len(&remote_addr));
 
 			if (rval) {
 				continue;
@@ -586,7 +592,7 @@ bool psnet_init_my_addr()
 				continue;
 			}
 
-			rval = connect(tsock, reinterpret_cast<LPSOCKADDR>(&remote_addr), sizeof(remote_addr));
+			rval = connect(tsock, reinterpret_cast<LPSOCKADDR>(&remote_addr), psnet_get_sockaddr_len(&remote_addr));
 
 			if (rval) {
 				continue;
@@ -920,6 +926,25 @@ static void psnet_sockaddr_storage_to_in6(const SOCKADDR_STORAGE *addr, SOCKADDR
 }
 
 /**
+ * @brief Helper to get the exact length of a specific protocol struct from
+ *        a generic storage struct
+ *
+ * @param addr
+ * @return SOCKLEN_T
+ */
+SOCKLEN_T psnet_get_sockaddr_len(const SOCKADDR_STORAGE *addr)
+{
+	// internally we should always use IPv6, but cover the bases
+	if (addr->ss_family == AF_INET6) {
+		return static_cast<SOCKLEN_T>(sizeof(SOCKADDR_IN6));
+	} else if (addr->ss_family == AF_INET) {
+		return static_cast<SOCKLEN_T>(sizeof(SOCKADDR_IN));
+	} else {
+		return static_cast<SOCKLEN_T>(sizeof(SOCKADDR_STORAGE));
+	}
+}
+
+/**
  * Helper to map IPv4 to IPv6
  */
 void psnet_map4to6(const in_addr *in4, in6_addr *in6)
@@ -1126,6 +1151,7 @@ bool psnet_get_addr(const char *host, const char *port, SOCKADDR_STORAGE *addr, 
 	SOCKADDR_IN6 si4to6;
 	int rval;
 
+	memset(addr, 0, sizeof(*addr));
 	memset(&si4to6, 0, sizeof(si4to6));
 
 	memset(&hints, 0, sizeof(hints));
@@ -2317,9 +2343,12 @@ bool psnet_init_socket()
 	psnet_set_socket_options();
 
 	// bind the socket
-	psnet_get_addr(nullptr, Psnet_default_port, &sockaddr);
+	if ( !psnet_get_addr(nullptr, Psnet_default_port, &sockaddr) ) {
+		ml_printf("Failed to get bind addr!");
+		return false;
+	}
 
-	if ( bind(Psnet_socket, reinterpret_cast<LPSOCKADDR>(&sockaddr), sizeof(sockaddr)) == SOCKET_ERROR) {
+	if ( bind(Psnet_socket, reinterpret_cast<LPSOCKADDR>(&sockaddr), psnet_get_sockaddr_len(&sockaddr)) == SOCKET_ERROR) {
 		Psnet_failure_code = WSAGetLastError();
 
 		if (Psnet_failure_code == WSAEADDRINUSE) {
