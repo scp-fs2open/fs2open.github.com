@@ -114,6 +114,10 @@ BEGIN_MESSAGE_MAP(VoiceActingManager, CDialog)
 	ON_BN_CLICKED(IDC_EXPORT_DEBRIEFINGS, OnExportDebriefings)
 	ON_BN_CLICKED(IDC_EXPORT_MESSAGES, OnExportMessages)
 	ON_BN_CLICKED(IDC_INCLUDE_SENDER, OnBnClickedIncludeSender)
+	ON_BN_CLICKED(IDC_MESSAGE_PERSONAS_TO_SHIPS, OnCopyMessagePersonasToShips)
+	ON_BN_CLICKED(IDC_SHIP_PERSONAS_TO_MESSAGES, OnCopyShipPersonasToMessages)
+	ON_BN_CLICKED(IDC_SET_HEAD_ANIS_USING_MESSAGES_TBL, OnSetHeadANIsUsingMessagesTbl)
+	ON_BN_CLICKED(IDC_CLEAR_PERSONAS_FROM_NON_SENDERS, OnClearPersonasFromNonSenders)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -934,7 +938,6 @@ void VoiceActingManager::OnExportMessages()
 	button->EnableWindow(TRUE);
 }
 
-
 void VoiceActingManager::OnBnClickedIncludeSender()
 {
 	UpdateData(TRUE);
@@ -942,4 +945,24 @@ void VoiceActingManager::OnBnClickedIncludeSender()
 	build_example();
 
 	UpdateData(FALSE);
+}
+
+void VoiceActingManager::OnCopyMessagePersonasToShips()
+{
+	MessageBox("TODO", "FRED2_Open");
+}
+
+void VoiceActingManager::OnCopyShipPersonasToMessages()
+{
+	MessageBox("TODO", "FRED2_Open");
+}
+
+void VoiceActingManager::OnSetHeadANIsUsingMessagesTbl()
+{
+	MessageBox("TODO", "FRED2_Open");
+}
+
+void VoiceActingManager::OnClearPersonasFromNonSenders()
+{
+	MessageBox("TODO", "FRED2_Open");
 }

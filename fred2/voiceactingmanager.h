@@ -91,6 +91,10 @@ protected:
 	afx_msg void OnExportDebriefings();
 	afx_msg void OnExportMessages();
 	afx_msg void OnBnClickedIncludeSender();
+	afx_msg void OnCopyMessagePersonasToShips();
+	afx_msg void OnCopyShipPersonasToMessages();
+	afx_msg void OnSetHeadANIsUsingMessagesTbl();
+	afx_msg void OnClearPersonasFromNonSenders();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 };
