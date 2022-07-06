@@ -241,7 +241,7 @@ void VoiceActingManager::build_example(CString section)
 	m_example = generate_filename(section, 1, 2, INVALID_MESSAGE);
 }
 
-CString VoiceActingManager::generate_filename(CString section, int number, int digits, MMessage *message)
+CString VoiceActingManager::generate_filename(CString section, int number, int digits, const MMessage *message)
 {
 	if (section == "")
 		return "none.wav";
@@ -512,7 +512,7 @@ void VoiceActingManager::OnGenerateScript()
 	MessageBox("Script generation complete.", "Woohoo!");
 }
 
-void VoiceActingManager::export_one_message(MMessage *message)
+void VoiceActingManager::export_one_message(const MMessage *message)
 {
 	CString entry = m_script_entry_format;
 	entry.Replace("\r\n", "\n");
@@ -544,7 +544,7 @@ void VoiceActingManager::export_one_message(MMessage *message)
 
 /** Passed sender string will have either have the senders name
 or '\<none\>'*/
-void VoiceActingManager::get_valid_sender(char *sender, size_t sender_size, MMessage *message)
+void VoiceActingManager::get_valid_sender(char *sender, size_t sender_size, const MMessage *message)
 {
 	Assert( sender != NULL );
 	Assert( message != NULL );
@@ -723,7 +723,7 @@ void VoiceActingManager::OnChangeNoReplace()
 	UpdateData(TRUE);
 }
 
-int VoiceActingManager::fout(char *format, ...)
+int VoiceActingManager::fout(const char *format, ...)
 {
 	SCP_string str;
 	va_list args;
@@ -738,7 +738,7 @@ int VoiceActingManager::fout(char *format, ...)
 
 // Loops through all the sexps and finds the sender of the specified message.  This assumes there is only one possible
 // sender of the message, which is probably nearly always true (especially for voice-acted missions).
-char *VoiceActingManager::get_message_sender(char *message)
+const char *VoiceActingManager::get_message_sender(const char *message)
 {
 	int i;
 
