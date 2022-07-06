@@ -408,18 +408,20 @@ void fireball_parse_tbl()
 		if (fi.lod_count > 1)
 		{
 			Assertion(fi.lod_count < MAX_FIREBALL_LOD, "Fireball LOD (%d) greater than MAX_FIREBALL_LOD %d.", fi.lod_count, MAX_FIREBALL_LOD);
+			static_assert(MAX_FIREBALL_LOD < 10, "The fireball LOD naming scheme needs to be changed for LODs > 9");
 
 			auto lod0 = fi.lod[0].filename;
+			constexpr int MAX_BASENAME_LEN = MAX_FILENAME_LEN - 3;	// ensure base file name + _*lod* fits in filename field
 
-			if (strlen(lod0) > MAX_FILENAME_LEN - 3)
+			if (strlen(lod0) > MAX_BASENAME_LEN)
 			{
-				Warning(LOCATION, "A fireball base file name may not be longer than %d characters due to the LOD naming scheme.\nLODs other than LOD0 will be skipped for fireball %s", MAX_FILENAME_LEN - 3, lod0);
+				Warning(LOCATION, "A fireball base file name may not be longer than %d characters due to the LOD naming scheme.\nLODs other than LOD0 will be skipped for fireball %s", MAX_BASENAME_LEN, lod0);
 				fi.lod_count = 1;
 				continue;
 			}
 
 			for (int j = 1; j < fi.lod_count; ++j)
-				sprintf(fi.lod[j].filename, "%.*s_%d", MAX_FILENAME_LEN - 3, lod0, j % MAX_FIREBALL_LOD /*to show gcc12 format string is safe*/);
+				sprintf(fi.lod[j].filename, "%.*s_%d", MAX_BASENAME_LEN, lod0, j % MAX_FIREBALL_LOD /*to show gcc12 format string is safe*/);
 		}
 	}
 
