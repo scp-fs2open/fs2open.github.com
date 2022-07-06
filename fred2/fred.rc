@@ -2105,21 +2105,22 @@ BEGIN
     GROUPBOX        "Script Entry Format",IDC_ENTRY,149,17,246,76
     EDITTEXT        IDC_ENTRY_FORMAT,154,28,109,56,ES_MULTILINE | ES_AUTOHSCROLL | ES_WANTRETURN
     LTEXT           "$filename - name of the message file\r\n$message - text of the message\r\n$persona - persona of the sender\r\n$sender - name of the sender\r\n\r\nNote that $persona and $sender will only appear for the Message section.",IDC_STATIC,270,28,120,58
-    GROUPBOX        "Export",IDC_EXPORT,149,98,119,83
-    CONTROL         "Everything",IDC_EXPORT_EVERYTHING,"Button",BS_AUTORADIOBUTTON,153,108,99,9
+    GROUPBOX        "Export",IDC_EXPORT,276,98,119,83
+    CONTROL         "Everything",IDC_EXPORT_EVERYTHING,"Button",BS_AUTORADIOBUTTON,280,108,99,9
     CONTROL         "Just Command Briefings",IDC_EXPORT_COMMAND_BRIEFINGS,
-                    "Button",BS_AUTORADIOBUTTON,153,118,99,9
-    CONTROL         "Just Briefings",IDC_EXPORT_BRIEFINGS,"Button",BS_AUTORADIOBUTTON,153,128,99,9
-    CONTROL         "Just Debriefings",IDC_EXPORT_DEBRIEFINGS,"Button",BS_AUTORADIOBUTTON,153,138,99,9
-    CONTROL         "Just Messages",IDC_EXPORT_MESSAGES,"Button",BS_AUTORADIOBUTTON,153,148,99,9
-    PUSHBUTTON      "Generate Script",IDC_GENERATE_SCRIPT,148,185,120,14
+                    "Button",BS_AUTORADIOBUTTON,280,118,99,9
+    CONTROL         "Just Briefings",IDC_EXPORT_BRIEFINGS,"Button",BS_AUTORADIOBUTTON,280,128,99,9
+    CONTROL         "Just Debriefings",IDC_EXPORT_DEBRIEFINGS,"Button",BS_AUTORADIOBUTTON,280,138,99,9
+    CONTROL         "Just Messages",IDC_EXPORT_MESSAGES,"Button",BS_AUTORADIOBUTTON,280,148,99,9
+    PUSHBUTTON      "Generate Script",IDC_GENERATE_SCRIPT,275,185,120,30
     CONTROL         "Group send-message-list messages before others",IDC_GROUP_MESSAGES,
-                    "Button",BS_AUTOCHECKBOX | BS_TOP | BS_MULTILINE | WS_TABSTOP,166,159,100,19
-    GROUPBOX        "Sync Personas",IDC_SYNC_PERSONAS,275,98,119,100
-    PUSHBUTTON      "Copy message personas to ships",IDC_MESSAGE_PERSONAS_TO_SHIPS,280,110,109,14
-    PUSHBUTTON      "Copy ship personas to messages",IDC_SHIP_PERSONAS_TO_MESSAGES,280,127,109,14
-    PUSHBUTTON      "Set head ANIs using personas in messages.tbl",IDC_SET_HEAD_ANIS_USING_MESSAGES_TBL,280,170,109,23,BS_MULTILINE
-    PUSHBUTTON      "Clear personas from ships that don't send messages",IDC_CLEAR_PERSONAS_FROM_NON_SENDERS,280,144,109,23,BS_MULTILINE
+                    "Button",BS_AUTOCHECKBOX | BS_TOP | BS_MULTILINE | WS_TABSTOP,293,159,100,19
+    GROUPBOX        "Sync Personas",IDC_SYNC_PERSONAS,149,98,119,118
+    PUSHBUTTON      "Copy message personas to ships",IDC_MESSAGE_PERSONAS_TO_SHIPS,154,128,109,14
+    PUSHBUTTON      "Copy ship personas to messages",IDC_SHIP_PERSONAS_TO_MESSAGES,154,145,109,14
+    PUSHBUTTON      "Set head ANIs using personas in messages.tbl",IDC_SET_HEAD_ANIS_USING_MESSAGES_TBL,154,188,109,23,BS_MULTILINE
+    PUSHBUTTON      "Clear personas from ships that don't send messages",IDC_CLEAR_PERSONAS_FROM_NON_SENDERS,154,162,109,23,BS_MULTILINE
+    LTEXT           "NOTE: Ships here are limited to fighters and bombers.",IDC_LBL_NOTE,155,109,107,16
 END
 
 IDD_CUSTOM_WING_NAMES DIALOG 0, 0, 390, 54

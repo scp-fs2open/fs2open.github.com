@@ -1062,6 +1062,7 @@
 #define IDC_SYNC_PERSONAS               1582
 #define IDC_PLAYER_START_CHASE          1583
 #define IDC_RESTRICT_PATHS_LABEL        1584
+#define IDC_LBL_NOTE                    1584
 #define IDC_PATH_LIST                   1585
 #define IDC_LISTITEM                    1586
 #define IDC_ENVMAP                      1589
