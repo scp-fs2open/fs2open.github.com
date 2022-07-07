@@ -5229,8 +5229,6 @@ void weapon_home(object *obj, int num, float frame_time)
 			obj->phys_info.speed *= t*t;
 		}
 
-		Assert( obj->phys_info.speed > 0.0f );
-
 		vm_vec_copy_scale( &obj->phys_info.desired_vel, &obj->orient.vec.fvec, obj->phys_info.speed);
 
 		// turn the missile towards the target only if non-swarm.  Homing swarm missiles choose
