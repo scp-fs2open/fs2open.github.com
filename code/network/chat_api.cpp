@@ -152,7 +152,7 @@ int ConnectToChatServer(char *serveraddr, char *nickname, char *trackerid)
 			return -1;
 		}
 		
-		if (SOCKET_ERROR==bind(Chatsock, reinterpret_cast<LPSOCKADDR>(&Chataddr), sizeof(Chataddr)))
+		if (SOCKET_ERROR==bind(Chatsock, reinterpret_cast<LPSOCKADDR>(&Chataddr), psnet_get_sockaddr_len(&Chataddr)))
 		{
 			return -1;
 		}
@@ -164,7 +164,7 @@ int ConnectToChatServer(char *serveraddr, char *nickname, char *trackerid)
 			return -2;
 		}
 
-		if(SOCKET_ERROR == connect(Chatsock, reinterpret_cast<LPSOCKADDR>(&Chataddr), sizeof(Chataddr)))
+		if(SOCKET_ERROR == connect(Chatsock, reinterpret_cast<LPSOCKADDR>(&Chataddr), psnet_get_sockaddr_len(&Chataddr)))
 		{
 			if(WSAEWOULDBLOCK == WSAGetLastError())
 			{
