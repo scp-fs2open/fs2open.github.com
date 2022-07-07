@@ -24,6 +24,7 @@ public:
 	orient_editor(CWnd* pParent = NULL);   // standard constructor
 
 	static float to_degrees(float radians);
+	static float normalize_degrees(float degrees);
 
 // Dialog Data
 	//{{AFX_DATA(orient_editor)
@@ -70,7 +71,8 @@ protected:
 
 private:
 	float convert(const CString &str);
-	bool close(float val, const CString &str);
+	bool close(float val, const CString &input_str);
+	bool angle_close(float rad, const CString &input_str);
 	int total;
 	int index[MAX_OBJECTS];
 	void actually_point_object(object *ptr);

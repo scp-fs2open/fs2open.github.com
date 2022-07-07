@@ -182,9 +182,27 @@ BOOL orient_editor::OnInitDialog()
 	return TRUE;
 }
 
-bool orient_editor::close(float val, const CString &str)
+bool orient_editor::close(float val, const CString &input_str)
 {
-	float diff = val - convert(str);
+	CString str;
+	str.Format("%.01f", val);
+	val = convert(str);
+
+	float input_val = convert(input_str);
+
+	float diff = val - input_val;
+	return diff > -input_threshold && diff < input_threshold;
+}
+
+bool orient_editor::angle_close(float rad, const CString &input_str)
+{
+	CString str;
+	str.Format("%.01f", to_degrees(rad));
+	float deg = convert(str);
+
+	float input_deg = normalize_degrees(convert(input_str));
+
+	float diff = deg - input_deg;
 	return diff > -input_threshold && diff < input_threshold;
 }
 
@@ -200,11 +218,11 @@ bool orient_editor::query_modified()
 	angles ang;
 	vm_extract_angles_matrix(&ang, &Objects[cur_object_index].orient);
 
-	if (!close(to_degrees(ang.p), m_orientation_p))
+	if (!angle_close(ang.p, m_orientation_p))
 		return true;
-	if (!close(to_degrees(ang.b), m_orientation_b))
+	if (!angle_close(ang.b, m_orientation_b))
 		return true;
-	if (!close(to_degrees(ang.h), m_orientation_h))
+	if (!angle_close(ang.h, m_orientation_h))
 		return true;
 
 	if (((CButton *) GetDlgItem(IDC_POINT_TO_CHECKBOX))->GetCheck() == TRUE)
@@ -237,7 +255,7 @@ void orient_editor::OnOK()
 
 	// there's enough difference in our orientation that we're changing it
 	vm_extract_angles_matrix(&ang, &Objects[cur_object_index].orient);
-	if (!close(to_degrees(ang.p), m_orientation_p) || !close(to_degrees(ang.b), m_orientation_b) || !close(to_degrees(ang.h), m_orientation_h))
+	if (!angle_close(ang.p, m_orientation_p) || !angle_close(ang.b, m_orientation_b) || !angle_close(ang.h, m_orientation_h))
 	{
 		ang.p = fl_radians(convert(m_orientation_p));
 		ang.b = fl_radians(convert(m_orientation_b));
@@ -354,6 +372,11 @@ void orient_editor::actually_point_object(object *ptr)
 float orient_editor::to_degrees(float rad)
 {
 	float deg = fl_degrees(rad);
+	return normalize_degrees(deg);
+}
+
+float orient_editor::normalize_degrees(float deg)
+{
 	while (deg < -180.0f)
 		deg += 180.0f;
 	while (deg > 180.0f)
