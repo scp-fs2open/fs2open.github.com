@@ -1364,7 +1364,7 @@ int aifft_rotate_turret(object *objp, ship *shipp, ship_subsys *ss, object *lep,
 			vm_vec_scale_sub2(&target_moving_direction, &objp->phys_info.vel, wip->vel_inherit_amount);
 		}
 
-		if (tp->flags[Model::Subsystem_Flags::Turret_distant_firepoint]) {
+		if (tp->flags[Model::Subsystem_Flags::Turret_distant_firepoint] || Always_use_distant_firepoints) {
 			//The firing point of this turret is so far away from the its center that we should consider this for firing calculations
 			//This will do the enemy position prediction based on their relative position and speed to the firing point, not the turret center.
 			vec3d fire_pos, fire_vec;
@@ -2349,7 +2349,7 @@ void ai_turret_execute_behavior(ship *shipp, ship_subsys *ss)
 
 		// If the barrel of this turret is long, we shouldn't try to fire if the enemy is under the gun.
 		// Note that this isn't the same thing as min_range, which is unrelated to barrel length.
-		if (tp->flags[Model::Subsystem_Flags::Turret_distant_firepoint]) {
+		if (tp->flags[Model::Subsystem_Flags::Turret_distant_firepoint] || Always_use_distant_firepoints) {
 			vec3d fpoint, fvec;
 			ship_get_global_turret_gun_info(objp, ss, &fpoint, &fvec, use_angles, &predicted_enemy_pos);
 			auto barrel_length = vm_vec_dist(&fpoint, &gpos);

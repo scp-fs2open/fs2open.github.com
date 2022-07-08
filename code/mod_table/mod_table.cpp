@@ -108,6 +108,7 @@ bool Always_warn_player_about_unbound_keys;
 leadIndicatorBehavior Lead_indicator_behavior;
 shadow_disable_overrides Shadow_disable_overrides {false, false, false, false};
 float Thruster_easing;
+bool Always_use_distant_firepoints;
 
 void mod_table_set_version_flags();
 
@@ -966,6 +967,10 @@ void parse_mod_table(const char *filename)
 				Warning(LOCATION, "$Lead indicator behavior: Invalid selection. Must be default, multiple or average. Reverting to default.");
 				Lead_indicator_behavior = leadIndicatorBehavior::DEFAULT;
 			}
+		}
+
+		if (optional_string("$Use distant firepoint for all turrets:")){
+			stuff_boolean(&Always_use_distant_firepoints);
 		}
 
 		required_string("#END");
