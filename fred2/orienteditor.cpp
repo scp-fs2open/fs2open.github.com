@@ -21,7 +21,8 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
-const float input_threshold = 0.01f;		// smallest increment of input box
+constexpr auto INPUT_THRESHOLD = 0.01f;		// smallest increment of input box
+constexpr auto INPUT_FORMAT = "%.01f";
 
 /////////////////////////////////////////////////////////////////////////////
 // orient_editor dialog
@@ -45,15 +46,15 @@ orient_editor::orient_editor(CWnd* pParent /*=NULL*/)
 
 	Assert(query_valid_object());
 	auto pos = &Objects[cur_object_index].pos;
-	m_position_x.Format("%.01f", pos->xyz.x);
-	m_position_y.Format("%.01f", pos->xyz.y);
-	m_position_z.Format("%.01f", pos->xyz.z);
+	m_position_x.Format(INPUT_FORMAT, pos->xyz.x);
+	m_position_y.Format(INPUT_FORMAT, pos->xyz.y);
+	m_position_z.Format(INPUT_FORMAT, pos->xyz.z);
 
 	angles ang;
 	vm_extract_angles_matrix(&ang, &Objects[cur_object_index].orient);
-	m_orientation_p.Format("%.01f", to_degrees(ang.p));
-	m_orientation_b.Format("%.01f", to_degrees(ang.b));
-	m_orientation_h.Format("%.01f", to_degrees(ang.h));
+	m_orientation_p.Format(INPUT_FORMAT, to_degrees(ang.p));
+	m_orientation_b.Format(INPUT_FORMAT, to_degrees(ang.b));
+	m_orientation_h.Format(INPUT_FORMAT, to_degrees(ang.h));
 }
 
 void orient_editor::DoDataExchange(CDataExchange* pDX)
@@ -182,47 +183,47 @@ BOOL orient_editor::OnInitDialog()
 	return TRUE;
 }
 
-bool orient_editor::close(float val, const CString &input_str)
+/**
+ * Checks whether the position value is close enough to the input string value that we can assume the input has not changed.
+ */
+bool orient_editor::is_close(float val, const CString &input_str)
 {
-	CString str;
-	str.Format("%.01f", val);
-	val = convert(str);
-
+	val = perform_input_rounding(val);
 	float input_val = convert(input_str);
 
 	float diff = val - input_val;
-	return diff > -input_threshold && diff < input_threshold;
+	return abs(diff) < INPUT_THRESHOLD;
 }
 
-bool orient_editor::angle_close(float rad, const CString &input_str)
+/**
+ * Checks whether the angle value is close enough to the input string value that we can assume the input has not changed.
+ */
+bool orient_editor::is_angle_close(float rad, const CString &input_str)
 {
-	CString str;
-	str.Format("%.01f", to_degrees(rad));
-	float deg = convert(str);
-
+	float deg = perform_input_rounding(to_degrees(rad));
 	float input_deg = normalize_degrees(convert(input_str));
 
 	float diff = deg - input_deg;
-	return diff > -input_threshold && diff < input_threshold;
+	return abs(diff) < INPUT_THRESHOLD;
 }
 
 bool orient_editor::query_modified()
 {
-	if (!close(Objects[cur_object_index].pos.xyz.x, m_position_x))
+	if (!is_close(Objects[cur_object_index].pos.xyz.x, m_position_x))
 		return true;
-	if (!close(Objects[cur_object_index].pos.xyz.y, m_position_y))
+	if (!is_close(Objects[cur_object_index].pos.xyz.y, m_position_y))
 		return true;
-	if (!close(Objects[cur_object_index].pos.xyz.z, m_position_z))
+	if (!is_close(Objects[cur_object_index].pos.xyz.z, m_position_z))
 		return true;
 
 	angles ang;
 	vm_extract_angles_matrix(&ang, &Objects[cur_object_index].orient);
 
-	if (!angle_close(ang.p, m_orientation_p))
+	if (!is_angle_close(ang.p, m_orientation_p))
 		return true;
-	if (!angle_close(ang.b, m_orientation_b))
+	if (!is_angle_close(ang.b, m_orientation_b))
 		return true;
-	if (!angle_close(ang.h, m_orientation_h))
+	if (!is_angle_close(ang.h, m_orientation_h))
 		return true;
 
 	if (((CButton *) GetDlgItem(IDC_POINT_TO_CHECKBOX))->GetCheck() == TRUE)
@@ -242,7 +243,7 @@ void orient_editor::OnOK()
 
 	// there's enough difference in our position that we're changing it
 	cur_pos = &Objects[cur_object_index].pos;
-	if (!close(cur_pos->xyz.x, m_position_x) || !close(cur_pos->xyz.y, m_position_y) || !close(cur_pos->xyz.z, m_position_z))
+	if (!is_close(cur_pos->xyz.x, m_position_x) || !is_close(cur_pos->xyz.y, m_position_y) || !is_close(cur_pos->xyz.z, m_position_z))
 	{
 		vec3d pos;
 		pos.xyz.x = convert(m_position_x);
@@ -255,7 +256,7 @@ void orient_editor::OnOK()
 
 	// there's enough difference in our orientation that we're changing it
 	vm_extract_angles_matrix(&ang, &Objects[cur_object_index].orient);
-	if (!angle_close(ang.p, m_orientation_p) || !angle_close(ang.b, m_orientation_b) || !angle_close(ang.h, m_orientation_h))
+	if (!is_angle_close(ang.p, m_orientation_p) || !is_angle_close(ang.b, m_orientation_b) || !is_angle_close(ang.h, m_orientation_h))
 	{
 		ang.p = fl_radians(convert(m_orientation_p));
 		ang.b = fl_radians(convert(m_orientation_b));
@@ -387,6 +388,9 @@ float orient_editor::normalize_degrees(float deg)
 	return deg;
 }
 
+/**
+ * Extract a float from the CString, being mindful of any comma separators.
+ */
 float orient_editor::convert(const CString &str)
 {
 	char buf[256];
@@ -400,6 +404,18 @@ float orient_editor::convert(const CString &str)
 
 	buf[j] = 0;
 	return (float) atof(buf);
+}
+
+/**
+ * Perform rounding of the float value by loading it into the input box format string and parsing it again.
+ * This accounts for not only decimal rounding to the precision of the input box, but also floating point rounding due to inexact fractions such as 1/10.
+ * See also GitHub PR #4475.
+ */
+float orient_editor::perform_input_rounding(float val)
+{
+	CString str;
+	str.Format(INPUT_FORMAT, val);
+	return convert(str);
 }
 
 void orient_editor::OnPointTo()

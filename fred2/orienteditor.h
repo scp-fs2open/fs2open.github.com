@@ -71,8 +71,10 @@ protected:
 
 private:
 	float convert(const CString &str);
-	bool close(float val, const CString &input_str);
-	bool angle_close(float rad, const CString &input_str);
+	float perform_input_rounding(float val);
+
+	bool is_close(float val, const CString &input_str);
+	bool is_angle_close(float rad, const CString &input_str);
 	int total;
 	int index[MAX_OBJECTS];
 	void actually_point_object(object *ptr);
