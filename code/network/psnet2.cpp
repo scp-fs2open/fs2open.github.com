@@ -1151,7 +1151,11 @@ bool psnet_get_addr(const char *host, const char *port, SOCKADDR_STORAGE *addr, 
 	SOCKADDR_IN6 si4to6;
 	int rval;
 
-	memset(addr, 0, sizeof(*addr));
+	if (addr) {
+		// by the spec, sockaddr_in6 must be zero'd, so just do that always
+		memset(addr, 0, sizeof(*addr));
+	}
+
 	memset(&si4to6, 0, sizeof(si4to6));
 
 	memset(&hints, 0, sizeof(hints));
