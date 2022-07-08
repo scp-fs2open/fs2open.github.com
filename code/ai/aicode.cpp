@@ -14487,6 +14487,10 @@ void ai_frame(int objnum)
 {
 	// Cyborg - can you believe this was added in *2022*??
 	Assertion (Objects[objnum].type == OBJ_SHIP, "Ai_frame was called for a non-ship of type %d. Please report!", Objects[objnum].type);
+	
+	if (Objects[objnum].type != OBJ_SHIP){
+		return;
+	}
 
 	ship		*shipp = &Ships[Objects[objnum].instance];
 	ai_info	*aip = &Ai_info[shipp->ai_index];
