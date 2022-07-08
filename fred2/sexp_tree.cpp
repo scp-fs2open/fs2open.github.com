@@ -2509,13 +2509,13 @@ void sexp_tree::NodeCopy()
 
 void sexp_tree::NodeReplacePaste()
 {
-	if (item_index < 0)
+	if (item_index < 0 || Sexp_clipboard < 0)
 		return;
 
 	int i;
 
 	// the following assumptions are made..
-	Assert((Sexp_clipboard > -1) && (Sexp_nodes[Sexp_clipboard].type != SEXP_NOT_USED));
+	Assert(Sexp_nodes[Sexp_clipboard].type != SEXP_NOT_USED);
 	Assert(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_LIST);
 	Assertion(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_CONTAINER_NAME,
 		"Attempt to use container name %s from SEXP clipboard. Please report!",
@@ -2587,13 +2587,13 @@ void sexp_tree::NodeReplacePaste()
 
 void sexp_tree::NodeAddPaste()
 {
-	if (item_index < 0)
+	if (item_index < 0 || Sexp_clipboard < 0)
 		return;
 
 	int i;
 
 	// the following assumptions are made..
-	Assert((Sexp_clipboard > -1) && (Sexp_nodes[Sexp_clipboard].type != SEXP_NOT_USED));
+	Assert(Sexp_nodes[Sexp_clipboard].type != SEXP_NOT_USED);
 	Assert(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_LIST);
 	Assertion(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_CONTAINER_NAME,
 		"Attempt to use container name %s from SEXP clipboard. Please report!",
