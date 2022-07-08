@@ -16161,6 +16161,10 @@ void maybe_cheat_fire_synaptic(object *objp)
 
 		Assertion(objp->type == OBJ_SHIP, "This ai function requires a ship, but was called with a non-ship object type of %d. Please report!", objp->type);
 
+		if (objp->type != OBJ_SHIP) {
+			return;
+		}
+
 		shipp = &Ships[objp->instance];
 
 		if (!(strnicmp(shipp->ship_name, NOX("delta"), 5)))
