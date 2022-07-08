@@ -2120,7 +2120,7 @@ BEGIN
     PUSHBUTTON      "Copy ship personas to messages",IDC_SHIP_PERSONAS_TO_MESSAGES,154,145,109,14
     PUSHBUTTON      "Set head ANIs using personas in messages.tbl",IDC_SET_HEAD_ANIS_USING_MESSAGES_TBL,154,188,109,23,BS_MULTILINE
     PUSHBUTTON      "Clear personas from ships that don't send messages",IDC_CLEAR_PERSONAS_FROM_NON_SENDERS,154,162,109,23,BS_MULTILINE
-    LTEXT           "NOTE: Ships here are limited to fighters and bombers.",IDC_LBL_NOTE,155,109,107,16
+    LTEXT           "NOTE: Only wingman personas are modified here.",IDC_LBL_NOTE,155,109,107,16
 END
 
 IDD_CUSTOM_WING_NAMES DIALOG 0, 0, 390, 54

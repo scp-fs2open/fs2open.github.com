@@ -965,22 +965,18 @@ void VoiceActingManager::OnCopyPersonas(bool messages_to_ships)
 		// find whoever sent this message
 		get_valid_sender(sender_buf, NAME_LENGTH, message, &sender_shipnum);
 
-		// if it's a ship, copy the persona, but don't copy <None>
+		// if it's a ship, copy the persona
 		if (sender_shipnum >= 0)
 		{
-			// only fighters/bombers
-			if (!Ship_info[Ships[sender_shipnum].ship_info_index].is_fighter_bomber())
-				continue;
+			auto persona_index = (messages_to_ships) ? message->persona_index : Ships[sender_shipnum].persona_index;
 
-			if (messages_to_ships)
+			// don't copy None, and only copy wingman personas
+			if (persona_index >= 0 && (Personas[persona_index].flags & PERSONA_FLAG_WINGMAN))
 			{
-				if (message->persona_index >= 0)
-					Ships[sender_shipnum].persona_index = message->persona_index;
-			}
-			else
-			{
-				if (Ships[sender_shipnum].persona_index >= 0)
-					message->persona_index = Ships[sender_shipnum].persona_index;
+				if (messages_to_ships)
+					Ships[sender_shipnum].persona_index = persona_index;
+				else
+					message->persona_index = persona_index;
 			}
 		}
 	}
@@ -1011,13 +1007,16 @@ void VoiceActingManager::OnClearPersonasFromNonSenders()
 	{
 		if ((objp->type == OBJ_START) || (objp->type == OBJ_SHIP))
 		{
-			// only fighters/bombers
-			if (!Ship_info[Ships[objp->instance].ship_info_index].is_fighter_bomber())
-				continue;
-
-			// if any ships aren't message senders, clear the persona
+			// for ships that aren't message senders
 			if (all_senders.find(objp->instance) == all_senders.end())
-				Ships[objp->instance].persona_index = -1;
+			{
+				// only clear wingman personas
+				if ((Ships[objp->instance].persona_index >= 0) && (Personas[Ships[objp->instance].persona_index].flags & PERSONA_FLAG_WINGMAN))
+				{
+					// clear the persona
+					Ships[objp->instance].persona_index = -1;
+				}
+			}
 		}
 	}
 
@@ -1038,9 +1037,6 @@ void VoiceActingManager::OnCopyShipPersonasToMessages()
 
 void VoiceActingManager::OnSetHeadANIsUsingMessagesTbl()
 {
-	char sender_buf[NAME_LENGTH];
-	int sender_shipnum;
-
 	// go through all messages in the mission
 	for (int i = 0; i < Num_messages - Num_builtin_messages; i++)
 	{
@@ -1050,9 +1046,8 @@ void VoiceActingManager::OnSetHeadANIsUsingMessagesTbl()
 		if (message->persona_index < 0)
 			continue;
 
-		// only fighters/bombers
-		get_valid_sender(sender_buf, NAME_LENGTH, message, &sender_shipnum);
-		if (sender_shipnum < 0 || !Ship_info[Ships[sender_shipnum].ship_info_index].is_fighter_bomber())
+		// only wingman personas
+		if (!(Personas[message->persona_index].flags & PERSONA_FLAG_WINGMAN))
 			continue;
 
 		// find the corresponding head for this persona
