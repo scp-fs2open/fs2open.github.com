@@ -407,7 +407,7 @@ void fireball_parse_tbl()
 	{
 		if (fi.lod_count > 1)
 		{
-			Assertion(fi.lod_count < MAX_FIREBALL_LOD, "Fireball LOD (%d) greater than MAX_FIREBALL_LOD %d.", fi.lod_count, MAX_FIREBALL_LOD);
+			Assertion(fi.lod_count <= MAX_FIREBALL_LOD, "Fireball LOD (%d) greater than MAX_FIREBALL_LOD %d.", fi.lod_count, MAX_FIREBALL_LOD);
 			static_assert(MAX_FIREBALL_LOD < 10, "The fireball LOD naming scheme needs to be changed for LODs > 9");
 
 			auto lod0 = fi.lod[0].filename;
