@@ -957,6 +957,9 @@ void VoiceActingManager::OnCopyPersonas(bool messages_to_ships)
 	char sender_buf[NAME_LENGTH];
 	int sender_shipnum;
 
+	SCP_unordered_set<int> already_assigned;
+	SCP_string inconsistent_copy_msg;
+
 	// go through all messages in the mission
 	for (int i = 0; i < Num_messages - Num_builtin_messages; i++)
 	{
@@ -968,17 +971,57 @@ void VoiceActingManager::OnCopyPersonas(bool messages_to_ships)
 		// if it's a ship, copy the persona
 		if (sender_shipnum >= 0)
 		{
-			auto persona_index = (messages_to_ships) ? message->persona_index : Ships[sender_shipnum].persona_index;
+			auto sender_shipp = &Ships[sender_shipnum];
+			auto persona_to_copy = (messages_to_ships) ? message->persona_index : sender_shipp->persona_index;
 
 			// don't copy None, and only copy wingman personas
-			if (persona_index >= 0 && (Personas[persona_index].flags & PERSONA_FLAG_WINGMAN))
+			if (persona_to_copy >= 0 && (Personas[persona_to_copy].flags & PERSONA_FLAG_WINGMAN))
 			{
 				if (messages_to_ships)
-					Ships[sender_shipnum].persona_index = persona_index;
+				{
+					if (already_assigned.count(sender_shipnum) > 0 && sender_shipp->persona_index != persona_to_copy)
+					{
+						inconsistent_copy_msg += "\n\u2022 ";
+						inconsistent_copy_msg += sender_shipp->ship_name;
+					}
+
+					sender_shipp->persona_index = persona_to_copy;
+					already_assigned.insert(sender_shipnum);
+				}
 				else
-					message->persona_index = persona_index;
+				{
+					if (already_assigned.count(i) > 0 && message->persona_index != persona_to_copy)
+					{
+						inconsistent_copy_msg += "\n\u2022 ";
+						inconsistent_copy_msg += message->name;
+					}
+
+					message->persona_index = persona_to_copy;
+					already_assigned.insert(i);
+				}
 			}
 		}
+	}
+
+	if (messages_to_ships)
+	{
+		if (!inconsistent_copy_msg.empty())
+		{
+			inconsistent_copy_msg = "Attempted to copy personas from messages to ships, but the following ships send messages with inconsistent personas.  You may want to review them.\n" + inconsistent_copy_msg;
+			MessageBox(inconsistent_copy_msg.c_str(), "Voice Acting Manager");
+		}
+		else
+			MessageBox("Personas have been copied from messages to ships.", "Voice Acting Manager");
+	}
+	else
+	{
+		if (!inconsistent_copy_msg.empty())
+		{
+			inconsistent_copy_msg = "Attempted to copy personas from ships to messages, but the following messages are sent by ships with inconsistent personas.  You may want to review them.\n" + inconsistent_copy_msg;
+			MessageBox(inconsistent_copy_msg.c_str(), "Voice Acting Manager");
+		}
+		else
+			MessageBox("Personas have been copied from ships to messages.", "Voice Acting Manager");
 	}
 }
 
@@ -1008,7 +1051,7 @@ void VoiceActingManager::OnClearPersonasFromNonSenders()
 		if ((objp->type == OBJ_START) || (objp->type == OBJ_SHIP))
 		{
 			// for ships that aren't message senders
-			if (all_senders.find(objp->instance) == all_senders.end())
+			if (all_senders.count(objp->instance) == 0)
 			{
 				// only clear wingman personas
 				if ((Ships[objp->instance].persona_index >= 0) && (Personas[Ships[objp->instance].persona_index].flags & PERSONA_FLAG_WINGMAN))
@@ -1026,13 +1069,11 @@ void VoiceActingManager::OnClearPersonasFromNonSenders()
 void VoiceActingManager::OnCopyMessagePersonasToShips()
 {
 	OnCopyPersonas(true);
-	MessageBox("Personas have been copied from messages to ships.", "Voice Acting Manager");
 }
 
 void VoiceActingManager::OnCopyShipPersonasToMessages()
 {
 	OnCopyPersonas(false);
-	MessageBox("Personas have been copied from ships to messages.", "Voice Acting Manager");
 }
 
 void VoiceActingManager::OnSetHeadANIsUsingMessagesTbl()
