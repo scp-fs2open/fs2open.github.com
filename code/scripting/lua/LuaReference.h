@@ -101,7 +101,7 @@ class UniqueLuaReference {
     * @brief Pushes the referenced value onto the stack.
     * @param thread A specific thread state to push the value to. nullptr for the default state of this reference
     */
-	void pushValue(lua_State* thread) const;
+	void pushValue(lua_State* thread, bool guaranteeStack = false) const;
 };
 }
 

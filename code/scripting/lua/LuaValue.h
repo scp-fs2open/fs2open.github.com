@@ -186,7 +186,7 @@ class LuaValue {
 	 * @param thread The thread stack onto which this value should be pushed. May be nullptr for the default state of
 	 * this value
 	 */
-	bool pushValue(lua_State* thread) const;
+	bool pushValue(lua_State* thread, bool guaranteeStack = false) const;
 
 	lua_State* getLuaState() const;
 
