@@ -70,11 +70,12 @@ protected:
 	DECLARE_MESSAGE_MAP()
 
 private:
-	float convert(const CString &str);
-	float perform_input_rounding(float val);
+	float convert(const CString &str) const;
+	float perform_input_rounding(float val) const;
 
-	bool is_close(float val, const CString &input_str);
-	bool is_angle_close(float rad, const CString &input_str);
+	bool is_close(float val, const CString &input_str) const;
+	bool is_angle_close(float rad, const CString &input_str) const;
+
 	int total;
 	int index[MAX_OBJECTS];
 	void actually_point_object(object *ptr);

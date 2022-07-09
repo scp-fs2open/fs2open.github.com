@@ -186,7 +186,7 @@ BOOL orient_editor::OnInitDialog()
 /**
  * Checks whether the position value is close enough to the input string value that we can assume the input has not changed.
  */
-bool orient_editor::is_close(float val, const CString &input_str)
+bool orient_editor::is_close(float val, const CString &input_str) const
 {
 	val = perform_input_rounding(val);
 	float input_val = convert(input_str);
@@ -198,7 +198,7 @@ bool orient_editor::is_close(float val, const CString &input_str)
 /**
  * Checks whether the angle value is close enough to the input string value that we can assume the input has not changed.
  */
-bool orient_editor::is_angle_close(float rad, const CString &input_str)
+bool orient_editor::is_angle_close(float rad, const CString &input_str) const
 {
 	float deg = perform_input_rounding(to_degrees(rad));
 	float input_deg = normalize_degrees(convert(input_str));
@@ -391,7 +391,7 @@ float orient_editor::normalize_degrees(float deg)
 /**
  * Extract a float from the CString, being mindful of any comma separators.
  */
-float orient_editor::convert(const CString &str)
+float orient_editor::convert(const CString &str) const
 {
 	char buf[256];
 	size_t i, j, len;
@@ -411,7 +411,7 @@ float orient_editor::convert(const CString &str)
  * This accounts for not only decimal rounding to the precision of the input box, but also floating point rounding due to inexact fractions such as 1/10.
  * See also GitHub PR #4475.
  */
-float orient_editor::perform_input_rounding(float val)
+float orient_editor::perform_input_rounding(float val) const
 {
 	CString str;
 	str.Format(INPUT_FORMAT, val);
