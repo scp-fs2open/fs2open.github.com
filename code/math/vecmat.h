@@ -22,13 +22,9 @@
 //Macros/functions to fill in fields of structures
 
 //macro to check if vector is zero
-#define IS_VEC_NULL_SQ_SAFE(v) (IS_NEAR_ZERO((v)->xyz.x, 1e-16) && \
-								IS_NEAR_ZERO((v)->xyz.y, 1e-16) && \
-								IS_NEAR_ZERO((v)->xyz.z, 1e-16))
-
-#define IS_VEC_NULL(v) (IS_NEAR_ZERO((v)->xyz.x, 1e-36) && \
-						IS_NEAR_ZERO((v)->xyz.y, 1e-36) && \
-						IS_NEAR_ZERO((v)->xyz.z, 1e-36))
+#define IS_VEC_NULL(v) (fl_near_zero((v)->xyz.x) && \
+						fl_near_zero((v)->xyz.y) && \
+						fl_near_zero((v)->xyz.z))
 
 #define IS_MAT_NULL(v) (IS_VEC_NULL(&(v)->vec.fvec) && IS_VEC_NULL(&(v)->vec.uvec) && IS_VEC_NULL(&(v)->vec.rvec))
 

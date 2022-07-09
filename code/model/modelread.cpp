@@ -764,7 +764,7 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 		float turn_rate;
 		if (idx == 0 || idx == 2) {
 			float turn_time = static_cast<float>(atof(buf));
-			if (turn_time == 0.0f) {
+			if (fl_near_zero(turn_time)) {
 				Warning(LOCATION, "Rotation has a turn time of 0 for subsystem '%s' on ship %s!", dname, modelp->filename);
 				turn_rate = 1.0f;
 			} else {
@@ -853,7 +853,7 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 				subsystemp->stepped_rotation->backwards = true;
 			}
 
-			subsystemp->stepped_rotation->max_turn_accel = (fraction == 0.0f) ? 0.0f : step_distance / (fraction * (1.0f - fraction) * t_trans * t_trans);
+			subsystemp->stepped_rotation->max_turn_accel = fl_near_zero(fraction) ? 0.0f : step_distance / (fraction * (1.0f - fraction) * t_trans * t_trans);
 			subsystemp->stepped_rotation->max_turn_rate = step_distance / ((1.0f - fraction) * t_trans);
 		}
 
@@ -1282,7 +1282,7 @@ void determine_submodel_movement(bool is_rotation, const char *filename, bsp_inf
 			if (idx == 0)
 			{
 				auto turn_time = static_cast<float>(atof(buf));
-				if (turn_time == 0.0f)
+				if (fl_near_zero(turn_time))
 				{
 					Warning(LOCATION, "Dumb-Rotation has a turn time of 0 for subsystem '%s' on ship %s!", sm->name, filename);
 					turn_rate = 1.0f;
@@ -2310,7 +2310,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 
 						cfread_vector(&(p->pnt), fp);
 						cfread_vector( &temp_vec, fp );
-						if (!IS_VEC_NULL_SQ_SAFE(&temp_vec))
+						if (!IS_VEC_NULL(&temp_vec))
 							vm_vec_normalize(&temp_vec);
 						else
 							vm_vec_zero(&temp_vec);
@@ -3817,7 +3817,7 @@ void submodel_stepped_rotate(model_subsystem *psub, submodel_instance *smi)
 	float step_offset_time = static_cast<float>(fmod(elapsed_time, step_time));
 
 	// get step we are on
-	int cur_step = static_cast<int>(floor(elapsed_time / step_time));
+	int cur_step = static_cast<int>(elapsed_time / step_time + 0.5f);
 
 	// get base angle
 	smi->cur_angle = (cur_step % psub->stepped_rotation->num_steps) * step_size;

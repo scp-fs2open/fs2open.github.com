@@ -8539,7 +8539,7 @@ void sexp_set_orient_sub(matrix *orient_to_set, vec3d *pos, vec3d *location, int
 
 	vm_vec_sub(&v_orient, location, pos);
 
-	if (IS_VEC_NULL_SQ_SAFE(&v_orient))
+	if (IS_VEC_NULL(&v_orient))
 	{
 		Warning(LOCATION, "error in sexp setting ship orientation: can't point to self; quitting...\n");
 		return;
@@ -13135,7 +13135,7 @@ void sexp_explosion_effect(int n)
 						ship_apply_global_damage( objp, nullptr, &origin, t_damage, -1 );
 						vec3d force, vec_ship_to_impact;
 						vm_vec_sub( &vec_ship_to_impact, &objp->pos, &origin );
-						if (!IS_VEC_NULL_SQ_SAFE( &vec_ship_to_impact )) {
+						if (!IS_VEC_NULL( &vec_ship_to_impact )) {
 							vm_vec_copy_normalize( &force, &vec_ship_to_impact );
 							vm_vec_scale( &force, (float)max_blast );
 							ship_apply_whack( &force, &origin, objp );
@@ -13297,7 +13297,7 @@ void sexp_warp_effect(int n)
 
 	vm_vec_sub(&v_orient, &location, &origin);
 
-	if (IS_VEC_NULL_SQ_SAFE(&v_orient))
+	if (IS_VEC_NULL(&v_orient))
 	{
 		Warning(LOCATION, "error in warp-effect: warp can't point to itself; quitting the warp...\n");
 		return;
@@ -20277,6 +20277,10 @@ void sexp_set_subsys_rotation_lock_free(int node, bool locked)
 		// get the moving subsystem
 		auto subsys = ship_get_subsys(ship_entry->shipp, CTEXT(node));
 		if (subsys == nullptr)
+			continue;
+
+		// see if it's already at the state we want
+		if (subsys->flags[Ship::Subsystem_Flags::Rotates] == !locked)
 			continue;
 
 		// set the flag

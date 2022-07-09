@@ -1118,7 +1118,7 @@ float find_nearest_point_on_line(vec3d *nearest_point, const vec3d *p0, const ve
 	vm_vec_sub(&norm, p1, p0);
 	vm_vec_sub(&xlated_int_pnt, int_pnt, p0);
 
-	if (IS_VEC_NULL_SQ_SAFE(&norm)) {
+	if (IS_VEC_NULL(&norm)) {
 		*nearest_point = *int_pnt;
 		return 9999.9f;
 	}
@@ -1345,7 +1345,7 @@ void vm_vec_rand_vec(vec3d *rvec)
 	rvec->xyz.y = (frand() - 0.5f) * 2;
 	rvec->xyz.z = (frand() - 0.5f) * 2;
 
-	if (IS_VEC_NULL_SQ_SAFE(rvec))
+	if (IS_VEC_NULL(rvec))
 		rvec->xyz.x = 1.0f;
 
 	vm_vec_normalize(rvec);
@@ -1565,7 +1565,7 @@ void vm_matrix_to_rot_axis_and_angle(const matrix *m, float *theta, vec3d *rot_a
 		rot_axis->xyz.x = (m->vec.uvec.xyz.z - m->vec.fvec.xyz.y);
 		rot_axis->xyz.y = (m->vec.fvec.xyz.x - m->vec.rvec.xyz.z);
 		rot_axis->xyz.z = (m->vec.rvec.xyz.y - m->vec.uvec.xyz.x);
-		if (IS_VEC_NULL_SQ_SAFE(rot_axis)) {
+		if (IS_VEC_NULL(rot_axis)) {
 			vm_vec_make(rot_axis, 1.0f, 0.0f, 0.0f);
 		} else {
 			vm_vec_normalize(rot_axis);
