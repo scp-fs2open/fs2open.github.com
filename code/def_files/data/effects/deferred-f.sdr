@@ -81,37 +81,38 @@ void GetLightInfo(vec3 position, in float alpha, in vec3 reflectDir, out vec3 li
 			attenuation = 1.0 - clamp(sqrt(dist / lightRadius), 0.0, 1.0);
 		} 
 		else if (lightType == LT_TUBE) {  // Tube light
-			float beamLength = length(beamVec);
-			vec3 beamDir = beamVec / beamLength;
+			
+			vec3 beamDir = normalize(beamVec);
 			//The actual 'lighting element' is shorter than the light volume cylinder
 			//To compensate the light is moved forward along the beam one radius and the length shortened
 			//this allows room for clean falloff of the light past the ends of beams.
 			vec3 adjustedLightPos = lightPosition - (beamDir * lightRadius);
-			beamLength = beamLength - (lightRadius * 2.0);
 			vec3 adjustedbeamVec = beamVec - 2.0 * lightRadius * beamDir;
+			float beamLength = length(adjustedbeamVec);
 			//adjustments having been made, sourceDir needs recalculating
 			vec3 sourceDir = adjustedLightPos - position.xyz;
-			// Get nearest 
+
+			// Get point on beam nearest to the reflection ray.
 			vec3 a_t = reflectDir;
 			vec3 b_t = beamDir;
 			vec3 b_0 = sourceDir;
 			vec3 c = cross(a_t, b_t);
 			vec3 d = b_0;
 			vec3 r = d - a_t * dot(d, a_t) - c * dot(d,c);
-			float neardist = -dot(r, r)/dot(b_t, r);
-			lightDir = sourceDir + beamDir * neardist;
-			// Somebody with a symbolic expression simplifier or a bigger brain than me
-			// should figure out how to optimise these calcs - qaz
+			float neardist = dot(r, r)/dot(b_t, r);
 			// Move along the beam by the distance we calculated
-			float dist = length(lightDir);
+			lightDir = sourceDir - beamDir * clamp(neardist, 0.0, beamLength);
+			// Somebody with a symbolic expression simplifier or a wrinklier brain than me
+			// should figure out how to optimise these calcs - qaz
+
 
 			// this chunk is unneccessary if sourceRadius = 0.0, but let's avoid a branch.
 			// Same principle as in LT_POINT, treat chosen location as a spherelight.
 			vec3 centerToRay = dot(lightDir, reflectDir) * reflectDir - lightDir;
 			lightDir = lightDir + centerToRay * clamp(sourceRadius/length(centerToRay), 0.0, 1.0);
-			dist = length(lightDir);
+			float dist = length(lightDir);
 			// Energy conservation term
-			float alpha_adjust = clamp(alpha + (sourceRadius/(2*dist)), 0.0, 1.0);
+			float alpha_adjust = min(alpha + (sourceRadius/(2*dist)), 1.0);
 			area_normalisation = alpha/alpha_adjust;
 			// don't need to square as it's a line rather than a sphere.
 			//end chunk
