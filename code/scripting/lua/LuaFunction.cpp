@@ -172,7 +172,7 @@ LuaValueList LuaFunction::call(lua_State* L, const LuaValueList& args) const {
 		stackTop = lua_gettop(L);
 	}
 
-	if(!lua_checkstack(L, args.size() + 1))
+	if(!lua_checkstack(L, (int)args.size() + 1))
 		throw LuaException("Lua Stack Overflow!");
 
 	// Push the function onto the stack
