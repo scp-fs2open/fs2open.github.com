@@ -50,6 +50,11 @@ layout (std140) uniform lightData {
 // Nearest point sphere and tube light calculations taken from 
 // "Real Shading in Unreal Engine 4" by Brian Karis, Epic Games
 // Part of SIGGRAPH 2013 Course: Physically Based Shading in Theory and Practice
+
+vec3 ExpandLightSize(in vec3 lightDir, in vec3 reflectDir) {
+	vec3 centerToRay = max(dot(lightDir, reflectDir),0) * reflectDir - lightDir;
+	return lightDir + centerToRay * clamp(sourceRadius/length(centerToRay), 0.0, 1.0);
+}
 void GetLightInfo(vec3 position, in float alpha, in vec3 reflectDir, out vec3 lightDir, out float attenuation, out float area_normalisation)
 {
 	if (lightType == LT_DIRECTIONAL) {
@@ -65,8 +70,7 @@ void GetLightInfo(vec3 position, in float alpha, in vec3 reflectDir, out vec3 li
 			// this chunk is unneccessary if sourceRadius= 0.0, but let's avoid a branch.
 			// given a sphere of radius sourceRadius centered at lightDir,
 			// move lightDir towards the ray defined by reflectDir
-			vec3 centerToRay = dot(lightDir, reflectDir) * reflectDir - lightDir;
-			lightDir = lightDir + centerToRay * clamp(sourceRadius/length(centerToRay), 0.0, 1.0);
+			lightDir = ExpandLightSize(lightDir, reflectDir);
 			dist = length(lightDir);
 			// Energy conservation term
 			float alpha_adjust = clamp(alpha + (sourceRadius/(2*dist)), 0.0, 1.0);
@@ -108,8 +112,7 @@ void GetLightInfo(vec3 position, in float alpha, in vec3 reflectDir, out vec3 li
 
 			// this chunk is unneccessary if sourceRadius = 0.0, but let's avoid a branch.
 			// Same principle as in LT_POINT, treat chosen location as a spherelight.
-			vec3 centerToRay = dot(lightDir, reflectDir) * reflectDir - lightDir;
-			lightDir = lightDir + centerToRay * clamp(sourceRadius/length(centerToRay), 0.0, 1.0);
+			lightDir = ExpandLightSize(lightDir, reflectDir);
 			float dist = length(lightDir);
 			// Energy conservation term
 			float alpha_adjust = min(alpha + (sourceRadius/(2*dist)), 1.0);
