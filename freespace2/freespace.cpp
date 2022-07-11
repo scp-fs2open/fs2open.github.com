@@ -1193,7 +1193,7 @@ void game_loading_callback(int count)
 
 	Script_system.RemHookVar("Progress");
 
-	os_ignore_events();
+	os_defer_events_on_load_screen();
 
 	if (do_flip)
 		gr_flip();

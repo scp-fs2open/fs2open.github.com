@@ -51,6 +51,7 @@ void processEvents()
 {
 	io::mouse::CursorManager::get()->showCursor(false);
 
+	os_remove_deferred_cutscene_key_events();
 	os_poll();
 }
 
