@@ -14763,20 +14763,16 @@ static void ai_control_info_apply(ai_info *aip)
 	if (aip->ai_override_flags.none_set())
 		return;
 
-	bool no_lat = false;
-	bool no_rot = false;
+	bool lateral_maneuver = false;
+	bool rotational_maneuver = false;
 
-	if (!aip->ai_override_flags[AI::Maneuver_Override_Flags::Lateral_never_expire] && timestamp_elapsed(aip->ai_override_lat_timestamp))
-		no_lat = true;
+	if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Lateral_never_expire] || !timestamp_elapsed(aip->ai_override_lat_timestamp))
+		lateral_maneuver = true;
 
-	if (!aip->ai_override_flags[AI::Maneuver_Override_Flags::Rotational_never_expire] && timestamp_elapsed(aip->ai_override_rot_timestamp))
-		no_rot = true;
+	if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Rotational_never_expire] || timestamp_elapsed(aip->ai_override_rot_timestamp))
+		rotational_maneuver = true;
 
-	if (no_rot && no_lat) {
-		aip->ai_override_flags.reset();
-	}
-	else
-	{
+	if (lateral_maneuver || rotational_maneuver) {
 		if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Full_rot])
 		{
 			AI_ci.pitch = aip->ai_override_ci.pitch;
