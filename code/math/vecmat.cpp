@@ -2070,6 +2070,7 @@ void vm_angular_move_forward_vec(const vec3d* goal_f, const matrix* orient, cons
 
 	// handle bank separately, simpler, since its just a target velocity
 	{
+		CLAMP(bank_vel, -vel_limit->xyz.z, vel_limit->xyz.z);
 		float delta_bank_vel = bank_vel - w_in->xyz.z;
 		float delta_bank_accel = fl_abs(delta_bank_vel) / delta_t; // the accel required to reach the target vel this frame
 		float accel = (delta_bank_accel > acc_limit->xyz.z) ? acc_limit->xyz.z : delta_bank_accel;
