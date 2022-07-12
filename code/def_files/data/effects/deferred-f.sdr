@@ -52,7 +52,15 @@ layout (std140) uniform lightData {
 // Part of SIGGRAPH 2013 Course: Physically Based Shading in Theory and Practice
 
 vec3 ExpandLightSize(in vec3 lightDir, in vec3 reflectDir) {
-	vec3 centerToRay = max(dot(lightDir, reflectDir),0) * reflectDir - lightDir;
+	// There's an extra max(...,sourceRadius) call here vs the version in the paper.
+	// This prevents the centerToRay calculation from choosing a point behind
+	// the reflection ray's origin (i.e. underneath the surface).
+	// this is necessary for situations where the fragment being shaded lies inside 
+	// the sourceRadius of the light.
+	// Instead, we choose a point suffciently far away from the reflection origin (hence max(...,sourceRadius))
+	// so that we have a gradual transition as the shaded fragments along the surface
+	// shift from being inside to outside the light.
+	vec3 centerToRay = max(dot(lightDir, reflectDir),sourceRadius) * reflectDir - lightDir;
 	return lightDir + centerToRay * clamp(sourceRadius/length(centerToRay), 0.0, 1.0);
 }
 void GetLightInfo(vec3 position, in float alpha, in vec3 reflectDir, out vec3 lightDir, out float attenuation, out float area_normalisation)
