@@ -1368,9 +1368,10 @@ int multi_oo_pack_data(net_player *pl, object *objp, ushort oo_flags, ubyte *dat
 
 			// Check that we are not sending too much data, if so, don't actually send.
 			if (packet_size + ret <= OO_MAX_DATA_SIZE) {
-				nprintf(("Network","Had to remove subsystems section from data packet for %s\n", shipp->ship_name));
 				oo_flags |= OO_SUBSYSTEMS_NEW;		
 				packet_size += ret;
+			} else {
+				nprintf(("Network","Had to remove subsystems section from data packet for %s\n", shipp->ship_name));
 			}
 		}
 	}
