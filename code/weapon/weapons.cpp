@@ -9514,8 +9514,8 @@ bool weapon_multilock_can_lock_on_target(object* shooter, object* target_objp, w
 			return false;
 	}
 
-	// if this is part of the same team and doesn't have any iff restrictions, reject lock
-	if (!weapon_has_iff_restrictions(wip) && iff_x_attacks_y(Ships[shooter->instance].team, obj_team(target_objp)))
+	// if there are no iff restrictions, reject lock if they are not supposed to attack each other
+	if (!weapon_has_iff_restrictions(wip) && !iff_x_attacks_y(Ships[shooter->instance].team, obj_team(target_objp)))
 		return false;
 
 	vec3d vec_to_target;
