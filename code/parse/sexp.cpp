@@ -2125,6 +2125,12 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 		} else if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER_DATA) {
 			// this is an instance of "Replace Container Data"
+
+			// can't be used in special argument list
+			if (type == OPF_ANYTHING || type == OPF_DATA_OR_STR_CONTAINER) {
+				return SEXP_CHECK_TYPE_MISMATCH;
+			}
+
 			const int modifier_node = Sexp_nodes[node].first;
 			if (modifier_node == -1) {
 				return SEXP_CHECK_MISSING_CONTAINER_MODIFIER;
@@ -11029,9 +11035,14 @@ void sexp_change_argument_validity(int n, bool invalidate)
 		// first we must check if the arg_handler marks a selection. At the moment random-of is the only one that does this
 		arg_n = CDR(arg_handler);
 		while (invalidate && (arg_n != -1)) {
-			// (in)validating container arguments isn't supported
-			if ((Sexp_nodes[arg_n].subtype != SEXP_ATOM_CONTAINER_NAME) &&
-				Sexp_nodes[arg_n].flags & SNF_ARGUMENT_SELECT) {
+			Assertion(Sexp_nodes[arg_n].subtype != SEXP_ATOM_CONTAINER_NAME,
+				"Attempt to use invalidate-argument with container %s. Please report!",
+				Sexp_nodes[arg_n].text);
+			Assertion(Sexp_nodes[arg_n].subtype != SEXP_ATOM_CONTAINER_DATA,
+				"Attempt to use invalidate-argument with data from container %s. Please report!",
+				Sexp_nodes[arg_n].text);
+
+			if (Sexp_nodes[arg_n].flags & SNF_ARGUMENT_SELECT) {
 				// now check if the selected argument matches the one we want to invalidate
 				if (!strcmp(CTEXT(n), CTEXT(arg_n))) {
 					// set it as invalid
@@ -11049,8 +11060,15 @@ void sexp_change_argument_validity(int n, bool invalidate)
 			arg_n = CDR(arg_handler);
 			while (arg_n != -1)
 			{
+				Assertion(Sexp_nodes[arg_n].subtype != SEXP_ATOM_CONTAINER_NAME,
+					"Attempt to change argument validity of container %s. Please report!",
+					Sexp_nodes[arg_n].text);
+				Assertion(Sexp_nodes[arg_n].subtype != SEXP_ATOM_CONTAINER_DATA,
+					"Attempt to change argument validity of data from container %s. Please report!",
+					Sexp_nodes[arg_n].text);
+
 				// match?
-				if ((Sexp_nodes[arg_n].subtype != SEXP_ATOM_CONTAINER_NAME) && !strcmp(CTEXT(n), CTEXT(arg_n)))
+				if (!strcmp(CTEXT(n), CTEXT(arg_n)))
 				{
 					if (invalidate) {
 						// we need to check if the argument is already invalid as some argument lists may contain duplicates
