@@ -14710,7 +14710,8 @@ void ai_frame(int objnum)
 	}
 }
 
-static void ai_control_info_check(ai_info *aip, ship_info *sip, physics_info *pi)
+// set and removes any maneuver flags for ai maneuver overrides
+static void ai_control_info_flags_upkeep(ai_info* aip, ship_info* sip, physics_info* pi)
 {
 	if (aip->ai_override_flags.none_set())
 		return;
@@ -14741,6 +14742,37 @@ static void ai_control_info_check(ai_info *aip, ship_info *sip, physics_info *pi
 	}
 	else
 	{
+		if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Dont_bank_when_turning] || sip->flags[Ship::Info_Flags::Dont_bank_when_turning])
+			AI_ci.control_flags |= CIF_DONT_BANK_WHEN_TURNING;
+		if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Dont_clamp_max_velocity] || sip->flags[Ship::Info_Flags::Dont_clamp_max_velocity])
+			AI_ci.control_flags |= CIF_DONT_CLAMP_MAX_VELOCITY;
+		if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Instantaneous_acceleration] || sip->flags[Ship::Info_Flags::Instantaneous_acceleration])
+			AI_ci.control_flags |= CIF_INSTANTANEOUS_ACCELERATION;
+	}
+
+	// set physics flag according to whether we are instantaneously accelerating
+	if (AI_ci.control_flags & CIF_INSTANTANEOUS_ACCELERATION)
+		pi->flags |= PF_MANEUVER_NO_DAMP;
+	else
+		pi->flags &= ~PF_MANEUVER_NO_DAMP;
+}
+
+// applies any rotational or lateral maneuver values to the AI's CI
+static void ai_control_info_apply(ai_info *aip)
+{
+	if (aip->ai_override_flags.none_set())
+		return;
+
+	bool lateral_maneuver = false;
+	bool rotational_maneuver = false;
+
+	if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Lateral_never_expire] || !timestamp_elapsed(aip->ai_override_lat_timestamp))
+		lateral_maneuver = true;
+
+	if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Rotational_never_expire] || timestamp_elapsed(aip->ai_override_rot_timestamp))
+		rotational_maneuver = true;
+
+	if (lateral_maneuver || rotational_maneuver) {
 		if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Full_rot])
 		{
 			AI_ci.pitch = aip->ai_override_ci.pitch;
@@ -14750,17 +14782,11 @@ static void ai_control_info_check(ai_info *aip, ship_info *sip, physics_info *pi
 		else
 		{
 			if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Pitch])
-			{
 				AI_ci.pitch = aip->ai_override_ci.pitch;
-			}
 			if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Heading])
-			{
 				AI_ci.heading = aip->ai_override_ci.heading;
-			}
 			if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Roll])
-			{
 				AI_ci.bank = aip->ai_override_ci.bank;
-			}
 		}
 
 		if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Full_lat])
@@ -14772,32 +14798,13 @@ static void ai_control_info_check(ai_info *aip, ship_info *sip, physics_info *pi
 		else
 		{
 			if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Up])
-			{
 				AI_ci.vertical = aip->ai_override_ci.vertical;
-			}
 			if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Sideways])
-			{
 				AI_ci.sideways = aip->ai_override_ci.sideways;
-			}
 			if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Forward])
-			{
 				AI_ci.forward = aip->ai_override_ci.forward;
-			}
 		}
-
-		if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Dont_bank_when_turning] || sip->flags[Ship::Info_Flags::Dont_bank_when_turning])
-			AI_ci.control_flags |= CIF_DONT_BANK_WHEN_TURNING;
-		if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Dont_clamp_max_velocity] || sip->flags[Ship::Info_Flags::Dont_clamp_max_velocity])
-			AI_ci.control_flags |= CIF_DONT_CLAMP_MAX_VELOCITY;
-		if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Instantaneous_acceleration] || sip->flags[Ship::Info_Flags::Instantaneous_acceleration])
-			AI_ci.control_flags |= CIF_INSTANTANEOUS_ACCELERATION;
 	}
-
-	// set physics flag according to whether we are instantaneously accelerating
-	if (AI_ci.control_flags & CIF_INSTANTANEOUS_ACCELERATION)
-		pi->flags |= PF_NO_DAMP;
-	else
-		pi->flags &= ~PF_NO_DAMP;
 }
 
 int Last_ai_obj = -1;
@@ -14857,9 +14864,12 @@ void ai_process( object * obj, int ai_index, float frametime )
 	if (shipp->flags[Ship::Ship_Flags::Dying] && sip->flags[Ship::Info_Flags::Large_ship_deathroll])
 		rfc = false;
 
+	// regardless if we're acting on them, upkeep maneuver flags
+	ai_control_info_flags_upkeep(aip, sip, &obj->phys_info);
+
 	if (rfc) {
 		// Wanderer - sexp based override goes here - only if rfc is valid though
-		ai_control_info_check(aip, sip, &obj->phys_info);
+		ai_control_info_apply(aip);
 		physics_read_flying_controls( &obj->orient, &obj->phys_info, &AI_ci, frametime);
 	}
 
