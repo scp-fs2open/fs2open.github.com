@@ -15,5 +15,10 @@ ADE_FUNC(getCurrentTime, l_Time, nullptr, "Gets the current real-time timestamp.
 	return ade_set_args(L, "o", l_Timestamp.Set(timer_get_nanoseconds()));
 }
 
+ADE_FUNC(getCurrentMissionTime, l_Time, nullptr, "Gets the current mission-time timestamp.", "timestamp", "The current mission time")
+{
+	return ade_set_args(L, "o", l_Timestamp.Set(timestamp_get_mission_time_in_microseconds() * NANOSECONDS_PER_MICROSECOND));
+}
+
 } // namespace api
 } // namespace scripting
