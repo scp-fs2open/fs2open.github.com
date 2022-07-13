@@ -384,7 +384,7 @@ void main()
 	vec3 env_light_dir = vec3(envMatrix * vec4(light_dir, 0.0));
 	vec4 specEnvColour = srgb_to_linear(textureLod(sEnvmap, env_light_dir, mip_bias));
 
-	vec3 halfVec = normalize(light_dir + eyeDir);
+	vec3 halfVec = normal;
 
 	// Lots of hacks here to get things to look right. We aren't loading a BRDF split-sum integral texture 
 	// or properly calculating IBL levels.
