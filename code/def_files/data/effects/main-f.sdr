@@ -398,7 +398,7 @@ void main()
 	float NdotL = max(dot(light_dir, normal),0);
 
 	float g1vNL = GeometrySchlickGGX(NdotL, k);
-	vec3 specEnvLighting = specEnvColour.rgb * fresnel * g1vNL * aoFactors.y;
+	vec3 specEnvLighting = specEnvColour.rgb * fresnel * g1vNL;
 
 	vec3 kD = vec3(1.0)-fresnel;
 	kD *= (vec3(1.0) - specColor.rgb);
