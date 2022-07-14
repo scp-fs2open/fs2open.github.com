@@ -34,6 +34,7 @@
 #include "scripting/scripting.h"
 #include "ship/ship.h"
 #include "ship/subsysdamage.h"
+#include "sound/audiostr.h"
 #include "sound/fsspeech.h"
 #include "species_defs/species_defs.h"
 #include "utils/Random.h"
@@ -1735,7 +1736,7 @@ void message_queue_message( int message_num, int priority, int timing, const cha
 				if (message_filename_has_fs1_wingman_prefix(filename)) {
 					char converted[MAX_FILENAME_LEN];
 					message_filename_convert_to_command(converted, filename);
-					if (cf_exists_full(converted, CF_TYPE_VOICE_SPECIAL)) {
+					if (cf_exists_full_ext(converted, CF_TYPE_VOICE_SPECIAL, NUM_AUDIO_EXT, audio_ext_list)) {
 						convert_to_command = true;
 					}
 				}
