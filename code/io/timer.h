@@ -106,6 +106,7 @@ extern int timer_get_seconds();				// seconds since program started... not accur
 constexpr int MILLISECONDS_PER_SECOND = 1000;
 constexpr uint64_t MICROSECONDS_PER_SECOND = 1000000;
 constexpr uint64_t NANOSECONDS_PER_SECOND = 1000000000;
+constexpr uint64_t NANOSECONDS_PER_MICROSECOND = 1000;
 
 // use this call to get the current counter value (which represents the time at the time
 // this function is called).  I.e. it doesn't return a count that would be in the future,
@@ -225,5 +226,6 @@ void timestamp_start_mission();
 
 // Calculate the current mission time using the timestamps
 fix timestamp_get_mission_time();
+uint64_t timestamp_get_mission_time_in_microseconds();
 
 #endif
