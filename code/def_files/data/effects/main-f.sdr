@@ -404,7 +404,7 @@ void main()
 	kD *= (vec3(1.0) - specColor.rgb);
 	vec3 diffEnvColor = srgb_to_linear(texture(sIrrmap, vec3(envMatrix * vec4(normal, 0.0))).rgb);
 	vec3 diffEnvLighting = kD * baseColor.rgb * diffEnvColor * aoFactors.x;
-	emissiveColor.rgb += specEnvLighting + diffEnvLighting;
+	emissiveColor.rgb += (specEnvLighting + diffEnvLighting) * baseColor.a;
 	#endif
 #endif
 #ifdef FLAG_GLOW_MAP
