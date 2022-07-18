@@ -10021,7 +10021,7 @@ void guard_object_was_hit(object *guard_objp, object *hitter_objp)
 			// that are symptomatic of a larger problem with the engine.
 
 			// This just checks to see that the target was a valid type. If it is not one of these, something really
-			// could be drasticly wrong in the engine.
+			// could be drastically wrong in the engine.
 			Assertion(aip->target_objnum == OBJ_SHIP || aip->target_objnum == OBJ_WEAPON || aip->target_objnum == OBJ_DEBRIS || aip->target_objnum == OBJ_ASTEROID || aip->target_objnum == OBJ_WAYPOINT,
 				"This function just discovered that %s has an invalid target object type of %d. This is bad. Please report!", 
 				Ships[aip->shipnum].ship_name, Objects[aip->target_objnum].type);
