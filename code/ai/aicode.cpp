@@ -10015,12 +10015,26 @@ void guard_object_was_hit(object *guard_objp, object *hitter_objp)
 			aip->submode = SM_ATTACK;
 			aip->submode_start_time = Missiontime;
 			aip->active_goal = AI_ACTIVE_GOAL_DYNAMIC;
-		} else if (Objects[aip->target_objnum].type == OBJ_SHIP) {
-			int	num_attacking_cur, num_attacking_new;
+		} else {
+			// This section used to be a lot simpler, but some "invalid" object types were probably getting into num_ships_attacking
+			// below, so we have to manually return for some object types and make sure to assert for other object types
+			// that are symptomatic of a larger problem with the engine.
 
-			num_attacking_cur = num_ships_attacking(aip->target_objnum);
+			// This just checks to see that the target was a valid type. If it is not one of these, something really
+			// could be drasticly wrong in the engine.
+			Assertion(aip->target_objnum == OBJ_SHIP || aip->target_objnum == OBJ_WEAPON || aip->target_objnum == OBJ_DEBRIS || aip->target_objnum == OBJ_ASTEROID || aip->target_objnum == OBJ_WAYPOINT,
+				"This function just discovered that %s has an invalid target object type of %d. This is bad. Please report!", 
+				Ships[aip->shipnum].ship_name, Objects[aip->target_objnum].type);
+
+			if (!(aip->target_objnum == OBJ_SHIP || aip->target_objnum == OBJ_WEAPON || aip->target_objnum == OBJ_ASTEROID || aip->target_objnum == OBJ_DEBRIS)){
+				// it's probably a valid target, but retail would not count those cases, so just return.
+				return;
+			} 
+
+			int	num_attacking_cur = num_ships_attacking(aip->target_objnum);
+
 			if (num_attacking_cur > 1) {
-				num_attacking_new = num_ships_attacking(hitter_objnum);
+				int num_attacking_new = num_ships_attacking(hitter_objnum);
 
 				if (num_attacking_new < num_attacking_cur) {
 
@@ -10037,8 +10051,6 @@ void guard_object_was_hit(object *guard_objp, object *hitter_objp)
 					aip->active_goal = AI_ACTIVE_GOAL_DYNAMIC;
 				}
 			}
-		} else {
-			UNREACHABLE("The AI previously had a guard goal to guard something besides a ship, specifically an object of type %d. As we understand it, this should not happen. Please report!", Objects[aip->target_objnum].type);
 		}
 	}
 }
