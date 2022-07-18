@@ -84,8 +84,9 @@ void UniqueLuaReference::pushValue(lua_State* thread, bool guaranteeStack) const
 {
 	Assertion(thread != nullptr, "Valid thread state must be specified!");
 
-	if(!guaranteeStack)
+	if (!guaranteeStack) {
 		lua_checkstack(thread, 1);
+	}
 
 	if (this->isValid()) {
 		lua_rawgeti(thread, LUA_REGISTRYINDEX, this->getReference());
