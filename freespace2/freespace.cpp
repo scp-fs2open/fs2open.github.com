@@ -6683,15 +6683,14 @@ void game_shutdown(void)
 		gr_clear();
 		gr_flip();
 	}
-
+	
+	// Free SEXP resources
+	sexp_shutdown();
+	
 	// Free the scripting resources of the new UI first
 	scpui::shutdown_scripting();
 
-
-	// Free SEXP resources
-	sexp_shutdown();
-
-	// Everything after this should be done without scripting so we can free those resources here
+	// Everything after this should be done without scripting so we can free those resources here. By this point, all things that hold Lua References must be destroyed (such as Lua SEXPs)
 	Script_system.Clear();
 
 	// Deinitialize the new UI system, needs to be done after scripting shutdown to make sure the resources were
