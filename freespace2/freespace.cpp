@@ -6687,6 +6687,10 @@ void game_shutdown(void)
 	// Free the scripting resources of the new UI first
 	scpui::shutdown_scripting();
 
+
+	// Free SEXP resources
+	sexp_shutdown();
+
 	// Everything after this should be done without scripting so we can free those resources here
 	Script_system.Clear();
 
@@ -6729,8 +6733,6 @@ void game_shutdown(void)
 
 	scoring_close();
 
-	// Free SEXP resources
-	sexp_shutdown();
 
 	stars_close();			// clean out anything used by stars code
 
