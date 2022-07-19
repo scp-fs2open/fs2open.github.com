@@ -80,11 +80,11 @@ bool UniqueLuaReference::isValid() const {
 	return true;
 }
 
-void UniqueLuaReference::pushValue(lua_State* thread, bool guaranteeStack) const
+void UniqueLuaReference::pushValue(lua_State* thread, bool manualStackAllocation) const
 {
 	Assertion(thread != nullptr, "Valid thread state must be specified!");
 
-	if (!guaranteeStack) {
+	if (!manualStackAllocation) {
 		lua_checkstack(thread, 1);
 	}
 

@@ -88,10 +88,10 @@ bool LuaValue::isValid() const {
 	return _reference && _reference->isValid();
 }
 
-bool LuaValue::pushValue(lua_State* thread, bool guaranteeStack) const
+bool LuaValue::pushValue(lua_State* thread, bool manualStackAllocation) const
 {
 	if (this->_reference->isValid()) {
-		this->_reference->pushValue(thread, guaranteeStack);
+		this->_reference->pushValue(thread, manualStackAllocation);
 		return true;
 	} else {
 		return false;
