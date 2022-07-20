@@ -4,29 +4,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [22.2.0] - 2022-07-XX ([Thread](https://www.hard-light.net/forums/index.php?topic=XX))
-
-```
-Changelog note: 
-As of this version, in an attempt to make the changelog easier to navigate and read,
-each section will have collapsible subsections, ordered alphabetically by topic. 
-Headlining features will always be on top.  
-```
 ### Added
 
-<details><summary> <b>Big Feature: SEXP Containers</b> </summary>
+<details><summary> <b>**Big Feature: SEXP Containers**</b> </summary>
 
 > As opposed to a SEXP variable, which stores only one value, a SEXP container stores a collection of values.  
-> Consequently, containers allow for handling data in much more sophisticated ways than variables.   
-> Containers come in two types:  
+> Consequently, containers allow for handling data in much more sophisticated ways than variables. 
+> Containers come in two types:
 > * List container - an ordered sequence of values, sort of a cross between Python lists and deques
-> * Map container - pairs of keys associated with data, like Lua tables or Python dictionaries  
-> 
+> * Map container - pairs of keys associated with data, like Lua tables or Python dictionaries
 > Further details in the [SEXP Containers announcement thread](https://www.hard-light.net/forums/index.php?topic=98209.0)
 </details>
 
 <details><summary> <b>Big Feature: LuaAI</b> </summary>
 
-> LuaAI allows scripters to add a new AI Goal (like ai-chase) that will run script instead of internal logic.  
+> LuaAI allows scripters to add a new AI Goal (like ai-chase) that will run script instead of internal logic.
 > Adding a Lua AI section in a -sexp.tbm and a few functions to a corresponding -sct.tbm to define the AI logic in certain conditions. More documentation on these functions is available in the LuaAISEXP-Object of the Scripting Docs.
 </details>
 
@@ -57,7 +49,6 @@ Headlining features will always be on top.
 - Can now rotate objects relative to other objects in the Object Editor
 - Dialog to calculate relative distance and orientation between ships
 - Flag "Point using uvec" to point ships while incorporating the ship's uvec
-- Add some checks before converting a message to Command
 - `ai-attackable-if-no-collide` flag, which prevents turrets from ignoring a target with `no_collide`
 </details>
 
@@ -86,7 +77,7 @@ Headlining features will always be on top.
 
 <details><summary>Modding: </summary>
 
-- `game_settings.tbl` setting `$Supernova hits at zero:`, to prevent default behavior where Supernovae hit at 5 seconds on the countdown.
+- `game_settings.tbl` setting `$Supernova hits at zero:`, which causes Supernovae to hit when the timer gets to 0, instead of the default of hitting 5 seconds before the time is up.
 - `game_settings.tbl` settings `$Show-subtitle uses pixels:` and `$Show-subtitle base resolution:`, which can be used in conjunction to scale subtitles.
 - `game_settings.tbl` setting `$Always warn player about unbound keys used in Directives Gauge:`, to show such warning to players when needed (without it these warnings only apply to Training Missions).
 - Ship flags `fail-sound-locked-primary` and `fail-sound-locked-secondary` to allow the firing fail sound to play if the player tries to fire weapons which are locked.
@@ -143,6 +134,7 @@ Headlining features will always be on top.
 - Add more information to Multi-related debug logging 
 - Enable Doxygen for QTFred 
 - Set up Mac builds on CI, allowing builds to be published automatically for Mac
+- Add some logging to `waitAsync`
 </details>
 
 ### Changed
@@ -170,7 +162,7 @@ Headlining features will always be on top.
 
 - CTRL+V is now add-paste (used to be CTRL+P)
 - CTRL+SHIFT+V is now overwrite-paste (used to be CTRL+V)
-- Replace `Always_show_goals` with `Toggle_showing_goals` which toggles whether the goals are shown
+- Replace `Always_show_goals` with `Toggle_showing_goals` which toggles whether the goals are shown, and works in any mission (instead of only Training Missions)
 - No longer disable icon dropdowns for models that have their own icons 
 - No longer change the ship class when the icon type is a special popup.
 - Make number of player orders FRED can handle dynamic
@@ -212,7 +204,6 @@ Headlining features will always be on top.
 - Replace `+Orders Accepted:` Bitfield with flag list
 - Handle deprecated cmdline flags programmatically, avoiding lots of code duplication.
 - Set up debug_filter.cfg to have default filters that can be turned off
-- Add some logging to `waitAsync`
 </details>
 
 ### Removed
@@ -247,6 +238,7 @@ Headlining features will always be on top.
 - End the campaign properly when a mission is skipped, preventing crashing in some situations
 - Prevent a crash when a message is sent from an invalid source
 - Prevent a broken campaign state if the player quits the game from the options menu during the debriefing
+- Add some checks before converting a message to Command
 </details>
 
 <details><summary>AI: </summary> 
@@ -277,8 +269,6 @@ Headlining features will always be on top.
 - Properly save `nav-carry-status` flag
 - Don't treat a bare `<argument>` as an error
 - Prevent adding duplicated variables and display an error to the user when they try.
-- Briefing Editor: Prevent the ship class from being changed if the icon image has a special closeup (like a jump node)
-- Briefing Editor: If the icon image is changed to a special closeup, automatically choose a ship class that doesn't have a custom icon
 - Clean up some parse problems
 - Fix assignment of alt-name when using the hash
 - Guard against off-by-one errors in `replace_one` and `replace_all`
@@ -322,10 +312,8 @@ Headlining features will always be on top.
 
 - Limit client collisions to prevent bugs, such as flinging players with high pings who collided multiple times between packet updates
 - Fix multiple timestamp issues
-  - In-game join
   - Multi messaging and multi pause screen
-  - Make sure maintenance stuff (pings, voice, file xfer, etc.) isn't
-affected by pausing or time compression
+  - Make sure maintenance stuff (pings, voice, file xfer, etc.) isn't affected by pausing or time compression
   - Sync issues caused by options menu and screenshots
 - Prevent an error with long messages in PXO Chat by using proper buffer size
 - Fix some issues with Multiplayer SEXPs
@@ -370,6 +358,7 @@ affected by pausing or time compression
 - Prevent a crash when Escort Priority was parsed for a ship not in the Escort List
 - Fix a bunch of graphics functions to respect GR_STUB, preventing problems in standalone server
 - Clean up line endings in several files (replaced CRLF with LF basically everywhere)
+- Fixed a timestamp issue which helps lay the groundwork to add In-Game Joining to multiplayer
 </details>
 
 ----
