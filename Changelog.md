@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [22.2.0] - 2022-07-XX ([Thread](https://www.hard-light.net/forums/index.php?topic=XX))
+
+```
+Changelog note: 
+As of this version, in an attempt to make the changelog easier to navigate and read,
+each section will have collapsible subsections, ordered alphabetically by topic. 
+Headlining features will always be on top.  
+```
 ### Added
 
 <details><summary> <b>**Big Feature: SEXP Containers**</b> </summary>
