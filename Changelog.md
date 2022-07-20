@@ -155,7 +155,7 @@ Headlining features will always be on top.
 <details><summary>AI: </summary>
 
 - Improve Player Orders to allow for a nearly unlimited number of player orders as opposed to the 32 before.
-- Update `ai_turn_towards_vector` to use a target vel for banking
+- Update `ai_turn_towards_vector` to use a target velocity for banking
 </details>
 
 <details><summary>Audio: </summary>
@@ -218,6 +218,7 @@ Headlining features will always be on top.
 <details><summary>FRED: </summary> 
 
 - Remove `Allow Daisy-Chained Docking` mission flag
+- Remove "Delete Item" from the right-click menu in the Event Editor
 </details>
 
 <details><summary>Technical: </summary>
@@ -246,11 +247,14 @@ Headlining features will always be on top.
 - Prevent a crash when a message is sent from an invalid source
 - Prevent a broken campaign state if the player quits the game from the options menu during the debriefing
 - Add some checks before converting a message to Command
+- Prevent accidentally skipping cutscenes caused by hitting spacebar during a loading screen
+- Fixed an issue where ships would start with the wrong hull values in Red Alert missions
 </details>
 
 <details><summary>AI: </summary> 
 
 - Fix turret swarm weapons by removing a few checks that are no longer valid
+- Fix a few issues with maneuvers
 </details>
 
 <details><summary>Animations: </summary> 
@@ -262,11 +266,13 @@ Headlining features will always be on top.
 
 - Fix cockpit engine sound volume changing unexpectedly
 - Fix a timing bug that would sometimes prevent music from being initialized when re-playing a mission
+- Check all possible extensions for audio files
 </details>
 
 <details><summary>Controls: </summary>
 
 - Flush the mouse state after toggling between `Use_mouse_to_fly` states, preventing situations where a stale mouse state would be used.
+- Fix a conflict between Free Look View controls and directional thrust controls
 </details>
 
 <details><summary>FRED: </summary>
@@ -280,6 +286,10 @@ Headlining features will always be on top.
 - Fix assignment of alt-name when using the hash
 - Guard against off-by-one errors in `replace_one` and `replace_all`
 - Improve error checking of campaign loop branches
+- Improve error reporting for bad SEXP nodes
+- Prevent a crash with paste/add-paste when the clipboard was empty
+- Prevent rounding/conversion issues that caused FRED to think an angle or position was modified when it wasn't.
+- Skip absent ships or wings when running `clear-goals`, instead of stopping the whole operation
 </details>
 
 <details><summary>Graphics: </summary>
@@ -291,6 +301,7 @@ Headlining features will always be on top.
 - Correct positioning and angles for background bitmaps and suns
 - Clean up ship arrival and departure effects
 - Fix clearing a skybox model when it isn't the mission default
+- Fix an assertion with Fireball LODs which would wrongly trigger if the number of LODs was the same as the maximum
 </details>
 
 <details><summary>HUD: </summary>
@@ -313,6 +324,7 @@ Headlining features will always be on top.
 - Delay processing `$Player Weapon Precedence:` until after parsing, avoiding ships starting with the wrong weapons in some situations.
 - Make the `$Player Weapon Precedence:` list actually give precedence
 - Empty `+Orders Accepted List:` entries were causing the ship to accept the default orders, instead of no orders as would be correct.
+- Show a Warning if a turret submodel is not an immediate child of the base object and handle it as a single-part object to prevent a crash. 
 </details>
 
 <details><summary>Multiplayer: </summary>
@@ -333,6 +345,8 @@ Headlining features will always be on top.
 - Stop non-printable keys adding text to multi message buffer
 - Prevent the standalone from crashing if a player tried to switch secondaries in a ship that doesn't have secondaries
 - Fix a standalone crash from disabled uniform buffer manager
+- Prevent a crash related to Observer type players
+- Fix network issues on MacOS
 </details>
 
 <details><summary>Scripting: </summary>
@@ -341,6 +355,7 @@ Headlining features will always be on top.
 - Fix `maybePlayCutscene` arguments
 - Add `isActive` checks for new-style script hooks
 - Sync the two `VIRTVAR`s for Orientation in subsystems and submodel instances, which behaved in different ways.
+- Fixed a few timing and framerate related issues for playing movies via script
 </details>
 
 <details><summary>SEXPs: </summary>
@@ -349,6 +364,8 @@ Headlining features will always be on top.
 - Fix some memory management problems in the `for-*` operators, avoiding a memory leak
 - Fix crash when removing form-on-wing order with `remove-goal`
 - Fix `show-subtitle` SEXP which was missing the `width` argument
+- Reset volumes changed via `adjust-audio-volume` when the mission closes
+- Ensure the Lua interpreter has enough space in its stack, and allow reserving more space if necessary
 </details>
 
 <details><summary>Technical: </summary>
@@ -366,6 +383,10 @@ Headlining features will always be on top.
 - Fix a bunch of graphics functions to respect GR_STUB, preventing problems in standalone server
 - Clean up line endings in several files (replaced CRLF with LF basically everywhere)
 - Fixed a timestamp issue which helps lay the groundwork to add In-Game Joining to multiplayer
+- Prevent pilot and campaign files from having invalid values, by clamping them within the expected ranges when saving and loading. 
+  - Also warn player if such an invalid value was detected, telling them which setting had the wrong value and what it was reset to.
+- Try to avoid invalid types in `obj_team()`
+- Shutdown the SEXP system before the Scripting system, otherwise a crash could happen if the SEXP system held references to Lua.
 </details>
 
 ----
