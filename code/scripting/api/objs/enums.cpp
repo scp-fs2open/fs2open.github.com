@@ -114,6 +114,7 @@ flag_def_list Enumerations[] = {
 	// the following OS_ definitions use bitfield values, not the indexes in enums.h
 	{"OS_NONE", 0, 0},
 	{"OS_MAIN", OS_MAIN, 0},
+	{"OS_ENGINE", OS_ENGINE, 0},
 	{"OS_TURRET_BASE_ROTATION", OS_TURRET_BASE_ROTATION, 0},
 	{"OS_TURRET_GUN_ROTATION", OS_TURRET_GUN_ROTATION, 0},
 	{"OS_SUBSYS_ALIVE", OS_SUBSYS_ALIVE, 0},
