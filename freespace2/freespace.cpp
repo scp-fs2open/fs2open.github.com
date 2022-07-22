@@ -6684,19 +6684,6 @@ void game_shutdown(void)
 		gr_flip();
 	}
 	
-	// Free SEXP resources
-	sexp_shutdown();
-	
-	// Free the scripting resources of the new UI first
-	scpui::shutdown_scripting();
-
-	// Everything after this should be done without scripting so we can free those resources here. By this point, all things that hold Lua References must be destroyed (such as Lua SEXPs)
-	Script_system.Clear();
-
-	// Deinitialize the new UI system, needs to be done after scripting shutdown to make sure the resources were
-	// released properly
-	scpui::shutdown();
-
 	// if the player has left the "player select" screen and quit the game without actually choosing
 	// a player, Player will be nullptr, in which case we shouldn't write the player file out!
 	if (!(Game_mode & GM_STANDALONE_SERVER) && (Player!=nullptr) && !Is_standalone){
@@ -6732,7 +6719,6 @@ void game_shutdown(void)
 
 	scoring_close();
 
-
 	stars_close();			// clean out anything used by stars code
 
 	// the menu close functions will unload the bitmaps if they were displayed during the game
@@ -6741,6 +6727,19 @@ void game_shutdown(void)
 
 	// free left over memory from table parsing
 	player_tips_close();
+
+
+	// more fundamental shutdowns begin here ----------
+
+	sexp_shutdown();				// Free SEXP resources
+
+	scpui::shutdown_scripting();	// Free the scripting resources of the new UI first
+
+	Script_system.Clear();			// Everything after this should be done without scripting so we can free those resources here.
+									// By this point, all things that hold Lua References must be destroyed (such as Lua SEXPs)
+
+	scpui::shutdown();				// Deinitialize the new UI system, needs to be done after scripting shutdown to make sure the resources were released properly
+
 
 	control_config_common_close();
 	io::joystick::shutdown();
@@ -6780,7 +6779,6 @@ void game_shutdown(void)
 	}
 
 	lcl_xstr_close();
-
 }
 
 // game_stop_looped_sounds()
