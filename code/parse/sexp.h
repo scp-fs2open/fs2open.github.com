@@ -1359,6 +1359,7 @@ void set_turret_secondary_ammo(ship_subsys *turret, int requested_bank, int requ
 extern int get_category(int sexp_id);
 extern int category_of_subcategory(int subcategory_id);
 extern int get_subcategory(int sexp_id);
+extern const char *get_category_name(int category_id);
 
 // Goober5000
 extern void sexp_music_close();

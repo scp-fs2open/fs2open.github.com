@@ -181,12 +181,12 @@ int add_dynamic_sexp(std::unique_ptr<DynamicSEXP>&& sexp, int type)
 
 	int free_op_index = get_next_free_operator(sexp->getCategory());
 	if (free_op_index >= 256) {
-		Warning(LOCATION, "There are too many SEXPs in the category %d.  The %s SEXP will not be added.", sexp->getCategory(), sexp->getName().c_str());
+		Warning(LOCATION, "There are too many SEXPs in the %s category.  The SEXP %s will not be added.", get_category_name(sexp->getCategory()), sexp->getName().c_str());
 		return -1;
 	}
 
 	if (Operators.size() >= FIRST_OP) {
-		Warning(LOCATION, "There are too many total SEXPs.  The %s SEXP will not be added.", sexp->getName().c_str());
+		Warning(LOCATION, "There are too many total SEXPs.  The SEXP %s will not be added.", sexp->getName().c_str());
 		return -1;
 	}
 

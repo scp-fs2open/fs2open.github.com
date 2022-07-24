@@ -32319,6 +32319,21 @@ int get_category(int sexp_id)
 }
 
 // Goober5000
+const char *get_category_name(int category_id)
+{
+	if (category_id == OP_CATEGORY_CHANGE2)
+		category_id = OP_CATEGORY_CHANGE;
+
+	for (auto &category : op_menu)
+	{
+		if (category.id == category_id)
+			return category.name.c_str();
+	}
+
+	return "<unknown>";
+}
+
+// Goober5000
 int category_of_subcategory(int subcategory_id)
 {
 	int category = (subcategory_id & OP_CATEGORY_MASK);
