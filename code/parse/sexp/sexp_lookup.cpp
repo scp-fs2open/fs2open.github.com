@@ -125,8 +125,10 @@ void parse_sexp_table(const char* filename) {
 				luaSexp->parseTable();
 
 				int op = add_dynamic_sexp(std::move(instance), SEXP_GOAL_OPERATOR);
-				luaSexp->registerAIMode(op);
-				luaSexp->maybeRegisterPlayerOrder(op);
+				if (op >= 0) {
+					luaSexp->registerAIMode(op);
+					luaSexp->maybeRegisterPlayerOrder(op);
+				}
 			}
 			required_string("#End");
 		}
@@ -177,8 +179,19 @@ int add_dynamic_sexp(std::unique_ptr<DynamicSEXP>&& sexp, int type)
 	new_op.min = sexp->getMinimumArguments();
 	new_op.max = sexp->getMaximumArguments();
 
+	int free_op_index = get_next_free_operator(sexp->getCategory());
+	if (free_op_index >= 256) {
+		Warning(LOCATION, "There are too many SEXPs in the %s category.  The SEXP %s will not be added.", get_category_name(sexp->getCategory()), sexp->getName().c_str());
+		return -1;
+	}
+
+	if (Operators.size() >= FIRST_OP) {
+		Warning(LOCATION, "There are too many total SEXPs.  The SEXP %s will not be added.", sexp->getName().c_str());
+		return -1;
+	}
+
 	// For now, all dynamic SEXPS are only valid in missions
-	new_op.value = get_next_free_operator(sexp->getCategory()) | sexp->getCategory() | OP_NONCAMPAIGN_FLAG;
+	new_op.value = free_op_index | sexp->getCategory() | OP_NONCAMPAIGN_FLAG;
 	new_op.type = type;
 
 	global.operator_const_mapping.insert(std::make_pair(new_op.value, std::move(sexp)));

@@ -10022,11 +10022,11 @@ void guard_object_was_hit(object *guard_objp, object *hitter_objp)
 
 			// This just checks to see that the target was a valid type. If it is not one of these, something really
 			// could be drastically wrong in the engine.
-			Assertion(aip->target_objnum == OBJ_SHIP || aip->target_objnum == OBJ_WEAPON || aip->target_objnum == OBJ_DEBRIS || aip->target_objnum == OBJ_ASTEROID || aip->target_objnum == OBJ_WAYPOINT,
+			Assertion(Objects[aip->target_objnum].type == OBJ_SHIP || Objects[aip->target_objnum].type == OBJ_WEAPON || Objects[aip->target_objnum].type == OBJ_DEBRIS || Objects[aip->target_objnum].type == OBJ_ASTEROID || Objects[aip->target_objnum].type == OBJ_WAYPOINT,
 				"This function just discovered that %s has an invalid target object type of %d. This is bad. Please report!", 
 				Ships[aip->shipnum].ship_name, Objects[aip->target_objnum].type);
 
-			if (!(aip->target_objnum == OBJ_SHIP || aip->target_objnum == OBJ_WEAPON || aip->target_objnum == OBJ_ASTEROID || aip->target_objnum == OBJ_DEBRIS)){
+			if (!(Objects[aip->target_objnum].type == OBJ_SHIP || Objects[aip->target_objnum].type == OBJ_WEAPON || Objects[aip->target_objnum].type == OBJ_ASTEROID || Objects[aip->target_objnum].type == OBJ_DEBRIS)){
 				// it's probably a valid target, but retail would not count those cases, so just return.
 				return;
 			} 
