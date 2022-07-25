@@ -9115,7 +9115,7 @@ static void ship_check_player_distance()
 		if (MULTIPLAYER_MASTER) {
 			// warn all players
 			for (idx=0; idx<MAX_PLAYERS; idx++) {
-				if (MULTI_CONNECTED(Net_players[idx]) && !MULTI_STANDALONE(Net_players[idx]) && !MULTI_OBSERVER(Net_players[idx]) && (Objects[Net_players[idx].m_player->objnum].type != OBJ_GHOST) ) {
+				if (MULTI_CONNECTED(Net_players[idx]) && !MULTI_STANDALONE(Net_players[idx]) && !MULTI_OBSERVER(Net_players[idx]) && (Objects[Net_players[idx].m_player->objnum].type == OBJ_SHIP) ) {
 					// if bad, blow him up
 					ship_check_player_distance_sub(Net_players[idx].m_player, idx);
 				}
