@@ -1504,14 +1504,20 @@ void obj_move_all(float frametime)
 		// pre-move
 		obj_move_all_pre(objp, frametime);
 
-		// store last pos and orient
-		objp->last_pos = cur_pos;
-		objp->last_orient = objp->orient;
+		bool interpolation_object = multi_oo_is_interp_object(objp);
+
+		// store last pos and orient, but only for non-interpolation objects
+		// interpolation objects will need to to work backwards from the last good position
+		// to prevent collision issues
+		if (!interpolation_object){
+			objp->last_pos = cur_pos;
+			objp->last_orient = objp->orient;
+		}
 
 		// Goober5000 - skip objects which don't move, but only until they're destroyed
 		if (!(objp->flags[Object::Object_Flags::Immobile] && objp->hull_strength > 0.0f)) {
 			// if this is an object which should be interpolated in multiplayer, do so
-			if (multi_oo_is_interp_object(objp)) {
+			if (interpolation_object) {
 				objp->interp_info.interpolate(&objp->pos, &objp->orient, &objp->phys_info, objp->flags[Object::Object_Flags::Player_ship]);
 			} else {
 				// physics

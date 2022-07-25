@@ -2962,43 +2962,43 @@ void multi_oo_update_server_rate()
 }
 
 // is this object one which needs to go through the interpolation
-int multi_oo_is_interp_object(object *objp)
+bool multi_oo_is_interp_object(object *objp)
 {	
 	// if not multiplayer, skip it
 	if(!(Game_mode & GM_MULTIPLAYER)){
-		return 0;
+		return false;
 	}
 
 	// if its not a ship, skip it
 	if(objp->type != OBJ_SHIP){
-		return 0;
+		return false;
 	}
 
 	// other bogus cases
 	if((objp->instance < 0) || (objp->instance >= MAX_SHIPS)){
-		return 0;
+		return false;
 	}
 
 	// if I'm a client and this is not me, I need to interp it
 	if(!MULTIPLAYER_MASTER){
 		if(objp != Player_obj){
-			return 1;
+			return true;
 		} else {
-			return 0;
+			return false;
 		}
 	}
 
 	// servers only interpolate other player ships
 	if(!(objp->flags[Object::Object_Flags::Player_ship])){
-		return 0;
+		return false;
 	}
 
 	// here we know its a player ship - is it mine?
 	if(objp == Player_obj){
-		return 0;
+		return false;
 	}
 
 	// interp it
-	return 1;
+	return true;
 }
 
