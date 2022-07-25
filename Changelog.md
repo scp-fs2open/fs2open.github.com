@@ -364,6 +364,7 @@ Headlining features will always be on top.
 - Fix crash when removing form-on-wing order with `remove-goal`
 - Fix `show-subtitle` SEXP which was missing the `width` argument
 - Reset volumes changed via `adjust-audio-volume` when the mission closes
+- Prevent too many dynamic SEXPs from breaking the SEXP system
 </details>
 
 <details><summary>Technical: </summary>
