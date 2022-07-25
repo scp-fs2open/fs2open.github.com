@@ -1518,7 +1518,7 @@ void obj_move_all(float frametime)
 		if (!(objp->flags[Object::Object_Flags::Immobile] && objp->hull_strength > 0.0f)) {
 			// if this is an object which should be interpolated in multiplayer, do so
 			if (interpolation_object) {
-				objp->interp_info.interpolate(&objp->pos, &objp->orient, &objp->phys_info, objp->flags[Object::Object_Flags::Player_ship]);
+				objp->interp_info.interpolate(&objp->pos, &objp->orient, &objp->phys_info, &objp->last_pos, &objp->last_orient, objp->flags[Object::Object_Flags::Player_ship]);
 			} else {
 				// physics
 				obj_move_call_physics(objp, frametime);

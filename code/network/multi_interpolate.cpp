@@ -38,7 +38,7 @@ void interpolation_manager::reassess_packet_index(vec3d* pos, matrix* ori, physi
 }
 
 // the meat and potatoes.  Basically, this figures out if we should interpolate, and then interpolates or sims
-void interpolation_manager::interpolate(vec3d* pos, matrix* ori, physics_info* pip, bool player_ship)
+void interpolation_manager::interpolate(vec3d* pos, matrix* ori, physics_info* pip, vec3d* last_pos, matrix* last_orient, bool player_ship)
 {
 	// make sure its a valid ship and valid mode
 	Assert(Game_mode & GM_MULTIPLAYER);
@@ -47,6 +47,9 @@ void interpolation_manager::interpolate(vec3d* pos, matrix* ori, physics_info* p
 	// To optimize, we should not reassess_packet_index with a negative index.  
 	// The index will be made positive by add_packet, once a second packet has been received.
 	if (_upcoming_packet_index < 0 ) {
+		*last_pos = *pos;
+		*last_orient = *ori;
+
 		physics_sim(pos, ori, pip, flFrametime);
 
 		// duplicate the rest of the physics engine's calls here to make the simulation more exact.
@@ -79,7 +82,14 @@ void interpolation_manager::interpolate(vec3d* pos, matrix* ori, physics_info* p
 
 		sim_time = (sim_time > 0.25f) ? 0.25f : sim_time;
 
+		// at some point, we may want to do something fancier, but for now...
+		*last_orient = *ori;
+
 		physics_sim(pos, ori, pip, sim_time);
+
+		// we can't trust what the last position was on the local instance, so figure out what it should have been
+		// use flFrametime here because we need to know what the last position would have been if it was accurate in the last frame.
+		vm_vec_scale_add(last_pos, pos, &pip->vel, -flFrametime);
 
 		// duplicate the rest of the physics engine's calls here to make the simulation more exact.
 		pip->speed = vm_vec_mag(&pip->vel);
@@ -102,6 +112,9 @@ void interpolation_manager::interpolate(vec3d* pos, matrix* ori, physics_info* p
 	// one by one interpolate the vectors to get the desired results.
 	vec3d temp_vector;
 
+	// at some point, we may want to do something fancier, but for now...
+	*last_orient = *ori;
+
 	// set new position.
 	vm_vec_sub(&temp_vector, &_packets[_upcoming_packet_index].position, &_packets[_prev_packet_index].position);
 	vm_vec_scale_add(pos, &_packets[_prev_packet_index].position, &temp_vector, scale);
@@ -109,6 +122,10 @@ void interpolation_manager::interpolate(vec3d* pos, matrix* ori, physics_info* p
 	// set new velocity
 	vm_vec_sub(&temp_vector, &_packets[_upcoming_packet_index].velocity, &_packets[_prev_packet_index].velocity);
 	vm_vec_scale_add(&pip->vel, &_packets[_prev_packet_index].velocity, &temp_vector, scale);
+
+	// we can't trust what the last position was on the local instance, so figure out what it should have been
+	// use flFrametime here because we need to know what the last position would have been if it was accurate in the last frame.
+	vm_vec_scale_add(last_pos, pos, &pip->vel, -flFrametime);
 
 	// set new desired velocity
 	vm_vec_sub(&temp_vector, &_packets[_upcoming_packet_index].desired_velocity, &_packets[_prev_packet_index].desired_velocity);
