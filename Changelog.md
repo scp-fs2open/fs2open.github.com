@@ -383,7 +383,7 @@ Headlining features will always be on top.
 - Fixed a timestamp issue which helps lay the groundwork to add In-Game Joining to multiplayer
 - Prevent pilot and campaign files from having invalid values, by clamping them within the expected ranges when saving and loading
   - Also warn the player if such an invalid value was detected, telling them which setting had the wrong value and what it was reset to
-  - Try to avoid invalid types in `obj_team()`
+  - Try to avoid assertions by preventing invalid types from being handled by `obj_team()`
 - Shut down the SEXP system before the Scripting system, otherwise a crash could happen if the SEXP system held references to Lua
 </details>
 
