@@ -354,6 +354,7 @@ Headlining features will always be on top.
 - Add `isActive` checks for new-style script hooks
 - Sync the two `VIRTVAR`s for Orientation in subsystems and submodel instances, which behaved in different ways
 - Fixed a few timing and framerate related issues for playing movies via script
+- Ensure the Lua interpreter has enough space in its stack, and allow reserving more space if necessary
 </details>
 
 <details><summary>SEXPs: </summary>
@@ -363,7 +364,6 @@ Headlining features will always be on top.
 - Fix crash when removing form-on-wing order with `remove-goal`
 - Fix `show-subtitle` SEXP which was missing the `width` argument
 - Reset volumes changed via `adjust-audio-volume` when the mission closes
-- Ensure the Lua interpreter has enough space in its stack, and allow reserving more space if necessary
 </details>
 
 <details><summary>Technical: </summary>
