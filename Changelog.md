@@ -3,7 +3,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [22.2.0] - 2022-07-XX ([Thread](https://www.hard-light.net/forums/index.php?topic=XX))
+## [22.2.0] - 2022-07-28
 
 ```
 Changelog note: 
@@ -355,6 +355,7 @@ Headlining features will always be on top.
 - Sync the two `VIRTVAR`s for Orientation in subsystems and submodel instances, which behaved in different ways
 - Fixed a few timing and framerate related issues for playing movies via script
 - Ensure the Lua interpreter has enough space in its stack, and allow reserving more space if necessary
+- Fixed an memory leak in the Lua interpreter caused by string-eval sexps, which never cleaned up the generated code 
 </details>
 
 <details><summary>SEXPs: </summary>
