@@ -337,13 +337,19 @@ bool script_state::EvalStringWithReturn(const char* string, const char* format, 
 				scripting::ade_get_args(LuaState, format, rtn);
 			}
 		} catch (const LuaException&) {
+			lua_pop(LuaState, 1);
+
 			return false;
 		}
 	} catch (const LuaException& e) {
 		LuaError(GetLuaSession(), "%s", e.what());
 
+		lua_pop(LuaState, 1);
+
 		return false;
 	}
+
+	lua_pop(LuaState, 1);
 
 	return true;
 }
