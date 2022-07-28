@@ -461,10 +461,10 @@ void obj_snd_do_frame()
 	}
 
 	closest_dist = 1000000.0f;
-	closest_objp = NULL;
+	closest_objp = nullptr;
 
-	object *observer_obj = NULL;
-	if (Viewer_obj != NULL) {
+	object *observer_obj = nullptr;
+	if (Viewer_obj != nullptr) {
 		observer_obj = Viewer_obj;
 	} else if (Viewer_mode & VM_OTHER_SHIP && Player_ai->target_objnum != -1) {
 		// apparently Viewer_obj is still null when Viewing Other Ship externally
@@ -474,7 +474,7 @@ void obj_snd_do_frame()
 	}
 
 	for ( osp = GET_FIRST(&obj_snd_list); osp !=END_OF_LIST(&obj_snd_list); osp = GET_NEXT(osp) ) {
-		Assert(osp != NULL);
+		Assert(osp != nullptr);
 		objp = &Objects[osp->objnum];
 		if ((Player_obj == objp) && (observer_obj == Player_obj) && !(osp->flags & OS_PLAY_ON_PLAYER)) {
 			// we don't play sounds if the view is from the player
@@ -538,7 +538,7 @@ void obj_snd_do_frame()
 			}
 
 			// check conditions for subsystem sounds
-			if (osp->ss != NULL)
+			if (osp->ss != nullptr)
 			{
 				if (osp->flags & OS_TURRET_BASE_ROTATION)
 				{
@@ -618,7 +618,7 @@ void obj_snd_do_frame()
 						break;
 
 					default:
-						UNREACHABLE("Unhandled object type for persistent sound; get Alan");
+						UNREACHABLE("Unhandled object type %d for persistent sound; get a coder!", objp->type);
 						break;
 				} // end switch
 
@@ -658,7 +658,7 @@ void obj_snd_do_frame()
 		if (!osp->instance.isValid())
 			continue;
 
-		sp = NULL;
+		sp = nullptr;
 		if ( objp->type == OBJ_SHIP )
 			sp = &Ships[objp->instance];
 
