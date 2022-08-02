@@ -1555,6 +1555,9 @@ int CFred_mission_save::save_cutscenes()
 					case MOVIE_PRE_DEBRIEF:
 						strcpy_s(type, "$Debriefing Cutscene:");
 						break;
+					case MOVIE_POST_DEBRIEF:
+						strcpy_s(type, "$Post-debriefing Cutscene:");
+						break;
 					case MOVIE_END_CAMPAIGN:
 						strcpy_s(type, "$Campaign End Cutscene:");
 						break;
