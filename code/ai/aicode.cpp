@@ -15587,10 +15587,11 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hit_normal)
 		Assertion((hitter_objnum >= 0) && (hitter_objnum < MAX_OBJECTS), "hitter_objnum in this function is an invalid index of %d.  This can cause random behavior, and is a coder mistake.  Please report!", hitter_objnum);
 		objp_hitter = &Objects[hitter_objnum];
 
-		Assertion((objp_hitter->type == OBJ_SHIP) || (objp_hitter->type == OBJ_WEAPON) || (objp_hitter->type == OBJ_ASTEROID) || (objp_hitter->type == OBJ_BEAM) || (objp_hitter->type == OBJ_DEBRIS),
+		// These are the types that can legally do damage.  OBJ_GHOST is a dead player. The player's weapons can do damage after they are dead.  Having that get here is a rare, but acceptable result, but we'll ignore it right after this.
+		Assertion((objp_hitter->type == OBJ_SHIP) || (objp_hitter->type == OBJ_WEAPON) || (objp_hitter->type == OBJ_ASTEROID) || (objp_hitter->type == OBJ_BEAM) || (objp_hitter->type == OBJ_DEBRIS) || (objp_hitter->type == OBJ_GHOST),
 		"The ai code is passing an invalid object type of %d to a function when trying to decide how to respond to something hitting it.  This is a bug in the code, please report!", objp_hitter->type);
 
-		// lets not check hits by ghosts any further either
+		// Only work through hits by objects that are still in the game
 		if(objp_hitter->type != OBJ_SHIP && objp_hitter->type != OBJ_WEAPON && objp_hitter->type != OBJ_ASTEROID && objp_hitter->type != OBJ_BEAM && objp_hitter->type != OBJ_DEBRIS)
 			return;
 		
