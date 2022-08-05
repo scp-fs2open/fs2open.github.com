@@ -13,7 +13,7 @@ Headlining features will always be on top.
 ```
 ### Added
 
-<details><summary> <b>**Big Feature: SEXP Containers**</b> </summary>
+<details><summary> <b>Big Feature: SEXP Containers</b> </summary>
 
 > As opposed to a SEXP variable, which stores only one value, a SEXP container stores a collection of values.  
 > Consequently, containers allow for handling data in much more sophisticated ways than variables. 
