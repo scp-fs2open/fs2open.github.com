@@ -19,7 +19,7 @@ Headlining features will always be on top.
 > Consequently, containers allow for handling data in much more sophisticated ways than variables. 
 > Containers come in two types:
 > * List container - an ordered sequence of values, sort of a cross between Python lists and deques
-> * Map container - pairs of keys associated with data, like Lua tables or Python dictionaries
+> * Map container - pairs of keys associated with data, like Lua tables or Python dictionaries  
 > Further details in the [SEXP Containers announcement thread](https://www.hard-light.net/forums/index.php?topic=98209.0)
 </details>
 
