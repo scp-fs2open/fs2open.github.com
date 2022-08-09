@@ -2526,7 +2526,7 @@ void ai_turret_execute_behavior(ship *shipp, ship_subsys *ss)
 	bool in_fov = turret_fov_test(ss, &gvec, &v2e);
 	bool something_was_ok_to_fire = false;
 
-	if (in_fov) {
+	if (in_fov && num_valid) {
 
 		// Do salvo thing separately - to prevent messing up things
 		int number_of_firings;
