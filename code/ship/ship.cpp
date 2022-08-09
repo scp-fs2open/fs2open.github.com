@@ -14809,7 +14809,7 @@ void ship_assign_sound(ship *sp)
 			engine_pos = vmd_zero_vector;
 		}
 
-		obj_snd_assign(sp->objnum, sip->engine_snd, &engine_pos, OS_MAIN);
+		obj_snd_assign(sp->objnum, sip->engine_snd, &engine_pos, OS_MAIN | OS_ENGINE);
 	}
 }
 
