@@ -297,6 +297,8 @@ BEGIN
             MENUITEM "x10\t6",                      32901
             MENUITEM "x50\t7",                      32917
             MENUITEM "x100\t8",                     32918
+            MENUITEM "x500",                        32920
+            MENUITEM "x1000",                       32922
         END
         POPUP "Rotation"
         BEGIN
