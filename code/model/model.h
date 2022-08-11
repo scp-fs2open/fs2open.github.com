@@ -44,13 +44,13 @@ extern int model_render_flags_size;
 #define MOVEMENT_TYPE_TRIGGERED		3
 #define MOVEMENT_TYPE_INTRINSIC		4	// intrinsic (non-subsystem-based)
 
-
 // DA 11/13/98 Reordered to account for difference between max and game
 #define MOVEMENT_AXIS_NONE		-1
 #define MOVEMENT_AXIS_X			0
 #define MOVEMENT_AXIS_Y			2
 #define MOVEMENT_AXIS_Z			1
 #define MOVEMENT_AXIS_OTHER		3
+
 
 // defines for special objects like gun and missile points, docking point, etc
 // Hoffoss: Please make sure that subsystem NONE is always index 0, and UNKNOWN is
@@ -88,7 +88,7 @@ struct submodel_instance
 	float	current_turn_rate = 0.0f;
 	float	desired_turn_rate = 0.0f;
 	float	turn_accel = 0.0f;
-	int		turn_step_zero_timestamp = timestamp();		// timestamp determines when next step is to begin (for stepped rotation)
+	TIMESTAMP stepped_rotation_started;
 
 	bool	blown_off = false;						// If set, this subobject is blown off
 	bool	collision_checked = false;
@@ -129,14 +129,14 @@ struct polymodel_instance
 #define MAX_MODEL_SUBSYSTEMS		200				// used in ships.cpp (only place?) for local stack variable DTP; bumped to 200
 													// when reading in ships.tbl
 
-// definition of stepped rotation struct
 typedef struct stepped_rotation {
 	int num_steps;				// number of steps in complete revolution
 	float fraction;			// fraction of time in step spent in accel
 	float t_transit;			// time spent moving from one step to next
 	float t_pause;				// time at rest between steps
-	float max_turn_rate;		// max turn rate going betweens steps
+	float max_turn_rate;		// max turn rate going between steps
 	float max_turn_accel;	// max accel going between steps
+	bool backwards;				// if rate is negative
 } stepped_rotation_t;
 
 struct queued_animation;
@@ -182,9 +182,9 @@ public:
 	// engine wash info
 	struct engine_wash_info		*engine_wash_pointer;					// index into Engine_wash_info
 
-	// rotation specific info
+	// movement specific info
 	int			weapon_rotation_pbank;				// weapon-controlled rotation - Goober5000
-	stepped_rotation_t	*stepped_rotation;			// turn rotation struct
+	std::shared_ptr<stepped_rotation_t>		stepped_rotation;		// turn rotation struct
 
 	// AWACS specific information
 	float		awacs_intensity;						// awacs intensity of this subsystem
@@ -347,8 +347,8 @@ public:
 	char	name[MAX_NAME_LEN];						// name of the subsystem.  Probably displayed on HUD
 
 	int		rotation_type = MOVEMENT_TYPE_NONE;
-	vec3d	rotation_axis = vmd_zero_vector;		// which axis this subobject rotates on.
-	int		rotation_axis_id = MOVEMENT_AXIS_NONE;	// for optimization
+	vec3d	rotation_axis = vmd_zero_vector;			// which axis this subobject rotates on.
+	int		rotation_axis_id = MOVEMENT_AXIS_NONE;		// for optimization
 
 	float	default_turn_rate = 0.0f;
 	float	default_turn_accel = 0.0f;

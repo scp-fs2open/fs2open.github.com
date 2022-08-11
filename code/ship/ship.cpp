@@ -18274,7 +18274,7 @@ void ship_do_submodel_rotation(ship *shipp, model_subsystem *psub, ship_subsys *
 	if (psub->flags[Model::Subsystem_Flags::Triggered]) {
 		//Triggered rotation is handled by animation stepping.
 		//The flag doesn't do anything at all anymore, except prevent other rotation types
-		return;	
+		return;
 	}
 
 	// check for rotating artillery

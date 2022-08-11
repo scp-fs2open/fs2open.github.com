@@ -1640,7 +1640,7 @@ static void asteroid_test_collide(object *pasteroid_obj, object *pship_obj, mc_i
 	asteroid_ray_dist = vm_vec_mag_quick(&pasteroid_obj->phys_info.desired_vel) * ASTEROID_MIN_COLLIDE_TIME;
 	asteroid_fvec = pasteroid_obj->phys_info.desired_vel;
 
-	if(IS_VEC_NULL_SQ_SAFE(&asteroid_fvec)){
+	if(IS_VEC_NULL(&asteroid_fvec)){
 		terminus = pasteroid_obj->pos;
 	} else {
 		vm_vec_normalize(&asteroid_fvec);
