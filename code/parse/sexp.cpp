@@ -35160,6 +35160,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"ai-attackable-if-no-collide - AI will still attack this ship even if collisions are disabled\r\n"
 		"fail-sound-locked-primary - This ship will play a weapon failure sound if trying to shoot primaries when they're locked\r\n"
 		"fail-sound-locked-secondary - This ship will play a weapon failure sound if trying to shoot secondaries when they're locked\r\n"
+		"aspect-immune - This ship cannot be locked onto by aspect seeking weapons\r\n"
 	},
 
 	{ OP_CANCEL_FUTURE_WAVES, "cancel-future-waves\r\n"
