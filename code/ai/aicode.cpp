@@ -216,6 +216,8 @@ ai_flag_name Ai_flag_names[] = {
 	{AI::AI_Flags::Free_afterburner_use,	"free-afterburner-use",	},
 };
 
+extern const int Num_ai_flag_names = sizeof(Ai_flag_names) / sizeof(ai_flag_name);
+
 const char *Skill_level_names(int level, int translate)
 {
 	const char *str = NULL;
