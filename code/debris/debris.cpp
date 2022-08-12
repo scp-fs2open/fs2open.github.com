@@ -668,9 +668,11 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 	// ensure vel is valid
 	Assert( !vm_is_vec_nan(&obj->phys_info.vel) );
 
-	OnDebrisCreatedHook->run(scripting::hook_param_list(
-		scripting::hook_param("Debris", 'o', obj),
-		scripting::hook_param("Source", 'o', source_obj)));
+	if (OnDebrisCreatedHook->isActive()) {
+		OnDebrisCreatedHook->run(scripting::hook_param_list(
+			scripting::hook_param("Debris", 'o', obj),
+			scripting::hook_param("Source", 'o', source_obj)));
+	}
 
 	if (db->is_hull) {
 		MONITOR_INC(NumHullDebris,1);

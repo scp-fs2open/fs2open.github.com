@@ -78,6 +78,7 @@ int Object_next_signature = 1;	//0 is bogus, start at 1
 int Object_inited = 0;
 int Show_waypoints = 0;
 
+
 //WMC - Made these prettier
 const char *Object_type_names[MAX_OBJECT_TYPES] = {
 //XSTR:OFF
@@ -530,6 +531,11 @@ int obj_create(ubyte type,int parent_obj,int instance, matrix * orient,
 	obj->n_quadrants = DEFAULT_SHIELD_SECTIONS; // Might be changed by the ship creation code
 	obj->shield_quadrant.resize(obj->n_quadrants);
 
+	// only ships are interpolated
+	if (obj->type == OBJ_SHIP){
+		obj->interp_info.reset(); // Multiplayer Interpolation info
+	}
+
 	return objnum;
 }
 
@@ -588,6 +594,7 @@ void obj_delete(int objnum)
 
 			physics_init(&objp->phys_info);
 			obj_snd_delete_type(OBJ_INDEX(objp));
+
 			return;
 		} else
 			ship_delete( objp );
@@ -635,6 +642,9 @@ void obj_delete(int objnum)
 	default:
 		Error( LOCATION, "Unhandled object type %d in obj_delete_all_that_should_be_dead", objp->type );
 	}
+
+	// clean up interpolation info
+	objp->interp_info.clean_up();
 
 	// delete any dock information we still have
 	dock_free_dock_list(objp);
@@ -1502,7 +1512,7 @@ void obj_move_all(float frametime)
 		if (!(objp->flags[Object::Object_Flags::Immobile] && objp->hull_strength > 0.0f)) {
 			// if this is an object which should be interpolated in multiplayer, do so
 			if (multi_oo_is_interp_object(objp)) {
-				multi_oo_interp(objp);
+				objp->interp_info.interpolate(&objp->pos, &objp->orient, &objp->phys_info, objp->flags[Object::Object_Flags::Player_ship]);
 			} else {
 				// physics
 				obj_move_call_physics(objp, frametime);

@@ -38,11 +38,11 @@ import nebula
 import forum
 
 # Compile regexes for extracting version components
-MAJOR_VERSION_PATTERN = re.compile("set_if_not_defined\(FSO_VERSION_MAJOR (\d+)\)")
-MINOR_VERSION_PATTERN = re.compile("set_if_not_defined\(FSO_VERSION_MINOR (\d+)\)")
-BUILD_VERSION_PATTERN = re.compile("set_if_not_defined\(FSO_VERSION_BUILD (\d+)\)")
-REVISION_VERSION_PATTERN = re.compile("set_if_not_defined\(FSO_VERSION_REVISION (\d+)\)")
-REVISION_STR_VERSION_PATTERN = re.compile("set_if_not_defined\(FSO_VERSION_REVISION_STR (\d+)\)")
+MAJOR_VERSION_PATTERN = re.compile("(?:set_if_not_defined|set)\(FSO_VERSION_MAJOR (\d+)\)")
+MINOR_VERSION_PATTERN = re.compile("(?:set_if_not_defined|set)\(FSO_VERSION_MINOR (\d+)\)")
+BUILD_VERSION_PATTERN = re.compile("(?:set_if_not_defined|set)\(FSO_VERSION_BUILD (\d+)\)")
+REVISION_VERSION_PATTERN = re.compile("(?:set_if_not_defined|set)\(FSO_VERSION_REVISION (\d+)\)")
+REVISION_STR_VERSION_PATTERN = re.compile("(?:set_if_not_defined|set)\(FSO_VERSION_REVISION_STR (\w+)\)")
 
 LOG_FORMAT = """
 ------------------------------------------------------------------------%n
@@ -62,6 +62,17 @@ def _match_version_number(text, regex):
 	"""
 	match = regex.search(text)
 	return int(match.group(1))
+
+def _match_version_str(text, regex):
+	"""! Extracts the version component represented by `regex` from `text`
+	
+	@param [in] `text`  Filename with version string 'MAJOR.MINOR.BUILD'
+	@param [in] `regex` Regex pattern of component to look for
+
+	@return The version component as integer
+	"""
+	match = regex.search(text)
+	return match.group(1)
 	
 
 def get_source_version(date_version: datetime, tag_name: str) -> semantic_version.Version:
@@ -84,7 +95,7 @@ def get_source_version(date_version: datetime, tag_name: str) -> semantic_versio
 		minor = _match_version_number(filetext, MINOR_VERSION_PATTERN)
 		build = _match_version_number(filetext, BUILD_VERSION_PATTERN)
 		# revision = _match_version_number(filetext, REVISION_VERSION_PATTERN)
-		revision_str = _match_version_number(filetext, REVISION_STR_VERSION_PATTERN)
+		revision_str = _match_version_str(filetext, REVISION_STR_VERSION_PATTERN)
 
 	print("Parsing version_override.cmake...")
 	if "rc" in tag_name.lower():
@@ -179,7 +190,7 @@ def main():
 		sys.exit(1)
 
 	# bail if tag_name does not exist in the repo
-	if not check_output(("git show-ref --tags refs/tags/%s" % tag_name), text=True):
+	if not check_output(("git", "show-ref", "--tags", "refs/tags/%s" % tag_name), text=True):
 		print("ERROR: Couldn't find tag %s in repo (git show-ref)!" % tag_name)
 		sys.exit(1)
 

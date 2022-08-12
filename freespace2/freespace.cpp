@@ -59,6 +59,7 @@
 #include "gamesequence/gamesequence.h"
 #include "gamesnd/eventmusic.h"
 #include "gamesnd/gamesnd.h"
+#include "graphics/debug_sphere.h"
 #include "graphics/font.h"
 #include "graphics/light.h"
 #include "graphics/matrix.h"
@@ -162,6 +163,7 @@
 #include "render/batching.h"
 #include "scpui/rocket_ui.h"
 #include "scripting/api/objs/gamestate.h"
+#include "scripting/global_hooks.h"
 #include "scripting/hook_api.h"
 #include "scripting/scripting.h"
 #include "ship/afterburner.h"
@@ -846,11 +848,14 @@ static void game_flash_diminish(float frametime)
 
 void game_level_close()
 {
-	OnMissionAboutToEndHook->run();
+	if (OnMissionAboutToEndHook->isActive())
+	{
+		OnMissionAboutToEndHook->run();
+	}
 
 	//WMC - this is actually pretty damn dangerous, but I don't want a modder
 	//to accidentally use an override here without realizing it.
-	if(!OnMissionEndHook->isOverride())
+	if (!OnMissionEndHook->isActive() || !OnMissionEndHook->isOverride())
 	{
 		// save player-persistent variables and containers
 		mission_campaign_save_on_close_variables();	// Goober5000
@@ -897,6 +902,7 @@ void game_level_close()
 		lock_time_compression(false);
 
 		audiostream_unpause_all();
+		snd_aav_init();
 
 		gr_set_ambient_light(120, 120, 120);
 
@@ -929,7 +935,10 @@ void game_level_close()
 		Error(LOCATION, "Scripting Mission End override is not fully supported yet.");
 	}
 
-	OnMissionEndHook->run();
+	if (OnMissionEndHook->isActive())
+	{
+		OnMissionEndHook->run();
+	}
 }
 
 uint load_gl_init;
@@ -1184,7 +1193,7 @@ void game_loading_callback(int count)
 
 	Script_system.RemHookVar("Progress");
 
-	os_ignore_events();
+	os_defer_events_on_load_screen();
 
 	if (do_flip)
 		gr_flip();
@@ -1985,7 +1994,9 @@ void game_init()
 	scpui::initialize();
 
 	Script_system.RunInitFunctions();
-	Script_system.RunCondition(CHA_GAMEINIT);
+	if (scripting::hooks::OnGameInit->isActive()) {
+		scripting::hooks::OnGameInit->run();
+	}
 
 	game_title_screen_close();
 
@@ -3419,6 +3430,7 @@ void game_render_frame( camid cid )
 
 
 #ifndef NDEBUG
+	debug_sphere::render();
 	ai_debug_render_stuff();
 	extern void snd_spew_debug_info();
 	snd_spew_debug_info();
@@ -3465,9 +3477,6 @@ void game_render_frame( camid cid )
 	extern int OO_update_index;	
 	multi_rate_display(OO_update_index, gr_screen.center_offset_x + 375, gr_screen.center_offset_y);
 
-	// test
-	extern void oo_display();
-	oo_display();			
 #endif
 	
 	g3_end_frame();
@@ -5074,16 +5083,20 @@ void game_leave_state( int old_state, int new_state )
 			break;
 	}
 
-	auto script_param_list = scripting::hook_param_list(
-		scripting::hook_param("OldState", 'o', scripting::api::l_GameState.Set(scripting::api::gamestate_h(old_state))),
-		scripting::hook_param("NewState", 'o', scripting::api::l_GameState.Set(scripting::api::gamestate_h(new_state))));
-
-	OnStateAboutToEndHook->run(script_param_list);
-
-	if (OnStateEndHook->isOverride(script_param_list))
+	if (OnStateAboutToEndHook->isActive() || OnStateEndHook->isActive())
 	{
-		OnStateEndHook->run(script_param_list);
-		return;
+		auto script_param_list = scripting::hook_param_list(
+			scripting::hook_param("OldState", 'o', scripting::api::l_GameState.Set(scripting::api::gamestate_h(old_state))),
+			scripting::hook_param("NewState", 'o', scripting::api::l_GameState.Set(scripting::api::gamestate_h(new_state))));
+
+		if (OnStateAboutToEndHook->isActive())
+			OnStateAboutToEndHook->run(script_param_list);
+
+		if (OnStateEndHook->isActive() && OnStateEndHook->isOverride(script_param_list))
+		{
+			OnStateEndHook->run(script_param_list);
+			return;
+		}
 	}
 
 	//WMC - Clear scripting bitmaps
@@ -5260,7 +5273,6 @@ void game_leave_state( int old_state, int new_state )
 				if ( (Game_mode & GM_MULTIPLAYER) && (new_state == GS_STATE_MAIN_MENU) ){
 					multi_quit_game(PROMPT_NONE);
 				}
-				snd_aav_init();
 
 				freespace_stop_mission();
 
@@ -5505,7 +5517,14 @@ void game_leave_state( int old_state, int new_state )
 	}
 
 	//WMC - Now run scripting stuff
-	OnStateEndHook->run(script_param_list);
+	if (OnStateEndHook->isActive())
+	{
+		auto script_param_list = scripting::hook_param_list(
+			scripting::hook_param("OldState", 'o', scripting::api::l_GameState.Set(scripting::api::gamestate_h(old_state))),
+			scripting::hook_param("NewState", 'o', scripting::api::l_GameState.Set(scripting::api::gamestate_h(new_state))));
+
+		OnStateEndHook->run(script_param_list);
+	}
 }
 
 // variable used for automatic netgame starting/joining
@@ -6110,7 +6129,7 @@ void game_do_state(int state)
 		return;
 	}
 
-	if (OnFrameHook->isOverride()) {
+	if (OnFrameHook->isActive() && OnFrameHook->isOverride()) {
 		game_set_frametime(state);
 
 		game_check_key();
@@ -6664,17 +6683,7 @@ void game_shutdown(void)
 		gr_clear();
 		gr_flip();
 	}
-
-	// Free the scripting resources of the new UI first
-	scpui::shutdown_scripting();
-
-	// Everything after this should be done without scripting so we can free those resources here
-	Script_system.Clear();
-
-	// Deinitialize the new UI system, needs to be done after scripting shutdown to make sure the resources were
-	// released properly
-	scpui::shutdown();
-
+	
 	// if the player has left the "player select" screen and quit the game without actually choosing
 	// a player, Player will be nullptr, in which case we shouldn't write the player file out!
 	if (!(Game_mode & GM_STANDALONE_SERVER) && (Player!=nullptr) && !Is_standalone){
@@ -6710,9 +6719,6 @@ void game_shutdown(void)
 
 	scoring_close();
 
-	// Free SEXP resources
-	sexp_shutdown();
-
 	stars_close();			// clean out anything used by stars code
 
 	// the menu close functions will unload the bitmaps if they were displayed during the game
@@ -6721,6 +6727,19 @@ void game_shutdown(void)
 
 	// free left over memory from table parsing
 	player_tips_close();
+
+
+	// more fundamental shutdowns begin here ----------
+
+	sexp_shutdown();				// Free SEXP resources
+
+	scpui::shutdown_scripting();	// Free the scripting resources of the new UI first
+
+	Script_system.Clear();			// Everything after this should be done without scripting so we can free those resources here.
+									// By this point, all things that hold Lua References must be destroyed (such as Lua SEXPs)
+
+	scpui::shutdown();				// Deinitialize the new UI system, needs to be done after scripting shutdown to make sure the resources were released properly
+
 
 	control_config_common_close();
 	io::joystick::shutdown();
@@ -6760,7 +6779,6 @@ void game_shutdown(void)
 	}
 
 	lcl_xstr_close();
-
 }
 
 // game_stop_looped_sounds()

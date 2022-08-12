@@ -68,9 +68,6 @@ extern void mouse_set_pos(int xpos,int ypos);
  */
 int mouse_down_count(const CC_bind &bind, int reset_count = 1);
 
-/**
- * Checks how many times the given mouse button went down since last check
- */
 int mouse_down_count(int n, int reset_count = 1);
 
 /**

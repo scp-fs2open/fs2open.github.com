@@ -1567,7 +1567,9 @@ void campaign_reset(const SCP_string& campaign_file)
 			Pilot.save_savefile();
 		}
 
-		OnCampaignBeginHook->run(scripting::hook_param_list(scripting::hook_param("Campaign", 's', Campaign.filename)));
+		if (OnCampaignBeginHook->isActive()) {
+			OnCampaignBeginHook->run(scripting::hook_param_list(scripting::hook_param("Campaign", 's', Campaign.filename)));
+		}
 	}
 
 	mission_campaign_next_mission();
@@ -1686,7 +1688,9 @@ void campaign_select_campaign(const SCP_string& campaign_file)
 				Pilot.save_savefile();
 			}
 
-			OnCampaignBeginHook->run(scripting::hook_param_list(scripting::hook_param("Campaign", 's', Campaign.filename)));
+			if (OnCampaignBeginHook->isActive()) {
+				OnCampaignBeginHook->run(scripting::hook_param_list(scripting::hook_param("Campaign", 's', Campaign.filename)));
+			}
 		}
 
 		// that's all we need to do for now; the campaign loading status will be checked again when we try to load the

@@ -327,7 +327,9 @@ ADE_FUNC(loadCampaign, l_Player, "string campaign", "Loads the specified campaig
 			Pilot.save_savefile();
 		}
 
-		OnCampaignBeginHook->run(scripting::hook_param_list(scripting::hook_param("Campaign", 's', Campaign.filename)));
+		if (OnCampaignBeginHook->isActive()) {
+			OnCampaignBeginHook->run(scripting::hook_param_list(scripting::hook_param("Campaign", 's', Campaign.filename)));
+		}
 	}
 
 	// that's all we need to do for now; the campaign loading status will be checked again when we try to load the

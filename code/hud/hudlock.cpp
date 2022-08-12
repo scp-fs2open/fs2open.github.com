@@ -194,7 +194,8 @@ void HudGaugeLock::renderOld(float frametime)
 		return;
 	}
 
-	if (Player->target_is_dying) {
+	// 1 is the only value for which your target is actually dying
+	if (Player->target_is_dying == 1) {
 		return;
 	}
 

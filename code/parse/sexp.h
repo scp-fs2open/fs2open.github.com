@@ -1117,6 +1117,7 @@ const char *CTEXT(int n);
 #define SEXP_CHECK_WRONG_CONTAINER_TYPE			-170
 #define SEXP_CHECK_INVALID_ANIMATION			-171
 #define SEXP_CHECK_WRONG_CONTAINER_DATA_TYPE	-172
+#define SEXP_CHECK_INVALID_SPECIAL_ARG_TYPE		-173
 
 
 #define TRAINING_CONTEXT_SPEED		(1<<0)
@@ -1296,6 +1297,7 @@ extern int query_operator_argument_type(int op, int argnum);
 extern void update_sexp_references(const char *old_name, const char *new_name);
 extern void update_sexp_references(const char *old_name, const char *new_name, int format);
 extern int query_referenced_in_sexp(int mode, const char *name, int *node);
+extern void stuff_sexp_text_string(SCP_string &dest, int node, int mode);
 extern int build_sexp_string(SCP_string &accumulator, int cur_node, int level, int mode);
 extern int sexp_query_type_match(int opf, int opr);
 extern bool sexp_recoverable_error(int num);
@@ -1357,6 +1359,7 @@ void set_turret_secondary_ammo(ship_subsys *turret, int requested_bank, int requ
 extern int get_category(int sexp_id);
 extern int category_of_subcategory(int subcategory_id);
 extern int get_subcategory(int sexp_id);
+extern const char *get_category_name(int category_id);
 
 // Goober5000
 extern void sexp_music_close();

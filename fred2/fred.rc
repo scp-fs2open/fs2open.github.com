@@ -445,7 +445,7 @@ IDR_MENU_EDIT_SEXP_TREE MENU
 BEGIN
     POPUP "Edit sexp tree"
     BEGIN
-        MENUITEM "&Delete Item\tDelete",        ID_DELETE
+        MENUITEM "&Delete Item",                ID_DELETE
         MENUITEM "&Edit Data\tSpace Bar",       ID_EDIT_TEXT
         MENUITEM "Expand All",                  ID_EXPAND_ALL
         MENUITEM SEPARATOR

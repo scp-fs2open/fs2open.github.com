@@ -642,3 +642,8 @@ fix timestamp_get_mission_time()
 
 	return static_cast<fix>(time / MICROSECONDS_PER_SECOND);
 }
+
+uint64_t timestamp_get_mission_time_in_microseconds()
+{
+	return timestamp_get_microseconds() - Timestamp_microseconds_at_mission_start;
+}

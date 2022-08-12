@@ -67,6 +67,7 @@
 #include "mod_table/mod_table.h"
 #include "libs/ffmpeg/FFmpeg.h"
 #include "scripting/scripting.h"
+#include "scripting/global_hooks.h"
 #include "utils/Random.h"
 
 #include <direct.h>
@@ -469,7 +470,9 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	Fred_main_wnd -> init_tools();
 
 	Script_system.RunInitFunctions();
-	Script_system.RunCondition(CHA_GAMEINIT);
+	if (scripting::hooks::OnGameInit->isActive()) {
+		scripting::hooks::OnGameInit->run();
+	}
 
 	return true;
 }
@@ -584,11 +587,7 @@ int create_ship(matrix *orient, vec3d *pos, int ship_type)
 			if (!(sip->is_small_ship()))
 			{
 				shipp->orders_accepted = ship_get_default_orders_accepted( sip );
-
-				for(size_t i = 0; i < Player_orders.size(); i++) {
-					if (Player_orders[i].id & DEPART_ITEM)
-						shipp->orders_accepted.erase(i);
-				}
+				shipp->orders_accepted.erase(DEPART_ITEM);
 			}
 		}
 		else

@@ -67,7 +67,7 @@
 #include "object/waypoint.h"
 #include "parse/parselo.h"
 #include "scripting/hook_api.h"
-#include "scripting/scripting.h"
+#include "scripting/global_hooks.h"
 #include "particle/particle.h"
 #include "playerman/player.h"
 #include "radar/radar.h"
@@ -196,7 +196,7 @@ int	Player_ship_class;	// needs to be player specific, move to player structure
 #define		SHIP_OBJ_USED	(1<<0)				// flag used in ship_obj struct
 #define		MAX_SHIP_OBJS	MAX_SHIPS			// max number of ships tracked in ship list
 ship_obj		Ship_objs[MAX_SHIP_OBJS];		// array used to store ship object indexes
-ship_obj		Ship_obj_list;							// head of linked list of ship_obj structs
+ship_obj		Ship_obj_list;							// head of linked list of ship_obj structs, Standalone ship cannot be in this list or it will cause bugs.
 
 SCP_vector<ship_info>	Ship_info;
 reinforcements	Reinforcements[MAX_REINFORCEMENTS];
@@ -4617,7 +4617,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 					}
 					for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
 						//find the index number of the current ship info type
-						if (it->name == sip->name) {
+						if (&(*it) == sip) {
 							Ai_tp_list[i].ship_class.push_back((int)std::distance(Ship_info.cbegin(), it));
 							break;
 						}
@@ -5829,6 +5829,10 @@ static int ship_allocate_subsystems(int num_so, bool page_in = false)
 	if (page_in)
 		Num_ship_subsystems = num_subsystems_save;
 
+	// because the Ship_subsystems vector changed, it might have moved in memory, so invalidate all the subsystem caches
+	for (auto so : list_range(&Ship_obj_list))
+		Ships[Objects[so->objnum].instance].flags.remove(Ship::Ship_Flags::Subsystem_cache_valid);
+
 	mprintf(("a total of %i is now available (%i in-use).\n", Num_ship_subsystems_allocated, Num_ship_subsystems));
 	return 1;
 }
@@ -6230,6 +6234,7 @@ void ship::clear()
 	wingnum = -1;
 	orders_accepted.clear();
 
+	subsys_list_indexer.reset();
 	subsys_list.clear();
 	// since these aren't cleared by clear()
 	subsys_list.next = NULL;
@@ -6877,6 +6882,7 @@ void ship_subsys::clear()
 	system_info = NULL;
 
 	parent_objnum = -1;
+	parent_subsys_index = -1;
 
 	sub_name[0] = 0;
 	current_hits = max_hits = 0.0f;
@@ -6967,6 +6973,8 @@ static int subsys_set(int objnum, int ignore_subsys_info)
 	// set up the subsystems for this ship.  walk through list of subsystems in the ship-info array.
 	// for each subsystem, get a new ship_subsys instance and set up the pointers and other values
 	list_init ( &shipp->subsys_list );								// initialize the ship's list of subsystems
+	shipp->subsys_list_indexer.reset();
+	shipp->flags.remove(Ship::Ship_Flags::Subsystem_cache_valid);
 
 	// make sure to have allocated the number of subsystems we require
 	if (!ship_allocate_subsystems( sinfo->n_subsystems )) {
@@ -7412,10 +7420,20 @@ void ship_render_show_ship_cockpit(object *objp)
 	model_render_params render_info;
 
 	render_info.set_object_number(OBJ_INDEX(objp));
-	render_info.set_replacement_textures(Ships[objp->instance].ship_replacement_textures);
+
+	// update any replacement and/or team color textures (wookieejedi), then render
+	ship* shipp = &Ships[objp->instance];
+	ship_info* sip = &Ship_info[Ships[objp->instance].ship_info_index];
+
+	render_info.set_replacement_textures(shipp->ship_replacement_textures);
+
+	if (sip->uses_team_colors) {
+		render_info.set_team_color(shipp->team_name, shipp->secondary_team_name, 0, 0);
+	}
+
 	render_info.set_detail_level_lock(0);
 
-	model_render_immediate(&render_info, Ship_info[Ships[objp->instance].ship_info_index].model_num, &objp->orient,
+	model_render_immediate(&render_info, sip->model_num, &objp->orient,
 	                       &objp->pos); // Render ship model with fixed detail level 0 so its not switching LOD when
 	                                    // moving away from origin
 	Glowpoint_override = false;
@@ -7662,6 +7680,9 @@ static void ship_subsystems_delete(ship *shipp)
 			Num_ship_subsystems--;								// subtract from our in-use total
 			systemp = temp;												// use the temp variable to move right along
 		}
+
+		shipp->subsys_list_indexer.reset();
+		shipp->flags.remove(Ship::Ship_Flags::Subsystem_cache_valid);
 	}
 }
 
@@ -7854,10 +7875,12 @@ void ship_destroy_instantly(object *ship_objp, bool with_debris)
 	Assert(ship_objp->type == OBJ_SHIP);
 	Assert(!(ship_objp == Player_obj));
 
-	// add scripting hook for 'On Ship Death Started' -- Goober5000
-	// hook is placed at the beginning of this function to allow the scripter to
-	// actually have access to the ship before any death routines (such as mission logging) are executed
-	OnShipDeathStartedHook->run(scripting::hook_param_list(scripting::hook_param("Ship", 'o', ship_objp)));
+	if (OnShipDeathStartedHook->isActive()) {
+		// add scripting hook for 'On Ship Death Started' -- Goober5000
+		// hook is placed at the beginning of this function to allow the scripter to
+		// actually have access to the ship before any death routines (such as mission logging) are executed
+		OnShipDeathStartedHook->run(scripting::hook_param_list(scripting::hook_param("Ship", 'o', ship_objp)));
+	}
 
 	// undocking and death preparation
 	ship_stop_fire_primary(ship_objp);
@@ -7869,10 +7892,10 @@ void ship_destroy_instantly(object *ship_objp, bool with_debris)
 	mission_log_add_entry(LOG_SELF_DESTRUCTED, Ships[ship_objp->instance].ship_name, NULL );
 	
 	// scripting stuff
-	if (Script_system.IsActiveAction(CHA_DEATH)) {
-		Script_system.SetHookObjects(2, "Self", ship_objp, "Ship", ship_objp);
-		Script_system.RunCondition(CHA_DEATH, ship_objp);
-		Script_system.RemHookVars({"Self", "Ship"});
+	if (scripting::hooks::OnDeath->isActive()) {
+		scripting::hooks::OnDeath->run(scripting::hook_param_list(scripting::hook_param("Self", 'o', ship_objp),
+			scripting::hook_param("Ship", 'o', ship_objp)),
+			ship_objp);
 	}
 
 	ship_objp->flags.set(Object::Object_Flags::Should_be_dead);
@@ -9872,7 +9895,7 @@ static void ship_init_afterburners(ship *shipp)
  * Returns object index of ship.
  * @return -1 means failed.
  */
-int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name)
+int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name, bool standalone_ship)
 {
 	int			i, n, objnum, j, k, t;
 	ship_info	*sip;
@@ -10064,8 +10087,10 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 
 	animation::anim_set_initial_states(shipp);
 
-	// Add this ship to Ship_obj_list
-	shipp->ship_list_index = ship_obj_list_add(objnum);
+	// Add this ship to Ship_obj_list, if it is *not* the standalone ship.  That can cause big time bugs.
+	if (!standalone_ship){
+		shipp->ship_list_index = ship_obj_list_add(objnum);
+	}
 
 	// Goober5000 - update the ship registry
 	// (since scripts and sexps can create ships, the entry may not yet exist)
@@ -10090,7 +10115,7 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 	
 	// Start up stracking for this ship in multi.
 	if (Game_mode & (GM_MULTIPLAYER)) {
-		multi_ship_record_add_ship(objnum);
+		multi_rollback_ship_record_add_ship(objnum);
 	}
 
 	// Set time when ship is created
@@ -10868,7 +10893,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	if (sip->uses_team_colors)
 	{
 		// wookieejedi - maintain team color setting if possible
-		if (!p_objp->team_color_setting.empty()) {
+		if (!Fred_running && !p_objp->team_color_setting.empty()) {
 			sp->team_name = p_objp->team_color_setting;
 		} else {
 			sp->team_name = sip->default_team_name;
@@ -10978,10 +11003,12 @@ int ship_launch_countermeasure(object *objp, int rand_val)
 			send_NEW_countermeasure_fired_packet(objp, cmeasure_count, Objects[cobjnum].net_signature);
 		}
 
-		// add scripting hook for 'On Countermeasure Fire' --wookieejedi
-		OnCountermeasureFireHook->run(scripting::hook_param_list(scripting::hook_param("Ship", 'o', objp), 
-			scripting::hook_param("CountermeasuresLeft", 'i', shipp->cmeasure_count),
-			scripting::hook_param("Countermeasure", 'o', &Objects[cobjnum])));
+		if (OnCountermeasureFireHook->isActive()) {
+			// add scripting hook for 'On Countermeasure Fire' --wookieejedi
+			OnCountermeasureFireHook->run(scripting::hook_param_list(scripting::hook_param("Ship", 'o', objp),
+				scripting::hook_param("CountermeasuresLeft", 'i', shipp->cmeasure_count),
+				scripting::hook_param("Countermeasure", 'o', &Objects[cobjnum])));
+		}
 	}
 
 	return (cobjnum >= 0);		// return 0 if not fired, 1 otherwise
@@ -13862,92 +13889,106 @@ ship_subsys *ship_get_best_subsys_to_attack(ship *sp, int subsys_type, vec3d *at
 	return ss_return;
 }
 
-// function to return a pointer to the 'nth' ship_subsys structure in a ship's linked list
-// of ship_subsys'.
-// attacker_pos	=>	world pos of attacker (default value NULL).  If value is non-NULL, try
-//							to select the best subsystem to attack of that type (using line-of-sight)
-//							and based on the number of ships already attacking the subsystem
-ship_subsys *ship_get_indexed_subsys( ship *sp, int index, vec3d *attacker_pos )
+/**
+ * Returns the first subsystem in the ship's subsystem list with the specified subsystem type.
+ * Originally part of ship_get_indexed_subsys.
+ * attacker_pos	=> world pos of attacker (default value NULL).  If value is non-NULL, try
+ *                 to select the best subsystem to attack of that type (using line-of-sight)
+ *                 and based on the number of ships already attacking the subsystem
+ */
+ship_subsys *ship_find_first_subsys(ship *sp, int subsys_type, vec3d *attacker_pos)
 {
-	int count;
-	ship_subsys *ss;
+	Assertion(subsys_type > SUBSYSTEM_NONE && subsys_type < SUBSYSTEM_MAX, "Subsys_type %d must refer to a valid subsystem type!", subsys_type);
 
-	// first, special code to see if the index < 0.  If so, we are looking for one of several possible
-	// engines or one of several possible turrets.  If we enter this if statement, we will always return
-	// something.
-	if ( index < 0 ) {
-		int subsys_type;
-		
-		subsys_type = -index;
-		if ( sp->subsys_info[subsys_type].aggregate_current_hits <= 0.0f )		// if there are no hits, no subsystem to attack.
-			return NULL;
+	// We are looking for one instance of a certain subsystem type, e.g. one of several possible
+	// engines or one of several possible turrets.
+	if ( sp->subsys_info[subsys_type].aggregate_current_hits <= 0.0f )		// if there are no hits, no subsystem to attack.
+		return nullptr;
 
-		if ( attacker_pos != NULL ) {
-			ss = ship_get_best_subsys_to_attack(sp, subsys_type, attacker_pos);
-			return ss;
-		} else {
-			// next, scan the list of subsystems and search for the first subsystem of the particular
-			// type which has > 0 hits remaining.
-			for (ss = GET_FIRST(&sp->subsys_list); ss != END_OF_LIST(&sp->subsys_list); ss = GET_NEXT(ss) ) {
-				if ( (ss->system_info->type == subsys_type) && (ss->current_hits > 0) )
-					return ss;
-			}
+	if ( attacker_pos != nullptr ) {
+		return ship_get_best_subsys_to_attack(sp, subsys_type, attacker_pos);
+	} else {
+		// next, scan the list of subsystems and search for the first subsystem of the particular
+		// type which has > 0 hits remaining.
+		for (auto ss : list_range(&sp->subsys_list)) {
+			if ( (ss->system_info->type == subsys_type) && (ss->current_hits > 0) )
+				return ss;
 		}
+	}
 		
-		// maybe we shouldn't get here, but with possible floating point rounding, I suppose we could
-		Warning(LOCATION, "Unable to get a nonspecific subsystem of index %d on ship %s!", index, sp->ship_name);
-		return NULL;
-	}
-
-
-	count = 0;
-	ss = GET_FIRST(&sp->subsys_list);
-	while ( ss != END_OF_LIST( &sp->subsys_list ) ) {
-		if ( count == index )
-			return ss;
-		count++;
-		ss = GET_NEXT( ss );
-	}
-
-	// get allender -- turret ref didn't fixup correctly!!!!
-	Warning(LOCATION, "In ship_get_indexed_subsys, unable to get a subsystem of index %d on ship %s, due to a broken subsystem reference!  This is most likely due to a table/model mismatch.", index, sp->ship_name);	
-	return NULL;
+	// maybe we shouldn't get here, but with possible floating point rounding, I suppose we could
+	Warning(LOCATION, "Unable to get a nonspecific subsystem of type %d (%s) on ship %s!", subsys_type, Subsystem_types[subsys_type], sp->ship_name);
+	return nullptr;
 }
 
 /**
- * Given a pointer to a subsystem and an associated object, return the index.
+ * Create or recreate the subsystem index cache.
  */
-int ship_get_index_from_subsys(ship_subsys *ssp, int objnum)
+void ship_index_subsystems(ship *shipp)
 {
-	if (ssp == NULL)
-		return -1;
-	else {
-		int	count;
-		ship	*shipp;
-		ship_subsys	*ss;
+	auto sinfo = &Ship_info[shipp->ship_info_index];
 
-		Assert(objnum >= 0);
-		Assert(Objects[objnum].instance >= 0);
+	// if the indexer already exists, its size won't change, so don't reallocate it
+	if (shipp->subsys_list_indexer.get() == nullptr)
+		shipp->subsys_list_indexer.reset(new ship_subsys* [sinfo->n_subsystems]);
 
-		shipp = &Ships[Objects[objnum].instance];
-
-		count = 0;
-		ss = GET_FIRST(&shipp->subsys_list);
-		while ( ss != END_OF_LIST( &shipp->subsys_list ) ) {
-			if ( ss == ssp)
-				return count;
-			count++;
-			ss = GET_NEXT( ss );
+	auto ss = GET_FIRST(&shipp->subsys_list);
+	for (int index = 0; index < sinfo->n_subsystems; ++index)
+	{
+		// normal indexing to valid subsystems
+		if (ss != END_OF_LIST(&shipp->subsys_list))
+		{
+			shipp->subsys_list_indexer[index] = ss;
+			ss->parent_subsys_index = index;
+			ss = GET_NEXT(ss);
 		}
-
-		return -1;
+		// in the event we run out of subsystems (i.e. if not all subsystems were linked)
+		else
+		{
+			shipp->subsys_list_indexer[index] = nullptr;
+		}
 	}
+
+	shipp->flags.set(Ship::Ship_Flags::Subsystem_cache_valid);
 }
 
 /**
- * Returns the index number of the ship_subsys parameter
+ * Returns the 'nth' ship_subsys structure in a ship's linked list of subsystems.
  */
-int ship_get_subsys_index(ship *sp, const char* ss_name)
+ship_subsys *ship_get_indexed_subsys(ship *sp, int index)
+{
+	Assertion(index >= 0, "Index must be positive!  The functionality for negative indexes has been moved to ship_get_first_subsys.");
+	Assertion(index < Ship_info[sp->ship_info_index].n_subsystems, "Subsystem index out of range!");
+
+	// might need to refresh the cache
+	if (!sp->flags[Ship::Ship_Flags::Subsystem_cache_valid])
+		ship_index_subsystems(sp);
+
+	return sp->subsys_list_indexer[index];
+}
+
+/**
+* Returns the index number of the ship_subsys parameter within its ship's subsytem list
+*/
+int ship_get_subsys_index(ship_subsys *subsys)
+{
+	Assertion(subsys != nullptr, "ship_get_subsys_index was called with a null ship_subsys parameter!");
+	if (subsys == nullptr)
+		return -1;
+
+	// might need to refresh the cache
+	auto sp = &Ships[Objects[subsys->parent_objnum].instance];
+	if (!sp->flags[Ship::Ship_Flags::Subsystem_cache_valid])
+		ship_index_subsystems(sp);
+
+	Assertion(subsys->parent_subsys_index >= 0, "Somehow a subsystem could not be found in its parent ship %s's subsystem list!", sp->ship_name);
+	return subsys->parent_subsys_index;
+}
+
+/**
+ * Searches for the subsystem with the given name in the ship's linked list of subsystems, and returns its index or -1 if not found.
+ */
+int ship_find_subsys(ship *sp, const char *ss_name)
 {
 	int count;
 	ship_subsys *ss;
@@ -13959,26 +14000,6 @@ int ship_get_subsys_index(ship *sp, const char* ss_name)
 			return count;
 		count++;
 		ss = GET_NEXT( ss );
-	}
-
-	return -1;
-}
-
-/**
-* Returns the index number of the ship_subsys parameter
-*/
-int ship_get_subsys_index(ship *shipp, ship_subsys *subsys)
-{
-	int count;
-	ship_subsys *ss;
-
-	count = 0;
-	ss = GET_FIRST(&shipp->subsys_list);
-	while (ss != END_OF_LIST(&shipp->subsys_list)) {
-		if (ss == subsys)
-			return count;
-		count++;
-		ss = GET_NEXT(ss);
 	}
 
 	return -1;
@@ -15823,7 +15844,7 @@ SCP_string ship_return_orders(ship* sp)
 			outbuf += target_name;
 			outbuf += XSTR(" wing", 494);
 		} else {
-			outbuf += XSTR("no orders", 495);
+			outbuf = XSTR("no orders", 495);
 		}
 		break;
 
@@ -15832,7 +15853,7 @@ SCP_string ship_return_orders(ship* sp)
 			outbuf += XSTR("any ", -1);
 			outbuf += target_name;
 		} else {
-			outbuf += XSTR("no orders", 495);
+			outbuf = XSTR("no orders", 495);
 		}
 		break;
 
@@ -15848,7 +15869,7 @@ SCP_string ship_return_orders(ship* sp)
 		if (aigp->target_name) {
 			outbuf += target_name;
 		} else {
-			outbuf += XSTR("no orders", 495);
+			outbuf = XSTR("no orders", 495);
 		}
 		break;
 
@@ -15859,7 +15880,7 @@ SCP_string ship_return_orders(ship* sp)
 			hud_targetbox_truncate_subsys_name(subsys_name);
 			sprintf(outbuf, XSTR("atk %s %s", 496), target_name, subsys_name);
 		} else {
-			outbuf += XSTR("no orders", 495);
+			outbuf = XSTR("no orders", 495);
 		}
 		break;
 	}
@@ -16793,7 +16814,7 @@ void ship_do_cap_subsys_cargo_revealed( ship *shipp, ship_subsys *subsys, int fr
 
 	// send the packet if needed
 	if ( (Game_mode & GM_MULTIPLAYER) && !from_network ){
-		int subsystem_index = ship_get_index_from_subsys(subsys, shipp->objnum);
+		int subsystem_index = ship_get_subsys_index(subsys);
 		send_subsystem_cargo_revealed_packet( shipp, subsystem_index );		
 	}
 
@@ -16843,7 +16864,7 @@ void ship_do_cap_subsys_cargo_hidden( ship *shipp, ship_subsys *subsys, int from
 
 	// send the packet if needed
 	if ( (Game_mode & GM_MULTIPLAYER) && !from_network ){
-		int subsystem_index = ship_get_index_from_subsys(subsys, shipp->objnum);
+		int subsystem_index = ship_get_subsys_index(subsys);
 		send_subsystem_cargo_hidden_packet( shipp, subsystem_index );		
 	}
 

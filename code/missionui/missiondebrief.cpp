@@ -378,6 +378,7 @@ int Debrief_should_show_popup = 1;
 static int Debrief_skip_popup_already_shown = 0;
 
 void debrief_text_init();
+bool debrief_can_accept();
 void debrief_accept(int ok_to_post_start_game_event = 1);
 void debrief_kick_selected_player();
 
@@ -925,7 +926,7 @@ void debrief_choose_voice(char *voice_dest, size_t buf_size, char *voice_base, i
 		if (snprintf(voice_dest, buf_size, NOX("%d_%s"), persona_index, voice_base) < static_cast<int>(buf_size))
 		{
 			// if it exists, we're done
-			if (cf_exists_full(voice_dest, CF_TYPE_VOICE_DEBRIEFINGS))
+			if (cf_exists_full_ext(voice_dest, CF_TYPE_VOICE_DEBRIEFINGS, NUM_AUDIO_EXT, audio_ext_list))
 				return;
 		}
 
@@ -1268,12 +1269,17 @@ void debrief_assemble_optional_mission_popup_text(char *buffer, char *mission_lo
 	strcat(buffer, XSTR("\n\n\nDo you want to play the optional mission?", 1491));
 }
 
+bool debrief_can_accept()
+{
+	return !(/*Cheats_enabled ||*/ Turned_traitor || Must_replay_mission);
+}
+
 // what to do when the accept button is hit
 void debrief_accept(int ok_to_post_start_game_event)
 {
 	int go_loop = 0;
 
-	if ( (/*Cheats_enabled ||*/ Turned_traitor || Must_replay_mission) && (Game_mode & GM_CAMPAIGN_MODE) ) {
+	if ( !debrief_can_accept() && (Game_mode & GM_CAMPAIGN_MODE) ) {
 		const char *str;
 		int z;
 
@@ -2554,6 +2560,13 @@ void debrief_rebuild_player_list()
 void debrief_handle_player_drop()
 {
 	debrief_rebuild_player_list();
+}
+
+void debrief_maybe_auto_accept()
+{
+	if (debrief_can_accept()) {
+		debrief_accept(0);
+	}
 }
 
 void debrief_disable_accept()

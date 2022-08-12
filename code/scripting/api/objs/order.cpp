@@ -344,7 +344,7 @@ ADE_VIRTVAR(TargetSubsystem, l_Order, "subsystem", "Target subsystem of the orde
 					set_target_objnum(aip, OBJ_INDEX(objp));
 				}
 			}
-			ohp->aigp->ai_submode = ship_get_subsys_index( &Ships[objp->instance], newh->ss->system_info->subobj_name );
+			ohp->aigp->ai_submode = ship_find_subsys( &Ships[objp->instance], newh->ss->system_info->subobj_name );
 			if(ohp->odx == 0) {
 				set_targeted_subsys(aip, newh->ss, OBJ_INDEX(objp));
 			}

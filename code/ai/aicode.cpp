@@ -1195,7 +1195,7 @@ void ai_turn_towards_vector(vec3d* dest, object* objp, vec3d* slide_vec, vec3d* 
 	vec3d	vel_in, vel_out, desired_fvec, src;
 	float		delta_time;
 	physics_info	*pip;
-	float		delta_bank;
+	float		bank;
 
 	Assertion(objp->type == OBJ_SHIP || objp->type == OBJ_WEAPON, "ai_turn_towards_vector called on a non-ship non-weapon object!");
 
@@ -1261,43 +1261,7 @@ void ai_turn_towards_vector(vec3d* dest, object* objp, vec3d* slide_vec, vec3d* 
 		}
 	}
 
-	//	Set rate at which ship can accelerate to its rotational velocity.
-	//	For now, weapons just go much faster.
-	acc_limit = vel_limit;
-	if (objp->type == OBJ_WEAPON)
-		acc_limit *= 8.0f;
-
-	// do _proper_ handling of acc_limit and vel_limit if this flag is set
-	if (Framerate_independent_turning) {
-		// handle modifications to rotdamp (that could affect acc_limit and vel_limit)
-		// handled in its entirety in physics_sim_rot 
-		float rotdamp = pip->rotdamp;
-		float shock_fraction_time_left = 0.f;
-		if (pip->flags & PF_IN_SHOCKWAVE) {
-			shock_fraction_time_left = timestamp_until(pip->shockwave_decay) / (float)SW_BLAST_DURATION;
-			if (shock_fraction_time_left > 0)
-				rotdamp = pip->rotdamp + pip->rotdamp * (SW_ROT_FACTOR - 1) * shock_fraction_time_left;
-		}
-
-		if (Ai_respect_tabled_turntime_rotdamp) {
-			// We're assuming the turn rate here is accurate so leave it as is
-			// but we'll use the ship's rotdamp to modify acc_limit
-			// (this is the polynomial approximation of the exponential effect rotdamp has on players)
-			if (rotdamp == 0.f)
-				acc_limit *= 1000.f;
-			else
-				acc_limit = vel_limit * (0.5f / rotdamp);
-		}
-		else { 
-			// else, calculate the retail-friendly vel and acc values
-			ai_compensate_for_retail_turning(&vel_limit, &acc_limit, rotdamp, objp->type == OBJ_WEAPON);
-
-			// handle missile turning accel (which is bundled into rotdamp)
-			if (objp->type == OBJ_WEAPON && rotdamp != 0.f) {
-				acc_limit = vel_limit * (0.5f / rotdamp);
-			}
-		}
-	}
+	acc_limit = ai_get_acc_limit(&vel_limit, objp);
 
 	// for formation flying
 	if ((flags & AITTV_SLOW_BANK_ACCEL)) {
@@ -1324,18 +1288,21 @@ void ai_turn_towards_vector(vec3d* dest, object* objp, vec3d* slide_vec, vec3d* 
 
 	//	Should be more general case here.  Currently, anything that is not a weapon will bank when it turns.
 	// Goober5000 - don't bank if sexp or ship says not to
-	if ( (objp->type == OBJ_WEAPON) || (flags & AITTV_IGNORE_BANK ) )
-		delta_bank = 0.0f;
+	if (flags & AITTV_FORCE_DELTA_BANK)
+		bank = bank_override;
+	else if ( (objp->type == OBJ_WEAPON) || (flags & AITTV_IGNORE_BANK ) )
+		bank = 0.0f;
 	else if (objp->type == OBJ_SHIP && Ship_info[Ships[objp->instance].ship_info_index].flags[Ship::Info_Flags::Dont_bank_when_turning])
-		delta_bank = 0.0f;
+		bank = 0.0f;
 	else if ((bank_override) && (iff_x_attacks_y(Ships[objp->instance].team, Player_ship->team))) {	//	Theoretically, this will only happen for Shivans.
-		delta_bank = bank_override;
+		bank = bank_override;
 	} else {
-		delta_bank = vm_vec_dot(&curr_orient.vec.rvec, &objp->last_orient.vec.rvec);
-		delta_bank = 200.0f * (1.0f - delta_bank) * pip->delta_bank_const;
+		bank = vm_vec_dot(&curr_orient.vec.rvec, &objp->last_orient.vec.rvec);
+		bank = 200.0f * (1.0f - bank) * pip->delta_bank_const;
 		if (vm_vec_dot(&objp->last_orient.vec.fvec, &objp->orient.vec.rvec) < 0.0f)
-			delta_bank = -delta_bank;
+			bank = -bank;
 	}
+	bank *= vel_limit.xyz.z;
 
 
 	matrix out_orient;
@@ -1347,7 +1314,7 @@ void ai_turn_towards_vector(vec3d* dest, object* objp, vec3d* slide_vec, vec3d* 
 		vm_angular_move_matrix(&goal_orient, &curr_orient, &vel_in, delta_time,
 			&out_orient, &vel_out, &vel_limit, &acc_limit, The_mission.ai_profile->flags[AI::Profile_Flags::No_turning_directional_bias]);
 	} else {
-		vm_angular_move_forward_vec(&desired_fvec, &curr_orient, &vel_in, delta_time, delta_bank,
+		vm_angular_move_forward_vec(&desired_fvec, &curr_orient, &vel_in, delta_time, bank,
 			&out_orient, &vel_out, &vel_limit, &acc_limit, The_mission.ai_profile->flags[AI::Profile_Flags::No_turning_directional_bias]);
 	}
 	
@@ -1363,6 +1330,52 @@ void ai_turn_towards_vector(vec3d* dest, object* objp, vec3d* slide_vec, vec3d* 
 	}
 
 }
+
+//vel_limit can be modified if the object is a weapon and retail behaviour is enabled
+vec3d ai_get_acc_limit(vec3d* vel_limit, const object* objp) {
+	//	Set rate at which ship can accelerate to its rotational velocity.
+	//	For now, weapons just go much faster.
+	vec3d acc_limit = *vel_limit;
+	if (objp->type == OBJ_WEAPON)
+		acc_limit *= 8.0f;
+
+	const physics_info* pip = &objp->phys_info;
+
+	// do _proper_ handling of acc_limit and vel_limit if this flag is set
+	if (Framerate_independent_turning) {
+		// handle modifications to rotdamp (that could affect acc_limit and vel_limit)
+		// handled in its entirety in physics_sim_rot 
+		float rotdamp = pip->rotdamp;
+		float shock_fraction_time_left = 0.f;
+		if (pip->flags & PF_IN_SHOCKWAVE) {
+			shock_fraction_time_left = timestamp_until(pip->shockwave_decay) / (float)SW_BLAST_DURATION;
+			if (shock_fraction_time_left > 0)
+				rotdamp = pip->rotdamp + pip->rotdamp * (SW_ROT_FACTOR - 1) * shock_fraction_time_left;
+		}
+
+		if (Ai_respect_tabled_turntime_rotdamp) {
+			// We're assuming the turn rate here is accurate so leave it as is
+			// but we'll use the ship's rotdamp to modify acc_limit
+			// (this is the polynomial approximation of the exponential effect rotdamp has on players)
+			if (rotdamp == 0.f)
+				acc_limit *= 1000.f;
+			else
+				acc_limit = *vel_limit * (0.5f / rotdamp);
+		}
+		else {
+			// else, calculate the retail-friendly vel and acc values
+			ai_compensate_for_retail_turning(vel_limit, &acc_limit, rotdamp, objp->type == OBJ_WEAPON);
+
+			// handle missile turning accel (which is bundled into rotdamp)
+			if (objp->type == OBJ_WEAPON && rotdamp != 0.f) {
+				acc_limit = *vel_limit * (0.5f / rotdamp);
+			}
+		}
+	}
+
+	return acc_limit;
+}
+
 
 //	Set aip->target_objnum to objnum
 //	Update aip->previous_target_objnum.
@@ -2387,6 +2400,7 @@ void ai_attack_object(object* attacker, object* attacked, int ship_info_index)
 
 	Assert(attacker != nullptr);
 	Assert(attacker->instance >= 0);
+	Assert(attacker->type == OBJ_SHIP);
 	Assert(Ships[attacker->instance].ai_index != -1);
 	//	Bogus!  Who tried to get me to attack myself!
 	if (attacker == attacked) {
@@ -4861,12 +4875,12 @@ void avoid_ship()
 	//	If in front of enemy, turn away from it.
 	//	If behind enemy, try to get fully behind it.
 	if (away_dot < 0.0f) {
-		turn_away_from_point(Pl_objp, &enemy_pos, Pl_objp->phys_info.speed);
+		turn_away_from_point(Pl_objp, &enemy_pos, 1.0f);
 	} else {
 		vec3d	goal_pos;
 
 		vm_vec_scale_add(&goal_pos, &En_objp->pos, &En_objp->orient.vec.fvec, -100.0f);
-		turn_towards_point(Pl_objp, &goal_pos, NULL, Pl_objp->phys_info.speed);
+		turn_towards_point(Pl_objp, &goal_pos, NULL, 1.0f);
 	}
 
 	//	Set speed.
@@ -5303,9 +5317,9 @@ void evade_ship()
 			//	caused flying in an odd spiral.
 			vm_vec_scale_add(&goal_point, &enemy_pos, &Pl_objp->orient.vec.rvec, 1000.0f);
 			if (dist < 100.0f)
-				bank_override = Pl_objp->phys_info.speed; 
+				bank_override = 1.0f; 
 		} else {
-			bank_override = Pl_objp->phys_info.speed;			//	In enemy's sights, not pointing at him, twirl away.
+			bank_override = 1.0f;			//	In enemy's sights, not pointing at him, twirl away.
 			goto evade_ship_l1;
 		}
 	} else {
@@ -7652,7 +7666,7 @@ void ai_chase_attack(ai_info *aip, ship_info *sip, vec3d *predicted_enemy_pos, f
 
 	//SUSHI: Don't change bank while circle strafing or glide attacking
 	if (dist_to_enemy < 250.0f && dot_from_enemy > 0.7f && aip->submode != AIS_CHASE_CIRCLESTRAFE && aip->submode != AIS_CHASE_GLIDEATTACK) {
-		bank_override = Pl_objp->phys_info.speed;
+		bank_override = 1.0f;
 	}
 
 	//	If enemy more than 500 meters away, all ships flying there will tend to match bank.
@@ -7699,9 +7713,7 @@ void ai_chase_es(ai_info *aip)
 		tvec.xyz.y += frand();
 	}
 
-	float bank_override = Pl_objp->phys_info.speed;
-
-	ai_turn_towards_vector(&tvec, Pl_objp, nullptr, nullptr, bank_override, 0);
+	ai_turn_towards_vector(&tvec, Pl_objp, nullptr, nullptr, 1.0f, 0);
 	accelerate_ship(aip, 1.0f);
 }
 
@@ -7712,7 +7724,6 @@ void ai_chase_ga(ai_info *aip, ship_info *sip)
 {
 	//	If not near end of this submode, evade squiggly.  If near end, just fly straight for a bit
 	vec3d	tvec;
-	float		bank_override;
 	vec3d	vec_from_enemy;
 
 	if (En_objp != NULL) {
@@ -7725,9 +7736,7 @@ void ai_chase_ga(ai_info *aip, ship_info *sip)
 	vm_vec_scale_add2(&tvec, &vec_from_enemy, 300.0f);
 	vm_vec_add2(&tvec, &Pl_objp->pos);
 
-	bank_override = Pl_objp->phys_info.speed;
-
-	ai_turn_towards_vector(&tvec, Pl_objp, nullptr, nullptr, bank_override, 0);
+	ai_turn_towards_vector(&tvec, Pl_objp, nullptr, nullptr, 1.0f, 0);
 
 	accelerate_ship(aip, 2.0f);
 
@@ -7774,7 +7783,11 @@ int ai_set_attack_subsystem(object *objp, int subnum)
 	attacked_objp = &Objects[aip->target_objnum];
 	shipp = &Ships[attacked_objp->instance];		//  need to get our target's ship pointer!!!
 
-	ssp = ship_get_indexed_subsys(shipp, subnum, &objp->pos);
+	// When subnum is >= 0, it indicates a specific subsystem.  Otherwise it is a subsystem type.  See ai_submode
+	if (subnum >= 0)
+		ssp = ship_get_indexed_subsys(shipp, subnum);
+	else
+		ssp = ship_find_first_subsys(shipp, -subnum, &objp->pos);
 	if (ssp == NULL)
 		return 0;
 
@@ -10003,11 +10016,25 @@ void guard_object_was_hit(object *guard_objp, object *hitter_objp)
 			aip->submode_start_time = Missiontime;
 			aip->active_goal = AI_ACTIVE_GOAL_DYNAMIC;
 		} else {
-			int	num_attacking_cur, num_attacking_new;
+			// This section used to be a lot simpler, but some "invalid" object types were probably getting into num_ships_attacking
+			// below, so we have to manually return for some object types and make sure to assert for other object types
+			// that are symptomatic of a larger problem with the engine.
 
-			num_attacking_cur = num_ships_attacking(aip->target_objnum);
+			// This just checks to see that the target was a valid type. If it is not one of these, something really
+			// could be drastically wrong in the engine.
+			Assertion(Objects[aip->target_objnum].type == OBJ_SHIP || Objects[aip->target_objnum].type == OBJ_WEAPON || Objects[aip->target_objnum].type == OBJ_DEBRIS || Objects[aip->target_objnum].type == OBJ_ASTEROID || Objects[aip->target_objnum].type == OBJ_WAYPOINT,
+				"This function just discovered that %s has an invalid target object type of %d. This is bad. Please report!", 
+				Ships[aip->shipnum].ship_name, Objects[aip->target_objnum].type);
+
+			if (!(Objects[aip->target_objnum].type == OBJ_SHIP || Objects[aip->target_objnum].type == OBJ_WEAPON || Objects[aip->target_objnum].type == OBJ_ASTEROID || Objects[aip->target_objnum].type == OBJ_DEBRIS)){
+				// it's probably a valid target, but retail would not count those cases, so just return.
+				return;
+			} 
+
+			int	num_attacking_cur = num_ships_attacking(aip->target_objnum);
+
 			if (num_attacking_cur > 1) {
-				num_attacking_new = num_ships_attacking(hitter_objnum);
+				int num_attacking_new = num_ships_attacking(hitter_objnum);
 
 				if (num_attacking_new < num_attacking_cur) {
 
@@ -14478,6 +14505,13 @@ void validate_mode_submode(ai_info *aip)
  */
 void ai_frame(int objnum)
 {
+	// Cyborg - can you believe this was added in *2022*??
+	Assertion (Objects[objnum].type == OBJ_SHIP, "Ai_frame was called for a non-ship of type %d. Please report!", Objects[objnum].type);
+	
+	if (Objects[objnum].type != OBJ_SHIP){
+		return;
+	}
+
 	ship		*shipp = &Ships[Objects[objnum].instance];
 	ai_info	*aip = &Ai_info[shipp->ai_index];
 	int		target_objnum;
@@ -14560,7 +14594,7 @@ void ai_frame(int objnum)
 		} else if (aip->resume_goal_time == -1) {
 			// AL 12-9-97: Don't allow cargo and navbuoys to set their aip->target_objnum
 			if ( Ship_info[shipp->ship_info_index].class_type > -1 && (Ship_types[Ship_info[shipp->ship_info_index].class_type].flags[Ship::Type_Info_Flags::AI_auto_attacks]) ) {
-				target_objnum = find_enemy(objnum, MAX_ENEMY_DISTANCE, The_mission.ai_profile->max_attackers[Game_skill_level]);		//	Attack up to 25K units away.
+				target_objnum = find_enemy(objnum, MAX_ENEMY_DISTANCE, The_mission.ai_profile->max_attackers[Game_skill_level]);		//	Attack up to 2.5K units away.
 				if (target_objnum != -1) {
 					if (aip->target_objnum != target_objnum)
 						aip->aspect_locked_time = 0.0f;
@@ -14688,7 +14722,8 @@ void ai_frame(int objnum)
 	}
 }
 
-static void ai_control_info_check(ai_info *aip, ship_info *sip, physics_info *pi)
+// set and removes any maneuver flags for ai maneuver overrides
+static void ai_control_info_flags_upkeep(ai_info* aip, ship_info* sip, physics_info* pi)
 {
 	if (aip->ai_override_flags.none_set())
 		return;
@@ -14719,6 +14754,37 @@ static void ai_control_info_check(ai_info *aip, ship_info *sip, physics_info *pi
 	}
 	else
 	{
+		if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Dont_bank_when_turning] || sip->flags[Ship::Info_Flags::Dont_bank_when_turning])
+			AI_ci.control_flags |= CIF_DONT_BANK_WHEN_TURNING;
+		if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Dont_clamp_max_velocity] || sip->flags[Ship::Info_Flags::Dont_clamp_max_velocity])
+			AI_ci.control_flags |= CIF_DONT_CLAMP_MAX_VELOCITY;
+		if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Instantaneous_acceleration] || sip->flags[Ship::Info_Flags::Instantaneous_acceleration])
+			AI_ci.control_flags |= CIF_INSTANTANEOUS_ACCELERATION;
+	}
+
+	// set physics flag according to whether we are instantaneously accelerating
+	if (AI_ci.control_flags & CIF_INSTANTANEOUS_ACCELERATION)
+		pi->flags |= PF_MANEUVER_NO_DAMP;
+	else
+		pi->flags &= ~PF_MANEUVER_NO_DAMP;
+}
+
+// applies any rotational or lateral maneuver values to the AI's CI
+static void ai_control_info_apply(ai_info *aip)
+{
+	if (aip->ai_override_flags.none_set())
+		return;
+
+	bool lateral_maneuver = false;
+	bool rotational_maneuver = false;
+
+	if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Lateral_never_expire] || !timestamp_elapsed(aip->ai_override_lat_timestamp))
+		lateral_maneuver = true;
+
+	if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Rotational_never_expire] || timestamp_elapsed(aip->ai_override_rot_timestamp))
+		rotational_maneuver = true;
+
+	if (lateral_maneuver || rotational_maneuver) {
 		if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Full_rot])
 		{
 			AI_ci.pitch = aip->ai_override_ci.pitch;
@@ -14728,17 +14794,11 @@ static void ai_control_info_check(ai_info *aip, ship_info *sip, physics_info *pi
 		else
 		{
 			if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Pitch])
-			{
 				AI_ci.pitch = aip->ai_override_ci.pitch;
-			}
 			if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Heading])
-			{
 				AI_ci.heading = aip->ai_override_ci.heading;
-			}
 			if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Roll])
-			{
 				AI_ci.bank = aip->ai_override_ci.bank;
-			}
 		}
 
 		if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Full_lat])
@@ -14750,32 +14810,13 @@ static void ai_control_info_check(ai_info *aip, ship_info *sip, physics_info *pi
 		else
 		{
 			if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Up])
-			{
 				AI_ci.vertical = aip->ai_override_ci.vertical;
-			}
 			if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Sideways])
-			{
 				AI_ci.sideways = aip->ai_override_ci.sideways;
-			}
 			if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Forward])
-			{
 				AI_ci.forward = aip->ai_override_ci.forward;
-			}
 		}
-
-		if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Dont_bank_when_turning] || sip->flags[Ship::Info_Flags::Dont_bank_when_turning])
-			AI_ci.control_flags |= CIF_DONT_BANK_WHEN_TURNING;
-		if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Dont_clamp_max_velocity] || sip->flags[Ship::Info_Flags::Dont_clamp_max_velocity])
-			AI_ci.control_flags |= CIF_DONT_CLAMP_MAX_VELOCITY;
-		if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Instantaneous_acceleration] || sip->flags[Ship::Info_Flags::Instantaneous_acceleration])
-			AI_ci.control_flags |= CIF_INSTANTANEOUS_ACCELERATION;
 	}
-
-	// set physics flag according to whether we are instantaneously accelerating
-	if (AI_ci.control_flags & CIF_INSTANTANEOUS_ACCELERATION)
-		pi->flags |= PF_NO_DAMP;
-	else
-		pi->flags &= ~PF_NO_DAMP;
 }
 
 int Last_ai_obj = -1;
@@ -14806,11 +14847,11 @@ void ai_process( object * obj, int ai_index, float frametime )
 
 	memset( &AI_ci, 0, sizeof(AI_ci) );
 
-	ai_frame(OBJ_INDEX(obj));
-
 	AI_ci.pitch = 0.0f;
 	AI_ci.bank = 0.0f;
 	AI_ci.heading = 0.0f;
+
+	ai_frame(OBJ_INDEX(obj));
 
 	// the ships maximum velocity now depends on the energy flowing to engines
 	obj->phys_info.max_vel.xyz.z = shipp->current_max_speed;
@@ -14835,9 +14876,12 @@ void ai_process( object * obj, int ai_index, float frametime )
 	if (shipp->flags[Ship::Ship_Flags::Dying] && sip->flags[Ship::Info_Flags::Large_ship_deathroll])
 		rfc = false;
 
+	// regardless if we're acting on them, upkeep maneuver flags
+	ai_control_info_flags_upkeep(aip, sip, &obj->phys_info);
+
 	if (rfc) {
 		// Wanderer - sexp based override goes here - only if rfc is valid though
-		ai_control_info_check(aip, sip, &obj->phys_info);
+		ai_control_info_apply(aip);
 		physics_read_flying_controls( &obj->orient, &obj->phys_info, &AI_ci, frametime);
 	}
 
@@ -15097,9 +15141,9 @@ void init_aip_from_class_and_profile(ai_info *aip, ai_class *aicp, ai_profile_t 
 
 void ai_do_default_behavior(object *obj)
 {
-    Assert(obj != NULL);
-    Assert(obj->instance != -1);
-    Assert(Ships[obj->instance].ai_index != -1);
+    Assertion(obj != nullptr, "Ai_do_default_behavior() was given a bad information.  Specifically obj is a nullptr. This is a coder error, please report!");
+    Assertion((obj->type == OBJ_SHIP) && (obj->instance > -1) && (obj->instance < MAX_SHIPS), "This function that requires an object to be a ship was passed an invalid ship. Please report\n\nObject type: %d\nInstance #: %d", obj->type, obj->instance);
+    Assertion(Ships[obj->instance].ai_index >= 0, "A ship has been found to have an invalid ai_index of %d. This should have been assigned and is coder mistake, please report!", Ships[obj->instance].ai_index);
 
     ai_info	*aip = &Ai_info[Ships[obj->instance].ai_index];
     ship_info* sip = &Ship_info[Ships[obj->instance].ship_info_index];
@@ -15197,118 +15241,125 @@ void maybe_process_friendly_hit(object *objp_hitter, object *objp_hit, object *o
 		return;
 	}
 
-	if ((obj_team(objp_hitter) == obj_team(objp_hit)) && (objp_hitter == Player_obj)) {
+	// Cyborg -- I had to switch around the logic here because it was potentially
+	// sending non-ships to obj_team, which would trigger an assert
+	if (objp_hitter == Player_obj){
 
-		// AL 12-4-97: It is possible the Player is a OBJ_GHOST at this point.  If so, bail out.
+		// Cyborg - So check if this is a ship first. Probably true, but you never know, with FSO
+		// (especially in multi)
 		if ( objp_hitter->type != OBJ_SHIP ) {
 			return;
 		}
 
-		Assert(objp_hitter->type == OBJ_SHIP);
+		// And assert that obj_hit is a ship as well.
 		Assert(objp_hit->type == OBJ_SHIP);
-		Assert((objp_weapon->type == OBJ_WEAPON) || (objp_weapon->type == OBJ_BEAM));  //beam added for traitor detection - FUBAR
 
-		ship	*shipp_hitter = &Ships[objp_hitter->instance];
-		ship	*shipp_hit = &Ships[objp_hit->instance];
+		if (obj_team(objp_hitter) == obj_team(objp_hit)) {
 
-		if (shipp_hitter->team != shipp_hit->team) {
-			return;
-		}
+			Assert((objp_weapon->type == OBJ_WEAPON) || (objp_weapon->type == OBJ_BEAM));  //beam added for traitor detection - FUBAR
 
-		// get the player
-		player *pp = &Players[Player_num];
+			ship	*shipp_hitter = &Ships[objp_hitter->instance];
+			ship	*shipp_hit = &Ships[objp_hit->instance];
 
-		// wacky stuff here
-		if (pp->friendly_hits != 0) {
-			float	time_since_last_hit = f2fl(Missiontime - pp->friendly_last_hit_time);
-			if ((time_since_last_hit >= 0.0f) && (time_since_last_hit < 10000.0f)) {
-				if (time_since_last_hit > 60.0f) {
-					pp->friendly_hits = 0;
-					pp->friendly_damage = 0.0f;
-				} else if (time_since_last_hit > 2.0f) {
-					pp->friendly_hits -= (int) time_since_last_hit/2;
-					pp->friendly_damage -= time_since_last_hit;
-				}
-
-				if (pp->friendly_damage < 0.0f) {
-					pp->friendly_damage = 0.0f;
-				}
-
-				if (pp->friendly_hits < 0) {
-					pp->friendly_hits = 0;
-				}
-			}
-		}
-
-		float	damage;		//	Damage done by weapon.  Gets scaled down based on size of ship.
-
-		if (objp_weapon->type == OBJ_BEAM)  // added beam for traitor detection -FUBAR
-			damage = beam_get_ship_damage(&Beams[objp_weapon->instance], objp_hit);
-		else  
-			damage = Weapon_info[Weapons[objp_weapon->instance].weapon_info_index].damage;
-		
-		// wacky stuff here
-		ship_info *sip = &Ship_info[Ships[objp_hit->instance].ship_info_index];
-		if (shipp_hit->ship_max_hull_strength > 1000.0f) {
-			float factor = shipp_hit->ship_max_hull_strength / 1000.0f;
-			factor = MIN(100.0f, factor);
-			damage /= factor;
-		}
-
-		//	Don't penalize much at all for hitting cargo
-		if (sip->class_type > -1) {
-			damage *= Ship_types[sip->class_type].ff_multiplier;
-		}
-
-		//	Hit ship, but not targeting it, so it's not so heinous, maybe an accident.
-		if (Ai_info[shipp_hitter->ai_index].target_objnum != OBJ_INDEX(objp_hit)) {
-			damage /= 5.0f;
-		}
-
-		pp->friendly_last_hit_time = Missiontime;
-		pp->friendly_hits++;
-
-		// cap damage and number of hits done this frame
-		float accredited_damage = MIN(MAX_BURST_DAMAGE, pp->damage_this_burst + damage) - pp->damage_this_burst;
-		pp->friendly_damage += accredited_damage;
-		pp->damage_this_burst += accredited_damage;
-
-		// Done with adjustments to damage.  Evaluate based on current friendly_damage
-		nprintf(("AI", "Friendly damage: %.1f, threshold: %.1f, inc damage: %.1f, max burst: %d\n", pp->friendly_damage, FRIENDLY_DAMAGE_THRESHOLD * (1.0f + (float) (NUM_SKILL_LEVELS + 1 - Game_skill_level)/3.0f), pp->damage_this_burst, MAX_BURST_DAMAGE ));
-		
-		if (is_instructor(objp_hit)) {
-			// it's not nice to hit your instructor
-			if (pp->friendly_damage > FRIENDLY_DAMAGE_THRESHOLD) {
-				message_send_builtin_to_player( MESSAGE_INSTRUCTOR_ATTACK, NULL, MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_IMMEDIATE, 0, 0, -1, -1);
-				pp->last_warning_message_time = Missiontime;
-				ship_set_subsystem_strength( Player_ship, SUBSYSTEM_WEAPONS, 0.0f);
-
-				training_fail();
-
-				//	Instructor leaves.
-				mission_do_departure(objp_hit);
-				gameseq_post_event( GS_EVENT_PLAYER_WARPOUT_START_FORCED );	//	Force player to warp out.
-			} else if (Missiontime - pp->last_warning_message_time > F1_0*4) {
-				// warning every 4 sec
-				// use NULL as the message sender here since it is the Terran Command persona
-				message_send_builtin_to_player( MESSAGE_INSTRUCTOR_HIT, NULL, MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_IMMEDIATE, 0, 0, -1, -1);
-				pp->last_warning_message_time = Missiontime;
+			if (shipp_hitter->team != shipp_hit->team) {
+				return;
 			}
 
-		// not nice to hit your friends
-		} else if (pp->friendly_damage > FRIENDLY_DAMAGE_THRESHOLD * (1.0f + (float) (NUM_SKILL_LEVELS + 1 - Game_skill_level)/3.0f)) {
-			process_friendly_hit_message( MESSAGE_HAMMER_SWINE, objp_hit );
-			mission_goal_fail_all();
-			ai_abort_rearm_request( Player_obj );
+			// get the player
+			player *pp = &Players[Player_num];
 
-			Player_ship->team = Iff_traitor;
+			// wacky stuff here
+			if (pp->friendly_hits != 0) {
+				float	time_since_last_hit = f2fl(Missiontime - pp->friendly_last_hit_time);
+				if ((time_since_last_hit >= 0.0f) && (time_since_last_hit < 10000.0f)) {
+					if (time_since_last_hit > 60.0f) {
+						pp->friendly_hits = 0;
+						pp->friendly_damage = 0.0f;
+					} else if (time_since_last_hit > 2.0f) {
+						pp->friendly_hits -= (int) time_since_last_hit/2;
+						pp->friendly_damage -= time_since_last_hit;
+					}
 
-		} else if ((damage > frand()) && (Missiontime - pp->last_warning_message_time > F1_0*4) && (pp->friendly_damage > FRIENDLY_DAMAGE_THRESHOLD)) {
-			// no closer than 4 sec intervals
-			//	Note: (damage > frand()) added on 12/9/97 by MK.  Since damage is now scaled down for big ships, we could get too
-			//	many warnings.  Kind of tedious.  frand() returns a value in 0..1, so this won't affect legit hits.
-			process_friendly_hit_message( MESSAGE_OOPS, objp_hit );
-			pp->last_warning_message_time = Missiontime;
+					if (pp->friendly_damage < 0.0f) {
+						pp->friendly_damage = 0.0f;
+					}
+
+					if (pp->friendly_hits < 0) {
+						pp->friendly_hits = 0;
+					}
+				}
+			}
+
+			float	damage;		//	Damage done by weapon.  Gets scaled down based on size of ship.
+
+			if (objp_weapon->type == OBJ_BEAM)  // added beam for traitor detection -FUBAR
+				damage = beam_get_ship_damage(&Beams[objp_weapon->instance], objp_hit);
+			else  
+				damage = Weapon_info[Weapons[objp_weapon->instance].weapon_info_index].damage;
+			
+			// wacky stuff here
+			ship_info *sip = &Ship_info[Ships[objp_hit->instance].ship_info_index];
+			if (shipp_hit->ship_max_hull_strength > 1000.0f) {
+				float factor = shipp_hit->ship_max_hull_strength / 1000.0f;
+				factor = MIN(100.0f, factor);
+				damage /= factor;
+			}
+
+			//	Don't penalize much at all for hitting cargo
+			if (sip->class_type > -1) {
+				damage *= Ship_types[sip->class_type].ff_multiplier;
+			}
+
+			//	Hit ship, but not targeting it, so it's not so heinous, maybe an accident.
+			if (Ai_info[shipp_hitter->ai_index].target_objnum != OBJ_INDEX(objp_hit)) {
+				damage /= 5.0f;
+			}
+
+			pp->friendly_last_hit_time = Missiontime;
+			pp->friendly_hits++;
+
+			// cap damage and number of hits done this frame
+			float accredited_damage = MIN(MAX_BURST_DAMAGE, pp->damage_this_burst + damage) - pp->damage_this_burst;
+			pp->friendly_damage += accredited_damage;
+			pp->damage_this_burst += accredited_damage;
+
+			// Done with adjustments to damage.  Evaluate based on current friendly_damage
+			nprintf(("AI", "Friendly damage: %.1f, threshold: %.1f, inc damage: %.1f, max burst: %d\n", pp->friendly_damage, FRIENDLY_DAMAGE_THRESHOLD * (1.0f + (float) (NUM_SKILL_LEVELS + 1 - Game_skill_level)/3.0f), pp->damage_this_burst, MAX_BURST_DAMAGE ));
+			
+			if (is_instructor(objp_hit)) {
+				// it's not nice to hit your instructor
+				if (pp->friendly_damage > FRIENDLY_DAMAGE_THRESHOLD) {
+					message_send_builtin_to_player( MESSAGE_INSTRUCTOR_ATTACK, NULL, MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_IMMEDIATE, 0, 0, -1, -1);
+					pp->last_warning_message_time = Missiontime;
+					ship_set_subsystem_strength( Player_ship, SUBSYSTEM_WEAPONS, 0.0f);
+
+					training_fail();
+
+					//	Instructor leaves.
+					mission_do_departure(objp_hit);
+					gameseq_post_event( GS_EVENT_PLAYER_WARPOUT_START_FORCED );	//	Force player to warp out.
+				} else if (Missiontime - pp->last_warning_message_time > F1_0*4) {
+					// warning every 4 sec
+					// use NULL as the message sender here since it is the Terran Command persona
+					message_send_builtin_to_player( MESSAGE_INSTRUCTOR_HIT, NULL, MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_IMMEDIATE, 0, 0, -1, -1);
+					pp->last_warning_message_time = Missiontime;
+				}
+
+			// not nice to hit your friends
+			} else if (pp->friendly_damage > FRIENDLY_DAMAGE_THRESHOLD * (1.0f + (float) (NUM_SKILL_LEVELS + 1 - Game_skill_level)/3.0f)) {
+				process_friendly_hit_message( MESSAGE_HAMMER_SWINE, objp_hit );
+				mission_goal_fail_all();
+				ai_abort_rearm_request( Player_obj );
+
+				Player_ship->team = Iff_traitor;
+
+			} else if ((damage > frand()) && (Missiontime - pp->last_warning_message_time > F1_0*4) && (pp->friendly_damage > FRIENDLY_DAMAGE_THRESHOLD)) {
+				// no closer than 4 sec intervals
+				//	Note: (damage > frand()) added on 12/9/97 by MK.  Since damage is now scaled down for big ships, we could get too
+				//	many warnings.  Kind of tedious.  frand() returns a value in 0..1, so this won't affect legit hits.
+				process_friendly_hit_message( MESSAGE_OOPS, objp_hit );
+				pp->last_warning_message_time = Missiontime;
+			}
 		}
 	}
 }
@@ -15533,11 +15584,14 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hit_normal)
 			return;
 		
 		hitter_objnum = hit_objp->parent;
-		Assert((hitter_objnum >= 0) && (hitter_objnum < MAX_OBJECTS));
+		Assertion((hitter_objnum >= 0) && (hitter_objnum < MAX_OBJECTS), "hitter_objnum in this function is an invalid index of %d.  This can cause random behavior, and is a coder mistake.  Please report!", hitter_objnum);
 		objp_hitter = &Objects[hitter_objnum];
 
+		Assertion((objp_hitter->type == OBJ_SHIP) || (objp_hitter->type == OBJ_WEAPON) || (objp_hitter->type == OBJ_ASTEROID) || (objp_hitter->type == OBJ_BEAM) || (objp_hitter->type == OBJ_DEBRIS),
+		"The ai code is passing an invalid object type of %d to a function when trying to decide how to respond to something hitting it.  This is a bug in the code, please report!", objp_hitter->type);
+
 		// lets not check hits by ghosts any further either
-		if(objp_hitter->type == OBJ_GHOST)
+		if(objp_hitter->type != OBJ_SHIP && objp_hitter->type != OBJ_WEAPON && objp_hitter->type != OBJ_ASTEROID && objp_hitter->type != OBJ_BEAM && objp_hitter->type != OBJ_DEBRIS)
 			return;
 		
 		//	Hit by a protected ship, don't attack it.
@@ -16134,6 +16188,12 @@ void maybe_cheat_fire_synaptic(object *objp)
 	{
 		ship	*shipp;
 		int	wing_index, time;
+
+		Assertion(objp->type == OBJ_SHIP, "This ai function requires a ship, but was called with a non-ship object type of %d. Please report!", objp->type);
+
+		if (objp->type != OBJ_SHIP) {
+			return;
+		}
 
 		shipp = &Ships[objp->instance];
 

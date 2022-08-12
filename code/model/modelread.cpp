@@ -69,7 +69,8 @@ static int model_initted = 0;
 CFILE *ss_fp = NULL;			// file pointer used to dump subsystem information
 char  model_filename[_MAX_PATH];		// temp used to store filename
 char	debug_name[_MAX_PATH];
-int ss_warning_shown = 0;		// have we shown the warning dialog concerning the subsystems?
+static bool ss_warning_shown_null = false;		// have we shown the warning dialog concerning the subsystems?
+static bool ss_warning_shown_mismatch = false;	// ditto but for a different warning
 #endif
 
 static uint Global_checksum = 0;
@@ -882,9 +883,9 @@ void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num,
 
 	if ( slist==NULL ) {
 #ifndef NDEBUG
-		if (!ss_warning_shown) {
+		if (!ss_warning_shown_null) {
 			mprintf(("No subsystems found for model \"%s\".\n", model_get(model_num)->filename));
-			ss_warning_shown = 1;
+			ss_warning_shown_null = true;
 		}
 #endif
 		return;			// For TestCode, POFView, etc don't bother
@@ -924,12 +925,12 @@ void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num,
 #ifndef NDEBUG
 	char bname[_MAX_FNAME];
 
-	if ( !ss_warning_shown) {
+	if ( !ss_warning_shown_mismatch) {
 		_splitpath(model_filename, NULL, NULL, bname, NULL);
 		// Lets still give a comment about it and not just erase it
 		Warning(LOCATION,"Not all subsystems in model \"%s\" have a record in ships.tbl.\nThis can cause game to crash.\n\nList of subsystems not found from table is in log file.\n", model_get(model_num)->filename );
 		mprintf(("Subsystem %s in model %s was not found in ships.tbl!\n", subobj_name, model_get(model_num)->filename));
-		ss_warning_shown = 1;
+		ss_warning_shown_mismatch = true;
 	} else
 #endif
 		mprintf(("Subsystem %s in model %s was not found in ships.tbl!\n", subobj_name, model_get(model_num)->filename));
@@ -1432,7 +1433,8 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 			mprintf(( "Can't open debug file for writing subsystems for %s\n", filename));
 		} else {
 			strcpy_s(model_filename, filename);
-			ss_warning_shown = 0;
+			ss_warning_shown_null = false;
+			ss_warning_shown_mismatch = false;
 		}
 	}
 #endif
@@ -2383,26 +2385,29 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 				int n_banks = cfread_int(fp);			// Number of turrets
 
 				for ( i = 0; i < n_banks; i++ ) {
-					int parent;							// The parent subobj of the turret (the gun base)
-					int physical_parent;				// The subobj that the firepoints are physically attached to (the gun barrel)
 					int n_slots;						// How many firepoints the turret has
 					model_subsystem *subsystemp;		// The actual turret subsystem
 
-					parent = cfread_int( fp );
-					physical_parent = cfread_int(fp);
+					int base_obj = cfread_int(fp);		// The parent subobj of the turret (the gun base)
+					int gun_obj = cfread_int(fp);       // The subobj that the firepoints are physically attached to (the gun barrel)
+					
+					if (base_obj != gun_obj && pm->submodel[gun_obj].parent != base_obj) {
+						Warning(LOCATION, "Model %s turret %s has a gun submodel that is not an immediate child object of the base", pm->filename, pm->submodel[base_obj].name);
+						gun_obj = base_obj; // fall back to singlepart handling
+					}
 
 					int snum=-1;
 					if ( subsystems ) {
 						for ( snum = 0; snum < n_subsystems; snum++ ) {
 							subsystemp = &subsystems[snum];
 
-							if ( parent == subsystemp->subobj_num ) {
+							if ( base_obj == subsystemp->subobj_num ) {
 								cfread_vector( &temp_vec, fp );
 								vm_vec_normalize_safe(&temp_vec);
 								subsystemp->turret_norm = temp_vec;
 
 								n_slots = cfread_int( fp );
-								subsystemp->turret_gun_sobj = physical_parent;
+								subsystemp->turret_gun_sobj = gun_obj;
 								if(n_slots > MAX_TFP) {
 									Warning(LOCATION, "Model %s has %i turret firing points on subsystem %s, maximum is %i", pm->filename, n_slots, subsystemp->name, MAX_TFP);
 								}
@@ -2421,8 +2426,8 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 								subsystemp->turret_num_firing_points = n_slots;
 
 								// copy the subsystem index that the gun base submodel should have at this point
-								Assertion(pm->submodel[parent].subsys_num >= 0, "Turret gun base should have a subsystem index!");
-								pm->submodel[physical_parent].subsys_num = pm->submodel[parent].subsys_num;
+								Assertion(pm->submodel[base_obj].subsys_num >= 0, "Turret gun base should have a subsystem index!");
+								pm->submodel[gun_obj].subsys_num = pm->submodel[base_obj].subsys_num;
 
 								break;
 							}
@@ -2432,7 +2437,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 					if ( (n_subsystems == 0) || (snum == n_subsystems) ) {
 						vec3d bogus;
 
-						nprintf(("Warning", "Turret submodel %i not found for turret %i in model %s\n", parent, i, pm->filename));
+						nprintf(("Warning", "Turret submodel %i not found for turret %i in model %s\n", base_obj, i, pm->filename));
 						cfread_vector( &bogus, fp );
 						n_slots = cfread_int( fp );
 						for (j = 0; j < n_slots; j++ )

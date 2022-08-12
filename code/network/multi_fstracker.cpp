@@ -28,6 +28,7 @@
 #include "network/stand_gui.h"
 #include "network/multi_pmsg.h"
 #include "playerman/player.h"
+#include "pilotfile/pilotfile.h"
 
 // -----------------------------------------------------------------------------------
 // FREESPACE MASTER TRACKER DEFINES/VARS
@@ -240,7 +241,8 @@ int multi_fs_tracker_validate(int show_error)
 			}
 
 			// copy my statistics into my pilot file
-			multi_stats_tracker_to_fs(&Multi_tracker_fs_pilot,&Player->stats);			
+			multi_stats_tracker_to_fs(&Multi_tracker_fs_pilot,&Player->stats);
+			Pilot.set_multi_stats(&Player->stats);
 
 			Multi_validate_mode = -1;
 
@@ -939,6 +941,8 @@ void multi_stats_tracker_to_fs(vmt_stats_struct *vmt,scoring_struct *fs)
 		fs->last_flown = 0;
 	}
 
+	fs->last_backup = fs->last_flown;
+
 	// medals and ship kills are stored in a single array, medals first
 	const size_t count = vmt->num_medals + vmt->num_ships;
 
@@ -949,7 +953,9 @@ void multi_stats_tracker_to_fs(vmt_stats_struct *vmt,scoring_struct *fs)
 
 	for (size_t idx = 0, idx2 = 0; idx < count; ++idx) {
 		if (idx < vmt->num_medals) {
-			fs->medal_counts[idx] = static_cast<int>(vmt->counts[idx]);
+			if (idx < max_medals) {
+				fs->medal_counts[idx] = static_cast<int>(vmt->counts[idx]);
+			}
 		} else {
 			fs->kills[idx2++] = static_cast<int>(vmt->counts[idx]);
 		}

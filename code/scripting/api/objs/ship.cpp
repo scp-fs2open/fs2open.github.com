@@ -1230,7 +1230,7 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem Ta
 			{
 				ai_mode = AI_GOAL_DESTROY_SUBSYSTEM;
 				ai_shipname = Ships[tgh->objp->instance].ship_name;
-				ai_submode = ship_get_subsys_index( &Ships[tgsh->objp->instance], tgsh->ss->system_info->subobj_name );
+				ai_submode = ship_find_subsys( &Ships[tgsh->objp->instance], tgsh->ss->system_info->subobj_name );
 			}
 			else if(tgh_valid && tgh->objp->type == OBJ_WEAPON)
 			{

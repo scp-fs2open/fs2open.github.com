@@ -132,6 +132,7 @@ namespace Ship {
 		Same_departure_warp_when_docked,	// Goober5000
 		Fail_sound_locked_primary,		// Kiloku -- Play the firing fail sound when the weapon is locked.
 		Fail_sound_locked_secondary,		// Kiloku -- Play the firing fail sound when the weapon is locked.
+		Subsystem_cache_valid,		// Goober5000 - whether the subsystem list index caches can be used
 		Aspect_immune,						//Kiloku -- Ship cannot be targeted by Aspect Seekers. 
 
 		NUM_VALUES
@@ -182,8 +183,8 @@ namespace Ship {
 		Awacs,							// ditto
 		Knossos_device,					// this is the knossos device
 		No_fred,						// not available in fred
-		Default_in_tech_database,		// default in tech database - Goober5000
-		Default_in_tech_database_m,		// ditto - Goober5000
+		Default_in_tech_database,		// this entry's default tech database status, as specified in ships.tbl; used when the tech db is "reset to default" - Goober5000
+		Default_in_tech_database_m,		// ditto for multiplayer - Goober5000
 		Flash,							// makes a flash when it explodes
 		Show_ship_model,				// Show ship model even in first person view
 		Surface_shields,				// _argv[-1], 16 Jan 2005: Enable surface shields for this ship.

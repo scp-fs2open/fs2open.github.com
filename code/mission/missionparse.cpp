@@ -1799,7 +1799,7 @@ void parse_dock_one_docked_object(p_object *pobjp, p_object *parent_pobjp)
 	ai_dock_with_object(objp, dockpoint, parent_objp, parent_dockpoint, AIDO_DOCK_NOW);
 }
 
-int parse_create_object_sub(p_object *objp);
+int parse_create_object_sub(p_object *objp, bool standalone_ship = false);
 
 // Goober5000
 void parse_create_docked_object_helper(p_object *pobjp, p_dock_function_info *infop)
@@ -1826,7 +1826,7 @@ void parse_create_docked_object_helper(p_object *pobjp, p_dock_function_info *in
  * This is a bit tricky because of the way initial docking is now handled.
  * Docking groups require special treatment.
  */
-int parse_create_object(p_object *pobjp)
+int parse_create_object(p_object *pobjp, bool standalone_ship)
 {
 	object *objp;
 
@@ -1862,7 +1862,7 @@ int parse_create_object(p_object *pobjp)
 	// create normally
 	else
 	{
-		parse_create_object_sub(pobjp);
+		parse_create_object_sub(pobjp, standalone_ship);
 	}
 
 	// get the main object
@@ -1895,7 +1895,7 @@ void parse_bring_in_docked_wing(p_object *p_objp, int wingnum, int shipnum);
  * Given a stuffed p_object struct, create an object and fill in the necessary fields.
  * @return object number.
  */
-int parse_create_object_sub(p_object *p_objp)
+int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 {
 	int	i, j, k, objnum, shipnum;
 	int anchor_objnum = -1;
@@ -1913,7 +1913,7 @@ int parse_create_object_sub(p_object *p_objp)
 	MONITOR_INC(NumShipArrivals, 1);
 
 	// base level creation - need ship name in case of duplicate textures
-	objnum = ship_create(&p_objp->orient, &p_objp->pos, p_objp->ship_class, p_objp->name);
+	objnum = ship_create(&p_objp->orient, &p_objp->pos, p_objp->ship_class, p_objp->name, standalone_ship);
 	Assert(objnum != -1);
 	shipnum = Objects[objnum].instance;
 
@@ -2459,7 +2459,7 @@ int parse_create_object_sub(p_object *p_objp)
 				send_ship_create_packet(&Objects[objnum], (p_objp == Arriving_support_ship));
 		}
 		// also add this ship to the multi ship tracking and interpolation struct
-		multi_ship_record_add_ship(objnum);
+		multi_rollback_ship_record_add_ship(objnum);
 	}
 
 	// If the ship is in a wing, this will be done in mission_set_wing_arrival_location() instead
@@ -3358,9 +3358,10 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
         if (tmp_orders != -1) {
 			p_objp->flags.set(Mission::Parse_Object_Flags::SF_Use_unique_orders);
 
-			for(size_t j = 0; j < Player_orders.size(); j++){
-				if(Player_orders[j].id & tmp_orders)
-					p_objp->orders_accepted.insert(j);
+			//Iterate over all player orders for the bitfield, but restrict to those that the integer could actually provide
+			for(size_t j = 0; j < Player_orders.size() && j < std::numeric_limits<decltype(tmp_orders)>::digits; j++) {
+				if((1 << j) & tmp_orders)
+					p_objp->orders_accepted.insert(j + 1); //The first "true" order starts at idx 1, since 0 can be "no order"
 			}
 		}
     }
@@ -6247,6 +6248,7 @@ bool post_process_mission()
 				SCP_string location_str;
 				SCP_string sexp_str;
 				SCP_string error_msg;
+				SCP_string bad_node_str;
 
 				// it's helpful to point out the goal/event, so do that if we can
 				int index;
@@ -6258,8 +6260,13 @@ bool post_process_mission()
 
 				convert_sexp_to_string(sexp_str, i, SEXP_ERROR_CHECK_MODE);
 				truncate_message_lines(sexp_str, 30);
+
+				stuff_sexp_text_string(bad_node_str, bad_node, SEXP_ERROR_CHECK_MODE);
+				if (!bad_node_str.empty()) {	// the previous function adds a space at the end
+					bad_node_str.pop_back();
+				}
 				
-				sprintf(error_msg, "%s%s.\n\nIn sexpression: %s\n\n(Bad node appears to be: %s)\n", location_str.c_str(), sexp_error_message(result), sexp_str.c_str(), Sexp_nodes[bad_node].text);
+				sprintf(error_msg, "%s%s.\n\nIn sexpression: %s\n\n(Bad node appears to be: %s)\n", location_str.c_str(), sexp_error_message(result), sexp_str.c_str(), bad_node_str.c_str());
 				Warning(LOCATION, "%s", error_msg.c_str());
 
 				// syntax errors are recoverable in Fred but not FS
@@ -7545,10 +7552,13 @@ int mission_do_departure(object *objp, bool goal_is_to_warp)
 
 	mprintf(("Entered mission_do_departure() for %s\n", shipp->ship_name));
 
-	// add scripting hook for 'On Departure Started' --wookieejedi
-	// hook is placed at the beginning of this function to allow the scripter to
-	// actually have access to the ship's departure decisions before they are all executed
-	OnDepartureStartedHook->run(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp), scripting::hook_param("Ship", 'o', objp)));
+	if (OnDepartureStartedHook->isActive())
+	{
+		// add scripting hook for 'On Departure Started' --wookieejedi
+		// hook is placed at the beginning of this function to allow the scripter to
+		// actually have access to the ship's departure decisions before they are all executed
+		OnDepartureStartedHook->run(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp), scripting::hook_param("Ship", 'o', objp)));
+	}
 
 	// abort rearm, because if we entered this function we're either going to depart via hyperspace, depart via bay,
 	// or revert to our default behavior

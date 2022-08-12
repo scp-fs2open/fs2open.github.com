@@ -18,6 +18,7 @@
 
 namespace scripting {
 struct ScriptingDocumentation;
+class Hook;
 }
 
 struct image_desc
@@ -67,9 +68,7 @@ enum ConditionalType {
 //Actions
 enum ConditionalActions : int32_t {
 	CHA_NONE    = -1,
-	CHA_DEATH,
 	CHA_ONFRAME,
-	CHA_COLLIDESHIP,
 	CHA_COLLIDEWEAPON,
 	CHA_COLLIDEDEBRIS,
 	CHA_COLLIDEASTEROID,
@@ -182,9 +181,10 @@ class script_state
 	// values are a vector to provide a stack of values. This is necessary to ensure consistent behavior if a scripting
 	// hook is called from within another script (e.g. calls to createShip)
 	SCP_unordered_map<SCP_string, SCP_vector<luacpp::LuaReference>> HookVariableValues;
+
 	// ActiveActions lets code that might run scripting hooks know whether any scripts are even registered for it.
 	// AssayActions is responsible for keeping it up to date.
-	bool ActiveActions[ConditionalActions::CHA_LAST+1];
+	SCP_unordered_map<int, bool> ActiveActions;
 
 	void ParseChunkSub(script_function& out_func, const char* debug_str=NULL);
 
@@ -244,7 +244,7 @@ public:
 	bool ParseCondition(const char *filename="<Unknown>");
 	void AddConditionedHook(ConditionedHook hook);
 	void AssayActions();
-	bool IsActiveAction(ConditionalActions action_id);
+	bool IsActiveAction(int hookId);
 
 	void AddGameInitFunction(script_function func);
 

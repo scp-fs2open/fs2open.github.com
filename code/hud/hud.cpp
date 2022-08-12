@@ -1515,6 +1515,7 @@ void hud_update_frame(float  /*frametime*/)
 	}
 
 	if (Player_ai->target_objnum == -1) {
+		Player->target_is_dying = -1; // according to comments elsewhere in the code, set to -1 when no target
 		hud_target_change_check();
 		return;
 	}

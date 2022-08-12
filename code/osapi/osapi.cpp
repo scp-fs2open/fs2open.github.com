@@ -300,7 +300,7 @@ static char			szWinTitle[128];
 static char			szWinClass[128];
 static int			Os_inited = 0;
 
-static SCP_vector<SDL_Event> buffered_events;
+static SCP_vector<SDL_Event> deferred_events;
 
 int Os_debugger_running = 0;
 
@@ -713,11 +713,11 @@ namespace os
 	}
 }
 	
-void os_ignore_events() {
+void os_defer_events_on_load_screen() {
 	SDL_Event event;
 	while (SDL_PollEvent(&event)) {
-		// Add event to buffer
-		buffered_events.push_back(event);
+		// Add event to be handled later
+		deferred_events.push_back(event);
 	}
 }
 
@@ -745,14 +745,28 @@ static void handle_sdl_event(const SDL_Event& event) {
 	}
 }
 
+void os_remove_deferred_cutscene_key_events() {
+	deferred_events.erase(
+		std::remove_if(deferred_events.begin(), deferred_events.end(), [](const SDL_Event &event)
+		{
+			return (event.type == SDL_KEYUP) && (
+				event.key.keysym.sym == SDLK_KP_ENTER ||
+				event.key.keysym.sym == SDLK_RETURN ||
+				event.key.keysym.sym == SDLK_SPACE
+			);
+		}),
+		deferred_events.end()
+	);
+}
+
 void os_poll()
 {
-	// Replay the buffered events
-	auto end = buffered_events.end();
-	for (auto it = buffered_events.begin(); it != end; ++it) {
+	// Replay the deferred events
+	auto end = deferred_events.end();
+	for (auto it = deferred_events.begin(); it != end; ++it) {
 		handle_sdl_event(*it);
 	}
-	buffered_events.clear();
+	deferred_events.clear();
 
 	SDL_Event event;
 

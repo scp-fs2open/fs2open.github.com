@@ -24,8 +24,7 @@
 #include "object/object.h"
 #include "object/objectdock.h"
 #include "object/objectshield.h"
-#include "scripting/scripting.h"
-#include "scripting/api/objs/vecmath.h"
+#include "scripting/global_hooks.h"
 #include "playerman/player.h"
 #include "render/3d.h"			// needed for View_position, which is used when playing 3d sound
 #include "ship/ship.h"
@@ -1195,17 +1194,23 @@ int collide_ship_ship( obj_pair * pair )
 		{
 			bool a_override = false, b_override = false;
 
-			if (Script_system.IsActiveAction(CHA_COLLIDESHIP)) {
-				Script_system.SetHookObjects(4, "Self", A, "Object", B, "Ship", A, "ShipB", B);
-				Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(world_hit_pos));
-				a_override = Script_system.IsConditionOverride(CHA_COLLIDESHIP, A, B);
-				Script_system.RemHookVars({ "Self", "Object", "Ship", "ShipB", "Hitpos" });
+			if (scripting::hooks::OnShipCollision->isActive()) {
+				a_override = scripting::hooks::OnShipCollision->isOverride(
+					scripting::hook_param_list(scripting::hook_param("Self", 'o', A),
+						scripting::hook_param("Object", 'o', B),
+						scripting::hook_param("Ship", 'o', A),
+						scripting::hook_param("ShipB", 'o', B),
+						scripting::hook_param("Hitpos", 'o', world_hit_pos)),
+					A, B);
 
 				// Yes, this should be reversed.
-				Script_system.SetHookObjects(4, "Self", B, "Object", A, "Ship", B, "ShipB", A);
-				Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(world_hit_pos));
-				b_override = Script_system.IsConditionOverride(CHA_COLLIDESHIP, B, A);
-				Script_system.RemHookVars({ "Self", "Object", "Ship", "ShipB", "Hitpos" });
+				b_override = scripting::hooks::OnShipCollision->isOverride(
+					scripting::hook_param_list(scripting::hook_param("Self", 'o', B),
+						scripting::hook_param("Object", 'o', A),
+						scripting::hook_param("Ship", 'o', B),
+						scripting::hook_param("ShipB", 'o', A),
+						scripting::hook_param("Hitpos", 'o', world_hit_pos)),
+					B, A);
 			}
 
 			if(!a_override && !b_override)
@@ -1388,7 +1393,7 @@ int collide_ship_ship( obj_pair * pair )
 										// finally if the host is also a player, ignore making these adjustments for him because he is in a pure simulation.
 										if (&Ships[Objects[current_player.m_player->objnum].instance] != Player_ship) {
 											// temp set this as an uninterpolated ship, to make the collision look more natural until the next update comes in.
-											multi_oo_set_client_simulation_mode(Objects[current_player.m_player->objnum].net_signature);
+											Objects[current_player.m_player->objnum].interp_info.force_interpolation_mode();
 
 											// check to see if it has been long enough since the last collision, if not, negate the damage
 											if (!timestamp_elapsed(current_player.s_info.player_collision_timestamp)) {
@@ -1447,24 +1452,28 @@ int collide_ship_ship( obj_pair * pair )
 				}
 			}
 
-			if (!Script_system.IsActiveAction(CHA_COLLIDESHIP)) {
+			if (!scripting::hooks::OnShipCollision->isActive()) {
 				return 0;
 			}
 
 			if(!(b_override && !a_override))
 			{
-				Script_system.SetHookObjects(4, "Self", A, "Object", B, "Ship", A, "ShipB", B);
-				Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(world_hit_pos));
-				Script_system.RunCondition(CHA_COLLIDESHIP, A, B);
-				Script_system.RemHookVars({ "Self", "Object", "Ship", "ShipB", "Hitpos" });
+				scripting::hooks::OnShipCollision->run(scripting::hook_param_list(scripting::hook_param("Self", 'o', A),
+														   scripting::hook_param("Object", 'o', B),
+														   scripting::hook_param("Ship", 'o', A),
+														   scripting::hook_param("ShipB", 'o', B),
+														   scripting::hook_param("Hitpos", 'o', world_hit_pos)),
+					A, B);
 			}
 			if((b_override && !a_override) || (!b_override && !a_override))
 			{
 				// Yes, this should be reversed.
-				Script_system.SetHookObjects(4, "Self", B, "Object", A, "Ship", B, "ShipB", A);
-				Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(world_hit_pos));
-				Script_system.RunCondition(CHA_COLLIDESHIP, B, A);
-				Script_system.RemHookVars({ "Self", "Object", "Ship", "ShipB", "Hitpos" });
+				scripting::hooks::OnShipCollision->run(scripting::hook_param_list(scripting::hook_param("Self", 'o', B),
+														   scripting::hook_param("Object", 'o', A),
+														   scripting::hook_param("Ship", 'o', B),
+														   scripting::hook_param("ShipB", 'o', A),
+														   scripting::hook_param("Hitpos", 'o', world_hit_pos)),
+					B, A);
 			}
 
 			return 0;

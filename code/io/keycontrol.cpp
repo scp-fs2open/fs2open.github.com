@@ -1924,12 +1924,12 @@ int button_function_critical(int n, net_player *p = NULL)
 			if(at_self)
 				control_used(CYCLE_NUM_MISSLES);
 
-			if ( objp == Player_obj ) {
-				if ( Player_ship->weapons.num_secondary_banks <= 0 ) {
+			if ( Ships[objp->instance].weapons.num_secondary_banks <= 0 ) {
+				if ( objp == Player_obj ) {
 					HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "This ship has no secondary weapons", 33));
 					gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
-					break;
 				}
+				break;
 			}
 
 			polymodel *pm = model_get(Ship_info[Ships[objp->instance].ship_info_index].model_num);
@@ -2311,7 +2311,7 @@ int button_function(int n)
 {
 	Assert(n >= 0);
 
-	if (Control_config[n].disabled)
+	if (Control_config[n].disabled || Control_config[n].locked)
 		return 0;
 
 	// check if the button has been set to be ignored by a SEXP
@@ -2324,6 +2324,12 @@ int button_function(int n)
 
 	//	No keys, not even targeting keys, when player in death roll.  He can press keys after he blows up.
 	if (Game_mode & GM_DEAD_DIED){
+		return 0;
+	}
+
+	//Keys can now be used. Execute ccd.tbl hooks
+	if (control_run_lua(static_cast<IoActionId>(n), 0)) {
+		//Lua told us to override
 		return 0;
 	}
 

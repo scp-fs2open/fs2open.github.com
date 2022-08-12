@@ -902,7 +902,9 @@ void sexp_tree::right_clicked(int mode)
 
 							// Replace Container Data submenu
 							// disallowed on variable-type SEXP args, to prevent FSO/FRED crashes
-							if (op_type != OPF_VARIABLE_NAME) {
+							// also disallowed for special argument options (not supported for now)
+							if (op_type != OPF_VARIABLE_NAME && op_type != OPF_ANYTHING &&
+								op_type != OPF_DATA_OR_STR_CONTAINER) {
 								int container_data_index = 0;
 								for (const auto &container : get_all_sexp_containers()) {
 									UINT flags = MF_STRING | MF_GRAYED;
@@ -2507,13 +2509,13 @@ void sexp_tree::NodeCopy()
 
 void sexp_tree::NodeReplacePaste()
 {
-	if (item_index < 0)
+	if (item_index < 0 || Sexp_clipboard < 0)
 		return;
 
 	int i;
 
 	// the following assumptions are made..
-	Assert((Sexp_clipboard > -1) && (Sexp_nodes[Sexp_clipboard].type != SEXP_NOT_USED));
+	Assert(Sexp_nodes[Sexp_clipboard].type != SEXP_NOT_USED);
 	Assert(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_LIST);
 	Assertion(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_CONTAINER_NAME,
 		"Attempt to use container name %s from SEXP clipboard. Please report!",
@@ -2585,13 +2587,13 @@ void sexp_tree::NodeReplacePaste()
 
 void sexp_tree::NodeAddPaste()
 {
-	if (item_index < 0)
+	if (item_index < 0 || Sexp_clipboard < 0)
 		return;
 
 	int i;
 
 	// the following assumptions are made..
-	Assert((Sexp_clipboard > -1) && (Sexp_nodes[Sexp_clipboard].type != SEXP_NOT_USED));
+	Assert(Sexp_nodes[Sexp_clipboard].type != SEXP_NOT_USED);
 	Assert(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_LIST);
 	Assertion(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_CONTAINER_NAME,
 		"Attempt to use container name %s from SEXP clipboard. Please report!",

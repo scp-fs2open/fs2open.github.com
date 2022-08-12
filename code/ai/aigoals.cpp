@@ -1235,6 +1235,10 @@ int ai_remove_goal_sexp_sub( int sexp, ai_goal* aigp )
 		priority = ( CDR( CDR(node) ) >= 0 ) ? atoi( CTEXT( CDR( CDR( node ) ) ) ) : -1;
 		goalmode = AI_GOAL_IGNORE_NEW;
 		break;
+	case OP_AI_FORM_ON_WING:
+		priority = 99;
+		goalmode = AI_GOAL_FORM_ON_WING;
+		break;
 	default:
 		const ai_mode_lua* luaAIMode = ai_lua_find_mode(op);
 		if(luaAIMode != nullptr){
@@ -1251,7 +1255,7 @@ int ai_remove_goal_sexp_sub( int sexp, ai_goal* aigp )
 			priority = localnode >= 0 ? atoi( CTEXT(localnode) ) : -1;
 		}
 		else {
-			UNREACHABLE("Invalid SEXP-OP number %d for an AI goal!", op);
+			UNREACHABLE("Invalid SEXP-OP %s (number %d) for an AI goal!", Sexp_nodes[node].text, op);
 		}
 		break;
 	};
@@ -1858,7 +1862,7 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 			sindex = ship_name_lookup( aigp->target_name );
 
 			if ( sindex != -1 ) {
-				aigp->ai_submode = ship_get_subsys_index( &Ships[sindex], aigp->docker.name );
+				aigp->ai_submode = ship_find_subsys( &Ships[sindex], aigp->docker.name );
 				aigp->flags.remove(AI::Goal_Flags::Subsys_needs_fixup);
 			} else {
 				Int3();
