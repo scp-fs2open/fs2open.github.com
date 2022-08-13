@@ -193,9 +193,6 @@ class script_state
 	static void OutputLuaDocumentation(scripting::ScriptingDocumentation& doc,
 		const scripting::DocumentationErrorReporter& errorReporter);
 
-	//Internal Lua helper functions
-	void EndLuaFrame();
-
 public:
 	//***Init/Deinit
 	script_state(const char *name);
@@ -259,10 +256,7 @@ public:
 	void RunInitFunctions();
 
 	//*****Other functions
-	void EndFrame();
-
 	static script_state* GetScriptState(lua_State* L);
-
 	util::event<void, lua_State*> OnStateDestroy;
 };
 
