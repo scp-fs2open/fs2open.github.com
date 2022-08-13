@@ -9,6 +9,8 @@
 #include "ship/ship.h"
 #include "ship/shipfx.h"
 
+#define CHEAT_BUFFER_LEN	17
+
 class CustomCheat {
 	public:
 		SCP_string cheatCode;

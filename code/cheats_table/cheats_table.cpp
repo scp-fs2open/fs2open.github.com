@@ -6,6 +6,7 @@ void cheat_table_init() {
 
 	// Add default Spawn Ship Cheat (Volition Bravos).
 	// Won't interfere with Total Conversions, since if the ship doesn't exist, the game will just ignore the cheat.
+	// The other default cheats do not use the Custom Cheat Framework and are still handled in keycontrol.cpp
 	std::unique_ptr<CustomCheat> bravos(new SpawnShipCheat("arrrrwalktheplank", "Walk the plank", false, "Volition Bravos", "Volition Bravos"));
 	customCheats.emplace(SCP_string(bravos->cheatCode), std::move(bravos));
 
@@ -27,6 +28,12 @@ void parse_cheat_table(const char* filename) {
 			bool shipSpawn = false;
 			required_string("+Code:");
 			stuff_string(code, F_RAW);
+
+			//We are limited to the buffer size used for the traditional cheats. We can still use short cheats, though.
+			if (code.length() > CHEAT_BUFFER_LEN) {
+				Warning(LOCATION, "Cheat code %s is too long. It will be cut off to maximum length (%i characters).", code.c_str(), CHEAT_BUFFER_LEN);
+				code = code.substr(0, CHEAT_BUFFER_LEN);
+			}
 
 			required_string("+Message:");
 			stuff_string(msg, F_RAW);
@@ -77,8 +84,7 @@ void parse_cheat_table(const char* filename) {
 	}
 }
 
-bool checkForCustomCheats(char buffer[], int buffer_length)
-{
+bool checkForCustomCheats(char buffer[], int buffer_length) {
 	char* check_buffer = new char[buffer_length];
 	memset (check_buffer, 0, buffer_length * sizeof(char));
 

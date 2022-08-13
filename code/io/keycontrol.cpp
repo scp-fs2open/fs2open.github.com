@@ -184,7 +184,6 @@ factor_table ftables;
 #define MAX_TIME_MULTIPLIER		64
 #define MAX_TIME_DIVIDER		4
 
-#define CHEAT_BUFFER_LEN	17
 char CheatBuffer[CHEAT_BUFFER_LEN+1];
 
 enum cheatCode {
@@ -1603,7 +1602,7 @@ void game_process_cheats(int k)
 	{
 		memset(CheatBuffer, 0, (CHEAT_BUFFER_LEN+1)*sizeof(char));
 		if (detectedCheatCode == CHEAT_CODE_NONE) return;
-		// If detectedCheatCode is anything else, then the modder overwrote an original cheat, and we still want that behavior, so continue.
+		// If detectedCheatCode is anything else, thenk the modder overwrote an original cheat, and we still want that behavior, so continue.
 	}
 
 	if(detectedCheatCode == CHEAT_CODE_FREESPACE){
