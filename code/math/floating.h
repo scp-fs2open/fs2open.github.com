@@ -97,10 +97,9 @@ float fl_isqrt( float x )
 */
 
 // sees if a floating point number is within the minimum tolerance of zero
-inline bool fl_near_zero(float a)
+inline bool fl_near_zero(float a, float e = std::numeric_limits<float>::epsilon())
 {
-	return a < std::numeric_limits<float>::epsilon()
-		&& a > -std::numeric_limits<float>::epsilon();
+	return a < e && a > -e;
 }
 
 // sees if two floating point numbers are within the minimum tolerance

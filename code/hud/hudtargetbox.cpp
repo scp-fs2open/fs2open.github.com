@@ -1033,7 +1033,7 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 		speed = vm_vec_mag(&target_objp->phys_info.vel);
 
 		// do the extra math only if it won't lead to null vec issues
-		if(!(IS_VEC_NULL(&target_objp->phys_info.vel))){
+		if(!(IS_VEC_NULL_SQ_SAFE(&target_objp->phys_info.vel))){
 			vec3d unit_vec, component_vec;
 
 			// in other words substract the magnitude of the target's velocity vectors parallel component from the speed of the weapon

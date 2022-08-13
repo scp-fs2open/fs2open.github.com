@@ -985,7 +985,7 @@ void physics_apply_shock(vec3d *direction_vec, float pressure, physics_info *pi,
 	pi->flags |= PF_IN_SHOCKWAVE;
 
 	// safety dance
-	if (!(IS_VEC_NULL(&torque))) {
+	if (!(IS_VEC_NULL_SQ_SAFE(&torque))) {
 		vec3d delta_rotvel;
 		vm_vec_rotate( &local_torque, &torque, orient );
 		vm_vec_copy_normalize(&delta_rotvel, &local_torque);

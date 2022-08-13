@@ -2273,7 +2273,7 @@ void model_queue_render_thrusters(model_render_params *interp, polymodel *pm, in
 			vec3d scale_vec = { { { 1.0f, 0.0f, 0.0f } } };
 
 			// normalize banks, in case of incredibly big normals
-			if ( !IS_VEC_NULL(&world_norm) )
+			if ( !IS_VEC_NULL_SQ_SAFE(&world_norm) )
 				vm_vec_copy_normalize(&scale_vec, &world_norm);
 
 			// adjust for thrust

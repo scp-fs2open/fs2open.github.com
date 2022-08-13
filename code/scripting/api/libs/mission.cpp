@@ -1059,7 +1059,7 @@ ADE_FUNC(createWarpeffect,
 
 	vm_vec_sub(&v_orient, &point_to, &pos);
 
-	if (IS_VEC_NULL(&v_orient))
+	if (IS_VEC_NULL_SQ_SAFE(&v_orient))
 	{
 		//error in warp-effect: warp can't point to itself
 		LuaError(L, "The warp effect cannot be pointing at itself");
