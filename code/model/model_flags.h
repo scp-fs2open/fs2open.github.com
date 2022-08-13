@@ -41,7 +41,8 @@ namespace Model {
 		Fire_on_target,		// prevents turret from firing unless it is pointing at the firingpoints are pointing at the target
 		No_ss_targeting,	// toggles the subsystem targeting for the turret
 		Turret_reset_idle,	// makes turret reset to their initial position if the target is out of field of view
-		Turret_restricted_fov,	// tells the game to use additional calculations should turret have a limited base fov or elevation
+		Turret_base_restricted_fov,	// tells the game to use additional calculations should turret have a limited base fov or elevation
+		Turret_barrel_override_fov,	// indicates the ships.tbl FOV should override the POF FOV
 		Carry_shockwave,	// subsystem - even with 'carry no damage' flag - will carry shockwave damage to the hull
 		Allow_landing,		// This subsystem can be landed on
 		Fov_edge_check,		// Tells the game to use better FOV edge checking with this turret

@@ -707,7 +707,11 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 		else
 			strcpy_s(buf,"180");
 		angle = fl_radians(atoi(buf))/2.0f;
-		subsystemp->turret_fov = cosf(angle);
+
+		// don't set the turret FOV if it has already been set (e.g. through ships.tbl)
+		if (!subsystemp->flags[Model::Subsystem_Flags::Turret_barrel_override_fov])
+			subsystemp->turret_fov = cosf(angle);
+
 		subsystemp->turret_num_firing_points = 0;
 
 		if (in(p, props, "$crewspot")) {
@@ -4056,7 +4060,7 @@ int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, ship_
 		}
 	}
 
-	if (turret->flags[Model::Subsystem_Flags::Turret_restricted_fov])
+	if (turret->flags[Model::Subsystem_Flags::Turret_base_restricted_fov])
 		limited_base_rotation = true;
 
 	//------------
