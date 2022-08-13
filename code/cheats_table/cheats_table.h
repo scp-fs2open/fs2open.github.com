@@ -23,32 +23,34 @@ class CustomCheat {
 
 		virtual ~CustomCheat() = default;
 
-		virtual void runCheat(){
-			if (canUseCheat()){
+		virtual void runCheat() {
+			if (canUseCheat()) {
 				HUD_printf("%s", cheatMsg.c_str());
 				scripting::hooks::OnCheat->run(scripting::hook_param_list(scripting::hook_param("Cheat", 's', cheatCode)));
 				CheatUsed = SCP_string(cheatCode);
 			}
 		}
-		bool canUseCheat(){
-			return !requireCheatsEnabled || Cheats_enabled ;
+
+		bool canUseCheat() {
+			return !requireCheatsEnabled || Cheats_enabled;
 		}
 };
 
 class SpawnShipCheat : public CustomCheat {
-	protected: 
+	protected:
 	SCP_string shipClassName;
 	SCP_string shipName;
-	public: 
-	SpawnShipCheat(SCP_string cheat_code, SCP_string cheat_msg,  bool require_cheats_enabled, SCP_string class_name, SCP_string ship_name) : CustomCheat(cheat_code, cheat_msg, require_cheats_enabled){
+	public:
+
+	SpawnShipCheat(SCP_string cheat_code, SCP_string cheat_msg,  bool require_cheats_enabled, SCP_string class_name, SCP_string ship_name) : CustomCheat(cheat_code, cheat_msg, require_cheats_enabled) {
 		shipClassName = class_name;
 		shipName = ship_name;
 	}
 
 	void runCheat() override {
 		CustomCheat::runCheat();
-		if (canUseCheat() && (Game_mode & GM_IN_MISSION) && Player_obj != nullptr)
-		{
+
+		if (canUseCheat() && (Game_mode & GM_IN_MISSION) && Player_obj != nullptr) {
 			extern void prevent_spawning_collision(object *new_obj);
 			ship_subsys *ptr;
 			char name[NAME_LENGTH];
@@ -76,7 +78,7 @@ class SpawnShipCheat : public CustomCheat {
 				shipp->orders_accepted.insert(j);
 
 			// Goober5000 - stolen from support ship creation
-			// create a name for the ship with a number. look for collisions until one isn't found anymore			
+			// create a name for the ship with a number. look for collisions until one isn't found anymore
 			ship_idx = 1;
 			do {
 				sprintf(name, "%s %d", shipName.c_str(), ship_idx);
@@ -116,6 +118,5 @@ class SpawnShipCheat : public CustomCheat {
 
 static SCP_map<SCP_string, std::unique_ptr<CustomCheat>> customCheats;
 
-
-void cheat_table_init(); 
+void cheat_table_init();
 void parse_cheat_table(const char* filename);

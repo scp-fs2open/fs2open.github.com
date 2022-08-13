@@ -3,10 +3,13 @@
 
 void cheat_table_init() {
 	customCheats.clear();
-	std::unique_ptr<CustomCheat> bravos(new SpawnShipCheat("arrrrwalktheplank", "Walk the plank", false, "Volition Bravos", "Volition Bravos")); //("Volition Bravos", "Volition Bravos", "Walk the plank", false));
+
+	// Add default Spawn Ship Cheat (Volition Bravos).
+	// Won't interfere with Total Conversions, since if the ship doesn't exist, the game will just ignore the cheat.
+	std::unique_ptr<CustomCheat> bravos(new SpawnShipCheat("arrrrwalktheplank", "Walk the plank", false, "Volition Bravos", "Volition Bravos"));
 	customCheats.emplace(SCP_string(bravos->cheatCode), std::move(bravos));
-    
-    if (cf_exists_full("cheats.tbl", CF_TYPE_TABLES)) {
+
+	if (cf_exists_full("cheats.tbl", CF_TYPE_TABLES)) {
 		parse_cheat_table("cheats.tbl");
 	}
 	parse_modular_table("*-cht.tbm", parse_cheat_table);
@@ -28,8 +31,9 @@ void parse_cheat_table(const char* filename) {
 			required_string("+Message:");
 			stuff_string(msg, F_RAW);
 
-			if (optional_string("+RequireCheats:"))
+			if (optional_string("+RequireCheats:")) {
 				stuff_boolean(&requireCheats);
+			}
 
 			if (optional_string("+SpawnShip:")) {
 				shipSpawn = true;
@@ -39,8 +43,7 @@ void parse_cheat_table(const char* filename) {
 				stuff_string(shipClass, F_RAW);
 
 				int shipClassInfo = ship_info_lookup(shipClass.c_str());
-				if (shipClassInfo < 0)
-				{
+				if (shipClassInfo < 0) {
 					shipSpawn = false;
 					Warning(LOCATION, "There is no ship class named '%s'. The '%s' cheat won't summon a ship.", shipClass.c_str(), code.c_str());
 				}
@@ -48,22 +51,21 @@ void parse_cheat_table(const char* filename) {
 			
 			if (shipSpawn) {
 				std::unique_ptr<CustomCheat> shipCheat(new SpawnShipCheat(code, msg, requireCheats, shipClass, shipName));
-				if(customCheats.count(code) == 1)
-				{
+
+				if(customCheats.count(code) == 1) {
 					Warning(LOCATION, "A cheat for code '%s' already exists. It will be replaced.", code.c_str());
 					customCheats[code] = std::move(shipCheat);
 				} else {
 					customCheats.emplace(code, std::move(shipCheat));
 				}
-				
 			} else {
 				std::unique_ptr<CustomCheat> cheat(new CustomCheat(code, msg, requireCheats));
-				if(customCheats.count(code) == 1)
-				{
+
+				if(customCheats.count(code) == 1) {
 					Warning(LOCATION, "A cheat for code '%s' already exists. It will be replaced.", code.c_str());
 					customCheats[code] = std::move(cheat);
 				} else {
-						customCheats.emplace(code, std::move(cheat));
+					customCheats.emplace(code, std::move(cheat));
 				}
 			}
 		}
@@ -75,23 +77,23 @@ void parse_cheat_table(const char* filename) {
 	}
 }
 
-bool checkForCheats(char buffer[], int buffer_length)
+bool checkForCustomCheats(char buffer[], int buffer_length)
 {
 	char* check_buffer = new char[buffer_length];
 	memset (check_buffer, 0, buffer_length * sizeof(char));
 
-	int fooidx = 0;
-	for (int i = 0; i < buffer_length; i++)
-	{
-		if (buffer[i] != '\0')
-		{
-			check_buffer[fooidx] = buffer[i];
-			fooidx++;
+	// We construct a checking buffer from the original.
+	int idx = 0;
+	for (int i = 0; i < buffer_length; i++) {
+		if (buffer[i] != '\0') {
+			check_buffer[idx] = buffer[i];
+			idx++;
 		}
 	}
-	//I'm sorry for the crimes against all stringkind.
-	for (auto &ccheat : customCheats)
-	{
+
+	// Loop through our map of custom cheats and check if the code is within the buffer.
+	// We don't just check for equality, as the player may have typed other characters before the cheat.
+	for (auto &ccheat : customCheats) {
 		auto found = std::strstr(check_buffer, ccheat.first.c_str());
 		if (found) {
 			ccheat.second->runCheat();
