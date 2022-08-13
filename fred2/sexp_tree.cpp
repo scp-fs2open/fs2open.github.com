@@ -6975,15 +6975,15 @@ sexp_list_item *sexp_tree::get_listing_opf_ship_flags()
 	int i;
 	sexp_list_item head;
 	// object flags
-	for ( i = 0; i < MAX_OBJECT_FLAG_NAMES; i++) {
+	for ( i = 0; i < Num_object_flag_names; i++) {
 		head.add_data(Object_flag_names[i].flag_name);
 	}
 	// ship flags
-	for ( i = 0; i < MAX_SHIP_FLAG_NAMES; i++) {
+	for ( i = 0; i < Num_ship_flag_names; i++) {
 		head.add_data(Ship_flag_names[i].flag_name);
 	}
 	// ai flags
-	for ( i = 0; i < MAX_AI_FLAG_NAMES; i++) {
+	for ( i = 0; i < Num_ai_flag_names; i++) {
 		head.add_data(Ai_flag_names[i].flag_name);
 	}
 

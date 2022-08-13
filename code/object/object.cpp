@@ -115,6 +115,8 @@ obj_flag_name Object_flag_names[] = {
 	{ Object::Object_Flags::Attackable_if_no_collide, "ai-attackable-if-no-collide", 1,},
 };
 
+extern const int Num_object_flag_names = sizeof(Object_flag_names) / sizeof(obj_flag_name);
+
 #ifdef OBJECT_CHECK
 checkobject::checkobject() 
     : type(0), signature(0), parent_sig(0) 

@@ -33,8 +33,8 @@ typedef struct ai_flag_name {
 	char flag_name[TOKEN_LENGTH];
 } ai_flag_name;
 
-#define MAX_AI_FLAG_NAMES			2
 extern ai_flag_name Ai_flag_names[];
+extern const int Num_ai_flag_names;
 
 //	dock_orient_and_approach() modes.
 #define	DOA_APPROACH	1		//	Approach the current point on the path (aip->path_cur)
