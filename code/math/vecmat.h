@@ -21,16 +21,17 @@
 
 //Macros/functions to fill in fields of structures
 
-//macro to check if vector is zero
+//macro to check if vector is zero, uses 1e-16 as a minimum tolerance
 #define IS_VEC_NULL_SQ_SAFE(v) \
-		(fl_near_zero((v)->xyz.x, 1e-16) && \
-		fl_near_zero((v)->xyz.y, 1e-16) && \
-		fl_near_zero((v)->xyz.z, 1e-16))
+		(fl_near_zero((v)->xyz.x, (float) 1e-16) && \
+		fl_near_zero((v)->xyz.y, (float) 1e-16) && \
+		fl_near_zero((v)->xyz.z, (float) 1e-16))
 
+// macro to check if vector is zero, uses 1e-36 as a minimum tolerance
 #define IS_VEC_NULL(v) \
-		(fl_near_zero((v)->xyz.x, 1e-36) && \
-		fl_near_zero((v)->xyz.y, 1e-36) && \
-		fl_near_zero((v)->xyz.z, 1e-36))
+		(fl_near_zero((v)->xyz.x, (float) 1e-36) && \
+		fl_near_zero((v)->xyz.y, (float) 1e-36) && \
+		fl_near_zero((v)->xyz.z, (float) 1e-36))
 
 #define IS_MAT_NULL(v) (IS_VEC_NULL(&(v)->vec.fvec) && IS_VEC_NULL(&(v)->vec.uvec) && IS_VEC_NULL(&(v)->vec.rvec))
 
