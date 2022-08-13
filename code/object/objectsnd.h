@@ -16,14 +16,15 @@
 
 #define	OS_USED					(1<<0)
 #define OS_MAIN					(1<<1)		// "main" sound. attentuation does not apply until outside the radius of the object
-#define OS_TURRET_BASE_ROTATION	(1<<2)
-#define OS_TURRET_GUN_ROTATION	(1<<3)
-#define OS_SUBSYS_ALIVE			(1<<4)
-#define OS_SUBSYS_DEAD			(1<<5)
-#define OS_SUBSYS_DAMAGED		(1<<6)
-#define OS_SUBSYS_ROTATION		(1<<7)
-#define OS_PLAY_ON_PLAYER		(1<<8)
-#define OS_LOOPING_DISABLED		(1<<9)
+#define OS_ENGINE				(1<<2)		// the engine sound; only played when engines are on
+#define OS_TURRET_BASE_ROTATION	(1<<3)
+#define OS_TURRET_GUN_ROTATION	(1<<4)
+#define OS_SUBSYS_ALIVE			(1<<5)
+#define OS_SUBSYS_DEAD			(1<<6)
+#define OS_SUBSYS_DAMAGED		(1<<7)
+#define OS_SUBSYS_ROTATION		(1<<8)
+#define OS_PLAY_ON_PLAYER		(1<<9)
+#define OS_LOOPING_DISABLED		(1<<10)
 
 struct vec3d;
 class object;

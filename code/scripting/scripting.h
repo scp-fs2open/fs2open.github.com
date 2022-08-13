@@ -193,9 +193,6 @@ class script_state
 	static void OutputLuaDocumentation(scripting::ScriptingDocumentation& doc,
 		const scripting::DocumentationErrorReporter& errorReporter);
 
-	//Internal Lua helper functions
-	void EndLuaFrame();
-
 public:
 	//***Init/Deinit
 	script_state(const char *name);
@@ -259,10 +256,7 @@ public:
 	void RunInitFunctions();
 
 	//*****Other functions
-	void EndFrame();
-
 	static script_state* GetScriptState(lua_State* L);
-
 	util::event<void, lua_State*> OnStateDestroy;
 };
 
@@ -337,13 +331,19 @@ bool script_state::EvalStringWithReturn(const char* string, const char* format, 
 				scripting::ade_get_args(LuaState, format, rtn);
 			}
 		} catch (const LuaException&) {
+			lua_pop(LuaState, 1);
+
 			return false;
 		}
 	} catch (const LuaException& e) {
 		LuaError(GetLuaSession(), "%s", e.what());
 
+		lua_pop(LuaState, 1);
+
 		return false;
 	}
+
+	lua_pop(LuaState, 1);
 
 	return true;
 }

@@ -2105,7 +2105,7 @@ float convert_distance_and_diameter_to_pixel_size(float distance, float diameter
 float model_render_get_diameter_clamped_to_min_pixel_size(const vec3d* pos, float diameter, float min_pixel_size)
 {
 	// Don't do any scaling math if the pixel size is set to zero.
-	if (min_pixel_size <= FLT_EPSILON)
+	if (fl_near_zero(min_pixel_size))
 		return diameter;
 
 	float distance_to_eye = vm_vec_dist(&Eye_position, pos);
@@ -2273,7 +2273,7 @@ void model_queue_render_thrusters(model_render_params *interp, polymodel *pm, in
 			vec3d scale_vec = { { { 1.0f, 0.0f, 0.0f } } };
 
 			// normalize banks, in case of incredibly big normals
-			if ( !IS_VEC_NULL_SQ_SAFE(&world_norm) )
+			if ( !IS_VEC_NULL(&world_norm) )
 				vm_vec_copy_normalize(&scale_vec, &world_norm);
 
 			// adjust for thrust

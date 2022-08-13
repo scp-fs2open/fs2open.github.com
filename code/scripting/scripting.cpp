@@ -792,11 +792,6 @@ bool script_state::IsConditionOverride(int action, object *objp1, object *objp2,
 	return false;
 }
 
-void script_state::EndFrame()
-{
-	EndLuaFrame();
-}
-
 void script_state::Clear()
 {
 	// Free all lua value references

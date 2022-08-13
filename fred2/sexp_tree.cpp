@@ -6372,23 +6372,28 @@ sexp_list_item *sexp_tree::get_listing_opf_builtin_hud_gauge()
 sexp_list_item *sexp_tree::get_listing_opf_custom_hud_gauge()
 {
 	sexp_list_item head;
-	SCP_unordered_set<SCP_string> all_gauges;
+	// prevent duplicate names, comparing case-insensitively
+	SCP_unordered_set<SCP_string, SCP_string_lcase_hash, SCP_string_lcase_equal_to> all_gauges;
 
 	for (auto &gauge : default_hud_gauges)
 	{
-		all_gauges.insert(gauge->getCustomGaugeName());
-		head.add_data(gauge->getCustomGaugeName());
+		SCP_string name = gauge->getCustomGaugeName();
+		if (!name.empty() && all_gauges.count(name) == 0)
+		{
+			head.add_data(name.c_str());
+			all_gauges.insert(std::move(name));
+		}
 	}
 
 	for (auto &si : Ship_info)
 	{
 		for (auto &gauge : si.hud_gauges)
 		{
-			// avoid duplicating any HUD gauges
-			if (all_gauges.count(gauge->getCustomGaugeName()) == 0)
+			SCP_string name = gauge->getCustomGaugeName();
+			if (!name.empty() && all_gauges.count(name) == 0)
 			{
-				all_gauges.insert(gauge->getCustomGaugeName());
-				head.add_data(gauge->getCustomGaugeName());
+				head.add_data(name.c_str());
+				all_gauges.insert(std::move(name));
 			}
 		}
 	}

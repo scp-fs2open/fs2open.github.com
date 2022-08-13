@@ -95,7 +95,7 @@ void HudGaugeRadarOrb::plotBlip(blip *b, vec3d *scaled_pos)
 {
 	*scaled_pos = b->position;
 	
-	if (IS_VEC_NULL_SQ_SAFE(scaled_pos)) {
+	if (IS_VEC_NULL(scaled_pos)) {
 		vm_vec_make(scaled_pos, 1.0f, 0.0f, 0.0f);
 	} else {
 		vm_vec_normalize(scaled_pos);

@@ -2526,7 +2526,7 @@ void ai_turret_execute_behavior(ship *shipp, ship_subsys *ss)
 	bool in_fov = turret_fov_test(ss, &gvec, &v2e);
 	bool something_was_ok_to_fire = false;
 
-	if (in_fov) {
+	if (in_fov && num_valid) {
 
 		// Do salvo thing separately - to prevent messing up things
 		int number_of_firings;
@@ -2800,7 +2800,7 @@ bool turret_adv_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mo
 			return true; 
 		else {
 			of_dst.xyz.y = 0;
-			if (!IS_VEC_NULL_SQ_SAFE(&of_dst)) {
+			if (!IS_VEC_NULL(&of_dst)) {
 				vm_vec_normalize(&of_dst);
 				// now we have 2d vector with lenght of 1 that points at the targets direction after being rotated to turrets FOR
 				if ((of_dst.xyz.z + size_mod) >= tp->turret_base_fov)
@@ -2814,7 +2814,7 @@ bool turret_adv_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mo
 bool turret_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mod)
 {
 	bool in_fov = false;
-	if (ss->system_info->flags[Model::Subsystem_Flags::Turret_restricted_fov])
+	if (ss->system_info->flags[Model::Subsystem_Flags::Turret_base_restricted_fov])
 		in_fov = turret_adv_fov_test(ss, gvec, v2e, size_mod);
 	else
 		in_fov = turret_std_fov_test(ss, gvec, v2e, size_mod);

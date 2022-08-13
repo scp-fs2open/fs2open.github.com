@@ -199,6 +199,10 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_UPDATE_COMMAND_UI(ID_SPEED50, OnUpdateSpeed50)
 	ON_COMMAND(ID_SPEED100, OnSpeed100)
 	ON_UPDATE_COMMAND_UI(ID_SPEED100, OnUpdateSpeed100)
+	ON_COMMAND(ID_SPEED500, OnSpeed500)
+	ON_UPDATE_COMMAND_UI(ID_SPEED500, OnUpdateSpeed500)
+	ON_COMMAND(ID_SPEED1000, OnSpeed1000)
+	ON_UPDATE_COMMAND_UI(ID_SPEED1000, OnUpdateSpeed1000)
 	ON_COMMAND(ID_SELECT, OnSelect)
 	ON_UPDATE_COMMAND_UI(ID_SELECT, OnUpdateSelect)
 	ON_COMMAND(ID_SELECT_AND_MOVE, OnSelectAndMove)
@@ -1744,7 +1748,19 @@ void CFREDView::OnSpeed100()
 	set_physics_controls();
 }
 
-void CFREDView::OnRot1() 
+void CFREDView::OnSpeed500()
+{
+	physics_speed = 500;
+	set_physics_controls();
+}
+
+void CFREDView::OnSpeed1000()
+{
+	physics_speed = 1000;
+	set_physics_controls();
+}
+
+void CFREDView::OnRot1()
 {
 	physics_rot = 2;
 	set_physics_controls();
@@ -1814,7 +1830,17 @@ void CFREDView::OnUpdateSpeed100(CCmdUI* pCmdUI)
 	pCmdUI->SetCheck(physics_speed == 100);
 }
 
-void CFREDView::OnUpdateRot1(CCmdUI* pCmdUI) 
+void CFREDView::OnUpdateSpeed500(CCmdUI* pCmdUI)
+{
+	pCmdUI->SetCheck(physics_speed == 500);
+}
+
+void CFREDView::OnUpdateSpeed1000(CCmdUI* pCmdUI)
+{
+	pCmdUI->SetCheck(physics_speed == 1000);
+}
+
+void CFREDView::OnUpdateRot1(CCmdUI* pCmdUI)
 {
 	pCmdUI->SetCheck(physics_rot == 2);
 }
