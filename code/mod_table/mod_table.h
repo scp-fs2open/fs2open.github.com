@@ -1,3 +1,4 @@
+#pragma once
 /*
  * Created by Hassan "Karajorma" Kazmi for the FreeSpace2 Source Code Project.
  * You may not sell or otherwise commercially exploit the source or things you
@@ -81,6 +82,9 @@ extern bool Show_subtitle_uses_pixels;
 extern int Show_subtitle_screen_base_res[];
 extern int Show_subtitle_screen_adjusted_res[];
 extern bool Always_warn_player_about_unbound_keys;
+extern struct shadow_disable_overrides {
+	bool disable_techroom, disable_mission_select_weapons, disable_mission_select_ships, disable_cockpit;
+} Shadow_disable_overrides;
 
 void mod_table_init();
 void mod_table_post_process();

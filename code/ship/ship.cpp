@@ -7356,7 +7356,7 @@ void ship_render_cockpit(object *objp)
 
 	//Deal with the model
 	model_clear_instance(sip->cockpit_model_num);
-	if (Shadow_quality != ShadowQuality::Disabled) {
+	if (Shadow_quality != ShadowQuality::Disabled && !Shadow_disable_overrides.disable_cockpit) {
 		gr_reset_clip();
 		Shadow_override = false;
 

@@ -551,7 +551,11 @@ void techroom_ships_render(float frametime)
 		render_info.set_replacement_textures(Techroom_ship_modelnum, sip->replacement_textures);
 	}
 
-    if(Shadow_quality != ShadowQuality::Disabled)
+	bool shadow_override_backup = Shadow_override;
+	if (Shadow_disable_overrides.disable_techroom) {
+		Shadow_override = true;
+	}
+    else if(Shadow_quality != ShadowQuality::Disabled)
     {
         gr_reset_clip();
 
@@ -581,6 +585,10 @@ void techroom_ships_render(float frametime)
 	Glowpoint_use_depth_buffer = true;
 
 	batching_render_all();
+
+	if (Shadow_disable_overrides.disable_techroom) {
+		Shadow_override = shadow_override_backup;
+	}
 
 	gr_end_view_matrix();
 	gr_end_proj_matrix();
