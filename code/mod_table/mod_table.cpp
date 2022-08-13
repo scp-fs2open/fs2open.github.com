@@ -41,6 +41,7 @@ bool Dont_automatically_select_turret_when_targeting_ship;
 bool Weapons_inherit_parent_collision_group;
 bool Flight_controls_follow_eyepoint_orientation;
 int FS2NetD_port;
+int Default_multi_object_update_level;
 float Briefing_window_FOV;
 bool Disable_hc_message_ani;
 bool Red_alert_applies_to_delayed_ships;
@@ -576,6 +577,16 @@ void parse_mod_table(const char *filename)
 				mprintf(("Game Settings Table: FS2NetD connecting to port %i\n", FS2NetD_port));
 		}
 
+		if (optional_string("$Default object update level for multiplayer:")) {
+			int object_update;
+			stuff_int(&object_update);
+			if ((object_update >= OBJ_UPDATE_LOW) && (object_update <= OBJ_UPDATE_LAN)) {
+				Default_multi_object_update_level = object_update;
+			} else {
+				mprintf(("Game Settings Table: '$Default object update level for multiplayer:' value of %d is not between %d and %d. Using default value of %d.\n", object_update, OBJ_UPDATE_LOW, OBJ_UPDATE_LAN, OBJ_UPDATE_HIGH));
+			}
+		}
+
 		optional_string("#SOUND SETTINGS");
 
 		if (optional_string("$Default Sound Volume:")) {
@@ -868,6 +879,7 @@ void mod_table_reset()
 	Weapons_inherit_parent_collision_group = false;
 	Flight_controls_follow_eyepoint_orientation = false;
 	FS2NetD_port = 0;
+	Default_multi_object_update_level = OBJ_UPDATE_HIGH;
 	Briefing_window_FOV = 0.29375f;
 	Disable_hc_message_ani = false;
 	Red_alert_applies_to_delayed_ships = false;

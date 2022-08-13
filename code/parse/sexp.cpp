@@ -3266,7 +3266,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 			case OPF_SHIP_FLAG:
 				{
 				bool found = false;
-				for ( i = 0; i < MAX_OBJECT_FLAG_NAMES; i++) {
+				for ( i = 0; i < Num_object_flag_names; i++) {
 					if (!stricmp(Object_flag_names[i].flag_name, CTEXT(node))) {
 						found = true;
 						break;
@@ -3274,7 +3274,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				}
 
 				if (!found) {
-					for ( i = 0; i < MAX_SHIP_FLAG_NAMES; i++) {
+					for ( i = 0; i < Num_ship_flag_names; i++) {
 						if (!stricmp(Ship_flag_names[i].flag_name, CTEXT(node))) {
 							found = true;
 							break;
@@ -3283,7 +3283,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				}
 
 				if (!found) {
-					for ( i = 0; i < MAX_AI_FLAG_NAMES; i++) {
+					for ( i = 0; i < Num_ai_flag_names; i++) {
 						if (!stricmp(Ai_flag_names[i].flag_name, CTEXT(node))) {
 							found = true;
 							break;
@@ -15512,7 +15512,7 @@ bool sexp_check_flag_arrays(const char *flag_name, Object::Object_Flags &object_
 	int i;
 	bool send_multi = false;
 
-	for ( i = 0; i < MAX_OBJECT_FLAG_NAMES; i++) {
+	for ( i = 0; i < Num_object_flag_names; i++) {
 		if (!stricmp(Object_flag_names[i].flag_name, flag_name)) {
 			// make sure the list writes to the correct list of flags!
 			if (Object_flag_names[i].flag_list == 1) {
@@ -15522,7 +15522,7 @@ bool sexp_check_flag_arrays(const char *flag_name, Object::Object_Flags &object_
 		}
 	}
 
-	for ( i = 0; i < MAX_SHIP_FLAG_NAMES; i++) {
+	for ( i = 0; i < Num_ship_flag_names; i++) {
 		if (!stricmp(Ship_flag_names[i].flag_name, flag_name)) {
 			// make sure the list writes to the correct list of flags!
 			ship_flags = Ship_flag_names[i].flag;
@@ -15539,7 +15539,7 @@ bool sexp_check_flag_arrays(const char *flag_name, Object::Object_Flags &object_
 		}
 	}
 
-	for ( i = 0; i < MAX_AI_FLAG_NAMES; i++) {
+	for ( i = 0; i < Num_ai_flag_names; i++) {
 		if (!stricmp(Ai_flag_names[i].flag_name, flag_name)) {
 			ai_flag = Ai_flag_names[i].flag;
 			break;
