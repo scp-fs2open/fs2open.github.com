@@ -81,6 +81,7 @@ int HUD_color_alpha = HUD_COLOR_ALPHA_DEFAULT;		// 1 -> HUD_COLOR_ALPHA_USER_MAX
 
 int HUD_draw     = 1;
 int HUD_contrast = 0;										// high or lo contrast (for nebula, etc)
+bool HUD_shadows = true;
 
 // Goober5000
 int HUD_disable_except_messages = 0;
@@ -753,6 +754,13 @@ void HudGauge::renderString(int x, int y, const char *str)
 		}
 	}
 
+	if (HUD_shadows) {
+		auto temp = gr_screen.current_color;
+		gr_set_color_fast(&Color_black);
+		gr_string(x + nx + 1, y + ny + 1, str);
+		gr_set_color_fast(&temp);
+	}
+
 	gr_string(x + nx, y + ny, str);
 	gr_reset_screen_scale();
 }
@@ -776,9 +784,21 @@ void HudGauge::renderString(int x, int y, int gauge_id, const char *str)
 		}
 	}
 
+	auto temp = gr_screen.current_color;
+
 	if ( gauge_id > -2 ) {
+		if (HUD_shadows) {
+			gr_set_color_fast(&Color_black);
+			emp_hud_string(x + nx + 1, y + ny + 1, gauge_id, str, GR_RESIZE_FULL);
+			gr_set_color_fast(&temp);
+		}
 		emp_hud_string(x + nx, y + ny, gauge_id, str, GR_RESIZE_FULL);
 	} else {
+		if (HUD_shadows) {
+			gr_set_color_fast(&Color_black);
+			gr_string(x + nx + 1, y + ny + 1, str);
+			gr_set_color_fast(&temp);
+		}
 		gr_string(x + nx, y + ny, str);
 	}
 
