@@ -625,6 +625,12 @@ ADE_FUNC(fireWeapon, l_Subsystem, "[number TurretWeaponIndex = 1, number FlakRan
 
 	wnum--;	//Lua->FS2
 
+	if (wnum < 0 || wnum >= MAX_SHIP_WEAPONS)
+	{
+		LuaError(L, "Weapon Number (%i) is invalid! Minimum is 1, maximum is %i", wnum+1, MAX_SHIP_WEAPONS+1);
+		return ADE_RETURN_NIL;
+	}
+
 	//Get default turret info
 	vec3d gpos, gvec;
 
