@@ -968,6 +968,28 @@ ADE_VIRTVAR(Orders, l_Ship, "shiporders", "Array of ship orders", "shiporders", 
 	return ade_set_args(L, "o", l_ShipOrders.Set(object_h(objh->objp)));
 }
 
+ADE_FUNC(turnTowardsPoint,
+	l_Ship,
+	"vector target, [boolean respectDifficulty = true, vector turnrateModifier /* 100% of tabled values in all rotation axes by default */, number bank /* native bank-on-heading by default */ ]",
+	"turns the ship towards the specified point during this frame",
+	nullptr,
+	nullptr)
+{
+	object_h shiph;
+	vec3d* target;
+	bool diffTurn = true;
+	vec3d* modifier = nullptr;
+	float bank = 0.0f;
+
+	int argnum = ade_get_args(L, "oo|bof", l_Ship.Get(&shiph), l_Vector.GetPtr(&target), &diffTurn, l_Vector.GetPtr(&modifier), &bank);
+	if (argnum == 0) {
+		return ADE_RETURN_NIL;
+	}
+
+	ai_turn_towards_vector(target, shiph.objp, nullptr, nullptr, bank, (diffTurn ? 0 : AITTV_FAST) | (argnum >= 5 ? AITTV_FORCE_DELTA_BANK : 0), nullptr, modifier);
+	return ADE_RETURN_NIL;
+}
+
 ADE_FUNC(getCenterPosition, l_Ship, nullptr, "Returns the position of the ship's physical center, which may not be the position of the origin of the model", "vector", "World position of the center of the ship, or nil if an error occurred")
 {
 	object_h *shiph;
