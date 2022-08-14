@@ -96,7 +96,7 @@ float fl_isqrt( float x )
 } 
 */
 
-// sees if a floating point number is within the minimum tolerance of zero
+// sees if a floating point number is within a certain threshold (by default, epsilon) of zero
 inline bool fl_near_zero(float a, float e = std::numeric_limits<float>::epsilon())
 {
 	return a < e && a > -e;
