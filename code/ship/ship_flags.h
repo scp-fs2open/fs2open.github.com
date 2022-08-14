@@ -133,6 +133,7 @@ namespace Ship {
 		Fail_sound_locked_primary,		// Kiloku -- Play the firing fail sound when the weapon is locked.
 		Fail_sound_locked_secondary,		// Kiloku -- Play the firing fail sound when the weapon is locked.
 		Subsystem_cache_valid,		// Goober5000 - whether the subsystem list index caches can be used
+		Aspect_immune,						// Kiloku -- Ship cannot be targeted by Aspect Seekers.
 
 		NUM_VALUES
 

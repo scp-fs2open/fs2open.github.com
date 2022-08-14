@@ -9381,6 +9381,8 @@ bool weapon_target_satisfies_lock_restrictions(weapon_info* wip, object* target)
 {
 	if (target->type != OBJ_SHIP)
 		return true;
+	else if (wip->is_locked_homing() && Ships[target->instance].flags[Ship::Ship_Flags::Aspect_immune])
+		return false;
 
 	auto& restrictions = wip->ship_restrict;
 	// if you didn't specify any restrictions, you can always lock

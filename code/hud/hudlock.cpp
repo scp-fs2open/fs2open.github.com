@@ -1552,6 +1552,12 @@ void hud_do_lock_indicators(float frametime)
 			continue;
 		}
 
+		// Target ship is protected from Aspect Locks. Since this flag can be given mid mission, we need to cut short a lock attempt.
+		if ( wip->is_locked_homing() && lock_slot->obj->type == OBJ_SHIP && Ships[lock_slot->obj->instance].flags[Ship::Ship_Flags::Aspect_immune] ) {
+			ship_clear_lock(lock_slot);
+			continue;
+		}
+
 		// unless they've flagged the weapon otherwise, discard locks on dead subsystems that aren't the primary target
 		if ( !wip->wi_flags[Weapon::Info_Flags::Multilock_target_dead_subsys] && lock_slot->subsys != nullptr && Player_ai->targeted_subsys != lock_slot->subsys 
 			&& lock_slot->subsys->current_hits <= 0.0f) {

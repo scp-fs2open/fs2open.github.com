@@ -526,7 +526,8 @@ ship_flag_name Ship_flag_names[] = {
 	{ Ship_Flags::Hide_mission_log,				"hide-in-mission-log" },
 	{ Ship_Flags::No_passive_lightning,			"no-ship-passive-lightning" },
 	{ Ship_Flags::Fail_sound_locked_primary, 	"fail-sound-locked-primary"},
-	{ Ship_Flags::Fail_sound_locked_secondary, 	"fail-sound-locked-secondary"}
+	{ Ship_Flags::Fail_sound_locked_secondary, 	"fail-sound-locked-secondary"},
+	{ Ship_Flags::Aspect_immune, 				"aspect-immune"}
 };
 
 extern const int Num_ship_flag_names = sizeof(Ship_flag_names) / sizeof(ship_flag_name);
@@ -15727,7 +15728,7 @@ static int ship_is_getting_locked(ship *shipp)
 		aip = &Ai_info[Ships[objp->instance].ai_index];
 
 		if ( aip->target_objnum == shipp->objnum ) {
-			if ( aip->aspect_locked_time > 0.1f ) {
+			if ( aip->aspect_locked_time > 0.1f && !shipp->flags[Ship::Ship_Flags::Aspect_immune]) {
 				float dist, wep_range;
 				dist = vm_vec_dist_quick(&objp->pos, &Objects[shipp->objnum].pos);
 				wep_range = ship_get_secondary_weapon_range(&Ships[objp->instance]);
