@@ -3881,6 +3881,11 @@ void hud_toggle_contrast()
 	HUD_contrast = !HUD_contrast;
 }
 
+void hud_toggle_shadows()
+{
+	HUD_shadows = !HUD_shadows;
+}
+
 void hud_set_contrast(int high)
 {
 	HUD_contrast = high;
