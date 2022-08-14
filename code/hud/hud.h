@@ -70,6 +70,7 @@ enum class HudAlignment
 
 extern int HUD_draw;
 extern int HUD_contrast;
+extern bool HUD_shadows;
 
 #define HUD_NUM_COLOR_LEVELS	16
 extern color HUD_color_defaults[HUD_NUM_COLOR_LEVELS];
