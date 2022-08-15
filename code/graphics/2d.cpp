@@ -432,7 +432,7 @@ bool gr_is_smaa_mode(AntiAliasMode mode) {
 bool Gr_post_processing_enabled = true;
 
 static auto PostProcessOption =
-    options::OptionBuilder<bool>("Graphis.PostProcessing", "Post processing",
+    options::OptionBuilder<bool>("Graphics.PostProcessing", "Post processing",
                                  "Controls whether post processing is enabled in the engine")
         .category("Graphics")
         .level(options::ExpertLevel::Advanced)
@@ -443,7 +443,7 @@ static auto PostProcessOption =
 
 bool Gr_enable_vsync = true;
 
-static auto VSyncOption = options::OptionBuilder<bool>("Graphis.VSync", "Vertical Sync",
+static auto VSyncOption = options::OptionBuilder<bool>("Graphics.VSync", "Vertical Sync",
                                                        "Controls how the engine does vertical synchronization")
                               .category("Graphics")
                               .level(options::ExpertLevel::Advanced)
