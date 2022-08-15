@@ -284,10 +284,17 @@ ship_info *sip = &Ship_info[Player_ship->ship_info_index];
 		gr_set_color_fast(&Color_black);
 
 		if (has_autoaim_lock)
+		{
+			// Render the shadow twice to increase visibility
 			renderBitmap(crosshair.first_frame + autoaim_frame_offset, position[0] + 1, position[1] + 1);
+			renderBitmap(crosshair.first_frame + autoaim_frame_offset, position[0] + 1, position[1] + 1);
+		}
 		else
+		{
+			// Render the shadow twice to increase visibility
 			renderBitmap(crosshair.first_frame, position[0] + 1, position[1] + 1);
-
+			renderBitmap(crosshair.first_frame, position[0] + 1, position[1] + 1);
+		}
 		gr_set_color_fast(&temp);
 
 	}
