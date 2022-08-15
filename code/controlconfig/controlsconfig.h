@@ -284,17 +284,17 @@ enum IoActionId : int {
 	CUSTOM_CONTROL_4								= 122,
 	CUSTOM_CONTROL_5								= 123,
 
-	TOGGLE_HUD_SHADOWS								= 124,
 	//!< @n
 	//!< Analog controls
 	//!<-----------------------------
 	//!< All axis actions must be kept together
-	JOY_HEADING_AXIS								= 125,
-	JOY_PITCH_AXIS									= 126,
-	JOY_BANK_AXIS									= 127,
-	JOY_ABS_THROTTLE_AXIS							= 128,
-	JOY_REL_THROTTLE_AXIS							= 129,
+	JOY_HEADING_AXIS								= 124,
+	JOY_PITCH_AXIS									= 125,
+	JOY_BANK_AXIS									= 126,
+	JOY_ABS_THROTTLE_AXIS							= 127,
+	JOY_REL_THROTTLE_AXIS							= 128,
 
+	TOGGLE_HUD_SHADOWS,
 
 	/*!
 	 * This must always be below the last defined item
