@@ -280,7 +280,6 @@ ship_info *sip = &Ship_info[Player_ship->ship_info_index];
 	setGaugeColor(HUD_C_BRIGHT);
 
 	if (HUD_shadows){
-		auto temp = gr_screen.current_color;
 		gr_set_color_fast(&Color_black);
 
 		if (has_autoaim_lock)
@@ -295,8 +294,7 @@ ship_info *sip = &Ship_info[Player_ship->ship_info_index];
 			renderBitmap(crosshair.first_frame, position[0] + 1, position[1] + 1);
 			renderBitmap(crosshair.first_frame, position[0] + 1, position[1] + 1);
 		}
-		gr_set_color_fast(&temp);
-
+		gr_set_color_fast(&gauge_color);
 	}
 
 	if (has_autoaim_lock)

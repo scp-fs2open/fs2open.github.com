@@ -755,10 +755,9 @@ void HudGauge::renderString(int x, int y, const char *str)
 	}
 
 	if (HUD_shadows) {
-		auto temp = gr_screen.current_color;
 		gr_set_color_fast(&Color_black);
 		gr_string(x + nx + 1, y + ny + 1, str);
-		gr_set_color_fast(&temp);
+		gr_set_color_fast(&gauge_color);
 	}
 
 	gr_string(x + nx, y + ny, str);
@@ -784,20 +783,19 @@ void HudGauge::renderString(int x, int y, int gauge_id, const char *str)
 		}
 	}
 
-	auto temp = gr_screen.current_color;
 
 	if ( gauge_id > -2 ) {
 		if (HUD_shadows) {
 			gr_set_color_fast(&Color_black);
 			emp_hud_string(x + nx + 1, y + ny + 1, gauge_id, str, GR_RESIZE_FULL);
-			gr_set_color_fast(&temp);
+			gr_set_color_fast(&gauge_color);
 		}
 		emp_hud_string(x + nx, y + ny, gauge_id, str, GR_RESIZE_FULL);
 	} else {
 		if (HUD_shadows) {
 			gr_set_color_fast(&Color_black);
 			gr_string(x + nx + 1, y + ny + 1, str);
-			gr_set_color_fast(&temp);
+			gr_set_color_fast(&gauge_color);
 		}
 		gr_string(x + nx, y + ny, str);
 	}
