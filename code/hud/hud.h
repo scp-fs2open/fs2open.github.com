@@ -208,8 +208,8 @@ int hud_disabled_except_messages();
 
 // contrast stuff
 void hud_toggle_contrast();
-void hud_toggle_shadows();
 void hud_set_contrast(int high);
+void hud_toggle_shadows();
 
 class HudGauge 
 {

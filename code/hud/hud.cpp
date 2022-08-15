@@ -81,7 +81,7 @@ int HUD_color_alpha = HUD_COLOR_ALPHA_DEFAULT;		// 1 -> HUD_COLOR_ALPHA_USER_MAX
 
 int HUD_draw     = 1;
 int HUD_contrast = 0;										// high or lo contrast (for nebula, etc)
-bool HUD_shadows = true;
+bool HUD_shadows = false;
 
 // Goober5000
 int HUD_disable_except_messages = 0;
@@ -3879,14 +3879,14 @@ void hud_toggle_contrast()
 	HUD_contrast = !HUD_contrast;
 }
 
-void hud_toggle_shadows()
-{
-	HUD_shadows = !HUD_shadows;
-}
-
 void hud_set_contrast(int high)
 {
 	HUD_contrast = high;
+}
+
+void hud_toggle_shadows()
+{
+	HUD_shadows = !HUD_shadows;
 }
 
 // Paging functions for the rest of the HUD code
