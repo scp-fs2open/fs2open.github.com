@@ -20,11 +20,19 @@
 #define vm_is_vec_nan(v) (fl_is_nan((v)->xyz.x) || fl_is_nan((v)->xyz.y) || fl_is_nan((v)->xyz.z))
 
 //Macros/functions to fill in fields of structures
+//VEC_NULL macros split into two functions in 2009 with commit 75a514b
 
-//macro to check if vector is zero
-#define IS_VEC_NULL(v) (fl_near_zero((v)->xyz.x) && \
-						fl_near_zero((v)->xyz.y) && \
-						fl_near_zero((v)->xyz.z))
+//macro to check if vector is close to zero or would be close to zero after squaring
+#define IS_VEC_NULL_SQ_SAFE(v) \
+		(fl_near_zero((v)->xyz.x, (float) 1e-16) && \
+		fl_near_zero((v)->xyz.y, (float) 1e-16) && \
+		fl_near_zero((v)->xyz.z, (float) 1e-16))
+
+//macro to check if vector is close to zero
+#define IS_VEC_NULL(v) \
+		(fl_near_zero((v)->xyz.x, (float) 1e-36) && \
+		fl_near_zero((v)->xyz.y, (float) 1e-36) && \
+		fl_near_zero((v)->xyz.z, (float) 1e-36))
 
 #define IS_MAT_NULL(v) (IS_VEC_NULL(&(v)->vec.fvec) && IS_VEC_NULL(&(v)->vec.uvec) && IS_VEC_NULL(&(v)->vec.rvec))
 

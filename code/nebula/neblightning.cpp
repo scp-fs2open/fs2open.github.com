@@ -509,7 +509,7 @@ void nebl_process()
 			} while (vm_vec_dist(&strike, &Eye_position) > 200.0f && vm_vec_dist(&start, &strike) > 200.0f);
 
 			// add some flavor to the bolt. mmmmmmmm, lightning
-			if(!IS_VEC_NULL(&Storm->flavor)){
+			if(!IS_VEC_NULL_SQ_SAFE(&Storm->flavor)){
 				// start with your basic hot sauce. measure how much you have			
 				vec3d your_basic_hot_sauce;
 				vm_vec_sub(&your_basic_hot_sauce, &strike, &start);
