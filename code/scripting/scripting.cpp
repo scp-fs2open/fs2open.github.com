@@ -14,6 +14,7 @@
 #include "hud/hud.h"
 #include "io/key.h"
 #include "mission/missioncampaign.h"
+#include "network/multi.h"
 #include "parse/parselo.h"
 #include "scripting/doc_html.h"
 #include "scripting/doc_json.h"
@@ -44,6 +45,7 @@ flag_def_list Script_conditions[] =
 	{"Action", CHC_ACTION, 0},
 	{"Version", CHC_VERSION, 0},
 	{"Application", CHC_APPLICATION, 0},
+	{"Multi type", CHC_MULTI_SERVER, 0},
 };
 
 int Num_script_conditions = sizeof(Script_conditions) / sizeof(flag_def_list);
@@ -309,6 +311,18 @@ bool ConditionedHook::AddCondition(script_condition *sc)
 		{
 			if (stricmp("FS2_Open", sc->condition_string.c_str()) != 0 && stricmp("FS2Open", sc->condition_string.c_str()) != 0 && stricmp("Freespace 2", sc->condition_string.c_str()) != 0 && stricmp("Freespace", sc->condition_string.c_str()) != 0)
 				sc->condition_cached_value = 0;
+		}
+		break;
+	}
+	case CHC_MULTI_SERVER:
+	{
+		if (stricmp("Server", sc->condition_string.c_str()) == 0 || stricmp("Master", sc->condition_string.c_str()) == 0)
+		{
+			sc->condition_cached_value = 1;
+		}
+		else
+		{
+			sc->condition_cached_value = 0;
 		}
 		break;
 	}
@@ -634,6 +648,12 @@ bool ConditionedHook::ConditionsValid(int action, object *objp1, object *objp2, 
 				{
 					return false;
 				}
+			}
+			
+			case CHC_MULTI_SERVER:
+			{
+				//condition_cached_value is 0 if we execute on clients, 1 on servers
+				return static_cast<bool>(scp.condition_cached_value == 0) != static_cast<bool>(MULTIPLAYER_MASTER);
 			}
 
 			default:
@@ -1133,6 +1153,7 @@ bool script_state::ParseCondition(const char *filename)
 			case CHC_OBJECTTYPE:
 			case CHC_VERSION:
 			case CHC_APPLICATION:
+			case CHC_MULTI_SERVER:
 			default:
 				stuff_string(sct.condition_string, F_NAME);
 				break;
