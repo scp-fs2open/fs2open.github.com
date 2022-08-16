@@ -279,6 +279,18 @@ ADE_VIRTVAR(Name, l_Subsystem, "string", "Subsystem name", "string", "Subsystem 
 	return ade_set_args(L, "s", ship_subsys_get_name(sso->ss));
 }
 
+ADE_VIRTVAR(NumFirePoints, l_Subsystem, "number", "Number of firepoints", "number", "Number of fire points, or 0 if handle is invalid")
+{
+	ship_subsys_h* sso;
+	if (!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
+		return ade_set_error(L, "i", 0);
+
+	if (!sso->isSubsystemValid())
+		return ade_set_error(L, "i", 0);
+
+	return ade_set_args(L, "i", sso->ss->system_info->turret_num_firing_points);
+}
+
 ADE_FUNC(getModelName, l_Subsystem, NULL, "Returns the original name of the subsystem in the model file", "string", "name or empty string on error")
 {
 	ship_subsys_h *sso;
