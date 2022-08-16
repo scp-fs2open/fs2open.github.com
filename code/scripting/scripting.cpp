@@ -648,12 +648,13 @@ bool ConditionedHook::ConditionsValid(int action, object *objp1, object *objp2, 
 				{
 					return false;
 				}
+				break;
 			}
 			
 			case CHC_MULTI_SERVER:
 			{
 				//condition_cached_value is 0 if we execute on clients, 1 on servers
-				return static_cast<bool>(scp.condition_cached_value == 0) != static_cast<bool>(MULTIPLAYER_MASTER);
+				return static_cast<bool>(scp.condition_cached_value == 1) == static_cast<bool>(MULTIPLAYER_MASTER);
 			}
 
 			default:
