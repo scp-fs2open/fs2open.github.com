@@ -1071,13 +1071,8 @@ void brief_render_closeup(int ship_class, float frametime)
 
 	model_render_params render_info;
 	render_info.set_detail_level_lock(0);
-	
-	bool shadow_override_backup = Shadow_override;
 
-	if (Shadow_disable_overrides.disable_mission_select_ships) {
-		Shadow_override = true;
-	}
-	if (Shadow_quality != ShadowQuality::Disabled)
+	if (shadow_maybe_start_frame(Shadow_disable_overrides.disable_mission_select_ships))
 	{
 		auto pm = model_get(Closeup_icon->modelnum);
 
@@ -1107,9 +1102,7 @@ void brief_render_closeup(int ship_class, float frametime)
 	gr_end_view_matrix();
 	gr_end_proj_matrix();
 
-	if (Shadow_disable_overrides.disable_mission_select_ships) {
-		Shadow_override = shadow_override_backup;
-	}
+	shadow_end_frame();
 
 	g3_end_frame();
 

@@ -908,12 +908,7 @@ void wl_render_overhead_view(float frametime)
 				render_info.set_replacement_textures(wl_ship->model_num, sip->replacement_textures);
 			}
 
-			bool shadow_override_backup = Shadow_override;
-
-			if (Shadow_disable_overrides.disable_mission_select_weapons) {
-				Shadow_override = true;
-			}
-			else if (Shadow_quality != ShadowQuality::Disabled)
+			if (shadow_maybe_start_frame(Shadow_disable_overrides.disable_mission_select_weapons))
 			{
 				gr_reset_clip();
 				shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, gr_screen.clip_aspect, -sip->closeup_pos.xyz.z + pm->rad, 
@@ -937,9 +932,7 @@ void wl_render_overhead_view(float frametime)
             
 			batching_render_all();
 
-			if (Shadow_disable_overrides.disable_mission_select_weapons) {
-				Shadow_override = shadow_override_backup;
-			}
+			shadow_end_frame();
 
 			//NOW render the lines for weapons
 			gr_reset_clip();

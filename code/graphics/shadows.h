@@ -40,4 +40,7 @@ void shadows_render_all(float fov, matrix *eye_orient, vec3d *eye_pos);
 matrix shadows_start_render(matrix *eye_orient, vec3d *eye_pos, float fov, float aspect, float veryneardist, float neardist, float middist, float fardist);
 void shadows_end_render();
 
+bool shadow_maybe_start_frame(const bool& override = false);
+void shadow_end_frame();
+
 #endif
