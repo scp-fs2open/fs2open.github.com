@@ -163,10 +163,6 @@ void multi_ship_record_rank_seq_num(object* objp, int seq_num);
 // recalculate how much time is between position packets
 float multi_oo_calc_pos_time_difference(int player_id, int net_sig_idx);
 
-
-// tolerance for bashing position
-#define OO_POS_UPDATE_TOLERANCE	150.0f
-
 // new improved - more compacted info type
 #define OO_POS_AND_ORIENT_NEW		(1<<0)		// To update position and orientation. Because getting accurate velocity requires orientation, and accurate orienation requires velocity
 #define OO_FULL_PHYSICS				(1<<1)		// Since AI don't use all phys_info values, we need a flag to confirm when all have been transmitted.
