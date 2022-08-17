@@ -551,7 +551,7 @@ void techroom_ships_render(float frametime)
 		render_info.set_replacement_textures(Techroom_ship_modelnum, sip->replacement_textures);
 	}
 
-    if(Shadow_quality != ShadowQuality::Disabled)
+    if(shadow_maybe_start_frame(Shadow_disable_overrides.disable_techroom))
     {
         gr_reset_clip();
 
@@ -581,6 +581,8 @@ void techroom_ships_render(float frametime)
 	Glowpoint_use_depth_buffer = true;
 
 	batching_render_all();
+
+	shadow_end_frame();
 
 	gr_end_view_matrix();
 	gr_end_proj_matrix();

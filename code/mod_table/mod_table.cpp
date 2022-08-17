@@ -93,6 +93,7 @@ bool Show_subtitle_uses_pixels;
 int Show_subtitle_screen_base_res[2];
 int Show_subtitle_screen_adjusted_res[2];
 bool Always_warn_player_about_unbound_keys;
+shadow_disable_overrides Shadow_disable_overrides {false, false, false, false};
 
 void mod_table_set_version_flags();
 
@@ -551,6 +552,22 @@ void parse_mod_table(const char *filename)
 			else {
 				error_display(0, "$Shadow Cascade Distances Cockpit are %f, %f, %f, %f. One or more are < 0, and/or values are not increasing. Assuming default distances.", dis[0], dis[1], dis[2], dis[3]);
 			}
+		}
+
+		if (optional_string("$Shadow Disable Techroom:")) {
+			stuff_boolean(&Shadow_disable_overrides.disable_techroom);
+		}
+
+		if (optional_string("$Shadow Disable Cockpit:")) {
+			stuff_boolean(&Shadow_disable_overrides.disable_cockpit);
+		}
+
+		if (optional_string("$Shadow Disable Mission Brief Weapons:")) {
+			stuff_boolean(&Shadow_disable_overrides.disable_mission_select_weapons);
+		}
+
+		if (optional_string("$Shadow Disable Mission Brief Ships:")) {
+			stuff_boolean(&Shadow_disable_overrides.disable_mission_select_ships);
 		}
 
 		if (optional_string("$Minimum Pixel Size Thrusters:")) {

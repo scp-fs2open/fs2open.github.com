@@ -908,7 +908,7 @@ void wl_render_overhead_view(float frametime)
 				render_info.set_replacement_textures(wl_ship->model_num, sip->replacement_textures);
 			}
 
-			if(Shadow_quality != ShadowQuality::Disabled)
+			if (shadow_maybe_start_frame(Shadow_disable_overrides.disable_mission_select_weapons))
 			{
 				gr_reset_clip();
 				shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, gr_screen.clip_aspect, -sip->closeup_pos.xyz.z + pm->rad, 
@@ -931,6 +931,8 @@ void wl_render_overhead_view(float frametime)
             Glowpoint_use_depth_buffer = true;
             
 			batching_render_all();
+
+			shadow_end_frame();
 
 			//NOW render the lines for weapons
 			gr_reset_clip();

@@ -516,3 +516,23 @@ void shadows_render_all(float fov, matrix *eye_orient, vec3d *eye_pos)
 	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
 	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 }
+
+static bool shadow_override_backup = false;
+static bool last_override = false;
+
+bool shadow_maybe_start_frame(const bool& override) {
+	last_override = override;
+	if (last_override) {
+		shadow_override_backup = Shadow_override;
+		Shadow_override = true;
+		return false;
+	}
+	return Shadow_quality != ShadowQuality::Disabled;
+}
+
+void shadow_end_frame() {
+	if (last_override) {
+		Shadow_override = shadow_override_backup;
+		last_override = false;
+	}
+}
