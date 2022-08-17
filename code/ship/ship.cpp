@@ -7363,14 +7363,13 @@ void ship_render_cockpit(object *objp)
 
 	vm_vec_unrotate(&pos, &sip->cockpit_offset, &eye_ori);
 
-	bool shadow_override_backup = Shadow_override;
 	float fov_backup = Proj_fov;
 
 	g3_set_fov(Sexp_fov <= 0.0f ? COCKPIT_ZOOM_DEFAULT : Sexp_fov);
 
 	//Deal with the model
 	model_clear_instance(sip->cockpit_model_num);
-	if (Shadow_quality != ShadowQuality::Disabled) {
+	if (shadow_maybe_start_frame(Shadow_disable_overrides.disable_cockpit)) {
 		gr_reset_clip();
 		Shadow_override = false;
 
@@ -7410,8 +7409,7 @@ void ship_render_cockpit(object *objp)
 	hud_save_restore_camera_data(0);
 
 	//Restore the Shadow_override
-	if (Shadow_quality != ShadowQuality::Disabled)
-		Shadow_override = shadow_override_backup;
+	shadow_end_frame();
 }
 
 void ship_render_show_ship_cockpit(object *objp)
