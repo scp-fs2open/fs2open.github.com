@@ -288,6 +288,11 @@ ADE_VIRTVAR(NumFirePoints, l_Subsystem, "number", "Number of firepoints", "numbe
 	if (!sso->isSubsystemValid())
 		return ade_set_error(L, "i", 0);
 
+	if (ADE_SETTING_VAR)
+	{
+		LuaError(L, "Setting the number of fire points for subsystems is not allowed!");
+	}
+
 	return ade_set_args(L, "i", sso->ss->system_info->turret_num_firing_points);
 }
 
