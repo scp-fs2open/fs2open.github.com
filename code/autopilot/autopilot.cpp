@@ -923,10 +923,7 @@ void EndAutoPilot()
 					if ( ((aigp->target_name != NULL) && !stricmp(aigp->target_name, goal_name))
 							&& (aigp->ai_mode == goal) )
 					{
-						aigp->ai_mode = AI_GOAL_NONE;
-						aigp->signature = -1;
-						aigp->priority = -1;
-						aigp->flags.reset();
+						ai_goal_reset(aigp);
 					}
 				}
 			}
@@ -947,10 +944,7 @@ void EndAutoPilot()
 					if ( ((aigp->target_name != NULL) && !stricmp(aigp->target_name, goal_name))
 							&& (aigp->ai_mode == goal) )
 					{
-						aigp->ai_mode = AI_GOAL_NONE;
-						aigp->signature = -1;
-						aigp->priority = -1;
-						aigp->flags.reset();
+						ai_goal_reset(aigp);
 					}
 				}
 			}
