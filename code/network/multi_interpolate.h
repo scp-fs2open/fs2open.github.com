@@ -58,7 +58,7 @@ public:
 
 	// adds a new packet, whilst also manually sorting the relevant entries
 	void add_packet(int frame, int time_delta, vec3d* position, vec3d* velocity, vec3d* rotational_velocity, vec3d* desired_velocity, vec3d* desired_rotational_velocity, angles* angles, int player_index);
-	void interpolate(vec3d* pos, matrix* ori, physics_info* pip, bool player_ship);
+	void interpolate(vec3d* pos, matrix* ori, physics_info* pip, vec3d* last_pos, matrix* last_orient, bool player_ship);
 
 	int get_hull_comparison_frame() { return _hull_comparison_frame; }
 	int get_shields_comparison_frame() { return _shields_comparison_frame; }

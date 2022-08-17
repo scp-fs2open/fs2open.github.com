@@ -165,6 +165,6 @@ int multi_oo_cirate_can_send();
 void multi_oo_player_reset_all(net_player *pl = NULL);
 
 // is this object one which needs to go through the interpolation
-int multi_oo_is_interp_object(object *objp);
+bool multi_oo_is_interp_object(object *objp);
 
 #endif
