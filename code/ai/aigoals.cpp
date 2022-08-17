@@ -2378,13 +2378,14 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 		break;
 
 	case AI_GOAL_FORM_ON_WING:
+		// get the ship first, since we're going to wipe it out next
+		shipnum = ship_name_lookup( current_goal->target_name );
+		Assert( shipnum >= 0 );
+		other_obj = &Objects[Ships[shipnum].objnum];
 		// for form on wing, we need to clear out all goals for this ship, and then call the form
 		// on wing AI code
 		// clearing out goals is okay here since we are now what mode to set this AI object to.
 		ai_clear_ship_goals( aip );
-		shipnum = ship_name_lookup( current_goal->target_name );
-		Assert( shipnum >= 0 );
-		other_obj = &Objects[Ships[shipnum].objnum];
 		ai_form_on_wing( objp, other_obj );
 		break;
 
