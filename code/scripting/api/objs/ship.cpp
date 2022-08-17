@@ -317,6 +317,24 @@ ADE_VIRTVAR(AfterburnerFuelMax, l_Ship, "number", "Afterburner fuel capacity", "
 	return ade_set_args(L, "f", sip->afterburner_fuel_capacity);
 }
 
+ADE_VIRTVAR(ScanTime, l_Ship, "number", "Ship scan time", "number", "Time required to scan, or 0 if handle is invalid")
+{
+	object_h *objh;
+	int time = -1;
+	if(!ade_get_args(L, "o|i", l_Ship.GetPtr(&objh), &time))
+		return ade_set_error(L, "i", 0);
+
+	if(!objh->IsValid())
+		return ade_set_error(L, "i", 0);
+
+	ship_info *sip = &Ship_info[Ships[objh->objp->instance].ship_info_index];
+
+	if(ADE_SETTING_VAR && time >= 0)
+		sip->scan_time = time;
+
+	return ade_set_args(L, "i", sip->scan_time);
+}
+
 ADE_VIRTVAR(Class, l_Ship, "shipclass", "Ship class", "shipclass", "Ship class, or invalid shipclass handle if ship handle is invalid")
 {
 	object_h *objh;

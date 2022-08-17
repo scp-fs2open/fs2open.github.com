@@ -270,6 +270,22 @@ ADE_VIRTVAR(AfterburnerFuelMax, l_Shipclass, "number", "Afterburner fuel capacit
 	return ade_set_args(L, "f", Ship_info[idx].afterburner_fuel_capacity);
 }
 
+ADE_VIRTVAR(ScanTime, l_Shipclass, "number", "Ship scan time", "number", "Time required to scan, or 0 if handle is invalid")
+{
+	int idx;
+	int time = -1;
+	if (!ade_get_args(L, "o|i", l_Shipclass.Get(&idx), &time))
+		return ade_set_error(L, "i", 0);
+
+	if (idx < 0 || idx >= ship_info_size())
+		return ade_set_error(L, "i", 0);
+
+	if (ADE_SETTING_VAR && time >= 0)
+		Ship_info[idx].scan_time = time;
+
+	return ade_set_args(L, "i", Ship_info[idx].scan_time);
+}
+
 ADE_VIRTVAR(CountermeasuresMax, l_Shipclass, "number", "Maximum number of countermeasures the ship can carry", "number", "Countermeasure capacity, or 0 if handle is invalid")
 {
 	int idx;
