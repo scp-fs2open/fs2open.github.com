@@ -202,67 +202,80 @@ float multi_oo_calc_pos_time_difference(int player_id, int net_sig_idx);
 #define OO_SUBSYS_TIME				1000
 
 // timestamp values for object update times based on client's update level.
-// Cyborg17 - This is the one update number I have adjusted, because it's the player's target.
+// Cyborg - Many of these values have been adjusted over time, but not based
+// on any scientific method, at least since Volition first wrote them.
+// It may be good to adjust these according to actual bandwidth use over time
+// once we have time.
 int Multi_oo_target_update_times[MAX_OBJ_UPDATE_LEVELS] = 
 {
-	50, 				// 20x a second 
-	50, 				// 20x a second
-	20,				// 50x a second
-	20,				// 50x a second
+	66, 			// Dialup, 15x a second 
+	50, 			// Medium, 20x a second
+	30,				// High, 33x a second
+	20,				// LAN, 50x a second
+};
+
+// Cyborg - This I added to increase updates for players, to mitigate the added
+// latency from multiple clients getting each other's positions.
+int Multi_oo_player_update_times[MAX_OBJ_UPDATE_LEVELS] =
+{
+	100,				// Dialup, 10x a second
+	66,					// Medium, 15x a second
+	33,					// High, 30x a second
+	20,					// LAN, 50x a second
 };
 
 // for near ships
 int Multi_oo_front_near_update_times[MAX_OBJ_UPDATE_LEVELS] =
 {
-	150,				// low update
-	100,				// medium update
-	66,				// high update
-	66,				// LAN update
+	150,			// Dialup, 6.5x a second 
+	100,			// Medium, 10x a second
+	66,				// High, 15x a second
+	50,				// LAN, 20x a second 
 };
 
 // for medium ships
 int Multi_oo_front_medium_update_times[MAX_OBJ_UPDATE_LEVELS] =
 {
-	250,				// low update
-	180, 				// medium update
-	120,				// high update
-	66,					// LAN update
+	250,				// Dialup, 4x a second
+	180, 				// medium, 5.5x a second
+	120,				// high, 8.3x a second
+	66,					// LAN, 15x a second
 };
 
 // for far ships
 int Multi_oo_front_far_update_times[MAX_OBJ_UPDATE_LEVELS] =
 {
-	750,				// low update
-	350, 				// medium update
-	150, 				// high update
-	66,					// LAN update
+	750,				// Dialup, 1.3x a second
+	350, 				// medium, 2.85x a second
+	150, 				// high, 6.6x a second
+	66,					// LAN, 15x a second
 };
 
 // for near ships
 int Multi_oo_rear_near_update_times[MAX_OBJ_UPDATE_LEVELS] = 
 {
-	300,				// low update
-	200,				// medium update
-	100,				// high update
-	66,					// LAN update
+	300,				// Dialup, 3.3x a second
+	200,				// medium, 5x a second
+	100,				// high 10x a second
+	66,					// LAN, 15x a second
 };
 
 // for medium ships
 int Multi_oo_rear_medium_update_times[MAX_OBJ_UPDATE_LEVELS] = 
 {
-	800,				// low update
-	600,				// medium update
-	300,				// high update
-	66,					// LAN update
+	800,				// Dialup, 1.25x a second
+	600,				// medium, 1.6x a second
+	300,				// high, 3.3x a second
+	100,				// LAN, 10x a second
 };
 
 // for far ships
 int Multi_oo_rear_far_update_times[MAX_OBJ_UPDATE_LEVELS] = 
 {
-	2500, 				// low update
-	1500,				// medium update
-	400,				// high update
-	66,					// LAN update
+	2500, 				// Dialup, 24x a *minute*
+	1500,				// medium, 40x a *minute* 
+	400,				// high, 2.5x a second
+	200,				// LAN, 5x a second
 };
 
 // ship index list for possibly sorting ships based upon distance, etc
@@ -930,6 +943,13 @@ bool multi_oo_sort_func(const short &index1, const short &index2)
 	// get the 2 objects
 	obj1 = &Objects[Ships[index1].objnum];
 	obj2 = &Objects[Ships[index2].objnum];
+
+	// always prioritze player objects
+	if (obj1->flags[Object::Object_Flags::Player_ship] && !obj2->flags[Object::Object_Flags::Player_ship]) {
+		return true;
+	} else if (!obj1->flags[Object::Object_Flags::Player_ship] && obj2->flags[Object::Object_Flags::Player_ship]) {
+		return false;
+	}
 
 	// get the distance and dot product to the player obj for both
 	vm_vec_sub(&v1, &OO_player_obj->pos, &obj1->pos);
@@ -2071,9 +2091,11 @@ void multi_oo_reset_timestamp(net_player *pl, object *objp, int range, int in_co
 {
 	int stamp = 0;	
 
-	// if this is the guy's target, 
+	// if this is the guy's target, or if they are a player.
 	if((pl->s_info.target_objnum != -1) && (pl->s_info.target_objnum == OBJ_INDEX(objp))){
 		stamp = Multi_oo_target_update_times[pl->p_info.options.obj_update_level];
+	} else if (objp->flags[Object::Object_Flags::Player_ship]){
+		stamp = Multi_oo_player_update_times[pl->p_info.options.obj_update_level];
 	} else {
 		// reset the timestamp appropriately
 		if(in_cone){
