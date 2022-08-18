@@ -273,12 +273,12 @@ ADE_VIRTVAR(AfterburnerFuelMax, l_Shipclass, "number", "Afterburner fuel capacit
 ADE_VIRTVAR(ScanTime, l_Shipclass, nullptr, "Ship scan time", "number", "Time required to scan, or 0 if handle is invalid. This propery is read-only")
 {
 	int idx;
-	int time = -1;
-	if (!ade_get_args(L, "o|i", l_Shipclass.Get(&idx), &time))
-		return ade_set_error(L, "i", 0);
-
 	if (idx < 0 || idx >= ship_info_size())
 		return ade_set_error(L, "i", 0);
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "Setting ScanTime is not supported");
+	}
 
 	return ade_set_args(L, "i", Ship_info[idx].scan_time);
 }
