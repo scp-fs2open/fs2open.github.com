@@ -567,6 +567,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "replace-texture",				OP_REPLACE_TEXTURE,						3,  INT_MAX,	SEXP_ACTION_OPERATOR,   },  // Lafiel
 	{ "set-alpha-multiplier",			OP_SET_ALPHA_MULT,						2,	INT_MAX,	SEXP_ACTION_OPERATOR,   }, //Lafiel
 	{ "trigger-ship-animation",			OP_TRIGGER_ANIMATION_NEW,				3,	7,			SEXP_ACTION_OPERATOR,	}, //Lafiel
+	{ "stop-looping-animation",			OP_STOP_LOOPING_ANIMATION,				3,  3,			SEXP_ACTION_OPERATOR,   }, //Lafiel
 	{ "update-moveable-animation",		OP_UPDATE_MOVEABLE,						2,	INT_MAX,	SEXP_ACTION_OPERATOR,	}, //Lafiel
 
 	//Coordinate Manipulation Sub-Category
@@ -2612,7 +2613,8 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 				const auto& animSet = Ship_info[ship_class].animations;
 				switch(get_operator_const(op_node)) {	
-					case OP_TRIGGER_ANIMATION_NEW: {
+					case OP_TRIGGER_ANIMATION_NEW:
+					case OP_STOP_LOOPING_ANIMATION: {
 						//Second OP trigger type
 						//Third OP triggered by
 						auto triggerType = animation::anim_match_type(CTEXT(CDR(ship_node)));
@@ -20524,6 +20526,10 @@ void sexp_trigger_submodel_animation_new(int n)
 	animationStartFunc(direction, forced || instant, instant, pause);
 }
 
+void sexp_stop_looping_animation(int node) {
+
+}
+
 void sexp_update_moveable_animation(int node)
 {
 	bool is_nan, is_nan_forever;
@@ -27149,6 +27155,10 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_update_moveable_animation(node);
 				break;
 
+			case OP_STOP_LOOPING_ANIMATION:
+				sexp_val = SEXP_TRUE;
+				sexp_stop_looping_animation(node);
+
 			default:{
 				// Check if we have a dynamic SEXP with this operator and if there is, execute that
 				auto dynamicSEXP = sexp::get_dynamic_sexp(op_num);
@@ -28278,6 +28288,7 @@ int query_operator_return_type(int op)
 		case OP_SET_ALPHA_MULT:
 		case OP_TRIGGER_ANIMATION_NEW:
 		case OP_UPDATE_MOVEABLE:
+		case OP_STOP_LOOPING_ANIMATION:
 		case OP_CONTAINER_ADD_TO_LIST:
 		case OP_CONTAINER_REMOVE_FROM_LIST:
 		case OP_CONTAINER_ADD_TO_MAP:
@@ -30814,6 +30825,7 @@ int query_operator_argument_type(int op, int argnum)
 			return OPF_LANGUAGE;
 
 		case OP_TRIGGER_ANIMATION_NEW:
+		case OP_STOP_LOOPING_ANIMATION:
 			if (argnum == 0)
 				return OPF_SHIP;
 			else if (argnum == 1)
@@ -32566,6 +32578,7 @@ int get_subcategory(int sexp_id)
 		case OP_SET_ALPHA_MULT:
 		case OP_TRIGGER_ANIMATION_NEW:
 		case OP_UPDATE_MOVEABLE:
+		case OP_STOP_LOOPING_ANIMATION:
 			return CHANGE_SUBCATEGORY_MODELS_AND_TEXTURES;
 
 		case OP_SET_OBJECT_POSITION:
@@ -37239,6 +37252,15 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t5: If the animation should reset before playing. Defaults to false.\r\n"
 		"\t6: If the animation should complete instantly. Defaults to false.\r\n"
 		"\t7: If the animation should pause, instead of playing. Defaults to false.\r\n"
+	},
+
+	{ OP_STOP_LOOPING_ANIMATION, "stop-looping-animation\r\n"
+		"\tStops a looping animation once it finishes its current loop.\r\n"
+		"Takes 3 arguments...\r\n"
+		"\t1: The ship to trigger the animation on.\r\n"
+		"\t2: The trigger type of the animation.\r\n"
+		"\t3: The triggered-by value of the animation. Must be the same as in the table for the animation. Leave blank if not specified in the table.\r\n"
+		"\t\tException: fighterbay-type animations must specify the number of the fighter bay path.\r\n"
 	},
 
 	{ OP_UPDATE_MOVEABLE , "update-moveable-animation\r\n"

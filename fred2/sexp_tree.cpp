@@ -7094,7 +7094,8 @@ sexp_list_item *sexp_tree::get_listing_opf_animation_name(int parent_node)
 	sh = ship_name_lookup(tree_nodes[child].text, 1);
 
 	switch(op) {
-		case OP_TRIGGER_ANIMATION_NEW: {
+		case OP_TRIGGER_ANIMATION_NEW:
+		case OP_STOP_LOOPING_ANIMATION: {
 			child = tree_nodes[child].next;
 			auto triggerType = animation::anim_match_type(tree_nodes[child].text);
 
