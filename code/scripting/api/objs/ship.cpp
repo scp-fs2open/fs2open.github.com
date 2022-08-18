@@ -742,7 +742,7 @@ ADE_VIRTVAR(Team, l_Ship, "team", "Ship's team", "team", "Ship team, or invalid 
 	return ade_set_args(L, "o", l_Team.Set(shipp->team));
 }
 
-ADE_VIRTVAR(Persona, l_Ship, "number", "Persona index", "number", "The index of the persona from messages.tbl, -1 if no persona is set")
+ADE_VIRTVAR(PersonaIndex, l_Ship, "number", "Persona index", "number", "The index of the persona from messages.tbl, 0 if no persona is set")
 {
 	object_h *objh;
 	int p_index = -1;
@@ -755,9 +755,9 @@ ADE_VIRTVAR(Persona, l_Ship, "number", "Persona index", "number", "The index of 
 	ship *shipp = &Ships[objh->objp->instance];
 
 	if(ADE_SETTING_VAR && p_index >= 0)
-		shipp->persona_index = p_index;
+		shipp->persona_index = p_index - 1;
 
-	return ade_set_args(L, "i", shipp->persona_index);
+	return ade_set_args(L, "i", shipp->persona_index + 1);
 }
 
 ADE_VIRTVAR(Textures, l_Ship, "shiptextures", "Gets ship textures", "shiptextures", "Ship textures, or invalid shiptextures handle if ship handle is invalid")
