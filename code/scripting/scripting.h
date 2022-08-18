@@ -63,6 +63,7 @@ enum ConditionalType {
 	CHC_ACTION      = 9,
 	CHC_VERSION     = 10,
 	CHC_APPLICATION = 11,
+	CHC_MULTI_SERVER = 12,
 };
 
 //Actions
