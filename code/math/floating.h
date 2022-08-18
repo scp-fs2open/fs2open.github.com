@@ -13,12 +13,8 @@
 #define _FLOATING_H
 
 #include <cmath>
-#include <cmath>
 #include <cfloat>
-
-#include "globalincs/pstypes.h"
-
-#include <cfloat>
+#include <limits>
 
 extern float frand();
 extern int rand_chance(float frametime, float chance = 1.0f);
