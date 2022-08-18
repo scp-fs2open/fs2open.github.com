@@ -270,7 +270,7 @@ ADE_VIRTVAR(AfterburnerFuelMax, l_Shipclass, "number", "Afterburner fuel capacit
 	return ade_set_args(L, "f", Ship_info[idx].afterburner_fuel_capacity);
 }
 
-ADE_VIRTVAR(ScanTime, l_Shipclass, "number", "Ship scan time", "number", "Time required to scan, or 0 if handle is invalid. This propery is read-only")
+ADE_VIRTVAR(ScanTime, l_Shipclass, nullptr, "Ship scan time", "number", "Time required to scan, or 0 if handle is invalid. This propery is read-only")
 {
 	int idx;
 	int time = -1;
