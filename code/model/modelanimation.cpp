@@ -98,6 +98,10 @@ namespace animation {
 					if (m_flags[Animation_Flags::Reset_at_completion]) {
 						//Loop from start
 						instanceData.time = 0;
+
+						//Reset at completion triggers count as a full next loop, so we need to stop here.
+						if (instanceData.instance_flags[Animation_Instance_Flags::Stop_after_next_loop])
+							stop(pmi, false);
 					}
 					else {
 						//Loop back
@@ -135,6 +139,9 @@ namespace animation {
 						instanceData.time = 0;
 						instanceData.state = ModelAnimationState::RUNNING_FWD;
 					}
+					//For backwards, ALL completion triggers are considered finishes, so always stop if we need to
+					if (instanceData.instance_flags[Animation_Instance_Flags::Stop_after_next_loop])
+						stop(pmi, false);
 				}
 				else
 					stop(pmi, false);

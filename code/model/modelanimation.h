@@ -117,6 +117,11 @@ namespace animation {
 		NUM_VALUES
 	};
 
+	FLAG_LIST(Animation_Instance_Flags) {
+		Stop_after_next_loop,	//Once a looping animation would start the next loop, stop the animation instead. Only valid for looping animations
+		NUM_VALUES
+	};
+
 	template <bool is_optional = false>
 	struct ModelAnimationData {
 	private:
@@ -246,6 +251,7 @@ namespace animation {
 			ModelAnimationState state = ModelAnimationState::UNTRIGGERED;
 			float time = 0.0f;
 			float duration = 0.0f;
+			flagset<animation::Animation_Instance_Flags> instance_flags;
 		};
 		//PMI ID -> Instance Data
 		std::map<int, instance_data> m_instances;
