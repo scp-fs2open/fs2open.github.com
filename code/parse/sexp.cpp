@@ -778,17 +778,19 @@ SCP_vector<sexp_oper> Operators = {
 	{ "ai-warp-out",					OP_AI_WARP_OUT,							1,	1,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-dock",						OP_AI_DOCK,								4,	4,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-undock",						OP_AI_UNDOCK,							1,	2,			SEXP_GOAL_OPERATOR,	},
+	{ "ai-rearm-repair",				OP_AI_REARM_REPAIR,						2,	2,			SEXP_GOAL_OPERATOR, },
 	{ "ai-waypoints",					OP_AI_WAYPOINTS,						2,	2,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-waypoints-once",				OP_AI_WAYPOINTS_ONCE,					2,	2,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-ignore",						OP_AI_IGNORE,							2,	2,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-ignore-new",					OP_AI_IGNORE_NEW,						2,	2,			SEXP_GOAL_OPERATOR,	},
+	{ "ai-form-on-wing",				OP_AI_FORM_ON_WING,						1,	1,			SEXP_GOAL_OPERATOR, },
+	{ "ai-fly-to-ship",					OP_AI_FLY_TO_SHIP,						2,	2,			SEXP_GOAL_OPERATOR, },
 	{ "ai-stay-near-ship",				OP_AI_STAY_NEAR_SHIP,					2,	3,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-evade-ship",					OP_AI_EVADE_SHIP,						2,	2,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-keep-safe-distance",			OP_AI_KEEP_SAFE_DISTANCE,				1,	1,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-stay-still",					OP_AI_STAY_STILL,						2,	2,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-play-dead",					OP_AI_PLAY_DEAD,						1,	1,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-play-dead-persistent",		OP_AI_PLAY_DEAD_PERSISTENT,				1,	1,			SEXP_GOAL_OPERATOR, },
-	{ "ai-form-on-wing",				OP_AI_FORM_ON_WING,						1,	1,			SEXP_GOAL_OPERATOR,	},
 
 	{ "goals",							OP_GOALS_ID,							1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 
@@ -842,7 +844,9 @@ sexp_ai_goal_link Sexp_ai_goal_links[] = {
 	{ AI_GOAL_STAY_STILL, OP_AI_STAY_STILL },
 	{ AI_GOAL_PLAY_DEAD, OP_AI_PLAY_DEAD },
 	{ AI_GOAL_PLAY_DEAD_PERSISTENT, OP_AI_PLAY_DEAD_PERSISTENT },
-	{ AI_GOAL_FORM_ON_WING, OP_AI_FORM_ON_WING }
+	{ AI_GOAL_FORM_ON_WING, OP_AI_FORM_ON_WING },
+	{ AI_GOAL_FLY_TO_SHIP, OP_AI_FLY_TO_SHIP },
+	{ AI_GOAL_REARM_REPAIR, OP_AI_REARM_REPAIR },
 };
 
 void sexp_set_skybox_model_preload(const char *name); // taylor
@@ -28308,6 +28312,8 @@ int query_operator_return_type(int op)
 		case OP_AI_PLAY_DEAD:
 		case OP_AI_PLAY_DEAD_PERSISTENT:
 		case OP_AI_FORM_ON_WING:
+		case OP_AI_FLY_TO_SHIP:
+		case OP_AI_REARM_REPAIR:
 			return OPR_AI_GOAL;
 
 		case OP_ANY_OF:
@@ -29184,6 +29190,8 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_AI_STAY_NEAR_SHIP:
 		case OP_AI_IGNORE:
 		case OP_AI_IGNORE_NEW:
+		case OP_AI_FLY_TO_SHIP:
+		case OP_AI_REARM_REPAIR:
 			if (!argnum)
 				return OPF_SHIP;
 			else
@@ -34629,6 +34637,18 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"same team.\r\n\r\n"
 		"Takes 2 arguments...\r\n"
 		"\t1:\tName of wing to guard.\r\n"
+		"\t2:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100)." },
+
+	{ OP_AI_FLY_TO_SHIP, "Ai-fly-to-ship (Ship goal)\r\n"
+		"\tCauses the specified ship to fly towards another ship's position.\r\n\r\n"
+		"Takes 2 arguments...\r\n"
+		"\t1:\tName of ship to fly towards.\r\n"
+		"\t2:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100)." },
+
+	{ OP_AI_REARM_REPAIR, "Ai-rearm-repair (Ship goal)\r\n"
+		"\tCauses the specified ship to rearm and/or repair another ship.  Typically only works on support ships.\r\n\r\n"
+		"Takes 2 arguments...\r\n"
+		"\t1:\tName of ship to rearm or repair.\r\n"
 		"\t2:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100)." },
 
 	{ OP_NOP, "Do-nothing (Action operator)\r\n"
