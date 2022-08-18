@@ -421,7 +421,7 @@ const std::shared_ptr<scripting::Hook> OnDepartureStartedHook = scripting::Hook:
 		{"Ship", "ship", "The ship that has begun the departure process."},
 	});
 
- const std::shared_ptr<scripting::Hook> OnLoadoutParseHook = scripting::Hook::Factory("On Loadout Parse",
+ const std::shared_ptr<scripting::Hook> OnLoadoutAboutToParseHook = scripting::Hook::Factory("On Loadout About To Parse",
 	"Called during mission load just before parsing the team loadout.",{});
 
 // Goober5000
@@ -855,8 +855,8 @@ void parse_player_info2(mission *pm)
 	SCP_vector<loadout_row> list, list2;
 	team_data *ptr;
 
-	if (OnLoadoutParseHook->isActive()) {
-		OnLoadoutParseHook->run();
+	if (OnLoadoutAboutToParseHook->isActive()) {
+		OnLoadoutAboutToParseHook->run();
 	}
 
 	// read in a ship/weapon pool for each team.
