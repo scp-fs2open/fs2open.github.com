@@ -684,7 +684,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "show-subtitle-image",			OP_CUTSCENES_SHOW_SUBTITLE_IMAGE,		8,	11,			SEXP_ACTION_OPERATOR,	},
 	{ "clear-subtitles",				OP_CLEAR_SUBTITLES,						0,	0,			SEXP_ACTION_OPERATOR,	},
 	{ "lock-perspective",				OP_CUTSCENES_FORCE_PERSPECTIVE,			1,	2,			SEXP_ACTION_OPERATOR,	},
-	{ "set-camera-shudder",				OP_SET_CAMERA_SHUDDER,					2,	2,			SEXP_ACTION_OPERATOR,	},
+	{ "set-camera-shudder",				OP_SET_CAMERA_SHUDDER,					2,	4,			SEXP_ACTION_OPERATOR,	},
 	{ "supernova-start",				OP_SUPERNOVA_START,						1,	1,			SEXP_ACTION_OPERATOR,	},
 	{ "supernova-stop",					OP_SUPERNOVA_STOP,						0,	0,			SEXP_ACTION_OPERATOR,	},	//CommanderDJ
 	{ "set-motion-debris-override",		OP_SET_MOTION_DEBRIS,					1,  1,			SEXP_ACTION_OPERATOR,	},	// The E
@@ -23864,6 +23864,8 @@ void sexp_set_camera_shudder(int n)
 {
 	int time;
 	float intensity;
+	bool perpetual = false;
+	bool everywhere = false;
 	bool is_nan, is_nan_forever;
 
 	eval_nums(n, is_nan, is_nan_forever, time, intensity);
@@ -23871,11 +23873,24 @@ void sexp_set_camera_shudder(int n)
 		return;
 	intensity *= 0.01f;
 
-	game_shudder_apply(time, intensity);
+	if (n >= 0)
+	{
+		perpetual = is_sexp_true(n);
+		n = CDR(n);
+	}
+	if (n >= 0)
+	{
+		everywhere = is_sexp_true(n);
+		n = CDR(n);
+	}
+
+	game_shudder_apply(time, intensity, perpetual, everywhere);
 
 	Current_sexp_network_packet.start_callback();
 	Current_sexp_network_packet.send_int(time);
-	Current_sexp_network_packet.send_float(intensity); 
+	Current_sexp_network_packet.send_float(intensity);
+	Current_sexp_network_packet.send_bool(perpetual);
+	Current_sexp_network_packet.send_bool(everywhere);
 	Current_sexp_network_packet.end_callback();
 }
 
@@ -23883,10 +23898,14 @@ void multi_sexp_set_camera_shudder()
 {
 	int time;
 	float intensity;
+	bool perpetual = false;
+	bool everywhere = false;
 
 	Current_sexp_network_packet.get_int(time);
 	if (Current_sexp_network_packet.get_float(intensity)) {
-		game_shudder_apply(time, intensity);
+		Current_sexp_network_packet.get_bool(perpetual);
+		Current_sexp_network_packet.get_bool(everywhere);
+		game_shudder_apply(time, intensity, perpetual, everywhere);
 	}
 }
 
@@ -30582,7 +30601,10 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_POSITIVE;
 
 		case OP_SET_CAMERA_SHUDDER:
-			return OPF_POSITIVE;
+			if (argnum == 0 || argnum == 1)
+				return OPF_POSITIVE;
+			else
+				return OPF_BOOL;
 
 		case OP_CUTSCENES_SHOW_SUBTITLE:
 			if (argnum < 2)
@@ -36876,9 +36898,11 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_SET_CAMERA_SHUDDER, "set-camera-shudder\r\n"
 		"\tCauses the camera to shudder.  Currently this will only work if the camera is showing the player's viewpoint (i.e. the HUD).\r\n\r\n"
-		"Takes 2 arguments...\r\n"
+		"Takes 2 to 4 arguments...\r\n"
 		"\t1: Time (in milliseconds)\r\n"
-		"\t2: Intensity.  For comparison, the Maxim has an intensity of 1440."
+		"\t2: Intensity.  For comparison, the Maxim has an intensity of 1440.\r\n"
+		"\t3: Perpetual (optional).  Whether the effect is perpetual, i.e. does not decay.\r\n"
+		"\t4: Everywhere (optional).  Whether the effect is applied to all camera views.\r\n"
 	},
 
 	{ OP_JUMP_NODE_SET_JUMPNODE_NAME, "set-jumpnode-name\r\n"
