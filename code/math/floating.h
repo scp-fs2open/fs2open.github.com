@@ -104,7 +104,7 @@ inline bool fl_near_zero(float a, float e = std::numeric_limits<float>::epsilon(
 // https://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/
 inline bool fl_equal(float a, float b)
 {
-	return fl_abs(a - b) <= FLT_EPSILON * MAX(1.0f, MAX(fl_abs(a), fl_abs(b)));
+	return fl_abs(a - b) <= FLT_EPSILON * std::max({ 1.0f, fl_abs(a), fl_abs(b) });
 }
 
 // rounds off a floating point number to a multiple of some number

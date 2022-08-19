@@ -6079,10 +6079,10 @@ void physics_ship_init(object *objp)
 		pi->flags |= PF_SLIDE_ENABLED;
 
 	pi->cur_glide_cap = pi->max_vel.xyz.z; //Init dynamic glide cap stuff to the max vel.
-	if ( sinfo->glide_cap > 0.000001f || sinfo->glide_cap < -0.000001f )		//Backslash
+	if (sinfo->glide_cap > 0.000001f || sinfo->glide_cap < -0.000001f)		//Backslash
 		pi->glide_cap = sinfo->glide_cap;
 	else
-		pi->glide_cap = MAX(MAX(pi->max_vel.xyz.z, sinfo->max_overclocked_speed), pi->afterburner_max_vel.xyz.z);
+		pi->glide_cap = std::max({ pi->max_vel.xyz.z, sinfo->max_overclocked_speed, pi->afterburner_max_vel.xyz.z });
 	// If there's not a value for +Max Glide Speed set in the table, we want this cap to default to the fastest speed the ship can go.
 	// However, a negative value means we want no cap, thus allowing nearly infinite maximum gliding speeds.
 
