@@ -27177,6 +27177,7 @@ int eval_sexp(int cur_node, int referenced_node)
 			case OP_STOP_LOOPING_ANIMATION:
 				sexp_val = SEXP_TRUE;
 				sexp_stop_looping_animation(node);
+				break;
 
 			default:{
 				// Check if we have a dynamic SEXP with this operator and if there is, execute that
