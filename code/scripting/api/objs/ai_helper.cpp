@@ -105,7 +105,7 @@ ADE_FUNC(turnTowardsOrientation,
 	bool diffTurn = true;
 	vec3d* modifier = nullptr;
 
-	int argnum = ade_get_args(L, "oo|bof", l_AI_Helper.Get(&ship), l_Matrix.GetPtr(&target), &diffTurn, l_Vector.GetPtr(&modifier));
+	int argnum = ade_get_args(L, "oo|bo", l_AI_Helper.Get(&ship), l_Matrix.GetPtr(&target), &diffTurn, l_Vector.GetPtr(&modifier));
 	if (argnum == 0) {
 		return ADE_RETURN_NIL;
 	}
