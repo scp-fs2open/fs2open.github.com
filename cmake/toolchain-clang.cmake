@@ -33,7 +33,7 @@ set(COMPILER_FLAGS "")
 _enable_extra_compiler_warnings_flags()
 set(COMPILER_FLAGS "${COMPILER_FLAGS} ${_flags}")
 
-set(COMPILER_FLAGS "${COMPILER_FLAGS} -funroll-loops -fsigned-char -Wno-unknown-pragmas")
+set(COMPILER_FLAGS "${COMPILER_FLAGS} -fsigned-char -Wno-unknown-pragmas")
 
 # Omit "argument unused during compilation" when clang is used with ccache.
 if(${CMAKE_CXX_COMPILER} MATCHES "ccache")
@@ -85,7 +85,7 @@ endif()
 
 set(COMPILER_FLAGS_RELEASE "-O2 -Wno-unused-variable -Wno-unused-parameter")
 
-set(COMPILER_FLAGS_DEBUG "-O0 -g -Wshadow")
+set(COMPILER_FLAGS_DEBUG "-Og -g -Wshadow")
 
 # Always use the base flags and add our compiler flags at the bacl
 set(CMAKE_CXX_FLAGS "${CXX_BASE_FLAGS} ${COMPILER_FLAGS}")

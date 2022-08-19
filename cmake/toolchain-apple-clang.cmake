@@ -4,7 +4,7 @@ MESSAGE(STATUS "Doing configuration specific to Apple Clang...")
 # TODO: Actually add Mac specific flags here...
 
 # Suppress specific warning
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -funroll-loops -fsigned-char -Wno-unknown-pragmas")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fsigned-char -Wno-unknown-pragmas")
 
 # Omit "conversion from string literal to 'char *' is deprecated" warnings.
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-write-strings")

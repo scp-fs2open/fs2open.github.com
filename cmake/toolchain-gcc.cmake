@@ -45,7 +45,7 @@ endif()
 _enable_extra_compiler_warnings_flags()
 set(COMPILER_FLAGS "${COMPILER_FLAGS} ${_flags}")
 
-set(COMPILER_FLAGS "${COMPILER_FLAGS} -funroll-loops -fsigned-char -Wno-unknown-pragmas")
+set(COMPILER_FLAGS "${COMPILER_FLAGS} -fsigned-char -Wno-unknown-pragmas")
 
 if (NOT GCC_INCREMENTAL_LINKING)
 	# Place each function and data in its own section so the linker can
@@ -115,7 +115,7 @@ endif()
 
 set(COMPILER_FLAGS_RELEASE "-O2 -Wno-unused-variable -Wno-unused-but-set-variable -Wno-array-bounds -Wno-empty-body -Wno-clobbered  -Wno-unused-parameter")
 
-set(COMPILER_FLAGS_DEBUG "-O0 -g -Wshadow")
+set(COMPILER_FLAGS_DEBUG "-Og -g -Wshadow")
 
 # Always use the base flags and add our compiler flags at the back
 set(CMAKE_CXX_FLAGS "${CXX_BASE_FLAGS} ${COMPILER_FLAGS}")
