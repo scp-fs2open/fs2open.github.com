@@ -25,6 +25,7 @@
 #include "globalincs/vmallocator.h"
 #include "graphics/2d.h"
 #include "graphics/color.h"
+#include "graphics/light.h"
 #include "graphics/matrix.h"
 #include "graphics/shadows.h"
 #include "hud/hudwingmanstatus.h"
@@ -1950,14 +1951,15 @@ void common_setup_room_lights()
 {
 	light_reset();
 	auto tempv = vm_vec_new(-1.0f,0.3f,-1.0f);
-	auto tempc = hdr_color(1.0f,0.95f,0.9f, 0.0f, 1.5f);//use 3 for qaz shaders
+	auto tempc = hdr_color(1.0f,0.95f,0.9f, 0.0f, 1.5f);
 	light_add_directional(&tempv,&tempc);
 	tempv.xyz={-0.4f,0.4f,1.1f};
-	tempc = hdr_color(0.788f,0.886f,1.0f,0.0f,1.5f);//use 3 for qaz shaders
+	tempc = hdr_color(0.788f,0.886f,1.0f,0.0f,1.5f);
 	light_add_directional(&tempv,&tempc);
 	tempv.xyz={0.4f,0.1f,0.4f};
-	tempc = hdr_color(1.0f,1.0f,1.0f,0.0f,0.4f);//use 0.8 for qaz shaders
+	tempc = hdr_color(1.0f,1.0f,1.0f,0.0f,0.4f);
 	light_add_directional(&tempv,&tempc);
+	gr_set_ambient_light(15, 15, 15);
 	light_rotate_all();
 }
 

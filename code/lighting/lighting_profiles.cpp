@@ -213,8 +213,10 @@ void lighting_profile::reset()
 	ambient_light_brightness.set_adjust(MAX(0.0f,Cmdline_emissive_power));
 
 	overall_brightness.reset();
-	overall_brightness.set_multiplier(Cmdline_light_power); 
+	//Default Multiplier to maintain legacy visual compatibility
+	overall_brightness.set_multiplier(3.5f); 
 	overall_brightness.set_minimum(0.0f);
+	overall_brightness.stack_multiplier(Cmdline_light_power); 
 }
 
 TonemapperAlgorithm lighting_profile::name_to_tonemapper(SCP_string &name)
