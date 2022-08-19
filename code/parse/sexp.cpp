@@ -21232,8 +21232,8 @@ void multi_sexp_add_nav_waypoint()
 	if (!Current_sexp_network_packet.get_int(vert))
 		return;
 
+	object_ship_wing_point_team oswpt;
 	if (Current_sexp_network_packet.get_string(oswpt_name)) {
-		object_ship_wing_point_team oswpt;
 		eval_object_ship_wing_point_team(&oswpt, -1, oswpt_name);
 		oswptp = &oswpt;
 	}
