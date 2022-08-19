@@ -754,7 +754,7 @@ ADE_VIRTVAR(PersonaIndex, l_Ship, "number", "Persona index", "number", "The inde
 
 	ship *shipp = &Ships[objh->objp->instance];
 
-	if(ADE_SETTING_VAR && p_index >= 0)
+	if(ADE_SETTING_VAR && p_index > 0)
 		shipp->persona_index = p_index - 1;
 
 	return ade_set_args(L, "i", shipp->persona_index + 1);
