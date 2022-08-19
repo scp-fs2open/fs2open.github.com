@@ -98,10 +98,13 @@ inline bool fl_near_zero(float a, float e = std::numeric_limits<float>::epsilon(
 	return a < e && a > -e;
 }
 
-// sees if two floating point numbers are within the minimum tolerance
+// sees if two floating point numbers are approximately equal, taking into account the argument magnitudes
+// see commit c62037
+// and see also this article, because fl_equal may need to be rewritten if it is recruited into more demanding situations:
+// https://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/
 inline bool fl_equal(float a, float b)
 {
-	return fl_near_zero(a - b);
+	return fl_abs(a - b) <= FLT_EPSILON * MAX(1.0f, MAX(fl_abs(a), fl_abs(b)));
 }
 
 // rounds off a floating point number to a multiple of some number
