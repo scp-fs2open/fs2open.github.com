@@ -41,11 +41,11 @@
 #define IS_VEC_NULL(v) IS_VEC_NULL_SQ_SAFE(v)
 
 // macro to check if moment-of-inertia vector is close to zero
-// (uses different thresholds since MOI values are really small)
+// (uses the previous 1e-36 threshold since MOI values are really small)
 #define IS_MOI_VEC_NULL(v) \
-		(fl_near_zero((v)->xyz.x, (float) 1e-20) && \
-		fl_near_zero((v)->xyz.y, (float) 1e-20) && \
-		fl_near_zero((v)->xyz.z, (float) 1e-20))
+		(fl_near_zero((v)->xyz.x, (float) 1e-36) && \
+		fl_near_zero((v)->xyz.y, (float) 1e-36) && \
+		fl_near_zero((v)->xyz.z, (float) 1e-36))
 
 // currently only used to check orientations
 #define IS_MAT_NULL(v) (IS_VEC_NULL(&(v)->vec.fvec) && IS_VEC_NULL(&(v)->vec.uvec) && IS_VEC_NULL(&(v)->vec.rvec))
