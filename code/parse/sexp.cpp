@@ -20459,11 +20459,13 @@ void sexp_trigger_submodel_animation(int node)
 			return;
 		}
 
-		Ship_info[ship_entry->shipp->ship_info_index].animations.start(model_get_instance(ship_entry->shipp->model_instance_num), animation_type, animation::anim_name_from_subsys(ss->system_info), direction == -1 ? animation::ModelAnimationDirection::RWD : animation::ModelAnimationDirection::FWD, instant, instant, false, animation_subtype);
+		Ship_info[ship_entry->shipp->ship_info_index].animations.get(model_get_instance(ship_entry->shipp->model_instance_num), animation_type, animation::anim_name_from_subsys(ss->system_info), animation_subtype)
+			.start(direction == -1 ? animation::ModelAnimationDirection::RWD : animation::ModelAnimationDirection::FWD, instant, instant, false);
 	}
 	else
 	{
-		Ship_info[ship_entry->shipp->ship_info_index].animations.startAll(model_get_instance(ship_entry->shipp->model_instance_num), animation_type, direction == -1 ? animation::ModelAnimationDirection::RWD : animation::ModelAnimationDirection::FWD, instant, instant, false, animation_subtype);
+		Ship_info[ship_entry->shipp->ship_info_index].animations.getAll(model_get_instance(ship_entry->shipp->model_instance_num), animation_type, animation_subtype)
+			.start(direction == -1 ? animation::ModelAnimationDirection::RWD : animation::ModelAnimationDirection::FWD, instant, instant, false);
 	}
 }
 

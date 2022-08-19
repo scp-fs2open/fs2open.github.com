@@ -365,25 +365,21 @@ namespace animation {
 			int getTime() const;
 			void setFlag(Animation_Instance_Flags flag, bool set = true) const;
 			AnimationList& operator+=(const AnimationList& rhs);
+			AnimationList operator+(const AnimationList& rhs);
 		};
+		//Get Animations of the specified type, with a specified name, and optionally specified subtype. Will always find corresponding animations that have the default subtype
 		AnimationList get(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& name, int subtype = SUBTYPE_DEFAULT) const;
+		//Get Animations of the specified type and optionally specified subtype regardless of the name. Will find corresponding animations that have the default subtype if strict is false
 		AnimationList getAll(polymodel_instance* pmi, ModelAnimationTriggerType type, int subtype = SUBTYPE_DEFAULT, bool strict = false) const;
+		//Get all Animations of the specified type
 		AnimationList getBlanket(polymodel_instance* pmi, ModelAnimationTriggerType type) const;
+		//Get DockBayDoor Animations with proper handling for dock bay door subtypes
 		AnimationList getDockBayDoors(polymodel_instance* pmi, int subtype) const;
+		//Get Animations from SEXP/Scripting specifiers using the TriggeredBy field. Parses TriggeredBy and defers to getX functions depending on animation type
 		AnimationList parseScripted(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& triggeredBy) const;
-
-		bool start(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& name, ModelAnimationDirection direction, bool forced = false, bool instant = false, bool pause = false, int subtype = SUBTYPE_DEFAULT) const;
-		bool startAll(polymodel_instance* pmi, ModelAnimationTriggerType type, ModelAnimationDirection direction, bool forced = false, bool instant = false, bool pause = false, int subtype = SUBTYPE_DEFAULT, bool strict = false) const;
-		bool startBlanket(polymodel_instance* pmi, ModelAnimationTriggerType type, ModelAnimationDirection direction, bool forced = false, bool instant = false, bool pause = false) const;
-		bool startDockBayDoors(polymodel_instance* pmi, ModelAnimationDirection direction, bool forced, bool instant, bool pause, int subtype) const;
-
-		int getTime(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& name, int subtype = SUBTYPE_DEFAULT) const;
-		int getTimeAll(polymodel_instance* pmi, ModelAnimationTriggerType type, int subtype = SUBTYPE_DEFAULT, bool strict = false) const;
-		int getTimeDockBayDoors(polymodel_instance* pmi, int subtype) const;
 
 		struct RegisteredTrigger { ModelAnimationTriggerType type; int subtype; const SCP_string& name; };
 		std::vector<RegisteredTrigger> getRegisteredTriggers() const;
-
 
 		bool updateMoveable(polymodel_instance* pmi, const SCP_string& name, const std::vector<linb::any>& args) const;
 		void initializeMoveables(polymodel_instance* pmi);

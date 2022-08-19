@@ -1198,7 +1198,7 @@ ADE_FUNC_DEPRECATED(getAnimationDoneTime, l_Ship, "number Type, number Subtype",
 	if(type == animation::ModelAnimationTriggerType::None)
 		return ADE_RETURN_FALSE;
 
-	int time_ms = Ship_info[Ships[objh->objp->instance].ship_info_index].animations.getTimeAll(model_get_instance(Ships[objh->objp->instance].model_instance_num), type, subtype);
+	int time_ms = Ship_info[Ships[objh->objp->instance].ship_info_index].animations.getAll(model_get_instance(Ships[objh->objp->instance].model_instance_num), type, subtype).getTime();
 	float time_s = (float)time_ms / 1000.0f;
 
 	return ade_set_args(L, "f", time_s);
@@ -1614,7 +1614,7 @@ ADE_FUNC_DEPRECATED(triggerAnimation, l_Ship, "string Type, [number Subtype, boo
 	if(type == animation::ModelAnimationTriggerType::None)
 		return ADE_RETURN_FALSE;
 
-	Ship_info[Ships[objh->objp->instance].ship_info_index].animations.startAll(model_get_instance(Ships[objh->objp->instance].model_instance_num), type, b ? animation::ModelAnimationDirection::FWD : animation::ModelAnimationDirection::RWD, instant, instant, false, subtype);
+	Ship_info[Ships[objh->objp->instance].ship_info_index].animations.getAll(model_get_instance(Ships[objh->objp->instance].model_instance_num), type, subtype).start(b ? animation::ModelAnimationDirection::FWD : animation::ModelAnimationDirection::RWD, instant, instant);
 
 	return ADE_RETURN_TRUE;
 }

@@ -723,6 +723,7 @@ namespace animation {
 		return list;
 	}
 
+	//Yes why of course does this need special handling...
 	ModelAnimationSet::AnimationList ModelAnimationSet::getDockBayDoors(polymodel_instance* pmi, int subtype) const {
 		if (pmi == nullptr)
 			return ModelAnimationSet::AnimationList();
@@ -748,35 +749,6 @@ namespace animation {
 			}
 		}
 		return list;
-	}
-
-	bool ModelAnimationSet::start(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& name, ModelAnimationDirection direction, bool forced, bool instant, bool pause, int subtype) const {
-		return get(pmi, type, name, subtype).start(direction, forced, instant, pause);
-	}
-
-	bool ModelAnimationSet::startAll(polymodel_instance* pmi, ModelAnimationTriggerType type, ModelAnimationDirection direction, bool forced, bool instant, bool pause, int subtype, bool strict) const {
-		return getAll(pmi, type, subtype).start(direction, forced, instant, pause);
-	}
-
-	bool ModelAnimationSet::startBlanket(polymodel_instance* pmi, ModelAnimationTriggerType type, ModelAnimationDirection direction, bool forced, bool instant, bool pause) const {
-		return getBlanket(pmi, type).start(direction, forced, instant, pause);
-	}
-
-	//Yes why of course does this need special handling...
-	bool ModelAnimationSet::startDockBayDoors(polymodel_instance* pmi, ModelAnimationDirection direction, bool forced, bool instant, bool pause, int subtype) const {
-		return getDockBayDoors(pmi, subtype).start(direction, forced, instant, pause);
-	}
-
-	int ModelAnimationSet::getTimeDockBayDoors(polymodel_instance* pmi, int subtype) const {
-		return getDockBayDoors(pmi, subtype).getTime();
-	}
-
-	int ModelAnimationSet::getTime(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& name, int subtype) const {
-		return get(pmi, type, name, subtype).getTime();
-	}
-
-	int ModelAnimationSet::getTimeAll(polymodel_instance* pmi, ModelAnimationTriggerType type, int subtype, bool strict) const {
-		return getAll(pmi, type, subtype).getTime();
 	}
 
 	std::vector<ModelAnimationSet::RegisteredTrigger> ModelAnimationSet::getRegisteredTriggers() const {
@@ -819,6 +791,14 @@ namespace animation {
 	ModelAnimationSet::AnimationList& ModelAnimationSet::AnimationList::operator+=(const AnimationList& rhs) {
 		Assertion(pmi == rhs.pmi, "Tried to concatenate two AnimationLists of different model instances!");
 		animations.insert(animations.end(), rhs.animations.cbegin(), rhs.animations.cend());
+		return *this;
+	}
+
+	ModelAnimationSet::AnimationList ModelAnimationSet::AnimationList::operator+(const AnimationList& rhs) {
+		Assertion(pmi == rhs.pmi, "Tried to concatenate two AnimationLists of different model instances!");
+		AnimationList result = *this;
+		result.animations.insert(animations.end(), rhs.animations.cbegin(), rhs.animations.cend());
+		return result;
 	}
 	
 	ModelAnimationSet::AnimationList ModelAnimationSet::parseScripted(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& triggeredBy) const {
@@ -963,9 +943,9 @@ namespace animation {
 		polymodel_instance* pmi = model_get_instance(shipp->model_instance_num);
 
 		sip->animations.clearShipData(pmi);
-		sip->animations.startAll(pmi, animation::ModelAnimationTriggerType::Initial, ModelAnimationDirection::FWD, true, true);
+		sip->animations.getAll(pmi, animation::ModelAnimationTriggerType::Initial).start(ModelAnimationDirection::FWD, true, true);
 		sip->animations.initializeMoveables(pmi);
-		sip->animations.startAll(pmi, animation::ModelAnimationTriggerType::OnSpawn, ModelAnimationDirection::FWD);
+		sip->animations.getAll(pmi, animation::ModelAnimationTriggerType::OnSpawn).start(ModelAnimationDirection::FWD);
 	}
 
 	const std::map<ModelAnimationTriggerType, std::pair<const char*, bool>> Animation_types = {
