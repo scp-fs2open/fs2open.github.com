@@ -40,6 +40,8 @@ extern bool Beams_use_damage_factors;
 extern float Generic_pain_flash_factor;
 extern float Shield_pain_flash_factor;
 extern SCP_string Window_title;
+extern SCP_string Mod_title;
+extern SCP_string Mod_version;
 extern bool Unicode_text_mode;
 extern bool Use_tabled_strings_for_default_language;
 extern bool Dont_preempt_training_voice;

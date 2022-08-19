@@ -582,6 +582,47 @@ ADE_FUNC(getVersionString, l_Base, nullptr,
 	return ade_set_args(L, "s", str.c_str());
 }
 
+ADE_FUNC(getModTitle, l_Base, nullptr,
+         "Returns the title of the current mod as defined in game_settings.tbl. Will return an empty string if not defined.",
+         "string", "The mod title")
+{
+	auto str = Mod_title;
+	return ade_set_args(L, "s", str.c_str());
+}
+
+ADE_FUNC(getModVersion, l_Base, nullptr,
+         "Returns the version of the current mod as defined in game_settings.tbl. Will return an empty string if not defined.",
+         "string, number, number, number", "The mod title; the major, minor, patch version numbers -1 if invalid")
+{
+	auto version = Mod_version;
+
+	int major = -1;
+	int minor = -1;
+	int patch = -1;
+	
+	int i = 0;
+	auto str = Mod_version;
+	while (i <= 3) {
+		size_t pos = str.find_first_of('.');
+		if (pos != SCP_string::npos) {
+			auto ver = str.substr(0, pos);
+			if(!ver.empty() && std::find_if(ver.begin(), ver.end(), [](char c) { return !std::isdigit(c); }) == ver.end()){
+				if (major < 0) {
+					major = std::stoi(str.c_str());
+				} else if (minor < 0) {
+					minor = std::stoi(str.c_str());
+				}
+				str.erase(0, pos + 1);
+			}
+		} else if ((!str.empty() && std::find_if(str.begin(), str.end(), [](char c) { return !std::isdigit(c); }) == str.end()) && (major > -1) && (!minor > -1)) {
+			patch = std::stoi(str.c_str());
+		}
+		i++;
+	}
+
+	return ade_set_args(L, "siii", version.c_str(), major, minor, patch);
+}
+
 ADE_VIRTVAR(MultiplayerMode, l_Base, "boolean", "Determines if the game is currently in single- or multiplayer mode",
             "boolean",
             "true if in multiplayer mode, false if in singleplayer. If neither is the case (e.g. on game init) nil "

@@ -51,6 +51,8 @@ float Generic_pain_flash_factor;
 float Shield_pain_flash_factor;
 gameversion::version Targeted_version; // Defaults to retail
 SCP_string Window_title;
+SCP_string Mod_title;
+SCP_string Mod_version;
 bool Unicode_text_mode;
 bool Use_tabled_strings_for_default_language;
 bool Dont_preempt_training_voice;
@@ -139,6 +141,14 @@ void parse_mod_table(const char *filename)
 
 		if (optional_string("$Window icon:")) {
 			stuff_string(Window_icon_path, F_NAME);
+		}
+
+		if (optional_string("$Mod title:")) {
+			stuff_string(Mod_title, F_NAME);
+		}
+
+		if (optional_string("$Mod version:")) {
+			stuff_string(Mod_version, F_NAME);
 		}
 		
 		if (optional_string("$Unicode mode:")) {
@@ -935,6 +945,8 @@ void mod_table_reset()
 	Shield_pain_flash_factor = 0.0f;
 	Targeted_version = gameversion::version(2, 0, 0, 0); // Defaults to retail
 	Window_title = "";
+	Mod_title = "";
+	Mod_version = "";
 	Unicode_text_mode = false;
 	Use_tabled_strings_for_default_language = false;
 	Dont_preempt_training_voice = false;
