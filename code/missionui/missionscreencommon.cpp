@@ -1959,7 +1959,7 @@ void common_setup_room_lights()
 	tempv.xyz={0.4f,0.1f,0.4f};
 	tempc = hdr_color(1.0f,1.0f,1.0f,0.0f,0.4f);
 	light_add_directional(&tempv,&tempc);
-	gr_set_ambient_light(15, 15, 15);
+	gr_set_ambient_light(53, 53, 53);
 	light_rotate_all();
 }
 
