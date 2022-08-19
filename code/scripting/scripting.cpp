@@ -7,7 +7,6 @@
 #include "ade_args.h"
 #include "freespace.h"
 #include "hook_api.h"
-#include "global_hooks.h"
 
 #include "bmpman/bmpman.h"
 #include "controlconfig/controlsconfig.h"
