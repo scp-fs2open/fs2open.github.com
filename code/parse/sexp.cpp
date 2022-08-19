@@ -20522,12 +20522,29 @@ void sexp_trigger_submodel_animation_new(int n)
 	else
 		pause = false;
 
-	auto animationStartFunc = animation::anim_parse_scripted_start(Ship_info[ship_entry->shipp->ship_info_index].animations, model_get_instance(ship_entry->shipp->model_instance_num), animation_type, triggeredBy).first;
-	animationStartFunc(direction, forced || instant, instant, pause);
+	const auto& list = Ship_info[ship_entry->shipp->ship_info_index].animations.parseScripted(model_get_instance(ship_entry->shipp->model_instance_num), animation_type, triggeredBy);
+	list.start(direction, forced || instant, instant, pause);
 }
 
-void sexp_stop_looping_animation(int node) {
+void sexp_stop_looping_animation(int n) {
+	auto ship_entry = eval_ship(n);
+	if (!ship_entry || !ship_entry->shipp)
+		return;
+	n = CDR(n);
 
+	auto animation_type = animation::anim_match_type(CTEXT(n));
+	if (animation_type == animation::ModelAnimationTriggerType::None)
+	{
+		Warning(LOCATION, "Unable to match animation type \"%s\"!", CTEXT(n));
+		return;
+	}
+	n = CDR(n);
+
+	SCP_string triggeredBy(CTEXT(n));
+	n = CDR(n);
+
+	const auto& list = Ship_info[ship_entry->shipp->ship_info_index].animations.parseScripted(model_get_instance(ship_entry->shipp->model_instance_num), animation_type, triggeredBy);
+	list.setFlag(animation::Animation_Instance_Flags::Stop_after_next_loop);
 }
 
 void sexp_update_moveable_animation(int node)

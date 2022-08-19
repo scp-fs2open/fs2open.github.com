@@ -355,6 +355,23 @@ namespace animation {
 
 		void clearShipData(polymodel_instance* pmi);
 
+		class AnimationList {
+			std::vector<std::shared_ptr<ModelAnimation>> animations;
+			polymodel_instance* pmi = nullptr;
+			AnimationList(polymodel_instance* pmi_ = nullptr) : pmi(pmi_) {}
+			friend class ModelAnimationSet;
+		public:
+			bool start(ModelAnimationDirection direction, bool forced = false, bool instant = false, bool pause = false) const;
+			int getTime() const;
+			void setFlag(Animation_Instance_Flags flag, bool set = true) const;
+			AnimationList& operator+=(const AnimationList& rhs);
+		};
+		AnimationList get(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& name, int subtype = SUBTYPE_DEFAULT) const;
+		AnimationList getAll(polymodel_instance* pmi, ModelAnimationTriggerType type, int subtype = SUBTYPE_DEFAULT, bool strict = false) const;
+		AnimationList getBlanket(polymodel_instance* pmi, ModelAnimationTriggerType type) const;
+		AnimationList getDockBayDoors(polymodel_instance* pmi, int subtype) const;
+		AnimationList parseScripted(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& triggeredBy) const;
+
 		bool start(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& name, ModelAnimationDirection direction, bool forced = false, bool instant = false, bool pause = false, int subtype = SUBTYPE_DEFAULT) const;
 		bool startAll(polymodel_instance* pmi, ModelAnimationTriggerType type, ModelAnimationDirection direction, bool forced = false, bool instant = false, bool pause = false, int subtype = SUBTYPE_DEFAULT, bool strict = false) const;
 		bool startBlanket(polymodel_instance* pmi, ModelAnimationTriggerType type, ModelAnimationDirection direction, bool forced = false, bool instant = false, bool pause = false) const;
@@ -366,6 +383,7 @@ namespace animation {
 
 		struct RegisteredTrigger { ModelAnimationTriggerType type; int subtype; const SCP_string& name; };
 		std::vector<RegisteredTrigger> getRegisteredTriggers() const;
+
 
 		bool updateMoveable(polymodel_instance* pmi, const SCP_string& name, const std::vector<linb::any>& args) const;
 		void initializeMoveables(polymodel_instance* pmi);

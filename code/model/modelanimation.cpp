@@ -650,220 +650,133 @@ namespace animation {
 		}
 	}
 
-	bool ModelAnimationSet::start(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& name, ModelAnimationDirection direction, bool forced, bool instant, bool pause, int subtype) const {
+	ModelAnimationSet::AnimationList ModelAnimationSet::get(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& name, int subtype) const {
 		if (pmi == nullptr)
-			return false;
+			return ModelAnimationSet::AnimationList();
 
-		bool started = false;
+		ModelAnimationSet::AnimationList list{ pmi };
+
 		auto animations = m_animationSet.find({ type, subtype });
 		if (animations != m_animationSet.end()) {
 			auto namedAnimations = animations->second.find(name);
 			if (namedAnimations != animations->second.end()) {
-				for (const auto& namedAnimation : namedAnimations->second) {
-					namedAnimation->start(pmi, direction, forced, instant, pause);
-					started = true;
-				}
+				list.animations.insert(list.animations.end(), namedAnimations->second.cbegin(), namedAnimations->second.cend());
 			}
 		}
 
 		//Only search for default anims again if these weren't looked for in the first place
 		if (subtype == SUBTYPE_DEFAULT)
-			return started;
+			return list;
 
 		animations = m_animationSet.find({ type, SUBTYPE_DEFAULT });
 		if (animations != m_animationSet.end()) {
 			auto namedAnimations = animations->second.find(name);
 			if (namedAnimations != animations->second.end()) {
-				for (const auto& namedAnimation : namedAnimations->second) {
-					namedAnimation->start(pmi, direction, forced, instant, pause);
-					started = true;
-				}
+				list.animations.insert(list.animations.end(), namedAnimations->second.cbegin(), namedAnimations->second.cend());
 			}
 		}
-		return started;
+
+		return list;
 	}
 
-	bool ModelAnimationSet::startAll(polymodel_instance* pmi, ModelAnimationTriggerType type, ModelAnimationDirection direction, bool forced, bool instant, bool pause, int subtype, bool strict) const {
+	ModelAnimationSet::AnimationList ModelAnimationSet::getAll(polymodel_instance* pmi, ModelAnimationTriggerType type, int subtype, bool strict) const {
 		if (pmi == nullptr)
-			return false;
+			return ModelAnimationSet::AnimationList();
 
-		bool started = false;
+		ModelAnimationSet::AnimationList list{ pmi };
+
 		auto animations = m_animationSet.find({ type, subtype });
 		if (animations != m_animationSet.end()) {
 			for (auto& namedAnimations : animations->second) {
-				for (const auto& namedAnimation : namedAnimations.second) {
-					namedAnimation->start(pmi, direction, forced, instant, pause);
-					started = true;
-				}
+				list.animations.insert(list.animations.end(), namedAnimations.second.cbegin(), namedAnimations.second.cend());
 			}
 		}
 
 		//Only search for default anims again if these weren't looked for in the first place
 		if (strict || subtype == SUBTYPE_DEFAULT)
-			return started;
+			return list;
 
 		animations = m_animationSet.find({ type, SUBTYPE_DEFAULT });
 		if (animations != m_animationSet.end()) {
 			for (auto& namedAnimations : animations->second) {
-				for (const auto& namedAnimation : namedAnimations.second) {
-					namedAnimation->start(pmi, direction, forced, instant, pause);
-					started = true;
-				}
+				list.animations.insert(list.animations.end(), namedAnimations.second.cbegin(), namedAnimations.second.cend());
 			}
 		}
-		return started;
+		return list;
+	}
+
+	ModelAnimationSet::AnimationList ModelAnimationSet::getBlanket(polymodel_instance* pmi, ModelAnimationTriggerType type) const {
+		if (pmi == nullptr)
+			return ModelAnimationSet::AnimationList();
+
+		ModelAnimationSet::AnimationList list{ pmi };
+
+		for (const auto& animations : m_animationSet) {
+			if (animations.first.type != type)
+				continue;
+
+			for (const auto& namedAnimation : animations.second) {
+				list.animations.insert(list.animations.end(), namedAnimation.second.cbegin(), namedAnimation.second.cend());
+			}
+		}
+
+		return list;
+	}
+
+	ModelAnimationSet::AnimationList ModelAnimationSet::getDockBayDoors(polymodel_instance* pmi, int subtype) const {
+		if (pmi == nullptr)
+			return ModelAnimationSet::AnimationList();
+
+		ModelAnimationSet::AnimationList list{ pmi };
+		subtype++;
+
+		for (const auto& animList : m_animationSet) {
+			if (animList.first.type != ModelAnimationTriggerType::DockBayDoor)
+				continue;
+
+			if (animList.first.subtype != ModelAnimationSet::SUBTYPE_DEFAULT) {
+				//Trigger on all but x type
+				if (animList.first.subtype < 0 && animList.first.subtype == subtype)
+					continue;
+
+				//Trigger only on x type. For the record, animsubtype 0 cannot happen here.
+				if (animList.first.subtype > 0 && animList.first.subtype != subtype)
+					continue;
+			}
+			for (auto& namedAnimations : animList.second) {
+				list.animations.insert(list.animations.end(), namedAnimations.second.cbegin(), namedAnimations.second.cend());
+			}
+		}
+		return list;
+	}
+
+	bool ModelAnimationSet::start(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& name, ModelAnimationDirection direction, bool forced, bool instant, bool pause, int subtype) const {
+		return get(pmi, type, name, subtype).start(direction, forced, instant, pause);
+	}
+
+	bool ModelAnimationSet::startAll(polymodel_instance* pmi, ModelAnimationTriggerType type, ModelAnimationDirection direction, bool forced, bool instant, bool pause, int subtype, bool strict) const {
+		return getAll(pmi, type, subtype).start(direction, forced, instant, pause);
 	}
 
 	bool ModelAnimationSet::startBlanket(polymodel_instance* pmi, ModelAnimationTriggerType type, ModelAnimationDirection direction, bool forced, bool instant, bool pause) const {
-		if (pmi == nullptr)
-			return false;
-
-		bool started = false;
-		
-		for(const auto& animations : m_animationSet) {
-			if(animations.first.type != type)
-				continue;
-			
-			for (const auto& namedAnimation : animations.second){
-				for(const auto& animation : namedAnimation.second){
-					animation->start(pmi, direction, forced, instant, pause);
-					started = true;
-				}
-			}
-		}
-		
-		return started;
+		return getBlanket(pmi, type).start(direction, forced, instant, pause);
 	}
 
 	//Yes why of course does this need special handling...
 	bool ModelAnimationSet::startDockBayDoors(polymodel_instance* pmi, ModelAnimationDirection direction, bool forced, bool instant, bool pause, int subtype) const {
-		if (pmi == nullptr)
-			return false;
-
-		bool started = false;
-		subtype++;
-
-		for (const auto& animList : m_animationSet) {
-			if (animList.first.type != ModelAnimationTriggerType::DockBayDoor)
-				continue;
-
-			if (animList.first.subtype != ModelAnimationSet::SUBTYPE_DEFAULT) {
-				//Trigger on all but x type
-				if (animList.first.subtype < 0 && animList.first.subtype == subtype)
-					continue;
-
-				//Trigger only on x type. For the record, animsubtype 0 cannot happen here.
-				if (animList.first.subtype > 0 && animList.first.subtype != subtype)
-					continue;
-			}
-			for (auto& namedAnimations : animList.second) {
-				for (const auto& namedAnimation : namedAnimations.second) {
-					namedAnimation->start(pmi, direction, forced, instant, pause);
-					started = true;
-				}
-			}
-		}
-		return started;
+		return getDockBayDoors(pmi, subtype).start(direction, forced, instant, pause);
 	}
 
 	int ModelAnimationSet::getTimeDockBayDoors(polymodel_instance* pmi, int subtype) const {
-		float duration = 0.0f;
-		subtype++;
-
-		for (const auto& animList : m_animationSet) {
-			if (animList.first.type != ModelAnimationTriggerType::DockBayDoor)
-				continue;
-
-			if (animList.first.subtype != ModelAnimationSet::SUBTYPE_DEFAULT) {
-				//Trigger on all but x type
-				if (animList.first.subtype < 0 && animList.first.subtype == subtype)
-					continue;
-
-				//Trigger only on x type. For the record, animsubtype 0 cannot happen here.
-				if (animList.first.subtype > 0 && animList.first.subtype != subtype)
-					continue;
-			}
-			for (auto& namedAnimations : animList.second) {
-				for (const auto& namedAnimation : namedAnimations.second) {
-					if (namedAnimation->m_instances[pmi->id].state == ModelAnimationState::UNTRIGGERED)
-						continue;
-
-					float localDur = namedAnimation->m_instances[pmi->id].duration;
-					duration = duration < localDur ? localDur : duration;
-				}
-			}
-		}
-
-		return (int) (duration * 1000);
+		return getDockBayDoors(pmi, subtype).getTime();
 	}
 
 	int ModelAnimationSet::getTime(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& name, int subtype) const {
-		float duration = 0.0f;
-
-		auto animations = m_animationSet.find({ type, subtype });
-		if (animations != m_animationSet.end()) {
-			auto namedAnimations = animations->second.find(name);
-			if (namedAnimations != animations->second.end()){
-				for (const auto& namedAnimation : namedAnimations->second) {
-					if (namedAnimation->m_instances[pmi->id].state != ModelAnimationState::UNTRIGGERED) {
-						float localDur = namedAnimation->m_instances[pmi->id].duration;
-						duration = duration < localDur ? localDur : duration;
-					}
-				}
-			}
-		}
-
-		//Only search for default anims again if these weren't looked for in the first place
-		if (subtype == SUBTYPE_DEFAULT)
-			return (int) (duration * 1000);
-
-		animations = m_animationSet.find({ type, SUBTYPE_DEFAULT });
-		if (animations != m_animationSet.end()) {
-			auto namedAnimations = animations->second.find(name);
-			if (namedAnimations != animations->second.end()) {
-				for (const auto& namedAnimation : namedAnimations->second) {
-					if (namedAnimation->m_instances[pmi->id].state != ModelAnimationState::UNTRIGGERED) {
-						float localDur = namedAnimation->m_instances[pmi->id].duration;
-						duration = duration < localDur ? localDur : duration;
-					}
-				}
-			}
-		}
-
-		return (int) (duration * 1000);
+		return get(pmi, type, name, subtype).getTime();
 	}
 
 	int ModelAnimationSet::getTimeAll(polymodel_instance* pmi, ModelAnimationTriggerType type, int subtype, bool strict) const {
-		float duration = 0.0f;
-		auto animations = m_animationSet.find({ type, subtype });
-		if (animations != m_animationSet.end()) {
-			for (const auto& namedAnimations : animations->second) {
-				for (const auto& namedAnimation : namedAnimations.second) {
-					if (namedAnimation->m_instances[pmi->id].state == ModelAnimationState::UNTRIGGERED)
-						continue;
-					float localDur = namedAnimation->m_instances[pmi->id].duration;
-					duration = duration < localDur ? localDur : duration;
-				}
-			}
-		}
-
-		//Only search for default anims again if these weren't looked for in the first place
-		if (strict || subtype == SUBTYPE_DEFAULT)
-			return (int) (duration * 1000);
-
-		animations = m_animationSet.find({ type, SUBTYPE_DEFAULT });
-		if (animations != m_animationSet.end()) {
-			for (const auto& namedAnimations : animations->second) {
-				for (const auto& namedAnimation : namedAnimations.second) {
-					if (namedAnimation->m_instances[pmi->id].state == ModelAnimationState::UNTRIGGERED)
-						continue;
-					float localDur = namedAnimation->m_instances[pmi->id].duration;
-					duration = duration < localDur ? localDur : duration;
-				}
-			}
-		}
-
-		return (int) (duration * 1000);
+		return getAll(pmi, type, subtype).getTime();
 	}
 
 	std::vector<ModelAnimationSet::RegisteredTrigger> ModelAnimationSet::getRegisteredTriggers() const {
@@ -877,6 +790,97 @@ namespace animation {
 
 		return ret;
 	};
+
+	bool ModelAnimationSet::AnimationList::start(ModelAnimationDirection direction, bool forced, bool instant, bool pause) const {
+		for(auto anim : animations)
+			anim->start(pmi, direction, forced, instant, pause);
+
+		return !animations.empty();
+	}
+
+	int ModelAnimationSet::AnimationList::getTime() const {
+		float duration = 0.0f;
+
+		for (auto anim : animations) {
+			if (anim->m_instances[pmi->id].state == ModelAnimationState::UNTRIGGERED)
+				continue;
+			float localDur = anim->m_instances[pmi->id].duration;
+			duration = duration < localDur ? localDur : duration;
+		}
+
+		return (int)(duration * 1000.0f);
+	}
+
+	void ModelAnimationSet::AnimationList::setFlag(Animation_Instance_Flags flag, bool set) const {
+		for (auto anim : animations)
+			anim->m_instances[pmi->id].instance_flags.set(flag, set);
+	}
+
+	ModelAnimationSet::AnimationList& ModelAnimationSet::AnimationList::operator+=(const AnimationList& rhs) {
+		Assertion(pmi == rhs.pmi, "Tried to concatenate two AnimationLists of different model instances!");
+		animations.insert(animations.end(), rhs.animations.cbegin(), rhs.animations.cend());
+	}
+	
+	ModelAnimationSet::AnimationList ModelAnimationSet::parseScripted(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& triggeredBy) const {
+		int subtype = ModelAnimationSet::SUBTYPE_DEFAULT;
+
+		switch (type) {
+		case ModelAnimationTriggerType::Docking_Stage1:
+		case ModelAnimationTriggerType::Docking_Stage2:
+		case ModelAnimationTriggerType::Docking_Stage3:
+		case ModelAnimationTriggerType::Docked: {
+			//The index of the dock port or name of the dock port.
+			if (can_construe_as_integer(triggeredBy.c_str()))
+				subtype = atoi(triggeredBy.c_str());
+			else
+				subtype = model_find_dock_name_index(pmi->model_num, triggeredBy.c_str());
+
+			SCP_string dock_name = model_get_dock_name(pmi->model_num, subtype);
+
+			ModelAnimationSet::AnimationList list = get(pmi, type, dock_name);
+			list += get(pmi, type, "");
+			list += getAll(pmi, type, subtype, true);
+			
+			return list;
+		}
+		case ModelAnimationTriggerType::PrimaryBank:
+		case ModelAnimationTriggerType::SecondaryBank:
+		case ModelAnimationTriggerType::PrimaryFired:
+		case ModelAnimationTriggerType::SecondaryFired:
+			//The index of the bank
+			subtype = atoi(triggeredBy.c_str());
+
+			return getAll(pmi, type, subtype);
+
+		case ModelAnimationTriggerType::DockBayDoor:
+			//Index of the dock bay door
+			subtype = atoi(triggeredBy.c_str());
+
+			return getDockBayDoors(pmi, subtype);
+
+		case ModelAnimationTriggerType::Scripted:
+			//More accurate name of scripted animation
+		case ModelAnimationTriggerType::TurretFired:
+		case ModelAnimationTriggerType::TurretFiring: {
+			//Name of the turret subsys that needs to be firing
+			std::string name(triggeredBy);
+			SCP_tolower(name);
+
+			return get(pmi, type, name);
+		}
+
+		case ModelAnimationTriggerType::Afterburner:
+		case ModelAnimationTriggerType::OnSpawn:
+			//No triggered by specialization
+			return getAll(pmi, type);
+
+		case ModelAnimationTriggerType::Initial:
+		default:
+			// Can't trigger by script
+			Warning(LOCATION, "Initial-type animations cannot be triggered by script/SEXP!");
+			return ModelAnimationSet::AnimationList{};
+		}
+	}
 
 	bool ModelAnimationSet::updateMoveable(polymodel_instance* pmi, const SCP_string& name, const std::vector<linb::any>& args) const {
 		SCP_string lowername = name;
@@ -1044,108 +1048,6 @@ namespace animation {
 		strncpy(namelower, ss->subobj_name, MAX_NAME_LEN);
 		strlwr(namelower);
 		return namelower;
-	}
-
-	std::pair<std::function<bool(ModelAnimationDirection, bool, bool, bool)>, std::function<int()>> anim_parse_scripted_start(const ModelAnimationSet& set, polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& triggeredBy) {
-		int subtype = ModelAnimationSet::SUBTYPE_DEFAULT;
-
-		switch (type) {
-		case ModelAnimationTriggerType::Docking_Stage1:
-		case ModelAnimationTriggerType::Docking_Stage2:
-		case ModelAnimationTriggerType::Docking_Stage3:
-		case ModelAnimationTriggerType::Docked: {
-			//The index of the dock port or name of the dock port.
-			if (can_construe_as_integer(triggeredBy.c_str()))
-				subtype = atoi(triggeredBy.c_str());
-			else 
-				subtype = model_find_dock_name_index(pmi->model_num, triggeredBy.c_str());
-
-			SCP_string dock_name = model_get_dock_name(pmi->model_num, subtype);
-
-			return {
-				[&set, pmi, type, dock_name, subtype](ModelAnimationDirection direction, bool forced, bool instant, bool pause) -> bool {
-					bool started = false;
-					started |= set.start(pmi, type, dock_name, direction, forced, instant, pause);
-					started |= set.start(pmi, type, "", direction, forced, instant, pause);
-					started |= set.startAll(pmi, type, direction, forced, instant, pause, subtype, true);
-					return started;
-				},
-				[&set, pmi, type, dock_name, subtype]() -> int {
-					int time1 = set.getTime(pmi, type, dock_name);
-					int time2 = set.getTime(pmi, type, "");
-					int time3 = set.getTimeAll(pmi, type, subtype, true);
-					return std::max({ time1, time2, time3 });
-				}
-			};
-		}
-		case ModelAnimationTriggerType::PrimaryBank:
-		case ModelAnimationTriggerType::SecondaryBank:
-		case ModelAnimationTriggerType::PrimaryFired:
-		case ModelAnimationTriggerType::SecondaryFired:
-			//The index of the bank
-			subtype = atoi(triggeredBy.c_str());
-
-			return {
-				[&set, pmi, type, subtype](ModelAnimationDirection direction, bool forced, bool instant, bool pause) -> bool {
-					return set.startAll(pmi, type, direction, forced, instant, pause, subtype);
-				},
-				[&set, pmi, type, subtype]() -> int {
-					return set.getTimeAll(pmi, type, subtype);
-				}
-			};
-
-		case ModelAnimationTriggerType::DockBayDoor: 
-			//Index of the dock bay door
-			subtype = atoi(triggeredBy.c_str());
-
-			return {
-				[&set, pmi, subtype](ModelAnimationDirection direction, bool forced, bool instant, bool pause) -> bool {
-					return set.startDockBayDoors(pmi, direction, forced, instant, pause, subtype);
-				},
-				[&set, pmi, subtype]() -> int {
-					return set.getTimeDockBayDoors(pmi, subtype);
-				}
-			};
-
-		case ModelAnimationTriggerType::Scripted:
-			//More accurate name of scripted animation
-		case ModelAnimationTriggerType::TurretFired:
-		case ModelAnimationTriggerType::TurretFiring: {
-			//Name of the turret subsys that needs to be firing
-			std::string name(triggeredBy);
-			SCP_tolower(name);
-
-			return {
-				[&set, pmi, type, name](ModelAnimationDirection direction, bool forced, bool instant, bool pause) -> bool {
-					return set.start(pmi, type, name, direction, forced, instant, pause);
-				},
-				[&set, pmi, type, name]() -> int {
-					return set.getTime(pmi, type, name);
-				}
-			};
-		}
-
-		case ModelAnimationTriggerType::Afterburner:
-		case ModelAnimationTriggerType::OnSpawn:
-			//No triggered by specialization
-			return {
-				[&set, type, pmi](ModelAnimationDirection direction, bool forced, bool instant, bool pause) -> bool {
-					return set.startAll(pmi, type, direction, forced, instant, pause);
-				},
-				[&set, type, pmi]() -> int {
-					return set.getTimeAll(pmi, type);
-				}
-			};
-
-		case ModelAnimationTriggerType::Initial:
-		default:
-			// Can't trigger by script
-			Warning(LOCATION, "Initial-type animations cannot be triggered by script/SEXP!");
-			return {
-				[](ModelAnimationDirection /*direction*/, bool /*forced*/, bool /*instant*/, bool /*pause*/) -> bool { return false; },
-				[]() -> int { return 0; }
-			};
-		}
 	}
 
 	//Parsing functions
