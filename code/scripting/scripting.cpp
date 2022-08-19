@@ -439,6 +439,8 @@ bool ConditionedHook::ConditionsValid(int action, object *objp1, object *objp2, 
 
 			case CHC_WEAPONCLASS:
 			{
+				bool found_weapon = false;
+
 				for (auto objp : objp_array)
 				{
 					if (objp == nullptr)
@@ -449,6 +451,8 @@ bool ConditionedHook::ConditionsValid(int action, object *objp1, object *objp2, 
 						// scp.condition_cached_value holds the weapon_info_index of the requested weapon class
 						if (Weapons[objp->instance].weapon_info_index != scp.condition_cached_value)
 							return false;
+
+						found_weapon = true;
 						break;
 					}
 					else if (objp->type == OBJ_BEAM)
@@ -456,9 +460,15 @@ bool ConditionedHook::ConditionsValid(int action, object *objp1, object *objp2, 
 						// scp.condition_cached_value holds the weapon_info_index of the requested weapon class
 						if (Beams[objp->instance].weapon_info_index != scp.condition_cached_value)
 							return false;
+
+						found_weapon = true;
 						break;
 					}
 				}
+
+				//If a weaponclass is specified, but none of the objects was even any weapon, the hook must not evaluate.
+				if (!found_weapon)
+					return false;
 
 				if (objp1 == nullptr || objp1->type != OBJ_SHIP)
 					break;
