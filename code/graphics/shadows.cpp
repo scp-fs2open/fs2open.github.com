@@ -31,6 +31,8 @@ light_frustum_info Shadow_frustums[MAX_SHADOW_CASCADES];
 
 ShadowQuality Shadow_quality = ShadowQuality::Disabled;
 
+bool Shadow_quality_uses_mod_option = false; 
+
 auto ShadowQualityOption =
     options::OptionBuilder<ShadowQuality>("Graphics.Shadows", "Shadow Quality", "The quality of the shadows")
         .values({{ShadowQuality::Disabled, "Disabled"},

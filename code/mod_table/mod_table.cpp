@@ -10,6 +10,7 @@
 #include "gamesnd/eventmusic.h"
 #include "def_files/def_files.h"
 #include "globalincs/version.h"
+#include "graphics/shadows.h"
 #include "localization/localize.h"
 #include "mission/missioncampaign.h"
 #include "mission/missionload.h"
@@ -530,6 +531,35 @@ void parse_mod_table(const char *filename)
 
 			if (optional_string("+Scaled visibility factor:")) {
 				stuff_float(&Neb2_fog_visibility_fireball_scaled_factor);
+			}
+		}
+
+		if (optional_string("$Shadow Quality Default:")) {
+			// only read this value if shadows are enabled and using default quality --wookieejedi
+			if (Shadow_quality_uses_mod_option) {
+				int quality;
+				stuff_int(&quality);
+				switch (quality) {
+				case 0:
+					Shadow_quality = ShadowQuality::Disabled;
+					break;
+				case 1:
+					Shadow_quality = ShadowQuality::Low;
+					break;
+				case 2:
+					Shadow_quality = ShadowQuality::Medium;
+					break;
+				case 3:
+					Shadow_quality = ShadowQuality::High;
+					break;
+				case 4:
+					Shadow_quality = ShadowQuality::Ultra;
+					break;
+				default:
+					// Shadow_quality was already set in cmdline.cpp, so just keep that default --wookieejedi
+					mprintf(("Game Settings Table: '$Shadow Quality Default:' value for default shadow quality %d is invalid. Using default quality of %d...\n", quality, static_cast<int>(Shadow_quality)));
+					break;
+				}
 			}
 		}
 

@@ -2072,11 +2072,17 @@ bool SetCmdlineParams()
 
 	if( enable_shadows_arg.found() )
 	{
+		// if only using `enable_shadows` then default quality level can be overriden in mod_settings.tbl --wookieejedi
+		Shadow_quality_uses_mod_option = true;
+
 		Shadow_quality = ShadowQuality::Medium;
 	}
 
 	if( shadow_quality_arg.found() )
 	{
+		// set that we are not using default shadow quality level --wookieejedi
+		Shadow_quality_uses_mod_option = false; 
+
 		switch (shadow_quality_arg.get_int()) {
 		case 0:
 			Shadow_quality = ShadowQuality::Disabled;
