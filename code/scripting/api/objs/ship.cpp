@@ -1673,6 +1673,8 @@ ADE_FUNC(setAnimationSpeed, l_Ship, "string type, string triggeredBy, [number sp
 	ship* shipp = &Ships[objh->objp->instance];
 
 	Ship_info[shipp->ship_info_index].animations.parseScripted(model_get_instance(shipp->model_instance_num), animtype, trigger).setSpeed(speed);
+
+	return ADE_RETURN_NIL;
 }
 
 ADE_FUNC(getSubmodelAnimationTime, l_Ship, "string type, string triggeredBy", "Gets time that animation will be done", "number", "Time (seconds), or 0 if ship handle is invalid")
