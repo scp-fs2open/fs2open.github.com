@@ -49,19 +49,20 @@ void cutscene_close()
 }
 
 // initialization stuff for cutscenes
-void cutscene_init()
+void parse_cutscene_table(const char* filename)
 {
-	atexit(cutscene_close);
+
 	char buf[MULTITEXT_LENGTH];
 	cutscene_info cutinfo;
 
 	try
 	{
-		read_file_text("cutscenes.tbl", CF_TYPE_TABLES);
+		
+		read_file_text(filename, CF_TYPE_TABLES);
+
 		reset_parse();
 
 		// parse in all the cutscenes
-		Cutscenes.clear();
 		skip_to_string("#Cutscenes");
 		ignore_white_space();
 
@@ -122,6 +123,20 @@ void cutscene_init()
 		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", "cutscenes.tbl", e.what()));
 		return;
 	}
+}
+
+void cutscene_init()
+{
+	
+	atexit(cutscene_close);
+
+	Cutscenes.clear();
+
+	// first parse the default table
+	parse_cutscene_table("cutscenes.tbl");
+
+	// parse any modular tables
+	parse_modular_table("*-ccn.tbm", parse_cutscene_table);
 }
 
 // marks a cutscene as viewable
