@@ -16,7 +16,7 @@ FLAG_LIST(LabRenderFlag) {
 	ModelRotationEnabled,
 	ShowInsignia,
 	ShowDamageLightning,
-	RotateSubsystems,
+	MoveSubsystems,
 	HidePostProcessing,
 	NoDiffuseMap,
 	NoGlowMap,
