@@ -3820,8 +3820,8 @@ void submodel_stepped_rotate(model_subsystem *psub, submodel_instance *smi)
 	// step_offset_time is TIME into current step
 	float step_offset_time = static_cast<float>(fmod(elapsed_time, step_time));
 
-	// get step we are on
-	int cur_step = static_cast<int>(elapsed_time / step_time + 0.5f);
+	// get step we are on (round down)
+	int cur_step = static_cast<int>(elapsed_time / step_time);
 
 	// get base angle
 	smi->cur_angle = (cur_step % psub->stepped_rotation->num_steps) * step_size;
