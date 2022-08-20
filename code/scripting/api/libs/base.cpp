@@ -614,7 +614,7 @@ ADE_FUNC(getModVersion, l_Base, nullptr,
 				}
 				str.erase(0, pos + 1);
 			}
-		} else if ((!str.empty() && std::find_if(str.begin(), str.end(), [](char c) { return !std::isdigit(c); }) == str.end()) && (major > -1) && (!minor > -1)) {
+		} else if ((!str.empty() && std::find_if(str.begin(), str.end(), [](char c) { return !std::isdigit(c); }) == str.end()) && (major > -1) && (minor > -1)) {
 			patch = std::stoi(str.c_str());
 		}
 		i++;
