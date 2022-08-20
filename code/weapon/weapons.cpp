@@ -6437,7 +6437,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 
 	//Only try and play animations on POF Weapons
 	if (wip->render_type == WRT_POF && wp->model_instance_num > -1) {
-		wip->animations.startAll(model_get_instance(wp->model_instance_num), animation::ModelAnimationTriggerType::OnSpawn, animation::ModelAnimationDirection::FWD);
+		wip->animations.getAll(model_get_instance(wp->model_instance_num), animation::ModelAnimationTriggerType::OnSpawn).start(animation::ModelAnimationDirection::FWD);
 	}
 
 	if (Script_system.IsActiveAction(CHA_ONWEAPONCREATED)) {

@@ -4514,7 +4514,7 @@ void model_set_up_techroom_instance(ship_info *sip, int model_instance_num)
 	flagset<Ship::Subsystem_Flags> empty;
 
 	sip->animations.clearShipData(pmi);
-	sip->animations.startAll(pmi, animation::ModelAnimationTriggerType::Initial, animation::ModelAnimationDirection::FWD, true, true);
+	sip->animations.getAll(pmi, animation::ModelAnimationTriggerType::Initial).start(animation::ModelAnimationDirection::FWD, true, true);
 
 	model_iterate_submodel_tree(pm, pm->detail[0], [&](int submodel, int /*level*/, bool /*isLeaf*/)
 		{

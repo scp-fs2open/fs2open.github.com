@@ -1198,7 +1198,7 @@ ADE_FUNC_DEPRECATED(getAnimationDoneTime, l_Ship, "number Type, number Subtype",
 	if(type == animation::ModelAnimationTriggerType::None)
 		return ADE_RETURN_FALSE;
 
-	int time_ms = Ship_info[Ships[objh->objp->instance].ship_info_index].animations.getTimeAll(model_get_instance(Ships[objh->objp->instance].model_instance_num), type, subtype);
+	int time_ms = Ship_info[Ships[objh->objp->instance].ship_info_index].animations.getAll(model_get_instance(Ships[objh->objp->instance].model_instance_num), type, subtype).getTime();
 	float time_s = (float)time_ms / 1000.0f;
 
 	return ade_set_args(L, "f", time_s);
@@ -1614,7 +1614,7 @@ ADE_FUNC_DEPRECATED(triggerAnimation, l_Ship, "string Type, [number Subtype, boo
 	if(type == animation::ModelAnimationTriggerType::None)
 		return ADE_RETURN_FALSE;
 
-	Ship_info[Ships[objh->objp->instance].ship_info_index].animations.startAll(model_get_instance(Ships[objh->objp->instance].model_instance_num), type, b ? animation::ModelAnimationDirection::FWD : animation::ModelAnimationDirection::RWD, instant, instant, false, subtype);
+	Ship_info[Ships[objh->objp->instance].ship_info_index].animations.getAll(model_get_instance(Ships[objh->objp->instance].model_instance_num), type, subtype).start(b ? animation::ModelAnimationDirection::FWD : animation::ModelAnimationDirection::RWD, instant, instant);
 
 	return ADE_RETURN_TRUE;
 }
@@ -1645,9 +1645,8 @@ ADE_FUNC(triggerSubmodelAnimation, l_Ship, "string type, string triggeredBy, [bo
 		return ADE_RETURN_FALSE;
 
 	ship* shipp = &Ships[objh->objp->instance];
-	auto animationStartFunc = animation::anim_parse_scripted_start(Ship_info[shipp->ship_info_index].animations, model_get_instance(shipp->model_instance_num), animtype, trigger).first;
 
-	return animationStartFunc(forwards ? animation::ModelAnimationDirection::FWD : animation::ModelAnimationDirection::RWD, forced || instant, instant, pause) ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
+	return Ship_info[shipp->ship_info_index].animations.parseScripted(model_get_instance(shipp->model_instance_num), animtype, trigger).start(forwards ? animation::ModelAnimationDirection::FWD : animation::ModelAnimationDirection::RWD, forced || instant, instant, pause) ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
 }
 
 ADE_FUNC(getSubmodelAnimationTime, l_Ship, "string type, string triggeredBy", "Gets time that animation will be done", "number", "Time (seconds), or 0 if ship handle is invalid")
@@ -1666,9 +1665,8 @@ ADE_FUNC(getSubmodelAnimationTime, l_Ship, "string type, string triggeredBy", "G
 		return ade_set_error(L, "f", 0.0f);
 
 	ship* shipp = &Ships[objh->objp->instance];
-	auto animationTimeFunc = animation::anim_parse_scripted_start(Ship_info[shipp->ship_info_index].animations, model_get_instance(shipp->model_instance_num), animtype, trigger).second;
 
-	int time_ms = animationTimeFunc();
+	int time_ms = Ship_info[shipp->ship_info_index].animations.parseScripted(model_get_instance(shipp->model_instance_num), animtype, trigger).getTime();
 	float time_s = (float)time_ms / 1000.0f;
 
 	return ade_set_args(L, "f", time_s);
