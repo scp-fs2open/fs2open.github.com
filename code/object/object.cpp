@@ -1275,7 +1275,7 @@ void obj_move_all_post(object *objp, float frametime)
 					shipp = &Ships[objp->instance];
 
 					for (i=0; i<MAX_SHIP_ARCS; i++ )	{
-						if ( timestamp_valid( shipp->arc_timestamp[i] ) )	{
+						if ( shipp->arc_timestamp[i].isValid() )	{
 							// Move arc endpoints into world coordinates	
 							vec3d tmp1, tmp2;
 							vm_vec_unrotate(&tmp1,&shipp->arc_pts[i][0],&objp->orient);
@@ -1372,7 +1372,7 @@ void obj_move_all_post(object *objp, float frametime)
 
 					if (db->arc_frequency > 0) {
 						for (i=0; i<MAX_DEBRIS_ARCS; i++ )	{
-							if ( timestamp_valid( db->arc_timestamp[i] ) )	{
+							if ( db->arc_timestamp[i].isValid() )	{
 								// Move arc endpoints into world coordinates	
 								vec3d tmp1, tmp2;
 								vm_vec_unrotate(&tmp1,&db->arc_pts[i][0],&objp->orient);

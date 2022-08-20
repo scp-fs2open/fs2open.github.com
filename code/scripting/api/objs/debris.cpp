@@ -28,10 +28,10 @@ ADE_VIRTVAR(IsHull, l_Debris, "boolean", "Whether or not debris is a piece of hu
 	debris *db = &Debris[oh->objp->instance];
 
 	if(ADE_SETTING_VAR) {
-		db->is_hull = b ? 1 : 0;
+		db->is_hull = b;
 	}
 
-	return ade_set_args(L, "b", db->is_hull ? true : false);
+	return ade_set_args(L, "b", db->is_hull);
 
 }
 

@@ -2123,8 +2123,8 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 			if (submodel_1 >= 0 && submodel_2 >= 0) {
 				// spawn the arc in the first unused slot
 				for (int j = 0; j < MAX_SHIP_ARCS; j++) {
-					if (!timestamp_valid(shipp->arc_timestamp[j])) {
-						shipp->arc_timestamp[j] = timestamp((int)(arc_info->duration * 1000));
+					if (!shipp->arc_timestamp[j].isValid()) {
+						shipp->arc_timestamp[j] = _timestamp((int)(arc_info->duration * MILLISECONDS_PER_SECOND));
 
 						vec3d v1, v2, offset;
 						// subtract away the submodel's offset, since these positions were in frame of ref of the whole ship
@@ -2182,9 +2182,9 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 	}
 
 	// Kill off old sparks
-	for(int &arc_stamp : shipp->arc_timestamp){
-		if(timestamp_valid(arc_stamp) && timestamp_elapsed(arc_stamp)){
-			arc_stamp = timestamp(-1);
+	for (auto &arc_stamp : shipp->arc_timestamp) {
+		if (arc_stamp.isValid() && timestamp_elapsed(arc_stamp)) {
+			arc_stamp = TIMESTAMP::invalid();
 		}
 	}
 
@@ -2260,8 +2260,8 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 
 		// Create the arc effects
 		for (int i=0; i<MAX_SHIP_ARCS; i++ )	{
-			if ( !timestamp_valid( shipp->arc_timestamp[i] ) )	{
-				shipp->arc_timestamp[i] = timestamp(lifetime);	// live up to a second
+			if ( !shipp->arc_timestamp[i].isValid() )	{
+				shipp->arc_timestamp[i] = _timestamp(lifetime);	// live up to a second
 
 				switch( n )	{
 				case 0:
@@ -2322,7 +2322,7 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 
 	// maybe move arc points around
 	for (int i=0; i<MAX_SHIP_ARCS; i++ )	{
-		if ( timestamp_valid( shipp->arc_timestamp[i] ) )	{
+		if ( shipp->arc_timestamp[i].isValid() )	{
 			if ( !timestamp_elapsed( shipp->arc_timestamp[i] ) )	{							
 				// Maybe move a vertex....  20% of the time maybe?
 				int mr = Random::next();
