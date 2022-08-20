@@ -272,6 +272,9 @@ namespace fso {
 										_m_assist_score = ((int)(Ships[i].assist_score_pct * 100));
 
 										_m_persona = Ships[i].persona_index;
+										_m_alt_name = Fred_alt_names[base_ship];
+										_m_callsign = Fred_callsigns[base_ship];
+
 
 										// we use final_death_time member of ship structure for holding the amount of time before a mission
 										// to destroy this ship
@@ -600,9 +603,11 @@ namespace fso {
 
 			bool ShipEditorDialogModel::apply()
 			{
-				update_data();
-				_editor->missionChanged();
-				initializeData();
+				if (_modified) {
+					update_data();
+					_editor->missionChanged();
+					_modified = false;
+				}
 				return true;
 			}
 

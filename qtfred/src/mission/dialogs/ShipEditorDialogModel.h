@@ -14,12 +14,10 @@ namespace dialogs {
  */
 class ShipEditorDialogModel : public AbstractDialogModel {
   private:
-	void initializeData();
 
 	template <typename T>
 	void modify(T& a, const T& b);
 
-	bool _modified = false;
 	int _m_no_departure_warp;
 	int _m_no_arrival_warp;
 	bool _m_player_ship;
@@ -77,7 +75,8 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 
   public:
 	ShipEditorDialogModel(QObject* parent, EditorViewport* viewport);
-
+	void initializeData();
+	bool _modified = false;
 	bool apply() override;
 	void reject() override;
 

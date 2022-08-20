@@ -67,6 +67,8 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 
   protected:
 	void closeEvent(QCloseEvent*) override;
+	void hideEvent(QHideEvent*) override;
+	void showEvent(QShowEvent*) override;
   private slots:
 
 	void on_textureReplacementButton_clicked();
@@ -93,6 +95,8 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	std::unique_ptr<Ui::ShipEditorDialog> ui;
 	std::unique_ptr<ShipEditorDialogModel> _model;
 	EditorViewport* _viewport;
+
+	void update();
 
 	void updateUI();
 	void updateColumnOne();

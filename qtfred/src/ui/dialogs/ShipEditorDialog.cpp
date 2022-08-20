@@ -4,11 +4,10 @@
 
 #include "iff_defs/iff_defs.h"
 #include "mission/missionmessage.h"
+#include "mission/object.h"
 
 #include <globalincs/linklist.h>
 #include <ui/util/SignalBlockers.h>
-
-#include "mission/object.h"
 
 #include <QCloseEvent>
 
@@ -25,13 +24,11 @@ ShipEditorDialog::ShipEditorDialog(FredView* parent, EditorViewport* viewport)
 
 	connect(_model.get(), &AbstractDialogModel::modelChanged, this, &ShipEditorDialog::updateUI);
 	connect(this, &QDialog::accepted, _model.get(), &ShipEditorDialogModel::apply);
-	connect(viewport->editor, &Editor::currentObjectChanged, _model.get(), &ShipEditorDialogModel::apply);
-	connect(viewport->editor, &Editor::objectMarkingChanged, _model.get(), &ShipEditorDialogModel::apply);
+	connect(viewport->editor, &Editor::currentObjectChanged, this, &ShipEditorDialog::update);
+	connect(viewport->editor, &Editor::objectMarkingChanged, this, &ShipEditorDialog::update);
 
 	// Column One
-	connect(ui->shipNameEdit,(&QLineEdit::editingFinished),
-		this,
-		&ShipEditorDialog::shipNameChanged);
+	connect(ui->shipNameEdit, (&QLineEdit::editingFinished), this, &ShipEditorDialog::shipNameChanged);
 
 	connect(ui->shipClassCombo,
 		static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
@@ -47,8 +44,8 @@ ShipEditorDialog::ShipEditorDialog(FredView* parent, EditorViewport* viewport)
 		&ShipEditorDialog::teamChanged);
 
 	connect(ui->cargoCombo->lineEdit(), (&QLineEdit::editingFinished), this, &ShipEditorDialog::cargoChanged);
-	connect(ui->altNameCombo->lineEdit(), (&QLineEdit::editingFinished), this, &ShipEditorDialog::altNameChanged);
-	connect(ui->callsignCombo->lineEdit(), (&QLineEdit::editingFinished), this, &ShipEditorDialog::callsignChanged);
+	connect(ui->altNameCombo->lineEdit(), (&QLineEdit::textEdited), this, &ShipEditorDialog::altNameChanged);
+	connect(ui->callsignCombo->lineEdit(), (&QLineEdit::textEdited), this, &ShipEditorDialog::callsignChanged);
 
 	// ui->cargoCombo->installEventFilter(this);
 
@@ -166,6 +163,15 @@ void ShipEditorDialog::closeEvent(QCloseEvent* e)
 	QDialog::closeEvent(e);
 }
 
+void ShipEditorDialog::hideEvent(QHideEvent* e)
+{
+	QDialog::hideEvent(e);
+}
+void ShipEditorDialog::showEvent(QShowEvent* e) {
+	_model->initializeData();
+	QDialog::showEvent(e);
+}
+
 void ShipEditorDialog::on_miscButton_clicked()
 {
 	if (!flagsDialog) {
@@ -189,7 +195,6 @@ void ShipEditorDialog::on_initialOrdersButton_clicked()
 		GoalsDialog = std::unique_ptr<ShipGoalsDialog>(new dialogs::ShipGoalsDialog(this, _viewport));
 	}
 	GoalsDialog->show();
-
 }
 
 void ShipEditorDialog::on_tblInfoButton_clicked()
@@ -198,6 +203,16 @@ void ShipEditorDialog::on_tblInfoButton_clicked()
 		TBLViewer = std::unique_ptr<ShipTBLViewer>(new dialogs::ShipTBLViewer(this, _viewport));
 	}
 	TBLViewer->show();
+}
+
+void ShipEditorDialog::update()
+{
+	if (this->isVisible()) {
+		if (_model->getNumSelectedObjects() && _model->_modified) {
+			_model->apply();
+		}
+		_model->initializeData();
+	}
 }
 
 void ShipEditorDialog::updateUI()
@@ -543,7 +558,7 @@ void ShipEditorDialog::enableDisable()
 	}
 
 	// disable textures for multiple ships
-		ui->textureReplacementButton->setEnabled(_model->getTexEditEnable());
+	ui->textureReplacementButton->setEnabled(_model->getTexEditEnable());
 
 	ui->AIClassCombo->setEnabled(_model->getUIEnable());
 	ui->cargoCombo->setEnabled(_model->getUIEnable());
@@ -559,7 +574,8 @@ void ShipEditorDialog::enableDisable()
 	// !pship_count used because if allowed to clear, we would have no player starts
 	// mission_type 0 = multi, 1 = single
 	if (!(The_mission.game_type & MISSION_TYPE_MULTI) || !_model->getNumUnmarkedPlayers() ||
-		(_model->getNumUnmarkedPlayers() + _model->getNumSelectedObjects() > MAX_PLAYERS) || (_model->getNumValidPlayers() < _model->getNumSelectedObjects()))
+		(_model->getNumUnmarkedPlayers() + _model->getNumSelectedObjects() > MAX_PLAYERS) ||
+		(_model->getNumValidPlayers() < _model->getNumSelectedObjects()))
 		ui->playerShipCheckBox->setEnabled(false);
 	else
 		ui->playerShipCheckBox->setEnabled(true);
@@ -574,8 +590,8 @@ void ShipEditorDialog::enableDisable()
 	{
 		int marked_ship = (_model->getIfPlayerShip() >= 0) ? _model->getIfPlayerShip() : _model->getSingleShip();
 		const bool isPlayerWing = _model->wing_is_player_wing(Ships[marked_ship].wingnum);
-		if (!(The_mission.game_type & MISSION_TYPE_MULTI) && ( _model->getNumSelectedObjects() > 0) &&
-			( _model->getIfMultipleShips() != true) && (isPlayerWing == true))
+		if (!(The_mission.game_type & MISSION_TYPE_MULTI) && (_model->getNumSelectedObjects() > 0) &&
+			(_model->getIfMultipleShips() != true) && (isPlayerWing == true))
 			ui->playerShipButton->setEnabled(true);
 		else
 			ui->playerShipButton->setEnabled(false);
@@ -606,8 +622,7 @@ void ShipEditorDialog::enableDisable()
 		} else {
 			ui->playerOrdersButton->setEnabled(true);
 		}
-	}
-	else {
+	} else {
 		// always enabled when one ship is selected
 		ui->playerOrdersButton->setEnabled(_model->getUIEnable());
 	}
@@ -689,9 +704,18 @@ void ShipEditorDialog::personaChanged(const int index)
 	auto personaIdx = ui->personaCombo->itemData(index).value<int>();
 	_model->setPersona(personaIdx);
 }
-void ShipEditorDialog::scoreChanged(const int value) { _model->setScore(value); }
-void ShipEditorDialog::assistChanged(const int value) { _model->setAssist(value); }
-void ShipEditorDialog::playerChanged(const bool enabled) { _model->setPlayer(enabled); }
+void ShipEditorDialog::scoreChanged(const int value)
+{
+	_model->setScore(value);
+}
+void ShipEditorDialog::assistChanged(const int value)
+{
+	_model->setAssist(value);
+}
+void ShipEditorDialog::playerChanged(const bool enabled)
+{
+	_model->setPlayer(enabled);
+}
 
 void ShipEditorDialog::arrivalLocationChanged(const int index)
 {
@@ -705,13 +729,25 @@ void ShipEditorDialog::arrivalTargetChanged(const int index)
 	_model->setArrivalTarget(arrivalLocationIdx);
 }
 
-void ShipEditorDialog::arrivalDistanceChanged(const int value) { _model->setArrivalDistance(value); }
+void ShipEditorDialog::arrivalDistanceChanged(const int value)
+{
+	_model->setArrivalDistance(value);
+}
 
-void ShipEditorDialog::arrivalDelayChanged(const int value) { _model->setArrivalDelay(value); }
+void ShipEditorDialog::arrivalDelayChanged(const int value)
+{
+	_model->setArrivalDelay(value);
+}
 
-void ShipEditorDialog::arrivalWarpChanged(const bool enable) { _model->setNoArrivalWarp(enable); }
+void ShipEditorDialog::arrivalWarpChanged(const bool enable)
+{
+	_model->setNoArrivalWarp(enable);
+}
 
-void ShipEditorDialog::ArrivalCueChanged(const bool value) { _model->setArrivalCue(value); }
+void ShipEditorDialog::ArrivalCueChanged(const bool value)
+{
+	_model->setArrivalCue(value);
+}
 
 void ShipEditorDialog::departureLocationChanged(const int index)
 {
@@ -725,11 +761,20 @@ void ShipEditorDialog::departureTargetChanged(const int index)
 	_model->setDepartureTarget(depLocationIdx);
 }
 
-void ShipEditorDialog::departureDelayChanged(const int value) { _model->setDepartureDelay(value); }
+void ShipEditorDialog::departureDelayChanged(const int value)
+{
+	_model->setDepartureDelay(value);
+}
 
-void ShipEditorDialog::departureWarpChanged(const bool value) { _model->setNoDepartureWarp(value); }
+void ShipEditorDialog::departureWarpChanged(const bool value)
+{
+	_model->setNoDepartureWarp(value);
+}
 
-void ShipEditorDialog::DepartureCueChanged(const bool value) { _model->setDepartureCue(value); }
+void ShipEditorDialog::DepartureCueChanged(const bool value)
+{
+	_model->setDepartureCue(value);
+}
 
 void ShipEditorDialog::on_textureReplacementButton_clicked()
 {
@@ -740,15 +785,30 @@ void ShipEditorDialog::on_textureReplacementButton_clicked()
 	TextureReplacementDialog->show();
 }
 
-void ShipEditorDialog::on_playerShipButton_clicked() { _model->setPlayer(true); }
+void ShipEditorDialog::on_playerShipButton_clicked()
+{
+	_model->setPlayer(true);
+}
 void ShipEditorDialog::on_altShipClassButton_clicked()
 {
 	// TODO: altshipclassui
 }
-void ShipEditorDialog::on_prevButton_clicked() { _model->OnPrevious(); }
-void ShipEditorDialog::on_nextButton_clicked() { _model->OnNext(); }
-void ShipEditorDialog::on_resetButton_clicked() { _model->OnShipReset(); }
-void ShipEditorDialog::on_deleteButton_clicked() { _model->OnDeleteShip(); }
+void ShipEditorDialog::on_prevButton_clicked()
+{
+	_model->OnPrevious();
+}
+void ShipEditorDialog::on_nextButton_clicked()
+{
+	_model->OnNext();
+}
+void ShipEditorDialog::on_resetButton_clicked()
+{
+	_model->OnShipReset();
+}
+void ShipEditorDialog::on_deleteButton_clicked()
+{
+	_model->OnDeleteShip();
+}
 void ShipEditorDialog::on_weaponsButton_clicked()
 {
 	// TODO: weapons dialog
