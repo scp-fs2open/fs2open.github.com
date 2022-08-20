@@ -30,6 +30,7 @@
 #include "menuui/playermenu.h"
 #include "menuui/snazzyui.h"
 #include "mission/missioncampaign.h"
+#include "mod_table/mod_table.h"
 #include "network/multi.h"
 #include "network/multi_voice.h"
 #include "network/multiui.h"
@@ -917,6 +918,12 @@ void main_hall_do(float frametime)
 
 				// clicked on the tech room region
 				case TECH_ROOM_REGION:
+					// Check if Techroom should auto-switch to singleplayer mode --wookieejedi
+					if (Techroom_autoswitches_to_singleplayer) {
+						Player->flags &= ~PLAYER_FLAGS_IS_MULTI;
+						Game_mode = GM_NORMAL;
+					}
+
 					gamesnd_play_iface(InterfaceSounds::IFACE_MOUSE_CLICK);
 					gameseq_post_event(GS_EVENT_TECH_MENU);
 					break;

@@ -95,6 +95,7 @@ int Show_subtitle_screen_base_res[2];
 int Show_subtitle_screen_adjusted_res[2];
 bool Always_warn_player_about_unbound_keys;
 shadow_disable_overrides Shadow_disable_overrides {false, false, false, false};
+bool Techroom_autoswitches_to_singleplayer;
 
 void mod_table_set_version_flags();
 
@@ -858,6 +859,10 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Custom_briefing_icons_always_override_standard_icons);
 		}
 
+		if (optional_string("$Techroom is always auto-switched to singleplayer mode:")) {
+			stuff_boolean(&Techroom_autoswitches_to_singleplayer);
+		}
+
 		required_string("#END");
 	}
 	catch (const parse::ParseException& e)
@@ -980,6 +985,7 @@ void mod_table_reset()
 	Show_subtitle_screen_adjusted_res[0] = -1;
 	Show_subtitle_screen_adjusted_res[1] = -1;
 	Always_warn_player_about_unbound_keys = false;
+	Techroom_autoswitches_to_singleplayer = false;
 }
 
 void mod_table_set_version_flags()
