@@ -1667,6 +1667,34 @@ ADE_FUNC(triggerSubmodelAnimation, l_Ship, "string type, string triggeredBy, [bo
 	return Ship_info[shipp->ship_info_index].animations.parseScripted(model_get_instance(shipp->model_instance_num), animtype, trigger).start(forwards ? animation::ModelAnimationDirection::FWD : animation::ModelAnimationDirection::RWD, forced || instant, instant, pause) ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
 }
 
+ADE_FUNC(setAnimationSpeed, l_Ship, "string type, string triggeredBy, [number speedMultiplier = 1.0]",
+	"Sets the speed multiplier at which an animation runs. Anything other than 1 will not work in multiplayer. Type is the string name of the animation type, "
+	"triggeredBy is a closer specification which animation should trigger. See *-anim.tbm specifications.",
+	nullptr,
+	nullptr)
+{
+	object_h* objh;
+	const char* type = nullptr;
+	const char* trigger = nullptr;
+	float speed = 1.0f;
+
+	if (!ade_get_args(L, "oss|f", l_Ship.GetPtr(&objh), &type, &trigger, &speed))
+		return ADE_RETURN_NIL;
+
+	if (!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	auto animtype = animation::anim_match_type(type);
+	if (animtype == animation::ModelAnimationTriggerType::None)
+		return ADE_RETURN_NIL;
+
+	ship* shipp = &Ships[objh->objp->instance];
+
+	Ship_info[shipp->ship_info_index].animations.parseScripted(model_get_instance(shipp->model_instance_num), animtype, trigger).setSpeed(speed);
+
+	return ADE_RETURN_NIL;
+}
+
 ADE_FUNC(getSubmodelAnimationTime, l_Ship, "string type, string triggeredBy", "Gets time that animation will be done", "number", "Time (seconds), or 0 if ship handle is invalid")
 {
 	object_h* objh;

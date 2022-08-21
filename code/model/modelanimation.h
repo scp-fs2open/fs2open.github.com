@@ -252,6 +252,7 @@ namespace animation {
 			float time = 0.0f;
 			float duration = 0.0f;
 			flagset<animation::Animation_Instance_Flags> instance_flags;
+			float speed = 1.0f;
 		};
 		//PMI ID -> Instance Data
 		std::map<int, instance_data> m_instances;
@@ -364,6 +365,7 @@ namespace animation {
 			bool start(ModelAnimationDirection direction, bool forced = false, bool instant = false, bool pause = false) const;
 			int getTime() const;
 			void setFlag(Animation_Instance_Flags flag, bool set = true) const;
+			void setSpeed(float speed = 1.0f) const;
 			AnimationList& operator+=(const AnimationList& rhs);
 			AnimationList operator+(const AnimationList& rhs);
 		};

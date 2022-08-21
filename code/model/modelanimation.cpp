@@ -258,11 +258,12 @@ namespace animation {
 		animList.parentSet->initializeSubmodelBuffer(pmi, applyBuffer);
 
 		for (const auto& anim : animList.animationList) {
-			switch (anim->m_instances[pmi->id].state) {
+			const auto& instanceData = anim->m_instances[pmi->id];
+			switch (instanceData.state) {
 			case ModelAnimationState::RUNNING_FWD:
 			case ModelAnimationState::RUNNING_RWD:
 			case ModelAnimationState::NEED_RECALC:
-				anim->play(frametime, pmi, applyBuffer);
+				anim->play(frametime * instanceData.speed, pmi, applyBuffer);
 				break;
 			case ModelAnimationState::COMPLETED:
 			case ModelAnimationState::PAUSED:
@@ -773,7 +774,7 @@ namespace animation {
 	int ModelAnimationSet::AnimationList::getTime() const {
 		float duration = 0.0f;
 
-		for (auto anim : animations) {
+		for (const auto& anim : animations) {
 			if (anim->m_instances[pmi->id].state == ModelAnimationState::UNTRIGGERED)
 				continue;
 			float localDur = anim->m_instances[pmi->id].duration;
@@ -784,9 +785,14 @@ namespace animation {
 	}
 
 	void ModelAnimationSet::AnimationList::setFlag(Animation_Instance_Flags flag, bool set) const {
-		for (auto anim : animations)
+		for (const auto& anim : animations)
 			anim->m_instances[pmi->id].instance_flags.set(flag, set);
 	}
+
+	void ModelAnimationSet::AnimationList::setSpeed(float speed) const {
+		for (const auto& anim : animations)
+			anim->m_instances[pmi->id].speed = speed;
+	};
 
 	ModelAnimationSet::AnimationList& ModelAnimationSet::AnimationList::operator+=(const AnimationList& rhs) {
 		Assertion(pmi == rhs.pmi, "Tried to concatenate two AnimationLists of different model instances!");
