@@ -289,26 +289,22 @@ int LuaSEXP::getSexpReturnValue(const LuaValueList& retVals) const {
 		return SEXP_TRUE;
 	}
 }
-int LuaSEXP::execute(int node) {
-	if (!_action.isValid()) {
-		Error(LOCATION,
-			  "Lua SEXP called without a valid action function! A script probably failed to set the action for some reason.");
-		return SEXP_CANT_EVAL;
-	}
 
+luacpp::LuaValueList LuaSEXP::getSEXPArgumentList(int node) const {
 	LuaValueList luaParameters;
 
 	// We need to adapt how we handle parameters based on their type. We use this variable to keep track of which parameter
 	// we are currently looking at
 	int argnum = 0;
 	while (node != -1) {
-		if (argnum < (int) _argument_types.size()) {
+		if (argnum < (int)_argument_types.size()) {
 			// This is a parameter in the normal list so we add it to the normal parameter list
 			luaParameters.push_back(sexpToLua(node, argnum));
 
 			node = CDR(node);
 			++argnum;
-		} else {
+		}
+		else {
 			// The varargs part is handled in chunks so that scripts can use the data more easily
 			// Every repeat pattern instance is put into its own table
 			LuaTable varargs_part = LuaTable::create(_action.getLuaState());
@@ -326,6 +322,18 @@ int LuaSEXP::execute(int node) {
 			luaParameters.push_back(varargs_part);
 		}
 	}
+
+	return luaParameters;
+}
+
+int LuaSEXP::execute(int node) {
+	if (!_action.isValid()) {
+		Error(LOCATION,
+			  "Lua SEXP called without a valid action function! A script probably failed to set the action for some reason.");
+		return SEXP_CANT_EVAL;
+	}
+
+	LuaValueList luaParameters = getSEXPArgumentList(node);
 
 	// All parameters are now in LuaValues, time to call our function
 	try {

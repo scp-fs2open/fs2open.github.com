@@ -60,6 +60,8 @@ protected:
 
 	luacpp::LuaFunction getAction() const;
 	int getSexpReturnValue(const luacpp::LuaValueList& retVals) const;
+
+	luacpp::LuaValueList getSEXPArgumentList(int node) const;
 };
 
 }

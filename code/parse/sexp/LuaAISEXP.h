@@ -46,8 +46,6 @@ class LuaAISEXP : public LuaSEXP {
 	void setTargetRestrict(const luacpp::LuaFunction& action);
 	luacpp::LuaFunction getTargetRestrict() const;
 
-	luacpp::LuaValueList getSEXPArgumentList(int node) const;
-
 	void registerAIMode(int sexp_id) const;
 	void maybeRegisterPlayerOrder(int sexp_id) const;
 };

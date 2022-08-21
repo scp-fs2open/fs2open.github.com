@@ -225,7 +225,7 @@ void insertion_sort(T* array_base, int array_size, int (*fncompare)(const T*, co
 
 	// allocate space for the element being moved
 	// (Taylor says that for optimization purposes malloc/free should be used rather than vm_malloc/vm_free here)
-	current_buf = (T*)malloc(sizeof(T));
+	current_buf = new T();
 	if (current_buf == nullptr)
 	{
 		UNREACHABLE("Malloc failed!");
@@ -264,7 +264,7 @@ void insertion_sort(T* array_base, int array_size, int (*fncompare)(const T*, co
 	}
 
 	// free the allocated space
-	free(current_buf);
+	delete current_buf;
 }
 
 #endif

@@ -101,8 +101,8 @@ struct ai_info;
 enum class ai_achievability { ACHIEVABLE, NOT_ACHIEVABLE, NOT_KNOWN, SATISFIED };
 
 struct ai_lua_parameters {
-	object_ship_wing_point_team target;
-	luacpp::LuaValueList arguments;
+	object_ship_wing_point_team target{};
+	luacpp::LuaValueList arguments{};
 };
 
 // structure for AI goals

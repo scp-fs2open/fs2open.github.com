@@ -60,6 +60,9 @@ void run_ai_lua_action(const luacpp::LuaFunction& action, const ai_mode_lua& lua
 	if (lua_ai.needsTarget) {
 		luaParameters.push_back(luacpp::LuaValue::createValue(action.getLuaState(), scripting::api::l_OSWPT.Set(aip->lua_ai_target.target)));
 	}
+	for (const auto& additionalParam : aip->lua_ai_target.arguments) {
+		luaParameters.push_back(additionalParam);
+	}
 
 	auto retVals = action.call(Script_system.GetLuaSession(), luaParameters);
 
@@ -189,6 +192,9 @@ ai_achievability ai_lua_is_achievable(const ai_goal* aigp, int objnum){
 	luaParameters.push_back(luacpp::LuaValue::createValue(action.getLuaState(), scripting::api::l_Ship.Set(object_h(&Objects[objnum]))));
 	if (lua_ai.needsTarget) {
 		luaParameters.push_back(luacpp::LuaValue::createValue(action.getLuaState(), scripting::api::l_OSWPT.Set(aigp->lua_ai_target.target)));
+	}
+	for (const auto& additionalParam : aigp->lua_ai_target.arguments) {
+		luaParameters.push_back(additionalParam);
 	}
 
 	auto retVals = action.call(Script_system.GetLuaSession(), luaParameters);
