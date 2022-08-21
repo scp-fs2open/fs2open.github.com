@@ -175,7 +175,6 @@ void parse_cutscene_table(const char* filename)
 					csnp->flags.set(Cutscene::Cutscene_Flags::Never_viewable);
 			}
 
-			//Cutscenes.push_back(csnt);
 		}
 
 		required_string("#End");
