@@ -66,8 +66,6 @@ void parse_cutscene_table(const char* filename)
 		skip_to_string("#Cutscenes");
 		ignore_white_space();
 
-		bool isFirstCutscene = true;
-
 		while (required_string_either("#End", "$Filename:"))
 		{
 			required_string("$Filename:");
@@ -91,9 +89,8 @@ void parse_cutscene_table(const char* filename)
 
 			cutinfo.flags.reset();
 
-			if (isFirstCutscene)
+			if (Cutscenes.empty())
 			{
-				isFirstCutscene = false;
 				// The original code assumes the first movie is the intro, so make it viewable
 				cutinfo.flags.set(Cutscene::Cutscene_Flags::Viewable);
 			}
