@@ -170,7 +170,7 @@ void ai_goal_reset(ai_goal *aigp, bool adding_goal, int ai_mode, int ai_submode,
 	aigp->dockee.name = nullptr;
 
 	aigp->lua_ai_target.target.clear();
-	//aigp->lua_ai_target.arguments.clear();
+	aigp->lua_ai_target.arguments.clear();
 }
 
 void ai_maybe_add_form_goal(wing* wingp)
