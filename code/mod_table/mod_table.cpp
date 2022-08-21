@@ -535,10 +535,10 @@ void parse_mod_table(const char *filename)
 		}
 
 		if (optional_string("$Shadow Quality Default:")) {
-			// only read this value if shadows are enabled and using default quality --wookieejedi
+			int quality;
+			stuff_int(&quality);
+			// only set values if shadows are enabled and using default quality --wookieejedi
 			if (Shadow_quality_uses_mod_option) {
-				int quality;
-				stuff_int(&quality);
 				switch (quality) {
 				case 0:
 					Shadow_quality = ShadowQuality::Disabled;
