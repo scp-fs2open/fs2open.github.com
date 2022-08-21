@@ -35,7 +35,6 @@ const char* Cutscene_mask_name[GR_NUM_RESOLUTIONS] = {
 		"2_ViewFootage-m"
 };
 
-int Num_cutscenes;
 int Description_index;
 SCP_vector<cutscene_info> Cutscenes;
 
@@ -51,7 +50,7 @@ void cutscene_close()
 
 static cutscene_info *get_cutscene_pointer(char *cutscene_filename)
 {
-	for (int i = 0; i < Num_cutscenes; i++) {
+	for (int i = 0; i < (int)Cutscenes.size(); i++) {
 		if (!stricmp(cutscene_filename, Cutscenes[i].filename)) {
 			return &Cutscenes[i];
 		}
@@ -93,6 +92,8 @@ void parse_cutscene_table(const char* filename)
 
 		while (required_string_either("#End", "$Filename:"))
 		{
+			bool csn_new = false;
+			
 			required_string("$Filename:");
 			stuff_string(csnt.filename, F_PATHNAME, MAX_FILENAME_LEN);
 
@@ -118,13 +119,14 @@ void parse_cutscene_table(const char* filename)
 			} else {
 				// Don't create cutscene if it has +nocreate and is in a modular table.
 				if (!create_if_not_found && Parsing_modular_table) {
-					if (!skip_to_start_of_string_either("$Fileame:", "#End")) {
+					if (!skip_to_start_of_string_either("$Filename:", "#End")) {
 						error_display(1, "Missing [#End] or [$Filename] after cutscene %s", csnt.filename);
 					}
-					return;
+					continue;
 				}
 				Cutscenes.push_back(csnt);
-				csnp = &Cutscenes[Num_cutscenes++];
+				csn_new = true;
+				csnp = &Cutscenes[Cutscenes.size() -1];
 			}
 
 			//If $Name is not found use the $Filename instead because this field needs data
@@ -132,8 +134,8 @@ void parse_cutscene_table(const char* filename)
 			if (optional_string("$Name:")) {
 				stuff_string(csnp->name, F_NAME, NAME_LENGTH);
 				mprintf(("Adding cutscene %s\n", csnp->name));
-			} else if (!Parsing_modular_table) {
-				strncpy(csnp->name, csnt.filename, 32);
+			} else if (strlen(csnp->name) == 0) {
+				strcpy_s(csnp->name, csnt.filename);
 				mprintf(("Missing $Name: in cutscene.tbl. Using filename %s instead.\n", csnt.filename));
 			}
 
@@ -152,7 +154,9 @@ void parse_cutscene_table(const char* filename)
 				stuff_int(&junk);
 			}
 
-			csnp->flags.reset();
+			if (csn_new == true) {
+				csnp->flags.reset();
+			}
 
 			if (Cutscenes.empty())
 			{
@@ -192,7 +196,6 @@ void cutscene_init()
 	atexit(cutscene_close);
 
 	Cutscenes.clear();
-	Num_cutscenes = 0;
 
 	// first parse the default table
 	parse_cutscene_table("cutscenes.tbl");
