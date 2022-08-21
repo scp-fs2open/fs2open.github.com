@@ -101,8 +101,8 @@ struct ai_info;
 enum class ai_achievability { ACHIEVABLE, NOT_ACHIEVABLE, NOT_KNOWN, SATISFIED };
 
 struct ai_lua_parameters {
-	object_ship_wing_point_team target{};
-	luacpp::LuaValueList arguments{};
+	object_ship_wing_point_team target;
+	luacpp::LuaValueList arguments;
 };
 
 // structure for AI goals
@@ -175,8 +175,8 @@ extern int ai_remove_goal_sexp_sub( int sexp, ai_goal* aigp );
 extern void ai_remove_wing_goal_sexp( int sexp, wing *wingp );
 
 // adds goals to ships/sings through player orders
-extern void ai_add_ship_goal_player(int type, int mode, int submode, char* shipname, ai_info* aip, const ai_lua_parameters& lua_target = { object_ship_wing_point_team(), {} });
-extern void ai_add_wing_goal_player(int type, int mode, int submode, char* shipname, int wingnum, const ai_lua_parameters& lua_target = { object_ship_wing_point_team(), {} });
+extern void ai_add_ship_goal_player(int type, int mode, int submode, char* shipname, ai_info* aip, const ai_lua_parameters& lua_target = { object_ship_wing_point_team(), luacpp::LuaValueList{} });
+extern void ai_add_wing_goal_player(int type, int mode, int submode, char* shipname, int wingnum, const ai_lua_parameters& lua_target = { object_ship_wing_point_team(), luacpp::LuaValueList{} });
 
 extern void ai_remove_ship_goal( ai_info *aip, int index );
 extern void ai_clear_ship_goals( ai_info *aip );

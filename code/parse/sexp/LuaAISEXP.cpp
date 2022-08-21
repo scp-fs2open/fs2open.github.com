@@ -249,7 +249,7 @@ void LuaAISEXP::parseTable() {
 	}
 
 	if (!variable_arg_part) {
-		if (_max_args != INT_MAX && _max_args != _argument_types.size()) {
+		if (_max_args != INT_MAX && _max_args != (int)_argument_types.size()) {
 			error_display(1, "Maximum Additional Argument count does not match number of specified arguments!");
 		}
 		_max_args = (int)_argument_types.size();

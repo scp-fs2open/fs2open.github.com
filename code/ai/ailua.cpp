@@ -133,7 +133,7 @@ bool ai_lua_is_valid_target_intrinsic(int sexp_op, int target_objnum, ship* self
 	return false;
 }
 
-bool ai_lua_is_valid_target_lua(const ai_mode_lua& mode, int sexp_op, int target_objnum, ship* self) {
+bool ai_lua_is_valid_target_lua(const ai_mode_lua& mode, int target_objnum, ship* self) {
 
 	const auto& action = mode.sexp.getTargetRestrict();
 
@@ -177,7 +177,7 @@ bool ai_lua_is_valid_target(int sexp_op, int target_objnum, ship* self) {
 	}
 
 	//If we haven't bailed yet, query the custom callback
-	return ai_lua_is_valid_target_lua(mode, sexp_op, target_objnum, self);
+	return ai_lua_is_valid_target_lua(mode, target_objnum, self);
 }
 
 ai_achievability ai_lua_is_achievable(const ai_goal* aigp, int objnum){

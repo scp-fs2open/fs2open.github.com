@@ -1076,7 +1076,7 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, char
 
 			aigp->priority = atoi( CTEXT(localnode) );
 
-			aigp->lua_ai_target = { std::move(target), std::move(luaAIMode->sexp.getSEXPArgumentList(CDR(localnode))) };
+			aigp->lua_ai_target = { std::move(target), luaAIMode->sexp.getSEXPArgumentList(CDR(localnode)) };
 		}
 		else {
 			UNREACHABLE("Invalid SEXP-OP number %d for an AI goal!", op);
