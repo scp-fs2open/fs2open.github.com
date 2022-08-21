@@ -45,15 +45,21 @@ int collide_debris_weapon( obj_pair * pair )
 		if ( !hit )
 			return 0;
 
-		Script_system.SetHookObjects(4, "Self", weapon_obj, "Object", pdebris, "Weapon", weapon_obj, "Debris", pdebris);
-		Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(hitpos));
-		bool weapon_override = Script_system.IsConditionOverride(CHA_COLLIDEDEBRIS, weapon_obj);
-		Script_system.RemHookVars({ "Self", "Object", "Weapon", "Debris", "Hitpos" });
+		bool weapon_override = false, debris_override = false;
 
-		Script_system.SetHookObjects(4, "Self", pdebris, "Object", weapon_obj, "Weapon", weapon_obj, "Debris", pdebris);
-		Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(hitpos));
-		bool debris_override = Script_system.IsConditionOverride(CHA_COLLIDEWEAPON, pdebris);
-		Script_system.RemHookVars({ "Self", "Object", "Weapon", "Debris", "Hitpos" });
+		if (Script_system.IsActiveAction(CHA_COLLIDEDEBRIS)) {
+			Script_system.SetHookObjects(4, "Self", weapon_obj, "Object", pdebris, "Weapon", weapon_obj, "Debris", pdebris);
+			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(hitpos));
+			weapon_override = Script_system.IsConditionOverride(CHA_COLLIDEDEBRIS, weapon_obj, pdebris);
+			Script_system.RemHookVars({ "Self", "Object", "Weapon", "Debris", "Hitpos" });
+		}
+
+		if (Script_system.IsActiveAction(CHA_COLLIDEWEAPON)) {
+			Script_system.SetHookObjects(4, "Self", pdebris, "Object", weapon_obj, "Weapon", weapon_obj, "Debris", pdebris);
+			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(hitpos));
+			debris_override = Script_system.IsConditionOverride(CHA_COLLIDEWEAPON, pdebris, weapon_obj);
+			Script_system.RemHookVars({ "Self", "Object", "Weapon", "Debris", "Hitpos" });
+		}
 
 		if(!weapon_override && !debris_override)
 		{
@@ -61,19 +67,19 @@ int collide_debris_weapon( obj_pair * pair )
 			debris_hit( pdebris, weapon_obj, &hitpos, Weapon_info[Weapons[weapon_obj->instance].weapon_info_index].damage );
 		}
 
-		if (!(debris_override && !weapon_override))
+		if (Script_system.IsActiveAction(CHA_COLLIDEDEBRIS) && !(debris_override && !weapon_override))
 		{
 			Script_system.SetHookObjects(4, "Self", weapon_obj, "Object", pdebris, "Weapon", weapon_obj, "Debris", pdebris);
 			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(hitpos));
-			Script_system.RunCondition(CHA_COLLIDEDEBRIS, weapon_obj);
+			Script_system.RunCondition(CHA_COLLIDEDEBRIS, weapon_obj, pdebris);
 			Script_system.RemHookVars({ "Self", "Object", "Weapon", "Debris", "Hitpos" });
 		}
 
-		if ((debris_override && !weapon_override) || (!debris_override && !weapon_override))
+		if (Script_system.IsActiveAction(CHA_COLLIDEWEAPON) && ((debris_override && !weapon_override) || (!debris_override && !weapon_override)))
 		{
 			Script_system.SetHookObjects(4, "Self", pdebris, "Object", weapon_obj, "Weapon", weapon_obj, "Debris", pdebris);
 			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(hitpos));
-			Script_system.RunCondition(CHA_COLLIDEWEAPON, pdebris, Weapons[weapon_obj->instance].weapon_info_index);
+			Script_system.RunCondition(CHA_COLLIDEWEAPON, pdebris, weapon_obj);
 			Script_system.RemHookVars({ "Self", "Object", "Weapon", "Debris", "Hitpos" });
 		}
 
@@ -110,15 +116,21 @@ int collide_asteroid_weapon( obj_pair * pair )
 		if ( !hit )
 			return 0;
 
-		Script_system.SetHookObjects(4, "Self", weapon_obj, "Object", pasteroid, "Weapon", weapon_obj, "Asteroid", pasteroid);
-		Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(hitpos));
-		bool weapon_override = Script_system.IsConditionOverride(CHA_COLLIDEASTEROID, weapon_obj);
-		Script_system.RemHookVars({ "Self", "Object", "Weapon", "Asteroid", "Hitpos" });
+		bool weapon_override = false, asteroid_override = false;
 
-		Script_system.SetHookObjects(4, "Self", pasteroid, "Object", weapon_obj, "Weapon", weapon_obj, "Asteroid", pasteroid);
-		Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(hitpos));
-		bool asteroid_override = Script_system.IsConditionOverride(CHA_COLLIDEWEAPON, pasteroid);
-		Script_system.RemHookVars({ "Self", "Object", "Weapon", "Asteroid", "Hitpos" });
+		if (Script_system.IsActiveAction(CHA_COLLIDEASTEROID)) {
+			Script_system.SetHookObjects(4, "Self", weapon_obj, "Object", pasteroid, "Weapon", weapon_obj, "Asteroid", pasteroid);
+			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(hitpos));
+			weapon_override = Script_system.IsConditionOverride(CHA_COLLIDEASTEROID, weapon_obj, pasteroid);
+			Script_system.RemHookVars({ "Self", "Object", "Weapon", "Asteroid", "Hitpos" });
+		}
+
+		if (Script_system.IsActiveAction(CHA_COLLIDEWEAPON)) {
+			Script_system.SetHookObjects(4, "Self", pasteroid, "Object", weapon_obj, "Weapon", weapon_obj, "Asteroid", pasteroid);
+			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(hitpos));
+			asteroid_override = Script_system.IsConditionOverride(CHA_COLLIDEWEAPON, pasteroid, weapon_obj);
+			Script_system.RemHookVars({ "Self", "Object", "Weapon", "Asteroid", "Hitpos" });
+		}
 
 		if(!weapon_override && !asteroid_override)
 		{
@@ -126,19 +138,19 @@ int collide_asteroid_weapon( obj_pair * pair )
 			asteroid_hit( pasteroid, weapon_obj, &hitpos, Weapon_info[Weapons[weapon_obj->instance].weapon_info_index].damage );
 		}
 
-		if (!(asteroid_override && !weapon_override))
+		if (Script_system.IsActiveAction(CHA_COLLIDEASTEROID) && !(asteroid_override && !weapon_override))
 		{
 			Script_system.SetHookObjects(4, "Self", weapon_obj, "Object", pasteroid, "Weapon", weapon_obj, "Asteroid", pasteroid);
 			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(hitpos));
-			Script_system.RunCondition(CHA_COLLIDEASTEROID, weapon_obj);
+			Script_system.RunCondition(CHA_COLLIDEASTEROID, weapon_obj, pasteroid);
 			Script_system.RemHookVars({ "Self", "Object", "Weapon", "Asteroid", "Hitpos" });
 		}
 
-		if ((asteroid_override && !weapon_override) || (!asteroid_override && !weapon_override))
+		if (Script_system.IsActiveAction(CHA_COLLIDEWEAPON) && ((asteroid_override && !weapon_override) || (!asteroid_override && !weapon_override)))
 		{
 			Script_system.SetHookObjects(4, "Self", pasteroid, "Object", weapon_obj, "Weapon", weapon_obj, "Asteroid", pasteroid);
 			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(hitpos));
-			Script_system.RunCondition(CHA_COLLIDEWEAPON, pasteroid, Weapons[weapon_obj->instance].weapon_info_index);
+			Script_system.RunCondition(CHA_COLLIDEWEAPON, pasteroid, weapon_obj);
 			Script_system.RemHookVars({ "Self", "Object", "Weapon", "Asteroid", "Hitpos" });
 		}
 

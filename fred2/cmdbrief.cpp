@@ -95,8 +95,8 @@ void cmd_brief_dlg::update_data(int update)
 		deconvert_multiline_string(last_stage->text, m_text);
 		lcl_fred_replace_stuff(last_stage->text);
 
-		string_copy(last_stage->ani_filename, m_ani_filename, MAX_FILENAME_LEN);
-		string_copy(last_stage->wave_filename, m_wave_filename, MAX_FILENAME_LEN);
+		string_copy(last_stage->ani_filename, m_ani_filename, MAX_FILENAME_LEN - 1);
+		string_copy(last_stage->wave_filename, m_wave_filename, MAX_FILENAME_LEN - 1);
 	}
 
 	// load data of new stage into dialog
@@ -313,6 +313,7 @@ BOOL cmd_brief_dlg::DestroyWindow()
 	audiostream_close_file(m_wave_id, 0);
 	m_wave_id = -1;
 
+	update_data();
 	m_play_bm.DeleteObject();
 	return CDialog::DestroyWindow();
 }

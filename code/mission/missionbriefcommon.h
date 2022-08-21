@@ -67,13 +67,14 @@ typedef struct briefing_icon_info {
 	generic_anim	regular;
 	hud_anim		fade;
 	hud_anim		highlight;
-} briefing_icon_type;
+} briefing_icon_info;
 
 extern SCP_vector<briefing_icon_info> Briefing_icon_info;
 
 struct brief_icon;
 extern briefing_icon_info *brief_get_icon_info(brief_icon *bi);
 
+extern bool brief_special_closeup(int briefing_icon_type);
 
 
 // Moving out of missionbriefcommon.cpp so it can be referenced elsewhere -MageKing17
@@ -84,17 +85,17 @@ extern const float		BRIEF_TEXT_WIPE_TIME;		// time in seconds for wipe to occur
 // ------------------------------------------------------------------------
 
 #define	MAX_BRIEF_LINES		70
-#define	MAX_BRIEF_LINE_LEN	256		// max number of chars in a briefing line
+#define	MAX_BRIEF_LINE_LEN	512		// max number of chars in a briefing line. Increased to allow for multibyte characters to fill a briefing line
 #define	MAX_BRIEF_LINE_W_640		375		// max width of line in pixels in 640x480 mode
 #define	MAX_BRIEF_LINE_W_1024	600		// max width of line in pixels in 1024x768 mode
 
 #define	MAX_DEBRIEF_LINES		60
-#define	MAX_DEBRIEF_LINE_LEN	256		// max number of chars in a debriefing line
+#define	MAX_DEBRIEF_LINE_LEN	512		// max number of chars in a debriefing line
 #define	MAX_DEBRIEF_LINE_W	500		// max width of line in pixels
 
 #define	MAX_ICON_TEXT_LEN			1024		// max number of chars for icon info
 #define	MAX_ICON_TEXT_LINES		30
-#define	MAX_ICON_TEXT_LINE_LEN	256		// max number of chars in icon info line
+#define	MAX_ICON_TEXT_LINE_LEN	512	// max number of chars in icon info line
 #define	MAX_ICON_TEXT_LINE_W		170		// max width of line in pixels
 
 #define	MAX_STAGE_ICONS			20
@@ -123,7 +124,6 @@ typedef struct brief_icon {
 	vec3d	pos;
 	char		label[MAX_LABEL_LEN];
 	char		closeup_label[MAX_LABEL_LEN];
-//	char		text[MAX_ICON_TEXT_LEN];
 	hud_anim	fadein_anim;
 	hud_anim	fadeout_anim;
 	hud_anim	highlight_anim;

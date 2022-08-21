@@ -109,16 +109,13 @@ static void shipfx_subsystem_maybe_create_live_debris(object *ship_objp, ship *s
 	vec3d model_axis, world_axis, rotvel, world_axis_pt;
 	matrix m_rot;	// rotation for debris orient about axis
 
-	if (pm->submodel[submodel_num].movement_type == MOVEMENT_TYPE_ROT || pm->submodel[submodel_num].movement_type == MOVEMENT_TYPE_INTRINSIC_ROTATE) {
-		if ( !smi->axis_set ) {
-			model_init_submodel_axis_pt(pm, pmi, submodel_num);
-		}
-
+	if (pm->submodel[submodel_num].rotation_type == MOVEMENT_TYPE_REGULAR || pm->submodel[submodel_num].rotation_type == MOVEMENT_TYPE_INTRINSIC || pm->submodel[submodel_num].rotation_type == MOVEMENT_TYPE_TRIGGERED){
 		// get the rotvel
 		model_get_rotating_submodel_axis(&model_axis, &world_axis, pm, pmi, submodel_num, &ship_objp->orient);
 		vm_vec_copy_scale(&rotvel, &world_axis, smi->current_turn_rate);
 
-		model_instance_find_world_point(&world_axis_pt, &smi->point_on_axis, pm, pmi, submodel_num, &ship_objp->orient, &ship_objp->pos);
+		//TODO replace zero_vector with translation offset of submodel
+		model_instance_local_to_global_point(&world_axis_pt, &vmd_zero_vector, pm, pmi, submodel_num, &ship_objp->orient, &ship_objp->pos);
 
 		vm_quaternion_rotate(&m_rot, smi->cur_angle, &model_axis);
 	} else {
@@ -135,13 +132,13 @@ static void shipfx_subsystem_maybe_create_live_debris(object *ship_objp, ship *s
 
 		// get start world pos
 		vm_vec_zero(&start_world_pos);
-		model_instance_find_world_point(&start_world_pos, &pm->submodel[live_debris_submodel].offset, pm, pmi, live_debris_submodel, &ship_objp->orient, &ship_objp->pos );
+		model_instance_local_to_global_point(&start_world_pos, &pm->submodel[live_debris_submodel].offset, pm, pmi, live_debris_submodel, &ship_objp->orient, &ship_objp->pos );
 
 		// convert to model coord of underlying submodel
-		world_find_model_instance_point(&start_model_pos, &start_world_pos, pm, pmi, submodel_num, &ship_objp->orient, &ship_objp->pos);
+		model_instance_global_to_local_point(&start_model_pos, &start_world_pos, pm, pmi, submodel_num, &ship_objp->orient, &ship_objp->pos);
 
 		// rotate from submodel coord to world coords
-		model_instance_find_world_point(&end_world_pos, &start_model_pos, pm, pmi, submodel_num, &ship_objp->orient, &ship_objp->pos);
+		model_instance_local_to_global_point(&end_world_pos, &start_model_pos, pm, pmi, submodel_num, &ship_objp->orient, &ship_objp->pos);
 
 		int fireball_type = fireball_ship_explosion_type(&Ship_info[ship_p->ship_info_index]);
 		if(fireball_type < 0) {
@@ -232,7 +229,7 @@ static void shipfx_maybe_create_live_debris_at_ship_death( object *ship_objp )
 
 	int live_debris_submodel = -1;
 	for (int idx=0; idx<pm->num_debris_objects; idx++) {
-		if (pm->submodel[pm->debris_objects[idx]].is_live_debris) {
+		if (pm->submodel[pm->debris_objects[idx]].flags[Model::Submodel_flags::Is_live_debris]) {
 			live_debris_submodel = pm->debris_objects[idx];
 
 			// get submodel that produces live debris
@@ -256,7 +253,7 @@ static void shipfx_maybe_create_live_debris_at_ship_death( object *ship_objp )
 				if (pss != NULL) {
 					if (pss->system_info != NULL) {
 						vec3d exp_center, tmp = ZERO_VECTOR;
-						model_instance_find_world_point(&exp_center, &tmp, pm, pmi, parent, &ship_objp->orient, &ship_objp->pos );
+						model_instance_local_to_global_point(&exp_center, &tmp, pm, pmi, parent, &ship_objp->orient, &ship_objp->pos );
 
 						// if not blown off, blow it off
 						shipfx_subsystem_maybe_create_live_debris(ship_objp, shipp, pss, &exp_center, 3.0f);
@@ -316,9 +313,9 @@ static void shipfx_blow_up_hull(object *obj, polymodel *pm, polymodel_instance *
 
 	bool try_live_debris = true;
 	for (i=0; i<pm->num_debris_objects; i++ )	{
-		if (! pm->submodel[pm->debris_objects[i]].is_live_debris) {
+		if (! pm->submodel[pm->debris_objects[i]].flags[Model::Submodel_flags::Is_live_debris]) {
 			vec3d tmp = ZERO_VECTOR;
-			model_instance_find_world_point(&tmp, &pm->submodel[pm->debris_objects[i]].offset, pm, pmi, 0, &obj->orient, &obj->pos );
+			model_instance_local_to_global_point(&tmp, &pm->submodel[pm->debris_objects[i]].offset, pm, pmi, 0, &obj->orient, &obj->pos );
 			debris_create( obj, pm->id, pm->debris_objects[i], &tmp, exp_center, 1, 3.0f );
 		} else {
 			if ( try_live_debris ) {
@@ -359,8 +356,10 @@ void shipfx_blow_up_model(object *obj, int submodel, int ndebris, vec3d *exp_cen
 
 	// made a change to allow anyone but multiplayer client to blow up hull.  Clients will do it when
 	// they get the create packet
+	bool use_ship_debris = false;
 	if ( submodel == 0 ) {
 		shipfx_blow_up_hull(obj, pm, pmi, exp_center);
+		use_ship_debris = true;
 	}
 
 	for (i=0; i<ndebris; i++ )	{
@@ -372,9 +371,9 @@ void shipfx_blow_up_model(object *obj, int submodel, int ndebris, vec3d *exp_cen
 		vec3d tmp, outpnt;
 
 		vm_vec_avg( &tmp, &pnt1, &pnt2 );
-		model_instance_find_world_point(&outpnt, &tmp, pm, pmi, submodel, &obj->orient, &obj->pos );
+		model_instance_local_to_global_point(&outpnt, &tmp, pm, pmi, submodel, &obj->orient, &obj->pos );
 
-		debris_create( obj, Ship_info[Ships[obj->instance].ship_info_index].generic_debris_model_num, -1, &outpnt, exp_center, 0, 1.0f );
+		debris_create( obj, use_ship_debris ? Ship_info[Ships[obj->instance].ship_info_index].generic_debris_model_num : -1, -1, &outpnt, exp_center, 0, 1.0f );
 	}
 }
 
@@ -390,17 +389,17 @@ void shipfx_blow_up_model(object *obj, int submodel, int ndebris, vec3d *exp_cen
 static float shipfx_calculate_effect_radius( object *objp, WarpDirection warp_dir )
 {
 	float rad;
+	ship* shipp = &Ships[objp->instance];
 
 	// if docked, we need to calculate the overall cross-sectional radius around the z-axis (longitudinal axis)
-	if (object_is_docked(objp))
+	if (object_is_docked(objp) && !( (warp_dir == WarpDirection::WARP_IN && shipp->flags[Ship::Ship_Flags::Same_arrival_warp_when_docked])
+									|| (warp_dir == WarpDirection::WARP_OUT && shipp->flags[Ship::Ship_Flags::Same_departure_warp_when_docked]) ))
 	{
 		rad = dock_calc_max_cross_sectional_radius_perpendicular_to_axis(objp, Z_AXIS);
 	}
 	// if it's not docked, we can save a lot of work by just using width and height
 	else
 	{
-		ship *shipp = &Ships[objp->instance];
-
 		//WMC - see if a radius was specified
 		float warp_radius = Warp_params[warp_dir == WarpDirection::WARP_IN ? shipp->warpin_params_index : shipp->warpout_params_index].radius;
 		if (warp_radius > 0.0f)
@@ -476,6 +475,7 @@ void shipfx_actually_warpin(ship *shipp, object *objp)
 {
 	shipp->flags.remove(Ship::Ship_Flags::Arriving_stage_1);
 	shipp->flags.remove(Ship::Ship_Flags::Arriving_stage_2);
+
 	// dock leader needs to handle dockees
 	if (object_is_docked(objp)) {
 		Assertion(shipp->flags[Ship::Ship_Flags::Dock_leader], "The docked ship warping in (%s) should only be the dock leader at this point!\n", shipp->ship_name);
@@ -537,23 +537,30 @@ void shipfx_warpin_start( object *objp )
 	}
 
 	//WMC - Check if scripting handles this.
-	if(OnWarpInHook->isOverride(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp)), objp))
+	if (OnWarpInHook->isActive())
 	{
-		OnWarpInHook->run(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp)), objp);
-		return;
+		if (OnWarpInHook->isOverride(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp)), objp))
+		{
+			OnWarpInHook->run(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp)), objp);
+			return;
+		}
 	}
 
-	// if there is no arrival warp, then skip the whole thing
+	// if there is no arrival warp, set the flag but don't create the effect
 	if (shipp->flags[Ship::Ship_Flags::No_arrival_warp])
 	{
-		shipfx_actually_warpin(shipp,objp);
+		shipp->flags.set(Ship::Ship_Flags::Arriving_stage_1);
+		// we don't actually need to set the flag on docked ships, since the flag will be immediately removed
 		return;
 	}
 
 	Assertion(shipp->warpin_effect != nullptr, "shipfx_warpin_start() was fed a ship with an uninitialized warpin_effect.");
 	shipp->warpin_effect->warpStart();
 
-	OnWarpInHook->run(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp)), objp);
+	if (OnWarpInHook->isActive())
+	{
+		OnWarpInHook->run(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp)), objp);
+	}
 }
 
 void shipfx_warpin_frame( object *objp, float frametime )
@@ -564,16 +571,25 @@ void shipfx_warpin_frame( object *objp, float frametime )
 
 	if ( shipp->flags[Ship::Ship_Flags::Dying] ) return;
 
-	shipp->warpin_effect->warpFrame(frametime);
+	// for ships with no warp effect, skip to the end
+	if (shipp->flags[Ship::Ship_Flags::No_arrival_warp])
+		shipfx_actually_warpin(shipp, objp);
+	else
+		shipp->warpin_effect->warpFrame(frametime);
 }
- 
+
 // This is called to actually warp this object out
 // after all the flashy fx are done, or if the flashy fx
 // don't work for some reason.  OR to skip the flashy fx.
-static void shipfx_actually_warpout(int shipnum)
+static void shipfx_actually_warpout(ship *shipp, object *objp)
 {
+	shipp->flags.remove(Ship::Ship_Flags::Depart_warp);
+
+	// let physics in on it too.
+	objp->phys_info.flags &= (~PF_WARP_OUT);
+
 	// Once we get through effect, make the ship go away
-	ship_actually_depart(shipnum);
+	ship_actually_depart(objp->instance);
 }
 
 void WE_Default::compute_warpout_stuff(float *warp_time, vec3d *warp_pos)
@@ -663,9 +679,11 @@ void shipfx_warpout_start( object *objp )
 		return;
 	}
 
-	if (OnWarpOutHook->isOverride(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp)), objp)) {
-		OnWarpOutHook->run(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp)), objp);
-		return;
+	if (OnWarpOutHook->isActive()) {
+		if (OnWarpOutHook->isOverride(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp)), objp)) {
+			OnWarpOutHook->run(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp)), objp);
+			return;
+		}
 	}
 
 	// if we're dying return
@@ -692,9 +710,9 @@ void shipfx_warpout_start( object *objp )
 	if (shipp->flags[Ship::Ship_Flags::No_departure_warp]) {
 		// DKA 5/25/99 If he's going to warpout, set it.
 		// Next line fixes assert in wing cleanup code when no warp effect.
+		// NOTE: It also causes shipfx_warpout_frame to be run in ship_process_post
+		//   which will make the ship actually depart
 		shipp->flags.set(Ship::Ship_Flags::Depart_warp);
-
-		shipfx_actually_warpout(objp->instance);
 		return;
 	}
 
@@ -702,7 +720,9 @@ void shipfx_warpout_start( object *objp )
 			  "shipfx_warpout_start() was fed a ship with an uninitialized warpout_effect.");
 	shipp->warpout_effect->warpStart();
 
-	OnWarpOutHook->run(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp)), objp);
+	if (OnWarpOutHook->isActive()) {
+		OnWarpOutHook->run(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp)), objp);
+	}
 }
 
 void shipfx_warpout_frame( object *objp, float frametime )
@@ -720,7 +740,11 @@ void shipfx_warpout_frame( object *objp, float frametime )
 		return;
 	}
 
-	shipp->warpout_effect->warpFrame(frametime);
+	// for ships with no warp effect, skip to the end
+	if (shipp->flags[Ship::Ship_Flags::No_departure_warp])
+		shipfx_actually_warpout(shipp, objp);
+	else
+		shipp->warpout_effect->warpFrame(frametime);
 }
 
 
@@ -1214,7 +1238,7 @@ void shipfx_emit_spark( int n, int sn )
 	if (shipp->sparks[spark_num].submodel_num != -1) {
 		auto pmi = model_get_instance(shipp->model_instance_num);
 		auto pm = model_get(pmi->model_num);
-		model_instance_find_world_point(&outpnt, &shipp->sparks[spark_num].pos, pm, pmi, shipp->sparks[spark_num].submodel_num, &obj->orient, &obj->pos);
+		model_instance_local_to_global_point(&outpnt, &shipp->sparks[spark_num].pos, pm, pmi, shipp->sparks[spark_num].submodel_num, &obj->orient, &obj->pos);
 	} else {
 		// rotate sparks correctly with current ship orient
 		vm_vec_unrotate(&outpnt, &shipp->sparks[spark_num].pos, &obj->orient);
@@ -1252,10 +1276,10 @@ void shipfx_emit_spark( int n, int sn )
 		// TODO: add velocity from rotation if submodel is rotating
 		// v_rot = w x r
 
-		// r = outpnt - model_find_world_point(0)
+		// r = outpnt - model_local_to_global_point(0)
 
-		// w = model_find_world_dir(
-		// model_find_world_dir(&out_dir, &in_dir, model_num, submodel_num, &objorient, &objpos);
+		// w = model_local_to_global_dir(
+		// model_local_to_global_dir(&out_dir, &in_dir, model_num, submodel_num, &objorient, &objpos);
 
 		vec3d tmp_norm, tmp_vel;
 		vm_vec_sub( &tmp_norm, &outpnt, &obj->pos );
@@ -1466,7 +1490,7 @@ static void split_ship_init( ship* shipp, split_ship* split_shipp )
 		vec3d tmp1 = pm->submodel[pm->debris_objects[i]].offset;
 		// tmp is world position,  temp_pos is world_pivot,  tmp1 is offset from world_pivot (in ship local coord)
 		// we don't need to use a model instance here because we're not working with any submodels
-		model_find_world_point(&tmp, &tmp1, pm, -1, &vmd_identity_matrix, &temp_pos );
+		model_local_to_global_point(&tmp, &tmp1, pm, -1, &vmd_identity_matrix, &temp_pos );
 		if (tmp.xyz.z > init_clip_plane_dist) {
 			split_shipp->front_ship.draw_debris[i] = DEBRIS_DRAW;
 			split_shipp->back_ship.draw_debris[i]  = DEBRIS_NONE;
@@ -1572,7 +1596,7 @@ void shipfx_queue_render_ship_halves_and_debris(model_draw_list *scene, clip_shi
 
 			// determine if explosion front has past debris piece
 			// 67 ~ dist expl moves in 2 frames -- maybe fraction works better
-			int is_live_debris = pm->submodel[pm->debris_objects[i]].is_live_debris;
+			bool is_live_debris = pm->submodel[pm->debris_objects[i]].flags[Model::Submodel_flags::Is_live_debris];
 			int create_debris = 0;
 			// front ship
 			if (half_ship->explosion_vel > 0) {
@@ -1589,7 +1613,7 @@ void shipfx_queue_render_ship_halves_and_debris(model_draw_list *scene, clip_shi
 			// Draw debris, but not live debris
 			if ( !is_live_debris ) {
 				// we don't need to use a model instance here because we're not working with any submodels
-				model_find_world_point(&tmp, &tmp1, pm, -1, &half_ship->orient, &temp_pos);
+				model_local_to_global_point(&tmp, &tmp1, pm, -1, &half_ship->orient, &temp_pos);
 				model_render_params render_info;
 
 				render_info.set_clip_plane(debris_clip_plane_pt, clip_plane_norm);
@@ -2058,14 +2082,74 @@ const float MAX_ARC_LENGTH_PERCENTAGE = 0.25f;
 
 const float MAX_EMP_ARC_TIMESTAMP = 150.0f;
 
-void shipfx_do_damaged_arcs_frame( ship *shipp )
+void shipfx_do_lightning_arcs_frame( ship *shipp )
 {
-	int i;
-	int should_arc;
 	object *obj = &Objects[shipp->objnum];
-	int model_num = Ship_info[shipp->ship_info_index].model_num;
+	ship_info* sip = &Ship_info[shipp->ship_info_index];
+	int model_num = sip->model_num;
 
-	should_arc = 1;
+	// first do any passive ship arcs, separate from damage or emp arcs
+	for (int passive_arc_info_idx = 0; passive_arc_info_idx < (int)sip->ship_passive_arcs.size(); passive_arc_info_idx++) {
+		if (!shipp->flags[Ship::Ship_Flags::No_passive_lightning] && timestamp_elapsed(shipp->passive_arc_next_times[passive_arc_info_idx])) {
+
+			ship_passive_arc_info* arc_info = &sip->ship_passive_arcs[passive_arc_info_idx];
+			polymodel* pm = model_get(model_num);
+
+			// find the specified submodels involved, if necessary
+			if (arc_info->submodels.first < 0 || arc_info->submodels.second < 0) {
+				for (int i = 0; i < pm->n_models; i++) {
+					if (!stricmp(pm->submodel[i].name, arc_info->submodel_strings.first.c_str()))
+						arc_info->submodels.first = i;
+					if (!stricmp(pm->submodel[i].name, arc_info->submodel_strings.second.c_str()))
+						arc_info->submodels.second = i;
+				}
+			}
+			int submodel_1 = arc_info->submodels.first;
+			int submodel_2 = arc_info->submodels.second;
+
+			// see if these submodels are also subsystems, and dont draw if its destroyed
+			bool skip = false;
+			for (ship_subsys* pss = GET_FIRST(&shipp->subsys_list); pss != END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss)) {
+				if (pss->system_info->subobj_num == submodel_1 && pss->max_hits > 0 && pss->current_hits <= 0) {
+					skip = true;
+					break;
+				} else if (pss->system_info->subobj_num == submodel_2 && pss->max_hits > 0 && pss->current_hits <= 0) {
+					skip = true;
+					break;
+				}
+			}
+			if (skip) break;
+
+			if (submodel_1 >= 0 && submodel_2 >= 0) {
+				// spawn the arc in the first unused slot
+				for (int j = 0; j < MAX_SHIP_ARCS; j++) {
+					if (!timestamp_valid(shipp->arc_timestamp[j])) {
+						shipp->arc_timestamp[j] = timestamp((int)(arc_info->duration * 1000));
+
+						vec3d v1, v2, offset;
+						// subtract away the submodel's offset, since these positions were in frame of ref of the whole ship
+						model_find_submodel_offset(&offset, pm, submodel_1);
+						v1 = arc_info->pos.first - offset;
+						model_find_submodel_offset(&offset, pm, submodel_2);
+						v2 = arc_info->pos.second - offset;
+
+						model_instance_local_to_global_point(&v1, &v1, shipp->model_instance_num, submodel_1, &vmd_identity_matrix, &vmd_zero_vector);
+						shipp->arc_pts[j][0] = v1;
+						model_instance_local_to_global_point(&v2, &v2, shipp->model_instance_num, submodel_2, &vmd_identity_matrix, &vmd_zero_vector);
+						shipp->arc_pts[j][1] = v2;
+
+						shipp->arc_type[j] = MARC_TYPE_SHIP;
+
+						shipp->passive_arc_next_times[passive_arc_info_idx] = timestamp((int)(arc_info->frequency * 1000));
+						break;
+					}
+				}
+			}
+		}
+	}
+
+	// now handle damage/emp arcs
+	int should_arc = 1;
 	int disrupted_arc=0;
 
 	float damage = get_hull_pct(obj);	
@@ -2098,9 +2182,9 @@ void shipfx_do_damaged_arcs_frame( ship *shipp )
 	}
 
 	// Kill off old sparks
-	for(i=0; i<MAX_SHIP_ARCS; i++){
-		if(timestamp_valid(shipp->arc_timestamp[i]) && timestamp_elapsed(shipp->arc_timestamp[i])){			
-			shipp->arc_timestamp[i] = timestamp(-1);
+	for(int &arc_stamp : shipp->arc_timestamp){
+		if(timestamp_valid(arc_stamp) && timestamp_elapsed(arc_stamp)){
+			arc_stamp = timestamp(-1);
 		}
 	}
 
@@ -2175,7 +2259,7 @@ void shipfx_do_damaged_arcs_frame( ship *shipp )
 		int lifetime = Random::next(a, b);
 
 		// Create the arc effects
-		for (i=0; i<MAX_SHIP_ARCS; i++ )	{
+		for (int i=0; i<MAX_SHIP_ARCS; i++ )	{
 			if ( !timestamp_valid( shipp->arc_timestamp[i] ) )	{
 				shipp->arc_timestamp[i] = timestamp(lifetime);	// live up to a second
 
@@ -2202,7 +2286,7 @@ void shipfx_do_damaged_arcs_frame( ship *shipp )
 				if((shipp->emp_intensity > 0.0f) || (disrupted_arc)){
 					shipp->arc_type[i] = MARC_TYPE_EMP;
 				} else {
-					shipp->arc_type[i] = MARC_TYPE_NORMAL;
+					shipp->arc_type[i] = MARC_TYPE_DAMAGED;
 				}
 					
 				n++;
@@ -2237,7 +2321,7 @@ void shipfx_do_damaged_arcs_frame( ship *shipp )
 	}
 
 	// maybe move arc points around
-	for (i=0; i<MAX_SHIP_ARCS; i++ )	{
+	for (int i=0; i<MAX_SHIP_ARCS; i++ )	{
 		if ( timestamp_valid( shipp->arc_timestamp[i] ) )	{
 			if ( !timestamp_elapsed( shipp->arc_timestamp[i] ) )	{							
 				// Maybe move a vertex....  20% of the time maybe?
@@ -2624,7 +2708,7 @@ void engine_wash_ship_process(ship *shipp)
 			// set the the necessary submodel instance info needed here. The second
 			// condition is thus a hack to disable the feature while in the lab, and
 			// can be removed if the lab is re-structured accordingly. -zookeeper
-			if ( bank->submodel_num > -1 && pm->submodel[bank->submodel_num].can_move && (gameseq_get_state_idx(GS_STATE_LAB) == -1) ) {
+			if ( bank->submodel_num >= 0 && pm->submodel[bank->submodel_num].flags[Model::Submodel_flags::Can_move] && (gameseq_get_state_idx(GS_STATE_LAB) == -1) ) {
 				model_find_submodel_offset(&submodel_static_offset, pm, bank->submodel_num);
 
 				submodel_rotation = true;
@@ -2640,7 +2724,7 @@ void engine_wash_ship_process(ship *shipp)
 
 					// Gets the final offset and normal in the ship's frame of reference
 					temp = loc_pos;
-					find_submodel_instance_point_normal(&loc_pos, &loc_norm, pm, pmi, bank->submodel_num, &temp, &loc_norm);
+					model_instance_local_to_global_point_dir(&loc_pos, &loc_norm, &temp, &loc_norm, pm, pmi, bank->submodel_num);
 				}
 
 				// get world pos of thruster
@@ -2724,7 +2808,7 @@ void engine_wash_ship_process(ship *shipp)
 		// if we had no wash before now, add the wash object sound
 		if(started_with_no_wash){
 			if(shipp != Player_ship){
-				obj_snd_assign(shipp->objnum, GameSounds::ENGINE_WASH, &vmd_zero_vector, 1);
+				obj_snd_assign(shipp->objnum, GameSounds::ENGINE_WASH, &vmd_zero_vector, OS_MAIN);
 			} else {				
 				Player_engine_wash_loop = snd_play_looping( gamesnd_get_game_sound(GameSounds::ENGINE_WASH), 0.0f , -1, -1, 1.0f);
 			}
@@ -3263,22 +3347,10 @@ int WarpEffect::warpEnd()
 	if(!this->isValid())
 		return 0;
 
-	shipp->flags.remove(Ship::Ship_Flags::Arriving_stage_1);
-	shipp->flags.remove(Ship::Ship_Flags::Arriving_stage_2);
-	shipp->flags.remove(Ship::Ship_Flags::Depart_warp);
-	// dock leader needs to handle dockees
-	if (object_is_docked(objp)) {
-		dock_function_info dfi;
-		dock_evaluate_all_docked_objects(objp, &dfi, object_remove_arriving_stage1_ndl_flag_helper);
-		dock_evaluate_all_docked_objects(objp, &dfi, object_remove_arriving_stage2_ndl_flag_helper);
-	}
-
-	// let physics in on it too.
-	objp->phys_info.flags &= (~PF_WARP_IN);
-	objp->phys_info.flags &= (~PF_WARP_OUT);
-
-	if(direction == WarpDirection::WARP_OUT)
-		ship_actually_depart(objp->instance);
+	if (direction == WarpDirection::WARP_IN)
+		shipfx_actually_warpin(&Ships[objp->instance], objp);
+	else if (direction == WarpDirection::WARP_OUT)
+		shipfx_actually_warpout(&Ships[objp->instance], objp);
 
 	return 1;
 }
@@ -3367,14 +3439,7 @@ int WE_Default::warpStart()
 
 	// determine the warping speed
 	if (direction == WarpDirection::WARP_OUT)
-	{
 		warping_speed = ship_get_warpout_speed(objp, sip, half_length, warping_dist);
-
-		// this is Volition behavior; we probably will want an AI profiles flag for this so that the ship could use its tabled speed
-		if (objp == Player_obj) {
-			warping_speed = 0.8f*objp->phys_info.max_vel.xyz.z;
-		}
-	}
 	else
 		warping_speed = warping_dist / warping_time;
 
@@ -3555,11 +3620,11 @@ int WE_Default::warpFrame(float frametime)
 		} else {
 			// Code for all non-player ships warpout frame
 
-			int timed_out = timestamp_elapsed(total_time_end);
+			bool timed_out = timestamp_elapsed(total_time_end);
 			if ( timed_out )	{
-				int	delta_ms = timestamp_until(total_time_end);
+				int	delta_ms = timestamp_since(total_time_end);
 				if (delta_ms > 1000.0f * frametime ) {
-					nprintf(("AI", "Frame %i: Ship %s missed departue cue by %7.3f seconds.\n", Framecount, shipp->ship_name, - (float) delta_ms/1000.0f));
+					nprintf(("AI", "Frame %i: Ship %s missed departure cue by %7.3f seconds.\n", Framecount, shipp->ship_name, (float) delta_ms/1000.0f));
 				}
 			}
 

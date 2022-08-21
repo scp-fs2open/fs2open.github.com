@@ -136,7 +136,13 @@ int shockwave_create(int parent_objnum, vec3d* pos, shockwave_create_info* sci, 
 	sw->time_elapsed=0.0f;
 	sw->delay_stamp = delay;
 
-	sw->rot_angles = sci->rot_angles;
+	if (!sci->rot_defined) {
+		sw->rot_angles.p = frand_range(0.0f, PI2);
+		sw->rot_angles.b = frand_range(0.0f, PI2);
+		sw->rot_angles.h = frand_range(0.0f, PI2);
+	} else 
+		sw->rot_angles = sci->rot_angles; // should just be 0,0,0
+
 	sw->damage_type_idx = sci->damage_type_idx;
 
 	sw->total_time = sw->outer_radius / sw->speed;
@@ -329,7 +335,7 @@ void shockwave_move(object *shockwave_objp, float frametime)
 			if ( (sw->weapon_info_index >= 0) && (Weapon_info[sw->weapon_info_index].wi_flags[Weapon::Info_Flags::Aoe_Electronics]) && !(objp->flags[Object::Object_Flags::Invulnerable]) ) {
 				weapon_do_electronics_effect(objp, &sw->pos, sw->weapon_info_index);
 			}
-			ship_apply_global_damage(objp, shockwave_objp, &sw->pos, damage );
+			ship_apply_global_damage(objp, shockwave_objp, &sw->pos, damage, sw->damage_type_idx );
 			weapon_area_apply_blast(NULL, objp, &sw->pos, blast, 1);
 			break;
 		case OBJ_ASTEROID:
@@ -342,7 +348,8 @@ void shockwave_move(object *shockwave_objp, float frametime)
 
 			objp->hull_strength -= damage;
 			if (objp->hull_strength < 0.0f) {
-				Weapons[objp->instance].lifeleft = 0.01f;
+				Weapons[objp->instance].lifeleft = 0.001f;
+				Weapons[objp->instance].weapon_flags.set(Weapon::Weapon_Flags::Begun_detonation);
 				Weapons[objp->instance].weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
 			}
 			break;
@@ -396,7 +403,7 @@ void shockwave_render(object *objp, model_draw_list *scene)
 
 	float alpha = 1.0f;
 	if (The_mission.flags[Mission::Mission_Flags::Fullneb] && Neb_affects_weapons)
-		alpha *= neb2_get_fog_visibility(&objp->pos, NEB_FOG_VISIBILITY_MULT_SHOCKWAVE);
+		alpha *= neb2_get_fog_visibility(&objp->pos, Neb2_fog_visibility_shockwave);
 
 	if (sw->model_id > -1) {
 		vec3d scale;
@@ -425,10 +432,10 @@ void shockwave_render(object *objp, model_draw_list *scene)
 
 		if ( Gr_framebuffer_effects[FramebufferEffects::Shockwaves] ) {
 			float intensity = ((sw->time_elapsed / sw->total_time) > 0.9f) ? (1.0f - (sw->time_elapsed / sw->total_time)) * 10.0f : 1.0f;
-			batching_add_distortion_bitmap_rotated(sw->current_bitmap, &p, fl_radians(sw->rot_angles.p), sw->radius, intensity);
+			batching_add_distortion_bitmap_rotated(sw->current_bitmap, &p, sw->rot_angles.p, sw->radius, intensity);
 		}
 
-		batching_add_volume_bitmap_rotated(sw->current_bitmap, &p, fl_radians(sw->rot_angles.p), sw->radius, alpha);
+		batching_add_volume_bitmap_rotated(sw->current_bitmap, &p, sw->rot_angles.p, sw->radius, alpha);
 	}
 }
 

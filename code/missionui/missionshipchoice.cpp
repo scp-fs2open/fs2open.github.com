@@ -1147,7 +1147,7 @@ void ship_select_blit_ship_info()
 		int x;
 		for(x = 0; x < sip->n_subsystems; x++)
 		{
-			if(sip->subsystems[x].type == SUBSYSTEM_TURRET)
+			if ( (sip->subsystems[x].type == SUBSYSTEM_TURRET) && !(sip->subsystems[x].flags[Model::Subsystem_Flags::Hide_turret_from_loadout_stats]) )
 				num_turrets++;
 			/*
 			for(y = 0; y < MAX_SHIP_PRIMARY_BANKS || y < MAX_SHIP_SECONDARY_BANKS; y++)
@@ -1222,7 +1222,7 @@ void ship_select_blit_ship_info()
 	if(Ship_select_ship_info_text[0] != '\0'){
 		// split the string into multiple lines
 		// MageKing17: Changed to use the widths determined by Yarn here: http://scp.indiegames.us/mantis/view.php?id=3144#c16516
-		n_lines = split_str(Ship_select_ship_info_text, gr_screen.res == GR_640 ? 204 : 328, n_chars, p_str, MAX_NUM_SHIP_DESC_LINES, 0);
+		n_lines = split_str(Ship_select_ship_info_text, gr_screen.res == GR_640 ? 204 : 328, n_chars, p_str, MAX_NUM_SHIP_DESC_LINES, SHIP_SELECT_SHIP_INFO_MAX_LINE_LEN);
 
 		// copy the split up lines into the text lines array
 		for (int idx = 0;idx<n_lines;idx++ ) {
@@ -2100,7 +2100,7 @@ void pick_from_wing(int wb_num, int ws_num)
 		return;
 	}
 
-	switch ( ws->status ) {
+	switch ( ws->status & ~WING_SLOT_WEAPONS_DISABLED ) {
 		case WING_SLOT_EMPTY:
 		case WING_SLOT_EMPTY|WING_SLOT_IS_PLAYER:
 			// TODO: add fail sound
@@ -2499,7 +2499,7 @@ int create_wings()
 
 		for ( j = 0; j < MAX_WING_SLOTS; j++ ) {
 			ws = &wb->ss_slots[j];
-			switch( ws->status ) {
+			switch( ws->status & ~WING_SLOT_WEAPONS_DISABLED ) {
 				case WING_SLOT_EMPTY:	
 					// delete ship that is not going to be used by the wing
 					if ( wb->is_late ) {

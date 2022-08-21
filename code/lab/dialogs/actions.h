@@ -1,11 +1,13 @@
 #pragma once
 
 #include "lab/dialogs/lab_dialog.h"
-#include "model/modelanim.h"
 
 
 class DestroySubsystems : public LabDialog {
+public:
+	~DestroySubsystems() override = default;
 
+private:
 	// Called when this dialog is opened via the top toolbar
 	void open(Button* /*caller*/) override;
 
@@ -31,7 +33,10 @@ private:
 };
 
 class ChangeLoadout : public LabDialog {
+public:
+	~ChangeLoadout() override = default;
 
+private:
 	// Called when this dialog is opened via the top toolbar
 	void open(Button* /*caller*/) override;
 
@@ -57,7 +62,10 @@ private:
 };
 
 class WeaponFire : public LabDialog {
+public:
+	~WeaponFire() override = default;
 
+private:
 	// Called when this dialog is opened via the top toolbar
 	void open(Button* /*caller*/) override;
 
@@ -83,6 +91,10 @@ private:
 };
 
 class AnimationTrigger : public LabDialog {
+public:
+	~AnimationTrigger() override = default;
+
+private:
 	// Called when this dialog is opened via the top toolbar
 	void open(Button* /*caller*/) override;
 
@@ -105,11 +117,13 @@ private:
 class Actions : public LabDialog {
 public:
 	Actions() {
-		subDialogs.push_back(new DestroySubsystems());
-		subDialogs.push_back(new ChangeLoadout());
-		subDialogs.push_back(new WeaponFire());
-		subDialogs.push_back(new AnimationTrigger());
+		subDialogs.emplace_back(std::make_shared<DestroySubsystems>());
+		subDialogs.emplace_back(std::make_shared<ChangeLoadout>());
+		subDialogs.emplace_back(std::make_shared<WeaponFire>());
+		subDialogs.emplace_back(std::make_shared<AnimationTrigger>());
 	}
+
+	~Actions() override = default;
 
 	// Called when this dialog is opened via the top toolbar
 	void open(Button* /*caller*/) override;
@@ -133,5 +147,5 @@ public:
 
 private:
 	DialogWindow* dialogWindow = nullptr;
-	SCP_vector<LabDialog*> subDialogs;
+	SCP_vector<std::shared_ptr<LabDialog>> subDialogs;
 };

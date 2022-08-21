@@ -17,10 +17,13 @@
 #include "fireball/fireballs.h"
 #include "freespace.h"
 #include "globalincs/linklist.h"
+#include "globalincs/pstypes.h"
+#include "globalincs/vmallocator.h"
 #include "iff_defs/iff_defs.h"
 #include "io/timer.h"
 #include "jumpnode/jumpnode.h"
 #include "lighting/lighting.h"
+#include "lighting/lighting_profiles.h"
 #include "mission/missionparse.h" //For 2D Mode
 #include "network/multi.h"
 #include "network/multiutil.h"
@@ -46,6 +49,7 @@
 #include "weapon/weapon.h"
 #include "tracing/Monitor.h"
 #include "graphics/light.h"
+#include "graphics/color.h"
 
 
 
@@ -73,6 +77,7 @@ int Highest_ever_object_index=0;
 int Object_next_signature = 1;	//0 is bogus, start at 1
 int Object_inited = 0;
 int Show_waypoints = 0;
+
 
 //WMC - Made these prettier
 const char *Object_type_names[MAX_OBJECT_TYPES] = {
@@ -107,11 +112,14 @@ obj_flag_name Object_flag_names[] = {
 	{ Object::Object_Flags::Missile_protected,		"missile-protect-ship",		1,	},
 	{ Object::Object_Flags::Immobile,				"immobile",					1,	},
 	{ Object::Object_Flags::Collides,				"collides",					1,  },
+	{ Object::Object_Flags::Attackable_if_no_collide, "ai-attackable-if-no-collide", 1,},
 };
+
+extern const int Num_object_flag_names = sizeof(Object_flag_names) / sizeof(obj_flag_name);
 
 #ifdef OBJECT_CHECK
 checkobject::checkobject() 
-    : type(0), signature(0), parent_sig(0), parent_type(0) 
+    : type(0), signature(0), parent_sig(0) 
 {
     flags.reset();
 }
@@ -138,7 +146,7 @@ void object::clear()
 {
 	signature = num_pairs = collision_group_id = 0;
 	parent = parent_sig = instance = -1;
-	type = parent_type = OBJ_NONE;
+	type = OBJ_NONE;
     flags.reset();
 	pos = last_pos = vmd_zero_vector;
 	orient = last_orient = vmd_identity_matrix;
@@ -505,10 +513,8 @@ int obj_create(ubyte type,int parent_obj,int instance, matrix * orient,
 	obj->parent					= parent_obj;
 	if (obj->parent != -1)	{
 		obj->parent_sig		= Objects[parent_obj].signature;
-		obj->parent_type		= Objects[parent_obj].type;
 	} else {
 		obj->parent_sig = obj->signature;
-		obj->parent_type = obj->type;
 	}
 
 	obj->flags 					= flags;
@@ -526,6 +532,11 @@ int obj_create(ubyte type,int parent_obj,int instance, matrix * orient,
 
 	obj->n_quadrants = DEFAULT_SHIELD_SECTIONS; // Might be changed by the ship creation code
 	obj->shield_quadrant.resize(obj->n_quadrants);
+
+	// only ships are interpolated
+	if (obj->type == OBJ_SHIP){
+		obj->interp_info.reset(); // Multiplayer Interpolation info
+	}
 
 	return objnum;
 }
@@ -585,6 +596,7 @@ void obj_delete(int objnum)
 
 			physics_init(&objp->phys_info);
 			obj_snd_delete_type(OBJ_INDEX(objp));
+
 			return;
 		} else
 			ship_delete( objp );
@@ -632,6 +644,9 @@ void obj_delete(int objnum)
 	default:
 		Error( LOCATION, "Unhandled object type %d in obj_delete_all_that_should_be_dead", objp->type );
 	}
+
+	// clean up interpolation info
+	objp->interp_info.clean_up();
 
 	// delete any dock information we still have
 	dock_free_dock_list(objp);
@@ -768,7 +783,7 @@ void obj_player_fire_stuff( object *objp, control_info ci )
 			// so let's let the new system take over instead by excluding client player shots
 			// on the server.
 			if (!(MULTIPLAYER_MASTER) || (objp == Player_obj)) {
-				ship_fire_primary(objp, 0);
+				ship_fire_primary(objp);
 			}
 			
 		} else {
@@ -829,8 +844,6 @@ void obj_move_call_physics(object *objp, float frametime)
 {
 	TRACE_SCOPE(tracing::Physics);
 
-	int has_fired = -1;	//stop fireing stuff-Bobboau
-
 	//	Do physics for objects with OF_PHYSICS flag set and with some engine strength remaining.
 	if ( objp->flags[Object::Object_Flags::Physics] ) {
 		// only set phys info if ship is not dead
@@ -858,7 +871,7 @@ void obj_move_call_physics(object *objp, float frametime)
 
 				for (int i = 0; i < shipp->weapons.num_secondary_banks; i++) {
 					//if there are no missles left don't bother
-					if (shipp->weapons.secondary_bank_ammo[i] == 0)
+					if (!ship_secondary_has_ammo(&shipp->weapons, i))
 						continue;
 
 					int points = pm->missile_banks[i].num_slots;
@@ -873,7 +886,7 @@ void obj_move_call_physics(object *objp, float frametime)
 					if (points > missles_left) {
 						//there are more slots than missles left, so not all of the slots will have missles drawn on them
 						for (int k = next_point; k < next_point+missles_left; k ++) {
-							float &s_pct = shipp->secondary_point_reload_pct[i][k % points];
+							float &s_pct = shipp->secondary_point_reload_pct.get(i, k % points);
 							if (s_pct < 1.0)
 								s_pct += reload_time * frametime;
 							if (s_pct > 1.0)
@@ -882,7 +895,7 @@ void obj_move_call_physics(object *objp, float frametime)
 					} else {
 						//we don't have to worry about such things
 						for (int k = 0; k < points; k++) {
-							float &s_pct = shipp->secondary_point_reload_pct[i][k];
+							float &s_pct = shipp->secondary_point_reload_pct.get(i, k);
 							if (s_pct < 1.0)
 								s_pct += reload_time * frametime;
 							if (s_pct > 1.0)
@@ -944,18 +957,7 @@ void obj_move_call_physics(object *objp, float frametime)
 					obj_player_fire_stuff( objp, pp->ci );				
 				}
 			}
-
-			// fire streaming weapons for ships in here - ALL PLAYERS, regardless of client, single player, server, whatever.
-			// do stream weapon firing for all ships themselves. 
-			if(objp->type == OBJ_SHIP){
-				ship_fire_primary(objp, 1, 0);
-					has_fired = 1;
-			}
 		}
-	}
-	
-	if(has_fired == -1){
-		ship_stop_fire_primary(objp);	//if it hasn't fired do the "has just stoped fireing" stuff
 	}
 
 	//2D MODE
@@ -1021,10 +1023,6 @@ void obj_check_object( object *obj )
 	}
 	if ( CheckObjects[objnum].parent_sig != obj->parent_sig ) {
 		mprintf(( "Object parent sig changed!\n" ));
-		Int3();
-	}
-	if ( CheckObjects[objnum].parent_type != obj->parent_type ) {
-		mprintf(( "Object's parent type changed!\n" ));
 		Int3();
 	}
 }
@@ -1228,26 +1226,33 @@ void obj_move_all_post(object *objp, float frametime)
 						cast_light = 0;
 					}
 				}
-
-				if ( cast_light )	{
-					weapon_info * wi = &Weapon_info[Weapons[objp->instance].weapon_info_index];
-
-					if ( wi->render_type == WRT_LASER )	{
+				if (cast_light) {
+					weapon_info* wi = &Weapon_info[Weapons[objp->instance].weapon_info_index];
+					auto lp = lighting_profile::current();
+					hdr_color light_color;
+					// If there is no specific color set in the table, laser render weapons have a dynamic color.
+					if (!wi->light_color_set && wi->render_type == WRT_LASER) {
+						// intensity is stored in the light color even if no user setting is done.
+						light_color = hdr_color(&wi->light_color);
+						// Classic dynamic laser color is handled with an old color object
 						color c;
-						float r,g,b;
-
-						// get the laser color
 						weapon_get_laser_color(&c, objp);
-
-						r = i2fl(c.red)/255.0f;
-						g = i2fl(c.green)/255.0f;
-						b = i2fl(c.blue)/255.0f;
-
-						//light_add_point( &objp->pos, 10.0f, 20.0f, 1.0f, r, g, b, objp->parent );
-						light_add_point( &objp->pos, 10.0f, 100.0f, 1.0f, r, g, b, objp->parent );
+						light_color.set_rgb(&c);
 					} else {
-						light_add_point( &objp->pos, 10.0f, 20.0f, 1.0f, 1.0f, 1.0f, 1.0f, objp->parent );
-					} 
+						// If not a laser then all default information needed is stored in the weapon light color
+						light_color = hdr_color(&wi->light_color);
+					}
+					//handles both defaults and adjustments.
+					float r = wi->light_radius;
+					if (wi->render_type == WRT_LASER) {
+						r = lp->laser_light_radius.handle(r);
+						light_color.i(lp->laser_light_brightness.handle(light_color.i()));
+					} else {
+						r = lp->missile_light_radius.handle(r);
+						light_color.i(lp->missile_light_brightness.handle(light_color.i()));
+					}
+					if(r > 0.0f && light_color.i() > 0.0f)
+						light_add_point(&objp->pos, r, r, &light_color);
 				}
 			}
 
@@ -1260,7 +1265,6 @@ void obj_move_all_post(object *objp, float frametime)
 
 			if ( !physics_paused || (objp==Player_obj) ) {
 				ship_process_post( objp, frametime );
-				ship_model_update_instance(objp);
 			}
 
 			// Make any electrical arcs on ships cast light
@@ -1280,8 +1284,8 @@ void obj_move_all_post(object *objp, float frametime)
 							vm_vec_unrotate(&tmp2,&shipp->arc_pts[i][1],&objp->orient);
 							vm_vec_add2(&tmp2,&objp->pos);
 
-							light_add_point( &tmp1, 10.0f, 20.0f, frand(), 1.0f, 1.0f, 1.0f, -1 );
-							light_add_point( &tmp2, 10.0f, 20.0f, frand(), 1.0f, 1.0f, 1.0f, -1 );
+							light_add_point( &tmp1, 10.0f, 20.0f, frand(), 1.0f, 1.0f, 1.0f);
+							light_add_point( &tmp2, 10.0f, 20.0f, frand(), 1.0f, 1.0f, 1.0f);
 						}
 					}
 				}
@@ -1341,7 +1345,7 @@ void obj_move_all_post(object *objp, float frametime)
 					// P goes from 0 to 1 to 0 over the life of the explosion
 					// Only do this if rad is > 0.0000001f
 					if (rad > 0.0001f)
-						light_add_point( &objp->pos, rad * 2.0f, rad * 5.0f, intensity, r, g, b, -1 );
+						light_add_point( &objp->pos, rad * 2.0f, rad * 5.0f, intensity, r, g, b);
 				}
 			}
 
@@ -1377,8 +1381,8 @@ void obj_move_all_post(object *objp, float frametime)
 								vm_vec_unrotate(&tmp2,&db->arc_pts[i][1],&objp->orient);
 								vm_vec_add2(&tmp2,&objp->pos);
 
-								light_add_point( &tmp1, 10.0f, 20.0f, frand(), 1.0f, 1.0f, 1.0f, -1 );
-								light_add_point( &tmp2, 10.0f, 20.0f, frand(), 1.0f, 1.0f, 1.0f, -1 );
+								light_add_point( &tmp1, 10.0f, 20.0f, frand(), 1.0f, 1.0f, 1.0f );
+								light_add_point( &tmp2, 10.0f, 20.0f, frand(), 1.0f, 1.0f, 1.0f );
 							}
 						}
 					}
@@ -1502,20 +1506,48 @@ void obj_move_all(float frametime)
 		// pre-move
 		obj_move_all_pre(objp, frametime);
 
-		// store last pos and orient
-		objp->last_pos = cur_pos;
-		objp->last_orient = objp->orient;
+		bool interpolation_object = multi_oo_is_interp_object(objp);
+
+		// store last pos and orient, but only for non-interpolation objects
+		// interpolation objects will need to to work backwards from the last good position
+		// to prevent collision issues
+		if (!interpolation_object){
+			objp->last_pos = cur_pos;
+			objp->last_orient = objp->orient;
+		}
 
 		// Goober5000 - skip objects which don't move, but only until they're destroyed
 		if (!(objp->flags[Object::Object_Flags::Immobile] && objp->hull_strength > 0.0f)) {
 			// if this is an object which should be interpolated in multiplayer, do so
-			if (multi_oo_is_interp_object(objp)) {
-				multi_oo_interp(objp);
+			if (interpolation_object) {
+				objp->interp_info.interpolate(&objp->pos, &objp->orient, &objp->phys_info, &objp->last_pos, &objp->last_orient, objp->flags[Object::Object_Flags::Player_ship]);
 			} else {
 				// physics
 				obj_move_call_physics(objp, frametime);
 			}
 		}
+
+		// Submodel movement now happens here, right after physics movement.  It's not excluded by the "immobile" flag.
+		
+		// this flag only affects ship subsystems, not any other type of submodel movement
+		if (objp->type == OBJ_SHIP && !Ships[objp->instance].flags[Ship::Ship_Flags::Subsystem_movement_locked])
+			ship_move_subsystems(objp);
+
+		// do animation on this object
+		int model_instance_num = object_get_model_instance(objp);
+		if (model_instance_num > -1) {
+			polymodel_instance* pmi = model_get_instance(model_instance_num);
+			animation::ModelAnimation::stepAnimations(frametime, pmi);
+		}
+
+		// finally, do intrinsic motion on this object
+		// (this happens last because look_at is a type of intrinsic rotation,
+		// and look_at needs to happen last or the angle may be off by a frame)
+		model_do_intrinsic_motions(objp);
+
+		// For ships, we now have to make sure that all the submodel detail levels remain consistent.
+		if (objp->type == OBJ_SHIP)
+			ship_model_replicate_submodels(objp);
 
 		// move post
 		obj_move_all_post(objp, frametime);
@@ -1532,16 +1564,17 @@ void obj_move_all(float frametime)
 			if (objp == Player_obj && Player_ai->target_objnum != -1)
 				target = &Objects[Player_ai->target_objnum];
 
-			Script_system.SetHookObjects(2, "User", objp, "Target", target);
-			Script_system.RunCondition(CHA_ONWPEQUIPPED, objp);
-			Script_system.RemHookVars({"User", "Target"});
+			if (Script_system.IsActiveAction(CHA_ONWPEQUIPPED)) {
+				Script_system.SetHookObjects(2, "User", objp, "Target", target);
+				Script_system.RunCondition(CHA_ONWPEQUIPPED, objp);
+				Script_system.RemHookVars({"User", "Target"});
+			}
 		}
 	}
 
-	// Now that we've moved all the objects, move all the models that use intrinsic rotations.  We do that here because we already handled the
-	// ship models in obj_move_all_post, and this is more or less conceptually close enough to move the rest.  (Originally all models
-	// were intrinsic-rotated here, but for sequencing reasons, intrinsic ship rotations must happen along with regular ship rotations.)
-	model_do_intrinsic_rotations();
+	// Now apply intrinsic motion to things that aren't objects (like skyboxes).  This technically doesn't belong in the object code,
+	// but there isn't really a good place to put this, it doesn't hurt to have this here, and it's conceptually related to what's here.
+	model_do_intrinsic_motions(nullptr);
 
 	//	After all objects have been moved, move all docked objects.
 	objp = GET_FIRST(&obj_used_list);
@@ -1633,7 +1666,6 @@ void obj_render(object *obj)
 	gr_clear_states();
 
 	gr_reset_lighting();
-	gr_set_lighting(false, false);
 }
 
 void obj_queue_render(object* obj, model_draw_list* scene)
@@ -1642,19 +1674,18 @@ void obj_queue_render(object* obj, model_draw_list* scene)
 
 	if ( obj->flags[Object::Object_Flags::Should_be_dead] ) return;
 
-	Script_system.SetHookObject("Self", obj);
-	
-	auto skip_render = Script_system.IsConditionOverride(CHA_OBJECTRENDER, obj);
-	
-	// Always execute the hook content
-	Script_system.RunCondition(CHA_OBJECTRENDER, obj);
-
-	Script_system.RemHookVar("Self");
-
-	if (skip_render) {
-		// Script said that it want's to skip rendering
-		return;
+	if (Script_system.IsActiveAction(CHA_OBJECTRENDER)) {
+		Script_system.SetHookObject("Self", obj);
+		bool skip_render = Script_system.IsConditionOverride(CHA_OBJECTRENDER, obj);
+		// Always execute the hook content
+		Script_system.RunCondition(CHA_OBJECTRENDER, obj);
+		Script_system.RemHookVar("Self");
+		if (skip_render) {
+			// Script said that it want's to skip rendering
+			return;
+		}
 	}
+
 
 	switch ( obj->type ) {
 	case OBJ_NONE:
@@ -2032,6 +2063,9 @@ int object_get_model(const object *objp)
 
 int object_get_model_instance(const object *objp)
 {
+	if (objp == nullptr)
+		return -1;
+
 	switch (objp->type)
 	{
 		case OBJ_ASTEROID:

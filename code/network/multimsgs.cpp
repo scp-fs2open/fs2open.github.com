@@ -76,6 +76,7 @@
 #include "network/multi_sexp.h"
 #include "network/multi_mdns.h"
 #include "mission/missiongoals.h"
+#include "network/multi_interpolate.h"
 
 // #define _MULTI_SUPER_WACKY_COMPRESSION
 
@@ -760,7 +761,7 @@ void process_game_chat_packet( ubyte *data, header *hinfo )
 	PACKET_SET_SIZE();	
 
    // get the index of the sending player
-	color_index = find_player_id(from);
+	color_index = find_player_index(from);
 	player_index = color_index;
 	
 	// if we couldn't find the player - bail
@@ -775,7 +776,7 @@ void process_game_chat_packet( ubyte *data, header *hinfo )
 	if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
 		// if he's targeting a specific player, find out who it is
 		if(mode == MULTI_MSG_TARGET){
-			to_player_index = find_player_id(to);
+			to_player_index = find_player_index(to);
 		} else {
 			to_player_index = -1;
 		}	
@@ -956,7 +957,7 @@ void process_join_packet(ubyte* data, header* hinfo)
 			}
 
 			// set the query timestamp
-			Multi_restr_query_timestamp = timestamp(MULTI_QUERY_RESTR_STAMP);
+			Multi_restr_query_timestamp = ui_timestamp(MULTI_QUERY_RESTR_STAMP);
 			Netgame.flags |= NG_FLAG_INGAME_JOINING;
 
 			// determine what mode we're in
@@ -1747,7 +1748,7 @@ void process_leave_game_packet(ubyte* data, header* hinfo)
 	PACKET_SET_SIZE();
 
 	// determine who is dropping and printf out a notification
-	player_num = find_player_id(deader_id);
+	player_num = find_player_index(deader_id);
 	if (player_num == -1) {
 		nprintf(("Network", "Received leave game packet for unknown player, ignoring\n"));
 		return;
@@ -2459,7 +2460,7 @@ void process_netplayer_update_packet( ubyte *data, header *hinfo )
 	while(stop != 0xff){
 		// look the player up
 		GET_SHORT(player_id);
-		player_num = find_player_id(player_id);
+		player_num = find_player_index(player_id);
 		// if we couldn't find him, read in the bogus data
 		if((player_num == -1) || (Net_player == &Net_players[player_num])){
 			GET_INT(bogus.state);
@@ -2692,7 +2693,7 @@ void process_ship_kill_packet( ubyte *data, header *hinfo )
 
 	// do the normal thing when not ingame joining.  When ingame joining, simply kill off the ship.
 	if ( !(Net_player->flags & NETINFO_FLAG_INGAME_JOIN) ) {
-		ship_hit_kill( sobjp, oobjp, nullptr, percent_killed, sd );
+		ship_hit_kill( sobjp, oobjp, nullptr, percent_killed, sd != 0 );
 	} else {
         sobjp->flags.set(Object::Object_Flags::Should_be_dead);
 		ship_cleanup(sobjp->instance, SHIP_DESTROYED);
@@ -2761,8 +2762,6 @@ void process_weapon_kill_packet(ubyte *data, header *hinfo )
 	}
 
 	weapon_detonate(missile);
-	missile->flags.set(Object::Object_Flags::Should_be_dead);
-	Weapons[missile->instance].lifeleft = -1.0f;
 }
 
 // send a packet indicating a ship should be created
@@ -3113,7 +3112,7 @@ void send_secondary_fired_packet( ship *shipp, ushort starting_sig, int  /*start
 	if ( aip->target_objnum != -1) {
 		target_net_signature = Objects[aip->target_objnum].net_signature;
 		if ( (Objects[aip->target_objnum].type == OBJ_SHIP) && (aip->targeted_subsys != NULL) ) {
-			s_index = ship_get_index_from_subsys( aip->targeted_subsys, aip->target_objnum );
+			s_index = ship_get_subsys_index( aip->targeted_subsys );
 		}
 
 		if ( Objects[aip->target_objnum].type == OBJ_WEAPON ) {
@@ -3353,7 +3352,7 @@ void send_turret_fired_packet( int ship_objnum, int subsys_index, int weapon_obj
 
 	pnet_signature = Objects[ship_objnum].net_signature;
 
-	ssp = ship_get_indexed_subsys( &Ships[Objects[ship_objnum].instance], subsys_index, NULL );
+	ssp = ship_get_indexed_subsys( &Ships[Objects[ship_objnum].instance], subsys_index );
 	if(ssp == NULL){
 		return;
 	}
@@ -3445,7 +3444,7 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 	// find this turret, and set the position of the turret that just fired to be where it fired.  Quite a
 	// hack, but should be suitable.
 	shipp = &Ships[objp->instance];
-	ssp = ship_get_indexed_subsys( shipp, turret_index, NULL );
+	ssp = ship_get_indexed_subsys( shipp, turret_index );
 	if(ssp == NULL){
 		return;
 	}
@@ -3627,7 +3626,7 @@ void process_pong_packet(ubyte * /*data*/, header *hinfo)
 		
 	// if we're connected , see who sent us this pong
 	if(Net_player->flags & NETINFO_FLAG_CONNECTED){
-		lookup = find_player_id(hinfo->id);
+		lookup = find_player_index(hinfo->id);
 		if(lookup == -1){
 			return;
 		}
@@ -3773,7 +3772,7 @@ void process_mission_request_packet(ubyte * /*data*/, header *hinfo)
 	PACKET_SET_SIZE();
 
 	// fill in the address information of where this came from	
-	player_num = find_player_id(hinfo->id);
+	player_num = find_player_index(hinfo->id);
 	if(player_num == -1){
 		nprintf(("Network","Could not find player to send mission list items to!\n"));
 		return;
@@ -3872,7 +3871,7 @@ void process_multi_pause_packet(ubyte *data, header *hinfo)
 	PACKET_SET_SIZE();
 
 	// get who sent the packet	
-	player_index = find_player_id(hinfo->id);
+	player_index = find_player_index(hinfo->id);
 	// if we don't know who sent the packet, don't do anything
 	if(player_index == -1){
 		return;
@@ -3936,7 +3935,7 @@ void process_ingame_nak(ubyte *data, header *hinfo)
 	GET_INT(state);	
 	PACKET_SET_SIZE();
 	
-	pid = find_player_id(hinfo->id);
+	pid = find_player_index(hinfo->id);
 	if(pid < 0){
 		return;
 	}
@@ -4035,7 +4034,7 @@ void process_endgame_packet(ubyte * /*data*/, header *hinfo)
 	// if I'm the server, I should evaluate whether the sender is authorized to end the game
 	if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
 		// determine who this came from and make sure he is allowed to end the game		
-		player_num = find_player_id(hinfo->id);
+		player_num = find_player_index(hinfo->id);
 		Assert(player_num != -1);
 		if(player_num < 0){
 			return;
@@ -4123,7 +4122,7 @@ void process_observer_update_packet(ubyte *data, header *hinfo)
 	object *target_obj;
 	offset = HEADER_LENGTH;
 
-	obs_num = find_player_id(hinfo->id);
+	obs_num = find_player_index(hinfo->id);
 	
 	memset(&bogus_pi,0,sizeof(physics_info));
 	ret = multi_pack_unpack_position( 0, data + offset, &g_vec );
@@ -4207,7 +4206,7 @@ void process_netplayer_slot_packet(ubyte *data, header *hinfo)
 		GET_USHORT(net_sig);
 		GET_SHORT(ship_class);
 		GET_DATA(ship_index);
-		player_num = find_player_id(player_id);
+		player_num = find_player_index(player_id);
 		if(player_num < 0){
 			nprintf(("Network","Error looking up player for object/slot assignment!!\n"));
 		} else {
@@ -4380,7 +4379,7 @@ void process_ship_status_packet(ubyte *data, header *hinfo)
    // this will be handled differently client and server side. Duh.
 	if(Net_player->flags & NETINFO_FLAG_AM_MASTER){                  // SERVER SIDE
 		// find which net-player has sent us butotn information		
-		player_num = find_player_id(hinfo->id);
+		player_num = find_player_index(hinfo->id);
 		Assert(player_num >= 0);
 		if(player_num < 0){
 			return;
@@ -4439,7 +4438,7 @@ void send_player_order_packet(int type, int index, int cmd)
 	ADD_USHORT( target_net_signature );
 
 	if ( (Player_ai->target_objnum != -1) && (Player_ai->targeted_subsys != NULL) ) {
-		s_index = ship_get_index_from_subsys( Player_ai->targeted_subsys, Player_ai->target_objnum );
+		s_index = ship_get_subsys_index( Player_ai->targeted_subsys );
 	}
 
 	ADD_SHORT(static_cast<short>(s_index));
@@ -4480,7 +4479,7 @@ void process_player_order_packet(ubyte *data, header *hinfo)
 
 	PACKET_SET_SIZE();	
 
-	player_num = find_player_id(hinfo->id);
+	player_num = find_player_index(hinfo->id);
 	if(player_num == -1){
 		nprintf(("Network","Received player order packet from unknown player\n"));		
 		return;
@@ -5551,7 +5550,7 @@ void process_wss_request_packet(ubyte *data, header *hinfo)
 
 	// determine who this request is from	
 	GET_SHORT(player_id);	
-	player_num = find_player_id(player_id);	
+	player_num = find_player_index(player_id);	
 
 	// read in the request data	
 	GET_INT(from_slot);
@@ -5637,7 +5636,7 @@ void process_wss_update_packet(ubyte *data, header *hinfo)
 		PACKET_SET_SIZE();
 
 		// determine where this came from		
-		player_index = find_player_id(hinfo->id);		
+		player_index = find_player_index(hinfo->id);		
 		Assert(player_index != -1);		
 		if(player_index < 0){
 			return;
@@ -5702,7 +5701,7 @@ void process_firing_info_packet( ubyte *data, header *hinfo )
 	GET_DATA( sdual );
 	PACKET_SET_SIZE();	
 
-	player_num = find_player_id(hinfo->id);
+	player_num = find_player_index(hinfo->id);
 	if(player_num < 0){
 		nprintf(("Network","Received firing info packet from unknown player, ignoring\n"));
 		return;
@@ -5805,7 +5804,7 @@ void process_player_settings_packet(ubyte *data, header *hinfo)
 	while(stop != 0xff){
 		// lookup the player
 		GET_SHORT(player_id);
-		player_num = find_player_id(player_id);
+		player_num = find_player_index(player_id);
 
 		// make sure this is a valid player
 		if(player_num == -1){
@@ -6700,7 +6699,7 @@ void process_player_stats_block_packet(ubyte *data, header *hinfo)
 
 	// get the player who these stats are for
 	GET_SHORT(player_id);	
-	player_num = find_player_id(player_id);
+	player_num = find_player_index(player_id);
 	if (player_num == -1) {
 		nprintf(("Network", "Couldn't find player for stats update!\n"));
 		ml_string("Couldn't find player for stats update!\n");
@@ -7053,7 +7052,7 @@ void process_host_restr_packet(ubyte *data, header *hinfo)
 			Multi_join_restr_mode = mode;
 
 			// set the timestamp
-			Multi_restr_query_timestamp = timestamp(MULTI_QUERY_RESTR_STAMP);
+			Multi_restr_query_timestamp = ui_timestamp(MULTI_QUERY_RESTR_STAMP);
 
 			// notify the host of the event
 			gamesnd_play_iface(InterfaceSounds::BRIEF_STAGE_CHG_FAIL);
@@ -7065,7 +7064,7 @@ void process_host_restr_packet(ubyte *data, header *hinfo)
 			Assert(Game_mode & GM_STANDALONE_SERVER);		
 
 			// let the player join if the timestamp has not already elapsed on the server
-			if(Multi_restr_query_timestamp != -1){
+			if(Multi_restr_query_timestamp.isValid()){
 				multi_process_valid_join_request(&Multi_restr_join_request,&Multi_restr_addr,(int)mode);
 			}
 			break;	
@@ -7074,7 +7073,7 @@ void process_host_restr_packet(ubyte *data, header *hinfo)
 		case 2 :
 			Assert(Game_mode & GM_STANDALONE_SERVER);
 			Netgame.flags &= ~(NG_FLAG_INGAME_JOINING);
-			Multi_restr_query_timestamp = -1;
+			Multi_restr_query_timestamp = UI_TIMESTAMP::invalid();
 			break;
 	}
 }
@@ -7265,7 +7264,7 @@ void process_client_update_packet(ubyte *data, header *hinfo)
 	// if we are paused, get who paused
 	if(is_paused){		
 		GET_SHORT(pauser);
-		player_index = find_player_id(pauser);
+		player_index = find_player_index(pauser);
 		if(player_index != -1){
 			Multi_pause_pauser = &Net_players[player_index];
 		} else {
@@ -7524,7 +7523,7 @@ void send_homing_weapon_info( int weapon_num )
 
 		// get the subsystem index.
 		if ( (homing_object->type == OBJ_SHIP) && (wp->homing_subsys != NULL) ) {
-			s_index = ship_get_index_from_subsys( wp->homing_subsys, OBJ_INDEX(homing_object) );
+			s_index = ship_get_subsys_index( wp->homing_subsys );
 		}
 	}
 
@@ -7762,7 +7761,6 @@ void process_NEW_primary_fired_packet(ubyte *data, header *hinfo)
 {
 	int offset; 
 	object* objp;	
-	ship *shipp;
 	ushort shooter_sig;	
 
 	// read all packet info
@@ -7784,26 +7782,13 @@ void process_NEW_primary_fired_packet(ubyte *data, header *hinfo)
 	if(objp->instance < 0 || objp->instance >= MAX_SHIPS){
 		return;
 	}
-	shipp = &Ships[objp->instance];
 
 	// if we're in client firing mode, ignore ones for myself	
 	if((Player_obj != nullptr) && (Player_obj == objp)){		
 		return;
 	}
 		
-	ship_fire_primary( objp, 0, 1 );
-
-	// Karajorma - It's still a hack but at least this way it only affects AI ships
-	if (!(objp->flags[Object::Object_Flags::Player_ship]))
-	{
-		// Juke - this is the hackiest hack, but hopefully it will fix stream weapon 
-		// notifications generated by AI ships.
-		bool flags = shipp->flags[Ship::Ship_Flags::Trigger_down];
-
-		shipp->flags.set(Ship::Ship_Flags::Trigger_down);
-		ship_fire_primary( objp, 1, 1 );
-		shipp->flags.set(Ship::Ship_Flags::Trigger_down, flags);
-	}
+	ship_fire_primary( objp, 1 );
 }
 
 const int NON_HOMING_PACKET_MISSILE	= (1 << 0);
@@ -7837,8 +7822,8 @@ void send_non_homing_fired_packet(ship* shipp, int banks_or_number_of_missiles_f
 	}
 
 	object* ref_objp = multi_get_network_object(multi_client_lookup_ref_obj_net_sig());
-	if (ref_objp == nullptr) {
-		mprintf(("Unable to get accurate reference object for non-homing packet.\n"));
+	if (ref_objp == nullptr || ref_objp->type != OBJ_SHIP) {
+		mprintf(("Unable to get accurate reference object for non-homing packet, because %s\n", (ref_objp == nullptr) ? "it was null." : "it was not a ship!"));
 		if (!secondary) {
 			send_NEW_primary_fired_packet(shipp, banks_or_number_of_missiles_fired);
 		}
@@ -7858,7 +7843,7 @@ void send_non_homing_fired_packet(ship* shipp, int banks_or_number_of_missiles_f
 
 	// We need the time elpased, so send the last frame we got from the server and how much time has happened since then.
 	int last_received_frame = multi_client_lookup_frame_idx();
-	auto time_elapsed = (ushort)(timestamp() - multi_client_lookup_frame_timestamp());
+	auto time_elapsed = static_cast<ushort>(timestamp_since(multi_client_lookup_frame_timestamp()));
 
 	ADD_INT(last_received_frame);
 	ADD_USHORT(time_elapsed);
@@ -7952,25 +7937,30 @@ void process_non_homing_fired_packet(ubyte* data, header* hinfo)
 
 	object* objp_ref = multi_get_network_object(target_ref);
 
-	if (objp_ref == nullptr) {
+	if (objp_ref == nullptr || objp_ref->type != OBJ_SHIP) {
 		// new way failed, use the old new way.
+
+		if (objp_ref != nullptr){
+			mprintf(("Rollback's reference object was not a ship! It was a %d. Get Cyborg!!!\n", objp_ref->type));
+		}
+
 		if (secondary) {
 			// if this is a rollback shot from a dumbfire secondary, we have to mark this as a 
 			// rollback shot so the client doesn't get an extra shot.
 			ship_fire_secondary(objp, 0, true);
 		}
 		else {
-			ship_fire_primary(objp, 0, 1);
+			ship_fire_primary(objp, 1);
 		}
 		return;
 	}
 
 	// figure out correct start frame
-	int frame = multi_ship_record_find_frame(client_frame, (int)time_elapsed);
+	int frame = multi_ship_record_find_frame(client_frame, static_cast<int>(time_elapsed));
 
 	if (frame > -1) {
 		// adjust time so that we can interpolate the position and orientation that was seen on the client.
-		int time_after_frame = multi_ship_record_find_time_after_frame(client_frame, frame, (int)time_elapsed);
+		int time_after_frame = multi_ship_record_find_time_after_frame(client_frame, frame, static_cast<int>(time_elapsed));
 		Assertion(time_after_frame >= 0, "Primary fire packet processor found an invalid time_after_frame of %d", time_after_frame);
 
 		vec3d new_tar_pos = multi_ship_record_lookup_position(objp_ref, frame);
@@ -8015,8 +8005,99 @@ void process_non_homing_fired_packet(ubyte* data, header* hinfo)
 			ship_fire_secondary(objp, 0, true);
 		}
 		else {
-			ship_fire_primary(objp, 0, 1);
+			ship_fire_primary(objp, 1);
 		}
+	}
+}
+
+static constexpr size_t animation_direction_bit = 1 << 0;
+static constexpr size_t animation_forced_bit = 1 << 1;
+static constexpr size_t animation_instant_bit = 1 << 2;
+static constexpr size_t animation_pause_bit = 1 << 3;
+
+void send_animation_triggered_packet(unsigned int animationId, object* parent_object, ushort special_mode, const animation::ModelAnimationDirection& direction, bool force, bool instant, bool pause, const int* /*time*/) {
+	int packet_size;
+	ushort netsig_to_send = 0;
+	ubyte data[MAX_PACKET_SIZE];
+
+	Assertion(special_mode != 0 || parent_object != nullptr, "Tried to synchronize an animation with neither an attached object, nor a valid special object mode.");
+	if (special_mode == 0) {
+		if (parent_object == nullptr)
+			return;
+
+		netsig_to_send = parent_object->net_signature;
+	}
+
+	BUILD_HEADER(ANIMATION_TRIGGERED);
+
+	ADD_UINT(animationId);
+	ADD_USHORT(netsig_to_send);
+	ADD_USHORT(special_mode); // Currently empty. Reserved to find special pmi's for non-object animations
+	
+	ubyte metadata = (direction == animation::ModelAnimationDirection::RWD ? animation_direction_bit : 0)
+		| (force ? animation_forced_bit : 0)
+		| (instant ? animation_instant_bit : 0)
+		| ( pause ? animation_pause_bit : 0);
+	ADD_DATA(metadata);
+	int actualTimestamp = 0; //If animation desync becomes a problem, send the ping-delay for animation rollback
+	ADD_INT(actualTimestamp);
+
+	// if I'm the server, send to everyone, else send to the server to be rebroadcasted
+	if (Net_player->flags & NETINFO_FLAG_AM_MASTER) {
+		multi_io_send_to_all_reliable(data, packet_size);
+	}
+	else {
+		multi_io_send_reliable(Net_player, data, packet_size);
+	}
+}
+
+void process_animation_triggered_packet(ubyte* data, header* hinfo) {
+	int offset; // linked;	
+	unsigned int animationId;
+	ushort netsig, special_mode;
+	ubyte metadata;
+	int time;
+
+	// read all packet info
+	offset = HEADER_LENGTH;
+	GET_UINT(animationId);
+	GET_USHORT(netsig);
+	GET_USHORT(special_mode);
+	GET_DATA(metadata);
+	GET_INT(time);
+
+	PACKET_SET_SIZE();
+
+	bool forced, instant, pause;
+	animation::ModelAnimationDirection direction;
+	direction = (metadata & (animation_direction_bit)) ? animation::ModelAnimationDirection::RWD : animation::ModelAnimationDirection::FWD;
+	forced = metadata & (animation_forced_bit);
+	instant = metadata & (animation_instant_bit);
+	pause = metadata & (animation_pause_bit);
+
+	float delay = time * 0.001f;
+
+	object* objp = multi_get_network_object(netsig);
+
+	if (objp == nullptr && special_mode == 0) //This means there is neither a good object, nor a known special mode. Don't even send the animation trigger on, just abort.
+		return;
+
+	auto animation = animation::ModelAnimationSet::s_animationById.find(animationId);
+	if (animation != animation::ModelAnimationSet::s_animationById.end()) {
+		if (special_mode == 0) {
+			//with the above exit condition, this guarantees a non-null objp
+			int model_instance_num = object_get_model_instance(objp);
+			if(model_instance_num > -1)
+				animation->second->start(model_get_instance(model_instance_num), direction, forced, instant, pause, &delay);
+		}
+		else {
+			//Currently empty. Reserved to find special pmi's for non-object animations
+		}
+	}
+
+	//Need to broadcast back to other clients
+	if (Net_player->flags & NETINFO_FLAG_AM_MASTER) {
+		send_animation_triggered_packet(animationId, objp, special_mode, direction, forced, instant, pause, &time);
 	}
 }
 
@@ -8121,7 +8202,7 @@ void send_beam_fired_packet(const beam_fire_info *fire_info, const beam_info *ov
 			return;
 		}
 	} else if (fire_info->shooter && fire_info->turret) {
-		shooter_subsys_index = ship_get_index_from_subsys(fire_info->turret, OBJ_INDEX(fire_info->shooter));
+		shooter_subsys_index = ship_get_subsys_index(fire_info->turret);
 
 		Assertion(shooter_subsys_index >= 0, "BEAM fired from unknown subsystem!");
 		Assertion(shooter_subsys_index < SHRT_MAX, "BEAM fired from a subsystem beyond max limits!");
@@ -8135,7 +8216,7 @@ void send_beam_fired_packet(const beam_fire_info *fire_info, const beam_info *ov
 	target_sig = (fire_info->target) ? fire_info->target->net_signature : 0;
 
 	if (fire_info->target && fire_info->target_subsys) {
-		target_subsys_index = ship_get_index_from_subsys(fire_info->target_subsys, OBJ_INDEX(fire_info->target));
+		target_subsys_index = ship_get_subsys_index(fire_info->target_subsys);
 	}
 
 	u_beam_info = static_cast<short>(fire_info->beam_info_index);
@@ -8288,6 +8369,7 @@ void process_beam_fired_packet(ubyte *data, header *hinfo)
 	fire_info.beam_info_index = u_beam_info;
 	fire_info.shooter = multi_get_network_object(shooter_sig);
 	fire_info.target = multi_get_network_object(target_sig);
+	fire_info.burst_index = 0;
 
 	if ( fire_info.target && (target_subsys_index >= 0) ) {
 		ship *targetp = &Ships[fire_info.target->instance];
@@ -8309,7 +8391,7 @@ void process_beam_fired_packet(ubyte *data, header *hinfo)
 			polymodel *pm = model_get( Ship_info[shipp->ship_info_index].model_num );
 			float field_of_fire = Weapon_info[fire_info.beam_info_index].field_of_fire;
 
-			fire_info.targeting_laser_offset = pm->gun_banks[bank].pnt[point];
+			fire_info.local_fire_postion = pm->gun_banks[bank].pnt[point];
 
 			shipp->beam_sys_info.turret_norm.xyz.x = 0.0f;
 			shipp->beam_sys_info.turret_norm.xyz.y = 0.0f;
@@ -8318,8 +8400,8 @@ void process_beam_fired_packet(ubyte *data, header *hinfo)
 			shipp->beam_sys_info.turret_gun_sobj = pm->detail[0];
 			shipp->beam_sys_info.turret_num_firing_points = 1;
 			shipp->beam_sys_info.turret_fov = cosf((field_of_fire != 0.0f) ? field_of_fire : 180);
-			shipp->beam_sys_info.pnt = fire_info.targeting_laser_offset;
-			shipp->beam_sys_info.turret_firing_point[0] = fire_info.targeting_laser_offset;
+			shipp->beam_sys_info.pnt = fire_info.local_fire_postion;
+			shipp->beam_sys_info.turret_firing_point[0] = fire_info.local_fire_postion;
 
 			shipp->fighter_beam_turret_data.disruption_timestamp = timestamp(0);
 			shipp->fighter_beam_turret_data.turret_next_fire_pos = 0;
@@ -8564,7 +8646,7 @@ void send_flak_fired_packet(int ship_objnum, int subsys_index, int weapon_objnum
 	Assert ( objp->type == OBJ_WEAPON );	
 	pnet_signature = Objects[ship_objnum].net_signature;
 
-	ssp = ship_get_indexed_subsys( &Ships[Objects[ship_objnum].instance], subsys_index, NULL );
+	ssp = ship_get_indexed_subsys( &Ships[Objects[ship_objnum].instance], subsys_index );
 	if(ssp == NULL){
 		return;
 	}
@@ -8648,7 +8730,7 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 	// find this turret, and set the position of the turret that just fired to be where it fired.  Quite a
 	// hack, but should be suitable.
 	shipp = &Ships[objp->instance];
-	ssp = ship_get_indexed_subsys( shipp, turret_index, NULL );
+	ssp = ship_get_indexed_subsys( shipp, turret_index );
 	if(ssp == NULL){
 		return;
 	}
@@ -8835,7 +8917,7 @@ void process_bytes_recvd_packet(ubyte *data, header *hinfo)
 	}
 
 	// make sure we know what player sent this
-	pid = find_player_id(hinfo->id);
+	pid = find_player_index(hinfo->id);
 	if((pid < 0) || (pid >= MAX_PLAYERS)){
 		return;
 	}
@@ -8963,7 +9045,7 @@ void process_self_destruct_packet(ubyte *data, header *hinfo)
 	PACKET_SET_SIZE();
 
 	// get the player
-	np_index = find_player_id(hinfo->id);
+	np_index = find_player_index(hinfo->id);
 	if(np_index < 0){
 		return;
 	}

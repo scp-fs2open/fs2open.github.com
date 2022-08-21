@@ -144,7 +144,17 @@ void CMainFrame::init_tools() {
 	m_new_ship_type_combo_box.SetCurSel(0);
 }
 
-void CMainFrame::OnClose() {
+void CMainFrame::OnClose()
+{
+	// CFrameWnd::OnClose() doesn't provide a way for the caller to tell that the close has been cancelled,
+	// so let's extract that particular logic and do it manually here
+	if (!FREDDoc_ptr->SaveModified())
+		return;
+
+	// and now if we *are* closing, prevent the dialog from coming up
+	FREDDoc_ptr->SetModifiedFlag(FALSE);
+
+	// do the closing stuff
 	theApp.write_ini_file();
 	SaveBarState("Tools state");
 	CFrameWnd::OnClose();
@@ -262,7 +272,7 @@ void CMainFrame::OnHelpInputInterface() {
 void CMainFrame::OnInitMenu(CMenu* pMenu) {
 	int i;
 	CString str;
-	extern int ID_SHOW_IFF[MAX_IFFS];
+	extern SCP_vector<int> ID_SHOW_IFF;
 
 	if (Undo_available && !FREDDoc_ptr->undo_desc[1].IsEmpty())
 		str = "Undo " + FREDDoc_ptr->undo_desc[1] + "\tCtrl+Z";
@@ -273,8 +283,9 @@ void CMainFrame::OnInitMenu(CMenu* pMenu) {
 		pMenu->ModifyMenu(ID_EDIT_UNDO, MF_BYCOMMAND, ID_EDIT_UNDO, str);
 
 	// Goober5000 - do the IFF menu options
-	for (i = 0; i < MAX_IFFS; i++) {
-		if (i < Num_iffs) {
+	for (i = 0; i < (int)ID_SHOW_IFF.size(); i++) {
+		//This should eventually be properly dynamic as well
+		if (i < (int)Iff_info.size()) {
 			char text[NAME_LENGTH + 7];
 			sprintf(text, "Show %s", Iff_info[i].iff_name);
 

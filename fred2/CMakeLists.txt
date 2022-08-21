@@ -13,16 +13,18 @@ set(FRED2_SOURCES
 	fictionviewerdlg.h
 	addvariabledlg.cpp
 	addvariabledlg.h
+	addmodifycontainerdlg.cpp
+	addmodifycontainerdlg.h
 	adjustgriddlg.cpp
 	adjustgriddlg.h
 	asteroideditordlg.cpp
 	asteroideditordlg.h
-	backgroundchooser.cpp
-	backgroundchooser.h
 	bgbitmapdlg.cpp
 	bgbitmapdlg.h
 	briefingeditordlg.cpp
 	briefingeditordlg.h
+	calcrelativecoordsdlg.cpp
+	calcrelativecoordsdlg.h
 	campaigneditordlg.cpp
 	campaigneditordlg.h
 	campaignfilelistbox.cpp
@@ -43,6 +45,8 @@ set(FRED2_SOURCES
 	dialog1.h
 	dumpstats.cpp
 	dumpstats.h
+	editcontainernamedlg.cpp
+	editcontainernamedlg.h
 	editor.h
 	eventeditor.cpp
 	eventeditor.h
@@ -65,6 +69,8 @@ set(FRED2_SOURCES
 	initialships.h
 	initialstatus.cpp
 	initialstatus.h
+	listitemchooser.cpp
+	listitemchooser.h
 	mainfrm.cpp
 	mainfrm.h
 	management.cpp

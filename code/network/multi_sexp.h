@@ -13,7 +13,7 @@
 
 void sexp_packet_received(ubyte *received_packet, int num_ubytes);
 
-#if SCP_COMPILER_IS_GNU
+#if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic push
 // This suppresses a GCC bug where it thinks that some of the enum fields below shadow global declarations even though
 // the enum class names are not visible in the global namespace
@@ -37,7 +37,7 @@ enum class packet_data_type {
 	WING				= 12,
 };
 
-#if SCP_COMPILER_IS_GNU
+#if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic pop
 #endif
 
@@ -64,6 +64,7 @@ private:
     bool packet_flagged_invalid = false;
     bool callback_started = false;
     int op_num = 0;
+    int op_index = 0;
 
     /**
     * Checks if there is enough space in the packet currently being stuffed for the data that is about to be written into it
@@ -82,6 +83,12 @@ private:
     * Checks that the previous SEXP in the packet has correctly removed all its data from the packet. Attempts to fix it if it hasn't.
     */
     bool argument_count_is_valid();
+
+    /**
+     * Gets text name of operator for debugging purposes
+     */
+    const char *get_operator_name();
+
 public:
     int sexp_bytes_left = 0;
 

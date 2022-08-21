@@ -39,8 +39,13 @@ add_file_folder("mod"
     mod/test_mod_table.cpp
 )
 
+add_file_folder("model"
+    model/test_modelread.cpp
+)
+
 add_file_folder("Parse"
     parse/test_parselo.cpp
+    parse/test_replace.cpp
 )
 
 add_file_folder("Pilotfile"

@@ -592,12 +592,9 @@ void bm_convert_format(bitmap *bmp, ushort flags) {
 		return;
 
 	if (Is_standalone) {
-		Assert(bmp->bpp == 8);
 		return;
 	} else {
-		if (flags & BMP_AABITMAP)
-			Assert(bmp->bpp == 8);
-		else
+		if(!(flags & BMP_AABITMAP))
 			Assert((bmp->bpp == 16) || (bmp->bpp == 32));
 	}
 
@@ -1120,7 +1117,7 @@ static int bm_load_info(BM_TYPE type, const char *filename, CFILE *img_cfp, int 
 	return 0;
 }
 
-int bm_load(const char *real_filename) {
+int bm_load(const char *real_filename, int dir_type) {
 	int free_slot = -1;
 	int w, h, bpp = 8;
 	int rc = 0;
@@ -1152,6 +1149,7 @@ int bm_load(const char *real_filename) {
 	if (Is_standalone) {
 		char standalone_filename[MAX_FILENAME_LEN] = "right_bracket";
 		strcpy_s(filename, standalone_filename);
+		dir_type = CF_TYPE_INTERFACE;
 	}
 
 	// safety catch for strcat...
@@ -1164,11 +1162,11 @@ int bm_load(const char *real_filename) {
 	// Lets find out what type it is
 	{
 		// see if it's already loaded (checks for any type with filename)
-		if (bm_load_sub_fast(filename, &handle))
+		if (bm_load_sub_fast(filename, &handle, dir_type))
 			return handle;
 
 		// if we are still here then we need to fall back to a file-based search
-		int rval = bm_load_sub_slow(filename, BM_NUM_TYPES, bm_ext_list, &img_cfp);
+		int rval = bm_load_sub_slow(filename, BM_NUM_TYPES, bm_ext_list, &img_cfp, dir_type);
 
 		if (rval < 0)
 			return -1;
@@ -1224,7 +1222,7 @@ int bm_load(const char *real_filename) {
 	entry->bm.palette = nullptr;
 	entry->num_mipmaps = mm_lvl;
 	entry->mem_taken = (size_t)bm_size;
-	entry->dir_type = CF_TYPE_ANY;
+	entry->dir_type = dir_type;
 	entry->handle = handle;
 
 	entry->load_count++;
@@ -1235,8 +1233,8 @@ int bm_load(const char *real_filename) {
 	return handle;
 }
 
-int bm_load(const SCP_string& filename) {
-	return bm_load(filename.c_str());
+int bm_load(const SCP_string& filename, int dir_type) {
+	return bm_load(filename.c_str(), dir_type);
 }
 
 bool bm_load_and_parse_eff(const char *filename, int dir_type, int *nframes, int *nfps, int *key, BM_TYPE *type) {
@@ -1424,7 +1422,7 @@ static int bm_load_image_data(int handle, int bpp, ushort flags, bool nodebug)
 	return 0;
 }
 
-int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *keyframe, float *total_time, bool can_drop_frames, int dir_type) {
+int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *keyframe, float *total_time, bool can_drop_frames, int dir_type, bool rethrow_exceptions) {
 	int	i, n;
 	anim	the_anim;
 	CFILE	*img_cfp = nullptr;
@@ -1466,6 +1464,7 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 	if (Is_standalone) {
 		char standalone_filename[MAX_FILENAME_LEN] = "cursorweb";
 		strcpy_s(filename, standalone_filename);
+		dir_type = CF_TYPE_INTERFACE;
 	}
 
 	// safety catch for strcat...
@@ -1594,10 +1593,15 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 			img_size = the_apng.imgsize();
 		}
 		catch (const apng::ApngException& e) {
-			mprintf(("Failed to load apng: %s\n", e.what() ));
 			if (img_cfp != nullptr)
 				cfclose(img_cfp);
-			return -1;
+			if (rethrow_exceptions) {
+				throw e;
+			}
+			else {
+				mprintf(("Failed to load apng: %s\n", e.what()));
+				return -1;
+			}
 		}
 	}
 	else {
@@ -1789,7 +1793,7 @@ int bm_load_either(const char *filename, int *nframes, int *fps, int *keyframe, 
 		*fps = 0;
 	int tidx = bm_load_animation(filename, nframes, fps, keyframe, nullptr, can_drop_frames, dir_type);
 	if (tidx == -1) {
-		tidx = bm_load(filename);
+		tidx = bm_load(filename, dir_type);
 		if (tidx != -1 && nframes != NULL)
 			*nframes = 1;
 	}
@@ -1868,9 +1872,7 @@ bitmap * bm_lock(int handle, int bpp, ushort flags, bool nodebug) {
 	}
 	// otherwise do it as normal
 	else {
-		if (flags & BMP_AABITMAP) {
-			Assert(bpp == 8);
-		} else if ((flags & BMP_TEX_NONCOMP) && (!(flags & BMP_TEX_COMP))) {
+		if ((flags & BMP_TEX_NONCOMP) && (!(flags & BMP_TEX_COMP))) {
 			Assert(bpp >= 16);  // cheating but bpp passed isn't what we normally end up with
 		} else if ((flags & BMP_TEX_DXT1) || (flags & BMP_TEX_DXT3) || (flags & BMP_TEX_DXT5) || (flags & BMP_TEX_BC7)) {
 			Assert(bpp >= 16); // cheating but bpp passed isn't what we normally end up with
@@ -1880,8 +1882,6 @@ bitmap * bm_lock(int handle, int bpp, ushort flags, bool nodebug) {
 				(be->type == BM_TYPE_CUBEMAP_DXT3) ||
 				(be->type == BM_TYPE_CUBEMAP_DXT5));
 			Assert(bpp >= 16);
-		} else {
-			Assert(0);		//?
 		}
 	}
 

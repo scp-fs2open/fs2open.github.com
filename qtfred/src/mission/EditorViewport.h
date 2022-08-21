@@ -20,11 +20,12 @@ struct ViewSettings {
 	bool Aa_gridlines = false;
 	bool Show_coordinates = false;
 	bool Show_outlines = false;
+	bool Draw_outlines_on_selected_ships = true;
 	bool Show_grid_positions = true;
 	bool Show_dock_points = false;
 	bool Show_starts = true;
 	bool Show_ships = true;
-	std::array<bool, MAX_IFFS> Show_iff;
+	SCP_vector<bool> Show_iff;
 	bool Show_ship_info = true;
 	bool Show_ship_models = true;
 	bool Show_paths_fred = false;
@@ -32,7 +33,7 @@ struct ViewSettings {
 	bool FullDetail = false;
 	bool Show_waypoints = true;
 	bool Show_compass = true;
-	bool Move_ships_when_undocking = true;
+	bool Highlight_selectable_subsys = false;
 
 	ViewSettings();
 };
@@ -160,6 +161,7 @@ class EditorViewport {
 
 	bool Group_rotate = true;
 	bool Lookat_mode = false;
+	bool Move_ships_when_undocking = true;
 
 	Editor* editor = nullptr;
 	FredRenderer* renderer = nullptr;

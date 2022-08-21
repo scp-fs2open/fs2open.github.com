@@ -643,14 +643,29 @@ void brief_init_colors()
 {
 }
 
+bool brief_special_closeup(int briefing_icon_type)
+{
+	switch (briefing_icon_type)
+	{
+		case ICON_PLANET:
+		case ICON_ASTEROID_FIELD:
+		case ICON_WAYPOINT:
+		case ICON_UNKNOWN:
+		case ICON_UNKNOWN_WING:
+		case ICON_JUMP_NODE:
+			return true;
+	}
+	return false;
+}
+
 briefing_icon_info *brief_get_icon_info(brief_icon *bi)
 {
 	if (bi->ship_class < 0)
-		return NULL;
+		return nullptr;
 	ship_info *sip = &Ship_info[bi->ship_class];
 
 	// ship info might override the usual briefing icon
-	if (sip->bii_index_ship >= 0)
+	if ((!brief_special_closeup(bi->type) || Custom_briefing_icons_always_override_standard_icons) && sip->bii_index_ship >= 0)
 	{
 		if (bi->flags & BI_USE_WING_ICON)
 		{
@@ -1681,7 +1696,7 @@ int brief_color_text_init(const char* src, int w, const char default_color, int 
 	}
 
 	Assert(src != NULL);
-	n_lines = split_str(src, w, n_chars, p_str, BRIEF_META_CHAR);
+	n_lines = split_str(src, w, n_chars, p_str, MAX_BRIEF_LINE_LEN, BRIEF_META_CHAR);
 	Assert(n_lines >= 0);
 
 	//for compatability reasons truncate text from everything except the fiction viewer

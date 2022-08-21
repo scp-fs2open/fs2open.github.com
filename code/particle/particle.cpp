@@ -47,8 +47,8 @@ namespace
 		float dist;
 		float alpha = 0.99999f;
 
-		const float inner_radius = 30.0f;
-		const float magic_num = 2.75f;
+		const float inner_radius = MIN(30.0f, rad);
+		const float magic_num = MIN(2.75f, rad / 10.0f);
 
 		// determine what alpha to draw this bitmap with
 		// higher alpha the closer the bitmap gets to the eye
@@ -68,7 +68,8 @@ namespace
 		}
 
 		if (The_mission.flags[Mission::Mission_Flags::Fullneb] && Neb_affects_particles)
-			alpha *= neb2_get_fog_visibility(pos, NEB_FOG_VISIBILITY_MULT_PARTICLE(rad));
+			alpha *= neb2_get_fog_visibility(pos, 
+				Neb2_fog_visibility_particle_const + (rad * Neb2_fog_visibility_particle_scaled_factor));
 
 		return alpha;
 	}
@@ -90,6 +91,12 @@ namespace particle
 	// Reset everything between levels
 	void init()
 	{
+		if (Is_standalone)
+		{
+			Particles_enabled = 0;
+			return;
+		}
+
 		// FIRE!!!
 		if (Anim_bitmap_id_fire == -1)
 		{
@@ -118,6 +125,11 @@ namespace particle
 
 	void page_in()
 	{
+		if (!Particles_enabled)
+		{
+			return;
+		}
+
 		bm_page_in_texture(Anim_bitmap_id_fire);
 		bm_page_in_texture(Anim_bitmap_id_smoke);
 		bm_page_in_texture(Anim_bitmap_id_smoke2);

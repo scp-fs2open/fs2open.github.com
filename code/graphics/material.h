@@ -204,6 +204,9 @@ class model_material : public material
 
 	float Outline_thickness = -1.0f;
 
+	bool Use_alpha_mult = false;
+	float Alpha_mult = 1.0f;
+
 public:
 	model_material();
 
@@ -259,6 +262,12 @@ public:
 	void set_fog();
 	bool is_fogged() const;
 	const fog& get_fog() const;
+
+	float get_alpha_mult() const;
+	bool is_alpha_mult_active() const;
+	void set_alpha_mult(float alpha);
+	void reset_alpha_mult();
+
 };
 
 class particle_material : public material
@@ -364,6 +373,7 @@ void material_set_unlit_volume(particle_material* mat_info, int texture, bool po
 void material_set_distortion(distortion_material *mat_info, int texture, bool thruster);
 void material_set_movie(movie_material *mat_info, int y_bm, int u_bm, int v_bm);
 void material_set_batched_bitmap(batched_bitmap_material* mat_info, int base_tex, float alpha, float color_scale);
+void material_set_batched_opaque_bitmap(batched_bitmap_material* mat_info, int base_tex, float color_scale);
 void material_set_nanovg(nanovg_material* mat_info, int base_tex);
 void material_set_decal(material* mat_info, int diffuse_tex, int glow_tex, int normal_tex);
 

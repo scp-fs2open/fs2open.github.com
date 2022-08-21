@@ -270,6 +270,10 @@ void convert_model_material(model_uniform_data* data_out,
 	if ( shader_flags & SDR_FLAG_MODEL_THICK_OUTLINES ) {
 		data_out->outlineWidth = material.get_outline_thickness();
 	}
+
+	if (shader_flags & SDR_FLAG_MODEL_ALPHA_MULT) {
+		data_out->alphaMult = material.get_alpha_mult();
+	}
 }
 
 }

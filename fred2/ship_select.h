@@ -29,12 +29,12 @@ public:
 // Dialog Data
 	//{{AFX_DATA(ship_select)
 	enum { IDD = IDD_SHIP_SELECT };
-	CListBox	m_wing_list;
+	CListBox	m_iff_list;
 	CListBox	m_ship_list;
+	CListBox	m_wing_and_waypoint_list;
 	BOOL	m_filter_ships;
 	BOOL	m_filter_starts;
 	BOOL	m_filter_waypoints;
-	BOOL	m_filter_iff[MAX_IFFS];
 	//}}AFX_DATA
 
 
@@ -48,8 +48,6 @@ public:
 // Implementation
 protected:
 
-	void OnFilterShipsIFF(int iff);
-
 	// Generated message map functions
 	//{{AFX_MSG(ship_select)
 	virtual BOOL OnInitDialog();
@@ -57,29 +55,23 @@ protected:
 	afx_msg void OnFilterShips();
 	afx_msg void OnFilterStarts();
 	afx_msg void OnFilterWaypoints();
-	afx_msg void OnFilterShipsIFF0();
-	afx_msg void OnFilterShipsIFF1();
-	afx_msg void OnFilterShipsIFF2();
-	afx_msg void OnFilterShipsIFF3();
-	afx_msg void OnFilterShipsIFF4();
-	afx_msg void OnFilterShipsIFF5();
-	afx_msg void OnFilterShipsIFF6();
-	afx_msg void OnFilterShipsIFF7();
-	afx_msg void OnFilterShipsIFF8();
-	afx_msg void OnFilterShipsIFF9();
+	afx_msg void OnSelchangeIFFList();
 	afx_msg void OnClear();
 	afx_msg void OnAll();
 	afx_msg void OnInvert();
 	afx_msg void OnDblclkShipList();
-	afx_msg void OnSelchangeWingList();
+	afx_msg void OnSelchangeWingAndWaypointList();
 	afx_msg void OnSelchangeShipList();
 	afx_msg void OnDblclkWingList();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 
+	// helper function
+	int find_index_with_objnum(int objnum);
+
 private:
-	int activity, list_size, wlist_size, wplist_size;
-	object *obj_index[MAX_OBJECTS];
-	SCP_vector<int> wing_index;
-	SCP_vector<int> wing_sel_last;
+	int activity, num_wings;
+	SCP_vector<int> obj_index;
+	SCP_vector<int> wing_and_waypoint_index;
+	SCP_vector<bool> wing_and_waypoint_sel_last;
 };

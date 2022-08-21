@@ -363,7 +363,7 @@ void emp_process_ship(ship *shipp)
 		int ship_lookup = ship_get_random_team_ship(iff_get_attackee_mask(shipp->team));
 
 		// if we got a valid ship object to target
-		if((ship_lookup >= 0) && (Ships[ship_lookup].objnum >= 0) && !(Objects[Ships[ship_lookup].objnum].flags[Object::Object_Flags::Protected])){
+		if((ship_lookup >= 0) && (Ships[ship_lookup].objnum >= 0) && !(Objects[Ships[ship_lookup].objnum].flags[Object::Object_Flags::Protected]) && (SHIP_INDEX(shipp) != ship_lookup)){
 			// attack the object
 			ai_attack_object(objp, &Objects[Ships[ship_lookup].objnum]);
 		}

@@ -3,6 +3,439 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [22.2.0] - 2022-08-06
+
+```
+Changelog note: 
+As of this version, in an attempt to make the changelog easier to navigate and read,
+each section will have collapsible subsections, ordered alphabetically by topic. 
+Headlining features will always be on top.  
+```
+### Added
+
+<details><summary> <b>Big Feature: SEXP Containers</b> </summary>
+
+> As opposed to a SEXP variable, which stores only one value, a SEXP container stores a collection of values.  
+> Consequently, containers allow for handling data in much more sophisticated ways than variables. 
+> Containers come in two types:
+> * List container - an ordered sequence of values, sort of a cross between Python lists and deques
+> * Map container - pairs of keys associated with data, like Lua tables or Python dictionaries  
+> Further details in the [SEXP Containers announcement thread](https://www.hard-light.net/forums/index.php?topic=98209.0)
+</details>
+
+<details><summary> <b>Big Feature: LuaAI</b> </summary>
+
+> LuaAI allows scripters to add a new AI Goal (like ai-chase) that will run script instead of internal logic.
+> Adding a Lua AI section in a -sexp.tbm and a few functions to a corresponding -sct.tbm to define the AI logic in certain conditions. More documentation on these functions is available in the LuaAISEXP-Object of the Scripting Docs.
+</details>
+
+<details><summary>AI:</summary>
+
+- `$AI ignores aspect lock for leading:` Flag, which lets AI continue to lead their target while performing an Aspect Lock
+</details>
+
+<details><summary>Animation: </summary>
+
+- `pause on reverse` Flag
+</details>
+
+<details><summary>Controls: </summary>
+
+- Handle international keyboard layouts
+- Re-Add `-joy-info` command line flag, for slightly quicker Joystick GUID retrieval
+- Add `-controlconfig_tbl` command line flag to print out a template controlconfigdefaults.tbl
+</details>
+
+<details><summary>FRED: </summary> 
+
+- Support the full number of nebula poofs using a multi-select list
+- Add the ability to edit nebula fog colors, since that previously was not part of the FRED UI
+- Flags `same-arrival-warp-when-docked` and `same-departure-warp-when-docked` to allow docked ships to still use custom warp parameters
+- Allow highlighting custom-colored events by drawing a border on them
+- Can now rotate objects relative to other objects in the Object Editor
+- Dialog to calculate relative distance and orientation between ships
+- Flag "Point using uvec" to point ships while incorporating the ship's uvec
+- `ai-attackable-if-no-collide` flag, which prevents turrets from ignoring a target with `no_collide`
+</details>
+
+<details><summary>QtFRED: </summary>
+
+- Reinforcements Dialog
+- Implemented Replace Data for Number and String
+- Texture Replacement Dialog
+- TBL Viewer in the Ship Editor
+</details>
+
+<details><summary>Graphics: </summary>
+
+- Allow particles to use a random chance for spawning through the `+Chance` parameter
+- Command-line parameter `-fov_cockpit` which allows setting an FoV for the cockpit model separately from the viewport FoV. This allows using custom FoVs without distorting the cockpit
+- Allow user to export environment map to a PNG from the F3 Lab by pressing M
+- Weapon lights: Configurable lighting data for weapons, both on a per-weapon basis and globally via lighting profiles
+- Implemented debug sphere queuing and rendering
+</details>
+
+<details><summary>Localization: </summary>
+
+- Make strings for Match Speed Indicator, Glide Indicator, and Afterburner Indicator translateable
+</details>
+
+<details><summary>Modding: </summary>
+
+- `game_settings.tbl` setting `$Supernova hits at zero:`, which causes Supernovae to hit when the timer gets to 0, instead of the default of hitting 5 seconds before the time is up
+- `game_settings.tbl` settings `$Show-subtitle uses pixels:` and `$Show-subtitle base resolution:`, which can be used in conjunction to scale subtitles
+- `game_settings.tbl` setting `$Always warn player about unbound keys used in Directives Gauge:`, to show such warning to players when needed (without it these warnings only apply to Training Missions)
+- Ship flags `fail-sound-locked-primary` and `fail-sound-locked-secondary` to allow the firing fail sound to play if the player tries to fire weapons that are locked
+- Subsystem Flag "hide turret from loadout stats"
+- Allow weapon to override turret name with `$Turret Name:`
+</details>
+
+<details><summary>Multiplayer: </summary>
+
+- Save PXO stats to local pilot file
+</details>
+
+<details><summary>Performance: </summary>
+
+- Preload subspace tunnel if the `mission-set-subspace` SEXP is used in the mission
+</details>
+
+<details><summary>SEXPs: </summary>
+
+- `cancel-future-waves`, for stopping wings that still had waves queued from spawning
+- Added optional flag to `show-subtitle-text` and `show-subtitle-image` to not change the subtitle aspect ratio
+- `set-nav-color` and `set-nav-visited-color`, which allows setting custom colors to Navpoints in a mission
+</details>
+
+<details><summary>Scripting: </summary>
+
+- Support for decals (see `decaldefinition` in the Scripting documentation)
+- Missile list iterator: `mn.getMissileList()`
+- Campaign Start hook: `On Campaign Begin`
+- Player Loaded hook: `On Player Loaded`
+- Added a few functions to get information on HUD gauges (check `HudGauge` in the Scripting documentation)
+- Function `ship.checkVisibility` which checks if a ship can appear on the viewer's radar
+- Function `hu.flashTargetBox` which causes the target box to flash
+- Function `hu.getTargetDistance` to return the distance to target as reported by the HUD
+- Function `mn.hasLineOfSight` which checks if one point has line of sight to the other
+- Function `mn.getLineOfSightFirstIntersect` which checks for line of sight and returns the distance of the first interruption if not
+- Variable `gr.CurrentResizeMode`, which can get or set the scaling mode to be used by the `gr.*` drawing methods
+- Function `gr.draw3dLine`, which draws a line in space between two points
+- Allow SCPUI to run `$On Briefing Stage:` hooks
+- New bindings to allow proper hooking into control actions based on the control's enumeration name
+- Allow scripted controls to override hardcoded functionality
+- Fennel script support
+- Lua BitOp 1.0.2 extension library, allowing the usage of bit operations
+</details>
+
+<details><summary>Technical: </summary> 
+
+- Class encapsulation for Volition's linked list
+- Improve a debug console message to be more informative
+- Type-safe `TIMESTAMP` class
+- Add `timestamp_since()` function
+- Add methods to compare timestamps, calculate deltas from an existing timestamp and a number of milliseconds, and to calculate deltas between timestamps
+- Create a command line option for logging data packets
+- Add more information to Multi-related debug logging 
+- Enable Doxygen for QTFred 
+- Set up Mac builds on CI, allowing builds to be published automatically for Mac
+- Add some logging to `waitAsync`
+</details>
+
+### Changed
+
+<details><summary>Game: </summary>
+
+- Only display one popup when the player gets to the main hall
+- Allow an unlimited number of ship flags to be parsed at once
+</details>
+
+<details><summary>AI: </summary>
+
+- Improve Player Orders to allow for a nearly unlimited number of player orders, as opposed to the 32 before
+- Update `ai_turn_towards_vector` to use a target velocity for banking
+</details>
+
+<details><summary>Audio: </summary>
+
+- Allow unlimited soundtracks and spooled music (Previously limited to 30 and 50 respectively)
+- Allow unlimited sound effects
+- Dynamically set the maximum number of audio channels based on how many the user's system can support
+</details>
+
+<details><summary>FRED: </summary>
+
+- CTRL+V is now add-paste (used to be CTRL+P)
+- CTRL+SHIFT+V is now overwrite-paste (used to be CTRL+V)
+- Replace `Always_show_goals` with `Toggle_showing_goals` which toggles whether the goals are shown, and works in any mission (instead of only Training Missions)
+- No longer disable icon dropdowns for models that have their own icons 
+- No longer change the ship class when the icon type is a special popup
+- Make the number of player orders FRED can handle dynamic
+- Restore original Error Checking behavior where the function would exit after one check (for consistency)
+- Exclude player ships from Error Checking for ships in a wing sharing the same orders
+- Split "No subsystems found" and "Not all subsystems have a record in ships.tbl" warnings into two different warning flags
+</details>
+
+<details><summary>Graphics: </summary>
+
+- Improved light attenuation to look more real
+- Increase POF vertex limit, allowing up to `2^32 - 1` vertices to be used by a single subobject
+</details>
+
+<details><summary>Performance: </summary> 
+
+- Delay `ai_new_maybe_reposition_attack_subsys` to only run once a second. Before this change, it could take around 13% of runtime in crowded missions
+- Cached subsystem indexing, speeding up subsystem lookups, which run for multiple ships, multiple times per frame
+</details>
+
+<details><summary>Scripting: </summary> 
+
+- Enhance help text for Lua SEXPs
+- Converted the following Lua Hooks to the new format to add documentation: `On Death`, `On Game Init`, `On Ship Collision`
+</details>
+
+<details><summary>Technical: </summary>
+
+- Turn `insertion_sort` into a templated function that uses assignment
+- CMake: Update `PREBUILT_VERSION_NAME` to latest (mac libs)
+- Optimized space used in the new POF version
+- Cleanup model code
+- Cleanup beam light functions by consolidating some duplicated code and removing unreachable logic
+- Cleanup wing wave code
+- Move special parsing functions into new `parsehi.cpp` and `parsehi.h` files
+- Actually clear delayed SSM parsing data when it's no longer needed
+- Allow C++ to interact more with LuaTables, allowing it to extract userdata like objects or ships from them
+- Use `SCP_string` for constructing multi/event log lines 
+- Replace `+Orders Accepted:` Bitfield with flag list
+- Handle deprecated command line flags programmatically, avoiding lots of code duplication
+- Set up debug_filter.cfg to have default filters that can be turned off
+</details>
+
+### Removed
+
+<details><summary>FRED: </summary> 
+
+- Remove the `Allow Daisy-Chained Docking` mission flag
+- Remove "Delete Item" from the right-click menu in the Event Editor
+</details>
+
+<details><summary>Technical: </summary>
+
+- Remove light filtering data which didn't work and increased code complexity
+- Remove a pointless assert that checked if `SEXP_NODE_INCREMENT` (a define, set at 250) was greater than zero
+</details>
+
+### Fixed 
+
+<details><summary>Game: </summary>
+
+- Missing whitespace in credits 
+- Stopped destroyed submodels from showing in Techroom
+- Prevent a crash when an object dies in the same frame as their goal
+- Always record primary bank ammo capacity during ship creation, preventing situations where a ballistic weapon would accidentally be set to zero ammo
+- Properly remove ships from the Techroom when they're not in the Tech Database
+- Load the correct Techroom data after a Tech Database Reset
+- Don't tick Supernova timer while the game is paused
+- Make `set-camera-facing` use default identity orientation when the `$Use host orientation` flag is active and no host is present
+- When a hotkey text replacement string refers to an unbound control, use the name of the binding instead of "none"
+- Fix usage of default tech database flags
+- Prevent a crash in the loadout screen with a weapons-locked ship
+- Fix two crashes in the F3 lab
+- End the campaign properly when a mission is skipped, preventing crashing in some situations
+- Prevent a crash when a message is sent from an invalid source
+- Prevent a broken campaign state if the player quits the game from the options menu during the debriefing
+- Add some checks before converting a message to Command
+- Prevent accidentally skipping cutscenes caused by hitting the spacebar during a loading screen
+- Fixed an issue where ships would start with the wrong hull values in Red Alert missions
+</details>
+
+<details><summary>AI: </summary> 
+
+- Fix turret swarm weapons by removing a few checks that are no longer valid
+- Fix a few issues with maneuvers
+</details>
+
+<details><summary>Animations: </summary> 
+
+- Fix broken turret animations in the Techroom
+</details>
+
+<details><summary>Audio: </summary>
+
+- Fix cockpit engine sound volume changing unexpectedly
+- Fix a timing bug that would sometimes prevent music from being initialized when re-playing a mission
+- Check all possible extensions for audio files
+</details>
+
+<details><summary>Controls: </summary>
+
+- Flush the mouse state after toggling between `Use_mouse_to_fly` states, preventing situations where a stale mouse state would be used
+- Fix a conflict between Free Look View controls and directional thrust controls
+</details>
+
+<details><summary>FRED: </summary>
+
+- Prevent Ship Select Dialog from crashing if there are too many IFFs
+- Support saving nebula fog colors
+- Properly save `nav-carry-status` flag
+- Don't treat a bare `<argument>` as an error
+- Prevent adding duplicated variables and display an error to the user when they try
+- Clean up some parse problems
+- Fix assignment of alt-name when using the hash
+- Guard against off-by-one errors in `replace_one` and `replace_all`
+- Improve error checking of campaign loop branches
+- Improve error reporting for bad SEXP nodes
+- Prevent a crash with paste/add-paste when the clipboard was empty
+- Prevent rounding/conversion issues that caused FRED to think an angle or position was modified when it wasn't
+- Skip absent ships or wings when running `clear-goals`, instead of stopping the whole operation
+</details>
+
+<details><summary>Graphics: </summary>
+
+- Disable Lightshafts while the Supernova glare effect is active. This partial fix ensures the glare shows up with the correct brightness
+- Update and correctly load environment maps in F3 Lab
+- Correctly set textures and Team Colors with `change-ship-class`
+- Fixes Team Colors not working with `show-ship`
+- Correct positioning and angles for background bitmaps and suns
+- Clean up ship arrival and departure effects
+- Fix clearing a skybox model when it isn't the mission default
+- Fix an assertion with Fireball LODs which would wrongly trigger if the number of LODs was the same as the maximum
+</details>
+
+<details><summary>HUD: </summary>
+
+- Make HUD Target distance consistent
+- Fix a crash with scripted HUDs
+- Correctly update RTT Cockpit Gauges with `change-ship-class`
+- Ignore HUD brackets with a size of zero or less (instead of just crashing)
+- Squad menu wasn't scrolling properly with PageDown in some cases
+- Fix issues with loading of hud config presets
+- Fix parsing issues with HUD color presets
+  - Continue parsing remaining gauges if one isn't found
+  - Use translated strings both when saving and loading
+- Fix an issue where a target's orders would be displayed wrongly in the target box 
+- Fix asteroid brackets disappearing or displaying wrong values
+</details>
+
+<details><summary>Modding: </summary>
+
+- Delay processing `$Player Weapon Precedence:` until after parsing, avoiding ships starting with the wrong weapons in some situations
+- Make the `$Player Weapon Precedence:` list actually give precedence
+- Empty `+Orders Accepted List:` entries were causing the ship to accept the default orders, instead of no orders as would be correct
+- Show a Warning if a turret submodel is not an immediate child of the base object and handle it as a single-part object to prevent a crash
+</details>
+
+<details><summary>Multiplayer: </summary>
+
+- Limit client collisions to prevent bugs, such as flinging players with high pings who collided multiple times between packet updates
+- Fix multiple timestamp issues
+  - Multi messaging and multi pause screen
+  - Make sure maintenance stuff (pings, voice, file xfer, etc.) isn't affected by pausing or time compression
+  - Sync issues caused by options menu and screenshots
+- Prevent an error with long messages in PXO Chat by using proper buffer size
+- Fix some issues with Multiplayer SEXPs
+  - Try to handle incompatible sexp packets better
+  - Fix operator name issue with debug messages
+  - Enable the new show-subtitle-text options
+- Improve interpolation, fixing the jerkiness that used to occur when the interpolation code basically guessed the timing on when packets were coming in
+- Fix rollback primary collisions, vastly improving accuracy on moving targets even at high pings
+- Fix the standalone ship being added to ship list
+- Stop non-printable keys adding text to multi message buffer
+- Prevent the standalone from crashing if a player tried to switch secondaries in a ship that doesn't have secondaries
+- Fix a standalone crash from disabled uniform buffer manager
+- Prevent a crash related to Observer-type players
+- Fix network issues on MacOS
+</details>
+
+<details><summary>Scripting: </summary>
+
+- Make hook conditions consistent and handle combinations that didn't work properly before
+- Fix `maybePlayCutscene` arguments
+- Add `isActive` checks for new-style script hooks
+- Sync the two `VIRTVAR`s for Orientation in subsystems and submodel instances, which behaved in different ways
+- Fixed a few timing and framerate related issues for playing movies via script
+- Ensure the Lua interpreter has enough space in its stack, and allow reserving more space if necessary
+- Fixed an memory leak in the Lua interpreter caused by string-eval sexps, which never cleaned up the generated code 
+</details>
+
+<details><summary>SEXPs: </summary>
+
+- Avoid setting .rest for `Locked_sexp_true/false` with malformed SEXPs
+- Fix some memory management problems in the `for-*` operators, avoiding a memory leak
+- Fix crash when removing form-on-wing order with `remove-goal`
+- Fix `show-subtitle` SEXP which was missing the `width` argument
+- Reset volumes changed via `adjust-audio-volume` when the mission closes
+- Prevent too many dynamic SEXPs from breaking the SEXP system
+</details>
+
+<details><summary>Technical: </summary>
+
+- Check if index is valid before accessing `Weapon_info`, preventing CTDs under certain conditions
+- When `weapon_create` was called while `MAX_WEAPONS` was reached, the previous algorithm didn't achieve desired results, and simply locked up the game. Instead, we now simply won't allow a new weapon to be created in such condition
+- Refactored Supernova code and fixed some state transition issues in it
+- Prevent crashes in the event of a subsystem mismatch during `change_ship_type`
+- Change include order to fix compilation of unit tests on Mac
+- Patch freeing of SEXP nodes, preventing a crash in certain conditions
+- Fix a memory leak in model code
+- Fix a crash in the Ship Creation code if a ship's name was exactly the maximum allowed length
+- Removed vestigial bit-depth asserts for aabitmaps, preventing crashes with certain image types
+- Prevent a crash when Escort Priority was parsed for a ship not present in the Escort List
+- Fix a bunch of graphics functions to respect GR_STUB, preventing problems in standalone server
+- Clean up line endings in several files (replaced CRLF with LF basically everywhere)
+- Fixed a timestamp issue which helps lay the groundwork to add In-Game Joining to multiplayer
+- Prevent pilot and campaign files from having invalid values, by clamping them within the expected ranges when saving and loading
+  - Also warn the player if such an invalid value was detected, telling them which setting had the wrong value and what it was reset to
+  - Try to avoid assertions by preventing invalid types from being handled by `obj_team()`
+- Shut down the SEXP system before the Scripting system, otherwise a crash could happen if the SEXP system held references to Lua
+</details>
+
+----
+	
+## [22.0.0] - 2022-04-01 ([Thread](https://www.hard-light.net/forums/index.php?topic=98125.0))
+### Changed
+- Controls5 PR (aka multi-joy)
+- Timing system upgrade
+- Model animation code upgrades
+
+
+## [21.4.0] - 2021-09-27 ([Thread](https://www.hard-light.net/forums/index.php?topic=97802.0))
+### Changed
+- Multiple features; see thread
+- Multiple bugfixes; see thread
+### Deprecations
+- `script-eval` has been deprecated in favor of `script-eval-block`
+- renamed `hud-set-retail-gauge-active` to `hud-set-builtin-gauge-active`
+
+
+## [21.2.0] - 2021-05-02 ([Thread](https://www.hard-light.net/forums/index.php?topic=97561.0))
+### Changed
+- Added a dynamic action system for more modder control of effects
+- Removed fireball limit
+- Fixed bomb intercept in multiplayer
+- Changed nebula fog distance from a linear to exponential model
+- Turrets on moving subobjects enabled
+- LZ4 Compression added for game files
+
+
+## [21.0.0] - 2021-01-27 ([Thread](https://www.hard-light.net/forums/index.php?topic=97293.0))
+### Changed
+- More OpenGL optimizations
+- Full type information output for Lua documentation. Very useful for writing Lua scripts.
+- A new -weaponspew command-line option for printing MediaVP-style statistics, plus a weapon comparison spreadsheet, to the debug log.
+- Improved ship lookup behavior in SEXPs for improved performance.
+- BPTC/BC7 texture compression support
+- Refactoring and new features for the ship lab.
+- Missile multi-lock. It's finally in an official build!
+- Enhancements to the model code in preparation for cool features in 21.2.
+- IPv6 support for multiplayer
+- A lot of general fixes for multiplayer.
+### Deprecated
+- Dropped support for Windows XP
+- Scripting:
+  - `ba.getFrametime()`: The parameter value was used incorrectly inside the implementation. To avoid breaking existing scripts and to improve readability this has been split into `ba.getMissionFrametime()` and `ba.getRealFrametime()`.
+  - `gr.drawMonochromeImage()`: `gr.drawImage()` got a new parameter for drawing monochrome images and is more flexible in general so the monochrome variant is no longer needed.
+
+
 ## [19.0.0] - 2020-01-25 ([Thread](https://www.hard-light.net/forums/index.php?topic=96226.0))
 ### Meta
 - With this release we decided to drop the "`3.Major_revision.Minor_revision`" versioning scheme in favor of a year based scheme since the Major and Minor versions did not have much meaning anymore. Instead the scheme will now be "`<year>.<number that is incremented every release>.0`". The last 0 is still there because some of our systems expect that. It will be gone at some point.
@@ -24,6 +457,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Replaced Blinn-Phong BRDF with GGX BRDF
 ### Fixed
 - Refactored bitmap slot handling and removed the fixed upper limit on the number of bitmaps. No more bmpman corruption!
+
 
 ## [3.8.0] - 2017-08-22 ([Release Thread](https://www.hard-light.net/forums/index.php?topic=93812.0))
 ### Added
@@ -48,6 +482,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Enhanced sound (up to 128 channels)
 ### Fixed
 - "Tons" of bugfixes
+
 
 ## [3.7.2] - 2015-04-23 ([Release thread](http://www.hard-light.net/forums/index.php?topic=89597.0))
 ### Added
@@ -79,15 +514,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Raised the per-model debris limit to 48 (previously 32).
 - Increased the per-frame debris limit to 96 (previously 64)
 
+
 ## [3.6.18] - 2013-03-01 ([Release thread](http://www.hard-light.net/forums/index.php?topic=83889.0))
 ### Fixed
 - Critical damage bug which caused heavy balance issues in the game
+
 
 ## [3.6.16] - 2013-01-31 ([Release thread](http://www.hard-light.net/forums/index.php?topic=83577.0))
 ### Added
 - Diaspora TC support
 ### Changed
 - Performance Improvements
+
 
 ## [3.6.14] - 2012-10-23 - ([Release thread](https://www.hard-light.net/forums/index.php?topic=82648.0))
 ### Added

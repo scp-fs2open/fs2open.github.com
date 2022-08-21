@@ -20,15 +20,19 @@
 #define vm_is_vec_nan(v) (fl_is_nan((v)->xyz.x) || fl_is_nan((v)->xyz.y) || fl_is_nan((v)->xyz.z))
 
 //Macros/functions to fill in fields of structures
+//VEC_NULL macros split into two functions in 2009 with commit 75a514b
 
-//macro to check if vector is zero
-#define IS_VEC_NULL_SQ_SAFE(v) (IS_NEAR_ZERO((v)->xyz.x, 1e-16) && \
-								IS_NEAR_ZERO((v)->xyz.y, 1e-16) && \
-								IS_NEAR_ZERO((v)->xyz.z, 1e-16))
+//macro to check if vector is close to zero or would be close to zero after squaring
+#define IS_VEC_NULL_SQ_SAFE(v) \
+		(fl_near_zero((v)->xyz.x, (float) 1e-16) && \
+		fl_near_zero((v)->xyz.y, (float) 1e-16) && \
+		fl_near_zero((v)->xyz.z, (float) 1e-16))
 
-#define IS_VEC_NULL(v) (IS_NEAR_ZERO((v)->xyz.x, 1e-36) && \
-						IS_NEAR_ZERO((v)->xyz.y, 1e-36) && \
-						IS_NEAR_ZERO((v)->xyz.z, 1e-36))
+//macro to check if vector is close to zero
+#define IS_VEC_NULL(v) \
+		(fl_near_zero((v)->xyz.x, (float) 1e-36) && \
+		fl_near_zero((v)->xyz.y, (float) 1e-36) && \
+		fl_near_zero((v)->xyz.z, (float) 1e-36))
 
 #define IS_MAT_NULL(v) (IS_VEC_NULL(&(v)->vec.fvec) && IS_VEC_NULL(&(v)->vec.uvec) && IS_VEC_NULL(&(v)->vec.rvec))
 
@@ -53,7 +57,10 @@ extern void vm_set_identity(matrix *m);
 
 #define vm_vec_make(v,_x,_y,_z) ((v)->xyz.x=(_x), (v)->xyz.y=(_y), (v)->xyz.z=(_z))
 
+extern angles vm_angles_new(float p, float b, float h);
 extern vec3d vm_vec_new(float x, float y, float z);
+extern matrix vm_matrix_new(float a0, float a1, float a2, float a3, float a4, float a5, float a6, float a7, float a8);
+extern matrix vm_matrix_new(vec3d rvec, vec3d uvec, vec3d fvec);
 
 //Global constants
 
@@ -285,12 +292,10 @@ matrix *vm_vector_2_matrix(matrix *m, const vec3d *fvec, const vec3d *uvec = nul
 matrix *vm_vector_2_matrix_norm(matrix *m, const vec3d *fvec, const vec3d *uvec = NULL, const vec3d *rvec = NULL);
 
 //rotates a vector through a matrix. returns ptr to dest vector
-//dest CANNOT equal either source
 vec3d *vm_vec_rotate(vec3d *dest, const vec3d *src, const matrix *m);
 
 //rotates a vector through the transpose of the given matrix. 
 //returns ptr to dest vector
-//dest CANNOT equal source
 // This is a faster replacement for this common code sequence:
 //    vm_copy_transpose(&tempm,src_matrix);
 //    vm_vec_rotate(dst_vec,src_vect,&tempm);
@@ -310,7 +315,6 @@ matrix *vm_transpose(matrix *m);
 matrix *vm_copy_transpose(matrix *dest, const matrix *src);
 
 //mulitply 2 matrices, fill in dest.  returns ptr to dest
-//dest CANNOT equal either source
 matrix *vm_matrix_x_matrix(matrix *dest, const matrix *src0, const matrix *src1);
 
 //extract angles from a matrix
@@ -477,6 +481,10 @@ void vm_quaternion_rotate(matrix *m, float theta, const vec3d *u);
 // Takes a rotation matrix and returns the axis and angle needed to generate it
 void vm_matrix_to_rot_axis_and_angle(const matrix *m, float *theta, vec3d *rot_axis);
 
+// Given a rotation axis, calculates the angle that results in the rotation closest to the given matrix m. Returns the angle between the matrix orientation and the closest axis angle orientation
+// If the axis is equal or very close to the orientation of the matrix, returns a distance of Pi/2 and an angle of 0
+float vm_closest_angle_to_matrix(const matrix* mat, const vec3d* rot_axis, float* angle);
+
 // interpolate between 2 vectors. t goes from 0.0 to 1.0. at
 void vm_vec_interp_constant(vec3d *out, const vec3d *v1, const vec3d *v2, float t);
 
@@ -488,6 +496,11 @@ void vm_vec_random_cone(vec3d *out, const vec3d *in, float min_angle, float max_
 // if on_edge is true, the point will be on the edge of the circle
 // if bias_towards_center is true, the probability will be higher towards the center
 void vm_vec_random_in_circle(vec3d *out, const vec3d *in, const matrix *orient, float radius, bool on_edge, bool bias_towards_center = false);
+
+
+// compute a point on the unit sphere from cylindrical coordinate scale factors
+// z_scale and phi_scale should be in [0.0, 1.0]
+void vm_vec_unit_sphere_point(vec3d *out, float z_scale, float phi_scale);
 
 // given a start vector and a radius, generate a point in a spherical volume
 // if on_surface is true, the point will be on the surface of the sphere
@@ -561,6 +574,12 @@ void vm_match_bank(vec3d* out_rvec, const vec3d* goal_fvec, const matrix* match_
 // You will get strange results otherwise.
 void vm_interpolate_angles_quick(angles* dest0, angles* src0, angles* src1, float interp_perc);
 
+// generates a well distributed quasi-random position in a -1 to 1 cube
+// the caller must provide and increment the seed for each call for proper results
+// if being used to fill a space, offset may be needed to properly 'glue together' generated
+// volumes in a well distrubtedness-preserving way
+vec3d vm_well_distributed_rand_vec(int seed, vec3d* offset = nullptr);
+
 /** Compares two vec3ds */
 inline bool operator==(const vec3d& left, const vec3d& right) { return vm_vec_same(&left, &right) != 0; }
 inline bool operator!=(const vec3d& left, const vec3d& right) { return !(left == right); }
@@ -589,7 +608,7 @@ inline vec3d& operator-=(vec3d& left, const vec3d& right)
 	return left;
 }
 
-inline vec3d operator*(vec3d& left, float right)
+inline vec3d operator*(const vec3d& left, float right)
 {
 	vec3d out;
 	vm_vec_copy_scale(&out, &left, right);
@@ -601,7 +620,7 @@ inline vec3d& operator*=(vec3d& left, float right)
 	return left;
 }
 
-inline vec3d operator/(vec3d& left, float right)
+inline vec3d operator/(const vec3d& left, float right)
 {
 	vec3d out;
 	vm_vec_copy_scale(&out, &left, 1.0f / right);
@@ -640,27 +659,50 @@ inline matrix& operator-=(matrix& left, const matrix& right)
 }
 
 /**
- * @brief Rotates a vector into the orientation specified by the matrix
+ * @brief Implements matrix multiplication on 3D vectors
  * @param left The matrix
  * @param right The vector
- * @return The rotated vector
- *
- * @note This actually follows the definition of the * operator in linear algebra. The standard vm_vec_rotate actually
- * implements a multiplication with the transpose of the matrix.
+ * @return The multiplied result
  */
-inline vec3d operator*(const matrix& left, const vec3d& right) {
+inline vec3d operator*(const matrix& A, const vec3d& v)
+{
 	vec3d out;
-	vm_vec_unrotate(&out, &right, &left);
+
+	out.xyz.x = vm_vec_dot(&A.vec.rvec, &v);
+	out.xyz.y = vm_vec_dot(&A.vec.uvec, &v);
+	out.xyz.z = vm_vec_dot(&A.vec.fvec, &v);
+
 	return out;
 }
 
-inline matrix operator*(const matrix& left, const matrix& right) {
-	matrix out;
-	vm_matrix_x_matrix(&out, &left, &right);
+/**
+ * @brief Implements matrix multiplication on 3x3 matrices
+ * @param left The matrix
+ * @param right The matrix
+ * @return The multiplied result
+ */
+inline matrix operator*(const matrix& A, const matrix& B)
+{
+	matrix BT, out;
+
+	// we transpose B here for concision and also potential vectorisation opportunities
+	vm_copy_transpose(&BT, &B);
+
+	out.vec.rvec = BT * A.vec.rvec;
+	out.vec.uvec = BT * A.vec.uvec;
+	out.vec.fvec = BT * A.vec.fvec;
+
 	return out;
 }
 
 std::ostream& operator<<(std::ostream& os, const vec3d& vec);
+
+// Given a direction and a 'stretch amount', computes a matrix which can be used to
+// 'rotate' positional vectors as to stretch them in that direction by that amount
+// Positions in the opposite direction of the stretch_dir are stretched in the opposite direction
+// and position orthogonal to the stretch_dir are not moved at all
+// Essentially turns spheres into ellipsoids
+matrix vm_stretch_matrix(const vec3d* stretch_dir, float stretch);
 
 #endif
 

@@ -75,7 +75,7 @@ public:
 	object *get_object_target();
 	int get_object_target_submodel();
 	float get_fov();
-	void get_info(vec3d *position, matrix *orientation);
+	void get_info(vec3d *position, matrix *orientation, bool apply_camera_orientation = true);
 
 	//Is
 	bool is_empty(){return sig < 0;}
@@ -123,6 +123,7 @@ private:
 	float fade_time;
 	color text_color;
 	int text_fontnum;
+	int line_height_modifier;
 
 	//Done with set
 	char imageanim[MAX_FILENAME_LEN];
@@ -136,10 +137,13 @@ private:
 	float time_displayed_end;
 
 	bool post_shaded;
+	bool do_screen_scaling;
+
 public:
 	subtitle(int in_x_pos, int in_y_pos, const char* in_text = NULL, const char* in_imageanim = NULL,
 			 float in_display_time = 0, float in_fade_time = 0.0f, const color *in_text_color = NULL, int in_text_fontnum = -1,
-			 bool center_x = false, bool center_y = false, int in_width = 0, int in_height = 0, bool post_shaded=false);
+			 bool center_x = false, bool center_y = false, int in_width = 0, int in_height = 0, bool post_shaded = false,
+			 int in_line_height_modifier = 0, bool in_adjust_wh = true);
 	~subtitle();
 
     subtitle(const subtitle &sub) { clone(sub); }
@@ -152,6 +156,7 @@ public:
 //Some global stuff
 extern SCP_vector<subtitle> Subtitles;
 extern float VIEWER_ZOOM_DEFAULT;
+extern float COCKPIT_ZOOM_DEFAULT;
 extern float Sexp_fov;
 
 //Helpful functions

@@ -32,7 +32,7 @@
 #define PF_GLIDING				(1 << 14)
 #define PF_FORCE_GLIDE			(1 << 15)
 #define PF_NEWTONIAN_DAMP		(1 << 16)	// SUSHI: Whether or not to use newtonian dampening
-#define PF_NO_DAMP				(1 << 17)	// Goober5000 - don't damp velocity changes in physics; used for instantaneous acceleration
+#define PF_MANEUVER_NO_DAMP				(1 << 17)	// Goober5000 - don't damp velocity changes in physics; used for instantaneous acceleration
 
 //information for physics sim for an object
 typedef struct physics_info {
@@ -100,6 +100,7 @@ typedef struct physics_info {
 
 	matrix ai_desired_orient;   // Asteroth - This is only set to something other than the zero matrix if Framerate_independent_turning is enabled, and 
 								// only by the AI after calls to angular_move. It is read and then zeroed out for the rest of the frame by physics_sim_rot
+	vec3d acceleration;		// this is only the current trend of velocity in m/s^2, does NOT determine future velocity
 } physics_info;
 
 // control info override flags

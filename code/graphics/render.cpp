@@ -46,6 +46,10 @@ static void gr_flash_internal(int r, int g, int b, int a, bool alpha_flash)
 }
 
 void gr_flash(int r, int g, int b) {
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	if (!(r || g || b)) {
 		return;
 	}
@@ -54,6 +58,10 @@ void gr_flash(int r, int g, int b) {
 }
 
 void gr_flash_alpha(int r, int g, int b, int a) {
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	if (!(r || g || b || a)) {
 		return;
 	}
@@ -152,6 +160,10 @@ static void bitmap_ex_internal(int x,
 }
 
 void gr_aabitmap(int x, int y, int resize_mode, bool mirror) {
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	GR_DEBUG_SCOPE("Draw AA-bitmap");
 
 	int w, h, do_resize;
@@ -222,6 +234,10 @@ void gr_aabitmap(int x, int y, int resize_mode, bool mirror) {
 					   &gr_screen.current_color);
 }
 void gr_aabitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode, bool mirror) {
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 
 	int reclip;
 #ifndef NDEBUG
@@ -349,6 +365,10 @@ void gr_aabitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode,
 }
 //these are penguins bitmap functions
 void gr_bitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode) {
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	int reclip;
 #ifndef NDEBUG
 	int count = 0;
@@ -748,6 +768,10 @@ void endDrawing(graphics::paths::PathRenderer* path) {
 }
 
 void gr_string(float sx, float sy, const char* s, int resize_mode, int in_length) {
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	GR_DEBUG_SCOPE("Render string");
 
 	using namespace font;
@@ -917,10 +941,18 @@ static void gr_line(float x1, float y1, float x2, float y2, int resize_mode) {
 }
 
 void gr_line(int x1, int y1, int x2, int y2, int resize_mode) {
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	gr_line(i2fl(x1), i2fl(y1), i2fl(x2), i2fl(y2), resize_mode);
 }
 
 void gr_aaline(vertex* v1, vertex* v2) {
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	float x1 = v1->screen.xyw.x;
 	float y1 = v1->screen.xyw.y;
 	float x2 = v2->screen.xyw.x;
@@ -931,6 +963,10 @@ void gr_aaline(vertex* v1, vertex* v2) {
 }
 
 void gr_gradient(int x1, int y1, int x2, int y2, int resize_mode) {
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	if (!gr_screen.current_color.is_alphacolor) {
 		gr_line(x1, y1, x2, y2, resize_mode);
 		return;
@@ -953,10 +989,18 @@ void gr_gradient(int x1, int y1, int x2, int y2, int resize_mode) {
 	endDrawing(path);
 }
 void gr_pixel(int x, int y, int resize_mode) {
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	gr_line(x, y, x, y, resize_mode);
 }
 
 void gr_circle(int xc, int yc, int d, int resize_mode) {
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	auto path = beginDrawing(resize_mode);
 
 	path->circle(i2fl(xc), i2fl(yc), d / 2.0f);
@@ -966,6 +1010,10 @@ void gr_circle(int xc, int yc, int d, int resize_mode) {
 	endDrawing(path);
 }
 void gr_unfilled_circle(int xc, int yc, int d, int resize_mode) {
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	auto path = beginDrawing(resize_mode);
 
 	path->circle(i2fl(xc), i2fl(yc), d / 2.0f);
@@ -975,6 +1023,10 @@ void gr_unfilled_circle(int xc, int yc, int d, int resize_mode) {
 	endDrawing(path);
 }
 void gr_arc(int xc, int yc, float r, float angle_start, float angle_end, bool fill, int resize_mode) {
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	// Ensure that angle_start < angle_end
 	if (angle_end < angle_start) {
 		float temp = angle_start;
@@ -1001,6 +1053,10 @@ void gr_arc(int xc, int yc, float r, float angle_start, float angle_end, bool fi
 	endDrawing(path);
 }
 void gr_curve(int xc, int yc, int r, int direction, int resize_mode) {
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	using namespace graphics::paths;
 
 	auto path = beginDrawing(resize_mode);
@@ -1047,9 +1103,20 @@ void gr_curve(int xc, int yc, int r, int direction, int resize_mode) {
 	endDrawing(path);
 }
 
-void gr_rect(int x, int y, int w, int h, int resize_mode) {
-	auto path = beginDrawing(resize_mode);
+void gr_rect(int x, int y, int w, int h, int resize_mode, float angle) {
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
 
+	auto path = beginDrawing(resize_mode);
+	if (angle != 0) {
+		// If we don't do this translation before and after rotating, the rotation will use 0,0 as the pivot, flinging the rectangle far away. 
+		float offsetX = x + w / 2.0f;
+		float offsetY = y + h / 2.0f;
+		path->translate(offsetX, offsetY);
+		path->rotate(angle);
+		path->translate(-offsetX, -offsetY);
+	}
 	path->rectangle(i2fl(x), i2fl(y), i2fl(w), i2fl(h));
 	path->setFillColor(&gr_screen.current_color);
 	path->fill();
@@ -1058,6 +1125,10 @@ void gr_rect(int x, int y, int w, int h, int resize_mode) {
 }
 
 void gr_shade(int x, int y, int w, int h, int resize_mode) {
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	auto r = (int) gr_screen.current_shader.r;
 	auto g = (int) gr_screen.current_shader.g;
 	auto b = (int) gr_screen.current_shader.b;
@@ -1076,6 +1147,10 @@ void gr_shade(int x, int y, int w, int h, int resize_mode) {
 }
 
 void gr_2d_start_buffer() {
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	Assertion(!buffering_nanovg, "Tried to enable 2D buffering but it was already enabled!");
 
 	buffering_nanovg = true;
@@ -1085,6 +1160,10 @@ void gr_2d_start_buffer() {
 }
 
 void gr_2d_stop_buffer() {
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	Assertion(buffering_nanovg, "Tried to stop 2D buffering but it was not enabled!");
 
 	buffering_nanovg = false;
@@ -1099,6 +1178,10 @@ static size_t immediate_buffer_size = 0;
 static const int IMMEDIATE_BUFFER_RESIZE_BLOCK_SIZE = 2048;
 
 size_t gr_add_to_immediate_buffer(size_t size, void* data) {
+	if (gr_screen.mode == GR_STUB) {
+		return 0;
+	}
+
 	GR_DEBUG_SCOPE("Add data to immediate buffer");
 
 	if (!gr_immediate_buffer_handle.isValid()) {
@@ -1125,6 +1208,10 @@ size_t gr_add_to_immediate_buffer(size_t size, void* data) {
 	return old_offset;
 }
 void gr_reset_immediate_buffer() {
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	if (!gr_immediate_buffer_handle.isValid()) {
 		// we haven't used the immediate buffer yet
 		return;
@@ -1143,6 +1230,10 @@ void gr_render_primitives_immediate(material* material_info,
 									int n_verts,
 									void* data,
 									size_t size) {
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	auto offset = gr_add_to_immediate_buffer(size, data);
 
 	gr_render_primitives(material_info, prim_type, layout, 0, n_verts, gr_immediate_buffer_handle, offset);
@@ -1155,6 +1246,10 @@ void gr_render_primitives_2d_immediate(material* material_info,
 	void* data,
 	size_t size)
 {
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	gr_set_2d_matrix();
 
 	gr_render_primitives_immediate(material_info, prim_type, layout, n_verts, data, size);
@@ -1164,7 +1259,7 @@ void gr_render_primitives_2d_immediate(material* material_info,
 
 // _->NEW<-_ NEW new bitmap functions -Bobboau
 // takes a list of rectangles that have assosiated rectangles in a texture
-static void draw_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode, material* render_mat)
+static void draw_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode, material* render_mat, float angle = 0.f)
 {
 	GR_DEBUG_SCOPE("2D Bitmap list");
 
@@ -1186,15 +1281,33 @@ static void draw_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode, 
 	auto vert_list = new vertex[6 * n_bm];
 	float sw = 0.1f;
 
+
 	for (int i = 0; i < n_bm; i++) {
 		// stuff coords
-
+		
 		bitmap_2d_list* b = &list[i].screen_rect;
 		texture_rect_list* t = &list[i].texture_rect;
+		
+		float centerX = 0;
+		float centerY = 0;
+
+		if (angle != 0.f) {
+			centerX = (b->x + (b->x + b->w)) / 2.0f;
+			centerY = (b->y + (b->y + b->h)) / 2.0f;
+		}
+
 		// tri one
 		vertex* V = &vert_list[i * 6];
-		V->screen.xyw.x = (float)b->x;
-		V->screen.xyw.y = (float)b->y;
+		
+		if (angle != 0.f) {
+			V->screen.xyw.x = cosf(angle) * (b->x - centerX) - sinf(angle) * (b->y - centerY) + centerX;
+			V->screen.xyw.y = sinf(angle) * (b->x - centerX) + cosf(angle) * (b->y - centerY) + centerY;
+		}
+		else {			
+			V->screen.xyw.x = (float)b->x;
+			V->screen.xyw.y = (float)b->y;
+		}
+		
 		V->screen.xyw.w = sw;
 		V->texture_position.u = (float)t->u0;
 		V->texture_position.v = (float)t->v0;
@@ -1202,8 +1315,15 @@ static void draw_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode, 
 		V->codes = 0;
 
 		V++;
-		V->screen.xyw.x = (float)(b->x + b->w);
-		V->screen.xyw.y = (float)b->y;
+		if (angle != 0.f) {
+			V->screen.xyw.x = cosf(angle) * (b->x + b->w - centerX) - sinf(angle) * (b->y - centerY) + centerX;
+			V->screen.xyw.y = sinf(angle) * (b->x + b->w - centerX) + cosf(angle) * (b->y - centerY) + centerY;
+		}
+		else {
+			V->screen.xyw.x = (float)(b->x + b->w);
+			V->screen.xyw.y = (float)b->y;
+		}
+
 		V->screen.xyw.w = sw;
 		V->texture_position.u = (float)t->u1;
 		V->texture_position.v = (float)t->v0;
@@ -1211,8 +1331,15 @@ static void draw_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode, 
 		V->codes = 0;
 
 		V++;
-		V->screen.xyw.x = (float)(b->x + b->w);
-		V->screen.xyw.y = (float)(b->y + b->h);
+		if (angle != 0.f) {
+			V->screen.xyw.x = cosf(angle) * (b->x + b->w - centerX) - sinf(angle) * (b->y + b->h - centerY) + centerX;
+			V->screen.xyw.y = sinf(angle) * (b->x + b->w - centerX) + cosf(angle) * (b->y + b->h - centerY) + centerY;
+		}
+		else {
+			V->screen.xyw.x = (float)(b->x + b->w);
+			V->screen.xyw.y = (float)(b->y + b->h);
+		}
+
 		V->screen.xyw.w = sw;
 		V->texture_position.u = (float)t->u1;
 		V->texture_position.v = (float)t->v1;
@@ -1221,8 +1348,15 @@ static void draw_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode, 
 
 		// tri two
 		V++;
-		V->screen.xyw.x = (float)b->x;
-		V->screen.xyw.y = (float)b->y;
+		if (angle != 0.f) {
+			V->screen.xyw.x = cosf(angle) * (b->x - centerX) - sinf(angle) * (b->y - centerY) + centerX;
+			V->screen.xyw.y = sinf(angle) * (b->x - centerX) + cosf(angle) * (b->y - centerY) + centerY;
+		}
+		else {			
+			V->screen.xyw.x = (float)b->x;
+			V->screen.xyw.y = (float)b->y;
+		}
+
 		V->screen.xyw.w = sw;
 		V->texture_position.u = (float)t->u0;
 		V->texture_position.v = (float)t->v0;
@@ -1230,8 +1364,15 @@ static void draw_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode, 
 		V->codes = 0;
 
 		V++;
-		V->screen.xyw.x = (float)(b->x + b->w);
-		V->screen.xyw.y = (float)(b->y + b->h);
+		if (angle != 0.f) {
+			V->screen.xyw.x = cosf(angle) * (b->x + b->w - centerX) - sinf(angle) * (b->y + b->h - centerY) + centerX;
+			V->screen.xyw.y = sinf(angle) * (b->x + b->w - centerX) + cosf(angle) * (b->y + b->h - centerY) + centerY;
+		}
+		else {
+			V->screen.xyw.x = (float)(b->x + b->w);
+			V->screen.xyw.y = (float)(b->y + b->h);
+		}
+
 		V->screen.xyw.w = sw;
 		V->texture_position.u = (float)t->u1;
 		V->texture_position.v = (float)t->v1;
@@ -1239,8 +1380,15 @@ static void draw_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode, 
 		V->codes = 0;
 
 		V++;
-		V->screen.xyw.x = (float)b->x;
-		V->screen.xyw.y = (float)(b->y + b->h);
+		if (angle != 0.f) {
+			V->screen.xyw.x = cosf(angle) * (b->x - centerX) - sinf(angle) * (b->y + b->h - centerY) + centerX;
+			V->screen.xyw.y = sinf(angle) * (b->x - centerX) + cosf(angle) * (b->y + b->h - centerY) + centerY;
+		}
+		else {
+			V->screen.xyw.x = (float)b->x;
+			V->screen.xyw.y = (float)(b->y + b->h);
+		}
+
 		V->screen.xyw.w = sw;
 		V->texture_position.u = (float)t->u0;
 		V->texture_position.v = (float)t->v1;
@@ -1253,19 +1401,27 @@ static void draw_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode, 
 	delete[] vert_list;
 }
 
-void gr_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode)
+void gr_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode, float angle)
 {
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	material mat_params;
 	material_set_interface(&mat_params,
 		gr_screen.current_bitmap,
 		gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER,
 		gr_screen.current_alpha);
 
-	draw_bitmap_list(list, n_bm, resize_mode, &mat_params);
+	draw_bitmap_list(list, n_bm, resize_mode, &mat_params, angle);
 }
 
-void gr_aabitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode)
+void gr_aabitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode, float angle)
 {
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	material render_mat;
 	render_mat.set_blend_mode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
 	render_mat.set_depth_mode(ZBUFFER_TYPE_NONE);
@@ -1274,5 +1430,5 @@ void gr_aabitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode)
 	render_mat.set_cull_mode(false);
 	render_mat.set_texture_type(material::TEX_TYPE_AABITMAP);
 
-	draw_bitmap_list(list, n_bm, resize_mode, &render_mat);
+	draw_bitmap_list(list, n_bm, resize_mode, &render_mat, angle);
 }

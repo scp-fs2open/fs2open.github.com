@@ -407,7 +407,7 @@ int ai_big_maybe_follow_subsys_path(int do_dot_check)
 
 			// get world pos of eye (stored in geye)
 			ep = &(pm->view_positions[shipp->current_viewpoint]);
-			model_instance_find_world_point( &geye, &ep->pnt, pm, pmi, 0, &Pl_objp->orient, &Pl_objp->pos );
+			model_instance_local_to_global_point( &geye, &ep->pnt, pm, pmi, 0, &Pl_objp->orient, &Pl_objp->pos );
 			
 			// get world pos of subsystem
 			vm_vec_unrotate(&gsubpos, &aip->targeted_subsys->system_info->pnt, &En_objp->orient);
@@ -549,7 +549,7 @@ bool ai_new_maybe_reposition_attack_subsys() {
 
 	// get world pos of eye (stored in geye)
 	ep = &(pm->view_positions[Ships[Pl_objp->instance].current_viewpoint]);
-	model_find_world_point(&geye, &ep->pnt, pm->id, 0, &Pl_objp->orient, &Pl_objp->pos);
+	model_local_to_global_point(&geye, &ep->pnt, pm->id, 0, &Pl_objp->orient, &Pl_objp->pos);
 
 	// get world pos of subsystem
 	vm_vec_unrotate(&gsubpos, &aip->targeted_subsys->system_info->pnt, &En_objp->orient);
@@ -560,61 +560,69 @@ bool ai_new_maybe_reposition_attack_subsys() {
 		return false;
 
 	// not in sight, gotta get there
-	vec3d tgt2pl = Pl_objp->pos - target_objp->pos;
-	vec3d tgt2subsys = gsubpos - target_objp->pos;
-	float pl_dist = vm_vec_mag(&tgt2pl);
-	float subsys_dist = vm_vec_mag(&tgt2subsys) * 1.3f; // add a bit to this, we don't want to go directly at the subsys, we want to go above it
-
-	float angle2subsys = vm_vec_delta_ang(&tgt2pl, &tgt2subsys, nullptr);
-	float angle2goal = angle2subsys;
-	if (angle2goal > 1.2f) // let's not try to go more than about 70 degrees around the ship
-		angle2goal = 1.2f;
-
-	// we'll start by travelling along the sphere at our current distance around the ship
-	// remember that goal_pos will be relative to our target_ship (so we can scale in and out easily)
-	vec3d goal_pos, cross;
-	vm_vec_cross(&cross, &tgt2pl, &tgt2subsys);
-	vm_vec_normalize(&cross);
-	vm_vec_negate(&cross);
-	vm_rot_point_around_line(&goal_pos, &tgt2pl, angle2goal, &vmd_zero_vector, &cross);
-
-	// then scale in (or out) towards our subsys
-	vec3d world_goal_pos;
-	float new_radius = ((subsys_dist - pl_dist) * (angle2goal / angle2subsys)) + pl_dist;
-	vm_vec_copy_scale(&world_goal_pos, &goal_pos, new_radius / pl_dist);
-	world_goal_pos += target_objp->pos;
-
 	vec3d* good_pos = nullptr;
-	if (pp_collide(&Pl_objp->pos, &world_goal_pos, target_objp, Pl_objp->radius * 4.0f)) {
-		// ok best case won't work
-		if (pl_dist > subsys_dist) {
-			//we're farther away than the subsys, let's try at our current distance
-			world_goal_pos = goal_pos + target_objp->pos;
-			if (!pp_collide(&Pl_objp->pos, &world_goal_pos, target_objp, Pl_objp->radius * 4.0f))
+	// For performance reasons we only recheck once a second, otherwise we reuse the last found target.
+	if (timestamp_elapsed(aip->next_dynamic_path_check_time)) {
+		vec3d tgt2pl = Pl_objp->pos - target_objp->pos;
+		vec3d tgt2subsys = gsubpos - target_objp->pos;
+		float pl_dist = vm_vec_mag(&tgt2pl);
+		float subsys_dist = vm_vec_mag(&tgt2subsys) * 1.3f; // add a bit to this, we don't want to go directly at the subsys, we want to go above it
+
+		float angle2subsys = vm_vec_delta_ang(&tgt2pl, &tgt2subsys, nullptr);
+		float angle2goal = angle2subsys;
+		if (angle2goal > 1.2f) // let's not try to go more than about 70 degrees around the ship
+			angle2goal = 1.2f;
+
+		// we'll start by travelling along the sphere at our current distance around the ship
+		// remember that goal_pos will be relative to our target_ship (so we can scale in and out easily)
+		vec3d goal_pos, cross;
+		vm_vec_cross(&cross, &tgt2pl, &tgt2subsys);
+		vm_vec_normalize(&cross);
+		vm_vec_negate(&cross);
+		vm_rot_point_around_line(&goal_pos, &tgt2pl, angle2goal, &vmd_zero_vector, &cross);
+
+		// then scale in (or out) towards our subsys
+		vec3d world_goal_pos;
+		float new_radius = ((subsys_dist - pl_dist) * (angle2goal / angle2subsys)) + pl_dist;
+		vm_vec_copy_scale(&world_goal_pos, &goal_pos, new_radius / pl_dist);
+		world_goal_pos += target_objp->pos;
+
+		if (pp_collide(&Pl_objp->pos, &world_goal_pos, target_objp, Pl_objp->radius * 4.0f)) {
+			// ok best case won't work
+			if (pl_dist > subsys_dist) {
+				//we're farther away than the subsys, let's try at our current distance
+				world_goal_pos = goal_pos + target_objp->pos;
+				if (!pp_collide(&Pl_objp->pos, &world_goal_pos, target_objp, Pl_objp->radius * 4.0f))
+					good_pos = &world_goal_pos;
+			}
+
+			// ok, let's start moving it away and see if that's better
+			for (float i = 1.0f; i < 4.0f; i += 1.0f) {
+				if (good_pos)
+					break;
+
+				vm_vec_copy_scale(&world_goal_pos, &goal_pos, (new_radius / pl_dist) * powf(1.3f,i));
+				world_goal_pos += target_objp->pos;
+				if (!pp_collide(&Pl_objp->pos, &world_goal_pos, target_objp, Pl_objp->radius * 4.0f))
+					good_pos = &world_goal_pos;
+			}
+
+			// welp this sucks, just run away i guess
+			if (!good_pos) {
+				vm_vec_copy_normalize(&world_goal_pos, &tgt2pl);
+				world_goal_pos *= target_objp->radius + pl_dist;
+				world_goal_pos += target_objp->pos;
 				good_pos = &world_goal_pos;
+			}
 		}
-
-		// ok, let's start moving it away and see if that's better
-		for (float i = 1.0f; i < 4.0f; i += 1.0f) {
-			if (good_pos)
-				break;
-
-			vm_vec_copy_scale(&world_goal_pos, &goal_pos, (new_radius / pl_dist) * powf(1.3f,i));
-			world_goal_pos += target_objp->pos;
-			if (!pp_collide(&Pl_objp->pos, &world_goal_pos, target_objp, Pl_objp->radius * 4.0f))
-				good_pos = &world_goal_pos;
-		}
-
-		// welp this sucks, just run away i guess
-		if (!good_pos) {
-			vm_vec_copy_normalize(&world_goal_pos, &tgt2pl);
-			world_goal_pos *= target_objp->radius + pl_dist;
-			world_goal_pos += target_objp->pos;
+		else
 			good_pos = &world_goal_pos;
-		}
+		aip->next_dynamic_path_check_time = timestamp( AI_DYNAMIC_PATH_RECHECK_DELAY );
+
 	}
-	else
-		good_pos = &world_goal_pos;
+	else{ //Not enough time has passed till recheck.
+		good_pos = &aip->last_dynamic_path_goal;
+	}
 
 	ai_turn_towards_vector(good_pos, Pl_objp, nullptr, nullptr, 0.0f, 0);
 	float subsys_distance = vm_vec_dist(&Pl_objp->pos, &gsubpos);
@@ -777,14 +785,28 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 		
 		ai_turn_towards_vector(enemy_pos, Pl_objp, nullptr, rel_pos, 0.0f, 0, rvec);
 
+		// set an optimal range if applicable
+		float optimal_range = 0.0f;
+		ship_weapon* weapons = &Ships[Pl_objp->instance].weapons;
+		weapon_info* wip = nullptr;
+		ship* shipp = &Ships[Pl_objp->instance];
+
+		if (weapons->num_primary_banks >= 1 && weapons->current_primary_bank >= 0 && !shipp->flags[Ship::Ship_Flags::Primaries_locked]) {
+			wip = &Weapon_info[weapons->primary_bank_weapons[weapons->current_primary_bank]];
+		} else if (weapons->num_secondary_banks >= 1 && weapons->current_secondary_bank >= 0 && !shipp->flags[Ship::Ship_Flags::Secondaries_locked]) {
+			wip = &Weapon_info[weapons->secondary_bank_weapons[weapons->current_secondary_bank]];
+		}
+
+		if (wip != nullptr && wip->optimum_range > 0)
+			optimal_range = wip->optimum_range;
+
 		// calc range of primary weapon
 		weapon_travel_dist = ai_get_weapon_dist(&Ships[Pl_objp->instance].weapons);
 
 		if ( aip->targeted_subsys != NULL ) {
-			if (dist_to_enemy > (weapon_travel_dist-20)) {
+			if (dist_to_enemy > (optimal_range > 0.0f ? optimal_range : (weapon_travel_dist-20))) {
 				accelerate_ship(aip, 1.0f);
 				
-				ship	*shipp = &Ships[Pl_objp->instance];
 				if ((aip->ai_flags[AI::AI_Flags::Free_afterburner_use] || aip->ai_profile_flags[AI::Profile_Flags::Free_afterburner_use]) && !(shipp->flags[Ship::Ship_Flags::Afterburner_locked]) && (dot_to_enemy > 0.75f)) {
 					if (ai_maybe_fire_afterburner(Pl_objp, aip)) {
 						afterburners_start(Pl_objp);
@@ -809,7 +831,7 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 			} else if (dot_to_enemy < 0.75f) {
 				accel = 0.75f;
 			} else {
-				if (dist_to_enemy > weapon_travel_dist/2.0f) {
+				if (dist_to_enemy > (optimal_range > 0.0f ? optimal_range : (weapon_travel_dist/2.0f))) {
 					accel = 1.0f;
 				} else {
 					accel = 1.0f - dot_to_enemy;
@@ -826,7 +848,6 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 			} else {
 				accelerate_ship(aip, accel);
 
-				ship	*shipp = &Ships[Pl_objp->instance];
 				if ((aip->ai_flags[AI::AI_Flags::Free_afterburner_use] || aip->ai_profile_flags[AI::Profile_Flags::Free_afterburner_use]) && !(shipp->flags[Ship::Ship_Flags::Afterburner_locked]) && (accel > 0.95f)) {
 					if (ai_maybe_fire_afterburner(Pl_objp, aip)) {
 						afterburners_start(Pl_objp);
@@ -914,7 +935,7 @@ static void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy)
 									}
 								}
 
-								if (timestamp_elapsed(swp->next_secondary_fire_stamp[current_bank])) {
+								if (timestamp_elapsed(swp->next_secondary_fire_stamp[current_bank]) && weapon_target_satisfies_lock_restrictions(swip, En_objp)) {
 									float firing_range;
 									if (swip->wi_flags[Weapon::Info_Flags::Local_ssm])
 										firing_range=swip->lssm_lock_range;

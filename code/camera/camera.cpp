@@ -9,11 +9,13 @@
 #include "model/model.h" //polymodel, model_get
 #include "options/Option.h"
 #include "parse/parselo.h"
+#include "parse/sexp_container.h"
 #include "playerman/player.h" //player_get_padlock_orient
 #include "ship/ship.h"        //compute_slew_matrix
 
 //*************************IMPORTANT GLOBALS*************************
 float VIEWER_ZOOM_DEFAULT = 0.75f;			//	Default viewer zoom, 0.625 as per multi-lateral agreement on 3/24/97
+float COCKPIT_ZOOM_DEFAULT = 0.75f;
 float Sexp_fov = 0.0f;
 warp_camera Warp_camera;
 
@@ -43,7 +45,7 @@ auto FovOption = options::OptionBuilder<float>("Graphics.FOV", "Field Of View", 
                      .finish();
 
 //*************************CLASS: camera*************************
-//This is where the camera class beings! :D
+//This is where the camera class begins! :D
 camera::camera(const char *in_name, int in_signature)
 {
 	set_name(in_name);
@@ -237,12 +239,24 @@ void camera::set_rotation_facing(vec3d *in_target, float in_rotation_time, float
 {
 	matrix temp_matrix = IDENTITY_MATRIX;
 
-	if(in_target != NULL)
+	if (in_target != nullptr)
 	{
-		vec3d position = vmd_zero_vector;
-		this->get_info(&position, NULL);
+		vec3d position;
+		matrix orient_buf;
+		matrix *orient = nullptr;
 
-		if(in_target->xyz.x == position.xyz.x && in_target->xyz.y == position.xyz.y && in_target->xyz.z == position.xyz.z)
+		if (Use_host_orientation_for_set_camera_facing)
+		{
+			// we want to retrieve the camera's orientation, so provide a buffer for it
+			orient = &orient_buf;
+
+			// reset the camera's orientation state because if we have no host object, that is what the camera will default to
+			c_ori = vmd_identity_matrix;
+		}
+
+		this->get_info(&position, orient, false);
+
+		if (vm_vec_same(in_target, &position))
 		{
 			Warning(LOCATION, "Camera tried to point to self");
 			return;
@@ -250,7 +264,25 @@ void camera::set_rotation_facing(vec3d *in_target, float in_rotation_time, float
 
 		vec3d targetvec;
 		vm_vec_normalized_dir(&targetvec, in_target, &position);
-		vm_vector_2_matrix(&temp_matrix, &targetvec, NULL, NULL);
+
+		if (Use_host_orientation_for_set_camera_facing)
+		{
+			// point along the target vector, but using the host orient's roll
+			vm_vector_2_matrix(&temp_matrix, &targetvec, &orient->vec.uvec, nullptr);
+
+			// if we have a host, we need the difference between the camera's current orient and the orient we want
+			// if not, we will later set the absolute orientation, rather than the orientation relative to the host
+			if (object_host.IsValid())
+			{
+				vm_transpose(orient);
+				temp_matrix = temp_matrix * *orient;
+			}
+		}
+		else
+		{
+			// point directly along the target vector
+			vm_vector_2_matrix(&temp_matrix, &targetvec, nullptr, nullptr);
+		}
 	}
 
 	set_rotation(&temp_matrix, in_rotation_time, in_rotation_acceleration_time, in_rotation_deceleration_time);
@@ -298,13 +330,16 @@ float camera::get_fov()
 }
 
 eye* get_submodel_eye(polymodel *pm, int submodel_num);
-void camera::get_info(vec3d *position, matrix *orientation)
+void camera::get_info(vec3d *position, matrix *orientation, bool apply_camera_orientation)
 {
 	if(position == NULL && orientation == NULL)
 		return;
 	
 	eye* eyep = NULL;
 	vec3d host_normal;
+	matrix host_orient = vmd_identity_matrix;
+	bool use_host_orient = false;
+
 	//POSITION
 	if(!(flags & CAM_STATIONARY_POS) || object_host.IsValid())
 	{
@@ -342,16 +377,19 @@ void camera::get_info(vec3d *position, matrix *orientation)
 					Assertion(objp->type == OBJ_SHIP, "This part of the code expects the object to be a ship");
 
 					vec3d c_pos_in;
-					find_submodel_instance_point_normal(&c_pos_in, &host_normal, pm, pmi, eyep->parent, &eyep->pnt, &eyep->norm);
+					model_instance_local_to_global_point_dir(&c_pos_in, &host_normal, &eyep->pnt, &eyep->norm, pm, pmi, eyep->parent);
 					vm_vec_unrotate(&c_pos, &c_pos_in, &objp->orient);
 					vm_vec_add2(&c_pos, &objp->pos);
 				}
 				else
 				{
 					if (pmi != nullptr)
-						model_instance_find_world_point(&c_pos, &pt, pm, pmi, object_host_submodel, &objp->orient, &objp->pos);
+					{
+						model_instance_local_to_global_point_orient(&c_pos, &host_orient, &pt, &vmd_identity_matrix, pm, pmi, object_host_submodel, &objp->orient, &objp->pos);
+						use_host_orient = true;
+					}
 					else
-						model_find_world_point( &c_pos, &pt, pm, object_host_submodel, &objp->orient, &objp->pos );
+						model_local_to_global_point( &c_pos, &pt, pm, object_host_submodel, &objp->orient, &objp->pos );
 				}
 			}
 		}
@@ -367,7 +405,7 @@ void camera::get_info(vec3d *position, matrix *orientation)
 		}
 	}
 
-	if(position != NULL)
+	if (position != nullptr)
 		*position = c_pos;
 
 	//ORIENTATION
@@ -378,32 +416,32 @@ void camera::get_info(vec3d *position, matrix *orientation)
 		{
 			if(object_target.IsValid())
 			{
-				object *objp = object_target.objp;
-				int model_num = object_get_model(objp);
-				polymodel *pm = nullptr;
-				polymodel_instance *pmi = nullptr;
+				object *target_objp = object_target.objp;
+				int model_num = object_get_model(target_objp);
+				polymodel *target_pm = nullptr;
+				polymodel_instance *target_pmi = nullptr;
 				vec3d target_pos = vmd_zero_vector;
 				
 				//See if we can get the model
 				if(model_num >= 0)
 				{
-					pm = model_get(model_num);
-					if (objp->type == OBJ_SHIP)
-						pmi = model_get_instance(Ships[objp->instance].model_instance_num);
+					target_pm = model_get(model_num);
+					if (target_objp->type == OBJ_SHIP)
+						target_pmi = model_get_instance(Ships[target_objp->instance].model_instance_num);
 				}
 
 				//If we don't have a submodel or don't have the model use object pos
 				//Otherwise, find the submodel pos as it is rotated
-				if(object_target_submodel < 0 || pm == NULL)
+				if (object_target_submodel < 0 || target_pm == nullptr)
 				{
-					target_pos = objp->pos;
+					target_pos = target_objp->pos;
 				}
 				else
 				{
-					if (pmi != nullptr)
-						model_instance_find_world_point(&target_pos, &vmd_zero_vector, pm, pmi, object_target_submodel, &objp->orient, &objp->pos);
+					if (target_pmi != nullptr)
+						model_instance_local_to_global_point(&target_pos, &vmd_zero_vector, target_pm, target_pmi, object_target_submodel, &target_objp->orient, &target_objp->pos);
 					else
-						model_find_world_point( &target_pos, &vmd_zero_vector, pm, object_target_submodel, &objp->orient, &objp->pos );
+						model_local_to_global_point( &target_pos, &vmd_zero_vector, target_pm, object_target_submodel, &target_objp->orient, &target_objp->pos );
 				}
 
 				vec3d targetvec;
@@ -418,6 +456,10 @@ void camera::get_info(vec3d *position, matrix *orientation)
 					vm_vector_2_matrix(&c_ori, &host_normal, vm_vec_same(&host_normal, &object_host.objp->orient.vec.uvec)?NULL:&object_host.objp->orient.vec.uvec, NULL);
 					target_set = true;
 				}
+				else if (use_host_orient)
+				{
+					c_ori = host_orient;
+				}
 				else
 				{
 					c_ori = object_host.objp->orient;
@@ -428,23 +470,30 @@ void camera::get_info(vec3d *position, matrix *orientation)
 				c_ori = vmd_identity_matrix;
 			}
 
-			matrix mtxA = c_ori;
-			matrix mtxB = IDENTITY_MATRIX;
-			float pos = 0.0f;
-			for(int i = 0; i < 9; i++)
+			//Do custom orientation stuff, if needed
+			if (func_custom_orientation != nullptr && !target_set)
 			{
-				ori[i].get(&pos, NULL);
-				mtxB.a1d[i] = pos;
+				func_custom_orientation(this, &c_ori);
 			}
-			vm_matrix_x_matrix(&c_ori, &mtxA, &mtxB);
 
-			vm_orthogonalize_matrix(&c_ori);
+			// only do this if we want to find where the camera is actually pointing;
+			// skip this if we just want the orientation of the host
+			if (apply_camera_orientation)
+			{
+				matrix mtxA = c_ori;
+				matrix mtxB = IDENTITY_MATRIX;
+				float pos = 0.0f;
+				for (int i = 0; i < 9; i++)
+				{
+					ori[i].get(&pos, nullptr);
+					mtxB.a1d[i] = pos;
+				}
+				vm_matrix_x_matrix(&c_ori, &mtxA, &mtxB);
+
+				vm_orthogonalize_matrix(&c_ori);
+			}
 		}
-		//Do custom orientation stuff, if needed
-		if(func_custom_orientation != NULL && !target_set)
-		{
-			func_custom_orientation(this, &c_ori);
-		}
+
 		*orientation = c_ori;
 	}
 }
@@ -559,11 +608,46 @@ void warp_camera::get_info(vec3d *position, matrix *orientation)
 
 #define MAX_SUBTITLE_LINES		64
 subtitle::subtitle(int in_x_pos, int in_y_pos, const char* in_text, const char* in_imageanim, float in_display_time,
-	float in_fade_time, const color *in_text_color, int in_text_fontnum, bool center_x, bool center_y, int in_width,
-	int in_height, bool in_post_shaded)
-	:display_time(-1.0f), fade_time(-1.0f), text_fontnum(-1), time_displayed(-1.0f), time_displayed_end(-1.0f),
-	post_shaded(false)
+	float in_fade_time, const color* in_text_color, int in_text_fontnum, bool center_x, bool center_y, int in_width,
+	int in_height, bool in_post_shaded, int in_line_height_modifier, bool in_adjust_wh)
+	: display_time(-1.0f), fade_time(-1.0f), text_fontnum(-1), line_height_modifier(0),
+	image_id(-1), time_displayed(-1.0f), time_displayed_end(-1.0f), post_shaded(false), do_screen_scaling(false)
 {
+	if ((in_text == nullptr || *in_text == '\0') && (in_imageanim == nullptr || *in_imageanim == '\0'))
+		return;
+
+	auto screen_w = gr_screen.center_w;
+	auto screen_h = gr_screen.center_h;
+
+	// we might be doing screen scaling
+	if (Show_subtitle_screen_base_res[0] > 0 && Show_subtitle_screen_base_res[1] > 0)
+	{
+		// The way this works is we specify our subtitle coordinates relative to a base resolution, e.g. 1024x768.
+		// The base resolution is adjusted behind the scenes to match the aspect ratio of the current resolution
+		// (and the subtitle coordinates are adjusted as well).  Then the adjusted subtitles are resized by the
+		// graphics code when they are drawn to the screen.
+		do_screen_scaling = true;
+
+		// we might need to adjust the coordinates for aspect ratio
+		if (in_adjust_wh)
+		{
+			if (Show_subtitle_screen_base_res[0] != Show_subtitle_screen_adjusted_res[0])
+			{
+				in_x_pos = in_x_pos * Show_subtitle_screen_adjusted_res[0] / Show_subtitle_screen_base_res[0];
+				in_width = in_width * Show_subtitle_screen_adjusted_res[0] / Show_subtitle_screen_base_res[0];
+			}
+			if (Show_subtitle_screen_base_res[1] != Show_subtitle_screen_adjusted_res[1])
+			{
+				in_y_pos = in_y_pos * Show_subtitle_screen_adjusted_res[1] / Show_subtitle_screen_base_res[1];
+				in_height = in_height * Show_subtitle_screen_adjusted_res[1] / Show_subtitle_screen_base_res[1];
+			}
+		}
+
+		// use these because we will be scaling the subtitle when it is displayed
+		screen_w = Show_subtitle_screen_adjusted_res[0];
+		screen_h = Show_subtitle_screen_adjusted_res[1];
+	}
+
 	// Initialize color
 	gr_init_color(&text_color, 0, 0, 0);
 	
@@ -573,18 +657,14 @@ subtitle::subtitle(int in_x_pos, int in_y_pos, const char* in_text, const char* 
 	memset( imageanim, 0, sizeof(imageanim) );
 	memset( &text_pos, 0, 2*sizeof(int) );
 	memset( &image_pos, 0, 4*sizeof(int) );
-	image_id = -1;
-
-	if ( ((in_text != NULL) && (strlen(in_text) <= 0)) && ((in_imageanim != NULL) && (strlen(in_imageanim) <= 0)) )
-		return;
 
 	if (in_text != NULL && in_text[0] != '\0')
 	{
 		text_buf = in_text;
 		sexp_replace_variable_names_with_values(text_buf);
+		sexp_container_replace_refs_with_values(text_buf);
 		in_text = text_buf.c_str();
 	}
-
 
 	int num_text_lines = 0;
 	const char *text_line_ptrs[MAX_SUBTITLE_LINES];
@@ -608,6 +688,7 @@ subtitle::subtitle(int in_x_pos, int in_y_pos, const char* in_text, const char* 
 	else
 		gr_init_alphacolor(&text_color, 255, 255, 255, 255);
 	text_fontnum = in_text_fontnum;
+	line_height_modifier = in_line_height_modifier;
 
 	//Setup display and fade time
 	display_time = fl_abs(in_display_time);
@@ -646,6 +727,14 @@ subtitle::subtitle(int in_x_pos, int in_y_pos, const char* in_text, const char* 
 			if(w > tw)
 				tw = w;
 
+			if (line_height_modifier != 0.0f)
+			{
+				if (Show_subtitle_uses_pixels)
+					h = line_height_modifier;
+				else
+					h = fl2i(h * line_height_modifier / 100.0f);
+			}
+
 			th += h;
 		}
 
@@ -671,20 +760,20 @@ subtitle::subtitle(int in_x_pos, int in_y_pos, const char* in_text, const char* 
 
 		//Center it?
 		if(center_x)
-			image_pos.x = (gr_screen.center_w - tw)/2 + gr_screen.center_offset_x;
+			image_pos.x = (screen_w - tw)/2;
 		if(center_y)
-			image_pos.y = (gr_screen.center_h - th)/2 + gr_screen.center_offset_y;
+			image_pos.y = (screen_h - th)/2;
 	}
 
 	if(in_x_pos < 0 && !center_x)
-		image_pos.x += gr_screen.center_offset_x + gr_screen.center_w + in_x_pos;
+		image_pos.x += screen_w + in_x_pos;
 	else if(!center_x)
-		image_pos.x += gr_screen.center_offset_x + in_x_pos;
+		image_pos.x += in_x_pos;
 
 	if(in_y_pos < 0 && !center_y)
-		image_pos.y += gr_screen.center_offset_y + gr_screen.center_h + in_y_pos;
+		image_pos.y += screen_h + in_y_pos;
 	else if(!center_y)
-		image_pos.y += gr_screen.center_offset_y + in_y_pos;
+		image_pos.y += in_y_pos;
 
 	image_pos.w = in_width;
 	image_pos.h = in_height;
@@ -740,24 +829,32 @@ void subtitle::do_frame(float frametime)
 	int x = text_pos.x;
 	int y = text_pos.y;
 
+	auto sizing_mode = do_screen_scaling ? GR_RESIZE_FULL : GR_RESIZE_NONE;
+	if (do_screen_scaling)
+		gr_set_screen_scale(Show_subtitle_screen_adjusted_res[0], Show_subtitle_screen_adjusted_res[1]);
+
+	// do the actual drawing ---------------------
 
 	for(SCP_vector<SCP_string>::iterator line = text_lines.begin(); line != text_lines.end(); ++line)
 	{
-		gr_string(x, y, (char*)line->c_str(), GR_RESIZE_NONE);
-		y += font_height;
-	}
+		gr_string(x, y, (char*)line->c_str(), sizing_mode);
 
-	// restore old font
-	if (old_fontnum >= 0)
-	{
-		font::set_font(old_fontnum);
+		if (line_height_modifier != 0.0f)
+		{
+			if (Show_subtitle_uses_pixels)
+				font_height = line_height_modifier;
+			else
+				font_height = fl2i(font_height * line_height_modifier / 100.0f);
+		}
+
+		y += font_height;
 	}
 
 	if(image_id >= 0)
 	{
 		gr_set_bitmap(image_id, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, text_color.alpha/255.0f);
 
-		// scaling?
+		// image scaling?
 		if (image_pos.w > 0 || image_pos.h > 0)
 		{
 			int orig_w, orig_h;
@@ -769,15 +866,24 @@ void subtitle::do_frame(float frametime)
 			scale.xyz.z = 1.0f;
 
 			gr_push_scale_matrix(&scale);
-			gr_bitmap(fl2i(image_pos.x / scale.xyz.x), fl2i(image_pos.y / scale.xyz.y), GR_RESIZE_NONE);
+			gr_bitmap(fl2i(image_pos.x / scale.xyz.x), fl2i(image_pos.y / scale.xyz.y), sizing_mode);
 			gr_pop_scale_matrix();
 		}
 		// no scaling
 		else
 		{
-			gr_bitmap(image_pos.x, image_pos.y, GR_RESIZE_NONE);
+			gr_bitmap(image_pos.x, image_pos.y, sizing_mode);
 		}
 	}
+
+	// finished the actual drawing ---------------
+
+	if (do_screen_scaling)
+		gr_reset_screen_scale();
+
+	// restore old font
+	if (old_fontnum >= 0)
+		font::set_font(old_fontnum);
 
 	time_displayed += frametime;
 }
@@ -793,9 +899,9 @@ subtitle::~subtitle()
 
 void subtitle::clone(const subtitle &sub)
 {
-
 	text_lines = sub.text_lines;
 	text_fontnum = sub.text_fontnum;
+	line_height_modifier = sub.line_height_modifier;
 
 	// copy the structs
 	text_pos = sub.text_pos;
@@ -818,6 +924,7 @@ void subtitle::clone(const subtitle &sub)
 	time_displayed_end = sub.time_displayed_end;
 
 	post_shaded = sub.post_shaded;
+	do_screen_scaling = sub.do_screen_scaling;
 }
 
 subtitle& subtitle::operator=(const subtitle &sub)

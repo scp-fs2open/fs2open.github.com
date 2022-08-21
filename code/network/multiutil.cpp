@@ -82,7 +82,7 @@
 extern int ascii_table[];
 extern int shifted_ascii_table[];
 
-extern int Multi_ping_timestamp;
+extern UI_TIMESTAMP Multi_ping_timestamp;
 
 // network object management
 ushort Next_ship_signature;										// next permanent network signature to assign to an object
@@ -486,7 +486,8 @@ int find_player_no_port(net_addr *addr)
 	return -1;
 }
 
-int find_player_id(short player_id)
+// return the index to the players array from the player ID assigned by the Server.
+int find_player_index(short player_id)
 {
 	int i;
 	for (i = 0; i < MAX_PLAYERS; i++ ) {
@@ -750,7 +751,7 @@ void multi_create_player( int net_player_num, player *pl, const char* name, net_
 	Assertion(name != nullptr, "A nullptr callsign was passed to multi_create_player(). This is a code error, please report.");
 
 	// blast _any_ old data
-	memset(&Net_players[net_player_num],0,sizeof(net_player));
+	Net_players[net_player_num].init();
 
 	// get the current # of players
 	current_player_count = multi_num_players();
@@ -798,9 +799,9 @@ void multi_create_player( int net_player_num, player *pl, const char* name, net_
 	// Net_players[net_player_num].respawn_count = 0;
 	Net_players[net_player_num].last_heard_time = timer_get_fixed_seconds();
 	Net_players[net_player_num].reliable_socket = PSNET_INVALID_SOCKET;
-	Net_players[net_player_num].s_info.kick_timestamp = -1;
-	Net_players[net_player_num].s_info.voice_token_timestamp = -1;
-	Net_players[net_player_num].s_info.player_collision_timestamp = timestamp(0);
+	Net_players[net_player_num].s_info.kick_timestamp = UI_TIMESTAMP::invalid();
+	Net_players[net_player_num].s_info.voice_token_timestamp = UI_TIMESTAMP::invalid();
+	Net_players[net_player_num].s_info.player_collision_timestamp = TIMESTAMP::immediate();
 	Net_players[net_player_num].s_info.tracker_security_last = -1;
 	Net_players[net_player_num].s_info.target_objnum = -1;
 	Net_players[net_player_num].s_info.accum_buttons = 0;
@@ -813,7 +814,7 @@ void multi_create_player( int net_player_num, player *pl, const char* name, net_
 	Net_players[net_player_num].client_server_seq = 0;		
 	
 	// timestamp his last_full_update_time
-	Net_players[net_player_num].s_info.last_full_update_time = timestamp(0);
+	Net_players[net_player_num].s_info.last_full_update_time = UI_TIMESTAMP::immediate();
 
 	// nil his file xfer handle
 	Net_players[net_player_num].s_info.xfer_handle = -1;
@@ -1008,11 +1009,11 @@ void delete_player(int player_num,int kicked_reason)
 	}
 
 	// blast this memory clean
-	memset(&Net_players[player_num], 0, sizeof(net_player));
+	Net_players[player_num].init();
 	Net_players[player_num].reliable_socket = PSNET_INVALID_SOCKET;
 
-	extern int Multi_client_update_times[MAX_PLAYERS];
-	Multi_client_update_times[player_num] = -1;
+	extern UI_TIMESTAMP Multi_client_update_times[MAX_PLAYERS];	// NOLINT
+	Multi_client_update_times[player_num] = UI_TIMESTAMP::invalid();
 }
 
 #define INACTIVE_LIMIT_NORMAL (15 * F1_0)
@@ -1304,7 +1305,7 @@ void server_verify_filesig(short player_id, ushort sum_sig, int length_sig)
 	int ok;	
 	int is_builtin;
    
-	player = find_player_id(player_id);
+	player = find_player_index(player_id);
 	Assert(player >= 0);
 	if(player < 0){
 		return;
@@ -1563,7 +1564,7 @@ void multi_create_standalone_object()
 	Net_player->m_player->objnum = objnum;
 
 	// create the default player ship object and use that as my default virtual "ship", and make it "invisible"
-	pobj_num = parse_create_object(Player_start_pobject);
+	pobj_num = parse_create_object(Player_start_pobject, true);
 	Assert(pobj_num != -1);
     flagset<Object::Object_Flags> tmp_flags;
 	obj_set_flags(&Objects[pobj_num], tmp_flags + Object::Object_Flags::Player_ship);
@@ -1598,7 +1599,8 @@ active_game *multi_new_active_game( void )
 {
 	active_game *new_game;
 
-	new_game = (active_game *)vm_malloc(sizeof(active_game));
+	new_game = new active_game;
+
 	if ( new_game == nullptr ) {
 		nprintf(("Network", "Cannot allocate space for new active game structure\n"));
 		return nullptr;
@@ -1704,9 +1706,9 @@ active_game *multi_update_active_games(active_game *ag)
 	
 	// update the last time we heard from him
 	if ( !MULTI_IS_TRACKER_GAME && (Multi_options_g.protocol == NET_TCP) && (Net_player->p_info.options.flags & MLO_FLAG_LOCAL_BROADCAST)){
-		gp->heard_from_timer = timestamp(MULTI_JOIN_SERVER_TIMEOUT_LOCAL);
+		gp->heard_from_timer = ui_timestamp(MULTI_JOIN_SERVER_TIMEOUT_LOCAL);
 	} else {
-		gp->heard_from_timer = timestamp(MULTI_JOIN_SERVER_TIMEOUT);
+		gp->heard_from_timer = ui_timestamp(MULTI_JOIN_SERVER_TIMEOUT);
 	}
 
 	return gp;
@@ -1723,7 +1725,7 @@ void multi_free_active_games()
 			backup = moveup;
 			moveup = moveup->next;
 			
-			vm_free(backup);
+			delete backup;
 			backup = nullptr;
 		} while(moveup != Active_game_head);
 		Active_game_head = nullptr;
@@ -2532,7 +2534,7 @@ void multi_process_valid_join_request(join_request *jr, net_addr *who_from, int 
 			send_accept_packet(net_player_num, ACCEPT_INGAME, ingame_join_team);
 
 			// set his last full update time for updating him on ingame join ships
-			Net_players[net_player_num].s_info.last_full_update_time = timestamp(INGAME_SHIP_UPDATE_TIME);
+			Net_players[net_player_num].s_info.last_full_update_time = ui_timestamp(INGAME_SHIP_UPDATE_TIME);
 		} 
 		// if he's joining as an otherwise ordinary client
 		else {
@@ -2560,8 +2562,8 @@ void multi_process_valid_join_request(join_request *jr, net_addr *who_from, int 
 		}
 	}
 
-	extern int Multi_client_update_times[MAX_PLAYERS];
-	Multi_client_update_times[net_player_num] = -1;
+	extern UI_TIMESTAMP Multi_client_update_times[MAX_PLAYERS];	// NOLINT
+	Multi_client_update_times[net_player_num] = UI_TIMESTAMP::invalid();
 
 	// notify datarate
 	multi_rate_reset(net_player_num);
@@ -2574,7 +2576,7 @@ int multi_process_restricted_keys(int k)
 	int team_val;
 	
 	// if the query timestamp is not set, don't do anything
-	if(Multi_restr_query_timestamp == -1){
+	if ( !Multi_restr_query_timestamp.isValid() ) {
 		return 0;
 	}
 
@@ -2612,7 +2614,7 @@ int multi_process_restricted_keys(int k)
 	// check the keypress
 	if((k == key1) || (k == key2)){
 		// unset the timestamp
-		Multi_restr_query_timestamp = -1;			
+		Multi_restr_query_timestamp = UI_TIMESTAMP::invalid();
 
 		// MWA -- 5/26/98.  Next line commented out.  It should be cleared when the ingame joiner
 		// actually gets into the mission
@@ -3078,20 +3080,7 @@ void multi_update_valid_missions()
 		popup_conditional_create(0, XSTR("&Cancel", 667), XSTR("Validating missions ...", -1));
 	}
 
-	for (idx = 0; idx < Multi_create_mission_list.size(); idx++) {
-		if (Multi_create_mission_list[idx].valid_status != MVALID_STATUS_UNKNOWN) {
-			continue;
-		}
-
-		int rval = multi_fs_tracker_validate_mission(Multi_create_mission_list[idx].filename);
-
-		if (rval == -2) {
-			was_cancelled = true;
-			break;
-		}
-
-		Multi_create_mission_list[idx].valid_status = (char)rval;
-	}
+	was_cancelled = !multi_fs_tracker_validate_mission_list(Multi_create_mission_list);
 
 	if ( !(Game_mode & GM_STANDALONE_SERVER) ) {
 		popup_conditional_close();
@@ -4021,9 +4010,9 @@ void send_debrief_event() {
 void multi_send_anti_timeout_ping()
 {
 	if (Game_mode & GM_MULTIPLAYER) {
-		if ( (Multi_ping_timestamp == -1) || (Multi_ping_timestamp <= timer_get_milliseconds()) ) {
+		if (!Multi_ping_timestamp.isValid() || ui_timestamp_elapsed(Multi_ping_timestamp)) {
 			multi_ping_send_all();
-			Multi_ping_timestamp = timer_get_milliseconds() + 10000; // timeout is 10 seconds between pings
+			Multi_ping_timestamp = ui_timestamp(10000); // timeout is 10 seconds between pings
 		}
 	}
 }

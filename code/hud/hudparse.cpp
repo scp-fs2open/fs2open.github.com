@@ -53,9 +53,9 @@ int Hud_font = -1;
 
 bool Chase_view_only_ex = false;
 
-//WARNING: If you add gauges to this array, make sure to bump num_default_gauges!
-int num_default_gauges = 42;
-static int retail_gauges[] = {
+//WARNING: If you add gauges to this array, make sure to bump Num_builtin_gauges!
+const int Num_builtin_gauges = 42;
+static int Builtin_gauges[Num_builtin_gauges] = {
 	HUD_OBJECT_MESSAGES,
 	HUD_OBJECT_TRAINING_MESSAGES,
 	HUD_OBJECT_SUPPORT,
@@ -100,9 +100,52 @@ static int retail_gauges[] = {
 	HUD_OBJECT_ETS_RETAIL
 };
 
+Legacy_HUD_gauge_pair Legacy_HUD_gauges[NUM_HUD_GAUGES] =
+{
+	{ "LEAD_INDICATOR", HUD_OBJECT_LEAD },
+	{ "ORIENTATION_TEE", HUD_OBJECT_ORIENTATION_TEE },
+	{ "HOSTILE_TRIANGLE", HUD_OBJECT_HOSTILE_TRI },
+	{ "TARGET_TRIANGLE", HUD_OBJECT_TARGET_TRI },
+	{ "MISSION_TIME", HUD_OBJECT_MISSION_TIME },
+	{ "RETICLE_CIRCLE", -1 },
+	{ "THROTTLE_GAUGE", HUD_OBJECT_THROTTLE },
+	{ "RADAR", HUD_OBJECT_RADAR_STD },
+	{ "TARGET_MONITOR", HUD_OBJECT_TARGET_MONITOR },
+	{ "CENTER_RETICLE", HUD_OBJECT_CENTER_RETICLE },
+	{ "TARGET_MONITOR_EXTRA_DATA", HUD_OBJECT_EXTRA_TARGET_DATA },
+	{ "TARGET_SHIELD_ICON", HUD_OBJECT_TARGET_SHIELD },
+	{ "PLAYER_SHIELD_ICON", HUD_OBJECT_PLAYER_SHIELD },
+	{ "ETS_GAUGE", HUD_OBJECT_ETS_RETAIL },
+	{ "AUTO_TARGET", HUD_OBJECT_AUTO_TARGET },
+	{ "AUTO_SPEED", HUD_OBJECT_AUTO_SPEED },
+	{ "WEAPONS_GAUGE", HUD_OBJECT_WEAPONS },
+	{ "ESCORT_VIEW", HUD_OBJECT_ESCORT },
+	{ "DIRECTIVES_VIEW", HUD_OBJECT_DIRECTIVES },
+	{ "THREAT_GAUGE", HUD_OBJECT_THREAT },
+	{ "AFTERBURNER_ENERGY", HUD_OBJECT_AFTERBURNER },
+	{ "WEAPONS_ENERGY", HUD_OBJECT_WEAPON_ENERGY },
+	{ "WEAPON_LINKING_GAUGE", HUD_OBJECT_WEAPON_LINKING },
+	{ "TARGER_MINI_ICON", HUD_OBJECT_MINI_SHIELD },
+	{ "OFFSCREEN_INDICATOR", HUD_OBJECT_OFFSCREEN },
+	{ "TALKING_HEAD", HUD_OBJECT_TALKING_HEAD },
+	{ "DAMAGE_GAUGE", HUD_OBJECT_DAMAGE },
+	{ "MESSAGE_LINES", HUD_OBJECT_MESSAGES },
+	{ "MISSILE_WARNING_ARROW", HUD_OBJECT_MISSILE_TRI },
+	{ "CMEASURE_GAUGE", HUD_OBJECT_CMEASURES },
+	{ "OBJECTIVES_NOTIFY_GAUGE", HUD_OBJECT_OBJ_NOTIFY },
+	{ "WINGMEN_STATUS", HUD_OBJECT_WINGMAN_STATUS },
+	{ "OFFSCREEN RANGE", -1 },
+	{ "KILLS GAUGE", HUD_OBJECT_KILLS },
+	{ "ATTACKING TARGET COUNT", -1 },
+	{ "TEXT FLASH", HUD_OBJECT_TEXT_WARNINGS },
+	{ "MESSAGE BOX", HUD_OBJECT_SQUAD_MSG },
+	{ "SUPPORT GUAGE", HUD_OBJECT_SUPPORT },
+	{ "LAG GUAGE", HUD_OBJECT_LAG },
+};
+
 flag_def_list Hud_gauge_types[] = {
 	{ "Messages",			HUD_OBJECT_MESSAGES,			0},
-	{ "Training messages",	HUD_OBJECT_TRAINING_MESSAGES,	0},
+	{ "Training messages",	HUD_OBJECT_TRAINING_MESSAGES,	0},		// Not in legacy list
 	{ "Support",			HUD_OBJECT_SUPPORT,				0},
 	{ "Damage",				HUD_OBJECT_DAMAGE,				0},
 	{ "Wingman status",		HUD_OBJECT_WINGMAN_STATUS,		0},
@@ -120,14 +163,14 @@ flag_def_list Hud_gauge_types[] = {
 	{ "Target shield",		HUD_OBJECT_TARGET_SHIELD,		0},
 	{ "Escort list",		HUD_OBJECT_ESCORT,				0},
 	{ "Mission time",		HUD_OBJECT_MISSION_TIME,		0},
-	{ "Ets weapons",		HUD_OBJECT_ETS_WEAPONS,			0},
-	{ "Ets shields",		HUD_OBJECT_ETS_SHIELDS,			0},
-	{ "Ets engines",		HUD_OBJECT_ETS_ENGINES,			0},
+	{ "Ets weapons",		HUD_OBJECT_ETS_WEAPONS,			0},		// Not in legacy list
+	{ "Ets shields",		HUD_OBJECT_ETS_SHIELDS,			0},		// Not in legacy list
+	{ "Ets engines",		HUD_OBJECT_ETS_ENGINES,			0},		// Not in legacy list
 	{ "Target monitor",		HUD_OBJECT_TARGET_MONITOR,		0},
 	{ "Extra target data",	HUD_OBJECT_EXTRA_TARGET_DATA,	0},
 	{ "Radar",				HUD_OBJECT_RADAR_STD,			0},
-	{ "Radar orb",			HUD_OBJECT_RADAR_ORB,			0},
-	{ "Radar BSG",			HUD_OBJECT_RADAR_BSG,			0},
+	{ "Radar orb",			HUD_OBJECT_RADAR_ORB,			0},		// Not in legacy list
+	{ "Radar BSG",			HUD_OBJECT_RADAR_BSG,			0},		// Not in legacy list
 	{ "Afterburner energy",	HUD_OBJECT_AFTERBURNER,			0},
 	{ "Weapon energy",		HUD_OBJECT_WEAPON_ENERGY,		0},
 	{ "Text warnings",		HUD_OBJECT_TEXT_WARNINGS,		0},
@@ -136,12 +179,12 @@ flag_def_list Hud_gauge_types[] = {
 	{ "Threat indicator",	HUD_OBJECT_THREAT,				0},
 	{ "Lead indicator",		HUD_OBJECT_LEAD,				0},
 	{ "Lead sight",			HUD_OBJECT_LEAD_SIGHT,			0},
-	{ "Lock indicator",		HUD_OBJECT_LOCK,				0},
+	{ "Lock indicator",		HUD_OBJECT_LOCK,				0},		// Not in legacy list
 	{ "Weapon linking",		HUD_OBJECT_WEAPON_LINKING,		0},
-	{ "Multiplayer messages",	HUD_OBJECT_MULTI_MSG,			0},
-	{ "Voice status",		HUD_OBJECT_VOICE_STATUS,		0},
-	{ "Ping",				HUD_OBJECT_PING,				0},
-	{ "Supernova",			HUD_OBJECT_SUPERNOVA,			0},
+	{ "Multiplayer messages",	HUD_OBJECT_MULTI_MSG,			0},	// Not in legacy list
+	{ "Voice status",		HUD_OBJECT_VOICE_STATUS,		0},		// Not in legacy list
+	{ "Ping",				HUD_OBJECT_PING,				0},		// Not in legacy list
+	{ "Supernova",			HUD_OBJECT_SUPERNOVA,			0},		// Not in legacy list
 	{ "Offscreen indicator",	HUD_OBJECT_OFFSCREEN,			0},
 	{ "Targeting brackets",	HUD_OBJECT_BRACKETS,			0},
 	{ "Orientation",		HUD_OBJECT_ORIENTATION_TEE,		0},
@@ -149,10 +192,9 @@ flag_def_list Hud_gauge_types[] = {
 	{ "Target direction",	HUD_OBJECT_TARGET_TRI,			0},
 	{ "Missile indicator",	HUD_OBJECT_MISSILE_TRI,			0},
 	{ "Kills",				HUD_OBJECT_KILLS,				0},
-	{ "Fixed messages",		HUD_OBJECT_FIXED_MESSAGES,		0},
+	{ "Fixed messages",		HUD_OBJECT_FIXED_MESSAGES,		0},		// Not in legacy list
 	{ "Ets retail",			HUD_OBJECT_ETS_RETAIL,			0}
 };
-
 int Num_hud_gauge_types = sizeof(Hud_gauge_types)/sizeof(flag_def_list);
 
 int parse_ship_start()
@@ -264,8 +306,8 @@ void parse_hud_gauges_tbl(const char *filename)
 		if (optional_string("$Reticle Style:")) {
 			int temp = required_string_either("FS1", "FS2");
 
-			// using require_string_either won't advance the Mp pointer to the next token so force it instead
-			skip_to_start_of_string("#Gauge Config");
+			// using require_string_either won't advance the Mp pointer to the next token
+			Mp += 3;
 
 			if (temp < 0)
 				Warning(LOCATION, "Undefined reticle style in hud_gauges.tbl!");
@@ -403,20 +445,17 @@ void parse_hud_gauges_tbl(const char *filename)
 			}
 
 			// Pruning time. Let's see if the current resolution defined by the user matches the conditions set by this entry
+			bool prune_config = false;
 			if (optional_string("$Required Aspect:")) {
 				// filter aspect ratio.
 				if (optional_string("Full Screen")) {
-					if( (float)gr_screen.center_w / (float)gr_screen.center_h > 1.5) {
-						skip_to_start_of_string("#Gauge Config");
-						//skip_to_start_of_string_either("#Gauge Config", "#End");
-						continue;
+					if ((float)gr_screen.center_w / (float)gr_screen.center_h > 1.5f) {
+						prune_config = true;
 					}
 				}
 				else if (optional_string("Wide Screen")) {
-					if( (float)gr_screen.center_w / (float)gr_screen.center_h <= 1.5) {
-						skip_to_start_of_string("#Gauge Config");
-						//skip_to_start_of_string_either("#Gauge Config", "#End");
-						continue;
+					if ((float)gr_screen.center_w / (float)gr_screen.center_h <= 1.5f) {
+						prune_config = true;
 					}
 				}
 			}
@@ -427,13 +466,11 @@ void parse_hud_gauges_tbl(const char *filename)
 				stuff_int_list(min_res, 2, RAW_INTEGER_TYPE);
 
 				if (min_res[0] > gr_screen.max_w) {
-					skip_to_start_of_string("#Gauge Config");
-					continue;
+					prune_config = true;
 				}
 				else if (min_res[0] == gr_screen.center_w) {
 					if (min_res[1] > gr_screen.center_h) {
-						skip_to_start_of_string("#Gauge Config");
-						continue;
+						prune_config = true;
 					}
 				}
 			}
@@ -444,15 +481,19 @@ void parse_hud_gauges_tbl(const char *filename)
 				stuff_int_list(max_res, 2, RAW_INTEGER_TYPE);
 
 				if (max_res[0] < gr_screen.max_w) {
-					skip_to_start_of_string("#Gauge Config");
-					continue;
+					prune_config = true;
 				}
 				else if (max_res[0] == gr_screen.center_w) {
 					if (max_res[1] < gr_screen.center_h) {
-						skip_to_start_of_string("#Gauge Config");
-						continue;
+						prune_config = true;
 					}
 				}
+			}
+
+			// don't prune resolutions in FRED
+			if (!Fred_running && prune_config) {
+				skip_to_start_of_string("#Gauge Config");
+				continue;
 			}
 
 			// let's start parsing for gauges.
@@ -522,7 +563,6 @@ void hud_positions_init()
 
 	// load missing retail gauges for the default and ship-specific HUDs
 	load_missing_retail_gauges();
-	
 }
 
 void load_missing_retail_gauges()
@@ -533,11 +573,11 @@ void load_missing_retail_gauges()
 	if(Hud_retail) {
 		int num_loaded_gauges = (int)default_hud_gauges.size();
 
-		for(int i = 0; i < num_default_gauges; i++) {
+		for(int i = 0; i < Num_builtin_gauges; i++) {
 			retail_gauge_loaded = false;
 
 			for(int j = 0; j < num_loaded_gauges; j++) {
-				if(retail_gauges[i] == default_hud_gauges[j]->getObjectType()) {
+				if(Builtin_gauges[i] == default_hud_gauges[j]->getObjectType()) {
 					retail_gauge_loaded = true;
 					break;
 				}
@@ -545,7 +585,7 @@ void load_missing_retail_gauges()
 
 			if(!retail_gauge_loaded) {
 				gauge_settings settings;
-				load_gauge(retail_gauges[i], &settings);
+				load_gauge(Builtin_gauges[i], &settings);
 			}
 		}
 
@@ -589,9 +629,9 @@ void load_missing_retail_gauges()
 		if(it->hud_enabled && it->hud_retail) {
 			int num_loaded_gauges = (int)it->hud_gauges.size();
 
-			for(int i = 0; i < num_default_gauges; i++) {
+			for(int i = 0; i < Num_builtin_gauges; i++) {
 				for(int j = 0; j < num_loaded_gauges; j++) {
-					if(retail_gauges[i] == it->hud_gauges[j]->getObjectType()) {
+					if(Builtin_gauges[i] == it->hud_gauges[j]->getObjectType()) {
 						retail_gauge_loaded = true;
 					}
 				}
@@ -599,7 +639,7 @@ void load_missing_retail_gauges()
 				if(!retail_gauge_loaded) {
 					gauge_settings settings;
 					settings.ship_idx = &sindex;
-					load_gauge(retail_gauges[i], &settings);
+					load_gauge(Builtin_gauges[i], &settings);
 				}
 			}
 
@@ -1127,7 +1167,7 @@ void check_color(int *colorp)
 	}
 }
 
-void adjust_base_res(int *base_res, int *force_scaling_above_res, bool scaling = true)
+void adjust_base_res(int *base_res, const int *force_scaling_above_res, float *aspect_quotient, bool scaling = true)
 {
 	// Don't scale gauge if:
 	// no scaling is set and current res is between base res and "force scaling above res"
@@ -1137,6 +1177,7 @@ void adjust_base_res(int *base_res, int *force_scaling_above_res, bool scaling =
 			gr_screen.center_w <= force_scaling_above_res[0] || gr_screen.center_h <= force_scaling_above_res[1])) ||
 			(gr_screen.center_w >= base_res[0] && gr_screen.center_h == base_res[1]) ||
 			(gr_screen.center_w == base_res[0] && gr_screen.center_h >= base_res[1])) {
+		*aspect_quotient = 1.0f;
 		base_res[0] = gr_screen.center_w;
 		base_res[1] = gr_screen.center_h;
 		return;
@@ -1148,11 +1189,11 @@ void adjust_base_res(int *base_res, int *force_scaling_above_res, bool scaling =
 		base_res[1] = force_scaling_above_res[1];
 	}
 
-	float aspect_quotient = ((float)gr_screen.center_w / (float)gr_screen.center_h) / ((float)base_res[0] / (float)base_res[1]);
-	if (aspect_quotient >= 1.0) {
-		base_res[0] = (int)(base_res[0] * aspect_quotient);
+	*aspect_quotient = ((float)gr_screen.center_w / (float)gr_screen.center_h) / ((float)base_res[0] / (float)base_res[1]);
+	if (*aspect_quotient >= 1.0f) {
+		base_res[0] = (int)(base_res[0] * *aspect_quotient);
 	} else {
-		base_res[1] = (int)(base_res[1] / aspect_quotient);
+		base_res[1] = (int)(base_res[1] / *aspect_quotient);
 	}
 }
 
@@ -1196,7 +1237,7 @@ std::unique_ptr<T> gauge_load_common(gauge_settings* settings, T* preAllocated =
 					stuff_int_list(settings->force_scaling_above_res, 2);
 				}
 
-				adjust_base_res(settings->base_res, settings->force_scaling_above_res, settings->scale_gauge);
+				adjust_base_res(settings->base_res, settings->force_scaling_above_res, &settings->aspect_quotient, settings->scale_gauge);
 
 				// If no positioning information is specified, use the default position
 				bool use_default_pos = true;
@@ -1220,7 +1261,7 @@ std::unique_ptr<T> gauge_load_common(gauge_settings* settings, T* preAllocated =
 				}
 			}
 		} else {
-			adjust_base_res(settings->base_res, settings->force_scaling_above_res, settings->scale_gauge);
+			adjust_base_res(settings->base_res, settings->force_scaling_above_res, &settings->aspect_quotient, settings->scale_gauge);
 		}
 	} else {
 		if(gr_screen.res == GR_640) {
@@ -1231,7 +1272,7 @@ std::unique_ptr<T> gauge_load_common(gauge_settings* settings, T* preAllocated =
 			settings->base_res[1] = 768;
 		}
 
-		adjust_base_res(settings->base_res, settings->force_scaling_above_res, settings->scale_gauge);
+		adjust_base_res(settings->base_res, settings->force_scaling_above_res, &settings->aspect_quotient, settings->scale_gauge);
 
 		if (settings->set_position && !settings->use_coords) {
 			settings->coords[0] = (int)(settings->base_res[0] * settings->origin[0]) + settings->offset[0];
@@ -1303,8 +1344,11 @@ std::unique_ptr<T> gauge_load_common(gauge_settings* settings, T* preAllocated =
 		instance.reset(new T());
 	}
 
-	instance->initBaseResolution(settings->base_res[0], settings->base_res[1]);
+	instance->initBaseResolution(settings->base_res[0], settings->base_res[1], settings->aspect_quotient);
 	instance->initFont(settings->font_num);
+	instance->initOriginAndOffset(settings->origin[0], settings->origin[1], settings->offset[0], settings->offset[1]);
+	instance->initCoords(settings->use_coords, settings->coords[0], settings->coords[1]);
+
 	instance->initChase_view_only(settings->chase_view_only);
 	if (settings->set_position) {
 		instance->initPosition(settings->coords[0], settings->coords[1]);
@@ -1366,7 +1410,7 @@ void load_gauge_custom(gauge_settings* settings)
 				stuff_int_list(settings->force_scaling_above_res, 2);
 			}
 
-			adjust_base_res(settings->base_res, settings->force_scaling_above_res, settings->scale_gauge);
+			adjust_base_res(settings->base_res, settings->force_scaling_above_res, &settings->aspect_quotient, settings->scale_gauge);
 
 			// If no positioning information is specified, use the default position
 			bool use_default_pos = true;
@@ -1452,7 +1496,7 @@ void load_gauge_custom(gauge_settings* settings)
 		stuff_string(gauge_string, F_NAME, MAX_FILENAME_LEN);
 		
 		for(i = 0; i < NUM_HUD_GAUGES; i++) {
-			if(!strcmp(HUD_gauge_text[i], gauge_string)) {
+			if(!strcmp(Legacy_HUD_gauges[i].hud_gauge_text, gauge_string)) {
 				gauge_type = i;
 				break;
 			}
@@ -1478,9 +1522,13 @@ void load_gauge_custom(gauge_settings* settings)
 	}
 
 	std::unique_ptr<HudGauge> hud_gauge(new HudGauge(gauge_type, settings->slew, r, g, b, name, text, filename, txtoffset_x, txtoffset_y));
-	hud_gauge->initBaseResolution(settings->base_res[0], settings->base_res[1]);
+
+	hud_gauge->initBaseResolution(settings->base_res[0], settings->base_res[1], settings->aspect_quotient);
 	hud_gauge->initPosition(settings->coords[0], settings->coords[1]);
 	hud_gauge->initFont(settings->font_num);
+	hud_gauge->initOriginAndOffset(settings->origin[0], settings->origin[1], settings->offset[0], settings->offset[1]);
+	hud_gauge->initCoords(settings->use_coords, settings->coords[0], settings->coords[1]);
+
 	hud_gauge->initRenderStatus(active_by_default);
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
@@ -2900,7 +2948,7 @@ void load_gauge_radar_dradis(gauge_settings* settings)
 				stuff_int_list(settings->force_scaling_above_res, 2);
 			}
 
-			adjust_base_res(settings->base_res, settings->force_scaling_above_res, settings->scale_gauge);
+			adjust_base_res(settings->base_res, settings->force_scaling_above_res, &settings->aspect_quotient, settings->scale_gauge);
 
 			if(optional_string("Origin:")) {
 				stuff_float_list(settings->origin, 2);
@@ -2926,7 +2974,7 @@ void load_gauge_radar_dradis(gauge_settings* settings)
 			settings->base_res[1] = 768;
 		}
 
-		adjust_base_res(settings->base_res, settings->force_scaling_above_res, settings->scale_gauge);
+		adjust_base_res(settings->base_res, settings->force_scaling_above_res, &settings->aspect_quotient, settings->scale_gauge);
 
 		settings->coords[0] = (int)(settings->base_res[0] * settings->origin[0]) + settings->offset[0];
 		settings->coords[1] = (int)(settings->base_res[1] * settings->origin[1]) + settings->offset[1];
@@ -3019,12 +3067,15 @@ void load_gauge_radar_dradis(gauge_settings* settings)
 	}
 
 	std::unique_ptr<HudGaugeRadarDradis> hud_gauge(new HudGaugeRadarDradis());
-	hud_gauge->initBaseResolution(settings->base_res[0], settings->base_res[1]);
+	hud_gauge->initBaseResolution(settings->base_res[0], settings->base_res[1], settings->aspect_quotient);
 	hud_gauge->initPosition(settings->coords[0], settings->coords[1]);
+	hud_gauge->initFont(settings->font_num);
+	hud_gauge->initOriginAndOffset(settings->origin[0], settings->origin[1], settings->offset[0], settings->offset[1]);
+	hud_gauge->initCoords(settings->use_coords, settings->coords[0], settings->coords[1]);
+
 	hud_gauge->initRadius(Radar_radius[0], Radar_radius[1]);
 	hud_gauge->initBitmaps(xy_fname, xz_yz_fname, sweep_fname, target_fname, unknown_fname);
 	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
-	hud_gauge->initFont(settings->font_num);
 	hud_gauge->initSound(loop_snd, loop_snd_volume, arrival_beep_snd, departure_beep_snd, stealth_arrival_snd, stealth_departure_snd, arrival_beep_delay, departure_beep_delay);
 	hud_gauge->initChase_view_only(settings->chase_view_only);
 
@@ -3968,6 +4019,16 @@ void load_gauge_wingman_status(gauge_settings* settings)
 			grow_mode = 2;
 	}
 
+	bool use_full_wingnames = false;
+	if (optional_string("Use Full Wing Names:")) {
+		stuff_boolean(&use_full_wingnames);
+	}
+
+	bool use_expanded_colors = false;
+	if (optional_string("Use Expanded Colors:")) {
+		stuff_boolean(&use_expanded_colors);
+	}
+
 	hud_gauge->initBitmaps(fname_left, fname_middle, fname_right, fname_dots);
 	hud_gauge->initHeaderOffsets(header_offsets[0], header_offsets[1]);
 	hud_gauge->initFixedHeaderPosition(fixed_header_position);
@@ -3984,6 +4045,8 @@ void load_gauge_wingman_status(gauge_settings* settings)
 	hud_gauge->initWingWidth(wing_width);
 	hud_gauge->initRightBgOffset(right_bg_offset);
 	hud_gauge->initGrowMode(grow_mode);
+	hud_gauge->initUseFullWingnames(use_full_wingnames);
+	hud_gauge->initUseExpandedColors(use_expanded_colors);
 
 	gauge_assign_common(settings, std::move(hud_gauge));
 }

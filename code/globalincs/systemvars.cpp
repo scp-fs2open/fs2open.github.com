@@ -243,8 +243,8 @@ detail_levels Detail_defaults[NUM_DEFAULT_DETAIL_LEVELS] = {
 	{				// Highest level
 		3,			// setting
 					// ===== Analogs (0-MAX_DETAIL_LEVEL) ====
-		3,			// nebula_detail;				// 0=lowest detail, MAX_DETAIL_LEVEL=highest detail
-		3,			// detail_distance;			// 0=lowest MAX_DETAIL_LEVEL=highest		
+		4,			// nebula_detail;				// 0=lowest detail, MAX_DETAIL_LEVEL=highest detail
+		4,			// detail_distance;			// 0=lowest MAX_DETAIL_LEVEL=highest		
 		4,			//	hardware_textures;			// 0=max culling, MAX_DETAIL_LEVEL=no culling
 		4,			//	num_small_debris;			// 0=min number, MAX_DETAIL_LEVEL=max number
 		4,			//	num_particles;				// 0=min number, MAX_DETAIL_LEVEL=max number
@@ -328,9 +328,6 @@ void detail_level_set(int level)
 	Assert( level < NUM_DEFAULT_DETAIL_LEVELS );
 
 	Detail = Detail_defaults[level];
-
-	// reset nebula stuff
-	neb2_set_detail_level(level);
 }
 
 // Returns the current detail level or -1 if custom.
@@ -429,46 +426,6 @@ DCF(detail, "Turns on/off parts of the game for speed testing" )
 	}
 }
 #endif
-
-// Goober5000
-// (Taylor says that for optimization purposes malloc/free should be used rather than vm_malloc/vm_free here)
-// NOTE: Because this uses memcpy, it should only be used to sort POD elements!
-void insertion_sort(void *array_base, size_t array_size, size_t element_size, int (*fncompare)(const void *, const void *))
-{
-	int i, j;
-	void *current;
-	char *array_byte_base;
-	
-	// this is used to avoid having to cast array_base to (char *) all the time
-	array_byte_base = (char *) array_base;
-
-	// allocate space for the element being moved
-	current = malloc(element_size);
-	if (current == NULL)
-	{
-		Int3();
-		return;
-	}
-
-	// loop
-	for (i = 1; (unsigned) i < array_size; i++)
-	{	
-		// grab the current element
-		memcpy(current, array_byte_base + (i * element_size), element_size);
-
-		// bump other elements toward the end of the array
-		for (j = i - 1; (j >= 0) && (fncompare(array_byte_base + (j * element_size), current) > 0); j--)
-		{
-			memcpy(array_byte_base + ((j + 1) * element_size), array_byte_base + (j * element_size), element_size);
-		}
-
-		// insert the current element at the correct place
-		memcpy(array_byte_base + ((j + 1) * element_size), current, element_size);
-	}
-
-	// free the allocated space
-	free(current);
-}
 
 // Stuff that can't be included in vmallocator.h
 

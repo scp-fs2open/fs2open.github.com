@@ -1,11 +1,14 @@
 #ifndef GENERIC_SHAPE_EFFECT_H
 #define GENERIC_SHAPE_EFFECT_H
+#include "osapi/dialogs.h"
+#include "parse/parselo.h"
 #pragma once
 
 #include "globalincs/pstypes.h"
 #include "particle/ParticleEffect.h"
 #include "particle/ParticleManager.h"
 #include "particle/util/ParticleProperties.h"
+#include "particle/util/EffectTiming.h"
 #include "utils/RandomRange.h"
 
 namespace particle {
@@ -31,10 +34,13 @@ class GenericShapeEffect : public ParticleEffect {
 	ConeDirection m_direction = ConeDirection::Incoming;
 	::util::UniformFloatRange m_velocity;
 	::util::UniformUIntRange m_particleNum;
-
+	float m_particleChance;
+	::util::UniformFloatRange m_particleRoll;
 	ParticleEffectHandle m_particleTrail = ParticleEffectHandle::invalid();
 
 	util::EffectTiming m_timing;
+
+	::util::UniformFloatRange m_vel_inherit;
 
 	TShape m_shape;
 
@@ -99,6 +105,12 @@ class GenericShapeEffect : public ParticleEffect {
 			matrix dirMatrix;
 			vm_vector_2_matrix(&dirMatrix, &dir, nullptr, nullptr);
 			for (uint i = 0; i < num; ++i) {
+				if (m_particleChance < 1.0f) {
+					auto roll = m_particleRoll.next();
+					if (roll <= 0.0f)
+						continue;
+				}
+
 				matrix velRotation = m_shape.getDisplacementMatrix();
 
 				matrix rotatedVel;
@@ -108,14 +120,17 @@ class GenericShapeEffect : public ParticleEffect {
 
 				source->getOrigin()->applyToParticleInfo(info);
 
-				info.vel = rotatedVel.vec.fvec;
+				vec3d velocity = rotatedVel.vec.fvec;
 				if (TShape::scale_velocity_deviation()) {
 					// Scale the vector with a random velocity sample and also multiply that with cos(angle between
 					// info.vel and sourceDir) That should produce good looking directions where the maximum velocity is
 					// only achieved when the particle travels directly on the normal/reflect vector
-					vm_vec_scale(&info.vel, vm_vec_dot(&info.vel, &dir));
+					vm_vec_scale(&velocity, vm_vec_dot(&velocity, &dir));
 				}
-				vm_vec_scale(&info.vel, m_velocity.next());
+				vm_vec_scale(&velocity, m_velocity.next());
+
+				info.vel *= m_vel_inherit.next();
+				info.vel += velocity;
 
 				if (m_particleTrail.isValid()) {
 					auto part = m_particleProperties.createPersistentParticle(info);
@@ -150,6 +165,25 @@ class GenericShapeEffect : public ParticleEffect {
 		if (internal::required_string_if_new("+Number:", nocreate)) {
 			m_particleNum = ::util::parseUniformRange<uint>();
 		}
+		if (!nocreate) {
+			m_particleChance = 1.0f;
+		}
+		if (optional_string("+Chance:")) {
+			float chance;
+			stuff_float(&chance);
+			if (chance <= 0.0f) {
+				Warning(LOCATION,
+					"Particle %s tried to set +Chance: %f\nChances below 0 would result in no particles.",
+					m_name.c_str(), chance);
+			} else if (chance > 1.0f) {
+				Warning(LOCATION,
+					"Particle %s tried to set +Chance: %f\nChances above 1 are ignored, please use +Number: (min,max) "
+					"to spawn multiple particles.", m_name.c_str(), chance);
+				chance = 1.0f;
+			}
+			m_particleChance = chance;
+		}
+		m_particleRoll = ::util::UniformFloatRange(m_particleChance - 1.0f, m_particleChance);
 
 		if (optional_string("+Direction:")) {
 			SCP_string dirStr;
@@ -177,6 +211,10 @@ class GenericShapeEffect : public ParticleEffect {
 			// This is the deprecated location since this introduces ambiguities in the parsing process
 			m_particleTrail = internal::parseEffectElement();
 			saw_deprecated_effect_location = true;
+		}
+
+		if (optional_string("+Parent Velocity Factor:")) {
+			m_vel_inherit = ::util::parseUniformRange<float>();
 		}
 
 		m_timing = util::EffectTiming::parseTiming();

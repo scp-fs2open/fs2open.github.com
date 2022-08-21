@@ -22,13 +22,17 @@
 #include "mission/missionmessage.h"
 #include "mission/missiontraining.h"
 #include "missionui/redalert.h"
+#include "nebula/neb.h"
+#include "object/objcollide.h"
 #include "parse/parselo.h"
 #include "parse/sexp.h"
 #include "parse/sexp/DynamicSEXP.h"
 #include "parse/sexp/LuaSEXP.h"
+#include "parse/sexp/LuaAISEXP.h"
 #include "parse/sexp/sexp_lookup.h"
 #include "scripting/api/LuaPromise.h"
 #include "scripting/api/objs/LuaSEXP.h"
+#include "scripting/api/objs/luaaisexp.h"
 #include "scripting/api/objs/asteroid.h"
 #include "scripting/api/objs/background_element.h"
 #include "scripting/api/objs/beam.h"
@@ -59,6 +63,8 @@
 #include "starfield/starfield.h"
 #include "weapon/beam.h"
 #include "weapon/weapon.h"
+
+#include <utility>
 
 extern bool Ships_inited;
 
@@ -555,7 +561,7 @@ ADE_INDEXER(l_Mission_Teams, "number/string IndexOrTeamName", "Teams in the miss
 		idx--;	//Lua->FS2
 	}
 
-	if(idx < 0 || idx >= Num_iffs)
+	if(idx < 0 || idx >= (int)Iff_info.size())
 		return ade_set_error(L, "o", l_Team.Set(-1));
 
 	return ade_set_args(L, "o", l_Team.Set(idx));
@@ -563,7 +569,7 @@ ADE_INDEXER(l_Mission_Teams, "number/string IndexOrTeamName", "Teams in the miss
 
 ADE_FUNC(__len, l_Mission_Teams, NULL, "Number of teams in mission", "number", "Number of teams in mission")
 {
-	return ade_set_args(L, "i", Num_iffs);
+	return ade_set_args(L, "i", Iff_info.size());
 }
 
 //****SUBLIBRARY: Mission/Messages
@@ -883,8 +889,8 @@ ADE_FUNC(sendPlainMessage,
 ADE_FUNC(createShip,
 	l_Mission,
 	"[string Name, shipclass Class /* First ship class by default */, orientation Orientation=null, vector Position /* "
-	"null vector by default */, team Team]",
-	"Creates a ship and returns a handle to it using the specified name, class, world orientation, and world position",
+	"null vector by default */, team Team, boolean ShowInMissionLog /* true by default */]",
+	"Creates a ship and returns a handle to it using the specified name, class, world orientation, and world position; and logs it in the mission log unless specified otherwise",
 	"ship",
 	"Ship handle, or invalid ship handle if ship couldn't be created")
 {
@@ -893,7 +899,8 @@ ADE_FUNC(createShip,
 	matrix_h* orient = nullptr;
 	vec3d pos        = vmd_zero_vector;
 	int team         = -1;
-	ade_get_args(L, "|soooo", &name, l_Shipclass.Get(&sclass), l_Matrix.GetPtr(&orient), l_Vector.Get(&pos), l_Team.Get(&team));
+	bool show_in_log = true;
+	ade_get_args(L, "|soooob", &name, l_Shipclass.Get(&sclass), l_Matrix.GetPtr(&orient), l_Vector.Get(&pos), l_Team.Get(&team), &show_in_log);
 
 	matrix *real_orient = &vmd_identity_matrix;
 	if(orient != NULL)
@@ -931,18 +938,12 @@ ADE_FUNC(createShip,
 			Objects[obj_idx].flags.set(Object::Object_Flags::No_shields);
 		}
 
-		mission_log_add_entry(LOG_SHIP_ARRIVED, shipp->ship_name, nullptr);
+		mission_log_add_entry(LOG_SHIP_ARRIVED, shipp->ship_name, nullptr, -1, show_in_log ? 0 : MLF_HIDDEN);
 
-		Script_system.SetHookObjects(2, "Ship", &Objects[obj_idx], "Parent", NULL);
-		Script_system.RunCondition(CHA_ONSHIPARRIVE, &Objects[obj_idx]);
-		Script_system.RemHookVars({"Ship", "Parent"});
-
-		if (Game_mode & GM_IN_MISSION && sip->is_big_or_huge()) {
-			float mission_time = f2fl(Missiontime);
-			int minutes = (int)(mission_time / 60);
-			int seconds = (int)mission_time % 60;
-
-			mprintf(("%s created at %02d:%02d\n", shipp->ship_name, minutes, seconds));
+		if (Script_system.IsActiveAction(CHA_ONSHIPARRIVE)) {
+			Script_system.SetHookObjects(2, "Ship", &Objects[obj_idx], "Parent", NULL);
+			Script_system.RunCondition(CHA_ONSHIPARRIVE, &Objects[obj_idx]);
+			Script_system.RemHookVars({"Ship", "Parent"});
 		}
 
 		return ade_set_args(L, "o", l_Ship.Set(object_h(&Objects[obj_idx])));
@@ -1212,7 +1213,6 @@ ADE_FUNC(loadMission, l_Mission, "string missionName", "Loads a mission", "boole
 	gr_post_process_set_defaults();
 
 	//NOW do the loading stuff
-	game_stop_time();
 	get_mission_info(s, &The_mission, false);
 	game_level_init();
 
@@ -1294,6 +1294,16 @@ ADE_FUNC(isNebula, l_Mission, nullptr, "Get whether or not the current mission b
 	return ade_set_args(L, "b", The_mission.flags[Mission::Mission_Flags::Fullneb]);
 }
 
+ADE_VIRTVAR(NebulaSensorRange, l_Mission, "number", "Gets or sets the Neb2_awacs variable.  This is multiplied by a species-specific factor to get the \"scan range\".  Within the scan range, a ship is at least partially targetable (fuzzy blip); within half the scan range, a ship is fully targetable.  Beyond the scan range, a ship is not targetable.", "number", "the Neb2_awacs variable")
+{
+	float range = -1.0f;
+
+	if (ADE_SETTING_VAR && ade_get_args(L, "*f", &range))
+		Neb2_awacs = range;
+
+	return ade_set_args(L, "f", Neb2_awacs);
+}
+
 ADE_FUNC(isSubspace, l_Mission, nullptr, "Get whether or not the current mission being played is set in subspace", "boolean", "true if in subspace, false if not")
 {
 	return ade_set_args(L, "b", The_mission.flags[Mission::Mission_Flags::Subspace]);
@@ -1303,13 +1313,7 @@ ADE_FUNC(getMissionTitle, l_Mission, NULL, "Get the title of the current mission
 	return ade_set_args(L, "s", The_mission.name);
 }
 
-ADE_FUNC(addBackgroundBitmap,
-	l_Mission,
-	"string name, orientation orientation = identity, number scaleX = 1.0, number scale_y = 1.0, number div_x = 1.0, "
-	"number div_y = 1.0",
-	"Adds a background bitmap to the mission with the specified parameters.",
-	"background_element",
-	"A handle to the background element, or invalid handle if the function failed.")
+static int addBackgroundBitmap_sub(bool uses_correct_angles, lua_State* L)
 {
 	const char* filename = nullptr;
 	float scale_x        = 1.0f;
@@ -1332,6 +1336,9 @@ ADE_FUNC(addBackgroundBitmap,
 	}
 
 	sle.ang     = *orient.GetAngles();
+	if (!uses_correct_angles)
+		stars_correct_background_bitmap_angles(&sle.ang);
+
 	sle.scale_x = scale_x;
 	sle.scale_y = scale_y;
 	sle.div_x   = div_x;
@@ -1359,12 +1366,31 @@ ADE_FUNC(addBackgroundBitmap,
 	return ade_set_args(L, "o", l_BackgroundElement.Set(background_el_h(BackgroundType::Bitmap, idx)));
 }
 
-ADE_FUNC(addSunBitmap,
+ADE_FUNC_DEPRECATED(addBackgroundBitmap,
 	l_Mission,
-	"string name, orientation orientation = identity, number scaleX = 1.0, number scale_y = 1.0",
-	"Adds a sun bitmap to the mission with the specified parameters.",
+	"string name, orientation orientation = identity, number scaleX = 1.0, number scale_y = 1.0, number div_x = 1.0, "
+	"number div_y = 1.0",
+	"Adds a background bitmap to the mission with the specified parameters, but using the old incorrectly-calculated angle math.",
+	"background_element",
+	"A handle to the background element, or invalid handle if the function failed.",
+	gameversion::version(22, 2),
+	"addBackgroundBitmap uses the old incorrectly-calculated angle math; use addBackgroundBitmapNew instead")
+{
+	return addBackgroundBitmap_sub(false, L);
+}
+
+ADE_FUNC(addBackgroundBitmapNew,
+	l_Mission,
+	"string name, orientation orientation = identity, number scaleX = 1.0, number scale_y = 1.0, number div_x = 1.0, "
+	"number div_y = 1.0",
+	"Adds a background bitmap to the mission with the specified parameters, treating the angles as correctly calculated.",
 	"background_element",
 	"A handle to the background element, or invalid handle if the function failed.")
+{
+	return addBackgroundBitmap_sub(true, L);
+}
+
+static int addSunBitmap_sub(bool uses_correct_angles, lua_State* L)
 {
 	const char* filename = nullptr;
 	float scale_x        = 1.0f;
@@ -1385,6 +1411,9 @@ ADE_FUNC(addSunBitmap,
 	}
 
 	sle.ang     = *orient.GetAngles();
+	if (!uses_correct_angles)
+		stars_correct_background_sun_angles(&sle.ang);
+
 	sle.scale_x = scale_x;
 	sle.scale_y = scale_y;
 	sle.div_x   = 1;
@@ -1402,6 +1431,28 @@ ADE_FUNC(addSunBitmap,
 
 	auto idx = stars_add_sun_entry(&sle);
 	return ade_set_args(L, "o", l_BackgroundElement.Set(background_el_h(BackgroundType::Sun, idx)));
+}
+
+ADE_FUNC_DEPRECATED(addSunBitmap,
+	l_Mission,
+	"string name, orientation orientation = identity, number scaleX = 1.0, number scale_y = 1.0",
+	"Adds a sun bitmap to the mission with the specified parameters, but using the old incorrectly-calculated angle math.",
+	"background_element",
+	"A handle to the background element, or invalid handle if the function failed.",
+	gameversion::version(22, 2),
+	"addSunBitmap uses the old incorrectly-calculated angle math; use addSunBitmapNew instead")
+{
+	return addSunBitmap_sub(false, L);
+}
+
+ADE_FUNC(addSunBitmapNew,
+	l_Mission,
+	"string name, orientation orientation = identity, number scaleX = 1.0, number scale_y = 1.0",
+	"Adds a sun bitmap to the mission with the specified parameters, treating the angles as correctly calculated.",
+	"background_element",
+	"A handle to the background element, or invalid handle if the function failed.")
+{
+	return addSunBitmap_sub(true, L);
 }
 
 ADE_FUNC(removeBackgroundElement, l_Mission, "background_element el",
@@ -1451,7 +1502,68 @@ ADE_FUNC(isRedAlertMission,
 	return ade_set_args(L, "b", red_alert_mission() != 0);
 }
 
-ADE_LIB_DERIV(l_Mission_LuaSEXPs, "LuaSEXPs", NULL, "Lua SEXPs", l_Mission);
+int testLineOfSight_internal(lua_State* L, bool returnDist) {
+	vec3d from, to;
+	luacpp::LuaTable excludedObjects;
+	bool testForShields = false, testForHull = true;
+	float threshold = 10.0f;
+
+	float distStore = 0.0f;
+	float* dist = returnDist ? &distStore : nullptr;
+
+	if (!ade_get_args(L, "oo|tbbf", l_Vector.Get(&from), l_Vector.Get(&to), &excludedObjects, &testForShields, &testForHull, &threshold)) {
+		return ADE_RETURN_FALSE;
+	}
+	if (!(testForHull || testForShields)) {
+		LuaError(L, "Cannot test line of sight if neither hull nor shields are set to be tested for.");
+		//Though it's technically a "line of sight", so return true
+		return ADE_RETURN_TRUE;
+	}
+
+	std::unordered_set<const object*> excludedObjectIDs;
+
+	if (excludedObjects.isValid()) {
+		for (const auto& object : excludedObjects) {
+			if (object.second.is(luacpp::ValueType::USERDATA)) {
+				// This'll lua-error internally if it's not fed only objects. Additionally, catch the lua exception and then carry on
+				try {
+					object_h obj;
+					object.second.getValue(l_Object.Get(&obj));
+					excludedObjectIDs.emplace(obj.objp);
+				}
+				catch (const luacpp::LuaException& /*e*/) {
+					// We were likely fed a userdata that was not an object. 
+					// Since we can't actually tell whether that's the case before we try to get the value, and the attempt to get the value is printing a LuaError itself, just eat the exception here and return
+					return ADE_RETURN_FALSE;
+				}
+			}
+			else {
+				//This happens on a non-userdata value, i.e. a number
+				LuaError(L, "Table with objects to be excluded contained non-userdata values! Aborting...");
+				return ADE_RETURN_FALSE;
+			}
+		}
+	}
+
+	bool hasLoS = test_line_of_sight(&from, &to, std::move(excludedObjectIDs), threshold, testForShields, testForHull, dist);
+
+	if(returnDist)
+		return ade_set_args(L, "bf", hasLoS, *dist);
+	else
+		return ade_set_args(L, "b", hasLoS);
+}
+
+ADE_FUNC(hasLineOfSight, l_Mission, "vector from, vector to, [table excludedObjects /* expects list of objects, empty by default */, boolean testForShields = false, boolean testForHull = true, number threshold = 10.0]", "Checks whether the to-position is in line of sight from the from-position, disregarding specific excluded objects and objects with a radius of less then threshold.", "boolean", "true if there is line of sight, false otherwise.")
+{
+	return testLineOfSight_internal(L, false);
+}
+
+ADE_FUNC(getLineOfSightFirstIntersect, l_Mission, "vector from, vector to, [table excludedObjects /* expects list of objects, empty by default */, boolean testForShields = false, boolean testForHull = true, number threshold = 10.0]", "Checks whether the to-position is in line of sight from the from-position and returns the distance to the first interruption of the line of sight, disregarding specific excluded objects and objects with a radius of less then threshold.", "boolean, number", "true and zero if there is line of sight, false and the distance otherwise.")
+{
+	return testLineOfSight_internal(L, true);
+}
+
+ADE_LIB_DERIV(l_Mission_LuaSEXPs, "LuaSEXPs", nullptr, "Lua SEXPs", l_Mission);
 
 ADE_INDEXER(l_Mission_LuaSEXPs, "string Name", "Gets a handle of a Lua SEXP", "LuaSEXP", "Lua SEXP handle or invalid handle on error")
 {
@@ -1489,6 +1601,44 @@ ADE_INDEXER(l_Mission_LuaSEXPs, "string Name", "Gets a handle of a Lua SEXP", "L
 	return ade_set_args(L, "o", l_LuaSEXP.Set(lua_sexp_h(static_cast<sexp::LuaSEXP*>(dynamicSEXP))));
 }
 
+ADE_LIB_DERIV(l_Mission_LuaAISEXPs, "LuaAISEXPs", nullptr, "Lua AI SEXPs", l_Mission);
+
+ADE_INDEXER(l_Mission_LuaAISEXPs, "string Name", "Gets a handle of a Lua SEXP", "LuaAISEXP", "Lua AI SEXP handle or invalid handle on error")
+{
+	const char* name = nullptr;
+	if (!ade_get_args(L, "*s", &name)) {
+		return ade_set_error(L, "o", l_LuaAISEXP.Set(lua_ai_sexp_h()));
+	}
+
+	if (name == nullptr) {
+		return ade_set_error(L, "o", l_LuaAISEXP.Set(lua_ai_sexp_h()));
+	}
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "Setting of Lua AI SEXPs is not supported!");
+	}
+
+	auto op = get_operator_const(name);
+
+	if (op == 0) {
+		LuaError(L, "SEXP '%s' is not known to the SEXP system!", name);
+		return ade_set_args(L, "o", l_LuaAISEXP.Set(lua_ai_sexp_h()));
+	}
+
+	auto dynamicSEXP = sexp::get_dynamic_sexp(op);
+
+	if (dynamicSEXP == nullptr) {
+		return ade_set_args(L, "o", l_LuaAISEXP.Set(lua_ai_sexp_h()));
+	}
+
+	if (typeid(*dynamicSEXP) != typeid(sexp::LuaAISEXP)) {
+		LuaError(L, "Specified dynamic SEXP name does not refer to a Lua SEXP!");
+		return ade_set_error(L, "o", l_LuaAISEXP.Set(lua_ai_sexp_h()));
+	}
+
+	return ade_set_args(L, "o", l_LuaAISEXP.Set(lua_ai_sexp_h(static_cast<sexp::LuaAISEXP*>(dynamicSEXP))));
+}
+
 static int arrivalListIter(lua_State* L)
 {
 	parse_object_h* poh = nullptr;
@@ -1498,7 +1648,7 @@ static int arrivalListIter(lua_State* L)
 
 	const auto next = GET_NEXT(poh->getObject());
 
-	if (next == END_OF_LIST(&Ship_arrival_list)) {
+	if (next == END_OF_LIST(&Ship_arrival_list) || next == nullptr) {
 		return ADE_RETURN_NIL;
 	}
 
@@ -1510,10 +1660,54 @@ ADE_FUNC(getArrivalList,
 	nullptr,
 	"Get the list of yet to arrive ships for this mission",
 	"iterator<parse_object>",
-	"An iterator across all the yet to arrive ships. Can be used in a for .. in loop")
+	"An iterator across all the yet to arrive ships. Can be used in a for .. in loop. Is not valid for more than one frame.")
 {
 	return ade_set_args(L, "u*o", luacpp::LuaFunction::createFromCFunction(L, arrivalListIter),
 	                    l_ParseObject.Set(parse_object_h(&Ship_arrival_list)));
+}
+
+ADE_FUNC(getShipList,
+	l_Mission,
+	nullptr,
+	"Get an iterator to the list of ships in this mission",
+	"iterator<ship>",
+	"An iterator across all ships in the mission. Can be used in a for .. in loop. Is not valid for more than one frame.")
+{
+	ship_obj* so = &Ship_obj_list;
+
+	return ade_set_args(L, "u", luacpp::LuaFunction::createFromStdFunction(L, [so](lua_State* LInner, const luacpp::LuaValueList& /*params*/) mutable -> luacpp::LuaValueList {
+		//Since the first element of a list is the next element from the head, and we start this function with the the captured "so" object being the head, this GET_NEXT will return the first element on first call of this lambda.
+		//Similarly, an empty list is defined by the head's next element being itself, hence an empty list will immediately return nil just fine
+		so = GET_NEXT(so);
+
+		if (so == END_OF_LIST(&Ship_obj_list) || so == nullptr) {
+			return luacpp::LuaValueList{ luacpp::LuaValue::createNil(LInner) };
+		}
+
+		return luacpp::LuaValueList{ luacpp::LuaValue::createValue(LInner, l_Ship.Set(object_h(&Objects[so->objnum]))) };
+	}));
+}
+
+ADE_FUNC(getMissileList,
+	l_Mission,
+	nullptr,
+	"Get an iterator to the list of missiles in this mission",
+	"iterator<weapon>",
+	"An iterator across all missiles in the mission. Can be used in a for .. in loop. Is not valid for more than one frame.")
+{
+	missile_obj* mo = &Missile_obj_list;
+
+	return ade_set_args(L, "u", luacpp::LuaFunction::createFromStdFunction(L, [mo](lua_State* LInner, const luacpp::LuaValueList& /*params*/) mutable -> luacpp::LuaValueList {
+		//Since the first element of a list is the next element from the head, and we start this function with the the captured "mo" object being the head, this GET_NEXT will return the first element on first call of this lambda.
+		//Similarly, an empty list is defined by the head's next element being itself, hence an empty list will immediately return nil just fine
+		mo = GET_NEXT(mo);
+
+		if (mo == END_OF_LIST(&Missile_obj_list) || mo == nullptr) {
+			return luacpp::LuaValueList{ luacpp::LuaValue::createNil(LInner) };
+		}
+
+		return luacpp::LuaValueList{ luacpp::LuaValue::createValue(LInner, l_Weapon.Set(object_h(&Objects[mo->objnum]))) };
+	}));
 }
 
 ADE_FUNC(waitAsync,
@@ -1535,7 +1729,11 @@ ADE_FUNC(waitAsync,
 
 	class time_resolve_context : public resolve_context, public std::enable_shared_from_this<time_resolve_context> {
 	  public:
-		time_resolve_context(int timestamp) : m_timestamp(timestamp) {}
+		time_resolve_context(int timestamp) : m_timestamp(timestamp) {
+			static int unique_id_counter = 0;
+			m_unique_id = unique_id_counter++;
+			nprintf(("scripting", "waitAsync: Creating asynchronous context %d.\n", m_unique_id));
+		}
 		void setResolver(Resolver resolver) override
 		{
 			// Keep checking the time until the timestamp is elapsed
@@ -1543,11 +1741,13 @@ ADE_FUNC(waitAsync,
 			auto cb = [this, self, resolver](
 						  executor::IExecutionContext::State contextState) {
 				if (contextState == executor::IExecutionContext::State::Invalid) {
+					mprintf(("waitAsync: Context is invalid, possibly due to a game state change (current state is %s).  Aborting asynchronous context %d.\n", GS_state_text[gameseq_get_state()], m_unique_id));
 					resolver(true, luacpp::LuaValueList());
 					return executor::Executor::CallbackResult::Done;
 				}
 
 				if (timestamp_elapsed(m_timestamp)) {
+					nprintf(("scripting", "waitAsync: Timestamp has elapsed for asynchronous context %d.\n", m_unique_id));
 					resolver(false, luacpp::LuaValueList());
 					return executor::Executor::CallbackResult::Done;
 				}
@@ -1562,6 +1762,7 @@ ADE_FUNC(waitAsync,
 
 	  private:
 		int m_timestamp = -1;
+		int m_unique_id = -1;
 	};
 	return ade_set_args(L,
 		"o",

@@ -217,13 +217,14 @@ void gr_opengl_deferred_lighting_finish()
 			case Light_Type::Point:
 				vm_vec_scale(&light_data->specLightColor, static_point_factor);
 
-				light_data->lightRadius = MAX(l.rada, l.radb) * 1.25f;
-				light_data->scale.xyz.x = MAX(l.rada, l.radb) * 1.28f;
-				light_data->scale.xyz.y = MAX(l.rada, l.radb) * 1.28f;
-				light_data->scale.xyz.z = MAX(l.rada, l.radb) * 1.28f;
+				light_data->lightRadius = MAX(l.rada, l.radb);
+				//A small padding factor is added to guard against potentially clipping the edges of the light with facets of the volume mesh.
+				light_data->scale.xyz.x = MAX(l.rada, l.radb) * 1.05f;
+				light_data->scale.xyz.y = MAX(l.rada, l.radb) * 1.05f;
+				light_data->scale.xyz.z = MAX(l.rada, l.radb) * 1.05f;
 				break;
 			case Light_Type::Tube: {
-				light_data->lightRadius = l.radb * 1.5f;
+				light_data->lightRadius = l.radb;
 				light_data->lightType = LT_TUBE;
 
 				vec3d a;
@@ -234,8 +235,9 @@ void gr_opengl_deferred_lighting_finish()
 				//origin we must extend it here. Later the position will be adjusted as well.
 				length += light_data->lightRadius * 2.0f;
 
-				light_data->scale.xyz.x = l.radb * 1.53f;
-				light_data->scale.xyz.y = l.radb * 1.53f;
+				//A small padding factor is added to guard against potentially clipping the edges of the light with facets of the volume mesh.
+				light_data->scale.xyz.x = l.radb * 1.05f;
+				light_data->scale.xyz.y = l.radb * 1.05f;
 				light_data->scale.xyz.z = length;
 
 				vm_vec_scale(&light_data->specLightColor, static_tube_factor);
@@ -266,14 +268,14 @@ void gr_opengl_deferred_lighting_finish()
 			case Light_Type::Cone:
 			case Light_Type::Point:
 				gr_bind_uniform_buffer(uniform_block_type::Lights, buffer.getAlignerElementOffset(element_index),
-					sizeof(graphics::deferred_light_data), buffer.bufferHandle());
+										sizeof(graphics::deferred_light_data), buffer.bufferHandle());
 
 				gr_opengl_draw_deferred_light_sphere(&l.vec);
-				++element_index; 
+				++element_index;
 				break;
 			case Light_Type::Tube:
 				gr_bind_uniform_buffer(uniform_block_type::Lights, buffer.getAlignerElementOffset(element_index),
-					sizeof(graphics::deferred_light_data), buffer.bufferHandle());
+										sizeof(graphics::deferred_light_data), buffer.bufferHandle());
 
 				vec3d dir, newPos;
 				matrix orient;
@@ -284,8 +286,7 @@ void gr_opengl_deferred_lighting_finish()
 				//to allow smooth fall-off from all angles. Since the light volume starts at the mesh
 				//origin we must extend it, which has been done above, and then move it backwards one radius.
 				vm_vec_normalize(&dir);
-				//1.5 multiplier matches scaling used earlier to scale light radius for all tubes
-				vm_vec_scale_sub(&newPos, &l.vec2, &dir, l.radb * 1.5f);
+				vm_vec_scale_sub(&newPos, &l.vec2, &dir, l.radb);
 				gr_opengl_draw_deferred_light_cylinder(&newPos, &orient);
 				++element_index;
 				
@@ -448,13 +449,15 @@ void gr_opengl_deferred_light_cylinder_init(int segments) // Generate a VBO of a
 		if ( opengl_check_for_errors() ) {
 			glDeleteBuffers(1, &deferred_light_cylinder_vbo);
 			deferred_light_cylinder_vbo = 0;
+
+			vm_free(Indices);
+			Indices = nullptr;
+			vm_free(Vertices);
+			Vertices = nullptr;
 			return;
 		}
 
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-		vm_free(Vertices);
-		Vertices = NULL;
 	}
 
 	glGenBuffers(1, &deferred_light_cylinder_ibo);
@@ -468,15 +471,21 @@ void gr_opengl_deferred_light_cylinder_init(int segments) // Generate a VBO of a
 		if ( opengl_check_for_errors() ) {
 			glDeleteBuffers(1, &deferred_light_cylinder_ibo);
 			deferred_light_cylinder_ibo = 0;
+
+			vm_free(Indices);
+			Indices = nullptr;
+			vm_free(Vertices);
+			Vertices = nullptr;
 			return;
 		}
 
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-		vm_free(Indices);
-		Indices = NULL;
 	}
 
+	vm_free(Indices);
+	Indices = nullptr;
+	vm_free(Vertices);
+	Vertices = nullptr;
 }
 
 static GLuint deferred_light_sphere_vbo = 0;
@@ -540,13 +549,15 @@ void gr_opengl_deferred_light_sphere_init(int rings, int segments) // Generate a
 		if ( opengl_check_for_errors() ) {
 			glDeleteBuffers(1, &deferred_light_sphere_vbo);
 			deferred_light_sphere_vbo = 0;
+			
+			vm_free(Vertices);
+			Vertices = nullptr;
+			vm_free(Indices);
+			Indices = nullptr;
 			return;
 		}
 
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-		vm_free(Vertices);
-		Vertices = NULL;
 	}
 
 	glGenBuffers(1, &deferred_light_sphere_ibo);
@@ -560,14 +571,21 @@ void gr_opengl_deferred_light_sphere_init(int rings, int segments) // Generate a
 		if ( opengl_check_for_errors() ) {
 			glDeleteBuffers(1, &deferred_light_sphere_ibo);
 			deferred_light_sphere_ibo = 0;
+			
+			vm_free(Vertices);
+			Vertices = nullptr;
+			vm_free(Indices);
+			Indices = nullptr;
 			return;
 		}
 
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-		vm_free(Indices);
-		Indices = NULL;
 	}
+	
+	vm_free(Vertices);
+	Vertices = nullptr;
+	vm_free(Indices);
+	Indices = nullptr;
 }
 
 void opengl_draw_sphere()

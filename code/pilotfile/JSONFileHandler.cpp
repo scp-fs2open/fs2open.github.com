@@ -21,7 +21,8 @@ const SCP_vector<std::pair<Section, const char*>> SectionMapping {
 	std::pair<Section, const char*>(Section::Variables, "variables"),
 	std::pair<Section, const char*>(Section::Missions, "missions"),
 	std::pair<Section, const char*>(Section::Cutscenes, "cutscenes"),
-	std::pair<Section, const char*>(Section::LastMissions, "last_mission")
+	std::pair<Section, const char*>(Section::LastMissions, "last_mission"),
+	std::pair<Section, const char*>(Section::Containers, "containers")
 };
 
 const char* lookupSectionName(Section s) {
@@ -85,6 +86,9 @@ void pilot::JSONFileHandler::popElement() {
 
 	_elementStack.pop_back();
 	_currentEl = _elementStack.back();
+}
+void pilot::JSONFileHandler::writeByte(const char* name, std::int8_t value) {
+	writeInteger(name, value);
 }
 void pilot::JSONFileHandler::writeUByte(const char* name, std::uint8_t value) {
 	writeInteger(name, value);
@@ -207,6 +211,9 @@ void pilot::JSONFileHandler::ensureExists(const char* name) {
 	if (json_object_get(_currentEl, name) == nullptr) {
 		Error(LOCATION, "JSON reading requires a value with name '%s' but there is no such value!", name);
 	}
+}
+std::int8_t pilot::JSONFileHandler::readByte(const char* name) {
+	return (std::int8_t)readInteger(name);
 }
 std::uint8_t pilot::JSONFileHandler::readUByte(const char* name) {
 	return (std::uint8_t)readInteger(name);

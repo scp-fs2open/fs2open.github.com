@@ -19,6 +19,7 @@
 #include "scpui/rocket_ui.h"
 #include "scripting/api/objs/cmd_brief.h"
 #include "scripting/api/objs/color.h"
+#include "scripting/api/objs/enums.h"
 #include "scripting/api/objs/player.h"
 #include "scripting/lua/LuaTable.h"
 
@@ -110,6 +111,25 @@ ADE_FUNC(playElementSound,
 	return ade_set_args(L, "b", scpui::SoundPlugin::instance()->PlayElementSound(el, event, state));
 }
 
+ADE_FUNC(maybePlayCutscene, l_UserInterface, "enumeration MovieType, boolean RestartMusic, number ScoreIndex", "Plays a cutscene, if one exists, for the appropriate state transition.  If RestartMusic is true, then the music score at ScoreIndex will be started after the cutscene plays.", nullptr, "Returns nothing")
+{
+	enum_h movie_type;
+	bool restart_music = false;
+	int score_index = 0;
+
+	if (!ade_get_args(L, "obi", l_Enum.Get(&movie_type), &restart_music, &score_index))
+		return ADE_RETURN_NIL;
+
+	if (!movie_type.IsValid() || movie_type.index < LE_MOVIE_PRE_FICTION || movie_type.index > LE_MOVIE_END_CAMPAIGN)
+	{
+		Warning(LOCATION, "Invalid movie type index %d", movie_type.index);
+		return ADE_RETURN_NIL;
+	}
+
+	common_maybe_play_cutscene(movie_type.index - LE_MOVIE_PRE_FICTION, restart_music, score_index);
+	return ADE_RETURN_NIL;
+}
+
 //**********SUBLIBRARY: UserInterface/PilotSelect
 ADE_LIB_DERIV(l_UserInterface_PilotSelect, "PilotSelect", nullptr,
               "API for accessing values specific to the pilot select screen.<br><b>Warning:</b> This is an internal "
@@ -172,7 +192,7 @@ ADE_FUNC(checkPilotLanguage, l_UserInterface_PilotSelect, "string callsign",
 		return ADE_RETURN_FALSE;
 	}
 
-	return ade_set_args(L, "b", valid_pilot_lang(callsign));
+	return ade_set_args(L, "b", valid_pilot(callsign, true));
 }
 
 ADE_FUNC(selectPilot, l_UserInterface_PilotSelect, "string callsign, boolean is_multi",
@@ -454,6 +474,21 @@ ADE_FUNC(getBriefing,
 ADE_FUNC(getBriefingMusicName, l_UserInterface_CmdBrief, nullptr, "Gets the file name of the music file to play for the briefing.", "string", "The file name or empty if no music")
 {
 	return ade_set_args(L, "s", common_music_get_filename(SCORE_BRIEFING).c_str());
+}
+
+ADE_FUNC(runBriefingStageHook, l_UserInterface_CmdBrief, "number oldStage, number newStage", "Run $On Briefing Stage: hooks.", nullptr, nullptr)
+{
+	int oldStage = -1, newStage = -1;
+	if (ade_get_args(L, "ii", &oldStage, &newStage) == 2)
+	{
+		// Subtract 1 to convert from Lua conventions to C conventions
+		common_fire_stage_script_hook(oldStage -1, newStage -1);
+	}
+	else
+	{
+		LuaError(L, "Bad arguments given to ui.runBriefingStageHook!");
+	}
+	return ADE_RETURN_NIL;
 }
 
 } // namespace api

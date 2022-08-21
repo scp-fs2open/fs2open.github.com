@@ -57,6 +57,7 @@
 #include "weapon/emp.h"
 #include "weapon/weapon.h"
 
+// This contains not only the retail HUD gauges but also any custom HUD gauges that are not specific to a ship.
 SCP_vector<std::unique_ptr<HudGauge>> default_hud_gauges;
 
 // new values for HUD alpha
@@ -369,12 +370,13 @@ void HudGauge::getPosition(int *x, int *y)
 	*y = position[1];
 }
 
-void HudGauge::initBaseResolution(int w, int h)
+void HudGauge::initBaseResolution(int w, int h, float aq)
 {
 	Assert(w >= 640 && h >= 480);
 
 	base_w = w;
 	base_h = h;
+	aspect_quotient = aq;
 }
 
 void HudGauge::initSlew(bool slew)
@@ -387,6 +389,43 @@ void HudGauge::initFont(int input_font_num)
 	if (input_font_num >= 0 && input_font_num < font::FontManager::numberOfFonts()) {
 		font_num = input_font_num;
 	}
+}
+
+int HudGauge::getFont()
+{
+	return font_num;
+}
+
+void HudGauge::initOriginAndOffset(float originX, float originY, int offsetX, int offsetY)
+{
+	tabled_origin[0] = originX;
+	tabled_origin[1] = originY;
+
+	tabled_offset[0] = offsetX;
+	tabled_offset[1] = offsetY;
+}
+
+void HudGauge::getOriginAndOffset(float *originX, float *originY, int *offsetX, int *offsetY)
+{
+	*originX = tabled_origin[0];
+	*originY = tabled_origin[1];
+
+	*offsetX = tabled_offset[0];
+	*offsetY = tabled_offset[1];
+}
+
+void HudGauge::initCoords(bool use_coords, int coordsX, int coordsY)
+{
+	tabled_use_coords = use_coords;
+	tabled_coords[0] = coordsX;
+	tabled_coords[1] = coordsY;
+}
+
+void HudGauge::getCoords(bool *use_coords, int *coordsX, int *coordsY)
+{
+	*use_coords = tabled_use_coords;
+	*coordsX = tabled_coords[0];
+	*coordsY = tabled_coords[1];
 }
 
 const char* HudGauge::getCustomGaugeName()
@@ -507,6 +546,26 @@ void HudGauge::setGaugeColor(int bright_index)
 	}
 
 	gr_set_color_fast(&gauge_color);	
+}
+
+bool HudGauge::isCustom()
+{
+	return custom_gauge;
+}
+
+int HudGauge::getBaseWidth()
+{
+	return base_w;
+}
+
+int HudGauge::getBaseHeight()
+{
+	return base_h;
+}
+
+float HudGauge::getAspectQuotient()
+{
+	return aspect_quotient;
 }
 
 int HudGauge::getConfigType()
@@ -1344,7 +1403,7 @@ void hud_maybe_popup_weapons_gauge()
 		int			i;
 
 		for ( i = 0; i < swp->num_secondary_banks; i++ ) {
-			if ( swp->secondary_bank_ammo[i] > 0 ) {
+			if (ship_secondary_has_ammo(swp, i)) {
 				int ms_till_fire = timestamp_until(swp->next_secondary_fire_stamp[i]);
 				if ( ms_till_fire >= 1000 ) {
 					hud_gauge_popup_start(HUD_WEAPONS_GAUGE, 2500);
@@ -1362,7 +1421,6 @@ void hud_maybe_popup_weapons_gauge()
 void hud_update_frame(float  /*frametime*/)
 {
 	object	*targetp;
-	vec3d target_pos;
 	int		can_target;
 
 	update_throttle_sound();
@@ -1448,8 +1506,6 @@ void hud_update_frame(float  /*frametime*/)
 		hud_update_closest_turret();
 	}
 
-	hud_target_change_check();
-
 	// check to see if we are in messaging mode.  If so, send the key to the code
 	// to deal with the message.  hud_sqaudmsg_do_frame will return 0 if the key
 	// wasn't used in messaging mode, otherwise 1.  In the event the key was used,
@@ -1459,15 +1515,15 @@ void hud_update_frame(float  /*frametime*/)
 	}
 
 	if (Player_ai->target_objnum == -1) {
-		if (Target_static_looping.isValid()) {
-			snd_stop(Target_static_looping);
-		}
+		Player->target_is_dying = -1; // according to comments elsewhere in the code, set to -1 when no target
+		hud_target_change_check();
 		return;
 	}
 
 	targetp = &Objects[Player_ai->target_objnum];
 
 	if ( Player_ai->targeted_subsys != NULL ) {
+		vec3d target_pos;
 		get_subsystem_world_pos(targetp, Player_ai->targeted_subsys, &target_pos);
 
 		// get new distance of current target
@@ -1494,16 +1550,17 @@ void hud_update_frame(float  /*frametime*/)
 			}
 		}
 	} else {
-		target_pos = targetp->pos;
-
 		Player_ai->current_target_distance = hud_find_target_distance(targetp,Player_obj);
 	}
 
-	int stop_targetting_this_thing = 0;
+	// moved past the if() block so that the target tracker has the current frame's target distance
+	hud_target_change_check();
+
+	bool stop_targeting_this_thing = false;
 
 	// check to see if the target is still alive
 	if ( targetp->flags[Object::Object_Flags::Should_be_dead] ) {
-		stop_targetting_this_thing = 1;
+		stop_targeting_this_thing = true;
 	}
 
 	Player->target_is_dying = FALSE;
@@ -1516,18 +1573,18 @@ void hud_update_frame(float  /*frametime*/)
 
 		// If it is warping out (or exploded), turn off targeting
 		if ( target_shipp->flags[Ship::Ship_Flags::Depart_warp] || target_shipp->flags[Ship::Ship_Flags::Exploded] ) {
-			stop_targetting_this_thing = 1;
+			stop_targeting_this_thing = true;
 		}
 	}
 
 	// Check if can still be seen in Nebula
 	if ( hud_target_invalid_awacs(targetp) ) {
-		stop_targetting_this_thing = 1;
+		stop_targeting_this_thing = true;
 	}
 
 	// If this was found to be something we shouldn't
 	// target anymore, just remove it
-	if ( stop_targetting_this_thing )	{
+	if ( stop_targeting_this_thing )	{
 		Player_ai->target_objnum = -1;
 		Player_ai->targeted_subsys = NULL;
 		hud_stop_looped_locking_sounds();
@@ -1608,7 +1665,7 @@ void hud_render_preprocess(float frametime)
 	Player->subsys_in_view = -1;
 	hud_target_clear_display_list();
 
-	if ( (Game_detail_flags & DETAIL_FLAG_HUD) && (supernova_active() >= 3) ) {
+	if ( (Game_detail_flags & DETAIL_FLAG_HUD) && (supernova_stage() >= SUPERNOVA_STAGE::HIT) ) {
 		return;
 	}
 
@@ -1719,16 +1776,15 @@ void HudGaugeMissionTime::render(float  /*frametime*/)
 }
 
 /**
- * @brief Show supernova warning it there's a supernova coming
+ * @brief Show supernova warning if there's a supernova coming
  */
 void hud_maybe_display_supernova()
 {
-	float time_left;
-
-	time_left = supernova_time_left();
-	if(time_left < 0.0f){
+	if (!supernova_active()) {
 		return;
 	}
+
+	auto time_left = supernova_hud_time_left();
 
 	gr_set_color_fast(&Color_bright_red);
 	if (Lcl_pl) {
@@ -1779,7 +1835,7 @@ void hud_render_gauges(int cockpit_display_num)
 			return;
 		}
 	} else {
-		if( supernova_active() >= 3 ) {
+		if( supernova_stage() >= SUPERNOVA_STAGE::HIT) {
 			return;
 		}
 	}
@@ -1893,10 +1949,8 @@ void update_throttle_sound()
 	
 		if ( object_get_gliding(Player_obj) ) {	// Backslash
 			percent_throttle = Player_obj->phys_info.forward_thrust;
-		} else if ( Ships[Player_obj->instance].current_max_speed == 0 ) {
-			percent_throttle = Player_obj->phys_info.fspeed / Ship_info[Ships[Player_obj->instance].ship_info_index].max_speed;
 		} else {
-			percent_throttle = Player_obj->phys_info.fspeed / Ships[Player_obj->instance].current_max_speed;
+			percent_throttle = Player_obj->phys_info.fspeed / Ship_info[Ships[Player_obj->instance].ship_info_index].max_speed;
 		}
 
 		if (percent_throttle != last_percent_throttle || !Player_engine_snd_loop.isValid()) {
@@ -2056,7 +2110,14 @@ void HudGaugeDamage::render(float  /*frametime*/)
 		psub = pss->system_info;
 		strength = ship_get_subsystem_strength(Player_ship, psub->type);
 		if ( strength < 1 ) {
-			screen_integrity = fl2i(strength*100);
+			// display the actual health of this specific subsystem --wookieejedi
+			if (pss->max_hits > 0) {
+				// get percentage if this subsystem has hitpoints to begin with
+				screen_integrity = fl2i((pss->current_hits / pss->max_hits) * 100);
+			} else {
+				// subsystems with no starting hitpoints can never be damaged, so they are always full health
+				screen_integrity = 1;
+			}
 			if ( screen_integrity == 0 ) {
 				if ( strength > 0 ) {
 					screen_integrity = 1;
@@ -3039,10 +3100,22 @@ void hud_set_dim_color()
 /**
  * @brief Will set the color to the IFF color based on the team
  *
- * @param objp			Object to test for team color to base on
+ * @param objp			Pointer to object whose team will be queried to set HUD gauge color
  * @param is_bright		Default parameter (value 0) which uses bright version of IFF color
  */
-void hud_set_iff_color(object *objp, int is_bright)
+void hud_set_iff_color(object* objp, int is_bright) {
+
+	gr_set_color_fast(hud_get_iff_color(objp, is_bright));
+
+}
+
+/**
+ * @brief Will get the color to the IFF color based on the team
+ *
+ * @param objp			Pointer to object whose team will be queried to get HUD gauge color
+ * @param is_bright		Default parameter (value 0) which uses bright version of IFF color
+ */
+color* hud_get_iff_color(object* objp, int is_bright)
 {
 	color *use_color;
 
@@ -3069,7 +3142,7 @@ void hud_set_iff_color(object *objp, int is_bright)
 		}
 	}
 
-	gr_set_color_fast(use_color);
+	return use_color;
 }
 
 /**
@@ -3822,31 +3895,69 @@ void hud_page_in()
 	}
 }
 
-HudGauge* hud_get_gauge(const char* name)
+HudGauge* hud_get_custom_gauge(const char* name, bool check_all_gauges)
 {
-	const char* gauge_name;
-	size_t j;
+	auto player_sip = Player_ship->ship_info_index < 0 ? nullptr : &Ship_info[Player_ship->ship_info_index];
 
-	// go through all gauges and return the gauge that matches
-	if(!Ship_info[Player_ship->ship_info_index].hud_gauges.empty()) {
-		for(j = 0; j < Ship_info[Player_ship->ship_info_index].hud_gauges.size(); j++) {
-
-			gauge_name = Ship_info[Player_ship->ship_info_index].hud_gauges[j]->getCustomGaugeName();
-			if(!strcmp(name, gauge_name)) {
-				return Ship_info[Player_ship->ship_info_index].hud_gauges[j].get();
+	// go through all gauges for all ships and defaults
+	if (check_all_gauges) {
+		for (auto &si : Ship_info) {
+			for (auto &gauge : si.hud_gauges) {
+				if (!stricmp(name, gauge->getCustomGaugeName())) {
+					return gauge.get();
+				}
 			}
 		}
-	} else {
-		for(j = 0; j < default_hud_gauges.size(); j++) {
-
-			gauge_name = default_hud_gauges[j]->getCustomGaugeName();
-			if(!strcmp(name, gauge_name)) {
-				return default_hud_gauges[j].get();
+	}
+	// if the player is flying a ship with a custom set of gauges, check those
+	else if (player_sip && !player_sip->hud_gauges.empty()) {
+		for (auto &gauge : player_sip->hud_gauges) {
+			if (!stricmp(name, gauge->getCustomGaugeName())) {
+				return gauge.get();
 			}
 		}
 	}
 
-	return NULL;
+	// fall back to checking the custom gauges in the default list
+	for (auto &gauge : default_hud_gauges) {
+		if (gauge->isCustom() && !stricmp(name, gauge->getCustomGaugeName())) {
+			return gauge.get();
+		}
+	}
+
+	return nullptr;
+}
+
+int hud_get_default_gauge_index(const char *name)
+{
+	int config_type = -1, object_type = -1;
+
+	// default gauges had two different lists
+	for (int i = 0; i < NUM_HUD_GAUGES; i++) {
+		if (!strcmp(Legacy_HUD_gauges[i].hud_gauge_text, name)) {
+			config_type = i;
+			break;
+		}
+	}
+
+	if (config_type < 0) {
+		for (int i = 0; i < Num_hud_gauge_types; i++) {
+			if (!stricmp(name, Hud_gauge_types[i].name)) {
+				object_type = Hud_gauge_types[i].def;
+				break;
+			}
+		}
+	}
+
+	if (config_type >= 0 || object_type >= 0) {
+		for (int i = 0; i < (int)default_hud_gauges.size(); i++) {
+			if (default_hud_gauges[i]->getConfigType() == config_type || default_hud_gauges[i]->getObjectType() == object_type) {
+				return i;
+			}
+		}
+	}
+
+	return -1;
 }
 
 HudGaugeMultiMsg::HudGaugeMultiMsg():
@@ -3956,13 +4067,11 @@ HudGauge(HUD_OBJECT_SUPERNOVA, HUD_DIRECTIVES_VIEW, false, false, 0, 255, 255, 2
 
 void HudGaugeSupernova::render(float  /*frametime*/)
 {
-	float time_left;
-
-	// if there's a supernova coming
-	time_left = supernova_time_left();
-	if(time_left < 0.0f){
+	if (!supernova_active()) {
 		return;
 	}
+
+	auto time_left = supernova_hud_time_left();
 
 	gr_set_color_fast(&Color_bright_red);
 	if (Lcl_pl) {

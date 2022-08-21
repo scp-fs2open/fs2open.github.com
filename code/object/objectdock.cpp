@@ -461,6 +461,7 @@ void dock_calculate_and_apply_whack_docked_object(vec3d* impulse, const vec3d* w
 // -----------------------
 
 // evaluate a certain function for all docked objects
+// The_Force:: If changed please change in QtFred's ShipInitialStatusDialogModel also
 void dock_evaluate_all_docked_objects(object *objp, dock_function_info *infop, void (*function)(object *, dock_function_info *))
 {
 	Assertion((objp != nullptr) && (infop != nullptr) && (function != nullptr),
@@ -940,8 +941,9 @@ bool dock_check_assume_hub()
 	// is not needed.  So this function is provided to allow the code to optimize itself for level 2, should level 1
 	// evaluation fail.
 
-	// Assume level 2 optimization unless the mission specifies level 3.
-	return !(The_mission.flags[Mission::Mission_Flags::Allow_dock_trees]);
+	// Determining this with a mission flag is a rather brittle design, and in any case this is not likely to be a large
+	// resource sink.  Until a general-purpose tree detection routine is written, this function will always return false.
+	return false;
 }
 
 object *dock_get_hub(object *objp)

@@ -488,6 +488,21 @@ void dc_putc(char c)
 	line_str->push_back(c);
 }
 
+bool handle_textInputEvent(const SDL_Event& event) {
+	if (event.text.text[0] != '\0' && event.text.text[0] != '\1') {
+		for (char c : event.text.text) {
+			if (c < 32)
+				break;
+
+			if (dc_command_buf.size() < MAX_CLI_LEN) {
+				dc_command_buf.push_back(c);
+			}
+		}
+	}
+
+	return true;
+}
+
 void debug_console(void (*_func)(void))
 {
 	int done = 0;
@@ -499,6 +514,9 @@ void debug_console(void (*_func)(void))
 	if ( !debug_inited ) {
 		dc_init();
 	}
+
+	auto textListener = os::events::addEventListener(SDL_TEXTINPUT, 10000, &handle_textInputEvent);
+	SDL_StartTextInput();
 
 	dc_draw(TRUE);
 
@@ -586,11 +604,9 @@ void debug_console(void (*_func)(void))
 			break;
 
 		default:
-			// Not any of the control key codes, so it's probably a letter or number.
-			ubyte c = (ubyte)key_to_ascii(k);
-			if ((c != 255) && (dc_command_buf.size() < MAX_CLI_LEN)) {
-				dc_command_buf.push_back(c);
-			}
+			// Leave handling of key input to SDL
+			break;
+
 		}
 
 		// Do the passed function
@@ -601,6 +617,9 @@ void debug_console(void (*_func)(void))
 		// All done, and ready for new entry
 		dc_draw(TRUE);
 	}
+
+	SDL_StopTextInput();
+	os::events::removeEventListener(textListener);
 
 	while( key_inkey() ) {
 		os_poll();

@@ -2,8 +2,10 @@
 #include "post_processing.h"
 
 #include "graphics/grinternal.h"
+#include "options/Option.h"
 #include "parse/parselo.h"
 #include "ship/ship.h"
+#include "starfield/supernova.h"
 
 namespace graphics {
 namespace {
@@ -34,6 +36,31 @@ PostEffectUniformType mapUniformNameToType(const SCP_string& uniform_name)
 	}
 }
 
+
+// used by In-Game Options menu
+bool Post_processing_enable_lightshafts = true;
+
+auto LightshaftsOption =
+	options::OptionBuilder<bool>("Graphics.Lightshafts", "Lightshafts", "Enable lightshafts (requires post-processing)")
+		.category("Graphics")
+		.default_val(true)
+		.level(options::ExpertLevel::Advanced)
+		.bind_to(&Post_processing_enable_lightshafts)
+		.importance(60)
+		.finish();
+
+int Post_processing_bloom_intensity = 25; // using default value of Cmdline_bloom_intensity
+
+auto BloomIntensityOption = options::OptionBuilder<int>("Graphics.BloomIntensity",
+	"Bloom intensity",
+	"Set bloom intensity (requires post-processing)")
+	.category("Graphics")
+	.range(0, 200)
+	.level(options::ExpertLevel::Advanced)
+	.default_val(25)
+	.bind_to(&Post_processing_bloom_intensity)
+	.importance(55)
+	.finish();
 } // namespace
 
 bool PostProcessingManager::parse_table()
@@ -169,9 +196,65 @@ SCP_vector<graphics::post_effect_t>& PostProcessingManager::getPostEffects() { r
 const lightshaft_parameters& PostProcessingManager::getLightshaftParams() const { return m_lightshaftParams; }
 lightshaft_parameters& PostProcessingManager::getLightshaftParams() { return m_lightshaftParams; }
 
+bool PostProcessingManager::bloomShadersOk() const
+{
+	return m_bloomShadersOk;
+}
+
+void PostProcessingManager::setBloomShadersOk(bool ok)
+{
+	m_bloomShadersOk = ok;
+}
 } // namespace graphics
 
 bool gr_lightshafts_enabled()
 {
-	return graphics::Post_processing_manager->getLightshaftParams().on && !Cmdline_force_lightshaft_off;
+	if (gr_screen.mode == GR_STUB) {
+		return false;
+	}
+
+	// supernova glare should disable lightshafts
+	if (supernova_stage() >= SUPERNOVA_STAGE::CLOSE) {
+		return false;
+	}
+
+	if (!graphics::Post_processing_manager->getLightshaftParams().on) {
+		return false;
+	}
+
+	if (Using_in_game_options) {
+		return graphics::Post_processing_enable_lightshafts;
+	} else {
+		return !Cmdline_force_lightshaft_off;
+	}
+}
+
+int gr_bloom_intensity()
+{
+	if (gr_screen.mode == GR_STUB) {
+		return 0;
+	}
+
+	if (graphics::Post_processing_manager == nullptr || !graphics::Post_processing_manager->bloomShadersOk()) {
+		return 0;
+	}
+
+	if (Using_in_game_options) {
+		return graphics::Post_processing_bloom_intensity;
+	} else {
+		return Cmdline_bloom_intensity;
+	}
+}
+
+void gr_set_bloom_intensity(int intensity)
+{
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
+	if (Using_in_game_options) {
+		graphics::Post_processing_bloom_intensity = intensity;
+	} else {
+		Cmdline_bloom_intensity = intensity;
+	}
 }

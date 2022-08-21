@@ -63,7 +63,7 @@ ADE_VIRTVAR(FPS, l_MoviePlayer, "number", "Determines the frames per second of t
 		LuaError(L, "Tried to modify read-only member!");
 	}
 
-	return ade_set_args(L, "f", (int)ph->player()->getMovieProperties().fps);
+	return ade_set_args(L, "f", ph->player()->getMovieProperties().fps);
 }
 
 ADE_FUNC(update, l_MoviePlayer, "timespan step_time",

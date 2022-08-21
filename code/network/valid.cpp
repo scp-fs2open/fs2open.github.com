@@ -57,10 +57,11 @@ int SquadWarValidState;
 static int SquadWarFirstSent;
 static int SquadWarLastSent;
 
-// table validation
-int TableValidState;
-static int TableValidFirstSent;
-static int TableValidLastSent;
+// data validation
+int DataValidState;
+static SCP_vector<uint32_t> DataValidStatus;
+static int DataValidFirstSent;
+static int DataValidLastSent;
 
 // squad war response
 static squad_war_response SquadWarValidateResponse;
@@ -93,8 +94,7 @@ static int SerializeValidatePacket(const udp_packet_header *uph, ubyte *data)
 			break;
 		}
 
-		case UNT_VALID_MSN_REQ:
-		case UNT_VALID_TBL_REQ: {
+		case UNT_VALID_MSN_REQ: {
 			auto mis_req = reinterpret_cast<const vmt_validate_mission_req_struct *>(&uph->data);
 
 			PXO_ADD_UINT(mis_req->checksum);
@@ -104,6 +104,17 @@ static int SerializeValidatePacket(const udp_packet_header *uph, ubyte *data)
 
 			data[packet_size] = '\0';
 			packet_size++;
+
+			break;
+		}
+
+		case UNT_VALID_DATA_REQ: {
+			// as a dynamically sized packet this should have already been
+			// packed, so just copy the data over
+			const unsigned int dsize = uph->len - PACKED_HEADER_ONLY_SIZE;
+
+			memcpy(data+packet_size, uph->data, dsize);
+			packet_size += dsize;
 
 			break;
 		}
@@ -138,6 +149,7 @@ static int SerializeValidatePacket(const udp_packet_header *uph, ubyte *data)
 
 	Assert(packet_size >= PACKED_HEADER_ONLY_SIZE);
 	Assert(packet_size == uph->len);
+	Assert(packet_size <= MAX_PACKET_SIZE);
 
 	return static_cast<int>(packet_size);
 }
@@ -191,6 +203,17 @@ static void DeserializeValidatePacket(const ubyte *data, const int data_size, ud
 			break;
 		}
 
+		case UNT_VALID_DATA_RSP: {
+			// as a dynamically sized packet we can't really handle it here
+			// that easily so just copy the data over for later use
+			const unsigned int dsize = uph->len - PACKED_HEADER_ONLY_SIZE;
+
+			memcpy(uph->data, data+offset, dsize);
+			offset += dsize;
+
+			break;
+		}
+
 		case UNT_LOGIN_AUTHENTICATED: {
 			SDL_strlcpy(reinterpret_cast<char *>(uph->data), reinterpret_cast<const char *>(data+offset), SDL_arraysize(uph->data));
 			break;
@@ -227,9 +250,9 @@ int InitValidateClient()
 	SquadWarLastSent = 0;
 	SquadWarValidState = VALID_STATE_IDLE;
 
-	TableValidFirstSent = 0;
-	TableValidLastSent = 0;
-	TableValidState = VALID_STATE_IDLE;
+	DataValidFirstSent = 0;
+	DataValidLastSent = 0;
+	DataValidState = VALID_STATE_IDLE;
 
 	psnet_get_addr(Multi_options_g.user_tracker_ip, REGPORT, &rtrackaddr);
 	return 1;
@@ -298,6 +321,7 @@ int ValidateUser(validate_id_request *valid_id, char *trackerid)
 			Psztracker_id = trackerid;
 
 			//Build the request packet
+			SDL_zero(PacketHeader);
 			PacketHeader.type = UNT_LOGIN_AUTH_REQUEST;
 			PacketHeader.xcode = static_cast<unsigned short>(Multi_fs_tracker_game_id);
 			PacketHeader.len = PACKED_HEADER_ONLY_SIZE+sizeof(validate_id_request);
@@ -365,6 +389,9 @@ void ValidIdle()
 
 		//Check to make sure the packets ok
 		if ( (bytesin > 0) && (bytesin == inpacket.len) ) {
+			const ubyte *data = inpacket.data;
+			unsigned int offset = 0;
+
 			switch(inpacket.type)
 			{
 				case UNT_LOGIN_NO_AUTH:
@@ -413,27 +440,53 @@ void ValidIdle()
 					}
 					break;
 
-				// table validation response
-				case UNT_VALID_TBL_RSP:
-					if (TableValidState == VALID_STATE_WAITING) {
+				// data validation response
+				case UNT_VALID_DATA_RSP: {
+					if (DataValidState == VALID_STATE_WAITING) {
 						if (inpacket.code == 2) {
-							TableValidState = VALID_STATE_VALID;
-
-							if (static_cast<size_t>(bytesin) > PACKED_HEADER_ONLY_SIZE) {
-								short game_id = -1;
-
-								memcpy(&game_id, inpacket.data, sizeof(short));
-
-								if (game_id > Multi_fs_tracker_game_id) {
-									Multi_fs_tracker_game_id = game_id;
-									Multi_fs_tracker_game_name = reinterpret_cast<const char *>(inpacket.data+sizeof(short));
-								}
-							}
+							DataValidState = VALID_STATE_VALID;
 						} else {
-							TableValidState = VALID_STATE_INVALID;
+							DataValidState = VALID_STATE_INVALID;
+						}
+
+						DataValidStatus.clear();
+
+						// special error case
+						if (inpacket.code == 0) {
+							break;
+						}
+
+						uint8_t flags;
+
+						PXO_GET_DATA(flags);
+
+						if (flags & VDR_FLAG_IDENT) {
+							char text[100];
+
+							PXO_GET_SHORT(Multi_fs_tracker_game_id);
+
+							PXO_GET_STRING(text);
+							Multi_fs_tracker_game_tag = text;
+
+							PXO_GET_STRING(text);
+							Multi_fs_tracker_game_name = text;
+						}
+
+						if (flags & VDR_FLAG_STATUS) {
+							uint8_t status_count;
+							uint32_t status;
+
+							PXO_GET_DATA(status_count);
+
+							for (auto i = 0; i < status_count; ++i) {
+								PXO_GET_UINT(status);
+								DataValidStatus.push_back(status);
+							}
 						}
 					}
+
 					break;
+				}
 
 				case UNT_CONTROL_VALIDATION:
 					Int3();
@@ -479,9 +532,9 @@ void ValidIdle()
 		}
 	}
 
-	if (TableValidState == VALID_STATE_WAITING) {
-		if ( (timer_get_milliseconds() - TableValidFirstSent) >= PILOT_REQ_TIMEOUT ) {
-			TableValidState = VALID_STATE_TIMEOUT;
+	if (DataValidState == VALID_STATE_WAITING) {
+		if ( (timer_get_milliseconds() - DataValidFirstSent) >= PILOT_REQ_TIMEOUT ) {
+			DataValidState = VALID_STATE_TIMEOUT;
 		}
 	}
 }
@@ -568,6 +621,7 @@ int ValidateMission(vmt_validate_mission_req_struct *valid_msn)
 						 reinterpret_cast<LPSOCKADDR>(&fromaddr), &addrsize, PSNET_TYPE_VALIDATION);
 			}
 			//only send the header, the checksum and the string length plus the null
+			SDL_zero(PacketHeader);
 			PacketHeader.type = UNT_VALID_MSN_REQ;
 			PacketHeader.xcode = static_cast<unsigned short>(Multi_fs_tracker_game_id);
 			PacketHeader.len = static_cast<unsigned short>(PACKED_HEADER_ONLY_SIZE + sizeof(int)+1+strlen(valid_msn->file_name));
@@ -654,6 +708,7 @@ int ValidateSquadWar(squad_war_request *sw_req, squad_war_response *sw_resp)
 
 			}
 			// only send the header, the checksum and the string length plus the null
+			SDL_zero(PacketHeader);
 			PacketHeader.type = UNT_VALID_SW_MSN_REQ;
 			PacketHeader.xcode = static_cast<unsigned short>(Multi_fs_tracker_game_id);
 			PacketHeader.len = static_cast<unsigned short>(PACKED_HEADER_ONLY_SIZE + sizeof(squad_war_request));
@@ -670,6 +725,27 @@ int ValidateSquadWar(squad_war_request *sw_req, squad_war_response *sw_resp)
 	}
 }
 
+
+// custom packer for valid data packet since we can't easily serialize it through
+// the normal function
+static unsigned short PackValidDataRequest(const vmt_valid_data_req_struct *vreq, ubyte *data)
+{
+	unsigned short packet_size = 0;
+
+	PXO_ADD_DATA(vreq->type);
+	PXO_ADD_DATA(vreq->flags);
+	PXO_ADD_DATA(vreq->num_files);
+
+	for (auto &file : vreq->files) {
+		Assert(packet_size+sizeof(uint32_t)+file.name.length()+1 < MAX_UDP_DATA_LENGH);
+
+		PXO_ADD_UINT(file.crc);
+		PXO_ADD_STRING(file.name.c_str(), MAX_UDP_DATA_LENGH);
+	}
+
+	return packet_size;
+}
+
 // call with a valid struct to validate a table
 // call with NULL to poll
 
@@ -679,33 +755,33 @@ int ValidateSquadWar(squad_war_request *sw_req, squad_war_response *sw_resp)
 // -1	table invalid
 //  0	Still waiting for response from tracker/Idle
 //  1	table valid
-int ValidateTable(vmt_validate_mission_req_struct *valid_tbl)
+int ValidateData(const vmt_valid_data_req_struct *vreq)
 {
 	ubyte packet_data[sizeof(udp_packet_header)];
 	int packet_length = 0;
 
 	ValidIdle();
 
-	if (valid_tbl == nullptr) {
-		switch (TableValidState) {
+	if (vreq == nullptr) {
+		switch (DataValidState) {
 			case VALID_STATE_IDLE:
 				return 0;
 			case VALID_STATE_WAITING:
 				return 0;
 			case VALID_STATE_VALID:
-				TableValidState = VALID_STATE_IDLE;
+				DataValidState = VALID_STATE_IDLE;
 				return 1;
 			case VALID_STATE_INVALID:
-				TableValidState = VALID_STATE_IDLE;
+				DataValidState = VALID_STATE_IDLE;
 				return -1;
 			case VALID_STATE_TIMEOUT:
-				TableValidState = VALID_STATE_IDLE;
+				DataValidState = VALID_STATE_IDLE;
 				return -2;
 		}
 
 		return 0;
 	} else {
-		if (TableValidState == VALID_STATE_IDLE) {
+		if (DataValidState == VALID_STATE_IDLE) {
 			fd_set read_fds;
 			struct timeval timeout;
 
@@ -725,20 +801,34 @@ int ValidateTable(vmt_validate_mission_req_struct *valid_tbl)
 						 reinterpret_cast<LPSOCKADDR>(&fromaddr), &addrsize, PSNET_TYPE_VALIDATION);
 			}
 
-			//only send the header, the checksum and the string length plus the null
-			PacketHeader.type = UNT_VALID_TBL_REQ;
+			SDL_zero(PacketHeader);
+			PacketHeader.type = UNT_VALID_DATA_REQ;
 			PacketHeader.xcode = static_cast<unsigned short>(Multi_fs_tracker_game_id);
-			PacketHeader.len = static_cast<unsigned short>(PACKED_HEADER_ONLY_SIZE + sizeof(int)+1+strlen(valid_tbl->file_name));
-			memcpy(PacketHeader.data, valid_tbl, PacketHeader.len-PACKED_HEADER_ONLY_SIZE);
+			PacketHeader.len = PackValidDataRequest(vreq, PacketHeader.data) + PACKED_HEADER_ONLY_SIZE;
 			packet_length = SerializeValidatePacket(&PacketHeader, packet_data);
 			SENDTO(Psnet_socket, reinterpret_cast<char *>(&packet_data), packet_length, 0,reinterpret_cast<LPSOCKADDR>(&rtrackaddr), sizeof(rtrackaddr), PSNET_TYPE_VALIDATION);
-			TableValidState = VALID_STATE_WAITING;
-			TableValidFirstSent = timer_get_milliseconds();
-			TableValidLastSent = timer_get_milliseconds();
+			DataValidState = VALID_STATE_WAITING;
+			DataValidStatus.clear();
+			DataValidFirstSent = timer_get_milliseconds();
+			DataValidLastSent = timer_get_milliseconds();
 
 			return 0;
 		} else {
 			return -1;
 		}
 	}
+}
+
+// if VDR_FLAG_STATUS was set then this should return the valid status of the
+// file at 'idx' in the packet
+bool IsDataIndexValid(const unsigned int idx)
+{
+	unsigned int count = idx / 32;
+	unsigned int index = idx % 32;
+
+	if (DataValidStatus.empty() || count > DataValidStatus.size()) {
+		return false;
+	}
+
+	return (DataValidStatus[count] & 1<<index);
 }

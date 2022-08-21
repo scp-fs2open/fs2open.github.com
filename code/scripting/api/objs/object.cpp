@@ -1,15 +1,20 @@
 //
 //
 
+#include "enums.h"
+#include "mc_info.h"
+#include "modelinstance.h"
 #include "object.h"
-#include "vecmath.h"
 #include "physics_info.h"
 #include "shields.h"
-#include "mc_info.h"
+#include "sound.h"
+#include "subsystem.h"
+#include "vecmath.h"
 
 #include "asteroid/asteroid.h"
 #include "debris/debris.h"
 #include "object/objectshield.h"
+#include "object/objectsnd.h"
 #include "scripting/api/LuaEventCallback.h"
 #include "scripting/lua/LuaFunction.h"
 #include "ship/ship.h"
@@ -79,13 +84,11 @@ ADE_VIRTVAR(Parent, l_Object, "object", "Parent of the object. Value may also be
 		{
 			objh->objp->parent = OBJ_INDEX(newparenth->objp);
 			objh->objp->parent_sig = newparenth->sig;
-			objh->objp->parent_type = newparenth->objp->type;
 		}
 		else
 		{
 			objh->objp->parent = -1;
 			objh->objp->parent_sig = 0;
-			objh->objp->parent_type = OBJ_NONE;
 		}
 	}
 
@@ -165,6 +168,25 @@ ADE_VIRTVAR(LastOrientation, l_Object, "orientation", "Object world orientation 
 	}
 
 	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&objh->objp->last_orient)));
+}
+
+ADE_VIRTVAR(ModelInstance, l_Object, nullptr, "model instance used by this object", "model_instance", "Model instance, nil if this object does not have one, or invalid model instance handle if object handle is invalid")
+{
+	object_h* objh;
+	if (!ade_get_args(L, "o", l_Object.GetPtr(&objh)))
+		return ade_set_error(L, "o", l_ModelInstance.Set(modelinstance_h()));
+
+	if (!objh->IsValid())
+		return ade_set_error(L, "o", l_ModelInstance.Set(modelinstance_h()));
+
+	if (ADE_SETTING_VAR)
+		LuaError(L, "Assigning model instances is not implemented");
+
+	int id = object_get_model_instance(objh->objp);
+	if (id < 0)
+		return ADE_RETURN_NIL;
+
+	return ade_set_args(L, "o", l_ModelInstance.Set(modelinstance_h(id)));
 }
 
 ADE_VIRTVAR(Physics, l_Object, "physics", "Physics data used to move ship between frames", "physics", "Physics data, or invalid physics handle if object handle is invalid")
@@ -512,6 +534,106 @@ ADE_FUNC(addPostMoveHook, l_Object, "function(object object) => void callback",
 	objh->objp->post_move_event.add(make_lua_callback<void, object*>(callback));
 
 	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(assignSound, l_Object, "soundentry GameSnd, [vector Offset=nil, enumeration Flags=0, subsystem Subsys=nil]",
+	"Assigns a sound to this object, with optional offset, sound flags (OS_XXXX), and associated subsystem.",
+	"number",
+	"Returns the index of the sound on this object, or -1 if a sound could not be assigned.")
+{
+	object_h* objh = nullptr;
+	sound_entry_h *seh = nullptr;
+	vec3d *offset = nullptr;
+	enum_h enum_flags;
+	int flags = 0;
+	ship_subsys_h *tgsh = nullptr;
+
+	if (!ade_get_args(L, "oo|ooo", l_Object.GetPtr(&objh), l_SoundEntry.GetPtr(&seh), l_Vector.GetPtr(&offset), l_Enum.Get(&enum_flags), l_Subsystem.GetPtr(&tgsh)))
+		return ade_set_error(L, "i", -1);
+
+	if (!objh->IsValid() || !seh->IsValid() || (tgsh && (!tgsh->IsValid() || !tgsh->isSubsystemValid())))
+		return ade_set_error(L, "i", -1);
+
+	auto objp = objh->objp;
+	auto gs_id = seh->idx;
+	auto subsys = tgsh ? tgsh->ss : nullptr;
+	if (!offset)
+		offset = &vmd_zero_vector;
+	if (enum_flags.index >= 0)
+		flags = enum_flags.index;
+
+	int snd_idx = obj_snd_assign(OBJ_INDEX(objp), gs_id, offset, flags, subsys);
+
+	return ade_set_args(L, "i", snd_idx);
+}
+
+ADE_FUNC(removeSoundByIndex, l_Object, "number index", "Removes an assigned sound from this object.", nullptr, "Returns nothing.")
+{
+	object_h* objh = nullptr;
+	int snd_idx;
+
+	if (!ade_get_args(L, "oi", l_Object.GetPtr(&objh), &snd_idx))
+		return ADE_RETURN_NIL;
+
+	auto objp = objh->objp;
+
+	if (snd_idx < 0 || snd_idx >= (int)objp->objsnd_num.size())
+	{
+		LuaError(L, "Sound index is out of range for object %d!", OBJ_INDEX(objp));
+		return ADE_RETURN_NIL;
+	}
+
+	obj_snd_delete(objp, snd_idx);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(removeSound, l_Object, "soundentry GameSnd, [subsystem Subsys=nil]",
+	"Removes all sounds of the given type from the object or object's subsystem",
+	nullptr,
+	"Returns nothing.")
+{
+	object_h* objh = nullptr;
+	sound_entry_h *seh = nullptr;
+	ship_subsys_h *tgsh = nullptr;
+
+	if (!ade_get_args(L, "oo|o", l_Object.GetPtr(&objh), l_SoundEntry.GetPtr(&seh), l_Subsystem.GetPtr(&tgsh)))
+		return ADE_RETURN_NIL;
+
+	if (!objh->IsValid() || !seh->IsValid() || (tgsh && (!tgsh->IsValid() || !tgsh->isSubsystemValid())))
+		return ADE_RETURN_NIL;
+
+	auto objp = objh->objp;
+	auto gs_id = seh->idx;
+	auto subsys = tgsh ? tgsh->ss : nullptr;
+
+	obj_snd_delete_type(OBJ_INDEX(objp), gs_id, subsys);
+
+	return ADE_RETURN_NIL;
+}
+
+
+ADE_FUNC(getIFFColor, l_Object, "number, number, number", 
+	"Gets the IFF color of the object",
+	"number, number, number", 
+	"IFF rgb color of the object or nil if object invalid")
+{
+	object_h* objh;
+
+	if (!ade_get_args(L, "o", l_Object.GetPtr(&objh)))
+		return ADE_RETURN_NIL;
+
+	if (!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	auto objp = objh->objp;
+	color* col = hud_get_iff_color(objp);
+
+	int r = col->red;
+	int g = col->green;
+	int b = col->blue;
+
+	return ade_set_args(L, "iii", r, g, b);
 }
 
 } // namespace api

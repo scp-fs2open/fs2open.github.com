@@ -46,6 +46,7 @@ ADE_FUNC(__eq, l_Shipclass, "shipclass, shipclass", "Checks if the two classes a
 	return ade_set_args(L, "b", idx1 == idx2);
 }
 
+
 ADE_VIRTVAR(Name, l_Shipclass, "string", "Ship class name", "string", "Ship class name, or an empty string if handle is invalid")
 {
 	int idx;
@@ -269,6 +270,22 @@ ADE_VIRTVAR(AfterburnerFuelMax, l_Shipclass, "number", "Afterburner fuel capacit
 	return ade_set_args(L, "f", Ship_info[idx].afterburner_fuel_capacity);
 }
 
+ADE_VIRTVAR(ScanTime, l_Shipclass, nullptr, "Ship scan time", "number", "Time required to scan, or 0 if handle is invalid. This propery is read-only")
+{
+	int idx;
+	if (!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
+		return ade_set_error(L, "i", 0);
+
+	if (idx < 0 || idx >= ship_info_size())
+		return ade_set_error(L, "i", 0);
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "Setting ScanTime is not supported");
+	}
+
+	return ade_set_args(L, "i", Ship_info[idx].scan_time);
+}
+
 ADE_VIRTVAR(CountermeasuresMax, l_Shipclass, "number", "Maximum number of countermeasures the ship can carry", "number", "Countermeasure capacity, or 0 if handle is invalid")
 {
 	int idx;
@@ -472,6 +489,74 @@ ADE_VIRTVAR(PowerOutput, l_Shipclass, "number", "Gets or sets a ship class' powe
 	}
 
 	return ade_set_args(L, "f", Ship_info[idx].power_output);
+}
+
+ADE_VIRTVAR(ScanningTimeMultiplier, l_Shipclass, nullptr, "Time multiplier for scans performed by this ship class", "number", "Scanning time multiplier, or 0 if handle is invalid")
+{
+	int idx;
+	if(!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
+		return ade_set_error(L, "f", 0.0f);
+
+	if(idx < 0 || idx >= ship_info_size())
+		return ade_set_error(L, "f", 0.0f);
+
+	if(ADE_SETTING_VAR) {
+		LuaError(L, "Setting ScanningTimeMultiplier is not supported");
+	}
+
+	return ade_set_args(L, "f", Ship_info[idx].scanning_time_multiplier);
+}
+
+ADE_VIRTVAR(ScanningRangeMultiplier, l_Shipclass, nullptr, "Range multiplier for scans performed by this ship class", "number", "Scanning range multiplier, or 0 if handle is invalid")
+{
+	int idx;
+	if(!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
+		return ade_set_error(L, "f", 0.0f);
+
+	if(idx < 0 || idx >= ship_info_size())
+		return ade_set_error(L, "f", 0.0f);
+
+	if(ADE_SETTING_VAR) {
+		LuaError(L, "Setting ScanningRangeMultiplier is not supported");
+	}
+
+	return ade_set_args(L, "f", Ship_info[idx].scanning_range_multiplier);
+}
+
+ADE_VIRTVAR(CustomData, l_Shipclass, nullptr, "Gets the custom data table for this ship class", "table", "The ship class's custom data table") 
+{
+	int idx;
+	if(!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
+		return ADE_RETURN_NIL;
+	
+	if(idx < 0 || idx >= ship_info_size())
+		return ADE_RETURN_NIL;
+
+	auto table = luacpp::LuaTable::create(L);
+	
+	ship_info *sip = &Ship_info[idx];
+
+	for (const auto& pair : sip->custom_data)
+	{
+		table.addValue(pair.first, pair.second);
+	}
+
+	return ade_set_args(L, "t", &table);	
+}
+
+ADE_FUNC(hasCustomData, l_Shipclass, nullptr, "Detects whether the ship class has any custom data", "boolean", "true if the shipclass's custom_data is not empty, false otherwise") 
+{
+	int idx;
+	if(!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
+		return ADE_RETURN_NIL;
+	
+	if(idx < 0 || idx >= ship_info_size())
+		return ADE_RETURN_NIL;
+
+	ship_info *sip = &Ship_info[idx];
+
+	bool result = !sip->custom_data.empty();
+	return ade_set_args(L, "b", result);
 }
 
 ADE_FUNC(isValid, l_Shipclass, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")

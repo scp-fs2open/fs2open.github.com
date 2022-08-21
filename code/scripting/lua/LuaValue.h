@@ -160,6 +160,21 @@ class LuaValue {
 	}
 
 	/**
+	 * @brief Same as above but allows passing a reference to a value where to store the lua value
+	 *
+	 * @exception LuaException Thrown when the conversion failed.
+	 */
+	template<typename Type>
+	void getValue(Type&& od) const {
+		_reference->pushValue(_luaState);
+
+		if (!convert::popValue(_luaState, std::forward<Type>(od))) {
+			lua_pop(_luaState, 1);
+			throw LuaException("Failed to pop value");
+		}
+	}
+
+	/**
      * @brief Specifies if the lua value is valid.
      *
      * @return bool @c true if it can be used and have an underlying reference, @c false otherwise.
@@ -170,8 +185,9 @@ class LuaValue {
 	 * @brief Pushes this lua value onto the stack.
 	 * @param thread The thread stack onto which this value should be pushed. May be nullptr for the default state of
 	 * this value
+	 * @param manualStackAllocation Set to true if you manually allocate sufficient stack size before calling this function. Keep false unless you know what you are doing.
 	 */
-	bool pushValue(lua_State* thread) const;
+	bool pushValue(lua_State* thread, bool manualStackAllocation = false) const;
 
 	lua_State* getLuaState() const;
 

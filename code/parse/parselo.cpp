@@ -87,16 +87,22 @@ int is_parenthesis(char ch)
 
 //	Advance global Mp (mission pointer) past all current white space.
 //	Leaves Mp pointing at first non white space character.
-void ignore_white_space()
+void ignore_white_space(const char **pp)
 {
-	while ((*Mp != '\0') && is_white_space(*Mp))
-		Mp++;
+	if (pp == nullptr)
+		pp = const_cast<const char**>(&Mp);
+
+	while ((**pp != '\0') && is_white_space(**pp))
+		(*pp)++;
 }
 
-void ignore_gray_space()
+void ignore_gray_space(const char **pp)
 {
-	while ((*Mp != '\0') && is_gray_space(*Mp))
-		Mp++;
+	if (pp == nullptr)
+		pp = const_cast<const char**>(&Mp);
+
+	while ((**pp != '\0') && is_gray_space(**pp))
+		(*pp)++;
 }
 
 //	Truncate *str, eliminating all trailing white space.
@@ -345,6 +351,19 @@ void advance_to_next_white()
 
 		Mp++;
 	}
+}
+
+// If the parser is at an eoln, move past it
+bool skip_eoln()
+{
+	auto old_Mp = Mp;
+
+	if (*Mp == '\r')
+		Mp++;
+	if (*Mp == '\n')
+		Mp++;
+
+	return old_Mp != Mp;
 }
 
 // Search for specified string, skipping everything up to that point.  Returns 1 if found,
@@ -2032,8 +2051,8 @@ int parse_get_line(char *lineout, int max_line_len, const char *start, int max_s
 void read_file_text(const char *filename, int mode, char *processed_text, char *raw_text)
 {
 	// copy the filename
-    if (!filename)
-        throw parse::ParseException("Invalid filename");
+	if (!filename)
+		throw parse::ParseException("Invalid filename");
 
 	strcpy_s(Current_filename_sub, filename);
 
@@ -2443,13 +2462,15 @@ int stuff_float(float *f, bool optional)
 		Mp = str_start;
 
 	if (success)
+	{
 		retval = 2;
+		diag_printf("Stuffed float: %f\n", *f);
+	}
 	else if (optional)
 		retval = comma ? 1 : 0;
 	else
 		skip_token();
 
-	diag_printf("Stuffed float: %f\n", *f);
 	return retval;
 }
 
@@ -2824,6 +2845,8 @@ void stuff_string_list(SCP_vector<SCP_string> &slp)
 	stuff_token_list(slp, [](SCP_string *buf)->bool {
 		if (*Mp != '\"') {
 			error_display(0, "Missing quotation marks in string list.");
+			// Since this is a bad token, skip characters until we find a comma, parenthesis, or EOLN
+			advance_to_eoln(",)");
 			return false;
 		}
 
@@ -2894,6 +2917,7 @@ size_t stuff_int_list(int *ilp, size_t max_ints, int lookup_type)
 	return stuff_token_list(ilp, max_ints, [&](int *buf)->bool {
 		if (*Mp == '"') {
 			int num = 0;
+			bool valid_negative = false;
 			SCP_string str;
 			get_string(str);
 
@@ -2901,29 +2925,32 @@ size_t stuff_int_list(int *ilp, size_t max_ints, int lookup_type)
 				case SHIP_TYPE:
 					num = ship_name_lookup(str.c_str());	// returns index of Ship[] entry with name
 					if (num < 0)
-						error_display(1, "Unable to find ship %s in stuff_int_list!", str.c_str());
+						error_display(0, "Unable to find ship %s in stuff_int_list!", str.c_str());
 					break;
 
 				case SHIP_INFO_TYPE:
 					num = ship_info_lookup(str.c_str());	// returns index of Ship_info[] entry with name
 					if (num < 0)
-						error_display(1, "Unable to find ship class %s in stuff_int_list!", str.c_str());
+						error_display(0, "Unable to find ship class %s in stuff_int_list!", str.c_str());
 					break;
 
 				case WEAPON_POOL_TYPE:
 					num = weapon_info_lookup(str.c_str());
 					if (num < 0)
-						error_display(1, "Unable to find weapon class %s in stuff_int_list!", str.c_str());
+						error_display(0, "Unable to find weapon class %s in stuff_int_list!", str.c_str());
 					break;
 
 				case WEAPON_LIST_TYPE:
 					num = weapon_info_lookup(str.c_str());
-					if (num < 0 && !str.empty())
-						error_display(1, "Unable to find weapon class %s in stuff_int_list!", str.c_str());
+					if (str.empty())
+						valid_negative = true;
+					else if (num < 0)
+						error_display(0, "Unable to find weapon class %s in stuff_int_list!", str.c_str());
 					break;
 
 				case RAW_INTEGER_TYPE:
 					num = atoi(str.c_str());
+					valid_negative = true;
 					break;
 
 				default:
@@ -2931,7 +2958,10 @@ size_t stuff_int_list(int *ilp, size_t max_ints, int lookup_type)
 					break;
 			}
 
-			*buf = num;
+			if (num < 0 && !valid_negative)
+				return false;
+
+			*buf = num;			
 		} else {
 			stuff_int(buf);
 		}
@@ -3019,7 +3049,7 @@ void stuff_loadout_list(SCP_vector<loadout_row> &list, int lookup_type)
 	}, get_lookup_type_name(lookup_type));
 }
 
-//Stuffs an integer list like stuff_int_list.
+//Stuffs an float list like stuff_int_list.
 size_t stuff_float_list(float* flp, size_t max_floats)
 {
 	return stuff_token_list(flp, max_floats, [](float *f)->bool {
@@ -3028,12 +3058,30 @@ size_t stuff_float_list(float* flp, size_t max_floats)
 	}, "float");
 }
 
+// ditto the above, but a vector of floats...
+void stuff_float_list(SCP_vector<float>& flp)
+{
+	stuff_token_list(flp, [](float* buf)->bool {
+		stuff_float(buf);
+		return true;
+		}, "float");
+}
+
 //	Stuff a vec3d struct, which is 3 floats.
 void stuff_vec3d(vec3d *vp)
 {
 	stuff_float(&vp->xyz.x);
 	stuff_float(&vp->xyz.y);
 	stuff_float(&vp->xyz.z);
+}
+
+void stuff_angles_deg_phb(angles* ap) {
+	stuff_float(&ap->p);
+	stuff_float(&ap->h);
+	stuff_float(&ap->b);
+	ap->p = fl_radians(ap->p);
+	ap->h = fl_radians(ap->h);
+	ap->b = fl_radians(ap->b);
 }
 
 void stuff_parenthesized_vec3d(vec3d *vp)
@@ -3248,7 +3296,7 @@ char *split_str_once(char *src, int max_pixel_w)
 
 	len = (int)strlen(src);
 	for (i=0; i<len; i++) {
-		gr_get_string_size(&w, nullptr, src, i);
+		gr_get_string_size(&w, nullptr, src, i + 1);
 
 		if (w <= max_pixel_w) {
 			if (src[i] == '\n') {  // reached natural end of line
@@ -3323,7 +3371,7 @@ char *split_str_once(char *src, int max_pixel_w)
 //	returns:			number of lines src is broken into
 //						-1 is returned when an error occurs
 //
-int split_str(const char *src, int max_pixel_w, int *n_chars, const char **p_str, int max_lines, unicode::codepoint_t ignore_char, bool strip_leading_whitespace)
+int split_str(const char *src, int max_pixel_w, int *n_chars, const char **p_str, int max_lines, int max_line_length, unicode::codepoint_t ignore_char, bool strip_leading_whitespace)
 {
 	char buffer[SPLIT_STR_BUFFER_SIZE];
 	const char *breakpoint = NULL;
@@ -3336,6 +3384,8 @@ int split_str(const char *src, int max_pixel_w, int *n_chars, const char **p_str
 	Assert(p_str != NULL);
 	Assert(max_lines > 0);
 	Assert(max_pixel_w > 0);
+
+	Assertion(max_line_length > 0, "Max line length should be >0, not %d; get a coder!\n", max_line_length);
 
 	memset(buffer, 0, sizeof(buffer));
 	buf_index = 0;
@@ -3419,7 +3469,7 @@ int split_str(const char *src, int max_pixel_w, int *n_chars, const char **p_str
 		buffer[buf_index] = 0;  // null terminate it
 
 		gr_get_string_size(&sw, NULL, buffer);
-		if (sw >= max_pixel_w) {
+		if (sw >= max_pixel_w || buf_index >= max_line_length) {
 			const char *end;
 
 			if (breakpoint) {
@@ -3454,7 +3504,7 @@ int split_str(const char *src, int max_pixel_w, int *n_chars, const char **p_str
 	return line_num;
 }
 
-int split_str(const char *src, int max_pixel_w, SCP_vector<int> &n_chars, SCP_vector<const char*> &p_str, unicode::codepoint_t ignore_char, bool strip_leading_whitespace)
+int split_str(const char *src, int max_pixel_w, SCP_vector<int> &n_chars, SCP_vector<const char*> &p_str, int max_line_length, unicode::codepoint_t ignore_char, bool strip_leading_whitespace)
 {
 	char buffer[SPLIT_STR_BUFFER_SIZE];
 	const char *breakpoint = NULL;
@@ -3464,6 +3514,8 @@ int split_str(const char *src, int max_pixel_w, SCP_vector<int> &n_chars, SCP_ve
 	// check our assumptions..
 	Assert(src != NULL);
 	Assert(max_pixel_w > 0);
+
+	Assertion(max_line_length > 0, "Max line length should be >0, not %d; get a coder!\n", max_line_length);
 
 	memset(buffer, 0, sizeof(buffer));
 
@@ -3542,7 +3594,7 @@ int split_str(const char *src, int max_pixel_w, SCP_vector<int> &n_chars, SCP_ve
 		buffer[buf_index] = 0;  // null terminate it
 
 		gr_get_string_size(&sw, NULL, buffer);
-		if (sw >= max_pixel_w) {
+		if (sw >= max_pixel_w || buf_index >= max_line_length) {
 			const char *end;
 
 			if (breakpoint) {
@@ -3597,13 +3649,11 @@ int subsystem_stricmp(const char *str1, const char *str2)
 		len2--;
 
 	// once we remove the trailing s on both names, they should be the same length
-	if (len1 > len2)
-		return 1;
-	if (len1 < len2)
-		return -1;
+	if (len1 == len2)
+		return strnicmp(str1, str2, len1);
 
-	// now do the comparison
-	return strnicmp(str1, str2, len1);
+	// if not, just do a regular comparison
+	return stricmp(str1, str2);
 }
 
 // Goober5000
@@ -3884,9 +3934,14 @@ void consolidate_double_characters(char *src, char ch)
 }
 
 // Goober5000
+// Returns position of replacement, or a negative value if replacement failed: -1 if search string was not found, -2 if replacement would exceed max length, or -3 if any string argument is null
+// Note that the parameter here is max *length*, not max buffer size.  Leave room for the null-terminator!
 ptrdiff_t replace_one(char *str, const char *oldstr, const char *newstr, size_t max_len, ptrdiff_t range)
 {
-	Assert(str && oldstr && newstr);
+	Assertion(str && oldstr && newstr, "Arguments must not be null!");
+	Assertion(max_len < SIZE_MAX, "Size must be less than SIZE_MAX because an extra char is added for the null terminator.");
+	if (!str || !oldstr || !newstr || max_len == SIZE_MAX)
+		return -3;
 
 	// search
 	char *ch = stristr(str, oldstr);
@@ -3897,23 +3952,23 @@ ptrdiff_t replace_one(char *str, const char *oldstr, const char *newstr, size_t 
 		// not found within bounds?
 		if ((range > 0) && ((ch - str) > range))
 		{
-			return 0;
+			return -1;
 		}
 
 		// determine if replacement will exceed max len
 		if (strlen(str) + strlen(newstr) - strlen(oldstr) > max_len)
 		{
-			return -1;
+			return -2;
 		}
 
 		// allocate temp string to hold extra stuff
-		char *temp = (char *) vm_malloc(sizeof(char) * max_len);
+		char *temp = (char *) vm_malloc(sizeof(char) * (max_len + 1));
 
 		// ensure allocation was successful
 		if (temp)
 		{
 			// save remainder of string
-			strcpy_s(temp, sizeof(char)*max_len, ch + strlen(oldstr));
+			strcpy(temp, ch + strlen(oldstr));
 
 			// replace
 			strcpy(ch, newstr);
@@ -3928,7 +3983,7 @@ ptrdiff_t replace_one(char *str, const char *oldstr, const char *newstr, size_t 
 	// not found
 	else
 	{
-		return 0;
+		return -1;
 	}
 
 	// return pos of replacement
@@ -3936,11 +3991,14 @@ ptrdiff_t replace_one(char *str, const char *oldstr, const char *newstr, size_t 
 }
 
 // Goober5000
-ptrdiff_t replace_all(char *str, const char *oldstr, const char *newstr, size_t max_len, ptrdiff_t range)
+// Returns number of replacements or a negative result from replace_one if a replacement failed for some reason other than not found
+// Note that the parameter here is max *length*, not max buffer size.  Leave room for the null-terminator!
+int replace_all(char *str, const char *oldstr, const char *newstr, size_t max_len, ptrdiff_t range)
 {
-	ptrdiff_t val, tally = 0;
+	ptrdiff_t val;
+	int tally = 0;
 
-	while ((val = replace_one(str, oldstr, newstr, max_len, range)) > 0)
+	while ((val = replace_one(str, oldstr, newstr, max_len, range)) >= 0)
 	{
 		tally++;
 
@@ -3950,59 +4008,82 @@ ptrdiff_t replace_all(char *str, const char *oldstr, const char *newstr, size_t 
 		}
 	}
 
-	return (val < 0) ? val : tally;
+	// return the tally, even if it's 0, unless there was an exceptional situation like exceeding max len
+	return (val < -1) ? (int)val : tally;
 }
 
-SCP_string& replace_one(SCP_string& context, const SCP_string& from, const SCP_string& to)
+// Goober5000
+// Returns position of replacement, or -1 if search string was not found
+ptrdiff_t replace_one(SCP_string& context, const SCP_string& from, const SCP_string& to)
 {
 	size_t foundHere;
 	if ((foundHere = context.find(from, 0)) != SCP_string::npos)
 	{
 		context.replace(foundHere, from.length(), to);
+		return foundHere;
 	}
-	return context;
+	else
+		return -1;
 }
 
-SCP_string& replace_one(SCP_string& context, const char* from, const char* to)
+// Goober5000
+// Returns position of replacement, or -1 if search string was not found
+ptrdiff_t replace_one(SCP_string& context, const char* from, const char* to)
 {
 	size_t foundHere;
 	if ((foundHere = context.find(from, 0)) != SCP_string::npos)
 	{
 		context.replace(foundHere, strlen(from), to);
+		return foundHere;
 	}
-	return context;
+	else
+		return -1;
 }
 
+// Goober5000
+// Returns number of replacements
 // http://www.cppreference.com/wiki/string/replace
-SCP_string& replace_all(SCP_string& context, const SCP_string& from, const SCP_string& to)
+int replace_all(SCP_string& context, const SCP_string& from, const SCP_string& to)
 {
 	size_t from_len = from.length();
 	size_t to_len = to.length();
 
 	size_t lookHere = 0;
 	size_t foundHere;
+	int tally = 0;
+
 	while ((foundHere = context.find(from, lookHere)) != SCP_string::npos)
 	{
+		tally++;
+
 		context.replace(foundHere, from_len, to);
 		lookHere = foundHere + to_len;
 	}
-	return context;
+
+	return tally;
 }
 
+// Goober5000
+// Returns number of replacements
 // http://www.cppreference.com/wiki/string/replace
-SCP_string& replace_all(SCP_string& context, const char* from, const char* to)
+int replace_all(SCP_string& context, const char* from, const char* to)
 {
 	size_t from_len = strlen(from);
 	size_t to_len = strlen(to);
 
 	size_t lookHere = 0;
 	size_t foundHere;
+	int tally = 0;
+
 	while ((foundHere = context.find(from, lookHere)) != SCP_string::npos)
 	{
+		tally++;
+
 		context.replace(foundHere, from_len, to);
 		lookHere = foundHere + to_len;
 	}
-	return context;
+
+	return tally;
 }
 
 // WMC
@@ -4193,6 +4274,39 @@ void parse_int_list(int *ilist, size_t size)
 	{
 		stuff_int(&ilist[i]);
 	}
+}
+
+void parse_string_map(SCP_map<SCP_string, SCP_string>& outMap, const char* end_marker, const char* entry_prefix)
+{
+	while(optional_string(entry_prefix)) 
+	{
+		SCP_string temp;
+		stuff_string(temp, F_RAW);
+		
+		drop_white_space(temp);
+		
+		if (temp.empty()) 
+		{
+			Warning(LOCATION, "Empty entry in string map.");
+			continue;
+		}
+		
+		size_t sep = temp.find_first_of(' ');
+
+		SCP_string key = temp.substr(0, sep);
+		SCP_string value = temp.substr(sep+1);
+	
+		//if the modder didn't add a value, make the value an empty string. (Without this, value would instead be an identical string to key)
+		if (sep == SCP_string::npos)
+			value = "";
+
+		
+		drop_white_space(key);
+		drop_white_space(value);
+
+		outMap.emplace(key, value);
+	}
+	required_string(end_marker);
 }
 
 // parse a modular table of type "name_check" and parse it using the specified function callback

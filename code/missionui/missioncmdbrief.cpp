@@ -29,6 +29,7 @@
 #include "network/multi.h"
 #include "network/multi_endgame.h"
 #include "network/multiteamselect.h"
+#include "parse/sexp_container.h"
 #include "playerman/player.h"
 #include "sound/audiostr.h"
 #include "sound/fsspeech.h"
@@ -563,8 +564,11 @@ void cmd_brief_init(int team)
 	Cur_cmd_brief = &Cmd_briefs[team];
 
 	// Goober5000 - replace any variables (probably persistent variables) with their values
-	for (i = 0; i < Cur_cmd_brief->num_stages; i++)
+	// karajorma/jg18 - replace container references as well
+	for (i = 0; i < Cur_cmd_brief->num_stages; i++) {
 		sexp_replace_variable_names_with_values(Cur_cmd_brief->stage[i].text);
+		sexp_container_replace_refs_with_values(Cur_cmd_brief->stage[i].text);
+	}
 
 	if (Cur_cmd_brief->num_stages <= 0)
 		return;
@@ -586,6 +590,7 @@ void cmd_brief_init(int team)
 		Uses_scroll_buttons = 0;	// nope, sorry
 		Cmd_brief_background_bitmap = mission_ui_background_load(NULL, Cmd_brief_fname[Uses_scroll_buttons][gr_screen.res]);
 	}
+	mprintf(("Command Briefing UI: %s scroll buttons\n", Uses_scroll_buttons != 0 ? "Using" : "Not using"));
 
 	Ui_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
 	Ui_window.set_mask_bmap(Cmd_brief_mask[Uses_scroll_buttons][gr_screen.res]);

@@ -492,7 +492,7 @@ void render_shield(int shield_num)
 
 		float alpha = 0.9999f;
 		if(The_mission.flags[Mission::Mission_Flags::Fullneb]){
-			alpha *= neb2_get_fog_visibility(centerp, NEB_FOG_VISIBILITY_MULT_SHIELD);
+			alpha *= neb2_get_fog_visibility(centerp, Neb2_fog_visibility_shield);
 		}
 
 		ubyte r, g, b;

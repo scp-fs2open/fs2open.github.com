@@ -9,179 +9,158 @@
 #include "tracing/tracing.h"
 #include "ship/ship.h"
 
-namespace {
+namespace decals {
 
-class DecalDefinition {
-	SCP_string _name;
+DecalDefinition::DecalDefinition(SCP_string name) : _name(std::move(name)) {
+}
 
-	SCP_string _diffuseFilename;
-	bool _loopDiffuse = true;
-
-	SCP_string _glowFilename;
-	bool _loopGlow = true;
-
-	SCP_string _normalMapFilename;
-	bool _loopNormal = true;
-
-	int _diffuseBitmap = -1;
-	int _glowBitmap = -1;
-	int _normalBitmap = -1;
-
- public:
-	explicit DecalDefinition(SCP_string name) : _name(std::move(name)) {
+DecalDefinition::~DecalDefinition() {
+	if (_diffuseBitmap >= 0) {
+		bm_release(_diffuseBitmap);
 	}
-
-	~DecalDefinition() {
-		if (_diffuseBitmap >= 0) {
-			bm_release(_diffuseBitmap);
-		}
-		if (_glowBitmap >= 0) {
-			bm_release(_glowBitmap);
-		}
-		if (_normalBitmap >= 0) {
-			bm_release(_normalBitmap);
-		}
+	if (_glowBitmap >= 0) {
+		bm_release(_glowBitmap);
 	}
-
-	// Disallow copying
-	DecalDefinition(const DecalDefinition&) = delete;
-	DecalDefinition& operator=(const DecalDefinition&) = delete;
-
-	// Move constructor and operator
-	DecalDefinition(DecalDefinition&& other) noexcept {
-		*this = std::move(other); // Use operator implementation
+	if (_normalBitmap >= 0) {
+		bm_release(_normalBitmap);
 	}
-	DecalDefinition& operator=(DecalDefinition&& other) noexcept {
-		std::swap(_name, other._name);
+}
 
-		std::swap(_diffuseFilename, other._diffuseFilename);
-		std::swap(_glowFilename, other._glowFilename);
-		std::swap(_normalMapFilename, other._normalMapFilename);
+DecalDefinition::DecalDefinition(DecalDefinition&& other) noexcept {
+	*this = std::move(other); // Use operator implementation
+}
 
-		std::swap(_diffuseBitmap, other._diffuseBitmap);
-		std::swap(_glowBitmap, other._glowBitmap);
-		std::swap(_normalBitmap, other._normalBitmap);
+DecalDefinition& DecalDefinition::operator=(DecalDefinition&& other) noexcept {
+	std::swap(_name, other._name);
 
-		std::swap(_loopDiffuse, other._loopDiffuse);
-		std::swap(_loopGlow, other._loopGlow);
-		std::swap(_loopNormal, other._loopNormal);
+	std::swap(_diffuseFilename, other._diffuseFilename);
+	std::swap(_glowFilename, other._glowFilename);
+	std::swap(_normalMapFilename, other._normalMapFilename);
 
-		return *this;
-	}
+	std::swap(_diffuseBitmap, other._diffuseBitmap);
+	std::swap(_glowBitmap, other._glowBitmap);
+	std::swap(_normalBitmap, other._normalBitmap);
 
-	void parse() {
-		if (optional_string("+Diffuse:")) {
-			stuff_string(_diffuseFilename, F_FILESPEC);
+	std::swap(_loopDiffuse, other._loopDiffuse);
+	std::swap(_loopGlow, other._loopGlow);
+	std::swap(_loopNormal, other._loopNormal);
 
-			if (!bm_validate_filename(_diffuseFilename, true, true)) {
-				error_display(0, "Animation '%s' is not valid!", _diffuseFilename.c_str());
-				_diffuseFilename = "";
-			}
+	return *this;
+}
 
-			if (optional_string("+Loop:")) {
-				stuff_boolean(&_loopDiffuse);
-			}
+void DecalDefinition::parse() {
+	if (optional_string("+Diffuse:")) {
+		stuff_string(_diffuseFilename, F_FILESPEC);
+
+		if (!bm_validate_filename(_diffuseFilename, true, true)) {
+			error_display(0, "Animation '%s' is not valid!", _diffuseFilename.c_str());
+			_diffuseFilename = "";
 		}
-		if (optional_string("+Glow:")) {
-			stuff_string(_glowFilename, F_FILESPEC);
 
-			if (!bm_validate_filename(_glowFilename, true, true)) {
-				error_display(0, "Animation '%s' is not valid!", _glowFilename.c_str());
-				_glowFilename = "";
-			}
-
-			if (optional_string("+Loop:")) {
-				stuff_boolean(&_loopGlow);
-			}
-		}
-		if (optional_string("+Normal:")) {
-			stuff_string(_normalMapFilename, F_FILESPEC);
-
-			if (!bm_validate_filename(_normalMapFilename, true, true)) {
-				error_display(0, "Animation '%s' is not valid!", _normalMapFilename.c_str());
-				_normalMapFilename = "";
-			}
-
-			if (optional_string("+Loop:")) {
-				stuff_boolean(&_loopNormal);
-			}
+		if (optional_string("+Loop:")) {
+			stuff_boolean(&_loopDiffuse);
 		}
 	}
+	if (optional_string("+Glow:")) {
+		stuff_string(_glowFilename, F_FILESPEC);
 
-	void loadBitmaps() {
-		if (_diffuseBitmap == -1 && VALID_FNAME(_diffuseFilename)) {
-			_diffuseBitmap = bm_load_either(_diffuseFilename.c_str());
-			if (_diffuseBitmap == -1) {
-				Warning(LOCATION,
-						"Bitmap '%s' failed to load for decal definition %s!",
-						_diffuseFilename.c_str(),
-						_name.c_str());
-			}
+		if (!bm_validate_filename(_glowFilename, true, true)) {
+			error_display(0, "Animation '%s' is not valid!", _glowFilename.c_str());
+			_glowFilename = "";
 		}
-		if (_glowBitmap == -1 && VALID_FNAME(_glowFilename)) {
-			_glowBitmap = bm_load_either(_glowFilename.c_str());
-			if (_glowBitmap == -1) {
-				Warning(LOCATION,
-						"Bitmap '%s' failed to load for decal definition %s!",
-						_glowFilename.c_str(),
-						_name.c_str());
-			}
-		}
-		if (_normalBitmap == -1 && VALID_FNAME(_normalMapFilename)) {
-			_normalBitmap = bm_load_either(_normalMapFilename.c_str());
-			if (_normalBitmap == -1) {
-				Warning(LOCATION,
-						"Bitmap '%s' failed to load for decal definition %s!",
-						_normalMapFilename.c_str(),
-						_name.c_str());
-			}
-		}
-	}
 
-	void pageIn() {
-		if (_diffuseBitmap >= 0) {
-			bm_page_in_texture(_diffuseBitmap);
-		}
-		if (_glowBitmap >= 0) {
-			bm_page_in_texture(_glowBitmap);
-		}
-		if (_normalBitmap >= 0) {
-			bm_page_in_texture(_normalBitmap);
+		if (optional_string("+Loop:")) {
+			stuff_boolean(&_loopGlow);
 		}
 	}
+	if (optional_string("+Normal:")) {
+		stuff_string(_normalMapFilename, F_FILESPEC);
 
-	bool bitmapsLoaded() {
-		// Since both bitmap types are optional we need to check if either is loaded to determine if any bitmap is loaded
-		return _diffuseBitmap >= 0 || _glowBitmap >= 0 || _normalBitmap >= 0;
-	}
+		if (!bm_validate_filename(_normalMapFilename, true, true)) {
+			error_display(0, "Animation '%s' is not valid!", _normalMapFilename.c_str());
+			_normalMapFilename = "";
+		}
 
-	const SCP_string& getName() const {
-		return _name;
+		if (optional_string("+Loop:")) {
+			stuff_boolean(&_loopNormal);
+		}
 	}
-	int getDiffuseBitmap() const {
-		return _diffuseBitmap;
-	}
-	int getGlowBitmap() const {
-		return _glowBitmap;
-	}
-	int getNormalBitmap() const {
-		return _normalBitmap;
-	}
-	bool isDiffuseLooping() const {
-		return _loopDiffuse;
-	}
-	bool isGlowLooping() const {
-		return _loopGlow;
-	}
-	bool isNormalLooping() const {
-		return _loopNormal;
-	}
-};
+}
 
-SCP_vector<DecalDefinition> decalDefinitions;
+void DecalDefinition::loadBitmaps() {
+	if (_diffuseBitmap == -1 && VALID_FNAME(_diffuseFilename)) {
+		_diffuseBitmap = bm_load_either(_diffuseFilename.c_str());
+		if (_diffuseBitmap == -1) {
+			Warning(LOCATION,
+					"Bitmap '%s' failed to load for decal definition %s!",
+					_diffuseFilename.c_str(),
+					_name.c_str());
+		}
+	}
+	if (_glowBitmap == -1 && VALID_FNAME(_glowFilename)) {
+		_glowBitmap = bm_load_either(_glowFilename.c_str());
+		if (_glowBitmap == -1) {
+			Warning(LOCATION,
+					"Bitmap '%s' failed to load for decal definition %s!",
+					_glowFilename.c_str(),
+					_name.c_str());
+		}
+	}
+	if (_normalBitmap == -1 && VALID_FNAME(_normalMapFilename)) {
+		_normalBitmap = bm_load_either(_normalMapFilename.c_str());
+		if (_normalBitmap == -1) {
+			Warning(LOCATION,
+					"Bitmap '%s' failed to load for decal definition %s!",
+					_normalMapFilename.c_str(),
+					_name.c_str());
+		}
+	}
+}
+
+void DecalDefinition::pageIn() {
+	if (_diffuseBitmap >= 0) {
+		bm_page_in_texture(_diffuseBitmap);
+	}
+	if (_glowBitmap >= 0) {
+		bm_page_in_texture(_glowBitmap);
+	}
+	if (_normalBitmap >= 0) {
+		bm_page_in_texture(_normalBitmap);
+	}
+}
+
+bool DecalDefinition::bitmapsLoaded() {
+	// Since both bitmap types are optional we need to check if either is loaded to determine if any bitmap is loaded
+	return _diffuseBitmap >= 0 || _glowBitmap >= 0 || _normalBitmap >= 0;
+}
+
+const SCP_string& DecalDefinition::getName() const {
+	return _name;
+}
+int DecalDefinition::getDiffuseBitmap() const {
+	return _diffuseBitmap;
+}
+int DecalDefinition::getGlowBitmap() const {
+	return _glowBitmap;
+}
+int DecalDefinition::getNormalBitmap() const {
+	return _normalBitmap;
+}
+bool DecalDefinition::isDiffuseLooping() const {
+	return _loopDiffuse;
+}
+bool DecalDefinition::isGlowLooping() const {
+	return _loopGlow;
+}
+bool DecalDefinition::isNormalLooping() const {
+	return _loopNormal;
+}
+
+
+SCP_vector<DecalDefinition> DecalDefinitions;
 
 // Variable to indicate if the system is able to work correctly on the current system
-bool decal_system_active = true;
+bool Decal_system_active = true;
 
 void parse_decals_table(const char* filename) {
 	try {
@@ -197,7 +176,7 @@ void parse_decals_table(const char* filename) {
 			DecalDefinition def(name);
 			def.parse();
 
-			decalDefinitions.push_back(std::move(def));
+			DecalDefinitions.push_back(std::move(def));
 		}
 
 		required_string("#End");
@@ -208,17 +187,17 @@ void parse_decals_table(const char* filename) {
 
 	if (!gr_is_capable(CAPABILITY_DEFERRED_LIGHTING)) {
 		// we need deferred lighting
-		decal_system_active = false;
+		Decal_system_active = false;
 		mprintf(("Note: Decal system has been disabled due to lack of deferred lighting.\n"));
 	}
 	if (!gr_is_capable(CAPABILITY_NORMAL_MAP)) {
 		// We need normal mapping for the full feature range
-		decal_system_active = false;
+		Decal_system_active = false;
 		mprintf(("Note: Decal system has been disabled due to lack of normal mapping.\n"));
 	}
 	if (!gr_is_capable(CAPABILITY_SEPARATE_BLEND_FUNCTIONS)) {
 		// WWe need separate blending functions for different color buffers
-		decal_system_active = false;
+		Decal_system_active = false;
 		mprintf(("Note: Decal system has been disabled due to lack of separate color buffer blend functions.\n"));
 	}
 }
@@ -242,6 +221,9 @@ struct Decal {
 
 	bool isValid() {
 		if (!object.IsValid()) {
+			return false;
+		}
+		if (object.objp->flags[Object::Object_Flags::Should_be_dead]) {
 			return false;
 		}
 
@@ -270,6 +252,9 @@ struct Decal {
 			if (smi->blown_off) {
 				return false;
 			}
+		} else {
+			Assertion(false, "Only ships are currently supported for decals!");
+			return false;
 		}
 
 		return true;
@@ -308,35 +293,41 @@ float smoothstep(float edge0, float edge1, float x) {
 namespace decals {
 
 void initialize() {
-	decalDefinitions.clear();
+	if (gr_screen.mode == GR_STUB) {
+		Decal_system_active = false;
+		return;
+	}
+
+	DecalDefinitions.clear();
 	graphics::decal_draw_list::globalInit();
 
 	parse_modular_table(NOX("*-dcl.tbm"), parse_decals_table);
 }
+
 void shutdown() {
 	graphics::decal_draw_list::globalShutdown();
 
 	// Free allocated resources
-	decalDefinitions.clear();
+	DecalDefinitions.clear();
 }
 
-int getDecalConfig(const SCP_string& name) {
-	int index = 0;
-	for (auto& def : decalDefinitions) {
-		if (!stricmp(def.getName().c_str(), name.c_str())) {
-			return index;
-		}
-		++index;
-	}
+int findDecalDefinition(const SCP_string& name) {
+	auto ii = std::find_if(DecalDefinitions.begin(), DecalDefinitions.end(), [&](const DecalDefinition& def)
+		{
+			return def.getName() == name;
+		});
 
-	return -1;
+	if (ii == DecalDefinitions.end())
+		return -1;
+
+	return static_cast<int>(std::distance(DecalDefinitions.begin(), ii));
 }
 
 void parseDecalReference(creation_info& dest_info, bool is_new_entry) {
 	SCP_string name;
 	stuff_string(name, F_NAME);
 
-	auto decalRef = getDecalConfig(name);
+	auto decalRef = findDecalDefinition(name);
 
 	if (decalRef < 0) {
 		error_display(0, "Decal definition '%s' is unknown!", name.c_str());
@@ -361,8 +352,9 @@ void parseDecalReference(creation_info& dest_info, bool is_new_entry) {
 		}
 	}
 }
+
 void loadBitmaps(const creation_info& info) {
-	if (!decal_system_active) {
+	if (!Decal_system_active) {
 		return;
 	}
 	// Silently ignore invalid definition handle since weapons use the default values if the decal option is not present
@@ -370,15 +362,16 @@ void loadBitmaps(const creation_info& info) {
 		return;
 	}
 
-	Assertion(info.definition_handle >= 0 && info.definition_handle < (int) decalDefinitions.size(),
+	Assertion(info.definition_handle >= 0 && info.definition_handle < (int) DecalDefinitions.size(),
 			  "Invalid decal handle detected!");
 
-	auto& def = decalDefinitions[info.definition_handle];
+	auto& def = DecalDefinitions[info.definition_handle];
 
 	def.loadBitmaps();
 }
+
 void pageInDecal(const creation_info& info) {
-	if (!decal_system_active) {
+	if (!Decal_system_active) {
 		return;
 	}
 	// Silently ignore invalid definition handle since weapons use the default values if the decal option is not present
@@ -386,10 +379,10 @@ void pageInDecal(const creation_info& info) {
 		return;
 	}
 
-	Assertion(info.definition_handle >= 0 && info.definition_handle < (int) decalDefinitions.size(),
+	Assertion(info.definition_handle >= 0 && info.definition_handle < (int) DecalDefinitions.size(),
 			  "Invalid decal handle detected!");
 
-	decalDefinitions[info.definition_handle].pageIn();
+	DecalDefinitions[info.definition_handle].pageIn();
 }
 
 void initializeMission() {
@@ -405,43 +398,25 @@ matrix4 getDecalTransform(Decal& decal) {
 	auto pm = model_get(pmi->model_num);
 
 	vec3d worldPos;
-	model_instance_find_world_point(&worldPos,
+	matrix worldOrient;
+	model_instance_local_to_global_point_orient(&worldPos,
+									&worldOrient,
 									&decal.position,
+									&decal.orientation,
 									pm,
 									pmi,
 									decal.submodel,
 									&objp->orient,
 									&objp->pos);
 
-	vec3d worldDir;
-	model_instance_find_world_dir(&worldDir,
-								  &decal.orientation.vec.fvec,
-								  pm,
-								  pmi,
-								  decal.submodel,
-								  &objp->orient);
-
-	vec3d worldUp;
-	model_instance_find_world_dir(&worldUp,
-								  &decal.orientation.vec.fvec,
-								  pm,
-								  pmi,
-								  decal.submodel,
-								  &objp->orient);
-
-	matrix worldOrient;
-	vm_vector_2_matrix(&worldOrient, &worldDir, &worldUp);
+	// The decal API sees the "direction" of a decal to be along the normal of the surface it is attached to. However,
+	// this will lead to a situation where we would look at the decal texture "from behind" causing the texture to
+	// appear flipped. We fix that here for the graphics transform by inverting the Z scaling.
 
 	// Apply scaling
-	worldOrient.a2d[0][0] *= decal.scale.xyz.x;
-	worldOrient.a2d[0][1] *= decal.scale.xyz.x;
-	worldOrient.a2d[0][2] *= decal.scale.xyz.x;
-	worldOrient.a2d[1][0] *= decal.scale.xyz.y;
-	worldOrient.a2d[1][1] *= decal.scale.xyz.y;
-	worldOrient.a2d[1][2] *= decal.scale.xyz.y;
-	worldOrient.a2d[2][0] *= decal.scale.xyz.z;
-	worldOrient.a2d[2][1] *= decal.scale.xyz.z;
-	worldOrient.a2d[2][2] *= decal.scale.xyz.z;
+	vm_vec_scale(&worldOrient.vec.rvec, decal.scale.xyz.x);
+	vm_vec_scale(&worldOrient.vec.uvec, decal.scale.xyz.y);
+	vm_vec_scale(&worldOrient.vec.fvec, -decal.scale.xyz.z);
 
 	matrix4 mat4;
 	vm_matrix4_set_transform(&mat4, &worldOrient, &worldPos);
@@ -450,7 +425,7 @@ matrix4 getDecalTransform(Decal& decal) {
 }
 
 void renderAll() {
-	if (!decal_system_active) {
+	if (!Decal_system_active) {
 		return;
 	}
 
@@ -481,9 +456,9 @@ void renderAll() {
 		int glow_bm = -1;
 		int normal_bm = -1;
 
-		Assertion(decal.definition_handle >= 0 && decal.definition_handle < (int) decalDefinitions.size(),
+		Assertion(decal.definition_handle >= 0 && decal.definition_handle < (int) DecalDefinitions.size(),
 				  "Invalid decal handle detected!");
-		auto& decalDef = decalDefinitions[decal.definition_handle];
+		auto& decalDef = DecalDefinitions[decal.definition_handle];
 
 		auto decal_time = mission_time - decal.creation_time;
 		auto progress = decal_time / decal.lifetime;
@@ -514,9 +489,9 @@ void renderAll() {
 
 	draw_list.render();
 }
-void
-addDecal(creation_info& info, object* host, int submodel, const vec3d& local_pos, const matrix& local_orient) {
-	if (!decal_system_active) {
+
+void addDecal(creation_info& info, object* host, int submodel, const vec3d& local_pos, const matrix& local_orient) {
+	if (!Decal_system_active) {
 		return;
 	}
 	// Silently ignore invalid definition handle since weapons use the default values if the decal option is not present
@@ -524,9 +499,9 @@ addDecal(creation_info& info, object* host, int submodel, const vec3d& local_pos
 		return;
 	}
 
-	Assertion(info.definition_handle >= 0 && info.definition_handle < (int) decalDefinitions.size(),
+	Assertion(info.definition_handle >= 0 && info.definition_handle < (int) DecalDefinitions.size(),
 			  "Invalid decal handle detected!");
-	auto& def = decalDefinitions[info.definition_handle];
+	auto& def = DecalDefinitions[info.definition_handle];
 
 	if (!def.bitmapsLoaded()) {
 		// If this decal was never used before then the bitmaps are not loaded so we need to do that here.
@@ -543,9 +518,15 @@ addDecal(creation_info& info, object* host, int submodel, const vec3d& local_pos
 
 	newDecal.position = local_pos;
 	newDecal.orientation = local_orient;
-	newDecal.scale.xyz.x = info.radius;
-	newDecal.scale.xyz.y = info.radius;
-	newDecal.scale.xyz.z = info.radius;
+	if (info.width < 0.0f || info.height < 0.0f) {
+		newDecal.scale.xyz.x = info.radius;
+		newDecal.scale.xyz.y = info.radius;
+		newDecal.scale.xyz.z = info.radius;
+	} else {
+		newDecal.scale.xyz.x = info.width;
+		newDecal.scale.xyz.y = info.height;
+		newDecal.scale.xyz.z = MIN(info.width, info.height);
+	}
 
 	active_decals.push_back(newDecal);
 }

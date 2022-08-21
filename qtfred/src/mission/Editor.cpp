@@ -17,7 +17,6 @@
 #include <gamesnd/eventmusic.h>
 #include <starfield/nebula.h>
 #include <object/objectdock.h>
-#include <ai/aigoals.h>
 #include <localization/fhash.h>
 
 #include "iff_defs/iff_defs.h" // iff_init
@@ -100,7 +99,7 @@ extern int Nmodel_bitmap;
 namespace fso {
 namespace fred {
 	
-Editor::Editor() : currentObject{ -1 }, Shield_sys_teams(MAX_IFFS, 0), Shield_sys_types(MAX_SHIP_CLASSES, 0) {
+Editor::Editor() : currentObject{ -1 }, Shield_sys_teams(Iff_info.size(), 0), Shield_sys_types(MAX_SHIP_CLASSES, 0) {
 	connect(fredApp, &FredApplication::onIdle, this, &Editor::update);
 
 	// When the mission changes we need to update all renderers
@@ -394,7 +393,6 @@ void Editor::clearMission() {
 	obj_init();
 	model_free_all();                // Free all existing models
 	ai_init();
-	ai_profiles_init();
 	ship_init();
 	jumpnode_level_close();
 	waypoint_level_close();
@@ -405,6 +403,9 @@ void Editor::clearMission() {
 		Wings[i].wing_squad_filename[0] = '\0';
 		Wings[i].wing_insignia_texture = -1;
 	}
+
+	Shield_sys_teams.clear();
+	Shield_sys_teams.resize(Iff_info.size(), 0);
 
 	Num_ai_dock_names = 0;
 	Num_reinforcements = 0;
@@ -473,9 +474,6 @@ void Editor::clearMission() {
 		Team_data[i].num_weapon_choices = count;
 	}
 
-	*Parse_text = *Parse_text_raw = '\0';
-	Parse_text[1] = Parse_text_raw[1] = 0;
-
 	waypoint_parse_init();
 	Num_mission_events = 0;
 	Num_goals = 0;
@@ -491,7 +489,6 @@ void Editor::clearMission() {
 	messages_init();
 	brief_reset();
 	debrief_reset();
-	ship_init();
 	event_music_reset_choices();
 	clear_texture_replacements();
 
@@ -516,7 +513,7 @@ void Editor::clearMission() {
 	Neb2_awacs = -1.0f;
 	Neb2_poof_flags = 0;
 	strcpy_s(Neb2_texture_name, "");
-	for (auto i = 0; i < MAX_NEB2_POOFS; i++) {
+	for (size_t i = 0; i < MAX_NEB2_POOFS; i++) {
 		Neb2_poof_flags |= (1 << i);
 	}
 
@@ -553,6 +550,11 @@ void Editor::clearMission() {
 
 	ENVMAP = -1;
 
+	// free memory from all parsing so far -- see also the stop_parse() in player_select_close() which frees all tbls found during game_init()
+	stop_parse();
+	// however, FRED expects to parse comments from the raw buffer, so we need a nominal string for that
+	allocate_parse_text(1);
+
 	missionLoaded("");
 }
 
@@ -571,8 +573,8 @@ void Editor::setupCurrentObjectIndices(int selectedObj) {
 		currentObject = selectedObj;
 
 		cur_ship = cur_wing = -1;
-		cur_waypoint_list = NULL;
-		cur_waypoint = NULL;
+		cur_waypoint_list = nullptr;
+		cur_waypoint = nullptr;
 
 		if ((Objects[selectedObj].type == OBJ_SHIP) || (Objects[selectedObj].type == OBJ_START)) {
 			cur_ship = Objects[selectedObj].instance;
@@ -587,7 +589,7 @@ void Editor::setupCurrentObjectIndices(int selectedObj) {
 			}
 		} else if (Objects[selectedObj].type == OBJ_WAYPOINT) {
 			cur_waypoint = find_waypoint_with_instance(Objects[selectedObj].instance);
-			Assert(cur_waypoint != NULL);
+			Assert(cur_waypoint != nullptr);
 			cur_waypoint_list = cur_waypoint->get_parent_list();
 		}
 
@@ -597,8 +599,8 @@ void Editor::setupCurrentObjectIndices(int selectedObj) {
 
 	if (selectedObj == -1 || !Num_objects) {
 		currentObject = cur_ship = cur_wing = -1;
-		cur_waypoint_list = NULL;
-		cur_waypoint = NULL;
+		cur_waypoint_list = nullptr;
+		cur_waypoint = nullptr;
 
 		currentObjectChanged(currentObject);
 		return;
@@ -620,8 +622,8 @@ void Editor::setupCurrentObjectIndices(int selectedObj) {
 	Assert(ptr->type != OBJ_NONE);
 
 	cur_ship = cur_wing = -1;
-	cur_waypoint_list = NULL;
-	cur_waypoint = NULL;
+	cur_waypoint_list = nullptr;
+	cur_waypoint = nullptr;
 
 	if (ptr->type == OBJ_SHIP) {
 		cur_ship = ptr->instance;
@@ -634,7 +636,7 @@ void Editor::setupCurrentObjectIndices(int selectedObj) {
 		}
 	} else if (ptr->type == OBJ_WAYPOINT) {
 		cur_waypoint = find_waypoint_with_instance(ptr->instance);
-		Assert(cur_waypoint != NULL);
+		Assert(cur_waypoint != nullptr);
 		cur_waypoint_list = cur_waypoint->get_parent_list();
 	}
 
@@ -717,7 +719,7 @@ int Editor::create_ship(matrix* orient, vec3d* pos, int ship_type) {
 	// set orders according to whether the ship is on the player ship's team
 	{
 		object* temp_objp;
-		ship* temp_shipp = NULL;
+		ship* temp_shipp = nullptr;
 
 		// find the first player ship
 		for (temp_objp = GET_FIRST(&obj_used_list); temp_objp != END_OF_LIST(&obj_used_list);
@@ -729,15 +731,15 @@ int Editor::create_ship(matrix* orient, vec3d* pos, int ship_type) {
 		}
 
 		// set orders if teams match, or if player couldn't be found
-		if (temp_shipp == NULL || shipp->team == temp_shipp->team) {
+		if (temp_shipp == nullptr || shipp->team == temp_shipp->team) {
 			// if this ship is not a small ship, then make the orders be the default orders without
 			// the depart item
 			if (!(sip->is_small_ship())) {
 				shipp->orders_accepted = ship_get_default_orders_accepted(sip);
-				shipp->orders_accepted &= ~DEPART_ITEM;
+				shipp->orders_accepted.erase(DEPART_ITEM);
 			}
 		} else {
-			shipp->orders_accepted = 0;
+			shipp->orders_accepted.clear();
 		}
 	}
 
@@ -2449,7 +2451,7 @@ int Editor::global_error_check_impl() {
 	// for all wings, be sure that the orders accepted for all ships are the same for all ships
 	// in the wing
 	for (i = 0; i < MAX_WINGS; i++) {
-		int default_orders, starting_wing;
+		int starting_wing;
 
 		if (!Wings[i].wave_count) {
 			continue;
@@ -2463,22 +2465,29 @@ int Editor::global_error_check_impl() {
 			if (error(
 				"Starting Wing %s marked as reinforcement.  This wing\nshould either be renamed, or unmarked as reinforcement.",
 				Wings[i].name)) {
-// Goober5000				return 1;
+				return 1;
 			}
 		}
 
-		default_orders = 0;
+		std::set<size_t> default_orders;
+		int default_orders_idx = -1;
 		for (j = 0; j < Wings[i].wave_count; j++) {
-			int orders;
+			// exclude players from the check
+			if (Objects[Ships[Wings[i].ship_index[j]].objnum].type == OBJ_START) {
+				continue;
+			}
 
-			orders = Ships[Wings[i].ship_index[j]].orders_accepted;
-			if (j == 0) {
+			const std::set<size_t>& orders = Ships[Wings[i].ship_index[j]].orders_accepted;
+
+			if (default_orders_idx < 0) {
+				default_orders_idx = j;
 				default_orders = orders;
+
 			} else if (default_orders != orders) {
 				if (error(
 					"%s and %s will accept different orders. All ships in a wing must accept the same Player Orders.",
 					Ships[Wings[i].ship_index[j]].ship_name,
-					Ships[Wings[i].ship_index[0]].ship_name)) {
+					Ships[Wings[i].ship_index[default_orders_idx]].ship_name)) {
 					return 1;
 				}
 			}
@@ -2492,7 +2501,7 @@ int Editor::global_error_check_impl() {
 			} else {
 				if ( starting_orders != default_orders ) {
 					if ( error("Player starting wing %s has orders which don't match other starting wings\n", Wings[i].name) ){
-// Goober5000						return 1;
+						return 1;
 					}
 				}
 			}
@@ -2562,7 +2571,7 @@ int Editor::internal_error(const char* msg, ...) {
 	return -1;
 }
 int Editor::fred_check_sexp(int sexp, int type, const char* msg, ...) {
-	SCP_string buf, sexp_buf, error_buf;
+	SCP_string buf, sexp_buf, error_buf, bad_node_str;
 	int err = 0, z, faulty_node;
 	va_list args;
 
@@ -2579,12 +2588,18 @@ int Editor::fred_check_sexp(int sexp, int type, const char* msg, ...) {
 
 	convert_sexp_to_string(sexp_buf, sexp, SEXP_ERROR_CHECK_MODE);
 	truncate_message_lines(sexp_buf, 30);
+
+	stuff_sexp_text_string(bad_node_str, faulty_node, SEXP_ERROR_CHECK_MODE);
+	if (!bad_node_str.empty()) {	// the previous function adds a space at the end
+		bad_node_str.pop_back();
+	}
+
 	sprintf(error_buf,
-			"Error in %s: %s\n\nIn sexpression: %s\n\n(Error appears to be: %s)",
+			"Error in %s: %s\n\nIn sexpression: %s\n\n(Bad node appears to be: %s)",
 			buf.c_str(),
 			sexp_error_message(z),
 			sexp_buf.c_str(),
-			Sexp_nodes[faulty_node].text);
+			bad_node_str.c_str());
 
 	if (z < 0 && z > -100)
 		err = 1;
@@ -2766,7 +2781,7 @@ const char* Editor::error_check_initial_orders(ai_goal* goals, int ship, int win
 		switch (goals[i].ai_mode) {
 		case AI_GOAL_DESTROY_SUBSYSTEM:
 			Assert(flag == 2 && inst >= 0);
-			if (ship_get_subsys_index(&Ships[inst], goals[i].docker.name) < 0)
+			if (ship_find_subsys(&Ships[inst], goals[i].docker.name) < 0)
 				return "Unknown subsystem type";
 
 			break;
@@ -2850,6 +2865,13 @@ const char* Editor::get_order_name(int order) {
 			return entry.name;
 
 	return "???";
+}
+const ai_goal_list* Editor::getAi_goal_list()
+{
+	return Ai_goal_list;
+}
+int Editor::getAigoal_list_size() {
+	return sizeof(Ai_goal_list) / sizeof(ai_goal_list);
 }
 SCP_vector<SCP_string> Editor::get_docking_list(int model_index) {
 	int i;
@@ -3163,7 +3185,7 @@ void Editor::importShieldSysData(const std::vector<int>& teams, const std::vecto
 // adapted from shield_sys_dlg OnInitDialog()
 // 0 = has shields, 1 = no shields, 2 = conflict/inconsistent
 void Editor::normalizeShieldSysData() {
-	std::vector<int> teams(MAX_IFFS, 0);
+	std::vector<int> teams(Iff_info.size(), 0);
 	std::vector<int> types(MAX_SHIP_CLASSES, 0);
 
 	for (int i = 0; i < MAX_SHIPS; i++) {

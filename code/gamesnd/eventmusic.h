@@ -67,32 +67,30 @@ typedef struct menu_music {
 	char filename[MAX_FILENAME_LEN];	// name music is stored on disk as
 } menu_music;
 
-#define MAX_SPOOLED_MUSIC	50			// max number of briefing/mainhall/credits tracks
-
 // Goober5000 - spooled music flags
 #define SMF_VALID						(1 << 0)
 
-extern menu_music Spooled_music[MAX_SPOOLED_MUSIC];
-extern int Num_music_files;
+extern SCP_vector<menu_music> Spooled_music;
 
 
 // event music soundtrack storage
 typedef struct tagSOUNDTRACK_INFO {
 	int flags;
 	int	num_patterns;
-	char	name[NAME_LENGTH];
-	char	pattern_fnames[MAX_PATTERNS][MAX_FILENAME_LEN];
+	char name[NAME_LENGTH];
+	struct {
+		char fname[MAX_FILENAME_LEN];
+		float num_measures;
+		int samples_per_measure;
+	} patterns[MAX_PATTERNS];
 } SOUNDTRACK_INFO;
-
-#define MAX_SOUNDTRACKS		30			// max number of battle tracks
 
 // Goober5000 - event music flags
 #define EMF_VALID						(1 << 0)
 #define EMF_ALLIED_ARRIVAL_OVERLAY		(1 << 1)
 #define EMF_CYCLE_FS1					(1 << 2)
 
-extern SOUNDTRACK_INFO Soundtracks[MAX_SOUNDTRACKS];
-extern int Num_soundtracks;
+extern SCP_vector<SOUNDTRACK_INFO> Soundtracks;
 
 
 void	event_music_init();
@@ -107,6 +105,7 @@ void	event_music_parse_musictbl(const char *filename);
 void	event_music_change_pattern(int new_pattern);
 int	event_music_return_current_pattern();
 void	event_music_first_pattern();
+void event_music_set_start_delay();
 int	event_music_battle_start();
 int	event_music_enemy_arrival();
 int	event_music_friendly_arrival();

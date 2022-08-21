@@ -25,15 +25,14 @@ struct obj_pair;
 struct beam_weapon_info;
 struct vec3d;
 
-// beam types
-// REMINDER : if you change the behavior of any of these beam types, make sure to update their "cones" of possible
-// movement inside of the function beam_get_cone_dot(...) in beam.cpp  Otherwise it could cause collisions to not
-// function properly!!!!!!
-#define BEAM_TYPE_A					0				// unidirectional beam
-#define BEAM_TYPE_B					1				// "slash" in one direction
-#define BEAM_TYPE_C					2				// targeting lasers (only lasts one frame)
-#define BEAM_TYPE_D					3				// similar to the type A beams, but takes multiple shots and "chases" fighters around
-#define BEAM_TYPE_E					4				// stupid beam. like type A, only it doesn't aim. it just shoots directly out of the turret
+typedef enum class BeamType {
+	DIRECT_FIRE,	// unidirectional beam; used to be BEAM_TYPE_A
+	SLASHING,		// "slash" in one direction; used to be BEAM_TYPE_B
+	TARGETING,		// targeting lasers (only lasts one frame); used to be BEAM_TYPE_C
+	ANTIFIGHTER,	// similar to the type A beams, but takes multiple shots and "chases" fighters around; used to be BEAM_TYPE_D
+	NORMAL_FIRE,	// stupid beam. like type A, only it doesn't aim. it just shoots directly out of the turret; used to be BEAM_TYPE_E
+	OMNI			// SCP type, highly flexible and configurable; used to be BEAM_TYPE_F
+} BeamType;
 
 // max # of "shots" an individual beam will take
 #define MAX_BEAM_SHOTS				5
@@ -67,7 +66,7 @@ typedef struct beam_info {
 typedef struct beam_fire_info {
 	int				beam_info_index;				// weapon info index 
 	object			*shooter;						// whos shooting
-	vec3d			targeting_laser_offset;		// offset from the center of the object (for targeting lasers only)
+	vec3d			local_fire_postion;		// offset from the center of the object (for fighter beams only)
 	ship_subsys		*turret;						// where he's shooting from
 	float			accuracy;						// 0.0 to 1.0 (only really effects targeting on small ships)
 	object			*target;							// who's getting shot
@@ -83,12 +82,14 @@ typedef struct beam_fire_info {
 	char team;									// for floating beams, determines which team the beam is on
 	int burst_seed;								// used for sharing random targets if part of the same burst
 	int  fire_method;
+	float per_burst_rotation;                         // for type 5 beams
+	int burst_index;
 } beam_fire_info;
 
 typedef struct fighter_beam_fire_info {
 	int				beam_info_index;				// weapon info index 
 	object			*shooter;						// whos shooting
-	vec3d			targeting_laser_offset;		// offset from the center of the object (for targeting lasers only)
+	vec3d			local_fire_postion;		// offset from the center of the object (for fighter beams only)
 	ship_subsys		*turret;							// where he's shooting from
 	float				accuracy;						// 0.0 to 1.0 (only really effects targeting on small ships)
 	object			*target;							// whos getting shot
@@ -139,7 +140,7 @@ typedef struct beam {
 	int		target_sig;				// target sig
 	ship_subsys *subsys;				// subsys its being fired from
 	beam		*next, *prev;			// link list stuff
-	vec3d	targeting_laser_offset;
+	vec3d	local_fire_postion;		// offset from the center of the object (for fighter beams only)
 	int		framecount;				// how many frames the beam has been active
 	int		flags;					// see BF_* defines 	
 	float		current_width_factor;		// applied to width due to shrink or grow
@@ -147,7 +148,7 @@ typedef struct beam {
 	// beam info	
 	int		warmup_stamp;			// timestamp for "warming up"
 	int		warmdown_stamp;		// timestamp for "warming down"
-	int		type;						// see BEAM_TYPE_* defines in beam.h
+	BeamType		type;				// the type of beam, direct-fire, slashing, etc
 	float		life_left;				// in seconds
 	float		life_total;				// total life	
 	// this vector has very special meaning. BEFORE performing collision checks, it basically implies a "direction". meaning
@@ -184,11 +185,13 @@ typedef struct beam {
 
 	int Beam_muzzle_stamp;
 	int firingpoint;
-
 	float		beam_collide_width;
 	float		beam_light_width;
 
 	float u_offset_local;
+
+	bool rotates;					// type 5s only, determines whether it rotates
+	float type5_rot_speed;          // how fast it rotates if it does
 } beam;
 
 extern std::array<beam, MAX_BEAMS> Beams;				// all beams
@@ -268,7 +271,7 @@ void beam_unpause_sounds();
 void beam_calc_facing_pts(vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, float w, float z_add);
 
 // return the amount of damage which should be applied to a ship. basically, filters friendly fire damage 
-float beam_get_ship_damage(beam *b, object *objp);
+float beam_get_ship_damage(beam *b, object *objp, vec3d* hitpos = nullptr);
 
 
 

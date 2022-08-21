@@ -554,14 +554,23 @@ int barracks_new_pilot_selected()
 		return -1;
 	}
 
+	// check if the pilot is valid
+	// Also prompt if pilot has version mismatch
+	if (!valid_pilot(Pilots[Selected_line])) {
+		// pilot not valid or user opted not to select
+		Cur_pilot->callsign[0] = 0;
+		return -1;
+	}
+
 	if ( !Pilot.load_player(Pilots[Selected_line], Cur_pilot) ) {
+		// could not load, bail
 		Cur_pilot->callsign[0] = 0;  // this indicates no pilot active
 		return -1;
-	} else {
-		if (!Pilot.load_savefile(Cur_pilot, Cur_pilot->current_campaign)) {
-			// set single player squad image to multi if campaign can't be loaded
-			strcpy_s(Cur_pilot->s_squad_filename, Cur_pilot->m_squad_filename);
-		}
+	}
+
+	if (!Pilot.load_savefile(Cur_pilot, Cur_pilot->current_campaign)) {
+		// set single player squad image to multi if campaign can't be loaded
+		strcpy_s(Cur_pilot->s_squad_filename, Cur_pilot->m_squad_filename);
 	}
 
 	// init stuff to reflect new pilot
@@ -662,12 +671,8 @@ int barracks_pilot_accepted()
 		return -1;
 	}
 
-	// check that pilot language is OK
-	if (!valid_pilot_lang(Cur_pilot->callsign)) {
-		popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,XSTR(
-			"Selected pilot was created with a different language\n"
-			"to the currently active language.\n\n"
-			"Please select a different pilot or change the language", 1637));
+	// check that pilot is OK
+	if (!valid_pilot(Cur_pilot->callsign)) {
 		return -1;
 	}
 
@@ -1587,7 +1592,7 @@ void barracks_do_frame(float  /*frametime*/)
 	}
 
 	// check mouse over help
-	if (mouse_down(MOUSE_LEFT_BUTTON)) {
+	if (mouse_down(CC_bind(CID_MOUSE, MOUSE_LEFT_BUTTON))) {
 		help_overlay_set_state(Barracks_overlay_id, gr_screen.res, 0);
 	}
 

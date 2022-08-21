@@ -5,6 +5,7 @@
 
 #include "particle/effects/SingleParticleEffect.h"
 #include "particle/effects/CompositeEffect.h"
+#include "particle/effects/VolumeEffect.h"
 
 #include "particle/effects/ConeShape.h"
 #include "particle/effects/SphereShape.h"
@@ -25,7 +26,8 @@ const char* effectTypeNames[static_cast<int64_t>(EffectType::MAX)] = {
 	"Single",
 	"Composite",
 	"Cone",
-	"Sphere"
+	"Sphere",
+	"Volume"
 };
 
 const char* getEffectTypeName(EffectType type) {
@@ -59,6 +61,11 @@ ParticleEffectPtr constructEffect(const SCP_string& name, EffectType type) {
 		}
 		case EffectType::Sphere: {
 			effect.reset(new GenericShapeEffect<SphereShape>(name));
+			effect->parseValues(false);
+			break;
+		}
+		case EffectType::Volume: {
+			effect.reset(new VolumeEffect(name));
 			effect->parseValues(false);
 			break;
 		}
@@ -176,43 +183,48 @@ ParticleEffectHandle ParticleManager::getEffectByName(const SCP_string& name)
 
 void ParticleManager::doFrame(float) {
 	if (Is_standalone) {
-		// Don't process sources for standalone server
-		m_sources.clear(); // Always clear the vector to free memory
+		return;
 	}
-	else {
-		TRACE_SCOPE(tracing::ProcessParticleEffects);
 
-		m_processingSources = true;
+	TRACE_SCOPE(tracing::ProcessParticleEffects);
 
-		for (auto source = std::begin(m_sources); source != std::end(m_sources);) {
-			if (!source->isValid() || !source->process()) {
-				// if we're sitting on the very last source, popping-back will invalidate the iterator!
-				if (std::next(source) == m_sources.end()) {
-					m_sources.pop_back();
-					break;
-				}
+	m_processingSources = true;
 
-				*source = std::move(m_sources.back());
+	for (auto source = std::begin(m_sources); source != std::end(m_sources);) {
+		if (!source->isValid() || !source->process()) {
+			// if we're sitting on the very last source, popping-back will invalidate the iterator!
+			if (std::next(source) == m_sources.end()) {
 				m_sources.pop_back();
-				continue;
+				break;
 			}
 
-			// source is only incremented here as elements would be skipped in
-			// the case that a source needs to be removed
-			++source;
+			*source = std::move(m_sources.back());
+			m_sources.pop_back();
+			continue;
 		}
 
-		m_processingSources = false;
-
-		for (auto& source : m_deferredSourceAdding) {
-			m_sources.push_back(source);
-		}
-		m_deferredSourceAdding.clear();
+		// source is only incremented here as elements would be skipped in
+		// the case that a source needs to be removed
+		++source;
 	}
+
+	m_processingSources = false;
+
+	for (auto& source : m_deferredSourceAdding) {
+		m_sources.push_back(source);
+	}
+	m_deferredSourceAdding.clear();
 }
 
 ParticleEffectHandle ParticleManager::addEffect(ParticleEffectPtr effect)
 {
+	// we don't need this on standalone so remove the effect and return something invalid
+	if (Is_standalone) {
+		delete effect;
+
+		return ParticleEffectHandle::invalid();
+	}
+
 	Assertion(effect, "Invalid effect pointer passed!");
 
 #ifndef NDEBUG
@@ -282,6 +294,7 @@ ParticleSourceWrapper ParticleManager::createSource(ParticleEffectHandle index)
 
 void ParticleManager::clearSources() {
 	m_sources.clear();
+	m_deferredSourceAdding.clear();
 }
 
 namespace util {

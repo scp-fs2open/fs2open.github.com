@@ -134,18 +134,18 @@ BOOL debriefing_editor_dlg::OnInitDialog()
 
 	box = (CComboBox *) GetDlgItem(IDC_SUCCESSFUL_MISSION_TRACK);
 	box->AddString("None");
-	for (i=0; i<Num_music_files; i++)
-		box->AddString(Spooled_music[i].name);
+	for (auto &sm: Spooled_music)
+		box->AddString(sm.name);
 
 	box = (CComboBox *) GetDlgItem(IDC_DEBRIEFING_TRACK);
 	box->AddString("None");
-	for (i=0; i<Num_music_files; i++)
-		box->AddString(Spooled_music[i].name);
+	for (auto &sm: Spooled_music)
+		box->AddString(sm.name);
 
 	box = (CComboBox *) GetDlgItem(IDC_FAILED_MISSION_TRACK);
 	box->AddString("None");
-	for (i=0; i<Num_music_files; i++)
-		box->AddString(Spooled_music[i].name);
+	for (auto &sm: Spooled_music)
+		box->AddString(sm.name);
 
 	m_debriefPass_music = Mission_music[SCORE_DEBRIEF_SUCCESS] + 1;
 	m_debriefAvg_music = Mission_music[SCORE_DEBRIEF_AVERAGE] + 1;
@@ -206,7 +206,7 @@ void debriefing_editor_dlg::update_data(int update)
 		lcl_fred_replace_stuff(ptr->text);
 		deconvert_multiline_string(ptr->recommendation_text, m_rec_text);
 		lcl_fred_replace_stuff(ptr->recommendation_text);
-		string_copy(ptr->voice, m_voice, MAX_FILENAME_LEN);
+		string_copy(ptr->voice, m_voice, MAX_FILENAME_LEN - 1);
 	}
 
 	// now get new stage data

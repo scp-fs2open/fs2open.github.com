@@ -55,6 +55,8 @@ class SourceOrigin {
 
 	vec3d m_offset;
 
+	vec3d m_velocity;
+
  public:
 	/**
 	 * @brief Initializes the origin with default values
@@ -122,6 +124,12 @@ class SourceOrigin {
 	 * @param weakParticlePtr The hosting particle
 	 */
 	void moveToParticle(const WeakParticlePtr& weakParticlePtr);
+
+	/**
+	* @brief Sets the velocity of the source, will not move the source, but particles created may inherit this velocity
+	* @param vel The world velocity
+	*/
+	void setVelocity(vec3d* vel);
 
 	friend class ParticleSource;
 };

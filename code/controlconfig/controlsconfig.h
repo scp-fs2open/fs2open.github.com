@@ -12,71 +12,67 @@
 #define CONTROLS_CONFIG_H
 
 #include "globalincs/pstypes.h"
+#include "scripting/scripting.h"
 
 #define CONTROL_CONFIG_XSTR	507
 
+#define CCF_AXIS_BTN    0x40    //!< axis is a button on positive side. If also inverted, is on negative side instead
+#define CCF_RELATIVE    0x20    //!< axis is relative
+#define CCF_INVERTED    0x10    //!< axis is inverted
+#define CCF_AXIS        0x08    //!< btn is an axis
+#define CCF_HAT         0x04    //!< btn is a hat
+#define CCF_BALL        0x02    //!< btn is a ball
+#define CCF_BUTTON      0x01    //!< btn is actually a button
+
 /*!
- * These are used to index a corresponding joystick axis value from an array.
+ * These are used to index a corresponding axis value from an array.
  * Currently only used by ::Axis_map_to[] and ::Axis_map_to_defaults[]
  */
-enum Joy_axis_index {
+enum Joy_axis_index : short {
 	JOY_X_AXIS		=0,
 	JOY_Y_AXIS,
 	JOY_Z_AXIS,
 	JOY_RX_AXIS,
 	JOY_RY_AXIS,
-	JOY_RZ_AXIS
+	JOY_RZ_AXIS,
+
+	JOY_NUM_AXES	// Number of axes a joystick may have. Must be last enum in Joy_axis_index.
 };
+
+// Aliases for mouse axes.  Really should unify this...
+const short MOUSE_X_AXIS = JOY_X_AXIS;
+const short MOUSE_Y_AXIS = JOY_Y_AXIS;
+const short MOUSE_Z_AXIS = JOY_Z_AXIS;
+const short MOUSE_NUM_AXES = 3;
+const short MOUSE_NUM_BUTTONS = 9;	// Keep this up to date with mouse.h until z64555 stops being lazy and does it right
 
 /*!
  * Controller index enumeration
  * @details For use with hardcoded bindings and scripting API to allow human-readable translation
  * @note These enums are hardcoded so that an int value of 0 would be JOY0
  */
-enum CID : short {
-	CID_NONE     = -3,	// No device bound
-	CID_KEYBOARD = -2,	// button belongs to keyboard
-	CID_MOUSE    = -1,  // to mouse
-	CID_JOY0     =  0,  // to Joy0
-	CID_JOY1     =  1,  // to Joy1 (Throttle?)
-	CID_JOY2     =  2,  // to Joy2 (Pedals?)
-	CID_JOY3     =  3   // to Joy3 (Head tracker?)
-	                    // Any additional joystick is an int >3
-};
-
-/*!
- * These are used to index a corresponding (analog) action, namely controlling the orientation angles and throttle.
- */
-enum Joy_axis_action_index {
-	JOY_HEADING_AXIS	=0,	//
-	JOY_PITCH_AXIS,
-	JOY_BANK_AXIS,
-	JOY_ABS_THROTTLE_AXIS,
-	JOY_REL_THROTTLE_AXIS,
-
-	/*!
-	 * This must always be below the last defined item
-	 */
-	NUM_JOY_AXIS_ACTIONS			//!< The total number of actions an axis may map to
-};
-
-/*!
- * Joystick action modes
- * note: should this be in joy.h?
- */
-enum Joy_axis_action_mode {
-	JAAM_ABS,       //!< Absolute mode.  Axis position = output value
-	JAAM_REL,       //!< Relative mode.  Axis postion away from its center adds or subtracts an output value register.
-	JAAM_BTN_NEG,   //!< Button mode, negative side.  Axis position in the negative side will trigger a button action
-	JAAM_BTN_POS,   //!< Button mode, positive side.  Axis position in the positive side will trigger a button action
+enum CID : int8_t {
+	CID_NONE     = -3,	//!< No device bound
+	CID_KEYBOARD = -2,	//!< belongs to keyboard
+	CID_MOUSE    = -1,  //!< to mouse
+	CID_JOY0     =  0,  //!< to Joy0
+	CID_JOY1     =  1,  //!< to Joy1 (Throttle?)
+	CID_JOY2     =  2,  //!< to Joy2 (Pedals?)
+	CID_JOY3     =  3,  //!< to Joy3 (Head tracker?)
+	
+	CID_JOY_MAX         //!< Maximum supported joysticks, must be last in the enum definition
 };
 
 /*!
  * Control Configuration Types. Namely differ in how the control is activated
  */
 enum CC_type {
-	CC_TYPE_TRIGGER			=0,		//!< A normal, one-shot type control that is activated when a key is or button is pressed
-	CC_TYPE_CONTINUOUS				//!< A continous control that is activated as long as the key or button is held down
+	CC_TYPE_TRIGGER = 0,    //!< A normal, one-shot type control that is activated when a key is or button is pressed
+	CC_TYPE_CONTINUOUS,     //!< A continous control that is activated as long as the key or button is held down
+	CC_TYPE_AXIS_ABS,       //!< Absolute Axis mode.  Axis position = output value
+	CC_TYPE_AXIS_REL,       //!< Relative Axis mode.  Axis postion away from its center adds or subtracts an output value register
+	CC_TYPE_AXIS_BTN_NEG,   //!< Axis Button mode, negative side.  Axis position in the negative side will trigger a button action
+	CC_TYPE_AXIS_BTN_POS    //!< Axis Button mode, positive side.  Axis position in the positive side will trigger a button action
 };
 
 /*!
@@ -86,7 +82,7 @@ enum CC_type {
  *
  * Note: Do not adjust the order or numeric value
  */
-enum IoActionId  {
+enum IoActionId : int {
 	TARGET_NEXT										=0,		//!< target next
 	TARGET_PREV										=1,		//!< target previous
 	TARGET_NEXT_CLOSEST_HOSTILE						=2,		//!< target the next hostile target
@@ -288,10 +284,51 @@ enum IoActionId  {
 	CUSTOM_CONTROL_4								= 122,
 	CUSTOM_CONTROL_5								= 123,
 
+	//!< @n
+	//!< Analog controls
+	//!<-----------------------------
+	//!< All axis actions must be kept together
+	JOY_HEADING_AXIS								= 124,
+	JOY_PITCH_AXIS									= 125,
+	JOY_BANK_AXIS									= 126,
+	JOY_ABS_THROTTLE_AXIS							= 127,
+	JOY_REL_THROTTLE_AXIS							= 128,
+
 	/*!
 	 * This must always be below the last defined item
 	 */
 	CCFG_MAX                                  //!<  The total number of defined control actions (or last define + 1)
+};
+
+// Constants for array-based checking (within Control_config) for the axis actions.
+// z64: Yes, this is hackish. No I don't really like it.
+const int JOY_AXIS_BEGIN = JOY_HEADING_AXIS;
+const int JOY_AXIS_END = JOY_REL_THROTTLE_AXIS + 1;
+const int NUM_JOY_AXIS_ACTIONS = JOY_AXIS_END - JOY_AXIS_BEGIN;
+
+/*!
+ * @brief Enum for indexing into axis action arrays.
+ * @note Keep this up to date with JOY_HEADING_AXIS and friends.  Pay attention to their order and copy to here
+ */
+namespace Action {
+enum {
+	HEADING = 0,
+	PITCH,
+	BANK,
+	ABS_THROTTLE,
+	REL_THROTTLE,
+
+	NUM_VALUES
+};
+}
+
+/*!
+ * Where the preset is located in memory
+ */
+enum class Preset_t {
+	hardcode,	// Preset is defined hardcode
+	tbl,		// Preset is defined in controlconfigdefaults.tbl
+	pst			// Preset is defined in a .json
 };
 
 class CCB;
@@ -301,26 +338,19 @@ class CCB;
  */
 class CC_bind {
 public:
-	CID cid   = CID_NONE;   //!< Which controller this belongs to
-	short btn = -1;         //!< Which button to index; If cid == CID_KEYBOARD, this is a key hash.
-
-public:
 	CC_bind() = default;
+	CC_bind(CID _cid, short _btn) : cid(_cid), btn(_btn) { validate(); };
+	CC_bind(CID _cid, short _btn, char _flags) : cid(_cid), flags(_flags), btn(_btn) { validate(); };
 	CC_bind(const CC_bind &A) = default;
 
-	CC_bind(CID _cid, short _btn) : cid(_cid), btn(_btn) {};
-
-	CC_bind& operator=(const CC_bind &A);
+	CC_bind& operator=(const CC_bind &A) = default;
 
 	/*!
 	 * Checks if this CC_bind is equal to the given CC_bind
+	 *
+	 * @note EQUAL means EQUAL, this will return FALSE if the flags differ by a single bit
 	 */
 	bool operator==(const CC_bind &B) const;
-
-	/*!
-	 * Checks if this CC_bind is equal to either in the pair
-	 */
-	bool operator==(const CCB &pair) const;
 
 	/*!
 	 * Checks if this CC_bind is not equal to the given CC_bind
@@ -328,12 +358,12 @@ public:
 	bool operator!=(const CC_bind &B) const;
 
 	/*!
-	 * Checks if this CC_bind is not equal to either in the pair
+	 * Checks if this CC_bind is equal to the given CC_bind, disregarding the inversion flag
 	 */
-	bool operator!=(const CCB &pair) const;
+	bool invert_agnostic_equals(const CC_bind &B) const;
 
 	/*!
-	 * Clears the binding
+	 * Clears the binding and flags.  Some flags are retained.
 	 */
 	void clear();
 
@@ -342,10 +372,62 @@ public:
 	 */
 	bool empty() const;
 
+	/**
+	 * Takes the given binding.
+	 */
+	void take(CID _cid, short _btn, char _flags = 0);
+
+	/**
+	 * Validates the binding, clearing it if necassary
+	 */
+	void validate();
+
+	/*!
+	 * Returns a copy of ::btn
+	 */
+	short get_btn() const;
+
+	/*!
+	 * Returns a copy of ::cid
+	 */
+	CID get_cid() const;
+
+	/*!
+	 * Returns a copy of ::flags
+	 */
+	char get_flags() const;
+
 	/*!
 	 * Returns a human-readable string of this binding
 	 */
 	SCP_string textify() const;
+
+	/*!
+	 * Sets the inversion state of this binding according to the passed bool. True = inverted, false = normal
+	 */
+	void invert(bool);
+
+	/*!
+	 * Toggles the inversion state
+	 */
+	void invert_toggle();
+
+	/*!
+	 * Is true if inverted, false otherwise
+	 */
+	bool is_inverted() const;
+
+	/*!
+	 * Checks if this CC_bind conflicts with the given argument
+	 *
+	 * @note Similar to operator==, but ignores certain combinations of flags.
+	 */
+	bool conflicts_with(const CC_bind&) const;
+
+private:
+	CID cid = CID_NONE; //!< Which controller this belongs to
+	char flags = 0;     //!< mask to determine various additional attributes of btn
+	short btn = -1;     //!< The button, key combo, or axis that's bound.
 };
 
 /*!
@@ -392,17 +474,57 @@ public:
 	/*!
 	 * Assigns the contents of the given CCB to this CCB
 	 */
-	CCB& operator=(const CCB&);
+	CCB& operator=(const CCB&) = default;
 
 	/*!
-	 * Returns True if this CCB's first isn't empty and the given CCB has a binding equal to it
+	 * Checks if the given CCB is exactly equal to this
 	 */
-	bool has_first(const CCB&) const;
+	bool operator==(const CCB&) const;
 
 	/*!
-	 * Returns True if this CCB's second isn't empty and the given CCB has a binding equal to it
+	 * Checks if the given CCB differs from this
 	 */
-	bool has_second(const CCB&) const;
+	bool operator!=(const CCB&) const;
+
+	/*!
+	 * Returns True if this CCB's first isn't empty and the given CCB has a binding that can conflict with it
+	 */
+	bool has_first_conflict(const CCB&) const;
+
+	/*!
+	 * Returns True if this CCB's second isn't empty and the given CCB has a binding that can conflict with it
+	 */
+	bool has_second_conflict(const CCB&) const;
+
+	/*!
+	 * Returns a pointer to first, or second, whichever has a binding equal to the given CC_bind, or nullptr if neither
+	 */
+	CC_bind* find(const CC_bind&);
+
+	/*!
+	 * Returns a pointer to first, or second, whichever has a CID equal to the given CID, or nullptr if neither
+	 */
+	CC_bind* find(CID);
+
+	/*!
+	 * Returns a pointer to first, or second, whichever has *all* flags in the given mask
+	 */
+	CC_bind* find_flags(const char);
+
+	/*!
+	 * Sets the inversion state of both bindings
+	 */
+	void invert(bool);
+
+	/*!
+	 * Toggles the inversion state of Primary and copies it to Secondary
+	 */
+	void invert_toggle();
+
+	/*!
+	 * Is true if both bindings are inverted, false otherwise
+	 */
+	bool is_inverted() const;
 };
 
 /*!
@@ -412,6 +534,17 @@ class CC_preset {
 public:
 	SCP_vector<CCB> bindings;
 	SCP_string name;
+	Preset_t type;
+
+public:
+	CC_preset() = default;
+	CC_preset(const CC_preset& A) = default;
+
+	CC_preset& operator=(const CC_preset&);
+	/*!
+	 * Checks if the given preset is a duplicate of this one
+	 */
+	bool is_duplicate_of(CC_preset&);
 };
 
 /*!
@@ -432,8 +565,10 @@ public:
 	CC_type type;           //!< manner control should be checked in
 
 // Items used during gameplay
-	int  used;                  //!< has control been used yet in mission?  If so, this is the timestamp
+	int  used;                  //!< has control been used yet in mission?  If so, this is the timestamp. For axes, this denotes the last frame's value
 	bool disabled = true;       //!< whether this action should be available at all
+	bool locked = false;		//!< whether this action will be triggered by the respectively bound key
+	bool scriptEnabledByDefault = false; //!< whether this binding will execute it's registered hooks if triggered. Resets each mission
 	bool continuous_ongoing;    //!< whether this action is a continuous one and is currently ongoing
 
 public:
@@ -449,6 +584,11 @@ public:
 	 * @brief Takes the bindings of the given CCB, but leaves all other members alone
 	 */
 	CCI& operator=(const CCB&);
+
+	/*!
+	 * Returns true if this item is analogue or an axis
+	 */
+	bool is_axis();
 };
 
 /*!
@@ -473,9 +613,23 @@ public:
 
 	/*!
 	 * Assigns the hardcoded binding to the given action
+	 *
 	 * @note This differs from the original hardcode from :V: in the hopes of it being more intuitive to future IoAction additions
+	 *
+	 * param[in] action_id  The IoActionId enum associated with the control
+	 * param[in] primary    The btn, key combo, or axis for the default primary binding
+	 * param[in] secondary  The btn, key combo, or axis for the default secondary binding
+	 * param[in] tab        Category tab this control should show up under on the config menu
+	 * param[in] indexXSTR  ID for the XSTR localization utility. 0 for no localization, 1 for automatic lookup, all other values are index for item in strings.tbl
+	 * param[in] text       Label text displayed in the config menu.
+	 * param[in] type       How the control should be treated. see doxy on CC_type for details
+	 * param[in] disabled   If true, this control will not be available in the game.  Controlsconfigdefaults.tbl may override this.  Don't use this to temporarily disable controls in mission.
+	 * 
+	 * @details The CID for the default primary and secondary is determined by the type parameter.
+	 *   If the type is CC_TYPE_TRIGGER or CC_TYPE_CONTINOUS, the primary is assumed to be a key combo and secondary is assumed to be a joy button.
+	 *   If the type is CC_TYPE_AXIS_ABS, CC_TYPE_AXIS_REL, CC_TYPE_AXIS_BTN_POS, or CC_TYPE_AXIS_BTN_NEG, the primary is a Joy0 axis and the secondary is a Mouse axis
 	 */
-	CCI_builder& operator()(IoActionId action_id, short key_default, short joy_default, char tab, int indexXSTR, const char *text, CC_type type, bool disabled = false);
+	CCI_builder& operator()(IoActionId action_id, short primary, short secondary, char tab, int indexXSTR, const char *text, CC_type type, bool disabled = false);
 
 private:
 	CCI_builder();	// Only one builder per Control Config, so a default constructor is useless
@@ -485,11 +639,6 @@ private:
 
 extern int Failed_key_index;
 
-extern int Axis_map_to[];           // Array to map an axis action to a joy axis. size() = NUM_JOY_AXIS_ACTIONS
-extern int Axis_map_to_defaults[];
-extern int Invert_axis[];           // Array to hold inversion bools for a joy axis. size() = JOY_NUM_AXES
-extern int Invert_axis_defaults[];
-
 extern int Joy_dead_zone_size;
 extern int Joy_sensitivity;
 
@@ -497,8 +646,16 @@ extern int Control_config_overlay_id;
 
 extern SCP_vector<CCI> Control_config;		//!< Stores the keyboard configuration
 extern SCP_vector<CC_preset> Control_config_presets; // tabled control presets; pointers to config_item arrays
-extern const char **Scan_code_text;
-extern const char **Joy_button_text;
+extern const char **Joy_button_text;			// String table of button labels.  XSTR'd on init.
+
+extern bool Generate_controlconfig_table;
+
+// string table constants for labels and stuff.
+#define NUM_AXIS_TEXT			JOY_NUM_AXES
+#define NUM_MOUSE_TEXT			MOUSE_NUM_BUTTONS
+
+extern char *Axis_text[NUM_AXIS_TEXT];			// String table of axis labels (joystick and mice).  XSTR'd on init.
+extern char *Mouse_button_text[NUM_MOUSE_TEXT];	// String table of mouse button labels.  XSTR'd on init.
 
 /*!
  * @brief Checks if either binding in the CCB has the given cid
@@ -508,6 +665,11 @@ extern const char **Joy_button_text;
  * @returns -1  if neither
  */
 int is_cid_either(CID, const CCB);
+
+/*!
+ * Allows CID to be assigned by a short.  Has Assert to check values
+ */
+void cid_assign(CID&, const short);
 
 /*!
 * @brief initialize common control config stuff - call at game startup after localization has been initialized
@@ -540,49 +702,87 @@ void control_config_close();
 void control_config_cancel_exit();
 
 /*!
- * @brief Resets all controls to values within the currently selected preset
+ * @brief Copies all bindings within preset into Control_config
  */
-void control_config_reset_defaults();
+void control_config_use_preset(CC_preset &preset);
 
 /*!
- * Returns the IoActionId of a control bound to the given key
+ * @brief Search for a given preset by name and use it, if it exists.
  *
- * @param[in] key           The key combo to look for
- * @param[in] find_override If true, return the IoActionId of a control that has this key as its default
+ * @returns TRUE    if the preset was found and selected
+ * @returns FALSE   if the preset was not found, and the defaults were selected
+ *
+ * @details If the preset does not exist, then defaults are used instead.
+ * @see control_config_use_preset()
+ */
+bool control_config_use_preset_by_name(const SCP_string &name);
+
+/**
+ * @brief Gets the currently used preset
+ *
+ * @param[in] invert_agnostic  If true, check the bindings in Control_config against the preset, ignoring inversion flags
+ * 
+ * @returns an iterator to the current preset, or
+ * @returns ::iterator Control_config_presets.end() if current bindings are not in a preset
+ * 
+ * @note Similar to preset_find_duplicate, this function has additional logic in its search to ignore disabled controls
+ */
+
+SCP_vector<CC_preset>::iterator control_config_get_current_preset(bool invert_agnostic = false);
+
+/*!
+ * Returns the IoActionId (index within Control_config[]) of a control bound to the given key
+ *
+ * @param[in]   key           The key combo to look for
+ * @param[in]   find_override If true, return the IoActionId of a control that has this key as its default
+ *
+ * @return  -1 if the given key is NULL or not bound.
+ *
  * @details If find_override is set to true, then this returns the index of the action
  */
 int translate_key_to_index(const char *key, bool find_override=true);
 
 
 /*!
- * @brief Given the system default key 'key', return the current key that is bound to that function.
+ * @brief Given the system default key 'key', return the current control input(s) that is bound to that function.
  *
- * @param[in] key  The default key combo (as string) to a certain control
+ * @param[in]   key     The default key combo (as cstring) to a certain control
  *
- * @returns The key combo (as string) currently bound to the control
+ * @return  The key combo (as cstring) currently bound to the control, or
+ * @return  nullptr if the given key is not a system default key, or
+ * @return  "None" if there is nothing bound to the control
  *
  * @details Both the 'key' and the return value are descriptive strings that can be displayed
  * directly to the user.  If 'key' isn't a real key, is not normally bound to anything,
- * or there is no key currently bound to the function, NULL is returned.
+ * or there is no key currently bound to the function, nullptr is returned.
+ *
+ * @note Not thread safe.  Has an internal buffer for the return value which is overwritten on each call.
+ *
+ * @note Uses CC_bind::textify for translations
  */
-char *translate_key(char *key);
+const char *translate_key(char *key);
 
 /**
- * @brief Converts the specified key code to a human readable string
+ * @brief Converts the specified key code to a human readable string, according to the selected locale and keyboard layout
  *
- * @note The returned value is localized to the current language
+ * @param[in]   code    The key scancode to convert
  *
- * @param code The key code to convert
- * @return The text representation of the code. The returned value is stored in a temporary location, copy it to your
- * own buffer if you want to continue using it.
+ * @return  The text representation of the code.
+ *
+ * @note Not thread safe.  Has an internal buffer for the return value which is overwritten on each call.
+ *
+ * @note The return value is translated according to localization settings
  */
 const char *textify_scancode(int code);
 
 /**
- * @note Same as textify_scancode but always returns the same value regardless of current language
- * @param code The key code to convert
- * @return The name of the key
- * @see textify_scancode
+ * @brief Converts the specified key code to a human readable string.  Uses the English locale and QWERTY layout.
+ * 
+ * @param[in]    code   The key scancode to convert
+ * 
+ * @return The text representation of the code
+ * 
+ * @note Not thread safe.  Has an internal buffer for the return value which is overwritten on each call.
  */
 const char *textify_scancode_universal(int code);
 
@@ -600,26 +800,29 @@ float check_control_timef(int id);
 /**
  * @brief Wrapper for check_control_used. Allows the game to ignore the key if told to do so by the ignore-key SEXP.
  *
- * @brief id    The IoActionId of the control to check
- * @brief key   The key combo to check against the control.
+ * @param[in] id    The IoActionId of the control to check
+ * @param[in] key   The key combo to check against the control. If -1, re-check the last key passed to this function
  *
  * @returns 0 If the control wasn't used, or
  * @returns 1 If the control was used
+ *
+ * @details If the given control is CC_CONTINOUS, param key is effectively ignored and instead keyd_press[] is checked.
+ * This function also checks against joy and mouse presses.
  */
 int check_control(int id, int key = -1);
 
 /**
  * @brief Gets the scaled reading for all control axes.
  *
- * @param[out] h  heading
- * @param[out] p pitch
- * @param[out] b bank
- * @param[out] ta Throttle - Absolute
- * @param[out] tr Throttle - Relative
+ * @param[in]   frametime   Frametime used to scale the mouse axes
+ * @param[out]  axis_v      Output array of all control axes, must have size of JOY_NUM_AXIS_ACTIONS
  *
- * @note None of the input pointers may be nullptr
+ * @details
+ * * Clamps output to stay within +/-JOY_AXIS_RANGE.
+ * * Should multiple axes be bound to a control, their values are blended with a simple sum.  This is to save a bit of
+ *   processing for speed.
  */
-void control_get_axes_readings(int *h, int *p, int *b, int *ta, int *tr);
+void control_get_axes_readings(int *axis_v, float frame_time);
 
 /**
  * @brief Markes the given control (by IoActionId) as used
@@ -627,6 +830,35 @@ void control_get_axes_readings(int *h, int *p, int *b, int *ta, int *tr);
  * @details Updates the ::used timestamp, triggers a script hook, and marks ::continous_ongoing as true
  */
 void control_used(int id);
+
+/**
+ * @brief Runs a given controlbindings lua hook added in ccd.tbl
+ *
+ * @return Whether the control should be overridden
+ */
+bool control_run_lua(IoActionId id, int value);
+
+/**
+ * @brief Resets the cache for script evaluations for continuous buttons. Should be called once per frame.
+ *
+*/
+void control_reset_lua_cache();
+
+/**
+ * @brief Registers a new hook for the keybinding action system.
+ * Parameters set if it is a normal or an override function, as well as if it is enabled by default or needs to be enabled manually each mission
+ */
+void control_register_hook(IoActionId id, const luacpp::LuaFunction& hook, bool is_override, bool enabledByDefault);
+
+/**
+ * @brief Enables or disables the respective Lua hook
+ */
+void control_enable_hook(IoActionId id, bool enable);
+
+/**
+ * @brief Resets every hooks enable state to the tabled value. Call on Mission start
+ */
+void control_reset_hook();
 
 /**
  * @brief Clears the bindings of all controls
@@ -651,5 +883,144 @@ void control_config_clear_used_status();
  * @return The transformed value
  */
 int joy_get_scaled_reading(int raw);
+
+/**
+ * Lookups the given stringified enum to find its value
+ * @return -1 if not found, or
+ * @return IoActionId if found
+ */
+int ActionToVal(const char * str);
+
+/**
+ * Reverse lookups the IoActionId to get its stringified name
+ * @return  Pointer to the stringified name of the action, or
+ * @return  nullptr if not found
+ */
+const char * ValToAction(IoActionId id);
+
+/**
+ * Reverse lookups the IoActionId to get its stringified name
+ * @return Pointer to the stringified name of the action, or
+ * @return nullptr if not found, or invalid id
+ */
+const char * ValToAction(int id);
+
+/**
+ * Lookups the given stringified enum to find its value
+ */
+CID CIDToVal(const char * str);
+
+/**
+ * Reverse lookups the CID to get its stringified name
+ * @return  The stringified name of the CID, or
+ * @return  "NONE" if not found
+ */
+SCP_string ValToCID(CID id);
+
+/**
+ * Reverse lookups the CID to get its stringified name
+ * @return The stringified name of the CID, or
+ * @return "NONE" if not found, or invalid id
+ */
+SCP_string ValToCID(int id);
+/**
+ * Lookups the given stringified enum to find its value
+ */
+char CCFToVal(const char * str);
+
+/**
+ * Constructs a enum string from the CCF_FLAGS
+ * @return The stringified name of the CCF, or
+ * @return "NONE" if not found, or invalid id
+ */
+SCP_string ValToCCF(char id);
+
+/**
+ * Lookups the given stringified enum to find its value
+ */
+short InputToVal(CID cid, const char * str);
+
+/**
+ * Constructs a enumstring from the input binding, depending on the CID
+ *
+ * @return The stringified name of the input, or
+ * @return "NONE" if not found, or invalid CC_bind
+ *
+ * @note This requires a CCB due to the way things are encoded
+ */
+SCP_string ValToInput(const CC_bind &bind);
+
+/**
+ * Lookups the given stringified enum to find its btn value
+ */
+short MouseToVal(const char * str);
+
+/**
+ * Constructs a enum string from the mouse input
+ *
+ * @return The stringified name of the input, or
+ * @return "NONE" if not found, or invalid CC_bind
+ * TODO XSTR
+ *
+ * @note This requires a CCB due to the way things are encoded
+ */
+SCP_string ValToMouse(const CC_bind &bind);
+
+/**
+ * Lookups the given stringified enum to find its btn value
+ */
+short KeyboardToVal(const char * str);
+
+/**
+ * Constructs an enum string from the key binding
+ *
+ * @return The stringified name of the input, or
+ * @return "NONE" f not found, or invalid CC_bind
+ *
+ * @note This requires a CCB due to the way things are encoded
+ * TODO XSTR
+ */
+SCP_string ValToKeyboard(const CC_bind &bind);
+
+/**
+ * Lookups the given stringified enum to find its value
+ */
+short JoyToVal(const char * str);
+
+/**
+ * Constructs a enum string from the Joystick input
+ *
+ * @return The stringified name of the input, or
+ * @return "NONE" if not found, or invalid CC_bind
+ *
+ * @note This requires a CCB due to the way things are encoded
+ * TODO XSTR
+ */
+SCP_string ValToJoy(const CC_bind &bind);
+
+/**
+ * Lookups the given string to find its tab value
+ */
+char CCTabToVal(const char *str);
+
+/**
+ * Reverse lookups the given tab in mCCTabToVal to retrieve the string name
+ *
+ * @return The stringified name of the input, or
+ * @return nullptr if not found, or invalid tab
+ *
+ */
+SCP_string ValToCCTab(char tab);
+
+/**
+ * Lookups the given string to find its CC_type value. =
+ */
+CC_type CCTypeToVal(const char *str);
+
+/**
+ * Reverse lookups the given CC_type to retrieve the string name
+
+ */
+SCP_string ValToCCType(CC_type type);
 
 #endif

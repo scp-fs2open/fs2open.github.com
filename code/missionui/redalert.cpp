@@ -126,7 +126,7 @@ UI_XSTR Red_alert_text[GR_NUM_RESOLUTIONS][RED_ALERT_NUM_TEXT] = {
 #define RA_H_COORD 3
 
 
-static int Text_delay;
+static UI_TIMESTAMP Text_delay;
 
 int Ra_brief_text_wnd_coords[GR_NUM_RESOLUTIONS][4] = {
 	{
@@ -353,7 +353,7 @@ void red_alert_init()
 
 	red_alert_voice_load();
 
-	Text_delay = timestamp(200);
+	Text_delay = ui_timestamp(200);
 
 	Red_alert_voice_started = 0;
 	Red_alert_inited = 1;
@@ -434,7 +434,7 @@ void red_alert_do_frame(float frametime)
 
 	font::set_font(font::FONT1);
 
-	if ( timestamp_elapsed(Text_delay) ) {
+	if ( ui_timestamp_elapsed(Text_delay) ) {
 		int finished_wipe = 0;
 		if ( Briefing->num_stages > 0 ) {
 			finished_wipe = brief_render_text(0, Ra_brief_text_wnd_coords[gr_screen.res][RA_X_COORD], Ra_brief_text_wnd_coords[gr_screen.res][RA_Y_COORD], Ra_brief_text_wnd_coords[gr_screen.res][RA_H_COORD], frametime, 0);
@@ -885,8 +885,14 @@ void red_alert_bash_wingman_status()
 							mprintf(("Invalid ship class specified in red alert data for ship %s. Using mission defaults.\n", shipp->ship_name));
 					}
 
+					float max_hull;
+					if (shipp->special_hitpoints)
+						max_hull = shipp->ship_max_hull_strength;
+					else
+						max_hull = Ship_info[shipp->ship_info_index].max_hull_strength;
+
 					// restore hull (but not shields)
-					if (ras->hull >= 0.0f && ras->hull <= ship_objp->hull_strength)
+					if (ras->hull >= 0.0f && ras->hull <= max_hull)
 						ship_objp->hull_strength = ras->hull;
 					else
 						mprintf(("Invalid health in red alert data for ship %s. Using mission defaults.\n", shipp->ship_name));
@@ -979,9 +985,15 @@ void red_alert_bash_wingman_status()
 						}
 					}
 
+					float max_hull;
+					if (pobjp->special_hitpoints)
+						max_hull = pobjp->ship_max_hull_strength;
+					else
+						max_hull = Ship_info[pobjp->ship_class].max_hull_strength;
+
 					// restore hull (but not shields)
-					if (ras->hull >= 0.0f && ras->hull <= (pobjp->initial_hull * pobjp->ship_max_hull_strength / 100.0f))
-						pobjp->initial_hull = (int) (ras->hull * 100.0f / pobjp->ship_max_hull_strength);
+					if (ras->hull >= 0.0f && ras->hull <= max_hull)
+						pobjp->initial_hull = (int) (ras->hull * 100.0f / max_hull);
 					else
 						mprintf(("Invalid health in red alert data for ship %s. Using mission defaults.\n", pobjp->name));
 

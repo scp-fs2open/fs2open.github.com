@@ -92,7 +92,7 @@ LuaPromise::LuaPromise(const std::shared_ptr<resolve_context>& resolveContext) :
 {
 	m_state->state = State::Pending;
 
-	// This executes promises eagerly since registering the callback kicks of the async operation
+	// This executes promises eagerly since registering the callback kicks off the async operation
 	m_state->registerResolveCallback(resolveContext);
 }
 

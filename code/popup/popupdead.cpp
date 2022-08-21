@@ -123,7 +123,7 @@ int Popupdead_multi_type;			// what kind of popup is active for muliplayer
 int Popupdead_skip_active = 0;	// The skip-misison popup is active
 int Popupdead_skip_already_shown = 0;
 
-int Popupdead_timer;
+UI_TIMESTAMP Popupdead_timer;
 
 extern int Cmdline_mpnoreturn;
 // Initialize the dead popup data
@@ -148,7 +148,7 @@ void popupdead_start()
 	Popupdead_multi_type = -1;
 
 	if ((The_mission.max_respawn_delay >= 0) && ( Game_mode & GM_MULTIPLAYER )) {
-		Popupdead_timer = timestamp(The_mission.max_respawn_delay * 1000); 
+		Popupdead_timer = ui_timestamp(The_mission.max_respawn_delay * 1000); 
 		if (Game_mode & GM_MULTIPLAYER) {
 			if(!(Net_player->flags & NETINFO_FLAG_LIMBO)){
 				if (The_mission.max_respawn_delay) {
@@ -490,7 +490,7 @@ int popupdead_do_frame(float  /*frametime*/)
 	popupdead_draw_button_text();
 
 	// maybe force the player to respawn if they've taken too long to choose
-	if (( Game_mode & GM_MULTIPLAYER ) && (The_mission.max_respawn_delay >= 0) && (timestamp_elapsed(Popupdead_timer)) && (choice < 0)) {
+	if (( Game_mode & GM_MULTIPLAYER ) && (The_mission.max_respawn_delay >= 0) && (ui_timestamp_elapsed(Popupdead_timer)) && (choice < 0)) {
 		if (( Popupdead_multi_type == POPUPDEAD_RESPAWN_ONLY) || ( Popupdead_multi_type == POPUPDEAD_RESPAWN_QUIT)) {
 			Popupdead_choice = POPUPDEAD_DO_RESPAWN; 
 		}
@@ -500,13 +500,16 @@ int popupdead_do_frame(float  /*frametime*/)
 }
 
 // Close down the dead popup
-void popupdead_close()
+void popupdead_close(bool play_sound)
 {
 	if ( !Popupdead_active ) {
 		return;
 	}
 
-	gamesnd_play_iface(InterfaceSounds::POPUP_DISAPPEAR);
+	if (play_sound) {
+		gamesnd_play_iface(InterfaceSounds::POPUP_DISAPPEAR);
+	}
+
 	Popupdead_window.destroy();
 	game_flush();
 	

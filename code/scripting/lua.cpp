@@ -5,6 +5,10 @@
 
 #include "scripting/lua/LuaUtil.h"
 
+extern "C" {
+#include "scripting/lua/lua_ext.h"
+}
+
 /**
  * IMPORTANT!
  *
@@ -18,7 +22,6 @@
 #include "scripting/api/objs/camera.h"
 #include "scripting/api/objs/cockpit_display.h"
 #include "scripting/api/objs/control_info.h"
-#include "scripting/api/objs/controls.h"
 #include "scripting/api/objs/debris.h"
 #include "scripting/api/objs/enums.h"
 #include "scripting/api/objs/event.h"
@@ -64,6 +67,7 @@
 #include "scripting/api/libs/base.h"
 #include "scripting/api/libs/bitops.h"
 #include "scripting/api/libs/cfile.h"
+#include "scripting/api/libs/controls.h"
 #include "scripting/api/libs/engine.h"
 #include "scripting/api/libs/graphics.h"
 #include "scripting/api/libs/hookvars.h"
@@ -117,6 +121,10 @@ int script_state::CreateLuaState()
 	//*****INITIALIZE AUXILIARY LIBRARIES
 	mprintf(("LUA: Initializing base Lua libraries...\n"));
 	luaL_openlibs(L);
+
+	//*****INITIALIZE EXTENSION LIBRARIES
+	mprintf(("LUA: Initializing extended Lua libraries...\n"));
+	luaL_openlibs_ext(L);
 
 	//*****INITIALIZE OUR SUPPORT LIBRARY
 	luacpp::util::initializeLuaSupportLib(L);
@@ -175,11 +183,6 @@ int script_state::CreateLuaState()
 	load_default_script(L, "cfile_require.lua");
 
 	return 1;
-}
-
-void script_state::EndLuaFrame()
-{
-	scripting::api::graphics_on_frame();
 }
 
 static bool sort_table_entries(const ade_table_entry* left, const ade_table_entry* right) {

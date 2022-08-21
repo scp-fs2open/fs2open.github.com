@@ -50,8 +50,6 @@
 #define IS_LIST_PRIMARY(x)			(Weapon_info[x].subtype != WP_MISSILE)
 #define IS_LIST_SECONDARY(x)		(Weapon_info[x].subtype == WP_MISSILE)
 
-extern int Multi_ping_timestamp;
-
 //////////////////////////////////////////////////////////////////
 // Game-wide globals
 //////////////////////////////////////////////////////////////////
@@ -416,7 +414,6 @@ UI_XSTR Weapon_select_text[GR_NUM_RESOLUTIONS][WEAPON_SELECT_NUM_TEXT] = {
 	}
 };
 
-
 ///////////////////////////////////////////////////////////////////////
 // Carried Icon
 ///////////////////////////////////////////////////////////////////////
@@ -757,7 +754,8 @@ void wl_render_overhead_view(float frametime)
 			if (wl_ship->model_num < 0)
 			{
 				if (sip->pof_file_tech[0] != '\0') {
-					wl_ship->model_num = model_load(sip->pof_file_tech, sip->n_subsystems, &sip->subsystems[0]);
+					//This cannot load into sip->subsystems, as this will overwrite the subsystems model_num to the techroom model, which is decidedly wrong for the mission itself.
+					wl_ship->model_num = model_load(sip->pof_file_tech, 0, nullptr);
 				}
 				else {
 					wl_ship->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
@@ -830,7 +828,8 @@ void wl_render_overhead_view(float frametime)
 		if (wl_ship->model_num < 0)
 		{
 			if (sip->pof_file_tech[0] != '\0') {
-				wl_ship->model_num = model_load(sip->pof_file_tech, sip->n_subsystems, &sip->subsystems[0]);
+				//This cannot load into sip->subsystems, as this will overwrite the subsystems model_num to the techroom model, which is decidedly wrong for the mission itself.
+				wl_ship->model_num = model_load(sip->pof_file_tech, 0, nullptr);
 			}
 			else {
 				wl_ship->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
@@ -909,7 +908,7 @@ void wl_render_overhead_view(float frametime)
 				render_info.set_replacement_textures(wl_ship->model_num, sip->replacement_textures);
 			}
 
-			if(Shadow_quality != ShadowQuality::Disabled)
+			if (shadow_maybe_start_frame(Shadow_disable_overrides.disable_mission_select_weapons))
 			{
 				gr_reset_clip();
 				shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, gr_screen.clip_aspect, -sip->closeup_pos.xyz.z + pm->rad, 
@@ -932,6 +931,8 @@ void wl_render_overhead_view(float frametime)
             Glowpoint_use_depth_buffer = true;
             
 			batching_render_all();
+
+			shadow_end_frame();
 
 			//NOW render the lines for weapons
 			gr_reset_clip();
@@ -1759,40 +1760,28 @@ void wl_remove_weps_from_pool(int *wep, int *wep_count, int ship_class)
 				if ( Wss_num_wings <= 0 ) {
 					wl_add_index_to_list(wi_index);
 				} else {
-	
+
 					if ( (Wl_pool[wi_index] <= 0) || (wep_count[i] == 0) ) {
 						// fresh out of this weapon, pick an alternate pool weapon if we can
-						int wep_pool_index, wep_precedence_index, new_wi_index = -1;
-						for ( wep_pool_index = 0; wep_pool_index < weapon_info_size(); wep_pool_index++ ) {
+						for (const auto &new_index : Player_weapon_precedence) {
+							Assertion(new_index >= 0, "Somehow, a negative index (%d) got into Player_weapon_precedence; this should not happen. Get a coder!", new_index);
 
-							if ( Wl_pool[wep_pool_index] <= 0 ) {
+							if ( Wl_pool[new_index] <= 0 ) {
 								continue;
 							}
 
 							// AL 3-31-98: Only pick another primary if primary, etc
-							if ( Weapon_info[wi_index].subtype != Weapon_info[wep_pool_index].subtype ) {
+							if ( Weapon_info[wi_index].subtype != Weapon_info[new_index].subtype ) {
 								continue;
 							}
 
-							if ( !eval_weapon_flag_for_game_type(Ship_info[ship_class].allowed_weapons[wep_pool_index]) ) {
+							if ( !eval_weapon_flag_for_game_type(Ship_info[ship_class].allowed_weapons[new_index]) ) {
 								continue;
 							}
 
-							for ( wep_precedence_index = 0; wep_precedence_index < Num_player_weapon_precedence; wep_precedence_index++ ) {
-								if ( wep_pool_index == Player_weapon_precedence[wep_precedence_index] ) {
-									new_wi_index = wep_pool_index;
-									break;
-								}
-							}
-
-							if ( new_wi_index >= 0 ) {
-								break;
-							}
-						}
-
-						if ( new_wi_index >= 0 ) {
-							wep[i] = new_wi_index;
-							wi_index = new_wi_index;
+							wep[i] = new_index;
+							wi_index = new_index;
+							break;
 						}
 					}
 
@@ -3426,7 +3415,11 @@ void wl_bash_ship_weapons(ship_weapon *swp, wss_unit *slot)
 		if ( (slot->wep_count[sidx] > 0) && (slot->wep[sidx] >= 0) ) {
 			swp->secondary_bank_weapons[j] = slot->wep[sidx];
 			swp->secondary_bank_ammo[j] = slot->wep_count[sidx];
-			swp->secondary_bank_start_ammo[j] = (int)std::lround(Ship_info[slot->ship_class].secondary_bank_ammo_capacity[i] / Weapon_info[swp->secondary_bank_weapons[j]].cargo_size);
+
+			if (Weapon_info[slot->wep[sidx]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo])
+				swp->secondary_bank_start_ammo[j] = 0;
+			else
+				swp->secondary_bank_start_ammo[j] = (int)std::lround(Ship_info[slot->ship_class].secondary_bank_ammo_capacity[i] / Weapon_info[swp->secondary_bank_weapons[j]].cargo_size);
 			j++;
 		}
 	}

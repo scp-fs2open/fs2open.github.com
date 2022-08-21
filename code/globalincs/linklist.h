@@ -7,7 +7,7 @@
  *
 */ 
 
-
+#include <utility>	// for std::move
 
 #ifndef _LINKLIST_H
 #define _LINKLIST_H
@@ -82,5 +82,165 @@ do {												\
 #define END_OF_LIST(head)	(head)
 #define NOT_EMPTY(head)		((head)->next != (head))
 #define EMPTY(head)			((head) == nullptr || (head)->next == (head))
+
+// Note that since these iterators operate on pointer collections, the dereference of an iterator using operator* returns a pointer.
+template <class T>
+class volition_linked_list
+{
+	T* head;
+
+public:
+	class iterator
+	{
+		T* ptr;
+
+	public:
+		iterator(T* x)
+			: ptr(x)
+		{}
+
+		iterator(const iterator& it)
+			: ptr(it.ptr)
+		{}
+
+		iterator& operator++()
+		{
+			ptr = GET_NEXT(ptr);
+			return *this;
+		}
+
+		iterator operator++(int)
+		{
+			iterator tmp(*this);
+			operator++();
+			return tmp;
+		}
+
+		iterator& operator--()
+		{
+			ptr = GET_PREV(ptr);
+			return *this;
+		}
+
+		iterator operator--(int)
+		{
+			iterator tmp(*this);
+			operator--();
+			return tmp;
+		}
+
+		bool operator==(const iterator& rhs) const
+		{
+			return ptr == rhs.ptr;
+
+		}
+
+		bool operator!=(const iterator& rhs) const
+		{
+			return ptr != rhs.ptr;
+		}
+
+		T*& operator*()
+		{
+			return ptr;
+		}
+
+		T* operator->()
+		{
+			return ptr;
+		}
+	};
+
+	class const_iterator
+	{
+		const T* ptr;
+
+	public:
+		const_iterator(const T* x)
+			: ptr(x)
+		{}
+
+		const_iterator(const const_iterator& it)
+			: ptr(it.ptr)
+		{}
+
+		const_iterator& operator++()
+		{
+			ptr = GET_NEXT(ptr);
+			return *this;
+		}
+
+		const_iterator operator++(int)
+		{
+			const_iterator tmp(*this);
+			operator++();
+			return tmp;
+		}
+
+		const_iterator& operator--()
+		{
+			ptr = GET_PREV(ptr);
+			return *this;
+		}
+
+		const_iterator operator--(int)
+		{
+			const_iterator tmp(*this);
+			operator--();
+			return tmp;
+		}
+
+		bool operator==(const const_iterator& rhs) const
+		{
+			return ptr == rhs.ptr;
+
+		}
+
+		bool operator!=(const const_iterator& rhs) const
+		{
+			return ptr != rhs.ptr;
+		}
+
+		const T*& operator*()
+		{
+			return ptr;
+		}
+
+		const T* operator->()
+		{
+			return ptr;
+		}
+	};
+
+	iterator begin() const
+	{
+		return iterator(GET_FIRST(head));
+	}
+
+	iterator end() const
+	{
+		return iterator(END_OF_LIST(head));
+	}
+
+	const_iterator cbegin() const
+	{
+		return const_iterator(GET_FIRST(head));
+	}
+
+	const_iterator cend() const
+	{
+		return const_iterator(END_OF_LIST(head));
+	}
+
+	volition_linked_list(T* ptr)
+		: head(ptr)
+	{}
+};
+
+template <class T>
+volition_linked_list<T> list_range(T* head)
+{
+	return volition_linked_list<T>(head);
+}
 
 #endif

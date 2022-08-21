@@ -18,6 +18,8 @@
 #include "camera/camera.h"
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
+#include "graphics/generic.h"
+#include "utils/RandomRange.h"
 
 class ship;
 class object;
@@ -40,22 +42,21 @@ extern float Neb2_awacs;
 extern float Neb2_fog_near_mult;
 extern float Neb2_fog_far_mult;
 
-#define NEB_FOG_VISIBILITY_MULT_TRAIL			1.0f
-#define NEB_FOG_VISIBILITY_MULT_THRUSTER		1.5f
-#define NEB_FOG_VISIBILITY_MULT_WEAPON			1.3f
-#define NEB_FOG_VISIBILITY_MULT_SHIELD			1.2f
-#define NEB_FOG_VISIBILITY_MULT_GLOWPOINT		1.2f
-#define NEB_FOG_VISIBILITY_MULT_BEAM(size)		4.0f + (size / 10)
-#define NEB_FOG_VISIBILITY_MULT_B_MUZZLE(size)  NEB_FOG_VISIBILITY_MULT_BEAM(size)
-#define NEB_FOG_VISIBILITY_MULT_PARTICLE(size)  1.0f + (size / 12)
-#define NEB_FOG_VISIBILITY_MULT_SHOCKWAVE		2.5f
-#define NEB_FOG_VISIBILITY_MULT_FIREBALL(size)	1.2f + (size / 12)
+extern float Neb2_fog_visibility_trail;
+extern float Neb2_fog_visibility_thruster;
+extern float Neb2_fog_visibility_weapon;
+extern float Neb2_fog_visibility_shield;
+extern float Neb2_fog_visibility_glowpoint;
+extern float Neb2_fog_visibility_beam_const;
+extern float Neb2_fog_visibility_beam_scaled_factor;
+extern float Neb2_fog_visibility_particle_const;
+extern float Neb2_fog_visibility_particle_scaled_factor;
+extern float Neb2_fog_visibility_shockwave;
+extern float Neb2_fog_visibility_fireball_const;
+extern float Neb2_fog_visibility_fireball_scaled_factor;
 
-#define MAX_NEB2_POOFS				32
-
-// poof names and flags (for fred)
-extern char Neb2_poof_filenames[MAX_NEB2_POOFS][MAX_FILENAME_LEN];	
 extern int Neb2_poof_flags;
+const size_t MAX_NEB2_POOFS = 32;
 
 #define MAX_NEB2_BITMAPS			10
 
@@ -65,22 +66,46 @@ extern char Neb2_bitmap_filenames[MAX_NEB2_BITMAPS][MAX_FILENAME_LEN];
 // texture to use for this level
 extern char Neb2_texture_name[MAX_FILENAME_LEN];
 
-// how many "slices" are in the current player nebuls
-extern int Neb2_slices;
+typedef struct poof_info {
+	char name[NAME_LENGTH];
+	char bitmap_filename[MAX_FILENAME_LEN];
+	generic_anim bitmap;
+	::util::UniformFloatRange scale;
+	float density;						 // poofs per square meter; can get *really* small but vague approximation is ok at those levels
+	::util::UniformFloatRange rotation;
+	float view_dist;
+	::util::UniformFloatRange alpha;
+
+	poof_info() {
+		bitmap_filename[0] = '\0';
+		generic_anim_init(&bitmap);
+		scale = ::util::UniformFloatRange(175.0f, 175.0f);
+		density = 1 / (110.f * 110.f * 110.f);
+		rotation = ::util::UniformFloatRange(-3.7f, 3.7f);
+		view_dist = 250.f;
+		alpha = ::util::UniformFloatRange(0.8f, 0.8f);
+	}
+} poof_info;
+
+extern SCP_vector<poof_info> Poof_info;
 
 // the color of the fog/background
 extern ubyte Neb2_fog_color[3];
 
 // nebula poofs
-typedef struct cube_poof {
+typedef struct poof {
 	vec3d	pt;				// point in space
-	int		bmap;				// bitmap in space
-	float		rot;				// rotation angle
-	float		rot_speed;		// rotation speed
+	size_t		poof_info_index;
+	float		radius;
+	vec3d		up_vec;			// to keep track of the poofs rotation
+								// must be the full vector instead of an angle to prevent parallel transport when looking around
+	float		rot_speed;		// rotation speed, deg/sec
 	float		flash;			// lightning flash
-} cube_poof;
-#define MAX_CPTS		5		// should always be <= slices
-extern cube_poof Neb2_cubes[MAX_CPTS][MAX_CPTS][MAX_CPTS];
+	float		alpha;			// base amount of alpha to start with
+	float		anim_time;		// how far along the animation is
+} poof;
+
+extern SCP_vector<poof> Neb2_poofs;
 
 // nebula detail level
 typedef struct neb2_detail {
@@ -104,14 +129,14 @@ typedef struct neb2_detail {
 // initialize neb2 stuff at game startup
 void neb2_init();
 
-// set detail level
-void neb2_set_detail_level(int level);
-
 //init neb stuff  - WMC
 void neb2_level_init();
 
 // initialize nebula stuff - call from game_post_level_init(), so the mission has been loaded
-void neb2_post_level_init();
+void neb2_post_level_init(bool fog_color_override);
+
+// helper function, used in above and in FRED
+void neb2_generate_fog_color(const char *fog_color_palette, ubyte fog_color[]);
 
 // shutdown nebula stuff
 void neb2_level_close();
@@ -119,21 +144,17 @@ void neb2_level_close();
 // call before beginning all rendering
 void neb2_render_setup(camid cid);
 
+// turns a poof on or off
+void neb2_toggle_poof(int poof_idx, bool enabling);
+
 // render the player nebula
 void neb2_render_poofs();
-
-// call this when the player's viewpoint has changed, this will cause the code to properly reset
-// the eye's local poofs
-void neb2_eye_changed();
 
 // get near and far fog values based upon object type and rendering mode
 void neb2_get_fog_values(float *fnear, float *ffar, object *obj = NULL);
 
 // get adjusted near and far fog values (allows mission-specific fog adjustments)
 void neb2_get_adjusted_fog_values(float *fnear, float *ffar, float *fdensity = nullptr, object *obj = nullptr);
-
-// given an object, returns 0 - 1 the fog visibility of its center, 0 = completely obscured
-float neb2_get_fog_visibility(object *obj);
 
 // given a position, returns 0 - 1 the fog visibility of that position, 0 = completely obscured
 // distance_mult will multiply the result, use for things that can be obscured but can 'shine through' the nebula more than normal
