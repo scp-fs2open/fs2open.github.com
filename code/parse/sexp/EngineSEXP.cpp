@@ -191,8 +191,8 @@ void EngineSEXP::initialize()
 		}
 	}
 }
-int EngineSEXP::getMinimumArguments() { return _minArgs; }
-int EngineSEXP::getMaximumArguments() { return _maxArgs; }
+int EngineSEXP::getMinimumArguments() const { return _minArgs; }
+int EngineSEXP::getMaximumArguments() const { return _maxArgs; }
 int EngineSEXP::getArgumentType(int argnum) const
 {
 	if (argnum >= static_cast<int>(_argumentTypes.size())) {

@@ -10,6 +10,7 @@
 namespace sexp {
 
 class LuaSEXP : public DynamicSEXP {
+protected:
 	luacpp::LuaFunction _action;
 
 	int _min_args;
@@ -39,9 +40,9 @@ class LuaSEXP : public DynamicSEXP {
 
 	void initialize() override;
 
-	int getMinimumArguments() override;
+	int getMinimumArguments() const override;
 
-	int getMaximumArguments() override;
+	int getMaximumArguments() const override;
 
 	int getArgumentType(int argnum) const override;
 

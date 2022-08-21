@@ -11,40 +11,39 @@ using namespace luacpp;
 namespace sexp {
 static const SCP_unordered_set<int> allowed_oswpt_parameters{ OPF_SHIP, OPF_WING, OPF_SHIP_POINT, OPF_SHIP_WING, OPF_SHIP_WING_WHOLETEAM, OPF_SHIP_WING_SHIPONTEAM_POINT, OPF_SHIP_WING_POINT, OPF_SHIP_WING_POINT_OR_NONE };
 
-LuaAISEXP::LuaAISEXP(const SCP_string& name) : DynamicSEXP(name) {
+LuaAISEXP::LuaAISEXP(const SCP_string& name) : LuaSEXP(name) {
+	_return_type = OPR_AI_GOAL;
+	_category = OP_CATEGORY_AI;
+	_subcategory = -1;
 }
 
 void LuaAISEXP::initialize() {
 };
 
-int LuaAISEXP::getMinimumArguments() {
+int LuaAISEXP::getMinimumArguments() const {
 	return _arg_type == -1 ? 1 : 2;
 };
 
-int LuaAISEXP::getMaximumArguments() {
-	return getMinimumArguments();
+int LuaAISEXP::getMaximumArguments() const {
+	if (LuaSEXP::getMaximumArguments() == INT_MAX)
+		return INT_MAX;
+	return getMinimumArguments() + LuaSEXP::getMaximumArguments();
 };
 
 int LuaAISEXP::getArgumentType(int argnum) const {
-	return argnum == 0 && _arg_type != -1 ? _arg_type : OPF_POSITIVE;
+	const int minArgs = getMinimumArguments();
+	if (argnum < minArgs) {
+		return argnum == 0 && _arg_type != -1 ? _arg_type : OPF_POSITIVE;
+	}
+	else {
+		return LuaSEXP::getArgumentType(argnum - minArgs);
+	}
 };
 
 int LuaAISEXP::execute(int /*node*/) {
 	UNREACHABLE("Tried to execute AI Lua SEXP %s! AI-Goal SEXPs should never be run.", _name.c_str());
 	return SEXP_CANT_EVAL;
 }
-
-int LuaAISEXP::getReturnType() {
-	return OPR_AI_GOAL;
-};
-
-int LuaAISEXP::getSubcategory() {
-	return -1;
-};
-
-int LuaAISEXP::getCategory() {
-	return OP_CATEGORY_AI;
-};
 
 bool LuaAISEXP::parseCheckEndOfDescription() {
 	// Since we're stuffing strings, this is the best way to "unstuff" a string
@@ -190,13 +189,6 @@ luacpp::LuaFunction LuaAISEXP::getActionEnter() const {
 	return _actionEnter;
 }
 
-void LuaAISEXP::setActionFrame(const luacpp::LuaFunction& action) {
-	_actionFrame = action;
-}
-luacpp::LuaFunction LuaAISEXP::getActionFrame() const {
-	return _actionFrame;
-}
-
 void LuaAISEXP::setAchievable(const luacpp::LuaFunction& action) {
 	_achievable = action;
 }
@@ -212,7 +204,7 @@ luacpp::LuaFunction LuaAISEXP::getTargetRestrict() const {
 }
 
 void LuaAISEXP::registerAIMode(int sexp_id) const {
-	ai_lua_add_mode(sexp_id, ai_mode_lua{ needsTarget, hudText });
+	ai_lua_add_mode(sexp_id, ai_mode_lua{ *this, needsTarget, hudText });
 }
 
 void LuaAISEXP::maybeRegisterPlayerOrder(int sexp_id) const {

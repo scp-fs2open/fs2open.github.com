@@ -101,10 +101,10 @@ LuaSEXP::LuaSEXP(const SCP_string& name) : DynamicSEXP(name) {
 void LuaSEXP::initialize() {
 	// Nothing to do for this type
 }
-int LuaSEXP::getMinimumArguments() {
+int LuaSEXP::getMinimumArguments() const {
 	return _min_args;
 }
-int LuaSEXP::getMaximumArguments() {
+int LuaSEXP::getMaximumArguments() const {
 	return _max_args;
 }
 std::pair<SCP_string, int> LuaSEXP::getArgumentInternalType(int argnum) const {

@@ -54,7 +54,7 @@ ADE_VIRTVAR(ActionFrame,
 	"function(ai_helper helper, oswpt | nil arg) => boolean action",
 	"The action function or nil on error")
 {
-	return sexp_function_getset_helper(L, &sexp::LuaAISEXP::setActionFrame, &sexp::LuaAISEXP::getActionFrame);
+	return sexp_function_getset_helper(L, &sexp::LuaAISEXP::setAction, &sexp::LuaAISEXP::getAction);
 }
 
 ADE_VIRTVAR(Achievability,

@@ -2,7 +2,7 @@
 
 #include "ai/ailua.h"
 
-#include "parse/sexp/DynamicSEXP.h"
+#include "parse/sexp/LuaSEXP.h"
 
 #include "scripting/lua/LuaFunction.h"
 #include "scripting/lua/LuaTable.h"
@@ -11,14 +11,13 @@
 
 namespace sexp {
 
-class LuaAISEXP : public DynamicSEXP {
+class LuaAISEXP : public LuaSEXP {
 	
 	int _arg_type = -1;
 	bool needsTarget = false;
 	const char* hudText = nullptr;
 
 	luacpp::LuaFunction _actionEnter;
-	luacpp::LuaFunction _actionFrame;
 	luacpp::LuaFunction _achievable;
 	luacpp::LuaFunction _targetRestrict;
 
@@ -31,21 +30,15 @@ class LuaAISEXP : public DynamicSEXP {
 	explicit LuaAISEXP(const SCP_string& name);
 
 	void initialize() override;
-	int getMinimumArguments() override;
-	int getMaximumArguments() override;
+	int getMinimumArguments() const override;
+	int getMaximumArguments() const override;
 	int getArgumentType(int argnum) const override;
 	int execute(int node) override;
-	int getReturnType() override;
-	int getSubcategory() override;
-	int getCategory() override;
 
 	void parseTable();
 
 	void setActionEnter(const luacpp::LuaFunction& action);
 	luacpp::LuaFunction getActionEnter() const;
-
-	void setActionFrame(const luacpp::LuaFunction& action);
-	luacpp::LuaFunction getActionFrame() const;
 
 	void setAchievable(const luacpp::LuaFunction& action);
 	luacpp::LuaFunction getAchievable() const;
@@ -53,6 +46,7 @@ class LuaAISEXP : public DynamicSEXP {
 	void setTargetRestrict(const luacpp::LuaFunction& action);
 	luacpp::LuaFunction getTargetRestrict() const;
 
+	luacpp::LuaValueList getSEXPArgumentList(int node) const;
 
 	void registerAIMode(int sexp_id) const;
 	void maybeRegisterPlayerOrder(int sexp_id) const;
