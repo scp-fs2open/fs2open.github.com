@@ -65,7 +65,7 @@ static void cutscene_info_init(cutscene_info *csni)
 {
 	csni->filename[0] = '\0';
 	csni->name[0] = '\0';
-	csni->description = '\0';
+	csni->description = NULL;
 	csni->flags = {};
 }
 
