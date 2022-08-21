@@ -108,10 +108,7 @@ void parse_cutscene_table(const char* filename)
 			// If so, load this new info into it
 			csnp = get_cutscene_pointer(csnt.filename);
 			if (csnp != NULL) {
-				if (Parsing_modular_table) {
-					nprintf(
-						("Warning", "More than one version of cutscene %s exists; using newer version.\n", csnt.filename));
-				} else {
+				if (!Parsing_modular_table) {
 					error_display(1,
 						"Error:  Cutscene %s already exists.  All cutscene names must be unique.",
 						csnt.filename);
@@ -154,7 +151,7 @@ void parse_cutscene_table(const char* filename)
 				stuff_int(&junk);
 			}
 
-			if (csn_new == true) {
+			if (csn_new) {
 				csnp->flags.reset();
 			}
 
