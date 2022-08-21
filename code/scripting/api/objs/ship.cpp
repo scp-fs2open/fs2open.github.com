@@ -1668,7 +1668,7 @@ ADE_FUNC(setAnimationSpeed, l_Ship, "string type, string triggeredBy, [number sp
 
 	auto animtype = animation::anim_match_type(type);
 	if (animtype == animation::ModelAnimationTriggerType::None)
-		return ADE_RETURN_FALSE;
+		return ADE_RETURN_NIL;
 
 	ship* shipp = &Ships[objh->objp->instance];
 

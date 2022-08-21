@@ -774,7 +774,7 @@ namespace animation {
 	int ModelAnimationSet::AnimationList::getTime() const {
 		float duration = 0.0f;
 
-		for (auto anim : animations) {
+		for (const auto& anim : animations) {
 			if (anim->m_instances[pmi->id].state == ModelAnimationState::UNTRIGGERED)
 				continue;
 			float localDur = anim->m_instances[pmi->id].duration;
@@ -785,12 +785,12 @@ namespace animation {
 	}
 
 	void ModelAnimationSet::AnimationList::setFlag(Animation_Instance_Flags flag, bool set) const {
-		for (auto anim : animations)
+		for (const auto& anim : animations)
 			anim->m_instances[pmi->id].instance_flags.set(flag, set);
 	}
 
 	void ModelAnimationSet::AnimationList::setSpeed(float speed) const {
-		for (auto anim : animations)
+		for (const auto& anim : animations)
 			anim->m_instances[pmi->id].speed = speed;
 	};
 
