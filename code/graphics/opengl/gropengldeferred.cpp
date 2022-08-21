@@ -268,18 +268,16 @@ void gr_opengl_deferred_lighting_finish()
 			case Light_Type::Cone:
 			case Light_Type::Point:
 				gr_bind_uniform_buffer(uniform_block_type::Lights, buffer.getAlignerElementOffset(element_index),
-										sizeof(graphics::deferred_light_data), buffer.bufferHandle());
-
+				                       sizeof(graphics::deferred_light_data), buffer.bufferHandle());
 				gr_opengl_draw_deferred_light_sphere(&l.vec);
 				++element_index;
 				break;
 			case Light_Type::Tube:
 				gr_bind_uniform_buffer(uniform_block_type::Lights, buffer.getAlignerElementOffset(element_index),
-										sizeof(graphics::deferred_light_data), buffer.bufferHandle());
+				                       sizeof(graphics::deferred_light_data), buffer.bufferHandle());
 
 				vec3d dir, newPos;
 				matrix orient;
-
 				vm_vec_sub(&dir, &l.vec, &l.vec2);
 				vm_vector_2_matrix(&orient, &dir, nullptr, nullptr);
 				//Tube light volumes must be extended past the length of their requested light vector
@@ -289,7 +287,6 @@ void gr_opengl_deferred_lighting_finish()
 				vm_vec_scale_sub(&newPos, &l.vec2, &dir, l.radb);
 				gr_opengl_draw_deferred_light_cylinder(&newPos, &orient);
 				++element_index;
-				
 				break;
 			default:
 				continue;
