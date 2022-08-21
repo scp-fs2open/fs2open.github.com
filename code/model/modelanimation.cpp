@@ -803,7 +803,7 @@ namespace animation {
 	ModelAnimationSet::AnimationList ModelAnimationSet::AnimationList::operator+(const AnimationList& rhs) {
 		Assertion(pmi == rhs.pmi, "Tried to concatenate two AnimationLists of different model instances!");
 		AnimationList result = *this;
-		result.animations.insert(animations.end(), rhs.animations.cbegin(), rhs.animations.cend());
+		result.animations.insert(result.animations.end(), rhs.animations.cbegin(), rhs.animations.cend());
 		return result;
 	}
 	
