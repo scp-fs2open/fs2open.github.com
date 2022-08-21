@@ -35,6 +35,7 @@ const char* Cutscene_mask_name[GR_NUM_RESOLUTIONS] = {
 		"2_ViewFootage-m"
 };
 
+int Num_cutscenes;
 int Description_index;
 SCP_vector<cutscene_info> Cutscenes;
 
@@ -48,12 +49,36 @@ void cutscene_close()
 		}
 }
 
+static cutscene_info *get_cutscene_pointer(char *cutscene_filename)
+{
+	for (int i = 0; i < Num_cutscenes; i++) {
+		if (!stricmp(cutscene_filename, Cutscenes[i].filename)) {
+			return &Cutscenes[i];
+		}
+	}
+
+	// Didn't find anything.
+	return NULL;
+}
+
+static void cutscene_info_init(cutscene_info *csni)
+{
+	csni->filename[0] = '\0';
+	csni->name[0] = '\0';
+	csni->description = '\0';
+	csni->flags = {};
+}
+
 // initialization stuff for cutscenes
 void parse_cutscene_table(const char* filename)
 {
 
 	char buf[MULTITEXT_LENGTH];
-	cutscene_info cutinfo;
+	cutscene_info csnt;
+	cutscene_info_init(&csnt);
+
+	cutscene_info *csnp;
+	bool create_if_not_found = true;
 
 	try
 	{
@@ -69,16 +94,56 @@ void parse_cutscene_table(const char* filename)
 		while (required_string_either("#End", "$Filename:"))
 		{
 			required_string("$Filename:");
-			stuff_string(cutinfo.filename, F_PATHNAME, MAX_FILENAME_LEN);
+			stuff_string(csnt.filename, F_PATHNAME, MAX_FILENAME_LEN);
 
-			required_string("$Name:");
-			stuff_string(cutinfo.name, F_NAME, NAME_LENGTH);
+			if (optional_string("+nocreate")) {
+				if (!Parsing_modular_table) {
+					Warning(LOCATION, "+nocreate flag used for cutscene in non-modular table\n");
+				}
+				create_if_not_found = false;
+			}
 
-			required_string("$Description:");
-			stuff_string(buf, F_MULTITEXT, sizeof(buf));
-			drop_white_space(buf);
-			compact_multitext_string(buf);
-			cutinfo.description = vm_strdup(buf);
+			// Does this cutscene exist already?
+			// If so, load this new info into it
+			csnp = get_cutscene_pointer(csnt.filename);
+			if (csnp != NULL) {
+				if (Parsing_modular_table) {
+					nprintf(
+						("Warning", "More than one version of cutscene %s exists; using newer version.\n", csnt.filename));
+				} else {
+					error_display(1,
+						"Error:  Cutscene %s already exists.  All cutscene names must be unique.",
+						csnt.filename);
+				}
+			} else {
+				// Don't create cutscene if it has +nocreate and is in a modular table.
+				if (!create_if_not_found && Parsing_modular_table) {
+					if (!skip_to_start_of_string_either("$Fileame:", "#End")) {
+						error_display(1, "Missing [#End] or [$Filename] after cutscene %s", csnt.filename);
+					}
+					return;
+				}
+				Cutscenes.push_back(csnt);
+				csnp = &Cutscenes[Num_cutscenes++];
+			}
+
+			//If $Name is not found use the $Filename instead because this field needs data
+			//but only do this if if we're parsing the tbl and not a tbm
+			if (optional_string("$Name:")) {
+				stuff_string(csnp->name, F_NAME, NAME_LENGTH);
+				mprintf(("Adding cutscene %s\n", csnp->name));
+			} else if (!Parsing_modular_table) {
+				strncpy(csnp->name, csnt.filename, 32);
+				mprintf(("Missing $Name: in cutscene.tbl. Using filename %s instead.\n", csnt.filename));
+			}
+
+			//If $Description is not found we can leave it blank
+			if (optional_string("$Description:")) {
+				stuff_string(buf, F_MULTITEXT, sizeof(buf));
+				drop_white_space(buf);
+				compact_multitext_string(buf);
+				csnp->description = vm_strdup(buf);
+			}
 
 			if (optional_string("$cd:"))
 			{
@@ -87,12 +152,12 @@ void parse_cutscene_table(const char* filename)
 				stuff_int(&junk);
 			}
 
-			cutinfo.flags.reset();
+			csnp->flags.reset();
 
 			if (Cutscenes.empty())
 			{
 				// The original code assumes the first movie is the intro, so make it viewable
-				cutinfo.flags.set(Cutscene::Cutscene_Flags::Viewable);
+				csnp->flags.set(Cutscene::Cutscene_Flags::Viewable);
 			}
 
 			if (optional_string("$Always Viewable:"))
@@ -100,17 +165,17 @@ void parse_cutscene_table(const char* filename)
 				bool flag;
 				stuff_boolean(&flag);
 				if (flag)
-					cutinfo.flags.set(Cutscene::Cutscene_Flags::Always_viewable);
+					csnp->flags.set(Cutscene::Cutscene_Flags::Always_viewable);
 			}
 			if (optional_string("$Never Viewable:"))
 			{
 				bool flag;
 				stuff_boolean(&flag);
 				if (flag)
-					cutinfo.flags.set(Cutscene::Cutscene_Flags::Never_viewable);
+					csnp->flags.set(Cutscene::Cutscene_Flags::Never_viewable);
 			}
 
-			Cutscenes.push_back(cutinfo);
+			//Cutscenes.push_back(csnt);
 		}
 
 		required_string("#End");
@@ -128,12 +193,13 @@ void cutscene_init()
 	atexit(cutscene_close);
 
 	Cutscenes.clear();
+	Num_cutscenes = 0;
 
 	// first parse the default table
 	parse_cutscene_table("cutscenes.tbl");
 
 	// parse any modular tables
-	parse_modular_table("*-ccn.tbm", parse_cutscene_table);
+	parse_modular_table("*-csn.tbm", parse_cutscene_table);
 }
 
 // marks a cutscene as viewable
