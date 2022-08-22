@@ -1322,6 +1322,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/executor.h
 	scripting/api/objs/eye.cpp
 	scripting/api/objs/eye.h
+	scripting/api/objs/fictionviewer.cpp
+	scripting/api/objs/fictionviewer.h
 	scripting/api/objs/file.cpp
 	scripting/api/objs/file.h
 	scripting/api/objs/fireballclass.cpp
