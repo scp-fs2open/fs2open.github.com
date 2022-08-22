@@ -2581,7 +2581,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 				memset( pm->paths, 0, sizeof(model_path) * pm->n_paths );
 					
 				for (i=0; i<pm->n_paths; i++ )	{
-					cfread_string_len(pm->paths[i].name, MAX_NAME_LEN-1, fp);
+					cfread_string_len(pm->paths[i].name, MAX_NAME_LEN, fp);
 
 					// check for reused path names... not fatal, but maybe problematic
 					for (j = 0; j < i; j++) {
@@ -2592,7 +2592,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 
 					if ( pm->version >= 2002 ) {
 						// store the sub_model name number of the parent
-						cfread_string_len(pm->paths[i].parent_name , MAX_NAME_LEN-1, fp);
+						cfread_string_len(pm->paths[i].parent_name , MAX_NAME_LEN, fp);
 						// get rid of leading '$' char in name
 						if ( pm->paths[i].parent_name[0] == '$' ) {
 							char tmpbuf[MAX_NAME_LEN];
