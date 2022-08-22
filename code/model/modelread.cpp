@@ -1546,9 +1546,7 @@ void resolve_submodel_index(const polymodel *pm, const char *requester, const ch
 	submodel_index = -1;
 }
 
-
-//reads a binary file containing a 3d model
-int read_model_file(polymodel * pm, const char *filename, int n_subsystems, model_subsystem *subsystems, int ferror, const SCP_string& searchname)
+int read_model_file_no_subsys(polymodel * pm, const char* filename, int n_subsystems, model_subsystem * subsystems, int ferror, const SCP_string & searchname)
 {
 	CFILE *fp;
 	int version;
@@ -2957,6 +2955,13 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 	return 1;
 }
 
+//reads a binary file containing a 3d model
+int read_model_file(polymodel* pm, const char* filename, int n_subsystems, model_subsystem* subsystems, int ferror, const SCP_string& searchname)
+{
+	return read_model_file_no_subsys(pm, filename, n_subsystems, subsystems, ferror, searchname);
+}
+
+
 //Goober
 void model_load_texture(polymodel *pm, int i, char *file)
 {
@@ -3139,7 +3144,7 @@ void model_load_texture(polymodel *pm, int i, char *file)
 }
 
 //returns the number of this model
-int model_load(const  char *filename, int n_subsystems, model_subsystem *subsystems, int ferror, int duplicate, int depth)
+int model_load(const  char* filename, int n_subsystems, model_subsystem* subsystems, int ferror, int duplicate, int depth)
 {
 	int i, num;
 	polymodel *pm = NULL;
