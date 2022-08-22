@@ -16,10 +16,14 @@ class VirtualPOFDefinition {
 
 class VirtualPOFOperation {
 public:
+	virtual ~VirtualPOFOperation() = default;
 	virtual void process(polymodel*) const = 0;
 };
 
 class VirtualPOFOperationReplaceProps : public VirtualPOFOperation {
+	SCP_string subobjName;
+	SCP_string replaceWith;
 public:
+	VirtualPOFOperationReplaceProps();
 	void process(polymodel* pm) const override;
 };

@@ -2,11 +2,23 @@
 
 #include "cfile/cfile.h"
 
+#include <functional>
 #include <map>
+#include <memory>
 #include <vector>
 
+static std::unordered_map<SCP_string, std::vector<VirtualPOFDefinition>> virtual_pofs;
+static std::unordered_map<SCP_string, std::function<std::unique_ptr<VirtualPOFOperation>()>> virtual_pof_operations = { 
+	{"$Replace Props:", &std::make_unique<VirtualPOFOperationReplaceProps> }
+};
 
-std::unordered_map<SCP_string, std::vector<VirtualPOFDefinition>> virtual_pofs;
+/*
+* forward declares for internal modelread functions
+*/
+extern void set_subsystem_info(int model_num, model_subsystem* subsystemp, char* props, char* dname);
+
+
+
 
 bool model_exists(const SCP_string& filename) {
 	auto it = virtual_pofs.find(filename);
@@ -21,13 +33,22 @@ bool model_load_virtual(polymodel* pm, const SCP_string& filename, int depth) {
 	return false;
 }
 
+void parse_virtual_pof() {
+
+}
+
 void parse_virtual_pof_table(const char* filename) {
 	try
 	{
 		read_file_text(filename, CF_TYPE_TABLES);
 		reset_parse();
 
-		
+		required_string("#Virtual POFs");
+
+		while (optional_string("$POF:"))
+			parse_virtual_pof();
+
+		required_string("#End");
 	}
 	catch (const parse::ParseException& e)
 	{
@@ -44,6 +65,10 @@ void virtual_pof_init() {
 }
 
 
-void VirtualPOFOperationReplaceProps::process(polymodel* pm) const {
+VirtualPOFOperationReplaceProps::VirtualPOFOperationReplaceProps() {
 
+}
+
+void VirtualPOFOperationReplaceProps::process(polymodel* pm) const {
+	int submodel = model_find_submodel_index(pm->id, subobjName.c_str());
 }

@@ -681,7 +681,7 @@ void model_copy_subsystems( int n_subsystems, model_subsystem *d_sp, model_subsy
 }
 
 // routine to get/set subsystem information
-static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char *props, char *dname)
+void set_subsystem_info(int model_num, model_subsystem *subsystemp, char *props, char *dname)
 {
 	char *p;
 	char buf[64];
