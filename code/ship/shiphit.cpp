@@ -1800,6 +1800,7 @@ void ship_hit_kill(object *ship_objp, object *other_obj, vec3d *hitpos, float pe
 				hitpos != nullptr)));
 	}
 
+	// if the OnDeath override is enabled, run the hook and then exit
 	if (scripting::hooks::OnDeath->isActive())
 	{
 		auto onDeathParamList = scripting::hook_param_list(scripting::hook_param("Self", 'o', ship_objp),
@@ -1812,6 +1813,23 @@ void ship_hit_kill(object *ship_objp, object *other_obj, vec3d *hitpos, float pe
 
 		if (scripting::hooks::OnDeath->isOverride(onDeathParamList, ship_objp)) {
 			scripting::hooks::OnDeath->run(onDeathParamList, ship_objp);
+			return;
+		}
+	}
+
+	// if the OnShipDeath override is enabled, run the hook and then exit
+	if (scripting::hooks::OnShipDeath->isActive())
+	{
+		auto onDeathParamList = scripting::hook_param_list(
+			scripting::hook_param("Ship", 'o', ship_objp),
+			scripting::hook_param("Killer", 'o', other_obj),
+			scripting::hook_param("Hitpos",
+				'o',
+				scripting::api::l_Vector.Set(hitpos ? *hitpos : vmd_zero_vector),
+				hitpos != nullptr));
+
+		if (scripting::hooks::OnShipDeath->isOverride(onDeathParamList, ship_objp)) {
+			scripting::hooks::OnShipDeath->run(onDeathParamList, ship_objp);
 			return;
 		}
 	}

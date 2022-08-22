@@ -41,7 +41,7 @@ const std::shared_ptr<Hook> OnShipDeathStarted = Hook::Factory(
 		{"Hitpos", "vector", "The world coordinates of the killing blow.  Could be nil."},
 	});
 
-const std::shared_ptr<Hook> OnShipDeath = Hook::Factory(
+const std::shared_ptr<OverridableHook> OnShipDeath = OverridableHook::Factory(
 	"On Ship Death", "Called when a ship has been destroyed.  Supersedes On Death for ships.",
 	{
 		{"Ship", "ship", "The ship that was destroyed."},
