@@ -31,6 +31,7 @@
 #include "math/fvi.h"
 #include "math/vecmat.h"
 #include "model/model.h"
+#include "model/modelreplace.h"
 #include "model/modelsinc.h"
 #include "parse/parselo.h"
 #include "render/3dinternal.h"
@@ -1547,7 +1548,7 @@ void resolve_submodel_index(const polymodel *pm, const char *requester, const ch
 
 
 //reads a binary file containing a 3d model
-int read_model_file(polymodel * pm, const char *filename, int n_subsystems, model_subsystem *subsystems, int ferror)
+int read_model_file(polymodel * pm, const char *filename, int n_subsystems, model_subsystem *subsystems, int ferror, const SCP_string& searchname)
 {
 	CFILE *fp;
 	int version;
@@ -1620,8 +1621,8 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 	}
 
 	pm->version = version;
-	Assert( strlen(filename) < FILESPEC_LENGTH );
-	strcpy_s(pm->filename, filename);
+	Assert(searchname.size() < FILESPEC_LENGTH );
+	strcpy_s(pm->filename, searchname.c_str());
 
 	memset( &pm->view_positions, 0, sizeof(pm->view_positions) );
 
@@ -3138,7 +3139,7 @@ void model_load_texture(polymodel *pm, int i, char *file)
 }
 
 //returns the number of this model
-int model_load(const  char *filename, int n_subsystems, model_subsystem *subsystems, int ferror, int duplicate)
+int model_load(const  char *filename, int n_subsystems, model_subsystem *subsystems, int ferror, int duplicate, int depth)
 {
 	int i, num;
 	polymodel *pm = NULL;
@@ -3146,11 +3147,13 @@ int model_load(const  char *filename, int n_subsystems, model_subsystem *subsyst
 	if ( !model_initted )
 		model_init();
 
+	SCP_string search_name = depth == 0 ? filename : SCP_string(filename) + "##" + std::to_string(depth);
+
 	num = -1;
 
 	for (i=0; i< MAX_POLYGON_MODELS; i++)	{
 		if ( Polygon_models[i] )	{
-			if (!stricmp(filename, Polygon_models[i]->filename) && !duplicate)		{
+			if (!stricmp(search_name.c_str() , Polygon_models[i]->filename) && !duplicate) {
 				// Model already loaded; just return.
 				Polygon_models[i]->used_this_mission++;
 				return Polygon_models[i]->id;
@@ -3202,7 +3205,13 @@ int model_load(const  char *filename, int n_subsystems, model_subsystem *subsyst
 	game_busy(busy_text);
 #endif
 
-	if (read_model_file(pm, filename, n_subsystems, subsystems, ferror) < 0)	{
+	//See if this is a modular, virtual pof, and if so, parse it from there
+	if (model_load_virtual(pm, filename, depth)) {
+		pm->used_this_mission++;
+		return pm->id;
+	}
+
+	if (read_model_file(pm, filename, n_subsystems, subsystems, ferror, search_name) < 0)	{
 		if (pm != NULL) {
 			delete pm;
 		}

@@ -27,6 +27,7 @@
 #include "network/multi_ingame.h"
 #include "popup/popup.h"
 #include "missionui/chatbox.h"
+#include "model/modelreplace.h"
 #include "network/multiteamselect.h"
 #include "network/multi_data.h"
 #include "network/multi_kick.h"
@@ -1571,6 +1572,7 @@ void standalone_main_init()
 	animation::ModelAnimationParseHelper::parseTables();
 	psnet_flush();
 	game_flush();
+	virtual_pof_init();
 	ship_init();
 
 	// setup port forwarding
