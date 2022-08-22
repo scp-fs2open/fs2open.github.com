@@ -4,11 +4,21 @@
 namespace scripting {
 namespace hooks {
 
-extern std::shared_ptr<scripting::Hook> OnGameInit;
+extern const std::shared_ptr<Hook>            OnGameInit;
 
-extern std::shared_ptr<OverridableHook> OnDeath;
+extern const std::shared_ptr<Hook>            OnDebrisCreated;
 
-extern std::shared_ptr<OverridableHook> OnShipCollision;
+extern const std::shared_ptr<OverridableHook> OnShipCollision;
+
+extern const std::shared_ptr<Hook>            OnShipDeathStarted;
+extern const std::shared_ptr<OverridableHook> OnShipDeath;
+extern const std::shared_ptr<Hook>            OnMissileDeathStarted;
+extern const std::shared_ptr<Hook>            OnMissileDeath;
+extern const std::shared_ptr<Hook>            OnAsteroidDeath;
+extern const std::shared_ptr<Hook>            OnDebrisDeath;
+
+// deprecated
+extern const std::shared_ptr<OverridableHook> OnDeath;
 
 }
 } // namespace scripting

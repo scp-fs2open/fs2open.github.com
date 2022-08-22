@@ -25,8 +25,10 @@
 #include "radar/radar.h"
 #include "radar/radarsetup.h"
 #include "render/3d.h"
+#include "scripting/global_hooks.h"
 #include "scripting/hook_api.h"
 #include "scripting/scripting.h"
+#include "scripting/api/objs/vecmath.h"
 #include "ship/ship.h"
 #include "ship/shipfx.h"
 #include "species_defs/species_defs.h"
@@ -54,18 +56,11 @@ int Debris_num_submodels = 0;
 
 #define	DEBRIS_INDEX(dp) (int)(dp-Debris.data())
 
-const auto OnDebrisCreatedHook = scripting::Hook::Factory(
-	"On Debris Created",
-	"Invoked when a piece of debris is created.",
-	{
-		{"Debris", "debris", "The newly created debris object"},
-		{"Source", "object", "The object (probably a ship) from which this debris piece was spawned."},
-	});
 
 /**
  * Start the sequence of a piece of debris writhing in unholy agony!!!
  */
-static void debris_start_death_roll(object *debris_obj, debris *debris_p)
+static void debris_start_death_roll(object *debris_obj, debris *debris_p, vec3d *hitpos = nullptr)
 {
 	if (debris_p->is_hull)	{
 		// tell everyone else to blow up the piece of debris
@@ -85,6 +80,15 @@ static void debris_start_death_roll(object *debris_obj, debris *debris_p)
 				snd_play_3d( gamesnd_get_game_sound(snd_id), &debris_obj->pos, &View_position, debris_obj->radius );
 			}
 		}
+	}
+
+	if (scripting::hooks::OnDebrisDeath->isActive()) {
+		scripting::hooks::OnDebrisDeath->run(scripting::hook_param_list(
+			scripting::hook_param("Debris", 'o', debris_obj),
+			scripting::hook_param("Hitpos",
+				'o',
+				scripting::api::l_Vector.Set(hitpos ? *hitpos : vmd_zero_vector),
+				hitpos != nullptr)));
 	}
 
     debris_obj->flags.set(Object::Object_Flags::Should_be_dead);
@@ -668,8 +672,8 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 	// ensure vel is valid
 	Assert( !vm_is_vec_nan(&obj->phys_info.vel) );
 
-	if (OnDebrisCreatedHook->isActive()) {
-		OnDebrisCreatedHook->run(scripting::hook_param_list(
+	if (scripting::hooks::OnDebrisCreated->isActive()) {
+		scripting::hooks::OnDebrisCreated->run(scripting::hook_param_list(
 			scripting::hook_param("Debris", 'o', obj),
 			scripting::hook_param("Source", 'o', source_obj)));
 	}
@@ -730,7 +734,7 @@ void debris_hit(object *debris_obj, object * /*other_obj*/, vec3d *hitpos, float
 	debris_obj->hull_strength -= damage;
 
 	if (debris_obj->hull_strength < 0.0f) {
-		debris_start_death_roll(debris_obj, debris_p );
+		debris_start_death_roll(debris_obj, debris_p, hitpos);
 	} else {
 		// otherwise, give all the other players an update on the debris
 		if(MULTIPLAYER_MASTER){
