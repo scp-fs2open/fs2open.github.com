@@ -868,6 +868,13 @@ public:
 	vertex_buffer detail_buffers[MAX_MODEL_DETAIL_LEVELS];
 };
 
+struct model_subsystem_parse {
+	int subobj_nr;
+	float rad;
+	vec3d pnt;
+	SCP_string props;
+};
+
 // Iterate over a submodel tree, starting at the given submodel root node, and running the given function for each node.  The function's signature should be:
 //
 // void func(int submodel, int level, bool isLeaf);
@@ -909,7 +916,7 @@ void model_free_all();
 void model_instance_free_all();
 
 // Loads a model from disk and returns the model number it loaded into.
-int model_load(const char *filename, int n_subsystems, model_subsystem *subsystems, int ferror = 1, int duplicate = 0, int depth = 0);
+int model_load(const char *filename, int n_subsystems, model_subsystem *subsystems, int ferror = 1, int duplicate = 0);
 
 int model_create_instance(int objnum, int model_num);
 void model_delete_instance(int model_instance_num);

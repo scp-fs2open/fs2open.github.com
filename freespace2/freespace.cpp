@@ -119,6 +119,7 @@
 #include "missionui/missionweaponchoice.h"
 #include "missionui/redalert.h"
 #include "mod_table/mod_table.h"
+#include "model/modelreplace.h"
 #include "nebula/neb.h"
 #include "nebula/neblightning.h"
 #include "network/multi.h"
@@ -1934,6 +1935,7 @@ void game_init()
 	sexp::dynamic_sexp_init();
 
 	obj_init();	
+	virtual_pof_init();
 	mflash_game_init();	
 	armor_init();
 	ai_init();

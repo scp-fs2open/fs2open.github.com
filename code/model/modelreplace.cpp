@@ -15,7 +15,7 @@ static std::unordered_map<SCP_string, std::function<std::unique_ptr<VirtualPOFOp
 /*
 * forward declares for internal modelread functions
 */
-extern void set_subsystem_info(int model_num, model_subsystem* subsystemp, char* props, char* dname);
+extern void set_subsystem_info(int model_num, model_subsystem* subsystemp, const char* props, const char* dname);
 
 
 
@@ -29,7 +29,7 @@ bool model_exists(const SCP_string& filename) {
 	return cf_exists_full(filename.c_str(), CF_TYPE_MODELS);
 }
 
-bool model_load_virtual(polymodel* pm, const SCP_string& filename, int depth) {
+bool model_read_virtual(polymodel* pm, const SCP_string& filename, int depth) {
 	return false;
 }
 

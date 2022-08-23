@@ -42,6 +42,7 @@
 
 #include <algorithm>
 #include <stack>
+#include <map>
 
 flag_def_list model_render_flags[] =
 {
@@ -681,7 +682,7 @@ void model_copy_subsystems( int n_subsystems, model_subsystem *d_sp, model_subsy
 }
 
 // routine to get/set subsystem information
-void set_subsystem_info(int model_num, model_subsystem *subsystemp, char *props, char *dname)
+void set_subsystem_info(int model_num, model_subsystem *subsystemp, char *props, const char *dname)
 {
 	char *p;
 	char buf[64];
@@ -1033,7 +1034,7 @@ float get_submodel_delta_shift(const submodel_instance *smi)
 	return abs(smi->cur_offset - smi->prev_offset);
 }
 
-void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num, float rad, vec3d *pnt, char *props, char *subobj_name, int model_num )
+void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num, float rad, const vec3d *pnt, char *props, const char *subobj_name, int model_num )
 {
 	int i;
 	model_subsystem *subsystemp;
@@ -1546,7 +1547,7 @@ void resolve_submodel_index(const polymodel *pm, const char *requester, const ch
 	submodel_index = -1;
 }
 
-int read_model_file_no_subsys(polymodel * pm, const char* filename, int n_subsystems, model_subsystem * subsystems, int ferror, const SCP_string & searchname)
+int read_model_file_no_subsys(polymodel * pm, const char* filename, int n_subsystems, model_subsystem * subsystems, int ferror, std::unordered_map<SCP_string, model_subsystem_parse>& subsystemParseList)
 {
 	CFILE *fp;
 	int version;
@@ -1619,8 +1620,8 @@ int read_model_file_no_subsys(polymodel * pm, const char* filename, int n_subsys
 	}
 
 	pm->version = version;
-	Assert(searchname.size() < FILESPEC_LENGTH );
-	strcpy_s(pm->filename, searchname.c_str());
+	Assert(strlen(filename) < FILESPEC_LENGTH );
+	strcpy_s(pm->filename, filename);
 
 	memset( &pm->view_positions, 0, sizeof(pm->view_positions) );
 
@@ -1911,7 +1912,7 @@ int read_model_file_no_subsys(polymodel * pm, const char* filename, int n_subsys
 
 					get_user_prop_value(p+9, type);
 					if ( !stricmp(type, "subsystem") ) {	// if we have a subsystem, put it into the list!
-						do_new_subsystem( n_subsystems, subsystems, n, sm->rad, &sm->offset, props, sm->name, pm->id );
+						subsystemParseList.emplace(sm->name, model_subsystem_parse{ n, sm->rad, sm->offset, props });
 					} else {
 						if ( !stricmp(type, "no_rotate") || !stricmp(type, "no_movement") ) {
 							// mark those submodels which should not move - i.e., those with no subsystem
@@ -2664,12 +2665,12 @@ int read_model_file_no_subsys(polymodel * pm, const char* filename, int n_subsys
 
 						get_user_prop_value(p+9, type);
 						if ( !stricmp(type, "subsystem") ) {	// if we have a subsystem, put it into the list!
-							do_new_subsystem( n_subsystems, subsystems, -1, radius, &pnt, props_spcl, &name[1], pm->id );		// skip the first '$' character of the name
+							subsystemParseList.emplace(&name[1], model_subsystem_parse{ -1, radius, pnt, props_spcl }); // skip the first '$' character of the name
 						} else if ( !stricmp(type, "shieldpoint") ) {
 							pm->shield_points.push_back(pnt);
 						}
 					} else if (in(name, "$enginelarge") || in(name, "$enginehuge")) {
-						do_new_subsystem( n_subsystems, subsystems, -1, radius, &pnt, props_spcl, &name[1], pm->id );		// skip the first '$' character of the name
+						subsystemParseList.emplace(&name[1], model_subsystem_parse{ -1, radius, pnt, props_spcl }); // skip the first '$' character of the name	
 					} else {
 						nprintf(("Warning", "Unknown special object type %s while reading model %s\n", name, pm->filename));
 					}					
@@ -2956,9 +2957,28 @@ int read_model_file_no_subsys(polymodel * pm, const char* filename, int n_subsys
 }
 
 //reads a binary file containing a 3d model
-int read_model_file(polymodel* pm, const char* filename, int n_subsystems, model_subsystem* subsystems, int ferror, const SCP_string& searchname)
+int read_model_file(polymodel* pm, const char* filename, int n_subsystems, model_subsystem* subsystems, int ferror, int depth)
 {
-	return read_model_file_no_subsys(pm, filename, n_subsystems, subsystems, ferror, searchname);
+	int status = 0;
+
+	std::unordered_map<SCP_string, model_subsystem_parse> subsystemParseList;
+
+	//See if this is a modular, virtual pof, and if so, parse it from there
+	if (model_read_virtual(pm, filename, depth)) {
+		status = 1;
+	}
+	else {
+		status = read_model_file_no_subsys(pm, filename, n_subsystems, subsystems, ferror, subsystemParseList);
+	}
+
+	for (const auto& subsystem : subsystemParseList) {
+		auto propBuffer = std::make_unique<char[]>(subsystem.second.props.size() + 1);
+		strncpy(propBuffer.get(), subsystem.second.props.c_str(), subsystem.second.props.size() + 1);
+
+		do_new_subsystem(n_subsystems, subsystems, subsystem.second.subobj_nr, subsystem.second.rad, &subsystem.second.pnt, propBuffer.get(), subsystem.first.c_str(), pm->id);
+	}
+
+	return status;
 }
 
 
@@ -3144,7 +3164,7 @@ void model_load_texture(polymodel *pm, int i, char *file)
 }
 
 //returns the number of this model
-int model_load(const  char* filename, int n_subsystems, model_subsystem* subsystems, int ferror, int duplicate, int depth)
+int model_load(const  char* filename, int n_subsystems, model_subsystem* subsystems, int ferror, int duplicate)
 {
 	int i, num;
 	polymodel *pm = NULL;
@@ -3152,13 +3172,11 @@ int model_load(const  char* filename, int n_subsystems, model_subsystem* subsyst
 	if ( !model_initted )
 		model_init();
 
-	SCP_string search_name = depth == 0 ? filename : SCP_string(filename) + "##" + std::to_string(depth);
-
 	num = -1;
 
 	for (i=0; i< MAX_POLYGON_MODELS; i++)	{
 		if ( Polygon_models[i] )	{
-			if (!stricmp(search_name.c_str() , Polygon_models[i]->filename) && !duplicate) {
+			if (!stricmp(filename , Polygon_models[i]->filename) && !duplicate) {
 				// Model already loaded; just return.
 				Polygon_models[i]->used_this_mission++;
 				return Polygon_models[i]->id;
@@ -3210,13 +3228,7 @@ int model_load(const  char* filename, int n_subsystems, model_subsystem* subsyst
 	game_busy(busy_text);
 #endif
 
-	//See if this is a modular, virtual pof, and if so, parse it from there
-	if (model_load_virtual(pm, filename, depth)) {
-		pm->used_this_mission++;
-		return pm->id;
-	}
-
-	if (read_model_file(pm, filename, n_subsystems, subsystems, ferror, search_name) < 0)	{
+	if (read_model_file(pm, filename, n_subsystems, subsystems, ferror, 0) < 0)	{
 		if (pm != NULL) {
 			delete pm;
 		}
