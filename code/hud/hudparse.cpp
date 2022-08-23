@@ -4578,6 +4578,12 @@ void load_gauge_lock(gauge_settings* settings)
 		Lockspin_half_w = temp[0];
 		Lockspin_half_h = temp[1];
 	}
+	if(optional_string("Loop Locked Animation:")) {
+		stuff_boolean(&loop_locked_anim);
+	}
+	if(optional_string("Blink Locked Animation:")) {
+		stuff_boolean(&loop_locked_anim);
+	}
 
 	hud_gauge->initBitmaps(fname_lock, fname_spin);
 	hud_gauge->initLoopLockedAnim(loop_locked_anim);
