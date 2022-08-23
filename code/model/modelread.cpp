@@ -1547,7 +1547,7 @@ void resolve_submodel_index(const polymodel *pm, const char *requester, const ch
 	submodel_index = -1;
 }
 
-int read_model_file_no_subsys(polymodel * pm, const char* filename, int n_subsystems, model_subsystem * subsystems, int ferror, std::unordered_map<SCP_string, model_subsystem_parse>& subsystemParseList)
+int read_model_file_no_subsys(polymodel * pm, const char* filename, int ferror, subsystem_parse_list& subsystemParseList)
 {
 	CFILE *fp;
 	int version;
@@ -1912,7 +1912,7 @@ int read_model_file_no_subsys(polymodel * pm, const char* filename, int n_subsys
 
 					get_user_prop_value(p+9, type);
 					if ( !stricmp(type, "subsystem") ) {	// if we have a subsystem, put it into the list!
-						subsystemParseList.emplace(sm->name, model_subsystem_parse{ n, sm->rad, sm->offset, props });
+						subsystemParseList.model_subsystems.emplace(sm->name, subsystem_parse_list::model_subsystem_parse{ n, sm->rad, sm->offset, props });
 					} else {
 						if ( !stricmp(type, "no_rotate") || !stricmp(type, "no_movement") ) {
 							// mark those submodels which should not move - i.e., those with no subsystem
@@ -2521,32 +2521,7 @@ int read_model_file_no_subsys(polymodel * pm, const char* filename, int n_subsys
 
 									nprintf(("wash", "Ship %s with engine wash associated with subsys %s\n", filename, engine_subsys_name));
 
-									// start off assuming the subsys is invalid
-									int table_error = 1;
-									for (int k=0; k<n_subsystems; k++) {
-										if ( !subsystem_stricmp(subsystems[k].subobj_name, engine_subsys_name) ) {
-											bank->submodel_num = subsystems[k].subobj_num;
-
-											bank->wash_info_pointer = subsystems[k].engine_wash_pointer;
-											if (bank->wash_info_pointer != nullptr) {
-												table_error = 0;
-											}
-											// also set what subsystem this is attached to but not if we only have one thruster bank
-											// do this so that original :V: models still work like they used to
-											if (pm->n_thrusters > 1) {
-												bank->obj_num = k;
-											}
-											break;
-										}
-									}
-
-									if ( (bank->wash_info_pointer == nullptr) && (n_subsystems > 0) ) {
-										if (table_error) {
-										//	Warning(LOCATION, "No engine wash table entry in ships.tbl for ship model %s", filename);
-										} else {
-											Warning(LOCATION, "Inconsistent model: Engine wash engine subsystem does not match any ship subsytem names for ship model %s", filename);
-										}
-									}
+									subsystemParseList.engine_subsystems.emplace(engine_subsys_name, subsystem_parse_list::engine_subsystem_parse{ i });
 								}
 							}
 						}
@@ -2587,53 +2562,25 @@ int read_model_file_no_subsys(polymodel * pm, const char* filename, int n_subsys
 						gun_obj = base_obj; // fall back to singlepart handling
 					}
 
-					int snum=-1;
-					if ( subsystems ) {
-						for ( snum = 0; snum < n_subsystems; snum++ ) {
-							subsystemp = &subsystems[snum];
-
-							if ( base_obj == subsystemp->subobj_num ) {
-								cfread_vector( &temp_vec, fp );
-								vm_vec_normalize_safe(&temp_vec);
-								subsystemp->turret_norm = temp_vec;
-
-								n_slots = cfread_int( fp );
-								subsystemp->turret_gun_sobj = gun_obj;
-								if(n_slots > MAX_TFP) {
-									Warning(LOCATION, "Model %s has %i turret firing points on subsystem %s, maximum is %i", pm->filename, n_slots, subsystemp->name, MAX_TFP);
-								}
-
-								for (j = 0; j < n_slots; j++ )	{
-									if(j < MAX_TFP)
-										cfread_vector( &subsystemp->turret_firing_point[j], fp );
-									else
-									{
-										vec3d bogus;
-										cfread_vector(&bogus, fp);
-									}
-								}
-								Assertion( n_slots > 0, "Turret %s in model %s has no firing points.\n", subsystemp->name, pm->filename);
-
-								subsystemp->turret_num_firing_points = n_slots;
-
-								// copy the subsystem index that the gun base submodel should have at this point
-								Assertion(pm->submodel[base_obj].subsys_num >= 0, "Turret gun base should have a subsystem index!");
-								pm->submodel[gun_obj].subsys_num = pm->submodel[base_obj].subsys_num;
-
-								break;
-							}
+					cfread_vector(&temp_vec, fp);
+					vm_vec_normalize_safe(&temp_vec);
+					n_slots = cfread_int(fp);
+					std::vector<vec3d> firingpoints;
+					for (j = 0; j < n_slots; j++) {
+						if (j < MAX_TFP) {
+							vec3d firepoint;
+							cfread_vector(&firepoint, fp);
+							firingpoints.emplace_back(std::move(firepoint));
+						}
+						else
+						{
+							vec3d bogus;
+							cfread_vector(&bogus, fp);
 						}
 					}
+					Assertion(n_slots > 0, "Turret %s in model %s has no firing points.\n", subsystemp->name, pm->filename);
 
-					if ( (n_subsystems == 0) || (snum == n_subsystems) ) {
-						vec3d bogus;
-
-						nprintf(("Warning", "Turret submodel %i not found for turret %i in model %s\n", base_obj, i, pm->filename));
-						cfread_vector( &bogus, fp );
-						n_slots = cfread_int( fp );
-						for (j = 0; j < n_slots; j++ )
-							cfread_vector( &bogus, fp );
-					}
+					subsystemParseList.weapons_subsystems.emplace(base_obj, subsystem_parse_list::weapon_subsystem_parse{ i, gun_obj, temp_vec, n_slots, std::move(firingpoints) });
 				}
 				break;
 			}
@@ -2665,12 +2612,12 @@ int read_model_file_no_subsys(polymodel * pm, const char* filename, int n_subsys
 
 						get_user_prop_value(p+9, type);
 						if ( !stricmp(type, "subsystem") ) {	// if we have a subsystem, put it into the list!
-							subsystemParseList.emplace(&name[1], model_subsystem_parse{ -1, radius, pnt, props_spcl }); // skip the first '$' character of the name
+							subsystemParseList.model_subsystems.emplace(&name[1], subsystem_parse_list::model_subsystem_parse{ -1, radius, pnt, props_spcl }); // skip the first '$' character of the name
 						} else if ( !stricmp(type, "shieldpoint") ) {
 							pm->shield_points.push_back(pnt);
 						}
 					} else if (in(name, "$enginelarge") || in(name, "$enginehuge")) {
-						subsystemParseList.emplace(&name[1], model_subsystem_parse{ -1, radius, pnt, props_spcl }); // skip the first '$' character of the name	
+						subsystemParseList.model_subsystems.emplace(&name[1], subsystem_parse_list::model_subsystem_parse{ -1, radius, pnt, props_spcl }); // skip the first '$' character of the name	
 					} else {
 						nprintf(("Warning", "Unknown special object type %s while reading model %s\n", name, pm->filename));
 					}					
@@ -2961,21 +2908,89 @@ int read_model_file(polymodel* pm, const char* filename, int n_subsystems, model
 {
 	int status = 0;
 
-	std::unordered_map<SCP_string, model_subsystem_parse> subsystemParseList;
+	subsystem_parse_list subsystemParseList;
 
 	//See if this is a modular, virtual pof, and if so, parse it from there
 	if (model_read_virtual(pm, filename, depth)) {
 		status = 1;
 	}
 	else {
-		status = read_model_file_no_subsys(pm, filename, n_subsystems, subsystems, ferror, subsystemParseList);
+		status = read_model_file_no_subsys(pm, filename, ferror, subsystemParseList);
 	}
 
-	for (const auto& subsystem : subsystemParseList) {
+	for (const auto& subsystem : subsystemParseList.model_subsystems) {
 		auto propBuffer = std::make_unique<char[]>(subsystem.second.props.size() + 1);
 		strncpy(propBuffer.get(), subsystem.second.props.c_str(), subsystem.second.props.size() + 1);
 
-		do_new_subsystem(n_subsystems, subsystems, subsystem.second.subobj_nr, subsystem.second.rad, &subsystem.second.pnt, propBuffer.get(), subsystem.first.c_str(), pm->id);
+		do_new_subsystem(n_subsystems, subsystems, subsystem.second.subobj_nr, subsystem.second.rad, &subsystem.second.pnt, propBuffer.get(), subsystem.first.c_str(), pm->id);		
+	}
+
+	for (const auto& subsystem : subsystemParseList.engine_subsystems) {
+		// start off assuming the subsys is invalid
+		int table_error = 1;
+		auto bank = &pm->thrusters[subsystem.second.thruster_nr];
+
+		for (int k = 0; k < n_subsystems; k++) {
+			if (!subsystem_stricmp(subsystems[k].subobj_name, subsystem.first.c_str())) {
+				bank->submodel_num = subsystems[k].subobj_num;
+
+				bank->wash_info_pointer = subsystems[k].engine_wash_pointer;
+				if (bank->wash_info_pointer != nullptr) {
+					table_error = 0;
+				}
+				// also set what subsystem this is attached to but not if we only have one thruster bank
+				// do this so that original :V: models still work like they used to
+				if (pm->n_thrusters > 1) {
+					bank->obj_num = k;
+				}
+				break;
+			}
+		}
+
+		if ((bank->wash_info_pointer == nullptr) && (n_subsystems > 0)) {
+			if (table_error) {
+				//	Warning(LOCATION, "No engine wash table entry in ships.tbl for ship model %s", filename);
+			}
+			else {
+				Warning(LOCATION, "Inconsistent model: Engine wash engine subsystem does not match any ship subsytem names for ship model %s", filename);
+			}
+		}
+	}
+
+	for (const auto& subsystem : subsystemParseList.weapons_subsystems) {
+		model_subsystem* subsystemp;
+		if (subsystems) {
+			int snum = 0;
+			for (snum = 0; snum < n_subsystems; snum++) {
+				subsystemp = &subsystems[snum];
+
+				if (subsystem.first == subsystemp->subobj_num) {
+					subsystemp->turret_norm = subsystem.second.turretNorm;
+					subsystemp->turret_gun_sobj = subsystem.second.gun_subobj_nr;
+
+					if (subsystem.second.n_slots > MAX_TFP) {
+						Warning(LOCATION, "Model %s has %i turret firing points on subsystem %s, maximum is %i", pm->filename, subsystem.second.n_slots, subsystemp->name, MAX_TFP);
+					}
+
+					for (int j = 0; j < subsystem.second.n_slots; j++) {
+						if (j < MAX_TFP)
+							subsystemp->turret_firing_point[j] = subsystem.second.firingpoints[j];
+					}
+					Assertion(subsystem.second.n_slots > 0, "Turret %s in model %s has no firing points.\n", subsystemp->name, pm->filename);
+
+					subsystemp->turret_num_firing_points = subsystem.second.n_slots;
+
+					// copy the subsystem index that the gun base submodel should have at this point
+					Assertion(pm->submodel[subsystem.first].subsys_num >= 0, "Turret gun base should have a subsystem index!");
+					pm->submodel[subsystem.second.gun_subobj_nr].subsys_num = pm->submodel[subsystem.first].subsys_num;
+
+					break;
+				}
+			}
+			if ((snum == n_subsystems)) {
+				nprintf(("Warning", "Turret submodel %i not found for turret %i in model %s\n", subsystem.first, subsystem.second.turret_nr, pm->filename));
+			}
+		}
 	}
 
 	return status;

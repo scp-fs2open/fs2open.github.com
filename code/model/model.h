@@ -868,11 +868,32 @@ public:
 	vertex_buffer detail_buffers[MAX_MODEL_DETAIL_LEVELS];
 };
 
-struct model_subsystem_parse {
-	int subobj_nr;
-	float rad;
-	vec3d pnt;
-	SCP_string props;
+struct subsystem_parse_list {
+	struct model_subsystem_parse {
+		int subobj_nr;
+		float rad;
+		vec3d pnt;
+		SCP_string props;
+	};
+
+	struct engine_subsystem_parse {
+		int thruster_nr;
+	};
+
+	struct weapon_subsystem_parse {
+		int turret_nr;
+		int gun_subobj_nr;
+		vec3d turretNorm;
+		int n_slots;
+		std::vector<vec3d> firingpoints;
+	};
+
+	//Key: Subsystem Name
+	std::unordered_map<SCP_string, model_subsystem_parse> model_subsystems;
+	//Key: Subsystem Name
+	std::unordered_map<SCP_string, engine_subsystem_parse> engine_subsystems;
+	//Key: Parent Subobject Nr
+	std::unordered_map<int, weapon_subsystem_parse> weapons_subsystems;
 };
 
 // Iterate over a submodel tree, starting at the given submodel root node, and running the given function for each node.  The function's signature should be:
