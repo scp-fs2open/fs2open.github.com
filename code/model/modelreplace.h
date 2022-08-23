@@ -5,7 +5,7 @@
 
 bool model_exists(const SCP_string& filename);
 
-bool model_read_virtual(polymodel* pm, const SCP_string& filename, int depth);
+bool read_virtual_model_file(polymodel* pm, const SCP_string& filename, int depth);
 
 void virtual_pof_init();
 

@@ -2552,7 +2552,6 @@ int read_model_file_no_subsys(polymodel * pm, const char* filename, int ferror, 
 
 				for ( i = 0; i < n_banks; i++ ) {
 					int n_slots;						// How many firepoints the turret has
-					model_subsystem *subsystemp;		// The actual turret subsystem
 
 					int base_obj = cfread_int(fp);		// The parent subobj of the turret (the gun base)
 					int gun_obj = cfread_int(fp);       // The subobj that the firepoints are physically attached to (the gun barrel)
@@ -2578,7 +2577,7 @@ int read_model_file_no_subsys(polymodel * pm, const char* filename, int ferror, 
 							cfread_vector(&bogus, fp);
 						}
 					}
-					Assertion(n_slots > 0, "Turret %s in model %s has no firing points.\n", subsystemp->name, pm->filename);
+					Assertion(n_slots > 0, "Turret %s in model %s has no firing points.\n", pm->submodel[gun_obj].name, pm->filename);
 
 					subsystemParseList.weapons_subsystems.emplace(base_obj, subsystem_parse_list::weapon_subsystem_parse{ i, gun_obj, temp_vec, n_slots, std::move(firingpoints) });
 				}
@@ -2903,20 +2902,27 @@ int read_model_file_no_subsys(polymodel * pm, const char* filename, int ferror, 
 	return 1;
 }
 
-//reads a binary file containing a 3d model
-int read_model_file(polymodel* pm, const char* filename, int n_subsystems, model_subsystem* subsystems, int ferror, int depth)
+int read_model_file(polymodel* pm, const char* filename, int ferror, subsystem_parse_list& subsystemParseList, int depth = 0)
 {
 	int status = 0;
 
-	subsystem_parse_list subsystemParseList;
-
 	//See if this is a modular, virtual pof, and if so, parse it from there
-	if (model_read_virtual(pm, filename, depth)) {
+	if (read_virtual_model_file(pm, filename, depth)) {
 		status = 1;
 	}
 	else {
 		status = read_model_file_no_subsys(pm, filename, ferror, subsystemParseList);
 	}
+
+	return status;
+}
+
+//reads a binary file containing a 3d model
+int read_and_process_model_file(polymodel* pm, const char* filename, int n_subsystems, model_subsystem* subsystems, int ferror)
+{
+	subsystem_parse_list subsystemParseList;
+
+	int status = read_model_file(pm, filename, ferror, subsystemParseList);
 
 	for (const auto& subsystem : subsystemParseList.model_subsystems) {
 		auto propBuffer = std::make_unique<char[]>(subsystem.second.props.size() + 1);
@@ -3243,7 +3249,7 @@ int model_load(const  char* filename, int n_subsystems, model_subsystem* subsyst
 	game_busy(busy_text);
 #endif
 
-	if (read_model_file(pm, filename, n_subsystems, subsystems, ferror, 0) < 0)	{
+	if (read_and_process_model_file(pm, filename, n_subsystems, subsystems, ferror) < 0)	{
 		if (pm != NULL) {
 			delete pm;
 		}
