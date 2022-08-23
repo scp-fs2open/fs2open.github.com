@@ -17,13 +17,13 @@ class VirtualPOFDefinition {
 class VirtualPOFOperation {
 public:
 	virtual ~VirtualPOFOperation() = default;
-	virtual void process(polymodel*) const = 0;
+	virtual void process(polymodel*, subsystem_parse_list& subsysList, int depth) const = 0;
 };
 
-class VirtualPOFOperationReplaceProps : public VirtualPOFOperation {
-	SCP_string subobjName;
-	SCP_string replaceWith;
+class VirtualPOFOperationAddSubmodel : public VirtualPOFOperation {
+	SCP_string subobjNameSrc, subobjNameDest;
+	SCP_string appendingPOF;
 public:
-	VirtualPOFOperationReplaceProps();
-	void process(polymodel* pm) const override;
+	VirtualPOFOperationAddSubmodel();
+	void process(polymodel* pm, subsystem_parse_list& subsysList, int depth) const override;
 };

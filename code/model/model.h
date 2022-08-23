@@ -23,6 +23,8 @@
 #include "object/object.h"
 #include "ship/ship_flags.h"
 
+#include <set>
+
 class object;
 class ship_info;
 class model_render_params;
@@ -931,6 +933,8 @@ void model_init();
 
 // call to unload a model (works like bm_unload()), "force" SHOULD NEVER BE SET outside of modelread.cpp!!!!
 void model_unload(int modelnum, int force = 0);
+// Directly frees polymodel data, regardless of state and usage in ship classes. Use with caution. Will not clear textures
+void model_free(polymodel* pm);
 
 // Call to free all existing models
 void model_free_all();
@@ -944,6 +948,8 @@ void model_delete_instance(int model_instance_num);
 
 // Goober5000
 void model_load_texture(polymodel *pm, int i, char *file);
+
+std::set<int> model_get_textures_used(polymodel* pm, int submodel);
 
 // Returns a pointer to the polymodel structure for model 'n'
 polymodel *model_get(int model_num);
@@ -1416,6 +1422,8 @@ void model_page_in_textures(int modelnum, int ship_info_index = -1);
 
 // given a model, unload all of its textures
 void model_page_out_textures(int model_num, bool release = false);
+// given a model, without respect to usage state of the polymodel
+void model_page_out_textures(polymodel* pm, bool release = false, const std::set<int>& skipTextures = {}, const std::set<int>& skipGlowBanks = {});
 
 void model_do_intrinsic_motions(object *objp);
 

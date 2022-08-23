@@ -115,6 +115,9 @@ public:
 
 	void generate_triangles(int texture, vertex *vert_ptr, vec3d* norm_ptr);
 	void generate_lines(int texture, vertex *vert_ptr);
+
+	std::set<int> get_textures_used() const;
+	void replace_textures_used(const std::map<int, int>& replacementMap);
 };
 
 /**
@@ -1618,8 +1621,6 @@ void model_page_in_textures(int modelnum, int ship_info_index)
 // "release" should only be set if called from model_unload()!!!
 void model_page_out_textures(int model_num, bool release)
 {
-	int i, j;
-
 	if (model_num < 0)
 		return;
 
@@ -1631,31 +1632,40 @@ void model_page_out_textures(int model_num, bool release)
 	if (release && (pm->used_this_mission > 0))
 		return;
 
+	model_page_out_textures(pm, release);
+}
 
+void model_page_out_textures(polymodel* pm, bool release, const std::set<int>& skipTextures, const std::set<int>& skipGlowBanks)
+{
+	int i, j;
 	for (i = 0; i < pm->n_textures; i++) {
+		if (skipTextures.count(i) > 0)
+			continue;
 		pm->maps[i].PageOut(release);
 	}
 
 	// NOTE: "release" doesn't work here for some, as of yet unknown, reason - taylor
 	for (j = 0; j < pm->n_glow_point_banks; j++) {
-		glow_point_bank *bank = &pm->glow_point_banks[j];
+		if(skipGlowBanks.count(j) > 0)
+			continue;
+		glow_point_bank* bank = &pm->glow_point_banks[j];
 
 		if (bank->glow_bitmap >= 0) {
-		//	if (release) {
-		//		bm_release(bank->glow_bitmap);
-		//		bank->glow_bitmap = -1;
-		//	} else {
-				bm_unload(bank->glow_bitmap);
-		//	}
+			//	if (release) {
+			//		bm_release(bank->glow_bitmap);
+			//		bank->glow_bitmap = -1;
+			//	} else {
+			bm_unload(bank->glow_bitmap);
+			//	}
 		}
 
 		if (bank->glow_neb_bitmap >= 0) {
-		//	if (release) {
-		//		bm_release(bank->glow_neb_bitmap);
-		//		bank->glow_neb_bitmap = -1;
-		//	} else {
-				bm_unload(bank->glow_neb_bitmap);
-		//	}
+			//	if (release) {
+			//		bm_release(bank->glow_neb_bitmap);
+			//		bank->glow_neb_bitmap = -1;
+			//	} else {
+			bm_unload(bank->glow_neb_bitmap);
+			//	}
 		}
 	}
 }
@@ -2302,6 +2312,9 @@ void interp_configure_vertex_buffers(polymodel *pm, int mn)
 	int milliseconds = timer_get_milliseconds();
 
 	bsp_polygon_data *bsp_polies = new bsp_polygon_data(model->bsp_data);
+
+	//TODO Replace textures here
+	//bsp_polies->replace_textures_used();
 
 	for (i = 0; i < MAX_MODEL_TEXTURES; i++) {
 		int vert_count = bsp_polies->get_num_triangles(i) * 3;
@@ -3391,4 +3404,24 @@ void bsp_polygon_data::generate_lines(int texture, vertex *vert_ptr)
 			num_verts += 2;
 		}
 	}
+}
+
+std::set<int> bsp_polygon_data::get_textures_used() const {
+	std::set<int> textures;
+	for (const auto& poly : Polygons)
+		textures.emplace(poly.texture);
+	return textures;
+}
+
+void bsp_polygon_data::replace_textures_used(const std::map<int, int>& replacementMap) {
+	for (auto& poly : Polygons) {
+		auto it = replacementMap.find(poly.texture);
+		if (it != replacementMap.end())
+			poly.texture = it->second;
+	}
+}
+
+std::set<int> model_get_textures_used(polymodel* pm, int submodel) {
+	auto polies = std::make_unique<const bsp_polygon_data>(pm->submodel[submodel].bsp_data);
+	return polies->get_textures_used();
 }

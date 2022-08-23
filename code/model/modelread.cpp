@@ -182,11 +182,157 @@ public:
 SCP_unordered_map<int, intrinsic_motion> Intrinsic_motions;
 
 
+void model_free(polymodel* pm)
+{
+	int i, j;
+	safe_kill(pm->ship_bay);
+
+	if (pm->paths) {
+		for (i = 0; i < pm->n_paths; i++) {
+			for (j = 0; j < pm->paths[i].nverts; j++) {
+				if (pm->paths[i].verts[j].turret_ids) {
+					vm_free(pm->paths[i].verts[j].turret_ids);
+				}
+			}
+			if (pm->paths[i].verts) {
+				vm_free(pm->paths[i].verts);
+			}
+		}
+		vm_free(pm->paths);
+	}
+
+	if (pm->shield.verts) {
+		vm_free(pm->shield.verts);
+	}
+
+	if (pm->shield.tris) {
+		vm_free(pm->shield.tris);
+	}
+
+	if (pm->gun_banks) {	// NOLINT
+		delete[] pm->gun_banks;
+	}
+
+	if (pm->missile_banks) {	// NOLINT
+		delete[] pm->missile_banks;
+	}
+
+	if (pm->docking_bays) {
+		for (i = 0; i < pm->n_docks; i++) {
+			if (pm->docking_bays[i].splines) {
+				vm_free(pm->docking_bays[i].splines);
+			}
+		}
+		vm_free(pm->docking_bays);
+	}
+
+
+	if (pm->thrusters) {
+		for (i = 0; i < pm->n_thrusters; i++) {
+			if (pm->thrusters[i].points)
+				vm_free(pm->thrusters[i].points);
+		}
+
+		vm_free(pm->thrusters);
+	}
+
+	if (pm->glow_point_banks) { // free the glows!!! -Bobboau
+		for (i = 0; i < pm->n_glow_point_banks; i++) {
+			if (pm->glow_point_banks[i].points)
+				vm_free(pm->glow_point_banks[i].points);
+		}
+
+		vm_free(pm->glow_point_banks);
+	}
+
+#ifndef NDEBUG
+	if (pm->debug_info) {
+		vm_free(pm->debug_info);
+	}
+#endif
+
+	model_octant_free(pm);
+
+	if (pm->submodel) {
+		for (i = 0; i < pm->n_models; i++) {
+			pm->submodel[i].buffer.clear();
+
+			if (pm->submodel[i].bsp_data) {
+				vm_free(pm->submodel[i].bsp_data);
+			}
+
+			if (pm->submodel[i].collision_tree_index >= 0) {
+				model_remove_bsp_collision_tree(pm->submodel[i].collision_tree_index);
+			}
+
+			if (pm->submodel[i].outline_buffer != nullptr) {
+				vm_free(pm->submodel[i].outline_buffer);
+				pm->submodel[i].outline_buffer = nullptr;
+			}
+		}
+
+		delete[] pm->submodel;
+	}
+
+	if (pm->xc) {
+		vm_free(pm->xc);
+	}
+
+	if (pm->lights) {
+		vm_free(pm->lights);
+	}
+
+	if (pm->shield_collision_tree) {
+		vm_free(pm->shield_collision_tree);
+	}
+
+	if (pm->shield.buffer_id.isValid()) {
+		gr_delete_buffer(pm->shield.buffer_id);
+		pm->shield.buffer_id = gr_buffer_handle::invalid();
+		pm->shield.buffer_n_verts = 0;
+	}
+
+	if (pm->vert_source.Vbuffer_handle.isValid()) {
+		gr_heap_deallocate(GpuHeap::ModelVertex, pm->vert_source.Vertex_offset);
+		pm->vert_source.Vbuffer_handle = gr_buffer_handle::invalid();
+
+		pm->vert_source.Vertex_offset = 0;
+		pm->vert_source.Base_vertex_offset = 0;
+	}
+
+	if (pm->vert_source.Vertex_list != NULL) {
+		vm_free(pm->vert_source.Vertex_list);
+		pm->vert_source.Vertex_list = NULL;
+	}
+
+	if (pm->vert_source.Ibuffer_handle.isValid()) {
+		gr_heap_deallocate(GpuHeap::ModelIndex, pm->vert_source.Index_offset);
+
+		pm->vert_source.Ibuffer_handle = gr_buffer_handle::invalid();
+		pm->vert_source.Index_offset = 0;
+	}
+
+	if (pm->vert_source.Index_list != NULL) {
+		vm_free(pm->vert_source.Index_list);
+		pm->vert_source.Index_list = NULL;
+	}
+
+	pm->vert_source.Vertex_list_size = 0;
+	pm->vert_source.Index_list_size = 0;
+
+	for (i = 0; i < MAX_MODEL_DETAIL_LEVELS; ++i) {
+		pm->detail_buffers[i].clear();
+	}
+
+	pm->id = 0;
+	delete pm;
+}
+
 // Free up a model, getting rid of all its memory
 // With the basic page in system this can be called from outside of modelread.cpp
 void model_unload(int modelnum, int force)
 {
-	int i, j, num;
+	int num;
 
 	if ( modelnum >= MAX_POLYGON_MODELS ) {
 		num = modelnum % MAX_POLYGON_MODELS;
@@ -218,172 +364,32 @@ void model_unload(int modelnum, int force)
 	// to get the slots back so we set "release" to true.
 	model_page_out_textures(pm->id, true);
 
-	safe_kill(pm->ship_bay);
-	
-	if (pm->paths)	{
-		for (i=0; i<pm->n_paths; i++ )	{
-			for (j=0; j<pm->paths[i].nverts; j++ )	{
-				if ( pm->paths[i].verts[j].turret_ids )	{
-					vm_free(pm->paths[i].verts[j].turret_ids);
-				}
-			}
-			if (pm->paths[i].verts)	{
-				vm_free(pm->paths[i].verts);
-			}
-		}
-		vm_free(pm->paths);
-	}
-
-	if ( pm->shield.verts )	{
-		vm_free( pm->shield.verts );
-	}
-
-	if ( pm->shield.tris )	{
-		vm_free(pm->shield.tris);
-	}
-
-	if (pm->gun_banks) {	// NOLINT
-		delete[] pm->gun_banks;
-	}
-
-	if (pm->missile_banks) {	// NOLINT
-		delete[] pm->missile_banks;
-	}
-
-	if ( pm->docking_bays )	{
-		for (i=0; i<pm->n_docks; i++ )	{
-			if ( pm->docking_bays[i].splines )	{
-				vm_free( pm->docking_bays[i].splines );
-			}
-		}
-		vm_free(pm->docking_bays);
-	}
-
-
-	if ( pm->thrusters ) {
-		for (i = 0; i < pm->n_thrusters; i++) {
-			if (pm->thrusters[i].points)
-				vm_free(pm->thrusters[i].points);
-		}
-
-		vm_free(pm->thrusters);
-	}
-
-	if ( pm->glow_point_banks )	{ // free the glows!!! -Bobboau
-		for (i = 0; i < pm->n_glow_point_banks; i++) {
-			if (pm->glow_point_banks[i].points)
-				vm_free(pm->glow_point_banks[i].points);
-		}
-
-		vm_free(pm->glow_point_banks);
-	}
-
-#ifndef NDEBUG
-	if ( pm->debug_info )	{
-		vm_free(pm->debug_info);
-	}
-#endif
-
-	model_octant_free( pm );
-
-	if (pm->submodel) {
-		for (i = 0; i < pm->n_models; i++) {
-			pm->submodel[i].buffer.clear();
-
-			if ( pm->submodel[i].bsp_data )	{
-				vm_free(pm->submodel[i].bsp_data);
-			}
-
-			if ( pm->submodel[i].collision_tree_index >= 0 ) {
-				model_remove_bsp_collision_tree(pm->submodel[i].collision_tree_index);
-			}
-
-			if ( pm->submodel[i].outline_buffer != nullptr ) {
-				vm_free(pm->submodel[i].outline_buffer);
-				pm->submodel[i].outline_buffer = nullptr;
-			}
-		}
-
-		delete[] pm->submodel;
-	}
-	
-	if ( pm->xc ) {
-		vm_free(pm->xc);
-	}
-
-	if ( pm->lights )	{
-		vm_free(pm->lights);
-	}
-
-	if ( pm->shield_collision_tree ) {
-		vm_free(pm->shield_collision_tree);
-	}
-
-	if (pm->shield.buffer_id.isValid()) {
-		gr_delete_buffer(pm->shield.buffer_id);
-		pm->shield.buffer_id = gr_buffer_handle::invalid();
-		pm->shield.buffer_n_verts = 0;
-	}
-
-	if (pm->vert_source.Vbuffer_handle.isValid()) {
-		gr_heap_deallocate(GpuHeap::ModelVertex, pm->vert_source.Vertex_offset);
-		pm->vert_source.Vbuffer_handle = gr_buffer_handle::invalid();
-
-		pm->vert_source.Vertex_offset = 0;
-		pm->vert_source.Base_vertex_offset = 0;
-	}
-
-	if ( pm->vert_source.Vertex_list != NULL ) {
-		vm_free(pm->vert_source.Vertex_list);
-		pm->vert_source.Vertex_list = NULL;
-	}
-
-	if (pm->vert_source.Ibuffer_handle.isValid()) {
-		gr_heap_deallocate(GpuHeap::ModelIndex, pm->vert_source.Index_offset);
-
-		pm->vert_source.Ibuffer_handle = gr_buffer_handle::invalid();
-		pm->vert_source.Index_offset = 0;
-	}
-
-	if ( pm->vert_source.Index_list != NULL ) {
-		vm_free(pm->vert_source.Index_list);
-		pm->vert_source.Index_list = NULL;
-	}
-
-	pm->vert_source.Vertex_list_size = 0;
-	pm->vert_source.Index_list_size = 0;
-
-	for (i = 0; i < MAX_MODEL_DETAIL_LEVELS; ++i) {
-		pm->detail_buffers[i].clear();
-	}
-
 	// run through Ship_info and if the model has been loaded we'll need to reset the modelnum to -1.
-	for (auto &si : Ship_info) {
-		if ( pm->id == si.model_num ) {
+	for (auto& si : Ship_info) {
+		if (pm->id == si.model_num) {
 			si.model_num = -1;
 		}
 
-		if ( pm->id == si.cockpit_model_num ) {
+		if (pm->id == si.cockpit_model_num) {
 			si.cockpit_model_num = -1;
 		}
 
-		if ( pm->id == si.model_num_hud ) {
+		if (pm->id == si.model_num_hud) {
 			si.model_num_hud = -1;
 		}
 	}
 
 	// need to reset weapon models as well
-	for (auto &wi: Weapon_info) {
-		if ( pm->id == wi.model_num ) {
+	for (auto& wi : Weapon_info) {
+		if (pm->id == wi.model_num) {
 			wi.model_num = -1;
 		}
-		if ( pm->id == wi.external_model_num ) {
+		if (pm->id == wi.external_model_num) {
 			wi.external_model_num = -1;
 		}
 	}
 
-	pm->id = 0;
-	delete pm;
+	model_free(pm);
 
 	Polygon_models[num] = NULL;	
 }
