@@ -1,6 +1,6 @@
 #include "modelreplace.h"
 
-#include "model.h"
+#include "model/model.h"
 
 #include "cfile/cfile.h"
 
@@ -13,7 +13,9 @@
 static std::unordered_map<SCP_string, std::vector<VirtualPOFDefinition>> virtual_pofs;
 static std::unordered_map<SCP_string, std::function<std::unique_ptr<VirtualPOFOperation>()>> virtual_pof_operations = { 
 	{"$Add Subobject:", &make_unique<VirtualPOFOperationAddSubmodel> },
-	{"$Rename Subobjects:", &make_unique<VirtualPOFOperationRenameSubobjects> }
+	{"$Rename Subobjects:", &make_unique<VirtualPOFOperationRenameSubobjects> },
+	{"$Set Subobject Data:", &make_unique<VirtualPOFOperationChangeData> },
+	{"$Set Header Data:", &make_unique<VirtualPOFOperationHeaderData> }
 };
 
 /*
@@ -21,6 +23,7 @@ static std::unordered_map<SCP_string, std::function<std::unique_ptr<VirtualPOFOp
 */
 extern int read_model_file(polymodel* pm, const char* filename, int ferror, model_read_deferred_tasks& deferredTasks, model_parse_depth depth = {});
 extern void create_family_tree(polymodel* obj);
+extern void model_calc_bound_box(vec3d* box, vec3d* big_mn, vec3d* big_mx);
 
 // General Functions and external code paths
 
@@ -369,7 +372,7 @@ VirtualPOFOperationChangeData::VirtualPOFOperationChangeData() {
 	}
 }
 
-void VirtualPOFOperationChangeData::process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth) const {
+void VirtualPOFOperationChangeData::process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth /*depth*/) const {
 	int subobj_no = -1;
 	for (int i = 0; i < pm->n_models; i++) {
 		if (!stricmp(pm->submodel[i].name, submodel.c_str()))
@@ -382,5 +385,33 @@ void VirtualPOFOperationChangeData::process(polymodel* pm, model_read_deferred_t
 		if (it != deferredTasks.model_subsystems.end()) {
 			it->second.pnt = *setOffset;
 		}
+	}
+}
+
+VirtualPOFOperationHeaderData::VirtualPOFOperationHeaderData() {
+	if (optional_string("+Set Radius:")) {
+		radius = make_unique<float>();
+		stuff_float(radius.get());
+	}
+
+	if (optional_string("$Set Bounding Box:")) {
+		boundingbox = std::make_unique<std::pair<vec3d, vec3d>>();
+		required_string("+Minimum:");
+		stuff_vec3d(&boundingbox->first);
+		required_string("+Maximum:");
+		stuff_vec3d(&boundingbox->second);
+	}
+}
+
+void VirtualPOFOperationHeaderData::process(polymodel* pm, model_read_deferred_tasks& /*deferredTasks*/, model_parse_depth /*depth*/) const {
+	if (radius != nullptr) {
+		pm->rad = pm->core_radius = *radius;
+		pm->bounding_box;
+	}
+
+	if (boundingbox != nullptr) {
+		pm->mins = boundingbox->first;
+		pm->maxs = boundingbox->second;
+		model_calc_bound_box(pm->bounding_box, &pm->mins, &pm->maxs);
 	}
 }
