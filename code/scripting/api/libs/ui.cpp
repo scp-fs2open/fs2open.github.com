@@ -15,9 +15,11 @@
 #include "missionui/fictionviewer.h"
 #include "mission/missioncampaign.h"
 #include "missionui/missionscreencommon.h"
+#include "missionui/redalert.h"
 #include "playerman/managepilot.h"
 #include "scpui/SoundPlugin.h"
 #include "scpui/rocket_ui.h"
+#include "scripting/api/objs/redalert.h"
 #include "scripting/api/objs/fictionviewer.h"
 #include "scripting/api/objs/cmd_brief.h"
 #include "scripting/api/objs/color.h"
@@ -491,6 +493,39 @@ ADE_FUNC(runBriefingStageHook, l_UserInterface_CmdBrief, "number oldStage, numbe
 		LuaError(L, "Bad arguments given to ui.runBriefingStageHook!");
 	}
 	return ADE_RETURN_NIL;
+}
+
+//**********SUBLIBRARY: UserInterface/RedAlert
+ADE_LIB_DERIV(l_UserInterface_RedAlert,
+	"RedAlert",
+	nullptr,
+	"API for accessing data related to the loop brief UI.<br><b>Warning:</b> This is an internal "
+	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	l_UserInterface);
+
+ ADE_FUNC(getRedAlert,
+	l_UserInterface_RedAlert,
+	nullptr,
+	"Get the loop brief.",
+	"red_alert_stage",
+	"The loop brief data")
+{
+	return ade_set_args(L, "o", l_RedAlertStage.Set(Briefings[0]));
+}
+
+ADE_FUNC(replayMission,
+	l_UserInterface_RedAlert,
+	nullptr,
+	"Loads the previous mission of the campaign, does nothing if not in campaign",
+	"boolean",
+	"Returns true if the operation was successful, false otherwise")
+{
+	if (!mission_campaign_previous_mission()) {
+		return ADE_RETURN_FALSE;
+	} else {
+		return ADE_RETURN_TRUE;
+	}
+
 }
 
 //**********SUBLIBRARY: UserInterface/FictionViewer
