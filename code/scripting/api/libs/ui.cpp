@@ -499,14 +499,14 @@ ADE_FUNC(runBriefingStageHook, l_UserInterface_CmdBrief, "number oldStage, numbe
 ADE_LIB_DERIV(l_UserInterface_RedAlert,
 	"RedAlert",
 	nullptr,
-	"API for accessing data related to the loop brief UI.<br><b>Warning:</b> This is an internal "
+	"API for accessing data related to the Red Alert UI.<br><b>Warning:</b> This is an internal "
 	"API for the new UI system. This should not be used by other code and may be removed in the future!",
 	l_UserInterface);
 
  ADE_FUNC(getRedAlert,
 	l_UserInterface_RedAlert,
 	nullptr,
-	"Get the loop brief.",
+	"Get the red alert brief.",
 	"red_alert_stage",
 	"The loop brief data")
 {
