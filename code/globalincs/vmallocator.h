@@ -6,6 +6,7 @@
 #include <list>
 #include <locale>
 #include <map>
+#include <memory>
 #include <queue>
 #include <sstream>
 #include <string>
@@ -154,5 +155,15 @@ using SCP_unordered_map = std::unordered_map<Key, T, Hash, KeyEqual, std::alloca
 
 template <typename Key, typename Hash = SCP_hash<Key>, typename KeyEqual = std::equal_to<Key>>
 using SCP_unordered_set = std::unordered_set<Key, Hash, KeyEqual, std::allocator<Key>>;
+
+template <typename T, typename... Args>
+std::unique_ptr<T> make_unique(Args&&... args) {
+	return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+}
+
+template <typename T, typename... Args>
+std::shared_ptr<T> make_shared(Args&&... args) {
+	return std::shared_ptr<T>(new T(std::forward<Args>(args)...));
+}
 
 #endif // _VMALLOCATOR_H_INCLUDED_

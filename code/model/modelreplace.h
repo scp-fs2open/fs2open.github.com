@@ -33,7 +33,17 @@ class VirtualPOFOperationAddSubmodel : public VirtualPOFOperation {
 	SCP_string subobjNameSrc, subobjNameDest;
 	SCP_string appendingPOF;
 	std::unique_ptr<VirtualPOFOperationRenameSubobjects> rename = nullptr;
+	bool copyChildred = true;
 public:
 	VirtualPOFOperationAddSubmodel();
+	void process(polymodel* pm, model_read_deferred_tasks& deferredTasks, int depth) const override;
+};
+
+class VirtualPOFOperationChangeData : public VirtualPOFOperation {
+	SCP_string submodel;
+	//TODO Refactor into proper optional when available
+	std::unique_ptr<vec3d> setOffset = nullptr;
+public:
+	VirtualPOFOperationChangeData();
 	void process(polymodel* pm, model_read_deferred_tasks& deferredTasks, int depth) const override;
 };

@@ -12,8 +12,8 @@
 
 static std::unordered_map<SCP_string, std::vector<VirtualPOFDefinition>> virtual_pofs;
 static std::unordered_map<SCP_string, std::function<std::unique_ptr<VirtualPOFOperation>()>> virtual_pof_operations = { 
-	{"$Add Subobject:", &std::make_unique<VirtualPOFOperationAddSubmodel> },
-	{"$Rename Subobjects:", &std::make_unique<VirtualPOFOperationRenameSubobjects> }
+	{"$Add Subobject:", &make_unique<VirtualPOFOperationAddSubmodel> },
+	{"$Rename Subobjects:", &make_unique<VirtualPOFOperationRenameSubobjects> }
 };
 
 /*
@@ -152,8 +152,12 @@ VirtualPOFOperationAddSubmodel::VirtualPOFOperationAddSubmodel() {
 	required_string("+Source Subobject:");
 	stuff_string(subobjNameSrc, F_NAME);
 
+	if (optional_string("+Copy Children:")) {
+		stuff_boolean(&copyChildred);
+	}
+
 	if (optional_string("$Rename Subobjects:")) {
-		rename = std::make_unique<VirtualPOFOperationRenameSubobjects>();
+		rename = make_unique<VirtualPOFOperationRenameSubobjects>();
 	}
 
 	required_string("+Destination Subobject:");
@@ -187,13 +191,22 @@ void VirtualPOFOperationAddSubmodel::process(polymodel* pm, model_read_deferred_
 
 		std::vector<int> to_copy_submodels;
 		bool has_name_collision = false;
-		model_iterate_submodel_tree(appendingPM, src_subobj_no, [&to_copy_submodels, &has_name_collision, pm, appendingPM](int submodel, int /*level*/, bool /*isLeaf*/) {
-			to_copy_submodels.emplace_back(submodel);
+		if (copyChildred) {
+			model_iterate_submodel_tree(appendingPM, src_subobj_no, [&to_copy_submodels, &has_name_collision, pm, appendingPM](int submodel, int /*level*/, bool /*isLeaf*/) {
+				to_copy_submodels.emplace_back(submodel);
+				for (int i = 0; i < pm->n_models; i++) {
+					if (!stricmp(pm->submodel[i].name, appendingPM->submodel[submodel].name))
+						has_name_collision = true;
+				}
+				});
+		}
+		else {
+			to_copy_submodels.emplace_back(src_subobj_no);
 			for (int i = 0; i < pm->n_models; i++) {
-				if (!stricmp(pm->submodel[i].name, appendingPM->submodel[submodel].name))
+				if (!stricmp(pm->submodel[i].name, appendingPM->submodel[src_subobj_no].name))
 					has_name_collision = true;
 			}
-			});
+		}
 
 		if (!has_name_collision) {
 			//Make sure to keep old data
@@ -270,6 +283,12 @@ void VirtualPOFOperationAddSubmodel::process(polymodel* pm, model_read_deferred_
 			pm->submodel[old_n_submodel].next_sibling = -1; //Our old submodel might've had a sibling. Not anymore.
 			pm->submodel[old_n_submodel].parent = dest_subobj_no;
 
+			if (!copyChildred) {
+				//Clear children if needed
+				pm->submodel[old_n_submodel].num_children = 0;
+				pm->submodel[old_n_submodel].first_child = -1;
+			}
+
 			//Actually copy textures
 			for (const auto& usedTexture : textureIDReplace) {
 				pm->maps[usedTexture.second] = appendingPM->maps[usedTexture.first];
@@ -335,5 +354,32 @@ void VirtualPOFOperationRenameSubobjects::process(polymodel* pm, model_read_defe
 		auto it = copy_engine_subsys.find(replace.first);
 		if (it != copy_engine_subsys.end())
 			deferredTasks.engine_subsystems.emplace(replace.second, it->second);
+	}
+}
+
+VirtualPOFOperationChangeData::VirtualPOFOperationChangeData() {
+	required_string("+Submodel:");
+	stuff_string(submodel, F_NAME);
+	SCP_tolower(submodel);
+
+	if (optional_string("+Set Offset:")) {
+		setOffset = make_unique<vec3d>();
+		stuff_vec3d(setOffset.get());
+	}
+}
+
+void VirtualPOFOperationChangeData::process(polymodel* pm, model_read_deferred_tasks& deferredTasks, int depth) const {
+	int subobj_no = -1;
+	for (int i = 0; i < pm->n_models; i++) {
+		if (!stricmp(pm->submodel[i].name, submodel.c_str()))
+			subobj_no = i;
+	}
+
+	if (setOffset != nullptr) {
+		pm->submodel[subobj_no].offset = *setOffset;
+		auto it = deferredTasks.model_subsystems.find(submodel);
+		if (it != deferredTasks.model_subsystems.end()) {
+			it->second.pnt = *setOffset;
+		}
 	}
 }
