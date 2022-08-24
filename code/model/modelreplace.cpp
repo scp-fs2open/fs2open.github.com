@@ -19,7 +19,7 @@ static std::unordered_map<SCP_string, std::function<std::unique_ptr<VirtualPOFOp
 /*
 * forward declares for internal modelread functions
 */
-extern int read_model_file(polymodel* pm, const char* filename, int ferror, model_read_deferred_tasks& deferredTasks, int depth = 0);
+extern int read_model_file(polymodel* pm, const char* filename, int ferror, model_read_deferred_tasks& deferredTasks, model_parse_depth depth = {});
 extern void create_family_tree(polymodel* obj);
 
 // General Functions and external code paths
@@ -33,7 +33,7 @@ bool model_exists(const SCP_string& filename) {
 	return cf_exists_full(filename.c_str(), CF_TYPE_MODELS);
 }
 
-bool read_virtual_model_file(polymodel* pm, const SCP_string& filename, int depth, int ferror, model_read_deferred_tasks& deferredTasks) {
+bool read_virtual_model_file(polymodel* pm, const SCP_string& filename, model_parse_depth depth, int ferror, model_read_deferred_tasks& deferredTasks) {
 	SCP_string fnamelower = filename;
 	SCP_tolower(fnamelower);
 	auto virtual_pof_it = virtual_pofs.find(fnamelower);
@@ -43,12 +43,13 @@ bool read_virtual_model_file(polymodel* pm, const SCP_string& filename, int dept
 		return false;
 
 	//We have one, but we're already past it and are processing whatever it overwrote
-	//TODO make depth per-filename
-	if (virtual_pof_it->second.size() <= depth)
+	int& depthLocal = depth[filename];
+
+	if (virtual_pof_it->second.size() <= depthLocal)
 		return false;
 
-	const auto& virtual_pof = virtual_pof_it->second[depth];
-	depth++;
+	const auto& virtual_pof = virtual_pof_it->second[depthLocal];
+	depthLocal++;
 
 	read_model_file(pm, fnamelower.c_str(), ferror, deferredTasks, depth);
 
@@ -164,7 +165,7 @@ VirtualPOFOperationAddSubmodel::VirtualPOFOperationAddSubmodel() {
 	stuff_string(subobjNameDest, F_NAME);
 }
 
-void VirtualPOFOperationAddSubmodel::process(polymodel* pm, model_read_deferred_tasks& deferredTasks, int depth) const {
+void VirtualPOFOperationAddSubmodel::process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth) const {
 	polymodel* appendingPM = new polymodel();
 	model_read_deferred_tasks appendingSubsys;
 	std::set<int> keepTextures;
@@ -296,7 +297,7 @@ void VirtualPOFOperationAddSubmodel::process(polymodel* pm, model_read_deferred_
 			}
 		}
 		else {
-			Warning(LOCATION, "Failed to add submodel to virtual POF, original POF already has a subsystem with the same name as was supposed to be added."); //TODO automatic submodel renaming
+			Warning(LOCATION, "Failed to add submodel to virtual POF, original POF already has a subsystem with the same name as was supposed to be added.");
 		}
 	}
 	else {
@@ -318,7 +319,7 @@ VirtualPOFOperationRenameSubobjects::VirtualPOFOperationRenameSubobjects() {
 	}
 }
 
-void VirtualPOFOperationRenameSubobjects::process(polymodel* pm, model_read_deferred_tasks& deferredTasks, int depth) const {
+void VirtualPOFOperationRenameSubobjects::process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth) const {
 	for (int i = 0; i < pm->n_models; i++) {
 		SCP_string name = pm->submodel[i].name;
 		SCP_tolower(name);
@@ -368,7 +369,7 @@ VirtualPOFOperationChangeData::VirtualPOFOperationChangeData() {
 	}
 }
 
-void VirtualPOFOperationChangeData::process(polymodel* pm, model_read_deferred_tasks& deferredTasks, int depth) const {
+void VirtualPOFOperationChangeData::process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth) const {
 	int subobj_no = -1;
 	for (int i = 0; i < pm->n_models; i++) {
 		if (!stricmp(pm->submodel[i].name, submodel.c_str()))

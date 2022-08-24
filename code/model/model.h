@@ -904,6 +904,18 @@ struct model_read_deferred_tasks {
 	std::unordered_map<int, texture_idx_replace> texture_replacements;
 };
 
+class model_parse_depth {
+	std::unordered_map<SCP_string, int> depth{};
+public:
+	model_parse_depth() = default;
+	model_parse_depth(const model_parse_depth&) = default;
+	model_parse_depth& operator=(const model_parse_depth&) = default;
+	inline int& operator[](SCP_string name) {
+		SCP_tolower(name);
+		return depth[name];
+	}
+};
+
 // Iterate over a submodel tree, starting at the given submodel root node, and running the given function for each node.  The function's signature should be:
 //
 // void func(int submodel, int level, bool isLeaf);

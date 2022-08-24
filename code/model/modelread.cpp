@@ -2917,7 +2917,7 @@ int read_model_file_no_subsys(polymodel * pm, const char* filename, int ferror, 
 	return 1;
 }
 
-int read_model_file(polymodel* pm, const char* filename, int ferror, model_read_deferred_tasks& deferredTasks, int depth = 0)
+int read_model_file(polymodel* pm, const char* filename, int ferror, model_read_deferred_tasks& deferredTasks, model_parse_depth depth = {})
 {
 	int status = 0;
 

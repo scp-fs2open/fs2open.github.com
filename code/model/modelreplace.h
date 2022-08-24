@@ -7,14 +7,14 @@
 
 bool model_exists(const SCP_string& filename);
 
-bool read_virtual_model_file(polymodel* pm, const SCP_string& filename, int depth, int ferror, model_read_deferred_tasks& deferredTasks);
+bool read_virtual_model_file(polymodel* pm, const SCP_string& filename, model_parse_depth depth, int ferror, model_read_deferred_tasks& deferredTasks);
 
 void virtual_pof_init();
 
 class VirtualPOFOperation {
 public:
 	virtual ~VirtualPOFOperation() = default;
-	virtual void process(polymodel*, model_read_deferred_tasks& subsysList, int depth) const = 0;
+	virtual void process(polymodel*, model_read_deferred_tasks& subsysList, model_parse_depth depth) const = 0;
 };
 
 struct VirtualPOFDefinition {
@@ -26,7 +26,7 @@ class VirtualPOFOperationRenameSubobjects : public VirtualPOFOperation {
 	std::unordered_map<SCP_string, SCP_string> replacements;
 public:
 	VirtualPOFOperationRenameSubobjects();
-	void process(polymodel* pm, model_read_deferred_tasks& deferredTasks, int depth) const override;
+	void process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth) const override;
 };
 
 class VirtualPOFOperationAddSubmodel : public VirtualPOFOperation {
@@ -36,7 +36,7 @@ class VirtualPOFOperationAddSubmodel : public VirtualPOFOperation {
 	bool copyChildred = true;
 public:
 	VirtualPOFOperationAddSubmodel();
-	void process(polymodel* pm, model_read_deferred_tasks& deferredTasks, int depth) const override;
+	void process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth) const override;
 };
 
 class VirtualPOFOperationChangeData : public VirtualPOFOperation {
@@ -45,5 +45,5 @@ class VirtualPOFOperationChangeData : public VirtualPOFOperation {
 	std::unique_ptr<vec3d> setOffset = nullptr;
 public:
 	VirtualPOFOperationChangeData();
-	void process(polymodel* pm, model_read_deferred_tasks& deferredTasks, int depth) const override;
+	void process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth) const override;
 };
