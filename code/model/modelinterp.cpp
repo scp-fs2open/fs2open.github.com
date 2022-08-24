@@ -2292,7 +2292,7 @@ bool model_interp_config_buffer(indexed_vertex_source *vert_src, vertex_buffer *
 	return true;
 }
 
-void interp_configure_vertex_buffers(polymodel *pm, int mn)
+void interp_configure_vertex_buffers(polymodel *pm, int mn, const model_read_deferred_tasks& deferredTasks)
 {
 	TRACE_SCOPE(tracing::ModelConfigureVertexBuffers);
 
@@ -2313,8 +2313,9 @@ void interp_configure_vertex_buffers(polymodel *pm, int mn)
 
 	bsp_polygon_data *bsp_polies = new bsp_polygon_data(model->bsp_data);
 
-	//TODO Replace textures here
-	//bsp_polies->replace_textures_used();
+	auto textureReplace = deferredTasks.texture_replacements.find(mn);
+	if (textureReplace != deferredTasks.texture_replacements.end())
+		bsp_polies->replace_textures_used(textureReplace->second.replacementIds);
 
 	for (i = 0; i < MAX_MODEL_TEXTURES; i++) {
 		int vert_count = bsp_polies->get_num_triangles(i) * 3;
@@ -3416,8 +3417,13 @@ std::set<int> bsp_polygon_data::get_textures_used() const {
 void bsp_polygon_data::replace_textures_used(const std::map<int, int>& replacementMap) {
 	for (auto& poly : Polygons) {
 		auto it = replacementMap.find(poly.texture);
-		if (it != replacementMap.end())
+		if (it != replacementMap.end()) {
 			poly.texture = it->second;
+			Num_verts[it->first] -= poly.Num_verts;
+			Num_verts[it->second] += poly.Num_verts;
+			--Num_polies[it->first];
+			++Num_polies[it->first];
+		}
 	}
 }
 

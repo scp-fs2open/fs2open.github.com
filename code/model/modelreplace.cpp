@@ -12,14 +12,14 @@
 
 static std::unordered_map<SCP_string, std::vector<VirtualPOFDefinition>> virtual_pofs;
 static std::unordered_map<SCP_string, std::function<std::unique_ptr<VirtualPOFOperation>()>> virtual_pof_operations = { 
-	{"$Replace Props:", &std::make_unique<VirtualPOFOperationAddSubmodel> }
+	{"$Add Subobject:", &std::make_unique<VirtualPOFOperationAddSubmodel> }
 };
 
 /*
 * forward declares for internal modelread functions
 */
-extern int read_model_file(polymodel* pm, const char* filename, int ferror, subsystem_parse_list& subsystemParseList, int depth = 0);
-
+extern int read_model_file(polymodel* pm, const char* filename, int ferror, model_read_deferred_tasks& deferredTasks, int depth = 0);
+extern void create_family_tree(polymodel* obj);
 
 // General Functions and external code paths
 
@@ -32,16 +32,63 @@ bool model_exists(const SCP_string& filename) {
 	return cf_exists_full(filename.c_str(), CF_TYPE_MODELS);
 }
 
-bool read_virtual_model_file(polymodel* pm, const SCP_string& filename, int depth) {
-	return false;
+bool read_virtual_model_file(polymodel* pm, const SCP_string& filename, int depth, int ferror, model_read_deferred_tasks& deferredTasks) {
+	SCP_string fnamelower = filename;
+	SCP_tolower(fnamelower);
+	auto virtual_pof_it = virtual_pofs.find(fnamelower);
 
-	//if return true, increment depth
+	//We don't have a virtual pof
+	if(virtual_pof_it == virtual_pofs.end())
+		return false;
+
+	//We have one, but we're already past it and are processing whatever it overwrote
+	//TODO make depth per-filename
+	if (virtual_pof_it->second.size() <= depth)
+		return false;
+
+	const auto& virtual_pof = virtual_pof_it->second[depth];
+	depth++;
+
+	read_model_file(pm, fnamelower.c_str(), ferror, deferredTasks, depth);
+
+	for (const auto& operation : virtual_pof.operationList)
+		operation->process(pm, deferredTasks, depth);
+
+	return true;
 }
 
 // Parsing function
 
 static void parse_virtual_pof() {
+	SCP_string name;
+	stuff_string(name, F_NAME);
 
+	SCP_tolower(name);
+	auto& virtual_pof_list = virtual_pofs[name];
+	virtual_pof_list.emplace_back();
+	VirtualPOFDefinition& toFill = virtual_pof_list.back();
+
+	toFill.name = name;
+	
+	required_string("+Base POF:");
+	stuff_string(toFill.basePOF, F_FILESPEC);
+
+	do {
+		ignore_white_space();
+		char operation_type[NAME_LENGTH];
+		stuff_string(operation_type, F_NAME, NAME_LENGTH);
+
+		auto operation_parser = virtual_pof_operations.find(operation_type);
+		if (operation_parser != virtual_pof_operations.end())
+			toFill.operationList.emplace_back(operation_parser->second());
+		else {
+			error_display(1, "Unknown operation type %s in virtual POF %s!", operation_type, name.c_str());
+			virtual_pof_list.pop_back();
+			skip_to_start_of_string_either("$POF:", "#End");
+			return;
+		}
+	} while (!optional_string_either("$POF:", "#End"));
+	Mp -= 5;
 }
 
 static void parse_virtual_pof_table(const char* filename) {
@@ -95,12 +142,19 @@ void change_submodel_numbers(polymodel* pm, int source, int dest) {
 // Actual replacement operations
 
 VirtualPOFOperationAddSubmodel::VirtualPOFOperationAddSubmodel() {
+	required_string("+POF to Add:");
+	stuff_string(appendingPOF, F_FILESPEC);
 
+	required_string("+Source Subobject:");
+	stuff_string(subobjNameSrc, F_NAME);
+
+	required_string("+Destination Subobject:");
+	stuff_string(subobjNameDest, F_NAME);
 }
 
-void VirtualPOFOperationAddSubmodel::process(polymodel* pm, subsystem_parse_list& subsysList, int depth) const {
+void VirtualPOFOperationAddSubmodel::process(polymodel* pm, model_read_deferred_tasks& deferredTasks, int depth) const {
 	polymodel* appendingPM = new polymodel();
-	subsystem_parse_list appendingSubsys;
+	model_read_deferred_tasks appendingSubsys;
 	std::set<int> keepTextures;
 	read_model_file(appendingPM, appendingPOF.c_str(), 0, appendingSubsys, depth);
 
@@ -113,10 +167,13 @@ void VirtualPOFOperationAddSubmodel::process(polymodel* pm, subsystem_parse_list
 	int dest_subobj_no = -1;
 	for (int i = 0; i < pm->n_models; i++) {
 		if (!stricmp(pm->submodel[i].name, subobjNameDest.c_str()))
-			src_subobj_no = i;
+			dest_subobj_no = i;
 	}
 
 	if (src_subobj_no >= 0 && dest_subobj_no >= 0) {
+		create_family_tree(pm);
+		create_family_tree(appendingPM);
+
 		std::vector<int> to_copy_submodels;
 		bool has_name_collision = false;
 		model_iterate_submodel_tree(appendingPM, src_subobj_no, [&to_copy_submodels, &has_name_collision, pm, appendingPM](int submodel, int /*level*/, bool /*isLeaf*/) {
@@ -137,7 +194,8 @@ void VirtualPOFOperationAddSubmodel::process(polymodel* pm, subsystem_parse_list
 			pm->submodel = new bsp_info[pm->n_models];
 
 			//Copy over old data. Pointers in the struct can still point to old members, we will just delete the outer bsp_info array
-			memcpy_s(&pm->submodel, pm->n_models, oldSubmodels, old_n_submodel);
+			for (int i = 0; i < old_n_submodel; i++)
+				pm->submodel[i] = oldSubmodels[i];
 			delete[] oldSubmodels;
 
 			//Modify new data to correct submodel indices. First move all indices to a safe spot where there can be no overlaps, then to the correct spot
@@ -148,11 +206,13 @@ void VirtualPOFOperationAddSubmodel::process(polymodel* pm, subsystem_parse_list
 				auto it = appendingSubsys.model_subsystems.find(appendingPM->submodel[to_copy_submodels[i]].name);
 				if (it != appendingSubsys.model_subsystems.end()) {
 					it->second.subobj_nr = i + old_n_submodel;
-					subsysList.model_subsystems.emplace(*it);
+					deferredTasks.model_subsystems.emplace(*it);
 				}
 			}
 			
 			int deltaDepth = (pm->submodel[dest_subobj_no].depth + 1) - appendingPM->submodel[src_subobj_no].depth;
+
+			std::map<int, int> textureIDReplace;
 
 			//Copy over new data. This one needs to be fully free'd afterwards, so make sure to nullptr the respective pointers before freeing later
 			for (int i = 0; i < to_copy_submodels.size(); i++) {
@@ -163,20 +223,47 @@ void VirtualPOFOperationAddSubmodel::process(polymodel* pm, subsystem_parse_list
 				newSubmodel.depth += deltaDepth;
 
 				//Store texture replacement indices
-				//TODO
+				const auto& textureIDs = model_get_textures_used(appendingPM, to_copy_submodels[i]);
+				for (const auto& textureID : textureIDs) {
+					auto it = textureIDReplace.find(textureID);
+					if (it == textureIDReplace.end()) {
+						int newID = pm->n_textures++;
+						if (pm->n_textures > MAX_MODEL_TEXTURES) {
+							Warning(LOCATION, "Failed to add submodel to virtual POF, combined POF has too many (over %d) textures.", MAX_MODEL_TEXTURES);
+							model_page_out_textures(appendingPM, true);
+							model_free(appendingPM);
+							return;
+						}
+						it = textureIDReplace.emplace(textureID, newID).first;
+					}
+					deferredTasks.texture_replacements[i + old_n_submodel].replacementIds[textureID] = it->second;
+				}
 
 				//Clear old pointer to data
-				appendingPM->submodel[i].bsp_data = nullptr;
+				appendingPM->submodel[to_copy_submodels[i]].bsp_data = nullptr;
 			}
 
 			//Register as next child to our destination
 			pm->submodel[dest_subobj_no].num_children++;
 			int last_sibling = pm->submodel[dest_subobj_no].first_child;
-			while (last_sibling >= 0)
+			int last_true_sibling = -1;
+			while (last_sibling >= 0) {
+				last_true_sibling = last_sibling;
 				last_sibling = pm->submodel[last_sibling].next_sibling;
+			}
 
-			pm->submodel[last_sibling].next_sibling = old_n_submodel; //The selected submodel will always be first, and thus get the first id
+			if(last_true_sibling == -1)
+				pm->submodel[dest_subobj_no].first_child = old_n_submodel;
+			else
+				pm->submodel[last_true_sibling].next_sibling = old_n_submodel; //The selected submodel will always be first, and thus get the first id
 			pm->submodel[old_n_submodel].next_sibling = -1; //Our old submodel might've had a sibling. Not anymore.
+			pm->submodel[old_n_submodel].parent = dest_subobj_no;
+
+			//Actually copy textures
+			for (const auto& usedTexture : textureIDReplace) {
+				pm->maps[usedTexture.second] = appendingPM->maps[usedTexture.first];
+				keepTextures.emplace(usedTexture.first);
+			}
 		}
 		else {
 			Warning(LOCATION, "Failed to add submodel to virtual POF, original POF already has a subsystem with the same name as was supposed to be added."); //TODO automatic submodel renaming
@@ -187,6 +274,6 @@ void VirtualPOFOperationAddSubmodel::process(polymodel* pm, subsystem_parse_list
 	}
 
 	
-	model_page_out_textures(appendingPM, true);
+	model_page_out_textures(appendingPM, true, keepTextures);
 	model_free(appendingPM);
 }

@@ -110,7 +110,7 @@ static uint Global_checksum = 0;
 
 static int Model_signature = 0;
 
-void interp_configure_vertex_buffers(polymodel*, int);
+void interp_configure_vertex_buffers(polymodel*, int, const model_read_deferred_tasks& deferredTasks);
 void interp_pack_vertex_buffers(polymodel* pm, int mn);
 void interp_create_detail_index_buffer(polymodel *pm, int detail);
 void interp_create_transparency_index_buffer(polymodel *pm, int detail_num);
@@ -1148,7 +1148,7 @@ void create_family_tree(polymodel *obj)
 	}
 }
 
-void create_vertex_buffer(polymodel *pm)
+void create_vertex_buffer(polymodel *pm, const model_read_deferred_tasks& deferredTasks)
 {
 	if (Is_standalone) {
 		return;
@@ -1160,7 +1160,7 @@ void create_vertex_buffer(polymodel *pm)
 
 	// determine the size and configuration of each buffer segment
 	for (i = 0; i < pm->n_models; i++) {
-		interp_configure_vertex_buffers(pm, i);
+		interp_configure_vertex_buffers(pm, i, deferredTasks);
 	}
 
 	// figure out which vertices are transparent
@@ -1553,7 +1553,7 @@ void resolve_submodel_index(const polymodel *pm, const char *requester, const ch
 	submodel_index = -1;
 }
 
-int read_model_file_no_subsys(polymodel * pm, const char* filename, int ferror, subsystem_parse_list& subsystemParseList)
+int read_model_file_no_subsys(polymodel * pm, const char* filename, int ferror, model_read_deferred_tasks& subsystemParseList)
 {
 	CFILE *fp;
 	int version;
@@ -1918,7 +1918,7 @@ int read_model_file_no_subsys(polymodel * pm, const char* filename, int ferror, 
 
 					get_user_prop_value(p+9, type);
 					if ( !stricmp(type, "subsystem") ) {	// if we have a subsystem, put it into the list!
-						subsystemParseList.model_subsystems.emplace(sm->name, subsystem_parse_list::model_subsystem_parse{ n, sm->rad, sm->offset, props });
+						subsystemParseList.model_subsystems.emplace(sm->name, model_read_deferred_tasks::model_subsystem_parse{ n, sm->rad, sm->offset, props });
 					} else {
 						if ( !stricmp(type, "no_rotate") || !stricmp(type, "no_movement") ) {
 							// mark those submodels which should not move - i.e., those with no subsystem
@@ -2527,7 +2527,7 @@ int read_model_file_no_subsys(polymodel * pm, const char* filename, int ferror, 
 
 									nprintf(("wash", "Ship %s with engine wash associated with subsys %s\n", filename, engine_subsys_name));
 
-									subsystemParseList.engine_subsystems.emplace(engine_subsys_name, subsystem_parse_list::engine_subsystem_parse{ i });
+									subsystemParseList.engine_subsystems.emplace(engine_subsys_name, model_read_deferred_tasks::engine_subsystem_parse{ i });
 								}
 							}
 						}
@@ -2585,7 +2585,7 @@ int read_model_file_no_subsys(polymodel * pm, const char* filename, int ferror, 
 					}
 					Assertion(n_slots > 0, "Turret %s in model %s has no firing points.\n", pm->submodel[gun_obj].name, pm->filename);
 
-					subsystemParseList.weapons_subsystems.emplace(base_obj, subsystem_parse_list::weapon_subsystem_parse{ i, gun_obj, temp_vec, n_slots, std::move(firingpoints) });
+					subsystemParseList.weapons_subsystems.emplace(base_obj, model_read_deferred_tasks::weapon_subsystem_parse{ i, gun_obj, temp_vec, n_slots, std::move(firingpoints) });
 				}
 				break;
 			}
@@ -2617,12 +2617,12 @@ int read_model_file_no_subsys(polymodel * pm, const char* filename, int ferror, 
 
 						get_user_prop_value(p+9, type);
 						if ( !stricmp(type, "subsystem") ) {	// if we have a subsystem, put it into the list!
-							subsystemParseList.model_subsystems.emplace(&name[1], subsystem_parse_list::model_subsystem_parse{ -1, radius, pnt, props_spcl }); // skip the first '$' character of the name
+							subsystemParseList.model_subsystems.emplace(&name[1], model_read_deferred_tasks::model_subsystem_parse{ -1, radius, pnt, props_spcl }); // skip the first '$' character of the name
 						} else if ( !stricmp(type, "shieldpoint") ) {
 							pm->shield_points.push_back(pnt);
 						}
 					} else if (in(name, "$enginelarge") || in(name, "$enginehuge")) {
-						subsystemParseList.model_subsystems.emplace(&name[1], subsystem_parse_list::model_subsystem_parse{ -1, radius, pnt, props_spcl }); // skip the first '$' character of the name	
+						subsystemParseList.model_subsystems.emplace(&name[1], model_read_deferred_tasks::model_subsystem_parse{ -1, radius, pnt, props_spcl }); // skip the first '$' character of the name	
 					} else {
 						nprintf(("Warning", "Unknown special object type %s while reading model %s\n", name, pm->filename));
 					}					
@@ -2908,36 +2908,34 @@ int read_model_file_no_subsys(polymodel * pm, const char* filename, int ferror, 
 	return 1;
 }
 
-int read_model_file(polymodel* pm, const char* filename, int ferror, subsystem_parse_list& subsystemParseList, int depth = 0)
+int read_model_file(polymodel* pm, const char* filename, int ferror, model_read_deferred_tasks& deferredTasks, int depth = 0)
 {
 	int status = 0;
 
 	//See if this is a modular, virtual pof, and if so, parse it from there
-	if (read_virtual_model_file(pm, filename, depth)) {
+	if (read_virtual_model_file(pm, filename, depth, ferror, deferredTasks)) {
 		status = 1;
 	}
 	else {
-		status = read_model_file_no_subsys(pm, filename, ferror, subsystemParseList);
+		status = read_model_file_no_subsys(pm, filename, ferror, deferredTasks);
 	}
 
 	return status;
 }
 
 //reads a binary file containing a 3d model
-int read_and_process_model_file(polymodel* pm, const char* filename, int n_subsystems, model_subsystem* subsystems, int ferror)
+int read_and_process_model_file(polymodel* pm, const char* filename, int n_subsystems, model_subsystem* subsystems, int ferror, model_read_deferred_tasks& deferredTasks)
 {
-	subsystem_parse_list subsystemParseList;
+	int status = read_model_file(pm, filename, ferror, deferredTasks);
 
-	int status = read_model_file(pm, filename, ferror, subsystemParseList);
-
-	for (const auto& subsystem : subsystemParseList.model_subsystems) {
+	for (const auto& subsystem : deferredTasks.model_subsystems) {
 		auto propBuffer = std::make_unique<char[]>(subsystem.second.props.size() + 1);
 		strncpy(propBuffer.get(), subsystem.second.props.c_str(), subsystem.second.props.size() + 1);
 
 		do_new_subsystem(n_subsystems, subsystems, subsystem.second.subobj_nr, subsystem.second.rad, &subsystem.second.pnt, propBuffer.get(), subsystem.first.c_str(), pm->id);		
 	}
 
-	for (const auto& subsystem : subsystemParseList.engine_subsystems) {
+	for (const auto& subsystem : deferredTasks.engine_subsystems) {
 		// start off assuming the subsys is invalid
 		int table_error = 1;
 		auto bank = &pm->thrusters[subsystem.second.thruster_nr];
@@ -2969,7 +2967,7 @@ int read_and_process_model_file(polymodel* pm, const char* filename, int n_subsy
 		}
 	}
 
-	for (const auto& subsystem : subsystemParseList.weapons_subsystems) {
+	for (const auto& subsystem : deferredTasks.weapons_subsystems) {
 		model_subsystem* subsystemp;
 		if (subsystems) {
 			int snum = 0;
@@ -3255,7 +3253,9 @@ int model_load(const  char* filename, int n_subsystems, model_subsystem* subsyst
 	game_busy(busy_text);
 #endif
 
-	if (read_and_process_model_file(pm, filename, n_subsystems, subsystems, ferror) < 0)	{
+	model_read_deferred_tasks deferredTasks;
+
+	if (read_and_process_model_file(pm, filename, n_subsystems, subsystems, ferror, deferredTasks) < 0)	{
 		if (pm != NULL) {
 			delete pm;
 		}
@@ -3325,7 +3325,7 @@ int model_load(const  char* filename, int n_subsystems, model_subsystem* subsyst
 	create_family_tree(pm);
 
 	// maybe generate vertex buffers
-	create_vertex_buffer(pm);
+	create_vertex_buffer(pm, deferredTasks);
 
 	//==============================
 	// Find all the lower detail versions of the hires model
