@@ -512,7 +512,7 @@ ADE_FUNC(getLoopBrief,
 	return ade_set_args(L, "o", l_LoopBriefStage.Set(Campaign.missions[Campaign.current_mission]));
 }
 
-ADE_FUNC(setLoopChoice, l_UserInterface_LoopBrief, "boolean", "Accepts mission outcome and then True to go to loop, False to skip", NULL, NULL)
+ADE_FUNC(setLoopChoice, l_UserInterface_LoopBrief, "boolean", "Accepts mission outcome and then True to go to loop, False to skip", nullptr, nullptr)
 {
 	bool choice = false;
 	ade_get_args(L, "b", &choice);
