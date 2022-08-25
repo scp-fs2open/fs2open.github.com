@@ -712,9 +712,8 @@ ADE_FUNC(buildCredits,
 	credits_scp_position();
 
 	size_t count = Credits_Info.credit_parts.size();
-	mprintf(("CREDITS number of parts is %i\n", count));
 
-	for (int i = 0; i < count; i++) {
+	for (size_t i = 0; i < count; i++) {
 		Credits_Info.credits_complete.append(Credits_Info.credit_parts[i]);
 	}
 
@@ -736,6 +735,11 @@ ADE_INDEXER(l_UserInterface_SingleMissions, "number Index", "Array of simulator 
 	return ade_set_args(L, "o", l_TechRoomMission.Set(Sim_Missions[idx]));
 }
 
+ADE_FUNC(__len, l_UserInterface_SingleMissions, nullptr, "The number of single missions", "number", "The number of single missions")
+{
+	return ade_set_args(L, "i", Sim_Missions.size());
+}
+
 ADE_LIB_DERIV(l_UserInterface_CampaignMissions, "CampaignMissions", nullptr, nullptr, l_UserInterface_TechRoom);
 ADE_INDEXER(l_UserInterface_CampaignMissions, "number Index", "Array of campaign missions", "sim_mission", "Mission handle, or invalid handle if index is invalid")
 {
@@ -744,6 +748,11 @@ ADE_INDEXER(l_UserInterface_CampaignMissions, "number Index", "Array of campaign
 		return ade_set_error(L, "s", "");
 	
 	return ade_set_args(L, "o", l_TechRoomMission.Set(Sim_CMissions[idx]));
+}
+
+ADE_FUNC(__len, l_UserInterface_CampaignMissions, nullptr, "The number of campaign missions", "number", "The number of campaign missions")
+{
+	return ade_set_args(L, "i", Sim_CMissions.size());
 }
 
 ADE_LIB_DERIV(l_UserInterface_Cutscenes, "Cutscenes", nullptr, nullptr, l_UserInterface_TechRoom);
@@ -758,6 +767,11 @@ ADE_INDEXER(l_UserInterface_Cutscenes,
 		return ade_set_error(L, "s", "");
 
 	return ade_set_args(L, "o", l_TechRoomCutscene.Set(Cutscenes[idx]));
+}
+
+ADE_FUNC(__len, l_UserInterface_Cutscenes, nullptr, "The number of cutscenes", "number", "The number of cutscenes")
+{
+	return ade_set_args(L, "i", Cutscenes.size());
 }
 
 ADE_LIB_DERIV(l_UserInterface_Credits, "Credits", nullptr, nullptr, l_UserInterface_TechRoom);

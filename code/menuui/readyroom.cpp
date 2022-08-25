@@ -506,13 +506,13 @@ int build_standalone_mission_list_do_frame()
 
 				//Add mission data to the API
 				if (API_Access) {
-					sim_mission mission;
-					mission.name = The_mission.name;
-					mission.filename = filename;
-					mission.mission_desc = The_mission.mission_desc;
-					mission.author = The_mission.author;
+					sim_mission api_mission;
+					api_mission.name = The_mission.name;
+					api_mission.filename = filename;
+					api_mission.mission_desc = The_mission.mission_desc;
+					api_mission.author = The_mission.author;
 
-					Sim_Missions.push_back(mission);
+					Sim_Missions.push_back(api_mission);
 				}
 
 				// determine some extra information
@@ -579,14 +579,14 @@ int build_campaign_mission_list_do_frame()
 
 			// Add mission data to the API
 			if (API_Access) {
-				sim_mission mission;
-				mission.name = The_mission.name;
-				mission.filename = filename;
-				mission.mission_desc = The_mission.mission_desc;
-				mission.author = The_mission.author;
-				mission.visible = Campaign.missions[Num_campaign_missions_with_info].completed;
+				sim_mission api_mission;
+				api_mission.name = The_mission.name;
+				api_mission.filename = filename;
+				api_mission.mission_desc = The_mission.mission_desc;
+				api_mission.author = The_mission.author;
+				api_mission.visible = Campaign.missions[Num_campaign_missions_with_info].completed;
 
-				Sim_CMissions.push_back(mission);
+				Sim_CMissions.push_back(api_mission);
 			}
 
 			// determine some extra information
