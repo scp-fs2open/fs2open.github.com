@@ -92,7 +92,7 @@ static void parse_virtual_pof() {
 			skip_to_start_of_string_either("$POF:", "#End");
 			return;
 		}
-	} while (!optional_string_either("$POF:", "#End"));
+	} while (optional_string_either("$POF:", "#End") == -1);
 	Mp -= 5;
 }
 
@@ -315,8 +315,8 @@ void VirtualPOFOperationAddSubmodel::process(polymodel* pm, model_read_deferred_
 VirtualPOFOperationRenameSubobjects::VirtualPOFOperationRenameSubobjects() {
 	while (optional_string("+Replace:")) {
 		SCP_string replace;
-		SCP_tolower(replace);
 		stuff_string(replace, F_NAME);
+		SCP_tolower(replace);
 		required_string("+With:");
 		stuff_string(replacements[replace], F_NAME);
 	}
