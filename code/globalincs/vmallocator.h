@@ -157,13 +157,21 @@ template <typename Key, typename Hash = SCP_hash<Key>, typename KeyEqual = std::
 using SCP_unordered_set = std::unordered_set<Key, Hash, KeyEqual, std::allocator<Key>>;
 
 template <typename T, typename... Args>
-std::unique_ptr<T> make_unique(Args&&... args) {
+typename std::enable_if<!std::is_array<T>::value, std::unique_ptr<T>>::type make_unique(Args&&... args) {
 	return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+}
+template <typename T, typename... Args>
+typename std::enable_if<std::is_array<T>::value, std::unique_ptr<T>>::type make_unique(std::size_t n) {
+	return std::unique_ptr<T>(new typename std::remove_extent<T>::type[n]());
 }
 
 template <typename T, typename... Args>
-std::shared_ptr<T> make_shared(Args&&... args) {
+typename std::enable_if<!std::is_array<T>::value, std::shared_ptr<T>>::type make_shared(Args&&... args) {
 	return std::shared_ptr<T>(new T(std::forward<Args>(args)...));
+}
+template <typename T, typename... Args>
+typename std::enable_if<std::is_array<T>::value, std::shared_ptr<T>>::type make_shared(std::size_t n) {
+	return std::shared_ptr<T>(new typename std::remove_extent<T>::type[n]());
 }
 
 #endif // _VMALLOCATOR_H_INCLUDED_

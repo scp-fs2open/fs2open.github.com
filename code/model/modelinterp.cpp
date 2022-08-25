@@ -3428,6 +3428,6 @@ void bsp_polygon_data::replace_textures_used(const std::map<int, int>& replaceme
 }
 
 std::set<int> model_get_textures_used(polymodel* pm, int submodel) {
-	auto polies = std::make_unique<const bsp_polygon_data>(pm->submodel[submodel].bsp_data);
+	auto polies = make_unique<const bsp_polygon_data>(pm->submodel[submodel].bsp_data);
 	return polies->get_textures_used();
 }

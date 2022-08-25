@@ -2938,7 +2938,7 @@ int read_and_process_model_file(polymodel* pm, const char* filename, int n_subsy
 	int status = read_model_file(pm, filename, ferror, deferredTasks);
 
 	for (const auto& subsystem : deferredTasks.model_subsystems) {
-		auto propBuffer = std::make_unique<char[]>(subsystem.second.props.size() + 1);
+		auto propBuffer = make_unique<char[]>(subsystem.second.props.size() + 1);
 		strncpy(propBuffer.get(), subsystem.second.props.c_str(), subsystem.second.props.size() + 1);
 
 		do_new_subsystem(n_subsystems, subsystems, subsystem.second.subobj_nr, subsystem.second.rad, &subsystem.second.pnt, propBuffer.get(), subsystem.first.c_str(), pm->id);		
@@ -3006,7 +3006,7 @@ int read_and_process_model_file(polymodel* pm, const char* filename, int n_subsy
 					break;
 				}
 			}
-			if ((snum == n_subsystems)) {
+			if (snum == n_subsystems) {
 				nprintf(("Warning", "Turret submodel %i not found for turret %i in model %s\n", subsystem.first, subsystem.second.turret_nr, pm->filename));
 			}
 		}

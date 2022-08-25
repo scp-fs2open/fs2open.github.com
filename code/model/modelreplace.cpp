@@ -48,7 +48,7 @@ bool read_virtual_model_file(polymodel* pm, const SCP_string& filename, model_pa
 	//We have one, but we're already past it and are processing whatever it overwrote
 	int& depthLocal = depth[filename];
 
-	if (virtual_pof_it->second.size() <= depthLocal)
+	if ((int)virtual_pof_it->second.size() <= depthLocal)
 		return false;
 
 	const auto& virtual_pof = virtual_pof_it->second[depthLocal];
@@ -229,7 +229,7 @@ void VirtualPOFOperationAddSubmodel::process(polymodel* pm, model_read_deferred_
 			//Modify new data to correct submodel indices. First move all indices to a safe spot where there can be no overlaps, then to the correct spot
 			for (const auto& id : to_copy_submodels)
 				change_submodel_numbers(appendingPM, id, id + pm->n_models);
-			for (int i = 0; i < to_copy_submodels.size(); i++) {
+			for (int i = 0; i < (int)to_copy_submodels.size(); i++) {
 				change_submodel_numbers(appendingPM, to_copy_submodels[i] + pm->n_models, i + old_n_submodel);
 				auto it = appendingSubsys.model_subsystems.find(appendingPM->submodel[to_copy_submodels[i]].name);
 				if (it != appendingSubsys.model_subsystems.end()) {
@@ -243,7 +243,7 @@ void VirtualPOFOperationAddSubmodel::process(polymodel* pm, model_read_deferred_
 			std::map<int, int> textureIDReplace;
 
 			//Copy over new data. This one needs to be fully free'd afterwards, so make sure to nullptr the respective pointers before freeing later
-			for (int i = 0; i < to_copy_submodels.size(); i++) {
+			for (int i = 0; i < (int)to_copy_submodels.size(); i++) {
 				auto& newSubmodel = pm->submodel[i + old_n_submodel];
 				newSubmodel = appendingPM->submodel[to_copy_submodels[i]];
 
@@ -322,20 +322,20 @@ VirtualPOFOperationRenameSubobjects::VirtualPOFOperationRenameSubobjects() {
 	}
 }
 
-void VirtualPOFOperationRenameSubobjects::process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth) const {
+void VirtualPOFOperationRenameSubobjects::process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth /*depth*/) const {
 	for (int i = 0; i < pm->n_models; i++) {
 		SCP_string name = pm->submodel[i].name;
 		SCP_tolower(name);
 		auto it = replacements.find(name);
 		if (it != replacements.end()) {
-			strncpy_s(pm->submodel[i].name, it->second.c_str(), it->second.size());
+			strncpy(pm->submodel[i].name, it->second.c_str(), it->second.size());
 			pm->submodel[i].name[it->second.size()] = '\0';
 		}
 		name = pm->submodel[i].lod_name;
 		SCP_tolower(name);
 		it = replacements.find(name);
 		if (it != replacements.end()) {
-			strncpy_s(pm->submodel[i].lod_name, it->second.c_str(), it->second.size());
+			strncpy(pm->submodel[i].lod_name, it->second.c_str(), it->second.size());
 			pm->submodel[i].lod_name[it->second.size()] = '\0';
 		}
 	}
@@ -395,7 +395,7 @@ VirtualPOFOperationHeaderData::VirtualPOFOperationHeaderData() {
 	}
 
 	if (optional_string("$Set Bounding Box:")) {
-		boundingbox = std::make_unique<std::pair<vec3d, vec3d>>();
+		boundingbox = make_unique<std::pair<vec3d, vec3d>>();
 		required_string("+Minimum:");
 		stuff_vec3d(&boundingbox->first);
 		required_string("+Maximum:");
@@ -406,7 +406,6 @@ VirtualPOFOperationHeaderData::VirtualPOFOperationHeaderData() {
 void VirtualPOFOperationHeaderData::process(polymodel* pm, model_read_deferred_tasks& /*deferredTasks*/, model_parse_depth /*depth*/) const {
 	if (radius != nullptr) {
 		pm->rad = pm->core_radius = *radius;
-		pm->bounding_box;
 	}
 
 	if (boundingbox != nullptr) {
