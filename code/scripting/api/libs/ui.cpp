@@ -12,11 +12,13 @@
 #include "menuui/playermenu.h"
 #include "menuui/readyroom.h"
 #include "mission/missionbriefcommon.h"
+#include "missionui/fictionviewer.h"
 #include "mission/missioncampaign.h"
 #include "missionui/missionscreencommon.h"
 #include "playerman/managepilot.h"
 #include "scpui/SoundPlugin.h"
 #include "scpui/rocket_ui.h"
+#include "scripting/api/objs/fictionviewer.h"
 #include "scripting/api/objs/cmd_brief.h"
 #include "scripting/api/objs/color.h"
 #include "scripting/api/objs/enums.h"
@@ -489,6 +491,27 @@ ADE_FUNC(runBriefingStageHook, l_UserInterface_CmdBrief, "number oldStage, numbe
 		LuaError(L, "Bad arguments given to ui.runBriefingStageHook!");
 	}
 	return ADE_RETURN_NIL;
+}
+
+//**********SUBLIBRARY: UserInterface/FictionViewer
+ADE_LIB_DERIV(l_UserInterface_FictionViewer,
+	"FictionViewer",
+	nullptr,
+	"API for accessing data related to the fiction viewer UI.<br><b>Warning:</b> This is an internal "
+	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	l_UserInterface);
+
+ADE_FUNC(getFiction, l_UserInterface_FictionViewer, nullptr, "Get the fiction.", "fiction_viewer_stage", "The fiction data")
+{
+	return ade_set_args(L, "o", l_FictionViewerStage.Set(Fiction_viewer_stages[Fiction_viewer_active_stage]));
+}
+
+ADE_FUNC(getFictionMusicName, l_UserInterface_FictionViewer, nullptr,
+	"Gets the file name of the music file to play for the fiction viewer.",
+	"string",
+	"The file name or empty if no music")
+{
+	return ade_set_args(L, "s", common_music_get_filename(SCORE_FICTION_VIEWER).c_str());
 }
 
 } // namespace api

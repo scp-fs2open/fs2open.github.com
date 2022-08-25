@@ -21,6 +21,7 @@
 #include "mission/missionlog.h"
 #include "mission/missionmessage.h"
 #include "mission/missiontraining.h"
+#include "missionui/missioncmdbrief.h"
 #include "missionui/redalert.h"
 #include "nebula/neb.h"
 #include "object/objcollide.h"
@@ -1500,6 +1501,16 @@ ADE_FUNC(isRedAlertMission,
 	"true if red alert mission, false otherwise.")
 {
 	return ade_set_args(L, "b", red_alert_mission() != 0);
+}
+
+ADE_FUNC(hasCommandBriefing,
+	l_Mission,
+	nullptr,
+	"Determines if the current mission has a command briefing",
+	"boolean",
+	"true if command briefing, false otherwise.")
+{
+	return ade_set_args(L, "b", mission_has_cmd_brief() != 0);
 }
 
 int testLineOfSight_internal(lua_State* L, bool returnDist) {
