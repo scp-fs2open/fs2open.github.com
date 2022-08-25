@@ -5,6 +5,7 @@
 #include "globalincs/alphacolors.h"
 
 #include "cmdline/cmdline.h"
+#include "cutscene/cutscenes.h"
 #include "gamesnd/eventmusic.h"
 #include "gamesequence/gamesequence.h"
 #include "menuui/barracks.h"
@@ -208,6 +209,19 @@ ADE_FUNC(maybePlayCutscene, l_UserInterface, "enumeration MovieType, boolean Res
 	return ADE_RETURN_NIL;
 }
 
+ADE_FUNC(playCutscene, l_UserInterface, "string Filename, boolean RestartMusic, number ScoreIndex", "Plays a cutscene.  If RestartMusic is true, then the music score at ScoreIndex will be started after the cutscene plays.", nullptr, "Returns nothing")
+{
+	const char* filename;
+	bool restart_music = false;
+	int score_index = 0;
+
+	if (!ade_get_args(L, "sbi", &filename, &restart_music, &score_index))
+		return ADE_RETURN_NIL;
+
+	common_play_cutscene(filename, restart_music, score_index);
+	return ADE_RETURN_NIL;
+}
+
 //**********SUBLIBRARY: UserInterface/PilotSelect
 ADE_LIB_DERIV(l_UserInterface_PilotSelect, "PilotSelect", nullptr,
               "API for accessing values specific to the pilot select screen.<br><b>Warning:</b> This is an internal "
@@ -341,6 +355,20 @@ ADE_FUNC(startAmbientSound, l_UserInterface_MainHall, nullptr, "Starts the ambie
 {
 	(void)L;
 	main_hall_start_ambient();
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(stopAmbientSound, l_UserInterface_MainHall, nullptr, "Stops the ambient mainhall sound.", nullptr, "nothing")
+{
+	(void)L;
+	main_hall_stop_ambient();
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(startMusic, l_UserInterface_MainHall, nullptr, "Starts the mainhall music.", nullptr, "nothing")
+{
+	(void)L;
+	main_hall_start_music();
 	return ADE_RETURN_NIL;
 }
 
@@ -689,6 +717,20 @@ ADE_INDEXER(l_UserInterface_CampaignMissions, "number Index", "Array of campaign
 		return ade_set_error(L, "s", "");
 	
 	return ade_set_args(L, "o", l_TechRoomMission.Set(Sim_CMissions[idx]));
+}
+
+ADE_LIB_DERIV(l_UserInterface_Cutscenes, "Cutscenes", nullptr, nullptr, l_UserInterface_TechRoom);
+ADE_INDEXER(l_UserInterface_Cutscenes,
+	"number Index",
+	"Array of cutscenes",
+	"custscene_info",
+	"Cutscene handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "s", "");
+
+	return ade_set_args(L, "o", l_TechRoomCutscene.Set(Cutscenes[idx]));
 }
 
 } // namespace api
