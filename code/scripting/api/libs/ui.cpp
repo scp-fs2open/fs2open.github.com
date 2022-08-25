@@ -21,6 +21,7 @@
 #include "playerman/managepilot.h"
 #include "scpui/SoundPlugin.h"
 #include "scpui/rocket_ui.h"
+#include "scripting/api/objs/techroom.h"
 #include "scripting/api/objs/loop_brief.h"
 #include "scripting/api/objs/redalert.h"
 #include "scripting/api/objs/fictionviewer.h"
@@ -641,6 +642,53 @@ ADE_FUNC(getFictionMusicName, l_UserInterface_FictionViewer, nullptr,
 	"The file name or empty if no music")
 {
 	return ade_set_args(L, "s", common_music_get_filename(SCORE_FICTION_VIEWER).c_str());
+}
+
+//**********SUBLIBRARY: UserInterface/TechRoom
+ADE_LIB_DERIV(l_UserInterface_TechRoom,
+	"TechRoom",
+	nullptr,
+	"API for accessing data related to the tech room UI.<br><b>Warning:</b> This is an internal "
+	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	l_UserInterface);
+
+ADE_FUNC(buildMissionList,
+	l_UserInterface_TechRoom,
+	nullptr,
+	"Builds the mission list for display. Must be called before the sim_mission handle will have data",
+	"number",
+	"Returns 1 when completed")
+{
+	API_Access = true;
+
+	Sim_Missions.clear();
+	Sim_CMissions.clear();
+
+	api_sim_room_build_mission_list();
+
+	mprintf(("Building mission lists for scripting API is complete!\n"));
+	API_Access = false;
+	return ade_set_args(L, "i", 1);
+}
+
+ADE_LIB_DERIV(l_UserInterface_SingleMissions, "SingleMissions", nullptr, nullptr, l_UserInterface_TechRoom);
+ADE_INDEXER(l_UserInterface_SingleMissions, "number Index", "Array of simulator missions", "sim_mission", "Mission handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "s", "");
+	
+	return ade_set_args(L, "o", l_TechRoomMission.Set(Sim_Missions[idx]));
+}
+
+ADE_LIB_DERIV(l_UserInterface_CampaignMissions, "CampaignMissions", nullptr, nullptr, l_UserInterface_TechRoom);
+ADE_INDEXER(l_UserInterface_CampaignMissions, "number Index", "Array of campaign missions", "sim_mission", "Mission handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "s", "");
+	
+	return ade_set_args(L, "o", l_TechRoomMission.Set(Sim_CMissions[idx]));
 }
 
 } // namespace api
