@@ -11,7 +11,7 @@ ADE_VIRTVAR(Text,
 	nullptr,
 	"The text file of the stage",
 	"loop_brief_stage",
-	"The text file")
+	"The text")
 {
 	cmission* current = nullptr;
 	if (!ade_get_args(L, "o", l_LoopBriefStage.GetPtr(&current))) {
@@ -28,9 +28,9 @@ ADE_VIRTVAR(Text,
 ADE_VIRTVAR(AniFilename,
 	l_LoopBriefStage,
 	nullptr,
-	"The text file of the stage",
+	"The ani filename of the stage",
 	"loop_brief_stage",
-	"The text file")
+	"The ani filename")
 {
 	cmission* current = nullptr;
 	if (!ade_get_args(L, "o", l_LoopBriefStage.GetPtr(&current))) {
@@ -47,9 +47,9 @@ ADE_VIRTVAR(AniFilename,
 ADE_VIRTVAR(AudioFilename,
 	l_LoopBriefStage,
 	nullptr,
-	"The text file of the stage",
+	"The audio file of the stage",
 	"loop_brief_stage",
-	"The text file")
+	"The audio filename")
 {
 	cmission* current = nullptr;
 	if (!ade_get_args(L, "o", l_LoopBriefStage.GetPtr(&current))) {

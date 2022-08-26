@@ -515,7 +515,7 @@ ADE_FUNC(getLoopBrief,
 ADE_FUNC(setLoopChoice, l_UserInterface_LoopBrief, "boolean", "Accepts mission outcome and then True to go to loop, False to skip", nullptr, nullptr)
 {
 	bool choice = false;
-	ade_get_args(L, "b", &choice);
+	ade_get_args(L, "|b", &choice);
 
 	if (choice) {
 		// select the loop mission
