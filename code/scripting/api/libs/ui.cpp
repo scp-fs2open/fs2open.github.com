@@ -126,7 +126,7 @@ ADE_VIRTVAR(DefaultTextColorTag,
 	}
 	
 	SCP_string tagStr;
-	char defaultColor;
+	char defaultColor = default_briefing_color;
 
 	switch (UiScreen) {
 		case 1:
