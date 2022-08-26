@@ -1239,17 +1239,17 @@ void cfread_string(char *buf, int n, CFILE *file)
 	} while (c != 0 );
 }
 
-void cfread_string_len(char *buf,int n, CFILE *file)
+void cfread_string_len(char *buf, int buffer_size, CFILE *file)
 {
 	int len;
 	len = cfread_int(file);
-	Assertion( (len <= n), "String cannot fit in buffer, len: %i, buffer: %i", len, n );
+	Assertion( (len <= buffer_size), "String cannot fit in buffer, len: %i, buffer: %i", len, buffer_size);
 	if (len) {
 		cfread(buf, len, 1, file);
-		Assertion(len != n || buf[len - 1] == 0, "Unterminated string does not fit in buffer");
+		Assertion(len != buffer_size || buf[len - 1] == 0, "Unterminated string does not fit in buffer");
 	}
 
-	buf[MIN(len, n - 1)] = 0;
+	buf[MIN(len, buffer_size - 1)] = 0;
 }
 
 SCP_string cfread_string_len(CFILE *file)
