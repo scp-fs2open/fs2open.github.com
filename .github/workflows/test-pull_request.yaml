@@ -181,6 +181,7 @@ jobs:
           cached: ${{ steps.cache-qt-mac.outputs.cache-hit }}
           setup-python: 'false'
           aqtversion: ==1.1.3
+          py7zrversion: '==0.19.*'
 
       - uses: actions/checkout@v1
         name: Checkout
