@@ -522,7 +522,7 @@ ADE_FUNC(inMissionEditor, l_Base, nullptr, "Determine if the current script is r
 	return ade_set_args(L, "b", Fred_running != 0);
 }
 
-ADE_FUNC(inDebug, l_Base, nullptr, "Determinds if FSO is running in Release or Debug", "boolean", "true if debug, false if release") {
+ADE_FUNC(inDebug, l_Base, nullptr, "Determines if FSO is running in Release or Debug", "boolean", "true if debug, false if release") {
 	#ifndef NDEBUG
 		return ADE_RETURN_TRUE;
 	#else
