@@ -313,10 +313,14 @@
 #define IDC_SOUND_CLIP_VOLUME           1063
 #define IDC_ADD_SBITMAP                 1063
 #define IDC_GENERATE_SCRIPT             1063
+#define IDC_MESSAGE_PERSONAS_TO_SHIPS   1064
 #define IDC_MISSION_NOTES               1065
 #define IDC_PRIORITY6                   1065
+#define IDC_SHIP_PERSONAS_TO_MESSAGES   1065
 #define IDC_MISSION_TITLE               1066
 #define IDC_SPIN6                       1066
+#define IDC_SET_HEAD_ANIS_USING_MESSAGES_TBL 1066
+#define IDC_CLEAR_PERSONAS_FROM_NON_SENDERS 1067
 #define ID_SHOW_FIGHTERS                1071
 #define IDC_PRIORITY7                   1071
 #define ID_SHOW_CAPITALSHIPS            1072
@@ -1055,8 +1059,10 @@
 #define IDC_EXPORT                      1581
 #define IDC_SECONDARIES_LOCKED          1582
 #define IDC_SUBSTITUTE_BRIEFING_MUSIC   1582
+#define IDC_SYNC_PERSONAS               1582
 #define IDC_PLAYER_START_CHASE          1583
 #define IDC_RESTRICT_PATHS_LABEL        1584
+#define IDC_LBL_NOTE                    1584
 #define IDC_PATH_LIST                   1585
 #define IDC_LISTITEM                    1586
 #define IDC_ENVMAP                      1589
@@ -1150,7 +1156,7 @@
 #define IDC_ORIGIN_LIST                 1671
 #define IDC_SATELLITE_LIST              1672
 #define IDC_DISTANCE                    1673
-#define IDC_IGNORE_ORDERS_LIST			1674
+#define IDC_IGNORE_ORDERS_LIST          1674
 #define ID_FILE_MISSIONNOTES            32771
 #define ID_DUPLICATE                    32774
 #define ID_VIEW_ROTATE                  32775
@@ -1446,7 +1452,7 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        329
+#define _APS_NEXT_RESOURCE_VALUE        330
 #define _APS_NEXT_COMMAND_VALUE         33102
 #define _APS_NEXT_CONTROL_VALUE         1665
 #define _APS_NEXT_SYMED_VALUE           105
