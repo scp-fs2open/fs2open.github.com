@@ -156,7 +156,12 @@ ADE_VIRTVAR(GunOrientation, l_Subsystem, "orientation", "Orientation of turret g
 	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&smi->canonical_orient)));
 }
 
-ADE_VIRTVAR(Offset, l_Subsystem, "vector", "Translated offset of subobject or turret base", "vector", "Offset, or zero vector if handle is not valid")
+ADE_VIRTVAR(TranslationOffset,
+	l_Subsystem,
+	"vector",
+	"Gets or sets the translated submodel instance offset of the subsystem or turret base.  This is relative to the existing submodel offset to its parent; a non-translated submodel will have a TranslationOffset of zero.",
+	"vector",
+	"Offset, or zero vector if handle is not valid")
 {
 	ship_subsys_h *sso;
 	vec3d *vec = nullptr;

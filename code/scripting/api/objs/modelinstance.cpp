@@ -148,7 +148,12 @@ ADE_VIRTVAR(Orientation, l_SubmodelInstance, "orientation", "Gets or sets the su
 	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&smi->canonical_orient)));
 }
 
-ADE_VIRTVAR(Offset, l_SubmodelInstance, "vector", "Gets or sets the translated submodel instance offset", "vector", "Offset, or zero vector if handle is not valid")
+ADE_VIRTVAR(TranslationOffset,
+	l_SubmodelInstance,
+	"vector",
+	"Gets or sets the translated submodel instance offset.  This is relative to the existing submodel offset to its parent; a non-translated submodel will have a TranslationOffset of zero.",
+	"vector",
+	"Offset, or zero vector if handle is not valid")
 {
 	submodelinstance_h *smih;
 	vec3d *vec = nullptr;
