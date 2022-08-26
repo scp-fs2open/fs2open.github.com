@@ -514,7 +514,7 @@ ADE_LIB_DERIV(l_UserInterface_RedAlert,
 	 if (Briefing[0].num_stages) {
 		return ade_set_args(L, "o", l_RedAlertStage.Set(Briefings[0].stages[0]));
 	 } else {
-		 ADE_RETURN_NIL;
+		 return ADE_RETURN_NIL;
 	 }
 	 
 }
