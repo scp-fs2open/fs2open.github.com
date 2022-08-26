@@ -1571,7 +1571,7 @@ ADE_FUNC(hasLineOfSight, l_Mission, "vector from, vector to, [table excludedObje
 	return testLineOfSight_internal(L, false);
 }
 
-ADE_FUNC(getLineOfSightFirstIntersect, l_Mission, "vector from, vector to, [table excludedObjects /* expects list of objects, empty by default */, boolean testForShields = false, boolean testForHull = true, number threshold = 10.0]", "Checks whether the to-position is in line of sight from the from-position and returns the distance and object signature to the first interruption of the line of sight, disregarding specific excluded objects and objects with a radius of less then threshold.", "boolean, number", "true and zero and nil if there is line of sight, false and the distance and Signature otherwise.")
+ADE_FUNC(getLineOfSightFirstIntersect, l_Mission, "vector from, vector to, [table excludedObjects /* expects list of objects, empty by default */, boolean testForShields = false, boolean testForHull = true, number threshold = 10.0]", "Checks whether the to-position is in line of sight from the from-position and returns the distance and object signature to the first interruption of the line of sight, disregarding specific excluded objects and objects with a radius of less then threshold.", "boolean, number", "number", "true and zero and -1 if there is line of sight, false and the distance and Signature otherwise.")
 {
 	return testLineOfSight_internal(L, true);
 }
