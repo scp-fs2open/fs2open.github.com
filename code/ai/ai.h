@@ -637,6 +637,6 @@ void do_random_sidethrust(ai_info *aip, ship_info *sip);
 void ai_formation_object_recalculate_slotnums(int form_objnum, int exiting_objnum = -1);
 
 
-bool test_line_of_sight(vec3d* from, vec3d* to, std::unordered_set<const object*>&& excluded_objects = {}, float threshold = 10.0f, bool test_for_shields = false, bool test_for_hull = true, float* first_intersect_dist = nullptr, object*& first_intersect_obj = nullptr);
+bool test_line_of_sight(vec3d* from, vec3d* to, std::unordered_set<const object*>&& excluded_objects = {}, float threshold = 10.0f, bool test_for_shields = false, bool test_for_hull = true, float* first_intersect_dist = nullptr, object** first_intersect_obj = nullptr);
 
 #endif
