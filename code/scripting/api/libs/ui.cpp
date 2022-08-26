@@ -508,12 +508,18 @@ ADE_LIB_DERIV(l_UserInterface_RedAlert,
 	nullptr,
 	"Get the red alert brief.",
 	"red_alert_stage",
-	"The loop brief data")
+	"The red-alert data")
 {
-	return ade_set_args(L, "o", l_RedAlertStage.Set(Briefings[0]));
+	
+	 if (Briefing[0].num_stages) {
+		return ade_set_args(L, "o", l_RedAlertStage.Set(Briefings[0].stages[0]));
+	 } else {
+		 ADE_RETURN_NIL;
+	 }
+	 
 }
 
-ADE_FUNC(replayMission,
+ADE_FUNC(replayPreviousMission,
 	l_UserInterface_RedAlert,
 	nullptr,
 	"Loads the previous mission of the campaign, does nothing if not in campaign",

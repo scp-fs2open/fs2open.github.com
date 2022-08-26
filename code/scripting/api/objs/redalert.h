@@ -6,7 +6,7 @@
 namespace scripting {
 namespace api {
 
-DECLARE_ADE_OBJ(l_RedAlertStage, briefing);
+DECLARE_ADE_OBJ(l_RedAlertStage, brief_stage);
 
 } // namespace api
 } // namespace scripting
