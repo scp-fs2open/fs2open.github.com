@@ -1513,14 +1513,16 @@ ADE_FUNC(hasCommandBriefing,
 	return ade_set_args(L, "b", mission_has_cmd_brief() != 0);
 }
 
-int testLineOfSight_internal(lua_State* L, bool returnDist) {
+int testLineOfSight_internal(lua_State* L, bool returnDist_and_Sig) {
 	vec3d from, to;
 	luacpp::LuaTable excludedObjects;
 	bool testForShields = false, testForHull = true;
 	float threshold = 10.0f;
 
 	float distStore = 0.0f;
-	float* dist = returnDist ? &distStore : nullptr;
+	float* dist = returnDist_and_Sig ? &distStore : nullptr;
+	int intersecting_obj_sig_Store = -1;
+	int* intersecting_obj_sig = returnDist_and_Sig ? &intersecting_obj_sig_Store : nullptr;
 
 	if (!ade_get_args(L, "oo|tbbf", l_Vector.Get(&from), l_Vector.Get(&to), &excludedObjects, &testForShields, &testForHull, &threshold)) {
 		return ADE_RETURN_FALSE;
@@ -1556,10 +1558,10 @@ int testLineOfSight_internal(lua_State* L, bool returnDist) {
 		}
 	}
 
-	bool hasLoS = test_line_of_sight(&from, &to, std::move(excludedObjectIDs), threshold, testForShields, testForHull, dist);
+	bool hasLoS = test_line_of_sight(&from, &to, std::move(excludedObjectIDs), threshold, testForShields, testForHull, dist, intersecting_obj_sig);
 
-	if(returnDist)
-		return ade_set_args(L, "bf", hasLoS, *dist);
+	if (returnDist_and_Sig)
+		return ade_set_args(L, "bfi", hasLoS, *dist, *intersecting_obj_sig);
 	else
 		return ade_set_args(L, "b", hasLoS);
 }
@@ -1569,7 +1571,7 @@ ADE_FUNC(hasLineOfSight, l_Mission, "vector from, vector to, [table excludedObje
 	return testLineOfSight_internal(L, false);
 }
 
-ADE_FUNC(getLineOfSightFirstIntersect, l_Mission, "vector from, vector to, [table excludedObjects /* expects list of objects, empty by default */, boolean testForShields = false, boolean testForHull = true, number threshold = 10.0]", "Checks whether the to-position is in line of sight from the from-position and returns the distance to the first interruption of the line of sight, disregarding specific excluded objects and objects with a radius of less then threshold.", "boolean, number", "true and zero if there is line of sight, false and the distance otherwise.")
+ADE_FUNC(getLineOfSightFirstIntersect, l_Mission, "vector from, vector to, [table excludedObjects /* expects list of objects, empty by default */, boolean testForShields = false, boolean testForHull = true, number threshold = 10.0]", "Checks whether the to-position is in line of sight from the from-position and returns the distance and object signature to the first interruption of the line of sight, disregarding specific excluded objects and objects with a radius of less then threshold.", "boolean, number", "true and zero and nil if there is line of sight, false and the distance and Signature otherwise.")
 {
 	return testLineOfSight_internal(L, true);
 }
