@@ -71,10 +71,10 @@ class player;
 // version 55 - 8/28/2021 - Adding multi-compatible animations
 // version 56 - 8/28/2021 - Fix animations for 22_0 release
 // version 57 - 6/5/2022 - Upgrade interpolation, fix multiplayer sexp handling, and enable player orders to exceed 16
-// version 58 - ??/??/2022 - Submodel translation
+// version 58 - ??/??/?? - Submodel translation and a fixed multi_pack_unpack_subsystem_list
 // STANDALONE_ONLY
 
-#define MULTI_FS_SERVER_VERSION							58
+#define MULTI_FS_SERVER_VERSION							57
 
 #define MULTI_FS_SERVER_COMPATIBLE_VERSION			MULTI_FS_SERVER_VERSION
 
