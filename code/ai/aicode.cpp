@@ -16228,7 +16228,7 @@ void maybe_cheat_fire_synaptic(object *objp)
 	}
 }
 
-bool test_line_of_sight(vec3d* from, vec3d* to, std::unordered_set<const object*>&& excluded_objects, float threshold, bool test_for_shields, bool test_for_hull, float* first_intersect_dist) {
+bool test_line_of_sight(vec3d* from, vec3d* to, std::unordered_set<const object*>&& excluded_objects, float threshold, bool test_for_shields, bool test_for_hull, float* first_intersect_dist, object** first_intersect_obj) {
 	bool collides = false;
 
 	for (object* objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
@@ -16304,8 +16304,11 @@ bool test_line_of_sight(vec3d* from, vec3d* to, std::unordered_set<const object*
 				}
 				else {
 					//If we need to find the first intersect distance, we need to keep searching if there might be an intersect earlier. Also, always record the first dist found
-					if (!collides || *first_intersect_dist > dist)
+					if (!collides || *first_intersect_dist > dist) {
 						*first_intersect_dist = dist;
+						if (first_intersect_obj != nullptr)
+							*first_intersect_obj = objp;
+					}
 					collides = true;
 				}
 			}
@@ -16321,8 +16324,11 @@ bool test_line_of_sight(vec3d* from, vec3d* to, std::unordered_set<const object*
 				}
 				else {
 					//If we need to find the first intersect distance, we need to keep searching if there might be an intersect earlier
-					if (!collides || *first_intersect_dist > dist)
+					if (!collides || *first_intersect_dist > dist) {
 						*first_intersect_dist = dist;
+						if (first_intersect_obj != nullptr)
+							*first_intersect_obj = objp;
+					}
 					collides = true;
 				}
 			}
