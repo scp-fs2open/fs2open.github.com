@@ -9,7 +9,7 @@ ADE_OBJ(l_LoopBriefStage, cmission, "loop_brief_stage", "Loop Brief stage handle
 ADE_VIRTVAR(Text,
 	l_LoopBriefStage,
 	nullptr,
-	"The text file of the stage",
+	"The text of the stage",
 	"loop_brief_stage",
 	"The text")
 {
