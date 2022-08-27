@@ -592,7 +592,7 @@ ADE_FUNC(getModTitle, l_Base, nullptr,
 
 ADE_FUNC(getModVersion, l_Base, nullptr,
          "Returns the version of the current mod as defined in game_settings.tbl. Will return an empty string if not defined.",
-         "string, number, number, number", "The mod title; the major, minor, patch version numbers -1 if invalid")
+         "string, number, number, number", "The mod version string; the major, minor, patch version numbers -1 if invalid")
 {
 	auto version = Mod_version;
 
