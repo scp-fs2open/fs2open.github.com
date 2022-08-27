@@ -1658,7 +1658,7 @@ void hud_config_color_load(const char *name)
 void hud_config_alpha_slider_up()
 {	
 	int pos = HCS_CONV(HC_color_sliders[HCS_ALPHA].get_currentItem());
-	int max = MAX(MAX( HCS_CONV(HC_color_sliders[HCS_RED].get_currentItem()), HCS_CONV(HC_color_sliders[HCS_GREEN].get_currentItem()) ), HCS_CONV(HC_color_sliders[HCS_BLUE].get_currentItem()) );
+	int max = std::max({ HCS_CONV(HC_color_sliders[HCS_RED].get_currentItem()), HCS_CONV(HC_color_sliders[HCS_GREEN].get_currentItem()), HCS_CONV(HC_color_sliders[HCS_BLUE].get_currentItem()) });
 
 	// if this would put the brightest element past its limit, skip
 	if(max >= 255){

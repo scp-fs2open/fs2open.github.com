@@ -655,7 +655,7 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 		}
 		else {
 			//Use the maximum value in X, Y, and Z (including overclocking)
-			dynamic_glide_cap_goal = MAX(MAX(pi->max_vel.xyz.x,pi->max_vel.xyz.y), pi->max_vel.xyz.z);
+			dynamic_glide_cap_goal = std::max({ pi->max_vel.xyz.x,pi->max_vel.xyz.y, pi->max_vel.xyz.z });
 		}
 		pi->cur_glide_cap = velocity_ramp(pi->cur_glide_cap, dynamic_glide_cap_goal, ramp_time_const, sim_time);
 
