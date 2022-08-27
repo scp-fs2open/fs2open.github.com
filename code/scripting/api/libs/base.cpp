@@ -591,8 +591,10 @@ ADE_FUNC(getModTitle, l_Base, nullptr,
 }
 
 ADE_FUNC(getModVersion, l_Base, nullptr,
-         "Returns the version of the current mod as defined in game_settings.tbl. Will return an empty string if not defined.",
-         "string, number, number, number", "The mod version string; the major, minor, patch version numbers -1 if invalid")
+         "Returns the version of the current mod as defined in game_settings.tbl. If the version is semantic versioning then the "
+		 "returned numbers will reflect that that. String always returns the complete string. If semantic version is not used then "
+		 "the returned numbers will all be -1",
+         "string, number, number, number", "The mod version string; the major, minor, patch version numbers or -1 if invalid")
 {
 	auto version = Mod_version;
 
@@ -613,8 +615,12 @@ ADE_FUNC(getModVersion, l_Base, nullptr,
 					minor = std::stoi(str.c_str());
 				}
 				str.erase(0, pos + 1);
+			} else if (major < 0) {
+				break; //Break out of the loop if the first string is not a digit. In this case we only return the whole string.
 			}
-		} else if ((!str.empty() && std::find_if(str.begin(), str.end(), [](char c) { return !std::isdigit(c); }) == str.end()) && (major > -1) && (minor > -1)) {
+		} else if ((major > -1) && (minor > -1) && (!str.empty() && std::find_if(str.begin(), str.end(), [](char c) {
+					   return !std::isdigit(c);
+				   }) == str.end())) {
 			patch = std::stoi(str.c_str());
 		}
 		i++;
