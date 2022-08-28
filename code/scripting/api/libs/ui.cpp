@@ -95,6 +95,76 @@ ADE_FUNC(disableInput, l_UserInterface, "", "Disables UI input", "boolean", "tru
 	return ADE_RETURN_TRUE;
 }
 
+ADE_VIRTVAR(ColorTags,
+	l_UserInterface,
+	nullptr,
+	"The available tagged colors",
+	"{ string => color ... }",
+	"A mapping from tag string to color value")
+{
+	using namespace luacpp;
+
+	LuaTable mapping = LuaTable::create(L);
+
+	for (const auto& tagged : Tagged_Colors) {
+		SCP_string tag;
+		tag.resize(1, tagged.first);
+
+		mapping.addValue(tag, l_Color.Set(*tagged.second));
+	}
+
+	return ade_set_args(L, "t", mapping);
+}
+
+ADE_VIRTVAR(DefaultTextColorTag,
+	l_UserInterface,
+	"number UiScreen",
+	"Gets the default color tag string for the specified state. 1 for Briefing, 2 for CBriefing, 3 for Debriefing,"
+	"4 for Fiction Viewer, 5 for Red Alert, 6 for Loop Briefing, 7 for Recommendation text. Defaults to 1. Index into ColorTags.",
+	"string",
+	"The default color tag")
+{
+	int UiScreen;
+
+	if (!ade_get_args(L, "i", &UiScreen)) {
+		UiScreen = 1;
+	}
+	
+	SCP_string tagStr;
+	char defaultColor = default_briefing_color;
+
+	switch (UiScreen) {
+		case 1:
+			defaultColor = default_briefing_color;
+			break;
+		case 2:
+			defaultColor = default_command_briefing_color;
+			break;
+		case 3:
+			defaultColor = default_debriefing_color;
+			break;
+		case 4:
+			defaultColor = default_fiction_viewer_color;
+			break;
+		case 5:
+			defaultColor = default_redalert_briefing_color;
+			break;
+		case 6:
+			defaultColor = default_loop_briefing_color;
+			break;
+		case 7:
+			defaultColor = default_recommendation_color;
+			break;
+	}
+
+	if (defaultColor == '\0' || !brief_verify_color_tag(defaultColor)) {
+		defaultColor = Color_Tags[0];
+	}
+	tagStr.resize(1, defaultColor);
+
+	return ade_set_args(L, "s", tagStr);
+}
+
 ADE_FUNC(playElementSound,
 	l_UserInterface,
 	"any element /* A libRocket element */, string event, string state = \"\"",
@@ -417,7 +487,43 @@ ADE_FUNC(resetCampaign,
 	return ADE_RETURN_TRUE;
 }
 
+//**********SUBLIBRARY: UserInterface/Briefing
+ADE_LIB_DERIV(l_UserInterface_Brief,
+	"Briefing",
+	nullptr,
+	"API for accessing data related to the briefing UI.<br><b>Warning:</b> This is an internal "
+	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	l_UserInterface);
+
+ADE_FUNC(getBriefingMusicName,
+	l_UserInterface_Brief,
+	nullptr,
+	"Gets the file name of the music file to play for the briefing.",
+	"string",
+	"The file name or empty if no music")
+{
+	return ade_set_args(L, "s", common_music_get_filename(SCORE_BRIEFING).c_str());
+}
+
+ADE_FUNC(runBriefingStageHook,
+	l_UserInterface_Brief,
+	"number oldStage, number newStage",
+	"Run $On Briefing Stage: hooks.",
+	nullptr,
+	nullptr)
+{
+	int oldStage = -1, newStage = -1;
+	if (ade_get_args(L, "ii", &oldStage, &newStage) == 2) {
+		// Subtract 1 to convert from Lua conventions to C conventions
+		common_fire_stage_script_hook(oldStage - 1, newStage - 1);
+	} else {
+		LuaError(L, "Bad arguments given to ui.runBriefingStageHook!");
+	}
+	return ADE_RETURN_NIL;
+}
+
 //**********SUBLIBRARY: UserInterface/CommandBriefing
+// This needs a slightly different name since there is already a type called "Options"
 ADE_LIB_DERIV(l_UserInterface_CmdBrief,
 	"CommandBriefing",
 	nullptr,
@@ -425,47 +531,7 @@ ADE_LIB_DERIV(l_UserInterface_CmdBrief,
 	"API for the new UI system. This should not be used by other code and may be removed in the future!",
 	l_UserInterface);
 
-ADE_VIRTVAR(ColorTags,
-	l_UserInterface_CmdBrief,
-	nullptr,
-	"The available tagged colors",
-	"{ string => color ... }",
-	"A mapping from tag string to color value")
-{
-	using namespace luacpp;
-
-	LuaTable mapping = LuaTable::create(L);
-
-	for (const auto& tagged : Tagged_Colors) {
-		SCP_string tag;
-		tag.resize(1, tagged.first);
-
-		mapping.addValue(tag, l_Color.Set(*tagged.second));
-	}
-
-	return ade_set_args(L, "t", mapping);
-}
-
-ADE_VIRTVAR(DefaultTextColorTag,
-	l_UserInterface_CmdBrief,
-	nullptr,
-	"Gets the default color tag string for the command briefing. Index into ColorTags.",
-	"string",
-	"The default color tag")
-{
-	SCP_string tagStr;
-
-	auto defaultColor = default_command_briefing_color;
-
-	if (defaultColor == '\0' || !brief_verify_color_tag(defaultColor)) {
-		defaultColor = Color_Tags[0];
-	}
-	tagStr.resize(1, defaultColor);
-
-	return ade_set_args(L, "s", tagStr);
-}
-
-ADE_FUNC(getBriefing,
+ADE_FUNC(getCmdBriefing,
 	l_UserInterface_CmdBrief,
 	nullptr,
 	"Get the command briefing.",
@@ -474,26 +540,6 @@ ADE_FUNC(getBriefing,
 {
 	// The cmd briefing code has support for specifying the team but only sets the index to 0
 	return ade_set_args(L, "o", l_CmdBrief.Set(Cmd_briefs[0]));
-}
-
-ADE_FUNC(getBriefingMusicName, l_UserInterface_CmdBrief, nullptr, "Gets the file name of the music file to play for the briefing.", "string", "The file name or empty if no music")
-{
-	return ade_set_args(L, "s", common_music_get_filename(SCORE_BRIEFING).c_str());
-}
-
-ADE_FUNC(runBriefingStageHook, l_UserInterface_CmdBrief, "number oldStage, number newStage", "Run $On Briefing Stage: hooks.", nullptr, nullptr)
-{
-	int oldStage = -1, newStage = -1;
-	if (ade_get_args(L, "ii", &oldStage, &newStage) == 2)
-	{
-		// Subtract 1 to convert from Lua conventions to C conventions
-		common_fire_stage_script_hook(oldStage -1, newStage -1);
-	}
-	else
-	{
-		LuaError(L, "Bad arguments given to ui.runBriefingStageHook!");
-	}
-	return ADE_RETURN_NIL;
 }
 
 //**********SUBLIBRARY: UserInterface/LoopBrief
