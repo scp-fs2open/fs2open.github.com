@@ -476,6 +476,8 @@ bool Cmdline_dump_packet_type = false;
 #ifdef WIN32
 bool Cmdline_alternate_registry_path = false;
 #endif
+uint Cmdline_randseed = 0;
+bool Cmdline_randfixed = false;
 
 // Developer/Testing related
 cmdline_parm start_mission_arg("-start_mission", "Skip mainhall and run this mission", AT_STRING);	// Cmdline_start_mission
@@ -507,6 +509,7 @@ cmdline_parm debug_window_arg("-debug_window", NULL, AT_NONE);	// Cmdline_debug_
 cmdline_parm graphics_debug_output_arg("-gr_debug", nullptr, AT_NONE); // Cmdline_graphics_debug_output
 cmdline_parm log_to_stdout_arg("-stdout_log", nullptr, AT_NONE); // Cmdline_log_to_stdout
 cmdline_parm slow_frames_ok_arg("-slow_frames_ok", nullptr, AT_NONE);	// Cmdline_slow_frames_ok
+cmdline_parm fixed_seed_rand("-seed", nullptr, AT_INT);	// Cmdline_randseed,Cmdline_randfixed;
 
 
 char *Cmdline_start_mission = NULL;
@@ -2234,6 +2237,11 @@ bool SetCmdlineParams()
  
 	if (log_multi_packet_arg.found()) {
 		Cmdline_dump_packet_type = true;
+	}
+
+	if (fixed_seed_rand.found()) {
+		Cmdline_randfixed = true;
+		Cmdline_randseed = abs((fixed_seed_rand.get_int()));
 	}
 
 	return true; 

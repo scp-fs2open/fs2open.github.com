@@ -944,7 +944,8 @@ void game_level_close()
 uint load_gl_init;
 uint load_mission_load;
 uint load_post_level_init;
-
+extern bool Cmdline_randfixed;
+extern uint Cmdline_randseed;
 /**
  * Intializes game stuff.  
  *
@@ -963,6 +964,8 @@ void game_level_init()
 
 		// semirand function needs to get re-initted every time in multiplayer
 		init_semirand();
+	} else if(Cmdline_randfixed) {
+		Random::seed( Cmdline_randseed );
 	}
 
 	Framecount = 0;
