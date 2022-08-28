@@ -900,7 +900,7 @@ static void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy)
 		
 		//	Chance of hitting ship is based on dot product of firing ship's forward vector with vector to ship
 		//	and also the size of the target relative to distance to target.
-		if (dot_to_enemy > MAX(0.5f, 0.90f + aip->ai_accuracy/10.0f - En_objp->radius/MAX(1.0f,dist_to_enemy))) {
+		if (dot_to_enemy > std::max(0.5f, 0.90f + aip->ai_accuracy / 10.0f - En_objp->radius / std::max(1.0f, dist_to_enemy))) {
 
 			ship *temp_shipp;
 			temp_shipp = &Ships[Pl_objp->instance];
