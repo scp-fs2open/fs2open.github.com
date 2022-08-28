@@ -6,6 +6,7 @@
 
 #include "cmdline/cmdline.h"
 #include "gamesnd/eventmusic.h"
+#include "gamesequence/gamesequence.h"
 #include "menuui/barracks.h"
 #include "menuui/mainhallmenu.h"
 #include "menuui/optionsmenu.h"
@@ -15,9 +16,11 @@
 #include "missionui/fictionviewer.h"
 #include "mission/missioncampaign.h"
 #include "missionui/missionscreencommon.h"
+#include "mission/missioncampaign.h"
 #include "playerman/managepilot.h"
 #include "scpui/SoundPlugin.h"
 #include "scpui/rocket_ui.h"
+#include "scripting/api/objs/loop_brief.h"
 #include "scripting/api/objs/fictionviewer.h"
 #include "scripting/api/objs/cmd_brief.h"
 #include "scripting/api/objs/color.h"
@@ -405,7 +408,6 @@ ADE_FUNC(playVoiceClip,
 }
 
 //**********SUBLIBRARY: UserInterface/CampaignMenu
-// This needs a slightly different name since there is already a type called "Options"
 ADE_LIB_DERIV(l_UserInterface_Campaign,
 	"CampaignMenu",
 	nullptr,
@@ -536,6 +538,43 @@ ADE_FUNC(getCmdBriefing,
 {
 	// The cmd briefing code has support for specifying the team but only sets the index to 0
 	return ade_set_args(L, "o", l_CmdBrief.Set(Cmd_briefs[0]));
+}
+
+//**********SUBLIBRARY: UserInterface/LoopBrief
+ADE_LIB_DERIV(l_UserInterface_LoopBrief,
+	"LoopBrief",
+	nullptr,
+	"API for accessing data related to the loop brief UI.<br><b>Warning:</b> This is an internal "
+	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	l_UserInterface);
+
+ADE_FUNC(getLoopBrief,
+	l_UserInterface_LoopBrief,
+	nullptr,
+	"Get the loop brief.",
+	"loop_brief_stage",
+	"The loop brief data")
+{
+	return ade_set_args(L, "o", l_LoopBriefStage.Set(Campaign.missions[Campaign.current_mission]));
+}
+
+ADE_FUNC(setLoopChoice, l_UserInterface_LoopBrief, "boolean", "Accepts mission outcome and then True to go to loop, False to skip", nullptr, nullptr)
+{
+	bool choice = false;
+	ade_get_args(L, "|b", &choice);
+
+	if (choice) {
+		// select the loop mission
+		Campaign.loop_enabled = 1;
+		Campaign.loop_reentry = Campaign.next_mission; // save reentry pt, so we can break out of loop
+		Campaign.next_mission = Campaign.loop_mission;
+
+		mission_campaign_mission_over();
+	} else {
+		mission_campaign_mission_over();
+	}
+
+	return ADE_RETURN_NIL;
 }
 
 //**********SUBLIBRARY: UserInterface/FictionViewer

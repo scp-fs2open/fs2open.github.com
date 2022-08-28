@@ -22,18 +22,32 @@
 //Macros/functions to fill in fields of structures
 //VEC_NULL macros split into two functions in 2009 with commit 75a514b
 
-//macro to check if vector is close to zero or would be close to zero after squaring
-#define IS_VEC_NULL_SQ_SAFE(v) \
-		(fl_near_zero((v)->xyz.x, (float) 1e-16) && \
-		fl_near_zero((v)->xyz.y, (float) 1e-16) && \
-		fl_near_zero((v)->xyz.z, (float) 1e-16))
+// Null vector checks are performed on the following types of vectors:
+// * orientation component vectors
+// * positions
+// * velocities
+// * normals
+// In each of these cases, FLT_EPSILON or 1.192092896e-07F is a reasonable threshold.
 
-//macro to check if vector is close to zero
-#define IS_VEC_NULL(v) \
+// macro to check if vector is close to zero or would be close to zero after squaring
+// (uses FLT_EPSILON; original threshold was 1e-16 which can be tightened up a bit)
+#define IS_VEC_NULL_SQ_SAFE(v) \
+		(fl_near_zero((v)->xyz.x) && \
+		fl_near_zero((v)->xyz.y) && \
+		fl_near_zero((v)->xyz.z))
+
+// macro to check if vector is close to zero
+// (original threshold was 1e-36 which was too small)
+#define IS_VEC_NULL(v) IS_VEC_NULL_SQ_SAFE(v)
+
+// macro to check if moment-of-inertia vector is close to zero
+// (uses the previous 1e-36 threshold since MOI values are really small)
+#define IS_MOI_VEC_NULL(v) \
 		(fl_near_zero((v)->xyz.x, (float) 1e-36) && \
 		fl_near_zero((v)->xyz.y, (float) 1e-36) && \
 		fl_near_zero((v)->xyz.z, (float) 1e-36))
 
+// currently only used to check orientations
 #define IS_MAT_NULL(v) (IS_VEC_NULL(&(v)->vec.fvec) && IS_VEC_NULL(&(v)->vec.uvec) && IS_VEC_NULL(&(v)->vec.rvec))
 
 //macro to set a vector to zero.  we could do this with an in-line assembly

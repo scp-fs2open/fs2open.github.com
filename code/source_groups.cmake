@@ -1340,6 +1340,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/hudgauge.h
 	scripting/api/objs/intelentry.cpp
 	scripting/api/objs/intelentry.h
+	scripting/api/objs/loop_brief.cpp
+	scripting/api/objs/loop_brief.h
 	scripting/api/objs/LuaSEXP.cpp
 	scripting/api/objs/LuaSEXP.h
 	scripting/api/objs/luaaisexp.cpp

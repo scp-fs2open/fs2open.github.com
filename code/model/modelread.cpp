@@ -768,7 +768,7 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 		float turn_rate;
 		if (idx == 0 || idx == 2) {
 			float turn_time = static_cast<float>(atof(buf));
-			if (fl_near_zero(turn_time)) {
+			if (fl_near_zero(turn_time, 0.01f)) {
 				Warning(LOCATION, "Rotation has a turn time of 0 for subsystem '%s' on ship %s!", dname, modelp->filename);
 				turn_rate = 1.0f;
 			} else {
@@ -1286,7 +1286,7 @@ void determine_submodel_movement(bool is_rotation, const char *filename, bsp_inf
 			if (idx == 0)
 			{
 				auto turn_time = static_cast<float>(atof(buf));
-				if (fl_near_zero(turn_time))
+				if (fl_near_zero(turn_time, 0.01f))
 				{
 					Warning(LOCATION, "Dumb-Rotation has a turn time of 0 for subsystem '%s' on ship %s!", sm->name, filename);
 					turn_rate = 1.0f;
@@ -1620,9 +1620,9 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 					}
 
 					// a custom MOI is only used for ships, but we should probably log it anyway
-					if ( IS_VEC_NULL(&pm->moment_of_inertia.vec.rvec)
-						&& IS_VEC_NULL(&pm->moment_of_inertia.vec.uvec)
-						&& IS_VEC_NULL(&pm->moment_of_inertia.vec.fvec) )
+					if ( IS_MOI_VEC_NULL(&pm->moment_of_inertia.vec.rvec)
+						&& IS_MOI_VEC_NULL(&pm->moment_of_inertia.vec.uvec)
+						&& IS_MOI_VEC_NULL(&pm->moment_of_inertia.vec.fvec) )
 					{
 						mprintf(("Model %s has a null moment of inertia!  (This is only a problem if the model is a ship.)\n", filename));
 					}
