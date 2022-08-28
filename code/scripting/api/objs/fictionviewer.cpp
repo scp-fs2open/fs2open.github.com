@@ -13,6 +13,10 @@ ADE_VIRTVAR(TextFile, l_FictionViewerStage, nullptr, "The text file of the stage
 		return ADE_RETURN_NIL;
 	}
 
+	if (stage == nullptr) {
+		return ADE_RETURN_NIL;
+	}
+
 	if (ADE_SETTING_VAR) {
 		LuaError(L, "This property is read only.");
 	}
@@ -27,6 +31,10 @@ ADE_VIRTVAR(FontFile, l_FictionViewerStage, nullptr, "The font file of the stage
 		return ADE_RETURN_NIL;
 	}
 
+	if (stage == nullptr) {
+		return ADE_RETURN_NIL;
+	}
+
 	if (ADE_SETTING_VAR) {
 		LuaError(L, "This property is read only.");
 	}
@@ -38,6 +46,10 @@ ADE_VIRTVAR(VoiceFile, l_FictionViewerStage, nullptr, "The voice file of the sta
 {
 	fiction_viewer_stage* stage = nullptr;
 	if (!ade_get_args(L, "o", l_FictionViewerStage.GetPtr(&stage))) {
+		return ADE_RETURN_NIL;
+	}
+
+	if (stage == nullptr) {
 		return ADE_RETURN_NIL;
 	}
 

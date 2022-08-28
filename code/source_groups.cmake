@@ -1271,6 +1271,8 @@ add_file_folder("Scripting\\\\Api\\\\Libs"
 	scripting/api/libs/options.h
 	scripting/api/libs/parse.cpp
 	scripting/api/libs/parse.h
+	scripting/api/objs/redalert.cpp
+	scripting/api/objs/redalert.h
 	scripting/api/libs/tables.cpp
 	scripting/api/libs/tables.h
 	scripting/api/libs/testing.cpp

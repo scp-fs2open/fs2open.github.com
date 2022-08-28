@@ -17,10 +17,12 @@
 #include "mission/missioncampaign.h"
 #include "missionui/missionscreencommon.h"
 #include "mission/missioncampaign.h"
+#include "missionui/redalert.h"
 #include "playerman/managepilot.h"
 #include "scpui/SoundPlugin.h"
 #include "scpui/rocket_ui.h"
 #include "scripting/api/objs/loop_brief.h"
+#include "scripting/api/objs/redalert.h"
 #include "scripting/api/objs/fictionviewer.h"
 #include "scripting/api/objs/cmd_brief.h"
 #include "scripting/api/objs/color.h"
@@ -577,6 +579,45 @@ ADE_FUNC(setLoopChoice, l_UserInterface_LoopBrief, "boolean", "Accepts mission o
 	return ADE_RETURN_NIL;
 }
 
+//**********SUBLIBRARY: UserInterface/RedAlert
+ADE_LIB_DERIV(l_UserInterface_RedAlert,
+	"RedAlert",
+	nullptr,
+	"API for accessing data related to the Red Alert UI.<br><b>Warning:</b> This is an internal "
+	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	l_UserInterface);
+
+ ADE_FUNC(getRedAlert,
+	l_UserInterface_RedAlert,
+	nullptr,
+	"Get the red alert brief.",
+	"red_alert_stage",
+	"The red-alert data")
+{
+
+	 if (Briefings[0].num_stages) {
+		return ade_set_args(L, "o", l_RedAlertStage.Set(Briefings[0].stages[0]));
+	 } else {
+		 return ADE_RETURN_NIL;
+	 }
+	 
+}
+
+ADE_FUNC(replayPreviousMission,
+	l_UserInterface_RedAlert,
+	nullptr,
+	"Loads the previous mission of the campaign, does nothing if not in campaign",
+	"boolean",
+	"Returns true if the operation was successful, false otherwise")
+{
+	if (!mission_campaign_previous_mission()) {
+		return ADE_RETURN_FALSE;
+	} else {
+		return ADE_RETURN_TRUE;
+	}
+
+}
+
 //**********SUBLIBRARY: UserInterface/FictionViewer
 ADE_LIB_DERIV(l_UserInterface_FictionViewer,
 	"FictionViewer",
@@ -587,7 +628,11 @@ ADE_LIB_DERIV(l_UserInterface_FictionViewer,
 
 ADE_FUNC(getFiction, l_UserInterface_FictionViewer, nullptr, "Get the fiction.", "fiction_viewer_stage", "The fiction data")
 {
-	return ade_set_args(L, "o", l_FictionViewerStage.Set(Fiction_viewer_stages[Fiction_viewer_active_stage]));
+	if (Fiction_viewer_active_stage >= 0) {
+		return ade_set_args(L, "o", l_FictionViewerStage.Set(Fiction_viewer_stages[Fiction_viewer_active_stage]));
+	} else {
+		return ADE_RETURN_NIL;
+	}
 }
 
 ADE_FUNC(getFictionMusicName, l_UserInterface_FictionViewer, nullptr,
