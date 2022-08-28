@@ -116,7 +116,7 @@ ADE_VIRTVAR(ColorTags,
 	return ade_set_args(L, "t", mapping);
 }
 
-ADE_VIRTVAR(DefaultTextColorTag,
+ADE_FUNC(DefaultTextColorTag,
 	l_UserInterface,
 	"number UiScreen",
 	"Gets the default color tag string for the specified state. 1 for Briefing, 2 for CBriefing, 3 for Debriefing,"
