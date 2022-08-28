@@ -541,7 +541,11 @@ ADE_LIB_DERIV(l_UserInterface_FictionViewer,
 
 ADE_FUNC(getFiction, l_UserInterface_FictionViewer, nullptr, "Get the fiction.", "fiction_viewer_stage", "The fiction data")
 {
-	return ade_set_args(L, "o", l_FictionViewerStage.Set(Fiction_viewer_stages[Fiction_viewer_active_stage]));
+	if (Fiction_viewer_active_stage >= 0) {
+		return ade_set_args(L, "o", l_FictionViewerStage.Set(Fiction_viewer_stages[Fiction_viewer_active_stage]));
+	} else {
+		return ADE_RETURN_NIL;
+	}
 }
 
 ADE_FUNC(getFictionMusicName, l_UserInterface_FictionViewer, nullptr,
