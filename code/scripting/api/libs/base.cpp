@@ -592,7 +592,7 @@ ADE_FUNC(getModTitle, l_Base, nullptr,
 
 ADE_FUNC(getModVersion, l_Base, nullptr,
          "Returns the version of the current mod as defined in game_settings.tbl. If the version is semantic versioning then the "
-		 "returned numbers will reflect that that. String always returns the complete string. If semantic version is not used then "
+		 "returned numbers will reflect that. String always returns the complete string. If semantic version is not used then "
 		 "the returned numbers will all be -1",
          "string, number, number, number", "The mod version string; the major, minor, patch version numbers or -1 if invalid")
 {
