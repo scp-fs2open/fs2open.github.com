@@ -222,7 +222,7 @@ void debris_process_post(object * obj, float frame_time)
 
 		if ( timestamp_elapsed(db->sound_delay) ) {
 			obj_snd_assign(objnum, db->ambient_sound, &vmd_zero_vector);
-			db->sound_delay = 0;
+			db->sound_delay = TIMESTAMP::invalid();
 		}
 	}
 
@@ -242,7 +242,7 @@ void debris_process_post(object * obj, float frame_time)
 
 	if ( !timestamp_elapsed(db->fire_timeout) && timestamp_elapsed(db->next_fireball))	{		
 
-		db->next_fireball = timestamp_rand(db->arc_frequency,db->arc_frequency*2 );
+		db->next_fireball = _timestamp_rand(db->arc_frequency,db->arc_frequency*2 );
 		db->arc_frequency += 100;	
 
 		if (db->is_hull)	{
@@ -260,9 +260,9 @@ void debris_process_post(object * obj, float frame_time)
 
 			// Create the spark effects
 			for (int i=0; i<MAX_DEBRIS_ARCS; ++i)	{
-				if ( !timestamp_valid( db->arc_timestamp[i] ) )	{
+				if ( !db->arc_timestamp[i].isValid() )	{
 
-					db->arc_timestamp[i] = timestamp(lifetime);	// live up to a second
+					db->arc_timestamp[i] = _timestamp(lifetime);	// live up to a second
 
 					switch( n )	{
 					case 0:
@@ -317,10 +317,10 @@ void debris_process_post(object * obj, float frame_time)
 	}
 
 	for (int i=0; i<MAX_DEBRIS_ARCS; ++i)	{
-		if ( timestamp_valid( db->arc_timestamp[i] ) )	{
+		if ( db->arc_timestamp[i].isValid() )	{
 			if ( timestamp_elapsed( db->arc_timestamp[i] ) )	{
 				// Kill off the spark
-				db->arc_timestamp[i] = timestamp(-1);
+				db->arc_timestamp[i] = TIMESTAMP::invalid();
 			} else {
 				// Maybe move a vertex....  20% of the time maybe?
 				int mr = Random::next();
@@ -377,7 +377,7 @@ MONITOR(NumHullDebris)
  * @param hull_flag		Hull flag settings
  * @param exp_force		Explosion force, used to assign velocity to pieces. 1.0f assigns velocity like before. 2.0f assigns twice as much to non-inherited part of velocity
  */
-object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d *pos, vec3d *exp_center, int hull_flag, float exp_force)
+object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d *pos, vec3d *exp_center, bool hull_flag, float exp_force)
 {
 	int		objnum, parent_objnum;
 	object	*obj;
@@ -502,14 +502,14 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 	db->ship_info_index = shipp->ship_info_index;
 	db->team = shipp->team;
 	db->ambient_sound = sip->debris_ambient_sound;
-	db->fire_timeout = 0;	// if not changed, timestamp_elapsed() will return false
+	db->fire_timeout = TIMESTAMP::never();	// if not changed, timestamp_elapsed() will return false
 	db->time_started = Missiontime;
 	db->species = Ship_info[shipp->ship_info_index].species;
 	db->parent_alt_name = shipp->alt_type_index;
 	db->damage_mult = 1.0f;
 
 	for (int i=0; i<MAX_DEBRIS_ARCS; ++i)	{	// NOLINT
-		db->arc_timestamp[i] = timestamp(-1);
+		db->arc_timestamp[i] = TIMESTAMP::invalid();
 	}
 
 	if ( db->is_hull )	{
@@ -523,7 +523,7 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 		db->arc_frequency = 0;
 	}
 
-	db->next_fireball = timestamp_rand(500,2000);	//start one 1/2 - 2 secs later
+	db->next_fireball = _timestamp_rand(500,2000);	//start one 1/2 - 2 secs later
 
 	if ( pos == nullptr )
 		pos = &source_obj->pos;
@@ -597,7 +597,7 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 	if ( hull_flag )	{
 		float t;
 		scale = exp_force * i2fl(Random::next(10, 29));	// for radial_vel away from location of blast center
-		db->sound_delay = timestamp(DEBRIS_SOUND_DELAY);
+		db->sound_delay = _timestamp(DEBRIS_SOUND_DELAY);
 
 		// set up physics mass and I_inv for hull debris pieces
 		pm = model_get(model_num);
@@ -609,7 +609,7 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 		// limit the amount of time that fireballs appear
 		// let fireball length be linked to radius of ship.  Range is .33 radius => 3.33 radius seconds.
 		t = 1000*Objects[db->source_objnum].radius/3 + Random::next(fl2i(1000*3*Objects[db->source_objnum].radius));
-		db->fire_timeout = timestamp(fl2i(t));		// fireballs last from 5 - 30 seconds
+		db->fire_timeout = _timestamp(fl2i(t));		// fireballs last from 5 - 30 seconds
 		
 		if ( Objects[db->source_objnum].radius < MIN_RADIUS_FOR_PERSISTANT_DEBRIS ) {
 			debris_add_to_hull_list(db);
@@ -1095,7 +1095,7 @@ void debris_render(object * obj, model_draw_list *scene)
 	// Only render electrical arcs if within 500m of the eye (for a 10m piece)
 	if ( vm_vec_dist_quick( &obj->pos, &Eye_position ) < obj->radius*50.0f )	{
 		for (i=0; i<MAX_DEBRIS_ARCS; i++ )	{
-			if ( timestamp_valid( db->arc_timestamp[i] ) )	{
+			if ( db->arc_timestamp[i].isValid() )	{
 				model_instance_add_arc( pm, pmi, db->submodel_num, &db->arc_pts[i][0], &db->arc_pts[i][1], MARC_TYPE_DAMAGED );
 			}
 		}

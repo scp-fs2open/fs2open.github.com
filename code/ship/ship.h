@@ -692,7 +692,7 @@ public:
 
 	// Stuff for showing electrical arcs on damaged ships
 	vec3d	arc_pts[MAX_SHIP_ARCS][2];			// The endpoints of each arc
-	int		arc_timestamp[MAX_SHIP_ARCS];		// When this times out, the spark goes away.  -1 is not used
+	TIMESTAMP	arc_timestamp[MAX_SHIP_ARCS];		// When this times out, the spark goes away.  Invalid is not used
 	ubyte		arc_type[MAX_SHIP_ARCS];			// see MARC_TYPE_* defines in model.h
 	int		arc_next_time;							// When the next damage/emp arc will be created.	
 	SCP_vector<int>		passive_arc_next_times;		// When the next passive ship arc will be created.	

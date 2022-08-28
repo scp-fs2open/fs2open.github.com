@@ -6345,7 +6345,7 @@ void ship::clear()
 
 	memset(&arc_pts, 0, MAX_SHIP_ARCS * 2 * sizeof(vec3d));
 	for (i = 0; i < MAX_SHIP_ARCS; i++)
-		arc_timestamp[i] = timestamp(-1);
+		arc_timestamp[i] = TIMESTAMP::invalid();
 	memset(&arc_type, 0, MAX_SHIP_ARCS * sizeof(ubyte));
 	arc_next_time = timestamp(-1);
 
@@ -19849,7 +19849,7 @@ void ship_render(object* obj, model_draw_list* scene)
 	// Only render electrical arcs if within 500m of the eye (for a 10m piece)
 	if ( vm_vec_dist_quick( &obj->pos, &Eye_position ) < obj->radius*50.0f && !Rendering_to_shadow_map ) {
 		for ( int i = 0; i < MAX_SHIP_ARCS; i++ )	{
-			if ( timestamp_valid(shipp->arc_timestamp[i]) ) {
+			if ( shipp->arc_timestamp[i].isValid() ) {
 				model_instance_add_arc(pm, pmi, -1, &shipp->arc_pts[i][0], &shipp->arc_pts[i][1], shipp->arc_type[i]);
 			}
 		}

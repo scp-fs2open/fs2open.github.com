@@ -147,6 +147,9 @@ int ui_timestamp_get_delta(UI_TIMESTAMP before, UI_TIMESTAMP after);
 inline int timestamp_rand(int a, int b) {
 	return timestamp(Random::next(a, b));
 }
+inline TIMESTAMP _timestamp_rand(int a, int b) {
+	return _timestamp(Random::next(a, b));
+}
 
 //	Returns milliseconds until timestamp will elapse.  Invalid timestamps are assumed to occur at approximately T=0.
 int timestamp_until(int stamp);

@@ -14,7 +14,7 @@
 
 #include "globalincs/globals.h"		// for NAME_LENGTH
 #include "globalincs/pstypes.h"
-
+#include "io/timer.h"
 
 class object;
 class polymodel;
@@ -108,9 +108,9 @@ typedef	struct asteroid {
 	int		model_instance_num;
 	int		asteroid_type;		// 0..MAX_DEBRIS_TYPES
 	int		asteroid_subtype;	// Index in asteroid_info for modelnum and modelp
-	int		check_for_wrap;		// timestamp to check for asteroid wrapping around field
-	int		check_for_collide;	// timestamp to check for asteroid colliding with escort ships
-	int		final_death_time;	// timestamp to swap in new models after explosion starts
+	TIMESTAMP	check_for_wrap;		// timestamp to check for asteroid wrapping around field
+	TIMESTAMP	check_for_collide;	// timestamp to check for asteroid colliding with escort ships
+	TIMESTAMP	final_death_time;	// timestamp to swap in new models after explosion starts
 	int		collide_objnum;		// set to objnum that asteroid will be impacting soon
 	int		collide_objsig;		// object signature corresponding to collide_objnum
 	vec3d	death_hit_pos;		// hit pos that caused death
