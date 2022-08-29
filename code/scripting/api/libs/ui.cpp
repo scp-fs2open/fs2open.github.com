@@ -545,32 +545,14 @@ ADE_FUNC(getBriefing,
 
 }
 
-ADE_LIB_DERIV(l_Briefing_Goals, "Objectives", nullptr, nullptr, l_UserInterface_Brief);
-ADE_INDEXER(l_Briefing_Goals,
-	"number Index",
-	"Array of goals",
-	"mission_goal",
-	"goal handle, or invalid handle if index is invalid")
-{
-	int idx;
-	if (!ade_get_args(L, "*i", &idx))
-		return ade_set_error(L, "s", "");
-
-	return ade_set_args(L, "o", l_Goals.Set(Mission_goals[idx]));
-}
-
-ADE_FUNC(__len, l_Briefing_Goals, nullptr, "The number of goals in the mission", "number", "The number of goals.")
-{
-	return ade_set_args(L, "i", Num_goals);
-}
-
 ADE_FUNC(exitLoop,
 	l_UserInterface_Brief,
 	nullptr,
 	"Skips the current mission, exits the campaign loop, and loads the next non-loop mission in a campaign",
 	nullptr,
-	nullptr)
+	"nothing")
 {
+	(void)L;
 	mission_campaign_exit_loop();
 	return ADE_RETURN_NIL;
 }
@@ -580,8 +562,9 @@ ADE_FUNC(skipMission,
 	nullptr,
 	"Skips the current mission, and loads the next mission in a campaign",
 	nullptr,
-	nullptr)
+	"nothing")
 {
+	(void)L;
 	mission_campaign_skip_to_next();
 	return ADE_RETURN_NIL;
 }
@@ -591,9 +574,9 @@ ADE_FUNC(skipTraining,
 	nullptr,
 	"Skips the current training mission, and loads the next mission in a campaign",
 	nullptr,
-	nullptr)
+	"nothing")
 {
-
+	(void)L;
 	// page out mission messages
 	message_mission_shutdown();
 
@@ -622,9 +605,29 @@ ADE_FUNC(startBriefingMap,
 	nullptr,
 	"Starts the briefing map for the current mission. Doesn't currently do anything.",
 	nullptr,
-	nullptr)
+	"nothing")
 {
+	(void)L;
 	return ADE_RETURN_NIL;
+}
+
+ADE_LIB_DERIV(l_Briefing_Goals, "Objectives", nullptr, nullptr, l_UserInterface_Brief);
+ADE_INDEXER(l_Briefing_Goals,
+	"number Index",
+	"Array of goals",
+	"mission_goal",
+	"goal handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "s", "");
+
+	return ade_set_args(L, "o", l_Goals.Set(Mission_goals[idx]));
+}
+
+ADE_FUNC(__len, l_Briefing_Goals, nullptr, "The number of goals in the mission", "number", "The number of goals.")
+{
+	return ade_set_args(L, "i", Num_goals);
 }
 
 //**********SUBLIBRARY: UserInterface/CommandBriefing
