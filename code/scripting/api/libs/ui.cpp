@@ -12,12 +12,18 @@
 #include "menuui/optionsmenu.h"
 #include "menuui/playermenu.h"
 #include "menuui/readyroom.h"
+#include "mission/missionmessage.h"
+#include "mission/missiongoals.h"
 #include "mission/missionbriefcommon.h"
+#include "mission/missionparse.h"
 #include "missionui/fictionviewer.h"
+#include "missionui/missionbrief.h"
 #include "mission/missioncampaign.h"
+#include "mission/missionbriefcommon.h"
 #include "missionui/missionscreencommon.h"
 #include "mission/missioncampaign.h"
 #include "missionui/redalert.h"
+#include "network/multi.h"
 #include "playerman/managepilot.h"
 #include "scpui/SoundPlugin.h"
 #include "scpui/rocket_ui.h"
@@ -25,6 +31,7 @@
 #include "scripting/api/objs/redalert.h"
 #include "scripting/api/objs/fictionviewer.h"
 #include "scripting/api/objs/cmd_brief.h"
+#include "scripting/api/objs/briefing.h"
 #include "scripting/api/objs/color.h"
 #include "scripting/api/objs/enums.h"
 #include "scripting/api/objs/player.h"
@@ -119,7 +126,7 @@ ADE_VIRTVAR(ColorTags,
 ADE_FUNC(DefaultTextColorTag,
 	l_UserInterface,
 	"number UiScreen",
-	"Gets the default color tag string for the specified state. 1 for Briefing, 2 for CBriefing, 3 for Debriefing,"
+	"Gets the default color tag string for the specified state. 1 for Briefing, 2 for CBriefing, 3 for Debriefing, "
 	"4 for Fiction Viewer, 5 for Red Alert, 6 for Loop Briefing, 7 for Recommendation text. Defaults to 1. Index into ColorTags.",
 	"string",
 	"The default color tag")
@@ -522,8 +529,105 @@ ADE_FUNC(runBriefingStageHook,
 	return ADE_RETURN_NIL;
 }
 
+ADE_FUNC(getBriefing,
+	l_UserInterface_Brief,
+	nullptr,
+	"Get the briefing",
+	"briefing",
+	"The briefing data")
+{
+	// get a pointer to the appropriate briefing structure
+	if (MULTI_TEAM) {
+		return ade_set_args(L, "o", l_Brief.Set(Briefings[Net_player->p_info.team]));
+	} else {
+		return ade_set_args(L, "o", l_Brief.Set(Briefings[0]));
+	}
+
+}
+
+ADE_LIB_DERIV(l_Briefing_Goals, "Objectives", nullptr, nullptr, l_UserInterface_Brief);
+ADE_INDEXER(l_Briefing_Goals,
+	"number Index",
+	"Array of goals",
+	"mission_goal",
+	"goal handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "s", "");
+
+	return ade_set_args(L, "o", l_Goals.Set(Mission_goals[idx]));
+}
+
+ADE_FUNC(__len, l_Briefing_Goals, nullptr, "The number of goals in the mission", "number", "The number of goals.")
+{
+	return ade_set_args(L, "i", Num_goals);
+}
+
+ADE_FUNC(exitLoop,
+	l_UserInterface_Brief,
+	nullptr,
+	"Skips the current mission, exits the campaign loop, and loads the next non-loop mission in a campaign",
+	nullptr,
+	nullptr)
+{
+	mission_campaign_exit_loop();
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(skipMission,
+	l_UserInterface_Brief,
+	nullptr,
+	"Skips the current mission, and loads the next mission in a campaign",
+	nullptr,
+	nullptr)
+{
+	mission_campaign_skip_to_next();
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(skipTraining,
+	l_UserInterface_Brief,
+	nullptr,
+	"Skips the current training mission, and loads the next mission in a campaign",
+	nullptr,
+	nullptr)
+{
+
+	// page out mission messages
+	message_mission_shutdown();
+
+	if (!(Game_mode & GM_CAMPAIGN_MODE)) {
+		gameseq_post_event(GS_EVENT_MAIN_MENU);
+	}
+
+	// tricky part.  Need to move to the next mission in the campaign.
+	mission_goal_mark_objectives_complete();
+	mission_goal_fail_incomplete();
+	mission_campaign_store_goals_and_events_and_variables();
+
+	mission_campaign_eval_next_mission();
+	mission_campaign_mission_over();
+
+	if (Campaign.next_mission == -1 || (The_mission.flags[Mission::Mission_Flags::End_to_mainhall])) {
+		gameseq_post_event(GS_EVENT_MAIN_MENU);
+	} else {
+		gameseq_post_event(GS_EVENT_START_GAME);
+	}
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(startBriefingMap,
+	l_UserInterface_Brief,
+	nullptr,
+	"Starts the briefing map for the current mission. Doesn't currently do anything.",
+	nullptr,
+	nullptr)
+{
+	return ADE_RETURN_NIL;
+}
+
 //**********SUBLIBRARY: UserInterface/CommandBriefing
-// This needs a slightly different name since there is already a type called "Options"
 ADE_LIB_DERIV(l_UserInterface_CmdBrief,
 	"CommandBriefing",
 	nullptr,

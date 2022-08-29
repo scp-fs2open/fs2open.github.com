@@ -31,6 +31,7 @@
 #include "parse/sexp/LuaSEXP.h"
 #include "parse/sexp/LuaAISEXP.h"
 #include "parse/sexp/sexp_lookup.h"
+#include "playerman/player.h"
 #include "scripting/api/LuaPromise.h"
 #include "scripting/api/objs/LuaSEXP.h"
 #include "scripting/api/objs/luaaisexp.h"
@@ -1290,6 +1291,39 @@ ADE_FUNC(isInCampaign, l_Mission, NULL, "Get whether or not the current mission 
 	return ade_set_args(L, "b", b);
 }
 
+ADE_FUNC(isInCampaignLoop, l_Mission, nullptr, "Get whether or not the current mission being played is a loop mission in the context of a campaign", "boolean", "true if in loop and campaign, false if not")
+{
+	bool b = false;
+
+	if ((Campaign.loop_enabled) && (Game_mode & GM_CAMPAIGN_MODE)) {
+		b = true;
+	}
+
+	return ade_set_args(L, "b", b);
+}
+
+ADE_FUNC(isTraining, l_Mission, nullptr, "Get whether or not the current mission being played is a training mission", "boolean", "true if in training, false if not")
+{
+	bool b = false;
+
+	if (The_mission.game_type & MISSION_TYPE_TRAINING) {
+		b = true;
+	}
+
+	return ade_set_args(L, "b", b);
+}
+
+ADE_FUNC(isMissionSkipAllowed, l_Mission, nullptr, "Get whether or not the player has reached the failure limit", "boolean", "true if limit reached, false if not")
+{
+	bool b = false;
+
+	if (Player->failures_this_session >= PLAYER_MISSION_FAILURE_LIMIT) {
+		b = true;
+	}
+
+	return ade_set_args(L, "b", b);
+}
+
 ADE_FUNC(isNebula, l_Mission, nullptr, "Get whether or not the current mission being played is set in a nebula", "boolean", "true if in nebula, false if not")
 {
 	return ade_set_args(L, "b", The_mission.flags[Mission::Mission_Flags::Fullneb]);
@@ -1312,6 +1346,10 @@ ADE_FUNC(isSubspace, l_Mission, nullptr, "Get whether or not the current mission
 
 ADE_FUNC(getMissionTitle, l_Mission, NULL, "Get the title of the current mission", "string", "The mission title or an empty string if currently not in mission") {
 	return ade_set_args(L, "s", The_mission.name);
+}
+
+ADE_FUNC(getMissionModifiedDate, l_Mission, NULL, "Get the modified date of the current mission", "string", "The mission modified date or an empty string if currently not in mission") {
+	return ade_set_args(L, "s", The_mission.modified);
 }
 
 static int addBackgroundBitmap_sub(bool uses_correct_angles, lua_State* L)
@@ -1511,6 +1549,19 @@ ADE_FUNC(hasCommandBriefing,
 	"true if command briefing, false otherwise.")
 {
 	return ade_set_args(L, "b", mission_has_cmd_brief() != 0);
+}
+
+ADE_FUNC(hasGoalsSlide,
+	l_Mission,
+	nullptr,
+	"Determines if the current mission will show a Goals slide",
+	"boolean",
+	"true if slide is active, false otherwise.")
+{
+	bool goals = The_mission.flags[Mission::Mission_Flags::Toggle_showing_goals] ==
+		!!(The_mission.game_type & MISSION_TYPE_TRAINING);
+	
+	return ade_set_args(L, "b", goals);
 }
 
 int testLineOfSight_internal(lua_State* L, bool returnDist_and_Obj) {

@@ -56,7 +56,8 @@ void ScrollingTextElement::OnChildRemove(Element* child)
 void ScrollingTextElement::OnUpdate()
 {
 	if (_newAnimationStarted) {
-		gamesnd_play_iface(InterfaceSounds::BRIEF_TEXT_WIPE);
+		//Disabled because this should be controled by the Lua to prevent it playing on frame 0
+		//gamesnd_play_iface(InterfaceSounds::BRIEF_TEXT_WIPE);
 		_newAnimationStarted = false;
 	}
 }
