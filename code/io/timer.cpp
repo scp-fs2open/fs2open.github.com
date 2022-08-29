@@ -452,19 +452,6 @@ bool ui_timestamp_in_between(UI_TIMESTAMP stamp, UI_TIMESTAMP before, UI_TIMESTA
 	return ui_timestamp_compare(before, stamp) >= 0 && ui_timestamp_compare(stamp, after) >= 0;
 }
 
-bool timestamp_has_time_elapsed(int stamp, int time) {
-	int t;
-
-	if (time <= 0)
-		return true;
-
-	t = stamp + time;
-	if (t <= timestamp_ms())
-		return 1;  // if we are unlucky enough to have it wrap on us, this will assume time has elapsed.
-
-	return false;
-}
-
 bool timestamp_elapsed(int stamp) {
 	if (stamp == 0) {
 		return false;

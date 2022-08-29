@@ -173,10 +173,6 @@ bool timestamp_in_between(TIMESTAMP stamp, TIMESTAMP before, TIMESTAMP after);
 // Checks that a timestamp occurs between the "before" and "after" timestamps.
 bool ui_timestamp_in_between(UI_TIMESTAMP stamp, UI_TIMESTAMP before, UI_TIMESTAMP after);
 
-// checks if a specified time (in milliseconds) has elapsed past the given timestamp (which
-// should be obtained from timestamp() or timestamp(x) with a positive x)
-bool timestamp_has_time_elapsed(int stamp, int time);
-
 // Example that makes a ship fire in 1/2 second
 
 // ...

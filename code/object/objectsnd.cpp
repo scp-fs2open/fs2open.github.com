@@ -59,7 +59,7 @@ static	int		Doppler_enabled = TRUE;
 obj_snd	Objsnds[MAX_OBJ_SNDS];
 
 int		Obj_snd_enabled = TRUE;
-int		Obj_snd_last_update;							// timer used to run object sound updates at fixed time intervals
+UI_TIMESTAMP	Obj_snd_last_update;							// timer used to run object sound updates at fixed time intervals
 int		Obj_snd_level_inited=0;
 
 // ship flyby data
@@ -212,7 +212,7 @@ void obj_snd_level_init()
 	Flyby_next_sound = 1;
 	Flyby_next_repeat = 1;
 	Flyby_last_objp = NULL;
-	Obj_snd_last_update=0;
+	Obj_snd_last_update = ui_timestamp();
 
 	if ( !snd_is_inited() ) {
 		Obj_snd_enabled = FALSE;
@@ -453,9 +453,8 @@ void obj_snd_do_frame()
 	if ( Obj_snd_enabled == FALSE )
 		return;
 
-	int now = timer_get_milliseconds();
-	if ( (now - Obj_snd_last_update) > 100 ) {
-		Obj_snd_last_update=now;
+	if ( ui_timestamp_since(Obj_snd_last_update) > 100 ) {
+		Obj_snd_last_update = ui_timestamp();
 	} else {
 		return;
 	}
