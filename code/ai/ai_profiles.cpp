@@ -600,6 +600,8 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$AI ignores aspect lock for leading:", AI::Profile_Flags::Ignore_aspect_when_leading);
 
+				set_flag(profile, "$fix good-rearm-time bug:", AI::Profile_Flags::Fix_good_rearm_time_bug);
+
 
 				// if we've been through once already and are at the same place, force a move
 				if (saved_Mp && (saved_Mp == Mp))
@@ -767,5 +769,8 @@ void ai_profile_t::reset()
 		flags.set(AI::Profile_Flags::Fighterbay_arrivals_use_carrier_orient);
 		flags.set(AI::Profile_Flags::Prevent_negative_turret_ammo);
 		flags.set(AI::Profile_Flags::Fix_keep_safe_distance);
+	}
+	if (mod_supports_version(22, 4, 0)) {
+		flags.set(AI::Profile_Flags::Fix_good_rearm_time_bug);
 	}
 }
