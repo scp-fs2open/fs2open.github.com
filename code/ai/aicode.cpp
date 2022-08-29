@@ -2795,7 +2795,7 @@ void copy_xlate_model_path_points(object *objp, model_path *mp, int dir, int cou
 	auto pm = model_get(pmi->model_num);
 
 	// Goober5000 - check for moving submodels
-	if ((mp->parent_submodel >= 0) && (pm->submodel[mp->parent_submodel].rotation_type >= 0))
+	if ((mp->parent_submodel >= 0) && ((pm->submodel[mp->parent_submodel].rotation_type >= 0) || (pm->submodel[mp->parent_submodel].translation_type >= 0)))
 	{
 		moving_submodel = true;
 
@@ -9447,7 +9447,7 @@ int find_parent_moving_submodel(polymodel *pm, int dock_index)
 		submodel = pm->paths[path_num].parent_submodel;
 
 		// submodel must exist and must move
-		if ((submodel >= 0) && (submodel < pm->n_models) && (pm->submodel[submodel].rotation_type >= 0))
+		if ((submodel >= 0) && (submodel < pm->n_models) && ((pm->submodel[submodel].rotation_type >= 0) || (pm->submodel[submodel].translation_type >= 0)))
 		{
 			return submodel;
 		}

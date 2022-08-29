@@ -55,6 +55,7 @@ flag_def_list model_render_flags[] =
 int model_render_flags_size = sizeof(model_render_flags)/sizeof(flag_def_list);
 
 #define MAX_SUBMODEL_COLLISION_ANGULAR_VELOCITY		(PI / 6.0f)		// max 30 degrees per frame
+#define MAX_SUBMODEL_COLLISION_LINEAR_VELOCITY		100.0f			// max 100 meters per frame
 
 // info for special polygon lists
 
@@ -83,20 +84,27 @@ static uint Global_checksum = 0;
 // compatible.  
 #define PM_OBJFILE_MAJOR_VERSION 30
 
+// 23.01 adds support for submodel translation
 // 23.00 adds support for increased subobject vertex limit via TMAP2POLY
 // 
+// 22.02 adds support for submodel translation
 // 22.01 adds support for external weapon model angle offsets
 // 22.00 fixes the POF byte alignment and introduces the SLC2 chunk
 //
+// 21.19 adds support for submodel translation
 // 21.18 adds support for external weapon model angle offsets
 // 21.17 adds support for engine thruster banks linked to specific engine subsystems
 // FreeSpace 2 shipped at POF version 21.17
 // Descent: FreeSpace shipped at POF version 20.14
 // See also https://wiki.hard-light.net/index.php/POF_data_structure
-#define PM_LATEST_ALIGNED_VERSION	2300
-#define PM_LATEST_LEGACY_VERSION	2118
-#define PM_FIRST_ALIGNED_VERSION	2200
+#define PM_LATEST_VERTLIM_VERSION	2301
 #define PM_FIRST_VERTLIM_VERSION	2300
+
+#define PM_LATEST_ALIGNED_VERSION	2202
+#define PM_FIRST_ALIGNED_VERSION	2200
+
+#define PM_LATEST_LEGACY_VERSION	2119
+
 
 static int Model_signature = 0;
 
@@ -620,7 +628,7 @@ bool in(char *&p, char *str, const char *substr)
 	return p != nullptr;
 }
 
-const Model::Subsystem_Flags carry_flags[] = { Model::Subsystem_Flags::Crewpoint, Model::Subsystem_Flags::Rotates, Model::Subsystem_Flags::Triggered, Model::Subsystem_Flags::Artillery, Model::Subsystem_Flags::Stepped_rotate };
+const Model::Subsystem_Flags carry_flags[] = { Model::Subsystem_Flags::Crewpoint, Model::Subsystem_Flags::Rotates, Model::Subsystem_Flags::Translates, Model::Subsystem_Flags::Triggered, Model::Subsystem_Flags::Artillery, Model::Subsystem_Flags::Stepped_rotate, Model::Subsystem_Flags::Stepped_translate };
 // Function to copy model data from one subsystem set to another subsystem set.  This function
 // is called when two ships use the same model data, but since the model only gets read in one time,
 // the subsystem data is only present in one location.  The ship code will call this routine to fix
@@ -740,6 +748,7 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 
 	if (in(props, "$triggered")) {
 		subsystemp->flags.set(Model::Subsystem_Flags::Rotates);
+		subsystemp->flags.set(Model::Subsystem_Flags::Translates);
 		subsystemp->flags.set(Model::Subsystem_Flags::Triggered);
 	}
 
@@ -889,6 +898,118 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 			submodelp->default_turn_accel = turn_accel;
 		}
 	}
+	// Translating subsystem
+	else if ((idx = prop_string(props, &p, "$translate_rate", "$translate")) >= 0) {
+        subsystemp->flags.set(Model::Subsystem_Flags::Translates);
+
+		// get value for continuous or stepped translation
+		get_user_prop_value(p, buf);	// note: p points to the value since we used prop_string
+
+		// $translate means $translate_rate; there is no $translate_time
+		float shift_rate = static_cast<float>(atof(buf));
+
+		// *** determine how the subsys translates ***
+
+		// CASE OF STEPPED TRANSLATION
+		if (in(props, "$stepped")) {
+
+			subsystemp->stepped_translation.reset(new stepped_translation);
+            subsystemp->flags.set(Model::Subsystem_Flags::Stepped_translate);
+
+			// get whether to reverse after the step
+			// (always reverse unless the props say explicitly not to)
+			if (in(p, props, "$reverse_after_step")) {
+				get_user_prop_value(p+19, buf);
+				if (stricmp(buf, "false")) {
+					subsystemp->stepped_translation->reverse_after_step = true;
+				}
+			} else {
+				subsystemp->stepped_translation->reverse_after_step = true;
+			}
+
+			// get step distance
+			if (in(p, props, "$step_distance")) {
+				get_user_prop_value(p+14, buf);
+				float step_dist = (float)atof(buf);
+				if (step_dist < 0.0f) {
+					Warning(LOCATION, "In model %s, subsystem %s, $step_distance must not be negative!", modelp->filename, submodelp->name);
+					step_dist = 25.0f;
+				}
+				subsystemp->stepped_translation->step_distance = step_dist;
+			} else {
+				subsystemp->stepped_translation->step_distance = 25.0f;
+			}
+
+			// get pause time
+			if (in(p, props, "$t_paused")) {
+				get_user_prop_value(p+9, buf);
+				float t_pause = (float)atof(buf);
+				if (t_pause < 0.0f) {
+					Warning(LOCATION, "In model %s, subsystem %s, $t_paused must not be negative!", modelp->filename, submodelp->name);
+					t_pause = 2.0f;
+				}
+				subsystemp->stepped_translation->t_pause = t_pause;
+			} else {
+				subsystemp->stepped_translation->t_pause = 2.0f;
+			}
+
+			// get transition time - time to make a complete movement
+			subsystemp->stepped_translation->t_transit = fl_abs(subsystemp->stepped_translation->step_distance / shift_rate);
+
+			// get fraction of time spent in accel
+			if (in(p, props, "$fraction_accel")) {
+				get_user_prop_value(p+15, buf);
+				float fraction = (float)atof(buf);
+				if (fraction < 0.0f || fraction > 0.5f) {
+					Warning(LOCATION, "In model %s, subsystem %s, $fraction_accel must not be negative and must be less than or equal to 0.5!", modelp->filename, submodelp->name);
+					fraction = 0.3f;
+				}
+				subsystemp->stepped_translation->fraction = fraction;
+			} else {
+				subsystemp->stepped_translation->fraction = 0.3f;
+			}
+
+			float step_distance = subsystemp->stepped_translation->step_distance;
+			float t_trans = subsystemp->stepped_translation->t_transit;
+			float fraction = subsystemp->stepped_translation->fraction;
+
+			// reverse the direction if we start out with reverse velocity
+			if (shift_rate < 0.0f) {
+				subsystemp->stepped_translation->backwards = true;
+			}
+
+			subsystemp->stepped_translation->max_shift_accel = fl_near_zero(fraction) ? 0.0f : step_distance / (fraction * (1.0f - fraction) * t_trans * t_trans);
+			subsystemp->stepped_translation->max_shift_rate = step_distance / ((1.0f - fraction) * t_trans);
+		}
+
+		// CASE OF NORMAL CONTINUOUS TRANSLATION
+		else {
+			if (submodelp) {
+				submodelp->default_shift_rate = shift_rate;
+			}
+		}
+
+		float shift_accel = 0.5f;
+		if (in(p, props, "$translate_accel")) {
+			get_user_prop_value(p + 16, buf);
+
+			if (!stricmp(buf, "instant")) {
+				if (submodelp) {
+					submodelp->flags.set(Model::Submodel_flags::Instant_translate_accel);
+				}
+				shift_accel = 0.0f;
+			} else {
+				shift_accel = static_cast<float>(atof(buf));
+				if (shift_accel < 0.0f) {
+					Warning(LOCATION, "Model %s, submodel %s, $translate_accel %f cannot be negative!", modelp->filename, dname, shift_accel);
+					shift_accel *= -1;
+				}
+			}
+		}
+		if (submodelp) {
+			submodelp->default_shift_accel = shift_accel;
+		}
+	}
 }
 
 // used in collision code to check if submodel rotates too far
@@ -903,6 +1024,12 @@ float get_submodel_delta_angle(const submodel_instance *smi)
 	}
 
 	return delta_angle;
+}
+
+float get_submodel_delta_shift(const submodel_instance *smi)
+{
+	// this is a bit simpler
+	return abs(smi->cur_offset - smi->prev_offset);
 }
 
 void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num, float rad, vec3d *pnt, char *props, char *subobj_name, int model_num )
@@ -1183,10 +1310,9 @@ void extract_movement_info(bsp_info *sm, bool is_rotation, int *&movement_axis_i
 	}
 	else
 	{
-		UNREACHABLE("Not yet implemented");
-		movement_axis_id = nullptr;
-		movement_axis = nullptr;
-		movement_type = nullptr;
+		movement_axis_id = &sm->translation_axis_id;
+		movement_axis = &sm->translation_axis;
+		movement_type = &sm->translation_type;
 	}
 }
 
@@ -1209,7 +1335,7 @@ void determine_submodel_movement(bool is_rotation, const char *filename, bsp_inf
 		*movement_axis = vmd_z_vector;
 	else if (*movement_axis_id == MOVEMENT_AXIS_OTHER)
 	{
-		auto axis_string = "$rotation_axis";
+		auto axis_string = is_rotation ? "$rotation_axis" : "$translation_axis";
 
 		if (in(p, props, axis_string))
 		{
@@ -1485,8 +1611,12 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 		Warning(LOCATION,"Bad version (%d) in model file <%s>",version,filename);
 		return 0;
 	}
-	if ((version > PM_LATEST_LEGACY_VERSION && version < PM_FIRST_ALIGNED_VERSION) || (version > PM_LATEST_ALIGNED_VERSION)) {
-		Warning(LOCATION, "Model file %s is version %d, but the latest supported version on this build of FSO is %d.  The model may not work correctly.", filename, version, version >= PM_FIRST_ALIGNED_VERSION ? PM_LATEST_ALIGNED_VERSION : PM_LATEST_LEGACY_VERSION);
+	if (version > PM_LATEST_LEGACY_VERSION && version < PM_FIRST_ALIGNED_VERSION) {
+		Warning(LOCATION, "Model file %s is version %d, but the latest supported version on this build of FSO is %d.  The model may not work correctly.", filename, version, PM_LATEST_LEGACY_VERSION);
+	} else if (version > PM_LATEST_ALIGNED_VERSION && version < PM_FIRST_VERTLIM_VERSION) {
+		Warning(LOCATION, "Model file %s is version %d, but the latest supported version on this build of FSO is %d.  The model may not work correctly.", filename, version, PM_LATEST_ALIGNED_VERSION);
+	} else if (version > PM_LATEST_VERTLIM_VERSION) {
+		Warning(LOCATION, "Model file %s is version %d, but the latest supported version on this build of FSO is %d.  The model may not work correctly.", filename, version, PM_LATEST_VERTLIM_VERSION);
 	}
 
 	pm->version = version;
@@ -1753,6 +1883,26 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 
 				determine_submodel_movement(true, pm->filename, sm, props, look_at_submodel_names);
 
+				// submodel translation is a new POF feature
+				if ((pm->version >= 2119 && pm->version < PM_FIRST_ALIGNED_VERSION)
+					|| (pm->version >= 2202 && pm->version < PM_FIRST_VERTLIM_VERSION)
+					|| (pm->version >= 2301))
+				{
+					sm->translation_type = cfread_int(fp);
+					sm->translation_axis_id = cfread_int(fp);
+
+					if (sm->translation_type == MOVEMENT_TYPE_REGULAR) {
+						if (in(props, "$triggered")) {
+							sm->translation_type = MOVEMENT_TYPE_TRIGGERED;
+						}
+					}
+
+					determine_submodel_movement(false, pm->filename, sm, props, look_at_submodel_names);
+				} else {
+					sm->translation_type = MOVEMENT_TYPE_NONE;
+					sm->translation_axis_id = -1;
+				}
+
 				if ( sm->name[0] == '\0' ) {
 					strcpy_s(sm->name, "unknown object name");
 				}
@@ -1763,12 +1913,21 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 					get_user_prop_value(p+9, type);
 					if ( !stricmp(type, "subsystem") ) {	// if we have a subsystem, put it into the list!
 						do_new_subsystem( n_subsystems, subsystems, n, sm->rad, &sm->offset, props, sm->name, pm->id );
-					} else if ( !stricmp(type, "no_rotate") ) {
-						// mark those submodels which should not rotate - ie, those with no subsystem
-						sm->rotation_type = MOVEMENT_TYPE_NONE;
 					} else {
-						// if submodel rotates (via bspgen), then there is either a subsys or special=no_rotate
-						Assert( sm->rotation_type != MOVEMENT_TYPE_REGULAR );
+						if ( !stricmp(type, "no_rotate") || !stricmp(type, "no_movement") ) {
+							// mark those submodels which should not move - i.e., those with no subsystem
+							sm->rotation_type = MOVEMENT_TYPE_NONE;
+						} else {
+							// if submodel rotates (via bspgen), then there is either a subsys or special=no_rotate
+							Assert( sm->rotation_type != MOVEMENT_TYPE_REGULAR );
+						}
+						if ( !stricmp(type, "no_translate") || !stricmp(type, "no_movement") ) {
+							// mark those submodels which should not move - i.e., those with no subsystem
+							sm->translation_type = MOVEMENT_TYPE_NONE;
+						} else {
+							// if submodel translates (via bspgen), then there is either a subsys or special=no_translate
+							Assert( sm->translation_type != MOVEMENT_TYPE_REGULAR );
+						}
 					}
 				}
 
@@ -1915,6 +2074,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 				// ---------- submodel movement sanity checks ----------
 
 				do_movement_sanity_checks(true, sm, parent_sm, pm->filename);
+				do_movement_sanity_checks(false, sm, parent_sm, pm->filename);
 
 				// ---------- done submodel movement sanity checks ----------
 
@@ -2768,7 +2928,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 
 	// And now look through all the submodels and set the model flag if any are intrinsic-moving
 	for (i = 0; i < pm->n_models; i++) {
-		if (pm->submodel[i].rotation_type == MOVEMENT_TYPE_INTRINSIC) {
+		if (pm->submodel[i].rotation_type == MOVEMENT_TYPE_INTRINSIC || pm->submodel[i].translation_type == MOVEMENT_TYPE_INTRINSIC) {
 			pm->flags |= PM_FLAG_HAS_INTRINSIC_MOTION;
 			break;
 		}
@@ -3743,7 +3903,7 @@ void model_get_rotating_submodel_axis(vec3d *model_axis, vec3d *world_axis, cons
 }
 
 // Normalize the submodel angle and convert float angle to angles struct
-void submodel_canonicalize(bsp_info *sm, submodel_instance *smi, bool clamp)
+void submodel_canonicalize_rotation(bsp_info *sm, submodel_instance *smi, bool clamp)
 {
 	smi->canonical_prev_orient = smi->canonical_orient;
 
@@ -3787,6 +3947,32 @@ void submodel_canonicalize(bsp_info *sm, submodel_instance *smi, bool clamp)
 
 		default:
 			vm_quaternion_rotate(&smi->canonical_orient, smi->cur_angle, &sm->rotation_axis);
+			break;
+	}
+}
+
+// Convert float displacement to vector, but no normalization (clamping) is needed
+void submodel_canonicalize_translation(bsp_info *sm, submodel_instance *smi)
+{
+	smi->canonical_prev_offset = smi->canonical_offset;
+
+	// get the vector
+	switch (sm->rotation_axis_id)
+	{
+		case MOVEMENT_AXIS_X:
+			vm_vec_copy_scale(&smi->canonical_offset, &vmd_x_vector, smi->cur_offset);
+			break;
+
+		case MOVEMENT_AXIS_Y:
+			vm_vec_copy_scale(&smi->canonical_offset, &vmd_y_vector, smi->cur_offset);
+			break;
+
+		case MOVEMENT_AXIS_Z:
+			vm_vec_copy_scale(&smi->canonical_offset, &vmd_z_vector, smi->cur_offset);
+			break;
+
+		default:
+			vm_vec_copy_scale(&smi->canonical_offset, &sm->translation_axis, smi->cur_offset);
 			break;
 	}
 }
@@ -3859,7 +4045,87 @@ void submodel_stepped_rotate(model_subsystem *psub, submodel_instance *smi)
 		smi->cur_angle *= -1.0f;
 	}
 
-	submodel_canonicalize(sm, smi, true);
+	submodel_canonicalize_rotation(sm, smi, true);
+}
+
+// Does stepped translation of a submodel
+void submodel_stepped_translate(model_subsystem *psub, submodel_instance *smi)
+{
+	Assert(psub->flags[Model::Subsystem_Flags::Stepped_translate]);
+
+	if ( psub->subobj_num < 0 ) return;
+
+	polymodel *pm = model_get(psub->model_num);
+	bsp_info *sm = &pm->submodel[psub->subobj_num];
+
+	if ( sm->translation_type != MOVEMENT_TYPE_REGULAR ) return;
+
+	if (!smi->stepped_translation_started.isValid())
+		smi->stepped_translation_started = _timestamp();
+
+	float elapsed_time = timestamp_since(smi->stepped_translation_started) / static_cast<float>(MILLISECONDS_PER_SECOND);
+
+	// save last offset
+	smi->prev_offset = smi->cur_offset;
+
+	// linear displacement of one step
+	float step_size = psub->stepped_translation->step_distance;
+
+	// get time to complete one step, including pause
+	float step_time = psub->stepped_translation->t_transit + psub->stepped_translation->t_pause;
+
+	// step_offset_time is TIME into current step
+	float step_offset_time = static_cast<float>(fmod(elapsed_time, step_time));
+
+	// get step we are on (round down)
+	int cur_step = static_cast<int>(elapsed_time / step_time);
+
+	// set base displacement to 0 for now
+	smi->cur_offset = 0.0f;
+
+	// determine which phase of translation we're in
+	float coast_start_time = psub->stepped_translation->fraction * psub->stepped_translation->t_transit;
+	float decel_start_time = psub->stepped_translation->t_transit * (1.0f - psub->stepped_translation->fraction);
+	float pause_start_time = psub->stepped_translation->t_transit;
+
+	float start_coast_dist = 0.5f * psub->stepped_translation->max_shift_accel * coast_start_time * coast_start_time;
+
+	if (step_offset_time < coast_start_time) {
+		// do accel
+		float accel_time = step_offset_time;
+		smi->cur_offset += 0.5f * psub->stepped_translation->max_shift_accel * accel_time * accel_time;
+		smi->current_shift_rate = psub->stepped_translation->max_shift_accel * accel_time;
+	} else if (step_offset_time < decel_start_time) {
+		// do coast
+		float coast_time = step_offset_time - coast_start_time;
+		smi->cur_offset += start_coast_dist + psub->stepped_translation->max_shift_rate * coast_time;
+		smi->current_shift_rate = psub->stepped_translation->max_shift_rate;
+	} else if (step_offset_time < pause_start_time) {
+		// do decel
+		float time_to_pause = psub->stepped_translation->t_transit - step_offset_time;
+		smi->cur_offset += (step_size - 0.5f * psub->stepped_translation->max_shift_accel * time_to_pause * time_to_pause);
+		smi->current_shift_rate = psub->stepped_translation->max_shift_rate * time_to_pause;
+	} else {
+		// do pause
+		smi->cur_offset += step_size;
+		smi->current_shift_rate = 0.0f;
+	}
+
+	// set correct displacement depending on whether we are alternating or moving continuously
+	if (psub->stepped_translation->reverse_after_step) {
+		if (cur_step % 2 == 1) {
+			smi->cur_offset = step_size - smi->cur_offset;
+		}
+	} else {
+		smi->cur_offset += cur_step * step_size;
+	}
+
+	// if we're going backwards, flip the whole thing
+	if (psub->stepped_translation->backwards) {
+		smi->cur_offset *= -1.0f;
+	}
+
+	submodel_canonicalize_translation(sm, smi);
 }
 
 // Instantly rotate a submodel (around its axis of rotation) so that it is oriented toward its look_at_submodel.
@@ -3902,7 +4168,7 @@ void submodel_look_at(polymodel *pm, polymodel_instance *pmi, int submodel_num)
 	{
 		sm->look_at_offset = -(smi->cur_angle);
 
-		// ensure the offset is in the proper range (see submodel_canonicalize)
+		// ensure the offset is in the proper range (see submodel_canonicalize_rotation)
 		while (sm->look_at_offset > PI2)
 			sm->look_at_offset -= PI2;
 		while (sm->look_at_offset < 0.0f)
@@ -3916,7 +4182,7 @@ void submodel_look_at(polymodel *pm, polymodel_instance *pmi, int submodel_num)
 		smi->current_turn_rate = smi->desired_turn_rate = (smi->cur_angle - smi->prev_angle) / flFrametime;
 
 	// and now set the other submodel fields
-	submodel_canonicalize(sm, smi, true);
+	submodel_canonicalize_rotation(sm, smi, true);
 }
 
 // Rotates the angle of a submodel, when the submodel has a subsystem (which is almost always the case)
@@ -3934,45 +4200,68 @@ void submodel_rotate(model_subsystem *psub, submodel_instance *smi)
 	submodel_rotate(sm, smi);
 }
 
-// Rotates the angle of a submodel.  If the submodel has a subsystem, the execution flow should first go through the other
-// submodel_rotate function before this one.  (This function is called directly in the case of dumb_rotation.)
-void submodel_rotate(bsp_info *sm, submodel_instance *smi)
+// Translates the offset of a submodel, when the submodel has a subsystem
+void submodel_translate(model_subsystem *psub, submodel_instance *smi)
 {
-	// save last angles
-	smi->prev_angle = smi->cur_angle;
+	bsp_info * sm;
+
+	if ( psub->subobj_num < 0 ) return;
+
+	polymodel *pm = model_get(psub->model_num);
+	sm = &pm->submodel[psub->subobj_num];
+
+	if ( sm->translation_type != MOVEMENT_TYPE_REGULAR ) return;
+
+	submodel_translate(sm, smi);
+}
+
+// Helper function for both rotation and translation
+void submodel_movement_calc(float &prev_value, float &cur_value, float &current_rate, float desired_rate, float accel, bool instant_accel)
+{
+	// save last value
+	prev_value = cur_value;
 
 	float delta;
 
-	if (sm->flags[Model::Submodel_flags::Instant_rotate_accel]) {
-		delta = smi->desired_turn_rate * flFrametime;
-		smi->current_turn_rate = smi->desired_turn_rate;
+	if (instant_accel) {
+		delta = desired_rate * flFrametime;
+		current_rate = desired_rate;
 	} else {
-		// probably send in a calculated desired turn rate
-		float diff = smi->desired_turn_rate - smi->current_turn_rate;
+		// probably send in a calculated desired rate
+		float diff = desired_rate - current_rate;
 
-		float final_turn_rate;
+		float final_rate;
 		if (diff > 0) {
-			final_turn_rate = smi->current_turn_rate + smi->turn_accel * flFrametime;
-			if (final_turn_rate > smi->desired_turn_rate) {
-				final_turn_rate = smi->desired_turn_rate;
+			final_rate = current_rate + accel * flFrametime;
+			if (final_rate > desired_rate) {
+				final_rate = desired_rate;
 			}
 		} else if (diff < 0) {
-			final_turn_rate = smi->current_turn_rate - smi->turn_accel * flFrametime;
-			if (final_turn_rate < smi->desired_turn_rate) {
-				final_turn_rate = smi->desired_turn_rate;
+			final_rate = current_rate - accel * flFrametime;
+			if (final_rate < desired_rate) {
+				final_rate = desired_rate;
 			}
 		} else {
-			final_turn_rate = smi->desired_turn_rate;
+			final_rate = desired_rate;
 		}
 
-		delta = (smi->current_turn_rate + final_turn_rate) * 0.5f * flFrametime;
-		smi->current_turn_rate = final_turn_rate;
+		delta = (current_rate + final_rate) * 0.5f * flFrametime;
+		current_rate = final_rate;
 	}
 
-	// Apply rotation in the axis of movement
-	smi->cur_angle += delta;
+	// Apply movement
+	cur_value += delta;
+}
+void submodel_rotate(bsp_info *sm, submodel_instance *smi)
+{
+	submodel_movement_calc(smi->prev_angle, smi->cur_angle, smi->current_turn_rate, smi->desired_turn_rate, smi->turn_accel, sm->flags[Model::Submodel_flags::Instant_rotate_accel]);
+	submodel_canonicalize_rotation(sm, smi, true);
+}
 
-	submodel_canonicalize(sm, smi, true);
+void submodel_translate(bsp_info *sm, submodel_instance *smi)
+{
+	submodel_movement_calc(smi->prev_offset, smi->cur_offset, smi->current_shift_rate, smi->desired_shift_rate, smi->shift_accel, sm->flags[Model::Submodel_flags::Instant_translate_accel]);
+	submodel_canonicalize_translation(sm, smi);
 }
 
 // Tries to move joints so that the turret points to the point dst.
@@ -4076,8 +4365,8 @@ int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, ship_
 	base_delta = vm_interp_angle(&base_smi->cur_angle, desired_base_angle, step_size, limited_base_rotation);
 	gun_delta = vm_interp_angle(&gun_smi->cur_angle, desired_gun_angle, step_size);
 
-	submodel_canonicalize(base_sm, base_smi, true);
-	submodel_canonicalize(gun_sm, gun_smi, true);
+	submodel_canonicalize_rotation(base_sm, base_smi, true);
+	submodel_canonicalize_rotation(gun_sm, gun_smi, true);
 
 	//------------
 	// Set fields for turret rotation sounds
@@ -4144,6 +4433,7 @@ void model_local_to_global_point(vec3d *outpnt, const vec3d *mpnt, const polymod
 	//instance up the tree for this point
 	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
 		// the angles in non-instanced models are always zero, so no need to rotate
+		// and no need to translate, for the same reason
 		vm_vec_add2(&pnt, &pm->submodel[mn].offset);
 
 		mn = pm->submodel[mn].parent;
@@ -4178,7 +4468,8 @@ void model_instance_local_to_global_point(vec3d *outpnt, const vec3d *mpnt, cons
 	//instance up the tree for this point
 	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
 		vm_vec_unrotate(&tpnt, &pnt, use_last_frame ? &pmi->submodel[mn].canonical_prev_orient : &pmi->submodel[mn].canonical_orient);
-		vm_vec_add(&pnt, &tpnt, &pm->submodel[mn].offset);
+		vm_vec_add(&pnt, &tpnt, use_last_frame ? &pmi->submodel[mn].canonical_prev_offset : &pmi->submodel[mn].canonical_offset);
+		vm_vec_add2(&pnt, &pm->submodel[mn].offset);
 
 		mn = pm->submodel[mn].parent;
 	}
@@ -4205,7 +4496,8 @@ void model_instance_local_to_global_point_dir(vec3d *out_pnt, vec3d *out_dir, co
 	// instance up the tree for this point
 	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
 		vm_vec_unrotate(&tpnt, &pnt, &pmi->submodel[mn].canonical_orient);
-		vm_vec_add(&pnt, &tpnt, &pm->submodel[mn].offset);
+		vm_vec_add(&pnt, &tpnt, &pmi->submodel[mn].canonical_offset);
+		vm_vec_add2(&pnt, &pm->submodel[mn].offset);
 
 		vm_vec_unrotate(&tdir, &dir, &pmi->submodel[mn].canonical_orient);
 		dir = tdir;
@@ -4239,7 +4531,8 @@ void model_instance_local_to_global_point_orient(vec3d *outpnt, matrix *outorien
 	// instance up the tree for this point
 	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
 		vm_vec_unrotate(&tpnt, &pnt, &pmi->submodel[mn].canonical_orient);
-		vm_vec_add(&pnt, &tpnt, &pm->submodel[mn].offset);
+		vm_vec_add(&pnt, &tpnt, &pmi->submodel[mn].canonical_offset);
+		vm_vec_add2(&pnt, &pm->submodel[mn].offset);
 
 		orient = orient * pmi->submodel[mn].canonical_orient;
 
@@ -4268,26 +4561,30 @@ void model_instance_global_to_local_point(vec3d* outpnt, const vec3d* mpnt, cons
 	Assert(pm->id == pmi->model_num);
 
 	constexpr int preallocatedStackDepth = 5;
-	std::pair<const matrix*, const vec3d*> preallocatedStack[preallocatedStackDepth];
+	std::tuple<const matrix*, const vec3d*, const vec3d*> preallocatedStack[preallocatedStackDepth];
 
-	auto submodelStack = pm->submodel[submodel_num].depth <= preallocatedStackDepth ? preallocatedStack : new std::pair<const matrix*, const vec3d*>[pm->submodel[submodel_num].depth];
+	auto submodelStack = pm->submodel[submodel_num].depth <= preallocatedStackDepth ? preallocatedStack : new std::tuple<const matrix*, const vec3d*, const vec3d*>[pm->submodel[submodel_num].depth];
 	int stackCounter = 0;
 
 	int mn = submodel_num;
 
 	//Go up the chain of parents to build a stack of transformations from parent -> child
 	while ((mn >= 0) && (pm->submodel[mn].parent >= 0)) {
-		if(use_last_frame)
-			submodelStack[stackCounter].first = &pmi->submodel[mn].canonical_prev_orient;
-		else
-			submodelStack[stackCounter].first = &pmi->submodel[mn].canonical_orient;
-		submodelStack[stackCounter++].second = &pm->submodel[mn].offset;
+		if(use_last_frame) {
+			std::get<0>(submodelStack[stackCounter]) = &pmi->submodel[mn].canonical_prev_orient;
+			std::get<1>(submodelStack[stackCounter]) = &pmi->submodel[mn].canonical_prev_offset;
+		} else {
+			std::get<0>(submodelStack[stackCounter]) = &pmi->submodel[mn].canonical_orient;
+			std::get<1>(submodelStack[stackCounter]) = &pmi->submodel[mn].canonical_offset;
+		}
+		std::get<2>(submodelStack[stackCounter++]) = &pm->submodel[mn].offset;
 		mn = pm->submodel[mn].parent;
 	}
 
 	if (objorient != nullptr && objpos != nullptr) {
-		submodelStack[stackCounter].first = objorient;
-		submodelStack[stackCounter++].second = objpos;
+		std::get<0>(submodelStack[stackCounter]) = objorient;
+		std::get<1>(submodelStack[stackCounter]) = &vmd_zero_vector;
+		std::get<2>(submodelStack[stackCounter++]) = objpos;
 	}
 	stackCounter--;
 		
@@ -4296,8 +4593,9 @@ void model_instance_global_to_local_point(vec3d* outpnt, const vec3d* mpnt, cons
 	while (stackCounter >= 0) {
 		const auto& transform = submodelStack[stackCounter--];
 
-		vm_vec_sub2(&resultPnt, transform.second);
-		vm_vec_rotate(&resultPnt, &resultPnt, transform.first);
+		vm_vec_sub2(&resultPnt, std::get<2>(transform));
+		vm_vec_sub2(&resultPnt, std::get<1>(transform));
+		vm_vec_rotate(&resultPnt, &resultPnt, std::get<0>(transform));
 	}
 
 	*outpnt = resultPnt;
@@ -4356,6 +4654,7 @@ void model_instance_global_to_local_dir(vec3d* out_dir, const vec3d* in_dir, con
  * 1) Have the rotating or intrinsic-rotating movement type
  * 2) Are currently rotating (i.e. actually moving and not part of the superstructure due to being destroyed or replaced)
  * 3) Are not rotating too far for collision detection (c.f. MAX_SUBMODEL_COLLISION_ANGULAR_VELOCITY)
+ * And check the translating equivalent as well
  */
 void model_get_moving_submodel_list(SCP_vector<int> &submodel_vector, const object *objp)
 {
@@ -4405,8 +4704,10 @@ void model_get_moving_submodel_list(SCP_vector<int> &submodel_vector, const obje
 		if (child_submodel.rotation_type == MOVEMENT_TYPE_REGULAR || child_submodel.rotation_type == MOVEMENT_TYPE_INTRINSIC) {
 			float delta_angle = get_submodel_delta_angle(&child_submodel_instance);
 			isMoving |= delta_angle < MAX_SUBMODEL_COLLISION_ANGULAR_VELOCITY;
-		}
-		else if (child_submodel.flags[Model::Submodel_flags::Can_move]) {
+		} else if (child_submodel.translation_type == MOVEMENT_TYPE_REGULAR || child_submodel.translation_type == MOVEMENT_TYPE_INTRINSIC) {
+			float delta_shift = get_submodel_delta_shift(&child_submodel_instance);
+			isMoving |= delta_shift < MAX_SUBMODEL_COLLISION_LINEAR_VELOCITY;
+		} else if (child_submodel.flags[Model::Submodel_flags::Can_move]) {
 			isMoving = true;
 		}
 
@@ -4503,6 +4804,10 @@ void model_set_submodel_instance_motion_info(bsp_info *sm, submodel_instance *sm
 	smi->current_turn_rate = 0.0f;
 	smi->desired_turn_rate = sm->default_turn_rate;
 	smi->turn_accel = sm->default_turn_accel;
+
+	smi->current_shift_rate = 0.0f;
+	smi->desired_shift_rate = sm->default_shift_rate;
+	smi->shift_accel = sm->default_shift_accel;
 }
 
 // Sets the submodel instance data when a tech room model instance is created.
@@ -4555,10 +4860,18 @@ void model_replicate_submodel_instance_sub(polymodel *pm, polymodel_instance *pm
 				r_smi->cur_angle = copy_from->cur_angle;
 				r_smi->canonical_orient = copy_from->canonical_orient;
 				r_smi->canonical_prev_orient = copy_from->canonical_prev_orient;
+
+				r_smi->cur_offset = copy_from->cur_offset;
+				r_smi->canonical_offset = copy_from->canonical_offset;
+				r_smi->canonical_prev_offset = copy_from->canonical_prev_offset;
 			} else {
 				r_smi->cur_angle = smi->cur_angle;
 				r_smi->canonical_orient = smi->canonical_orient;
 				r_smi->canonical_prev_orient = smi->canonical_prev_orient;
+
+				r_smi->cur_offset = smi->cur_offset;
+				r_smi->canonical_offset = smi->canonical_offset;
+				r_smi->canonical_prev_offset = smi->canonical_prev_offset;
 			}
 		}
 	} else {
@@ -4570,11 +4883,15 @@ void model_replicate_submodel_instance_sub(polymodel *pm, polymodel_instance *pm
 		}
 	}
 
-	// Set the angles.
+	// Set the angles and offset.
 	if ( copy_from ) {
 		smi->cur_angle = copy_from->cur_angle;
 		smi->canonical_orient = copy_from->canonical_orient;
 		smi->canonical_prev_orient = copy_from->canonical_prev_orient;
+
+		smi->cur_offset = copy_from->cur_offset;
+		smi->canonical_offset = copy_from->canonical_offset;
+		smi->canonical_prev_offset = copy_from->canonical_prev_offset;
 	}
 
 	// For all the detail levels of this submodel, set them also.
@@ -5519,6 +5836,7 @@ void model_subsystem::reset()
 
     weapon_rotation_pbank = 0;
     stepped_rotation.reset();
+    stepped_translation.reset();
 
     awacs_intensity = 0.0f;
     awacs_radius = 0.0f;

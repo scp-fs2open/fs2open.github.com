@@ -50,7 +50,9 @@ struct weapon;
 #define OO_SUBSYS_ROTATION_2b		(1<<4)		// Did this subsystem's barrel rotation angles change
 #define OO_SUBSYS_ROTATION_2h		(1<<5)		// Did this subsystem's barrel rotation angles change
 #define OO_SUBSYS_ROTATION_2p		(1<<6)		// Did this subsystem's barrel rotation angles change
-#define OO_SUBSYS_TRANSLATION		(1<<7)		// Only for backwards compatibility of future builds.
+#define OO_SUBSYS_TRANSLATION_x		(1<<7)		// Did this subsystem's base translation coordinates change
+#define OO_SUBSYS_TRANSLATION_y		(1<<8)		// Did this subsystem's base translation coordinates change
+#define OO_SUBSYS_TRANSLATION_z		(1<<9)		// Did this subsystem's base translation coordinates change
 
 // combo values
 #define OO_SUBSYS_ROTATION_1	(OO_SUBSYS_ROTATION_1b | OO_SUBSYS_ROTATION_1h | OO_SUBSYS_ROTATION_1p)

@@ -90,6 +90,14 @@ struct submodel_instance
 	float	turn_accel = 0.0f;
 	TIMESTAMP stepped_rotation_started;
 
+	float	cur_offset = 0.0f;
+	float	prev_offset = 0.0f;
+
+	float	current_shift_rate = 0.0f;
+	float	desired_shift_rate = 0.0f;
+	float	shift_accel = 0.0f;
+	TIMESTAMP stepped_translation_started;
+
 	bool	blown_off = false;						// If set, this subobject is blown off
 	bool	collision_checked = false;
 
@@ -97,6 +105,9 @@ struct submodel_instance
 	// and should almost never be written directly.  In most cases, coders should prefer cur_angle and prev_angle.
 	matrix	canonical_orient = vmd_identity_matrix;
 	matrix	canonical_prev_orient = vmd_identity_matrix;
+	// similarly for translation
+	vec3d	canonical_offset = vmd_zero_vector;
+	vec3d	canonical_prev_offset = vmd_zero_vector;
 
 	// --- these fields used to be in bsp_info ---
 
@@ -108,6 +119,7 @@ struct submodel_instance
 
 	//SMI-Specific movement axis. Only valid in MOVEMENT_TYPE_TRIGGERED.
 	vec3d	rotation_axis;
+	vec3d	translation_axis;
 
 	submodel_instance()
 	{
@@ -138,6 +150,17 @@ typedef struct stepped_rotation {
 	float max_turn_accel;	// max accel going between steps
 	bool backwards;				// if rate is negative
 } stepped_rotation_t;
+
+typedef struct stepped_translation {
+	bool reverse_after_step;	// for back-and-forth motion
+	float step_distance;	// linear displacement of one step
+	float fraction;			// fraction of time in step spent in accel
+	float t_transit;			// time spent moving from one step to next
+	float t_pause;				// time at rest between steps
+	float max_shift_rate;		// max shift rate going between steps
+	float max_shift_accel;	// max accel going between steps
+	bool backwards;				// if rate is negative
+} stepped_translation_t;
 
 struct queued_animation;
 
@@ -185,6 +208,7 @@ public:
 	// movement specific info
 	int			weapon_rotation_pbank;				// weapon-controlled rotation - Goober5000
 	std::shared_ptr<stepped_rotation_t>		stepped_rotation;		// turn rotation struct
+	std::shared_ptr<stepped_translation_t>	stepped_translation;	// shift translation struct
 
 	// AWACS specific information
 	float		awacs_intensity;						// awacs intensity of this subsystem
@@ -350,8 +374,15 @@ public:
 	vec3d	rotation_axis = vmd_zero_vector;			// which axis this subobject rotates on.
 	int		rotation_axis_id = MOVEMENT_AXIS_NONE;		// for optimization
 
+	int		translation_type = MOVEMENT_TYPE_NONE;
+	vec3d	translation_axis = vmd_zero_vector;
+	int		translation_axis_id = MOVEMENT_AXIS_NONE;
+
 	float	default_turn_rate = 0.0f;
 	float	default_turn_accel = 0.0f;
+
+	float	default_shift_rate = 0.0f;
+	float	default_shift_accel = 0.0f;
 
 	flagset<Model::Submodel_flags> flags;
 
@@ -1001,13 +1032,20 @@ extern int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi
 
 // Rotates the angle of a submodel.  Use this so the right unlocked axis
 // gets stuffed.
-extern void submodel_canonicalize(bsp_info *sm, submodel_instance *smi, bool clamp);
+extern void submodel_canonicalize_rotation(bsp_info *sm, submodel_instance *smi, bool clamp);
 extern void submodel_rotate(model_subsystem *psub, submodel_instance *smi);
 extern void submodel_rotate(bsp_info *sm, submodel_instance *smi);
 
 // Rotates the angle of a submodel.  Use this so the right unlocked axis
 // gets stuffed.  Does this for stepped rotations
 void submodel_stepped_rotate(model_subsystem *psub, submodel_instance *smi);
+
+// Similar to above
+extern void submodel_canonicalize_translation(bsp_info *sm, submodel_instance *smi);
+extern void submodel_translate(model_subsystem *psub, submodel_instance *smi);
+extern void submodel_translate(bsp_info *sm, submodel_instance *smi);
+
+void submodel_stepped_translate(model_subsystem *psub, submodel_instance *smi);
 
 // ------- submodel transformations -------
 

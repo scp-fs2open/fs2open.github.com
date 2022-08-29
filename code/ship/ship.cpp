@@ -7073,6 +7073,8 @@ static int subsys_set(int objnum, int ignore_subsys_info)
 			ship_system->flags.set(Ship::Subsystem_Flags::No_aggregate);
 		if (model_system->flags[Model::Subsystem_Flags::Rotates])
 			ship_system->flags.set(Ship::Subsystem_Flags::Rotates);
+		if (model_system->flags[Model::Subsystem_Flags::Translates])
+			ship_system->flags.set(Ship::Subsystem_Flags::Translates);
 		if (model_system->flags[Model::Subsystem_Flags::Player_turret_sound])
 			ship_system->flags.set(Ship::Subsystem_Flags::Play_sound_for_player);
 		if (model_system->flags[Model::Subsystem_Flags::No_disappear])
@@ -18336,6 +18338,32 @@ void ship_do_submodel_rotation(ship *shipp, model_subsystem *psub, ship_subsys *
 	}
 }
 
+// Goober5000
+void ship_do_submodel_translation(ship *shipp, model_subsystem *psub, ship_subsys *pss)
+{
+	Assert(shipp);
+	Assert(psub);
+	Assert(pss);
+
+	// check if we actually can translate
+	if ( !(pss->flags[Ship::Subsystem_Flags::Translates]) ){
+		return;
+	}
+
+	if (psub->flags[Model::Subsystem_Flags::Triggered]) {
+		//Triggered translation is handled by animation stepping.
+		//The flag doesn't do anything at all anymore, except prevent other translation types
+		return;
+	}
+
+	// if we got this far, we can translate - so choose which method to use
+	if (psub->flags[Model::Subsystem_Flags::Stepped_translate]	) {
+		submodel_stepped_translate(psub, pss->submodel_instance_1);
+	} else {
+		submodel_translate(psub, pss->submodel_instance_1 );
+	}
+}
+
 void ship_move_subsystems(object *objp)
 {
 	Assertion(objp->type == OBJ_SHIP, "ship_move_subsystems should only be called for ships!  objp type = %d", objp->type);
@@ -18351,6 +18379,7 @@ void ship_move_subsystems(object *objp)
 
 		// do solar/radar/gas/activator rotation here
 		ship_do_submodel_rotation(shipp, psub, pss);
+		ship_do_submodel_translation(shipp, psub, pss);
 	}
 }
 
