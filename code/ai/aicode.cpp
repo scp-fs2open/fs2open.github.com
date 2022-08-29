@@ -314,7 +314,7 @@ void ai_set_rearm_status(int team, int time)
 {
 	Assert( time >= 0 );
 
-	Iff_info[team].ai_rearm_timestamp = timestamp(time * 1000);
+	Iff_info[team].ai_rearm_timestamp = _timestamp(time * MILLISECONDS_PER_SECOND);
 }
 
 /**
@@ -330,7 +330,10 @@ int ai_good_time_to_rearm(object *objp)
 	Assert(objp->type == OBJ_SHIP);
 	team = Ships[objp->instance].team;
 	
-	return timestamp_valid(Iff_info[team].ai_rearm_timestamp);
+	if (The_mission.ai_profile->flags[AI::Profile_Flags::Fix_good_rearm_time_bug])
+		return Iff_info[team].ai_rearm_timestamp.isValid() && !timestamp_elapsed(Iff_info[team].ai_rearm_timestamp);
+	else
+		return Iff_info[team].ai_rearm_timestamp.isValid();
 }
 
 /**
@@ -883,7 +886,7 @@ void ai_level_init()
 	Ai_goal_signature = 0;
 
 	for (i = 0; i < (int) Iff_info.size(); i++)
-		Iff_info[i].ai_rearm_timestamp = timestamp(-1);
+		Iff_info[i].ai_rearm_timestamp = TIMESTAMP::invalid();
 
 	// clear out the stuff needed for AI firing powerful secondary weapons
 	ai_init_secondary_info();
