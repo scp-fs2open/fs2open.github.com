@@ -1453,6 +1453,9 @@ void multi_pxo_do_normal()
 
 	// if we need to connect, do so now
 	if (Multi_pxo_must_connect) {		
+		SCP_string pxo_ident = "PXO: Game identified as " + Multi_fs_tracker_game_name;
+		multi_pxo_chat_process_incoming(pxo_ident.c_str(), CHAT_MODE_CARRY);
+
 		// for now, just try once
 		Multi_pxo_connected = multi_pxo_connect();
 
