@@ -87,11 +87,9 @@ static uint Global_checksum = 0;
 // 23.01 adds support for submodel translation
 // 23.00 adds support for increased subobject vertex limit via TMAP2POLY
 // 
-// 22.02 adds support for submodel translation
 // 22.01 adds support for external weapon model angle offsets
 // 22.00 fixes the POF byte alignment and introduces the SLC2 chunk
 //
-// 21.19 adds support for submodel translation
 // 21.18 adds support for external weapon model angle offsets
 // 21.17 adds support for engine thruster banks linked to specific engine subsystems
 // FreeSpace 2 shipped at POF version 21.17
@@ -100,10 +98,10 @@ static uint Global_checksum = 0;
 #define PM_LATEST_VERTLIM_VERSION	2301
 #define PM_FIRST_VERTLIM_VERSION	2300
 
-#define PM_LATEST_ALIGNED_VERSION	2202
+#define PM_LATEST_ALIGNED_VERSION	2201
 #define PM_FIRST_ALIGNED_VERSION	2200
 
-#define PM_LATEST_LEGACY_VERSION	2119
+#define PM_LATEST_LEGACY_VERSION	2118
 
 
 static int Model_signature = 0;
@@ -1884,9 +1882,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 				determine_submodel_movement(true, pm->filename, sm, props, look_at_submodel_names);
 
 				// submodel translation is a new POF feature
-				if ((pm->version >= 2119 && pm->version < PM_FIRST_ALIGNED_VERSION)
-					|| (pm->version >= 2202 && pm->version < PM_FIRST_VERTLIM_VERSION)
-					|| (pm->version >= 2301))
+				if (pm->version >= 2301)
 				{
 					sm->translation_type = cfread_int(fp);
 					sm->translation_axis_id = cfread_int(fp);
