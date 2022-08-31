@@ -19,11 +19,11 @@ public:
 
 struct VirtualPOFDefinition {
 	SCP_string name, basePOF;
-	std::vector<std::unique_ptr<VirtualPOFOperation>> operationList;
+	SCP_vector<std::unique_ptr<VirtualPOFOperation>> operationList;
 };
 
 class VirtualPOFOperationRenameSubobjects : public VirtualPOFOperation {
-	std::unordered_map<SCP_string, SCP_string> replacements;
+	SCP_unordered_map<SCP_string, SCP_string, SCP_string_lcase_hash, SCP_string_lcase_equal_to> replacements;
 public:
 	VirtualPOFOperationRenameSubobjects();
 	void process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth) const override;
@@ -33,7 +33,7 @@ class VirtualPOFOperationAddSubmodel : public VirtualPOFOperation {
 	SCP_string subobjNameSrc, subobjNameDest;
 	SCP_string appendingPOF;
 	std::unique_ptr<VirtualPOFOperationRenameSubobjects> rename = nullptr;
-	bool copyChildred = true;
+	bool copyChildren = true;
 public:
 	VirtualPOFOperationAddSubmodel();
 	void process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth) const override;

@@ -157,7 +157,7 @@ VirtualPOFOperationAddSubmodel::VirtualPOFOperationAddSubmodel() {
 	stuff_string(subobjNameSrc, F_NAME);
 
 	if (optional_string("+Copy Children:")) {
-		stuff_boolean(&copyChildred);
+		stuff_boolean(&copyChildren);
 	}
 
 	if (optional_string("$Rename Subobjects:")) {
@@ -195,7 +195,7 @@ void VirtualPOFOperationAddSubmodel::process(polymodel* pm, model_read_deferred_
 
 		std::vector<int> to_copy_submodels;
 		bool has_name_collision = false;
-		if (copyChildred) {
+		if (copyChildren) {
 			model_iterate_submodel_tree(appendingPM, src_subobj_no, [&to_copy_submodels, &has_name_collision, pm, appendingPM](int submodel, int /*level*/, bool /*isLeaf*/) {
 				to_copy_submodels.emplace_back(submodel);
 				for (int i = 0; i < pm->n_models; i++) {
@@ -287,7 +287,7 @@ void VirtualPOFOperationAddSubmodel::process(polymodel* pm, model_read_deferred_
 			pm->submodel[old_n_submodel].next_sibling = -1; //Our old submodel might've had a sibling. Not anymore.
 			pm->submodel[old_n_submodel].parent = dest_subobj_no;
 
-			if (!copyChildred) {
+			if (!copyChildren) {
 				//Clear children if needed
 				pm->submodel[old_n_submodel].num_children = 0;
 				pm->submodel[old_n_submodel].first_child = -1;
@@ -324,16 +324,12 @@ VirtualPOFOperationRenameSubobjects::VirtualPOFOperationRenameSubobjects() {
 
 void VirtualPOFOperationRenameSubobjects::process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth /*depth*/) const {
 	for (int i = 0; i < pm->n_models; i++) {
-		SCP_string name = pm->submodel[i].name;
-		SCP_tolower(name);
-		auto it = replacements.find(name);
+		auto it = replacements.find(pm->submodel[i].name);
 		if (it != replacements.end()) {
 			strncpy(pm->submodel[i].name, it->second.c_str(), it->second.size());
 			pm->submodel[i].name[it->second.size()] = '\0';
 		}
-		name = pm->submodel[i].lod_name;
-		SCP_tolower(name);
-		it = replacements.find(name);
+		it = replacements.find(pm->submodel[i].lod_name);
 		if (it != replacements.end()) {
 			strncpy(pm->submodel[i].lod_name, it->second.c_str(), it->second.size());
 			pm->submodel[i].lod_name[it->second.size()] = '\0';

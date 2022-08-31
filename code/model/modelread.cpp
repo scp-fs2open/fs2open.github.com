@@ -1918,9 +1918,7 @@ int read_model_file_no_subsys(polymodel * pm, const char* filename, int ferror, 
 
 					get_user_prop_value(p+9, type);
 					if ( !stricmp(type, "subsystem") ) {	// if we have a subsystem, put it into the list!
-						SCP_string name = sm->name;
-						SCP_tolower(name);
-						subsystemParseList.model_subsystems.emplace(name, model_read_deferred_tasks::model_subsystem_parse{ n, sm->rad, sm->offset, props });
+						subsystemParseList.model_subsystems.emplace(sm->name, model_read_deferred_tasks::model_subsystem_parse{ n, sm->rad, sm->offset, props });
 					} else {
 						if ( !stricmp(type, "no_rotate") || !stricmp(type, "no_movement") ) {
 							// mark those submodels which should not move - i.e., those with no subsystem
@@ -2529,9 +2527,7 @@ int read_model_file_no_subsys(polymodel * pm, const char* filename, int ferror, 
 
 									nprintf(("wash", "Ship %s with engine wash associated with subsys %s\n", filename, engine_subsys_name));
 
-									SCP_string name = engine_subsys_name;
-									SCP_tolower(name);
-									subsystemParseList.engine_subsystems.emplace(name, model_read_deferred_tasks::engine_subsystem_parse{ i });
+									subsystemParseList.engine_subsystems.emplace(engine_subsys_name, model_read_deferred_tasks::engine_subsystem_parse{ i });
 								}
 							}
 						}
@@ -2621,17 +2617,13 @@ int read_model_file_no_subsys(polymodel * pm, const char* filename, int ferror, 
 
 						get_user_prop_value(p+9, type);
 						if ( !stricmp(type, "subsystem") ) {	// if we have a subsystem, put it into the list!
-							SCP_string namelower = &name[1];
-							SCP_tolower(namelower);
-							subsystemParseList.model_subsystems.emplace(namelower, model_read_deferred_tasks::model_subsystem_parse{ -1, radius, pnt, props_spcl }); // skip the first '$' character of the name
+							subsystemParseList.model_subsystems.emplace(&name[1], model_read_deferred_tasks::model_subsystem_parse{ -1, radius, pnt, props_spcl }); // skip the first '$' character of the name
 						} else if ( !stricmp(type, "shieldpoint") ) {
 							pm->shield_points.push_back(pnt);
 						}
 					} else if (in(name, "$enginelarge") || in(name, "$enginehuge")) 
 					{
-						SCP_string namelower = &name[1];
-						SCP_tolower(namelower);
-						subsystemParseList.model_subsystems.emplace(namelower, model_read_deferred_tasks::model_subsystem_parse{ -1, radius, pnt, props_spcl }); // skip the first '$' character of the name	
+						subsystemParseList.model_subsystems.emplace(&name[1], model_read_deferred_tasks::model_subsystem_parse{ -1, radius, pnt, props_spcl }); // skip the first '$' character of the name	
 					} else {
 						nprintf(("Warning", "Unknown special object type %s while reading model %s\n", name, pm->filename));
 					}					

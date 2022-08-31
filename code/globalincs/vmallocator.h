@@ -8,6 +8,7 @@
 #include <map>
 #include <memory>
 #include <queue>
+#include <set>
 #include <sstream>
 #include <string>
 #include <type_traits>
@@ -62,6 +63,9 @@ using SCP_queue = std::queue< T, std::deque< T, std::allocator< T > > >;
 
 template< typename T >
 using SCP_deque = std::deque< T, std::allocator< T > >;
+
+template <typename T>
+using SCP_set = std::set<T, std::less<T>, std::allocator<T>>;
 
 #if __cplusplus < 201402L
 template <class T, bool>

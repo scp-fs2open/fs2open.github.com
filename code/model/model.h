@@ -887,31 +887,27 @@ struct model_read_deferred_tasks {
 		int gun_subobj_nr;
 		vec3d turretNorm;
 		int n_slots;
-		std::vector<vec3d> firingpoints;
+		SCP_vector<vec3d> firingpoints;
 	};
 
 	struct texture_idx_replace {
-		std::map<int, int> replacementIds;
+		SCP_map<int, int> replacementIds;
 	};
 
 	//Key: Subsystem Name
-	std::unordered_map<SCP_string, model_subsystem_parse> model_subsystems;
+	SCP_unordered_map<SCP_string, model_subsystem_parse, SCP_string_lcase_hash, SCP_string_lcase_equal_to> model_subsystems;
 	//Key: Subsystem Name
-	std::unordered_map<SCP_string, engine_subsystem_parse> engine_subsystems;
+	SCP_unordered_map<SCP_string, engine_subsystem_parse, SCP_string_lcase_hash, SCP_string_lcase_equal_to> engine_subsystems;
 	//Key: Parent Subobject Nr
-	std::unordered_map<int, weapon_subsystem_parse> weapons_subsystems;
+	SCP_unordered_map<int, weapon_subsystem_parse> weapons_subsystems;
 	//Key: Subobject Nr
-	std::unordered_map<int, texture_idx_replace> texture_replacements;
+	SCP_unordered_map<int, texture_idx_replace> texture_replacements;
 };
 
 class model_parse_depth {
-	std::unordered_map<SCP_string, int> depth{};
+	SCP_unordered_map<SCP_string, int, SCP_string_lcase_hash, SCP_string_lcase_equal_to> depth{};
 public:
-	model_parse_depth() = default;
-	model_parse_depth(const model_parse_depth&) = default;
-	model_parse_depth& operator=(const model_parse_depth&) = default;
-	inline int& operator[](SCP_string name) {
-		SCP_tolower(name);
+	inline int& operator[](const SCP_string& name) {
 		return depth[name];
 	}
 };
@@ -967,7 +963,7 @@ void model_delete_instance(int model_instance_num);
 // Goober5000
 void model_load_texture(polymodel *pm, int i, char *file);
 
-std::set<int> model_get_textures_used(polymodel* pm, int submodel);
+SCP_set<int> model_get_textures_used(polymodel* pm, int submodel);
 
 // Returns a pointer to the polymodel structure for model 'n'
 polymodel *model_get(int model_num);
@@ -1441,7 +1437,7 @@ void model_page_in_textures(int modelnum, int ship_info_index = -1);
 // given a model, unload all of its textures
 void model_page_out_textures(int model_num, bool release = false);
 // given a model, without respect to usage state of the polymodel
-void model_page_out_textures(polymodel* pm, bool release = false, const std::set<int>& skipTextures = {}, const std::set<int>& skipGlowBanks = {});
+void model_page_out_textures(polymodel* pm, bool release = false, const SCP_set<int>& skipTextures = {}, const SCP_set<int>& skipGlowBanks = {});
 
 void model_do_intrinsic_motions(object *objp);
 

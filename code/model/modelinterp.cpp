@@ -1635,7 +1635,7 @@ void model_page_out_textures(int model_num, bool release)
 	model_page_out_textures(pm, release);
 }
 
-void model_page_out_textures(polymodel* pm, bool release, const std::set<int>& skipTextures, const std::set<int>& skipGlowBanks)
+void model_page_out_textures(polymodel* pm, bool release, const SCP_set<int>& skipTextures, const SCP_set<int>& skipGlowBanks)
 {
 	int i, j;
 	for (i = 0; i < pm->n_textures; i++) {
