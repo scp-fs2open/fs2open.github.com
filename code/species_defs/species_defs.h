@@ -76,6 +76,10 @@ public:
 	char cmeasure_name[NAME_LENGTH];
 	int cmeasure_index;
 
+	// ditto for support ships - naomimyselfandi
+	char support_ship_name[NAME_LENGTH];
+	int support_ship_index;
+
 	species_info()
 	{
 		for (int i = 0; i < MIN_BRIEF_ICONS; i++)
@@ -83,6 +87,8 @@ public:
 
 		cmeasure_name[0] = '\0';
 		cmeasure_index = -1;
+		support_ship_name[0] = '\0';
+		support_ship_index = -1;
 		borrows_bii_index_species = -1;
 	}
 };
