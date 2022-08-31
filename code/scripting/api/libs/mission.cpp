@@ -21,6 +21,7 @@
 #include "mission/missionlog.h"
 #include "mission/missionmessage.h"
 #include "mission/missiontraining.h"
+#include "missionui/missionbrief.h"
 #include "missionui/missioncmdbrief.h"
 #include "missionui/redalert.h"
 #include "nebula/neb.h"
@@ -1307,6 +1308,17 @@ ADE_FUNC(isTraining, l_Mission, nullptr, "Get whether or not the current mission
 	bool b = false;
 
 	if (The_mission.game_type & MISSION_TYPE_TRAINING) {
+		b = true;
+	}
+
+	return ade_set_args(L, "b", b);
+}
+
+ADE_FUNC(isScramble, l_Mission, nullptr, "Get whether or not the current mission being played is a scramble mission", "boolean", "true if in training, false if not")
+{
+	bool b = false;
+
+	if (brief_only_allow_briefing()) {
 		b = true;
 	}
 
