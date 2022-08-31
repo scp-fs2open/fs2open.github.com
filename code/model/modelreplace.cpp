@@ -10,8 +10,8 @@
 #include <set>
 #include <vector>
 
-static std::unordered_map<SCP_string, std::vector<VirtualPOFDefinition>> virtual_pofs;
-static std::unordered_map<SCP_string, std::function<std::unique_ptr<VirtualPOFOperation>()>> virtual_pof_operations = { 
+static SCP_unordered_map<SCP_string, std::vector<VirtualPOFDefinition>, SCP_string_lcase_hash, SCP_string_lcase_equal_to> virtual_pofs;
+static SCP_unordered_map<SCP_string, std::function<std::unique_ptr<VirtualPOFOperation>()>> virtual_pof_operations = {
 	{"$Add Subobject:", &make_unique<VirtualPOFOperationAddSubmodel> },
 	{"$Rename Subobjects:", &make_unique<VirtualPOFOperationRenameSubobjects> },
 	{"$Set Subobject Data:", &make_unique<VirtualPOFOperationChangeData> },
@@ -37,9 +37,7 @@ bool model_exists(const SCP_string& filename) {
 }
 
 bool read_virtual_model_file(polymodel* pm, const SCP_string& filename, model_parse_depth depth, int ferror, model_read_deferred_tasks& deferredTasks) {
-	SCP_string fnamelower = filename;
-	SCP_tolower(fnamelower);
-	auto virtual_pof_it = virtual_pofs.find(fnamelower);
+	auto virtual_pof_it = virtual_pofs.find(filename);
 
 	//We don't have a virtual pof
 	if(virtual_pof_it == virtual_pofs.end())
@@ -54,7 +52,7 @@ bool read_virtual_model_file(polymodel* pm, const SCP_string& filename, model_pa
 	const auto& virtual_pof = virtual_pof_it->second[depthLocal];
 	depthLocal++;
 
-	read_model_file(pm, fnamelower.c_str(), ferror, deferredTasks, depth);
+	read_model_file(pm, filename.c_str(), ferror, deferredTasks, depth);
 
 	for (const auto& operation : virtual_pof.operationList)
 		operation->process(pm, deferredTasks, depth);
@@ -68,7 +66,6 @@ static void parse_virtual_pof() {
 	SCP_string name;
 	stuff_string(name, F_NAME);
 
-	SCP_tolower(name);
 	auto& virtual_pof_list = virtual_pofs[name];
 	virtual_pof_list.emplace_back();
 	VirtualPOFDefinition& toFill = virtual_pof_list.back();
@@ -171,7 +168,7 @@ VirtualPOFOperationAddSubmodel::VirtualPOFOperationAddSubmodel() {
 void VirtualPOFOperationAddSubmodel::process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth) const {
 	polymodel* appendingPM = new polymodel();
 	model_read_deferred_tasks appendingSubsys;
-	std::set<int> keepTextures;
+	SCP_set<int> keepTextures;
 	read_model_file(appendingPM, appendingPOF.c_str(), 0, appendingSubsys, depth);
 
 	int src_subobj_no = -1;
@@ -193,7 +190,7 @@ void VirtualPOFOperationAddSubmodel::process(polymodel* pm, model_read_deferred_
 		if (rename != nullptr)
 			rename->process(appendingPM, appendingSubsys, depth);
 
-		std::vector<int> to_copy_submodels;
+		SCP_vector<int> to_copy_submodels;
 		bool has_name_collision = false;
 		if (copyChildren) {
 			model_iterate_submodel_tree(appendingPM, src_subobj_no, [&to_copy_submodels, &has_name_collision, pm, appendingPM](int submodel, int /*level*/, bool /*isLeaf*/) {
@@ -240,7 +237,7 @@ void VirtualPOFOperationAddSubmodel::process(polymodel* pm, model_read_deferred_
 			
 			int deltaDepth = (pm->submodel[dest_subobj_no].depth + 1) - appendingPM->submodel[src_subobj_no].depth;
 
-			std::map<int, int> textureIDReplace;
+			SCP_map<int, int> textureIDReplace;
 
 			//Copy over new data. This one needs to be fully free'd afterwards, so make sure to nullptr the respective pointers before freeing later
 			for (int i = 0; i < (int)to_copy_submodels.size(); i++) {

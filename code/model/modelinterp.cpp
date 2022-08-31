@@ -116,8 +116,8 @@ public:
 	void generate_triangles(int texture, vertex *vert_ptr, vec3d* norm_ptr);
 	void generate_lines(int texture, vertex *vert_ptr);
 
-	std::set<int> get_textures_used() const;
-	void replace_textures_used(const std::map<int, int>& replacementMap);
+	SCP_set<int> get_textures_used() const;
+	void replace_textures_used(const SCP_map<int, int>& replacementMap);
 };
 
 /**
@@ -3407,14 +3407,14 @@ void bsp_polygon_data::generate_lines(int texture, vertex *vert_ptr)
 	}
 }
 
-std::set<int> bsp_polygon_data::get_textures_used() const {
-	std::set<int> textures;
+SCP_set<int> bsp_polygon_data::get_textures_used() const {
+	SCP_set<int> textures;
 	for (const auto& poly : Polygons)
 		textures.emplace(poly.texture);
 	return textures;
 }
 
-void bsp_polygon_data::replace_textures_used(const std::map<int, int>& replacementMap) {
+void bsp_polygon_data::replace_textures_used(const SCP_map<int, int>& replacementMap) {
 	for (auto& poly : Polygons) {
 		auto it = replacementMap.find(poly.texture);
 		if (it != replacementMap.end()) {
@@ -3427,7 +3427,7 @@ void bsp_polygon_data::replace_textures_used(const std::map<int, int>& replaceme
 	}
 }
 
-std::set<int> model_get_textures_used(polymodel* pm, int submodel) {
+SCP_set<int> model_get_textures_used(polymodel* pm, int submodel) {
 	auto polies = make_unique<const bsp_polygon_data>(pm->submodel[submodel].bsp_data);
 	return polies->get_textures_used();
 }

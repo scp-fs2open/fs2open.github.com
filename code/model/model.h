@@ -23,8 +23,6 @@
 #include "object/object.h"
 #include "ship/ship_flags.h"
 
-#include <set>
-
 class object;
 class ship_info;
 class model_render_params;

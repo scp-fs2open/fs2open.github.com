@@ -2570,7 +2570,7 @@ int read_model_file_no_subsys(polymodel * pm, const char* filename, int ferror, 
 					cfread_vector(&temp_vec, fp);
 					vm_vec_normalize_safe(&temp_vec);
 					n_slots = cfread_int(fp);
-					std::vector<vec3d> firingpoints;
+					SCP_vector<vec3d> firingpoints;
 					for (j = 0; j < n_slots; j++) {
 						if (j < MAX_TFP) {
 							vec3d firepoint;
