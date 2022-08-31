@@ -60,7 +60,7 @@ bool *Lcl_unexpected_tstring_check = nullptr;
 // add a new string to the code, you must assign it a new index.  Use the number below for
 // that index and increase the number below by one.
 // retail XSTR_SIZE = 1570
-#define XSTR_SIZE	1670
+#define XSTR_SIZE	1671
 
 
 // struct to allow for strings.tbl-determined x offset

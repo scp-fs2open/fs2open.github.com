@@ -2466,7 +2466,7 @@ void hud_start_text_flash(const char *txt, int t, int interval)
 	// HACK. don't override EMP if its still going    :)
 	// An additional hack: don't interrupt other warnings if this is a missile launch alert (Swifty)
 	if(!timestamp_elapsed(Hud_text_flash_timer))
-		if( !stricmp(Hud_text_flash, NOX("Emp")) || !stricmp(txt, NOX("Launch")) )
+		if(!stricmp(Hud_text_flash, XSTR("Emp", 1670)) || !stricmp(txt, XSTR("Launch", 1507)))
 			return;
 
 	strncpy(Hud_text_flash, txt, 500);

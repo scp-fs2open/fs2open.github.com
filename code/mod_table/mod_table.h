@@ -39,6 +39,8 @@ extern bool Red_alert_applies_to_delayed_ships;
 extern bool Beams_use_damage_factors;
 extern float Generic_pain_flash_factor;
 extern float Shield_pain_flash_factor;
+extern float Emp_pain_flash_factor;
+extern std::tuple<ubyte, ubyte, ubyte> Emp_pain_flash_color;
 extern SCP_string Window_title;
 extern SCP_string Mod_title;
 extern SCP_string Mod_version;
