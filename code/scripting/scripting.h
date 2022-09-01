@@ -174,6 +174,9 @@ class script_state
 	//Utility variables
 	SCP_vector<image_desc> ScriptImages;
 	SCP_vector<ConditionedHook> ConditionalHooks;
+	// Scripts can add new hooks at runtime; we collect all hooks to be added here and add them at the end of the current
+	// frame to avoid corrupting any iterators that the script system may be using.
+	SCP_vector<ConditionedHook> AddedHooks;
 
 	SCP_vector<script_function> GameInitFunctions;
 
@@ -255,6 +258,8 @@ public:
 	bool IsConditionOverride(int action, object *objp1 = nullptr, object *objp2 = nullptr, int more_data = -1);
 
 	void RunInitFunctions();
+
+	void ProcessAddedHooks();
 
 	//*****Other functions
 	static script_state* GetScriptState(lua_State* L);
