@@ -1336,6 +1336,17 @@ ADE_FUNC(isMissionSkipAllowed, l_Mission, nullptr, "Get whether or not the playe
 	return ade_set_args(L, "b", b);
 }
 
+ADE_FUNC(hasNoBriefing, l_Mission, nullptr, "Get whether or not the mission is set to skip the briefing", "boolean", "true if it should be skipped, false if not")
+{
+	bool b = false;
+
+	if (The_mission.flags[Mission::Mission_Flags::No_briefing]) {
+		b = true;
+	}
+
+	return ade_set_args(L, "b", b);
+}
+
 ADE_FUNC(isNebula, l_Mission, nullptr, "Get whether or not the current mission being played is set in a nebula", "boolean", "true if in nebula, false if not")
 {
 	return ade_set_args(L, "b", The_mission.flags[Mission::Mission_Flags::Fullneb]);
