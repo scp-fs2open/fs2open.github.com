@@ -381,21 +381,30 @@ void parse_mod_table(const char *filename)
 		}
 
 		if (optional_string("$Generic Pain Flash Factor:")) {
-			stuff_float(&Generic_pain_flash_factor);
-			if (Generic_pain_flash_factor > 0.0f)
-				mprintf(("Game Settings Table: Setting generic pain flash factor to %.2f\n", Generic_pain_flash_factor));
+			float temp;
+			stuff_float(&temp);
+			if (temp >= 0.0f) {
+				mprintf(("Game Settings Table: Setting generic pain flash factor to %.2f\n", temp));
+				Generic_pain_flash_factor = temp;
+			}
 		}
 
 		if (optional_string("$Shield Pain Flash Factor:")) {
-			stuff_float(&Shield_pain_flash_factor);
-			if (Shield_pain_flash_factor > 0.0f)
-				 mprintf(("Game Settings Table: Setting shield pain flash factor to %.2f\n", Shield_pain_flash_factor));
+			float temp;
+			stuff_float(&temp);
+			if (temp >= 0.0f) {
+				mprintf(("Game Settings Table: Setting shield pain flash factor to %.2f\n", temp));
+				Shield_pain_flash_factor = temp;
+			}
 		}
 
 		if (optional_string("$EMP Pain Flash Factor:")) {
-			stuff_float(&Emp_pain_flash_factor);
-			if (Emp_pain_flash_factor > 0.0f)
-				mprintf(("Game Settings Table: Setting EMP pain flash factor to %.2f\n", Emp_pain_flash_factor));
+			float temp;
+			stuff_float(&temp);
+			if (temp >= 0.0f) {
+				mprintf(("Game Settings Table: Setting EMP pain flash factor to %.2f\n", temp));
+				Emp_pain_flash_factor = temp;
+			}
 		}
 
 		if (optional_string("$EMP Pain Flash Color:")) {
