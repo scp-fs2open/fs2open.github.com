@@ -382,19 +382,19 @@ void parse_mod_table(const char *filename)
 
 		if (optional_string("$Generic Pain Flash Factor:")) {
 			stuff_float(&Generic_pain_flash_factor);
-			if (Generic_pain_flash_factor != 1.0f)
+			if (!fl_near_zero(Generic_pain_flash_factor, 0.01f))
 				mprintf(("Game Settings Table: Setting generic pain flash factor to %.2f\n", Generic_pain_flash_factor));
 		}
 
 		if (optional_string("$Shield Pain Flash Factor:")) {
 			stuff_float(&Shield_pain_flash_factor);
-			if (Shield_pain_flash_factor != 0.0f)
+			if (!fl_near_zero(Shield_pain_flash_factor, 0.01f))
 				 mprintf(("Game Settings Table: Setting shield pain flash factor to %.2f\n", Shield_pain_flash_factor));
 		}
 
 		if (optional_string("$EMP Pain Flash Factor:")) {
 			stuff_float(&Emp_pain_flash_factor);
-			if (Emp_pain_flash_factor != 0.0f)
+			if (!fl_near_zero(Emp_pain_flash_factor, 0.01f))
 				mprintf(("Game Settings Table: Setting EMP pain flash factor to %.2f\n", Emp_pain_flash_factor));
 		}
 
@@ -963,7 +963,7 @@ void mod_table_reset()
 	Generic_pain_flash_factor = 1.0f;
 	Shield_pain_flash_factor = 0.0f;
 	Emp_pain_flash_factor = 1.0f;
-	Emp_pain_flash_color = std::make_tuple(static_cast<ubyte>(255), static_cast<ubyte>(255), static_cast<ubyte>(125));
+	Emp_pain_flash_color = std::make_tuple(static_cast<ubyte>(255), static_cast<ubyte>(255), static_cast<ubyte>(127));
 	Targeted_version = gameversion::version(2, 0, 0, 0); // Defaults to retail
 	Window_title = "";
 	Mod_title = "";

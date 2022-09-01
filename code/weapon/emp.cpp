@@ -414,9 +414,9 @@ void emp_start_local(float intensity, float time)
 
 	// play a flash
 	game_flash(
-		std::get<0>(Emp_pain_flash_color) * Emp_pain_flash_factor,
-		std::get<1>(Emp_pain_flash_color) * Emp_pain_flash_factor,
-		std::get<2>(Emp_pain_flash_color) * Emp_pain_flash_factor
+		std::get<0>(Emp_pain_flash_color) * Emp_pain_flash_factor / 255,
+		std::get<1>(Emp_pain_flash_color) * Emp_pain_flash_factor / 255,
+		std::get<2>(Emp_pain_flash_color) * Emp_pain_flash_factor / 255
 	);
 }
 
