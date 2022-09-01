@@ -2955,25 +2955,20 @@ void vm_interpolate_angles_quick(angles *dest0, angles *src0, angles *src1, floa
 }
 
 // Interpolate between two matrices, using t as a percentage progress between them.
+// Intended values for t are [0.0f, 1.0f], but only values close to zero rejected, 
+// as you could conceivably use these calculations to find a rotation that is more 
+// than 100% of the rotation.
 // derived by Asteroth from our AI code
-void vm_interpolate_matrices(matrix* out_orient, matrix* curr_orient, matrix* goal_orient, float t) 
+void vm_interpolate_matrices(matrix* out_orient, const matrix* curr_orient, const matrix* goal_orient, float t) 
 {
-	// check the two cases where it doesn't make sense to go through the whole function
+	// check the case where it doesn't make sense to go through the whole function
 	if (fl_near_zero(t)) {
 		*out_orient = *curr_orient;
 		return;
 	}
 
-	Assertion(t <= 1.0f, "The function vm_interpolate_matrices was passed a bad percentage of %f.  This is an error that points to a coder mistake.  Please report to the SCP!",t);
-
-	// any value > 1.0f should be a bug.
-	if (t >= 1.0f) {
-		*out_orient = *goal_orient;
-		return;
-	}
-
 	matrix Mtemp1;
- 
+
 	vm_copy_transpose(&Mtemp1, curr_orient);     // Mtemp1 = curr ^-1
  
 	matrix matrix_delta;        // rotation matrix from curr_orient to goal_orient
@@ -2981,10 +2976,10 @@ void vm_interpolate_matrices(matrix* out_orient, matrix* curr_orient, matrix* go
 	vm_matrix_x_matrix(&matrix_delta, &Mtemp1, goal_orient);    // Rot = goal * Mtemp1
 	vm_orthogonalize_matrix(&matrix_delta);
  
-	vec3d rot_axis;            // vector indicating direction of rotation axis
+ 	vec3d rot_axis;            // vector indicating direction of rotation axis
 	float theta;                // magnitude of rotation about the rotation axis
 
-    vm_matrix_to_rot_axis_and_angle(&matrix_delta, &theta, &rot_axis);     // determines angle and rotation axis from curr to goal
+	vm_matrix_to_rot_axis_and_angle(&matrix_delta, &theta, &rot_axis);     // determines angle and rotation axis from curr to goal
 
 	// if we had identical or nearly identical matrices, it shows up here as theta being very close to zero.
 	if (fl_near_zero(theta)) {
@@ -2997,8 +2992,8 @@ void vm_interpolate_matrices(matrix* out_orient, matrix* curr_orient, matrix* go
 
 	matrix rot_matrix;
 
-    vm_quaternion_rotate(&rot_matrix, t * theta, &rot_axis); // get the matrix that rotates current to our interpolated matrix
-	vm_matrix_x_matrix(out_orient, &rot_matrix, &curr_orient); // do the final rotation
+	vm_quaternion_rotate(&rot_matrix, t * theta, &rot_axis); // get the matrix that rotates current to our interpolated matrix
+	vm_matrix_x_matrix(out_orient, &rot_matrix, curr_orient); // do the final rotation
 	
 }
 

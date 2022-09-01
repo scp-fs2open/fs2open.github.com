@@ -588,9 +588,12 @@ void vm_match_bank(vec3d* out_rvec, const vec3d* goal_fvec, const matrix* match_
 // You will get strange results otherwise.
 void vm_interpolate_angles_quick(angles* dest0, angles* src0, angles* src1, float interp_perc);
 
-// Interpolate between two matrices, using t as a percentage between them.
+// Interpolate between two matrices, using t as a percentage progress between them.
+// Intended values for t are [0.0f, 1.0f], but only values close to zero rejected, 
+// as you could conceivably use these calculations to find a rotation that is more 
+// than 100% of the rotation.
 // derived by Asteroth from our AI code
-void vm_interpolate_matrices(matrix* curr_orient, matrix* goal_orient, float t);
+void vm_interpolate_matrices(matrix* out_orient, const matrix* curr_orient, const matrix* goal_orient, float t);
 
 // generates a well distributed quasi-random position in a -1 to 1 cube
 // the caller must provide and increment the seed for each call for proper results

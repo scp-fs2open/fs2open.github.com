@@ -149,7 +149,7 @@ void interpolation_manager::interpolate(vec3d* pos, matrix* ori, physics_info* p
 	}
 
 	// calculate the new orientation.
-	*ori = vm_interpolate_matrices(&_packets[_prev_packet_index].orientation, &_packets[_upcoming_packet_index].orientation, scale);
+	vm_interpolate_matrices(ori, &_packets[_prev_packet_index].orientation, &_packets[_upcoming_packet_index].orientation, scale);
 
 	// a quick calculation for the last orientation, courtesy Asteroth
 	vec3d normalized_rotvel;
