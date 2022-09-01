@@ -1176,7 +1176,7 @@ void submodel_get_cross_sectional_avg_pos(int model_num, int submodel_num, float
 void submodel_get_cross_sectional_random_pos(int model_num, int submodel_num, float z_slice_pos, vec3d* pos);
   
 extern int model_find_submodel_index(int modelnum, const char *name);
-extern int model_find_submodel_index(const polymodel& pm, const char* name);
+extern int model_find_submodel_index(const polymodel* pm, const char* name);
 
 // gets the index into the docking_bays array of the specified type of docking point
 // Returns the index.  second functions returns the index of the docking bay with

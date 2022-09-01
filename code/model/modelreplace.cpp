@@ -170,8 +170,8 @@ void VirtualPOFOperationAddSubmodel::process(polymodel* pm, model_read_deferred_
 	SCP_set<int> keepTextures;
 	read_model_file(appendingPM, appendingPOF.c_str(), 0, appendingSubsys, depth);
 
-	int src_subobj_no = model_find_submodel_index(*appendingPM, subobjNameSrc.c_str());
-	int dest_subobj_no = model_find_submodel_index(*appendingPM, subobjNameDest.c_str());
+	int src_subobj_no = model_find_submodel_index(appendingPM, subobjNameSrc.c_str());
+	int dest_subobj_no = model_find_submodel_index(appendingPM, subobjNameDest.c_str());
 
 	if (src_subobj_no >= 0 && dest_subobj_no >= 0) {
 		create_family_tree(pm);
@@ -185,13 +185,13 @@ void VirtualPOFOperationAddSubmodel::process(polymodel* pm, model_read_deferred_
 		if (copyChildren) {
 			model_iterate_submodel_tree(appendingPM, src_subobj_no, [&to_copy_submodels, &has_name_collision, pm, appendingPM](int submodel, int /*level*/, bool /*isLeaf*/) {
 				to_copy_submodels.emplace_back(submodel);
-				if(model_find_submodel_index(*pm, appendingPM->submodel[submodel].name) != -1)
+				if(model_find_submodel_index(pm, appendingPM->submodel[submodel].name) != -1)
 					has_name_collision = true;
 				});
 		}
 		else {
 			to_copy_submodels.emplace_back(src_subobj_no);
-			if (model_find_submodel_index(*pm, appendingPM->submodel[src_subobj_no].name) != -1)
+			if (model_find_submodel_index(pm, appendingPM->submodel[src_subobj_no].name) != -1)
 				has_name_collision = true;
 		}
 
@@ -352,7 +352,7 @@ VirtualPOFOperationChangeData::VirtualPOFOperationChangeData() {
 }
 
 void VirtualPOFOperationChangeData::process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth /*depth*/) const {
-	int subobj_no = model_find_submodel_index(*pm, submodel.c_str());
+	int subobj_no = model_find_submodel_index(pm, submodel.c_str());
 
 	if (subobj_no == -1) {
 		Warning(LOCATION, "Failed to find submodel to change data of. Returning original POF");
