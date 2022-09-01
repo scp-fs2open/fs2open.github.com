@@ -902,13 +902,7 @@ struct model_read_deferred_tasks {
 	SCP_unordered_map<int, texture_idx_replace> texture_replacements;
 };
 
-class model_parse_depth {
-	SCP_unordered_map<SCP_string, int, SCP_string_lcase_hash, SCP_string_lcase_equal_to> depth{};
-public:
-	inline int& operator[](const SCP_string& name) {
-		return depth[name];
-	}
-};
+using model_parse_depth = SCP_unordered_map<SCP_string, int, SCP_string_lcase_hash, SCP_string_lcase_equal_to>;
 
 // Iterate over a submodel tree, starting at the given submodel root node, and running the given function for each node.  The function's signature should be:
 //
@@ -1182,6 +1176,7 @@ void submodel_get_cross_sectional_avg_pos(int model_num, int submodel_num, float
 void submodel_get_cross_sectional_random_pos(int model_num, int submodel_num, float z_slice_pos, vec3d* pos);
   
 extern int model_find_submodel_index(int modelnum, const char *name);
+extern int model_find_submodel_index(const polymodel& pm, const char* name);
 
 // gets the index into the docking_bays array of the specified type of docking point
 // Returns the index.  second functions returns the index of the docking bay with

@@ -16,24 +16,24 @@
 #include <unordered_set>
 #include <vector>
 
-template< typename T >
-using SCP_vector = std::vector< T, std::allocator< T > >;
+template <typename T>
+using SCP_vector = std::vector<T, std::allocator<T>>;
 
-template< typename T >
+template <typename T>
 bool SCP_vector_contains(SCP_vector<T>& vector, T item) {
 	return std::find(vector.begin(), vector.end(), item) != vector.end();
 }
 
-template< typename T >
-using SCP_list = std::list< T, std::allocator< T > >;
+template <typename T>
+using SCP_list = std::list<T, std::allocator<T>>;
 
 
 extern std::locale SCP_default_locale;
 
-template< class charT >
+template <class charT>
 charT SCP_toupper(charT ch) { return std::toupper(ch, SCP_default_locale); }
 
-template< class charT >
+template <class charT>
 charT SCP_tolower(charT ch) { return std::tolower(ch, SCP_default_locale); }
 
 typedef std::basic_string<char, std::char_traits<char>, std::allocator<char> > SCP_string;
@@ -52,23 +52,23 @@ extern void SCP_tolower(char *str);
 extern void SCP_toupper(char *str);
 
 
-template< typename T, typename U >
-using SCP_map = std::map<T, U, std::less<T>, std::allocator<std::pair<const T, U> > >;
+template <typename T, typename U>
+using SCP_map = std::map<T, U, std::less<T>, std::allocator<std::pair<const T, U>>>;
 
-template< typename T, typename U >
-using SCP_multimap = std::multimap<T, U, std::less<T>, std::allocator<std::pair<const T, U> > >;
+template <typename T, typename U>
+using SCP_multimap = std::multimap<T, U, std::less<T>, std::allocator<std::pair<const T, U>>>;
 
-template< typename T >
-using SCP_queue = std::queue< T, std::deque< T, std::allocator< T > > >;
+template <typename T>
+using SCP_queue = std::queue<T, std::deque<T, std::allocator<T>>>;
 
-template< typename T >
-using SCP_deque = std::deque< T, std::allocator< T > >;
+template <typename T>
+using SCP_deque = std::deque<T, std::allocator<T>>;
 
 template <typename T>
 using SCP_set = std::set<T, std::less<T>, std::allocator<T>>;
 
 #if __cplusplus < 201402L
-template <class T, bool>
+template<class T, bool>
 struct enum_hasher_util {
 	inline size_t operator()(const T& elem) { return std::hash<T>()(elem); }
 };

@@ -1651,21 +1651,21 @@ void model_page_out_textures(polymodel* pm, bool release, const SCP_set<int>& sk
 		glow_point_bank* bank = &pm->glow_point_banks[j];
 
 		if (bank->glow_bitmap >= 0) {
-			//	if (release) {
-			//		bm_release(bank->glow_bitmap);
-			//		bank->glow_bitmap = -1;
-			//	} else {
-			bm_unload(bank->glow_bitmap);
-			//	}
+		//	if (release) {
+		//		bm_release(bank->glow_bitmap);
+		//		bank->glow_bitmap = -1;
+		//	} else {
+				bm_unload(bank->glow_bitmap);
+		//	}
 		}
 
 		if (bank->glow_neb_bitmap >= 0) {
-			//	if (release) {
-			//		bm_release(bank->glow_neb_bitmap);
-			//		bank->glow_neb_bitmap = -1;
-			//	} else {
-			bm_unload(bank->glow_neb_bitmap);
-			//	}
+		//	if (release) {
+		//		bm_release(bank->glow_neb_bitmap);
+		//		bank->glow_neb_bitmap = -1;
+		//	} else {
+				bm_unload(bank->glow_neb_bitmap);
+		//	}
 		}
 	}
 }
@@ -3428,6 +3428,5 @@ void bsp_polygon_data::replace_textures_used(const SCP_map<int, int>& replacemen
 }
 
 SCP_set<int> model_get_textures_used(polymodel* pm, int submodel) {
-	auto polies = make_unique<const bsp_polygon_data>(pm->submodel[submodel].bsp_data);
-	return polies->get_textures_used();
+	return bsp_polygon_data{ pm->submodel[submodel].bsp_data }.get_textures_used();
 }

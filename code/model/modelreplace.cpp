@@ -89,8 +89,7 @@ static void parse_virtual_pof() {
 			skip_to_start_of_string_either("$POF:", "#End");
 			return;
 		}
-	} while (optional_string_either("$POF:", "#End") == -1);
-	Mp -= 5;
+	} while (optional_string_either("$POF:", "#End", false) == -1);
 }
 
 static void parse_virtual_pof_table(const char* filename) {
@@ -122,7 +121,7 @@ void virtual_pof_init() {
 
 // Internal helper functions
 
-#define REPLACE_IF_EQ(data, source, dest) if ((data) == source) (data) = dest;
+#define REPLACE_IF_EQ(data) if ((data) == source) (data) = dest;
 
 static void change_submodel_numbers(polymodel* pm, int source, int dest) {
 	//For now only in the subobject data...
@@ -142,7 +141,7 @@ static void change_submodel_numbers(polymodel* pm, int source, int dest) {
 	}
 }
 
-
+#undef REPLACE_IF_EQ
 
 // Actual replacement operations
 
@@ -171,17 +170,8 @@ void VirtualPOFOperationAddSubmodel::process(polymodel* pm, model_read_deferred_
 	SCP_set<int> keepTextures;
 	read_model_file(appendingPM, appendingPOF.c_str(), 0, appendingSubsys, depth);
 
-	int src_subobj_no = -1;
-	for (int i = 0; i < appendingPM->n_models; i++) {
-		if (!stricmp(appendingPM->submodel[i].name, subobjNameSrc.c_str()))
-			src_subobj_no = i;
-	}
-
-	int dest_subobj_no = -1;
-	for (int i = 0; i < pm->n_models; i++) {
-		if (!stricmp(pm->submodel[i].name, subobjNameDest.c_str()))
-			dest_subobj_no = i;
-	}
+	int src_subobj_no = model_find_submodel_index(*appendingPM, subobjNameSrc.c_str());
+	int dest_subobj_no = model_find_submodel_index(*appendingPM, subobjNameDest.c_str());
 
 	if (src_subobj_no >= 0 && dest_subobj_no >= 0) {
 		create_family_tree(pm);
@@ -195,18 +185,14 @@ void VirtualPOFOperationAddSubmodel::process(polymodel* pm, model_read_deferred_
 		if (copyChildren) {
 			model_iterate_submodel_tree(appendingPM, src_subobj_no, [&to_copy_submodels, &has_name_collision, pm, appendingPM](int submodel, int /*level*/, bool /*isLeaf*/) {
 				to_copy_submodels.emplace_back(submodel);
-				for (int i = 0; i < pm->n_models; i++) {
-					if (!stricmp(pm->submodel[i].name, appendingPM->submodel[submodel].name))
-						has_name_collision = true;
-				}
+				if(model_find_submodel_index(*pm, appendingPM->submodel[submodel].name) != -1)
+					has_name_collision = true;
 				});
 		}
 		else {
 			to_copy_submodels.emplace_back(src_subobj_no);
-			for (int i = 0; i < pm->n_models; i++) {
-				if (!stricmp(pm->submodel[i].name, appendingPM->submodel[src_subobj_no].name))
-					has_name_collision = true;
-			}
+			if (model_find_submodel_index(*pm, appendingPM->submodel[src_subobj_no].name) != -1)
+				has_name_collision = true;
 		}
 
 		if (!has_name_collision) {
@@ -366,10 +352,11 @@ VirtualPOFOperationChangeData::VirtualPOFOperationChangeData() {
 }
 
 void VirtualPOFOperationChangeData::process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth /*depth*/) const {
-	int subobj_no = -1;
-	for (int i = 0; i < pm->n_models; i++) {
-		if (!stricmp(pm->submodel[i].name, submodel.c_str()))
-			subobj_no = i;
+	int subobj_no = model_find_submodel_index(*pm, submodel.c_str());
+
+	if (subobj_no == -1) {
+		Warning(LOCATION, "Failed to find submodel to change data of. Returning original POF");
+		return;
 	}
 
 	if (setOffset != nullptr) {
