@@ -807,6 +807,8 @@ int script_state::RunCondition(int action, object *objp1, object *objp2, int mor
 			num++;
 		}
 	}
+
+	ProcessAddedHooks();
 	return num;
 }
 
@@ -1214,7 +1216,14 @@ bool script_state::ParseCondition(const char *filename)
 }
 
 void script_state::AddConditionedHook(ConditionedHook hook) {
-	ConditionalHooks.push_back(std::move(hook));
+	AddedHooks.push_back(std::move(hook));
+}
+
+void script_state::ProcessAddedHooks() {
+	for (auto& hook : AddedHooks) {
+		ConditionalHooks.push_back(std::move(hook));
+	}
+	AddedHooks.clear();
 	AssayActions();
 }
 
