@@ -382,19 +382,19 @@ void parse_mod_table(const char *filename)
 
 		if (optional_string("$Generic Pain Flash Factor:")) {
 			stuff_float(&Generic_pain_flash_factor);
-			if (!fl_equal(Generic_pain_flash_factor, 1.0f))
+			if (Generic_pain_flash_factor > 0.0f)
 				mprintf(("Game Settings Table: Setting generic pain flash factor to %.2f\n", Generic_pain_flash_factor));
 		}
 
 		if (optional_string("$Shield Pain Flash Factor:")) {
 			stuff_float(&Shield_pain_flash_factor);
-			if (!fl_near_zero(Shield_pain_flash_factor, 0.01f))
+			if (Shield_pain_flash_factor > 0.0f)
 				 mprintf(("Game Settings Table: Setting shield pain flash factor to %.2f\n", Shield_pain_flash_factor));
 		}
 
 		if (optional_string("$EMP Pain Flash Factor:")) {
 			stuff_float(&Emp_pain_flash_factor);
-			if (!fl_near_zero(Emp_pain_flash_factor, 0.01f))
+			if (Emp_pain_flash_factor > 0.0f)
 				mprintf(("Game Settings Table: Setting EMP pain flash factor to %.2f\n", Emp_pain_flash_factor));
 		}
 
@@ -402,7 +402,7 @@ void parse_mod_table(const char *filename)
 			int rgb[3];
 			stuff_int_list(rgb, 3);
 			if ((rgb[0] >= 0 && rgb[0] <= 255) && (rgb[1] >= 0 && rgb[1] <= 255) && (rgb[2] >= 0 && rgb[2] <= 255)) {
-				Emp_pain_flash_color = std::make_tuple(static_cast<float>(rgb[0]/255), static_cast<float>(rgb[1]/255), static_cast<float>(rgb[2]/255));
+				Emp_pain_flash_color = std::make_tuple(static_cast<float>(rgb[0])/255, static_cast<float>(rgb[1])/255, static_cast<float>(rgb[2])/255);
 			} else {
 				error_display(0, "$EMP Pain Flash Color is %i, %i, %i. "
 					"One or more of these values is not within the range of 0-255. Assuming default color.", rgb[0], rgb[1], rgb[2]);
