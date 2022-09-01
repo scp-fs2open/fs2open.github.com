@@ -129,15 +129,15 @@ static void change_submodel_numbers(polymodel* pm, int source, int dest) {
 	for (int i = 0; i < pm->n_models; i++) {
 		auto& submodel = pm->submodel[i];
 		for (auto& detail : submodel.details)
-			REPLACE_IF_EQ(detail, source, dest);
-		REPLACE_IF_EQ(submodel.first_child, source, dest);
-		REPLACE_IF_EQ(submodel.i_replace, source, dest);
+			REPLACE_IF_EQ(detail);
+		REPLACE_IF_EQ(submodel.first_child);
+		REPLACE_IF_EQ(submodel.i_replace);
 		for (auto& debris : submodel.live_debris)
-			REPLACE_IF_EQ(debris, source, dest);
-		REPLACE_IF_EQ(submodel.look_at_submodel, source, dest);
-		REPLACE_IF_EQ(submodel.my_replacement, source, dest);
-		REPLACE_IF_EQ(submodel.next_sibling, source, dest);
-		REPLACE_IF_EQ(submodel.parent, source, dest);
+			REPLACE_IF_EQ(debris);
+		REPLACE_IF_EQ(submodel.look_at_submodel);
+		REPLACE_IF_EQ(submodel.my_replacement);
+		REPLACE_IF_EQ(submodel.next_sibling);
+		REPLACE_IF_EQ(submodel.parent);
 	}
 }
 
