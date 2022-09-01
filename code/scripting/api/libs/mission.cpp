@@ -1651,6 +1651,21 @@ ADE_FUNC(hasGoalsSlide,
 	return ade_set_args(L, "b", goals);
 }
 
+ADE_FUNC(hasDebriefing,
+	l_Mission,
+	nullptr,
+	"Determines if the current mission has a command briefing",
+	"boolean",
+	"true if command briefing, false otherwise.")
+{
+	bool check = false;
+	if (The_mission.flags[Mission::Mission_Flags::Toggle_debriefing]) {
+		check = true;
+	}
+	
+	return ade_set_args(L, "b", check);
+}
+
 int testLineOfSight_internal(lua_State* L, bool returnDist_and_Obj) {
 	vec3d from, to;
 	luacpp::LuaTable excludedObjects;

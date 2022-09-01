@@ -6,6 +6,9 @@
 
 #include "cmdline/cmdline.h"
 #include "cutscene/cutscenes.h"
+#include "hud/hudconfig.h"
+#include "hud/hudlock.h"
+#include "hud/hudtargetbox.h"
 #include "gamesnd/eventmusic.h"
 #include "gamesequence/gamesequence.h"
 #include "menuui/barracks.h"
@@ -23,10 +26,15 @@
 #include "mission/missioncampaign.h"
 #include "mission/missionbriefcommon.h"
 #include "missionui/missionscreencommon.h"
+#include "missionui/missiondebrief.h"
+#include "mission/missiongoals.h"
 #include "mission/missioncampaign.h"
 #include "missionui/redalert.h"
 #include "network/multi.h"
+#include "network/multi.h"
+#include "object/objectsnd.h"
 #include "playerman/managepilot.h"
+#include "radar/radarsetup.h"
 #include "scpui/SoundPlugin.h"
 #include "scpui/rocket_ui.h"
 #include "scripting/api/objs/techroom.h"
@@ -35,10 +43,15 @@
 #include "scripting/api/objs/fictionviewer.h"
 #include "scripting/api/objs/cmd_brief.h"
 #include "scripting/api/objs/briefing.h"
+#include "scripting/api/objs/debriefing.h"
 #include "scripting/api/objs/color.h"
 #include "scripting/api/objs/enums.h"
 #include "scripting/api/objs/player.h"
 #include "scripting/lua/LuaTable.h"
+#include "ship/afterburner.h"
+#include "ship/shipfx.h"
+#include "stats/medals.h"
+#include "stats/stats.h"
 
 // Our Assert conflicts with the definitions inside libRocket
 #pragma push_macro("Assert")
@@ -677,6 +690,208 @@ ADE_FUNC(getCmdBriefing,
 {
 	// The cmd briefing code has support for specifying the team but only sets the index to 0
 	return ade_set_args(L, "o", l_CmdBrief.Set(0));
+}
+
+//**********SUBLIBRARY: UserInterface/Debriefing
+ADE_LIB_DERIV(l_UserInterface_Debrief,
+	"Debriefing",
+	nullptr,
+	"API for accessing data related to the debriefing UI.<br><b>Warning:</b> This is an internal "
+	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	l_UserInterface);
+
+//NEED A FLAG TO CHECK IF THE MISSION HAS A DEBRIEF
+
+ADE_FUNC(initDebriefing,
+	l_UserInterface_Debrief,
+	nullptr,
+	"Builds the debriefing, the stats, sets the next campaign mission, and makes all relevant data accessible",
+	"number",
+	"Returns 1 when completed")
+{
+	//This is used to skip some UI preloading in debrief init
+	API_Access = true;
+	
+	//freespace.cpp does all this stuff before entering debrief so we have to do it here, too -Mjn
+	hud_stop_looped_locking_sounds();
+	hud_stop_looped_engine_sounds();
+	afterburner_stop_sounds();
+	player_stop_looped_sounds();
+	obj_snd_stop_all(); // stop all object-linked persistant sounds
+	if (Subspace_ambient_left_channel.isValid()) {
+		snd_stop(Subspace_ambient_left_channel);
+		Subspace_ambient_left_channel = sound_handle::invalid();
+	}
+
+	if (Subspace_ambient_right_channel.isValid()) {
+		snd_stop(Subspace_ambient_right_channel);
+		Subspace_ambient_right_channel = sound_handle::invalid();
+	}
+	snd_stop(Radar_static_looping);
+	Radar_static_looping = sound_handle::invalid();
+	snd_stop(Target_static_looping);
+	shipfx_stop_engine_wash_sound();
+	Target_static_looping = sound_handle::invalid();
+
+	mission_goal_fail_incomplete(); // fail all incomplete goals before entering debriefing
+	hud_config_as_player();
+	debrief_init();
+
+	API_Access = false;
+	
+	return ade_set_args(L, "i", 1);
+}
+
+ADE_FUNC(getDebriefingMusicName,
+	l_UserInterface_Debrief,
+	nullptr,
+	"Gets the file name of the music file to play for the debriefing.",
+	"string",
+	"The file name or empty if no music")
+{
+	return ade_set_args(L, "s", common_music_get_filename(debrief_select_music()).c_str());
+}
+
+ADE_FUNC(getDebriefing, l_UserInterface_Debrief, nullptr, "Get the debriefing", "debriefing", "The debriefing data")
+{
+	// get a pointer to the appropriate debriefing structure
+	if (MULTI_TEAM) {
+		return ade_set_args(L, "o", l_Debrief.Set(Debriefings[Net_player->p_info.team]));
+	} else {
+		return ade_set_args(L, "o", l_Debrief.Set(Debriefings[0]));
+	}
+}
+
+ADE_FUNC(getEarnedMedal,
+	l_UserInterface_Debrief,
+	nullptr,
+	"Get the earned medal name and bitmap",
+	"string, string",
+	"The name and bitmap or NIL if not earned")
+{
+	char filename[80];
+	SCP_string displayname;
+
+	if (Player->stats.m_medal_earned != -1) {
+		debrief_choose_medal_variant(filename,
+			Player->stats.m_medal_earned,
+			Player->stats.medal_counts[Player->stats.m_medal_earned] - 1);
+		displayname = Medals[Player->stats.m_medal_earned].get_display_name();
+
+		return ade_set_args(L, "ss", displayname, filename);
+	} else {
+		return ADE_RETURN_NIL;
+	}
+}
+
+ADE_FUNC(getEarnedPromotion,
+	l_UserInterface_Debrief,
+	nullptr,
+	"Get the earned promotion stage, name, and bitmap",
+	"debriefing_stage, string, string",
+	"The promotion stage, name and bitmap or NIL if not earned")
+{
+	char filename[80];
+	SCP_string displayname;
+
+	if (Player->stats.m_promotion_earned != -1) {
+		Promoted = Player->stats.m_promotion_earned;
+		debrief_choose_medal_variant(filename, Rank_medal_index, Promoted);
+		displayname = Ranks[Promoted].name;
+
+		return ade_set_args(L, "oss", l_DebriefStage.Set(Promotion_stage), displayname, filename);
+	} else {
+		return ADE_RETURN_NIL;
+	}
+}
+
+ADE_FUNC(getEarnedBadge,
+	l_UserInterface_Debrief,
+	nullptr,
+	"Get the earned badge stage, name, and bitmap",
+	"debriefing_stage, string, string",
+	"The badge stage, name and bitmap or NIL if not earned")
+{
+	char filename[80];
+	SCP_string displayname;
+
+	if (Player->stats.m_badge_earned.size()) {
+		debrief_choose_medal_variant(filename,
+			Player->stats.m_badge_earned.back(),
+			Player->stats.medal_counts[Player->stats.m_badge_earned.back()] - 1);
+		displayname = Ranks[Promoted].name;
+
+		return ade_set_args(L, "oss", l_DebriefStage.Set(Badge_stage), displayname, filename);
+	} else {
+		return ADE_RETURN_NIL;
+	}
+}
+
+ADE_FUNC(getTraitor,
+	l_UserInterface_Debrief,
+	nullptr,
+	"Get the traitor stage",
+	"debriefing_stage",
+	"The traitor stage or nil if the player is not traitor. Will also clear out any earned stats if true")
+{
+	if (Turned_traitor) {
+		Player->flags &= ~PLAYER_FLAGS_PROMOTED;
+		scoring_level_init(&Player->stats);
+		return ade_set_args(L, "o", l_DebriefStage.Set(Traitor_debriefing.stages[0]));
+	} else {
+		return ADE_RETURN_NIL;
+	}
+}
+
+ADE_FUNC(mustReplay,
+	l_UserInterface_Debrief,
+	nullptr,
+	"Gets whether or not the player must replay the mission. Will also clear out any earned stats if true",
+	"boolean",
+	"true if must replay, false otherwise")
+{
+
+	if (Must_replay_mission) {
+		Player->flags &= ~PLAYER_FLAGS_PROMOTED;
+		scoring_level_init(&Player->stats);
+		return ade_set_args(L, "b", true);
+	} else {
+		return ade_set_args(L, "b", false);
+	}
+}
+
+ADE_FUNC(canSkip,
+	l_UserInterface_Debrief,
+	nullptr,
+	"Gets whether or not the player has failed enough times to trigger a skip dialog",
+	"boolean",
+	"true if can skip, false otherwise")
+{
+
+	if (Player->failures_this_session >= PLAYER_MISSION_FAILURE_LIMIT) {
+		return ade_set_args(L, "b", true);
+	} else {
+		return ade_set_args(L, "b", false);
+	}
+}
+
+ADE_FUNC(acceptMission,
+	l_UserInterface_Debrief,
+	nullptr,
+	"Accepts the mission outcome, saves the stats, and begins the next mission if in campaign",
+	"number",
+	"Returns 1 when completed")
+{
+	// This is used to skip some UI preloading in debrief init
+	API_Access = true;
+
+	debrief_accept();
+
+	debrief_close();
+
+	API_Access = false;
+
+	return ade_set_args(L, "i", 1);
 }
 
 //**********SUBLIBRARY: UserInterface/LoopBrief

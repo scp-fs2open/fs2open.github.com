@@ -352,6 +352,9 @@ class interface_snd_id : public util::ID<interface_snd_tag, int, -1> {
 	}
 };
 
+static sound_handle Subspace_ambient_left_channel = sound_handle::invalid();
+static sound_handle Subspace_ambient_right_channel = sound_handle::invalid();
+
 void gamesnd_parse_soundstbl();	// Loads in general game sounds from sounds.tbl
 void gamesnd_close();	// close out gamesnd... only call from game_shutdown()!
 void gamesnd_load_gameplay_sounds();
