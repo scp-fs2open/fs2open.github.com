@@ -616,7 +616,7 @@ void parse_mission_info(mission *pm, bool basic = false)
 
 	// for each species, store whether support is available
 	for (int species = 0; species < (int)Species_info.size(); species++) {
-		if (Species_info[species].support_ship_index > 0) {
+		if (Species_info[species].support_ship_index >= 0) {
 			pm->support_ships.support_available_for_species |= (1 << species);
 		}
 	}
@@ -8084,6 +8084,17 @@ void mission_bring_in_support_ship( object *requester_objp )
 		mission_add_to_arriving_support( requester_objp );
 		return;
 	}
+
+	// If the support ship class was set via SEXP, use it. Otherwise, look it up by the requester's species.
+	int ship_class = The_mission.support_ships.ship_class;
+	if (ship_class < 0) {
+		int requester_species = Ship_info[requester_shipp->ship_info_index].species;
+		ship_class = Species_info[requester_species].support_ship_index;
+		if ( ship_class < 0 ) {
+			Warning(LOCATION, "Couldn't determine the support ship class to bring in\n");
+			return;
+		}
+	}
 	
 	// create a parse object, and put it onto the ship arrival list.  This whole thing kind of stinks.
 	// I want to put it into a parse object since it needs to arrive just a little later than
@@ -8093,6 +8104,7 @@ void mission_bring_in_support_ship( object *requester_objp )
 
 	Arriving_support_ship = &Support_ship_pobj;
 	pobj = Arriving_support_ship;
+	pobj->ship_class = ship_class;
 
 	// get average position of all ships
 	obj_get_average_ship_pos( &center );
@@ -8125,19 +8137,6 @@ void mission_bring_in_support_ship( object *requester_objp )
 	} while(1);
 
 	vm_set_identity( &(pobj->orient) );
-
-	// If the support ship class was set via SEXP, use it.
-	// Otherwise, look it up by the requester's species.
-	pobj->ship_class = The_mission.support_ships.ship_class;
-	if (pobj->ship_class < 0) {
-		int requester_species = Ship_info[requester_shipp->ship_info_index].species;
-		int ship_class = Species_info[requester_species].support_ship_index;
-		if ( ship_class >= 0 ) {
-			pobj->ship_class = ship_class;
-		} else {
-			Int3();				// BOGUS!!!!  gotta figure something out here
-		}
-	}
 
 	// set support ship hitpoints
 	pobj->ship_max_hull_strength = Ship_info[i].max_hull_strength;
