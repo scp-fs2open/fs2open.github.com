@@ -2711,10 +2711,9 @@ void ss_return_name(int wing_block, int wing_slot, char *name)
 		return;
 	}
 
-  bool trim = true;
 	// Check to see if ship is on the ship arrivals list
 	if ( ws->sa_index != -1 ) {
-		strcpy(name, Parse_objects[ws->sa_index].name);
+		strcpy(name, Parse_objects[ws->sa_index].get_display_name());
 	} else {
 		ship *sp;
 		sp = &Ships[wp->ship_index[wing_slot]];
@@ -2724,16 +2723,12 @@ void ss_return_name(int wing_block, int wing_slot, char *name)
 			int player_index = multi_find_player_by_object(&Objects[sp->objnum]);
 			if(player_index != -1){
 				strcpy(name,Net_players[player_index].m_player->callsign);
-        trim = false;
 			} else {
-				strcpy(name,sp->ship_name);
+				strcpy(name, sp->get_display_name());
 			}
 		} else {		
-			strcpy(name, sp->ship_name);
+			strcpy(name, sp->get_display_name());
 		}
-	}
-	if (trim) {
-		end_string_at_first_hash_symbol(name);
 	}
 }
 
