@@ -55,7 +55,7 @@ bool read_virtual_model_file(polymodel* pm, const SCP_string& filename, model_pa
 	read_model_file(pm, filename.c_str(), ferror, deferredTasks, depth);
 
 	for (const auto& operation : virtual_pof.operationList)
-		operation->process(pm, deferredTasks, depth);
+		operation->process(pm, deferredTasks, depth, virtual_pof);
 
 	return true;
 }
@@ -164,7 +164,7 @@ VirtualPOFOperationAddSubmodel::VirtualPOFOperationAddSubmodel() {
 	stuff_string(subobjNameDest, F_NAME);
 }
 
-void VirtualPOFOperationAddSubmodel::process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth) const {
+void VirtualPOFOperationAddSubmodel::process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const {
 	polymodel* appendingPM = new polymodel();
 	model_read_deferred_tasks appendingSubsys;
 	SCP_set<int> keepTextures;
@@ -178,7 +178,7 @@ void VirtualPOFOperationAddSubmodel::process(polymodel* pm, model_read_deferred_
 		create_family_tree(appendingPM);
 
 		if (rename != nullptr)
-			rename->process(appendingPM, appendingSubsys, depth);
+			rename->process(appendingPM, appendingSubsys, depth, virtualPof);
 
 		SCP_vector<int> to_copy_submodels;
 		bool has_name_collision = false;
@@ -240,7 +240,7 @@ void VirtualPOFOperationAddSubmodel::process(polymodel* pm, model_read_deferred_
 					if (it == textureIDReplace.end()) {
 						int newID = pm->n_textures++;
 						if (pm->n_textures > MAX_MODEL_TEXTURES) {
-							Warning(LOCATION, "Failed to add submodel to virtual POF, combined POF has too many (over %d) textures.", MAX_MODEL_TEXTURES);
+							Warning(LOCATION, "Failed to add submodel %s of POF %s to virtual POF %s, combined POF has too many (over %d) textures.", subobjNameSrc.c_str(), appendingPOF.c_str(), virtualPof.name.c_str(), MAX_MODEL_TEXTURES);
 							model_page_out_textures(appendingPM, true);
 							model_free(appendingPM);
 							return;
@@ -283,11 +283,11 @@ void VirtualPOFOperationAddSubmodel::process(polymodel* pm, model_read_deferred_
 			}
 		}
 		else {
-			Warning(LOCATION, "Failed to add submodel to virtual POF, original POF already has a subsystem with the same name as was supposed to be added.");
+			Warning(LOCATION, "Failed to add submodel %s of POF %s to virtual POF %s, original POF already has a subsystem with the same name as was supposed to be added.", subobjNameSrc.c_str(), appendingPOF.c_str(), virtualPof.name.c_str());
 		}
 	}
 	else {
-		Warning(LOCATION, "Failed to add submodel to virtual POF, specified subobject was not found. Returning original POF");
+		Warning(LOCATION, "Failed to add submodel %s of POF %s to virtual POF %s, specified subobject was not found. Returning original POF", subobjNameSrc.c_str(), appendingPOF.c_str(), virtualPof.name.c_str());
 	}
 
 	
@@ -299,13 +299,12 @@ VirtualPOFOperationRenameSubobjects::VirtualPOFOperationRenameSubobjects() {
 	while (optional_string("+Replace:")) {
 		SCP_string replace;
 		stuff_string(replace, F_NAME);
-		SCP_tolower(replace);
 		required_string("+With:");
 		stuff_string(replacements[replace], F_NAME);
 	}
 }
 
-void VirtualPOFOperationRenameSubobjects::process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth /*depth*/) const {
+void VirtualPOFOperationRenameSubobjects::process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth /*depth*/, const VirtualPOFDefinition& /*virtualPof*/) const {
 	for (int i = 0; i < pm->n_models; i++) {
 		auto it = replacements.find(pm->submodel[i].name);
 		if (it != replacements.end()) {
@@ -343,7 +342,6 @@ void VirtualPOFOperationRenameSubobjects::process(polymodel* pm, model_read_defe
 VirtualPOFOperationChangeData::VirtualPOFOperationChangeData() {
 	required_string("+Submodel:");
 	stuff_string(submodel, F_NAME);
-	SCP_tolower(submodel);
 
 	if (optional_string("+Set Offset:")) {
 		setOffset = make_unique<vec3d>();
@@ -351,11 +349,11 @@ VirtualPOFOperationChangeData::VirtualPOFOperationChangeData() {
 	}
 }
 
-void VirtualPOFOperationChangeData::process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth /*depth*/) const {
+void VirtualPOFOperationChangeData::process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth /*depth*/, const VirtualPOFDefinition& virtualPof) const {
 	int subobj_no = model_find_submodel_index(pm, submodel.c_str());
 
 	if (subobj_no == -1) {
-		Warning(LOCATION, "Failed to find submodel to change data of. Returning original POF");
+		Warning(LOCATION, "Failed to find submodel %s to change data of in virtual POF %s. Returning original POF", submodel.c_str(), virtualPof.name.c_str());
 		return;
 	}
 
@@ -383,7 +381,7 @@ VirtualPOFOperationHeaderData::VirtualPOFOperationHeaderData() {
 	}
 }
 
-void VirtualPOFOperationHeaderData::process(polymodel* pm, model_read_deferred_tasks& /*deferredTasks*/, model_parse_depth /*depth*/) const {
+void VirtualPOFOperationHeaderData::process(polymodel* pm, model_read_deferred_tasks& /*deferredTasks*/, model_parse_depth /*depth*/, const VirtualPOFDefinition& /*virtualPof*/) const {
 	if (radius != nullptr) {
 		pm->rad = pm->core_radius = *radius;
 	}

@@ -11,10 +11,12 @@ bool read_virtual_model_file(polymodel* pm, const SCP_string& filename, model_pa
 
 void virtual_pof_init();
 
+struct VirtualPOFDefinition;
+
 class VirtualPOFOperation {
 public:
 	virtual ~VirtualPOFOperation() = default;
-	virtual void process(polymodel*, model_read_deferred_tasks& subsysList, model_parse_depth depth) const = 0;
+	virtual void process(polymodel* pm, model_read_deferred_tasks& subsysList, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const = 0;
 };
 
 struct VirtualPOFDefinition {
@@ -26,7 +28,7 @@ class VirtualPOFOperationRenameSubobjects : public VirtualPOFOperation {
 	SCP_unordered_map<SCP_string, SCP_string, SCP_string_lcase_hash, SCP_string_lcase_equal_to> replacements;
 public:
 	VirtualPOFOperationRenameSubobjects();
-	void process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth) const override;
+	void process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const override;
 };
 
 class VirtualPOFOperationAddSubmodel : public VirtualPOFOperation {
@@ -36,7 +38,7 @@ class VirtualPOFOperationAddSubmodel : public VirtualPOFOperation {
 	bool copyChildren = true;
 public:
 	VirtualPOFOperationAddSubmodel();
-	void process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth) const override;
+	void process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const override;
 };
 
 class VirtualPOFOperationChangeData : public VirtualPOFOperation {
@@ -45,7 +47,7 @@ class VirtualPOFOperationChangeData : public VirtualPOFOperation {
 	std::unique_ptr<vec3d> setOffset = nullptr;
 public:
 	VirtualPOFOperationChangeData();
-	void process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth) const override;
+	void process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const override;
 };
 
 class VirtualPOFOperationHeaderData : public VirtualPOFOperation {
@@ -54,5 +56,5 @@ class VirtualPOFOperationHeaderData : public VirtualPOFOperation {
 	std::unique_ptr<std::pair<vec3d, vec3d>> boundingbox = nullptr;
 public:
 	VirtualPOFOperationHeaderData();
-	void process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth) const override;
+	void process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const override;
 };
