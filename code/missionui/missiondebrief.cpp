@@ -1883,7 +1883,6 @@ int debrief_select_music()
 		return SCORE_DEBRIEF_AVERAGE;
 	}
 
-	return SCORE_DEBRIEF_AVERAGE;
 }
 
 
