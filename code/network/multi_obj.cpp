@@ -312,8 +312,11 @@ void multi_rollback_ship_record_add_ship(int obj_num)
 	// our target size is the number of ships in the vector plus one because net_signatures start at 1 and size gives the number of elements, and this should be a new element.
 	int current_size = (int)Oo_info.frame_info.size();
 	
-	objp->interp_info.reset();
-
+	if (objp->type == OBJ_SHIP) {
+		int subsystem_count = Ship_info[Ships[objp->instance].ship_info_index].n_subsystems;
+		objp->interp_info.reset(subsystem_count);
+	}
+	
 	// if we're right where we should be.
 	if (net_sig_idx == current_size) {
 		Oo_info.frame_info.push_back(Oo_info.frame_info[0]);
@@ -922,7 +925,8 @@ void multi_oo_respawn_reset_info(object* objp)
 	}
 
 	// To ensure clean interpolation, we should probably just reset everything.
-	objp->interp_info.reset();
+	int subsystem_count = Ship_info[Ships[objp->instance].ship_info_index].n_subsystems;
+	objp->interp_info.reset(subsystem_count);
 }
 
 // ---------------------------------------------------------------------------------------------------
@@ -1878,8 +1882,8 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num, int time_delt
 
 				// update health
 				if (flags[i] & OO_SUBSYS_HEALTH) {
-					if (seq_num > pobjp->interp_info.get_subsystem_comparison_frame(i)) {
-						pobjp->interp_info.set_subsystem_comparison_frames(i, seq_num);
+					if (seq_num > pobjp->interp_info.get_subsystem_health_frame(i)) {
+						pobjp->interp_info.set_subsystem_health_frame(i, seq_num);
 						subsysp->current_hits = subsys_data[data_idx] * subsysp->max_hits;
 
 						// Aggregate if necessary.
@@ -1890,89 +1894,131 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num, int time_delt
 					data_idx++;
 				}
 
-				angles *prev_angs_1 = nullptr;
-				angles *prev_angs_2 = nullptr;
-				angles *angs_1 = nullptr;
-				angles *angs_2 = nullptr;
-				if (subsysp->submodel_instance_1) {
-					prev_angs_1 = new angles;
-					angs_1 = new angles;
-					vm_extract_angles_matrix_alternate(prev_angs_1, &subsysp->submodel_instance_1->canonical_prev_orient);
-					vm_extract_angles_matrix_alternate(angs_1, &subsysp->submodel_instance_1->canonical_orient);
-				}
-				if (subsysp->submodel_instance_2) {
-					prev_angs_2 = new angles;
-					angs_2 = new angles;
-					vm_extract_angles_matrix_alternate(prev_angs_2, &subsysp->submodel_instance_2->canonical_prev_orient);
-					vm_extract_angles_matrix_alternate(angs_2, &subsysp->submodel_instance_2->canonical_orient);
-				}
+				// We could do individual flag comparisons, but every other flag is animation, and health alone is the lowest value.
+				if (flags[i] > OO_SUBSYS_HEALTH){
 
-				if (flags[i] & OO_SUBSYS_ROTATION_1b) {
-					prev_angs_1->b = angs_1->b;
-					angs_1->b = (subsys_data[data_idx] * PI2);
-					data_idx++;
-				}
+					bool animations_valid = false;
 
-				if (flags[i] & OO_SUBSYS_ROTATION_1h) {
-					prev_angs_1->h = angs_1->h;
-					angs_1->h = (subsys_data[data_idx] * PI2);
-					data_idx++;
-				}
+					if (seq_num > pobjp->interp_info.get_subsystem_animation_frame(i)) {
+						animations_valid = true;
+						pobjp->interp_info.set_subsystem_animation_frame(i, seq_num);						
+					}
 
-				if (flags[i] & OO_SUBSYS_ROTATION_1p) {
-					prev_angs_1->p = angs_1->p;
-					angs_1->p = (subsys_data[data_idx] * PI2);
-					data_idx++;
-				}
+					angles *prev_angs_1 = nullptr;
+					angles *prev_angs_2 = nullptr;
+					angles *angs_1 = nullptr;
+					angles *angs_2 = nullptr;
 
-				if (flags[i] & OO_SUBSYS_ROTATION_2b) {
-					prev_angs_2->b = angs_2->b;
-					angs_2->b = (subsys_data[data_idx] * PI2);
-					data_idx++;
-				}
+					if (subsysp->submodel_instance_1) {
+						prev_angs_1 = new angles;
+						angs_1 = new angles;
+						vm_extract_angles_matrix_alternate(prev_angs_1, &subsysp->submodel_instance_1->canonical_prev_orient);
+						vm_extract_angles_matrix_alternate(angs_1, &subsysp->submodel_instance_1->canonical_orient);
+					}
 
-				if (flags[i] & OO_SUBSYS_ROTATION_2h) {
-					prev_angs_2->h = angs_2->h;
-					angs_2->h = (subsys_data[data_idx] * PI2);
-					data_idx++;
-				}
+					if (subsysp->submodel_instance_2) {
+						prev_angs_2 = new angles;
+						angs_2 = new angles;
+						vm_extract_angles_matrix_alternate(prev_angs_2, &subsysp->submodel_instance_2->canonical_prev_orient);
+						vm_extract_angles_matrix_alternate(angs_2, &subsysp->submodel_instance_2->canonical_orient);
+					}
 
-				if (flags[i] & OO_SUBSYS_ROTATION_2p) {
-					prev_angs_2->p = angs_2->p;
-					angs_2->p = (subsys_data[data_idx] * PI2);
-					data_idx++;
-				}
+					if (flags[i] & OO_SUBSYS_ROTATION_1b) {
+						if (animations_valid) {
+							prev_angs_1->b = angs_1->b;
+							angs_1->b = (subsys_data[data_idx] * PI2);
+						}
 
-				if (flags[i] & OO_SUBSYS_TRANSLATION_x) {
-					subsysp->submodel_instance_1->canonical_prev_offset.xyz.x = subsysp->submodel_instance_1->canonical_offset.xyz.x;
-					subsysp->submodel_instance_1->canonical_offset.xyz.x = subsys_data[data_idx];
-					data_idx++;
-				}
+						data_idx++;
+					}
 
-				if (flags[i] & OO_SUBSYS_TRANSLATION_y) {
-					subsysp->submodel_instance_1->canonical_prev_offset.xyz.y = subsysp->submodel_instance_1->canonical_offset.xyz.y;
-					subsysp->submodel_instance_1->canonical_offset.xyz.y = subsys_data[data_idx];
-					data_idx++;
-				}
+					if (flags[i] & OO_SUBSYS_ROTATION_1h) {
+						if (animations_valid) {						
+							prev_angs_1->h = angs_1->h;
+							angs_1->h = (subsys_data[data_idx] * PI2);
+						}
 
-				if (flags[i] & OO_SUBSYS_TRANSLATION_z) {
-					subsysp->submodel_instance_1->canonical_prev_offset.xyz.z = subsysp->submodel_instance_1->canonical_offset.xyz.z;
-					subsysp->submodel_instance_1->canonical_offset.xyz.z = subsys_data[data_idx];
-					data_idx++;
-				}
+						data_idx++;
+					}
 
-				// fix up the matrixes
-				if (flags[i] & OO_SUBSYS_ROTATION_1) {
-					vm_angles_2_matrix(&subsysp->submodel_instance_1->canonical_prev_orient, prev_angs_1);
-					vm_angles_2_matrix(&subsysp->submodel_instance_1->canonical_orient, angs_1);
-					delete prev_angs_1;
-					delete angs_1;
-				}
-				if (flags[i] & OO_SUBSYS_ROTATION_2) {
-					vm_angles_2_matrix(&subsysp->submodel_instance_2->canonical_prev_orient, prev_angs_2);
-					vm_angles_2_matrix(&subsysp->submodel_instance_2->canonical_orient, angs_2);
-					delete prev_angs_2;
-					delete angs_2;
+					if (flags[i] & OO_SUBSYS_ROTATION_1p) {
+						if (animations_valid) {
+							prev_angs_1->p = angs_1->p;
+							angs_1->p = (subsys_data[data_idx] * PI2);
+						}
+
+						data_idx++;
+					}
+
+					if (flags[i] & OO_SUBSYS_ROTATION_2b) {
+						if (animations_valid) {
+							prev_angs_2->b = angs_2->b;
+							angs_2->b = (subsys_data[data_idx] * PI2);
+						}
+
+						data_idx++;
+					}
+
+					if (flags[i] & OO_SUBSYS_ROTATION_2h) {
+						if (animations_valid) {						
+							prev_angs_2->h = angs_2->h;
+							angs_2->h = (subsys_data[data_idx] * PI2);
+						}
+
+						data_idx++;
+					}
+
+					if (flags[i] & OO_SUBSYS_ROTATION_2p) {
+						if (animations_valid) {						
+							prev_angs_2->p = angs_2->p;
+							angs_2->p = (subsys_data[data_idx] * PI2);
+						}
+
+						data_idx++;
+					}
+
+					// fix up the subsystem orientation matrixes based on received data
+					if (flags[i] & OO_SUBSYS_ROTATION_1) {
+						vm_angles_2_matrix(&subsysp->submodel_instance_1->canonical_prev_orient, prev_angs_1);
+						vm_angles_2_matrix(&subsysp->submodel_instance_1->canonical_orient, angs_1);
+						delete prev_angs_1;
+						delete angs_1;
+					}
+
+					// fix up the subsystem orientation matrixes based on received data
+					if (flags[i] & OO_SUBSYS_ROTATION_2) {
+						vm_angles_2_matrix(&subsysp->submodel_instance_2->canonical_prev_orient, prev_angs_2);
+						vm_angles_2_matrix(&subsysp->submodel_instance_2->canonical_orient, angs_2);
+						delete prev_angs_2;
+						delete angs_2;
+					}
+
+					if (flags[i] & OO_SUBSYS_TRANSLATION_x) {
+						if (animations_valid) {
+							subsysp->submodel_instance_1->canonical_prev_offset.xyz.x = subsysp->submodel_instance_1->canonical_offset.xyz.x;
+							subsysp->submodel_instance_1->canonical_offset.xyz.x = subsys_data[data_idx];
+						}
+
+						data_idx++;
+					}
+
+					if (flags[i] & OO_SUBSYS_TRANSLATION_y) {
+						if (animations_valid) {						
+							subsysp->submodel_instance_1->canonical_prev_offset.xyz.y = subsysp->submodel_instance_1->canonical_offset.xyz.y;
+							subsysp->submodel_instance_1->canonical_offset.xyz.y = subsys_data[data_idx];
+						}
+
+						data_idx++;
+					}
+
+					if (flags[i] & OO_SUBSYS_TRANSLATION_z) {
+						if (animations_valid) {						
+							subsysp->submodel_instance_1->canonical_prev_offset.xyz.z = subsysp->submodel_instance_1->canonical_offset.xyz.z;
+							subsysp->submodel_instance_1->canonical_offset.xyz.z = subsys_data[data_idx];
+						}
+
+						data_idx++;
+					}
 				}
 
 				subsysp = GET_NEXT(subsysp);
