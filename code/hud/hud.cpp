@@ -81,6 +81,7 @@ int HUD_color_alpha = HUD_COLOR_ALPHA_DEFAULT;		// 1 -> HUD_COLOR_ALPHA_USER_MAX
 
 int HUD_draw     = 1;
 int HUD_contrast = 0;										// high or lo contrast (for nebula, etc)
+bool HUD_shadows = false;
 
 // Goober5000
 int HUD_disable_except_messages = 0;
@@ -753,6 +754,12 @@ void HudGauge::renderString(int x, int y, const char *str)
 		}
 	}
 
+	if (HUD_shadows) {
+		gr_set_color_fast(&Color_black);
+		gr_string(x + nx + 1, y + ny + 1, str);
+		gr_set_color_fast(&gauge_color);
+	}
+
 	gr_string(x + nx, y + ny, str);
 	gr_reset_screen_scale();
 }
@@ -776,9 +783,20 @@ void HudGauge::renderString(int x, int y, int gauge_id, const char *str)
 		}
 	}
 
+
 	if ( gauge_id > -2 ) {
+		if (HUD_shadows) {
+			gr_set_color_fast(&Color_black);
+			emp_hud_string(x + nx + 1, y + ny + 1, gauge_id, str, GR_RESIZE_FULL);
+			gr_set_color_fast(&gauge_color);
+		}
 		emp_hud_string(x + nx, y + ny, gauge_id, str, GR_RESIZE_FULL);
 	} else {
+		if (HUD_shadows) {
+			gr_set_color_fast(&Color_black);
+			gr_string(x + nx + 1, y + ny + 1, str);
+			gr_set_color_fast(&gauge_color);
+		}
 		gr_string(x + nx, y + ny, str);
 	}
 
@@ -3864,6 +3882,11 @@ void hud_toggle_contrast()
 void hud_set_contrast(int high)
 {
 	HUD_contrast = high;
+}
+
+void hud_toggle_shadows()
+{
+	HUD_shadows = !HUD_shadows;
 }
 
 // Paging functions for the rest of the HUD code
