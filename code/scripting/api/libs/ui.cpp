@@ -700,8 +700,6 @@ ADE_LIB_DERIV(l_UserInterface_Debrief,
 	"API for the new UI system. This should not be used by other code and may be removed in the future!",
 	l_UserInterface);
 
-//NEED A FLAG TO CHECK IF THE MISSION HAS A DEBRIEF
-
 ADE_FUNC(initDebriefing,
 	l_UserInterface_Debrief,
 	nullptr,
@@ -873,6 +871,25 @@ ADE_FUNC(canSkip,
 	} else {
 		return ade_set_args(L, "b", false);
 	}
+}
+
+ADE_FUNC(replayMission,
+	l_UserInterface_Debrief,
+	nullptr,
+	"Resets the mission outcome and begins the current mission again if in campaign",
+	"number",
+	"Returns 1 when completed")
+{
+	// This is used to skip some UI preloading in debrief init
+	API_Access = true;
+
+	debrief_close();
+
+	gameseq_post_event(GS_EVENT_START_GAME);
+
+	API_Access = false;
+
+	return ade_set_args(L, "i", 1);
 }
 
 ADE_FUNC(acceptMission,

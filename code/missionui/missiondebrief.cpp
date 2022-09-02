@@ -1959,9 +1959,7 @@ void debrief_init()
 	// be backed out if used chooses to replace them.
 	scoring_level_close();
 
-	if (!API_Access) {
-		debrief_ui_init(); // init UI items
-	}
+	debrief_ui_init(); // init UI items
 	debrief_award_init();
 	show_stats_init();
 	debrief_voice_init();
@@ -1983,7 +1981,7 @@ void debrief_init()
 
 		if ( Num_debrief_stages <= 0 ) {
 			Num_debrief_stages = 0;
-		} else if (!API_Access) {
+		} else if (!API_Access) { //Do not load voice files in API mode -Mjn
 			debrief_voice_load_all();
 		}
 	} else {
@@ -2120,12 +2118,9 @@ void debrief_close()
 		bm_release(Badge_bitmap);
 	}
 
-	// These don't need to be handled when accessing through the API -Mjn
-	if (!API_Access) {
-		Debrief_ui_window.destroy();
-		common_free_interface_palette(); // restore game palette
-		show_stats_close();
-	}
+	Debrief_ui_window.destroy();
+	common_free_interface_palette(); // restore game palette
+	show_stats_close();
 
 	if (Game_mode & GM_MULTIPLAYER){
 		multi_debrief_close();

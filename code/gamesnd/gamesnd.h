@@ -352,6 +352,7 @@ class interface_snd_id : public util::ID<interface_snd_tag, int, -1> {
 	}
 };
 
+//Move these declarations here from freespace.cpp so that the Debriefing API can properly close them if called -Mjn
 static sound_handle Subspace_ambient_left_channel = sound_handle::invalid();
 static sound_handle Subspace_ambient_right_channel = sound_handle::invalid();
 
