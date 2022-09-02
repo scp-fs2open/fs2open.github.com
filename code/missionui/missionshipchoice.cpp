@@ -2162,11 +2162,14 @@ void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_sele
 	
 	// print the wing name under the wing
 	wp = &Wings[wb->wingnum];
-	gr_get_string_size(&w, &h, wp->name);
+	char name[NAME_LENGTH];
+	strcpy_s(name, wp->name);
+	end_string_at_first_hash_symbol(name);
+	gr_get_string_size(&w, &h, name);
 	sx = Wing_icon_coords[gr_screen.res][wb_num*MAX_WING_SLOTS][0] + 16 - w/2;
 	sy = Wing_icon_coords[gr_screen.res][wb_num*MAX_WING_SLOTS + 3][1] + 32 + h;
 	gr_set_color_fast(&Color_normal);
-	gr_string(sx, sy, wp->name, GR_RESIZE_MENU);
+	gr_string(sx, sy, name, GR_RESIZE_MENU);
 
 	for ( i = 0; i < MAX_WING_SLOTS; i++ ) {
 		GR_DEBUG_SCOPE("Single ship");
@@ -2710,7 +2713,7 @@ void ss_return_name(int wing_block, int wing_slot, char *name)
 
 	// Check to see if ship is on the ship arrivals list
 	if ( ws->sa_index != -1 ) {
-		strcpy(name, Parse_objects[ws->sa_index].name);
+		strcpy(name, Parse_objects[ws->sa_index].get_display_name());
 	} else {
 		ship *sp;
 		sp = &Ships[wp->ship_index[wing_slot]];
@@ -2721,10 +2724,10 @@ void ss_return_name(int wing_block, int wing_slot, char *name)
 			if(player_index != -1){
 				strcpy(name,Net_players[player_index].m_player->callsign);
 			} else {
-				strcpy(name,sp->ship_name);
+				strcpy(name, sp->get_display_name());
 			}
 		} else {		
-			strcpy(name, sp->ship_name);
+			strcpy(name, sp->get_display_name());
 		}
 	}
 }
