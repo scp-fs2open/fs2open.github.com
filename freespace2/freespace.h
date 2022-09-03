@@ -178,7 +178,7 @@ void game_whack_reset();
 void game_whack_apply( float x, float y );
 
 // call to apply a "shudder"
-void game_shudder_apply(int time, float intensity);
+void game_shudder_apply(int time, float intensity, bool perpetual = false, bool everywhere = false);
 
 //===================================================================
 

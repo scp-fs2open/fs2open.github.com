@@ -541,7 +541,9 @@ float Sun_spot = 0.0f;
 big_expl_flash Big_expl_flash = {0.0f, 0.0f, 0};
 
 // game shudder stuff (in ms)
-int Game_shudder_time = -1;
+bool Game_shudder_perpetual = false;
+bool Game_shudder_everywhere = false;
+TIMESTAMP Game_shudder_time = TIMESTAMP::invalid();
 int Game_shudder_total = 0;
 float Game_shudder_intensity = 0.0f;			// should be between 0.0 and 100.0
 
@@ -972,7 +974,7 @@ void game_level_init()
 	Key_normal_game = (Game_mode & GM_NORMAL);
 	Cheats_enabled = 0;
 
-	Game_shudder_time = -1;
+	Game_shudder_time = TIMESTAMP::invalid();
 
 	Perspective_locked = false;
 
@@ -2921,9 +2923,11 @@ void game_whack_apply( float x, float y )
 }
 
 // call to apply a "shudder"
-void game_shudder_apply(int time, float intensity)
+void game_shudder_apply(int time, float intensity, bool perpetual, bool everywhere)
 {
-	Game_shudder_time = timestamp(time);
+	Game_shudder_perpetual = perpetual;
+	Game_shudder_everywhere = everywhere;
+	Game_shudder_time = _timestamp(time);
 	Game_shudder_total = time;
 	Game_shudder_intensity = intensity;
 }
@@ -2934,8 +2938,7 @@ float get_shake(float intensity, int decay_time, int max_decay_time)
 
 	float shake = intensity * (float)(r-Random::HALF_MAX_VALUE) * Random::INV_F_MAX_VALUE;
 	
-	if (decay_time >= 0) {
-		Assert(max_decay_time > 0);
+	if (decay_time >= 0 && max_decay_time > 0) {
 		shake *= (0.5f - fl_abs(0.5f - (float) decay_time / (float) max_decay_time));
 	}
 
@@ -2947,6 +2950,7 @@ extern int Wash_on;
 extern float sn_shudder;
 void apply_view_shake(matrix *eye_orient)
 {
+	bool do_global_shudder = false;
 	angles tangles;
 	tangles.p = 0.0f;
 	tangles.h = 0.0f;
@@ -2975,15 +2979,7 @@ void apply_view_shake(matrix *eye_orient)
 			joy_ff_play_dir_effect(FF_SCALE * wash_intensity * rand_vec.xyz.x, FF_SCALE * wash_intensity * rand_vec.xyz.y);
 		}
 
-		// Make eye shake due to shuddering
-		if (Game_shudder_time != -1) {
-			if (timestamp_elapsed(Game_shudder_time)) {
-				Game_shudder_time = -1;
-			} else {
-				tangles.p += get_shake(Game_shudder_intensity * 0.005f, timestamp_until(Game_shudder_time), Game_shudder_total);
-				tangles.h += get_shake(Game_shudder_intensity * 0.005f, timestamp_until(Game_shudder_time), Game_shudder_total);
-			}
-		}
+		do_global_shudder = true;
 	}
 	// do shakes that affect external cameras
 	else {
@@ -2993,10 +2989,29 @@ void apply_view_shake(matrix *eye_orient)
 			tangles.p += get_shake(0.07f * cut_pct * sn_shudder, -1, 0);
 			tangles.h += get_shake(0.07f * cut_pct * sn_shudder, -1, 0);
 		}
+
+		if (Game_shudder_everywhere) {
+			do_global_shudder = true;
+		}
+	}
+
+	if (do_global_shudder) {	
+		// Make eye shake due to shuddering
+		if (Game_shudder_perpetual) {
+			tangles.p += get_shake(Game_shudder_intensity * 0.005f, -1, 0);
+			tangles.h += get_shake(Game_shudder_intensity * 0.005f, -1, 0);
+		} else if (Game_shudder_time.isValid()) {
+			if (timestamp_elapsed(Game_shudder_time)) {
+				Game_shudder_time = TIMESTAMP::invalid();
+			} else {
+				tangles.p += get_shake(Game_shudder_intensity * 0.005f, timestamp_until(Game_shudder_time), Game_shudder_total);
+				tangles.h += get_shake(Game_shudder_intensity * 0.005f, timestamp_until(Game_shudder_time), Game_shudder_total);
+			}
+		}
 	}
 
 	// maybe bail
-	if (tangles.p == 0.0f && tangles.h == 0.0f && tangles.b == 0.0f)
+	if (fl_near_zero(tangles.p) && fl_near_zero(tangles.h) && fl_near_zero(tangles.b))
 		return;
 
 	matrix	tm, tm2;
