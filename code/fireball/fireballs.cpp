@@ -26,7 +26,7 @@
 #include <cstdlib>
 
 
-int Knossos_warp_ani_used;
+bool Knossos_warp_ani_used;
 
 #define WARPHOLE_GROW_TIME		(2.35f)	// time for warphole to reach max size (also time to shrink to nothing once it begins to shrink)
 
@@ -203,6 +203,10 @@ static void fireball_set_default_warp_attributes(int idx)
 			strcpy_s(Fireball_info[idx].warp_glow, "warpglow01");
 			strcpy_s(Fireball_info[idx].warp_ball, "warpball01");
 			strcpy_s(Fireball_info[idx].warp_model, "warp.pof");
+
+			if (Fireball_use_3d_warp)
+				Fireball_info[idx].use_3d_warp = true;
+
 			break;
 	}
 }
@@ -366,7 +370,13 @@ static void parse_fireball_tbl(const char *table_filename)
 
 			// check for custom warp model
 			if (optional_string("$Warp model:"))
+			{
 				stuff_string(fi->warp_model, F_NAME, NAME_LENGTH);
+
+				// if we are explicitly specifying a model, then we'll want to use it,
+				// rather than just having the default model that might or might not be used
+				fi->use_3d_warp = true;
+			}
 		}
 
 		required_string("#End");
@@ -397,10 +407,21 @@ void fireball_parse_tbl()
 	{
 		if (fi.lod_count > 1)
 		{
+			Assertion(fi.lod_count <= MAX_FIREBALL_LOD, "Fireball LOD (%d) greater than MAX_FIREBALL_LOD %d.", fi.lod_count, MAX_FIREBALL_LOD);
+			static_assert(MAX_FIREBALL_LOD < 10, "The fireball LOD naming scheme needs to be changed for LODs > 9");
+
 			auto lod0 = fi.lod[0].filename;
+			constexpr int MAX_BASENAME_LEN = MAX_FILENAME_LEN - 3;	// ensure base file name + _*lod* fits in filename field
+
+			if (strlen(lod0) > MAX_BASENAME_LEN)
+			{
+				Warning(LOCATION, "A fireball base file name may not be longer than %d characters due to the LOD naming scheme.\nLODs other than LOD0 will be skipped for fireball %s", MAX_BASENAME_LEN, lod0);
+				fi.lod_count = 1;
+				continue;
+			}
 
 			for (int j = 1; j < fi.lod_count; ++j)
-				sprintf(fi.lod[j].filename, "%s_%d", lod0, j);
+				sprintf(fi.lod[j].filename, "%.*s_%d", MAX_BASENAME_LEN, lod0, j % MAX_FIREBALL_LOD /*to show gcc12 format string is safe*/);
 		}
 	}
 
@@ -460,7 +481,7 @@ void fireball_init()
 	Unused_fireball_indices.reserve(INTITIAL_FIREBALL_CONTAINTER_SIZE);
 
 	// Goober5000 - reset Knossos warp flag
-	Knossos_warp_ani_used = 0;
+	Knossos_warp_ani_used = false;
 }
 
 MONITOR( NumFireballsRend )
@@ -1049,7 +1070,8 @@ void fireball_render(object* obj, model_draw_list *scene)
 	float alpha = 1.0f;
 
 	if (The_mission.flags[Mission::Mission_Flags::Fullneb] && Neb_affects_fireballs)
-		alpha *= neb2_get_fog_visibility(&obj->pos, NEB_FOG_VISIBILITY_MULT_FIREBALL(obj->radius));
+		alpha *= neb2_get_fog_visibility(&obj->pos, 
+			Neb2_fog_visibility_fireball_const + (obj->radius * Neb2_fog_visibility_fireball_scaled_factor));
 	
 	g3_transfer_vertex(&p, &obj->pos);
 
@@ -1071,7 +1093,7 @@ void fireball_render(object* obj, model_draw_list *scene)
 			float rad = obj->radius * fireball_wormhole_intensity(fb);
 
 			fireball_info *fi = &Fireball_info[fb->fireball_info_index];
-			warpin_queue_render(scene, obj, &obj->orient, &obj->pos, fb->current_bitmap, rad, percent_life, obj->radius, (fb->flags & FBF_WARP_3D) != 0, fi->warp_glow_bitmap, fi->warp_ball_bitmap, fi->warp_model_id);
+			warpin_queue_render(scene, obj, &obj->orient, &obj->pos, fb->current_bitmap, rad, percent_life, obj->radius, fi->use_3d_warp || (fb->flags & FBF_WARP_3D) != 0, fi->warp_glow_bitmap, fi->warp_ball_bitmap, fi->warp_model_id);
 		}
 		break;
 

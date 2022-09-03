@@ -28,6 +28,7 @@ namespace Object {
 		Temp_marked,			// Temporarily marked (Fred).
 		Hidden,					// Object is hidden (not shown) and can't be manipulated
 		Collides_with_parent,	// Asteroth - Only used for weapons with 'Can_damage_shooter'
+		Attackable_if_no_collide,	// Cyborg - Allows the AI to attack this object, even if no-collide is set (Cue Admiral Ackbar)
 
 		NUM_VALUES
 	};

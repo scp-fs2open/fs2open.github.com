@@ -26,6 +26,7 @@
 #include "gamesnd/eventmusic.h"
 #include "globalincs/linklist.h"
 #include "globalincs/version.h"
+#include "hud/hudsquadmsg.h"
 #include "iff_defs/iff_defs.h"
 #include "jumpnode/jumpnode.h"
 #include "lighting/lighting.h"
@@ -49,6 +50,7 @@
 #include "sound/sound.h"
 #include "starfield/nebula.h"
 #include "starfield/starfield.h"
+#include "starfield/starfield_flags.h"
 #include "weapon/weapon.h"
 
 #include <freespace.h>
@@ -137,7 +139,7 @@ void CFred_mission_save::convert_special_tags_to_retail()
 	}
 
 	for (i = Num_builtin_messages; i < Num_messages; i++) {
-		convert_special_tags_to_retail(Messages[i].message, MESSAGE_LENGTH);
+		convert_special_tags_to_retail(Messages[i].message, MESSAGE_LENGTH - 1);
 	}
 }
 
@@ -663,8 +665,16 @@ void CFred_mission_save::save_ai_goals(ai_goal *goalp, int ship)
 					str = "ai-stay-still";
 					break;
 
+				case AI_GOAL_REARM_REPAIR:
+					str = "ai-rearm-repair";
+					break;
+
+				case AI_GOAL_FLY_TO_SHIP:
+					str = "ai-fly-to-ship";
+					break;
+
 				default:
-					Assert(0);
+					UNREACHABLE("Goal %d not handled!", goalp[i].ai_mode);
 				}
 
 				if (valid)
@@ -768,6 +778,23 @@ int CFred_mission_save::save_asteroid_fields()
 			save_vector(Asteroid_field.inner_max_bound);
 		}
 
+		if (!Asteroid_target_ships.empty()) {
+			fso_comment_push(";;FSO 22.0.0;;");
+			if (optional_string_fred("$Asteroid Targets:")) {
+				parse_comments();
+				fout(" (");
+			} else {
+				fout_version("\n$Asteroid Targets: (");
+			}
+
+			for (SCP_string& name : Asteroid_target_ships) {				
+				fout(" \"%s\"", name.c_str());
+			}
+
+			fout(" )");
+			fso_comment_pop();
+		}
+
 		fso_comment_pop();
 	}
 
@@ -796,13 +823,27 @@ int CFred_mission_save::save_bitmaps()
 
 	// neb2 stuff
 	if (The_mission.flags[Mission::Mission_Flags::Fullneb]) {
+		fout("\n");
 		required_string_fred("+Neb2:");
 		parse_comments();
-		fout(" %s\n", Neb2_texture_name);
+		fout(" %s", Neb2_texture_name);
+
+		if (Mission_save_format != FSO_FORMAT_RETAIL && The_mission.flags[Mission::Mission_Flags::Neb2_fog_color_override]) {
+			if (optional_string_fred("+Neb2Color:")) {
+				parse_comments();
+			} else {
+				fout("\n+Neb2Color:");
+			}
+			fout(" (");
+			for (auto c : Neb2_fog_color) {
+				fout(" %d", c);
+			}
+			fout(" )");
+		}
 
 		required_string_fred("+Neb2Flags:");
 		parse_comments();
-		fout(" %d\n", Neb2_poof_flags);
+		fout(" %d", Neb2_poof_flags);
 	}
 	// neb 1 stuff
 	else {
@@ -839,6 +880,7 @@ int CFred_mission_save::save_bitmaps()
 		bool tag = (i < (int)Backgrounds.size() - 1);
 		background_t *background = &Backgrounds[i];
 
+		// each background should be preceded by this line so that the suns/bitmaps are partitioned correctly
 		fso_comment_push(";;FSO 3.6.9;;");
 		if (optional_string_fred("$Bitmap List:")) {
 			parse_comments(2);
@@ -850,9 +892,26 @@ int CFred_mission_save::save_bitmaps()
 			fso_comment_pop(true);
 		}
 
+		// save our flags
+		if (Mission_save_format == FSO_FORMAT_RETAIL) {
+			MessageBox(nullptr, "Warning: Background flags (including the fixed-angles-in-mission-file flag) are not supported in retail.  The sun and bitmap angles will be loaded differently by previous versions.", "Incompatibility with retail mission format", MB_OK);
+		} else if (background->flags.any_set()) {
+			if (optional_string_fred("+Flags:")) {
+				parse_comments();
+			} else {
+				fout_version("\n+Flags:");
+			}
+			fout(" (");
+			if (background->flags[Starfield::Background_Flags::Corrected_angles_in_mission_file]) {
+				fout(" \"corrected angles\"");
+			}
+			fout(" )");
+		}
+
 		// save suns by filename
 		for (j = 0; j < background->suns.size(); j++) {
 			starfield_list_entry *sle = &background->suns[j];
+
 
 			// filename
 			required_string_fred("$Sun:");
@@ -862,7 +921,10 @@ int CFred_mission_save::save_bitmaps()
 			// angles
 			required_string_fred("+Angles:");
 			parse_comments();
-			fout(" %f %f %f", sle->ang.p, sle->ang.b, sle->ang.h);
+			angles ang = sle->ang;
+			if (!background->flags[Starfield::Background_Flags::Corrected_angles_in_mission_file])
+				stars_uncorrect_background_sun_angles(&ang);
+			fout(" %f %f %f", ang.p, ang.b, ang.h);
 
 			// scale
 			required_string_fred("+Scale:");
@@ -882,7 +944,10 @@ int CFred_mission_save::save_bitmaps()
 			// angles
 			required_string_fred("+Angles:");
 			parse_comments();
-			fout(" %f %f %f", sle->ang.p, sle->ang.b, sle->ang.h);
+			angles ang = sle->ang;
+			if (!background->flags[Starfield::Background_Flags::Corrected_angles_in_mission_file])
+				stars_uncorrect_background_bitmap_angles(&ang);
+			fout(" %f %f %f", ang.p, ang.b, ang.h);
 
 			// scale
 			required_string_fred("+ScaleX:");
@@ -1046,6 +1111,17 @@ int CFred_mission_save::save_briefing()
 					fout_ext(" ", "%s", bi->label);
 				}
 
+				if (Mission_save_format != FSO_FORMAT_RETAIL) {
+					if (drop_white_space(bi->closeup_label)[0]) {
+						if (optional_string_fred("$closeup label:"))
+							parse_comments();
+						else
+							fout("\n$closeup label:");
+
+						fout_ext(" ", "%s", bi->closeup_label);
+					}
+				}
+
 				if (optional_string_fred("+id:"))
 					parse_comments();
 				else
@@ -1067,6 +1143,12 @@ int CFred_mission_save::save_briefing()
 					required_string_fred("$use wing icon:");
 					parse_comments();
 					fout(" %d", (bi->flags & BI_USE_WING_ICON) ? 1 : 0);
+				}
+
+				if ((Mission_save_format != FSO_FORMAT_RETAIL) && (bi->flags & BI_USE_CARGO_ICON)) {
+					required_string_fred("$use cargo icon:");
+					parse_comments();
+					fout(" %d", (bi->flags & BI_USE_CARGO_ICON) ? 1 : 0);
 				}
 
 				required_string_fred("$multi_text");
@@ -3406,6 +3488,18 @@ int CFred_mission_save::save_objects()
 				fout(" \"no_collide\"");
 			if (shipp->flags[Ship::Ship_Flags::No_disabled_self_destruct])
 				fout(" \"no-disabled-self-destruct\"");
+			if (shipp->flags[Ship::Ship_Flags::Same_arrival_warp_when_docked])
+				fout(" \"same-arrival-warp-when-docked\"");
+			if (shipp->flags[Ship::Ship_Flags::Same_departure_warp_when_docked])
+				fout(" \"same-departure-warp-when-docked\"");
+			if (objp->flags[Object::Object_Flags::Attackable_if_no_collide])
+				fout(" \"ai-attackable-if-no-collide\"");
+			if (shipp->flags[Ship::Ship_Flags::Fail_sound_locked_primary])
+				fout(" \"fail-sound-locked-primary\"");
+			if (shipp->flags[Ship::Ship_Flags::Fail_sound_locked_secondary])
+				fout(" \"fail-sound-locked-secondary\"");
+			if (shipp->flags[Ship::Ship_Flags::Aspect_immune])
+				fout(" \"aspect-immune\"");
 			fout(" )");
 		}
 		// -----------------------------------------------------------
@@ -3611,12 +3705,32 @@ int CFred_mission_save::save_objects()
 		// possibly write out the orders that this ship will accept.  We'll only do it if the orders
 		// are not the default set of orders
 		if (shipp->orders_accepted != ship_get_default_orders_accepted(&Ship_info[shipp->ship_info_index])) {
-			if (optional_string_fred("+Orders Accepted:", "$Name:"))
-				parse_comments();
-			else
-				fout("\n+Orders Accepted:");
+			if (Mission_save_format == FSO_FORMAT_RETAIL) {
+				if (optional_string_fred("+Orders Accepted:", "$Name:"))
+					parse_comments();
+				else 
+					fout("\n+Orders Accepted:");
 
-			fout(" %d\t\t;! note that this is a bitfield!!!", shipp->orders_accepted);
+				int bitfield = 0;
+				for (size_t order : shipp->orders_accepted) {
+					if(order < 32)
+						bitfield |= (1 << (order - 1)); //The first "true" order starts at idx 1, since 0 can be "no order"				
+				}
+				fout(" %d\t\t;! note that this is a bitfield!!!", bitfield);
+			}
+			else {
+				if (optional_string_fred("+Orders Accepted List:", "$Name:"))
+					parse_comments();
+				else
+					fout("\n+Orders Accepted List:");
+
+				fout(" (");
+				for (size_t order_id : shipp->orders_accepted) {
+					const auto& order = Player_orders[order_id];
+					fout(" \"%s\"", order.parse_name.c_str());
+				}
+				fout(" )");
+			}
 		}
 
 		if (shipp->group >= 0) {
@@ -4525,6 +4639,15 @@ int CFred_mission_save::save_wings()
 			fout(" \"no-departure-warp\"");
 		if (Wings[i].flags[Ship::Wing_Flags::No_dynamic])
 			fout(" \"no-dynamic\"");
+		if (Mission_save_format != FSO_FORMAT_RETAIL)
+		{
+			if (Wings[i].flags[Ship::Wing_Flags::Nav_carry])
+				fout(" \"nav-carry-status\"");
+			if (Wings[i].flags[Ship::Wing_Flags::Same_arrival_warp_when_docked])
+				fout(" \"same-arrival-warp-when-docked\"");
+			if (Wings[i].flags[Ship::Wing_Flags::Same_departure_warp_when_docked])
+				fout(" \"same-departure-warp-when-docked\"");
+		}
 
 		fout(" )");
 

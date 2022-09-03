@@ -67,13 +67,14 @@ typedef struct briefing_icon_info {
 	generic_anim	regular;
 	hud_anim		fade;
 	hud_anim		highlight;
-} briefing_icon_type;
+} briefing_icon_info;
 
 extern SCP_vector<briefing_icon_info> Briefing_icon_info;
 
 struct brief_icon;
 extern briefing_icon_info *brief_get_icon_info(brief_icon *bi);
 
+extern bool brief_special_closeup(int briefing_icon_type);
 
 
 // Moving out of missionbriefcommon.cpp so it can be referenced elsewhere -MageKing17
@@ -123,7 +124,6 @@ typedef struct brief_icon {
 	vec3d	pos;
 	char		label[MAX_LABEL_LEN];
 	char		closeup_label[MAX_LABEL_LEN];
-//	char		text[MAX_ICON_TEXT_LEN];
 	hud_anim	fadein_anim;
 	hud_anim	fadeout_anim;
 	hud_anim	highlight_anim;

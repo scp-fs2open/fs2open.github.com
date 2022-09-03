@@ -725,7 +725,6 @@ SerializeInt(fp, mode, objp->signature);
 SerializeInt(fp, mode, objp->type);
 SerializeInt(fp, mode, objp->parent);
 SerializeInt(fp, mode, objp->parent_sig);
-SerializeInt(fp, mode, objp->parent_type);
 SerializeInt(fp, mode, objp->instance);
 SerializeInt(fp, mode, objp->flags);
 SerializeInt(fp, mode, objp->flags2);	// Goober5000 - code is obsolete, but I added this just in case

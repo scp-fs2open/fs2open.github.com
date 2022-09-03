@@ -7,6 +7,7 @@
 #include "network/multi_sexp.h"
 #include "parse/sexp.h"
 #include "network/multi.h"
+#include "network/multi_log.h"
 #include "network/multiutil.h"
 
 static const std::uint8_t CALLBACK_TERMINATOR = 255;
@@ -58,7 +59,7 @@ void sexp_network_packet::ensure_space_remains(size_t data_size)
 
     // At very least must include OP, COUNT, TERMINATOR 
 	if (packet_end < MIN_SEXP_PACKET_SIZE && !packet_flagged_invalid) {
-        Warning(LOCATION, "Sexp %s has attempted to write too much data to a single packet. It is advised that you split this SEXP up into smaller ones", Operators[Current_sexp_operator.back()].text.c_str());
+        Warning(LOCATION, "Sexp %s has attempted to write too much data to a single packet. It is advised that you split this SEXP up into smaller ones", get_operator_name());
         packet_flagged_invalid = true;
         return;
     }
@@ -109,7 +110,7 @@ bool sexp_network_packet::argument_count_is_valid()
             sexp_bytes_left--;
 
             if (possible_terminator == CALLBACK_TERMINATOR) {
-                Warning(LOCATION, "%s has returned to multi_sexp_eval() claiming %d arguments left. %d actually found. Trace out and fix this!", Operators[op_num].text.c_str(), current_argument_count, i);
+                Warning(LOCATION, "%s has returned to multi_sexp_eval() claiming %d arguments left. %d actually found. Trace out and fix this!", get_operator_name(), current_argument_count, i);
                 terminator_found = true;
                 break;
             }
@@ -122,13 +123,13 @@ bool sexp_network_packet::argument_count_is_valid()
 
             if (possible_terminator != CALLBACK_TERMINATOR) {
                 // discard remainder of packet if we still haven't found the terminator as it is hopelessly corrupt
-                Warning(LOCATION, "%s has returned to multi_sexp_eval() without finding the terminator. Discarding packet! Trace out and fix this!", Operators[op_num].text.c_str());
+                Warning(LOCATION, "%s has returned to multi_sexp_eval() without finding the terminator. Discarding packet! Trace out and fix this!", get_operator_name());
                 sexp_bytes_left = 0;
                 return false;
             }
             else {
                 // the previous SEXP hasn't removed all it's data from the packet correctly but it appears we've managed to fix it
-                Warning(LOCATION, "%s has returned to multi_sexp_eval() without removing all the data the server wrote during its callback. Trace out and fix this!", Operators[op_num].text.c_str());
+                Warning(LOCATION, "%s has returned to multi_sexp_eval() without removing all the data the server wrote during its callback. Trace out and fix this!", get_operator_name());
                 op_num = -1;
             }
         }
@@ -672,6 +673,16 @@ int sexp_network_packet::get_next_operator()
 	current_argument_count = count;
 	sexp_bytes_left -= sizeof(short);
 
+    // set index into Operators[] for debug messages
+    op_index = -1;
+
+    for (size_t i = 0; i < Operators.size(); ++i) {
+        if (Operators[i].value == op_num) {
+            op_index = static_cast<int>(i);
+            break;
+        }
+    }
+
     Assert(sexp_bytes_left);
     return op_num;
 
@@ -682,22 +693,51 @@ int sexp_network_packet::get_operator()
     return op_num;
 }
 
+const char *sexp_network_packet::get_operator_name()
+{
+    if (op_index < 0) {
+        return "<unknown>";
+    }
+
+    return Operators[op_index].text.c_str();
+}
+
+
 void sexp_network_packet::finished_callback()
 {
+    int i;
+    ubyte dummy;
     ubyte terminator;
 
-    Assert(current_argument_count == 0);
+    // For improved backwards/forwards compatibility we can discard extra data
+    // in the packet. NOTE that this does not provide any actual compatibility
+    // between builds, but can at least help reduce issues related to using
+    // incompatible builds.
+
+    if (current_argument_count > 0) {
+        // dump this to multi log for easier multi debugging in release builds
+        ml_printf("WARNING! Multi sexp '%s' contains %d bytes of excess/unknown data!", get_operator_name(), current_argument_count);
+
+        for (i = 0; i < current_argument_count; ++i) {
+            GET_DATA(dummy);
+            --sexp_bytes_left;
+        }
+
+        // clear count for the next op
+        current_argument_count = 0;
+    }
 
     // read in the terminator
     GET_DATA(terminator);
+    sexp_bytes_left--;
+    op_num = -1;
+
     if (terminator != CALLBACK_TERMINATOR) {
         Warning(LOCATION, "multi_get_x function call has been called on an improperly terminated callback. Trace out and fix this!");
         // discard remainder of packet
         sexp_bytes_left = 0;
         return;
     }
-    sexp_bytes_left--;
-    op_num = -1;
 }
 
 bool sexp_network_packet::sexp_discard_operator()
@@ -711,6 +751,9 @@ bool sexp_network_packet::sexp_discard_operator()
         GET_DATA(dummy);
         sexp_bytes_left--;
     }
+
+    // clear count for the next op
+    current_argument_count = 0;
 
     GET_DATA(terminator);
     sexp_bytes_left--;

@@ -8,7 +8,8 @@ void Variables::open(Button* /*caller*/) {
 	if (dialogWindow == nullptr) {
 		dialogWindow = (DialogWindow*)getLabManager()->Screen->Add(new DialogWindow("Class Variables", gr_screen.center_offset_x + gr_screen.center_w - 285,
 			gr_screen.center_offset_y + 200));
-		dialogWindow->SetOwner(this);
+		Assert(Opener != nullptr);
+		dialogWindow->SetOwner(Opener->getDialog());
 	}
 	update(getLabManager()->CurrentMode, getLabManager()->CurrentClass);
 }
@@ -74,8 +75,8 @@ void Variables::update(LabMode newLabMode, int classIndex) {
 			addHeader(y, "Techroom");
 			addVariable(&y, "Closeup zoom", sip->closeup_zoom);
 			addVariable(&y, "Closeup pos (x)", sip->closeup_pos.xyz.x);
-			addVariable(&y, "Closeup pos (y)", sip->closeup_pos.xyz.x);
-			addVariable(&y, "Closeup pos (z)", sip->closeup_pos.xyz.x);
+			addVariable(&y, "Closeup pos (y)", sip->closeup_pos.xyz.y);
+			addVariable(&y, "Closeup pos (z)", sip->closeup_pos.xyz.z);
 			break;
 		case LabMode::Weapon:
 			wip = &Weapon_info[classIndex];

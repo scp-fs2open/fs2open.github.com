@@ -12,6 +12,7 @@
 
 
 #include "ai/aigoals.h"
+#include "ai/ailua.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/linklist.h"
 #include "hud/hudmessage.h"
@@ -32,7 +33,6 @@
 #include "ship/subsysdamage.h"
 #include "weapon/emp.h"
 #include "weapon/weapon.h"
-
 
 // defines for different modes in the squad messaging system
 
@@ -155,41 +155,38 @@ int keys_used[] = {	KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_
 
 
 SCP_string  Comm_order_types[NUM_COMM_ORDER_TYPES];
-comm_order Comm_orders[NUM_COMM_ORDER_ITEMS];
 
+int player_order::orderingCounter = 0;
 
-// Goober5000
-// this is stupid, but localization won't work otherwise
-// Karajorma 
-// moving the defines to a non-temporary array is no less stupid. But at least now the SEXP system can get at them.
-sexp_com_order Sexp_comm_orders[] =
-	{
-		// common stuff
-		{ "Destroy my target",	299,	ATTACK_TARGET_ITEM },
-		{ "Disable my target",	300,	DISABLE_TARGET_ITEM },
-		{ "Disarm my target",	301,	DISARM_TARGET_ITEM },
-		{ "Destroy subsystem",	302,	DISABLE_SUBSYSTEM_ITEM },
-		{ "Protect my target",	303,	PROTECT_TARGET_ITEM },
-		{ "Ignore my target",	304,	IGNORE_TARGET_ITEM },
-		{ "Form on my wing",	305,	FORMATION_ITEM },
-		{ "Cover me",			306,	COVER_ME_ITEM },
-		{ "Engage enemy",		307,	ENGAGE_ENEMY_ITEM },
+std::vector<player_order> Player_orders = {
+	player_order("no order",   "No Order",  -1, -1, NO_ORDER_ITEM), //Required to keep defines in sync with array indices
+	player_order("attack ship",   "Destroy my target",  299, -1, ATTACK_TARGET_ITEM),
+	player_order("disable ship",  "Disable my target",	300, -1, DISABLE_TARGET_ITEM),
+	player_order("disarm ship",	  "Disarm my target",	301, -1, DISARM_TARGET_ITEM),
+	player_order("disable subsys","Destroy subsystem",	302, -1, DISABLE_SUBSYSTEM_ITEM),
+	player_order("guard ship",	  "Protect my target",	303, -1, PROTECT_TARGET_ITEM),
+	player_order("ignore ship",   "Ignore my target",	304, -1, IGNORE_TARGET_ITEM),
+	player_order("form on wing","Form on my wing",	305, -1, FORMATION_ITEM),
+	player_order("cover me",	"Cover me",			306, -1, COVER_ME_ITEM),
+	player_order("attack any",	"Engage enemy",		307, -1, ENGAGE_ENEMY_ITEM),
+	player_order("dock", "Capture my target",	308, -1, CAPTURE_TARGET_ITEM),
+	player_order("rearm me", "Rearm me",			309, -1, REARM_REPAIR_ME_ITEM),
+	player_order("abort rearm", "Abort rearm",		310, -1, ABORT_REARM_REPAIR_ITEM),
+	player_order("depart", "Depart",				311, -1, DEPART_ITEM),
+	player_order("stay near me", "Stay near me",		-1, -1, STAY_NEAR_ME_ITEM),
+	player_order("stay near ship", "Stay near my target",-1, -1, STAY_NEAR_TARGET_ITEM),
+	player_order("keep safe dist", "Keep safe distance", -1, -1, KEEP_SAFE_DIST_ITEM)
+};
 
-		// transports mostly
-		{ "Capture my target",	308,	CAPTURE_TARGET_ITEM },
+const std::set<size_t> default_messages{ ATTACK_TARGET_ITEM , DISABLE_TARGET_ITEM , DISARM_TARGET_ITEM , PROTECT_TARGET_ITEM , IGNORE_TARGET_ITEM , FORMATION_ITEM , COVER_ME_ITEM , ENGAGE_ENEMY_ITEM , DEPART_ITEM , DISABLE_SUBSYSTEM_ITEM };
+const std::set<size_t> enemy_target_messages{ ATTACK_TARGET_ITEM , DISABLE_TARGET_ITEM , DISARM_TARGET_ITEM , IGNORE_TARGET_ITEM , STAY_NEAR_TARGET_ITEM , CAPTURE_TARGET_ITEM , DISABLE_SUBSYSTEM_ITEM };
+const std::set<size_t> friendly_target_messages{ PROTECT_TARGET_ITEM };
+const std::set<size_t> target_messages = []() {
+	std::set<size_t> setunion;
+	std::set_union(enemy_target_messages.cbegin(), enemy_target_messages.cend(), friendly_target_messages.cbegin(), friendly_target_messages.cend(), std::inserter(setunion, setunion.end()));
+	return setunion;
+}();
 
-		// support ships
-		{ "Rearm me",			309,	REARM_REPAIR_ME_ITEM },
-		{ "Abort rearm",		310,	ABORT_REARM_REPAIR_ITEM },
-
-		// all ships
-		{ "Depart",				311,	DEPART_ITEM },
-	
-		// extra stuff for support (maintain original comm menu order)
-		{ "Stay near me",		-1,		STAY_NEAR_ME_ITEM},
-		{ "Stay near my target",-1,		STAY_NEAR_TARGET_ITEM},
-		{ "Keep safe distance", -1,		KEEP_SAFE_DIST_ITEM},
-	};
 
 void hud_init_comm_orders()
 {
@@ -210,27 +207,21 @@ void hud_init_comm_orders()
 		Comm_order_types[i] = temp_comm_order_types[i];
 	}
 
-	for (i = 0; i < NUM_COMM_ORDER_ITEMS; i++)
-	{
-		Comm_orders[i].name = XSTR(Sexp_comm_orders[i].name, Sexp_comm_orders[i].xstring);
-		Comm_orders[i].item = Sexp_comm_orders[i].item;
-	}
+	for (auto& order : Player_orders)
+		order.localize();
+
+	std::sort(Player_orders.begin(), Player_orders.end(), [](const player_order& o1, const player_order& o2) {
+		return o1.legacy_id < o2.legacy_id;
+	});
+
 }
 
 // Text to display on the messaging menu when using the shortcut keys
 const char *comm_order_get_text(int item)
 {
-	int i;
-
-	for (i = 0; i < NUM_COMM_ORDER_ITEMS; i++)
-	{
-		if (Comm_orders[i].item == item)
-			return Comm_orders[i].name.c_str();
-	}
-
-	// not found
-	Int3();
-	return NULL;
+	Assertion(item < (int)Player_orders.size(), "Did not find order with index %d!", item);
+	
+	return Player_orders[item].localized_name.c_str();
 }
 
 SCP_vector<squadmsg_history> Squadmsg_history; 
@@ -238,7 +229,7 @@ SCP_vector<squadmsg_history> Squadmsg_history;
 // forward declarations
 void hud_add_issued_order(const char *name, int order);
 void hud_update_last_order(const char *target, int order_source, int special_index);
-bool hud_squadmsg_is_target_order_valid(int order, int find_order, ai_info *aip = nullptr);
+bool hud_squadmsg_is_target_order_valid(size_t order, ai_info *aip = nullptr);
 bool hud_squadmsg_ship_valid(ship *shipp, object *objp = nullptr);
 bool hud_squadmsg_ship_order_valid( int shipnum, int order );
 
@@ -344,7 +335,7 @@ bool hud_squadmsg_ship_valid(ship *shipp, object *objp)
 		return false;
 
 	// ship must be accepting ship type orders
-	if ( shipp->orders_accepted == 0)
+	if ( shipp->orders_accepted.empty())
 		return false;
 
 	// if it is a player ship, we must be in multiplayer
@@ -353,8 +344,9 @@ bool hud_squadmsg_ship_valid(ship *shipp, object *objp)
 
 	// if a messaging shortcut, be sure this ship can process the order
 	if ( Msg_shortcut_command != -1 ) {
-		if ( !(shipp->orders_accepted & Msg_shortcut_command) )
+		if (shipp->orders_accepted.count((size_t) Msg_shortcut_command) == 0)
 			return false;
+		
 		else if ( !hud_squadmsg_ship_order_valid(objp->instance, Msg_shortcut_command) )
 			return false;
 	}
@@ -603,11 +595,13 @@ int hud_squadmsg_get_key()
 				return i;
 
 			// play general fail sound if inactive item hit.
-			else if ( (i < Num_menu_items) && !(MsgItems[i].active) )
+			else if ((i + First_menu_item < Num_menu_items) && !(MsgItems[i + First_menu_item].active)) {
 				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
+			}
 
-			else if ( (i < Num_menu_items) && (MsgItems[i].active) )	// only return keys that are associated with menu items
-				return i;
+			else if ((i + First_menu_item < Num_menu_items) && (MsgItems[i + First_menu_item].active)) {	// only return keys that are associated with menu items
+				return i + First_menu_item;
+			}
 
 			else {
 				Msg_key_used = 0;					// if no #-key pressed for visible item, break and allow timer to 
@@ -740,7 +734,7 @@ bool hud_squadmsg_ship_order_valid( int shipnum, int order )
 	Assert( shipnum >= 0 && shipnum < MAX_SHIPS );
 	ship *shipp = &Ships[shipnum];
 
-	switch ( order  )
+	switch ( order )
 	{
 		case DEPART_ITEM:
 			// disabled ships can't depart.
@@ -762,30 +756,27 @@ bool hud_squadmsg_ship_order_valid( int shipnum, int order )
 // returns true or false if the Players target is valid for the given order
 // find_order is true when we need to search the comm_orders array for the order entry.  We have
 // to do this action in some cases since all we know is the actual "value" of the order
-bool hud_squadmsg_is_target_order_valid(int order, int find_order, ai_info *aip )
+bool hud_squadmsg_is_target_order_valid(size_t order, ai_info *aip )
 {
-	int target_objnum, i;
+	int target_objnum;
 	ship *shipp, *ordering_shipp;
 	object *objp;
 
 	if ( aip == NULL )
 		aip = Player_ai;
 
-	// find the comm_menu item for this command
-	if ( find_order ) {
-		for (i = 0; i < NUM_COMM_ORDER_ITEMS; i++ ) {
-			if ( Comm_orders[i].item == order )
-				break;
-		}
-		Assert( i < NUM_COMM_ORDER_ITEMS );
-		order = i;
+	target_objnum = aip->target_objnum;
+	ordering_shipp = &Ships[aip->shipnum];
+
+	//If it's a lua order, defer to luaai
+	if (Player_orders[order].lua_id != -1) {
+		return ai_lua_is_valid_target(Player_orders[order].lua_id, target_objnum, ordering_shipp);
 	}
 
 	// orders which don't operate on targets are always valid
-	if ( !(Comm_orders[order].item & TARGET_MESSAGES) )
+	if ( target_messages.count(order) == 0 )
 		return true;
 
-	target_objnum = aip->target_objnum;
 
 	// order isn't valid if there is no player target
 	if ( target_objnum == -1 ) {
@@ -794,7 +785,6 @@ bool hud_squadmsg_is_target_order_valid(int order, int find_order, ai_info *aip 
 
 	objp = &Objects[target_objnum];
 
-	ordering_shipp = &Ships[aip->shipnum];
 
 	// target isn't a ship, then return false
 	if ( (objp->type != OBJ_SHIP) && (objp->type != OBJ_WEAPON) )
@@ -809,7 +799,7 @@ bool hud_squadmsg_is_target_order_valid(int order, int find_order, ai_info *aip 
 			return false;
 		}
 		
-		if ( (Comm_orders[order].item == ATTACK_TARGET_ITEM )
+		if ( order == ATTACK_TARGET_ITEM
 			&& ((Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Bomb]) || (Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Fighter_Interceptable]))
 			&& (Weapons[objp->instance].team != ordering_shipp->team) ) {
 			return true;
@@ -833,24 +823,24 @@ bool hud_squadmsg_is_target_order_valid(int order, int find_order, ai_info *aip 
 	}
 
 	// if the order is a disable order or depart, and the ship is disabled, order isn't active
-	if ( (Comm_orders[order].item == DISABLE_TARGET_ITEM) && (shipp->flags[Ship::Ship_Flags::Disabled]) ){
+	if ( (order == DISABLE_TARGET_ITEM) && (shipp->flags[Ship::Ship_Flags::Disabled]) ){
 		return false;
 	}
 
 	// same as above except for disarmed.
-	if ( (Comm_orders[order].item == DISARM_TARGET_ITEM) && ((shipp->subsys_info[SUBSYSTEM_TURRET].type_count == 0) || (shipp->subsys_info[SUBSYSTEM_TURRET].aggregate_current_hits <= 0.0f)) ){
+	if ( (order == DISARM_TARGET_ITEM) && ((shipp->subsys_info[SUBSYSTEM_TURRET].type_count == 0) || (shipp->subsys_info[SUBSYSTEM_TURRET].aggregate_current_hits <= 0.0f)) ){
 		return false;
 	}
 
 	// if order is disable subsystem, and no subsystem targeted or no hits, then order not valid
-	if ( (Comm_orders[order].item == DISABLE_SUBSYSTEM_ITEM) && ((aip->targeted_subsys == NULL) || (aip->targeted_subsys->current_hits <= 0.0f)) ){
+	if ( (order == DISABLE_SUBSYSTEM_ITEM) && ((aip->targeted_subsys == nullptr) || (aip->targeted_subsys->current_hits <= 0.0f)) ){
 		return false;
 	}
 
 	// check based on target's and player's team
-	if ( (shipp->team == ordering_shipp->team) && (FRIENDLY_TARGET_MESSAGES & Comm_orders[order].item) ){
+	if ( (shipp->team == ordering_shipp->team) && (friendly_target_messages.count(order) > 0) ){
 		return true;
-	} else if ( (shipp->team != ordering_shipp->team) && (ENEMY_TARGET_MESSAGES & Comm_orders[order].item) ){
+	} else if ( (shipp->team != ordering_shipp->team) && (enemy_target_messages.count(order) > 0) ){
 		return true;
 	} else {
 		return false;
@@ -927,7 +917,7 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num )
 
 		// don't send the command if the "wing" won't accept the command.  We do this by looking at
 		// the set of orders accepted for the wing leader
-		if ( !(command & shipp->orders_accepted) )
+		if (shipp->orders_accepted.count((size_t)command) == 0)
 			continue;
 
 		// send the command to the wing
@@ -963,7 +953,7 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num )
 			continue;
 
 		// don't send command if ship won't accept if
-		if ( !(command & shipp->orders_accepted) )
+		if (shipp->orders_accepted.count((size_t)command) == 0)
 			continue;
 
 		if (send_message) {
@@ -1017,6 +1007,7 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 	ai_info *ainfo;
 	int ai_mode, ai_submode;					// ai mode and submode needed for ship commands
 	char *target_shipname;						// ship number of possible targets
+	ai_lua_parameters lua_target;
 	int message;
 	int target_team, ship_team;				// team id's for the ship getting message and any target the player has
 	ship *ordering_shipp;
@@ -1053,10 +1044,10 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 	// a shortcut to save on repetitive coding.  If the order is a 'target' order, make the default
 	// mesage be "no target"
 	message = MESSAGE_NOSIR;
-	if ( (command & TARGET_MESSAGES) && (ainfo->target_objnum == -1) )
+	if ( target_messages.count((size_t)command) > 0 && (ainfo->target_objnum == -1) )
 		message = MESSAGE_NO_TARGET;
 
-	if ( hud_squadmsg_is_target_order_valid(command, 1, ainfo) ) {
+	if ( hud_squadmsg_is_target_order_valid((size_t) command, ainfo) ) {
 
 		target_shipname = NULL;
 		target_team = -1;
@@ -1134,7 +1125,7 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 			}
 
 			ai_mode = AI_GOAL_DESTROY_SUBSYSTEM;
-			ai_submode = ship_get_subsys_index( &Ships[Objects[ainfo->target_objnum].instance], ainfo->targeted_subsys->system_info->subobj_name );
+			ai_submode = ship_find_subsys( &Ships[Objects[ainfo->target_objnum].instance], ainfo->targeted_subsys->system_info->subobj_name );
 			special_index = ai_submode; 
 			message = MESSAGE_ATTACK_TARGET;
 			break;
@@ -1252,16 +1243,24 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 			message = MESSAGE_YESSIR;
 			break;
 		
-		default:
-			Int3();										// get Allender -- illegal message
+		default: {
+			Assert(command < (int) Player_orders.size()); // get Allender -- illegal message
+			
+			ai_mode = AI_GOAL_LUA;
+			ai_submode = Player_orders[command].lua_id;
+			auto lua_porder = ai_lua_find_player_order(Player_orders[command].lua_id);
+			message = lua_porder->ai_message;
+			if (ainfo->target_objnum != -1)
+				lua_target = { object_ship_wing_point_team(&Ships[Objects[ainfo->target_objnum].instance]), {} };
 			break;
+		}
 
 		}
 
 		// handle case of messaging one ship.  Deal with messaging all fighters next.
 		if ( ai_mode != AI_GOAL_NONE ) {
 			Assert(ai_submode != -1234567);
-			ai_add_ship_goal_player( AIG_TYPE_PLAYER_SHIP, ai_mode, ai_submode, target_shipname, &Ai_info[Ships[shipnum].ai_index] );
+			ai_add_ship_goal_player( AIG_TYPE_PLAYER_SHIP, ai_mode, ai_submode, target_shipname, &Ai_info[Ships[shipnum].ai_index], lua_target );
 			if( update_history == SQUADMSG_HISTORY_ADD_ENTRY ) {
 				hud_add_issued_order(Ships[shipnum].ship_name, command);
 				hud_update_last_order(target_shipname, player_num, special_index); 
@@ -1301,6 +1300,7 @@ int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, 
 	ai_info *ainfo;
 	int ai_mode, ai_submode;					// ai mode and submode needed for ship commands
 	char *target_shipname;						// ship number of possible targets
+	ai_lua_parameters lua_target;
 	int message_sent, message;
 	int target_team, wing_team;				// team for the wing and the player's target
 	ship *ordering_shipp;
@@ -1339,10 +1339,10 @@ int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, 
 
 	// a shortcut to save on repetative coding
 	message = MESSAGE_NOSIR;
-	if ( (command & TARGET_MESSAGES) && (ainfo->target_objnum == -1) )
+	if ( (target_messages.count((size_t)command) > 0) && (ainfo->target_objnum == -1) )
 		message = MESSAGE_NO_TARGET;
 
-	if ( hud_squadmsg_is_target_order_valid(command, 1, ainfo) ) {
+	if ( hud_squadmsg_is_target_order_valid((size_t)command, ainfo) ) {
 
 		target_shipname = NULL;
 		target_team = -1;
@@ -1407,7 +1407,7 @@ int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, 
 			Assert( ainfo->targeted_subsys->current_hits > 0.0f);
 
 			ai_mode = AI_GOAL_DESTROY_SUBSYSTEM;
-			ai_submode = ship_get_subsys_index( &Ships[Objects[ainfo->target_objnum].instance], ainfo->targeted_subsys->system_info->subobj_name );
+			ai_submode = ship_find_subsys( &Ships[Objects[ainfo->target_objnum].instance], ainfo->targeted_subsys->system_info->subobj_name );
 			special_index = ai_submode; 
 			message = MESSAGE_ATTACK_TARGET;
 			break;
@@ -1470,15 +1470,23 @@ int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, 
 		case KEEP_SAFE_DIST_ITEM:
 			return 0;
 
-		default:
-			Int3();										// get Allender -- illegal message
+		default: {
+			Assert(command < (int) Player_orders.size()); // get Allender -- illegal message
+
+			ai_mode = AI_GOAL_LUA;
+			ai_submode = Player_orders[command].lua_id;
+			auto lua_porder = ai_lua_find_player_order(Player_orders[command].lua_id);
+			message = lua_porder->ai_message;
+			if(ainfo->target_objnum != -1)
+				lua_target = { object_ship_wing_point_team(&Ships[Objects[ainfo->target_objnum].instance]), {} };
 			break;
 
+		}
 		}
 
 		if ( ai_mode != AI_GOAL_NONE ) {
 			Assert(ai_submode != -1234567);
-			ai_add_wing_goal_player( AIG_TYPE_PLAYER_WING, ai_mode, ai_submode, target_shipname, wingnum );
+			ai_add_wing_goal_player( AIG_TYPE_PLAYER_WING, ai_mode, ai_submode, target_shipname, wingnum, lua_target );
 
 			if( update_history == SQUADMSG_HISTORY_ADD_ENTRY ) {				
 				hud_add_issued_order(Wings[wingnum].name, command);
@@ -1579,8 +1587,6 @@ int hud_squadmsg_reinforcements_available(int team)
 void hud_squadmsg_type_select( )
 {
 	int k, i;
-
-	First_menu_item = 0;	
 
 	// Add the items
 	for (i = 0; i < NUM_COMM_ORDER_TYPES; i++)
@@ -1705,13 +1711,13 @@ void hud_squadmsg_ship_select()
 	k = hud_squadmsg_get_key();
 	if ( k != -1 ) {						// if true, we have selected a ship.
 		if ( Msg_shortcut_command == -1 ) {
-			Msg_instance = MsgItems[First_menu_item + k].instance;		// store the instance id in a global
+			Msg_instance = MsgItems[k].instance;		// store the instance id in a global
 			hud_squadmsg_do_mode( SM_MODE_SHIP_COMMAND );				// and move to a new mode
 		} else {
 			// we must convert the Msg_shortcut_command value to a value that the message
 			// system normally uses to select a command.  Since the menu 
 			//Assert( Msg_shortcut_command != IGNORE_TARGET_ITEM );
-			hud_squadmsg_send_ship_command( MsgItems[First_menu_item+k].instance, Msg_shortcut_command, 1, SQUADMSG_HISTORY_ADD_ENTRY);
+			hud_squadmsg_send_ship_command( MsgItems[k].instance, Msg_shortcut_command, 1, SQUADMSG_HISTORY_ADD_ENTRY);
 			hud_squadmsg_toggle();
 		}
 	}
@@ -1732,11 +1738,11 @@ void hud_squadmsg_wing_select()
 	k = hud_squadmsg_get_key();
 	if ( k != -1 ) {						// if true, we have selected a ship.
 		if ( Msg_shortcut_command == -1 ) {									// do normal menu stuff when no hoykey active
-			Msg_instance = MsgItems[First_menu_item + k].instance;	// store the instance id in a global
+			Msg_instance = MsgItems[k].instance;	// store the instance id in a global
 			hud_squadmsg_do_mode( SM_MODE_WING_COMMAND );				// and move to a new mode
 		} else {
 			//Assert( Msg_shortcut_command != IGNORE_TARGET_ITEM );
-			hud_squadmsg_send_wing_command( MsgItems[First_menu_item+k].instance, Msg_shortcut_command, 1, SQUADMSG_HISTORY_ADD_ENTRY );
+			hud_squadmsg_send_wing_command( MsgItems[k].instance, Msg_shortcut_command, 1, SQUADMSG_HISTORY_ADD_ENTRY );
 			hud_squadmsg_toggle();
 		}
 	}
@@ -1901,11 +1907,11 @@ void hud_squadmsg_reinforcement_select()
 
 		hud_squadmsg_toggle();						// take us out of message mode
 
-		rnum = MsgItems[First_menu_item + k].instance;
+		rnum = MsgItems[k].instance;
 
 		// check to see if trying to call a reinforcement not yet available.  If so, maybe play message, but
 		// definately bail
-		if ( MsgItems[First_menu_item + k].active == 0 ) {						
+		if ( MsgItems[k].active == 0 ) {						
 			return;
 		}
 
@@ -1920,12 +1926,17 @@ void hud_squadmsg_reinforcement_select()
 	}
 }
 
+bool hud_order_comparator(size_t a, size_t b) {
+	return Player_orders[a].ordering < Player_orders[b].ordering;
+}
+
 // function to display list of commands for a ship
 
 void hud_squadmsg_ship_command()
 {
 	int k;
-	int i, orders, default_orders;
+	std::set<size_t> orders;
+	std::set<size_t, decltype(&hud_order_comparator)> default_orders(&hud_order_comparator);
 
 	// when adding ship commands, we must look at the type of ship, and what messages that
 	// ship allows.  First, place all messages that are possible onto the menu, then 
@@ -1934,72 +1945,70 @@ void hud_squadmsg_ship_command()
 	// show on comm menu.
 	if ( Msg_instance != MESSAGE_ALL_FIGHTERS ) {
 		orders = Ships[Msg_instance].orders_accepted;
-		default_orders = ship_get_default_orders_accepted( &Ship_info[Ships[Msg_instance].ship_info_index] );
+		const auto& default_orders_accepted = ship_get_default_orders_accepted(&Ship_info[Ships[Msg_instance].ship_info_index]);
+		default_orders.insert(default_orders_accepted.cbegin(), default_orders_accepted.cend());
 	} else {
-
-		default_orders = DEFAULT_MESSAGES;
-		orders = default_orders;
+		orders = default_messages;
+		default_orders.insert(default_messages.cbegin(), default_messages.cend());
 	}
 
-	First_menu_item = 0;
 	Num_menu_items = 0;
-	for ( i = 0; i < NUM_COMM_ORDER_ITEMS; i++ ) {
-		// check to see if the comm order should even be added to the menu -- if so, then add it
-		// the order will be activated if the bit is set for the ship.
-		if ( default_orders & Comm_orders[i].item ) {
-			Assert ( Num_menu_items < MAX_MENU_ITEMS );
-			MsgItems[Num_menu_items].text = Comm_orders[i].name.c_str();
-			MsgItems[Num_menu_items].instance = Comm_orders[i].item;
+	for(size_t order_id : default_orders) {
+		Assert (Num_menu_items < MAX_MENU_ITEMS);
+		MsgItems[Num_menu_items].text = Player_orders[order_id].localized_name;
+		MsgItems[Num_menu_items].instance = (int)order_id;
+		MsgItems[Num_menu_items].active = 0;
+
+		// check the bit to see if the command is active
+		if (orders.find(order_id) != orders.end())
+			MsgItems[Num_menu_items].active = 1;
+
+		// if the order cannot be carried out by the ship, then item should be inactive
+		if ((Msg_instance != MESSAGE_ALL_FIGHTERS) && !hud_squadmsg_ship_order_valid(Msg_instance, (int)order_id))
 			MsgItems[Num_menu_items].active = 0;
-			// check the bit to see if the command is active
-			if ( orders & Comm_orders[i].item )
-				MsgItems[Num_menu_items].active = 1;
 
-			// if the order cannot be carried out by the ship, then item should be inactive
-			if ( (Msg_instance != MESSAGE_ALL_FIGHTERS) && !hud_squadmsg_ship_order_valid( Msg_instance, Comm_orders[i].item ) )
-				MsgItems[Num_menu_items].active = 0;
+		// do some other checks to possibly gray out other items.
+		// if no target, remove any items which are associated with the players target
+		if (!hud_squadmsg_is_target_order_valid(order_id, nullptr))
+			MsgItems[Num_menu_items].active = 0;
 
-			// do some other checks to possibly gray out other items.
-			// if no target, remove any items which are associated with the players target
-			if ( !hud_squadmsg_is_target_order_valid(i, 0) )
-				MsgItems[Num_menu_items].active = 0;
+		// if messaging all fighters, see if we should gray out the order if no one will accept it,
+		// or modify the text if only some of the ships will accept it
+		if (Msg_instance == MESSAGE_ALL_FIGHTERS) {
+			ship_obj* so;
+			ship* shipp;
+			bool partial_accept, all_accept;            // value which tells us what to do with menu item
 
-			// if messaging all fighters, see if we should gray out the order if no one will accept it,
-			// or modify the text if only some of the ships will accept it
-			if ( Msg_instance == MESSAGE_ALL_FIGHTERS ) {
-				ship_obj *so;
-				ship *shipp;
-				int partial_accept, all_accept;			// value which tells us what to do with menu item
+			all_accept = true;
+			partial_accept = false;
+			for (so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so)) {
 
-				all_accept = Comm_orders[i].item;
-				partial_accept = 0;
-				for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
+				// don't send messge to ships not on player's team, or that are in a wing.
+				shipp = &Ships[Objects[so->objnum].instance];
+				if (shipp->team != Player_ship->team)
+					continue;
 
-					// don't send messge to ships not on player's team, or that are in a wing.
-					shipp = &Ships[Objects[so->objnum].instance];
-					if ( shipp->team != Player_ship->team )
-						continue;
+				// don't send message to non fighter wings
+				if (!(Ship_info[shipp->ship_info_index].is_fighter_bomber()))
+					continue;
 
-					// don't send message to non fighter wings
-					if ( !(Ship_info[shipp->ship_info_index].is_fighter_bomber()) )
-						continue;
-
-					all_accept &= shipp->orders_accepted;		// 'and'ing will either keep this bit set or zero it properly
-					partial_accept |= (shipp->orders_accepted & Comm_orders[i].item);	// 'or'ing will tell us if at least one accepts
-				}
-
-				if ( !all_accept ) {
-					// either modify the text if a partial accept, or grey it out if no one accepts
-					if ( partial_accept ) {
-						MsgItems[Num_menu_items].text += XSTR("(*)", 320);
-					} else {
-						MsgItems[Num_menu_items].active = 0;
-					}
-				}
+				bool local_accepted = shipp->orders_accepted.count(order_id) > 0;
+				all_accept &= local_accepted;        // 'and'ing will either keep this bit set or zero it properly
+				partial_accept |= local_accepted;    // 'or'ing will tell us if at least one accepts
 			}
 
-			Num_menu_items++;
+			if (!all_accept) {
+				// either modify the text if a partial accept, or grey it out if no one accepts
+				if (partial_accept) {
+					MsgItems[Num_menu_items].text += XSTR("(*)", 320);
+				} else {
+					MsgItems[Num_menu_items].active = 0;
+				}
+			}
 		}
+
+		Num_menu_items++;
+	
 	}
 
 	strcpy_s( Squad_msg_title, XSTR( "What Command", 321) );
@@ -2025,46 +2034,49 @@ void hud_squadmsg_wing_command()
 {
 	int k;
 	wing *wingp;
-	int default_orders, i, orders, shipnum;
+	int shipnum;
 
+	std::set<size_t> orders;
+	std::set<size_t, decltype(&hud_order_comparator)> default_orders(&hud_order_comparator);
+	
 	// when adding commands for wings, we will look at all of the ships in the wing, and create
 	// the order list from that set of ships.  In the future, we may want to do something else....
 
 	wingp = &Wings[Msg_instance];
 
 	// or together all of the orders for all the ships in the wing
-	default_orders = 0;
-	for ( i = 0; i < wingp->current_count; i++ ) {
-		orders = ship_get_default_orders_accepted( &Ship_info[Ships[wingp->ship_index[i]].ship_info_index] );
-		default_orders |= orders;
+	for (int i = 0; i < wingp->current_count; i++ ) {
+		const auto& setAdd = ship_get_default_orders_accepted( &Ship_info[Ships[wingp->ship_index[i]].ship_info_index] );
+		default_orders.insert(setAdd.begin(), setAdd.end());
 	}
-	default_orders &= ~CAPTURE_TARGET_ITEM;		// we cannot capture any target with a wing.
+	
+	default_orders.erase(CAPTURE_TARGET_ITEM); // we cannot capture any target with a wing.
 
 	Num_menu_items = 0;
 	shipnum = wingp->ship_index[wingp->special_ship];
 	Assertion(shipnum >= 0, "Special ship (%d) for wing '%s' has a negative ship_index (%d). This should not happen; get a coder!\n", wingp->special_ship, wingp->name, shipnum);
 	orders = Ships[shipnum].orders_accepted;		// get the orders that the wing leader will accept
-	for ( i = 0; i < NUM_COMM_ORDER_ITEMS; i++ ) {
+	
+	for ( size_t order_id : default_orders ) {
 		// add the set of default orders to the comm menu.  We will currently allow all messages
 		// to be available in the wing.
-		if ( default_orders & Comm_orders[i].item ) {
-			Assert ( Num_menu_items < MAX_MENU_ITEMS );
-			MsgItems[Num_menu_items].text = Comm_orders[i].name;
-			MsgItems[Num_menu_items].instance = Comm_orders[i].item;
+		Assert ( Num_menu_items < MAX_MENU_ITEMS );
+		MsgItems[Num_menu_items].text = Player_orders[order_id].localized_name;
+		MsgItems[Num_menu_items].instance = (int)order_id;
+		MsgItems[Num_menu_items].active = 0;
+
+		// possibly grey out the menu item depending on whether or not the "wing" will accept this order
+		// the "wing" won't accept the order if the first ship in the wing doesn't accept it.
+		if ( orders.find(order_id) != orders.end() )
+			MsgItems[Num_menu_items].active = 1;
+
+		// do some other checks to possibly gray out other items.
+		// if no target, remove any items which are associated with the players target
+		if ( !hud_squadmsg_is_target_order_valid((int)order_id, 0) )
 			MsgItems[Num_menu_items].active = 0;
 
-			// possibly grey out the menu item depending on whether or not the "wing" will accept this order
-			// the "wing" won't accept the order if the first ship in the wing doesn't accept it.
-			if ( orders & Comm_orders[i].item )
-				MsgItems[Num_menu_items].active = 1;
-
-			// do some other checks to possibly gray out other items.
-			// if no target, remove any items which are associated with the players target
-			if ( !hud_squadmsg_is_target_order_valid(i, 0) )
-				MsgItems[Num_menu_items].active = 0;
-
-			Num_menu_items++;
-		}
+		Num_menu_items++;
+	
 	}
 
 	
@@ -2243,7 +2255,7 @@ int hud_squadmsg_hotkey_select( int k )
 			continue;
 
 		// be sure that this ship can accept this command
-		if ( !(Ships[objp->instance].orders_accepted & Msg_shortcut_command) )
+		if ( Ships[objp->instance].orders_accepted.count(Msg_shortcut_command) == 0)
 			continue;
 
 		hud_squadmsg_send_ship_command( objp->instance, Msg_shortcut_command, send_message, SQUADMSG_HISTORY_ADD_ENTRY );
@@ -2408,17 +2420,18 @@ int hud_query_order_issued(const char *to, const char *order_name, const char *t
 	}
 
 	
-	for (i = 0; i < NUM_COMM_ORDER_ITEMS; i++)
-		if (!stricmp(order_name, Comm_orders[i].name.c_str()))
-			order = Comm_orders[i].item;
+	for (i = 0; i < (int) Player_orders.size(); i++)
+		if (!stricmp(order_name, Player_orders[i].hud_name.c_str())) {
+			order = i;
+			break;
+		}
 
 	// Goober5000 - if not found, check compatibility
 	if (order == -1)
 	{
 		if (!stricmp(order_name, "Attack my target"))
 		{
-			i = 0;	// it maps to option 0, "Destroy my target"
-			order = Comm_orders[i].item;
+			order = ATTACK_TARGET_ITEM;
 		}
 	}
 
@@ -2447,7 +2460,7 @@ int hud_query_order_issued(const char *to, const char *order_name, const char *t
 								continue;
 							}
                             
-							int subsys_index = ship_get_subsys_index(&Ships[target_ship], special_argument); 
+							int subsys_index = ship_find_subsys(&Ships[target_ship], special_argument); 
 							// if the order is for s different subsystem
 							if (Squadmsg_history[i].special_index != subsys_index) {
 								continue;

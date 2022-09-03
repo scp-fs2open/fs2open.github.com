@@ -56,7 +56,7 @@ void GetLightInfo(vec3 position, out vec3 lightDir, out float attenuation)
 		// Positional light source
 		lightDir = lightPosition - position.xyz;
 		float dist = length(lightDir);
-		attenuation = 1.0 - clamp(dist / lightRadius, 0.0, 1.0);
+		attenuation = 1.0 - clamp(sqrt(dist / lightRadius), 0.0, 1.0);
 
 		if(dist > lightRadius && lightType != LT_TUBE) {
 			discard;
@@ -81,7 +81,7 @@ void GetLightInfo(vec3 position, out vec3 lightDir, out float attenuation)
 			if(dist > lightRadius) {
 				discard;
 			}
-			attenuation = 1.0 - clamp(dist / lightRadius, 0.0, 1.0);
+			attenuation = 1.0 - clamp(sqrt(dist / lightRadius), 0.0, 1.0);
 		} else if (lightType == LT_CONE) {
 			float coneDot = dot(normalize(-lightDir), coneDir);
 			if(dualCone) {
@@ -98,7 +98,7 @@ void GetLightInfo(vec3 position, out vec3 lightDir, out float attenuation)
 				}
 			}
 		}
-
+		attenuation *= attenuation;
 		lightDir = normalize(lightDir);
 	}
 }

@@ -39,6 +39,7 @@
 #include "network/multiutil.h"
 #include "osapi/osapi.h"
 #include "parse/parselo.h"
+#include "parse/sexp_container.h"
 #include "pilotfile/pilotfile.h"
 #include "playerman/player.h"
 #include "popup/popup.h"
@@ -337,7 +338,7 @@ static int Current_stage;
 static int Num_stages;
 static int Num_debrief_stages;
 static int Stage_voice = -1;
-static int Debrief_music_timeout = 0;
+static UI_TIMESTAMP Debrief_music_timeout;
 
 static int Multi_list_size;
 static int Multi_list_offset;
@@ -353,7 +354,7 @@ int Debrief_multi_voice_loaded = 0;
 static int Debrief_voices[MAX_DEBRIEF_STAGES];
 
 #define DEBRIEF_VOICE_DELAY 400				// time to delay voice playback when a new stage starts
-static int Debrief_cue_voice;					// timestamp to cue the playback of the voice
+static UI_TIMESTAMP Debrief_cue_voice;		// timestamp to cue the playback of the voice
 static int Debrief_first_voice_flag = 1;	// used to delay the first voice playback extra long
 
 static int Debriefing_paused = 0;
@@ -377,6 +378,7 @@ int Debrief_should_show_popup = 1;
 static int Debrief_skip_popup_already_shown = 0;
 
 void debrief_text_init();
+bool debrief_can_accept();
 void debrief_accept(int ok_to_post_start_game_event = 1);
 void debrief_kick_selected_player();
 
@@ -577,15 +579,15 @@ void debrief_voice_play()
 	}
 
 	// if in delayed start, see if delay has elapsed and start voice if so
-	if (Debrief_cue_voice) {
-		if (!timestamp_elapsed(Debrief_cue_voice)){
+	if (Debrief_cue_voice.isValid()) {
+		if (!ui_timestamp_elapsed(Debrief_cue_voice)){
 			return;
 		}
 
 		Stage_voice++;  // move up to next voice
 		if ((Stage_voice < Num_debrief_stages) && (Debrief_voices[Stage_voice] >= 0)) {
 			audiostream_play(Debrief_voices[Stage_voice], Master_voice_volume, 0);
-			Debrief_cue_voice = 0;  // indicate no longer in delayed start checking
+			Debrief_cue_voice = UI_TIMESTAMP::invalid();  // indicate no longer in delayed start checking
 		}
 
 		return;
@@ -597,7 +599,7 @@ void debrief_voice_play()
 	}
 
 	// set voice to play in a little while from now.
-	Debrief_cue_voice = timestamp(DEBRIEF_VOICE_DELAY);
+	Debrief_cue_voice = ui_timestamp(DEBRIEF_VOICE_DELAY);
 }
 
 // stop playback of the voice for a particular briefing stage
@@ -924,7 +926,7 @@ void debrief_choose_voice(char *voice_dest, size_t buf_size, char *voice_base, i
 		if (snprintf(voice_dest, buf_size, NOX("%d_%s"), persona_index, voice_base) < static_cast<int>(buf_size))
 		{
 			// if it exists, we're done
-			if (cf_exists_full(voice_dest, CF_TYPE_VOICE_DEBRIEFINGS))
+			if (cf_exists_full_ext(voice_dest, CF_TYPE_VOICE_DEBRIEFINGS, NUM_AUDIO_EXT, audio_ext_list))
 				return;
 		}
 
@@ -1267,12 +1269,17 @@ void debrief_assemble_optional_mission_popup_text(char *buffer, char *mission_lo
 	strcat(buffer, XSTR("\n\n\nDo you want to play the optional mission?", 1491));
 }
 
+bool debrief_can_accept()
+{
+	return !(/*Cheats_enabled ||*/ Turned_traitor || Must_replay_mission);
+}
+
 // what to do when the accept button is hit
 void debrief_accept(int ok_to_post_start_game_event)
 {
 	int go_loop = 0;
 
-	if ( (/*Cheats_enabled ||*/ Turned_traitor || Must_replay_mission) && (Game_mode & GM_CAMPAIGN_MODE) ) {
+	if ( !debrief_can_accept() && (Game_mode & GM_CAMPAIGN_MODE) ) {
 		const char *str;
 		int z;
 
@@ -1314,6 +1321,7 @@ void debrief_accept(int ok_to_post_start_game_event)
 		if ( Game_mode & GM_CAMPAIGN_MODE ) {
 
 			mission_campaign_store_variables(SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS);
+			mission_campaign_store_containers(ContainerType::SAVE_ON_MISSION_PROGRESS);
 
 			// check for possible mission loop
 			// check for (1) mission loop available, (2) don't have to repeat last mission
@@ -1866,7 +1874,7 @@ static void debrief_init_music()
 {
 	int score = SCORE_DEBRIEF_AVERAGE;
 
-	Debrief_music_timeout = 0;
+	Debrief_music_timeout = UI_TIMESTAMP::invalid();
 
 	if ( Turned_traitor || ((Game_mode & GM_CAMPAIGN_MODE) && (Campaign.next_mission == Campaign.current_mission)) ) {
 		// you failed the mission, so you get the fail music
@@ -1882,7 +1890,7 @@ static void debrief_init_music()
 	// if multi client then give a slight delay before playing average music
 	// since we'd like to eval the goals once more for slow clients
 	if ( MULTIPLAYER_CLIENT && (score == SCORE_DEBRIEF_AVERAGE) ) {
-		Debrief_music_timeout = timestamp(2000);
+		Debrief_music_timeout = ui_timestamp(2000);
 		return;
 	}
 
@@ -1915,7 +1923,7 @@ void debrief_init()
 
 	Current_stage = -1;
 	New_stage = 0;
-	Debrief_cue_voice = 0;
+	Debrief_cue_voice = UI_TIMESTAMP::invalid();
 	Num_text_lines = 0;
 	Debrief_first_voice_flag = 1;
 
@@ -2037,13 +2045,13 @@ void debrief_close()
 						scoring_backout_accept(sc);
 
 						if (Net_player == &Net_players[i]) {
-							Pilot.update_stats_backout( sc );
+							Pilot.update_stats_backout( sc, (The_mission.game_type == MISSION_TYPE_TRAINING) );
 						}
 					}
 				}
 			} else {
 				scoring_backout_accept( &Player->stats );
-				Pilot.update_stats_backout( &Player->stats );
+				Pilot.update_stats_backout( &Player->stats, (The_mission.game_type == MISSION_TYPE_TRAINING) );
 			}
 		}
 	} else {
@@ -2054,7 +2062,7 @@ void debrief_close()
 				Campaign.next_mission = Campaign.current_mission;
 			}
 			scoring_backout_accept( &Player->stats );
-			Pilot.update_stats_backout( &Player->stats );
+			Pilot.update_stats_backout( &Player->stats, (The_mission.game_type == MISSION_TYPE_TRAINING) );
 		}
 	}
 
@@ -2348,10 +2356,10 @@ void debrief_do_frame(float frametime)
 		New_stage = 0;
 		if (New_mode == DEBRIEF_TAB) {
 			Num_stages = 1;
-			Debrief_cue_voice = 0;
+			Debrief_cue_voice = UI_TIMESTAMP::invalid();
 			Stage_voice = -1;
 			if (Debrief_first_voice_flag) {
-				Debrief_cue_voice = timestamp(DEBRIEF_VOICE_DELAY * 3);
+				Debrief_cue_voice = ui_timestamp(DEBRIEF_VOICE_DELAY * 3);
 				Debrief_first_voice_flag = 0;
 			}
 		} else {
@@ -2367,9 +2375,9 @@ void debrief_do_frame(float frametime)
 	debrief_voice_play();
 
 	// multi clients get a slight delay before music start to check goals again
-	if ( timestamp_valid(Debrief_music_timeout) ) {
-		if ( timestamp_elapsed(Debrief_music_timeout) ) {
-			Debrief_music_timeout = 0;
+	if ( Debrief_music_timeout.isValid() ) {
+		if ( ui_timestamp_elapsed(Debrief_music_timeout) ) {
+			Debrief_music_timeout = UI_TIMESTAMP::invalid();
 
 			if ( mission_goals_met() ) {
 				common_music_init(SCORE_DEBRIEF_SUCCESS);
@@ -2554,13 +2562,23 @@ void debrief_handle_player_drop()
 	debrief_rebuild_player_list();
 }
 
+void debrief_maybe_auto_accept()
+{
+	if (debrief_can_accept()) {
+		debrief_accept(0);
+	}
+}
+
 void debrief_disable_accept()
 {
 }
 
 // Goober5000 - replace any variables with their values
+// karajorma/jg18 - replace container references as well
 void debrief_replace_stage_text(debrief_stage &stage)
 {
 	sexp_replace_variable_names_with_values(stage.text);
 	sexp_replace_variable_names_with_values(stage.recommendation_text);
+	sexp_container_replace_refs_with_values(stage.text);
+	sexp_container_replace_refs_with_values(stage.recommendation_text);
 }

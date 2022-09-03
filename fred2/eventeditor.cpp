@@ -161,7 +161,7 @@ BEGIN_MESSAGE_MAP(event_editor, CDialog)
 	ON_BN_CLICKED(IDC_BROWSE_WAVE, OnBrowseWave)
 	ON_CBN_SELCHANGE(IDC_WAVE_FILENAME, OnSelchangeWaveFilename)
 	ON_BN_CLICKED(IDC_PLAY, OnPlay)
-	ON_BN_CLICKED(IDC_UPDATE, OnUpdate)
+	ON_BN_CLICKED(IDC_UPDATE, OnUpdateStuff)
 	ON_BN_CLICKED(ID_CANCEL, OnButtonCancel)
 	ON_CBN_SELCHANGE(IDC_EVENT_TEAM, OnSelchangeTeam)
 	ON_CBN_SELCHANGE(IDC_MESSAGE_TEAM, OnSelchangeMessageTeam)
@@ -181,7 +181,7 @@ void maybe_add_head(CComboBox *box, char* name)
 
 BOOL event_editor::OnInitDialog() 
 {
-	int i, adjust = 0;
+	int i;
 	BOOL r = TRUE;
 	CListBox *list;
 	CComboBox *box;
@@ -191,10 +191,7 @@ BOOL event_editor::OnInitDialog()
 	m_play_bm.LoadBitmap(IDB_PLAY);
 	((CButton *) GetDlgItem(IDC_PLAY)) -> SetBitmap(m_play_bm);
 
-	if (!Show_sexp_help)
-		adjust = -SEXP_HELP_BOX_SIZE;
-
-	theApp.init_window(&Events_wnd_data, this, adjust);
+	theApp.init_window(&Events_wnd_data, this, 0);
 	m_event_tree.setup((CEdit *) GetDlgItem(IDC_HELP_BOX));
 	load_tree();
 	create_tree();
@@ -855,30 +852,19 @@ void event_editor::OnDelete()
 // this is called when you hit the escape key..
 void event_editor::OnCancel()
 {
+	// override MFC default behavior and do nothing
+	// the Esc key is used for certain actions inside the events editor
+	// so pressing Esc shouldn't close the window
 }
 
-// this is called the clicking the ID_CANCEL button
+// this is called when you click the ID_CANCEL button
 void event_editor::OnButtonCancel()
 {
 	audiostream_close_file(m_wave_id, 0);
 	m_wave_id = -1;
 
-	event_annotation_prune();
-
-	theApp.record_window_data(&Events_wnd_data, this);
-	delete Event_editor_dlg;
-	Event_editor_dlg = NULL;
-}
-
-void event_editor::OnClose() 
-{
-	int z;
-
-	audiostream_close_file(m_wave_id, 0);
-	m_wave_id = -1;
-
 	if (query_modified()) {
-		z = MessageBox("Do you want to keep your changes?", "Close", MB_ICONQUESTION | MB_YESNOCANCEL);
+		int z = MessageBox("Do you want to keep your changes?", "Close", MB_ICONQUESTION | MB_YESNOCANCEL);
 		if (z == IDCANCEL){
 			return;
 		}
@@ -890,10 +876,15 @@ void event_editor::OnClose()
 	}
 
 	event_annotation_prune();
-	
+
 	theApp.record_window_data(&Events_wnd_data, this);
 	delete Event_editor_dlg;
 	Event_editor_dlg = NULL;
+}
+
+void event_editor::OnClose() 
+{
+	OnButtonCancel();
 }
 
 void event_editor::insert_handler(int old, int node)
@@ -913,7 +904,20 @@ void event_editor::insert_handler(int old, int node)
 
 void event_editor::save()
 {
-	int m = (m_cur_msg >= 0) ? m_cur_msg : m_cur_msg_old;
+	int m;
+
+	if (m_cur_msg >= 0) {
+		m = m_cur_msg;
+	} else {
+		// the current message could be -1 because the message list
+		// lost focus, so remember the last focused message
+		// (but make sure it's valid)
+		if (m_cur_msg_old >= 0 && m_cur_msg_old < m_num_messages) {
+			m = m_cur_msg_old;
+		} else {
+			m = -1;
+		}
+	}
 
 	save_event(cur_event);
 	save_message(m);
@@ -1570,8 +1574,13 @@ void event_editor::OnPlay()
 	}
 }
 
-void event_editor::OnUpdate() 
+void event_editor::OnUpdateStuff() 
 {
+	int z = MessageBox("This will set the head ANIs according to the FS1 personas.  Do you want to proceed?\n\n(Consider using the 'Sync Personas' buttons in the Voice Acting Manager instead.)", "Update Stuff", MB_ICONQUESTION | MB_YESNO);
+	if (z != IDYES) {
+		return;
+	}
+
 //	GetDlgItem(IDC_WAVE_FILENAME)->GetWindowText(m_wave_filename);
 	UpdateData(TRUE);
 	update_persona();
@@ -1813,6 +1822,9 @@ BOOL event_sexp_tree::OnToolTipText(UINT id, NMHDR *pNMHDR, LRESULT *pResult)
 
 void event_sexp_tree::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 {
+	static CRect rect;
+	static bool drawBorder = false;
+
 	NMTVCUSTOMDRAW *pcd = (NMTVCUSTOMDRAW *)pNMHDR;
 	switch (pcd->nmcd.dwDrawStage)
 	{
@@ -1822,8 +1834,10 @@ void event_sexp_tree::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 
 		case CDDS_ITEMPREPAINT:
 		{
-			HTREEITEM hItem = (HTREEITEM)pcd->nmcd.dwItemSpec;
+			drawBorder = false;
+			*pResult = CDRF_DODEFAULT;
 
+			HTREEITEM hItem = (HTREEITEM)pcd->nmcd.dwItemSpec;
 			if (hItem)
 			{
 				int ea_idx = event_annotation_lookup(hItem);
@@ -1841,11 +1855,30 @@ void event_sexp_tree::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 							pcd->clrText = RGB(255, 255, 255);
 
 						pcd->clrTextBk = RGB(ea->r, ea->g, ea->b);
+
+						// if this is selected, save some information for drawing a border later
+						if (pcd->nmcd.uItemState & CDIS_SELECTED)
+						{
+							drawBorder = true;
+							GetItemRect((HTREEITEM)pcd->nmcd.dwItemSpec, &rect, TRUE);
+							// we want to get the CDDS_ITEMPOSTPAINT notification
+							*pResult = CDRF_NOTIFYPOSTPAINT;
+						}
 					}
 				}
 			}
+			break;
+		}
 
-			*pResult = CDRF_DODEFAULT;
+		case CDDS_ITEMPOSTPAINT:
+		{
+			// see Solution 2 here: https://www.codeproject.com/Questions/685172/CTreeCtrl-with-Item-Border
+			if (drawBorder)
+			{
+				SelectObject(pcd->nmcd.hdc, CreatePen(PS_INSIDEFRAME, 2, RGB(0, 0, 0)));
+				SelectObject(pcd->nmcd.hdc, GetStockObject(HOLLOW_BRUSH));
+				Rectangle(pcd->nmcd.hdc, rect.left, rect.top, rect.right, rect.bottom);
+			}
 			break;
 		}
 	}

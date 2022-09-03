@@ -98,7 +98,7 @@ char *Multi_voice_playback_buffer = NULL;								// buffer for processing the ac
 // voice algorithm stuff
 // it would probably be good to base the timeout time on some multiple of our average ping to the server
 #define MV_ALG_TIMEOUT	500												// if start get new data for a window then a pause this long, play the window
-int Multi_voice_stamps[MULTI_VOICE_MAX_STREAMS];
+UI_TIMESTAMP Multi_voice_stamps[MULTI_VOICE_MAX_STREAMS];
 
 // NOTE : this should be > then MULTI_VOICE_MAX_TIME + the time for the data to come over a network connection!!
 #define MULTI_VOICE_TOKEN_TIMEOUT					7000				// timeout - server will take the token back if he does not hear from the guy in this amount of time
@@ -111,7 +111,7 @@ int Multi_voice_stamps[MULTI_VOICE_MAX_STREAMS];
 
 typedef struct voice_stream {		
 	int token_status;															// status of the token (player index if a player has it) or one of the above defines
-	int token_stamp;															// timestamp for the MULTI_VOICE_TOKEN_TIMEOUT
+	UI_TIMESTAMP token_stamp;															// timestamp for the MULTI_VOICE_TOKEN_TIMEOUT
 
 	short stream_from;														// id of the player the stream is coming from
 
@@ -135,7 +135,7 @@ std::array<voice_stream, MULTI_VOICE_MAX_STREAMS> Multi_voice_stream;		// voice 
 int Multi_voice_keydown = 0;												// is the record key currently being pressed
 int Multi_voice_recording = 0;											// flag indicating if we're currently recording or not
 int Multi_voice_token = 0;													// if we currently have a token or not
-int Multi_voice_recording_stamp = -1;									// how long we've been recording
+UI_TIMESTAMP Multi_voice_recording_stamp;									// how long we've been recording
 ubyte Multi_voice_stream_id = 0;											// stream id for the stream we're currently sending
 int Multi_voice_current_stream_index = 0;								// packet index of the currently recodring stream
 int Multi_voice_current_stream_sent = -1;								// index of packet we've sent up to
@@ -146,7 +146,7 @@ int Multi_voice_player_prefs[MAX_PLAYERS];							// player bitflag preferences
 
 // voice status data - used for determing the result of multi_voice_status
 #define MULTI_VOICE_DENIED_TIME						1000				// how long to display the "denied" status
-int Multi_voice_denied_stamp = -1;										// timestamp for when we got denied a token
+UI_TIMESTAMP Multi_voice_denied_stamp;										// timestamp for when we got denied a token
 
 // local muting preferences
 int Multi_voice_local_prefs = 0xffffffff;
@@ -294,7 +294,7 @@ void multi_voice_init()
 	Multi_voice_keydown = 0;
 	Multi_voice_recording = 0;	
 	Multi_voice_stream_id = 0;
-	Multi_voice_recording_stamp = -1;
+	Multi_voice_recording_stamp = UI_TIMESTAMP::invalid();
 	Multi_voice_current_stream_index = 0;
 	Multi_voice_current_stream_sent = -1;
 
@@ -319,7 +319,7 @@ void multi_voice_init()
 
 		// attempt to copy in the "pre" voice sound
 		auto gs = gamesnd_get_game_sound(MULTI_VOICE_PRE_SOUND);
-		auto pre_sound = snd_load(gamesnd_choose_entry(gs), gs->flags, 0);
+		auto pre_sound = snd_load(gamesnd_choose_entry(gs), &gs->flags, 0);
 		if (pre_sound.isValid()) {
 			// get the pre-sound size
 			if((snd_size(pre_sound,&pre_size) != -1) && (pre_size < MULTI_VOICE_MAX_BUFFER_SIZE)){
@@ -337,7 +337,7 @@ void multi_voice_init()
 	Multi_voice_stream.fill({});
 	for(idx=0;idx<MULTI_VOICE_MAX_STREAMS;idx++){
 		Multi_voice_stream[idx].token_status = MULTI_VOICE_TOKEN_INDEX_FREE;
-		Multi_voice_stream[idx].token_stamp = -1;
+		Multi_voice_stream[idx].token_stamp = UI_TIMESTAMP::invalid();
 		Multi_voice_stream[idx].stream_snd_handle = sound_handle::invalid();
 
 		// get a playback buffer handle
@@ -369,7 +369,7 @@ void multi_voice_init()
 	Multi_voice_max_time = MULTI_VOICE_MAX_TIME;
 
 	// initialize voice status data
-	Multi_voice_denied_stamp = -1;
+	Multi_voice_denied_stamp = UI_TIMESTAMP::invalid();
 	
 	// initialize the smart algorithm
 	multi_voice_alg_init();	
@@ -428,7 +428,7 @@ void multi_voice_reset()
 	Multi_voice_keydown = 0;
 	Multi_voice_recording = 0;	
 	Multi_voice_stream_id = 0;
-	Multi_voice_recording_stamp = -1;
+	Multi_voice_recording_stamp = UI_TIMESTAMP::invalid();
 
 	// initialize server-side data
 	memset(Multi_voice_player_prefs,0xff,sizeof(int)*MAX_PLAYERS);				
@@ -441,7 +441,7 @@ void multi_voice_reset()
 	// initialize the streams		
 	for(idx=0;idx<MULTI_VOICE_MAX_STREAMS;idx++){
 		Multi_voice_stream[idx].token_status = MULTI_VOICE_TOKEN_INDEX_FREE;
-		Multi_voice_stream[idx].token_stamp = -1;							
+		Multi_voice_stream[idx].token_stamp = UI_TIMESTAMP::invalid();
 	}	
 	
 	// initialize the smart algorithm
@@ -508,7 +508,7 @@ int multi_voice_status()
 	fix earliest_time;
 	
 	// if the "denied" timestamp is set, return that as the status
-	if(Multi_voice_denied_stamp != -1){
+	if(Multi_voice_denied_stamp.isValid()){
 		return MULTI_VOICE_STATUS_DENIED;
 	}
 
@@ -592,7 +592,7 @@ void multi_voice_server_process()
 		// if the token is still being held by a player
 		default :
 			// if the token timestamp has elapsed, take the token back
-			if((Multi_voice_stream[idx].token_stamp != -1) && timestamp_elapsed(Multi_voice_stream[idx].token_stamp)){
+			if(Multi_voice_stream[idx].token_stamp.isValid() && ui_timestamp_elapsed(Multi_voice_stream[idx].token_stamp)){
 				Assert(Multi_voice_stream[idx].token_status != MULTI_VOICE_TOKEN_INDEX_FREE);
 				multi_voice_take_token(idx);
 			}				
@@ -602,9 +602,9 @@ void multi_voice_server_process()
 
 	// for each netplayer, if his token wait timestamp is running, see if it has popped yet
 	for(idx=0;idx<MAX_PLAYERS;idx++){
-		if(MULTI_CONNECTED(Net_players[idx]) && (Net_players[idx].s_info.voice_token_timestamp != -1) && timestamp_elapsed(Net_players[idx].s_info.voice_token_timestamp)){
+		if(MULTI_CONNECTED(Net_players[idx]) && Net_players[idx].s_info.voice_token_timestamp.isValid() && ui_timestamp_elapsed(Net_players[idx].s_info.voice_token_timestamp)){
 			// unset it so that he can have the token again
-			Net_players[idx].s_info.voice_token_timestamp = -1;
+			Net_players[idx].s_info.voice_token_timestamp = UI_TIMESTAMP::invalid();
 		}
 	}
 }
@@ -647,7 +647,7 @@ void multi_voice_player_process()
 				Multi_voice_recording = 1;
 
 				// set the time when I started recording
-				Multi_voice_recording_stamp = timestamp(Multi_voice_max_time);
+				Multi_voice_recording_stamp = ui_timestamp(Multi_voice_max_time);
 
 				// set the current packet/chunk index to 0
 				Multi_voice_current_stream_index = 0;
@@ -669,7 +669,7 @@ void multi_voice_player_process()
 			}
 
 			// if we've recorded the max time allowed, send the data
-			if((Multi_voice_recording_stamp != -1) && timestamp_elapsed(Multi_voice_recording_stamp)){
+			if(Multi_voice_recording_stamp.isValid() && ui_timestamp_elapsed(Multi_voice_recording_stamp)){
 #ifdef MULTI_VOICE_VERBOSE
 				nprintf(("Network","MULTI VOICE : timestamp popped\n"));
 #endif
@@ -727,8 +727,8 @@ void multi_voice_player_process()
 	}	
 
 	// if the "denied" timestamp is set, but has elapsed or the user has let up on the key, set it to -1
-	if((Multi_voice_denied_stamp != -1) && (timestamp_elapsed(Multi_voice_denied_stamp) || !multi_voice_keydown())){
-		Multi_voice_denied_stamp = -1;
+	if(Multi_voice_denied_stamp.isValid() && (ui_timestamp_elapsed(Multi_voice_denied_stamp) || !multi_voice_keydown())){
+		Multi_voice_denied_stamp = UI_TIMESTAMP::invalid();
 	}
 }
 
@@ -783,7 +783,7 @@ void multi_voice_give_token(int stream_index,int player_index)
 	Multi_voice_stream[stream_index].token_status = player_index;
 	
 	// set the token timeout
-	Multi_voice_stream[stream_index].token_stamp = timestamp(MULTI_VOICE_TOKEN_TIMEOUT);
+	Multi_voice_stream[stream_index].token_stamp = ui_timestamp(MULTI_VOICE_TOKEN_TIMEOUT);
 
 	// set the stream id and increment the count
 	Multi_voice_stream[stream_index].stream_id = Multi_voice_next_stream_id;
@@ -826,7 +826,7 @@ void multi_voice_take_token(int stream_index)
 
 	// if the index is -1, the token has probably been released to us "officially" already
 	if((Multi_voice_stream[stream_index].token_status == (int)MULTI_VOICE_TOKEN_INDEX_FREE) || (Multi_voice_stream[stream_index].token_status == (int)MULTI_VOICE_TOKEN_INDEX_RELEASED)){
-		Multi_voice_stream[stream_index].token_stamp = -1;
+		Multi_voice_stream[stream_index].token_stamp = UI_TIMESTAMP::invalid();
 		return;
 	}
 
@@ -835,7 +835,7 @@ void multi_voice_take_token(int stream_index)
 		Multi_voice_token = 0;
 
 		// timestamp this guy so that he can't get the token back immediately
-		Net_player->s_info.voice_token_timestamp = timestamp(Netgame.options.voice_token_wait);
+		Net_player->s_info.voice_token_timestamp = ui_timestamp(Netgame.options.voice_token_wait);
 	} else {
 		// send the "take" packet to the guy
 		BUILD_HEADER(VOICE_PACKET);
@@ -846,12 +846,12 @@ void multi_voice_take_token(int stream_index)
 		multi_io_send_reliable(&Net_players[Multi_voice_stream[stream_index].token_status], data, packet_size);
 
 		// timestamp this guy so that he can't get the token back immediately
-		Net_players[Multi_voice_stream[stream_index].token_status].s_info.voice_token_timestamp = timestamp(Netgame.options.voice_token_wait);
+		Net_players[Multi_voice_stream[stream_index].token_status].s_info.voice_token_timestamp = ui_timestamp(Netgame.options.voice_token_wait);
 	}
 
 	// take the token back from the dude
 	Multi_voice_stream[stream_index].token_status = MULTI_VOICE_TOKEN_INDEX_RELEASED;	
-	Multi_voice_stream[stream_index].token_stamp = -1;
+	Multi_voice_stream[stream_index].token_stamp = UI_TIMESTAMP::invalid();
 }
 
 // <server> tells the client he's been denied on this request
@@ -866,7 +866,7 @@ void multi_voice_deny_token(int player_index)
 
 	// if i'm denying myself, set the denied timestamp
 	if(Net_player == &Net_players[player_index]){	
-		Multi_voice_denied_stamp = timestamp(MULTI_VOICE_DENIED_TIME);		
+		Multi_voice_denied_stamp = ui_timestamp(MULTI_VOICE_DENIED_TIME);
 	} else {
 		// send the "deny" packet to the guy
 		BUILD_HEADER(VOICE_PACKET);
@@ -895,7 +895,7 @@ void multi_voice_release_token()
 			Multi_voice_stream[stream_index].token_status = MULTI_VOICE_TOKEN_INDEX_RELEASED;
 				
 		// timestamp this guy so that he can't get the token back immediately
-		Net_player->s_info.voice_token_timestamp = timestamp(Netgame.options.voice_token_wait);
+		Net_player->s_info.voice_token_timestamp = ui_timestamp(Netgame.options.voice_token_wait);
 	} else {
 		// send the "release" packet to the server
 		BUILD_HEADER(VOICE_PACKET);
@@ -1021,7 +1021,7 @@ void multi_voice_process_token_request(int player_index)
 	}
 
 	// if the player's token timestamp is not -1, can't give him the token
-	if(Net_players[player_index].s_info.voice_token_timestamp != -1){
+	if(Net_players[player_index].s_info.voice_token_timestamp.isValid()){
 #ifdef MULTI_VOICE_VERBOSE
 		nprintf(("Network","MULTI VOICE : Not giving token because player %s's timestamp hasn't elapsed yet!\n",Net_players[player_index].m_player->callsign));
 		nprintf(("Network","MULTI VOICE : token status %d\n",Multi_voice_stream[0].token_status));
@@ -1218,7 +1218,7 @@ int multi_voice_process_data(ubyte *data, int player_index,int  /*msg_mode*/,net
 		Multi_voice_stream[stream_index].accum_buffer_usize[chunk_index] = uc_size;			
 
 		// set the token timestamp
-		Multi_voice_stream[stream_index].token_stamp = timestamp(MULTI_VOICE_TOKEN_TIMEOUT);
+		Multi_voice_stream[stream_index].token_stamp = ui_timestamp(MULTI_VOICE_TOKEN_TIMEOUT);
 
 		// set the last heard time
 		Multi_voice_stream[stream_index].stream_last_heard = timer_get_fixed_seconds();
@@ -1274,11 +1274,11 @@ void multi_voice_flush_old_stream(int stream_index)
 		multi_voice_take_token(stream_index);
 	}
 
-	Multi_voice_stream[stream_index].token_stamp = -1;
+	Multi_voice_stream[stream_index].token_stamp = UI_TIMESTAMP::invalid();
 	Multi_voice_stream[stream_index].token_status = MULTI_VOICE_TOKEN_INDEX_FREE;
 
 	// timestamp the player
-	Net_player->s_info.voice_token_timestamp = timestamp(Netgame.options.voice_token_wait);
+	Net_player->s_info.voice_token_timestamp = ui_timestamp(Netgame.options.voice_token_wait);
 }
 
 // route sound data through the server to all appropriate players
@@ -1352,7 +1352,7 @@ int multi_voice_get_stream(int stream_id)
 
 	// if we got to this point, we didn't find the matching stream, so we should try and find an empty stream
 	for(idx=0;idx<MULTI_VOICE_MAX_STREAMS;idx++){
-		if(Multi_voice_stream[idx].token_stamp == -1){
+		if ( !Multi_voice_stream[idx].token_stamp.isValid() ) {
 			return idx;
 		}
 	}
@@ -1366,7 +1366,7 @@ int multi_voice_get_stream(int stream_id)
 	max_diff_index = -1;
 	max_diff = -1;
 	for(idx=0;idx<MULTI_VOICE_MAX_STREAMS;idx++){
-		if(((max_diff_index == -1) || ((cur_time - Multi_voice_stream[idx].stream_last_heard) > max_diff)) && (Multi_voice_stream[idx].token_stamp != -1)){
+		if(((max_diff_index == -1) || ((cur_time - Multi_voice_stream[idx].stream_last_heard) > max_diff)) && Multi_voice_stream[idx].token_stamp.isValid()){
 			max_diff_index = idx;
 			max_diff = cur_time - Multi_voice_stream[idx].stream_last_heard;			
 		}
@@ -1418,7 +1418,7 @@ int multi_voice_mix(gamesnd_id post_sound,char *data,int cur_size,int max_size)
 	
 	// post sound
 	auto gs = gamesnd_get_game_sound(post_sound);
-	auto post_sound_handle = snd_load(gamesnd_choose_entry(gs), gs->flags, 0);
+	auto post_sound_handle = snd_load(gamesnd_choose_entry(gs), &gs->flags, 0);
 	if (post_sound_handle.isValid()) {
 		if(snd_size(post_sound_handle, &post_size) == -1){
 			post_size = 0;
@@ -1510,7 +1510,7 @@ void multi_voice_process_next_chunk()
 		multi_voice_release_token();
 
 		// unset the timestamp so we don't still think we're still recording
-		Multi_voice_recording_stamp = -1;
+		Multi_voice_recording_stamp = UI_TIMESTAMP::invalid();
 
 		return;
 	}
@@ -1586,13 +1586,13 @@ int multi_voice_process_data_dummy(ubyte *data)
 	if ( (stream_index = multi_voice_get_stream((int)stream_id) ) != -1 ) {
 
 		// set the token timestamp
-		Multi_voice_stream[stream_index].token_stamp = timestamp(MULTI_VOICE_TOKEN_TIMEOUT);
+		Multi_voice_stream[stream_index].token_stamp = ui_timestamp(MULTI_VOICE_TOKEN_TIMEOUT);
 
 		// set the last heard time
 		Multi_voice_stream[stream_index].stream_last_heard = timer_get_fixed_seconds();
 
 		// set the timeout timestamp
-		Multi_voice_stamps[stream_index] = timestamp(MV_ALG_TIMEOUT);
+		Multi_voice_stamps[stream_index] = ui_timestamp(MV_ALG_TIMEOUT);
 	}
 
 	// return bytes processed
@@ -1662,7 +1662,7 @@ void multi_voice_process_packet(ubyte *data, header *hinfo)
 	// I have been denied the token
 	case MV_CODE_DENY_TOKEN:
 		// set the "denied" timestamp
-		Multi_voice_denied_stamp = timestamp(MULTI_VOICE_DENIED_TIME);
+		Multi_voice_denied_stamp = ui_timestamp(MULTI_VOICE_DENIED_TIME);
 		break;
 	
 	// I now have the token
@@ -1702,7 +1702,7 @@ void multi_voice_process_packet(ubyte *data, header *hinfo)
 			Multi_voice_stream[stream_index].token_status = MULTI_VOICE_TOKEN_INDEX_RELEASED;		
 
 			// timestamp this guy so that he can't get the token back immediately
-			Net_players[player_index].s_info.voice_token_timestamp = timestamp(Netgame.options.voice_token_wait);
+			Net_players[player_index].s_info.voice_token_timestamp = ui_timestamp(Netgame.options.voice_token_wait);
 		} 
 		break;
 
@@ -1951,7 +1951,7 @@ void multi_voice_alg_play_window(int stream_index)
 	}
 	
 	// unset the stamp so that its not "free"
-	Multi_voice_stamps[stream_index] = -1;
+	Multi_voice_stamps[stream_index] = UI_TIMESTAMP::invalid();
 
 	// flush the stream (will also grab the token back, if the server)
 	multi_voice_flush_old_stream(stream_index);
@@ -1961,7 +1961,7 @@ void multi_voice_alg_play_window(int stream_index)
 int multi_voice_alg_should_play(int stream_index)
 {
 	// if the timestamp has expired, play the sound
-	if((Multi_voice_stamps[stream_index] != -1) && timestamp_elapsed(Multi_voice_stamps[stream_index])){
+	if(Multi_voice_stamps[stream_index].isValid() && ui_timestamp_elapsed(Multi_voice_stamps[stream_index])){
 #ifdef MULTI_VOICE_VERBOSE
 		nprintf(("Network","MULTI VOICE : DECIDE, TIMEOUT\n"));		
 #endif
@@ -1975,7 +1975,7 @@ int multi_voice_alg_should_play(int stream_index)
 void multi_voice_alg_process_data(int stream_index)
 {
 	// update the timestamp for this window
-	Multi_voice_stamps[stream_index] = timestamp(MV_ALG_TIMEOUT);	
+	Multi_voice_stamps[stream_index] = ui_timestamp(MV_ALG_TIMEOUT);
 }
 
 // process existing streams
@@ -1986,14 +1986,14 @@ void multi_voice_alg_process_streams()
 
 	for(idx=0;idx<MULTI_VOICE_MAX_STREAMS;idx++){			
 		// determine if we should play this window of data
-		if((Multi_voice_stamps[idx] != -1) && multi_voice_alg_should_play(idx)){
+		if(Multi_voice_stamps[idx].isValid() && multi_voice_alg_should_play(idx)){
 			// determine who this stream came from
 			player_index = find_player_index(Multi_voice_stream[idx].stream_from);			
 
 			// server should check his own settings here
 			if((Net_player->flags & NETINFO_FLAG_AM_MASTER) && ((Net_player->p_info.options.flags & MLO_FLAG_NO_VOICE) || (player_index == -1) || !(Multi_voice_player_prefs[MY_NET_PLAYER_NUM] & (1<<player_index))) ){
 				// unset the stamp so that its not "free"
-				Multi_voice_stamps[idx] = -1;
+				Multi_voice_stamps[idx] = UI_TIMESTAMP::invalid();
 
 				// flush the stream (will also grab the token back, if the server)
 				multi_voice_flush_old_stream(idx);
@@ -2012,7 +2012,7 @@ void multi_voice_alg_process_streams()
 void multi_voice_alg_flush_old_stream(int stream_index)
 {
 	// just unset the heard from timestamp for now
-	Multi_voice_stamps[stream_index] = -1;
+	Multi_voice_stamps[stream_index] = UI_TIMESTAMP::invalid();
 }
 
 // initialize the smart algorithm
@@ -2021,7 +2021,7 @@ void multi_voice_alg_init()
 	int idx;
 
 	for(idx=0;idx<MULTI_VOICE_MAX_STREAMS;idx++){
-		Multi_voice_stamps[idx] = -1;
+		Multi_voice_stamps[idx] = UI_TIMESTAMP::invalid();
 	}
 }
 
@@ -2031,7 +2031,7 @@ void multi_voice_alg_init()
 //
 
 #define MV_TEST_RECORD_TIME				3000					// recording time in ms for testing voice
-int Multi_voice_test_record_stamp = -1;
+UI_TIMESTAMP Multi_voice_test_record_stamp;
 int Multi_voice_test_packet_tossed = 0;
 
 // process the next chunk of voice data
@@ -2042,18 +2042,18 @@ void multi_voice_test_process_next_chunk()
 	double gain;
 	
 	// if the test recording stamp is -1, we should stop
-	if(Multi_voice_test_record_stamp == -1){
+	if ( !Multi_voice_test_record_stamp.isValid() ) {
 		rtvoice_stop_recording();
 		return;
 	}
 
 	// if the recording timestamp has elapsed, stop the whole thing
-	if(timestamp_elapsed(Multi_voice_test_record_stamp)){
+	if(ui_timestamp_elapsed(Multi_voice_test_record_stamp)){
 		nprintf(("Network","Stopping voice test recording\n"));
 
 		rtvoice_stop_recording();
 
-		Multi_voice_test_record_stamp = -1;
+		Multi_voice_test_record_stamp = UI_TIMESTAMP::invalid();
 		Multi_voice_test_packet_tossed = 0;
 		return;
 	}
@@ -2076,7 +2076,7 @@ void multi_voice_test_process_next_chunk()
 void multi_voice_test_record_start()
 {
 	// if there is test recording going on already, don't do anything
-	if(Multi_voice_test_record_stamp != -1){
+	if (Multi_voice_test_record_stamp.isValid()) {
 		return;
 	}
 
@@ -2087,7 +2087,7 @@ void multi_voice_test_record_start()
 	rtvoice_stop_recording();
 
 	// set the timestamp
-	Multi_voice_test_record_stamp = timestamp(MV_TEST_RECORD_TIME);
+	Multi_voice_test_record_stamp = ui_timestamp(MV_TEST_RECORD_TIME);
 
 	// start the recording of voice
 	rtvoice_start_recording(multi_voice_test_process_next_chunk, 175);
@@ -2096,7 +2096,7 @@ void multi_voice_test_record_start()
 // force stop any recording voice test
 void multi_voice_test_record_stop()
 {
-	Multi_voice_test_record_stamp = -1;
+	Multi_voice_test_record_stamp = UI_TIMESTAMP::invalid();
 	Multi_voice_test_packet_tossed = 0;
 	rtvoice_stop_recording();
 }
@@ -2104,20 +2104,20 @@ void multi_voice_test_record_stop()
 // return if the test recording is going on
 int multi_voice_test_recording()
 {
-	return (Multi_voice_test_record_stamp == -1) ? 0 : 1;
+	return !Multi_voice_test_record_stamp.isValid() ? 0 : 1;
 }
 
 // call this function if multi_voice_test_recording() is true to process various odds and ends of the test recording
 void multi_voice_test_process()
 {
 	// if we're not recording, do nothing
-	if(Multi_voice_test_record_stamp == -1){
+	if ( !Multi_voice_test_record_stamp.isValid() ) {
 		return;
 	}
 
 	// check to see if the timestamp has elapsed
-	if(timestamp_elapsed(Multi_voice_test_record_stamp)){
-		Multi_voice_test_record_stamp = -1;
+	if(ui_timestamp_elapsed(Multi_voice_test_record_stamp)){
+		Multi_voice_test_record_stamp = UI_TIMESTAMP::invalid();
 		Multi_voice_test_packet_tossed = 0;
 	}
 }

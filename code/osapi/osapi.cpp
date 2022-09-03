@@ -54,7 +54,8 @@ namespace
 						"Report at www.hard-light.net or the hard-light discord.", SDL_GetError());
 					sdl_is_borked_warning = true;
 				}
-				// No preferences path, try current directory.  
+				// No preferences path, try current directory.
+				Cmdline_portable_mode = true;
 				return "." DIR_SEPARATOR_STR;
 		    }
 #ifdef WIN32
@@ -64,15 +65,21 @@ namespace
 			    while (current != prefPathEnd) {
 				    const auto cp = utf8::next(current, prefPathEnd);
 				    if (cp > 127) {
-					    // On Windows, we currently do not support Unicode paths so catch this early and let the user
+					    // On Windows, we currently do not support Unicode paths so force portable mode let the user
 					    // know
 					    const auto invalid_end = current;
-					    utf8::prior(current, preferencesPath);
-					    Error(LOCATION,
-					          "Determined the preferences path as \"%s\". That path is not supported since it "
-					          "contains a Unicode character (%s). If possible, choose a different user name or "
-					          "use portable mode.",
-					          preferencesPath, std::string(current, invalid_end).c_str());
+						static bool force_portable_warning = false;
+						if (!force_portable_warning) {
+							utf8::prior(current, preferencesPath);
+							ReleaseWarning(LOCATION,
+								"Determined the preferences path as \"%s\". That path is not supported since it "
+								"contains a Unicode character (%s). Using portable mode. Set -portable_mode in "
+								"the commandline to avoid this message in the future.",
+								preferencesPath, std::string(current, invalid_end).c_str());
+							force_portable_warning = true;
+						}
+						Cmdline_portable_mode = true;
+						return "." DIR_SEPARATOR_STR;
 				    }
 			    }
 		    } catch (const std::exception& e) {
@@ -293,7 +300,7 @@ static char			szWinTitle[128];
 static char			szWinClass[128];
 static int			Os_inited = 0;
 
-static SCP_vector<SDL_Event> buffered_events;
+static SCP_vector<SDL_Event> deferred_events;
 
 int Os_debugger_running = 0;
 
@@ -706,11 +713,11 @@ namespace os
 	}
 }
 	
-void os_ignore_events() {
+void os_defer_events_on_load_screen() {
 	SDL_Event event;
 	while (SDL_PollEvent(&event)) {
-		// Add event to buffer
-		buffered_events.push_back(event);
+		// Add event to be handled later
+		deferred_events.push_back(event);
 	}
 }
 
@@ -738,14 +745,28 @@ static void handle_sdl_event(const SDL_Event& event) {
 	}
 }
 
+void os_remove_deferred_cutscene_key_events() {
+	deferred_events.erase(
+		std::remove_if(deferred_events.begin(), deferred_events.end(), [](const SDL_Event &event)
+		{
+			return (event.type == SDL_KEYUP) && (
+				event.key.keysym.sym == SDLK_KP_ENTER ||
+				event.key.keysym.sym == SDLK_RETURN ||
+				event.key.keysym.sym == SDLK_SPACE
+			);
+		}),
+		deferred_events.end()
+	);
+}
+
 void os_poll()
 {
-	// Replay the buffered events
-	auto end = buffered_events.end();
-	for (auto it = buffered_events.begin(); it != end; ++it) {
+	// Replay the deferred events
+	auto end = deferred_events.end();
+	for (auto it = deferred_events.begin(); it != end; ++it) {
 		handle_sdl_event(*it);
 	}
-	buffered_events.clear();
+	deferred_events.clear();
 
 	SDL_Event event;
 

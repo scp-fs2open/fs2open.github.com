@@ -2,27 +2,35 @@
  * Created by Hassan "Karajorma" Kazmi for the FreeSpace2 Source Code Project.
  * You may not sell or otherwise commercially exploit the source or things you
  * create based on the source.
+ *
+ * This file is in charge of the "game_settings.tbl", colloquially referred to
+ * as the "mod table", and contains many misc FSO specific settings.
  */
 
 #include "gamesnd/eventmusic.h"
 #include "def_files/def_files.h"
 #include "globalincs/version.h"
+#include "graphics/shadows.h"
 #include "localization/localize.h"
 #include "mission/missioncampaign.h"
 #include "mission/missionload.h"
 #include "mission/missionmessage.h"
 #include "missionui/fictionviewer.h"
+#include "nebula/neb.h"
 #include "mod_table/mod_table.h"
 #include "parse/parselo.h"
 #include "sound/sound.h"
+#include "starfield/supernova.h"
 #include "playerman/player.h"
 
 int Directive_wait_time;
 bool True_loop_argument_sexps;
 bool Fixed_turret_collisions;
+bool Fixed_missile_detonation;
 bool Damage_impacted_subsystem_first;
 bool Cutscene_camera_displays_hud;
 bool Alternate_chaining_behavior;
+bool Use_host_orientation_for_set_camera_facing;
 int Default_ship_select_effect;
 int Default_weapon_select_effect;
 int Default_fiction_viewer_ui;
@@ -30,19 +38,26 @@ bool Enable_external_shaders;
 bool Enable_external_default_scripts;
 int Default_detail_level;
 bool Full_color_head_anis;
+bool Dont_automatically_select_turret_when_targeting_ship;
 bool Weapons_inherit_parent_collision_group;
 bool Flight_controls_follow_eyepoint_orientation;
 int FS2NetD_port;
+int Default_multi_object_update_level;
 float Briefing_window_FOV;
 bool Disable_hc_message_ani;
 bool Red_alert_applies_to_delayed_ships;
 bool Beams_use_damage_factors;
 float Generic_pain_flash_factor;
 float Shield_pain_flash_factor;
-gameversion::version Targetted_version; // Defaults to retail
+float Emp_pain_flash_factor;
+std::tuple<float, float, float> Emp_pain_flash_color;
+gameversion::version Targeted_version; // Defaults to retail
 SCP_string Window_title;
+SCP_string Mod_title;
+SCP_string Mod_version;
 bool Unicode_text_mode;
 bool Use_tabled_strings_for_default_language;
+bool Dont_preempt_training_voice;
 SCP_string Movie_subtitle_font;
 bool Enable_scripts_in_fred; // By default FRED does not initialize the scripting system
 SCP_string Window_icon_path;
@@ -72,6 +87,20 @@ bool Neb_affects_particles;
 bool Neb_affects_fireballs;
 std::tuple<float, float, float, float> Shadow_distances;
 std::tuple<float, float, float, float> Shadow_distances_cockpit;
+bool Custom_briefing_icons_always_override_standard_icons;
+float Min_pixel_size_thruster;
+float Min_pixel_size_beam;
+float Min_pizel_size_muzzleflash;
+float Min_pixel_size_trail;
+float Min_pixel_size_laser;
+bool Supernova_hits_at_zero;
+bool Show_subtitle_uses_pixels;
+int Show_subtitle_screen_base_res[2];
+int Show_subtitle_screen_adjusted_res[2];
+bool Always_warn_player_about_unbound_keys;
+shadow_disable_overrides Shadow_disable_overrides {false, false, false, false};
+
+void mod_table_set_version_flags();
 
 SCP_vector<std::pair<SCP_string, gr_capability>> req_render_ext_pairs = {
 	std::make_pair("BPTC Texture Compression", CAPABILITY_BPTC)
@@ -94,15 +123,18 @@ void parse_mod_table(const char *filename)
 		optional_string("#GAME SETTINGS");
 
 		if (optional_string("$Minimum version:") || optional_string("$Target Version:")) {
-			Targetted_version = gameversion::parse_version();
+			Targeted_version = gameversion::parse_version();
 
-			mprintf(("Game Settings Table: Parsed target version of %s\n", gameversion::format_version(Targetted_version).c_str()));
+			mprintf(("Game Settings Table: Parsed target version of %s\n", gameversion::format_version(Targeted_version).c_str()));
 
-			if (!gameversion::check_at_least(Targetted_version)) {
+			if (!gameversion::check_at_least(Targeted_version)) {
 				Error(LOCATION, "This modification needs at least version %s of FreeSpace Open. However, the current is only %s!",
-					gameversion::format_version(Targetted_version).c_str(),
+					gameversion::format_version(Targeted_version).c_str(),
 					gameversion::format_version(gameversion::get_executable_version()).c_str());
 			}
+
+			// whenever we specify a version, set the flags for that version
+			mod_table_set_version_flags();
 		}
 
 		if (optional_string("$Window title:")) {
@@ -112,17 +144,33 @@ void parse_mod_table(const char *filename)
 		if (optional_string("$Window icon:")) {
 			stuff_string(Window_icon_path, F_NAME);
 		}
+
+		if (optional_string("$Mod title:")) {
+			stuff_string(Mod_title, F_NAME);
+		}
+
+		if (optional_string("$Mod version:")) {
+			stuff_string(Mod_version, F_NAME);
+		}
 		
 		if (optional_string("$Unicode mode:")) {
 			stuff_boolean(&Unicode_text_mode);
 
-			mprintf(("Game settings table: Unicode mode: %s\n", Unicode_text_mode ? "yes" : "no"));
+			mprintf(("Game Settings Table: Unicode mode: %s\n", Unicode_text_mode ? "yes" : "no"));
 		}
+
+		optional_string("#LOCALIZATION SETTINGS");
 
 		if (optional_string("$Use tabled strings for the default language:")) {
 			stuff_boolean(&Use_tabled_strings_for_default_language);
 
-			mprintf(("Game settings table: Use tabled strings (translations) for the default language: %s\n", Use_tabled_strings_for_default_language ? "yes" : "no"));
+			mprintf(("Game Settings Table: Use tabled strings (translations) for the default language: %s\n", Use_tabled_strings_for_default_language ? "yes" : "no"));
+		}
+
+		if (optional_string("$Don't pre-empt training message voice:")) {
+			stuff_boolean(&Dont_preempt_training_voice);
+
+			mprintf(("Game Settings Table: %sre-empting training message voice\n", Dont_preempt_training_voice ? "Not p" : "P"));
 		}
 
 		optional_string("#CAMPAIGN SETTINGS");
@@ -223,6 +271,23 @@ void parse_mod_table(const char *filename)
 			Full_color_head_anis = !temp;
 		}
 
+		if (optional_string("$Don't automatically select a turret when targeting a ship:")) {
+			stuff_boolean(&Dont_automatically_select_turret_when_targeting_ship);
+		}
+
+		if (optional_string("$Supernova hits at zero:")) {
+			stuff_boolean(&Supernova_hits_at_zero);
+			if (Supernova_hits_at_zero) {
+				mprintf(("Game Settings Table: HUD timer will reach 0 when the supernova shockwave hits the player\n"));
+			} else {
+				mprintf(("Game Settings Table: HUD timer will reach %.2f when the supernova shockwave hits the player\n", SUPERNOVA_HIT_TIME));
+			}
+		}
+
+		if (optional_string("$Always warn player about unbound keys used in Directives Gauge:")) {
+			stuff_boolean(&Always_warn_player_about_unbound_keys);
+		}
+
 		optional_string("#SEXP SETTINGS");
 
 		if (optional_string("$Loop SEXPs Then Arguments:")) {
@@ -242,6 +307,40 @@ void parse_mod_table(const char *filename)
 			}
 			else {
 				mprintf(("Game Settings Table: Using standard event chaining behavior\n"));
+			}
+		}
+
+		if (optional_string("$Use host orientation for set-camera-facing:")) {
+			stuff_boolean(&Use_host_orientation_for_set_camera_facing);
+			if (Use_host_orientation_for_set_camera_facing) {
+				mprintf(("Game Settings Table: Using host orientation for set-camera-facing\n"));
+			}
+			else {
+				mprintf(("Game Settings Table: Using identity orientation for set-camera-facing\n"));
+			}
+		}
+
+		if (optional_string("$Show-subtitle uses pixels:")) {
+			stuff_boolean(&Show_subtitle_uses_pixels);
+			if (Show_subtitle_uses_pixels) {
+				mprintf(("Game Settings Table: Show-subtitle uses pixels\n"));
+			} else {
+				mprintf(("Game Settings Table: Show-subtitle uses percentages\n"));
+			}
+		}
+
+		if (optional_string("$Show-subtitle base resolution:")) {
+			int base_res[2];
+			if (stuff_int_list(base_res, 2) == 2) {
+				if (base_res[0] >= 640 && base_res[1] >= 480) {
+					Show_subtitle_screen_base_res[0] = base_res[0];
+					Show_subtitle_screen_base_res[1] = base_res[1];
+					mprintf(("Game Settings Table: Show-subtitle base resolution is (%d, %d)\n", base_res[0], base_res[1]));
+				} else {
+					Warning(LOCATION, "$Show-subtitle base resolution: arguments must be at least 640x480!");
+				}
+			} else {
+				Warning(LOCATION, "$Show-subtitle base resolution: must specify two arguments");
 			}
 		}
 
@@ -282,15 +381,41 @@ void parse_mod_table(const char *filename)
 		}
 
 		if (optional_string("$Generic Pain Flash Factor:")) {
-			stuff_float(&Generic_pain_flash_factor);
-			if (Generic_pain_flash_factor != 1.0f)
-				mprintf(("Game Settings Table: Setting generic pain flash factor to %.2f\n", Generic_pain_flash_factor));
+			float temp;
+			stuff_float(&temp);
+			if (temp >= 0.0f) {
+				mprintf(("Game Settings Table: Setting generic pain flash factor to %.2f\n", temp));
+				Generic_pain_flash_factor = temp;
+			}
 		}
 
 		if (optional_string("$Shield Pain Flash Factor:")) {
-			stuff_float(&Shield_pain_flash_factor);
-			if (Shield_pain_flash_factor != 0.0f)
-				 mprintf(("Game Settings Table: Setting shield pain flash factor to %.2f\n", Shield_pain_flash_factor));
+			float temp;
+			stuff_float(&temp);
+			if (temp >= 0.0f) {
+				mprintf(("Game Settings Table: Setting shield pain flash factor to %.2f\n", temp));
+				Shield_pain_flash_factor = temp;
+			}
+		}
+
+		if (optional_string("$EMP Pain Flash Factor:")) {
+			float temp;
+			stuff_float(&temp);
+			if (temp >= 0.0f) {
+				mprintf(("Game Settings Table: Setting EMP pain flash factor to %.2f\n", temp));
+				Emp_pain_flash_factor = temp;
+			}
+		}
+
+		if (optional_string("$EMP Pain Flash Color:")) {
+			int rgb[3];
+			stuff_int_list(rgb, 3);
+			if ((rgb[0] >= 0 && rgb[0] <= 255) && (rgb[1] >= 0 && rgb[1] <= 255) && (rgb[2] >= 0 && rgb[2] <= 255)) {
+				Emp_pain_flash_color = std::make_tuple(static_cast<float>(rgb[0])/255, static_cast<float>(rgb[1])/255, static_cast<float>(rgb[2])/255);
+			} else {
+				error_display(0, "$EMP Pain Flash Color is %i, %i, %i. "
+					"One or more of these values is not within the range of 0-255. Assuming default color.", rgb[0], rgb[1], rgb[2]);
+			}
 		}
 
 		if (optional_string("$BMPMAN Slot Limit:")) {
@@ -383,20 +508,97 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Render_player_mflash);
 		}
 
+		if (optional_string("$Glowpoint nebula visibility factor:")) {
+			stuff_float(&Neb2_fog_visibility_glowpoint);
+		}
+
+		if (optional_string("$Shield nebula visibility factor:")) {
+			stuff_float(&Neb2_fog_visibility_shield);
+		}
+
+		if (optional_string("$Thruster nebula visibility factor:")) {
+			stuff_float(&Neb2_fog_visibility_thruster);
+		}
+
 		if (optional_string("$Beams affected by nebula visibility:")) {
 			stuff_boolean(&Neb_affects_beams);
+
+			if (optional_string("+Constant visibility factor:")) {
+				stuff_float(&Neb2_fog_visibility_beam_const);
+			}
+
+			if (optional_string("+Scaled visibility factor:")) {
+				stuff_float(&Neb2_fog_visibility_beam_scaled_factor);
+			}
 		}
 
 		if (optional_string("$Weapons affected by nebula visibility:")) {
 			stuff_boolean(&Neb_affects_weapons);
+
+			if (optional_string("+Weapon visibility factor:")) {
+				stuff_float(&Neb2_fog_visibility_weapon);
+			}
+
+			if (optional_string("+Trail visibility factor:")) {
+				stuff_float(&Neb2_fog_visibility_trail);
+			}
+
+			if (optional_string("+Shockwave visibility factor:")) {
+				stuff_float(&Neb2_fog_visibility_shockwave);
+			}
 		}
 
 		if (optional_string("$Particles affected by nebula visibility:")) {
 			stuff_boolean(&Neb_affects_particles);
+
+			if (optional_string("+Constant visibility factor:")) {
+				stuff_float(&Neb2_fog_visibility_particle_const);
+			}
+
+			if (optional_string("+Scaled visibility factor:")) {
+				stuff_float(&Neb2_fog_visibility_particle_scaled_factor);
+			}
 		}
 		
 		if (optional_string("$Fireballs affected by nebula visibility:")) {
 			stuff_boolean(&Neb_affects_fireballs);
+
+			if (optional_string("+Constant visibility factor:")) {
+				stuff_float(&Neb2_fog_visibility_fireball_const);
+			}
+
+			if (optional_string("+Scaled visibility factor:")) {
+				stuff_float(&Neb2_fog_visibility_fireball_scaled_factor);
+			}
+		}
+
+		if (optional_string("$Shadow Quality Default:")) {
+			int quality;
+			stuff_int(&quality);
+			// only set values if shadows are enabled and using default quality --wookieejedi
+			if (Shadow_quality_uses_mod_option) {
+				switch (quality) {
+				case 0:
+					Shadow_quality = ShadowQuality::Disabled;
+					break;
+				case 1:
+					Shadow_quality = ShadowQuality::Low;
+					break;
+				case 2:
+					Shadow_quality = ShadowQuality::Medium;
+					break;
+				case 3:
+					Shadow_quality = ShadowQuality::High;
+					break;
+				case 4:
+					Shadow_quality = ShadowQuality::Ultra;
+					break;
+				default:
+					// Shadow_quality was already set in cmdline.cpp, so just keep that default --wookieejedi
+					mprintf(("Game Settings Table: '$Shadow Quality Default:' value for default shadow quality %d is invalid. Using default quality of %d...\n", quality, static_cast<int>(Shadow_quality)));
+					break;
+				}
+			}
 		}
 
 		if (optional_string("$Shadow Cascade Distances:")) {
@@ -420,6 +622,38 @@ void parse_mod_table(const char *filename)
 			}
 		}
 
+		if (optional_string("$Shadow Disable Techroom:")) {
+			stuff_boolean(&Shadow_disable_overrides.disable_techroom);
+		}
+
+		if (optional_string("$Shadow Disable Cockpit:")) {
+			stuff_boolean(&Shadow_disable_overrides.disable_cockpit);
+		}
+
+		if (optional_string("$Shadow Disable Mission Brief Weapons:")) {
+			stuff_boolean(&Shadow_disable_overrides.disable_mission_select_weapons);
+		}
+
+		if (optional_string("$Shadow Disable Mission Brief Ships:")) {
+			stuff_boolean(&Shadow_disable_overrides.disable_mission_select_ships);
+		}
+
+		if (optional_string("$Minimum Pixel Size Thrusters:")) {
+			stuff_float(&Min_pixel_size_thruster);
+		}
+		if (optional_string("$Minimum Pixel Size Beams:")) {
+			stuff_float(&Min_pixel_size_beam);
+		}
+		if (optional_string("$Minimum Pixel Size Muzzle Flashes:")) {
+			stuff_float(&Min_pizel_size_muzzleflash);
+		}
+		if (optional_string("$Minimum Pixel Size Trails:")) {
+			stuff_float(&Min_pixel_size_trail);
+		}
+		if (optional_string("$Minimum Pixel Size Lasers:")) {
+			stuff_float(&Min_pixel_size_laser);
+		}
+
 		optional_string("#NETWORK SETTINGS");
 
 		if (optional_string("$FS2NetD port:")) {
@@ -428,18 +662,46 @@ void parse_mod_table(const char *filename)
 				mprintf(("Game Settings Table: FS2NetD connecting to port %i\n", FS2NetD_port));
 		}
 
+		if (optional_string("$Default object update level for multiplayer:")) {
+			int object_update;
+			stuff_int(&object_update);
+			if ((object_update >= OBJ_UPDATE_LOW) && (object_update <= OBJ_UPDATE_LAN)) {
+				Default_multi_object_update_level = object_update;
+			} else {
+				mprintf(("Game Settings Table: '$Default object update level for multiplayer:' value of %d is not between %d and %d. Using default value of %d.\n", object_update, OBJ_UPDATE_LOW, OBJ_UPDATE_LAN, OBJ_UPDATE_HIGH));
+			}
+		}
+
 		optional_string("#SOUND SETTINGS");
 
 		if (optional_string("$Default Sound Volume:")) {
-			stuff_float(&Master_sound_volume);
+			float snd_default;
+			stuff_float(&snd_default);
+			if ((snd_default >= 0) && (snd_default <= 1.0)) {
+				Default_sound_volume = snd_default;
+			} else {
+				error_display(0, "$Default Sound Volume is %f. It is not within 0-1.0 and will not be used. ", snd_default);
+			}
 		}
 
 		if (optional_string("$Default Music Volume:")) {
-			stuff_float(&Master_event_music_volume);
+			float music_default;
+			stuff_float(&music_default);
+			if ((music_default >= 0) && (music_default <= 1.0)) {
+				Default_music_volume = music_default;
+			} else {
+				error_display(0, "$Default Music Volume is %f. It is not within 0-1.0 and will not be used. ", music_default);
+			}
 		}
 
 		if (optional_string("$Default Voice Volume:")) {
-			stuff_float(&Master_voice_volume);
+			float voice_default;
+			stuff_float(&voice_default);
+			if ((voice_default >= 0) && (voice_default <= 1.0)) {
+				Default_voice_volume = voice_default;
+			} else {
+				error_display(0, "$Default Voice Volume is %f. It is not within 0-1.0 and will not be used. ", voice_default);
+			}
 		}
 
 		optional_string("#FRED SETTINGS");
@@ -469,6 +731,10 @@ void parse_mod_table(const char *filename)
 
 		if (optional_string("$Fixed Turret Collisions:")) {
 			stuff_boolean(&Fixed_turret_collisions);
+		}
+
+		if (optional_string("$Fixed Missile Detonation:")) {
+			stuff_boolean(&Fixed_missile_detonation);
 		}
 
 		if (optional_string("$Damage Impacted Subsystem First:")) {
@@ -626,6 +892,10 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Chase_view_default);
 		}
 		
+		if (optional_string("$Custom briefing icons always override standard icons:")) {
+			stuff_boolean(&Custom_briefing_icons_always_override_standard_icons);
+		}
+
 		required_string("#END");
 	}
 	catch (const parse::ParseException& e)
@@ -651,9 +921,26 @@ void mod_table_init()
 	parse_modular_table("*-mod.tbm", parse_mod_table);
 }
 
+// game_settings.tbl is parsed before graphics are actually initialized, so we can't calculate the resolution at that time
+void mod_table_post_process()
+{
+	// use the same widescreen code as in adjust_base_res()
+	// This calculates an adjusted resolution if the aspect ratio of the base resolution doesn't exactly match that of the current resolution.
+	// The base resolution specified in game_settings.tbl does not need to be 1024x768 or even 4:3.
+	float aspect_quotient = ((float)gr_screen.center_w / (float)gr_screen.center_h) / ((float)Show_subtitle_screen_base_res[0] / (float)Show_subtitle_screen_base_res[1]);
+	if (aspect_quotient >= 1.0) {
+		Show_subtitle_screen_adjusted_res[0] = (int)(Show_subtitle_screen_base_res[0] * aspect_quotient);
+		Show_subtitle_screen_adjusted_res[1] = Show_subtitle_screen_base_res[1];
+	} else {
+		Show_subtitle_screen_adjusted_res[0] = Show_subtitle_screen_base_res[0];
+		Show_subtitle_screen_adjusted_res[1] = (int)(Show_subtitle_screen_base_res[1] / aspect_quotient);
+	}
+	mprintf(("Game Settings Table: Show-subtitle adjusted resolution is (%d, %d)\n", Show_subtitle_screen_adjusted_res[0], Show_subtitle_screen_adjusted_res[1]));
+}
+
 bool mod_supports_version(int major, int minor, int build)
 {
-	return Targetted_version >= gameversion::version(major, minor, build, 0);
+	return Targeted_version >= gameversion::version(major, minor, build, 0);
 }
 
 void mod_table_reset()
@@ -661,29 +948,38 @@ void mod_table_reset()
 	Directive_wait_time = 3000;
 	True_loop_argument_sexps = false;
 	Fixed_turret_collisions = false;
+	Fixed_missile_detonation = false;
 	Damage_impacted_subsystem_first = false;
 	Cutscene_camera_displays_hud = false;
 	Alternate_chaining_behavior = false;
+	Use_host_orientation_for_set_camera_facing = false;
 	Default_ship_select_effect = 2;
 	Default_weapon_select_effect = 2;
 	Default_fiction_viewer_ui = -1;
 	Enable_external_shaders = false;
-	Enable_external_default_scripts             = false;
+	Enable_external_default_scripts = false;
 	Default_detail_level = 3; // "very high" seems a reasonable default in 2012 -zookeeper
 	Full_color_head_anis = false;
+	Dont_automatically_select_turret_when_targeting_ship = false;
 	Weapons_inherit_parent_collision_group = false;
 	Flight_controls_follow_eyepoint_orientation = false;
 	FS2NetD_port = 0;
+	Default_multi_object_update_level = OBJ_UPDATE_HIGH;
 	Briefing_window_FOV = 0.29375f;
 	Disable_hc_message_ani = false;
 	Red_alert_applies_to_delayed_ships = false;
 	Beams_use_damage_factors = false;
 	Generic_pain_flash_factor = 1.0f;
 	Shield_pain_flash_factor = 0.0f;
-	Targetted_version = gameversion::version(2, 0, 0, 0); // Defaults to retail
+	Emp_pain_flash_factor = 1.0f;
+	Emp_pain_flash_color = std::make_tuple(1.0f, 1.0f, 0.5f);
+	Targeted_version = gameversion::version(2, 0, 0, 0); // Defaults to retail
 	Window_title = "";
+	Mod_title = "";
+	Mod_version = "";
 	Unicode_text_mode = false;
 	Use_tabled_strings_for_default_language = false;
+	Dont_preempt_training_voice = false;
 	Movie_subtitle_font = "font01.vf";
 	Enable_scripts_in_fred = false;
 	Window_icon_path = "app_icon_sse";
@@ -713,4 +1009,28 @@ void mod_table_reset()
 	Neb_affects_fireballs = false;
 	Shadow_distances = std::make_tuple(200.0f, 600.0f, 2500.0f, 8000.0f); // Default values tuned by Swifty and added here by wookieejedi
 	Shadow_distances_cockpit = std::make_tuple(0.25f, 0.75f, 1.5f, 3.0f); // Default values tuned by wookieejedi and added here by Lafiel
+	Custom_briefing_icons_always_override_standard_icons = false;
+	Min_pixel_size_thruster = 0.0f;
+	Min_pixel_size_beam = 0.0f;
+	Min_pizel_size_muzzleflash = 0.0f;
+	Min_pixel_size_trail = 0.0f;
+	Min_pixel_size_laser = 0.0f;
+	Supernova_hits_at_zero = false;
+	Show_subtitle_uses_pixels = false;
+	Show_subtitle_screen_base_res[0] = -1;
+	Show_subtitle_screen_base_res[1] = -1;
+	Show_subtitle_screen_adjusted_res[0] = -1;
+	Show_subtitle_screen_adjusted_res[1] = -1;
+	Always_warn_player_about_unbound_keys = false;
+}
+
+void mod_table_set_version_flags()
+{
+	if (mod_supports_version(22, 0, 0)) {
+		Fixed_turret_collisions = true;
+		Fixed_missile_detonation = true;
+		Shockwaves_damage_all_obj_types_once = true;
+		Framerate_independent_turning = true;					// this is already true, but let's re-emphasize it
+		Use_host_orientation_for_set_camera_facing = true;		// this is essentially a bugfix
+	}
 }

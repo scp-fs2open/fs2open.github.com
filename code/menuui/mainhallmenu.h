@@ -92,6 +92,9 @@ public:
 	// Time until we will next play a given misc animation, min delay, and max delay
 	SCP_vector<SCP_vector<int> > misc_anim_delay;
 
+	// Initial offset values for anim delay, these should not be altered after parsing
+	SCP_vector<int> misc_anim_initial_delay;
+
 	// Goober5000, used in preference to the flag in generic_anim
 	SCP_vector<int> misc_anim_paused;
 

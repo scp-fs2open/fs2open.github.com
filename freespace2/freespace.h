@@ -95,10 +95,12 @@ void game_level_close();
 // gameplay stuff -----------------------------------------------------
 
 // stop the game (mission) timer
-void game_stop_time();
+void game_stop_time(bool by_os_focus = false);
+
+bool game_time_is_stopped();
 
 // start the game (mission) timer
-void game_start_time();
+void game_start_time(bool by_os_focus = false);
 
 // call whenever in a loop or if you need to get a keypress
 int game_check_key();
@@ -176,7 +178,7 @@ void game_whack_reset();
 void game_whack_apply( float x, float y );
 
 // call to apply a "shudder"
-void game_shudder_apply(int time, float intensity);
+void game_shudder_apply(int time, float intensity, bool perpetual = false, bool everywhere = false);
 
 //===================================================================
 

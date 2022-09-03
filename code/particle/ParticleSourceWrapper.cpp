@@ -84,6 +84,14 @@ namespace particle
 		}
 	}
 
+	void ParticleSourceWrapper::setVelocity(vec3d* vel)
+	{
+		for (auto& source : m_sources)
+		{
+			source->getOrigin()->setVelocity(vel);
+		}
+	}
+
 	void ParticleSourceWrapper::setOrientationFromNormalizedVec(vec3d* normalizedDir, bool relative)
 	{
 		for (auto& source : m_sources)

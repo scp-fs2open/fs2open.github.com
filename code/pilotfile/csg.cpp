@@ -1,4 +1,6 @@
 
+#include "controlconfig/controlsconfig.h"
+#include "controlconfig/presets.h"
 #include "cutscene/cutscenes.h"
 #include "freespace.h"
 #include "gamesnd/eventmusic.h"
@@ -10,6 +12,7 @@
 #include "mission/missionload.h"
 #include "missionui/missionscreencommon.h"
 #include "missionui/missionshipchoice.h"
+#include "parse/sexp_container.h"
 #include "pilotfile/pilotfile.h"
 #include "playerman/player.h"
 #include "ship/ship.h"
@@ -1131,11 +1134,20 @@ void pilotfile::csg_write_variables()
 
 void pilotfile::csg_read_settings()
 {
+	clamped_range_warnings.clear();
 	// sound/voice/music
 	if (!Using_in_game_options) {
-		snd_set_effects_volume(cfread_float(cfp));
-		event_music_set_volume(cfread_float(cfp));
-		snd_set_voice_volume(cfread_float(cfp));
+		float temp_volume = cfread_float(cfp);
+		clamp_value_with_warn(&temp_volume, 0.f, 1.f, "Effects Volume");
+		snd_set_effects_volume(temp_volume);
+
+		temp_volume = cfread_float(cfp);
+		clamp_value_with_warn(&temp_volume, 0.f, 1.f, "Music Volume");
+		event_music_set_volume(temp_volume);
+
+		temp_volume = cfread_float(cfp);
+		clamp_value_with_warn(&temp_volume, 0.f, 1.f, "Voice Volume");
+		snd_set_voice_volume(temp_volume);
 
 		Briefing_voice_enabled = cfread_int(cfp) != 0;
 	} else {
@@ -1151,13 +1163,20 @@ void pilotfile::csg_read_settings()
 
 	// skill level
 	Game_skill_level = cfread_int(cfp);
+	clamp_value_with_warn(&Game_skill_level, 0, 4, "Game Skill Level");
 
 	// input options
 	if (!Using_in_game_options) {
 		Use_mouse_to_fly   = cfread_int(cfp) != 0;
 		Mouse_sensitivity  = cfread_int(cfp);
+		clamp_value_with_warn(&Mouse_sensitivity, 0, 9, "Mouse Sensitivity");
+
 		Joy_sensitivity    = cfread_int(cfp);
+		clamp_value_with_warn(&Joy_sensitivity, 0, 9, "Joystick Sensitivity");
+
 		Joy_dead_zone_size = cfread_int(cfp);
+		clamp_value_with_warn(&Joy_dead_zone_size, 0, 45, "Joystick Deadzone");
+
 	} else {
 		// The values are set by the in-game menu but we still need to read the int from the file to maintain the correct offset
 		cfread_int(cfp);
@@ -1181,64 +1200,121 @@ void pilotfile::csg_read_settings()
 		dummy = cfread_int(cfp);
 		dummy = cfread_int(cfp);
 	}
+	if (!clamped_range_warnings.empty()) {
+		ReleaseWarning(LOCATION, "The following values in the campaign save file were out of bounds and were automatically reset:\n%s\nPlease check your settings!\n", clamped_range_warnings.c_str());
+		clamped_range_warnings.clear();
+	}
 }
 
 void pilotfile::csg_write_settings()
 {
 	startSection(Section::Settings);
+	clamped_range_warnings.clear();
 
 	// sound/voice/music
+	clamp_value_with_warn(&Master_sound_volume, 0.f, 1.f, "Effects Volume");
 	cfwrite_float(Master_sound_volume, cfp);
+	clamp_value_with_warn(&Master_event_music_volume, 0.f, 1.f, "Music Volume");
 	cfwrite_float(Master_event_music_volume, cfp);
+	clamp_value_with_warn(&Master_voice_volume, 0.f, 1.f, "Voice Volume");
 	cfwrite_float(Master_voice_volume, cfp);
 
 	cfwrite_int(Briefing_voice_enabled ? 1 : 0, cfp);
 
 	// skill level
+	clamp_value_with_warn(&Game_skill_level, 0, 4, "Game Skill Level");
 	cfwrite_int(Game_skill_level, cfp);
 
 	// input options
 	cfwrite_int(Use_mouse_to_fly, cfp);
+	clamp_value_with_warn(&Mouse_sensitivity, 0, 9, "Mouse Sensitivity");
 	cfwrite_int(Mouse_sensitivity, cfp);
+	clamp_value_with_warn(&Joy_sensitivity, 0, 9, "Joystick Sensitivity");
 	cfwrite_int(Joy_sensitivity, cfp);
+	clamp_value_with_warn(&Joy_dead_zone_size, 0, 45, "Joystick Deadzone");
 	cfwrite_int(Joy_dead_zone_size, cfp);
 
+	if (!clamped_range_warnings.empty()) {
+		ReleaseWarning(LOCATION, "The following values were out of bounds when saving the campaign file and were automatically reset.\n%s\nThis shouldn't be possible, please contact the FreeSpace 2 Open Source Code Project!\n", clamped_range_warnings.c_str());
+		clamped_range_warnings.clear();
+	}
 	endSection();
 }
 
 void pilotfile::csg_read_controls()
 {
-	int idx, list_size;
-	short id1, id2, id3 __UNUSED;
+	if (csg_ver < 7) {
+		// Pre CSG-7 compatibility
+		int idx, list_size;
+		short id1, id2, id3 __UNUSED;
 
-	list_size = (int)cfread_ushort(cfp);
+		list_size = (int)cfread_ushort(cfp);
 
-	for (idx = 0; idx < list_size; idx++) {
-		id1 = cfread_short(cfp);
-		id2 = cfread_short(cfp);
-		id3 = cfread_short(cfp);	// unused, at the moment
+		for (idx = 0; idx < list_size; idx++) {
+			id1 = cfread_short(cfp);
+			id2 = cfread_short(cfp);
+			id3 = cfread_short(cfp);	// unused, at the moment
 
-		if (idx < CCFG_MAX) {
-			Control_config[idx].take(CC_bind(CID_KEYBOARD, id1), 0);
-			Control_config[idx].take(CC_bind(CID_JOY0, id2), 1);
+			if (idx < CCFG_MAX) {
+				Control_config[idx].take(CC_bind(CID_KEYBOARD, id1), 0);
+				Control_config[idx].take(CC_bind(CID_JOY0, id2), 1);
+			}
 		}
+
+		// Check that these bindings are in a preset.
+		// CSG doesn't save invert flags, so use agnostic equals
+		auto it = control_config_get_current_preset(true);
+		if (it == Control_config_presets.end()) {
+			// Not a preset, create one and its file
+			CC_preset preset;
+			preset.name = filename;
+
+			// strip off extension
+			auto n = preset.name.find_last_of('.');
+			preset.name.resize(n);
+
+			std::copy(Control_config.begin(), Control_config.end(), std::back_inserter(preset.bindings));
+			Control_config_presets.push_back(preset);
+			save_preset_file(preset, true);
+		}
+		return;
+	
+	} else {
+		// >= CSG-7
+		char buf[MAX_FILENAME_LEN];
+		memset(buf, '\0', sizeof(buf));
+		cfread_string(buf, sizeof(buf), cfp);
+
+		auto it = std::find_if(Control_config_presets.begin(), Control_config_presets.end(),
+		                       [buf](const CC_preset& preset) { return preset.name == buf; });
+
+		if (it == Control_config_presets.end()) {
+			Assertion(!Control_config_presets.empty(), "[CSG] Error reading CSG! Control_config_presets empty; Get a coder!");
+			// Couldn't find the preset, use defaults
+			it = Control_config_presets.begin();
+		}
+
+		control_config_use_preset(*it);
+		return;
 	}
 }
 
 void pilotfile::csg_write_controls()
 {
-	int idx;
+	auto it = control_config_get_current_preset();
+
+	if (it == Control_config_presets.end()) {
+		// Normally shouldn't happen, may be a new, blank player
+		// First assert that the presets have been initialized and have at least the defaults preset
+		Assertion(!Control_config_presets.empty(), "[CSG] Error saving CSG! Control_config_presets empty; Get a coder!");
+
+		// Next, just bash the current preset to be defaults
+		it = Control_config_presets.begin();
+	}
 
 	startSection(Section::Controls);
 
-	cfwrite_ushort(CCFG_MAX, cfp);
-
-	for (idx = 0; idx < CCFG_MAX; idx++) {
-		cfwrite_short(Control_config[idx].get_btn(CID_KEYBOARD), cfp);
-		cfwrite_short(Control_config[idx].get_btn(CID_JOY0), cfp);
-		// placeholder? for future mouse_id?
-		cfwrite_short(-1, cfp);
-	}
+	cfwrite_string(it->name.c_str(), cfp);
 
 	endSection();
 }
@@ -1320,6 +1396,100 @@ void pilotfile::csg_write_lastmissions()
 	endSection();
 }
 
+void pilotfile::csg_read_containers()
+{
+	const int num_containers = cfread_int(cfp);
+
+	for (int idx = 0; idx < num_containers; idx++) {
+		Campaign.persistent_containers.emplace_back();
+		auto& container = Campaign.persistent_containers.back();
+		csg_read_container(container);
+	}
+
+	Campaign.red_alert_containers.clear();
+
+	const int redalert_num_containers = cfread_int(cfp);
+
+	for (int idx = 0; idx < redalert_num_containers; idx++) {
+		Campaign.red_alert_containers.emplace_back();
+		auto& ra_container = Campaign.red_alert_containers.back();
+		csg_read_container(ra_container);
+	}
+}
+
+void pilotfile::csg_read_container(sexp_container& container)
+{
+	char temp_buf[NAME_LENGTH];
+	memset(temp_buf, 0, sizeof(temp_buf));
+
+	cfread_string_len(temp_buf, sizeof(temp_buf), cfp);
+	container.container_name = temp_buf;
+
+	container.type = (ContainerType)cfread_int(cfp);
+	container.opf_type = cfread_int(cfp);
+
+	const int size = cfread_int(cfp);
+
+	if (container.is_list()) {
+		for (int i = 0; i < size; ++i) {
+			cfread_string_len(temp_buf, sizeof(temp_buf), cfp);
+			container.list_data.emplace_back(temp_buf);
+		}
+	} else if (container.is_map()) {
+		char temp_key[NAME_LENGTH];
+		memset(temp_key, 0, sizeof(temp_key));
+
+		for (int i = 0; i < size; ++i) {
+			cfread_string_len(temp_key, sizeof(temp_key), cfp);
+			cfread_string_len(temp_buf, sizeof(temp_buf), cfp);
+			container.map_data.emplace(temp_key, temp_buf);
+		}
+	} else {
+		UNREACHABLE("Unknown container type %d", (int)container.type);
+	}
+}
+
+void pilotfile::csg_write_containers()
+{
+	startSection(Section::Containers);
+
+	cfwrite_int((int)Campaign.persistent_containers.size(), cfp);
+
+	for (const auto& container : Campaign.persistent_containers) {
+		Assert(!container.is_eternal()); // eternal containers should be written to player file
+		csg_write_container(container);
+	}
+
+	cfwrite_int((int)Campaign.red_alert_containers.size(), cfp);
+
+	for (const auto& ra_container : Campaign.red_alert_containers) {
+		csg_write_container(ra_container);
+	}
+
+	endSection();
+}
+
+void pilotfile::csg_write_container(const sexp_container &container)
+{
+	cfwrite_string_len(container.container_name.c_str(), cfp);
+	cfwrite_int((int)container.type, cfp);
+	cfwrite_int(container.opf_type, cfp);
+
+	cfwrite_int(container.size(), cfp);
+	if (container.is_list()) {
+		for (const auto& data : container.list_data) {
+			cfwrite_string_len(data.c_str(), cfp);
+		}
+	} else if (container.is_map()) {
+		for (const auto& key_data : container.map_data) {
+			cfwrite_string_len(key_data.first.c_str(), cfp);
+			cfwrite_string_len(key_data.second.c_str(), cfp);
+		}
+	} else {
+		UNREACHABLE("Unknown container type %d", (int)container.type);
+	}
+}
+
 void pilotfile::csg_reset_data()
 {
 	int idx;
@@ -1396,6 +1566,8 @@ void pilotfile::csg_close()
 
 	m_have_flags = false;
 	m_have_info = false;
+
+	csg_ver = PLR_VERSION_INVALID;
 }
 
 bool pilotfile::load_savefile(player *_p, const char *campaign)
@@ -1536,6 +1708,11 @@ bool pilotfile::load_savefile(player *_p, const char *campaign)
 					csg_read_lastmissions();
 					break;
 
+				case Section::Containers:
+					mprintf(("CSG => Parsing:  Containers...\n"));
+					csg_read_containers();
+					break;
+
 				default:
 					mprintf(("CSG => Skipping unknown section 0x%04x!\n", (uint32_t)section_id));
 					break;
@@ -1656,6 +1833,8 @@ bool pilotfile::save_savefile()
 	csg_write_cutscenes();
 	mprintf(("CSG => Saving:  Last Missions...\n"));
 	csg_write_lastmissions();
+	mprintf(("CSG => Saving:  Containers...\n"));
+	csg_write_containers();
 
 	// Done!
 	mprintf(("CSG => Saving complete!\n"));

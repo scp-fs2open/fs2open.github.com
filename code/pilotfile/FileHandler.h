@@ -32,7 +32,8 @@ enum class Section {
 	Variables = 0x0012,
 	Missions = 0x0013,
 	Cutscenes = 0x0014,
-	LastMissions = 0x0015
+	LastMissions = 0x0015,
+	Containers = 0x0016
 };
 #if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic pop
@@ -42,6 +43,8 @@ namespace pilot {
 class FileHandler {
  public:
 	virtual ~FileHandler() {}
+
+	virtual void writeByte(const char* name, std::int8_t value) = 0;
 
 	virtual void writeUByte(const char* name, std::uint8_t value) = 0;
 
@@ -68,6 +71,8 @@ class FileHandler {
 	virtual void endArrayWrite() = 0;
 
 	virtual void flush() = 0;
+
+	virtual std::int8_t readByte(const char* name) = 0;
 
 	virtual std::uint8_t readUByte(const char* name) = 0;
 

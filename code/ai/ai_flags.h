@@ -139,6 +139,13 @@ namespace AI {
 		Improved_subsystem_attack_pathing,
 		Fixed_ship_weapon_collision,
 		No_shield_damage_from_ship_collisions,
+		Reset_last_hit_target_time_for_player_hits,
+		Fighterbay_arrivals_use_carrier_orient, 
+		Fighterbay_departures_use_carrier_orient,
+		Prevent_negative_turret_ammo,
+		Fix_keep_safe_distance,
+		Ignore_aspect_when_leading,
+		Fix_good_rearm_time_bug,
 
 		NUM_VALUES
 	};

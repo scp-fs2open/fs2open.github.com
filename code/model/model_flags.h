@@ -5,9 +5,30 @@
 
 namespace Model {
 
+	FLAG_LIST(Submodel_flags) {
+		Can_move,						// If true, the position and/or orientation of this submodel can change due to rotation of itself OR a parent
+		Is_live_debris,					// whether current submodel is a live debris model
+		Is_thruster,					// is an engine thruster submodel
+		Is_damaged,						// is a submodel that represents a damaged submodel (e.g. a -destroyed version of some other submodel)
+		Do_not_scale_detail_distances,	// if set should not scale boxes or spheres based on 'model detail' settings
+		Gun_rotation,					// for animated weapon models
+		Instant_rotate_accel,			// rotating submodels instantly reach their desired velocity
+		Instant_translate_accel,		// ditto for translating submodels
+		No_collisions,					// for $no_collisions property - kazan
+		Nocollide_this_only,			//SUSHI: Like no_collisions, but not recursive. For the "replacement" collision model scheme.
+		Collide_invisible,				//SUSHI: If set, this submodel should allow collisions for invisible textures. For the "replacement" collision model scheme.
+		Use_render_box_offset,			// whether an offset has been defined; needed because one can't tell just by looking at render_box_offset
+		Use_render_sphere_offset,		// whether an offset has been defined; needed because one can't tell just by looking at render_sphere_offset
+		Attach_thrusters,				//zookeeper: If set and this submodel or any of its parents rotates, also rotates associated thrusters.
+
+		NUM_VALUES
+	};
+
 	FLAG_LIST(Subsystem_Flags) {
-		Rotates,			// This means the object rotates automatically with "turn_rate"
+		Rotates,			// This means the object rotates automatically
+		Translates,			// This means the object translates automatically
 		Stepped_rotate,		// This means that the rotation occurs in steps
+		Stepped_translate,	// Ditto for translation
 		Ai_rotate,			// This means that the rotation is controlled by ai
 		Crewpoint,			// If set, this is a crew point.
 		Awacs,				// If set, this subsystem has AWACS capability
@@ -23,8 +44,8 @@ namespace Model {
 		Fire_on_target,		// prevents turret from firing unless it is pointing at the firingpoints are pointing at the target
 		No_ss_targeting,	// toggles the subsystem targeting for the turret
 		Turret_reset_idle,	// makes turret reset to their initial position if the target is out of field of view
-		Turret_restricted_fov,	// tells the game to use additional calculations should turret have a limited base fov or elevation
-		Dum_rotates,		// Bobboau
+		Turret_base_restricted_fov,	// tells the game to use additional calculations should turret have a limited base fov or elevation
+		Turret_barrel_override_fov,	// indicates the ships.tbl FOV should override the POF FOV
 		Carry_shockwave,	// subsystem - even with 'carry no damage' flag - will carry shockwave damage to the hull
 		Allow_landing,		// This subsystem can be landed on
 		Fov_edge_check,		// Tells the game to use better FOV edge checking with this turret
@@ -48,6 +69,7 @@ namespace Model {
         Share_fire_direction,		// (DahBlount) Whenever the turret fires, make all firing points fire in the same direction.
         No_sparks,          // Subsystem does not generate sparks if hit - m!m
 		No_impact_debris,    // Don't spawn the small debris on impact - m!m
+		Hide_turret_from_loadout_stats, // Turret is not accounted for in auto-generated "Turrets" line in the ship loadout window --wookieejedi
 
         NUM_VALUES
 	};

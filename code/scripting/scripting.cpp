@@ -14,6 +14,7 @@
 #include "hud/hud.h"
 #include "io/key.h"
 #include "mission/missioncampaign.h"
+#include "network/multi.h"
 #include "parse/parselo.h"
 #include "scripting/doc_html.h"
 #include "scripting/doc_json.h"
@@ -44,6 +45,7 @@ flag_def_list Script_conditions[] =
 	{"Action", CHC_ACTION, 0},
 	{"Version", CHC_VERSION, 0},
 	{"Application", CHC_APPLICATION, 0},
+	{"Multi type", CHC_MULTI_SERVER, 0},
 };
 
 int Num_script_conditions = sizeof(Script_conditions) / sizeof(flag_def_list);
@@ -56,13 +58,17 @@ class BuiltinHook : public scripting::HookBase {
 	}
 	~BuiltinHook() override = default;
 
+	bool isActive() const override
+	{
+		return Script_system.IsActiveAction(_hookId);
+	}
+
 	bool isOverridable() const override { return true; }
 };
 
 // clang-format off
 static USED_VARIABLE SCP_vector<std::shared_ptr<BuiltinHook>> Script_actions
 {
-	std::make_shared<BuiltinHook>("On Game Init",			CHA_GAMEINIT ),
 	std::make_shared<BuiltinHook>("On Splash Screen",		CHA_SPLASHSCREEN ),
 	std::make_shared<BuiltinHook>("On State Start",			CHA_ONSTATESTART ),
 	std::make_shared<BuiltinHook>("On Action",				CHA_ONACTION ),
@@ -72,16 +78,12 @@ static USED_VARIABLE SCP_vector<std::shared_ptr<BuiltinHook>> Script_actions
 	std::make_shared<BuiltinHook>("On Mouse Moved",			CHA_MOUSEMOVED ),
 	std::make_shared<BuiltinHook>("On Mouse Pressed",		CHA_MOUSEPRESSED ),
 	std::make_shared<BuiltinHook>("On Mouse Released",		CHA_MOUSERELEASED ),
-	std::make_shared<BuiltinHook>("On State End",			CHA_ONSTATEEND ),
 	std::make_shared<BuiltinHook>("On Mission Start",		CHA_MISSIONSTART ),
 	std::make_shared<BuiltinHook>("On HUD Draw",			CHA_HUDDRAW ),
-	std::make_shared<BuiltinHook>("On Ship Collision",		CHA_COLLIDESHIP ),
 	std::make_shared<BuiltinHook>("On Weapon Collision",	CHA_COLLIDEWEAPON ),
 	std::make_shared<BuiltinHook>("On Debris Collision",	CHA_COLLIDEDEBRIS ),
 	std::make_shared<BuiltinHook>("On Asteroid Collision",	CHA_COLLIDEASTEROID ),
 	std::make_shared<BuiltinHook>("On Object Render",		CHA_OBJECTRENDER ),
-	std::make_shared<BuiltinHook>("On Death",				CHA_DEATH ),
-	std::make_shared<BuiltinHook>("On Mission End",			CHA_MISSIONEND ),
 	std::make_shared<BuiltinHook>("On Weapon Delete",		CHA_ONWEAPONDELETE ),
 	std::make_shared<BuiltinHook>("On Weapon Equipped",		CHA_ONWPEQUIPPED ),
 	std::make_shared<BuiltinHook>("On Weapon Fired",		CHA_ONWPFIRED ),
@@ -163,6 +165,8 @@ void script_parse_table(const char* filename)
 			while (st->ParseCondition(filename));
 			required_string("#End");
 		}
+
+		st->AssayActions();
 	}
 	catch (const parse::ParseException& e)
 	{
@@ -310,6 +314,18 @@ bool ConditionedHook::AddCondition(script_condition *sc)
 		}
 		break;
 	}
+	case CHC_MULTI_SERVER:
+	{
+		if (stricmp("Server", sc->condition_string.c_str()) == 0 || stricmp("Master", sc->condition_string.c_str()) == 0)
+		{
+			sc->condition_cached_value = 1;
+		}
+		else
+		{
+			sc->condition_cached_value = 0;
+		}
+		break;
+	}
 	default:
 		break;
 	}
@@ -328,15 +344,16 @@ bool ConditionedHook::AddAction(script_action *sa)
 	return true;
 }
 
-bool ConditionedHook::ConditionsValid(int action, object *objp, int more_data)
+bool ConditionedHook::ConditionsValid(int action, object *objp1, object *objp2, int more_data)
 {
+	object *objp_array[2];
+	objp_array[0] = objp1;
+	objp_array[1] = objp2;
 
 	//Return false if any conditions are not met
 	//Never return true inside the loop, or you will be potentially skipping other conditions on the hook.
-	ship_info *sip;
-	for(auto & scp : Conditions)
+	for (auto & scp : Conditions)
 	{
-		
 		switch(scp.condition_type)
 		{
 			case CHC_STATE:
@@ -345,249 +362,311 @@ bool ConditionedHook::ConditionsValid(int action, object *objp, int more_data)
 				if(gameseq_get_state() != scp.condition_cached_value)
 					return false;
 				break;
+
 			case CHC_SHIPTYPE:
-				if(objp == NULL || objp->type != OBJ_SHIP)
-					return false;
-				sip = &Ship_info[Ships[objp->instance].ship_info_index];
-				if(sip->class_type < 0)
-					return false;
-				if(stricmp(Ship_types[sip->class_type].name, scp.condition_string.c_str()) != 0)
-					return false;
+			{
+				for (auto objp : objp_array)
+				{
+					if (objp != nullptr && objp->type == OBJ_SHIP)
+					{
+						auto sip = &Ship_info[Ships[objp->instance].ship_info_index];
+						if (sip->class_type >= 0)
+						{
+							if (stricmp(Ship_types[sip->class_type].name, scp.condition_string.c_str()) != 0)
+								return false;
+						}
+						break;
+					}
+				}
 				break;
+			}
+
 			case CHC_SHIPCLASS:
-				//scp.condition_cached_value holds the weapon_info_index of the requested weapon class
-				if(objp == NULL || objp->type != OBJ_SHIP)
-					return false;
-				if(!(Ships[objp->instance].ship_info_index == scp.condition_cached_value))
-					return false;
+			{
+				for (auto objp : objp_array)
+				{
+					if (objp != nullptr && objp->type == OBJ_SHIP)
+					{
+						// scp.condition_cached_value holds the ship_info_index of the requested ship class
+						if (Ships[objp->instance].ship_info_index != scp.condition_cached_value)
+							return false;
+						break;
+					}
+				}
 				break;
+			}
+
 			case CHC_SHIP:
-				if(objp == NULL || objp->type != OBJ_SHIP)
-					return false;
-				if(stricmp(Ships[objp->instance].ship_name, scp.condition_string.c_str()) != 0)
-					return false;
+			{
+				for (auto objp : objp_array)
+				{
+					if (objp != nullptr && objp->type == OBJ_SHIP)
+					{
+						if (stricmp(Ships[objp->instance].ship_name, scp.condition_string.c_str()) != 0)
+							return false;
+						break;
+					}
+				}
 				break;
+			}
+
 			case CHC_MISSION:
-				{
-					//WMC - Get mission filename with Mission_filename
-					//I don't use Game_current_mission_filename, because
-					//Mission_filename is valid in both fs2_open and FRED
-					size_t len = strlen(Mission_filename);
-					if(!len)
-						return false;
-					if(len > 4 && !stricmp(&Mission_filename[len-4], ".fs2"))
-						len -= 4;
-					if(strnicmp(scp.condition_string.c_str(), Mission_filename, len) != 0)
-						return false;
-					break;
-				}
+			{
+				//WMC - Get mission filename with Mission_filename
+				//I don't use Game_current_mission_filename, because
+				//Mission_filename is valid in both fs2_open and FRED
+				size_t len = strlen(Mission_filename);
+				if(!len)
+					return false;
+				if(len > 4 && !stricmp(&Mission_filename[len-4], ".fs2"))
+					len -= 4;
+				if(strnicmp(scp.condition_string.c_str(), Mission_filename, len) != 0)
+					return false;
+				break;
+			}
+
 			case CHC_CAMPAIGN:
-				{
-					size_t len = strlen(Campaign.filename);
-					if(!len)
-						return false;
-					if(len > 4 && !stricmp(&Mission_filename[len-4], ".fc2"))
-						len -= 4;
-					if(strnicmp(scp.condition_string.c_str(), Mission_filename, len) != 0)
-						return false;
-					break;
-				}
+			{
+				size_t len = strlen(Campaign.filename);
+				if(!len)
+					return false;
+				if(len > 4 && !stricmp(&Mission_filename[len-4], ".fc2"))
+					len -= 4;
+				if(strnicmp(scp.condition_string.c_str(), Mission_filename, len) != 0)
+					return false;
+				break;
+			}
+
 			case CHC_WEAPONCLASS:
+			{
+				bool found_weapon = false;
+
+				for (auto objp : objp_array)
 				{
-					//scp.condition_cached_value holds the weapon_info_index of the requested weapon class
-					if (action == CHA_COLLIDEWEAPON) {
-						return(more_data == scp.condition_cached_value);
-					} else if (!(action == CHA_ONWPSELECTED || action == CHA_ONWPDESELECTED || action == CHA_ONWPEQUIPPED || action == CHA_ONWPFIRED || action == CHA_ONTURRETFIRED )) {
-						if (objp == NULL || (objp->type != OBJ_WEAPON && objp->type != OBJ_BEAM))
+					if (objp == nullptr)
+						continue;
+
+					if (objp->type == OBJ_WEAPON)
+					{
+						// scp.condition_cached_value holds the weapon_info_index of the requested weapon class
+						if (Weapons[objp->instance].weapon_info_index != scp.condition_cached_value)
 							return false;
-						else if (objp->type == OBJ_WEAPON && !(Weapons[objp->instance].weapon_info_index == scp.condition_cached_value))
-							return false;
-						else if (objp->type == OBJ_BEAM && !(Weapons[objp->instance].weapon_info_index == scp.condition_cached_value))
-							return false;
+
+						found_weapon = true;
+						break;
 					}
-					else if (objp == NULL || objp->type != OBJ_SHIP) {
-						return false;
-					}
-					else if (action == CHA_ONWEAPONCREATED) {
-						if (objp == nullptr || objp->type != OBJ_WEAPON)
+					else if (objp->type == OBJ_BEAM)
+					{
+						// scp.condition_cached_value holds the weapon_info_index of the requested weapon class
+						if (Beams[objp->instance].weapon_info_index != scp.condition_cached_value)
 							return false;
+
+						found_weapon = true;
+						break;
 					}
-					else {
+				}
 
-						// Okay, if we're still here, then objp is both valid and a ship
-						ship* shipp = &Ships[objp->instance];
-						bool primary = false, secondary = false, prev_primary = false, prev_secondary = false;
-						switch (action) {
-						case CHA_ONWPSELECTED: {
-							if (shipp->weapons.current_primary_bank >= 0) {
-								primary = shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank] == scp.condition_cached_value;
-							}
-							if (shipp->weapons.current_secondary_bank >= 0) {
-								secondary = shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank] == scp.condition_cached_value;
-							}
+				//If a weaponclass is specified, but none of the objects was even any weapon, the hook must not evaluate.
+				if (!found_weapon)
+					return false;
 
-							if (!(primary || secondary)) {
-								return false;
-							}
+				if (objp1 == nullptr || objp1->type != OBJ_SHIP)
+					break;
+				auto shipp = &Ships[objp1->instance];
+				bool primary = false, secondary = false, prev_primary = false, prev_secondary = false;
 
-							if ((shipp->flags[Ship::Ship_Flags::Primary_linked]) && primary && (Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].wi_flags[Weapon::Info_Flags::Nolink])) {
-								return false;
-							}
-
-							break; }
-						case CHA_ONWPDESELECTED: {
-							if (shipp->weapons.current_primary_bank >= 0) {
-								primary = shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank] == scp.condition_cached_value;
-							}
-							if (shipp->weapons.previous_primary_bank >= 0) {
-								prev_primary = shipp->weapons.primary_bank_weapons[shipp->weapons.previous_primary_bank] == scp.condition_cached_value;
-							}
-							if (shipp->weapons.current_secondary_bank >= 0) {
-								secondary = shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank] == scp.condition_cached_value;
-							}
-							if (shipp->weapons.previous_secondary_bank >= 0) {
-								prev_secondary = shipp->weapons.secondary_bank_weapons[shipp->weapons.previous_secondary_bank] == scp.condition_cached_value;
-							}
-
-							if (!(
-									(shipp->flags[Ship::Ship_Flags::Primary_linked]) && prev_primary && 
-									(Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.previous_primary_bank]].wi_flags[Weapon::Info_Flags::Nolink])
-								)) {
-								return false;
-							}
-							if (!prev_secondary && !secondary && !prev_primary && !primary)
-								return false;
-
-							if ((!prev_secondary && !secondary) && (prev_primary && primary))
-								return false;
-
-							if ((!prev_secondary && !secondary) && (!prev_primary && primary))
-								return false;
-
-							if ((!prev_primary && !primary) && (prev_secondary && secondary))
-								return false;
-
-							if ((!prev_primary && !primary) && (!prev_secondary && secondary))
-								return false;
-
-							break; }
-						case CHA_ONWPEQUIPPED: {
-							bool equipped = false;
-							for (int j = 0; j < MAX_SHIP_PRIMARY_BANKS && !equipped; j++) {
-								if (shipp->weapons.primary_bank_weapons[j] > 0 && shipp->weapons.primary_bank_weapons[j] < weapon_info_size()) {
-									equipped = shipp->weapons.primary_bank_weapons[j] == scp.condition_cached_value;
-								}
-							}
-							for (int j = 0; j < MAX_SHIP_SECONDARY_BANKS && !equipped; j++) {
-								if (shipp->weapons.secondary_bank_weapons[j] >= 0 && (shipp->weapons.secondary_bank_weapons[j] < weapon_info_size()))
-								{
-									equipped = shipp->weapons.secondary_bank_weapons[j] == scp.condition_cached_value;
-								}
-
-							}
-
-							if (!equipped) {
-								return false;
-							}
-
-							break;
+				switch (action)
+				{
+					case CHA_ONWPSELECTED:
+					{
+						if (shipp->weapons.current_primary_bank >= 0) {
+							primary = shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank] == scp.condition_cached_value;
 						}
-						case CHA_ONWPFIRED: {
-							if (more_data == 1) {
-								primary = shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank] == scp.condition_cached_value;
-								secondary = false;
-							} else {
-								primary = false;
-								secondary = shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank] == scp.condition_cached_value;
-							}
+						if (shipp->weapons.current_secondary_bank >= 0) {
+							secondary = shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank] == scp.condition_cached_value;
+						}
 
-							if (
-								(shipp->flags[Ship::Ship_Flags::Primary_linked]) && primary && 
-								(Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].wi_flags[Weapon::Info_Flags::Nolink]))
+						if (!(primary || secondary)) {
+							return false;
+						}
+
+						if ((shipp->flags[Ship::Ship_Flags::Primary_linked]) && primary && (Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].wi_flags[Weapon::Info_Flags::Nolink])) {
+							return false;
+						}
+
+						break;
+					}
+
+					case CHA_ONWPDESELECTED:
+					{
+						if (shipp->weapons.current_primary_bank >= 0) {
+							primary = shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank] == scp.condition_cached_value;
+						}
+						if (shipp->weapons.previous_primary_bank >= 0) {
+							prev_primary = shipp->weapons.primary_bank_weapons[shipp->weapons.previous_primary_bank] == scp.condition_cached_value;
+						}
+						if (shipp->weapons.current_secondary_bank >= 0) {
+							secondary = shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank] == scp.condition_cached_value;
+						}
+						if (shipp->weapons.previous_secondary_bank >= 0) {
+							prev_secondary = shipp->weapons.secondary_bank_weapons[shipp->weapons.previous_secondary_bank] == scp.condition_cached_value;
+						}
+
+						if (!(
+								(shipp->flags[Ship::Ship_Flags::Primary_linked]) && prev_primary && 
+								(Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.previous_primary_bank]].wi_flags[Weapon::Info_Flags::Nolink])
+							)) {
+							return false;
+						}
+						if (!prev_secondary && !secondary && !prev_primary && !primary)
+							return false;
+
+						if ((!prev_secondary && !secondary) && (prev_primary && primary))
+							return false;
+
+						if ((!prev_secondary && !secondary) && (!prev_primary && primary))
+							return false;
+
+						if ((!prev_primary && !primary) && (prev_secondary && secondary))
+							return false;
+
+						if ((!prev_primary && !primary) && (!prev_secondary && secondary))
+							return false;
+
+						break;
+					}
+
+					case CHA_ONWPEQUIPPED:
+					{
+						bool equipped = false;
+						for (int j = 0; j < MAX_SHIP_PRIMARY_BANKS && !equipped; j++) {
+							if (shipp->weapons.primary_bank_weapons[j] > 0 && shipp->weapons.primary_bank_weapons[j] < weapon_info_size()) {
+								equipped = shipp->weapons.primary_bank_weapons[j] == scp.condition_cached_value;
+							}
+						}
+						for (int j = 0; j < MAX_SHIP_SECONDARY_BANKS && !equipped; j++) {
+							if (shipp->weapons.secondary_bank_weapons[j] >= 0 && (shipp->weapons.secondary_bank_weapons[j] < weapon_info_size()))
 							{
-								return false;
+								equipped = shipp->weapons.secondary_bank_weapons[j] == scp.condition_cached_value;
 							}
 
-							if (more_data == 1 && !primary) {
-								return false;
-							}
-							else if (more_data != 1 && !secondary) {
-								return false;
-							}
-							break;
 						}
-						case CHA_ONTURRETFIRED: {
-							if(shipp->last_fired_turret->last_fired_weapon_info_index != scp.condition_cached_value)
-								return false;
-							break;
+
+						if (!equipped) {
+							return false;
 						}
-						case CHA_PRIMARYFIRE: {
-							if (shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank] != scp.condition_cached_value)
-								return false;
-							break;
-						}
-						case CHA_SECONDARYFIRE: {
-							if(shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank] != scp.condition_cached_value)
-								return false;
-							break;
-						}
-						case CHA_BEAMFIRE: {
-							if(more_data != scp.condition_cached_value)
-								return false;
-							break;
-						}
-						default:
-							break;
+
+						break;
 					}
-				} // case CHC_WEAPONCLASS
-				break;
+
+					case CHA_ONWPFIRED:
+					{
+						if (more_data == 1) {
+							primary = shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank] == scp.condition_cached_value;
+							secondary = false;
+						} else {
+							primary = false;
+							secondary = shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank] == scp.condition_cached_value;
+						}
+
+						if (
+							(shipp->flags[Ship::Ship_Flags::Primary_linked]) && primary && 
+							(Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].wi_flags[Weapon::Info_Flags::Nolink]))
+						{
+							return false;
+						}
+
+						if (more_data == 1 && !primary) {
+							return false;
+						}
+						else if (more_data != 1 && !secondary) {
+							return false;
+						}
+						break;
+					}
+
+					case CHA_ONTURRETFIRED: {
+						if(shipp->last_fired_turret->last_fired_weapon_info_index != scp.condition_cached_value)
+							return false;
+						break;
+					}
+					case CHA_PRIMARYFIRE: {
+						if (shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank] != scp.condition_cached_value)
+							return false;
+						break;
+					}
+					case CHA_SECONDARYFIRE: {
+						if(shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank] != scp.condition_cached_value)
+							return false;
+						break;
+					}
+					case CHA_BEAMFIRE: {
+						if(more_data != scp.condition_cached_value)
+							return false;
+						break;
+					}
+					default:
+						break;
 				}
+				break;
+			} // case CHC_WEAPONCLASS
+
 			case CHC_OBJECTTYPE:
-				if(objp == NULL)
-					return false;
-				if(objp->type != scp.condition_cached_value)
+				if (objp1 == nullptr || objp1->type != scp.condition_cached_value)
 					return false;
 				break;
+
 			case CHC_KEYPRESS:
-				{
-					extern int Current_key_down;
-					if(gameseq_get_depth() < 0)
-						return false;
-					if(Current_key_down == 0)
-						return false;
-					//WMC - could be more efficient, but whatever.
-					if(stricmp(textify_scancode(Current_key_down), scp.condition_string.c_str()) != 0)
-						return false;
-					break;
-				}
+			{
+				extern int Current_key_down;
+				if(gameseq_get_depth() < 0)
+					return false;
+				if(Current_key_down == 0)
+					return false;
+				//WMC - could be more efficient, but whatever.
+				if(stricmp(textify_scancode(Current_key_down), scp.condition_string.c_str()) != 0)
+					return false;
+				break;
+			}
+
 			case CHC_ACTION:
-				{
-					if(gameseq_get_depth() < 0)
-						return false;
+			{
+				if(gameseq_get_depth() < 0)
+					return false;
 
-					int action_index = more_data;
+				int action_index = more_data;
 
-					if (action_index <= 0 || stricmp(scp.condition_string.c_str(), Control_config[action_index].text.c_str()) != 0)
-						return false;
-					break;
-				}
+				if (action_index <= 0 || stricmp(scp.condition_string.c_str(), Control_config[action_index].text.c_str()) != 0)
+					return false;
+				break;
+			}
+
 			case CHC_VERSION:
+			{
+				//Already evaluated on script load, stored value is 1 if application matches condition, 0 if not.
+				if(scp.condition_cached_value == 0)
 				{
-					//Already evaluated on script load, stored value is 1 if application matches condition, 0 if not.
-					if(scp.condition_cached_value == 0)
-					{
-						return false;
-					}
-					break;
+					return false;
 				}
+				break;
+			}
+
 			case CHC_APPLICATION:
+			{
+				//Already evaluated on script load, stored value is 1 if application matches condition, 0 if not.
+				if(scp.condition_cached_value == 0)
 				{
-					//Already evaluated on script load, stored value is 1 if application matches condition, 0 if not.
-					if(scp.condition_cached_value == 0)
-					{
-						return false;
-					}
+					return false;
 				}
+				break;
+			}
+			
+			case CHC_MULTI_SERVER:
+			{
+				//condition_cached_value is 0 if we execute on clients, 1 on servers
+				return static_cast<bool>(scp.condition_cached_value == 1) == static_cast<bool>(MULTIPLAYER_MASTER);
+			}
+
 			default:
 				break;
 		}
@@ -711,7 +790,7 @@ void script_state::UnloadImages()
 	ScriptImages.clear();
 }
 
-int script_state::RunCondition(int action, object* objp, int more_data)
+int script_state::RunCondition(int action, object *objp1, object *objp2, int more_data)
 {
 	TRACE_SCOPE(tracing::LuaHooks);
 	int num = 0;
@@ -722,21 +801,22 @@ int script_state::RunCondition(int action, object* objp, int more_data)
 
 	for(SCP_vector<ConditionedHook>::iterator chp = ConditionalHooks.begin(); chp != ConditionalHooks.end(); ++chp) 
 	{
-		if(chp->ConditionsValid(action, objp, more_data))
+		if(chp->ConditionsValid(action, objp1, objp2, more_data))
 		{
 			chp->Run(this, action);
 			num++;
 		}
 	}
+
+	ProcessAddedHooks();
 	return num;
 }
 
-bool script_state::IsConditionOverride(int action, object *objp)
+bool script_state::IsConditionOverride(int action, object *objp1, object *objp2, int more_data)
 {
-	//bool b = false;
 	for(SCP_vector<ConditionedHook>::iterator chp = ConditionalHooks.begin(); chp != ConditionalHooks.end(); ++chp)
 	{
-		if(chp->ConditionsValid(action, objp))
+		if(chp->ConditionsValid(action, objp1, objp2, more_data))
 		{
 			if(chp->IsOverride(this, action))
 				return true;
@@ -745,16 +825,13 @@ bool script_state::IsConditionOverride(int action, object *objp)
 	return false;
 }
 
-void script_state::EndFrame()
-{
-	EndLuaFrame();
-}
-
 void script_state::Clear()
 {
 	// Free all lua value references
 	ConditionalHooks.clear();
 	HookVariableValues.clear();
+
+	AssayActions();
 
 	if (LuaState != nullptr) {
 		OnStateDestroy(LuaState);
@@ -1089,6 +1166,7 @@ bool script_state::ParseCondition(const char *filename)
 			case CHC_OBJECTTYPE:
 			case CHC_VERSION:
 			case CHC_APPLICATION:
+			case CHC_MULTI_SERVER:
 			default:
 				stuff_string(sct.condition_string, F_NAME);
 				break;
@@ -1137,9 +1215,40 @@ bool script_state::ParseCondition(const char *filename)
 	return true;
 }
 
-void script_state::AddConditionedHook(ConditionedHook hook) { ConditionalHooks.push_back(std::move(hook)); }
+void script_state::AddConditionedHook(ConditionedHook hook) {
+	AddedHooks.push_back(std::move(hook));
+}
+
+void script_state::ProcessAddedHooks() {
+	for (auto& hook : AddedHooks) {
+		ConditionalHooks.push_back(std::move(hook));
+	}
+	AddedHooks.clear();
+	AssayActions();
+}
 
 void script_state::AddGameInitFunction(script_function func) { GameInitFunctions.push_back(std::move(func)); }
+
+// For each possible script_action this maintains an array that records whether any scripts are actually using this action
+// This allows us to avoid significant overhead from checking everything at the potential hook sites, but you must call
+// AssayActions() after modifying ConditionalHooks before returning to normal operation of the scripting system!
+void script_state::AssayActions() {
+	ActiveActions.clear();
+
+	for (const auto &hook : ConditionalHooks) {
+		for (const auto &action : hook.Actions) {
+			ActiveActions[action.action_type] = true;
+		}
+	}
+}
+
+bool script_state::IsActiveAction(int action_id) {
+	auto entry = ActiveActions.find(action_id);
+	if (entry != ActiveActions.end())
+		return entry->second;
+	else
+		return false;
+}
 
 //*************************CLASS: script_state*************************
 bool script_state::IsOverride(script_hook &hd)

@@ -393,7 +393,7 @@ void turret_swarm_set_up_info(int parent_objnum, ship_subsys *turret, weapon_inf
 	} else {
 		tsi->num_to_launch = wip->cs_num_fired;
 	}
-	if (turret->system_info->flags[Model::Subsystem_Flags::Turret_use_ammo]) {
+	if (turret->system_info->flags[Model::Subsystem_Flags::Turret_use_ammo] && !Weapon_info[swp->secondary_bank_weapons[bank_fired]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo]) {
 		swp->secondary_bank_ammo[bank_fired] -= tsi->num_to_launch;
 	}
 	tsi->parent_objnum = parent_objnum;

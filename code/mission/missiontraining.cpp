@@ -23,10 +23,12 @@
 #include "network/multi.h"
 #include "parse/parselo.h"
 #include "parse/sexp.h"
+#include "parse/sexp_container.h"
 #include "playerman/player.h"
 #include "popup/popup.h"
 #include "ship/ship.h"
 #include "sound/audiostr.h"
+#include "sound/fsspeech.h"
 #include "sound/sound.h"
 #include "weapon/emp.h"
 
@@ -360,12 +362,8 @@ void training_mission_init()
 	}
 }
 
-int comp_training_lines_by_born_on_date(const void *m1, const void *m2)
+int comp_training_lines_by_born_on_date(const int *e1, const int *e2)
 {
-	int *e1, *e2;
-	e1 = (int*) m1;
-	e2 = (int*) m2;
-
 	return (Mission_events[*e1 & 0xffff].born_on_date - Mission_events[*e2 & 0xffff].born_on_date);
 }
 
@@ -382,7 +380,7 @@ void sort_training_objectives()
 	int i, event_status, offset;
 
 	// start by sorting on born on date
-	insertion_sort(Training_obj_lines, Training_obj_num_lines, sizeof(int), comp_training_lines_by_born_on_date);
+	insertion_sort(Training_obj_lines, Training_obj_num_lines, comp_training_lines_by_born_on_date);
 
 	// get the index of the first directive that will be displayed
 	// if less than 0, display all lines
@@ -635,8 +633,8 @@ char *translate_message_token(char *str)
  */
 SCP_string message_translate_tokens(const char *text)
 {
-	char temp[40], *ptr;
-	const char *toke1, *toke2;
+	char temp[40];
+	const char *ptr, *toke1, *toke2;
 	int r;
 	SCP_string buf;
 
@@ -658,9 +656,10 @@ SCP_string message_translate_tokens(const char *text)
 				strncpy(temp, text, toke2 - text);  // isolate token into seperate buffer
 				temp[toke2 - text] = 0;  // null terminate string
 				ptr = translate_key(temp);  // try and translate key
-				if (ptr) {  // was key translated properly?
+				if (ptr != nullptr) {  // was key translated properly?
 					if (!stricmp(ptr, NOX("none")) && (Training_bind_warning != Missiontime)) {
-						if ( The_mission.game_type & MISSION_TYPE_TRAINING ) {
+						// check if a warning message should be displayed if the key is unbound
+						if ( (The_mission.game_type & MISSION_TYPE_TRAINING) || (Always_warn_player_about_unbound_keys & MISSION_TYPE_SINGLE) ) {
 							r = popup(PF_TITLE_BIG | PF_TITLE_RED, 2, XSTR( "&Bind Control", 424), XSTR( "&Abort mission", 425),
 								XSTR( "Warning\nYou have no control bound to the action \"%s\".  You must do so before you can continue with your training.", 426),
 								XSTR(Control_config[Failed_key_index].text.c_str(), CONTROL_CONFIG_XSTR + Failed_key_index));
@@ -772,9 +771,9 @@ int message_play_training_voice(int index)
 			return Training_voice;
 
 		} else {
-			game_snd_entry tmp_gs;
-			strcpy_s(tmp_gs.filename, Message_waves[index].name);
-			Message_waves[index].num = snd_load(&tmp_gs, 0, 0);
+			game_snd_entry tmp_gse;
+			strcpy_s(tmp_gse.filename, Message_waves[index].name);
+			Message_waves[index].num = snd_load(&tmp_gse, nullptr, 0);
 			if (!Message_waves[index].num.isValid()) {
 				nprintf(("Warning", "Cannot load message wave: %s.  Will not play\n", Message_waves[index].name));
 				return -1;
@@ -871,8 +870,11 @@ void message_training_queue(const char *text, int timestamp, int length)
 		}
 
 		// Goober5000 - replace variables if necessary
+		// karajorma/jg18 - replace container references if necessary
 		temp_buf = Messages[m].message;
-		if (sexp_replace_variable_names_with_values(temp_buf))
+		const bool replace_var = sexp_replace_variable_names_with_values(temp_buf);
+		const bool replace_con = sexp_container_replace_refs_with_values(temp_buf);
+		if (replace_var || replace_con)
 			Training_message_queue[Training_message_queue_count].special_message = vm_strdup(temp_buf.c_str());
 
 		Training_message_queue_count++;
@@ -921,6 +923,17 @@ void message_training_queue_check()
 
 	if (Training_failure)
 		return;
+
+	if (Dont_preempt_training_voice) {
+		// don't pre-empt any voice files that are playing
+		if (Training_voice >= 0) {
+			auto z = (Training_voice_type) ? audiostream_is_playing(Training_voice_soundstream) : snd_is_playing(Training_voice_snd_handle);
+			if (z)
+				return;
+		}
+		if (fsspeech_playing())
+			return;
+	}
 
 	for (i=0; i<Training_message_queue_count; i++) {
 		if (timestamp_elapsed(Training_message_queue[i].timestamp)) {

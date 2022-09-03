@@ -6,17 +6,24 @@
 
 #include "cmdline/cmdline.h"
 #include "gamesnd/eventmusic.h"
+#include "gamesequence/gamesequence.h"
 #include "menuui/barracks.h"
 #include "menuui/mainhallmenu.h"
 #include "menuui/optionsmenu.h"
 #include "menuui/playermenu.h"
 #include "menuui/readyroom.h"
 #include "mission/missionbriefcommon.h"
+#include "missionui/fictionviewer.h"
 #include "mission/missioncampaign.h"
 #include "missionui/missionscreencommon.h"
+#include "mission/missioncampaign.h"
+#include "missionui/redalert.h"
 #include "playerman/managepilot.h"
 #include "scpui/SoundPlugin.h"
 #include "scpui/rocket_ui.h"
+#include "scripting/api/objs/loop_brief.h"
+#include "scripting/api/objs/redalert.h"
+#include "scripting/api/objs/fictionviewer.h"
 #include "scripting/api/objs/cmd_brief.h"
 #include "scripting/api/objs/color.h"
 #include "scripting/api/objs/enums.h"
@@ -88,6 +95,76 @@ ADE_FUNC(disableInput, l_UserInterface, "", "Disables UI input", "boolean", "tru
 	return ADE_RETURN_TRUE;
 }
 
+ADE_VIRTVAR(ColorTags,
+	l_UserInterface,
+	nullptr,
+	"The available tagged colors",
+	"{ string => color ... }",
+	"A mapping from tag string to color value")
+{
+	using namespace luacpp;
+
+	LuaTable mapping = LuaTable::create(L);
+
+	for (const auto& tagged : Tagged_Colors) {
+		SCP_string tag;
+		tag.resize(1, tagged.first);
+
+		mapping.addValue(tag, l_Color.Set(*tagged.second));
+	}
+
+	return ade_set_args(L, "t", mapping);
+}
+
+ADE_FUNC(DefaultTextColorTag,
+	l_UserInterface,
+	"number UiScreen",
+	"Gets the default color tag string for the specified state. 1 for Briefing, 2 for CBriefing, 3 for Debriefing,"
+	"4 for Fiction Viewer, 5 for Red Alert, 6 for Loop Briefing, 7 for Recommendation text. Defaults to 1. Index into ColorTags.",
+	"string",
+	"The default color tag")
+{
+	int UiScreen;
+
+	if (!ade_get_args(L, "i", &UiScreen)) {
+		UiScreen = 1;
+	}
+	
+	SCP_string tagStr;
+	char defaultColor = default_briefing_color;
+
+	switch (UiScreen) {
+		case 1:
+			defaultColor = default_briefing_color;
+			break;
+		case 2:
+			defaultColor = default_command_briefing_color;
+			break;
+		case 3:
+			defaultColor = default_debriefing_color;
+			break;
+		case 4:
+			defaultColor = default_fiction_viewer_color;
+			break;
+		case 5:
+			defaultColor = default_redalert_briefing_color;
+			break;
+		case 6:
+			defaultColor = default_loop_briefing_color;
+			break;
+		case 7:
+			defaultColor = default_recommendation_color;
+			break;
+	}
+
+	if (defaultColor == '\0' || !brief_verify_color_tag(defaultColor)) {
+		defaultColor = Color_Tags[0];
+	}
+	tagStr.resize(1, defaultColor);
+
+	return ade_set_args(L, "s", tagStr);
+}
+
 ADE_FUNC(playElementSound,
 	l_UserInterface,
 	"any element /* A libRocket element */, string event, string state = \"\"",
@@ -117,11 +194,16 @@ ADE_FUNC(maybePlayCutscene, l_UserInterface, "enumeration MovieType, boolean Res
 	bool restart_music = false;
 	int score_index = 0;
 
-	if (!ade_get_args(L, "*obi", l_Enum.Get(&movie_type), &restart_music, &score_index))
+	if (!ade_get_args(L, "obi", l_Enum.Get(&movie_type), &restart_music, &score_index))
 		return ADE_RETURN_NIL;
 
-	// if an out-of-range enum is passed to this function, it will just be ignored
-	common_maybe_play_cutscene(movie_type.index, restart_music, score_index);
+	if (!movie_type.IsValid() || movie_type.index < LE_MOVIE_PRE_FICTION || movie_type.index > LE_MOVIE_END_CAMPAIGN)
+	{
+		Warning(LOCATION, "Invalid movie type index %d", movie_type.index);
+		return ADE_RETURN_NIL;
+	}
+
+	common_maybe_play_cutscene(movie_type.index - LE_MOVIE_PRE_FICTION, restart_music, score_index);
 	return ADE_RETURN_NIL;
 }
 
@@ -187,7 +269,7 @@ ADE_FUNC(checkPilotLanguage, l_UserInterface_PilotSelect, "string callsign",
 		return ADE_RETURN_FALSE;
 	}
 
-	return ade_set_args(L, "b", valid_pilot_lang(callsign));
+	return ade_set_args(L, "b", valid_pilot(callsign, true));
 }
 
 ADE_FUNC(selectPilot, l_UserInterface_PilotSelect, "string callsign, boolean is_multi",
@@ -328,7 +410,6 @@ ADE_FUNC(playVoiceClip,
 }
 
 //**********SUBLIBRARY: UserInterface/CampaignMenu
-// This needs a slightly different name since there is already a type called "Options"
 ADE_LIB_DERIV(l_UserInterface_Campaign,
 	"CampaignMenu",
 	nullptr,
@@ -406,6 +487,41 @@ ADE_FUNC(resetCampaign,
 	return ADE_RETURN_TRUE;
 }
 
+//**********SUBLIBRARY: UserInterface/Briefing
+ADE_LIB_DERIV(l_UserInterface_Brief,
+	"Briefing",
+	nullptr,
+	"API for accessing data related to the briefing UI.<br><b>Warning:</b> This is an internal "
+	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	l_UserInterface);
+
+ADE_FUNC(getBriefingMusicName,
+	l_UserInterface_Brief,
+	nullptr,
+	"Gets the file name of the music file to play for the briefing.",
+	"string",
+	"The file name or empty if no music")
+{
+	return ade_set_args(L, "s", common_music_get_filename(SCORE_BRIEFING).c_str());
+}
+
+ADE_FUNC(runBriefingStageHook,
+	l_UserInterface_Brief,
+	"number oldStage, number newStage",
+	"Run $On Briefing Stage: hooks.",
+	nullptr,
+	nullptr)
+{
+	int oldStage = -1, newStage = -1;
+	if (ade_get_args(L, "ii", &oldStage, &newStage) == 2) {
+		// Subtract 1 to convert from Lua conventions to C conventions
+		common_fire_stage_script_hook(oldStage - 1, newStage - 1);
+	} else {
+		LuaError(L, "Bad arguments given to ui.runBriefingStageHook!");
+	}
+	return ADE_RETURN_NIL;
+}
+
 //**********SUBLIBRARY: UserInterface/CommandBriefing
 // This needs a slightly different name since there is already a type called "Options"
 ADE_LIB_DERIV(l_UserInterface_CmdBrief,
@@ -415,47 +531,7 @@ ADE_LIB_DERIV(l_UserInterface_CmdBrief,
 	"API for the new UI system. This should not be used by other code and may be removed in the future!",
 	l_UserInterface);
 
-ADE_VIRTVAR(ColorTags,
-	l_UserInterface_CmdBrief,
-	nullptr,
-	"The available tagged colors",
-	"{ string => color ... }",
-	"A mapping from tag string to color value")
-{
-	using namespace luacpp;
-
-	LuaTable mapping = LuaTable::create(L);
-
-	for (const auto& tagged : Tagged_Colors) {
-		SCP_string tag;
-		tag.resize(1, tagged.first);
-
-		mapping.addValue(tag, l_Color.Set(*tagged.second));
-	}
-
-	return ade_set_args(L, "t", mapping);
-}
-
-ADE_VIRTVAR(DefaultTextColorTag,
-	l_UserInterface_CmdBrief,
-	nullptr,
-	"Gets the default color tag string for the command briefing. Index into ColorTags.",
-	"string",
-	"The default color tag")
-{
-	SCP_string tagStr;
-
-	auto defaultColor = default_command_briefing_color;
-
-	if (defaultColor == '\0' || !brief_verify_color_tag(defaultColor)) {
-		defaultColor = Color_Tags[0];
-	}
-	tagStr.resize(1, defaultColor);
-
-	return ade_set_args(L, "s", tagStr);
-}
-
-ADE_FUNC(getBriefing,
+ADE_FUNC(getCmdBriefing,
 	l_UserInterface_CmdBrief,
 	nullptr,
 	"Get the command briefing.",
@@ -466,9 +542,105 @@ ADE_FUNC(getBriefing,
 	return ade_set_args(L, "o", l_CmdBrief.Set(Cmd_briefs[0]));
 }
 
-ADE_FUNC(getBriefingMusicName, l_UserInterface_CmdBrief, nullptr, "Gets the file name of the music file to play for the briefing.", "string", "The file name or empty if no music")
+//**********SUBLIBRARY: UserInterface/LoopBrief
+ADE_LIB_DERIV(l_UserInterface_LoopBrief,
+	"LoopBrief",
+	nullptr,
+	"API for accessing data related to the loop brief UI.<br><b>Warning:</b> This is an internal "
+	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	l_UserInterface);
+
+ADE_FUNC(getLoopBrief,
+	l_UserInterface_LoopBrief,
+	nullptr,
+	"Get the loop brief.",
+	"loop_brief_stage",
+	"The loop brief data")
 {
-	return ade_set_args(L, "s", common_music_get_filename(SCORE_BRIEFING).c_str());
+	return ade_set_args(L, "o", l_LoopBriefStage.Set(Campaign.missions[Campaign.current_mission]));
+}
+
+ADE_FUNC(setLoopChoice, l_UserInterface_LoopBrief, "boolean", "Accepts mission outcome and then True to go to loop, False to skip", nullptr, nullptr)
+{
+	bool choice = false;
+	ade_get_args(L, "|b", &choice);
+
+	if (choice) {
+		// select the loop mission
+		Campaign.loop_enabled = 1;
+		Campaign.loop_reentry = Campaign.next_mission; // save reentry pt, so we can break out of loop
+		Campaign.next_mission = Campaign.loop_mission;
+
+		mission_campaign_mission_over();
+	} else {
+		mission_campaign_mission_over();
+	}
+
+	return ADE_RETURN_NIL;
+}
+
+//**********SUBLIBRARY: UserInterface/RedAlert
+ADE_LIB_DERIV(l_UserInterface_RedAlert,
+	"RedAlert",
+	nullptr,
+	"API for accessing data related to the Red Alert UI.<br><b>Warning:</b> This is an internal "
+	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	l_UserInterface);
+
+ ADE_FUNC(getRedAlert,
+	l_UserInterface_RedAlert,
+	nullptr,
+	"Get the red alert brief.",
+	"red_alert_stage",
+	"The red-alert data")
+{
+
+	 if (Briefings[0].num_stages) {
+		return ade_set_args(L, "o", l_RedAlertStage.Set(Briefings[0].stages[0]));
+	 } else {
+		 return ADE_RETURN_NIL;
+	 }
+	 
+}
+
+ADE_FUNC(replayPreviousMission,
+	l_UserInterface_RedAlert,
+	nullptr,
+	"Loads the previous mission of the campaign, does nothing if not in campaign",
+	"boolean",
+	"Returns true if the operation was successful, false otherwise")
+{
+	if (!mission_campaign_previous_mission()) {
+		return ADE_RETURN_FALSE;
+	} else {
+		return ADE_RETURN_TRUE;
+	}
+
+}
+
+//**********SUBLIBRARY: UserInterface/FictionViewer
+ADE_LIB_DERIV(l_UserInterface_FictionViewer,
+	"FictionViewer",
+	nullptr,
+	"API for accessing data related to the fiction viewer UI.<br><b>Warning:</b> This is an internal "
+	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	l_UserInterface);
+
+ADE_FUNC(getFiction, l_UserInterface_FictionViewer, nullptr, "Get the fiction.", "fiction_viewer_stage", "The fiction data")
+{
+	if (Fiction_viewer_active_stage >= 0) {
+		return ade_set_args(L, "o", l_FictionViewerStage.Set(Fiction_viewer_stages[Fiction_viewer_active_stage]));
+	} else {
+		return ADE_RETURN_NIL;
+	}
+}
+
+ADE_FUNC(getFictionMusicName, l_UserInterface_FictionViewer, nullptr,
+	"Gets the file name of the music file to play for the fiction viewer.",
+	"string",
+	"The file name or empty if no music")
+{
+	return ade_set_args(L, "s", common_music_get_filename(SCORE_FICTION_VIEWER).c_str());
 }
 
 } // namespace api

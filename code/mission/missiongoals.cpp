@@ -388,6 +388,7 @@ void mission_init_goals()
 		Mission_events[i].mission_log_flags = 0;
 		Mission_events[i].event_log_buffer.clear();
 		Mission_events[i].event_log_variable_buffer.clear();
+		Mission_events[i].event_log_container_buffer.clear();
 		Mission_events[i].event_log_argument_buffer.clear();
 		Mission_events[i].backup_log_buffer.clear();
 		Mission_events[i].previous_result = 0;
@@ -948,6 +949,7 @@ void mission_process_event( int event )
 			
 			Current_event_log_buffer = &Mission_events[event].event_log_buffer;
 			Current_event_log_variable_buffer = &Mission_events[event].event_log_variable_buffer;
+			Current_event_log_container_buffer = &Mission_events[event].event_log_container_buffer;
 			Current_event_log_argument_buffer = &Mission_events[event].event_log_argument_buffer;
 		}
 		result = eval_sexp(sindex);
@@ -1503,4 +1505,20 @@ void mission_goal_exit()
 {
 	snd_play( gamesnd_get_interface_sound(InterfaceSounds::USER_SELECT) );
 	gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
+}
+
+int mission_goal_find_sexp_tree(int root_node)
+{
+	for (int i = 0; i < Num_goals; ++i)
+		if (Mission_goals[i].formula == root_node)
+			return i;
+	return -1;
+}
+
+int mission_event_find_sexp_tree(int root_node)
+{
+	for (int i = 0; i < Num_mission_events; ++i)
+		if (Mission_events[i].formula == root_node)
+			return i;
+	return -1;
 }

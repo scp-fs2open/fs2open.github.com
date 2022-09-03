@@ -1,9 +1,12 @@
 
+#include "ai/ailua.h"
+
 #include "parse/sexp/sexp_lookup.h"
 
 #include "parse/parselo.h"
 #include "parse/sexp.h"
 #include "parse/sexp/LuaSEXP.h"
+#include "parse/sexp/LuaAISEXP.h"
 #include "scripting/scripting.h"
 
 #include <memory>
@@ -65,38 +68,71 @@ void parse_sexp_table(const char* filename) {
 		read_file_text(filename, CF_TYPE_TABLES);
 		reset_parse();
 
-		required_string("#Lua SEXPs");
-
 		// These characters may not appear in a SEXP name
-		const char* INVALID_CHARS = "()\"'\t ";
+		constexpr const char* INVALID_CHARS = "()\"'\t ";
+		if (optional_string("#Lua SEXPs")) {
 
-		while (optional_string("$Operator:")) {
-			SCP_string name;
-			stuff_string(name, F_NAME);
+			while (optional_string("$Operator:")) {
+				SCP_string name;
+				stuff_string(name, F_NAME);
 
-			if (std::strpbrk(name.c_str(), INVALID_CHARS) != nullptr) {
-				error_display(0, "Found invalid SEXP name '%s'!", name.c_str());
+				if (std::strpbrk(name.c_str(), INVALID_CHARS) != nullptr) {
+					error_display(0, "Found invalid SEXP name '%s'!", name.c_str());
 
-				// Skip the invalid entry
-				skip_to_start_of_string_either("$Operator:", "#End");
-				continue;
+					// Skip the invalid entry
+					skip_to_start_of_string_either("$Operator:", "#End");
+					continue;
+				}
+				if (get_operator_index(name.c_str()) >= 0) {
+					error_display(0, "The SEXP '%s' is already defined!", name.c_str());
+
+					// Skip the invalid entry
+					skip_to_start_of_string_either("$Operator:", "#End");
+					continue;
+				}
+
+				std::unique_ptr<DynamicSEXP> instance(new LuaSEXP(name));
+				auto luaSexp = static_cast<LuaSEXP*>(instance.get());
+				luaSexp->parseTable();
+
+				add_dynamic_sexp(std::move(instance));
 			}
-			if (get_operator_index(name.c_str()) >= 0) {
-				error_display(0, "The SEXP '%s' is already defined!", name.c_str());
-
-				// Skip the invalid entry
-				skip_to_start_of_string_either("$Operator:", "#End");
-				continue;
-			}
-
-			std::unique_ptr<DynamicSEXP> instance(new LuaSEXP(name));
-			auto luaSexp = static_cast<LuaSEXP*>(instance.get());
-			luaSexp->parseTable();
-
-			add_dynamic_sexp(std::move(instance));
+			required_string("#End");
 		}
 
-		required_string("#End");
+		if (optional_string("#Lua AI")) {
+			while (optional_string("$Operator:")) {
+				SCP_string name;
+				stuff_string(name, F_NAME);
+
+				if (std::strpbrk(name.c_str(), INVALID_CHARS) != nullptr) {
+					error_display(0, "Found invalid AI-SEXP name '%s'!", name.c_str());
+
+					// Skip the invalid entry
+					skip_to_start_of_string_either("$Operator:", "#End");
+					continue;
+				}
+				if (get_operator_index(name.c_str()) >= 0) {
+					error_display(0, "The AI-SEXP '%s' is already defined!", name.c_str());
+
+					// Skip the invalid entry
+					skip_to_start_of_string_either("$Operator:", "#End");
+					continue;
+				}
+
+				std::unique_ptr<DynamicSEXP> instance(new LuaAISEXP(name));
+				auto luaSexp = static_cast<LuaAISEXP*>(instance.get());
+				luaSexp->parseTable();
+
+				int op = add_dynamic_sexp(std::move(instance), SEXP_GOAL_OPERATOR);
+				if (op >= 0) {
+					luaSexp->registerAIMode(op);
+					luaSexp->maybeRegisterPlayerOrder(op);
+				}
+			}
+			required_string("#End");
+		}
+
 	} catch (const parse::ParseException& e) {
 		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
 		return;
@@ -123,14 +159,14 @@ void free_lua_sexps(lua_State* /*L*/)
 
 namespace sexp {
 
-void add_dynamic_sexp(std::unique_ptr<DynamicSEXP>&& sexp)
+int add_dynamic_sexp(std::unique_ptr<DynamicSEXP>&& sexp, int type)
 {
 	auto& global = globals();
 
 	if (!global.initialized) {
 		// Do nothing now and delay this until we know that we are properly initialized
 		global.pending_sexps.emplace_back(std::move(sexp));
-		return;
+		return -1;
 	}
 
 	sexp->initialize();
@@ -143,9 +179,20 @@ void add_dynamic_sexp(std::unique_ptr<DynamicSEXP>&& sexp)
 	new_op.min = sexp->getMinimumArguments();
 	new_op.max = sexp->getMaximumArguments();
 
+	int free_op_index = get_next_free_operator(sexp->getCategory());
+	if (free_op_index >= 256) {
+		Warning(LOCATION, "There are too many SEXPs in the %s category.  The SEXP %s will not be added.", get_category_name(sexp->getCategory()), sexp->getName().c_str());
+		return -1;
+	}
+
+	if (Operators.size() >= FIRST_OP) {
+		Warning(LOCATION, "There are too many total SEXPs.  The SEXP %s will not be added.", sexp->getName().c_str());
+		return -1;
+	}
+
 	// For now, all dynamic SEXPS are only valid in missions
-	new_op.value = get_next_free_operator(sexp->getCategory()) | sexp->getCategory() | OP_NONCAMPAIGN_FLAG;
-	new_op.type = SEXP_ACTION_OPERATOR;
+	new_op.value = free_op_index | sexp->getCategory() | OP_NONCAMPAIGN_FLAG;
+	new_op.type = type;
 
 	global.operator_const_mapping.insert(std::make_pair(new_op.value, std::move(sexp)));
 
@@ -156,6 +203,8 @@ void add_dynamic_sexp(std::unique_ptr<DynamicSEXP>&& sexp)
 	new_help.id = new_op.value;
 	new_help.help = help_text;
 	Sexp_help.push_back(new_help);
+
+	return new_op.value;
 }
 DynamicSEXP* get_dynamic_sexp(int operator_const)
 {

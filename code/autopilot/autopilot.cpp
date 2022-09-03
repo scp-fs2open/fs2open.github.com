@@ -923,10 +923,7 @@ void EndAutoPilot()
 					if ( ((aigp->target_name != NULL) && !stricmp(aigp->target_name, goal_name))
 							&& (aigp->ai_mode == goal) )
 					{
-						aigp->ai_mode = AI_GOAL_NONE;
-						aigp->signature = -1;
-						aigp->priority = -1;
-						aigp->flags.reset();
+						ai_goal_reset(aigp);
 					}
 				}
 			}
@@ -947,10 +944,7 @@ void EndAutoPilot()
 					if ( ((aigp->target_name != NULL) && !stricmp(aigp->target_name, goal_name))
 							&& (aigp->ai_mode == goal) )
 					{
-						aigp->ai_mode = AI_GOAL_NONE;
-						aigp->signature = -1;
-						aigp->priority = -1;
-						aigp->flags.reset();
+						ai_goal_reset(aigp);
 					}
 				}
 			}
@@ -1580,4 +1574,19 @@ bool IsVisited(int nav)
 	if (Navs[nav].flags & NP_VISITED)
 		return 1;
 	return 0;
+}
+
+//+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+void Nav_SetColor(const char *nav, bool visited, ubyte r, ubyte g, ubyte b)
+{
+	int n = FindNav(nav);
+
+	if (n >= 0 && n < MAX_NAVPOINTS)
+	{
+		auto rgb = visited ? Navs[n].visited_color : Navs[n].normal_color;
+		rgb[0] = r;
+		rgb[1] = g;
+		rgb[2] = b;
+	}
 }

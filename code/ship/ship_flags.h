@@ -26,6 +26,7 @@ namespace Ship {
 		Vanished,					// allows subsystem to be made to disappear without a trace (for swapping it for a true model for example.
 		Missiles_ignore_if_dead,	// forces homing missiles to target hull if subsystem is dead before missile hits it.
 		Rotates,
+		Translates,
 		Damage_as_hull,				// Applies armor damage instead of subsystem damge. - FUBAR
 		No_aggregate,				// exclude this subsystem from the aggregate subsystem-info tracking - Goober5000
 		Play_sound_for_player,		// If this subsystem is a turret on a player ship, play firing sounds - The E 
@@ -110,7 +111,7 @@ namespace Ship {
 		Scramble_messages,			// Goober5000 - all messages sent from this ship appear scrambled
         No_secondary_lockon,        // zookeeper - secondary lock-on disabled
         No_disabled_self_destruct,  // Goober5000 - ship will not self-destruct after 90 seconds if engines or weapons destroyed (c.f. ai_maybe_self_destruct)
-		Rotators_locked,			// The_E -- Rotating subobjects are locked in place
+		Subsystem_movement_locked,	// The_E -- Rotating subsystems are locked in place.
 		Draw_as_wireframe,			// The_E -- Ship will be rendered in wireframe mode
 		Render_without_diffuse,		// The_E -- Ship will be rendered without diffuse map (needed for the lab)
 		Render_without_glowmap,
@@ -123,8 +124,17 @@ namespace Ship {
 		Render_full_detail, 
 		Render_without_light,
 		Render_without_weapons,		// The_E -- Skip weapon model rendering
+		Render_with_alpha_mult,
 		Has_display_name,			// Goober5000
 		Attempting_to_afterburn,    // set and unset by afterburner_start and stop, used by afterburner_min_fuel_to_consume
+		Hide_mission_log,			// Goober5000 - mission log events generated for this ship will not be viewable
+		No_passive_lightning,		// Asteroth - disables ship passive lightning
+		Same_arrival_warp_when_docked,		// Goober5000
+		Same_departure_warp_when_docked,	// Goober5000
+		Fail_sound_locked_primary,		// Kiloku -- Play the firing fail sound when the weapon is locked.
+		Fail_sound_locked_secondary,		// Kiloku -- Play the firing fail sound when the weapon is locked.
+		Subsystem_cache_valid,		// Goober5000 - whether the subsystem list index caches can be used
+		Aspect_immune,						// Kiloku -- Ship cannot be targeted by Aspect Seekers.
 
 		NUM_VALUES
 
@@ -174,8 +184,8 @@ namespace Ship {
 		Awacs,							// ditto
 		Knossos_device,					// this is the knossos device
 		No_fred,						// not available in fred
-		Default_in_tech_database,		// default in tech database - Goober5000
-		Default_in_tech_database_m,		// ditto - Goober5000
+		Default_in_tech_database,		// this entry's default tech database status, as specified in ships.tbl; used when the tech db is "reset to default" - Goober5000
+		Default_in_tech_database_m,		// ditto for multiplayer - Goober5000
 		Flash,							// makes a flash when it explodes
 		Show_ship_model,				// Show ship model even in first person view
 		Surface_shields,				// _argv[-1], 16 Jan 2005: Enable surface shields for this ship.
@@ -258,9 +268,10 @@ namespace Ship {
 
 
     // Not all wing flags are parseable or saveable in mission files. Right now, the only ones which can be set by mission designers are:
-    // ignore_count, reinforcement, no_arrival_music, no_arrival_message, no_arrival_warp, no_departure_warp, no_dynamic and nav_carry_status
+    // ignore_count, reinforcement, no_arrival_music, no_arrival_message, no_arrival_warp, no_departure_warp,
+	// same_arrival_warp_when_docked, same_departure_warp_when_docked, no_dynamic, and nav_carry_status
     // Should that change, bump this variable and make sure to make the necessary changes to parse_wing (in missionparse)
-#define PARSEABLE_WING_FLAGS 8
+#define PARSEABLE_WING_FLAGS 9
 	
     FLAG_LIST(Wing_Flags) {
 		Gone,					// all ships were either destroyed or departed
@@ -277,6 +288,8 @@ namespace Ship {
 		Departure_ordered,		// departure of this wing was ordered by player
 		Never_existed,			// this wing never existed because something prevented it from being created (like its mother ship being destroyed)
 		Nav_carry,				// Kazan - Wing has nav-carry-status
+		Same_arrival_warp_when_docked,		// Goober5000
+		Same_departure_warp_when_docked,	// Goober5000
 
 		NUM_VALUES
 	};

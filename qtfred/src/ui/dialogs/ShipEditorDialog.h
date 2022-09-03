@@ -4,6 +4,13 @@
 #include <QtWidgets/QDialog>
 #include <mission/dialogs/ShipEditorDialogModel.h>
 #include <ui/FredView.h>
+#include "ShipGoalsDialog.h"
+#include "ShipInitialStatusDialog.h"
+#include "ShipFlagsDialog.h"
+#include "PlayerOrdersDialog.h"
+#include "ShipSpecialStatsDialog.h"
+#include "ShipTextureReplacementDialog.h"
+#include "ShipTBLViewer.h"
 
 #include <QAbstractButton>
 #include <QtWidgets/QDialog>
@@ -17,6 +24,8 @@ namespace Ui {
 class ShipEditorDialog;
 }
 
+class ShipTBLViewer;
+
 class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 
 	Q_OBJECT
@@ -24,6 +33,9 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
   public:
 	explicit ShipEditorDialog(FredView* parent, EditorViewport* viewport);
 	~ShipEditorDialog() override;
+
+	int getShipClass();
+	bool getIfMultipleShips();
 
   protected:
 	void closeEvent(QCloseEvent*) override;
@@ -42,8 +54,7 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	void on_resetButton_clicked();
 	void on_weaponsButton_clicked();
 	void on_playerOrdersButton_clicked();
-	void on_specialExpButton_clicked();
-	void on_specialHitsButton_clicked();
+	void on_specialStatsButton_clicked();
 	void on_hideCuesButton_clicked();
 	void on_restrictArrivalPathsButton_clicked();
 	void on_customWarpinButton_clicked();
@@ -63,12 +74,14 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	void enableDisable();
 
 	//column one
-	void shipNameChanged(const QString&);
+	void shipNameChanged();
 	void shipClassChanged(int);
 	void aiClassChanged(int);
 	void teamChanged(int);
 	void cargoChanged();
+	void altNameChanged();
 	void altNameChanged(const QString&);
+	void callsignChanged();
 	void callsignChanged(const QString&);
 
 	//column two
@@ -93,6 +106,7 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	void departureWarpChanged(bool);
 	void DepartureCueChanged(bool);
 
+	ShipTBLViewer* TBLViewer = nullptr;
 };
 } // namespace dialogs
 } // namespace fred

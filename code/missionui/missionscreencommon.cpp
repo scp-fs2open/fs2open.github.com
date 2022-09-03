@@ -63,8 +63,8 @@ int Mouse_down_last_frame = 0;
 // Timers used to flash buttons after timeouts
 #define MSC_FLASH_AFTER_TIME	60000		//	time before flashing a button
 #define MSC_FLASH_INTERVAL		200		// time between flashes
-int Flash_timer;								//	timestamp used to start flashing
-int Flash_toggle;								// timestamp used to toggle flashing
+UI_TIMESTAMP Flash_timer;						// timestamp used to start flashing
+UI_TIMESTAMP Flash_toggle;						// timestamp used to toggle flashing
 int Flash_bright;								// state of button to flash
 
 //////////////////////////////////////////////////////////////////
@@ -322,7 +322,7 @@ SCP_string common_music_get_filename(int score_index)
 	Assertion(score_index >= 0 && score_index < NUM_SCORES, "Invalid score index %d.", score_index);
 
 	if (Mission_music[score_index] < 0) {
-		if (Num_music_files > 0) {
+		if (!Spooled_music.empty()) {
 			Mission_music[score_index] = 0;
 			nprintf(("Sound",
 				"No briefing music is selected, so play first briefing track: %s\n",
@@ -345,7 +345,7 @@ void common_music_init(int score_index)
 
 	briefing_load_music(file_name.c_str());
 	// Use this id to trigger the start of music playing on the briefing screen
-	Briefing_music_begin_timestamp = timestamp(BRIEFING_MUSIC_DELAY);
+	Briefing_music_begin_timestamp = ui_timestamp(BRIEFING_MUSIC_DELAY);
 }
 
 void common_music_do()
@@ -355,8 +355,8 @@ void common_music_do()
 	}
 
 	// Use this id to trigger the start of music playing on the briefing screen
-	if ( timestamp_elapsed( Briefing_music_begin_timestamp) ) {
-		Briefing_music_begin_timestamp = 0;
+	if ( ui_timestamp_elapsed(Briefing_music_begin_timestamp) ) {
+		Briefing_music_begin_timestamp = UI_TIMESTAMP::invalid();
 		briefing_start_music();
 	}
 }
@@ -367,7 +367,7 @@ void common_music_close()
 		return;
 	}
 
-	if ( Num_music_files <= 0 )
+	if ( Spooled_music.empty() )
 		return;
 
 	briefing_stop_music(true);
@@ -457,17 +457,17 @@ void common_free_interface_palette()
 // Init timers used for flashing buttons
 void common_flash_button_init()
 {
-	Flash_timer = timestamp(MSC_FLASH_AFTER_TIME);
-	Flash_toggle = 1;
+	Flash_timer = ui_timestamp(MSC_FLASH_AFTER_TIME);
+	Flash_toggle = UI_TIMESTAMP::immediate();
 	Flash_bright = 0;
 }
 
 // determine if we should draw a button as bright
 int common_flash_bright()
 {
-	if ( timestamp_elapsed(Flash_timer) ) {
-		if ( timestamp_elapsed(Flash_toggle) ) {
-			Flash_toggle = timestamp(MSC_FLASH_INTERVAL);
+	if ( ui_timestamp_elapsed(Flash_timer) ) {
+		if ( ui_timestamp_elapsed(Flash_toggle) ) {
+			Flash_toggle = ui_timestamp(MSC_FLASH_INTERVAL);
 			Flash_bright ^= 1;
 		}
 	}
@@ -1050,6 +1050,9 @@ int common_scroll_down_pressed(int *start, int size, int max_show)
 
 void common_fire_stage_script_hook(int old_stage, int new_stage)
 {
+	if (!Script_system.IsActiveAction(CHA_ONBRIEFSTAGE)) {
+		return;
+	}
 	// call a scripting hook for switching stages
 	// note that we add 1 because Lua arrays are 1-based
 	Script_system.SetHookVar("OldStage", 'i', old_stage + 1);
@@ -1568,7 +1571,7 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 		bsp_info *bs = NULL;	//tehe
 		for(int i = 0; i < pm->n_models; i++)
 		{
-			if(!pm->submodel[i].is_thruster)
+			if(!pm->submodel[i].flags[Model::Submodel_flags::Is_thruster])
 			{
 				bs = &pm->submodel[i];
 				break;
@@ -1649,6 +1652,8 @@ void draw_model_rotating(model_render_params *render_info, int model_id, int x1,
 	float time = (timer_get_milliseconds()-anim_timer_start)/1000.0f;
 	angles rot_angles, view_angles;
 	matrix model_orient;
+
+	const bool& shadow_disable_override = flags & MR_IS_MISSILE ? Shadow_disable_overrides.disable_mission_select_weapons : Shadow_disable_overrides.disable_mission_select_ships;
 
 	if (effect == 2) {  // FS2 Effect; Phase 0 Expand scanline, Phase 1 scan the grid and wireframe, Phase 2 scan up and reveal the ship, Phase 3 tilt the camera, Phase 4 start rotating the ship
 		// rotate the ship as much as required for this frame
@@ -1780,7 +1785,8 @@ void draw_model_rotating(model_render_params *render_info, int model_id, int x1,
 			render_info->set_detail_level_lock(0);
 
 			gr_zbuffer_set(true);
-			if(Shadow_quality != ShadowQuality::Disabled)
+
+			if(shadow_maybe_start_frame(shadow_disable_override))
             {
 				gr_end_view_matrix();
 				gr_end_proj_matrix();
@@ -1894,7 +1900,7 @@ void draw_model_rotating(model_render_params *render_info, int model_id, int x1,
 
 		render_info->set_detail_level_lock(0);
 
-		if(Shadow_quality != ShadowQuality::Disabled)
+		if(shadow_maybe_start_frame(shadow_disable_override))
 		{
 			if ( flags & MR_IS_MISSILE )  {
 				shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, gr_screen.clip_aspect, -closeup_pos->xyz.z + pm->rad, -closeup_pos->xyz.z + pm->rad + 20.0f, -closeup_pos->xyz.z + pm->rad + 200.0f, -closeup_pos->xyz.z + pm->rad + 1000.0f);
@@ -1934,6 +1940,8 @@ void draw_model_rotating(model_render_params *render_info, int model_id, int x1,
 		g3_end_frame();
 		gr_reset_clip();
 	}
+
+	shadow_end_frame();
 }
 
 // NEWSTUFF END

@@ -4,6 +4,7 @@
 
 #include "ship/ship.h"
 #include "ui/widgets/sexp_tree.h"
+#include "mission/util.h"
 
 namespace fso {
 namespace fred {
@@ -17,9 +18,8 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	void modify(T& a, const T& b);
 
 	bool _modified = false;
-
-	bool _m_no_departure_warp;
-	bool _m_no_arrival_warp;
+	int _m_no_departure_warp;
+	int _m_no_arrival_warp;
 	bool _m_player_ship;
 	int _m_departure_tree_formula;
 	int _m_arrival_tree_formula;
@@ -58,12 +58,12 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 
 	static int make_ship_list(int* arr);
 
+
   public:
 	ShipEditorDialogModel(QObject* parent, EditorViewport* viewport);
 
 	bool apply() override;
 	void reject() override;
-	void onSelectedObjectMarkingChanged(int, bool);
 
 	void setShipName(const SCP_string& m_ship_name);
 	SCP_string getShipName();
@@ -121,8 +121,8 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	void setArrivalFormula(int, int);
 	int getArrivalFormula();
 
-	void setNoArrivalWarp(bool);
-	bool getNoArrivalWarp();
+	void setNoArrivalWarp(int);
+	int getNoArrivalWarp();
 
 	void setDepartureLocation(int);
 	int getDepartureLocation();
@@ -138,8 +138,8 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 
 	void setDepartureFormula(int, int);
 	int getDepartureFormula();
-	void setNoDepartureWarp(bool);
-	bool getNoDepartureWarp();
+	void setNoDepartureWarp(int);
+	int getNoDepartureWarp();
 
 	void OnPrevious();
 	void OnNext();
@@ -147,23 +147,29 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	void OnShipReset();
 
 	static bool wing_is_player_wing(int);
-	static int get_ship_from_obj(object*);
-	static void stuff_special_arrival_anchor_name(char* buf, int iff_index, int restrict_to_players, int retail_format);
 
-	bool enable;
-	bool p_enable;
-	int select_sexp_node;
+	bool enable = true;
+	//bool p_enable;
+	//int type;
+	//int base_player;
+	//int select_sexp_node;
 	int player_count;
 	int ship_count;
-	int multi_edit;
-	int base_ship;
+	//int escort_count;
+	bool multi_edit;
+	//int base_ship;
 	int cue_init;
 	int total_count;
 	int pvalid_count;
 	int pship_count; // a total count of the player ships not marked
-	int player_ship, single_ship;
-	int ship_orders;
+	int single_ship;
+	int player_ship;
+	std::set<size_t> ship_orders;
 	static int tristate_set(int val, int cur_state);
+
+	bool texenable = true;
+
+	//int pship, current_orders;
 };
 
 template <typename T>
@@ -172,6 +178,7 @@ inline void ShipEditorDialogModel::modify(T& a, const T& b)
 	if (a != b) {
 		a = b;
 		set_modified();
+		update_data();
 		modelChanged();
 	}
 }

@@ -139,7 +139,7 @@ void afterburners_start(object *objp)
 	percent_left = shipp->afterburner_fuel / sip->afterburner_fuel_capacity;
 
 	//Do anim
-	model_anim_start_type(shipp, AnimationTriggerType::Afterburner, ANIMATION_SUBTYPE_ALL, 1);
+	Ship_info[shipp->ship_info_index].animations.getAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::Afterburner).start(animation::ModelAnimationDirection::FWD);
 
 	if ( objp == Player_obj ) {
 		Player_afterburner_start_time = timer_get_milliseconds();
@@ -159,9 +159,11 @@ void afterburners_start(object *objp)
 		snd_play_3d( gamesnd_get_game_sound(ship_get_sound(objp, GameSounds::ABURN_ENGAGE)), &objp->pos, &View_position, objp->radius );
 	}
 
-	Script_system.SetHookObjects(1, "Ship", objp);
-	Script_system.RunCondition(CHA_AFTERBURNSTART, objp);
-	Script_system.RemHookVars({"Ship"});
+	if (Script_system.IsActiveAction(CHA_AFTERBURNSTART)) {
+		Script_system.SetHookObjects(1, "Ship", objp);
+		Script_system.RunCondition(CHA_AFTERBURNSTART, objp);
+		Script_system.RemHookVars({"Ship"});
+	}
 	
 	objp->phys_info.flags |= PF_AFTERBURNER_WAIT;
 }
@@ -328,14 +330,16 @@ void afterburners_stop(object *objp, int key_released)
 
 	shipp->afterburner_last_end_time = timer_get_milliseconds();
 
-	Script_system.SetHookObjects(1, "Ship", objp);
-	Script_system.RunCondition(CHA_AFTERBURNEND, objp);
-	Script_system.RemHookVars({"Ship"});
+	if (Script_system.IsActiveAction(CHA_AFTERBURNEND)) {
+		Script_system.SetHookObjects(1, "Ship", objp);
+		Script_system.RunCondition(CHA_AFTERBURNEND, objp);
+		Script_system.RemHookVars({"Ship"});
+	}
 
 	objp->phys_info.flags &= ~PF_AFTERBURNER_ON;
 
 	//Do anim
-	model_anim_start_type(shipp, AnimationTriggerType::Afterburner, ANIMATION_SUBTYPE_ALL, -1);
+	Ship_info[shipp->ship_info_index].animations.getAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::Afterburner).start(animation::ModelAnimationDirection::RWD);
 
 	if ( objp == Player_obj ) {
 

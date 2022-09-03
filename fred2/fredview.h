@@ -15,7 +15,6 @@
 
 #define WM_MENU_POPUP_SHIPS	(WM_USER+6)
 #define WM_MENU_POPUP_EDIT		(WM_USER+7)
-#define SEXP_HELP_BOX_SIZE 170
 
 typedef struct Marking_box {
 	int x1, y1, x2, y2;
@@ -161,6 +160,10 @@ protected:
 	afx_msg void OnUpdateSpeed50(CCmdUI* pCmdUI);
 	afx_msg void OnSpeed100();
 	afx_msg void OnUpdateSpeed100(CCmdUI* pCmdUI);
+	afx_msg void OnSpeed500();
+	afx_msg void OnUpdateSpeed500(CCmdUI* pCmdUI);
+	afx_msg void OnSpeed1000();
+	afx_msg void OnUpdateSpeed1000(CCmdUI* pCmdUI);
 	afx_msg void OnSelect();
 	afx_msg void OnUpdateSelect(CCmdUI* pCmdUI);
 	afx_msg void OnSelectAndMove();
@@ -215,6 +218,8 @@ protected:
 	afx_msg void OnEditorsWaypoint();
 	afx_msg void OnViewOutlines();
 	afx_msg void OnUpdateViewOutlines(CCmdUI* pCmdUI);
+	afx_msg void OnViewOutlinesOnSelected();
+	afx_msg void OnUpdateViewOutlinesOnSelected(CCmdUI* pCmdUI);
 	afx_msg void OnUpdateNewShipType(CCmdUI* pCmdUI);
 	afx_msg void OnShowStarfield();
 	afx_msg void OnUpdateShowStarfield(CCmdUI* pCmdUI);
@@ -263,6 +268,7 @@ protected:
 	afx_msg void OnLookatObj();
 	afx_msg void OnUpdateLookatObj(CCmdUI* pCmdUI);
 	afx_msg void OnEditorsAdjustGrid();
+	afx_msg void OnCalcRelativeCoords();
 	afx_msg void OnEditorsShieldSys();
 	afx_msg void OnLevelObj();
 	afx_msg void OnAlignObj();
@@ -298,6 +304,10 @@ protected:
 	afx_msg void OnUpdateFormatFs1Retail(CCmdUI* pCmdUI);
 	afx_msg void OnMoveShipsWhenUndocking();
 	afx_msg void OnUpdateMoveShipsWhenUndocking(CCmdUI* pCmdUI);
+	afx_msg void OnPointUsingUvec();
+	afx_msg void OnUpdatePointUsingUvec(CCmdUI* pCmdUI);
+	afx_msg void OnHighlightSubsys();
+	afx_msg void OnUpdateHighlightSubsys(CCmdUI* pCmdUI);
 	afx_msg void OnEditorsSetGlobalShipFlags();
 	afx_msg void OnEditorsVoiceManager();
 	afx_msg void OnEditorsFiction();
@@ -359,6 +369,8 @@ extern int Id_select_type_start;
 extern int Id_select_type_waypoint;
 extern int Hide_ship_cues, Hide_wing_cues;
 extern int Move_ships_when_undocking;
+extern int Highlight_selectable_subsys;
+extern int Point_using_uvec;
 
 extern Marking_box marking_box;
 extern object_orient_pos	rotation_backup[MAX_OBJECTS];

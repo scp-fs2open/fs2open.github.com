@@ -1,10 +1,10 @@
 #pragma once
 
-#include "actions/expression/ParseContext.h"
-#include "actions/expression/Value.h"
-
 #include <Parser.h>
 #include <Token.h>
+
+#include "actions/expression/ParseContext.h"
+#include "actions/expression/Value.h"
 
 namespace actions {
 namespace expression {

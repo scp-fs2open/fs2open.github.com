@@ -432,7 +432,7 @@ bool gr_is_smaa_mode(AntiAliasMode mode) {
 bool Gr_post_processing_enabled = true;
 
 static auto PostProcessOption =
-    options::OptionBuilder<bool>("Graphis.PostProcessing", "Post processing",
+    options::OptionBuilder<bool>("Graphics.PostProcessing", "Post processing",
                                  "Controls whether post processing is enabled in the engine")
         .category("Graphics")
         .level(options::ExpertLevel::Advanced)
@@ -443,7 +443,7 @@ static auto PostProcessOption =
 
 bool Gr_enable_vsync = true;
 
-static auto VSyncOption = options::OptionBuilder<bool>("Graphis.VSync", "Vertical Sync",
+static auto VSyncOption = options::OptionBuilder<bool>("Graphics.VSync", "Vertical Sync",
                                                        "Controls how the engine does vertical synchronization")
                               .category("Graphics")
                               .level(options::ExpertLevel::Advanced)
@@ -1435,7 +1435,7 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 		auto res = ResolutionOption->getValue();
 		width = res.width;
 		height = res.height;
-	} else {
+	} else if ( !Is_standalone ) {
 		// We cannot continue without this, quit, but try to help the user out first
 		ptr = os_config_read_string(nullptr, NOX("VideocardFs2open"), nullptr);
 
@@ -1540,6 +1540,15 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 		depth = d_depth;
 	}
 
+	// if we are in standalone mode then just use special defaults
+	if (Is_standalone) {
+		mode = GR_STUB;
+		width = 640;
+		height = 480;
+		depth = 16;
+		center_aspect_ratio = -1.0f;
+	}
+
 	if (gr_get_resolution_class(width, height) != GR_640) {
 		// check for hi-res interface files so that we can verify our width/height is correct
 		// if we don't have it then fall back to 640x480 mode instead
@@ -1554,15 +1563,6 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 				center_aspect_ratio = -1.0f;
 			}
 		}
-	}
-
-	// if we are in standalone mode then just use special defaults
-	if (Is_standalone) {
-		mode = GR_STUB;
-		width = 640;
-		height = 480;
-		depth = 16;
-		center_aspect_ratio = -1.0f;
 	}
 
 // These compiler macros will force windowed mode at the specified resolution if
@@ -1605,8 +1605,6 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 		return false;
 	}
 
-	gr_light_init();
-
 	gr_set_palette_internal(Gr_current_palette_name, NULL, 0);
 
 	bm_init();
@@ -1617,6 +1615,8 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 
 	mprintf(("Initializing path renderer...\n"));
 	graphics::paths::PathRenderer::init();
+
+	gr_light_init();
 
 	// Initialize uniform buffer managers
 	uniform_buffer_managers_init();
@@ -2532,6 +2532,10 @@ void gr_set_bitmap(int bitmap_num, int alphablend_mode, int bitblt_mode, float a
 
 static void output_uniform_debug_data()
 {
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	int line_height = gr_get_font_height() + 1;
 
 	gr_set_color_fast(&Color_bright_white);
@@ -2553,9 +2557,9 @@ void gr_flip(bool execute_scripting)
 		TRACE_SCOPE(tracing::LuaOnFrame);
 
 		// WMC - Do conditional hooks. Yippee!
-		OnFrameHook->run();
-		// WMC - Do scripting reset stuff
-		Script_system.EndFrame();
+		if (OnFrameHook->isActive()) {
+			OnFrameHook->run();
+		}
 	}
 
 	gr_reset_immediate_buffer();
@@ -2588,9 +2592,33 @@ void gr_print_timestamp(int x, int y, fix timestamp, int resize_mode)
 
 	gr_string(x, y, time.c_str(), resize_mode);
 }
-static void uniform_buffer_managers_init() { UniformBufferManager.reset(new graphics::util::UniformBufferManager()); }
-static void uniform_buffer_managers_deinit() { UniformBufferManager.reset(); }
-static void uniform_buffer_managers_retire_buffers() { UniformBufferManager->onFrameEnd(); }
+
+static void uniform_buffer_managers_init()
+{
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
+	UniformBufferManager.reset(new graphics::util::UniformBufferManager());
+}
+
+static void uniform_buffer_managers_deinit()
+{
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
+	UniformBufferManager.reset();
+}
+
+static void uniform_buffer_managers_retire_buffers()
+{
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
+	UniformBufferManager->onFrameEnd();
+}
 
 graphics::util::UniformBuffer gr_get_uniform_buffer(uniform_block_type type, size_t num_elements, size_t element_size_override)
 {
@@ -2725,6 +2753,10 @@ size_t vertex_layout::hash() const {
 static std::unique_ptr<graphics::util::GPUMemoryHeap> gpu_heaps [static_cast<size_t>(GpuHeap::NUM_VALUES)];
 
 static void gpu_heap_init() {
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	for (size_t i = 0; i < static_cast<size_t>(GpuHeap::NUM_VALUES); ++i) {
 		auto enumVal = static_cast<GpuHeap>(i);
 
@@ -2820,6 +2852,10 @@ static void make_gamma_ramp(float gamma, ushort* ramp)
 
 void gr_set_gamma(float gamma)
 {
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	Gr_gamma = gamma;
 
 	// new way - but not while running FRED

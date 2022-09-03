@@ -21,8 +21,9 @@
 #define SOUND_LIB_DIRECTSOUND		0
 #define SOUND_LIB_RSX				1
 
-#define GAME_SND_USE_DS3D			(1<<1)
-#define GAME_SND_VOICE				(1<<2)
+#define GAME_SND_USE_DS3D			(1<<0)
+#define GAME_SND_VOICE				(1<<1)
+#define GAME_SND_NOT_VALID			(1<<2)
 
 // Priorities that can be passed to snd_play() functions to limit how many concurrent sounds of a 
 // given type are played.
@@ -51,8 +52,6 @@ struct EnhancedSoundData
 	EnhancedSoundData();
 	EnhancedSoundData(const int new_priority, const unsigned int new_limit);
 };
-
-extern const unsigned int SND_ENHANCED_MAX_LIMIT;
 
 //For the adjust-audio-volume sexp
 #define AAV_MUSIC		0
@@ -126,7 +125,7 @@ void snd_set_effects_volume(float volume);
 void snd_set_voice_volume(float volume);
 
 //int	snd_load( char *filename, int hardware=0, int three_d=0, int *sig=NULL );
-sound_load_id snd_load(game_snd_entry* entry, int flags, int allow_hardware_load = 0);
+sound_load_id snd_load(game_snd_entry* entry, int* flags, int allow_hardware_load = 0);
 
 int snd_unload(sound_load_id sndnum);
 void	snd_unload_all();

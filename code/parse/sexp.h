@@ -16,6 +16,10 @@
 class ship_subsys;
 class ship;
 class waypoint_list;
+class object;
+class waypoint;
+class p_object;
+struct ship_obj;
 
 // bumped to 30 by Goober5000
 #define	OPERATOR_LENGTH	30  // if this ever exceeds TOKEN_LENGTH, let JasonH know!
@@ -79,7 +83,7 @@ class waypoint_list;
 #define OPF_NAV_POINT			52		// Kazan	  - a Nav Point name
 #define OPF_SSM_CLASS			53		// Goober5000 - an SSM class
 #define OPF_FLEXIBLE_ARGUMENT	54		// Goober5000 - special to match for when-argument
-#define OPF_ANYTHING			55		// Goober5000 - anything goes
+#define OPF_ANYTHING			55		// Goober5000 - anything goes, except containers
 #define OPF_SKYBOX_MODEL_NAME	56		// taylor - changing skybox model
 #define OPF_SHIP_OR_NONE		57		// Goober5000 - an "optional" ship argument
 #define OPF_BACKGROUND_BITMAP	58		// phreak - name of a background bitmap
@@ -116,6 +120,14 @@ class waypoint_list;
 #define OPF_FIREBALL			89		// Goober5000 - an entry in fireball.tbl
 #define OPF_SPECIES				90		// Goober5000
 #define OPF_LANGUAGE			91		// Goober5000
+#define OPF_FUNCTIONAL_WHEN_EVAL_TYPE	92	// Goober5000
+#define OPF_CONTAINER_NAME		93		// Karajorma/jg18 - The name of a SEXP container
+#define OPF_LIST_CONTAINER_NAME	94		// Karajorma/jg18 - The name of a SEXP list container
+#define OPF_MAP_CONTAINER_NAME	95		// Karajorma/jg18 - The name of a SEXP map container
+#define OPF_ANIMATION_NAME 		96		// Lafiel
+#define OPF_CONTAINER_VALUE		97		// jg18 - Container data and map container keys
+#define OPF_DATA_OR_STR_CONTAINER	98	// jg18 - any data, or a container that is accessed via strings
+#define OPF_TRANSLATING_SUBSYSTEM	99	// Goober5000 - a translating subsystem
 
 // Operand return types
 #define	OPR_NUMBER				1	// returns number
@@ -201,7 +213,8 @@ class waypoint_list;
 #define CHANGE_SUBCATEGORY_JUMP_NODES						(0x0010 | OP_CATEGORY_CHANGE)
 #define CHANGE_SUBCATEGORY_SPECIAL_EFFECTS					(0x0011 | OP_CATEGORY_CHANGE)
 #define CHANGE_SUBCATEGORY_VARIABLES						(0x0012 | OP_CATEGORY_CHANGE)
-#define CHANGE_SUBCATEGORY_OTHER							(0x0013 | OP_CATEGORY_CHANGE)
+#define CHANGE_SUBCATEGORY_CONTAINERS						(0x0013 | OP_CATEGORY_CHANGE)
+#define CHANGE_SUBCATEGORY_OTHER							(0x0014 | OP_CATEGORY_CHANGE)
 
 
 #define STATUS_SUBCATEGORY_MISSION							(0x0000 | OP_CATEGORY_STATUS)
@@ -213,7 +226,8 @@ class waypoint_list;
 #define STATUS_SUBCATEGORY_DAMAGE							(0x0006 | OP_CATEGORY_STATUS)
 #define STATUS_SUBCATEGORY_DISTANCE_AND_COORDINATES			(0x0007 | OP_CATEGORY_STATUS)
 #define STATUS_SUBCATEGORY_VARIABLES						(0x0008 | OP_CATEGORY_STATUS)
-#define STATUS_SUBCATEGORY_OTHER							(0x0009 | OP_CATEGORY_STATUS)
+#define STATUS_SUBCATEGORY_CONTAINERS						(0x0009 | OP_CATEGORY_STATUS)
+#define STATUS_SUBCATEGORY_OTHER							(0x000a | OP_CATEGORY_STATUS)
 
 
 #define	OP_PLUS								(0x0000 | OP_CATEGORY_ARITHMETIC)
@@ -259,7 +273,8 @@ class waypoint_list;
 #define OP_LESS_OR_EQUAL					(0x000f | OP_CATEGORY_LOGICAL)	// Goober5000
 
 #define OP_XOR								(0x0010 | OP_CATEGORY_LOGICAL)	// Goober5000
-#define OP_PERFORM_ACTIONS					(0x0011 | OP_CATEGORY_LOGICAL | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_PERFORM_ACTIONS_BOOL_FIRST		(0x0011 | OP_CATEGORY_LOGICAL | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_PERFORM_ACTIONS_BOOL_LAST		(0x0012 | OP_CATEGORY_LOGICAL | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
 
 #define	OP_GOAL_INCOMPLETE					(0x0000 | OP_CATEGORY_GOAL_EVENT | OP_NONCAMPAIGN_FLAG)
@@ -400,6 +415,13 @@ class waypoint_list;
 #define OP_DISTANCE_BBOX					(0x0055 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Goober5000
 #define OP_DISTANCE_BBOX_SUBSYSTEM			(0x0056 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Goober5000
 #define OP_IS_LANGUAGE						(0x0057 | OP_CATEGORY_STATUS)						// Goober5000
+#define OP_SCRIPT_EVAL_BOOL					(0x0058 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Goober5000
+#define OP_IS_CONTAINER_EMPTY				(0x0059 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Karajorma/jg18
+#define OP_GET_CONTAINER_SIZE				(0x005a | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Karajorma/jg18
+#define OP_LIST_HAS_DATA					(0x005b | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Karajorma/jg18
+#define OP_LIST_DATA_INDEX					(0x005c | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Karajorma/jg18
+#define OP_MAP_HAS_KEY						(0x005d | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Karajorma/jg18
+#define OP_MAP_HAS_DATA_ITEM				(0x005e | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Karajorma/jg18
 
 // conditional sexpressions
 #define OP_WHEN								(0x0000 | OP_CATEGORY_CONDITIONAL)
@@ -430,6 +452,9 @@ class waypoint_list;
 #define OP_FIRST_OF							(0x0018 | OP_CATEGORY_CONDITIONAL)	// MageKing17
 #define OP_SWITCH							(0x0019 | OP_CATEGORY_CONDITIONAL)	// Goober5000
 #define OP_FUNCTIONAL_SWITCH				(0x001a | OP_CATEGORY_CONDITIONAL)	// Goober5000
+#define OP_FUNCTIONAL_WHEN					(0x001b | OP_CATEGORY_CONDITIONAL)	// Goober5000
+#define OP_FOR_CONTAINER_DATA				(0x001c | OP_CATEGORY_CONDITIONAL)	// jg18
+#define OP_FOR_MAP_CONTAINER_KEYS			(0x001d | OP_CATEGORY_CONDITIONAL)	// jg18
 
 
 // sexpressions with side-effects
@@ -766,8 +791,8 @@ class waypoint_list;
 #define OP_CHANGE_BACKGROUND				(0x0035 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_CLEAR_DEBRIS						(0x0036 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_SET_DEBRIEFING_PERSONA			(0x0037 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
-#define OP_ADD_TO_COLGROUP2					(0x0038 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
-#define OP_REMOVE_FROM_COLGROUP2			(0x0039 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_ADD_TO_COLGROUP_NEW				(0x0038 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_REMOVE_FROM_COLGROUP_NEW			(0x0039 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_GET_POWER_OUTPUT					(0x003a | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// The E
 #define OP_TURRET_SET_FORCED_TARGET			(0x003b | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Asteroth
 #define OP_TURRET_SET_FORCED_SUBSYS_TARGET	(0x003c | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Asteroth
@@ -777,6 +802,30 @@ class waypoint_list;
 
 #define OP_REPLACE_TEXTURE					(0x0040 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Lafiel
 #define OP_NEBULA_CHANGE_FOG_COLOR			(0x0041 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Asteroth
+#define OP_SET_ALPHA_MULT					(0x0042 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Lafiel
+#define OP_DESTROY_INSTANTLY_WITH_DEBRIS	(0x0043 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Asteroth
+#define OP_TRIGGER_ANIMATION_NEW			(0x0044 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Lafiel
+#define OP_UPDATE_MOVEABLE					(0x0045 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Lafiel
+#define OP_NAV_SET_COLOR					(0x0046 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG) 	// Goober5000
+#define OP_NAV_SET_VISITED_COLOR			(0x0047 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG) 	// Goober5000
+#define OP_CONTAINER_ADD_TO_LIST			(0x0048 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma/jg18
+#define OP_CONTAINER_REMOVE_FROM_LIST		(0x0049 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma/jg18
+#define OP_CONTAINER_ADD_TO_MAP				(0x004a | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma/jg18
+#define OP_CONTAINER_REMOVE_FROM_MAP		(0x004b | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma/jg18
+#define OP_CONTAINER_GET_MAP_KEYS			(0x004c | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma/jg18
+#define OP_CLEAR_CONTAINER					(0x004d | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma/jg18
+#define OP_ADD_BACKGROUND_BITMAP_NEW		(0x004e | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_ADD_SUN_BITMAP_NEW				(0x004f | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
+
+#define OP_CANCEL_FUTURE_WAVES				(0x0050 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// naomimyselfandi
+#define OP_COPY_CONTAINER					(0x0051 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// jg18
+#define OP_APPLY_CONTAINER_FILTER			(0x0052 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// jg18
+#define OP_STOP_LOOPING_ANIMATION			(0x0053 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Lafiel
+#define OP_LOCK_TRANSLATING_SUBSYSTEM		(0x0054 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_FREE_TRANSLATING_SUBSYSTEM		(0x0055 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_REVERSE_TRANSLATING_SUBSYSTEM	(0x0056 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_TRANSLATING_SUBSYS_SET_SPEED		(0x0057 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
+
 
 // defined for AI goals
 #define OP_AI_CHASE							(0x0000 | OP_CATEGORY_AI | OP_NONCAMPAIGN_FLAG)
@@ -800,6 +849,8 @@ class waypoint_list;
 #define OP_AI_FORM_ON_WING					(0x0012 | OP_CATEGORY_AI | OP_NONCAMPAIGN_FLAG) // The E
 #define OP_AI_CHASE_SHIP_CLASS				(0x0013 | OP_CATEGORY_AI | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_AI_PLAY_DEAD_PERSISTENT			(0x0014 | OP_CATEGORY_AI | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_AI_FLY_TO_SHIP					(0x0015 | OP_CATEGORY_AI | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_AI_REARM_REPAIR					(0x0016 | OP_CATEGORY_AI | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
 #define OP_GOALS_ID							(0x0000 | OP_CATEGORY_UNLISTED)
 #define OP_NEXT_MISSION						(0x0001 | OP_CATEGORY_UNLISTED)		// used in campaign files for branching
@@ -972,11 +1023,12 @@ const char *CTEXT(int n);
 #define SEXP_NODE_TYPE(n)	(Sexp_nodes[n].type & 0x00ff)
 
 // defines for subtypes of atoms
-#define SEXP_ATOM_LIST			0
-#define SEXP_ATOM_OPERATOR		1
-#define SEXP_ATOM_NUMBER		2
-#define SEXP_ATOM_STRING		3
-#define SEXP_ATOM_CONTAINER		4
+#define SEXP_ATOM_LIST				0
+#define SEXP_ATOM_OPERATOR			1
+#define SEXP_ATOM_NUMBER			2
+#define SEXP_ATOM_STRING			3
+#define SEXP_ATOM_CONTAINER_NAME	4
+#define SEXP_ATOM_CONTAINER_DATA	5
 
 // defines to short circuit evaluation when possible. Also used when goals can't
 // be satisfied yet because ship (or wing) hasn't been created yet.
@@ -1065,6 +1117,21 @@ const char *CTEXT(int n);
 #define SEXP_CHECK_INVALID_SSM_CLASS			-160
 #define SEXP_CHECK_INVALID_FIREBALL				-161
 #define SEXP_CHECK_INVALID_SPECIES				-162
+#define SEXP_CHECK_INVALID_FUNCTIONAL_WHEN_EVAL_TYPE	-163
+#define SEXP_CHECK_MISPLACED_SPECIAL_ARGUMENT	-164
+#define SEXP_CHECK_AMBIGUOUS_GOAL_NAME			-165
+#define SEXP_CHECK_AMBIGUOUS_EVENT_NAME			-166
+#define SEXP_CHECK_MISSING_CONTAINER_MODIFIER	-167
+#define SEXP_CHECK_INVALID_LIST_MODIFIER		-168
+#define SEXP_CHECK_WRONG_MAP_KEY_TYPE			-169
+#define SEXP_CHECK_WRONG_CONTAINER_TYPE			-170
+#define SEXP_CHECK_INVALID_ANIMATION			-171
+#define SEXP_CHECK_WRONG_CONTAINER_DATA_TYPE	-172
+#define SEXP_CHECK_INVALID_SPECIAL_ARG_TYPE		-173
+#define SEXP_CHECK_INVALID_AWACS_SUBSYS			-174
+#define SEXP_CHECK_INVALID_ROTATING_SUBSYS		-175
+#define SEXP_CHECK_INVALID_TRANSLATING_SUBSYS	-176
+
 
 #define TRAINING_CONTEXT_SPEED		(1<<0)
 #define TRAINING_CONTEXT_FLY_PATH	(1<<1)
@@ -1101,6 +1168,8 @@ struct sexp_cached_data
 	int numeric_literal = 0;				// i.e. a number
 	int ship_registry_index = -1;			// because ship status is pretty common
 	void *pointer = nullptr;				// could be an IFF, a wing, a goal, or other unchanging reference
+	// jg18 - used to store result from sexp_container_CTEXT()
+	char container_CTEXT_result[TOKEN_LENGTH] = "";
 
 	sexp_cached_data() = default;
 
@@ -1115,6 +1184,27 @@ struct sexp_cached_data
 	sexp_cached_data(int _sexp_node_data_type, int _numeric_literal, int _ship_registry_index)
 		: sexp_node_data_type(_sexp_node_data_type), numeric_literal(_numeric_literal), ship_registry_index(_ship_registry_index)
 	{}
+
+	sexp_cached_data(int _sexp_node_data_type, const SCP_string &_container_CTEXT_result)
+		: sexp_node_data_type(_sexp_node_data_type)
+	{
+		update_container_CTEXT_result(_container_CTEXT_result);
+	}
+
+	void update_container_CTEXT_result(const SCP_string &_container_CTEXT_result)
+	{
+		if (_container_CTEXT_result.empty()) {
+			Warning(LOCATION, "assigning empty string to SEXP node text");
+		} else if (_container_CTEXT_result.length() >= sizeof(container_CTEXT_result)) {
+			Warning(LOCATION,
+				"attempt to assign CTEXT() result %s which is too long (limit %d)",
+				_container_CTEXT_result.c_str(),
+				(int)(sizeof(container_CTEXT_result) - 1));
+		}
+
+		const auto length = _container_CTEXT_result.copy(container_CTEXT_result, sizeof(container_CTEXT_result) - 1);
+		container_CTEXT_result[length] = 0;
+	}
 };
 
 typedef struct sexp_node {
@@ -1186,6 +1276,7 @@ extern SCP_vector<int> Current_sexp_operator;
 // event log stuff
 extern SCP_vector<SCP_string> *Current_event_log_buffer;
 extern SCP_vector<SCP_string> *Current_event_log_variable_buffer;
+extern SCP_vector<SCP_string> *Current_event_log_container_buffer;
 extern SCP_vector<SCP_string> *Current_event_log_argument_buffer;
 
 extern void init_sexp();
@@ -1193,8 +1284,8 @@ extern void sexp_shutdown();
 extern int alloc_sexp(const char *text, int type, int subtype, int first, int rest);
 extern int find_free_sexp();
 extern int free_one_sexp(int num);
-extern int free_sexp(int num);
-extern int free_sexp2(int num);
+extern int free_sexp(int num, int calling_node = -1);
+extern int free_sexp2(int num, int calling_node = -1);
 extern int dup_sexp_chain(int node);
 extern int cmp_sexp_chains(int node1, int node2);
 extern int find_sexp_list(int num);
@@ -1219,8 +1310,10 @@ extern int query_operator_argument_type(int op, int argnum);
 extern void update_sexp_references(const char *old_name, const char *new_name);
 extern void update_sexp_references(const char *old_name, const char *new_name, int format);
 extern int query_referenced_in_sexp(int mode, const char *name, int *node);
+extern void stuff_sexp_text_string(SCP_string &dest, int node, int mode);
 extern int build_sexp_string(SCP_string &accumulator, int cur_node, int level, int mode);
 extern int sexp_query_type_match(int opf, int opr);
+extern bool sexp_recoverable_error(int num);
 extern const char *sexp_error_message(int num);
 extern int count_free_sexp_nodes();
 
@@ -1279,12 +1372,10 @@ void set_turret_secondary_ammo(ship_subsys *turret, int requested_bank, int requ
 extern int get_category(int sexp_id);
 extern int category_of_subcategory(int subcategory_id);
 extern int get_subcategory(int sexp_id);
+extern const char *get_category_name(int category_id);
 
 // Goober5000
 extern void sexp_music_close();
-
-// Goober5000
-extern int Knossos_warp_ani_used;
 
 //WMC - moved here from FRED
 typedef struct sexp_help_struct {
@@ -1316,6 +1407,9 @@ extern const char *Sound_environment_option[];
 extern int Num_explosion_options;
 extern const char *Explosion_option[];
 
+extern int Num_functional_when_eval_types;
+extern const char *Functional_when_eval_type[];
+
 //The E
 extern int Num_adjust_audio_options;
 extern const char *Adjust_audio_options[];
@@ -1338,5 +1432,40 @@ extern int Sexp_hud_display_warpout;
 int get_effect_from_name(const char* name);
 
 void maybe_write_to_event_log(int result);
+
+//OSWPT Stuff
+
+#define OSWPT_TYPE_NONE				0
+#define OSWPT_TYPE_SHIP				1
+#define OSWPT_TYPE_WING				2
+#define OSWPT_TYPE_WAYPOINT			3
+#define OSWPT_TYPE_SHIP_ON_TEAM		4	// e.g. <any friendly>
+#define OSWPT_TYPE_WHOLE_TEAM		5	// e.g. Friendly
+#define OSWPT_TYPE_PARSE_OBJECT		6	// a "ship" that hasn't arrived yet
+#define OSWPT_TYPE_EXITED			7
+#define OSWPT_TYPE_WING_NOT_PRESENT	8	// a wing that hasn't arrived yet or is between waves
+
+// Goober5000
+struct object_ship_wing_point_team
+{
+	const char* object_name = nullptr;
+	int type = OSWPT_TYPE_NONE;
+
+	const ship_registry_entry* ship_entry = nullptr;
+	object* objp = nullptr;
+	wing* wingp = nullptr;
+	waypoint* waypointp = nullptr;
+	int team = -1;
+
+	object_ship_wing_point_team() = default;
+	object_ship_wing_point_team(ship* sp);
+	object_ship_wing_point_team(p_object* pop);
+	object_ship_wing_point_team(ship_obj* sop);
+	object_ship_wing_point_team(wing* wp);
+
+	void clear();
+};
+
+void eval_object_ship_wing_point_team(object_ship_wing_point_team* oswpt, int node, const char* ctext_override = nullptr);
 
 #endif

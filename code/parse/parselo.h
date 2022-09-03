@@ -81,7 +81,7 @@ extern void consolidate_double_characters(char *str, char ch);
 // white space
 extern int is_white_space(char ch);
 extern int is_white_space(unicode::codepoint_t cp);
-extern void ignore_white_space();
+extern void ignore_white_space(const char **pp = nullptr);
 extern void drop_trailing_white_space(char *str);
 extern void drop_leading_white_space(char *str);
 extern char *drop_white_space(char *str);
@@ -94,7 +94,7 @@ extern void drop_white_space(SCP_string &str);
 // gray space
 extern int is_gray_space(char ch);
 extern bool is_gray_space(unicode::codepoint_t cp);
-extern void ignore_gray_space();
+extern void ignore_gray_space(const char **pp = nullptr);
 
 // error
 extern int get_line_num();
@@ -107,11 +107,12 @@ extern int skip_to_string(const char *pstr, const char *end = NULL);
 extern int skip_to_start_of_string(const char *pstr, const char *end = NULL);
 extern int skip_to_start_of_string_either(const char *pstr1, const char *pstr2, const char *end = NULL);
 extern void advance_to_eoln(const char *terminators);
+extern bool skip_eoln();
 extern void skip_token();
 
 // optional
 extern int optional_string(const char *pstr);
-extern int optional_string_either(const char *str1, const char *str2);
+extern int optional_string_either(const char *str1, const char *str2, bool advance = true);
 extern int optional_string_one_of(int arg_count, ...);
 
 // required
@@ -206,6 +207,7 @@ extern void stuff_vec3d_list(SCP_vector<vec3d> &vec_list);
 extern size_t stuff_bool_list(bool *blp, size_t max_bools);
 extern void stuff_vec3d(vec3d *vp);
 extern void stuff_matrix(matrix *mp);
+extern void stuff_angles_deg_phb(angles* vp);
 extern void find_and_stuff(const char *id, int *addr, int f_type, const char *strlist[], size_t max, const char *description);
 extern void find_and_stuff_optional(const char *id, int *addr, int f_type, const char * const *strlist, size_t max, const char *description);
 extern int match_and_stuff(int f_type, const char * const *strlist, int max, const char *description);
@@ -238,6 +240,7 @@ extern int check_for_eoln();
 extern void parse_float_list(float *plist, size_t size);
 extern void parse_int_list(int *ilist, size_t size);
 
+extern void parse_string_map(SCP_map<SCP_string, SCP_string>& mapOut, const char* end_marker, const char* entry_prefix);
 
 // general
 extern void reset_parse(char *text = NULL);
@@ -283,15 +286,15 @@ extern int required_string_fred(const char *pstr, const char *end = NULL);
 extern int required_string_either_fred(const char *str1, const char *str2);
 extern int optional_string_fred(const char *pstr, const char *end = NULL, const char *end2 = NULL);
 
-// Goober5000 - returns position of replacement or -1 for exceeded length (SCP_string variants return the result)
+// Goober5000
 extern ptrdiff_t replace_one(char *str, const char *oldstr, const char *newstr, size_t max_len, ptrdiff_t range = 0);
-extern SCP_string& replace_one(SCP_string& context, const SCP_string& from, const SCP_string& to);
-extern SCP_string& replace_one(SCP_string& context, const char* from, const char* to);
+extern ptrdiff_t replace_one(SCP_string& context, const SCP_string& from, const SCP_string& to);
+extern ptrdiff_t replace_one(SCP_string& context, const char* from, const char* to);
 
-// Goober5000 - returns number of replacements or -1 for exceeded length (SCP_string variants return the result)
-extern ptrdiff_t replace_all(char *str, const char *oldstr, const char *newstr, size_t max_len, ptrdiff_t range = 0);
-extern SCP_string& replace_all(SCP_string& context, const SCP_string& from, const SCP_string& to);
-extern SCP_string& replace_all(SCP_string& context, const char* from, const char* to);
+// Goober5000
+extern int replace_all(char *str, const char *oldstr, const char *newstr, size_t max_len, ptrdiff_t range = 0);
+extern int replace_all(SCP_string& context, const SCP_string& from, const SCP_string& to);
+extern int replace_all(SCP_string& context, const char* from, const char* to);
 
 // Goober5000 (why is this not in the C library?)
 extern const char *stristr(const char *str, const char *substr);

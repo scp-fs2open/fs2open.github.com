@@ -335,7 +335,7 @@ void techroom_select_new_entry()
 		if (Techroom_ship_model_instance >= 0) {
 			model_delete_instance(Techroom_ship_model_instance);
 		}
-		Techroom_ship_model_instance = model_create_instance(true, Techroom_ship_modelnum);
+		Techroom_ship_model_instance = model_create_instance(-1, Techroom_ship_modelnum);
 
 		model_set_up_techroom_instance(sip, Techroom_ship_model_instance);
 
@@ -551,7 +551,7 @@ void techroom_ships_render(float frametime)
 		render_info.set_replacement_textures(Techroom_ship_modelnum, sip->replacement_textures);
 	}
 
-    if(Shadow_quality != ShadowQuality::Disabled)
+    if(shadow_maybe_start_frame(Shadow_disable_overrides.disable_techroom))
     {
         gr_reset_clip();
 
@@ -581,6 +581,8 @@ void techroom_ships_render(float frametime)
 	Glowpoint_use_depth_buffer = true;
 
 	batching_render_all();
+
+	shadow_end_frame();
 
 	gr_end_view_matrix();
 	gr_end_proj_matrix();
@@ -760,7 +762,6 @@ void techroom_change_tab(int num)
 	switch (Tab) {
 		case SHIPS_DATA_TAB:
             si_mask.set(multi ? Ship::Info_Flags::In_tech_database_m : Ship::Info_Flags::In_tech_database);
-            si_mask.set(multi ? Ship::Info_Flags::Default_in_tech_database_m : Ship::Info_Flags::Default_in_tech_database);
 			
 			// load ship info if necessary
 			if ( !Ships_loaded ) {
@@ -809,7 +810,6 @@ void techroom_change_tab(int num)
 				Weapon_list.reserve(Weapon_info.size());
 
 				wi_mask.set(multi ? Weapon::Info_Flags::Player_allowed : Weapon::Info_Flags::In_tech_database);
-                wi_mask.set(Weapon::Info_Flags::Default_in_tech_database);
 
 				int i = 0;
 				tech_list_entry temp_entry;
@@ -1377,24 +1377,16 @@ int intel_info_lookup(const char *name)
 void tech_reset_to_default()
 {
 	// ships
-    for (auto &si : Ship_info)
-    {
-        if (si.flags[Ship::Info_Flags::Default_in_tech_database])
-            si.flags.set(Ship::Info_Flags::In_tech_database);
-        else
-            si.flags.remove(Ship::Info_Flags::Default_in_tech_database);
-
-        if (si.flags[Ship::Info_Flags::Default_in_tech_database_m])
-            si.flags.set(Ship::Info_Flags::In_tech_database_m);
-        else
-            si.flags.remove(Ship::Info_Flags::Default_in_tech_database_m);
-    }
-
+	for (auto& si : Ship_info)
+	{
+		si.flags.set(Ship::Info_Flags::In_tech_database, si.flags[Ship::Info_Flags::Default_in_tech_database]);
+		si.flags.set(Ship::Info_Flags::In_tech_database_m, si.flags[Ship::Info_Flags::Default_in_tech_database_m]);
+	}
 
 	// weapons
-	for (auto &wi : Weapon_info)
+	for (auto& wi : Weapon_info)
 	{
-        wi.wi_flags.set(Weapon::Info_Flags::In_tech_database, wi.wi_flags[Weapon::Info_Flags::Default_in_tech_database]);
+		wi.wi_flags.set(Weapon::Info_Flags::In_tech_database, wi.wi_flags[Weapon::Info_Flags::Default_in_tech_database]);
 	}
 
 	// intelligence

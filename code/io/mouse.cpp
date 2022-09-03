@@ -14,6 +14,7 @@
 #include <windowsx.h>
 #endif
 
+#include "controlconfig/controlsconfig.h"
 #include "graphics/2d.h"
 #include "io/mouse.h"
 #include "options/Option.h"
@@ -65,8 +66,11 @@ static auto MouseSensitivityOption =
 
 bool Use_mouse_to_fly = false;
 
+static SCP_string mouse_mode_display(bool mode) { return mode ? "Joy-0" : "Mouse"; }
+
 static auto UseMouseOption = options::OptionBuilder<bool>("Input.UseMouse", "Mouse", "Use the mouse for flying")
                                  .category("Input")
+				 .display(mouse_mode_display) 
                                  .level(options::ExpertLevel::Beginner)
                                  .default_val(false)
                                  .bind_to(&Use_mouse_to_fly)
@@ -270,14 +274,13 @@ void mouse_mark_button( uint flags, int set)
 
 	Script_system.SetHookVar("MouseButton", 'i', flags);
 
-	//WMC - On Mouse Pressed and On Mouse Released hooks
-	if (set == 1)
-	{
-		Script_system.RunCondition(CHA_MOUSEPRESSED);
-	}
-	else if (set == 0)
-	{
-		Script_system.RunCondition(CHA_MOUSERELEASED);
+	if (Script_system.IsActiveAction(CHA_MOUSEPRESSED) || Script_system.IsActiveAction(CHA_MOUSERELEASED)) {
+		//WMC - On Mouse Pressed and On Mouse Released hooks
+		if (set == 1) {
+			Script_system.RunCondition(CHA_MOUSEPRESSED);
+		} else if (set == 0) {
+			Script_system.RunCondition(CHA_MOUSERELEASED);
+		}
 	}
 
 	Script_system.RemHookVar("MouseButton");
@@ -301,8 +304,34 @@ void mouse_flush()
 	SDL_UnlockMutex( mouse_lock );
 }
 
-int mouse_down_count(int n, int reset_count)
+int mouse_down_count(const CC_bind &bind, int reset_count)
 {
+	// Bail if the incoming bind is not the right CID according to mouse-fly mode
+	auto CID = bind.get_cid();
+	if (Use_mouse_to_fly) {
+		// Mouse is Joy0 in this mode
+		if (CID != CID_JOY0) {
+			return 0;
+		}
+	} else {
+		// Mouse is Mouse in this mode
+		if (CID != CID_MOUSE) {
+			return 0;
+		}
+	}
+
+	int btn = bind.get_btn();
+
+	if (btn > MOUSE_NUM_BUTTONS) {
+		return 0;
+	}
+
+	btn = 1 << btn;
+
+	return mouse_down_count(btn, reset_count);
+}
+
+int mouse_down_count(int n, int reset_count) {
 	int tmp = 0;
 	if ( !mouse_inited ) return 0;
 
@@ -357,8 +386,16 @@ int mouse_down_count(int n, int reset_count)
 //
 // parameters:  n - button of mouse (see #define's in mouse.h)
 //
-int mouse_up_count(int n)
+int mouse_up_count(const CC_bind &bind)
 {
+	if (bind.get_cid() != CID_MOUSE) {
+		return 0;
+	}
+	int n = 1 << bind.get_btn();
+	return mouse_up_count(n);
+}
+
+int mouse_up_count(int n) {
 	int tmp = 0;
 	if ( !mouse_inited ) return 0;
 
@@ -404,8 +441,34 @@ int mouse_up_count(int n)
 
 // returns 1 if mouse button btn is down, 0 otherwise
 
-int mouse_down(int btn)
+int mouse_down(const CC_bind &bind)
 {
+	// Bail if the incoming bind is not the right CID according to mouse-fly mode
+	auto CID = bind.get_cid();
+	if (Use_mouse_to_fly) {
+		// Mouse is Joy0 in this mode
+		if (CID != CID_JOY0) {
+			return 0;
+		}
+	} else {
+		// Mouse is Mouse in this mode
+		if (CID != CID_MOUSE) {
+			return 0;
+		}
+	}
+
+	int btn = bind.get_btn();
+
+	if (btn >= MOUSE_NUM_BUTTONS) {
+		return 0;
+	}
+
+	btn = 1 << btn;
+
+	return mouse_down(btn);
+}
+
+int mouse_down(int btn) {
 	int tmp;
 	if ( !mouse_inited ) return 0;
 
@@ -464,7 +527,7 @@ void mouse_event(int x, int y, int dx, int dy)
 	Mouse_dx += dx;
 	Mouse_dy += dy;
 
-	if(Mouse_dx != 0 || Mouse_dy != 0)
+	if (Script_system.IsActiveAction(CHA_MOUSEMOVED) && (Mouse_dx != 0 || Mouse_dy != 0))
 	{
 		Script_system.RunCondition(CHA_MOUSEMOVED);
 	}
@@ -575,19 +638,17 @@ void mousewheel_motion(int x, int y, bool reversed) {
 }
 
 void mousewheel_decay(int btn) {
-	switch (btn) {
-	case MOUSE_WHEEL_UP:
+	if (btn & MOUSE_WHEEL_UP) {
 		Mouse_wheel_y -= 1;
-		break;
-	case MOUSE_WHEEL_DOWN:
+	}
+	if (btn & MOUSE_WHEEL_DOWN) {
 		Mouse_wheel_y += 1;
-		break;
-	case MOUSE_WHEEL_LEFT:
+	}
+	if (btn & MOUSE_WHEEL_LEFT) {
 		Mouse_wheel_x -= 1;
-		break;
-	case MOUSE_WHEEL_RIGHT:
+	}
+	if (btn & MOUSE_WHEEL_RIGHT) {
 		Mouse_wheel_x += 1;
-		break;
 	}
 
 	if (Mouse_wheel_x == 0) {
@@ -596,4 +657,21 @@ void mousewheel_decay(int btn) {
 	if (Mouse_wheel_y == 0) {
 		mouse_flags &= ~(MOUSE_WHEEL_RIGHT | MOUSE_WHEEL_LEFT);
 	}
+}
+
+short bit_distance(short x) {
+	short i;
+	const short max_dist = sizeof(short) * 8;
+	
+	for (i = 0; i < max_dist; ++i, x >>= 1) {
+		if (x & 0x01) {
+			break;
+		}
+	}
+
+	if (i >= max_dist) {
+		return -1;
+	}
+
+	return i;
 }

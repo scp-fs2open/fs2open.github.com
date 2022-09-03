@@ -43,6 +43,7 @@
 #include "network/multiui.h"
 #include "parse/parselo.h"
 #include "parse/sexp.h"
+#include "parse/sexp_container.h"
 #include "playerman/player.h"
 #include "popup/popup.h"
 #include "render/3d.h"
@@ -74,7 +75,7 @@ static int	Brief_playing_fade_sound;
 hud_anim		Fade_anim;
 
 int	Briefing_music_handle = -1;
-int	Briefing_music_begin_timestamp = 0;
+UI_TIMESTAMP Briefing_music_begin_timestamp;
 
 int Briefing_overlay_id = -1;
 
@@ -350,7 +351,7 @@ void brief_skip_training_pressed()
 	mission_campaign_eval_next_mission();
 	mission_campaign_mission_over();	
 
-	if ( The_mission.flags[Mission::Mission_Flags::End_to_mainhall] ) {
+	if ( Campaign.next_mission == -1 || (The_mission.flags[Mission::Mission_Flags::End_to_mainhall]) ) {
 		gameseq_post_event( GS_EVENT_MAIN_MENU );
 	} else {
 		gameseq_post_event( GS_EVENT_START_GAME );
@@ -799,6 +800,8 @@ void brief_compact_stages()
 		if ( eval_sexp(Briefing->stages[num].formula) ) {
 			// Goober5000 - replace any variables (probably persistent variables) with their values
 			sexp_replace_variable_names_with_values(Briefing->stages[num].text);
+			// karajorma/jg18 - replace container references as well
+			sexp_container_replace_refs_with_values(Briefing->stages[num].text);
 		} else {
 			// clean up unused briefing stage
 			Briefing->stages[num].text = "";
@@ -882,10 +885,12 @@ void brief_init()
 		return;
 	}
 
-	if (The_mission.flags[Mission::Mission_Flags::Always_show_goals] || !(The_mission.game_type & MISSION_TYPE_TRAINING))
+	// Show the goals slide iff we're in a training mission with the "toggle goals" flag, or a normal mission without it.
+	if (The_mission.flags[Mission::Mission_Flags::Toggle_showing_goals] == !!(The_mission.game_type & MISSION_TYPE_TRAINING)) {
 		Num_brief_stages = Briefing->num_stages + 1;
-	else
+	} else {
 		Num_brief_stages = Briefing->num_stages;
+	}
 
 	Current_brief_stage = 0;
 	Last_brief_stage = 0;
@@ -1067,7 +1072,7 @@ void brief_render_closeup(int ship_class, float frametime)
 	model_render_params render_info;
 	render_info.set_detail_level_lock(0);
 
-	if (Shadow_quality != ShadowQuality::Disabled)
+	if (shadow_maybe_start_frame(Shadow_disable_overrides.disable_mission_select_ships))
 	{
 		auto pm = model_get(Closeup_icon->modelnum);
 
@@ -1096,6 +1101,8 @@ void brief_render_closeup(int ship_class, float frametime)
 
 	gr_end_view_matrix();
 	gr_end_proj_matrix();
+
+	shadow_end_frame();
 
 	g3_end_frame();
 
@@ -1225,7 +1232,6 @@ int brief_setup_closeup(brief_icon *bi)
 	vec3d			tvec;
 
 	Closeup_icon = bi;
-	Closeup_icon->ship_class = bi->ship_class;
 	Closeup_icon->modelnum = -1;
 	Closeup_icon->model_instance_num = -1;
 
@@ -1243,37 +1249,48 @@ int brief_setup_closeup(brief_icon *bi)
 		Closeup_one_revolution_time = ONE_REV_TIME * 3;
 		*/
 		break;
+
 	case ICON_ASTEROID_FIELD:
 		strcpy_s(pof_filename, Asteroid_icon_closeup_model);
-		strcpy_s(Closeup_icon->closeup_label, XSTR( "asteroid", 431));
+		if (Closeup_icon->closeup_label[0] == '\0') {
+			strcpy_s(Closeup_icon->closeup_label, XSTR("asteroid", 431));
+		}
 		Closeup_cam_pos = Asteroid_icon_closeup_position;
 		Closeup_zoom = Asteroid_icon_closeup_zoom;
 		break;
+
 	case ICON_JUMP_NODE:
 		strcpy_s(pof_filename, NOX("subspacenode.pof"));
-		strcpy_s(Closeup_icon->closeup_label, XSTR( "jump node", 432));
+		if (Closeup_icon->closeup_label[0] == '\0') {
+			strcpy_s(Closeup_icon->closeup_label, XSTR("jump node", 432));
+		}
 		vm_vec_make(&Closeup_cam_pos, 0.0f, 0.0f, -2700.0f);
 		Closeup_zoom = 0.5f;
 		Closeup_one_revolution_time = ONE_REV_TIME * 3;
 		break;
+
 	case ICON_UNKNOWN:
 	case ICON_UNKNOWN_WING:
 		strcpy_s(pof_filename, NOX("unknownship.pof"));
-		strcpy_s(Closeup_icon->closeup_label, XSTR( "unknown", 433));
+		if (Closeup_icon->closeup_label[0] == '\0') {
+			strcpy_s(Closeup_icon->closeup_label, XSTR("unknown", 433));
+		}
 		vm_vec_make(&Closeup_cam_pos, 0.0f, 0.0f, -22.0f);
 		Closeup_zoom = 0.5f;
 		break;
+
 	default:
 		Assert( Closeup_icon->ship_class != -1 );
 		sip = &Ship_info[Closeup_icon->ship_class];
 
-		strcpy_s(Closeup_icon->closeup_label, sip->get_display_name());
+		if (Closeup_icon->closeup_label[0] == '\0') {
+			strcpy_s(Closeup_icon->closeup_label, sip->get_display_name());
 
-		// Goober5000 - wcsaga doesn't want this
-		if (Ship_types[sip->class_type].flags[Ship::Type_Info_Flags::No_class_display] ) {
-			strcat_s(Closeup_icon->closeup_label, XSTR( " class", 434));
+			if (!Ship_types[sip->class_type].flags[Ship::Type_Info_Flags::No_class_display]
+				&& (sip->is_small_ship() || sip->is_big_ship() || sip->is_huge_ship() || sip->flags[Ship::Info_Flags::Sentrygun])) {
+					strcat_s(Closeup_icon->closeup_label, XSTR(" class", 434));
+			}
 		}
-
 		break;
 	}
 	
@@ -1282,7 +1299,7 @@ int brief_setup_closeup(brief_icon *bi)
 			Closeup_icon->modelnum = model_load(pof_filename, 0, NULL);
 		} else {
 			Closeup_icon->modelnum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
-			Closeup_icon->model_instance_num = model_create_instance(true, Closeup_icon->modelnum);
+			Closeup_icon->model_instance_num = model_create_instance(-1, Closeup_icon->modelnum);
 			model_set_up_techroom_instance(sip, Closeup_icon->model_instance_num);
 		}
 	}

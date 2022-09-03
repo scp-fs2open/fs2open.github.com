@@ -8,8 +8,10 @@
 #include "freespace.h"
 
 #include "gamesequence/gamesequence.h"
+#include "mission/missiontraining.h"
 #include "network/multi.h"
 #include "parse/parselo.h"
+#include "parse/sexp.h"
 #include "pilotfile/pilotfile.h"
 #include "playerman/player.h"
 #include "scripting/api/objs/bytearray.h"
@@ -80,7 +82,7 @@ ADE_FUNC(rand32,
 		result = Random::next();
 	}
 
-	return ade_set_error(L, "i", result);
+	return ade_set_args(L, "i", result);
 }
 
 ADE_FUNC(rand32f,
@@ -93,12 +95,17 @@ ADE_FUNC(rand32f,
 	float _max;
 	int numargs = ade_get_args(L, "|f", &_max);
 
-	float result = (float)Random::next() * Random::INV_F_MAX_VALUE;
+	// see also frand()
+	int num;
+	do {
+		num = Random::next();
+	} while (num == Random::MAX_VALUE);
+	float result = i2fl(num) * Random::INV_F_MAX_VALUE;
 
 	if (numargs > 0)
 		result *= _max;
 
-	return ade_set_error(L, "f", _max);
+	return ade_set_args(L, "f", result);
 }
 
 ADE_FUNC(createOrientation,
@@ -476,8 +483,51 @@ ADE_FUNC(XSTR,
 	return ade_set_args(L, "s", translated.c_str());
 }
 
+ADE_FUNC(replaceTokens, 
+	l_Base, 
+	"string text", 
+	"Returns a string that replaces any default control binding to current binding (same as Directive Text). Default binding must be encapsulated by '$$' for replacement to work.",
+	"string",
+	"Updated string or nil if invalid")
+{
+	const char* untranslated_str;
+	if (!ade_get_args(L, "s", &untranslated_str)) {
+		return ADE_RETURN_NIL;
+	}
+
+	SCP_string translated_str = message_translate_tokens(untranslated_str);
+
+	return ade_set_args(L, "s", translated_str.c_str());
+}
+
+ADE_FUNC(replaceVariables,
+	l_Base,
+	"string text",
+	"Returns a string that replaces any variable name with the variable value (same as text in Briefings, Debriefings, or Messages). Variable name must be preceeded by '$' for replacement to work.",
+	"string",
+	"Updated string or nil if invalid")
+{
+	const char* untranslated_str;
+	if (!ade_get_args(L, "s", &untranslated_str)) {
+		return ADE_RETURN_NIL;
+	}
+
+	SCP_string translated_str = untranslated_str;
+	sexp_replace_variable_names_with_values(translated_str);
+
+	return ade_set_args(L, "s", translated_str.c_str());
+}
+
 ADE_FUNC(inMissionEditor, l_Base, nullptr, "Determine if the current script is running in the mission editor (e.g. FRED2). This should be used to control which code paths will be executed even if running in the editor.", "boolean", "true when we are in the mission editor, false otherwise") {
 	return ade_set_args(L, "b", Fred_running != 0);
+}
+
+ADE_FUNC(inDebug, l_Base, nullptr, "Determines if FSO is running in Release or Debug", "boolean", "true if debug, false if release") {
+	#ifndef NDEBUG
+		return ADE_RETURN_TRUE;
+	#else
+		return ADE_RETURN_FALSE;
+	#endif
 }
 
 ADE_FUNC(isEngineVersionAtLeast,
@@ -538,6 +588,53 @@ ADE_FUNC(getVersionString, l_Base, nullptr,
 {
 	auto str = gameversion::get_version_string();
 	return ade_set_args(L, "s", str.c_str());
+}
+
+ADE_FUNC(getModTitle, l_Base, nullptr,
+         "Returns the title of the current mod as defined in game_settings.tbl. Will return an empty string if not defined.",
+         "string", "The mod title")
+{
+	auto str = Mod_title;
+	return ade_set_args(L, "s", str.c_str());
+}
+
+ADE_FUNC(getModVersion, l_Base, nullptr,
+         "Returns the version of the current mod as defined in game_settings.tbl. If the version is semantic versioning then the "
+		 "returned numbers will reflect that. String always returns the complete string. If semantic version is not used then "
+		 "the returned numbers will all be -1",
+         "string, number, number, number", "The mod version string; the major, minor, patch version numbers or -1 if invalid")
+{
+	auto version = Mod_version;
+
+	int major = -1;
+	int minor = -1;
+	int patch = -1;
+	
+	int i = 0;
+	auto str = Mod_version;
+	while (i <= 3) {
+		size_t pos = str.find_first_of('.');
+		if (pos != SCP_string::npos) {
+			auto ver = str.substr(0, pos);
+			if(!ver.empty() && std::find_if(ver.begin(), ver.end(), [](char c) { return !std::isdigit(c); }) == ver.end()){
+				if (major < 0) {
+					major = std::stoi(str.c_str());
+				} else if (minor < 0) {
+					minor = std::stoi(str.c_str());
+				}
+				str.erase(0, pos + 1);
+			} else if (major < 0) {
+				break; //Break out of the loop if the first string is not a digit. In this case we only return the whole string.
+			}
+		} else if ((major > -1) && (minor > -1) && (!str.empty() && std::find_if(str.begin(), str.end(), [](char c) {
+					   return !std::isdigit(c);
+				   }) == str.end())) {
+			patch = std::stoi(str.c_str());
+		}
+		i++;
+	}
+
+	return ade_set_args(L, "siii", version.c_str(), major, minor, patch);
 }
 
 ADE_VIRTVAR(MultiplayerMode, l_Base, "boolean", "Determines if the game is currently in single- or multiplayer mode",

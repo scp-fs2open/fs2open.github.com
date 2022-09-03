@@ -74,23 +74,24 @@ cf_pathtype Pathtypes[CF_MAX_PATH_TYPES]  = {
 	{ CF_TYPE_FONT,					"data" DIR_SEPARATOR_STR "fonts",											".vf .ttf .otf",						CF_TYPE_DATA	},
 	{ CF_TYPE_EFFECTS,				"data" DIR_SEPARATOR_STR "effects",											".ani .eff .pcx .neb .tga .jpg .png .dds .sdr",	CF_TYPE_DATA	},
 	{ CF_TYPE_HUD,					"data" DIR_SEPARATOR_STR "hud",												".pcx .ani .eff .tga .jpg .png .dds",	CF_TYPE_DATA	},
-	{ CF_TYPE_PLAYERS,				"data" DIR_SEPARATOR_STR "players",											".hcf",								CF_TYPE_DATA	},
+	{ CF_TYPE_PLAYERS,				"data" DIR_SEPARATOR_STR "players",											".hcf", /* DON'T add pilot files here!! */	CF_TYPE_DATA	},
 	{ CF_TYPE_PLAYER_IMAGES,		"data" DIR_SEPARATOR_STR "players" DIR_SEPARATOR_STR "images",				".pcx .png .dds",						CF_TYPE_PLAYERS	},
 	{ CF_TYPE_SQUAD_IMAGES,			"data" DIR_SEPARATOR_STR "players" DIR_SEPARATOR_STR "squads",				".pcx .png .dds",						CF_TYPE_PLAYERS	},
 	{ CF_TYPE_SINGLE_PLAYERS,		"data" DIR_SEPARATOR_STR "players" DIR_SEPARATOR_STR "single",				".pl2 .cs2 .plr .csg .css .json",	CF_TYPE_PLAYERS	},
 	{ CF_TYPE_MULTI_PLAYERS,		"data" DIR_SEPARATOR_STR "players" DIR_SEPARATOR_STR "multi",				".plr .json",						CF_TYPE_PLAYERS	},
 	{ CF_TYPE_CACHE,				"data" DIR_SEPARATOR_STR "cache",											".clr .tmp .bx",					CF_TYPE_DATA	}, 	//clr=cached color
-	{ CF_TYPE_MULTI_CACHE,			"data" DIR_SEPARATOR_STR "multidata",										".pcx .png .dds .fs2 .txt",				CF_TYPE_DATA	},
+	{ CF_TYPE_MULTI_CACHE,			"data" DIR_SEPARATOR_STR "multidata",										".pcx .png .jpg .dds .fs2 .txt",		CF_TYPE_DATA	},
 	{ CF_TYPE_MISSIONS,				"data" DIR_SEPARATOR_STR "missions",										".fs2 .fc2 .ntl .ssv",				CF_TYPE_DATA	},
 	{ CF_TYPE_CONFIG,				"data" DIR_SEPARATOR_STR "config",											".cfg .tbl .tbm .xml .csv",			CF_TYPE_DATA	},
 	{ CF_TYPE_DEMOS,				"data" DIR_SEPARATOR_STR "demos",											".fsd",								CF_TYPE_DATA	},
 	{ CF_TYPE_CBANIMS,				"data" DIR_SEPARATOR_STR "cbanims",											".pcx .ani .eff .tga .jpg .png .dds",	CF_TYPE_DATA	},
 	{ CF_TYPE_INTEL_ANIMS,			"data" DIR_SEPARATOR_STR "intelanims",										".pcx .ani .eff .tga .jpg .png .dds",	CF_TYPE_DATA	},
-	{ CF_TYPE_SCRIPTS,				"data" DIR_SEPARATOR_STR "scripts",											".lua .lc",							CF_TYPE_DATA	},
+	{ CF_TYPE_SCRIPTS,				"data" DIR_SEPARATOR_STR "scripts",											".lua .lc .fnl",						CF_TYPE_DATA	},
 	{ CF_TYPE_FICTION,				"data" DIR_SEPARATOR_STR "fiction",											".txt",								CF_TYPE_DATA	}, 
 	{ CF_TYPE_FREDDOCS,				"data" DIR_SEPARATOR_STR "freddocs",										".html",							CF_TYPE_DATA	},
 	{ CF_TYPE_INTERFACE_MARKUP,		"data" DIR_SEPARATOR_STR "interface" DIR_SEPARATOR_STR "markup",			".rml",								CF_TYPE_INTERFACE	},
 	{ CF_TYPE_INTERFACE_CSS,		"data" DIR_SEPARATOR_STR "interface" DIR_SEPARATOR_STR "css",				".rcss",							CF_TYPE_INTERFACE	},
+	{ CF_TYPE_PLAYER_BINDS,			"data" DIR_SEPARATOR_STR "players" DIR_SEPARATOR_STR "presets",				".json",							CF_TYPE_PLAYERS	},
 };
 // clang-format on
 
@@ -634,7 +635,7 @@ void cf_create_directory(int dir_type, uint32_t location_flags)
 //
 // parameters:  *filepath ==> name of file to open (may be path+name)
 //              *mode     ==> specifies how file should be opened (eg "rb" for read binary)
-//                            passing NULL to mode deletes the file if it exists and returns NULL
+//                            passing NULL to mode triggers an assert and returns NULL
 //               type     ==> one of:    CFILE_NORMAL
 //                                       CFILE_MEMORY_MAPPED
 //					  dir_type	=>	override extension check, value is one of CF_TYPE* #defines
@@ -781,7 +782,7 @@ CFILE* _cfopen(const char* source, int line, const char* file_path, const char* 
 //
 // parameters:	*filepath	==> name of file to open (may be path+name)
 //				*mode		==> specifies how file should be opened (eg "rb" for read binary)
-//								passing NULL to mode deletes the file if it exists and returns NULL
+//								passing NULL to mode triggers an assert and returns NULL
 
 //				dir_type	=>	override extension check, value is one of CF_TYPE* #defines
 //

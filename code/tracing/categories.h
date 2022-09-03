@@ -74,6 +74,7 @@ extern Category SubmitDraws;
 extern Category ApplyLights;
 extern Category DrawEffects;
 extern Category SetupNebula;
+extern Category DrawPoofs;
 extern Category DrawStars;
 extern Category DrawShields;
 extern Category DrawBeams;
@@ -90,8 +91,6 @@ extern Category NonrepeatingEvents;
 extern Category ParticlesRenderAll;
 extern Category ParticlesMoveAll;
 
-extern Category TrailDraw;
-
 extern Category EnvironmentMapping;
 extern Category BuildShadowMap;
 extern Category RenderScene;
@@ -104,7 +103,7 @@ extern Category RenderMainFrame;
 extern Category RenderHUD;
 extern Category RenderHUDHook;
 extern Category RenderHUDGauge;
-extern Category RenderTargettingBracket;
+extern Category RenderTargetingBracket;
 extern Category RenderNavBracket;
 extern Category MainFrame;
 extern Category PageFlip;

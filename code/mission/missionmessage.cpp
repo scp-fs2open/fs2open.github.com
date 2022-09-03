@@ -28,11 +28,13 @@
 #include "network/multiutil.h"
 #include "parse/parselo.h"
 #include "parse/sexp.h"
+#include "parse/sexp_container.h"
 #include "scripting/api/objs/message.h"
 #include "scripting/hook_api.h"
 #include "scripting/scripting.h"
 #include "ship/ship.h"
 #include "ship/subsysdamage.h"
+#include "sound/audiostr.h"
 #include "sound/fsspeech.h"
 #include "species_defs/species_defs.h"
 #include "utils/Random.h"
@@ -808,13 +810,8 @@ void message_mission_close()
 //	Compare function for sorting message queue entries based on priority.
 //	Return values set to sort array in _decreasing_ order.  If priorities equal, sort based
 // on time added into queue
-int message_queue_priority_compare(const void *a, const void *b)
+int message_queue_priority_compare(const message_q *ma, const message_q *mb)
 {
-	message_q *ma, *mb;
-
-	ma = (message_q *) a;
-	mb = (message_q *) b;
-
 	if (ma->priority > mb->priority) {
 		return -1;
 	} else if (ma->priority < mb->priority) {
@@ -987,7 +984,7 @@ void message_remove_from_queue(message_q *q)
 	q->event_num_to_cancel = -1;
 
 	if ( MessageQ_num > 0 ) {
-		insertion_sort(MessageQ, MAX_MESSAGE_Q, sizeof(message_q), message_queue_priority_compare);
+		insertion_sort(MessageQ, MAX_MESSAGE_Q, message_queue_priority_compare);
 	}
 }
 
@@ -1008,9 +1005,9 @@ void message_load_wave(int index, const char *filename)
 		return;
 	}
 
-	game_snd_entry tmp_gs;
-	strcpy_s( tmp_gs.filename, filename );
-	Message_waves[index].num = snd_load( &tmp_gs, 0, 0 );
+	game_snd_entry tmp_gse;
+	strcpy_s(tmp_gse.filename, filename);
+	Message_waves[index].num = snd_load(&tmp_gse, nullptr, 0);
 
 	if (!Message_waves[index].num.isValid())
 		nprintf(("messaging", "Cannot load message wave: %s.  Will not play\n", Message_waves[index].name));
@@ -1042,10 +1039,25 @@ bool message_filename_is_generic(char *filename)
 	return false;
 }
 
+bool message_filename_has_fs1_wingman_prefix(const char *filename)
+{
+	Assert(filename != nullptr);
+	return (filename[0] >= '1' && filename[0] <= '6'
+		&& filename[1] == '_'
+		&& filename[2] != '\0');
+}
+
+void message_filename_convert_to_command(char *buf, const char *filename)
+{
+	// prepend the command name, and then the rest of the filename.
+	strcpy(buf, COMMAND_WAVE_PREFIX);
+	strcat(buf, &filename[2]);
+}
+
 // Play wave file associated with message
 // input: m		=>		pointer to message description
 //
-// note: changes Messave_wave_duration, Playing_messages[].wave, and Message_waves[].num
+// note: changes Message_wave_duration, Playing_messages[].wave, and Message_waves[].num
 bool message_play_wave( message_q *q )
 {
 	int index;
@@ -1063,24 +1075,13 @@ bool message_play_wave( message_q *q )
 			return false;
 
 		// if we need to bash the wave name because of "conversion" to terran command, do it here
-		if ( q->flags & MQF_CONVERT_TO_COMMAND ) {
-			char *p, new_filename[MAX_FILENAME_LEN];
+		// Look for "[1-6]_" at the front of the message.  If found, then convert to TC_*
+		if ( q->flags & MQF_CONVERT_TO_COMMAND && message_filename_has_fs1_wingman_prefix(filename) ) {
+			char temp[MAX_FILENAME_LEN];
+			message_filename_convert_to_command(temp, filename);
+			strcpy_s(filename, temp);
 
 			Message_waves[index].num = sound_load_id::invalid(); // forces us to reload the message
-
-			// bash the filename here. Look for "[1-6]_" at the front of the message.  If found, then
-			// convert to TC_*
-			p = strchr(filename, '_' );
-			if ( p == NULL ) {
-				mprintf(("Cannot convert %s to terran command wave -- find Sandeep or Allender\n", Message_waves[index].name));
-				return false;
-			}
-
-			// prepend the command name, and then the rest of the filename.
-			p++;
-			strcpy_s( new_filename, COMMAND_WAVE_PREFIX );
-			strcat_s( new_filename, p );
-			strcpy_s( filename, new_filename );
 		}
 
 		// load the sound file into memory
@@ -1194,7 +1195,13 @@ void message_play_anim( message_q *q )
 		// so the correct head plays.
 		if ( q->flags & MQF_CONVERT_TO_COMMAND ) {
 			persona_index = The_mission.command_persona;
-			strcpy_s( ani_name, COMMAND_HEAD_PREFIX );
+
+			// if this is a FS1 message, swap the head
+			if (m->wave_info.index >= 0) {
+				if (message_filename_has_fs1_wingman_prefix(Message_waves[m->wave_info.index].name)) {
+					strcpy_s(ani_name, COMMAND_HEAD_PREFIX);
+				}
+			}
 		}
 
 		// Goober5000 - guard against negative array indexing; this way, if no persona was
@@ -1627,13 +1634,15 @@ void message_queue_process()
 	if (Message_shipnum >= 0) {
 		sender = &Objects[Ships[Message_shipnum].objnum];
 	}
-	OnMessageReceivedHook->run(scripting::hook_param_list(
-		scripting::hook_param("Name", 's', m->name),
-		scripting::hook_param("MessageHandle", 'o', scripting::api::l_Message.Set(q->message_num)),
-		scripting::hook_param("Message", 's', buf),
-		scripting::hook_param("SenderString", 's', who_from),
-		scripting::hook_param("Builtin", 'b', builtinMessage),
-		scripting::hook_param("Sender", 'o', sender)));
+	if (OnMessageReceivedHook->isActive()) {
+		OnMessageReceivedHook->run(scripting::hook_param_list(
+			scripting::hook_param("Name", 's', m->name),
+			scripting::hook_param("MessageHandle", 'o', scripting::api::l_Message.Set(q->message_num)),
+			scripting::hook_param("Message", 's', buf),
+			scripting::hook_param("SenderString", 's', who_from),
+			scripting::hook_param("Builtin", 'b', builtinMessage),
+			scripting::hook_param("Sender", 'o', sender)));
+	}
 
 	Num_messages_playing++;		// this has to be done at the end because some sound functions use it to index into the array
 all_done:
@@ -1701,21 +1710,43 @@ void message_queue_message( int message_num, int priority, int timing, const cha
 	}
 
 	// Goober5000 - replace variables if necessary
+	// karajorma/jg18 - replace container references if necessary
 	strcpy_s(temp_buf, Messages[message_num].message);
-	if (sexp_replace_variable_names_with_values(temp_buf, MESSAGE_LENGTH))
+	const bool replace_var = sexp_replace_variable_names_with_values(temp_buf, MESSAGE_LENGTH - 1);
+	const bool replace_con = sexp_container_replace_refs_with_values(temp_buf, MESSAGE_LENGTH - 1);
+	if (replace_var || replace_con)
 		MessageQ[i].special_message = vm_strdup(temp_buf);
 
-	// SPECIAL HACK -- if the who_from is terran command, and there is a wingman persona attached
-	// to this message, then set a bit to tell the wave/anim playing code to play the command version
-	// of the wave and head
 	MessageQ[i].flags = 0;
-	if ( !stricmp(who_from, The_mission.command_sender) && (m_persona != -1) && (Personas[m_persona].flags & PERSONA_FLAG_WINGMAN) ) {
-		MessageQ[i].flags |= MQF_CONVERT_TO_COMMAND;
-		MessageQ[i].source = HUD_SOURCE_TERRAN_CMD;
-	}
 
+	// wingman personas have their alive status checked
 	if ( (m_persona != -1) && (Personas[m_persona].flags & PERSONA_FLAG_WINGMAN) ) {
-		if ( !strstr(who_from, ".wav") ) {
+		bool convert_to_command = false;
+
+		// SPECIAL HACK -- if the who_from is terran command, and there is a wingman persona attached
+		// to this message, then set a bit to tell the wave/anim playing code to play the command version
+		// of the wave and head
+		// ADDENDUM -- Since the special hack is specifically for mission-unique messages, don't
+		// convert built-in messages to Command
+		if ( builtin_type < 0 && !stricmp(who_from, The_mission.command_sender) ) {
+			// ADDENDUM 2 -- perform an additional check: only convert this message if a WAV exists for it
+			auto m = &Messages[message_num];
+			if (m->wave_info.index >= 0) {
+				auto filename = Message_waves[m->wave_info.index].name;
+				if (message_filename_has_fs1_wingman_prefix(filename)) {
+					char converted[MAX_FILENAME_LEN];
+					message_filename_convert_to_command(converted, filename);
+					if (cf_exists_full_ext(converted, CF_TYPE_VOICE_SPECIAL, NUM_AUDIO_EXT, audio_ext_list)) {
+						convert_to_command = true;
+					}
+				}
+			}
+		}
+
+		if (convert_to_command) {
+			MessageQ[i].flags |= MQF_CONVERT_TO_COMMAND;
+			MessageQ[i].source = HUD_SOURCE_TERRAN_CMD;
+		} else {
 			MessageQ[i].flags |= MQF_CHECK_ALIVE;
 		}
 	}
@@ -1729,7 +1760,7 @@ void message_queue_message( int message_num, int priority, int timing, const cha
 		MessageQ[i].window_timestamp = timestamp(MESSAGE_ANYTIME_TIMESTAMP);		// make invalid
 
 	MessageQ_num++;
-	insertion_sort(MessageQ, MAX_MESSAGE_Q, sizeof(message_q), message_queue_priority_compare);
+	insertion_sort(MessageQ, MAX_MESSAGE_Q, message_queue_priority_compare);
 
 	// Try to start it!
 	// MWA -- called every frame from game loop

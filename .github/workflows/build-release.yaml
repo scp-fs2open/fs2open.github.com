@@ -16,6 +16,17 @@ jobs:
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
+        # Creates a release package page on github
+        # create_release.inputs:      (notable inputs)
+        #   allowUpdates=false        if true, update an existing release if it exists
+        #   artifactErrorsFailBuild=false   if true, fails the build should artifact read/write errors occur
+        #   artifacts                 optional set of paths to artifacts to upload to the release. comma delimited.
+        #   removeArtifacts=false     if true, remove existing artifacts
+        #   replaceArtifacts=false    if true, replace/overwrite existing artifacts
+        # create_release.outputs:
+        #   id          id of the created release
+        #   html_url    HTML URL of the release
+        #   upload_url  FTP URL of the release where assets are uploaded
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
         with:
@@ -23,32 +34,53 @@ jobs:
           release_name: Release ${{ github.ref }}
           draft: false
           prerelease: false
-      - name: Store upload URL
-        run: |
-          echo -n "${{ steps.create_release.outputs.upload_url }}" > upload_url
-      - name: Persist upload URL
-        uses: actions/upload-artifact@v2
-        with:
-          name: upload_url
-          path: ${{ github.workspace }}/upload_url
 
   build_linux:
     strategy:
       matrix:
+        # Run this job for each configuration
+        # The current config running is accesible with `matrix.configuration`
         configuration: [FastDebug, Release]
     name: Linux
-    needs: create_release
+    needs: create_release   # Don't run this job until create_release is done and successful
     runs-on: ubuntu-latest
-    container: ghcr.io/scp-fs2open/linux_build:sha-11e553c
+    container: ghcr.io/scp-fs2open/linux_build:sha-8a6bbbe
     steps:
       - name: Cache Qt
         id: cache-qt-lin
         uses: actions/cache@v1
+        # cache the Qt directory so we don't have to reinstall it every time
+        # cache.inputs:
+        #   path - A list of files, directories, and wildcard patterns to cache and restore. See @actions/glob for supported patterns.
+        #   key - An explicit key for restoring and saving the cache
+        #   restore-keys - An ordered list of keys to use for restoring the cache if no cache hit occurred for key
+        # cache.outputs:
+        #   cache-hit   true when an exact match was found for the key, false otherwise.
         with:
           path: ${{ github.workspace }}/../Qt
           key: ${{ runner.os }}-QtCache-${{ env.QT_VERSION }}
       - name: Install Qt
         uses: jurplel/install-qt-action@v2
+        # installs Qt in the action workflow
+        # install-qt-action.inputs:
+        #   version     desired qt version to install
+        #   host        Host platform of Qt, default to platform used by runs-on
+        #   target      target platform of Qt, default to desktop
+        #   arch        target architecture of Qt, only used for windows or android builds
+        #   dir         root dir Qt will be installed to
+        #   install-deps    if true, auto-install dependencies on linux. Default true
+        #   modules     whitespace delimited list string of additional addon modules to install
+        #   archives    whitespace delimited list string of Qt archives to install
+        #   cached      if true, Don't download Qt but set ENVARs; use with cache.outputs.cache-hit
+        #   setup-python    Set to false to skip using setup-python to find/download a valid python version
+        #   set-env     if true, set ENVARs; default = false
+        #   aqtversion  version of aqtinstall to use; default = 2.0.0
+        #   py7zrversion    version of py7zr to use; default = 0.16.1
+        #   extra       additional arguments to pass to aqinstall
+        # ENVARS set:
+        #   Qt5_DIR / Qt6_DIR
+        #   Qt bin dir appended to PATH
+        #   QT_PLUGIN_PATH, QML2_IMPORT_PATH, PKG_CONFIG_PATH, LD_LIBRARY_PATH
         with:
           version: ${{ env.QT_VERSION }}
           dir: ${{ github.workspace }}/..
@@ -57,9 +89,10 @@ jobs:
           aqtversion: ==1.1.3
 
       - uses: actions/checkout@v1
+        # checks-out your repository under $GITHUB_WORKSPACE, so your workflow can access it.
         name: Checkout
         with:
-          submodules: true
+          submodules: true  # `true` to checkout submodules, `recursive` to recursively checkout submodules
       - name: Configure CMake
         env:
           CONFIGURATION: ${{ matrix.configuration }}
@@ -84,6 +117,15 @@ jobs:
         run: $GITHUB_WORKSPACE/ci/linux/generate_appimage.sh $GITHUB_WORKSPACE/build/install
       - name: Upload build result
         uses: actions/upload-artifact@v2
+        # Upload the url file for use with other runners
+        # upload-artifact.inputs:
+        #   if-no-files-found=warn  What to do if path fails to find any files.
+        #       warn      Display a warning but do not fail the action
+        #       error     Display an error and fail the action
+        #       ignore    No display, No fail
+        #   retention-days=0    Days to keep the artifact.
+        #       0     Use default retention policy of the repo
+        #       1~90  Min 1, Max 90 days to keep the artifact unless changed by repo settings page
         with:
           name: linux-${{ matrix.configuration }}
           path: ${{ github.workspace }}/build/install/*.AppImage
@@ -97,38 +139,37 @@ jobs:
         name: Checkout
         with:
           submodules: true
-          fetch-depth: '0'
-      - name: Download upload URL
-        uses: actions/download-artifact@v1
-        with:
-          name: upload_url
-          path: .
-      - name: Extract upload URL
-        id: extractUploadUrl
-        run: echo "::set-output name=upload_url::$(cat upload_url)"
+          fetch-depth: '0'  # value 0 to fetch all history and tags for all branches
       - name: Download Release builds
-        uses: actions/download-artifact@v1
+        # Grab the release builds
+        uses: actions/download-artifact@v2
         with:
           name: linux-Release
           path: builds
       - name: Download FastDebug builds
+        # Grab the debug builds
         uses: actions/download-artifact@v2
         with:
           name: linux-FastDebug
           path: builds
       - name: Create Distribution package
+        # Zip both builds together
         id: generate_package
         working-directory: ./builds
         run: $GITHUB_WORKSPACE/ci/linux/create_dist_pack.sh Linux
       - name: Upload result package
-        uses: actions/upload-release-asset@v1
+        # Stash the result to artifact filespace
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ steps.generate_package.outputs.package_name }}
+          path: ${{ steps.generate_package.outputs.package_path }}
+      - name: Publish result package
+        # publish the zipped result
+        uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.extractUploadUrl.outputs.upload_url }}
-          asset_path: ${{ steps.generate_package.outputs.package_path }}
-          asset_name: ${{ steps.generate_package.outputs.package_name }}
-          asset_content_type: ${{ steps.generate_package.outputs.package_mime }}
+          files: ${{ steps.generate_package.outputs.package_path }}
 
   build_windows:
     strategy:
@@ -141,16 +182,19 @@ jobs:
     runs-on: windows-2019
     steps:
       - uses: actions/checkout@v1
+        # Checkout repo
         name: Checkout
         with:
           submodules: true
       - name: Cache Qt
+        # Cache Qt
         id: cache-qt-win
         uses: actions/cache@v1
         with:
           path: ${{ github.workspace }}/../Qt
           key: ${{ runner.os }}-${{ matrix.arch }}-QtCache-${{ env.QT_VERSION }}
       - name: Install Qt (32 bit)
+        # Install Qt 32bit if matrix.arch == Win32
         uses: jurplel/install-qt-action@v2
         if: ${{ matrix.arch == 'Win32' }}
         with:
@@ -160,6 +204,7 @@ jobs:
           cached: ${{ steps.cache-qt-win.outputs.cache-hit }}
           aqtversion: ==0.8
       - name: Install Qt (64 bit)
+        # Install Qt 64bit if matrix.arch == x64
         uses: jurplel/install-qt-action@v2
         if: ${{ matrix.arch == 'x64' }}
         with:
@@ -204,39 +249,37 @@ jobs:
         with:
           name: windows-${{ matrix.configuration }}-${{ matrix.arch }}-${{ matrix.simd }}
           path: ${{ github.workspace }}/build/install/*
+
   windows_zip:
     name: Build Windows distribution zip
     needs: build_windows
     runs-on: ubuntu-latest
     container: ghcr.io/scp-fs2open/sftp_upload:sha-748b19d
     strategy:
+      fail-fast: false  # Run the other jobs in the matrix instead of failing them
       matrix:
         arch: [Win32, x64]
         simd: [SSE2, AVX]
+
     steps:
       - uses: actions/checkout@v1
         name: Checkout
         with:
           submodules: true
           fetch-depth: '0'
-      - name: Download upload URL
-        uses: actions/download-artifact@v1
-        with:
-          name: upload_url
-          path: .
-      - name: Extract upload URL
-        id: extractUploadUrl
-        run: echo "::set-output name=upload_url::$(cat upload_url)"
+
       - name: Download Release builds
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v2
         with:
           name: windows-Release-${{ matrix.arch }}-${{ matrix.simd }}
           path: builds
+
       - name: Download FastDebug builds
         uses: actions/download-artifact@v2
         with:
           name: windows-FastDebug-${{ matrix.arch }}-${{ matrix.simd }}
           path: builds
+
       - name: Create Distribution package
         id: generate_package
         working-directory: ./builds
@@ -245,21 +288,33 @@ jobs:
           ARCH: ${{ matrix.arch }}
           SIMD: ${{ matrix.simd }}
         run: $GITHUB_WORKSPACE/ci/linux/create_dist_pack.sh Windows
+
       - name: Upload result package
-        uses: actions/upload-release-asset@v1
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ steps.generate_package.outputs.package_name }}
+          path: ${{ steps.generate_package.outputs.package_path }}
+
+      - name: Upload debug package
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ steps.generate_package.outputs.debug_name }}
+          path: ${{ steps.generate_package.outputs.debug_path }}
+
+      - name: Publish packages
+        uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.extractUploadUrl.outputs.upload_url }}
-          asset_path: ${{ steps.generate_package.outputs.package_path }}
-          asset_name: ${{ steps.generate_package.outputs.package_name }}
-          asset_content_type: ${{ steps.generate_package.outputs.package_mime }}
-      - name: Upload debug symbols
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.extractUploadUrl.outputs.upload_url }}
-          asset_path: ${{ steps.generate_package.outputs.debug_path }}
-          asset_name: ${{ steps.generate_package.outputs.debug_name }}
-          asset_content_type: ${{ steps.generate_package.outputs.debug_mime }}
+          files: |
+            ${{ steps.generate_package.outputs.package_path }}
+            ${{ steps.generate_package.outputs.debug_path }}
+
+  post_build:
+    name: Post builds to Nebula and Forum
+    needs: [linux_zip, windows_zip]
+    uses: ./.github/workflows/post-build-release.yaml
+    with:
+      linux_result: ${{ needs.linux_zip.result }}
+      windows_result: ${{ needs.windows_zip.result }}
+      releaseTag: ${{ github.ref_name }}

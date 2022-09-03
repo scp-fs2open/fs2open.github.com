@@ -1,0 +1,69 @@
+name: Post Release builds
+
+on:
+  workflow_call:
+    # Trigger when called by other workflows
+    inputs:
+      linux_result:   # job.result; either success, failure, canceled or skipped
+        required: true
+        type: string
+      windows_result: # job.result
+        required: true
+        type: string
+      releaseTag:
+        required: true
+        type: string
+
+  workflow_dispatch:
+    # Trigger manually from Github
+    inputs:
+      releaseTag:
+        description: Release Tag
+        required: true
+        type: string
+
+env:
+  GITHUB_REPO: ${{ github.repository }} # repo this workflow was called from
+  INDIEGAMES_USER: ${{ secrets.INDIEGAMES_USER }}
+  INDIEGAMES_SSHPASS: ${{ secrets.INDIEGAMES_PASSWORD }}
+  NEBULA_USER: ${{ secrets.NEBULA_USER }}
+  NEBULA_PASSWORD: ${{ secrets.NEBULA_PASSWORD }}
+  HLP_API: ${{ secrets.HLP_API }}
+  HLP_KEY: ${{ secrets.HLP_KEY }}
+  RELEASE_TAG: ${{ inputs.releaseTag }}
+
+jobs:
+  post_builds:
+    name: Post builds on Nebula and the forums
+    runs-on: ubuntu-latest
+    steps:
+      - name: Caller
+        # Name of what called this yaml.  Used to debug auto/manual step being triggered
+        run: echo "github.event_name= ${{ github.event_name }}"
+
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: '0'
+          ref: ${{ env.RELEASE_TAG }}
+
+      - name: Install Python dependencies
+        run: pip install -r ci/post/requirements.txt
+
+      - name: Post Builds (Auto trigger)
+        if: ${{ (github.event_name == 'workflow_call') || (github.event_name == 'push') }}
+        env:
+          LINUX_RESULT: ${{ inputs.linux_result }}
+          WINDOWS_RESULT: ${{ inputs.windows_result }}
+        run: python ci/post/main.py release
+
+      - name: Post Builds (Manual trigger)
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        # assume user knows what they're doing...
+        env:
+          LINUX_RESULT: success
+          WINDOWS_RESULT: success
+        run: |
+          echo "releaseTag= ${{ env.RELEASE_TAG }}"
+          echo "repository= ${{ github.repository }}"
+          python ci/post/main.py release

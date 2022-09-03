@@ -23,6 +23,7 @@
 #include "ship/subsysdamage.h"
 #include "weapon/emp.h"
 #include "weapon/weapon.h"
+#include "globalincs/alphacolors.h"
 
 float Energy_levels[NUM_ENERGY_LEVELS] = {0.0f,  0.0833f, 0.167f, 0.25f, 0.333f, 0.417f, 0.5f, 0.583f, 0.667f, 0.75f, 0.833f, 0.9167f, 1.0f};
 bool Weapon_energy_cheat = false;
@@ -102,6 +103,9 @@ void update_ets(object* objp, float fl_frametime)
 	} else {
 		shield_delta = Energy_levels[ship_p->shield_recharge_index] * max_new_shield_energy;
 	}
+
+	if (Missiontime - Ai_info[ship_p->ai_index].last_hit_time < fl2f(sinfo_p->shield_regen_hit_delay))
+		shield_delta = 0.0f;
 
 	shield_add_strength(objp, shield_delta);
 
@@ -868,6 +872,24 @@ void HudGaugeEts::blitGauge(int index)
 	clip_h = fl2i( (1 - Energy_levels[index]) * ETS_bar_h );
 
 	bm_get_info(Ets_bar.first_frame,&w,&h);
+
+	if (HUD_shadows) {
+		// These act more as a backing black layer.
+
+		gr_set_color_fast(&Color_black);
+		// draw the top portion
+		x = position[0] + Top_offsets[0];
+		y = position[1] + Top_offsets[1];
+		
+		renderBitmapEx(Ets_bar.first_frame,x,y,w,ETS_bar_h,0,0);
+
+		// draw the bottom portion
+		x = position[0] + Bottom_offsets[0];
+		y = position[1] + Bottom_offsets[1];
+
+		renderBitmapEx(Ets_bar.first_frame, x, y, w, y + ETS_bar_h, 0, 0);
+		gr_set_color_fast(&gauge_color);
+	}
 
 	if ( index < NUM_ENERGY_LEVELS-1 ) {
 		// some portion of dark needs to be drawn

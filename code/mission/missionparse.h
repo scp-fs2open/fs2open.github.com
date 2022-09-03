@@ -11,6 +11,7 @@
 #define _PARSE_H
 
 #include <csetjmp>
+#include <set>
 
 #include "ai/ai.h"
 #include "ai/ai_profiles.h"
@@ -381,7 +382,7 @@ public:
 	int	hotkey;								// hotkey number (between 0 and 9) -1 means no hotkey
 	int	score;
 	float assist_score_pct;					// percentage of the score which players who gain an assist will get when this ship is killed
-	int	orders_accepted;					// which orders this ship will accept from the player
+	std::set<size_t> orders_accepted;					// which orders this ship will accept from the player
 	p_dock_instance	*dock_list;				// Goober5000 - parse objects this parse object is docked to
 	object *created_object;					// Goober5000
 	int	group;								// group object is within or -1 if none.
@@ -422,7 +423,7 @@ public:
 
 	SCP_vector<alt_class> alt_classes;	
 
-	int alt_iff_color[MAX_IFFS][MAX_IFFS];
+	SCP_map<std::pair<int, int>, int> alt_iff_color;
 
 	p_object();
 	~p_object();
@@ -494,7 +495,7 @@ p_object *mission_parse_get_arrival_ship(const char *name);
 bool mission_check_ship_yet_to_arrive(const char *name);
 p_object *mission_parse_get_parse_object(ushort net_signature);
 p_object *mission_parse_get_parse_object(const char *name);
-int parse_create_object(p_object *objp);
+int parse_create_object(p_object *objp, bool standalone_ship = false);
 void resolve_parse_flags(object *objp, flagset<Mission::Parse_Object_Flags> &parse_flags);
 
 void mission_parse_close();
@@ -549,9 +550,6 @@ int get_mission_info(const char *filename, mission *missionp = NULL, bool basic 
 
 // Goober5000
 void parse_dock_one_docked_object(p_object *pobjp, p_object *parent_pobjp);
-
-// Goober5000
-extern int Knossos_warp_ani_used;
 
 // Karajorma
 void swap_parse_object(p_object *p_obj, int ship_class);

@@ -25,6 +25,7 @@
 #include "mission/missionmessage.h"
 #include "mission/missiongoals.h"
 #include "mission/missionbriefcommon.h"
+#include "model/modelreplace.h"
 #include "Management.h"
 #include "cfile/cfile.h"
 #include "graphics/2d.h"
@@ -67,6 +68,7 @@
 #include "mod_table/mod_table.h"
 #include "libs/ffmpeg/FFmpeg.h"
 #include "scripting/scripting.h"
+#include "scripting/global_hooks.h"
 #include "utils/Random.h"
 
 #include <direct.h>
@@ -106,7 +108,7 @@ int wing_objects[MAX_WINGS][MAX_SHIPS_PER_WING];
 char *Docking_bay_list[MAX_DOCKS];
 
 // Goober5000
-bool Show_iff[MAX_IFFS];
+SCP_vector<bool> Show_iff;
 
 CCriticalSection CS_cur_object_index;
 
@@ -146,11 +148,7 @@ int create_ship(matrix *orient, vec3d *pos, int ship_type);
 int query_ship_name_duplicate(int ship);
 char *reg_read_string( char *section, char *name, char *default_value );
 
-extern int Nmodel_num;
-extern int Nmodel_instance_num;
-extern matrix Nmodel_orient;
-extern int Nmodel_bitmap;
-
+// Note that the parameter here is max *length*, not max buffer size.  Leave room for the null-terminator!
 void string_copy(char *dest, const CString &src, size_t max_len, int modify)
 {
 	if (modify)
@@ -158,8 +156,8 @@ void string_copy(char *dest, const CString &src, size_t max_len, int modify)
 			set_modified();
 
 	auto len = strlen(src);
-	if (len >= max_len)
-		len = max_len - 1;
+	if (len > max_len)
+		len = max_len;
 
 	strncpy(dest, src, len);
 	dest[len] = 0;
@@ -191,11 +189,11 @@ void convert_multiline_string(CString &dest, const char *src)
 }
 
 // Converts a windows format multiline CString back into a normal multiline string.
-void deconvert_multiline_string(char *dest, const CString &str, int max_len)
+void deconvert_multiline_string(char *dest, const CString &str, size_t max_len)
 {
 	// leave room for the null terminator
-	memset(dest, 0, max_len);
-	strncpy(dest, (LPCTSTR) str, max_len - 1);
+	memset(dest, 0, max_len + 1);
+	strncpy(dest, (LPCTSTR) str, max_len);
 
 	replace_all(dest, "\r\n", "\n", max_len);
 }
@@ -387,8 +385,9 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	Fred_texture_replacements.clear();
 
 	// Goober5000
-	for (i = 0; i < MAX_IFFS; i++)
-		Show_iff[i] = true;
+	Show_iff.clear();
+	for (i = 0; i < (int)Iff_info.size(); i++)
+		Show_iff.push_back(true);
 
 	// Goober5000
 	strcpy_s(Voice_abbrev_briefing, "");
@@ -407,8 +406,13 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	
 	gamesnd_parse_soundstbl();		// needs to be loaded after species stuff but before interface/weapon/ship stuff - taylor
 	mission_brief_common_init();	
+
+	sexp::dynamic_sexp_init(); // Must happen before ship init for LuaAI
+
+	animation::ModelAnimationParseHelper::parseTables();
 	obj_init();
 	model_free_all();				// Free all existing models
+	virtual_pof_init();
 	ai_init();
 	ai_profiles_init();
 	armor_init();
@@ -448,7 +452,6 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 
 	libs::ffmpeg::initialize();
 
-	sexp::dynamic_sexp_init();
 
 	// wookieejedi
 	// load in the controls and defaults including the controlconfigdefault.tbl
@@ -469,7 +472,9 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	Fred_main_wnd -> init_tools();
 
 	Script_system.RunInitFunctions();
-	Script_system.RunCondition(CHA_GAMEINIT);
+	if (scripting::hooks::OnGameInit->isActive()) {
+		scripting::hooks::OnGameInit->run();
+	}
 
 	return true;
 }
@@ -550,9 +555,6 @@ int create_ship(matrix *orient, vec3d *pos, int ship_type)
 	if (query_ship_name_duplicate(Objects[obj].instance))
 		fix_ship_name(Objects[obj].instance);
 
-	// set up model stuff - only needs to be done once, not every frame
-	model_set_up_techroom_instance(sip, shipp->model_instance_num);
-
 	// default stuff according to species and IFF
 	shipp->team = Species_info[Ship_info[shipp->ship_info_index].species].default_iff;
 	resolve_parse_flags(&Objects[obj], Iff_info[shipp->team].default_parse_flags);
@@ -587,12 +589,12 @@ int create_ship(matrix *orient, vec3d *pos, int ship_type)
 			if (!(sip->is_small_ship()))
 			{
 				shipp->orders_accepted = ship_get_default_orders_accepted( sip );
-				shipp->orders_accepted &= ~DEPART_ITEM;
+				shipp->orders_accepted.erase(DEPART_ITEM);
 			}
 		}
 		else
 		{
-			shipp->orders_accepted = 0;
+			shipp->orders_accepted.clear();
 		}
 	}
 	
@@ -847,10 +849,10 @@ void clear_mission()
 
 	strcpy_s(Mission_parse_storm_name, "none");
 
+	animation::ModelAnimationParseHelper::parseTables();
 	obj_init();
 	model_free_all();				// Free all existing models
 	ai_init();
-	ai_profiles_init();
 	ship_init();
 	jumpnode_level_close();
 	waypoint_level_close();
@@ -862,8 +864,9 @@ void clear_mission()
 		Wings[i].wing_insignia_texture = -1;
 	}
 
-	for (i=0; i<MAX_IFFS; i++){
-		Shield_sys_teams[i] = 0;
+	Shield_sys_teams.clear();
+	for (i=0; i< (int)Iff_info.size(); i++){
+		Shield_sys_teams.push_back(0);
 	}
 
 	for (i=0; i<MAX_SHIP_CLASSES; i++){
@@ -941,9 +944,6 @@ void clear_mission()
 		Team_data[i].num_weapon_choices = count; 
 	}
 
-	*Parse_text = *Parse_text_raw = '\0';
-	Parse_text[1] = Parse_text_raw[1] = 0;
-
 	waypoint_parse_init();
 	Num_mission_events = 0;
 	Num_goals = 0;
@@ -955,7 +955,6 @@ void clear_mission()
 	messages_init();
 	brief_reset();
 	debrief_reset();
-	ship_init();
 	event_music_reset_choices();
 	clear_texture_replacements();
 
@@ -978,7 +977,7 @@ void clear_mission()
 	Neb2_awacs = -1.0f;
 	Neb2_poof_flags = 0;
 	strcpy_s(Neb2_texture_name, "");
-	for(i=0; i<MAX_NEB2_POOFS; i++){
+	for(i=0; i<(int)MAX_NEB2_POOFS; i++){
 		Neb2_poof_flags |= (1<<i);
 	}
 
@@ -1014,6 +1013,11 @@ void clear_mission()
 	The_mission.sound_environment.id = -1;
 
 	ENVMAP = -1;
+
+	// free memory from all parsing so far -- see also the stop_parse() in player_select_close() which frees all tbls found during game_init()
+	stop_parse();
+	// however, FRED expects to parse comments from the raw buffer, so we need a nominal string for that
+	allocate_parse_text(1);
 
 	set_modified(FALSE);
 	Update_window = 1;
@@ -2472,7 +2476,7 @@ void management_add_ships_to_combo( CComboBox *box, int flags )
 	{
 		for (restrict_to_players = 0; restrict_to_players < 2; restrict_to_players++)
 		{
-			for (i = 0; i < Num_iffs; i++)
+			for (i = 0; i < (int)Iff_info.size(); i++)
 			{
 				char tmp[NAME_LENGTH + 15];
 				stuff_special_arrival_anchor_name(tmp, i, restrict_to_players, 0);

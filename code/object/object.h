@@ -18,6 +18,7 @@
 #include "object/object_flags.h"
 #include "physics/physics.h"
 #include "utils/event.h"
+#include "network/multi_interpolate.h"
 
 #include <functional>
 
@@ -109,8 +110,8 @@ typedef struct obj_flag_name {
 	int flag_list;
 } obj_flag_name;
 
-#define MAX_OBJECT_FLAG_NAMES			10
 extern obj_flag_name Object_flag_names[];
+extern const int Num_object_flag_names;
 
 struct dock_instance;
 class model_draw_list;
@@ -123,7 +124,6 @@ public:
 	char			type;				// what type of object this is... robot, weapon, hostage, powerup, fireball
 	int				parent;			// This object's parent.
 	int				parent_sig;		// This object's parent's signature
-	char			parent_type;	// This object's parent's type
 	int				instance;		// which instance.  ie.. if type is Robot, then this indexes into the Robots array
 	flagset<Object::Object_Flags> flags;			// misc flags.  Call obj_set_flags to change this.
 	vec3d			pos;				// absolute x,y,z coordinate of center of object
@@ -147,6 +147,8 @@ public:
 
 	util::event<void, object*> pre_move_event;
 	util::event<void, object*> post_move_event;
+
+	interpolation_manager interp_info;
 
 	object();
 	~object();
@@ -181,7 +183,6 @@ public:
 	int	signature;
 	flagset<Object::Object_Flags>	flags;
 	int	parent_sig;
-	int	parent_type;
 
     checkobject();
 };
@@ -215,7 +216,7 @@ extern object *Player_obj;	// Which object is the player. Has to be valid.
 // given it's pointer.  This way, we can replace it with a macro
 // to check that the pointer is valid for debugging.
 // This code will break in 64 bit builds when we have more than 2^31 objects but that will probably never happen
-#define OBJ_INDEX(objp) (int)(objp-Objects)
+#define OBJ_INDEX(objp) static_cast<int>(objp-Objects)
 
 /*
  *		FUNCTIONS

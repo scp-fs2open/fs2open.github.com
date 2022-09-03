@@ -98,7 +98,7 @@ void warpin_queue_render(model_draw_list *scene, object *obj, matrix *orient, ve
 		}
 	}
 
-	if ( (warp_model_id >= 0) && (warp_3d || Fireball_use_3d_warp) ) {
+	if ( (warp_model_id >= 0) && (warp_3d) ) {
 		model_render_params render_info;
 
 		float scale = radius / 25.0f;

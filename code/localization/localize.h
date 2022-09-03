@@ -25,8 +25,8 @@
 #define LCL_FRENCH						2
 #define LCL_POLISH						3
 
-#define LCL_UNTRANSLATED				10	// this should be higher than the highest builtin language
-#define LCL_RETAIL_HYBRID				11	// ditto; this is the weird retail behavior where internal is translated but external isn't
+#define LCL_UNTRANSLATED				100		// this should be higher than the highest builtin or custom language index
+#define LCL_RETAIL_HYBRID				101		// ditto; this is the weird retail behavior where internal is translated but external isn't
 #define	LCL_DEFAULT						0
 
 // for language name strings

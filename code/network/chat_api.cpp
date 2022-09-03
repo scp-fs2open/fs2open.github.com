@@ -152,7 +152,7 @@ int ConnectToChatServer(char *serveraddr, char *nickname, char *trackerid)
 			return -1;
 		}
 		
-		if (SOCKET_ERROR==bind(Chatsock, reinterpret_cast<LPSOCKADDR>(&Chataddr), sizeof(Chataddr)))
+		if (SOCKET_ERROR==bind(Chatsock, reinterpret_cast<LPSOCKADDR>(&Chataddr), psnet_get_sockaddr_len(&Chataddr)))
 		{
 			return -1;
 		}
@@ -164,7 +164,7 @@ int ConnectToChatServer(char *serveraddr, char *nickname, char *trackerid)
 			return -2;
 		}
 
-		if(SOCKET_ERROR == connect(Chatsock, reinterpret_cast<LPSOCKADDR>(&Chataddr), sizeof(Chataddr)))
+		if(SOCKET_ERROR == connect(Chatsock, reinterpret_cast<LPSOCKADDR>(&Chataddr), psnet_get_sockaddr_len(&Chataddr)))
 		{
 			if(WSAEWOULDBLOCK == WSAGetLastError())
 			{
@@ -1038,8 +1038,10 @@ char * ParseIRCMessage(char *Line, int iMode)
 		RemoveChatUser(szNick);
 		return NULL;
 	}
-	if(stricmp(szCmd,"376")==0) //end of motd, trigger autojoin...
+	if((stricmp(szCmd,"376")==0)||
+		(stricmp(szCmd,"422")==0))
 	{
+		//end of motd (or motd missing), trigger autojoin...
 		if (!Chat_server_connected)
 		{
 			Chat_server_connected=1;
@@ -1100,7 +1102,6 @@ char * ParseIRCMessage(char *Line, int iMode)
 	   (stricmp(szCmd,"254")==0)||
 	   (stricmp(szCmd,"255")==0)||
 	   (stricmp(szCmd,"265")==0)||
-	   (stricmp(szCmd,"372")==0)||
 	   (stricmp(szCmd,"375")==0)
 	   )
 	{

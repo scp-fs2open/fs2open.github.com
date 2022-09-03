@@ -62,8 +62,13 @@ BOOL CMissionGoalsDlg::OnInitDialog()
 	int i, adjust = 0;
 
 	CDialog::OnInitDialog();  // let the base class do the default work
+
 	if (!Show_sexp_help)
-		adjust = -SEXP_HELP_BOX_SIZE;
+	{
+		CRect rect;
+		GetDlgItem(IDC_HELP_BOX)->GetWindowRect(rect);
+		adjust = rect.top - rect.bottom - 20;
+	}
 
 	theApp.init_window(&Mission_goals_wnd_data, this, adjust);
 	m_goals_tree.setup((CEdit *) GetDlgItem(IDC_HELP_BOX));
@@ -445,7 +450,7 @@ void CMissionGoalsDlg::OnChangeGoalDesc()
 	}
 
 	UpdateData(TRUE);
-	string_copy(m_goals[cur_goal].message, m_goal_desc, MAX_GOAL_TEXT);
+	string_copy(m_goals[cur_goal].message, m_goal_desc, MAX_GOAL_TEXT - 1);
 }
 
 void CMissionGoalsDlg::OnChangeGoalRating() 
@@ -506,7 +511,7 @@ void CMissionGoalsDlg::OnChangeGoalName()
 	}
 
 	m_goals_tree.SetItemText(h, m_name);
-	string_copy(m_goals[cur_goal].name, m_name, NAME_LENGTH);
+	string_copy(m_goals[cur_goal].name, m_name, NAME_LENGTH - 1);
 }
 
 void CMissionGoalsDlg::OnCancel()

@@ -204,7 +204,7 @@ size_t cockpit_display_h::GetId() {
 	return m_display_num;
 }
 bool cockpit_display_h::isValid() {
-	if (obj_num < 0 || obj_num > MAX_OBJECTS)
+	if (obj_num < 0 || obj_num >= MAX_OBJECTS)
 	{
 		return false;
 	}

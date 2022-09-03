@@ -204,6 +204,8 @@ enum shader_type {
 	SDR_TYPE_POST_PROCESS_SMAA_BLENDING_WEIGHT,
 	SDR_TYPE_POST_PROCESS_SMAA_NEIGHBORHOOD_BLENDING,
 
+	SDR_TYPE_ENVMAP_SPHERE_WARP,
+
 	NUM_SHADER_TYPES
 };
 
@@ -230,6 +232,7 @@ enum shader_type {
 #define SDR_FLAG_MODEL_AMBIENT_MAP	(1<<19)
 #define SDR_FLAG_MODEL_NORMAL_ALPHA	(1<<20)
 #define SDR_FLAG_MODEL_THICK_OUTLINES (1<<21) // Renders the model geometry as an outline with configurable line width
+#define SDR_FLAG_MODEL_ALPHA_MULT (1<<22) 
 
 #define SDR_FLAG_PARTICLE_POINT_GEN			(1<<0)
 
@@ -712,6 +715,9 @@ typedef struct screen {
 	// dumps the current screen to a file
 	std::function<void(const char* filename)> gf_print_screen;
 
+	// transforms and dumps the current environment map to a file
+	std::function<void(const char* filename)> gf_dump_envmap;
+
 	// Retrieves the zbuffer mode.
 	std::function<int()> gf_zbuffer_get;
 
@@ -982,6 +988,9 @@ extern void gr_get_string_size( int *w, int *h, const char * text, int len = 999
 // Returns the height of the current font
 extern int gr_get_font_height();
 
+// Returns a scaled amount of lines per the current font --wookieejedi
+extern int gr_get_dynamic_font_lines(int number_default_lines);
+
 extern io::mouse::Cursor* Web_cursor;
 
 // Called by OS when application gets/looses focus
@@ -993,6 +1002,7 @@ extern void gr_activate(int active);
 // old Descent-style gr_xxx calls.
 
 #define gr_print_screen		GR_CALL(gr_screen.gf_print_screen)
+#define gr_dump_envmap		GR_CALL(gr_screen.gf_dump_envmap)
 
 //#define gr_flip				GR_CALL(gr_screen.gf_flip)
 void gr_flip(bool execute_scripting = true);

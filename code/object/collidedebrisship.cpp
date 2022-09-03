@@ -15,6 +15,7 @@
 #include "io/timer.h"
 #include "object/objcollide.h"
 #include "object/object.h"
+#include "scripting/global_hooks.h"
 #include "scripting/scripting.h"
 #include "scripting/api/objs/vecmath.h"
 #include "playerman/player.h"
@@ -71,15 +72,24 @@ int collide_debris_ship( obj_pair * pair )
 		hit = debris_check_collision(debris_objp, ship_objp, &hitpos, &debris_hit_info );
 		if ( hit )
 		{
-			Script_system.SetHookObjects(4, "Self", ship_objp, "Object", debris_objp, "Ship", ship_objp, "Debris", debris_objp);
-			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(hitpos));
-			bool ship_override = Script_system.IsConditionOverride(CHA_COLLIDEDEBRIS, ship_objp);
-			Script_system.RemHookVars({ "Self", "Object", "Ship", "Debris", "Hitpos" });
+			bool ship_override = false, debris_override = false;
 
-			Script_system.SetHookObjects(4, "Self", debris_objp, "Object", ship_objp, "Ship", ship_objp, "Debris", debris_objp);
-			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(hitpos));
-			bool debris_override = Script_system.IsConditionOverride(CHA_COLLIDESHIP, debris_objp);
-			Script_system.RemHookVars({ "Self", "Object", "Ship", "Debris", "Hitpos" });
+			if (Script_system.IsActiveAction(CHA_COLLIDEDEBRIS)) {
+				Script_system.SetHookObjects(4, "Self", ship_objp, "Object", debris_objp, "Ship", ship_objp, "Debris", debris_objp);
+				Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(hitpos));
+				ship_override = Script_system.IsConditionOverride(CHA_COLLIDEDEBRIS, ship_objp, debris_objp);
+				Script_system.RemHookVars({ "Self", "Object", "Ship", "Debris", "Hitpos" });
+			}
+
+			if (scripting::hooks::OnShipCollision->isActive()) {
+				debris_override = scripting::hooks::OnShipCollision->isOverride(
+					scripting::hook_param_list(scripting::hook_param("Self", 'o', debris_objp),
+						scripting::hook_param("Object", 'o', ship_objp),
+						scripting::hook_param("Ship", 'o', ship_objp),
+						scripting::hook_param("Debris", 'o', debris_objp),
+						scripting::hook_param("Hitpos", 'o', hitpos)),
+					debris_objp, ship_objp);
+			}
 
 			if(!ship_override && !debris_override)
 			{
@@ -144,20 +154,23 @@ int collide_debris_ship( obj_pair * pair )
 				collide_ship_ship_do_sound(&hitpos, ship_objp, debris_objp, ship_objp==Player_obj);
 			}
 
-			if (!(debris_override && !ship_override))
+			if (Script_system.IsActiveAction(CHA_COLLIDEDEBRIS) && !(debris_override && !ship_override))
 			{
 				Script_system.SetHookObjects(4, "Self", ship_objp, "Object", debris_objp, "Ship", ship_objp, "Debris", debris_objp);
 				Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(hitpos));
-				Script_system.RunCondition(CHA_COLLIDEDEBRIS, ship_objp);
+				Script_system.RunCondition(CHA_COLLIDEDEBRIS, ship_objp, debris_objp);
 				Script_system.RemHookVars({ "Self", "Object", "Ship", "Debris", "Hitpos" });
 			}
 
-			if ((debris_override && !ship_override) || (!debris_override && !ship_override))
+			if (scripting::hooks::OnShipCollision->isActive() && ((debris_override && !ship_override) || (!debris_override && !ship_override)))
 			{
-				Script_system.SetHookObjects(4, "Self", debris_objp, "Object", ship_objp, "Ship", ship_objp, "Debris", debris_objp);
-				Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(hitpos));
-				Script_system.RunCondition(CHA_COLLIDESHIP, debris_objp);
-				Script_system.RemHookVars({ "Self", "Object", "Ship", "Debris", "Hitpos" });
+				scripting::hooks::OnShipCollision->run(
+					scripting::hook_param_list(scripting::hook_param("Self", 'o', debris_objp),
+						scripting::hook_param("Object", 'o', ship_objp),
+						scripting::hook_param("Ship", 'o', ship_objp),
+						scripting::hook_param("Debris", 'o', debris_objp),
+						scripting::hook_param("Hitpos", 'o', hitpos)),
+					debris_objp, ship_objp);
 			}
 
 			return 0;
@@ -236,16 +249,25 @@ int collide_asteroid_ship( obj_pair * pair )
 		hit = asteroid_check_collision(asteroid_objp, ship_objp, &hitpos, &asteroid_hit_info );
 		if ( hit )
 		{
-			//Scripting support (WMC)
-			Script_system.SetHookObjects(4, "Self", ship_objp, "Object", asteroid_objp, "Ship", ship_objp, "Asteroid", asteroid_objp);
-			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(hitpos));
-			bool ship_override = Script_system.IsConditionOverride(CHA_COLLIDEASTEROID, ship_objp);
-			Script_system.RemHookVars({ "Self", "Object", "Ship", "Asteroid", "Hitpos" });
+			bool ship_override = false, asteroid_override = false;
 
-			Script_system.SetHookObjects(4, "Self", asteroid_objp, "Object", ship_objp, "Ship", ship_objp, "Asteroid", asteroid_objp);
-			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(hitpos));
-			bool asteroid_override = Script_system.IsConditionOverride(CHA_COLLIDESHIP, asteroid_objp);
-			Script_system.RemHookVars({ "Self", "Object", "Ship", "Asteroid", "Hitpos" });
+			//Scripting support (WMC)
+			if (Script_system.IsActiveAction(CHA_COLLIDEASTEROID)) {
+				Script_system.SetHookObjects(4, "Self", ship_objp, "Object", asteroid_objp, "Ship", ship_objp, "Asteroid", asteroid_objp);
+				Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(hitpos));
+				ship_override = Script_system.IsConditionOverride(CHA_COLLIDEASTEROID, ship_objp, asteroid_objp);
+				Script_system.RemHookVars({ "Self", "Object", "Ship", "Asteroid", "Hitpos" });
+			}
+
+			if (scripting::hooks::OnShipCollision->isActive()) {
+				asteroid_override = scripting::hooks::OnShipCollision->isOverride(
+					scripting::hook_param_list(scripting::hook_param("Self", 'o', asteroid_objp),
+						scripting::hook_param("Object", 'o', ship_objp),
+						scripting::hook_param("Ship", 'o', ship_objp),
+						scripting::hook_param("Asteroid", 'o', asteroid_objp),
+						scripting::hook_param("Hitpos", 'o', hitpos)),
+					asteroid_objp, ship_objp);
+			}
 
 			if(!ship_override && !asteroid_override)
 			{
@@ -314,20 +336,23 @@ int collide_asteroid_ship( obj_pair * pair )
 				collide_ship_ship_do_sound(&hitpos, ship_objp, asteroid_objp, ship_objp==Player_obj);
 			}
 
-			if (!(asteroid_override && !ship_override))
+			if (Script_system.IsActiveAction(CHA_COLLIDEASTEROID) && !(asteroid_override && !ship_override))
 			{
 				Script_system.SetHookObjects(4, "Self", ship_objp, "Object", asteroid_objp, "Ship", ship_objp, "Asteroid", asteroid_objp);
 				Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(hitpos));
-				Script_system.RunCondition(CHA_COLLIDEASTEROID, ship_objp);
+				Script_system.RunCondition(CHA_COLLIDEASTEROID, ship_objp, asteroid_objp);
 				Script_system.RemHookVars({ "Self", "Object", "Ship", "Asteroid", "Hitpos" });
 			}
 
-			if ((asteroid_override && !ship_override) || (!asteroid_override && !ship_override))
+			if (scripting::hooks::OnShipCollision->isActive() && ((asteroid_override && !ship_override) || (!asteroid_override && !ship_override)))
 			{
-				Script_system.SetHookObjects(4, "Self", asteroid_objp, "Object", ship_objp, "Ship", ship_objp, "Asteroid", asteroid_objp);
-				Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(hitpos));
-				Script_system.RunCondition(CHA_COLLIDESHIP, asteroid_objp);
-				Script_system.RemHookVars({ "Self", "Object", "Ship", "Asteroid", "Hitpos" });
+				scripting::hooks::OnShipCollision->run(
+					scripting::hook_param_list(scripting::hook_param("Self", 'o', asteroid_objp),
+						scripting::hook_param("Object", 'o', ship_objp),
+						scripting::hook_param("Ship", 'o', ship_objp),
+						scripting::hook_param("Asteroid", 'o', asteroid_objp),
+						scripting::hook_param("Hitpos", 'o', hitpos)),
+					asteroid_objp, ship_objp);
 			}
 
 			return 0;

@@ -70,6 +70,7 @@ enum class HudAlignment
 
 extern int HUD_draw;
 extern int HUD_contrast;
+extern bool HUD_shadows;
 
 #define HUD_NUM_COLOR_LEVELS	16
 extern color HUD_color_defaults[HUD_NUM_COLOR_LEVELS];
@@ -208,6 +209,7 @@ int hud_disabled_except_messages();
 // contrast stuff
 void hud_toggle_contrast();
 void hud_set_contrast(int high);
+void hud_toggle_shadows();
 
 class HudGauge 
 {
@@ -219,6 +221,13 @@ protected:
 	int gauge_object;
 
 	int font_num;
+
+	// useful information to keep around for scripts
+	float tabled_origin[2];
+	int tabled_offset[2];
+	bool tabled_use_coords;
+	int tabled_coords[2];
+	float aspect_quotient;
 
 	bool lock_color;
 	bool sexp_lock_color;
@@ -262,17 +271,29 @@ public:
 	virtual ~HudGauge();
 
 	void initPosition(int x, int y);
-	void initBaseResolution(int w, int h);
-	void initSlew(bool slew);
+	void initBaseResolution(int w, int h, float aq);
 	void initFont(int input_font_num);
+	void initOriginAndOffset(float originX, float originY, int offsetX, int offsetY);
+	void initCoords(bool use_coords, int coordsX, int coordsY);
+
+	void initSlew(bool slew);
 	void initCockpitTarget(const char* display_name, int _target_x, int _target_y, int _target_w, int _target_h, int _canvas_w, int _canvas_h);
 	void initRenderStatus(bool render);
+
+	bool isCustom();
+	int getBaseWidth();
+	int getBaseHeight();
+	float getAspectQuotient();
 
 	int getConfigType();
 	int getObjectType();
 	void getPosition(int *x, int *y);
 	bool isOffbyDefault();
 	bool isActive();
+
+	int getFont();
+	void getOriginAndOffset(float *originX, float *originY, int *offsetX, int *offsetY);
+	void getCoords(bool* use_coords, int* coordsX, int* coordsY);
 	
 	void updateColor(int r, int g, int b, int a = 255);
 	const color& getColor();
@@ -549,7 +570,8 @@ public:
 	void render(float frametime) override;
 };
 
-HudGauge* hud_get_gauge(const char* name);
+HudGauge* hud_get_custom_gauge(const char* name, bool check_all_gauges = false);
+int hud_get_default_gauge_index(const char* name);
 
 extern SCP_vector<std::unique_ptr<HudGauge>> default_hud_gauges;
 

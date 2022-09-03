@@ -44,7 +44,7 @@ public:
 	{}
 };
 
-SCP_unordered_map<uint, collider_pair> Collision_cached_pairs;
+static SCP_unordered_map<uint, collider_pair> Collision_cached_pairs;
 
 class checkobject;
 extern checkobject CheckObjects[MAX_OBJECTS];
@@ -541,14 +541,14 @@ int collide_remove_weapons( )
 
 }
 
-void set_hit_struct_info(collision_info_struct *hit, mc_info *mc, int submodel_rot_hit)
+void set_hit_struct_info(collision_info_struct *hit, mc_info *mc, bool submodel_move_hit)
 {
 	hit->edge_hit = mc->edge_hit;
 	hit->hit_pos = mc->hit_point_world;
 	hit->hit_time = mc->hit_dist;
 	hit->submodel_num = mc->hit_submodel;
 
-	hit->submodel_rot_hit = submodel_rot_hit;
+	hit->submodel_move_hit = submodel_move_hit;
 }
 
 //Previously, this was done with 
@@ -569,7 +569,6 @@ void obj_add_collider(int obj_index)
 	CheckObjects[obj_index].signature = objp->signature;
     CheckObjects[obj_index].flags = objp->flags - Object::Object_Flags::Not_in_coll;
 	CheckObjects[obj_index].parent_sig = objp->parent_sig;
-	CheckObjects[obj_index].parent_type = objp->parent_type;
 #endif
 
 	if(!(objp->flags[Object::Object_Flags::Not_in_coll])){
@@ -604,10 +603,10 @@ void obj_reset_colliders()
 	Collision_cached_pairs.clear();
 }
 
-void obj_collide_retime_cached_pairs(int checkdly)
+void obj_collide_retime_cached_pairs()
 {
 	for ( auto& pair : Collision_cached_pairs ) {
-		pair.second.next_check_time = timestamp(checkdly);
+		pair.second.next_check_time = timestamp(0);
 	}
 }
 

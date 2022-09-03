@@ -372,7 +372,7 @@ bool CFtpGet::IssuePasv()
 		return false;
 	}
 
-	if ( connect(m_DataSock, reinterpret_cast<LPSOCKADDR>(&dataaddr), sizeof(dataaddr)) == SOCKET_ERROR ) {
+	if ( connect(m_DataSock, reinterpret_cast<LPSOCKADDR>(&dataaddr), psnet_get_sockaddr_len(&dataaddr)) == SOCKET_ERROR ) {
 		return false;
 	}
 
@@ -392,7 +392,7 @@ int CFtpGet::ConnectControlSocket()
 	}
 
 	// Now we will connect to the host
-	if ( connect(m_ControlSock, reinterpret_cast<LPSOCKADDR>(&m_ServerAddr), sizeof(m_ServerAddr)) ) {
+	if ( connect(m_ControlSock, reinterpret_cast<LPSOCKADDR>(&m_ServerAddr), psnet_get_sockaddr_len(&m_ServerAddr)) ) {
 		m_State = FTP_STATE_CANT_CONNECT;
 		return 0;
 	}

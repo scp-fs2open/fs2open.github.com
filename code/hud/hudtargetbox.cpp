@@ -693,7 +693,7 @@ void HudGaugeTargetBox::renderTargetShip(object *target_objp)
 	setGaugeColor();
 
 	renderTargetShipInfo(target_objp);
-	maybeRenderCargoScan(target_sip);
+	maybeRenderCargoScan(target_sip, Player_ai->targeted_subsys);
 }
 
 /**
@@ -826,7 +826,7 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 		return;
 
 	is_homing = FALSE;
-	if ( target_wip->is_homing() && wp->homing_object != &obj_used_list )
+	if ( target_wip->is_homing() && weapon_has_homing_object(wp) )
 		is_homing = TRUE;
 
 	is_player_missile = FALSE;
@@ -1566,6 +1566,23 @@ void get_turret_subsys_name(ship_weapon *swp, char *outstr)
 
 	//WMC - find the first weapon, if there is one
 	if (swp->num_primary_banks || swp->num_secondary_banks) {
+		// allow the first weapon on the turret to specify the name
+		for (int i = 0; i < swp->num_primary_banks; ++i) {
+			auto wip = &Weapon_info[swp->primary_bank_weapons[i]];
+			if (*(wip->altSubsysName) != '\0') {
+				sprintf(outstr, "%s", wip->altSubsysName);
+				return;
+			}
+		} 
+		for (int i = 0; i < swp->num_secondary_banks; ++i) {
+			auto wip = &Weapon_info[swp->secondary_bank_weapons[i]];
+			if (*(wip->altSubsysName) != '\0') {
+				sprintf(outstr, "%s", wip->altSubsysName);
+				return;
+			}
+		}
+
+		// otherwise use a general name based on the type of weapon(s) on the turret
 		auto flags = turret_weapon_aggregate_flags(swp);
 
 		// check if beam or flak using weapon flags
@@ -1578,17 +1595,13 @@ void get_turret_subsys_name(ship_weapon *swp, char *outstr)
 				sprintf(outstr, "%s", XSTR("Missile lnchr", 1569));
 			} else if (turret_weapon_has_subtype(swp, WP_LASER)) {
 				// ballistic too! - Goober5000
-				if (flags[Weapon::Info_Flags::Ballistic])
-				{
+				if (flags[Weapon::Info_Flags::Ballistic]) {
 					sprintf(outstr, "%s", XSTR("Turret", 1487));
 				}
 				// the TVWP has some primaries flagged as bombs
-				else if (flags[Weapon::Info_Flags::Bomb])
-				{
+				else if (flags[Weapon::Info_Flags::Bomb]) {
 					sprintf(outstr, "%s", XSTR("Missile lnchr", 1569));
-				}
-				else
-				{
+				} else {
 					sprintf(outstr, "%s", XSTR("Laser turret", 1568));
 				}
 			} else {
@@ -1871,16 +1884,21 @@ void hud_update_cargo_scan_sound()
 /**
  * If the player is scanning for cargo, draw some cool scanning lines on the target monitor
  */
-void HudGaugeTargetBox::maybeRenderCargoScan(ship_info *target_sip)
+void HudGaugeTargetBox::maybeRenderCargoScan(ship_info *target_sip, ship_subsys *target_subsys)
 {
 	int x1, y1, x2, y2;
-	int scan_time;				// time required to scan ship
+	float scan_time;				// time required to scan ship
 
 	if ( Player->cargo_inspect_time <= 0  ) {
 		return;
 	}
 
-	scan_time = target_sip->scan_time;
+	if (target_subsys && target_subsys->system_info->scan_time > 0)
+		scan_time = i2fl(target_subsys->system_info->scan_time);
+	else
+		scan_time = i2fl(target_sip->scan_time);
+	scan_time *= Ship_info[Player_ship->ship_info_index].scanning_time_multiplier;
+
 	setGaugeColor(HUD_C_BRIGHT);
 
 	// draw horizontal scan line

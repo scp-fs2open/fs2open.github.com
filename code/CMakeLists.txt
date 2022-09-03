@@ -66,6 +66,8 @@ TARGET_LINK_LIBRARIES(code PUBLIC jansson)
 
 target_link_libraries(code PUBLIC variant)
 
+target_link_libraries(code PUBLIC any)
+
 # Headers for standalone "gui" on UNIX
 IF(UNIX)
 	TARGET_LINK_LIBRARIES(code PUBLIC ${MONGOOSE_LIBS})
@@ -104,3 +106,6 @@ set_target_properties(code PROPERTIES XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYM
 set_target_properties(code PROPERTIES XCODE_ATTRIBUTE_COPY_PHASE_STRIP[variant=Debug] "NO")
 set_target_properties(code PROPERTIES XCODE_ATTRIBUTE_STRIP_INSTALLED_PRODUCT[variant=Debug] "NO")
 set_target_properties(code PROPERTIES XCODE_ATTRIBUTE_GCC_SYMBOLS_PRIVATE_EXTERN[variant=Debug] "NO")
+
+# Prevent GCC warnings in third-party BitOp... see GitHub #4366
+suppress_file_warnings(scripting/lua/bitop/bit.c)

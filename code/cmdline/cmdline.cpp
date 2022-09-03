@@ -19,6 +19,7 @@
 #include "hud/hudconfig.h"
 #include "io/joy.h"
 #include "network/multi.h"
+#include "network/multi_log.h"
 #include "options/OptionsManager.h"
 #include "osapi/osapi.h"
 #include "parse/sexp.h"
@@ -42,6 +43,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <cstdio>
+#include <sstream>
 
 #include <jansson.h>
 
@@ -195,6 +197,7 @@ Flag exe_params[] =
 	{ "-no_enhanced_sound",	"Disable enhanced sound",					false,	0,									EASY_DEFAULT,					"Audio",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_enhanced_sound", },
 
 	{ "-portable_mode",		"Store config in portable location",		false,	0,									EASY_DEFAULT,					"Launcher",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-portable_mode", },
+	{ "-joy_info",			"Outputs SDL joystick info",				true,	0,									EASY_DEFAULT,					"Launcher",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-joy_info",},
 
 	{ "-standalone",		"Run as standalone server",					false,	0,									EASY_DEFAULT,					"Multiplayer",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-standalone", },
 	{ "-startgame",			"Skip mainhall and start hosting",			false,	0,									EASY_DEFAULT,					"Multiplayer",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-startgame", },
@@ -220,6 +223,9 @@ Flag exe_params[] =
 	{ "-set_cpu_affinity",	"Sets processor affinity to config value",	true,	0,									EASY_DEFAULT,					"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-set_cpu_affinity", },
 	{ "-nograb",			"Disables mouse grabbing",					true,	0,									EASY_DEFAULT,					"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nograb", },
 	{ "-noshadercache",		"Disables the shader cache",				true,	0,									EASY_DEFAULT,					"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-noshadercache", },
+	{ "-prefer_ipv4",		"Prefer IPv4 DNS lookups",					true,	0,									EASY_DEFAULT,					"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-prefer_ipv4", },
+	{ "-prefer_ipv6",		"Prefer IPv6 DNS lookups",					true,	0,									EASY_DEFAULT,					"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-prefer_ipv6", },
+	{ "-log_multi_packet",	"Log multi packet types ",					true,	0,									EASY_DEFAULT,					"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-log_multi_packet",},
 #ifdef WIN32
 	{ "-fix_registry",	"Use a different registry path",				true,	0,									EASY_DEFAULT,					"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-fix_registry", },
 #endif
@@ -240,6 +246,7 @@ Flag exe_params[] =
 	{ "-output_sexps",		"Output SEXPs to sexps.html",				true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-output_sexps", },
 	{ "-output_scripting",	"Output scripting to scripting.html",		true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-output_scripting", },
 	{ "-output_script_json",	"Output scripting doc to scripting.json",	true,	0,								EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-output_script_json", },
+	{ "-controlconfig_tbl",	"Save control presets to table",			true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-controlconfig_tbl", },
 	{ "-save_render_target",	"Save render targets to file",			true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-save_render_target", },
 	{ "-verify_vps",		"Spew VP CRCs to vp_crcs.txt",				true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-verify_vps", },
 	{ "-reparse_mainhall",	"Reparse mainhall.tbl when loading halls",	false,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-reparse_mainhall", },
@@ -251,6 +258,8 @@ Flag exe_params[] =
 	{ "-json_profiling",	"Generate JSON profiling output",			true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-json_profiling", },
 	{ "-debug_window",		"Enable the debug window",					true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-debug_window", },
 	{ "-gr_debug",		"Output graphics debug information",			true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-gr_debug", },
+	{ "-stdout_log",		"Output log file to stdout",				true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-stdout_log", },
+	{ "-slow_frames_ok",	"Don't adjust timestamps for slow frames",	true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-slow_frames_ok", },
 };
 // clang-format on
 
@@ -306,6 +315,7 @@ int Cmdline_use_last_pilot = 0;
 
 // Graphics related
 cmdline_parm fov_arg("-fov", "Vertical field-of-view factor", AT_FLOAT);					// Cmdline_fov  -- comand line FOV -Bobboau
+cmdline_parm fov_cockpit_arg("-fov_cockpit", "Vertical field-of-view factor for Cockpits", AT_FLOAT);
 cmdline_parm clip_dist_arg("-clipdist", "Changes the distance from the viewpoint for the near-clipping plane", AT_FLOAT);		// Cmdline_clip_dist
 cmdline_parm spec_static_arg("-spec_static", "Adjusts suns contribution to specular highlights", AT_FLOAT);
 cmdline_parm spec_point_arg("-spec_point", "Adjusts laser weapons contribution to specular highlights", AT_FLOAT);
@@ -375,21 +385,23 @@ int Cmdline_rearm_timer = 0;
 int Cmdline_targetinfo = 0;
 
 // Gameplay related
-cmdline_parm use_3dwarp("-3dwarp", NULL, AT_NONE);			// Cmdline_3dwarp
-cmdline_parm ship_choice_3d_arg("-ship_choice_3d", NULL, AT_NONE);	// Cmdline_ship_choice_3d
-cmdline_parm weapon_choice_3d_arg("-weapon_choice_3d", NULL, AT_NONE);	// Cmdline_weapon_choice_3d
-cmdline_parm use_warp_flash("-warp_flash", NULL, AT_NONE);	// Cmdline_warp_flash
-cmdline_parm allow_autpilot_interrupt("-no_ap_interrupt", NULL, AT_NONE);
-cmdline_parm stretch_menu("-stretch_menu", NULL, AT_NONE);	// Cmdline_stretch_menu
+cmdline_parm use_3dwarp("-3dwarp", nullptr, AT_NONE);			// Is now Fireball_use_3d_warp
+cmdline_parm ship_choice_3d_arg("-ship_choice_3d", nullptr, AT_NONE);	// Cmdline_ship_choice_3d
+cmdline_parm weapon_choice_3d_arg("-weapon_choice_3d", nullptr, AT_NONE);	// Cmdline_weapon_choice_3d
+cmdline_parm use_warp_flash("-warp_flash", nullptr, AT_NONE);	// Cmdline_warp_flash
+cmdline_parm allow_autpilot_interrupt("-no_ap_interrupt", nullptr, AT_NONE);
+cmdline_parm stretch_menu("-stretch_menu", nullptr, AT_NONE);	// Cmdline_stretch_menu
 cmdline_parm no_screenshake("-no_screenshake", nullptr, AT_NONE); // Cmdline_no_screenshake
+cmdline_parm deadzone("-deadzone", 
+"Sets the joystick deadzone. Integer value from 0 to 100 as a percentage of the joystick's range (100% would make the stick do nothing). Disables deadzone slider in the in-game Options menu.", AT_INT); //Cmdline_deadzone
 
-int Cmdline_3dwarp = 0;
 int Cmdline_ship_choice_3d = 0;
 int Cmdline_weapon_choice_3d = 0;
 int Cmdline_warp_flash = 0;
 int Cmdline_autopilot_interruptable = 1;
 int Cmdline_stretch_menu = 0;
 int Cmdline_no_screenshake = 0;
+int Cmdline_deadzone = -1;
 
 // Audio related
 cmdline_parm voice_recognition_arg("-voicer", NULL, AT_NONE);	// Cmdline_voice_recognition
@@ -417,6 +429,7 @@ char *Cmdline_gateway_ip = nullptr;
 
 // Launcher related options
 cmdline_parm portable_mode("-portable_mode", NULL, AT_NONE);
+cmdline_parm joy_info("-joy_info", "Outputs SDL joystick info", AT_NONE);
 
 bool Cmdline_portable_mode = false;
 
@@ -436,6 +449,9 @@ cmdline_parm no_geo_sdr_effects("-no_geo_effects", NULL, AT_NONE);
 cmdline_parm set_cpu_affinity("-set_cpu_affinity", NULL, AT_NONE);
 cmdline_parm nograb_arg("-nograb", NULL, AT_NONE);
 cmdline_parm noshadercache_arg("-noshadercache", NULL, AT_NONE);
+cmdline_parm prefer_ipv4_arg("-prefer_ipv4", nullptr, AT_NONE);
+cmdline_parm prefer_ipv6_arg("-prefer_ipv6", nullptr, AT_NONE);
+cmdline_parm log_multi_packet_arg("-log_multi_packet", nullptr, AT_NONE);
 #ifdef WIN32
 cmdline_parm fix_registry("-fix_registry", NULL, AT_NONE);
 #endif
@@ -454,6 +470,9 @@ bool Cmdline_no_geo_sdr_effects = false;
 bool Cmdline_set_cpu_affinity = false;
 bool Cmdline_nograb = false;
 bool Cmdline_noshadercache = false;
+bool Cmdline_prefer_ipv4 = false;
+bool Cmdline_prefer_ipv6 = false;
+bool Cmdline_dump_packet_type = false;
 #ifdef WIN32
 bool Cmdline_alternate_registry_path = false;
 #endif
@@ -487,6 +506,7 @@ cmdline_parm frame_profile_arg("-profile_frame_time", NULL, AT_NONE); //Cmdline_
 cmdline_parm debug_window_arg("-debug_window", NULL, AT_NONE);	// Cmdline_debug_window
 cmdline_parm graphics_debug_output_arg("-gr_debug", nullptr, AT_NONE); // Cmdline_graphics_debug_output
 cmdline_parm log_to_stdout_arg("-stdout_log", nullptr, AT_NONE); // Cmdline_log_to_stdout
+cmdline_parm slow_frames_ok_arg("-slow_frames_ok", nullptr, AT_NONE);	// Cmdline_slow_frames_ok
 
 
 char *Cmdline_start_mission = NULL;
@@ -519,12 +539,14 @@ bool Cmdline_show_video_info = false;
 bool Cmdline_debug_window = false;
 bool Cmdline_graphics_debug_output = false;
 bool Cmdline_log_to_stdout = false;
+bool Cmdline_slow_frames_ok = false;
 
 // Other
 cmdline_parm get_flags_arg(GET_FLAGS_STRING, "Output the launcher flags file", AT_STRING);
 cmdline_parm output_sexp_arg("-output_sexps", NULL, AT_NONE); //WMC - outputs all SEXPs to sexps.html
 cmdline_parm output_scripting_arg("-output_scripting", NULL, AT_NONE);	//WMC
 cmdline_parm output_script_json_arg("-output_script_json", nullptr, AT_NONE);	// m!m
+cmdline_parm generate_controlconfig_arg("-controlconfig_tbl", nullptr, AT_NONE);	
 
 // Deprecated flags - CommanderDJ
 cmdline_parm deprecated_spec_arg("-spec", "Deprecated", AT_NONE);
@@ -540,18 +562,6 @@ cmdline_parm deprecated_missile_lighting_arg("-missile_lighting", "Deprecated", 
 cmdline_parm deprecated_cache_bitmaps_arg("-cache_bitmaps", "Deprecated", AT_NONE);
 cmdline_parm deprecated_no_emissive_arg("-no_emissive_light", "Deprecated", AT_NONE);
 cmdline_parm deprecated_postprocess_arg("-post_process", "Deprecated", AT_NONE);
-
-int Cmdline_deprecated_spec = 0;
-int Cmdline_deprecated_glow = 0;
-int Cmdline_deprecated_normal = 0;
-int Cmdline_deprecated_env = 0;
-int Cmdline_deprecated_tbp = 0;
-int Cmdline_deprecated_jpgtga = 0;
-int Cmdline_deprecated_nohtl = 0;
-bool Cmdline_deprecated_brief_lighting = 0;
-bool Cmdline_deprecated_missile_lighting = false;
-bool Cmdline_deprecated_cache_bitmaps = false;
-bool Cmdline_deprecated_postprocess = false;
 
 #ifndef NDEBUG
 // NOTE: this assumes that os_init() has already been called but isn't a fatal error if it hasn't
@@ -578,60 +588,40 @@ void cmdline_debug_print_cmdline()
 	mprintf(("\n"));
 
 	//Print log messages about any deprecated flags we found - CommanderDJ
-	if(Cmdline_deprecated_spec == 1)
-	{
-		mprintf(("Deprecated flag '-spec' found. Please remove from your cmdline.\n"));
-	}
-
-	if(Cmdline_deprecated_glow == 1)
-	{
-		mprintf(("Deprecated flag '-glow' found. Please remove from your cmdline.\n"));
-	}
-
-	if(Cmdline_deprecated_normal == 1)
-	{
-		mprintf(("Deprecated flag '-normal' found. Please remove from your cmdline.\n"));
-	}
-
-	if(Cmdline_deprecated_env == 1)
-	{
-		mprintf(("Deprecated flag '-env' found. Please remove from your cmdline.\n"));
-	}
-
-	if(Cmdline_deprecated_tbp == 1)
-	{
-		mprintf(("Deprecated flag '-tbp' found. Please remove from your cmdline.\n"));
-	}
-
-	if(Cmdline_deprecated_jpgtga == 1)
-	{
-		mprintf(("Deprecated flag '-jpgtga' found. Please remove from your cmdline.\n"));
-	}
-
-	if(Cmdline_deprecated_nohtl == 1)
-	{
-		mprintf(("Deprecated flag '-nohtl' found. Please remove from your cmdline.\n"));
-	}
-
-	if(Cmdline_deprecated_brief_lighting == 1)
-	{
-		mprintf(("Deprecated flag '-brief_lighting' found. Please remove from your cmdline.\n"));
-	}
-
-	if (Cmdline_deprecated_missile_lighting) 
-	{
-		mprintf(("Deprecated flag '-missile_lighting' found. Please remove from your cmdline.\n"));
-	}
-
-	if (Cmdline_deprecated_cache_bitmaps) {
-		mprintf(("Deprecated flag '-cache_bitmaps' found. Please remove from your cmdline.\n"));
-	}
-
-	if (Cmdline_deprecated_postprocess) {
-		mprintf(("Deprecated flag '-post_process' found. Please remove from your cmdline.\n"));
+	//Do it programmatically, rather than enumerating them by hand - MageKing17
+	for (parmp = GET_FIRST(&Parm_list); parmp != END_OF_LIST(&Parm_list); parmp = GET_NEXT(parmp)) {
+		if (parmp->name_found && !stricmp("deprecated", parmp->help)) {
+			mprintf(("Deprecated flag '%s' found. Please remove from your cmdline.\n", parmp->name));
+		}
 	}
 }
 #endif
+
+// prints simple cmdline to multi.log
+void cmdline_print_cmdline_multi()
+{
+	cmdline_parm *parmp;
+	int found = 0;
+	std::ostringstream cmdline;
+
+	for (parmp = GET_FIRST(&Parm_list); parmp !=END_OF_LIST(&Parm_list); parmp = GET_NEXT(parmp) ) {
+		if ( parmp->name_found ) {
+			cmdline << " " << parmp->name;
+
+			if (parmp->args) {
+				cmdline << " " << parmp->args;
+			}
+
+			found++;
+		}
+	}
+
+	if ( !found ) {
+		cmdline << " <none>";
+	}
+
+	ml_printf("Command line:%s", cmdline.str().c_str());
+}
 
 //	Return true if this character is an extra char (white space and quotes)
 int is_extra_space(char ch)
@@ -1319,6 +1309,7 @@ static json_t* json_get_v1() {
 		json_array_append_new(caps_array, json_string("No D3D"));
 		json_array_append_new(caps_array, json_string("New Sound"));
 		json_array_append_new(caps_array, json_string("SDL"));
+		json_array_append_new(caps_array, json_string("Multijoy"));
 
 		json_object_set_new(root, "caps", caps_array);
 	}
@@ -1410,24 +1401,7 @@ static json_t* json_get_v1() {
 		json_object_set_new(root, "openal", openal_obj);
 	}
 	{
-		auto joystick_array = json_array();
-
-		auto joysticks = io::joystick::getJoystickInformations();
-		for (auto& info : joysticks) {
-			auto joystick_obj = json_object();
-
-			json_object_set_new(joystick_obj, "name", json_string(info.name.c_str()));
-			json_object_set_new(joystick_obj, "guid", json_string(info.guid.c_str()));
-
-			json_object_set_new(joystick_obj, "num_axes", json_integer(info.num_axes));
-			json_object_set_new(joystick_obj, "num_balls", json_integer(info.num_balls));
-			json_object_set_new(joystick_obj, "num_buttons", json_integer(info.num_buttons));
-			json_object_set_new(joystick_obj, "num_hats", json_integer(info.num_hats));
-
-			json_object_set_new(joystick_obj, "is_haptic", json_boolean(info.is_haptic));
-
-			json_array_append_new(joystick_array, joystick_obj);
-		}
+		auto joystick_array = io::joystick::getJsonArray();
 
 		json_object_set_new(root, "joysticks", joystick_array);
 	}
@@ -1530,6 +1504,11 @@ bool SetCmdlineParams()
 		return false; 
 	}
 
+	if (joy_info.found()) {
+		io::joystick::printJoyJSON();
+		return false;
+	}
+
 	if (no_fpscap.found())
 	{
 		Cmdline_NoFPSCap = 1;
@@ -1561,6 +1540,9 @@ bool SetCmdlineParams()
 		// is this a standalone server??
 		if (standalone_arg.found()) {
 			Is_standalone = 1;
+
+			// also enable non-interactive by default here
+			Cmdline_noninteractive = true;
 		}
 	}
 
@@ -1619,7 +1601,7 @@ bool SetCmdlineParams()
 		Cmdline_game_name = gamename_arg.str();
 
 		// be sure that this string fits in our limits
-		if ( strlen(Cmdline_game_name) > MAX_GAMENAME_LEN ) {
+		if ( strlen(Cmdline_game_name) >= MAX_GAMENAME_LEN ) {
 			Cmdline_game_name[MAX_GAMENAME_LEN-1] = '\0';
 		}
 	}
@@ -1629,8 +1611,9 @@ bool SetCmdlineParams()
 		Cmdline_game_password = gamepassword_arg.str();
 
 		// be sure that this string fits in our limits
-		if ( strlen(Cmdline_game_name) > MAX_PASSWD_LEN ) {
-			Cmdline_game_name[MAX_PASSWD_LEN-1] = '\0';
+		if ( strlen(Cmdline_game_password) >= MAX_PASSWD_LEN ) {
+			ReleaseWarning(LOCATION, "Multi game password is longer than max of %d charaters and will be trimmed to fit!", MAX_PASSWD_LEN-1);
+			Cmdline_game_password[MAX_PASSWD_LEN-1] = '\0';
 		}
 	}
 
@@ -1816,6 +1799,16 @@ bool SetCmdlineParams()
 		}
 	}
 
+	if ( fov_cockpit_arg.found() ) {
+		auto val = fov_cockpit_arg.get_float();
+		if (val > 0.1) {
+			COCKPIT_ZOOM_DEFAULT = val;
+		}
+		else {
+			COCKPIT_ZOOM_DEFAULT = VIEWER_ZOOM_DEFAULT;
+		}
+	}
+
 	if( clip_dist_arg.found() ) {
 		Min_draw_distance = Cmdline_clip_dist = clip_dist_arg.get_float();
 	}
@@ -1841,6 +1834,10 @@ bool SetCmdlineParams()
 		Cmdline_no_screenshake = 1;
 	}
 	
+	if ( deadzone.found() ) {
+		Cmdline_deadzone = deadzone.get_int();
+	}
+
 	if ( stretch_menu.found() )	{
 		Cmdline_stretch_menu = 1;
 	}
@@ -1939,6 +1936,9 @@ bool SetCmdlineParams()
 	if (output_sexp_arg.found() ) {
 		Cmdline_output_sexp_info = true;
 	}
+
+	if (generate_controlconfig_arg.found())
+		Generate_controlconfig_table = true;
 
 	if ( no_pbo_arg.found() )
 	{
@@ -2072,11 +2072,17 @@ bool SetCmdlineParams()
 
 	if( enable_shadows_arg.found() )
 	{
+		// if only using `enable_shadows` then default quality level can be overriden in mod_settings.tbl --wookieejedi
+		Shadow_quality_uses_mod_option = true;
+
 		Shadow_quality = ShadowQuality::Medium;
 	}
 
 	if( shadow_quality_arg.found() )
 	{
+		// set that we are not using default shadow quality level --wookieejedi
+		Shadow_quality_uses_mod_option = false; 
+
 		switch (shadow_quality_arg.get_int()) {
 		case 0:
 			Shadow_quality = ShadowQuality::Disabled;
@@ -2157,67 +2163,18 @@ bool SetCmdlineParams()
 		Cmdline_log_to_stdout = true;
 	}
 
+	if (slow_frames_ok_arg.found()) {
+		Cmdline_slow_frames_ok = true;
+	}
+
 	if (show_video_info.found())
 	{
 		Cmdline_show_video_info = true;
 	}
 
 	//Deprecated flags - CommanderDJ
-	if( deprecated_spec_arg.found() )
-	{
-		Cmdline_deprecated_spec = 1;
-	}
-
-	if( deprecated_glow_arg.found() )
-	{
-		Cmdline_deprecated_glow = 1;
-	}
-
-	if( deprecated_normal_arg.found() )
-	{
-		Cmdline_deprecated_normal = 1;
-	}
-
-	if( deprecated_env_arg.found() )
-	{
-		Cmdline_deprecated_env = 1;
-	}
-
-	if( deprecated_tbp_arg.found() )
-	{
-		Cmdline_deprecated_tbp = 1;
-	}
-
-	if( deprecated_jpgtga_arg.found() )
-	{
-		Cmdline_deprecated_jpgtga = 1;
-	}
-
-	if ( deprecated_htl_arg.found() ) 
-	{
-		Cmdline_deprecated_nohtl = 1;
-	}
-
-	if ( deprecated_brieflighting_arg.found() )
-	{
-		Cmdline_deprecated_brief_lighting = 1;
-	}
-
-	if (deprecated_missile_lighting_arg.found())
-	{
-		Cmdline_deprecated_missile_lighting = true;
-	}
-
-	if (deprecated_cache_bitmaps_arg.found()) {
-		Cmdline_deprecated_cache_bitmaps = true;
-	}
-
 	if (deprecated_no_emissive_arg.found()) {
 		Cmdline_emissive = 0;
-	}
-
-	if (deprecated_postprocess_arg.found()) {
-		Cmdline_deprecated_postprocess = true;
 	}
 
 	if (deprecated_fxaa_arg.found() ) {
@@ -2258,7 +2215,27 @@ bool SetCmdlineParams()
 			}
 		}
 	}
+
+	if (prefer_ipv4_arg.found()) {
+		Cmdline_prefer_ipv4 = true;
+	}
+
+	if (prefer_ipv6_arg.found()) {
+		Cmdline_prefer_ipv6 = true;
+
+		// Rule 2: Not both
+		if (Cmdline_prefer_ipv4) {
+			ReleaseWarning(LOCATION, "Cannot set preference for both IPv4 and IPv6! Reverting to default behavior...\n");
+
+			Cmdline_prefer_ipv4 = false;
+			Cmdline_prefer_ipv6 = false;
+		}
+	}
  
+	if (log_multi_packet_arg.found()) {
+		Cmdline_dump_packet_type = true;
+	}
+
 	return true; 
 }
 

@@ -53,6 +53,26 @@ void material_set_unlit(material* mat_info, int texture, float alpha, bool blend
 	}
 }
 
+void material_set_unlit_opaque(material* mat_info, int texture, bool depth_testing)
+{
+	mat_info->set_texture_map(TM_BASE_TYPE, texture);
+
+	gr_alpha_blend blend_mode = ALPHA_BLEND_NONE;
+	gr_zbuffer_type depth_mode = material_determine_depth_mode(depth_testing, false);
+
+	mat_info->set_blend_mode(blend_mode);
+	mat_info->set_depth_mode(depth_mode);
+	mat_info->set_cull_mode(false);
+
+	
+	mat_info->set_color(1.0f, 1.0f, 1.0f, 1.0f);
+	
+
+	if ( texture >= 0 && bm_has_alpha_channel(texture) ) {
+		mat_info->set_texture_type(material::TEX_TYPE_XPARENT);
+	}
+}
+
 void material_set_unlit_emissive(material* mat_info, int texture, float alpha, float color_scale)
 {
 	material_set_unlit(mat_info, texture, alpha, true, true);
@@ -161,6 +181,13 @@ void material_set_batched_bitmap(batched_bitmap_material* mat_info, int base_tex
 
 	mat_info->set_color_scale(color_scale);
 }
+
+void material_set_batched_opaque_bitmap(batched_bitmap_material* mat_info, int base_tex, float color_scale) {
+	material_set_unlit_opaque(mat_info, base_tex, true);
+
+	mat_info->set_color_scale(color_scale);
+}
+
 void material_set_nanovg(nanovg_material* mat_info, int base_tex) {
 	material_set_unlit(mat_info, base_tex, 1.0f, true, false);
 
@@ -688,6 +715,24 @@ bool model_material::uses_thick_outlines() const {
 	return Outline_thickness > 0.0f;
 }
 
+float model_material::get_alpha_mult() const {
+	return Alpha_mult;
+}
+
+bool model_material::is_alpha_mult_active() const {
+	return Use_alpha_mult;
+}
+
+void model_material::set_alpha_mult(float alpha) {
+	Use_alpha_mult = true;
+	Alpha_mult = alpha;
+}
+
+void model_material::reset_alpha_mult() {
+	Use_alpha_mult = false;
+	Alpha_mult = 1.0f;
+}
+
 uint model_material::get_shader_flags() const
 {
 	uint Shader_flags = 0;
@@ -777,6 +822,10 @@ uint model_material::get_shader_flags() const
 
 	if ( uses_thick_outlines() ) {
 		Shader_flags |= SDR_FLAG_MODEL_THICK_OUTLINES;
+	}
+
+	if (is_alpha_mult_active()) {
+		Shader_flags |= SDR_FLAG_MODEL_ALPHA_MULT;
 	}
 
 	return Shader_flags;

@@ -80,13 +80,6 @@ float Minimum_player_warpout_time = 3.0f;
 #endif
 
 /**
- * @brief Reads and combines the axes from the player's joystick and mouse.
- * @param[out] axis       Pointer to axes array
- * @param[in]  frame_time The frame time when this was called
- */
-void playercontrol_read_stick(int *axis, float frame_time);
-
-/**
  * @brief Slew angles chase towards a value like they're on a spring.
  *
  * @param[in,out] ap The current view angles. Is modified towards target angles.
@@ -151,7 +144,7 @@ void view_modify(angles *ma, angles *da, float max_p, float max_h)
 	float   u = 0;
 
 	// Analog inputs
-	int axis[NUM_JOY_AXIS_ACTIONS];
+	int axis[Action::NUM_VALUES];
 	float h = 0.0f;
 	float p = 0.0f;
 
@@ -223,11 +216,11 @@ void view_modify(angles *ma, angles *da, float max_p, float max_h)
 		t = (check_control_timef(YAW_RIGHT) - check_control_timef(YAW_LEFT));
 		u = (check_control_timef(PITCH_FORWARD) - check_control_timef(PITCH_BACK));
 
-		playercontrol_read_stick(axis, flRealframetime);
+		control_get_axes_readings(axis, flRealframetime);
 
 		// Does the same thing as t and u but for the joystick input 
-		h = f2fl(axis[JOY_HEADING_AXIS]);
-		p = -f2fl(axis[JOY_PITCH_AXIS]);
+		h = f2fl(axis[Action::HEADING]);
+		p = -f2fl(axis[Action::PITCH]);
 	}
 
 	// Combine Analog and Digital slew commands
@@ -518,16 +511,6 @@ void do_view_external()
 }
 
 /**
- * Separate out the reading of thrust keys, so we can call this from external view as well as from normal view
- */
-void do_thrust_keys(control_info *ci)
-{
-	ci->forward = check_control_timef(FORWARD_THRUST) - check_control_timef(REVERSE_THRUST);
-	ci->sideways = (check_control_timef(RIGHT_SLIDE_THRUST) - check_control_timef(LEFT_SLIDE_THRUST));//for slideing-Bobboau
-	ci->vertical = (check_control_timef(UP_SLIDE_THRUST) - check_control_timef(DOWN_SLIDE_THRUST));//for slideing-Bobboau
-}
-
-/**
  * Called by single and multiplayer modes to reset information inside of control info structure
  */
 void player_control_reset_ci( control_info *ci )
@@ -543,74 +526,10 @@ void player_control_reset_ci( control_info *ci )
 	ci->forward_cruise_percent = oldspeed;
 }
 
-/**
- * @brief Reads the joystick Pitch, Bank, and Heading axes.
- *
- * @param[out] axis       The axis array to store the scaled joystick position. (Must have a size of NUM_JOY_AXIS_ACTIONS)
- * @param[in]  frame_time The frame time at which this function is called.
- *
- * @details This is its own function because we only want to read it at a certain rate, since it takes time.
- */
-void playercontrol_read_stick(int *axis, float frame_time)
-{
-	int i;
-
-	// Read the stick
-	control_get_axes_readings(&axis[0], &axis[1], &axis[2], &axis[3], &axis[4]);
-
-	if (Use_mouse_to_fly) {
-		int dx, dy, dz;
-		float factor;
-
-		factor = (float) Mouse_sensitivity + 1.77f;
-		factor = factor * factor / frame_time / 0.6f;
-
-		mouse_get_delta(&dx, &dy, &dz);
-		int x_axis, y_axis, z_axis;
-		x_axis = y_axis = z_axis = -1;
-
-		for (i = 0; i < NUM_JOY_AXIS_ACTIONS; i++) {
-			switch(Axis_map_to[i])
-			{
-			case JOY_X_AXIS:
-				x_axis = i;
-				break;
-			case JOY_Y_AXIS:
-				y_axis = i;
-				break;
-			case JOY_Z_AXIS:
-				z_axis = i;
-				break;
-			}
-		}
-
-		if (x_axis >= 0) {
-			if (Invert_axis[x_axis]) {
-				dx = -dx;
-			}
-			axis[x_axis] += (int) ((float) dx * factor);
-		}
-
-		if (y_axis >= 0) {
-			if (Invert_axis[y_axis]) {
-				dy = -dy;
-			}
-			axis[y_axis] += (int) ((float) dy * factor);
-		}
-
-		if (z_axis >= 0) {
-			if (Invert_axis[z_axis]) {
-				dz = -dz;
-			}
-			axis[z_axis] += (int) ((float) dz * factor);
-		}
-	}
-}
-
 void read_keyboard_controls( control_info * ci, float frame_time, physics_info *pi )
 {
 	float kh=0.0f, scaled, newspeed, delta, oldspeed;
-	int axis[NUM_JOY_AXIS_ACTIONS];
+	int axis[Action::NUM_VALUES];
 	static int afterburner_last = 0;
 	static float analog_throttle_last = 9e9f;
 	static int override_analog_throttle = 0; 
@@ -619,15 +538,16 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 
 	oldspeed = ci->forward_cruise_percent;
 	player_control_reset_ci( ci );
+	control_reset_lua_cache();
 
 	// Camera & View controls
 	if ( Viewer_mode & VM_EXTERNAL ) {
+		// External mode
 		control_used(VIEW_EXTERNAL);
-
 		do_view_external();
-		do_thrust_keys(ci);
 
 	} else if ( Viewer_mode & VM_CHASE ) {
+		// Chase mode
 		do_view_chase();
 
 	} else {
@@ -640,7 +560,6 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 	// Ship controls
 	if (Viewer_mode & VM_CAMERA_LOCKED) {
 		// From keyboard...
-		do_thrust_keys(ci);
 		if ( check_control(BANK_WHEN_PRESSED) ) {
 			ci->bank = check_control_timef(BANK_LEFT) + check_control_timef(YAW_LEFT) - check_control_timef(YAW_RIGHT) - check_control_timef(BANK_RIGHT);
 			ci->heading = 0.0f;
@@ -679,6 +598,12 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 	}
 
 	if (!(Game_mode & GM_DEAD)) {
+		// Thrust controls
+		ci->forward = check_control_timef(FORWARD_THRUST) - check_control_timef(REVERSE_THRUST);
+		ci->sideways = (check_control_timef(RIGHT_SLIDE_THRUST) - check_control_timef(LEFT_SLIDE_THRUST)); // for slideing-Bobboau
+		ci->vertical = (check_control_timef(UP_SLIDE_THRUST) - check_control_timef(DOWN_SLIDE_THRUST)); // for slideing-Bobboau
+
+		// Throttle controls
 		if ( button_info_query(&Player->bi, ONE_THIRD_THROTTLE) ) {
 			control_used(ONE_THIRD_THROTTLE);
 			player_clear_speed_matching();
@@ -805,41 +730,36 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 		// code to read joystick axis for pitch/heading.  Code to read joystick buttons
 		// for bank.
 		if ( !(Game_mode & GM_DEAD) )	{
-			playercontrol_read_stick(axis, frame_time);
+			control_get_axes_readings(axis, frame_time);
 		} else {
 			axis[0] = axis[1] = axis[2] = axis[3] = axis[4] = 0;
 		}
 
 		if (Viewer_mode & VM_CAMERA_LOCKED) {
 			// Player has control of the ship
-			if (Axis_map_to[JOY_HEADING_AXIS] >= 0) {
-				// check the heading on the x axis
-				if ( check_control(BANK_WHEN_PRESSED) ) {
-					delta = f2fl( axis[JOY_HEADING_AXIS] );
-					if ( (delta > 0.05f) || (delta < -0.05f) ) {
-						ci->bank -= delta;
-					}
-				} else {
-					ci->heading += f2fl( axis[JOY_HEADING_AXIS] );
+			// Set heading
+			if ( check_control(BANK_WHEN_PRESSED) ) {
+				delta = f2fl( axis[Action::HEADING] );
+				if ( (delta > 0.05f) || (delta < -0.05f) ) {
+					ci->bank -= delta;
 				}
+			} else {
+				ci->heading += f2fl( axis[Action::HEADING] );
 			}
-			// check the pitch on the y axis
-			if (Axis_map_to[JOY_PITCH_AXIS] >= 0) {
-				ci->pitch -= f2fl( axis[JOY_PITCH_AXIS] );
-			}
+			// Set pitch
+			ci->pitch -= f2fl( axis[Action::PITCH] );
+
 		} else {
 			// Player has control of the camera
 			ci->pitch = 0.0f;
 			ci->heading = 0.0f;
 		}
 
-		if (Axis_map_to[JOY_BANK_AXIS] >= 0) {
-			ci->bank -= f2fl( axis[JOY_BANK_AXIS] ) * 1.5f;
-		}
+		// Set bank
+		ci->bank -= f2fl( axis[Action::BANK] ) * 1.5f;
 
-		// axis 2 is for throttle
-		if (Axis_map_to[JOY_ABS_THROTTLE_AXIS] >= 0) {
-			scaled = (float) axis[JOY_ABS_THROTTLE_AXIS] * 1.2f / (float) F1_0 - 0.1f;  // convert to -0.1 - 1.1 range
+		if (!Control_config[JOY_ABS_THROTTLE_AXIS].empty()) {
+			scaled = (float) axis[Action::ABS_THROTTLE] * 1.2f / (float) F1_0 - 0.1f;  // convert to -0.1 - 1.1 range
 			oldspeed = ci->forward_cruise_percent;
 
 			newspeed = (1.0f - scaled) * 100.0f;
@@ -852,8 +772,8 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 			}
 		}
 
-		if (Axis_map_to[JOY_REL_THROTTLE_AXIS] >= 0)
-			ci->forward_cruise_percent += f2fl(axis[JOY_REL_THROTTLE_AXIS]) * 100.0f * frame_time;
+		if (!Control_config[JOY_REL_THROTTLE_AXIS].empty())
+			ci->forward_cruise_percent += f2fl(axis[Action::REL_THROTTLE]) * 100.0f * frame_time;
 
 		CLAMP(ci->forward_cruise_percent, 0, 100);
 
@@ -992,31 +912,45 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 	}
 }
 
-void copy_control_info(control_info *dest_ci, control_info *src_ci)
+void copy_control_info(control_info *dest_ci, control_info *src_ci, int control_copy_method)
 {
-	if (dest_ci == NULL)
+	if (dest_ci == nullptr)
 		return;
 
-	if (src_ci == NULL) {
-		dest_ci->pitch = 0.0f;
-		dest_ci->vertical = 0.0f;
-		dest_ci->heading = 0.0f;
-		dest_ci->sideways = 0.0f;
-		dest_ci->bank = 0.0f;
-		dest_ci->forward = 0.0f;
-		dest_ci->forward_cruise_percent = 0.0f;
-		dest_ci->fire_countermeasure_count = 0;
-		dest_ci->fire_secondary_count = 0;
-		dest_ci->fire_primary_count = 0;
-	} else {
-		dest_ci->pitch = src_ci->pitch;
-		dest_ci->vertical = src_ci->vertical;
-		dest_ci->heading = src_ci->heading;
-		dest_ci->sideways = src_ci->sideways;
-		dest_ci->bank = src_ci->bank;
-		dest_ci->forward = src_ci->forward;
-		dest_ci->forward_cruise_percent = src_ci->forward_cruise_percent;
+	// check which type of controls are being copied --wookieejedi
+	if (control_copy_method & LGC_FULL) {
+		if (src_ci == nullptr) {
+			dest_ci->pitch = 0.0f;
+			dest_ci->vertical = 0.0f;
+			dest_ci->heading = 0.0f;
+			dest_ci->sideways = 0.0f;
+			dest_ci->bank = 0.0f;
+			dest_ci->forward = 0.0f;
+			dest_ci->forward_cruise_percent = 0.0f;
+			dest_ci->fire_countermeasure_count = 0;
+			dest_ci->fire_secondary_count = 0;
+			dest_ci->fire_primary_count = 0;
+		} else {
+			dest_ci->pitch = src_ci->pitch;
+			dest_ci->vertical = src_ci->vertical;
+			dest_ci->heading = src_ci->heading;
+			dest_ci->sideways = src_ci->sideways;
+			dest_ci->bank = src_ci->bank;
+			dest_ci->forward = src_ci->forward;
+			dest_ci->forward_cruise_percent = src_ci->forward_cruise_percent;
+		}
+	} else if (control_copy_method & LGC_STEERING) {
+		if (src_ci == nullptr) {
+			dest_ci->pitch = 0.0f;
+			dest_ci->heading = 0.0f;
+			dest_ci->bank = 0.0f;
+		} else {
+			dest_ci->pitch = src_ci->pitch;
+			dest_ci->heading = src_ci->heading;
+			dest_ci->bank = src_ci->bank;
+		}
 	}
+
 }
 
 void read_player_controls(object *objp, float frametime)
@@ -1046,15 +980,10 @@ void read_player_controls(object *objp, float frametime)
 					Player->ci.control_flags |= CIF_INSTANTANEOUS_ACCELERATION;
 			}
 
-			if ( lua_game_control & LGC_STEERING ) {
-				// make sure to copy the control before reseting it
-				Player->lua_ci = Player->ci;
-				copy_control_info(&(Player->ci), NULL);
-			} else if ( lua_game_control & LGC_FULL ) {
-				control_info temp;
+			if ((lua_game_control & LGC_STEERING) || (lua_game_control & LGC_FULL)) {
 				// first copy over the new values, then reset
-				temp = Player->ci;
-				copy_control_info(&(Player->ci), &(Player->lua_ci));
+				control_info temp = Player->ci;
+				copy_control_info(&(Player->ci), &(Player->lua_ci), lua_game_control);
 				Player->lua_ci = temp;
 			} else {
 				// just copy the ci should that be needed in scripting
@@ -1075,7 +1004,8 @@ void read_player_controls(object *objp, float frametime)
 				target_warpout_speed = ship_get_warpout_speed(objp);
 
 				// check if warp ability has been disabled
-				if (!(Warpout_forced) && !(ship_can_warp_full_check(&Ships[objp->instance]))) {
+				// but only in the first stage
+				if (!(Warpout_forced) && !(ship_can_warp_full_check(&Ships[objp->instance])) && (Player->control_mode == PCM_WARPOUT_STAGE1)) {
 					HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "Cannot warp out at this time.", 81));
 					snd_play(gamesnd_get_game_sound(GameSounds::PLAYER_WARP_FAIL));
 					gameseq_post_event( GS_EVENT_PLAYER_WARPOUT_STOP );
@@ -1438,7 +1368,7 @@ void player_level_init()
 	Player->cargo_scan_loop    = sound_handle::invalid();
 	Player->cargo_inspect_time = 0;			// time that current target's cargo has been inspected for
 
-	Player->target_is_dying = -1;				// The player target is dying, set to -1 if no target
+	Player->target_is_dying = -1;				// Whether the player target is dying, -1 if no target
 	Player->current_target_sx = -1;			// Screen x-pos of current target (or subsystem if applicable)
 	Player->current_target_sy = -1;			// Screen y-pos of current target (or subsystem if applicable)
 	Player->target_in_lock_cone = -1;		// Is the current target in secondary weapon lock cone?
@@ -1649,7 +1579,10 @@ int player_inspect_cargo(float frametime, char *outstr)
 
 	// see if player is within inspection range
 	ship_info* player_sip = &Ship_info[Player_ship->ship_info_index];
-	if ( Player_ai->current_target_distance < MAX(player_sip->scan_range_normal, (cargo_objp->radius + player_sip->scan_range_normal - CARGO_RADIUS_REAL_DELTA)) ) {
+	float scan_dist = MAX(player_sip->scan_range_normal, (cargo_objp->radius + player_sip->scan_range_normal - CARGO_RADIUS_REAL_DELTA));
+	scan_dist *= player_sip->scanning_range_multiplier;
+
+	if ( Player_ai->current_target_distance < scan_dist ) {
 
 		// check if player is facing cargo, do not proceed with inspection if not
 		vm_vec_normalized_dir(&vec_to_cargo, &cargo_objp->pos, &Player_obj->pos);
@@ -1674,7 +1607,10 @@ int player_inspect_cargo(float frametime, char *outstr)
 		else
 			strcpy(outstr,XSTR( "scanning", 89));
 
-		if ( Player->cargo_inspect_time > cargo_sip->scan_time ) {
+		float scan_time = i2fl(cargo_sip->scan_time);
+		scan_time *= player_sip->scanning_time_multiplier;
+
+		if ( Player->cargo_inspect_time > scan_time ) {
 			ship_do_cargo_revealed( cargo_sp );
 			snd_play( gamesnd_get_game_sound(GameSounds::CARGO_REVEAL), 0.0f );
 			Player->cargo_inspect_time = 0;
@@ -1756,9 +1692,9 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 	} else {
 		scan_dist = MAX(player_sip->scan_range_normal, (subsys_rad + player_sip->scan_range_normal - CARGO_RADIUS_REAL_DELTA));
 	}
+	scan_dist *= player_sip->scanning_range_multiplier;
 
 	if ( Player_ai->current_target_distance < scan_dist ) {
-
 		// check if player is facing cargo, do not proceed with inspection if not
 		vm_vec_normalized_dir(&vec_to_cargo, &subsys_pos, &Player_obj->pos);
 		dot = vm_vec_dot(&vec_to_cargo, &Player_obj->orient.vec.fvec);
@@ -1785,7 +1721,14 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 		else
 			strcpy(outstr,XSTR( "scanning", 89));
 
-		if ( Player->cargo_inspect_time > cargo_sip->scan_time ) {
+		float scan_time;
+		if (subsys->system_info->scan_time > 0)
+			scan_time = i2fl(subsys->system_info->scan_time);
+		else
+			scan_time = i2fl(cargo_sip->scan_time);
+		scan_time *= player_sip->scanning_time_multiplier;
+
+		if ( Player->cargo_inspect_time > scan_time ) {
 			ship_do_cap_subsys_cargo_revealed( cargo_sp, subsys, 0);
 			snd_play( gamesnd_get_game_sound(GameSounds::CARGO_REVEAL), 0.0f );
 			Player->cargo_inspect_time = 0;

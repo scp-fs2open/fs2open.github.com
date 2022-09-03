@@ -3,12 +3,14 @@
 #include "LuaSEXP.h"
 
 #include "iff_defs/iff_defs.h"
+#include "localization/localize.h"
 #include "mission/missionmessage.h"
 #include "object/waypoint.h"
 #include "parse/parselo.h"
 #include "parse/sexp.h"
 #include "parse/sexp/sexp_lookup.h"
 #include "scripting/api/objs/message.h"
+#include "scripting/api/objs/oswpt.h"
 #include "scripting/api/objs/sexpvar.h"
 #include "scripting/api/objs/ship.h"
 #include "scripting/api/objs/shipclass.h"
@@ -23,9 +25,9 @@
 
 using namespace luacpp;
 
-namespace {
+namespace sexp {
 
-SCP_unordered_map<SCP_string, int> parameter_type_mapping{{ "boolean",      OPF_BOOL },
+static SCP_unordered_map<SCP_string, int> parameter_type_mapping{{ "boolean",      OPF_BOOL },
 														  { "number",       OPF_NUMBER },
 														  { "ship",         OPF_SHIP },
 														  { "shipname",     OPF_SHIP },
@@ -37,8 +39,15 @@ SCP_unordered_map<SCP_string, int> parameter_type_mapping{{ "boolean",      OPF_
 														  { "wing",         OPF_WING },
 														  { "shipclass",    OPF_SHIP_CLASS_NAME },
 														  { "weaponclass",  OPF_WEAPON_NAME },
-														  { "soundentry",   OPF_GAME_SND }, };
-std::pair<SCP_string, int> get_parameter_type(const SCP_string& name)
+														  { "soundentry",   OPF_GAME_SND }, 
+														  { "ship+waypoint",   OPF_SHIP_POINT },
+														  { "ship+wing",   OPF_SHIP_WING },
+														  { "ship+wing+team",   OPF_SHIP_WING_WHOLETEAM },
+														  { "ship+wing+ship_on_team+waypoint",   OPF_SHIP_WING_SHIPONTEAM_POINT },
+														  { "ship+wing+waypoint",   OPF_SHIP_WING_POINT },
+														  { "ship+wing+waypoint+none",   OPF_SHIP_WING_POINT_OR_NONE }, };
+
+std::pair<SCP_string, int> LuaSEXP::get_parameter_type(const SCP_string& name)
 {
 	SCP_string copy = name;
 	SCP_tolower(copy);
@@ -51,10 +60,10 @@ std::pair<SCP_string, int> get_parameter_type(const SCP_string& name)
 	}
 }
 
-SCP_unordered_map<SCP_string, int> return_type_mapping{{ "number",  OPR_NUMBER },
+static SCP_unordered_map<SCP_string, int> return_type_mapping{{ "number",  OPR_NUMBER },
 													   { "boolean", OPR_BOOL },
 													   { "nothing", OPR_NULL }, };
-int get_return_type(const SCP_string& name)
+int LuaSEXP::get_return_type(const SCP_string& name)
 {
 	SCP_string copy = name;
 	SCP_tolower(copy);
@@ -67,7 +76,7 @@ int get_return_type(const SCP_string& name)
 	}
 }
 
-int get_category(const SCP_string& name) {
+int LuaSEXP::get_category(const SCP_string& name) {
 	for (auto& subcat : op_menu) {
 		if (subcat.name == name) {
 			return subcat.id;
@@ -77,9 +86,9 @@ int get_category(const SCP_string& name) {
 	return -1;
 }
 
-int get_subcategory(const SCP_string& name) {
+int LuaSEXP::get_subcategory(const SCP_string& name, int category) {
 	for (auto& subcat : op_submenu) {
-		if (subcat.name == name) {
+		if (subcat.name == name && (subcat.id & OP_CATEGORY_MASK) == category) {
 			return subcat.id;
 		}
 	}
@@ -87,19 +96,15 @@ int get_subcategory(const SCP_string& name) {
 	return -1;
 }
 
-}
-
-namespace sexp {
-
 LuaSEXP::LuaSEXP(const SCP_string& name) : DynamicSEXP(name) {
 }
 void LuaSEXP::initialize() {
 	// Nothing to do for this type
 }
-int LuaSEXP::getMinimumArguments() {
+int LuaSEXP::getMinimumArguments() const {
 	return _min_args;
 }
-int LuaSEXP::getMaximumArguments() {
+int LuaSEXP::getMaximumArguments() const {
 	return _max_args;
 }
 std::pair<SCP_string, int> LuaSEXP::getArgumentInternalType(int argnum) const {
@@ -173,8 +178,9 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum) const {
 		auto ship_entry = eval_ship(node);
 
 		// if this is a shipname type, we want the name of a valid ship but not the ship itself
-		if (ship_entry && argtype.first == "shipname") {
-			return LuaValue::createValue(_action.getLuaState(), ship_entry->name);
+		// (if the ship is not valid, return an empty string)
+		if (argtype.first == "shipname") {
+			return LuaValue::createValue(_action.getLuaState(), ship_entry ? ship_entry->name : "");
 		}
 
 		if (!ship_entry || ship_entry->status != ShipStatus::PRESENT) {
@@ -228,6 +234,16 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum) const {
 		auto text = CTEXT(node);
 		return LuaValue::createValue(_action.getLuaState(), text);
 	}
+	case OPF_SHIP_POINT:
+	case OPF_SHIP_WING:
+	case OPF_SHIP_WING_WHOLETEAM:
+	case OPF_SHIP_WING_SHIPONTEAM_POINT:
+	case OPF_SHIP_WING_POINT:
+	case OPF_SHIP_WING_POINT_OR_NONE: {
+		object_ship_wing_point_team oswpt;
+		eval_object_ship_wing_point_team(&oswpt, node);
+		return LuaValue::createValue(_action.getLuaState(), l_OSWPT.Set(oswpt));
+	}
 	default:
 		UNREACHABLE("Unhandled argument type! Someone added an argument type but didn't add handling code to execute().");
 		return LuaValue::createNil(_action.getLuaState());
@@ -273,26 +289,22 @@ int LuaSEXP::getSexpReturnValue(const LuaValueList& retVals) const {
 		return SEXP_TRUE;
 	}
 }
-int LuaSEXP::execute(int node) {
-	if (!_action.isValid()) {
-		Error(LOCATION,
-			  "Lua SEXP called without a valid action function! A script probably failed to set the action for some reason.");
-		return SEXP_CANT_EVAL;
-	}
 
+luacpp::LuaValueList LuaSEXP::getSEXPArgumentList(int node) const {
 	LuaValueList luaParameters;
 
 	// We need to adapt how we handle parameters based on their type. We use this variable to keep track of which parameter
 	// we are currently looking at
 	int argnum = 0;
 	while (node != -1) {
-		if (argnum < (int) _argument_types.size()) {
+		if (argnum < (int)_argument_types.size()) {
 			// This is a parameter in the normal list so we add it to the normal parameter list
 			luaParameters.push_back(sexpToLua(node, argnum));
 
 			node = CDR(node);
 			++argnum;
-		} else {
+		}
+		else {
 			// The varargs part is handled in chunks so that scripts can use the data more easily
 			// Every repeat pattern instance is put into its own table
 			LuaTable varargs_part = LuaTable::create(_action.getLuaState());
@@ -310,6 +322,18 @@ int LuaSEXP::execute(int node) {
 			luaParameters.push_back(varargs_part);
 		}
 	}
+
+	return luaParameters;
+}
+
+int LuaSEXP::execute(int node) {
+	if (!_action.isValid()) {
+		Error(LOCATION,
+			  "Lua SEXP called without a valid action function! A script probably failed to set the action for some reason.");
+		return SEXP_CANT_EVAL;
+	}
+
+	LuaValueList luaParameters = getSEXPArgumentList(node);
 
 	// All parameters are now in LuaValues, time to call our function
 	try {
@@ -344,6 +368,34 @@ int LuaSEXP::getCategory() {
 	}
 	return _category;
 }
+bool LuaSEXP::parseCheckEndOfDescription() {
+	// Since we're stuffing strings, this is the best way to "unstuff" a string
+	// if we determine we're finished with the description - and we also want
+	// to preserve whitespace (which the parser eats) while building the description
+	pause_parse();
+
+	// look for any token that can follow $Description
+	auto possible_tokens =
+	{
+		"$Operator:",
+		"#End",
+		"$Repeat",
+		"$Parameter:"
+	};
+
+	bool found = false;
+	for (auto token : possible_tokens)
+	{
+		if (optional_string(token))
+		{
+			found = true;
+			break;
+		}
+	}
+
+	unpause_parse();
+	return found;
+}
 void LuaSEXP::parseTable() {
 	required_string("$Category:");
 	SCP_string category;
@@ -359,7 +411,7 @@ void LuaSEXP::parseTable() {
 	SCP_string subcategory;
 	stuff_string(subcategory, F_NAME);
 
-	_subcategory = get_subcategory(subcategory);
+	_subcategory = get_subcategory(subcategory, _category);
 	if (_subcategory < 0) {
 		// Unknown subcategory so we need to add this one
 		_subcategory = sexp::add_subcategory(_category, subcategory);
@@ -373,14 +425,7 @@ void LuaSEXP::parseTable() {
 			// Default to the first subcategory in our category, hopefully it will exist...
 			_subcategory = 0x0000 | _category;
 		}
-	} else if ((_subcategory & OP_CATEGORY_MASK) != _category) {
-		error_display(0,
-					  "Subcategory '%s' is in a different category than the specified category! Subcategory names must be unique.",
-					  subcategory.c_str());
-
-		// Default to the first subcategory in our category, hopefully it will exist...
-		_subcategory = 0x0000 | _category;
-	}
+	} 
 
 	required_string("$Minimum Arguments:");
 
@@ -426,10 +471,36 @@ void LuaSEXP::parseTable() {
 
 	required_string("$Description:");
 
-	SCP_string description;
+	SCP_string description, extra;
 	stuff_string(description, F_NAME);
+	while (!parseCheckEndOfDescription()) {
+		while (skip_eoln()) {
+			description += "\r\n";
+		}
+		stuff_string(extra, F_NAME);
+		description += extra;
+	}
 
-	help_text << "\t" << description << "\r\n";
+	help_text << "\t" << description << "\r\n\r\n";
+
+	// argument string
+	help_text << "Takes ";
+	if (_max_args == INT_MAX) {
+		help_text << _min_args << " or more arguments:";
+	} else {
+		if (_max_args == 0) {
+			help_text << "no arguments.";
+		} else if (_min_args == _max_args) {
+			help_text << _min_args << " argument";
+			if (_min_args > 1) {
+				help_text << "s";
+			}
+			help_text << ":";
+		} else {
+			help_text << _min_args << " to " << _max_args << " arguments:";
+		}
+	}
+	help_text << "\r\n";
 
 	bool variable_arg_part = false;
 	if (optional_string("$Repeat")) {
@@ -477,6 +548,7 @@ void LuaSEXP::parseTable() {
 	}
 
 	_help_text = help_text.str();
+	lcl_replace_stuff(_help_text, true);
 }
 void LuaSEXP::setAction(const luacpp::LuaFunction& action) {
 	Assertion(action.isValid(), "Invalid function handle supplied!");

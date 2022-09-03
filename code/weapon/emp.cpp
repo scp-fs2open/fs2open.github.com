@@ -407,13 +407,17 @@ void emp_start_local(float intensity, float time)
 	}
 
 	// start the emp icon flashing
-	hud_start_text_flash(NOX("Emp"), 5000);
+	hud_start_text_flash(XSTR("Emp", 1670), 5000);
 
 	// determine how much we have to decrement the effect per second
 	Emp_decr = Emp_intensity / time;
 
 	// play a flash
-	game_flash( 1.0f, 1.0f, 0.5f );
+	game_flash(
+		std::get<0>(Emp_pain_flash_color) * Emp_pain_flash_factor,
+		std::get<1>(Emp_pain_flash_color) * Emp_pain_flash_factor,
+		std::get<2>(Emp_pain_flash_color) * Emp_pain_flash_factor
+	);
 }
 
 // stop the emp effect cold

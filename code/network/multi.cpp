@@ -27,6 +27,7 @@
 #include "network/multi_ingame.h"
 #include "popup/popup.h"
 #include "missionui/chatbox.h"
+#include "model/modelreplace.h"
 #include "network/multiteamselect.h"
 #include "network/multi_data.h"
 #include "network/multi_kick.h"
@@ -53,6 +54,7 @@
 #include "debugconsole/console.h"
 #include "network/psnet2.h"
 #include "network/multi_mdns.h"
+#include "cmdline/cmdline.h"
 
 // Stupid windows workaround...
 #ifdef MessageBox
@@ -129,13 +131,13 @@ int Multi_server_check_count = 0;					// var to keep track of reentrancy when ch
 int Next_bytes_time = -1;								// bytes sent
 
 // how often each player gets updated
-int Multi_client_update_times[MAX_PLAYERS];	// client update packet timestamp
+UI_TIMESTAMP Multi_client_update_times[MAX_PLAYERS];	// client update packet timestamp
 
 // local network buffer data
 LOCAL ubyte net_buffer[NUM_REENTRANT_LEVELS][MAX_NET_BUFFER];
 LOCAL ubyte Multi_read_count;
 
-int Multi_restr_query_timestamp = -1;
+UI_TIMESTAMP Multi_restr_query_timestamp;
 join_request Multi_restr_join_request;
 net_addr Multi_restr_addr;
 int Multi_join_restr_mode = -1;
@@ -171,8 +173,8 @@ void multi_init()
 	Multi_id_num = 0;
 
 	// clear out all netplayers
-	memset(Net_players, 0, sizeof(net_player) * MAX_PLAYERS);
 	for(idx=0; idx<MAX_PLAYERS; idx++){
+		Net_players[idx].init();
 		Net_players[idx].reliable_socket = PSNET_INVALID_SOCKET;
 	}
 
@@ -228,7 +230,7 @@ void multi_vars_init()
 	Multi_mission_loaded = 0;   // client side		
 
 	// restricted game stuff
-	Multi_restr_query_timestamp = -1;	
+	Multi_restr_query_timestamp = UI_TIMESTAMP::invalid();
 
 	// respawn stuff	
 	Multi_server_check_count = 0;
@@ -269,7 +271,7 @@ void multi_level_init()
 		// close all sockets down just for good measure
 		psnet_rel_close_socket(Net_players[idx].reliable_socket);
 
-		memset(&Net_players[idx],0,sizeof(net_player));
+		Net_players[idx].init();
 		Net_players[idx].reliable_socket = PSNET_INVALID_SOCKET;
 
 		Net_players[idx].s_info.xfer_handle = -1;
@@ -491,6 +493,12 @@ void multi_client_check_server()
 
 void process_packet_normal(ubyte* data, header *header_info)
 {
+	// this is for helping to diagnose misaligned packets.  The last sensible packet 
+	// is usually the culprit that needs to be analyzed.
+	if (Cmdline_dump_packet_type) {
+		mprintf(("Game packet type of %d received.\n", data[0]));
+	}
+
 	switch ( data[0] ) {
 
 		case JOIN:
@@ -862,6 +870,10 @@ void process_packet_normal(ubyte* data, header *header_info)
 			process_non_homing_fired_packet(data, header_info);
 			break;
 
+		case ANIMATION_TRIGGERED:
+			process_animation_triggered_packet(data, header_info);
+			break;
+
 		case COUNTERMEASURE_NEW:
 			process_NEW_countermeasure_fired_packet(data, header_info);
 			break;
@@ -919,11 +931,16 @@ void process_packet_normal(ubyte* data, header *header_info)
 			break; 
 
 		default:
-			nprintf(("Network", "Received packet with unknown type %d\n", data[0] ));
+			mprintf(("Received packet with unknown type %d\n", data[0] ));
 			header_info->bytes_processed = 10000;
 			break;
 
 	} // end switch
+
+	// Let's also dump the amount of data that we've processed so far.
+	if (Cmdline_dump_packet_type) {
+		mprintf(("Game packet ended.  Total amount of data processed from packet is %d.\n", header_info->bytes_processed));
+	}
 }
 
 
@@ -935,7 +952,7 @@ void process_packet_normal(ubyte* data, header *header_info)
 // process_tracker_packet() as defined in MultiTracker.[h,cpp]
 void multi_process_bigdata(ubyte *data, int len, net_addr *from_addr, int reliable)
 {
-	int type, bytes_processed;
+	int bytes_processed;
 	int player_num;
 	header header_info;
 	ubyte *buf;	
@@ -960,20 +977,23 @@ void multi_process_bigdata(ubyte *data, int len, net_addr *from_addr, int reliab
 	}   
 
 	bytes_processed = 0;
+
+	// start off logging of packets by writing how many bytes of data we should get through.
+	if (Cmdline_dump_packet_type) {
+		mprintf(("Network packet with %d bytes of data received. ", len));
+	}
+
 	while( (bytes_processed >= 0) && (bytes_processed < len) )  {
 
       buf = &(data[bytes_processed]);
 
-      type = buf[0];
+      const ubyte type = buf[0];
 
 		// if its coming from an unknown source, there are only certain packets we will actually process
 		if((player_num == -1) && !multi_is_valid_unknown_packet((ubyte)type)){
+			// So let's log it, because we should probably at least be vaguely aware of the buggy behavior.
+			mprintf(("Receiving unknown source packet of type %d that should have a source, aborting packet processing!\n", type));
 			return ;
-		}		
-
-		if ( (type<0) || (type > MAX_TYPE_ID )) {
-			nprintf( ("Network", "multi_process_bigdata: Invalid packet type %d!\n", type ));
-			return;
 		}		
 
 		// perform any special processing checks here		
@@ -1214,10 +1234,10 @@ void multi_do_frame()
 	}
 
 	// check to see if we're waiting on confirmation for a restricted ingame join
-	if(Multi_restr_query_timestamp != -1){
+	if(Multi_restr_query_timestamp.isValid()){
 		// if it has elapsed, unset the ingame join flag
-		if(timestamp_elapsed(Multi_restr_query_timestamp)){
-			Multi_restr_query_timestamp = -1;
+		if(ui_timestamp_elapsed(Multi_restr_query_timestamp)){
+			Multi_restr_query_timestamp = UI_TIMESTAMP::invalid();
 			Netgame.flags &= ~(NG_FLAG_INGAME_JOINING);		
 		}	
 	}
@@ -1280,11 +1300,11 @@ void multi_do_frame()
 		int idx;
 		for(idx=0;idx<MAX_PLAYERS;idx++){
 			if(MULTI_CONNECTED(Net_players[idx]) && (Net_player != &Net_players[idx])){
-				if((Multi_client_update_times[idx] < 0) || timestamp_elapsed_safe(Multi_client_update_times[idx], 1000)){
+				if ( !Multi_client_update_times[idx].isValid() || ui_timestamp_elapsed_safe(Multi_client_update_times[idx], MILLISECONDS_PER_SECOND) ) {
 					
 					send_client_update_packet(&Net_players[idx]);
 					
-					Multi_client_update_times[idx] = timestamp(MULTI_CLIENT_UPDATE_TIME);
+					Multi_client_update_times[idx] = ui_timestamp(MULTI_CLIENT_UPDATE_TIME);
 				}
 			}
 		}
@@ -1318,11 +1338,6 @@ void multi_do_frame()
 	if (Game_mode & GM_STANDALONE_SERVER) {
 		std_do_gui_frame();
 	}	
-
-	// dogfight nonstandalone players should recalc the escort list every frame
-	if(!(Game_mode & GM_STANDALONE_SERVER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT) && MULTI_IN_MISSION){
-		hud_setup_escort_list(0);
-	}
 
 	// if master then maybe do port forwarding setup/refresh/wait
 	if (Net_player->flags & NETINFO_FLAG_AM_MASTER) {
@@ -1385,11 +1400,11 @@ void multi_pause_do_frame()
 
 		for(idx=0;idx<MAX_PLAYERS;idx++){
 			if(MULTI_CONNECTED(Net_players[idx]) && (Net_player != &Net_players[idx])){			
-				if((Multi_client_update_times[idx] < 0) || timestamp_elapsed_safe(Multi_client_update_times[idx], 1000)){
+				if ( !Multi_client_update_times[idx].isValid() || ui_timestamp_elapsed_safe(Multi_client_update_times[idx], MILLISECONDS_PER_SECOND) ) {
 					
 					send_client_update_packet(&Net_players[idx]);
 					
-					Multi_client_update_times[idx] = timestamp(MULTI_CLIENT_UPDATE_TIME);
+					Multi_client_update_times[idx] = ui_timestamp(MULTI_CLIENT_UPDATE_TIME);
 				}
 			}				
 		}
@@ -1477,7 +1492,7 @@ void standalone_main_init()
 
 	// clear out the Netgame structure and start filling in the values
 	// NOTE : these values are not incredibly important since they will be overwritten by the host when he joins
-	memset( &Netgame, 0, sizeof(Netgame) );	
+	Netgame.init();
 	Netgame.game_state = NETGAME_STATE_FORMING;		// game is currently starting up
 	Netgame.security = 0;
 	Netgame.server_addr = Psnet_my_addr;
@@ -1493,9 +1508,6 @@ void standalone_main_init()
 	// clear the file xfer system
 	multi_xfer_reset();
 	multi_xfer_force_dir(CF_TYPE_MULTI_CACHE);
-
-	// reset timer
-	timestamp_reset();
 
 	// setup a blank pilot (this is a standalone usage only!)
 	Pilot.load_player(NULL);
@@ -1557,8 +1569,10 @@ void standalone_main_init()
 	}
 
 	// clear out various things
+	animation::ModelAnimationParseHelper::parseTables();
 	psnet_flush();
 	game_flush();
+	virtual_pof_init();
 	ship_init();
 
 	// setup port forwarding
@@ -1786,7 +1800,7 @@ void multi_reset_timestamps()
 	int i;
 
 	for ( i = 0 ; i < MAX_PLAYERS; i++ ){
-		Multi_client_update_times[i] = -1;
+		Multi_client_update_times[i] = UI_TIMESTAMP::invalid();
 	}
 	Netgame_send_time = -1;
 	Gameinfo_send_time = -1;	
@@ -1801,8 +1815,8 @@ void multi_reset_timestamps()
 		Players[i].update_dumbfire_time = timestamp(0);
 		Players[i].update_lock_time = timestamp(0);
 
-		Net_players[i].s_info.voice_token_timestamp = -1;
-		Net_players[i].s_info.player_collision_timestamp = timestamp(0);
+		Net_players[i].s_info.voice_token_timestamp = UI_TIMESTAMP::invalid();
+		Net_players[i].s_info.player_collision_timestamp = TIMESTAMP::immediate();
 	}
 
 	// reset standalone gui timestamps (these are not game critical, so there is not much danger)

@@ -205,13 +205,13 @@ namespace os
 
 			mprintf(("Lua Error: %s\n", msgStream.str().c_str()));
 
+			if (running_unittests) {
+				throw LuaErrorException(msgStream.str());
+			}
+
 			if (Cmdline_noninteractive) {
 				abort();
 				return;
-			}
-
-			if (running_unittests) {
-				throw LuaErrorException(msgStream.str());
 			}
 
 			set_clipboard_text(msgStream.str().c_str());
@@ -289,13 +289,13 @@ namespace os
 		{
 			mprintf(("\n%s\n", text));
 
+			if (running_unittests) {
+				throw ErrorException(text);
+			}
+
 			if (Cmdline_noninteractive) {
 				abort();
 				return;
-			}
-
-			if (running_unittests) {
-				throw ErrorException(text);
 			}
 
 			SCP_stringstream messageStream;
@@ -355,13 +355,13 @@ namespace os
 			// output to the debug log before anything else (so that we have a complete record)
 			mprintf(("WARNING: \"%s\" at %s:%d\n", text.c_str(), filename, line));
 
+			if (running_unittests) {
+				throw WarningException(text);
+			}
+
 			// now go for the additional popup window, if we want it ...
 			if (Cmdline_noninteractive) {
 				return;
-			}
-
-			if (running_unittests) {
-				throw WarningException(text);
 			}
 
 			SCP_stringstream boxMsgStream;
@@ -463,6 +463,44 @@ namespace os
 				Warning(filename, line, "%s", msg.c_str());
 			}
 #endif
+		}
+
+		void Information(const char* filename, int line, const char* format, ...) {
+			SCP_string msg;
+			va_list args;
+
+			va_start(args, format);
+			vsprintf(msg, format, args);
+			va_end(args);
+
+			// Below is essentially a stripped down copy pasta of WarningImpl
+			filename = clean_filename(filename);
+
+			// output to the debug log before anything else (so that we have a complete record)
+			mprintf(("INFO: \"%s\" at %s:%d\n", msg.c_str(), filename, line));
+
+			// now go for the additional popup window, if we want it ...
+			if (Cmdline_noninteractive || running_unittests) {
+				return;
+			}
+
+			SCP_stringstream boxMsgStream;
+			boxMsgStream << "Information: " << msg << "\n";
+			boxMsgStream << "File: " << filename << "\n";
+			boxMsgStream << "Line: " << line << "\n";
+
+			set_clipboard_text(boxMsgStream.str().c_str());
+
+			boxMsgStream << "\n";
+
+			SCP_string boxMessage = truncateLines(boxMsgStream, Messagebox_lines);
+			boxMessage += "\n[ This info is in the clipboard so you can paste it somewhere now ]\n";
+
+			gr_activate(0);
+
+			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Information", boxMessage.c_str(), getDialogParent());
+
+			gr_activate(1);
 		}
 
 		void Message(MessageType type, const char* message, const char* title)

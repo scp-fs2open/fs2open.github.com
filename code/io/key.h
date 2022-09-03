@@ -22,6 +22,7 @@ extern int ascii_table[SIZE_OF_ASCII_TABLE];
 
 extern ubyte keyd_pressed[NUM_KEYS];
 
+
 // O/S level hooks...
 void key_init();
 void key_level_init();
@@ -34,6 +35,7 @@ void key_flush();
 // Routines/data you can access:
 float key_down_timef( uint code );
 
+SDL_Scancode fs2_to_sdl( int scancode );
 int key_to_ascii(int keycode );
 int key_inkey();
 

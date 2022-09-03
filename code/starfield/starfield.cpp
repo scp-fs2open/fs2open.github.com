@@ -178,8 +178,10 @@ int Num_debris_normal = 0;
 int Num_debris_nebula = 0;
 
 bool Dynamic_environment = false;
-bool Motion_debris_override = false;
 
+bool Subspace_sexp_used = false;
+
+bool Motion_debris_override = false;
 bool Motion_debris_enabled = true;
 
 auto MotionDebrisOption = options::OptionBuilder<bool>("Graphics.MotionDebris", "Motion Debris",
@@ -262,13 +264,11 @@ extern void stars_project_2d_onto_sphere( vec3d *pnt, float rho, float phi, floa
 static void starfield_create_bitmap_buffer(const int si_idx)
 {
 	vec3d s_points[MAX_PERSPECTIVE_DIVISIONS+1][MAX_PERSPECTIVE_DIVISIONS+1];
-	vec3d t_points[MAX_PERSPECTIVE_DIVISIONS+1][MAX_PERSPECTIVE_DIVISIONS+1];
 
 	vertex v[4];
-	matrix m, m_bank;
+	matrix m;
 	int idx, s_idx;
 	float ui, vi;
-	angles bank_first;
 
 	starfield_bitmap_instance *sbi = &Starfield_bitmap_instances[si_idx];
 
@@ -311,27 +311,16 @@ static void starfield_create_bitmap_buffer(const int si_idx)
 	float d_theta = -(((p_theta * scale_y) / 360.0f) / (float)(div_y));
 
 	// bank matrix
-	bank_first.p = 0.0f;
-	bank_first.b = a->b;
-	bank_first.h = 0.0f;
-	vm_angles_2_matrix(&m_bank, &bank_first);
-
-	// convert angles to matrix
-	angles a_temp = *a;
-	a_temp.b = 0.0f;
-	vm_angles_2_matrix(&m, &a_temp);
+	vm_angles_2_matrix(&m, a);
 
 	// generate the bitmap points
 	for(idx=0; idx<=div_x; idx++) {
 		for(s_idx=0; s_idx<=div_y; s_idx++) {
 			// get world spherical coords
 			stars_project_2d_onto_sphere(&s_points[idx][s_idx], 1000.0f, s_phi + ((float)idx*d_phi), s_theta + ((float)s_idx*d_theta));
-			
-			// bank the bitmap first
-			vm_vec_rotate(&t_points[idx][s_idx], &s_points[idx][s_idx], &m_bank);
 
-			// rotate on the sphere
-			vm_vec_rotate(&s_points[idx][s_idx], &t_points[idx][s_idx], &m);
+			// (un)rotate on the sphere
+			vm_vec_unrotate(&s_points[idx][s_idx], &s_points[idx][s_idx], &m);
 		}
 	}
 
@@ -795,6 +784,8 @@ void stars_pre_level_init(bool clear_backgrounds)
 	// also clear the preload indexes
 	Preload_background_indexes.clear();
 
+	Subspace_sexp_used = false;
+
 	Dynamic_environment = false;
 	Motion_debris_override = false;
 
@@ -842,11 +833,15 @@ void stars_post_level_init()
 	float dist, dist_max;
 	ubyte red,green,blue,alpha;
 
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	// in FRED, make sure we always have at least one background
 	if (Fred_running)
 	{
 		if (Backgrounds.empty())
-			Backgrounds.emplace_back();
+			stars_add_blank_background(true);
 	}
 	// in FSO, see if we have any backgrounds to preload
 	// (since the backgrounds aren't parsed at the time we parse the sexps)
@@ -908,7 +903,7 @@ void stars_post_level_init()
 			starfield_bitmap_instance def_sun;
 
 			// stuff some values
-			def_sun.ang.h = fl_radians(60.0f);
+			def_sun.ang.h = fl_radians(-60.0f);
 
 			Suns.push_back(def_sun);
 		}
@@ -1142,7 +1137,7 @@ void stars_get_sun_pos(int sun_n, vec3d *pos)
 	
 	// rotation matrix
 	vm_angles_2_matrix(&rot, &Suns[sun_n].ang);
-	vm_vec_rotate(pos, &temp, &rot);
+	vm_vec_unrotate(pos, &temp, &rot);
 }
 
 // draw sun
@@ -1157,6 +1152,10 @@ void stars_draw_sun(int show_sun)
 	vertex sun_vex;
 	starfield_bitmap *bm;
 	float local_scale;
+
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
 
 	// should we even be here?
 	if (!show_sun)
@@ -1242,6 +1241,10 @@ void stars_draw_lens_flare(vertex *sun_vex, int sun_n)
 	float dx,dy;
 	vertex flare_vex = *sun_vex; //copy over to flare_vex to get all sorts of properties
 
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	Assert( sun_n < (int)Suns.size() );
 
 	if ( (sun_n >= (int)Suns.size()) || (sun_n < 0) ) {
@@ -1293,6 +1296,10 @@ void stars_draw_sun_glow(int sun_n)
 	vec3d sun_pos, sun_dir;
 	vertex sun_vex;	
 	float local_scale;
+
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
 
 	// sanity
 	//WMC - Dunno why this is getting hit...
@@ -1366,6 +1373,10 @@ void stars_draw_bitmaps(int show_bitmaps)
 
 	int idx;
 	int star_index;
+
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
 
 	// should we even be here?
 	if ( !show_bitmaps )
@@ -1493,17 +1504,21 @@ void subspace_render()
 {
 	int framenum = 0;
 
-	if ( Subspace_model_inner == -1 )	{
-		Subspace_model_inner = model_load( "subspace_small.pof", 0, NULL );
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
+	if ( Subspace_model_inner < 0 )	{
+		Subspace_model_inner = model_load( "subspace_small.pof", 0, nullptr );
 		Assert(Subspace_model_inner >= 0);
 	}
 
-	if ( Subspace_model_outer == -1 )	{
-		Subspace_model_outer = model_load( "subspace_big.pof", 0, NULL );
+	if ( Subspace_model_outer < 0 )	{
+		Subspace_model_outer = model_load( "subspace_big.pof", 0, nullptr );
 		Assert(Subspace_model_outer >= 0);
 	}
 
-	if ( Subspace_glow_bitmap == -1 )	{
+	if ( Subspace_glow_bitmap < 0 )	{
 		Subspace_glow_bitmap = bm_load( NOX("SunGlow01"));
 		Assert(Subspace_glow_bitmap >= 0);
 	}
@@ -1631,6 +1646,10 @@ void stars_draw_stars()
 	vertex p1, p2;
 	int can_draw = 1;
 
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	if ( !last_stars_filled ) {
 		for (i = 0; i < Num_stars; i++) {
 			g3_rotate_faraway_vertex(&p2, &Stars[i].pos);
@@ -1730,6 +1749,10 @@ void stars_draw_motion_debris()
 	GR_DEBUG_SCOPE("Draw motion debris");
 	TRACE_SCOPE(tracing::DrawMotionDebris);
 
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	if (Motion_debris_override)
 		return;
 
@@ -1789,6 +1812,10 @@ void stars_draw(int show_stars, int show_suns, int  /*show_nebulas*/, int show_s
 	GR_DEBUG_SCOPE("Draw Stars");
 	TRACE_SCOPE(tracing::DrawStars);
 
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	int gr_zbuffering_save = gr_zbuffer_get();
 	gr_zbuffer_set(GR_ZBUFF_NONE);
 
@@ -1818,7 +1845,7 @@ void stars_draw(int show_stars, int show_suns, int  /*show_nebulas*/, int show_s
 		stars_draw_background();
 	}
 
-	if ( !env && show_stars && (Nmodel_num < 0) && (Game_detail_flags & DETAIL_FLAG_STARS) && !(The_mission.flags[Mission::Mission_Flags::Fullneb]) && (supernova_active() < 3) ) {
+	if ( !env && show_stars && (Nmodel_num < 0) && (Game_detail_flags & DETAIL_FLAG_STARS) && !(The_mission.flags[Mission::Mission_Flags::Fullneb]) && (supernova_stage() < SUPERNOVA_STAGE::TOOLTIME) ) {
 		stars_draw_stars();
 	}
 
@@ -1829,7 +1856,7 @@ void stars_draw(int show_stars, int show_suns, int  /*show_nebulas*/, int show_s
 	mprintf(( "Stars: %d\n", xt2-xt1 ));
 #endif
 
-	if ( !Rendering_to_env && (Game_detail_flags & DETAIL_FLAG_MOTION) && (!Fred_running) && (supernova_active() < 3) && in_mission)	{
+	if ( !Rendering_to_env && (Game_detail_flags & DETAIL_FLAG_MOTION) && (!Fred_running) && (supernova_stage() < SUPERNOVA_STAGE::TOOLTIME) && in_mission)	{
 		stars_draw_motion_debris();
 	}
 
@@ -1912,19 +1939,24 @@ void stars_page_in()
 	starfield_bitmap_instance *sbi;
 	starfield_bitmap *sb;
 
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	// Initialize the subspace stuff
 
-	if ( Game_subspace_effect )	{
-		Subspace_model_inner = model_load( "subspace_small.pof", 0, NULL );
+	if ( Game_subspace_effect || Subspace_sexp_used ) {
+		Subspace_model_inner = model_load("subspace_small.pof", 0, nullptr);
 		Assert(Subspace_model_inner >= 0);
-		Subspace_model_outer = model_load( "subspace_big.pof", 0, NULL );
+
+		Subspace_model_outer = model_load("subspace_big.pof", 0, nullptr);
 		Assert(Subspace_model_outer >= 0);
 
 		polymodel *pm;
 		
 		pm = model_get(Subspace_model_inner);
 		
-		nprintf(( "Paging", "Paging in textures for subspace effect.\n" ));
+		nprintf(( "Paging", "Paging in textures for inner subspace effect.\n" ));
 
 		for (idx = 0; idx < pm->n_textures; idx++) {
 			pm->maps[idx].PageIn();
@@ -1932,7 +1964,7 @@ void stars_page_in()
 
 		pm = model_get(Subspace_model_outer);
 		
-		nprintf(( "Paging", "Paging in textures for subspace effect.\n" ));
+		nprintf(( "Paging", "Paging in textures for outer subspace effect.\n" ));
 
 		for (idx = 0; idx < pm->n_textures; idx++) {
 			pm->maps[idx].PageIn();
@@ -2159,6 +2191,10 @@ void stars_draw_background()
 	GR_DEBUG_SCOPE("Draw Background");
 	TRACE_SCOPE(tracing::DrawBackground);
 
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	if (Nmodel_num < 0)
 		return;
 
@@ -2178,6 +2214,26 @@ void stars_draw_background()
 // call this to set a specific model as the background model
 void stars_set_background_model(const char *model_name, const char *texture_name, int flags)
 {
+	int new_model = -1;
+	int new_bitmap = -1;
+
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
+	if (model_name != nullptr && *model_name != '\0' && stricmp(model_name, "none") != 0) {
+		new_model = model_load(model_name, 0, nullptr, -1);
+
+		if (texture_name != nullptr && *texture_name != '\0') {
+			new_bitmap = bm_load(texture_name);
+		}
+	}
+
+	// see if we are actually changing anything
+	if (Nmodel_num == new_model && Nmodel_bitmap == new_bitmap && Nmodel_flags == flags) {
+		return;
+	}
+
 	if (Nmodel_bitmap >= 0) {
 		bm_unload(Nmodel_bitmap);
 		Nmodel_bitmap = -1;
@@ -2194,18 +2250,14 @@ void stars_set_background_model(const char *model_name, const char *texture_name
 	}
 
 	Nmodel_flags = flags;
-
-	if ( (model_name == NULL) || (*model_name == '\0') )
-		return;
-
-	Nmodel_num = model_load(model_name, 0, NULL, -1);
-	Nmodel_bitmap = bm_load(texture_name);
+	Nmodel_num = new_model;
+	Nmodel_bitmap = new_bitmap;
 
 	if (Nmodel_num >= 0) {
 		model_page_in_textures(Nmodel_num);
 
-		if (model_get(Nmodel_num)->flags & PM_FLAG_HAS_INTRINSIC_ROTATE) {
-			Nmodel_instance_num = model_create_instance(false, Nmodel_num);
+		if (model_get(Nmodel_num)->flags & PM_FLAG_HAS_INTRINSIC_MOTION) {
+			Nmodel_instance_num = model_create_instance(-1, Nmodel_num);
 		}
 	}
 
@@ -2421,6 +2473,56 @@ int stars_add_bitmap_entry(starfield_list_entry *sle)
 	return (int)(Starfield_bitmap_instances.size() - 1);
 }
 
+void stars_correct_background_sun_angles(angles* angs_to_correct)
+{
+	matrix mat;
+	vm_angles_2_matrix(&mat, angs_to_correct);
+	vm_transpose(&mat);
+	vm_extract_angles_matrix(angs_to_correct, &mat);
+	angs_to_correct->p = fmod(angs_to_correct->p + PI2, PI2);
+	angs_to_correct->b = fmod(angs_to_correct->b + PI2, PI2);
+	angs_to_correct->h = fmod(angs_to_correct->h + PI2, PI2);
+}
+
+void stars_uncorrect_background_sun_angles(angles* angs_to_uncorrect)
+{
+	// the actual operation is an inversion so 'correcting' and 'uncorrecting' are the same
+	stars_correct_background_sun_angles(angs_to_uncorrect);
+}
+
+void stars_correct_background_bitmap_angles(angles *angs_to_correct)
+{
+	matrix mat1, mat2;
+	angles ang1 = vm_angles_new(0.0, angs_to_correct->b, 0.0);
+	angles ang2 = vm_angles_new(angs_to_correct->p, 0.0, angs_to_correct->h);
+	vm_angles_2_matrix(&mat1, &ang1);
+	vm_angles_2_matrix(&mat2, &ang2);
+	matrix mat3 = mat2 * mat1;
+	vm_transpose(&mat3);
+	vm_extract_angles_matrix(angs_to_correct, &mat3);
+	angs_to_correct->p = fmod(angs_to_correct->p + PI2, PI2);
+	angs_to_correct->b = fmod(angs_to_correct->b + PI2, PI2);
+	angs_to_correct->h = fmod(angs_to_correct->h + PI2, PI2);
+}
+
+void stars_uncorrect_background_bitmap_angles(angles *angs_to_uncorrect)
+{
+	matrix mat;
+	vm_angles_2_matrix(&mat, angs_to_uncorrect);
+	// transpose and {2,3,1} permute rows and cols
+	matrix mat_permuted = vm_matrix_new(
+		mat.vec.uvec.xyz.y, mat.vec.fvec.xyz.y, mat.vec.rvec.xyz.y,
+		mat.vec.uvec.xyz.z, mat.vec.fvec.xyz.z, mat.vec.rvec.xyz.z,
+		mat.vec.uvec.xyz.x, mat.vec.fvec.xyz.x, mat.vec.rvec.xyz.x
+	);
+	angles angs_permuted;
+	vm_extract_angles_matrix(&angs_permuted, &mat_permuted);
+	// {2,3,1} unpermute p,b,h
+	angs_to_uncorrect->p = angs_permuted.b;
+	angs_to_uncorrect->h = angs_permuted.p;
+	angs_to_uncorrect->b = angs_permuted.h;
+}
+
 // get the number of entries that each vector contains
 // "is_a_sun" will get sun instance counts, otherwise it gets normal starfield bitmap instance counts
 // "bitmap_count" will get number of starfield_bitmap entries rather than starfield_bitmap_instance entries
@@ -2517,7 +2619,7 @@ const char *stars_get_name_from_instance(int index, bool is_a_sun)
 }
 
 // WMC/Goober5000
-void stars_set_nebula(bool activate)
+void stars_set_nebula(bool activate, float range)
 {
     The_mission.flags.set(Mission::Mission_Flags::Fullneb, activate);
 	
@@ -2525,20 +2627,27 @@ void stars_set_nebula(bool activate)
 	{
 		Toggle_text_alpha = TOGGLE_TEXT_NEBULA_ALPHA;
 		HUD_contrast = 1;
-		if(Fred_running) {
+
+		Neb2_render_mode = NEB2_RENDER_HTL;
+		Neb2_awacs = range;
+		if (Neb2_awacs < 0.1f)
+			Neb2_awacs = 3000.0f;	// this is also the default in the background editor
+
+		// this function is not currently called in FRED, but this would be needed for FRED support
+		if (Fred_running)
+		{
 			Neb2_render_mode = NEB2_RENDER_POF;
 			stars_set_background_model(BACKGROUND_MODEL_FILENAME, Neb2_texture_name);
 			stars_set_background_orientation();
-		} else {
-			Neb2_render_mode = NEB2_RENDER_HTL;
 		}
-		neb2_eye_changed();
 	}
 	else
 	{
 		Toggle_text_alpha = TOGGLE_TEXT_NORMAL_ALPHA;
-		Neb2_render_mode = NEB2_RENDER_NONE;
 		HUD_contrast = 0;
+
+		Neb2_render_mode = NEB2_RENDER_NONE;
+		Neb2_awacs = -1.0f;
 	}
 
 	// (DahBlount)
@@ -2645,6 +2754,16 @@ void stars_delete_entry_FRED(int index, bool is_a_sun)
 }
 
 // Goober5000
+void stars_add_blank_background(bool creating_in_fred)
+{
+	Backgrounds.emplace_back();
+
+	// any background that is created will have correct angles, so be sure to set the flag
+	if (creating_in_fred)
+		Backgrounds.back().flags.set(Starfield::Background_Flags::Corrected_angles_in_mission_file);
+}
+
+// Goober5000
 void stars_load_first_valid_background()
 {
 	int background_idx = stars_get_first_valid_background();
@@ -2739,6 +2858,7 @@ void stars_load_background(int background_idx)
 // Goober5000
 void stars_copy_background(background_t *dest, background_t *src)
 {
+	dest->flags = src->flags;
 	dest->suns.assign(src->suns.begin(), src->suns.end());
 	dest->bitmaps.assign(src->bitmaps.begin(), src->bitmaps.end());
 }
@@ -2765,6 +2885,10 @@ void stars_pack_backgrounds()
 	Backgrounds.erase(
 		std::remove_if(Backgrounds.begin(), Backgrounds.end(), stars_background_empty),
 		Backgrounds.end());
+
+	// in FRED, make sure we always have at least one background
+	if (Fred_running && Backgrounds.empty())
+		stars_add_blank_background(true);
 }
 
 static void render_environment(int i, vec3d *eye_pos, matrix *new_orient, float new_zoom)
@@ -2794,6 +2918,10 @@ void stars_setup_environment_mapping(camid cid) {
 	extern float View_zoom;
 	float old_zoom = View_zoom, new_zoom = 1.0f;//0.925f;
 	int i = 0;
+
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
 
 	if(!cid.isValid())
 		return;

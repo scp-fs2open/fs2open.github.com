@@ -17,6 +17,7 @@
 #include "network/multiutil.h"
 #include "object/objcollide.h"
 #include "object/object.h"
+#include "scripting/global_hooks.h"
 #include "scripting/scripting.h"
 #include "scripting/api/objs/vecmath.h"
 #include "playerman/player.h"
@@ -74,7 +75,7 @@ static void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, vec3
 	vec3d force;
 
 	vec3d worldNormal;
-	model_instance_find_world_dir(&worldNormal, &hit_dir, pm, pmi, submodel_num, &pship_obj->orient);
+	model_instance_local_to_global_dir(&worldNormal, &hit_dir, pm, pmi, submodel_num, &pship_obj->orient);
 
 	// Apply hit & damage & stuff to weapon
 	weapon_hit(weapon_obj, pship_obj,  world_hitpos, quadrant_num, &worldNormal);
@@ -132,8 +133,12 @@ static void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, vec3
 
 	// Add impact decal
 	if (quadrant_num == -1 && wip->impact_decal.definition_handle >= 0) {
+		// Use the weapon orientation to augment the orientation computation.
+		vec3d weapon_up;
+		model_instance_global_to_local_dir(&weapon_up, &weapon_obj->orient.vec.uvec, pm, pmi, submodel_num, &pship_obj->orient);
+
 		matrix decal_orient;
-		vm_vector_2_matrix_norm(&decal_orient, &hit_dir); // hit_dir is already normalized so we can use the more efficient function
+		vm_vector_2_matrix_norm(&decal_orient, &hit_dir, &weapon_up); // hit_dir is already normalized so we can use the more efficient function
 
 		decals::addDecal(wip->impact_decal, pship_obj, submodel_num, *hitpos, decal_orient);
 	}
@@ -446,15 +451,24 @@ static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, f
 		wp->collisionInfo = new mc_info;	// The weapon will free this memory later
 		memcpy(wp->collisionInfo, &mc, sizeof(mc_info));
 
-		Script_system.SetHookObjects(4, "Self", ship_objp, "Object", weapon_objp, "Ship", ship_objp, "Weapon", weapon_objp);
-		Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(mc.hit_point_world));
-		bool ship_override = Script_system.IsConditionOverride(CHA_COLLIDEWEAPON, ship_objp);
-		Script_system.RemHookVars({ "Self", "Object", "Ship", "Weapon", "Hitpos" });
+		bool ship_override = false, weapon_override = false;
 
-		Script_system.SetHookObjects(4, "Self", weapon_objp, "Object", ship_objp, "Ship", ship_objp, "Weapon", weapon_objp);
-		Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(mc.hit_point_world));
-		bool weapon_override = Script_system.IsConditionOverride(CHA_COLLIDESHIP, weapon_objp);
-		Script_system.RemHookVars({ "Self", "Object", "Ship", "Weapon", "Hitpos" });
+		if (Script_system.IsActiveAction(CHA_COLLIDEWEAPON)) {
+			Script_system.SetHookObjects(4, "Self", ship_objp, "Object", weapon_objp, "Ship", ship_objp, "Weapon", weapon_objp);
+			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(mc.hit_point_world));
+			ship_override = Script_system.IsConditionOverride(CHA_COLLIDEWEAPON, ship_objp, weapon_objp);
+			Script_system.RemHookVars({ "Self", "Object", "Ship", "Weapon", "Hitpos" });
+		}
+
+		if (scripting::hooks::OnShipCollision->isActive()) {
+			weapon_override = scripting::hooks::OnShipCollision->isOverride(
+				scripting::hook_param_list(scripting::hook_param("Self", 'o', weapon_objp),
+					scripting::hook_param("Object", 'o', ship_objp),
+					scripting::hook_param("Ship", 'o', ship_objp),
+					scripting::hook_param("Weapon", 'o', weapon_objp),
+					scripting::hook_param("Hitpos", 'o', mc.hit_point_world)),
+				weapon_objp, ship_objp);
+		}
 
 		if(!ship_override && !weapon_override) {
 			if (shield_collision && quadrant_num >= 0) {
@@ -465,20 +479,23 @@ static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, f
 			ship_weapon_do_hit_stuff(ship_objp, weapon_objp, &mc.hit_point_world, &mc.hit_point, quadrant_num, mc.hit_submodel, mc.hit_normal);
 		}
 
-		if (!(weapon_override && !ship_override))
+		if (Script_system.IsActiveAction(CHA_COLLIDEWEAPON) && !(weapon_override && !ship_override))
 		{
 			Script_system.SetHookObjects(4, "Self", ship_objp, "Object", weapon_objp, "Ship", ship_objp, "Weapon", weapon_objp);
 			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(mc.hit_point_world));
-			Script_system.RunCondition(CHA_COLLIDEWEAPON, ship_objp, wp->weapon_info_index);
+			Script_system.RunCondition(CHA_COLLIDEWEAPON, ship_objp, weapon_objp);
 			Script_system.RemHookVars({ "Self", "Object", "Ship", "Weapon", "Hitpos" });
 		}
 
-		if ((weapon_override && !ship_override) || (!weapon_override && !ship_override))
+		if (scripting::hooks::OnShipCollision->isActive() && ((weapon_override && !ship_override) || (!weapon_override && !ship_override)))
 		{
-			Script_system.SetHookObjects(4, "Self", weapon_objp, "Object", ship_objp, "Ship", ship_objp, "Weapon", weapon_objp);
-			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(mc.hit_point_world));
-			Script_system.RunCondition(CHA_COLLIDESHIP, weapon_objp);
-			Script_system.RemHookVars({ "Self", "Object", "Ship", "Weapon", "Hitpos" });
+			scripting::hooks::OnShipCollision->run(
+				scripting::hook_param_list(scripting::hook_param("Self", 'o', weapon_objp),
+					scripting::hook_param("Object", 'o', ship_objp),
+					scripting::hook_param("Ship", 'o', ship_objp),
+					scripting::hook_param("Weapon", 'o', weapon_objp),
+					scripting::hook_param("Hitpos", 'o', mc.hit_point_world)),
+				weapon_objp, ship_objp);
 		}
 	}
 	else if ((Missiontime - wp->creation_time > F1_0/2) && (wip->is_homing()) && (wp->homing_object == ship_objp)) {
@@ -491,6 +508,8 @@ static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, f
 				// check if we're colliding against "invisible" ship
 				if (!(shipp->flags[Ship::Ship_Flags::Dont_collide_invis])) {
 					wp->lifeleft = 0.001f;
+					wp->weapon_flags.set(Weapon::Weapon_Flags::Begun_detonation);
+
 					if (ship_objp == Player_obj)
 						nprintf(("Jim", "Frame %i: Weapon %d set to detonate, dist = %7.3f.\n", Framecount, OBJ_INDEX(weapon_objp), dist));
 					valid_hit_occurred = 1;

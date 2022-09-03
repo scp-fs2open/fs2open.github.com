@@ -828,16 +828,6 @@
          </widget>
         </item>
         <item>
-         <widget class="QCheckBox" name="toggleDaisyChainedDocking">
-          <property name="text">
-           <string>Allow Daisy-Chained Docking</string>
-          </property>
-          <attribute name="buttonGroup">
-           <string notr="true">m_flagGroup</string>
-          </attribute>
-         </widget>
-        </item>
-        <item>
          <widget class="QCheckBox" name="toggleNoBriefing">
           <property name="text">
            <string>No Briefing</string>
@@ -910,7 +900,7 @@
         <item>
          <widget class="QCheckBox" name="toggleGoalsInBriefing">
           <property name="text">
-           <string>Always Show Mission Goals In Briefing</string>
+           <string>Toggle Showing Goals In Briefing</string>
           </property>
           <attribute name="buttonGroup">
            <string notr="true">m_flagGroup</string>

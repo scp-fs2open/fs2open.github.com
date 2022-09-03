@@ -25,6 +25,7 @@ void debrief_close();
 void debrief_rebuild_player_list();
 void debrief_handle_player_drop();
 
+void debrief_maybe_auto_accept();
 void debrief_disable_accept();
 void debrief_assemble_optional_mission_popup_text(char *buffer, char *mission_loop_desc);
 

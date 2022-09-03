@@ -31,23 +31,23 @@
 #define	GM_CAMPAIGN_MODE				(1 << 10)			// are we currently in a campaign.
 #define GM_LAB							(1 << 11)			// We are currently in the F3 lab
 
-#define	VM_EXTERNAL						(1 << 0)				//	Set if not viewing from player position.
-#define	VM_TRACK						(1 << 1)				//	Set if viewer is tracking target.
-#define	VM_DEAD_VIEW					(1 << 2)				//	Set if viewer is watching from dead view.
-#define	VM_CHASE							(1 << 3)				//	Chase view.
-#define	VM_OTHER_SHIP					(1 << 4)				//	View from another ship.
-#define	VM_CAMERA_LOCKED			(1 << 5)				// Set if player does not have control of the camera
-#define	VM_WARP_CHASE					(1	<< 6)				// View while warping out (form normal view mode)
-#define	VM_PADLOCK_UP					(1 << 7)
-#define	VM_PADLOCK_REAR				(1 << 8)
-#define	VM_PADLOCK_LEFT				(1 << 9)
-#define	VM_PADLOCK_RIGHT				(1 << 10)
-#define	VM_WARPIN_ANCHOR				(1 << 11)			// special warpin camera mode
-#define VM_TOPDOWN					(1 << 12)				//Camera is looking down on ship
-#define VM_FREECAMERA				(1 << 13)				//Camera is not attached to any particular object, probably under SEXP control
-#define VM_CENTERING				(1 << 14)				// View is springing to center
+#define VM_EXTERNAL         (1 <<  0)   // Set if not viewing from player position.
+#define VM_TRACK            (1 <<  1)   // Set if viewer is tracking target.
+#define VM_DEAD_VIEW        (1 <<  2)   // Set if viewer is watching from dead view.
+#define VM_CHASE            (1 <<  3)   // Chase view.
+#define VM_OTHER_SHIP       (1 <<  4)   // View from another ship.
+#define VM_CAMERA_LOCKED    (1 <<  5)   // Set if player does not have control of the camera
+#define VM_WARP_CHASE       (1 <<  6)   // View while warping out (form normal view mode)
+#define VM_PADLOCK_UP       (1 <<  7)   // Set when player is looking up
+#define VM_PADLOCK_REAR     (1 <<  8)   // Set when player is looking behind
+#define VM_PADLOCK_LEFT     (1 <<  9)   // Set when player is looking left
+#define VM_PADLOCK_RIGHT    (1 << 10)   // Set when player is looking right
+#define VM_WARPIN_ANCHOR    (1 << 11)   // special warpin camera mode
+#define VM_TOPDOWN          (1 << 12)   // Camera is looking down on ship
+#define VM_FREECAMERA       (1 << 13)   // Camera is not attached to any particular object, probably under SEXP control
+#define VM_CENTERING        (1 << 14)   // View is springing to center
 
-#define	VM_PADLOCK_ANY (VM_PADLOCK_UP|VM_PADLOCK_REAR|VM_PADLOCK_LEFT|VM_PADLOCK_RIGHT)
+#define VM_PADLOCK_ANY (VM_PADLOCK_UP | VM_PADLOCK_REAR | VM_PADLOCK_LEFT | VM_PADLOCK_RIGHT)
 
 //-----Cutscene stuff
 //No bars
@@ -213,7 +213,58 @@ int current_detail_level();
 
 
 // Goober5000
-void insertion_sort(void *array, size_t array_size, size_t element_size, int (*fncompare)(const void *, const void *));
+// A sort for use with small or almost-sorted lists.  Iteration time is O(n) for a fully-sorted list.
+// This uses a type-safe version of the function prototype for stdlib's qsort, although the size is an int rather than a size_t (for the reasons that j is an int).
+// The fncompare function should return <0, 0, or >0 as the left item is less than, equal to, or greater than the right item.
+template <typename T>
+void insertion_sort(T* array_base, int array_size, int (*fncompare)(const T*, const T*))
+{
+	// NOTE: j *must* be a signed type because j reaches -1 and j+1 must be 0.
+	int i, j;
+	T *current, *current_buf;
 
+	// allocate space for the element being moved
+	// (Taylor says that for optimization purposes malloc/free should be used rather than vm_malloc/vm_free here)
+	current_buf = new T();
+	if (current_buf == nullptr)
+	{
+		UNREACHABLE("Malloc failed!");
+		return;
+	}
+
+	// loop
+	for (i = 1; i < array_size; i++)
+	{
+		// grab the current element
+		// this does a lazy move/copy because if the array is mostly sorted,
+		// there's no sense copying sorted items to their own places
+		bool lazily_copied = false;
+		current = &array_base[i];
+
+		// bump other elements toward the end of the array
+		for (j = i - 1; (j >= 0) && (fncompare(&array_base[j], current) > 0); j--)
+		{
+			if (!lazily_copied)
+			{
+				// this may look strange but it is just copying the data
+				// into the buffer, then pointing to the buffer
+				*current_buf = std::move(*current);
+				current = current_buf;
+				lazily_copied = true;
+			}
+
+			array_base[j + 1] = std::move(array_base[j]);
+		}
+
+		if (lazily_copied)
+		{
+			// insert the current element at the correct place
+			array_base[j + 1] = std::move(*current);
+		}
+	}
+
+	// free the allocated space
+	delete current_buf;
+}
 
 #endif
