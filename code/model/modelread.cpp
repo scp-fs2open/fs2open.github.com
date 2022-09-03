@@ -76,8 +76,6 @@ static bool ss_warning_shown_null = false;		// have we shown the warning dialog 
 static bool ss_warning_shown_mismatch = false;	// ditto but for a different warning
 #endif
 
-static uint Global_checksum = 0;
-
 // Anything less than this is considered incompatible.
 #define PM_COMPATIBLE_VERSION 1900
 
@@ -1573,11 +1571,7 @@ int read_model_file_no_subsys(polymodel * pm, const char* filename, int ferror, 
 
 	TRACE_SCOPE(tracing::ReadModelFile);
 
-	// generate checksum for the POF
-	cfseek(fp, 0, SEEK_SET);	
-	cf_chksum_long(fp, &Global_checksum);
 	cfseek(fp, 0, SEEK_SET);
-
 
 	// code to get a filename to write out subsystem information for each model that
 	// is read.  This info is essentially debug stuff that is used to help get models
