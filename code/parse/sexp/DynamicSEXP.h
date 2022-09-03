@@ -36,7 +36,7 @@ class DynamicSEXP {
 	 *
 	 * @return The minimum amount of arguments
 	 */
-	virtual int getMinimumArguments() = 0;
+	virtual int getMinimumArguments() const = 0;
 
 	/**
 	 * @brief Gets the maximum number of how many arguments this SEXP may be called with
@@ -45,7 +45,7 @@ class DynamicSEXP {
 	 *
 	 * @return The maximum amount of arguments for this SEXP
 	 */
-	virtual int getMaximumArguments() = 0;
+	virtual int getMaximumArguments() const = 0;
 
 	/**
 	 * @brief Retrieves the type of the specified argument (0-base)

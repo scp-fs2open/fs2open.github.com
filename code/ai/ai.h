@@ -460,7 +460,7 @@ typedef struct ai_info {
 	int multilock_check_timestamp;		// when to check for multilock next
 	SCP_vector<std::pair<int, ship_subsys*>> ai_missile_locks_firing;  // a list of missile locks (locked objnum, locked subsys) the ai is currently firing
 	
-	object_ship_wing_point_team lua_ai_target;
+	ai_lua_parameters lua_ai_target;
 } ai_info;
 
 // Goober5000
