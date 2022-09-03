@@ -870,6 +870,8 @@ add_file_folder("Model"
 	model/modelread.cpp
 	model/modelrender.h
 	model/modelrender.cpp
+	model/modelreplace.h
+	model/modelreplace.cpp
 	model/modelsinc.h
 	model/model_flags.h
 )

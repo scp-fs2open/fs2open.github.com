@@ -10,6 +10,7 @@
 #include <iff_defs/iff_defs.h>
 #include <weapon/weapon.h>
 #include <stats/medals.h>
+#include <model/modelreplace.h>
 #include <nebula/neb.h>
 #include <starfield/starfield.h>
 #include <sound/audiostr.h>
@@ -179,6 +180,7 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 	listener(SubSystem::Models);
 	model_init();
 	model_free_all();                // Free all existing models
+	virtual_pof_init();
 
 	listener(SubSystem::AI);
 	ai_init();

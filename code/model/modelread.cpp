@@ -31,6 +31,7 @@
 #include "math/fvi.h"
 #include "math/vecmat.h"
 #include "model/model.h"
+#include "model/modelreplace.h"
 #include "model/modelsinc.h"
 #include "parse/parselo.h"
 #include "render/3dinternal.h"
@@ -41,6 +42,7 @@
 
 #include <algorithm>
 #include <stack>
+#include <map>
 
 flag_def_list model_render_flags[] =
 {
@@ -106,7 +108,7 @@ static uint Global_checksum = 0;
 
 static int Model_signature = 0;
 
-void interp_configure_vertex_buffers(polymodel*, int);
+void interp_configure_vertex_buffers(polymodel*, int, const model_read_deferred_tasks& deferredTasks);
 void interp_pack_vertex_buffers(polymodel* pm, int mn);
 void interp_create_detail_index_buffer(polymodel *pm, int detail);
 void interp_create_transparency_index_buffer(polymodel *pm, int detail_num);
@@ -178,11 +180,157 @@ public:
 SCP_unordered_map<int, intrinsic_motion> Intrinsic_motions;
 
 
+void model_free(polymodel* pm)
+{
+	int i, j;
+	safe_kill(pm->ship_bay);
+
+	if (pm->paths) {
+		for (i = 0; i < pm->n_paths; i++) {
+			for (j = 0; j < pm->paths[i].nverts; j++) {
+				if (pm->paths[i].verts[j].turret_ids) {
+					vm_free(pm->paths[i].verts[j].turret_ids);
+				}
+			}
+			if (pm->paths[i].verts) {
+				vm_free(pm->paths[i].verts);
+			}
+		}
+		vm_free(pm->paths);
+	}
+
+	if (pm->shield.verts) {
+		vm_free(pm->shield.verts);
+	}
+
+	if (pm->shield.tris) {
+		vm_free(pm->shield.tris);
+	}
+
+	if (pm->gun_banks) {	// NOLINT
+		delete[] pm->gun_banks;
+	}
+
+	if (pm->missile_banks) {	// NOLINT
+		delete[] pm->missile_banks;
+	}
+
+	if (pm->docking_bays) {
+		for (i = 0; i < pm->n_docks; i++) {
+			if (pm->docking_bays[i].splines) {
+				vm_free(pm->docking_bays[i].splines);
+			}
+		}
+		vm_free(pm->docking_bays);
+	}
+
+
+	if (pm->thrusters) {
+		for (i = 0; i < pm->n_thrusters; i++) {
+			if (pm->thrusters[i].points)
+				vm_free(pm->thrusters[i].points);
+		}
+
+		vm_free(pm->thrusters);
+	}
+
+	if (pm->glow_point_banks) { // free the glows!!! -Bobboau
+		for (i = 0; i < pm->n_glow_point_banks; i++) {
+			if (pm->glow_point_banks[i].points)
+				vm_free(pm->glow_point_banks[i].points);
+		}
+
+		vm_free(pm->glow_point_banks);
+	}
+
+#ifndef NDEBUG
+	if (pm->debug_info) {
+		vm_free(pm->debug_info);
+	}
+#endif
+
+	model_octant_free(pm);
+
+	if (pm->submodel) {
+		for (i = 0; i < pm->n_models; i++) {
+			pm->submodel[i].buffer.clear();
+
+			if (pm->submodel[i].bsp_data) {
+				vm_free(pm->submodel[i].bsp_data);
+			}
+
+			if (pm->submodel[i].collision_tree_index >= 0) {
+				model_remove_bsp_collision_tree(pm->submodel[i].collision_tree_index);
+			}
+
+			if (pm->submodel[i].outline_buffer != nullptr) {
+				vm_free(pm->submodel[i].outline_buffer);
+				pm->submodel[i].outline_buffer = nullptr;
+			}
+		}
+
+		delete[] pm->submodel;
+	}
+
+	if (pm->xc) {
+		vm_free(pm->xc);
+	}
+
+	if (pm->lights) {
+		vm_free(pm->lights);
+	}
+
+	if (pm->shield_collision_tree) {
+		vm_free(pm->shield_collision_tree);
+	}
+
+	if (pm->shield.buffer_id.isValid()) {
+		gr_delete_buffer(pm->shield.buffer_id);
+		pm->shield.buffer_id = gr_buffer_handle::invalid();
+		pm->shield.buffer_n_verts = 0;
+	}
+
+	if (pm->vert_source.Vbuffer_handle.isValid()) {
+		gr_heap_deallocate(GpuHeap::ModelVertex, pm->vert_source.Vertex_offset);
+		pm->vert_source.Vbuffer_handle = gr_buffer_handle::invalid();
+
+		pm->vert_source.Vertex_offset = 0;
+		pm->vert_source.Base_vertex_offset = 0;
+	}
+
+	if (pm->vert_source.Vertex_list != NULL) {
+		vm_free(pm->vert_source.Vertex_list);
+		pm->vert_source.Vertex_list = NULL;
+	}
+
+	if (pm->vert_source.Ibuffer_handle.isValid()) {
+		gr_heap_deallocate(GpuHeap::ModelIndex, pm->vert_source.Index_offset);
+
+		pm->vert_source.Ibuffer_handle = gr_buffer_handle::invalid();
+		pm->vert_source.Index_offset = 0;
+	}
+
+	if (pm->vert_source.Index_list != NULL) {
+		vm_free(pm->vert_source.Index_list);
+		pm->vert_source.Index_list = NULL;
+	}
+
+	pm->vert_source.Vertex_list_size = 0;
+	pm->vert_source.Index_list_size = 0;
+
+	for (i = 0; i < MAX_MODEL_DETAIL_LEVELS; ++i) {
+		pm->detail_buffers[i].clear();
+	}
+
+	pm->id = 0;
+	delete pm;
+}
+
 // Free up a model, getting rid of all its memory
 // With the basic page in system this can be called from outside of modelread.cpp
 void model_unload(int modelnum, int force)
 {
-	int i, j, num;
+	int num;
 
 	if ( modelnum >= MAX_POLYGON_MODELS ) {
 		num = modelnum % MAX_POLYGON_MODELS;
@@ -214,172 +362,32 @@ void model_unload(int modelnum, int force)
 	// to get the slots back so we set "release" to true.
 	model_page_out_textures(pm->id, true);
 
-	safe_kill(pm->ship_bay);
-	
-	if (pm->paths)	{
-		for (i=0; i<pm->n_paths; i++ )	{
-			for (j=0; j<pm->paths[i].nverts; j++ )	{
-				if ( pm->paths[i].verts[j].turret_ids )	{
-					vm_free(pm->paths[i].verts[j].turret_ids);
-				}
-			}
-			if (pm->paths[i].verts)	{
-				vm_free(pm->paths[i].verts);
-			}
-		}
-		vm_free(pm->paths);
-	}
-
-	if ( pm->shield.verts )	{
-		vm_free( pm->shield.verts );
-	}
-
-	if ( pm->shield.tris )	{
-		vm_free(pm->shield.tris);
-	}
-
-	if (pm->gun_banks) {	// NOLINT
-		delete[] pm->gun_banks;
-	}
-
-	if (pm->missile_banks) {	// NOLINT
-		delete[] pm->missile_banks;
-	}
-
-	if ( pm->docking_bays )	{
-		for (i=0; i<pm->n_docks; i++ )	{
-			if ( pm->docking_bays[i].splines )	{
-				vm_free( pm->docking_bays[i].splines );
-			}
-		}
-		vm_free(pm->docking_bays);
-	}
-
-
-	if ( pm->thrusters ) {
-		for (i = 0; i < pm->n_thrusters; i++) {
-			if (pm->thrusters[i].points)
-				vm_free(pm->thrusters[i].points);
-		}
-
-		vm_free(pm->thrusters);
-	}
-
-	if ( pm->glow_point_banks )	{ // free the glows!!! -Bobboau
-		for (i = 0; i < pm->n_glow_point_banks; i++) {
-			if (pm->glow_point_banks[i].points)
-				vm_free(pm->glow_point_banks[i].points);
-		}
-
-		vm_free(pm->glow_point_banks);
-	}
-
-#ifndef NDEBUG
-	if ( pm->debug_info )	{
-		vm_free(pm->debug_info);
-	}
-#endif
-
-	model_octant_free( pm );
-
-	if (pm->submodel) {
-		for (i = 0; i < pm->n_models; i++) {
-			pm->submodel[i].buffer.clear();
-
-			if ( pm->submodel[i].bsp_data )	{
-				vm_free(pm->submodel[i].bsp_data);
-			}
-
-			if ( pm->submodel[i].collision_tree_index >= 0 ) {
-				model_remove_bsp_collision_tree(pm->submodel[i].collision_tree_index);
-			}
-
-			if ( pm->submodel[i].outline_buffer != nullptr ) {
-				vm_free(pm->submodel[i].outline_buffer);
-				pm->submodel[i].outline_buffer = nullptr;
-			}
-		}
-
-		delete[] pm->submodel;
-	}
-	
-	if ( pm->xc ) {
-		vm_free(pm->xc);
-	}
-
-	if ( pm->lights )	{
-		vm_free(pm->lights);
-	}
-
-	if ( pm->shield_collision_tree ) {
-		vm_free(pm->shield_collision_tree);
-	}
-
-	if (pm->shield.buffer_id.isValid()) {
-		gr_delete_buffer(pm->shield.buffer_id);
-		pm->shield.buffer_id = gr_buffer_handle::invalid();
-		pm->shield.buffer_n_verts = 0;
-	}
-
-	if (pm->vert_source.Vbuffer_handle.isValid()) {
-		gr_heap_deallocate(GpuHeap::ModelVertex, pm->vert_source.Vertex_offset);
-		pm->vert_source.Vbuffer_handle = gr_buffer_handle::invalid();
-
-		pm->vert_source.Vertex_offset = 0;
-		pm->vert_source.Base_vertex_offset = 0;
-	}
-
-	if ( pm->vert_source.Vertex_list != NULL ) {
-		vm_free(pm->vert_source.Vertex_list);
-		pm->vert_source.Vertex_list = NULL;
-	}
-
-	if (pm->vert_source.Ibuffer_handle.isValid()) {
-		gr_heap_deallocate(GpuHeap::ModelIndex, pm->vert_source.Index_offset);
-
-		pm->vert_source.Ibuffer_handle = gr_buffer_handle::invalid();
-		pm->vert_source.Index_offset = 0;
-	}
-
-	if ( pm->vert_source.Index_list != NULL ) {
-		vm_free(pm->vert_source.Index_list);
-		pm->vert_source.Index_list = NULL;
-	}
-
-	pm->vert_source.Vertex_list_size = 0;
-	pm->vert_source.Index_list_size = 0;
-
-	for (i = 0; i < MAX_MODEL_DETAIL_LEVELS; ++i) {
-		pm->detail_buffers[i].clear();
-	}
-
 	// run through Ship_info and if the model has been loaded we'll need to reset the modelnum to -1.
-	for (auto &si : Ship_info) {
-		if ( pm->id == si.model_num ) {
+	for (auto& si : Ship_info) {
+		if (pm->id == si.model_num) {
 			si.model_num = -1;
 		}
 
-		if ( pm->id == si.cockpit_model_num ) {
+		if (pm->id == si.cockpit_model_num) {
 			si.cockpit_model_num = -1;
 		}
 
-		if ( pm->id == si.model_num_hud ) {
+		if (pm->id == si.model_num_hud) {
 			si.model_num_hud = -1;
 		}
 	}
 
 	// need to reset weapon models as well
-	for (auto &wi: Weapon_info) {
-		if ( pm->id == wi.model_num ) {
+	for (auto& wi : Weapon_info) {
+		if (pm->id == wi.model_num) {
 			wi.model_num = -1;
 		}
-		if ( pm->id == wi.external_model_num ) {
+		if (pm->id == wi.external_model_num) {
 			wi.external_model_num = -1;
 		}
 	}
 
-	pm->id = 0;
-	delete pm;
+	model_free(pm);
 
 	Polygon_models[num] = NULL;	
 }
@@ -678,7 +686,7 @@ void model_copy_subsystems( int n_subsystems, model_subsystem *d_sp, model_subsy
 }
 
 // routine to get/set subsystem information
-static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char *props, char *dname)
+void set_subsystem_info(int model_num, model_subsystem *subsystemp, char *props, const char *dname)
 {
 	char *p;
 	char buf[64];
@@ -1030,7 +1038,7 @@ float get_submodel_delta_shift(const submodel_instance *smi)
 	return abs(smi->cur_offset - smi->prev_offset);
 }
 
-void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num, float rad, vec3d *pnt, char *props, char *subobj_name, int model_num )
+void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num, float rad, const vec3d *pnt, char *props, const char *subobj_name, int model_num )
 {
 	int i;
 	model_subsystem *subsystemp;
@@ -1138,7 +1146,7 @@ void create_family_tree(polymodel *obj)
 	}
 }
 
-void create_vertex_buffer(polymodel *pm)
+void create_vertex_buffer(polymodel *pm, const model_read_deferred_tasks& deferredTasks)
 {
 	if (Is_standalone) {
 		return;
@@ -1150,7 +1158,7 @@ void create_vertex_buffer(polymodel *pm)
 
 	// determine the size and configuration of each buffer segment
 	for (i = 0; i < pm->n_models; i++) {
-		interp_configure_vertex_buffers(pm, i);
+		interp_configure_vertex_buffers(pm, i, deferredTasks);
 	}
 
 	// figure out which vertices are transparent
@@ -1543,9 +1551,7 @@ void resolve_submodel_index(const polymodel *pm, const char *requester, const ch
 	submodel_index = -1;
 }
 
-
-//reads a binary file containing a 3d model
-int read_model_file(polymodel * pm, const char *filename, int n_subsystems, model_subsystem *subsystems, int ferror)
+int read_model_file_no_subsys(polymodel * pm, const char* filename, int ferror, model_read_deferred_tasks& subsystemParseList)
 {
 	CFILE *fp;
 	int version;
@@ -1618,7 +1624,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 	}
 
 	pm->version = version;
-	Assert( strlen(filename) < FILESPEC_LENGTH );
+	Assert(strlen(filename) < FILESPEC_LENGTH );
 	strcpy_s(pm->filename, filename);
 
 	memset( &pm->view_positions, 0, sizeof(pm->view_positions) );
@@ -1908,7 +1914,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 
 					get_user_prop_value(p+9, type);
 					if ( !stricmp(type, "subsystem") ) {	// if we have a subsystem, put it into the list!
-						do_new_subsystem( n_subsystems, subsystems, n, sm->rad, &sm->offset, props, sm->name, pm->id );
+						subsystemParseList.model_subsystems.emplace(sm->name, model_read_deferred_tasks::model_subsystem_parse{ n, sm->rad, sm->offset, props });
 					} else {
 						if ( !stricmp(type, "no_rotate") || !stricmp(type, "no_movement") ) {
 							// mark those submodels which should not move - i.e., those with no subsystem
@@ -2517,32 +2523,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 
 									nprintf(("wash", "Ship %s with engine wash associated with subsys %s\n", filename, engine_subsys_name));
 
-									// start off assuming the subsys is invalid
-									int table_error = 1;
-									for (int k=0; k<n_subsystems; k++) {
-										if ( !subsystem_stricmp(subsystems[k].subobj_name, engine_subsys_name) ) {
-											bank->submodel_num = subsystems[k].subobj_num;
-
-											bank->wash_info_pointer = subsystems[k].engine_wash_pointer;
-											if (bank->wash_info_pointer != nullptr) {
-												table_error = 0;
-											}
-											// also set what subsystem this is attached to but not if we only have one thruster bank
-											// do this so that original :V: models still work like they used to
-											if (pm->n_thrusters > 1) {
-												bank->obj_num = k;
-											}
-											break;
-										}
-									}
-
-									if ( (bank->wash_info_pointer == nullptr) && (n_subsystems > 0) ) {
-										if (table_error) {
-										//	Warning(LOCATION, "No engine wash table entry in ships.tbl for ship model %s", filename);
-										} else {
-											Warning(LOCATION, "Inconsistent model: Engine wash engine subsystem does not match any ship subsytem names for ship model %s", filename);
-										}
-									}
+									subsystemParseList.engine_subsystems.emplace(engine_subsys_name, model_read_deferred_tasks::engine_subsystem_parse{ i });
 								}
 							}
 						}
@@ -2573,7 +2554,6 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 
 				for ( i = 0; i < n_banks; i++ ) {
 					int n_slots;						// How many firepoints the turret has
-					model_subsystem *subsystemp;		// The actual turret subsystem
 
 					int base_obj = cfread_int(fp);		// The parent subobj of the turret (the gun base)
 					int gun_obj = cfread_int(fp);       // The subobj that the firepoints are physically attached to (the gun barrel)
@@ -2583,53 +2563,25 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 						gun_obj = base_obj; // fall back to singlepart handling
 					}
 
-					int snum=-1;
-					if ( subsystems ) {
-						for ( snum = 0; snum < n_subsystems; snum++ ) {
-							subsystemp = &subsystems[snum];
-
-							if ( base_obj == subsystemp->subobj_num ) {
-								cfread_vector( &temp_vec, fp );
-								vm_vec_normalize_safe(&temp_vec);
-								subsystemp->turret_norm = temp_vec;
-
-								n_slots = cfread_int( fp );
-								subsystemp->turret_gun_sobj = gun_obj;
-								if(n_slots > MAX_TFP) {
-									Warning(LOCATION, "Model %s has %i turret firing points on subsystem %s, maximum is %i", pm->filename, n_slots, subsystemp->name, MAX_TFP);
-								}
-
-								for (j = 0; j < n_slots; j++ )	{
-									if(j < MAX_TFP)
-										cfread_vector( &subsystemp->turret_firing_point[j], fp );
-									else
-									{
-										vec3d bogus;
-										cfread_vector(&bogus, fp);
-									}
-								}
-								Assertion( n_slots > 0, "Turret %s in model %s has no firing points.\n", subsystemp->name, pm->filename);
-
-								subsystemp->turret_num_firing_points = n_slots;
-
-								// copy the subsystem index that the gun base submodel should have at this point
-								Assertion(pm->submodel[base_obj].subsys_num >= 0, "Turret gun base should have a subsystem index!");
-								pm->submodel[gun_obj].subsys_num = pm->submodel[base_obj].subsys_num;
-
-								break;
-							}
+					cfread_vector(&temp_vec, fp);
+					vm_vec_normalize_safe(&temp_vec);
+					n_slots = cfread_int(fp);
+					SCP_vector<vec3d> firingpoints;
+					for (j = 0; j < n_slots; j++) {
+						if (j < MAX_TFP) {
+							vec3d firepoint;
+							cfread_vector(&firepoint, fp);
+							firingpoints.emplace_back(std::move(firepoint));
+						}
+						else
+						{
+							vec3d bogus;
+							cfread_vector(&bogus, fp);
 						}
 					}
+					Assertion(n_slots > 0, "Turret %s in model %s has no firing points.\n", pm->submodel[gun_obj].name, pm->filename);
 
-					if ( (n_subsystems == 0) || (snum == n_subsystems) ) {
-						vec3d bogus;
-
-						nprintf(("Warning", "Turret submodel %i not found for turret %i in model %s\n", base_obj, i, pm->filename));
-						cfread_vector( &bogus, fp );
-						n_slots = cfread_int( fp );
-						for (j = 0; j < n_slots; j++ )
-							cfread_vector( &bogus, fp );
-					}
+					subsystemParseList.weapons_subsystems.emplace(base_obj, model_read_deferred_tasks::weapon_subsystem_parse{ i, gun_obj, temp_vec, n_slots, std::move(firingpoints) });
 				}
 				break;
 			}
@@ -2661,12 +2613,13 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 
 						get_user_prop_value(p+9, type);
 						if ( !stricmp(type, "subsystem") ) {	// if we have a subsystem, put it into the list!
-							do_new_subsystem( n_subsystems, subsystems, -1, radius, &pnt, props_spcl, &name[1], pm->id );		// skip the first '$' character of the name
+							subsystemParseList.model_subsystems.emplace(&name[1], model_read_deferred_tasks::model_subsystem_parse{ -1, radius, pnt, props_spcl }); // skip the first '$' character of the name
 						} else if ( !stricmp(type, "shieldpoint") ) {
 							pm->shield_points.push_back(pnt);
 						}
-					} else if (in(name, "$enginelarge") || in(name, "$enginehuge")) {
-						do_new_subsystem( n_subsystems, subsystems, -1, radius, &pnt, props_spcl, &name[1], pm->id );		// skip the first '$' character of the name
+					} else if (in(name, "$enginelarge") || in(name, "$enginehuge")) 
+					{
+						subsystemParseList.model_subsystems.emplace(&name[1], model_read_deferred_tasks::model_subsystem_parse{ -1, radius, pnt, props_spcl }); // skip the first '$' character of the name	
 					} else {
 						nprintf(("Warning", "Unknown special object type %s while reading model %s\n", name, pm->filename));
 					}					
@@ -2952,6 +2905,105 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 	return 1;
 }
 
+int read_model_file(polymodel* pm, const char* filename, int ferror, model_read_deferred_tasks& deferredTasks, model_parse_depth depth = {})
+{
+	int status = 0;
+
+	//See if this is a modular, virtual pof, and if so, parse it from there
+	if (read_virtual_model_file(pm, filename, depth, ferror, deferredTasks)) {
+		status = 1;
+	}
+	else {
+		status = read_model_file_no_subsys(pm, filename, ferror, deferredTasks);
+	}
+
+	return status;
+}
+
+//reads a binary file containing a 3d model
+int read_and_process_model_file(polymodel* pm, const char* filename, int n_subsystems, model_subsystem* subsystems, int ferror, model_read_deferred_tasks& deferredTasks)
+{
+	int status = read_model_file(pm, filename, ferror, deferredTasks);
+
+	for (const auto& subsystem : deferredTasks.model_subsystems) {
+		auto propBuffer = make_unique<char[]>(subsystem.second.props.size() + 1);
+		strncpy(propBuffer.get(), subsystem.second.props.c_str(), subsystem.second.props.size() + 1);
+
+		do_new_subsystem(n_subsystems, subsystems, subsystem.second.subobj_nr, subsystem.second.rad, &subsystem.second.pnt, propBuffer.get(), subsystem.first.c_str(), pm->id);		
+	}
+
+	for (const auto& subsystem : deferredTasks.engine_subsystems) {
+		// start off assuming the subsys is invalid
+		int table_error = 1;
+		auto bank = &pm->thrusters[subsystem.second.thruster_nr];
+
+		for (int k = 0; k < n_subsystems; k++) {
+			if (!subsystem_stricmp(subsystems[k].subobj_name, subsystem.first.c_str())) {
+				bank->submodel_num = subsystems[k].subobj_num;
+
+				bank->wash_info_pointer = subsystems[k].engine_wash_pointer;
+				if (bank->wash_info_pointer != nullptr) {
+					table_error = 0;
+				}
+				// also set what subsystem this is attached to but not if we only have one thruster bank
+				// do this so that original :V: models still work like they used to
+				if (pm->n_thrusters > 1) {
+					bank->obj_num = k;
+				}
+				break;
+			}
+		}
+
+		if ((bank->wash_info_pointer == nullptr) && (n_subsystems > 0)) {
+			if (table_error) {
+				//	Warning(LOCATION, "No engine wash table entry in ships.tbl for ship model %s", filename);
+			}
+			else {
+				Warning(LOCATION, "Inconsistent model: Engine wash engine subsystem does not match any ship subsytem names for ship model %s", filename);
+			}
+		}
+	}
+
+	for (const auto& subsystem : deferredTasks.weapons_subsystems) {
+		model_subsystem* subsystemp;
+		if (subsystems) {
+			int snum = 0;
+			for (snum = 0; snum < n_subsystems; snum++) {
+				subsystemp = &subsystems[snum];
+
+				if (subsystem.first == subsystemp->subobj_num) {
+					subsystemp->turret_norm = subsystem.second.turretNorm;
+					subsystemp->turret_gun_sobj = subsystem.second.gun_subobj_nr;
+
+					if (subsystem.second.n_slots > MAX_TFP) {
+						Warning(LOCATION, "Model %s has %i turret firing points on subsystem %s, maximum is %i", pm->filename, subsystem.second.n_slots, subsystemp->name, MAX_TFP);
+					}
+
+					for (int j = 0; j < subsystem.second.n_slots; j++) {
+						if (j < MAX_TFP)
+							subsystemp->turret_firing_point[j] = subsystem.second.firingpoints[j];
+					}
+					Assertion(subsystem.second.n_slots > 0, "Turret %s in model %s has no firing points.\n", subsystemp->name, pm->filename);
+
+					subsystemp->turret_num_firing_points = subsystem.second.n_slots;
+
+					// copy the subsystem index that the gun base submodel should have at this point
+					Assertion(pm->submodel[subsystem.first].subsys_num >= 0, "Turret gun base should have a subsystem index!");
+					pm->submodel[subsystem.second.gun_subobj_nr].subsys_num = pm->submodel[subsystem.first].subsys_num;
+
+					break;
+				}
+			}
+			if (snum == n_subsystems) {
+				nprintf(("Warning", "Turret submodel %i not found for turret %i in model %s\n", subsystem.first, subsystem.second.turret_nr, pm->filename));
+			}
+		}
+	}
+
+	return status;
+}
+
+
 //Goober
 void model_load_texture(polymodel *pm, int i, char *file)
 {
@@ -3134,7 +3186,7 @@ void model_load_texture(polymodel *pm, int i, char *file)
 }
 
 //returns the number of this model
-int model_load(const  char *filename, int n_subsystems, model_subsystem *subsystems, int ferror, int duplicate)
+int model_load(const  char* filename, int n_subsystems, model_subsystem* subsystems, int ferror, int duplicate)
 {
 	int i, num;
 	polymodel *pm = NULL;
@@ -3146,7 +3198,7 @@ int model_load(const  char *filename, int n_subsystems, model_subsystem *subsyst
 
 	for (i=0; i< MAX_POLYGON_MODELS; i++)	{
 		if ( Polygon_models[i] )	{
-			if (!stricmp(filename, Polygon_models[i]->filename) && !duplicate)		{
+			if (!stricmp(filename , Polygon_models[i]->filename) && !duplicate) {
 				// Model already loaded; just return.
 				Polygon_models[i]->used_this_mission++;
 				return Polygon_models[i]->id;
@@ -3198,7 +3250,9 @@ int model_load(const  char *filename, int n_subsystems, model_subsystem *subsyst
 	game_busy(busy_text);
 #endif
 
-	if (read_model_file(pm, filename, n_subsystems, subsystems, ferror) < 0)	{
+	model_read_deferred_tasks deferredTasks;
+
+	if (read_and_process_model_file(pm, filename, n_subsystems, subsystems, ferror, deferredTasks) < 0)	{
 		if (pm != NULL) {
 			delete pm;
 		}
@@ -3268,7 +3322,7 @@ int model_load(const  char *filename, int n_subsystems, model_subsystem *subsyst
 	create_family_tree(pm);
 
 	// maybe generate vertex buffers
-	create_vertex_buffer(pm);
+	create_vertex_buffer(pm, deferredTasks);
 
 	//==============================
 	// Find all the lower detail versions of the hires model
@@ -4990,10 +5044,7 @@ void model_instance_add_arc(polymodel *pm, polymodel_instance *pmi, int sub_mode
 	}
 }
 
-int model_find_submodel_index(int modelnum, const char *name)
-{
-	auto pm = model_get(modelnum);
-
+int model_find_submodel_index(const polymodel* pm, const char* name) {
 	for (int i = 0; i < pm->n_models; i++)
 	{
 		if (!stricmp(pm->submodel[i].name, name))
@@ -5001,6 +5052,13 @@ int model_find_submodel_index(int modelnum, const char *name)
 	}
 
 	return -1;
+}
+
+int model_find_submodel_index(int modelnum, const char *name)
+{
+	auto pm = model_get(modelnum);
+
+	return model_find_submodel_index(pm, name);
 }
 
 // function to return an index into the docking_bays array which matches the criteria passed

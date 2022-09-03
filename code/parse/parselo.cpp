@@ -547,15 +547,17 @@ int optional_string(const char *pstr)
 	return 0;
 }
 
-int optional_string_either(const char *str1, const char *str2)
+int optional_string_either(const char *str1, const char *str2, bool advance)
 {
 	ignore_white_space();
 
 	if ( !strnicmp(str1, Mp, strlen(str1)) ) {
-		Mp += strlen(str1);
+		if(advance)
+			Mp += strlen(str1);
 		return 0;
 	} else if ( !strnicmp(str2, Mp, strlen(str2)) ) {
-		Mp += strlen(str2);
+		if (advance)
+			Mp += strlen(str2);
 		return 1;
 	}
 
