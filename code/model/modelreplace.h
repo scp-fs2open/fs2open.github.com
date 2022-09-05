@@ -52,9 +52,8 @@ public:
 };
 
 class VirtualPOFOperationHeaderData : public VirtualPOFOperation {
-	//TODO Refactor into proper optional when available
-	std::unique_ptr<float> radius = nullptr;
-	std::unique_ptr<std::pair<vec3d, vec3d>> boundingbox = nullptr;
+	tl::optional<float> radius = tl::nullopt;
+	tl::optional<std::pair<vec3d, vec3d>> boundingbox = tl::nullopt;
 public:
 	VirtualPOFOperationHeaderData();
 	void process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const override;
