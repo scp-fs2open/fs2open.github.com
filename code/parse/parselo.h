@@ -190,13 +190,13 @@ void parse_string_flag_list_special(Flagset& dest, const special_flag_def_list_n
 	SCP_vector<SCP_string> unparsed;
 	parse_string_flag_list<special_flag_def_list_new<T, additional_args...>, Flagset>(dest, defs, n, &unparsed);
 	for (const auto& special : unparsed) {
-		const auto* const it = std::find_if(std::cbegin(defs), std::cend(defs), [&special](const special_flag_def_list_new<T, additional_args...>& flag) {
+		const auto* const it = std::find_if(&defs[0], &defs[n], [&special](const special_flag_def_list_new<T, additional_args...>& flag) {
 			if (!flag.is_special || !flag.parse_special)
 				return false;
 			return strnicmp(special.c_str(), flag.name, strlen(flag.name)) == 0;
 			});
 
-		if (it != std::cend(defs)) {
+		if (it != &defs[n]) {
 			const size_t flag_length = strlen(it->name);
 			const size_t skip_length = flag_length + strspn(&special.c_str()[flag_length], NOX(" \t"));
 			it->parse_special(special.substr(skip_length), std::forward<additional_args_fwd>(args)...);
