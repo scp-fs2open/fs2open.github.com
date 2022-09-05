@@ -76,15 +76,14 @@ namespace animation {
 
 	public:
 		ModelAnimationData() = default;
-		ModelAnimationData(const ModelAnimationData<true>& other) :
-			position(*other.position),
-			orientation(*other.orientation) {};
-		ModelAnimationData(const ModelAnimationData<false>& other) :
-			position(other.position),
-			orientation(other.orientation) {};
+
 		ModelAnimationData(const vec3d& copy_position, const matrix& copy_orientation) :
 			position(copy_position),
 			orientation(copy_orientation) {};
+		ModelAnimationData(const tl::optional<vec3d>& copy_position, const tl::optional<matrix>& copy_orientation) :
+			position(*copy_position),
+			orientation(*copy_orientation) {};
+		ModelAnimationData(const ModelAnimationData<!is_optional>& other) : ModelAnimationData(other.position, other.orientation) {};
 
 		maybe_optional<vec3d> position;
 		maybe_optional<matrix> orientation;
