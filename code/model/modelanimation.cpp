@@ -12,12 +12,15 @@ extern float flFrametime;
 
 namespace animation {
 
-	flag_def_list_new<animation::Animation_Flags> Animation_flags[] = {
-		{ "auto reverse",				animation::Animation_Flags::Auto_Reverse,						true, false },
-		{ "reset at completion",		animation::Animation_Flags::Reset_at_completion,		        true, false },
-		{ "loop",						animation::Animation_Flags::Loop,						        true, false },
-		{ "random starting phase",		animation::Animation_Flags::Random_starting_phase,				true, false },
-		{ "pause on reverse",			animation::Animation_Flags::Pause_on_reverse,					true, false },
+	special_flag_def_list_new<animation::Animation_Flags, ModelAnimation&> Animation_flags[] = {
+		{ "auto reverse",				animation::Animation_Flags::Auto_Reverse,						true },
+		{ "reset at completion",		animation::Animation_Flags::Reset_at_completion,		        true },
+		{ "loop",						animation::Animation_Flags::Loop,						        true },
+		{ "random starting phase",		animation::Animation_Flags::Random_starting_phase,				true },
+		{ "pause on reverse",			animation::Animation_Flags::Pause_on_reverse,					true },
+		{ "seamless with startup",		animation::Animation_Flags::Seamless_with_startup,				true, [](const SCP_string& from, ModelAnimation& anim) {
+			anim.m_flagData.loopsFrom = std::atof(from.c_str());
+		}}
 	};
 
 	const size_t Num_animation_flags = sizeof(Animation_flags) / sizeof(flag_def_list_new<animation::Animation_Flags>);
@@ -1194,7 +1197,10 @@ namespace animation {
 
 		if (optional_string("$Flags:")) {
 			SCP_vector<SCP_string> unparsed;
-			parse_string_flag_list(animation->m_flags, Animation_flags, Num_animation_flags, &unparsed);
+			parse_string_flag_list_special(animation->m_flags, Animation_flags, &unparsed, *animation);
+			for (const auto& flag : unparsed) {
+				error_display(0, "Unknown flag %s in flag list!", flag.c_str());
+			}
 		}
 
 		if (Animation_types.find(type)->second.second) {
