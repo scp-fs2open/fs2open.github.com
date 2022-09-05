@@ -19523,8 +19523,6 @@ void ship_render_batch_thrusters(object *obj)
 
 	physics_info *pi = &Objects[shipp->objnum].phys_info;
 	float render_amount;
-	SCP_vector<int> foo;
-	foo.push_back(0);
 
 	for ( int i = 0; i < sip->num_maneuvering; i++ ) {
 		man_thruster *mtp = &sip->maneuvering[i];
