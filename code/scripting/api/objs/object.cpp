@@ -98,6 +98,23 @@ ADE_VIRTVAR(Parent, l_Object, "object", "Parent of the object. Value may also be
 		return ade_set_args(L, "o", l_Object.Set(object_h()));
 }
 
+ADE_VIRTVAR(Radius, l_Object, "number", "Radius of an object", "number", "Radius, or 0 if handle is invalid")
+{
+	object_h* objh = nullptr;
+	float f = -1.0f;
+	if (!ade_get_args(L, "o|f", l_Object.GetPtr(&objh), &f))
+		return ade_set_error(L, "f", 0.0f);
+
+	if (!objh->IsValid())
+		return ade_set_error(L, "f", 0.0f);
+
+	if (ADE_SETTING_VAR) {
+		objh->objp->radius = f;
+	}
+
+	return ade_set_args(L, "f", objh->objp->radius);
+}
+
 ADE_VIRTVAR(Position, l_Object, "vector", "Object world position (World vector)", "vector", "World position, or null vector if handle is invalid")
 {
 	object_h *objh;
