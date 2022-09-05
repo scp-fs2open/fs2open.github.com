@@ -344,8 +344,8 @@ VirtualPOFOperationChangeData::VirtualPOFOperationChangeData() {
 	stuff_string(submodel, F_NAME);
 
 	if (optional_string("+Set Offset:")) {
-		setOffset = make_unique<vec3d>();
-		stuff_vec3d(setOffset.get());
+		setOffset = vec3d();
+		stuff_vec3d(&(*setOffset));
 	}
 }
 
@@ -357,7 +357,7 @@ void VirtualPOFOperationChangeData::process(polymodel* pm, model_read_deferred_t
 		return;
 	}
 
-	if (setOffset != nullptr) {
+	if (setOffset) {
 		pm->submodel[subobj_no].offset = *setOffset;
 		auto it = deferredTasks.model_subsystems.find(submodel);
 		if (it != deferredTasks.model_subsystems.end()) {
