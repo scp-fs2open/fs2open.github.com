@@ -306,7 +306,7 @@ namespace animation {
 	}
 
 	void ModelAnimationSubmodel::reset(polymodel_instance* pmi) {
-		if(!m_submodel.has())
+		if(!m_submodel)
 			findSubmodel(pmi);
 
 		auto dataIt = m_initialData.find({ pmi->id });
@@ -401,8 +401,8 @@ namespace animation {
 		polymodel* pm = model_get(pmi->model_num);
 
 		//Do we have a submodel number already cached?
-		if (m_submodel.has())
-			submodelNumber = m_submodel;
+		if (m_submodel)
+			submodelNumber = *m_submodel;
 		//We seem to have a submodel name
 		else {
 			for (int i = 0; i < pm->n_models; i++) {
@@ -445,8 +445,8 @@ namespace animation {
 		polymodel* pm = model_get(pmi->model_num);
 
 		//Do we have a submodel number already cached?
-		if (m_submodel.has())
-			submodelNumber = m_submodel;
+		if (m_submodel)
+			submodelNumber = *m_submodel;
 		//Do we know if we were told to find the barrel submodel or not? This implies we have a subsystem name, not a submodel name
 		else {
 			ship_info* sip = nullptr;
@@ -563,7 +563,7 @@ namespace animation {
 
 		for (const auto& submodel : other.m_submodels) {
 			auto newSubmodel = std::shared_ptr<ModelAnimationSubmodel>(submodel->copy());
-			newSubmodel->m_submodel = optional<int>();
+			newSubmodel->m_submodel = tl::nullopt;
 			m_submodels.push_back(newSubmodel);
 		}
 
@@ -1217,7 +1217,7 @@ namespace animation {
 
 	void ModelAnimationParseHelper::parseSingleMoveable() {
 		volatile ModelAnimationMoveableOrientation o = ModelAnimationMoveableOrientation(nullptr, angles{ 0,0,0 });
-		volatile ModelAnimationMoveableRotation r = ModelAnimationMoveableRotation(nullptr, angles{ 0,0,0 }, angles{0,0,0}, optional<angles>());
+		volatile ModelAnimationMoveableRotation r = ModelAnimationMoveableRotation(nullptr, angles{ 0,0,0 }, angles{0,0,0}, tl::nullopt);
 		
 		required_string("$Name:");
 		char animID[NAME_LENGTH];
@@ -1471,7 +1471,7 @@ namespace animation {
 			required_string("+velocity:");
 			stuff_angles_deg_phb(&velocity);
 
-			optional<angles> acceleration;
+			tl::optional<angles> acceleration;
 
 			if (optional_string("+acceleration:")) {
 				angles accel{ 0,0,0 };
@@ -1480,7 +1480,7 @@ namespace animation {
 				bool allZero = accel.p == 0 && accel.b == 0 && accel.h == 0;
 
 				if (!allZero) {
-					acceleration = accel;
+					acceleration = std::move(accel);
 				}
 			}
 
@@ -1491,7 +1491,7 @@ namespace animation {
 				//Hence, throw time away, and let the segment handle calculating how long it actually takes
 			}
 
-			auto rotation = std::shared_ptr<ModelAnimationSegmentRotation>(new ModelAnimationSegmentRotation(subsys, target, velocity, optional<float>(), acceleration, absolute));
+			auto rotation = std::shared_ptr<ModelAnimationSegmentRotation>(new ModelAnimationSegmentRotation(subsys, target, velocity, tl::nullopt, acceleration, absolute));
 
 			if (optional_string("$Sound:")) {
 				gamesnd_id start_sound;
