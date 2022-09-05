@@ -19523,6 +19523,8 @@ void ship_render_batch_thrusters(object *obj)
 
 	physics_info *pi = &Objects[shipp->objnum].phys_info;
 	float render_amount;
+	SCP_vector<int> foo;
+	foo.push_back(0);
 
 	for ( int i = 0; i < sip->num_maneuvering; i++ ) {
 		man_thruster *mtp = &sip->maneuvering[i];
@@ -19564,14 +19566,14 @@ void ship_render_batch_thrusters(object *obj)
 			rotvel.xyz.x = pi->desired_rotvel.xyz.x / pi->max_rotvel.xyz.x;
 			rotvel.xyz.y = pi->desired_rotvel.xyz.y / pi->max_rotvel.xyz.y;
 			rotvel.xyz.z = pi->desired_rotvel.xyz.z / pi->max_rotvel.xyz.z;
-			vec3d pos = mtp->pos / (obj->radius * 0.5); // for full activation at half radius, further out will get capped to 1
+			vec3d pos = mtp->pos / (obj->radius * 0.5f); // for full activation at half radius, further out will get capped to 1
 			vm_vec_cross(&cross, &pos, &rotvel);
 			render_amount = vm_vec_dot(&mtp->norm, &cross);
 			CLAMP(render_amount, 0.0f, 1.0f);
 
-			render_amount += -vm_vec_dot(&mtp->norm, &vm_vec_new(1.f, 0.f, 0.f)) * pi->side_thrust;
-			render_amount += -vm_vec_dot(&mtp->norm, &vm_vec_new(0.f, 1.f, 0.f)) * pi->vert_thrust;
-			render_amount += -vm_vec_dot(&mtp->norm, &vm_vec_new(0.f, 0.f, 1.f)) * pi->forward_thrust;
+			render_amount += -vm_vec_dot(&mtp->norm, &vmd_x_vector) * pi->side_thrust;
+			render_amount += -vm_vec_dot(&mtp->norm, &vmd_y_vector) * pi->vert_thrust;
+			render_amount += -vm_vec_dot(&mtp->norm, &vmd_z_vector) * pi->forward_thrust;
 
 		}
 		CLAMP(render_amount, 0.0f, 1.0f);
@@ -19586,8 +19588,6 @@ void ship_render_batch_thrusters(object *obj)
 			render_amount += -vm_vec_dot(&mtp->norm, &glide_dir);
 			CLAMP(render_amount, 0.0f, 1.0f);
 		}
-
-
 
 		//Don't render small faraway thrusters (more than 1k * radius * length away)
 		if ( vm_vec_dist(&Eye_position, &obj->pos) > (1000.0f * mtp->radius * mtp->length) ) {
