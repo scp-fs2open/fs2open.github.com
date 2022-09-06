@@ -13231,7 +13231,7 @@ int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, int allowed_path_
 	pl_objp->phys_info.prev_ramp_vel.xyz.x = 0.0f;
 	pl_objp->phys_info.prev_ramp_vel.xyz.y = 0.0f;
 	pl_objp->phys_info.prev_ramp_vel.xyz.z = 0.0f;
-	pl_objp->phys_info.linear_thrust.xyz.z = 0.0f;		// How much the forward thruster is applied.  0-1.
+	pl_objp->phys_info.linear_thrust.xyz.z = 0.0f;		// How much the forward thruster is applied.  -1 - 1.
 	pl_objp->pos = pos;
 
 	vec3d rvec;		vm_vec_zero(&rvec);
